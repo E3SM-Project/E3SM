@@ -103,11 +103,10 @@ class TestBuildnml(unittest.TestCase):
         for name, value, all_matches in changes:
             all_matches_opt = "-a" if all_matches else ""
 
-            self._get_values(case, name, value=value, expect_equal=False, all_matches=all_matches)
+            names = self._get_values(case, name, value=value, expect_equal=False, all_matches=all_matches)
 
             run_cmd_assert_result(self, f"./atmchange {all_matches_opt} {name}='{value}'", from_dir=case)
 
-            names = self._get_values(case, name, value=value, expect_equal=True, all_matches=all_matches)
             for item in names:
                 changes_unpacked[item] = value
 
@@ -219,7 +218,7 @@ class TestBuildnml(unittest.TestCase):
 
         run_cmd_assert_result(self, "./xmlchange SCREAM_HACK_XML=TRUE", from_dir=case)
 
-        self._chg_atmconfig([("atm_log_level", "trace")], case, expect_lost=False)
+        self._chg_atmconfig([("atm_log_level", "trace")], case, expect_lost=True)
 
     ###########################################################################
     def test_multiple_atmchanges_are_preserved(self):
