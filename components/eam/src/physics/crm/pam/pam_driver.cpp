@@ -17,6 +17,8 @@
 #include "surface_friction.h"
 #include "scream_cxx_interface_finalize.h"
 
+#include "pam_hyperdiffusion.h"
+
 // Needed for p3_init
 #include "p3_functions.hpp"
 #include "p3_f90.hpp"
@@ -85,8 +87,8 @@ extern "C" void pam_driver() {
   // Copy input CRM state (saved by the GCM) to coupler
   pam_state_copy_input_to_coupler(coupler);
 
-  // update horz mean of CRM dry density to match GCM - also disables dry density forcing
-  pam_state_update_dry_density(coupler);
+  // // update CRM dry density to match GCM and disable dry density forcing
+  // pam_state_update_dry_density(coupler);
 
   // if debugging - initialize saved state variables and check initial CRM state
   if (enable_check_state) {
@@ -130,7 +132,11 @@ extern "C" void pam_driver() {
   #endif
 
   // dycor initialization
+  bool do_density_save_recall = false;
   #if defined(MMF_PAM_DYCOR_SPAM)
+    // The PAM-C anelastic dycor can dramatically change the dry density due to the assumption that
+    // the total density does not change, so we will save it here and recall after the dycor
+    do_density_save_recall = true;
     pam_state_set_reference_state(coupler);
     dycore.pre_time_loop(coupler);
   #elif defined(MMF_PAM_DYCOR_AWFL)
@@ -165,42 +171,43 @@ extern "C" void pam_driver() {
     coupler.run_module( "radiation"                    , [&] (pam::PamCoupler &coupler) {rad   .timeStep(coupler);} );
     if (enable_check_state) { pam_debug_check_state(coupler, 2, nstep); }
 
-    // The PAM-C anelastic dycor can dramatically change the dry density due to the assumption that
-    // the total density does not change, so we will save it here and recall after the dycor
-    pam_statistics_save_state(coupler);
-    #if defined(MMF_PAM_DYCOR_SPAM)
-      pam_state_save_dry_density(coupler);
-    #endif
-    coupler.run_module( "dycore"                       , [&] (pam::PamCoupler &coupler) {dycore.timeStep(coupler);} );
-    #if defined(MMF_PAM_DYCOR_SPAM)
-      pam_state_recall_dry_density(coupler);
-    #endif
+    // Dynamics
+    if (enable_physics_tend_stats) { pam_statistics_save_state(coupler); }
+    if (do_density_save_recall)    { pam_state_save_dry_density(coupler); }
+    coupler.run_module( "dycore", [&] (pam::PamCoupler &coupler) {dycore.timeStep(coupler);} );
+    if (do_density_save_recall)    { pam_state_recall_dry_density(coupler); }
     if (enable_physics_tend_stats) { pam_statistics_aggregate_tendency(coupler,"dycor"); }
-    if (enable_check_state) { pam_debug_check_state(coupler, 3, nstep); }
+    if (enable_check_state)        { pam_debug_check_state(coupler, 3, nstep); }
 
-    pam_statistics_save_state(coupler);
-    coupler.run_module( "sponge_layer"                 , modules::sponge_layer );
+    // Sponge layer damping
+    if (enable_physics_tend_stats) { pam_statistics_save_state(coupler); }
+    coupler.run_module( "sponge_layer", modules::sponge_layer );
     if (enable_physics_tend_stats) { pam_statistics_aggregate_tendency(coupler,"sponge"); }
-    if (enable_check_state) { pam_debug_check_state(coupler, 4, nstep); }
+    if (enable_check_state)        { pam_debug_check_state(coupler, 4, nstep); }
 
-    // calculate psuedo friction which will be an input to SHOC
-    coupler.run_module( "compute_surface_friction"     , modules::compute_surface_friction );
+    // Apply hyperdiffusion to account for lack of horizontal mixing in SHOC
+    pam_hyperdiffusion(coupler);
 
-    pam_statistics_save_state(coupler);
-    coupler.run_module( "sgs"                          , [&] (pam::PamCoupler &coupler) {sgs   .timeStep(coupler);} );
+    // Turbulence - SHOC
+    coupler.run_module( "compute_surface_friction", modules::compute_surface_friction );
+    if (enable_physics_tend_stats) { pam_statistics_save_state(coupler); }
+    coupler.run_module( "sgs", [&] (pam::PamCoupler &coupler) {sgs   .timeStep(coupler);} );
     if (enable_physics_tend_stats) { pam_statistics_aggregate_tendency(coupler,"sgs"); }
-    if (enable_check_state) { pam_debug_check_state(coupler, 5, nstep); }
+    if (enable_check_state)        { pam_debug_check_state(coupler, 5, nstep); }
 
-    pam_statistics_save_state(coupler);
-    coupler.run_module( "micro"                        , [&] (pam::PamCoupler &coupler) {micro .timeStep(coupler);} );
+    // Microphysics - P3
+    if (enable_physics_tend_stats) { pam_statistics_save_state(coupler); }
+    coupler.run_module( "micro", [&] (pam::PamCoupler &coupler) {micro .timeStep(coupler);} );
     if (enable_physics_tend_stats) { pam_statistics_aggregate_tendency(coupler,"micro"); }
-    if (enable_check_state) { pam_debug_check_state(coupler, 6, nstep); }
+    if (enable_check_state)        { pam_debug_check_state(coupler, 6, nstep); }
 
+    // CRM mean state acceleration
     if (use_crm_accel && !coupler.get_option<bool>("crm_acceleration_ceaseflag")) {
       pam_accelerate(coupler, nstep, nstop);
       pam_accelerate_diagnose(coupler);
     }
 
+    // Diagnostic aggregation
     pam_radiation_timestep_aggregation(coupler);
     pam_statistics_timestep_aggregation(coupler);
 
