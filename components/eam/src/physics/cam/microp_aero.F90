@@ -454,13 +454,6 @@ contains
     ! save copy of cloud borne aerosols for use in heterogeneous freezing
     call hetfrz_classnuc_cam_save_cbaero(state, pbuf)
 
-    ! mode number mixing ratios
-    call rad_cnst_get_mode_num(0, mode_coarse_dst_idx, 'a', state, pbuf, num_coarse)
-
-    ! mode specie mass m.r.
-    call rad_cnst_get_aer_mmr(0, mode_coarse_dst_idx, coarse_dust_idx, 'a', state, pbuf, coarse_dust)
-    call rad_cnst_get_aer_mmr(0, mode_coarse_slt_idx, coarse_nacl_idx, 'a', state, pbuf, coarse_nacl)
-
     !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
     ! More refined computation of sub-grid vertical velocity
     ! Set to be zero at the surface by initialization.
@@ -470,15 +463,14 @@ contains
     allocate(tke(pcols,pverp))
     tke(:ncol,:) = (3._r8/2._r8)*wp2(:ncol,:)
 
-
     ! Set minimum values above top_lev.
     !PMA no longer needs the minimum value that is designed for CAM5-UW scheme which
     !produces very low values
 
     wsub(:ncol,:top_lev-1)  = wsubmin
-    wsubi(:ncol,:top_lev-1) = 0.001_r8
-    wsig(:ncol,:top_lev-1)  = 0.001_r8
-
+    wsubi(:ncol,:top_lev-1) = 0.001_r8 ! for ice
+    wsig(:ncol,:top_lev-1)  = 0.001_r8 ! for computing updraft velocity
+    w0(1:ncol,1:pver)       = 0._r8
     do k = top_lev, pver
        do i = 1, ncol
           wsub(i,k) = sqrt(0.5_r8*(tke(i,k) + tke(i,k+1))*(2._r8/3._r8))
@@ -488,40 +480,22 @@ contains
           wsubi(i,k) = max(0.2_r8, wsub(i,k))
           wsubi(i,k) = min(wsubi(i,k), 10.0_r8)
           wsub(i,k)  = max(wsubmin, wsub(i,k))
+
+          rho(i,k) = pmid(i,k)/(rair*t(i,k))
+          !Convert from omega to w
+          w0(i,k) = -1._r8*omega(i,k)/(rho(i,k)*gravit) !Negative omega means rising motion
        end do
     end do
 
-    !!..........................................................
-    !! Initialization
-    !!..........................................................
-
-    w0(1:ncol,1:pver) = 0._r8
-    w2(1:ncol,1:pver) = 0._r8
-    wsubice(1:ncol,1:pver) = 0._r8
-
-    !!..........................................................
-    !!  Convert from omega to w
-    !!  Negative omega means rising motion
-    !!..........................................................
-    ! initialize time-varying parameters
-    do k = top_lev, pver
-      do i = 1, ncol
-         rho(i,k) = pmid(i,k)/(rair*t(i,k))
-      end do
-   end do
-
-    do k = top_lev, pver
-       do i = 1, ncol
-          w0(i,k) = -1._r8*omega(i,k)/(rho(i,k)*gravit)
-       enddo
-    enddo
 
     !!..........................................................
     !! icenul_wsub_scheme = 2 : Mean updraft calculated from Gausssian PDF, with
     !stddev=f(TKE)
     !!..........................................................
-
+    w2(1:ncol,1:pver) = 0._r8
     call subgrid_mean_updraft(ncol, w0, wsig, w2)
+
+    wsubice(1:ncol,1:pver) = 0._r8
     wsubice(1:ncol,1:pver) = wsubi(1:ncol,1:pver)
 
 
@@ -543,6 +517,7 @@ contains
 
     call pbuf_get_field(pbuf, alst_idx,     alst, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
     liqcldf(:ncol,:pver) = alst(:ncol,:pver)
+
     ! partition cloud fraction into liquid water part
     lcldn = 0._r8
     lcldo = 0._r8
@@ -563,8 +538,11 @@ contains
 
 
     call dropmixnuc( &
-         state, ptend, deltatin, pbuf, wsub, &
-         lcldn, lcldo, nctend_mixnuc, factnum)
+         state, &
+         ptend, & !OUT
+         deltatin, pbuf, wsub, &
+         lcldn, lcldo, &
+         nctend_mixnuc, factnum) !OUT
 
     call pbuf_get_field(pbuf, npccn_idx, npccn)
     ! initialize output
@@ -585,6 +563,13 @@ contains
     rndst(1:ncol,1:pver,3) = rn_dst3
     rndst(1:ncol,1:pver,4) = rn_dst4
 
+    ! mode number mixing ratios
+    call rad_cnst_get_mode_num(0, mode_coarse_dst_idx, 'a', state, pbuf, num_coarse)
+    ! mode specie mass m.r.
+    call rad_cnst_get_aer_mmr(0, mode_coarse_dst_idx, coarse_dust_idx, 'a', state, pbuf, coarse_dust)
+    call rad_cnst_get_aer_mmr(0, mode_coarse_slt_idx, coarse_nacl_idx, 'a', state, pbuf, coarse_nacl)
+
+
     do k = top_lev, pver
        do i = 1, ncol
           if (t(i,k) < 269.15_r8) then
@@ -595,15 +580,8 @@ contains
 
              dmc  = coarse_dust(i,k)
              ssmc = coarse_nacl(i,k)
-
-             if ( separate_dust ) then
-                ! 7-mode -- has separate dust and seasalt mode types and no need for weighting
-                wght = 1._r8
-             else
-                ! 3-mode -- needs weighting for dust since dust and seasalt are combined in the "coarse" mode type
-                wght = dmc/(ssmc + dmc)
-             endif
-
+             wght = dmc/(ssmc + dmc)
+             
              if (dmc > 0.0_r8) then
                 nacon(i,k,3) = wght*num_coarse(i,k)*rho(i,k)
              else
