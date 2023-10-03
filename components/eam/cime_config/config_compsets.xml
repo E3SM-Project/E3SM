@@ -141,6 +141,16 @@
     <lname>RICO_EAM%SCM-MMF1_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
+  <compset>
+    <alias>FSCM-RCE</alias>
+    <lname>RCE_EAM%SCM-RCE_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>FSCM-RCE-MMF1</alias>
+    <lname>RCE_EAM%SCM-RCE-MMF1_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
+  </compset>
+
   <!-- ************************************************* -->
   <!--                    Aquaplanet                     -->
   <!-- ************************************************* -->
@@ -308,6 +318,7 @@
         <value  compset="ARM95_EAM">1995-07-18</value>
         <value  compset="ARM97_EAM">1997-06-19</value>
         <value  compset="RICO_EAM">2004-12-16</value>
+        <value  compset="RCE_EAM">0001-01-01</value>
         <value  compset="_EAM%SCREAM-LR-DYAMOND1">2016-08-01</value>
         <value  compset="_EAM%SCREAM-HR-DYAMOND1">2016-08-01</value>
         <value  compset="_EAM%SCREAM-LR-DYAMOND2">2020-01-20</value>
@@ -326,6 +337,7 @@
         <value  compset="ARM95_EAM">19800</value>
         <value  compset="ARM97_EAM">84585</value>
         <value  compset="RICO_EAM">0</value>
+        <value  compset="RCE_EAM">0</value>
       </values>
     </entry>
 
@@ -334,6 +346,7 @@
         <value compset="ARM95_EAM">ndays</value>
         <value compset="ARM97_EAM">ndays</value>
         <value compset="RICO_EAM">ndays</value>
+        <value compset="RCE_EAM">ndays</value>
       </values>
     </entry>
 
@@ -342,6 +355,7 @@
         <value compset="ARM95_EAM">2</value>
         <value compset="ARM97_EAM">29</value>
         <value compset="RICO_EAM">1</value>
+        <value compset="RCE_EAM">1</value>
       </values>
     </entry>
 
@@ -368,6 +382,7 @@
       <values>
         <value compset="ARM9[57]_EAM">36.6</value>
         <value compset="RICO_EAM">17.97</value>
+        <value compset="RCE_EAM">0.0</value>
       </values>
     </entry>
 
@@ -375,6 +390,7 @@
       <values>
         <value compset="ARM9[57]_EAM">262.5</value>
         <value compset="RICO_EAM">298.54</value>
+        <value compset="RCE_EAM">0.0</value>
       </values>
     </entry>
 
