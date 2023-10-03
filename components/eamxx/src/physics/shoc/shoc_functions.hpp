@@ -83,6 +83,8 @@ struct Functions
    Scalar w2tune;
    Scalar length_fac;
    Scalar c_diag_3rd_mom;
+   Scalar Ckh;
+   Scalar Ckm;
  };
 
   // This struct stores input views for shoc_main.
@@ -850,6 +852,8 @@ struct Functions
     const Scalar&                w2tune,
     const Scalar&                length_fac,
     const Scalar&                c_diag_3rd_mom,
+    const Scalar&                Ckh,
+    const Scalar&                Ckm,
     // Input Variables
     const Scalar&                host_dx,
     const Scalar&                host_dy,
@@ -919,6 +923,8 @@ struct Functions
     const Scalar&                w2tune,
     const Scalar&                length_fac,
     const Scalar&                c_diag_3rd_mom,
+    const Scalar&                Ckh,
+    const Scalar&                Ckm,
     // Input Variables
     const view_1d<const Scalar>& host_dx,
     const view_1d<const Scalar>& host_dy,
@@ -1125,6 +1131,8 @@ struct Functions
   static void eddy_diffusivities(
     const MemberType&            team,
     const Int&                   nlev,
+    const Scalar&                Ckh,
+    const Scalar&                Ckm,
     const Scalar&                pblh,
     const uview_1d<const Spack>& zt_grid,
     const uview_1d<const Spack>& tabs,
@@ -1145,6 +1153,8 @@ struct Functions
     const Scalar&                lambda_high,
     const Scalar&                lambda_slope,
     const Scalar&                lambda_thresh,
+    const Scalar&                Ckh,
+    const Scalar&                Ckm,
     const uview_1d<const Spack>& wthv_sec,
     const uview_1d<const Spack>& shoc_mix,
     const uview_1d<const Spack>& dz_zi,
@@ -1172,6 +1182,8 @@ struct Functions
     const Scalar&                lambda_high,
     const Scalar&                lambda_slope,
     const Scalar&                lambda_thresh,
+    const Scalar&                Ckh,
+    const Scalar&                Ckm,
     const view_2d<const Spack>&  wthv_sec,
     const view_2d<const Spack>&  shoc_mix,
     const view_2d<const Spack>&  dz_zi,

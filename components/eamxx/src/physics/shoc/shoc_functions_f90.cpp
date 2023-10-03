@@ -2884,7 +2884,7 @@ Int shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl, 
                                              qwthl_sec_d, wthl_sec_d, wqw_sec_d, wtke_sec_d,
                                              uw_sec_d,    vw_sec_d,   w3_d,      wqls_sec_d,
                                              brunt_d,     isotropy_d};
-  SHF::SHOCRuntime shoc_runtime_options{0.001,0.04,2.65,0.02,1.0,1.0,1.0,1.0,0.5,7.0};
+  SHF::SHOCRuntime shoc_runtime_options{0.001,0.04,2.65,0.02,1.0,1.0,1.0,1.0,0.5,7.0,0.1,0.1};
 
   const auto nlevi_packs = ekat::npack<Spack>(nlevi);
 
@@ -3217,7 +3217,10 @@ void eddy_diffusivities_f(Int nlev, Int shcol, Real* pblh, Real* zt_grid, Real* 
     const auto tkh_s = ekat::subview(tkh_d, i);
     const auto tk_s = ekat::subview(tk_d, i);
 
-    SHF::eddy_diffusivities(team, nlev, pblh_s, zt_grid_s, tabs_s, shoc_mix_s, sterm_zt_s, isotropy_s, tke_s, tkh_s, tk_s);
+    // Hardcode runtime options for F90 testing
+    const Real Ckh = 0.1;
+    const Real Ckm = 0.1;
+    SHF::eddy_diffusivities(team, nlev, Ckh, Ckm, pblh_s, zt_grid_s, tabs_s, shoc_mix_s, sterm_zt_s, isotropy_s, tke_s, tkh_s, tk_s);
   });
 
   // Sync back to host
@@ -3477,11 +3480,16 @@ void shoc_tke_f(Int shcol, Int nlev, Int nlevi, Real dtime, Real* wthv_sec, Real
     const auto tkh_s = ekat::subview(tkh_d, i);
     const auto isotropy_s = ekat::subview(isotropy_d, i);
 
-    const Real lambda_low    = 0.001;  //ASD
+    // Hardcode for F90 testing
+    const Real lambda_low    = 0.001;  
     const Real lambda_high   = 0.04;
     const Real lambda_slope  = 2.65;
     const Real lambda_thresh = 0.02;
+    const Real Ckh           = 0.1;
+    const Real Ckm           = 0.1;
+
     SHF::shoc_tke(team,nlev,nlevi,dtime,lambda_low,lambda_high,lambda_slope,lambda_thresh,
+                  Ckh, Ckm,
 		  wthv_sec_s,shoc_mix_s,dz_zi_s,dz_zt_s,pres_s,
                   tabs_s,u_wind_s,v_wind_s,brunt_s,zt_grid_s,zi_grid_s,pblh_s,
                   workspace,
