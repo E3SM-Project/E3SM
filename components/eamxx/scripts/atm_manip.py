@@ -10,7 +10,7 @@ import xml.etree.ElementTree as ET # pylint: disable=unused-import
 # Add path to cime_config folder
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "cime_config"))
 from eamxx_buildnml_impl import check_value, is_array_type, has_child, get_child, find_node
-from eamxx_buildnml_impl import gen_atm_proc_group
+from eamxx_buildnml_impl import gen_atm_proc_group, resolve_all_inheritances
 from utils import expect, run_cmd_no_fail
 
 ATMCHANGE_SEP = "-ATMCHANGE_SEP-"
@@ -63,6 +63,10 @@ def apply_buffer(case,xml_root):
         expect (len(atmchgs)==len(atmchgs_all),"Failed to unbuffer changes from SCREAM_ATMCHANGE_BUFFER")
         for chg, to_all in zip(atmchgs,atmchgs_all):
             atm_config_chg_impl(xml_root, chg, all_matches=to_all)
+            # Annoying as it may be, we must resolve all inheritances.
+            # E.g., the user *may* have added an atm proc, which requires
+            # to get all the atm_proc_base defaults
+            resolve_all_inheritances(xml_root)
 
 ###############################################################################
 def reset_buffer():
@@ -121,7 +125,7 @@ def get_xml_nodes(xml_root, name):
     return result
 
 ###############################################################################
-def modify_ap_list(xml_root, node, ap_list_str, append_this):
+def modify_ap_list(xml_root, group, ap_list_str, append_this):
 ###############################################################################
     """
     Modify the atm_procs_list entry of this XML node (which is an atm proc group).
@@ -166,7 +170,7 @@ def modify_ap_list(xml_root, node, ap_list_str, append_this):
     >>> has_child(defaults,'_my_group_')
     True
     """
-    curr_apl = get_child(node,"atm_procs_list")
+    curr_apl = get_child(group,"atm_procs_list")
     if curr_apl.text==ap_list_str:
         return False
 
@@ -211,8 +215,10 @@ def apply_change(xml_root, node, new_value, append_this):
 
     # User can change the list of atm procs in a group doing ./atmchange group_name=a,b,c
     # If we detect that this node is an atm proc group, don't modify the text, but do something els
-    if has_child(node,"atm_procs_list"):
-        return modify_ap_list (xml_root,node,new_value,append_this)
+    if node.tag=="atm_procs_list":
+        parent_map = create_parent_map(xml_root)
+        group = get_parents(node,parent_map)[-1]
+        return modify_ap_list (xml_root,group,new_value,append_this)
 
     if append_this:
 
