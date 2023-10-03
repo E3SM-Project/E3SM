@@ -1,129 +1,116 @@
 <?xml version="1.0"?>
-
 <config_pes>
-
   <grid name="any">
     <mach name="any">
       <pes pesize="any" compset="any">
-	<comment>none</comment>
-	<ntasks>
-	  <ntasks_atm>-1</ntasks_atm>
-	  <ntasks_rof>-1</ntasks_rof>
-	  <ntasks_ocn>-1</ntasks_ocn>
-	  <ntasks_ice>-1</ntasks_ice>
-	  <ntasks_cpl>-1</ntasks_cpl>
-	  <ntasks_lnd>-1</ntasks_lnd>
-	  <ntasks_glc>-1</ntasks_glc>
-    <ntasks_wav>-1</ntasks_wav>
-    <ntasks_iac>-1</ntasks_iac>
-	  <ntasks_esp>-1</ntasks_esp>
-	</ntasks>
-	<nthrds>
-	  <nthrds_atm>1</nthrds_atm>
-	  <nthrds_lnd>1</nthrds_lnd>
-	  <nthrds_rof>1</nthrds_rof>
-	  <nthrds_ice>1</nthrds_ice>
-	  <nthrds_ocn>1</nthrds_ocn>
-	  <nthrds_glc>1</nthrds_glc>
-    <nthrds_wav>1</nthrds_wav>
-    <nthrds_iac>1</nthrds_iac>
-	  <nthrds_esp>1</nthrds_esp>
-	  <nthrds_cpl>1</nthrds_cpl>
-	</nthrds>
-	<rootpe>
-	  <rootpe_atm>0</rootpe_atm>
-	  <rootpe_rof>0</rootpe_rof>
-	  <rootpe_ice>0</rootpe_ice>
-	  <rootpe_ocn>0</rootpe_ocn>
-	  <rootpe_cpl>0</rootpe_cpl>
-	  <rootpe_lnd>0</rootpe_lnd>
-	  <rootpe_glc>0</rootpe_glc>
-    <rootpe_wav>0</rootpe_wav>
-    <rootpe_iac>0</rootpe_iac>
-	  <rootpe_esp>0</rootpe_esp>
-	</rootpe>
+        <comment>driver-mct: any grid, any mach, any compset, any pesize</comment>
+        <ntasks>
+          <ntasks_atm>-1</ntasks_atm>
+          <ntasks_rof>-1</ntasks_rof>
+          <ntasks_ocn>-1</ntasks_ocn>
+          <ntasks_ice>-1</ntasks_ice>
+          <ntasks_cpl>-1</ntasks_cpl>
+          <ntasks_lnd>-1</ntasks_lnd>
+          <ntasks_glc>-1</ntasks_glc>
+          <ntasks_wav>-1</ntasks_wav>
+          <ntasks_iac>-1</ntasks_iac>
+          <ntasks_esp>-1</ntasks_esp>
+        </ntasks>
       </pes>
-    </mach>
-  </grid>
-
-  <grid name="a%T62">
-    <mach name="yellowstone|pronghorn">
-      <pes pesize="any" compset="DATM%IAF">
-	<comment>none</comment>
-	<ntasks>
-	  <ntasks_atm>60</ntasks_atm>
-	  <ntasks_rof>60</ntasks_rof>
-	  <ntasks_ocn>60</ntasks_ocn>
-	  <ntasks_ice>60</ntasks_ice>
-	  <ntasks_cpl>60</ntasks_cpl>
-	  <ntasks_lnd>60</ntasks_lnd>
-	  <ntasks_glc>60</ntasks_glc>
-	  <ntasks_wav>60</ntasks_wav>
-	  <ntasks_esp>60</ntasks_esp>
-	</ntasks>
-	<nthrds>
-	  <nthrds_atm>2</nthrds_atm>
-	  <nthrds_lnd>2</nthrds_lnd>
-	  <nthrds_rof>2</nthrds_rof>
-	  <nthrds_ice>2</nthrds_ice>
-	  <nthrds_ocn>2</nthrds_ocn>
-	  <nthrds_glc>2</nthrds_glc>
-	  <nthrds_wav>2</nthrds_wav>
-	  <nthrds_esp>2</nthrds_esp>
-	  <nthrds_cpl>2</nthrds_cpl>
-	</nthrds>
-	<rootpe>
-	  <rootpe_atm>0</rootpe_atm>
-	  <rootpe_rof>0</rootpe_rof>
-	  <rootpe_ice>0</rootpe_ice>
-	  <rootpe_ocn>0</rootpe_ocn>
-	  <rootpe_cpl>0</rootpe_cpl>
-	  <rootpe_lnd>0</rootpe_lnd>
-	  <rootpe_glc>0</rootpe_glc>
-	  <rootpe_wav>0</rootpe_wav>
-	  <rootpe_esp>0</rootpe_esp>
-	</rootpe>
+      <pes compset="XATM" pesize="T">
+        <comment>driver-mct: any grid, any mach, compset XATM, pesize=threaded</comment>
+        <ntasks>
+          <ntasks_atm>4</ntasks_atm>
+          <ntasks_lnd>4</ntasks_lnd>
+          <ntasks_rof>4</ntasks_rof>
+          <ntasks_ice>4</ntasks_ice>
+          <ntasks_ocn>4</ntasks_ocn>
+          <ntasks_glc>4</ntasks_glc>
+          <ntasks_wav>4</ntasks_wav>
+          <ntasks_cpl>4</ntasks_cpl>
+        </ntasks>
+        <nthrds>
+          <nthrds_atm>4</nthrds_atm>
+          <nthrds_lnd>4</nthrds_lnd>
+          <nthrds_rof>4</nthrds_rof>
+          <nthrds_ice>4</nthrds_ice>
+          <nthrds_ocn>4</nthrds_ocn>
+          <nthrds_glc>4</nthrds_glc>
+          <nthrds_wav>4</nthrds_wav>
+          <nthrds_cpl>4</nthrds_cpl>
+        </nthrds>
       </pes>
-    </mach>
-  </grid>
-
-  <grid name="a%T62">
-    <mach name="yellowstone|pronghorn">
-      <pes pesize="L" compset="DATM%IAF">
-	<comment>none</comment>
-	<ntasks>
-	  <ntasks_atm>-8</ntasks_atm>
-	  <ntasks_rof>-8</ntasks_rof>
-	  <ntasks_ocn>-8</ntasks_ocn>
-	  <ntasks_ice>-8</ntasks_ice>
-	  <ntasks_cpl>-8</ntasks_cpl>
-	  <ntasks_lnd>-8</ntasks_lnd>
-	  <ntasks_glc>-8</ntasks_glc>
-	  <ntasks_wav>-8</ntasks_wav>
-	  <ntasks_esp>-8</ntasks_esp>
-	</ntasks>
-	<nthrds>
-	  <nthrds_atm>2</nthrds_atm>
-	  <nthrds_lnd>2</nthrds_lnd>
-	  <nthrds_rof>2</nthrds_rof>
-	  <nthrds_ice>2</nthrds_ice>
-	  <nthrds_ocn>2</nthrds_ocn>
-	  <nthrds_glc>2</nthrds_glc>
-	  <nthrds_wav>2</nthrds_wav>
-	  <nthrds_cpl>2</nthrds_cpl>
-	  <nthrds_esp>1</nthrds_esp>
-	</nthrds>
-	<rootpe>
-	  <rootpe_atm>0</rootpe_atm>
-	  <rootpe_rof>0</rootpe_rof>
-	  <rootpe_ice>0</rootpe_ice>
-	  <rootpe_ocn>0</rootpe_ocn>
-	  <rootpe_cpl>0</rootpe_cpl>
-	  <rootpe_lnd>0</rootpe_lnd>
-	  <rootpe_glc>0</rootpe_glc>
-	  <rootpe_wav>0</rootpe_wav>
-	  <rootpe_esp>0</rootpe_esp>
-	</rootpe>
+      <pes compset="SATM" pesize="any">
+        <comment>driver-mct: any grid, any mach, compset SATM, any pesize</comment>
+        <ntasks>
+          <ntasks_atm>8</ntasks_atm>
+          <ntasks_lnd>8</ntasks_lnd>
+          <ntasks_rof>8</ntasks_rof>
+          <ntasks_ice>8</ntasks_ice>
+          <ntasks_ocn>8</ntasks_ocn>
+          <ntasks_glc>8</ntasks_glc>
+          <ntasks_wav>8</ntasks_wav>
+          <ntasks_cpl>8</ntasks_cpl>
+        </ntasks>
+      </pes>
+      <pes compset="SATM" pesize="T">
+        <comment>driver-mct: any grid, any mach, compset SATM, pesize=threaded</comment>
+        <ntasks>
+          <ntasks_atm>2</ntasks_atm>
+          <ntasks_lnd>2</ntasks_lnd>
+          <ntasks_rof>2</ntasks_rof>
+          <ntasks_ice>2</ntasks_ice>
+          <ntasks_ocn>2</ntasks_ocn>
+          <ntasks_glc>2</ntasks_glc>
+          <ntasks_wav>2</ntasks_wav>
+          <ntasks_cpl>2</ntasks_cpl>
+        </ntasks>
+        <nthrds>
+          <nthrds_atm>4</nthrds_atm>
+          <nthrds_lnd>4</nthrds_lnd>
+          <nthrds_rof>4</nthrds_rof>
+          <nthrds_ice>4</nthrds_ice>
+          <nthrds_ocn>4</nthrds_ocn>
+          <nthrds_glc>4</nthrds_glc>
+          <nthrds_wav>4</nthrds_wav>
+          <nthrds_cpl>4</nthrds_cpl>
+        </nthrds>
+      </pes>
+      <pes compset="DATM.+DLND.+DICE.+DOCN%DOM.+DROF" pesize="any">
+        <comment>driver-mct: any grid, any mach, compset all-data, any pesize</comment>
+        <ntasks>
+          <ntasks_atm>-1</ntasks_atm>
+          <ntasks_lnd>-1</ntasks_lnd>
+          <ntasks_rof>-1</ntasks_rof>
+          <ntasks_ice>-1</ntasks_ice>
+          <ntasks_ocn>-1</ntasks_ocn>
+          <ntasks_glc>-1</ntasks_glc>
+          <ntasks_wav>-1</ntasks_wav>
+          <ntasks_cpl>-1</ntasks_cpl>
+        </ntasks>
+      </pes>
+      <pes compset="DATM.+DLND.+DICE.+DOCN%DOM.+DROF" pesize="T">
+        <comment>driver-mct: any grid, any mach, compset all-data, pesize=threaded</comment>
+        <ntasks>
+          <ntasks_atm>2</ntasks_atm>
+          <ntasks_lnd>2</ntasks_lnd>
+          <ntasks_rof>2</ntasks_rof>
+          <ntasks_ice>2</ntasks_ice>
+          <ntasks_ocn>2</ntasks_ocn>
+          <ntasks_glc>2</ntasks_glc>
+          <ntasks_wav>2</ntasks_wav>
+          <ntasks_cpl>2</ntasks_cpl>
+        </ntasks>
+        <nthrds>
+          <nthrds_atm>4</nthrds_atm>
+          <nthrds_lnd>4</nthrds_lnd>
+          <nthrds_rof>4</nthrds_rof>
+          <nthrds_ice>4</nthrds_ice>
+          <nthrds_ocn>4</nthrds_ocn>
+          <nthrds_glc>4</nthrds_glc>
+          <nthrds_wav>4</nthrds_wav>
+          <nthrds_cpl>4</nthrds_cpl>
+        </nthrds>
       </pes>
     </mach>
   </grid>

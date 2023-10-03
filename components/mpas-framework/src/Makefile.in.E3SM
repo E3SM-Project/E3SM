@@ -41,6 +41,16 @@ else
    ESMFDIR = noesmf
 endif
 
+# Set MOAB info if it is being used
+ifeq ($(COMP_INTERFACE),moab)
+  ifdef MOAB_PATH
+    CPPDEFS += -DHAVE_MOAB
+    MOAB_INCLUDES = -I$(MOAB_PATH)/include
+  else
+    $(error MOAB_PATH must be defined when using moab driver)
+  endif
+endif
+
 RM = rm -f
 CPP = cpp -P -traditional
 FC=$(MPIFC)
@@ -54,8 +64,8 @@ override CFLAGS += -DMPAS_NO_LOG_REDIRECT -DUSE_PIO2 -DMPAS_NO_ESMF_INIT -DMPAS_
 override FFLAGS += -DMPAS_NO_LOG_REDIRECT -DUSE_PIO2 -DMPAS_NO_ESMF_INIT -DMPAS_ESM_SHR_CONST -DMPAS_PERF_MOD_TIMERS
 override CPPFLAGS += $(CPPDEFS) $(MODEL_FORMULATION) $(FILE_OFFSET) $(ZOLTAN_DEFINE) -DMPAS_NO_LOG_REDIRECT -DUSE_PIO2 -DMPAS_NO_ESMF_INIT -DMPAS_ESM_SHR_CONST -D_MPI -DMPAS_NAMELIST_SUFFIX=$(NAMELIST_SUFFIX) -DMPAS_EXE_NAME=$(EXE_NAME) -DMPAS_PERF_MOD_TIMERS
 override CPPINCLUDES += -I$(EXEROOT)/$(COMPONENT)/source/inc -I$(INSTALL_SHAREDPATH)/include -I$(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share -I$(NETCDF)/include -I$(PIO) -I$(PNETCDF)/include
-override FCINCLUDES += -I$(EXEROOT)/$(COMPONENT)/source/inc -I$(INSTALL_SHAREDPATH)/include -I$(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share -I$(NETCDF)/include -I$(PIO) -I$(PNETCDF)/include
-LIBS += -L$(PIO) -L$(PNETCDF)/lib -L$(NETCDF)/lib -L$(LIBROOT) -L$(INSTALL_SHAREDPATH)/lib -lpio -lpnetcdf -lnetcdf
+override FCINCLUDES += -I$(EXEROOT)/$(COMPONENT)/source/inc -I$(INSTALL_SHAREDPATH)/include -I$(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share -I$(NETCDF)/include -I$(PIO) -I$(PNETCDF)/include $(MOAB_INCLUDE)
+LIBS += $(IMESH_LIBS) -L$(PIO) -L$(PNETCDF)/lib -L$(NETCDF)/lib -L$(LIBROOT) -L$(INSTALL_SHAREDPATH)/lib -lpio -lpnetcdf -lnetcdf
 
 ifeq ($(DEBUG), TRUE)
     override CPPFLAGS += -DMPAS_DEBUG

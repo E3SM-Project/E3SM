@@ -33,7 +33,24 @@ module seq_map_type_mod
      real(R8), pointer       :: slat_d(:)
      real(R8), pointer       :: clat_d(:)
      integer(IN)             :: mpicom    ! mpicom
+
+#ifdef HAVE_MOAB
+     ! MOAB additional members, that store source, target and intx MOAB appids
+     !  these are integers greater than or equal to 0
      !
+     !   in general, rearrange can be solved with a parcommgraph, true fv-fv intx with an actual intx
+     !   and a weight matrix;
+     ! intx appid should be used for one map usually
+     ! source and target app ids also make sense only on the coupler pes
+     integer                 :: src_mbid, tgt_mbid, intx_mbid, src_context, intx_context
+     character*32            :: weight_identifier ! 'state' OR 'flux'
+     character*16            :: mbname
+     integer                 :: tag_entity_type
+     integer                 :: nentities ! this should be used only if copy_only is true
+     logical                 :: read_map
+     !
+#endif
+
   end type seq_map
   public seq_map
 
@@ -100,6 +117,10 @@ contains
           mapid = m
           if (seq_comm_iamroot(CPLID)) then
              write(logunit,'(A,i6)') subname//' found match ',mapid
+#ifdef MOABCOMP
+             write(logunit,'(A,i6)') subname//' strategy '//trim(seq_maps(mapid)%strategy)//&
+             ' mapfile '//trim(seq_maps(mapid)%mapfile)
+#endif
              call shr_sys_flush(logunit)
           endif
           return
@@ -135,6 +156,22 @@ contains
     mapper%mpicom         = mpicom
     mapper%strategy       = "undefined"
     mapper%mapfile        = "undefined"
+
+#ifdef HAVE_MOAB
+    mapper%src_mbid  = -1
+    mapper%tgt_mbid  = -1
+    mapper%intx_mbid = -1
+    mapper%nentities =  0
+    mapper%tag_entity_type = 1 ! cells most of the time when we need it
+    mapper%mbname    = "undefined"
+    mapper%read_map = .false.
+#ifdef MOABCOMP
+    if (seq_comm_iamroot(CPLID)) then
+      write(logunit,'(A,i6)') subname//' call init map for mapper with id ',mapper%counter
+      call shr_sys_flush(logunit)
+    endif
+#endif
+#endif
 
   end subroutine seq_map_mapinit
 
@@ -174,6 +211,27 @@ contains
     endif
 
   end subroutine seq_map_gsmapcheck
+  
+  !===============================================================================
 
+  subroutine seq_map_set_type(mapper, mbid, ent_type)
+    use iMOAB, only: iMOAB_GetMeshInfo
+    type(seq_map)   ,intent(in),pointer :: mapper
+    integer         ,intent(in) :: mbid
+    integer         ,intent(in) :: ent_type
+    
+    integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3), ierr
+
+
+    ierr  = iMOAB_GetMeshInfo ( mbid, nvert, nvise, nbl, nsurf, nvisBC ); 
+    if (ent_type .eq. 0) then
+       mapper%nentities = nvert(1)
+    else if (ent_type .eq. 1) then
+       mapper%nentities = nvise(1)
+    endif
+
+    mapper%tag_entity_type = ent_type
+
+  end  subroutine seq_map_set_type
 
 end module seq_map_type_mod
