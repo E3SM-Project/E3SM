@@ -82,6 +82,7 @@ struct Functions
    Scalar qwthl2tune;
    Scalar w2tune;
    Scalar length_fac;
+   Scalar c_diag_3rd_mom;
  };
 
   // This struct stores input views for shoc_main.
@@ -282,6 +283,7 @@ struct Functions
     const MemberType& team,
     const Int& nlev,
     const Int& nlevi,
+    const Scalar& c_diag_3rd_mom,
     const uview_1d<const Spack>& w_sec,
     const uview_1d<const Spack>& thl_sec,
     const uview_1d<const Spack>& wthl_sec,
@@ -675,6 +677,7 @@ struct Functions
     const MemberType&            team,
     const Int&                   nlev,
     const Int&                   nlevi,
+    const Scalar&                c_diag_3rd_mom,
     const uview_1d<const Spack>& w_sec,
     const uview_1d<const Spack>& thl_sec,
     const uview_1d<const Spack>& wthl_sec,
@@ -693,6 +696,7 @@ struct Functions
     const Int&                  shcol,
     const Int&                  nlev,
     const Int&                  nlevi,
+    const Scalar&               c_diag_3rd_mom,
     const view_2d<const Spack>& w_sec,
     const view_2d<const Spack>& thl_sec,
     const view_2d<const Spack>& wthl_sec,
@@ -845,6 +849,7 @@ struct Functions
     const Scalar&                qwthl2tune,
     const Scalar&                w2tune,
     const Scalar&                length_fac,
+    const Scalar&                c_diag_3rd_mom,
     // Input Variables
     const Scalar&                host_dx,
     const Scalar&                host_dy,
@@ -913,6 +918,7 @@ struct Functions
     const Scalar&                qwthl2tune,
     const Scalar&                w2tune,
     const Scalar&                length_fac,
+    const Scalar&                c_diag_3rd_mom,
     // Input Variables
     const view_1d<const Scalar>& host_dx,
     const view_1d<const Scalar>& host_dy,

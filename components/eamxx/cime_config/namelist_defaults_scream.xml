@@ -216,7 +216,9 @@ be lost if SCREAM_HACK_XML is not enabled.
       <thl2tune type="real" doc="Temperature variance tuning factor">1.0</thl2tune>
       <qw2tune type="real" doc="Moisture variance tuning factor">1.0</qw2tune>
       <qwthl2tune type="real" doc="Temperature moisture covariance">1.0</qwthl2tune>
-      <w2tune type="real" doc=" Vertical velocity variance">1.0</w2tune>
+      <w2tune type="real" doc="Vertical velocity variance">1.0</w2tune>
+      <length_fac type="real" doc="Length scale factor">0.5</length_fac>
+      <c_diag_3rd_mom type="real" doc="w3 factor">7.0</c_diag_3rd_mom>
     </shoc>
 
     <!-- CLD fraction -->

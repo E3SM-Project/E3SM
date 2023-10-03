@@ -240,6 +240,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   runtime_options.qwthl2tune    = m_params.get<double>("qwthl2tune");
   runtime_options.w2tune        = m_params.get<double>("w2tune");
   runtime_options.length_fac    = m_params.get<double>("length_fac");
+  runtime_options.c_diag_3rd_mom = m_params.get<double>("c_diag_3rd_mom");
   // Initialize all of the structures that are passed to shoc_main in run_impl.
   // Note: Some variables in the structures are not stored in the field manager.  For these
   //       variables a local view is constructed.

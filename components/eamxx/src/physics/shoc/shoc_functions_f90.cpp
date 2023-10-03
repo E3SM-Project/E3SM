@@ -1132,7 +1132,9 @@ void compute_diag_third_shoc_moment_f(Int shcol, Int nlev, Int nlevi, Real* w_se
     const auto thetal_zi_s   = ekat::subview(thetal_zi_d, i);
     const auto w3_s          = ekat::subview(w3_d, i);
 
-    SHF::compute_diag_third_shoc_moment(team, nlev, nlevi, w_sec_s, thl_sec_s,
+    // Hardcode runtime options for F90 testing
+    const Real c_diag_3rd_mom = 7.0;
+    SHF::compute_diag_third_shoc_moment(team, nlev, nlevi, c_diag_3rd_mom, w_sec_s, thl_sec_s,
                                         wthl_sec_s, tke_s, dz_zt_s, dz_zi_s, isotropy_zi_s,
                                         brunt_zi_s, w_sec_zi_s, thetal_zi_s, w3_s);
   });
@@ -2325,7 +2327,9 @@ void diag_third_shoc_moments_f(Int shcol, Int nlev, Int nlevi, Real* w_sec, Real
     const auto zi_grid_s = ekat::subview(zi_grid_d, i);
     const auto w3_s = ekat::subview(w3_d, i);
 
-    SHF::diag_third_shoc_moments(team, nlev, nlevi, wsec_s, thl_sec_s,
+    // Hardcode for F90 testing
+    const Real c_diag_3rd_mom = 7.0;
+    SHF::diag_third_shoc_moments(team, nlev, nlevi, c_diag_3rd_mom, wsec_s, thl_sec_s,
                                  wthl_sec_s, isotropy_s, brunt_s, thetal_s, tke_s,
                                  dz_zt_s, dz_zi_s, zt_grid_s, zi_grid_s,
                                  workspace,
@@ -2880,7 +2884,7 @@ Int shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl, 
                                              qwthl_sec_d, wthl_sec_d, wqw_sec_d, wtke_sec_d,
                                              uw_sec_d,    vw_sec_d,   w3_d,      wqls_sec_d,
                                              brunt_d,     isotropy_d};
-  SHF::SHOCRuntime shoc_runtime_options{0.001,0.04,2.65,0.02,1.0,1.0,1.0,1.0,0.5};
+  SHF::SHOCRuntime shoc_runtime_options{0.001,0.04,2.65,0.02,1.0,1.0,1.0,1.0,0.5,7.0};
 
   const auto nlevi_packs = ekat::npack<Spack>(nlevi);
 
