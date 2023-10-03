@@ -11,6 +11,30 @@ if (TARGET netcdf)
   return()
 endif()
 
+# Sets GET_NETCDF_LIBS_RESULT
+function(get_netcdf_libs ncpath nfpath)
+
+  set(ncconfig ${ncpath}/bin/nc-config)
+  set(nfconfig ${nfpath}/bin/nf-config)
+
+  # Get C libs
+  if (EXISTS ${ncconfig})
+    execute_process(COMMAND ${ncconfig} --libs OUTPUT_VARIABLE nclibs OUTPUT_STRIP_TRAILING_WHITESPACE)
+  else()
+    find_library(nclibs netcdf REQUIRED PATHS ${ncpath}/lib ${ncpath}/lib64)
+  endif()
+
+  # Get fortran libs
+  if (EXISTS ${nfconfig})
+    execute_process(COMMAND ${nfconfig} --flibs OUTPUT_VARIABLE nflibs OUTPUT_STRIP_TRAILING_WHITESPACE)
+  else()
+    find_library(nflibs netcdff REQUIRED PATHS ${nfpath}/lib ${nfpath}/lib64)
+  endif()
+
+  # C libs need to come last
+  set(GET_NETCDF_LIBS_RESULT "${nflibs} ${nclibs}" PARENT_SCOPE)
+endfunction()
+
 function(create_netcdf_target)
   # Need to load macros to pick up netcdf vars. This should not impact
   # the scope of the caller because we are doing this within a function
@@ -36,39 +60,35 @@ function(create_netcdf_target)
       message(FATAL_ERROR "NETCDF_FORTRAN_PATH does not contain a lib or lib64 directory")
     endif ()
 
-    # Find the libraries
-    find_library(netcdf_c_lib netcdf  REQUIRED PATHS ${NETCDF_C_PATH}/lib ${NETCDF_C_PATH}/lib64)
-    find_library(netcdf_f_lib netcdff REQUIRED PATHS ${NETCDF_FORTRAN_PATH}/lib ${NETCDF_FORTRAN_PATH}/lib64)
+    get_netcdf_libs(${NETCDF_C_PATH} ${NETCDF_FORTRAN_PATH})
     find_path (netcdf_c_incdir netcdf.h REQUIRED PATHS ${NETCDF_C_PATH}/include)
     find_path (netcdf_f_incdir netcdf.inc REQUIRED PATHS ${NETCDF_FORTRAN_PATH}/include)
 
   elseif (NETCDF_FORTRAN_PATH)
     message(FATAL_ERROR "NETCDF_FORTRAN_PATH specified without NETCDF_C_PATH")
-  elseif (NETCDF_PATH)
 
+  elseif (NETCDF_PATH)
     # Sanity checks
     if (NOT EXISTS ${NETCDF_PATH}/lib AND NOT EXISTS ${NETCDF_PATH}/lib64)
       message(FATAL_ERROR "NETCDF_PATH does not contain a lib or lib64 directory")
     endif ()
 
-    find_library(netcdf_c_lib netcdf  REQUIRED PATHS ${NETCDF_PATH}/lib ${NETCDF_PATH}/lib64)
-    find_library(netcdf_f_lib netcdff REQUIRED PATHS ${NETCDF_PATH}/lib ${NETCDF_PATH}/lib64)
-    find_path (netcdf_c_incdir netcdf.h REQUIRED PATHS ${NETCDF_PATH}/include)
-    find_path (netcdf_f_incdir netcdf.inc REQUIRED PATHS ${NETCDF_PATH}/include)
+    get_netcdf_libs(${NETCDF_PATH} ${NETCDF_PATH})
+    find_path(netcdf_c_incdir netcdf.h REQUIRED PATHS ${NETCDF_PATH}/include)
+    find_path(netcdf_f_incdir netcdf.inc REQUIRED PATHS ${NETCDF_PATH}/include)
+
   else()
     message(FATAL_ERROR "NETCDF not found: Define NETCDF_PATH or NETCDF_C_PATH and NETCDF_FORTRAN_PATH in config_machines.xml or config_compilers.xml")
   endif()
 
-  set (pnetcdf_lib ${pnetcdf_lib})
-  set (netcdf_c_lib ${netcdf_c_lib})
-  set (netcdf_f_lib ${netcdf_f_lib})
-  set (pnetcdf_incdir ${pnetcdf_incdir})
-  set (netcdf_c_incdir ${netcdf_c_incdir})
-  set (netcdf_f_incdir ${netcdf_f_incdir})
+  set(pnetcdf_lib ${pnetcdf_lib})
+  set(pnetcdf_incdir ${pnetcdf_incdir})
+  set(netcdf_c_incdir ${netcdf_c_incdir})
+  set(netcdf_f_incdir ${netcdf_f_incdir})
 
   # Create the interface library, and set target properties
   add_library(netcdf INTERFACE)
-  target_link_libraries(netcdf INTERFACE ${pnetcdf_lib};${netcdf_c_lib};${netcdf_f_lib})
+  target_link_libraries(netcdf INTERFACE ${pnetcdf_lib} ${GET_NETCDF_LIBS_RESULT})
   target_include_directories(netcdf INTERFACE ${pnetcdf_incdir};${netcdf_c_incdir};${netcdf_f_incdir})
 endfunction()
 
