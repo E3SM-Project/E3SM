@@ -99,6 +99,7 @@ void Functions<Real,DefaultDevice>
 template <>
 Int Functions<Real,DefaultDevice>
 ::p3_main_internal_disp(
+  const P3Runtime& runtime_options,
   const P3PrognosticState& prognostic_state,
   const P3DiagnosticInputs& diagnostic_inputs,
   const P3DiagnosticOutputs& diagnostic_outputs,
@@ -236,7 +237,7 @@ Int Functions<Real,DefaultDevice>
   // main k-loop (for processes):
 
   p3_main_part2_disp(
-      nj, nk, infrastructure.predictNc, infrastructure.prescribedCCN, infrastructure.dt, inv_dt,
+      nj, nk, runtime_options.max_total_ni, infrastructure.predictNc, infrastructure.prescribedCCN, infrastructure.dt, inv_dt,
       lookup_tables.dnu_table_vals, lookup_tables.ice_table_vals, lookup_tables.collect_table_vals, 
       lookup_tables.revap_table_vals, pres, dpres, dz, nc_nuceat_tend, inv_exner,
       exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, ni_activated, inv_qc_relvar, cld_frac_i,
@@ -291,7 +292,7 @@ Int Functions<Real,DefaultDevice>
   // and compute diagnostic fields for output
   //
   p3_main_part3_disp(
-      nj, nk_pack, lookup_tables.dnu_table_vals, lookup_tables.ice_table_vals, inv_exner, cld_frac_l, cld_frac_r, cld_frac_i,
+      nj, nk_pack, runtime_options.max_total_ni, lookup_tables.dnu_table_vals, lookup_tables.ice_table_vals, inv_exner, cld_frac_l, cld_frac_r, cld_frac_i,
       rho, inv_rho, rhofaci, qv, th, qc, nc, qr, nr, qi, ni,
       qm, bm, latent_heat_vapor, latent_heat_sublim, mu_c, nu, lamc, mu_r, lamr,
       vap_liq_exchange, ze_rain, ze_ice, diag_vm_qi, diag_eff_radius_qi, diag_diam_qi,

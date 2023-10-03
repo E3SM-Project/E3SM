@@ -107,6 +107,12 @@ struct Functions
   using WorkspaceManager = typename ekat::WorkspaceManager<Spack, Device>;
   using Workspace        = typename WorkspaceManager::Workspace;
 
+  // Structure to store p3 runtime options
+  struct P3Runtime {
+    // maximum total ice concentration (sum of all categories) (m)
+    Scalar max_total_ni;
+  };
+
   // This struct stores prognostic variables evolved by P3.
   struct P3PrognosticState {
     P3PrognosticState() = default;
@@ -1009,6 +1015,7 @@ struct Functions
   static void p3_main_part2(
     const MemberType& team,
     const Int& nk_pack,
+    const Scalar& max_total_ni,
     const bool& do_predict_nc,
     const bool& do_prescribed_CCN,
     const Scalar& dt,
@@ -1088,6 +1095,7 @@ struct Functions
   static void p3_main_part2_disp(
     const Int& nj,
     const Int& nk,
+    const Scalar& max_total_ni,
     const bool& do_predict_nc,
     const bool& do_prescribed_CCN,
     const Scalar& dt,
@@ -1168,6 +1176,7 @@ struct Functions
   static void p3_main_part3(
     const MemberType& team,
     const Int& nk_pack,
+    const Scalar& max_total_ni,
     const view_dnu_table& dnu,
     const view_ice_table& ice_table_vals,
     const uview_1d<const Spack>& inv_exner,
@@ -1209,6 +1218,7 @@ struct Functions
   static void p3_main_part3_disp(
     const Int& nj,
     const Int& nk_pack,
+    const Scalar& max_total_ni,
     const view_dnu_table& dnu,
     const view_ice_table& ice_table_vals,
     const uview_2d<const Spack>& inv_exner,
@@ -1251,6 +1261,7 @@ struct Functions
 
   // Return microseconds elapsed
   static Int p3_main(
+    const P3Runtime& runtime_options,
     const P3PrognosticState& prognostic_state,
     const P3DiagnosticInputs& diagnostic_inputs,
     const P3DiagnosticOutputs& diagnostic_outputs,
@@ -1262,6 +1273,7 @@ struct Functions
     Int nk); // number of vertical cells per column
 
   static Int p3_main_internal(
+    const P3Runtime& runtime_options,
     const P3PrognosticState& prognostic_state,
     const P3DiagnosticInputs& diagnostic_inputs,
     const P3DiagnosticOutputs& diagnostic_outputs,
@@ -1274,6 +1286,7 @@ struct Functions
 
 #ifdef SCREAM_SMALL_KERNELS
   static Int p3_main_internal_disp(
+    const P3Runtime& runtime_options,
     const P3PrognosticState& prognostic_state,
     const P3DiagnosticInputs& diagnostic_inputs,
     const P3DiagnosticOutputs& diagnostic_outputs,

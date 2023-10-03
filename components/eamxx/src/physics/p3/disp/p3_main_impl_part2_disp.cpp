@@ -15,6 +15,7 @@ void Functions<Real,DefaultDevice>
 ::p3_main_part2_disp(
   const Int& nj,
   const Int& nk,
+  const Scalar& max_total_ni,
   const bool& predictNc,
   const bool& do_prescribed_CCN,
   const Scalar& dt,
@@ -106,7 +107,7 @@ void Functions<Real,DefaultDevice>
     // ------------------------------------------------------------------------------------------
     // main k-loop (for processes):
     p3_main_part2(
-      team, nk_pack, predictNc, do_prescribed_CCN, dt, inv_dt,
+      team, nk_pack, max_total_ni, predictNc, do_prescribed_CCN, dt, inv_dt,
       dnu_table_vals, ice_table_vals, collect_table_vals, revap_table_vals, 
       ekat::subview(pres, i), ekat::subview(dpres, i), ekat::subview(dz, i), ekat::subview(nc_nuceat_tend, i), ekat::subview(inv_exner, i),
       ekat::subview(exner, i), ekat::subview(inv_cld_frac_l, i), ekat::subview(inv_cld_frac_i, i), ekat::subview(inv_cld_frac_r, i), 

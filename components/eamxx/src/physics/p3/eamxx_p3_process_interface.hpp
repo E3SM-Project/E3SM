@@ -408,6 +408,7 @@ protected:
   P3F::P3HistoryOnly       history_only;
   P3F::P3LookupTables      lookup_tables;
   P3F::P3Infrastructure    infrastructure;
+  P3F::P3Runtime           runtime_options;
   p3_preamble              p3_preproc;
   p3_postamble             p3_postproc;
 

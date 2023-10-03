@@ -17,6 +17,8 @@ atmosphere_processes:
     lambda_high: 0.04
     lambda_slope: 2.65
     lambda_thresh: 0.02
+  p3:
+    max_total_ni: 740.0e3
 
 grids_manager:
   Type: Mesh Free

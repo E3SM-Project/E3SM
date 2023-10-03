@@ -28,7 +28,7 @@ void P3Microphysics::run_impl (const double dt)
   get_field_out("micro_vap_liq_exchange").deep_copy(0.0);
   get_field_out("micro_vap_ice_exchange").deep_copy(0.0);
 
-  P3F::p3_main(prog_state, diag_inputs, diag_outputs, infrastructure,
+  P3F::p3_main(runtime_options, prog_state, diag_inputs, diag_outputs, infrastructure,
                history_only, lookup_tables, workspace_mgr, m_num_cols, m_num_levs);
 
   // Conduct the post-processing of the p3_main output.

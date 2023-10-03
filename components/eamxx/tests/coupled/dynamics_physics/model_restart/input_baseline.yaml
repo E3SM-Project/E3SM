@@ -38,6 +38,7 @@ atmosphere_processes:
       number_of_subcycles: 1
       p3:
         do_prescribed_ccn: false
+        max_total_ni: 740.0e3
       shoc:
         lambda_low: 0.001
         lambda_high: 0.04
