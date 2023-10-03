@@ -840,6 +840,9 @@ add_default($nl, 'config_snow_shortwave_tuning_parameter');
 add_default($nl, 'config_temp_change_snow_grain_radius_change');
 add_default($nl, 'config_max_melting_snow_grain_radius');
 add_default($nl, 'config_algae_absorption_coefficient');
+add_default($nl, 'config_use_shortwave_redistribution');
+add_default($nl, 'config_shortwave_redistribution_fraction');
+add_default($nl, 'config_shortwave_redistribution_threshold');
 
 ########################
 # Namelist group: snow #
@@ -861,7 +864,7 @@ add_default($nl, 'config_max_dry_snow_radius');
 
 add_default($nl, 'config_snow_to_ice_transition_depth');
 add_default($nl, 'config_pond_refreezing_type');
-add_default($nl, 'config_pond_flushing_timescale');
+add_default($nl, 'config_pond_flushing_factor');
 add_default($nl, 'config_min_meltwater_retained_fraction');
 add_default($nl, 'config_max_meltwater_retained_fraction');
 add_default($nl, 'config_pond_depth_to_fraction_ratio');
@@ -879,6 +882,7 @@ add_default($nl, 'config_rapid_model_critical_Ra');
 add_default($nl, 'config_rapid_mode_aspect_ratio');
 add_default($nl, 'config_slow_mode_drainage_strength');
 add_default($nl, 'config_slow_mode_critical_porosity');
+add_default($nl, 'config_macro_drainage_timescale');
 add_default($nl, 'config_congelation_ice_porosity');
 
 #######################
@@ -901,7 +905,7 @@ add_default($nl, 'config_floediam');
 add_default($nl, 'config_ice_strength_formulation');
 add_default($nl, 'config_ridging_participation_function');
 add_default($nl, 'config_ridging_redistribution_function');
-add_default($nl, 'config_ridiging_efolding_scale');
+add_default($nl, 'config_ridging_efolding_scale');
 add_default($nl, 'config_ratio_ridging_work_to_PE');
 
 ##############################

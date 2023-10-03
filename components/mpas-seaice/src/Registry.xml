@@ -1583,6 +1583,21 @@
 			possible_values=""
 			icepack_name="kalg"
 		/>
+		<nml_option name="config_use_shortwave_redistribution" type="logical" default_value="false" units="none"
+			description="redistribution shortwave from layers near the melting temperature"
+			possible_values="true or false"
+			icepack_name="sw_redist"
+		/>
+		<nml_option name="config_shortwave_redistribution_fraction" type="real" default_value="0.9" units="none"
+			description="Fraction of shortwave moved from a layer near the melting temperature to the surface."
+			possible_values="fraction between 0 and 1"
+			icepack_name="sw_frac"
+		/>
+		<nml_option name="config_shortwave_redistribution_threshold" type="real" default_value="0.02" units="C"
+			description="Temperature threshold for moving shortwave to the surface."
+			possible_values=""
+			icepack_name="sw_dtemp"
+		/>
 	</nml_record>
 
 	<nml_record name="snow" in_defaults="true">
@@ -1644,8 +1659,8 @@
 			possible_values="'cesm' or 'hlid'"
 			icepack_name="frzpnd"
 		/>
-		<nml_option name="config_pond_flushing_timescale" type="real" default_value="1.0e-3" units=""
-			description="Alter e-folding time scale for flushing.?????"
+		<nml_option name="config_pond_flushing_factor" type="real" default_value="1.0e-3" units=""
+			description="Alters e-folding time scale for flushing with BL99 thermodynamics."
 			possible_values=""
 			icepack_name="dpscale"
 		/>
@@ -1712,6 +1727,11 @@
 			possible_values="Any real number between 0 and 1."
 			icepack_name="phi_c_slow_mode"
 		/>
+		<nml_option name="config_macro_drainage_timescale" type="real" default_value="10." units="days"
+			description="Timescale for macroscopic drainage."
+			possible_values="Any positive real number."
+			icepack_name="tscale_pnd_drain"
+		/>
 		<nml_option name="config_congelation_ice_porosity" type="real" default_value="0.85" units="unitless"
 			description="Liquid fraction of congelation ice."
 			possible_values="Any real number between 0 and 1."
@@ -1761,7 +1781,7 @@
 			possible_values="'Hibler80' or 'exponential'"
 			icepack_name="krdg_redist"
 		/>
-		<nml_option name="config_ridiging_efolding_scale" type="real" default_value="3.0" units="m^0.5"
+		<nml_option name="config_ridging_efolding_scale" type="real" default_value="3.0" units="m^0.5"
 			description="E-folding scale of ridged ice (krdg_redist = 1)"
 			possible_values=""
 			icepack_name="mu_rdg"

@@ -10116,10 +10116,10 @@ contains
          config_temp_change_snow_grain_radius_change, &
          config_max_melting_snow_grain_radius, &
          config_algae_absorption_coefficient, &
-         config_ridiging_efolding_scale, &
+         config_ridging_efolding_scale, &
          config_ratio_ridging_work_to_PE, &
          config_snow_to_ice_transition_depth, &
-         config_pond_flushing_timescale, &
+         config_pond_flushing_factor, &
          config_min_meltwater_retained_fraction, &
          config_max_meltwater_retained_fraction, &
          config_pond_depth_to_fraction_ratio, &
@@ -10288,7 +10288,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_ice_strength_formulation", config_ice_strength_formulation)
     call MPAS_pool_get_config(domain % configs, "config_ridging_participation_function", config_ridging_participation_function)
     call MPAS_pool_get_config(domain % configs, "config_ridging_redistribution_function", config_ridging_redistribution_function)
-    call MPAS_pool_get_config(domain % configs, "config_ridiging_efolding_scale", config_ridiging_efolding_scale)
+    call MPAS_pool_get_config(domain % configs, "config_ridging_efolding_scale", config_ridging_efolding_scale)
     call MPAS_pool_get_config(domain % configs, "config_ratio_ridging_work_to_PE", config_ratio_ridging_work_to_PE)
     call MPAS_pool_get_config(domain % configs, "config_atmos_boundary_method", config_atmos_boundary_method)
     call MPAS_pool_get_config(domain % configs, "config_calc_surface_stresses", config_calc_surface_stresses)
@@ -10301,7 +10301,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_category_bounds_type", config_category_bounds_type)
     call MPAS_pool_get_config(domain % configs, "config_snow_to_ice_transition_depth", config_snow_to_ice_transition_depth)
     call MPAS_pool_get_config(domain % configs, "config_pond_refreezing_type", config_pond_refreezing_type)
-    call MPAS_pool_get_config(domain % configs, "config_pond_flushing_timescale", config_pond_flushing_timescale)
+    call MPAS_pool_get_config(domain % configs, "config_pond_flushing_factor", config_pond_flushing_factor)
     call MPAS_pool_get_config(domain % configs, "config_min_meltwater_retained_fraction", config_min_meltwater_retained_fraction)
     call MPAS_pool_get_config(domain % configs, "config_max_meltwater_retained_fraction", config_max_meltwater_retained_fraction)
     call MPAS_pool_get_config(domain % configs, "config_pond_depth_to_fraction_ratio", config_pond_depth_to_fraction_ratio)
@@ -10489,7 +10489,7 @@ contains
          config_cice_int("config_ice_strength_formulation", config_ice_strength_formulation), &
          config_cice_int("config_ridging_participation_function", config_ridging_participation_function), &
          config_cice_int("config_ridging_redistribution_function", config_ridging_redistribution_function), &
-         config_ridiging_efolding_scale, &
+         config_ridging_efolding_scale, &
          config_ratio_ridging_work_to_PE, &
          config_atmos_boundary_method, &
          config_calc_surface_stresses, &
@@ -10502,7 +10502,7 @@ contains
          config_cice_int("config_category_bounds_type", config_category_bounds_type), &
          config_snow_to_ice_transition_depth, &
          config_pond_refreezing_type, &
-         config_pond_flushing_timescale, &
+         config_pond_flushing_factor, &
          config_min_meltwater_retained_fraction, &
          config_max_meltwater_retained_fraction, &
          config_pond_depth_to_fraction_ratio, &
@@ -10782,7 +10782,7 @@ contains
     ! mu_rdg:
     ! gives e-folding scale of ridged ice (m^.5)
     ! (krdg_redist = 1)
-    !mu_rdg = config_ridiging_efolding_scale
+    !mu_rdg = config_ridging_efolding_scale
 
     ! Cf
     ! ratio of ridging work to PE change in ridging (kstrength = 1)
@@ -10863,8 +10863,8 @@ contains
     !frzpnd = config_pond_refreezing_type
 
     ! dpscale:
-    ! alter e-folding time scale for flushing
-    !dpscale = config_pond_flushing_timescale
+    ! alters e-folding time scale for flushing with BL99 thermodynamics
+    !dpscale = config_pond_flushing_factor
 
     ! rfracmin:
     ! minimum retained fraction of meltwater
@@ -11570,7 +11570,8 @@ contains
          config_use_skeletal_biochemistry, &
          config_use_modal_aerosols, &
          config_use_snow_liquid_ponds, &
-         config_use_snow_grain_radius
+         config_use_snow_grain_radius, &
+         config_use_shortwave_redistribution
 
     real(kind=RKIND), pointer :: &
          config_min_friction_velocity, &
@@ -11579,6 +11580,7 @@ contains
          config_rapid_mode_aspect_ratio, &
          config_slow_mode_drainage_strength, &
          config_slow_mode_critical_porosity, &
+         config_macro_drainage_timescale, &
          config_congelation_ice_porosity, &
 !         config_frazil_ice_porosity, &
 !         config_frazil_salinity_reduction, &
@@ -11591,13 +11593,15 @@ contains
          config_ice_shortwave_tuning_parameter, &
          config_pond_shortwave_tuning_parameter, &
          config_snow_shortwave_tuning_parameter, &
+         config_shortwave_redistribution_fraction, &
+         config_shortwave_redistribution_threshold, &
          config_temp_change_snow_grain_radius_change, &
          config_max_melting_snow_grain_radius, &
          config_algae_absorption_coefficient, &
-         config_ridiging_efolding_scale, &
+         config_ridging_efolding_scale, &
          config_ratio_ridging_work_to_PE, &
          config_snow_to_ice_transition_depth, &
-         config_pond_flushing_timescale, &
+         config_pond_flushing_factor, &
          config_min_meltwater_retained_fraction, &
          config_max_meltwater_retained_fraction, &
          config_pond_depth_to_fraction_ratio, &
@@ -11751,7 +11755,7 @@ contains
          config_itd_conversion_type_int, &
          config_category_bounds_type_int
 
-    character(len=strKIND) :: tmp_config_shortwave
+    character(len=strKIND) :: tmp_config_shortwave_type
     character(len=strKIND) :: tmp_config_snw_ssp_table
     character(len=strKIND) :: snw_aging_table = 'snicar'
 
@@ -11772,6 +11776,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_rapid_mode_aspect_ratio", config_rapid_mode_aspect_ratio)
     call MPAS_pool_get_config(domain % configs, "config_slow_mode_drainage_strength", config_slow_mode_drainage_strength)
     call MPAS_pool_get_config(domain % configs, "config_slow_mode_critical_porosity", config_slow_mode_critical_porosity)
+    call MPAS_pool_get_config(domain % configs, "config_macro_drainage_timescale", config_macro_drainage_timescale)
     call MPAS_pool_get_config(domain % configs, "config_congelation_ice_porosity", config_congelation_ice_porosity)
 !    call MPAS_pool_get_config(domain % configs, "config_frazil_ice_porosity", config_frazil_ice_porosity)
 !    call MPAS_pool_get_config(domain % configs, "config_frazil_salinity_reduction", config_frazil_salinity_reduction)
@@ -11787,6 +11792,9 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_ice_shortwave_tuning_parameter", config_ice_shortwave_tuning_parameter)
     call MPAS_pool_get_config(domain % configs, "config_pond_shortwave_tuning_parameter", config_pond_shortwave_tuning_parameter)
     call MPAS_pool_get_config(domain % configs, "config_snow_shortwave_tuning_parameter", config_snow_shortwave_tuning_parameter)
+    call MPAS_pool_get_config(domain % configs, "config_use_shortwave_redistribution", config_use_shortwave_redistribution)
+    call MPAS_pool_get_config(domain % configs, "config_shortwave_redistribution_fraction", config_shortwave_redistribution_fraction)
+    call MPAS_pool_get_config(domain % configs, "config_shortwave_redistribution_threshold", config_shortwave_redistribution_threshold)
     call MPAS_pool_get_config(domain % configs, "config_temp_change_snow_grain_radius_change", &
                                                  config_temp_change_snow_grain_radius_change)
     call MPAS_pool_get_config(domain % configs, "config_max_melting_snow_grain_radius", config_max_melting_snow_grain_radius)
@@ -11794,7 +11802,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_ice_strength_formulation", config_ice_strength_formulation)
     call MPAS_pool_get_config(domain % configs, "config_ridging_participation_function", config_ridging_participation_function)
     call MPAS_pool_get_config(domain % configs, "config_ridging_redistribution_function", config_ridging_redistribution_function)
-    call MPAS_pool_get_config(domain % configs, "config_ridiging_efolding_scale", config_ridiging_efolding_scale)
+    call MPAS_pool_get_config(domain % configs, "config_ridging_efolding_scale", config_ridging_efolding_scale)
     call MPAS_pool_get_config(domain % configs, "config_ratio_ridging_work_to_PE", config_ratio_ridging_work_to_PE)
     call MPAS_pool_get_config(domain % configs, "config_atmos_boundary_method", config_atmos_boundary_method)
     call MPAS_pool_get_config(domain % configs, "config_calc_surface_stresses", config_calc_surface_stresses)
@@ -11808,7 +11816,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_snow_to_ice_transition_depth", config_snow_to_ice_transition_depth)
     call MPAS_pool_get_config(domain % configs, "config_pond_refreezing_type", config_pond_refreezing_type)
     call MPAS_pool_get_config(domain % configs, "config_salt_flux_coupling_type", config_salt_flux_coupling_type)
-    call MPAS_pool_get_config(domain % configs, "config_pond_flushing_timescale", config_pond_flushing_timescale)
+    call MPAS_pool_get_config(domain % configs, "config_pond_flushing_factor", config_pond_flushing_factor)
     call MPAS_pool_get_config(domain % configs, "config_min_meltwater_retained_fraction", config_min_meltwater_retained_fraction)
     call MPAS_pool_get_config(domain % configs, "config_max_meltwater_retained_fraction", config_max_meltwater_retained_fraction)
     call MPAS_pool_get_config(domain % configs, "config_pond_depth_to_fraction_ratio", config_pond_depth_to_fraction_ratio)
@@ -11980,11 +11988,11 @@ contains
     config_category_bounds_type_int = config_cice_int("config_category_bounds_type", config_category_bounds_type)
 
     if (config_use_snicar_ad .and. (trim(config_shortwave_type(1:4)) == "dEdd")) then
-       tmp_config_shortwave     = 'dEdd_snicar_ad'
-       tmp_config_snw_ssp_table = 'snicar'
+       tmp_config_shortwave_type = 'dEdd_snicar_ad'
+       tmp_config_snw_ssp_table  = 'snicar'
     else
-       tmp_config_shortwave     = config_shortwave_type
-       tmp_config_snw_ssp_table = 'test'
+       tmp_config_shortwave_type = config_shortwave_type
+       tmp_config_snw_ssp_table  = 'test'
     endif
 
 !echmod debugging
@@ -12200,8 +12208,9 @@ contains
          dSdt_slow_mode_in       = config_slow_mode_drainage_strength, &
          phi_c_slow_mode_in      = config_slow_mode_critical_porosity, &
          phi_i_mushy_in          = config_congelation_ice_porosity, &
+         tscale_pnd_drain_in     = config_macro_drainage_timescale, &
 !         shortwave_in            = config_shortwave_type, &
-         shortwave_in            = tmp_config_shortwave, &
+         shortwave_in            = tmp_config_shortwave_type, &
          albedo_type_in          = config_albedo_type, &
          albsnowi_in             = config_infrared_snow_albedo, &
          albicev_in              = config_visible_ice_albedo, &
@@ -12217,7 +12226,7 @@ contains
          kstrength_in            = config_ice_strength_formulation_int, &
          krdg_partic_in          = config_ridging_participation_function_int, &
          krdg_redist_in          = config_ridging_redistribution_function_int, &
-         mu_rdg_in               = config_ridiging_efolding_scale, &
+         mu_rdg_in               = config_ridging_efolding_scale, &
          atmbndy_in              = config_atmos_boundary_method, &
          calc_strair_in          = config_calc_surface_stresses, &
          formdrag_in             = config_use_form_drag, &
@@ -12235,7 +12244,7 @@ contains
          !wave_spec_in            = , &        ! not yet implemented in MPAS-SI (stealth feature)
          !wave_spec_type_in       = , &        ! not yet implemented in MPAS-SI (stealth feature)
          !nfreq_in                = , &        ! not yet implemented in MPAS-SI (stealth feature)
-         dpscale_in              = config_pond_flushing_timescale, &
+         dpscale_in              = config_pond_flushing_factor, &
          rfracmin_in             = config_min_meltwater_retained_fraction, &
          rfracmax_in             = config_max_meltwater_retained_fraction, &
          pndaspect_in            = config_pond_depth_to_fraction_ratio, &
@@ -12275,9 +12284,9 @@ contains
          !t_sk_conv_in            = , &
          !t_sk_ox_in              = , &
          !frazil_scav_in          = , &
-         !sw_redist_in            = , &        ! not yet implemented in MPAS-SI (stealth feature)
-         !sw_frac_in              = , &        ! not yet implemented in MPAS-SI (stealth feature)
-         !sw_dtemp_in             = , &        ! not yet implemented in MPAS-SI (stealth feature)
+         sw_redist_in            = config_use_shortwave_redistribution, &
+         sw_frac_in              = config_shortwave_redistribution_fraction, &
+         sw_dtemp_in             = config_shortwave_redistribution_threshold, &
          snwgrain_in             = config_use_snow_grain_radius, &
          snwredist_in            = config_snow_redistribution_scheme, &
          use_smliq_pnd_in        = config_use_snow_liquid_ponds, &
@@ -12525,6 +12534,10 @@ contains
     ! liquid fraction porosity cutoff for slow mode
     !phi_c_slow_mode = config_slow_mode_critical_porosity
 
+    ! tscale_pnd_drain:
+    ! Timescale for macroscopic drainage
+    !tscale_pnd_drain = config_macro_drainage_timescale
+
     ! phi_i_mushy:
     ! liquid fraction of congelation ice
     !phi_i_mushy = config_congelation_ice_porosity
@@ -12590,6 +12603,18 @@ contains
     ! snow tuning parameter; +1 > ~.01 change in broadband albedo
     !R_snw = config_snow_shortwave_tuning_parameter
 
+    ! sw_redist
+    ! Redistribute shortwave from layers near the melting temperature to the surface
+    !sw_redist = config_use_shortwave_redistribution
+
+    ! sw_frac
+    ! Fraction of shortwave moved from layers near the melting temperature to the surface
+    !sw_frac = config_shortwave_redistribution_fraction
+
+    ! sw_dtemp
+    ! Temperature threshold for moving shortwave to the surface
+    !sw_dtemp = config_shortwave_redistribution_threshold
+
     ! dT_mlt:
     ! change in temp for non-melt to melt snow grain radius change (C)
     !dT_mlt = config_temp_change_snow_grain_radius_change
@@ -12624,7 +12649,7 @@ contains
     ! mu_rdg:
     ! gives e-folding scale of ridged ice (m^.5)
     ! (krdg_redist = 1)
-    !mu_rdg = config_ridiging_efolding_scale
+    !mu_rdg = config_ridging_efolding_scale
 
     ! Cf
     ! ratio of ridging work to PE change in ridging (kstrength = 1)
@@ -12705,8 +12730,8 @@ contains
     !frzpnd = config_pond_refreezing_type
 
     ! dpscale:
-    ! alter e-folding time scale for flushing
-    !dpscale = config_pond_flushing_timescale
+    ! alters e-folding time scale for flushing with BL99 thermodynamics
+    !dpscale = config_pond_flushing_factor
 
     ! rfracmin:
     ! minimum retained fraction of meltwater

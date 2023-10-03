@@ -2236,6 +2236,30 @@ Valid values:
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_use_shortwave_redistribution" type="logical"
+	category="shortwave" group="shortwave">
+Redistribute shortwave from layers near the melting temperature to the surface.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_shortwave_redistribution_fraction" type="real"
+	category="shortwave" group="shortwave">
+Fraction of shortwave moved from a layer near the melting temperature to the surface.
+
+Valid values: fraction between 0 and 1
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_shortwave_redistribution_threshold" type="real"
+	category="shortwave" group="shortwave">
+Temperature threshold for moving shortwave to the surface.
+
+Valid values:
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- snow -->
 
@@ -2330,9 +2354,9 @@ Valid values: 'cesm' or 'hlid'
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_pond_flushing_timescale" type="real"
+<entry id="config_pond_flushing_factor" type="real"
 	category="meltponds" group="meltponds">
-Alter e-folding time scale for flushing.?????
+Alters e-folding time scale for flushing with BL99 thermodynamics.
 
 Valid values:
 Default: Defined in namelist_defaults.xml
@@ -2437,6 +2461,14 @@ Valid values: Any real number between 0 and 1.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_macro_drainage_timescale" type="real"
+	category="thermodynamics" group="thermodynamics">
+Timescale for macroscopic drainage.
+
+Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_congelation_ice_porosity" type="real"
 	category="thermodynamics" group="thermodynamics">
 Liquid fraction of congelation ice.
@@ -2508,7 +2540,7 @@ Valid values: 'Hibler80' or 'exponential'
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_ridiging_efolding_scale" type="real"
+<entry id="config_ridging_efolding_scale" type="real"
 	category="ridging" group="ridging">
 E-folding scale of ridged ice (krdg_redist = 1)
 
