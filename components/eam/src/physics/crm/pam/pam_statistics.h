@@ -31,6 +31,9 @@ inline void pam_statistics_init( pam::PamCoupler &coupler ) {
   dm_device.register_and_allocate<real>("liq_ice_exchange_aggregated","aggregated liq_ice_exchange",   {nz,nens},{"z","nens"});
   dm_device.register_and_allocate<real>("vap_liq_exchange_aggregated","aggregated vap_liq_exchange",   {nz,nens},{"z","nens"});
   dm_device.register_and_allocate<real>("vap_ice_exchange_aggregated","aggregated vap_ice_exchange",   {nz,nens},{"z","nens"});
+  dm_device.register_and_allocate<real>("rho_v_forcing_aggregated",   "aggregated rho_v_forcing",      {nz,nens},{"z","nens"});
+  dm_device.register_and_allocate<real>("rho_l_forcing_aggregated",   "aggregated rho_l_forcing",      {nz,nens},{"z","nens"});
+  dm_device.register_and_allocate<real>("rho_i_forcing_aggregated",   "aggregated rho_i_forcing",      {nz,nens},{"z","nens"});
   dm_device.register_and_allocate<real>("cldfrac_aggregated",         "aggregated cloud fraction",     {nz,nens},{"z","nens"});
   dm_device.register_and_allocate<real>("clear_rh"       ,            "clear air rel humidity",        {nz,nens},{"z","nens"});
   dm_device.register_and_allocate<real>("clear_rh_cnt"   ,            "clear air count",               {nz,nens},{"z","nens"});
@@ -79,6 +82,9 @@ inline void pam_statistics_init( pam::PamCoupler &coupler ) {
   auto liq_ice_exchange_aggregated = dm_device.get<real,2>("liq_ice_exchange_aggregated");
   auto vap_liq_exchange_aggregated = dm_device.get<real,2>("vap_liq_exchange_aggregated");
   auto vap_ice_exchange_aggregated = dm_device.get<real,2>("vap_ice_exchange_aggregated");
+  auto rho_v_forcing_aggregated    = dm_device.get<real,2>("rho_v_forcing_aggregated");
+  auto rho_l_forcing_aggregated    = dm_device.get<real,2>("rho_l_forcing_aggregated");
+  auto rho_i_forcing_aggregated    = dm_device.get<real,2>("rho_i_forcing_aggregated");
   auto cldfrac_aggregated          = dm_device.get<real,2>("cldfrac_aggregated");
   auto clear_rh                    = dm_device.get<real,2>("clear_rh");
   auto clear_rh_cnt                = dm_device.get<real,2>("clear_rh_cnt");
@@ -121,9 +127,12 @@ inline void pam_statistics_init( pam::PamCoupler &coupler ) {
   parallel_for(SimpleBounds<2>(nz,nens), YAKL_LAMBDA (int k, int iens) {
     liqwp_aggregated           (k,iens) = 0;
     icewp_aggregated           (k,iens) = 0;
-    liq_ice_exchange_aggregated(k,iens) = 0;;
-    vap_liq_exchange_aggregated(k,iens) = 0;;
-    vap_ice_exchange_aggregated(k,iens) = 0;;
+    liq_ice_exchange_aggregated(k,iens) = 0;
+    vap_liq_exchange_aggregated(k,iens) = 0;
+    vap_ice_exchange_aggregated(k,iens) = 0;
+    rho_v_forcing_aggregated   (k,iens) = 0;
+    rho_l_forcing_aggregated   (k,iens) = 0;
+    rho_i_forcing_aggregated   (k,iens) = 0;
     cldfrac_aggregated         (k,iens) = 0;
     clear_rh                   (k,iens) = 0;
     clear_rh_cnt               (k,iens) = 0;
@@ -315,6 +324,9 @@ inline void pam_statistics_timestep_aggregation( pam::PamCoupler &coupler ) {
   auto liq_ice_exchange = dm_device.get<real const,4>("liq_ice_exchange_out");
   auto vap_liq_exchange = dm_device.get<real const,4>("vap_liq_exchange_out");
   auto vap_ice_exchange = dm_device.get<real const,4>("vap_ice_exchange_out");
+  auto gcm_forcing_tend_rho_v = dm_device.get<real const,2>("gcm_forcing_tend_rho_v");
+  auto gcm_forcing_tend_rho_l = dm_device.get<real const,2>("gcm_forcing_tend_rho_l");
+  auto gcm_forcing_tend_rho_i = dm_device.get<real const,2>("gcm_forcing_tend_rho_i");
   //------------------------------------------------------------------------------------------------
   // get aggregation variables
   auto stat_aggregation_cnt        = dm_device.get<real,1>("stat_aggregation_cnt");
@@ -325,6 +337,9 @@ inline void pam_statistics_timestep_aggregation( pam::PamCoupler &coupler ) {
   auto liq_ice_exchange_aggregated = dm_device.get<real,2>("liq_ice_exchange_aggregated");
   auto vap_liq_exchange_aggregated = dm_device.get<real,2>("vap_liq_exchange_aggregated");
   auto vap_ice_exchange_aggregated = dm_device.get<real,2>("vap_ice_exchange_aggregated");
+  auto rho_v_forcing_aggregated    = dm_device.get<real,2>("rho_v_forcing_aggregated");
+  auto rho_l_forcing_aggregated    = dm_device.get<real,2>("rho_l_forcing_aggregated");
+  auto rho_i_forcing_aggregated    = dm_device.get<real,2>("rho_i_forcing_aggregated");
   auto cldfrac_aggregated          = dm_device.get<real,2>("cldfrac_aggregated");
   auto clear_rh                    = dm_device.get<real,2>("clear_rh");
   auto clear_rh_cnt                = dm_device.get<real,2>("clear_rh_cnt");
@@ -362,6 +377,11 @@ inline void pam_statistics_timestep_aggregation( pam::PamCoupler &coupler ) {
       atomicAdd( clear_rh_cnt(k,iens), 1. );
     }
   });
+  parallel_for(SimpleBounds<2>(nz,nens), YAKL_LAMBDA (int k, int iens) {
+    rho_v_forcing_aggregated(k,iens) += gcm_forcing_tend_rho_v(k,iens);
+    rho_l_forcing_aggregated(k,iens) += gcm_forcing_tend_rho_l(k,iens);
+    rho_i_forcing_aggregated(k,iens) += gcm_forcing_tend_rho_i(k,iens);
+  });
   //------------------------------------------------------------------------------------------------
 }
 
@@ -385,6 +405,9 @@ inline void pam_statistics_compute_means( pam::PamCoupler &coupler ) {
   auto liq_ice_exchange      = dm_device.get<real,2>("liq_ice_exchange_aggregated");
   auto vap_liq_exchange      = dm_device.get<real,2>("vap_liq_exchange_aggregated");
   auto vap_ice_exchange      = dm_device.get<real,2>("vap_ice_exchange_aggregated");
+  auto rho_v_forcing         = dm_device.get<real,2>("rho_v_forcing_aggregated");
+  auto rho_l_forcing         = dm_device.get<real,2>("rho_l_forcing_aggregated");
+  auto rho_i_forcing         = dm_device.get<real,2>("rho_i_forcing_aggregated");
   auto cldfrac               = dm_device.get<real,2>("cldfrac_aggregated");
   auto clear_rh              = dm_device.get<real,2>("clear_rh");
   auto clear_rh_cnt          = dm_device.get<real,2>("clear_rh_cnt");
@@ -428,6 +451,9 @@ inline void pam_statistics_compute_means( pam::PamCoupler &coupler ) {
     liq_ice_exchange(k,iens) = liq_ice_exchange(k,iens) / aggregation_cnt(iens);
     vap_liq_exchange(k,iens) = vap_liq_exchange(k,iens) / aggregation_cnt(iens);
     vap_ice_exchange(k,iens) = vap_ice_exchange(k,iens) / aggregation_cnt(iens);
+    rho_v_forcing   (k,iens) = rho_v_forcing   (k,iens) / aggregation_cnt(iens);
+    rho_l_forcing   (k,iens) = rho_l_forcing   (k,iens) / aggregation_cnt(iens);
+    rho_i_forcing   (k,iens) = rho_i_forcing   (k,iens) / aggregation_cnt(iens);
     cldfrac         (k,iens) = cldfrac         (k,iens) / aggregation_cnt(iens);
     if (clear_rh_cnt(k,iens)>0) {
       clear_rh(k,iens) = clear_rh(k,iens) / clear_rh_cnt(k,iens);
@@ -478,6 +504,9 @@ inline void pam_statistics_copy_to_host( pam::PamCoupler &coupler ) {
   auto liq_ice_exchange      = dm_device.get<real,2>("liq_ice_exchange_aggregated");
   auto vap_liq_exchange      = dm_device.get<real,2>("vap_liq_exchange_aggregated");
   auto vap_ice_exchange      = dm_device.get<real,2>("vap_ice_exchange_aggregated");
+  auto rho_v_forcing         = dm_device.get<real,2>("rho_v_forcing_aggregated");
+  auto rho_l_forcing         = dm_device.get<real,2>("rho_l_forcing_aggregated");
+  auto rho_i_forcing         = dm_device.get<real,2>("rho_i_forcing_aggregated");
   auto cldfrac               = dm_device.get<real,2>("cldfrac_aggregated");
   auto clear_rh              = dm_device.get<real,2>("clear_rh");
 
@@ -529,6 +558,9 @@ inline void pam_statistics_copy_to_host( pam::PamCoupler &coupler ) {
   real2d liq_ice_exchange_gcm("liq_ice_exchange_gcm", gcm_nlev,nens);
   real2d vap_liq_exchange_gcm("vap_liq_exchange_gcm", gcm_nlev,nens);
   real2d vap_ice_exchange_gcm("vap_ice_exchange_gcm", gcm_nlev,nens);
+  real2d rho_v_forcing_gcm   ("rho_v_forcing_gcm",    gcm_nlev,nens);
+  real2d rho_l_forcing_gcm   ("rho_l_forcing_gcm",    gcm_nlev,nens);
+  real2d rho_i_forcing_gcm   ("rho_i_forcing_gcm",    gcm_nlev,nens);
   real2d cldfrac_gcm         ("cldfrac_gcm",          gcm_nlev,nens);
 
   real2d phys_tend_sgs_temp_gcm  ("phys_tend_sgs_temp_gcm",  gcm_nlev,nens);
@@ -563,6 +595,9 @@ inline void pam_statistics_copy_to_host( pam::PamCoupler &coupler ) {
       liq_ice_exchange_gcm(k_gcm,iens) = liq_ice_exchange(k_crm,iens);
       vap_liq_exchange_gcm(k_gcm,iens) = vap_liq_exchange(k_crm,iens);
       vap_ice_exchange_gcm(k_gcm,iens) = vap_ice_exchange(k_crm,iens);
+      rho_v_forcing_gcm   (k_gcm,iens) = rho_v_forcing   (k_crm,iens);
+      rho_l_forcing_gcm   (k_gcm,iens) = rho_l_forcing   (k_crm,iens);
+      rho_i_forcing_gcm   (k_gcm,iens) = rho_i_forcing   (k_crm,iens);
       cldfrac_gcm         (k_gcm,iens) = cldfrac         (k_crm,iens);
 
       phys_tend_sgs_temp_gcm  (k_gcm,iens) = phys_tend_sgs_temp  (k_crm,iens);
@@ -595,6 +630,9 @@ inline void pam_statistics_copy_to_host( pam::PamCoupler &coupler ) {
       liq_ice_exchange_gcm(k_gcm,iens) = 0.;
       vap_liq_exchange_gcm(k_gcm,iens) = 0.;
       vap_ice_exchange_gcm(k_gcm,iens) = 0.;
+      rho_v_forcing_gcm   (k_gcm,iens) = 0.;
+      rho_l_forcing_gcm   (k_gcm,iens) = 0.;
+      rho_i_forcing_gcm   (k_gcm,iens) = 0.;
       cldfrac_gcm         (k_gcm,iens) = 0.;
 
       phys_tend_sgs_temp_gcm  (k_gcm,iens) = 0.;
@@ -633,6 +671,9 @@ inline void pam_statistics_copy_to_host( pam::PamCoupler &coupler ) {
   auto liq_ice_exchange_host      = dm_host.get<real,2>("output_liq_ice_exchange");
   auto vap_liq_exchange_host      = dm_host.get<real,2>("output_vap_liq_exchange");
   auto vap_ice_exchange_host      = dm_host.get<real,2>("output_vap_ice_exchange");
+  auto output_rho_v_ls            = dm_host.get<real,2>("output_rho_v_ls");
+  auto output_rho_l_ls            = dm_host.get<real,2>("output_rho_l_ls");
+  auto output_rho_i_ls            = dm_host.get<real,2>("output_rho_i_ls");
   auto cldfrac_host               = dm_host.get<real,2>("output_cld");
   auto clear_rh_host              = dm_host.get<real,2>("output_clear_rh");
 
@@ -669,6 +710,9 @@ inline void pam_statistics_copy_to_host( pam::PamCoupler &coupler ) {
   liq_ice_exchange_gcm    .deep_copy_to(liq_ice_exchange_host);
   vap_liq_exchange_gcm    .deep_copy_to(vap_liq_exchange_host);
   vap_ice_exchange_gcm    .deep_copy_to(vap_ice_exchange_host);
+  rho_v_forcing_gcm       .deep_copy_to(output_rho_v_ls);
+  rho_l_forcing_gcm       .deep_copy_to(output_rho_l_ls);
+  rho_i_forcing_gcm       .deep_copy_to(output_rho_i_ls);
   cldfrac_gcm             .deep_copy_to(cldfrac_host);
   clear_rh                .deep_copy_to(clear_rh_host);
 
