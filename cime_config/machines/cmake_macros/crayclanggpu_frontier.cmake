@@ -60,8 +60,6 @@ endif()
 # https://github.com/E3SM-Project/E3SM/pull/5208
 string(APPEND FFLAGS " -hipa0 -hzero -em -ef -hnoacc")
 
-set(NETCDF_PATH "$ENV{NETCDF_DIR}")
-set(PNETCDF_PATH "$ENV{PNETCDF_DIR}")
 string(APPEND CMAKE_OPTS " -DPIO_ENABLE_TOOLS:BOOL=OFF")
 string(APPEND CXX_LIBS " -lstdc++")
 

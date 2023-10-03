@@ -259,6 +259,8 @@
       <env name="MPICH_COLL_SYNC">MPI_Bcast</env>
       <env name="Albany_ROOT">$SHELL{if [ -z "$Albany_ROOT" ]; then echo /global/common/software/e3sm/mali_tpls/albany-e3sm-serial-release-gcc; else echo "$Albany_ROOT"; fi}</env>
       <env name="Trilinos_ROOT">$SHELL{if [ -z "$Trilinos_ROOT" ]; then echo /global/common/software/e3sm/mali_tpls/trilinos-e3sm-serial-release-gcc; else echo "$Trilinos_ROOT"; fi}</env>
+      <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
+      <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
     </environment_variables>
     <environment_variables compiler="gnu" mpilib="mpich">
       <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.8.3.patch/cray-mpich-8.1.15/gcc-11.2.0; else echo "$ADIOS2_ROOT"; fi}</env>
@@ -391,6 +393,8 @@
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
       <env name="PERL5LIB">/global/cfs/cdirs/e3sm/perl/lib/perl5-only-switch</env>
       <env name="MPICH_COLL_SYNC">MPI_Bcast</env>
+      <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
+      <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
     </environment_variables>
     <environment_variables compiler="gnugpu">
       <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
@@ -511,6 +515,8 @@
       <env name="PERL5LIB">/global/cfs/cdirs/e3sm/perl/lib/perl5-only-switch</env>
       <env name="FI_CXI_RX_MATCH_MODE">software</env>
       <env name="MPICH_COLL_SYNC">MPI_Bcast</env>
+      <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
+      <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
     </environment_variables>
     <resource_limits>
       <resource name="RLIMIT_STACK">-1</resource>
@@ -1113,6 +1119,8 @@
       <env name="OMP_PLACES">threads</env>
       <env name="I_MPI_PIN">1</env>
       <env name="MY_MPIRUN_OPTIONS">-l</env>
+      <env name="NETCDF_PATH">$ENV{TACC_NETCDF_DIR}</env>
+      <env name="PNETCDF_PATH">$ENV{TACC_PNETCDF_DIR}</env>
     </environment_variables>
   </machine>
 
@@ -1395,7 +1403,7 @@
     <MAX_GB_OLD_TEST_DATA>0</MAX_GB_OLD_TEST_DATA>
     <!--    <GMAKE>make</GMAKE> <- this doesn't actually work! -->
     <environment_variables>
-      <env name="NETCDFROOT">$ENV{SEMS_NETCDF_ROOT}</env>
+      <env name="NETCDF_PATH">$ENV{SEMS_NETCDF_ROOT}</env>
       <env name="OMP_STACKSIZE">64M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
@@ -1453,6 +1461,9 @@
       <env name="PATH">/ascldap/users/projects/e3sm/scream/libs/gcc/install/weaver/gcc/8.5.0/bin:/ascldap/users/projects/e3sm/scream/libs/gcc/install/weaver/gcc/8.5.0/libexec/gcc/powerpc64le-unknown-linux-gnu/8.5.0:/ascldap/users/projects/e3sm/scream/libs/openmpi/install/weaver/gcc/8.5.0/cuda/10.1.105/bin:/ascldap/users/projects/e3sm/scream/libs/pnetcdf/install/weaver/gcc/8.5.0/cuda/10.1.105/bin:/ascldap/users/projects/e3sm/scream/libs/netcdf-c/install/weaver/gcc/8.5.0/cuda/10.1.105/bin:/ascldap/users/projects/e3sm/scream/libs/netcdf-fortran/install/weaver/gcc/8.5.0/cuda/10.1.105/bin:/ascldap/users/projects/e3sm/scream/libs/wget/bin:/ascldap/users/jgfouca/perl5/bin:$ENV{PATH}</env>
       <env name="PERL5LIB">/ascldap/users/jgfouca/perl5/lib/perl5</env>
       <env name="PERL_LOCAL_LIB_ROOT">/ascldap/users/jgfouca/perl5</env>
+      <env name="NETCDF_C_PATH">/ascldap/users/projects/e3sm/scream/libs/netcdf-c/install/weaver/gcc/8.5.0/cuda/10.1.105</env>
+      <env name="NETCDF_FORTRAN_PATH">/ascldap/users/projects/e3sm/scream/libs/netcdf-fortran/install/weaver/gcc/8.5.0/cuda/10.1.105</env>
+      <env name="PNETCDF_PATH">/ascldap/users/projects/e3sm/scream/libs/pnetcdf/install/weaver/gcc/8.5.0/cuda/10.1.105</env>
     </environment_variables>
   </machine>
 
@@ -1869,13 +1880,11 @@
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
 
     <environment_variables>
-      <env name="NETCDFROOT">$ENV{SEMS_NETCDF_ROOT}</env>
-      <env name="NETCDF_INCLUDES">$ENV{SEMS_NETCDF_ROOT}/include</env>
-      <env name="NETCDF_LIBS">$ENV{SEMS_NETCDF_ROOT}/lib</env>
+      <env name="NETCDF_PATH">$ENV{SEMS_NETCDF_ROOT}</env>
       <env name="OMP_STACKSIZE">64M</env>
     </environment_variables>
     <environment_variables mpilib="!mpi-serial">
-      <env name="PNETCDFROOT">$ENV{SEMS_NETCDF_ROOT}</env>
+      <env name="PNETCDF_PATH">$ENV{SEMS_NETCDF_ROOT}</env>
     </environment_variables>
   </machine>
 
@@ -1940,13 +1949,11 @@
     <!-- complete path to a short term archiving directory -->
     <!-- path to the cprnc tool used to compare netcdf history files in testing -->
     <environment_variables>
-      <env name="NETCDFROOT">$ENV{SEMS_NETCDF_ROOT}</env>
-      <env name="NETCDF_INCLUDES">$ENV{SEMS_NETCDF_ROOT}/include</env>
-      <env name="NETCDF_LIBS">$ENV{SEMS_NETCDF_ROOT}/lib</env>
+      <env name="NETCDF_PATH">$ENV{SEMS_NETCDF_ROOT}</env>
       <env name="OMP_STACKSIZE">64M</env>
     </environment_variables>
     <environment_variables mpilib="!mpi-serial">
-      <env name="PNETCDFROOT">$ENV{SEMS_NETCDF_ROOT}</env>
+      <env name="PNETCDF_PATH">$ENV{SEMS_NETCDF_ROOT}</env>
     </environment_variables>
   </machine>
 
@@ -2546,9 +2553,8 @@
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <environment_variables compiler="intel">
-      <env name="NETCDFROOT">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.6.0-mvapich2-2.3.7-intel-classic-2021.6.0/</env>
-      <env name="NETCDF_PATH">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.6.0-mvapich2-2.3.7-intel-classic-2021.6.0/</env>    
-      <env name="PNETCDFROOT">/usr/tce/packages/parallel-netcdf/parallel-netcdf-1.12.3-mvapich2-2.3.7-intel-classic-2021.6.0/</env>
+      <env name="NETCDF_PATH">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.6.0-mvapich2-2.3.7-intel-classic-2021.6.0/</env>
+      <env name="PNETCDF_PATH">/usr/tce/packages/parallel-netcdf/parallel-netcdf-1.12.3-mvapich2-2.3.7-intel-classic-2021.6.0/</env>
       </environment_variables>
   </machine>
 
@@ -2602,9 +2608,8 @@
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <environment_variables compiler="intel">
-      <env name="NETCDFROOT">/usr/gdata/climdat/install/quartz/netcdf-fortran/</env>
       <env name="NETCDF_PATH">/usr/gdata/climdat/install/quartz/netcdf-fortran/</env>
-      <env name="PNETCDFROOT">/usr/tce/packages/parallel-netcdf/parallel-netcdf-1.12.3-mvapich2-2.3.7-intel-classic-2021.6.0</env>
+      <env name="PNETCDF_PATH">/usr/tce/packages/parallel-netcdf/parallel-netcdf-1.12.3-mvapich2-2.3.7-intel-classic-2021.6.0</env>
     </environment_variables>
   </machine>
 
@@ -2698,6 +2703,7 @@
       <env name="HDF5_DISABLE_VERSION_CHECK">1</env>
       <env name="labeling">-e PMI_LABEL_ERROUT=1</env>
       <env name="SMP_VARS"> </env>
+      <env name="NETCDF_PATH">$ENV{NETCDF_DIR}</env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE" compiler="intel">
       <env name="SMP_VARS">-e OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS} -e OMP_STACKSIZE=128M -e KMP_AFFINITY=granularity=thread,scatter</env>
@@ -3103,7 +3109,7 @@
     <EXEROOT>$CIME_OUTPUT_ROOT/csmruns/$CASE/bld</EXEROOT>
     <environment_variables>
       <env name="OMP_STACKSIZE">64M</env>
-      <env name="NETCDF_HOME">$ENV{NETCDF_ROOT}</env>
+      <env name="NETCDF_PATH">$ENV{NETCDF_ROOT}</env>
     </environment_variables>
     <environment_variables compiler="intel">
       <env name="MKL_PATH">$ENV{MLIBHOME}</env>
@@ -3225,7 +3231,7 @@
     </environment_variables>
     <environment_variables>
       <env name="OMP_STACKSIZE">64M</env>
-      <env name="NETCDF_HOME">$ENV{NETCDF_LIB}/../</env>
+      <env name="NETCDF_PATH">$ENV{NETCDF_LIB}/../</env>
     </environment_variables>
     <environment_variables compiler="intel">
       <env name="MKL_PATH">$ENV{MKLROOT}</env>
@@ -3320,7 +3326,8 @@
     <TEST_TPUT_TOLERANCE>0.05</TEST_TPUT_TOLERANCE>
     <MAX_GB_OLD_TEST_DATA>0</MAX_GB_OLD_TEST_DATA>
     <environment_variables>
-      <env name="NETCDF_HOME">$ENV{NETCDF_ROOT}/</env>
+      <env name="NETCDF_PATH">$ENV{NETCDF_ROOT}/</env>
+      <env name="PNETCDF_PATH">$ENV{PNETCDF_ROOT}/</env>
       <env name="MKL_PATH">$ENV{MKLROOT}</env>
     </environment_variables>
     <environment_variables compiler="intel">
@@ -3549,6 +3556,8 @@
     </environment_variables>
     <environment_variables>
       <env name="PERL5LIB">/software/user_tools/current/cades-ccsi/perl5/lib/perl5/</env>
+      <env name="NETCDF_PATH">/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/netcdf-hdf5parallel/4.3.3.1/centos7.2_gnu5.3.0</env>
+      <env name="PNETCDF_PATH">/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/pnetcdf/1.9.0/centos7.2_gnu5.3.0</env>
     </environment_variables>
 
   </machine>
@@ -3626,8 +3635,6 @@
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <environment_variables>
-      <env name="PNETCDF_PATH">$ENV{PNETCDF_PATH}</env>
-      <env name="NETCDF_PATH">$ENV{NETCDF_PATH}</env>
       <env name="MKLROOT">$ENV{MKLROOT}</env>
       <env name="PNETCDF_HINTS">romio_ds_write=disable;romio_ds_read=disable;romio_cb_write=enable;romio_cb_read=enable</env>
     </environment_variables>
@@ -3706,8 +3713,6 @@
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <environment_variables>
-      <env name="PNETCDF_PATH">$ENV{PNETCDF_PATH}</env>
-      <env name="NETCDF_PATH">$ENV{NETCDF_PATH}</env>
       <env name="MKLROOT">$ENV{MKLROOT}</env>
       <env name="PNETCDF_HINTS">romio_ds_write=disable;romio_ds_read=disable;romio_cb_write=enable;romio_cb_read=enable</env>
     </environment_variables>
@@ -3819,6 +3824,8 @@
       <env name="PNETCDF_HINTS">romio_ds_write=disable;romio_ds_read=disable;romio_cb_write=enable;romio_cb_read=enable</env>
       <env name="FI_CXI_RX_MATCH_MODE">software</env>
       <env name="MPICH_COLL_SYNC">MPI_Bcast</env>
+      <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
+      <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
     </environment_variables>
     <resource_limits>
       <resource name="RLIMIT_STACK">-1</resource>
@@ -3906,6 +3913,9 @@
     <!-- complete path to a long term archiving directory -->
     <!-- where the cesm testing scripts write and read baseline results -->
     <!-- path to the cprnc tool used to compare netcdf history files in testing -->
+    <environment_variables>
+      <env name="NETCDF_PATH">/soft/netcdf/fortran-4.4-intel-sp1-update3-parallel/lib</env>
+    </environment_variables>
   </machine>
 
   <machine MACH="lawrencium-lr3">
@@ -3985,6 +3995,11 @@
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+
+    <environment_variables>
+      <env name="NETCDF_PATH">$ENV{NETCDF_DIR}</env>
+      <env name="PNETCDF_PATH">$ENV{PNETCDF_DIR}</env>
+    </environment_variables>
   </machine>
 
   <machine MACH="lawrencium-lr6">
@@ -4064,6 +4079,11 @@
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+
+    <environment_variables>
+      <env name="NETCDF_PATH">$ENV{NETCDF_DIR}</env>
+      <env name="PNETCDF_PATH">$ENV{PNETCDF_DIR}</env>
+    </environment_variables>
   </machine>
   
   <machine MACH="lobata">
@@ -4142,6 +4162,7 @@
     <module_system type="none"/>
     <environment_variables compiler="gnu" > 
       <env name="CMAKE_ROOT">/usr/local/share/cmake-3.21/</env>
+      <env name="NETCDF_PATH">$ENV{NETCDF_HOME}</env>
     </environment_variables>
   </machine>
 
@@ -4959,6 +4980,7 @@
 
       <!--env name="HDF5_DISABLE_VERSION_CHECK">2</env-->
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
+      <env name="NETCDF_PATH">$ENV{NETCDF_DIR}</env>
     </environment_variables>
     <environment_variables compiler="intel">
       <env name="FORT_BUFFERED">yes</env>
@@ -5194,6 +5216,8 @@
     <environment_variables>
       <env name="OMPI_ALLOW_RUN_AS_ROOT">1</env>
       <env name="OMPI_ALLOW_RUN_AS_ROOT_CONFIRM">1</env>
+      <env name="NETCDF_PATH">/opt/conda</env>
+      <env name="PNETCDF_PATH">/opt/conda</env>
     </environment_variables>
   </machine>
 

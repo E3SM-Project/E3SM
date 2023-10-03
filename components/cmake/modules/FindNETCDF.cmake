@@ -36,9 +36,12 @@ function(get_netcdf_libs ncpath nfpath)
 endfunction()
 
 function(create_netcdf_target)
-  # Need to load macros to pick up netcdf vars. This should not impact
-  # the scope of the caller because we are doing this within a function
-  include(${CASEROOT}/Macros.cmake)
+
+  # Grab things from env
+  set(PNETCDF_PATH        $ENV{PNETCDF_PATH})
+  set(NETCDF_PATH         $ENV{NETCDF_PATH})
+  set(NETCDF_C_PATH       $ENV{NETCDF_C_PATH})
+  set(NETCDF_FORTRAN_PATH $ENV{NETCDF_FORTRAN_PATH})
 
   # Pnetcdf is optional, and only if not running serial
   if (NOT MPILIB STREQUAL mpi-serial)

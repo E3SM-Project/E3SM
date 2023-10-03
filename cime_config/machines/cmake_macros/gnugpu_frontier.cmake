@@ -16,8 +16,6 @@ if (NOT DEBUG)
   string(APPEND CXXFLAGS " -O2")
   string(APPEND FFLAGS   " -O2")
 endif()
-set(NETCDF_PATH "$ENV{NETCDF_DIR}")
-set(PNETCDF_PATH "$ENV{PNETCDF_DIR}")
 string(APPEND CMAKE_OPTS " -DPIO_ENABLE_TOOLS:BOOL=OFF")
 
 string(APPEND CXXFLAGS " -I$ENV{MPICH_DIR}/include --offload-arch=gfx90a")
