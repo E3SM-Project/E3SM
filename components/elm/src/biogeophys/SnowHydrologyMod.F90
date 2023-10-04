@@ -2575,15 +2575,13 @@ contains
      ! Determine model time step
      dtime = dtime_mod 
      ! Initialize capping fluxes for all columns in domain (lake or non-lake)
-     !$acc parallel loop independent gang vector default(present)
      do fc = 1, num_nolakec
         c = filter_initc(fc)
         qflx_snwcp_ice(c) = 0.0_r8
         qflx_snwcp_liq(c) = 0.0_r8
      end do
 
-     !$acc parallel loop independent gang vector default(present)
-     do fc = 1, num_snowc
+     loop_columns: do fc = 1, num_snowc
         c = filter_snowc(fc)
 
         if (h2osno(c) > h2osno_max) then
@@ -2613,9 +2611,9 @@ contains
 
            ! Check that water capacity is still positive
            if (h2osoi_ice(c,0) < 0._r8 .or. h2osoi_liq(c,0) < 0._r8 ) then
-            !  write(iulog,*)'ERROR: capping procedure failed (negative mass remaining) c = ',c
-            !  write(iulog,*)'h2osoi_ice = ', h2osoi_ice(c,0), ' h2osoi_liq = ', h2osoi_liq(c,0)
-            !   call endrun(decomp_index=c, elmlevel=namec, msg=errmsg(__FILE__, __LINE__))
+              write(iulog,*)'ERROR: capping procedure failed (negative mass remaining) c = ',c
+              write(iulog,*)'h2osoi_ice = ', h2osoi_ice(c,0), ' h2osoi_liq = ', h2osoi_liq(c,0)
+              call endrun(decomp_index=c, elmlevel=namec, msg=errmsg(__FILE__, __LINE__))
            end if
 
            ! Correct the top layer aerosol mass to account for snow capping.
@@ -2631,7 +2629,7 @@ contains
            mss_dst4(c,0)    = mss_dst4(c,0) * frac_adjust
         end if
 
-     end do ! loop_columns
+     end do loop_columns
 
      end associate
    end subroutine SnowCapping

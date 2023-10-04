@@ -62,7 +62,6 @@ subroutine normalize_test( lbj2, ubj2, numf, filter, arr2d_inout)
    integer  :: f, p         !indices
    real(r8) :: arr_sum(numf), sum1
 
-   print *, "Inside Normalize Test!"
    !$acc enter data create(arr_sum(1:numf))
    !$acc parallel loop independent gang worker default(present) private(sum1)
    do f = 1, numf
@@ -324,7 +323,6 @@ end subroutine normalize_test
                   else
                      rootfr_unf(f,j) = 0._r8
                   end if
-                  print *, "rootfr_unf:",rootfr_unf(f,j)
                end do
             end do
          else

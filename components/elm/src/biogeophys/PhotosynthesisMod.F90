@@ -246,20 +246,20 @@ contains
     type(photosyns_type)   , intent(inout) :: photosyns_vars
     character(len=3)       , intent(in)    :: phase               ! 'sun' or 'sha'
     !!passing these variables as arguments to avoid deep copying the local pointers to GPU
-    real(r8), intent(in) :: par_z    (:,:)  ! Input:  [real(r8) (:,:) ] par absorbed per unit lai for canopy layer (w/m**2)
-    real(r8), intent(in) :: lai_z    (:,:)  ! Input:  [real(r8) (:,:) ] leaf area index for canopy layer, sunlit or shaded
-    real(r8), intent(in) :: vcmaxcint(:)    ! Input:  [real(r8) (:)   ] leaf to canopy scaling coefficient
-    real(r8), intent(inout) :: alphapsn (:) ! Output:  [real(r8) (:)   ] 13C fractionation factor for PSN ()
-    real(r8), intent(inout) :: ci_z  (:,:)  ! Output: [real(r8) (:,:) ] intracellular leaf CO2 (Pa)
-    real(r8), intent(inout) :: rs    (:)    ! Output: [real(r8) (:)   ] leaf stomatal resistance (s/m)
-    real(r8), intent(inout) :: rs_z  (:,:)  ! Output: [real(r8) (:,:) ] canopy layer: leaf stomatal resistance (s/m)
-    real(r8), intent(inout) :: lmr   (:)    ! Output: [real(r8) (:)   ] leaf maintenance respiration rate (umol CO2/m**2/s)
-    real(r8), intent(inout) :: lmr_z (:,:)  ! Output: [real(r8) (:,:) ] canopy layer: leaf maintenance respiration rate (umol CO2/m**2/s)
-    real(r8), intent(inout) :: psn   (:)    ! Output: [real(r8) (:)   ] foliage photosynthesis (umol co2 /m**2/ s) [always +]
-    real(r8), intent(inout) :: psn_z (:,:)  ! Output: [real(r8) (:,:) ] canopy layer: foliage photosynthesis (umol co2 /m**2/ s) [always +]
-    real(r8), intent(inout) :: psn_wc(:)    ! Output: [real(r8) (:)   ] Rubisco-limited foliage photosynthesis (umol co2 /m**2/ s) [always +]
-    real(r8), intent(inout) :: psn_wj(:)    ! Output: [real(r8) (:)   ] RuBP-limited foliage photosynthesis (umol co2 /m**2/ s) [always +]
-    real(r8), intent(inout) :: psn_wp(:)    ! Output: [real(r8) (:)   ] product-limited foliage photosynthesis (umol co2 /m**2/ s) [always +]
+    real(r8), intent(in) :: par_z    (bounds%begp:,:)  ! Input:  [real(r8) (:,:) ] par absorbed per unit lai for canopy layer (w/m**2)
+    real(r8), intent(in) :: lai_z    (bounds%begp:,:)  ! Input:  [real(r8) (:,:) ] leaf area index for canopy layer, sunlit or shaded
+    real(r8), intent(in) :: vcmaxcint(bounds%begp:)    ! Input:  [real(r8) (:)   ] leaf to canopy scaling coefficient
+    real(r8), intent(inout) :: alphapsn (bounds%begp:) ! Output:  [real(r8) (:)   ] 13C fractionation factor for PSN ()
+    real(r8), intent(inout) :: ci_z  (bounds%begp:,:)  ! Output: [real(r8) (:,:) ] intracellular leaf CO2 (Pa)
+    real(r8), intent(inout) :: rs    (bounds%begp:)    ! Output: [real(r8) (:)   ] leaf stomatal resistance (s/m)
+    real(r8), intent(inout) :: rs_z  (bounds%begp:,:)  ! Output: [real(r8) (:,:) ] canopy layer: leaf stomatal resistance (s/m)
+    real(r8), intent(inout) :: lmr   (bounds%begp:)    ! Output: [real(r8) (:)   ] leaf maintenance respiration rate (umol CO2/m**2/s)
+    real(r8), intent(inout) :: lmr_z (bounds%begp:,:)  ! Output: [real(r8) (:,:) ] canopy layer: leaf maintenance respiration rate (umol CO2/m**2/s)
+    real(r8), intent(inout) :: psn   (bounds%begp:)    ! Output: [real(r8) (:)   ] foliage photosynthesis (umol co2 /m**2/ s) [always +]
+    real(r8), intent(inout) :: psn_z (bounds%begp:,:)  ! Output: [real(r8) (:,:) ] canopy layer: foliage photosynthesis (umol co2 /m**2/ s) [always +]
+    real(r8), intent(inout) :: psn_wc(bounds%begp:)    ! Output: [real(r8) (:)   ] Rubisco-limited foliage photosynthesis (umol co2 /m**2/ s) [always +]
+    real(r8), intent(inout) :: psn_wj(bounds%begp:)    ! Output: [real(r8) (:)   ] RuBP-limited foliage photosynthesis (umol co2 /m**2/ s) [always +]
+    real(r8), intent(inout) :: psn_wp(bounds%begp:)    ! Output: [real(r8) (:)   ] product-limited foliage photosynthesis (umol co2 /m**2/ s) [always +]
 
     !
     ! !LOCAL VARIABLES:
@@ -413,8 +413,10 @@ contains
       ! Bonan et al (2011) JGR, 116, doi:10.1029/2010JG001593
       !==============================================================================!
 
+      !$acc enter data create(fnr,act25,vcmaxha,jmaxha,tpuha,lmrha,vcmaxhd,jmaxhd,tpuhd,lmrhd,lmrse,lmrc) 
       ! Miscellaneous parameters, from Bonan et al (2011) JGR, 116, doi:10.1029/2010JG001593
       ! vcmax25 parameters, from CN
+      !$acc serial default(present)  
       p = filterp(1)
       i_type = veg_pp%itype(p)
       fnr   = veg_vp%fnr(i_type)   !7.16_r8
@@ -443,9 +445,8 @@ contains
       lmrhd   = veg_vp%lmrhd(i_type)   !150650._r8
       lmrse   = veg_vp%lmrse(i_type)   !490._r8
       lmrc    = fth25 (lmrhd, lmrse)
-
-      !$acc enter data copyin(fnr,act25,vcmaxha,jmaxha,tpuha,lmrha,vcmaxhd,jmaxhd,tpuhd,lmrhd,lmrse,lmrc) &
-      !$acc create(jmax_z(1:fn,nlevcan), lnc(1:fn),kn(1:fn),psn_wc_z(1:fn,:nlevcan),psn_wj_z(1:fn,:nlevcan), psn_wp_z(1:fn,:nlevcan) )
+      !$acc end serial 
+      !$acc enter data create(jmax_z(:,:), lnc(:),kn(:),psn_wc_z(:,:),psn_wj_z(:,:), psn_wp_z(:,:) )
 
       !$acc parallel loop independent gang vector default(present) private(p,c,t,i_type,kc25,ko25,sco,cp25)
       do f = 1, fn
@@ -489,7 +490,6 @@ contains
       ! Loop through each canopy layer to calculate nitrogen profile using
       ! cumulative lai at the midpoint of the layer
       
-      call cpu_time(startt)
       !$acc parallel loop independent gang vector default(present)
       do f = 1, fn
          if(converged(f)) cycle
@@ -515,7 +515,7 @@ contains
             if ( Carbon_only  .or.  carbonphosphorus_only ) then
 
                lnc(f) = 1._r8 / (slatop(i_type) * leafcn(i_type))
-               vcmax25top = lnc(f) * flnr(i_type) * fnr * act25 * dayl_factor(p)
+               vcmax25top = lnc(f) * flnr(i_type) * fnr * act25 * dayl_factor(f)
                vcmax25top = vcmax25top * fnitr(i_type)
                jmax25top = (2.59_r8 - 0.035_r8*min(max((t10(p)-tfrz),11._r8),35._r8)) * vcmax25top
 
@@ -553,7 +553,7 @@ contains
                   lnc(f) = 0.0_r8
                end if
 
-               vcmax25top = (i_vcmax(i_type) + s_vcmax(i_type) * lnc(f)) * dayl_factor(p)
+               vcmax25top = (i_vcmax(i_type) + s_vcmax(i_type) * lnc(f)) * dayl_factor(f)
                jmax25top = (2.59_r8 - 0.035_r8*min(max((t10(p)-tfrz),11._r8),35._r8)) * vcmax25top
                vcmax25top = min(max(vcmax25top, 10.0_r8), 150.0_r8)
                jmax25top = min(max(jmax25top, 10.0_r8), 250.0_r8)
@@ -595,8 +595,8 @@ contains
                      lpc = min(max(lpc,0.014_r8),0.85_r8) ! based on doi: 10.1002/ece3.1173
                      vcmax25top = exp(vcmax_np1(i_type) + vcmax_np2(i_type)*log(lnc(f)) + &
                           vcmax_np3(i_type)*log(lpc) + vcmax_np4(i_type)*log(lnc(f))*log(lpc ))&
-                          * dayl_factor(p)
-                     jmax25top = exp(jmax_np1 + jmax_np2*log(vcmax25top) + jmax_np3*log(lpc )) * dayl_factor(p)
+                          * dayl_factor(f)
+                     jmax25top = exp(jmax_np1 + jmax_np2*log(vcmax25top) + jmax_np3*log(lpc )) * dayl_factor(f)
                      vcmax25top = min(max(vcmax25top, 10.0_r8), 150.0_r8)
                      jmax25top = min(max(jmax25top, 10.0_r8), 250.0_r8)
                   else
@@ -715,7 +715,7 @@ contains
                jmaxc  = fth25 (jmaxhd, jmaxse)
                tpuc   = fth25 (tpuhd, tpuse)
                vcmax_z(p,iv) = vcmax25 * ft(t_veg(p), vcmaxha) * fth(t_veg(p), vcmaxhd, vcmaxse, vcmaxc)
-               jmax_z(p,iv) = jmax25 * ft(t_veg(p), jmaxha) * fth(t_veg(p), jmaxhd, jmaxse, jmaxc)
+               jmax_z(f,iv) = jmax25 * ft(t_veg(p), jmaxha) * fth(t_veg(p), jmaxhd, jmaxse, jmaxc)
                tpu_z(p,iv) = tpu25 * ft(t_veg(p), tpuha) * fth(t_veg(p), tpuhd, tpuse, tpuc)
 
                if (.not. c3flag(p)) then
@@ -732,7 +732,6 @@ contains
             lmr_z(p,iv) = lmr_z(p,iv) * btran(p)
          end do       ! canopy layer loop
       end do     ! patch loop
-      call cpu_time(stopt)
       !==============================================================================!
       ! Leaf-level photosynthesis and stomatal conductance
       !==============================================================================!
@@ -773,24 +772,24 @@ contains
             else                                     ! day time
 
                !now the constraint is no longer needed, Jinyun Tang
-               ceair = min( eair(p),  esat_tv(p) )
-               rh_can = ceair / esat_tv(p)
+               ceair = min( eair(f),  esat_tv(f) )
+               rh_can = ceair / esat_tv(f)
 
                ! Electron transport rate for C3 plants. Convert par from W/m2 to
                ! umol photons/m**2/s using the factor 4.6
 
                qabs  = 0.5_r8 * (1._r8 - fnps) * par_z(p,iv) * 4.6_r8
                aquad = theta_psii
-               bquad = -(qabs + jmax_z(p,iv))
-               cquad = qabs * jmax_z(p,iv)
+               bquad = -(qabs + jmax_z(f,iv))
+               cquad = qabs * jmax_z(f,iv)
                call quadratic (aquad, bquad, cquad, r1, r2)
                je = min(r1,r2)
 
                ! Iterative loop for ci beginning with initial guess
                if (c3flag(p)) then
-                  ci_z(p,iv) = 0.7_r8 * cair(p)
+                  ci_z(p,iv) = 0.7_r8 * cair(f)
                else
-                  ci_z(p,iv) = 0.4_r8 * cair(p)
+                  ci_z(p,iv) = 0.4_r8 * cair(f)
                end if
 
                niter = 0
@@ -802,7 +801,7 @@ contains
                ciold = ci_z(p,iv)
 
                !find ci and stomatal conductance
-               call hybrid(ciold, p, iv, c, t, gb_mol(p), je, cair(p), oair(p), &
+               call hybrid(ciold, p, iv, c, t, gb_mol(p), je, cair(f), oair(f), &
                     lmr_z(p,iv), par_z(p,iv), rh_can, gs_mol(p,iv), niter, &
                     photosyns_vars)
 
@@ -811,9 +810,9 @@ contains
 
                ! Final estimates for cs and ci (needed for early exit of ci iteration when an < 0)
 
-               cs = cair(p) - 1.4_r8/gb_mol(p) * an(p,iv) * forc_pbot(t)
+               cs = cair(f) - 1.4_r8/gb_mol(p) * an(p,iv) * forc_pbot(t)
                cs = max(cs,1.e-06_r8)
-               ci_z(p,iv) = cair(p) - an(p,iv) * forc_pbot(t) * (1.4_r8*gs_mol(p,iv)+1.6_r8*gb_mol(p)) / (gb_mol(p)*gs_mol(p,iv))
+               ci_z(p,iv) = cair(f) - an(p,iv) * forc_pbot(t) * (1.4_r8*gs_mol(p,iv)+1.6_r8*gb_mol(p)) / (gb_mol(p)*gs_mol(p,iv))
 
                ! Convert gs_mol (umol H2O/m**2/s) to gs (m/s) and then to rs (s/m)
 
@@ -846,7 +845,7 @@ contains
 #endif
                ! Compare with Ball-Berry model: gs_mol = m * an * hs/cs p + b
 
-               hs = (gb_mol(p)*ceair + gs_mol(p,iv)*esat_tv(p)) / ((gb_mol(p)+gs_mol(p,iv))*esat_tv(p))
+               hs = (gb_mol(p)*ceair + gs_mol(p,iv)*esat_tv(f)) / ((gb_mol(p)+gs_mol(p,iv))*esat_tv(f))
                rh_leaf(p) = hs
                gs_mol_err = mbb(p)*max(an(p,iv), 0._r8)*hs/cs*forc_pbot(t) + bbb(p)
 #ifndef _OPENACC
@@ -858,7 +857,6 @@ contains
             end if    ! night or day if branch
          end do       ! canopy layer loop
       end do          ! patch loop
-      call cpu_time(stopt)
       !==============================================================================!
       ! Canopy photosynthesis and stomatal conductance
       !==============================================================================!
@@ -866,7 +864,6 @@ contains
       ! Sum canopy layer fluxes and then derive effective leaf-level fluxes (per
       ! unit leaf area), which are used in other parts of the model. Here, laican
       ! sums to either laisun or laisha.
-      call cpu_time(startt)
       !$acc parallel loop gang worker independent default(present)
       do f = 1, fn
          if(converged(f)) cycle
@@ -906,8 +903,7 @@ contains
       end do
 
       !$acc exit data delete(fnr,act25,vcmaxha,jmaxha,tpuha,lmrha,vcmaxhd,jmaxhd,tpuhd,lmrhd,lmrse,lmrc &
-      !$acc ,jmax_z(:,:), lnc(:), kn(1:fn),psn_wc_z(1:fn,:nlevcan),psn_wj_z(1:fn,:nlevcan), psn_wp_z(1:fn,:nlevcan) )
-      call cpu_time(stopt)
+      !$acc ,jmax_z(:,:), lnc(:), kn(:),psn_wc_z(:,:nlevcan),psn_wj_z(:,:nlevcan), psn_wp_z(:,:nlevcan) )
 
     end associate
 

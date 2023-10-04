@@ -40,7 +40,7 @@ module CanopyFluxesMod
   use ColumnDataType        , only : col_es, col_ef, col_ws
   use VegetationType        , only : veg_pp
   use VegetationDataType    , only : veg_es, veg_ef, veg_ws, veg_wf
-  !!! using elm_instMod messes with the compilation order
+  ! using elm_instMod messes with the compilation order
   !#fates_py use elm_instMod           , only : alm_fates, soil_water_retention_curve
   use timeinfoMod
   use spmdmod          , only: masterproc
@@ -97,9 +97,9 @@ contains
     use elm_varcon         , only : c14ratio
 
     !NEW
-    use domainMod          , only : ldomain_gpu
+    use domainMod          , only : ldomain
     use QSatMod            , only : QSat
-    use FrictionVelocityMod, only : FrictionVelocity, MoninObukIni
+    use FrictionVelocityMod, only : FrictionVelocity_noloop, MoninObukIni
     use SurfaceResistanceMod, only : getlblcef
     use PhotosynthesisType, only : photosyns_vars_TimeStepInit
     !
@@ -110,7 +110,7 @@ contains
     integer                   , intent(in)    :: num_nolu_vegp
     integer                   , intent(in)    :: filter_nolu_vegp(:)
     type(canopystate_type)    , intent(inout) :: canopystate_vars
-    type(cnstate_type)        , intent(inout) :: cnstate_vars
+    type(cnstate_type)        , intent(inout) :: cnstate_vars  
     type(energyflux_type)     , intent(inout) :: energyflux_vars
     type(frictionvel_type)    , intent(inout) :: frictionvel_vars
     type(solarabs_type)       , intent(inout) :: solarabs_vars
@@ -244,7 +244,7 @@ contains
     integer  :: nmozsgn(num_nolu_vegp) ! number of times stability changes sign
     real(r8) :: w                      ! exp(-LSAI)
     real(r8) :: csoilcn                ! interpolated csoilc for less than dense canopies
-    real(r8) :: fm(1:num_nolu_vegp)    ! needed for BGC only to diagnose 10m wind speed
+    real(r8) :: fm(num_nolu_vegp)    ! needed for BGC only to diagnose 10m wind speed
     real(r8) :: wtshi                  ! sensible heat resistance for air, grnd and leaf [-]
     real(r8) :: wtsqi                  ! latent heat resistance for air, grnd and leaf [-]
     integer  :: j                      ! soil/snow level index
@@ -295,7 +295,7 @@ contains
     integer  :: iv
     real :: startt, stopt,iterT1,iterT2
     integer :: filterp(num_nolu_vegp)  ! filter for iteration loop
-    integer :: converged(1:num_nolu_vegp), num_unconverged 
+    integer :: converged(num_nolu_vegp), num_unconverged 
     character(len=64) :: event !! timing event
     !------------------------------------------------------------------------------
 
@@ -437,8 +437,6 @@ contains
       fn = num_nolu_vegp
       ! First - set the following values over points where frac vegetation covered by snow is zero
       ! (e.g. btran, t_veg, rootr, rresis)
-      print *, "barep,vegp:",num_nolu_barep, num_nolu_vegp 
-      call cpu_time(startt)
       if(num_nolu_barep > 0) then
          !$acc parallel loop independent gang vector private(p,c,t) default(present) &
          !$acc   present(t_veg(:), btran(:), rssun(:), rssha(:), lbl_rsc_h2o(:), thm(:) ) 
@@ -507,12 +505,14 @@ contains
       !NOTE: This likely shouldn't init based on bounds but on a filter !!
       call photosyns_vars_TimeStepInit(photosyns_vars,bounds)
 
-      call cpu_time(stopt)
 #ifndef _OPENACC
       if (use_fates) then
          !#fates_py call alm_fates%prep_canopyfluxes( bounds )
       end if
 #endif
+      
+      rb1(begp:endp) = 0._r8
+
 
       !NOTE: this filter set up means doing the same calculations for a column
       !      redundantly (eg. computing the same column variable 4 times)
@@ -520,7 +520,6 @@ contains
       !assign the temporary filter
       
       ! compute effective soil porosity
-      call cpu_time(startt)
       call calc_effective_soilporosity(bounds,                          &
            ubj = nlevgrnd,                                              &
            numf = fn,                                                   &
@@ -542,8 +541,6 @@ contains
            denh2o = denh2o,                                                  &
            vol_liq = h2osoi_liqvol(bounds%begc:bounds%endc, 1:nlevgrnd) )
 
-      call cpu_time(stopt)
-
       ! set up perchroot options
       ! Better way to do this???
       call set_perchroot_opt(perchroot, perchroot_alt)
@@ -564,7 +561,6 @@ contains
                !#fates_py temperature_vars, energyflux_vars, soil_water_retention_curve)
 #endif
       else
-         call cpu_time(startt)
          !calculate root moisture stress
          call calc_root_moist_stress(bounds,     &
               nlevgrnd = nlevgrnd,               &
@@ -574,8 +570,6 @@ contains
               energyflux_vars=energyflux_vars,   &
               soilstate_vars=soilstate_vars      &
               )
-         call cpu_time(stopt)
-         !print *, "TIMING CanopyFluxes::root_moist_stress",(stopt-startt)*1.E+3,"ms"
       end if !use_fates
 
       ! Determine if irrigation is needed (over irrigated soil columns)
@@ -583,7 +577,6 @@ contains
       ! Also set n_irrig_steps_left for these grid cells
       ! n_irrig_steps_left(p) > 0 is ok even if irrig_rate(p) ends up = 0
       ! in this case, we'll irrigate by 0 for the given number of time steps
-      call cpu_time(startt)
       !$acc parallel loop independent gang vector default(present) present(btran(:),elai(:),n_irrig_steps_left(:), irrig_rate(:)) private(p,g,local_time,seconds_since_irrig_start_time)
       do f = 1, fn
          p = filter_nolu_vegp(f)
@@ -635,7 +628,7 @@ contains
                   ! Translate vol_liq_so and eff_porosity into h2osoi_liq_so and h2osoi_liq_sat and calculate deficit
                   h2osoi_liq_so  = vol_liq_so * denh2o * col_pp%dz(c,j)
                   h2osoi_liq_sat = eff_porosity(c,j) * denh2o * col_pp%dz(c,j)
-                  deficit        = max((h2osoi_liq_so + ldomain_gpu%firrig(g)*(h2osoi_liq_sat - h2osoi_liq_so)) - h2osoi_liq(c,j), 0._r8)
+                  deficit        = max((h2osoi_liq_so + ldomain%firrig(g)*(h2osoi_liq_sat - h2osoi_liq_so)) - h2osoi_liq(c,j), 0._r8)
 
                   ! Add deficit to irrig_rate, converting units from mm to mm/sec
                   sum1  = sum1 + deficit/(dtime_mod*irrig_nsteps_per_day)
@@ -645,12 +638,9 @@ contains
             irrig_rate(p) = sum1
          end if        ! if (check_for_irrig(f) .and. .not. frozen_soil(f))
       end do           ! do f
-      call cpu_time(stopt)
-      !print *, "TIMING CanFlux::Irrigation",(stopt-startt)*1.E+3,"ms"
 
       found = .false.
 
-      call cpu_time(startt)
       ! Modify aerodynamic parameters for sparse/dense canopy (X. Zeng)
       !$acc parallel loop independent gang vector default(present) private(p,c,egvf,lt) &
       !$acc present(z0qv(:),forc_hgt_u_patch(:),elai(:),displa(:),esai(:),z0hv(:),z0mg(:),z0mv(:))
@@ -712,9 +702,6 @@ contains
 
       end do
 
-      call cpu_time(stopt)
-      !print *, "TIMING CanFlux::Create/Init Iteration ",(stopt-startt)*1.E+3,"ms"
-
       if (found) then
          if ( .not. use_fates ) then
             write(*,*)'Error: Forcing height is below canopy height for pft index '
@@ -723,7 +710,6 @@ contains
       end if
       
       !$acc enter data create(converged(:) ) 
-      call cpu_time(startt)
       !$acc parallel loop independent gang vector default(present) private(p,c)
       do f = 1, fn
          p = filter_nolu_vegp(f)
@@ -734,9 +720,6 @@ contains
          call MoninObukIni(ur(f), thv(c), dthv(f), zldis(f), z0mv(p), um(f), obu(f))
 
       end do
-      call cpu_time(stopt)
-      
-      print *, "Starting Iteration :" 
       ! Set counter for leaf temperature iteration (itlef)
       
       num_unconverged = num_nolu_vegp  
@@ -748,24 +731,19 @@ contains
       
       ! Begin stability iteration
       event = 'can_iter'
-      call cpu_time(iterT1)
       ITERATION : do while (itlef <= itmax .and. num_unconverged > 0)
         !$acc update device(itlef)  
-        call cpu_time(startt)
-        !$acc parallel loop independent gang vector private(p,f,fm) default(present)
+        !$acc parallel loop independent gang vector  default(present)
         do f = 1, fn
             if(converged(f)) cycle
             p = filterp(f)
-            call FrictionVelocity ( &
+            call FrictionVelocity_noloop ( &
                         displa(p), z0mv(p), z0hv(p), z0qv(p), &
                         obu(f), itlef+1, ur(f), um(f), ustar(f), &
                         temp1(f), temp2(f), temp12m(f), temp22m(f), fm(f), &
                         forc_hgt_u_patch(p), forc_hgt_t_patch(p), forc_hgt_q_patch(p), &
                         vds(p), u10(p), u10_elm(p), va(p), fv(p))
         end do
-        call cpu_time(stopt)
-        
-        call cpu_time(startt)
         !$acc parallel loop independent gang vector default(present) private(p,c,t,g,&
         !$acc  cf, w,csoilb,ri, ricsoilc, csoilcn) present(ram1(:), rb1(:), rhaf(:),grnd_ch4_cond(:),t_veg(:),elai(:),btran(:),&
         !$acc  esai(:), temp2(:), htop(:), dleaf_patch(:), rah(:,:))
@@ -856,7 +834,6 @@ contains
             end if
 
         end do
-        call cpu_time(stopt)
 
 
          if ( use_fates ) then
@@ -876,28 +853,23 @@ contains
                !      atm2lnd_vars, soilstate_vars, surfalb_vars, solarabs_vars,    &
                !      canopystate_vars, photosyns_vars)
             else
-              call cpu_time(startt)
               call Photosynthesis(bounds,num_nolu_vegp,filterp,converged(1:num_nolu_vegp),&
                         svpts(1:num_nolu_vegp), eah(1:num_nolu_vegp),o2(1:num_nolu_vegp),&
                         co2(1:num_nolu_vegp), rb(1:num_nolu_vegp), btran(begp:endp), dayl_factor(1:num_nolu_vegp),&
                         surfalb_vars, solarabs_vars, canopystate_vars, photosyns_vars, 'sun', &
-                        solarabs_vars%parsun_z_patch,  canopystate_vars%laisun_z_patch, &
-                        surfalb_vars%vcmaxcintsun_patch,  photosyns_vars%alphapsnsun_patch, &
-                        photosyns_vars%cisun_z_patch, photosyns_vars%rssun_patch, photosyns_vars%rssun_z_patch, &
-                        photosyns_vars%lmrsun_patch,  photosyns_vars%lmrsun_z_patch, photosyns_vars%psnsun_patch, &
-                        photosyns_vars%psnsun_z_patch,photosyns_vars%psnsun_wc_patch,photosyns_vars%psnsun_wj_patch,&
-                        photosyns_vars%psnsun_wp_patch   )
+                        solarabs_vars%parsun_z_patch(begp:endp,:),  canopystate_vars%laisun_z_patch(begp:endp,:), &
+                        surfalb_vars%vcmaxcintsun_patch(begp:endp),  photosyns_vars%alphapsnsun_patch(begp:endp), &
+                        photosyns_vars%cisun_z_patch(begp:endp,:), photosyns_vars%rssun_patch(begp:endp), &
+                        photosyns_vars%rssun_z_patch(begp:endp,:), photosyns_vars%lmrsun_patch(begp:endp), &
+                        photosyns_vars%lmrsun_z_patch(begp:endp,:), photosyns_vars%psnsun_patch(begp:endp), &
+                        photosyns_vars%psnsun_z_patch(begp:endp,:),photosyns_vars%psnsun_wc_patch(begp:endp), &
+                        photosyns_vars%psnsun_wj_patch(begp:endp),photosyns_vars%psnsun_wp_patch(begp:endp)   )
 
-              call cpu_time(stopt)
-              !print *, "TIMING CanopyFluxes::PhotosynthesisSun",(stopt-startt)*1.E+3,"ms"
             end if
 
             if ( use_c13 ) then
-               call cpu_time(startt)
                call Fractionation (bounds, fn, filterp, &
                      cnstate_vars, solarabs_vars, surfalb_vars, photosyns_vars, 1)
-               call cpu_time(stopt)
-               !print *, "TIMING CanopyFluxes::Fractionation-Sun",(stopt-startt)*1.E+3,"ms"
             endif
 
             !$acc parallel loop independent gang vector default(present) private(p,c)
@@ -910,20 +882,17 @@ contains
             end do
 
             if ( .not. use_hydrstress ) then
-               call cpu_time(startt)
                call Photosynthesis(bounds,fn,filterp,converged, &
                         svpts(1:num_nolu_vegp), eah(1:num_nolu_vegp),o2(1:num_nolu_vegp),&
                         co2(1:num_nolu_vegp),rb(1:num_nolu_vegp), btran(begp:endp), dayl_factor(1:num_nolu_vegp),&
                         surfalb_vars, solarabs_vars, canopystate_vars, photosyns_vars, 'sha', &
-                        solarabs_vars%parsha_z_patch, canopystate_vars%laisha_z_patch, &
-                        surfalb_vars%vcmaxcintsha_patch, photosyns_vars%alphapsnsha_patch, &
-                        photosyns_vars%cisha_z_patch,photosyns_vars%rssha_patch, photosyns_vars%rssha_z_patch,&
-                        photosyns_vars%lmrsha_patch,photosyns_vars%lmrsha_z_patch,photosyns_vars%psnsha_patch,&
-                        photosyns_vars%psnsha_z_patch,photosyns_vars%psnsha_wc_patch,&
-                        photosyns_vars%psnsha_wj_patch,photosyns_vars%psnsha_wp_patch   )
-
-               call cpu_time(stopt)
-               !print *, "TIMING CanopyFluxes::PhotosynthesisSha",(stopt-startt)*1.E+3,"ms" 
+                        solarabs_vars%parsha_z_patch(begp:endp,:), canopystate_vars%laisha_z_patch(begp:endp,:), &
+                        surfalb_vars%vcmaxcintsha_patch(begp:endp), photosyns_vars%alphapsnsha_patch(begp:endp), &
+                        photosyns_vars%cisha_z_patch(begp:endp,:),photosyns_vars%rssha_patch(begp:endp), &
+                        photosyns_vars%rssha_z_patch(begp:endp,:),photosyns_vars%lmrsha_patch(begp:endp), &
+                        photosyns_vars%lmrsha_z_patch(begp:endp,:),photosyns_vars%psnsha_patch(begp:endp),&
+                        photosyns_vars%psnsha_z_patch(begp:endp,:),photosyns_vars%psnsha_wc_patch(begp:endp),&
+                        photosyns_vars%psnsha_wj_patch(begp:endp),photosyns_vars%psnsha_wp_patch(begp:endp)   )
 
             end if
 
@@ -934,7 +903,6 @@ contains
 
          end if ! end of if use_fates
 
-         call cpu_time(startt)
          !$acc parallel loop independent gang vector default(present) present(laisun(:),&
          !$acc  thm(:), canopy_cond(:),temp2(:), frac_veg_nosno(:), esai(:), fdry(:), wta0(:), h2ocan(:), &
          !$acc  laisha(:),rssha(:),btran(:), fwet(:), qflx_evap_veg(:), qflx_tran_veg(:),sabv(:), eflx_sh_veg(:) )
@@ -1147,7 +1115,6 @@ contains
             obuold(f) = obu(f)
 
          end do   ! end of filtered pft loop
-         call cpu_time(stopt)
 
          !$acc parallel loop independent gang vector default(present) private(p,t)
          do f = 1, fn
@@ -1159,7 +1126,6 @@ contains
          enddo
 
          ! Test for convergence
-         call cpu_time(startt)
          itlef = itlef+1
          if (itlef > itmin) then
             fnold = 0 
@@ -1179,12 +1145,8 @@ contains
                end if 
             end do
          end if
-         call cpu_time(stopt)
       end do ITERATION     ! End stability iteration
-      call cpu_time(iterT2)
       
-      print *, "TIMING can_iter::",(iterT2-iterT1)*1.E+3,"ms"
-
       !$acc parallel loop independent gang vector default(present)
       do f = 1, num_nolu_vegp
          p = filter_nolu_vegp(f)
@@ -1266,34 +1228,36 @@ contains
          h2ocan(p) = max(0._r8,h2ocan(p)+(qflx_tran_veg(p)-qflx_evap_veg(p))*dtime_mod)
 
       end do
-      call cpu_time(stopt)
-      print *, "TIMING CanopyFluxes::FinalFluxes ",(stopt-startt)*1.E+3,"ms"
 
       if ( use_fates ) then
 
-        #ifndef _OPENACC
-            !#fates_py call alm_fates%wrap_accumulatefluxes(bounds,fn,filterp(1:fn))
-            !#fates_py call alm_fates%wrap_hydraulics_drive(bounds,fn,filterp(1:fn),soilstate_vars, &
-                  !#fates_py solarabs_vars,energyflux_vars)
-        #endif
+        !#py call alm_fates%wrap_accumulatefluxes(bounds,fn,filterp(1:fn))
+        !#py call alm_fates%wrap_hydraulics_drive(bounds,fn,filterp(1:fn),soilstate_vars, &
+        !#py                                     solarabs_vars,energyflux_vars)
       else
 
          ! Determine total photosynthesis
-         call cpu_time(startt)
          call PhotosynthesisTotal(num_nolu_vegp, filter_nolu_vegp, &
                cnstate_vars, canopystate_vars, photosyns_vars)
-         call cpu_time(stopt)
-         print *, "TIMING CanFlux::PhotosynthesisTotal ",(stopt-startt)*1.E+3, "ms"
          ! Filter out patches which have small energy balance errors; report others
          ! NOTE: filter out patches for what? This is the end of the subroutine.
          fnold = num_nolu_vegp
          fn = 0
+         !$acc parallel loop independent gang vector default(present) 
          do f = 1, fnold
             p = filterp(f)
             if (abs(err(f)) > 0.1_r8) then
                fn = fn + 1
                filterp(fn) = p
-               write(iulog,*) 'energy balance in canopy ',p,', err=',err(f)
+               print *, 'energy balance in canopy ',p,', err=',err(f)
+               write(iulog,*) "sabv  :", sabv(p) 
+               write(iulog,*) "air   :",air(p)
+               write(iulog,*) "bir   :" ,bir(p)
+               write(iulog,*) "cir   :" ,cir(p)
+               write(iulog,*) "tlbef :",tlbef(p)
+               write(iulog,*) "dt_veg:",dt_veg(p) 
+               write(iulog,*) "eflx_sh_veg:",eflx_sh_veg(p) 
+               write(iulog,*) "qflx_evap_veg:",qflx_evap_veg(p)
             end if
          end do
 

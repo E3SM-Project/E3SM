@@ -280,7 +280,7 @@ contains
     use elm_varcon           , only : e_ice,denh2o, denice
     use elm_varpar           , only : nlevsoi, max_patch_per_col, nlevgrnd
     use column_varcon        , only : icol_roof, icol_road_imperv
-    use TridiagonalMod       , only : Tridiagonal_filter
+    ! use TridiagonalMod       , only : Tridiagonal_filter
     use SoilStateType        , only : soilstate_type
     use SoilHydrologyType    , only : soilhydrology_type
     use VegetationType       , only : veg_pp
@@ -1247,17 +1247,15 @@ contains
          end if
       end do
       num_filterc_tot = num_filterc_tot+num_filterc
-      print *, "num_hydrologyc / num_tot / num_filterc "
 
-      print *, num_hydrologyc, num_filterc_tot, num_filterc
-      !if(use_hydrstress) then
-      !   call Compute_EffecRootFrac_And_VertTranSink_HydStress(bounds, &
-      !         num_filterc, filterc,  soilstate_inst, &
-      !         canopystate_inst)
-      !else
-      call Compute_EffecRootFrac_And_VertTranSink_Default(bounds, &
+      if(use_hydrstress) then
+         call Compute_EffecRootFrac_And_VertTranSink_HydStress(bounds, &
+               num_filterc, filterc,  soilstate_inst, &
+               canopystate_inst)
+      else
+         call Compute_EffecRootFrac_And_VertTranSink_Default(bounds, &
             num_filterc,filterc, soilstate_inst)
-      !end if
+      end if
 
       if (num_hydrologyc /= num_filterc_tot) then
           write(*,*) 'The total number of columns flagged to root water uptake'
@@ -1413,7 +1411,6 @@ contains
            canopystate_vars)
         !
         !USES:
-      !$acc routine seq
         use decompMod        , only : bounds_type
         use elm_varpar       , only : nlevsoi
         use elm_varpar       , only : max_patch_per_col
