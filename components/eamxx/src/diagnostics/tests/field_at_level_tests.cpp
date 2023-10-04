@@ -88,8 +88,8 @@ TEST_CASE("field_at_level")
     printf (" -> testing extraction at level: %s\n",lev_str.c_str());
 
     // Create and setup diagnostics
-    params_mid.set<std::string>("Field Level Location",lev_str);
-    params_int.set<std::string>("Field Level Location",lev_str);
+    params_mid.set<std::string>("vertical_location",lev_str);
+    params_int.set<std::string>("vertical_location",lev_str);
     auto diag_mid = std::make_shared<FieldAtLevel>(comm,params_mid);
     auto diag_int = std::make_shared<FieldAtLevel>(comm,params_int);
 

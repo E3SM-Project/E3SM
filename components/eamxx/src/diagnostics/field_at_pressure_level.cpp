@@ -12,38 +12,10 @@ FieldAtPressureLevel::
 FieldAtPressureLevel (const ekat::Comm& comm, const ekat::ParameterList& params)
  : AtmosphereDiagnostic(comm,params)
 {
-  const auto& f = params.get<Field>("Field");
-  const auto& fid = f.get_header().get_identifier();
-  m_field_name = f.name();
-
-  // Sanity checks
-  using namespace ShortFieldTagsNames;
-  const auto& layout = fid.get_layout();
-  EKAT_REQUIRE_MSG (layout.rank()>=2 && layout.rank()<=3,
-      "Error! Field rank not supported by FieldAtPressureLevel.\n"
-      " - field name: " + fid.name() + "\n"
-      " - field layout: " + to_string(layout) + "\n");
-  const auto tag = layout.tags().back();
-  EKAT_REQUIRE_MSG (tag==LEV || tag==ILEV,
-      "Error! FieldAtPressureLevel diagnostic expects a layout ending with 'LEV'/'ILEV' tag.\n"
-      " - field name  : " + fid.name() + "\n"
-      " - field layout: " + to_string(layout) + "\n");
-
-  // Note: you may ask why we can't just store f and be done, rather than go through the
-  // add_field infrastructure. Unfortunately, there are some checks in the base classes
-  // that require the diagnostic to have 1+ required fields. So we have to do this.
-  // TODO: one day we may make atm diags *not* inherit from atm process...
-  add_field<Required>(fid);
-
-  // We can also create the diagnostic already!
-  const auto& location = params.get<std::string>("Field Level Location");
-  const auto diag_field_name = m_field_name + "_at_" + location;
-
-  FieldIdentifier d_fid (diag_field_name,layout.strip_dim(tag),fid.get_units(),fid.get_grid_name());
-  m_diagnostic_output = Field(d_fid);
-  m_diagnostic_output.allocate_view();
+  m_field_name = m_params.get<std::string>("field_name");
 
   // Figure out the pressure value
+  const auto& location = m_params.get<std::string>("vertical_location");
   auto chars_start = location.find_first_not_of("0123456789.");
   EKAT_REQUIRE_MSG (chars_start!=0 && chars_start!=std::string::npos,
       "Error! Invalid string for pressure value for FieldAtPressureLevel.\n"
@@ -68,10 +40,45 @@ FieldAtPressureLevel (const ekat::Comm& comm, const ekat::ParameterList& params)
 
   m_mask_val = m_params.get<double>("mask_value",Real(std::numeric_limits<float>::max()/10.0));
 
-  // Create request for pressure field
-  const auto& gname = fid.get_grid_name();
+  m_diag_name = m_field_name + "_at_" + location;
+}
+
+void FieldAtPressureLevel::
+set_grids (const std::shared_ptr<const GridsManager> grids_manager)
+{
+  const auto& gname = m_params.get<std::string>("grid_name");
+  add_field<Required>(m_field_name,gname);
+
+  // We don't know yet which one we need
+  add_field<Required>("p_mid",gname);
+  add_field<Required>("p_int",gname);
+}
+
+void FieldAtPressureLevel::
+initialize_impl (const RunType /*run_type*/)
+{
+  const auto& f = get_field_in(m_field_name);
+  const auto& fid = f.get_header().get_identifier();
+
+  // Sanity checks
+  using namespace ShortFieldTagsNames;
+  const auto& layout = fid.get_layout();
+  EKAT_REQUIRE_MSG (layout.rank()>=2 && layout.rank()<=3,
+      "Error! Field rank not supported by FieldAtPressureLevel.\n"
+      " - field name: " + fid.name() + "\n"
+      " - field layout: " + to_string(layout) + "\n");
+  const auto tag = layout.tags().back();
+  EKAT_REQUIRE_MSG (tag==LEV || tag==ILEV,
+      "Error! FieldAtPressureLevel diagnostic expects a layout ending with 'LEV'/'ILEV' tag.\n"
+      " - field name  : " + fid.name() + "\n"
+      " - field layout: " + to_string(layout) + "\n");
+
+  // All good, create the diag output
+  FieldIdentifier d_fid (m_diag_name,layout.strip_dim(tag),fid.get_units(),fid.get_grid_name());
+  m_diagnostic_output = Field(d_fid);
+  m_diagnostic_output.allocate_view();
+
   m_pressure_name = tag==LEV ? "p_mid" : "p_int";
-  add_field<Required>(m_pressure_name, layout, ekat::units::Pa, gname);
   m_num_levs = layout.dims().back();
   auto num_cols = layout.dims().front();
 
@@ -85,6 +92,8 @@ FieldAtPressureLevel (const ekat::Comm& comm, const ekat::ParameterList& params)
 
   // Add a field representing the mask as extra data to the diagnostic field.
   auto nondim = ekat::units::Units::nondimensional();
+  const auto& gname = fid.get_grid_name();
+
   std::string mask_name = name() + " mask";
   FieldLayout mask_layout( {COL}, {num_cols});
   FieldIdentifier mask_fid (mask_name,mask_layout, nondim, gname);
@@ -98,10 +107,7 @@ FieldAtPressureLevel (const ekat::Comm& comm, const ekat::ParameterList& params)
   FieldIdentifier mask_src_fid ("mask_tmp",mask_src_layout, nondim, gname);
   m_mask_field = Field(mask_src_fid);
   m_mask_field.allocate_view();
-}
 
-void FieldAtPressureLevel::initialize_impl (const RunType /*run_type*/)
-{
   using stratts_t = std::map<std::string,std::string>;
 
   // Propagate any io string attribute from input field to diag field
