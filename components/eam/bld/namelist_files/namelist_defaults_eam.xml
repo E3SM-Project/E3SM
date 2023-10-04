@@ -1862,13 +1862,15 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <clubb_C14 phys="default"> 2.5D0      </clubb_C14>
 <clubb_tk1 phys="default"> 268.15D0   </clubb_tk1>
 <dust_emis_fact phys="default"> 12.8D0     </dust_emis_fact>
-<linoz_psc_T               > 198.0      </linoz_psc_T>
+<linoz_psc_T               > 198.0D0    </linoz_psc_T>
+<lght_no_prd_factor        > 5.0D0    </lght_no_prd_factor>
 <micro_mincdnc phys="default" microphys="mg2"> 10.D6      </micro_mincdnc>
 <nucleate_ice_subgrid phys="default" clubb_sgs="1" microphys="p3" >1.35D0</nucleate_ice_subgrid>
 <sscav_tuning phys="default" microphys="p3">.false.</sscav_tuning>
 <p3_mincdnc phys="default" microphys="p3"> 20.D6      </p3_mincdnc>
 <p3_wbf_coeff phys="default" clubb_sgs="1" microphys="p3"> 1.0      </p3_wbf_coeff>
 <p3_nc_autocon_expon  phys="default" clubb_sgs="1" microphys="p3">  -1.20D0   </p3_nc_autocon_expon>
+<n_so4_monolayers_pcage  phys="default" clubb_sgs="1" microphys="p3">  3.0D0   </n_so4_monolayers_pcage>
 <clubb_C1 phys="default"> 2.4        </clubb_C1>
 <clubb_C11 phys="default"> 0.70       </clubb_C11>
 <clubb_C11b phys="default"> 0.20       </clubb_C11b>
@@ -1892,7 +1894,7 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <seasalt_emis_scale phys="default" chem="linoz_mam4_resus_mom_soag"> 0.6D0      </seasalt_emis_scale>
 <seasalt_emis_scale phys="default" chem="superfast_mam4_resus_mom_soag"> 0.6D0  </seasalt_emis_scale>
 <seasalt_emis_scale phys="default" chem="chemuci_linozv3_mam5_vbs"> 0.55D0 </seasalt_emis_scale>
-<dms_emis_scale phys="default"> 1.0D0 </dms_emis_scale>
+<dms_emis_scale phys="default"> 2.0D0 </dms_emis_scale>
 <zmconv_trigdcape_ull phys="default"> .true.     </zmconv_trigdcape_ull>
 <zmconv_c0_lnd phys="default" clubb_sgs="1" microphys="p3"> 0.0020D0   </zmconv_c0_lnd>
 <zmconv_c0_ocn phys="default" clubb_sgs="1" microphys="p3"> 0.0020D0   </zmconv_c0_ocn>
