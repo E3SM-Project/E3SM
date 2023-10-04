@@ -52,7 +52,7 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
    * to be used here which we can then setup using the m_fields_nudge variable
    * For now we check if a field is intended to be nudged via the m_fields_nudge
    * vector, if it is we register it.  For now we are limited to just T_mid, qv,
-   * u and v
+   * U and V
    */
   if (std::find(m_fields_nudge.begin(),m_fields_nudge.end(),"T_mid") != m_fields_nudge.end()) {
     add_field<Updated>("T_mid", scalar3d_layout_mid, K, grid_name, ps);
@@ -60,11 +60,11 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   if (std::find(m_fields_nudge.begin(),m_fields_nudge.end(),"qv") != m_fields_nudge.end()) {
     add_field<Updated>("qv",    scalar3d_layout_mid, Q, grid_name, "tracers", ps);
   }
-  if (std::find(m_fields_nudge.begin(),m_fields_nudge.end(),"u") != m_fields_nudge.end()) {
-    add_field<Updated>("u",     scalar3d_layout_mid, m/s, grid_name, ps);
+  if (std::find(m_fields_nudge.begin(),m_fields_nudge.end(),"U") != m_fields_nudge.end()) {
+    add_field<Updated>("U",     scalar3d_layout_mid, m/s, grid_name, ps);
   }
-  if (std::find(m_fields_nudge.begin(),m_fields_nudge.end(),"v") != m_fields_nudge.end()) {
-    add_field<Updated>("v",     scalar3d_layout_mid, m/s, grid_name, ps);
+  if (std::find(m_fields_nudge.begin(),m_fields_nudge.end(),"V") != m_fields_nudge.end()) {
+    add_field<Updated>("V",     scalar3d_layout_mid, m/s, grid_name, ps);
   }
   /* ----------------------- WARNING --------------------------------*/
 
