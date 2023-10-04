@@ -20,19 +20,26 @@ function(get_netcdf_libs ncpath nfpath)
   # Get C libs
   if (EXISTS ${ncconfig})
     execute_process(COMMAND ${ncconfig} --libs OUTPUT_VARIABLE nclibs OUTPUT_STRIP_TRAILING_WHITESPACE)
-  else()
-    find_library(nclibs netcdf REQUIRED PATHS ${ncpath}/lib ${ncpath}/lib64)
+  endif()
+
+  # Fall back to find_library
+  if (NOT nclibs)
+    find_library(nclibs_temp netcdf REQUIRED PATHS ${ncpath}/lib ${ncpath}/lib64)
+    set(nclibs ${nclibs_temp})
   endif()
 
   # Get fortran libs
   if (EXISTS ${nfconfig})
     execute_process(COMMAND ${nfconfig} --flibs OUTPUT_VARIABLE nflibs OUTPUT_STRIP_TRAILING_WHITESPACE)
-  else()
-    find_library(nflibs netcdff REQUIRED PATHS ${nfpath}/lib ${nfpath}/lib64)
+  endif()
+
+  if (NOT nflibs)
+    find_library(nflibs_temp netcdff REQUIRED PATHS ${nfpath}/lib ${nfpath}/lib64)
+    set(nflibs ${nflibs_temp})
   endif()
 
   # C libs need to come last
-  set(GET_NETCDF_LIBS_RESULT "${nflibs} ${nclibs}" PARENT_SCOPE)
+  set(GET_NETCDF_LIBS_RESULT ${nflibs} ${nclibs} PARENT_SCOPE)
 endfunction()
 
 function(create_netcdf_target)
