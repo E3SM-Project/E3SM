@@ -16,7 +16,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__f
 # SCREAM imports
 from eamxx_buildnml_impl import get_valid_selectors, get_child, refine_type, \
         resolve_all_inheritances, gen_atm_proc_group, check_all_values
-from atm_manip import atm_config_chg_impl, unbuffer_changes, apply_buffer
+from atm_manip import apply_buffer
 
 from utils import ensure_yaml # pylint: disable=no-name-in-module
 ensure_yaml()
@@ -243,7 +243,7 @@ def evaluate_selectors(element, case, ez_selectors):
     CIME.utils.CIMEError: ERROR: child 'var1' element without selectors occurred after other parameter elements for this parameter
     """
 
-    child_values = {} # elem_name -> evaluated XML element
+    selected_child = {} # elem_name -> evaluated XML element
     children_to_remove = []
     for child in element:
         # Note: in our system, an XML element is either a "node" (has children)
@@ -259,7 +259,6 @@ def evaluate_selectors(element, case, ez_selectors):
             selectors = child.attrib
             if selectors:
                 all_match = True
-                is_first = False
                 for k, v in selectors.items():
                     # Metadata attributes are used only when it's time to generate the input files
                     if k in METADATA_ATTRIBS:
@@ -293,35 +292,45 @@ def evaluate_selectors(element, case, ez_selectors):
 
                     if val is None or val_re.match(val) is None:
                         all_match = False
+                        children_to_remove.append(child)
                         break
 
                 if all_match:
-                    if child_name in child_values:
-                        orig_child = child_values[child_name]
-                        orig_child.text = do_cime_vars(child_val, case)
+                    if child_name in selected_child.keys():
+                        orig_child = selected_child[child_name]
+                        orig_child.text = child.text
+                        children_to_remove.append(child)
 
                     else:
-                        is_first = True
-                        child_values[child_name] = child
-                        child.text = do_cime_vars(child_val, case)
+                        selected_child[child_name] = child
                         # Make a copy of selectors.keys(), since selectors=child.attrib,
                         # and we might delete an entry, causing the error
                         #    RuntimeError: dictionary changed size during iteration
-                        for k in list(selectors.keys()):
-                            if k not in METADATA_ATTRIBS:
-                                del child.attrib[k]
-
-                if not is_first:
-                    children_to_remove.append(child)
 
             else:
-                expect(child_name not in child_values,
+                expect(child_name not in selected_child,
                        "child '{}' element without selectors occurred after other parameter elements for this parameter".format(child_name))
-                child_values[child_name] = child
+                selected_child[child_name] = child
                 child.text = do_cime_vars(child_val, case)
 
     for child_to_remove in children_to_remove:
         element.remove(child_to_remove)
+
+###############################################################################
+def expand_cime_vars(element, case):
+###############################################################################
+    """
+    Expand all CIME variables inside an XML node text
+    """
+
+    for child in element:
+        # Note: in our system, an XML element is either a "node" (has children)
+        # or a "leaf" (has a value).
+        has_children = len(child) > 0
+        if has_children:
+            expand_cime_vars(child, case)
+        else:
+            child.text = do_cime_vars(child.text, case)
 
 ###############################################################################
 def _create_raw_xml_file_impl(case, xml):
@@ -468,17 +477,26 @@ def _create_raw_xml_file_impl(case, xml):
     get_child(xml,"generated_files",remove=True)
     selectors = get_valid_selectors(xml)
 
-    # 1. Resolve all inheritances, and evaluate all selectors
+    # 1. Evaluate all selectors
     evaluate_selectors(xml, case, selectors)
+
+    # 2. If there are changes in the SCREAM_ATMCHANGE_BUFFER, apply them
+    apply_buffer(case,xml)
+
+    # 3. Resolve all inheritances
     resolve_all_inheritances(xml)
 
-    # 2. Grab the atmosphere_processes macro list, with all the defaults
+    # 4. Expand any CIME var that appears inside XML nodes text
+    expand_cime_vars(xml,case)
+
+    # 5. Grab the atmosphere_processes macro list, with all the defaults
     atm_procs_defaults = get_child(xml,"atmosphere_processes_defaults",remove=True)
 
-    # 3. Get atm procs list
+    # 6. Get atm procs list
     atm_procs_list = get_child(atm_procs_defaults,"atm_procs_list",remove=True)
 
-    # 4. Form the nested list of atm procs needed, append to atmosphere_driver section
+
+    # 7. Form the nested list of atm procs needed, append to atmosphere_driver section
     atm_procs = gen_atm_proc_group(atm_procs_list.text, atm_procs_defaults)
     atm_procs.tag = "atmosphere_processes"
     xml.append(atm_procs)
@@ -489,29 +507,28 @@ def _create_raw_xml_file_impl(case, xml):
 def create_raw_xml_file(case, caseroot):
 ###############################################################################
     """
-    Create the raw $case/namelist_scream.xml file. This file is intended to be
-    modified by users via the atmchange script if they want
+    Create the $case/namelist_scream.xml file. This file is intended to be
+    modified by users via the atmchange script if they want,
     to make tweaks to input files (yaml and/or nml).
+    Note: users calls to atmchange do two things: 1) they add the change
+          to the SCREAM_ATMCHANGE_BUFFER case variable, and 2) they
+          call this function, which regenerates the scream xml file from
+          the defaults, applyin all buffered changes.
     """
-    src = os.path.join(case.get_value("SRCROOT"), "components/eamxx/cime_config/namelist_defaults_scream.xml")
-
-    # Some atmchanges will require structural changes to the XML file and must
-    # be processed early by treating them as if they were made to the defaults file.
-    atmchgs = unbuffer_changes(case)[0]
-    with open(src, "r") as fd:
-        defaults = ET.parse(fd).getroot()
-        for change in atmchgs:
-            atm_config_chg_impl(defaults, change, all_matches=True, missing_ok=True)
-
-        raw_xml = _create_raw_xml_file_impl(case, defaults)
-
     raw_xml_file = os.path.join(caseroot, "namelist_scream.xml")
     if os.path.exists(raw_xml_file) and case.get_value("SCREAM_HACK_XML"):
         print("{} already exists and SCREAM_HACK_XML is on, will not overwrite. Remove to regenerate".format(raw_xml_file))
 
     else:
-        if os.path.exists(raw_xml_file):
-            print("Regenerating {}. Manual edits will be lost.".format(raw_xml_file))
+        print("Regenerating {}. Manual edits will be lost.".format(raw_xml_file))
+
+        src = os.path.join(case.get_value("SRCROOT"), "components/eamxx/cime_config/namelist_defaults_scream.xml")
+
+        # Some atmchanges will require structural changes to the XML file and must
+        # be processed early by treating them as if they were made to the defaults file.
+        with open(src, "r") as fd:
+            defaults = ET.parse(fd).getroot()
+            raw_xml = _create_raw_xml_file_impl(case, defaults)
 
         check_all_values(raw_xml)
 
@@ -522,10 +539,6 @@ def create_raw_xml_file(case, caseroot):
             pretty_xml = os.linesep.join([s for s in pretty_xml.splitlines()
                                           if s.strip()])
             fd.write(pretty_xml)
-
-        # Now that we have our namelist_scream.xml file, we can apply buffered
-        # atmchange requests.
-        apply_buffer(case)
 
 ###############################################################################
 def convert_to_dict(element):
@@ -820,7 +833,6 @@ def do_cime_vars_on_yaml_output_files(case, caseroot):
 
     # Now update the output yaml files entry, and dump the new content
     # of the scream input to YAML file
-    print ("out list: {}".format(",".join(output_yaml_files)))
     scream_input["Scorpio"]["output_yaml_files"] = refine_type(",".join(output_yaml_files),"array(string)")
     with open(scream_input_file, "w") as fd:
         fd.write(

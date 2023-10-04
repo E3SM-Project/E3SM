@@ -141,7 +141,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       so it must be of the form (a,b,...).
       NOTE: *CANNOT* be changed.
     -->
-    <atm_procs_list type="array(strring)">sc_import,homme,physics,sc_export</atm_procs_list>
+    <atm_procs_list type="array(string)">sc_import,homme,physics,sc_export</atm_procs_list>
 
     <!-- Basic options for each atm process -->
     <atm_proc_base>
