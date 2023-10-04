@@ -642,10 +642,16 @@ module li_advection
                   GLfluxSign = -1.0_RKIND
                   theGroundedCell = iCell2
                endif
-               do k = 1, nVertLevels
-                  thicknessFluxEdge = layerNormalVelocity(k,iEdge) * dvEdge(iEdge) * layerThicknessEdge(k,iEdge)
-                  fluxAcrossGroundingLine(iEdge) = fluxAcrossGroundingLine(iEdge) + GLfluxSign * thicknessFluxEdge / dvEdge(iEdge)
-               enddo
+               if (trim(config_thickness_advection) == 'fct') then
+                  do k = 1, nVertLevels
+                     fluxAcrossGroundingLine(iEdge) = fluxAcrossGroundingLine(iEdge) + GLfluxSign * layerThicknessEdgeFlux(k,iEdge)
+                  enddo
+               else
+                  do k = 1, nVertLevels
+                     thicknessFluxEdge = layerNormalVelocity(k,iEdge) * dvEdge(iEdge) * layerThicknessEdge(k,iEdge)
+                     fluxAcrossGroundingLine(iEdge) = fluxAcrossGroundingLine(iEdge) + GLfluxSign * thicknessFluxEdge / dvEdge(iEdge)
+                  enddo
+               endif
                ! assign to grounded cell in fluxAcrossGroundingLineOnCells
                if (thickness(theGroundedCell) <= 0.0_RKIND) then
                   ! This should never be the case, but checking to avoid possible divide by zero
