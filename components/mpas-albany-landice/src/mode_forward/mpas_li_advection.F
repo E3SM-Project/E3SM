@@ -369,6 +369,7 @@ module li_advection
 
       ! save old copycellMask for determining cells changing from grounded to floating and vice versa
       cellMaskTemporaryField % array(:) = cellMask(:)
+      layerThicknessEdgeFlux(:,:) = 0.0_RKIND
 
       !-----------------------------------------------------------------
       ! Horizontal transport of thickness and tracers
@@ -414,7 +415,6 @@ module li_advection
              (trim(config_tracer_advection) .eq. 'fct' ) ) then
             allocate(tend(nTracers,nVertLevels,nCells+1))
             tend(:,:,:) = 0.0_RKIND
-            layerThicknessEdgeFlux(:,:) = 0.0_RKIND
          endif
 
          ! Transport thickness and tracers
@@ -648,8 +648,8 @@ module li_advection
                   enddo
                else
                   do k = 1, nVertLevels
-                     thicknessFluxEdge = layerNormalVelocity(k,iEdge) * dvEdge(iEdge) * layerThicknessEdge(k,iEdge)
-                     fluxAcrossGroundingLine(iEdge) = fluxAcrossGroundingLine(iEdge) + GLfluxSign * thicknessFluxEdge / dvEdge(iEdge)
+                     layerThicknessEdgeFlux(k,iEdge) = layerNormalVelocity(k,iEdge) * layerThicknessEdge(k,iEdge)
+                     fluxAcrossGroundingLine(iEdge) = fluxAcrossGroundingLine(iEdge) + GLfluxSign * layerThicknessEdgeFlux(k,iEdge)
                   enddo
                endif
                ! assign to grounded cell in fluxAcrossGroundingLineOnCells
