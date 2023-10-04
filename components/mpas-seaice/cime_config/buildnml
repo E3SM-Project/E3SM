@@ -436,7 +436,7 @@ def buildnml(case, caseroot, compname):
             lines.append('<streams>')
             lines.append('<immutable_stream name="mesh"')
             lines.append('                  type="none"')
-            if ice_grid.startswith("oRRS1"):
+            if ice_grid.startswith("oRRS1") or ice_grid.startswith("FRIS"):
                 lines.append('                  io_type="pnetcdf,cdf5"')
             else:
                 lines.append('                  io_type="{}"'.format(ice_pio_typename))
@@ -445,7 +445,7 @@ def buildnml(case, caseroot, compname):
             lines.append('')
             lines.append('<immutable_stream name="input"')
             lines.append('                  type="input"')
-            if ice_grid.startswith("oRRS1"):
+            if ice_grid.startswith("oRRS1") or ice_grid.startswith("FRIS"):
                 lines.append('                  io_type="pnetcdf,cdf5"')
             else:
                 lines.append('                  io_type="{}"'.format(ice_pio_typename))
@@ -467,7 +467,7 @@ def buildnml(case, caseroot, compname):
             lines.append('')
             lines.append('<immutable_stream name="restart"')
             lines.append('                  type="input;output"')
-            if ice_grid.startswith("oRRS1"):
+            if ice_grid.startswith("oRRS1") or ice_grid.startswith("FRIS"):
                 lines.append('                  io_type="pnetcdf,cdf5"')
             else:
                 lines.append('                  io_type="{}"'.format(ice_pio_typename))
@@ -483,7 +483,7 @@ def buildnml(case, caseroot, compname):
             if ice_ic_mode == 'spunup':
                 lines.append('<immutable_stream name="restart_ic"')
                 lines.append('                  type="input"')
-                if ice_grid.startswith("oRRS1"):
+                if ice_grid.startswith("oRRS1") or ice_grid.startswith("FRIS"):
                     lines.append('                  io_type="pnetcdf,cdf5"')
                 else:
                     lines.append('                  io_type="{}"'.format(ice_pio_typename))
