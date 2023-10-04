@@ -458,7 +458,7 @@ module li_time_integration_fe_rk
 
 ! Finalize budget updates
       sfcMassBalApplied(:) = sfcMassBalAccum(:)
-      groundedSfcMassBalApplied(:) = sfcMassBalAccum(:)
+      groundedSfcMassBalApplied(:) = groundedSfcMassBalAccum(:)
       basalMassBalApplied(:) = basalMassBalAccum(:)
       groundedBasalMassBalApplied(:) = groundedBasalMassBalAccum(:)
       floatingBasalMassBalApplied(:) = floatingBasalMassBalAccum(:)
