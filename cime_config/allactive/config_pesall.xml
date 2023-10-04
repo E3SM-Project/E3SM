@@ -265,7 +265,7 @@
   <grid name="a%ne30np4">
     <mach name="pm-cpu|alvarez">
       <pes compset="JRA_ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV" pesize="any">
-        <comment>"pm-cpu 4 nodes, 256 partition, 128x1, c8"</comment>
+        <comment>"pm-cpu 4 nodes, 256 partition, 128x1"</comment>
         <ntasks>
           <ntasks_atm>-4</ntasks_atm>
           <ntasks_lnd>-4</ntasks_lnd>
@@ -274,11 +274,8 @@
           <ntasks_ocn>-4</ntasks_ocn>
           <ntasks_glc>-1</ntasks_glc>
           <ntasks_wav>-1</ntasks_wav>
-          <ntasks_cpl>64</ntasks_cpl>
+          <ntasks_cpl>-4</ntasks_cpl>
         </ntasks>
-        <pstrid>
-          <pstrid_cpl>8</pstrid_cpl>
-        </pstrid>
       </pes>
     </mach>
     <mach name="gcp12">
@@ -552,11 +549,11 @@
   <grid name="a%ne120np4">
     <mach name="pm-cpu|alvarez">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SWAV.*" pesize="any">
-        <comment>ne120-wcycl on 42 nodes 128x1c8 ~0.7 sypd</comment>
+        <comment>ne120-wcycl on 42 nodes 128x1 ~0.7 sypd</comment>
         <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
         <ntasks>
           <ntasks_atm>3072</ntasks_atm>
-          <ntasks_cpl>384</ntasks_cpl>
+          <ntasks_cpl>3072</ntasks_cpl>
           <ntasks_ice>3072</ntasks_ice>
           <ntasks_lnd>2560</ntasks_lnd>
           <ntasks_rof>512</ntasks_rof>
@@ -584,9 +581,6 @@
           <rootpe_glc>0</rootpe_glc>
           <rootpe_wav>0</rootpe_wav>
         </rootpe>
-        <pstrid>
-          <pstrid_cpl>8</pstrid_cpl>
-        </pstrid>
       </pes>
     </mach>
     <mach name="theta">
@@ -1252,7 +1246,7 @@
     </mach>
     <mach name="pm-cpu|alvarez">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="any">
-        <comment> -compset A_WCYCL* -res ne30pg2_oECv3 with MPASO on 7 nodes, 128x1 c8 </comment>
+        <comment> -compset A_WCYCL* -res ne30pg2_oECv3 with MPASO on 7 nodes, 128x1 </comment>
         <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
         <ntasks>
           <ntasks_atm>640</ntasks_atm>
@@ -1260,7 +1254,7 @@
           <ntasks_rof>640</ntasks_rof>
           <ntasks_ice>640</ntasks_ice>
           <ntasks_ocn>256</ntasks_ocn>
-          <ntasks_cpl>80</ntasks_cpl>
+          <ntasks_cpl>640</ntasks_cpl>
         </ntasks>
         <nthrds>
           <nthrds_atm>1</nthrds_atm>
@@ -1278,12 +1272,9 @@
           <rootpe_ocn>640</rootpe_ocn>
           <rootpe_cpl>0</rootpe_cpl>
         </rootpe>
-        <pstrid>
-          <pstrid_cpl>8</pstrid_cpl>
-        </pstrid>
       </pes>
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="L">
-        <comment> -compset A_WCYCL* -res ne30pg2_oECv3 with MPASO on 58 nodes, ~20 sypd</comment>
+        <comment> -compset A_WCYCL* -res ne30pg2_oECv3 with MPASO on 58 nodes, 128x1, ~20 sypd</comment>
         <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
         <ntasks>
           <ntasks_atm>5504</ntasks_atm>
@@ -1291,7 +1282,7 @@
           <ntasks_rof>256</ntasks_rof>
           <ntasks_ice>5248</ntasks_ice>
           <ntasks_ocn>1920</ntasks_ocn>
-          <ntasks_cpl>688</ntasks_cpl>
+          <ntasks_cpl>5504</ntasks_cpl>
         </ntasks>
         <nthrds>
           <nthrds_atm>1</nthrds_atm>
@@ -1309,9 +1300,6 @@
           <rootpe_ocn>5504</rootpe_ocn>
           <rootpe_cpl>0</rootpe_cpl>
         </rootpe>
-        <pstrid>
-          <pstrid_cpl>8</pstrid_cpl>
-        </pstrid>
       </pes>
     </mach>
   </grid>
@@ -1757,7 +1745,7 @@
     </mach>
     <mach name="pm-cpu|alvarez">
       <pes compset="any" pesize="any">
-        <comment>"pm-cpu ne30np4 and ne30np4.pg2 2 nodes 1 thread, 128x1 c8"</comment>
+        <comment>"pm-cpu ne30np4 and ne30np4.pg2 2 nodes 1 thread, 128x1"</comment>
         <ntasks>
           <ntasks_atm>-2</ntasks_atm>
           <ntasks_lnd>-2</ntasks_lnd>
@@ -1766,11 +1754,8 @@
           <ntasks_ocn>-2</ntasks_ocn>
           <ntasks_glc>-2</ntasks_glc>
           <ntasks_wav>-2</ntasks_wav>
-          <ntasks_cpl>32</ntasks_cpl>
+          <ntasks_cpl>-2</ntasks_cpl>
         </ntasks>
-        <pstrid>
-          <pstrid_cpl>8</pstrid_cpl>
-        </pstrid>
       </pes>
     </mach>
     <mach name="crusher-scream-gpu">
@@ -2072,14 +2057,14 @@
     </mach>
     <mach name="pm-cpu|alvarez">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="any">
-        <comment> 8 nodes, 128x1 c8</comment>
+        <comment> 8 nodes, 128x1</comment>
         <ntasks>
           <ntasks_atm>640</ntasks_atm>
           <ntasks_lnd>640</ntasks_lnd>
           <ntasks_rof>640</ntasks_rof>
           <ntasks_ice>640</ntasks_ice>
           <ntasks_ocn>384</ntasks_ocn>
-          <ntasks_cpl>80</ntasks_cpl>
+          <ntasks_cpl>640</ntasks_cpl>
         </ntasks>
         <rootpe>
           <rootpe_atm>0</rootpe_atm>
@@ -2097,9 +2082,6 @@
           <nthrds_ocn>1</nthrds_ocn>
           <nthrds_cpl>1</nthrds_cpl>
         </nthrds>
-        <pstrid>
-          <pstrid_cpl>8</pstrid_cpl>
-        </pstrid>
       </pes>
     </mach>
   </grid>
