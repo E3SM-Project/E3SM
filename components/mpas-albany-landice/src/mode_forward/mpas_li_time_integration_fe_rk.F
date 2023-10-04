@@ -36,6 +36,7 @@ module li_time_integration_fe_rk
    use li_setup
    use li_constants
    use li_mesh
+   use li_mask
 
    implicit none
    private
@@ -82,6 +83,8 @@ module li_time_integration_fe_rk
       use li_subglacial_hydro
       use li_velocity
       use li_bedtopo
+      use li_mask
+      use li_advection, only: li_grounded_to_floating
 
       !-----------------------------------------------------------------
       ! input variables
@@ -104,7 +107,7 @@ module li_time_integration_fe_rk
       !-----------------------------------------------------------------
       type (block_type), pointer :: block
       integer :: err_tmp
-      type (mpas_pool_type), pointer :: geometryPool, thermalPool, meshPool
+      type (mpas_pool_type), pointer :: geometryPool, thermalPool, meshPool, velocityPool
       
       logical, pointer :: config_restore_calving_front
       logical, pointer :: config_calculate_damage
@@ -123,13 +126,18 @@ module li_time_integration_fe_rk
                                                   basalMassBalApplied, &
                                                   groundedSfcMassBalApplied, &
                                                   groundedBasalMassBalApplied, &
-                                                  floatingBasalMassBalApplied
+                                                  floatingBasalMassBalApplied, &
+                                                  fluxAcrossGroundingLine, &
+                                                  fluxAcrossGroundingLineOnCells, &
+                                                  groundedToFloatingThickness
       real (kind=RKIND), dimension(:), allocatable :: sfcMassBalAccum, &
                                                       basalMassBalAccum, &
                                                       groundedSfcMassBalAccum, &
                                                       groundedBasalMassBalAccum, &
-                                                      floatingBasalMassBalAccum
+                                                      floatingBasalMassBalAccum, &
+                                                      fluxAcrossGroundingLineAccum
       real (kind=RKIND), dimension(:), pointer :: layerCenterSigma, layerThicknessFractions
+      integer, dimension(:), pointer :: cellMaskPrev  ! cell mask before advection
       real (kind=RKIND), dimension(:,:), allocatable :: layerThicknessPrev, &
                                                         layerThicknessTmp, &
                                                         temperaturePrev, &
@@ -139,8 +147,10 @@ module li_time_integration_fe_rk
                                                         damage3d, &
                                                         damage3dPrev
       integer, pointer :: nVertLevels
-      integer, pointer :: nCells
-      real (kind=RKIND), pointer :: deltat
+      integer, pointer :: nCells, nEdges
+      integer :: iCell1, iCell2, iEdge, theGroundedCell
+      integer, dimension(:), pointer :: edgeMask, cellMask
+      real (kind=RKIND), pointer :: deltat, config_ice_density
       real (kind=RKIND) :: deltatFull
       real (kind=RKIND), dimension(4) :: rkSubstepWeights
       real (kind=RKIND), dimension(4) :: rkSSPweights
@@ -158,16 +168,22 @@ module li_time_integration_fe_rk
       call mpas_pool_get_config(liConfigs, 'config_rk_order', config_rk_order)
       call mpas_pool_get_config(liConfigs, 'config_rk3_stages', config_rk3_stages)
       call mpas_pool_get_config(liConfigs, 'config_time_integration', config_time_integration)
+      call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
 
       call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
       call mpas_pool_get_subpool(domain % blocklist % structs, 'thermal', thermalPool)
       call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'velocity', velocityPool)
 
       call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
       call mpas_pool_get_array(meshPool, 'deltat', deltat)
       call mpas_pool_get_array(meshPool, 'layerCenterSigma', layerCenterSigma)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+
+      call mpas_pool_get_array(velocityPool, 'fluxAcrossGroundingLineOnCells', fluxAcrossGroundingLineOnCells)
+      call mpas_pool_get_array(geometryPool, 'groundedToFloatingThickness', groundedToFloatingThickness)
 
       allocate(temperaturePrev(nVertLevels, nCells+1))
       allocate(enthalpyPrev(nVertLevels, nCells+1))
@@ -177,12 +193,14 @@ module li_time_integration_fe_rk
       allocate(damage3d(nVertLevels, nCells+1))
       allocate(passiveTracer3dPrev(nVertLevels, nCells+1))
       allocate(passiveTracer3d(nVertLevels, nCells+1))
+      allocate(cellMaskPrev(nCells+1))
 
       allocate(sfcMassBalAccum(nCells+1))
       allocate(basalMassBalAccum(nCells+1))
       allocate(groundedSfcMassBalAccum(nCells+1))
       allocate(groundedBasalMassBalAccum(nCells+1))
       allocate(floatingBasalMassBalAccum(nCells+1))
+      allocate(fluxAcrossGroundingLineAccum(nEdges+1))
 
       temperaturePrev(:,:) = 0.0_RKIND
       enthalpyPrev(:,:) = 0.0_RKIND
@@ -191,6 +209,7 @@ module li_time_integration_fe_rk
       damage3dPrev(:,:) = 0.0_RKIND
       damage3d(:,:) = 0.0_RKIND
       passiveTracer3dPrev(:,:) = 0.0_RKIND
+      cellMaskPrev(:) = 0
       passiveTracer3d(:,:) = 0.0_RKIND
 
       sfcMassBalAccum(:) = 0.0_RKIND
@@ -198,6 +217,7 @@ module li_time_integration_fe_rk
       groundedSfcMassBalAccum(:) = 0.0_RKIND
       groundedBasalMassBalAccum(:) = 0.0_RKIND
       floatingBasalMassBalAccum(:) = 0.0_RKIND
+      fluxAcrossGroundingLineAccum(:) = 0.0_RKIND
 
 ! === Prepare for advection (including CFL checks) ===========
 ! This has to come first currently, because it sets the time step!
@@ -249,6 +269,7 @@ module li_time_integration_fe_rk
       call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness)
       call mpas_pool_get_array(geometryPool, 'passiveTracer2d', passiveTracer2d)
       call mpas_pool_get_array(geometryPool, 'damage', damage)
+      call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 
       call mpas_pool_get_array(thermalPool, 'temperature', temperature)
       call mpas_pool_get_array(thermalPool, 'enthalpy', enthalpy)
@@ -257,6 +278,7 @@ module li_time_integration_fe_rk
       temperaturePrev(:,:) = temperature(:,:)
       enthalpyPrev(:,:) =  enthalpy(:,:)
       layerThicknessPrev(:,:) = layerThickness(:,:)
+      cellMaskPrev(:) = cellMask(:)
       do k = 1, nVertLevels
          damage3dPrev(k,:) = damage(:)
          passiveTracer3dPrev(k,:) = passiveTracer2d(:)
@@ -427,7 +449,13 @@ module li_time_integration_fe_rk
             enddo
 
          endif
-        
+       
+         call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+         err = ior(err, err_tmp)
+
+         call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+         call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
+ 
          ! === Ensure damage is within bounds before velocity solve ===
          if ( config_finalize_damage_after_advection ) then
              call mpas_timer_start("finalize damage")
@@ -441,13 +469,17 @@ module li_time_integration_fe_rk
          call mpas_pool_get_array(geometryPool, 'basalMassBalApplied', basalMassBalApplied)
          call mpas_pool_get_array(geometryPool, 'floatingBasalMassBalApplied', floatingBasalMassBalApplied)
          call mpas_pool_get_array(geometryPool, 'groundedBasalMassBalApplied', groundedBasalMassBalApplied)
+         call mpas_pooL_get_array(velocityPool, 'fluxAcrossGroundingLine', fluxAcrossGroundingLine)
+         call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+
          ! update budgets
          sfcMassBalAccum = sfcMassBalAccum + rkTendWeights(rkStage) * sfcMassBalApplied
          groundedSfcMassBalAccum = groundedSfcMassBalAccum + rkTendWeights(rkStage) * groundedSfcMassBalApplied
          basalMassBalAccum = basalMassBalAccum + rkTendWeights(rkStage) * basalMassBalApplied
          groundedBasalMassBalAccum = groundedBasalMassBalAccum + rkTendWeights(rkStage) * groundedBasalMassBalApplied
          floatingBasalMassBalAccum = floatingBasalMassBalAccum + rkTendWeights(rkStage) * floatingBasalMassBalApplied
-         
+         fluxAcrossGroundingLineAccum = fluxAcrossGroundingLineAccum + rkTendWeights(rkStage) * fluxAcrossGroundingLine
+
          ! Update velocity for each RK step
          ! === Solve Velocity =====================
          call li_velocity_solve(domain, solveVelo=.true., err=err_tmp)
@@ -457,12 +489,34 @@ module li_time_integration_fe_rk
       enddo
 
 ! Finalize budget updates
+      ! Calculate volume converted from grounded to floating
+      ! This needs to be determined after SMB/BMB are applied because those can change floating/grounded state
+      call li_grounded_to_floating(cellMaskPrev, cellMask, thickness, groundedToFloatingThickness, nCells)
       sfcMassBalApplied(:) = sfcMassBalAccum(:)
       groundedSfcMassBalApplied(:) = groundedSfcMassBalAccum(:)
       basalMassBalApplied(:) = basalMassBalAccum(:)
       groundedBasalMassBalApplied(:) = groundedBasalMassBalAccum(:)
       floatingBasalMassBalApplied(:) = floatingBasalMassBalAccum(:)
+      fluxAcrossGroundingLine(:) = fluxAcrossGroundingLineAccum(:)
       
+      fluxAcrossGroundingLineOnCells(:) = 0.0_RKIND
+      do iEdge = 1, nEdges
+         if (li_mask_is_grounding_line(edgeMask(iEdge))) then
+            iCell1 = cellsOnEdge(1,iEdge)
+            iCell2 = cellsOnEdge(2,iEdge)
+            if (li_mask_is_grounded_ice(cellMask(iCell1))) then
+               theGroundedCell = iCell1
+            else
+               theGroundedCell = iCell2
+            endif
+            if ( thickness(theGroundedCell) > 0.0_RKIND ) then
+               fluxAcrossGroundingLineOnCells(theGroundedCell) = fluxAcrossGroundingLineOnCells(theGroundedCell) + &
+                       fluxAcrossGroundingLine(iEdge) / thickness(theGroundedCell) * config_ice_density  ! adjust to correct units
+            else
+               fluxAcrossGroundingLineOnCells(theGroundedCell) = 0.0_RKIND
+            endif
+         endif
+      enddo ! edges
 ! Reset time step to full length after RK loop
       deltat = deltatFull
 
@@ -515,11 +569,13 @@ module li_time_integration_fe_rk
       deallocate(damage3d)
       deallocate(passiveTracer3dPrev)
       deallocate(passiveTracer3d)
+      deallocate(cellMaskPrev)
       deallocate(sfcMassBalAccum)
       deallocate(basalMassBalAccum)
       deallocate(groundedSfcMassBalAccum)
       deallocate(groundedBasalMassBalAccum)
       deallocate(floatingBasalMassBalAccum)
+      deallocate(fluxAcrossGroundingLineAccum)
    !--------------------------------------------------------------------
    end subroutine li_time_integrator_forwardeuler_rungekutta
 

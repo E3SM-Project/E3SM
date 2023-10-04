@@ -46,7 +46,8 @@ module li_advection
    !--------------------------------------------------------------------
    public :: li_advection_thickness_tracers, &
              li_layer_normal_velocity, &
-             li_update_geometry
+             li_update_geometry, &
+             li_grounded_to_floating
 
    !--------------------------------------------------------------------
    !
@@ -631,7 +632,7 @@ module li_advection
 
          ! Calculate volume converted from grounded to floating
          ! This needs to be determined after SMB/BMB are applied because those can change floating/grounded state
-         call grounded_to_floating(cellMaskTemporaryField % array, cellMask, thickness, groundedToFloatingThickness, nCells)
+         call li_grounded_to_floating(cellMaskTemporaryField % array, cellMask, thickness, groundedToFloatingThickness, nCells)
 
          ! Calculate flux across grounding line
          ! Do this after new thickness & mask have been calculated, including SMB/BMB
@@ -2107,7 +2108,7 @@ module li_advection
 
     end subroutine vertical_remap
 
-    subroutine grounded_to_floating(cellMaskOrig, cellMaskNew, thicknessNew, groundedToFloatingThickness, nCells)
+    subroutine li_grounded_to_floating(cellMaskOrig, cellMaskNew, thicknessNew, groundedToFloatingThickness, nCells)
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
@@ -2151,7 +2152,7 @@ module li_advection
         endif
       enddo
 
-    end subroutine grounded_to_floating
+    end subroutine li_grounded_to_floating
 
 !***********************************************************************
 
