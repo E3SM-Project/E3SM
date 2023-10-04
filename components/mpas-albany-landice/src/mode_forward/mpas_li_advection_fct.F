@@ -65,7 +65,7 @@ module li_tracer_advection_fct
                                         tend, tracers, layerThickness, &
                                         normalThicknessFlux, w, dt,    &
                                         nTracers, &
-                                        activeTracerHorizontalAdvectionEdgeFlux, &
+                                        layerThicknessEdgeFlux, &
                                         computeBudgets)!{{{
       use li_mesh
       !-----------------------------------------------------------------
@@ -74,8 +74,8 @@ module li_tracer_advection_fct
 
       real (kind=RKIND), dimension(:,:,:), intent(inout) :: &
          tend    !< [inout] Tracer tendency to which advection added
-      real (kind=RKIND), dimension(:,:,:), intent(inout), optional :: &
-         activeTracerHorizontalAdvectionEdgeFlux  !< [inout] used to compute higher order normalThicknessFlux
+      real (kind=RKIND), dimension(:,:), intent(inout), optional :: &
+         layerThicknessEdgeFlux  !< [inout] used to compute higher order normalThicknessFlux
       !-----------------------------------------------------------------
       ! Input parameters
       !-----------------------------------------------------------------
@@ -462,18 +462,19 @@ module li_tracer_advection_fct
 #endif
         ! Compute budget and monotonicity diagnostics if needed
 
-        ! Use activeTracerHorizontalAdvectionEdgeFlux from the call to fct for thickness
+        ! Use layerThicknessEdgeFlux from the call to fct for thickness
         ! advection as the higher-order normalThicknessFlux for fct tracer advection.
-        if (present(activeTracerHorizontalAdvectionEdgeFlux)) then
+        if (present(layerThicknessEdgeFlux)) then
             do iEdge = 1,nEdges
             do k = 1, nVertLevels
                ! Save u*h*T flux on edge for analysis. This variable will be
                ! divided by h at the end of the time step.
+               ! average normal velocities from layer interfaces to layer midpoints
                if (dvEdge(iEdge) > 0.0_RKIND) then
-                  activeTracerHorizontalAdvectionEdgeFlux(iTracer,k,iEdge) = &
+                  layerThicknessEdgeFlux(k,iEdge) = &
                       (lowOrderFlx(k,iEdge) + highOrderFlx(k,iEdge))/dvEdge(iEdge)
                else
-                  activeTracerHorizontalAdvectionEdgeFlux(iTracer,k,iEdge) = 0.0_RKIND
+                  layerThicknessEdgeFlux(k,iEdge) = 0.0_RKIND
                endif
             enddo
             enddo
