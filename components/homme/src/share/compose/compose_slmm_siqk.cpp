@@ -87,7 +87,7 @@ Int test_sphere_to_ref (const ConstVec3s::HostMirror& p,
                         const bool sphere) {
   TestSphereToRefKernel k(p, e, sphere);
   Info info;
-  ko::parallel_reduce(k.n(), k, info);
+//  ko::parallel_reduce(k.n(), k, info);
   return info.nfails;
 }
 

@@ -22,8 +22,10 @@ typedef Kokkos::Experimental::HIP ComposeGpuExeSpace;
 typedef Kokkos::Experimental::HIPSpace ComposeGpuSpace;
 # endif
 # if defined KOKKOS_ENABLE_SYCL
-typedef Kokkos::Experimental::SYCL ComposeGpuExeSpace;
-typedef Kokkos::Experimental::SYCL> ComposeGpuSpace;
+//typedef Kokkos::Experimental::SYCL ComposeGpuExeSpace;
+//typedef Kokkos::Experimental::SYCL ComposeGpuSpace;
+typedef Kokkos::DefaultExecutionSpace::execution_space ComposeGpuExeSpace;
+typedef Kokkos::DefaultExecutionSpace::memory_space ComposeGpuSpace;
 # endif
 #endif
 
