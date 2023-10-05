@@ -3902,7 +3902,7 @@ contains
         ! Check input parameters :
         !----------------------------------   
 
-        do n = rtmCtl%begr, rtmCTL%endr
+       do n = rtmCtl%begr, rtmCTL%endr
           !if ( Tunit%mask(n) .eq. 1 .or. Tunit%mask(n) .eq. 2 ) then    ! 1-- Land; 2-- Basin outlet.
           if ( rtmCTL%mask(n) .eq. 1 .or. rtmCTL%mask(n) .eq. 3 ) then   ! 1--Land; 3--Basin outlet (downstream is ocean).
 
