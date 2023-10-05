@@ -18,6 +18,31 @@ ATMCHANGE_ALL = "__ALL__"
 ATMCHANGE_BUFF_XML_NAME = "SCREAM_ATMCHANGE_BUFFER"
 
 ###############################################################################
+def apply_atm_procs_list_changes_from_buffer(case, xml):
+###############################################################################
+    atmchg_buffer = case.get_value(ATMCHANGE_BUFF_XML_NAME)
+    if atmchg_buffer:
+        atmchgs, atmchgs_all = unbuffer_changes(case)
+
+        expect (len(atmchgs)==len(atmchgs_all),"Failed to unbuffer changes from SCREAM_ATMCHANGE_BUFFER")
+        for chg, to_all in zip(atmchgs,atmchgs_all):
+            if "atm_procs_list" in chg:
+                expect (not to_all, "Makes no sense to change 'atm_procs_list' for all groups")
+                atm_config_chg_impl(xml, chg, all_matches=false)
+
+###############################################################################
+def apply_non_atm_procs_list_changes_from_buffer(case, xml):
+###############################################################################
+    atmchg_buffer = case.get_value(ATMCHANGE_BUFF_XML_NAME)
+    if atmchg_buffer:
+        atmchgs, atmchgs_all = unbuffer_changes(case)
+
+        expect (len(atmchgs)==len(atmchgs_all),"Failed to unbuffer changes from SCREAM_ATMCHANGE_BUFFER")
+        for chg, to_all in zip(atmchgs,atmchgs_all):
+            if "atm_procs_list" not in chg:
+                atm_config_chg_impl(xml, chg, all_matches=to_all)
+
+###############################################################################
 def buffer_changes(changes, all_matches=False):
 ###############################################################################
     """
@@ -50,23 +75,6 @@ def unbuffer_changes(case):
 
     return atmchgs, atmchgs_all
 
-###############################################################################
-def apply_buffer(case,xml_root):
-###############################################################################
-    """
-    From a case, retrieve the buffered changes and re-apply them via atmchange
-    """
-    atmchg_buffer = case.get_value(ATMCHANGE_BUFF_XML_NAME)
-    if atmchg_buffer:
-        atmchgs, atmchgs_all = unbuffer_changes(case)
-
-        expect (len(atmchgs)==len(atmchgs_all),"Failed to unbuffer changes from SCREAM_ATMCHANGE_BUFFER")
-        for chg, to_all in zip(atmchgs,atmchgs_all):
-            atm_config_chg_impl(xml_root, chg, all_matches=to_all)
-            # Annoying as it may be, we must resolve all inheritances.
-            # E.g., the user *may* have added an atm proc, which requires
-            # to get all the atm_proc_base defaults
-            resolve_all_inheritances(xml_root)
 
 ###############################################################################
 def reset_buffer():
