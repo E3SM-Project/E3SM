@@ -16,13 +16,15 @@ cmvc (const ViewT& v) {
 
 class CoarseningRemapperTester : public CoarseningRemapper {
 public:
+  using gid_type = AbstractGrid::gid_type;
+
   CoarseningRemapperTester (const grid_ptr_type& src_grid,
                             const std::string& map_file)
    : CoarseningRemapper(src_grid,map_file)
   {
     // Nothing to do
   }
-  std::vector<gid_t>
+  std::vector<gid_type>
   test_triplet_gids (const std::string& map_file) const {
     return CoarseningRemapper::get_my_triplets_gids (map_file,m_src_grid);
   }
@@ -66,7 +68,7 @@ public:
     return cmvc(m_send_pid_lids_start);
   }
 
-  int gid2lid (const gid_t gid, const grid_ptr_type& grid) const {
+  int gid2lid (const gid_type gid, const grid_ptr_type& grid) const {
     return CoarseningRemapper::gid2lid(gid,grid);
   }
 };
@@ -94,10 +96,12 @@ void print (const std::string& msg, const ekat::Comm& comm) {
 std::shared_ptr<AbstractGrid>
 build_src_grid(const ekat::Comm& comm, const int nldofs_src) 
 {
+  using gid_type = AbstractGrid::gid_type;
+
   auto src_grid = std::make_shared<PointGrid>("src",nldofs_src,20,comm);
 
   auto src_dofs = src_grid->get_dofs_gids();
-  auto src_dofs_h = src_dofs.get_view<gid_t*,Host>();
+  auto src_dofs_h = src_dofs.get_view<gid_type*,Host>();
   std::iota(src_dofs_h.data(),src_dofs_h.data()+nldofs_src,nldofs_src*comm.rank());
   src_dofs.sync_to_dev();
 
@@ -163,6 +167,8 @@ void create_remap_file(const std::string& filename, std::vector<std::int64_t>& d
 }
 
 TEST_CASE("coarsening_remap_nnz>nsrc") {
+  using gid_type = AbstractGrid::gid_type;
+
   // This is a simple test to just make sure the coarsening remapper works
   // when the map itself has more remap triplets than the size of the 
   // source and target grid.  This is typical in monotone remappers from
@@ -258,7 +264,7 @@ TEST_CASE("coarsening_remap_nnz>nsrc") {
   // Generate data in a deterministic way, so that when we check results,
   // we know a priori what the input data that generated the tgt field's
   // values was, even if that data was off rank.
-  auto src_gids = remap->get_src_grid()->get_dofs_gids().get_view<const gid_t*,Host>();
+  auto src_gids = remap->get_src_grid()->get_dofs_gids().get_view<const gid_type*,Host>();
   for (const auto& f : src_f) {
     const auto& l = f.get_header().get_identifier().get_layout();
     switch (get_layout_type(l.tags())) {
@@ -280,7 +286,7 @@ TEST_CASE("coarsening_remap_nnz>nsrc") {
   // -------------------------------------- //
   //          Check remapped fields         //
   // -------------------------------------- //
-  const auto tgt_gids = tgt_grid->get_dofs_gids().get_view<const gid_t*,Host>();
+  const auto tgt_gids = tgt_grid->get_dofs_gids().get_view<const gid_type*,Host>();
   for (int irun=0; irun<5; ++irun) {
     print (" -> run remap ...\n",comm);
     remap->remap(true);
@@ -322,7 +328,7 @@ TEST_CASE("coarsening_remap_nnz>nsrc") {
 }
 
 TEST_CASE ("coarsening_remap") {
-  using gid_t = AbstractGrid::gid_type;
+  using gid_type = AbstractGrid::gid_type;
 
   // -------------------------------------- //
   //           Init MPI and PIO             //
@@ -449,7 +455,7 @@ TEST_CASE ("coarsening_remap") {
   REQUIRE (tgt_grid->get_num_global_dofs()==ngdofs_tgt);
 
   // Check which triplets are read from map file
-  auto src_dofs_h = src_grid->get_dofs_gids().get_view<const gid_t*,Host>();
+  auto src_dofs_h = src_grid->get_dofs_gids().get_view<const gid_type*,Host>();
   auto my_triplets = remap->test_triplet_gids (filename);
   const int num_triplets = my_triplets.size();
   REQUIRE (num_triplets==nnz_local);
@@ -468,7 +474,7 @@ TEST_CASE ("coarsening_remap") {
   const int num_loc_ov_tgt_gids = ov_tgt_grid->get_num_local_dofs();
   const int expected_num_loc_ov_tgt_gids = ngdofs_tgt>=nldofs_src ? nldofs_src : ngdofs_tgt;
   REQUIRE (num_loc_ov_tgt_gids==expected_num_loc_ov_tgt_gids);
-  const auto ov_gids = ov_tgt_grid->get_dofs_gids().get_view<const gid_t*,Host>();
+  const auto ov_gids = ov_tgt_grid->get_dofs_gids().get_view<const gid_type*,Host>();
   for (int i=0; i<num_loc_ov_tgt_gids; ++i) {
     if (comm.size()==1) {
       REQUIRE(ov_gids[i]==i);
@@ -482,8 +488,8 @@ TEST_CASE ("coarsening_remap") {
   auto row_offsets_h = cmvc(remap->get_row_offsets());
   auto col_lids_h    = cmvc(remap->get_col_lids());
   auto weights_h = cmvc(remap->get_weights());
-  auto ov_tgt_gids = ov_tgt_grid->get_dofs_gids().get_view<const gid_t*,Host>();
-  auto src_gids    = remap->get_src_grid()->get_dofs_gids().get_view<const gid_t*,Host>();
+  auto ov_tgt_gids = ov_tgt_grid->get_dofs_gids().get_view<const gid_type*,Host>();
+  auto src_gids    = remap->get_src_grid()->get_dofs_gids().get_view<const gid_type*,Host>();
 
   REQUIRE (col_lids_h.extent_int(0)==nldofs_src);
   REQUIRE (row_offsets_h.extent_int(0)==(num_loc_ov_tgt_gids+1));
@@ -511,7 +517,7 @@ TEST_CASE ("coarsening_remap") {
 
   // Check internal MPI structures
   const int num_loc_tgt_gids = tgt_grid->get_num_local_dofs();
-  const auto tgt_gids = tgt_grid->get_dofs_gids().get_view<const gid_t*,Host>();
+  const auto tgt_gids = tgt_grid->get_dofs_gids().get_view<const gid_type*,Host>();
   const auto recv_lids_beg = remap->get_recv_lids_beg();
   const auto recv_lids_end = remap->get_recv_lids_end();
   const auto recv_lids_pidpos = remap->get_recv_lids_pidpos();

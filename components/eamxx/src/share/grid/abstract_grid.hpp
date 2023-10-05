@@ -173,7 +173,7 @@ public:
 
   int get_unique_grid_id () const { return m_unique_grid_id; }
 
-  std::map<gid_t,int> get_gid2lid_map () const;
+  std::map<gid_type,int> get_gid2lid_map () const;
 
 protected:
 

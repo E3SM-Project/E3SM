@@ -122,9 +122,9 @@ TEST_CASE ("get_owners") {
   auto grid = std::make_shared<PointGrid>("grid",num_local_dofs,2,comm);
 
   // Create dofs, shuffled them around across ranks.
-  using gid_t = AbstractGrid::gid_type;
+  using gid_type = AbstractGrid::gid_type;
 
-  std::vector<gid_t> all_dofs (num_global_dofs);
+  std::vector<gid_type> all_dofs (num_global_dofs);
   if (comm.am_i_root()) {
     std::iota(all_dofs.data(),all_dofs.data()+all_dofs.size(),0);
     std::shuffle(all_dofs.data(),all_dofs.data()+num_global_dofs,engine);
@@ -132,8 +132,8 @@ TEST_CASE ("get_owners") {
   comm.broadcast(all_dofs.data(),num_global_dofs,comm.root_rank());
 
   auto dofs = grid->get_dofs_gids();
-  auto dofs_h = dofs.get_view<gid_t*,Host>();
-  std::memcpy (dofs_h.data(),all_dofs.data()+offset,num_local_dofs*sizeof(gid_t));
+  auto dofs_h = dofs.get_view<gid_type*,Host>();
+  std::memcpy (dofs_h.data(),all_dofs.data()+offset,num_local_dofs*sizeof(gid_type));
   dofs.sync_to_dev();
 
   // Now, ask each rank to retrieve owners, and verify

@@ -38,16 +38,16 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
   auto io_grid = std::make_shared<PointGrid>("",my_gids.size(),0,m_comm);
 
   auto dofs_gids = io_grid->get_dofs_gids();
-  auto dofs_gids_h = dofs_gids.get_view<gid_t*,Host>();
-  std::memcpy(dofs_gids_h.data(),my_gids.data(),my_gids.size()*sizeof(gid_t));
+  auto dofs_gids_h = dofs_gids.get_view<gid_type*,Host>();
+  std::memcpy(dofs_gids_h.data(),my_gids.data(),my_gids.size()*sizeof(gid_type));
   dofs_gids.sync_to_dev();
 
   // Create CRS matrix views
 
   // Read in triplets.
   const int nlweights = io_grid->get_num_local_dofs();
-  std::vector<gid_t> row_gids_h(nlweights);
-  std::vector<gid_t> col_gids_h(nlweights);
+  std::vector<gid_type> row_gids_h(nlweights);
+  std::vector<gid_type> col_gids_h(nlweights);
   std::vector<Real>  S_h (nlweights);
 
   // scream's gids are of type int, while scorpio wants long int as offsets.
@@ -87,7 +87,7 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
   int global_remap_min_dof;
   m_comm.all_reduce(&remap_min_dof,&global_remap_min_dof,1,MPI_MIN);
 
-  gid_t col_offset = global_remap_min_dof - src_grid->get_global_min_dof_gid();
+  gid_type col_offset = global_remap_min_dof - src_grid->get_global_min_dof_gid();
   for (int ii=0; ii<nlweights; ii++) {
     col_gids_h[ii] -= col_offset;
   }
@@ -95,13 +95,13 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
   // Create an "overlapped" tgt grid, that is, a grid where each rank
   // owns all tgt rows that are affected by at least one of the cols
   // in its src_grid
-  std::set<gid_t> ov_tgt_gids;
+  std::set<gid_type> ov_tgt_gids;
   for (int i=0; i<nlweights; ++i) {
     ov_tgt_gids.insert(row_gids_h[i]-1);
   }
   const int num_ov_tgt_gids = ov_tgt_gids.size();
   auto ov_tgt_grid = std::make_shared<PointGrid>("ov_tgt_grid",num_ov_tgt_gids,0,m_comm);
-  auto ov_tgt_gids_h = ov_tgt_grid->get_dofs_gids().get_view<gid_t*,Host>();
+  auto ov_tgt_gids_h = ov_tgt_grid->get_dofs_gids().get_view<gid_type*,Host>();
   auto it = ov_tgt_gids.begin();
   for (int i=0; i<num_ov_tgt_gids; ++i, ++it) {
     ov_tgt_gids_h[i] = *it;
@@ -160,8 +160,8 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
 
   auto tgt_grid = std::make_shared<PointGrid>("horiz_remap_tgt_grid",ngids,nlevs,m_comm);
 
-  auto tgt_grid_gids_h = tgt_grid->get_dofs_gids().get_view<gid_t*,Host>();
-  std::memcpy(tgt_grid_gids_h.data(),tgt_grid_gids.data(),ngids*sizeof(gid_t));
+  auto tgt_grid_gids_h = tgt_grid->get_dofs_gids().get_view<gid_type*,Host>();
+  std::memcpy(tgt_grid_gids_h.data(),tgt_grid_gids.data(),ngids*sizeof(gid_type));
   tgt_grid->get_dofs_gids().sync_to_dev();
 
   this->set_grids(src_grid,tgt_grid);
@@ -913,7 +913,7 @@ void CoarseningRemapper::recv_and_unpack ()
 }
 
 
-std::vector<CoarseningRemapper::gid_t>
+std::vector<CoarseningRemapper::gid_type>
 CoarseningRemapper::
 get_my_triplets_gids (const std::string& map_file,
                       const grid_ptr_type& src_grid) const
@@ -927,7 +927,7 @@ get_my_triplets_gids (const std::string& map_file,
   const auto io_grid_linear = create_point_grid ("helper",ngweights,1,m_comm);
   const int nlweights = io_grid_linear->get_num_local_dofs();
 
-  gid_t offset = nlweights;
+  gid_type offset = nlweights;
   m_comm.scan(&offset,1,MPI_SUM);
   offset -= nlweights; // scan is inclusive, but we need exclusive
 
@@ -936,8 +936,8 @@ get_my_triplets_gids (const std::string& map_file,
   const std::string idx_decomp_tag = "CR::gmtg,grid-idx=" + std::to_string(io_grid_linear->get_unique_grid_id());
 
   // 2. Read a chunk of triplets col indices
-  std::vector<gid_t> cols(nlweights);
-  std::vector<gid_t> rows(nlweights); // Needed to calculate min_dof
+  std::vector<gid_type> cols(nlweights);
+  std::vector<gid_type> rows(nlweights); // Needed to calculate min_dof
 
   scorpio::register_variable(map_file, "col", "col", {"n_s"}, "int", idx_decomp_tag);
   scorpio::register_variable(map_file, "row", "row", {"n_s"}, "int", idx_decomp_tag);
@@ -960,7 +960,7 @@ get_my_triplets_gids (const std::string& map_file,
   int global_remap_min_dof;
   m_comm.all_reduce(&remap_min_dof,&global_remap_min_dof,1,MPI_MIN);
 
-  gid_t col_offset = global_remap_min_dof - src_grid->get_global_min_dof_gid();
+  gid_type col_offset = global_remap_min_dof - src_grid->get_global_min_dof_gid();
   for (auto& id : cols) {
     id -= col_offset;
   }
@@ -984,7 +984,7 @@ get_my_triplets_gids (const std::string& map_file,
   for (const auto& it : pid2gids_recv) {
     num_my_triplets += it.second.size();
   }
-  std::vector<gid_t> my_triplets_gids(num_my_triplets);
+  std::vector<gid_type> my_triplets_gids(num_my_triplets);
   int num_copied = 0;
   for (const auto& it : pid2gids_recv) {
     auto dst = my_triplets_gids.data()+num_copied;
@@ -1144,13 +1144,13 @@ void CoarseningRemapper::setup_mpi_data_structures ()
 
   // 1. Retrieve pid (and associated lid) of all ov_tgt gids
   //    on the tgt grid
-  const auto ov_gids = m_ov_tgt_grid->get_dofs_gids().get_view<const gid_t*,Host>();
+  const auto ov_gids = m_ov_tgt_grid->get_dofs_gids().get_view<const gid_type*,Host>();
   auto gids_owners = m_tgt_grid->get_owners (ov_gids);
 
   // 2. Group dofs to send by remote pid
   const int num_ov_gids = ov_gids.size();
   std::map<int,std::vector<int>> pid2lids_send;
-  std::map<int,std::vector<gid_t>> pid2gids_send;
+  std::map<int,std::vector<gid_type>> pid2gids_send;
   for (int i=0; i<num_ov_gids; ++i) {
     const int pid = gids_owners[i];
     pid2lids_send[pid].push_back(i);
@@ -1242,7 +1242,7 @@ void CoarseningRemapper::setup_mpi_data_structures ()
   auto recv_lids_beg_h  = Kokkos::create_mirror_view(m_recv_lids_beg);
   auto recv_lids_end_h  = Kokkos::create_mirror_view(m_recv_lids_end);
 
-  auto tgt_dofs_h = m_tgt_grid->get_dofs_gids().get_view<const gid_t*,Host>();
+  auto tgt_dofs_h = m_tgt_grid->get_dofs_gids().get_view<const gid_type*,Host>();
   for (int i=0,pos=0; i<num_tgt_dofs; ++i) {
     recv_lids_beg_h(i) = pos;
     const int gid = tgt_dofs_h[i];

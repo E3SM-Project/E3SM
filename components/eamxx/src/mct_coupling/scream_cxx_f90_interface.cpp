@@ -282,7 +282,7 @@ int scream_get_num_global_cols () {
 // Return the global ids of all physics column
 void scream_get_local_cols_gids (void* const ptr) {
   using namespace scream;
-  using gid_t = AbstractGrid::gid_type;
+  using gid_type = AbstractGrid::gid_type;
   fpe_guard_wrapper([&]() {
     auto gids_f = reinterpret_cast<int*>(ptr);
     const auto& ad = get_ad();
@@ -290,7 +290,7 @@ void scream_get_local_cols_gids (void* const ptr) {
 
     auto gids = phys_grid->get_dofs_gids();
     gids.sync_to_host();
-    auto gids_h = gids.get_view<const gid_t*,Host>();
+    auto gids_h = gids.get_view<const gid_type*,Host>();
 
     for (int i=0; i<gids_h.extent_int(0); ++i) {
       gids_f[i] = gids_h(i);

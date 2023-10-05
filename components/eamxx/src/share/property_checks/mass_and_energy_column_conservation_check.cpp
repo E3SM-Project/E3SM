@@ -219,8 +219,8 @@ PropertyCheck::ResultAndMsg MassAndEnergyColumnConservationCheck::check() const
   res_and_msg.result = CheckResult::Fail;
 
   // We output relative errors with lat/lon information (if available)
-  using gid_t = AbstractGrid::gid_type;
-  auto gids = m_grid->get_dofs_gids().get_view<const gid_t*,Host>();
+  using gid_type = AbstractGrid::gid_type;
+  auto gids = m_grid->get_dofs_gids().get_view<const gid_type*,Host>();
   typename Field::view_host_t<const Real*> lat, lon;
   const bool has_latlon = m_grid->has_geometry_data("lat") && m_grid->has_geometry_data("lon");
   if (has_latlon) {
