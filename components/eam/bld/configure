@@ -284,7 +284,7 @@ OPTIONS
      -crm_nx_rad <n>           # of columns for CRM radiation calculation in x direction
      -crm_ny_rad <n>           # of columns for CRM radiation calculation in y direction
      -MMF_microphysics_scheme  CRM micro scheme - depends on CRM model [ sam1mom | p3 ].
-     -crm                      MMF CRM model            [ sam | samomp | samxx | pam]
+     -crm                      MMF CRM model            [ sam | samxx | pam]
      -crm_adv                  SAM CRM advection scheme [ MPDATA | UM5]
      -pam_dycor                PAM CRM dycor option     [ awfl | spam ]
 
@@ -1846,8 +1846,6 @@ if (defined $opts{'use_MMF'}) {
     if ($crm_ny eq 1) {$yes3Dval = 0;}
     if    ($crm eq 'sam') {
         $cfg_cppdefs .= " -DMMF_SAM "
-    } elsif ($crm eq 'samomp') {
-        $cfg_cppdefs .= " -DMMF_SAMOMP"
     } elsif ($crm eq 'samxx') {
         $cfg_cppdefs .= " -DMMF_SAMXX "
     } elsif ($crm eq 'pam') {
@@ -2633,10 +2631,8 @@ sub write_filepath
           } elsif ($MMF_microphysics_scheme eq 'm2005') {
               print $fh "$camsrcdir/eam/src/physics/crm/sam/MICRO_M2005\n";
           }
-
           # turbulence closure
           print $fh "$camsrcdir/eam/src/physics/crm/sam/SGS_TKE\n";
-
           # advection scheme
           my $crm_adv = 'MPDATA';
           if (defined $opts{'crm_adv'}) { $crm_adv = $cfg_ref->get('crm_adv'); }
@@ -2647,40 +2643,6 @@ sub write_filepath
           } else {
             die "configure ERROR: invalid option - crm_adv: $crm_adv.\n";
           }
-
-        } elsif ($crm eq 'samomp') {
-          #####################################################
-          ## -crm samomp will GLOB directories for CMake
-          ######################################################
-          print $fh "$camsrcdir/eam/src/physics/crm/samomp\n";
-          #
-          # microphysics
-          my $MMF_microphysics_scheme = $cfg_ref->get('MMF_microphysics_scheme');
-          if ($MMF_microphysics_scheme eq 'sam1mom') {
-              print $fh "$camsrcdir/eam/src/physics/crm/samomp/MICRO_SAM1MOM\n";
-          } elsif ($MMF_microphysics_scheme eq 'm2005') {
-              print $fh "$camsrcdir/eam/src/physics/crm/samomp/MICRO_M2005\n";
-          }
-
-          # turbulence closure
-          print $fh "$camsrcdir/eam/src/physics/crm/samomp/SGS_TKE\n";
-
-          # advection scheme
-          my $crm_adv = 'MPDATA';
-          if (defined $opts{'crm_adv'}) { $crm_adv = $cfg_ref->get('crm_adv'); }
-          if ($crm_adv eq 'MPDATA') {
-            print $fh "$camsrcdir/eam/src/physics/crm/sam/ADV_MPDATA\n";
-          } elsif ($crm_adv eq 'UM5') {
-            print $fh "$camsrcdir/eam/src/physics/crm/sam/ADV_UM5\n";
-          } else {
-            die "configure ERROR: invalid option - crm_adv: $crm_adv.\n";
-          }
-                              
-        } elsif (($crm eq 'samxx') || ($crm eq 'pam')) {
-          #####################################################
-          ## These CRM options will add_subdirectory in CMake
-          ## rather than GLOBing.
-          #####################################################
         }
 
     }
