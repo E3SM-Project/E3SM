@@ -869,6 +869,7 @@
 <!-- MMF -->
 <MMF_microphysics_scheme MMF_microphysics_scheme="sam1mom">sam1mom</MMF_microphysics_scheme>
 <MMF_microphysics_scheme MMF_microphysics_scheme="m2005">m2005</MMF_microphysics_scheme>
+<MMF_microphysics_scheme MMF_microphysics_scheme="p3">p3</MMF_microphysics_scheme>
 <use_MMF                      > .false.</use_MMF>
 <use_MMF    use_MMF="1"       > .true. </use_MMF>
 <use_ECPP                     > .false.</use_ECPP>
@@ -1143,15 +1144,21 @@
 <export_gustiness>.false.</export_gustiness>
 
 <!-- MMF CRM mean state acceleration -->
-<use_crm_accel    use_MMF="0">.false.</use_crm_accel>
-<crm_accel_uv     use_MMF="0">.false.</crm_accel_uv>
-<crm_accel_factor use_MMF="0">0</crm_accel_factor>
-<use_crm_accel    use_MMF="1" MMF_microphysics_scheme="sam1mom">.true.</use_crm_accel>
-<crm_accel_uv     use_MMF="1" MMF_microphysics_scheme="sam1mom">.true.</crm_accel_uv>
-<!-- Disable MMF MSA for 2-mom microphyics -->
-<use_crm_accel    use_MMF="1" MMF_microphysics_scheme="m2005">.false.</use_crm_accel>
-<crm_accel_uv     use_MMF="1" MMF_microphysics_scheme="m2005">.false.</crm_accel_uv>
-<crm_accel_factor use_MMF="1">2</crm_accel_factor>
+<use_crm_accel    >.false.</use_crm_accel>
+<crm_accel_uv     >.false.</crm_accel_uv>
+<crm_accel_factor >0</crm_accel_factor>
+<crm_accel_factor use_MMF="1" crm="sam"  >2</crm_accel_factor>
+<use_crm_accel    use_MMF="1" crm="sam"  >.true.</use_crm_accel>
+<crm_accel_uv     use_MMF="1" crm="sam"  >.true.</crm_accel_uv>
+<crm_accel_factor use_MMF="1" crm="samxx">2</crm_accel_factor>
+<use_crm_accel    use_MMF="1" crm="samxx">.true.</use_crm_accel>
+<crm_accel_uv     use_MMF="1" crm="samxx">.true.</crm_accel_uv>
+<crm_accel_factor use_MMF="1" crm="pam" pam_dycor="spam" >2</crm_accel_factor>
+<use_crm_accel    use_MMF="1" crm="pam" pam_dycor="spam" >.true.</use_crm_accel>
+<crm_accel_uv     use_MMF="1" crm="pam" pam_dycor="spam" >.true.</crm_accel_uv>
+<crm_accel_factor use_MMF="1" crm="pam" pam_dycor="awfl" >0</crm_accel_factor>
+<use_crm_accel    use_MMF="1" crm="pam" pam_dycor="awfl" >.false.</use_crm_accel>
+<crm_accel_uv     use_MMF="1" crm="pam" pam_dycor="awfl" >.false.</crm_accel_uv>
 
 <!-- Cloud fraction -->
 <cldfrc_freeze_dry             >.true.</cldfrc_freeze_dry>
@@ -1511,7 +1518,6 @@
 <dt_tracer_factor    use_MMF="1" dyn_target="theta-l" hgrid="ne30np4"> 4 </dt_tracer_factor>
 <hypervis_subcycle_q use_MMF="1" dyn_target="theta-l" hgrid="ne30np4"> 4 </hypervis_subcycle_q>
 
-
 <!-- ================================================================== -->
 <!-- 
 Defaults for SE preqx dycore.  preqx can run with theta-l settings 
@@ -1802,7 +1808,7 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <use_hetfrz_classnuc               >.false.</use_hetfrz_classnuc>
 <hist_hetfrz_classnuc              >.false.</hist_hetfrz_classnuc>
 <use_hetfrz_classnuc phys="default">.true.</use_hetfrz_classnuc>
-<use_hetfrz_classnuc MMF_microphysics_scheme="sam1mom">.false.</use_hetfrz_classnuc>
+<use_hetfrz_classnuc use_MMF="1">.false.</use_hetfrz_classnuc>
 <use_preexisting_ice               >.false.</use_preexisting_ice>
 <micro_mg_dcs_tdep phys="default">.true.</micro_mg_dcs_tdep>
 <microp_aero_wsub_scheme               >1</microp_aero_wsub_scheme>
