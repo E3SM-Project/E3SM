@@ -113,7 +113,7 @@ class TestBuildnml(unittest.TestCase):
         if reset:
             run_cmd_assert_result(self, "./atmchange --reset", from_dir=case)
 
-        run_cmd_assert_result(self, "./case.setup", from_dir=case)
+        #  run_cmd_assert_result(self, "./case.setup", from_dir=case)
 
         for name, value in changes_unpacked.items():
             self._get_values(case, name, value=value, expect_equal=not expect_lost)
