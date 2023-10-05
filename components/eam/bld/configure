@@ -1827,8 +1827,6 @@ if (defined $opts{'use_MMF'}) {
     $cfg_cppdefs .= " -DYES3DVAL=$yes3Dval";
     if ($MMF_microphysics_scheme eq 'sam1mom') {
         $cfg_cppdefs .= " -D$MMF_microphysics_scheme ";
-    } elsif ($MMF_microphysics_scheme eq 'm2005') {
-        $cfg_cppdefs .= " -D$MMF_microphysics_scheme ";
     }
     $cfg_cppdefs .= " -DCRM_NX=$crm_nx -DCRM_NY=$crm_ny -DCRM_NZ=$crm_nz ";
     $cfg_cppdefs .= " -DCRM_DX=$crm_dx -DCRM_DT=$crm_dt ";
@@ -2628,8 +2626,6 @@ sub write_filepath
           my $MMF_microphysics_scheme = $cfg_ref->get('MMF_microphysics_scheme');
           if ($MMF_microphysics_scheme eq 'sam1mom') {
               print $fh "$camsrcdir/eam/src/physics/crm/sam/MICRO_SAM1MOM\n";
-          } elsif ($MMF_microphysics_scheme eq 'm2005') {
-              print $fh "$camsrcdir/eam/src/physics/crm/sam/MICRO_M2005\n";
           }
           # turbulence closure
           print $fh "$camsrcdir/eam/src/physics/crm/sam/SGS_TKE\n";
