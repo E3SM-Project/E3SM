@@ -73,10 +73,10 @@ constexpr int num_aero_tracers() {
 KOKKOS_INLINE_FUNCTION
 const char* aero_mode_name(const int mode) {
   static const char *mode_names[num_aero_modes()] = {
-    "accum",
-    "aitken",
-    "coarse",
-    "primary_carbon",
+    "1",
+    "2",
+    "3",
+    "4",
   };
   return mode_names[mode];
 }
@@ -180,21 +180,21 @@ char* gas_mmr_names(int gas_id) {
 }
 
 // Given a MAM aerosol mode index, returns the name of the related interstitial
-// modal number mixing ratio field in EAMxx ("int_aero_nmr_<mode>")
+// modal number mixing ratio field in EAMxx ("num_a<1-based-mode-index>")
 KOKKOS_INLINE_FUNCTION
 const char* int_aero_nmr_field_name(const int mode) {
   if (!int_aero_nmr_names(mode)) {
-    concat_2_strings("int_aero_nmr_", aero_mode_name(mode), int_aero_nmr_names(mode));
+    concat_2_strings("num_a", aero_mode_name(mode), int_aero_nmr_names(mode));
   }
   return const_cast<const char*>(int_aero_nmr_names(mode));
 }
 
 // Given a MAM aerosol mode index, returns the name of the related cloudborne
-// modal number mixing ratio field in EAMxx ("cld_aero_nmr_<mode>")
+// modal number mixing ratio field in EAMxx ("num_c<1-based-mode-index>>")
 KOKKOS_INLINE_FUNCTION
 const char* cld_aero_nmr_field_name(const int mode) {
   if (!cld_aero_nmr_names(mode)) {
-    concat_2_strings("cld_aero_nmr_", aero_mode_name(mode), cld_aero_nmr_names(mode));
+    concat_2_strings("num_c", aero_mode_name(mode), cld_aero_nmr_names(mode));
   }
   return const_cast<const char*>(cld_aero_nmr_names(mode));
 }
@@ -203,7 +203,7 @@ const char* cld_aero_nmr_field_name(const int mode) {
 
 // Given a MAM aerosol mode index and the index of the MAM aerosol species
 // within it, returns the name of the relevant interstitial mass mixing ratio
-// field in EAMxx. The form of the field name is "int_aero_mmr_<mode>_<species>".
+// field in EAMxx. The form of the field name is "<species>_a<1-based-mode-index>".
 // If the desired species is not present within the desire mode, returns a blank
 // string ("").
 KOKKOS_INLINE_FUNCTION
@@ -211,8 +211,8 @@ const char* int_aero_mmr_field_name(const int mode, const int species) {
   if (!int_aero_mmr_names(mode, species)) {
     const auto aero_id = mam4::mode_aero_species(mode, species);
     if (aero_id != mam4::AeroId::None) {
-      concat_3_strings("int_aero_mmr_", aero_mode_name(mode),
-                       aero_species_name(static_cast<int>(aero_id)),
+      concat_3_strings(aero_species_name(static_cast<int>(aero_id)),
+                       "_a", aero_mode_name(mode),
                        int_aero_mmr_names(mode, species));
     }
   }
@@ -221,7 +221,7 @@ const char* int_aero_mmr_field_name(const int mode, const int species) {
 
 // Given a MAM aerosol mode index and the index of the MAM aerosol species
 // within it, returns the name of the relevant cloudborne mass mixing ratio
-// field in EAMxx. The form of the field name is "cld_aero_mmr_<mode>_<species>".
+// field in EAMxx. The form of the field name is "<species>_c<1-based-mode-index>".
 // If the desired species is not present within the desire mode, returns a blank
 // string ("").
 KOKKOS_INLINE_FUNCTION
@@ -229,9 +229,9 @@ const char* cld_aero_mmr_field_name(const int mode, const int species) {
   if (!cld_aero_mmr_names(mode, species)) {
     const auto aero_id = mam4::mode_aero_species(mode, species);
     if (aero_id != mam4::AeroId::None) {
-      concat_3_strings("cld_aero_mmr_", aero_mode_name(mode),
-                       aero_species_name(static_cast<int>(aero_id)),
-                       cld_aero_mmr_names(mode, species));
+      concat_3_strings(aero_species_name(static_cast<int>(aero_id)),
+                       "_c", aero_mode_name(mode),
+                       int_aero_mmr_names(mode, species));
     }
   }
   return const_cast<const char*>(cld_aero_mmr_names(mode, species));
