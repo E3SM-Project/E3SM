@@ -1132,7 +1132,9 @@ void compute_diag_third_shoc_moment_f(Int shcol, Int nlev, Int nlevi, Real* w_se
     const auto thetal_zi_s   = ekat::subview(thetal_zi_d, i);
     const auto w3_s          = ekat::subview(w3_d, i);
 
-    SHF::compute_diag_third_shoc_moment(team, nlev, nlevi, w_sec_s, thl_sec_s,
+    // Hardcode runtime options for F90 testing
+    const Real c_diag_3rd_mom = 7.0;
+    SHF::compute_diag_third_shoc_moment(team, nlev, nlevi, c_diag_3rd_mom, w_sec_s, thl_sec_s,
                                         wthl_sec_s, tke_s, dz_zt_s, dz_zi_s, isotropy_zi_s,
                                         brunt_zi_s, w_sec_zi_s, thetal_zi_s, w3_s);
   });
@@ -1222,7 +1224,8 @@ void compute_shoc_mix_shoc_length_f(Int nlev, Int shcol, Real* tke, Real* brunt,
     const auto zt_grid_s  = ekat::subview(zt_grid_d, i);
     const auto shoc_mix_s = ekat::subview(shoc_mix_d, i);
 
-    SHF::compute_shoc_mix_shoc_length(team, nlev, tke_s, brunt_s, zt_grid_s, l_inf_s,
+    const Real length_fac = 0.5;
+    SHF::compute_shoc_mix_shoc_length(team, nlev, length_fac, tke_s, brunt_s, zt_grid_s, l_inf_s,
                                       shoc_mix_s);
   });
 
@@ -1525,6 +1528,11 @@ void diag_second_moments_f(Int shcol, Int nlev, Int nlevi, Real* thetal, Real* q
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nk_pack);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();
+    // Hardcode runtime options for F90
+    const Real thl2tune = 1.0;
+    const Real qw2tune = 1.0;
+    const Real qwthl2tune = 1.0;
+    const Real w2tune = 1.0;
 
     const auto thetal_1d      = ekat::subview(thetal_2d, i);
     const auto qw_1d          = ekat::subview(qw_2d, i);
@@ -1551,7 +1559,8 @@ void diag_second_moments_f(Int shcol, Int nlev, Int nlevi, Real* thetal, Real* q
     const auto tkh_zi_1d      = ekat::subview(tkh_zi_2d, i);
     const auto tk_zi_1d       = ekat::subview(tk_zi_2d, i);
 
-    SHOC::diag_second_moments(team, nlev, nlevi, thetal_1d, qw_1d, u_wind_1d, v_wind_1d, tke_1d, isotropy_1d, tkh_1d, tk_1d,
+    SHOC::diag_second_moments(team, nlev, nlevi, thl2tune, qw2tune, qwthl2tune, w2tune,
+                     thetal_1d, qw_1d, u_wind_1d, v_wind_1d, tke_1d, isotropy_1d, tkh_1d, tk_1d,
                      dz_zi_1d, zt_grid_1d, zi_grid_1d, shoc_mix_1d, isotropy_zi_1d, tkh_zi_1d, tk_zi_1d,
                      thl_sec_1d, qw_sec_1d, wthl_sec_1d, wqw_sec_1d,
                      qwthl_sec_1d, uw_sec_1d, vw_sec_1d, wtke_sec_1d, w_sec_1d);
@@ -1632,6 +1641,11 @@ void diag_second_shoc_moments_f(Int shcol, Int nlev, Int nlevi, Real* thetal, Re
 
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();
+    // Hardcode runtime options for F90
+    const Real thl2tune = 1.0;
+    const Real qw2tune = 1.0;
+    const Real qwthl2tune = 1.0;
+    const Real w2tune = 1.0;
 
     auto workspace = workspace_mgr.get_workspace(team);
 
@@ -1665,6 +1679,7 @@ void diag_second_shoc_moments_f(Int shcol, Int nlev, Int nlevi, Real* thetal, Re
     Scalar wstar_s  = wstar_1d(i);
 
     SHOC::diag_second_shoc_moments(team, nlev, nlevi,
+       thl2tune, qw2tune, qwthl2tune, w2tune,
        thetal_1d, qw_1d, u_wind_1d, v_wind_1d, tke_1d, isotropy_1d, tkh_1d, tk_1d, dz_zi_1d, zt_grid_1d, zi_grid_1d, shoc_mix_1d,
        wthl_s, wqw_s, uw_s, vw_s, ustar2_s, wstar_s,
        workspace, thl_sec_1d, qw_sec_1d, wthl_sec_1d, wqw_sec_1d, qwthl_sec_1d,
@@ -1967,7 +1982,9 @@ void shoc_length_f(Int shcol, Int nlev, Int nlevi, Real* host_dx, Real* host_dy,
     const auto brunt_s = ekat::subview(brunt_d, i);
     const auto shoc_mix_s = ekat::subview(shoc_mix_d, i);
 
-    SHF::shoc_length(team,nlev,nlevi,host_dx_s,host_dy_s,
+    // Hardcode runtime option for F90 tests.
+    const Scalar length_fac = 0.5;
+    SHF::shoc_length(team,nlev,nlevi,length_fac,host_dx_s,host_dy_s,
                      zt_grid_s,zi_grid_s,dz_zt_s,tke_s,
                      thv_s,workspace,brunt_s,shoc_mix_s);
   });
@@ -2310,7 +2327,9 @@ void diag_third_shoc_moments_f(Int shcol, Int nlev, Int nlevi, Real* w_sec, Real
     const auto zi_grid_s = ekat::subview(zi_grid_d, i);
     const auto w3_s = ekat::subview(w3_d, i);
 
-    SHF::diag_third_shoc_moments(team, nlev, nlevi, wsec_s, thl_sec_s,
+    // Hardcode for F90 testing
+    const Real c_diag_3rd_mom = 7.0;
+    SHF::diag_third_shoc_moments(team, nlev, nlevi, c_diag_3rd_mom, wsec_s, thl_sec_s,
                                  wthl_sec_s, isotropy_s, brunt_s, thetal_s, tke_s,
                                  dz_zt_s, dz_zi_s, zt_grid_s, zi_grid_s,
                                  workspace,
@@ -2648,7 +2667,8 @@ void isotropic_ts_f(Int nlev, Int shcol, Real* brunt_int, Real* tke,
       //outputs
       const auto isotropy_s = ekat::subview(isotropy_d, i); //output
 
-      const Real lambda_low = 0.001; //ASD
+      // Hard code these runtime options for F90
+      const Real lambda_low = 0.001; 
       const Real lambda_high   = 0.04;
       const Real lambda_slope  = 2.65;
       const Real lambda_thresh = 0.02;
@@ -2864,7 +2884,7 @@ Int shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl, 
                                              qwthl_sec_d, wthl_sec_d, wqw_sec_d, wtke_sec_d,
                                              uw_sec_d,    vw_sec_d,   w3_d,      wqls_sec_d,
                                              brunt_d,     isotropy_d};
-  SHF::SHOCRuntime shoc_runtime_options{0.001,0.04,2.65,0.02};
+  SHF::SHOCRuntime shoc_runtime_options{0.001,0.04,2.65,0.02,1.0,1.0,1.0,1.0,0.5,7.0,0.1,0.1};
 
   const auto nlevi_packs = ekat::npack<Spack>(nlevi);
 
@@ -3197,7 +3217,10 @@ void eddy_diffusivities_f(Int nlev, Int shcol, Real* pblh, Real* zt_grid, Real* 
     const auto tkh_s = ekat::subview(tkh_d, i);
     const auto tk_s = ekat::subview(tk_d, i);
 
-    SHF::eddy_diffusivities(team, nlev, pblh_s, zt_grid_s, tabs_s, shoc_mix_s, sterm_zt_s, isotropy_s, tke_s, tkh_s, tk_s);
+    // Hardcode runtime options for F90 testing
+    const Real Ckh = 0.1;
+    const Real Ckm = 0.1;
+    SHF::eddy_diffusivities(team, nlev, Ckh, Ckm, pblh_s, zt_grid_s, tabs_s, shoc_mix_s, sterm_zt_s, isotropy_s, tke_s, tkh_s, tk_s);
   });
 
   // Sync back to host
@@ -3457,11 +3480,16 @@ void shoc_tke_f(Int shcol, Int nlev, Int nlevi, Real dtime, Real* wthv_sec, Real
     const auto tkh_s = ekat::subview(tkh_d, i);
     const auto isotropy_s = ekat::subview(isotropy_d, i);
 
-    const Real lambda_low    = 0.001;  //ASD
+    // Hardcode for F90 testing
+    const Real lambda_low    = 0.001;  
     const Real lambda_high   = 0.04;
     const Real lambda_slope  = 2.65;
     const Real lambda_thresh = 0.02;
+    const Real Ckh           = 0.1;
+    const Real Ckm           = 0.1;
+
     SHF::shoc_tke(team,nlev,nlevi,dtime,lambda_low,lambda_high,lambda_slope,lambda_thresh,
+                  Ckh, Ckm,
 		  wthv_sec_s,shoc_mix_s,dz_zi_s,dz_zt_s,pres_s,
                   tabs_s,u_wind_s,v_wind_s,brunt_s,zt_grid_s,zi_grid_s,pblh_s,
                   workspace,

@@ -16,6 +16,8 @@ KOKKOS_FUNCTION
 void Functions<S,D>::eddy_diffusivities(
   const MemberType&            team,
   const Int&                   nlev,
+  const Scalar&                 Ckh,
+  const Scalar&                 Ckm,
   const Scalar&                pblh,
   const uview_1d<const Spack>& zt_grid,
   const uview_1d<const Spack>& tabs,
@@ -33,9 +35,6 @@ void Functions<S,D>::eddy_diffusivities(
   // Transition depth [m] above PBL top to allow
   // stability diffusivities
   const Int pbl_trans = 200;
-  // Turbulent coefficients
-  const Scalar Ckh = 0.1;
-  const Scalar Ckm = 0.1;
   // Dddy coefficients for stable PBL diffusivities
   const Scalar Ckh_s = 0.1;
   const Scalar Ckm_s = 0.1;

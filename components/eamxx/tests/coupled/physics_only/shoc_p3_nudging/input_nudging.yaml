@@ -24,6 +24,14 @@ atmosphere_processes:
     lambda_high: 0.04
     lambda_slope: 2.65
     lambda_thresh: 0.02
+    thl2tune: 1.0
+    qw2tune: 1.0
+    qwthl2tune: 1.0
+    w2tune: 1.0
+    length_fac: 0.5
+    c_diag_3rd_mom: 7.0
+    Ckh: 0.1
+    Ckm: 0.1
 
 grids_manager:
   Type: Mesh Free
