@@ -93,6 +93,7 @@ endif()
 project(E3SM C CXX Fortran)
 
 if (COMP_INTERFACE STREQUAL "moab")
+  set(USE_MOAB True)
   set(CPPDEFS "${CPPDEFS} -DHAVE_MOAB")
 endif()
 
