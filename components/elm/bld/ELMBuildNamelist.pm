@@ -1103,7 +1103,7 @@ sub setup_cmdl_solar_rad_scheme {
   my $val;
 
   # If "-solar_rad_scheme pp" or "-solar_rad_scheme" is unspecified, then
-  # we will set "use_top_solar_rad = .true."
+  # we will set "use_top_solar_rad = .false."
   if ( $opts->{$var} eq "pp" || $opts->{$var} eq "default" ) {
     $val = ".false.";
   } else {
