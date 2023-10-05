@@ -68,15 +68,15 @@ public:
   struct DeviceOp : public CDR::DeviceOp {
     // lclcellidx is trivial; it is the user's index for the cell.
     KOKKOS_INLINE_FUNCTION
-    void set_rhom(const Int& lclcellidx, const Int& rhomidx, const Real& rhom) const override;
+    void set_rhom(const Int& lclcellidx, const Int& rhomidx, const Real& rhom) const; // override;
 
     KOKKOS_INLINE_FUNCTION
     void set_Qm(const Int& lclcellidx, const Int& tracer_idx,
                 const Real& Qm, const Real& Qm_min, const Real& Qm_max,
-                const Real Qm_prev = cedr::impl::TypeTraits<Real>::infinity) const override;
+                const Real Qm_prev = cedr::impl::TypeTraits<Real>::infinity) const; // override;
 
     KOKKOS_INLINE_FUNCTION
-    Real get_Qm(const Int& lclcellidx, const Int& tracer_idx) const override;
+    Real get_Qm(const Int& lclcellidx, const Int& tracer_idx) const; // override;
 
     Int nlclcells_, nrhomidxs_;
     bool need_conserve_;

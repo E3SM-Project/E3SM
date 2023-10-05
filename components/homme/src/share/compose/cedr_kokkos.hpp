@@ -17,8 +17,10 @@ typedef Kokkos::Experimental::HIP CedrGpuExeSpace;
 typedef Kokkos::Experimental::HIPSpace CedrGpuSpace;
 # endif
 # if defined KOKKOS_ENABLE_SYCL
-typedef Kokkos::Experimental::SYCL CedrGpuExeSpace;
-typedef Kokkos::Experimental::SYCL> CedrGpuSpace;
+//typedef Kokkos::Experimental::SYCL CedrGpuExeSpace;
+//typedef Kokkos::Experimental::SYCL CedrGpuSpace;
+typedef Kokkos::DefaultExecutionSpace::execution_space CedrGpuExeSpace;
+typedef Kokkos::DefaultExecutionSpace::memory_space CedrGpuSpace;
 # endif
 #endif
 

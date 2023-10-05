@@ -471,9 +471,6 @@ void SHOCMacrophysics::run_impl (const double dt)
   // Run shoc main
   SHF::shoc_main(m_num_cols, m_num_levs, m_num_levs+1, m_npbl, m_nadv, m_num_tracers, dt,
                  workspace_mgr,runtime_options,input,input_output,output,history_output
-#ifdef SCREAM_SMALL_KERNELS
-                 , temporaries
-#endif
                  );
 
   // Postprocessing of SHOC outputs

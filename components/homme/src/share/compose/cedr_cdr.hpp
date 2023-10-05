@@ -78,6 +78,7 @@ struct CDR {
     // the index into the local cell.
     //
     //   set_rhom must be called before set_Qm.
+#if 0    
     KOKKOS_FUNCTION
     virtual void set_rhom(
       const Int& lclcellidx, const Int& rhomidx,
@@ -99,6 +100,7 @@ struct CDR {
     // Get a cell's tracer mass Qm after the QLT algorithm has run.
     KOKKOS_FUNCTION
     virtual Real get_Qm(const Int& lclcellidx, const Int& tracer_idx) const = 0;
+#endif
   };
 
   virtual const DeviceOp& get_device_op() = 0;
