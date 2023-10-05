@@ -10,7 +10,7 @@ import xml.etree.ElementTree as ET # pylint: disable=unused-import
 # Add path to cime_config folder
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "cime_config"))
 from eamxx_buildnml_impl import check_value, is_array_type, get_child, find_node
-from eamxx_buildnml_impl import gen_atm_proc_group, resolve_all_inheritances
+from eamxx_buildnml_impl import gen_atm_proc_group
 from utils import expect, run_cmd_no_fail
 
 ATMCHANGE_SEP = "-ATMCHANGE_SEP-"
@@ -28,7 +28,7 @@ def apply_atm_procs_list_changes_from_buffer(case, xml):
         for chg, to_all in zip(atmchgs,atmchgs_all):
             if "atm_procs_list" in chg:
                 expect (not to_all, "Makes no sense to change 'atm_procs_list' for all groups")
-                atm_config_chg_impl(xml, chg, all_matches=false)
+                atm_config_chg_impl(xml, chg, all_matches=False)
 
 ###############################################################################
 def apply_non_atm_procs_list_changes_from_buffer(case, xml):
