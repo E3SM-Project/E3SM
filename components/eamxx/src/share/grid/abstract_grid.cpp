@@ -346,6 +346,17 @@ void AbstractGrid::create_dof_fields (const int scalar2d_layout_rank)
   m_lid_to_idx.allocate_view();
 }
 
+std::map<gid_t,int>
+AbstractGrid::get_gid2lid_map () const
+{
+  std::map<gid_t,int> m;
+  auto gids_h = get_dofs_gids().get_view<const gid_t*,Host>();
+  for (int i=0; i<get_num_local_dofs(); ++i) {
+    m[gids_h[i]] = i;
+  }
+  return m;
+}
+
 void AbstractGrid::copy_data (const AbstractGrid& src, const bool shallow)
 {
   if (shallow) {

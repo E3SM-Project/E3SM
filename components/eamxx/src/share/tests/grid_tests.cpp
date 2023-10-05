@@ -147,4 +147,35 @@ TEST_CASE ("get_owners") {
   }
 }
 
+TEST_CASE ("gid2lid_map") {
+  using gid_type = AbstractGrid::gid_type;
+
+  ekat::Comm comm(MPI_COMM_WORLD);
+
+  auto engine = setup_random_test(&comm);
+
+  const int num_local_dofs = 10;
+  const int num_global_dofs = num_local_dofs*comm.size();;
+  // Create dofs, shuffled them around across ranks.
+  std::vector<gid_type> all_dofs (num_global_dofs);
+  if (comm.am_i_root()) {
+    std::iota(all_dofs.data(),all_dofs.data()+all_dofs.size(),0);
+    std::shuffle(all_dofs.data(),all_dofs.data()+num_global_dofs,engine);
+  }
+  comm.broadcast(all_dofs.data(),num_global_dofs,comm.root_rank());
+
+  // Create a grid, grabbing my portion of the all_dofs array
+  const int offset = num_local_dofs*comm.rank();
+  auto grid = std::make_shared<PointGrid>("grid",num_local_dofs,0,comm);
+  auto dofs = grid->get_dofs_gids();
+  auto dofs_h = dofs.get_view<gid_type*,Host>();
+  std::memcpy (dofs_h.data(),all_dofs.data()+offset,num_local_dofs*sizeof(gid_type));
+  dofs.sync_to_dev();
+
+  auto gid2lid = grid->get_gid2lid_map();
+  for (const auto& it : gid2lid) {
+    REQUIRE (it.first==dofs_h[it.second]);
+  }
+}
+
 } // anonymous namespace
