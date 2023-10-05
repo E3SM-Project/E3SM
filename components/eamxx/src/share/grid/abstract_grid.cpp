@@ -2,6 +2,8 @@
 
 #include "share/field/field_utils.hpp"
 
+#include <ekat/ekat_assert.hpp>
+
 #include <algorithm>
 #include <cstring>
 #include <string>
@@ -327,6 +329,73 @@ get_owners (const gid_view_h& gids) const
   }
 
   return result;
+}
+
+void AbstractGrid::
+get_remote_pids_and_lids (const gid_view_h& gids,
+                          std::vector<int>& pids,
+                          std::vector<int>& lids) const
+{
+  const auto& comm = get_comm();
+  int num_gids_in = gids.size();
+
+  pids.resize(num_gids_in,-1);
+  lids.resize(num_gids_in,-1);
+
+  int num_found = 0;
+
+  // We may have repeated gids. In that case, we want to update
+  // the pids/lids arrays at all indices corresponding to the same gid
+  std::map<gid_type,std::vector<int>> gid2idx;
+  for (int i=0; i<num_gids_in; ++i) {
+    gid2idx[gids[i]].push_back(i);
+  }
+  int num_unique_gids = gid2idx.size();
+
+  // Let each rank bcast its owned gids, so that other procs can
+  // check against their input list
+  // Note: we can't use a view of const, since the view ptr needs to be passed
+  //       to MPI bcast routines, which expect pointer to nonconst. It's an
+  //       innocuous issue though, since only the send rank will use the ptr
+  //       from the view, and it's not writing in it.
+  auto my_gids_h = m_dofs_gids.get_view<gid_type*,Host>();
+  gid_type* data;
+  std::vector<gid_type> pid_gids;
+  for (int pid=0; pid<comm.size(); ++pid) {
+    // Bcast gids count for this pid
+    int num_gids_pid = my_gids_h.size();
+    comm.broadcast(&num_gids_pid,1,pid);
+
+    // Bcast gids
+    if (pid==comm.rank()) {
+      data = my_gids_h.data();
+    } else {
+      pid_gids.resize(num_gids_pid);
+      data = pid_gids.data();
+    }
+    comm.broadcast(data,num_gids_pid,pid);
+
+    // Checks if any of the input pids is in this list
+    for (int i=0; i<num_gids_pid; ++i) {
+      auto it = gid2idx.find(data[i]);
+      if (it!=gid2idx.end()) {
+        for (auto idx : it->second) {
+          EKAT_REQUIRE_MSG (pids[idx]==-1,
+              "Error! Found a GID with multiple owners.\n"
+              "  - owner 1: " + std::to_string(pids[idx]) + "\n"
+              "  - owner 2: " + std::to_string(pid) + "\n");
+          pids[idx] = pid;
+          lids[idx] = i;
+        }
+        ++num_found;
+      }
+    }
+  }
+  EKAT_REQUIRE_MSG (num_found==num_unique_gids,
+      "Error! Could not locate the owner of one of the input GIDs.\n"
+      "  - rank: " + std::to_string(comm.rank()) + "\n"
+      "  - num found: " + std::to_string(num_found) + "\n"
+      "  - num unique gids in: " + std::to_string(num_unique_gids) + "\n");
 }
 
 void AbstractGrid::create_dof_fields (const int scalar2d_layout_rank)
