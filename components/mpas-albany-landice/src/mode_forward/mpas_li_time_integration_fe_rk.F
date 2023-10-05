@@ -985,6 +985,7 @@ module li_time_integration_fe_rk
       real (kind=RKIND), dimension(:), pointer :: thicknessOld
       real (kind=RKIND), dimension(:), pointer :: thicknessNew
       real (kind=RKIND), dimension(:), pointer :: thickness
+      real (kind=RKIND), dimension(:,:), pointer :: layerThickness
 
       real (kind=RKIND), dimension(:,:), pointer :: temperature
       real (kind=RKIND), dimension(:,:), pointer :: waterFrac
@@ -1173,7 +1174,10 @@ module li_time_integration_fe_rk
          if ( config_restore_thickness_after_advection ) then
             call mpas_pool_get_array(geometryPool, 'thickness', thickness)
             call mpas_pool_get_array(geometryPool, 'thicknessOld', thicknessOld)
+            call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness)
             thickness(:) = thicknessOld(:)
+
+            call li_calculate_layerThickness(meshPool, thickness, layerThickness)
          endif
 
          call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
