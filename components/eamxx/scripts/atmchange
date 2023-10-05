@@ -14,7 +14,7 @@ sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 
 from eamxx_buildnml_impl import check_value, is_array_type
 from eamxx_buildnml import create_raw_xml_file
-from atm_manip import atm_config_chg_impl, buffer_changes, reset_buffer, get_xml_nodes
+from atm_manip import atm_config_chg_impl, buffer_changes, reset_buffer, get_xml_nodes, parse_change
 from utils import run_cmd_no_fail, expect
 
 # Add path to cime
@@ -52,6 +52,12 @@ def atm_config_chg(changes, reset=False, all_matches=False, buffer_only=False):
     else:
         expect(changes, "Missing <param>=<val> args")
 
+    # Before applying/buffering changes, at the very least check the syntax
+    for c in changes:
+        # This will throw if the syntax is bad
+        _, _, _ = parse_change(c)
+
+    any_change = True
     if not buffer_only:
         with open("namelist_scream.xml", "r") as fd:
             tree = ET.parse(fd)
@@ -62,10 +68,15 @@ def atm_config_chg(changes, reset=False, all_matches=False, buffer_only=False):
             this_changed = atm_config_chg_impl(root, change, all_matches)
             any_change |= this_changed
 
-    buffer_changes(changes, all_matches=all_matches)
 
-    if not buffer_only:
-        recreate_raw_xml_file()
+    if any_change:
+        # NOTE: if a change is wrong (e.g., typo in param name), we are still buffering it.
+        #       We have no way of checking this, unfortunately. If you get an error that is
+        #       not just syntax, your best course of action is to run atmchange --reset.
+        buffer_changes(changes, all_matches=all_matches)
+
+        if not buffer_only:
+            recreate_raw_xml_file()
 
     return True
 
