@@ -12,6 +12,7 @@
 cmake_minimum_required(VERSION 3.9)
 cmake_policy(SET CMP0057 NEW)
 cmake_policy(SET CMP0074 NEW)
+cmake_policy(SET CMP0079 NEW) # Remove once scorpio in a better state
 set(CMAKE_CXX_STANDARD 17)
 
 # Turn on wrapper
