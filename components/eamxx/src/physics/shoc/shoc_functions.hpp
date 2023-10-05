@@ -12,6 +12,18 @@
 namespace scream {
 namespace shoc {
 
+#if defined(KOKKOS_ENABLE_SYCL) 
+#define PRINTF(format, ...)                                        \
+  do {                                                            \
+    const __attribute__((opencl_constant)) char fmt[] = (format); \
+    sycl::ext::oneapi::experimental::printf(fmt, ##__VA_ARGS__);  \
+  } while (0)
+#else
+  #define PRINTF(format, ...)                                       \
+    const char fmt[] = (format);                                   \
+    printf(fmt, ##__VA_ARGS__);
+#endif
+	
 /*
  * Functions is a stateless struct used to encapsulate a
  * number of functions for SHOC. We use the ETI pattern for
@@ -1011,9 +1023,6 @@ struct Functions
     const SHOCInputOutput&   shoc_input_output,    // Input/Output
     const SHOCOutput&        shoc_output,          // Output
     const SHOCHistoryOutput& shoc_history_output   // Output (diagnostic)
-#ifdef SCREAM_SMALL_KERNELS
-    , const SHOCTemporaries& shoc_temporaries      // Temporaries for small kernels
-#endif
                        );
 
   KOKKOS_FUNCTION

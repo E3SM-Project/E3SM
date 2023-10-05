@@ -583,9 +583,6 @@ Int Functions<S,D>::shoc_main(
   const SHOCInputOutput&   shoc_input_output,   // Input/Output
   const SHOCOutput&        shoc_output,         // Output
   const SHOCHistoryOutput& shoc_history_output  // Output (diagnostic)
-#ifdef SCREAM_SMALL_KERNELS
-  , const SHOCTemporaries& shoc_temporaries     // Temporaries for small kernels
-#endif
                               )
 {
   // Start timer
@@ -683,6 +680,33 @@ Int Functions<S,D>::shoc_main(
   });
   Kokkos::fence();
 #else
+  const auto nlevi_packs = ekat::npack<Spack>(nlevi);
+  view_1d<Scalar>
+    se_b   ("se_b", shcol),
+    ke_b   ("ke_b", shcol),
+    wv_b   ("wv_b", shcol),
+    wl_b   ("wl_b", shcol),
+    se_a   ("se_a", shcol),
+    ke_a   ("ke_a", shcol),
+    wv_a   ("wv_a", shcol),
+    wl_a   ("wl_a", shcol),
+    ustar  ("ustar", shcol),
+    kbfs   ("kbfs", shcol),
+    obklen ("obklen", shcol),
+    ustar2 ("ustar2", shcol),
+    wstar  ("wstar", shcol);
+
+    view_2d<Spack>
+    rho_zt  ("rho_zt",  shcol, nlevi_packs),
+    shoc_qv ("shoc_qv", shcol, nlevi_packs),
+    dz_zt   ("dz_zt",   shcol, nlevi_packs),
+    dz_zi   ("dz_zi",   shcol, nlevi_packs),
+    tkh     ("tkh",     shcol, nlevi_packs);
+
+  SHOCTemporaries shoc_temporaries{
+    se_b, ke_b, wv_b, wl_b, se_a, ke_a, wv_a, wl_a, ustar, kbfs, obklen, ustar2, wstar,
+    rho_zt, shoc_qv, dz_zt, dz_zi, tkh};
+  
   const auto u_wind_s   = Kokkos::subview(shoc_input_output.horiz_wind, Kokkos::ALL(), 0, Kokkos::ALL());
   const auto v_wind_s   = Kokkos::subview(shoc_input_output.horiz_wind, Kokkos::ALL(), 1, Kokkos::ALL());
 

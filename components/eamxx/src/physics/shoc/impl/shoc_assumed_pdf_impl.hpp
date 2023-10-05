@@ -234,10 +234,10 @@ void Functions<S,D>::shoc_assumed_pdf(
       const Smask is_nan_Tl1_1 = isnan(Tl1_1) && active_entries;
       const Smask is_nan_Tl1_2 = isnan(Tl1_2) && active_entries;
       if (is_nan_Tl1_1.any() || is_nan_Tl1_2.any()) {
-        printf("WARNING: NaN Detected in Tl1_1 or Tl1_2!\n");
+        PRINTF("WARNING: NaN Detected in Tl1_1 or Tl1_2!\n");
         for (int i=0; i<is_nan_Tl1_1.n; i++) {
           if (is_nan_Tl1_1[i] || is_nan_Tl1_2[i]) {
-            printf(
+            PRINTF(
               "Tl1 NaN Detected: lev, Tl1_1, Tl1_2: %d, %16.9e, %16.9e\n"
               "  thetal, qw, pressure, thl_sec, qw_sec, w2sec:"
               " %16.9e, %16.9e, %16.9e, %16.9e, %16.9e, %16.9e, %16.9e\n"
@@ -267,7 +267,7 @@ void Functions<S,D>::shoc_assumed_pdf(
             n_mask++;
           }
         }
-        printf("WARNING: Tl1_1 has %d values <= allowable value.  Resetting to minimum value.\n",n_mask);
+        PRINTF("WARNING: Tl1_1 has %d values <= allowable value.  Resetting to minimum value.\n",n_mask);
       }
       if( is_small_Tl1_2.any() ) {
         Tl1_2.set(is_small_Tl1_2,Tl_min);
@@ -277,7 +277,7 @@ void Functions<S,D>::shoc_assumed_pdf(
             n_mask++;
           }
         }
-        printf("WARNING: Tl1_2 has %d values <= allowable value.  Resetting to minimum value.\n",n_mask);
+        PRINTF("WARNING: Tl1_2 has %d values <= allowable value.  Resetting to minimum value.\n",n_mask);
       }
 
       // Compute qs and beta

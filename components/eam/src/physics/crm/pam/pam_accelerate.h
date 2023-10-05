@@ -5,7 +5,7 @@
 void pam_accelerate_nstop( pam::PamCoupler &coupler, int &nstop) {
   auto crm_accel_factor = coupler.get_option<real>("crm_accel_factor");
   if(nstop%static_cast<int>((1+crm_accel_factor)) != 0) {
-    printf("pam_accelerate_nstop: Error: (1+crm_accel_factor) does not divide equally into nstop: %4.4d  crm_accel_factor: %6.1f \n",nstop, crm_accel_factor);
+    PRINTF("pam_accelerate_nstop: Error: (1+crm_accel_factor) does not divide equally into nstop: %4.4d  crm_accel_factor: %6.1f \n",nstop, crm_accel_factor);
     exit(-1);
   } else {
     nstop = nstop / (1 + crm_accel_factor);
@@ -184,7 +184,7 @@ inline void pam_accelerate( pam::PamCoupler &coupler, int nstep, int &nstop ) {
     coupler.set_option<bool>("crm_acceleration_ceaseflag",true);
     int nstop_old = nstop;
     int nstop_new = nstop_old + (nstop_old - nstep + 1)*crm_accel_factor;
-    printf("pam_accelerate: MSA tendencies too large - nstop increased from %d to %d \n",nstop_old, nstop_new);
+    PRINTF("pam_accelerate: MSA tendencies too large - nstop increased from %d to %d \n",nstop_old, nstop_new);
     nstop = nstop_new; 
     return;
   }
