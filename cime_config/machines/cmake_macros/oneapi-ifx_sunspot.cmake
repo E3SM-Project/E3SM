@@ -1,2 +1,3 @@
 
-string(APPEND SLIBS " -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -fiopenmp -fopenmp-targets=spir64")
+set(BLA_VENDOR Intel10_64_dyn)
+string(APPEND SLIBS " -fiopenmp -fopenmp-targets=spir64")

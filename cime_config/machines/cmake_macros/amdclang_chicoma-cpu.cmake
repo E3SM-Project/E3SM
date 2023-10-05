@@ -1,7 +1,6 @@
 if (COMP_NAME STREQUAL gptl)
   string(APPEND CPPDEFS " -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_GETTIMEOFDAY")
 endif()
-string(APPEND SLIBS " -lblas -llapack -lamdlibm")
 set(PIO_FILESYSTEM_HINTS "lustre")
 if (NOT DEBUG)
   string(APPEND CFLAGS " -O2 -g")

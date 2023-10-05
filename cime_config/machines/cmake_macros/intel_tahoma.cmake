@@ -7,8 +7,8 @@ if (DEBUG)
 endif()
 string(APPEND SLIBS " -L$ENV{HDF5_PATH}/lib -lhdf5_fortran -lhdf5 -lhdf5_hl -lhdf5hl_fortran")
 string(APPEND SLIBS " -L$ENV{CURL_PATH}/lib -lcurl")
-string(APPEND SLIBS " -L$ENV{LAPACK_PATH}/lib64 -lblas -llapack")
-string(APPEND SLIBS " -lpmi -L$ENV{MKL_PATH}/lib/intel64/ -lmkl_rt")
+set(BLA_VENDOR Intel10_64_dyn)
+string(APPEND SLIBS " -lpmi")
 
 set(PIO_FILESYSTEM_HINTS "lustre")
 

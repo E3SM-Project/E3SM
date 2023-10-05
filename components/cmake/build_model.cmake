@@ -208,8 +208,7 @@ function(build_model COMP_CLASS COMP_NAME)
   #-------------------------------------------------------------------------------
 
   if (MPILIB STREQUAL "mpi-serial")
-    set(MPISERIAL "${INSTALL_SHAREDPATH}/lib/libmpi-serial.a")
-    set(MLIBS "${MLIBS} ${MPISERIAL}")
+    set(SLIBS "${SLIBS} ${INSTALL_SHAREDPATH}/lib/libmpi-serial.a")
   endif()
 
   foreach(ITEM IN LISTS SOURCES)
@@ -225,7 +224,7 @@ function(build_model COMP_CLASS COMP_NAME)
     add_executable(${TARGET_NAME})
     target_sources(${TARGET_NAME} PRIVATE ${REAL_SOURCES})
 
-    set(ALL_LIBS "${GPTLLIB} ${SLIBS} ${MLIBS}")
+    set(ALL_LIBS "${GPTLLIB} ${SLIBS}")
     separate_arguments(ALL_LIBS_LIST UNIX_COMMAND "${ALL_LIBS}")
 
     foreach(ITEM IN LISTS COMP_CLASSES)
@@ -237,6 +236,10 @@ function(build_model COMP_CLASS COMP_NAME)
     foreach(ITEM IN LISTS ALL_LIBS_LIST)
       target_link_libraries(${TARGET_NAME} ${ITEM})
     endforeach()
+
+    # Make sure we link blas/lapack
+    target_link_libraries(${TARGET_NAME} BLAS::BLAS LAPACK::LAPACK)
+
     set_target_properties(${TARGET_NAME} PROPERTIES LINKER_LANGUAGE ${LD})
   else()
     set(TARGET_NAME ${COMP_CLASS})

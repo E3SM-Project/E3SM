@@ -1,6 +1,7 @@
 
 set(CXX_LINKER "CXX")
-string(APPEND SLIBS " -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -fiopenmp -fopenmp-targets=spir64")
+set(BLA_VENDOR Intel10_64_dyn)
+string(APPEND SLIBS " -fiopenmp -fopenmp-targets=spir64")
 set(USE_SYCL "TRUE")
 string(APPEND SYCL_FLAGS " -\-intel -fsycl -fsycl-targets=spir64_gen -Xsycl-target-backend \"-device 12.60.7\"") # for pvc node only
 #string(APPEND SYCL_FLAGS " -\-intel -fsycl")

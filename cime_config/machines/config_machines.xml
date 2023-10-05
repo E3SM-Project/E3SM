@@ -1223,6 +1223,9 @@
     <module_system type="none"/>
     <RUNDIR>$ENV{HOME}/e3sm_scratch/$CASE/run</RUNDIR>
     <EXEROOT>$ENV{HOME}/e3sm_scratch/$CASE/bld</EXEROOT>
+    <environment_variables>
+      <env name="LAPACK_ROOT">$ENV{BLASLAPACK_LIBDIR}</env>
+    </environment_variables>
   </machine>
 
   <machine MACH="singularity">
@@ -2794,6 +2797,7 @@
       <env name="PATH">/home/azamat/soft/perl/5.32.0/bin:$ENV{PATH}</env>
       <env name="NETCDF_PATH">/home/azamat/soft/netcdf/4.4.1c-4.2cxx-4.4.4f/oneapi-2020.12.15.004-intel_mpi-2019.4.243</env>
       <env name="PNETCDF_PATH">/home/azamat/soft/pnetcdf/1.12.1/oneapi-2020.12.15.004-intel_mpi-2019.4.243</env>
+      <env name="LAPACK_ROOT">/home/azamat/soft/libs</env>
     </environment_variables>
     <environment_variables mpilib="mpich" DEBUG="TRUE">
       <env name="HYDRA_TOPO_DEBUG">1</env>
@@ -3569,6 +3573,7 @@
       <env name="PERL5LIB">/software/user_tools/current/cades-ccsi/perl5/lib/perl5/</env>
       <env name="NETCDF_PATH">/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/netcdf-hdf5parallel/4.3.3.1/centos7.2_gnu5.3.0</env>
       <env name="PNETCDF_PATH">/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/pnetcdf/1.9.0/centos7.2_gnu5.3.0</env>
+      <env name="LAPACK_ROOT">/software/tools/compilers/intel_2017/mkl/lib/intel64</env>
     </environment_variables>
 
   </machine>
@@ -4010,6 +4015,7 @@
     <environment_variables>
       <env name="NETCDF_PATH">$ENV{NETCDF_DIR}</env>
       <env name="PNETCDF_PATH">$ENV{PNETCDF_DIR}</env>
+      <env name="LAPACK_ROOT">/global/software/sl-6.x86_64/modules/intel/2016.1.150/lapack/3.6.0-intel</env>
     </environment_variables>
   </machine>
 
@@ -4039,12 +4045,10 @@
       </arguments>
     </mpirun>
     <mpirun mpilib="default">
-
       <executable>mpirun</executable>
       <arguments>
         <arg name="num_tasks">-np {{ total_tasks }}</arg>
       </arguments>
-      
     </mpirun>
     <module_system type="module">
       <init_path lang="sh">/etc/profile.d/modules.sh</init_path>
@@ -4056,10 +4060,10 @@
       <cmd_path lang="perl">/usr/Modules/bin/modulecmd perl</cmd_path>
       <cmd_path lang="python">/usr/Modules/bin/modulecmd python</cmd_path>
       <modules>
-	     <command name="purge"/>
+	<command name="purge"/>
         <command name="load">cmake/3.15.0</command>
         <command name="load">perl</command>
-	     <command name="load">xml-libxml/2.0116</command>
+	<command name="load">xml-libxml/2.0116</command>
         <command name="load">python/3.6</command>
       </modules>
       <modules compiler="intel">
@@ -4094,9 +4098,10 @@
     <environment_variables>
       <env name="NETCDF_PATH">$ENV{NETCDF_DIR}</env>
       <env name="PNETCDF_PATH">$ENV{PNETCDF_DIR}</env>
+      <env name="LAPACK_ROOT">/global/software/sl-6.x86_64/modules/intel/2016.1.150/lapack/3.6.0-intel</env>
     </environment_variables>
   </machine>
-  
+
   <machine MACH="lobata">
     <DESC>FATES development machine at LBNL, System76 Thelio Massive Workstation Pop!_OS 20.04</DESC>
     <NODENAME_REGEX>lobata</NODENAME_REGEX>
@@ -4276,6 +4281,7 @@
     <environment_variables>
       <env name="NETCDF_C_PATH">$ENV{OLCF_NETCDF_C_ROOT}</env>
       <env name="NETCDF_FORTRAN_PATH">$ENV{OLCF_NETCDF_FORTRAN_ROOT}</env>
+      <env name="LAPACK_ROOT">$ENV{OLCF_NETLIB_LAPACK_ROOT}</env>
       <env name="ESSL_PATH">$ENV{OLCF_ESSL_ROOT}</env>
       <env name="HDF5_PATH">$ENV{OLCF_HDF5_ROOT}</env>
       <env name="PNETCDF_PATH">$ENV{OLCF_PARALLEL_NETCDF_ROOT}</env>
@@ -4450,6 +4456,7 @@
       <env name="NETCDF_C_PATH">$SHELL{dirname $(dirname $(which nc-config))}</env>
       <env name="NETCDF_FORTRAN_PATH">$SHELL{dirname $(dirname $(which nf-config))}</env>
       <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf_version))}</env>
+      <env name="LAPACK_ROOT">$ENV{OLCF_NETLIB_LAPACK_ROOT}</env>
       <env name="ESSL_PATH">$ENV{OLCF_ESSL_ROOT}</env>
       <env name="HDF5_PATH">$ENV{OLCF_HDF5_ROOT}</env>
       <env name="PGI_ACC_POOL_ALLOC">0</env>
@@ -4715,7 +4722,7 @@
       <env name="NETCDF_FORTRAN_PATH">$SHELL{dirname $(dirname $(which nf-config))}</env>
       <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf-config))}</env>
       <env name="OPENBLAS_PATH">/opt/apps/spack/opt/spack/linux-centos7-zen2/gcc-12.2.0/openblas-0.3.21-z66r7lyxwkhsshgreexm4cedffp73scp</env>
-      <env name="LAPACK_PATH">/opt/apps/spack/opt/spack/linux-centos7-zen2/gcc-12.2.0/netlib-lapack-3.10.1-lkhddpuidlw2z74g5ui6eq5iattsfjxp</env>
+      <env name="LAPACK_ROOT">/opt/apps/spack/opt/spack/linux-centos7-zen2/gcc-12.2.0/netlib-lapack-3.10.1-lkhddpuidlw2z74g5ui6eq5iattsfjxp</env>
       <env name="PERL5LIB">$ENV{PERL5LIB}:/opt/apps/spack/opt/spack/linux-centos7-zen2/gcc-12.2.0/perl-5.36.0-sly2pft2edg2p3iyijfyy6dzntusokno/lib/site_perl/5.36.0</env>
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
     </environment_variables>
@@ -4805,7 +4812,7 @@
       <env name="NETCDF_FORTRAN_PATH">$SHELL{dirname $(dirname $(which nf-config))}</env>
       <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf-config))}</env>
       <env name="OPENBLAS_PATH">/apps/spack/opt/spack/linux-centos7-cascadelake/gcc-12.2.0/openblas-0.3.20-nxcsxdi56nj2gxyo65iyuaecp3cbd4xd</env>
-      <env name="LAPACK_PATH">/apps/spack/opt/spack/linux-centos7-cascadelake/gcc-12.2.0/netlib-lapack-3.10.1-xjw3q4abrpdihbyvx72em7l4wrzxm3zp</env>
+      <env name="LAPACK_ROOT">/apps/spack/opt/spack/linux-centos7-cascadelake/gcc-12.2.0/netlib-lapack-3.10.1-xjw3q4abrpdihbyvx72em7l4wrzxm3zp</env>
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
     </environment_variables>
 
