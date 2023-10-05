@@ -5,3 +5,4 @@ if (SCREAM_DOUBLE_PRECISION)
 endif()
 
 add_subdirectory (atm_proc_subcycling)
+add_subdirectory (shoc_p3_nudging)

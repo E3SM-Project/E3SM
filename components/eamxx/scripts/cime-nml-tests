@@ -5,7 +5,7 @@ Script containing python test suite for SCREAM's CIME
 namelist-related infrastructure.
 """
 
-from utils import check_minimum_python_version, expect, ensure_pylint, run_cmd_assert_result, get_timestamp
+from utils import check_minimum_python_version, expect, ensure_pylint, run_cmd_assert_result, get_timestamp, run_cmd_no_fail
 
 check_minimum_python_version(3, 6)
 
@@ -34,6 +34,8 @@ class TestBuildnml(unittest.TestCase):
         Convenience wrapper around create_test. Returns list of full paths to created cases. If multiple cases,
         the order of the returned list is not guaranteed to match the order of the arguments.
         """
+        extra_args = extra_args.split()
+
         test_id = f"cmd_nml_tests-{get_timestamp()}"
         extra_args.append("-t {}".format(test_id))
 
@@ -60,29 +62,61 @@ class TestBuildnml(unittest.TestCase):
         return cases[0] if len(cases) == 1 else cases
 
     ###########################################################################
-    def _chg_atmconfig(self, changes, case, buff=True, reset=False, expect_lost=False):
+    def _get_values(self, case, name, value=None, expect_equal=True, all_matches=False):
     ###########################################################################
-        buffer_opt = "" if buff else "--no-buffer"
-
-        for name, value in changes:
+        """
+        Queries a name, optionally checking if the value matches or does not match the
+        argument.
+        """
+        if not all_matches:
             orig = run_cmd_assert_result(self, f"./atmquery {name} --value", from_dir=case)
-            self.assertNotEqual(orig, value)
+            if value:
+                if expect_equal:
+                    self.assertEqual(orig, value, msg=name)
+                else:
+                    self.assertNotEqual(orig, value, msg=name)
 
-            run_cmd_assert_result(self, f"./atmchange {buffer_opt} {name}={value}", from_dir=case)
-            curr_value = run_cmd_assert_result(self, f"./atmquery {name} --value", from_dir=case)
-            self.assertEqual(curr_value, value)
+            return [name]
+
+        else:
+            output = run_cmd_assert_result(self, f"./atmquery {name} --grep", from_dir=case).splitlines()
+            names  = [line.rsplit(": ", maxsplit=1)[0].strip() for line in output]
+            values = [line.rsplit(": ", maxsplit=1)[1].strip() for line in output]
+
+            if value:
+                for orig_value in values:
+                    if expect_equal:
+                        self.assertEqual(orig_value, value, msg=name)
+                    else:
+                        self.assertNotEqual(orig_value, value, msg=name)
+
+            return names
+
+    ###########################################################################
+    def _chg_atmconfig(self, changes, case, reset=False, expect_lost=None):
+    ###########################################################################
+        changes = [(item[0], item[1], False) if len(item) == 2 else item for item in changes]
+
+        expect_lost     = reset if expect_lost is None else expect_lost
+
+        changes_unpacked = {}
+        for name, value, all_matches in changes:
+            all_matches_opt = "-a" if all_matches else ""
+
+            names = self._get_values(case, name, value=value, expect_equal=False, all_matches=all_matches)
+
+            run_cmd_assert_result(self, f"./atmchange {all_matches_opt} {name}='{value}'", from_dir=case)
+
+            for item in names:
+                changes_unpacked[item] = value
 
         if reset:
             run_cmd_assert_result(self, "./atmchange --reset", from_dir=case)
 
         run_cmd_assert_result(self, "./case.setup", from_dir=case)
 
-        for name, value in changes:
-            curr_value = run_cmd_assert_result(self, f"./atmquery {name} --value", from_dir=case)
-            if expect_lost:
-                self.assertNotEqual(curr_value, value)
-            else:
-                self.assertEqual(curr_value, value)
+        for name, value in changes_unpacked.items():
+            self._get_values(case, name, value=value, expect_equal=not expect_lost)
 
     ###########################################################################
     def setUp(self):
@@ -120,7 +154,7 @@ class TestBuildnml(unittest.TestCase):
         """
         Test that xmlchanges impact atm config files
         """
-        case = self._create_test("ERS_Ln22.ne30_ne30.F2010-SCREAMv1 --no-build".split())
+        case = self._create_test("ERS_Ln22.ne30_ne30.F2010-SCREAMv1 --no-build")
 
         # atm config should match case test opts
         case_rest_n = run_cmd_assert_result(self, "./xmlquery REST_N --value", from_dir=case)
@@ -143,31 +177,35 @@ class TestBuildnml(unittest.TestCase):
         """
         Test that atmchanges are not lost when eamxx setup is called
         """
-        case = self._create_test("SMS.ne30_ne30.F2010-SCREAMv1 --no-build".split())
+        case = self._create_test("SMS.ne30_ne30.F2010-SCREAMv1 --no-build")
 
         self._chg_atmconfig([("atm_log_level", "trace")], case)
 
     ###########################################################################
-    def test_manual_atmchanges_are_lost(self):
+    def test_append(self):
     ###########################################################################
         """
-        Test that manual atmchanges are lost when eamxx setup is called
+        Test that var+=value syntax behaves as expected
         """
-        case = self._create_test("SMS.ne30_ne30.F2010-SCREAMv1 --no-build".split())
+        case = self._create_test("SMS.ne30_ne30.F2010-SCREAMv1 --no-build")
 
-        # An unbuffered atmchange is semantically the same as a manual edit
-        self._chg_atmconfig([("atm_log_level", "trace")], case, buff=False, expect_lost=True)
+        # Append to an existing entry
+        name = 'output_yaml_files'
+        out = run_cmd_no_fail(f"./atmchange {name}+=a.yaml", from_dir=case)
+
+        # Get the yaml files
+        expected =f'{EAMXX_DIR / "data/scream_default_output.yaml"}, a.yaml'
+        self._get_values(case, name, value=expected, expect_equal=True)
 
     ###########################################################################
     def test_reset_atmchanges_are_lost(self):
     ###########################################################################
         """
-        Test that manual atmchanges are lost when eamxx setup is called
+        Test that atmchanges are lost when resetting
         """
-        case = self._create_test("SMS.ne30_ne30.F2010-SCREAMv1 --no-build".split())
+        case = self._create_test("SMS.ne30_ne30.F2010-SCREAMv1 --no-build")
 
-        # An unbuffered atmchange is semantically the same as a manual edit
-        self._chg_atmconfig([("atm_log_level", "trace")], case, reset=True, expect_lost=True)
+        self._chg_atmconfig([("atm_log_level", "trace")], case, reset=True)
 
     ###########################################################################
     def test_manual_atmchanges_are_not_lost_hack_xml(self):
@@ -176,11 +214,11 @@ class TestBuildnml(unittest.TestCase):
         Test that manual atmchanges are not lost when eamxx setup is called if
         xml hacking is enabled.
         """
-        case = self._create_test("SMS.ne30_ne30.F2010-SCREAMv1 --no-build".split())
+        case = self._create_test("SMS.ne30_ne30.F2010-SCREAMv1 --no-build")
 
-        run_cmd_assert_result(self, f"./xmlchange SCREAM_HACK_XML=TRUE", from_dir=case)
+        run_cmd_assert_result(self, "./xmlchange SCREAM_HACK_XML=TRUE", from_dir=case)
 
-        self._chg_atmconfig([("atm_log_level", "trace")], case, buff=False)
+        self._chg_atmconfig([("atm_log_level", "trace")], case, expect_lost=True)
 
     ###########################################################################
     def test_multiple_atmchanges_are_preserved(self):
@@ -188,7 +226,7 @@ class TestBuildnml(unittest.TestCase):
         """
         Test that multiple atmchanges are not lost when eamxx setup is called
         """
-        case = self._create_test("SMS.ne30_ne30.F2010-SCREAMv1 --no-build".split())
+        case = self._create_test("SMS.ne30_ne30.F2010-SCREAMv1 --no-build")
 
         self._chg_atmconfig([("atm_log_level", "trace"), ("output_to_screen", "true")], case)
 
@@ -201,7 +239,7 @@ class TestBuildnml(unittest.TestCase):
         """
         def_mach_comp = \
             run_cmd_assert_result(self, "../CIME/Tools/list_e3sm_tests cime_tiny", from_dir=CIME_SCRIPTS_DIR).splitlines()[-1].split(".")[-1]
-        case = self._create_test(f"SMS.ne30_ne30.F2010-SCREAMv1.{def_mach_comp}.scream-scream_example_testmod_atmchange --no-build".split())
+        case = self._create_test(f"SMS.ne30_ne30.F2010-SCREAMv1.{def_mach_comp}.scream-scream_example_testmod_atmchange --no-build")
 
         self._chg_atmconfig([("cubed_sphere_map", "84")], case)
 
@@ -211,9 +249,60 @@ class TestBuildnml(unittest.TestCase):
         """
         Test that atmchange works for array data
         """
-        case = self._create_test("SMS.ne30_ne30.F2010-SCREAMv1 --no-build".split())
+        case = self._create_test("SMS.ne30_ne30.F2010-SCREAMv1 --no-build")
 
         self._chg_atmconfig([("surf_mom_flux", "40.0,2.0")], case)
+
+    ###########################################################################
+    def test_atmchanges_on_all_matches(self):
+    ###########################################################################
+        """
+        Test that atmchange works for all matches
+        """
+        case = self._create_test("SMS.ne30_ne30.F2010-SCREAMv1 --no-build")
+
+        self._chg_atmconfig([("enable_precondition_checks", "false", True)], case)
+
+    ###########################################################################
+    def test_atmchanges_on_all_matches_plus_spec(self):
+    ###########################################################################
+        """
+        Test that atmchange works for all matches and picking one specialization
+        """
+        case = self._create_test("SMS.ne30_ne30.F2010-SCREAMv1 --no-build")
+
+        self._chg_atmconfig([("enable_precondition_checks", "false", True),
+                             ("p3::enable_precondition_checks", "true")], case)
+
+    ###########################################################################
+    def test_atmchanges_for_atm_procs(self):
+    ###########################################################################
+        """
+        Test that atmchanges that add atm procs create the new proc when case.setup
+        is called.
+        """
+        case = self._create_test("SMS.ne30_ne30.F2010-SCREAMv1 --no-build")
+
+        self._chg_atmconfig([("mac_aero_mic::atm_procs_list", "shoc,cldFraction,spa,p3,testOnly")], case)
+
+        # If we are able to change subcycles of testOnly then we know the atmchange
+        # above added the necessary atm proc XML block.
+        self._chg_atmconfig([("testOnly::number_of_subcycles", "42")], case)
+
+        # Now remove the testOnly proc. Things should still work even though
+        # the buffer will have changes that cannot be applied.
+        self._chg_atmconfig([("mac_aero_mic::atm_procs_list", "shoc,cldFraction,spa,p3")], case)
+
+    ###########################################################################
+    def test_atmchanges_for_atm_procs_no_setup(self):
+    ###########################################################################
+        """
+        Test that you can set atm proc fields for an atm proc added by
+        atmchange without having to run case.setup.
+        """
+        case = self._create_test("SMS.ne30_ne30.F2010-SCREAMv1 --no-build")
+
+        self._chg_atmconfig([("mac_aero_mic::atm_procs_list", "shoc,cldFraction,spa,p3,testOnly"), ("testOnly::number_of_subcycles", "42")], case)
 
 ###############################################################################
 def parse_command_line(args, desc):

@@ -1,1 +1,2 @@
-./xmlchange --append SCREAM_ATMCHANGE_BUFFER='BfbHash=6'
+
+$CIMEROOT/../components/eamxx/scripts/atmchange BfbHash=1 -b

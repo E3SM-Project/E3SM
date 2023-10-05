@@ -16,9 +16,11 @@ Field Names:
   - bm
   - eff_radius_qc
   - eff_radius_qi
+  - eff_radius_qr
   - micro_liq_ice_exchange
   - micro_vap_liq_exchange
   - micro_vap_ice_exchange
+  - rainfrac
   - tke
   - eddy_diff_mom
   - sgs_buoy_flux

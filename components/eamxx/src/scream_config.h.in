@@ -22,9 +22,6 @@
 // Whether this is a CUDA/HIP build
 #cmakedefine EAMXX_ENABLE_GPU
 
-// Whether SCREAM has Homme enabled as dynamics dycore
-#cmakedefine SCREAM_HAS_HOMME
-
 // Whether scream uses leap years or not
 #cmakedefine SCREAM_HAS_LEAP_YEAR
 
@@ -50,5 +47,11 @@
 
 // Whether monolithic kernels are on
 #cmakedefine SCREAM_SMALL_KERNELS
+
+// The sha of the last commit
+#define EAMXX_GIT_VERSION "${EAMXX_GIT_VERSION}"
+
+// The version of EAMxx
+#define EAMXX_VERSION "${EAMXX_VERSION_MAJOR}.${EAMXX_VERSION_MINOR}.${EAMXX_VERSION_PATCH}"
 
 #endif

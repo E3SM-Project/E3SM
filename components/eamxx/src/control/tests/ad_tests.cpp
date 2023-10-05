@@ -16,7 +16,7 @@ TEST_CASE ("ad_tests","[!throws]")
   // Load ad parameter list
   std::string fname = "ad_tests.yaml";
   ekat::ParameterList ad_params("Atmosphere Driver");
-  REQUIRE_NOTHROW ( parse_yaml_file(fname,ad_params) );
+  parse_yaml_file(fname,ad_params);
 
   // Create a comm
   ekat::Comm atm_comm (MPI_COMM_WORLD);
