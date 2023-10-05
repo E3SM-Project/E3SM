@@ -8,6 +8,7 @@ import glob
 
 logger = logging.getLogger(__name__)
 
+###############################################################################
 def parse_command_line(args, description):
 ###############################################################################
     parser = argparse.ArgumentParser(
@@ -42,7 +43,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     return args.buildroot, args.installpath, args.caseroot
 
-
+###############################################################################
 def buildlib(bldroot, installpath, case):
 ###############################################################################
     gmake_args = get_standard_makefile_args(case, shared_lib=True)
@@ -50,6 +51,12 @@ def buildlib(bldroot, installpath, case):
     srcroot = case.get_value("SRCROOT")
     caseroot = case.get_value("CASEROOT")
     libroot = case.get_value("LIBROOT")
+
+    csm_share_dir = os.environ.get("csm_share_ROOT")
+    if csm_share_dir is not None:
+        # We are using a pre-installed csm_share
+        expect(os.path.exists(csm_share_dir), f"Non-existent csm_share root {csm_share_dir}")
+        return
 
     filepath = [os.path.join(caseroot,"SourceMods","src.share"),
                 os.path.join(srcroot,"share","streams"),
@@ -137,12 +144,13 @@ def buildlib(bldroot, installpath, case):
     for _file in glob.iglob(os.path.join(installdir,"include","*")):
         symlink_force(_file, os.path.join(case_inc_dir,os.path.basename(_file)))
 
-
-
+###############################################################################
 def _main(argv, documentation):
+###############################################################################
     bldroot, installpath, caseroot = parse_command_line(argv, documentation)
     with Case(caseroot) as case:
         buildlib(bldroot, installpath, case)
 
+###############################################################################
 if (__name__ == "__main__"):
     _main(sys.argv, __doc__)

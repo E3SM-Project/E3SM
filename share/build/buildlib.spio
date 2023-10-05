@@ -74,6 +74,11 @@ def buildlib(bldroot, installpath, case):
         ):
             scorpio_src_root_dir = None
 
+    # find_package(ADIOS2) appears to work better with ADIOS2_DIR than
+    # ADIOS2_ROOT. This is a workaround
+    if "ADIOS2_ROOT" in os.environ:
+        os.environ["ADIOS2_DIR"] = os.environ["ADIOS2_ROOT"]
+
     # If variable PIO_VERSION_MAJOR is defined in the environment then
     # we assume that PIO is installed on the system
     # and expect to find
