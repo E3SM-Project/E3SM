@@ -62,7 +62,6 @@
 <config_nFloeCategories>1</config_nFloeCategories>
 <config_nIceLayers>7</config_nIceLayers>
 <config_nSnowLayers>5</config_nSnowLayers>
-<config_nFloeCategories>1</config_nFloeCategories>
 
 <!-- initialize -->
 <config_earth_radius>6371229.0</config_earth_radius>

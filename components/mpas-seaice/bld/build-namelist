@@ -531,7 +531,6 @@ add_default($nl, 'config_nCategories');
 add_default($nl, 'config_nFloeCategories');
 add_default($nl, 'config_nIceLayers');
 add_default($nl, 'config_nSnowLayers');
-add_default($nl, 'config_nFloeCategories');
 
 ##############################
 # Namelist group: initialize #
