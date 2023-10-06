@@ -888,10 +888,18 @@ contains
     !-----------------------------------------------------------------------
     !        ... Compute the extraneous frcing at time = t(n+1)
     !-----------------------------------------------------------------------      
+    !call setext( extfrc, zint, zintr, cldtop, &
+    !             zmid, lchnk, tfld, o2mmr, ommr, &
+    !             pmid, mbar, rlats, calday, ncol, rlons, pbuf )
     call setext( extfrc, zint, zintr, cldtop, &
                  zmid, lchnk, tfld, o2mmr, ommr, &
-                 pmid, mbar, rlats, calday, ncol, rlons, pbuf )
-
+                 pmid, mbar, rlats, calday, ncol, rlons, pbuf, &
+                 zmidr, relhum, qh2o, ufld, vfld) !      
+   ! zmidr, geopotential height relative to surface elevation 
+   ! pmid,tfld,already have 
+   ! relhum relative humidity
+   ! qh2o specific humidity kg/kg 
+   ! ufld, vfld, wind speeds 
     do m = 1,extcnt
        if( m /= synoz_ndx ) then
           do k = 1,pver

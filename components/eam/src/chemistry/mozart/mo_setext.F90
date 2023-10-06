@@ -66,9 +66,13 @@ contains
 
   end subroutine setext_inti
 
+  !subroutine setext( extfrc, zint_abs, zint_rel, cldtop, &
+  !     zmid, lchnk, tfld, o2mmr, ommr, &
+  !     pmid, mbar, rlats, calday, ncol, rlons, pbuf )
   subroutine setext( extfrc, zint_abs, zint_rel, cldtop, &
        zmid, lchnk, tfld, o2mmr, ommr, &
-       pmid, mbar, rlats, calday, ncol, rlons, pbuf )
+       pmid, mbar, rlats, calday, ncol, rlons, pbuf, &
+       zmidr, relhum, qh2o, ufld, vfld )
     !--------------------------------------------------------
     !     ... for this latitude slice:
     !         - form the production from datasets
@@ -117,6 +121,13 @@ contains
     real(r8), intent(in)  ::   o2mmr(ncol,pver)            ! o2 concentration (kg/kg)
     real(r8), intent(in)  ::   ommr(ncol,pver)             ! o concentration (kg/kg)
 
+    ! plume-rise parameters
+    real(r8), intent(in)  ::   zmidr(ncol,pver)             ! midpoint geopot height - elevation ( km )
+    real(r8), intent(in)  ::   relhum(ncol,pver)           ! relative humidity (0~1)
+    real(r8), intent(in)  ::   qh2o(pcols,pver)            ! specific humidity (kg/kg)
+    real(r8), intent(in)    :: ufld(pcols,pver)            ! zonal velocity (m/s)
+    real(r8), intent(in)    :: vfld(pcols,pver)            ! meridional velocity (m/s)
+
     type(physics_buffer_desc),pointer :: pbuf(:)
 
     !--------------------------------------------------------
@@ -138,7 +149,10 @@ contains
     !--------------------------------------------------------
     !     ... set frcing from datasets
     !--------------------------------------------------------
-    call extfrc_set( lchnk, zint_rel, extfrc, ncol )
+    !call extfrc_set( lchnk, zint_rel, extfrc, ncol )
+    ! plume-rise parameters
+    call extfrc_set( lchnk, zint_rel, extfrc, ncol, &
+                     zmidr, pmid, tfld, relhum, qh2o, ufld, vfld )
     
     !--------------------------------------------------------
     !     ... set nox production from lighting
