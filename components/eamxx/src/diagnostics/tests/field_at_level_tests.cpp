@@ -67,8 +67,10 @@ TEST_CASE("field_at_level")
   auto f_mid_1 = f_mid.get_component(1);
 
   ekat::ParameterList params_mid, params_int;
-  params_mid.set("Field",f_mid_1);
-  params_int.set("Field",f_int);
+  params_mid.set("field_name",f_mid_1.name());
+  params_int.set("field_name",f_int.name());
+  params_mid.set("grid_name",grid->name());
+  params_int.set("grid_name",grid->name());
 
   using IPDF = std::uniform_int_distribution<int>;
   IPDF ipdf (1,nlevs-2);
@@ -88,10 +90,13 @@ TEST_CASE("field_at_level")
     printf (" -> testing extraction at level: %s\n",lev_str.c_str());
 
     // Create and setup diagnostics
-    params_mid.set<std::string>("Field Level Location",lev_str);
-    params_int.set<std::string>("Field Level Location",lev_str);
+    params_mid.set<std::string>("vertical_location",lev_str);
+    params_int.set<std::string>("vertical_location",lev_str);
     auto diag_mid = std::make_shared<FieldAtLevel>(comm,params_mid);
     auto diag_int = std::make_shared<FieldAtLevel>(comm,params_int);
+
+    diag_mid->set_grids(gm);
+    diag_int->set_grids(gm);
 
     diag_mid->set_required_field(f_mid_1);
     diag_int->set_required_field(f_int);

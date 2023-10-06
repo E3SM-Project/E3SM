@@ -9,11 +9,26 @@ namespace scream
 FieldAtLevel::FieldAtLevel (const ekat::Comm& comm, const ekat::ParameterList& params)
   : AtmosphereDiagnostic(comm,params)
 {
-  const auto& f = params.get<Field>("Field");
-  const auto& fid = f.get_header().get_identifier();
+  const auto& fname = m_params.get<std::string>("field_name");
+  const auto& location = m_params.get<std::string>("vertical_location");
+  m_diag_name = fname + "_at_" + location;
+}
 
+void FieldAtLevel::
+set_grids (const std::shared_ptr<const GridsManager> grids_manager)
+{
+  const auto& fname = m_params.get<std::string>("field_name");
+  const auto& gname = m_params.get<std::string>("grid_name");
+  add_field<Required>(fname,gname);
+}
+
+void FieldAtLevel::
+initialize_impl (const RunType /*run_type*/)
+{
+  const auto& f   = get_fields_in().front();
   // Sanity checks
   using namespace ShortFieldTagsNames;
+  const auto& fid    = f.get_header().get_identifier();
   const auto& layout = fid.get_layout();
   EKAT_REQUIRE_MSG (layout.rank()>1 && layout.rank()<=6,
       "Error! Field rank not supported by FieldAtLevel.\n"
@@ -25,27 +40,14 @@ FieldAtLevel::FieldAtLevel (const ekat::Comm& comm, const ekat::ParameterList& p
       " - field name  : " + fid.name() + "\n"
       " - field layout: " + to_string(layout) + "\n");
 
-  // Note: you may ask why we can't just store f and be done, rather than go through the
-  // add_field infrastructure. Unfortunately, there are some checks in the base classes
-  // that require the diagnostic to have 1+ required fields. So we have to do this.
-  // TODO: one day we may make atm diags *not* inherit from atm process...
-  add_field<Required>(fid);
-
-  // We can also create the diagnostic already!
-  const auto& location = params.get<std::string>("Field Level Location");
-  const auto diag_field_name = f.name() + "_at_" + location;
-
-  FieldIdentifier d_fid (diag_field_name,layout.strip_dim(tag),fid.get_units(),fid.get_grid_name());
-  m_diagnostic_output = Field(d_fid);
-  m_diagnostic_output.allocate_view();
-
   // Figure out the level
-  if (ekat::starts_with(location,"lev")) {
+  const auto& location = m_params.get<std::string>("vertical_location");
+  if (ekat::starts_with(location,"lev_")) {
     const auto& lev = location.substr(4);
     EKAT_REQUIRE_MSG (lev.find_first_not_of("0123456789")==std::string::npos,
         "Error! Invalid level specification for FieldAtLevel diagnostic.\n"
         "  - input value: '" + location + "'\n"
-        "  - expected: 'levN', with N an integer.\n");
+        "  - expected: 'lev_N', with N an integer.\n");
     m_field_level = std::stoi(lev);
     EKAT_REQUIRE_MSG (m_field_level<layout.dims().back(),
         "Error! Invalid level specification. Level index out of bounds.\n"
@@ -61,10 +63,12 @@ FieldAtLevel::FieldAtLevel (const ekat::Comm& comm, const ekat::ParameterList& p
         "  - input value: '" + location + "'\n"
         "  - expected: 'model_top','model_bot', or 'levN', with N an integer.\n");
   }
-}
 
-void FieldAtLevel::initialize_impl (const RunType /*run_type*/)
-{
+  // All good, create the diag output
+  FieldIdentifier d_fid (m_diag_name,layout.strip_dim(tag),fid.get_units(),fid.get_grid_name());
+  m_diagnostic_output = Field(d_fid);
+  m_diagnostic_output.allocate_view();
+
   using stratts_t = std::map<std::string,std::string>;
 
   // Propagate any io string attribute from input field to diag field

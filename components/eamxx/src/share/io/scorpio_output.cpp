@@ -1170,17 +1170,17 @@ compute_diagnostic(const std::string& name, const bool allow_invalid_fields)
 // manager.  If not it will next check to see if it is in the list
 // of available diagnostics.  If neither of these two options it
 // will throw an error.
-Field AtmosphereOutput::get_field(const std::string& name, const std::string mode) const
+Field AtmosphereOutput::
+get_field(const std::string& name, const std::string& mode) const
 {
   const auto field_mgr = get_field_manager(mode);
   const auto sim_field_mgr = get_field_manager("sim");
+  const bool can_be_diag = field_mgr == sim_field_mgr;
   if (field_mgr->has_field(name)) {
     return field_mgr->get_field(name);
-  } else if (m_diagnostics.find(name) != m_diagnostics.end() && field_mgr==sim_field_mgr) {
+  } else if (m_diagnostics.find(name) != m_diagnostics.end() && can_be_diag) {
     const auto& diag = m_diagnostics.at(name);
     return diag->get_diagnostic();
-  } else if (m_fields_alt_name.find(name) != m_fields_alt_name.end()) {
-    return get_field(m_fields_alt_name.at(name),mode);
   } else {
     EKAT_ERROR_MSG ("ERROR::AtmosphereOutput::get_field Field " + name + " not found in " + mode + " field manager or diagnostics list.");
   }
@@ -1190,77 +1190,61 @@ void AtmosphereOutput::set_diagnostics()
 {
   const auto sim_field_mgr = get_field_manager("sim");
   // Create all diagnostics
-  for (const auto& fname : m_fields_names) {
+  for (auto& fname : m_fields_names) {
     if (!sim_field_mgr->has_field(fname)) {
-      create_diagnostic(fname);
-    }
-  }
+      auto diag = create_diagnostic(fname);
+      auto diag_fname = diag->get_diagnostic().name();
+      m_diagnostics[diag_fname] = diag;
 
-  // Set required fields for all diagnostics
-  // NOTE: do this *after* creating all diags: in case the required
-  //       field of certain diagnostics is itself a diagnostic,
-  //       we want to make sure the required ones are all built.
-  for (const auto& dd : m_diagnostics) {
-    const auto& diag = dd.second;
-    for (const auto& req : diag->get_required_field_requests()) {
-      const auto& req_field = get_field(req.fid.name(),"sim");
-      diag->set_required_field(req_field.get_const());
+      // Note: the diag field may have a name different from what was used
+      //       in the input file, so update the name with the actual
+      //       diagnostic field name
+      fname = diag_fname;
     }
-
-    // Note: this inits with an invalid timestamp. If by any chance we try to
-    //       output the diagnostic without computing it, we'll get an error.
-    diag->initialize(util::TimeStamp(),RunType::Initial);
   }
 }
 
-void AtmosphereOutput::
+std::shared_ptr<AtmosphereDiagnostic>
+AtmosphereOutput::
 create_diagnostic (const std::string& diag_field_name) {
   auto& diag_factory = AtmosphereDiagnosticFactory::instance();
-
-  // Add empty entry for this map, so .at(..) always works
-  m_diag_depends_on_diags[diag_field_name].resize(0);
 
   // Construct a diagnostic by this name
   ekat::ParameterList params;
   std::string diag_name;
 
-  // If the diagnostic is one of
-  //  - ${field_name}_at_lev_${N}     <- interface fields still use "_lev_"
-  //  - ${field_name}_at_model_bot
-  //  - ${field_name}_at_model_top
-  //  - ${field_name}_at_${M}X
-  // where M/N are numbers (N integer), X=Pa, hPa, or mb
-  // then we need to set some params
-  auto tokens = ekat::split(diag_field_name,"_at_");
-  EKAT_REQUIRE_MSG (tokens.size()==1 || tokens.size()==2,
-      "Error! Unexpected diagnostic name: " + diag_field_name + "\n");
+  if (diag_field_name.find("_at_")!=std::string::npos) {
+    // The diagnostic must be one of
+    //  - ${field_name}_at_lev_${N}     <- interface fields still use "_lev_"
+    //  - ${field_name}_at_model_bot
+    //  - ${field_name}_at_model_top
+    //  - ${field_name}_at_${M}X
+    // where M/N are numbers (N integer), X=Pa, hPa, mb, or m
+    auto tokens = ekat::split(diag_field_name,"_at_");
+    EKAT_REQUIRE_MSG (tokens.size()==2,
+        "Error! Unexpected diagnostic name: " + diag_field_name + "\n");
 
-  if (tokens.size()==2) {
-    // If the field is itself a diagnostic, ensure that diag
-    // is already created before we handle this one
     const auto& fname = tokens.front();
-    if (diag_factory.has_product(fname)) {
-      if (m_diagnostics.count(fname)==0) {
-        create_diagnostic(fname);
-      }
-      m_diag_depends_on_diags[diag_field_name].push_back(fname);
-    }
+    params.set("field_name",fname);
+    params.set("grid_name",get_field_manager("sim")->get_grid()->name());
 
-    const auto& f = get_field(fname,"sim");
-    params.set("Field",f);
-    params.set("Field Level Location", tokens[1]);
+    params.set("vertical_location", tokens[1]);
     params.set<double>("mask_value",m_fill_value);
-    // FieldAtLevel         follows convention variable_at_lev_N (where N is some integer)
-    // FieldAtPressureLevel follows convention variable_at_999XYZ (where 999 is some integer, XYZ string units)
-    // FieldAtHeight        follows convention variable_at_999XYZ (where 999 is some integer, XYZ string units)
+
+    // Conventions on notation (N=any integer):
+    // FieldAtLevel        : var_at_lev_N, var_at_model_top, var_at_model_bot
+    // FieldAtPressureLevel: var_at_Nx, with x=mb,Pa,hPa
+    // FieldAtHeight       : var_at_Nm
     if (tokens[1].find_first_of("0123456789.")==0) {
       auto units_start = tokens[1].find_first_not_of("0123456789.");
-      if (tokens[1].substr(units_start)=="m") {
+      auto units = tokens[1].substr(units_start);
+      if (units=="m") {
         diag_name = "FieldAtHeight";
-      } else {
+      } else if (units=="mb" or units=="Pa" or units=="hPa") {
         diag_name = "FieldAtPressureLevel";
+      } else {
+        EKAT_ERROR_MSG ("Error! Invalid units x for 'field_at_Nx' diagnostic.\n");
       }
-
     } else {
       diag_name = "FieldAtLevel";
     }
@@ -1299,25 +1283,27 @@ create_diagnostic (const std::string& diag_field_name) {
   // Create the diagnostic
   auto diag = diag_factory.create(diag_name,m_comm,params);
   diag->set_grids(m_grids_manager);
-  m_diagnostics.emplace(diag_field_name,diag);
 
-  // When using remappers with certain diagnostics the get_field command can be called with both the diagnostic
-  // name as saved inside the diagnostic and with the name as it is given in the output control file.  If it is
-  // the case that these names don't match we add their pairings to the alternate name map.
-  if (diag->name() != diag_field_name) {
-    m_fields_alt_name.emplace(diag->name(),diag_field_name);
-    m_fields_alt_name.emplace(diag_field_name,diag->name());
-  }
+  // Add empty entry for this map, so .at(..) always works
+  auto& deps = m_diag_depends_on_diags[diag->name()];
 
-  // If any of the diag req fields is itself a diag, we need to create it
+  // Initialize the diagnostic
   const auto sim_field_mgr = get_field_manager("sim");
-  for (const auto& req : diag->get_required_field_requests()) {
-    const auto& fname = req.fid.name();
+  for (const auto& freq : diag->get_required_field_requests()) {
+    const auto& fname = freq.fid.name();
     if (!sim_field_mgr->has_field(fname)) {
-      create_diagnostic(fname);
-      m_diag_depends_on_diags.at(diag_field_name).push_back(fname);
+      // This diag depends on another diag. Create and init the dependency
+      if (m_diagnostics.count(fname)==0) {
+        m_diagnostics[fname] = create_diagnostic(fname);
+      }
+      auto dep = m_diagnostics.at(fname);
+      deps.push_back(fname);
     }
+    diag->set_required_field (get_field(fname,"sim"));
   }
+  diag->initialize(util::TimeStamp(),RunType::Initial);
+
+  return diag;
 }
 
 // Helper function to mark filled points in a specific layout

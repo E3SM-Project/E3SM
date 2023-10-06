@@ -79,8 +79,9 @@ TEST_CASE("field_at_height")
     util::TimeStamp t0 ({2022,1,1},{0,0,0});
     auto& factory = AtmosphereDiagnosticFactory::instance();
     ekat::ParameterList pl;
-    pl.set("Field Level Location",loc);
-    pl.set("Field",f);
+    pl.set("vertical_location",loc);
+    pl.set("field_name",f.name());
+    pl.set("grid_name",grid->name());
     auto diag = factory.create("FieldAtheight",comm,pl);
     diag->set_grids(gm);
     diag->set_required_field(f);

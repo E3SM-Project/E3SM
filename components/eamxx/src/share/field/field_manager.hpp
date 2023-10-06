@@ -82,7 +82,6 @@ public:
 
   // Query for a particular field or group of fields
   bool has_field (const std::string& name) const { return m_fields.find(name)!=m_fields.end(); }
-  bool has_field (const identifier_type& id) const;
   bool has_group (const std::string& name) const { return m_field_groups.find(name)!=m_field_groups.end(); }
 
   const FieldIdentifier& get_field_id (const std::string& name) const;
@@ -133,6 +132,11 @@ protected:
 
   // The grid where the fields in this FM live
   std::shared_ptr<const AbstractGrid> m_grid;
+
+  // If some fields are registered with incomplete FID (just name and grid),
+  // we 'skip' them, hoping that some other request will contain the right specs.
+  // If no complete request is given for that field, we need to error out
+  std::list<std::pair<std::string,std::string>> m_incomplete_requests;
 };
 
 } // namespace scream

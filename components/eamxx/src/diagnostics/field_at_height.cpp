@@ -37,9 +37,40 @@ FieldAtHeight::
 FieldAtHeight (const ekat::Comm& comm, const ekat::ParameterList& params)
  : AtmosphereDiagnostic(comm,params)
 {
-  const auto& f = params.get<Field>("Field");
+  m_field_name = m_params.get<std::string>("field_name");
+  const auto& location = m_params.get<std::string>("vertical_location");
+  auto chars_start = location.find_first_not_of("0123456789.");
+  EKAT_REQUIRE_MSG (chars_start!=0 && chars_start!=std::string::npos,
+      "Error! Invalid string for height value for FieldAtHeight.\n"
+      " - input string   : " + location + "\n"
+      " - expected format: Nm, with N integer\n");
+  const auto z_str = location.substr(0,chars_start);
+  m_z = std::stod(z_str);
+
+  const auto units = location.substr(chars_start);
+  EKAT_REQUIRE_MSG (units=="m",
+      "Error! Invalid string for height value for FieldAtHeight.\n"
+      " - input string   : " + location + "\n"
+      " - expected format: Nm, with N integer\n");
+  m_diag_name = m_field_name + "_at_" + m_params.get<std::string>("vertical_location");
+}
+
+void FieldAtHeight::
+set_grids (const std::shared_ptr<const GridsManager> grids_manager)
+{
+  const auto& gname = m_params.get<std::string>("grid_name");
+  add_field<Required>(m_field_name,gname);
+
+  // We don't know yet which one we need
+  add_field<Required>("z_mid",gname);
+  add_field<Required>("z_int",gname);
+}
+
+void FieldAtHeight::
+initialize_impl (const RunType /*run_type*/)
+{
+  const auto& f = get_field_in(m_field_name);
   const auto& fid = f.get_header().get_identifier();
-  m_field_name = f.name();
 
   // Sanity checks
   using namespace ShortFieldTagsNames;
@@ -58,43 +89,14 @@ FieldAtHeight (const ekat::Comm& comm, const ekat::ParameterList& params)
       " - field name  : " + fid.name() + "\n"
       " - field layout: " + to_string(layout) + "\n");
 
-  // Note: you may ask why we can't just store f and be done, rather than go through the
-  // add_field infrastructure. Unfortunately, there are some checks in the base classes
-  // that require the diagnostic to have 1+ required fields. So we have to do this.
-  // TODO: one day we may make atm diags *not* inherit from atm process...
-  add_field<Required>(fid);
+  // Figure out the z value
+  m_z_name = tag==LEV ? "z_mid" : "z_int";
 
-  // We can also create the diagnostic already!
-  const auto& location = params.get<std::string>("Field Level Location");
-  const auto diag_field_name = m_field_name + "_at_" + location;
-
-  FieldIdentifier d_fid (diag_field_name,layout.strip_dim(tag),fid.get_units(),fid.get_grid_name());
+  // All good, create the diag output
+  FieldIdentifier d_fid (m_diag_name,layout.strip_dim(tag),fid.get_units(),fid.get_grid_name());
   m_diagnostic_output = Field(d_fid);
   m_diagnostic_output.allocate_view();
 
-  // Figure out the pressure value
-  auto chars_start = location.find_first_not_of("0123456789.");
-  EKAT_REQUIRE_MSG (chars_start!=0 && chars_start!=std::string::npos,
-      "Error! Invalid string for pressure value for FieldAtHeight.\n"
-      " - input string   : " + location + "\n"
-      " - expected format: Nm, with N integer\n");
-  const auto z_str = location.substr(0,chars_start);
-  m_z = std::stod(z_str);
-
-  const auto units = location.substr(chars_start);
-  EKAT_REQUIRE_MSG (units=="m",
-      "Error! Invalid string for height value for FieldAtHeight.\n"
-      " - input string   : " + location + "\n"
-      " - expected format: Nm, with N integer\n");
-
-  // Create request for z field
-  const auto& gname = fid.get_grid_name();
-  m_z_name = tag==LEV ? "z_mid" : "z_int";
-  add_field<Required>(m_z_name, layout, ekat::units::m, gname);
-}
-
-void FieldAtHeight::initialize_impl (const RunType /*run_type*/)
-{
   using stratts_t = std::map<std::string,std::string>;
 
   // Propagate any io string attribute from input field to diag field
