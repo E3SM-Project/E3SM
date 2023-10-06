@@ -316,7 +316,7 @@ void Functions<S,D>::shoc_main_internal(
 }
 #else
 template<typename S, typename D>
-void Functions<S,D>::shoc_main_internal(
+void Functions<S,D>::shoc_main_internal_disp(
   const Int&                   shcol,        // Number of columns
   const Int&                   nlev,         // Number of levels
   const Int&                   nlevi,        // Number of levels on interface grid
@@ -385,7 +385,8 @@ void Functions<S,D>::shoc_main_internal(
   const view_2d<Spack>&       w3,
   const view_2d<Spack>&       wqls_sec,
   const view_2d<Spack>&       brunt,
-  const view_2d<Spack>&       isotropy,
+  const view_2d<Spack>&       isotropy)
+#if 0
   // Temporaries
   const view_1d<Scalar>& se_b,
   const view_1d<Scalar>& ke_b,
@@ -406,7 +407,33 @@ void Functions<S,D>::shoc_main_internal(
   const view_2d<Spack>& dz_zt,
   const view_2d<Spack>& dz_zi,
   const view_2d<Spack>& tkh)
+#endif
 {
+  const auto nlevi_packs = ekat::npack<Spack>(nlevi);
+  const auto nlev_packs = ekat::npack<Spack>(nlev);
+  view_1d<Scalar>
+    se_b   ("se_b", shcol),
+    ke_b   ("ke_b", shcol),
+    wv_b   ("wv_b", shcol),
+    wl_b   ("wl_b", shcol),
+    se_a   ("se_a", shcol),
+    ke_a   ("ke_a", shcol),
+    wv_a   ("wv_a", shcol),
+    wl_a   ("wl_a", shcol),
+    ustar  ("ustar", shcol),
+    kbfs   ("kbfs", shcol),
+    obklen ("obklen", shcol),
+    ustar2 ("ustar2", shcol),
+    wstar  ("wstar", shcol);
+
+  view_2d<Spack>
+    rho_zt  ("rho_zt",  shcol, nlevi_packs),
+    shoc_qv ("shoc_qv", shcol, nlevi_packs),
+    shoc_tabs ("shoc_tabs", shcol, nlev_packs),
+    dz_zt   ("dz_zt",   shcol, nlevi_packs),
+    dz_zi   ("dz_zi",   shcol, nlevi_packs),
+    tkh    ("tkh",     shcol, nlevi_packs);
+
   // Scalarize some views for single entry access
   const auto s_thetal  = ekat::scalarize(thetal);
   const auto s_shoc_ql = ekat::scalarize(shoc_ql);
@@ -680,37 +707,27 @@ Int Functions<S,D>::shoc_main(
   });
   Kokkos::fence();
 #else
+#if 0
   const auto nlevi_packs = ekat::npack<Spack>(nlevi);
-  view_1d<Scalar>
-    se_b   ("se_b", shcol),
-    ke_b   ("ke_b", shcol),
-    wv_b   ("wv_b", shcol),
-    wl_b   ("wl_b", shcol),
-    se_a   ("se_a", shcol),
-    ke_a   ("ke_a", shcol),
-    wv_a   ("wv_a", shcol),
-    wl_a   ("wl_a", shcol),
-    ustar  ("ustar", shcol),
-    kbfs   ("kbfs", shcol),
-    obklen ("obklen", shcol),
-    ustar2 ("ustar2", shcol),
-    wstar  ("wstar", shcol);
+  view_1d<Scalar> se_b   ("se_b", shcol), ke_b   ("ke_b", shcol),
+    wv_b   ("wv_b", shcol), wl_b   ("wl_b", shcol), se_a   ("se_a", shcol),
+    ke_a   ("ke_a", shcol), wv_a   ("wv_a", shcol), wl_a   ("wl_a", shcol),
+    ustar  ("ustar", shcol), kbfs   ("kbfs", shcol), obklen ("obklen", shcol),
+    ustar2 ("ustar2", shcol), wstar  ("wstar", shcol);
 
-    view_2d<Spack>
-    rho_zt  ("rho_zt",  shcol, nlevi_packs),
-    shoc_qv ("shoc_qv", shcol, nlevi_packs),
-    dz_zt   ("dz_zt",   shcol, nlevi_packs),
-    dz_zi   ("dz_zi",   shcol, nlevi_packs),
-    tkh     ("tkh",     shcol, nlevi_packs);
+  view_2d<Spack> rho_zt  ("rho_zt",  shcol, nlevi_packs),
+    shoc_qv ("shoc_qv", shcol, nlevi_packs), dz_zt   ("dz_zt",   shcol, nlevi_packs),
+    dz_zi   ("dz_zi",   shcol, nlevi_packs), tkh     ("tkh",     shcol, nlevi_packs);
 
   SHOCTemporaries shoc_temporaries{
     se_b, ke_b, wv_b, wl_b, se_a, ke_a, wv_a, wl_a, ustar, kbfs, obklen, ustar2, wstar,
     rho_zt, shoc_qv, dz_zt, dz_zi, tkh};
+#endif
   
-  const auto u_wind_s   = Kokkos::subview(shoc_input_output.horiz_wind, Kokkos::ALL(), 0, Kokkos::ALL());
-  const auto v_wind_s   = Kokkos::subview(shoc_input_output.horiz_wind, Kokkos::ALL(), 1, Kokkos::ALL());
+  const auto u_wind_s = Kokkos::subview(shoc_input_output.horiz_wind, Kokkos::ALL(), 0, Kokkos::ALL());
+  const auto v_wind_s = Kokkos::subview(shoc_input_output.horiz_wind, Kokkos::ALL(), 1, Kokkos::ALL());
 
-  shoc_main_internal(shcol, nlev, nlevi, npbl, nadv, num_qtracers, dtime,
+  shoc_main_internal_disp(shcol, nlev, nlevi, npbl, nadv, num_qtracers, dtime,
     lambda_low, lambda_high, lambda_slope, lambda_thresh,  // Runtime options
     thl2tune, qw2tune, qwthl2tune, w2tune, length_fac,     // Runtime options
     c_diag_3rd_mom, Ckh, Ckm,                              // Runtime options
@@ -725,13 +742,15 @@ Int Functions<S,D>::shoc_main(
     shoc_output.pblh, shoc_output.shoc_ql2, // Output
     shoc_history_output.shoc_mix, shoc_history_output.w_sec, shoc_history_output.thl_sec, shoc_history_output.qw_sec, shoc_history_output.qwthl_sec, // Diagnostic Output Variables
     shoc_history_output.wthl_sec, shoc_history_output.wqw_sec, shoc_history_output.wtke_sec, shoc_history_output.uw_sec, shoc_history_output.vw_sec, // Diagnostic Output Variables
-    shoc_history_output.w3, shoc_history_output.wqls_sec, shoc_history_output.brunt, shoc_history_output.isotropy, // Diagnostic Output Variables
+    shoc_history_output.w3, shoc_history_output.wqls_sec, shoc_history_output.brunt, shoc_history_output.isotropy); // Diagnostic Output Variables
+#if 0
     // Temporaries
     shoc_temporaries.se_b, shoc_temporaries.ke_b, shoc_temporaries.wv_b, shoc_temporaries.wl_b,
     shoc_temporaries.se_a, shoc_temporaries.ke_a, shoc_temporaries.wv_a, shoc_temporaries.wl_a,
     shoc_temporaries.ustar, shoc_temporaries.kbfs, shoc_temporaries.obklen, shoc_temporaries.ustar2,
     shoc_temporaries.wstar, shoc_temporaries.rho_zt, shoc_temporaries.shoc_qv,
     shoc_temporaries.tabs, shoc_temporaries.dz_zt, shoc_temporaries.dz_zi, shoc_temporaries.tkh);
+#endif
 #endif
 
   auto finish = std::chrono::steady_clock::now();

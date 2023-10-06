@@ -916,7 +916,7 @@ struct Functions
     const uview_1d<Spack>&       brunt,
     const uview_1d<Spack>&       isotropy);
 #else
-  static void shoc_main_internal(
+  static void shoc_main_internal_disp(
     const Int&                   shcol,        // Number of columns
     const Int&                   nlev,         // Number of levels
     const Int&                   nlevi,        // Number of levels on interface grid
@@ -985,7 +985,8 @@ struct Functions
     const view_2d<Spack>&       w3,
     const view_2d<Spack>&       wqls_sec,
     const view_2d<Spack>&       brunt,
-    const view_2d<Spack>&       isotropy,
+    const view_2d<Spack>&       isotropy);
+#if 0
     // Temporaries
     const view_1d<Scalar>& se_b,
     const view_1d<Scalar>& ke_b,
@@ -1006,6 +1007,7 @@ struct Functions
     const view_2d<Spack>& dz_zt,
     const view_2d<Spack>& dz_zi,
     const view_2d<Spack>& tkh);
+#endif
 #endif
 
   // Return microseconds elapsed

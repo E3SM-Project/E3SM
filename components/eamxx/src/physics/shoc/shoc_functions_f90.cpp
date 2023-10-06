@@ -2925,9 +2925,6 @@ Int shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl, 
   const auto elapsed_microsec = SHF::shoc_main(shcol, nlev, nlevi, npbl, nadv, num_qtracers, dtime,
                                                workspace_mgr, shoc_runtime_options,
                                                shoc_input, shoc_input_output, shoc_output, shoc_history_output
-#ifdef SCREAM_SMALL_KERNELS
-                                               , shoc_temporaries
-#endif
                                                );
 
   // Copy wind back into separate views and
