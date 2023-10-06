@@ -1631,6 +1631,11 @@
 			possible_values="positive real"
 			icepack_name="rsnw_tmax"
 		/>
+		<nml_option name="config_snow_thermal_conductivity" type="real" default_value="0.3" units="W/m/deg"
+			description="thermal conductivity of snow"
+			possible_values="positive real"
+			icepack_name="ksno"
+		/>
 	</nml_record>
 
 	<nml_record name="meltponds" in_defaults="true">

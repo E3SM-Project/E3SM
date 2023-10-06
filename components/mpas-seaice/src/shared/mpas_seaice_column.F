@@ -10998,6 +10998,7 @@ contains
     real(kind=RKIND), pointer :: &
          config_min_friction_velocity, &
          config_ice_ocean_drag_coefficient, &
+         config_snow_thermal_conductivity, &
          config_rapid_mode_channel_radius, &
          config_rapid_model_critical_Ra, &
          config_rapid_mode_aspect_ratio, &
@@ -11164,6 +11165,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_calc_surface_temperature", config_calc_surface_temperature)
     call MPAS_pool_get_config(domain % configs, "config_min_friction_velocity", config_min_friction_velocity)
     call MPAS_pool_get_config(domain % configs, "config_ice_ocean_drag_coefficient", config_ice_ocean_drag_coefficient)
+    call MPAS_pool_get_config(domain % configs, "config_snow_thermal_conductivity", config_snow_thermal_conductivity)
     call MPAS_pool_get_config(domain % configs, "config_rapid_mode_channel_radius", config_rapid_mode_channel_radius)
     call MPAS_pool_get_config(domain % configs, "config_rapid_model_critical_Ra", config_rapid_model_critical_Ra)
     call MPAS_pool_get_config(domain % configs, "config_rapid_mode_aspect_ratio", config_rapid_mode_aspect_ratio)
@@ -11363,6 +11365,10 @@ contains
     if (seaiceIceOceanDragCoefficient /= config_ice_ocean_drag_coefficient) &
        call mpas_log_write('ColPkg dragio differs from config_ice_ocean_drag_coefficient', &
                realArgs=(/seaiceIceOceanDragCoefficient,config_ice_ocean_drag_coefficient/))
+
+    if (seaiceSnowConductivity /= config_snow_thermal_conductivity) &
+       call mpas_log_write('ColPkg ksno differs from ', &
+               realArgs=(/seaiceSnowConductivity,config_snow_thermal_conductivity/))
 
     call colpkg_init_parameters(&
          config_cice_int("config_thermodynamics_type", config_thermodynamics_type), &

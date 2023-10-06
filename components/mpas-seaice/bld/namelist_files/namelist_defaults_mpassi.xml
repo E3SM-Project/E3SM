@@ -364,6 +364,7 @@
 <config_wind_compaction_factor>27.3</config_wind_compaction_factor>
 <config_snow_redistribution_factor>0.3</config_snow_redistribution_factor>
 <config_max_dry_snow_radius>2800.0</config_max_dry_snow_radius>
+<config_snow_thermal_conductivity>0.3</config_snow_thermal_conductivity>
 
 <!-- meltponds -->
 <config_snow_to_ice_transition_depth>0.0</config_snow_to_ice_transition_depth>

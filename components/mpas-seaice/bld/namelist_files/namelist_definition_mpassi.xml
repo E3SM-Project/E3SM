@@ -2303,6 +2303,14 @@ Valid values: positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_snow_thermal_conductivity" type="real"
+	category="snow" group="snow">
+thermal conductivity of snow  (W/m/deg)
+
+Valid values: positive real
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- meltponds -->
 
