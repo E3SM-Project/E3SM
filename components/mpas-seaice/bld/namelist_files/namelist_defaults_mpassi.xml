@@ -419,6 +419,7 @@
 <config_couple_biogeochemistry_fields>false</config_couple_biogeochemistry_fields>
 <config_use_data_icebergs>false</config_use_data_icebergs>
 <config_salt_flux_coupling_type>'constant'</config_salt_flux_coupling_type>
+<config_ice_ocean_drag_coefficient>0.00536</config_ice_ocean_drag_coefficient>
 
 <!-- diagnostics -->
 <config_check_state>false</config_check_state>

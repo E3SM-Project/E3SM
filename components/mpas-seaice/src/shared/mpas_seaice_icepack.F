@@ -10061,6 +10061,9 @@ contains
     use ice_colpkg, only: &
          colpkg_init_parameters
 
+    use seaice_constants, only: &
+         seaiceIceOceanDragCoefficient    ! ice ocean drag coefficient
+
     type(domain_type), intent(inout) :: &
          domain
 
@@ -10099,6 +10102,7 @@ contains
 
     real(kind=RKIND), pointer :: &
          config_min_friction_velocity, &
+         config_ice_ocean_drag_coefficient, &
          config_rapid_mode_channel_radius, &
          config_rapid_model_critical_Ra, &
          config_rapid_mode_aspect_ratio, &
@@ -10264,6 +10268,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_ocean_heat_transfer_type", config_ocean_heat_transfer_type)
     call MPAS_pool_get_config(domain % configs, "config_calc_surface_temperature", config_calc_surface_temperature)
     call MPAS_pool_get_config(domain % configs, "config_min_friction_velocity", config_min_friction_velocity)
+    call MPAS_pool_get_config(domain % configs, "config_ice_ocean_drag_coefficient", config_ice_ocean_drag_coefficient)
     call MPAS_pool_get_config(domain % configs, "config_rapid_mode_channel_radius", config_rapid_mode_channel_radius)
     call MPAS_pool_get_config(domain % configs, "config_rapid_model_critical_Ra", config_rapid_model_critical_Ra)
     call MPAS_pool_get_config(domain % configs, "config_rapid_mode_aspect_ratio", config_rapid_mode_aspect_ratio)
@@ -10459,6 +10464,10 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_wind_compaction_factor", config_wind_compaction_factor)
     call MPAS_pool_get_config(domain % configs, "config_snow_redistribution_factor", config_snow_redistribution_factor)
     call MPAS_pool_get_config(domain % configs, "config_max_dry_snow_radius", config_max_dry_snow_radius)
+
+    if (seaiceIceOceanDragCoefficient /= config_ice_ocean_drag_coefficient) &
+       call mpas_log_write('ColPkg dragio differs from config_ice_ocean_drag_coefficient',
+                          realArgs=(/dragio,config_ice_ocean_drag_coefficient/))
 
     call colpkg_init_parameters(&
          config_cice_int("config_thermodynamics_type", config_thermodynamics_type), &
@@ -11574,6 +11583,7 @@ contains
 
     real(kind=RKIND), pointer :: &
          config_min_friction_velocity, &
+         config_ice_ocean_drag_coefficient, &
          config_rapid_mode_channel_radius, &
          config_rapid_model_critical_Ra, &
          config_rapid_mode_aspect_ratio, &
@@ -11767,6 +11777,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_update_ocean_fluxes", config_update_ocean_fluxes)
     call MPAS_pool_get_config(domain % configs, "config_frazil_coupling_type", config_frazil_coupling_type)
     call MPAS_pool_get_config(domain % configs, "config_min_friction_velocity", config_min_friction_velocity)
+    call MPAS_pool_get_config(domain % configs, "config_ice_ocean_drag_coefficient", config_ice_ocean_drag_coefficient)
     call MPAS_pool_get_config(domain % configs, "config_rapid_mode_channel_radius", config_rapid_mode_channel_radius)
     call MPAS_pool_get_config(domain % configs, "config_rapid_model_critical_Ra", config_rapid_model_critical_Ra)
     call MPAS_pool_get_config(domain % configs, "config_rapid_mode_aspect_ratio", config_rapid_mode_aspect_ratio)
@@ -12141,7 +12152,7 @@ contains
          hfrazilmin_in           = seaiceFrazilMinimumThickness, &
          !floediam_in             = , &
          depressT_in             = seaiceMeltingTemperatureDepression, &
-         dragio_in               = seaiceIceOceanDragCoefficient, & ! note calc_dragio not implemented
+         dragio_in               = config_ice_ocean_drag_coefficient, & ! calc_dragio not implemented
          !thickness_ocn_layer1_in = , &        ! not yet implemented in MPAS-SI (stealth feature)
          !iceruf_ocn_in           = , &        ! under-ice roughness, not yet implemented
          albocn_in               = seaiceOceanAlbedo, &
@@ -12672,6 +12683,10 @@ contains
     ! 'linear_salt' = -depressT * sss
     ! 'mushy' conforms with ktherm=2
     !tfrz_option = config_sea_freezing_temperature_type
+
+    ! dragio:
+    ! Neutral ice-ocean drag coefficient
+    !dragio = config_ice_ocean_drag_coefficient
 
     !-----------------------------------------------------------------------
     ! Parameters for the ice thickness distribution

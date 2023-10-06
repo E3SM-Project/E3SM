@@ -134,7 +134,7 @@ module seaice_constants
 
   ! dynamics constants
   real(kind=RKIND), public :: &
-       seaiceIceOceanDragCoefficient      = 0.00536_RKIND, &! ice-ocn drag coefficient
+       seaiceIceOceanDragCoefficient      = 0.00536_RKIND, &! ice-ocn drag coefficient (also a namelist variable)
        seaiceIceStrengthConstantHiblerP   = 2.75e4_RKIND , &! P* constant in Hibler strength formula
        seaiceIceStrengthConstantHiblerC   = 20._RKIND       ! C* constant in Hibler strength formula
 

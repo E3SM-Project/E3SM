@@ -1847,6 +1847,11 @@
 			description="Type of salt flux to ocean method"
 			possible_values="'constant', or 'prognostic'"
 		/>
+		<nml_option name="config_ice_ocean_drag_coefficient" type="real" default_value="0.00536" units=""
+			description="Neutral ice-ocean drag coefficient"
+			possible_values=""
+			icepack_name="dragio"
+		/>
 	</nml_record>
 
 	<nml_record name="diagnostics" in_defaults="true">

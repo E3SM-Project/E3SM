@@ -2650,6 +2650,13 @@ Valid values: 'constant' or 'prognostic'
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_ice_ocean_drag_coefficient" type="real"
+	category="ocean" group="ocean">
+Neutral ice-ocean drag coefficient
+
+Valid values:
+Default: Defined in namelist_defaults.xml
+</entry>
 
 <!-- diagnostics -->
 
