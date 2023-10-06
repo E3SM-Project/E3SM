@@ -140,7 +140,7 @@ contains
 
   subroutine fan_eval(bounds, num_soilc, filter_soilc, &
        atm2lnd_vars, soilstate_vars,  frictionvel_vars)
-    use clm_time_manager, only: get_step_size, get_curr_date, get_curr_calday, get_nstep
+    use elm_time_manager, only: get_step_size, get_curr_date, get_curr_calday, get_nstep
     use elm_varpar, only: max_patch_per_col
     use LandunitType, only: lun_pp
     use shr_sys_mod, only : shr_sys_flush

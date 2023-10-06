@@ -1412,7 +1412,7 @@ contains
     allocate(this%snowdp             (begc:endc))                     ; this%snowdp             (:)   = spval
     allocate(this%snow_persistence   (begc:endc))                     ; this%snow_persistence   (:)   = spval
     if (use_fan) then
-       allocate(this%h2osoi_tend_tsl_col(begc:endc))                  ; this%h2osoi_tend_tsl_col(:)   = nan
+       allocate(this%h2osoi_tend_tsl_col(begc:endc))                  ; this%h2osoi_tend_tsl_col(:)   = spval
     end if
     allocate(this%snw_rds_top        (begc:endc))                     ; this%snw_rds_top        (:)   = spval
     allocate(this%do_capsnow         (begc:endc))

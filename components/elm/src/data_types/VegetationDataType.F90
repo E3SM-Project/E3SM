@@ -8969,9 +8969,9 @@ module VegetationDataType
     allocate(this%grainn_to_food                      (begp:endp)) ; this%grainn_to_food                      (:) = spval
     allocate(this%grainn_xfer_to_grainn               (begp:endp)) ; this%grainn_xfer_to_grainn               (:) = spval
     allocate(this%grainn_storage_to_xfer              (begp:endp)) ; this%grainn_storage_to_xfer              (:) = spval
-    allocate(this%synthfert                           (begp:endp)) ; this%synthfert                           (:) = nan
-    allocate(this%manure                              (begp:endp)) ; this%manure                              (:) = nan
-    allocate(this%nfertilization                      (begp:endp)) ; this%nfertilization                      (:) = nan
+    allocate(this%synthfert                           (begp:endp)) ; this%synthfert                           (:) = spval
+    allocate(this%manure                              (begp:endp)) ; this%manure                              (:) = spval
+    allocate(this%nfertilization                      (begp:endp)) ; this%nfertilization                      (:) = spval
     allocate(this%fert_counter                        (begp:endp)) ; this%fert_counter                        (:) = spval
     allocate(this%soyfixn                             (begp:endp)) ; this%soyfixn                             (:) = spval
     allocate(this%nfix_to_plantn                      (begp:endp)) ; this%nfix_to_plantn                      (:) = spval
@@ -10127,7 +10127,7 @@ module VegetationDataType
     allocate(this%grainp_to_food                      (begp:endp)) ; this%grainp_to_food                      (:) = spval
     allocate(this%grainp_xfer_to_grainp               (begp:endp)) ; this%grainp_xfer_to_grainp               (:) = spval
     allocate(this%grainp_storage_to_xfer              (begp:endp)) ; this%grainp_storage_to_xfer              (:) = spval
-    allocate(this%fert_p                              (begp:endp)) ; this%fert_p                              (:) = spval
+    allocate(this%fert_p                              (begp:endp)) ; this%fert_p                              (:) = 0.d0
     allocate(this%fert_p_counter                      (begp:endp)) ; this%fert_p_counter                      (:) = spval
     allocate(this%crop_seedp_to_leaf                  (begp:endp)) ; this%crop_seedp_to_leaf                  (:) = spval
     allocate(this%dwt_seedp_to_leaf                   (begp:endp)) ; this%dwt_seedp_to_leaf                   (:) = spval

@@ -407,7 +407,6 @@ contains
                 is_pft_known_to_model(m) = .false.
              end if
           end do
-          t2 = t - grc_pp%topi(g) + 1
        end do
     end do
 

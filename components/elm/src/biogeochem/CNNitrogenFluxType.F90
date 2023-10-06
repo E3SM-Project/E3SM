@@ -898,7 +898,7 @@ contains
        allocate(this%nh3_otherfert_col              (begc:endc))
        allocate(this%nh3_otherfert_col              (begc:endc)) ; this%nh3_otherfert_col          (:)   = spval 
        allocate(this%nh3_total_col                  (begc:endc))
-       allocate(this%nh3_total_col                  (begc:endc)) ; this%nh3_total_col              (:)   = spval +
+       allocate(this%nh3_total_col                  (begc:endc)) ; this%nh3_total_col              (:)   = spval 
 
        allocate(this%manure_no3_to_soil_col         (begc:endc)) ; this%manure_no3_to_soil_col     (:)   = spval
        allocate(this%fert_no3_to_soil_col           (begc:endc)) ; this%fert_no3_to_soil_col       (:)   = spval

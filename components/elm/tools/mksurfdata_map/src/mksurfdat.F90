@@ -462,7 +462,9 @@ program mksurfdat
                ero_c2(ns_o)                       , &
                ero_c3(ns_o)                       , &
                tillage(ns_o)                      , &
-               litho(ns_o)                        )
+               litho(ns_o)                        , &
+               nfert(ns_o,0:numpft)               , &
+               pfert(ns_o,0:numpft)               )
 
     landfrac_pft(:)       = spval 
     pctlnd_pft(:)         = spval

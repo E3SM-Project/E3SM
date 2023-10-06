@@ -262,27 +262,27 @@ contains
     this%p2ETo_patch(begp:endp,:) = spval
     call hist_addfld2d (fname='P2ETO', units='mm', type2d='month', &
          avgflag='A', long_name='Precipitation:Evapotranspiration ratio', &
-         ptr_patch=this%p2ETo_patch)
+         ptr_patch=this%p2ETo_patch, default = 'inactive')
 
     this%p2ETo_bar_patch(begp:endp,:) = spval
     call hist_addfld2d (fname='P2ETO_bar', units='mm', type2d='month', &
          avgflag='A', long_name='EWMA Precipitation:Evapotranspiration ratio', &
-         ptr_patch=this%p2ETo_bar_patch)
+         ptr_patch=this%p2ETo_bar_patch, default = 'inactive')
 
     this%prev_p2ETo_bar_patch(begp:endp,:) = spval
     call hist_addfld2d (fname='PREV_P2ETO_bar', units='mm', type2d='month', &
          avgflag='A', long_name='Previous EWMA Precipitation:Evapotranspirationratio', &
-         ptr_patch=this%prev_p2ETo_bar_patch)
+         ptr_patch=this%prev_p2ETo_bar_patch, default = 'inactive')
 
     this%P2E_rm_patch(begp:endp,:) = spval
     call hist_addfld2d (fname='P2E_rm', units='mm', type2d='month', &
          avgflag='A', long_name='Precipitation:Evapotranspiration ratio 4-month sum', &
-         ptr_patch=this%P2E_rm_patch)
+         ptr_patch=this%P2E_rm_patch, default = 'inactive')
 
     this%ETo_patch(begp:endp,:) = spval
     call hist_addfld2d (fname='ETO', units='mm', type2d='month', &
          avgflag='A', long_name='Reference Evapotranspiration', &
-         ptr_patch=this%ETo_patch)
+         ptr_patch=this%ETo_patch, default = 'inactive')
 
   end subroutine InitHistory
 

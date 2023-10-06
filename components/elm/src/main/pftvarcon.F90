@@ -1012,7 +1012,7 @@ contains
     call ncd_io('gcbr_q',gcbr_q, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv ) gcbr_q(:) = 0._r8
        
-    call ncd_io('mergetoelmpft', mergetoelmpft, 'read', ncid, readvar=readv)  
+    call ncd_io('mergetoclmpft', mergetoelmpft, 'read', ncid, readvar=readv)  
     if ( .not. readv ) then
        do i = 0, mxpft
           mergetoelmpft(i) = i
