@@ -155,7 +155,7 @@ module seaice_constants
        seaiceExtinctionCoef              = 1.4_RKIND    , & ! vis extnctn coef in ice, wvlngth<700nm (1/m)
        seaiceFreshIceConductivity        = 2.03_RKIND   , & ! thermal conductivity of fresh ice(W/m/deg)
                                                             ! (kice) is not used for mushy thermo
-       seaiceSnowConductivity            = 0.30_RKIND   , & ! thermal conductivity of snow  (W/m/deg)
+       seaiceSnowConductivity            = 0.30_RKIND   , & ! thermal conductivity of snow  (W/m/deg, also a namelist variable)
        seaiceSnowMinimumThickness        = 1.e-4_RKIND  , & ! min snow thickness for computing zTsn (m)
        ! weights for albedos for history and diagnostics
        ! 4 Jan 2007 BPB  Following are appropriate for complete cloud
