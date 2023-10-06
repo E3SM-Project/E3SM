@@ -18,8 +18,11 @@ using KT            = ekat::KokkosTypes<ekat::DefaultDevice>;
 // views for single- and multi-column data
 using view_1d       = typename KT::template view_1d<Real>;
 using view_2d       = typename KT::template view_2d<Real>;
+using view_3d       = typename KT::template view_3d<Real>;
 using const_view_1d = typename KT::template view_1d<const Real>;
 using const_view_2d = typename KT::template view_2d<const Real>;
+
+using complex_view_2d = typename KT::template view_2d<Kokkos::complex<Real>>;
 
 // Kokkos thread team (league member)
 using Team = Kokkos::TeamPolicy<KT::ExeSpace>::member_type;
