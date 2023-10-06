@@ -11368,7 +11368,7 @@ contains
                realArgs=(/seaiceIceOceanDragCoefficient,config_ice_ocean_drag_coefficient/))
 
     if (seaiceSnowConductivity /= config_snow_thermal_conductivity) &
-       call mpas_log_write('ColPkg ksno differs from ', &
+       call mpas_log_write('ColPkg ksno differs from config_snow_thermal_conductivity', &
                realArgs=(/seaiceSnowConductivity,config_snow_thermal_conductivity/))
 
     call colpkg_init_parameters(&
