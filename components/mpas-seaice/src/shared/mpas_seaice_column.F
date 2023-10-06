@@ -11364,7 +11364,6 @@ contains
        call mpas_log_write('ColPkg dragio differs from config_ice_ocean_drag_coefficient', &
                realArgs=(/seaiceIceOceanDragCoefficient,config_ice_ocean_drag_coefficient/))
 
-
     call colpkg_init_parameters(&
          config_cice_int("config_thermodynamics_type", config_thermodynamics_type), &
          config_heat_conductivity_type, &
