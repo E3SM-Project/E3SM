@@ -541,6 +541,11 @@ module li_time_integration_fe_rk
       call mpas_dmpar_field_halo_exch(domain, 'vertexMask')
       call mpas_timer_stop("halo updates")
 
+      ! Update stresses etc
+      ! === Solve Velocity =====================
+      call li_velocity_solve(domain, solveVelo=.false., err=err_tmp)
+      err = ior(err, err_tmp)
+
 ! === Update bed topo =====================
 ! It's not clear when the best time to do this is.
 ! Seems cleaner to do it either before or after all of the time evolution of the ice
