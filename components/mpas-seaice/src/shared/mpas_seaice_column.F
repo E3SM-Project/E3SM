@@ -10957,7 +10957,8 @@ contains
          colpkg_init_parameters
 
     use seaice_constants, only: &
-         seaiceIceOceanDragCoefficient    ! ice ocean drag coefficient
+         seaiceIceOceanDragCoefficient, & ! ice ocean drag coefficient
+         seaiceSnowConductivity           ! snow thermal conductivity
 
     type(domain_type), intent(inout) :: &
          domain
