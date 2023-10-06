@@ -10956,6 +10956,9 @@ contains
     use ice_colpkg, only: &
          colpkg_init_parameters
 
+    use seaice_constants, only: &
+         seaiceIceOceanDragCoefficient    ! ice ocean drag coefficient
+
     type(domain_type), intent(inout) :: &
          domain
 
@@ -11358,8 +11361,9 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_max_dry_snow_radius", config_max_dry_snow_radius)
 
     if (seaiceIceOceanDragCoefficient /= config_ice_ocean_drag_coefficient) &
-       call mpas_log_write('ColPkg dragio differs from config_ice_ocean_drag_coefficient',
-                          realArgs=(/dragio,config_ice_ocean_drag_coefficient/))
+       call mpas_log_write('ColPkg dragio differs from config_ice_ocean_drag_coefficient', &
+               realArgs=(/seaiceIceOceanDragCoefficient,config_ice_ocean_drag_coefficient/))
+
 
     call colpkg_init_parameters(&
          config_cice_int("config_thermodynamics_type", config_thermodynamics_type), &
