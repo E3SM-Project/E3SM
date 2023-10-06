@@ -480,6 +480,19 @@ module li_time_integration_fe_rk
          floatingBasalMassBalAccum = floatingBasalMassBalAccum + rkTendWeights(rkStage) * floatingBasalMassBalApplied
          fluxAcrossGroundingLineAccum = fluxAcrossGroundingLineAccum + rkTendWeights(rkStage) * fluxAcrossGroundingLine
 
+         ! Halo updates
+         call mpas_timer_start("halo updates")
+
+         call mpas_dmpar_field_halo_exch(domain, 'thickness')
+         call mpas_dmpar_field_halo_exch(domain, 'temperature')
+         call mpas_dmpar_field_halo_exch(domain, 'waterFrac')
+         call mpas_dmpar_field_halo_exch(domain, 'enthalpy')
+         call mpas_dmpar_field_halo_exch(domain, 'damage')
+         call mpas_dmpar_field_halo_exch(domain, 'passiveTracer2d')
+
+         call mpas_timer_stop("halo updates")
+
+
          ! Update velocity for each RK step
          ! === Solve Velocity =====================
          call li_velocity_solve(domain, solveVelo=.true., err=err_tmp)
