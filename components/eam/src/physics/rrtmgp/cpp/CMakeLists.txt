@@ -14,11 +14,7 @@ include(${YAKL_HOME}/yakl_utils.cmake)
 yakl_process_target(rrtmgp_interface)
 
 # Libraries to link
-find_library(
-    NETCDF_C_LIBRARY NAMES netcdf libnetcdf 
-    HINTS ${LIB_NETCDF} ${LIB_NETCDF_C}
-)
-target_link_libraries(rrtmgp_interface ${NETCDF_C_LIBRARY} rrtmgp yakl)
+target_link_libraries(rrtmgp_interface spio rrtmgp yakl)
 
 # Where to find includes
 target_include_directories(rrtmgp_interface PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../external/cpp)

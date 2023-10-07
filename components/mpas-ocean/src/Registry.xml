@@ -2285,11 +2285,11 @@
 		<!-- FIELDS FOR LAND ICE STORAGE -->
 		<var name="accumulatedLandIceMass" type="real" dimensions="nCells Time" units="kg m^-2"
 			description="Mass per unit area of land ice produced at land ice-ocean interface. Only computed in 'standalone' mode where land-ice fluxes are computed in MPAS-O."
-			packages="landIceFluxesPKG"
+			packages="landIceFluxesPKG;dataLandIceFluxesPKG"
 		/>
 		<var name="accumulatedLandIceHeat" type="real" dimensions="nCells Time" units="J m^-2"
 			description="Heat per unit area stored in land ice produced at land ice-ocean interface. Only computed in 'standalone' mode where land-ice fluxes are computed in MPAS-O."
-			packages="landIceFluxesPKG"
+			packages="landIceFluxesPKG;dataLandIceFluxesPKG"
 		/>
 		<var name="accumulatedLandIceFrazilMass" type="real" dimensions="nCells Time" units="kg m^-2"
 			description="Mass per unit area of frazil ice produced under land ice.  Only computed when not coupled to a dynamic land-ice model."

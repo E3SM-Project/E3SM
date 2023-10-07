@@ -1837,6 +1837,7 @@ end subroutine clubb_init_cnst
    !  At each CLUBB call, initialize mean momentum  and thermo CLUBB state
    !  from the CAM state
 
+   rvm = 0._r8
    do k=1,pver   ! loop over levels
      do i=1,ncol ! loop over columns
 
@@ -2571,7 +2572,7 @@ end subroutine clubb_init_cnst
    call t_stopf('adv_clubb_core_col_loop')
 
 
-   call outfld('fixerCLUBB', te_a(:)-te_b(:), pcols, lchnk )
+   call outfld('fixerCLUBB', te_a(:ncol)-te_b(:ncol), ncol, lchnk )
 
 
    ! Add constant to ghost point so that output is not corrupted
