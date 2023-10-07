@@ -14,6 +14,7 @@ based on the computing system where the build is taking place, as well as
 user input from the CMake command-line.
 
 For the Omega build system to function, a Python interpreter is necessary.
+The minimum version of CMake is 3.21.
 
 ## Standalone Build
 
@@ -33,6 +34,16 @@ as illustrated below:
   ${E3SM_HOME}/components/omega
 ```
 
+Once the command completes succwssfuly, several scripts will be created in
+the build directory: 
+
+* omega\_env.sh   : load specific modules and set env. variables read from CIME
+* omega\_build.sh : run `make` command after sourcing `omega\_env.sh`
+* omega\_run.sh   : run `./src/omega.exe` after sourcing `omega\_env.sh`
+* omega\_ctest.sh : run `ctest` after sourcing `omega\_env.sh`
+
+Run omega\_build.sh in the build directory to build Omega.
+
 To employ a specific compiler, users can utilize the `OMEGA_CXX_COMPILER`
 CMake variable, providing CMake with the compiler's path.
 
@@ -43,6 +54,21 @@ CMake variable, providing CMake with the compiler's path.
 ```
 
 `OMEGA_CXX_COMPILER` overrides `OMEGA_CIME_COMPILER`.
+
+To build Omega for GPU, add OMEGA\_ARCH to one of "CUDA" or "HIP".
+
+```sh
+>> cmake \
+  -DOMEGA_CIME_COMPILER=nvidiagpu \
+  -DOMEGA_CIME_MACHINE=pm-gpu \
+  -DOMEGA_ARCH=CUDA \
+  ${E3SM_HOME}/components/omega
+```
+In some cases, you may want to add OMEGA\_CIME\_MACHINE to specify which
+system you intend to use.
+
+The values of OMEGA\_CIME\_COMPILER and OMEGA\_CIME\_MACHINE are defined in
+"${E3SM}/cime\_config/machines/config\_machines.xml".
 
 To enable the ctest-based unittest option, include the `OMEGA_BUILD_TEST`
 option as illustrated below.

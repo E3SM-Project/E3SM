@@ -4266,13 +4266,15 @@
         <command name="load">gcc/9.1.0</command>
       </modules>
       <modules compiler="pgigpu">
-        <command name="load">cuda/10.1.243</command>
+        <!--<command name="load">cuda/10.1.243</command>-->
+        <command name="load">cuda/11.0.3</command>
       </modules>
       <modules compiler="gnugpu">
         <command name="load">cuda/11.0.3</command>
       </modules>
       <modules compiler="ibmgpu">
-        <command name="load">cuda/10.1.243</command>
+        <!--<command name="load">cuda/10.1.243</command>-->
+        <command name="load">cuda/11.0.3</command>
       </modules>
       <modules>
         <command name="load">spectrum-mpi/10.4.0.3-20210112</command>

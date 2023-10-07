@@ -28,9 +28,10 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/OmegaBuild.cmake)
 if (NOT DEFINED PROJECT_NAME)
   # enter standalone build
 
-  preset()
+  cmake_minimum_required(VERSION 3.21) # the minimum version for HIP support
 
-  cmake_minimum_required(VERSION 3.16) # used in E3SM
+  # Collect machine and compiler info from CIME
+  preset()
 
   project(${OMEGA_PROJECT_NAME}
              LANGUAGES CXX
