@@ -6,10 +6,12 @@ This script should be invoked by Omega cmake build system
 import argparse
 import os
 import re
+import stat
 import subprocess
 import sys
 import typing
-import stat
+import getpass
+
 
 pat_envvar = re.compile(r'^([_\d\w]+)=(.*)$', flags=re.MULTILINE)
 
@@ -24,32 +26,33 @@ def parse_cmdline():
         epilog='Contact: <T.B.D.>')
 
     parser.add_argument('-p', '--cimepath', default=os.path.realpath(
-                        os.path.join(here, "..", "..", "cime")))    # CIME root
-    parser.add_argument('-o', '--outpath', default="_Omega.cmake")  # outfile
-    parser.add_argument('-m', '--machine')                          # machine
-    parser.add_argument('-c', '--compiler')                         # compiler
+                        os.path.join(here, "..", "..", "cime"))) # CIME root
+    parser.add_argument('-o', '--outpath', default="_Omega.cmake") # outfile
+    parser.add_argument('-m', '--machine') # machine
+    parser.add_argument('-c', '--compiler') # compiler
     parser.add_argument('-d', '--debug', action='store_const',
-                        const="TRUE", default="FALSE")              # debug mode
-    parser.add_argument('-v', '--verbose')                          # verbose output
+                        const="TRUE", default="FALSE") # debug mode
+    parser.add_argument('-v', '--verbose') # verbose output
 
     return parser.parse_args()
 
+
 args = parse_cmdline()
 
-#import Machines class from CIME
+# import Machines class from CIME
 sys.path.insert(0, args.cimepath)
 from CIME.XML.machines import Machines  # noqa: E402
 
 sys.path.pop(0)
 
 
-#run a shell command
+# run a shell command
 def run_cmd_no_fail(cmd):
     out = subprocess.run(cmd, shell=True, capture_output=True)
     return str(out.stdout, 'UTF-8')
 
 
-#main class that extends Machines class
+# main class that extends Machines class
 class OmegaMachines(Machines):
 
     def __init__(self, cimepath, outpath, machine, compiler, debug):
@@ -104,24 +107,26 @@ class OmegaMachines(Machines):
                 item_data = item_data.replace(m.group(), os.environ[env_var])
 
             else:
-                raise Exception("Undefined env var '{}'".format(env_var))
+                raise Exception(f"Undefined env var '{env_var}'")
 
         for s in shell_ref_re.finditer(item_data):
             shell_cmd = s.groups()[0]
-            item_data = item_data.replace(s.group(), run_cmd_no_fail(shell_cmd))
+            item_data = item_data.replace(
+                          s.group(), run_cmd_no_fail(shell_cmd)
+                        )
 
         for m in reference_re.finditer(item_data):
             var = m.groups()[0]
             ref = self.get_value(var)
 
             if ref is not None:
-                item_data = item_data.replace(
-                    m.group(), self.get_processed_value(str(ref), outvar)
-                )
+                procval = self.get_processed_value(str(ref), outvar)
+                item_data = item_data.replace(m.group(), procval)
             elif var == "CIMEROOT":
                 item_data = item_data.replace(m.group(), self.cimepath)
             elif var == "SRCROOT":
-                item_data = item_data.replace(m.group(), os.path.join(self.cimepath, ".."))
+                cpath = os.path.join(self.cimepath, "..")
+                item_data = item_data.replace(m.group(), cpath)
             elif var == "USER":
                 item_data = item_data.replace(m.group(), getpass.getuser())
 
@@ -134,12 +139,12 @@ class OmegaMachines(Machines):
 
         return item_data
 
-    #get module info
+    # get module info
     def get_modules(self, outvar):
 
         modcmds = []
         outvar["__OMEGA_MODULE_COMMANDS__"] = modcmds
-    
+
         module_system_node = self.get_child("module_system")
         module_system_type = self.get(module_system_node, "type")
 
@@ -164,13 +169,16 @@ class OmegaMachines(Machines):
             mpilib = self.get(module_node, "mpilib")
             debug = self.get(module_node, "DEBUG")
 
-            if not (compiler is None or re.match("^"+compiler+"$", self.compiler)):
+            if not (compiler is None or
+                    re.match("^" + compiler + "$", self.compiler)):
                 continue
 
-            if not (mpilib is None or re.match("^"+mpilib+"$", self.mpilib)):
+            if not (mpilib is None or
+                    re.match("^" + mpilib + "$", self.mpilib)):
                 continue
  
-            if not (debug is None or re.match("^"+debug+"$", self.debug)):
+            if not (debug is None or
+                    re.match("^" + debug + "$", self.debug)):
                 continue
 
             command_nodes = self.get_children("command",
@@ -203,27 +211,31 @@ class OmegaMachines(Machines):
             else:
                 outvar[name] = value
 
-    #get environmental variables info
+    # get environmental variables info
     def get_envs(self, outvar):
 
         exports = {}
         outvar["__OMEGA_SCRIPT_EXPORTS__"] = exports
 
-        envvar_nodes = self.get_children("environment_variables", root=self.machine_node)
+        envvar_nodes = self.get_children("environment_variables",
+                                         root=self.machine_node)
 
-        #possible attribs : compiler, DEBUG, SMP_PRESENT, mpilib
+        # possible attribs : compiler, DEBUG, SMP_PRESENT, mpilib
         for envvar_node in envvar_nodes:
             compiler = self.get(envvar_node, "compiler")
             mpilib = self.get(envvar_node, "mpilib")
             debug = self.get(envvar_node, "DEBUG")
 
-            if not (compiler is None or re.match("^"+compiler+"$", self.compiler)):
+            if not (compiler is None or
+                    re.match("^" + compiler + "$", self.compiler)):
                 continue
 
-            if not (mpilib is None or re.match("^"+mpilib+"$", self.mpilib)):
+            if not (mpilib is None or
+                    re.match("^" + mpilib + "$", self.mpilib)):
                 continue
  
-            if not (debug is None or re.match("^"+debug+"$", self.debug)):
+            if not (debug is None or
+                    re.match("^" + debug + "$", self.debug)):
                 continue
               
             env_nodes = self.get_children("env", root=envvar_node)
@@ -249,7 +261,7 @@ class OmegaMachines(Machines):
                     outvar[name] = value
                     exports[name] = outvar[name]
 
-    #get mpirun info
+    # get mpirun info
     def get_mpirun(self, outvar):
 
         mpirun_node = self.get_child("mpirun")
@@ -269,7 +281,7 @@ class OmegaMachines(Machines):
 
         self.mpiexec = self.text(exec_nodes[0])
 
-    #collect machine info
+    # collect machine info
     def gen_machinfo(self):
 
         outvar = {}
@@ -280,8 +292,8 @@ class OmegaMachines(Machines):
         self.write_output(outvar)
         self.generate_scripts(outvar)
 
-    #create a temporary cmake script to be included
-    #in the main Omega cmake build system
+    # create a temporary cmake script to be included
+    # in the main Omega cmake build system
     def write_output(self, outvar):
 
         with open(self.outpath, "w") as f:
@@ -298,13 +310,17 @@ class OmegaMachines(Machines):
             f.write(f"set(CASEROOT {self.machpath})\n")
             f.write(f"include({self.macrospath})\n")
 
-    #create scripts
+    # create scripts
     def generate_scripts(self, outvar):
 
-        omega_env = os.path.join(os.path.dirname(self.outpath), "omega_env.sh")
-        omega_build = os.path.join(os.path.dirname(self.outpath), "omega_build.sh")
-        omega_run = os.path.join(os.path.dirname(self.outpath), "omega_run.sh")
-        omega_ctest = os.path.join(os.path.dirname(self.outpath), "omega_ctest.sh")
+        omega_env = os.path.join(os.path.dirname(self.outpath),
+                                 "omega_env.sh")
+        omega_build = os.path.join(os.path.dirname(self.outpath),
+                                   "omega_build.sh")
+        omega_run = os.path.join(os.path.dirname(self.outpath),
+                                 "omega_run.sh")
+        omega_ctest = os.path.join(os.path.dirname(self.outpath),
+                                   "omega_ctest.sh")
 
         with open(omega_env, "w") as f:
             f.write("#!/usr/bin/env bash\n\n")
@@ -315,7 +331,7 @@ class OmegaMachines(Machines):
 
             f.write("\n# env. variables\n")
             for key, value in outvar["__OMEGA_SCRIPT_EXPORTS__"].items():
-                f.write("export %s=\"%s\"\n" % (key, value))
+                f.write(f"export {key}=\"{value}\"\n")
 
         with open(omega_build, "w") as f:
             f.write("#!/usr/bin/env bash\n\n")
@@ -351,7 +367,7 @@ class OmegaMachines(Machines):
 def main():
 
     mach = OmegaMachines(args.cimepath, args.outpath, args.machine,
-                            args.compiler, args.debug)
+                         args.compiler, args.debug)
     mach.gen_machinfo()
 
 

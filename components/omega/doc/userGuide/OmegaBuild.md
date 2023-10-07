@@ -34,8 +34,8 @@ as illustrated below:
   ${E3SM_HOME}/components/omega
 ```
 
-Once the command completes succwssfuly, several scripts will be created in
-the build directory: 
+Once the command completes successfully, several scripts will be created
+in the build directory.
 
 * omega\_env.sh   : load specific modules and set env. variables read from CIME
 * omega\_build.sh : run `make` command after sourcing `omega\_env.sh`
