@@ -4,13 +4,12 @@ This script should be invoked by Omega cmake build system
 """
 
 import argparse
+import getpass
 import os
 import re
 import stat
 import subprocess
 import sys
-import typing
-import getpass
 
 
 pat_envvar = re.compile(r'^([_\d\w]+)=(.*)$', flags=re.MULTILINE)
@@ -26,13 +25,13 @@ def parse_cmdline():
         epilog='Contact: <T.B.D.>')
 
     parser.add_argument('-p', '--cimepath', default=os.path.realpath(
-                        os.path.join(here, "..", "..", "cime"))) # CIME root
-    parser.add_argument('-o', '--outpath', default="_Omega.cmake") # outfile
-    parser.add_argument('-m', '--machine') # machine
-    parser.add_argument('-c', '--compiler') # compiler
+                        os.path.join(here, "..", "..", "cime")))  # CIME root
+    parser.add_argument('-o', '--outpath', default="_Omega.cmake")  # outfile
+    parser.add_argument('-m', '--machine')  # machine
+    parser.add_argument('-c', '--compiler')  # compiler
     parser.add_argument('-d', '--debug', action='store_const',
-                        const="TRUE", default="FALSE") # debug mode
-    parser.add_argument('-v', '--verbose') # verbose output
+                        const="TRUE", default="FALSE")  # debug mode
+    parser.add_argument('-v', '--verbose')  # verbose output
 
     return parser.parse_args()
 
@@ -82,7 +81,7 @@ class OmegaMachines(Machines):
         self.machos = self.get_value("OS")
         self.mpilibs = self.get_value("MPILIBS").split(",")
 
-    #modifed based on generic_xml.py in CIME
+    # modifed based on generic_xml.py in CIME
     def get_processed_value(self, raw_value, outvar):
 
         reference_re = re.compile(r"\${?(\w+)}?")
@@ -111,9 +110,8 @@ class OmegaMachines(Machines):
 
         for s in shell_ref_re.finditer(item_data):
             shell_cmd = s.groups()[0]
-            item_data = item_data.replace(
-                          s.group(), run_cmd_no_fail(shell_cmd)
-                        )
+            item_data = item_data.replace(s.group(),
+                                          run_cmd_no_fail(shell_cmd))
 
         for m in reference_re.finditer(item_data):
             var = m.groups()[0]
@@ -237,11 +235,12 @@ class OmegaMachines(Machines):
             if not (debug is None or
                     re.match("^" + debug + "$", self.debug)):
                 continue
-              
+
             env_nodes = self.get_children("env", root=envvar_node)
             for env_node in env_nodes:
                 name = self.get(env_node, "name")
-                value = self.get_processed_value(self.text(env_node).strip(), outvar)
+                value = self.get_processed_value(self.text(env_node).strip(),
+                                                 outvar)
                 if value is None:
                     outvar[name] = ""
                     exports[name] = outvar[name]
