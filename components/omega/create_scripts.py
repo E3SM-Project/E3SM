@@ -9,6 +9,7 @@ import os
 import re
 import stat
 import subprocess
+import typing
 import sys
 
 
@@ -140,7 +141,7 @@ class OmegaMachines(Machines):
     # get module info
     def get_modules(self, outvar):
 
-        modcmds = []
+        modcmds: typing.List[str] = []
         outvar["__OMEGA_MODULE_COMMANDS__"] = modcmds
 
         module_system_node = self.get_child("module_system")
@@ -212,7 +213,7 @@ class OmegaMachines(Machines):
     # get environmental variables info
     def get_envs(self, outvar):
 
-        exports = {}
+        exports: typing.Dict[str, str] = {}
         outvar["__OMEGA_SCRIPT_EXPORTS__"] = exports
 
         envvar_nodes = self.get_children("environment_variables",
@@ -283,7 +284,7 @@ class OmegaMachines(Machines):
     # collect machine info
     def gen_machinfo(self):
 
-        outvar = {}
+        outvar: typing.Dict[str, str] = {}
 
         self.get_mpirun(outvar)
         self.get_modules(outvar)
