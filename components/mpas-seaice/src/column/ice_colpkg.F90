@@ -4047,6 +4047,8 @@
            fbot_xfer_type_in, &
            calc_Tsfc_in, &
            ustar_min_in, &
+           dragio_in, &
+           ksno_in, &
            a_rapid_mode_in, &
            Rac_rapid_mode_in, &
            aspect_rapid_mode_in, &
@@ -4241,6 +4243,8 @@
              fbot_xfer_type, &
              calc_Tsfc, &
              ustar_min, &
+             dragio, &
+             ksno, & 
              a_rapid_mode, &
              Rac_rapid_mode, &
              aspect_rapid_mode, &
@@ -4529,6 +4533,9 @@
 ! Parameters for ocean
 !-----------------------------------------------------------------------
 
+        real (kind=dbl_kind), intent(in) :: &  
+             dragio_in          ! ice-ocean drago coefficient 
+
         logical (kind=log_kind), intent(in) :: &
              oceanmixed_ice_in           ! if true, use ocean mixed layer
         
@@ -4738,22 +4745,23 @@
       ! snow metamorphism parameters, set in namelist
       real (kind=dbl_kind), intent(in) :: &
          rsnw_fall_in , & ! fallen snow grain radius (10^-6 m))  54.5 um CLM **
-                       ! 30 um is minimum for defined mie properties 
+                          ! 30 um is minimum for defined mie properties 
          rsnw_tmax_in , & ! maximum dry metamorphism snow grain radius (10^-6 m)
-                       ! 1500 um is maximum for defined mie properties
+                          ! 1500 um is maximum for defined mie properties
          rhosnew_in   , & ! new snow density (kg/m^3)
          rhosmax_in   , & ! maximum snow density (kg/m^3)
          windmin_in   , & ! minimum wind speed to compact snow (m/s)
          snwlvlfac_in , & ! snow loss factor for wind redistribution
-         drhosdwind_in    ! wind compaction factor (kg s/m^4)
+         drhosdwind_in, & ! wind compaction factor (kg s/m^4)
+         ksno_in          ! snow thermal conductivity (W/m/deg)
 
       character(len=char_len), intent(in) :: & 
          snwredist_in     ! type of snow redistribution
-                       ! '30percent' = 30% rule, precip only
-                       ! '30percentsw' = 30% rule with shortwave
-                       ! 'ITDsd' = Lecomte PhD, 2014
-                       ! 'ITDrdg' = like ITDsd but use level/ridged ice
-                       ! 'default' or 'none' = none
+                          ! '30percent' = 30% rule, precip only
+                          ! '30percentsw' = 30% rule with shortwave
+                          ! 'ITDsd' = Lecomte PhD, 2014
+                          ! 'ITDrdg' = like ITDsd but use level/ridged ice
+                          ! 'default' or 'none' = none
 
       logical (kind=log_kind), intent(in) :: &
          use_smliq_pnd_in ! if true, use snow liquid tracer for ponds
@@ -4763,6 +4771,8 @@
         fbot_xfer_type = fbot_xfer_type_in
         calc_Tsfc = calc_Tsfc_in
         ustar_min = ustar_min_in
+        dragio = dragio_in
+        ksno = ksno_in
         a_rapid_mode = a_rapid_mode_in
         Rac_rapid_mode = Rac_rapid_mode_in
         aspect_rapid_mode = aspect_rapid_mode_in

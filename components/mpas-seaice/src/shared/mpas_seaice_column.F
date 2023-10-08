@@ -6304,7 +6304,6 @@ contains
          seaiceStabilityReferenceHeight, &
          seaiceIceStrengthConstantHiblerP, &
          seaiceIceStrengthConstantHiblerC, &
-         seaiceIceOceanDragCoefficient, &
          skeletalLayerThickness, &
          gramsCarbonPerMolCarbon, &
          iceAreaMinimum, &
@@ -6329,7 +6328,6 @@ contains
          ice_ref_salinity, &
          Pstar, &
          Cstar, &
-         dragio, &
          albocn, &
          rhofresh, &
          vonkar, &
@@ -6360,7 +6358,6 @@ contains
     seaiceStabilityReferenceHeight   = zref
     seaiceIceStrengthConstantHiblerP = Pstar
     seaiceIceStrengthConstantHiblerC = Cstar
-    seaiceIceOceanDragCoefficient    = dragio
     skeletalLayerThickness           = sk_l
     gramsCarbonPerMolCarbon          = R_gC2molC
 
@@ -10956,10 +10953,6 @@ contains
     use ice_colpkg, only: &
          colpkg_init_parameters
 
-    use seaice_constants, only: &
-         seaiceIceOceanDragCoefficient, & ! ice ocean drag coefficient
-         seaiceSnowConductivity           ! snow thermal conductivity
-
     type(domain_type), intent(inout) :: &
          domain
 
@@ -11363,20 +11356,14 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_wind_compaction_factor", config_wind_compaction_factor)
     call MPAS_pool_get_config(domain % configs, "config_max_dry_snow_radius", config_max_dry_snow_radius)
 
-    if (seaiceIceOceanDragCoefficient /= config_ice_ocean_drag_coefficient) &
-       call mpas_log_write('ColPkg dragio differs from config_ice_ocean_drag_coefficient', &
-               realArgs=(/seaiceIceOceanDragCoefficient,config_ice_ocean_drag_coefficient/))
-
-    if (seaiceSnowConductivity /= config_snow_thermal_conductivity) &
-       call mpas_log_write('ColPkg ksno differs from config_snow_thermal_conductivity', &
-               realArgs=(/seaiceSnowConductivity,config_snow_thermal_conductivity/))
-
     call colpkg_init_parameters(&
          config_cice_int("config_thermodynamics_type", config_thermodynamics_type), &
          config_heat_conductivity_type, &
          config_ocean_heat_transfer_type, &
          config_calc_surface_temperature, &
          config_min_friction_velocity, &
+         config_ice_ocean_drag_coefficient, &
+         config_snow_thermal_conductivity, &
          config_rapid_mode_channel_radius, &
          config_rapid_model_critical_Ra, &
          config_rapid_mode_aspect_ratio, &
@@ -11742,6 +11729,10 @@ contains
     ! 'linear_salt' = -depressT * sss
     ! 'mushy' conforms with ktherm=2
     !tfrz_option = config_sea_freezing_temperature_type
+
+    ! dragio:
+    ! neutral ice-ocean drag coefficient
+    ! dragio = config_ice_ocean_drag_coefficient
 
     !-----------------------------------------------------------------------
     ! Parameters for the ice thickness distribution
@@ -12363,6 +12354,10 @@ contains
     ! drhosdwind:
     ! wind compaction factor (kg s/m^4)
     ! drhosdwind = config_wind_compaction_factor
+
+    ! ksno:
+    ! snow thermal conductivity
+    ! ksno = config_snow_thermal_conductivity
 
   end subroutine init_column_package_configs
 
@@ -14326,9 +14321,6 @@ contains
 
   subroutine seaice_column_reinitialize_diagnostics_thermodynamics(domain)
 
-    use seaice_constants, only: &
-         seaiceIceOceanDragCoefficient
-
     type(domain_type) :: domain
 
     type(block_type), pointer :: block
@@ -14397,6 +14389,9 @@ contains
          pondAlbedoCell
 
     ! drag variables
+    real(kind=RKIND), pointer :: &
+         config_ice_ocean_drag_coefficient
+
     real(kind=RKIND), dimension(:), pointer :: &
          airOceanDragCoefficientRatio, &
          oceanDragCoefficient, &
@@ -14515,12 +14510,15 @@ contains
           pondAlbedoCell    = 0.0_RKIND
 
           ! form drag
+          call MPAS_pool_get_config(block % configs, "config_ice_ocean_drag_coefficient", & 
+                                    config_ice_ocean_drag_coefficient)
+
           call MPAS_pool_get_subpool(block % structs, "drag", dragPool)
 
           call MPAS_pool_get_array(dragPool, "oceanDragCoefficient", oceanDragCoefficient)
           call MPAS_pool_get_array(dragPool, "airDragCoefficient", airDragCoefficient)
 
-          oceanDragCoefficient = seaiceIceOceanDragCoefficient
+          oceanDragCoefficient = config_ice_ocean_drag_coefficient
           airDragCoefficient   = seaice_column_initial_air_drag_coefficient()
 
           call MPAS_pool_get_config(block % configs, "config_use_form_drag", config_use_form_drag)

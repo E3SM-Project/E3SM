@@ -10062,10 +10062,6 @@ contains
     use ice_colpkg, only: &
          colpkg_init_parameters
 
-    use seaice_constants, only: &
-         seaiceIceOceanDragCoefficient, &    ! ice ocean drag coefficient
-         seaiceSnowConductivity              ! snow thermal conductivity
-
     type(domain_type), intent(inout) :: &
          domain
 
@@ -10469,20 +10465,14 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_snow_redistribution_factor", config_snow_redistribution_factor)
     call MPAS_pool_get_config(domain % configs, "config_max_dry_snow_radius", config_max_dry_snow_radius)
 
-    if (seaiceIceOceanDragCoefficient /= config_ice_ocean_drag_coefficient) &
-       call mpas_log_write('ColPkg dragio differs from config_ice_ocean_drag_coefficient', &
-               realArgs=(/seaiceIceOceanDragCoefficient,config_ice_ocean_drag_coefficient/))
-
-    if (seaiceSnowConductivity /= config_snow_thermal_conductivity) &
-       call mpas_log_write('ColPkg ksno differs from config_snow_thermal_conductivity', &
-               realArgs=(/seaiceSnowConductivity,config_snow_thermal_conductivity/))
-
     call colpkg_init_parameters(&
          config_cice_int("config_thermodynamics_type", config_thermodynamics_type), &
          config_heat_conductivity_type, &
          config_ocean_heat_transfer_type, &
          config_calc_surface_temperature, &
          config_min_friction_velocity, &
+         config_ice_ocean_drag_coefficient, &
+         config_snow_thermal_conductivity, &
          config_rapid_mode_channel_radius, &
          config_rapid_model_critical_Ra, &
          config_rapid_mode_aspect_ratio, &
@@ -11515,7 +11505,6 @@ contains
          seaiceSnowSurfaceScatteringLayer, & ! snow surface scattering layer thickness (m)
          seaiceStabilityReferenceHeight, &   ! stability reference height (m)
          seaiceFreshWaterFreezingPoint, &    ! freezing temp of fresh ice (K)
-         seaiceIceOceanDragCoefficient, &    ! ice ocean drag coefficient
          seaiceIceSurfaceRoughness, &        ! ice surface roughness (m)
          seaiceVonKarmanConstant, &          ! Von Karman constant
          seaiceOceanAlbedo, &                ! Ocean albedo
@@ -11535,7 +11524,6 @@ contains
          seaiceFreezingTemperatureConstant, &! constant freezing temp of seawater (C)
          seaiceExtinctionCoef, &             ! vis extnctn coef in ice, wvlngth<700nm (1/m)
          seaiceFreshIceConductivity, &       ! thermal conductivity of fresh ice(W/m/deg)
-         seaiceSnowConductivity, &           ! thermal conductivity of snow  (W/m/deg)
          seaiceSnowMinimumThickness, &       ! min snow thickness for computing zTsn (m)
          seaiceFrazilMinimumThickness, &     ! min thickness of new frazil ice
          seaiceAlbedoWtVisibleDirect, &      ! visible, direct
@@ -12052,10 +12040,6 @@ contains
     rtmp1 = seaiceSeaWaterSpecificHeat
     call icepack_query_parameters(cp_ocn_out=rtmp2)
     if (rtmp1 /= rtmp2) call mpas_log_write('cp_ocn differs $r $r',realArgs=(/rtmp1,rtmp2/))
-
-    rtmp1 = seaiceIceOceanDragCoefficient
-    call icepack_query_parameters(dragio_out=rtmp2)
-    if (rtmp1 /= rtmp2) call mpas_log_write('dragio differs $r $r',realArgs=(/rtmp1,rtmp2/))
 
     rtmp1 = seaiceIceSurfaceRoughness
     call icepack_query_parameters(iceruf_out=rtmp2)
@@ -12681,22 +12665,22 @@ contains
 
     ! oceanmixed_ice:
     ! if true, use ocean mixed layer
-    !oceanmixed_ice = config_use_ocean_mixed_layer
+    ! oceanmixed_ice = config_use_ocean_mixed_layer
 
     ! fbot_xfer_type:
     ! transfer coefficient type for ice-ocean heat flux
-    !fbot_xfer_type = config_ocean_heat_transfer_type
+    ! fbot_xfer_type = config_ocean_heat_transfer_type
 
     ! tfrz_option:
     ! form of ocean freezing temperature
     ! 'minus1p8' = -1.8 C
     ! 'linear_salt' = -depressT * sss
     ! 'mushy' conforms with ktherm=2
-    !tfrz_option = config_sea_freezing_temperature_type
+    ! tfrz_option = config_sea_freezing_temperature_type
 
     ! dragio:
     ! Neutral ice-ocean drag coefficient
-    !dragio = config_ice_ocean_drag_coefficient
+    ! dragio = config_ice_ocean_drag_coefficient
 
     !-----------------------------------------------------------------------
     ! Parameters for the ice thickness distribution
@@ -15271,9 +15255,6 @@ contains
 
   subroutine seaice_icepack_reinitialize_diagnostics_thermodynamics(domain)
 
-    use seaice_constants, only: &
-         seaiceIceOceanDragCoefficient
-
     type(domain_type) :: domain
 
     type(block_type), pointer :: block
@@ -15342,6 +15323,9 @@ contains
          pondAlbedoCell
 
     ! drag variables
+    real(kind=RKIND), pointer :: &
+         config_ice_ocean_drag_coefficient
+
     real(kind=RKIND), dimension(:), pointer :: &
          airOceanDragCoefficientRatio, &
          oceanDragCoefficient, &
@@ -15460,12 +15444,15 @@ contains
           pondAlbedoCell    = 0.0_RKIND
 
           ! form drag
+          call MPAS_pool_get_config(block % configs, "config_ice_ocean_drag_coefficient", &
+                                    config_ice_ocean_drag_coefficient)
+
           call MPAS_pool_get_subpool(block % structs, "drag", dragPool)
 
           call MPAS_pool_get_array(dragPool, "oceanDragCoefficient", oceanDragCoefficient)
           call MPAS_pool_get_array(dragPool, "airDragCoefficient", airDragCoefficient)
 
-          oceanDragCoefficient = seaiceIceOceanDragCoefficient
+          oceanDragCoefficient = config_ice_ocean_drag_coefficient
           airDragCoefficient   = seaice_icepack_initial_air_drag_coefficient()
 
           call MPAS_pool_get_config(block % configs, "config_use_form_drag", config_use_form_drag)
