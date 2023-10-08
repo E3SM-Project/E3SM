@@ -561,7 +561,7 @@ add_default($nl, 'config_use_dynamics');
 add_default($nl, 'config_use_velocity_solver');
 add_default($nl, 'config_use_advection');
 add_default($nl, 'config_use_forcing');
-add_default($nl, 'config_use_column_package');
+add_default($nl, 'config_use_column_physics');
 add_default($nl, 'config_use_prescribed_ice');
 add_default($nl, 'config_use_prescribed_ice_forcing');
 

@@ -98,7 +98,7 @@
 <config_use_velocity_solver>true</config_use_velocity_solver>
 <config_use_advection>true</config_use_advection>
 <config_use_forcing>false</config_use_forcing>
-<config_use_column_package>true</config_use_column_package>
+<config_use_column_physics>true</config_use_column_physics>
 <config_use_prescribed_ice>false</config_use_prescribed_ice>
 <config_use_prescribed_ice prognostic_mode="prescribed">true</config_use_prescribed_ice>
 <config_use_prescribed_ice_forcing>false</config_use_prescribed_ice_forcing>

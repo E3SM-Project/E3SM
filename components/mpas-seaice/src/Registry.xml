@@ -514,7 +514,7 @@
 			description="If true calculate input forcing fields."
 			possible_values="true or .false"
 		/>
-		<nml_option name="config_use_column_package" type="logical" default_value="true" units="unitless"
+		<nml_option name="config_use_column_physics" type="logical" default_value="true" units="unitless"
 			description="If true perform calculations from the column physics package."
 			possible_values="true or .false"
 		/>

@@ -204,19 +204,19 @@ contains
          clock !< Input:
 
     logical, pointer :: &
-         config_use_column_package, &
+         config_use_column_physics, &
          config_use_column_shortwave, &
          config_do_restart
 
     character(len=strKIND), pointer :: &
          config_column_physics_type
 
-    call MPAS_pool_get_config(domain % configs, "config_use_column_package", config_use_column_package)
+    call MPAS_pool_get_config(domain % configs, "config_use_column_physics", config_use_column_physics)
     call MPAS_pool_get_config(domain % configs, "config_use_column_shortwave", config_use_column_shortwave)
     call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
     call MPAS_pool_get_config(domain % configs, "config_column_physics_type", config_column_physics_type)
 
-    if (config_use_column_package .and. config_use_column_shortwave .and. .not. config_do_restart) then
+    if (config_use_column_physics .and. config_use_column_shortwave .and. .not. config_do_restart) then
        if (trim(config_column_physics_type) == "icepack") then
           call seaice_init_icepack_shortwave(domain, clock)
        else if (trim(config_column_physics_type) == "column_package") then
@@ -330,7 +330,7 @@ contains
 
     logical, pointer :: &
          config_do_restart, &
-         config_use_column_package
+         config_use_column_physics
 
     call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
 
@@ -497,9 +497,9 @@ contains
     endif
 
     ! aggregate tracers even if restart
-    call MPAS_pool_get_config(domain % blocklist % configs, "config_use_column_package", config_use_column_package)
+    call MPAS_pool_get_config(domain % blocklist % configs, "config_use_column_physics", config_use_column_physics)
     call MPAS_pool_get_config(domain % blocklist % configs, "config_column_physics_type", config_column_physics_type)
-    if (config_use_column_package) then
+    if (config_use_column_physics) then
        if (trim(config_column_physics_type) == "icepack") then
           call seaice_icepack_aggregate(domain)
        else if (trim(config_column_physics_type) == "column_package") then
@@ -1113,7 +1113,7 @@ contains
          iCategory
 
     logical, pointer :: &
-         config_use_column_package
+         config_use_column_physics
 
     real(kind=RKIND), parameter :: &
          thicknessWithLargestArea = 3.0_RKIND ! initial ice thickness with greatest area
@@ -1139,9 +1139,9 @@ contains
     ! init caregory limits if needed
     !--------------------------------------------------------
 
-    call MPAS_pool_get_config(block % configs, "config_use_column_package", config_use_column_package)
+    call MPAS_pool_get_config(block % configs, "config_use_column_physics", config_use_column_physics)
 
-    if (.not. config_use_column_package) then
+    if (.not. config_use_column_physics) then
 
        if (trim(config_column_physics_type) == "icepack") then
           call icepack_init_itd(&
@@ -2580,7 +2580,7 @@ contains
     logical, pointer :: &
          config_do_restart, &
          config_use_column_biogeochemistry, &
-         config_use_column_package, &
+         config_use_column_physics, &
          config_use_aerosols
 
     integer, pointer :: &
@@ -2647,9 +2647,9 @@ contains
        ! fluxes sent to atmosphere
        !-------------------------------------------------------------
 
-       call MPAS_pool_get_config(block % configs, "config_use_column_package", config_use_column_package)
+       call MPAS_pool_get_config(block % configs, "config_use_column_physics", config_use_column_physics)
 
-       if (config_use_column_package) then
+       if (config_use_column_physics) then
 
           call MPAS_pool_get_subpool(block % structs, "atmos_fluxes", atmosFluxes)
           call MPAS_pool_get_array(atmosFluxes, "longwaveUp", longwaveUp)
@@ -2662,6 +2662,7 @@ contains
           else if (trim(config_column_physics_type) == "column_package") then
              airDragCoefficient = seaice_column_initial_air_drag_coefficient()
           endif ! config_column_physics_type
+
        endif
 
        !-------------------------------------------------------------
