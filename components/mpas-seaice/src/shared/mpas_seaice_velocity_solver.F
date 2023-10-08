@@ -2826,7 +2826,7 @@ contains
   subroutine ocean_stress_coefficient(domain)
 
     use seaice_constants, only: &
-         seaiceDensitySeaWater, &
+         seaiceDensitySeaWater
 
     type(domain_type), intent(inout) :: &
          domain
