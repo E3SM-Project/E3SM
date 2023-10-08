@@ -1,7 +1,8 @@
 #!/bin/bash
 
-wget -t 3 -O e3sm.sif http://portal.nersc.gov/project/e3sm/lukasz/e3sm.sif || \
-    wget -t 3 -O e3sm.sif https://dabdceba-6d04-11e5-ba46-22000b92c6ec.e.globus.org/containers/public/e3sm.sif
+singularity pull e3sm.sif \
+    docker://ghcr.io/mahf708/e3sm-imgs@sha256:d1030a6f4e3a53f682859436a26b30a9477d69423829ae1d9c1b5ab4e255430d
+
 if [ $? -ne 0 ]; then
     exit -1
 fi
