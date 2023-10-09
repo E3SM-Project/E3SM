@@ -57,13 +57,14 @@ def atm_config_chg(changes, reset=False, all_matches=False, buffer_only=False):
         # This will throw if the syntax is bad
         _, _, _ = parse_change(c)
 
-    any_change = True
+    # If buffer_only=True, we must assume there were changes (we can't check).
+    # Otherwise, we'll assume no changes, and if we find one, we'll adjust
+    any_change = buffer_only
     if not buffer_only:
         with open("namelist_scream.xml", "r") as fd:
             tree = ET.parse(fd)
             root = tree.getroot()
 
-        any_change = False
         for change in changes:
             this_changed = atm_config_chg_impl(root, change, all_matches)
             any_change |= this_changed
