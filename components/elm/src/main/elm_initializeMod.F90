@@ -79,10 +79,11 @@ contains
     use ExternalModelInterfaceMod , only: EMI_Determine_Active_EMs
     use dynSubgridControlMod      , only: dynSubgridControl_init
     use filterMod                 , only: allocFilters
+    use filterMod                 , only : proc_filter, proc_filter_inactive_and_active
+    use filterMod                 , only : createProcessorFilter, setProcFilters  
     use reweightMod               , only: reweight_wrapup
     use ELMFatesInterfaceMod      , only: ELMFatesGlobals
     use topounit_varcon           , only: max_topounits, has_topounit, topounit_varcon_init    
-    use domainMod                 , only : domain_transfer 
     !
     ! !LOCAL VARIABLES:
     integer           :: ier                     ! error status
@@ -129,7 +130,7 @@ contains
     call ncd_pio_init()
     call elm_petsc_init()
     call init_soil_temperature()
-    write(iulog,*) "DEBUG: init params" 
+
     if (masterproc) call control_print()
 
     call dynSubgridControl_init(NLFilename)
@@ -157,7 +158,7 @@ contains
     ! ------------------------------------------------------------------------
     ! If specified, read the grid level connectivity
     ! ------------------------------------------------------------------------
-    write(iulog,*) "DEBUG: before lateral connectivity" 
+
     if (lateral_connectivity) then
        call surfrd_get_grid_conn(fatmlndfrc, cellsOnCell, edgesOnCell, &
             nEdgesOnCell, areaCell, dcEdge, dvEdge, &
@@ -169,9 +170,9 @@ contains
     endif
 
     ! ------------------------------------------------------------------------
-    ! Determine elm gridcell decomposition and processor bounds for gridcells
+    ! Determine clm gridcell decomposition and processor bounds for gridcells
     ! ------------------------------------------------------------------------
-    write(iulog,*) "DEBUG: Domain decomp ",trim(domain_decomp_type) 
+
     select case (trim(domain_decomp_type))
     case ("round_robin")
        call decompInit_lnd(ni, nj, amask)
@@ -199,7 +200,7 @@ contains
     ! ------------------------------------------------------------------------
     ! Get grid and land fraction (set ldomain)
     ! ------------------------------------------------------------------------
-    write(iulog,*) "DEBUG: real ldomain"
+
     if (masterproc) then
        write(iulog,*) 'Attempting to read ldomain from ',trim(fatmlndfrc)
        call shr_sys_flush(iulog)
@@ -234,6 +235,7 @@ contains
     ! Initialize urban model input (initialize urbinp data structure)
     ! This needs to be called BEFORE the call to surfrd_get_data since
     ! that will call surfrd_get_special which in turn calls check_urban
+
     call UrbanInput(begg, endg, mode='initialize')
 
     ! Allocate surface grid dynamic memory (just gridcell bounds dependent)
@@ -256,14 +258,10 @@ contains
     allocate (slp_tunit (begg:endg,1:max_topounits  ))
     allocate (asp_tunit (begg:endg,1:max_topounits  ))
     allocate (num_tunit_per_grd (begg:endg))
-    ! NOTE: Can't find where slp_tunit or asp_tunit are initialized ??
-    slp_tunit(:,:) = 0._r8
-    asp_tunit(:,:) = 0._r8 
 
     ! Read list of Patches and their corresponding parameter values
     ! Independent of model resolution, Needs to stay before surfrd_get_data
 
-    call shr_sys_flush(iulog)
     call pftconrd()
     call soilorder_conrd()
 
@@ -277,7 +275,7 @@ contains
 
     ! Read surface dataset and set up subgrid weight arrays
     call surfrd_get_data(begg, endg, ldomain, fsurdat)
-    call domain_transfer() 
+
     ! ------------------------------------------------------------------------
     ! Ask Fates to evaluate its own dimensioning needs.
     !
@@ -303,8 +301,6 @@ contains
     ! *** Get ALL processor bounds - for gridcells, landunit, columns and patches ***
 
     call get_proc_bounds(bounds_proc)
-    write(iulog,*) "DEBUG: initialize gridcell " 
-    call shr_sys_flush(iulog)
 
     ! Allocate memory for subgrid data structures
     ! This is needed here BEFORE the following call to initGridcells
@@ -333,8 +329,6 @@ contains
 
     ! Initialize the vegetation (PFT) data types
     call veg_pp%Init (bounds_proc%begp_all, bounds_proc%endp_all)
-    write(iulog,*) "DEBUG: Variable initialization finished " 
-    call shr_sys_flush(iulog)
 
     ! Initialize the cohort data types (nothing here yet)
     ! ...to be added later...
@@ -363,6 +357,7 @@ contains
     !endif
 
     ! Set filters
+
     call t_startf('init_filters')
     call allocFilters()
     call t_stopf('init_filters')
@@ -375,7 +370,12 @@ contains
             ldomain%glcmask(bounds_clump%begg:bounds_clump%endg)*1._r8)
     end do
     !$OMP END PARALLEL DO
-
+    
+    call createProcessorFilter(nclumps, bounds_proc, proc_filter, ldomain%glcmask(begg:endg)*1._r8)
+    call createProcessorFilter(nclumps, bounds_proc, proc_filter_inactive_and_active, ldomain%glcmask(begg:endg)*1._r8)
+    call setProcFilters(bounds_proc, proc_filter, .false., ldomain%glcmask(begg:endg)*1._r8)
+    call setProcFilters(bounds_proc, proc_filter_inactive_and_active, .true., ldomain%glcmask(begg:endg)*1._r8)
+    
     ! ------------------------------------------------------------------------
     ! Remainder of initialization1
     ! ------------------------------------------------------------------------
@@ -383,6 +383,7 @@ contains
     ! Set CH4 Model Parameters from namelist.
     ! Need to do before initTimeConst so that it knows whether to
     ! look for several optional parameters on surfdata file.
+
     if (use_lch4) then
        call CH4conrd()
     end if
@@ -390,6 +391,7 @@ contains
     ! Deallocate surface grid dynamic memory for variables that aren't needed elsewhere.
     ! Some things are kept until the end of initialize2; urban_valid is kept through the
     ! end of the run for error checking.
+
     !deallocate (wt_lunit, wt_cft, wt_glc_mec)
     deallocate (wt_cft, wt_glc_mec)    !wt_lunit not deallocated because it is being used in CanopyHydrologyMod.F90
     deallocate (wt_tunit, elv_tunit, slp_tunit, asp_tunit,num_tunit_per_grd)
@@ -416,6 +418,7 @@ contains
           col_pp%glc_topo(c) = 0._r8
        end if
     end do
+
   end subroutine initialize1
 
 
@@ -475,8 +478,8 @@ contains
     use tracer_varcon         , only : is_active_betr_bgc
     use clm_time_manager      , only : is_restart
     use ALMbetrNLMod          , only : betr_namelist_buffer
-    
-    use subgridAveMod, only : initialize_scale_l2g_lookup, initialize_scale_c2l
+    use UrbanParamsType       , only : urban_hac_int, urban_hac_off_int, urban_hac_on_int, urban_wasteheat_int
+    use UrbanParamsType       , only : urban_hac, urban_hac_off, urban_hac_on, urban_wasteheat_on
     !
     ! !ARGUMENTS
     implicit none
@@ -549,8 +552,6 @@ contains
     ! Initialize daylength from the previous time step (needed so prev_dayl can be set correctly)
     ! ------------------------------------------------------------------------
 
-    write(iulog,*) "DEBUG: Last topo initialization in 2 " 
-    call shr_sys_flush(iulog)
     call t_startf('init_orbd')
 
     calday = get_curr_calday()
@@ -575,8 +576,6 @@ contains
     end do
 
     ! History file variables
-    write(iulog,*) "DEBUG: Hist file variables  " 
-    call shr_sys_flush(iulog)
 
     if (use_cn) then
        call hist_addfld1d (fname='DAYL',  units='s', &
@@ -587,8 +586,6 @@ contains
             avgflag='A', long_name='daylength from previous timestep', &
             ptr_gcell=grc_pp%prev_dayl, default='inactive')
     end if
-    write(iulog,*) "DEBUG: hist 2d " 
-    call shr_sys_flush(iulog)
 
     ! ------------------------------------------------------------------------
     ! Initialize component data structures
@@ -610,8 +607,6 @@ contains
     call hist_addfld1d (fname='ZII', units='m', &
          avgflag='A', long_name='convective boundary height', &
          ptr_col=col_pp%zii, default='inactive')
-    write(iulog,*) "DEBUG: elm_inst_biogeophys  " 
-    call shr_sys_flush(iulog)
 
     call elm_inst_biogeophys(bounds_proc)
 
@@ -623,10 +618,8 @@ contains
       call ep_betr%InitOnline(bounds_proc, lun_pp, col_pp, veg_pp, waterstate_vars, betr_namelist_buffer, masterproc)
       is_active_betr_bgc = ep_betr%do_soibgc()
     else
-      !allocate(ep_betr, source=create_betr_simulation_alm())
+      allocate(ep_betr, source=create_betr_simulation_alm())
     endif
-    write(iulog,*) "DEBUG: SnowOptics  " 
-    call shr_sys_flush(iulog)
 
     call SnowOptics_init( ) ! SNICAR optical parameters:
 
@@ -653,8 +646,6 @@ contains
           end if
        endif
     endif
-    write(iulog,*) "DEBUG: elm_inst_biogeochem  " 
-    call shr_sys_flush(iulog)
 
     ! FATES is instantiated in the following call.  The global is in clm_inst
     call elm_inst_biogeochem(bounds_proc)
@@ -662,8 +653,6 @@ contains
     ! ------------------------------------------------------------------------
     ! Initialize accumulated fields
     ! ------------------------------------------------------------------------
-    write(iulog,*) "DEBUG: Accumulators  " 
-    call shr_sys_flush(iulog)
 
     ! The time manager needs to be initialized before thes called is made, since
     ! the step size is needed.
@@ -695,19 +684,15 @@ contains
     ! and/or dynamic landunits); note that these will be overwritten in a
     ! restart run
     ! ------------------------------------------------------------------------
-    write(iulog,*) "DEBUG: init_dyn_subgrid  " 
-    call shr_sys_flush(iulog)
 
     call t_startf('init_dyn_subgrid')
     call init_subgrid_weights_mod(bounds_proc)
-    call dynSubgrid_init(bounds_proc, glc2lnd_vars, crop_vars, patch_state_updater, column_state_updater)
+    call dynSubgrid_init(bounds_proc, glc2lnd_vars, crop_vars)
     call t_stopf('init_dyn_subgrid')
 
     ! ------------------------------------------------------------------------
     ! Initialize modules (after time-manager initialization in most cases)
     ! ------------------------------------------------------------------------
-    write(iulog,*) "DEBUG: EcoDynInit  " 
-    call shr_sys_flush(iulog)
 
     if (use_cn .or. use_fates) then
        call EcosystemDynInit(bounds_proc,alm_fates)
@@ -735,8 +720,6 @@ contains
     if (nsrest == nsrContinue ) then
        call htapes_fieldlist()
     end if
-    write(iulog,*) "DEBUG: Restart stuff " 
-    call shr_sys_flush(iulog)
 
     ! ------------------------------------------------------------------------
     ! Read restart/initial info
@@ -908,8 +891,6 @@ contains
        call crop_vars%initAccVars(bounds_proc)
     end if
     call cnstate_vars%initAccVars(bounds_proc)
-    write(iulog,*) "DEBUG: Read mon vegetation  " 
-    call shr_sys_flush(iulog)
 
     !------------------------------------------------------------
     ! Read monthly vegetation
@@ -934,15 +915,13 @@ contains
     !------------------------------------------------------------
     ! Determine gridcell averaged properties to send to atm
     !------------------------------------------------------------
-    !$acc enter data copyin(col_pp, lun_pp)
-    call initialize_scale_l2g_lookup() 
-    call initialize_scale_c2l(bounds_proc) 
-    !$acc exit data delete(col_pp, lun_pp) 
+
     if (nsrest == nsrStartup) then
        call t_startf('init_map2gc')
        call lnd2atm_minimal(bounds_proc, surfalb_vars, energyflux_vars, lnd2atm_vars)
        call t_stopf('init_map2gc')
     end if
+
     !------------------------------------------------------------
     ! Initialize sno export state to send to glc
     !------------------------------------------------------------
@@ -1035,6 +1014,15 @@ contains
        write(iulog,*)
     endif
     call t_stopf('init_wlog')
+    
+    ! Set urban_hac to an integer flag, since "trim" is not supported on GPUs
+    if(trim(urban_hac) == urban_hac_off) then 
+       urban_hac_int = urban_hac_off_int 
+    else if (trim(urban_hac) == urban_hac_on) then 
+       urban_hac_int = urban_hac_on_int
+    elseif(trim(urban_hac) == urban_wasteheat_on) then 
+       urban_hac_int = urban_wasteheat_int
+    end if 
 
     call t_stopf('elm_init2')
 

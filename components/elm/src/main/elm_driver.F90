@@ -271,8 +271,6 @@ module elm_driver
       use dynSubgridControlMod, only : get_flanduse_timeseries
       use dynSubgridControlMod, only : get_do_transient_pfts, get_do_transient_crops
       use dynSubgridControlMod, only : get_do_harvest
-      use UrbanFluxesMod      , only : urban_hac_int
-      use UrbanParamsType     , only : urban_hac, urban_hac_on, urban_hac_off, urban_wasteheat_on
       use dynPriorWeightsMod  , only : set_prior_weights
       use dynUpdateModAcc 
       use glc2lndMod  , only : glc2lnd_vars_update_glc2lnd_acc
@@ -380,13 +378,6 @@ module elm_driver
          write(iulog,*) "transferring data to GPU"
          call init_proc_clump_info()
          call createLitterTransportList() 
-         if(trim(urban_hac) == urban_hac_on) then 
-            urban_hac_int = 1
-         elseif(trim(urban_hac) == urban_hac_off) then 
-            urban_hac_int = 0 
-         elseif(trim(urban_hac) == urban_wasteheat_on) then 
-            urban_hac_int = 2 
-         end if
 
          begg = bounds_proc%begg; endg = bounds_proc%endg 
          begc = bounds_proc%begc; endc = bounds_proc%endc 

@@ -98,16 +98,19 @@ module UrbanParamsType
   end type urbanparams_type
   !
   ! !Urban control variables
-  character(len=1), parameter, public :: urban_hac_off = 'N'                
-  character(len=1), parameter, public :: urban_hac_on =  'Y'                 
-  character(len=1), parameter, public :: urban_wasteheat_on = 'W'  
-  character(len=1), public           :: urban_hac = urban_hac_off
-  
+  character(len= *), parameter, public :: urban_hac_off = 'OFF'                
+  character(len= *), parameter, public :: urban_hac_on =  'ON'                 
+  character(len= *), parameter, public :: urban_wasteheat_on = 'ON_WASTEHEAT'  
+  character(len= 16), public           :: urban_hac = urban_hac_off
+  integer, public,parameter  :: urban_hac_off_int = 0
+  integer, public,parameter  :: urban_hac_on_int = 1
+  integer, public,parameter  :: urban_wasteheat_int = 2
+  integer, public  :: urban_hac_int = urban_hac_off_int
   logical, public            :: urban_traffic      = .false.   ! urban traffic fluxes
-  !$acc declare copyin(urban_hac_off     )
-  !$acc declare copyin(urban_hac_on      )
-  !$acc declare copyin(urban_wasteheat_on)
-  !$acc declare create(urban_hac       )
+  !$acc declare copyin(urban_hac_off_int     )
+  !$acc declare copyin(urban_hac_on_int      )
+  !$acc declare copyin(urban_wasteheat_int)
+  !$acc declare copyin(urban_hac_int       )
   !$acc declare copyin(urban_traffic     )
   !-----------------------------------------------------------------------
 
