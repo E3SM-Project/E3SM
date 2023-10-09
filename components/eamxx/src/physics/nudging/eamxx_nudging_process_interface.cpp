@@ -4,7 +4,6 @@
 namespace scream
 {
 
-  //using namespace spa;
 // =========================================================================================
 Nudging::Nudging (const ekat::Comm& comm, const ekat::ParameterList& params)
   : AtmosphereProcess(comm, params)
@@ -39,6 +38,7 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   m_num_levs = m_grid->get_num_vertical_levels();  // Number of levels per column
 
   FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols, m_num_levs} };
+  FieldLayout horiz_wind_layout { {COL,CMP,LEV}, {m_num_cols,2,m_num_levs} };
 
   constexpr int ps = 1;
   auto Q = kg/kg;
@@ -60,11 +60,9 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   if (std::find(m_fields_nudge.begin(),m_fields_nudge.end(),"qv") != m_fields_nudge.end()) {
     add_field<Updated>("qv",    scalar3d_layout_mid, Q, grid_name, "tracers", ps);
   }
-  if (std::find(m_fields_nudge.begin(),m_fields_nudge.end(),"U") != m_fields_nudge.end()) {
-    add_field<Updated>("U",     scalar3d_layout_mid, m/s, grid_name, ps);
-  }
-  if (std::find(m_fields_nudge.begin(),m_fields_nudge.end(),"V") != m_fields_nudge.end()) {
-    add_field<Updated>("V",     scalar3d_layout_mid, m/s, grid_name, ps);
+  if (std::find(m_fields_nudge.begin(),m_fields_nudge.end(),"U") != m_fields_nudge.end() or
+      std::find(m_fields_nudge.begin(),m_fields_nudge.end(),"V") != m_fields_nudge.end()) {
+    add_field<Updated>("horiz_winds",   horiz_wind_layout,   m/s,     grid_name, ps);
   }
   /* ----------------------- WARNING --------------------------------*/
 
@@ -133,7 +131,7 @@ void Nudging::initialize_impl (const RunType /* run_type */)
     std::string name_ext = name + "_ext";
     // Helper fields that will temporarily store the target state, which can then
     // be used to back out a nudging tendency
-    auto field  = get_field_out(name);
+    auto field  = get_field_out_wrap(name);
     auto layout = field.get_header().get_identifier().get_layout();
     create_helper_field(name,     layout,              grid_name, ps);
     create_helper_field(name_ext, scalar3d_layout_mid, grid_name, ps);
@@ -167,7 +165,7 @@ void Nudging::run_impl (const double dt)
     p_mid_ext_1d   = get_helper_field("p_mid_ext").get_view<mPack*>();
   }
   for (auto name : m_fields_nudge) {
-    auto atm_state_field = get_field_out(name);
+    auto atm_state_field = get_field_out_wrap(name);
     auto int_state_field = get_helper_field(name);
     auto ext_state_field = get_helper_field(name+"_ext");
     auto ext_state_view  = ext_state_field.get_view<mPack**>();
@@ -347,6 +345,23 @@ void Nudging::init_buffers(const ATMBufferManager& buffer_manager) {
 
   size_t used_mem = (reinterpret_cast<Real*>(mem) - buffer_manager.get_memory())*sizeof(Real);
   EKAT_REQUIRE_MSG(used_mem==requested_buffer_size_in_bytes(), "Error: Nudging::init_buffers! Used memory != requested memory.");
+}
+// =========================================================================================
+Field Nudging::get_field_out_wrap(const std::string& field_name) {
+  if (field_name == "U" or field_name == "V") {
+    auto hw = get_field_out("horiz_winds");
+    const auto& fid = hw.get_header().get_identifier();
+    const auto& layout = fid.get_layout();
+    const int vec_dim = layout.get_vector_dim();
+    const auto& units = fid.get_units();
+    if (field_name == "U") {
+      return hw.subfield("U",units,vec_dim,0);
+    } else {
+      return hw.subfield("V",units,vec_dim,1);
+    }
+  } else {
+    return get_field_out(field_name);
+  }
 }
 
 } // namespace scream
