@@ -9,9 +9,9 @@ import os
 import re
 import stat
 import subprocess
-import typing
 import sys
 
+import typing
 
 pat_envvar = re.compile(r'^([_\d\w]+)=(.*)$', flags=re.MULTILINE)
 
@@ -175,7 +175,7 @@ class OmegaMachines(Machines):
             if not (mpilib is None or
                     re.match("^" + mpilib + "$", self.mpilib)):
                 continue
- 
+
             if not (debug is None or
                     re.match("^" + debug + "$", self.debug)):
                 continue
@@ -232,7 +232,7 @@ class OmegaMachines(Machines):
             if not (mpilib is None or
                     re.match("^" + mpilib + "$", self.mpilib)):
                 continue
- 
+
             if not (debug is None or
                     re.match("^" + debug + "$", self.debug)):
                 continue
