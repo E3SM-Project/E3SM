@@ -276,7 +276,7 @@
     <DESC>Perlmutter GPU nodes at NERSC.  Phase1 only: Each GPU node has single AMD EPYC 7713 64-Core (Milan) (256GB) and 4 nvidia A100's.</DESC>
     <NODENAME_REGEX>$ENV{NERSC_HOST}:perlmutter</NODENAME_REGEX>
     <OS>Linux</OS>
-    <COMPILERS>gnugpu,gnu,nvidiagpu,nvidia</COMPILERS>
+    <COMPILERS>gnugpu,gnu,nvidiagpu,nvidia,nvidiaacc</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>e3sm_g</PROJECT>
     <SAVE_TIMING_DIR>/global/cfs/cdirs/e3sm</SAVE_TIMING_DIR>
@@ -357,6 +357,11 @@
         <command name="load">craype-accel-nvidia80</command>
       </modules>
 
+      <modules compiler="nvidiaacc">
+        <command name="load">cudatoolkit/11.5</command>
+        <command name="load">craype-accel-nvidia80</command>
+      </modules>
+
       <modules compiler="gnu">
         <command name="load">craype-accel-host</command>
       </modules>
@@ -394,6 +399,9 @@
       <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
     </environment_variables>
     <environment_variables compiler="nvidiagpu">
+      <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
+    </environment_variables>
+    <environment_variables compiler="nvidiaacc">
       <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
     </environment_variables>
     <environment_variables compiler="gnu.*" mpilib="mpich">

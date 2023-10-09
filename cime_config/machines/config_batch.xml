@@ -445,6 +445,10 @@
       <directive> --gpus-per-task=1</directive>
       <directive> --gpu-bind=none</directive>
     </directives>
+    <directives compiler="nvidiaacc">
+      <directive> --gpus-per-task=1</directive>
+      <directive> --gpu-bind=none</directive>
+    </directives>
     <directives compiler="gnu">
       <directive> -G 0</directive>
     </directives>

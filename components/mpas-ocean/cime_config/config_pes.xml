@@ -465,6 +465,73 @@
     </mach>
   </grid>
   <grid name=".*oi%oRRS18to6v3*">
+    <!-- YSK -->
+    <!-- 2000_DATM%JRA-1p5_SLND_MPASSI_MPASO%DATMFORCED_DROF%JRA-1p5_SGLC_SWAV_SIAC_SESP -->
+    <!-- ATM_GRID is TL319.  OCN_GRID and ICE_GRID is oRRS18to6v3 -->
+<!--
+    <mach name="pm-gpu">
+      <pes compset=".*DATM.+SLND.+MPASSI.+MPASO.+DROF.+SWAV.+" pesize="any">
+        <comment>pm-gpu, hires (18to6) G case on 80 nodes, 80*4 GPUs, sypd=??</comment>
+        <ntasks>
+          <ntasks_atm>-1</ntasks_atm>
+          <ntasks_lnd>-1</ntasks_lnd>
+          <ntasks_rof>-1</ntasks_rof>
+          <ntasks_ice>-80</ntasks_ice>
+          <ntasks_ocn>-80</ntasks_ocn>
+          <ntasks_glc>-1</ntasks_glc>
+          <ntasks_wav>-1</ntasks_wav>
+          <ntasks_cpl>-80</ntasks_cpl>
+        </ntasks>
+      </pes>
+    </mach>
+    <mach name="pm-gpu">
+      <pes compset=".*DATM.+SLND.+MPASSI.+MPASO.+DROF.+SWAV.+" pesize="any">
+        <comment>pm-gpu, hires (18to6) G case on 32 nodes, sypd=??</comment>
+        <ntasks>
+          <ntasks_atm>-1</ntasks_atm>
+          <ntasks_lnd>-1</ntasks_lnd>
+          <ntasks_rof>-1</ntasks_rof>
+          <ntasks_ice>-32</ntasks_ice>
+          <ntasks_ocn>-32</ntasks_ocn>
+          <ntasks_glc>-1</ntasks_glc>
+          <ntasks_wav>-1</ntasks_wav>
+          <ntasks_cpl>-32</ntasks_cpl>
+        </ntasks>
+      </pes>
+    </mach>
+
+-->
+    <mach name="pm-gpu">
+      <pes compset=".*DATM.+SLND.+MPASSI.+MPASO.+DROF.+SWAV.+" pesize="any">
+        <comment>pm-gpu, hires (18to6) G case on 320 nodes, sypd=??</comment>
+        <ntasks>
+          <ntasks_atm>-1</ntasks_atm>
+          <ntasks_lnd>-1</ntasks_lnd>
+          <ntasks_rof>-1</ntasks_rof>
+          <ntasks_ice>-320</ntasks_ice>
+          <ntasks_ocn>-320</ntasks_ocn>
+          <ntasks_glc>-1</ntasks_glc>
+          <ntasks_wav>-1</ntasks_wav>
+          <ntasks_cpl>-320</ntasks_cpl>
+        </ntasks>
+      </pes>
+    </mach>
+
+    <mach name="pm-cpu">
+      <pes compset=".*DATM.+SLND.+MPASSI.+MPASO.+DROF.+SWAV.+" pesize="any">
+        <comment>pm-gpu, hires (18to6) G case on 20 nodes, sypd=??</comment>
+        <ntasks>
+          <ntasks_atm>-1</ntasks_atm>
+          <ntasks_lnd>-1</ntasks_lnd>
+          <ntasks_rof>-1</ntasks_rof>
+          <ntasks_ice>-20</ntasks_ice>
+          <ntasks_ocn>-20</ntasks_ocn>
+          <ntasks_glc>-1</ntasks_glc>
+          <ntasks_wav>-1</ntasks_wav>
+          <ntasks_cpl>-20</ntasks_cpl>
+        </ntasks>
+      </pes>
+    </mach>
     <mach name="cori-knl">
       <pes compset=".*MPASSI.+MPASO.+" pesize="any">
         <comment>cori-knl, hires (18to6) G case on 150 nodes, 64x2, sypd=0.5</comment>
