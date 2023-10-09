@@ -2826,8 +2826,7 @@ contains
   subroutine ocean_stress_coefficient(domain)
 
     use seaice_constants, only: &
-         seaiceDensitySeaWater, &
-         seaiceIceOceanDragCoefficient
+         seaiceDensitySeaWater
 
     type(domain_type), intent(inout) :: &
          domain
@@ -2838,6 +2837,9 @@ contains
     type(MPAS_pool_type), pointer :: &
          velocitySolverPool, &
          icestatePool
+
+    real(kind=RKIND), pointer :: &
+         configIceOceanDragCoeff
 
     real(kind=RKIND), dimension(:), pointer :: &
          oceanStressCoeff, &
@@ -2863,6 +2865,7 @@ contains
     do while (associated(blockPtr))
 
        call MPAS_pool_get_config(blockPtr % configs, "config_use_ocean_stress", configUseOceanStress)
+       call MPAS_pool_get_config(blockPtr % configs, "config_ice_ocean_drag_coefficient", configIceOceanDragCoeff)
 
        call MPAS_pool_get_dimension(blockPtr % dimensions, "nVerticesSolve", nVerticesSolve)
 
@@ -2887,7 +2890,8 @@ contains
 
                 if (solveVelocity(iVertex) == 1) then
 
-                   oceanStressCoeff(iVertex) = seaiceIceOceanDragCoefficient * seaiceDensitySeaWater * iceAreaVertex(iVertex) * &
+                   oceanStressCoeff(iVertex) = configIceOceanDragCoeff * &
+                        seaiceDensitySeaWater * iceAreaVertex(iVertex) * &
                         sqrt((uOceanVelocityVertex(iVertex) - uVelocity(iVertex))**2 + &
                              (vOceanVelocityVertex(iVertex) - vVelocity(iVertex))**2)
 
@@ -2901,7 +2905,8 @@ contains
 
                 if (solveVelocity(iVertex) == 1) then
 
-                   oceanStressCoeff(iVertex) = seaiceIceOceanDragCoefficient * seaiceDensitySeaWater * iceAreaVertex(iVertex)
+                   oceanStressCoeff(iVertex) = configIceOceanDragCoeff * &
+                        seaiceDensitySeaWater * iceAreaVertex(iVertex)
 
                 endif
 

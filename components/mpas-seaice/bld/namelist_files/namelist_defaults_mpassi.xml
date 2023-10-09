@@ -62,7 +62,6 @@
 <config_nFloeCategories>1</config_nFloeCategories>
 <config_nIceLayers>7</config_nIceLayers>
 <config_nSnowLayers>5</config_nSnowLayers>
-<config_nFloeCategories>1</config_nFloeCategories>
 
 <!-- initialize -->
 <config_earth_radius>6371229.0</config_earth_radius>
@@ -368,6 +367,7 @@
 <config_wind_compaction_factor>27.3</config_wind_compaction_factor>
 <config_snow_redistribution_factor>0.3</config_snow_redistribution_factor>
 <config_max_dry_snow_radius>2800.0</config_max_dry_snow_radius>
+<config_snow_thermal_conductivity>0.3</config_snow_thermal_conductivity>
 
 <!-- meltponds -->
 <config_snow_to_ice_transition_depth>0.0</config_snow_to_ice_transition_depth>
@@ -423,6 +423,7 @@
 <config_couple_biogeochemistry_fields>false</config_couple_biogeochemistry_fields>
 <config_use_data_icebergs>false</config_use_data_icebergs>
 <config_salt_flux_coupling_type>'constant'</config_salt_flux_coupling_type>
+<config_ice_ocean_drag_coefficient>0.00536</config_ice_ocean_drag_coefficient>
 
 <!-- diagnostics -->
 <config_check_state>false</config_check_state>
