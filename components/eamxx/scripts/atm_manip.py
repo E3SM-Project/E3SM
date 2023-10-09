@@ -10,12 +10,37 @@ import xml.etree.ElementTree as ET # pylint: disable=unused-import
 # Add path to cime_config folder
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "cime_config"))
 from eamxx_buildnml_impl import check_value, is_array_type, get_child, find_node
-from eamxx_buildnml_impl import gen_atm_proc_group, resolve_all_inheritances
+from eamxx_buildnml_impl import gen_atm_proc_group
 from utils import expect, run_cmd_no_fail
 
 ATMCHANGE_SEP = "-ATMCHANGE_SEP-"
 ATMCHANGE_ALL = "__ALL__"
 ATMCHANGE_BUFF_XML_NAME = "SCREAM_ATMCHANGE_BUFFER"
+
+###############################################################################
+def apply_atm_procs_list_changes_from_buffer(case, xml):
+###############################################################################
+    atmchg_buffer = case.get_value(ATMCHANGE_BUFF_XML_NAME)
+    if atmchg_buffer:
+        atmchgs, atmchgs_all = unbuffer_changes(case)
+
+        expect (len(atmchgs)==len(atmchgs_all),"Failed to unbuffer changes from SCREAM_ATMCHANGE_BUFFER")
+        for chg, to_all in zip(atmchgs,atmchgs_all):
+            if "atm_procs_list" in chg:
+                expect (not to_all, "Makes no sense to change 'atm_procs_list' for all groups")
+                atm_config_chg_impl(xml, chg, all_matches=False)
+
+###############################################################################
+def apply_non_atm_procs_list_changes_from_buffer(case, xml):
+###############################################################################
+    atmchg_buffer = case.get_value(ATMCHANGE_BUFF_XML_NAME)
+    if atmchg_buffer:
+        atmchgs, atmchgs_all = unbuffer_changes(case)
+
+        expect (len(atmchgs)==len(atmchgs_all),"Failed to unbuffer changes from SCREAM_ATMCHANGE_BUFFER")
+        for chg, to_all in zip(atmchgs,atmchgs_all):
+            if "atm_procs_list" not in chg:
+                atm_config_chg_impl(xml, chg, all_matches=to_all)
 
 ###############################################################################
 def buffer_changes(changes, all_matches=False):
@@ -50,23 +75,6 @@ def unbuffer_changes(case):
 
     return atmchgs, atmchgs_all
 
-###############################################################################
-def apply_buffer(case,xml_root):
-###############################################################################
-    """
-    From a case, retrieve the buffered changes and re-apply them via atmchange
-    """
-    atmchg_buffer = case.get_value(ATMCHANGE_BUFF_XML_NAME)
-    if atmchg_buffer:
-        atmchgs, atmchgs_all = unbuffer_changes(case)
-
-        expect (len(atmchgs)==len(atmchgs_all),"Failed to unbuffer changes from SCREAM_ATMCHANGE_BUFFER")
-        for chg, to_all in zip(atmchgs,atmchgs_all):
-            atm_config_chg_impl(xml_root, chg, all_matches=to_all)
-            # Annoying as it may be, we must resolve all inheritances.
-            # E.g., the user *may* have added an atm proc, which requires
-            # to get all the atm_proc_base defaults
-            resolve_all_inheritances(xml_root)
 
 ###############################################################################
 def reset_buffer():

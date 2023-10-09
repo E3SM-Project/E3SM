@@ -16,7 +16,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__f
 # SCREAM imports
 from eamxx_buildnml_impl import get_valid_selectors, get_child, refine_type, \
         resolve_all_inheritances, gen_atm_proc_group, check_all_values
-from atm_manip import apply_buffer
+from atm_manip import apply_atm_procs_list_changes_from_buffer, apply_non_atm_procs_list_changes_from_buffer
 
 from utils import ensure_yaml # pylint: disable=no-name-in-module
 ensure_yaml()
@@ -480,8 +480,9 @@ def _create_raw_xml_file_impl(case, xml):
     # 1. Evaluate all selectors
     evaluate_selectors(xml, case, selectors)
 
-    # 2. If there are changes in the SCREAM_ATMCHANGE_BUFFER, apply them
-    apply_buffer(case,xml)
+    # 2. Apply all changes in the SCREAM_ATMCHANGE_BUFFER that may alter
+    #    which atm processes are used
+    apply_atm_procs_list_changes_from_buffer (case,xml)
 
     # 3. Resolve all inheritances
     resolve_all_inheritances(xml)
@@ -495,11 +496,14 @@ def _create_raw_xml_file_impl(case, xml):
     # 6. Get atm procs list
     atm_procs_list = get_child(atm_procs_defaults,"atm_procs_list",remove=True)
 
-
     # 7. Form the nested list of atm procs needed, append to atmosphere_driver section
     atm_procs = gen_atm_proc_group(atm_procs_list.text, atm_procs_defaults)
     atm_procs.tag = "atmosphere_processes"
     xml.append(atm_procs)
+
+    # 8. Apply all changes in the SCREAM_ATMCHANGE_BUFFER that do not alter
+    #    which atm processes are used
+    apply_non_atm_procs_list_changes_from_buffer (case,xml)
 
     return xml
 
