@@ -448,6 +448,7 @@
     <directives compiler="nvidiaacc">
       <directive> --gpus-per-task=1</directive>
       <directive> --gpu-bind=none</directive>
+      <directive> -G 32</directive>
     </directives>
     <directives compiler="gnu">
       <directive> -G 0</directive>

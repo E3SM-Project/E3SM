@@ -198,6 +198,23 @@
       </pes>
     </mach>
   </grid>
+  <grid name="a%T62.+_oi%oQU240.+">
+    <mach name="pm-gpu">
+      <pes compset=".*MPAS.*" pesize="any">
+        <comment>mpas-ocean: T62_oQU240 grid for MPAS tests</comment>
+        <ntasks>
+          <ntasks_atm>-1</ntasks_atm>
+          <ntasks_lnd>-1</ntasks_lnd>
+          <ntasks_rof>-1</ntasks_rof>
+          <ntasks_ice>-8</ntasks_ice>
+          <ntasks_ocn>-8</ntasks_ocn>
+          <ntasks_glc>-1</ntasks_glc>
+          <ntasks_wav>-1</ntasks_wav>
+          <ntasks_cpl>-8</ntasks_cpl>
+        </ntasks>
+      </pes>
+    </mach>
+  </grid>
   <grid name="oi%EC30to60E2r2|oi%oEC60to30v3">
     <mach name="anvil">
       <pes compset="DATM.+MPASO.+SWAV" pesize="any">

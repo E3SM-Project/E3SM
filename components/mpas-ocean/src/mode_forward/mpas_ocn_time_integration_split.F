@@ -614,8 +614,10 @@ module ocn_time_integration_split
                            normalVelocityCur, stage1_tend_time)
 
 #ifdef MPAS_OPENACC
-         !$acc enter data copyin(layerThicknessCur, normalVelocityCur, sshCur)
+!         !$acc enter data copyin(layerThicknessCur, normalVelocityCur, sshCur)
+!         !$acc update device(layerThickEdgeFlux)
          !$acc update device(layerThickEdgeFlux)
+         !$acc enter data copyin(layerThicknessCur, normalVelocityCur, sshCur)
          if (config_use_freq_filtered_thickness .or. associated(highFreqThicknessNew) ) then
             !$acc enter data create(highFreqThicknessNew)
             !$acc enter data copyin(highFreqThicknessCur, highFreqThicknessTend)
