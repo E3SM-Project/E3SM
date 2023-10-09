@@ -409,7 +409,7 @@ contains
             call calc_nuptake_prof(num_soilc, filter_soilc, cnstate_vars, nuptake_prof)
             call calc_puptake_prof(num_soilc, filter_soilc, cnstate_vars, puptake_prof)
          end if
-
+            
             do j = 1, nlevdecomp
                do fc=1, num_soilc
                   c = filter_soilc(fc)
@@ -2155,7 +2155,7 @@ contains
      integer              , intent(in)    :: num_soilc        ! number of soil columns in filter
      integer              , intent(in)    :: filter_soilc(:)  ! filter for soil columns
      type(cnstate_type)   , intent(in)    :: cnstate_vars
-     real(r8)             , intent(inout) :: nuptake_prof(num_soilc, 1:nlevdecomp)
+     real(r8)             , intent(inout) :: nuptake_prof(1:num_soilc, 1:nlevdecomp)
 
      integer :: c,j,fc                                            !indices
      real(r8):: sminn_tot(num_soilc)
@@ -2203,20 +2203,18 @@ contains
 
           end if
           if(use_pflotran .and. pf_cmode) then
-             !$acc parallel loop independent gang worker default(present) private(sum1,c)
             do fc=1,num_soilc
                sum1 = 0._r8
                c = filter_soilc(fc)
-               !$acc loop vector reduction(+:sum1)
                do j = 1, nlevdecomp
                   sminn_vr_loc = smin_no3_vr(c,j) + smin_nh4_vr(c,j)
                   sum1 = sum1 + sminn_vr_loc * dzsoi_decomp(j) &
                            *(nfixation_prof(c,j)*dzsoi_decomp(j))         ! weighted by froot fractions in annual max. active layers
+               end do
+               sminn_tot(fc) = sum1
              end do
-             sminn_tot(fc) = sum1
-            end do
-
-            do j = 1, nlevdecomp
+            !
+             do j = 1, nlevdecomp
               do fc=1,num_soilc
                  c = filter_soilc(fc)
                  sminn_vr_loc = smin_no3_vr(c,j) + smin_nh4_vr(c,j)
@@ -2229,7 +2227,7 @@ contains
                  end if
               end do
            end do
-       end if
+         end if
        !$acc exit data delete(sminn_tot(1:num_soilc))
 
      end associate
@@ -2246,7 +2244,7 @@ subroutine calc_puptake_prof(num_soilc, filter_soilc, cnstate_vars, puptake_prof
   integer                  , intent(in)    :: num_soilc        ! number of soil columns in filter
   integer                  , intent(in)    :: filter_soilc(:)  ! filter for soil columns
   type(cnstate_type)       , intent(in)    :: cnstate_vars
-  real(r8)                 , intent(inout) :: puptake_prof(num_soilc, 1:nlevdecomp)
+  real(r8)                 , intent(inout) :: puptake_prof(1:num_soilc, 1:nlevdecomp)
 
   integer :: c,j,fc                                            !indices
   real(r8):: solutionp_tot(num_soilc), sum1
