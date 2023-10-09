@@ -119,7 +119,6 @@ module li_time_integration_fe_rk
       integer :: rkStage, iCell, iTracer, k
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness, &
                                                     temperature, &
-                                                    enthalpy, &
                                                     waterFrac
       real (kind=RKIND), dimension(:), pointer :: thickness, damage, passiveTracer2d
       real (kind=RKIND), dimension(:), pointer :: sfcMassBalApplied, &
@@ -141,7 +140,7 @@ module li_time_integration_fe_rk
       real (kind=RKIND), dimension(:,:), allocatable :: layerThicknessPrev, &
                                                         layerThicknessTmp, &
                                                         temperaturePrev, &
-                                                        enthalpyPrev, &
+                                                        waterFracPrev, &
                                                         passiveTracer3d, &
                                                         passiveTracer3dPrev, &
                                                         damage3d, &
@@ -186,7 +185,7 @@ module li_time_integration_fe_rk
       call mpas_pool_get_array(geometryPool, 'groundedToFloatingThickness', groundedToFloatingThickness)
 
       allocate(temperaturePrev(nVertLevels, nCells+1))
-      allocate(enthalpyPrev(nVertLevels, nCells+1))
+      allocate(waterFracPrev(nVertLevels, nCells+1))
       allocate(layerThicknessPrev(nVertLevels, nCells+1))
       allocate(layerThicknessTmp(nVertLevels, nCells+1))
       allocate(damage3dPrev(nVertLevels, nCells+1))
@@ -203,7 +202,6 @@ module li_time_integration_fe_rk
       allocate(fluxAcrossGroundingLineAccum(nEdges+1))
 
       temperaturePrev(:,:) = 0.0_RKIND
-      enthalpyPrev(:,:) = 0.0_RKIND
       layerThicknessPrev(:,:) = 0.0_RKIND
       layerThicknessTmp(:,:) = 0.0_RKIND
       damage3dPrev(:,:) = 0.0_RKIND
@@ -272,11 +270,10 @@ module li_time_integration_fe_rk
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 
       call mpas_pool_get_array(thermalPool, 'temperature', temperature)
-      call mpas_pool_get_array(thermalPool, 'enthalpy', enthalpy)
       call mpas_pool_get_array(thermalPool, 'waterFrac', waterFrac)
       ! Save relevant fields before RK loop, to be used in update at the end
       temperaturePrev(:,:) = temperature(:,:)
-      enthalpyPrev(:,:) =  enthalpy(:,:)
+      waterFracPrev(:,:) = waterFrac(:,:)
       layerThicknessPrev(:,:) = layerThickness(:,:)
       cellMaskPrev(:) = cellMask(:)
       do k = 1, nVertLevels
@@ -384,7 +381,6 @@ module li_time_integration_fe_rk
             call mpas_pool_get_array(geometryPool, 'damage', damage)
 
             call mpas_pool_get_array(thermalPool, 'temperature', temperature)
-            call mpas_pool_get_array(thermalPool, 'enthalpy', enthalpy)
             call mpas_pool_get_array(thermalPool, 'waterFrac', waterFrac)
 
             layerThicknessTmp(:,:) = layerThickness(:,:)
@@ -392,32 +388,19 @@ module li_time_integration_fe_rk
                                      (1.0_RKIND - rkSSPweights(rkStage)) * layerThickness(:,:)
             thickness = sum(layerThickness, 1)
 
-            if (trim(config_thermal_solver) == 'enthalpy') then
-               where (layerThickness(:,:) > 0.0_RKIND)
-                  enthalpy(:,:) = ( rkSSPweights(rkStage) * enthalpyPrev(:,:) * layerThicknessPrev(:,:) + &
-                                    (1.0_RKIND - rkSSPweights(rkStage)) * enthalpy(:,:) * &
-                                    layerThicknessTmp(:,:) ) / layerThickness(:,:)
-               ! elsewhere, what?
-               end where
-               ! given the enthalpy, compute the temperature and water fraction
+            if (trim(config_thermal_solver) .ne. 'none') then
                do iCell = 1, nCells
-
-                  call li_enthalpy_to_temperature_kelvin(&
-                       layerCenterSigma,                           &
-                       thickness(iCell),                           &
-                       enthalpy(:,iCell),     &
-                       temperature(:,iCell),  &
-                       waterFrac(:,iCell))
-
+                  do k = 1, nVertLevels
+                     if (layerThickness(k,iCell) > 0.0_RKIND) then
+                        temperature(k,iCell) = ( rkSSPweights(rkStage) * temperaturePrev(k,iCell) * layerThicknessPrev(k,iCell) + &
+                                             (1.0_RKIND - rkSSPweights(rkStage)) * temperature(k,iCell) * &
+                                             layerThicknessTmp(k,iCell) ) / layerThickness(k,iCell)
+                        waterFrac(k,iCell) = ( rkSSPweights(rkStage) * waterFracPrev(k,iCell) * layerThicknessPrev(k,iCell) + &
+                                             (1.0_RKIND - rkSSPweights(rkStage)) * waterFrac(k,iCell) * &
+                                             layerThicknessTmp(k,iCell) ) / layerThickness(k,iCell)
+                     endif
+                  enddo
                enddo
-
-            elseif (trim(config_thermal_solver) == 'temperature') then
-               where (layerThickness(:,:) > 0.0_RKIND)
-                  temperature(:,:) = ( rkSSPweights(rkStage) * temperaturePrev(:,:) * layerThicknessPrev(:,:) + &
-                                       (1.0_RKIND - rkSSPweights(rkStage)) * temperature(:,:) * &
-                                       layerThicknessTmp(:,:) ) / layerThickness(:,:)
-               ! elsewhere, what?
-               end where
             endif
 
             if (config_calculate_damage) then
@@ -486,7 +469,6 @@ module li_time_integration_fe_rk
          call mpas_dmpar_field_halo_exch(domain, 'thickness')
          call mpas_dmpar_field_halo_exch(domain, 'temperature')
          call mpas_dmpar_field_halo_exch(domain, 'waterFrac')
-         call mpas_dmpar_field_halo_exch(domain, 'enthalpy')
          call mpas_dmpar_field_halo_exch(domain, 'damage')
          call mpas_dmpar_field_halo_exch(domain, 'passiveTracer2d')
 
@@ -580,7 +562,7 @@ module li_time_integration_fe_rk
       endif
 
       deallocate(temperaturePrev)
-      deallocate(enthalpyPrev)
+      deallocate(waterFracPrev)
       deallocate(layerThicknessPrev)
       deallocate(layerThicknessTmp)
       deallocate(damage3dPrev)
