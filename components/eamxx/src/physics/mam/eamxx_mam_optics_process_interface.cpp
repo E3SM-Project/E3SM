@@ -105,9 +105,9 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   constexpr int maxd_aspectype = mam4::ndrop::maxd_aspectype;
   constexpr int ntot_amode = mam4::AeroConfig::num_modes();
 
-  state_q_ = mam_coupling::view_2d("state_q_", nlev_, nvars);
+  state_q_ = mam_coupling::view_3d("state_q_", ncol_, nlev_, nvars);
   Kokkos::deep_copy(state_q_,10);
-  qqcw_ = mam_coupling::view_2d("qqcw_", nlev_, nvars);
+  qqcw_ = mam_coupling::view_3d("qqcw_", ncol_, nlev_, nvars);
   Kokkos::deep_copy(qqcw_,10);
   ext_cmip6_lw_ = mam_coupling::view_2d("ext_cmip6_lw_", nlev_, nlwbands);
   // odap_aer_ = mam_coupling::view_2d("odap_aer_", nlev_, nlwbands);
@@ -284,8 +284,8 @@ void MAMOptics::run_impl(const double dt) {
 
           for (int kk = mam4::ndrop::top_lev; kk < nlev_; ++kk) {
 
-            const auto state_q_k = Kokkos::subview(state_q_, kk, Kokkos::ALL());
-            const auto qqcw_k = Kokkos::subview(qqcw_, kk, Kokkos::ALL());
+            const auto state_q_k = Kokkos::subview(state_q_, icol, kk, Kokkos::ALL());
+            const auto qqcw_k = Kokkos::subview(qqcw_, icol, kk, Kokkos::ALL());
             auto dgncur_i = Kokkos::subview(dgnumdry_m_, icol, kk, Kokkos::ALL());
             Real dgncur_c[ntot_amode] = {};
             mam4::modal_aero_calcsize::modal_aero_calcsize_sub(
@@ -317,11 +317,12 @@ void MAMOptics::run_impl(const double dt) {
    auto specrefindex_icol = ekat::subview(specrefindex_, icol);
    auto qaerwat_m_icol = ekat::subview(qaerwat_m_, icol);
    auto ext_cmip6_lw_inv_m_icol = ekat::subview(ext_cmip6_lw_inv_m_, icol);
+   auto state_q_icol = ekat::subview(state_q_, icol);
 
  mam4::aer_rad_props::aer_rad_props_lw(
     dt, pmid, pint,
     temperature, zm, zi,
-    state_q_, pdel, pdeldry,
+    state_q_icol, pdel, pdeldry,
     cldn, ext_cmip6_lw_,
     // const ColumnView qqcw_fld[pcnst],
     odap_aer_icol,
@@ -342,6 +343,8 @@ void MAMOptics::run_impl(const double dt) {
     logradsurf_icol, specrefindex_icol,
     qaerwat_m_icol, ext_cmip6_lw_inv_m_icol);
 
+    // printf("odap_aer_icol %e \n ", odap_aer_icol(10,10));
+
 #endif
     });
 
@@ -354,7 +357,7 @@ void MAMOptics::run_impl(const double dt) {
 #endif
 
   }
-  printf("Oscar is here... done \n");
+  printf("Done  with aerosol_optics \n");
 
 }
 

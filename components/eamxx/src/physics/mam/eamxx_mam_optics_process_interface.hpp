@@ -60,7 +60,8 @@ protected_except_cuda:
 
 private_except_cuda:
   // state variable
-  mam_coupling::view_2d state_q_, ext_cmip6_lw_, qqcw_;// odap_aer_,
+  mam_coupling::view_3d state_q_,  qqcw_;// odap_aer_,
+  mam_coupling::view_2d ext_cmip6_lw_;
 
   mam_coupling::complex_view_2d specrefndxlw_;
 
