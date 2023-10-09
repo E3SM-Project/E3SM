@@ -10,7 +10,6 @@ import re
 import stat
 import subprocess
 import sys
-
 import typing
 
 pat_envvar = re.compile(r'^([_\d\w]+)=(.*)$', flags=re.MULTILINE)
