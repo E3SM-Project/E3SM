@@ -560,7 +560,7 @@ contains
     call ncd_pio_openfile (ncid, locfn, 0)
     call ncd_io(ncid=ncid, varname='pc', flag='read', data=this%pc, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
-      this%pc(:) = 0.4_r8
+      this%pc(:) = 0.4
     end if
     call ncd_pio_closefile(ncid)
 
