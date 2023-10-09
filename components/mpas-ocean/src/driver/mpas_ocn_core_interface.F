@@ -216,7 +216,8 @@ module ocn_core_interface
       if ( forwardModeActive ) then
          if (    config_time_integrator == trim('split_explicit') &
             .or. config_time_integrator == trim('unsplit_explicit') &
-            .or. config_time_integrator == trim('split_implicit') ) then
+            .or. config_time_integrator == trim('split_implicit') &
+            .or. config_time_integrator == trim('split_explicit_ab2') ) then
             splitTimeIntegratorActive = .true.
          end if
       endif

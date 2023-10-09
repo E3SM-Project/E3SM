@@ -202,7 +202,7 @@
 		/>
 		<nml_option name="config_time_integrator" type="character" default_value="split_explicit"
 					description="Time integration method."
-					possible_values="'split_explicit', 'RK4', 'unsplit_explicit', 'split_implicit', 'LTS'"
+					possible_values="'split_explicit', 'RK4', 'unsplit_explicit', 'split_implicit', 'LTS', 'split_explicit_ab2'"
 		/>
 		<nml_option name="config_number_of_time_levels" type="integer" default_value="2"
 					description="The number of time levels in the time-stepping scheme. This is used for array allocation."
