@@ -56,10 +56,13 @@ struct RemapStateProvider {
     m_process_nh_vars = 1;
 #else
 //    m_process_nh_vars = !params.theta_hydrostatic_mode;
-    m_process_nh_vars = 0;
+    if(params.theta_hydrostatic_mode){
+	    m_process_nh_vars = 0;
+    }else{
+            m_process_nh_vars = 1;}
 #endif
-
-if(m_process_nh_vars){
+    std::cout << "as int: hey m_process_nh_vars " << m_process_nh_vars << "\n";
+if(m_process_nh_vars==1){
     std::cout << "hey m_process_nh_vars is true \n";
 }else
 {
