@@ -445,7 +445,7 @@ Valid values: true or .false
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_use_column_package" type="logical"
+<entry id="config_use_column_physics" type="logical"
 	category="use_sections" group="use_sections">
 If true perform calculations from the column physics package.
 

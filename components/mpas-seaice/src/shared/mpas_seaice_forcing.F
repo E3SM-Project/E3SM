@@ -3124,11 +3124,11 @@ contains
     type(domain_type) :: domain
 
     logical, pointer :: &
-         config_use_column_package
+         config_use_column_physics
 
-    call MPAS_pool_get_config(domain % blocklist % configs, "config_use_column_package", config_use_column_package)
+    call MPAS_pool_get_config(domain % blocklist % configs, "config_use_column_physics", config_use_column_physics)
 
-    if (config_use_column_package) then
+    if (config_use_column_physics) then
 
        call reset_atmospheric_coupler_fluxes(domain)
        call reset_ocean_coupler_fluxes(domain)

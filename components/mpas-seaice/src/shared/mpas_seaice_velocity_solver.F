@@ -757,7 +757,7 @@ contains
          totalMassCell
 
     logical, pointer :: &
-         config_use_column_package, &
+         config_use_column_physics, &
          config_use_column_vertical_thermodynamics, &
          config_use_halo_exch, &
          config_aggregate_halo_exch, &
@@ -768,12 +768,12 @@ contains
          ierr
 
     ! set initial ice area if not have column physics
-    call MPAS_pool_get_config(domain % configs, "config_use_column_package", config_use_column_package)
+    call MPAS_pool_get_config(domain % configs, "config_use_column_physics", config_use_column_physics)
     call MPAS_pool_get_config(domain % configs, "config_use_column_vertical_thermodynamics", &
                                                  config_use_column_vertical_thermodynamics)
 
-    if (.not. config_use_column_package .or. &
-         (config_use_column_package .and. .not. config_use_column_vertical_thermodynamics)) then
+    if (.not. config_use_column_physics .or. &
+         (config_use_column_physics .and. .not. config_use_column_vertical_thermodynamics)) then
 
        blockPtr => domain % blocklist
        do while (associated(blockPtr))
@@ -1350,7 +1350,7 @@ contains
          solveStress
 
     logical, pointer :: &
-         config_use_column_package, &
+         config_use_column_physics, &
          config_use_column_vertical_thermodynamics, &
          config_use_halo_exch, &
          config_aggregate_halo_exch, &
@@ -1371,7 +1371,7 @@ contains
     do while (associated(blockPtr))
 
        call MPAS_pool_get_config(blockPtr % configs, "config_column_physics_type", config_column_physics_type)
-       call MPAS_pool_get_config(blockPtr % configs, "config_use_column_package", config_use_column_package)
+       call MPAS_pool_get_config(blockPtr % configs, "config_use_column_physics", config_use_column_physics)
        call MPAS_pool_get_config(blockPtr % configs, "config_use_column_vertical_thermodynamics", &
                                                       config_use_column_vertical_thermodynamics)
 
@@ -1394,8 +1394,8 @@ contains
        call MPAS_pool_get_array(tracersPool, "iceAreaCategory", iceAreaCategory, 1)
        call MPAS_pool_get_array(tracersPool, "iceVolumeCategory", iceVolumeCategory, 1)
 
-       if (.not. config_use_column_package .or. &
-            (config_use_column_package .and. .not. config_use_column_vertical_thermodynamics)) then
+       if (.not. config_use_column_physics .or. &
+            (config_use_column_physics .and. .not. config_use_column_vertical_thermodynamics)) then
 
           do iCell = 1, nCellsSolve
 
@@ -1535,7 +1535,7 @@ contains
          blockPtr
 
     logical, pointer :: &
-         config_use_column_package, &
+         config_use_column_physics, &
          config_use_column_vertical_thermodynamics, &
          config_use_air_stress, &
          config_use_halo_exch, &
@@ -1556,12 +1556,12 @@ contains
          ierr
 
     ! calculate the air stress
-    call MPAS_pool_get_config(domain % blocklist % configs, "config_use_column_package", config_use_column_package)
+    call MPAS_pool_get_config(domain % blocklist % configs, "config_use_column_physics", config_use_column_physics)
     call MPAS_pool_get_config(domain % blocklist % configs, "config_use_column_vertical_thermodynamics", &
                                                              config_use_column_vertical_thermodynamics)
 
-    if (.not. config_use_column_package .or. &
-         (config_use_column_package .and. .not. config_use_column_vertical_thermodynamics)) then
+    if (.not. config_use_column_physics .or. &
+         (config_use_column_physics .and. .not. config_use_column_vertical_thermodynamics)) then
        call constant_air_stress(domain)
     endif
 
