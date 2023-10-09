@@ -77,10 +77,10 @@ private_except_cuda:
   mam_coupling::view_1d refrtablw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nlwbands];
   mam_coupling::view_1d refitablw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nlwbands];
 
-  mam_coupling::view_1d mass_, radsurf_, logradsurf_  ;
-  mam_coupling::view_2d cheb_, dgnumwet_m_, dgnumdry_m_;
-  mam_coupling::complex_view_2d specrefindex_;
-  mam_coupling::view_2d qaerwat_m_, ext_cmip6_lw_inv_m_;
+  mam_coupling::view_2d mass_, radsurf_, logradsurf_  ;
+  mam_coupling::view_3d cheb_, dgnumwet_m_, dgnumdry_m_;
+  mam_coupling::complex_view_3d specrefindex_;
+  mam_coupling::view_3d qaerwat_m_, ext_cmip6_lw_inv_m_;
   // FIXME: move this values to mam_coupling
   mam_coupling::const_view_2d z_mid_, z_iface_, p_int_, p_del_;
 

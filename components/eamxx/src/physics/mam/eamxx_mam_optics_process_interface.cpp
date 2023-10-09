@@ -151,21 +151,19 @@ void MAMOptics::initialize_impl(const RunType run_type) {
    }
 
   // FIXME: work arrays
-  mass_ = mam_coupling::view_1d("mass", nlev_);
-  cheb_ = mam_coupling::view_2d("cheb", mam4::modal_aer_opt::ncoef, nlev_);
+  mass_ = mam_coupling::view_2d("mass", ncol_,  nlev_);
+  cheb_ = mam_coupling::view_3d("cheb", ncol_, mam4::modal_aer_opt::ncoef, nlev_);
 
-  dgnumwet_m_ = mam_coupling::view_2d("dgnumwet_m", nlev_, ntot_amode);
-  dgnumdry_m_ = mam_coupling::view_2d("dgnumdry_m", nlev_, ntot_amode);
+  dgnumwet_m_ = mam_coupling::view_3d("dgnumwet_m", ncol_, nlev_, ntot_amode);
+  dgnumdry_m_ = mam_coupling::view_3d("dgnumdry_m", ncol_, nlev_, ntot_amode);
 
-  radsurf_ = mam_coupling::view_1d("radsurf",nlev_);
-  logradsurf_ = mam_coupling::view_1d("logradsurf",nlev_);
+  radsurf_ = mam_coupling::view_2d("radsurf",ncol_, nlev_);
+  logradsurf_ = mam_coupling::view_2d("logradsurf",ncol_,nlev_);
 
-  specrefindex_=mam_coupling::complex_view_2d("specrefindex",
+  specrefindex_=mam_coupling::complex_view_3d("specrefindex", ncol_,
    mam4::modal_aer_opt::max_nspec, nlwbands);
-  qaerwat_m_ = mam_coupling::view_2d ("qaerwat_m", nlev_, ntot_amode);
-
-  ext_cmip6_lw_inv_m_ = mam_coupling::view_2d ("qaerwat_m", nlev_, nlwbands);
-
+  qaerwat_m_ = mam_coupling::view_3d ("qaerwat_m", ncol_, nlev_, ntot_amode);
+  ext_cmip6_lw_inv_m_ = mam_coupling::view_3d ("qaerwat_m", ncol_, nlev_, nlwbands);
 
 }
 void MAMOptics::run_impl(const double dt) {
@@ -288,7 +286,7 @@ void MAMOptics::run_impl(const double dt) {
 
             const auto state_q_k = Kokkos::subview(state_q_, kk, Kokkos::ALL());
             const auto qqcw_k = Kokkos::subview(qqcw_, kk, Kokkos::ALL());
-            auto dgncur_i = Kokkos::subview(dgnumdry_m_, kk, Kokkos::ALL());
+            auto dgncur_i = Kokkos::subview(dgnumdry_m_, icol, kk, Kokkos::ALL());
             Real dgncur_c[ntot_amode] = {};
             mam4::modal_aero_calcsize::modal_aero_calcsize_sub(
                 state_q_k.data(), // in
@@ -308,6 +306,18 @@ void MAMOptics::run_impl(const double dt) {
 
 
   #if 1
+
+   auto mass_icol = ekat::subview(mass_, icol);
+   auto radsurf_icol = ekat::subview(radsurf_, icol);
+   auto logradsurf_icol = ekat::subview(logradsurf_, icol);
+
+   auto cheb_icol = ekat::subview(cheb_, icol);
+   auto dgnumwet_m_icol = ekat::subview(dgnumwet_m_, icol);
+   auto dgnumdry_m_icol = ekat::subview(dgnumdry_m_, icol);
+   auto specrefindex_icol = ekat::subview(specrefindex_, icol);
+   auto qaerwat_m_icol = ekat::subview(qaerwat_m_, icol);
+   auto ext_cmip6_lw_inv_m_icol = ekat::subview(ext_cmip6_lw_inv_m_, icol);
+
  mam4::aer_rad_props::aer_rad_props_lw(
     dt, pmid, pint,
     temperature, zm, zi,
@@ -327,10 +337,10 @@ void MAMOptics::run_impl(const double dt) {
     refrtablw_,
     refitablw_,
     // work views
-    mass_, cheb_, dgnumwet_m_,
-    dgnumdry_m_, radsurf_,
-    logradsurf_, specrefindex_,
-    qaerwat_m_, ext_cmip6_lw_inv_m_);
+    mass_icol, cheb_icol, dgnumwet_m_icol,
+    dgnumdry_m_icol, radsurf_icol,
+    logradsurf_icol, specrefindex_icol,
+    qaerwat_m_icol, ext_cmip6_lw_inv_m_icol);
 
 #endif
     });
