@@ -2738,7 +2738,6 @@ contains
 
    logical :: keepFrazil
 
-   errorcode = 0
 
    ! get configure options
    call mpas_pool_get_package(domain % packages, 'frazilIceActive', frazilIceActive)
@@ -3988,8 +3987,10 @@ contains
                                                    avgOceanSurfaceDMS, &
                                                    avgOceanSurfaceDMSP, &
                                                    avgOceanSurfaceDOCr, &
+                                                   avgOceanSurfaceDOCSemiLabile, &
                                                    avgOceanSurfaceFeParticulate, &
-                                                   avgOceanSurfaceFeDissolved
+                                                   avgOceanSurfaceFeDissolved, &
+                                                   ssh
    
       real (kind=RKIND), dimension(:,:), pointer :: avgTracersSurfaceValue, avgSurfaceVelocity, &
                                                       avgOceanSurfacePhytoC, &
@@ -4008,6 +4009,7 @@ contains
       character (len=StrKIND), pointer :: config_land_ice_flux_mode
    
       logical :: keepFrazil
+
    
       ! get configure options
       call mpas_pool_get_package(domain % packages, 'frazilIceActive', frazilIceActive)
@@ -4038,6 +4040,7 @@ contains
          call mpas_pool_get_dimension(forcingPool, 'index_avgSurfaceVelocityZonal', index_avgZonalSurfaceVelocity)
          call mpas_pool_get_dimension(forcingPool, 'index_avgSurfaceVelocityMeridional', index_avgMeridionalSurfaceVelocity)
    
+         call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
          call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
    
          call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
@@ -4069,6 +4072,7 @@ contains
             call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceSiO3', avgOceanSurfaceSiO3)
             call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceNH4', avgOceanSurfaceNH4)
             call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceDOCr', avgOceanSurfaceDOCr)
+            call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceDOCSemiLabile', avgOceanSurfaceDOCSemiLabile)
             call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceFeParticulate', avgOceanSurfaceFeParticulate)
             call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceFeDissolved', avgOceanSurfaceFeDissolved)
          endif
@@ -4096,6 +4100,7 @@ contains
             o2x_om(n, index_o2x_So_u) = avgSurfaceVelocity(index_avgZonalSurfaceVelocity, i)
             o2x_om(n, index_o2x_So_v) = avgSurfaceVelocity(index_avgMeridionalSurfaceVelocity, i)
    
+            o2x_om(n, index_o2x_So_ssh)  = ssh(i)
             o2x_om(n, index_o2x_So_dhdx) = filteredSSHGradientZonal(i)
             o2x_om(n, index_o2x_So_dhdy) = filteredSSHGradientMeridional(i)
    
@@ -4155,6 +4160,10 @@ contains
                o2x_om(n, index_o2x_So_algae2) = max(0.0_RKIND,avgOceanSurfacePhytoC(2,i))
                o2x_om(n, index_o2x_So_algae3) = max(0.0_RKIND,avgOceanSurfacePhytoC(3,i))
                o2x_om(n, index_o2x_So_dic1)   = max(0.0_RKIND,avgOceanSurfaceDIC(i))
+               o2x_om(n, index_o2x_So_doc1)   = max(0.0_RKIND,avgOceanSurfaceDOCSemiLabile(i))
+               o2x_om(n, index_o2x_So_doc2)   = max(0.0_RKIND,avgOceanSurfaceDOCSemiLabile(i))
+               o2x_om(n, index_o2x_So_doc3)   = max(0.0_RKIND,avgOceanSurfaceDOCSemiLabile(i))
+               o2x_om(n, index_o2x_So_don1)   = 0.0_RKIND
                o2x_om(n, index_o2x_So_no3)    = max(0.0_RKIND,avgOceanSurfaceNO3(i))
                o2x_om(n, index_o2x_So_sio3)   = max(0.0_RKIND,avgOceanSurfaceSiO3(i))
                o2x_om(n, index_o2x_So_nh4)    = max(0.0_RKIND,avgOceanSurfaceNH4(i))
@@ -4172,14 +4181,14 @@ contains
                o2x_om(n, index_o2x_So_don1) = max(0.0_RKIND,avgOceanSurfaceDON(i))
             endif
       
-            if ( trim(config_land_ice_flux_mode) .ne. 'pressure_only' ) then
+            if ( trim(config_land_ice_flux_mode) .eq. 'standalone' .or. &
+                  trim(config_land_ice_flux_mode) .eq. 'coupled'  ) then
                o2x_om(n, index_o2x_So_blt) = landIceBoundaryLayerTracers(indexBLT,i)
                o2x_om(n, index_o2x_So_bls) = landIceBoundaryLayerTracers(indexBLS,i)
                o2x_om(n, index_o2x_So_htv) = landIceTracerTransferVelocities(indexHeatTrans,i)
                o2x_om(n, index_o2x_So_stv) = landIceTracerTransferVelocities(indexSaltTrans,i)
                o2x_om(n, index_o2x_So_rhoeff) = 0.0_RKIND
-            endif
-   
+            endif 
          end do
    
          block_ptr => block_ptr % next
@@ -4190,7 +4199,7 @@ contains
       tagname = trim(seq_flds_o2x_fields)//C_NULL_CHAR
       ierr = iMOAB_SetDoubleTagStorage ( MPOID, tagname, totalmbls , ent_type, o2x_om(1, 1) )
       if ( ierr /= 0 ) then
-         write(ocnLogUnit,*) 'Fail to set MOAB fields '
+         write(ocnLogUnit,*) 'Fail to set o2x MOAB fields '
       endif
    !-----------------------------------------------------------------------
    !EOC
