@@ -543,7 +543,11 @@ void RefiningRemapper::setup_mpi_data_structures ()
     auto data = f.get_internal_view_data<Real,Host>();
     check_mpi_call(MPI_Win_create(data,win_size,sizeof(Real),
                                   MPI_INFO_NULL,mpi_comm,&m_mpi_win[i]),
-                   "[setup_mpi_data_structures] MPI_Win_create");
+                   "[RefiningRemapper::setup_mpi_data_structures] MPI_Win_create");
+#ifndef EKAT_MPI_ERRORS_ARE_FATAL
+    check_mpi_call(MPI_Win_set_errhandler(m_mpi_win[i],MPI_ERRORS_RETURN),
+                   "[RefiningRemapper::setup_mpi_data_structure] setting MPI_ERRORS_RETURN handler on MPI_Win");
+#endif
   }
 }
 
