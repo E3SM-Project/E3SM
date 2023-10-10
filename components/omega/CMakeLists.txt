@@ -5,6 +5,15 @@
 #    2) e3sm build
 
 
+# Included scripts do automatic cmake_policy() PUSH and POP
+cmake_policy(SET CMP0011 NEW)
+
+# list command no longer ignores empty elements
+cmake_policy(SET CMP0007 NEW)
+
+# Only interpret if() arguments as variables or keywords when unquoted
+cmake_policy(SET CMP0054 NEW)
+
 ###########################################################
 # STEP 1: Setup                                           #
 #                                                         #
@@ -19,9 +28,10 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/OmegaBuild.cmake)
 if (NOT DEFINED PROJECT_NAME)
   # enter standalone build
 
-  preset()
+  cmake_minimum_required(VERSION 3.21) # the minimum version for HIP support
 
-  cmake_minimum_required(VERSION 3.16) # used in E3SM
+  # Collect machine and compiler info from CIME
+  preset()
 
   project(${OMEGA_PROJECT_NAME}
              LANGUAGES CXX

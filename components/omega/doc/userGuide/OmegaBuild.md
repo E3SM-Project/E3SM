@@ -2,10 +2,19 @@
 
 # CMake-based Omega Build
 
-Omega's build system is built upon the CMake build tool, which provides
-a robust foundation for managing the build process.
+Omega's build system is constructed using the CMake build tool,
+offering a strong foundation for managing the building process.
 
-The Omega build system supports two modes: standalone and E3SM component.
+The Omega build system has two modes: standalone and E3SM component.
+
+At the start of the Omega build, the system reads the E3SM machine file
+(`config_machines.xml`) for both standalone and E3SM component builds.
+Following this, it configures CMake variables and environment variables
+based on the computing system where the build is taking place, as well as
+user input from the CMake command-line.
+
+For the Omega build system to function, a Python interpreter is necessary.
+The minimum version of CMake is 3.21.
 
 ## Standalone Build
 
@@ -15,16 +24,57 @@ The standard practice is for a user to create a separate directory where
 the build should take place and the commands below should be launched from
 that directory.
 
-To perform a standalone build, you need to execute the cmake command with
-the required CMake and Omega parameters. For example, you can specify the
-CC parameter as the C++ compiler and enable the ctest option to guide the
-Omega build process. The following example demonstrates building
-a standalone Omega with a test suite.
+To utilize a compiler name that's defined in the E3SM machine configuration
+file (`config_machines.xml`), employ the `OMEGA_CIME_COMPILER` CMake variable,
+as illustrated below. In some cases, you may also want to add `OMEGA_CIME_MACHINE`
+to specify which system you intend to use. The values of `OMEGA_CIME_COMPILER`
+and `OMEGA_CIME_MACHINE` are defined in
+"${E3SM}/cime\_config/machines/config\_machines.xml".
+
+```sh
+>> cmake \
+  -DOMEGA_CIME_COMPILER=nvidiagpu \
+  -DOMEGA_CIME_MACHINE=pm-gpu \
+  ${E3SM_HOME}/components/omega
+```
+
+Once the command completes successfully, several scripts will be created
+in the build directory.
+
+* omega\_env.sh   : load specific modules and set env. variables read from CIME
+* omega\_build.sh : run `make` command after sourcing `omega_env.sh`
+* omega\_run.sh   : run `./src/omega.exe` after sourcing `omega_env.sh`
+* omega\_ctest.sh : run `ctest` after sourcing `omega_env.sh`
+
+Run omega\_build.sh in the build directory to build Omega.
+
+To employ a specific compiler, users can utilize the `OMEGA_CXX_COMPILER`
+CMake variable, providing CMake with the compiler's path.
+
+```sh
+>> cmake \
+  -DOMEGA_CXX_COMPILER=CC \
+  ${E3SM_HOME}/components/omega
+```
+
+`OMEGA_CXX_COMPILER` overrides `OMEGA_CIME_COMPILER`.
+
+To build Omega for GPU, add OMEGA\_ARCH to one of "CUDA" or "HIP".
+
+```sh
+>> cmake \
+  -DOMEGA_CIME_COMPILER=nvidiagpu \
+  -DOMEGA_CIME_MACHINE=pm-gpu \
+  -DOMEGA_ARCH=CUDA \
+  ${E3SM_HOME}/components/omega
+```
+
+To enable the ctest-based unittest option, include the `OMEGA_BUILD_TEST`
+option as illustrated below.
 
 ```sh
 >> cmake \
   -DOMEGA_BUILD_TEST=ON \
-  -DOMEGA_CXX_COMPILER=CC \
   ${E3SM_HOME}/components/omega
 ```
 
@@ -43,31 +93,34 @@ src
 test
 ```
 
-To build the Omega, execute the `make` command in the directory.
+To build the Omega, execute the `make` command in the build directory.
+
+Typical output will look something like:
 
 ```sh
 >> make
 Scanning dependencies of target yakl
-[ 11%] Building Fortran object external/YAKL/CMakeFiles/yakl.dir/src/YAKL_gator_mod.F90.o
-[ 22%] Building CXX object external/YAKL/CMakeFiles/yakl.dir/src/YAKL.cpp.o
-[ 33%] Linking CXX static library libyakl.a
-[ 33%] Built target yakl
-[ 44%] Building CXX object src/CMakeFiles/OmegaLib.dir/ocn/ocndummy.cpp.o
-[ 55%] Linking CXX static library libOmegaLib.a
-[ 55%] Built target OmegaLib
-[ 66%] Building CXX object src/CMakeFiles/omega.exe.dir/drivers/drvdummy.cpp.o
-[ 77%] Linking CXX executable omega.exe
-[ 77%] Built target omega.exe
-[ 88%] Building CXX object test/CMakeFiles/OMEGA_TEST.dir/testdummy.cpp.o
-[100%] Linking CXX executable OMEGA_TEST
-[100%] Built target OMEGA_TEST
+[ 10%] Building Fortran object external/YAKL/CMakeFiles/yakl.dir/src/YAKL_gator_mod.F90.o
+[ 20%] Building CXX object external/YAKL/CMakeFiles/yakl.dir/src/YAKL.cpp.o
+[ 30%] Linking CXX static library libyakl.a
+[ 30%] Built target yakl
+[ 40%] Building CXX object src/CMakeFiles/OmegaLib.dir/base/MachEnv.cpp.o
+[ 50%] Building CXX object src/CMakeFiles/OmegaLib.dir/ocn/OcnDummy.cpp.o
+[ 60%] Linking CXX static library libOmegaLib.a
+[ 60%] Built target OmegaLib
+[ 70%] Building CXX object src/CMakeFiles/omega.exe.dir/drivers/DrvDummy.cpp.o
+[ 80%] Linking CXX executable omega.exe
+[ 80%] Built target omega.exe
+[ 90%] Building CXX object test/CMakeFiles/testDataTypes.exe.dir/base/DataTypesTest.cpp.o
+[100%] Linking CXX executable testDataTypes.exe
+[100%] Built target testDataTypes.exe
 ```
 
 If the build succeeds, the Omega library and executable are created in the
 `src` sub-directory of the build directory.
 
 To specify the output directory for saving the generated output files,
-you can include the `OMEGA_INSTALL_PREFIX` variable in the `cmake` command,
+a user can include the `OMEGA_INSTALL_PREFIX` variable in the `cmake` command,
 as shown below:
 
 ```sh
@@ -78,7 +131,7 @@ cmake \
   ...
 ```
 
-Afterwards, you can use the `make install` command to copy the Omega library
+Afterwards, a user can use the `make install` command to copy the Omega library
 and executable to the `lib` and `bin` sub-directories under the directory
 specified by `DOMEGA_INSTALL_PREFIX`.
 
@@ -87,12 +140,12 @@ To run the Omega test suite, execute the `ctest` command.
 ```sh
 >> ctest
 Test project <cmake working directory>
-    Start 1: OMEGA_TEST
-1/1 Test #1: OMEGA_TEST .......................   Passed    0.01 sec
+    Start 1: DATA_TYPES_TEST
+1/1 Test #1: DATA_TYPES_TEST ..................   Passed    0.03 sec
 
 100% tests passed, 0 tests failed out of 1
 
-Total Test time (real) =   0.01 sec
+Total Test time (real) =   0.04 sec
 ```
 
 ## E3SM Component Build
@@ -142,7 +195,7 @@ endfunction(build_omega)
 
 Step 3: Create an E3SM Case
 
-At this stage, you can create any E3SM case as usual without
+At this stage, a user can create any E3SM case as usual without
 requiring any specific configuration for Omega.
 
 NOTE: In this version, the compiled library file for Omega,
