@@ -349,10 +349,6 @@ void Nudging::init_buffers(const ATMBufferManager& buffer_manager) {
 Field Nudging::get_field_out_wrap(const std::string& field_name) {
   if (field_name == "U" or field_name == "V") {
     auto hw = get_field_out("horiz_winds");
-    const auto& fid = hw.get_header().get_identifier();
-    const auto& layout = fid.get_layout();
-    const int vec_dim = layout.get_vector_dim();
-    const auto& units = fid.get_units();
     if (field_name == "U") {
       return hw.get_component(0);
     } else {
