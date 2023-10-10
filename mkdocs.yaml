@@ -25,15 +25,19 @@ theme:
 #    - navigation.tabs
 
 markdown_extensions:
+  - footnotes
   - pymdownx.highlight
   - pymdownx.superfences
   - pymdownx.tabbed:
       alternate_style: true
   - pymdownx.arithmatex:
       generic: true
+  - md_in_html
 
 plugins:
   - monorepo
+  - bibtex:
+      bib_file: components/elm/docs/refs.bib
 
 extra_javascript:
   # - javascript/mathjax.js
