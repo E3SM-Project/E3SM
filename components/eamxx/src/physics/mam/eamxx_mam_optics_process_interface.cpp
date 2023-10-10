@@ -244,11 +244,13 @@ void MAMOptics::initialize_impl(const RunType run_type) {
 
    // work array
    air_density_ = mam_coupling::view_2d("air_density", ncol_,  nlev_);
-   ext_cmip6_sw_inv_m_ = mam_coupling::view_3d ("ext_cmip6_sw_inv_m", ncol_, nlev_, nswbands);
+   ext_cmip6_sw_inv_m_ = mam_coupling::view_3d ("ext_cmip6_sw_inv_m", ncol_, nswbands, nlev_);
 
 
 }
 void MAMOptics::run_impl(const double dt) {
+
+  constexpr Real zero =0.0;
 
   const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_);
 #if 1
@@ -298,6 +300,8 @@ void MAMOptics::run_impl(const double dt) {
   auto  bcaod= get_field_out("bcaod").get_view<Real*>();
 
   auto  seasaltaod= get_field_out("seasaltaod").get_view<Real*>();
+
+  Kokkos::deep_copy(bcaod,zero);
 
 
 
@@ -569,6 +573,10 @@ void MAMOptics::run_impl(const double dt) {
   auto burdenmode_icol = ekat::subview(burdenmode, icol);
 
 #if 1
+    // outputs nan
+    Real aodabsbc2=zero;
+    Real bcaod2 = zero;
+
      mam4::aer_rad_props::aer_rad_props_sw( dt, zi, pmid,
     pint, temperature,
     zm, state_q_icol,
@@ -599,12 +607,12 @@ void MAMOptics::run_impl(const double dt) {
     extinct_icol, //        ! aerosol extinction [1/m]
     absorb_icol,  //         ! aerosol absorption [1/m]
     aodnir[icol], aoduv[icol], dustaodmode_icol.data(),
-    aodmode_icol.data(), burdenmode_icol.data(), aodabsbc[icol],
+    aodmode_icol.data(), burdenmode_icol.data(), aodabsbc2,
     aodvis[icol], aodall[icol], ssavis[icol], aodabs[icol], burdendust[icol],
     burdenso4[icol], burdenbc[icol], burdenpom[icol], burdensoa[icol],
     burdenseasalt[icol], burdenmom[icol], momaod[icol], dustaod[icol],
     so4aod[icol], // total species AOD
-    pomaod[icol], soaaod[icol], bcaod[icol], seasaltaod[icol],
+    pomaod[icol], soaaod[icol], bcaod2, seasaltaod[icol],
     // work views
     mass_icol, air_density_icol, cheb_icol,
     dgnumwet_m_icol, dgnumdry_m_icol,
