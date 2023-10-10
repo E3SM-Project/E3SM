@@ -40,7 +40,7 @@ void MAMOptics::set_grids(const std::shared_ptr<const GridsManager> grids_manage
 
   // Define aerosol optics fields computed by this process.
   auto nondim = Units::nondimensional();
-  FieldLayout scalar3d_swband_layout { {COL, SWBND, LEV}, {ncol_, nswbands_, nlev_} };
+  FieldLayout scalar3d_swband_layout { {COL, LEV, SWBND}, {ncol_, nlev_, nswbands_} };
   FieldLayout scalar3d_lwband_layout { {COL, LEV, LWBND}, {ncol_, nlev_, nlwbands_} };
 
   // layout for 3D (2d horiz X 1d vertical) variables
@@ -67,6 +67,13 @@ void MAMOptics::set_grids(const std::shared_ptr<const GridsManager> grids_manage
   // longwave aerosol optical depth [-]
   add_field<Computed>("aero_tau_lw", scalar3d_lwband_layout, nondim, grid_name);
 
+  // // aerosol extinction optical depth
+  add_field<Computed>("aero_tau_forward", scalar3d_swband_layout, nondim, grid_name);
+
+
+
+
+
     // FIXME: this field doesn't belong here, but this is a convenient place to
   // FIXME: put it for now.
   // number mixing ratio for CCN
@@ -77,6 +84,43 @@ void MAMOptics::set_grids(const std::shared_ptr<const GridsManager> grids_manage
   add_field<Computed>("nccn", scalar3d_layout_mid, 1/kg, grid_name, ps);
 
 #endif
+
+
+
+add_field<Computed>("extinct",   scalar3d_layout_mid, 1/m, grid_name);
+add_field<Computed>("absorb",   scalar3d_layout_mid, 1/m, grid_name);
+//Aerosol optical depth 850 nm
+FieldLayout scalar2d_layout_mid{ {COL}, {ncol_} };
+add_field<Computed>("aodnir", scalar2d_layout_mid, nondim, grid_name);
+add_field<Computed>("aoduv",  scalar2d_layout_mid, nondim, grid_name);
+
+constexpr int ntot_amode = mam4::AeroConfig::num_modes();
+//FIXME: I add NMODES to field_tag
+FieldLayout scalar3d_layout_nmodes{ {COL, NMODES}, {ncol_, ntot_amode} };
+
+add_field<Computed>("dustaodmode",  scalar3d_layout_nmodes, nondim, grid_name);
+add_field<Computed>("aodmode",  scalar3d_layout_nmodes, nondim, grid_name);
+add_field<Computed>("burdenmode",  scalar3d_layout_nmodes, nondim, grid_name);
+
+add_field<Computed>("aodabsbc",  scalar2d_layout_mid, nondim, grid_name);
+add_field<Computed>("aodvis",  scalar2d_layout_mid, nondim, grid_name);
+add_field<Computed>("aodall",  scalar2d_layout_mid, nondim, grid_name);
+add_field<Computed>("ssavis",  scalar2d_layout_mid, nondim, grid_name);
+add_field<Computed>("aodabs",  scalar2d_layout_mid, nondim, grid_name);
+add_field<Computed>("burdendust",  scalar2d_layout_mid, nondim, grid_name);
+add_field<Computed>("burdenso4",  scalar2d_layout_mid, nondim, grid_name);
+add_field<Computed>("burdenbc",  scalar2d_layout_mid, nondim, grid_name);
+add_field<Computed>("burdenpom",  scalar2d_layout_mid, nondim, grid_name);
+add_field<Computed>("burdensoa",  scalar2d_layout_mid, nondim, grid_name);
+add_field<Computed>("burdenseasalt",  scalar2d_layout_mid, nondim, grid_name);
+add_field<Computed>("burdenmom",  scalar2d_layout_mid, nondim, grid_name);
+add_field<Computed>("momaod",  scalar2d_layout_mid, nondim, grid_name);
+add_field<Computed>("dustaod",  scalar2d_layout_mid, nondim, grid_name);
+add_field<Computed>("so4aod",  scalar2d_layout_mid, nondim, grid_name);
+add_field<Computed>("pomaod",  scalar2d_layout_mid, nondim, grid_name);
+add_field<Computed>("soaaod",  scalar2d_layout_mid, nondim, grid_name);
+add_field<Computed>("bcaod",  scalar2d_layout_mid, nondim, grid_name);
+add_field<Computed>("seasaltaod",  scalar2d_layout_mid, nondim, grid_name);
 
 }
 
@@ -160,10 +204,48 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   radsurf_ = mam_coupling::view_2d("radsurf",ncol_, nlev_);
   logradsurf_ = mam_coupling::view_2d("logradsurf",ncol_,nlev_);
 
+  const int nwbands = nlwbands > nswbands ? nlwbands: nswbands;
+
   specrefindex_=mam_coupling::complex_view_3d("specrefindex", ncol_,
-   mam4::modal_aer_opt::max_nspec, nlwbands);
+   mam4::modal_aer_opt::max_nspec, nwbands);
   qaerwat_m_ = mam_coupling::view_3d ("qaerwat_m", ncol_, nlev_, ntot_amode);
-  ext_cmip6_lw_inv_m_ = mam_coupling::view_3d ("qaerwat_m", ncol_, nlev_, nlwbands);
+  ext_cmip6_lw_inv_m_ = mam_coupling::view_3d ("ext_cmip6_lw_inv_m", ncol_, nlev_, nlwbands);
+
+  // aer_rad_props_sw inputs
+  ssa_cmip6_sw_ = mam_coupling::view_3d ("ssa_cmip6_sw", ncol_, nlev_, nswbands);
+  af_cmip6_sw_ = mam_coupling::view_3d ("af_cmip6_sw", ncol_, nlev_, nswbands);
+  ext_cmip6_sw_= mam_coupling::view_3d ("ext_cmip6_sw", ncol_, nlev_, nswbands);
+  Kokkos::deep_copy(ssa_cmip6_sw_, 1.0);
+  Kokkos::deep_copy(af_cmip6_sw_, 1.0);
+  Kokkos::deep_copy(ext_cmip6_sw_, 1.0);
+
+  specrefndxsw_ = mam_coupling::complex_view_2d("specrefndxlw_",nswbands, maxd_aspectype );
+  Kokkos::deep_copy(specrefndxsw_, 1.0);
+
+  for (int d1 = 0; d1 < ntot_amode; ++d1)
+      for (int d5 = 0; d5 < nswbands; ++d5) {
+        abspsw_[d1][d5] =
+            mam_coupling::view_3d("abspsw", mam4::modal_aer_opt::coef_number, mam4::modal_aer_opt::refindex_real, mam4::modal_aer_opt::refindex_im);
+        extpsw_[d1][d5] =
+            mam_coupling::view_3d("extpsw", mam4::modal_aer_opt::coef_number, mam4::modal_aer_opt::refindex_real, mam4::modal_aer_opt::refindex_im);
+        asmpsw_[d1][d5] =
+            mam_coupling::view_3d("asmpsw", mam4::modal_aer_opt::coef_number, mam4::modal_aer_opt::refindex_real, mam4::modal_aer_opt::refindex_im);
+        Kokkos::deep_copy(abspsw_[d1][d5], 1.0);
+        Kokkos::deep_copy(extpsw_[d1][d5], 1.0);
+        Kokkos::deep_copy(asmpsw_[d1][d5], 1.0);
+      } // d5
+
+
+    for (int d1 = 0; d1 < ntot_amode; ++d1)
+      for (int d3 = 0; d3 < nswbands; ++d3) {
+        refrtabsw_[d1][d3] = mam_coupling::view_1d ("refrtabsw", mam4::modal_aer_opt::refindex_real);
+        refitabsw_[d1][d3] = mam_coupling::view_1d("refitabsw", mam4::modal_aer_opt::refindex_im);
+      } // d3
+
+   // work array
+   air_density_ = mam_coupling::view_2d("air_density", ncol_,  nlev_);
+   ext_cmip6_sw_inv_m_ = mam_coupling::view_3d ("ext_cmip6_sw_inv_m", ncol_, nlev_, nswbands);
+
 
 }
 void MAMOptics::run_impl(const double dt) {
@@ -176,6 +258,49 @@ void MAMOptics::run_impl(const double dt) {
   auto aero_tau_sw = get_field_out("aero_tau_sw").get_view<Real***>();
   auto aero_tau_lw = get_field_out("aero_tau_lw").get_view<Real***>();
 
+  auto aero_tau_forward = get_field_out("aero_tau_forward").get_view<Real***>();
+  // diagnostics
+
+  // aerosol extinction [1/m]
+  auto extinct = get_field_out("extinct").get_view<Real**>();
+  // aerosol absorption [1/m]
+  auto absorb = get_field_out("absorb").get_view<Real**>();
+
+  auto aodnir = get_field_out("aodnir").get_view<Real*>();
+  auto aoduv = get_field_out("aoduv").get_view<Real*>();
+  // dustaodmode[ntot_amode],
+  auto dustaodmode = get_field_out("dustaodmode").get_view<Real**>();
+  // aodmode[ntot_amode]
+  auto aodmode = get_field_out("aodmode").get_view<Real**>();
+  // burdenmode[ntot_amode]
+  auto burdenmode = get_field_out("burdenmode").get_view<Real**>();
+
+  auto aodabsbc = get_field_out("aodabsbc").get_view<Real*>();
+  auto aodvis = get_field_out("aodvis").get_view<Real*>();
+  auto aodall = get_field_out("aodall").get_view<Real*>();
+  auto  ssavis = get_field_out("ssavis").get_view<Real*>();
+  auto  aodabs = get_field_out("aodabs").get_view<Real*>();
+  auto  burdendust= get_field_out("burdendust").get_view<Real*>();
+
+  auto  burdenso4= get_field_out("burdenso4").get_view<Real*>();
+  auto  burdenbc= get_field_out("burdenbc").get_view<Real*>();
+  auto  burdenpom= get_field_out("burdenpom").get_view<Real*>();
+  auto  burdensoa= get_field_out("burdensoa").get_view<Real*>();
+
+  auto  burdenseasalt= get_field_out("burdenseasalt").get_view<Real*>();
+  auto  burdenmom= get_field_out("burdenmom").get_view<Real*>();
+  auto  momaod= get_field_out("momaod").get_view<Real*>();
+  auto  dustaod= get_field_out("dustaod").get_view<Real*>();
+
+  auto  so4aod= get_field_out("so4aod").get_view<Real*>();
+  auto  pomaod= get_field_out("pomaod").get_view<Real*>();
+  auto  soaaod= get_field_out("soaaod").get_view<Real*>();
+  auto  bcaod= get_field_out("bcaod").get_view<Real*>();
+
+  auto  seasaltaod= get_field_out("seasaltaod").get_view<Real*>();
+
+
+
   printf("dt %e\n",dt);
 
   auto aero_nccn   = get_field_out("nccn").get_view<Real**>(); // FIXME: get rid of this
@@ -187,6 +312,18 @@ void MAMOptics::run_impl(const double dt) {
   constexpr int num_aerosol_ids = mam4::AeroConfig::num_aerosol_ids();
 
   const Real t = 0.0;
+
+
+      mam4::AeroId specname_amode[9] = {mam4::AeroId::SO4,  // sulfate
+                                      mam4::AeroId::None, // ammonium
+                                      mam4::AeroId::None, // nitrate
+                                      mam4::AeroId::POM,  // p-organic
+                                      mam4::AeroId::SOA,  // s-organic
+                                      mam4::AeroId::BC,   // black-c
+                                      mam4::AeroId::NaCl, // seasalt
+                                      mam4::AeroId::DST,  // dust
+                                      mam4::AeroId::MOM}; // m-organic
+
 
   if (false) { // remove when ready to do actual calculations
     // populate these fields with reasonable representative values
@@ -256,7 +393,8 @@ void MAMOptics::run_impl(const double dt) {
 
 #if 1
           team.team_barrier();
-   Real inv_density[ntot_amode]
+          {
+          Real inv_density[ntot_amode]
                           [num_aerosol_ids] = {};
           Real num2vol_ratio_min[ntot_amode] = {};
           Real num2vol_ratio_max[ntot_amode] = {};
@@ -302,6 +440,9 @@ void MAMOptics::run_impl(const double dt) {
                 noxf_acc2ait, n_common_species_ait_accum, ait_spec_in_acc,
                 acc_spec_in_ait, dgncur_i.data(), dgncur_c);
           } // k
+          }
+          team.team_barrier();
+
 #endif
 
 
@@ -343,18 +484,145 @@ void MAMOptics::run_impl(const double dt) {
     logradsurf_icol, specrefindex_icol,
     qaerwat_m_icol, ext_cmip6_lw_inv_m_icol);
 
-    // printf("odap_aer_icol %e \n ", odap_aer_icol(10,10));
-
 #endif
+
+#if 1
+          team.team_barrier();
+          {
+          Real inv_density[ntot_amode]
+                          [num_aerosol_ids] = {};
+          Real num2vol_ratio_min[ntot_amode] = {};
+          Real num2vol_ratio_max[ntot_amode] = {};
+          Real num2vol_ratio_max_nmodes[ntot_amode] = {};
+          Real num2vol_ratio_min_nmodes[ntot_amode] = {};
+          Real num2vol_ratio_nom_nmodes[ntot_amode] = {};
+          Real dgnmin_nmodes[ntot_amode] = {};
+          Real dgnmax_nmodes[ntot_amode] = {};
+          Real dgnnom_nmodes[ntot_amode] = {};
+          Real mean_std_dev_nmodes[ntot_amode] = {};
+          // outputs
+          bool noxf_acc2ait[num_aerosol_ids] = {};
+          int n_common_species_ait_accum = {};
+          int ait_spec_in_acc[num_aerosol_ids] = {};
+          int acc_spec_in_ait[num_aerosol_ids] = {};
+
+           mam4::modal_aero_calcsize::init_calcsize(
+              inv_density, num2vol_ratio_min, num2vol_ratio_max,
+              num2vol_ratio_max_nmodes, num2vol_ratio_min_nmodes,
+              num2vol_ratio_nom_nmodes, dgnmin_nmodes, dgnmax_nmodes,
+              dgnnom_nmodes, mean_std_dev_nmodes,
+              // outputs
+              noxf_acc2ait, n_common_species_ait_accum, ait_spec_in_acc,
+              acc_spec_in_ait);
+
+          for (int kk = mam4::ndrop::top_lev; kk < nlev_; ++kk) {
+
+            const auto state_q_k = Kokkos::subview(state_q_, icol, kk, Kokkos::ALL());
+            const auto qqcw_k = Kokkos::subview(qqcw_, icol, kk, Kokkos::ALL());
+            auto dgncur_i = Kokkos::subview(dgnumdry_m_, icol, kk, Kokkos::ALL());
+            Real dgncur_c[ntot_amode] = {};
+            mam4::modal_aero_calcsize::modal_aero_calcsize_sub(
+                state_q_k.data(), // in
+                qqcw_k.data(),    // in
+                dt, do_adjust, do_aitacc_transfer, update_mmr, lmassptr_amode,
+                numptr_amode,
+                inv_density, // in
+                num2vol_ratio_min, num2vol_ratio_max, num2vol_ratio_max_nmodes,
+                num2vol_ratio_min_nmodes, num2vol_ratio_nom_nmodes,
+                dgnmin_nmodes, dgnmax_nmodes, dgnnom_nmodes,
+                mean_std_dev_nmodes,
+                // outputs
+                noxf_acc2ait, n_common_species_ait_accum, ait_spec_in_acc,
+                acc_spec_in_ait, dgncur_i.data(), dgncur_c);
+          } // k
+          }
+          team.team_barrier();
+
+
+  auto ssa_cmip6_sw_icol = ekat::subview(ssa_cmip6_sw_, icol);
+  auto af_cmip6_sw_icol = ekat::subview(af_cmip6_sw_, icol);
+  auto ext_cmip6_sw_icol = ekat::subview(ext_cmip6_sw_, icol);
+
+
+  // FIXME: check if this correct: Note that these variables have pver+1 levels
+  // tau_w =>  aero_ssa_sw  (pcols,0:pver,nswbands) ! aerosol single scattering albedo * tau
+   auto tau_w_icol = ekat::subview(aero_ssa_sw, icol);
+  // tau_w_g => "aero_g_sw" (pcols,0:pver,nswbands) ! aerosol assymetry parameter * tau * w
+  auto tau_w_g_icol = ekat::subview(aero_g_sw, icol);
+  // tau_w_f(pcols,0:pver,nswbands) => aero_tau_forward  ? ! aerosol forward scattered fraction * tau * w
+  auto tau_w_f_icol = ekat::subview(aero_tau_forward, icol);
+  // tau  => aero_tau_sw (?)   (pcols,0:pver,nswbands) ! aerosol extinction optical depth
+  auto tau_icol = ekat::subview(aero_tau_sw, icol);
+
+  auto air_density_icol = ekat::subview(air_density_, icol);
+
+  auto ext_cmip6_sw_inv_m_icol = ekat::subview(ext_cmip6_sw_inv_m_, icol);
+
+  auto extinct_icol = ekat::subview(extinct, icol);
+  // aerosol absorption [1/m]
+  auto absorb_icol = ekat::subview(absorb, icol);
+  // dustaodmode[ntot_amode],
+  auto dustaodmode_icol = ekat::subview(dustaodmode, icol);
+  // aodmode[ntot_amode]
+  auto aodmode_icol = ekat::subview(aodmode, icol);
+  // burdenmode[ntot_amode]
+  auto burdenmode_icol = ekat::subview(burdenmode, icol);
+
+#if 1
+     mam4::aer_rad_props::aer_rad_props_sw( dt, zi, pmid,
+    pint, temperature,
+    zm, state_q_icol,
+    pdel, pdeldry,
+    cldn, ssa_cmip6_sw_icol,
+    af_cmip6_sw_icol, ext_cmip6_sw_icol,
+    // nnite, idxnite,
+    // is_cmip6_volc,
+    // const ColumnView qqcw_fld[pcnst],
+    tau_icol, tau_w_icol, tau_w_g_icol,
+    tau_w_f_icol,
+    nspec_amode,
+    sigmag_amode,
+    lmassptr_amode,
+    spechygro, specdens_amode,
+    lspectype_amode,
+    specrefndxsw_, // specrefndxsw( nswbands, maxd_aspectype )
+    crefwlw_,
+    crefwsw_,
+    // FIXME
+    specname_amode,
+    extpsw_,
+    abspsw_,
+    asmpsw_,
+    refrtabsw_,
+    refitabsw_,
+    // diagnostic
+    extinct_icol, //        ! aerosol extinction [1/m]
+    absorb_icol,  //         ! aerosol absorption [1/m]
+    aodnir[icol], aoduv[icol], dustaodmode_icol.data(),
+    aodmode_icol.data(), burdenmode_icol.data(), aodabsbc[icol],
+    aodvis[icol], aodall[icol], ssavis[icol], aodabs[icol], burdendust[icol],
+    burdenso4[icol], burdenbc[icol], burdenpom[icol], burdensoa[icol],
+    burdenseasalt[icol], burdenmom[icol], momaod[icol], dustaod[icol],
+    so4aod[icol], // total species AOD
+    pomaod[icol], soaaod[icol], bcaod[icol], seasaltaod[icol],
+    // work views
+    mass_icol, air_density_icol, cheb_icol,
+    dgnumwet_m_icol, dgnumdry_m_icol,
+    radsurf_icol, logradsurf_icol,
+    specrefindex_icol, qaerwat_m_icol,
+    ext_cmip6_sw_inv_m_icol);
+#endif
+#endif
+
     });
 
-#if 0
-    Kokkos::deep_copy(aero_g_sw, 0.5);
-    Kokkos::deep_copy(aero_ssa_sw, 0.7);
-    Kokkos::deep_copy(aero_tau_sw, 0.0);
-    Kokkos::deep_copy(aero_tau_lw, 0.0);
-    Kokkos::deep_copy(aero_nccn, 50.0);
-#endif
+// #if 0
+//     Kokkos::deep_copy(aero_g_sw, 0.5);
+//     Kokkos::deep_copy(aero_ssa_sw, 0.7);
+//     Kokkos::deep_copy(aero_tau_sw, 0.0);
+//     Kokkos::deep_copy(aero_tau_lw, 0.0);
+//     Kokkos::deep_copy(aero_nccn, 50.0);
+// #endif
 
   }
   printf("Done  with aerosol_optics \n");

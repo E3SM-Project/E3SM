@@ -93,6 +93,23 @@ private_except_cuda:
   mam_coupling::DryAtmosphere dry_atm_;
   mam_coupling::AerosolState  wet_aero_;//,
 
+
+  mam_coupling::view_3d ssa_cmip6_sw_, af_cmip6_sw_, ext_cmip6_sw_;
+
+  mam_coupling::complex_view_2d specrefndxsw_;
+
+  mam_coupling::view_3d  abspsw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nswbands];
+  mam_coupling::view_3d  extpsw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nswbands];
+  mam_coupling::view_3d  asmpsw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nswbands];
+
+
+  mam_coupling::view_1d refrtabsw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nswbands];
+  mam_coupling::view_1d refitabsw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nswbands];
+
+  // work arrays
+  mam_coupling::view_2d air_density_;
+  mam_coupling::view_3d ext_cmip6_sw_inv_m_;
+
   // aerosol processes
   //std::unique_ptr<mam4::OpticsProcess> optics_;
   // std::unique_ptr<mam4::CalcSizeProcess> calcsize_process_;
