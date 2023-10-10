@@ -47,7 +47,7 @@ def buildlib(bldroot, installpath, case):
     caseroot = case.get_value("CASEROOT")
     comp_interface = case.get_value("COMP_INTERFACE")
 
-    gptl_dir = os.environ.get("gptl_ROOT")
+    gptl_dir = os.environ.get("GPTL_ROOT")
     if gptl_dir is not None:
         # We are using a pre-installed gptl
         expect(os.path.exists(gptl_dir), f"Non-existent gptl root {gptl_dir}")

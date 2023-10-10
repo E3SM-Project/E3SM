@@ -139,26 +139,12 @@ else()
   set(CC ${MPICC})
   set(FC ${MPIFC})
   set(CXX ${MPICXX})
-  if (MPI_PATH)
-    set(INC_MPI ${MPI_PATH}/include)
-    set(LIB_MPI ${MPI_PATH}/lib)
-  endif()
 endif()
 
 #===============================================================================
 # Set include paths (needed after override for any model specific builds below)
 #===============================================================================
 list(APPEND INCLDIR "${INSTALL_SHAREDPATH}/include" "${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/${NINST_VALUE}/include")
-
-foreach(ITEM INC_MPI)
-  if (${ITEM})
-    list(APPEND INCLDIR "${${ITEM}}")
-  endif()
-endforeach()
-
-if (NOT GPTL_LIBDIR)
-  set(GPTL_LIBDIR "${INSTALL_SHAREDPATH}/lib")
-endif()
 
 if (NOT GLC_DIR)
   set(GLC_DIR "${EXEROOT}/glc")
@@ -181,14 +167,6 @@ if (NOT HAS_COSP EQUAL -1)
   set(USE_COSP TRUE)
 endif()
 
-if (LIB_MPI)
-  if (NOT MPI_LIB_NAME)
-    set(SLIBS "${SLIBS} -L${LIB_MPI} -lmpi")
-  else()
-    set(SLIBS "${SLIBS} -L${LIB_MPI} -l${MPI_LIB_NAME}")
-  endif()
-endif()
-
 # Add libraries and flags that we need on the link line when C++ code is included
 if (USE_CXX)
   if (CXX_LIBS)
@@ -209,8 +187,6 @@ else()
   # Remove arch flag if it exists, it break fortran linking
   string(REGEX REPLACE "-arch[^ ]+" "" LDFLAGS "${LDFLAGS}")
 endif()
-
-set(GPTLLIB "${GPTL_LIBDIR}/libgptl.a")
 
 #------------------------------------------------------------------------------
 # Set key cmake vars
