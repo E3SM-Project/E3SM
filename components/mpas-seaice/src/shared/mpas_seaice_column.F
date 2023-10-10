@@ -218,10 +218,10 @@ contains
     type(domain_type), intent(inout) :: domain
 
     logical, pointer :: &
-         config_use_column_package
+         config_use_column_physics
 
-    call MPAS_pool_get_config(domain % configs, "config_use_column_package", config_use_column_package)
-    if (config_use_column_package) then
+    call MPAS_pool_get_config(domain % configs, "config_use_column_physics", config_use_column_physics)
+    if (config_use_column_physics) then
 
        ! set non activated variable pointers to other memory
        call init_column_non_activated_pointers(domain)
@@ -259,16 +259,16 @@ contains
          clock !< Input:
 
     logical, pointer :: &
-         config_use_column_package, &
+         config_use_column_physics, &
          config_do_restart, &
          config_use_column_biogeochemistry, &
          config_use_column_shortwave, &
          config_use_column_snow_tracers
 
-    call MPAS_pool_get_config(domain % configs, "config_use_column_package", config_use_column_package)
+    call MPAS_pool_get_config(domain % configs, "config_use_column_physics", config_use_column_physics)
     call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
 
-    if (config_use_column_package) then
+    if (config_use_column_physics) then
 
        ! initialize level ice tracers
        call init_column_level_ice_tracers(domain)
@@ -1048,7 +1048,7 @@ contains
     type(MPAS_clock_type), intent(in) :: clock
 
     logical, pointer :: &
-         config_use_column_package, &
+         config_use_column_physics, &
          config_use_column_shortwave, &
          config_use_column_vertical_thermodynamics, &
          config_use_column_biogeochemistry, &
@@ -1059,9 +1059,9 @@ contains
     real(kind=RKIND), pointer :: &
          config_dt
 
-    call MPAS_pool_get_config(domain % configs, "config_use_column_package", config_use_column_package)
+    call MPAS_pool_get_config(domain % configs, "config_use_column_physics", config_use_column_physics)
 
-    if (config_use_column_package) then
+    if (config_use_column_physics) then
 
        call MPAS_pool_get_config(domain % configs, "config_use_column_shortwave", config_use_column_shortwave)
        call MPAS_pool_get_config(domain % configs, "config_use_column_vertical_thermodynamics", &
@@ -1149,7 +1149,7 @@ contains
     type(MPAS_clock_type), intent(in) :: clock
 
     logical, pointer :: &
-         config_use_column_package, &
+         config_use_column_physics, &
          config_use_column_ridging, &
          config_use_vertical_tracers
 
@@ -1159,9 +1159,9 @@ contains
     real(kind=RKIND), pointer :: &
          dynamicsTimeStep
 
-    call MPAS_pool_get_config(domain % configs, "config_use_column_package", config_use_column_package)
+    call MPAS_pool_get_config(domain % configs, "config_use_column_physics", config_use_column_physics)
 
-    if (config_use_column_package) then
+    if (config_use_column_physics) then
 
        call MPAS_pool_get_config(domain % configs, "config_use_column_ridging", config_use_column_ridging)
        call MPAS_pool_get_config(domain % configs, "config_use_vertical_tracers", config_use_vertical_tracers)
@@ -1224,16 +1224,16 @@ contains
     type(MPAS_clock_type), intent(in) :: clock
 
     logical, pointer :: &
-         config_use_column_package, &
+         config_use_column_physics, &
          config_use_column_shortwave, &
          config_use_column_snow_tracers
 
     type(block_type), pointer :: &
          block
 
-    call MPAS_pool_get_config(domain % configs, "config_use_column_package", config_use_column_package)
+    call MPAS_pool_get_config(domain % configs, "config_use_column_physics", config_use_column_physics)
 
-    if (config_use_column_package) then
+    if (config_use_column_physics) then
 
        call MPAS_pool_get_config(domain % configs, "config_use_column_shortwave", config_use_column_shortwave)
        call MPAS_pool_get_config(domain % configs, "config_use_column_snow_tracers", config_use_column_snow_tracers)
@@ -6304,7 +6304,6 @@ contains
          seaiceStabilityReferenceHeight, &
          seaiceIceStrengthConstantHiblerP, &
          seaiceIceStrengthConstantHiblerC, &
-         seaiceIceOceanDragCoefficient, &
          skeletalLayerThickness, &
          gramsCarbonPerMolCarbon, &
          iceAreaMinimum, &
@@ -6329,7 +6328,6 @@ contains
          ice_ref_salinity, &
          Pstar, &
          Cstar, &
-         dragio, &
          albocn, &
          rhofresh, &
          vonkar, &
@@ -6360,7 +6358,6 @@ contains
     seaiceStabilityReferenceHeight   = zref
     seaiceIceStrengthConstantHiblerP = Pstar
     seaiceIceStrengthConstantHiblerC = Cstar
-    seaiceIceOceanDragCoefficient    = dragio
     skeletalLayerThickness           = sk_l
     gramsCarbonPerMolCarbon          = R_gC2molC
 
@@ -10994,6 +10991,8 @@ contains
 
     real(kind=RKIND), pointer :: &
          config_min_friction_velocity, &
+         config_ice_ocean_drag_coefficient, &
+         config_snow_thermal_conductivity, &
          config_rapid_mode_channel_radius, &
          config_rapid_model_critical_Ra, &
          config_rapid_mode_aspect_ratio, &
@@ -11159,6 +11158,8 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_ocean_heat_transfer_type", config_ocean_heat_transfer_type)
     call MPAS_pool_get_config(domain % configs, "config_calc_surface_temperature", config_calc_surface_temperature)
     call MPAS_pool_get_config(domain % configs, "config_min_friction_velocity", config_min_friction_velocity)
+    call MPAS_pool_get_config(domain % configs, "config_ice_ocean_drag_coefficient", config_ice_ocean_drag_coefficient)
+    call MPAS_pool_get_config(domain % configs, "config_snow_thermal_conductivity", config_snow_thermal_conductivity)
     call MPAS_pool_get_config(domain % configs, "config_rapid_mode_channel_radius", config_rapid_mode_channel_radius)
     call MPAS_pool_get_config(domain % configs, "config_rapid_model_critical_Ra", config_rapid_model_critical_Ra)
     call MPAS_pool_get_config(domain % configs, "config_rapid_mode_aspect_ratio", config_rapid_mode_aspect_ratio)
@@ -11361,6 +11362,8 @@ contains
          config_ocean_heat_transfer_type, &
          config_calc_surface_temperature, &
          config_min_friction_velocity, &
+         config_ice_ocean_drag_coefficient, &
+         config_snow_thermal_conductivity, &
          config_rapid_mode_channel_radius, &
          config_rapid_model_critical_Ra, &
          config_rapid_mode_aspect_ratio, &
@@ -11726,6 +11729,10 @@ contains
     ! 'linear_salt' = -depressT * sss
     ! 'mushy' conforms with ktherm=2
     !tfrz_option = config_sea_freezing_temperature_type
+
+    ! dragio:
+    ! neutral ice-ocean drag coefficient
+    ! dragio = config_ice_ocean_drag_coefficient
 
     !-----------------------------------------------------------------------
     ! Parameters for the ice thickness distribution
@@ -12347,6 +12354,10 @@ contains
     ! drhosdwind:
     ! wind compaction factor (kg s/m^4)
     ! drhosdwind = config_wind_compaction_factor
+
+    ! ksno:
+    ! snow thermal conductivity
+    ! ksno = config_snow_thermal_conductivity
 
   end subroutine init_column_package_configs
 
@@ -13332,7 +13343,7 @@ contains
          atmosReferenceSpeed10m
 
     logical, pointer :: &
-         config_use_column_package
+         config_use_column_physics
 
     block => domain % blocklist
     do while (associated(block))
@@ -13354,9 +13365,9 @@ contains
        atmosReferenceHumidity2m(:)    = 0.0_RKIND
        atmosReferenceSpeed10m(:)      = 0.0_RKIND
 
-       call MPAS_pool_get_config(block % configs, "config_use_column_package", config_use_column_package)
+       call MPAS_pool_get_config(block % configs, "config_use_column_physics", config_use_column_physics)
 
-       if (config_use_column_package) then
+       if (config_use_column_physics) then
 
           call MPAS_pool_get_subpool(block % structs, "atmos_fluxes", atmosFluxesPool)
           call MPAS_pool_get_subpool(block % structs, "shortwave", shortwavePool)
@@ -13375,7 +13386,7 @@ contains
           evaporativeWaterFlux(:)  = 0.0_RKIND
           longwaveUp(:)            = 0.0_RKIND
 
-       endif ! config_use_column_package
+       endif ! config_use_column_physics
 
        block => block % next
     end do
@@ -13413,16 +13424,16 @@ contains
          snowMeltMassCell
 
     logical, pointer :: &
-         config_use_column_package, &
+         config_use_column_physics, &
          config_use_column_snow_tracers
 
     block => domain % blocklist
     do while (associated(block))
 
-       call MPAS_pool_get_config(block % configs, "config_use_column_package", config_use_column_package)
+       call MPAS_pool_get_config(block % configs, "config_use_column_physics", config_use_column_physics)
        call MPAS_pool_get_config(block % configs, "config_use_column_snow_tracers", config_use_column_snow_tracers)
 
-       if (config_use_column_package) then
+       if (config_use_column_physics) then
 
           call MPAS_pool_get_subpool(block % structs, "ocean_fluxes", oceanFluxesPool)
 
@@ -13447,7 +13458,7 @@ contains
 
           endif ! config_use_column_snow_tracers
 
-       endif ! config_use_column_package
+       endif ! config_use_column_physics
 
        block => block % next
     end do
@@ -14310,9 +14321,6 @@ contains
 
   subroutine seaice_column_reinitialize_diagnostics_thermodynamics(domain)
 
-    use seaice_constants, only: &
-         seaiceIceOceanDragCoefficient
-
     type(domain_type) :: domain
 
     type(block_type), pointer :: block
@@ -14381,6 +14389,9 @@ contains
          pondAlbedoCell
 
     ! drag variables
+    real(kind=RKIND), pointer :: &
+         config_ice_ocean_drag_coefficient
+
     real(kind=RKIND), dimension(:), pointer :: &
          airOceanDragCoefficientRatio, &
          oceanDragCoefficient, &
@@ -14404,12 +14415,12 @@ contains
     logical, pointer :: &
          config_use_ice_age, &
          config_use_form_drag, &
-         config_use_column_package, &
+         config_use_column_physics, &
          config_use_column_snow_tracers
 
-    call MPAS_pool_get_config(domain % blocklist % configs, "config_use_column_package", config_use_column_package)
+    call MPAS_pool_get_config(domain % blocklist % configs, "config_use_column_physics", config_use_column_physics)
 
-    if (config_use_column_package) then
+    if (config_use_column_physics) then
 
        block => domain % blocklist
        do while (associated(block))
@@ -14499,12 +14510,15 @@ contains
           pondAlbedoCell    = 0.0_RKIND
 
           ! form drag
+          call MPAS_pool_get_config(block % configs, "config_ice_ocean_drag_coefficient", & 
+                                    config_ice_ocean_drag_coefficient)
+
           call MPAS_pool_get_subpool(block % structs, "drag", dragPool)
 
           call MPAS_pool_get_array(dragPool, "oceanDragCoefficient", oceanDragCoefficient)
           call MPAS_pool_get_array(dragPool, "airDragCoefficient", airDragCoefficient)
 
-          oceanDragCoefficient = seaiceIceOceanDragCoefficient
+          oceanDragCoefficient = config_ice_ocean_drag_coefficient
           airDragCoefficient   = seaice_column_initial_air_drag_coefficient()
 
           call MPAS_pool_get_config(block % configs, "config_use_form_drag", config_use_form_drag)
@@ -14573,7 +14587,7 @@ contains
           block => block % next
        end do
 
-    endif ! config_use_column_package
+    endif ! config_use_column_physics
 
   end subroutine seaice_column_reinitialize_diagnostics_thermodynamics
 
@@ -14642,17 +14656,17 @@ contains
 
     logical, pointer :: &
          config_use_ice_age, &
-         config_use_column_package, &
+         config_use_column_physics, &
          config_use_velocity_solver
 
     character(len=strKIND), pointer :: &
          config_stress_divergence_scheme
 
-    call MPAS_pool_get_config(domain % blocklist % configs, "config_use_column_package", config_use_column_package)
+    call MPAS_pool_get_config(domain % blocklist % configs, "config_use_column_physics", config_use_column_physics)
     call MPAS_pool_get_config(domain % blocklist % configs, "config_use_velocity_solver", config_use_velocity_solver)
     call MPAS_pool_get_config(domain % blocklist % configs, "config_stress_divergence_scheme", config_stress_divergence_scheme)
 
-    if (config_use_column_package) then
+    if (config_use_column_physics) then
 
        block => domain % blocklist
        do while (associated(block))
@@ -14741,7 +14755,7 @@ contains
           block => block % next
        end do
 
-    endif ! config_use_column_package
+    endif ! config_use_column_physics
 
   end subroutine seaice_column_reinitialize_diagnostics_dynamics
 
@@ -14793,13 +14807,13 @@ contains
     logical, pointer :: &
          config_use_column_biogeochemistry, &
          config_use_column_shortwave, &
-         config_use_column_package, &
+         config_use_column_physics, &
          config_use_vertical_biochemistry, &
          config_use_vertical_zsalinity
 
-    call MPAS_pool_get_config(domain % blocklist % configs, "config_use_column_package", config_use_column_package)
+    call MPAS_pool_get_config(domain % blocklist % configs, "config_use_column_physics", config_use_column_physics)
 
-     if (config_use_column_package) then
+     if (config_use_column_physics) then
 
        block => domain % blocklist
        do while (associated(block))
@@ -14872,7 +14886,7 @@ contains
           block => block % next
        end do
 
-    endif ! config_use_column_package
+    endif ! config_use_column_physics
 
   end subroutine seaice_column_reinitialize_diagnostics_bgc
 

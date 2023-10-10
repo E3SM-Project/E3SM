@@ -320,14 +320,6 @@ Valid values: Any positive integer.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_nFloeCategories" type="integer"
-	category="dimensions" group="dimensions">
-The number of ice floe categories to use.
-
-Valid values: 1(default), 12, 16, 24.
-Default: Defined in namelist_defaults.xml
-</entry>
-
 <!-- initialize -->
 
 <entry id="config_earth_radius" type="real"
@@ -453,7 +445,7 @@ Valid values: true or .false
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_use_column_package" type="logical"
+<entry id="config_use_column_physics" type="logical"
 	category="use_sections" group="use_sections">
 If true perform calculations from the column physics package.
 
@@ -2335,6 +2327,14 @@ Valid values: positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_snow_thermal_conductivity" type="real"
+	category="snow" group="snow">
+thermal conductivity of snow  (W/m/deg)
+
+Valid values: positive real
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- meltponds -->
 
@@ -2682,6 +2682,13 @@ Valid values: 'constant' or 'prognostic'
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_ice_ocean_drag_coefficient" type="real"
+	category="ocean" group="ocean">
+Neutral ice-ocean drag coefficient
+
+Valid values:
+Default: Defined in namelist_defaults.xml
+</entry>
 
 <!-- diagnostics -->
 
