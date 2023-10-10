@@ -26,11 +26,15 @@ that directory.
 
 To utilize a compiler name that's defined in the E3SM machine configuration
 file (`config_machines.xml`), employ the `OMEGA_CIME_COMPILER` CMake variable,
-as illustrated below:
+as illustrated below. In some cases, you may also want to add `OMEGA_CIME_MACHINE`
+to specify which system you intend to use. The values of `OMEGA_CIME_COMPILER`
+and `OMEGA_CIME_MACHINE` are defined in
+"${E3SM}/cime\_config/machines/config\_machines.xml".
 
 ```sh
 >> cmake \
-  -DOMEGA_CIME_COMPILER=crayclang \
+  -DOMEGA_CIME_COMPILER=nvidiagpu \
+  -DOMEGA_CIME_MACHINE=pm-gpu \
   ${E3SM_HOME}/components/omega
 ```
 
@@ -38,9 +42,9 @@ Once the command completes successfully, several scripts will be created
 in the build directory.
 
 * omega\_env.sh   : load specific modules and set env. variables read from CIME
-* omega\_build.sh : run `make` command after sourcing `omega\_env.sh`
-* omega\_run.sh   : run `./src/omega.exe` after sourcing `omega\_env.sh`
-* omega\_ctest.sh : run `ctest` after sourcing `omega\_env.sh`
+* omega\_build.sh : run `make` command after sourcing `omega_env.sh`
+* omega\_run.sh   : run `./src/omega.exe` after sourcing `omega_env.sh`
+* omega\_ctest.sh : run `ctest` after sourcing `omega_env.sh`
 
 Run omega\_build.sh in the build directory to build Omega.
 
@@ -64,11 +68,6 @@ To build Omega for GPU, add OMEGA\_ARCH to one of "CUDA" or "HIP".
   -DOMEGA_ARCH=CUDA \
   ${E3SM_HOME}/components/omega
 ```
-In some cases, you may want to add OMEGA\_CIME\_MACHINE to specify which
-system you intend to use.
-
-The values of OMEGA\_CIME\_COMPILER and OMEGA\_CIME\_MACHINE are defined in
-"${E3SM}/cime\_config/machines/config\_machines.xml".
 
 To enable the ctest-based unittest option, include the `OMEGA_BUILD_TEST`
 option as illustrated below.
