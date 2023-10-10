@@ -171,7 +171,7 @@
 <config_recover_tracer_means_check>false</config_recover_tracer_means_check>
 
 <!-- column_package -->
-<config_column_physics_type>'column_package'</config_column_physics_type>
+<config_column_physics_type>'icepack'</config_column_physics_type>
 <config_use_column_shortwave>true</config_use_column_shortwave>
 <config_use_column_vertical_thermodynamics>true</config_use_column_vertical_thermodynamics>
 <config_use_column_biogeochemistry>false</config_use_column_biogeochemistry>
