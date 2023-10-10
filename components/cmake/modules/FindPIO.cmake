@@ -28,13 +28,17 @@ find_package(NETCDF REQUIRED)
 # Not all machines/PIO installations use ADIOS but, for now,
 # we can assume that an MPI case with ADIOS2_ROOT set is probably
 # using adios.
-if (NOT MPILIB STREQUAL mpi-serial AND DEFINED ENV{ADIOS2_ROOT})
+if (NOT MPILIB STREQUAL "mpi-serial" AND DEFINED ENV{ADIOS2_ROOT})
   find_package(MPI REQUIRED COMPONENTS C)
   find_package(ADIOS2 REQUIRED COMPONENTS C)
   list(APPEND PIOLIBS adios2::adios2)
 endif()
 
 list(APPEND PIOLIBS netcdf)
+
+if (MPILIB STREQUAL "mpi-serial")
+  list(APPEND PIOLIBS "${INSTALL_SHAREDPATH}/lib/libmpi-serial.a")
+endif()
 
 # Create the interface library, and set target properties
 add_library(spio INTERFACE)

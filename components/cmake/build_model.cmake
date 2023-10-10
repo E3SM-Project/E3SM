@@ -207,10 +207,6 @@ function(build_model COMP_CLASS COMP_NAME)
   # build rules:
   #-------------------------------------------------------------------------------
 
-  if (MPILIB STREQUAL "mpi-serial")
-    set(SLIBS "${SLIBS} ${INSTALL_SHAREDPATH}/lib/libmpi-serial.a")
-  endif()
-
   foreach(ITEM IN LISTS SOURCES)
     if (ITEM MATCHES "${CMAKE_BINARY_DIR}/.*") # is generated
       list(APPEND REAL_SOURCES ${ITEM})
