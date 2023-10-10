@@ -1590,6 +1590,7 @@
 		<package name="variableShortwave" description="This package includes variables required to compute spatially variable shortwave extinction coefficients"/>
 
 		<package name="splitTimeIntegrator" description="This package includes variables required for either the split or unsplit explicit time integrators."/>
+		<package name="splitAB2TimeIntegrator" description="This package includes variables required for the split explicit AB2 time integrators."/>
 		<package name="semiImplicitTimePKG" description="This package includes variables required for split-implicit time integrators."/>
 		<package name="thicknessFilter" description="This package includes variables required for frequency filtered thickness."/>
 		<package name="windStressBulkPKG" description="This package includes varibles required for bulk wind stress forcing."/>
@@ -1918,6 +1919,8 @@
 			<var_array name="surfaceVelocity"/>
 			<var_array name="SSHGradient"/>
 			<var_array name="vertNonLocalFlux"/>
+			<var_array name="normalVelocityTendOld" packages="splitAB2TimeIntegrator" />
+			<var_array name="CoriolisTermOld" packages="splitAB2TimeIntegrator" />
 			<var name="boundaryLayerDepth"/>
 			<var name="effectiveDensityInLandIce"/>
 			<var_struct name="ecosysAuxiliary"/>
@@ -3402,6 +3405,15 @@
 		<var name="ssh_sal_grad" type="real" dimensions="nEdges Time" units=""
 			description="gradient of sea surface height perturbation from self-attraction and loading"
 			packages="tidalPotentialForcingPKG"
+		/>
+		<!-- FIELD split_explicit AB2 time stepping -->
+		<var name="normalVelocityTendOld" type="real" dimensions="nVertLevels nEdges Time" units="m s^-2"
+                        description="time tendency of normal component of velocity at the previous time step used in the split-explicit AB2 time stepping"
+			packages="splitAB2TimeIntegrator"
+		/>
+		<var name="CoriolisTermOld" type="real" dimensions="nVertLevels nEdges Time" units="m s^-2"
+                        description="Coriolis term at the previous time step used in the split-explicit AB2 time stepping"
+			packages="splitAB2TimeIntegrator"
 		/>
 	</var_struct>
 	<var_struct name="shortwave" time_levs="1">
