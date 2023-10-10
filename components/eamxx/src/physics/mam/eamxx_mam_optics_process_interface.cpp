@@ -396,8 +396,6 @@ void MAMOptics::run_impl(const double dt) {
                                            0.16000000238418579e+001};
 
 #if 1
-          team.team_barrier();
-          {
           Real inv_density[ntot_amode]
                           [num_aerosol_ids] = {};
           Real num2vol_ratio_min[ntot_amode] = {};
@@ -423,6 +421,9 @@ void MAMOptics::run_impl(const double dt) {
               // outputs
               noxf_acc2ait, n_common_species_ait_accum, ait_spec_in_acc,
               acc_spec_in_ait);
+
+          team.team_barrier();
+          {
 
           for (int kk = mam4::ndrop::top_lev; kk < nlev_; ++kk) {
 
@@ -464,89 +465,13 @@ void MAMOptics::run_impl(const double dt) {
    auto ext_cmip6_lw_inv_m_icol = ekat::subview(ext_cmip6_lw_inv_m_, icol);
    auto state_q_icol = ekat::subview(state_q_, icol);
 
- mam4::aer_rad_props::aer_rad_props_lw(
-    dt, pmid, pint,
-    temperature, zm, zi,
-    state_q_icol, pdel, pdeldry,
-    cldn, ext_cmip6_lw_,
-    // const ColumnView qqcw_fld[pcnst],
-    odap_aer_icol,
-    //
-    nspec_amode, sigmag_amode,
-    lmassptr_amode,
-    spechygro, specdens_amode,
-    lspectype_amode,
-    specrefndxlw_,
-    crefwlw_,
-    crefwsw_,
-    absplw_,
-    refrtablw_,
-    refitablw_,
-    // work views
-    mass_icol, cheb_icol, dgnumwet_m_icol,
-    dgnumdry_m_icol, radsurf_icol,
-    logradsurf_icol, specrefindex_icol,
-    qaerwat_m_icol, ext_cmip6_lw_inv_m_icol);
-
 #endif
 
 #if 1
-          team.team_barrier();
-          {
-          Real inv_density[ntot_amode]
-                          [num_aerosol_ids] = {};
-          Real num2vol_ratio_min[ntot_amode] = {};
-          Real num2vol_ratio_max[ntot_amode] = {};
-          Real num2vol_ratio_max_nmodes[ntot_amode] = {};
-          Real num2vol_ratio_min_nmodes[ntot_amode] = {};
-          Real num2vol_ratio_nom_nmodes[ntot_amode] = {};
-          Real dgnmin_nmodes[ntot_amode] = {};
-          Real dgnmax_nmodes[ntot_amode] = {};
-          Real dgnnom_nmodes[ntot_amode] = {};
-          Real mean_std_dev_nmodes[ntot_amode] = {};
-          // outputs
-          bool noxf_acc2ait[num_aerosol_ids] = {};
-          int n_common_species_ait_accum = {};
-          int ait_spec_in_acc[num_aerosol_ids] = {};
-          int acc_spec_in_ait[num_aerosol_ids] = {};
-
-           mam4::modal_aero_calcsize::init_calcsize(
-              inv_density, num2vol_ratio_min, num2vol_ratio_max,
-              num2vol_ratio_max_nmodes, num2vol_ratio_min_nmodes,
-              num2vol_ratio_nom_nmodes, dgnmin_nmodes, dgnmax_nmodes,
-              dgnnom_nmodes, mean_std_dev_nmodes,
-              // outputs
-              noxf_acc2ait, n_common_species_ait_accum, ait_spec_in_acc,
-              acc_spec_in_ait);
-
-          for (int kk = mam4::ndrop::top_lev; kk < nlev_; ++kk) {
-
-            const auto state_q_k = Kokkos::subview(state_q_, icol, kk, Kokkos::ALL());
-            const auto qqcw_k = Kokkos::subview(qqcw_, icol, kk, Kokkos::ALL());
-            auto dgncur_i = Kokkos::subview(dgnumdry_m_, icol, kk, Kokkos::ALL());
-            Real dgncur_c[ntot_amode] = {};
-            mam4::modal_aero_calcsize::modal_aero_calcsize_sub(
-                state_q_k.data(), // in
-                qqcw_k.data(),    // in
-                dt, do_adjust, do_aitacc_transfer, update_mmr, lmassptr_amode,
-                numptr_amode,
-                inv_density, // in
-                num2vol_ratio_min, num2vol_ratio_max, num2vol_ratio_max_nmodes,
-                num2vol_ratio_min_nmodes, num2vol_ratio_nom_nmodes,
-                dgnmin_nmodes, dgnmax_nmodes, dgnnom_nmodes,
-                mean_std_dev_nmodes,
-                // outputs
-                noxf_acc2ait, n_common_species_ait_accum, ait_spec_in_acc,
-                acc_spec_in_ait, dgncur_i.data(), dgncur_c);
-          } // k
-          }
-          team.team_barrier();
-
 
   auto ssa_cmip6_sw_icol = ekat::subview(ssa_cmip6_sw_, icol);
   auto af_cmip6_sw_icol = ekat::subview(af_cmip6_sw_, icol);
   auto ext_cmip6_sw_icol = ekat::subview(ext_cmip6_sw_, icol);
-
 
   // FIXME: check if this correct: Note that these variables have pver+1 levels
   // tau_w =>  aero_ssa_sw  (pcols,0:pver,nswbands) ! aerosol single scattering albedo * tau
@@ -573,9 +498,17 @@ void MAMOptics::run_impl(const double dt) {
   auto burdenmode_icol = ekat::subview(burdenmode, icol);
 
 #if 1
-    // outputs nan
-    Real aodabsbc2=zero;
+    // FIXME: following variables, wihout 2, are producing nans.
+    Real aodabsbc2 = zero;
     Real bcaod2 = zero;
+    Real dustaod2 = zero;
+    Real momaod2 = zero;
+    Real pomaod2 = zero;
+    Real seasaltaod2 =zero;
+    Real so4aod2 = zero;
+    Real soaaod2 = zero;
+
+    team.team_barrier();
 
      mam4::aer_rad_props::aer_rad_props_sw( dt, zi, pmid,
     pint, temperature,
@@ -610,17 +543,69 @@ void MAMOptics::run_impl(const double dt) {
     aodmode_icol.data(), burdenmode_icol.data(), aodabsbc2,
     aodvis[icol], aodall[icol], ssavis[icol], aodabs[icol], burdendust[icol],
     burdenso4[icol], burdenbc[icol], burdenpom[icol], burdensoa[icol],
-    burdenseasalt[icol], burdenmom[icol], momaod[icol], dustaod[icol],
-    so4aod[icol], // total species AOD
-    pomaod[icol], soaaod[icol], bcaod2, seasaltaod[icol],
+    burdenseasalt[icol], burdenmom[icol], momaod2, dustaod2,
+    so4aod2, // total species AOD
+    pomaod2, soaaod2, bcaod2, seasaltaod2,
     // work views
     mass_icol, air_density_icol, cheb_icol,
     dgnumwet_m_icol, dgnumdry_m_icol,
     radsurf_icol, logradsurf_icol,
     specrefindex_icol, qaerwat_m_icol,
     ext_cmip6_sw_inv_m_icol);
+
+    // printf("aodabsbc2 %e \n",aodabsbc2);
 #endif
 #endif
+
+
+          team.team_barrier();
+          {
+          for (int kk = mam4::ndrop::top_lev; kk < nlev_; ++kk) {
+
+            const auto state_q_k = Kokkos::subview(state_q_, icol, kk, Kokkos::ALL());
+            const auto qqcw_k = Kokkos::subview(qqcw_, icol, kk, Kokkos::ALL());
+            auto dgncur_i = Kokkos::subview(dgnumdry_m_, icol, kk, Kokkos::ALL());
+            Real dgncur_c[ntot_amode] = {};
+            mam4::modal_aero_calcsize::modal_aero_calcsize_sub(
+                state_q_k.data(), // in
+                qqcw_k.data(),    // in
+                dt, do_adjust, do_aitacc_transfer, update_mmr, lmassptr_amode,
+                numptr_amode,
+                inv_density, // in
+                num2vol_ratio_min, num2vol_ratio_max, num2vol_ratio_max_nmodes,
+                num2vol_ratio_min_nmodes, num2vol_ratio_nom_nmodes,
+                dgnmin_nmodes, dgnmax_nmodes, dgnnom_nmodes,
+                mean_std_dev_nmodes,
+                // outputs
+                noxf_acc2ait, n_common_species_ait_accum, ait_spec_in_acc,
+                acc_spec_in_ait, dgncur_i.data(), dgncur_c);
+          } // k
+          }
+
+mam4::aer_rad_props::aer_rad_props_lw(
+    dt, pmid, pint,
+    temperature, zm, zi,
+    state_q_icol, pdel, pdeldry,
+    cldn, ext_cmip6_lw_,
+    // const ColumnView qqcw_fld[pcnst],
+    odap_aer_icol,
+    //
+    nspec_amode, sigmag_amode,
+    lmassptr_amode,
+    spechygro, specdens_amode,
+    lspectype_amode,
+    specrefndxlw_,
+    crefwlw_,
+    crefwsw_,
+    absplw_,
+    refrtablw_,
+    refitablw_,
+    // work views
+    mass_icol, cheb_icol, dgnumwet_m_icol,
+    dgnumdry_m_icol, radsurf_icol,
+    logradsurf_icol, specrefindex_icol,
+    qaerwat_m_icol, ext_cmip6_lw_inv_m_icol);
+
 
     });
 
