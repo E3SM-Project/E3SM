@@ -1129,6 +1129,7 @@ contains
     ! 
     ! !USES:
     use shr_kind_mod       , only : r8 => shr_kind_r8
+    use shr_kind_mod       , only : CXX => SHR_KIND_CXX
     use elm_varctl         , only : iulog, create_glacier_mec_landunit
     use elm_time_manager   , only : get_nstep, get_step_size  
     use domainMod          , only : ldomain
@@ -1153,7 +1154,7 @@ contains
 
     integer :: ent_type, ierr
     character(len=100) :: outfile, wopts, lnum
-   character(len=400) :: tagname
+    character(CXX) :: tagname
     !---------------------------------------------------------------------------
 
     ! cesm sign convention is that fluxes are positive downward
@@ -1247,7 +1248,7 @@ contains
     endif
     ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, totalmbls , ent_type, l2x_lm(1,1) )
     if (ierr > 0 )  &
-       call shr_sys_abort( sub//' Error: fail to set moab '// trim(seq_flds_l2x_fields) )
+       call shr_sys_abort( sub//' Error: fail to set moab l2x '// trim(seq_flds_l2x_fields) )
  
 #ifdef MOABDEBUG
        write(lnum,"(I0.2)")num_moab_exports
