@@ -83,6 +83,8 @@ protected:
 
 protected:
 
+  Field get_field_out_wrap(const std::string& field_name);
+
   // The two other main overrides for the subcomponent
   void initialize_impl (const RunType run_type);
   void finalize_impl   ();
