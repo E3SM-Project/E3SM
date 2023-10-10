@@ -1705,13 +1705,9 @@ if ( !($phys eq 'ideal' or $phys eq 'adiabatic') ) {
 # Cloud optics; for MMF be specific about which optics package to use
 if ($rad_pkg eq 'rrtmg' or $rad_pkg eq 'rrtmgp') {
     if ($cfg->get('use_MMF')) {
-        if ($cfg->get('MMF_microphysics_scheme') eq 'sam1mom') {
-            add_default($nl, 'liqcldoptics', 'val' => 'slingo');
-            add_default($nl, 'icecldoptics', 'val' => 'ebertcurry');
-        } else {
-            add_default($nl, 'liqcldoptics', 'val' => 'gammadist');
-            add_default($nl, 'icecldoptics', 'val' => 'mitchell');
-        }
+        # NOTE: eventually we should switch PAM optics to gammadist+mitchell
+        add_default($nl, 'liqcldoptics', 'val' => 'slingo');
+        add_default($nl, 'icecldoptics', 'val' => 'ebertcurry');
     } else {
         add_default($nl, 'liqcldoptics');
         add_default($nl, 'icecldoptics');

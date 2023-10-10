@@ -116,6 +116,22 @@ function(build_model COMP_CLASS COMP_NAME)
                              cmake/atm/../../eam/src/physics/crm/crm_ecpp_output_module.F90 )
     endif()
 
+    if (USE_PAM)
+      message(STATUS "Building PAM")
+      # PAM_HOME is where the samxx source code lives
+      set(PAM_HOME ${CMAKE_CURRENT_SOURCE_DIR}/../../eam/src/physics/crm/pam)
+      # PAM_BIN is where the samxx library will live
+      set(PAM_BIN  ${CMAKE_CURRENT_BINARY_DIR}/pam)
+      # Build the static samxx library
+      add_subdirectory(${PAM_HOME} ${PAM_BIN})
+      # Add samxx F90 files to the main E3SM build
+      set(SOURCES ${SOURCES} cmake/atm/../../eam/src/physics/crm/pam/params.F90
+                             cmake/atm/../../eam/src/physics/crm/crm_ecpp_output_module.F90
+                             cmake/atm/../../eam/src/physics/crm/pam/pam_driver.F90) 
+      # Pam interface need to include modules from pam
+      include_directories(${PAM_BIN}/external/pam_core)
+    endif()
+
     # Add rrtmgp++ source code if asked for
     if (USE_RRTMGPXX)
       message(STATUS "Building RRTMGPXX")
@@ -244,6 +260,9 @@ function(build_model COMP_CLASS COMP_NAME)
       endif()
       if (USE_SAMXX)
         target_link_libraries(${TARGET_NAME} PRIVATE samxx)
+      endif()
+      if (USE_PAM)
+        target_link_libraries(${TARGET_NAME} PRIVATE pam_driver)
       endif()
       if (USE_RRTMGPXX)
         target_link_libraries(${TARGET_NAME} PRIVATE rrtmgp rrtmgp_interface)
