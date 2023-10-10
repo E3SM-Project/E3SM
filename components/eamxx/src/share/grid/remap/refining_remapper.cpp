@@ -530,16 +530,18 @@ void RefiningRemapper::setup_mpi_data_structures ()
 
     // If field has a parent, col_stride and col_offset need to be adjusted
     auto p = fh.get_parent().lock();
+    auto win_size = layout.size()*sizeof(Real);
     if (p) {
       EKAT_REQUIRE_MSG (p->get_parent().lock()==nullptr,
           "Error! We do not support remapping of subfields of other subfields.\n");
       const auto& sv_info = fh.get_alloc_properties().get_subview_info();
       m_col_stride[i] = sv_info.dim_extent * m_col_size[i];
       m_col_offset[i] = sv_info.slice_idx  * m_col_size[i];
+      win_size *= sv_info.dim_extent;
     }
 
     auto data = f.get_internal_view_data<Real,Host>();
-    check_mpi_call(MPI_Win_create(data,layout.size()*sizeof(Real),sizeof(Real),
+    check_mpi_call(MPI_Win_create(data,win_size,sizeof(Real),
                                   MPI_INFO_NULL,mpi_comm,&m_mpi_win[i]),
                    "[setup_mpi_data_structures] MPI_Win_create");
   }
