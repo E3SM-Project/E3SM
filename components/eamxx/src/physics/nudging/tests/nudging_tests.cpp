@@ -102,29 +102,29 @@ TEST_CASE("nudging") {
     const int num_levs = grid2->get_num_vertical_levels();
 
     // Create some fields for this fm
-    std::vector<FieldTag> tag_h  = {COL};
-    std::vector<FieldTag> tag_v  = {LEV};
-    std::vector<FieldTag> tag_2d = {COL,LEV};
+    std::vector<FieldTag> tag_h      = {COL};
+    std::vector<FieldTag> tag_v      = {LEV};
+    std::vector<FieldTag> tag_2d     = {COL,LEV};
+    std::vector<FieldTag> tag_2d_vec = {COL,CMP,LEV};
 
-    std::vector<Int>     dims_h  = {num_lcols};
-    std::vector<Int>     dims_v  = {num_levs};
-    std::vector<Int>     dims_2d = {num_lcols,num_levs};
+    std::vector<Int>     dims_h      = {num_lcols};
+    std::vector<Int>     dims_v      = {num_levs};
+    std::vector<Int>     dims_2d     = {num_lcols,num_levs};
+    std::vector<Int>     dims_2d_vec = {num_lcols,2,num_levs};
 
     const std::string& gn = grid2->name();
 
     FieldIdentifier fid1("p_mid",FL{tag_2d,dims_2d},Pa,gn);
     FieldIdentifier fid2("T_mid",FL{tag_2d,dims_2d},K,gn);
     FieldIdentifier fid3("qv",FL{tag_2d,dims_2d},kg/kg,gn);
-    FieldIdentifier fid4("U",FL{tag_2d,dims_2d},m/s,gn);
-    FieldIdentifier fid5("V",FL{tag_2d,dims_2d},m/s,gn);
+    FieldIdentifier fidhw("horiz_winds",FL{tag_2d_vec,dims_2d_vec},m/s,gn);
 
     // Register fields with fm
     fm->registration_begins();
     fm->register_field(FR{fid1,"output",packsize});
     fm->register_field(FR{fid2,"output",packsize});
     fm->register_field(FR{fid3,"output",packsize});
-    fm->register_field(FR{fid4,"output",packsize});
-    fm->register_field(FR{fid5,"output",packsize});
+    fm->register_field(FR{fidhw,"output",packsize});
     fm->registration_ends();
 
     // Initialize these fields
@@ -137,27 +137,36 @@ TEST_CASE("nudging") {
     auto f3      = fm->get_field(fid3);
     auto f3_host = f3.get_view<Real**,Host>();
 
-    auto f4      = fm->get_field(fid4);
-    auto f4_host = f4.get_view<Real**,Host>();
-
-    auto f5      = fm->get_field(fid5);
-    auto f5_host = f5.get_view<Real**,Host>();
+    auto fhw      = fm->get_field(fidhw);
+    auto fhw_host = fhw.get_view<Real***,Host>();
 
     for (int ii=0;ii<num_lcols;++ii) {
       for (int jj=0;jj<num_levs;++jj) {
 	f1_host(ii,jj) = 2*jj+1;
 	f2_host(ii,jj) = (ii-1)*10000+200*jj+10*(-1);
 	f3_host(ii,jj) = (ii-1)*10000+200*jj+10*(-1);
-	f4_host(ii,jj) = (ii-1)*10000+200*jj+10*(-1);
-	f5_host(ii,jj) = (ii-1)*10000+200*jj+10*(-1);
+	fhw_host(ii,0,jj) = (ii-1)*10000+200*jj+10*(-1);
+	fhw_host(ii,1,jj) = (ii-1)*10000+200*jj+10*(-1);
       }
     }
     fm->init_fields_time_stamp(time);
     f1.sync_to_dev();
     f2.sync_to_dev();
     f3.sync_to_dev();
-    f4.sync_to_dev();
-    f5.sync_to_dev();
+    fhw.sync_to_dev();
+
+    // Add subfields U and V to field manager
+    {
+    auto hw = fm->get_field("horiz_winds");
+    const auto& fid = hw.get_header().get_identifier();
+    const auto& layout = fid.get_layout();
+    const int vec_dim = layout.get_vector_dim();
+    const auto& units = fid.get_units();
+    auto fU = hw.subfield("U",units,vec_dim,0);
+    auto fV = hw.subfield("V",units,vec_dim,1);
+    fm->add_field(fU);
+    fm->add_field(fV);
+    }
 
     // Set up parameter list control for output
     ekat::ParameterList params;
@@ -199,6 +208,17 @@ TEST_CASE("nudging") {
                   if (fname == "p_mid"){
                     v(i,j) = 2*j+1;
 		  }
+                }
+              }
+            }
+	    break;
+          case 3:
+            {
+              auto v = f.get_view<Real***,Host>();
+              for (int i=0; i<fl.dim(0); ++i) {
+                for (int j=0; j<fl.dim(2); ++j) {
+		  v(i,0,j) = (i-1)*10000+200*j+10*(dt/250.)*ii;
+		  v(i,1,j) = (i-1)*10000+200*j+10*(dt/250.)*ii;
                 }
               }
             }
@@ -259,12 +279,10 @@ TEST_CASE("nudging") {
   Field p_mid       = input_fields["p_mid"];
   Field T_mid       = input_fields["T_mid"];
   Field qv          = input_fields["qv"];
-  Field u          = input_fields["U"];
-  Field v          = input_fields["V"];
-  Field T_mid_o = output_fields["T_mid"];
-  Field qv_mid_o = output_fields["qv"];
-  Field u_o = output_fields["U"];
-  Field v_o = output_fields["V"];
+  Field hw          = input_fields["horiz_winds"];
+  Field T_mid_o     = output_fields["T_mid"];
+  Field qv_mid_o    = output_fields["qv"];
+  Field hw_o        = output_fields["horiz_winds"];
   // Initialize memory buffer for all atm processes
   auto memory_buffer = std::make_shared<ATMBufferManager>();
   memory_buffer->request_bytes(nudging_mid->requested_buffer_size_in_bytes());
@@ -281,25 +299,21 @@ TEST_CASE("nudging") {
   }
   T_mid.sync_to_dev();
   qv.sync_to_dev();
-  u.sync_to_dev();
-  v.sync_to_dev();
+  hw.sync_to_dev();
   p_mid.sync_to_dev();
 
   //10 timesteps of 100 s
   for (int time_s = 1; time_s < 10; time_s++){
     T_mid_o.sync_to_dev();
     qv_mid_o.sync_to_dev();
-    u_o.sync_to_dev();
-    v_o.sync_to_dev();
+    hw_o.sync_to_dev();
     auto T_mid_v_h_o   = T_mid_o.get_view<Real**, Host>();
-    auto qv_h_o   = qv_mid_o.get_view<Real**, Host>();
-    auto u_h_o   = u_o.get_view<Real**, Host>();
-    auto v_h_o   = v_o.get_view<Real**, Host>();
+    auto qv_h_o        = qv_mid_o.get_view<Real**, Host>();
+    auto hw_h_o        = hw_o.get_view<Real***, Host>();
     nudging_mid->run(100);
     T_mid_o.sync_to_host();
     qv_mid_o.sync_to_host();
-    u_o.sync_to_host();
-    v_o.sync_to_host();
+    hw_o.sync_to_host();
 
     for (int icol=0; icol<ncols; icol++){
       for (int ilev=0; ilev<nlevs; ilev++){
@@ -320,8 +334,8 @@ TEST_CASE("nudging") {
 	  Real val_tim_avg = (val_before*w_bef + val_after*w_aft) / 250.;
           REQUIRE(abs(T_mid_v_h_o(icol,ilev) - val_tim_avg)<0.001);
           REQUIRE(abs(qv_h_o(icol,ilev) - val_tim_avg)<0.001);
-          REQUIRE(abs(u_h_o(icol,ilev) - val_tim_avg)<0.001);
-          REQUIRE(abs(v_h_o(icol,ilev) - val_tim_avg)<0.001);
+          REQUIRE(abs(hw_h_o(icol,0,ilev) - val_tim_avg)<0.001);
+          REQUIRE(abs(hw_h_o(icol,1,ilev) - val_tim_avg)<0.001);
 	  continue;
 	}
 
@@ -342,8 +356,8 @@ TEST_CASE("nudging") {
 	  Real val_tim_avg = (val_before*w_bef + val_after*w_aft) / 250.;
           REQUIRE(abs(T_mid_v_h_o(icol,ilev) - val_tim_avg)<0.001);
           REQUIRE(abs(qv_h_o(icol,ilev) - val_tim_avg)<0.001);
-          REQUIRE(abs(u_h_o(icol,ilev) - val_tim_avg)<0.001);
-          REQUIRE(abs(v_h_o(icol,ilev) - val_tim_avg)<0.001);
+          REQUIRE(abs(hw_h_o(icol,0,ilev) - val_tim_avg)<0.001);
+          REQUIRE(abs(hw_h_o(icol,1,ilev) - val_tim_avg)<0.001);
 	  continue;
 	}
 
@@ -362,8 +376,8 @@ TEST_CASE("nudging") {
 
 	REQUIRE(abs(T_mid_v_h_o(icol,ilev) - val_avg)<0.001);
 	REQUIRE(abs(qv_h_o(icol,ilev) - val_avg)<0.001);
-	REQUIRE(abs(u_h_o(icol,ilev) - val_avg)<0.001);
-	REQUIRE(abs(v_h_o(icol,ilev) - val_avg)<0.001);
+	REQUIRE(abs(hw_h_o(icol,0,ilev) - val_avg)<0.001);
+	REQUIRE(abs(hw_h_o(icol,1,ilev) - val_avg)<0.001);
       }
     }
 

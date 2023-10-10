@@ -54,14 +54,13 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
    * vector, if it is we register it.  For now we are limited to just T_mid, qv,
    * U and V
    */
-  if (std::find(m_fields_nudge.begin(),m_fields_nudge.end(),"T_mid") != m_fields_nudge.end()) {
+  if (ekat::contains(m_fields_nudge,"T_mid")) {
     add_field<Updated>("T_mid", scalar3d_layout_mid, K, grid_name, ps);
   }
-  if (std::find(m_fields_nudge.begin(),m_fields_nudge.end(),"qv") != m_fields_nudge.end()) {
+  if (ekat::contains(m_fields_nudge,"qv")) {
     add_field<Updated>("qv",    scalar3d_layout_mid, Q, grid_name, "tracers", ps);
   }
-  if (std::find(m_fields_nudge.begin(),m_fields_nudge.end(),"U") != m_fields_nudge.end() or
-      std::find(m_fields_nudge.begin(),m_fields_nudge.end(),"V") != m_fields_nudge.end()) {
+  if (ekat::contains(m_fields_nudge,"U") or ekat::contains(m_fields_nudge,"V")) {
     add_field<Updated>("horiz_winds",   horiz_wind_layout,   m/s,     grid_name, ps);
   }
   /* ----------------------- WARNING --------------------------------*/
@@ -355,9 +354,9 @@ Field Nudging::get_field_out_wrap(const std::string& field_name) {
     const int vec_dim = layout.get_vector_dim();
     const auto& units = fid.get_units();
     if (field_name == "U") {
-      return hw.subfield("U",units,vec_dim,0);
+      return hw.get_component(0);
     } else {
-      return hw.subfield("V",units,vec_dim,1);
+      return hw.get_component(1);
     }
   } else {
     return get_field_out(field_name);
