@@ -356,14 +356,10 @@ contains
       !$acc               thermExpCoeff, salineContractCoeff, tangentialVelocity, &
       !$acc               layerThickEdgeFlux, kineticEnergyCell, sfcFlxAttCoeff, potentialDensity, &
       !$acc               vertAleTransportTop, vertViscTopOfEdge, wettingVelocityFactor)
-!YSK      !$acc enter data &
-!      !$acc    copyin(tendVel, sfcStress, sfcStressMag, &
-!      !$acc    ssh, normalVelocity, &
-!      !$acc    layerThickness, activeTracers)
       !$acc enter data &
-      !$acc  copyin(ssh, normalVelocity, &
-      !$acc  layerThickness, activeTracers) &
-      !$acc  create(tendVel, sfcStress, sfcStressMag)
+      !$acc    copyin(tendVel, sfcStress, sfcStressMag, &
+      !$acc    ssh, normalVelocity, &
+      !$acc    layerThickness, activeTracers)
 
       !*** Set output variables to zero before accumulating results
       

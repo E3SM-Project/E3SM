@@ -447,7 +447,7 @@
     </directives>
     <directives compiler="nvidiaacc">
       <directive> --gpus-per-task=1</directive>
-      <directive> --gpu-bind=none</directive>
+      <directive> --gpu-bind=map_gpu:0,1,2,3</directive>
     </directives>
     <directives compiler="gnu">
       <directive> -G 0</directive>
