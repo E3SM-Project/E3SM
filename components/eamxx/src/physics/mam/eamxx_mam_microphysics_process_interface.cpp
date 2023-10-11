@@ -61,6 +61,8 @@ void MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_
   auto n_unit = 1/kg;  // number mixing ratios [# / kg air]
   n_unit.set_string("#/kg");
   Units nondim(0,0,0,0,0,0,0);
+  const auto m2 = m*m;
+  const auto s2 = s*s;
 
   grid_ = grids_manager->get_grid("Physics");
   const auto& grid_name = grid_->name();
@@ -93,6 +95,7 @@ void MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Required>("ni", scalar3d_layout_mid, n_unit, grid_name, "tracers"); // ice number mixing ratio
   add_field<Required>("pbl_height", scalar2d_layout_col, m, grid_name); // planetary boundary layer height
   add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa, grid_name); // p_del, hydrostatic pressure
+  add_field<Required>("phis",           scalar2d_layout_col, m2/s2, grid_name, ps);
   add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid_name); // cloud fraction
 
   // droplet activation can alter cloud liquid and number mixing ratios
@@ -172,6 +175,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   dry_atm_.p_del     = get_field_in("pseudo_density").get_view<const Real**>();
   dry_atm_.cldfrac   = get_field_in("cldfrac_tot").get_view<const Real**>(); // FIXME: tot or liq?
   dry_atm_.pblh      = get_field_in("pbl_height").get_view<const Real*>();
+  dry_atm_.phis      = get_field_in("phis").get_view<const Real*>();
   dry_atm_.z_mid     = buffer_.z_mid;
   dry_atm_.dz        = buffer_.dz;
   dry_atm_.z_iface   = buffer_.z_iface;
@@ -252,6 +256,8 @@ void MAMMicrophysics::run_impl(const double dt) {
 
     // fetch column-specific atmosphere state data
     auto atm = mam_coupling::atmosphere_for_column(dry_atm_, icol);
+    Real z_surf = dry_atm_.z_surf;
+    Real phis = dry_atm_.phis(icol);
 
     // set surface state data
     haero::Surface sfc{};

@@ -276,6 +276,7 @@ struct DryAtmosphere {
   const_view_2d cldfrac;   // cloud fraction [-]
   view_2d       w_updraft; // updraft velocity [m/s]
   const_view_1d pblh;      // planetary boundary layer height [m]
+  const_view_1d phis;      // surface geopotential [m2/s2]
 };
 
 // This type stores aerosol number and mass mixing ratios evolved by MAM. It
