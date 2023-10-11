@@ -217,6 +217,7 @@ void run(std::mt19937_64& engine)
             }
           }, Kokkos::Max<Real>(qv_mass_max));
         EKAT_KERNEL_REQUIRE(vwp_v(icol)>qv_mass_max);
+        team.team_barrier();
         // Test qc mass
         Real qc_mass_max=0.0;
         auto qc_icol = ekat::subview(qc_v, icol);
@@ -227,6 +228,7 @@ void run(std::mt19937_64& engine)
             }
           }, Kokkos::Max<Real>(qc_mass_max));
         EKAT_KERNEL_REQUIRE(lwp_v(icol)>qc_mass_max);
+        team.team_barrier();
         // Test qi mass
         Real qi_mass_max=0.0;
         auto qi_icol = ekat::subview(qi_v, icol);
@@ -237,6 +239,7 @@ void run(std::mt19937_64& engine)
             }
           }, Kokkos::Max<Real>(qi_mass_max));
         EKAT_KERNEL_REQUIRE(iwp_v(icol)>qi_mass_max);
+        team.team_barrier();
         // Test qm mass
         Real qm_mass_max=0.0;
         auto qm_icol = ekat::subview(qm_v, icol);
@@ -247,7 +250,7 @@ void run(std::mt19937_64& engine)
             }
           }, Kokkos::Max<Real>(qm_mass_max));
         EKAT_KERNEL_REQUIRE(mwp_v(icol)>qm_mass_max);
-
+        team.team_barrier();
         // Test qr mass
         Real qr_mass_max=0.0;
         auto qr_icol = ekat::subview(qr_v, icol);
