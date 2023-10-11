@@ -321,8 +321,12 @@ call mpas_log_write('DEBUG POINT 11')
 
       timeStep = mpas_get_clock_timestep(domain % clock, ierr=err_tmp)
       call mpas_get_timeInterval(timeStep, dt=dt)
+!YSK
+call mpas_log_write('DEBUG POINT 11-1')
 
       call ocn_init_routines_block(block, dt, ierr)
+!YSK
+call mpas_log_write('DEBUG POINT 11-2')
 
       if(ierr.eq.1) then
           call mpas_log_write('An error was encountered in ocn_init_routines_block', MPAS_LOG_CRIT)
@@ -342,15 +346,21 @@ call mpas_log_write('DEBUG POINT 11')
       daysSinceStartOfSim = daysSinceStartOfSim*days_per_second
 
       call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
+!YSK
+call mpas_log_write('DEBUG POINT 11-3')
 
       ! add units of "days since <ref_date>" to Time
       write(units, '(a10,a20)') 'days since', &
            config_output_reference_time(1:10)//" "//config_output_reference_time(12:19)
       call mpas_pool_get_Field(diagnosticsPool, 'Time', TimeField)
       call mpas_add_att(TimeField % attLists(1) % attList, 'units', units)
+!YSK
+call mpas_log_write('DEBUG POINT 11-4')
 
       ! Add calendar attribute to Time
       call mpas_add_att(TimeField % attLists(1) % attList, 'calendar', config_calendar_type)
+!YSK
+call mpas_log_write('DEBUG POINT 11-5')
 
       ! compute Time as days since config_output_reference_time
       call mpas_set_time(referenceTime_timeType, dateTimeString=config_output_reference_time)
@@ -359,15 +369,21 @@ call mpas_log_write('DEBUG POINT 11')
       ! bounds on instantaneous time are just the time itself
       Time_bnds(1) = Time
       Time_bnds(2) = Time
+!YSK
+call mpas_log_write('DEBUG POINT 11-6')
 
       ! Update any mesh fields that may have been modified during init
       call ocn_meshUpdateFields(domain)
+!YSK
+call mpas_log_write('DEBUG POINT 11-7')
 
       if (config_conduct_tests) then
          call mpas_timer_start("test suite")
          call ocn_test_suite(domain,ierr)
          call mpas_timer_stop("test suite")
       endif
+!YSK
+call mpas_log_write('DEBUG POINT 11-8')
 
       call ocn_analysis_init(domain, err_tmp)
       ierr = ior(ierr, err_tmp)
@@ -384,6 +400,8 @@ call mpas_log_write('DEBUG POINT 11')
                       config_surface_salinity_monthly_restoring_compute_interval, ierr=err_tmp)
       endif
       alarmTime = mpas_get_clock_time(domain % clock, MPAS_START_TIME, ierr=err_tmp)
+!YSK
+call mpas_log_write('DEBUG POINT 11-9')
 
       call mpas_set_timeInterval(alarmTimeStep, timeString= &
               config_surface_salinity_monthly_restoring_compute_interval, ierr=err_tmp)
