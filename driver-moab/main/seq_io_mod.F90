@@ -1687,24 +1687,25 @@ contains
        allocate(data_reorder(ns))
        allocate(dof(ns))
        allocate(dof_reorder(ns))
+       allocate(indx(ns))
 
        ! note: size of dof is ns
-       tagname = 'GLOBAL_ID'//C_NULL_CHAR
-       ierr = iMOAB_GetIntTagStorage ( mbxid, tagname, ns , ent_type, dof(1))
-       if (ierr .ne. 0) then
-         write(logunit,*) subname,' ERROR: cannot get dofs '
-         call shr_sys_abort(subname//'cannot get dofs ')
+       if (ns > 0) then
+          tagname = 'GLOBAL_ID'//C_NULL_CHAR
+          ierr = iMOAB_GetIntTagStorage ( mbxid, tagname, ns , ent_type, dof(1))
+          if (ierr .ne. 0) then
+            write(logunit,*) subname,' ERROR: cannot get dofs '
+            call shr_sys_abort(subname//'cannot get dofs ')
+          endif
+
+          call IndexSet(ns, indx)
+          call IndexSort(ns, indx, dof, descend=.false.)
+          !      after sort, dof( indx(i)) < dof( indx(i+1) )
+          do ix=1,ns
+             dof_reorder(ix) = dof(indx(ix)) ! 
+          enddo
+          ! so we know that dof_reorder(ix) < dof_reorder(ix+1)
        endif
-
-       allocate(indx(ns))
-       call IndexSet(ns, indx)
-       call IndexSort(ns, indx, dof, descend=.false.)
-       !      after sort, dof( indx(i)) < dof( indx(i+1) )
-       do ix=1,ns
-          dof_reorder(ix) = dof(indx(ix)) ! 
-       enddo
-       ! so we know that dof_reorder(ix) < dof_reorder(ix+1)
-
        call pio_initdecomp(cpl_io_subsystem, pio_double, (/lnx,lny/), dof_reorder, iodesc)
 
        deallocate(dof)
@@ -1718,13 +1719,17 @@ contains
              rcode = pio_inq_varid(cpl_io_file(lfile_ind),trim(name1),varid)
              !call pio_setframe(cpl_io_file(lfile_ind),varid,frame)
              if (present(matrix)) then
-               data1(:) = matrix(:, index_list) ! 
+               do ix = 1, ns
+                 data1(ix) = matrix(ix, index_list) ! 
+               enddo
              else
                tagname = trim(field)//C_NULL_CHAR
-               ierr = iMOAB_GetDoubleTagStorage (mbxid, tagname, ns , ent_type, data1(1))
-               if (ierr .ne. 0) then
-                  write(logunit,*) subname,' ERROR: cannot get tag data ', trim(tagname)
-                  call shr_sys_abort(subname//'cannot get tag data ')
+               if (ns > 0 ) then
+                  ierr = iMOAB_GetDoubleTagStorage (mbxid, tagname, ns , ent_type, data1(1))
+                  if (ierr .ne. 0) then
+                     write(logunit,*) subname,' ERROR: cannot get tag data ', trim(tagname)
+                     call shr_sys_abort(subname//'cannot get tag data ')
+                  endif
                endif
              endif
              do ix=1,ns
@@ -2586,12 +2591,13 @@ contains
 
    ! note: size of dof is ns
     tagname = 'GLOBAL_ID'//C_NULL_CHAR
-    ierr = iMOAB_GetIntTagStorage ( mbxid, tagname, ns , ent_type, dof(1))
-    if (ierr .ne. 0) then
-       write(logunit,*) subname,' ERROR: cannot get dofs '
-       call shr_sys_abort(subname//'cannot get dofs ')
+    if (ns > 0 ) then 
+       ierr = iMOAB_GetIntTagStorage ( mbxid, tagname, ns , ent_type, dof(1))
+       if (ierr .ne. 0) then
+          write(logunit,*) subname,' ERROR: cannot get dofs '
+          call shr_sys_abort(subname//'cannot get dofs ')
+       endif
     endif
-
 #ifdef MOABCOMP
    if (iam==0) write(logunit,*) subname, ' dofs on iam=0: ', dof  
 #endif
@@ -2646,13 +2652,18 @@ contains
           endif
 #endif
           if (present(matrix)) then
-            matrix(:, index_list)  = data_reorder(:) ! 
+            !matrix(:, index_list)  = data_reorder(:) ! 
+            do ix = 1,ns
+               matrix(ix, index_list)  = data_reorder(ix) !
+            enddo
           else
             tagname = trim(field)//C_NULL_CHAR
-            ierr = iMOAB_SetDoubleTagStorage (mbxid, tagname, ns , ent_type, data_reorder(1))
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' ERROR: cannot set tag data ', trim(tagname)
-               call shr_sys_abort(subname//'cannot set tag data ')
+            if (ns > 0) then
+               ierr = iMOAB_SetDoubleTagStorage (mbxid, tagname, ns , ent_type, data_reorder(1))
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' ERROR: cannot set tag data ', trim(tagname)
+                  call shr_sys_abort(subname//'cannot set tag data ')
+               endif
             endif
           endif
          !  n = 0
@@ -2670,13 +2681,18 @@ contains
          !  enddo
          data_reorder = 0.
          if (present(matrix)) then
-            matrix(:, index_list)  = data_reorder(:) ! 
+            ! matrix(:, index_list)  = data_reorder(:) ! 
+            do ix = 1,ns
+               matrix(ix, index_list)  = data_reorder(ix) !
+            enddo
          else
             tagname = trim(field)//C_NULL_CHAR
-            ierr = iMOAB_SetDoubleTagStorage (mbxid, tagname, ns , ent_type, data_reorder(1))
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' ERROR: cannot set tag data ', trim(tagname)
-               call shr_sys_abort(subname//'cannot set tag data ')
+            if ( ns > 0 ) then
+               ierr = iMOAB_SetDoubleTagStorage (mbxid, tagname, ns , ent_type, data_reorder(1))
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' ERROR: cannot set tag data ', trim(tagname)
+                  call shr_sys_abort(subname//'cannot set tag data ')
+               endif
             endif
          endif
 
