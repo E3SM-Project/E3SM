@@ -1114,7 +1114,7 @@ contains
        ! compute HOMME test case forcing
        ! by calling it here, it mimics eam forcings computations in standalone
        ! homme.
-       call compute_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete,tl)
+!       call compute_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete,tl)
 #endif
 
        call applyCAMforcing_remap(elem,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
@@ -1176,7 +1176,12 @@ contains
         nete_in=nete
       endif
 
+!print *, 'phi before', elem(1)%state%phinh_i(1,1,:,tl%np1)
+
+
       call vertical_remap(hybrid,elem,hvcoord,dt_remap,tl%np1,np1_qdp,nets_in,nete_in)
+!print *, 'phi after', elem(1)%state%phinh_i(1,1,:,tl%np1)
+
     elseif(prim_step_type == 2) then
       ! This time stepping routine permits the vertical remap time
       ! step to be shorter than the tracer transport time step.
@@ -1347,7 +1352,7 @@ contains
 
 #if !defined(CAM) && !defined(SCREAM)
     ! Compute test forcing over tracer time step.
-    call compute_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,dt_q,nets,nete,tl)
+!    call compute_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,dt_q,nets,nete,tl)
 #endif
 
 #ifdef CAM

@@ -498,6 +498,9 @@ contains
     minjacerr=0
     if (hybrid%masterthread) write(iulog,*)'Running IMEX Jacobian unit test...'
     do ie=nets,nete
+
+print *, 'IN IMEX my ie is ', ie
+
        dp3d(:,:,:) = elem(ie)%state%dp3d(:,:,:,tl%n0)
        vtheta_dp(:,:,:) = elem(ie)%state%vtheta_dp(:,:,:,tl%n0)
        phi_i(:,:,:)         = elem(ie)%state%phinh_i(:,:,:,tl%n0)

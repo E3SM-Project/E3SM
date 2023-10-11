@@ -120,13 +120,22 @@ implicit none
   real (kind=real_kind) ::  rhati(np,np,nlevp), invrhatm(np,np,nlev), invrhati(np,np,nlevp)
 
   r0=rearth
+  !r0 = 1.0
+
+!print *, 'g, r0', g, r0
+!print *, 'EOS phi_i', phi_i
 
   rheighti = phi_i/g + r0
+  !rheighti = 1.0
   rheightm(:,:,1:nlev) = (rheighti(:,:,1:nlev) + rheighti(:,:,2:nlevp))/2.0
   rhati = rheighti/r0 ! r/r0
   rhatm = rheightm/r0
   invrhatm = 1.0/rhatm
   invrhati = 1.0/rhati
+
+!print *, 'EOS rhati', rhati
+!print *, 'EOS rhatm', rhatm
+
 
   ! check for bad state that will crash exponential function below
   if (theta_hydrostatic_mode) then
@@ -145,10 +154,11 @@ implicit none
         if ( (vtheta_dp(i,j,k) < 0) .or. (dp3d(i,j,k)<0)  .or. &
              (dphi(i,j,k)>0)  ) then
            print *,'bad i,j,k=',i,j,k
-           print *,'vertical column: dphi,dp3d,vtheta_dp'
+           print *,'vertical column: phi_i,dphi,dp3d,vtheta_dp'
            do k2=1,nlev
-              write(*,'(i3,4f14.4)') k2,dphi(i,j,k2),dp3d(i,j,k2),vtheta_dp(i,j,k2)
+              write(*,'(i3,5f14.4)') k2,phi_i(i,j,k),dphi(i,j,k2),dp3d(i,j,k2),vtheta_dp(i,j,k2)
            enddo
+print *, 'phi_i', phi_i(1,1,:)
            call abortmp('EOS bad state: d(phi), dp3d or vtheta_dp < 0')
         endif
      enddo
@@ -188,7 +198,9 @@ implicit none
      p_over_exner(:,:,k) = Rgas*vtheta_dp(:,:,k)/(-dphi(:,:,k))
 
      !da
+#ifdef DA
      p_over_exner(:,:,k) = p_over_exner(:,:,k)*invrhatm(:,:,k)*invrhatm(:,:,k)
+#endif
 
 #ifndef HOMMEXX_BFB_TESTING
      pnh(:,:,k) = p0 * (p_over_exner(:,:,k)/p0)**(1/(1-kappa))
@@ -201,18 +213,22 @@ implicit none
 ! boundary terms
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
 
-!do we want to convert mass coord to hy pressure?
-!there is a way, but let's leave it
+!!!!!
    pnh_i(:,:,1) = hvcoord%hyai(1)*hvcoord%ps0  ! hydrostatic ptop    
+!#ifdef DA
+!   pnh_i(:,:,1) = pnh(:,:,1)*0.6
+!#endif
+
    ! surface boundary condition pnh_i determined by w equation to enforce
    ! w b.c.  This is computed in the RHS calculation.  Here, we use
    ! an approximation (hydrostatic) so that dpnh/dpi = 1
    ! DO NOT CHANGE this approximation.  it is required by 
    ! compute_andor_apply_rhs()
 
-!this is interesting, again, leave it
    pnh_i(:,:,nlevp) = pnh(:,:,nlev) + dp3d(:,:,nlev)/2
-
+!#ifdef DA
+!   pnh_i(:,:,nlevp) = pnh(:,:,nlev) + dp3d(:,:,nlev)/2*invrhatm(:,:,nlev)*invrhatm(:,:,nlev)
+!#endif
 
    ! compute d(pnh)/d(pi) at interfaces
    ! use one-sided differences at boundaries
@@ -222,15 +238,22 @@ implicit none
       dp3d_i(:,:,k)=(dp3d(:,:,k)+dp3d(:,:,k-1))/2
    end do
 
+!original
    dpnh_dp_i(:,:,1)  = 2*(pnh(:,:,1)-pnh_i(:,:,1))/dp3d_i(:,:,1)
+!   dpnh_dp_i(:,:,1)  = 1.0
+
    dpnh_dp_i(:,:,nlevp)  = 2*(pnh_i(:,:,nlevp)-pnh(:,:,nlev))/dp3d_i(:,:,nlevp)
    do k=2,nlev
       dpnh_dp_i(:,:,k) = (pnh(:,:,k)-pnh(:,:,k-1))/dp3d_i(:,:,k)        
    end do
 
+#ifdef DA
    !da
-   dpnh_dp_i(:,:,1:nlevp) = dpnh_dp_i(:,:,1:nlevp)*rhati(:,:,1:nlevp)*rhati(:,:,1:nlevp)
-   
+   !keeep the bottom val unchanged and set to 1
+   !dpnh_dp_i(:,:,1:nlevp) = dpnh_dp_i(:,:,1:nlevp)*rhati(:,:,1:nlevp)*rhati(:,:,1:nlevp)
+   dpnh_dp_i(:,:,1:nlev) = dpnh_dp_i(:,:,1:nlev)*rhati(:,:,1:nlev)*rhati(:,:,1:nlev)
+#endif   
+
    if (present(pnh_i_out)) then
       ! boundary values already computed. interpolate interior
       ! use linear interpolation in hydrostatic pressure coordinate
@@ -241,8 +264,26 @@ implicit none
       enddo
       pnh_i_out=pnh_i    
    endif
-   
+
+!print *, 'dp3d is', dp3d(1,1,1:nlev)
+!print *, 'mu is ', dpnh_dp_i(1,1,1:nlevp)
+!print *, 'pnh(:,:,1),pnh_i(:,:,1)', pnh(1,1,1),pnh_i(1,1,1)
+
+!print *, 'is pnh_i requested? ', present(pnh_i_out)
+!if (present(pnh_i_out)) then
+!print *, '---- pnh_i is', pnh_i(1,1,1:nlevp)
+!endif
+!print *, 'pnh_m is', pnh(1,1,1:nlev)
+ 
   endif ! hydrostatic/nonhydrostatic version
+
+
+!print *, 'EOS dpnh_dp', dpnh_dp_i
+
+
+
+
+
   end subroutine 
 
 

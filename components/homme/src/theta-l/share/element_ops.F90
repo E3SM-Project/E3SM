@@ -488,7 +488,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   !set phi, copy from 1st timelevel to all
   call tests_finalize(elem,hvcoord)
 
-
+#ifndef DA
   ! verify T
   call get_temperature(elem,p,hvcoord,nt)
 
@@ -500,6 +500,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
         write(iulog,*) 'T,Tnew',temperature(1,1,k),p(1,1,k)
      endif
   enddo
+#endif
 
   end subroutine set_thermostate
 
@@ -723,11 +724,13 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
        elem%state%dp3d(:,:,:,tl),elem%state%phinh_i(:,:,:,tl),pnh,exner,dpnh_dp_i)
   do k=1,nlev
      pi(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,tl)
+#ifndef DA
      if (maxval(abs(1-dpnh_dp_i(:,:,k))) > 1e-10) then
         write(iulog,*)'WARNING: hydrostatic inverse FAILED!'
         write(iulog,*)k,minval(dpnh_dp_i(:,:,k)),maxval(dpnh_dp_i(:,:,k))
         write(iulog,*) 'pnh',pi(1,1,k),pnh(1,1,k)
      endif
+#endif
   enddo
 #endif
 

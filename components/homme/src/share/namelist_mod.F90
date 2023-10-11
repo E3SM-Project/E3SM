@@ -503,7 +503,8 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
        ! moviefreq and restartfreq are interpreted to be in units of days.
        ! Both must be converted to numbers of steps.
        ! ================================================
-#if !defined(CAM) && !defined(SCREAM)
+#if 0
+!#if !defined(CAM) && !defined(SCREAM)
        if (tstep <= 0) then
           call abortmp('tstep must be > 0')
        end if

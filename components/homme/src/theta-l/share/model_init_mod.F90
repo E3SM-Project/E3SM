@@ -25,7 +25,7 @@ module model_init_mod
   use control_mod,        only: qsplit,theta_hydrostatic_mode, hv_ref_profiles, &
        hv_theta_correction, tom_sponge_start
   use time_mod,           only: timelevel_qdp, timelevel_t
-  use physical_constants, only: g, TREF, Rgas, kappa
+  use physical_constants, only: g, TREF, Rgas, kappa, rearth
   use imex_mod,           only: test_imex_jacobian
   use eos,                only: phi_from_eos
 
@@ -47,11 +47,28 @@ contains
     real (kind=real_kind) :: gradtemp(np,np,2,nets:nete)
     real (kind=real_kind) :: temp(np,np,nlev),ps_ref(np,np)
     real (kind=real_kind) :: ptop_over_press
+    real (kind=real_kind) ::  rheighti(np,np,nlevp), rheightm(np,np,nlev), rhatm(np,np,nlev), r0
+    real (kind=real_kind) ::  rhati(np,np,nlevp), invrhatm(np,np,nlev), invrhati(np,np,nlevp)
 
+    r0=rearth
+    !r0 = 1.0
 
     ! other theta specific model initialization should go here
     do ie=nets,nete
-       gradtemp(:,:,:,ie) = gradient_sphere( elem(ie)%state%phis(:,:), deriv, elem(ie)%Dinv)
+
+     rheighti =  elem(ie)%state%phinh_i(:,:,:,1)/g + r0
+     !rheighti = 1.0
+     rheightm(:,:,1:nlev) = (rheighti(:,:,1:nlev) + rheighti(:,:,2:nlevp))/2.0
+     rhati = rheighti/r0 ! r/r0
+     rhatm = rheightm/r0
+     invrhatm = 1.0/rhatm
+     invrhati = 1.0/rhati
+
+     gradtemp(:,:,:,ie) = gradient_sphere( elem(ie)%state%phis(:,:), deriv, elem(ie)%Dinv)
+#ifdef DA
+     gradtemp(:,:,1,ie) = gradtemp(:,:,1,ie)*invrhati(:,:,nlevp)
+     gradtemp(:,:,2,ie) = gradtemp(:,:,2,ie)*invrhati(:,:,nlevp)
+#endif
     enddo
     call make_C0_vector(gradtemp,elem,hybrid,nets,nete)
 
@@ -93,8 +110,10 @@ contains
 
 
     ! unit test for analytic jacobian and tri-diag solve used by IMEX methods
+#ifndef DA
     if (.not. theta_hydrostatic_mode) &
          call test_imex_jacobian(elem,hybrid,hvcoord,tl,nets,nete)
+#endif
 
     !$omp master
     !

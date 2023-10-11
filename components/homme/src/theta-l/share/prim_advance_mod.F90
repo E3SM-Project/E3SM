@@ -523,6 +523,7 @@ contains
   type (hvcoord_t),       intent(in)    :: hvcoord
   integer,                intent(in)    :: np1,nets,nete
 
+#if 0
   integer :: k,ie
   do ie=nets,nete
 
@@ -540,6 +541,8 @@ contains
           elem(ie)%state%v(:,:,2,nlev,np1)*elem(ie)%derived%gradphis(:,:,2))/g
   enddo
   
+#endif
+
   end subroutine applyCAMforcing_dynamics
 
 
@@ -1105,31 +1108,50 @@ contains
 
   call t_startf('compute_andor_apply_rhs')
 
-  r0 = rearth 
+  r0 = rearth
+  !r0 = 1.0
 
   if (theta_hydrostatic_mode) then
      nlyr_tot=4*nlev        ! dont bother to dss w_i and phinh_i
   else
      nlyr_tot=5*nlev+nlevp  ! total amount of data for DSS
   endif
-     
+
+#if 0
+print *, 'be phi lev 1', elem(1)%state%phinh_i(1,1,1:2,1)
+print *, 'be phi lev 2', elem(1)%state%phinh_i(1,1,1:2,2)
+print *, 'be phi lev 3', elem(1)%state%phinh_i(1,1,1:2,3)
+!print *, 'be w lev 1', elem(1)%state%w_i(1,1,:,1)
+!print *, 'be w lev 2', elem(1)%state%w_i(1,1,:,2)
+!print *, 'be w lev 3', elem(1)%state%w_i(1,1,:,3)
+#endif  
+
   do ie=nets,nete
+
      dp3d  => elem(ie)%state%dp3d(:,:,:,n0)
      vtheta_dp  => elem(ie)%state%vtheta_dp(:,:,:,n0)
      vtheta(:,:,:) = vtheta_dp(:,:,:)/dp3d(:,:,:)
      phi_i => elem(ie)%state%phinh_i(:,:,:,n0)
 
+!print *, 'PHI_I IS ', phi_i(:,:,nlevp)
+!print *, 'PHIS IS ', elem(ie)%state%phis(:,:)
+
      !when we run with notrivial topo, also fix derived%gradphis
 
      rheighti = phi_i/g + r0
+     !rheighti = 1.0
      rheightm(:,:,1:nlev) = (rheighti(:,:,1:nlev) + rheighti(:,:,2:nlevp))/2.0
      rhati = rheighti/r0 ! r/r0
      rhatm = rheightm/r0
      invrhatm = 1.0/rhatm
      invrhati = 1.0/rhati
 
+!print *, 'rhati', rhati
+!print *, 'rhatm', rhatm
+!print *, 'rheightm', rheightm
+!print *, 'rheighti', rheighti
 
-#ifdef ENERGY_DIAGNOSTICS
+!#ifdef ENERGY_DIAGNOSTICS
      if (.not. theta_hydrostatic_mode) then
         ! check w b.c.
         temp(:,:,1) =  (elem(ie)%state%v(:,:,1,nlev,n0)*elem(ie)%derived%gradphis(:,:,1) + &
@@ -1161,13 +1183,15 @@ contains
         enddo
         enddo
      endif
-#endif
+!#endif
      ! this routine will set dpnh_dp_i(nlevp)=1 - a very good approximation, that will
      ! then be corrected below, after the DSS.  
      call pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_i,pnh,exner,dpnh_dp_i,caller='CAAR')
 
      dp3d_i(:,:,1) = dp3d(:,:,1)
      dp3d_i(:,:,nlevp) = dp3d(:,:,nlev)
+
+!da -- is this good to do 1/2 here?
      do k=2,nlev
         dp3d_i(:,:,k)=(dp3d(:,:,k)+dp3d(:,:,k-1))/2
      end do
@@ -1203,20 +1227,24 @@ contains
         vtemp(:,:,2,k) = elem(ie)%state%v(:,:,2,k,n0)*dp3d(:,:,k)
 
         !da
+#ifdef DA
         vtemp(:,:,1,k) = vtemp(:,:,1,k)*invrhatm(:,:,k)
         vtemp(:,:,2,k) = vtemp(:,:,2,k)*invrhatm(:,:,k)
-
+#endif
         elem(ie)%derived%vn0(:,:,:,k)=elem(ie)%derived%vn0(:,:,:,k)+eta_ave_w*vtemp(:,:,:,k)
 
         divdp(:,:,k)=divergence_sphere(vtemp(:,:,:,k),deriv,elem(ie))
         vort(:,:,k)=vorticity_sphere(elem(ie)%state%v(:,:,:,k,n0),deriv,elem(ie))
 
         !da
+#ifdef DA
         vort(:,:,k) = vort(:,:,k)*invrhatm(:,:,k)
+#endif
      enddo
 
 
 !!!! Ignore for now omega
+!da problematic
      ! Compute omega =  Dpi/Dt   Used only as a DIAGNOSTIC
      pi_i(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
      omega_i(:,:,1)=0
@@ -1300,8 +1328,6 @@ contains
            enddo
 #endif           
 
-
-
         do k=1,nlev
            ! average interface quantity to midpoints:
            temp(:,:,k) = (( eta_dot_dpdn(:,:,k)+eta_dot_dpdn(:,:,k+1))/2)*&
@@ -1324,7 +1350,7 @@ contains
         ! final form of SB81 vertical advection operator:
         w_vadv_i=w_vadv_i/dp3d_i
         phi_vadv_i=phi_vadv_i/dp3d_i
-     endif !if rsplit or not
+     endif !if rsplit == 0
 
 
      ! ================================
@@ -1346,22 +1372,34 @@ contains
         ! compute gradphi at interfaces and then average to levels
         gradphinh_i(:,:,:,k)   = gradient_sphere(phi_i(:,:,k),deriv,elem(ie)%Dinv)   
         !da
+#ifdef DA
         gradphinh_i(:,:,1,k)   = gradphinh_i(:,:,1,k) * invrhati(:,:,k) 
         gradphinh_i(:,:,2,k)   = gradphinh_i(:,:,2,k) * invrhati(:,:,k) 
-           
+#endif      
+     
         gradw_i(:,:,:,k)   = gradient_sphere(elem(ie)%state%w_i(:,:,k,n0),deriv,elem(ie)%Dinv)
         !da
+#ifdef DA
         gradw_i(:,:,1,k)   = gradw_i(:,:,1,k) * invrhati(:,:,k)
         gradw_i(:,:,2,k)   = gradw_i(:,:,2,k) * invrhati(:,:,k)
+#endif
 
         v_gradw_i(:,:,k) = v_i(:,:,1,k)*gradw_i(:,:,1,k) + v_i(:,:,2,k)*gradw_i(:,:,2,k)
         ! w - tendency on interfaces
         w_tens(:,:,k) = (-w_vadv_i(:,:,k) - v_gradw_i(:,:,k))*scale1 - scale2*g*(1-dpnh_dp_i(:,:,k))
 
+
+
+!!!!!!!!!!!!!!!HEY
+!w_tens(:,:,k) = 0
+
+
+#ifdef DA
         !da metric
-        w_tens(:,:,k) = w_tens(:,:,k) +scale1*(v_i(:,:,1,k)*v_i(:,:,1,k)+v_i(:,:,2,k)*v_i(:,:,2,k))/rheighti(:,:,k)
+!        w_tens(:,:,k) = w_tens(:,:,k) +scale1*(v_i(:,:,1,k)*v_i(:,:,1,k)+v_i(:,:,2,k)*v_i(:,:,2,k))/rheighti(:,:,k)
         !da cos
-        w_tens(:,:,k) = w_tens(:,:,k) +scale1*elem(ie)%fcorcosine(:,:)*v_i(:,:,1,k)
+!        w_tens(:,:,k) = w_tens(:,:,k) +scale1*elem(ie)%fcorcosine(:,:)*v_i(:,:,1,k)
+#endif
 
         ! phi - tendency on interfaces
         ! vtemp(:,:,:,k) = gradphinh_i(:,:,:,k) + &
@@ -1370,37 +1408,62 @@ contains
              +v_i(:,:,2,k)*gradphinh_i(:,:,2,k) 
         phi_tens(:,:,k) =  (-phi_vadv_i(:,:,k) - v_gradphinh_i(:,:,k))*scale1 &
           + scale2*g*elem(ie)%state%w_i(:,:,k,n0)
+
         if (scale1/=scale2) then
            ! add imex phi_h splitting 
            ! use approximate phi_h = hybi*phis 
            ! could also use true hydrostatic pressure, but this requires extra DSS in dirk()
+
+!!!! gradphis needs invrhat factor!
            phi_tens(:,:,k) =  phi_tens(:,:,k)+(scale1-scale2)*(&
                 v_i(:,:,1,k)*elem(ie)%derived%gradphis(:,:,1) + &
                 v_i(:,:,2,k)*elem(ie)%derived%gradphis(:,:,2) )*hvcoord%hybi(k)
         endif
      end do
 
+!phi_tens(:,:,:) = 0
+
+#if 0
+if(ie==1)then
+print *, 'grad w 1', gradw_i(1,1,1,:)
+print *, 'grad w 2', gradw_i(1,1,2,:)
+print *, 'v grad w', v_gradw_i(1,1,:)
+print *, 'w_vadv', -w_vadv_i(1,1,:)
+print *, 'mu', dpnh_dp_i(1,1,:)
+print *, 'mu/rhat/rhat', dpnh_dp_i(1,1,:)*invrhati(1,1,:)*invrhati(1,1,:)
+
+print *, '1-mu', 1-dpnh_dp_i(1,1,:)*invrhati(1,1,:)*invrhati(1,1,:)
+print *, '1st wtens term', w_tens(1,1,:)
+endif
+#endif
 
      ! k =nlevp case, all terms in the imex methods are treated explicitly at the boundary
      k =nlevp 
      ! compute gradphi at interfaces and then average to levels
      gradphinh_i(:,:,:,k)   = gradient_sphere(phi_i(:,:,k),deriv,elem(ie)%Dinv)
      !da
+#ifdef DA
      gradphinh_i(:,:,1,k)   = gradphinh_i(:,:,1,k) * invrhati(:,:,k)
      gradphinh_i(:,:,2,k)   = gradphinh_i(:,:,2,k) * invrhati(:,:,k)
+#endif
 
      gradw_i(:,:,:,k)   = gradient_sphere(elem(ie)%state%w_i(:,:,k,n0),deriv,elem(ie)%Dinv)
      !da
+#ifdef DA
      gradw_i(:,:,1,k)   = gradw_i(:,:,1,k) * invrhati(:,:,k)
      gradw_i(:,:,2,k)   = gradw_i(:,:,2,k) * invrhati(:,:,k)
+#endif
 
      v_gradw_i(:,:,k) = v_i(:,:,1,k)*gradw_i(:,:,1,k) + v_i(:,:,2,k)*gradw_i(:,:,2,k)
      ! w - tendency on interfaces
      w_tens(:,:,k) = (-w_vadv_i(:,:,k) - v_gradw_i(:,:,k))*scale1 - scale1*g*(1-dpnh_dp_i(:,:,k) )
+
+#ifdef DA
      !da metric
-     w_tens(:,:,k) = w_tens(:,:,k) +scale1*(v_i(:,:,1,k)*v_i(:,:,1,k)+v_i(:,:,2,k)*v_i(:,:,2,k))/rheighti(:,:,k)
+!     w_tens(:,:,k) = w_tens(:,:,k) +scale1*(v_i(:,:,1,k)*v_i(:,:,1,k)+v_i(:,:,2,k)*v_i(:,:,2,k))/rheighti(:,:,k)
      !da cos
-     w_tens(:,:,k) = w_tens(:,:,k) +scale1*elem(ie)%fcorcosine(:,:)*v_i(:,:,1,k)
+!     w_tens(:,:,k) = w_tens(:,:,k) +scale1*elem(ie)%fcorcosine(:,:)*v_i(:,:,1,k)
+#endif
 
      !why do we have this for phi?
      ! phi - tendency on interfaces
@@ -1420,8 +1483,10 @@ contains
            v_theta(:,:,2,k)=elem(ie)%state%v(:,:,2,k,n0)*vtheta_dp(:,:,k)
 
            !da
+#ifdef DA
            v_theta(:,:,1,k) = v_theta(:,:,1,k) * invrhatm(:,:,k)
            v_theta(:,:,2,k) = v_theta(:,:,2,k) * invrhatm(:,:,k)
+#endif
 
            div_v_theta(:,:,k)=divergence_sphere(v_theta(:,:,:,k),deriv,elem(ie))
         else
@@ -1429,8 +1494,10 @@ contains
            v_theta(:,:,:,k) = gradient_sphere(vtheta(:,:,k),deriv,elem(ie)%Dinv)
 
            !da
+#ifdef DA
            v_theta(:,:,1,k) = v_theta(:,:,1,k) * invrhatm(:,:,k)
            v_theta(:,:,2,k) = v_theta(:,:,2,k) * invrhatm(:,:,k)
+#endif
 
            !there is already a da correction in divp term
            div_v_theta(:,:,k)=vtheta(:,:,k)*divdp(:,:,k) + &
@@ -1443,15 +1510,17 @@ contains
         theta_tens(:,:,k)=(-theta_vadv(:,:,k)-div_v_theta(:,:,k))*scale1
 #endif
 
-        !why is w gradw is w vorticity?
+        !grad(w^2/2) term
         ! w vorticity correction term
         temp(:,:,k) = (elem(ie)%state%w_i(:,:,k,n0)**2 + &
              elem(ie)%state%w_i(:,:,k+1,n0)**2)/4
         wvor(:,:,:,k) = gradient_sphere(temp(:,:,k),deriv,elem(ie)%Dinv)
 
         !da
+#ifdef DA
         wvor(:,:,1,k) = wvor(:,:,1,k) * invrhatm(:,:,k)
         wvor(:,:,2,k) = wvor(:,:,2,k) * invrhatm(:,:,k)
+#endif
 
         !there is already a da correction in gradw_i
         wvor(:,:,1,k) = wvor(:,:,1,k) - (elem(ie)%state%w_i(:,:,k,n0)*gradw_i(:,:,1,k) +&
@@ -1464,10 +1533,12 @@ contains
         gradexner(:,:,:,k) = gradient_sphere(exner(:,:,k),deriv,elem(ie)%Dinv)
 
         !da
+#ifdef DA
         gradKE(:,:,1,k) = gradKE(:,:,1,k) * invrhatm(:,:,k)
         gradKE(:,:,2,k) = gradKE(:,:,2,k) * invrhatm(:,:,k)
         gradexner(:,:,1,k) = gradexner(:,:,1,k) * invrhatm(:,:,k)
         gradexner(:,:,2,k) = gradexner(:,:,2,k) * invrhatm(:,:,k)
+#endif
 
 #if 0
         ! another form: (good results in dcmip2012 test2.0)  max=0.195
@@ -1556,9 +1627,11 @@ contains
                   -wvor(i,j,2,k) )*scale1
 
               !da
-              vtens1(i,j,k) = vtens1(i,j,k) - scale1*elem(ie)%state%w_i(i,j,k,n0)*(  v1/rheightm(i,j,k) &
-                                                                                  + elem(ie)%fcorcosine(i,j) )
-              vtens2(i,j,k) = vtens2(i,j,k) - scale1*elem(ie)%state%w_i(i,j,k,n0)*v2/rheightm(i,j,k)
+#ifdef DA
+!              vtens1(i,j,k) = vtens1(i,j,k) - scale1*elem(ie)%state%w_i(i,j,k,n0)*(  v1/rheightm(i,j,k) &
+!                                                                                  + elem(ie)%fcorcosine(i,j) )
+!              vtens2(i,j,k) = vtens2(i,j,k) - scale1*elem(ie)%state%w_i(i,j,k,n0)*v2/rheightm(i,j,k)
+#endif
 
 #endif
            end do
@@ -1771,6 +1844,9 @@ contains
         call edgeVpack_nlyr(edge_g,elem(ie)%desc,elem(ie)%state%phinh_i(:,:,:,np1),nlev,kptr,nlyr_tot)
      endif
 
+
+
+
    end do ! end do for the ie=nets,nete loop
 
   call t_startf('caar_bexchV')
@@ -1856,6 +1932,9 @@ contains
         do i=1,np
            if ((elem(ie)%state%phinh_i(i,j,k,np1)-elem(ie)%state%phinh_i(i,j,k+1,np1)) < g) then
               write(iulog,*) 'WARNING:CAAR after ADV, delta z < 1m. ie,i,j,k=',ie,i,j,k
+              
+              write(iulog,*) 'mu at k, k+1', dpnh_dp_i(i,j,k), dpnh_dp_i(i,j,k+1)
+                 
               write(iulog,*) 'phi(i,j,k)=  ',elem(ie)%state%phinh_i(i,j,k,np1)
               write(iulog,*) 'phi(i,j,k+1)=',elem(ie)%state%phinh_i(i,j,k+1,np1)
            endif
@@ -1871,6 +1950,30 @@ contains
      endif
   end do
   call t_stopf('compute_andor_apply_rhs')
+
+!print *, "OG                 CAAR"
+!stop
+
+#if 0
+!print elem state
+ie=1
+print *, 'w is', elem(ie)%state%w_i(1,1,:,np1)
+print *, 'u is', elem(ie)%state%v(1,1,1,:,np1)
+print *, 'v is', elem(ie)%state%v(1,1,2,:,np1)
+print *, 'phi is', elem(ie)%state%phinh_i(1,1,:,np1)
+#endif
+
+
+#if 0
+print *, 'a phi lev 1', elem(1)%state%phinh_i(1,1,1:2,1)
+print *, 'a phi lev 2', elem(1)%state%phinh_i(1,1,1:2,2)
+print *, 'a phi lev 3', elem(1)%state%phinh_i(1,1,1:2,3)
+!print *, 'a w lev 1', elem(1)%state%w_i(1,1,:,1)
+!print *, 'a w lev 2', elem(1)%state%w_i(1,1,:,2)
+!print *, 'a w lev 3', elem(1)%state%w_i(1,1,:,3)
+#endif
+
+!!!!stop
 
   end subroutine compute_andor_apply_rhs
 

@@ -28,6 +28,10 @@ PROJECT(HOMME C Fortran)
 
 INCLUDE(FortranCInterface)
 
+IF (WITH_DA)
+ADD_DEFINITIONS(-DDA)
+ENDIF ()
+
 IF (${HOMME_BUILD_EXECS})
   OPTION(HOMME_ENABLE_TESTING "Whether tests should be enabled" TRUE)
   IF (${HOMME_ENABLE_TESTING})
@@ -538,3 +542,6 @@ IF (${HOMME_USE_KOKKOS})
   # Homme's.
   install_kokkos_if_needed()
 ENDIF ()
+
+
+
