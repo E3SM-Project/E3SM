@@ -80,6 +80,7 @@ module prep_ocn_mod
   public :: prep_ocn_get_x2oacc_ox
   public :: prep_ocn_get_x2oacc_ox_cnt
 
+  public :: prep_ocn_get_x2oacc_om ! will return a pointer to the local private matrix 
   public :: prep_ocn_get_x2oacc_om_cnt
 #ifdef SUMMITDEV_PGI
   ! Sarat: Dummy variable added to workaround PGI compiler bug (PGI 17.9) as of Oct 23, 2017
@@ -98,8 +99,6 @@ module prep_ocn_mod
   public :: prep_ocn_get_mapper_Sg2o
   public :: prep_ocn_get_mapper_Fg2o
   public :: prep_ocn_get_mapper_Sw2o
-
-  public :: prep_ocn_get_x2oacc_om ! will return a pointer to the local private matrix ? is that correct ?
 
   !--------------------------------------------------------------------------
   ! Private interfaces
@@ -265,10 +264,11 @@ contains
     integer                  :: rank_on_cpl ! just for debugging
 ! these are just to zero out r2x fields on ocean
     integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3) ! for moab info
-    integer  mlsize ! moab land size
+    integer  mlsize ! moab local ocean size 
     integer  nrflds  ! number of rof fields projected on land
     integer arrsize  ! for setting the r2x fields on land to 0
     integer ent_type ! for setting tags
+    integer noflds   ! used for number of fields in allocating moab accumulated array x2oacc_om
     real (kind=r8) , allocatable :: tmparray (:) ! used to set the r2x fields to 0
 
     !---------------------------------------------------------------
@@ -361,7 +361,26 @@ contains
        end do
        x2oacc_ox_cnt = 0
 
-       ! moab accumulation variable is allocated first time when we enter merge routine 
+       ! moab accumulation variable has to be allocated here too, because restart needs it
+       ! it resulted in unexpected crashes, because we were allocating it only
+       ! during "first_time" entering merge routine; this was wrong
+       ! allocate accumulation variable , parallel to x2o_om
+       noflds = mct_aVect_nRattr(x2o_ox) ! these are saved after first time
+       ! size of the x2oacc_om depends on the size of the ocean mesh locally 
+            
+       ! find out the number of local elements in moab mesh ocean instance on coupler
+       ierr  = iMOAB_GetMeshInfo ( mboxid, nvert, nvise, nbl, nsurf, nvisBC )
+       if (ierr .ne. 0) then
+          write(logunit,*) subname,' cant get size of ocn mesh'
+          call shr_sys_abort(subname//' ERROR in getting size of ocn mesh')
+       endif
+         ! ocn is cell mesh on coupler side
+       mlsize = nvise(1)
+       allocate(x2oacc_om(mlsize, noflds)) 
+       x2oacc_om_cnt = 0
+       x2oacc_om(:,:)=0.
+
+       ! moab accumulation variable 
 
        samegrid_ao = .true.
        samegrid_ro = .true.
@@ -1302,13 +1321,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
 
        !ngflds = mct_aVect_nRattr(g2x_o)
        allocate(x2o_om (lsize, noflds))
-       ! allocate accumulation variable , parallel to x2o_om
-       allocate(x2oacc_om(lsize, noflds))
-       arrSize_x2o_om = lsize * noflds ! this willbe used to set/get x2o_om tags 
-       x2oacc_om_cnt = 0
-       x2oacc_om(:,:)=0.
-
-       ! moab accumulation variable 
+       arrSize_x2o_om = lsize * noflds ! this willbe used to set/get x2o_om tags
        allocate(a2x_om (lsize, naflds))
        allocate(i2x_om (lsize, niflds))
        allocate(r2x_om (lsize, nrflds))

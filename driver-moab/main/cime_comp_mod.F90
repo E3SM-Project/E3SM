@@ -127,6 +127,9 @@ module cime_comp_mod
 
   ! restart file routines
   use seq_rest_mod, only : seq_rest_read, seq_rest_mb_read, seq_rest_write, seq_rest_mb_write
+#ifdef MOABDEBUG
+  use seq_rest_mod, only : write_moab_state
+#endif
 
   ! flux calc routines
   use seq_flux_mct, only: seq_flux_init_mct, seq_flux_initexch_mct, seq_flux_ocnalb_mct
@@ -2521,10 +2524,16 @@ contains
             fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
             fractions_rx, fractions_gx, fractions_wx, fractions_zx)
        call t_stopf('CPL:seq_rest_read-init')
-
+       if (iamroot_CPLID) then
+          write(logunit,103) subname,' Reading moab restart file ','moab_'//trim(rest_file)
+          call shr_sys_flush(logunit)
+       end if
        call t_startf('CPL:seq_rest_read-moab')
-       call seq_rest_mb_read(rest_file, infodata, samegrid_al)
+       call seq_rest_mb_read(rest_file, infodata, samegrid_al)    
        call t_stopf('CPL:seq_rest_read-moab')
+#ifdef MOABDEBUG
+       call write_moab_state(.false.)
+#endif
 
 
     endif
@@ -3487,10 +3496,8 @@ contains
              call shr_sys_flush(logunit)
           end if
           if (iamin_CPLID) then
-
              call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:RESTART_READ_BARRIER')
              call t_drvstartf ('CPL:RESTART_READ',cplrun=.true.,barrier=mpicom_CPLID)
-
              call t_startf('CPL:seq_rest_read')
              call seq_rest_read(drv_resume_file, infodata,                     &
                   atm, lnd, ice, ocn, rof, glc, wav, esp, iac,                 &
@@ -3500,6 +3507,13 @@ contains
 
              call t_drvstopf  ('CPL:RESTART_READ',cplrun=.true.)
 
+             if (iamroot_CPLID) then
+               write(logunit,103) subname,' resume by moab restart file ','moab_'//trim(drv_resume_file)
+               call shr_sys_flush(logunit)
+             end if
+             call t_startf('CPL:seq_rest_read-moab')
+             call seq_rest_mb_read(drv_resume_file, infodata, samegrid_al)    
+             call t_stopf('CPL:seq_rest_read-moab')
           end if
           ! Clear the resume file so we don't try to read it again
           drv_resume = .FALSE.
@@ -5351,6 +5365,9 @@ contains
                trim(cpl_inst_tag), drv_resume_file)
           call t_stopf('CPL:seq_rest_write')
 
+#ifdef MOABDEBUG
+          call write_moab_state( .true. )
+#endif
           call t_startf('CPL:seq_rest_mb_write')
           call seq_rest_mb_write(EClock_d, seq_SyncClock, infodata,       &
                atm, lnd, ice, ocn, rof, glc, wav, esp, iac,            &
