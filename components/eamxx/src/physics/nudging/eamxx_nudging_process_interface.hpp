@@ -109,14 +109,21 @@ protected:
   // Internal function to apply nudging at specific timescale
   void apply_tendency(Field& base, const Field& next, const int dt);
 
+  // Internal function to apply nudging at specific timescale with weights
+  void apply_weighted_tendency(Field& base, const Field& next, const Field& weights, const int dt);
+
   std::shared_ptr<const AbstractGrid>   m_grid;
   // Keep track of field dimensions and the iteration count
   int m_num_cols;
   int m_num_levs;
   int m_num_src_levs;
   int m_timescale;
+  int m_use_weights;
   std::vector<std::string> m_datafiles;
   std::string              m_static_vertical_pressure_file;
+  // add nudging weights for regional nudging update
+  std::string              m_weights_file;
+
   SourcePresType m_src_pres_type;
   
 
