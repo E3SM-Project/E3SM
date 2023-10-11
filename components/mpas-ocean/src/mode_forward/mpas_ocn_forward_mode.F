@@ -284,21 +284,32 @@ module ocn_forward_mode
 
       ! fill the ocean mesh structure
       call ocn_meshCreate(domain)
+!YSK
+call mpas_log_write('DEBUG POINT 7')
 
       !-----------------------------------------------------------------
       ! Initialize submodules and fields that are required by others
       ! or that have dependencies that require specific ordering.
       !-----------------------------------------------------------------
+!YSK
+call mpas_log_write('DEBUG POINT 8')
 
       ! Needed for later call to compute land ice fluxes
       call ocn_surface_land_ice_fluxes_init(err_tmp)
       ierr = ior(ierr, err_tmp)
+!YSK
+call mpas_log_write('DEBUG POINT 9')
 
       ! Needed for later diagnostic_solve computations
       call ocn_equation_of_state_init(domain, err_tmp)
       ierr = ior(ierr, err_tmp)
+!YSK
+call mpas_log_write('DEBUG POINT 10')
+
       call ocn_diagnostics_init(domain, err_tmp)
       ierr = ior(ierr,err_tmp)
+!YSK
+call mpas_log_write('DEBUG POINT 11')
 
       if(ierr.eq.1) then
           call mpas_log_write('An error was encountered while initializing the MPAS-Ocean forward mode', MPAS_LOG_CRIT)
@@ -382,6 +393,8 @@ module ocn_forward_mode
       call mpas_reset_clock_alarm(domain % clock, 'salinityDataReadAlarm', ierr=err_tmp)
 
       endif
+!YSK
+call mpas_log_write('DEBUG POINT 12')
 
       ! Initialize self-attraction and loading
       call ocn_vel_self_attraction_loading_init(domain,err_tmp)
@@ -393,14 +406,19 @@ module ocn_forward_mode
 
       ! add some mesh metadata to tau performance tools if enabled
       call ocn_init_metadata(domain)
+!YSK
+call mpas_log_write('DEBUG POINT 13')
 
       call ocn_timestep_init(domain, dt, ierr)
+
       if (ierr /= 0) then
          call mpas_log_write( &
               'Error initializing ocean time integration ', &
               MPAS_LOG_ERR, masterOnly=.true., flushNow=.true.)
          return
       endif
+!YSK
+call mpas_log_write('DEBUG POINT 14')
 
       ! Initialize thickness tendency modules
       call ocn_thick_hadv_init(err_tmp)
@@ -417,6 +435,8 @@ module ocn_forward_mode
               MPAS_LOG_ERR, masterOnly=.true., flushNow=.true.)
          return
       endif
+!YSK
+call mpas_log_write('DEBUG POINT 15')
 
       ! Initialize velocity tendency modules
       call ocn_vel_hadv_coriolis_init(err_tmp)
@@ -455,6 +475,8 @@ module ocn_forward_mode
               MPAS_LOG_ERR, masterOnly=.true., flushNow=.true.)
          return
       endif
+!YSK
+call mpas_log_write('DEBUG POINT 16')
 
       ! Initialize tracer tendencies
       call ocn_tracer_hmix_init(err_tmp)
@@ -509,6 +531,8 @@ module ocn_forward_mode
               MPAS_LOG_ERR, masterOnly=.true., flushNow=.true.)
          return
       endif
+!YSK
+call mpas_log_write('DEBUG POINT 17')
 
    !--------------------------------------------------------------------
 
