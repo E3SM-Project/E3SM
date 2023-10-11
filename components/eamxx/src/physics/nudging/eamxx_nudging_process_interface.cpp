@@ -345,7 +345,6 @@ void Nudging::run_impl (const double dt)
     auto nudging_weights_view      = nudging_weights_field.get_view<mPack**>();
     auto ext_weights_field         = get_helper_field("nudging_weights_ext");
     auto ext_weights_view          = ext_weights_field.get_view<mPack**>();
-    auto nudging_weights_mask_view = m_buffer.int_mask_view;
 
     // Vertical Interpolation onto atmosphere state pressure levels
     if (m_src_pres_type == TIME_DEPENDENT_3D_PROFILE) {
