@@ -25,6 +25,10 @@ use ref_pres,     only: clim_modal_aero_top_lev
 use cam_abortutils,       only: endrun
 use tropopause,           only : tropopause_find
 use cam_logfile,          only: iulog
+#if defined(CLDERA_PROFILING)
+use ppgrid,         only: begchunk
+use cldera_interface_mod, only: cldera_set_field_part_data
+#endif
 
 implicit none
 private
@@ -894,6 +898,13 @@ subroutine aer_vis_diag_out(lchnk, ncol, nnite, idxnite, iaer, tau, diag_idx)
    else
       call outfld('AEROD_v', tmp, pcols, lchnk)
    end if
+
+#if defined(CLDERA_PROFILING)
+   if (iaer <= 0) then
+     call cldera_set_field_part_data("AEROD_v" ,lchnk-begchunk+1,tmp)
+   end if
+#endif
+
 
 end subroutine aer_vis_diag_out
 

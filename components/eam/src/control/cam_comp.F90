@@ -336,11 +336,23 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
    call cldera_add_partitioned_field("psdry",1,dims,dimnames,nparts,part_dim)
    call cldera_add_partitioned_field("phis",1,dims,dimnames,nparts,part_dim)
 
-   ! Last arg is view=false, since AOD fields are *not* views of EAM persistent data.
+   ! Last arg is view=false, since these fields are *not* views of EAM persistent data.
+   call cldera_add_partitioned_field("AEROD_v", 1,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("AODALL", 1,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("ABSORB", 1,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("AODVIS", 1,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("AODABS", 1,dims,dimnames,nparts,part_dim,.false.)
    call cldera_add_partitioned_field("aod"    , 1,dims,dimnames,nparts,part_dim,.false.)
    call cldera_add_partitioned_field("aod_so2", 1,dims,dimnames,nparts,part_dim,.false.)
    call cldera_add_partitioned_field("aod_ash", 1,dims,dimnames,nparts,part_dim,.false.)
    call cldera_add_partitioned_field("aod_sulf",1,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("FSDS", 1,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("FSDSC", 1,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("FLNT", 1,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("FLUT", 1,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("FLUTC", 1,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("FLNS", 1,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("BURDENSO4", 1,dims,dimnames,nparts,part_dim,.false.)
 
    !2d, mid points
    dims(2) = pver
@@ -367,6 +379,14 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
    ! 1d, vertically integrated
    call cldera_add_partitioned_field("te",1,dims,dimnames,nparts,part_dim) ! total energy
    call cldera_add_partitioned_field("tw",1,dims,dimnames,nparts,part_dim) ! total water
+
+   ! cam_in fields
+   call cldera_add_partitioned_field("TREFHT", 1,dims,dimnames,nparts,part_dim)
+   call cldera_add_partitioned_field("TS", 1,dims,dimnames,nparts,part_dim)
+   call cldera_add_partitioned_field("QFLX", 1,dims,dimnames,nparts,part_dim)
+
+   ! cam_out fields
+   call cldera_add_partitioned_field("FLDS", 1,dims,dimnames,nparts,part_dim)
 
    ! Set fields data
    do ipart = 1,nparts
@@ -458,11 +478,39 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
      call cldera_set_field_part_size("tw",ipart,ncols)
      call cldera_set_field_part_data("tw",ipart,field1d)
 
+     ! cam_in fields
+     field1d => cam_in(c)%tref(:)
+     call cldera_set_field_part_size("TREFHT",ipart,ncols)
+     call cldera_set_field_part_data("TREFHT",ipart,field1d)
+     field1d => cam_in(c)%ts(:)
+     call cldera_set_field_part_size("TS",ipart,ncols)
+     call cldera_set_field_part_data("TS",ipart,field1d)
+     field1d => cam_in(c)%cflx(:,1)
+     call cldera_set_field_part_size("QFLX",ipart,ncols)
+     call cldera_set_field_part_data("QFLX",ipart,field1d)
+
+     ! cam_out fields
+     field1d => cam_out(c)%flwds(:)
+     call cldera_set_field_part_size("FLDS",ipart,ncols)
+     call cldera_set_field_part_data("FLDS",ipart,field1d)
+
      ! Copied field (AOD)
+     call cldera_set_field_part_size("AEROD_v", ipart,ncols)
+     call cldera_set_field_part_size("AODALL", ipart,ncols)
+     call cldera_set_field_part_size("ABSORB", ipart,ncols)
+     call cldera_set_field_part_size("AODVIS", ipart,ncols)
+     call cldera_set_field_part_size("AODABS", ipart,ncols)
      call cldera_set_field_part_size("aod"    , ipart,ncols)
      call cldera_set_field_part_size("aod_so2", ipart,ncols)
      call cldera_set_field_part_size("aod_ash", ipart,ncols)
      call cldera_set_field_part_size("aod_sulf",ipart,ncols)
+     call cldera_set_field_part_size("FSDS"   , ipart,ncols)
+     call cldera_set_field_part_size("FSDSC"   , ipart,ncols)
+     call cldera_set_field_part_size("FLNT"   , ipart,ncols)
+     call cldera_set_field_part_size("FLUT"   , ipart,ncols)
+     call cldera_set_field_part_size("FLUTC"   , ipart,ncols)
+     call cldera_set_field_part_size("FLNS"   , ipart,ncols)
+     call cldera_set_field_part_size("BURDENSO4"   , ipart,ncols)
    enddo
 
    call cldera_commit_all_fields()
