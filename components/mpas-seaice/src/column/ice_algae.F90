@@ -2016,8 +2016,9 @@
           N_r_g  = graze(k)  * dt
           N_r_r  = resp(k)   * dt
           N_r_mo = mort(k)   * dt
-          N_s(k)    = N_s_p !(c1- fr_resp - fr_graze(k)) * grow_N(k) *dt
-          N_r(k)    = N_r_g + N_r_mo + N_r_r !mort(k) * dt
+          N_s(k)    = (c1- fr_resp - fr_graze(k)) * grow_N(k) *dt   !N_s_p
+          N_r(k)    = mort(k) * dt                                  !N_r_g  + N_r_mo + N_r_r
+
           graze_N   = graze_N + graze(k)
           graze_C   = graze_C + R_C2N(k)*graze(k)
           mort_N    = mort_N + mort(k)
