@@ -1938,6 +1938,7 @@ contains
       call mpas_pool_get_config(configs, "config_use_aerosols", config_use_aerosols)
       call mpas_pool_get_config(configs, "config_use_modal_aerosols", config_use_modal_aerosols)
       call mpas_pool_get_config(configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
+      call mpas_pool_get_config(configs, "config_use_zaerosols", config_use_zaerosols)
 
       call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
       call mpas_pool_get_subpool(block_ptr % structs, 'ocean_coupling', oceanCoupling)
@@ -1976,9 +1977,13 @@ contains
          call mpas_pool_get_array(aerosols, "atmosAerosolFlux", atmosAerosolFlux)
       endif
 
+      call mpas_pool_get_subpool(block_ptr % structs, 'biogeochemistry', biogeochemistry)
+      if (config_use_zaerosols) then
+         call mpas_pool_get_array(biogeochemistry, 'oceanZAerosolConc', oceanZAerosolConc)
+         call mpas_pool_get_array(biogeochemistry, 'atmosBlackCarbonFlux', atmosBlackCarbonFlux)
+         call mpas_pool_get_array(biogeochemistry, 'atmosDustFlux', atmosDustFlux)
+      endif 
       if (config_use_column_biogeochemistry) then
-         call mpas_pool_get_config(configs, "config_use_zaerosols", config_use_zaerosols)
-         call mpas_pool_get_subpool(block_ptr % structs, 'biogeochemistry', biogeochemistry)
 
          call mpas_pool_get_array(biogeochemistry, 'oceanAlgaeConc', oceanAlgaeConc)
          call mpas_pool_get_array(biogeochemistry, 'oceanDOCConc', oceanDOCConc)
@@ -1992,15 +1997,10 @@ contains
          call mpas_pool_get_array(biogeochemistry, 'oceanHumicsConc', oceanHumicsConc)
          call mpas_pool_get_array(biogeochemistry, 'oceanParticulateIronConc', oceanParticulateIronConc)
          call mpas_pool_get_array(biogeochemistry, 'oceanDissolvedIronConc', oceanDissolvedIronConc)
-         call mpas_pool_get_array(biogeochemistry, 'oceanZAerosolConc', oceanZAerosolConc)
          call mpas_pool_get_array(biogeochemistry, 'carbonToNitrogenRatioAlgae', carbonToNitrogenRatioAlgae)
          call mpas_pool_get_array(biogeochemistry, 'carbonToNitrogenRatioDON', carbonToNitrogenRatioDON)
          call mpas_pool_get_array(biogeochemistry, 'DOCPoolFractions', DOCPoolFractions)
 
-         if (config_use_zaerosols) then
-            call mpas_pool_get_array(biogeochemistry, "atmosBlackCarbonFlux", atmosBlackCarbonFlux)
-            call mpas_pool_get_array(biogeochemistry, "atmosDustFlux", atmosDustFlux)
-         endif
       endif
 
       do i = 1, nCellsSolve
@@ -2092,6 +2092,42 @@ contains
            endif
         endif
 
+        ! set aerosols, if configured
+        if (config_use_zaerosols) then
+           oceanZAerosolConc(1,i)        = 0.0_RKIND !x2i_i % rAttr(index_x2i_So_zaer1, n)
+           oceanZAerosolConc(2,i)        = 0.0_RKIND !x2i_i % rAttr(index_x2i_So_zaer2, n)
+           oceanZAerosolConc(3,i)        = 0.0_RKIND !x2i_i % rAttr(index_x2i_So_zaer3, n)
+           oceanZAerosolConc(4,i)        = 0.0_RKIND !x2i_i % rAttr(index_x2i_So_zaer4, n)
+           oceanZAerosolConc(5,i)        = 0.0_RKIND !x2i_i % rAttr(index_x2i_So_zaer5, n)
+           oceanZAerosolConc(6,i)        = 0.0_RKIND !x2i_i % rAttr(index_x2i_So_zaer6, n)
+           if (config_use_modal_aerosols) then
+              atmosBlackCarbonFlux(1,i) = x2i_i % rAttr(index_x2i_Faxa_bcphodry, n) &
+                                        + x2i_i % rAttr(index_x2i_Faxa_bcphidry, n)
+              atmosBlackCarbonFlux(2,i) = x2i_i % rAttr(index_x2i_Faxa_bcphiwet, n)
+              !combine wet and dry dust
+              atmosDustFlux(1,i) = x2i_i % rAttr(index_x2i_Faxa_dstwet1, n) &
+                                 + x2i_i % rAttr(index_x2i_Faxa_dstdry1, n)
+              atmosDustFlux(2,i) = x2i_i % rAttr(index_x2i_Faxa_dstwet2, n) &
+                                 + x2i_i % rAttr(index_x2i_Faxa_dstdry2, n)
+              atmosDustFlux(3,i) = x2i_i % rAttr(index_x2i_Faxa_dstwet3, n) &
+                                 + x2i_i % rAttr(index_x2i_Faxa_dstdry3, n)
+              atmosDustFlux(4,i) = x2i_i % rAttr(index_x2i_Faxa_dstwet4, n) &
+                                 + x2i_i % rAttr(index_x2i_Faxa_dstdry4, n)
+           else
+              atmosBlackCarbonFlux(1,i) = x2i_i % rAttr(index_x2i_Faxa_bcphodry, n)
+              atmosBlackCarbonFlux(2,i) = x2i_i % rAttr(index_x2i_Faxa_bcphidry, n) &
+                                        + x2i_i % rAttr(index_x2i_Faxa_bcphiwet, n)
+              ! combine wet and dry dust
+              atmosDustFlux(1,i) = x2i_i % rAttr(index_x2i_Faxa_dstwet1, n) &
+                                 + x2i_i % rAttr(index_x2i_Faxa_dstdry1, n)
+              atmosDustFlux(2,i) = x2i_i % rAttr(index_x2i_Faxa_dstwet2, n) &
+                                 + x2i_i % rAttr(index_x2i_Faxa_dstdry2, n)
+              atmosDustFlux(3,i) = x2i_i % rAttr(index_x2i_Faxa_dstwet3, n) &
+                                 + x2i_i % rAttr(index_x2i_Faxa_dstdry3, n)
+              atmosDustFlux(4,i) = x2i_i % rAttr(index_x2i_Faxa_dstwet4, n) &
+                                 + x2i_i % rAttr(index_x2i_Faxa_dstdry4, n)
+           endif
+        endif
         ! import biogeochemistry fields, if configured
         if (config_use_column_biogeochemistry) then
            oceanAlgaeConc(1,i)           = x2i_i % rAttr(index_x2i_So_algae1, n)
@@ -2113,42 +2149,6 @@ contains
            oceanParticulateIronConc(2,i) = x2i_i % rAttr(index_x2i_So_fep2, n)
            oceanDissolvedIronConc(1,i)   = x2i_i % rAttr(index_x2i_So_fed1, n)
            oceanDissolvedIronConc(2,i)   = x2i_i % rAttr(index_x2i_So_fed2, n)
-           oceanZAerosolConc(1,i)        = 0.0_RKIND !x2i_i % rAttr(index_x2i_So_zaer1, n)
-           oceanZAerosolConc(2,i)        = 0.0_RKIND !x2i_i % rAttr(index_x2i_So_zaer2, n)
-           oceanZAerosolConc(3,i)        = 0.0_RKIND !x2i_i % rAttr(index_x2i_So_zaer3, n)
-           oceanZAerosolConc(4,i)        = 0.0_RKIND !x2i_i % rAttr(index_x2i_So_zaer4, n)
-           oceanZAerosolConc(5,i)        = 0.0_RKIND !x2i_i % rAttr(index_x2i_So_zaer5, n)
-           oceanZAerosolConc(6,i)        = 0.0_RKIND !x2i_i % rAttr(index_x2i_So_zaer6, n)
-           ! set aerosols, if configured
-           if (config_use_zaerosols) then
-              if (config_use_modal_aerosols) then
-                 atmosBlackCarbonFlux(1,i) = x2i_i % rAttr(index_x2i_Faxa_bcphodry, n) &
-                                           + x2i_i % rAttr(index_x2i_Faxa_bcphidry, n)
-                 atmosBlackCarbonFlux(2,i) = x2i_i % rAttr(index_x2i_Faxa_bcphiwet, n)
-                 ! combine wet and dry dust
-                 atmosDustFlux(1,i) = x2i_i % rAttr(index_x2i_Faxa_dstwet1, n) &
-                                    + x2i_i % rAttr(index_x2i_Faxa_dstdry1, n)
-                 atmosDustFlux(2,i) = x2i_i % rAttr(index_x2i_Faxa_dstwet2, n) &
-                                    + x2i_i % rAttr(index_x2i_Faxa_dstdry2, n)
-                 atmosDustFlux(3,i) = x2i_i % rAttr(index_x2i_Faxa_dstwet3, n) &
-                                    + x2i_i % rAttr(index_x2i_Faxa_dstdry3, n)
-                 atmosDustFlux(4,i) = x2i_i % rAttr(index_x2i_Faxa_dstwet4, n) &
-                                    + x2i_i % rAttr(index_x2i_Faxa_dstdry4, n)
-              else
-                 atmosBlackCarbonFlux(1,i) = x2i_i % rAttr(index_x2i_Faxa_bcphodry, n)
-                 atmosBlackCarbonFlux(2,i) = x2i_i % rAttr(index_x2i_Faxa_bcphidry, n) &
-                                           + x2i_i % rAttr(index_x2i_Faxa_bcphiwet, n)
-                 ! combine wet and dry dust
-                 atmosDustFlux(1,i) = x2i_i % rAttr(index_x2i_Faxa_dstwet1, n) &
-                                    + x2i_i % rAttr(index_x2i_Faxa_dstdry1, n)
-                 atmosDustFlux(2,i) = x2i_i % rAttr(index_x2i_Faxa_dstwet2, n) &
-                                    + x2i_i % rAttr(index_x2i_Faxa_dstdry2, n)
-                 atmosDustFlux(3,i) = x2i_i % rAttr(index_x2i_Faxa_dstwet3, n) &
-                                    + x2i_i % rAttr(index_x2i_Faxa_dstdry3, n)
-                 atmosDustFlux(4,i) = x2i_i % rAttr(index_x2i_Faxa_dstwet4, n) &
-                                    + x2i_i % rAttr(index_x2i_Faxa_dstdry4, n)
-              endif
-           endif
         endif
       end do
 
@@ -2211,6 +2211,11 @@ contains
       call mpas_pool_get_field(aerosols, "atmosAerosolFlux", atmosAerosolFluxField)
    endif
 
+   if (config_use_zaerosols) then
+      call mpas_pool_get_field(biogeochemistry, "atmosBlackCarbonFlux", atmosBlackCarbonFluxField)
+      call mpas_pool_get_field(biogeochemistry, "atmosDustFlux", atmosDustFluxField)
+      call mpas_pool_get_field(biogeochemistry, 'oceanZAerosolConc', oceanZAerosolConcField)
+   endif
    if (config_use_column_biogeochemistry) then
       call mpas_pool_get_subpool(domain % blocklist % structs, 'biogeochemistry', biogeochemistry)
 
@@ -2226,11 +2231,6 @@ contains
       call mpas_pool_get_field(biogeochemistry, 'oceanHumicsConc', oceanHumicsConcField)
       call mpas_pool_get_field(biogeochemistry, 'oceanParticulateIronConc', oceanParticulateIronConcField)
       call mpas_pool_get_field(biogeochemistry, 'oceanDissolvedIronConc', oceanDissolvedIronConcField)
-      call mpas_pool_get_field(biogeochemistry, 'oceanZAerosolConc', oceanZAerosolConcField)
-      if (config_use_zaerosols) then
-         call mpas_pool_get_field(biogeochemistry, "atmosBlackCarbonFlux", atmosBlackCarbonFluxField)
-         call mpas_pool_get_field(biogeochemistry, "atmosDustFlux", atmosDustFluxField)
-      endif
    endif
 
    call mpas_dmpar_exch_halo_field(seaSurfaceTemperatureField)
@@ -2261,7 +2261,11 @@ contains
    if (config_use_aerosols) then
       call mpas_dmpar_exch_halo_field(atmosAerosolFluxField)
    endif
-
+   if (config_use_zaerosols) then
+      call mpas_dmpar_exch_halo_field(atmosBlackCarbonFluxField)
+      call mpas_dmpar_exch_halo_field(atmosDustFluxField)
+      call mpas_dmpar_exch_halo_field(oceanZAerosolConcField)
+   endif
    if (config_use_column_biogeochemistry) then
       call mpas_dmpar_exch_halo_field(oceanAlgaeConcField)
       call mpas_dmpar_exch_halo_field(oceanDOCConcField)
@@ -2275,11 +2279,6 @@ contains
       call mpas_dmpar_exch_halo_field(oceanHumicsConcField)
       call mpas_dmpar_exch_halo_field(oceanParticulateIronConcField)
       call mpas_dmpar_exch_halo_field(oceanDissolvedIronConcField)
-      call mpas_dmpar_exch_halo_field(oceanZAerosolConcField)
-      if (config_use_zaerosols) then
-         call mpas_dmpar_exch_halo_field(atmosBlackCarbonFluxField)
-         call mpas_dmpar_exch_halo_field(atmosDustFluxField)
-      endif
    endif
 
 ! REVISION HISTORY:

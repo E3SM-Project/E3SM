@@ -263,10 +263,12 @@ contains
          config_do_restart, &
          config_use_column_biogeochemistry, &
          config_use_column_shortwave, &
-         config_use_column_snow_tracers
+         config_use_column_snow_tracers, &
+         config_use_zaerosols
 
     call MPAS_pool_get_config(domain % configs, "config_use_column_physics", config_use_column_physics)
     call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
+    call MPAS_pool_get_config(domain % configs, "config_use_zaerosols", config_use_zaerosols)
 
     if (config_use_column_physics) then
 
@@ -280,7 +282,7 @@ contains
        call init_column_thermodynamic_profiles(domain)
 
        ! initialize biogoechemistry profiles
-       if (config_use_column_biogeochemistry) &
+       if (config_use_column_biogeochemistry .or. config_use_zaerosols) &
             call init_column_biogeochemistry_profiles(domain, ciceTracerObject)
 
        ! history variables
@@ -1054,7 +1056,8 @@ contains
          config_use_column_biogeochemistry, &
          config_use_column_itd_thermodynamics, &
          config_calc_surface_temperature, &
-         config_use_vertical_tracers
+         config_use_vertical_tracers, &
+         config_use_zaerosols
 
     real(kind=RKIND), pointer :: &
          config_dt
@@ -1067,6 +1070,7 @@ contains
        call MPAS_pool_get_config(domain % configs, "config_use_column_vertical_thermodynamics", &
                                                     config_use_column_vertical_thermodynamics)
        call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
+       call MPAS_pool_get_config(domain % configs, "config_use_zaerosols", config_use_zaerosols)
        call MPAS_pool_get_config(domain % configs, "config_use_column_itd_thermodynamics", config_use_column_itd_thermodynamics)
        call MPAS_pool_get_config(domain % configs, "config_calc_surface_temperature", config_calc_surface_temperature)
        call MPAS_pool_get_config(domain % configs, "config_use_vertical_tracers", config_use_vertical_tracers)
@@ -1096,7 +1100,7 @@ contains
        !-----------------------------------------------------------------
 
        call mpas_timer_start("Column biogeochemistry")
-       if (config_use_column_biogeochemistry) &
+       if (config_use_column_biogeochemistry .or. config_use_zaerosols) &
             call column_biogeochemistry(domain)
        call mpas_timer_stop("Column biogeochemistry")
 
@@ -2133,7 +2137,8 @@ contains
 
     logical, pointer :: &
          config_update_ocean_fluxes, &
-         config_use_column_biogeochemistry
+         config_use_column_biogeochemistry, &
+         config_use_zaerosols
 
     ! dimensions
     integer, pointer :: &
@@ -2254,6 +2259,7 @@ contains
        call MPAS_pool_get_config(block % configs, "config_dt", config_dt)
        call MPAS_pool_get_config(block % configs, "config_update_ocean_fluxes", config_update_ocean_fluxes)
        call MPAS_pool_get_config(block % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
+       call MPAS_pool_get_config(block % configs, "config_use_zaerosols", config_use_zaerosols)
 
        call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
        call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
@@ -2323,7 +2329,7 @@ contains
        verticalGridSpace(nBioLayersP1) = verticalGridSpace(1)
 
        setGetPhysicsTracers = .true.
-       setGetBGCTracers     = config_use_column_biogeochemistry
+       setGetBGCTracers     = (config_use_column_biogeochemistry .or. config_use_zaerosols)
 
        ! code abort
        abortFlag = .false.
@@ -2924,7 +2930,8 @@ contains
          config_use_shortwave_bioabsorption, &
          config_use_brine, &
          config_use_modal_aerosols, &
-         config_use_column_biogeochemistry
+         config_use_column_biogeochemistry, &
+         config_use_zaerosols
 
     character(len=strKIND), pointer :: &
          config_snow_redistribution_scheme
@@ -3061,6 +3068,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_use_shortwave_bioabsorption", config_use_shortwave_bioabsorption)
     call MPAS_pool_get_config(domain % configs, "config_use_modal_aerosols",config_use_modal_aerosols)
     call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry",config_use_column_biogeochemistry)
+    call MPAS_pool_get_config(domain % configs, "config_use_zaerosols",config_use_zaerosols)
 
     block => domain % blocklist
     do while (associated(block))
@@ -3206,7 +3214,7 @@ contains
        allocate(aerosolsArray(4*nAerosols,nCategories))
        allocate(index_shortwaveAerosol(maxAerosolType))
 
-       if (.not. config_use_column_biogeochemistry) then
+       if (.not. config_use_zaerosols) then
           index_shortwaveAerosol(1:maxAerosolType) = 1
        else
           do iAerosol = 1, maxAerosolType
@@ -3215,7 +3223,7 @@ contains
        endif
 
        setGetPhysicsTracers = .true.
-       setGetBGCTracers     = config_use_column_biogeochemistry
+       setGetBGCTracers     = (config_use_column_biogeochemistry .or. config_use_zaerosols)
 
        !$omp parallel do default(shared) firstprivate(aerosolsArray,index_shortwaveAerosol) &
        !$omp&                                 private(iCategory,iAerosol,lonCellColumn)
@@ -3382,7 +3390,8 @@ contains
 
     ! configs
     logical, pointer :: &
-         config_use_column_biogeochemistry
+         config_use_column_biogeochemistry, &
+         config_use_zaerosols
 
     real(kind=RKIND), pointer :: &
          config_dt
@@ -3479,6 +3488,7 @@ contains
 
        call MPAS_pool_get_config(block % configs, "config_dynamics_subcycle_number", config_dynamics_subcycle_number)
        call MPAS_pool_get_config(block % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
+       call MPAS_pool_get_config(block % configs, "config_use_zaerosols", config_use_zaerosols)
 
        call MPAS_pool_get_array(velocity_solver, "dynamicsTimeStep", dynamicsTimeStep)
 
@@ -3535,7 +3545,7 @@ contains
        allocate(newlyFormedIceLogical(nCategories))
 
        setGetPhysicsTracers = .true.
-       setGetBGCTracers     = config_use_column_biogeochemistry
+       setGetBGCTracers     = (config_use_column_biogeochemistry .or. config_use_zaerosols)
 
        ! code abort
        abortFlag = .false.
@@ -3994,11 +4004,13 @@ contains
         endif
 
        setGetPhysicsTracers = .true.
-       setGetBGCTracers     = config_use_column_biogeochemistry
+       setGetBGCTracers     = (config_use_column_biogeochemistry .or. config_use_zaerosols)
 
        ! code abort
        abortFlag = .false.
        abortMessage = ""
+
+       atmosBioFluxes(:,:) = 0.0_RKIND
 
        do iCell = 1, nCellsSolve
           ! newly formed ice
@@ -4041,7 +4053,6 @@ contains
              atmosDustFlux(iBioTracers,iCell) =  1.e-13_RKIND
           enddo
 #endif
-          atmosBioFluxes(:,:) = 0.0_RKIND
           if (config_use_zaerosols) then
              indexj = ciceTracerObject % index_verticalAerosolsConcLayer(1)
              do iBioTracers = 1, maxBCType
@@ -4492,7 +4503,8 @@ contains
          ocean_coupling
 
     logical, pointer :: &
-         config_use_column_biogeochemistry
+         config_use_column_biogeochemistry, &
+         config_use_zaerosols
 
     real(kind=RKIND), dimension(:), pointer :: &
          iceAreaCell, &
@@ -4527,6 +4539,7 @@ contains
        call MPAS_pool_get_subpool(block % structs, "ocean_coupling", ocean_coupling)
 
        call MPAS_pool_get_config(block % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
+       call MPAS_pool_get_config(block % configs, "config_use_zaerosols", config_use_zaerosols)
 
        call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
        call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
@@ -4544,7 +4557,7 @@ contains
        call MPAS_pool_get_array(ocean_coupling, "seaFreezingTemperature", seaFreezingTemperature)
 
        setGetPhysicsTracers = .true.
-       setGetBGCTracers     = config_use_column_biogeochemistry
+       setGetBGCTracers     = (config_use_column_biogeochemistry .or. config_use_zaerosols)
 
        do iCell = 1, nCellsSolve
 
@@ -4691,7 +4704,8 @@ contains
     logical, pointer :: &
          config_use_ocean_mixed_layer, &
          config_include_pond_freshwater_feedback, &
-         config_use_column_biogeochemistry
+         config_use_column_biogeochemistry, &
+         config_use_zaerosols
 
     type(MPAS_pool_type), pointer :: &
          oceanCoupling, &
@@ -4802,6 +4816,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_dt", config_dt)
     call MPAS_pool_get_config(domain % configs, "config_include_pond_freshwater_feedback", config_include_pond_freshwater_feedback)
     call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
+    call MPAS_pool_get_config(domain % configs, "config_use_zaerosols", config_use_zaerosols)
     call MPAS_pool_get_config(domain % configs, "config_ratio_C_to_N_diatoms", config_ratio_C_to_N_diatoms)
     call MPAS_pool_get_config(domain % configs, "config_ratio_C_to_N_small_plankton", config_ratio_C_to_N_small_plankton)
     call MPAS_pool_get_config(domain % configs, "config_ratio_C_to_N_phaeocystis", config_ratio_C_to_N_phaeocystis)
@@ -4994,10 +5009,12 @@ contains
           !-----------------------------------------------------------------
           ! Define ocean biogeochemical flux variables
           !-----------------------------------------------------------------
-           if (config_use_column_biogeochemistry) then
+
+           oceanBioFluxesAll(:)              = 0.0_RKIND
+
+           if (config_use_column_biogeochemistry .or. config_use_zaerosols) then
 
               totalOceanCarbonFlux(iCell)       = 0.0_RKIND
-              oceanBioFluxesAll(:)              = 0.0_RKIND
               oceanAlgaeFlux(:,iCell)           = 0.0_RKIND
               oceanDOCFlux(:,iCell)             = 0.0_RKIND
               oceanDICFlux(:,iCell)             = 0.0_RKIND
@@ -5108,7 +5125,7 @@ contains
               totalOceanCarbonFlux(iCell) = totalOceanCarbonFlux(iCell) + &
                      oceanHumicsFlux(iCell)
 
-          endif ! config_use_column_biogeochemistry
+          endif ! config_use_column_biogeochemistry .or. config_use_zaerosols
 
        enddo ! iCell
 
@@ -5156,7 +5173,8 @@ contains
          mesh
 
     logical, pointer :: &
-         config_use_column_biogeochemistry
+         config_use_column_biogeochemistry, &
+         config_use_zaerosols
 
     real(kind=RKIND), dimension(:), pointer :: &
          iceAreaCell, &
@@ -5216,6 +5234,7 @@ contains
          iBioTracers
 
     call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
+    call MPAS_pool_get_config(domain % configs, "config_use_zaerosols", config_use_zaerosols)
 
     block => domain % blocklist
     do while (associated(block))
@@ -5308,6 +5327,9 @@ contains
              albedoVisibleDiffuseCell(iCell)    = albedoVisibleDiffuseCell(iCell)    * iceAreaInverse
              albedoIRDiffuseCell(iCell)         = albedoIRDiffuseCell(iCell)         * iceAreaInverse
 
+             if (config_use_zaerosols) &
+                oceanDustIronFlux(iCell)       = oceanDustIronFlux(iCell)            * iceAreaInverse
+
              if (config_use_column_biogeochemistry) then
 
                 oceanNitrateFlux(iCell)        = oceanNitrateFlux(iCell)             * iceAreaInverse
@@ -5317,7 +5339,6 @@ contains
                 oceanDMSPdFlux(iCell)          = oceanDMSPdFlux(iCell)               * iceAreaInverse
                 oceanDMSFlux(iCell)            = oceanDMSFlux(iCell)                 * iceAreaInverse
                 oceanHumicsFlux(iCell)         = oceanHumicsFlux(iCell)              * iceAreaInverse
-                oceanDustIronFlux(iCell)       = oceanDustIronFlux(iCell)            * iceAreaInverse
 
                 do iBioTracers = 1, maxAlgaeType
                    oceanAlgaeFlux(iBioTracers,iCell) = oceanAlgaeFlux(iBioTracers,iCell) * iceAreaInverse
@@ -5360,6 +5381,9 @@ contains
              albedoVisibleDiffuseCell(iCell)    = 0.0_RKIND
              albedoIRDiffuseCell(iCell)         = 0.0_RKIND
 
+             if (config_use_zaerosols) &
+                oceanDustIronFlux(iCell)       = 0.0_RKIND
+
              if (config_use_column_biogeochemistry) then
 
                 oceanNitrateFlux(iCell)           = 0.0_RKIND
@@ -5369,7 +5393,6 @@ contains
                 oceanDMSPdFlux(iCell)             = 0.0_RKIND
                 oceanDMSFlux(iCell)               = 0.0_RKIND
                 oceanHumicsFlux(iCell)            = 0.0_RKIND
-                oceanDustIronFlux(iCell)          = 0.0_RKIND
                 oceanAlgaeFlux(:,iCell)           = 0.0_RKIND
                 oceanDOCFlux(:,iCell)             = 0.0_RKIND
                 oceanDICFlux(:,iCell)             = 0.0_RKIND
@@ -6396,12 +6419,14 @@ contains
          nZBGCTracers
 
     logical, pointer :: &
-         config_use_column_biogeochemistry
+         config_use_column_biogeochemistry, &
+         config_use_zaerosols
 
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nCategories", nCategories)
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nZBGCTracers", nZBGCTracers)
 
     call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
+    call MPAS_pool_get_config(domain % configs, "config_use_zaerosols", config_use_zaerosols)
 
     ! get the number of CICE tracers in trcrn
     call init_column_tracer_object_tracer_number(domain, tracerObject)
@@ -6425,7 +6450,7 @@ contains
     call init_column_tracer_object_ancestor_indices(domain, tracerObject)
 
     ! biogeochemistry
-    if (config_use_column_biogeochemistry) then
+    if (config_use_column_biogeochemistry .or. config_use_zaerosols) then
 
        allocate(tracerObject % index_LayerIndexToDataArray(nZBGCTracers))
        allocate(tracerObject % index_LayerIndexToBioIndex(nZBGCTracers))
@@ -6633,7 +6658,7 @@ contains
     ! biogeochemistry
     !-----------------------------------------------------------------------
 
-    if (config_use_column_biogeochemistry) then
+    if (config_use_column_biogeochemistry .or. config_use_zaerosols) then
 
        ! save tracer number without bio tracers counted
        tracerObject % nTracersNotBio = tracerObject % nTracers
@@ -10273,11 +10298,11 @@ contains
     endif
 
     ! check biogeochemistry flags:
-    if (.not. config_use_column_biogeochemistry .and. (config_use_brine .or. config_use_vertical_zsalinity .or. &
-        config_use_vertical_biochemistry .or. config_use_shortwave_bioabsorption .or. config_use_vertical_tracers .or. &
+    if (.not. config_use_column_biogeochemistry .and. (config_use_vertical_zsalinity .or. &
+        config_use_vertical_biochemistry .or. &
         config_use_skeletal_biochemistry .or. config_use_nitrate .or. config_use_carbon .or. config_use_chlorophyll .or. &
         config_use_ammonium .or. config_use_silicate .or. config_use_DMS .or. config_use_nonreactive .or. config_use_humics .or. &
-        config_use_DON .or. config_use_iron .or. config_use_modal_aerosols .or. config_use_zaerosols)) then
+        config_use_DON .or. config_use_iron)) then
        call mpas_log_write(&
             "check_column_package_configs: config_use_column_biogeochemistry = false. "//&
             "All biogeochemistry namelist flags must also be false", &
@@ -14807,9 +14832,10 @@ contains
     logical, pointer :: &
          config_use_column_biogeochemistry, &
          config_use_column_shortwave, &
-         config_use_column_physics, &
-         config_use_vertical_biochemistry, &
-         config_use_vertical_zsalinity
+         config_use_column_package, &
+         config_use_vertical_tracers, &
+         config_use_vertical_zsalinity, &
+         config_use_zaerosols
 
     call MPAS_pool_get_config(domain % blocklist % configs, "config_use_column_physics", config_use_column_physics)
 
@@ -14820,15 +14846,16 @@ contains
 
           ! biogeochemistry
           call MPAS_pool_get_config(block % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
-          call MPAS_pool_get_config(block % configs, "config_use_vertical_biochemistry", config_use_vertical_biochemistry)
+          call MPAS_pool_get_config(block % configs, "config_use_zaerosols", config_use_zaerosols)
+          call MPAS_pool_get_config(block % configs, "config_use_vertical_tracers", config_use_vertical_tracers)
           call MPAS_pool_get_config(block % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
 
-          if (config_use_column_biogeochemistry) then
+          if (config_use_column_biogeochemistry .or. config_use_zaerosols) then
 
              call MPAS_pool_get_subpool(block % structs, "biogeochemistry", biogeochemistryPool)
              call MPAS_pool_get_subpool(block % structs, "diagnostics_biogeochemistry", diagnostics_biogeochemistryPool)
 
-             if (config_use_vertical_biochemistry) then
+             if (config_use_vertical_tracers) then
                 call MPAS_pool_get_array(biogeochemistryPool, "primaryProduction", primaryProduction)
                 call MPAS_pool_get_array(biogeochemistryPool, "totalChlorophyll", totalChlorophyll)
                 call MPAS_pool_get_array(biogeochemistryPool, "netSpecificAlgalGrowthRate", netSpecificAlgalGrowthRate)
@@ -14875,7 +14902,7 @@ contains
 
           call MPAS_pool_get_config(block % configs, "config_use_column_shortwave", config_use_column_shortwave)
 
-          if (config_use_column_biogeochemistry .or. config_use_column_shortwave) then
+          if (config_use_column_biogeochemistry .or. config_use_column_shortwave .or. config_use_zaerosols) then
 
              call MPAS_pool_get_subpool(block % structs, "biogeochemistry", biogeochemistryPool)
              call MPAS_pool_get_array(biogeochemistryPool, "bioTracerShortwave", bioTracerShortwave)

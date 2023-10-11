@@ -1431,32 +1431,32 @@
 			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange"
 			icepack_name="feptype_1"
 		/>
-		<nml_option name="config_mobility_type_black_carbon1" type="real" default_value="0.0" units="unitless"
+		<nml_option name="config_mobility_type_black_carbon1" type="real" default_value="-1.0" units="unitless"
 			description="Transport type of black carbon 1 pool"
 			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange"
 			icepack_name="zaerotype_bc1"
 		/>
-		<nml_option name="config_mobility_type_black_carbon2" type="real" default_value="0.0" units="unitless"
+		<nml_option name="config_mobility_type_black_carbon2" type="real" default_value="-1.0" units="unitless"
 			description="Transport type of black carbon 1 pool"
 			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange"
 			icepack_name="zaerotype_bc2"
 		/>
-		<nml_option name="config_mobility_type_dust1" type="real" default_value="0.0" units="unitless"
+		<nml_option name="config_mobility_type_dust1" type="real" default_value="-1.0" units="unitless"
 			description="Transport type of dust pool 1"
 			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange"
 			icepack_name="zaerotype_dust1"
 		/>
-		<nml_option name="config_mobility_type_dust2" type="real" default_value="0.0" units="unitless"
+		<nml_option name="config_mobility_type_dust2" type="real" default_value="-1.0" units="unitless"
 			description="Transport type of dust pool 2"
 			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange"
 			icepack_name="zaerotype_dust2"
 		/>
-		<nml_option name="config_mobility_type_dust3" type="real" default_value="0.0" units="unitless"
+		<nml_option name="config_mobility_type_dust3" type="real" default_value="-1.0" units="unitless"
 			description="Transport type of dust pool 3"
 			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange"
 			icepack_name="zaerotype_dust3"
 		/>
-		<nml_option name="config_mobility_type_dust4" type="real" default_value="0.0" units="unitless"
+		<nml_option name="config_mobility_type_dust4" type="real" default_value="-1.0" units="unitless"
 			description="Transport type of dust pool 4"
 			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange"
 			icepack_name="zaerotype_dust4"

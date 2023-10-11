@@ -255,10 +255,12 @@ contains
          config_do_restart, &
          config_use_column_biogeochemistry, &
          config_use_column_shortwave, &
-         config_use_column_snow_tracers
+         config_use_column_snow_tracers, &
+         config_use_zaerosols
 
     call MPAS_pool_get_config(domain % configs, "config_use_column_physics", config_use_column_physics)
     call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
+    call MPAS_pool_get_config(domain % configs, "config_use_zaerosols", config_use_zaerosols)
 
     if (config_use_column_physics) then
 
@@ -272,7 +274,7 @@ contains
        call init_column_thermodynamic_profiles(domain)
 
        ! initialize biogoechemistry profiles
-       if (config_use_column_biogeochemistry) &
+       if (config_use_column_biogeochemistry .or. config_use_zaerosols) &
             call init_column_biogeochemistry_profiles(domain, ciceTracerObject)
 
        ! history variables
@@ -1023,7 +1025,8 @@ contains
          config_use_column_biogeochemistry, &
          config_use_column_itd_thermodynamics, &
          config_calc_surface_temperature, &
-         config_use_vertical_tracers
+         config_use_vertical_tracers, &
+         config_use_zaerosols
 
     real(kind=RKIND), pointer :: &
          config_dt
@@ -1036,6 +1039,7 @@ contains
        call MPAS_pool_get_config(domain % configs, "config_use_column_vertical_thermodynamics", &
                                                     config_use_column_vertical_thermodynamics)
        call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
+       call MPAS_pool_get_config(domain % configs, "config_use_zaerosols", config_use_zaerosols)
        call MPAS_pool_get_config(domain % configs, "config_use_column_itd_thermodynamics", config_use_column_itd_thermodynamics)
        call MPAS_pool_get_config(domain % configs, "config_calc_surface_temperature", config_calc_surface_temperature)
        call MPAS_pool_get_config(domain % configs, "config_use_vertical_tracers", config_use_vertical_tracers)
@@ -1065,7 +1069,7 @@ contains
        !-----------------------------------------------------------------
 
        call mpas_timer_start("Column biogeochemistry")
-       if (config_use_column_biogeochemistry) &
+       if (config_use_column_biogeochemistry .or. config_use_zaerosols) &
             call column_biogeochemistry(domain)
        call mpas_timer_stop("Column biogeochemistry")
 
@@ -2117,7 +2121,8 @@ contains
 
     logical, pointer :: &
          config_update_ocean_fluxes, &
-         config_use_column_biogeochemistry
+         config_use_column_biogeochemistry, &
+         config_use_zaerosols
 
     ! dimensions
     integer, pointer :: &
@@ -2253,6 +2258,7 @@ contains
        call MPAS_pool_get_config(block % configs, "config_dt", config_dt)
        call MPAS_pool_get_config(block % configs, "config_update_ocean_fluxes", config_update_ocean_fluxes)
        call MPAS_pool_get_config(block % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
+       call MPAS_pool_get_config(block % configs, "config_use_zaerosols", config_use_zaerosols)
 
        call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
        call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
@@ -2337,7 +2343,7 @@ contains
        verticalGridSpace(nBioLayersP1) = verticalGridSpace(1)
 
        setGetPhysicsTracers = .true.
-       setGetBGCTracers     = config_use_column_biogeochemistry
+       setGetBGCTracers     = (config_use_column_biogeochemistry .or. config_use_zaerosols)
 
        ! code abort
        abortFlag = .false.
@@ -2915,7 +2921,8 @@ contains
          config_use_shortwave_bioabsorption, &
          config_use_brine, &
          config_use_modal_aerosols, &
-         config_use_column_biogeochemistry
+         config_use_column_biogeochemistry, &
+         config_use_zaerosols
 
     character(len=strKIND), pointer :: &
          config_snow_redistribution_scheme
@@ -3038,6 +3045,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_use_shortwave_bioabsorption", config_use_shortwave_bioabsorption)
     call MPAS_pool_get_config(domain % configs, "config_use_modal_aerosols",config_use_modal_aerosols)
     call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry",config_use_column_biogeochemistry)
+    call MPAS_pool_get_config(domain % configs, "config_use_zaerosols",config_use_zaerosols)
 
     block => domain % blocklist
     do while (associated(block))
@@ -3129,22 +3137,25 @@ contains
        allocate(index_shortwaveAerosol(maxAerosolType))
        allocate(index_verticalAerosolsConc(maxAerosolType))
        allocate(index_algaeConc(nAlgae))
-       if (.not. config_use_column_biogeochemistry) then
+       if (.not. config_use_zaerosols) then
           index_shortwaveAerosol(1:maxAerosolType) = 1
           index_verticalAerosolsConc(1:maxAerosolType) = 1
-          index_algaeConc(1:nAlgae) = 1
        else
           do iAerosol = 1, maxAerosolType
              index_shortwaveAerosol(iAerosol) =  ciceTracerObject % index_verticalAerosolsConcShortwave(iAerosol)
              index_verticalAerosolsConc(iAerosol) = ciceTracerObject % index_verticalAerosolsConc(iAerosol)
           enddo
+       endif
+       if (.not. config_use_column_biogeochemistry) then
+          index_algaeConc(1:nAlgae) = 1
+       else
           do iBioTracers = 1, nAlgae
              index_algaeConc(iBioTracers) = ciceTracerObject % index_algaeConc(iBioTracers)
           enddo
        endif
 
        setGetPhysicsTracers = .true.
-       setGetBGCTracers     = config_use_column_biogeochemistry
+       setGetBGCTracers     = (config_use_column_biogeochemistry .or. config_use_zaerosols)
 
        ! snow grain radius array
        allocate(snow_grain_radius(nSnowLayers,nCategories))
@@ -3152,6 +3163,7 @@ contains
        !$omp parallel do default(shared) &
        !$omp&   firstprivate(aerosolsArray,index_shortwaveAerosol,snow_grain_radius) &
        !$omp&   private(iCategory,iAerosol,lonCellColumn,iSnowLayer)
+
        do iCell = 1, nCellsSolve
 
           ! set aerosols array
@@ -3167,7 +3179,7 @@ contains
           enddo ! iCategory
 
           snow_grain_radius(:,:) = 0.0_RKIND
-          if (config_use_snow_grain_radius) then           
+          if (config_use_snow_grain_radius) then
              do iCategory = 1, nCategories
                 do iSnowLayer = 1, nSnowLayers
                    snow_grain_radius(iSnowLayer, iCategory) = snowGrainRadius(iSnowLayer,iCategory,iCell)
@@ -3295,7 +3307,8 @@ contains
 
     ! configs
     logical, pointer :: &
-         config_use_column_biogeochemistry
+         config_use_column_biogeochemistry, &
+         config_use_zaerosols
 
     real(kind=RKIND), pointer :: &
          config_dt
@@ -3386,6 +3399,7 @@ contains
 
        call MPAS_pool_get_config(block % configs, "config_dynamics_subcycle_number", config_dynamics_subcycle_number)
        call MPAS_pool_get_config(block % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
+       call MPAS_pool_get_config(block % configs, "config_use_zaerosols", config_use_zaerosols)
 
        call MPAS_pool_get_array(velocity_solver, "dynamicsTimeStep", dynamicsTimeStep)
 
@@ -3441,7 +3455,7 @@ contains
        allocate(newlyFormedIceLogical(nCategories))
 
        setGetPhysicsTracers = .true.
-       setGetBGCTracers     = config_use_column_biogeochemistry
+       setGetBGCTracers     = (config_use_column_biogeochemistry .or. config_use_zaerosols)
 
        do iCell = 1, nCellsSolve
 
@@ -3533,10 +3547,10 @@ contains
 
   subroutine column_biogeochemistry(domain)
 
-    use ice_colpkg, only: &
-         colpkg_biogeochemistry, &
-         colpkg_init_OceanConcArray, &
-         colpkg_clear_warnings
+    use icepack_intfc, only: &
+         icepack_biogeochemistry, &
+         icepack_load_ocean_bio_array, &
+         icepack_warnings_clear
 
     use seaice_constants, only: &
          seaicePuny
@@ -3583,15 +3597,8 @@ contains
          nDON, &
          nParticulateIron, &
          nDissolvedIron, &
-         nZBGCTracers, &
-         maxAlgaeType, &
-         maxDOCType, &
-         maxDICType, &
-         maxDONType, &
-         maxIronType, &
          maxBCType, &
-         maxDustType, &
-         maxAerosolType
+         maxDustType
 
     ! variables
 
@@ -3611,9 +3618,6 @@ contains
          seaSurfaceSalinity, &
          seaFreezingTemperature, &
          snowfallRate, &
-         zSalinityFlux, &      !echmod deprecate
-         zSalinityGDFlux, &    !echmod deprecate
-         oceanMixedLayerDepth, &
          totalSkeletalAlgae, &
          oceanNitrateConc, &
          oceanSilicateConc, &
@@ -3638,7 +3642,6 @@ contains
          totalVerticalBiologyIce, &
          totalVerticalBiologySnow, &
          penetratingShortwaveFlux, &
-         zSalinityIceDensity, &    !echmod deprecate
          basalIceMeltCategory, &
          surfaceIceMeltCategory, &
          congelationCategory, &
@@ -3765,13 +3768,6 @@ contains
        call MPAS_pool_get_dimension(mesh, "nDON", nDON)
        call MPAS_pool_get_dimension(mesh, "nParticulateIron", nParticulateIron)
        call MPAS_pool_get_dimension(mesh, "nDissolvedIron", nDissolvedIron)
-       call MPAS_pool_get_dimension(mesh, "nZBGCTracers", nZBGCTracers)
-       call MPAS_pool_get_dimension(mesh, "maxAlgaeType", maxAlgaeType)
-       call MPAS_pool_get_dimension(mesh, "maxDOCType", maxDOCType)
-       call MPAS_pool_get_dimension(mesh, "maxDICType", maxDICType)
-       call MPAS_pool_get_dimension(mesh, "maxDONType", maxDONType)
-       call MPAS_pool_get_dimension(mesh, "maxAerosolType", maxAerosolType)
-       call MPAS_pool_get_dimension(mesh, "maxIronType", maxIronType)
        call MPAS_pool_get_dimension(mesh, "maxBCType", maxBCType)
        call MPAS_pool_get_dimension(mesh, "maxDustType", maxDustType)
 
@@ -3810,9 +3806,6 @@ contains
        call MPAS_pool_get_array(biogeochemistry, "oceanBioConcentrations", oceanBioConcentrations)
        call MPAS_pool_get_array(biogeochemistry, "totalVerticalBiologyIce", totalVerticalBiologyIce)
        call MPAS_pool_get_array(biogeochemistry, "totalVerticalBiologySnow", totalVerticalBiologySnow)
-       call MPAS_pool_get_array(biogeochemistry, "zSalinityIceDensity", zSalinityIceDensity)  !echmod deprecate
-       call MPAS_pool_get_array(biogeochemistry, "zSalinityFlux", zSalinityFlux)              !echmod deprecate
-       call MPAS_pool_get_array(biogeochemistry, "zSalinityGDFlux", zSalinityGDFlux)          !echmod deprecate
        call MPAS_pool_get_array(biogeochemistry, "atmosBioFluxes", atmosBioFluxes)
        call MPAS_pool_get_array(biogeochemistry, "atmosBlackCarbonFlux", atmosBlackCarbonFlux)
        call MPAS_pool_get_array(biogeochemistry, "atmosDustFlux", atmosDustFlux)
@@ -3842,7 +3835,6 @@ contains
        call MPAS_pool_get_array(ocean_coupling, "seaSurfaceTemperature", seaSurfaceTemperature)
        call MPAS_pool_get_array(ocean_coupling, "seaSurfaceSalinity", seaSurfaceSalinity)
        call MPAS_pool_get_array(ocean_coupling, "seaFreezingTemperature", seaFreezingTemperature)
-       call MPAS_pool_get_array(ocean_coupling, "oceanMixedLayerDepth", oceanMixedLayerDepth)
 
        call MPAS_pool_get_array(atmos_coupling, "snowfallRate", snowfallRate)
 
@@ -3882,12 +3874,14 @@ contains
         endif
 
        setGetPhysicsTracers = .true.
-       setGetBGCTracers     = config_use_column_biogeochemistry
+       setGetBGCTracers     = (config_use_column_biogeochemistry .or. config_use_zaerosols)
 
-       ! code abort
-       abortFlag = .false.
-       abortMessage = ""
+       atmosBioFluxes(:,:) = 0.0_RKIND
 
+       !$omp parallel do default(shared) private(iCategory,iBioTracers,iAlgae, rayleighCriteria, &
+       !$omp& rayleighCriteriaReal) firstprivate(atmosBioFluxes,atmosBlackCarbonFlux, &
+       !$omp& atmosDustFlux, bioShortwaveFluxCell, newlyFormedIce)
+       !
        do iCell = 1, nCellsSolve
           ! newly formed ice
           do iCategory = 1, nCategories
@@ -3899,28 +3893,23 @@ contains
 
           !update ocean concentrations fields and atmospheric fluxes into allocated array
 #ifdef coupled
-          call colpkg_init_OceanConcArray(&
-               nZBGCTracers, &
-               maxAlgaeType, &
-               maxDONType, &
-               maxDOCType, &
-               maxDICType, &
-               maxAerosolType, &
-               maxIronType, &
-               oceanNitrateConc(iCell), &
-               oceanAmmoniumConc(iCell), &
-               oceanSilicateConc(iCell),&
-               oceanDMSPConc(iCell), &
-               oceanDMSConc(iCell), &
-               oceanAlgaeConc(:,iCell), &
-               oceanDOCConc(:,iCell), &
-               oceanDONConc(:,iCell), &
-               oceanDICConc(:,iCell), &
-               oceanDissolvedIronConc(:,iCell), &
-               oceanParticulateIronConc(:,iCell), &
-               oceanZAerosolConc(:,iCell), &
-               oceanBioConcentrations(:,iCell), &
-               oceanHumicsConc(iCell))
+
+          call icepack_load_ocean_bio_array(&
+                  nit=oceanNitrateConc(iCell), &
+                  amm=oceanAmmoniumConc(iCell), &
+                  sil=oceanSilicateConc(iCell), &
+                  dmsp=oceanDMSPConc(iCell), &
+                  dms=oceanDMSConc(iCell), &
+                  algalN=oceanAlgaeConc(:,iCell), &
+                  doc=oceanDOCConc(:,iCell), &
+                  don=oceanDONConc(:,iCell), &
+                  dic=oceanDICConc(:,iCell), &
+                  fed=oceanDissolvedIronConc(:,iCell), &
+                  fep=oceanParticulateIronConc(:,iCell), &
+                  zaeros=oceanZAerosolConc(:,iCell), &
+                  ocean_bio_all=oceanBioConcentrations(:,iCell), &
+                  hum=oceanHumicsConc(iCell))
+
 #else
           do iBioTracers = 1, maxBCType
              atmosBlackCarbonFlux(iBioTracers,iCell) =  1.e-12_RKIND
@@ -3929,7 +3918,6 @@ contains
              atmosDustFlux(iBioTracers,iCell) =  1.e-13_RKIND
           enddo
 #endif
-          atmosBioFluxes(:,:) = 0.0_RKIND
           if (config_use_zaerosols) then
              indexj = ciceTracerObject % index_verticalAerosolsConcLayer(1)
              do iBioTracers = 1, maxBCType
@@ -3945,94 +3933,90 @@ contains
              oceanBioConcentrationsUsed(iBioTracers) = oceanBioConcentrations(iBioData,iCell)
           enddo ! iBioTracers
 
-          abortFlag = .false.
-
           call set_cice_tracer_array_category(block, ciceTracerObject, &
                tracerArrayCategory, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
           if (checkCarbon) call seaice_total_carbon_content_category(block,&
                totalCarbonCatInitial,iceAreaCategoryInitial,iceVolumeCategoryInitial,iCell)
 
-          call colpkg_clear_warnings()
-          call colpkg_biogeochemistry(&
-               config_dt, &
-               ciceTracerObject % nTracers, &
-               ciceTracerObject % nBioTracers, &
-               netNitrateUptake(iCell), &
-               netAmmoniumUptake(iCell), &
-               bioDiffusivity(:,:,iCell), &
-               bioPermeability(:,:,iCell), &
-               bioShortwaveFlux(:,:,iCell), &
-               totalVerticalSalinity(iCell), &
-               darcyVelocityBio(:,iCell), &
-               netSpecificAlgalGrowthRate(iCell), &
-               primaryProduction(iCell), &
-               netBrineHeight(iCell), &
-               brineBottomChange(:,iCell), &
-               brineTopChange(:,iCell), &
-               verticalNitrogenLosses(:,:,iCell), &
-               snowIceBioFluxes(:,iCell), &
-               atmosIceBioFluxes(:,iCell), &
-               oceanBioConcentrationsUsed(:), &
-               newlyFormedIceLogical(:), &
-               shortwaveLayerPenetration(:,:,iCell), &
-               bioPorosity(:,:,iCell), &
-               bioTemperature(:,:,iCell), &
-               totalVerticalBiologyIce(:,iCell), &
-               totalVerticalBiologySnow(:,iCell), &
-               totalChlorophyll(iCell), &
-               penetratingShortwaveFlux(:,iCell), &
-               rayleighCriteria, &
-               zSalinityIceDensity(:,iCell), &      !echmod deprecate
-               zSalinityFlux(iCell), &              !echmod deprecate
-               zSalinityGDFlux(iCell), &            !echmod deprecate
-               biologyGrid, &
-               interfaceBiologyGrid, &
-               interfaceGrid, &
-               verticalGrid, &
-               nBioLayers, &
-               nIceLayers, &
-               nSnowLayers, &
-               nAlgae, &
-               nzAerosols, &
-               nCategories, &
-               nDOC, &
-               nDIC, &
-               nDON, &
-               nDissolvedIron, &
-               nParticulateIron, &
-               basalIceMeltCategory(:,iCell), &
-               surfaceIceMeltCategory(:,iCell), &
-               congelationCategory(:,iCell), &
-               snowiceFormationCategory(:,iCell), &
-               seaSurfaceTemperature(iCell), &
-               seaSurfaceSalinity(iCell), &
-               seaFreezingTemperature(iCell), &
-               snowfallRate(iCell), &
-               snowMeltCategory(:,iCell), &
-               oceanMixedLayerDepth(iCell), &
-               initialSalinityProfile(:,iCell), &
-               iceThicknessCategoryInitial(:,iCell), &
-               oceanBioFluxes(:,iCell), &
-               atmosBioFluxes(:,iCell), &
-               iceAreaCategoryInitial(:,iCell), &
-               iceVolumeCategoryInitial(:,iCell), &
-               iceAreaCategory(1,:,iCell), &
-               iceVolumeCategory(1,:,iCell), &
-               snowVolumeCategory(1,:,iCell), &
-               openWaterArea(iCell), &
-               tracerArrayCategory, &
-               snowVolumeCategoryInitial(:,iCell), &
-               config_use_skeletal_biochemistry, &
-               maxAlgaeType, &
-               nZBGCTracers, &
-               oceanBioFluxesCategory(:,:,iCell), &
-               bgridPorosityIceCell(:,iCell), &
-               bgridSalinityIceCell(:,iCell), &
-               bgridTemperatureIceCell(:,iCell), &
-               abortFlag, &
-               abortMessage)
-          call column_write_warnings(abortFlag)
+          ! code abort
+          abortFlag = .false.
+          abortMessage = ""
+
+          call icepack_warnings_clear()
+          call icepack_biogeochemistry(&
+               dt=config_dt, &
+               ntrcr=ciceTracerObject % nTracers, &
+               nbtrcr=ciceTracerObject % nBioTracers, &
+               upNO=netNitrateUptake(iCell), &
+               upNH=netAmmoniumUptake(iCell), &
+               iDi=bioDiffusivity(:,:,iCell), &
+               iki=bioPermeability(:,:,iCell), &
+               zfswin=bioShortwaveFlux(:,:,iCell), &
+               zsal_tot=totalVerticalSalinity(iCell), &
+               darcy_V=darcyVelocityBio(:,iCell), &
+               grow_net=netSpecificAlgalGrowthRate(iCell), &
+               PP_net=primaryProduction(iCell), &
+               hbri=netBrineHeight(iCell), &
+               dhbr_bot=brineBottomChange(:,iCell), &
+               dhbr_top=brineTopChange(:,iCell), &
+               Zoo=verticalNitrogenLosses(:,:,iCell), &
+               fbio_snoice=snowIceBioFluxes(:,iCell), &
+               fbio_atmice=atmosIceBioFluxes(:,iCell), &
+               ocean_bio=oceanBioConcentrationsUsed(:), &
+               first_ice=newlyFormedIceLogical(:), &
+               fswpenln=shortwaveLayerPenetration(:,:,iCell), &
+               bphi=bioPorosity(:,:,iCell), &
+               bTiz=bioTemperature(:,:,iCell), &
+               ice_bio_net=totalVerticalBiologyIce(:,iCell), &
+               snow_bio_net=totalVerticalBiologySnow(:,iCell), &
+               totalChla=totalChlorophyll(iCell), &
+               fswthrun=penetratingShortwaveFlux(:,iCell), &
+               Rayleigh_criteria=rayleighCriteria, &
+               bgrid=biologyGrid, &
+               igrid=interfaceBiologyGrid, &
+               icgrid=interfaceGrid, &
+               cgrid=verticalGrid, &
+               nblyr=nBioLayers, &
+               nilyr=nIceLayers, &
+               nslyr=nSnowLayers, &
+               n_algae=nAlgae, &
+               n_zaero=nzAerosols, &
+               ncat=nCategories, &
+               n_doc=nDOC, &
+               n_dic=nDIC, &
+               n_don=nDON, &
+               n_fed=nDissolvedIron, &
+               n_fep=nParticulateIron, &
+               meltbn=basalIceMeltCategory(:,iCell), &
+               melttn=surfaceIceMeltCategory(:,iCell), &
+               congeln=congelationCategory(:,iCell), &
+               snoicen=snowiceFormationCategory(:,iCell), &
+               sst=seaSurfaceTemperature(iCell), &
+               sss=seaSurfaceSalinity(iCell), &
+               Tf=seaFreezingTemperature(iCell), &
+               fsnow=snowfallRate(iCell), &
+               meltsn=snowMeltCategory(:,iCell), &
+               !initialSalinityProfile(:,iCell), & !!!!
+               hin_old=iceThicknessCategoryInitial(:,iCell), &
+               flux_bio=oceanBioFluxes(:,iCell), &
+               flux_bio_atm=atmosBioFluxes(:,iCell), &
+               aicen_init=iceAreaCategoryInitial(:,iCell), &
+               vicen_init=iceVolumeCategoryInitial(:,iCell), &
+               aicen=iceAreaCategory(1,:,iCell), &
+               vicen=iceVolumeCategory(1,:,iCell), &
+               vsnon=snowVolumeCategory(1,:,iCell), &
+               aice0=openWaterArea(iCell), &
+               trcrn=tracerArrayCategory, &
+               vsnon_init=snowVolumeCategoryInitial(:,iCell), &
+               skl_bgc=config_use_skeletal_biochemistry, &
+               flux_bion=oceanBioFluxesCategory(:,:,iCell), &
+               bioPorosityIceCell=bgridPorosityIceCell(:,iCell), &
+               bioSalinityIceCell=bgridSalinityIceCell(:,iCell), &
+               bioTemperatureIceCell=bgridTemperatureIceCell(:,iCell))
+
+          abortFlag = icepack_warnings_aborted()
+          call seaice_icepack_write_warnings(abortFlag)
 
           call get_cice_tracer_array_category(block, ciceTracerObject, &
                tracerArrayCategory, iCell, setGetPhysicsTracers, setGetBGCTracers)
@@ -4061,9 +4045,6 @@ contains
                endif
             enddo
           endif
-
-          ! code abort
-          if (abortFlag) exit
 
           totalSkeletalAlgae(iCell) = 0.0_RKIND
           bioShortwaveFluxCell(:,iCell) = 0.0_RKIND
@@ -4382,7 +4363,8 @@ contains
          ocean_coupling
 
     logical, pointer :: &
-         config_use_column_biogeochemistry
+         config_use_column_biogeochemistry, &
+         config_use_zaerosols
 
     real(kind=RKIND), dimension(:), pointer :: &
          iceAreaCell, &
@@ -4417,6 +4399,7 @@ contains
        call MPAS_pool_get_subpool(block % structs, "ocean_coupling", ocean_coupling)
 
        call MPAS_pool_get_config(block % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
+       call MPAS_pool_get_config(block % configs, "config_use_zaerosols", config_use_zaerosols)
 
        call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
        call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
@@ -4434,7 +4417,7 @@ contains
        call MPAS_pool_get_array(ocean_coupling, "seaFreezingTemperature", seaFreezingTemperature)
 
        setGetPhysicsTracers = .true.
-       setGetBGCTracers     = config_use_column_biogeochemistry
+       setGetBGCTracers     = (config_use_column_biogeochemistry .or. config_use_zaerosols)
 
        do iCell = 1, nCellsSolve
 
@@ -4583,7 +4566,8 @@ contains
     logical, pointer :: &
          config_use_ocean_mixed_layer, &
          config_include_pond_freshwater_feedback, &
-         config_use_column_biogeochemistry
+         config_use_column_biogeochemistry, &
+         config_use_zaerosols
 
     type(MPAS_pool_type), pointer :: &
          oceanCoupling, &
@@ -4694,6 +4678,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_dt", config_dt)
     call MPAS_pool_get_config(domain % configs, "config_include_pond_freshwater_feedback", config_include_pond_freshwater_feedback)
     call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
+    call MPAS_pool_get_config(domain % configs, "config_use_zaerosols", config_use_zaerosols)
     call MPAS_pool_get_config(domain % configs, "config_ratio_C_to_N_diatoms", config_ratio_C_to_N_diatoms)
     call MPAS_pool_get_config(domain % configs, "config_ratio_C_to_N_small_plankton", config_ratio_C_to_N_small_plankton)
     call MPAS_pool_get_config(domain % configs, "config_ratio_C_to_N_phaeocystis", config_ratio_C_to_N_phaeocystis)
@@ -4886,10 +4871,12 @@ contains
           !-----------------------------------------------------------------
           ! Define ocean biogeochemical flux variables
           !-----------------------------------------------------------------
-           if (config_use_column_biogeochemistry) then
+
+           oceanBioFluxesAll(:)              = 0.0_RKIND
+
+           if (config_use_column_biogeochemistry .or. config_use_zaerosols) then
 
               totalOceanCarbonFlux(iCell)       = 0.0_RKIND
-              oceanBioFluxesAll(:)              = 0.0_RKIND
               oceanAlgaeFlux(:,iCell)           = 0.0_RKIND
               oceanDOCFlux(:,iCell)             = 0.0_RKIND
               oceanDICFlux(:,iCell)             = 0.0_RKIND
@@ -5000,7 +4987,7 @@ contains
               totalOceanCarbonFlux(iCell) = totalOceanCarbonFlux(iCell) + &
                      oceanHumicsFlux(iCell)
 
-          endif ! config_use_column_biogeochemistry
+          endif ! config_use_column_biogeochemistry .or. config_use_zaerosols
 
        enddo ! iCell
 
@@ -5048,7 +5035,8 @@ contains
          mesh
 
     logical, pointer :: &
-         config_use_column_biogeochemistry
+         config_use_column_biogeochemistry, &
+         config_use_zaerosols
 
     real(kind=RKIND), dimension(:), pointer :: &
          iceAreaCell, &
@@ -5108,6 +5096,7 @@ contains
          iBioTracers
 
     call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
+    call MPAS_pool_get_config(domain % configs, "config_use_zaerosols", config_use_zaerosols)
 
     block => domain % blocklist
     do while (associated(block))
@@ -5200,6 +5189,9 @@ contains
              albedoVisibleDiffuseCell(iCell)    = albedoVisibleDiffuseCell(iCell)    * iceAreaInverse
              albedoIRDiffuseCell(iCell)         = albedoIRDiffuseCell(iCell)         * iceAreaInverse
 
+             if (config_use_zaerosols) &
+                oceanDustIronFlux(iCell)       = oceanDustIronFlux(iCell)            * iceAreaInverse
+
              if (config_use_column_biogeochemistry) then
 
                 oceanNitrateFlux(iCell)        = oceanNitrateFlux(iCell)             * iceAreaInverse
@@ -5209,7 +5201,6 @@ contains
                 oceanDMSPdFlux(iCell)          = oceanDMSPdFlux(iCell)               * iceAreaInverse
                 oceanDMSFlux(iCell)            = oceanDMSFlux(iCell)                 * iceAreaInverse
                 oceanHumicsFlux(iCell)         = oceanHumicsFlux(iCell)              * iceAreaInverse
-                oceanDustIronFlux(iCell)       = oceanDustIronFlux(iCell)            * iceAreaInverse
 
                 do iBioTracers = 1, maxAlgaeType
                    oceanAlgaeFlux(iBioTracers,iCell) = oceanAlgaeFlux(iBioTracers,iCell) * iceAreaInverse
@@ -5252,6 +5243,9 @@ contains
              albedoVisibleDiffuseCell(iCell)    = 0.0_RKIND
              albedoIRDiffuseCell(iCell)         = 0.0_RKIND
 
+             if (config_use_zaerosols) &
+                oceanDustIronFlux(iCell)       = 0.0_RKIND
+
              if (config_use_column_biogeochemistry) then
 
                 oceanNitrateFlux(iCell)           = 0.0_RKIND
@@ -5261,7 +5255,6 @@ contains
                 oceanDMSPdFlux(iCell)             = 0.0_RKIND
                 oceanDMSFlux(iCell)               = 0.0_RKIND
                 oceanHumicsFlux(iCell)            = 0.0_RKIND
-                oceanDustIronFlux(iCell)          = 0.0_RKIND
                 oceanAlgaeFlux(:,iCell)           = 0.0_RKIND
                 oceanDOCFlux(:,iCell)             = 0.0_RKIND
                 oceanDICFlux(:,iCell)             = 0.0_RKIND
@@ -5738,12 +5731,14 @@ contains
          nZBGCTracers
 
     logical, pointer :: &
-         config_use_column_biogeochemistry
+         config_use_column_biogeochemistry, &
+         config_use_zaerosols
 
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nCategories", nCategories)
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nZBGCTracers", nZBGCTracers)
 
     call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
+    call MPAS_pool_get_config(domain % configs, "config_use_zaerosols", config_use_zaerosols)
 
     ! get the number of CICE tracers in trcrn
     call init_column_tracer_object_tracer_number(domain, tracerObject)
@@ -5767,7 +5762,7 @@ contains
     call init_column_tracer_object_ancestor_indices(domain, tracerObject)
 
     ! biogeochemistry
-    if (config_use_column_biogeochemistry) then
+    if (config_use_column_biogeochemistry .or. config_use_zaerosols) then
 
        allocate(tracerObject % index_LayerIndexToDataArray(nZBGCTracers))
        allocate(tracerObject % index_LayerIndexToBioIndex(nZBGCTracers))
@@ -5972,7 +5967,7 @@ contains
     ! biogeochemistry
     !-----------------------------------------------------------------------
 
-    if (config_use_column_biogeochemistry) then
+    if (config_use_column_biogeochemistry .or. config_use_zaerosols) then
 
        ! save tracer number without bio tracers counted
        tracerObject % nTracersNotBio = tracerObject % nTracers
@@ -5989,6 +5984,7 @@ contains
 !          tracerObject % nTracers = tracerObject % nTracers + nBioLayers
 !          tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + 1
 !       endif
+
        nMobileTracers = 0
 
        ! Skeletal Biogeochemistry
@@ -9568,19 +9564,20 @@ contains
         config_use_vertical_biochemistry .or. config_use_shortwave_bioabsorption .or. config_use_vertical_tracers .or. &
         config_use_skeletal_biochemistry .or. config_use_nitrate .or. config_use_carbon .or. config_use_chlorophyll .or. &
         config_use_ammonium .or. config_use_silicate .or. config_use_DMS .or. config_use_nonreactive .or. config_use_humics .or. &
-        config_use_DON .or. config_use_iron .or. config_use_modal_aerosols .or. config_use_zaerosols)) then
+        config_use_DON .or. config_use_iron)) then
        call mpas_log_write(&
             "check_column_package_configs: config_use_column_biogeochemistry = false. "//&
             "All biogeochemistry namelist flags must also be false", &
             messageType=MPAS_LOG_CRIT)
     endif
 
-    ! deprecate vertical zSalinity
-    if (config_use_vertical_zsalinity) then
-       call mpas_log_write(&
-            "check_column_package_configs: config_use_vertical_zsalinity = .true. but vertical zSalinity has been deprecated", &
-            messageType=MPAS_LOG_CRIT)
-    endif
+    ! check vertical zSalinity requirements
+    !if (config_use_vertical_zsalinity .and. ((.not. config_use_brine) .or. &
+    !     (.not. (trim(config_thermodynamics_type) == "BL99")))) then
+    !   call mpas_log_write(&
+    !        "check_column_package_configs: vertical zSalinity requires config_use_brine = true and 'BL99' ", &
+    !        messageType=MPAS_LOG_CRIT)
+    !endif
 
     ! check that vertical bio tracers use brine height
     if ((config_use_vertical_biochemistry .or. config_use_zaerosols) .and. &
@@ -9748,13 +9745,27 @@ contains
          nIceLayers, &
          nSnowLayers, &
          nAerosols, &
-         nBioLayers
+         nBioLayers, &
+         nAlgae, &
+         nDOC, &
+         nDIC, &
+         nDON, &
+         nParticulateIron, &
+         nDissolvedIron, &
+         nzAerosols
 
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nCategories", nCategories)
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nIceLayers", nIceLayers)
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nSnowLayers", nSnowLayers)
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nBioLayers", nBioLayers)
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nAerosols", nAerosols)
+    call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nzAerosols", nzAerosols)
+    call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nAlgae", nAlgae)
+    call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nDOC", nDOC)
+    call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nDIC", nDIC)
+    call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nDON", nDON)
+    call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nParticulateIron", nParticulateIron)
+    call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nDissolvedIron", nDissolvedIron)
 
     call icepack_init_tracer_sizes(&
          ncat_in      = nCategories, &
@@ -9762,23 +9773,241 @@ contains
          nslyr_in     = nSnowLayers, &
          nblyr_in     = nBioLayers, &
          !nfsd_in      = , &
-         !n_algae_in   = , &
-         !n_DOC_in     = , &
-         n_aero_in    = nAerosols, &
          !n_iso_in     = , &
-         !n_DON_in     = , &
-         !n_DIC_in     = , &
-         !n_fed_in     = , &
-         !n_fep_in     = , &
-         !n_zaero_in   = , &
+         !n_aero_in    = nAerosols, &
+         n_algae_in   = nAlgae, &
+         n_DOC_in     = nDOC, &
+         n_DON_in     = nDON, &
+         n_DIC_in     = nDIC, &
+         n_fed_in     = nDissolvedIron, &
+         n_fep_in     = nParticulateIron, &
+         n_zaero_in   = nzAerosols, &
          ntrcr_in     = tracerObject % nTracers, &
-         !ntrcr_o_in   = , &
+         ntrcr_o_in   = tracerObject % nTracersNotBio, &
          nbtrcr_in    = tracerObject % nBioTracers, &
          nbtrcr_sw_in = tracerObject % nBioTracersShortwave)
 
     call seaice_icepack_write_warnings(icepack_warnings_aborted())
 
   end subroutine init_icepack_package_tracer_sizes
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  init_column_package_tracer_indices
+!
+!> \brief
+!> \author Adrian K. Turner, LANL
+!> \date 5th Feburary 2015
+!> \details
+!>
+!
+!-----------------------------------------------------------------------
+
+  subroutine init_column_package_tracer_indices(tracerObject)
+
+    !use ice_colpkg_tracers, only: &
+    !     nt_Tsfc, &       ! ice/snow temperature
+    !     nt_qice, &       ! volume-weighted ice enthalpy (in layers)
+    !     nt_qsno, &       ! volume-weighted snow enthalpy (in layers)
+    !     nt_sice, &       ! volume-weighted ice bulk salinity (CICE grid layers)
+    !     nt_fbri, &       ! volume fraction of ice with dynamic salt (hinS/vicen*aicen)
+    !     nt_iage, &       ! volume-weighted ice age
+    !     nt_FY, &         ! area-weighted first-year ice area
+    !     nt_alvl, &       ! level ice area fraction
+    !     nt_vlvl, &       ! level ice volume fraction
+    !     nt_apnd, &       ! melt pond area fraction
+    !     nt_hpnd, &       ! melt pond depth
+    !     nt_ipnd, &       ! melt pond refrozen lid thickness
+    !     nt_aero, &       ! starting index for aerosols in ice
+    !     nt_smice, &      ! snow ice mass
+    !     nt_smliq, &      ! snow liquid mass
+    !     nt_rsnw, &       ! snow grain radius
+    !     nt_rhos, &       ! snow density tracer
+    !     nt_fbri, &       ! volume fraction of ice with dynamic salt (hinS/vicen*aicen)
+    !     nt_bgc_Nit, &    ! nutrients
+    !     nt_bgc_Am, &     !
+    !     nt_bgc_Sil, &    !
+    !     nt_bgc_DMSPp, &  ! trace gases (skeletal layer)
+    !     nt_bgc_DMSPd, &  !
+    !     nt_bgc_DMS, &    !
+    !     nt_bgc_PON, &    ! zooplankton and detritus
+    !     nt_bgc_hum, &    ! humic material
+    !                      ! bio layer indicess
+    !     nlt_bgc_Nit, &   ! nutrients
+    !     nlt_bgc_Am, &    !
+    !     nlt_bgc_Sil, &   !
+    !     nlt_bgc_DMSPp, & ! trace gases (skeletal layer)
+    !     nlt_bgc_DMSPd, & !
+    !     nlt_bgc_DMS, &   !
+    !     nlt_bgc_PON, &   ! zooplankton and detritus
+    !     nlt_bgc_hum, &   ! humic material
+    !     nlt_chl_sw, &    ! points to total chla in trcrn_sw
+    !     nt_zbgc_frac, &  ! fraction of tracer in the mobile phase
+    !     nt_bgc_S, &      ! Bulk salinity in fraction ice with dynamic salinity (Bio grid)
+    !     nt_bgc_N, &      ! diatoms, phaeocystis, pico/small
+    !     nt_bgc_C, &      ! diatoms, phaeocystis, pico/small
+    !     nt_bgc_chl, &    ! diatoms, phaeocystis, pico/small
+    !     nlt_bgc_N, &     ! diatoms, phaeocystis, pico/small
+    !     nlt_bgc_C, &     ! diatoms, phaeocystis, pico/small
+    !     nlt_bgc_chl, &   ! diatoms, phaeocystis, pico/small
+    !     nt_bgc_DOC, &    ! dissolved organic carbon
+    !     nlt_bgc_DOC, &   ! dissolved organic carbon
+    !     nt_bgc_DON, &    ! dissolved organic nitrogen
+    !     nlt_bgc_DON, &   ! dissolved organic nitrogen
+    !     nt_bgc_DIC, &    ! dissolved inorganic carbon
+    !     nlt_bgc_DIC, &   ! dissolved inorganic carbon
+    !     nt_bgc_Fed, &    ! dissolved iron
+    !     nt_bgc_Fep, &    ! particulate iron
+    !     nlt_bgc_Fed, &   ! dissolved iron
+    !     nlt_bgc_Fep, &   ! particulate iron
+    !     nt_zaero, &      ! black carbon and other aerosols
+    !     nlt_zaero, &     ! black carbon and other aerosols
+    !     nlt_zaero_sw     ! black carbon and other aerosols
+
+    use ice_colpkg, only: &
+         colpkg_init_tracer_indices
+
+    type(ciceTracerObjectType), intent(in) :: &
+         tracerObject
+
+    call colpkg_init_tracer_indices(&
+         tracerObject % index_surfaceTemperature, &
+         tracerObject % index_iceEnthalpy, &
+         tracerObject % index_snowEnthalpy, &
+         tracerObject % index_iceSalinity, &
+         tracerObject % index_brineFraction, &
+         tracerObject % index_iceAge, &
+         tracerObject % index_firstYearIceArea, &
+         tracerObject % index_levelIceArea, &
+         tracerObject % index_levelIceVolume, &
+         tracerObject % index_pondArea, &
+         tracerObject % index_pondDepth, &
+         tracerObject % index_pondLidThickness, &
+         tracerObject % index_aerosols, &
+         tracerObject % index_snowIceMass, &
+         tracerObject % index_snowLiquidMass, &
+         tracerObject % index_snowGrainRadius, &
+         tracerObject % index_snowDensity, &
+         tracerObject % index_verticalAerosolsConc, &
+         tracerObject % index_algaeConc, &
+         tracerObject % index_algalCarbon, &
+         tracerObject % index_algalChlorophyll, &
+         tracerObject % index_DOCConc, &
+         tracerObject % index_DONConc, &
+         tracerObject % index_DICConc, &
+         tracerObject % index_dissolvedIronConc, &
+         tracerObject % index_particulateIronConc, &
+         tracerObject % index_nitrateConc, &
+         tracerObject % index_ammoniumConc, &
+         tracerObject % index_silicateConc, &
+         tracerObject % index_DMSPpConc, &
+         tracerObject % index_DMSPdConc, &
+         tracerObject % index_DMSConc, &
+         tracerObject % index_humicsConc, &
+         tracerObject % index_nonreactiveConc, &
+         tracerObject % index_verticalAerosolsConcLayer, &
+         tracerObject % index_algaeConcLayer, &
+         tracerObject % index_algalCarbonLayer, &
+         tracerObject % index_algalChlorophyllLayer, &
+         tracerObject % index_DOCConcLayer, &
+         tracerObject % index_DONConcLayer, &
+         tracerObject % index_DICConcLayer, &
+         tracerObject % index_dissolvedIronConcLayer, &
+         tracerObject % index_particulateIronConcLayer, &
+         tracerObject % index_nitrateConcLayer, &
+         tracerObject % index_ammoniumConcLayer, &
+         tracerObject % index_silicateConcLayer, &
+         tracerObject % index_DMSPpConcLayer, &
+         tracerObject % index_DMSPdConcLayer, &
+         tracerObject % index_DMSConcLayer, &
+         tracerObject % index_humicsConcLayer, &
+         tracerObject % index_nonreactiveConcLayer, &
+         tracerObject % index_mobileFraction, &
+         tracerObject % index_verticalSalinity, &
+         tracerObject % index_chlorophyllShortwave, &
+         tracerObject % index_verticalAerosolsConcShortwave, &
+         tracerObject % nAlgaeIndex, &
+         tracerObject % nAlgalCarbonIndex, &
+         tracerObject % nAlgalChlorophyllIndex, &
+         tracerObject % nDOCIndex, &
+         tracerObject % nDONIndex, &
+         tracerObject % nDICIndex, &
+         tracerObject % nDissolvedIronIndex, &
+         tracerObject % nParticulateIronIndex, &
+         tracerObject % nzAerosolsIndex, &
+         tracerObject % index_LayerIndexToDataArray, &
+         tracerObject % index_LayerIndexToBioIndex, &
+         tracerObject % nBioTracers)
+
+    !nt_Tsfc       = tracerObject % index_surfaceTemperature
+    !nt_qice       = tracerObject % index_iceEnthalpy
+    !nt_qsno       = tracerObject % index_snowEnthalpy
+    !nt_sice       = tracerObject % index_iceSalinity
+    !nt_iage       = tracerObject % index_iceAge
+    !nt_FY         = tracerObject % index_firstYearIceArea
+    !nt_alvl       = tracerObject % index_levelIceArea
+    !nt_vlvl       = tracerObject % index_levelIceVolume
+    !nt_apnd       = tracerObject % index_pondArea
+    !nt_hpnd       = tracerObject % index_pondDepth
+    !nt_ipnd       = tracerObject % index_pondLidThickness
+    !nt_aero       = tracerObject % index_aerosols
+    !nt_smice      = tracerObject % index_snowIceMass
+    !nt_rsnw       = tracerObject % index_snowGrainRadius
+    !nt_rhos       = tracerObject % index_snowDensity
+    !nt_smliq      = tracerObject % index_snowLiquidMass
+    !nt_fbri       = tracerObject % index_brineFraction
+    !nt_zaeros     = tracerObject % index_verticalAerosolsConc
+    !nt_bgc_N      = tracerObject % index_algaeConc
+    !nt_bgc_C      = tracerObject % index_algalCarbon
+    !nt_bgc_chl    = tracerObject % index_algalChlorophyll
+    !nt_bgc_DOC    = tracerObject % index_DOCConc
+    !nt_bgc_DON    = tracerObject % index_DONConc
+    !nt_bgc_DIC    = tracerObject % index_DICConc
+    !nt_bgc_Fed    = tracerObject % index_dissolvedIronConc
+    !nt_bgc_Fep    = tracerObject % index_particulateIronConc
+    !nt_bgc_Nit    = tracerObject % index_nitrateConc
+    !nt_bgc_Am     = tracerObject % index_ammoniumConc
+    !nt_bgc_Sil    = tracerObject % index_silicateConc
+    !nt_bgc_DMSPp  = tracerObject % index_DMSPpConc
+    !nt_bgc_DMSPd  = tracerObject % index_DMSPdConc
+    !nt_bgc_DMS    = tracerObject % index_DMSConc
+    !nt_bgc_hum    = tracerObject % index_humicsConc
+    !nt_bgc_PON    = tracerObject % index_nonreactiveConc
+    !nlt_zaero     = tracerObject % index_verticalAerosolsConcLayer
+    !nlt_bgc_N     = tracerObject % index_algaeConcLayer
+    !nlt_bgc_C     = tracerObject % index_algalCarbonLayer
+    !nlt_bgc_chl   = tracerObject % index_algalChlorophyllLayer
+    !nlt_bgc_DOC   = tracerObject % index_DOCConcLayer
+    !nlt_bgc_DON   = tracerObject % index_DONConcLayer
+    !nlt_bgc_DIC   = tracerObject % index_DICConcLayer
+    !nlt_bgc_Fed   = tracerObject % index_dissolvedIronConcLayer
+    !nlt_bgc_Fep   = tracerObject % index_particulateIronConcLayer
+    !nlt_bgc_Nit   = tracerObject % index_nitrateConcLayer
+    !nlt_bgc_Am    = tracerObject % index_ammoniumConcLayer
+    !nlt_bgc_Sil   = tracerObject % index_silicateConcLayer
+    !nlt_bgc_DMSPp = tracerObject % index_DMSPpConcLayer
+    !nlt_bgc_DMSPd = tracerObject % index_DMSPdConcLayer
+    !nlt_bgc_DMS   = tracerObject % index_DMSConcLayer
+    !nlt_bgc_hum   = tracerObject % index_humicsConcLayer
+    !nlt_bgc_PON   = tracerObject % index_nonreactiveConcLayer
+    !nt_zbgc_frac  = tracerObject % index_mobileFraction
+    !nt_zbgc_S     = tracerObject % index_verticalSalinity
+    !nlt_chl_sw    = tracerObject % index_chlorophyllShortwave
+    !nlt_zaero_sw  = tracerObject % index_verticalAerosolsConcShortwave
+    !n_algae       = tracerObject % nAlgaeIndex
+    !n_algae       = tracerObject % nAlgalCarbonIndex
+    !n_algae       = tracerObject % nAlgalChlorophyllIndex
+    !n_doc         = tracerObject % nDOCIndex
+    !n_don         = tracerObject % nDONIndex
+    !n_dic         = tracerObject % nDICIndex
+    !n_fed         = tracerObject % nDissolvedIronIndex
+    !n_fep         = tracerObject % nParticulateIronIndex
+    !n_zaero       = tracerObject % nzAerosolsIndex
+    !bio_index_o   = tracerObject % index_LayerIndexToDataArray
+    !bio_index     = tracerObject % index_LayerIndexToBioIndex
+    !nbtrcr        = tracerObject % nBioTracers
+
+  end subroutine init_column_package_tracer_indices
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -11574,6 +11803,8 @@ contains
          config_use_shortwave_bioabsorption, &
          config_use_skeletal_biochemistry, &
          config_use_modal_aerosols, &
+         config_use_macromolecules, &
+         config_do_restart_bgc, &
          config_use_snow_liquid_ponds, &
          config_use_snow_grain_radius, &
          config_use_shortwave_redistribution
@@ -11838,6 +12069,8 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_use_vertical_biochemistry", config_use_vertical_biochemistry)
     call MPAS_pool_get_config(domain % configs, "config_use_shortwave_bioabsorption", config_use_shortwave_bioabsorption)
     call MPAS_pool_get_config(domain % configs, "config_use_modal_aerosols", config_use_modal_aerosols)
+    call MPAS_pool_get_config(domain % configs, "config_use_macromolecules", config_use_macromolecules)
+    call MPAS_pool_get_config(domain % configs, "config_do_restart_bgc", config_do_restart_bgc)
     call MPAS_pool_get_config(domain % configs, "config_use_skeletal_biochemistry", config_use_skeletal_biochemistry)
     call MPAS_pool_get_config(domain % configs, "config_biogrid_bottom_molecular_sublayer", &
                                                  config_biogrid_bottom_molecular_sublayer)
@@ -12259,39 +12492,139 @@ contains
          z_tracers_in            = config_use_vertical_tracers, &
          scale_bgc_in            = config_scale_initial_vertical_bgc, &
          solve_zbgc_in           = config_use_vertical_biochemistry, &
+         dEdd_algae_in           = config_use_shortwave_bioabsorption, &
          modal_aero_in           = config_use_modal_aerosols, &
+         use_macromolecules_in   = config_use_macromolecules, &
+         restartbgc_in           = config_do_restart_bgc, &
          skl_bgc_in              = config_use_skeletal_biochemistry, &
          grid_o_in               = config_biogrid_bottom_molecular_sublayer, &
          l_sk_in                 = config_bio_gravity_drainage_length_scale, &
-         initbio_frac_in         = config_new_ice_fraction_biotracer, &
-!         grid_oS_in              = config_zsalinity_molecular_sublayer, &
-!         l_skS_in                = config_zsalinity_gravity_drainage_scale, &
-         dEdd_algae_in           = config_use_shortwave_bioabsorption, &
+         grid_o_t_in             = config_biogrid_top_molecular_sublayer, &
+         !initbio_frac_in         = config_new_ice_fraction_biotracer, &
+         !frazil_scav_in          = config_fraction_biotracer_in_frazil, &
+         grid_oS_in              = config_zsalinity_molecular_sublayer, &
+         l_skS_in                = config_zsalinity_gravity_drainage_scale, &
          phi_snow_in             = config_snow_porosity_at_ice_surface, &
-         !T_max_in                = , &         ! BGC
-         !fsal_in                 = , &
-         !fr_resp_in              = , &
-         !algal_vel_in            = , &
-         !R_dFe2dust_in           = , &
-         !dustFe_sol_in           = , &
-         !op_dep_min_in           = , &
-         !fr_graze_s_in           = , &
-         !fr_graze_e_in           = , &
-         !fr_mort2min_in          = , &
-         !fr_dFe_in               = , &
-         !k_nitrif_in             = , &
-         !t_iron_conv_in          = , &
-         !max_loss_in             = , &
-         !max_dfe_doc1_in         = , &
-         !fr_resp_s_in            = , &
+         !ratio_Si2N_diatoms_in   = config_ratio_Si_to_N_diatoms, &
+         !ratio_Si2N_sp_in        = config_ratio_Si_to_N_small_plankton, &
+         !ratio_Si2N_phaeo_in     = config_ratio_Si_to_N_phaeocystis, &
+         !ratio_S2N_diatoms_in    = config_ratio_S_to_N_diatoms, &
+         !ratio_S2N_sp_in         = config_ratio_S_to_N_small_plankton, &
+         !ratio_S2N_phaeo_in      = config_ratio_S_to_N_phaeocystis, &
+         !ratio_Fe2C_diatoms_in   = config_ratio_Fe_to_C_diatoms, &
+         !ratio_Fe2C_sp_in        = config_ratio_Fe_to_C_small_plankton, &
+         !ratio_Fe2C_phaeo_in     = config_ratio_Fe_to_C_phaeocystis, &
+         !ratio_Fe2N_diatoms_in   = config_ratio_Fe_to_N_diatoms, &
+         !ratio_Fe2N_sp_in        = config_ratio_Fe_to_N_small_plankton, &
+         !ratio_Fe2N_phaeo_in     = config_ratio_Fe_to_N_phaeocystis, &
+         !ratio_Fe2DON_in         = config_ratio_Fe_to_DON, &
+         !ratio_Fe2DOC_s_in       = config_ratio_Fe_to_DOC_saccharids, &
+         !ratio_Fe2DOC_l_in       = config_ratio_Fe_to_DOC_lipids, &
+         fr_resp_in              = config_respiration_fraction_of_growth, &
+         tau_min_in              = config_rapid_mobile_to_stationary_time, &
+         tau_max_in              = config_long_mobile_to_stationary_time, &
+         algal_vel_in            = config_algal_maximum_velocity, &
+         R_dFe2dust_in           = config_ratio_Fe_to_dust, &
+         dustFe_sol_in           = config_solubility_of_Fe_in_dust, &
+         !chlabs_diatoms_in       = config_chla_absorptivity_of_diatoms, &
+         !chlabs_sp_in            = config_chla_absorptivity_of_small_plankton, &
+         !chlabs_phaeo_in         = config_chla_absorptivity_of_phaeocystis, &
+         !alpha2max_low_diatoms_in =  config_light_attenuation_diatoms, &
+         !alpha2max_low_sp_in     = config_light_attenuation_small_plankton, &
+         !alpha2max_low_phaeo_in  = config_light_attenuation_phaeocystis, &
+         !beta2max_diatoms_in     = config_light_inhibition_diatoms, &
+         !beta2max_sp_in          = config_light_inhibition_small_plankton, &
+         !beta2max_phaeo_in       = config_light_inhibition_phaeocystis, &
+         !mu_max_diatoms_in       = config_maximum_growth_rate_diatoms, &
+         !mu_max_sp_in            = config_maximum_growth_rate_small_plankton, &
+         !mu_max_phaeo_in         = config_maximum_growth_rate_phaeocystis, &
+         !grow_Tdep_diatoms_in    = config_temperature_growth_diatoms, &
+         !grow_Tdep_sp_in         = config_temperature_growth_small_plankton, &
+         !grow_Tdep_phaeo_in      = config_temperature_growth_phaeocystis, &
+         !fr_graze_diatoms_in     = config_grazed_fraction_diatoms, &
+         !fr_graze_sp_in          = config_grazed_fraction_small_plankton, &
+         !fr_graze_phaeo_in       = config_grazed_fraction_phaeocystis, &
+         !mort_pre_diatoms_in     = config_mortality_diatoms, &
+         !mort_pre_sp_in          = config_mortality_small_plankton, &
+         !mort_pre_phaeo_in       = config_mortality_phaeocystis, &
+         !mort_Tdep_diatoms_in    = config_temperature_mortality_diatoms, &
+         !mort_Tdep_sp_in         = config_temperature_mortality_small_plankton, &
+         !mort_Tdep_phaeo_in      = config_temperature_mortality_phaeocystis, &
+         !k_exude_diatoms_in      = config_exudation_diatoms, &
+         !k_exude_sp_in           = config_exudation_small_plankton, &
+         !k_exude_phaeo_in        = config_exudation_phaeocystis, &
+         !K_Nit_diatoms_in        = config_nitrate_saturation_diatoms, &
+         !K_Nit_sp_in             = config_nitrate_saturation_small_plankton, &
+         !K_Nit_phaeo_in          = config_nitrate_saturation_phaeocystis, &
+         !K_Am_diatoms_in         = config_ammonium_saturation_diatoms, &
+         !K_Am_sp_in              = config_ammonium_saturation_small_plankton, &
+         !K_Am_phaeo_in           = config_ammonium_saturation_phaeocystis, &
+         !K_Sil_diatoms_in        = config_silicate_saturation_diatoms, &
+         !K_Sil_sp_in             = config_silicate_saturation_small_plankton, &
+         !K_Sil_phaeo_in          = config_silicate_saturation_phaeocystis, &
+         !K_Fe_diatoms_in         = config_iron_saturation_diatoms, &
+         !K_Fe_sp_in              = config_iron_saturation_small_plankton, &
+         !K_Fe_phaeo_in           = config_iron_saturation_phaeocystis, &
+         !f_don_protein_in        = config_fraction_spilled_to_DON, &
+         !kn_bac_protein_in       = config_degredation_of_DON, &
+         !f_don_Am_protein_in     = config_fraction_DON_ammonium, &
+         !f_doc_s_in              = config_fraction_loss_to_saccharids, &
+         !f_doc_l_in              = config_fraction_loss_to_lipids, &
+         !f_exude_s_in            = config_fraction_exudation_to_saccharids, &
+         !f_exude_l_in            = config_fraction_exudation_to_lipids, &
+         !k_bac_s_in              = config_remineralization_saccharids, &
+         !k_bac_l_in              = config_remineralization_lipids, &
+         T_max_in                = config_maximum_brine_temperature, &
+         fsal_in                 = config_salinity_dependence_of_growth, &
+         op_dep_min_in           = config_minimum_optical_depth, &
+         fr_graze_s_in           = config_slopped_grazing_fraction, &
+         fr_graze_e_in           = config_excreted_fraction, &
+         fr_mort2min_in          = config_fraction_mortality_to_ammonium, &
+         fr_dFe_in               = config_fraction_iron_remineralized, &
+         k_nitrif_in             = config_nitrification_rate, &
+         t_iron_conv_in          = config_desorption_loss_particulate_iron, &
+         max_loss_in             = config_maximum_loss_fraction, &
+         max_dfe_doc1_in         = config_maximum_ratio_iron_to_saccharids, &
+         fr_resp_s_in            = config_respiration_loss_to_DMSPd, &
+         y_sk_DMS_in             = config_DMSP_to_DMS_conversion_fraction, &
+         t_sk_conv_in            = config_DMSP_to_DMS_conversion_time, &
+         t_sk_ox_in              = config_DMS_oxidation_time, &
+         algaltype_diatoms_in    = config_mobility_type_diatoms, &
+         algaltype_sp_in         = config_mobility_type_small_plankton, &
+         algaltype_phaeo_in      = config_mobility_type_phaeocystis, &
+         nitratetype_in          = config_mobility_type_nitrate, &
+         ammoniumtype_in         = config_mobility_type_ammonium, &
+         silicatetype_in         = config_mobility_type_silicate, &
+         dmspptype_in            = config_mobility_type_DMSPp, &
+         dmspdtype_in            = config_mobility_type_DMSPd, &
+         humtype_in              = config_mobility_type_humics, &
+         doctype_s_in            = config_mobility_type_saccharids, &
+         doctype_l_in            = config_mobility_type_lipids, &
+         dictype_1_in            = config_mobility_type_inorganic_carbon, &
+         dontype_protein_in      = config_mobility_type_proteins, &
+         fedtype_1_in            = config_mobility_type_dissolved_iron, &
+         feptype_1_in            = config_mobility_type_particulate_iron, &
+         zaerotype_bc1_in        = config_mobility_type_black_carbon1, &
+         zaerotype_bc2_in        = config_mobility_type_black_carbon2, &
+         zaerotype_dust1_in      = config_mobility_type_dust1, &
+         zaerotype_dust2_in      = config_mobility_type_dust2, &
+         zaerotype_dust3_in      = config_mobility_type_dust3, &
+         zaerotype_dust4_in      = config_mobility_type_dust4, &
+         ratio_C2N_diatoms_in    = config_ratio_C_to_N_diatoms, &
+         ratio_C2N_sp_in         = config_ratio_C_to_N_small_plankton, &
+         ratio_C2N_phaeo_in      = config_ratio_C_to_N_phaeocystis, &
+         ratio_chl2N_diatoms_in  = config_ratio_chla_to_N_diatoms, &
+         ratio_chl2N_sp_in       = config_ratio_chla_to_N_small_plankton, &
+         ratio_chl2N_phaeo_in    = config_ratio_chla_to_N_phaeocystis, &
+         F_abs_chl_diatoms_in    = config_scales_absorption_diatoms, &
+         F_abs_chl_sp_in         = config_scales_absorption_small_plankton, &
+         F_abs_chl_phaeo_in      = config_scales_absorption_phaeocystis, &
+         ratio_C2N_proteins_in   = config_ratio_C_to_N_proteins, &
          !conserv_check_in        = , &
-         !y_sk_DMS_in             = , &
-         !t_sk_conv_in            = , &
-         !t_sk_ox_in              = , &
-         !frazil_scav_in          = , &
-         sw_redist_in            = config_use_shortwave_redistribution, &
-         sw_frac_in              = config_shortwave_redistribution_fraction, &
-         sw_dtemp_in             = config_shortwave_redistribution_threshold, &
+         !
+         !sw_redist_in            = , &        ! not yet implemented in MPAS-SI (stealth feature)
+         !sw_frac_in              = , &        ! not yet implemented in MPAS-SI (stealth feature)
+         !sw_dtemp_in             = , &        ! not yet implemented in MPAS-SI (stealth feature)
          snwgrain_in             = config_use_snow_grain_radius, &
          snwredist_in            = config_snow_redistribution_scheme, &
          use_smliq_pnd_in        = config_use_snow_liquid_ponds, &
@@ -12371,124 +12704,6 @@ contains
     !call icepack_init_parameters(& 
     !     shortwave             = config_shortwave_type, &         ! not working correctly above
     !     oceanmixed_ice        = config_use_ocean_mixed_layer, &  ! not used in Icepack/columnphysics (driver only)
-    !     grid_o_t              = config_biogrid_top_molecular_sublayer, &  ! not used in Icepack
-    !     frazil_scav           = config_fraction_biotracer_in_frazil, &    ! BGC 
-    !     ratio_Si2N_diatoms    = config_ratio_Si_to_N_diatoms, &
-    !     ratio_Si2N_sp         = config_ratio_Si_to_N_small_plankton, &
-    !     ratio_Si2N_phaeo      = config_ratio_Si_to_N_phaeocystis, &
-    !     ratio_S2N_diatoms     = config_ratio_S_to_N_diatoms, &
-    !     ratio_S2N_sp          = config_ratio_S_to_N_small_plankton, &
-    !     ratio_S2N_phaeo       = config_ratio_S_to_N_phaeocystis, &
-    !     ratio_Fe2C_diatoms    = config_ratio_Fe_to_C_diatoms, &
-    !     ratio_Fe2C_sp         = config_ratio_Fe_to_C_small_plankton, &
-    !     ratio_Fe2C_phaeo      = config_ratio_Fe_to_C_phaeocystis, &
-    !     ratio_Fe2N_diatoms    = config_ratio_Fe_to_N_diatoms, &
-    !     ratio_Fe2N_sp         = config_ratio_Fe_to_N_small_plankton, &
-    !     ratio_Fe2N_phaeo      = config_ratio_Fe_to_N_phaeocystis, &
-    !     ratio_Fe2DON          = config_ratio_Fe_to_DON, &
-    !     ratio_Fe2DOC_s        = config_ratio_Fe_to_DOC_saccharids, &
-    !     ratio_Fe2DOC_l        = config_ratio_Fe_to_DOC_lipids, &
-    !     fr_resp               = config_respiration_fraction_of_growth, &
-    !     tau_min               = config_rapid_mobile_to_stationary_time, &
-    !     tau_max               = config_long_mobile_to_stationary_time, &
-    !     algal_vel             = config_algal_maximum_velocity, &
-    !     R_dFe2dust            = config_ratio_Fe_to_dust, &
-    !     dustFe_sol            = config_solubility_of_Fe_in_dust, &
-    !     chlabs_diatoms        = config_chla_absorptivity_of_diatoms, &
-    !     chlabs_sp             = config_chla_absorptivity_of_small_plankton, &
-    !     chlabs_phaeo          = config_chla_absorptivity_of_phaeocystis, &
-    !     alpha2max_low_diatoms = config_light_attenuation_diatoms, &
-    !     alpha2max_low_sp      = config_light_attenuation_small_plankton, &
-    !     alpha2max_low_phaeo   = config_light_attenuation_phaeocystis, &
-    !     beta2max_diatoms      = config_light_inhibition_diatoms, &
-    !     beta2max_sp           = config_light_inhibition_small_plankton, &
-    !     beta2max_phaeo        = config_light_inhibition_phaeocystis, &
-    !     mu_max_diatoms        = config_maximum_growth_rate_diatoms, &
-    !     mu_max_sp             = config_maximum_growth_rate_small_plankton, &
-    !     mu_max_phaeo          = config_maximum_growth_rate_phaeocystis, &
-    !     mu_max_diatoms        = config_temperature_growth_diatoms, & ! rename
-    !     mu_max_sp             = config_temperature_growth_small_plankton, &
-    !     mu_max_phaeo          = config_temperature_growth_phaeocystis, &
-    !     fr_graze_diatoms      = config_grazed_fraction_diatoms, &
-    !     fr_graze_sp           = config_grazed_fraction_small_plankton, &
-    !     fr_graze_phaeo        = config_grazed_fraction_phaeocystis, &
-    !     mort_pre_diatoms      = config_mortality_diatoms, &
-    !     mort_pre_sp           = config_mortality_small_plankton, &
-    !     mort_pre_phaeo        = config_mortality_phaeocystis, &
-    !     mort_Tdep_diatoms     = config_temperature_mortality_diatoms, &
-    !     mort_Tdep_sp          = config_temperature_mortality_small_plankton, &
-    !     mort_Tdep_phaeo       = config_temperature_mortality_phaeocystis, &
-    !     k_exude_diatoms       = config_exudation_diatoms, &
-    !     k_exude_sp            = config_exudation_small_plankton, &
-    !     k_exude_phaeo         = config_exudation_phaeocystis, &
-    !     K_Nit_diatoms         = config_nitrate_saturation_diatoms, &
-    !     K_Nit_sp              = config_nitrate_saturation_small_plankton, &
-    !     K_Nit_phaeo           = config_nitrate_saturation_phaeocystis, &
-    !     K_Am_diatoms          = config_ammonium_saturation_diatoms, &
-    !     K_Am_sp               = config_ammonium_saturation_small_plankton, &
-    !     K_Am_phaeo            = config_ammonium_saturation_phaeocystis, &
-    !     K_Sil_diatoms         = config_silicate_saturation_diatoms, &
-    !     K_Sil_sp              = config_silicate_saturation_small_plankton, &
-    !     K_Sil_phaeo           = config_silicate_saturation_phaeocystis, &
-    !     K_Fe_diatoms          = config_iron_saturation_diatoms, &
-    !     K_Fe_sp               = config_iron_saturation_small_plankton, &
-    !     K_Fe_phaeo            = config_iron_saturation_phaeocystis, &
-    !     f_don_protein         = config_fraction_spilled_to_DON, &
-    !     kn_bac_protein        = config_degredation_of_DON, &
-    !     f_don_Am_protein      = config_fraction_DON_ammonium, &
-    !     f_doc_s               = config_fraction_loss_to_saccharids, &
-    !     f_doc_l               = config_fraction_loss_to_lipids, &
-    !     f_exude_s             = config_fraction_exudation_to_saccharids, &
-    !     f_exude_l             = config_fraction_exudation_to_lipids, &
-    !     k_bac_s               = config_remineralization_saccharids, &
-    !     k_bac_l               = config_remineralization_lipids, &
-    !     T_max                 = config_maximum_brine_temperature, &
-    !     fsal                  = config_salinity_dependence_of_growth, &
-    !     op_dep_min            = config_minimum_optical_depth, &
-    !     fr_graze_s            = config_slopped_grazing_fraction, &
-    !     fr_graze_e            = config_excreted_fraction, &
-    !     fr_mort2min           = config_fraction_mortality_to_ammonium, &
-    !     fr_dFe                = config_fraction_iron_remineralized, &
-    !     k_nitrif              = config_nitrification_rate, &
-    !     t_iron_conv           = config_desorption_loss_particulate_iron, &
-    !     max_loss              = config_maximum_loss_fraction, &
-    !     max_dfe_doc1          = config_maximum_ratio_iron_to_saccharids, &
-    !     fr_resp_s             = config_respiration_loss_to_DMSPd, &
-    !     y_sk_DMS              = config_DMSP_to_DMS_conversion_fraction, &
-    !     t_sk_conv             = config_DMSP_to_DMS_conversion_time, &
-    !     t_sk_ox               = config_DMS_oxidation_time, &
-    !     algaltype_diatoms     = config_mobility_type_diatoms, &
-    !     algaltype_sp          = config_mobility_type_small_plankton, &
-    !     algaltype_phaeo       = config_mobility_type_phaeocystis, &
-    !     nitratetype           = config_mobility_type_nitrate, &
-    !     ammoniumtype          = config_mobility_type_ammonium, &
-    !     silicatetype          = config_mobility_type_silicate, &
-    !     dmspptype             = config_mobility_type_DMSPp, &
-    !     dmspdtype             = config_mobility_type_DMSPd, &
-    !     humicstype            = config_mobility_type_humics, &
-    !     doctype_s             = config_mobility_type_saccharids, &
-    !     dictype_1             = config_mobility_type_lipids, &
-    !     dictype_1             = config_mobility_type_inorganic_carbon, &
-    !     dontype_protein       = config_mobility_type_proteins, &
-    !     fedtype_1             = config_mobility_type_dissolved_iron, &
-    !     feptype_1             = config_mobility_type_particulate_iron, &
-    !     zaerotype_bc1         = config_mobility_type_black_carbon1, &
-    !     zaerotype_bc2         = config_mobility_type_black_carbon2, &
-    !     zaerotype_dust1       = config_mobility_type_dust1, &
-    !     zaerotype_dust2       = config_mobility_type_dust2, &
-    !     zaerotype_dust3       = config_mobility_type_dust3, &
-    !     zaerotype_dust4       = config_mobility_type_dust4, &
-    !     ratio_C2N_diatoms     = config_ratio_C_to_N_diatoms, &
-    !     ratio_C2N_sp          = config_ratio_C_to_N_small_plankton, &
-    !     ratio_C2N_phaeo       = config_ratio_C_to_N_phaeocystis, &
-    !     ratio_chl2N_diatoms   = config_ratio_chla_to_N_diatoms, &
-    !     ratio_chl2N_sp        = config_ratio_chla_to_N_small_plankton, &
-    !     ratio_chl2N_phaeo     = config_ratio_chla_to_N_phaeocystis, &
-    !     F_abs_chl_diatoms     = config_scales_absorption_diatoms, &
-    !     F_abs_chl_sp          = config_scales_absorption_small_plankton, &
-    !     F_abs_chl_phaeo       = config_scales_absorption_phaeocystis, &
-    !     ratio_C2N_proteins    = config_ratio_C_to_N_proteins, &
-
     !-----------------------------------------------------------------------
     ! Parameters for thermodynamics
     !-----------------------------------------------------------------------
@@ -14447,7 +14662,8 @@ contains
 
   subroutine init_column_tracer_object_for_biogeochemistry(domain, tracerObject)
 
-    use ice_colpkg, only: colpkg_init_zbgc
+    !use ice_colpkg, only: colpkg_init_zbgc
+    use icepack_intfc, only: icepack_init_zbgc
 
     type(domain_type), intent(in) :: &
          domain
@@ -14787,188 +15003,186 @@ contains
     allocate(tracerObject % index_dissolvedIronConcLayer(maxIronType))
     tracerObject % nDissolvedIronIndex = nDissolvedIron
 
-    call colpkg_init_zbgc(&
-         nBioLayers, &
-         nIceLayers, &
-         nSnowLayers, &
-         nAlgae, &
-         nzAerosols, &
-         nDOC, &
-         nDIC, &
-         nDON, &
-         nDissolvedIron, &
-         nParticulateIron, &
-         tracerObject % firstAncestorMask, &
-         tracerObject % parentIndex, &
-         tracerObject % ancestorNumber, &
-         tracerObject % ancestorIndices, &
-         tracerObject % nBioTracersShortwave, &
-         config_use_brine, &
-         tracerObject % index_brineFraction,&
-         tracerObject % nTracers, &
-         tracerObject % nBioTracers, &
-         tracerObject % index_nitrateConc, &
-         tracerObject % index_ammoniumConc, &
-         tracerObject % index_silicateConc, &
-         tracerObject % index_DMSConc, &
-         tracerObject % index_nonreactiveConc, &
-         tracerObject % index_verticalSalinity, &
-         tracerObject % index_algaeConc, &
-         tracerObject % index_algalCarbon, &
-         tracerObject % index_algalChlorophyll, &
-         tracerObject % index_DOCConc, &
-         tracerObject % index_DONConc, &
-         tracerObject % index_DICConc, &
-         tracerObject % index_verticalAerosolsConc, &
-         tracerObject % index_DMSPpConc, &
-         tracerObject % index_DMSPdConc, &
-         tracerObject % index_dissolvedIronConc, &
-         tracerObject % index_particulateIronConc, &
-         tracerObject % index_mobileFraction, &
-         config_use_nitrate, &
-         config_use_ammonium, &
-         config_use_silicate, &
-         config_use_DMS, &
-         config_use_nonreactive, &
-         config_use_vertical_zsalinity, &      !echmod deprecate
-         use_nitrogen, &
-         config_use_carbon, &
-         config_use_chlorophyll, &
-         config_use_DON, &
-         config_use_iron,&
-         config_use_zaerosols, &
-         tracerObject % index_verticalAerosolsConcShortwave, &
-         tracerObject % index_chlorophyllShortwave, &
-         tracerObject % index_algaeConcLayer, &
-         tracerObject % index_nitrateConcLayer, &
-         tracerObject % index_ammoniumConcLayer, &
-         tracerObject % index_silicateConcLayer, &
-         tracerObject % index_DMSConcLayer, &
-         tracerObject % index_DMSPpConcLayer, &
-         tracerObject % index_DMSPdConcLayer, &
-         tracerObject % index_algalCarbonLayer, &
-         tracerObject % index_algalChlorophyllLayer, &
-         tracerObject % index_DICConcLayer, &
-         tracerObject % index_DOCConcLayer, &
-         tracerObject % index_nonreactiveConcLayer, &
-         tracerObject % index_DONConcLayer, &
-         tracerObject % index_dissolvedIronConcLayer, &
-         tracerObject % index_particulateIronConcLayer, &
-         tracerObject % index_verticalAerosolsConcLayer, &
-         tracerObject % index_humicsConc, &
-         tracerObject % index_humicsConcLayer, &
-         config_use_humics, &
-         config_use_vertical_zsalinity, &            !echmod deprecate
-         config_use_skeletal_biochemistry, &
-         config_use_vertical_tracers, &
-         config_use_shortwave_bioabsorption, &
-         config_use_vertical_biochemistry, &
-         config_fraction_biotracer_in_frazil, &
-         config_new_ice_fraction_biotracer, &
-         tracerObject % index_LayerIndexToDataArray, &
-         tracerObject % index_LayerIndexToBioIndex, &
-         tracerObject % nTracersNotBio, &
-         maxAlgaeType, &
-         maxDOCType, &
-         maxDICType, &
-         maxDONType, &
-         maxIronType, &
-         config_ratio_Si_to_N_diatoms, &
-         config_ratio_Si_to_N_small_plankton, &
-         config_ratio_Si_to_N_phaeocystis, &
-         config_ratio_S_to_N_diatoms, &
-         config_ratio_S_to_N_small_plankton, &
-         config_ratio_S_to_N_phaeocystis, &
-         config_ratio_Fe_to_C_diatoms, &
-         config_ratio_Fe_to_C_small_plankton, &
-         config_ratio_Fe_to_C_phaeocystis, &
-         config_ratio_Fe_to_N_diatoms, &
-         config_ratio_Fe_to_N_small_plankton, &
-         config_ratio_Fe_to_N_phaeocystis, &
-         config_ratio_Fe_to_DON, &
-         config_ratio_Fe_to_DOC_saccharids, &
-         config_ratio_Fe_to_DOC_lipids, &
-         config_chla_absorptivity_of_diatoms, &
-         config_chla_absorptivity_of_small_plankton, &
-         config_chla_absorptivity_of_phaeocystis, &
-         config_light_attenuation_diatoms, &
-         config_light_attenuation_small_plankton, &
-         config_light_attenuation_phaeocystis, &
-         config_light_inhibition_diatoms, &
-         config_light_inhibition_small_plankton, &
-         config_light_inhibition_phaeocystis, &
-         config_maximum_growth_rate_diatoms, &
-         config_maximum_growth_rate_small_plankton, &
-         config_maximum_growth_rate_phaeocystis, &
-         config_temperature_growth_diatoms, &
-         config_temperature_growth_small_plankton, &
-         config_temperature_growth_phaeocystis, &
-         config_grazed_fraction_diatoms, &
-         config_grazed_fraction_small_plankton, &
-         config_grazed_fraction_phaeocystis, &
-         config_mortality_diatoms, &
-         config_mortality_small_plankton, &
-         config_mortality_phaeocystis, &
-         config_temperature_mortality_diatoms, &
-         config_temperature_mortality_small_plankton, &
-         config_temperature_mortality_phaeocystis, &
-         config_exudation_diatoms, &
-         config_exudation_small_plankton, &
-         config_exudation_phaeocystis, &
-         config_nitrate_saturation_diatoms, &
-         config_nitrate_saturation_small_plankton, &
-         config_nitrate_saturation_phaeocystis, &
-         config_ammonium_saturation_diatoms, &
-         config_ammonium_saturation_small_plankton, &
-         config_ammonium_saturation_phaeocystis, &
-         config_silicate_saturation_diatoms, &
-         config_silicate_saturation_small_plankton, &
-         config_silicate_saturation_phaeocystis, &
-         config_iron_saturation_diatoms, &
-         config_iron_saturation_small_plankton, &
-         config_iron_saturation_phaeocystis, &
-         config_fraction_spilled_to_DON, &
-         config_degredation_of_DON, &
-         config_fraction_DON_ammonium, &
-         config_fraction_loss_to_saccharids, &
-         config_fraction_loss_to_lipids, &
-         config_fraction_exudation_to_saccharids, &
-         config_fraction_exudation_to_lipids, &
-         config_remineralization_saccharids, &
-         config_remineralization_lipids, &
-         config_mobility_type_diatoms, &
-         config_mobility_type_small_plankton, &
-         config_mobility_type_phaeocystis, &
-         config_mobility_type_saccharids, &
-         config_mobility_type_lipids, &
-         config_mobility_type_inorganic_carbon, &
-         config_mobility_type_proteins, &
-         config_mobility_type_dissolved_iron, &
-         config_mobility_type_particulate_iron, &
-         config_mobility_type_black_carbon1, &
-         config_mobility_type_black_carbon2, &
-         config_mobility_type_dust1, &
-         config_mobility_type_dust2, &
-         config_mobility_type_dust3, &
-         config_mobility_type_dust4, &
-         config_ratio_C_to_N_diatoms, &
-         config_ratio_C_to_N_small_plankton, &
-         config_ratio_C_to_N_phaeocystis, &
-         config_ratio_chla_to_N_diatoms, &
-         config_ratio_chla_to_N_small_plankton, &
-         config_ratio_chla_to_N_phaeocystis, &
-         config_scales_absorption_diatoms, &
-         config_scales_absorption_small_plankton, &
-         config_scales_absorption_phaeocystis, &
-         config_ratio_C_to_N_proteins, &
-         config_mobility_type_nitrate, &
-         config_mobility_type_ammonium, &
-         config_mobility_type_DMSPp, &
-         config_mobility_type_DMSPd, &
-         config_mobility_type_silicate, &
-         config_mobility_type_humics, &
-         config_rapid_mobile_to_stationary_time, &
-         config_long_mobile_to_stationary_time)
+    call icepack_init_zbgc(&
+         nblyr=nBioLayers, &
+         nilyr=nIceLayers, &
+         nslyr=nSnowLayers, &
+         n_algae=nAlgae, &
+         n_zaero=nzAerosols, &
+         n_doc=nDOC, &
+         n_dic=nDIC, &
+         n_don=nDON, &
+         n_fed=nDissolvedIron, &
+         n_fep=nParticulateIron, &
+         trcr_base=tracerObject % firstAncestorMask, &
+         trcr_depend=tracerObject % parentIndex, &
+         n_trcr_strata=tracerObject % ancestorNumber, &
+         nt_strata=tracerObject % ancestorIndices, &
+         nbtrcr_sw=tracerObject % nBioTracersShortwave, &
+         tr_brine=config_use_brine, &
+         nt_fbri=tracerObject % index_brineFraction,&
+         ntrcr=tracerObject % nTracers, &
+         nbtrcr=tracerObject % nBioTracers, &
+         nt_bgc_Nit=tracerObject % index_nitrateConc, &
+         nt_bgc_Am=tracerObject % index_ammoniumConc, &
+         nt_bgc_Sil=tracerObject % index_silicateConc, &
+         nt_bgc_DMS=tracerObject % index_DMSConc, &
+         nt_bgc_PON=tracerObject % index_nonreactiveConc, &
+         nt_bgc_S=tracerObject % index_verticalSalinity, &
+         nt_bgc_N=tracerObject % index_algaeConc, &
+         nt_bgc_C=tracerObject % index_algalCarbon, &
+         nt_bgc_chl=tracerObject % index_algalChlorophyll, &
+         nt_bgc_DOC=tracerObject % index_DOCConc, &
+         nt_bgc_DON=tracerObject % index_DONConc, &
+         nt_bgc_DIC=tracerObject % index_DICConc, &
+         nt_zaero=tracerObject % index_verticalAerosolsConc, &
+         nt_bgc_DMSPp=tracerObject % index_DMSPpConc, &
+         nt_bgc_DMSPd=tracerObject % index_DMSPdConc, &
+         nt_bgc_Fed=tracerObject % index_dissolvedIronConc, &
+         nt_bgc_Fep=tracerObject % index_particulateIronConc, &
+         nt_zbgc_frac=tracerObject % index_mobileFraction, &
+         tr_bgc_Nit=config_use_nitrate, &
+         tr_bgc_Am=config_use_ammonium, &
+         tr_bgc_Sil=config_use_silicate, &
+         tr_bgc_DMS=config_use_DMS, &
+         tr_bgc_PON=config_use_nonreactive, &
+         tr_bgc_N=use_nitrogen, &
+         tr_bgc_C=config_use_carbon, &
+         tr_bgc_chl=config_use_chlorophyll, &
+         tr_bgc_DON=config_use_DON, &
+         tr_bgc_Fe=config_use_iron,&
+         tr_zaero=config_use_zaerosols, &
+         nlt_zaero_sw=tracerObject % index_verticalAerosolsConcShortwave, &
+         nlt_chl_sw=tracerObject % index_chlorophyllShortwave, &
+         nlt_bgc_N=tracerObject % index_algaeConcLayer, &
+         nlt_bgc_Nit=tracerObject % index_nitrateConcLayer, &
+         nlt_bgc_Am=tracerObject % index_ammoniumConcLayer, &
+         nlt_bgc_Sil=tracerObject % index_silicateConcLayer, &
+         nlt_bgc_DMS=tracerObject % index_DMSConcLayer, &
+         nlt_bgc_DMSPp=tracerObject % index_DMSPpConcLayer, &
+         nlt_bgc_DMSPd=tracerObject % index_DMSPdConcLayer, &
+         nlt_bgc_C=tracerObject % index_algalCarbonLayer, &
+         nlt_bgc_chl=tracerObject % index_algalChlorophyllLayer, &
+         nlt_bgc_DIC=tracerObject % index_DICConcLayer, &
+         nlt_bgc_DOC=tracerObject % index_DOCConcLayer, &
+         nlt_bgc_PON=tracerObject % index_nonreactiveConcLayer, &
+         nlt_bgc_DON=tracerObject % index_DONConcLayer, &
+         nlt_bgc_Fed=tracerObject % index_dissolvedIronConcLayer, &
+         nlt_bgc_Fep=tracerObject % index_particulateIronConcLayer, &
+         nlt_zaero=tracerObject % index_verticalAerosolsConcLayer, &
+         nt_bgc_hum=tracerObject % index_humicsConc, &
+         nlt_bgc_hum=tracerObject % index_humicsConcLayer, &
+         tr_bgc_hum=config_use_humics, &
+         skl_bgc=config_use_skeletal_biochemistry, &
+         z_tracers=config_use_vertical_tracers, &
+         dEdd_algae=config_use_shortwave_bioabsorption, &
+         solve_zbgc=config_use_vertical_biochemistry, &
+         frazil_scav_in=config_fraction_biotracer_in_frazil, &
+         initbio_frac_in=config_new_ice_fraction_biotracer, &
+         bio_index_o_out=tracerObject % index_LayerIndexToDataArray, &
+         bio_index_out=tracerObject % index_LayerIndexToBioIndex, &
+         ntrcr_o=tracerObject % nTracersNotBio, &
+         max_algae_in=maxAlgaeType, &
+         max_doc_in=maxDOCType, &
+         max_dic_in=maxDICType, &
+         max_don_in=maxDONType, &
+         max_fe_in=maxIronType, &
+         ratio_Si2N_diatoms_in=config_ratio_Si_to_N_diatoms, &
+         ratio_Si2N_sp_in=config_ratio_Si_to_N_small_plankton, &
+         ratio_Si2N_phaeo_in=config_ratio_Si_to_N_phaeocystis, &
+         ratio_S2N_diatoms_in=config_ratio_S_to_N_diatoms, &
+         ratio_S2N_sp_in=config_ratio_S_to_N_small_plankton, &
+         ratio_S2N_phaeo_in=config_ratio_S_to_N_phaeocystis, &
+         ratio_Fe2C_diatoms_in=config_ratio_Fe_to_C_diatoms, &
+         ratio_Fe2C_sp_in=config_ratio_Fe_to_C_small_plankton, &
+         ratio_Fe2C_phaeo_in=config_ratio_Fe_to_C_phaeocystis, &
+         ratio_Fe2N_diatoms_in=config_ratio_Fe_to_N_diatoms, &
+         ratio_Fe2N_sp_in=config_ratio_Fe_to_N_small_plankton, &
+         ratio_Fe2N_phaeo_in=config_ratio_Fe_to_N_phaeocystis, &
+         ratio_Fe2DON_in=config_ratio_Fe_to_DON, &
+         ratio_Fe2DOC_s_in=config_ratio_Fe_to_DOC_saccharids, &
+         ratio_Fe2DOC_l_in=config_ratio_Fe_to_DOC_lipids, &
+         chlabs_diatoms_in=config_chla_absorptivity_of_diatoms, &
+         chlabs_sp_in=config_chla_absorptivity_of_small_plankton, &
+         chlabs_phaeo_in=config_chla_absorptivity_of_phaeocystis, &
+         alpha2max_low_diatoms_in=config_light_attenuation_diatoms, &
+         alpha2max_low_sp_in=config_light_attenuation_small_plankton, &
+         alpha2max_low_phaeo_in=config_light_attenuation_phaeocystis, &
+         beta2max_diatoms_in=config_light_inhibition_diatoms, &
+         beta2max_sp_in=config_light_inhibition_small_plankton, &
+         beta2max_phaeo_in=config_light_inhibition_phaeocystis, &
+         mu_max_diatoms_in=config_maximum_growth_rate_diatoms, &
+         mu_max_sp_in=config_maximum_growth_rate_small_plankton, &
+         mu_max_phaeo_in=config_maximum_growth_rate_phaeocystis, &
+         grow_Tdep_diatoms_in=config_temperature_growth_diatoms, &
+         grow_Tdep_sp_in=config_temperature_growth_small_plankton, &
+         grow_Tdep_phaeo_in=config_temperature_growth_phaeocystis, &
+         fr_graze_diatoms_in=config_grazed_fraction_diatoms, &
+         fr_graze_sp_in=config_grazed_fraction_small_plankton, &
+         fr_graze_phaeo_in=config_grazed_fraction_phaeocystis, &
+         mort_pre_diatoms_in=config_mortality_diatoms, &
+         mort_pre_sp_in=config_mortality_small_plankton, &
+         mort_pre_phaeo_in=config_mortality_phaeocystis, &
+         mort_Tdep_diatoms_in=config_temperature_mortality_diatoms, &
+         mort_Tdep_sp_in=config_temperature_mortality_small_plankton, &
+         mort_Tdep_phaeo_in=config_temperature_mortality_phaeocystis, &
+         k_exude_diatoms_in=config_exudation_diatoms, &
+         k_exude_sp_in=config_exudation_small_plankton, &
+         k_exude_phaeo_in=config_exudation_phaeocystis, &
+         K_Nit_diatoms_in=config_nitrate_saturation_diatoms, &
+         K_Nit_sp_in=config_nitrate_saturation_small_plankton, &
+         K_Nit_phaeo_in=config_nitrate_saturation_phaeocystis, &
+         K_Am_diatoms_in=config_ammonium_saturation_diatoms, &
+         K_Am_sp_in=config_ammonium_saturation_small_plankton, &
+         K_Am_phaeo_in=config_ammonium_saturation_phaeocystis, &
+         K_Sil_diatoms_in=config_silicate_saturation_diatoms, &
+         K_Sil_sp_in=config_silicate_saturation_small_plankton, &
+         K_Sil_phaeo_in=config_silicate_saturation_phaeocystis, &
+         K_Fe_diatoms_in=config_iron_saturation_diatoms, &
+         K_Fe_sp_in=config_iron_saturation_small_plankton, &
+         K_Fe_phaeo_in=config_iron_saturation_phaeocystis, &
+         f_don_protein_in=config_fraction_spilled_to_DON, &
+         kn_bac_protein_in=config_degredation_of_DON, &
+         f_don_Am_protein_in=config_fraction_DON_ammonium, &
+         f_doc_s_in=config_fraction_loss_to_saccharids, &
+         f_doc_l_in=config_fraction_loss_to_lipids, &
+         f_exude_s_in=config_fraction_exudation_to_saccharids, &
+         f_exude_l_in=config_fraction_exudation_to_lipids, &
+         k_bac_s_in=config_remineralization_saccharids, &
+         k_bac_l_in=config_remineralization_lipids, &
+         algaltype_diatoms_in=config_mobility_type_diatoms, &
+         algaltype_sp_in=config_mobility_type_small_plankton, &
+         algaltype_phaeo_in=config_mobility_type_phaeocystis, &
+         doctype_s_in=config_mobility_type_saccharids, &
+         doctype_l_in=config_mobility_type_lipids, &
+         dictype_1_in=config_mobility_type_inorganic_carbon, &
+         dontype_protein_in=config_mobility_type_proteins, &
+         fedtype_1_in=config_mobility_type_dissolved_iron, &
+         feptype_1_in=config_mobility_type_particulate_iron, &
+         zaerotype_bc1_in=config_mobility_type_black_carbon1, &
+         zaerotype_bc2_in=config_mobility_type_black_carbon2, &
+         zaerotype_dust1_in=config_mobility_type_dust1, &
+         zaerotype_dust2_in=config_mobility_type_dust2, &
+         zaerotype_dust3_in=config_mobility_type_dust3, &
+         zaerotype_dust4_in=config_mobility_type_dust4, &
+         ratio_C2N_diatoms_in=config_ratio_C_to_N_diatoms, &
+         ratio_C2N_sp_in=config_ratio_C_to_N_small_plankton, &
+         ratio_C2N_phaeo_in=config_ratio_C_to_N_phaeocystis, &
+         ratio_chl2N_diatoms_in=config_ratio_chla_to_N_diatoms, &
+         ratio_chl2N_sp_in=config_ratio_chla_to_N_small_plankton, &
+         ratio_chl2N_phaeo_in=config_ratio_chla_to_N_phaeocystis, &
+         F_abs_chl_diatoms_in=config_scales_absorption_diatoms, &
+         F_abs_chl_sp_in=config_scales_absorption_small_plankton, &
+         F_abs_chl_phaeo_in=config_scales_absorption_phaeocystis, &
+         ratio_C2N_proteins_in=config_ratio_C_to_N_proteins, &
+         nitratetype_in=config_mobility_type_nitrate, &
+         ammoniumtype_in=config_mobility_type_ammonium, &
+         dmspptype_in=config_mobility_type_DMSPp, &
+         dmspdtype_in=config_mobility_type_DMSPd, &
+         silicatetype_in=config_mobility_type_silicate, &
+         humtype_in=config_mobility_type_humics, &
+         tau_min_in=config_rapid_mobile_to_stationary_time, &
+         tau_max_in=config_long_mobile_to_stationary_time)
 
     ! check calculated tracer array size
     if (nTracers_temp /= tracerObject % nTracers) then
@@ -14993,10 +15207,15 @@ contains
 
   subroutine init_column_biogeochemistry_profiles(domain, tracerObject)
 
-    use ice_colpkg, only: &
-         colpkg_init_bgc, &
-         colpkg_init_hbrine!, &
-!         colpkg_init_zsalinity        !echmod deprecate
+    !use ice_colpkg, only: &
+    !     colpkg_init_bgc, &
+    !     colpkg_init_hbrine, &
+    !     colpkg_init_zsalinity
+
+    use icepack_intfc, only: &
+         icepack_init_bgc, &
+         icepack_init_hbrine, &
+         icepack_load_ocean_bio_array
 
     type(domain_type), intent(inout) :: domain
 
@@ -15017,10 +15236,8 @@ contains
 !         config_use_vertical_zsalinity, &      !echmod deprecate
          config_use_vertical_tracers, &
          config_use_skeletal_biochemistry, &
-!         config_do_restart_zsalinity, &        !echmod deprecate
-         config_do_restart_bgc, &
-         config_do_restart_hbrine, &
-         config_use_macromolecules
+         config_do_restart_zsalinity, &
+         config_do_restart_hbrine
 
     real(kind=RKIND), pointer :: &
          config_dt, &
@@ -15074,14 +15291,7 @@ contains
          nBioLayersP1, &
          nBioLayersP2, &
          nCategories, &
-         nShortwaveBio, &
-         nZBGCTracers, &
-         maxAerosolType, &
-         maxAlgaeType, &
-         maxDOCType, &
-         maxDICType, &
-         maxDONType, &
-         maxIronType
+         nShortwaveBio
 
     integer :: &
          iCell
@@ -15096,15 +15306,13 @@ contains
          abortMessage
 
     call MPAS_pool_get_config(domain % configs, "config_use_brine", config_use_brine)
-!    call MPAS_pool_get_config(domain % configs, "config_do_restart_zsalinity", config_do_restart_zsalinity)  !echmod deprecate
-    call MPAS_pool_get_config(domain % configs, "config_do_restart_bgc", config_do_restart_bgc)
+    call MPAS_pool_get_config(domain % configs, "config_do_restart_zsalinity", config_do_restart_zsalinity)
     call MPAS_pool_get_config(domain % configs, "config_do_restart_hbrine", config_do_restart_hbrine)
 !    call MPAS_pool_get_config(domain % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity) !echmod deprecate
     call MPAS_pool_get_config(domain % configs, "config_use_skeletal_biochemistry", config_use_skeletal_biochemistry)
     call MPAS_pool_get_config(domain % configs, "config_use_vertical_tracers", config_use_vertical_tracers)
     call MPAS_pool_get_config(domain % configs, "config_dt", config_dt)
     call MPAS_pool_get_config(domain % configs, "config_snow_porosity_at_ice_surface", config_snow_porosity_at_ice_surface)
-    call MPAS_pool_get_config(domain % configs, "config_use_macromolecules", config_use_macromolecules)
 
     abortFlag = .false.
 
@@ -15163,23 +15371,15 @@ contains
        call MPAS_pool_get_dimension(block % dimensions, "nBioLayersP1", nBioLayersP1)
        call MPAS_pool_get_dimension(block % dimensions, "nBioLayersP2", nBioLayersP2)
        call MPAS_pool_get_dimension(block % dimensions, "nShortwaveBio", nShortwaveBio)
-       call MPAS_pool_get_dimension(block % dimensions, "nZBGCTracers", nZBGCTracers)
-       call MPAS_pool_get_dimension(block % dimensions, "maxAerosolType", maxAerosolType)
-       call MPAS_pool_get_dimension(block % dimensions, "maxAlgaeType", maxAlgaeType)
-       call MPAS_pool_get_dimension(block % dimensions, "maxDOCType", maxDOCType)
-       call MPAS_pool_get_dimension(block % dimensions, "maxDICType", maxDICType)
-       call MPAS_pool_get_dimension(block % dimensions, "maxDONType", maxDONType)
-       call MPAS_pool_get_dimension(block % dimensions, "maxIronType", maxIronType)
-
-       call colpkg_init_hbrine(&
-            biologyGrid, &
-            interfaceBiologyGrid, &
-            verticalGrid, &
-            interfaceGrid, &
-            verticalShortwaveGrid, &
-            nBioLayers, &
-            nIceLayers, &
-            config_snow_porosity_at_ice_surface)
+       call icepack_init_hbrine(&
+            bgrid=biologyGrid, &
+            igrid=interfaceBiologyGrid, &
+            cgrid=verticalGrid, &
+            icgrid=interfaceGrid, &
+            swgrid=verticalShortwaveGrid, &
+            nblyr=nBioLayers, &
+            nilyr=nIceLayers, &
+            phi_snow=config_snow_porosity_at_ice_surface)
 
        do iCell = 1, nCellsSolve
           if (.not. config_do_restart_hbrine) then
@@ -15194,65 +15394,41 @@ contains
           call set_cice_tracer_array_category(block, tracerObject, &
                tracerArrayCategory, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
-!          if (config_use_vertical_zsalinity) then        !echmod deprecate
-!             call colpkg_init_zsalinity(&
-!                  nBioLayers, &
-!                  tracerObject % nTracersNotBio, &
-!                  config_do_restart_zsalinity, &
-!                  rayleighCriteria, &
-!                  rayleighCriteriaReal(iCell), &
-!                  tracerArrayCategory(tracerObject % nTracersNotBio+1:tracerObject % nTracers,:), &
-!                  tracerObject % index_verticalSalinity, &
-!                  nCategories, &
-!                  seaSurfaceSalinity(iCell))
-!          endif
-
           if (config_use_vertical_tracers .or. config_use_skeletal_biochemistry) then
-             call colpkg_init_bgc(&
-                  config_dt, &
-                  nCategories, &
-                  nBioLayers, &
-                  nIceLayers, &
-                  tracerObject % nTracersNotBio, &
-                  verticalGrid, &
-                  interfaceBiologyGrid, &
-                  config_do_restart_bgc, &
-                  tracerObject % nTracers, &
-                  tracerObject % nBiotracers, &
-                  iceSalinity(:,:,iCell), &
-                  tracerArrayCategory(tracerObject % nTracersNotBio+1:tracerObject % nTracers,:), &
-                  seaSurfaceSalinity(iCell), &
-                  oceanNitrateConc(iCell), &
-                  oceanAmmoniumConc(iCell), &
-                  oceanSilicateConc(iCell), &
-                  oceanDMSPConc(iCell), &
-                  oceanDMSConc(iCell), &
-                  oceanAlgaeConc(:,iCell), &
-                  oceanDOCConc(:,iCell), &
-                  oceanDONConc(:,iCell), &
-                  oceanDICConc(:,iCell), &
-                  oceanDissolvedIronConc(:,iCell), &
-                  oceanParticulateIronConc(:,iCell), &
-                  oceanZAerosolConc(:,iCell), &
-                  oceanHumicsConc(iCell), &
-                  oceanBioConcentrations(:,iCell), &
-                  maxAlgaeType, &
-                  maxDOCType, &
-                  maxDICType, &
-                  maxDONType, &
-                  maxIronType, &
-                  nZBGCTracers, &
-                  maxAerosolType, &
-                  DOCPoolFractions, &
-                  config_use_macromolecules, &
-                  abortFlag, &
-                  abortMessage)
 
-             if (abortFlag) then
-                call mpas_log_write(&
-                     "init_column_biogeochemistry_profiles: colpkg_init_bgc: "//trim(abortMessage), &
-                     messageType=MPAS_LOG_CRIT)
-             endif
+             call icepack_load_ocean_bio_array(&
+                  nit=oceanNitrateConc(iCell), &
+                  amm=oceanAmmoniumConc(iCell), &
+                  sil=oceanSilicateConc(iCell), &
+                  dmsp=oceanDMSPConc(iCell), &
+                  dms=oceanDMSConc(iCell), &
+                  algalN=oceanAlgaeConc(:,iCell), &
+                  doc=oceanDOCConc(:,iCell), &
+                  don=oceanDONConc(:,iCell), &
+                  dic=oceanDICConc(:,iCell), &
+                  fed=oceanDissolvedIronConc(:,iCell), &
+                  fep=oceanParticulateIronConc(:,iCell), &
+                  zaeros=oceanZAerosolConc(:,iCell), &
+                  ocean_bio_all=oceanBioConcentrations(:,iCell), &
+                  hum=oceanHumicsConc(iCell))
+
+             call icepack_init_bgc(&
+                  ncat=nCategories, &
+                  nblyr=nBioLayers, &
+                  nilyr=nIceLayers, &
+                  ntrcr_o=tracerObject % nTracersNotBio, &
+                  cgrid=verticalGrid, &
+                  igrid=interfaceBiologyGrid, &
+                  ntrcr=tracerObject % nTracers, &
+                  nbtrcr=tracerObject % nBiotracers, &
+                  sicen=iceSalinity(:,:,iCell), &
+                  trcrn=tracerArrayCategory(tracerObject % nTracersNotBio+1:tracerObject % nTracers,:), &
+                  sss=seaSurfaceSalinity(iCell), &
+                  ocean_bio_all=oceanBioConcentrations(:,iCell), &
+                  DOCPoolFractions=DOCPoolFractions)
+
+             call seaice_icepack_write_warnings(icepack_warnings_aborted())
+
           endif ! biogeochemistry
 
           ! get the category tracer array
@@ -15766,9 +15942,10 @@ contains
     logical, pointer :: &
          config_use_column_biogeochemistry, &
          config_use_column_shortwave, &
-         config_use_column_physics, &
-         config_use_vertical_biochemistry!, &
-!         config_use_vertical_zsalinity         !echmod deprecate
+         config_use_column_package, &
+         config_use_vertical_tracers, &
+         config_use_vertical_zsalinity, &
+         config_use_zaerosols
 
     call MPAS_pool_get_config(domain % blocklist % configs, "config_use_column_physics", config_use_column_physics)
 
@@ -15779,15 +15956,16 @@ contains
 
           ! biogeochemistry
           call MPAS_pool_get_config(block % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
-          call MPAS_pool_get_config(block % configs, "config_use_vertical_biochemistry", config_use_vertical_biochemistry)
-!          call MPAS_pool_get_config(block % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)    !echmod deprecate
+          call MPAS_pool_get_config(block % configs, "config_use_zaerosols", config_use_zaerosols)
+          call MPAS_pool_get_config(block % configs, "config_use_vertical_tracers", config_use_vertical_tracers)
+          call MPAS_pool_get_config(block % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
 
-          if (config_use_column_biogeochemistry) then
+          if (config_use_column_biogeochemistry .or. config_use_zaerosols) then
 
              call MPAS_pool_get_subpool(block % structs, "biogeochemistry", biogeochemistryPool)
              call MPAS_pool_get_subpool(block % structs, "diagnostics_biogeochemistry", diagnostics_biogeochemistryPool)
 
-             if (config_use_vertical_biochemistry) then
+             if (config_use_vertical_tracers) then
                 call MPAS_pool_get_array(biogeochemistryPool, "primaryProduction", primaryProduction)
                 call MPAS_pool_get_array(biogeochemistryPool, "totalChlorophyll", totalChlorophyll)
                 call MPAS_pool_get_array(biogeochemistryPool, "netSpecificAlgalGrowthRate", netSpecificAlgalGrowthRate)
@@ -15834,7 +16012,7 @@ contains
 
           call MPAS_pool_get_config(block % configs, "config_use_column_shortwave", config_use_column_shortwave)
 
-          if (config_use_column_biogeochemistry .or. config_use_column_shortwave) then
+          if (config_use_column_biogeochemistry .or. config_use_column_shortwave .or. config_use_zaerosols) then
 
              call MPAS_pool_get_subpool(block % structs, "biogeochemistry", biogeochemistryPool)
              call MPAS_pool_get_array(biogeochemistryPool, "bioTracerShortwave", bioTracerShortwave)

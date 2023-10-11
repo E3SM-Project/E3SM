@@ -2580,8 +2580,9 @@ contains
     logical, pointer :: &
          config_do_restart, &
          config_use_column_biogeochemistry, &
-         config_use_column_physics, &
-         config_use_aerosols
+         config_use_column_package, &
+         config_use_aerosols, &
+         config_use_zaerosols
 
     integer, pointer :: &
          nCells
@@ -2679,8 +2680,9 @@ contains
        endif
 
        call MPAS_pool_get_config(block % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
+       call MPAS_pool_get_config(block % configs, "config_use_zaerosols", config_use_zaerosols)
 
-       if (config_use_column_biogeochemistry) then
+       if (config_use_column_biogeochemistry .or. config_use_zaerosols) then
 
           call MPAS_pool_get_subpool(block % structs, "biogeochemistry", biogeochemistry)
 

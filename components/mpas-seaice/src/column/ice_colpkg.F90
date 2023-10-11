@@ -4594,6 +4594,7 @@
       real (kind=dbl_kind), intent(in) :: & 
          grid_oS_in     , & ! for bottom flux (zsalinity)
          l_skS_in           ! 0.02 characteristic skeletal layer thickness (m) (zsalinity)
+
       real (kind=dbl_kind), intent(in) :: &
          ratio_Si2N_diatoms_in, &   ! algal Si to N (mol/mol)
          ratio_Si2N_sp_in     , &
