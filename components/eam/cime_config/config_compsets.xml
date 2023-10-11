@@ -133,27 +133,27 @@
 
   <compset>
     <alias>FSCM-ARM97-MMF1</alias>
-    <lname>ARM97_EAM%SCM-MMF1_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+    <lname>ARM97_EAM%SCM-MMF1_ELM%SP_SICE_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
   <compset>
     <alias>FSCM-ARM97-MMF2</alias>
-    <lname>ARM97_EAM%SCM-MMF2_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+    <lname>ARM97_EAM%SCM-MMF2_ELM%SP_SICE_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
   <compset>
     <alias>FSCM-ARM97-MMF2-AWFL</alias>
-    <lname>ARM97_EAM%SCM-MMF2-AWFL_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+    <lname>ARM97_EAM%SCM-MMF2-AWFL_ELM%SP_SICE_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
   <compset>
     <alias>FSCM-RICO-MMF1</alias>
-    <lname>RICO_EAM%SCM-MMF1_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+    <lname>RICO_EAM%SCM-MMF1_ELM%SP_SICE_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
   <compset>
     <alias>FSCM-RICO-MMF2</alias>
-    <lname>RICO_EAM%SCM-MMF2_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+    <lname>RICO_EAM%SCM-MMF2_ELM%SP_SICE_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
   <!-- ************************************************* -->
@@ -306,17 +306,17 @@
   <!-- F compsets with climatological SST -->
   <compset>
     <alias>F2010-MMF1</alias>
-    <lname>2010_EAM%MMF1_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+    <lname>2010_EAM%MMF1_ELM%SP_MPASSI%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
   <compset>
     <alias>F2010-MMF2</alias>
-    <lname>2010_EAM%MMF2_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+    <lname>2010_EAM%MMF2_ELM%SP_MPASSI%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
   <compset>
     <alias>F2010-MMF2-AWFL</alias>
-    <lname>2010_EAM%MMF2-AWFL_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+    <lname>2010_EAM%MMF2-AWFL_ELM%SP_MPASSI%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
   <!-- F compsets with transient SST (AMIP) -->
