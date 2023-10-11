@@ -272,7 +272,7 @@ _TESTS = {
             "SMS.T62_oQU120_ais20.MPAS_LISIO_TEST",
             "SMS.f09_g16_a.IGELM_MLI",
             "SMS_P12x2.ne4_oQU240.WCYCL1850NS.allactive-mach_mods",
-            "ERS_Ln9.ne4pg2_ne4pg2.F2010-MMF1.eam-mmf_crmout",
+            "ERS_Ln9.ne4pg2_oQU480.F2010-MMF1.eam-mmf_crmout",
             )
         },
 
@@ -337,9 +337,9 @@ _TESTS = {
     "e3sm_mmf_integration" : {
         "tests" : (
             "ERP_Ln9.ne4pg2_oQU480.WCYCL20TRNS-MMF1.allactive-mmf_fixed_subcycle",
-            "ERS_Ln9.ne4pg2_ne4pg2.FRCE-MMF1.eam-cosp_nhtfrq9",
+            "ERS_Ln9.ne4pg2_oQU480.FRCE-MMF1.eam-cosp_nhtfrq9",
             "SMS_Ln5.ne4_ne4.FSCM-ARM97-MMF1",
-            "SMS_Ln3.ne4pg2_ne4pg2.F2010-MMF2",
+            "SMS_Ln3.ne4pg2_oQU480.F2010-MMF2",
             )
         },
 
@@ -648,7 +648,7 @@ _TESTS = {
 
     "e3sm_gpucxx" : {
         "tests"    : (
-                 "SMS_Ln9.ne4pg2_ne4pg2.F2010-MMF1",
+                 "SMS_Ln9.ne4pg2_oQU480.F2010-MMF1",
                  )
     },
 
