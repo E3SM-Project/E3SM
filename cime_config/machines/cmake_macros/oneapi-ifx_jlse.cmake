@@ -1,1 +1,1 @@
-string(APPEND SLIBS " -qmkl -fiopenmp -fopenmp-targets=spir64")
+string(APPEND SLIBS " -fiopenmp -fopenmp-targets=spir64")

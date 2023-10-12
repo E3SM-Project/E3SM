@@ -1,5 +1,3 @@
 set(PIO_FILESYSTEM_HINTS "lustre")
 set(MPICXX "mpic++")
-string(APPEND SLIBS " -llapack -lblas")
-string(APPEND SLIBS " $ENV{MKLROOT}/lib/intel64/libmkl_scalapack_lp64.a -Wl,--start-group $ENV{MKLROOT}/lib/intel64/libmkl_intel_lp64.a $ENV{MKLROOT}/lib/intel64/libmkl_core.a $ENV{MKLROOT}/lib/intel64/libmkl_sequential.a -Wl,--end-group $ENV{MKLROOT}/lib/intel64/libmkl_blacs_intelmpi_lp64.a -lpthread -lm -lz")
 string(APPEND CXX_LIBS " -lstdc++")
