@@ -314,18 +314,22 @@ contains
              gsmap => component_get_gsmap_cx(ocn(1))
              dom   => component_get_dom_cx(ocn(1))
              call seq_io_write(hist_file, gsmap, dom%data, 'dom_ox',  &
-                  nx=ocn_nx, ny=ocn_ny, nt=1, whead=whead, wdata=wdata, pre='domo')
+                  nx=ocn_nx, ny=ocn_ny, nt=1, whead=whead, wdata=wdata, pre='domo', &
+                  scolumn=single_column)
              call seq_io_write(hist_file, gsmap, fractions_ox, 'fractions_ox',  &
-                  nx=ocn_nx, ny=ocn_ny, nt=1, whead=whead, wdata=wdata, pre='fraco')
+                  nx=ocn_nx, ny=ocn_ny, nt=1, whead=whead, wdata=wdata, pre='fraco', &
+                  scolumn=single_column)
              call seq_io_write(hist_file, ocn, 'c2x', 'o2x_ox', &
-                  nx=ocn_nx, ny=ocn_ny, nt=1, whead=whead, wdata=wdata, pre='o2x')
+                  nx=ocn_nx, ny=ocn_ny, nt=1, whead=whead, wdata=wdata, pre='o2x', &
+                  scolumn=single_column)
              !call seq_io_write(hist_file, ocn, 'x2c', 'x2o_ox', &
              !                  nx=ocn_nx, ny=ocn_ny, nt=1, whead=whead, wdata=wdata, pre='x2o')
 
              gsmap     => component_get_gsmap_cx(ocn(1))
              x2oacc_ox => prep_ocn_get_x2oacc_ox()
              call seq_io_write(hist_file, gsmap, x2oacc_ox, 'x2oacc_ox',  &
-                  nx=ocn_nx, ny=ocn_ny, nt=1, whead=whead, wdata=wdata, pre='x2oacc')
+                  nx=ocn_nx, ny=ocn_ny, nt=1, whead=whead, wdata=wdata, pre='x2oacc', &
+                  scolumn=single_column)
 
              gsmap         => component_get_gsmap_cx(ocn(1))
              x2oacc_ox_cnt => prep_ocn_get_x2oacc_ox_cnt()
@@ -334,17 +338,20 @@ contains
              gsmap => component_get_gsmap_cx(ocn(1))
              xao_ox => prep_aoflux_get_xao_ox()
              call seq_io_write(hist_file, gsmap, xao_ox, 'xao_ox',  &
-                  nx=ocn_nx, ny=ocn_ny, nt=1, whead=whead, wdata=wdata, pre='xaoo')
+                  nx=ocn_nx, ny=ocn_ny, nt=1, whead=whead, wdata=wdata, pre='xaoo', &
+                  scolumn=single_column)
 
              gsmap  => component_get_gsmap_cx(atm(1))
              o2x_ax => prep_atm_get_o2x_ax()
              call seq_io_write(hist_file, gsmap, o2x_ax, 'o2x_ax',  &
-                  nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata, pre='o2xa')
+                  nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata, pre='o2xa', &
+                  scolumn=single_column)
 
              gsmap  => component_get_gsmap_cx(atm(1))
              xao_ax => prep_aoflux_get_xao_ax()
              call seq_io_write(hist_file, gsmap, xao_ax, 'xao_ax',  &
-                  nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata, pre='xaoa')
+                  nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata, pre='xaoa', &
+                  scolumn=single_column)
           endif
 
           if (ice_present) then
