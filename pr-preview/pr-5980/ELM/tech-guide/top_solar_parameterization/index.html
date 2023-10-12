@@ -732,24 +732,30 @@ f_{rdif}
 \mu = \cos(SZA) \cos(\alpha) + \sin(SZA) \sin(\alpha) \cos(SAA-\beta)
 \]</div>
 <p>The <span class="arithmatex">\(SZA\)</span> and <span class="arithmatex">\(SAA\)</span> are assumed to be constant within a grid cell, but <span class="arithmatex">\(\alpha\)</span> and <span class="arithmatex">\(\beta\)</span> vary within a grid cell. The grid cell average solar incident angle, , can be expressed as follows:</p>
-<div class="arithmatex">\[\begin{eqnarray}
+<div class="arithmatex">\[
+\begin{eqnarray}
 \overline{\mu} &amp;=&amp; \overline{\cos(SZA) \cos(\alpha)} + \overline{\sin(SZA) \sin(\alpha) \cos(SAA-\beta)} \nonumber \\
 &amp;=&amp; \cos(SZA)  \overline{\cos(\alpha)} + 
 \sin(SZA) \cos(SAA) +
 \overline{\sin(\alpha) \cos(\beta)} + \nonumber \\
 &amp; &amp; \sin(SZA) \sin(SAA) +
 \overline{\sin(\alpha) \sin(\beta)}
-\end{eqnarray}\]</div>
+\end{eqnarray}
+\]</div>
 <p>where overlines represent grid-averaged values. To further improve the regression parameterization, <span class="arithmatex">\(\mu\)</span>, <span class="arithmatex">\(V_d\)</span>, and <span class="arithmatex">\(C_T\)</span> are normalized by <span class="arithmatex">\(\cos(\alpha)\)</span>. The land surface albedo is adjusted, instead of modifying incoming solar radiation, to maintain the surface energy conservation and the consistency between the surface and the first levels of atmosphere above the surface (Lee et al., 2015). Specifically, to keep the absorbed solar radiation of the ground surface unchanged, Lee et al. (2015) built the relationship between direct (<span class="arithmatex">\(\alpha_{dir}^{TOP}\)</span>) and diffuse (<span class="arithmatex">\(\alpha_{dif}^{TOP}\)</span>) albedo over mountains and those (<span class="arithmatex">\(\alpha_{dir}^{PP}\)</span> and <span class="arithmatex">\(\alpha_{dif}^PP\)</span>) over flat surfaces as follows:</p>
-<div class="arithmatex">\[\begin{eqnarray}
+<div class="arithmatex">\[
+\begin{eqnarray}
 F_{dir}^{PP} (1 - \alpha_{dir}^{TOP}) &amp;=&amp; (F_{dir}^{TOP} + F_{rdir}^{TOP})(1 - \alpha_{dir}^{PP}) \label{eqn_fdir_pp} \\
 F_{dif}^{PP} (1 - \alpha_{dif}^{TOP}) &amp;=&amp; (F_{dif}^{TOP} + F_{rdif}^{TOP})(1 - \alpha_{dif}^{PP}) \label{eqn_fdif_pp}
-\end{eqnarray}\]</div>
+\end{eqnarray}
+\]</div>
 <p>Substituting Eqns \eqref{eqn_fdir}-\eqref{eqn_frdif} into Eqs \eqref{eqn_fdir_pp}-\eqref{eqn_fdif_pp} leads to</p>
-<div class="arithmatex">\[\begin{eqnarray}
+<div class="arithmatex">\[
+\begin{eqnarray}
 \alpha_{dir}^{TOP} &amp;=&amp; 1 - (1 + f_{dir} + f_{rdir}) (1 - \alpha_{dir}^{PP}) \label{eqn_alb_dir_top} \\
 \alpha_{dif}^{TOP} &amp;=&amp; 1 - (1 + f_{dif} + f_{rdif}) (1 - \alpha_{dif}^{PP}) \label{eqn_alb_dif_top}
-\end{eqnarray}\]</div>
+\end{eqnarray}
+\]</div>
 <p>The parameterizations represented by Eqs. \eqref{eqn_linear_reg}, \eqref{eqn_alb_dir_top}, and \eqref{eqn_alb_dif_top} are implemented in ELM to account for the sub-grid topographic effects on solar radiation fluxes.</p>
 <div class="footnote">
 <hr />
