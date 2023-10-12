@@ -12,7 +12,7 @@ For the purpose of these document, let's assume the developer branch is `bishtga
 Find the starting hash on `master` by switching to the developer branch and looking at the Git
 graph.
 
-```
+```bash
 cd <e3sm-dir>
 
 # Switch to your branch
@@ -47,7 +47,7 @@ git log --oneline --decorate --graph
 
 The above Git graph tells us that `bishtgautam/lnd/emi-example` started with the `cfb7fc2b2` hash on the `master`. So, we will generate the baselines using `cfb7fc2b2`. Checkout `cfb7fc2b2` and update the submodels via:
 
-```
+```bash
 git checkout cfb7fc2b2
 Note: checking out 'cfb7fc2b2'.
 
@@ -68,13 +68,13 @@ git submodule update --init
 Now we will use `cime/scripts/create_test` to generate baseline for the `e3sm_land_developer`
 test suite.
 
-```
+```bash
 cd cime/scripts
 ```
 
 A few things that you need to decide at this stage include the directory location where the baselines will be saved, the name and ID for the baselines, the project allocation that you will use for running the simulation, if you would like to recieve email notirications about tests, etc.
 
-```
+```bash
 # Define the directory to hold the baseline 
 export MY_BASELINE_DIR=/global/cscratch1/sd/gbisht/e3sm_baselines
 
@@ -96,7 +96,7 @@ export MAIL_USER=<your-mail@something>
 Use `./create_test --help` to get a complete list of arguments. Below are some additional
 useful arguments for `./create_test`:
 
-```
+```bash
 # Other arguments
 # -v         : Verbose option
 # -g         : Generate the baseline
@@ -109,7 +109,7 @@ useful arguments for `./create_test`:
 
 Now run the `e3sm_land_developer`
 
-```
+```bash
 ./create_test e3sm_land_developer  \
 --baseline-root ${MY_BASELINE_DIR} \
 -b ${BASELINE_NAME}                \
@@ -136,7 +136,7 @@ status of test by running the `cs.status.${TEST_ID}` file that was created in th
 Now, switch to the development branch and be sure to update submodules.
 
 
-```
+```bash
 cd <e3sm-dir>
 git checkout bishtgautam/lnd/emi-example
 Previous HEAD position was cfb7fc2b2... Merge branch 'qzhu-lbl/lnd/ch4_inundation_bugfix' (PR #2814)
@@ -149,7 +149,7 @@ git submodule update --init
 
 Again initialize few settings.
 
-```
+```bash
 cd cime/scripts
 
 # Let's use the settings as the last time
@@ -165,7 +165,7 @@ export TEST_ID=9a2cd8459
 
 Run the test suite and compare (via `-c`) against previously generated baselines.
 
-```
+```bash
 ./create_test e3sm_land_developer  \
 --baseline-root ${MY_BASELINE_DIR} \
 -b ${BASELINE_NAME}                \
