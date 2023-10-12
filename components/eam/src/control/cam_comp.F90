@@ -342,6 +342,10 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
    call cldera_add_partitioned_field("ABSORB", 1,dims,dimnames,nparts,part_dim,.false.)
    call cldera_add_partitioned_field("AODVIS", 1,dims,dimnames,nparts,part_dim,.false.)
    call cldera_add_partitioned_field("AODABS", 1,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("AODSO4", 1,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("AODSO401", 1,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("AODSO402", 1,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("AODSO403", 1,dims,dimnames,nparts,part_dim,.false.)
    call cldera_add_partitioned_field("aod"    , 1,dims,dimnames,nparts,part_dim,.false.)
    call cldera_add_partitioned_field("aod_so2", 1,dims,dimnames,nparts,part_dim,.false.)
    call cldera_add_partitioned_field("aod_ash", 1,dims,dimnames,nparts,part_dim,.false.)
@@ -353,8 +357,11 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
    call cldera_add_partitioned_field("FLUTC", 1,dims,dimnames,nparts,part_dim,.false.)
    call cldera_add_partitioned_field("FLNS", 1,dims,dimnames,nparts,part_dim,.false.)
    call cldera_add_partitioned_field("BURDENSO4", 1,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("BURDENSO401", 1,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("BURDENSO402", 1,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("BURDENSO403", 1,dims,dimnames,nparts,part_dim,.false.)
 
-   !2d, mid points
+   ! 2d, mid points
    dims(2) = pver
    dimnames(2) = 'lev'
    call cldera_add_partitioned_field("T",2,dims,dimnames,nparts,part_dim)
@@ -369,6 +376,12 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
    call cldera_add_partitioned_field("exner",2,dims,dimnames,nparts,part_dim)
    call cldera_add_partitioned_field("zm",2,dims,dimnames,nparts,part_dim)
 
+   ! 2d, mid points (copy)
+   call cldera_add_partitioned_field("Mass_so4",2,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("Mass_so401",2,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("Mass_so402",2,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("Mass_so403",2,dims,dimnames,nparts,part_dim,.false.)
+
    ! 2d, interfaces
    dims(2) = pver+1
    dimnames(2) = "ilev"
@@ -382,8 +395,11 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
 
    ! cam_in fields
    call cldera_add_partitioned_field("TREFHT", 1,dims,dimnames,nparts,part_dim)
+   call cldera_add_partitioned_field("QREFHT", 1,dims,dimnames,nparts,part_dim)
    call cldera_add_partitioned_field("TS", 1,dims,dimnames,nparts,part_dim)
    call cldera_add_partitioned_field("QFLX", 1,dims,dimnames,nparts,part_dim)
+   call cldera_add_partitioned_field("SHFLX", 1,dims,dimnames,nparts,part_dim)
+   call cldera_add_partitioned_field("LHFLX", 1,dims,dimnames,nparts,part_dim)
 
    ! cam_out fields
    call cldera_add_partitioned_field("FLDS", 1,dims,dimnames,nparts,part_dim)
@@ -482,24 +498,37 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
      field1d => cam_in(c)%tref(:)
      call cldera_set_field_part_size("TREFHT",ipart,ncols)
      call cldera_set_field_part_data("TREFHT",ipart,field1d)
+     field1d => cam_in(c)%qref(:)
+     call cldera_set_field_part_size("QREFHT",ipart,ncols)
+     call cldera_set_field_part_data("QREFHT",ipart,field1d)
      field1d => cam_in(c)%ts(:)
      call cldera_set_field_part_size("TS",ipart,ncols)
      call cldera_set_field_part_data("TS",ipart,field1d)
      field1d => cam_in(c)%cflx(:,1)
      call cldera_set_field_part_size("QFLX",ipart,ncols)
      call cldera_set_field_part_data("QFLX",ipart,field1d)
+     field1d => cam_in(c)%shf(:)
+     call cldera_set_field_part_size("SHFLX",ipart,ncols)
+     call cldera_set_field_part_data("SHFLX",ipart,field1d)
+     field1d => cam_in(c)%lhf(:)
+     call cldera_set_field_part_size("LHFLX",ipart,ncols)
+     call cldera_set_field_part_data("LHFLX",ipart,field1d)
 
      ! cam_out fields
      field1d => cam_out(c)%flwds(:)
      call cldera_set_field_part_size("FLDS",ipart,ncols)
      call cldera_set_field_part_data("FLDS",ipart,field1d)
 
-     ! Copied field (AOD)
+     ! Copied field
      call cldera_set_field_part_size("AEROD_v", ipart,ncols)
      call cldera_set_field_part_size("AODALL", ipart,ncols)
      call cldera_set_field_part_size("ABSORB", ipart,ncols)
      call cldera_set_field_part_size("AODVIS", ipart,ncols)
      call cldera_set_field_part_size("AODABS", ipart,ncols)
+     call cldera_set_field_part_size("AODSO4", ipart,ncols)
+     call cldera_set_field_part_size("AODSO401", ipart,ncols)
+     call cldera_set_field_part_size("AODSO402", ipart,ncols)
+     call cldera_set_field_part_size("AODSO403", ipart,ncols)
      call cldera_set_field_part_size("aod"    , ipart,ncols)
      call cldera_set_field_part_size("aod_so2", ipart,ncols)
      call cldera_set_field_part_size("aod_ash", ipart,ncols)
@@ -511,6 +540,13 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
      call cldera_set_field_part_size("FLUTC"   , ipart,ncols)
      call cldera_set_field_part_size("FLNS"   , ipart,ncols)
      call cldera_set_field_part_size("BURDENSO4"   , ipart,ncols)
+     call cldera_set_field_part_size("BURDENSO401"   , ipart,ncols)
+     call cldera_set_field_part_size("BURDENSO402"   , ipart,ncols)
+     call cldera_set_field_part_size("BURDENSO403"   , ipart,ncols)
+     call cldera_set_field_part_size("Mass_so4", ipart,ncols)
+     call cldera_set_field_part_size("Mass_so401", ipart,ncols)
+     call cldera_set_field_part_size("Mass_so402", ipart,ncols)
+     call cldera_set_field_part_size("Mass_so403", ipart,ncols)
    enddo
 
    call cldera_commit_all_fields()
