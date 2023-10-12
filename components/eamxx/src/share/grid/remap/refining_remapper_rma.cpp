@@ -579,12 +579,4 @@ void RefiningRemapperRMA::clean_up ()
   m_num_bound_fields = 0;
 }
 
-void RefiningRemapperRMA::
-check_mpi_call (int err, const std::string& context) const {
-  EKAT_REQUIRE_MSG (err==MPI_SUCCESS,
-      "Error! MPI operation encountered an error.\n"
-      "  - err code: " + std::to_string(err) + "\n"
-      "  - context: " + context + "\n");
-}
-
 } // namespace scream

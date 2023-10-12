@@ -2,6 +2,7 @@
 #define SCREAM_REFINING_REMAPPER_RMA_HPP
 
 #include "share/grid/remap/abstract_remapper.hpp"
+#include "share/util/scream_utils.hpp"
 #include "scream_config.h"
 
 #include "ekat/ekat_pack.hpp"
@@ -114,7 +115,6 @@ public:
   void local_mat_vec (const Field& f_src, const Field& f_tgt) const;
 
 protected:
-  void check_mpi_call (int err, const std::string& context) const;
 
   struct Triplet {
     gid_type row;
