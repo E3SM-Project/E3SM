@@ -1426,6 +1426,7 @@
       <env name="OMP_STACKSIZE">64M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
+      <env name="BLA_VENDOR">Generic</env>
     </environment_variables>
   </machine>
 
