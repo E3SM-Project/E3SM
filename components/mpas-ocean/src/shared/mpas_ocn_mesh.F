@@ -509,16 +509,11 @@ contains
 
       ! Start by initializing vertical mesh, min/max cells and
       ! sign/index fields
-      call ocn_meshVertCoordInit(domain)!YSK
-call mpas_log_write('DEBUG POINT 2')
+      call ocn_meshVertCoordInit(domain)
 
       call ocn_meshMinMaxLevel()
-!YSK
-call mpas_log_write('DEBUG POINT 3')
 
       call ocn_meshSignIndexFields()
-!YSK
-call mpas_log_write('DEBUG POINT 4')
 
       ! Compute max mesh density and mesh scaling
       if (config_maxMeshDensity < 0.0_RKIND) then
@@ -573,8 +568,6 @@ call mpas_log_write('DEBUG POINT 4')
          invAreaCell(n) = 1.0_RKIND / areaCell(n)
       end do
       invAreaCell(nCellsAll+1) = 0.0_RKIND
-!YSK
-call mpas_log_write('DEBUG POINT 5')
 
       !-----------------------------------------------------------------
       ! Copy mesh data to accelerator if needed.
@@ -668,8 +661,6 @@ call mpas_log_write('DEBUG POINT 5')
          !$acc                   localVerticalUnitVectors, &
          !$acc                   cellTangentPlane,         &
          !$acc                   coeffs_reconstruct)
-!YSK
-call mpas_log_write('DEBUG POINT 6')
 
 !-------------------------------------------------------------------------------
 
@@ -1698,8 +1689,6 @@ call mpas_log_write('DEBUG POINT 6')
           MPAS_LOG_CRIT)
       endif
 
-!YSK
-call mpas_log_write('DEBUG POINT 1')
 
    !--------------------------------------------------------------------
 

@@ -122,8 +122,6 @@ contains
 
       type (mpas_pool_iterator_type) :: groupItr
 
-      call mpas_log_write('DEBUG POINT 11-1-1')  
-
       call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
       call mpas_pool_get_dimension(block % dimensions, 'nEdges', nEdges)
       call mpas_pool_get_dimension(block % dimensions, 'nVertices', nVertices)
@@ -149,7 +147,6 @@ contains
 
       call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
 
-      call mpas_log_write('DEBUG POINT 11-1-1')  
       if (.not. config_do_restart) then
          do iCell=1,nCells
             boundaryLayerDepth(iCell) = layerThickness(minLevelCell(iCell), iCell) * 0.5_RKIND
@@ -157,7 +154,6 @@ contains
          end do
       end if
 
-      call mpas_log_write('DEBUG POINT 11-1-2')  
 #ifdef MPAS_OPENACC
       !$acc enter data copyin(layerThickness, normalVelocity)
       !$acc update device (normalTransportVelocity, &
@@ -175,7 +171,6 @@ contains
       endif
 #endif
       call ocn_diagnostic_solve(dt,  statePool, forcingPool, meshPool, verticalMeshPool, scratchPool, tracersPool)
-      call mpas_log_write('DEBUG POINT 11-1-3')  
 #ifdef MPAS_OPENACC
       !$acc update host(layerThickEdgeFlux, layerThickEdgeMean)
       !$acc update host(relativeVorticity, circulation)
@@ -215,7 +210,6 @@ contains
       endif
       !$acc exit data delete(layerThickness, normalVelocity)
 #endif
-      call mpas_log_write('DEBUG POINT 11-1-4')  
 
       layerThickness(:, nCells+1) = 0.0_RKIND
 
@@ -228,7 +222,6 @@ contains
          normalVelocity(1:minLevelEdgeTop(iEdge)-1,iEdge) = -1.0e34_RKIND
       end do
 
-      call mpas_log_write('DEBUG POINT 11-1-5')  
       call mpas_pool_begin_iteration(tracersPool)
       do while ( mpas_pool_get_next_member(tracersPool, groupItr) )
          if ( groupItr % memberType == MPAS_POOL_FIELD ) then
@@ -242,7 +235,6 @@ contains
          end if
       end do
 
-      call mpas_log_write('DEBUG POINT 11-1-6')  
       ! ------------------------------------------------------------------
       ! Accumulating various parametrizations of the transport velocity
       ! ------------------------------------------------------------------
@@ -255,13 +247,10 @@ contains
       ! ------------------------------------------------------------------
 
       call mpas_rbf_interp_initialize(meshPool)
-      call mpas_log_write('DEBUG POINT 11-1-7')  
       call mpas_initialize_tangent_vectors(meshPool, edgeTangentVectors)
 
-      call mpas_log_write('DEBUG POINT 11-1-8')  
       call mpas_init_reconstruct(meshPool, includeHalos=.true.)
 
-      call mpas_log_write('DEBUG POINT 11-1-9')  
       call mpas_reconstruct(meshPool, normalVelocity,        &
                        velocityX,            &
                        velocityY,            &
@@ -270,20 +259,14 @@ contains
                        velocityMeridional    &
                       )
 
-      call mpas_log_write('DEBUG POINT 11-1-10')  
       call mpas_pool_initialize_time_levels(statePool)
 
-      call mpas_log_write('DEBUG POINT 11-1-11')  
       ! compute land-ice fluxes for potential output at startup
       call ocn_forcing_build_fraction_absorbed_array(meshPool, statePool, forcingPool, err1, 1)
-      call mpas_log_write('DEBUG POINT 11-1-12')  
       err = ior(err, err1)
       call ocn_surface_land_ice_fluxes_build_arrays(meshPool, &
                                                     forcingPool, scratchPool, statePool, dt, err1)
       err = ior(err, err1)
-
-
-      call mpas_log_write('DEBUG POINT 11-1-13')  
 
    end subroutine ocn_init_routines_block!}}}
 

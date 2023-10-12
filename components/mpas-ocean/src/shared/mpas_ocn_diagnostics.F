@@ -145,8 +145,6 @@ contains
       integer, dimension(:), pointer :: &
         landIceFloatingMask
 
-      call mpas_log_write('DEBUG DIAG-SOLVE 1')
-
       call mpas_timer_start('diagnostic solve')
 
       if ( present(full) ) then
@@ -160,8 +158,6 @@ contains
       else
          timeLevel = 1
       end if
-
-      call mpas_log_write('DEBUG DIAG-SOLVE 2')
 
       call mpas_pool_get_dimension(tracersPool, 'index_temperature', &
                                                  indexTemperaturePtr)
@@ -190,8 +186,6 @@ contains
                                 MPAS_LOG_CRIT)
          endif
       end if
-
-      call mpas_log_write('DEBUG DIAG-SOLVE 3')
 
       nEdges = nEdgesAll
       nCells = nCellsAll
@@ -245,18 +239,14 @@ contains
 !     endif
 #endif
 
-      call mpas_log_write('DEBUG DIAG-SOLVE 4')
       ! inputs: layerThickness, normalVelocity
       ! output: layerThickEdgeMean, layerThickEdgeDrag, layerThickEdgeFlux
       call ocn_diagnostic_solve_layerThicknessEdge(normalVelocity, &
                                                    layerThickness, restingThickness)
-
-      call mpas_log_write('DEBUG DIAG-SOLVE 5')
       ! inputs: normalVelocity
       ! outputs: relativeVorticity, circulation
       call ocn_relativeVorticity_circulation(relativeVorticity, circulation, normalVelocity, err)
 
-      call mpas_log_write('DEBUG DIAG-SOLVE 6')
       ! inputs: relativeVorticity, layerThickEdgeFlux, normalVelocity, normalTransportVelocity,
       !         normalGMBolusVelocity
       ! outputs: vertTransportVelocityTop, vertGMBolusVelocityTop, relativeVorticityCell,
@@ -267,19 +257,16 @@ contains
              vertVelocityTop, vertTransportVelocityTop, relativeVorticityCell, &
              divergence, kineticEnergyCell, tangentialVelocity)
 
-      call mpas_log_write('DEBUG DIAG-SOLVE 7')
       !compute vertical velocity due to gm bolus velocity if requested
       if (config_use_gm) then
          call ocn_diagnostic_solve_GMvel(layerThickEdgeFlux, normalGMBolusVelocity, vertGMBolusVelocityTop)
       end if
 
-      call mpas_log_write('DEBUG DIAG-SOLVE 8')
       !compute vertical velocity due to submesoscale eddies (MLE) velocity if requested
       if (config_submesoscale_enable) then
          call ocn_diagnostic_solve_MLEvel(layerThickEdgeFlux, normalMLEVelocity, vertMLEBolusVelocityTop)
       end if
 
-      call mpas_log_write('DEBUG DIAG-SOLVE 9')
       if ( configVertAdvMethod == vertAdvRemap ) then
 
          ! Overwrite vertVelocityTop with exact Eulerian solution from remapping
@@ -323,7 +310,6 @@ contains
          endif
       endif
 
-      call mpas_log_write('DEBUG DIAG-SOLVE 10')
       !
       ! Compute kinetic energy
       !
@@ -333,7 +319,6 @@ contains
          call ocn_diagnostic_solve_kineticEnergy(normalVelocity, kineticEnergyCell)
       end if
 
-      call mpas_log_write('DEBUG DIAG-SOLVE 11')
       ! inputs :: normalVelocity, tangentialVelocity, layerThickness, relativeVorticity
       ! outputs :: normRelVortEdge, normPlanetVortEdge,
       !            normalizedRelativeVorticityCell
@@ -342,7 +327,6 @@ contains
                 normRelVortEdge, normPlanetVortEdge, &
                 normalizedRelativeVorticityCell)
 
-      call mpas_log_write('DEBUG DIAG-SOLVE 12')
       !
       ! Surface pressure
       ! This section must be placed in the code before computing the density.
@@ -352,7 +336,6 @@ contains
       call ocn_diagnostic_solve_surface_pressure(forcingPool, atmosphericPressure, &
                 seaIcePressure, surfacePressure)
 
-      call mpas_log_write('DEBUG DIAG-SOLVE 13')
       !
       ! Z-coordinates
       ! This section must be placed in the code before computing the density.
@@ -361,7 +344,6 @@ contains
       ! outputs : zMid, zTop, ssh)
       call ocn_diagnostic_solve_z_coordinates(layerThickness, zMid, zTop, ssh)
 
-      call mpas_log_write('DEBUG DIAG-SOLVE 14')
       !
       ! equation of state
       !
@@ -377,20 +359,17 @@ contains
                                          thermExpCoeff, salineContractCoeff, &
                                          timeLevelIn=timeLevel)
 
-      call mpas_log_write('DEBUG DIAG-SOLVE 15')
       ! compute potentialDensity, the density displaced adiabatically to the mid-depth of top layer.
       call ocn_equation_of_state_density(statePool, meshPool, activeTracers, tracersSurfaceValue, &
                                          nCells, 1, 'absolute', potentialDensity, &
                                          err, timeLevelIn=timeLevel)
 
-      call mpas_log_write('DEBUG DIAG-SOLVE 16')
       ! compute displacedDensity, density displaced adiabatically to the mid-depth one layer deeper.
       ! That is, layer k has been displaced to the depth of layer k+1.
       call ocn_equation_of_state_density(statePool, meshPool, activeTracers, tracersSurfaceValue, &
                                          nCells, 1, 'relative', displacedDensity, &
                                          err, timeLevelIn=timeLevel)
 
-      call mpas_log_write('DEBUG DIAG-SOLVE 17')
       !
       ! Pressure
       ! This section must be placed in the code after computing the density.
@@ -400,7 +379,6 @@ contains
       call ocn_diagnostic_solve_pressure(layerThickness, density, &
                 surfacePressure, montgomeryPotential, pressure)
 
-      call mpas_log_write('DEBUG DIAG-SOLVE 18')
       nCells = nCellsAll
 
       if ( full_compute ) then
@@ -415,7 +393,6 @@ contains
 
       end if    ! full_compute
 
-      call mpas_log_write('DEBUG DIAG-SOLVE 20')
       !
       ! extrapolate tracer values to ocean surface
       ! this eventually be a modelled process
@@ -446,7 +423,6 @@ contains
       !$omp end do
 #endif
 
-      call mpas_log_write('DEBUG DIAG-SOLVE 21')
 #ifdef MPAS_OPENACC
       ! normalVelocitySurfaceLayer calc
       ! inputs: normalVelocity, minLevelEdgeBot
@@ -464,7 +440,6 @@ contains
       !$omp end parallel
 #endif
 
-      call mpas_log_write('DEBUG DIAG-SOLVE 22')
       if ( full_compute ) then
 
          !
@@ -481,7 +456,6 @@ contains
 
       end if ! full_compute
 
-      call mpas_log_write('DEBUG DIAG-SOLVE 23')
       !
       !  compute fields needed to compute land-ice fluxes, either in the ocean model or in the coupler
       !
@@ -492,7 +466,6 @@ contains
                 landIceFraction, landIceFloatingMask, timeLevel, indexTemperature, indexSalinity)
       end if
 
-      call mpas_log_write('DEBUG DIAG-SOLVE 24')
       if ( full_compute ) then
 
          !
@@ -508,7 +481,6 @@ contains
 
       end if ! full_compute
 
-      call mpas_log_write('DEBUG DIAG-SOLVE 25')
 #ifdef MPAS_OPENACC
       !! Listing outputs by first routine that modifies variable
       !! ocn_diagnostic_solve_layerThicknessEdge :: layerThickEdgeDrag, (diagnostics array)
@@ -598,7 +570,6 @@ contains
 !     !$acc                   activeTracers)
 #endif
 
-      call mpas_log_write('DEBUG DIAG-SOLVE 26')
       call mpas_timer_stop('diagnostic solve')
 
    end subroutine ocn_diagnostic_solve!}}}
@@ -1128,13 +1099,11 @@ contains
 
       nCells = nCellsHalo( 2 )
 
-      call mpas_log_write('DEBUG DIAG-SOLVE 10-1')
       allocate(kineticEnergyVertex(nVertLevels, nVerticesAll), &
                kineticEnergyVertexOnCells(nVertLevels, nCells))
       !$acc enter data create(kineticEnergyVertex, &
       !$acc                   kineticEnergyVertexOnCells)
 
-      call mpas_log_write('DEBUG DIAG-SOLVE 10-1-1')
 
 #ifdef MPAS_OPENACC
       !$acc parallel loop &
@@ -1150,7 +1119,7 @@ contains
             iEdge = edgesOnVertex(i, iVertex)
             rTmp  = dcEdge(iEdge)*dvEdge(iEdge)*0.25_RKIND/ &
                     areaTriangle(iVertex)
-!            !$acc loop seq
+!YSK: stuck at this line           !$acc loop seq
             do k = 1, nVertLevels
                kineticEnergyVertex(k,iVertex) = &
                kineticEnergyVertex(k,iVertex) + rTmp* &
@@ -1162,7 +1131,6 @@ contains
       !$omp end do
 #endif
 
-      call mpas_log_write('DEBUG DIAG-SOLVE 10-2')
 #ifdef MPAS_OPENACC
       !$acc parallel loop &
       !$acc    present(kineticEnergyVertexOnCells, kineticEnergyVertex,&
@@ -1191,7 +1159,6 @@ contains
       !$omp end do
 #endif
 
-      call mpas_log_write('DEBUG DIAG-SOLVE 10-3')
       !
       ! Compute kinetic energy in each cell by blending
       ! kineticEnergyCell and kineticEnergyVertexOnCells
@@ -1215,12 +1182,10 @@ contains
       !$omp end parallel
 #endif
 
-      call mpas_log_write('DEBUG DIAG-SOLVE 10-4')
       !$acc exit data delete(kineticEnergyVertex, &
       !$acc                  kineticEnergyVertexOnCells)
       deallocate(kineticEnergyVertex, &
                  kineticEnergyVertexOnCells)
-      call mpas_log_write('DEBUG DIAG-SOLVE 10-5')
 
    !--------------------------------------------------------------------
 
