@@ -250,6 +250,12 @@ void MAMMicrophysics::run_impl(const double dt) {
   // FIXME: nothing depends on simulation time (yet), so we can just use zero for now
   double t = 0.0;
 
+  // ... look up photolysis rates from our table
+  // FIXME: figure this out
+  Real cwat = cldw;
+  table_photo(reaction_rates, pmid, pdel, tfld, col_dens, zen_angle,
+    asdir, cwat, cldfr, esfact, ncol);
+
   // loop over atmosphere columns and compute aerosol microphyscs
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const ThreadTeam& team) {
     const Int icol = team.league_rank(); // column index

@@ -67,12 +67,6 @@ void gas_phase_chemistry(Real zm, Real zi, Real phis, Real q[mam_coupling::gas_p
   Real esfact = 1.0;
   shr_orb_decl(calday, eccen, mvelpp, lambm0, obliqr, delta, esfact);
 
-  // ... look up the photolysis rates from table
-  // FIXME: We might need to rework this for ѕingle vertical levels
-  Real cwat = cldw;
-  table_photo(reaction_rates, pmid, pdel, tfld, col_dens, zen_angle,
-    asdir, cwat, cldfr, esfact, ncol);
-
   // ... compute the extraneous frcing at time = t(n+1)
   setext(extfrc, lchnk, ncol, zintr);
 
