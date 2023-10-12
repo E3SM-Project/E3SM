@@ -74,6 +74,7 @@ $$
 
 The $SZA$ and $SAA$ are assumed to be constant within a grid cell, but $\alpha$ and $\beta$ vary within a grid cell. The grid cell average solar incident angle, , can be expressed as follows:
 
+$$
 \begin{eqnarray}
 \overline{\mu} &=& \overline{\cos(SZA) \cos(\alpha)} + \overline{\sin(SZA) \sin(\alpha) \cos(SAA-\beta)} \nonumber \\
 &=& \cos(SZA)  \overline{\cos(\alpha)} + 
@@ -82,19 +83,24 @@ The $SZA$ and $SAA$ are assumed to be constant within a grid cell, but $\alpha$ 
 & & \sin(SZA) \sin(SAA) +
 \overline{\sin(\alpha) \sin(\beta)}
 \end{eqnarray}
+$$
 
 where overlines represent grid-averaged values. To further improve the regression parameterization, $\mu$, $V_d$, and $C_T$ are normalized by $\cos(\alpha)$. The land surface albedo is adjusted, instead of modifying incoming solar radiation, to maintain the surface energy conservation and the consistency between the surface and the first levels of atmosphere above the surface (Lee et al., 2015). Specifically, to keep the absorbed solar radiation of the ground surface unchanged, Lee et al. (2015) built the relationship between direct ($\alpha_{dir}^{TOP}$) and diffuse ($\alpha_{dif}^{TOP}$) albedo over mountains and those ($\alpha_{dir}^{PP}$ and $\alpha_{dif}^PP$) over flat surfaces as follows:
 
+$$
 \begin{eqnarray}
 F_{dir}^{PP} (1 - \alpha_{dir}^{TOP}) &=& (F_{dir}^{TOP} + F_{rdir}^{TOP})(1 - \alpha_{dir}^{PP}) \label{eqn_fdir_pp} \\
 F_{dif}^{PP} (1 - \alpha_{dif}^{TOP}) &=& (F_{dif}^{TOP} + F_{rdif}^{TOP})(1 - \alpha_{dif}^{PP}) \label{eqn_fdif_pp}
 \end{eqnarray}
+$$
 
 Substituting Eqns \eqref{eqn_fdir}-\eqref{eqn_frdif} into Eqs \eqref{eqn_fdir_pp}-\eqref{eqn_fdif_pp} leads to
 
+$$
 \begin{eqnarray}
 \alpha_{dir}^{TOP} &=& 1 - (1 + f_{dir} + f_{rdir}) (1 - \alpha_{dir}^{PP}) \label{eqn_alb_dir_top} \\
 \alpha_{dif}^{TOP} &=& 1 - (1 + f_{dif} + f_{rdif}) (1 - \alpha_{dif}^{PP}) \label{eqn_alb_dif_top}
 \end{eqnarray}
+$$
 
 The parameterizations represented by Eqs. \eqref{eqn_linear_reg}, \eqref{eqn_alb_dir_top}, and \eqref{eqn_alb_dif_top} are implemented in ELM to account for the sub-grid topographic effects on solar radiation fluxes.
