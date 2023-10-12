@@ -379,7 +379,7 @@ contains
          usePlanetVorticity = .false.
 
       case ('split_explicit_ab2')
-         ! For split explicit, Coriolis tendency uses eta/h because
+         ! For split explicit AB2, Coriolis tendency uses eta/h because
          ! the Coriolis term is added separately to the momentum
          ! tendencies.
          usePlanetVorticity = .false.

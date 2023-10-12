@@ -754,8 +754,7 @@ module ocn_time_integration_split_ab2
 
                !$omp parallel
                !$omp do schedule(runtime) &
-               !$omp private(k, cell1, cell2, uTemp, sshGrad, &
-               !$omp         normalThicknessFluxSum, thicknessSum)
+               !$omp private(k, cell1, cell2, sshGrad)
                do iEdge = 1, nEdgesOwned
                   cell1 = cellsOnEdge(1,iEdge)
                   cell2 = cellsOnEdge(2,iEdge)
@@ -796,8 +795,7 @@ module ocn_time_integration_split_ab2
                if ( j == 1 ) then
                   !$omp parallel
                   !$omp do schedule(runtime) &
-                  !$omp private(k, cell1, cell2, uTemp, &
-                  !$omp         normalThicknessFluxSum, thicknessSum)
+                  !$omp private(k, cell1, cell2, sshGrad)
                   do iEdge = 1, nEdgesOwned
                      cell1 = cellsOnEdge(1,iEdge)
                      cell2 = cellsOnEdge(2,iEdge)
@@ -834,8 +832,7 @@ module ocn_time_integration_split_ab2
 
                   !$omp parallel
                   !$omp do schedule(runtime) &
-                  !$omp private(k, cell1, cell2, uTemp, &
-                  !$omp         normalThicknessFluxSum, thicknessSum)
+                  !$omp private(k, cell1, cell2, sshGrad)
                   do iEdge = 1, nEdgesOwned
                      cell1 = cellsOnEdge(1,iEdge)
                      cell2 = cellsOnEdge(2,iEdge)
@@ -873,8 +870,7 @@ module ocn_time_integration_split_ab2
 
             !$omp parallel
             !$omp do schedule(runtime) &
-            !$omp private(k, cell1, cell2, uTemp, &
-            !$omp         normalThicknessFluxSum, thicknessSum)
+            !$omp private(k, normalThicknessFluxSum, thicknessSum)
             do iEdge = 1, nEdgesOwned
                ! thicknessSum is initialized outside the loop because
                ! on land boundaries maxLevelEdgeTop=0, but we want to
@@ -2045,7 +2041,6 @@ module ocn_time_integration_split_ab2
             !$omp end do
             !$omp end parallel
 #endif
-
                
             ! Compute layerThicknessTend again
             !   layerThickTend from 0.5 * (h_{n} + h_{*})
@@ -2075,8 +2070,8 @@ module ocn_time_integration_split_ab2
                !$omp end do
                !$omp end parallel
 #endif
-               nEdges = nEdgesHalo(config_num_halos-1 )
-               allocate(uTemp(nVertLevels,nEdges))
+
+               allocate(uTemp(nVertLevels,nEdgesAll))
 
                ! velocity for normalVelocityCorrectionection is
                ! normalBarotropicVelocity +
@@ -2113,7 +2108,7 @@ module ocn_time_integration_split_ab2
 
                !$omp parallel
                !$omp do schedule(runtime) &
-               !$omp private(k, uTemp, normalThicknessFluxSum, &
+               !$omp private(k, normalThicknessFluxSum, &
                !$omp         thicknessSum, normalVelocityCorrection)
                do iEdge = 1, nEdges
 
@@ -2151,8 +2146,8 @@ module ocn_time_integration_split_ab2
 
 #ifdef MPAS_OPENACC
                !$acc parallel loop gang vector &
-               !$acc          present(maxLevelCell, zMid, layerThickness, zTop, bottomDepth, ssh, &
-               !$acc                  minLevelCell) &
+               !$acc          present(maxLevelCell, zMid, layerThickness, zTop, &
+               !$acc                  bottomDepth, ssh, minLevelCell) &
                !$acc          private(k)
 #else
                !$omp parallel
@@ -2182,8 +2177,10 @@ module ocn_time_integration_split_ab2
                   end do
 
                end do
+#ifndef MPAS_OPENACC
                !$omp end do
                !$omp end parallel
+#endif
 
                call ocn_vert_transport_velocity_top( &
                     verticalMeshPool, layerThicknessCur, &
@@ -2202,7 +2199,7 @@ module ocn_time_integration_split_ab2
                do k = minLevelCell(iCell), maxLevelCell(iCell)
                   ! this is h_{n+1} = h_{n} + dt * hTend_{n+0.5}
                   layerThicknessNew(k,iCell) = &
-                                        layerThicknessCur(k,iCell) + &
+                                         layerThicknessCur(k,iCell) + &
                                      dt*layerThicknessTend(k,iCell)
                end do
                end do
