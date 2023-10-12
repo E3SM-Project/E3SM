@@ -35,12 +35,9 @@ namespace scream
  * An obvious future development would be to use some scratch memory
  * for these fields, so to not increase memory pressure.
  *
- * The setup of the class uses a bunch of RMA mpi operations, since they
- * are more convenient when ranks don't know where data is coming from
- * or how much data is coming from each rank. The runtime operations,
- * however, use the classic send/recv paradigm, where data is packed in
- * a buffer, sent to the recv rank, and then unpacked and accumulated
- * into the result.
+ * The setup as well as the runtime operations use classic send/recv
+ * MPI calls, where data is packed in a buffer and sent to the recv rank,
+ * where it is then unpacked and accumulated into the result.
  */
 
 class CoarseningRemapper : public AbstractRemapper

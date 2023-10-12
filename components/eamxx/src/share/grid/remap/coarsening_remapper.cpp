@@ -789,6 +789,7 @@ void CoarseningRemapper::pack_and_send ()
       default:
         EKAT_ERROR_MSG ("Unexpected field rank in CoarseningRemapper::pack.\n"
             "  - MPI rank  : " + std::to_string(m_comm.rank()) + "\n"
+            "  - field name: " + f.name() + "\n"
             "  - field rank: " + std::to_string(fl.rank()) + "\n");
     }
   }

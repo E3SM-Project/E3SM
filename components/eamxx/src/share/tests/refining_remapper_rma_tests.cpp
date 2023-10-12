@@ -1,6 +1,6 @@
 #include <catch2/catch.hpp>
 
-#include "share/grid/remap/refining_remapper.hpp"
+#include "share/grid/remap/refining_remapper_rma.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/io/scream_scorpio_interface.hpp"
 #include "share/util/scream_setup_random_test.hpp"
@@ -16,13 +16,13 @@ cmvdc (const VT& v) {
   return vh;
 }
 
-class RefiningRemapperTester : public RefiningRemapper {
+class RefiningRemapperRMATester : public RefiningRemapperRMA {
 public:
-  RefiningRemapperTester (const grid_ptr_type& tgt_grid,
+  RefiningRemapperRMATester (const grid_ptr_type& tgt_grid,
                           const std::string& map_file)
-   : RefiningRemapper(tgt_grid,map_file) {}
+   : RefiningRemapperRMA(tgt_grid,map_file) {}
 
-  ~RefiningRemapperTester () = default;
+  ~RefiningRemapperRMATester () = default;
 
   void test_internals () {
     // Test arrays size
@@ -161,7 +161,7 @@ Field all_gather_field (const Field& f, const ekat::Comm& comm) {
           break;
         default:
           EKAT_ERROR_MSG (
-              "Unexpected rank in RefiningRemapper unit test.\n"
+              "Unexpected rank in RefiningRemapperRMA unit test.\n"
               "  - field name: " + f.name() + "\n");
       }
       comm.broadcast(data,col_size,pid);
@@ -224,6 +224,8 @@ void write_map_file (const std::string& filename, const int ngdofs_src) {
 TEST_CASE ("refining_remapper") {
   using gid_type = AbstractGrid::gid_type;
 
+  auto& catch_capture = Catch::getResultCapture();
+
   ekat::Comm comm(MPI_COMM_WORLD);
 
   auto engine = setup_random_test (&comm);
@@ -253,7 +255,7 @@ TEST_CASE ("refining_remapper") {
 
   // Test bad registrations separately, since they corrupt the remapper state for later
   {
-    auto r = std::make_shared<RefiningRemapperTester>(tgt_grid,filename);
+    auto r = std::make_shared<RefiningRemapperRMATester>(tgt_grid,filename);
     auto src_grid = r->get_src_grid();
     r->registration_begins();
     Field bad_src(FieldIdentifier("",src_grid->get_2d_scalar_layout(),ekat::units::m,src_grid->name(),DataType::IntType));
@@ -264,7 +266,7 @@ TEST_CASE ("refining_remapper") {
     CHECK_THROWS (r->register_field(bad_src,bad_tgt)); // bad data type (must be real)
   }
 
-  auto r = std::make_shared<RefiningRemapperTester>(tgt_grid,filename);
+  auto r = std::make_shared<RefiningRemapperRMATester>(tgt_grid,filename);
   auto src_grid = r->get_src_grid();
 
   auto bundle_src = create_field("bundle3d_src",LayoutType::Vector3D,*src_grid,engine);
@@ -314,6 +316,7 @@ TEST_CASE ("refining_remapper") {
     if (comm.am_i_root()) {
       printf(" -> Checking 2d scalars .........\n");
     }
+    bool ok = true;
     gs2d_src.sync_to_host();
     gs2d_tgt.sync_to_host();
 
@@ -323,14 +326,16 @@ TEST_CASE ("refining_remapper") {
     // Coarse grid cols are just copied
     for (int icol=0; icol<ngdofs_src; ++icol) {
       CHECK (tgt_v[2*icol]==src_v[icol]);
+      ok &= catch_capture.lastAssertionPassed();
     }
     // Fine cols are an average of the two cols nearby
     for (int icol=0; icol<ngdofs_src-1; ++icol) {
       avg = (src_v[icol] + src_v[icol+1]) / 2;
       CHECK (tgt_v[2*icol+1]==avg);
+      ok &= catch_capture.lastAssertionPassed();
     }
     if (comm.am_i_root()) {
-      printf(" -> Checking 2d scalars ......... PASS\n");
+      printf(" -> Checking 2d scalars ......... %s\n",ok ? "PASS" : "FAIL");
     }
   }
 
@@ -339,6 +344,7 @@ TEST_CASE ("refining_remapper") {
     if (comm.am_i_root()) {
       printf(" -> Checking 2d vectors .........\n");
     }
+    bool ok = true;
     gv2d_src.sync_to_host();
     gv2d_tgt.sync_to_host();
 
@@ -349,6 +355,7 @@ TEST_CASE ("refining_remapper") {
     for (int icol=0; icol<ngdofs_src; ++icol) {
       for (int icmp=0; icmp<2; ++icmp) {
         CHECK (tgt_v(2*icol,icmp)==src_v(icol,icmp));
+        ok &= catch_capture.lastAssertionPassed();
       }
     }
     // Fine cols are an average of the two cols nearby
@@ -356,10 +363,11 @@ TEST_CASE ("refining_remapper") {
       for (int icmp=0; icmp<2; ++icmp) {
         avg = (src_v(icol,icmp) + src_v(icol+1,icmp)) / 2;
         CHECK (tgt_v(2*icol+1,icmp)==avg);
+        ok &= catch_capture.lastAssertionPassed();
       }
     }
     if (comm.am_i_root()) {
-      printf(" -> Checking 2d vectors ......... PASS\n");
+      printf(" -> Checking 2d vectors ......... %s\n",ok ? "PASS" : "FAIL");
     }  
   }
 
@@ -368,6 +376,7 @@ TEST_CASE ("refining_remapper") {
     if (comm.am_i_root()) {
       printf(" -> Checking 3d scalars .........\n");
     }
+    bool ok = true;
     gs3d_src.sync_to_host();
     gs3d_tgt.sync_to_host();
 
@@ -378,6 +387,7 @@ TEST_CASE ("refining_remapper") {
     for (int icol=0; icol<ngdofs_src; ++icol) {
       for (int ilev=0; ilev<nlevs; ++ilev) {
         CHECK (tgt_v(2*icol,ilev)==src_v(icol,ilev));
+        ok &= catch_capture.lastAssertionPassed();
       }
     }
     // Fine cols are an average of the two cols nearby
@@ -385,10 +395,11 @@ TEST_CASE ("refining_remapper") {
       for (int ilev=0; ilev<nlevs; ++ilev) {
         avg = (src_v(icol,ilev) + src_v(icol+1,ilev)) / 2;
         CHECK (tgt_v(2*icol+1,ilev)==avg);
+        ok &= catch_capture.lastAssertionPassed();
       }
     }
     if (comm.am_i_root()) {
-      printf(" -> Checking 3d scalars ......... PASS\n");
+      printf(" -> Checking 3d scalars ......... %s\n",ok ? "PASS" : "FAIL");
     }
   }
 
@@ -397,6 +408,7 @@ TEST_CASE ("refining_remapper") {
     if (comm.am_i_root()) {
       printf(" -> Checking 3d vectors .........\n");
     }
+    bool ok = true;
     gv3d_src.sync_to_host();
     gv3d_tgt.sync_to_host();
 
@@ -408,6 +420,7 @@ TEST_CASE ("refining_remapper") {
       for (int icmp=0; icmp<2; ++icmp) {
         for (int ilev=0; ilev<nlevs; ++ilev) {
           CHECK (tgt_v(2*icol,icmp,ilev)==src_v(icol,icmp,ilev));
+          ok &= catch_capture.lastAssertionPassed();
         }
       }
     }
@@ -417,11 +430,12 @@ TEST_CASE ("refining_remapper") {
         for (int ilev=0; ilev<nlevs; ++ilev) {
           avg = (src_v(icol,icmp,ilev) + src_v(icol+1,icmp,ilev)) / 2;
           CHECK (tgt_v(2*icol+1,icmp,ilev)==avg);
+          ok &= catch_capture.lastAssertionPassed();
         }
       }
     }
     if (comm.am_i_root()) {
-      printf(" -> Checking 3d vectors ......... PASS\n");
+      printf(" -> Checking 3d vectors ......... %s\n",ok ? "PASS" : "FAIL");
     }
   }
 
@@ -430,6 +444,7 @@ TEST_CASE ("refining_remapper") {
     if (comm.am_i_root()) {
       printf(" -> Checking 3d subfields .......\n");
     }
+    bool ok = true;
     gbundle_src.sync_to_host();
     gbundle_tgt.sync_to_host();
 
@@ -444,6 +459,7 @@ TEST_CASE ("refining_remapper") {
       for (int icol=0; icol<ngdofs_src; ++icol) {
         for (int ilev=0; ilev<nlevs; ++ilev) {
           CHECK (tgt_v(2*icol,ilev)==src_v(icol,ilev));
+          ok &= catch_capture.lastAssertionPassed();
         }
       }
       // Fine cols are an average of the two cols nearby
@@ -451,11 +467,12 @@ TEST_CASE ("refining_remapper") {
         for (int ilev=0; ilev<nlevs; ++ilev) {
           avg = (src_v(icol,ilev) + src_v(icol+1,ilev)) / 2;
           CHECK (tgt_v(2*icol+1,ilev)==avg);
+          ok &= catch_capture.lastAssertionPassed();
         }
       }
     }
     if (comm.am_i_root()) {
-      printf(" -> Checking 3d subfields ....... PASS\n");
+      printf(" -> Checking 3d subfields ....... %s\n",ok ? "PASS" : "FAIL");
     }
   }
 

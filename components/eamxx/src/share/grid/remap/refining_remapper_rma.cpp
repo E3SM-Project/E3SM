@@ -1,4 +1,4 @@
-#include "refining_remapper.hpp"
+#include "refining_remapper_rma.hpp"
 
 #include "share/grid/point_grid.hpp"
 #include "share/io/scorpio_input.hpp"
@@ -11,8 +11,8 @@
 namespace scream
 {
 
-RefiningRemapper::
-RefiningRemapper (const grid_ptr_type& tgt_grid,
+RefiningRemapperRMA::
+RefiningRemapperRMA (const grid_ptr_type& tgt_grid,
                   const std::string& map_file)
  : AbstractRemapper()
  , m_comm (tgt_grid->get_comm())
@@ -21,11 +21,11 @@ RefiningRemapper (const grid_ptr_type& tgt_grid,
 
   // Sanity checks
   EKAT_REQUIRE_MSG (tgt_grid->type()==GridType::Point,
-      "Error! RefiningRemapper only works on PointGrid grids.\n"
+      "Error! RefiningRemapperRMA only works on PointGrid grids.\n"
       "  - tgt grid name: " + tgt_grid->name() + "\n"
       "  - tgt_grid_type: " + e2str(tgt_grid->type()) + "\n");
   EKAT_REQUIRE_MSG (tgt_grid->is_unique(),
-      "Error! RefiningRemapper requires a unique target grid.\n");
+      "Error! RefiningRemapperRMA requires a unique target grid.\n");
 
   // This is a refining remapper. We only go in one direction
   m_bwd_allowed = false;
@@ -89,13 +89,13 @@ RefiningRemapper (const grid_ptr_type& tgt_grid,
   Kokkos::deep_copy(m_weights,    weights_h);
 }
 
-RefiningRemapper::
-~RefiningRemapper ()
+RefiningRemapperRMA::
+~RefiningRemapperRMA ()
 {
   clean_up();
 }
 
-FieldLayout RefiningRemapper::
+FieldLayout RefiningRemapperRMA::
 create_src_layout (const FieldLayout& tgt_layout) const
 {
   using namespace ShortFieldTagsNames;
@@ -117,12 +117,12 @@ create_src_layout (const FieldLayout& tgt_layout) const
       src = m_src_grid->get_3d_vector_layout(midpoints,CMP,vec_dim);
       break;
     default:
-      EKAT_ERROR_MSG ("Layout not supported by RefiningRemapper: " + e2str(lt) + "\n");
+      EKAT_ERROR_MSG ("Layout not supported by RefiningRemapperRMA: " + e2str(lt) + "\n");
   }
   return src;
 }
 
-FieldLayout RefiningRemapper::
+FieldLayout RefiningRemapperRMA::
 create_tgt_layout (const FieldLayout& src_layout) const
 {
   using namespace ShortFieldTagsNames;
@@ -144,32 +144,32 @@ create_tgt_layout (const FieldLayout& src_layout) const
       tgt = m_tgt_grid->get_3d_vector_layout(midpoints,CMP,vec_dim);
       break;
     default:
-      EKAT_ERROR_MSG ("Layout not supported by RefiningRemapper: " + e2str(lt) + "\n");
+      EKAT_ERROR_MSG ("Layout not supported by RefiningRemapperRMA: " + e2str(lt) + "\n");
   }
   return tgt;
 }
 
-void RefiningRemapper::
+void RefiningRemapperRMA::
 do_register_field (const identifier_type& src, const identifier_type& tgt)
 {
   constexpr auto COL = ShortFieldTagsNames::COL;
   EKAT_REQUIRE_MSG (src.get_layout().has_tag(COL),
-      "Error! Cannot register a field without COL tag in RefiningRemapper.\n"
+      "Error! Cannot register a field without COL tag in RefiningRemapperRMA.\n"
       "  - field name: " + src.name() + "\n"
       "  - field layout: " + to_string(src.get_layout()) + "\n");
   m_src_fields.push_back(field_type(src));
   m_tgt_fields.push_back(field_type(tgt));
 }
 
-void RefiningRemapper::
+void RefiningRemapperRMA::
 do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
 {
   EKAT_REQUIRE_MSG (src.data_type()==DataType::RealType,
-      "Error! RefiningRemapper only allows fields with RealType data.\n"
+      "Error! RefiningRemapperRMA only allows fields with RealType data.\n"
       "  - src field name: " + src.name() + "\n"
       "  - src field type: " + e2str(src.data_type()) + "\n");
   EKAT_REQUIRE_MSG (tgt.data_type()==DataType::RealType,
-      "Error! RefiningRemapper only allows fields with RealType data.\n"
+      "Error! RefiningRemapperRMA only allows fields with RealType data.\n"
       "  - tgt field name: " + tgt.name() + "\n"
       "  - tgt field type: " + e2str(tgt.data_type()) + "\n");
 
@@ -184,7 +184,7 @@ do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
   }
 }
 
-void RefiningRemapper::do_registration_ends ()
+void RefiningRemapperRMA::do_registration_ends ()
 {
   if (this->m_num_bound_fields==this->m_num_registered_fields) {
     create_ov_src_fields ();
@@ -192,7 +192,7 @@ void RefiningRemapper::do_registration_ends ()
   }
 }
 
-void RefiningRemapper::do_remap_fwd ()
+void RefiningRemapperRMA::do_remap_fwd ()
 {
   // Start RMA epoch on each field
   for (int i=0; i<m_num_fields; ++i) {
@@ -264,7 +264,7 @@ void RefiningRemapper::do_remap_fwd ()
 }
 
 template<int PackSize>
-void RefiningRemapper::
+void RefiningRemapperRMA::
 local_mat_vec (const Field& x, const Field& y) const
 {
   using RangePolicy = typename KT::RangePolicy;
@@ -355,7 +355,7 @@ local_mat_vec (const Field& x, const Field& y) const
   }
 }
 
-auto RefiningRemapper::
+auto RefiningRemapperRMA::
 get_my_triplets (const std::string& map_file,
                  const grid_ptr_type& tgt_grid)
  -> std::vector<Triplet>
@@ -477,7 +477,7 @@ get_my_triplets (const std::string& map_file,
   return my_triplets;
 }
 
-void RefiningRemapper::create_ov_src_fields ()
+void RefiningRemapperRMA::create_ov_src_fields ()
 {
   using FL = FieldLayout;
   m_ov_src_fields.reserve(m_num_fields);
@@ -499,7 +499,7 @@ void RefiningRemapper::create_ov_src_fields ()
   }
 }
 
-void RefiningRemapper::setup_mpi_data_structures ()
+void RefiningRemapperRMA::setup_mpi_data_structures ()
 {
   using namespace ShortFieldTagsNames;
 
@@ -543,15 +543,15 @@ void RefiningRemapper::setup_mpi_data_structures ()
     auto data = f.get_internal_view_data<Real,Host>();
     check_mpi_call(MPI_Win_create(data,win_size,sizeof(Real),
                                   MPI_INFO_NULL,mpi_comm,&m_mpi_win[i]),
-                   "[RefiningRemapper::setup_mpi_data_structures] MPI_Win_create");
+                   "[RefiningRemapperRMA::setup_mpi_data_structures] MPI_Win_create");
 #ifndef EKAT_MPI_ERRORS_ARE_FATAL
     check_mpi_call(MPI_Win_set_errhandler(m_mpi_win[i],MPI_ERRORS_RETURN),
-                   "[RefiningRemapper::setup_mpi_data_structure] setting MPI_ERRORS_RETURN handler on MPI_Win");
+                   "[RefiningRemapperRMA::setup_mpi_data_structure] setting MPI_ERRORS_RETURN handler on MPI_Win");
 #endif
   }
 }
 
-void RefiningRemapper::clean_up ()
+void RefiningRemapperRMA::clean_up ()
 {
   // Clear all MPI related structures
   if (m_mpi_group!=MPI_GROUP_NULL) {
@@ -579,7 +579,7 @@ void RefiningRemapper::clean_up ()
   m_num_bound_fields = 0;
 }
 
-void RefiningRemapper::
+void RefiningRemapperRMA::
 check_mpi_call (int err, const std::string& context) const {
   EKAT_REQUIRE_MSG (err==MPI_SUCCESS,
       "Error! MPI operation encountered an error.\n"

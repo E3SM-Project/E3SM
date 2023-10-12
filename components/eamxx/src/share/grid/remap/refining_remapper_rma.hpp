@@ -1,5 +1,5 @@
-#ifndef SCREAM_REFINING_REMAPPER_HPP
-#define SCREAM_REFINING_REMAPPER_HPP
+#ifndef SCREAM_REFINING_REMAPPER_RMA_HPP
+#define SCREAM_REFINING_REMAPPER_RMA_HPP
 
 #include "share/grid/remap/abstract_remapper.hpp"
 #include "scream_config.h"
@@ -12,45 +12,44 @@ namespace scream
 {
 
 /*
- * A remapper to interpolate fields on a coarser grid
+ * A remapper to interpolate fields on a finer grid
  *
  * This remapper loads an interpolation sparse matrix from a map file,
- * and performs an interpolation form a fine to a coarse grid by means
+ * and performs an interpolation form a coarse to a fine grid by means
  * of a mat-vec product. The sparse matrix encodes the interpolation
  * weights. So far, the map file is *assumed* to store the matrix in
  * triplet format, with row/col indices starting from 1.
  *
- * The remapper takes a src grid and the name of the map file. From here,
- * it creates the tgt grid, and all the internal structures needed for
+ * The remapper takes a tgt grid and the name of the map file. From here,
+ * it creates the src grid, and all the internal structures needed for
  * an efficient mat-vec product at runtime.
  *
  * The mat-vec is performed in two stages:
- *   1. Perform a local mat-vec multiplication (on device), producing intermediate
- *      output fields that have "duplicated" entries (that is, 2+ MPI
- *      ranks could all own a piece of the result for the same dof).
- *   2. Perform a pack-send-recv-unpack sequence via MPI, to accumulate
- *      partial results on the rank that owns the dof in the tgt grid.
+ *   1. Import remote entries of the source fields into an overlapped
+ *      partition, so that each rank has all the entries it needs to
+ *      performe a local mat-vec product.
+ *   2. Perform the local mat-vec product (on device), producing using
+ *      as input fields the onese produced by step one.
  *
  * The class has to create temporaries for the intermediate fields.
  * An obvious future development would be to use some scratch memory
  * for these fields, so to not increase memory pressure.
  *
- * The setup of the class uses a bunch of RMA mpi operations, since they
- * are more convenient when ranks don't know where data is coming from
- * or how much data is coming from each rank. The runtime operations,
- * however, use the classic send/recv paradigm, where data is packed in
- * a buffer, sent to the recv rank, and then unpacked and accumulated
- * into the result.
+ * All the MPI operations performed by this class are implemented with
+ * one-sided (or RMA) MPI routines. One-sided MPI has been in the MPI
+ * standard since 2.0, but its support is still sub-optimal, due to
+ * limited effort in optimizing it by the vendors. Furthermore, as of
+ * Oct 2023, RMA operations are not supported by GPU-aware implementations.
  */
 
-class RefiningRemapper : public AbstractRemapper
+class RefiningRemapperRMA : public AbstractRemapper
 {
 public:
 
-  RefiningRemapper (const grid_ptr_type& tgt_grid,
+  RefiningRemapperRMA (const grid_ptr_type& tgt_grid,
                     const std::string& map_file);
 
-  ~RefiningRemapper ();
+  ~RefiningRemapperRMA ();
 
   FieldLayout create_src_layout (const FieldLayout& tgt_layout) const override;
   FieldLayout create_tgt_layout (const FieldLayout& src_layout) const override;
@@ -89,7 +88,7 @@ protected:
   void do_remap_fwd () override;
 
   void do_remap_bwd () override {
-    EKAT_ERROR_MSG ("RefiningRemapper only supports fwd remapping.\n");
+    EKAT_ERROR_MSG ("RefiningRemapperRMA only supports fwd remapping.\n");
   }
 
 protected:
@@ -113,7 +112,6 @@ public:
 #endif
   template<int N>
   void local_mat_vec (const Field& f_src, const Field& f_tgt) const;
-  void import_source_fields ();
 
 protected:
   void check_mpi_call (int err, const std::string& context) const;
@@ -183,4 +181,4 @@ protected:
 
 } // namespace scream
 
-#endif // SCREAM_REFINING_REMAPPER_HPP
+#endif // SCREAM_REFINING_REMAPPER_RMA_HPP

@@ -29,8 +29,8 @@ if (NOT ${SCREAM_BASELINES_ONLY})
   CreateUnitTest(coarsening_remapper "coarsening_remapper_tests.cpp" "scream_share;scream_io"
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
 
-  # Test refining remap
-  CreateUnitTest(refining_remapper "refining_remapper_tests.cpp" "scream_share;scream_io"
+  # Test refining remap (RMA version)
+  CreateUnitTest(refining_remapper_rma "refining_remapper_rma_tests.cpp" "scream_share;scream_io"
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
 
   # Test vertical remap
