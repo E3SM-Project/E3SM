@@ -18,6 +18,7 @@ set(SHARE_SRC
   field/field_manager.cpp
   grid/abstract_grid.cpp
   grid/grids_manager.cpp
+  grid/grid_import_export.cpp
   grid/se_grid.cpp
   grid/point_grid.cpp
   grid/remap/abstract_remapper.cpp

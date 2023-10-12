@@ -25,6 +25,10 @@ if (NOT ${SCREAM_BASELINES_ONLY})
   CreateUnitTest(grid "grid_tests.cpp" scream_share
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
 
+  # Test grid import-export
+  CreateUnitTest(grid_imp_exp "grid_import_export_tests.cpp" scream_share
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
+
   # Test coarsening remap
   CreateUnitTest(coarsening_remapper "coarsening_remapper_tests.cpp" "scream_share;scream_io"
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
