@@ -70,10 +70,6 @@ void MAMOptics::set_grids(const std::shared_ptr<const GridsManager> grids_manage
   // // aerosol extinction optical depth
   add_field<Computed>("aero_tau_forward", scalar3d_swband_layout, nondim, grid_name);
 
-
-
-
-
     // FIXME: this field doesn't belong here, but this is a convenient place to
   // FIXME: put it for now.
   // number mixing ratio for CCN
