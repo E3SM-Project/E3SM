@@ -863,6 +863,7 @@ module ocn_time_integration_split_ab2
 
                   enddo ! iEdge
                   !$omp end do
+                  !$omp end parallel
 
                end if ! j
 
