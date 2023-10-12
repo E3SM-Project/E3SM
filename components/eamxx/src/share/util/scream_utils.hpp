@@ -24,6 +24,15 @@ enum MemoryUnits {
   GiB
 };
 
+template<typename VT>
+typename VT::HostMirror
+cmvdc (const VT& v)
+{
+  auto vh = Kokkos::create_mirror_view(v);
+  Kokkos::deep_copy(vh,v);
+  return vh;
+}
+
 // Gets current memory (RAM) usage by current process.
 long long get_mem_usage (const MemoryUnits u);
 

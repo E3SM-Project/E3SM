@@ -4,17 +4,10 @@
 #include "share/grid/point_grid.hpp"
 #include "share/io/scream_scorpio_interface.hpp"
 #include "share/util/scream_setup_random_test.hpp"
+#include "share/util/scream_utils.hpp"
 #include "share/field/field_utils.hpp"
 
 namespace scream {
-
-template<typename VT>
-typename VT::HostMirror
-cmvdc (const VT& v) {
-  auto vh = Kokkos::create_mirror_view(v);
-  Kokkos::deep_copy(vh,v);
-  return vh;
-}
 
 class RefiningRemapperRMATester : public RefiningRemapperRMA {
 public:
