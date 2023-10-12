@@ -491,7 +491,7 @@ subroutine phys_ctl_readnl(nlfile)
    ! check MMF parameters
    if (use_MMF) then
       ! Check settings for MMF_microphysics_scheme
-      if ( .not.(MMF_microphysics_scheme .eq. 'm2005' .or. &
+      if ( .not.(MMF_microphysics_scheme .eq. 'p3' .or. &
                  MMF_microphysics_scheme .eq. 'sam1mom' )) then
          write(iulog,*)'phys_setopts: illegal value of MMF_microphysics_scheme:', MMF_microphysics_scheme
          call endrun('phys_setopts: illegal value of MMF_microphysics_scheme')

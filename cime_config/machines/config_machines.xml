@@ -268,6 +268,11 @@
     <environment_variables compiler="nvidia" mpilib="mpich">
       <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.8.3.patch/cray-mpich-8.1.15/nvidia-21.11; else echo "$ADIOS2_ROOT"; fi}</env>
     </environment_variables>
+    <environment_variables compiler="nvidia">
+      <env name="BLAS_ROOT">$SHELL{if [ -z "$BLAS_ROOT" ]; then echo /opt/nvidia/hpc_sdk/Linux_x86_64/22.7/compilers; else echo "$BLAS_ROOT"; fi}</env>
+      <env name="LAPACK_ROOT">$SHELL{if [ -z "$LAPACK_ROOT" ]; then echo /opt/nvidia/hpc_sdk/Linux_x86_64/22.7/compilers; else echo "$LAPACK_ROOT"; fi}</env>
+      <env name="BLA_VENDOR">NVHPC</env>
+    </environment_variables>
     <environment_variables compiler="amdclang" mpilib="mpich">
       <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.8.3.patch/cray-mpich-8.1.15/aocc-3.2.0; else echo "$ADIOS2_ROOT"; fi}</env>
     </environment_variables>
@@ -1421,6 +1426,7 @@
       <env name="OMP_STACKSIZE">64M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
+      <env name="BLA_VENDOR">Generic</env>
     </environment_variables>
   </machine>
 

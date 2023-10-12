@@ -4752,7 +4752,7 @@ Default: false
 </entry>
 
 <entry id="MMF_microphysics_scheme" type="char*16" category="conv"
-       group="phys_ctl_nl" valid_values="m2005, sam1mom" >
+       group="phys_ctl_nl" valid_values="p3, sam1mom" >
 Type of E3SM-MMF microphysics scheme employed.
 Default: sam1mom
 </entry>

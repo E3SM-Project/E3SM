@@ -6,7 +6,6 @@ if (DEBUG)
   string(APPEND FFLAGS " -check all -ftrapuv -init=snan")
 endif()
 string(APPEND SLIBS " -L$ENV{CURL_PATH}/lib -lcurl")
-set(BLA_VENDOR Intel10_64_dyn)
 string(APPEND SLIBS " -lpmi")
 
 set(PIO_FILESYSTEM_HINTS "lustre")

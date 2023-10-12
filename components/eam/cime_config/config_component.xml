@@ -68,12 +68,16 @@
       <value compset="_EAM%ADIAB"      >-phys adiabatic</value>
 
       <!-- Multiscale modeling framework (MMF) -->
-      <value compset="_EAM%.*MMF"      >-use_MMF -crm samxx -nlev 60 -crm_nz 50</value>
-      <value compset="_EAM%.*MMF"      >-crm_dt 10 -crm_dx 2000 -crm_nx 64 -crm_ny 1 </value>
-      <value compset="_EAM%.*MMF"      >-crm_nx_rad 4 -crm_ny_rad 1 -rad rrtmgp -rrtmgpxx</value>
+      <value compset="_EAM%.*MMF1"     >-crm samxx -crm_dt 10 </value>
+      <value compset="_EAM%.*MMF2_"    >-crm pam -pam_dycor spam -crm_dt 8 </value>
+      <value compset="_EAM%.*MMF2-AWFL">-crm pam -pam_dycor awfl -crm_dt 8 </value>
+      <value compset="_EAM%.*MMF"      >-use_MMF -nlev 60 -crm_nz 50</value>
+      <value compset="_EAM%.*MMF"      >-crm_dx 2000 -crm_nx 64 -crm_ny 1 </value>
       <value compset="_EAM%.*MMF1"     >-MMF_microphysics_scheme sam1mom -chem none</value>
-      <value compset="_EAM%.*MMF"      >-use_MMF_VT</value>   <!-- CRM variance transport -->
-      <value compset="_EAM%.*MMF"      >-use_MMF_ESMT</value> <!-- explicit scalar momentum transport -->
+      <value compset="_EAM%.*MMF2"     >-MMF_microphysics_scheme p3 -chem none</value>
+      <value compset="_EAM%.*MMF"      >-crm_nx_rad 4 -crm_ny_rad 1 -rad rrtmgp -rrtmgpxx</value>
+      <value compset="_EAM%.*MMF1"     >-use_MMF_VT</value>   <!-- CRM variance transport -->
+      <value compset="_EAM%.*MMF1"     >-use_MMF_ESMT</value> <!-- explicit scalar momentum transport -->
       <value compset="_EAM%AQP-MMF.*"  >-aquaplanet</value>
       <value compset="_EAM%RCE-MMF.*"  >-aquaplanet -rce</value>
       <value compset="_EAM%SCM-MMF.*"  >-scam</value>
@@ -141,10 +145,10 @@
       <value compset="_EAM%SCREAM-LR-AQUA"              >aquaplanet_SCREAM-LR</value>
       <value compset="_EAM%SCREAM-HR-AQUA"              >aquaplanet_SCREAM-HR</value>
       <!-- MMF / Super-Parameterization -->
-      <value compset="20TR(?:SOI)?_EAM%.*MMF1"          >20TR_MMF-1mom_CMIP6</value>
-      <value compset="1950(?:SOI)?_EAM%.*MMF1"          >1950_MMF-1mom_CMIP6</value>
-      <value compset="2010(?:SOI)?_EAM%.*MMF1"          >2010_mmf_1mom</value>
-      <value compset="2010(?:SOI)?_EAM%.*MMF2"          >2010_mmf_2mom</value>
+      <!-- TODO: revisit the MMF2 use case when aerosols are not prescribed -->
+      <value compset="20TR(?:SOI)?_EAM%.*MMF"           >20TR_MMF-1mom_CMIP6</value>
+      <value compset="1950(?:SOI)?_EAM%.*MMF"           >1950_MMF-1mom_CMIP6</value>
+      <value compset="2010(?:SOI)?_EAM%.*MMF"           >2010_mmf_1mom</value>
       <value compset="_EAM%AQP.*MMF"                    >aquaplanet_MMF-1mom</value>
       <value compset="_EAM%RCE.*MMF"                    >RCEMIP_EAMv1</value>
       <value compset="ARM97_EAM%SCM.*MMF"               >scam_arm97_MMF-1mom</value>
