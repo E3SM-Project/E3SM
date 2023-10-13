@@ -100,6 +100,12 @@ protected:
   // MPI strategy they use (P2P or RMA)
   virtual void setup_mpi_data_structures () = 0;
 
+#ifdef KOKKOS_ENABLE_CUDA
+public:
+#endif
+  template<int N>
+  void local_mat_vec (const Field& f_src, const Field& f_tgt) const;
+
   // The fine and coarse grids. Depending on m_type, they could be
   // respectively m_src_grid and m_tgt_grid or viceversa
   // Note: coarse grid is non-const, so that we can add geo data later.

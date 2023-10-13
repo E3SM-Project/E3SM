@@ -71,8 +71,6 @@ protected:
 #ifdef KOKKOS_ENABLE_CUDA
 public:
 #endif
-  template<int N>
-  void local_mat_vec (const Field& f_src, const Field& f_tgt) const;
   void pack_and_send ();
   void recv_and_unpack ();
 

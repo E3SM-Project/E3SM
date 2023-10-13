@@ -164,17 +164,23 @@ void CoarseningRemapper::do_remap_fwd ()
     const auto& f_ov  = m_ov_fields[i];
 
     const int mask_idx = m_field_idx_to_mask_idx[i];
-    const Field* mask_ptr = nullptr;
     if (mask_idx>0) {
       // Pass the mask to the local_mat_vec routine
-      mask_ptr = &m_src_fields[mask_idx];
-    }
+      const auto& mask = m_src_fields[mask_idx];
 
-    // If possible, dispatch kernel with SCREAM_PACK_SIZE
-    if (can_pack_field(f_src) and can_pack_field(f_ov)) {
-      local_mat_vec<SCREAM_PACK_SIZE>(f_src,f_ov,mask_ptr);
+      // If possible, dispatch kernel with SCREAM_PACK_SIZE
+      if (can_pack_field(f_src) and can_pack_field(f_ov)) {
+        local_mat_vec<SCREAM_PACK_SIZE>(f_src,f_ov,mask);
+      } else {
+        local_mat_vec<1>(f_src,f_ov,mask);
+      }
     } else {
-      local_mat_vec<1>(f_src,f_ov,mask_ptr);
+      // If possible, dispatch kernel with SCREAM_PACK_SIZE
+      if (can_pack_field(f_src) and can_pack_field(f_ov)) {
+        local_mat_vec<SCREAM_PACK_SIZE>(f_src,f_ov);
+      } else {
+        local_mat_vec<1>(f_src,f_ov);
+      }
     }
   }
 
@@ -343,7 +349,7 @@ rescale_masked_fields (const Field& x, const Field& mask) const
 
 template<int PackSize>
 void CoarseningRemapper::
-local_mat_vec (const Field& x, const Field& y, const Field* mask) const
+local_mat_vec (const Field& x, const Field& y, const Field& mask) const
 {
   using RangePolicy = typename KT::RangePolicy;
   using MemberType  = typename KT::MemberType;
@@ -368,24 +374,14 @@ local_mat_vec (const Field& x, const Field& y, const Field* mask) const
       // along the 2nd dimension.
       auto x_view = x.get_strided_view<const Real*>();
       auto y_view = y.get_strided_view<      Real*>();
-      view_1d<Real> mask_view;
-      if (mask != nullptr) {
-        mask_view = mask->get_strided_view<Real*>();
-      }
+      auto mask_view = mask.get_strided_view<Real*>();
       Kokkos::parallel_for(RangePolicy(0,nrows),
                            KOKKOS_LAMBDA(const int& row) {
         const auto beg = row_offsets(row);
         const auto end = row_offsets(row+1);
-        if (mask != nullptr) {
-          y_view(row) = weights(beg)*x_view(col_lids(beg))*mask_view(col_lids(beg));
-          for (int icol=beg+1; icol<end; ++icol) {
-            y_view(row) += weights(icol)*x_view(col_lids(icol))*mask_view(col_lids(icol));
-          }
-        } else {
-          y_view(row) = weights(beg)*x_view(col_lids(beg));
-          for (int icol=beg+1; icol<end; ++icol) {
-            y_view(row) += weights(icol)*x_view(col_lids(icol));
-          }
+        y_view(row) = weights(beg)*x_view(col_lids(beg))*mask_view(col_lids(beg));
+        for (int icol=beg+1; icol<end; ++icol) {
+          y_view(row) += weights(icol)*x_view(col_lids(icol))*mask_view(col_lids(icol));
         }
       });
       break;
@@ -396,16 +392,13 @@ local_mat_vec (const Field& x, const Field& y, const Field* mask) const
       auto y_view = y.get_view<      Pack**>();
       view_1d<const Real> mask_1d;
       view_2d<const Pack> mask_2d;
-      bool mask1d = false; // Init should not be needed, but removes a compiler warning
-      if (mask != nullptr) {
-        // If the mask comes from FieldAtLevel, it's only defined on columns (rank=1)
-        // If the mask comes from vert interpolation remapper, it is defined on ncols x nlevs (rank=2)
-        mask1d = mask->rank()==1;
-        if (mask1d) {
-          mask_1d = mask->get_view<const Real*>();
-        } else {
-          mask_2d = mask->get_view<const Pack**>();
-        }
+      // If the mask comes from FieldAtLevel, it's only defined on columns (rank=1)
+      // If the mask comes from vert interpolation remapper, it is defined on ncols x nlevs (rank=2)
+      bool mask1d = mask.rank()==1;
+      if (mask1d) {
+        mask_1d = mask.get_view<const Real*>();
+      } else {
+        mask_2d = mask.get_view<const Pack**>();
       }
       const int dim1 = PackInfo::num_packs(src_layout.dim(1));
       auto policy = ESU::get_default_team_policy(nrows,dim1);
@@ -417,18 +410,11 @@ local_mat_vec (const Field& x, const Field& y, const Field* mask) const
         const auto end = row_offsets(row+1);
         Kokkos::parallel_for(Kokkos::TeamVectorRange(team,dim1),
                             [&](const int j){
-          if (mask != nullptr) {
-            y_view(row,j) = weights(beg)*x_view(col_lids(beg),j) *
-                            (mask1d ? mask_1d (col_lids(beg)) : mask_2d(col_lids(beg),j));
-            for (int icol=beg+1; icol<end; ++icol) {
-              y_view(row,j) += weights(icol)*x_view(col_lids(icol),j) *
-                            (mask1d ? mask_1d (col_lids(icol)) : mask_2d(col_lids(icol),j));
-            }
-          } else {
-            y_view(row,j) = weights(beg)*x_view(col_lids(beg),j);
-            for (int icol=beg+1; icol<end; ++icol) {
-              y_view(row,j) += weights(icol)*x_view(col_lids(icol),j);
-            }
+          y_view(row,j) = weights(beg)*x_view(col_lids(beg),j) *
+                          (mask1d ? mask_1d (col_lids(beg)) : mask_2d(col_lids(beg),j));
+          for (int icol=beg+1; icol<end; ++icol) {
+            y_view(row,j) += weights(icol)*x_view(col_lids(icol),j) *
+                          (mask1d ? mask_1d (col_lids(icol)) : mask_2d(col_lids(icol),j));
           }
         });
       });
@@ -441,16 +427,13 @@ local_mat_vec (const Field& x, const Field& y, const Field* mask) const
       // Note, the mask is still assumed to be defined on COLxLEV so still only 2D for case 3.
       view_1d<const Real> mask_1d;
       view_2d<const Pack> mask_2d;
-      bool mask1d = false; // Init should not be needed, but removes a compiler warning
-      if (mask != nullptr) {
-        mask1d = mask->rank()==1;
-        // If the mask comes from FieldAtLevel, it's only defined on columns (rank=1)
-        // If the mask comes from vert interpolation remapper, it is defined on ncols x nlevs (rank=2)
-        if (mask1d) {
-          mask_1d = mask->get_view<const Real*>();
-        } else {
-          mask_2d = mask->get_view<const Pack**>();
-        }
+      bool mask1d = mask.rank()==1;
+      // If the mask comes from FieldAtLevel, it's only defined on columns (rank=1)
+      // If the mask comes from vert interpolation remapper, it is defined on ncols x nlevs (rank=2)
+      if (mask1d) {
+        mask_1d = mask.get_view<const Real*>();
+      } else {
+        mask_2d = mask.get_view<const Pack**>();
       }
       const int dim1 = src_layout.dim(1);
       const int dim2 = PackInfo::num_packs(src_layout.dim(2));
@@ -465,18 +448,11 @@ local_mat_vec (const Field& x, const Field& y, const Field* mask) const
                             [&](const int idx){
           const int j = idx / dim2;
           const int k = idx % dim2;
-          if (mask != nullptr) {
-            y_view(row,j,k) = weights(beg)*x_view(col_lids(beg),j,k) * 
-                            (mask1d ? mask_1d (col_lids(beg)) : mask_2d(col_lids(beg),k));
-            for (int icol=beg+1; icol<end; ++icol) {
-              y_view(row,j,k) += weights(icol)*x_view(col_lids(icol),j,k) *
-                            (mask1d ? mask_1d (col_lids(icol)) : mask_2d(col_lids(icol),k));
-            }
-          } else {
-            y_view(row,j,k) = weights(beg)*x_view(col_lids(beg),j,k);
-            for (int icol=beg+1; icol<end; ++icol) {
-              y_view(row,j,k) += weights(icol)*x_view(col_lids(icol),j,k);
-            }
+          y_view(row,j,k) = weights(beg)*x_view(col_lids(beg),j,k) * 
+                          (mask1d ? mask_1d (col_lids(beg)) : mask_2d(col_lids(beg),k));
+          for (int icol=beg+1; icol<end; ++icol) {
+            y_view(row,j,k) += weights(icol)*x_view(col_lids(icol),j,k) *
+                          (mask1d ? mask_1d (col_lids(icol)) : mask_2d(col_lids(icol),k));
           }
         });
       });

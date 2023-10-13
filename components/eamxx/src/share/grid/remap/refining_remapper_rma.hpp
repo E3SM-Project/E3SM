@@ -66,12 +66,6 @@ protected:
   // remapping all the geo data.
   void clean_up ();
 
-#ifdef KOKKOS_ENABLE_CUDA
-public:
-#endif
-  template<int N>
-  void local_mat_vec (const Field& f_src, const Field& f_tgt) const;
-
 protected:
 
   // Wrap a pointer in an MPI_Win
