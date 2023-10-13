@@ -24,10 +24,6 @@ public:
   {
     // Nothing to do
   }
-  std::vector<gid_type>
-  test_triplet_gids (const std::string& map_file) const {
-    return CoarseningRemapper::get_my_triplets_gids (map_file,m_src_grid);
-  }
 
   view_1d<int> get_row_offsets () const {
     return m_row_offsets;
@@ -66,10 +62,6 @@ public:
 
   view_1d<int>::HostMirror get_send_pid_lids_start () const {
     return cmvc(m_send_pid_lids_start);
-  }
-
-  int gid2lid (const gid_type gid, const grid_ptr_type& grid) const {
-    return CoarseningRemapper::gid2lid(gid,grid);
   }
 };
 
@@ -454,22 +446,11 @@ TEST_CASE ("coarsening_remap") {
   // Check tgt grid
   REQUIRE (tgt_grid->get_num_global_dofs()==ngdofs_tgt);
 
-  // Check which triplets are read from map file
-  auto src_dofs_h = src_grid->get_dofs_gids().get_view<const gid_type*,Host>();
-  auto my_triplets = remap->test_triplet_gids (filename);
-  const int num_triplets = my_triplets.size();
-  REQUIRE (num_triplets==nnz_local);
-  for (int i=0; i<nnz_local; ++i) {
-    const auto src_gid = src_dofs_h(i);
-    const auto tgt_gid = src_gid % ngdofs_tgt;
-
-    REQUIRE (ekat::contains(my_triplets, 2*tgt_gid + src_gid/ngdofs_tgt));
-  }
-
   // Check overlapped tgt grid
   // NOTE: you need to treat the case of 1 rank separately, since in that case
   //       there are 2 local src dofs impacting the same tgt dof, while with 2+
   //       ranks every local src dof impacts a different tgt dof.
+  auto src_dofs_h = src_grid->get_dofs_gids().get_view<const gid_type*,Host>();
   auto ov_tgt_grid = remap->get_ov_tgt_grid ();
   const int num_loc_ov_tgt_gids = ov_tgt_grid->get_num_local_dofs();
   const int expected_num_loc_ov_tgt_gids = ngdofs_tgt>=nldofs_src ? nldofs_src : ngdofs_tgt;

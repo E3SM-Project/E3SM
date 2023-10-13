@@ -2,6 +2,7 @@
 #define SCREAM_COARSENING_REMAPPER_HPP
 
 #include "share/grid/remap/abstract_remapper.hpp"
+#include "share/grid/remap/horiz_interp_remapper_base.hpp"
 #include "scream_config.h"
 
 #include "ekat/ekat_pack.hpp"
@@ -40,7 +41,8 @@ namespace scream
  * where it is then unpacked and accumulated into the result.
  */
 
-class CoarseningRemapper : public AbstractRemapper
+class CoarseningRemapper : public AbstractRemapper,
+                           public HorizInterpRemapperBase
 {
 public:
 
@@ -114,18 +116,6 @@ protected:
 
   void create_ov_tgt_fields ();
   void setup_mpi_data_structures ();
-
-  int gid2lid (const gid_type gid, const grid_ptr_type& grid) const {
-    const auto gids = grid->get_dofs_gids().get_view<const gid_type*,Host>();
-    const auto beg = gids.data();
-    const auto end = gids.data()+grid->get_num_local_dofs();
-    const auto it = std::find(beg,end,gid);
-    return it==end ? -1 : std::distance(beg,it);
-  }
-
-  std::vector<gid_type>
-  get_my_triplets_gids (const std::string& map_file,
-                        const grid_ptr_type& src_grid) const;
 
   std::vector<int> get_pids_for_recv (const std::vector<int>& send_to_pids) const;
 

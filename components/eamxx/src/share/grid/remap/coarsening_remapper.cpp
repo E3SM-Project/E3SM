@@ -1,6 +1,7 @@
 #include "coarsening_remapper.hpp"
 
 #include "share/grid/point_grid.hpp"
+#include "share/grid/grid_import_export.hpp"
 #include "share/io/scorpio_input.hpp"
 
 #include <ekat/kokkos/ekat_kokkos_utils.hpp>
@@ -34,106 +35,47 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
 
   // Create io_grid, containing the indices of the triplets
   // in the map file that this rank has to read
-  auto my_gids = get_my_triplets_gids (map_file,src_grid);
-  auto io_grid = std::make_shared<PointGrid>("",my_gids.size(),0,m_comm);
+  auto my_triplets = get_my_triplets (map_file,m_comm,src_grid,OwnedBy::Col);
 
-  auto dofs_gids = io_grid->get_dofs_gids();
-  auto dofs_gids_h = dofs_gids.get_view<gid_type*,Host>();
-  std::memcpy(dofs_gids_h.data(),my_gids.data(),my_gids.size()*sizeof(gid_type));
-  dofs_gids.sync_to_dev();
+  // Sort triplets by row GID
+  auto compare = [&] (const Triplet& lhs, const Triplet& rhs) {
+    return lhs.row < rhs.row;
+  };
+  std::sort(my_triplets.begin(),my_triplets.end(),compare);
 
-  // Create CRS matrix views
-
-  // Read in triplets.
-  const int nlweights = io_grid->get_num_local_dofs();
-  std::vector<gid_type> row_gids_h(nlweights);
-  std::vector<gid_type> col_gids_h(nlweights);
-  std::vector<Real>  S_h (nlweights);
-
-  // scream's gids are of type int, while scorpio wants long int as offsets.
-  std::vector<scorpio::offset_t> dofs_offsets(nlweights);
-  for (int i=0; i<nlweights; ++i) {
-    dofs_offsets[i] = dofs_gids_h[i];
+  // Create an overlapped src map, consisting of all the col gids
+  // in the triplets. This is overlapped, since for each gid there
+  // may be 2+ ranks owning it.
+  std::map<gid_type,int> ov_tgt_gid2lid;
+  for (const auto& t : my_triplets) {
+    ov_tgt_gid2lid.emplace(t.row,ov_tgt_gid2lid.size());
   }
-
-  const auto grid_idx = std::to_string(io_grid->get_unique_grid_id());
-  const std::string idx_decomp_tag = "CR::ctor,dt=int,grid-idx=" + grid_idx;
-  const std::string val_decomp_tag = "CR::ctor,dt=real,grid-idx=" + grid_idx;
-
-  scorpio::register_file(map_file,scorpio::FileMode::Read);
-  scorpio::register_variable(map_file, "row", "row", {"n_s"}, "int", idx_decomp_tag);
-  scorpio::register_variable(map_file, "col", "col", {"n_s"}, "int", idx_decomp_tag);
-  scorpio::register_variable(map_file, "S",   "S",   {"n_s"}, "real", val_decomp_tag);
-  scorpio::set_dof(map_file,"row",nlweights,dofs_offsets.data());
-  scorpio::set_dof(map_file,"col",nlweights,dofs_offsets.data());
-  scorpio::set_dof(map_file,"S",nlweights,dofs_offsets.data());
-  scorpio::set_decomp(map_file);
-  scorpio::grid_read_data_array(map_file,"row",-1,row_gids_h.data(),nlweights);
-  scorpio::grid_read_data_array(map_file,"col",-1,col_gids_h.data(),nlweights);
-  scorpio::grid_read_data_array(map_file,"S",  -1,S_h.data(),       nlweights);
-  scorpio::eam_pio_closefile(map_file);
-
-  // Offset the cols ids to match the source grid.
-  // Determine the min id among the cols array, we
-  // also add the min_dof for the grid.
-  // Note: The cols field is not guaranteed to have the
-  // min offset value, but the rows will be numbered
-  // by 1 from least to greatest.  So we use row_gids to calculate
-  // the remap min.
-  int remap_min_dof = std::numeric_limits<int>::max();  // Really big INT
-  for (int id=0; id<nlweights; id++) {
-    remap_min_dof = std::min(row_gids_h[id],remap_min_dof);
-  }
-  int global_remap_min_dof;
-  m_comm.all_reduce(&remap_min_dof,&global_remap_min_dof,1,MPI_MIN);
-
-  gid_type col_offset = global_remap_min_dof - src_grid->get_global_min_dof_gid();
-  for (int ii=0; ii<nlweights; ii++) {
-    col_gids_h[ii] -= col_offset;
-  }
-
-  // Create an "overlapped" tgt grid, that is, a grid where each rank
-  // owns all tgt rows that are affected by at least one of the cols
-  // in its src_grid
-  std::set<gid_type> ov_tgt_gids;
-  for (int i=0; i<nlweights; ++i) {
-    ov_tgt_gids.insert(row_gids_h[i]-1);
-  }
-  const int num_ov_tgt_gids = ov_tgt_gids.size();
+  const int num_ov_tgt_gids = ov_tgt_gid2lid.size();
   auto ov_tgt_grid = std::make_shared<PointGrid>("ov_tgt_grid",num_ov_tgt_gids,0,m_comm);
   auto ov_tgt_gids_h = ov_tgt_grid->get_dofs_gids().get_view<gid_type*,Host>();
-  auto it = ov_tgt_gids.begin();
-  for (int i=0; i<num_ov_tgt_gids; ++i, ++it) {
-    ov_tgt_gids_h[i] = *it;
+  for (const auto& it : ov_tgt_gid2lid) {
+    ov_tgt_gids_h[it.second] = it.first;
   }
   ov_tgt_grid->get_dofs_gids().sync_to_dev();
-
   m_ov_tgt_grid = ov_tgt_grid;
+
   const int num_ov_row_gids = m_ov_tgt_grid->get_num_local_dofs();
 
   // Now we have to create the weights CRS matrix
+  const int num_my_triplets = my_triplets.size();
   m_row_offsets = view_1d<int>("",num_ov_row_gids+1);
-  m_col_lids    = view_1d<int>("",nlweights);
-  m_weights     = view_1d<Real>("",nlweights);
-
-  // Sort col_gids_h and row_gids_h by row gid. It is easier to sort
-  // the array [0,...,n), and use it later to index the row/col/weight
-  // views in the correct order.
-  std::vector<int> id (nlweights);
-  std::iota(id.begin(),id.end(),0);
-  auto compare = [&] (const int i, const int j) -> bool {
-    return row_gids_h[i] < row_gids_h[j];
-  };
-  std::sort(id.begin(),id.end(),compare);
+  m_col_lids    = view_1d<int>("",num_my_triplets);
+  m_weights     = view_1d<Real>("",num_my_triplets);
 
   // Create mirror views
   auto row_offsets_h = Kokkos::create_mirror_view(m_row_offsets);
   auto col_lids_h    = Kokkos::create_mirror_view(m_col_lids);
   auto weights_h     = Kokkos::create_mirror_view(m_weights);
 
-  for (int i=0; i<nlweights; ++i) {
-    col_lids_h(i) = gid2lid(col_gids_h[id[i]],src_grid);
-    weights_h(i)  = S_h[id[i]];
+  auto src_gid2lid = src_grid->get_gid2lid_map();
+  for (int i=0; i<num_my_triplets; ++i) {
+    col_lids_h(i) = src_gid2lid[my_triplets[i].col];
+    weights_h(i)  = my_triplets[i].w;
   }
 
   Kokkos::deep_copy(m_weights,weights_h);
@@ -141,14 +83,14 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
 
   // Compute row offsets
   std::vector<int> row_counts(num_ov_row_gids);
-  for (int i=0; i<nlweights; ++i) {
-    ++row_counts[gid2lid(row_gids_h[i]-1,m_ov_tgt_grid)];
+  for (int i=0; i<num_my_triplets; ++i) {
+    ++row_counts[ov_tgt_gid2lid[my_triplets[i].row]];
   }
   std::partial_sum(row_counts.begin(),row_counts.end(),row_offsets_h.data()+1);
   EKAT_REQUIRE_MSG (
-      row_offsets_h(num_ov_row_gids)==nlweights,
+      row_offsets_h(num_ov_row_gids)==num_my_triplets,
       "Error! Something went wrong while computing row offsets.\n"
-      "  - local nnz       : " + std::to_string(nlweights) + "\n"
+      "  - local nnz       : " + std::to_string(num_my_triplets) + "\n"
       "  - row_offsets(end): " + std::to_string(row_offsets_h(num_ov_row_gids)) + "\n");
 
   Kokkos::deep_copy(m_row_offsets,row_offsets_h);
@@ -198,7 +140,6 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
     }
   }
   clean_up();
-
 }
 
 CoarseningRemapper::
@@ -559,8 +500,6 @@ rescale_masked_fields (const Field& x, const Field& mask) const
       break;
     }
   }
-
-
 }
 
 template<int PackSize>
@@ -913,90 +852,6 @@ void CoarseningRemapper::recv_and_unpack ()
   }
 }
 
-
-std::vector<CoarseningRemapper::gid_type>
-CoarseningRemapper::
-get_my_triplets_gids (const std::string& map_file,
-                      const grid_ptr_type& src_grid) const
-{
-  using namespace ShortFieldTagsNames;
-
-  scorpio::register_file(map_file,scorpio::FileMode::Read);
-  // 1. Create a "helper" grid, with as many dofs as the number
-  //    of triplets in the map file, and divided linearly across ranks
-  const int ngweights = scorpio::get_dimlen(map_file,"n_s");
-  const auto io_grid_linear = create_point_grid ("helper",ngweights,1,m_comm);
-  const int nlweights = io_grid_linear->get_num_local_dofs();
-
-  gid_type offset = nlweights;
-  m_comm.scan(&offset,1,MPI_SUM);
-  offset -= nlweights; // scan is inclusive, but we need exclusive
-
-  // Create a unique decomp tag, which ensures all coarsening remappers have
-  // their own decomposition
-  const std::string idx_decomp_tag = "CR::gmtg,grid-idx=" + std::to_string(io_grid_linear->get_unique_grid_id());
-
-  // 2. Read a chunk of triplets col indices
-  std::vector<gid_type> cols(nlweights);
-  std::vector<gid_type> rows(nlweights); // Needed to calculate min_dof
-
-  scorpio::register_variable(map_file, "col", "col", {"n_s"}, "int", idx_decomp_tag);
-  scorpio::register_variable(map_file, "row", "row", {"n_s"}, "int", idx_decomp_tag);
-  std::vector<scorpio::offset_t> dofs_offsets(nlweights);
-  std::iota(dofs_offsets.begin(),dofs_offsets.end(),offset);
-  scorpio::set_dof(map_file,"col",nlweights,dofs_offsets.data());
-  scorpio::set_dof(map_file,"row",nlweights,dofs_offsets.data());
-  scorpio::set_decomp(map_file);
-  scorpio::grid_read_data_array(map_file,"col",-1,cols.data(),cols.size());
-  scorpio::grid_read_data_array(map_file,"row",-1,rows.data(),rows.size());
-  scorpio::eam_pio_closefile(map_file);
-
-  // Offset the cols ids to match the source grid.
-  // Determine the min id among the cols array, we
-  // also add the min_dof for the grid.
-  int remap_min_dof = std::numeric_limits<int>::max();
-  for (int id=0; id<nlweights; id++) {
-    remap_min_dof = std::min(rows[id],remap_min_dof);
-  }
-  int global_remap_min_dof;
-  m_comm.all_reduce(&remap_min_dof,&global_remap_min_dof,1,MPI_MIN);
-
-  gid_type col_offset = global_remap_min_dof - src_grid->get_global_min_dof_gid();
-  for (auto& id : cols) {
-    id -= col_offset;
-  }
-
-  // 3. Get the owners of the cols gids we read in, according to the src grid
-  auto owners = src_grid->get_owners(cols);
-
-  // 4. Group gids we read by the pid we need to send them to
-  std::map<int,std::vector<int>> pid2gids_send;
-  for (int i=0; i<nlweights; ++i) {
-    const auto pid = owners[i];
-    pid2gids_send[pid].push_back(i+offset);
-  }
-
-  // 5. Obtain the dual map of the one above: a list of gids we need to
-  //    receive, grouped by the pid we recv them from
-  auto pid2gids_recv = recv_gids_from_pids(pid2gids_send);
-
-  // 6. Cat all the list of gids in one
-  int num_my_triplets = 0;
-  for (const auto& it : pid2gids_recv) {
-    num_my_triplets += it.second.size();
-  }
-  std::vector<gid_type> my_triplets_gids(num_my_triplets);
-  int num_copied = 0;
-  for (const auto& it : pid2gids_recv) {
-    auto dst = my_triplets_gids.data()+num_copied;
-    auto src = it.second.data();
-    std::memcpy (dst,src,it.second.size()*sizeof(int));
-    num_copied += it.second.size();
-  }
-
-  return my_triplets_gids;
-}
-
 std::vector<int>
 CoarseningRemapper::get_pids_for_recv (const std::vector<int>& send_to_pids) const
 {
@@ -1225,10 +1080,11 @@ void CoarseningRemapper::setup_mpi_data_structures ()
   // 2. Convert the gids to lids, and arrange them by lid
   std::vector<std::vector<int>> lid2pids_recv(num_tgt_dofs);
   int num_total_recv_gids = 0;
+  auto tgt_gid2lid = m_tgt_grid->get_gid2lid_map();
   for (const auto& it : pid2gids_recv) {
     const int pid = it.first;
     for (auto gid : it.second) {
-      const int lid = gid2lid(gid,m_tgt_grid);
+      const int lid = tgt_gid2lid[gid];
       lid2pids_recv[lid].push_back(pid);
     }
     num_total_recv_gids += it.second.size();
