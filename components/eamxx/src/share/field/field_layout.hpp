@@ -84,7 +84,6 @@ public:
 
   long long  size () const;
 
-  bool is_dimension_set  (const int idim) const;
   bool are_dimensions_set () const;
 
   // Check if this layout is that of a vector field
@@ -157,11 +156,6 @@ inline bool FieldLayout::has_tags (const std::vector<FieldTag>& tags) const {
     b &= has_tag(t);
   }
   return b;
-}
-
-inline bool FieldLayout::is_dimension_set (const int idim) const {
-  ekat::error::runtime_check(idim>=0 && idim<m_rank, "Error! Index out of bounds.", -1);
-  return m_dims[idim]>=0;
 }
 
 inline bool FieldLayout::are_dimensions_set () const {
