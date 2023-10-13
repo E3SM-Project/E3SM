@@ -32,7 +32,14 @@ RefiningRemapperRMA (const grid_ptr_type& tgt_grid,
 
   // Load (i,j,w) triplets from map file, for all i that are
   // owned on the tgt_grid
-  auto my_triplets = get_my_triplets (map_file,tgt_grid);
+  auto my_triplets = get_my_triplets (map_file,m_comm,tgt_grid,OwnedBy::Row);
+
+  // Sort triplets by row lid
+  auto gid2lid = tgt_grid->get_gid2lid_map();
+  auto compare = [&] (const Triplet& lhs, const Triplet& rhs) {
+    return gid2lid.at(lhs.row) < gid2lid.at(rhs.row);
+  };
+  std::sort(my_triplets.begin(),my_triplets.end(),compare);
 
   // Create an overlapped src map, consisting of all the col gids
   // in the triplets. This is overlapped, since for each gid there
@@ -355,127 +362,6 @@ local_mat_vec (const Field& x, const Field& y) const
   }
 }
 
-auto RefiningRemapperRMA::
-get_my_triplets (const std::string& map_file,
-                 const grid_ptr_type& tgt_grid)
- -> std::vector<Triplet>
-{
-  using namespace ShortFieldTagsNames;
-  constexpr int one = 1;
-
-  // 1. Load the map file chunking it evenly across all ranks
-  scorpio::register_file(map_file,scorpio::FileMode::Read);
-
-  // 1.1 Create a "helper" grid, with as many dofs as the number
-  //     of triplets in the map file, and divided linearly across ranks
-  const int ngweights = scorpio::get_dimlen(map_file,"n_s");
-  const auto io_grid_linear = create_point_grid ("helper",ngweights,1,m_comm);
-  const int nlweights = io_grid_linear->get_num_local_dofs();
-
-  gid_type offset = nlweights;
-  m_comm.scan(&offset,1,MPI_SUM);
-  offset -= nlweights; // scan is inclusive, but we need exclusive
-
-  // Create a unique decomp tag, which ensures all refining remappers have
-  // their own decomposition
-  const std::string int_decomp_tag  = "RR::gmtg,int,grid-idx=" + std::to_string(io_grid_linear->get_unique_grid_id());
-  const std::string real_decomp_tag = "RR::gmtg,real,grid-idx=" + std::to_string(io_grid_linear->get_unique_grid_id());
-
-  // 1.2 Read a chunk of triplets col indices
-  std::vector<gid_type> cols(nlweights);
-  std::vector<gid_type> rows(nlweights);
-  std::vector<Real>  S(nlweights);
-
-  scorpio::register_variable(map_file, "col", "col", {"n_s"}, "int",  int_decomp_tag);
-  scorpio::register_variable(map_file, "row", "row", {"n_s"}, "int",  int_decomp_tag);
-  scorpio::register_variable(map_file, "S",   "S",   {"n_s"}, "real", real_decomp_tag);
-
-  std::vector<scorpio::offset_t> dofs_offsets(nlweights);
-  std::iota(dofs_offsets.begin(),dofs_offsets.end(),offset);
-  scorpio::set_dof(map_file,"col",nlweights,dofs_offsets.data());
-  scorpio::set_dof(map_file,"row",nlweights,dofs_offsets.data());
-  scorpio::set_dof(map_file,"S"  ,nlweights,dofs_offsets.data());
-  scorpio::set_decomp(map_file);
-
-  scorpio::grid_read_data_array(map_file,"col",-1,cols.data(),cols.size());
-  scorpio::grid_read_data_array(map_file,"row",-1,rows.data(),rows.size());
-  scorpio::grid_read_data_array(map_file,"S"  ,-1,S.data(),S.size());
-
-  scorpio::eam_pio_closefile(map_file);
-
-  // 1.3 Dofs in tgt grid are likely 0-based, while row ids in map file
-  // are likely 1-based. To match dofs, we need to offset the row
-  // ids we read in.
-  int map_file_min_row = std::numeric_limits<int>::max();
-  for (int id=0; id<nlweights; id++) {
-    map_file_min_row = std::min(rows[id],map_file_min_row);
-  }
-  int global_map_file_min_row;
-  m_comm.all_reduce(&map_file_min_row,&global_map_file_min_row,1,MPI_MIN);
-
-  gid_type row_offset = global_map_file_min_row - tgt_grid->get_global_min_dof_gid();
-  for (auto& id : rows) {
-    id -= row_offset;
-  }
-
-  // 2. Get the owners of the row gids we read in, according to the tgt grid
-  std::vector<int> pids, lids;
-  tgt_grid->get_remote_pids_and_lids(rows,pids,lids);
-
-  // 3. For each triplet, communicate to the rightful owner that there's one
-  //    more triplet for them. In doing that, retrieve the offset at which
-  //    the triplet should be written on the remote.
-  int num_my_triplets = 0;
-  auto win = get_mpi_window (&num_my_triplets,1);
-  std::vector<int> write_at(rows.size(),-1);
-  check_mpi_call(MPI_Win_fence(0,win),"MPI_Win_fence");
-  for (int i=0; i<nlweights; ++i) {
-    // Tell pids[i] that we have one triplet for them. Also, get the current
-    // value of num_triplets, cause that will tell us where to write when we
-    // actually pass the triplet
-    check_mpi_call(MPI_Get_accumulate(&one,1,MPI_INT,
-                                      &write_at[i],1,MPI_INT,
-                                      pids[i],0,1,MPI_INT,MPI_SUM,win),
-                   "MPI_Get_accumulate");
-  }
-  check_mpi_call(MPI_Win_fence(0,win),"MPI_Win_fence");
-  check_mpi_call(MPI_Win_free(&win),"MPI_Win_free"); 
-
-  // 4. Ship each triplet to their owner
-
-  // Create data type for a triplet
-  auto mpi_gid_t = ekat::get_mpi_type<gid_type>();
-  auto mpi_real_t = ekat::get_mpi_type<Real>();
-  int lengths[3] = {1,1,1};
-  MPI_Aint displacements[3] = {0, offsetof(Triplet,col), offsetof(Triplet,w)};
-  MPI_Datatype types[3] = {mpi_gid_t,mpi_gid_t,mpi_real_t};
-  MPI_Datatype triplet_mpi_t;
-  MPI_Type_create_struct (3,lengths,displacements,types,&triplet_mpi_t);
-  MPI_Type_commit(&triplet_mpi_t);
-
-  // Create window, and do RMA stuff
-  std::vector<Triplet> my_triplets (num_my_triplets);
-  auto triplets_win = get_mpi_window(my_triplets.data(),my_triplets.size());
-  check_mpi_call (MPI_Win_fence(0,triplets_win),"MPI_Win_fence");
-  for (int i=0; i<nlweights; ++i) {
-    Triplet t {rows[i], cols[i], S[i]};
-    check_mpi_call (MPI_Put(&t,1,triplet_mpi_t,pids[i],
-                            write_at[i],1,triplet_mpi_t,triplets_win),
-                    "MPI_Put");
-  }
-  check_mpi_call (MPI_Win_fence(0,triplets_win),"MPI_Win_fence");
-  check_mpi_call (MPI_Win_free(&triplets_win),  "MPI_Win_free");
-  MPI_Type_free(&triplet_mpi_t);
-
-  // Sort triplets by the row lids
-  auto gid2lid = tgt_grid->get_gid2lid_map();
-  auto compare = [&] (const Triplet& lhs, const Triplet& rhs) {
-    return gid2lid.at(lhs.row) < gid2lid.at(rhs.row);
-  };
-  std::sort(my_triplets.begin(),my_triplets.end(),compare);
-
-  return my_triplets;
-}
 
 void RefiningRemapperRMA::create_ov_src_fields ()
 {

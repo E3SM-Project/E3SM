@@ -2,6 +2,7 @@
 #define SCREAM_REFINING_REMAPPER_RMA_HPP
 
 #include "share/grid/remap/abstract_remapper.hpp"
+#include "share/grid/remap/horiz_interp_remapper_base.hpp"
 #include "share/util/scream_utils.hpp"
 #include "scream_config.h"
 
@@ -43,12 +44,13 @@ namespace scream
  * Oct 2023, RMA operations are not supported by GPU-aware implementations.
  */
 
-class RefiningRemapperRMA : public AbstractRemapper
+class RefiningRemapperRMA : public AbstractRemapper,
+                            public HorizInterpRemapperBase
 {
 public:
 
   RefiningRemapperRMA (const grid_ptr_type& tgt_grid,
-                    const std::string& map_file);
+                       const std::string& map_file);
 
   ~RefiningRemapperRMA ();
 
@@ -115,16 +117,6 @@ public:
   void local_mat_vec (const Field& f_src, const Field& f_tgt) const;
 
 protected:
-
-  struct Triplet {
-    gid_type row;
-    gid_type col;
-    Real  w;
-  };
-
-  std::vector<Triplet>
-  get_my_triplets (const std::string& map_file,
-                   const grid_ptr_type& src_grid);
 
   // Wrap a pointer in an MPI_Win
   template<typename T>
