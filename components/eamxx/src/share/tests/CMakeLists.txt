@@ -37,6 +37,10 @@ if (NOT ${SCREAM_BASELINES_ONLY})
   CreateUnitTest(refining_remapper_rma "refining_remapper_rma_tests.cpp" "scream_share;scream_io"
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
 
+  # Test refining remap (P2P version)
+  CreateUnitTest(refining_remapper_p2p "refining_remapper_p2p_tests.cpp" "scream_share;scream_io"
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
+
   # Test vertical remap
   CreateUnitTest(vertical_remapper "vertical_remapper_tests.cpp" "scream_share;scream_io"
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
