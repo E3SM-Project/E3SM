@@ -8,6 +8,9 @@
       "path": ".."
     }
   ],
+  // ===========================
+  // VS Code Workspace Settings.
+  // ===========================
   "settings": {
     // ===================
     // Editor settings
@@ -22,17 +25,14 @@
       "editor.rulers": [80, 88, 120],
       "editor.wordWrap": "wordWrapColumn",
       "editor.wordWrapColumn": 120,
-      "editor.defaultFormatter": "ms-python.python"
+      "editor.defaultFormatter": "ms-python.black-formatter"
     },
     // Code Formatting and Linting
     // ---------------------------
-    "python.formatting.provider": "black",
-    "python.linting.flake8Enabled": true,
-    "python.linting.flake8Args": ["--config=setup.cfg"],
+    "flake8.args": ["--config=setup.cfg"],
     // Type checking
     // ---------------------------
-    "python.linting.mypyEnabled": true,
-    "python.linting.mypyArgs": ["--config=setup.cfg"],
+    "mypy-type-checker.args": ["--config=pyproject.toml"],
     // Testing
     // ---------------------------
     // NOTE: Debugger doesn't work if pytest-cov is enabled, so set "--no-cov"
@@ -49,5 +49,24 @@
       "editor.wordWrap": "wordWrapColumn",
       "editor.wordWrapColumn": 120
     }
+  },
+  // =====================================
+  // VS Code Python Debugger Configuration
+  // =====================================
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Python: Current File",
+        "type": "python",
+        "request": "launch",
+        "program": "${file}",
+        "console": "integratedTerminal",
+        "justMyCode": true,
+        "env": {
+          "PYTHONPATH": "${workspaceFolder}"
+        }
+      }
+    ]
   }
 }

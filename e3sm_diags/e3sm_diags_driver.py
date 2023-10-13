@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # The above line is needed for `test_all_sets.test_all_sets_mpl`.
 # Otherwise, OSError: [Errno 8] Exec format error: 'e3sm_diags_driver.py'.
-
-import importlib
 import os
 import subprocess
 import sys
@@ -251,56 +249,6 @@ def create_parameter_dict(parameters):
     return d
 
 
-def run_diag(parameter: CoreParameter) -> List[CoreParameter]:
-    """Run the corresponding diagnostics for a set of parameters.
-
-    Additional CoreParameter (or CoreParameter sub-class) objects are derived
-    from the CoreParameter `sets` attribute, hence this function returns a
-    list of CoreParameter objects.
-
-    This function loops over the specified diagnostic sets and runs the
-    diagnostic using the parameters.
-
-    Parameters
-    ----------
-    parameter : CoreParameter
-        The CoreParameter object to run diagnostics on.
-
-    Returns
-    -------
-    List[CoreParameter]
-        The list of CoreParameter objects with results from the diagnostic run.
-    """
-    results = []
-
-    for set_name in parameter.sets:
-        # FIXME: The parameter and driver for a diagnostic should be mapped
-        # together. If this is done, the `run_diag` function should be
-        # accessible by the parameter class without needing to perform a static
-        # string reference for the module name.
-        parameter.current_set = set_name
-        mod_str = "e3sm_diags.driver.{}_driver".format(set_name)
-
-        # Check if there is a matching driver module for the `set_name`.
-        try:
-            module = importlib.import_module(mod_str)
-        except ModuleNotFoundError as e:
-            logger.error(f"'Error with set name {set_name}'", exc_info=e)
-            continue
-
-        # If the module exists, call the driver module's `run_diag` function.
-        try:
-            single_result = module.run_diag(parameter)
-            results.append(single_result)
-        except Exception:
-            logger.exception(f"Error in {mod_str}", exc_info=True)
-
-            if parameter.debug:
-                sys.exit()
-
-    return results
-
-
 def _run_serially(parameters: List[CoreParameter]) -> List[CoreParameter]:
     """Run diagnostics with the parameters serially.
 
@@ -314,14 +262,16 @@ def _run_serially(parameters: List[CoreParameter]) -> List[CoreParameter]:
     List[CoreParameter]
         The list of CoreParameter objects with results from the diagnostic run.
     """
-    results = []
+    # A nested list of lists, where a sub-list represents the results of
+    # the sets related to the CoreParameter object.
+    nested_results: List[List[CoreParameter]] = []
 
-    for p in parameters:
-        results.append(run_diag(p))
+    for parameter in parameters:
+        nested_results.append(parameter._run_diag())
 
     # `results` becomes a list of lists of parameters so it needs to be
     # collapsed a level.
-    collapsed_results = _collapse_results(results)
+    collapsed_results = _collapse_results(nested_results)
 
     return collapsed_results
 
@@ -362,7 +312,7 @@ def _run_with_dask(parameters: List[CoreParameter]) -> List[CoreParameter]:
         )
 
     with dask.config.set(config):
-        results = bag.map(run_diag).compute(num_workers=num_workers)
+        results = bag.map(CoreParameter._run_diag).compute(num_workers=num_workers)
 
     # `results` becomes a list of lists of parameters so it needs to be
     # collapsed a level.

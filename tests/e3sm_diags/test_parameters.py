@@ -79,6 +79,44 @@ class TestCoreParameter:
         with pytest.raises(RuntimeError):
             param.check_values()
 
+    def test_returns_parameter_with_results(self):
+        parameter = CoreParameter()
+        parameter.sets = ["lat_lon"]
+
+        results = parameter._run_diag()
+        expected = [parameter]
+
+        # NOTE: We are only testing that the function returns a list of
+        # parameter objects, not the results themselves. There are integration
+        # tests validates the results.
+        assert results == expected
+
+    def test_logs_error_if_driver_module_for_set_not_found(self, caplog):
+        parameter = CoreParameter()
+        parameter.sets = ["invalid_set"]
+
+        parameter._run_diag()
+
+        assert (
+            "ModuleNotFoundError: No module named 'e3sm_diags.driver.invalid_set_driver'"
+            in caplog.text
+        )
+
+    @pytest.mark.xfail
+    def test_logs_exception_if_driver_run_diag_function_fails(self, caplog):
+        # TODO: Need to implement this test by raising an exception through
+        # the driver's `run_diag` function
+        parameter = CoreParameter()
+        parameter.sets = ["lat_lon"]
+
+        # Make this attribute an invalid value to test exception is thrown.
+        parameter.seasons = None  # type: ignore
+
+        # NOTE: Comment out temporarily to avoid polluting the test output log.
+        # parameter._run_diag()
+
+        assert "TypeError: 'NoneType' object is not iterable" in caplog.text
+
 
 def test_ac_zonal_mean_parameter():
     param = ACzonalmeanParameter()
