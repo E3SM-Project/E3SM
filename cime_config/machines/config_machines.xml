@@ -264,6 +264,7 @@
     </environment_variables>
     <environment_variables compiler="gnu" mpilib="mpich">
       <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.8.3.patch/cray-mpich-8.1.15/gcc-11.2.0; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="BLA_VENDOR">Generic</env>
     </environment_variables>
     <environment_variables compiler="nvidia" mpilib="mpich">
       <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.8.3.patch/cray-mpich-8.1.15/nvidia-21.11; else echo "$ADIOS2_ROOT"; fi}</env>
