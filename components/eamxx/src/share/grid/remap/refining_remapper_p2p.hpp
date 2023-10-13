@@ -46,66 +46,22 @@ class GridImportExport;
  * into the result.
  */
 
-class RefiningRemapperP2P : public AbstractRemapper,
-                            public HorizInterpRemapperBase
+class RefiningRemapperP2P : public HorizInterpRemapperBase
 {
 public:
 
   RefiningRemapperP2P (const grid_ptr_type& tgt_grid,
-                    const std::string& map_file);
+                       const std::string& map_file);
 
   ~RefiningRemapperP2P ();
 
-  FieldLayout create_src_layout (const FieldLayout& tgt_layout) const override;
-  FieldLayout create_tgt_layout (const FieldLayout& src_layout) const override;
-
-  bool compatible_layouts (const layout_type& src,
-                           const layout_type& tgt) const override {
-    // Same type of layout, and same sizes except for possibly the first one
-    constexpr auto COL = ShortFieldTagsNames::COL;
-    return get_layout_type(src.tags())==get_layout_type(tgt.tags()) &&
-           src.strip_dim(COL)==tgt.strip_dim(COL);
-  }
-
 protected:
-
-  const identifier_type& do_get_src_field_id (const int ifield) const override {
-    return m_src_fields[ifield].get_header().get_identifier();
-  }
-  const identifier_type& do_get_tgt_field_id (const int ifield) const override {
-    return m_tgt_fields[ifield].get_header().get_identifier();
-  }
-  const field_type& do_get_src_field (const int ifield) const override {
-    return m_src_fields[ifield];
-  }
-  const field_type& do_get_tgt_field (const int ifield) const override {
-    return m_tgt_fields[ifield];
-  }
-
-  void do_registration_begins () override { /* Nothing to do here */ }
-
-  void do_register_field (const identifier_type& src, const identifier_type& tgt) override;
-
-  void do_bind_field (const int ifield, const field_type& src, const field_type& tgt) override;
-
-  void do_registration_ends () override;
 
   void do_remap_fwd () override;
 
-  void do_remap_bwd () override {
-    EKAT_ERROR_MSG ("RefiningRemapperP2P only supports fwd remapping.\n");
-  }
-
 protected:
 
-  using KT = KokkosTypes<DefaultDevice>;
-  using gid_type = AbstractGrid::gid_type;
-
-  template<typename T>
-  using view_1d = typename KT::template view_1d<T>;
-
-  void create_ov_src_fields ();
-  void setup_mpi_data_structures ();
+  void setup_mpi_data_structures () override;
 
   // This class uses itself to remap src grid geo data to the tgt grid. But in order
   // to not pollute the remapper for later use, we must be able to clean it up after
@@ -121,9 +77,6 @@ public:
   void recv_and_unpack ();
 
 protected:
-  // void check_mpi_call (int err, const std::string& context) const;
-
-  ekat::Comm            m_comm;
 
   // If MpiOnDev=true, we pass device pointers to MPI. Otherwise, we use host mirrors.
   static constexpr bool MpiOnDev = SCREAM_MPI_ON_DEVICE;
@@ -133,20 +86,6 @@ protected:
                         view_1d<T>,
                         typename view_1d<T>::HostMirror
                       >::type;
-
-  // An "overlapped" src grid, that is a version of the src grid where
-  // ranks own all cols that are affecting local dofs in their tgt grid
-  grid_ptr_type         m_ov_src_grid;
-
-  // Source, target, and overlapped-target fields
-  std::vector<Field>    m_src_fields;
-  std::vector<Field>    m_ov_src_fields;
-  std::vector<Field>    m_tgt_fields;
-
-  // ----- Sparse matrix CRS representation ---- //
-  view_1d<int>    m_row_offsets;
-  view_1d<int>    m_col_lids;
-  view_1d<Real>   m_weights;
 
   // ----- Data structures for pack/unpack and MPI ----- //
 

@@ -16,97 +16,10 @@ CoarseningRemapper::
 CoarseningRemapper (const grid_ptr_type& src_grid,
                     const std::string& map_file,
                     const bool track_mask)
- : AbstractRemapper()
- , m_comm (src_grid->get_comm())
+ : HorizInterpRemapperBase (src_grid,map_file,InterpType::Coarsen)
  , m_track_mask (track_mask)
 {
   using namespace ShortFieldTagsNames;
-
-  // Sanity checks
-  EKAT_REQUIRE_MSG (src_grid->type()==GridType::Point,
-      "Error! CoarseningRemapper only works on PointGrid grids.\n"
-      "  - src grid name: " + src_grid->name() + "\n"
-      "  - src_grid_type: " + e2str(src_grid->type()) + "\n");
-  EKAT_REQUIRE_MSG (src_grid->is_unique(),
-      "Error! CoarseningRemapper requires a unique source grid.\n");
-
-  // This is a coarsening remapper. We only go in one direction
-  m_bwd_allowed = false;
-
-  // Create io_grid, containing the indices of the triplets
-  // in the map file that this rank has to read
-  auto my_triplets = get_my_triplets (map_file,m_comm,src_grid,OwnedBy::Col);
-
-  // Sort triplets by row GID
-  auto compare = [&] (const Triplet& lhs, const Triplet& rhs) {
-    return lhs.row < rhs.row;
-  };
-  std::sort(my_triplets.begin(),my_triplets.end(),compare);
-
-  // Create an overlapped src map, consisting of all the col gids
-  // in the triplets. This is overlapped, since for each gid there
-  // may be 2+ ranks owning it.
-  std::map<gid_type,int> ov_tgt_gid2lid;
-  for (const auto& t : my_triplets) {
-    ov_tgt_gid2lid.emplace(t.row,ov_tgt_gid2lid.size());
-  }
-  const int num_ov_tgt_gids = ov_tgt_gid2lid.size();
-  auto ov_tgt_grid = std::make_shared<PointGrid>("ov_tgt_grid",num_ov_tgt_gids,0,m_comm);
-  auto ov_tgt_gids_h = ov_tgt_grid->get_dofs_gids().get_view<gid_type*,Host>();
-  for (const auto& it : ov_tgt_gid2lid) {
-    ov_tgt_gids_h[it.second] = it.first;
-  }
-  ov_tgt_grid->get_dofs_gids().sync_to_dev();
-  m_ov_tgt_grid = ov_tgt_grid;
-
-  const int num_ov_row_gids = m_ov_tgt_grid->get_num_local_dofs();
-
-  // Now we have to create the weights CRS matrix
-  const int num_my_triplets = my_triplets.size();
-  m_row_offsets = view_1d<int>("",num_ov_row_gids+1);
-  m_col_lids    = view_1d<int>("",num_my_triplets);
-  m_weights     = view_1d<Real>("",num_my_triplets);
-
-  // Create mirror views
-  auto row_offsets_h = Kokkos::create_mirror_view(m_row_offsets);
-  auto col_lids_h    = Kokkos::create_mirror_view(m_col_lids);
-  auto weights_h     = Kokkos::create_mirror_view(m_weights);
-
-  auto src_gid2lid = src_grid->get_gid2lid_map();
-  for (int i=0; i<num_my_triplets; ++i) {
-    col_lids_h(i) = src_gid2lid[my_triplets[i].col];
-    weights_h(i)  = my_triplets[i].w;
-  }
-
-  Kokkos::deep_copy(m_weights,weights_h);
-  Kokkos::deep_copy(m_col_lids,col_lids_h);
-
-  // Compute row offsets
-  std::vector<int> row_counts(num_ov_row_gids);
-  for (int i=0; i<num_my_triplets; ++i) {
-    ++row_counts[ov_tgt_gid2lid[my_triplets[i].row]];
-  }
-  std::partial_sum(row_counts.begin(),row_counts.end(),row_offsets_h.data()+1);
-  EKAT_REQUIRE_MSG (
-      row_offsets_h(num_ov_row_gids)==num_my_triplets,
-      "Error! Something went wrong while computing row offsets.\n"
-      "  - local nnz       : " + std::to_string(num_my_triplets) + "\n"
-      "  - row_offsets(end): " + std::to_string(row_offsets_h(num_ov_row_gids)) + "\n");
-
-  Kokkos::deep_copy(m_row_offsets,row_offsets_h);
-
-  const int nlevs  = src_grid->get_num_vertical_levels();
-
-  auto tgt_grid_gids = m_ov_tgt_grid->get_unique_gids ();
-  const int ngids = tgt_grid_gids.size();
-
-  auto tgt_grid = std::make_shared<PointGrid>("horiz_remap_tgt_grid",ngids,nlevs,m_comm);
-
-  auto tgt_grid_gids_h = tgt_grid->get_dofs_gids().get_view<gid_type*,Host>();
-  std::memcpy(tgt_grid_gids_h.data(),tgt_grid_gids.data(),ngids*sizeof(gid_type));
-  tgt_grid->get_dofs_gids().sync_to_dev();
-
-  this->set_grids(src_grid,tgt_grid);
 
   // Replicate the src grid geo data in the tgt grid. We use this remapper to do
   // the remapping (if needed), and clean it up afterwards.
@@ -120,12 +33,12 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
       // Not a field to be coarsened (perhaps a vertical coordinate field).
       // Simply copy it in the tgt grid, but we still need to assign the new grid name.
       FieldIdentifier tgt_data_fid(src_data_fid.name(),src_data_fid.get_layout(),src_data_fid.get_units(),m_tgt_grid->name());
-      auto tgt_data = tgt_grid->create_geometry_data(tgt_data_fid);
+      auto tgt_data = m_coarse_grid->create_geometry_data(tgt_data_fid);
       tgt_data.deep_copy(src_data);
     } else {
       // This field needs to be remapped
       auto tgt_data_fid = create_tgt_fid(src_data_fid);
-      auto tgt_data = tgt_grid->create_geometry_data(tgt_data_fid);
+      auto tgt_data = m_coarse_grid->create_geometry_data(tgt_data_fid);
       register_field(src_data,tgt_data);
     }
   }
@@ -133,7 +46,8 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
   if (get_num_fields()>0) {
     remap(true);
 
-    // The remap phase only alters the fields on device. We need to sync them to host as well
+    // The remap phase only alters the fields on device.
+    // We need to sync them to host as well
     for (int i=0; i<get_num_fields(); ++i) {
       auto tgt_data = get_tgt_field(i);
       tgt_data.sync_to_host();
@@ -154,72 +68,9 @@ CoarseningRemapper::
   }
 }
 
-FieldLayout CoarseningRemapper::
-create_src_layout (const FieldLayout& tgt_layout) const
-{
-  using namespace ShortFieldTagsNames;
-  const auto lt = get_layout_type(tgt_layout.tags());
-  auto src = FieldLayout::invalid();
-  const bool midpoints = tgt_layout.has_tag(LEV);
-  const int vec_dim = tgt_layout.is_vector_layout() ? tgt_layout.dim(CMP) : -1;
-  switch (lt) {
-    case LayoutType::Scalar2D:
-      src = m_src_grid->get_2d_scalar_layout();
-      break;
-    case LayoutType::Vector2D:
-      src = m_src_grid->get_2d_vector_layout(CMP,vec_dim);
-      break;
-    case LayoutType::Scalar3D:
-      src = m_src_grid->get_3d_scalar_layout(midpoints);
-      break;
-    case LayoutType::Vector3D:
-      src = m_src_grid->get_3d_vector_layout(midpoints,CMP,vec_dim);
-      break;
-    default:
-      EKAT_ERROR_MSG ("Layout not supported by CoarseningRemapper: " + e2str(lt) + "\n");
-  }
-  return src;
-}
-FieldLayout CoarseningRemapper::
-create_tgt_layout (const FieldLayout& src_layout) const
-{
-  using namespace ShortFieldTagsNames;
-  const auto lt = get_layout_type(src_layout.tags());
-  auto tgt = FieldLayout::invalid();
-  const bool midpoints = src_layout.has_tag(LEV);
-  const int vec_dim = src_layout.is_vector_layout() ? src_layout.dim(CMP) : -1;
-  switch (lt) {
-    case LayoutType::Scalar2D:
-      tgt = m_tgt_grid->get_2d_scalar_layout();
-      break;
-    case LayoutType::Vector2D:
-      tgt = m_tgt_grid->get_2d_vector_layout(CMP,vec_dim);
-      break;
-    case LayoutType::Scalar3D:
-      tgt = m_tgt_grid->get_3d_scalar_layout(midpoints);
-      break;
-    case LayoutType::Vector3D:
-      tgt = m_tgt_grid->get_3d_vector_layout(midpoints,CMP,vec_dim);
-      break;
-    default:
-      EKAT_ERROR_MSG ("Layout not supported by CoarseningRemapper: " + e2str(lt) + "\n");
-  }
-  return tgt;
-}
-
-void CoarseningRemapper::
-do_register_field (const identifier_type& src, const identifier_type& tgt)
-{
-  m_src_fields.push_back(field_type(src));
-  m_tgt_fields.push_back(field_type(tgt));
-}
-
 void CoarseningRemapper::
 do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
 {
-  m_src_fields[ifield] = src;
-  m_tgt_fields[ifield] = tgt;
-
   // Assume no mask tracking for this field. Can correct below
   m_field_idx_to_mask_idx[ifield] = -1;
 
@@ -230,7 +81,9 @@ do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
           "Error! Field " + src.name() + " stores a mask field but not a mask value.\n");
       const auto& src_mask_val = src.get_header().get_extra_data<Real>("mask_value");
 
-      auto& tgt_hdr = m_tgt_fields[ifield].get_header();
+      Field tgt_copy = tgt;
+
+      auto& tgt_hdr = tgt_copy.get_header();
       if (tgt_hdr.has_extra_data("mask_value")) {
         const auto& tgt_mask_val = tgt_hdr.get_extra_data<Real>("mask_value");
 
@@ -281,21 +134,7 @@ do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
           "  - mask layout: " + to_string(m_lt) + "\n");
     }
   }
-
-  // If this was the last field to be bound, we can setup the MPI schedule
-  if (this->m_state==RepoState::Closed &&
-      (this->m_num_bound_fields+1)==this->m_num_registered_fields) {
-    create_ov_tgt_fields ();
-    setup_mpi_data_structures ();
-  }
-}
-
-void CoarseningRemapper::do_registration_ends ()
-{
-  if (this->m_num_bound_fields==this->m_num_registered_fields) {
-    create_ov_tgt_fields ();
-    setup_mpi_data_structures ();
-  }
+  HorizInterpRemapperBase::do_bind_field(ifield,src,tgt);
 }
 
 void CoarseningRemapper::do_remap_fwd ()
@@ -314,15 +153,15 @@ void CoarseningRemapper::do_remap_fwd ()
   // Helpef function, to establish if a field can be handled with packs
   auto can_pack_field = [](const Field& f) {
     const auto& ap = f.get_header().get_alloc_properties();
-    return ap.is_compatible<RPack<SCREAM_PACK_SIZE>>();
+    return (ap.get_last_extent() % SCREAM_PACK_SIZE) == 0;
   };
 
   // Loop over each field
   for (int i=0; i<m_num_fields; ++i) {
     // First, perform the local mat-vec. Recall that in these y=Ax products,
     // x is the src field, and y is the overlapped tgt field.
-    const auto& f_src    = m_src_fields[i];
-    const auto& f_ov_tgt = m_ov_tgt_fields[i];
+    const auto& f_src = m_src_fields[i];
+    const auto& f_ov  = m_ov_fields[i];
 
     const int mask_idx = m_field_idx_to_mask_idx[i];
     const Field* mask_ptr = nullptr;
@@ -332,10 +171,10 @@ void CoarseningRemapper::do_remap_fwd ()
     }
 
     // If possible, dispatch kernel with SCREAM_PACK_SIZE
-    if (can_pack_field(f_src) and can_pack_field(f_ov_tgt)) {
-      local_mat_vec<SCREAM_PACK_SIZE>(f_src,f_ov_tgt,mask_ptr);
+    if (can_pack_field(f_src) and can_pack_field(f_ov)) {
+      local_mat_vec<SCREAM_PACK_SIZE>(f_src,f_ov,mask_ptr);
     } else {
-      local_mat_vec<1>(f_src,f_ov_tgt,mask_ptr);
+      local_mat_vec<1>(f_src,f_ov,mask_ptr);
     }
   }
 
@@ -514,7 +353,7 @@ local_mat_vec (const Field& x, const Field& y, const Field* mask) const
 
   const auto& src_layout = x.get_header().get_identifier().get_layout();
   const int rank = src_layout.rank();
-  const int nrows = m_ov_tgt_grid->get_num_local_dofs();
+  const int nrows = m_ov_coarse_grid->get_num_local_dofs();
   auto row_offsets = m_row_offsets;
   auto col_lids = m_col_lids;
   auto weights = m_weights;
@@ -656,13 +495,13 @@ void CoarseningRemapper::pack_and_send ()
   using MemberType  = typename KT::MemberType;
   using ESU         = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
 
-  const int num_send_gids = m_ov_tgt_grid->get_num_local_dofs();
+  const int num_send_gids = m_ov_coarse_grid->get_num_local_dofs();
   const auto pid_lid_start = m_send_pid_lids_start;
   const auto lids_pids = m_send_lids_pids;
   const auto buf = m_send_buffer;
 
   for (int ifield=0; ifield<m_num_fields; ++ifield) {
-    const auto& f  = m_ov_tgt_fields[ifield];
+    const auto& f  = m_ov_fields[ifield];
     const auto& fl = f.get_header().get_identifier().get_layout();
     const auto f_pid_offsets = ekat::subview(m_send_f_pid_offsets,ifield);
 
@@ -945,32 +784,6 @@ recv_gids_from_pids (const std::map<int,std::vector<int>>& pid2gids_send) const
   return pid2gids_recv;
 }
 
-void CoarseningRemapper::create_ov_tgt_fields ()
-{
-  using FL = FieldLayout;
-  m_ov_tgt_fields.reserve(m_num_fields);
-  const int num_ov_cols = m_ov_tgt_grid->get_num_local_dofs();
-  const auto ov_gn = m_ov_tgt_grid->name();
-  for (int i=0; i<m_num_fields; ++i) {
-    const auto& f_src = m_src_fields[i];
-    const auto& f_tgt = m_tgt_fields[i];
-    const auto& fid = f_tgt.get_header().get_identifier();
-    auto tags = fid.get_layout().tags();
-    auto dims = fid.get_layout().dims();
-    dims[0] = num_ov_cols;
-    FieldIdentifier ov_fid (fid.name(),FL(tags,dims),fid.get_units(),ov_gn,fid.data_type());
-
-    // Note: with C++17, emplace_back already returns a ref
-    m_ov_tgt_fields.emplace_back(ov_fid);
-    auto& ov_f = m_ov_tgt_fields.back();
-
-    // Use same alloc props as src fields, to allow packing in local_mat_vec
-    const auto pack_size = f_src.get_header().get_alloc_properties().get_largest_pack_size();
-    ov_f.get_header().get_alloc_properties().request_allocation(pack_size);
-    ov_f.allocate_view();
-  }
-}
-
 void CoarseningRemapper::setup_mpi_data_structures ()
 {
   using namespace ShortFieldTagsNames;
@@ -984,13 +797,9 @@ void CoarseningRemapper::setup_mpi_data_structures ()
   std::vector<int> field_col_size (m_num_fields);
   int sum_fields_col_sizes = 0;
   for (int i=0; i<m_num_fields; ++i) {
-    const auto& f  = m_ov_tgt_fields[i];  // Doesn't matter if tgt or ov_tgt
+    const auto& f  = m_src_fields[i];
     const auto& fl = f.get_header().get_identifier().get_layout();
-    if (fl.dim(0)>0) {
-      field_col_size[i] = fl.size() / fl.dim(0);
-    } else {
-      field_col_size[i] = fl.size();
-    }
+    field_col_size[i] = fl.strip_dim(COL).size();
     sum_fields_col_sizes += field_col_size[i];
   }
 
@@ -998,9 +807,9 @@ void CoarseningRemapper::setup_mpi_data_structures ()
   //                   Setup SEND structures                   //
   // --------------------------------------------------------- //
 
-  // 1. Retrieve pid (and associated lid) of all ov_tgt gids
+  // 1. Retrieve pid (and associated lid) of all ov gids
   //    on the tgt grid
-  const auto ov_gids = m_ov_tgt_grid->get_dofs_gids().get_view<const gid_type*,Host>();
+  const auto ov_gids = m_ov_coarse_grid->get_dofs_gids().get_view<const gid_type*,Host>();
   auto gids_owners = m_tgt_grid->get_owners (ov_gids);
 
   // 2. Group dofs to send by remote pid
@@ -1183,17 +992,7 @@ void CoarseningRemapper::clean_up ()
   m_send_req.clear();
   m_recv_req.clear();
 
-  // Clear all fields
-  m_src_fields.clear();
-  m_tgt_fields.clear();
-  m_ov_tgt_fields.clear();
-
-  // Reset the state of the base class
-  m_state = RepoState::Clean;
-  m_num_fields = 0;
-  m_num_registered_fields = 0;
-  m_fields_are_bound.clear();
-  m_num_bound_fields = 0;
+  HorizInterpRemapperBase::clean_up();
 }
 
 } // namespace scream

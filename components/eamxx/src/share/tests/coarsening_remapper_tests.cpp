@@ -3,6 +3,7 @@
 #include "share/grid/remap/coarsening_remapper.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/io/scream_scorpio_interface.hpp"
+#include "share/field/field_utils.hpp"
 
 namespace scream {
 
@@ -36,7 +37,7 @@ public:
   }
 
   grid_ptr_type get_ov_tgt_grid () const {
-    return m_ov_tgt_grid;
+    return m_ov_coarse_grid;
   }
 
   view_2d<int>::HostMirror get_send_f_pid_offsets () const {
@@ -172,6 +173,10 @@ TEST_CASE("coarsening_remap_nnz>nsrc") {
 
   ekat::Comm comm(MPI_COMM_WORLD);
 
+  print ("\n +---------------------------------+\n",comm);
+  print (" |  Testing nnz > num source dofs  |\n",comm);
+  print (" +---------------------------------+\n\n",comm);
+
   MPI_Fint fcomm = MPI_Comm_c2f(comm.mpi_comm());
   scorpio::eam_init_pio_subsystem(fcomm);
 
@@ -190,8 +195,6 @@ TEST_CASE("coarsening_remap_nnz>nsrc") {
   //           Create a map file            //
   // -------------------------------------- //
 
-  print (" -> creating map file ...\n",comm);
-
   std::string filename = "coarsening_map_file_lrg_np" + std::to_string(comm.size()) + ".nc";
   std::vector<std::int64_t> dofs (nnz_local);
   std::iota(dofs.begin(),dofs.end(),comm.rank()*nnz_local);
@@ -209,25 +212,18 @@ TEST_CASE("coarsening_remap_nnz>nsrc") {
   }
 
   create_remap_file(filename, dofs, ngdofs_src, ngdofs_tgt, nnz, col, row, S);
-  print (" -> creating map file ... done!\n",comm);
 
   // -------------------------------------- //
   //      Build src grid and remapper       //
   // -------------------------------------- //
 
-  print (" -> creating grid ...\n",comm);
   auto src_grid = build_src_grid(comm, nldofs_src);
-  print (" -> creating grid ... done\n",comm);
-
-  print (" -> creating remapper ...\n",comm);
   auto remap = std::make_shared<CoarseningRemapperTester>(src_grid,filename);
-  print (" -> creating remapper ... done!\n",comm);
 
   // -------------------------------------- //
   //      Create src/tgt grid fields        //
   // -------------------------------------- //
 
-  print (" -> creating fields ...\n",comm);
   // The other test checks remapping for fields of multiple dimensions.
   // Here we will simplify and just remap a simple 2D horizontal field.
   auto tgt_grid = remap->get_tgt_grid();
@@ -242,17 +238,14 @@ TEST_CASE("coarsening_remap_nnz>nsrc") {
   //     Register fields in the remapper    //
   // -------------------------------------- //
 
-  print (" -> registering fields ...\n",comm);
   remap->registration_begins();
   remap->register_field(src_s2d,  tgt_s2d);
   remap->registration_ends();
-  print (" -> registering fields ... done!\n",comm);
 
   // -------------------------------------- //
   //       Generate data for src fields     //
   // -------------------------------------- //
 
-  print (" -> generate src fields data ...\n",comm);
   // Generate data in a deterministic way, so that when we check results,
   // we know a priori what the input data that generated the tgt field's
   // values was, even if that data was off rank.
@@ -272,19 +265,15 @@ TEST_CASE("coarsening_remap_nnz>nsrc") {
     }
     f.sync_to_dev();
   }
-  print (" -> generate src fields data ... done!\n",comm);
-
 
   // -------------------------------------- //
   //          Check remapped fields         //
   // -------------------------------------- //
   const auto tgt_gids = tgt_grid->get_dofs_gids().get_view<const gid_type*,Host>();
   for (int irun=0; irun<5; ++irun) {
-    print (" -> run remap ...\n",comm);
+    print (" -> Run " + std::to_string(irun) + "\n",comm);
     remap->remap(true);
-    print (" -> run remap ... done!\n",comm);
 
-    print (" -> check tgt fields ...\n",comm);
     // Recall, tgt gid K should be the avg of local src_gids
     const int ntgt_gids = tgt_gids.size();
     for (size_t ifield=0; ifield<tgt_f.size(); ++ifield) {
@@ -305,18 +294,22 @@ TEST_CASE("coarsening_remap_nnz>nsrc") {
             for (size_t j=0; j<src_gids.size(); j++) {
               cmp += src_gids(j);
             }
+            if (v_tgt(i)!=cmp/src_gids.size()) {
+              print_field_hyperslab(src_f[0]);
+              print_field_hyperslab(tgt_f[0]);
+            }
             REQUIRE ( v_tgt(i)== cmp/src_gids.size() );
           }
         } break;
         default:
           EKAT_ERROR_MSG ("Unexpected layout.\n");
       }
+      print ("   -> Checking field with layout " + to_string(l) + " " + dots + " OK!\n",comm);
     }
   }
 
   // Clean up scorpio stuff
   scorpio::eam_pio_finalize();
-
 }
 
 TEST_CASE ("coarsening_remap") {
@@ -327,6 +320,10 @@ TEST_CASE ("coarsening_remap") {
   // -------------------------------------- //
 
   ekat::Comm comm(MPI_COMM_WORLD);
+
+  print ("\n +---------------------------------+\n",comm);
+  print (" |     Testing general remap       |\n",comm);
+  print (" +---------------------------------+\n\n",comm);
 
   MPI_Fint fcomm = MPI_Comm_c2f(comm.mpi_comm());
   scorpio::eam_init_pio_subsystem(fcomm);
@@ -346,8 +343,6 @@ TEST_CASE ("coarsening_remap") {
   //           Create a map file            //
   // -------------------------------------- //
 
-  print (" -> creating map file ...\n",comm);
-
   std::string filename = "coarsening_map_file_np" + std::to_string(comm.size()) + ".nc";
   std::vector<std::int64_t> dofs (nnz_local);
   std::iota(dofs.begin(),dofs.end(),comm.rank()*nnz_local);
@@ -366,24 +361,18 @@ TEST_CASE ("coarsening_remap") {
   }
 
   create_remap_file(filename, dofs, ngdofs_src, ngdofs_tgt, nnz, col, row, S);
-  print (" -> creating map file ... done!\n",comm);
 
   // -------------------------------------- //
   //      Build src grid and remapper       //
   // -------------------------------------- //
 
-  print (" -> creating grid and remapper ...\n",comm);
-
   auto src_grid = build_src_grid(comm, nldofs_src);
-
   auto remap = std::make_shared<CoarseningRemapperTester>(src_grid,filename);
-  print (" -> creating grid and remapper ... done!\n",comm);
 
   // -------------------------------------- //
   //      Create src/tgt grid fields        //
   // -------------------------------------- //
 
-  print (" -> creating fields ...\n",comm);
   constexpr int vec_dim = 3;
 
   auto tgt_grid = remap->get_tgt_grid();
@@ -420,13 +409,10 @@ TEST_CASE ("coarsening_remap") {
     field_col_offset[i+1] = field_col_offset[i]+field_col_size[i];
   }
 
-  print (" -> creating fields ... done!\n",comm);
-
   // -------------------------------------- //
   //     Register fields in the remapper    //
   // -------------------------------------- //
 
-  print (" -> registering fields ...\n",comm);
   remap->registration_begins();
   remap->register_field(src_s2d,  tgt_s2d);
   remap->register_field(src_v2d,  tgt_v2d);
@@ -435,13 +421,12 @@ TEST_CASE ("coarsening_remap") {
   remap->register_field(src_v3d_m,tgt_v3d_m);
   remap->register_field(src_v3d_i,tgt_v3d_i);
   remap->registration_ends();
-  print (" -> registering fields ... done!\n",comm);
 
   // -------------------------------------- //
   //        Check remapper internals        //
   // -------------------------------------- //
 
-  print (" -> Checking remapper internal state ...\n",comm);
+  print (" -> Checking remapper internal state ...............\n",comm);
 
   // Check tgt grid
   REQUIRE (tgt_grid->get_num_global_dofs()==ngdofs_tgt);
@@ -526,13 +511,12 @@ TEST_CASE ("coarsening_remap") {
       REQUIRE (recv_lids_pidpos(2*i+1,0)==pid2);
     }
   }
-  print (" -> Checking remapper internal state ... OK!\n",comm);
+  print (" -> Checking remapper internal state ............... OK!\n",comm);
 
   // -------------------------------------- //
   //       Generate data for src fields     //
   // -------------------------------------- //
 
-  print (" -> generate src fields data ...\n",comm);
   // Generate data in a deterministic way, so that when we check results,
   // we know a priori what the input data that generated the tgt field's
   // values was, even if that data was off rank.
@@ -578,7 +562,6 @@ TEST_CASE ("coarsening_remap") {
     }
     f.sync_to_dev();
   }
-  print (" -> generate src fields data ... done!\n",comm);
 
   auto combine = [] (const Real lhs, const Real rhs) -> Real {
     return 0.25*lhs + 0.75*rhs;
@@ -588,15 +571,13 @@ TEST_CASE ("coarsening_remap") {
   REQUIRE_THROWS(remap->remap(false));
 
   for (int irun=0; irun<5; ++irun) {
-    print (" -> run remap ...\n",comm);
+    print (" -> Run " + std::to_string(irun) + "\n",comm);
     remap->remap(true);
-    print (" -> run remap ... done!\n",comm);
 
     // -------------------------------------- //
     //          Check remapped fields         //
     // -------------------------------------- //
 
-    print (" -> check tgt fields ...\n",comm);
     // Recall, tgt gid K should be the avg of src gids K and K+ngdofs_tgt
     const int ntgt_gids = tgt_gids.size();
     for (size_t ifield=0; ifield<tgt_f.size(); ++ifield) {
@@ -661,7 +642,6 @@ TEST_CASE ("coarsening_remap") {
 
       print ("   -> Checking field with layout " + to_string(l) + " " + dots + " OK!\n",comm);
     }
-    print ("check tgt fields ... done!\n",comm);
   }
 
   // Clean up scorpio stuff

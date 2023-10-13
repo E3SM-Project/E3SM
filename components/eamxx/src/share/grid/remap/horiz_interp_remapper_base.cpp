@@ -9,11 +9,148 @@
 namespace scream
 {
 
+HorizInterpRemapperBase::
+HorizInterpRemapperBase (const grid_ptr_type& fine_grid,
+                         const std::string& map_file,
+                         const InterpType type)
+ : m_fine_grid(fine_grid)
+ , m_type (type)
+ , m_comm (fine_grid->get_comm())
+{
+  // Sanity checks
+  EKAT_REQUIRE_MSG (fine_grid->type()==GridType::Point,
+      "Error! CoarseningRemapper only works on PointGrid grids.\n"
+      "  - fine grid name: " + fine_grid->name() + "\n"
+      "  - fine_grid_type: " + e2str(fine_grid->type()) + "\n");
+  EKAT_REQUIRE_MSG (fine_grid->is_unique(),
+      "Error! CoarseningRemapper requires a unique source grid.\n");
+
+  // This is a special remapper. We only go in one direction
+  m_bwd_allowed = false;
+
+  // Read the map file, loading the triplets this rank needs for the crs matrix
+  // in the map file that this rank has to read
+  auto my_triplets = get_my_triplets (map_file);
+
+  // Create coarse/ov_coarse grids
+  create_coarse_grids (my_triplets);
+
+  // Set src/tgt grid, based on interpolation type
+  if (m_type==InterpType::Refine) {
+    set_grids (m_coarse_grid,m_fine_grid);
+  } else {
+    set_grids (m_fine_grid,m_coarse_grid);
+  }
+
+  // Create crs matrix
+  create_crs_matrix_structures (my_triplets);
+}
+
+FieldLayout HorizInterpRemapperBase::
+create_src_layout (const FieldLayout& tgt_layout) const
+{
+  EKAT_REQUIRE_MSG (m_src_grid!=nullptr,
+      "Error! Cannot create source layout until the source grid has been set.\n");
+
+  using namespace ShortFieldTagsNames;
+  const auto lt = get_layout_type(tgt_layout.tags());
+  const bool midpoints = tgt_layout.has_tag(LEV);
+  const int vec_dim = tgt_layout.is_vector_layout() ? tgt_layout.dim(CMP) : -1;
+  auto src = FieldLayout::invalid();
+  switch (lt) {
+    case LayoutType::Scalar2D:
+      src = m_src_grid->get_2d_scalar_layout();
+      break;
+    case LayoutType::Vector2D:
+      src = m_src_grid->get_2d_vector_layout(CMP,vec_dim);
+      break;
+    case LayoutType::Scalar3D:
+      src = m_src_grid->get_3d_scalar_layout(midpoints);
+      break;
+    case LayoutType::Vector3D:
+      src = m_src_grid->get_3d_vector_layout(midpoints,CMP,vec_dim);
+      break;
+    default:
+      EKAT_ERROR_MSG ("Layout not supported by CoarseningRemapper: " + e2str(lt) + "\n");
+  }
+  return src;
+}
+
+FieldLayout HorizInterpRemapperBase::
+create_tgt_layout (const FieldLayout& src_layout) const
+{
+  EKAT_REQUIRE_MSG (m_tgt_grid!=nullptr,
+      "Error! Cannot create target layout until the target grid has been set.\n");
+
+  using namespace ShortFieldTagsNames;
+  const auto lt = get_layout_type(src_layout.tags());
+  auto tgt = FieldLayout::invalid();
+  const bool midpoints = src_layout.has_tag(LEV);
+  const int vec_dim = src_layout.is_vector_layout() ? src_layout.dim(CMP) : -1;
+  switch (lt) {
+    case LayoutType::Scalar2D:
+      tgt = m_tgt_grid->get_2d_scalar_layout();
+      break;
+    case LayoutType::Vector2D:
+      tgt = m_tgt_grid->get_2d_vector_layout(CMP,vec_dim);
+      break;
+    case LayoutType::Scalar3D:
+      tgt = m_tgt_grid->get_3d_scalar_layout(midpoints);
+      break;
+    case LayoutType::Vector3D:
+      tgt = m_tgt_grid->get_3d_vector_layout(midpoints,CMP,vec_dim);
+      break;
+    default:
+      EKAT_ERROR_MSG ("Layout not supported by CoarseningRemapper: " + e2str(lt) + "\n");
+  }
+  return tgt;
+}
+
+void HorizInterpRemapperBase::do_registration_ends ()
+{
+  if (this->m_num_bound_fields==this->m_num_registered_fields) {
+    create_ov_fields ();
+    setup_mpi_data_structures ();
+  }
+}
+
+void HorizInterpRemapperBase::
+do_register_field (const identifier_type& src, const identifier_type& tgt)
+{
+  constexpr auto COL = ShortFieldTagsNames::COL;
+  EKAT_REQUIRE_MSG (src.get_layout().has_tag(COL),
+      "Error! Cannot register a field without COL tag in RefiningRemapperP2P.\n"
+      "  - field name: " + src.name() + "\n"
+      "  - field layout: " + to_string(src.get_layout()) + "\n");
+  m_src_fields.push_back(field_type(src));
+  m_tgt_fields.push_back(field_type(tgt));
+}
+
+void HorizInterpRemapperBase::
+do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
+{
+  EKAT_REQUIRE_MSG (src.data_type()==DataType::RealType,
+      "Error! RefiningRemapperRMA only allows fields with RealType data.\n"
+      "  - src field name: " + src.name() + "\n"
+      "  - src field type: " + e2str(src.data_type()) + "\n");
+  EKAT_REQUIRE_MSG (tgt.data_type()==DataType::RealType,
+      "Error! RefiningRemapperRMA only allows fields with RealType data.\n"
+      "  - tgt field name: " + tgt.name() + "\n"
+      "  - tgt field type: " + e2str(tgt.data_type()) + "\n");
+
+  m_src_fields[ifield] = src;
+  m_tgt_fields[ifield] = tgt;
+
+  // If this was the last field to be bound, we can setup the MPI schedule
+  if (this->m_state==RepoState::Closed &&
+      (this->m_num_bound_fields+1)==this->m_num_registered_fields) {
+    create_ov_fields ();
+    setup_mpi_data_structures ();
+  }
+}
+
 auto HorizInterpRemapperBase::
-get_my_triplets (const std::string& map_file,
-                 const ekat::Comm&  comm,
-                 const std::shared_ptr<const AbstractGrid>& grid,
-                 const OwnedBy owned_by) const
+get_my_triplets (const std::string& map_file) const
  -> std::vector<Triplet>
 {
   using gid_type = AbstractGrid::gid_type;
@@ -25,13 +162,13 @@ get_my_triplets (const std::string& map_file,
   // 1.1 Create a "helper" grid, with as many dofs as the number
   //     of triplets in the map file, and divided linearly across ranks
   const int ngweights = scorpio::get_dimlen(map_file,"n_s");
-  int nlweights = ngweights / comm.size();
-  if (comm.rank() < (ngweights % comm.size())) {
+  int nlweights = ngweights / m_comm.size();
+  if (m_comm.rank() < (ngweights % m_comm.size())) {
     nlweights += 1;
   }
 
   gid_type offset = nlweights;
-  comm.scan(&offset,1,MPI_SUM);
+  m_comm.scan(&offset,1,MPI_SUM);
   offset -= nlweights; // scan is inclusive, but we need exclusive
 
   // Create a unique decomp tag, which ensures all refining remappers have
@@ -72,15 +209,15 @@ get_my_triplets (const std::string& map_file,
     map_file_min_col = std::min(cols[id],map_file_min_col);
   }
   int global_map_file_min_row, global_map_file_min_col;
-  comm.all_reduce(&map_file_min_row,&global_map_file_min_row,1,MPI_MIN);
-  comm.all_reduce(&map_file_min_col,&global_map_file_min_col,1,MPI_MIN);
+  m_comm.all_reduce(&map_file_min_row,&global_map_file_min_row,1,MPI_MIN);
+  m_comm.all_reduce(&map_file_min_col,&global_map_file_min_col,1,MPI_MIN);
 
   gid_type row_offset = global_map_file_min_row;
   gid_type col_offset = global_map_file_min_col;
-  if (owned_by==OwnedBy::Row) {
-    row_offset -= grid->get_global_min_dof_gid();
+  if (m_type==InterpType::Refine) {
+    row_offset -= m_fine_grid->get_global_min_dof_gid();
   } else {
-    col_offset -= grid->get_global_min_dof_gid();
+    col_offset -= m_fine_grid->get_global_min_dof_gid();
   }
   for (auto& id : rows) {
     id -= row_offset;
@@ -91,13 +228,13 @@ get_my_triplets (const std::string& map_file,
 
   // Create a grid based on the row gids I read in (may be duplicated across ranks)
   std::vector<gid_type> unique_gids;
-  const auto& gids = owned_by==OwnedBy::Row ? rows : cols;
+  const auto& gids = m_type==InterpType::Refine ? rows : cols;
   for (auto gid : gids) {
     if (not ekat::contains(unique_gids,gid)) {
       unique_gids.push_back(gid);
     }
   }
-  auto io_grid = std::make_shared<PointGrid> ("helper",unique_gids.size(),0,comm);
+  auto io_grid = std::make_shared<PointGrid> ("helper",unique_gids.size(),0,m_comm);
   auto io_grid_gids_h = io_grid->get_dofs_gids().get_view<gid_type*,Host>();
   int k = 0;
   for (auto gid : unique_gids) {
@@ -125,9 +262,10 @@ get_my_triplets (const std::string& map_file,
   MPI_Type_commit(&mpi_triplet_t);
 
   // Create import-export
-  GridImportExport imp_exp (grid,io_grid);
+  GridImportExport imp_exp (m_fine_grid,io_grid);
   std::map<int,std::vector<Triplet>> my_triplets_map;
   imp_exp.gather(mpi_triplet_t,io_triplets,my_triplets_map);
+  MPI_Type_free(&mpi_triplet_t);
 
   std::vector<Triplet> my_triplets;
   for (auto& it : my_triplets_map) {
@@ -137,5 +275,132 @@ get_my_triplets (const std::string& map_file,
 
   return my_triplets;
 }
+
+void HorizInterpRemapperBase::
+create_coarse_grids (const std::vector<Triplet>& triplets)
+{
+  const int nlevs = m_fine_grid->get_num_vertical_levels();
+
+  // Gather overlapped coarse grid gids (rows or cols, depending on m_type)
+  std::map<gid_type,int> ov_gid2lid;
+  bool pickRow = m_type==InterpType::Coarsen;
+  for (const auto& t : triplets) {
+    ov_gid2lid.emplace(pickRow ? t.row : t.col,ov_gid2lid.size());
+  }
+  int num_ov_gids = ov_gid2lid.size();
+
+  // Use a temp and then assing, b/c grid_ptr_type is a pointer to const,
+  // so you can't modify gids using that pointer
+  auto ov_coarse_grid = std::make_shared<PointGrid>("ov_coarse_grid",num_ov_gids,nlevs,m_comm);
+  auto ov_coarse_gids_h = ov_coarse_grid->get_dofs_gids().get_view<gid_type*,Host>();
+  for (const auto& it : ov_gid2lid) {
+    ov_coarse_gids_h[it.second] = it.first;
+  }
+  ov_coarse_grid->get_dofs_gids().sync_to_dev();
+  m_ov_coarse_grid = ov_coarse_grid;
+
+  // Create the unique coarse grid
+  auto coarse_gids = m_ov_coarse_grid->get_unique_gids();
+  int num_gids = coarse_gids.size();
+  m_coarse_grid = std::make_shared<PointGrid>("coarse_grid",num_gids,nlevs,m_comm);
+  auto coarse_gids_h = m_coarse_grid->get_dofs_gids().get_view<gid_type*,Host>();
+  std::copy(coarse_gids.begin(),coarse_gids.end(),coarse_gids_h.data());
+  m_coarse_grid->get_dofs_gids().sync_to_dev();
+}
+
+void HorizInterpRemapperBase::
+create_crs_matrix_structures (std::vector<Triplet>& triplets)
+{
+  // Get row/col data depending on interp type
+  bool refine = m_type==InterpType::Refine;
+  auto row_grid = refine ? m_fine_grid : m_ov_coarse_grid;
+  auto col_grid = refine ? m_ov_coarse_grid : m_fine_grid;
+  const int num_rows = row_grid->get_num_local_dofs();
+
+  auto col_gid2lid = col_grid->get_gid2lid_map();
+  auto row_gid2lid = row_grid->get_gid2lid_map();
+
+  // Sort triplets so that row GIDs appear in the same order as
+  // in the row grid. If two row GIDs are the same, use same logic
+  // with col
+  auto compare = [&] (const Triplet& lhs, const Triplet& rhs) {
+    auto lhs_lrow = row_gid2lid.at(lhs.row);
+    auto rhs_lrow = row_gid2lid.at(rhs.row);
+    auto lhs_lcol = col_gid2lid.at(lhs.col);
+    auto rhs_lcol = col_gid2lid.at(rhs.col);
+    return lhs_lrow<rhs_lrow or (lhs_lrow==rhs_lrow and lhs_lcol<rhs_lcol);
+  };
+  std::sort(triplets.begin(),triplets.end(),compare);
+
+  // Alloc views and create mirror views
+  const int nnz = triplets.size();
+  m_row_offsets = view_1d<int>("",num_rows+1);
+  m_col_lids    = view_1d<int>("",nnz);
+  m_weights     = view_1d<Real>("",nnz);
+
+  auto row_offsets_h = Kokkos::create_mirror_view(m_row_offsets);
+  auto col_lids_h    = Kokkos::create_mirror_view(m_col_lids);
+  auto weights_h     = Kokkos::create_mirror_view(m_weights);
+
+  // Fill col ids and weights
+  for (int i=0; i<nnz; ++i) {
+    col_lids_h(i) = col_gid2lid[triplets[i].col];
+    weights_h(i)  = triplets[i].w;
+  }
+  Kokkos::deep_copy(m_weights,weights_h);
+  Kokkos::deep_copy(m_col_lids,col_lids_h);
+
+  // Compute row offsets
+  std::vector<int> row_counts(num_rows);
+  for (int i=0; i<nnz; ++i) {
+    ++row_counts[row_gid2lid[triplets[i].row]];
+  }
+  std::partial_sum(row_counts.begin(),row_counts.end(),row_offsets_h.data()+1);
+  EKAT_REQUIRE_MSG (
+      row_offsets_h(num_rows)==nnz,
+      "Error! Something went wrong while computing row offsets.\n"
+      "  - local nnz       : " + std::to_string(nnz) + "\n"
+      "  - row_offsets(end): " + std::to_string(row_offsets_h(num_rows)) + "\n");
+
+  Kokkos::deep_copy(m_row_offsets,row_offsets_h);
+}
+
+void HorizInterpRemapperBase::create_ov_fields ()
+{
+  m_ov_fields.reserve(m_num_fields);
+  const auto num_ov_gids = m_ov_coarse_grid->get_num_local_dofs();
+  const auto ov_gn = m_ov_coarse_grid->name();
+  const auto dt = DataType::RealType;
+  for (int i=0; i<m_num_fields; ++i) {
+    const auto& f = m_type==InterpType::Refine ? m_tgt_fields[i] : m_src_fields[i];
+    const auto& fid = f.get_header().get_identifier();
+    auto layout = fid.get_layout();
+    layout.set_dimension(0,num_ov_gids);
+    FieldIdentifier ov_fid (fid.name(),layout,fid.get_units(),ov_gn,dt);
+
+    auto& ov_f = m_ov_fields.emplace_back(ov_fid);
+
+    // Use same alloc props as fine fields, to allow packing in local_mat_vec
+    const auto pack_size = f.get_header().get_alloc_properties().get_largest_pack_size();
+    ov_f.get_header().get_alloc_properties().request_allocation(pack_size);
+    ov_f.allocate_view();
+  }
+}
+
+void HorizInterpRemapperBase::clean_up ()
+{
+  // Clear all fields
+  m_src_fields.clear();
+  m_tgt_fields.clear();
+  m_ov_fields.clear();
+
+  // Reset the state of the base class
+  m_state = RepoState::Clean;
+  m_num_fields = 0;
+  m_num_registered_fields = 0;
+  m_fields_are_bound.clear();
+  m_num_bound_fields = 0;
+}
+
 
 } // namespace scream

@@ -1,11 +1,8 @@
 #ifndef SCREAM_COARSENING_REMAPPER_HPP
 #define SCREAM_COARSENING_REMAPPER_HPP
 
-#include "share/grid/remap/abstract_remapper.hpp"
 #include "share/grid/remap/horiz_interp_remapper_base.hpp"
 #include "scream_config.h"
-
-#include "ekat/ekat_pack.hpp"
 
 #include <mpi.h>
 
@@ -41,8 +38,7 @@ namespace scream
  * where it is then unpacked and accumulated into the result.
  */
 
-class CoarseningRemapper : public AbstractRemapper,
-                           public HorizInterpRemapperBase
+class CoarseningRemapper : public HorizInterpRemapperBase
 {
 public:
 
@@ -52,70 +48,18 @@ public:
 
   ~CoarseningRemapper ();
 
-  FieldLayout create_src_layout (const FieldLayout& tgt_layout) const override;
-  FieldLayout create_tgt_layout (const FieldLayout& src_layout) const override;
-
-  bool compatible_layouts (const layout_type& src,
-                           const layout_type& tgt) const override {
-    // Same type of layout, and same sizes except for possibly the first one
-    // Note: we can't do tgt.size()/tgt.dim(0), since there may be 0 tgt gids
-    //       on some ranks, which means tgt.dim(0)=0.
-    int src_col_size = 1;
-    for (int i=1; i<src.rank(); ++i) {
-      src_col_size *= src.dim(i);
-    }
-    int tgt_col_size = 1;
-    for (int i=1; i<tgt.rank(); ++i) {
-      tgt_col_size *= tgt.dim(i);
-    }
-    return get_layout_type(src.tags())==get_layout_type(tgt.tags()) &&
-           src_col_size == tgt_col_size;
-  }
-
 protected:
-
-  const identifier_type& do_get_src_field_id (const int ifield) const override {
-    return m_src_fields[ifield].get_header().get_identifier();
-  }
-  const identifier_type& do_get_tgt_field_id (const int ifield) const override {
-    return m_tgt_fields[ifield].get_header().get_identifier();
-  }
-  const field_type& do_get_src_field (const int ifield) const override {
-    return m_src_fields[ifield];
-  }
-  const field_type& do_get_tgt_field (const int ifield) const override {
-    return m_tgt_fields[ifield];
-  }
-
-  void do_registration_begins () override { /* Nothing to do here */ }
-
-  void do_register_field (const identifier_type& src, const identifier_type& tgt) override;
 
   void do_bind_field (const int ifield, const field_type& src, const field_type& tgt) override;
 
-  void do_registration_ends () override;
-
   void do_remap_fwd () override;
-
-  void do_remap_bwd () override {
-    EKAT_ERROR_MSG ("CoarseningRemapper only supports fwd remapping.\n");
-  }
 
 protected:
 
-  using KT = KokkosTypes<DefaultDevice>;
-  using gid_type = AbstractGrid::gid_type;
-
-  template<int N>
-  using RPack = ekat::Pack<Real,N>;
-
-  template<typename T>
-  using view_1d = typename KT::template view_1d<T>;
   template<typename T>
   using view_2d = typename KT::template view_2d<T>;
 
-  void create_ov_tgt_fields ();
-  void setup_mpi_data_structures ();
+  void setup_mpi_data_structures () override;
 
   std::vector<int> get_pids_for_recv (const std::vector<int>& send_to_pids) const;
 
@@ -138,9 +82,6 @@ public:
   void recv_and_unpack ();
 
 protected:
-  // If a field
-
-  ekat::Comm            m_comm;
 
   static constexpr bool MpiOnDev = SCREAM_MPI_ON_DEVICE;
 
@@ -152,23 +93,9 @@ protected:
                         typename view_1d<T>::HostMirror
                       >::type;
 
-  // An "overlapped" tgt grid, that is a version of the tgt grid where
-  // ranks own all rows that are affected by local dofs in their src grid
-  grid_ptr_type         m_ov_tgt_grid;
-
-  // Source, target, and overlapped-target fields
-  std::vector<Field>    m_src_fields;
-  std::vector<Field>    m_ov_tgt_fields;
-  std::vector<Field>    m_tgt_fields;
-
   // Mask fields, if needed
   bool                  m_track_mask;
   std::map<int,int>     m_field_idx_to_mask_idx;
-
-  // ----- Sparse matrix CRS representation ---- //
-  view_1d<int>    m_row_offsets;
-  view_1d<int>    m_col_lids;
-  view_1d<Real>   m_weights;
 
   // ------- MPI data structures -------- //
 

@@ -13,190 +13,16 @@ namespace scream
 
 RefiningRemapperRMA::
 RefiningRemapperRMA (const grid_ptr_type& tgt_grid,
-                  const std::string& map_file)
- : AbstractRemapper()
- , m_comm (tgt_grid->get_comm())
+                     const std::string& map_file)
+ : HorizInterpRemapperBase(tgt_grid,map_file,InterpType::Refine)
 {
-  using namespace ShortFieldTagsNames;
-
-  // Sanity checks
-  EKAT_REQUIRE_MSG (tgt_grid->type()==GridType::Point,
-      "Error! RefiningRemapperRMA only works on PointGrid grids.\n"
-      "  - tgt grid name: " + tgt_grid->name() + "\n"
-      "  - tgt_grid_type: " + e2str(tgt_grid->type()) + "\n");
-  EKAT_REQUIRE_MSG (tgt_grid->is_unique(),
-      "Error! RefiningRemapperRMA requires a unique target grid.\n");
-
-  // This is a refining remapper. We only go in one direction
-  m_bwd_allowed = false;
-
-  // Load (i,j,w) triplets from map file, for all i that are
-  // owned on the tgt_grid
-  auto my_triplets = get_my_triplets (map_file,m_comm,tgt_grid,OwnedBy::Row);
-
-  // Sort triplets by row lid
-  auto gid2lid = tgt_grid->get_gid2lid_map();
-  auto compare = [&] (const Triplet& lhs, const Triplet& rhs) {
-    return gid2lid.at(lhs.row) < gid2lid.at(rhs.row);
-  };
-  std::sort(my_triplets.begin(),my_triplets.end(),compare);
-
-  // Create an overlapped src map, consisting of all the col gids
-  // in the triplets. This is overlapped, since for each gid there
-  // may be 2+ ranks owning it.
-  std::map<gid_type,int> ov_src_gid2lid;
-  for (const auto& t : my_triplets) {
-    ov_src_gid2lid.emplace(t.col,ov_src_gid2lid.size());
-  }
-  int num_ov_src_gids = ov_src_gid2lid.size();
-  auto ov_src_grid = std::make_shared<PointGrid>("ov_src_grid",num_ov_src_gids,0,m_comm);
-  auto ov_src_gids_h = ov_src_grid->get_dofs_gids().get_view<gid_type*,Host>();
-  for (const auto& it : ov_src_gid2lid) {
-    ov_src_gids_h[it.second] = it.first;
-  }
-  ov_src_grid->get_dofs_gids().sync_to_dev();
-  m_ov_src_grid = ov_src_grid;
-
-  // Create a unique version of m_ov_src_grid
-  auto src_grid_gids = m_ov_src_grid->get_unique_gids();
-  const int ngids = src_grid_gids.size();
-  const int nlevs  = tgt_grid->get_num_vertical_levels();
-  auto src_grid = std::make_shared<PointGrid>("src_grid",ngids,nlevs,m_comm);
-  auto src_grid_gids_h = src_grid->get_dofs_gids().get_view<gid_type*,Host>();
-  std::memcpy(src_grid_gids_h.data(),src_grid_gids.data(),ngids*sizeof(gid_type));
-  src_grid->get_dofs_gids().sync_to_dev();
-
-  // Finally able to set the src and tgt grids
-  this->set_grids(src_grid,tgt_grid);
-
-  // 5. Create CRS views and host mirrors
-  const int num_my_triplets = my_triplets.size();
-  m_row_offsets = view_1d<int>("",tgt_grid->get_num_local_dofs()+1);
-  m_col_lids = view_1d<int>("",num_my_triplets);
-  m_weights = view_1d<Real>("",num_my_triplets);
-
-  auto row_offsets_h = Kokkos::create_mirror_view(m_row_offsets);
-  auto col_lids_h = Kokkos::create_mirror_view(m_col_lids);
-  auto weights_h = Kokkos::create_mirror_view(m_weights);
-
-  std::vector<int> num_entries_per_row(tgt_grid->get_num_local_dofs(),0);
-  auto gid2lid_row = tgt_grid->get_gid2lid_map();
-  for (int i=0; i<num_my_triplets; ++i) {
-    const auto& t = my_triplets[i];
-    ++num_entries_per_row[gid2lid_row.at(t.row)];
-    col_lids_h[i] = ov_src_gid2lid.at(t.col);
-    weights_h[i] = t.w;
-  }
-  row_offsets_h(0) = 0;
-  for (int i=0; i<tgt_grid->get_num_local_dofs(); ++i) {
-    row_offsets_h(i+1) = row_offsets_h(i) + num_entries_per_row[i];
-  }
-  Kokkos::deep_copy(m_row_offsets,row_offsets_h);
-  Kokkos::deep_copy(m_col_lids,   col_lids_h);
-  Kokkos::deep_copy(m_weights,    weights_h);
+  // Nothing to do here
 }
 
 RefiningRemapperRMA::
 ~RefiningRemapperRMA ()
 {
   clean_up();
-}
-
-FieldLayout RefiningRemapperRMA::
-create_src_layout (const FieldLayout& tgt_layout) const
-{
-  using namespace ShortFieldTagsNames;
-  const auto lt = get_layout_type(tgt_layout.tags());
-  auto src = FieldLayout::invalid();
-  const bool midpoints = tgt_layout.has_tag(LEV);
-  const int vec_dim = tgt_layout.is_vector_layout() ? tgt_layout.dim(CMP) : -1;
-  switch (lt) {
-    case LayoutType::Scalar2D:
-      src = m_src_grid->get_2d_scalar_layout();
-      break;
-    case LayoutType::Vector2D:
-      src = m_src_grid->get_2d_vector_layout(CMP,vec_dim);
-      break;
-    case LayoutType::Scalar3D:
-      src = m_src_grid->get_3d_scalar_layout(midpoints);
-      break;
-    case LayoutType::Vector3D:
-      src = m_src_grid->get_3d_vector_layout(midpoints,CMP,vec_dim);
-      break;
-    default:
-      EKAT_ERROR_MSG ("Layout not supported by RefiningRemapperRMA: " + e2str(lt) + "\n");
-  }
-  return src;
-}
-
-FieldLayout RefiningRemapperRMA::
-create_tgt_layout (const FieldLayout& src_layout) const
-{
-  using namespace ShortFieldTagsNames;
-  const auto lt = get_layout_type(src_layout.tags());
-  auto tgt = FieldLayout::invalid();
-  const bool midpoints = src_layout.has_tag(LEV);
-  const int vec_dim = src_layout.is_vector_layout() ? src_layout.dim(CMP) : -1;
-  switch (lt) {
-    case LayoutType::Scalar2D:
-      tgt = m_tgt_grid->get_2d_scalar_layout();
-      break;
-    case LayoutType::Vector2D:
-      tgt = m_tgt_grid->get_2d_vector_layout(CMP,vec_dim);
-      break;
-    case LayoutType::Scalar3D:
-      tgt = m_tgt_grid->get_3d_scalar_layout(midpoints);
-      break;
-    case LayoutType::Vector3D:
-      tgt = m_tgt_grid->get_3d_vector_layout(midpoints,CMP,vec_dim);
-      break;
-    default:
-      EKAT_ERROR_MSG ("Layout not supported by RefiningRemapperRMA: " + e2str(lt) + "\n");
-  }
-  return tgt;
-}
-
-void RefiningRemapperRMA::
-do_register_field (const identifier_type& src, const identifier_type& tgt)
-{
-  constexpr auto COL = ShortFieldTagsNames::COL;
-  EKAT_REQUIRE_MSG (src.get_layout().has_tag(COL),
-      "Error! Cannot register a field without COL tag in RefiningRemapperRMA.\n"
-      "  - field name: " + src.name() + "\n"
-      "  - field layout: " + to_string(src.get_layout()) + "\n");
-  m_src_fields.push_back(field_type(src));
-  m_tgt_fields.push_back(field_type(tgt));
-}
-
-void RefiningRemapperRMA::
-do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
-{
-  EKAT_REQUIRE_MSG (src.data_type()==DataType::RealType,
-      "Error! RefiningRemapperRMA only allows fields with RealType data.\n"
-      "  - src field name: " + src.name() + "\n"
-      "  - src field type: " + e2str(src.data_type()) + "\n");
-  EKAT_REQUIRE_MSG (tgt.data_type()==DataType::RealType,
-      "Error! RefiningRemapperRMA only allows fields with RealType data.\n"
-      "  - tgt field name: " + tgt.name() + "\n"
-      "  - tgt field type: " + e2str(tgt.data_type()) + "\n");
-
-  m_src_fields[ifield] = src;
-  m_tgt_fields[ifield] = tgt;
-
-  // If this was the last field to be bound, we can setup the MPI schedule
-  if (this->m_state==RepoState::Closed &&
-      (this->m_num_bound_fields+1)==this->m_num_registered_fields) {
-    create_ov_src_fields ();
-    setup_mpi_data_structures ();
-  }
-}
-
-void RefiningRemapperRMA::do_registration_ends ()
-{
-  if (this->m_num_bound_fields==this->m_num_registered_fields) {
-    create_ov_src_fields ();
-    setup_mpi_data_structures ();
-  }
 }
 
 void RefiningRemapperRMA::do_remap_fwd ()
@@ -217,20 +43,20 @@ void RefiningRemapperRMA::do_remap_fwd ()
     const int col_stride = m_col_stride[i];
     const int col_offset = m_col_offset[i];
     const auto& win = m_mpi_win[i];
-    auto ov_data = m_ov_src_fields[i].get_internal_view_data<Real,MpiDev>();
-    for (int icol=0; icol<m_ov_src_grid->get_num_local_dofs(); ++icol) {
+    auto ov_data = m_ov_fields[i].get_internal_view_data<Real,MpiDev>();
+    for (int icol=0; icol<m_ov_coarse_grid->get_num_local_dofs(); ++icol) {
       const int pid = m_remote_pids[icol];
       const int lid = m_remote_lids[icol];
       check_mpi_call(MPI_Get(ov_data+icol*col_size,col_size,dt,pid,
                              lid*col_stride+col_offset,col_size,dt,win),
-                     "MPI_Get for field: " + m_ov_src_fields[i].name());
+                     "MPI_Get for field: " + m_ov_fields[i].name());
     }
   }
 
   // Close access RMA epoch on each field (exposure is still open)
   for (int i=0; i<m_num_fields; ++i) {
     check_mpi_call(MPI_Win_complete(m_mpi_win[i]),
-                   "MPI_Win_complete for field: " + m_ov_src_fields[i].name());
+                   "MPI_Win_complete for field: " + m_ov_fields[i].name());
   }
 
   // Helpef function, to establish if a field can be handled with packs
@@ -253,7 +79,7 @@ void RefiningRemapperRMA::do_remap_fwd ()
 
     // Perform the local mat-vec. Recall that in these y=Ax products,
     // x is the overlapped src field, and y is the tgt field.
-    const auto& f_ov_src    = m_ov_src_fields[i];
+    const auto& f_ov_src    = m_ov_fields[i];
 
     // If possible, dispatch kernel with SCREAM_PACK_SIZE
     if (can_pack_field(f_ov_src) and can_pack_field(f_tgt)) {
@@ -362,29 +188,6 @@ local_mat_vec (const Field& x, const Field& y) const
   }
 }
 
-
-void RefiningRemapperRMA::create_ov_src_fields ()
-{
-  using FL = FieldLayout;
-  m_ov_src_fields.reserve(m_num_fields);
-  const int num_ov_cols = m_ov_src_grid->get_num_local_dofs();
-  const auto ov_gn = m_ov_src_grid->name();
-  for (int i=0; i<m_num_fields; ++i) {
-    const auto& f_tgt = m_tgt_fields[i];
-    const auto& fid = f_tgt.get_header().get_identifier();
-    auto tags = fid.get_layout().tags();
-    auto dims = fid.get_layout().dims();
-    dims[0] = num_ov_cols;
-    FieldIdentifier ov_fid (fid.name(),FL(tags,dims),fid.get_units(),ov_gn,DataType::RealType);
-
-    auto& ov_f = m_ov_src_fields.emplace_back(ov_fid);
-    // Use same alloc props as tgt fields, to allow packing in local_mat_vec
-    const auto pack_size = f_tgt.get_header().get_alloc_properties().get_largest_pack_size();
-    ov_f.get_header().get_alloc_properties().request_allocation(pack_size);
-    ov_f.allocate_view();
-  }
-}
-
 void RefiningRemapperRMA::setup_mpi_data_structures ()
 {
   using namespace ShortFieldTagsNames;
@@ -394,14 +197,13 @@ void RefiningRemapperRMA::setup_mpi_data_structures ()
   check_mpi_call(MPI_Comm_group(mpi_comm,&m_mpi_group),"MPI_Comm_group");
 
   // Figure out where data needs to be retrieved from
-  const auto ov_src_gids = m_ov_src_grid->get_dofs_gids().get_view<const gid_type*,Host>();
+  const auto ov_src_gids = m_ov_coarse_grid->get_dofs_gids().get_view<const gid_type*,Host>();
   m_src_grid->get_remote_pids_and_lids(ov_src_gids,m_remote_pids,m_remote_lids);
 
   // TODO: scope out possibility of using sub-groups for start/post calls
   //       (but I'm afraid you can't, b/c start/post may require same groups)
 
   // Create per-field structures
-  constexpr auto COL = ShortFieldTagsNames::COL;
   m_mpi_win.resize(m_num_fields);
   m_col_size.resize(m_num_fields);
   m_col_stride.resize(m_num_fields);
@@ -411,8 +213,6 @@ void RefiningRemapperRMA::setup_mpi_data_structures ()
     const auto& fh = f.get_header();
     const auto& layout = fh.get_identifier().get_layout();
     m_col_stride[i] = m_col_size[i] = layout.strip_dim(COL).size();
-
-
 
     // If field has a parent, col_stride and col_offset need to be adjusted
     auto p = fh.get_parent().lock();
@@ -452,17 +252,7 @@ void RefiningRemapperRMA::clean_up ()
   m_remote_lids.clear();
   m_col_size.clear();
 
-  // Clear all fields
-  m_src_fields.clear();
-  m_tgt_fields.clear();
-  m_ov_src_fields.clear();
-
-  // Reset the state of the base class
-  m_state = RepoState::Clean;
-  m_num_fields = 0;
-  m_num_registered_fields = 0;
-  m_fields_are_bound.clear();
-  m_num_bound_fields = 0;
+  HorizInterpRemapperBase::clean_up();
 }
 
 } // namespace scream

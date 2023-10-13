@@ -21,14 +21,14 @@ public:
     // Test arrays size
     const size_t n = m_num_fields;
     REQUIRE (m_src_fields.size()==n);
-    REQUIRE (m_ov_src_fields.size()==n);
+    REQUIRE (m_ov_fields.size()==n);
     REQUIRE (m_tgt_fields.size()==n);
     REQUIRE (m_col_size.size()==n);
     REQUIRE (m_col_stride.size()==n);
     REQUIRE (m_col_offset.size()==n);
     REQUIRE (m_mpi_win.size()==n);
-    REQUIRE (m_remote_lids.size()==static_cast<size_t>(m_ov_src_grid->get_num_local_dofs()));
-    REQUIRE (m_remote_pids.size()==static_cast<size_t>(m_ov_src_grid->get_num_local_dofs()));
+    REQUIRE (m_remote_lids.size()==static_cast<size_t>(m_ov_coarse_grid->get_num_local_dofs()));
+    REQUIRE (m_remote_pids.size()==static_cast<size_t>(m_ov_coarse_grid->get_num_local_dofs()));
 
     // Test field specs
     constexpr auto COL = ShortFieldTagsNames::COL;
@@ -51,7 +51,7 @@ public:
     auto row_offsets_h = cmvdc(m_row_offsets);
     auto col_lids_h = cmvdc(m_col_lids);
     auto weights_h = cmvdc(m_weights);
-    auto col_gids_h = m_ov_src_grid->get_dofs_gids().get_view<const AbstractGrid::gid_type*,Host>();
+    auto col_gids_h = m_ov_coarse_grid->get_dofs_gids().get_view<const AbstractGrid::gid_type*,Host>();
 
     auto row_gids_h = m_tgt_grid->get_dofs_gids().get_view<const AbstractGrid::gid_type*,Host>();
     for (int i=0; i<nldofs_tgt; ++i) {
@@ -229,7 +229,7 @@ TEST_CASE ("refining_remapper") {
   // Create a map file
   const int ngdofs_src = 4*comm.size();
   const int ngdofs_tgt = 2*ngdofs_src-1;
-  auto filename = "rr_rmap_tests_map.np" + std::to_string(comm.size()) + ".nc";
+  auto filename = "rr_rma_tests_map.np" + std::to_string(comm.size()) + ".nc";
   write_map_file(filename,ngdofs_src);
 
   // Create target grid. Ensure gids are numbered like in map file
