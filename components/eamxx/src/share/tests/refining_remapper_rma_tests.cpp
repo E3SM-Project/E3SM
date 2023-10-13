@@ -229,7 +229,7 @@ TEST_CASE ("refining_remapper") {
   // Create a map file
   const int ngdofs_src = 4*comm.size();
   const int ngdofs_tgt = 2*ngdofs_src-1;
-  auto filename = "rr_tests_map.np" + std::to_string(comm.size()) + ".nc";
+  auto filename = "rr_rmap_tests_map.np" + std::to_string(comm.size()) + ".nc";
   write_map_file(filename,ngdofs_src);
 
   // Create target grid. Ensure gids are numbered like in map file

@@ -16,10 +16,6 @@ public:
    : RefiningRemapperP2P(tgt_grid,map_file) {}
 
   ~RefiningRemapperP2PTester () = default;
-
-  void test_internals () {
-    // TODO
-  }
 };
 
 Field create_field (const std::string& name, const LayoutType lt, const AbstractGrid& grid)
@@ -169,6 +165,8 @@ void write_map_file (const std::string& filename, const int ngdofs_src) {
 TEST_CASE ("refining_remapper") {
   using gid_type = AbstractGrid::gid_type;
 
+  auto& catch_capture = Catch::getResultCapture();
+
   ekat::Comm comm(MPI_COMM_WORLD);
 
   auto engine = setup_random_test (&comm);
@@ -179,7 +177,7 @@ TEST_CASE ("refining_remapper") {
   // Create a map file
   const int ngdofs_src = 4*comm.size();
   const int ngdofs_tgt = 2*ngdofs_src-1;
-  auto filename = "rr_tests_map.np" + std::to_string(comm.size()) + ".nc";
+  auto filename = "rr_p2p_tests_map.np" + std::to_string(comm.size()) + ".nc";
   write_map_file(filename,ngdofs_src);
 
   // Create target grid. Ensure gids are numbered like in map file
@@ -233,9 +231,6 @@ TEST_CASE ("refining_remapper") {
   r->register_field(bundle_src.get_component(1),bundle_tgt.get_component(1));
   r->registration_ends();
 
-  // Test remapper internal state
-  r->test_internals();
-
   // Run remap
   CHECK_THROWS (r->remap(false)); // No backward remap
   r->remap(true);
@@ -259,6 +254,7 @@ TEST_CASE ("refining_remapper") {
     if (comm.am_i_root()) {
       printf(" -> Checking 2d scalars .........\n");
     }
+    bool ok = true;
     gs2d_src.sync_to_host();
     gs2d_tgt.sync_to_host();
 
@@ -268,14 +264,16 @@ TEST_CASE ("refining_remapper") {
     // Coarse grid cols are just copied
     for (int icol=0; icol<ngdofs_src; ++icol) {
       CHECK (tgt_v[2*icol]==src_v[icol]);
+      ok &= catch_capture.lastAssertionPassed();
     }
     // Fine cols are an average of the two cols nearby
     for (int icol=0; icol<ngdofs_src-1; ++icol) {
       avg = (src_v[icol] + src_v[icol+1]) / 2;
       CHECK (tgt_v[2*icol+1]==avg);
+      ok &= catch_capture.lastAssertionPassed();
     }
     if (comm.am_i_root()) {
-      printf(" -> Checking 2d scalars ......... PASS\n");
+      printf(" -> Checking 2d scalars ......... %s\n",ok ? "PASS" : "FAIL");
     }
   }
 
@@ -284,6 +282,7 @@ TEST_CASE ("refining_remapper") {
     if (comm.am_i_root()) {
       printf(" -> Checking 2d vectors .........\n");
     }
+    bool ok = true;
     gv2d_src.sync_to_host();
     gv2d_tgt.sync_to_host();
 
@@ -294,6 +293,7 @@ TEST_CASE ("refining_remapper") {
     for (int icol=0; icol<ngdofs_src; ++icol) {
       for (int icmp=0; icmp<2; ++icmp) {
         CHECK (tgt_v(2*icol,icmp)==src_v(icol,icmp));
+        ok &= catch_capture.lastAssertionPassed();
       }
     }
     // Fine cols are an average of the two cols nearby
@@ -301,10 +301,11 @@ TEST_CASE ("refining_remapper") {
       for (int icmp=0; icmp<2; ++icmp) {
         avg = (src_v(icol,icmp) + src_v(icol+1,icmp)) / 2;
         CHECK (tgt_v(2*icol+1,icmp)==avg);
+        ok &= catch_capture.lastAssertionPassed();
       }
     }
     if (comm.am_i_root()) {
-      printf(" -> Checking 2d vectors ......... PASS\n");
+      printf(" -> Checking 2d vectors ......... %s\n",ok ? "PASS" : "FAIL");
     }  
   }
 
@@ -313,6 +314,7 @@ TEST_CASE ("refining_remapper") {
     if (comm.am_i_root()) {
       printf(" -> Checking 3d scalars .........\n");
     }
+    bool ok = true;
     gs3d_src.sync_to_host();
     gs3d_tgt.sync_to_host();
 
@@ -323,6 +325,7 @@ TEST_CASE ("refining_remapper") {
     for (int icol=0; icol<ngdofs_src; ++icol) {
       for (int ilev=0; ilev<nlevs; ++ilev) {
         CHECK (tgt_v(2*icol,ilev)==src_v(icol,ilev));
+        ok &= catch_capture.lastAssertionPassed();
       }
     }
     // Fine cols are an average of the two cols nearby
@@ -330,10 +333,11 @@ TEST_CASE ("refining_remapper") {
       for (int ilev=0; ilev<nlevs; ++ilev) {
         avg = (src_v(icol,ilev) + src_v(icol+1,ilev)) / 2;
         CHECK (tgt_v(2*icol+1,ilev)==avg);
+        ok &= catch_capture.lastAssertionPassed();
       }
     }
     if (comm.am_i_root()) {
-      printf(" -> Checking 3d scalars ......... PASS\n");
+      printf(" -> Checking 3d scalars ......... %s\n",ok ? "PASS" : "FAIL");
     }
   }
 
@@ -342,6 +346,7 @@ TEST_CASE ("refining_remapper") {
     if (comm.am_i_root()) {
       printf(" -> Checking 3d vectors .........\n");
     }
+    bool ok = true;
     gv3d_src.sync_to_host();
     gv3d_tgt.sync_to_host();
 
@@ -353,6 +358,7 @@ TEST_CASE ("refining_remapper") {
       for (int icmp=0; icmp<2; ++icmp) {
         for (int ilev=0; ilev<nlevs; ++ilev) {
           CHECK (tgt_v(2*icol,icmp,ilev)==src_v(icol,icmp,ilev));
+          ok &= catch_capture.lastAssertionPassed();
         }
       }
     }
@@ -362,11 +368,12 @@ TEST_CASE ("refining_remapper") {
         for (int ilev=0; ilev<nlevs; ++ilev) {
           avg = (src_v(icol,icmp,ilev) + src_v(icol+1,icmp,ilev)) / 2;
           CHECK (tgt_v(2*icol+1,icmp,ilev)==avg);
+          ok &= catch_capture.lastAssertionPassed();
         }
       }
     }
     if (comm.am_i_root()) {
-      printf(" -> Checking 3d vectors ......... PASS\n");
+      printf(" -> Checking 3d vectors ......... %s\n",ok ? "PASS" : "FAIL");
     }
   }
 
@@ -375,6 +382,7 @@ TEST_CASE ("refining_remapper") {
     if (comm.am_i_root()) {
       printf(" -> Checking 3d subfields .......\n");
     }
+    bool ok = true;
     gbundle_src.sync_to_host();
     gbundle_tgt.sync_to_host();
 
@@ -389,6 +397,7 @@ TEST_CASE ("refining_remapper") {
       for (int icol=0; icol<ngdofs_src; ++icol) {
         for (int ilev=0; ilev<nlevs; ++ilev) {
           CHECK (tgt_v(2*icol,ilev)==src_v(icol,ilev));
+          ok &= catch_capture.lastAssertionPassed();
         }
       }
       // Fine cols are an average of the two cols nearby
@@ -396,11 +405,12 @@ TEST_CASE ("refining_remapper") {
         for (int ilev=0; ilev<nlevs; ++ilev) {
           avg = (src_v(icol,ilev) + src_v(icol+1,ilev)) / 2;
           CHECK (tgt_v(2*icol+1,ilev)==avg);
+          ok &= catch_capture.lastAssertionPassed();
         }
       }
     }
     if (comm.am_i_root()) {
-      printf(" -> Checking 3d subfields ....... PASS\n");
+      printf(" -> Checking 3d subfields ....... %s\n",ok ? "PASS" : "FAIL");
     }
   }
 
