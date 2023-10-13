@@ -2577,10 +2577,10 @@ contains
          maxAerosolType, &
          nZBGCTracers
 
-    logical, pointer :: &
+         logical, pointer :: &
          config_do_restart, &
          config_use_column_biogeochemistry, &
-         config_use_column_package, &
+         config_use_column_physics, &
          config_use_aerosols, &
          config_use_zaerosols
 

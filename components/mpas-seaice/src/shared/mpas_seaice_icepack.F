@@ -12502,8 +12502,8 @@ contains
          grid_o_t_in             = config_biogrid_top_molecular_sublayer, &
          !initbio_frac_in         = config_new_ice_fraction_biotracer, &
          !frazil_scav_in          = config_fraction_biotracer_in_frazil, &
-         grid_oS_in              = config_zsalinity_molecular_sublayer, &
-         l_skS_in                = config_zsalinity_gravity_drainage_scale, &
+         !grid_oS_in              = config_zsalinity_molecular_sublayer, &
+         !l_skS_in                = config_zsalinity_gravity_drainage_scale, &
          phi_snow_in             = config_snow_porosity_at_ice_surface, &
          !ratio_Si2N_diatoms_in   = config_ratio_Si_to_N_diatoms, &
          !ratio_Si2N_sp_in        = config_ratio_Si_to_N_small_plankton, &
@@ -15942,7 +15942,7 @@ contains
     logical, pointer :: &
          config_use_column_biogeochemistry, &
          config_use_column_shortwave, &
-         config_use_column_package, &
+         config_use_column_physics, &
          config_use_vertical_tracers, &
          config_use_vertical_zsalinity, &
          config_use_zaerosols

@@ -14830,6 +14830,7 @@ contains
          bioTracerShortwave
 
     logical, pointer :: &
+         config_use_column_physics, &
          config_use_column_biogeochemistry, &
          config_use_column_shortwave, &
          config_use_column_package, &

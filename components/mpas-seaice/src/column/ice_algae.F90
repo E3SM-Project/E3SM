@@ -2259,6 +2259,10 @@
             write(warning, *) 'Conservation error!'
             call add_warning(warning)
             if (tr_bgc_DON) then
+               write(warning, *) 'Error bound = max(puny,maxval(abs(reactb(:)))*1.0e-13_dbl_kind)'
+               call add_warning(warning)
+               write(warning, *)  max(puny,maxval(abs(reactb(:)))*1.0e-13_dbl_kind)
+               call add_warning(warning)
                write(warning, *) 'dN,DONin(1), kn_bac(1),secday,dt,n_doc'
                call add_warning(warning)
                write(warning, *) dN, DONin(1),kn_bac(1),secday,dt,n_doc
@@ -2272,10 +2276,16 @@
             call add_warning(warning)
             write(warning, *) dN,secday,dt,n_doc
             call add_warning(warning)
-            write(warning, *) 'reactb(nlt_bgc_Nit),reactb(nlt_bgc_N(1)),reactb(nlt_bgc_N(2)'
+            write(warning, *) 'reactb(nlt_bgc_Nit),fr_resp'
             call add_warning(warning)
-            write(warning, *) reactb(nlt_bgc_Nit),reactb(nlt_bgc_N(1)),reactb(nlt_bgc_N(2))
+            write(warning, *) reactb(nlt_bgc_Nit),fr_resp
             call add_warning(warning)
+            do k = 1,n_algae
+               write(warning, *) 'reactb(nlt_bgc_N(k)),fr_graze(k), grow_N(k), mort(k)'
+               call add_warning(warning)
+               write(warning, *) reactb(nlt_bgc_N(k)),fr_graze(k), grow_N(k), mort(k)
+               call add_warning(warning)
+            enddo
             if (tr_bgc_Am) then
                write(warning, *) 'reactb(nlt_bgc_Am),Am_r, Am_s'
                call add_warning(warning)
@@ -2298,6 +2308,7 @@
                write(warning, *) 'DOC_r,DOC_s'
                call add_warning(warning)
                write(warning, *) DOC_r(k),DOC_s(k)
+               call add_warning(warning)
              end do
              do k = 1,n_dic
                write(warning, *) 'DICin'
@@ -2312,7 +2323,6 @@
                call add_warning(warning)
                write(warning, *) DIC_r(k),DIC_s(k)
             end do
-            call add_warning(warning)
             write(warning, *) 'Zoo'
             call add_warning(warning)
             write(warning, *) Zoo
