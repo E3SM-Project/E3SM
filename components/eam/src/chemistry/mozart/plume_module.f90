@@ -289,7 +289,7 @@ if(use_sound==1) then
      ! dimension 200
      k=k+1
      zcon(k)  =env(1,i) !-topo  !geopotential height
-     prcon(k) =env(2,i)!*100. ! mb to pascar
+     prcon(k) =env(2,i)/1000 ! kp !*100. ! mb to pascar
      tmpcon(k)=env(3,i)!+273.15  ! Kelve degree
      urcon(k) =env(4,i)  ! relative humidity
 !     urcon(k) =0.000001 
@@ -443,7 +443,7 @@ subroutine set_grid()
 implicit none
 integer :: k,mzp
 
-dz=100. ! set constant grid spacing of plume grid model(meters)
+dz=50. ! set constant grid spacing of plume grid model(meters)
 
 mzp=nkp
 zt(1) = zsurf ! zsurf=0, defined at zero_plumegen_coms
@@ -1398,8 +1398,8 @@ enddo
 do k = 2,m1-2
 
 !srf- just for output
-    rbuoy(k)=0.5*(scr1(k)+scr1(k+1))
- !   rbuoy(k)=0.333*(scr1(k)+scr1(k+1)+scr1(k+1))
+ !   rbuoy(k)=0.5*(scr1(k)+scr1(k+1))
+    rbuoy(k)=0.333*(scr1(k-1)+scr1(k)+scr1(k+1))
     wt(k) = wt(k)+rbuoy(k)
 
 !   print*,'W-BUO',k,wt(k),scr1(k),scr1(k+1)
@@ -1885,9 +1885,9 @@ do k=mI,mF,deltaM !v2
 !    WT(k) =   WT(k) + D2WDZ
 !     TT(k) =   TT(k) + D2TDZ
 
-dkdz=(visc_ke(k+1)-visc_ke(k-1))/2.0/ZM(k)
-WT(k) =   WT(k) + dkdz*(W(k)-W(k-1))/ZM(k)
-TT(k) =   TT(k) + dkdz*(T(k)-T(k-1))/ZT(k)
+!dkdz=(visc_ke(k+1)-visc_ke(k-1))/2.0/ZM(k)
+!WT(k) =   WT(k) + dkdz*(W(k)-W(k-1))/ZM(k)
+!TT(k) =   TT(k) + dkdz*(T(k)-T(k-1))/ZT(k)
 ! QVT(k) =  QVT(k) + dkdz*(QV(k)-QV(k-1))/ZT(k)
 ! QCT(k) =  QCT(k) + D2QCDZ
 ! QHT(k) =  QHT(k) + D2QHDZ

@@ -401,7 +401,7 @@ contains
     !-----------------------------------------------------
     logical :: fire_detected
     real(r8) :: plume_height,emis_col
-    real(r8) :: plume_height_EM(ncol)
+    real(r8) :: plume_height_EM(ncol), pt_v(pver)
     integer :: ph_z(ncol), fire_icol   ! index of levels of max plume height
     real(r8) :: frcing_col_plume,frcing_vertical_plume_old(pver),frcing_vertical_plume_new(pver)
     real(r8) :: clat(pcols)                   ! current latitudes(radians)
@@ -451,10 +451,15 @@ contains
                          write(iulog,*)'kzm_plume_rise_calculation_lon ', clon(icol)/(3.1415_r8)*180.0_r8
                          call cal_plume_height(plume_height,zmidr(icol,:), pmid(icol,:), &
                                  tfld(icol,:), relhum(icol,:), qh2o(icol,:), ufld(icol,:), &
-                                 vfld(icol,:), clat(icol)/(3.1415_r8)*180.0_r8, clon(icol)/(3.1415_r8)*180.0_r8, tl)
+                                 vfld(icol,:), clat(icol)/(3.1415_r8)*180.0_r8, clon(icol)/(3.1415_r8)*180.0_r8, tl, pt_v)
                          plume_height_EM(icol) = plume_height ! in meter
                          write(iulog,*)'kzm_plume_time ', iyear,imo,iday_m,tod
                          write(iulog,*)'kzm_plume_height ', plume_height, 'local time ',tl 
+                         !write(iulog,*)'kzm_plume environment data begin: zmidr pmid tfld relhum qh2o ufld vfld '
+                         !do k = pver,30,-1
+                         !   write(iulog,*)k, zmidr(icol,k) ,pmid(icol,k), pt_v(k), relhum(icol,k), qh2o(icol,k), ufld(icol,k),vfld(icol,k)  
+                         !enddo
+                         !write(iulog,*)'kzm_plume environment data end'
                          ! match plume height to model vertical grid
                          ph_z(icol) = pver
                          do k = 2, pver
@@ -531,7 +536,7 @@ contains
   end subroutine extfrc_set
 
 ! subroutines for plumerise
-  subroutine cal_plume_height( plume_height,zmidr_v, pmid_v, tfld_v, relhum_v, qh2o_v, ufld_v, vfld_v,lat,lon,tl )
+  subroutine cal_plume_height( plume_height,zmidr_v, pmid_v, tfld_v, relhum_v, qh2o_v, ufld_v, vfld_v,lat,lon,tl,pt_v )
     use smk_plumerise, only : smk_pr_driver  
     !use time_manager,  only: get_curr_date
     implicit none
