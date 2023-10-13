@@ -1564,7 +1564,7 @@ contains
 !    The following fields are sometimes received from the coupler,
 !      depending on model options:
 !
-!    o  pbot   -- bottom atm pressure                      (Pa)
+!    o  pslv   -- sea level pressure                      (Pa)
 !    o  duu10n -- 10m wind speed squared                   (m^2/s^2)
 !    o  co2prog-- bottom atm level prognostic co2
 !    o  co2diag-- bottom atm level diagnostic co2
@@ -2027,7 +2027,7 @@ contains
            rainFlux(i) = x2o_o % rAttr(index_x2o_Faxa_rain, n)
         end if
         if ( atmosphericPressureField % isActive ) then
-           atmosphericPressure(i) = x2o_o % rAttr(index_x2o_Sa_pbot,   n)
+           atmosphericPressure(i) = x2o_o % rAttr(index_x2o_Sa_pslv,   n)
         end if
         if ( seaIcePressureField % isActive ) then
            ! Set seaIcePressure to be limited to 5m of pressure
