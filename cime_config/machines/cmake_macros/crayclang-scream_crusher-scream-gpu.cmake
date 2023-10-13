@@ -8,9 +8,9 @@ endif()
 set(PIO_FILESYSTEM_HINTS "gpfs")
 string(APPEND CXX_LIBS " -lstdc++")
 
-SET(CMAKE_C_COMPILER "cc" CACHE STRING "")
-SET(CMAKE_Fortran_COMPILER "ftn" CACHE STRING "")
-SET(CMAKE_CXX_COMPILER "hipcc" CACHE STRING "")
+set(CMAKE_C_COMPILER "cc")
+set(CMAKE_Fortran_COMPILER "ftn")
+set(CMAKE_CXX_COMPILER "hipcc")
 
 string(APPEND CXXFLAGS " -I${MPICH_DIR}/include")
 string(APPEND LDFLAGS " -L${MPICH_DIR}/lib -lmpi -L/opt/cray/pe/mpich/8.1.16/gtl/lib -lmpi_gtl_hsa")
