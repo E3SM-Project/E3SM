@@ -787,15 +787,54 @@ public:
     const auto& D_inv = Homme::subview(m_dinv, kv.ie);
     const auto& spheremp = Homme::subview(m_spheremp, kv.ie);
     constexpr int np_squared = NP * NP;
+
+    const int s1 = &v(1,0,0,0)[0]-&v(0,0,0,0)[0];
+    const int s2 = &v(0,1,0,0)[0]-&v(0,0,0,0)[0];
+    const int s3 = &v(0,0,1,0)[0]-&v(0,0,0,0)[0];
+    const int s4 = &v(0,0,0,1)[0]-&v(0,0,0,0)[0];
+
+    const int d1 = &D_inv(1,0,0,0)-&D_inv(0,0,0,0);
+    const int d2 = &D_inv(0,1,0,0)-&D_inv(0,0,0,0);
+    const int d3 = &D_inv(0,0,1,0)-&D_inv(0,0,0,0);
+    const int d4 = &D_inv(0,0,0,1)-&D_inv(0,0,0,0);
+
+    Real * const vv = &v(0,0,0,0)[0];
+    const Real * const dd = &D_inv(0,0,0,0);
+
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, np_squared),
                          [&](const int loop_idx) {
       const int igp = loop_idx / NP;
       const int jgp = loop_idx % NP;
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team, NUM_LEV_REQUEST), [&] (const int& ilev) {
+
+#if 0
         const auto v0 = v(0,igp,jgp,ilev);
         const auto v1 = v(1,igp,jgp,ilev);
         v(0,igp,jgp,ilev) = D_inv(0, 0, igp, jgp) * v0 + D_inv(1, 0, igp, jgp) * v1;
         v(1,igp,jgp,ilev) = D_inv(0, 1, igp, jgp) * v0 + D_inv(1, 1, igp, jgp) * v1;
+#else
+        const auto v1 = v(1,igp,jgp,ilev)[0];
+
+        const int l1 = s1*0 + s2*igp + s3*jgp + s4*ilev;
+        const int l2 = s1*1 + l1;
+        const Real v0old = vv[l1];
+        const Real v1old = vv[l2];
+//std::cout << "strides are " << s1 << " " << s2 << " " <<s3 << " " << s4 << "\n";
+//std::cout << "l1 from igp jgp ilev , l1=" << l1 << " igp=" << igp << " jgp" <<jgp << " ilev=" << ilev << "\n";
+//std::cout << "v from index " << v(0,igp,jgp,ilev)[0] << " v from address " << vv[l1] << "\n";
+//std::cout << "v from index " << v(0,0,0,1)[0] << " v from address " << vv[1] << "\n";
+
+        int l3 = d1*0 + d2*0 + d3*igp + d4*jgp;
+        int l4 = d1*1 + d2*0 + d3*igp + d4*jgp;
+
+        vv[l1] = dd[l3] * v0old + dd[l4] * v1old;
+
+        l3 = d1*0 + d2*1 + d3*igp + d4*jgp;
+        l4 = d1*1 + d2*1 + d3*igp + d4*jgp;
+
+        vv[l2] = dd[l3] * v0old + dd[l4] * v1old;        
+#endif
+
       });
     });
     kv.team_barrier();
