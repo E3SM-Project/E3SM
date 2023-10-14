@@ -839,6 +839,16 @@ public:
     });
     kv.team_barrier();
 
+    const int f1 = &dvv(1,0)-&dvv(0,0);
+    const int f2 = &dvv(0,1)-&dvv(0,0);
+
+    const Real * const ss = &spheremp(0,0);
+    const Real * const ddv = &dvv(0,0);
+
+    const int k1 = &div_v(1,0,0)[0]-&div_v(0,0,0)[0];
+    const int k2 = &div_v(0,1,0)[0]-&div_v(0,0,0)[0];
+    const int k3 = &div_v(0,0,1)[0]-&div_v(0,0,0)[0];
+
     constexpr int div_iters = NP * NP;
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, div_iters),
                          [&](const int loop_idx) {
@@ -847,15 +857,25 @@ public:
       const int mgp = loop_idx % NP;
       const int ngp = loop_idx / NP;
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team, NUM_LEV_REQUEST), [&] (const int& ilev) {
-        Scalar dd;
+        Real dd;
         // TODO: move multiplication by scale_factor_inv outside the loop
         for (int jgp = 0; jgp < NP; ++jgp) {
           // Here, v is the temporary buffer, aliased on the input v.
-          dd -= (spheremp(ngp, jgp) * v(0, ngp, jgp, ilev) * dvv(jgp, mgp) +
-                 spheremp(jgp, mgp) * v(1, jgp, mgp, ilev) * dvv(jgp, ngp)) *
+          
+          const int l1 = s1*0 + s2*ngp + s3*jgp + s4*ilev;
+          const int l2 = s1*1 + s2*jgp + s3*mgp + s4*ilev;
+
+          const int x1 = f1 * ngp + f2 * jgp;
+          const int x2 = f1 * jgp + f2 * mgp;
+          const int x3 = f1 * jgp + f2 * ngp;
+
+          dd -= (ss[x1] * vv[l1] * ddv[x2] +
+                 ss[x2] * vv[l2] * ddv[x3]) *
                 m_scale_factor_inv;
         }
-        div_v(ngp, mgp, ilev) = dd;
+        //div_v(ngp, mgp, ilev) = dd;
+        const int l1 = k1 * ngp + k2 * mgp + k3 * ilev;
+        *(&div_v(0,0,0)[0]+l1) = dd;
       });
     });
     kv.team_barrier();
