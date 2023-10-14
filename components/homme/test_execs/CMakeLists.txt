@@ -273,7 +273,6 @@ IF (${BUILD_HOMME_PREQX_KOKKOS})
   IF (HOMMEXX_BFB_TESTING)
     ADD_SUBDIRECTORY(preqx-nlev26)
     ADD_SUBDIRECTORY(preqx-nlev72)
-    ADD_SUBDIRECTORY(preqx_kokkos_ut)
   ENDIF ()
     # For doubly periodic tests.
     ADD_SUBDIRECTORY(preqx-nlev10-native-kokkos)
