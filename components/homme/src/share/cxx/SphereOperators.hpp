@@ -258,15 +258,54 @@ public:
 
     // copied from strong divergence as is but without metdet
     // conversion to contravariant
+
+    double * ggv = &gv_buf(0,0,0);
+
+    const int s1 = &v(1,0,0)-&v(0,0,0);
+    const int s2 = &v(0,1,0)-&v(0,0,0);
+    const int s3 = &v(0,0,1)-&v(0,0,0);
+
+    //not sure we can reuse strides above, so using new ones
+    const int d1 = &D_inv(1,0,0,0)-&D_inv(0,0,0,0);
+    const int d2 = &D_inv(0,1,0,0)-&D_inv(0,0,0,0);
+    const int d3 = &D_inv(0,0,1,0)-&D_inv(0,0,0,0);
+    const int d4 = &D_inv(0,0,0,1)-&D_inv(0,0,0,0);
+
     constexpr int np_squared = NP * NP;
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, np_squared),
                          [&](const int loop_idx) {
       const int igp = loop_idx / NP;
       const int jgp = loop_idx % NP;
+
+#if 0
       const auto& v0 = v(0,igp,jgp);
       const auto& v1 = v(1,igp,jgp);
       gv_buf(0,igp,jgp) = D_inv(0,0,igp,jgp) * v0 + D_inv(1,0,igp,jgp) * v1;
       gv_buf(1,igp,jgp) = D_inv(0,1,igp,jgp) * v0 + D_inv(1,1,igp,jgp) * v1;
+#else
+      //ggv[linind1] = *(&D_inv(0,0,0,0) + linind3) * (*v0) + *(&D_inv(0,0,0,0) + linind4) * (*v1);
+      //ggv[linind2] = *(&D_inv(0,0,0,0) + linind3) * (*v0) + *(&D_inv(0,0,0,0) + linind4) * (*v1);
+
+      int linind1 = s1 * 0 + s2 * igp + s3 * jgp;
+      const auto& vv0 = (&v(0,0,0) + linind1);
+      int linind2 = s1 * 1 + s2 * igp + s3 * jgp;
+      const auto& vv1 = (&v(0,0,0) + linind2);
+
+//std::cout << "igp, jgp" << igp <<" " <<  jgp << " "  << "\n";
+//std::cout << "s1 s2 s3 " << s1 <<" " <<  s2 << " "  << s3<< "\n";
+//std::cout << "linind1 " << linind1 << "\n";
+//std::cout << "v(0,igp,jgp) and *(&v(0,0,0) + linind1) " << v(0,igp,jgp) << " "<<*(&v(0,0,0) + linind1) << "\n";
+
+      int linind3 = d1 * 0 + d2 * 0 + d3 * igp + d4 * jgp;
+      int linind4 = d1 * 1 + d2 * 0 + d3 * igp + d4 * jgp;
+      *(&gv_buf(0,0,0)+linind1) = *(&D_inv(0,0,0,0)+linind3) * (*vv0) + *(&D_inv(0,0,0,0)+linind4) * (*vv1);
+
+      linind3 = d1 * 0 + d2 * 1 + d3 * igp + d4 * jgp;
+      linind4 = d1 * 1 + d2 * 1 + d3 * igp + d4 * jgp;
+      *(&gv_buf(0,0,0)+linind2) = *(&D_inv(0,0,0,0)+linind3) * (*vv0) + *(&D_inv(0,0,0,0)+linind4) * (*vv1);
+
+#endif
+
     });
     kv.team_barrier();
 
@@ -278,6 +317,12 @@ public:
     // j(weak)=i(strong)=kgp
     constexpr int div_iters = NP * NP;
     // keeping indices' names as in F
+    
+    //gv_buf strides are as before, s1 s2 s3
+    //dvv, div_v, and spheremp should have the same strides
+    const int f1 = &dvv(1,0)-&dvv(0,0);
+    const int f2 = &dvv(0,1)-&dvv(0,0);
+
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, div_iters),
                          [&](const int loop_idx) {
       // Note: for this one time, it is better if m strides faster, due to
@@ -286,11 +331,19 @@ public:
       const int ngp = loop_idx / NP;
       Real dd = 0.0;
       for (int jgp = 0; jgp < NP; ++jgp) {
-        dd -= (spheremp(ngp, jgp) * gv_buf(0, ngp, jgp) * dvv(jgp, mgp) +
-               spheremp(jgp, mgp) * gv_buf(1, jgp, mgp) * dvv(jgp, ngp)) *
+        int linind1 = s1 * 0 + s2 * ngp + s3 * jgp;
+        int linind2 = s1 * 1 + s2 * jgp + s3 * mgp;
+
+        int l1 = f1 * ngp + f2 * jgp;
+        int l2 = f1 * jgp + f2 * mgp;
+        int l3 = f1 * jgp + f2 * ngp;
+
+        dd -= (  *(&spheremp(0,0)+l1) * *(&gv_buf(0,0,0)+linind1) * *(&dvv(0,0)+l2) +
+                 *(&spheremp(0,0)+l2) * *(&gv_buf(0,0,0)+linind2) * *(&dvv(0,0)+l3)) *
               m_scale_factor_inv;
       }
-      div_v(ngp, mgp) = dd;
+      int l1 = f1 * ngp + f2 * mgp;
+      *(&div_v(0,0)+l1) = dd;
     });
     kv.team_barrier();
 
