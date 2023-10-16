@@ -45,6 +45,8 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols, m_num_levs} };
   FieldLayout horiz_wind_layout { {COL,CMP,LEV}, {m_num_cols,2,m_num_levs} };
 
+printf("set grids: %d, %d\n",m_num_cols, m_num_levs);
+
   constexpr int ps = 1;
   auto Q = kg/kg;
   Q.set_string("kg/kg");
@@ -62,9 +64,9 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   if (ekat::contains(m_fields_nudge,"T_mid")) {
     add_field<Updated>("T_mid", scalar3d_layout_mid, K, grid_name, ps);
   }
-//  if (ekat::contains(m_fields_nudge,"qv")) {
+  if (ekat::contains(m_fields_nudge,"qv")) {
     add_field<Updated>("qv",    scalar3d_layout_mid, Q, grid_name, "tracers", ps);
-//  }
+  }
   if (ekat::contains(m_fields_nudge,"U") or ekat::contains(m_fields_nudge,"V")) {
     add_field<Updated>("horiz_winds",   horiz_wind_layout,   m/s,     grid_name, ps);
   }
@@ -84,6 +86,7 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
     m_num_src_levs = scorpio::get_dimlen(m_static_vertical_pressure_file,"lev");
     scorpio::eam_pio_closefile(m_static_vertical_pressure_file);
   }
+
 }
 // =========================================================================================
 void Nudging::apply_tendency(Field& base, const Field& next, const int dt)
@@ -113,12 +116,11 @@ void Nudging::apply_weighted_tendency(Field& base, const Field& next, const Fiel
   // Use update internal to set tendency, will be (weights*next - weights*base), note tend=base at this point.
   auto base_view = base.get_view<const mPack**>();
   auto tend_view = tend.get_view<      mPack**>();
-  auto next_view = next.get_view<mPack**>();
-  auto w_view    = weights.get_view<mPack**>();
+  auto next_view = next.get_view<      mPack**>();
+  auto w_view    = weights.get_view<   mPack**>();
 
-  const int num_cols       = base_view.extent(0);
-  const int num_vert_packs = base_view.extent(1);
-
+  const int num_cols       = w_view.extent(0);
+  const int num_vert_packs = w_view.extent(1);
   Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0}, {num_cols, num_vert_packs}), KOKKOS_LAMBDA(int i, int j) {
     tend_view(i,j) = next_view(i,j)*w_view(i,j) - base_view(i,j)*w_view(i,j);
   });
@@ -152,9 +154,14 @@ void Nudging::initialize_impl (const RunType /* run_type */)
     create_helper_field("p_mid_ext", scalar2d_layout_mid, grid_name, ps);
     auto pmid_ext = get_helper_field("p_mid_ext");
     auto pmid_ext_v = pmid_ext.get_view<Real*,Host>();
-    in_params.set<std::vector<std::string>>("Field Names",{"p_levs"});
-    host_views["p_levs"] = pmid_ext_v;
-    layouts.emplace("p_levs",scalar2d_layout_mid);
+//    in_params.set<std::vector<std::string>>("Field Names",{"p_levs"});
+//    host_views["p_levs"] = pmid_ext_v;
+//    layouts.emplace("p_levs",scalar2d_layout_mid);
+
+    in_params.set<std::vector<std::string>>("Field Names",{"hybm"});
+    host_views["hybm"] = pmid_ext_v;
+    layouts.emplace("hybm",scalar2d_layout_mid);
+
     AtmosphereInput src_input(in_params,grid_ext,host_views,layouts);
     src_input.read_variables(-1);
     src_input.finalize();
@@ -176,15 +183,16 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   // load nudging weights from file
   if (m_use_weights)
   {
-    std::vector<Field> fields;
     auto nudging_weights = get_field_out("nudging_weights");
+    auto weights_layout = nudging_weights.get_header().get_identifier().get_layout();
+    create_helper_field("nudging_weights_ext", weights_layout, grid_name, ps);
+    std::vector<Field> fields;
+    auto nudging_weights_ext = get_helper_field("nudging_weights_ext");
     fields.push_back(nudging_weights);
     AtmosphereInput src_weights_input(m_weights_file, grid_ext, fields);
     src_weights_input.read_variables();
     src_weights_input.finalize();
-    auto weights_layout = nudging_weights.get_header().get_identifier().get_layout();
     nudging_weights.sync_to_dev();
-    create_helper_field("nudging_weights_ext", weights_layout, grid_name, ps);
   }
 }
 
@@ -344,37 +352,15 @@ void Nudging::run_impl (const double dt)
       // Back out a tendency and apply it.
       if (m_use_weights <= 0) {
         apply_tendency(atm_state_field, int_state_field, dt);
-
-      // get nudging weights field
-      // NOTES: do we really need the vertical interpolation for nudging weights? Since we are going to 
-      //        use the same grids as the case by providing the nudging weights file.
-      //        I would not apply the vertical interpolation here, but it depends...
-      //
-      } else  {
-        auto nudging_weights_field     = get_field_out("nudging_weights");
-        auto nudging_weights_view      = nudging_weights_field.get_view<mPack**>();
-        auto ext_weights_field         = get_helper_field("nudging_weights_ext");
-        auto ext_weights_view          = ext_weights_field.get_view<mPack**>();
-
-        // Vertical Interpolation onto atmosphere state pressure levels
-        if (m_src_pres_type == TIME_DEPENDENT_3D_PROFILE) {
-          perform_vertical_interpolation<Real,1,2>(p_mid_ext_p,
-                                                   p_mid_v,
-                                                   nudging_weights_view,
-                                                   ext_weights_view,
-                                                   m_num_src_levs,
-                                                   m_num_levs);
-        } else if (m_src_pres_type == STATIC_1D_VERTICAL_PROFILE) {
-          perform_vertical_interpolation<Real,1,2>(p_mid_ext_1d,
-                                                   p_mid_v,
-                                                   nudging_weights_view,
-                                                   ext_weights_view,
-                                                   m_num_src_levs,
-                                                   m_num_levs);
-       }
-
-       // appply the nudging tendencies to the ATM states
-       apply_weighted_tendency(atm_state_field, int_state_field, ext_weights_field, dt);
+      } else {
+        // get nudging weights field
+        // NOTES: do we really need the vertical interpolation for nudging weights? Since we are going to 
+        //        use the same grids as the case by providing the nudging weights file.
+        //        I would not apply the vertical interpolation here, but it depends...
+        //
+        auto nudging_weights_field = get_field_out("nudging_weights");
+        // appply the nudging tendencies to the ATM states
+        apply_weighted_tendency(atm_state_field, int_state_field, nudging_weights_field, dt);
       }
     }
   }

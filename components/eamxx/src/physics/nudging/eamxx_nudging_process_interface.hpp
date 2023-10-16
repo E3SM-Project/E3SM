@@ -65,6 +65,9 @@ public:
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
 
+  // Internal function to apply nudging at specific timescale with weights
+  void apply_weighted_tendency(Field& base, const Field& next, const Field& weights, const int dt);
+
   // Structure for storing local variables initialized using the ATMBufferManager
   struct Buffer {
     // 2D view
@@ -108,9 +111,6 @@ protected:
   Field get_helper_field (const std::string& name) const { return m_helper_fields.at(name); }
   // Internal function to apply nudging at specific timescale
   void apply_tendency(Field& base, const Field& next, const int dt);
-
-  // Internal function to apply nudging at specific timescale with weights
-  void apply_weighted_tendency(Field& base, const Field& next, const Field& weights, const int dt);
 
   std::shared_ptr<const AbstractGrid>   m_grid;
   // Keep track of field dimensions and the iteration count
