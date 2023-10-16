@@ -1564,7 +1564,7 @@ contains
 !    The following fields are sometimes received from the coupler,
 !      depending on model options:
 !
-!    o  pslv   -- sea level pressure                      (Pa)
+!    o  pslv   -- atmospheric pressure at sea level        (Pa)
 !    o  duu10n -- 10m wind speed squared                   (m^2/s^2)
 !    o  co2prog-- bottom atm level prognostic co2
 !    o  co2diag-- bottom atm level diagnostic co2
