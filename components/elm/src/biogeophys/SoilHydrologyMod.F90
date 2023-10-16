@@ -552,7 +552,7 @@ contains
                 if ( use_modified_infil ) then
                    ! Assume frac_h2osfc occurs on top of fsat
                    if (frac_h2osfc(c) <= fsat(c)) then
-                     qflx_h2osfc_drain(c)=0
+                     qflx_h2osfc_drain(c)=0._r8
                    else
                      qflx_h2osfc_drain(c)=min((frac_h2osfc(c)-fsat(c))*qinmax,h2osfc(c)/dtime)
                    endif

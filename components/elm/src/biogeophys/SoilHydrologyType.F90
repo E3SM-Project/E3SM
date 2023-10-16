@@ -66,7 +66,7 @@ Module SoilHydrologyType
      real(r8), pointer :: i_0_col           (:)     => null()! col VIC average saturation in top soil layers
      real(r8), pointer :: ice_col           (:,:)   => null()! col VIC soil ice (kg/m2) for VIC soil layers
      real(r8), pointer :: fover             (:)     => null()! decay factor for surface runoff
-     real(r8), pointer :: pc                (:)     => null()! surface water threshold
+     real(r8), pointer :: pc                (:)     => null()! surface water threshold probability
      
    contains
 
