@@ -768,6 +768,11 @@ public:
     vorticity_sphere<NUM_LEV_OUT,NUM_LEV_IN>(kv, v, vort, NUM_LEV_REQUEST);
   }
 
+
+
+
+#if 0
+
   template<int NUM_LEV_OUT, int NUM_LEV_IN = NUM_LEV_OUT>
   KOKKOS_INLINE_FUNCTION void
   divergence_sphere_wk (const KernelVariables &kv,
@@ -807,22 +812,10 @@ public:
       const int jgp = loop_idx % NP;
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team, NUM_LEV_REQUEST), [&] (const int& ilev) {
 
-#if 0
-        const auto v0 = v(0,igp,jgp,ilev);
-        const auto v1 = v(1,igp,jgp,ilev);
-        v(0,igp,jgp,ilev) = D_inv(0, 0, igp, jgp) * v0 + D_inv(1, 0, igp, jgp) * v1;
-        v(1,igp,jgp,ilev) = D_inv(0, 1, igp, jgp) * v0 + D_inv(1, 1, igp, jgp) * v1;
-#else
-        const auto v1 = v(1,igp,jgp,ilev)[0];
-
         const int l1 = s1*0 + s2*igp + s3*jgp + s4*ilev;
         const int l2 = s1*1 + l1;
         const Real v0old = vv[l1];
         const Real v1old = vv[l2];
-//std::cout << "strides are " << s1 << " " << s2 << " " <<s3 << " " << s4 << "\n";
-//std::cout << "l1 from igp jgp ilev , l1=" << l1 << " igp=" << igp << " jgp" <<jgp << " ilev=" << ilev << "\n";
-//std::cout << "v from index " << v(0,igp,jgp,ilev)[0] << " v from address " << vv[l1] << "\n";
-//std::cout << "v from index " << v(0,0,0,1)[0] << " v from address " << vv[1] << "\n";
 
         int l3 = d1*0 + d2*0 + d3*igp + d4*jgp;
         int l4 = d1*1 + d2*0 + d3*igp + d4*jgp;
@@ -833,7 +826,6 @@ public:
         l4 = d1*1 + d2*1 + d3*igp + d4*jgp;
 
         vv[l2] = dd[l3] * v0old + dd[l4] * v1old;        
-#endif
 
       });
     });
@@ -881,6 +873,80 @@ public:
     kv.team_barrier();
 
   }//end of divergence_sphere_wk
+
+#else
+
+
+
+  template<int NUM_LEV_OUT, int NUM_LEV_IN = NUM_LEV_OUT>
+  KOKKOS_INLINE_FUNCTION void
+  divergence_sphere_wk (const KernelVariables &kv,
+                        // On input, a field whose divergence is sought; on
+                        // output, the view's data are invalid.
+                        const ExecViewUnmanaged<Scalar [2][NP][NP][NUM_LEV_IN]>& v,
+                        const ExecViewUnmanaged<Scalar [NP][NP][NUM_LEV_OUT]>& div_v,
+                        const int NUM_LEV_REQUEST) const
+  {
+    assert(NUM_LEV_REQUEST>=0);
+    assert(NUM_LEV_REQUEST<=NUM_LEV_IN);
+    assert(NUM_LEV_REQUEST<=NUM_LEV_OUT);
+
+    // Make sure the buffers have been created
+    assert (vector_buf_ml.size()>0);
+
+    const auto& D_inv = Homme::subview(m_dinv, kv.ie);
+    const auto& spheremp = Homme::subview(m_spheremp, kv.ie);
+    constexpr int np_squared = NP * NP;
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, np_squared),
+                         [&](const int loop_idx) {
+      const int igp = loop_idx / NP;
+      const int jgp = loop_idx % NP;
+      Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team, NUM_LEV_REQUEST), [&] (const int& ilev) {
+        const auto v0 = v(0,igp,jgp,ilev);
+        const auto v1 = v(1,igp,jgp,ilev);
+        v(0,igp,jgp,ilev) = D_inv(0, 0, igp, jgp) * v0 + D_inv(1, 0, igp, jgp) * v1;
+        v(1,igp,jgp,ilev) = D_inv(0, 1, igp, jgp) * v0 + D_inv(1, 1, igp, jgp) * v1;
+      });
+    });
+    kv.team_barrier();
+
+    constexpr int div_iters = NP * NP;
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, div_iters),
+                         [&](const int loop_idx) {
+      // Note: for this one time, it is better if m strides faster, due to
+      //       the way the views are accessed.
+      const int mgp = loop_idx % NP;
+      const int ngp = loop_idx / NP;
+      Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team, NUM_LEV_REQUEST), [&] (const int& ilev) {
+        Scalar dd;
+        // TODO: move multiplication by scale_factor_inv outside the loop
+        for (int jgp = 0; jgp < NP; ++jgp) {
+          // Here, v is the temporary buffer, aliased on the input v.
+          dd -= (spheremp(ngp, jgp) * v(0, ngp, jgp, ilev) * dvv(jgp, mgp) +
+                 spheremp(jgp, mgp) * v(1, jgp, mgp, ilev) * dvv(jgp, ngp)) *
+                m_scale_factor_inv;
+        }
+        div_v(ngp, mgp, ilev) = dd;
+      });
+    });
+    kv.team_barrier();
+
+  }//end of divergence_sphere_wk
+
+
+
+
+
+
+
+
+
+
+#endif
+
+
+
+
 
   template<int NUM_LEV_OUT, int NUM_LEV_IN = NUM_LEV_OUT, int NUM_LEV_REQUEST = NUM_LEV_OUT>
   KOKKOS_INLINE_FUNCTION void
