@@ -106,7 +106,7 @@ def buildlib(bldroot, installpath, case):
     # Compute cmake args
     # Use old genf90 until "short" type is supported
     cmake_opts = "-Wno-dev "
-    cmake_opts = f"-DGENF90_PATH={scorpio_src_dir}/src/genf90 "
+    cmake_opts += f"-DGENF90_PATH={scorpio_src_dir}/src/genf90 "
     if "ADIOS2_ROOT" in os.environ:
         cmake_opts += "-DWITH_ADIOS2:BOOL=ON "
     if debug:
