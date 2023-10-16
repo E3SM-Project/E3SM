@@ -278,10 +278,10 @@ module ColumnDataType
     real(r8), pointer :: tan_s1                   (:)     => null() ! (gN/m2) total ammoniacal N in FAN pool S1
     real(r8), pointer :: tan_s2                   (:)     => null() ! (gN/m2) total ammoniacal N in FAN pool S2
     real(r8), pointer :: tan_s3                   (:)     => null() ! (gN/m2) total ammoniacal N in FAN pool S2
-    real(r8), pointer :: tan_f1                   (:)     => null() ! (gN/m2) total ammoniacal N in FAN pool F0
-    real(r8), pointer :: tan_f2                   (:)     => null() ! (gN/m2) total ammoniacal N in FAN pool F1
-    real(r8), pointer :: tan_f3                   (:)     => null() ! (gN/m2) total ammoniacal N in FAN pool F2
-    real(r8), pointer :: tan_f4                   (:)     => null() ! (gN/m2) total ammoniacal N in FAN pool F3
+    real(r8), pointer :: tan_f1                   (:)     => null() ! (gN/m2) total ammoniacal N in FAN pool F1
+    real(r8), pointer :: tan_f2                   (:)     => null() ! (gN/m2) total ammoniacal N in FAN pool F2
+    real(r8), pointer :: tan_f3                   (:)     => null() ! (gN/m2) total ammoniacal N in FAN pool F3
+    real(r8), pointer :: tan_f4                   (:)     => null() ! (gN/m2) total ammoniacal N in FAN pool F4
     real(r8), pointer :: fert_u1                  (:)     => null() ! (gN/m2) total urea N in FAN pool U0
     real(r8), pointer :: fert_u2                  (:)     => null() ! (gN/m2) total urea N in FAN pool U1
     real(r8), pointer :: manure_u_grz             (:)     => null() ! (gN/m2) unavailable organic N, grazing
