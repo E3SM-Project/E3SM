@@ -3475,32 +3475,32 @@ contains
 
        this%tan_f1(begc:endc) = spval
        call hist_addfld1d (fname='TAN_F0', units='gN/m^2', &
-            avgflag='A', long_name='Total ammoniacal nitrogen in FAN pool F0', &
+            avgflag='A', long_name='Total ammoniacal nitrogen in FAN pool F1', &
             ptr_col=this%tan_f1, default='inactive')
 
        this%tan_f2(begc:endc) = spval
        call hist_addfld1d (fname='TAN_F1', units='gN/m^2', &
-            avgflag='A', long_name='Total ammoniacal nitrogen in FAN pool F1', &
+            avgflag='A', long_name='Total ammoniacal nitrogen in FAN pool F2', &
             ptr_col=this%tan_f2, default='inactive')
 
        this%tan_f3(begc:endc) = spval
        call hist_addfld1d (fname='TAN_F2', units='gN/m^2', &
-            avgflag='A', long_name='Total ammoniacal nitrogen in FAN pool F2', &
+            avgflag='A', long_name='Total ammoniacal nitrogen in FAN pool F3', &
             ptr_col=this%tan_f3, default='inactive')
 
        this%tan_f4(begc:endc) = spval
        call hist_addfld1d (fname='TAN_F3', units='gN/m^2', &
-            avgflag='A', long_name='Total ammoniacal nitrogen in FAN pool F3', &
+            avgflag='A', long_name='Total ammoniacal nitrogen in FAN pool F4', &
             ptr_col=this%tan_f4, default='inactive')
 
        this%fert_u1(begc:endc) = spval
        call hist_addfld1d (fname='FERT_U0', units='gN/m^2', &
-            avgflag='A', long_name='Total ammoniacal nitrogen in FAN pool F0', &
+            avgflag='A', long_name='Total ammoniacal nitrogen in FAN pool U1', &
             ptr_col=this%fert_u1, default='inactive')
 
        this%fert_u2(begc:endc) = spval
        call hist_addfld1d (fname='FERT_U1', units='gN/m^2', &
-            avgflag='A', long_name='Total ammoniacal nitrogen in FAN pool F1', &
+            avgflag='A', long_name='Total ammoniacal nitrogen in FAN pool U2', &
             ptr_col=this%fert_u2, default='inactive')
 
        this%tan_s0(begc:endc) = spval
