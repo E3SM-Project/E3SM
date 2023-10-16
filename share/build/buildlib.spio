@@ -119,6 +119,11 @@ def buildlib(bldroot, installpath, case):
         cmake_opts += f"-DNetCDF_C_PATH:PATH={os.environ['NETCDF_C_PATH']} "
     if "NETCDF_FORTRAN_PATH" in os.environ:
         cmake_opts += f"-DNetCDF_Fortran_PATH:PATH={os.environ['NETCDF_FORTRAN_PATH']} "
+
+    if "HDF5_PATH" in os.environ:
+        cmake_opts += f"-DHDF5_PATH:STRING={os.environ['HDF5_PATH']} "
+
+
     if "PNETCDF_PATH" in os.environ:
         cmake_opts += f"-DPnetCDF_PATH:PATH={os.environ['PNETCDF_PATH']} "
     else:
