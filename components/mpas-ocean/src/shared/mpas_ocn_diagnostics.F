@@ -1118,7 +1118,11 @@ contains
             iEdge = edgesOnVertex(i, iVertex)
             rTmp  = dcEdge(iEdge)*dvEdge(iEdge)*0.25_RKIND/ &
                     areaTriangle(iVertex)
-            !$acc loop seq
+
+! Commented out next openacc directive to prevent 
+! excessive waiting on Perlmutter compiled by Nvidia HPC compiler
+! This change may/may not cause verification issue but works for a benchmark task
+!            !$acc loop seq
             do k = 1, nVertLevels
                kineticEnergyVertex(k,iVertex) = &
                kineticEnergyVertex(k,iVertex) + rTmp* &
