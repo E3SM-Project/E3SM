@@ -451,7 +451,9 @@ contains
       use physics_buffer, only: physics_buffer_desc
       use aer_rad_props, only: aer_rad_props_sw
       use radconstants, only: nswbands, idx_sw_diag
+#if defined(MMF_SAMXX) || defined(MMF_PAM)
       use prescribed_macv2, only: do_macv2sp
+#endif
       use cam_history, only: outfld
       integer, intent(in) :: icall
       real(r8), intent(in):: dt
@@ -484,6 +486,10 @@ contains
 
       ! Everyone needs a name
       character(len=*), parameter :: subroutine_name = 'set_aerosol_optics_sw'
+
+#if !defined(MMF_SAMXX) && !defined(MMF_PAM)
+      logical :: do_macv2sp = .false.
+#endif
 
       ncol = state%ncol
 
@@ -608,7 +614,9 @@ contains
       use physics_buffer,   only: physics_buffer_desc
       use aer_rad_props,    only: aer_rad_props_sw
       use radconstants,     only: nswbands, wavenum_sw_lower, wavenum_sw_upper
+#if defined(MMF_SAMXX) || defined(MMF_PAM)
       use prescribed_macv2, only: do_macv2sp, sp_aop_profile, swbandnum
+#endif
       use time_manager,     only: get_curr_date, get_curr_calday
       use physconst,        only: gravit
       use cam_history,      only: addfld, outfld
@@ -636,6 +644,11 @@ contains
       ! Subroutine name for error messages
       character(len=*), parameter :: subroutine_name = 'set_macv2_aerosol_optics'
 
+#if !defined(MMF_SAMXX) && !defined(MMF_PAM)
+      logical :: do_macv2sp = .false.
+      character(len=5) :: swbandnum(nswbands) =(/'_sw01','_sw02','_sw03','_sw04','_sw05','_sw06','_sw07','_sw08','_sw09','_sw10','_sw11','_sw12','_sw13','_sw14'/)
+#endif
+
       if ( .not. do_macv2sp ) return
 
       ! calculate MACv2-SP aerosol direct effects 
@@ -656,9 +669,10 @@ contains
       !this is an input to the sp_aop_profile subroutine of MACv2-SP
          lambda = 10.0_r8**7*( wavenum_sw_lower(isw)**(-1) + wavenum_sw_upper(isw)**(-1) )/2.0_r8 
 
-
+#if defined(MMF_SAMXX) || defined(MMF_PAM)
          call sp_aop_profile (ncol, lambda, state%phis/gravit, clon, clat, year_fr, state%zm, &
-                              aod_prof(:,:,isw), ssa_prof(:,:,isw), asy_prof(:,:,isw), state%lchnk, isw)
+              aod_prof(:,:,isw), ssa_prof(:,:,isw), asy_prof(:,:,isw), state%lchnk, isw)
+#endif
       ! state%phis/gravit for orography in [m]
 
       ! output diagnostic variables for MACv2-SP, only for the mid-visible wavelength
