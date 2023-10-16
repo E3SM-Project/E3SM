@@ -48,13 +48,16 @@
     <valid_values></valid_values>
     <default_value></default_value>
     <values modifier='additive'>
-      <value compset=""                  >-mach $MACH</value>
-      <value compset="_EAM"              >-phys default</value>
-      <value compset="_EAM%CMIP6_"       >&eamv3_phys_defaults; &eamv3_chem_defaults;</value>
-      <value compset="_EAM%CMIP6-1pctCO2">&eamv3_phys_defaults; &eamv3_chem_defaults;</value>
-      <value compset="_EAM%CMIP6-4xCO2"  >&eamv3_phys_defaults; &eamv3_chem_defaults;</value>
-      <value compset="_ELM%[^_]*BC"      >-bc_dep_to_snow_updates</value>
-      <value compset="_EAM.*_BGC%*"      >-co2_cycle</value>
+
+      <value compset=""                        >-mach $MACH</value>
+      <value compset="_EAM"                    >-phys default</value>
+      <value compset="_EAM%CMIP6_"             >&eamv3_phys_defaults; &eamv3_chem_defaults;</value>
+      <value compset="_EAM%CMIP6-1pctCO2"      >&eamv3_phys_defaults; &eamv3_chem_defaults;</value>
+      <value compset="_EAM%CMIP6-4xCO2"        >&eamv3_phys_defaults; &eamv3_chem_defaults;</value>
+      <value compset="^((?!SSP).)*_EAM%CMIP6_" >&eamv3_phys_defaults; &eamv3_chem_defaults;</value>
+      <value compset="SSP.*_EAM%CMIP6_"        >&eamv3_phys_defaults; &eamv2_chem_defaults;</value>
+      <value compset="_ELM%[^_]*BC"            >-bc_dep_to_snow_updates</value>
+      <value compset="_EAM.*_BGC%*"            >-co2_cycle</value>
 
       <!-- Single column model (SCM) -->
       <value compset="_EAM%SCM_"       >&eamv3_phys_defaults; &eamv3_chem_defaults; -scam</value>
