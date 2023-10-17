@@ -228,7 +228,7 @@ void create_remap_file(const std::string& filename, const int ngdofs_tgt)
 
   scorpio::register_variable(filename,"col","col","none",{"n_s"},"int","int","int-nnz");
   scorpio::register_variable(filename,"row","row","none",{"n_s"},"int","int","int-nnz");
-  scorpio::register_variable(filename,"S","S","none",{"n_s"},"real","real","Real-nnz");
+  scorpio::register_variable(filename,"S","S","none",{"n_s"},"double","double","Real-nnz");
 
   std::vector<scorpio::offset_t> dofs(nnz);
   std::iota(dofs.begin(),dofs.end(),0);
@@ -286,14 +286,13 @@ TEST_CASE("coarsening_remap")
 
   const int nldofs_tgt = 2;
   const int ngdofs_tgt = nldofs_tgt*comm.size();
-  const int grids_factor = 2;
   create_remap_file(filename, ngdofs_tgt);
 
   // -------------------------------------- //
   //      Build src grid and remapper       //
   // -------------------------------------- //
 
-  const int ngdofs_src = ngdofs_tgt*grids_factor;
+  const int ngdofs_src = ngdofs_tgt+1;
   auto src_grid = build_src_grid(comm, ngdofs_src, engine);
   auto remap = std::make_shared<CoarseningRemapperTester>(src_grid,filename);
 
