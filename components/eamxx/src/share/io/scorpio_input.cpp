@@ -202,6 +202,10 @@ set_grid (const std::shared_ptr<const AbstractGrid>& grid)
 //       running eam_update_timesnap.
 void AtmosphereInput::read_variables (const int time_index)
 {
+  auto func_start = std::chrono::steady_clock::now();
+  if (m_atm_logger) {
+    m_atm_logger->info("[EAMxx::scorpio_input] Reading variables from file:\n\t " + m_filename + " ...\n");
+  }
   EKAT_REQUIRE_MSG (m_inited_with_views || m_inited_with_fields,
       "Error! Scorpio structures not inited yet. Did you forget to call 'init(..)'?\n");
 
@@ -313,6 +317,11 @@ void AtmosphereInput::read_variables (const int time_index)
       // Sync to device
       f.sync_to_dev();
     }
+  }
+  auto func_finish = std::chrono::steady_clock::now();
+  if (m_atm_logger) {
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(func_finish - func_start);
+    m_atm_logger->info("[EAMxx::scorpio_input] Reading variables from file:\n\t " + m_filename + " ... done! (Elapsed time = " + std::to_string(duration.count()) +" ms)\n");
   }
 } 
 
