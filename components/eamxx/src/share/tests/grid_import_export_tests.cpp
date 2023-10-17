@@ -58,15 +58,6 @@ TEST_CASE ("grid_import_export") {
   std::copy (start,end,dst_gids.data());
   dst_gids_field.sync_to_dev();
 
-  std::cout << "src gids:";
-  for (int i=0; i<src_grid->get_num_local_dofs(); ++i) {
-    std::cout << " " << src_gids[i];
-  } std::cout << "\n";
-  std::cout << "dst gids:";
-  for (int i=0; i<dst_grid->get_num_local_dofs(); ++i) {
-    std::cout << " " << dst_gids[i];
-  } std::cout << "\n";
-
   GridImportExport imp_exp(src_grid,dst_grid);
 
   // Test import views
