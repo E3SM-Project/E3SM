@@ -157,7 +157,7 @@ GridImportExport (const std::shared_ptr<const AbstractGrid>& unique,
     m_num_exports_per_pid = view_1d<int>("",m_comm.size());
     m_num_exports_per_pid_h = Kokkos::create_mirror_view(m_num_exports_per_pid);
     for (size_t i=0; i<m_export_pids.size(); ++i) {
-      ++m_num_exports_per_pid[m_export_pids_h[i]];
+      ++m_num_exports_per_pid_h[m_export_pids_h[i]];
     }
     Kokkos::deep_copy(m_num_exports_per_pid,m_num_exports_per_pid_h);
   }
@@ -165,7 +165,7 @@ GridImportExport (const std::shared_ptr<const AbstractGrid>& unique,
     m_num_imports_per_pid = view_1d<int>("",m_comm.size());
     m_num_imports_per_pid_h = Kokkos::create_mirror_view(m_num_imports_per_pid);
     for (size_t i=0; i<m_import_pids.size(); ++i) {
-      ++m_num_imports_per_pid[m_import_pids_h[i]];
+      ++m_num_imports_per_pid_h[m_import_pids_h[i]];
     }
     Kokkos::deep_copy(m_num_imports_per_pid,m_num_imports_per_pid_h);
   }
