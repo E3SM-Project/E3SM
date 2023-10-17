@@ -52,7 +52,7 @@ Field create_field (const std::string& name, const LayoutType lt, const Abstract
   using IPDF = std::discrete_distribution<int>;
   IPDF ipdf ({1,1,1,1,1,1,1,1,1,1});
   auto pdf = [&](Engine& e) {
-    return std::pow(2,ipdf(e));
+    return Real(std::pow(2,ipdf(e)));
   };
   randomize(f,engine,pdf);
 
