@@ -24,7 +24,6 @@ set(SHARE_SRC
   grid/remap/abstract_remapper.cpp
   grid/remap/coarsening_remapper.cpp
   grid/remap/horiz_interp_remapper_base.cpp
-  grid/remap/refining_remapper_rma.cpp
   grid/remap/refining_remapper_p2p.cpp
   grid/remap/vertical_remapper.cpp
   grid/remap/horizontal_remap_utility.cpp
@@ -40,6 +39,13 @@ set(SHARE_SRC
   util/scream_bfbhash.cpp
   util/eamxx_time_interpolation.cpp
 )
+
+if (EAMXX_ENABLE_EXPERIMENTAL_CODE)
+  list (APPEND
+    SHARE_SRC
+    grid/remap/refining_remapper_rma.cpp
+  )
+endif()
 
 add_library(scream_share ${SHARE_SRC})
 set_target_properties(scream_share PROPERTIES
