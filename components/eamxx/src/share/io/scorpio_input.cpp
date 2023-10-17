@@ -320,8 +320,8 @@ void AtmosphereInput::read_variables (const int time_index)
   }
   auto func_finish = std::chrono::steady_clock::now();
   if (m_atm_logger) {
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(func_finish - func_start);
-    m_atm_logger->info("[EAMxx::scorpio_input] Reading variables from file:\n\t " + m_filename + " ... done! (Elapsed time = " + std::to_string(duration.count()) +" ms)\n");
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(func_finish - func_start)/1000.0;
+    m_atm_logger->info("[EAMxx::scorpio_input] Reading variables from file:\n\t " + m_filename + " ... done! (Elapsed time = " + std::to_string(duration.count()) +" seconds)\n");
   }
 } 
 

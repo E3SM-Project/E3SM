@@ -150,6 +150,11 @@ public:
     return m_io_grid;
   }
 
+  // Option to add a logger
+  void set_logger(const std::shared_ptr<ekat::logger::LoggerBase>& atm_logger) {
+      m_atm_logger = atm_logger;
+  }
+
 protected:
   // Internal functions
   void set_grid (const std::shared_ptr<const AbstractGrid>& grid);
@@ -212,6 +217,9 @@ protected:
 
   bool m_add_time_dim;
   bool m_track_avg_cnt = false;
+
+  // The logger to be used throughout the ATM to log message
+  std::shared_ptr<ekat::logger::LoggerBase> m_atm_logger;
 };
 
 } //namespace scream
