@@ -1355,7 +1355,14 @@ CONTAINS
           a2x_am(ig, index_a2x_Sa_ptem   ) = cam_out(c)%thbot(i)  
           a2x_am(ig, index_a2x_Sa_pbot   ) = cam_out(c)%pbot(i)   
           a2x_am(ig, index_a2x_Sa_shum   ) = cam_out(c)%qbot(i,1) 
-	       a2x_am(ig, index_a2x_Sa_dens   ) = cam_out(c)%rho(i)
+          a2x_am(ig, index_a2x_Sa_dens   ) = cam_out(c)%rho(i)
+          if (trim(adjustl(precip_downscaling_method)) == "FNM") then
+             !if the land model's precip downscaling method is FNM, export uovern to the coupler
+             a2x_am(ig, index_a2x_Sa_uovern) = cam_out(c)%uovern(i)
+          else
+             a2x_am(ig, index_a2x_Sa_uovern) = 0._R8
+          endif
+
           a2x_am(ig, index_a2x_Faxa_swnet) = cam_out(c)%netsw(i)      
           a2x_am(ig, index_a2x_Faxa_lwdn ) = cam_out(c)%flwds(i)  
           a2x_am(ig, index_a2x_Faxa_rainc) = (cam_out(c)%precc(i)-cam_out(c)%precsc(i))*1000._r8
