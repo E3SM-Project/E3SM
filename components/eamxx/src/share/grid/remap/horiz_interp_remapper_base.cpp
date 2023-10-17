@@ -505,8 +505,10 @@ template
 void HorizInterpRemapperBase::
 local_mat_vec<1>(const Field&, const Field&) const;
 
+#if SCREAM_PACK_SIZE>1
 template
 void HorizInterpRemapperBase::
 local_mat_vec<SCREAM_PACK_SIZE>(const Field&, const Field&) const;
+#endif
 
 } // namespace scream
