@@ -39,6 +39,7 @@ TEST_CASE("remap", "") {
   using IPDF = std::uniform_int_distribution<int>;
   using FID = FieldIdentifier;
   using FL  = FieldLayout;
+  using gid_type = AbstractGrid::gid_type;
 
   constexpr int pg_gll = 0;
   constexpr int PackSize = HOMMEXX_VECTOR_SIZE;
@@ -573,6 +574,7 @@ TEST_CASE("combo_remap", "") {
   using IPDF = std::uniform_int_distribution<int>;
   using FID = FieldIdentifier;
   using FL  = FieldLayout;
+  using gid_type = AbstractGrid::gid_type;
 
   constexpr int pg_gll = 0;
   constexpr int PackSize = HOMMEXX_VECTOR_SIZE;
