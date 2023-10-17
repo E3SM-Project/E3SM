@@ -283,9 +283,9 @@ lnd/clm2/surfdata_map/surfdata_ne30np4_simyr2010_c20181025.nc</fsurdat>
 <fsurdat hgrid="r0125"   sim_year="2010" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_0.125x0.125_simyr2010_c191025.nc</fsurdat>
 <fsurdat hgrid="r05"   sim_year="2010" use_crop=".false." >
-lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr2010_c191025.nc</fsurdat>
+lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr2010_c230922_with_TOP.nc</fsurdat>
 <fsurdat hgrid="ne30np4.pg2"   sim_year="2010" use_crop=".false." >
-lnd/clm2/surfdata_map/surfdata_ne30pg2_simyr2010_c210402.nc</fsurdat>
+lnd/clm2/surfdata_map/surfdata_ne30pg2_simyr2010_c210402_with_TOP.nc</fsurdat>
 <fsurdat hgrid="ne120np4"     sim_year="2010" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne120np4_simyr2010_c20181023.nc</fsurdat>
 <fsurdat hgrid="ne120np4.pg2" sim_year="2010" use_crop=".false." >
@@ -405,7 +405,7 @@ lnd/clm2/surfdata_map/surfdata_1x1_brazil_simyr1850_c140610.nc</fsurdat>
 lnd/clm2/surfdata_map/surfdata_ne30np4_simyr1850_c180306.nc</fsurdat>
 
 <fsurdat hgrid="ne30np4.pg2"   sim_year="1850" use_crop=".false." >
-lnd/clm2/surfdata_map/surfdata_ne30pg2_simyr1850_c210402.nc</fsurdat>
+lnd/clm2/surfdata_map/surfdata_ne30pg2_simyr1850_c230417_with_TOP.nc</fsurdat>
 
 <fsurdat hgrid="ne30np4.pg2"   sim_year="1950" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne30pg2_simyr1950_c210729.nc</fsurdat>
@@ -423,7 +423,7 @@ lnd/clm2/surfdata_map/surfdata_ne4pg2_simyr1850_c210722.nc</fsurdat>
 <fsurdat hgrid="ne240np4"      sim_year="1850" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne240np4_simyr1850_c170821.nc</fsurdat>
 <fsurdat hgrid="r05"          sim_year="1850" use_crop=".false." use_cn=".false.">
-lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr1850_c200609.nc</fsurdat>
+lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr1850_c200609_with_TOP.nc</fsurdat>
 <fsurdat hgrid="r05"          sim_year="1850" use_crop=".false." use_cn=".true.">
 lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr1850_c211019.nc</fsurdat>
 <fsurdat hgrid="r0125"        sim_year="1850" use_crop=".false." >
