@@ -399,12 +399,16 @@ local_mat_vec (const Field& x, const Field& y) const
   using Pack        = ekat::Pack<Real,PackSize>;
   using PackInfo    = ekat::PackInfo<PackSize>;
 
+  const auto row_grid = m_type==InterpType::Refine ? m_fine_grid : m_ov_coarse_grid;
+  const int  nrows    = row_grid->get_num_local_dofs();
+
   const auto& src_layout = x.get_header().get_identifier().get_layout();
-  const int rank = src_layout.rank();
-  const int nrows = m_tgt_grid->get_num_local_dofs();
+  const int   rank       = src_layout.rank();
+
   auto row_offsets = m_row_offsets;
-  auto col_lids = m_col_lids;
-  auto weights = m_weights;
+  auto col_lids    = m_col_lids;
+  auto weights     = m_weights;
+
   switch (rank) {
     // Note: in each case, handle 1st contribution to each row separately,
     //       using = instead of +=. This allows to avoid doing an extra
