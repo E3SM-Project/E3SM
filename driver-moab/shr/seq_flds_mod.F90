@@ -644,15 +644,6 @@ contains
     attname  = 'Sa_z'
     call metadata_set(attname, longname, stdname, units)
 
-    ! topographic height (m)
-    call seq_flds_add(a2x_states,"Sa_topo")
-    call seq_flds_add(x2l_states,"Sa_topo")
-    longname = 'Surface height'
-    stdname  = 'height'
-    units    = 'm'
-    attname  = 'Sa_topo'
-    call metadata_set(attname, longname, stdname, units)
-
     ! zonal wind at the lowest model level (m/s)
     call seq_flds_add(a2x_states,"Sa_u")
     call seq_flds_add(x2l_states,"Sa_u")
