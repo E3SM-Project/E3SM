@@ -366,7 +366,7 @@ run (const std::string& filename,
   if (not is_write_step and m_avg_type==OutputAvgType::Instant) {
     return;
   }
-  auto func_start = std::chrono::steady_clock::now();
+  Real duration_write = 0.0;  // Record of time spent writing output
   if (is_write_step) {
     if (m_atm_logger) {
       m_atm_logger->info("[EAMxx::scorpio_output] Writing variables to file:\n\t " + filename + " ...\n");
@@ -631,7 +631,11 @@ run (const std::string& filename,
       // Bring data to host
       auto view_host = m_host_views_1d.at(name);
       Kokkos::deep_copy (view_host,view_dev);
+      auto func_start = std::chrono::steady_clock::now();
       grid_write_data_array(filename,name,view_host.data(),view_host.size());
+      auto func_finish = std::chrono::steady_clock::now();
+      auto duration_loc = std::chrono::duration_cast<std::chrono::milliseconds>(func_finish - func_start);
+      duration_write += duration_loc.count();
     }
   }
   // Handle writing the average count variables to file
@@ -641,14 +645,16 @@ run (const std::string& filename,
       // Bring data to host
       auto view_host = m_host_views_1d.at(name);
       Kokkos::deep_copy (view_host,view_dev);
+      auto func_start = std::chrono::steady_clock::now();
       grid_write_data_array(filename,name,view_host.data(),view_host.size());
+      auto func_finish = std::chrono::steady_clock::now();
+      auto duration_loc = std::chrono::duration_cast<std::chrono::milliseconds>(func_finish - func_start);
+      duration_write += duration_loc.count();
     }
   }
-  auto func_finish = std::chrono::steady_clock::now();
   if (is_write_step) {
     if (m_atm_logger) {
-      auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(func_finish - func_start)/1000.0;
-      m_atm_logger->info("[EAMxx::scorpio_output] Writing variables to file:\n\t " + filename + " ...done! (Elapsed time = " + std::to_string(duration.count()) +" seconds)\n");
+      m_atm_logger->info("[EAMxx::scorpio_output] Writing variables to file:\n\t " + filename + " ...done! (Elapsed time = " + std::to_string(duration_write/1000.0) +" seconds)\n");
     }
   }
 } // run
