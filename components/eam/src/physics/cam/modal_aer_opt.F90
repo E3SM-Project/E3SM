@@ -1466,9 +1466,9 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
       call cldera_set_field_part_data("AODSO4" ,lchnk-begchunk+1,so4aod)
       call cldera_set_field_part_data("BURDENSO4" ,lchnk-begchunk+1,burdenso4)
 
-      ! Only three tags needed for now
-      if (nso4>2) then
-         do tag_loop = 1,3
+      if (nso4>1) then
+         do tag_loop = 1,nso4
+            if (tag_loop>3) exit ! Only three tags needed for now
             call cldera_set_field_part_data("AODSO4"//tagged_sulfur_suffix(tag_loop),lchnk-begchunk+1,so4aod_tag(:,tag_loop))
             call cldera_set_field_part_data("BURDENSO4"//tagged_sulfur_suffix(tag_loop),lchnk-begchunk+1,burdenso4_tag(:,tag_loop))
          end do
