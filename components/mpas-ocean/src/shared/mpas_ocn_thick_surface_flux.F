@@ -85,7 +85,7 @@ contains
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          transmissionCoefficients,     &!< Input: Coefficients for the transmission of surface fluxes
          transmissionCoefficientsRunoff, &!< Input: Coefficients for the transmission of surface fluxes due to river runoff
-         transmissionCoefficientsSubglacialRunoff !< Input: Coefficients for the transmission of surface fluxes due to river runoff
+         transmissionCoefficientsSubglacialRunoff !< Input: Coefficients for the transmission of surface fluxes due to subglacial runoff
 
       real (kind=RKIND), dimension(:), intent(in) :: &
          surfaceThicknessFlux,       &!< Input: surface flux of thickness
