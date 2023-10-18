@@ -1264,7 +1264,7 @@
     <environment_variables mpilib="!mpi-serial">
       <env name="NETCDF_PATH">/usr/local/packages/netcdf-parallel</env>
       <env name="PNETCDF_PATH">/usr/local/packages/pnetcdf</env>
-      <env name="HDF5_PATH">/usr/local/packages/hdf5-parallel</env>
+      <env name="HDF5_ROOT">/usr/local/packages/hdf5-parallel</env>
       <env name="PATH">/usr/local/packages/cmake/bin:/usr/local/packages/mpich/bin:/usr/local/packages/hdf5-parallel/bin:/usr/local/packages/netcdf-parallel/bin:/usr/local/packages/pnetcdf/bin:$ENV{PATH}</env>
       <env name="LD_LIBRARY_PATH">/usr/local/packages/mpich/lib:/usr/local/packages/szip/lib:/usr/local/packages/hdf5-parallel/lib:/usr/local/packages/netcdf-parallel/lib:/usr/local/packages/pnetcdf/lib</env>
     </environment_variables>
@@ -1617,7 +1617,7 @@
       <!-- We currently don't have a soft env for mpich 3.3.2 built with gcc 8.2.0 -->
       <env name="PATH">/soft/apps/packages/climate/mpich/3.3.2/gcc-8.2.0/bin:/soft/apps/packages/climate/cmake/3.18.4/bin:/soft/apps/packages/climate/gmake/bin:$ENV{PATH}</env>
       <!-- We currently don't have a soft env for parallel hdf5 built with mpich 3.3.2 and gcc 8.2.0 -->
-      <env name="HDF5_PATH">/soft/apps/packages/climate/hdf5/1.8.16-parallel/mpich-3.3.2/gcc-8.2.0</env>
+      <env name="HDF5_ROOT">/soft/apps/packages/climate/hdf5/1.8.16-parallel/mpich-3.3.2/gcc-8.2.0</env>
       <!-- We currently don't have a soft env for netcdf parallel built with mpich 3.3.2 and gcc 8.2.0 -->
       <env name="NETCDF_PATH">/soft/apps/packages/climate/netcdf/4.4.1c-4.2cxx-4.4.4f-parallel/mpich-3.3.2/gcc-8.2.0</env>
       <!-- We currently don't have a soft env for pnetcdf built with mpich 3.3.2 and gcc 8.2.0 -->
@@ -1626,9 +1626,9 @@
     <environment_variables mpilib="openmpi">
       <!-- We currently don't have a soft env for openmpi 2.1.5, zlib, szip, hdf5, NetCDF and PnetCDF libraries -->
       <env name="PATH">/soft/apps/packages/climate/openmpi/2.1.5/gcc-8.2.0/bin:/soft/apps/packages/climate/cmake/3.18.4/bin:/soft/apps/packages/climate/gmake/bin:$ENV{PATH}</env>
-      <env name="ZLIB_PATH">/soft/apps/packages/climate/zlib/1.2.11/gcc-8.2.0-static</env>
-      <env name="SZIP_PATH">/soft/apps/packages/climate/szip/2.1/gcc-8.2.0-static</env>
-      <env name="HDF5_PATH">/soft/apps/packages/climate/hdf5/1.8.12-parallel/openmpi-2.1.5/gcc-8.2.0-static</env>
+      <env name="ZLIB_ROOT">/soft/apps/packages/climate/zlib/1.2.11/gcc-8.2.0-static</env>
+      <env name="SZIP_ROOT">/soft/apps/packages/climate/szip/2.1/gcc-8.2.0-static</env>
+      <env name="HDF5_ROOT">/soft/apps/packages/climate/hdf5/1.8.12-parallel/openmpi-2.1.5/gcc-8.2.0-static</env>
       <env name="NETCDF_PATH">/soft/apps/packages/climate/netcdf/4.7.4c-4.3.1cxx-4.4.4f-parallel/openmpi-2.1.5/gcc-8.2.0-static-hdf5-1.8.12-pnetcdf-1.12.0</env>
       <env name="PNETCDF_PATH">/soft/apps/packages/climate/pnetcdf/1.12.0/openmpi-2.1.5/gcc-8.2.0</env>
     </environment_variables>
@@ -1705,8 +1705,8 @@
       <!-- We currently don't have modules for HDF5, NetCDF & PnetCDF -->
       <env name="LD_LIBRARY_PATH">/nfs/gce/projects/climate/software/mpich/3.4.2/gcc-11.1.0/lib:$ENV{LD_LIBRARY_PATH}</env>
       <env name="PATH">/nfs/gce/projects/climate/software/mpich/3.4.2/gcc-11.1.0/bin:$ENV{PATH}</env>
-      <env name="ZLIB_PATH">/nfs/gce/software/spack/opt/spack/linux-ubuntu18.04-x86_64/gcc-7.5.0/zlib-1.2.11-smoyzzo</env>
-      <env name="HDF5_PATH">/nfs/gce/projects/climate/software/hdf5/1.12.1/mpich-3.4.2/gcc-11.1.0</env>
+      <env name="ZLIB_ROOT">/nfs/gce/software/spack/opt/spack/linux-ubuntu18.04-x86_64/gcc-7.5.0/zlib-1.2.11-smoyzzo</env>
+      <env name="HDF5_ROOT">/nfs/gce/projects/climate/software/hdf5/1.12.1/mpich-3.4.2/gcc-11.1.0</env>
       <env name="NETCDF_PATH">/nfs/gce/projects/climate/software/netcdf/4.8.0c-4.3.1cxx-4.5.3f-parallel/mpich-3.4.2/gcc-11.1.0</env>
       <env name="PNETCDF_PATH">/nfs/gce/projects/climate/software/pnetcdf/1.12.2/mpich-3.4.2/gcc-11.1.0</env>
     </environment_variables>
@@ -1714,8 +1714,8 @@
       <!-- We currently don't have modules for HDF5, NetCDF & PnetCDF -->
       <env name="LD_LIBRARY_PATH">/nfs/gce/projects/climate/software/openmpi/4.1.3/gcc-11.1.0/lib:$ENV{LD_LIBRARY_PATH}</env>
       <env name="PATH">/nfs/gce/projects/climate/software/openmpi/4.1.3/gcc-11.1.0/bin:$ENV{PATH}</env>
-      <env name="ZLIB_PATH">/nfs/gce/software/spack/opt/spack/linux-ubuntu18.04-x86_64/gcc-7.5.0/zlib-1.2.11-smoyzzo</env>
-      <env name="HDF5_PATH">/nfs/gce/projects/climate/software/hdf5/1.12.1/openmpi-4.1.3/gcc-11.1.0</env>
+      <env name="ZLIB_ROOT">/nfs/gce/software/spack/opt/spack/linux-ubuntu18.04-x86_64/gcc-7.5.0/zlib-1.2.11-smoyzzo</env>
+      <env name="HDF5_ROOT">/nfs/gce/projects/climate/software/hdf5/1.12.1/openmpi-4.1.3/gcc-11.1.0</env>
       <env name="NETCDF_PATH">/nfs/gce/projects/climate/software/netcdf/4.8.0c-4.3.1cxx-4.5.3f-parallel/openmpi-4.1.3/gcc-11.1.0</env>
       <env name="PNETCDF_PATH">/nfs/gce/projects/climate/software/pnetcdf/1.12.2/openmpi-4.1.3/gcc-11.1.0</env>
     </environment_variables>
@@ -1792,8 +1792,8 @@
       <!-- We currently don't have modules for HDF5, NetCDF & PnetCDF -->
       <env name="LD_LIBRARY_PATH">/nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/mpich/4.0/gcc-11.1.0/lib:$ENV{LD_LIBRARY_PATH}</env>
       <env name="PATH">/nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/mpich/4.0/gcc-11.1.0/bin:$ENV{PATH}</env>
-      <env name="ZLIB_PATH">/nfs/gce/software/spack/opt/spack/linux-ubuntu20.04-x86_64/gcc-9.3.0/zlib-1.2.11-p7dmb5p</env>
-      <env name="HDF5_PATH">/nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/hdf5/1.12.1/mpich-4.0/gcc-11.1.0</env>
+      <env name="ZLIB_ROOT">/nfs/gce/software/spack/opt/spack/linux-ubuntu20.04-x86_64/gcc-9.3.0/zlib-1.2.11-p7dmb5p</env>
+      <env name="HDF5_ROOT">/nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/hdf5/1.12.1/mpich-4.0/gcc-11.1.0</env>
       <env name="NETCDF_PATH">/nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/netcdf/4.8.0c-4.3.1cxx-4.5.3f-parallel/mpich-4.0/gcc-11.1.0</env>
       <env name="PNETCDF_PATH">/nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/pnetcdf/1.12.2/mpich-4.0/gcc-11.1.0</env>
     </environment_variables>
@@ -1801,8 +1801,8 @@
       <!-- We currently don't have modules for HDF5, NetCDF & PnetCDF -->
       <env name="LD_LIBRARY_PATH">/nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/openmpi/4.1.3/gcc-11.1.0/lib:$ENV{LD_LIBRARY_PATH}</env>
       <env name="PATH">/nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/openmpi/4.1.3/gcc-11.1.0/bin:$ENV{PATH}</env>
-      <env name="ZLIB_PATH">/nfs/gce/software/spack/opt/spack/linux-ubuntu20.04-x86_64/gcc-9.3.0/zlib-1.2.11-p7dmb5p</env>
-      <env name="HDF5_PATH">/nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/hdf5/1.12.1/openmpi-4.1.3/gcc-11.1.0</env>
+      <env name="ZLIB_ROOT">/nfs/gce/software/spack/opt/spack/linux-ubuntu20.04-x86_64/gcc-9.3.0/zlib-1.2.11-p7dmb5p</env>
+      <env name="HDF5_ROOT">/nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/hdf5/1.12.1/openmpi-4.1.3/gcc-11.1.0</env>
       <env name="NETCDF_PATH">/nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/netcdf/4.8.0c-4.3.1cxx-4.5.3f-parallel/openmpi-4.1.3/gcc-11.1.0</env>
       <env name="PNETCDF_PATH">/nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/pnetcdf/1.12.2/openmpi-4.1.3/gcc-11.1.0</env>
     </environment_variables>
@@ -2456,7 +2456,7 @@
       <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf_version))}</env>
     </environment_variables>
     <environment_variables compiler="gnu">
-      <env name="HDF5_PATH">$SHELL{which h5dump | xargs dirname | xargs dirname}</env>
+      <env name="HDF5_ROOT">$SHELL{which h5dump | xargs dirname | xargs dirname}</env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
@@ -3375,7 +3375,7 @@
     <TEST_TPUT_TOLERANCE>0.05</TEST_TPUT_TOLERANCE>
     <MAX_GB_OLD_TEST_DATA>0</MAX_GB_OLD_TEST_DATA>
     <environment_variables>
-      <env name="HDF5_PATH">$SHELL{dirname $(dirname $(which h5diff))}</env>
+      <env name="HDF5_ROOT">$SHELL{dirname $(dirname $(which h5diff))}</env>
       <env name="NETCDF_C_PATH">$SHELL{dirname $(dirname $(which nc-config))}</env>
       <env name="NETCDF_FORTRAN_PATH">$SHELL{dirname $(dirname $(which nf-config))}</env>
       <env name="MKL_PATH">$ENV{MKLROOT}</env>
@@ -4207,7 +4207,7 @@
       <env name="LAPACK_ROOT">$ENV{OLCF_NETLIB_LAPACK_ROOT}</env>
       <env name="BLA_VENDOR">Generic</env>
       <env name="ESSL_PATH">$ENV{OLCF_ESSL_ROOT}</env>
-      <env name="HDF5_PATH">$ENV{OLCF_HDF5_ROOT}</env>
+      <env name="HDF5_ROOT">$ENV{OLCF_HDF5_ROOT}</env>
       <env name="PNETCDF_PATH">$ENV{OLCF_PARALLEL_NETCDF_ROOT}</env>
       <env name="PGI_ACC_POOL_ALLOC">0</env>
       <env name="SMPIARGS"> </env>
@@ -4383,7 +4383,7 @@
       <env name="LAPACK_ROOT">$ENV{OLCF_NETLIB_LAPACK_ROOT}</env>
       <env name="BLA_VENDOR">Generic</env>
       <env name="ESSL_PATH">$ENV{OLCF_ESSL_ROOT}</env>
-      <env name="HDF5_PATH">$ENV{OLCF_HDF5_ROOT}</env>
+      <env name="HDF5_ROOT">$ENV{OLCF_HDF5_ROOT}</env>
       <env name="PGI_ACC_POOL_ALLOC">0</env>
       <env name="SMPIARGS"> </env>
     </environment_variables>
@@ -4642,7 +4642,7 @@
     <TEST_TPUT_TOLERANCE>0.2</TEST_TPUT_TOLERANCE>
     <TEST_MEMLEAK_TOLERANCE>0.20</TEST_MEMLEAK_TOLERANCE>
     <environment_variables compiler="gnu">
-      <env name="HDF5_PATH">$SHELL{dirname $(dirname $(which h5diff))}</env>
+      <env name="HDF5_ROOT">$SHELL{dirname $(dirname $(which h5diff))}</env>
       <env name="NETCDF_C_PATH">$SHELL{dirname $(dirname $(which nc-config))}</env>
       <env name="NETCDF_FORTRAN_PATH">$SHELL{dirname $(dirname $(which nf-config))}</env>
       <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf-config))}</env>
@@ -4732,7 +4732,7 @@
     <TEST_TPUT_TOLERANCE>0.2</TEST_TPUT_TOLERANCE>
     <TEST_MEMLEAK_TOLERANCE>0.20</TEST_MEMLEAK_TOLERANCE>
     <environment_variables compiler="gnu">
-      <env name="HDF5_PATH">$SHELL{dirname $(dirname $(which h5diff))}</env>
+      <env name="HDF5_ROOT">$SHELL{dirname $(dirname $(which h5diff))}</env>
       <env name="NETCDF_C_PATH">$SHELL{dirname $(dirname $(which nc-config))}</env>
       <env name="NETCDF_FORTRAN_PATH">$SHELL{dirname $(dirname $(which nf-config))}</env>
       <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf-config))}</env>
