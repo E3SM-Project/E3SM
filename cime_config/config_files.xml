@@ -539,9 +539,9 @@
       <value lib="gptl">$SRCROOT/share/build/buildlib.gptl</value>
       <value lib="pio">$CIMEROOT/CIME/build_scripts/buildlib.pio</value>
       <value lib="spio">$SRCROOT/share/build/buildlib.spio</value>
-      <value lib="mct">$CIMEROOT/CIME/build_scripts/buildlib.mct</value>
+      <value lib="mct">$SRCROOT/share/build/buildlib.mct</value>
       <value lib="csm_share">$SRCROOT/share/build/buildlib.csm_share</value>
-      <value lib="mpi-serial">$CIMEROOT/CIME/build_scripts/buildlib.mpi-serial</value>
+      <value lib="mpi-serial">$SRCROOT/share/build/buildlib.mpi-serial</value>
       <value lib="cprnc">$CIMEROOT/CIME/build_scripts/buildlib.cprnc</value>
     </values>
     <group>case_last</group>
