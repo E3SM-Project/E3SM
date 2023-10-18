@@ -1718,7 +1718,6 @@ module li_subglacial_hydro
       ! local variables
       !-----------------------------------------------------------------
       ! Pools pointers
-!!      type (mpas_pool_type), pointer :: geometryPool
       type (mpas_pool_type), pointer :: hydroPool
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: velocityPool
@@ -1730,7 +1729,8 @@ module li_subglacial_hydro
       real (kind=RKIND), pointer :: rhoi
       real (kind=RKIND), pointer :: config_SGH_incipient_channel_width
       logical, pointer :: config_SGH_include_pressure_melt
-
+      real (kind=RKIND), pointer :: config_SGH_bed_roughness_max
+      real (kind=RKIND), pointer :: config_sea_level
       real (kind=RKIND), dimension(:), pointer :: channelArea
       real (kind=RKIND), dimension(:), pointer :: channelMelt
       real (kind=RKIND), dimension(:), pointer :: channelPressureFreeze
@@ -1747,26 +1747,37 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: channelEffectivePressure
       real (kind=RKIND), dimension(:), pointer :: effectivePressure
       real (kind=RKIND), dimension(:), pointer :: channelDiffusivity
+      real (kind=RKIND), dimension(:), pointer :: waterThickness
+      real (kind=RKIND), dimension(:), pointer :: waterPressure
+      real (kind=RKIND), dimension(:), pointer :: iceThicknessHydro
+      real (kind=RKIND), dimension(:), pointer :: totalGroundingLineDischargeCell
+      real (kind=RKIND), dimension(:), pointer :: totalGroundingLineDischargeEdge
+      real (kind=RKIND), dimension(:), pointer :: dvEdge
+      real (kind=RKIND), dimension(:), pointer :: bedTopography
       integer, dimension(:), pointer :: waterFluxMask
       integer, dimension(:), pointer :: hydroMarineMarginMask
       integer, dimension(:), pointer :: edgeMask
       real (kind=RKIND), dimension(:,:), pointer :: flowParamA
       integer, dimension(:,:), pointer :: cellsOnEdge
       integer, pointer :: nVertLevels
-
-      integer, pointer :: nEdgesSolve
+      real (kind=RKIND), pointer :: config_SGH_max_chnl_lake_depth
+      character (len=StrKIND), pointer :: config_SGH_inhibit_chnls_on_lakes
+      real (kind=RKIND), dimension(:), pointer :: xCell
+      real (kind=RKIND), dimension(:), pointer :: yCell
+      real (kind=RKIND), dimension(:), pointer :: xEdge
+      real (kind=RKIND), dimension(:), pointer :: yEdge
+      integer, dimension(:), pointer :: cellMask
+      integer, pointer :: nEdgesSolve, nEdges
       integer :: iEdge, cell1, cell2
-
 
       err = 0
 
       ! Get pools things
       call mpas_pool_get_subpool(block % structs, 'hydro', hydroPool)
-!      call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
       call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
       call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
       call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
-
+      call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
       call mpas_pool_get_config(liConfigs, 'config_ice_density', rhoi)
       call mpas_pool_get_config(liConfigs, 'config_SGH_chnl_conduc_coeff', Kc)
       call mpas_pool_get_config(liConfigs, 'config_SGH_chnl_alpha', alpha_c)
@@ -1774,10 +1785,8 @@ module li_subglacial_hydro
       call mpas_pool_get_config(liConfigs, 'config_SGH_chnl_creep_coefficient', creep_coeff)
       call mpas_pool_get_config(liConfigs, 'config_SGH_incipient_channel_width', config_SGH_incipient_channel_width)
       call mpas_pool_get_config(liConfigs, 'config_SGH_include_pressure_melt', config_SGH_include_pressure_melt)
-
       call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
-
       call mpas_pool_get_array(hydroPool, 'channelArea', channelArea)
       call mpas_pool_get_array(hydroPool, 'channelMelt', channelMelt)
       call mpas_pool_get_array(hydroPool, 'channelPressureFreeze', channelPressureFreeze)
@@ -1799,7 +1808,15 @@ module li_subglacial_hydro
       call mpas_pool_get_array(hydroPool, 'hydroMarineMarginMask', hydroMarineMarginMask)
       call mpas_pool_get_array(hydroPool, 'channelDiffusivity', channelDiffusivity)
       call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
-
+      call mpas_pool_get_array(meshPool, 'xCell', xCell)
+      call mpas_pool_get_array(meshPool, 'yCell', yCell)
+      call mpas_pool_get_array(meshPool, 'xEdge', xEdge)
+      call mpas_pool_get_array(meshPool, 'yEdge', yEdge)
+      call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+      call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
+      call mpas_pool_get_array(hydroPool, 'totalGroundingLineDischargeCell', totalGroundingLineDischargeCell)
+      call mpas_pool_get_array(hydroPool, 'totalGroundingLineDischargeEdge', totalGroundingLineDischargeEdge)
+      call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
       ! Calculate terms needed for opening (melt) rate
 
       where(gradMagPhiEdge < 0.01_RKIND)
@@ -1867,9 +1884,31 @@ module li_subglacial_hydro
          channelOpeningRate = 0.0_RKIND
          channelClosingRate = 0.0_RKIND
       end where
+    
       channelChangeRate = channelOpeningRate - channelClosingRate
-
-
+     
+      totalGroundingLineDischargeCell(:) = 0.0_RKIND
+      totalGroundingLineDischargeEdge(:) = 0.0_RKIND
+      do iEdge = 1, nEdgesSolve
+         cell1 = cellsOnEdge(1, iEdge)
+         cell2 = cellsOnEdge(2, iEdge)
+         
+         if (hydroMarineMarginMask(iEdge) == 1) then
+            ! We are looking for edges with 1 cell grounded ice and the
+            ! other cell floating ice or open ocean
+            if ( (li_mask_is_grounded_ice(cellMask(cell1))) .and. &
+                 (li_mask_is_floating_ice(cellMask(cell2)) .or. &
+                 ((bedTopography(cell2) < config_sea_level) .and. (.not. li_mask_is_ice(cellMask(cell2)))) ) ) then
+               totalGroundingLineDischargeEdge(iEdge) = abs(channelDischarge(iEdge)) +abs( waterFlux(iEdge) * dvEdge(iEdge))
+               totalGroundingLineDischargeCell(cell2) = totalGroundingLineDischargeCell(cell2) + totalGroundingLineDischargeEdge(iEdge)
+            elseif ( (li_mask_is_grounded_ice(cellMask(cell2))) .and. &
+                     (li_mask_is_floating_ice(cellMask(cell1)) .or. &
+                     ((bedTopography(cell1) < config_sea_level) .and. (.not. li_mask_is_ice(cellMask(cell1)))) ) ) then
+               totalGroundingLineDischargeEdge(iEdge) = abs(channelDischarge(iEdge)) + abs(waterFlux(iEdge) * dvEdge(iEdge))
+               totalGroundingLineDischargeCell(cell1) = totalGroundingLineDischargeCell(cell1) + totalGroundingLineDischargeEdge(iEdge)
+            endif
+         endif
+      enddo
    !--------------------------------------------------------------------
    end subroutine update_channel
 

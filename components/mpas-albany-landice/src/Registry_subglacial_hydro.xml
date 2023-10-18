@@ -230,7 +230,11 @@
                      description="time step length limited by pressure equation scheme in subglacial hydrology system" />
                 <var name="deltatSGH" type="real" dimensions="Time" units="s"
                      description="time step used for evolving subglacial hydrology system" />
-                <!-- channel variables -->
+	     	<var name="totalGroundingLineDischargeCell" type="real" dimensions="Time nCells" units="m^{3} s^{-1}"
+		     description="total discharge across the grounding line, extrapolated from edge to adjacent ungrounded cell" />	
+	     	<var name="totalGroundingLineDischargeEdge" type="real" dimensions="Time nEdges" units="m^{3} s^{-1}"
+		     description="total discharge across grounding line edge" />
+	     	<!-- channel variables -->
                 <var name="channelArea" type="real" dimensions="nEdges Time" units="m^{2}"
                      description="area of channel in subglacial hydrology system" />
                 <var name="channelDischarge" type="real" dimensions="nEdges Time" units="m^{3} s^{-1}"
@@ -263,7 +267,7 @@
                      description="rate of channel melt production within each cell, averaged over cell area" />
                 <var name="channelDiffusivity" type="real" dimensions="nEdges Time" units="m^{2} s^{-1}"
                      description="diffusivity in channel in subglacial hydrology system" />
-
+		
 	</var_struct>
 
 <!-- ======================================================================= -->
