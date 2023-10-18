@@ -11,6 +11,10 @@ module mo_chm_diags
   use mo_jeuv,      only : neuv
   use modal_aero_data,only: nso4, nbc, npoa, nsoa
   use cam_logfile,    only: iulog
+#if defined(CLDERA_PROFILING)
+  use ppgrid,         only: begchunk
+  use cldera_interface_mod, only: cldera_set_field_part_data
+#endif
 
   private
 
@@ -752,6 +756,17 @@ contains
        call outfld( 'Mass_soa', mass_soa(:ncol,:,:),ncol,lchnk)
     end if
     endif
+
+#if defined(CLDERA_PROFILING)
+    if (nso4>1) then
+       do tag_loop = 1,nso4
+          if (tag_loop>3) exit ! Only three tags needed for now
+          call cldera_set_field_part_data("Mass_so4"//tagged_suffix(tag_loop),lchnk-begchunk+1,mass_so4(:ncol,:,tag_loop))
+       end do
+    else
+       call cldera_set_field_part_data("Mass_so4" ,lchnk-begchunk+1,mass_so4(:ncol,:,:))
+    end if
+#endif
 #endif
 
     call outfld( 'NOX',  vmr_nox(:ncol,:),  ncol, lchnk )

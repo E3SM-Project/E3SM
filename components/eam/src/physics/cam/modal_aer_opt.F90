@@ -36,6 +36,10 @@ use modal_aero_wateruptake, only: modal_aero_wateruptake_dr
 use modal_aero_calcsize,    only: modal_aero_calcsize_diag,modal_aero_calcsize_sub
 use shr_log_mod ,           only: errmsg => shr_log_errmsg
 use modal_aero_data,only: nso4, nbc, npoa, nsoa
+#if defined(CLDERA_PROFILING)
+use ppgrid,         only: begchunk
+use cldera_interface_mod, only: cldera_set_field_part_data
+#endif
 
 implicit none
 private
@@ -1453,6 +1457,24 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
       call outfld('AODPROT',         protaod,    pcols, lchnk)
       call outfld('AODLIP',         lipaod,    pcols, lchnk)
 #endif
+
+#if defined(CLDERA_PROFILING)
+      call cldera_set_field_part_data("ABSORB" ,lchnk-begchunk+1,absorb)
+      call cldera_set_field_part_data("AODVIS" ,lchnk-begchunk+1,aodvis)
+      call cldera_set_field_part_data("AODALL" ,lchnk-begchunk+1,aodall)
+      call cldera_set_field_part_data("AODABS" ,lchnk-begchunk+1,aodabs)
+      call cldera_set_field_part_data("AODSO4" ,lchnk-begchunk+1,so4aod)
+      call cldera_set_field_part_data("BURDENSO4" ,lchnk-begchunk+1,burdenso4)
+
+      if (nso4>1) then
+         do tag_loop = 1,nso4
+            if (tag_loop>3) exit ! Only three tags needed for now
+            call cldera_set_field_part_data("AODSO4"//tagged_sulfur_suffix(tag_loop),lchnk-begchunk+1,so4aod_tag(:,tag_loop))
+            call cldera_set_field_part_data("BURDENSO4"//tagged_sulfur_suffix(tag_loop),lchnk-begchunk+1,burdenso4_tag(:,tag_loop))
+         end do
+      end if
+#endif
+
    end if
 
 end subroutine modal_aero_sw

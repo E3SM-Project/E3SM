@@ -888,6 +888,10 @@ end function radiation_nextsw_cday
     use rrtmg_state, only: rrtmg_state_create, rrtmg_state_update, rrtmg_state_destroy, rrtmg_state_t, num_rrtmg_levs
     use orbit,            only: zenith
     use output_aerocom_aie , only: do_aerocom_ind3
+#if defined(CLDERA_PROFILING)
+    use ppgrid,         only: begchunk
+    use cldera_interface_mod, only: cldera_set_field_part_data
+#endif
 
     ! Arguments
     logical,  intent(in)    :: is_cmip6_volc    ! true if cmip6 style volcanic file is read otherwise false 
@@ -1403,6 +1407,34 @@ end function radiation_nextsw_cday
                   call outfld('FSN200C'//diag(icall),fsn200c,pcols,lchnk)
                   call outfld('SWCF'//diag(icall),swcf  ,pcols,lchnk)
 
+#if defined(CLDERA_PROFILING)
+                  if (icall < 3) then ! profile climate calculation & two diags for now
+                     call cldera_set_field_part_data('QRS'//diag(icall),lchnk-begchunk+1,qrs(:ncol,:pver)/cpair)
+                     call cldera_set_field_part_data('QRSC'//diag(icall),lchnk-begchunk+1,qrsc(:ncol,:pver)/cpair)
+                     call cldera_set_field_part_data('SOLIN'//diag(icall),lchnk-begchunk+1,solin)
+                     call cldera_set_field_part_data('FSDS'//diag(icall),lchnk-begchunk+1,fsds)
+                     call cldera_set_field_part_data('FSNIRTOA'//diag(icall),lchnk-begchunk+1,fsnirt)
+                     call cldera_set_field_part_data('FSNRTOAC'//diag(icall),lchnk-begchunk+1,fsnrtc)
+                     call cldera_set_field_part_data('FSNRTOAS'//diag(icall),lchnk-begchunk+1,fsnirtsq)
+                     call cldera_set_field_part_data('FSNT'//diag(icall),lchnk-begchunk+1,fsnt)
+                     call cldera_set_field_part_data('FSNS'//diag(icall),lchnk-begchunk+1,fsns)
+                     call cldera_set_field_part_data('FSNTC'//diag(icall),lchnk-begchunk+1,fsntc)
+                     call cldera_set_field_part_data('FSNSC'//diag(icall),lchnk-begchunk+1,fsnsc)
+                     call cldera_set_field_part_data('FSDSC'//diag(icall),lchnk-begchunk+1,fsdsc)
+                     call cldera_set_field_part_data('FSNTOA'//diag(icall),lchnk-begchunk+1,fsntoa)
+                     call cldera_set_field_part_data('FSUTOA'//diag(icall),lchnk-begchunk+1,fsutoa)
+                     call cldera_set_field_part_data('FSNTOAC'//diag(icall),lchnk-begchunk+1,fsntoac)
+                     call cldera_set_field_part_data('FSUTOAC'//diag(icall),lchnk-begchunk+1,fsutoac)
+                     call cldera_set_field_part_data('SOLS'//diag(icall),lchnk-begchunk+1,cam_out%sols)
+                     call cldera_set_field_part_data('SOLL'//diag(icall),lchnk-begchunk+1,cam_out%soll)
+                     call cldera_set_field_part_data('SOLSD'//diag(icall),lchnk-begchunk+1,cam_out%solsd)
+                     call cldera_set_field_part_data('SOLLD'//diag(icall),lchnk-begchunk+1,cam_out%solld)
+                     call cldera_set_field_part_data('FSN200'//diag(icall),lchnk-begchunk+1,fsn200)
+                     call cldera_set_field_part_data('FSN200C'//diag(icall),lchnk-begchunk+1,fsn200c)
+                     call cldera_set_field_part_data('SWCF'//diag(icall),lchnk-begchunk+1,swcf)
+                  endif
+#endif
+
               end if ! (active_calls(icall))
           end do ! icall
           call t_stopf ('rad_sw_loop')
@@ -1500,6 +1532,25 @@ end function radiation_nextsw_cday
                   call outfld('FLN200'//diag(icall),fln200,pcols,lchnk)
                   call outfld('FLN200C'//diag(icall),fln200c,pcols,lchnk)
                   call outfld('FLDS'//diag(icall),cam_out%flwds ,pcols,lchnk)
+
+#if defined(CLDERA_PROFILING)
+                  if (icall < 3) then ! profile climate calculation & two diags for now
+                     call cldera_set_field_part_data('QRL'//diag(icall),lchnk-begchunk+1,qrl(:ncol,:)/cpair)
+                     call cldera_set_field_part_data('QRLC'//diag(icall),lchnk-begchunk+1,qrlc(:ncol,:)/cpair)
+                     call cldera_set_field_part_data('FLNT'//diag(icall),lchnk-begchunk+1,flnt)
+                     call cldera_set_field_part_data('FLUT'//diag(icall),lchnk-begchunk+1,flut)
+                     call cldera_set_field_part_data('FLUTC'//diag(icall),lchnk-begchunk+1,flutc)
+                     call cldera_set_field_part_data('FLNTC'//diag(icall),lchnk-begchunk+1,flntc)
+                     call cldera_set_field_part_data('FLNS'//diag(icall),lchnk-begchunk+1,flns)
+
+                     call cldera_set_field_part_data('FLDSC'//diag(icall),lchnk-begchunk+1,fldsc)
+                     call cldera_set_field_part_data('FLNSC'//diag(icall),lchnk-begchunk+1,flnsc)
+                     call cldera_set_field_part_data('LWCF'//diag(icall),lchnk-begchunk+1,lwcf)
+                     call cldera_set_field_part_data('FLN200'//diag(icall),lchnk-begchunk+1,fln200)
+                     call cldera_set_field_part_data('FLN200C'//diag(icall),lchnk-begchunk+1,fln200c)
+                     call cldera_set_field_part_data('FLDS'//diag(icall),lchnk-begchunk+1,cam_out%flwds)
+                  endif
+#endif
 
               end if
           end do
