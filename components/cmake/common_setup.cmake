@@ -70,7 +70,7 @@ set(CPPDEFS "${CPPDEFS} ${USER_CPPDEFS} -D${OS}")
 
 # SLIBS comes from Macros, so this append must come after Macros are included
 
-if (DEBUG)
+if (NOT DEBUG)
   set(CPPDEFS "${CPPDEFS} -DNDEBUG")
 endif()
 
