@@ -428,7 +428,7 @@
     </mach>
     <mach name="pm-cpu|alvarez">
       <pes compset="DATM.+MPASO.+SWAV" pesize="any">
-        <comment>mpas-ocean: SO RRM, compset=DATM+MPASO, 8 nodes, 128x1c8 ~3.3 sypd</comment>
+        <comment>mpas-ocean: SO RRM, compset=DATM+MPASO, 8 nodes, 128x1 ~3.3 sypd</comment>
         <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
         <ntasks>
           <ntasks_atm>1024</ntasks_atm>
@@ -437,7 +437,7 @@
           <ntasks_ice>1024</ntasks_ice>
           <ntasks_ocn>1024</ntasks_ocn>
           <ntasks_glc>1</ntasks_glc>
-          <ntasks_cpl>128</ntasks_cpl>
+          <ntasks_cpl>1024</ntasks_cpl>
         </ntasks>
         <nthrds>
           <nthrds_atm>1</nthrds_atm>
@@ -458,9 +458,6 @@
           <rootpe_glc>0</rootpe_glc>
           <rootpe_cpl>0</rootpe_cpl>
         </rootpe>
-        <pstrid>
-          <pstrid_cpl>8</pstrid_cpl>
-        </pstrid>
       </pes>
     </mach>
   </grid>

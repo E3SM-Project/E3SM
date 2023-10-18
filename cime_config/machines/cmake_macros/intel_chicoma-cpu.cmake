@@ -1,0 +1,11 @@
+set(PIO_FILESYSTEM_HINTS "lustre")
+string(APPEND CONFIG_ARGS " --host=cray")
+string(APPEND SLIBS " -qmkl")
+set(CXX_LINKER "FORTRAN")
+
+set(MPICC "cc")
+set(MPICXX "CC")
+set(MPIFC "ftn")
+set(SCC "icc")
+set(SCXX "icpc")
+set(SFC "ifc")

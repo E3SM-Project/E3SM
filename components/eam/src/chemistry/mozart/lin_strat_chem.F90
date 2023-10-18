@@ -186,10 +186,10 @@ end subroutine linoz_readnl
     if (linoz_v3) file%linoz_v3=.true.
     if (linoz_v2) file%linoz_v2=.true.
     !!
-    if (linoz_v2.eqv..true. .and.linoz_v3.eqv..true. ) then
+    if (linoz_v2 .and. linoz_v3 ) then
             write(iulog,*) 'linoz_readnl, linoz: Both linoz_v2 and linoz_v3 are true. This is wrong! please check.'
             return
-    elseif (linoz_v2.eqv..false..and.linoz_v3.eqv..false.) then
+    elseif (.not. linoz_v2 .and. .not. linoz_v3) then
             write(iulog,*) 'linoz_readnl, linoz: Both linoz_v2 and linoz_v3 are false, which can be correct, but be sure that is intended!'
     endif
     !!

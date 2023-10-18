@@ -745,12 +745,12 @@
       <pes compset=".*EAM.+ELM.+MPASSI.+DOCN.+" pesize="any">
         <comment> for F-cases on anvil, to fix testing issues that default to 144 pes </comment>
         <ntasks>
-          <ntasks_atm>288</ntasks_atm>
-          <ntasks_lnd>288</ntasks_lnd>
-          <ntasks_rof>288</ntasks_rof>
-          <ntasks_ice>288</ntasks_ice>
-          <ntasks_ocn>288</ntasks_ocn>
-          <ntasks_cpl>288</ntasks_cpl>
+          <ntasks_atm>-12</ntasks_atm>
+          <ntasks_lnd>-12</ntasks_lnd>
+          <ntasks_rof>-12</ntasks_rof>
+          <ntasks_ice>-12</ntasks_ice>
+          <ntasks_ocn>-12</ntasks_ocn>
+          <ntasks_cpl>-12</ntasks_cpl>
         </ntasks>
       </pes>
     </mach>
@@ -810,7 +810,7 @@
       <!--Pes setting: grid          is a%ne30np4_l%ne30np4_oi%oEC60to30v3_r%r05_g%null_w%null_z%null_m%oEC60to30v3
           Pes setting: compset       is 2010_EAM%CMIP6_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV_SIAC_SESP -->
       <pes compset=".*EAM.+ELM.+DOCN" pesize="any">
-        <comment> -compset A_WCYCL* -res ne30pg2_oECv3 without MPASO on 4 nodes, 128x1 c8 </comment>
+        <comment> -compset A_WCYCL* -res ne30pg2_oECv3 without MPASO on 4 nodes, 128x1 </comment>
         <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
         <ntasks>
           <ntasks_atm>512</ntasks_atm>
@@ -818,11 +818,8 @@
           <ntasks_rof>512</ntasks_rof>
           <ntasks_ice>512</ntasks_ice>
           <ntasks_ocn>512</ntasks_ocn>
-          <ntasks_cpl>64</ntasks_cpl>
+          <ntasks_cpl>512</ntasks_cpl>
         </ntasks>
-        <pstrid>
-          <pstrid_cpl>8</pstrid_cpl>
-        </pstrid>
       </pes>
     </mach>
   </grid>
@@ -1113,7 +1110,7 @@
   <grid name="a%ne120np4">
     <mach name="pm-cpu|alvarez">
       <pes compset=".*EAM.+ELM.+MPASSI.+DOCN.+SGLC.+SWAV.*" pesize="any">
-        <comment>pm-cpu ne120pg2 F-compset with MPASSI on 43 nodes 128x1c8 1.3 sypd</comment>
+        <comment>pm-cpu ne120pg2 F-compset with MPASSI on 43 nodes 128x1 ~1 sypd</comment>
         <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
         <ntasks>
           <ntasks_atm>5504</ntasks_atm>
@@ -1123,7 +1120,7 @@
           <ntasks_ocn>5504</ntasks_ocn>
           <ntasks_glc>64</ntasks_glc>
           <ntasks_wav>64</ntasks_wav>
-          <ntasks_cpl>688</ntasks_cpl>
+          <ntasks_cpl>5504</ntasks_cpl>
         </ntasks>
         <nthrds>
           <nthrds_atm>1</nthrds_atm>
@@ -1135,9 +1132,6 @@
           <nthrds_wav>1</nthrds_wav>
           <nthrds_cpl>1</nthrds_cpl>
         </nthrds>
-        <pstrid>
-          <pstrid_cpl>8</pstrid_cpl>
-        </pstrid>
       </pes>
     </mach>
     <mach name="theta">
