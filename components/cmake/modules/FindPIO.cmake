@@ -23,6 +23,9 @@ else()
   set(PIOLIBS "${PIO_LIBDIR}/libpio.a")
 endif()
 
+# Handle gptl. Just hardcode it for now.
+list(APPEND PIOLIBS "${INSTALL_SHAREDPATH}/lib/libgptl.a")
+
 find_package(NETCDF REQUIRED)
 
 # Not all machines/PIO installations use ADIOS but, for now,
@@ -38,6 +41,9 @@ list(APPEND PIOLIBS netcdf)
 
 if (MPILIB STREQUAL "mpi-serial")
   list(APPEND PIOLIBS "${INSTALL_SHAREDPATH}/lib/libmpi-serial.a")
+else()
+  find_package(MPI REQUIRED COMPONENTS C Fortran)
+  list(APPEND PIOLIBS MPI::MPI_C MPI::MPI_Fortran)
 endif()
 
 # Create the interface library, and set target properties

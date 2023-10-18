@@ -236,8 +236,7 @@ function(build_model COMP_CLASS COMP_NAME)
     add_executable(${TARGET_NAME})
     target_sources(${TARGET_NAME} PRIVATE ${REAL_SOURCES})
 
-    set(ALL_LIBS "${GPTLLIB} ${SLIBS}")
-    separate_arguments(ALL_LIBS_LIST UNIX_COMMAND "${ALL_LIBS}")
+    separate_arguments(ALL_LIBS_LIST UNIX_COMMAND "${SLIBS}")
 
     foreach(ITEM IN LISTS COMP_CLASSES)
       if (NOT ITEM STREQUAL "cpl")
