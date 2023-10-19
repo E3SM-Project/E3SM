@@ -4207,7 +4207,7 @@
       <env name="LAPACK_ROOT">$ENV{OLCF_NETLIB_LAPACK_ROOT}</env>
       <env name="BLA_VENDOR">Generic</env>
       <env name="ESSL_PATH">$ENV{OLCF_ESSL_ROOT}</env>
-      <!--<env name="HDF5_ROOT">$ENV{OLCF_HDF5_ROOT}</env> Remove for now, scorpio cannot do hdf5 + adios-->
+      <env name="HDF5_ROOT">$ENV{OLCF_HDF5_ROOT}</env>
       <env name="PNETCDF_PATH">$ENV{OLCF_PARALLEL_NETCDF_ROOT}</env>
       <env name="PGI_ACC_POOL_ALLOC">0</env>
       <env name="SMPIARGS"> </env>
