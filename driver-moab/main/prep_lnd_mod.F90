@@ -371,7 +371,7 @@ contains
             allocate (tmparray(arrsize)) ! mlsize is the size of local land
             ! do we need to zero out others or just river ? 
             tmparray = 0._r8
-            ierr = iMOAB_SetDoubleTagStorage(mblxid, tagname, arrsize , ent_type, tmparray(1))
+            ierr = iMOAB_SetDoubleTagStorage(mblxid, tagname, arrsize , ent_type, tmparray)
             if (ierr .ne. 0) then
                write(logunit,*) subname,' cant zero out r2x tags on land'
                call shr_sys_abort(subname//' cant zero out r2x tags on land')

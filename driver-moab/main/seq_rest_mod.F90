@@ -525,7 +525,7 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al)
            call seq_io_read(moab_rest_file, x2oacc_om_cnt, 'x2oacc_ox_cnt') 
       !           tagname = trim(seq_flds_xao_fields)//C_NULL_CHAR
       !  arrsize = nxflds * lsize !        allocate (xao_om (lsize, nxflds))
-      !  ierr = iMOAB_GetDoubleTagStorage ( mbofxid, tagname, arrsize , ent_type, xao_om(1,1))
+      !  ierr = iMOAB_GetDoubleTagStorage ( mbofxid, tagname, arrsize , ent_type, xao_om)
            call seq_io_read(moab_rest_file, mbofxid, 'xao_ox', &
               trim(seq_flds_xao_fields) )
 !           gsmap         => component_get_gsmap_cx(ocn(1))
@@ -1260,7 +1260,7 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al)
                whead=whead, wdata=wdata)
       !            tagname = trim(seq_flds_xao_fields)//C_NULL_CHAR
       !  arrsize = nxflds * lsize !        allocate (xao_om (lsize, nxflds))
-      !  ierr = iMOAB_GetDoubleTagStorage ( mbofxid, tagname, arrsize , ent_type, xao_om(1,1))
+      !  ierr = iMOAB_GetDoubleTagStorage ( mbofxid, tagname, arrsize , ent_type, xao_om)
                call seq_io_write(rest_file, mbofxid, 'xao_ox', &
                   trim(seq_flds_xao_fields), &
                   whead=whead, wdata=wdata)

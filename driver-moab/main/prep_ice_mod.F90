@@ -765,7 +765,7 @@ contains
    ! git the x2i_im field which has been mostly filled out by mapping calls.
     tagname = trim(seq_flds_x2i_fields)//C_NULL_CHAR
     arrsize = niflds * lsize
-    ierr = iMOAB_GetDoubleTagStorage ( mbixid, tagname, arrsize , ent_type, x2i_im(1,1))
+    ierr = iMOAB_GetDoubleTagStorage ( mbixid, tagname, arrsize , ent_type, x2i_im)
     if (ierr .ne. 0) then
       call shr_sys_abort(subname//' error in getting x2i_im array ')
     endif
@@ -773,7 +773,7 @@ contains
 ! get the a2x data that was mapped to i
     tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
     arrsize = naflds * lsize !        allocate (a2x_om (lsize, naflds))
-    ierr = iMOAB_GetDoubleTagStorage ( mbixid, tagname, arrsize , ent_type, a2x_im(1,1))
+    ierr = iMOAB_GetDoubleTagStorage ( mbixid, tagname, arrsize , ent_type, a2x_im)
     if (ierr .ne. 0) then
       write(logunit, *) 'MOAB error ', ierr
       call shr_sys_abort(subname//' error in getting a2x_im array ')
@@ -782,7 +782,7 @@ contains
 ! get the r2x data that was mapped to i
     tagname = trim(seq_flds_r2x_fields)//C_NULL_CHAR
     arrsize = nrflds * lsize !        allocate (a2x_om (lsize, naflds))
-    ierr = iMOAB_GetDoubleTagStorage ( mbixid, tagname, arrsize , ent_type, r2x_im(1,1))
+    ierr = iMOAB_GetDoubleTagStorage ( mbixid, tagname, arrsize , ent_type, r2x_im)
     if (ierr .ne. 0) then
       call shr_sys_abort(subname//' error in getting r2x_im array ')
     endif
@@ -840,7 +840,7 @@ contains
     end do
     tagname = trim(seq_flds_x2i_fields)//C_NULL_CHAR
     arrsize = niflds * lsize
-    ierr = iMOAB_SetDoubleTagStorage ( mbixid, tagname, arrsize , ent_type, x2i_im(1,1))
+    ierr = iMOAB_SetDoubleTagStorage ( mbixid, tagname, arrsize , ent_type, x2i_im)
     if (ierr .ne. 0) then
       call shr_sys_abort(subname//' error in setting x2i_im array ')
     endif
