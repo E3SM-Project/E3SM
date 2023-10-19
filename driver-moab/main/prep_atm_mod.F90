@@ -1138,7 +1138,7 @@ contains
     ent_type = 1 ! cells
     tagname = trim(seq_flds_x2a_fields)//C_NULL_CHAR
     arrsize = naflds * lsize
-    ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, x2a_am(1,1))
+    ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, x2a_am)
     if (ierr .ne. 0) then
         call shr_sys_abort(subname//' error in getting moab tags with 0 ')
     endif
@@ -1160,35 +1160,35 @@ contains
 
     tagname = 'afrac:ifrac:ofrac:lfrac:lfrin'//C_NULL_CHAR
     arrsize = 5 * lsize
-    ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, fractions_am(1,1))
+    ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, fractions_am)
     if (ierr .ne. 0) then
          call shr_sys_abort(subname//' error in getting fractions_am from atm instance ')
     endif
 
     tagname = trim(seq_flds_o2x_fields)//C_NULL_CHAR
     arrsize = noflds * lsize !        allocate (o2x_am (lsize, noflds))
-    ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, o2x_am(1,1))
+    ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, o2x_am)
     if (ierr .ne. 0) then
       call shr_sys_abort(subname//' error in getting o2x_am array ')
     endif
 
     tagname = trim(seq_flds_i2x_fields)//C_NULL_CHAR
     arrsize = niflds * lsize !        allocate (i2x_am (lsize, niflds))
-    ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, i2x_am(1,1))
+    ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, i2x_am)
     if (ierr .ne. 0) then
       call shr_sys_abort(subname//' error in getting i2x_am array ')
     endif
 
     tagname = trim(seq_flds_l2x_fields)//C_NULL_CHAR
     arrsize = nlflds * lsize !        allocate (l2x_am (lsize, nlflds))
-    ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, l2x_am(1,1))
+    ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, l2x_am)
     if (ierr .ne. 0) then
       call shr_sys_abort(subname//' error in getting l2x_am array ')
     endif
 
     tagname = trim(seq_flds_xao_fields)//C_NULL_CHAR
     arrsize = nxflds * lsize !        allocate (xao_am (lsize, nxflds))
-    ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, xao_am(1,1))
+    ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, xao_am)
     if (ierr .ne. 0) then
       call shr_sys_abort(subname//' error in getting xao_om array ')
     endif
@@ -1343,7 +1343,7 @@ contains
 
     tagname = trim(seq_flds_x2a_fields)//C_NULL_CHAR
     arrsize = naflds * lsize
-    ierr = iMOAB_SetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, x2a_am(1,1))
+    ierr = iMOAB_SetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, x2a_am)
     if (ierr .ne. 0) then
       call shr_sys_abort(subname//' error in setting x2o_om array ')
     endif

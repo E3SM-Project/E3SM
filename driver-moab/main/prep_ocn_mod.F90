@@ -767,7 +767,7 @@ contains
          allocate (tmparray(arrsize)) ! mlsize is the size of local land
          ! do we need to zero out others or just river ?
          tmparray = 0._r8
-         ierr = iMOAB_SetDoubleTagStorage(mboxid, tagname, arrsize , ent_type, tmparray(1))
+         ierr = iMOAB_SetDoubleTagStorage(mboxid, tagname, arrsize , ent_type, tmparray)
          if (ierr .ne. 0) then
             write(logunit,*) subname,' cant zero out r2x tags on ocn'
             call shr_sys_abort(subname//' cant zero out r2x tags on ocn')
@@ -965,7 +965,7 @@ contains
     ! x2o_om should be saved between these calls
     tagname = trim(seq_flds_x2o_fields)//C_NULL_CHAR
     ent_type = 1  ! cell type
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, arrSize_x2o_om , ent_type, x2o_om(1,1))
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, arrSize_x2o_om , ent_type, x2o_om)
     if (ierr .ne. 0) then
       call shr_sys_abort(subname//' error in getting x2o_om array  ')
     endif
@@ -1042,7 +1042,7 @@ subroutine prep_ocn_accum_avg_moab()
        ! modify the tags
        tagname = trim(seq_flds_x2o_fields)//C_NULL_CHAR
        ent_type = 1  ! cell type
-       ierr = iMOAB_SetDoubleTagStorage ( mboxid, tagname, arrSize_x2o_om , ent_type, x2o_om(1,1))
+       ierr = iMOAB_SetDoubleTagStorage ( mboxid, tagname, arrSize_x2o_om , ent_type, x2o_om)
        if (ierr .ne. 0) then
             call shr_sys_abort(subname//' error in setting x2o_om array  ')
       endif
@@ -1689,14 +1689,14 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
     ent_type = 1 ! cells
     tagname = 'afrac:ifrac:ofrac:ifrad:ofrad'//C_NULL_CHAR
     arrsize = 5 * lsize
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, arrsize , ent_type, fractions_om(1,1))
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, arrsize , ent_type, fractions_om)
     if (ierr .ne. 0) then
          call shr_sys_abort(subname//' error in getting fractions_om from ocean instance ')
     endif
    ! fill the o2x_om, etc double array fields noflds
     tagname = trim(seq_flds_x2o_fields)//C_NULL_CHAR
     arrsize = noflds * lsize
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, arrsize , ent_type, x2o_om(1,1))
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, arrsize , ent_type, x2o_om)
     if (ierr .ne. 0) then
       call shr_sys_abort(subname//' error in getting x2o_om array ')
     endif    
@@ -1716,28 +1716,28 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
     enddo
     tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
     arrsize = naflds * lsize !        allocate (a2x_om (lsize, naflds))
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, arrsize , ent_type, a2x_om(1,1))
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, arrsize , ent_type, a2x_om)
     if (ierr .ne. 0) then
       call shr_sys_abort(subname//' error in getting a2x_om array ')
     endif
 
     tagname = trim(seq_flds_i2x_fields)//C_NULL_CHAR
     arrsize = niflds * lsize !        allocate (i2x_om (lsize, niflds))
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, arrsize , ent_type, i2x_om(1,1))
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, arrsize , ent_type, i2x_om)
     if (ierr .ne. 0) then
       call shr_sys_abort(subname//' error in getting i2x_om array ')
     endif
 
     tagname = trim(seq_flds_r2x_fields)//C_NULL_CHAR
     arrsize = nrflds * lsize !        allocate (r2x_om (lsize, nrflds))
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, arrsize , ent_type, r2x_om(1,1))
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, arrsize , ent_type, r2x_om)
     if (ierr .ne. 0) then
       call shr_sys_abort(subname//' error in getting r2x_om array ')
     endif
 
     tagname = trim(seq_flds_xao_fields)//C_NULL_CHAR
     arrsize = nxflds * lsize !        allocate (xao_om (lsize, nxflds))
-    ierr = iMOAB_GetDoubleTagStorage ( mbofxid, tagname, arrsize , ent_type, xao_om(1,1))
+    ierr = iMOAB_GetDoubleTagStorage ( mbofxid, tagname, arrsize , ent_type, xao_om)
     if (ierr .ne. 0) then
       call shr_sys_abort(subname//' error in getting xao_om array ')
     endif
@@ -1925,7 +1925,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
 
     tagname = trim(seq_flds_x2o_fields)//C_NULL_CHAR
     arrsize = noflds * lsize
-    ierr = iMOAB_SetDoubleTagStorage ( mboxid, tagname, arrsize , ent_type, x2o_om(1,1))
+    ierr = iMOAB_SetDoubleTagStorage ( mboxid, tagname, arrsize , ent_type, x2o_om)
     if (ierr .ne. 0) then
       call shr_sys_abort(subname//' error in setting x2o_om array ')
     endif

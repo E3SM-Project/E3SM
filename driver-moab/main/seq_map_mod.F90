@@ -568,7 +568,7 @@ end subroutine moab_map_init_rcfile
                arrsize_src=lsize_src*(nfields)
 
                ! get the current values of all source tags including the norm8wt currently set to 1
-               ierr = iMOAB_GetDoubleTagStorage (mapper%src_mbid, fldlist_moab, arrsize_src , mapper%tag_entity_type, targtags(1,1))
+               ierr = iMOAB_GetDoubleTagStorage (mapper%src_mbid, fldlist_moab, arrsize_src , mapper%tag_entity_type, targtags)
                if (ierr .ne. 0) then
                   write(logunit,*) subname,' error getting source tag values ', mapper%mbname, mapper%src_mbid, trim(fldlist_moab), arrsize_src, mapper%tag_entity_type
                   call shr_sys_abort(subname//' ERROR getting source tag values') ! serious enough
@@ -588,7 +588,7 @@ end subroutine moab_map_init_rcfile
          endif
 #endif
                ! put the new values on the mesh for later mapping
-               ierr = iMOAB_SetDoubleTagStorage (mapper%src_mbid, fldlist_moab, arrsize_src , mapper%tag_entity_type, targtags(1,1))
+               ierr = iMOAB_SetDoubleTagStorage (mapper%src_mbid, fldlist_moab, arrsize_src , mapper%tag_entity_type, targtags)
                if (ierr .ne. 0) then
                   write(logunit,*) subname,' error setting normed source tag values ', mapper%mbname
                   call shr_sys_abort(subname//' ERROR setting normed source tag values') ! serious enough
@@ -664,7 +664,7 @@ end subroutine moab_map_init_rcfile
             ! get values of target tags after mapping
             allocate(targtags(lsize_tgt,nfields))
             arrsize_tgt=lsize_tgt*(nfields)
-            ierr = iMOAB_GetDoubleTagStorage (mapper%tgt_mbid, fldlist_moab, arrsize_tgt , mapper%tag_entity_type, targtags(1,1))
+            ierr = iMOAB_GetDoubleTagStorage (mapper%tgt_mbid, fldlist_moab, arrsize_tgt , mapper%tag_entity_type, targtags)
             if (ierr .ne. 0) then
                write(logunit,*) subname,' error getting destination tag values ', mapper%mbname
                call shr_sys_abort(subname//' ERROR getting source tag values') ! serious enough
@@ -679,7 +679,7 @@ end subroutine moab_map_init_rcfile
             enddo
 
             ! put the values back on the mesh
-            ierr = iMOAB_SetDoubleTagStorage (mapper%tgt_mbid, fldlist_moab, arrsize_tgt , mapper%tag_entity_type, targtags(1,1))
+            ierr = iMOAB_SetDoubleTagStorage (mapper%tgt_mbid, fldlist_moab, arrsize_tgt , mapper%tag_entity_type, targtags)
             if (ierr .ne. 0) then
                write(logunit,*) subname,' error getting destination tag values ', mapper%mbname
                call shr_sys_abort(subname//' ERROR getting source tag values') ! serious enough
@@ -694,7 +694,7 @@ end subroutine moab_map_init_rcfile
                endif
 #endif
                ! put the values back on the source mesh
-               ierr = iMOAB_SetDoubleTagStorage (mapper%src_mbid, fldlist_moab, arrsize_src , mapper%tag_entity_type, targtags_ini(1,1))
+               ierr = iMOAB_SetDoubleTagStorage (mapper%src_mbid, fldlist_moab, arrsize_src , mapper%tag_entity_type, targtags_ini)
                if (ierr .ne. 0) then
                   write(logunit,*) subname,' error setting source tag values ', mapper%mbname
                   call shr_sys_abort(subname//' ERROR setting source tag values') ! serious enough

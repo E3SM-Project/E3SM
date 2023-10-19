@@ -782,7 +782,7 @@ contains
    tagname = trim(sharedFieldsLndRof)//C_NULL_CHAR
    arrsize = nfields_sh_lr * lsize_lm
    ent_type = 1 ! cell type
-   ierr = iMOAB_GetDoubleTagStorage ( mblxid, tagname, arrsize , ent_type, l2x_lm2(1,1))
+   ierr = iMOAB_GetDoubleTagStorage ( mblxid, tagname, arrsize , ent_type, l2x_lm2)
    if (ierr .ne. 0) then
       call shr_sys_abort(subname//' error in getting shared fields from land instance ')
    endif
@@ -848,7 +848,7 @@ contains
    tagname = trim(sharedFieldsAtmRof)//C_NULL_CHAR
    arrsize = nfields_sh_ar * lsize_am
    ent_type = 1 ! cell type
-   ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, a2x_am2(1,1))
+   ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, a2x_am2)
    if (ierr .ne. 0) then
       call shr_sys_abort(subname//' error in getting shared fields from atm instance ')
    endif
@@ -932,7 +932,7 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
    tagname = trim(sharedFieldsOcnRof)//C_NULL_CHAR
    arrsize = nfields_sh_or * lsize_om
    ent_type = 1 ! cell type
-   ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, arrsize , ent_type, o2r_om2(1,1))
+   ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, arrsize , ent_type, o2r_om2)
    if (ierr .ne. 0) then
       call shr_sys_abort(subname//' error in getting shared fields from ocn instance ')
    endif
@@ -1029,7 +1029,7 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
     tagname = trim(sharedFieldsLndRof)//C_NULL_CHAR
     arrsize = nfields_sh_lr * lsize_lm
     ent_type = 1 ! cell type
-    ierr = iMOAB_SetDoubleTagStorage ( mblxid, tagname, arrsize , ent_type, l2racc_lm(1,1))
+    ierr = iMOAB_SetDoubleTagStorage ( mblxid, tagname, arrsize , ent_type, l2racc_lm)
     if (ierr .ne. 0) then
       call shr_sys_abort(subname//' error in setting accumulated shared fields on rof on land instance ')
     endif
@@ -1043,7 +1043,7 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
     tagname = trim(sharedFieldsAtmRof)//C_NULL_CHAR
     arrsize = nfields_sh_ar * lsize_am
     ent_type = 1 ! cell type
-    ierr = iMOAB_SetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, a2racc_am(1,1))
+    ierr = iMOAB_SetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, a2racc_am)
     if (ierr .ne. 0) then
       call shr_sys_abort(subname//' error in setting accumulated shared fields on rof on atm instance ')
     endif
@@ -1056,7 +1056,7 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
     tagname = trim(sharedFieldsOcnRof)//C_NULL_CHAR
     arrsize = nfields_sh_or * lsize_om
     ent_type = 1 ! cell type
-    ierr = iMOAB_SetDoubleTagStorage ( mboxid, tagname, arrsize , ent_type, o2racc_om(1,1))
+    ierr = iMOAB_SetDoubleTagStorage ( mboxid, tagname, arrsize , ent_type, o2racc_om)
     if (ierr .ne. 0) then
       call shr_sys_abort(subname//' error in setting accumulated shared fields on rof on ocn instance ')
     endif
@@ -1681,14 +1681,14 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
     ent_type = 1 ! cells
     tagname = 'lfrac:lfrin:rfrac'//C_NULL_CHAR
     arrsize = 3 * lsize
-    ierr = iMOAB_GetDoubleTagStorage ( mbrxid, tagname, arrsize , ent_type, fractions_rm(1,1))
+    ierr = iMOAB_GetDoubleTagStorage ( mbrxid, tagname, arrsize , ent_type, fractions_rm)
     if (ierr .ne. 0) then
          call shr_sys_abort(subname//' error in getting fractions_om from rof instance ')
     endif
    ! fill the r2x_rm, etc double array fields nflds
     tagname = trim(seq_flds_x2r_fields)//C_NULL_CHAR
     arrsize = nflds * lsize
-    ierr = iMOAB_GetDoubleTagStorage ( mbrxid, tagname, arrsize , ent_type, x2r_rm(1,1))
+    ierr = iMOAB_GetDoubleTagStorage ( mbrxid, tagname, arrsize , ent_type, x2r_rm)
     if (ierr .ne. 0) then
       call shr_sys_abort(subname//' error in getting x2r_rm array ')
     endif    
@@ -1696,14 +1696,14 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
 
     tagname = trim(seq_flds_a2x_fields_to_rof)//C_NULL_CHAR
     arrsize = naflds * lsize !        allocate (a2x_rm (lsize, naflds))
-    ierr = iMOAB_GetDoubleTagStorage ( mbrxid, tagname, arrsize , ent_type, a2x_rm(1,1))
+    ierr = iMOAB_GetDoubleTagStorage ( mbrxid, tagname, arrsize , ent_type, a2x_rm)
     if (ierr .ne. 0) then
       call shr_sys_abort(subname//' error in getting a2x_rm array ')
     endif
     !  l2x_rm
     tagname = trim(seq_flds_l2x_fluxes_to_rof)//C_NULL_CHAR
     arrsize = nlflds * lsize !        
-    ierr = iMOAB_GetDoubleTagStorage ( mbrxid, tagname, arrsize , ent_type, l2x_rm(1,1))
+    ierr = iMOAB_GetDoubleTagStorage ( mbrxid, tagname, arrsize , ent_type, l2x_rm)
     if (ierr .ne. 0) then
       call shr_sys_abort(subname//' error in getting l2x_rm array ')
     endif
@@ -1754,7 +1754,7 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
 
     tagname = trim(seq_flds_x2r_fields)//C_NULL_CHAR
     arrsize = nflds * lsize
-    ierr = iMOAB_SetDoubleTagStorage ( mbrxid, tagname, arrsize , ent_type, x2r_rm(1,1))
+    ierr = iMOAB_SetDoubleTagStorage ( mbrxid, tagname, arrsize , ent_type, x2r_rm)
     if (ierr .ne. 0) then
       call shr_sys_abort(subname//' error in setting x2r_rm array ')
     endif
