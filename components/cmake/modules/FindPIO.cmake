@@ -27,6 +27,7 @@ endif()
 list(APPEND PIOLIBS "${INSTALL_SHAREDPATH}/lib/libgptl.a")
 
 find_package(NETCDF REQUIRED)
+find_package(HDF5 REQUIRED COMPONENTS C HL)
 
 # Not all machines/PIO installations use ADIOS but, for now,
 # we can assume that an MPI case with ADIOS2_ROOT set is probably
@@ -45,6 +46,9 @@ else()
   find_package(MPI REQUIRED COMPONENTS C Fortran)
   list(APPEND PIOLIBS MPI::MPI_C MPI::MPI_Fortran)
 endif()
+
+message("JGF HDF5_libs: ${HDF5_LIBRARIES}")
+list(APPEND PIOLIBS ${HDF5_HL_LIBRARIES} ${HDF5_LIBRARIES})
 
 # Create the interface library, and set target properties
 add_library(spio INTERFACE)
