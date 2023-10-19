@@ -279,7 +279,7 @@ ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".true." irrigate=".true." nu_co
 <fsurdat hgrid="ne4np4"   sim_year="2010" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne4np4_simyr2010_c210908_with_TOP.nc</fsurdat>
 <fsurdat hgrid="ne30np4"   sim_year="2010" use_crop=".false." >
-lnd/clm2/surfdata_map/surfdata_ne30np4_simyr2010_c20181025.nc</fsurdat>
+lnd/clm2/surfdata_map/surfdata_ne30np4_simyr2010_c20181025_with_TOP.nc</fsurdat>
 <fsurdat hgrid="r0125"   sim_year="2010" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_0.125x0.125_simyr2010_c191025.nc</fsurdat>
 <fsurdat hgrid="r05"   sim_year="2010" use_crop=".false." >
@@ -417,7 +417,7 @@ lnd/clm2/surfdata_map/surfdata_ne120np4_simyr1850_c160211.nc</fsurdat>
 <fsurdat hgrid="ne11np4"      sim_year="1850" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne11np4_simyr1850_c160614_with_TOP.nc</fsurdat>
 <fsurdat hgrid="ne4np4"      sim_year="1850" use_crop=".false." >
-lnd/clm2/surfdata_map/surfdata_ne4np4_simyr1850_c160614.nc</fsurdat>
+lnd/clm2/surfdata_map/surfdata_ne4np4_simyr1850_c160614_with_TOP.nc</fsurdat>
 <fsurdat hgrid="ne4np4.pg2"  sim_year="1850" >
 lnd/clm2/surfdata_map/surfdata_ne4pg2_simyr1850_c210722.nc</fsurdat>
 <fsurdat hgrid="ne240np4"      sim_year="1850" use_crop=".false." >
