@@ -1875,7 +1875,7 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <sscav_tuning phys="default" microphys="p3">.false.</sscav_tuning>
 <p3_mincdnc phys="default" microphys="p3"> 20.D6      </p3_mincdnc>
 <p3_wbf_coeff phys="default" clubb_sgs="1" microphys="p3"> 1.0      </p3_wbf_coeff>
-<p3_nc_autocon_expon  phys="default" clubb_sgs="1" microphys="p3">  -1.20D0   </p3_nc_autocon_expon>
+<p3_nc_autocon_expon  phys="default" clubb_sgs="1" microphys="p3">  -1.10D0   </p3_nc_autocon_expon>
 <n_so4_monolayers_pcage  phys="default" clubb_sgs="1" microphys="p3">  3.0D0   </n_so4_monolayers_pcage>
 <clubb_C1 phys="default"> 2.4        </clubb_C1>
 <clubb_C11 phys="default"> 0.70       </clubb_C11>
