@@ -791,6 +791,8 @@ if ( (($chem ne 'none') && ($chem ne 'spa')) or ( $prog_species ) ){
       add_default($nl, 'clim_soilw_file' );
       add_default($nl, 'season_wes_file' );
     }
+
+    add_default($nl, 'lght_no_prd_factor' );
 }
 
 # Initial conditions
