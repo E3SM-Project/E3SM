@@ -480,6 +480,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: rainTemperatureFlux, evapTemperatureFlux, &
                                                   seaIceTemperatureFlux, icebergTemperatureFlux, &
                                                   totalFreshWaterTemperatureFlux
+      real (kind=RKIND), dimension(:), pointer :: landIcePressure
       real (kind=RKIND) :: requiredSalt, allowedSalt, surfaceTemperatureFluxWithoutRunoff
 
       err = 0
@@ -515,6 +516,8 @@ contains
       call mpas_pool_get_array(forcingPool, 'riverRunoffFlux', riverRunoffFlux)
       call mpas_pool_get_array(forcingPool, 'subglacialRunoffFlux', subglacialRunoffFlux)
       call mpas_pool_get_array(forcingPool, 'penetrativeTemperatureFlux', penetrativeTemperatureFlux)
+
+      call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
 
       call mpas_pool_get_array(forcingPool, 'rainTemperatureFlux', rainTemperatureFlux)
       call mpas_pool_get_array(forcingPool, 'evapTemperatureFlux', evapTemperatureFlux)
@@ -577,7 +580,7 @@ contains
 
            ! Subglacial runoff can have temperature below 0.0C, since it can come out at great depth
            tracersSurfaceFluxSubglacialRunoff(index_temperature_flux,iCell) = subglacialRunoffFlux(iCell) * &
-               ocn_freezing_temperature(salinity=0.0_RKIND, pressure=interfacePressure(iCell), &
+               ocn_freezing_temperature(salinity=0.0_RKIND, pressure=landIcePressure(iCell), &
                                          inLandIceCavity=.true.) / rho_sw
 
            ! Accumulate fluxes that use the freezing point
