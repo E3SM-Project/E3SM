@@ -45,8 +45,6 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols, m_num_levs} };
   FieldLayout horiz_wind_layout { {COL,CMP,LEV}, {m_num_cols,2,m_num_levs} };
 
-printf("set grids: %d, %d\n",m_num_cols, m_num_levs);
-
   constexpr int ps = 1;
   auto Q = kg/kg;
   Q.set_string("kg/kg");
@@ -154,14 +152,9 @@ void Nudging::initialize_impl (const RunType /* run_type */)
     create_helper_field("p_mid_ext", scalar2d_layout_mid, grid_name, ps);
     auto pmid_ext = get_helper_field("p_mid_ext");
     auto pmid_ext_v = pmid_ext.get_view<Real*,Host>();
-//    in_params.set<std::vector<std::string>>("Field Names",{"p_levs"});
-//    host_views["p_levs"] = pmid_ext_v;
-//    layouts.emplace("p_levs",scalar2d_layout_mid);
-
-    in_params.set<std::vector<std::string>>("Field Names",{"hybm"});
-    host_views["hybm"] = pmid_ext_v;
-    layouts.emplace("hybm",scalar2d_layout_mid);
-
+    in_params.set<std::vector<std::string>>("Field Names",{"p_levs"});
+    host_views["p_levs"] = pmid_ext_v;
+    layouts.emplace("p_levs",scalar2d_layout_mid);
     AtmosphereInput src_input(in_params,grid_ext,host_views,layouts);
     src_input.read_variables(-1);
     src_input.finalize();
