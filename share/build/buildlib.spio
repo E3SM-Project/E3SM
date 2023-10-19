@@ -134,7 +134,7 @@ def buildlib(bldroot, installpath, case):
 
     # Same deal with libz and szip
     if "ZLIB_ROOT" in os.environ:
-        os.environ["ZLIB"] = os.environ["ZLIB_ROOT"]
+        os.environ["LIBZ"] = os.environ["ZLIB_ROOT"] # LIBZ/ZLIB
     if "SZIP_ROOT" in os.environ:
         os.environ["SZIP"] = os.environ["SZIP_ROOT"]
 
