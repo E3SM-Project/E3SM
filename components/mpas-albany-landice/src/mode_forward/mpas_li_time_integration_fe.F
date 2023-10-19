@@ -715,6 +715,7 @@ module li_time_integration_fe
             endif
 
             call li_advection_thickness_tracers(&
+                 domain,                 &
                  deltat,                 &
                  meshPool,               &
                  velocityPool,           &
@@ -733,6 +734,7 @@ module li_time_integration_fe
             endif
 
             call li_advection_thickness_tracers(&
+                 domain,                 &
                  deltat,                 &
                  meshPool,               &
                  velocityPool,           &
