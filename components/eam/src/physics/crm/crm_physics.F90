@@ -1587,7 +1587,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
          end do
 
 #if defined(MMF_PAM)
-         ! Currently PAM is coupled the CRM to all levels, so only add rad to levels above CRM
+         ! Currently PAM is coupled at all levels, so only add rad to levels above CRM top
          ptend(c)%s(1:ncol, 1:pver-crm_nz) = qrs(1:ncol,1:pver-crm_nz) + qrl(1:ncol,1:pver-crm_nz)
 #else
          ! The radiation tendencies in the GCM levels above the CRM and the top 2 CRM levels are set to
@@ -1606,6 +1606,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
          !------------------------------------------------------------------------------------------
          ! set convective heating tendency for gravity wave drag
          !------------------------------------------------------------------------------------------
+         ! Subtract radiation from all levels so only convective heating is used for the
+         ! convective gravityw ave scheme, consistent with standard EAM w/ ZM
          if (ttend_dp_idx > 0) then
             call pbuf_get_field(pbuf_chunk, ttend_dp_idx, ttend_dp)
             ttend_dp(1:ncol,1:pver) = ( ptend(c)%s(1:ncol,:pver) - qrs(1:ncol,:pver) - qrl(1:ncol,:pver) )/cpair
