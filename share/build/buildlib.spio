@@ -148,9 +148,10 @@ def buildlib(bldroot, installpath, case):
     make_args = get_standard_makefile_args(case, shared_lib=True)
     macro_dump = run_cmd(f"make -f Macros.make COMP_NAME=spio {make_args} -p")[1]
     fflags = extract_from_macros(macro_dump, "FFLAGS")
-    cflags = extract_from_macros(macro_dump, "CFLAGS")
-    cxxflags = extract_from_macros(macro_dump, "CXXFLAGS")
-    cppdefs  = extract_from_macros(macro_dump, "CPPDEFS")
+    # Setting GPTL_PATH is currently insufficient scorpio to find gptl headers?
+    cflags = extract_from_macros(macro_dump, "CFLAGS") + f" -I{installpath}/include"
+    cxxflags = extract_from_macros(macro_dump, "CXXFLAGS") + f" -I{installpath}/include"
+    cppdefs  = extract_from_macros(macro_dump, "CPPDEFS") + f" -I{installpath}/include"
     ldflags  = extract_from_macros(macro_dump, "LDFLAGS")
     if mpilib == "mpi-serial":
         fc = extract_from_macros(macro_dump, "SFC")
