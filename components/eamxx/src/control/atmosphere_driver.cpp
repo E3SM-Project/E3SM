@@ -1226,6 +1226,7 @@ read_fields_from_file (const std::vector<std::string>& field_names_nc,
   }
 
   AtmosphereInput ic_reader(file_name,grid,fields);
+  ic_reader.set_logger(m_atm_logger);
   ic_reader.read_variables();
   ic_reader.finalize();
 
@@ -1264,6 +1265,7 @@ read_fields_from_file (const std::vector<std::string>& field_names,
   }
 
   AtmosphereInput ic_reader(file_name,grid,fields);
+  ic_reader.set_logger(m_atm_logger);
   ic_reader.read_variables();
   ic_reader.finalize();
 
