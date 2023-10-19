@@ -132,6 +132,12 @@ def buildlib(bldroot, installpath, case):
     if "HDF5" in os.environ:
         cmake_opts += "-DWITH_HDF5=On "
 
+    # Same deal with libz and szip
+    if "ZLIB_ROOT" in os.environ:
+        os.environ["ZLIB"] = os.environ["ZLIB_ROOT"]
+    if "SZIP_ROOT" in os.environ:
+        os.environ["SZIP"] = os.environ["SZIP_ROOT"]
+
     if "PNETCDF_PATH" in os.environ:
         cmake_opts += f"-DPnetCDF_PATH:PATH={os.environ['PNETCDF_PATH']} "
     else:
