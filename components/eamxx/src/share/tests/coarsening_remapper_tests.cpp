@@ -198,7 +198,7 @@ Field all_gather_field_impl (const Field& f, const ekat::Comm& comm) {
               "  - field name: " + f.name() + "\n");
       }
       comm.broadcast(data,col_size,pid);
-      auto gdata = gf.get_internal_view_data<T>()+offset;
+      auto gdata = gf.get_internal_view_data<T,Host>()+offset;
       std::copy(data,data+col_size,gdata);
     }
   }
