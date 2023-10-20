@@ -113,6 +113,11 @@ def buildlib(bldroot, installpath, case):
     if "NETCDF_FORTRAN_PATH" in os.environ:
         cmake_opts += f"-DNetCDF_Fortran_PATH:PATH={os.environ['NETCDF_FORTRAN_PATH']} "
 
+    if "PNETCDF_PATH" in os.environ and mpilib != "mpi-serial":
+        cmake_opts += f"-DPnetCDF_PATH:PATH={os.environ['PNETCDF_PATH']} "
+    else:
+        cmake_opts += "-DWITH_PNETCDF:LOGICAL=FALSE -DPIO_USE_MPIIO:LOGICAL=FALSE "
+
     # scorpio needs a little help finding hdf5. The FindHDF5 in scopio uses the
     # env var "HDF5" instead of "HDF5_ROOT". If HDF5_ROOT is not set, but we have
     # h5dump in our path, we can use that info to set up HDF5. For now, we will
@@ -132,12 +137,9 @@ def buildlib(bldroot, installpath, case):
     if "SZIP_ROOT" in os.environ:
         os.environ["SZIP"] = os.environ["SZIP_ROOT"]
 
-    if "PNETCDF_PATH" in os.environ:
-        cmake_opts += f"-DPnetCDF_PATH:PATH={os.environ['PNETCDF_PATH']} "
-    else:
-        cmake_opts += "-DWITH_PNETCDF:LOGICAL=FALSE -DPIO_USE_MPIIO:LOGICAL=FALSE "
     if mpilib == "mpi-serial":
         cmake_opts += f"-DPIO_USE_MPISERIAL=TRUE -DMPISERIAL_PATH={installpath} "
+
     cmake_opts += "-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON "
     cmake_opts += f"-DGPTL_PATH:STRING={installpath} "
     cmake_opts += "-DPIO_ENABLE_TESTS:BOOL=OFF -DPIO_USE_MALLOC:BOOL=ON "
