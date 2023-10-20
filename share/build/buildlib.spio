@@ -4,7 +4,7 @@ import sys, os, logging, argparse
 cimeroot = os.getenv("CIMEROOT")
 sys.path.append(os.path.join(cimeroot, "CIME", "Tools"))
 
-import glob, re
+import glob, re, shutil
 from standard_script_setup import *
 from CIME import utils
 from CIME.utils import expect, run_bld_cmd_ensure_logging, safe_copy, run_cmd
@@ -113,6 +113,25 @@ def buildlib(bldroot, installpath, case):
     if "NETCDF_FORTRAN_PATH" in os.environ:
         cmake_opts += f"-DNetCDF_Fortran_PATH:PATH={os.environ['NETCDF_FORTRAN_PATH']} "
 
+    # scorpio needs a little help finding hdf5. The FindHDF5 in scopio uses the
+    # env var "HDF5" instead of "HDF5_ROOT". If HDF5_ROOT is not set, but we have
+    # h5dump in our path, we can use that info to set up HDF5. For now, we will
+    # assume only HDF5_ROOT is what matters.
+    which_h5dump = shutil.which('h5dump')
+    if "HDF5_ROOT" in os.environ:
+        os.environ["HDF5"] = os.environ["HDF5_ROOT"]
+    # elif which_h5dump is not None:
+    #     os.environ["HDF5"] = os.path.dirname(os.path.dirname(which_h5dump))
+
+    if "WITH_HDF5_SCORPIO" in os.environ:
+        cmake_opts += "-DWITH_HDF5:BOOL=ON "
+
+    # Same deal with libz and szip
+    if "ZLIB_ROOT" in os.environ:
+        os.environ["LIBZ"] = os.environ["ZLIB_ROOT"] # LIBZ/ZLIB
+    if "SZIP_ROOT" in os.environ:
+        os.environ["SZIP"] = os.environ["SZIP_ROOT"]
+
     if "PNETCDF_PATH" in os.environ:
         cmake_opts += f"-DPnetCDF_PATH:PATH={os.environ['PNETCDF_PATH']} "
     else:
@@ -129,9 +148,10 @@ def buildlib(bldroot, installpath, case):
     make_args = get_standard_makefile_args(case, shared_lib=True)
     macro_dump = run_cmd(f"make -f Macros.make COMP_NAME=spio {make_args} -p")[1]
     fflags = extract_from_macros(macro_dump, "FFLAGS")
-    cflags = extract_from_macros(macro_dump, "CFLAGS")
-    cxxflags = extract_from_macros(macro_dump, "CXXFLAGS")
-    cppdefs  = extract_from_macros(macro_dump, "CPPDEFS")
+    # Setting GPTL_PATH is currently insufficient scorpio to find gptl headers?
+    cflags = extract_from_macros(macro_dump, "CFLAGS") + f" -I{installpath}/include"
+    cxxflags = extract_from_macros(macro_dump, "CXXFLAGS") + f" -I{installpath}/include"
+    cppdefs  = extract_from_macros(macro_dump, "CPPDEFS") + f" -I{installpath}/include"
     ldflags  = extract_from_macros(macro_dump, "LDFLAGS")
     if mpilib == "mpi-serial":
         fc = extract_from_macros(macro_dump, "SFC")
