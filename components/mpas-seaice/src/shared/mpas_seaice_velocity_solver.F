@@ -757,7 +757,7 @@ contains
          totalMassCell
 
     logical, pointer :: &
-         config_use_column_package, &
+         config_use_column_physics, &
          config_use_column_vertical_thermodynamics, &
          config_use_halo_exch, &
          config_aggregate_halo_exch, &
@@ -768,12 +768,12 @@ contains
          ierr
 
     ! set initial ice area if not have column physics
-    call MPAS_pool_get_config(domain % configs, "config_use_column_package", config_use_column_package)
+    call MPAS_pool_get_config(domain % configs, "config_use_column_physics", config_use_column_physics)
     call MPAS_pool_get_config(domain % configs, "config_use_column_vertical_thermodynamics", &
                                                  config_use_column_vertical_thermodynamics)
 
-    if (.not. config_use_column_package .or. &
-         (config_use_column_package .and. .not. config_use_column_vertical_thermodynamics)) then
+    if (.not. config_use_column_physics .or. &
+         (config_use_column_physics .and. .not. config_use_column_vertical_thermodynamics)) then
 
        blockPtr => domain % blocklist
        do while (associated(blockPtr))
@@ -1307,8 +1307,15 @@ contains
 
   subroutine ice_strength(domain)
 
-    use ice_colpkg, only: &
-         colpkg_ice_strength
+    use icepack_intfc, only: &
+         icepack_ice_strength, &
+         icepack_warnings_aborted
+
+    use seaice_icepack, only: &
+         seaice_icepack_write_warnings
+
+    use seaice_column, only: &
+         seaice_column_ice_strength
 
     use seaice_constants, only: &
          seaiceIceStrengthConstantHiblerP, &
@@ -1343,7 +1350,7 @@ contains
          solveStress
 
     logical, pointer :: &
-         config_use_column_package, &
+         config_use_column_physics, &
          config_use_column_vertical_thermodynamics, &
          config_use_halo_exch, &
          config_aggregate_halo_exch, &
@@ -1357,12 +1364,16 @@ contains
          iCell, &
          ierr
 
+    character(len=strKIND), pointer :: &
+         config_column_physics_type
+
     blockPtr => domain % blocklist
     do while (associated(blockPtr))
 
-       call MPAS_pool_get_config(blockPtr % configs, "config_use_column_package", config_use_column_package)
+       call MPAS_pool_get_config(blockPtr % configs, "config_column_physics_type", config_column_physics_type)
+       call MPAS_pool_get_config(blockPtr % configs, "config_use_column_physics", config_use_column_physics)
        call MPAS_pool_get_config(blockPtr % configs, "config_use_column_vertical_thermodynamics", &
-                                                   config_use_column_vertical_thermodynamics)
+                                                      config_use_column_vertical_thermodynamics)
 
        call MPAS_pool_get_dimension(blockPtr % dimensions, "nCellsSolve", nCellsSolve)
        call MPAS_pool_get_dimension(blockPtr % dimensions, "nCategories", nCategories)
@@ -1383,8 +1394,8 @@ contains
        call MPAS_pool_get_array(tracersPool, "iceAreaCategory", iceAreaCategory, 1)
        call MPAS_pool_get_array(tracersPool, "iceVolumeCategory", iceVolumeCategory, 1)
 
-       if (.not. config_use_column_package .or. &
-            (config_use_column_package .and. .not. config_use_column_vertical_thermodynamics)) then
+       if (.not. config_use_column_physics .or. &
+            (config_use_column_physics .and. .not. config_use_column_vertical_thermodynamics)) then
 
           do iCell = 1, nCellsSolve
 
@@ -1403,25 +1414,48 @@ contains
 
        else
 
-          do iCell = 1, nCellsSolve
+          if (trim(config_column_physics_type) == "icepack") then
+             do iCell = 1, nCellsSolve
 
-             icePressure(iCell) = 0.0_RKIND
+                icePressure(iCell) = 0.0_RKIND
 
-             if (solveStress(iCell) == 1) then
+                if (solveStress(iCell) == 1) then
 
-                ! this routine doesnt reset icePressure
-                call colpkg_ice_strength(&
-                     nCategories, &
-                     iceAreaCell(iCell), &
-                     iceVolumeCell(iCell), &
-                     openWaterArea(iCell), &
-                     iceAreaCategory(1,:,iCell), &
-                     iceVolumeCategory(1,:,iCell), &
-                     icePressure(iCell))
+                   ! this routine doesnt reset icePressure
+                   call icepack_ice_strength(&
+                        nCategories, &
+                        iceAreaCell(iCell), &
+                        iceVolumeCell(iCell), &
+                        openWaterArea(iCell), &
+                        iceAreaCategory(1,:,iCell), &
+                        iceVolumeCategory(1,:,iCell), &
+                        icePressure(iCell))
+                   call seaice_icepack_write_warnings(icepack_warnings_aborted())
 
-             endif ! solveStress
+                endif ! solveStress
 
-          enddo ! iCell
+             enddo ! iCell
+          else if (trim(config_column_physics_type) == "column_package") then
+             do iCell = 1, nCellsSolve
+
+                icePressure(iCell) = 0.0_RKIND
+
+                if (solveStress(iCell) == 1) then
+
+                   ! this routine doesnt reset icePressure
+                   call seaice_column_ice_strength(&
+                        nCategories, &
+                        iceAreaCell(iCell), &
+                        iceVolumeCell(iCell), &
+                        openWaterArea(iCell), &
+                        iceAreaCategory(1,:,iCell), &
+                        iceVolumeCategory(1,:,iCell), &
+                        icePressure(iCell))
+
+                endif ! solveStress
+
+             enddo ! iCell
+          endif ! config_column_physics_type
 
        endif
 
@@ -1501,7 +1535,7 @@ contains
          blockPtr
 
     logical, pointer :: &
-         config_use_column_package, &
+         config_use_column_physics, &
          config_use_column_vertical_thermodynamics, &
          config_use_air_stress, &
          config_use_halo_exch, &
@@ -1522,12 +1556,12 @@ contains
          ierr
 
     ! calculate the air stress
-    call MPAS_pool_get_config(domain % blocklist % configs, "config_use_column_package", config_use_column_package)
+    call MPAS_pool_get_config(domain % blocklist % configs, "config_use_column_physics", config_use_column_physics)
     call MPAS_pool_get_config(domain % blocklist % configs, "config_use_column_vertical_thermodynamics", &
                                                              config_use_column_vertical_thermodynamics)
 
-    if (.not. config_use_column_package .or. &
-         (config_use_column_package .and. .not. config_use_column_vertical_thermodynamics)) then
+    if (.not. config_use_column_physics .or. &
+         (config_use_column_physics .and. .not. config_use_column_vertical_thermodynamics)) then
        call constant_air_stress(domain)
     endif
 
@@ -2792,8 +2826,7 @@ contains
   subroutine ocean_stress_coefficient(domain)
 
     use seaice_constants, only: &
-         seaiceDensitySeaWater, &
-         seaiceIceOceanDragCoefficient
+         seaiceDensitySeaWater
 
     type(domain_type), intent(inout) :: &
          domain
@@ -2804,6 +2837,9 @@ contains
     type(MPAS_pool_type), pointer :: &
          velocitySolverPool, &
          icestatePool
+
+    real(kind=RKIND), pointer :: &
+         configIceOceanDragCoeff
 
     real(kind=RKIND), dimension(:), pointer :: &
          oceanStressCoeff, &
@@ -2829,6 +2865,7 @@ contains
     do while (associated(blockPtr))
 
        call MPAS_pool_get_config(blockPtr % configs, "config_use_ocean_stress", configUseOceanStress)
+       call MPAS_pool_get_config(blockPtr % configs, "config_ice_ocean_drag_coefficient", configIceOceanDragCoeff)
 
        call MPAS_pool_get_dimension(blockPtr % dimensions, "nVerticesSolve", nVerticesSolve)
 
@@ -2853,7 +2890,8 @@ contains
 
                 if (solveVelocity(iVertex) == 1) then
 
-                   oceanStressCoeff(iVertex) = seaiceIceOceanDragCoefficient * seaiceDensitySeaWater * iceAreaVertex(iVertex) * &
+                   oceanStressCoeff(iVertex) = configIceOceanDragCoeff * &
+                        seaiceDensitySeaWater * iceAreaVertex(iVertex) * &
                         sqrt((uOceanVelocityVertex(iVertex) - uVelocity(iVertex))**2 + &
                              (vOceanVelocityVertex(iVertex) - vVelocity(iVertex))**2)
 
@@ -2867,7 +2905,8 @@ contains
 
                 if (solveVelocity(iVertex) == 1) then
 
-                   oceanStressCoeff(iVertex) = seaiceIceOceanDragCoefficient * seaiceDensitySeaWater * iceAreaVertex(iVertex)
+                   oceanStressCoeff(iVertex) = configIceOceanDragCoeff * &
+                        seaiceDensitySeaWater * iceAreaVertex(iVertex)
 
                 endif
 
