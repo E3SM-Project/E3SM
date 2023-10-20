@@ -1455,6 +1455,7 @@ contains
 
     ! Sea level pressure (Pa)
     call seq_flds_add(a2x_states,"Sa_pslv")
+    call seq_flds_add(x2i_states,"Sa_pslv")
     call seq_flds_add(x2o_states,"Sa_pslv")
     longname = 'Sea level pressure'
     stdname  = 'air_pressure_at_sea_level'
