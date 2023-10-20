@@ -7,7 +7,7 @@ sys.path.append(os.path.join(cimeroot, "CIME", "Tools"))
 import glob, re, shutil
 from standard_script_setup import *
 from CIME import utils
-from CIME.utils import expect, run_bld_cmd_ensure_logging, safe_copy, run_cmd
+from CIME.utils import expect, run_bld_cmd_ensure_logging, safe_copy
 from CIME.build import get_standard_makefile_args
 from CIME.case import Case
 
@@ -143,29 +143,27 @@ def buildlib(bldroot, installpath, case):
     cmake_opts += "-DPIO_ENABLE_TESTS:BOOL=OFF -DPIO_USE_MALLOC:BOOL=ON "
     cmake_opts += f"-DUSER_CMAKE_MODULE_PATH:LIST={cimeroot}/CIME/non_py/src/CMake "
 
-    # Hacky way of getting stuff from Macros. Should scorpio just load the E3SM
-    # macros once they are using cmake names for things?
-    make_args = get_standard_makefile_args(case, shared_lib=True)
-    macro_dump = run_cmd(f"make -f Macros.make COMP_NAME=spio {make_args} -p")[1]
-    fflags = extract_from_macros(macro_dump, "FFLAGS")
-    # Setting GPTL_PATH is currently insufficient scorpio to find gptl headers?
-    cflags = extract_from_macros(macro_dump, "CFLAGS") + f" -I{installpath}/include"
-    cxxflags = extract_from_macros(macro_dump, "CXXFLAGS") + f" -I{installpath}/include"
-    cppdefs  = extract_from_macros(macro_dump, "CPPDEFS") + f" -I{installpath}/include"
-    ldflags  = extract_from_macros(macro_dump, "LDFLAGS")
-    if mpilib == "mpi-serial":
-        fc = extract_from_macros(macro_dump, "SFC")
-        cc = extract_from_macros(macro_dump, "SCC")
-        cxx = extract_from_macros(macro_dump, "SCXX")
-    else:
-        fc = extract_from_macros(macro_dump, "MPIFC")
-        cc = extract_from_macros(macro_dump, "MPICC")
-        cxx = extract_from_macros(macro_dump, "MPICXX")
+    # Scorpio should just load the E3SM macros once  are using cmake names for things
+    sfc, scc, scxx, mfc, mcc, mcxx, fflags, cflags, cxxflags, cppdefs, ldflags = \
+        extract_from_macros(case, "spio")
 
     cppdefs += " -DTIMING"
-    cmake_opts += f"-DCMAKE_Fortran_FLAGS:STRING='{fflags} {cppdefs}' "
-    cmake_opts += f"-DCMAKE_C_FLAGS:STRING='{cflags} {cppdefs}' "
-    cmake_opts += f"-DCMAKE_CXX_FLAGS:STRING='{cxxflags} {cppdefs}' "
+
+    # Setting GPTL_PATH is currently insufficient scorpio to find gptl headers?
+    incl_flag = f" -I{installpath}/include"
+
+    if mpilib == "mpi-serial":
+        fc  = sfc
+        cc  = scc
+        cxx = scxx
+    else:
+        fc  = mfc
+        cc  = mcc
+        cxx = mcxx
+
+    cmake_opts += f"-DCMAKE_Fortran_FLAGS:STRING='{fflags} {incl_flag} {cppdefs}' "
+    cmake_opts += f"-DCMAKE_C_FLAGS:STRING='{cflags} {incl_flag} {cppdefs}' "
+    cmake_opts += f"-DCMAKE_CXX_FLAGS:STRING='{cxxflags} {incl_flag} {cppdefs}' "
 
     # This runs the pio cmake command from the cime case Makefile
     logger.info("Configuring SCORPIO")
