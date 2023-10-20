@@ -93,8 +93,8 @@ def buildlib(bldroot, installpath, case):
         mfc = fc
         mcc = cc
     else:
-        cc = mfc
-        fc = mcc
+        fc = mfc
+        cc = mcc
 
     # Only need the netcdf_c library
     if "NETCDF_PATH" in os.environ:
