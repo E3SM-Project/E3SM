@@ -1,8 +1,0 @@
-string(APPEND CPPDEFS " -DnoI8")
-if (DEBUG)
-  string(APPEND FFLAGS " -C=all  -g  -O0 -v")
-endif()
-if (DEBUG AND COMP_NAME STREQUAL eam)
-  string(APPEND FFLAGS " -C=all  -g  -nan -O0 -v")
-endif()
-set(PIO_FILESYSTEM_HINTS "lustre")
