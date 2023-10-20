@@ -703,7 +703,7 @@
 					possible_values="Any positive real number."
 		/>
 		<nml_option name="config_flux_attenuation_coefficient_subglacial_runoff" type="real" default_value="10" units="m"
-					description="The length scale of exponential decay of subglacia runoff. Fluxes are multiplied by $e^{z/\gamma}$, where this coefficient is $\gamma$."
+					description="The length scale of exponential decay of subglacial runoff. Fluxes are multiplied by $e^{z/\gamma}$, where this coefficient is $\gamma$."
 					possible_values="Any positive real number."
 		/>
 	</nml_record>
