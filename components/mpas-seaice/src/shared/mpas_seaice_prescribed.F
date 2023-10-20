@@ -156,7 +156,8 @@ contains
          config_use_prescribed_ice_forcing
 
     character(len=strKIND), pointer :: &
-         config_column_physics_type
+         config_column_physics_type, &
+         config_thermodynamics_type
 
     type(block_type), pointer :: &
          blockPtr
@@ -213,6 +214,8 @@ contains
 
     call MPAS_pool_get_config(domain % configs, "config_column_physics_type", config_column_physics_type)            
     call mpas_pool_get_config(domain % configs, "config_use_prescribed_ice", config_use_prescribed_ice)
+    call mpas_pool_get_config(domain % configs, "config_thermodynamics_type", config_thermodynamics_type)
+
     if (config_use_prescribed_ice) then
 
        ! get ice coverage
@@ -309,7 +312,7 @@ contains
                                depth = (real(iIceLayer,kind=RKIND) - 0.5_RKIND) / real(nIceLayers,kind=RKIND)
                                iceTemperature = surfaceTemperature(1,iCategory,iCell) + temperatureGradient * depth
                                iceSalinity(iIceLayer,iCategory,iCell) = icepack_salinity_profile(depth)
-                               iceEnthalpy(iIceLayer,iCategory,iCell) = seaice_icepack_enthalpy_ice(iceTemperature,iceSalinity(iIceLayer,iCategory,iCell))
+                               iceEnthalpy(iIceLayer,iCategory,iCell) = seaice_icepack_enthalpy_ice(iceTemperature,iceSalinity(iIceLayer,iCategory,iCell),config_thermodynamics_type)
 
                             enddo ! iIceLayer
 
