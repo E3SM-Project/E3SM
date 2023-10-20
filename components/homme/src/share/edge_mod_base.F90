@@ -2079,17 +2079,13 @@ endif
 
     m=0
     gid = GlobalID
-    print *,'amb>0',nc,vlyr,desc%actual_neigh_edges+1,size(v,1),size(v,2),size(v,3),size(v,4)
     do n=1,desc%actual_neigh_edges+1
-       if (.true.) then
-          print *,'amb>1',n,m,size(desc%loc2buf)
-          if (size(desc%loc2buf) < 1 .or. m+1 > size(desc%loc2buf)) print *,'amb>1 BAD'
-          print *,'amb>2',desc%loc2buf((m+1)),size(desc%globalID)
-          if (desc%loc2buf((m+1)) < 1 .or. desc%loc2buf((m+1)) > size(desc%globalID)) print *,'amb>2 BAD'
-          print *,'amb>3',desc%globalID(desc%loc2buf((m+1))),gid
+       if (m == desc%actual_neigh_edges) then
+          pid = -1
+       else
+          pid = desc%globalID(desc%loc2buf((m+1)))
        end if
-       pid = desc%globalID(desc%loc2buf((m+1)))
-       if (m==desc%actual_neigh_edges .OR. pid < gid) then
+       if (pid < gid) then
           gid = -1
           v(:nc,:nc,:vlyr,n) = u(:,:,:)
        else
