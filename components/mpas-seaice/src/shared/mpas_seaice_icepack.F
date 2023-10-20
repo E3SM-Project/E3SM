@@ -5647,7 +5647,8 @@ contains
 
   !-----------------------------------------------------------------------
 
-  function seaice_icepack_enthalpy_ice(iceTemperature, iceSalinity) result(iceEnthalpy)
+  function seaice_icepack_enthalpy_ice(iceTemperature, iceSalinity, &
+                                       config_thermodynamics_type) result(iceEnthalpy)
 
     use icepack_intfc, only: icepack_enthalpy_mush
 
@@ -5658,28 +5659,24 @@ contains
         seaiceLatentHeatMelting, &            ! latent heat of melting of fresh ice (J/kg)
         seaiceSeaWaterSpecificHeat            ! specific heat of ocn (J/kg/K)
 
-    type(domain_type) :: domain
-
     real(kind=RKIND), intent(in) :: iceTemperature
     real(kind=RKIND), intent(in) :: iceSalinity
     real(kind=RKIND) :: iceEnthalpy
 
-    real(kind=RKIND) :: qin
     real(kind=RKIND) :: Tmlt
 
     character(len=strKIND), pointer :: config_thermodynamics_type
 
-    call MPAS_pool_get_config(domain % configs, "config_thermodynamics_type", config_thermodynamics_type)
-
     if (trim(config_thermodynamics_type) == "mushy") then
 
-       qin = icepack_enthalpy_mush(iceTemperature, iceSalinity)
+       iceEnthalpy = icepack_enthalpy_mush(iceTemperature, iceSalinity)
 
     else
 
        Tmlt = -iceSalinity*seaiceMeltingTemperatureDepression
-       qin = -(seaiceDensityIce * (seaiceFreshIceSpecificHeat*(Tmlt-iceTemperature) &
-               + seaiceLatentHeatMelting*(1.0_RKIND-Tmlt/iceTemperature) - seaiceSeaWaterSpecificHeat*Tmlt))
+       iceEnthalpy = -(seaiceDensityIce * (seaiceFreshIceSpecificHeat*(Tmlt-iceTemperature) &
+                     + seaiceLatentHeatMelting*(1.0_RKIND-Tmlt/iceTemperature) &
+                     - seaiceSeaWaterSpecificHeat*Tmlt))
 
     endif
 
