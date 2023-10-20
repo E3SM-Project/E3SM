@@ -49,7 +49,6 @@ def buildlib(bldroot, installpath, case):
     comp_interface = case.get_value("COMP_INTERFACE")
     srcroot = case.get_value("SRCROOT")
     caseroot = case.get_value("CASEROOT")
-    libroot = case.get_value("LIBROOT")
 
     csm_share_dir = os.environ.get("csm_share_ROOT")
     if csm_share_dir is not None:
@@ -132,7 +131,6 @@ def buildlib(bldroot, installpath, case):
         copyifnewer(_file, os.path.join(installdir, "include", os.path.basename(_file)))
 
     # This runs the cmake command
-    logger.info(f"JGF libdir={libdir} installpath={installpath}")
     cmake_args = get_standard_cmake_args(case, installpath)
     run_bld_cmd_ensure_logging(f"cmake {cmake_args} {csm_share_dir}", logger, from_dir=libdir)
 
@@ -145,10 +143,14 @@ def buildlib(bldroot, installpath, case):
     # The pgi compiler sometimes has issues with long include paths
     # on the command line, this is a workaround for that problem
     #
-    case_inc_dir = os.path.join(libroot, "include")
+    case_inc_dir = os.path.join(libdir, "..", "include")
     if not os.path.isdir(case_inc_dir):
         os.mkdir(case_inc_dir)
-    for _file in glob.iglob(os.path.join(installdir,"include","*")):
+
+    for _file in glob.iglob(os.path.join(libdir,"*.mod")):
+        symlink_force(_file, os.path.join(case_inc_dir,os.path.basename(_file)))
+
+    for _file in glob.iglob(os.path.join(libdir,"*.h")):
         symlink_force(_file, os.path.join(case_inc_dir,os.path.basename(_file)))
 
 ###############################################################################
