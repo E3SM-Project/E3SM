@@ -118,7 +118,7 @@ contains
 
       integer :: iCell, k
 
-      real (kind=RKIND) :: remainingFlux, remainingFluxRunoff
+      real (kind=RKIND) :: remainingFlux, remainingFluxRunoff, remainingFluxSubglacialRunoff
 
       err = 0
 
@@ -133,10 +133,10 @@ contains
       !$acc     present(tend, surfaceThicknessFlux, surfaceThicknessFluxRunoff, &
       !$acc     surfaceThicknessFluxSubglacialRunoff, transmissionCoefficientsSubglacialRunoff, &
       !$acc     transmissionCoefficients, transmissionCoefficientsRunoff, minLevelCell, maxLevelCell) &
-      !$acc     private(k, remainingFlux, remainingFluxRunoff)
+      !$acc     private(k, remainingFlux, remainingFluxRunoff, remainingFluxSubglacialRunoff)
 #else
       !$omp parallel
-      !$omp do schedule(runtime) private(remainingFlux, remainingFluxRunoff, k)
+      !$omp do schedule(runtime) private(remainingFlux, remainingFluxRunoff, remainingFluxSubglacialRunoff, k)
 #endif
       do iCell = 1, nCellsOwned
         remainingFlux = 1.0_RKIND
