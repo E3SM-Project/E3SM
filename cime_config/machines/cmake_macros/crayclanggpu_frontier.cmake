@@ -40,7 +40,6 @@ set(HAS_F2008_CONTIGUOUS "TRUE")
 string(APPEND LDFLAGS " -Wl,--allow-multiple-definition -Wl,--allow-shlib-undefined")
 
 set(SUPPORTS_CXX "TRUE")
-set(CXX_LINKER "FORTRAN")
 
 # Switching to O3 for performance benchmarking
 # Will revisit any failing tests

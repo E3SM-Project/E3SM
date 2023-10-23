@@ -28,7 +28,6 @@
 # set(HAS_F2008_CONTIGUOUS "TRUE")
 # string(APPEND LDFLAGS " -Wl,--allow-multiple-definition")
 # set(SUPPORTS_CXX "TRUE")
-# set(CXX_LINKER "FORTRAN")
 # set(MPICC "cc")
 # set(MPICXX "hipcc")
 # set(MPIFC "ftn")

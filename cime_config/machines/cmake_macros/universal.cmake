@@ -9,3 +9,6 @@ set(KOKKOS_OPTIONS "-DKokkos_ENABLE_SERIAL=On")
 if (compile_threaded)
   string(APPEND KOKKOS_OPTIONS " -DKokkos_ENABLE_OPENMP=On")
 endif()
+
+# Unless told otherwise, use fortran to link
+set(CXX_LINKER "FORTRAN")
