@@ -11,7 +11,7 @@ on:
 
 env:
   CANCEL_OTHERS: true
-  PATHS_IGNORE: '["**/README.md", "**/docs/**", "**/examples/**", "**/misc/**", "**/.vscode/**"]'
+  PATHS_IGNORE: '["**/README.md", "**/docs/**", "**/examples/**", "**/misc/**", "**/.vscode/**", "**/.github/pull_request_template.md", "**/.github/ISSUE_TEMPLATE"]'
 
 jobs:
   pre-commit-hooks:

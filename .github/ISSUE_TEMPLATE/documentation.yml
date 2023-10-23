@@ -1,0 +1,15 @@
+name: Documentation Update
+description: Update e3sm_diags documentation
+title: "[Doc]: "
+labels: ["documentation"]
+assignees: []
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe your documentation update
+      description: |
+        Concise description of why the documentation is being updated (e.g., missing content for new feature, typo)
+        If this is related to an issue or PR, please mention it.
+    validations:
+      required: true

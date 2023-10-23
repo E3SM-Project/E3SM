@@ -1,0 +1,10 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Questions
+    url: https://github.com/E3SM-Project/e3sm_diags/discussions
+    about: |
+      Ask questions and discuss with other e3sm_diags community members here. Please
+      browse the e3sm_diags Discussions Forum or e3sm_diags documentation first before asking a
+      question to make sure it is not already answered. If you can't find an
+      answer, please include a self-contained reproducible example with your
+      question if possible. Thanks!
