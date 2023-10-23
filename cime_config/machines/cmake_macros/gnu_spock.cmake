@@ -1,4 +1,3 @@
-set(SUPPORTS_CXX "TRUE")
 string(APPEND FFLAGS " -Wno-implicit-interface ")
 string(APPEND CXX_LIBS " -lstdc++")
 if (NOT DEBUG)

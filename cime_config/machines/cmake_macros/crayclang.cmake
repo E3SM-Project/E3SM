@@ -22,7 +22,6 @@ endif()
 string(APPEND FFLAGS_NOOPT " -O0")
 set(HAS_F2008_CONTIGUOUS "TRUE")
 string(APPEND LDFLAGS " -Wl,--allow-multiple-definition")
-set(SUPPORTS_CXX "TRUE")
 
 set(MPICC "cc")
 set(MPICXX "CC")

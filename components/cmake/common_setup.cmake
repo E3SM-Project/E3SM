@@ -94,10 +94,6 @@ else()
   set(USE_CXX TRUE)
 endif()
 
-if (USE_CXX AND NOT SUPPORTS_CXX)
-  message(FATAL_ERROR "Fatal attempt to include C++ code on a compiler/machine combo that has not been set up to support C++")
-endif()
-
 # Not clear how to escape commas for libraries with their own configure
 # script, and they don't need this defined anyway, so leave this out of
 # FPPDEFS.

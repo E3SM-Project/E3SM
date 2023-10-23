@@ -38,8 +38,6 @@ set(HAS_F2008_CONTIGUOUS "TRUE")
 # AMD started building with GCC 12.2.0, which brings in a GLIBCXX symbol that isn't in CCE's default GCC toolchain.
 string(APPEND LDFLAGS " -Wl,--allow-multiple-definition -Wl,--allow-shlib-undefined")
 
-set(SUPPORTS_CXX "TRUE")
-
 # Switch to O3 for better performance
 # Using O2 to ensure passing tests
 if (NOT DEBUG)
