@@ -84,8 +84,10 @@ Field create_field (const std::string& name, const LayoutType lt, const Abstract
       f = Field(FieldIdentifier(name,grid.get_2d_vector_layout(CMP,ndims),u,gn));  break;
     case LayoutType::Scalar3D:
       f = Field(FieldIdentifier(name,grid.get_3d_scalar_layout(true),u,gn));  break;
+      f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
     case LayoutType::Vector3D:
       f = Field(FieldIdentifier(name,grid.get_3d_vector_layout(false,CMP,ndims),u,gn));  break;
+      f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
     default:
       EKAT_ERROR_MSG ("Invalid layout type for this unit test.\n");
   }
@@ -233,7 +235,7 @@ TEST_CASE ("refining_remapper") {
   write_map_file(filename,ngdofs_src);
 
   // Create target grid. Ensure gids are numbered like in map file
-  const int nlevs = 8;
+  const int nlevs = std::max(SCREAM_PACK_SIZE,16);
   auto tgt_grid = create_point_grid("tgt",ngdofs_tgt,nlevs,comm);
   auto dofs_h = tgt_grid->get_dofs_gids().get_view<gid_type*,Host>();
   for (int i=0; i<tgt_grid->get_num_local_dofs(); ++i) {
