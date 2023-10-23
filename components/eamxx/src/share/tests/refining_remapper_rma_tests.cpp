@@ -34,12 +34,15 @@ public:
     constexpr auto COL = ShortFieldTagsNames::COL;
     for (int i=0; i<m_num_fields; ++i) {
       const auto& fh = m_src_fields[i].get_header();
-      REQUIRE (m_col_size[i]==fh.get_identifier().get_layout().strip_dim(COL).size());
+      const auto& fl = fh.get_identifier().get_layout();
+      const auto& fap = fh.get_alloc_properties();
+      const auto col_alloc_size = fap.get_num_scalars() / fl.dim(COL);
+      REQUIRE (m_col_size[i]==fl.strip_dim(COL).size());
       if (fh.get_parent().lock()) {
-        REQUIRE (m_col_stride[i]==m_col_size[i]*fh.get_alloc_properties().get_subview_info().dim_extent);
-        REQUIRE (m_col_offset[i]==m_col_size[i]*fh.get_alloc_properties().get_subview_info().slice_idx);
+        REQUIRE (m_col_stride[i]==col_alloc_size*fap.get_subview_info().dim_extent);
+        REQUIRE (m_col_offset[i]==col_alloc_size*fap.get_subview_info().slice_idx);
       } else {
-        REQUIRE (m_col_stride[i]==m_col_size[i]);
+        REQUIRE (m_col_stride[i]==col_alloc_size);
         REQUIRE (m_col_offset[i]==0);
       }
     }

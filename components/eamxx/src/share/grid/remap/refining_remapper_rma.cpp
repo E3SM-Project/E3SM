@@ -119,8 +119,11 @@ void RefiningRemapperRMA::setup_mpi_data_structures ()
   for (int i=0; i<m_num_fields; ++i) {
     const auto& f = m_src_fields[i];
     const auto& fh = f.get_header();
+    const auto& fap = fh.get_alloc_properties();
     const auto& layout = fh.get_identifier().get_layout();
-    m_col_stride[i] = m_col_size[i] = layout.strip_dim(COL).size();
+    m_col_size[i]   = layout.strip_dim(COL).size();
+
+    const int col_stride = m_col_stride[i] = fap.get_num_scalars() / layout.dim(COL);
 
     // If field has a parent, col_stride and col_offset need to be adjusted
     auto p = fh.get_parent().lock();
@@ -128,9 +131,9 @@ void RefiningRemapperRMA::setup_mpi_data_structures ()
     if (p) {
       EKAT_REQUIRE_MSG (p->get_parent().lock()==nullptr,
           "Error! We do not support remapping of subfields of other subfields.\n");
-      const auto& sv_info = fh.get_alloc_properties().get_subview_info();
-      m_col_stride[i] = sv_info.dim_extent * m_col_size[i];
-      m_col_offset[i] = sv_info.slice_idx  * m_col_size[i];
+      const auto& sv_info = fap.get_subview_info();
+      m_col_offset[i] = sv_info.slice_idx  * col_stride;
+      m_col_stride[i] = sv_info.dim_extent * col_stride;
       win_size *= sv_info.dim_extent;
     }
 
