@@ -15,7 +15,6 @@ if (COMP_NAME STREQUAL cism)
   string(APPEND CMAKE_OPTS " -D CISM_GNU=ON")
 endif()
 
-string(APPEND FC_AUTO_R8 " -fdefault-real-8")
 string(APPEND FFLAGS " -Mflushz ")
 string(APPEND FIXEDFLAGS " -Mfixed")
 string(APPEND FREEFLAGS " -Mfreeform")

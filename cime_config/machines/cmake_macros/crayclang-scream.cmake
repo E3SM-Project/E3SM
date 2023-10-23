@@ -11,7 +11,6 @@ if (DEBUG)
   string(APPEND CPPDEFS  " -DYAKL_DEBUG")
 endif()
 string(APPEND CPPDEFS " -DFORTRANUNDERSCORE -DNO_R16 -DCPRCRAY")
-string(APPEND FC_AUTO_R8 " -s real64")
 # -em (default) generates MODULENAME.mod files
 string(APPEND FFLAGS " -f free -N 255 -h byteswapio -em")
 if (NOT compile_threaded)

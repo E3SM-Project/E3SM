@@ -16,7 +16,6 @@
 #   string(APPEND CPPDEFS " -DYAKL_DEBUG")
 # endif()
 # string(APPEND CPPDEFS " -DFORTRANUNDERSCORE -DNO_R16 -DCPRCRAY")
-# string(APPEND FC_AUTO_R8 " -s real64")
 # string(APPEND FFLAGS " -f free  -em")
 # if (NOT compile_threaded)
 #   # -M1077 flag used to suppress message about OpenMP directives

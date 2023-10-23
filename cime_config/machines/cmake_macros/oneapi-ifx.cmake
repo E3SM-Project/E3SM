@@ -20,7 +20,6 @@ string(APPEND FFLAGS   " -traceback -convert big_endian -assume byterecl -assume
 set(SUPPORTS_CXX "TRUE")
 string(APPEND CXX_LDFLAGS " -cxxlib")
 string(APPEND CPPDEFS " -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL -DHAVE_SLASHPROC -DHIDE_MPI")
-string(APPEND FC_AUTO_R8 " -r8")
 string(APPEND FFLAGS_NOOPT " -O0")
 string(APPEND FIXEDFLAGS " -fixed -132")
 string(APPEND FREEFLAGS " -free")
