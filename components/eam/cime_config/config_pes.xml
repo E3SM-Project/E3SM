@@ -745,12 +745,12 @@
       <pes compset=".*EAM.+ELM.+MPASSI.+DOCN.+" pesize="any">
         <comment> for F-cases on anvil, to fix testing issues that default to 144 pes </comment>
         <ntasks>
-          <ntasks_atm>288</ntasks_atm>
-          <ntasks_lnd>288</ntasks_lnd>
-          <ntasks_rof>288</ntasks_rof>
-          <ntasks_ice>288</ntasks_ice>
-          <ntasks_ocn>288</ntasks_ocn>
-          <ntasks_cpl>288</ntasks_cpl>
+          <ntasks_atm>-12</ntasks_atm>
+          <ntasks_lnd>-12</ntasks_lnd>
+          <ntasks_rof>-12</ntasks_rof>
+          <ntasks_ice>-12</ntasks_ice>
+          <ntasks_ocn>-12</ntasks_ocn>
+          <ntasks_cpl>-12</ntasks_cpl>
         </ntasks>
       </pes>
     </mach>

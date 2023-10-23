@@ -2,7 +2,6 @@ string(APPEND CONFIG_ARGS " --host=cray")
 if (COMP_NAME STREQUAL gptl)
   string(APPEND CPPDEFS " -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_GETTIMEOFDAY")
 endif()
-string(APPEND SLIBS " -qmkl")
 set(CXX_LINKER "FORTRAN")
 
 set(MPICC "cc")

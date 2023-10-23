@@ -46,4 +46,4 @@ set(SFC "ifort")
 if (compile_threaded)
   string(APPEND LDFLAGS " -qopenmp")
 endif()
-string(APPEND SLIBS " -mkl")
+

@@ -189,11 +189,6 @@ if (NOT HAS_COSP EQUAL -1)
   set(USE_COSP TRUE)
 endif()
 
-# System libraries (mpi, esmf, etc.)
-if (LAPACK_LIBDIR)
-  set(SLIBS "${SLIBS} -L${LAPACK_LIBDIR} -llapack -lblas")
-endif()
-
 if (LIB_MPI)
   if (NOT MPI_LIB_NAME)
     set(SLIBS "${SLIBS} -L${LIB_MPI} -lmpi")

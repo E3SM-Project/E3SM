@@ -1944,21 +1944,21 @@
     </mach>
     <mach name="anvil">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SWAV.+" pesize="S">
-        <comment> for testing only, scaled from compy </comment>
+        <comment> RRM-WCYCL: 64 nodes 2.133 sypd </comment>
         <ntasks>
-          <ntasks_atm>720</ntasks_atm>
-          <ntasks_lnd>720</ntasks_lnd>
-          <ntasks_rof>720</ntasks_rof>
-          <ntasks_ice>720</ntasks_ice>
-          <ntasks_ocn>324</ntasks_ocn>
-          <ntasks_cpl>720</ntasks_cpl>
+          <ntasks_atm>1800</ntasks_atm>
+          <ntasks_lnd>1800</ntasks_lnd>
+          <ntasks_rof>1800</ntasks_rof>
+          <ntasks_ice>1800</ntasks_ice>
+          <ntasks_ocn>504</ntasks_ocn>
+          <ntasks_cpl>1800</ntasks_cpl>
         </ntasks>
         <rootpe>
           <rootpe_atm>0</rootpe_atm>
           <rootpe_lnd>0</rootpe_lnd>
           <rootpe_rof>0</rootpe_rof>
           <rootpe_ice>0</rootpe_ice>
-          <rootpe_ocn>720</rootpe_ocn>
+          <rootpe_ocn>1800</rootpe_ocn>
           <rootpe_cpl>0</rootpe_cpl>
         </rootpe>
       </pes>
