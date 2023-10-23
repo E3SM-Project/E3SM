@@ -1129,7 +1129,7 @@ module ocn_time_integration_split
                ! matches the sum of baroclinic thicknesses at this edge.
                !$omp parallel
                !$omp do schedule(runtime)
-               do iCell = 1, nCells
+               do iCell = 1, nCellsAll
                   deltaSSH(iCell) = sshSubcycleCur(iCell) - sshNew(iCell)
                end do
                !$omp end do
@@ -1384,7 +1384,7 @@ module ocn_time_integration_split
 
                   !$omp parallel
                   !$omp do schedule(runtime)
-                  do iCell = 1, nCells
+                  do iCell = 1, nCellsAll
                      ! SSH is linear combination of SSHold and SSHnew
                      sshTemp(iCell) = (1-config_btr_gam2_SSHWt1)* &
                                       sshSubcycleCur(iCell) + &
@@ -1437,7 +1437,7 @@ module ocn_time_integration_split
 
                   !$omp parallel
                   !$omp do schedule(runtime)
-                  do iCell = 1, nCells
+                  do iCell = 1, nCellsAll
                      ! SSH is linear combination of SSHold and SSHnew
                      sshTemp(iCell) = (1-config_btr_gam2_SSHWt1)* &
                                       sshSubcycleCur(iCell) + &
