@@ -437,6 +437,9 @@ contains
     use shr_orb_mod     ,  only : shr_orb_decl
     use mct_mod
     use ESMF
+#ifdef MOABCOMP
+    use seq_flds_mod     , only :   seq_flds_x2l_fields
+#endif
     !
     ! !ARGUMENTS:
     type(ESMF_Clock) , intent(inout) :: EClock    ! Input synchronization clock from driver
