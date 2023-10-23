@@ -11,7 +11,8 @@ NAME_MAP_TYPE_SENSITIVE = {
     "FFLAGS"    : "CMAKE_Fortran_FLAGS",
     "CXXFLAGS"  : "CMAKE_CXX_FLAGS",
     "CPPDEFS"   : "CPPDEFS",  # CMake doesn't use variables to store CPP defs
-    "CUDA_FLAGS": "CUDA_FLAGS",
+    "CUDA_FLAGS": "CMAKE_CUDA_FLAGS",
+    "HIP_FLAGS" : "CMAKE_HIP_FLAGS",
     "LDFLAGS"   : "CMAKE_EXE_LINKER_FLAGS"
 }
 
