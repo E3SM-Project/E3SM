@@ -6136,7 +6136,7 @@ pressure gradient discretization error.
 Default: 0
 </entry>
 <entry id="hv_ref_profiles" type="integer" category="se"
-       group="ctl_nl" valid_values="0,1,2" >
+       group="ctl_nl" valid_values="0,1,2,6" >
 Modifications to hyperviscosity to minimize dissipation of
 background reference states.
 Default: 0
