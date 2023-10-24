@@ -176,10 +176,6 @@ if (USE_CXX)
   if (CXX_LIBS)
     set(SLIBS "${SLIBS} ${CXX_LIBS}")
   endif()
-
-  if (CXX_LDFLAGS)
-    set(LDFLAGS "${LDFLAGS} ${CXX_LDFLAGS}")
-  endif()
 endif()
 
 # Decide whether to use a C++ or Fortran linker, based on whether we
