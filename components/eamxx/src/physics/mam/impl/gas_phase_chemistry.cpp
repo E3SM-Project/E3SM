@@ -1,17 +1,19 @@
+#include <mam4xx/gas_chem_mechanism.hpp>
 #include <mam4xx/mam4.hpp>
-#include <mam_coupling.hpp>
 
 namespace scream::impl {
+
+using mam4::utils::min_max_bound;
 
 // performs gas phase chemistry calculations on a single level of a single
 // atmospheric column
 KOKKOS_INLINE_FUNCTION
-void gas_phase_chemistry(Real zm, Real zi, Real phis, Real q[mam_coupling::gas_pcnst()]) {
+void gas_phase_chemistry(Real zm, Real zi, Real phis, Real q[mam4::gas_chemistry::gas_pcnst]) {
   constexpr Real rga = 1.0/haero::gravity;
   constexpr Real m2km = 0.01; // converts m -> km
                               //
   // FIXME: The following things are chemical mechanism dependent! See mam4xx/src/mam4xx/gas_chem_mechanism.hpp)
-  constexpr int gas_pcnst = mam_coupling::gas_pcnst();
+  constexpr int gas_pcnst = mam4::gas_chemistry::gas_pcnst;
   constexpr int rxntot = 7; // number of chemical reactions
   constexpr int extcnt = 9; // number of species with external forcing
 
@@ -43,7 +45,7 @@ void gas_phase_chemistry(Real zm, Real zi, Real phis, Real q[mam_coupling::gas_p
 
   // ... set rates for "tabular" and user specified reactions
   Real rxt_rates[3];
-  setrxt(reaction_rates, tfld);
+  mam4::gas_chemistry::setrxt(reaction_rates, tfld);
 
   // compute the relative humidity
   // FIXME: We have a better way of doing this in EAMxx

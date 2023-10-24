@@ -4,6 +4,7 @@
 
 #include "scream_config.h" // for SCREAM_CIME_BUILD
 #include "impl/compute_water_content.cpp"
+#include "impl/gas_phase_chemistry.cpp"
 
 #include <ekat/ekat_assert.hpp>
 
@@ -333,7 +334,7 @@ void MAMMicrophysics::run_impl(const double dt) {
       Real dgncur_awet[num_modes] = {};
       Real wetdens[num_modes]     = {};
       Real qaerwat[num_modes]     = {};
-      impl::compute_water_content(progs, dgncur_a, dgncur_awet, wetdens, qaerwet);
+      impl::compute_water_content(progs, k, dgncur_a, dgncur_awet, wetdens, qaerwet);
 
       // compute aerosol microphysics
       impl::modal_aero_amicphys_intr(config_, ncol_, step_, dt, t, pmid, pdel,
