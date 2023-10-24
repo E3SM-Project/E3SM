@@ -1302,13 +1302,22 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
       call pam_mirror_array_readonly( 'input_tau00',   crm_input%tau00   )
       ! call pam_mirror_array_readonly( 'input_ul_esmt', crm_input%ul_esmt )
       ! call pam_mirror_array_readonly( 'input_vl_esmt', crm_input%vl_esmt )
-      ! call pam_mirror_array_readonly( 'input_t_vt',    crm_input%t_vt    )
-      ! call pam_mirror_array_readonly( 'input_q_vt',    crm_input%q_vt    )
-      ! call pam_mirror_array_readonly( 'input_u_vt',    crm_input%u_vt    )
-
       call pam_mirror_array_readonly( 'input_nccn_prescribed',crm_input%nccn_prescribed )
       call pam_mirror_array_readonly( 'input_nc_nuceat_tend', crm_input%nc_nuceat_tend  )
       call pam_mirror_array_readonly( 'input_ni_activated',   crm_input%ni_activated    )
+
+      ! Variance transport inputs and outputs
+      if (use_MMF_VT) then
+         call pam_mirror_array_readonly(  'input_vt_t',       crm_input%t_vt )
+         call pam_mirror_array_readonly(  'input_vt_q',       crm_input%q_vt )
+         call pam_mirror_array_readonly(  'input_vt_u',       crm_input%u_vt )
+         call pam_mirror_array_readwrite( 'output_t_vt_tend', crm_output%t_vt_tend )
+         call pam_mirror_array_readwrite( 'output_q_vt_tend', crm_output%q_vt_tend )
+         call pam_mirror_array_readwrite( 'output_u_vt_tend', crm_output%u_vt_tend )
+         call pam_mirror_array_readwrite( 'output_t_vt_ls',   crm_output%t_vt_ls )
+         call pam_mirror_array_readwrite( 'output_q_vt_ls',   crm_output%q_vt_ls )
+         call pam_mirror_array_readwrite( 'output_u_vt_ls',   crm_output%u_vt_ls )
+      end if
 
       call pam_mirror_array_readwrite( 'state_u_wind',      crm_state%u_wind      )
       call pam_mirror_array_readwrite( 'state_v_wind',      crm_state%v_wind      )
@@ -1389,12 +1398,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
       call pam_mirror_array_readwrite( 'output_qltend',      crm_output%qltend,      '' )
       call pam_mirror_array_readwrite( 'output_qcltend',     crm_output%qcltend,     '' )
       call pam_mirror_array_readwrite( 'output_qiltend',     crm_output%qiltend,     '' )
-      ! call pam_mirror_array_readwrite( 'output_t_vt_tend',   crm_output%t_vt_tend,   '' )
-      ! call pam_mirror_array_readwrite( 'output_q_vt_tend',   crm_output%q_vt_tend,   '' )
-      ! call pam_mirror_array_readwrite( 'output_u_vt_tend',   crm_output%u_vt_tend,   '' )
-      ! call pam_mirror_array_readwrite( 'output_t_vt_ls',     crm_output%t_vt_ls,     '' )
-      ! call pam_mirror_array_readwrite( 'output_q_vt_ls',     crm_output%q_vt_ls,     '' )
-      ! call pam_mirror_array_readwrite( 'output_u_vt_ls',     crm_output%u_vt_ls,     '' )
       call pam_mirror_array_readwrite( 'output_ultend',      crm_output%ultend,      '' )
       call pam_mirror_array_readwrite( 'output_vltend',      crm_output%vltend,      '' )
       ! call pam_mirror_array_readwrite( 'output_tk',          crm_output%tk,          '' )
@@ -1450,7 +1453,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
       call pam_register_dimension('gcm_lev',pver)
 
       call pam_set_option('use_MMF_VT', use_MMF_VT_tmp )
-      call pam_set_option('MMF_VT_wn_max', MMF_VT_wn_max )
       call pam_set_option('use_MMF_ESMT', use_MMF_ESMT_tmp )
 
       call pam_set_option('use_crm_accel', use_crm_accel_tmp )
