@@ -245,9 +245,10 @@ def cmakeify_macro(text, macro_file):
 ###############################################################################
 def cmakeify_macros(macro_files):
 ###############################################################################
+    skips = ["Macros.cmake", "post_process.cmake"]
     for macro_file in macro_files:
         macro_file_p = pathlib.Path(macro_file)
-        if macro_file_p.name == "Macros.cmake":
+        if macro_file_p.name in skips:
             continue
 
         assert macro_file_p.exists(), f"Macro file {macro_file} doesn't exist"
