@@ -107,7 +107,7 @@ public:
   struct Buffer {
     static constexpr int num_1d_ncol        = 10;
     static constexpr int num_2d_nlay        = 16;
-    static constexpr int num_2d_nlay_p1     = 13;
+    static constexpr int num_2d_nlay_p1     = 23;
     static constexpr int num_2d_nswbands    = 2;
     static constexpr int num_3d_nlev_nswbands = 4;
     static constexpr int num_3d_nlev_nlwbands = 2;
@@ -154,11 +154,21 @@ public:
     real2d sw_flux_dn_dir;
     real2d lw_flux_up;
     real2d lw_flux_dn;
+    real2d sw_clnclrsky_flux_up;
+    real2d sw_clnclrsky_flux_dn;
+    real2d sw_clnclrsky_flux_dn_dir;
     real2d sw_clrsky_flux_up;
     real2d sw_clrsky_flux_dn;
     real2d sw_clrsky_flux_dn_dir;
+    real2d sw_clnsky_flux_up;
+    real2d sw_clnsky_flux_dn;
+    real2d sw_clnsky_flux_dn_dir;
+    real2d lw_clnclrsky_flux_up;
+    real2d lw_clnclrsky_flux_dn;
     real2d lw_clrsky_flux_up;
     real2d lw_clrsky_flux_dn;
+    real2d lw_clnsky_flux_up;
+    real2d lw_clnsky_flux_dn;
     uview_2d<Real> d_tint;
 
     // 3d size (ncol, nlay+1, nswbands)
