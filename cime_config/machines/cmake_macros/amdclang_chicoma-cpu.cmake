@@ -12,10 +12,6 @@ set(SCC "clang")
 set(SCXX "clang++")
 set(SFC "flang")
 
-if (COMP_NAME STREQUAL cism)
-  string(APPEND CMAKE_OPTS " -D CISM_GNU=ON")
-endif()
-
 string(APPEND FFLAGS " -Mflushz ")
 string(APPEND FIXEDFLAGS " -Mfixed")
 string(APPEND FREEFLAGS " -Mfreeform")

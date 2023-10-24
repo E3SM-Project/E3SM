@@ -15,7 +15,7 @@ if (NOT DEBUG)
   string(APPEND FFLAGS   " -O2")
 endif()
 
-string(APPEND CMAKE_OPTS " -DPIO_ENABLE_TOOLS:BOOL=OFF")
+string(APPEND SPIO_CMAKE_OPTS " -DPIO_ENABLE_TOOLS:BOOL=OFF")
 string(APPEND SLIBS " -L$ENV{CRAY_LIBSCI_PREFIX_DIR}/lib -lsci_amd")
 
 set(MPICXX "hipcc")

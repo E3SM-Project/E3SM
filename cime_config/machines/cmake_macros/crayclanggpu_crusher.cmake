@@ -56,7 +56,7 @@ endif()
 # https://github.com/E3SM-Project/E3SM/pull/5208
 string(APPEND FFLAGS " -hipa0 -hzero -em -ef -hnoacc")
 
-string(APPEND CMAKE_OPTS " -DPIO_ENABLE_TOOLS:BOOL=OFF")
+string(APPEND SPIO_CMAKE_OPTS " -DPIO_ENABLE_TOOLS:BOOL=OFF")
 string(APPEND CXX_LIBS " -lstdc++")
 
 string(APPEND CXXFLAGS " -I$ENV{MPICH_DIR}/include --offload-arch=gfx90a")
