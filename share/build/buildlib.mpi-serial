@@ -68,8 +68,8 @@ def buildlib(bldroot, installpath, case):
         copyifnewer(_file, os.path.join(bldroot, os.path.basename(_file)))
 
     # Hacky way of getting stuff from Macros.
-    fc, cc, _, _, _, _, fflags, cflags, _, cppdefs, ldflags, ffree = \
-        extract_from_macros(case, "mpi-serial", extra_vars=("FREEFLAGS",))
+    fc, cc, _, _, _, _, fflags, cflags, _, cppdefs, ldflags, ffree, config_args = \
+        extract_from_macros(case, "mpi-serial", extra_vars=("FREEFLAGS", "CONFIG_ARGS"))
 
     fflags += f" {ffree}"
 
@@ -79,7 +79,7 @@ def buildlib(bldroot, installpath, case):
     elif "NETCDF_C_PATH" in os.environ:
         netcdf_args = f"NETCDF_PATH={os.environ['NETCDF_C_PATH']} "
 
-    config_cmd = f"{mpi_serial_path}/configure CC={cc} FC={fc} FCFLAGS='{fflags}' CPPDEFS='{cppdefs}' CFLAGS='{cflags}' LDFLAGS='{ldflags}' {netcdf_args} --srcdir {mpi_serial_path}"
+    config_cmd = f"{mpi_serial_path}/configure CC={cc} FC={fc} FCFLAGS='{fflags}' CPPDEFS='{cppdefs}' CFLAGS='{cflags}' LDFLAGS='{ldflags}' {config_args} {netcdf_args} --srcdir {mpi_serial_path}"
 
     # run configure
     run_bld_cmd_ensure_logging(config_cmd, logger, from_dir=bldroot)
