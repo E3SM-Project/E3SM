@@ -347,8 +347,12 @@
                call add_warning(warning)
                write(warning,*)  Tot_BGC_i(mm) + flux_bio_atm(mm)*dt - flux_bion(mm)*dt
                call add_warning(warning)
-               !l_stop = .true.
-               !stop_label = "carbon conservation in ice_algae.F90"
+               write(warning,*) 'hbri, hbri_old'
+               call add_warning(warning)
+               write(warning,*) hbri, hbri_old
+               call add_warning(warning)
+               l_stop = .true.
+               stop_label = "carbon conservation in ice_algae.F90"
             enddo
          endif
       endif
@@ -1021,7 +1025,7 @@
          Nquota_I = 0.0408_dbl_kind, & ! Intercept in N quota to cell volume fit
          f_s = p1, & ! fracton of sites available for saturation
          f_a = 0.3_dbl_kind, & !c1 , &  ! fraction of collector available for attachment
-         f_v = 0.7854  ! fraction of algal coverage on area availabel for attachment
+         f_v = 0.7854_dbl_kind  ! fraction of algal coverage on area availabel for attachment
                        ! 4(pi r^2)/(4r)^2  [Johnson et al, 1995, water res. research]
 
       integer, parameter :: &
@@ -1413,8 +1417,16 @@
                 call add_warning(warning)
                 write(warning, *) m, nlt_bgc_DIC(1), bio_tmp, react(k,m)
                 call add_warning(warning)
-                flux_bio(m) = flux_bio(m) + bio_tmp*dz(k)*hbri_old/dt
+                write(warning,*)'flux_bio(m) Initial, hbri_old, dz(k)'
+                call add_warning(warning)
+                write(warning,*) flux_bio(m), hbri_old, dz(k)
+                call add_warning(warning)
+                flux_bio(m) = flux_bio(m) + bio_tmp*dz(k)*hbri/dt
                 bio_tmp = c0
+                write(warning,*)  'flux_bio(m)'
+                call add_warning(warning)
+                write(warning,*)  flux_bio(m)
+                call add_warning(warning)
             end if
             if (m .eq. nlt_bgc_Nit) then
                initcons_mobile(k) = max(c0,(biomat_brine(k,m)-nitrification(k) + &
@@ -1442,7 +1454,7 @@
                 l_stop = .true.
                 stop_label = 'C in algal_dyn not conserved'
             elseif (abs(bio_tmp) < puny) then
-               flux_bio(m) = flux_bio(m) + bio_tmp*dz(k)*hbri_old/dt
+               flux_bio(m) = flux_bio(m) + bio_tmp*dz(k)*hbri/dt
                bio_tmp = c0
             elseif (bio_tmp > 1.0e8_dbl_kind) then
                 write(warning, *) 'very large bgc value'

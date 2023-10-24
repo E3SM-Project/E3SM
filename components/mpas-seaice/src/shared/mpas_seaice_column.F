@@ -2664,7 +2664,8 @@ contains
     logical, pointer :: &
          config_use_effective_snow_density, &
          config_use_snow_grain_radius, &
-         config_use_column_biogeochemistry
+         config_use_column_biogeochemistry, &
+         config_use_zaerosols
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          snowIceMass, &
@@ -2755,6 +2756,7 @@ contains
        call MPAS_pool_get_config(block % configs, "config_wind_compaction_factor", config_wind_compaction_factor)
        call MPAS_pool_get_config(block % configs, "config_snow_redistribution_factor", config_snow_redistribution_factor)
        call MPAS_pool_get_config(block % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
+       call MPAS_pool_get_config(block % configs, "config_use_zaerosols", config_use_zaerosols)
 
        call MPAS_pool_get_dimension(block % dimensions, "nCellsSolve", nCellsSolve)
        call MPAS_pool_get_dimension(block % dimensions, "nCategories", nCategories)
@@ -2798,7 +2800,7 @@ contains
        call MPAS_pool_get_array(ocean_fluxes, "oceanHeatFlux", oceanHeatFlux)
 
        setGetPhysicsTracers = .true.
-       setGetBGCTracers     = config_use_column_biogeochemistry
+       setGetBGCTracers     = (config_use_column_biogeochemistry .or. config_use_zaerosols)
 
        ! code abort
        abortFlag = .false.
@@ -10326,10 +10328,20 @@ contains
             messageType=MPAS_LOG_CRIT)
     endif
 
-    ! check that vertical bio tracers and not used with skeletal bio tracers
-    if (config_use_vertical_tracers  .and.  config_use_skeletal_biochemistry) then
+    ! check that vertical bio tracers use brine height
+    if ((config_use_vertical_biochemistry .or. config_use_zaerosols) .and. &
+         (.not. config_use_brine .or. .not. config_use_vertical_tracers )) then
        call mpas_log_write(&
-            "check_column_package_configs: vertical bio tracers and skeletal bio tracers cannot both be true", &
+            "check_column_package_configs: vertical biochemistry and zaerosols require " //&
+            "config_use_brine and config_use_vertical_tracer = true", &
+            messageType=MPAS_LOG_CRIT)
+    endif
+
+    ! check that brine height is used with either aerosols or bgc
+    if (config_use_brine  .and. &
+         (.not. config_use_column_biogeochemistry .and. .not. config_use_zaerosols)) then
+       call mpas_log_write(&
+            "check_column_package_configs: brine tracer must be used with vertical tracers - config_use_column_biogeochemistry and/or config_use_zaerosols equal to true", &
             messageType=MPAS_LOG_CRIT)
     endif
 

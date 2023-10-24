@@ -2990,7 +2990,9 @@ contains
          iceBodyAerosol, &
          brineFraction, &
          bioTracerShortwave, &
-         snowGrainRadius
+         snowGrainRadius, &
+         verticalAerosolsConc, &
+         verticalAlgaeConc
 
     real(kind=RKIND), pointer :: &
          dayOfNextShortwaveCalculation ! needed for CESM like coupled simulations
@@ -3060,11 +3062,11 @@ contains
        call MPAS_pool_get_config(block % configs, "config_dt", config_dt)
        call MPAS_pool_get_config(block % configs, "config_snow_redistribution_scheme", config_snow_redistribution_scheme)
 
-       call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
-       call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
-       call MPAS_pool_get_dimension(mesh, "nIceLayers", nIceLayers)
-       call MPAS_pool_get_dimension(mesh, "nSnowLayers", nSnowLayers)
-       call MPAS_pool_get_dimension(mesh, "nAerosols", nAerosols)
+       call MPAS_pool_get_dimension(block % dimensions, "nCellsSolve", nCellsSolve)
+       call MPAS_pool_get_dimension(block % dimensions, "nCategories", nCategories)
+       call MPAS_pool_get_dimension(block % dimensions, "nIceLayers", nIceLayers)
+       call MPAS_pool_get_dimension(block % dimensions, "nSnowLayers", nSnowLayers)
+       call MPAS_pool_get_dimension(block % dimensions, "nAerosols", nAerosols)
        call MPAS_pool_get_dimension(block % dimensions, "nAlgae", nAlgae)
        call MPAS_pool_get_dimension(block % dimensions, "nBioLayers", nBioLayers)
        call MPAS_pool_get_dimension(block % dimensions, "nzAerosols", nzAerosols)
@@ -3087,6 +3089,8 @@ contains
        call MPAS_pool_get_array(tracers, "iceBodyAerosol", iceBodyAerosol, 1)
        call MPAS_pool_get_array(tracers, "brineFraction", brineFraction, 1)
        call MPAS_pool_get_array(tracers, "snowGrainRadius", snowGrainRadius, 1)
+       call MPAS_pool_get_array(tracers, "verticalAlgaeConc", verticalAlgaeConc, 1)
+       call MPAS_pool_get_array(tracers, "verticalAerosolsConc", verticalAerosolsConc, 1)
 
        call MPAS_pool_get_array(atmos_coupling, "shortwaveVisibleDirectDown", shortwaveVisibleDirectDown)
        call MPAS_pool_get_array(atmos_coupling, "shortwaveVisibleDiffuseDown", shortwaveVisibleDiffuseDown)
@@ -3137,6 +3141,7 @@ contains
        allocate(index_shortwaveAerosol(maxAerosolType))
        allocate(index_verticalAerosolsConc(maxAerosolType))
        allocate(index_algaeConc(nAlgae))
+
        if (.not. config_use_zaerosols) then
           index_shortwaveAerosol(1:maxAerosolType) = 1
           index_verticalAerosolsConc(1:maxAerosolType) = 1
@@ -3146,6 +3151,7 @@ contains
              index_verticalAerosolsConc(iAerosol) = ciceTracerObject % index_verticalAerosolsConc(iAerosol)
           enddo
        endif
+
        if (.not. config_use_column_biogeochemistry) then
           index_algaeConc(1:nAlgae) = 1
        else
@@ -3190,10 +3196,6 @@ contains
           lonCellColumn = lonCell(iCell)
           if (lonCellColumn > seaicePi) lonCellColumn = lonCellColumn - 2.0_RKIND * seaicePi
 
-          ! set the category tracer array
-          call set_cice_tracer_array_category(block, ciceTracerObject, &
-                 tracerArrayCategory, iCell, setGetPhysicsTracers, setGetBGCTracers)
-
           call icepack_step_radiation(&
                dt=config_dt, &
                swgrid=verticalShortwaveGrid(:), &
@@ -3208,8 +3210,8 @@ contains
                hpndn=pondDepth(1,:,iCell), &
                ipndn=pondLidThickness(1,:,iCell), &
                aeron=aerosolsArray, &
-               bgcNn=tracerArrayCategory(index_algaeConc(:),:), &
-               zaeron=tracerArrayCategory(index_verticalAerosolsConc(:),:), &
+               bgcNn=verticalAlgaeConc(:,:,iCell), &
+               zaeron=verticalAerosolsConc(:,:,iCell), &
                trcrn_bgcsw=bioTracerShortwave(:,:,iCell), &
                TLAT=latCell(iCell), &
                TLON=lonCellColumn, &
@@ -3248,10 +3250,6 @@ contains
                rsnow=snow_grain_radius(:,:), &
                l_print_point=.false., &
                initonly=lInitialization)
-
-          ! set the category tracer array
-          call get_cice_tracer_array_category(block, ciceTracerObject, &
-                 tracerArrayCategory, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
        enddo ! iCell
 
@@ -3603,7 +3601,6 @@ contains
     ! variables
 
     real(kind=RKIND), dimension(:), pointer :: &
-         rayleighCriteriaReal, &
          netNitrateUptake, &
          netAmmoniumUptake, &
          totalVerticalSalinity, &
@@ -3722,7 +3719,6 @@ contains
 
     logical :: &
          abortFlag, &
-         rayleighCriteria, &
          setGetPhysicsTracers, &
          setGetBGCTracers, &
          checkCarbon
@@ -3791,7 +3787,6 @@ contains
        call MPAS_pool_get_array(biogeochemistry, "brineBottomChange", brineBottomChange)
        call MPAS_pool_get_array(biogeochemistry, "brineTopChange", brineTopChange)
        call MPAS_pool_get_array(biogeochemistry, "bioPorosity", bioPorosity)
-       call MPAS_pool_get_array(biogeochemistry, "rayleighCriteriaReal", rayleighCriteriaReal)
        call MPAS_pool_get_array(biogeochemistry, "biologyGrid", biologyGrid)
        call MPAS_pool_get_array(biogeochemistry, "interfaceBiologyGrid", interfaceBiologyGrid)
        call MPAS_pool_get_array(biogeochemistry, "interfaceGrid", interfaceGrid)
@@ -3878,8 +3873,8 @@ contains
 
        atmosBioFluxes(:,:) = 0.0_RKIND
 
-       !$omp parallel do default(shared) private(iCategory,iBioTracers,iAlgae, rayleighCriteria, &
-       !$omp& rayleighCriteriaReal) firstprivate(atmosBioFluxes,atmosBlackCarbonFlux, &
+       !$omp parallel do default(shared) private(iCategory,iBioTracers,iAlgae) &
+       !$omp&  firstprivate(atmosBioFluxes,atmosBlackCarbonFlux, &
        !$omp& atmosDustFlux, bioShortwaveFluxCell, newlyFormedIce)
        !
        do iCell = 1, nCellsSolve
@@ -3889,7 +3884,6 @@ contains
              brineHeightCatInitial(iCategory) = brineFraction(1,iCategory,iCell) * &
                 iceVolumeCategoryInitial(iCategory,iCell)/(iceAreaCategoryInitial(iCategory,iCell) + seaicePuny)
           enddo ! iCategory
-          rayleighCriteria = (rayleighCriteriaReal(iCell) > 0.5_RKIND)
 
           !update ocean concentrations fields and atmospheric fluxes into allocated array
 #ifdef coupled
@@ -3972,7 +3966,6 @@ contains
                snow_bio_net=totalVerticalBiologySnow(:,iCell), &
                totalChla=totalChlorophyll(iCell), &
                fswthrun=penetratingShortwaveFlux(:,iCell), &
-               Rayleigh_criteria=rayleighCriteria, &
                bgrid=biologyGrid, &
                igrid=interfaceBiologyGrid, &
                icgrid=interfaceGrid, &
@@ -4067,8 +4060,6 @@ contains
              newlyFormedIce(iCategory,iCell) = 0
              if (newlyFormedIceLogical(iCategory)) newlyFormedIce(iCategory,iCell) = 1
           enddo ! iCategory
-
-          if (.not. rayleighCriteria) rayleighCriteriaReal(iCell) = 0.0_RKIND
 
        enddo ! iCell
 
@@ -5585,8 +5576,8 @@ contains
        carbonToNitrogenRatioAlgae, &
        carbonToNitrogenRatioDON)
 
-    use ice_colpkg, only: &
-         colpkg_init_ocean_conc
+    use icepack_intfc, only: &
+         icepack_init_ocean_bio
 
     integer, intent(in) :: &
          maxDICType, &
@@ -5615,26 +5606,26 @@ contains
          carbonToNitrogenRatioAlgae, & ! carbon to nitrogen ratio for algae
          carbonToNitrogenRatioDON      ! nitrogen to carbon ratio for proteins
 
-    call colpkg_init_ocean_conc(&
-         oceanAmmoniumConc, &
-         oceanDMSPConc, &
-         oceanDMSConc, &
-         oceanAlgaeConc, &
-         oceanDOCConc, &
-         oceanDICConc, &
-         oceanDONConc, &
-         oceanDissolvedIronConc, &
-         oceanParticulateIronConc, &
-         oceanHumicsConc, &
-         oceanNitrateConc, &
-         oceanSilicateConc,&
-         oceanZAerosolConc, &
-         maxDICType, &
-         maxDONType, &
-         maxIronType, &
-         maxAerosolType, &
-         carbonToNitrogenRatioAlgae, &
-         carbonToNitrogenRatioDON)
+    call icepack_init_ocean_bio(&
+         amm=oceanAmmoniumConc, &
+         dmsp=oceanDMSPConc, &
+         dms=oceanDMSConc, &
+         algalN=oceanAlgaeConc, &
+         doc=oceanDOCConc, &
+         dic=oceanDICConc, &
+         don=oceanDONConc, &
+         fed=oceanDissolvedIronConc, &
+         fep=oceanParticulateIronConc, &
+         hum=oceanHumicsConc, &
+         nit=oceanNitrateConc, &
+         sil=oceanSilicateConc,&
+         zaeros=oceanZAerosolConc, &
+         max_dic=maxDICType, &
+         max_don=maxDONType, &
+         max_fe=maxIronType, &
+         max_aero=maxAerosolType, &
+         CToN=carbonToNitrogenRatioAlgae, &
+         CToN_DON=carbonToNitrogenRatioDON)
 
   end subroutine seaice_icepack_init_ocean_conc
 
@@ -9560,10 +9551,10 @@ contains
 
     ! check biogeochemistry flags:
 !    if (.not. config_use_column_biogeochemistry .and. (config_use_brine .or. config_use_vertical_zsalinity .or. &
-    if (.not. config_use_column_biogeochemistry .and. (config_use_brine .or. &
-        config_use_vertical_biochemistry .or. config_use_shortwave_bioabsorption .or. config_use_vertical_tracers .or. &
-        config_use_skeletal_biochemistry .or. config_use_nitrate .or. config_use_carbon .or. config_use_chlorophyll .or. &
-        config_use_ammonium .or. config_use_silicate .or. config_use_DMS .or. config_use_nonreactive .or. config_use_humics .or. &
+    if (.not. config_use_column_biogeochemistry .and. (config_use_vertical_biochemistry .or. &
+        config_use_skeletal_biochemistry .or. config_use_nitrate .or. config_use_carbon .or. &
+        config_use_chlorophyll .or. config_use_ammonium .or. config_use_silicate .or. &
+        config_use_DMS .or. config_use_nonreactive .or. config_use_humics .or. &
         config_use_DON .or. config_use_iron)) then
        call mpas_log_write(&
             "check_column_package_configs: config_use_column_biogeochemistry = false. "//&
@@ -9592,6 +9583,14 @@ contains
     if (config_use_vertical_tracers  .and.  config_use_skeletal_biochemistry) then
        call mpas_log_write(&
             "check_column_package_configs: vertical bio tracers and skeletal bio tracers cannot both be true", &
+            messageType=MPAS_LOG_CRIT)
+    endif
+
+    ! check that brine height is used with either aerosols or bgc
+    if (config_use_brine  .and. &
+         (.not. config_use_column_biogeochemistry .and. .not. config_use_zaerosols)) then
+       call mpas_log_write(&
+            "check_column_package_configs: brine tracer must be used with vertical tracers - config_use_column_biogeochemistry and/or config_use_zaerosols equal to true", &
             messageType=MPAS_LOG_CRIT)
     endif
 
@@ -14662,7 +14661,6 @@ contains
 
   subroutine init_column_tracer_object_for_biogeochemistry(domain, tracerObject)
 
-    !use ice_colpkg, only: colpkg_init_zbgc
     use icepack_intfc, only: icepack_init_zbgc
 
     type(domain_type), intent(in) :: &
@@ -15207,11 +15205,6 @@ contains
 
   subroutine init_column_biogeochemistry_profiles(domain, tracerObject)
 
-    !use ice_colpkg, only: &
-    !     colpkg_init_bgc, &
-    !     colpkg_init_hbrine, &
-    !     colpkg_init_zsalinity
-
     use icepack_intfc, only: &
          icepack_init_bgc, &
          icepack_init_hbrine, &
@@ -15256,7 +15249,6 @@ contains
          biologyGrid, &           ! bgrid
          verticalShortwaveGrid, & ! swgrid
          interfaceGrid, &         ! icgrid
-         rayleighCriteriaReal, &
          DOCPoolFractions
 
     real(kind=RKIND), dimension(:,:), pointer :: &
@@ -15298,7 +15290,6 @@ contains
 
     logical :: &
          abortFlag, &
-         rayleighCriteria, &
          setGetPhysicsTracers, &
          setGetBGCTracers
 
@@ -15337,7 +15328,6 @@ contains
        call MPAS_pool_get_array(biogeochemistry, "bioTracerShortwave", bioTracerShortwave)
        call MPAS_pool_get_array(biogeochemistry, "interfaceBiologyGrid", interfaceBiologyGrid)
        call MPAS_pool_get_array(biogeochemistry, "interfaceGrid", interfaceGrid)
-       call MPAS_pool_get_array(biogeochemistry, "rayleighCriteriaReal", rayleighCriteriaReal)
        call MPAS_pool_get_array(biogeochemistry, "verticalGrid", verticalGrid)
        call MPAS_pool_get_array(biogeochemistry, "biologyGrid", biologyGrid)
        call MPAS_pool_get_array(biogeochemistry, "verticalShortwaveGrid", verticalShortwaveGrid)
@@ -17408,40 +17398,6 @@ contains
     deallocate(verticalGridSpace)
 
   end subroutine seaice_total_carbon_content_category
-
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-!-----------------------------------------------------------------------
-! Warning messages
-!-----------------------------------------------------------------------
-
-!echmod: remove this subroutine and all calls to it 
-
-  subroutine column_write_warnings(logAsErrors)
-
-    use ice_colpkg, only: colpkg_get_warnings
-
-    character(len=strKINDWarnings), dimension(:), allocatable :: &
-         warnings
-
-    logical, intent(in) :: &
-         logAsErrors
-
-    integer :: &
-         iWarning
-
-    call colpkg_get_warnings(warnings)
-
-    if (logAsErrors) then
-       do iWarning = 1, size(warnings)
-          call mpas_log_write(trim(warnings(iWarning)), messageType=MPAS_LOG_ERR)
-       enddo ! iWarning
-    else
-       do iWarning = 1, size(warnings)
-          call mpas_log_write(trim(warnings(iWarning)), messageType=MPAS_LOG_WARN)
-       enddo ! iWarning
-    endif
-
-  end subroutine column_write_warnings
 
 !-----------------------------------------------------------------------
 
