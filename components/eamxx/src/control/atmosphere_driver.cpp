@@ -825,9 +825,6 @@ initialize_fields ()
     }
   }
 
-  // Zero out accumulated fields
-  reset_accummulated_fields();
-
 #ifdef SCREAM_HAS_MEMORY_USAGE
   long long my_mem_usage = get_mem_usage(MB);
   long long max_mem_usage;
@@ -1418,6 +1415,9 @@ void AtmosphereDriver::run (const int dt) {
     "Atmosphere step = " + std::to_string(m_current_ts.get_num_steps()) + "\n" +
     "  model start-of-step time = " + m_current_ts.get_date_string() + " " + m_current_ts.get_time_string() + "\n");
 
+  // Reset accum fields
+  reset_accummulated_fields();
+
   // The class AtmosphereProcessGroup will take care of dispatching arguments to
   // the individual processes, which will be called in the correct order.
   m_atm_process_group->run(dt);
@@ -1430,10 +1430,6 @@ void AtmosphereDriver::run (const int dt) {
   for (auto& out_mgr : m_output_managers) {
     out_mgr.run(m_current_ts);
   }
-
-  // Reset accum fields right away, so that if we have t=0 output,
-  // we don't run into errors in the IO or diagnostics layers.
-  reset_accummulated_fields();
 
 #ifdef SCREAM_HAS_MEMORY_USAGE
   long long my_mem_usage = get_mem_usage(MB);
