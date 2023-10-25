@@ -906,6 +906,9 @@
 			<var name="ecosys_diag_POC_ACCUM" type="real" dimensions="nVertLevels nCells Time" units="mmol C m^{-3} s^{-1}"
 				description="POC Accumulation"
 			/>
+                        <var name="ecosys_diag_POP_FLUX_IN" type="real" dimensions="nVertLevels nCells Time" units="mmol P m^{-3} m s^{-1}"
+                                description="POP Flux into Cell"
+                        />
 			<var name="ecosys_diag_POP_PROD" type="real" dimensions="nVertLevels nCells Time" units="mmol P m^{-3} s^{-1}"
 				description="POP Production"
 			/>
