@@ -849,7 +849,7 @@ public:
       const int mgp = loop_idx % NP;
       const int ngp = loop_idx / NP;
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team, NUM_LEV_REQUEST), [&] (const int& ilev) {
-        Real dd;
+        Real dd = 0.0;
         // TODO: move multiplication by scale_factor_inv outside the loop
         for (int jgp = 0; jgp < NP; ++jgp) {
           // Here, v is the temporary buffer, aliased on the input v.
