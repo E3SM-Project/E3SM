@@ -43,7 +43,7 @@ module mo_extfrc
   logical :: has_extfrc(gas_pcnst)
   type(forcing), allocatable  :: forcings(:)
   integer :: extfrc_cnt = 0
-  integer, parameter :: nfire = 2 !! two type of fire emission
+  integer, parameter :: nfire = 4 !! two type of fire emission
   integer :: nfire_count
   integer :: PH_emis_m(nfire), PH_emis_n(nfire) ! fire emission indices
   logical, parameter :: plumerise = .true.
@@ -284,7 +284,7 @@ contains
              ! kzm note: here assumes fire emission are in ncol emission files 
              if (plumerise)then
                 !if (trim(forcings(m)%species) == 'bc_a4' .and. trim(varname) == 'EM')then
-                if (trim(varname) == 'EM')then
+                if (trim(varname) == 'EM' .or. trim(varname) == 'num_a1_BC_ELEV_EM' .or. trim(varname) == 'num_a1_POM_ELEV_EM')then
                    nfire_count = nfire_count +1
                    if(masterproc) write(iulog,*) forcings(m)%species
                    if(masterproc) write(iulog,*) 'sector number = ', forcings(m)%nsectors
@@ -435,7 +435,8 @@ contains
           if ((plumerise) .and. (forcings(m)%file%alt_data)) then
              fire_detected = .false.
              fire_icol = -1
-             if ((m == PH_emis_m(1) .and. isec == PH_emis_n(1)) .or. (m == PH_emis_m(2) .and. isec == PH_emis_n(2)))then
+             if ((m == PH_emis_m(1) .and. isec == PH_emis_n(1)) .or. (m == PH_emis_m(2) .and. isec == PH_emis_n(2)) &
+                 .or. (m == PH_emis_m(3) .and. isec == PH_emis_n(3)) .or. (m == PH_emis_m(4) .and. isec == PH_emis_n(4)) )then
                 plume_height_EM(:ncol) = 0._r8
                 frcing_col_plume = 0._r8
                 frcing_vertical_plume_old(:pver) = 0._r8
