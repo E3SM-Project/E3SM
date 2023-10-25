@@ -6,7 +6,6 @@ if (compile_threaded)
 endif()
 
 set(PIO_FILESYSTEM_HINTS "gpfs")
-string(APPEND CXX_LIBS " -lstdc++")
 
 string(APPEND CPPDEFS " -DCPRCRAY")
 

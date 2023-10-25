@@ -1,5 +1,4 @@
 string(APPEND FFLAGS " -Wno-implicit-interface ")
-string(APPEND CXX_LIBS " -lstdc++")
 if (NOT DEBUG)
   string(APPEND FFLAGS " -O2")
   string(APPEND CFLAGS " -O2")

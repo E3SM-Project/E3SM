@@ -1,7 +1,6 @@
 if (COMP_NAME STREQUAL gptl)
   string(APPEND CPPDEFS " -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY -DHAVE_BACKTRACE -DHAVE_SLASHPROC")
 endif()
-string(APPEND CXX_LIBS " -lstdc++")
 if (NOT DEBUG)
   string(APPEND FFLAGS " -fno-unsafe-math-optimizations")
 endif()

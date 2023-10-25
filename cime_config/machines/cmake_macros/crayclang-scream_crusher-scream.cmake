@@ -11,4 +11,3 @@ string(APPEND FFLAGS " -hipa0 -hzero")
 string(APPEND FFLAGS " -em -ef")
 
 set(PIO_FILESYSTEM_HINTS "gpfs")
-string(APPEND CXX_LIBS " -lstdc++")
