@@ -21,6 +21,20 @@ module FanUpdateMod
   ! model includes 4 slurry (manure) age classes, 3 grazing manure age classes, 2 urea age
   ! classes, 3 age classes for ammonium produced from urea, and 1 age class for non-urea
   ! NH4 fertilizer N.
+  !
+  ! For reference, the main driver of FAN (fan_eval) is here, but most of the functions 
+  ! and subroutines called are found in FanMod. The calling tree is too long to
+  ! put here, so I will summarize. fan_eval starts by calculating the loss of N
+  ! in storage pools (handle_storage) and then proceeds to update the pools of
+  ! the various fertilizer applications (manure from grazing, manure applied
+  ! (i.e., slurry), urea, and synthetic fertilizer), these subroutines are identified 
+  ! with update_(org_n, npool, 4pool, or urea) and each will update the age
+  ! classes, evaluate fluxes of soil and or slurry, update the pools, and 
+  ! partitioning of ammonia in the pools. The last calls will be to perform a
+  ! balance check and summarize all the pools for NitrogenBalanceCheck.
+  ! Two subroutines called outside of FAN are FanInit (for initializing FAN) and
+  ! fan_to_sminn which couples to the soil biogeochemistry when that flag is
+  ! turned on.
 
   use FanMod
   use shr_kind_mod, only : r8 => shr_kind_r8, CL => shr_kind_cl
@@ -42,7 +56,6 @@ module FanUpdateMod
   implicit none
 
   private
-
   ! !PUBLIC MEMBER FUNCTIONS:
   public fanInit
   public fan_eval

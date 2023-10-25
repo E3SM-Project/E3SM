@@ -9407,30 +9407,22 @@ module VegetationDataType
        call hist_addfld1d (fname='NSYNTHFERT', units='gN/m^2/s', &
             avgflag='A', long_name='Synthetic fertilizer N added', &
             ptr_patch=this%synthfert)
-    end if
 
-    if (crop_prog) then
        this%manure(begp:endp) = spval
        call hist_addfld1d (fname='NMANURE', units='gN/m^2/s', &
             avgflag='A', long_name='Manure added according to the ELM default', &
             ptr_patch=this%manure)
-    end if
 
-    if (crop_prog) then
        this%nfertilization(begp:endp) = spval
        call hist_addfld1d (fname='NFERTILIZATION', units='gN/m^2/s', &
             avgflag='A', long_name='Total fertilizer N added', &
             ptr_patch=this%nfertilization)
-    end if
 
-    if (crop_prog) then
        this%soyfixn(begp:endp) = spval
        call hist_addfld1d (fname='SOYFIXN', units='gN/m^2/s', &
             avgflag='A', long_name='soybean fixation', &
             ptr_patch=this%soyfixn)
-    end if
 
-    if (crop_prog) then
        this%fert_counter(begp:endp) = spval
        call hist_addfld1d (fname='FERT_COUNTER', units='seconds', &
             avgflag='A', long_name='time left to fertilize', &

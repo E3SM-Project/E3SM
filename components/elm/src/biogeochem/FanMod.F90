@@ -13,6 +13,16 @@ module FanMod
   ! exported to the python module, they might not work correctly due to the assumed-shape
   ! arrays.
   !
+  ! The main driver of FAN (fan_eval) is in FanUpdateMod, but most of the supporting 
+  ! functions and subroutines called are found here. The calling tree is too long to
+  ! put here, so I will summarize. fan_eval starts by calculating the loss of N
+  ! in storage pools (handle_storage) and then proceeds to update the pools of
+  ! the various fertilizer applications (manure from grazing, manure applied
+  ! (i.e., slurry), urea, and synthetic fertilizer), these subroutines are identified 
+  ! as update_(org_n, npool, 4pool, or urea) and each will update the age
+  ! classes, evaluate fluxes of soil and or slurry, update the pools, and 
+  ! partitioning of ammonia in the pools. See FanUpdatMod for a more detailed
+  ! description of FAN.
 
 #ifdef _PYMOD_
   ! This cpp flag is inteded for compiling FAN into a python module with f2py. 

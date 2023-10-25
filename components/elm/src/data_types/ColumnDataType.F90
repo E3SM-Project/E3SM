@@ -277,13 +277,13 @@ module ColumnDataType
     real(r8), pointer :: tan_s0                   (:)     => null() ! (gN/m2) total ammoniacal N in FAN pool S0
     real(r8), pointer :: tan_s1                   (:)     => null() ! (gN/m2) total ammoniacal N in FAN pool S1
     real(r8), pointer :: tan_s2                   (:)     => null() ! (gN/m2) total ammoniacal N in FAN pool S2
-    real(r8), pointer :: tan_s3                   (:)     => null() ! (gN/m2) total ammoniacal N in FAN pool S2
+    real(r8), pointer :: tan_s3                   (:)     => null() ! (gN/m2) total ammoniacal N in FAN pool S3
     real(r8), pointer :: tan_f1                   (:)     => null() ! (gN/m2) total ammoniacal N in FAN pool F1
     real(r8), pointer :: tan_f2                   (:)     => null() ! (gN/m2) total ammoniacal N in FAN pool F2
     real(r8), pointer :: tan_f3                   (:)     => null() ! (gN/m2) total ammoniacal N in FAN pool F3
     real(r8), pointer :: tan_f4                   (:)     => null() ! (gN/m2) total ammoniacal N in FAN pool F4
-    real(r8), pointer :: fert_u1                  (:)     => null() ! (gN/m2) total urea N in FAN pool U0
-    real(r8), pointer :: fert_u2                  (:)     => null() ! (gN/m2) total urea N in FAN pool U1
+    real(r8), pointer :: fert_u1                  (:)     => null() ! (gN/m2) total urea N in FAN pool U1
+    real(r8), pointer :: fert_u2                  (:)     => null() ! (gN/m2) total urea N in FAN pool U2
     real(r8), pointer :: manure_u_grz             (:)     => null() ! (gN/m2) unavailable organic N, grazing
     real(r8), pointer :: manure_a_grz             (:)     => null() ! (gN/m2) available organic N, grazing
     real(r8), pointer :: manure_r_grz             (:)     => null() ! (gN/m2) resistant organic N, grazing
@@ -3251,30 +3251,30 @@ contains
     allocate(this%totprodn              (begc:endc))                     ; this%totprodn              (:)   = spval
     allocate(this%dyn_nbal_adjustments  (begc:endc))                     ; this%dyn_nbal_adjustments  (:)   = spval
     if (use_fan) then
-       allocate(this%tan_g1                (begc:endc))                     ; this%tan_g1                (:)   = nan
-       allocate(this%tan_g2                (begc:endc))                     ; this%tan_g2                (:)   = nan
-       allocate(this%tan_g3                (begc:endc))                     ; this%tan_g3                (:)   = nan
-       allocate(this%tan_s0                (begc:endc))                     ; this%tan_s0                (:)   = nan
-       allocate(this%tan_s1                (begc:endc))                     ; this%tan_s1                (:)   = nan
-       allocate(this%tan_s2                (begc:endc))                     ; this%tan_s2                (:)   = nan
-       allocate(this%tan_s3                (begc:endc))                     ; this%tan_s3                (:)   = nan
-       allocate(this%tan_f1                (begc:endc))                     ; this%tan_f1                (:)   = nan
-       allocate(this%tan_f2                (begc:endc))                     ; this%tan_f2                (:)   = nan
-       allocate(this%tan_f3                (begc:endc))                     ; this%tan_f3                (:)   = nan
-       allocate(this%tan_f4                (begc:endc))                     ; this%tan_f4                (:)   = nan 
-       allocate(this%fert_u1               (begc:endc))                     ; this%fert_u1               (:)   = nan 
-       allocate(this%fert_u2               (begc:endc))                     ; this%fert_u2               (:)   = nan 
-       allocate(this%manure_u_grz          (begc:endc))                     ; this%manure_u_grz          (:)   = nan 
-       allocate(this%manure_a_grz          (begc:endc))                     ; this%manure_a_grz          (:)   = nan 
-       allocate(this%manure_r_grz          (begc:endc))                     ; this%manure_r_grz          (:)   = nan 
-       allocate(this%manure_u_app          (begc:endc))                     ; this%manure_u_app          (:)   = nan 
-       allocate(this%manure_a_app          (begc:endc))                     ; this%manure_a_app          (:)   = nan 
-       allocate(this%manure_r_app          (begc:endc))                     ; this%manure_r_app          (:)   = nan 
-       allocate(this%manure_n_stored       (begc:endc))                     ; this%manure_n_stored       (:)   = nan 
-       allocate(this%manure_tan_stored     (begc:endc))                     ; this%manure_tan_stored     (:)   = nan 
-       allocate(this%fan_grz_fract         (begc:endc))                     ; this%fan_grz_fract         (:)   = nan 
+       allocate(this%tan_g1                (begc:endc))                     ; this%tan_g1                (:)   = spval
+       allocate(this%tan_g2                (begc:endc))                     ; this%tan_g2                (:)   = spval
+       allocate(this%tan_g3                (begc:endc))                     ; this%tan_g3                (:)   = spval
+       allocate(this%tan_s0                (begc:endc))                     ; this%tan_s0                (:)   = spval
+       allocate(this%tan_s1                (begc:endc))                     ; this%tan_s1                (:)   = spval
+       allocate(this%tan_s2                (begc:endc))                     ; this%tan_s2                (:)   = spval
+       allocate(this%tan_s3                (begc:endc))                     ; this%tan_s3                (:)   = spval
+       allocate(this%tan_f1                (begc:endc))                     ; this%tan_f1                (:)   = spval
+       allocate(this%tan_f2                (begc:endc))                     ; this%tan_f2                (:)   = spval
+       allocate(this%tan_f3                (begc:endc))                     ; this%tan_f3                (:)   = spval
+       allocate(this%tan_f4                (begc:endc))                     ; this%tan_f4                (:)   = spval 
+       allocate(this%fert_u1               (begc:endc))                     ; this%fert_u1               (:)   = spval 
+       allocate(this%fert_u2               (begc:endc))                     ; this%fert_u2               (:)   = spval 
+       allocate(this%manure_u_grz          (begc:endc))                     ; this%manure_u_grz          (:)   = spval 
+       allocate(this%manure_a_grz          (begc:endc))                     ; this%manure_a_grz          (:)   = spval 
+       allocate(this%manure_r_grz          (begc:endc))                     ; this%manure_r_grz          (:)   = spval 
+       allocate(this%manure_u_app          (begc:endc))                     ; this%manure_u_app          (:)   = spval 
+       allocate(this%manure_a_app          (begc:endc))                     ; this%manure_a_app          (:)   = spval 
+       allocate(this%manure_r_app          (begc:endc))                     ; this%manure_r_app          (:)   = spval 
+       allocate(this%manure_n_stored       (begc:endc))                     ; this%manure_n_stored       (:)   = spval 
+       allocate(this%manure_tan_stored     (begc:endc))                     ; this%manure_tan_stored     (:)   = spval 
+       allocate(this%fan_grz_fract         (begc:endc))                     ; this%fan_grz_fract         (:)   = spval 
     end if
-    allocate(this%fan_totn              (begc:endc))                     ; this%fan_totn              (:)   = nan
+    allocate(this%fan_totn              (begc:endc))                     ; this%fan_totn              (:)   = spval
     allocate(this%totpftn_beg           (begc:endc))                     ; this%totpftn_beg           (:)   = spval
     allocate(this%totpftn_end           (begc:endc))                     ; this%totpftn_end           (:)   = spval
     allocate(this%cwdn_beg              (begc:endc))                     ; this%cwdn_beg              (:)   = spval
@@ -3474,32 +3474,32 @@ contains
             ptr_col=this%tan_g3, default='inactive')
 
        this%tan_f1(begc:endc) = spval
-       call hist_addfld1d (fname='TAN_F0', units='gN/m^2', &
+       call hist_addfld1d (fname='TAN_F1', units='gN/m^2', &
             avgflag='A', long_name='Total ammoniacal nitrogen in FAN pool F1', &
             ptr_col=this%tan_f1, default='inactive')
 
        this%tan_f2(begc:endc) = spval
-       call hist_addfld1d (fname='TAN_F1', units='gN/m^2', &
+       call hist_addfld1d (fname='TAN_F2', units='gN/m^2', &
             avgflag='A', long_name='Total ammoniacal nitrogen in FAN pool F2', &
             ptr_col=this%tan_f2, default='inactive')
 
        this%tan_f3(begc:endc) = spval
-       call hist_addfld1d (fname='TAN_F2', units='gN/m^2', &
+       call hist_addfld1d (fname='TAN_F3', units='gN/m^2', &
             avgflag='A', long_name='Total ammoniacal nitrogen in FAN pool F3', &
             ptr_col=this%tan_f3, default='inactive')
 
        this%tan_f4(begc:endc) = spval
-       call hist_addfld1d (fname='TAN_F3', units='gN/m^2', &
+       call hist_addfld1d (fname='TAN_F4', units='gN/m^2', &
             avgflag='A', long_name='Total ammoniacal nitrogen in FAN pool F4', &
             ptr_col=this%tan_f4, default='inactive')
 
        this%fert_u1(begc:endc) = spval
-       call hist_addfld1d (fname='FERT_U0', units='gN/m^2', &
+       call hist_addfld1d (fname='FERT_U1', units='gN/m^2', &
             avgflag='A', long_name='Total ammoniacal nitrogen in FAN pool U1', &
             ptr_col=this%fert_u1, default='inactive')
 
        this%fert_u2(begc:endc) = spval
-       call hist_addfld1d (fname='FERT_U1', units='gN/m^2', &
+       call hist_addfld1d (fname='FERT_U2', units='gN/m^2', &
             avgflag='A', long_name='Total ammoniacal nitrogen in FAN pool U2', &
             ptr_col=this%fert_u2, default='inactive')
 

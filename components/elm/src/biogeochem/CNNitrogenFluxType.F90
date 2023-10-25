@@ -422,20 +422,20 @@ module CNNitrogenFluxType
      real(r8), pointer :: manure_n_barns_col                        (:)     ! Manure N produced in animal housings (gN/m2/s)
      real(r8), pointer :: fert_n_appl_col                           (:)     ! Fertilizer N  applied on soil (gN/m2/s)
      real(r8), pointer :: otherfert_n_appl_col                      (:)     ! Non-urea fertilizer N  applied on soil (gN/m2/s)
-     real(r8), pointer :: manure_n_transf_col                       (:)     ! Manure N removed from the crop column (into the natural veg. column in t
-     real(r8), pointer :: nh3_barns_col                             (:)     ! NH3 emission from animal housings (gN/m2/s
-     real(r8), pointer :: nh3_stores_col                            (:)     ! NH3 emission from manure storage, (gN/m2/s
-     real(r8), pointer :: nh3_grz_col                               (:)     ! NH3 emission from manure on pastures, (gN/m2/s
-     real(r8), pointer :: nh3_manure_app_col                        (:)     ! NH3 emission from manure applied on crops and grasslands, (gN/m2/s
-     real(r8), pointer :: nh3_fert_col                              (:)     ! NH3 emission from fertilizers applied on crops and grasslands, (gN/m2/s
-     real(r8), pointer :: nh3_otherfert_col                         (:)     ! NH3 emission from non-urea fertilizers applied on crops and grasslands, 
+     real(r8), pointer :: manure_n_transf_col                       (:)     ! Manure N removed from the crop column (into the natural veg. column in the gcell) (gN/m2/s)
+     real(r8), pointer :: nh3_barns_col                             (:)     ! NH3 emission from animal housings (gN/m2/s)
+     real(r8), pointer :: nh3_stores_col                            (:)     ! NH3 emission from manure storage (gN/m2/s)
+     real(r8), pointer :: nh3_grz_col                               (:)     ! NH3 emission from manure on pastures (gN/m2/s)
+     real(r8), pointer :: nh3_manure_app_col                        (:)     ! NH3 emission from manure applied on crops and grasslands (gN/m2/s)
+     real(r8), pointer :: nh3_fert_col                              (:)     ! NH3 emission from fertilizers applied on crops and grasslands (gN/m2/s)
+     real(r8), pointer :: nh3_otherfert_col                         (:)     ! NH3 emission from non-urea fertilizers applied on crops and grasslands (gN/m2/s)
      real(r8), pointer :: manure_no3_to_soil_col                    (:)     ! Nitrification flux from manure (gN/m2/s)  
      real(r8), pointer :: fert_no3_to_soil_col                      (:)     ! Nitrification flux from fertilizer (gN/m2/s)
      real(r8), pointer :: manure_nh4_to_soil_col                    (:)     ! NH4 flux to soil mineral N pools from manure (gN/m2/s)
      real(r8), pointer :: fert_nh4_to_soil_col                      (:)     ! NH4 flux to soil mineral N pools from fertilizer (gN/m2/s)
-     real(r8), pointer :: manure_nh4_runoff_col                     (:)     ! NH4 runoff flux from manure, gN/m2/s
-     real(r8), pointer :: fert_nh4_runoff_col                       (:)     ! NH4 runoff flux from fertilizer, gN/m2/s
-     real(r8), pointer :: nh3_total_col                             (:)     ! Total NH3 emission from agriculture
+     real(r8), pointer :: manure_nh4_runoff_col                     (:)     ! NH4 runoff flux from manure (gN/m2/s)
+     real(r8), pointer :: fert_nh4_runoff_col                       (:)     ! NH4 runoff flux from fertilizer (gN/m2/s)
+     real(r8), pointer :: nh3_total_col                             (:)     ! Total NH3 emission from agriculture (gN/m2/s)
 
 
      ! C4MIP output variable
