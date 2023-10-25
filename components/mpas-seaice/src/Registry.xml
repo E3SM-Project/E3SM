@@ -534,15 +534,15 @@
 		/>
 		<nml_option name="config_forcing_start_time" type="character" default_value="2000-01-01_00:00:00" units="unitless"
 			description="Forcing time to use at the simulation start time"
-			possible_values="'YYYY-MM-DD_HH:MM:SS"
+			possible_values="'YYYY-MM-DD_HH:MM:SS'"
 		/>
 		<nml_option name="config_forcing_cycle_start" type="character" default_value="2000-01-01_00:00:00" units="unitless"
 			description="Start time for the forcing cycle."
-			possible_values="'YYYY-MM-DD_HH:MM:SS"
+			possible_values="'YYYY-MM-DD_HH:MM:SS'"
 		/>
 		<nml_option name="config_forcing_cycle_duration" type="character" default_value="2-00-00_00:00:00" units="unitless"
 			description="Duration of the forcing cycle."
-			possible_values="'YYYY-MM-DD_HH:MM:SS"
+			possible_values="'YYYY-MM-DD_HH:MM:SS'"
 		/>
 		<nml_option name="config_forcing_precipitation_units" type="character" default_value="mm_per_sec" units="unitless"
 			description="Forcing input precipitation units."
@@ -557,7 +557,7 @@
 			possible_values="'ISPOL'"
 		/>
 		<nml_option name="config_update_ocean_fluxes" type="logical" default_value="false" units="unitless"
-			description="Include frazil ice in ocean flux fields."
+			description="Include frazil ice fluxes in ocean flux fields."
 			possible_values="true or false"
 		/>
 		<nml_option name="config_frazil_coupling_type" type="character" default_value="external" units="unitless"
@@ -704,7 +704,7 @@
 	<!-- column physics -->
 	<nml_record name="column_package" in_defaults="true">
 		<nml_option name="config_column_physics_type" type="character" default_value="icepack" units="unitless"
-			description="Type of column library."
+			description="Set column physics library."
 			possible_values="'icepack' and 'column_package'"
 		/>
 		<nml_option name="config_use_column_shortwave" type="logical" default_value="true" units="unitless"
@@ -784,7 +784,7 @@
 			possible_values="true or false"
 		/>
 		<nml_option name="config_use_floe_size_distribution" type="logical" default_value="false" units="unitless"
-			description="Use prognostic floe size distribution"
+			description="Use floe size distribution. Requires Icepack column package."
 			possible_values="true or false"
 			icepack_name="tr_fsd"
 		/>
@@ -1584,7 +1584,7 @@
 			icepack_name="kalg"
 		/>
 		<nml_option name="config_use_shortwave_redistribution" type="logical" default_value="false" units="none"
-			description="redistribution shortwave from layers near the melting temperature"
+			description="Redistribute shortwave from layers near the melting temperature to the surface."
 			possible_values="true or false"
 			icepack_name="sw_redist"
 		/>
@@ -1759,13 +1759,13 @@
 	
 	<nml_record name="floesize" in_defaults="true">
 		<nml_option name="config_floeshape" type="real" default_value="0.66" units="unitless"
-			description="Floe shape constant for lateral melt."
-			possible_values="any real number between 0 and 1"
+			description="Floe shape constant (noncircularity)."
+			possible_values="Any real number between 0 and pi/4."
 			icepack_name="floeshape"
 		/>
 		<nml_option name="config_floediam" type="real" default_value="300.0" units="m"
 			description="Effective floe diameter for lateral melt in m."
-			possible_values="any real number."
+			possible_values="Any real number."
 			icepack_name="floediam"
 		/>
 	</nml_record>
@@ -1870,7 +1870,7 @@
 		/>
 		<nml_option name="config_salt_flux_coupling_type" type="character" default_value="constant" units="unitless"
 			description="Type of salt flux to ocean method"
-			possible_values="'constant', or 'prognostic'"
+			possible_values="'constant' or 'prognostic'"
 		/>
 		<nml_option name="config_ice_ocean_drag_coefficient" type="real" default_value="0.00536" units=""
 			description="Neutral ice-ocean drag coefficient"
