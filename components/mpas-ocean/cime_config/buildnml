@@ -407,7 +407,6 @@ def buildnml(case, caseroot, compname):
                 lines.append('                  io_type="pnetcdf,cdf5"')
             else:
                 lines.append('                  io_type="{}"'.format(ocn_pio_typename))
-
             lines.append('                  filename_template="{}/ocn/mpas-o/{}/{}.{}.nc"'.format(din_loc_root, ocn_mask, ic_prefix, ic_date))
             lines.append('/>')
             lines.append('<immutable_stream name="input"')
