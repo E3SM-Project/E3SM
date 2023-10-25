@@ -33,6 +33,7 @@ module ocn_time_integration
    use ocn_time_integration_rk4
    use ocn_time_integration_split
    use ocn_time_integration_si
+   use ocn_time_integration_benthos
 
    implicit none
    private
@@ -67,7 +68,8 @@ module ocn_time_integration
        timeIntSplitExplicit   = 1, &! split-explicit
        timeIntUnsplitExplicit = 2, &! unsplit-explicit
        timeIntSemiImplicit    = 3, &! Semi-implicit
-       timeIntRK4             = 4   ! 4th-order Runge-Kutta
+       timeIntRK4             = 4, & ! 4th-order Runge-Kutta
+       timeIntBenthos         = 5
 
 !***********************************************************************
 
@@ -129,6 +131,8 @@ module ocn_time_integration
          call ocn_time_integrator_si(domain, dt)
       case (timeIntRK4)
          call ocn_time_integrator_rk4(domain, dt)
+      case (timeIntBenthos)
+         call ocn_time_integrator_benthos(domain, dt)
       end select
 
       ! compute time since start of simulation, in days
@@ -205,8 +209,13 @@ module ocn_time_integration
 
       select case (trim(config_time_integrator))
       case ('split_explicit')
-         timeIntegratorChoice = timeIntSplitExplicit
-         call ocn_time_integration_split_init(domain)
+         if (config_do_benthos_spinup) then
+            timeIntegratorChoice = timeIntBenthos
+            call ocn_time_integration_benthos_init(domain)
+         else
+            timeIntegratorChoice = timeIntSplitExplicit
+            call ocn_time_integration_split_init(domain)
+         endif
 
       case ('unsplit_explicit')
          timeIntegratorChoice = timeIntUnsplitExplicit
@@ -218,7 +227,7 @@ module ocn_time_integration
 
       case ('RK4')
          timeIntegratorChoice = timeIntRK4
-         ! No init routine needs to be run for RK4
+         call ocn_time_integration_rk4_init(domain)
 
       case default
 

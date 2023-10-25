@@ -111,6 +111,14 @@ Valid values: 'gregorian', 'noleap'
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_output_reference_time" type="char*1024"
+	category="time_management" group="time_management">
+Reference time used in the units attribute of Time in output files.
+
+Valid values: 'YYYY-MM-DD_HH:MM:SS'
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- io -->
 
@@ -697,49 +705,6 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
-<!-- Rayleigh_damping -->
-
-<entry id="config_Rayleigh_friction" type="logical"
-	category="Rayleigh_damping" group="Rayleigh_damping">
-If true, Rayleigh friction is included in the momentum equation at every depth level.
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_Rayleigh_damping_coeff" type="real"
-	category="Rayleigh_damping" group="Rayleigh_damping">
-Inverse-time coefficient for the Rayleigh damping term, $c_R$, applied at every depth level.
-
-Valid values: Any positive real value.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_Rayleigh_damping_depth_variable" type="logical"
-	category="Rayleigh_damping" group="Rayleigh_damping">
-If true applies r h^-1 instead of just r.
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_Rayleigh_bottom_friction" type="logical"
-	category="Rayleigh_damping" group="Rayleigh_damping">
-If true, Rayleigh friction is only applied to the bottom
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_Rayleigh_bottom_damping_coeff" type="real"
-	category="Rayleigh_damping" group="Rayleigh_damping">
-Inverse-time coefficient for the Rayleigh damping term, $c_R$, only applied at the bottom.
-
-Valid values: Any positive real value.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-
 <!-- cvmix -->
 
 <entry id="config_use_cvmix" type="logical"
@@ -1070,14 +1035,6 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_cvmix_kpp_use_active_wave" type="logical"
-	category="cvmix" group="cvmix">
-Flag for use of active WAVEWATCH III coupling to calculate the Langmuir number and enhancement factor
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
 <entry id="config_cvmix_kpp_langmuir_mixing_opt" type="char*1024"
 	category="cvmix" group="cvmix">
 Option of Langmuir enhanced mixing parameterization
@@ -1094,22 +1051,30 @@ Valid values: NONE, LWF16, LF17, RWHGK16
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_cvmix_kpp_use_active_wave" type="logical"
+	category="cvmix" group="cvmix">
+Flag for Langmuir enchancement factor using prognostic waves. Requires config_use_active_wave = .true.
 
-<!-- wave coupling -->
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- wave_coupling -->
 
 <entry id="config_use_active_wave" type="logical"
 	category="wave_coupling" group="wave_coupling">
-Flag for using prognostic waves
+Flag for using prognostic waves. Controls the allocation of wave arrays and computation of Stokes drift profiles.
 
-Valid values: 
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_n_stokes_drift_wavenumber_partitions" type="integer"
 	category="wave_coupling" group="wave_coupling">
-Number of wavenumbers used to reconstruct Stokes drift profile
+Number of wavenumber partitions to be used in reconstructing wave-induced Stokes drift profile
 
-Valid values: 3, 4, and 6
+Valid values: 3,4,6
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1609,9 +1574,9 @@ Valid values: Any positive real number
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_land_ice_flux_topDragCoeff" type="real"
+<entry id="config_land_ice_flux_explicit_topDragCoeff" type="real"
 	category="land_ice_fluxes" group="land_ice_fluxes">
-The top drag coefficient.
+The top drag coefficient if config_use_implicit_top_drag_coeff is false.
 
 Valid values: Any positive real number
 Default: Defined in namelist_defaults.xml
@@ -1719,15 +1684,23 @@ Default: Defined in namelist_defaults.xml
 
 <!-- bottom_drag -->
 
-<entry id="config_use_implicit_bottom_drag" type="logical"
+<entry id="config_bottom_drag_mode" type="char*1024"
 	category="bottom_drag" group="bottom_drag">
-If true, implicit bottom drag is used on the momentum equation.
+Formulation of the bottom drag.
 
-Valid values: .true. or .false.
+Valid values: 'implicit','explicit'
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_implicit_bottom_drag_coeff" type="real"
+<entry id="config_implicit_bottom_drag_type" type="char*1024"
+	category="bottom_drag" group="bottom_drag">
+Type of implicit bottom drag used.
+
+Valid values: 'constant','constant_and_rayleigh','loglaw','spatially-variable','mannings'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_implicit_constant_bottom_drag_coeff" type="real"
 	category="bottom_drag" group="bottom_drag">
 Dimensionless bottom drag coefficient, $c_{drag}$.
 
@@ -1735,41 +1708,25 @@ Valid values: any positive real, typically 1.0e-3
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_use_implicit_bottom_roughness" type="logical"
+<entry id="config_use_implicit_top_drag" type="logical"
 	category="bottom_drag" group="bottom_drag">
-If true, depends on bottom roughness z0
+If true, implicit top drag is used on the momentum equation.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_use_implicit_bottom_drag_variable" type="logical"
+<entry id="config_implicit_top_drag_coeff" type="real"
 	category="bottom_drag" group="bottom_drag">
-If true, spatially-variable implicit bottom drag is used on the momentum equation.
+Dimensionless top drag coefficient, $c_{drag}$.
 
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_use_implicit_bottom_drag_variable_mannings" type="logical"
-	category="bottom_drag" group="bottom_drag">
-If true, uses Mannings' n values for the computation of Cd=g*n^2*h^{-1/3}.
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_use_explicit_bottom_drag" type="logical"
-	category="bottom_drag" group="bottom_drag">
-If true, explicit bottom drag is used on the momentum equation.
-
-Valid values: .true. or .false.
+Valid values: any positive real, typically 1.0e-3
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_explicit_bottom_drag_coeff" type="real"
 	category="bottom_drag" group="bottom_drag">
-Dimensionless bottom drag coefficient, $c_{drag}$.
+Dimensionless explicit bottom drag coefficient, $c_{drag}$.
 
 Valid values: any positive real, typically 1.0e-3
 Default: Defined in namelist_defaults.xml
@@ -1788,6 +1745,68 @@ Default: Defined in namelist_defaults.xml
 Dimensionless topographic wave drag coefficient, $c_{topo}$.
 
 Valid values: any positive real, typically 5.0e-4
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- Rayleigh_damping -->
+
+<entry id="config_Rayleigh_damping_coeff" type="real"
+	category="Rayleigh_damping" group="Rayleigh_damping">
+Inverse-time coefficient for the Rayleigh damping term, $c_R$, applied at every depth level.
+
+Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Rayleigh_damping_depth_variable" type="logical"
+	category="Rayleigh_damping" group="Rayleigh_damping">
+If true applies r h^-1 instead of just r.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Rayleigh_bottom_friction" type="logical"
+	category="Rayleigh_damping" group="Rayleigh_damping">
+If true, Rayleigh friction is only applied to the bottom
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Rayleigh_bottom_damping_coeff" type="real"
+	category="Rayleigh_damping" group="Rayleigh_damping">
+Inverse-time coefficient for the Rayleigh damping term, $c_R$, only applied at the bottom.
+
+Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- vegetation_drag -->
+
+<entry id="config_use_vegetation_drag" type="logical"
+	category="vegetation_drag" group="vegetation_drag">
+Controls if vegetation_drag is used to compute Manning's roughness coefficient.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_vegetation_drag_coefficient" type="real"
+	category="vegetation_drag" group="vegetation_drag">
+Vegetation drag coefficient
+
+Valid values: O(1)
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_thickness_drag_type" type="char*1024"
+	category="bottom_drag" group="bottom_drag">
+The type of layerThickness averaging to use on the drag term. The standard MPAS-O approach is 'centered'.
+
+Valid values: 'harmonic-mean', 'centered'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2890,6 +2909,223 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<!-- tracer_forcing_benthosTracers -->
+
+<entry id="config_use_benthosTracers" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, the 'benthosGRP' category is enabled for the run
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_do_restart_benthos" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, use restart file
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_benthosTracers_sea_ice_coupling" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, couple benthos fields with sea ice
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_set_benthos_flags" type="integer"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+postive integers set testcases which override remaining flags. If negative, defer to user specified flag options
+
+Valid values: integers less than or equal to 11
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_carbonate_saturation" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, compute carbonate chemistry
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_secondary_reactions" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, compute secondary reaction chemistry
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_depth_dependent_porosity" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, sets depth dependence of porosity
+          
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_non_zero_diffusivity" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if false, sets diffusivity to zero
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_sedimentation" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, apply sediment fluxes to then benthos
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_positive_sedimentation" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if false, sediments are resuspended from the benthos
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_fast_sedimentation" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, incease sedimentation rate for advection testing
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_bgc_sinking_flux" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, allow particulate sinking fluxes of bgc tracers to the benthos
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_step_initial_profiles" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, initialize benthos tracer vertical profiles as step functions
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml           
+</entry>
+
+<entry id="config_use_benthic_reactions" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, enables reaction terms
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_flux_correction" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, track transport flux errors in deep storage for conservation
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_ocean_conc" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, use bottom ocean concentrations of solutes in boundary condition
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_deep_source" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, allow source fluxes below the active benthos layers
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_constant_diffusivity" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, diffusivity becomes constant with depth
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_ocean_bottom_state" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, use the ocean ecosys model to force the benthos
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_benthos_monthly_forcing" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, use monthly data file of ocean fluxes and concentrations
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_benthos_monthly_terra_forcing" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, use monthly data file of terrigenous fluxes
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_do_benthos_spinup" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, run the benthos only with data forcing
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_benthosTracers_diagnostic_fields_level1" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, make variables in benthosDiagFieldsLevel1 available for output
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_benthosTracers_diagnostic_fields_level2" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, make variables in benthosDiagFieldsLevel2 available for output
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_benthosTracers_diagnostic_fields_level3" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, make variables in benthosDiagFieldsLevel3 available for output
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_benthosTracers_diagnostic_fields_level4" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, make variables in benthosDiagFieldsLevel4 available for output
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_benthosTracers_diagnostic_fields_level5" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, make variables in benthosDiagFieldsLevel5 available for output
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
 
 <!-- tracer_forcing_DMSTracers -->
 

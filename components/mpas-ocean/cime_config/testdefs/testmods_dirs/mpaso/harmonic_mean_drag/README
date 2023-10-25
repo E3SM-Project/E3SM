@@ -1,0 +1,5 @@
+This testdef is used to test a stealth feature in mpaso introduced by
+PR #5475. It simplies changes one mpaso namelist variable, 
+   config_thickness_drag_type 
+from its default value of 'centered' to 'harmonic-mean'. It have an
+impact on all mpaso runs.

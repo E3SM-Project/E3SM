@@ -147,7 +147,9 @@ module ocn_core_interface
       logical, pointer :: tracerGroupExponentialDecayPKGActive
       logical, pointer :: tracerGroupIdealAgePKGActive
       logical, pointer :: tracerGroupTTDPKGActive
+      logical, pointer :: benthosTracersPKGActive
 
+      logical, pointer :: config_use_benthosTracers
       logical, pointer :: config_use_tracerGroup
       logical, pointer :: config_use_tracerGroup_surface_bulk_forcing
       logical, pointer :: config_use_tracerGroup_surface_restoring
@@ -499,6 +501,17 @@ module ocn_core_interface
             end if
          end if
       end do
+
+      !
+      ! test for Benthic biogeochemistry  (not part of tracerGroup)
+      !
+
+      call mpas_pool_get_package(packagePool, 'benthosTracersPKGActive', benthosTracersPKGActive)
+      call mpas_pool_get_config(configPool, 'config_use_benthosTracers', config_use_benthosTracers)
+
+      if (config_use_benthosTracers) then
+         benthosTracersPKGActive = .true.
+      end if
 
       !
       ! test for conflicts, i.e. package settings that are inconsistent in combination

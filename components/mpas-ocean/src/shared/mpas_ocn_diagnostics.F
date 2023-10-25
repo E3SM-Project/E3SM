@@ -75,14 +75,19 @@ module ocn_diagnostics
 
    integer :: ke_cell_flag, ke_vertex_flag
    real (kind=RKIND) ::  fCoef
+   real (kind=RKIND) ::  landIceTopDragCoeff
    real (kind=RKIND), pointer ::  coef_3rd_order
 
    ! Methods for computing thickness at edges for flux calculations
-   integer :: thickEdgeFluxChoice  ! choice of thickness flux type
+   integer :: &
+      thickEdgeFluxChoice, &! choice of thickness flux type
+      thickEdgeDragChoice   ! choice of thickness drag type
    integer, parameter :: &
-      thickEdgeFluxUnknown = 0, &! type unknown or unset
       thickEdgeFluxCenter  = 1, &! use mean thickness of cell neighbors
       thickEdgeFluxUpwind  = 2   ! use upwind cell thickness at edge
+   integer, parameter :: &
+      thickEdgeDragCenter  = 1, &! use mean thickness of cell neighbors
+      thickEdgeDragHarMean = 2   ! use harmonic mean cell thickness at edge
 
 !***********************************************************************
 
@@ -125,7 +130,8 @@ contains
 
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
 
-      integer, pointer :: indexTemperature, indexSalinity
+      integer, pointer :: indexTemperaturePtr, indexSalinityPtr
+      integer :: indexTemperature, indexSalinity
 
       logical :: full_compute = .true.
 
@@ -133,7 +139,7 @@ contains
         frazilSurfacePressure, landIcePressure, landIceDraft, landIceFraction
 
       integer, dimension(:), pointer :: &
-        landIceMask
+        landIceFloatingMask
 
       call mpas_timer_start('diagnostic solve')
 
@@ -149,8 +155,12 @@ contains
          timeLevel = 1
       end if
 
-      call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexTemperature)
-      call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
+      call mpas_pool_get_dimension(tracersPool, 'index_temperature', &
+                                                 indexTemperaturePtr)
+      call mpas_pool_get_dimension(tracersPool, 'index_salinity', &
+                                                 indexSalinityPtr)
+      indexTemperature = indexTemperaturePtr
+      indexSalinity    = indexSalinityPtr
       call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, timeLevel)
 
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
@@ -164,8 +174,12 @@ contains
       if (landIcePressureOn) then
          call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
          call mpas_pool_get_array(forcingPool, 'landIceDraft', landIceDraft)
-         call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
+         call mpas_pool_get_array(forcingPool, 'landIceFloatingMask', landIceFloatingMask)
          call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
+         if (landIceFloatingMask(1) == -1) then
+            call mpas_log_write('landIceFloatingMask contains the default value which likely indicates that this field is missing in the initial condition file (e.g. because it is meant for an older E3SM version).', &
+                                MPAS_LOG_CRIT)
+         endif
       end if
 
       nEdges = nEdgesAll
@@ -221,7 +235,7 @@ contains
 #endif
 
       ! inputs: layerThickness, normalVelocity
-      ! output: layerThickEdgeMean, layerThickEdgeFlux
+      ! output: layerThickEdgeMean, layerThickEdgeDrag, layerThickEdgeFlux
       call ocn_diagnostic_solve_layerThicknessEdge(normalVelocity, &
                                                    layerThickness)
 
@@ -440,11 +454,11 @@ contains
       !
       !  compute fields needed to compute land-ice fluxes, either in the ocean model or in the coupler
       !
-      ! inputs: layerThickness, normalVelocity, landIceFraction, landIceMask
+      ! inputs: layerThickness, normalVelocity, landIceFraction, landIceFloatingMask
       ! outputs: 
       if (landIcePressureOn) then
          call ocn_compute_land_ice_flux_input_fields(layerThickness, normalVelocity, activeTracers, &
-                landIceFraction, landIceMask, timeLevel, indexTemperature, indexSalinity)
+                landIceFraction, landIceFloatingMask, timeLevel, indexTemperature, indexSalinity)
       end if
 
       if ( full_compute ) then
@@ -464,7 +478,8 @@ contains
 
 #ifdef MPAS_OPENACC
       !! Listing outputs by first routine that modifies variable
-      !! ocn_diagnostic_solve_layerThicknessEdge :: layerThickEdgeFlux, (diagnostics array)
+      !! ocn_diagnostic_solve_layerThicknessEdge :: layerThickEdgeDrag, (diagnostics array)
+      !!                                            layerThickEdgeFlux, (diagnostics array)
       !!                                            layerThickEdgeMean (diagnostics array)
       !! ocn_relativeVorticity_circulation       :: relativeVorticity, (diagnostics array)
       !!                                            circulation (diagnostics array)
@@ -502,7 +517,9 @@ contains
       !! ocn_diagnostic_solve_ssh                :: pressureAdjustedSSH, (diagnostics array)
       !!                                            gradSSH (diagnostics array)
 
-!     !$acc update host(layerThickEdgeFlux, layerThickEdgeCenter)
+!     !$acc update host(layerThickEdgeDrag, &
+!     !$acc             layerThickEdgeFlux, &
+!     !$acc             layerThickEdgeMean)
 !     !$acc update host(relativeVorticity, circulation)
 !     !$acc update host(vertTransportVelocityTop, &
 !     !$acc             vertGMBolusVelocityTop, &
@@ -654,10 +671,10 @@ contains
 !> \author  Matt Turner
 !> \date    October 2020
 !> \details
-!>  This routine computes the diagnostic variables layerThickEdgeFlux
-!>  and layerThickEdgeMean. The Mean is a simple mean across the edge
-!>  but the Flux value can either be the mean or an upwind value,
-!>  depending on user input.
+!>  This routine computes the diagnostic variables layerThickEdgeDrag,
+!>  layerThickEdgeFlux, and layerThickEdgeMean. The Mean is a simple
+!>  mean across the edge but the Flux value can either be the mean or
+!>  an upwind value, depending on user input.
 !
 !-----------------------------------------------------------------------
 
@@ -678,8 +695,9 @@ contains
 
       ! Outputs are the shared variables from diagnostic_variables:
       !real (kind=RKIND), dimension(:,:), intent(out) :: &
-      !   layerThickEdgeMean, & !< [out] centered layer thickness on edge
-      !   layerThickEdgeFlux    !< [out] flux-related thickness on edge
+      !   layerThickEdgeDrag,    & !< [out] layer thickness on edge for drag
+      !   layerThickEdgeMean,    & !< [out] centered layer thickness on edge
+      !   layerThickEdgeFlux       !< [out] flux-related thickness on edge
 
       !-----------------------------------------------------------------
       ! local variables
@@ -796,6 +814,69 @@ contains
                              MPAS_LOG_CRIT)
 
       end select
+
+      ! Compute edge flux based on option set on init
+      select case (thickEdgeDragChoice)
+
+      case (thickEdgeDragCenter)
+#ifdef MPAS_OPENACC
+         !$acc parallel loop collapse(2) &
+         !$acc    present(layerThickEdgeDrag, layerThickEdgeMean)
+#else
+         !$omp parallel
+         !$omp do schedule(runtime) private(k)
+#endif
+         do iEdge = 1, nEdgesAll
+         do k = 1,nVertLevels
+            layerThickEdgeDrag(k,iEdge) = &
+            layerThickEdgeMean(k,iEdge)
+         end do
+         end do
+#ifndef MPAS_OPENACC
+        !$omp end do
+        !$omp end parallel
+#endif
+
+      case (thickEdgeDragHarMean)
+
+#ifdef MPAS_OPENACC
+         !$acc parallel loop &
+         !$acc    present(layerThickness, layerThickEdgeDrag, &
+         !$acc            minLevelEdgeBot, maxLevelEdgeTop, cellsOnEdge) &
+         !$acc    private(k, kmin, kmax, cell1, cell2)
+#else
+         !$omp parallel
+         !$omp do schedule(runtime) private(k, kmin, kmax, cell1, cell2)
+#endif
+         do iEdge = 1, nEdgesAll
+            kmin = minLevelEdgeBot(iEdge)
+            kmax = maxLevelEdgeTop(iEdge)
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
+            do k = 1,nVertLevels
+               ! initialize layerThicknessEdgeMean to avoid divide by
+               ! zero and NaN problems.
+               layerThickEdgeDrag(k,iEdge) = -1.0e34_RKIND
+            end do
+            do k = kmin,kmax
+               ! central differenced
+               layerThickEdgeDrag(k,iEdge) = &
+                   2.0_RKIND * layerThickness(k,cell1) * layerThickness(k,cell2)/ &
+                   (max(layerThickness(k,cell1)+layerThickness(k,cell2), 1e-9_RKIND))
+            end do
+         end do
+#ifndef MPAS_OPENACC
+         !$omp end do
+         !$omp end parallel
+#endif
+
+      case default
+         ! Should have been caught on init
+         call mpas_log_write('Thickness flux option unknown', &
+                             MPAS_LOG_CRIT)
+
+      end select
+
 
    !--------------------------------------------------------------------
 
@@ -3224,7 +3305,7 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_compute_land_ice_flux_input_fields(layerThickness, normalVelocity, &
-      activeTracers, landIceFraction, landIceMask, &
+      activeTracers, landIceFraction, landIceFloatingMask, &
       timeLevel, indexTval, indexSval)!{{{
 
       !-----------------------------------------------------------------
@@ -3245,7 +3326,7 @@ contains
          activeTracers
 
       integer, dimension(:), intent(in) :: &
-         landIceMask
+         landIceFloatingMask
 
       !-----------------------------------------------------------------
       !
@@ -3279,16 +3360,11 @@ contains
 
       call mpas_timer_start("land_ice_diagnostic_fields", .false.)
 
-      indexBLTval = indexBLT
-      indexBLSval = indexBLS
-      indexHeatTransval = indexHeatTrans
-      indexSaltTransval = indexSaltTrans
-
       allocate(blTempScratch(nCellsAll), &
                blSaltScratch(nCellsAll))
       !$acc enter data create(blTempScratch, blSaltScratch)
 
-      ! Compute top drag
+      ! Compute top drag everywhere there is grounded or floating land ice
 #ifdef MPAS_OPENACC
       !$acc enter data copyin(landIceFraction)
 
@@ -3306,7 +3382,7 @@ contains
          velocityMagnitude = sqrt(kineticEnergyCell(minLevelCell(cell1),cell1) + kineticEnergyCell(minLevelCell(cell2),cell2))
          landIceEdgeFraction = 0.5_RKIND*(landIceFraction(cell1)+landIceFraction(cell2))
 
-         topDrag(iEdge) = - rho_sw * landIceEdgeFraction * config_land_ice_flux_topDragCoeff &
+         topDrag(iEdge) = - rho_sw * landIceEdgeFraction * landIceTopDragCoeff &
                           * velocityMagnitude * normalVelocity(minLevelEdgeBot(iEdge),iEdge)
 
       end do
@@ -3324,11 +3400,11 @@ contains
       do iCell = 1, nCellsAll
          ! the magnitude of the top drag is CD*u**2 = CD*(2*KE)
          topDragMag(iCell) = rho_sw * landIceFraction(iCell) &
-                           * 2.0_RKIND * config_land_ice_flux_topDragCoeff *  kineticEnergyCell(minLevelCell(iCell),iCell)
+                           * 2.0_RKIND * landIceTopDragCoeff *  kineticEnergyCell(minLevelCell(iCell),iCell)
 
          ! the friction velocity is the square root of the top drag + variance of tidal velocity
          ! (computed regardless of land-ice coverage)
-         landIceFrictionVelocity(iCell) = sqrt(config_land_ice_flux_topDragCoeff * &
+         landIceFrictionVelocity(iCell) = sqrt(landIceTopDragCoeff * &
                                    (2.0_RKIND * kineticEnergyCell(minLevelCell(iCell),iCell) &
                                    + config_land_ice_flux_rms_tidal_velocity**2))
       end do
@@ -3373,16 +3449,16 @@ contains
       !$omp do schedule(runtime) private(weightSum, i, cell2)
 #endif
       do iCell = 1, nCellsAll
-         landIceBoundaryLayerTracers(indexBLTval, iCell) = blTempScratch(iCell)
-         landIceBoundaryLayerTracers(indexBLSval, iCell) = blSaltScratch(iCell)
+         landIceBoundaryLayerTracers(indexBLT, iCell) = blTempScratch(iCell)
+         landIceBoundaryLayerTracers(indexBLS, iCell) = blSaltScratch(iCell)
          if(config_land_ice_flux_boundaryLayerNeighborWeight > 0.0_RKIND) then
             weightSum = 1.0_RKIND
             do i = 1, nEdgesOnCell(iCell)
                cell2 = cellsOnCell(i,iCell)
 
-               landIceBoundaryLayerTracers(indexBLTval, iCell) = landIceBoundaryLayerTracers(indexBLTval, iCell) &
+               landIceBoundaryLayerTracers(indexBLT, iCell) = landIceBoundaryLayerTracers(indexBLT, iCell) &
                  + cellMask(minLevelCell(cell2),cell2)*config_land_ice_flux_boundaryLayerNeighborWeight*blTempScratch(cell2)
-               landIceBoundaryLayerTracers(indexBLSval, iCell) = landIceBoundaryLayerTracers(indexBLSval, iCell) &
+               landIceBoundaryLayerTracers(indexBLS, iCell) = landIceBoundaryLayerTracers(indexBLS, iCell) &
                  + cellMask(minLevelCell(cell2),cell2)*config_land_ice_flux_boundaryLayerNeighborWeight*blSaltScratch(cell2)
                weightSum = weightSum + cellMask(minLevelCell(cell2),cell2)*config_land_ice_flux_boundaryLayerNeighborWeight
             end do
@@ -3403,9 +3479,9 @@ contains
 #endif
          do iCell = 1, nCellsAll
             ! transfer coefficients from namelist
-            landIceTracerTransferVelocities(indexHeatTransval, iCell) = landIceFrictionVelocity(iCell) &
+            landIceTracerTransferVelocities(indexHeatTrans, iCell) = landIceFrictionVelocity(iCell) &
                                              * config_land_ice_flux_jenkins_heat_transfer_coefficient
-            landIceTracerTransferVelocities(indexSaltTransval, iCell) = landIceFrictionVelocity(iCell) &
+            landIceTracerTransferVelocities(indexSaltTrans, iCell) = landIceFrictionVelocity(iCell) &
                                              * config_land_ice_flux_jenkins_salt_transfer_coefficient
          end do
 #ifndef MPAS_OPENACC
@@ -3432,9 +3508,9 @@ contains
                 *xiN/(abs(fCell(iCell))*h_nu))
             end if
 
-            landIceTracerTransferVelocities(indexHeatTransval, iCell) = 1.0_RKIND/(Gamma_turb + 12.5_RKIND &
+            landIceTracerTransferVelocities(indexHeatTrans, iCell) = 1.0_RKIND/(Gamma_turb + 12.5_RKIND &
                                                                    * Pr**(2.0_RKIND/3.0_RKIND) - 6.0_RKIND)
-            landIceTracerTransferVelocities(indexSaltTransval, iCell) = 1.0_RKIND/(Gamma_turb + 12.5_RKIND &
+            landIceTracerTransferVelocities(indexSaltTrans, iCell) = 1.0_RKIND/(Gamma_turb + 12.5_RKIND &
                                                                    * Sc**(2.0_RKIND/3.0_RKIND) - 6.0_RKIND)
          end do
 #ifndef MPAS_OPENACC
@@ -3449,15 +3525,15 @@ contains
 
       ! modify the spatially-varying attenuation coefficient where there is land ice
 #ifdef MPAS_OPENACC
-      !$acc enter data copyin(landIceMask)
+      !$acc enter data copyin(landIceFloatingMask)
 
-      !$acc parallel loop present(landIceMask, sfcFlxAttCoeff)
+      !$acc parallel loop present(landIceFloatingMask, sfcFlxAttCoeff)
 #else
       !$omp parallel
       !$omp do schedule(runtime)
 #endif
       do iCell = 1, nCellsAll
-         if(landIceMask(iCell) == 1) then
+         if(landIceFloatingMask(iCell) == 1) then
             sfcFlxAttCoeff(iCell) = config_land_ice_flux_attenuation_coefficient
          end if
       end do
@@ -4222,11 +4298,27 @@ contains
                thickEdgeFluxChoice = thickEdgeFluxUpwind
             end if
          else
-            thickEdgeFluxChoice = thickEdgeFluxUnknown
             call mpas_log_write('Thickness flux option of ' //&
                  & trim(config_thickness_flux_type) // &
-                 & 'is not known', MPAS_LOG_CRIT)
+                 & ' is not known', MPAS_LOG_CRIT)
          end if
+      end if
+
+      ! Initialize coefficient choice for computing land ice drag
+      if (config_use_implicit_top_drag) then
+         landIceTopDragCoeff = config_implicit_top_drag_coeff
+      else
+         landIceTopDragCoeff = config_land_ice_flux_explicit_topDragCoeff
+      endif
+
+      if (trim(config_thickness_drag_type) == 'centered') then
+         thickEdgeDragChoice = thickEdgeDragCenter
+      elseif (trim(config_thickness_drag_type) == 'harmonic-mean') then
+         thickEdgeDragChoice = thickEdgeDragHarMean
+      else
+         call mpas_log_write('Thickness drag option of ' //&
+              & trim(config_thickness_drag_type) // &
+              & ' is not known', MPAS_LOG_CRIT)
       end if
 
       call ocn_diagnostics_variables_init(domain, jenkinsOn, &

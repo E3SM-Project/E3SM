@@ -1,5 +1,6 @@
 #include "Registry_seaice_high_frequency_output.xml"
 #include "Registry_seaice_temperatures.xml"
+#include "Registry_seaice_thicknesses.xml"
 #include "Registry_seaice_regional_statistics.xml"
 #include "Registry_seaice_ridging_diagnostics.xml"
 #include "Registry_seaice_conservation_check.xml"

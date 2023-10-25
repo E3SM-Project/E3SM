@@ -49,7 +49,7 @@ module dyn_grid
   use dimensions_mod,          only: nelem, nelemd, nelemdmax, ne, np, npsq
   use spmd_utils,              only: iam, mpi_integer, mpi_real8, mpicom, npes, masterproc
   use parallel_mod,            only: par
-  use scamMod,                 only: single_column
+  use scamMod,                 only: single_column, scm_multcols
 
   implicit none
   private
@@ -666,7 +666,7 @@ contains
     ! The native HOMME GLL grid
     call cam_grid_register(trim(gridname), dyn_decomp, lat_coord, lon_coord,  &
                            grid_map_d,block_indexed=.false., unstruct=.true.)
-    if (.not.single_column) then
+    if (.not.single_column .or. scm_multcols) then
       call cam_grid_attribute_register(trim(gridname), trim(areaname),   &
                                 'gll grid areas', trim(ncolname), pearea, pemap)
     else

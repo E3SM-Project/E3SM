@@ -137,12 +137,12 @@ contains
     use gridgraph_mod,  only : GridEdge_t
     use dimensions_mod, only : nelem
     interface
-      subroutine init_connectivity (num_local_elems) bind (c)
+      subroutine init_connectivity (num_local_elems, max_corner_elems) bind (c)
         use iso_c_binding, only : c_int
         !
         ! Inputs
         !
-        integer (kind=c_int), intent(in) :: num_local_elems
+        integer (kind=c_int), intent(in) :: num_local_elems, max_corner_elems
       end subroutine init_connectivity
       subroutine finalize_connectivity () bind(c)
       end subroutine finalize_connectivity
@@ -166,10 +166,11 @@ contains
     !
     ! Locals
     !
-    integer :: ie, num_edges, ierr
+    integer :: ie, num_edges, ierr, max_corner_elems
     type(GridEdge_t) :: e
 
-    call init_connectivity(nelemd)
+    max_corner_elems = 1 ! always structured cubed-sphere in unit tests
+    call init_connectivity(nelemd, max_corner_elems)
 
     num_edges = SIZE(GridEdge)
     do ie=1,num_edges

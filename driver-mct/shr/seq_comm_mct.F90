@@ -234,7 +234,7 @@ contains
     ! Local variables
     !
     logical :: error_state
-    integer :: ierr, n, count
+    integer :: ierr, n, count, xcount
     character(*), parameter :: subName =   '(seq_comm_init) '
     integer :: mype,numpes,myncomps,max_threads,gloroot, global_numpes
     integer :: pelist(3,1)       ! start, stop, stride for group
@@ -508,14 +508,33 @@ contains
 
     call mpi_bcast(pelist, size(pelist), MPI_INTEGER, 0, DRIVER_COMM, ierr)
     call mpi_bcast(exlist, size(exlist), MPI_INTEGER, 0, DRIVER_COMM, ierr)
+    call mpi_comm_group(DRIVER_COMM, mpigrp_world, ierr)
+    call shr_mpi_chkerr(ierr,subname//' mpi_comm_group mpigrp_world')
     if (exlist(3) > 0) then
-       call mpi_comm_group(DRIVER_COMM, mpigrp_world, ierr)
-       call shr_mpi_chkerr(ierr,subname//' mpi_comm_group mpigrp_world')
        call mpi_group_range_incl(mpigrp_world, 1, exlist, exgrp, ierr)
        call shr_mpi_chkerr(ierr,subname//' mpi_group_range_incl CPLID')
        seq_comms(CPLID)%excl_group = exgrp
     endif
     call seq_comm_setcomm(CPLID,pelist,nthreads=cpl_nthreads,iname='CPL')
+
+    ! init excl-strides
+    xcount = CPLID + 2*num_inst_atm + 1
+    call comp_exstride_init(driver_comm, lnd_rootpe, lnd_ntasks, lnd_pestride, &
+         lnd_excl_stride, num_inst_lnd, xcount, mpigrp_world)
+    call comp_exstride_init(driver_comm, ice_rootpe, ice_ntasks, ice_pestride, &
+         ice_excl_stride, num_inst_ice, xcount, mpigrp_world)
+    call comp_exstride_init(driver_comm, ocn_rootpe, ocn_ntasks, ocn_pestride, &
+         ocn_excl_stride, num_inst_ocn, xcount, mpigrp_world)
+    call comp_exstride_init(driver_comm, rof_rootpe, rof_ntasks, rof_pestride, &
+         rof_excl_stride, num_inst_rof, xcount, mpigrp_world)
+    call comp_exstride_init(driver_comm, glc_rootpe, glc_ntasks, glc_pestride, &
+         glc_excl_stride, num_inst_glc, xcount, mpigrp_world)
+    call comp_exstride_init(driver_comm, wav_rootpe, wav_ntasks, wav_pestride, &
+         wav_excl_stride, num_inst_wav, xcount, mpigrp_world)
+    call comp_exstride_init(driver_comm, esp_rootpe, esp_ntasks, esp_pestride, &
+         esp_excl_stride, num_inst_esp, xcount, mpigrp_world)
+    call comp_exstride_init(driver_comm, iac_rootpe, iac_ntasks, iac_pestride, &
+         iac_excl_stride, num_inst_iac, xcount, mpigrp_world)
 
     call comp_comm_init(driver_comm, atm_rootpe, atm_nthreads, atm_layout, &
          atm_ntasks, atm_pestride, atm_excl_stride, num_inst_atm, &
@@ -616,6 +635,33 @@ contains
     call seq_comm_printcomms()
 
   end subroutine seq_comm_init
+
+  subroutine comp_exstride_init(driver_comm, comp_rootpe, comp_ntasks, comp_pestride, &
+       comp_exstride, num_inst_comp, xcount, drv_grp)
+    integer, intent(in) :: driver_comm
+    integer, intent(in) :: comp_rootpe
+    integer, intent(in) :: comp_ntasks
+    integer, intent(in) :: comp_pestride
+    integer, intent(in) :: comp_exstride
+    integer, intent(in) :: num_inst_comp
+    integer, intent(inout) :: xcount
+    integer, intent(in) :: drv_grp
+
+    integer :: exlist(3), exgrp, ierr
+
+    xcount = xcount + 2*num_inst_comp + 2
+
+    exlist(1) = comp_rootpe
+    exlist(2) = comp_rootpe + (comp_ntasks - 1) * comp_pestride
+    exlist(3) = comp_exstride
+    call mpi_bcast(exlist, 3, MPI_INTEGER, 0, driver_comm, ierr)
+
+    if (exlist(3) > 0) then
+       call mpi_group_range_incl(drv_grp, 1, exlist, exgrp, ierr)
+       seq_comms(xcount)%excl_group = exgrp
+    endif
+
+  end subroutine comp_exstride_init
 
   subroutine comp_comm_init(driver_comm, comp_rootpe, comp_nthreads, comp_layout, &
        comp_ntasks, comp_pestride, comp_exstride, num_inst_comp, &
@@ -789,8 +835,8 @@ contains
     call shr_mpi_chkerr(ierr,subname//' mpi_group_range_incl mpigrp')
 
     ! exclude tasks dedicated to other components
-    do n = 3, ID
-       if (seq_comms(n)%excl_group >= 0) then
+    do n = 2, ncomps
+       if (seq_comms(n)%excl_group /= -1) then
           if (n == ID) cycle ! don't exclude self
           call mpi_group_difference(mpigrp, seq_comms(n)%excl_group, newgrp, ierr)
           call shr_mpi_chkerr(ierr,subname//' mpi_group_difference excl_group')

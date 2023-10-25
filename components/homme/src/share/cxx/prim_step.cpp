@@ -131,20 +131,19 @@ void prim_step_flexible (const Real dt, const bool compute_diagnostics) {
   bool apply_forcing;
 
   const auto dt_q =        dt * params.dt_tracer_factor;
-  //standalone homme nsplit=1
+  // In standalone HOMME, nsplit=1 always.
   const auto dt_q_nsplit = dt * params.dt_tracer_factor * params.nsplit;
   
-  //decide on tracer forcing
+  // Decide on tracer forcing.
 #if defined(CAM) || defined(SCREAM)
-  //CAM + xx supports only ftype2 and ftype0
-  apply_forcing = ( params.ftype == ForcingAlg::FORCING_0 ) ||
-                  ( params.ftype == ForcingAlg::FORCING_2  && params.nsplit_iteration == 1 );
+  // CAM + xx supports only ftype 0 and 2.
+  apply_forcing = (params.ftype == ForcingAlg::FORCING_0) ||
+                  (params.ftype == ForcingAlg::FORCING_2 && params.nsplit_iteration == 1);
 #else
   apply_forcing = forcing_0or2;
 #endif
 
   if (apply_forcing) {
-
     if (params.ftype == ForcingAlg::FORCING_0) apply_cam_forcing_tracers(dt_q);
     if (params.ftype == ForcingAlg::FORCING_2) apply_cam_forcing_tracers(dt_q_nsplit);
   }

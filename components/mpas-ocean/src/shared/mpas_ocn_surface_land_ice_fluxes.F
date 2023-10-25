@@ -188,6 +188,7 @@ contains
 
       err = 0
       if (.not.landIceFluxesOn) return
+      if (config_use_implicit_top_drag) return
 
       call mpas_timer_start("top_drag", .false.)
 
@@ -429,7 +430,7 @@ contains
 
       real (kind=RKIND) :: freshwaterFlux, heatFlux
 
-      real (kind=RKIND), dimension(:), pointer :: landIcePressure, landIceFraction, &
+      real (kind=RKIND), dimension(:), pointer :: landIcePressure, landIceFloatingFraction, &
                                                   landIceSurfaceTemperature, &
                                                   landIceFreshwaterFlux, &
                                                   landIceHeatFlux, heatFluxToLandIce
@@ -438,12 +439,13 @@ contains
                                                   accumulatedLandIceHeatOld, &
                                                   accumulatedLandIceHeatNew
 
-      integer, dimension(:), pointer :: landIceMask
+      integer, dimension(:), pointer :: landIceFloatingMask
 
       real (kind=RKIND), dimension(:,:), pointer :: &
                                                     landIceInterfaceTracers
 
-      integer, pointer :: indexIT, indexIS
+      integer, pointer :: indexITPtr, indexISPtr
+      integer :: indexIT, indexIS
 
       ! Scratch Arrays
       !---
@@ -467,16 +469,22 @@ contains
 
       call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
 
-      call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
-      call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
+      call mpas_pool_get_array(forcingPool, 'landIceFloatingFraction', landIceFloatingFraction)
+      call mpas_pool_get_array(forcingPool, 'landIceFloatingMask', landIceFloatingMask)
 
       call mpas_pool_get_array(forcingPool, 'landIceFreshwaterFlux', landIceFreshwaterFlux)
       call mpas_pool_get_array(forcingPool, 'landIceHeatFlux', landIceHeatFlux)
       call mpas_pool_get_array(forcingPool, 'heatFluxToLandIce', heatFluxToLandIce)
 
       call mpas_pool_get_array(forcingPool, 'landIceInterfaceTracers', landIceInterfaceTracers)
-      call mpas_pool_get_dimension(forcingPool, 'index_landIceInterfaceTemperature', indexIT)
-      call mpas_pool_get_dimension(forcingPool, 'index_landIceInterfaceSalinity', indexIS)
+      call mpas_pool_get_dimension(forcingPool, &
+                                'index_landIceInterfaceTemperature', &
+                                 indexITPtr)
+      call mpas_pool_get_dimension(forcingPool, &
+                                'index_landIceInterfaceSalinity', &
+                                 indexISPtr)
+      indexIT = indexITPtr
+      indexIS = indexISPtr
       call mpas_pool_get_array(statePool, 'accumulatedLandIceMass', accumulatedLandIceMassNew, 2)
       call mpas_pool_get_array(statePool, 'accumulatedLandIceMass', accumulatedLandIceMassOld, 1)
       call mpas_pool_get_array(statePool, 'accumulatedLandIceHeat', accumulatedLandIceHeatNew, 2)
@@ -499,7 +507,7 @@ contains
          !$omp parallel
          !$omp do schedule(runtime) private(freshwaterFlux, heatFlux)
          do iCell = 1, nCells
-            if (landIceMask(iCell) == 0) cycle
+            if (landIceFloatingMask(iCell) == 0) cycle
 
             ! linearized equaiton for the S and p dependent potential freezing temperature
             landIceInterfaceTracers(indexIT,iCell) = ocn_freezing_temperature( &
@@ -514,14 +522,14 @@ contains
             freshwaterFlux = -rho_sw * ISOMIPgammaT * (cp_sw/latent_heat_fusion_mks) &
                        * (landIceInterfaceTracers(indexIT,iCell)-landIceBoundaryLayerTracers(indexBLT,iCell))
 
-            landIceFreshwaterFlux(iCell) = landIceFraction(iCell)*freshwaterFlux
+            landIceFreshwaterFlux(iCell) = landIceFloatingFraction(iCell)*freshwaterFlux
 
             ! Using (13) from Jenkins et al. (2001)
             ! heat flux is in W/s
             heatFlux = cp_sw*(freshwaterFlux*landIceInterfaceTracers(indexIT,iCell) &
                               + rho_sw*ISOMIPgammaT &
                                 * (landIceInterfaceTracers(indexIT,iCell)-landIceBoundaryLayerTracers(indexBLT,iCell)))
-            landIceHeatFlux(iCell) = landIceFraction(iCell)*heatFlux
+            landIceHeatFlux(iCell) = landIceFloatingFraction(iCell)*heatFlux
 
             heatFluxToLandIce(iCell) = 0.0_RKIND
 
@@ -534,7 +542,7 @@ contains
          if(useHollandJenkinsAdvDiff) then
             ! melting solution
             call compute_HJ99_melt_fluxes( &
-               landIceMask, &
+               landIceFloatingMask, &
                landIceBoundaryLayerTracers(indexBLT,:), &
                landIceBoundaryLayerTracers(indexBLS,:), &
                landIceTracerTransferVelocities(indexHeatTrans,:), &
@@ -556,7 +564,7 @@ contains
 
             ! freezing solution
             call compute_melt_fluxes( &
-               landIceMask, &
+               landIceFloatingMask, &
                landIceBoundaryLayerTracers(indexBLT,:), &
                landIceBoundaryLayerTracers(indexBLS,:), &
                landIceTracerTransferVelocities(indexHeatTrans,:), &
@@ -576,7 +584,7 @@ contains
             end if
 
             do iCell = 1, nCells
-               if ((landIceMask(iCell) == 0) .or. (landIceFreshwaterFlux(iCell) >= 0.0_RKIND)) cycle
+               if ((landIceFloatingMask(iCell) == 0) .or. (landIceFreshwaterFlux(iCell) >= 0.0_RKIND)) cycle
 
                landIceInterfaceTracers(indexIS,iCell) = freezeInterfaceSalinity(iCell)
                landIceInterfaceTracers(indexIT,iCell) = freezeInterfaceTemperature(iCell)
@@ -586,7 +594,7 @@ contains
             end do
          else ! not using Holland and Jenkins advection/diffusion
             call compute_melt_fluxes( &
-               landIceMask, &
+               landIceFloatingMask, &
                landIceBoundaryLayerTracers(indexBLT,:), &
                landIceBoundaryLayerTracers(indexBLS,:), &
                landIceTracerTransferVelocities(indexHeatTrans,:), &
@@ -606,13 +614,13 @@ contains
             end if
          end if
 
-         ! modulate the fluxes by the landIceFraction
+         ! modulate the fluxes by the landIceFloatingFraction
          do iCell = 1, nCells
-            if (landIceMask(iCell) == 0) cycle
+            if (landIceFloatingMask(iCell) == 0) cycle
 
-            landIceFreshwaterFlux(iCell) = landIceFraction(iCell)*landIceFreshwaterFlux(iCell)
-            landIceHeatFlux(iCell) = landIceFraction(iCell)*landIceHeatFlux(iCell)
-            heatFluxToLandIce(iCell) = landIceFraction(iCell)*heatFluxToLandIce(iCell)
+            landIceFreshwaterFlux(iCell) = landIceFloatingFraction(iCell)*landIceFreshwaterFlux(iCell)
+            landIceHeatFlux(iCell) = landIceFloatingFraction(iCell)*landIceHeatFlux(iCell)
+            heatFluxToLandIce(iCell) = landIceFloatingFraction(iCell)*heatFluxToLandIce(iCell)
          end do
 
       endif ! jenkinsOn or hollandJenkinsOn

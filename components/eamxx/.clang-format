@@ -1,0 +1,15 @@
+---
+BasedOnStyle:      Google
+IndentWidth:       2
+SpaceBeforeParens: Never
+UseTab:            Never
+TabWidth:          2
+ColumnLimit:       80
+---
+Language:                    Cpp
+PointerAlignment:            Right
+DerivePointerAlignment:      false
+AlignConsecutiveAssignments: true
+AlignOperands:               true
+AlignTrailingComments:       true
+AlignEscapedNewlines:        true

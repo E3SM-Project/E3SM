@@ -89,11 +89,6 @@ struct DirkFunctorImpl {
   TeamUtils<ExecSpace> m_tu, m_tu_ig;
   int nslot;
 
-  KOKKOS_INLINE_FUNCTION
-  size_t shmem_size (const int team_size) const {
-    return KernelVariables::shmem_size(team_size);
-  }
-
   DirkFunctorImpl (const int nelem)
     : m_policy(1,1,1), m_ig_policy(1,1,1), m_tu(m_policy), m_tu_ig(m_ig_policy) // throwaway settings
   {

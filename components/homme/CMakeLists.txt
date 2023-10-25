@@ -50,8 +50,16 @@ IF (HOMME_BUILD_EXECS OR BUILD_HOMME_TOOL)
 ELSE ()
   SET(BUILD_HOMME_WITHOUT_PIOLIBRARY ON CACHE BOOL "")
 ENDIF ()
+
+SET(HOMME_BUILD_SCORPIO ON)
 IF(BUILD_HOMME_WITHOUT_PIOLIBRARY)
   MESSAGE(STATUS "This configuration builds without PIO library and NetCDF calls")
+  SET(HOMME_BUILD_SCORPIO OFF)
+ELSE()
+  IF (TARGET pioc OR TARGET piof)
+    message(STATUS "pioc and/or piof are already defined; skipping SCORPIO build in HOMME")
+    SET(HOMME_BUILD_SCORPIO OFF)
+  ENDIF()
 ENDIF()
 
 #option to discard forcings call and push to/from F
@@ -355,9 +363,9 @@ ADD_SUBDIRECTORY(utils/cime/CIME/non_py/src/timing)
 # CMAKE_CURRENT_SOURCE_DIR == homme
 SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/src/CMake" ${CMAKE_MODULE_PATH})
-SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/utils/externals/scorpio/cmake" ${CMAKE_MODULE_PATH})
-
-
+if (HOMME_BUILD_SCORPIO)
+  SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/utils/externals/scorpio/cmake" ${CMAKE_MODULE_PATH})
+endif ()
 
 #
 # Scorpio
@@ -369,28 +377,28 @@ SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/utils/externals/scorpio/cmak
 #
 ADD_DEFINITIONS(-D_NO_MPI_RSEND)
 
-if(NOT BUILD_HOMME_WITHOUT_PIOLIBRARY)
-SET(NetCDF_PATH ${NETCDF_DIR})
-SET(PnetCDF_PATH ${PNETCDF_DIR})
-message("** Configuring SCORPIO with:")
-message("-- NetCDF_PATH = ${NetCDF_PATH}")
-message("-- PnetCDF_PATH = ${PnetCDF_PATH}")
-message("-- NetCDF_Fortran_PATH = ${NetCDF_Fortran_PATH}")
-message("-- NetCDF_C_PATH = ${NetCDF_C_PATH}")
-message("-- PnetCDF_Fortran_PATH = ${PnetCDF_Fortran_PATH}")
-message("-- PnetCDF_C_PATH = ${PnetCDF_C_PATH}")
-# pio needs cime/externals/genf90/genf90.pl
-if (HOMME_USE_SCORPIO)
-  # Need to use scorpio's older genf90 for now
-  SET(GENF90_PATH ${CMAKE_CURRENT_SOURCE_DIR}/utils/utils/externals/scorpio/src/genf90)
-  SET(PIO_ENABLE_TOOLS OFF CACHE BOOL "Disabling Scorpio tool build")
-  ADD_SUBDIRECTORY(utils/externals/scorpio)
-else ()
-  # The default I/O library used in "Scorpio classic"
-  ADD_SUBDIRECTORY(utils/externals/scorpio_classic)
-  SET(GENF90_PATH ${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/CIME/non_py/externals/genf90)
+if (HOMME_BUILD_SCORPIO)
+  SET(NetCDF_PATH ${NETCDF_DIR})
+  SET(PnetCDF_PATH ${PNETCDF_DIR})
+  message("-- NetCDF_PATH = ${NetCDF_PATH}")
+  message("-- PnetCDF_PATH = ${PnetCDF_PATH}")
+  message("-- NetCDF_Fortran_PATH = ${NetCDF_Fortran_PATH}")
+  message("-- NetCDF_C_PATH = ${NetCDF_C_PATH}")
+  message("-- PnetCDF_Fortran_PATH = ${PnetCDF_Fortran_PATH}")
+  message("-- PnetCDF_C_PATH = ${PnetCDF_C_PATH}")
+  message("** Configuring SCORPIO")
+  # pio needs cime/externals/genf90/genf90.pl
+  if (HOMME_USE_SCORPIO)
+    # Need to use scorpio's older genf90 for now
+    SET(GENF90_PATH ${CMAKE_CURRENT_SOURCE_DIR}/utils/utils/externals/scorpio/src/genf90)
+    SET(PIO_ENABLE_TOOLS OFF CACHE BOOL "Disabling Scorpio tool build")
+    ADD_SUBDIRECTORY(utils/externals/scorpio)
+  else ()
+    # The default I/O library used in "Scorpio classic"
+    ADD_SUBDIRECTORY(utils/externals/scorpio_classic)
+    SET(GENF90_PATH ${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/CIME/non_py/externals/genf90)
+  endif ()
 endif ()
-ENDIF()
 
 
 # CPRNC locations
@@ -407,7 +415,7 @@ IF (CPRNC_DIR)
 ENDIF ()
 
 #compile cprnc only if pio is built
-if(NOT BUILD_HOMME_WITHOUT_PIOLIBRARY)
+if(HOMME_BUILD_EXECS AND NOT BUILD_HOMME_WITHOUT_PIOLIBRARY)
   IF (NOT (CPRNC_DIR))
     # compile CPRNC from CIME source code. Requires CIME support for machine
     message("-- CPRNC_BINARY = will compile from source")

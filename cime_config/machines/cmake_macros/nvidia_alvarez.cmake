@@ -17,7 +17,7 @@ if (NOT DEBUG)
   string(APPEND CXXFLAGS " -O2")
 endif()
 if (NOT DEBUG)
-  string(APPEND FFLAGS " -O2")
+  string(APPEND FFLAGS " -g")
 endif()
 if (compile_threaded)
   string(APPEND KOKKOS_OPTIONS " -DKokkos_ENABLE_OPENMP=Off") # work-around for nvidia as kokkos is not passing "-mp" for threaded build

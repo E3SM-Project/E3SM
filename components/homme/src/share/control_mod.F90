@@ -86,7 +86,8 @@ module control_mod
 ! advect theta 0: conservation form 
 !              1: expanded divergence form (less noisy, non-conservative)
  integer, public :: theta_advect_form = 0
- real (kind=real_kind), public :: vtheta_thresh = 100  ! threshold for virtual potential temperature minimum limiter
+ real (kind=real_kind), public :: vtheta_thresh = 100.d0  ! threshold for virtual potential temperature minimum limiter
+ real (kind=real_kind), public :: dp3d_thresh   = 0.125d0 ! threshold for dp3d minimum limiter
 
  integer, public :: pgrad_correction  = 0   ! 1=turn on theta model pressure gradient correction
  integer, public :: hv_ref_profiles   = 0   ! 1=turn on theta model HV reference profiles

@@ -1,0 +1,35 @@
+\documentclass[12pt]{article}
+\usepackage{authblk} %needed to compile chunks as standalone
+\bibliographystyle{../amermeteorsoc}
+
+\title{A next generation driver for EAMxx}
+
+\author[2]{Luca Bertagna}
+\author[1]{Aaron Donahue}
+\author[2]{Ben Hillman}
+\author[1]{Peter Caldwell}
+\author[2]{Thomas Clevenger}
+\author[2]{Jim Foucar}
+\date{\today}
+
+\affil[1]{Lawrence Livermore National Lab, Livermore CA}
+\affil[2]{Sandia National Laboratories, Albuquerque, NM}
+\affil[3]{Lawrence Berkeley National Laboratory, Berkeley, CA}
+\affil[4]{Brookhaven National Laboratory, Upton, NY}
+\affil[5]{Pacific Northwest National Laboratory, Richland, WA}
+\affil[6]{University of California, Davis, Davis, CA}
+
+\begin{document}
+\maketitle{}
+
+
+\input{driver_doc.tex}
+
+%bibliography needs to be in main b/c will be called from different directories when an individual
+%section is compiled versus when all documentation is compiled.
+%================================
+\subsection{Bibliography}
+%================================
+\bibliography{../bibliography.bib}
+
+\end{document}

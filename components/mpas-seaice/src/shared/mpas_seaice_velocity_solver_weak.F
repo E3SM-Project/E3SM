@@ -80,6 +80,10 @@ contains
 
        call MPAS_pool_get_config(domain % configs, "config_rotate_cartesian_grid", config_rotate_cartesian_grid)
 
+       call MPAS_pool_get_subpool(blockPtr % structs, "velocity_weak", velocityWeakPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "mesh", meshPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "boundary", boundaryPool)
+
        call MPAS_pool_get_array(velocityWeakPool, "normalVectorPolygon", normalVectorPolygon)
        call MPAS_pool_get_array(velocityWeakPool, "normalVectorTriangle", normalVectorTriangle)
        call MPAS_pool_get_array(velocityWeakPool, "latCellRotated", latCellRotated)
@@ -350,9 +354,9 @@ contains
        call MPAS_pool_get_array(velocityWeakPool, "strain11", strain11)
        call MPAS_pool_get_array(velocityWeakPool, "strain22", strain22)
        call MPAS_pool_get_array(velocityWeakPool, "strain12", strain12)
-       call MPAS_pool_get_array(velocityWeakPool, "stress11weak", stress11)
-       call MPAS_pool_get_array(velocityWeakPool, "stress22weak", stress22)
-       call MPAS_pool_get_array(velocityWeakPool, "stress12weak", stress12)
+       call MPAS_pool_get_array(velocityWeakPool, "stress11", stress11)
+       call MPAS_pool_get_array(velocityWeakPool, "stress22", stress22)
+       call MPAS_pool_get_array(velocityWeakPool, "stress12", stress12)
        call MPAS_pool_get_array(velocityWeakPool, "replacementPressure", replacementPressure)
 
        if (constitutiveRelationType == EVP_CONSTITUTIVE_RELATION) then

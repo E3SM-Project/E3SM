@@ -38,7 +38,11 @@ module zm_conv
   public trigdcape_ull            ! true if to use dcape-ULL trigger
   public trig_dcape_only          ! true if to use dcape only trigger
   public trig_ull_only            ! true if to ULL along with default CAPE-based trigger
-
+  public buoyan_dilute            ! subroutine that calculates CAPE
+!
+! PUBLIC: data
+!
+  public limcnv                   ! top interface level limit for convection
 !
 ! Private data
 !
@@ -67,9 +71,6 @@ module zm_conv
    logical :: trigdcape_ull    = .false. !true to use DCAPE trigger and ULL 
    logical :: trig_dcape_only  = .false. !true to use DCAPE trigger, ULL not used
    logical :: trig_ull_only    = .false. !true to use ULL along with default CAPE-based trigger
-   integer, allocatable :: dcapemx(:) ! save maxi from 1st call for CAPE calculation and used in 2nd call when DCAPE-ULL active
-!  May need to change to use local variable !  as passed via dummy argument. For now, making it threadprivate as follows,
-!$omp threadprivate (dcapemx)
 
    real(r8) :: ke           ! Tunable evaporation efficiency set from namelist input zmconv_ke
    real(r8) :: c0_lnd       ! set from namelist input zmconv_c0_lnd
@@ -97,7 +98,7 @@ module zm_conv
    real(r8) :: grav        ! = gravit
    real(r8) :: cp          ! = cpres = cpair
    
-   integer  limcnv       ! top interface level limit for convection
+   integer,protected ::  limcnv   ! top interface level limit for convection
 
    real(r8) :: tp_fac = unset_r8  ! PMA tunes tpert 
 
@@ -524,6 +525,7 @@ subroutine zm_convr(lchnk   ,ncol    , &
    real(r8) qdifr
    real(r8) sdifr
 
+   integer dcapemx(pcols)  ! maxi saved from 1st call for CAPE calculation;  used in 2nd call when DCAPE-ULL active
 !
 !--------------------------Data statements------------------------------
 !
@@ -639,30 +641,26 @@ subroutine zm_convr(lchnk   ,ncol    , &
       !    The differewnce of CAPE values from the two calls is DCAPE, based on the same launch level
 
          iclosure = .true.
-         call buoyan_dilute(lchnk   ,ncol    , &
-                  q       ,t       ,p       ,z       ,pf       , &
-                  tp      ,qstp    ,tl      ,rl      ,cape     , &
-                  pblt    ,lcl     ,lel     ,lon     ,maxi     , &
-                  rgas    ,grav    ,cpres   ,msg     , &
-                  tpert   ,iclosure)
+         call buoyan_dilute(lchnk   ,ncol    ,                   &! in
+                  q       ,t       ,p       ,z       ,pf       , &! in
+                  tp      ,qstp    ,tl      ,rl      ,cape     , &! rl = in, others = out
+                  pblt    ,lcl     ,lel     ,lon     ,maxi     , &! pblt = in, others = out
+                  rgas    ,grav    ,cpres   ,msg               , &! in
+                  tpert   ,iclosure                            )  ! in
          
       if (trigdcape_ull .or. trig_dcape_only) then
-         if (.not. allocated(dcapemx)) then
-            allocate (dcapemx(pcols), stat=ierror)
-            if ( ierror /= 0 ) call endrun('ZM_CONVR error: allocation error dcapemx')
-         endif
          dcapemx(:ncol) = maxi(:ncol)
       endif
 
       !DCAPE-ULL
       if (.not. is_first_step() .and. (trigdcape_ull .or. trig_dcape_only)) then
          iclosure = .false.
-         call buoyan_dilute(lchnk   ,ncol    , &
-                 q_star  ,t_star     ,p       ,z       ,pf       , &
-                 tpm1    ,qstpm1  ,tlm1    ,rl      ,capem1   , &
-                 pblt    ,lclm1   ,lelm1   ,lonm1   ,maxim1   , &
-                 rgas    ,grav    ,cpres   ,msg     , &
-                 tpert   ,iclosure)
+         call buoyan_dilute(lchnk   ,ncol    ,                  &! in
+                 q_star  ,t_star     ,p       ,z       ,pf    , &! in
+                 tpm1    ,qstpm1  ,tlm1    ,rl      ,capem1   , &! rl = in, others = out
+                 pblt    ,lclm1   ,lelm1   ,lonm1   ,maxim1   , &! pblt = in; others = out
+                 rgas    ,grav    ,cpres   ,msg               , &! in
+                 tpert   ,iclosure, dcapemx                   )  ! in
 
           dcape(:ncol) = (cape(:ncol)-capem1(:ncol))/(delt*2._r8)
       endif
@@ -3144,12 +3142,14 @@ subroutine q1q2_pjr(lchnk   , &
    return
 end subroutine q1q2_pjr
 
-subroutine buoyan_dilute(lchnk   ,ncol    , &
-                  q       ,t       ,p       ,z       ,pf      , &
-                  tp      ,qstp    ,tl      ,rl      ,cape    , &
-                  pblt    ,lcl     ,lel     ,lon     ,mx      , &
-                  rd      ,grav    ,cp      ,msg     , &
-                  tpert   ,iclosure)
+subroutine buoyan_dilute(lchnk   ,ncol    , &! in
+                  q_in    ,t_in    ,p       ,z       ,pf      , &! in
+                  tp      ,qstp    ,tl      ,rl      ,cape    , &! rl = in, others = out
+                  pblt    ,lcl     ,lel     ,lon     ,mx      , &! pblt = in; others = out
+                  rd      ,grav    ,cp      ,msg     ,          &! in
+                  tpert   ,iclosure,                            &! in
+                  dcapemx , use_input_parcel_tq_in,             &! in, optional
+                  q_mx    ,t_mx                                 )! in, optional
 !----------------------------------------------------------------------- 
 ! 
 ! Purpose: 
@@ -3183,14 +3183,27 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
    integer, intent(in) :: lchnk                 ! chunk identifier
    integer, intent(in) :: ncol                  ! number of atmospheric columns
 
-   real(r8), intent(in) :: q(pcols,pver)        ! spec. humidity
-   real(r8), intent(in) :: t(pcols,pver)        ! temperature
+   real(r8), intent(in) :: q_in(pcols,pver)     ! spec. humidity
+   real(r8), intent(in) :: t_in(pcols,pver)     ! temperature
    real(r8), intent(in) :: p(pcols,pver)        ! pressure
    real(r8), intent(in) :: z(pcols,pver)        ! height
    real(r8), intent(in) :: pf(pcols,pver+1)     ! pressure at interfaces
+
    real(r8), intent(in) :: pblt(pcols)          ! index of pbl depth
-   real(r8), intent(in) :: tpert(pcols)         ! perturbation temperature by pbl processes
-   logical, intent(in) :: iclosure              ! true for normal procedure, otherwise use dcapemx from 1st call
+
+   real(r8), intent(in) :: rl
+   real(r8), intent(in) :: rd
+   real(r8), intent(in) :: cp
+   real(r8), intent(in) :: grav
+   integer,  intent(in) :: msg
+   real(r8), intent(in) :: tpert(pcols)          ! perturbation temperature by pbl processes
+   logical,  intent(in) :: iclosure              ! true for normal procedure, otherwise use dcapemx from 1st call
+
+   integer, intent(in), optional :: dcapemx(pcols)
+
+   logical, intent(in),    optional :: use_input_parcel_tq_in  ! if .true., use input values of dcapemx, q_mx, t_mx
+   real(r8),intent(inout), optional :: q_mx(pcols)             ! in the CAPE calculation
+   real(r8),intent(inout), optional :: t_mx(pcols)
 !
 ! output arguments
 !
@@ -3198,13 +3211,18 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
    real(r8), intent(out) :: qstp(pcols,pver)     ! saturation mixing ratio of parcel (only above lcl, just q below).
    real(r8), intent(out) :: tl(pcols)            ! parcel temperature at lcl
    real(r8), intent(out) :: cape(pcols)          ! convective aval. pot. energy.
-   integer lcl(pcols)        !
-   integer lel(pcols)        !
-   integer lon(pcols)        ! level of onset of deep convection
-   integer mx(pcols)         ! level of max moist static energy
+
+   integer, intent(out) :: lcl(pcols)        !
+   integer, intent(out) :: lel(pcols)        !
+   integer, intent(out) :: lon(pcols)        ! level of onset of deep convection
+   integer, intent(out) :: mx(pcols)         ! level of max moist static energy
 !
 !--------------------------Local Variables------------------------------
 !
+   logical  :: use_input_parcel_tq
+   real(r8) :: q(pcols,pver)        ! spec. humidity
+   real(r8) :: t(pcols,pver)        ! temperature
+
    real(r8) capeten(pcols,num_cin)     ! provisional value of cape
    real(r8) tv(pcols,pver)       !
    real(r8) tpv(pcols,pver)      !
@@ -3225,25 +3243,65 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
 
 ! DCAPE-ULL
    real(r8) pblt600(pcols)
+   integer top_k(pcols)
 
-   real(r8) cp
    real(r8) e
-   real(r8) grav
-
    integer i
    integer k
-   integer msg
    integer n
    integer bot_layer
 
-   real(r8) rd
-   real(r8) rl
 #ifdef PERGRO
    real(r8) rhd
 #endif
 !
 !-----------------------------------------------------------------------
 !
+   if (PRESENT(use_input_parcel_tq_in)) then
+      use_input_parcel_tq = use_input_parcel_tq_in
+   else
+      use_input_parcel_tq = .false.
+   end if
+
+   if (  use_input_parcel_tq  .and. &
+        ((.not.PRESENT(t_mx)) .or.  &
+         (.not.PRESENT(q_mx)) .or.  &
+         (.not.PRESENT(dcapemx)) )  ) then
+     call endrun('buoyan_dilute :: use_input_parcel_tq = .t. but dcapemx, t_mx or q_mx is not provided')
+  end if
+
+  !------------------------------------------------------------------------------------
+  ! Copy the incoming temperature and specific humidity values to work arrays. 
+  ! The latter will be used in the buoyancy calculation.
+  !-----------------------------------------------------------------------------------
+  t(:ncol,:) = t_in(:ncol,:)
+  q(:ncol,:) = q_in(:ncol,:)
+
+
+  if (use_input_parcel_tq) then
+  !------------------------------------------------------------------------------------
+  ! We expect 
+  ! (1) the incoming array dcapemx contains previously identified launching level index, and 
+  ! (2) the arrays q_mx and t_mx contain q and T values at the old launching level 
+  !     at the time when the old launching level was identified. 
+  ! Copy the old values to work arrays for calculations in the rest of this subroutine
+  !------------------------------------------------------------------------------------
+
+     mx(:ncol) = dcapemx(:ncol)
+
+     do i=1,ncol
+        q(i,mx(i)) = q_mx(i)
+        t(i,mx(i)) = t_mx(i)
+     end do
+
+  else ! initialize the mx array
+
+     mx(:) = pver
+
+  end if
+
+!-----------------------------------------------------------------------
+
    do n = 1,num_cin
       do i = 1,ncol
          lelten(i,n) = pver
@@ -3255,7 +3313,6 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
       lon(i) = pver
       knt(i) = 0
       lel(i) = pver
-      mx(i) = lon(i)
       cape(i) = 0._r8
       hmax(i) = 0._r8
    end do
@@ -3287,8 +3344,22 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
 
 ! DCAPE-ULL
   if ((trigdcape_ull .or. trig_dcape_only ).and. (.not. iclosure)) then
+  !------------------------------------------------------
+  ! Use max moist static energy level that is passed in
+  !------------------------------------------------------
+     if (.not.PRESENT(dcapemx)) call endrun('** ZM CONV buoyan_dilute: dcapemx not present **')
      mx(:ncol) = dcapemx(:ncol)
-  else
+
+  elseif (.not.use_input_parcel_tq) then
+  !----------------------------------------------
+  ! Search for max moist static energy level
+  !----------------------------------------------
+   if (trigdcape_ull .or. trig_ull_only) then !DCAPE-ULL
+      top_k(:ncol) = nint(pblt600(:ncol))
+   else
+      top_k(:ncol) = nint(pblt(:ncol))
+   end if
+
 #ifdef PERGRO
    do k = bot_layer,msg + 1,-1
       do i = 1,ncol
@@ -3298,18 +3369,11 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
 !
          rhd = (hmn(i) - hmax(i))/(hmn(i) + hmax(i))
 
-         !DCAPE-ULL
-         if (trigdcape_ull .or. trig_ull_only) then
-           if (k >= nint(pblt600(i)) .and. k <= lon(i) .and. rhd > -1.e-4_r8) then
+           if (k >= top_k(i) .and. k <= lon(i) .and. rhd > -1.e-4_r8) then
               hmax(i) = hmn(i)
               mx(i) = k
            end if
-         else
-           if (k >= nint(pblt(i)) .and. k <= lon(i) .and. rhd > -1.e-4_r8) then
-              hmax(i) = hmn(i)
-              mx(i) = k
-           end if
-         end if
+
       end do
    end do
 #else
@@ -3317,22 +3381,25 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
       do i = 1,ncol
          hmn(i) = cp*t(i,k) + grav*z(i,k) + rl*q(i,k)
 
-         !DCAPE-ULL
-         if (trigdcape_ull .or. trig_ull_only) then
-            if (k >= nint(pblt600(i)) .and. k <= lon(i) .and. hmn(i) > hmax(i)) then
+            if (k >= top_k(i) .and. k <= lon(i) .and. hmn(i) > hmax(i)) then
                hmax(i) = hmn(i)
                mx(i) = k
             end if
-         else
-           if (k >= nint(pblt(i)) .and. k <= lon(i) .and. hmn(i) > hmax(i)) then
-              hmax(i) = hmn(i)
-              mx(i) = k
-           end if
-         end if
+
       end do
    end do
 #endif
 
+  end if
+
+!--------------------------------------
+! Save launching level T, q for output
+!--------------------------------------
+  if ( .not.use_input_parcel_tq .and. PRESENT(q_mx) .and. PRESENT(t_mx) ) then
+     do i=1,ncol
+        q_mx(i) = q(i,mx(i))
+        t_mx(i) = t(i,mx(i))
+     end do
   end if
 
 ! LCL dilute calculation - initialize to mx(i)

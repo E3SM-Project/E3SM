@@ -74,6 +74,7 @@ module ocn_forward_mode
    use ocn_tracer_MacroMolecules
    use ocn_tracer_ideal_age
    use ocn_tracer_CFC
+   use ocn_tracer_benthos
    use ocn_tracer_surface_restoring
    use ocn_gm
    use ocn_submesoscale_eddies
@@ -482,6 +483,8 @@ module ocn_forward_mode
       ierr = ior(ierr,err_tmp)
       call ocn_tracer_CFC_init(domain, err_tmp)
       ierr = ior(ierr,err_tmp)
+      call ocn_benthos_tracer_init(domain, err_tmp)
+      ierr = ior(ierr,err_tmp)
       if (ierr /= 0) then
          call mpas_log_write( &
               'Error initializing tracer tendency modules', &
@@ -647,6 +650,19 @@ module ocn_forward_mode
         call mpas_timer_stop('io_CFC')
       endif
 
+      ! read initial data required for ecosys forcing
+      if (config_use_benthosTracers .and. config_use_benthos_monthly_forcing) then
+        call mpas_timer_start('io_benthos',.false.)
+        call ocn_get_benthos_data(domain % streamManager, domain, domain % clock, .true.)
+        call mpas_timer_stop('io_benthos')
+      endif
+
+      if (config_use_benthosTracers .and. config_use_benthos_monthly_terra_forcing) then
+        call mpas_timer_start('io_benthos',.false.)
+        call ocn_get_benthos_terra_data(domain % streamManager, domain, domain % clock, .true.)
+        call mpas_timer_stop('io_benthos')
+      endif
+
       ! read initial data required for monthly surface salinity restoring
       ! always execute this call as initial data needed regardless of alarm
       if (config_use_activeTracers_surface_restoring .and. config_use_surface_salinity_monthly_restoring) then
@@ -769,7 +785,8 @@ module ocn_forward_mode
                 config_use_ecosysTracers .or. &
                 (config_use_activeTracers_surface_restoring .and. config_use_surface_salinity_monthly_restoring) .or. &
                 config_use_time_varying_atmospheric_forcing .or. &
-                config_use_time_varying_land_ice_forcing) then
+                config_use_time_varying_land_ice_forcing .or. &
+                config_use_benthosTracers) then
 
                 call ocn_time_varying_forcing_write_restart_times(domain)
             end if
@@ -808,6 +825,20 @@ module ocn_forward_mode
            call mpas_timer_start('io_CFC',.false.)
            call ocn_get_CFCData(domain % streamManager, domain, domain % clock, .false.)
            call mpas_timer_stop('io_CFC')
+         endif
+
+         ! read next time level data required for benthos forcing
+         if (config_use_benthosTracers .and. config_use_benthos_monthly_forcing) then
+            call mpas_timer_start('io_benthos',.false.)
+            call ocn_get_benthos_data(domain % streamManager, domain, domain % clock, .false.)
+            call mpas_timer_stop('io_benthos')
+         endif
+
+         ! read next time level data required for benthos forcing
+         if (config_use_benthosTracers .and. config_use_benthos_monthly_terra_forcing) then
+            call mpas_timer_start('io_benthos',.false.)
+            call ocn_get_benthos_terra_data(domain % streamManager, domain, domain % clock, .false.)
+            call mpas_timer_stop('io_benthos')
          endif
 
          ! read next time level data required for monthly surface salinity restoring
@@ -853,6 +884,8 @@ module ocn_forward_mode
 
       if ( config_time_integrator == 'split_explicit') then
          call mpas_dmpar_exch_group_destroy_reusable_buffers(domain, 'subcycleFields')
+      else if ( config_time_integrator == 'split_implicit') then
+         call ocn_time_integrator_si_variable_destroy()
       end if
 
       call ocn_analysis_finalize(domain, ierr)
