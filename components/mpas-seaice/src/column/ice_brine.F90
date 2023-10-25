@@ -317,7 +317,6 @@
       do k= 2, nblyr+1
          ikin(k) = k_o*iphin(k)**exp_h
          if (hbr_old .GT. puny) iDin(k) = iphin(k)*Dm/hbr_old**2
-
          if (hbr_old .GE. Ra_c) &
             iDin(k) = iDin(k) &
                     + l_sk*ikin(k)*gravit/viscos_dynamic*drho(k)/hbr_old**2
