@@ -1,6 +1,2 @@
-if (NOT DEBUG)
-  string(APPEND CFLAGS " -O2")
-endif()
-if (NOT DEBUG)
-  string(APPEND FFLAGS " -O2")
-endif()
+string(APPEND CMAKE_C_FLAGS_RELEASE " -O2")
+string(APPEND CMAKE_Fortran_FLAGS_RELEASE " -O2")
