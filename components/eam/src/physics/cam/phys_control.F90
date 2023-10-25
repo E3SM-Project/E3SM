@@ -78,7 +78,9 @@ logical           :: history_verbose      = .false.    ! produce verbose output 
 logical           :: history_vdiag        = .false.    ! output the variables used by the AMWG variability diag package
 logical           :: history_aerosol      = .false.    ! output the MAM aerosol variables and tendencies
 logical           :: history_aero_optics  = .false.    ! output the aerosol
-logical           ::  is_output_interactive_volc = .false.    ! output the stratosphere optics
+logical           :: is_output_interactive_volc = .false.    ! output the stratosphere optics
+logical           :: emis_constrained_frp = .false.    ! use emis converted FRP for plume-rise model
+logical           :: plumerise            = .false.    ! use plume-rise model
 logical           :: history_eddy         = .false.    ! output the eddy variables
 logical           :: history_budget       = .false.    ! output tendencies and state variables for CAM4
                                                        ! temperature, water vapor, cloud ice and cloud
@@ -212,7 +214,8 @@ subroutine phys_ctl_readnl(nlfile)
       use_MMF_VT, MMF_VT_wn_max, &
       use_crm_accel, crm_accel_factor, crm_accel_uv, &
       use_subcol_microp, atm_dep_flux, history_amwg, history_verbose, history_vdiag, &
-      history_aerosol, history_aero_optics, is_output_interactive_volc, &
+      history_aerosol, history_aero_optics, & 
+      is_output_interactive_volc,emis_constrained_frp,plumerise, &
       history_eddy, history_budget,  history_budget_histfile_num, history_waccm, &
       conv_water_in_rad, history_clubb, do_clubb_sgs, do_tms, state_debug_checks, &
       linearize_pbl_winds, export_gustiness, &
@@ -280,6 +283,8 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(history_aerosol,                 1 , mpilog,  0, mpicom)
    call mpibcast(history_aero_optics,             1 , mpilog,  0, mpicom)
    call mpibcast(is_output_interactive_volc,      1 , mpilog,  0, mpicom)
+   call mpibcast(emis_constrained_frp,            1 , mpilog,  0, mpicom)
+   call mpibcast(plumerise,                       1 , mpilog,  0, mpicom)
    call mpibcast(history_budget,                  1 , mpilog,  0, mpicom)
    call mpibcast(history_gaschmbudget,            1 , mpilog,  0, mpicom)
    call mpibcast(history_gaschmbudget_2D,         1 , mpilog,  0, mpicom)
@@ -492,7 +497,8 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
                         microp_scheme_out, &
                         radiation_scheme_out, use_subcol_microp_out, atm_dep_flux_out, &
                         history_amwg_out, history_verbose_out, history_vdiag_out, &
-                        history_aerosol_out, history_aero_optics_out, history_eddy_out, is_output_interactive_volc_out, &
+                        history_aerosol_out, history_aero_optics_out, history_eddy_out, &
+                        is_output_interactive_volc_out, emis_constrained_frp_out, plumerise_out, &
                         history_budget_out, history_gaschmbudget_out, history_gaschmbudget_2D_out, history_gaschmbudget_2D_levels_out, &
                         gaschmbudget_2D_L1_s_out, gaschmbudget_2D_L1_e_out, gaschmbudget_2D_L2_s_out, gaschmbudget_2D_L2_e_out, &
                         gaschmbudget_2D_L3_s_out, gaschmbudget_2D_L3_e_out, gaschmbudget_2D_L4_s_out, gaschmbudget_2D_L4_e_out, &
@@ -551,6 +557,8 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    logical,           intent(out), optional :: history_aerosol_out
    logical,           intent(out), optional :: history_aero_optics_out
    logical,           intent(out), optional :: is_output_interactive_volc_out
+   logical,           intent(out), optional :: emis_constrained_frp_out
+   logical,           intent(out), optional :: plumerise_out
    logical,           intent(out), optional :: history_budget_out
    logical,           intent(out), optional :: history_gaschmbudget_out
    logical,           intent(out), optional :: history_gaschmbudget_2D_out
@@ -645,6 +653,8 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    if ( present(atm_dep_flux_out        ) ) atm_dep_flux_out         = atm_dep_flux
    if ( present(history_aerosol_out     ) ) history_aerosol_out      = history_aerosol
    if ( present(is_output_interactive_volc_out    ) ) is_output_interactive_volc_out      = is_output_interactive_volc
+   if ( present(emis_constrained_frp_out    ) ) emis_constrained_frp_out      = emis_constrained_frp
+   if ( present(plumerise_out    ) ) plumerise_out      = plumerise
    if ( present(history_aero_optics_out ) ) history_aero_optics_out  = history_aero_optics
    if ( present(history_budget_out      ) ) history_budget_out       = history_budget
    if ( present(history_gaschmbudget_out) ) history_gaschmbudget_out = history_gaschmbudget

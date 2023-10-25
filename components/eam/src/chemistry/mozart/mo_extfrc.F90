@@ -46,7 +46,8 @@ module mo_extfrc
   integer, parameter :: nfire = 4 !! two type of fire emission
   integer :: nfire_count
   integer :: PH_emis_m(nfire), PH_emis_n(nfire) ! fire emission indices
-  logical, parameter :: plumerise = .true.
+  logical :: plumerise = .false.
+  logical :: emis_constrained_frp = .false.
 contains
 
   subroutine extfrc_inti( extfrc_specifier, extfrc_type, extfrc_cycle_yr, extfrc_fixed_ymd, extfrc_fixed_tod)
@@ -101,7 +102,9 @@ contains
     !-----------------------------------------------------------------------
  
     call phys_getopts( history_aerosol_out        = history_aerosol, &
-                       history_verbose_out        = history_verbose   )
+                       history_verbose_out        = history_verbose, &
+                       emis_constrained_frp_out   = emis_constrained_frp, &
+                       plumerise_out              = plumerise   )
 
     do i = 1, gas_pcnst
        has_extfrc(i) = .false.
@@ -408,7 +411,7 @@ contains
     real(r8) :: frcing_col_plume,frcing_vertical_plume_old(pver),frcing_vertical_plume_new(pver)
     real(r8) :: clat(pcols)                   ! current latitudes(radians)
     real(r8) :: clon(pcols)                   ! current longitudes(radians)
-    real(r8) :: tl, frp, frp_memory(pcols)! 
+    real(r8) :: tl, frp, frp_memory(pcols), frp4plume! 
     integer :: iyear,imo,iday_m,tod,tod_saved
     if( extfrc_cnt < 1 .or. extcnt < 1 ) then
        return
@@ -443,8 +446,8 @@ contains
              !plume-rise calculation for certain species
              if ((m == PH_emis_m(1) .and. isec == PH_emis_n(1)) .or. (m == PH_emis_m(2) .and. isec == PH_emis_n(2)) &
                  .or. (m == PH_emis_m(3) .and. isec == PH_emis_n(3)) .or. (m == PH_emis_m(4) .and. isec == PH_emis_n(4)) )then
-                plume_height_EM(:ncol) = 0._r8
-                heat_flux_plume(:ncol) = 0._r8
+                !plume_height_EM(:ncol) = 0._r8
+                !heat_flux_plume(:ncol) = 0._r8
                 !frcing_col_plume = 0._r8
                 frcing_vertical_plume_old(:pver) = 0._r8
                 frcing_vertical_plume_new(:pver) = 0._r8
@@ -466,31 +469,36 @@ contains
                          ! convert molecular/cm2/s to kw/m2/s, based on Wooster et al., 2005, equation 14                           
                          ! mass (kg/s) = emis*1.0E4/Avogadr_cst*12/1000
                          ! FRP (kW/m2) = mass/0.368*1000
+                            
                             frp = (frcing_col_plume*1.0e4/0.03_r8)/6.022e23_r8*12.0/0.368
                             frp = frp*10.0_r8 ! 
                             frp_memory(icol) = frp 
                             tod_saved = tod
                             call cal_plume_height(plume_height,zmidr(icol,:), pmid(icol,:), &
                                  tfld(icol,:), relhum(icol,:), qh2o(icol,:), ufld(icol,:), &
-                                 vfld(icol,:), clat(icol)/(3.1415_r8)*180.0_r8, clon(icol)/(3.1415_r8)*180.0_r8, tl, pt_v,frp)
+                                 vfld(icol,:), clat(icol)/(3.1415_r8)*180.0_r8, &
+                                 clon(icol)/(3.1415_r8)*180.0_r8, tl, pt_v, frp, frp4plume)
                             plume_height_EM(icol) = plume_height ! in meter
-                            heat_flux_plume(icol) = frp ! in kw/m2
+                            heat_flux_plume(icol) = frp4plume ! in kw/m2
                             
                          elseif (forcings(m)%species == 'pom_a4' .or. forcings(m)%species == 'brc_a4')then
-                            frp = frp_memory(icol)
-                            call cal_plume_height(plume_height,zmidr(icol,:), pmid(icol,:), &
-                                 tfld(icol,:), relhum(icol,:), qh2o(icol,:), ufld(icol,:), &
-                                 vfld(icol,:), clat(icol)/(3.1415_r8)*180.0_r8, clon(icol)/(3.1415_r8)*180.0_r8, tl, pt_v,frp)
+                            !frp = (frcing_col_plume*1.0e4/0.97_r8)/6.022e23_r8*12.0/0.368
+                            !frp = frp*10.0_r8 !
+                            !call cal_plume_height(plume_height,zmidr(icol,:), pmid(icol,:), &
+                            !     tfld(icol,:), relhum(icol,:), qh2o(icol,:), ufld(icol,:), &
+                            !     vfld(icol,:), clat(icol)/(3.1415_r8)*180.0_r8, clon(icol)/(3.1415_r8)*180.0_r8, tl, pt_v,frp)
+                            plume_height = plume_height_EM(icol) 
                          elseif (forcings(m)%species == 'num_a4' )then
                             !if at same timestep and other fire species        
-                             frp = frp_memory(icol)
-                             call cal_plume_height(plume_height,zmidr(icol,:), pmid(icol,:), &
-                                 tfld(icol,:), relhum(icol,:), qh2o(icol,:), ufld(icol,:), &
-                                 vfld(icol,:), clat(icol)/(3.1415_r8)*180.0_r8, clon(icol)/(3.1415_r8)*180.0_r8, tl, pt_v,frp)    
+                             !frp = frp_memory(icol)
+                             !call cal_plume_height(plume_height,zmidr(icol,:), pmid(icol,:), &
+                             !    tfld(icol,:), relhum(icol,:), qh2o(icol,:), ufld(icol,:), &
+                             !    vfld(icol,:), clat(icol)/(3.1415_r8)*180.0_r8, clon(icol)/(3.1415_r8)*180.0_r8, tl, pt_v,frp)    
+                            plume_height = plume_height_EM(icol) 
                          endif 
                          
                          write(iulog,*) 'kzm_fire_species ', forcings(m)%species, isec
-                         write(iulog,*) 'kzm_FRP ',frp
+                         write(iulog,*) 'kzm_FRP ',frp,frp4plume
                          write(iulog,*)'kzm_plume_rise_calculation_running'
                          write(iulog,*)'kzm_plume_rise_calculation_lat ', clat(icol)/(3.1415_r8)*180.0_r8
                          write(iulog,*)'kzm_plume_rise_calculation_lon ', clon(icol)/(3.1415_r8)*180.0_r8  
@@ -580,7 +588,8 @@ contains
   end subroutine extfrc_set
 
 ! subroutines for plumerise
-  subroutine cal_plume_height( plume_height,zmidr_v, pmid_v, tfld_v, relhum_v, qh2o_v, ufld_v, vfld_v,lat,lon,tl,pt_v,frp)
+  subroutine cal_plume_height( plume_height,zmidr_v, pmid_v, tfld_v, relhum_v, qh2o_v, &
+                               ufld_v, vfld_v,lat,lon,tl,pt_v,frp,frp4plume )
     use smk_plumerise, only : smk_pr_driver  
     !use time_manager,  only: get_curr_date
     implicit none
@@ -594,13 +603,14 @@ contains
     real(r8), intent(in)  ::   ufld_v(pver)            ! zonal velocity (m/s)
     real(r8), intent(in)  ::   vfld_v(pver)            ! meridional velocity (m/s)
     real(r8), intent(in)  ::   frp
+    real(r8), intent(out)  ::   frp4plume, tl
     ! local variables
     real(r8)  :: env(8, pver) ! meterology profiles for this column 
     real(r8)  :: gfed_area  ! fire parameters
     real(r8)  :: lat,lon !
     real(r8)  :: pt_v(pver)  ! potential temperature
     integer :: i,ihr,imn,iyear,imo,iday_m,tod 
-    real(r8) :: frp_peak,frp_h,frp_b,frp_sigma,tl,frp4plume
+    real(r8) :: frp_peak,frp_h,frp_b,frp_sigma
    ! get plume height
    ! env: geopotential height, pressure, temp(state%t), relative humidity(state%),
    ! env: potential T, specific humidity, U, V
@@ -641,10 +651,10 @@ contains
        elseif (tl < 0.0) then
           tl = tl + 24.0
        endif 
-       if (frp < 0.0_r8) then
-          frp4plume=frp_peak*(exp(-0.5*(tl-frp_h)*(tl-frp_h)/frp_sigma/frp_sigma)+frp_b) 
-       else
+       if (emis_constrained_frp) then
           frp4plume=frp
+       else 
+          frp4plume=frp_peak*(exp(-0.5*(tl-frp_h)*(tl-frp_h)/frp_sigma/frp_sigma)+frp_b) 
        endif
        call smk_pr_driver(plume_height , env, gfed_area, frp4plume, lat )
        plume_height = plume_height*1000.0_r8 ! in meter
