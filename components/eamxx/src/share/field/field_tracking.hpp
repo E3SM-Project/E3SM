@@ -74,7 +74,7 @@ protected:
   // Tracking the updates of the field
   TimeStamp         m_time_stamp;
 
-  // For accummulated vars, the time where the accummulation started
+  // For accumulated vars, the time where the accumulation started
   TimeStamp         m_accum_start;
   ci_string         m_accum_type;
 

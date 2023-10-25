@@ -325,7 +325,7 @@ void AtmosphereDriver::setup_surface_coupling_processes () const
   }
 }
 
-void AtmosphereDriver::reset_accummulated_fields ()
+void AtmosphereDriver::reset_accumulated_fields ()
 {
   constexpr Real zero = 0;
   for (auto fm_it : m_field_mgrs) {
@@ -1416,7 +1416,7 @@ void AtmosphereDriver::run (const int dt) {
     "  model start-of-step time = " + m_current_ts.get_date_string() + " " + m_current_ts.get_time_string() + "\n");
 
   // Reset accum fields
-  reset_accummulated_fields();
+  reset_accumulated_fields();
 
   // The class AtmosphereProcessGroup will take care of dispatching arguments to
   // the individual processes, which will be called in the correct order.
