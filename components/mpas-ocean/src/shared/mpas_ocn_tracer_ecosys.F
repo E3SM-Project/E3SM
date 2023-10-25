@@ -1705,6 +1705,10 @@ contains
 
 ! input flux components in ecosysAuxiliary
       real (kind=RKIND), dimension(:), pointer :: &
+         coastalFluxDOC,       &
+         coastalFluxDIC,       &
+         coastalFluxDON,       &
+         coastalFluxNO3,       &
          windSpeedSquared10m,  &
          depositionFluxNO3,    &
          depositionFluxNH4,    &
@@ -1810,6 +1814,13 @@ contains
       call mpas_pool_get_array(ecosysAuxiliary, 'CO2_gas_flux', CO2_gas_flux)
       call mpas_pool_get_array(ecosysAuxiliary, 'CO2_alt_gas_flux', CO2_alt_gas_flux)
       call mpas_pool_get_array(ecosysAuxiliary, 'total_Chl', total_Chl)
+
+      if (config_use_coastal_erosion_flux) then
+         call mpas_pool_get_array(ecosysAuxiliary, 'coastalFluxDON', coastalFluxDON)
+         call mpas_pool_get_array(ecosysAuxiliary, 'coastalFluxDIC', coastalFluxDIC)
+         call mpas_pool_get_array(ecosysAuxiliary, 'coastalFluxNO3', coastalFluxNO3)
+         call mpas_pool_get_array(ecosysAuxiliary, 'coastalFluxDOC', coastalFluxDOC)
+      endif
 
       if (config_use_ecosysTracers_sea_ice_coupling) then
 
@@ -1975,6 +1986,19 @@ contains
          ecosysSurfaceFlux(docr_ind_MPAS,iCell) =  &
             ecosysSurfaceFlux(docr_ind_MPAS,iCell) + riverFluxDOC(iCell) * 0.2_RKIND
 
+! add contribution from coastal erosion if available
+         if (config_use_coastal_erosion_flux) then
+            ecosysSurfaceFlux(no3_ind_MPAS,iCell) = &
+               ecosysSurfaceFlux(no3_ind_MPAS,iCell) + coastalFluxNO3(iCell)
+            ecosysSurfaceFlux(don_ind_MPAS,iCell) =  &
+               ecosysSurfaceFlux(don_ind_MPAS,iCell) + coastalFluxDON(iCell)
+            ecosysSurfaceFlux(dic_ind_MPAS,iCell) =  &
+               ecosysSurfaceFlux(dic_ind_MPAS,iCell) + coastalFluxDIC(iCell)
+            ecosysSurfaceFlux(dic_alt_co2_ind_MPAS,iCell) =  &
+               ecosysSurfaceFlux(dic_alt_co2_ind_MPAS,iCell) + coastalFluxDIC(iCell)
+            ecosysSurfaceFlux(doc_ind_MPAS,iCell) =  &
+               ecosysSurfaceFlux(doc_ind_MPAS,iCell) + coastalFluxDOC(iCell)
+         endif
 ! now add contribution from sea ice fluxes if available (assume MKS)
          if (config_use_ecosysTracers_sea_ice_coupling) then
             topLayerThickness = abs(zMid(iLevelSurface,iCell))*2.0_RKIND
@@ -2249,6 +2273,8 @@ contains
 
 ! input flux components in ecosysAuxiliary
       real (kind=RKIND), dimension(:), pointer :: &
+         coastalFluxCarbon,    &
+         coastalFluxNitrogen,  &
          depositionFluxNO3,    &
          depositionFluxNH4,    &
          IRON_FLUX_IN,         &
@@ -2265,6 +2291,8 @@ contains
 
 ! input flux components in ecosysMonthlyForcing
       real (kind=RKIND), dimension(:), pointer :: &
+         coastalFluzCarbon,    &
+         coastalFluzNitrogen,  &
          depositionFluzNO3,    &
          depositionFluzNH4,    &
          IRON_FLUZ_IN,         &
@@ -2578,6 +2606,13 @@ contains
         call mpas_pool_get_array(ecosysMonthlyForcing, 'riverFluzDOC', riverFluzDOC)
       endif
 
+      if (config_use_coastal_erosion_flux) then
+         call mpas_pool_get_array(ecosysAuxiliary, 'coastalFluxCarbon', coastalFluxCarbon)
+         call mpas_pool_get_array(ecosysAuxiliary, 'coastalFluxNitrogen', coastalFluxNitrogen)
+         call mpas_pool_get_array(ecosysMonthlyForcing, 'coastalFluzCarbon', coastalFluzCarbon)
+         call mpas_pool_get_array(ecosysMonthlyForcing, 'coastalFluzNitrogen', coastalFluzNitrogen)
+      end if
+
       call MPAS_forcing_init_field( domain % streamManager, &
                 forcingGroupHead, &
                 'ecosysMonthlyClimatology', &
@@ -2726,6 +2761,31 @@ contains
 
       endif  ! config_use_ecosysTracers_river_inputs_from_coupler
 
+      if (config_use_coastal_erosion_flux) then
+
+        call MPAS_forcing_init_field( domain % streamManager, &
+                forcingGroupHead, &
+                'ecosysMonthlyClimatology', &
+                'coastalFluzCarbon', &
+                'ecosys_monthly_flux', &
+                'ecosysMonthlyForcing',  &
+                'coastalFluzCarbon',  &
+                'linear',  &
+                forcingReferenceTimeMonthly,  &
+                forcingIntervalMonthly)
+
+        call MPAS_forcing_init_field( domain % streamManager, &
+                forcingGroupHead, &
+                'ecosysMonthlyClimatology', &
+                'coastalFluzNitrogen', &
+                'ecosys_monthly_flux', &
+                'ecosysMonthlyForcing',  &
+                'coastalFluzNitrogen',  &
+                'linear',  &
+                forcingReferenceTimeMonthly,  &
+                forcingIntervalMonthly)
+      endif
+
       call MPAS_forcing_init_field_data( forcingGroupHead, &
         'ecosysMonthlyClimatology',  &
          domain % streamManager,  &
@@ -2780,6 +2840,12 @@ contains
         type (mpas_pool_type), pointer :: ecosysMonthlyForcing
 
         real (kind=RKIND), dimension(:), pointer :: &
+         coastalFluxCarbon,    &
+         coastalFluxNitrogen,  &
+         coastalFluxDOC,       &
+         coastalFluxDON,       &
+         coastalFluxDIC,       &
+         coastalFluxNO3,       &
          depositionFluxNO3,    &
          depositionFluxNH4,    &
          IRON_FLUX_IN,         &
@@ -2796,6 +2862,8 @@ contains
 
 ! input flux components in ecosysMonthlyForcing
         real (kind=RKIND), dimension(:), pointer :: &
+         coastalFluzCarbon,    &
+         coastalFluzNitrogen,  &
          depositionFluzNO3,    &
          depositionFluzNH4,    &
          IRON_FLUZ_IN,         &
@@ -2812,6 +2880,9 @@ contains
 
         integer, pointer :: nCells
         integer :: iCell
+
+        real (kind=RKIND), parameter :: &
+           convertKgToMg = 1.0e6_RKIND
 
         call mpas_set_timeInterval(timeStepEco,timeString=config_dt)
         call mpas_get_timeInterval(timeStepEco,dt=dt)
@@ -2862,6 +2933,26 @@ contains
           call mpas_pool_get_array(ecosysMonthlyForcing, 'riverFluzALK', riverFluzALK)
           call mpas_pool_get_array(ecosysMonthlyForcing, 'riverFluzDOC', riverFluzDOC)
         endif
+
+        if (config_use_coastal_erosion_flux) then
+           call mpas_pool_get_array(ecosysAuxiliary, 'coastalFluxCarbon', coastalFluxCarbon)
+           call mpas_pool_get_array(ecosysAuxiliary, 'coastalFluxNitrogen', coastalFluxNitrogen)
+           call mpas_pool_get_array(ecosysAuxiliary, 'coastalFluxDOC', coastalFluxDOC)
+           call mpas_pool_get_array(ecosysAuxiliary, 'coastalFluxDON', coastalFluxDON)
+           call mpas_pool_get_array(ecosysAuxiliary, 'coastalFluxDIC', coastalFluxDIC)
+           call mpas_pool_get_array(ecosysAuxiliary, 'coastalFluxNO3', coastalFluxNO3)
+           call mpas_pool_get_array(ecosysMonthlyForcing, 'coastalFluzCarbon', coastalFluzCarbon)
+           call mpas_pool_get_array(ecosysMonthlyForcing, 'coastalFluzNitrogen', coastalFluzNitrogen)
+
+           do iCell = 1, nCells
+              coastalFluxCarbon(iCell) = max(0.0_RKIND,coastalFluzCarbon(iCell)) / carbon_mol_mass * convertKgToMg
+              coastalFluxNitrogen(iCell) = max(0.0_RKIND,coastalFluzNitrogen(iCell))/ nitrogen_mol_mass * convertKgToMg
+              coastalFluxDOC(iCell) = config_use_coastal_doc_frac * coastalFluxCarbon(iCell)
+              coastalFluxDIC(iCell) = coastalFluxCarbon(iCell)-coastalFluxDOC(iCell)
+              coastalFluxDON(iCell) = config_use_coastal_don_frac * coastalFluxNitrogen(iCell)
+              coastalFluxNO3(iCell) = coastalFluxNitrogen(iCell)-coastalFluxDON(iCell)
+           enddo
+        end if
 
         do iCell = 1, nCells
            depositionFluxNO3(iCell) = depositionFluzNO3(iCell)
@@ -3053,6 +3144,7 @@ contains
             ecosys_diag_Jint_Sitot_allocatedInMARBL = .true.
          found = .true.
       endif
+
       if (trim(field_name) == 'Jint_Fetot') then
          ecosys_diag_Jint_Fetot_indexInMARBL = indexInMARBL
          if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_2d) ) &

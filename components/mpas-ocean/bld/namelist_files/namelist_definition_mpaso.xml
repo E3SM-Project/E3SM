@@ -2826,6 +2826,30 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_use_coastal_erosion_flux" type="logical"
+	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
+if true, read coastal erosion carbon and nitrogen fluxes
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_coastal_don_frac" type="real"
+	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
+Fraction of coastal nitrogen flux as dissolved organic nitrogen
+
+Valid values: real positive value less than or equal to 1
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_coastal_doc_frac" type="real"
+	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
+Fraction of coastal carbon flux as dissolved organic carbon
+
+Valid values: real positive value less than or equal to 1
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_ecosysTracers_diagnostic_fields_level1" type="logical"
 	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
 if true, make variables in ecosysDiagFieldsLevel1 available for output

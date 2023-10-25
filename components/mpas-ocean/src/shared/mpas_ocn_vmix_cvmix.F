@@ -763,6 +763,13 @@ contains
          ! put double diffusion mxing here
          !
 
+ 
+         ! put uniform background vertical diffusion here
+         ! impose before no-flux boundary conditions at top and bottom by zero viscosity/diffusivity
+         ! (updated, Jan 27th, 2022, Yohei Takano)
+         do k = minLevelCell(iCell), maxLevelCell(iCell) + 1
+            vertDiffTopOfCell(k, iCell)=vertDiffTopOfCell(k, iCell) + 1.5_RKIND * 1.e-5_RKIND
+         end do
 
          ! computation of viscosity/diffusivity complete
          ! impose no-flux boundary conditions at top and bottom by zero viscosity/diffusivity

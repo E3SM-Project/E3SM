@@ -55,6 +55,18 @@
 			description="if true, couple ecosys fields with sea ice"
 			possible_values=".true. or .false."
 		/>
+		<nml_option name="config_use_coastal_erosion_flux" type="logical" default_value=".false." units="unitless"
+			description="if true, read coastal erosion carbon and nitrogen fluxes"
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_coastal_don_frac" type="real" default_value="0.5" units="unitless"
+			description="Fraction of coastal nitrogen flux as dissolved organic nitrogen"
+			possible_values="real positive value less than or equal to 1"
+		/>
+		<nml_option name="config_use_coastal_doc_frac" type="real" default_value="0.5" units="unitless"
+			description="Fraction of coastal carbon flux as dissolved organic carbon"
+			possible_values="real positive value less than or equal to 1"
+		/>
 		<nml_option name="config_ecosysTracers_diagnostic_fields_level1" type="logical" default_value=".false." units="unitless"
 			description="if true, make variables in ecosysDiagFieldsLevel1 available for output"
 			possible_values=".true. or .false."
@@ -630,6 +642,24 @@
 			<var name="PH_PREV_ALT_CO2" type="real" dimensions="nCells Time" units="pH"
 				description="pH (2D) of alternate CO2 from previous timestep"
 			/>
+			<var name="coastalFluxNitrogen" type="real" dimensions="nCells Time" units="mmol N m^{-3} m s^{-1}"
+				description="Coastal Erosion Flux of Nitrogen"
+			/>
+			<var name="coastalFluxCarbon" type="real" dimensions="nCells Time" units="mmol C m^{-3} m s^{-1}"
+				description="Coastal Erosion Flux of Carbon"
+			/>
+			<var name="coastalFluxDON" type="real" dimensions="nCells Time" units="mmol N m^{-3} m s^{-1}"
+				description="Coastal Erosion Flux of dissolved organic nitrogen"
+			/>
+			<var name="coastalFluxDOC" type="real" dimensions="nCells Time" units="mmol C m^{-3} m s^{-1}"
+				description="Coastal Erosion Flux of dissolved organic carbon"
+			/>
+			<var name="coastalFluxNO3" type="real" dimensions="nCells Time" units="mmol N m^{-3} m s^{-1}"
+				description="Coastal Erosion Flux of Nitrate"
+			/>
+			<var name="coastalFluxDIC" type="real" dimensions="nCells Time" units="mmol C m^{-3} m s^{-1}"
+				description="Coastal Erosion Flux of dissolved inorganic carbon"
+			/>
 			<var name="depositionFluxNO3" type="real" dimensions="nCells Time" units="mmol N m^{-3} m s^{-1}"
 				description="Atmospheric Deposition of NO3"
 			/>
@@ -786,9 +816,6 @@
 			<var name="ecosys_diag_POC_FLUX_IN" type="real" dimensions="nVertLevels nCells Time" units="mmol C m^{-3} m s^{-1}"
 				description="POC Flux into Cell"
 			/>
-			<var name="ecosys_diag_POP_FLUX_IN" type="real" dimensions="nVertLevels nCells Time" units="mmol P m^{-3} m s^{-1}"
-				description="POP Flux into Cell"
-			/>
 			<var name="ecosys_diag_CaCO3_FLUX_IN" type="real" dimensions="nVertLevels nCells Time" units="mmol C m^{-3} m s^{-1}"
 				description="CaCO3 Flux into Cell"
 			/>
@@ -879,8 +906,8 @@
 			<var name="ecosys_diag_POC_ACCUM" type="real" dimensions="nVertLevels nCells Time" units="mmol C m^{-3} s^{-1}"
 				description="POC Accumulation"
 			/>
-			<var name="ecosys_diag_POP_FLUX_IN" type="real" dimensions="nVertLevels nCells Time" units="mmol P m^{-3} s^{-1}"
-				description="POP Flux into cell"
+			<var name="ecosys_diag_POP_FLUX_IN" type="real" dimensions="nVertLevels nCells Time" units="mmol P m^{-3} m s^{-1}"
+				description="POP Flux into Cell"
 			/>
 			<var name="ecosys_diag_POP_PROD" type="real" dimensions="nVertLevels nCells Time" units="mmol P m^{-3} s^{-1}"
 				description="POP Production"
@@ -1922,5 +1949,11 @@
 		/>
 		<var name="IRON_FLUZ_IN" type="real" dimensions="nCells Time" units="mmol Fe m^{-3} m s^{-1}"
 			description="Surface Fe Flux"
+		/>
+		<var name="coastalFluzNitrogen" type="real" dimensions="nCells Time" units="kg N m^{-3} m s^{-1}"
+			description="Coastal Erosion Flux of Nitrogen"
+		/>
+		<var name="coastalFluzCarbon" type="real" dimensions="nCells Time" units="kg C m^{-3} m s^{-1}"
+			description="Coastal Erosion Flux of Carbon"
 		/>
 	</var_struct>
