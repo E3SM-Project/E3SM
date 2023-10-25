@@ -1683,7 +1683,6 @@ contains
 !    o  u        -- bottom atm level zon wind
 !    o  v        -- bottom atm level mer wind
 !    o  tbot     -- bottom atm level temp
-!    o  pbot     -- bottom atm level pressure
 !    o  ptem     -- bottom atm level pot temp
 !    o  shum     -- bottom atm level spec hum
 !    o  dens     -- bottom atm level air den
