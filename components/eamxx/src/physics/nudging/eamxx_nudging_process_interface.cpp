@@ -69,9 +69,6 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
     add_field<Updated>("horiz_winds",   horiz_wind_layout,   m/s,     grid_name, ps);
   }
 
-  if (m_use_weights) 
-    add_field<Updated>("nudging_weights", scalar3d_layout_mid, A, grid_name, "weights", ps);
-
   /* ----------------------- WARNING --------------------------------*/
 
   //Now need to read in the file
@@ -112,10 +109,10 @@ void Nudging::apply_weighted_tendency(Field& base, const Field& next, const Fiel
   Field tend = base.clone();
 
   // Use update internal to set tendency, will be (weights*next - weights*base), note tend=base at this point.
-  auto base_view = base.get_view<const mPack**>();
-  auto tend_view = tend.get_view<      mPack**>();
-  auto next_view = next.get_view<      mPack**>();
-  auto w_view    = weights.get_view<   mPack**>();
+  auto base_view = base.get_view<const Real**>();
+  auto tend_view = tend.get_view<      Real**>();
+  auto next_view = next.get_view<      Real**>();
+  auto w_view    = weights.get_view<   Real**>();
 
   const int num_cols       = w_view.extent(0);
   const int num_vert_packs = w_view.extent(1);
@@ -176,11 +173,9 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   // load nudging weights from file
   if (m_use_weights)
   {
-    auto nudging_weights = get_field_out("nudging_weights");
-    auto weights_layout = nudging_weights.get_header().get_identifier().get_layout();
-    create_helper_field("nudging_weights_ext", weights_layout, grid_name, ps);
+    create_helper_field("nudging_weights", scalar3d_layout_mid, grid_name, ps);
     std::vector<Field> fields;
-    auto nudging_weights_ext = get_helper_field("nudging_weights_ext");
+    auto nudging_weights = get_helper_field("nudging_weights");
     fields.push_back(nudging_weights);
     AtmosphereInput src_weights_input(m_weights_file, grid_ext, fields);
     src_weights_input.read_variables();
@@ -351,7 +346,7 @@ void Nudging::run_impl (const double dt)
         //        use the same grids as the case by providing the nudging weights file.
         //        I would not apply the vertical interpolation here, but it depends...
         //
-        auto nudging_weights_field = get_field_out("nudging_weights");
+        auto nudging_weights_field = get_helper_field("nudging_weights");
         // appply the nudging tendencies to the ATM states
         apply_weighted_tendency(atm_state_field, int_state_field, nudging_weights_field, dt);
       }
