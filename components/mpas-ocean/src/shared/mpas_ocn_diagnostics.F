@@ -1594,11 +1594,12 @@ contains
       !$acc parallel loop gang vector &
       !$acc          present(RiTopOfCell, maxLevelCell, nEdgesOnCell, edgesOnCell, normalVelocity, &
       !$acc                  edgeAreaFractionOfCell, zMid, BruntVaisalaFreqTop, minLevelCell) &
-      !$acc          private(k, i, iEdge, delU2, shearSquared, shearMean)
+      !$acc          private(k, i, iEdge, delU2, shearMean, jCell, shear, dz_edge, Ri_edge, &
+      !$acc                  RiTopOfCellNorm)
 #else
       !$omp parallel
-      !$omp do schedule(runtime) private(k, shearSquared, i, iEdge, delU2, shearMean, &
-      !$omp                              jCell, shear, dz_edge, Ri_edge)
+      !$omp do schedule(runtime) private(k, i, iEdge, delU2, shearMean, jCell, shear, &
+      !$omp                              dz_edge, Ri_edge, RiTopOfCellNorm)
 #endif
       do iCell=1,nCells
          RiTopOfCell(:,iCell) = 100.0_RKIND
