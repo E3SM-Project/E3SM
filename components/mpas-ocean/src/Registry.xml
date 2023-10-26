@@ -1915,12 +1915,12 @@
 			<var name="landIceFloatingFraction"/>
 			<var name="seaIcePressure"/>
 			<var name="atmosphericPressure"/>
+			<var name="normalVelocityTendOld" packages="splitAB2TimeIntegrator" />
+			<var name="CoriolisTermOld" packages="splitAB2TimeIntegrator" />
 			<var_array name="tracersSurfaceValue"/>
 			<var_array name="surfaceVelocity"/>
 			<var_array name="SSHGradient"/>
 			<var_array name="vertNonLocalFlux"/>
-			<var_array name="normalVelocityTendOld" packages="splitAB2TimeIntegrator" />
-			<var_array name="CoriolisTermOld" packages="splitAB2TimeIntegrator" />
 			<var name="boundaryLayerDepth"/>
 			<var name="effectiveDensityInLandIce"/>
 			<var_struct name="ecosysAuxiliary"/>

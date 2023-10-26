@@ -245,7 +245,8 @@ module ocn_time_integration
             'Incorrect choice for config_time_integrator:' // &
              trim(config_time_integrator) // &
              '   choices are: RK4, split_explicit, ' // &
-                 'unsplit_explicit, split_implicit, LTS', MPAS_LOG_ERR)
+                 'unsplit_explicit, split_implicit, LTS, ' // &
+                 'split_explicit_ab2', MPAS_LOG_ERR)
 
       end select
 

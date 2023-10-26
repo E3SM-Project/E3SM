@@ -3222,6 +3222,31 @@ module ocn_time_integration_split_ab2
 
       self_attraction_and_loading_beta = config_self_attraction_and_loading_beta
 
+      !-----------------------------------------------------------------
+      if ( config_do_restart ) then
+         block => domain % blocklist
+         call mpas_pool_get_subpool(block%structs, 'state', statePool)
+         call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+         call mpas_pool_get_subpool(block%structs, 'mesh', meshPool)
+
+         call mpas_pool_get_dimension(block % dimensions, 'nVertLevels', nVertLevels)
+         call mpas_pool_get_dimension(block % dimensions, 'nEdges', nEdges)
+
+         call mpas_pool_get_array(statePool, 'normalVelocity', &
+                                              normalVelocity, 1)
+
+         call mpas_pool_get_array(meshPool, 'minLevelEdgeBot', minLevelEdgeBot)
+         call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
+
+         do iEdge = 1, nEdges
+            kmax  = maxLevelEdgeTop(iEdge)
+            ! normalVelocity=0 on land cells
+            do k = kmax+1, nVertLevels
+               normalVelocity(k,iEdge) = 0.0_RKIND
+            enddo
+         enddo ! edge loop
+
+      end if
    end subroutine ocn_time_integration_split_ab2_init!}}}
 
 !***********************************************************************
