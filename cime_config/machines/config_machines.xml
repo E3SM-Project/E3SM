@@ -1805,6 +1805,7 @@
       <env name="NETCDF_PATH">/nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/netcdf/4.8.0c-4.3.1cxx-4.5.3f-parallel/mpich-4.0/gcc-11.1.0</env>
       <env name="PNETCDF_PATH">/nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/pnetcdf/1.12.2/mpich-4.0/gcc-11.1.0</env>
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /nfs/gce/projects/climate/software/moab/devel/mpich-4.0/gcc-11.1.0; else echo "$MOAB_ROOT"; fi}</env>
+      <env name="MOAB_PATH">/nfs/gce/projects/climate/software/moab/devel/mpich-4.0/gcc-11.1.0</env>
     </environment_variables>
     <environment_variables mpilib="openmpi">
       <!-- We currently don't have modules for HDF5, NetCDF & PnetCDF -->
@@ -1824,6 +1825,9 @@
     <environment_variables compiler="gnu" mpilib="mpich">
       <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/adios2/2.8.3.patch/mpich-4.0/gcc-11.1.0; else echo "$ADIOS2_ROOT"; fi}</env>
     </environment_variables>
+    <resource_limits>
+      <resource name="RLIMIT_STACK">-1</resource>
+    </resource_limits>
   </machine>
 
   <machine MACH="sandiatoss3">
