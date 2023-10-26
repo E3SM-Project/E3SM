@@ -229,6 +229,23 @@ SET (CONFIG_DEFINES HAVE_CONFIG_H)
   cxx_unit_test (caar_ut "${CAAR_UT_F90_SRCS}" "${CAAR_UT_CXX_SRCS}" "${CAAR_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
   TARGET_LINK_LIBRARIES(caar_ut thetal_kokkos_ut_lib)
 
+
+  ##########################################3 simple CAAR
+  SET (C1_UT_CXX_SRCS
+   ${THETA_UT_DIR}/c1_ut.cpp
+  )
+
+  IF (USE_NUM_PROCS)
+    SET (NUM_CPUS ${USE_NUM_PROCS})
+  ELSE()
+    SET (NUM_CPUS 1)
+  ENDIF()
+
+  SET (CONFIG_DEFINES_C1 TESTER_SIMPLE ${CONFIG_DEFINES})
+  cxx_unit_test (c1_ut "${CAAR_UT_F90_SRCS}" "${C1_UT_CXX_SRCS}" "${CAAR_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES_C1}" ${NUM_CPUS})
+  TARGET_LINK_LIBRARIES(c1_ut thetal_kokkos_ut_lib)
+
+
   # ### Remap functor unit test
 
   SET (REMAP_THETA_UT_CXX_SRCS

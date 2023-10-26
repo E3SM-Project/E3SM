@@ -350,6 +350,8 @@ struct CaarFunctorImpl {
     Kokkos::parallel_reduce("caar loop pre-boundary exchange", m_policy_pre, *this, nerr);
     Kokkos::fence();
     GPTLstop("caar compute");
+
+#ifndef TESTER_SIMPLE
     if (nerr > 0)
       check_print_abort_on_bad_elems("CaarFunctorImpl::run TagPreExchange", data.n0);
 
@@ -366,6 +368,7 @@ struct CaarFunctorImpl {
     }
 
     limiter.run(data.np1);
+#endif
 
     profiling_pause();
   }
