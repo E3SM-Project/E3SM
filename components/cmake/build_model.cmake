@@ -208,50 +208,19 @@ function(build_model COMP_CLASS COMP_NAME)
 
   # Load machine/compiler specific settings
   if (COMP_NAME STREQUAL "csm_share")
-    # csm_share customizes things in a special way (no Depends)
-    if (COMPILER STREQUAL "ibm")
-      e3sm_add_flags("util/shr_reprosum_mod.F90" "-qnosmp")
-
-    elseif(COMPILER STREQUAL "intel")
-      if (NOT DEBUG)
-        # Note: FFLAGS contains flags such as -fp-model consistent (and -fimf-use-svml for intel version 18)
-        # The -fp-model fast flags below will effectively override other -fp-model settings.
-
-        # shr_wv_sat_mod does not need to have better than ~0.1% precision, and benefits
-        # enormously from a lower precision in the vector functions.
-        e3sm_add_flags("util/shr_wv_sat_mod.F90" "-fimf-precision=low -fp-model fast")
-
-        set(SHR_RANDNUM_FORT_SRCS
-          "RandNum/src/kissvec/kissvec_mod.F90"
-          "RandNum/src/mt19937/mersennetwister_mod.F90"
-          "RandNum/src/dsfmt_f03/dSFMT_interface.F90"
-          "RandNum/src/shr_RandNum_mod.F90")
-
-        foreach(SHR_RANDNUM_FORT_SRC IN LISTS SHR_RANDNUM_FORT_SRCS)
-          e3sm_add_flags("${SHR_RANDNUM_FORT_SRC}" "-fp-model fast -no-prec-div -no-prec-sqrt -qoverride-limits")
-        endforeach()
-
-        set(SHR_RANDNUM_C_SRCS
-          "RandNum/src/dsfmt_f03/dSFMT.c"
-          "RandNum/src/dsfmt_f03/dSFMT_utils.c"
-          "RandNum/src/kissvec/kissvec.c")
-
-        foreach(SHR_RANDNUM_C_SRC IN LISTS SHR_RANDNUM_C_SRCS)
-          e3sm_add_flags("${SHR_RANDNUM_C_SRC}" "-fp-model fast")
-        endforeach()
-      endif()
-    endif()
-  else()
-    set(COMPILER_SPECIFIC_DEPENDS ${CASEROOT}/Depends.${COMPILER}.cmake)
-    set(MACHINE_SPECIFIC_DEPENDS ${CASEROOT}/Depends.${MACH}.cmake)
-    set(PLATFORM_SPECIFIC_DEPENDS ${CASEROOT}/Depends.${MACH}.${COMPILER}.cmake)
-    set(TRY_TO_LOAD ${COMPILER_SPECIFIC_DEPENDS} ${MACHINE_SPECIFIC_DEPENDS} ${PLATFORM_SPECIFIC_DEPENDS})
-    foreach(ITEM IN LISTS TRY_TO_LOAD)
-      if (EXISTS ${ITEM})
-        include(${ITEM})
-      endif()
-    endforeach()
+    # csm_share uses special Depends files
+    set(SHARE_DEPENDS_EXT "csm_share.")
   endif()
+
+  set(COMPILER_SPECIFIC_DEPENDS ${CASEROOT}/Depends.${SHARE_DEPENDS_EXT}${COMPILER}.cmake)
+  set(MACHINE_SPECIFIC_DEPENDS ${CASEROOT}/Depends.${SHARE_DEPENDS_EXT}${MACH}.cmake)
+  set(PLATFORM_SPECIFIC_DEPENDS ${CASEROOT}/Depends.${SHARE_DEPENDS_EXT}${MACH}.${COMPILER}.cmake)
+  set(TRY_TO_LOAD ${COMPILER_SPECIFIC_DEPENDS} ${MACHINE_SPECIFIC_DEPENDS} ${PLATFORM_SPECIFIC_DEPENDS})
+  foreach(ITEM IN LISTS TRY_TO_LOAD)
+    if (EXISTS ${ITEM})
+      include(${ITEM})
+    endif()
+  endforeach()
 
   # Disable optimizations on some files that would take too long to compile, expect these to all be fortran files
   foreach (SOURCE_FILE IN LISTS NOOPT_FILES)
