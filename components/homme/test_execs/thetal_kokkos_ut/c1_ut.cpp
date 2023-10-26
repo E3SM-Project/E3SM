@@ -13,7 +13,8 @@
 #include "utilities/SyncUtils.hpp"
 #include "utilities/ViewUtils.hpp"
 
-#define NNE 200
+#define NNE 500
+#define HOWMANY 200
 
 
 using namespace Homme;
@@ -226,7 +227,8 @@ TEST_CASE("caar", "caar_testing") {
         if (comm.root()) {
           std::cout << "  -> " << (adv_form==AdvectionForm::Conservative ? "Conservative" : "Non-Conservative") << " theta advection\n";
         }
-        for (int rsplit : {3,0}) {
+        //for (int rsplit : {3,0}) {
+        for (int rsplit : {3}) {
           if (comm.root()) {
             std::cout << "   -> rsplit = " << rsplit << "\n";
           }
@@ -284,7 +286,7 @@ TEST_CASE("caar", "caar_testing") {
           caar.init_boundary_exchanges(c.get_ptr<MpiBuffersManager>());
 
           // Run cxx
-          caar.run(data);
+	  for(int ii = 0; ii <  HOWMANY ; ii++)  caar.run(data);
 	}
       }
     }
