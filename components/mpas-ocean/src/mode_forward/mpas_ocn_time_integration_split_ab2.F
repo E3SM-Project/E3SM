@@ -3238,10 +3238,15 @@ module ocn_time_integration_split_ab2
          call mpas_pool_get_array(meshPool, 'minLevelEdgeBot', minLevelEdgeBot)
          call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
 
+         ! normalVelocity=0 on inactive cells
          do iEdge = 1, nEdges
-            kmax  = maxLevelEdgeTop(iEdge)
-            ! normalVelocity=0 on land cells
-            do k = kmax+1, nVertLevels
+            ! at top
+            do k = 1, minLevelEdgeBot(iEdge)-1
+               normalVelocity(k,iEdge) = 0.0_RKIND
+            enddo
+
+            ! at bottom
+            do k = maxLevelEdgeTop(iEdge)+1, nVertLevels
                normalVelocity(k,iEdge) = 0.0_RKIND
             enddo
          enddo ! edge loop
