@@ -21,7 +21,7 @@ module elm_initializeMod
   use readParamsMod    , only : readSharedParameters, readPrivateParameters
   use ncdio_pio        , only : file_desc_t
   use ELMFatesInterfaceMod  , only : ELMFatesGlobals1,ELMFatesGlobals2
-  use CLMFatesParamInterfaceMod, only: FatesReadPFTs
+  use ELMFatesParamInterfaceMod, only: FatesReadPFTs
   use BeTRSimulationELM, only : create_betr_simulation_elm
   !
   !-----------------------------------------

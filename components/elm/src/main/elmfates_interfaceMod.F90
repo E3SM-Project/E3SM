@@ -7,11 +7,9 @@ module ELMFatesInterfaceMod
    !
    ! This is also the only location where CLM code is allowed to see FATES memory
    ! structures.
-   ! The routines here, that call FATES library routines, will not pass any types defined
-   ! by the driving land model (HLM).
-   !
-   ! either native type arrays (int,real,log, etc) or packed into ED boundary condition
-   ! structures.
+   ! The routines here, that call FATES library routines, cannot pass most types defined
+   ! by the driving land model (HLM), only native type arrays (int,real,log, etc), implementations
+   ! of fates abstract classes, and references into fates boundary condition structures.
    !
    ! Note that CLM/ALM does use Shared Memory Parallelism (SMP), where processes such as
    ! the update of state variables are forked.  However, IO is not assumed to be
@@ -176,7 +174,10 @@ module ELMFatesInterfaceMod
    use dynSubgridControlMod, only : get_do_harvest ! this gets the namelist value
 
    use FatesInterfaceTypesMod , only : bc_in_type, bc_out_type
-   use CLMFatesParamInterfaceMod         , only : FatesReadParameters
+
+   use ELMFatesParamInterfaceMod, only : fates_param_reader_ctsm_impl
+   use FatesParametersInterface, only : fates_param_reader_type
+   use FatesParametersInterface, only : fates_parameters_type
    
    use perf_mod          , only : t_startf, t_stopf
 
@@ -292,6 +293,7 @@ contains
     integer                                        :: pass_sp
     integer                                        :: pass_masterproc
     logical                                        :: verbose_output
+    type(fates_param_reader_ctsm_impl)             :: var_reader
 
     if (use_fates) then
 
@@ -346,7 +348,7 @@ contains
     ! want fates to handle crops, so again, it should be ignored.
     ! (RGK 07-2022)
     
-    call SetFatesGlobalElements1(use_fates,natpft_size,0)
+    call SetFatesGlobalElements1(use_fates,natpft_size,0,var_reader)
 
     natpft_size = fates_maxPatchesPerSite
 
@@ -3452,6 +3454,6 @@ end subroutine wrap_update_hifrq_hist
 
  end subroutine GetAndSetTime
 
-
+ !-----------------------------------------------------------------------
 
 end module ELMFatesInterfaceMod
