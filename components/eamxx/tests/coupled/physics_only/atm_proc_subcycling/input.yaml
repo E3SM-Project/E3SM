@@ -27,6 +27,7 @@ atmosphere_processes:
     c_diag_3rd_mom: 7.0
     Ckh: 0.1
     Ckm: 0.1
+    compute_tendencies: [tke]
 
 grids_manager:
   Type: Mesh Free
@@ -49,5 +50,5 @@ initial_conditions:
 
 # The parameters for I/O control
 Scorpio:
-  output_yaml_files: [output_${POSTFIX}.yaml]
+  output_yaml_files: [output_${POSTFIX}.yaml, output_tend_${POSTFIX}.yaml]
 ...
