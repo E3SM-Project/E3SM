@@ -1415,12 +1415,38 @@ void AtmosphereDriver::run (const int dt) {
     "Atmosphere step = " + std::to_string(m_current_ts.get_num_steps()) + "\n" +
     "  model start-of-step time = " + m_current_ts.get_date_string() + " " + m_current_ts.get_time_string() + "\n");
 
-  // Reset accum fields
-  reset_accumulated_fields();
+  // Reset accum fields to 0
+  constexpr Real zero = 0;
+  for (auto fm_it : m_field_mgrs) {
+    const auto& fm = fm_it.second;
+    if (not fm->has_group("ACCUMULATED")) {
+      continue;
+    }
+
+    auto accum_group = fm->get_field_group("ACCUMULATED");
+    for (auto f_it : accum_group.m_fields) {
+      auto& track = f_it.second->get_header().get_tracking();
+      f_it.second->deep_copy(zero);
+      track.set_accum_start_time(m_current_ts);
+    }
+  }
 
   // The class AtmosphereProcessGroup will take care of dispatching arguments to
   // the individual processes, which will be called in the correct order.
   m_atm_process_group->run(dt);
+
+  // Some accumulated fields need to be divided by dt at the end of the atm step
+  for (auto fm_it : m_field_mgrs) {
+    const auto& fm = fm_it.second;
+    if (not fm->has_group("DIVIDE_BY_DT")) {
+      continue;
+    }
+
+    auto rescale_group = fm->get_field_group("DIVIDE_BY_DT");
+    for (auto f_it : rescale_group.m_fields) {
+      f_it.second->scale(Real(1) / dt);
+    }
+  }
 
   // Update current time stamps
   m_current_ts += dt;

@@ -211,6 +211,7 @@ void AtmosphereProcess::setup_tendencies_requests () {
   // field with the requested name. If more than one is found (must be
   // that we have same field on multiple grids), error out.
   using namespace ekat::units;
+  using strlist_t = std::list<std::string>;
   for (const auto& tn : tend_list) {
     std::string grid_found = "";
     auto tokens = field_grid(tn);
@@ -240,7 +241,7 @@ void AtmosphereProcess::setup_tendencies_requests () {
 
         // Create tend FID and request field
         FieldIdentifier t_fid(tname,layout,units,gname,dtype);
-        add_field<Computed>(t_fid,"ACCUMULATED");
+        add_field<Computed>(t_fid,strlist_t{"ACCUMULATED","DIVIDE_BY_DT"});
         grid_found = gname;
       }
     }
@@ -494,8 +495,9 @@ void AtmosphereProcess::init_step_tendencies () {
 }
 
 void AtmosphereProcess::compute_step_tendencies (const double dt) {
+  using namespace ShortFieldTagsNames;
   if (m_compute_proc_tendencies) {
-    m_atm_logger->debug("[" + this->name() + "] compuiting tendencies...");
+    m_atm_logger->debug("[" + this->name() + "] computing tendencies...");
     start_timer(m_timer_prefix + this->name() + "::compute_tendencies");
     for (auto it : m_proc_tendencies) {
       // Note: f_beg is nonconst, so we can store step tendency in it
@@ -506,7 +508,7 @@ void AtmosphereProcess::compute_step_tendencies (const double dt) {
             auto& tend  = it.second;
 
       // Compute tend from this atm proc step, then sum into overall atm timestep tendency
-      f_beg.update(f,1/dt,-1/dt);
+      f_beg.update(f,1,-1);
       tend.update(f_beg,1,1);
     }
     stop_timer(m_timer_prefix + this->name() + "::compute_tendencies");
