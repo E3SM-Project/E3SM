@@ -351,7 +351,7 @@ contains
         surfaceThicknessFlux(iCell) = surfaceThicknessFlux(iCell) + ( snowFlux(iCell) + rainFlux(iCell) + evaporationFlux(iCell) &
                                     + seaIceFreshWaterFlux(iCell) + icebergFreshWaterFlux(iCell) + iceRunoffFlux(iCell) ) / rho_sw
         surfaceThicknessFluxRunoff(iCell) = riverRunoffFlux(iCell) / rho_sw
-        surfaceThicknessFluxSubglacialRunoff(iCell) = subglacialRunoffFlux(iCell) / rho_sw
+        surfaceThicknessFluxSubglacialRunoff(iCell) = subglacialRunoffFlux(iCell) / areaCell(iCell)
       end do
 #ifndef MPAS_OPENACC
       !$omp end do
@@ -581,7 +581,7 @@ contains
            ! Subglacial runoff can have temperature below 0.0C, since it can come out at great depth
            tracersSurfaceFluxSubglacialRunoff(index_temperature_flux,iCell) = subglacialRunoffFlux(iCell) * &
                ocn_freezing_temperature(salinity=0.0_RKIND, pressure=landIcePressure(iCell), &
-                                         inLandIceCavity=.true.) / rho_sw
+                                         inLandIceCavity=.true.) / areaCell(iCell)
 
            ! Accumulate fluxes that use the freezing point
 ! mrp performance note: should call ocn_freezing_temperature just once here 
