@@ -535,15 +535,27 @@ module ocn_time_integration_split
          call mpas_pool_get_array(seafloorTracersPool, 'benthosTracers', benthosTracersNew,2)
 
          if (associated(benthosTracersCur) .and. associated(benthosTracersNew)) then
-            !$omp parallel
-            !$omp do schedule(runtime) private(k)
+#ifdef MPAS_OPENACC
+               !$acc enter data create(benthosTracersNew)
+               !$acc enter data copyin(benthosTracersCur)
+               !$acc parallel loop gang present(minLevelCell, maxLevelCell, &
+               !$acc    benthosTracersNew, benthosTracersCur)
+#else
+               !$omp parallel
+               !$omp do schedule(runtime) private(k)
+#endif
             do iCell = 1, nCellsAll  ! couple tracers to thickness
             do k = 1, nBenthicVertLevels+1
                benthosTracersNew(:, k, iCell) = benthosTracersCur(:, k, iCell)
             end do
             end do
-            !$omp end do
-            !$omp end parallel
+#ifdef MPAS_OPENACC
+               !$acc exit data copyout(benthosTracersNew)
+               !$acc exit data delete(benthosTracersCur)
+#else
+               !$omp end do
+               !$omp end parallel
+#endif
          end if
       end if
 

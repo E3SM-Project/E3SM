@@ -613,15 +613,30 @@ module ocn_time_integration_si
             call mpas_pool_get_array(seafloorTracersPool, 'benthosTracers', benthosTracersCur,1)
             call mpas_pool_get_array(seafloorTracersPool, 'benthosTracers', benthosTracersNew,2)
             if (associated(benthosTracersCur) .and. associated(benthosTracersNew)) then
+#ifdef MPAS_OPENACC
+               !$acc enter data create(benthosTracersNew)
+               !$acc enter data copyin(benthosTracersCur)
+               !$acc parallel loop gang present(minLevelCell, maxLevelCell, &
+               !$acc    benthosTracersNew, benthosTracersCur)
+#else
                !$omp parallel
                !$omp do schedule(runtime) private(k)
+#endif
                do iCell = 1, nCells  ! couple tracers to thickness
                do k = 1, nBenthicVertLevels+1
+#ifdef MPAS_OPENACC
+               !$acc loop vector
+#endif
                   benthosTracersNew(:, k, iCell) = benthosTracersCur(:, k, iCell)
                end do
                end do
+#ifdef MPAS_OPENACC
+               !$acc exit data copyout(benthosTracersNew)
+               !$acc exit data delete(benthosTracersCur)
+#else
                !$omp end do
                !$omp end parallel
+#endif
             end if
          end if
 
@@ -2237,8 +2252,10 @@ module ocn_time_integration_si
                               benthosInterfaceLayerThickness(k)
                         end do
                         end do
+#ifndef MPAS_OPENACC
                         !$omp end do
                         !$omp end parallel
+#endif
                      end if
 
                      ! Reset debugTracers to fixed value at the surface
