@@ -56,6 +56,13 @@
 		<dim name="nVertLevelsP1" definition="nVertLevels+1"
 			 description="The number of interfaces in the vertical direction."
 		/>
+
+                <dim name="nBenthicVertLevels" definition="29"
+                         description="The number of levels in the benthos vertical direction."
+                />
+                <dim name="nBenthicVertLevelsP1" definition="nBenthicVertLevels+1"
+                         description="The number of interfaces in the benthos vertical direction."
+                />
 		<dim name="nPoints" definition="1"
 			 description="The number of points for AM_pointwiseStats"
 		/>
@@ -1636,6 +1643,7 @@
 			<var name="cullCell"/>
 			<var name="effectiveDensityInLandIce"/>
 			<var_struct name="ecosysAuxiliary"/>
+                        <var_struct name="benthosAuxiliary"/>
 			<var name="landIceMask"/>
 			<var name="landIcePressure"/>
 			<var name="landIceFraction"/>
@@ -1739,6 +1747,9 @@
 
 			<stream name="mesh"/>
 			<var_struct name="tracers"/>
+                        <var_array name="benthosPhPrev3d"/>
+                        <var_array name="benthosTracers"/>
+                        <var_struct name="seafloorStorage"/>
 			<var name="normalVelocity"/>
 			<var name="layerThickness"/>
 			<var name="highFreqThickness"/>
@@ -1835,6 +1846,9 @@
 
 			<stream name="mesh"/>
 			<var_struct name="tracers"/>
+                        <var_array name="benthosPhPrev3d"/>
+                        <var_array name="benthosTracers"/>
+                        <var_struct name="seafloorStorage"/>
 			<var name="indMLD"/>
 			<var name="normalVelocity"/>
 			<var name="layerThickness"/>

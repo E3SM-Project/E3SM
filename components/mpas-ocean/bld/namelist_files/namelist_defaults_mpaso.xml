@@ -574,6 +574,35 @@
 <config_ecosysTracers_diagnostic_fields_level4>.false.</config_ecosysTracers_diagnostic_fields_level4>
 <config_ecosysTracers_diagnostic_fields_level5>.false.</config_ecosysTracers_diagnostic_fields_level5>
 
+<!-- tracer_forcing_benthosTracers -->
+<config_use_benthosTracers>.false.</config_use_benthosTracers>
+<config_do_restart_benthos>.false.</config_do_restart_benthos>
+<config_use_benthosTracers_sea_ice_coupling>.false.</config_use_benthosTracers_sea_ice_coupling>
+<config_set_benthos_flags>0</config_set_benthos_flags>
+<config_use_carbonate_saturation>.true.</config_use_carbonate_saturation>
+<config_use_secondary_reactions>.true.</config_use_secondary_reactions>
+<config_use_depth_dependent_porosity>.true.</config_use_depth_dependent_porosity>
+<config_use_non_zero_diffusivity>.true.</config_use_non_zero_diffusivity>
+<config_use_sedimentation>.true.</config_use_sedimentation>
+<config_use_positive_sedimentation>.true.</config_use_positive_sedimentation>
+<config_use_fast_sedimentation>.false.</config_use_fast_sedimentation>
+<config_use_bgc_sinking_flux>.true.</config_use_bgc_sinking_flux>
+<config_use_step_initial_profiles>.false.</config_use_step_initial_profiles>
+<config_use_benthic_reactions>.true.</config_use_benthic_reactions>
+<config_use_flux_correction>.true.</config_use_flux_correction>
+<config_use_ocean_conc>.true.</config_use_ocean_conc>
+<config_use_deep_source>.true.</config_use_deep_source>
+<config_use_constant_diffusivity>.false.</config_use_constant_diffusivity>
+<config_use_ocean_bottom_state>.false.</config_use_ocean_bottom_state>
+<config_use_benthos_monthly_forcing>.false.</config_use_benthos_monthly_forcing>
+<config_use_benthos_monthly_terra_forcing>.false.</config_use_benthos_monthly_terra_forcing>
+<config_do_benthos_spinup>.false.</config_do_benthos_spinup>
+<config_benthosTracers_diagnostic_fields_level1>.false.</config_benthosTracers_diagnostic_fields_level1>
+<config_benthosTracers_diagnostic_fields_level2>.false.</config_benthosTracers_diagnostic_fields_level2>
+<config_benthosTracers_diagnostic_fields_level3>.false.</config_benthosTracers_diagnostic_fields_level3>
+<config_benthosTracers_diagnostic_fields_level4>.false.</config_benthosTracers_diagnostic_fields_level4>
+<config_benthosTracers_diagnostic_fields_level5>.false.</config_benthosTracers_diagnostic_fields_level5>
+
 <!-- tracer_forcing_DMSTracers -->
 <config_use_DMSTracers>.false.</config_use_DMSTracers>
 <config_use_DMSTracers_surface_bulk_forcing>.false.</config_use_DMSTracers_surface_bulk_forcing>

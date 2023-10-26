@@ -45,6 +45,7 @@ my @groups = qw(run_modes
                 tracer_forcing_macromoleculestracers
                 tracer_forcing_idealagetracers
                 tracer_forcing_cfctracers
+                tracer_forcing_benthostracers
                 am_globalstats
                 am_surfaceareaweightedaverages
                 am_watermasscensus

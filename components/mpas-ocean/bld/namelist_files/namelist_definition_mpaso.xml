@@ -2890,6 +2890,223 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<!-- tracer_forcing_benthosTracers -->
+
+<entry id="config_use_benthosTracers" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, the 'benthosGRP' category is enabled for the run
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_do_restart_benthos" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, use restart file
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_benthosTracers_sea_ice_coupling" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, couple benthos fields with sea ice
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_set_benthos_flags" type="integer"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+postive integers set testcases which override remaining flags. If negative, defer to user specified flag options
+
+Valid values: integers less than or equal to 11
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_carbonate_saturation" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, compute carbonate chemistry
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_secondary_reactions" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, compute secondary reaction chemistry
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_depth_dependent_porosity" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, sets depth dependence of porosity
+          
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_non_zero_diffusivity" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if false, sets diffusivity to zero
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_sedimentation" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, apply sediment fluxes to then benthos
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_positive_sedimentation" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if false, sediments are resuspended from the benthos
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_fast_sedimentation" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, incease sedimentation rate for advection testing
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_bgc_sinking_flux" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, allow particulate sinking fluxes of bgc tracers to the benthos
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_step_initial_profiles" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, initialize benthos tracer vertical profiles as step functions
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml           
+</entry>
+
+<entry id="config_use_benthic_reactions" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, enables reaction terms
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_flux_correction" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, track transport flux errors in deep storage for conservation
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_ocean_conc" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, use bottom ocean concentrations of solutes in boundary condition
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_deep_source" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, allow source fluxes below the active benthos layers
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_constant_diffusivity" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, diffusivity becomes constant with depth
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_ocean_bottom_state" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, use the ocean ecosys model to force the benthos
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_benthos_monthly_forcing" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, use monthly data file of ocean fluxes and concentrations
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_benthos_monthly_terra_forcing" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, use monthly data file of terrigenous fluxes
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_do_benthos_spinup" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, run the benthos only with data forcing
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_benthosTracers_diagnostic_fields_level1" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, make variables in benthosDiagFieldsLevel1 available for output
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_benthosTracers_diagnostic_fields_level2" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, make variables in benthosDiagFieldsLevel2 available for output
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_benthosTracers_diagnostic_fields_level3" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, make variables in benthosDiagFieldsLevel3 available for output
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_benthosTracers_diagnostic_fields_level4" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, make variables in benthosDiagFieldsLevel4 available for output
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_benthosTracers_diagnostic_fields_level5" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, make variables in benthosDiagFieldsLevel5 available for output
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
 
 <!-- tracer_forcing_DMSTracers -->
 

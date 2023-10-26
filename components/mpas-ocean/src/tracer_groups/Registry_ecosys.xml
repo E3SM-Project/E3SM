@@ -709,6 +709,29 @@
 				description="Total depth-integrated chlorophyll"
 			/>
 		</var_struct>
+                <var_struct name="ecosysBenthosForcing" time_levs="1" packages="ecosysTracersPKG">
+                        <var name="benthos_calcToSed" type="real" dimensions="nVertLevels nCells Time" units="mmol C m^{-3} m s^{-1}"
+                                description="CaCO3 Flux to Sediments"
+                        />
+                        <var name="benthos_pocToSed" type="real" dimensions="nVertLevels nCells Time" units="mmol C m^{-3} m s^{-1}"
+                                description="POC Flux to Sediments"
+                        />
+                        <var name="benthos_pfeToSed" type="real" dimensions="nVertLevels nCells Time" units="mmol Fe m^{-3} m s^{-1}"
+                                description="Fe Flux to Sediments"
+                        />
+                        <var name="benthos_ponToSed" type="real" dimensions="nVertLevels nCells Time" units="mmol N m^{-3} m s^{-1}"
+                                description="N Burial Flux to Sediments"
+                        />
+                        <var name="benthos_popToSed" type="real" dimensions="nVertLevels nCells Time" units="mmol P m^{-3} m s^{-1}"
+                                description="P Flux to Sediments"
+                        />
+			<var name="benthos_bsiToSed" type="real" dimensions="nVertLevels nCells Time" units="mmol Si m^{-3} m s^{-1}"
+				description="Biogenic Si Flux to Sediments"
+			/>
+			<var name="benthos_dustToSed" type="real" dimensions="nVertLevels nCells Time" units="kg m^{-2} s^{-1}"
+				description="Dust Flux to Sediments"
+			/>
+                      </var_struct>
 
 		<var_struct name="ecosysSeaIceCoupling" time_levs="1" packages="ecosysTracersPKG">
 			<var name="avgOceanSurfacePhytoC" type="real" dimensions="R3 nCells Time" units="mmol C m^{-3}"

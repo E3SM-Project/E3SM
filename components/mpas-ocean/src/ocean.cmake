@@ -27,6 +27,7 @@ list(APPEND RAW_SOURCES
   core_ocean/mode_forward/mpas_ocn_time_integration_rk4.F
   core_ocean/mode_forward/mpas_ocn_time_integration_split.F
   core_ocean/mode_forward/mpas_ocn_time_integration_si.F
+  core_ocean/mode_forward/mpas_ocn_time_integration_benthos.F
 
   core_ocean/mode_analysis/mpas_ocn_analysis_mode.F
 
@@ -65,6 +66,7 @@ list(APPEND RAW_SOURCES
   core_ocean/shared/mpas_ocn_vmix_gotm.F
   core_ocean/shared/mpas_ocn_vel_self_attraction_loading.F
   core_ocean/shared/mpas_ocn_tendency.F
+  core_ocean/shared/mpas_ocn_tendency_benthos.F
   core_ocean/shared/mpas_ocn_tracer_hmix.F
   core_ocean/shared/mpas_ocn_tracer_hmix_del2.F
   core_ocean/shared/mpas_ocn_tracer_hmix_del4.F
@@ -87,6 +89,9 @@ list(APPEND RAW_SOURCES
   core_ocean/shared/mpas_ocn_tracer_ecosys.F
   core_ocean/shared/mpas_ocn_tracer_DMS.F
   core_ocean/shared/mpas_ocn_tracer_MacroMolecules.F
+  core_ocean/shared/mpas_ocn_benthos_parms.F
+  core_ocean/shared/mpas_ocn_benthos_mod.F
+  core_ocean/shared/mpas_ocn_tracer_benthos.F
   core_ocean/shared/mpas_ocn_transport_tests.F
   core_ocean/shared/mpas_ocn_high_freq_thickness_hmix_del2.F
   core_ocean/shared/mpas_ocn_tracer_surface_flux_to_tend.F
