@@ -74,6 +74,7 @@ module li_advection
 !-----------------------------------------------------------------------
 
    subroutine li_advection_thickness_tracers(&
+        domain,                 &
         dt,                     &
         meshPool,               &
         velocityPool,           &
@@ -107,6 +108,7 @@ module li_advection
       ! input/output variables
       !
       !-----------------------------------------------------------------
+      type (domain_type), intent(inout) :: domain  !< Input/Output: domain object
 
       type (mpas_pool_type), intent(inout) :: &
            velocityPool           !< Input/output: velocity information
@@ -493,6 +495,10 @@ module li_advection
              ! this: layerThickness(:,:) = advectedTracers(nTracers,:,:) does not conserve mass!
              ! This does conserve mass:
              layerThickness(:,:) = layerThickness(:,:) + tend(nTracers,:,:) * dt
+
+             call mpas_timer_start("halo updates")
+             call mpas_dmpar_field_halo_exch(domain, 'layerThicknessEdgeFlux')
+             call mpas_timer_stop("halo updates")
 
              if (trim(config_tracer_advection) .eq. 'fct') then
                 ! Call fct for tracers, using layerThicknessEdgeFlux
