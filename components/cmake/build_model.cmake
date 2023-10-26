@@ -208,13 +208,15 @@ function(build_model COMP_CLASS COMP_NAME)
 
   # Load machine/compiler specific settings
   if (COMP_NAME STREQUAL "csm_share")
-    # csm_share uses special Depends files
-    set(SHARE_DEPENDS_EXT "csm_share.")
+    # csm_share uses special Depends files, not customizable per case
+    set(DEPENDS_LOC "${SRCROOT}/share")
+  else()
+    set(DEPENDS_LOC "${CASEROOT}")
   endif()
 
-  set(COMPILER_SPECIFIC_DEPENDS ${CASEROOT}/Depends.${SHARE_DEPENDS_EXT}${COMPILER}.cmake)
-  set(MACHINE_SPECIFIC_DEPENDS ${CASEROOT}/Depends.${SHARE_DEPENDS_EXT}${MACH}.cmake)
-  set(PLATFORM_SPECIFIC_DEPENDS ${CASEROOT}/Depends.${SHARE_DEPENDS_EXT}${MACH}.${COMPILER}.cmake)
+  set(COMPILER_SPECIFIC_DEPENDS ${DEPENDS_LOC}/Depends.${COMPILER}.cmake)
+  set(MACHINE_SPECIFIC_DEPENDS ${DEPENDS_LOC}/Depends.${MACH}.cmake)
+  set(PLATFORM_SPECIFIC_DEPENDS ${DEPENDS_LOC}/Depends.${MACH}.${COMPILER}.cmake)
   set(TRY_TO_LOAD ${COMPILER_SPECIFIC_DEPENDS} ${MACHINE_SPECIFIC_DEPENDS} ${PLATFORM_SPECIFIC_DEPENDS})
   foreach(ITEM IN LISTS TRY_TO_LOAD)
     if (EXISTS ${ITEM})
