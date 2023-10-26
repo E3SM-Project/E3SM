@@ -572,16 +572,17 @@ contains
        call outfld( xfcname, frcing_col(:ncol), ncol, lchnk )
 
        ! output plume heights and environment
-       call outfld( 'plume_height_EM', plume_height_EM, ncol, lchnk )
-       call outfld( 'heat_flux_plume', heat_flux_plume, ncol, lchnk )
-       call outfld('zmidr_ph', zmidr(:ncol,:), ncol, lchnk) 
-       call outfld('pmid_ph', pmid(:ncol,:), ncol, lchnk) 
-       call outfld('tfld_ph', tfld(:ncol,:), ncol, lchnk) 
-       call outfld('relhum_ph', relhum(:ncol,:), ncol, lchnk) 
-       call outfld('qh2o_ph', qh2o(:ncol,:), ncol, lchnk)
-       call outfld('ufld_ph', ufld(:ncol,:), ncol, lchnk)
-       call outfld('vfld_ph', vfld(:ncol,:), ncol, lchnk) 
-        
+       if (plumerise)then
+         call outfld( 'plume_height_EM', plume_height_EM, ncol, lchnk )
+         call outfld( 'heat_flux_plume', heat_flux_plume, ncol, lchnk )
+         call outfld('zmidr_ph', zmidr(:ncol,:), ncol, lchnk) 
+         call outfld('pmid_ph', pmid(:ncol,:), ncol, lchnk) 
+         call outfld('tfld_ph', tfld(:ncol,:), ncol, lchnk) 
+         call outfld('relhum_ph', relhum(:ncol,:), ncol, lchnk) 
+         call outfld('qh2o_ph', qh2o(:ncol,:), ncol, lchnk)
+         call outfld('ufld_ph', ufld(:ncol,:), ncol, lchnk)
+         call outfld('vfld_ph', vfld(:ncol,:), ncol, lchnk) 
+       endif 
        
     end do src_loop
 
