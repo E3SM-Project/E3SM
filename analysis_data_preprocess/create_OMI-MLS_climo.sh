@@ -18,7 +18,7 @@ mkdir $climo_output_path
 mkdir $tmp
 
 
-#Add lon dimention to zonel mean
+#Add lon dimention to zonal mean
 ncap2 -s 'SCO=O3strat' ${original_data_path}O3strat_ZMK.nc ${time_series_output_path}SCO_200410_201712.nc
 #cp ${original_data_path}O3strat_ZMK.nc ${time_series_output_path}SCO_200410_201712.nc
 cdo splityear ${time_series_output_path}SCO_200410_201712.nc ${tmp}sco

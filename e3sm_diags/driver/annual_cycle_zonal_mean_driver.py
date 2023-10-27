@@ -101,7 +101,7 @@ def run_diag(parameter: ACzonalmeanParameter) -> ACzonalmeanParameter:
 
         parameter.var_id = var
         parameter.output_file = "-".join([ref_name, var, "Annual-Cycle"])
-        parameter.main_title = str(" ".join([var, "Zonel Mean Annual Cycle"]))
+        parameter.main_title = str(" ".join([var, "Zonal Mean Annual Cycle"]))
 
         parameter.viewer_descr[var] = (
             test_ac.long_name

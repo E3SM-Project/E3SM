@@ -143,7 +143,7 @@ Additional back-ends could be implemented if the need arose.
 |    :align: center                                      |    :align: center                                    |
 |    :target: _static/index/fig21.png                    |    :target: _static/index/fig22.png                  |
 |                                                        |                                                      |
-|    Tropical Cyclone Track Density                      |    Annual Cycle Zonel Mean plot                      |
+|    Tropical Cyclone Track Density                      |    Annual Cycle Zonal Mean plot                      |
 +--------------------------------------------------------+------------------------------------------------------+
 | .. figure:: _static/index/fig23.png                    | .. figure:: _static/index/fig24.png                  |
 |    :align: center                                      |    :align: center                                    |
