@@ -14,6 +14,9 @@ set (RUN_T0 2021-10-12-45000)
 CreateUnitTest(create_vert_remap "create_vert_remap.cpp" scream_share
   PROPERTIES FIXTURES_SETUP create_vertical_remap_file)
 
+CreateUnitTest(create_nudging_weights "create_nudging_weights.cpp" scream_share
+  PROPERTIES FIXTURES_SETUP create_nudging_weights_file)
+
 # Run a test to setup nudging source data:
 set (NUM_STEPS  5)
 set (POSTFIX source_data)
@@ -26,7 +29,9 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/output_remapped.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/output_source_data_remapped.yaml)
 CreateUnitTestFromExec (shoc_p3_source shoc_p3_nudging
       EXE_ARGS "--use-colour no --ekat-test-params ifile=input_source_data.yaml"
-      PROPERTIES FIXTURES_SETUP source_data FIXTURES_REQUIRED create_vertical_remap_file)
+      PROPERTIES FIXTURES_SETUP source_data 
+      FIXTURES_REQUIRED create_vertical_remap_file 
+      FIXTURES_REQUIRED create_nudging_weights_file)
 
 # Run a test with nudging turned on using raw source data for nudging:
 set (NUM_STEPS  5)
