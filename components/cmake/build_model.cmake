@@ -2,7 +2,7 @@ function(build_model COMP_CLASS COMP_NAME)
 
   # We support component-specific configuration of flags, etc, so this setup
   # need to be done here.
-  include(${CMAKE_SOURCE_DIR}/cmake/common_setup.cmake)
+  include(${SRCROOT}/components/cmake/common_setup.cmake)
 
   set(MODELCONF_DIR "${BUILDCONF}/${COMP_NAME}conf")
 
@@ -34,8 +34,11 @@ function(build_model COMP_CLASS COMP_NAME)
 
   # Source files don't live in components/cmake/$COMP_CLASS. This path won't work for
   # generated files.
-  set(SOURCE_PATH "../..")
-  set(CIMESRC_PATH "../cime/src")
+  if (COMP_NAME STREQUAL "csm_share")
+    set(SOURCE_PATH ".")
+  else()
+    set(SOURCE_PATH "../..")
+  endif()
 
   #-------------------------------------------------------------------------------
   # Build & include dependency files
@@ -127,7 +130,7 @@ function(build_model COMP_CLASS COMP_NAME)
       # Add samxx F90 files to the main E3SM build
       set(SOURCES ${SOURCES} cmake/atm/../../eam/src/physics/crm/pam/params.F90
                              cmake/atm/../../eam/src/physics/crm/crm_ecpp_output_module.F90
-                             cmake/atm/../../eam/src/physics/crm/pam/pam_driver.F90) 
+                             cmake/atm/../../eam/src/physics/crm/pam/pam_driver.F90)
       # Pam interface need to include modules from pam
       include_directories(${PAM_BIN}/external/pam_core)
     endif()
@@ -204,9 +207,16 @@ function(build_model COMP_CLASS COMP_NAME)
   endforeach()
 
   # Load machine/compiler specific settings
-  set(COMPILER_SPECIFIC_DEPENDS ${CASEROOT}/Depends.${COMPILER}.cmake)
-  set(MACHINE_SPECIFIC_DEPENDS ${CASEROOT}/Depends.${MACH}.cmake)
-  set(PLATFORM_SPECIFIC_DEPENDS ${CASEROOT}/Depends.${MACH}.${COMPILER}.cmake)
+  if (COMP_NAME STREQUAL "csm_share")
+    # csm_share uses special Depends files, not customizable per case
+    set(DEPENDS_LOC "${SRCROOT}/share")
+  else()
+    set(DEPENDS_LOC "${CASEROOT}")
+  endif()
+
+  set(COMPILER_SPECIFIC_DEPENDS ${DEPENDS_LOC}/Depends.${COMPILER}.cmake)
+  set(MACHINE_SPECIFIC_DEPENDS ${DEPENDS_LOC}/Depends.${MACH}.cmake)
+  set(PLATFORM_SPECIFIC_DEPENDS ${DEPENDS_LOC}/Depends.${MACH}.${COMPILER}.cmake)
   set(TRY_TO_LOAD ${COMPILER_SPECIFIC_DEPENDS} ${MACHINE_SPECIFIC_DEPENDS} ${PLATFORM_SPECIFIC_DEPENDS})
   foreach(ITEM IN LISTS TRY_TO_LOAD)
     if (EXISTS ${ITEM})
@@ -256,30 +266,35 @@ function(build_model COMP_CLASS COMP_NAME)
     set(TARGET_NAME ${COMP_CLASS})
     add_library(${TARGET_NAME})
     target_sources(${TARGET_NAME} PRIVATE ${REAL_SOURCES})
-    target_link_libraries(${TARGET_NAME} PRIVATE csm_share)
-    if (COMP_NAME STREQUAL "eam")
-      if (USE_YAKL)
-        target_link_libraries(${TARGET_NAME} PRIVATE yakl)
+    if (COMP_NAME STREQUAL "csm_share")
+      find_package(NETCDF REQUIRED)
+      target_link_libraries(${TARGET_NAME} PRIVATE netcdf)
+    else()
+      target_link_libraries(${TARGET_NAME} PRIVATE csm_share)
+      if (COMP_NAME STREQUAL "eam")
+        if (USE_YAKL)
+          target_link_libraries(${TARGET_NAME} PRIVATE yakl)
+        endif()
+        if (USE_SAMXX)
+          target_link_libraries(${TARGET_NAME} PRIVATE samxx)
+        endif()
+        if (USE_PAM)
+          target_link_libraries(${TARGET_NAME} PRIVATE pam_driver)
+        endif()
+        if (USE_RRTMGPXX)
+          target_link_libraries(${TARGET_NAME} PRIVATE rrtmgp rrtmgp_interface)
+        endif()
       endif()
-      if (USE_SAMXX)
-        target_link_libraries(${TARGET_NAME} PRIVATE samxx)
+      if (COMP_NAME STREQUAL "elm")
+        if (USE_PETSC)
+          target_link_libraries(${TARGET_NAME} PRIVATE "${PETSC_LIBRARIES}")
+          target_include_directories(${TARGET_NAME} PRIVATE "${PETSC_INCLUDES}")
+        endif()
       endif()
-      if (USE_PAM)
-        target_link_libraries(${TARGET_NAME} PRIVATE pam_driver)
-      endif()
-      if (USE_RRTMGPXX)
-        target_link_libraries(${TARGET_NAME} PRIVATE rrtmgp rrtmgp_interface)
-      endif()
+      if (USE_KOKKOS)
+        target_link_libraries (${TARGET_NAME} PRIVATE Kokkos::kokkos)
+      endif ()
     endif()
-    if (COMP_NAME STREQUAL "elm")
-      if (USE_PETSC)
-        target_link_libraries(${TARGET_NAME} PRIVATE "${PETSC_LIBRARIES}")
-        target_include_directories(${TARGET_NAME} PRIVATE "${PETSC_INCLUDES}")
-      endif()
-    endif()
-    if (USE_KOKKOS)
-      target_link_libraries (${TARGET_NAME} PRIVATE Kokkos::kokkos)
-    endif ()
   endif()
 
   # Subtle: In order for fortran dependency scanning to work, our CPPFPP/DEFS must be registered
