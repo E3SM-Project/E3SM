@@ -38,6 +38,9 @@ if (COMP_NAME STREQUAL gptl)
     string(APPEND CPPDEFS " -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY")
 endif()
 
-string(APPEND FFLAGS " -h acc")
-string(APPEND LDFLAGS " -h acc")
+if (COMP_NAME MATCHES "^pio" AND COMP_NAME MATCHES "^csm_share")
+  string(APPEND FFLAGS " -h acc")
+  string(APPEND LDFLAGS " -h acc")
+  string(APPEND CPPDEFS " -DMPAS_OPENACC")
+endif()
 
