@@ -30,6 +30,9 @@ else()
   set(ESMFDIR "noesmf")
 endif()
 
+#YSK
+set(LDFLAGS "${LDFLAGS} -h acc")
+
 set(CMAKE_C_COMPILER ${MPICC})
 set(CMAKE_CXX_COMPILER ${MPICXX})
 set(CMAKE_Fortran_COMPILER ${MPIFC})
@@ -49,6 +52,9 @@ if (compile_threaded)
   list(APPEND CPPDEFS "-DMPAS_OPENMP")
 endif()
 
+#YSK
+list(APPEND CPPDEFS "-DMPAS_OPENACC")
+
 set(INCLUDES "${INSTALL_SHAREDPATH}/include" "${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/${NINST_VALUE}/csm_share" "${INSTALL_SHAREDPATH}/pio" "${CMAKE_CURRENT_SOURCE_DIR}/external/ezxml" "${CMAKE_BINARY_DIR}/framework" "${CMAKE_BINARY_DIR}/operators")
 
 if (USE_KOKKOS)
@@ -56,6 +62,9 @@ if (USE_KOKKOS)
   string (REPLACE ";" " " KOKKOS_CXXFLAGS_STR "${KOKKOS_CXXFLAGS}")
   set(CXXFLAGS "${CXXFLAGS} ${KOKKOS_CXXFLAGS_STR}")
 endif()
+
+#YSK
+set(FFLAGS "${FFLAGS} -h acc")
 
 set(CMAKE_Fortran_FLAGS "${FFLAGS}")
 set(CMAKE_C_FLAGS "${CFLAGS}")
