@@ -657,7 +657,7 @@ setup_file (      IOFileSpecs& filespecs,
     register_variable(filename,"time_bnds","time_bnds",time_units,{"dim2","time"},"double","double","time-dim2");
     
     // Make it clear how the time_bnds should be interpreted
-    set_variable_metadata(filename,"time_bnds","note","right endpoint accummulation");
+    set_variable_metadata(filename,"time_bnds","note","right endpoint accumulation");
 
     // I'm not sure what's the point of this, but CF conventions seem to require it
     set_variable_metadata (filename,"time","bounds","time_bnds");
