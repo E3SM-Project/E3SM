@@ -267,6 +267,10 @@ module ocn_time_integration_split
       ! Forcing pool
       real (kind=RKIND), dimension(:), pointer :: tidalPotentialEta
 
+      real (kind=RKIND) :: totalDepth
+      real (kind=RKIND), dimension(:), pointer :: tidalInputMask, tidalBCValue
+      real (kind=RKIND), dimension(:,:), pointer :: restingThickness
+
       real (kind=RKIND), dimension(:), pointer :: &
         seaIcePressure, atmosphericPressure
 
@@ -2580,6 +2584,29 @@ module ocn_time_integration_split
          !$omp end do
          !$omp end parallel
 #endif
+      end if
+
+      ! direct application of tidal boundary condition
+      if (config_use_tidal_forcing .and. trim(config_tidal_forcing_type) == 'direct') then
+        call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
+        call mpas_pool_get_array(forcingPool, 'tidalInputMask', tidalInputMask)
+        call mpas_pool_get_array(forcingPool, 'tidalBCValue', tidalBCValue)
+        do iCell=1, nCells
+          ! artificially assumes boolean mask for now, could generalize to tappered sponge layer
+          if (tidalInputMask(iCell) == 1.0_RKIND) then
+            ! compute total depth for relative thickness contribution
+            totalDepth = 0.0_RKIND
+            do k = minLevelCell(iCell), maxLevelCell(iCell)
+              totalDepth = totalDepth + restingThickness(k,iCell)
+            end do
+
+            ! only modify layer thicknesses on tidal boundary
+            do k = minLevelCell(iCell), maxLevelCell(iCell)
+              layerThicknessNew(k, iCell) = tidalInputMask(iCell)*(tidalBCValue(iCell) + bottomDepth(iCell))*(restingThickness(k,iCell)/totalDepth)
+              !(1.0_RKIND - tidalInputMask(iCell))*layerThicknessNew(k, iCell)  ! generalized tappered assumption code
+            end do
+          end if
+        end do
       end if
 
       call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, verticalMeshPool, &
