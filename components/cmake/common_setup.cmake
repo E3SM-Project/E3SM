@@ -123,8 +123,3 @@ if (NOT HAS_COSP EQUAL -1)
   # The following is for the COSP simulator code:
   set(USE_COSP TRUE)
 endif()
-
-#------------------------------------------------------------------------------
-# Set key cmake vars
-#------------------------------------------------------------------------------
-set(CMAKE_EXE_LINKER_FLAGS "${LDFLAGS}" PARENT_SCOPE)

@@ -89,7 +89,7 @@ function(build_model COMP_CLASS COMP_NAME)
         set(YAKL_SYCL_FLAGS "${CPPDEFS} ${SYCL_FLAGS}")
       else()
         # For CPU C++ compilers duplicate flags are fine, the last ones win typically
-        set(YAKL_CXX_FLAGS "${CPPDEFS} ${CXXFLAGS}")
+        set(YAKL_CXX_FLAGS "${CPPDEFS} ${CMAKE_CXX_FLAGS}")
         set(YAKL_ARCH "")
       endif()
       message(STATUS "Building YAKL")
@@ -185,12 +185,10 @@ function(build_model COMP_CLASS COMP_NAME)
     # Set flags based on file extension. File extensions may change if the globs used by
     # gather_sources changes.
     if (SOURCE_EXT STREQUAL ".c")
-      e3sm_add_flags("${SOURCE_FILE}" "${CFLAGS}")
+
     elseif (SOURCE_EXT STREQUAL ".cpp")
-      e3sm_add_flags("${SOURCE_FILE}" "${CXXFLAGS}")
+
     else()
-      # This is a fortran source
-      e3sm_add_flags("${SOURCE_FILE}" "${FFLAGS}")
 
       # Cosp manages its own flags
       if (NOT SOURCE_FILE IN_LIST COSP_SOURCES)

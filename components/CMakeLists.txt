@@ -30,20 +30,6 @@ function(set_compilers_e3sm)
   # Grab CXX compiler from CIME
   include(${CASEROOT}/Macros.cmake)
 
-  if (MPILIB STREQUAL "mpi-serial")
-    set(CC ${SCC})
-    set(FC ${SFC})
-    set(CXX ${SCXX})
-  else()
-    set(CC ${MPICC})
-    set(FC ${MPIFC})
-    set(CXX ${MPICXX})
-  endif()
-
-  set(CMAKE_CXX_COMPILER     ${CXX} CACHE STRING "The CXX compiler")
-  set(CMAKE_C_COMPILER       ${CC}  CACHE STRING "The C   compiler")
-  set(CMAKE_Fortran_COMPILER ${FC}  CACHE STRING "The Fortran compiler")
-
   if (DEBUG)
     set(E3SM_DEFAULT_BUILD_TYPE "DEBUG" CACHE STRING "Default build type, inferred from ${DEBUG}")
   else()
@@ -126,19 +112,6 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/find_dep_packages.cmake)
 
 # Scream manages its own flags
 build_eamxx()
-
-# We do want CMAKE_BUILD_TYPE to be set, but we do NOT want CMake to
-# decide what optimization flags to append, based on build type,
-# for components who rely on CIME for build flags, so make all the following empty.
-# JGF: I think we can remove this once proper CMake names are being used in the
-# macros.
-set (CMAKE_C_FLAGS_RELEASE "")
-set (CMAKE_CXX_FLAGS_RELEASE "")
-set (CMAKE_Fortran_FLAGS_RELEASE "")
-
-set (CMAKE_C_FLAGS_DEBUG "")
-set (CMAKE_CXX_FLAGS_DEBUG "")
-set (CMAKE_Fortran_FLAGS_DEBUG "")
 
 set(BUILDCONF ${CASEROOT}/Buildconf)
 

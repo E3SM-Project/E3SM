@@ -8,7 +8,3 @@ if (NOT DEBUG)
     e3sm_remove_flags("${ITEM}" "-O")
   endforeach()
 endif()
-
-
-
-

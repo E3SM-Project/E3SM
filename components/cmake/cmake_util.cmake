@@ -57,32 +57,6 @@ function(e3sm_add_flags FILE_ARG FLAGS_ARG)
   set_property(SOURCE ${REAL_FILE} APPEND_STRING PROPERTY COMPILE_FLAGS " ${FLAGS_ARG} ")
 endfunction()
 
-# Remove compile flags for a file. Expects a filepath relative to E3SM/components if it
-# is not a generated file.
-function(e3sm_remove_flags FILE_ARG FLAGS_ARG)
-  if (FILE_ARG MATCHES "${CMAKE_BINARY_DIR}/.*") # is generated
-    set(REAL_FILE ${FILE_ARG})
-  else()
-    if (NOT EXISTS ${PROJECT_SOURCE_DIR}/${FILE_ARG})
-      message(FATAL_ERROR "Trying to set flags on non-existent source: ${FILE_ARG}")
-    endif()
-    set(REAL_FILE "${SOURCE_PATH}/${FILE_ARG}")
-  endif()
-
-  get_property(ITEM_FLAGS SOURCE ${REAL_FILE} PROPERTY COMPILE_FLAGS)
-  string(REPLACE "${FLAGS_ARG}" "" ITEM_FLAGS "${ITEM_FLAGS}")
-  set_property(SOURCE ${REAL_FILE} PROPERTY COMPILE_FLAGS "${ITEM_FLAGS}")
-endfunction()
-
 function(e3sm_deoptimize_file FILE_ARG FFLAGS_NOOPT)
-  if (CMAKE_Fortran_COMPILER_ID STREQUAL "PGI" OR CMAKE_Fortran_COMPILER_ID STREQUAL "NVHPC")
-    # PGI does not support bulk-disabling of optimization by appending -O0,
-    # we have to remove the optimization flags first
-
-    # Until we know which particular flags are related to optimization, we have to guess.
-    e3sm_remove_flags(${FILE_ARG} "-O1")
-    e3sm_remove_flags(${FILE_ARG} "-O2")
-    e3sm_remove_flags(${FILE_ARG} "-O3")
-  endif()
   e3sm_add_flags(${FILE_ARG} "${FFLAGS_NOOPT}")
 endfunction()
