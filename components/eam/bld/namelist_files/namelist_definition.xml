@@ -4270,6 +4270,54 @@ End layer of L4 for gas chemistry tracers 2D budget diagnostic output
 Default: 72
 </entry>
 
+<entry id="UCIgaschmbudget_2D_L1_s" type="integer" category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+Start layer of L1 for gas chemistry tracers 2D budget diagnostic output
+Default: 1
+</entry>
+
+<entry id="UCIgaschmbudget_2D_L1_e" type="integer" category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+End layer of L1 for gas chemistry tracers 2D budget diagnostic output
+Default: 26
+</entry>
+
+<entry id="UCIgaschmbudget_2D_L2_s" type="integer" category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+Start layer of L2 for gas chemistry tracers 2D budget diagnostic output
+Default: 27
+</entry>
+
+<entry id="UCIgaschmbudget_2D_L2_e" type="integer" category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+End layer of L2 for gas chemistry tracers 2D budget diagnostic output
+Default: 38
+</entry>
+
+<entry id="UCIgaschmbudget_2D_L3_s" type="integer" category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+Start layer of L3 for gas chemistry tracers 2D budget diagnostic output
+Default: 39
+</entry>
+
+<entry id="UCIgaschmbudget_2D_L3_e" type="integer" category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+End layer of L3 for gas chemistry tracers 2D budget diagnostic output
+Default: 58
+</entry>
+
+<entry id="UCIgaschmbudget_2D_L4_s" type="integer" category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+Start layer of L4 for gas chemistry tracers 2D budget diagnostic output
+Default: 59
+</entry>
+
+<entry id="UCIgaschmbudget_2D_L4_e" type="integer" category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+End layer of L4 for gas chemistry tracers 2D budget diagnostic output
+Default: 72
+</entry>
+
 <entry id="history_UCIgaschmbudget_2D" type="logical"  category="diagnostics"
        group="phys_ctl_nl" valid_values="" >
 Switch for gas chemistry tracers 2D budget diagnostic output
