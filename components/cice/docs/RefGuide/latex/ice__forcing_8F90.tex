@@ -1,0 +1,207 @@
+\hypertarget{ice__forcing_8F90}{
+\section{ice\_\-forcing.F90 File Reference}
+\label{ice__forcing_8F90}\index{ice\_\-forcing.F90@{ice\_\-forcing.F90}}
+}
+\subsection*{Modules}
+\begin{DoxyCompactItemize}
+\item 
+module \hyperlink{namespaceice__forcing}{ice\_\-forcing}
+\end{DoxyCompactItemize}
+\subsection*{Functions/Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{namespaceice__forcing_aa113a0f4916cea9631de05496daf36c6}{ice\_\-forcing::init\_\-forcing\_\-atmo}
+\item 
+subroutine \hyperlink{namespaceice__forcing_a53be2f27b17125aea7195b3e14874b44}{ice\_\-forcing::init\_\-forcing\_\-ocn} (dt)
+\item 
+subroutine \hyperlink{namespaceice__forcing_ab2f60fb9ecb6411647c4995b88de8732}{ice\_\-forcing::get\_\-forcing\_\-atmo}
+\item 
+subroutine \hyperlink{namespaceice__forcing_a3c95ab18cff7177ae785d882338cd72e}{ice\_\-forcing::get\_\-forcing\_\-ocn} (dt)
+\item 
+subroutine \hyperlink{namespaceice__forcing_a45d48692f330fef1618489012ca9d0a7}{ice\_\-forcing::read\_\-data} (flag, recd, yr, ixm, ixx, ixp, maxrec, data\_\-file, field\_\-data, field\_\-loc, field\_\-type)
+\item 
+subroutine \hyperlink{namespaceice__forcing_a33953eccfa9abefcd935133786fa04b3}{ice\_\-forcing::read\_\-data\_\-nc} (flag, recd, yr, ixm, ixx, ixp, maxrec, data\_\-file, fieldname, field\_\-data, field\_\-loc, field\_\-type)
+\item 
+subroutine \hyperlink{namespaceice__forcing_ae59c1f1aebe7408876c324fd7e2f5e5f}{ice\_\-forcing::read\_\-clim\_\-data} (readflag, recd, ixm, ixx, ixp, data\_\-file, field\_\-data, field\_\-loc, field\_\-type)
+\item 
+subroutine \hyperlink{namespaceice__forcing_a9da649682a06b9b9fb085742a770d940}{ice\_\-forcing::interp\_\-coeff\_\-monthly} (recslot)
+\item 
+subroutine \hyperlink{namespaceice__forcing_a9357ad1d7f2850b9ac32cb5f6b6aa7cb}{ice\_\-forcing::interp\_\-coeff} (recnum, recslot, secint, dataloc)
+\item 
+subroutine \hyperlink{namespaceice__forcing_aaa8b12715d3c39535f631da2fcc76c21}{ice\_\-forcing::interpolate\_\-data} (field\_\-data, field)
+\item 
+subroutine \hyperlink{namespaceice__forcing_a4dc16c54400bfdb9cdf1298aa63d7c0f}{ice\_\-forcing::file\_\-year} (data\_\-file, yr)
+\item 
+subroutine \hyperlink{namespaceice__forcing_af5f411a97331efb9556841318e740684}{ice\_\-forcing::prepare\_\-forcing} (nx\_\-block, ny\_\-block, ilo, ihi, jlo, jhi, hm, Tair, fsw, cldf, flw, frain, fsnow, Qa, rhoa, uatm, vatm, strax, stray, zlvl, wind, swvdr, swvdf, swidr, swidf, potT, ANGLET, Tsfc, sst, aice)
+\item 
+subroutine \hyperlink{namespaceice__forcing_a18335b8937585695c3ddddd162b39414}{ice\_\-forcing::ncar\_\-files} (yr)
+\item 
+subroutine \hyperlink{namespaceice__forcing_a24793c87569906af2dce6abb1be1f204}{ice\_\-forcing::ncar\_\-data}
+\item 
+subroutine \hyperlink{namespaceice__forcing_adbed1e81d23690718cc666b6bb1c964e}{ice\_\-forcing::ecmwf\_\-files} (yr)
+\item 
+subroutine \hyperlink{namespaceice__forcing_a7d343f266bce5c9e7a7062d07fc3b57e}{ice\_\-forcing::ECMWF\_\-data}
+\item 
+subroutine \hyperlink{namespaceice__forcing_a4efb2f31dda4004f4fefadeac72d74a5}{ice\_\-forcing::LY\_\-files} (yr)
+\item 
+subroutine \hyperlink{namespaceice__forcing_af090b8a3141de745a9f1893256289b0b}{ice\_\-forcing::LY\_\-data}
+\item 
+subroutine \hyperlink{namespaceice__forcing_af98a1525343c579e040a9dfd3493ada4}{ice\_\-forcing::compute\_\-shortwave} (nx\_\-block, ny\_\-block, ilo, ihi, jlo, jhi, TLON, TLAT, hm, Qa, cldf, fsw)
+\item 
+subroutine \hyperlink{namespaceice__forcing_a72e60597f70954128768b0082b1a4579}{ice\_\-forcing::Qa\_\-fixLY} (nx\_\-block, ny\_\-block, Tair, Qa)
+\item 
+subroutine \hyperlink{namespaceice__forcing_a47009d309c3885ec335b6595792ffb39}{ice\_\-forcing::hadgem\_\-files} (yr)
+\item 
+subroutine \hyperlink{namespaceice__forcing_a39483ffb7ca71d3bc78cfb98b9dbbdbc}{ice\_\-forcing::hadgem\_\-data}
+\item 
+subroutine \hyperlink{namespaceice__forcing_a7a1e37c4eee269322492ab28f1e99737}{ice\_\-forcing::monthly\_\-files} (yr)
+\item 
+subroutine \hyperlink{namespaceice__forcing_aa45c8ecbe140ec4fa53e278301462374}{ice\_\-forcing::monthly\_\-data}
+\item 
+subroutine \hyperlink{namespaceice__forcing_a83eb2b44b9507b6136d8ca5969356058}{ice\_\-forcing::ocn\_\-data\_\-clim} (dt)
+\item 
+subroutine \hyperlink{namespaceice__forcing_aeb55eba5600676c3b7eb42cf02d337c1}{ice\_\-forcing::ocn\_\-data\_\-ncar\_\-init}
+\item 
+subroutine \hyperlink{namespaceice__forcing_a1b5cad2ae77729861f402fa1ef5a2140}{ice\_\-forcing::ocn\_\-data\_\-ncar} (dt)
+\item 
+subroutine \hyperlink{namespaceice__forcing_a6b38f04cff511ea4f70d58e89dfaf0e5}{ice\_\-forcing::ocn\_\-data\_\-hadgem} (dt)
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__forcing_a50c7cbc293e8bdff5e53f79b141e4a9b}{ice\_\-forcing::ycycle}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__forcing_a00220497cafa391e9105c65fad81c982}{ice\_\-forcing::fyear\_\-init}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__forcing_a9e840876f677642389293c4dda357eef}{ice\_\-forcing::fyear}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__forcing_aebf7ee5db66f4a38134d1314a4de3f8f}{ice\_\-forcing::fyear\_\-final}
+\item 
+character(char\_\-len\_\-long) \hyperlink{namespaceice__forcing_ab619dc21fc4da36e5f02a12ca1e7944d}{ice\_\-forcing::height\_\-file}
+\item 
+character(char\_\-len\_\-long) \hyperlink{namespaceice__forcing_a807421aa54b1f2f0416c158c1909b5bd}{ice\_\-forcing::uwind\_\-file}
+\item 
+character(char\_\-len\_\-long) \hyperlink{namespaceice__forcing_a81253ba2712f47539e7e4f1d0d35d885}{ice\_\-forcing::vwind\_\-file}
+\item 
+character(char\_\-len\_\-long) \hyperlink{namespaceice__forcing_a096f17ea955001c7c2f968e84e0bf5b5}{ice\_\-forcing::wind\_\-file}
+\item 
+character(char\_\-len\_\-long) \hyperlink{namespaceice__forcing_a49c9fbd4c57cb5e160f88fd18db10938}{ice\_\-forcing::strax\_\-file}
+\item 
+character(char\_\-len\_\-long) \hyperlink{namespaceice__forcing_a5539f8ddd2633d9b318092daf9745cf9}{ice\_\-forcing::stray\_\-file}
+\item 
+character(char\_\-len\_\-long) \hyperlink{namespaceice__forcing_aa081200ee80895fd9ca58398d4171467}{ice\_\-forcing::potT\_\-file}
+\item 
+character(char\_\-len\_\-long) \hyperlink{namespaceice__forcing_ab4ce88faae0d80e903bc827b71109573}{ice\_\-forcing::tair\_\-file}
+\item 
+character(char\_\-len\_\-long) \hyperlink{namespaceice__forcing_a2a98f60110b3268470cdb52f6b63486c}{ice\_\-forcing::humid\_\-file}
+\item 
+character(char\_\-len\_\-long) \hyperlink{namespaceice__forcing_a91b13032a46cf179bc526aaacf04608d}{ice\_\-forcing::rhoa\_\-file}
+\item 
+character(char\_\-len\_\-long) \hyperlink{namespaceice__forcing_ad4465d0f13c0141d16998d7771003a45}{ice\_\-forcing::fsw\_\-file}
+\item 
+character(char\_\-len\_\-long) \hyperlink{namespaceice__forcing_a80a3c80bad2ac9ab38aff61fdaf8084e}{ice\_\-forcing::flw\_\-file}
+\item 
+character(char\_\-len\_\-long) \hyperlink{namespaceice__forcing_a872adfb9cc20037a1b0dc19f317438bd}{ice\_\-forcing::rain\_\-file}
+\item 
+character(char\_\-len\_\-long) \hyperlink{namespaceice__forcing_a33afd2f71d0f18c27e6a2e78388dbb31}{ice\_\-forcing::sst\_\-file}
+\item 
+character(char\_\-len\_\-long) \hyperlink{namespaceice__forcing_a679cbae21b157e961355e2d69701a241}{ice\_\-forcing::sss\_\-file}
+\item 
+character(char\_\-len\_\-long) \hyperlink{namespaceice__forcing_a6aaf5d68f7a6e2eca9949390469c09eb}{ice\_\-forcing::pslv\_\-file}
+\item 
+character(char\_\-len\_\-long) \hyperlink{namespaceice__forcing_a91c5310add7d3da3da2f948d150844ca}{ice\_\-forcing::sublim\_\-file}
+\item 
+character(char\_\-len\_\-long) \hyperlink{namespaceice__forcing_aa253506c47f71090fd11a5b309eecf7e}{ice\_\-forcing::snow\_\-file}
+\item 
+character(char\_\-len\_\-long), dimension(ncat) \hyperlink{namespaceice__forcing_a22a86e9e628aeff874655d16792b2637}{ice\_\-forcing::topmelt\_\-file}
+\item 
+character(char\_\-len\_\-long), dimension(ncat) \hyperlink{namespaceice__forcing_a0278acba1215b398580f3e503a8baf11}{ice\_\-forcing::botmelt\_\-file}
+\item 
+real(kind=dbl\_\-kind) \hyperlink{namespaceice__forcing_a56dcb1f5a344ec3a10ce9138f9418e51}{ice\_\-forcing::c1intp}
+\item 
+real(kind=dbl\_\-kind) \hyperlink{namespaceice__forcing_ad041327090c6188e198972d2e2162197}{ice\_\-forcing::c2intp}
+\item 
+real(kind=dbl\_\-kind) \hyperlink{namespaceice__forcing_a7818997d422d32d4d238d866a60e50a7}{ice\_\-forcing::ftime}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__forcing_ad802bdcf2b496e0e3b0cf226abe288ec}{ice\_\-forcing::oldrecnum} = 0
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__forcing_abf29b2295f18d12d51a4d993a2589770}{ice\_\-forcing::oldrecslot} = 1
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__forcing_a251b0646126ab48de9758116bec0c414}{ice\_\-forcing::cldf}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, 2, max\_\-blocks) \hyperlink{namespaceice__forcing_a423a50a8e4373aae7be0c11fe1ab7e0f}{ice\_\-forcing::fsw\_\-data}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, 2, max\_\-blocks) \hyperlink{namespaceice__forcing_aa497c4b2e2bdd7e83e0b08b306c364c8}{ice\_\-forcing::cldf\_\-data}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, 2, max\_\-blocks) \hyperlink{namespaceice__forcing_ae97592cfaa6f6f1dfe5a12391e7f912d}{ice\_\-forcing::fsnow\_\-data}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, 2, max\_\-blocks) \hyperlink{namespaceice__forcing_ad7ad20c7d13ff53a459e4f18b8eeccbf}{ice\_\-forcing::Tair\_\-data}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, 2, max\_\-blocks) \hyperlink{namespaceice__forcing_a3e020efe327d9945b65433fa30d543ef}{ice\_\-forcing::uatm\_\-data}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, 2, max\_\-blocks) \hyperlink{namespaceice__forcing_a369b83c4f0776d66c624871fbb32767d}{ice\_\-forcing::vatm\_\-data}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, 2, max\_\-blocks) \hyperlink{namespaceice__forcing_a5b562d2a30773faba85cbae322e64162}{ice\_\-forcing::wind\_\-data}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, 2, max\_\-blocks) \hyperlink{namespaceice__forcing_a553d40f9acc76f1b6dc8fc56cddccf87}{ice\_\-forcing::strax\_\-data}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, 2, max\_\-blocks) \hyperlink{namespaceice__forcing_af5d69277a6de176e90f0b2329fef928c}{ice\_\-forcing::stray\_\-data}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, 2, max\_\-blocks) \hyperlink{namespaceice__forcing_aa702ee11143b22380ab015e34da2cd55}{ice\_\-forcing::Qa\_\-data}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, 2, max\_\-blocks) \hyperlink{namespaceice__forcing_ab950a2df7e588896b30862fc06c54496}{ice\_\-forcing::rhoa\_\-data}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, 2, max\_\-blocks) \hyperlink{namespaceice__forcing_a8be75ef0261c9c45a8a2b4983813d2ea}{ice\_\-forcing::potT\_\-data}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, 2, max\_\-blocks) \hyperlink{namespaceice__forcing_ad17a564b4d1aff388f9e96432340e0f8}{ice\_\-forcing::zlvl\_\-data}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, 2, max\_\-blocks) \hyperlink{namespaceice__forcing_a22c2a2d054007cbf4c83142fba90a332}{ice\_\-forcing::flw\_\-data}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, 2, max\_\-blocks) \hyperlink{namespaceice__forcing_ab6d2ed507a72720751a324430fb30e40}{ice\_\-forcing::sst\_\-data}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, 2, max\_\-blocks) \hyperlink{namespaceice__forcing_afc0212ff56f8450191bde0697eec98c0}{ice\_\-forcing::sss\_\-data}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, 2, max\_\-blocks) \hyperlink{namespaceice__forcing_abf31afbe922f5e349590ae3e542e2116}{ice\_\-forcing::uocn\_\-data}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, 2, max\_\-blocks) \hyperlink{namespaceice__forcing_af9f5d7d98f0d9a7a1754c8e066a5ecc7}{ice\_\-forcing::vocn\_\-data}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, 2, max\_\-blocks) \hyperlink{namespaceice__forcing_aeefce6613d18c1281edaf501aa11ce4a}{ice\_\-forcing::sublim\_\-data}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, 2, max\_\-blocks) \hyperlink{namespaceice__forcing_a33507a33e635005acfc8ac3fcb8f330d}{ice\_\-forcing::frain\_\-data}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, 2, max\_\-blocks, ncat) \hyperlink{namespaceice__forcing_a76dd37d14a04398b8cddb3930e86f682}{ice\_\-forcing::topmelt\_\-data}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, 2, max\_\-blocks, ncat) \hyperlink{namespaceice__forcing_a3f2b5aab55a596bdea86fc066fb03fc9}{ice\_\-forcing::botmelt\_\-data}
+\item 
+character(char\_\-len) \hyperlink{namespaceice__forcing_a47d5ef141d5d07f3facede3ccda065b9}{ice\_\-forcing::atm\_\-data\_\-format}
+\item 
+character(char\_\-len) \hyperlink{namespaceice__forcing_a9d9be81629d968253c14a8c0a5984bda}{ice\_\-forcing::ocn\_\-data\_\-format}
+\item 
+character(char\_\-len) \hyperlink{namespaceice__forcing_a0a79982d0d62aeee3a33ef50513f3d23}{ice\_\-forcing::atm\_\-data\_\-type}
+\item 
+character(char\_\-len\_\-long) \hyperlink{namespaceice__forcing_ade690adebb1115f5b496db9148e05784}{ice\_\-forcing::atm\_\-data\_\-dir}
+\item 
+character(char\_\-len\_\-long) \hyperlink{namespaceice__forcing_a654560673c82ff131fd490ed0e7f36ff}{ice\_\-forcing::ocn\_\-data\_\-dir}
+\item 
+character(char\_\-len\_\-long) \hyperlink{namespaceice__forcing_aec28b3a9dba2ddef0ac023a96fc361bc}{ice\_\-forcing::oceanmixed\_\-file}
+\item 
+integer(kind=int\_\-kind), parameter \hyperlink{namespaceice__forcing_ae1362a8a47b05e49acfce2142d98fdd5}{ice\_\-forcing::nfld} = 8
+\item 
+real(kind=dbl\_\-kind), parameter \hyperlink{namespaceice__forcing_a076bfda8ebb5a4f63d65ec503c12f0d4}{ice\_\-forcing::frcvdr} = 0.28\_\-dbl\_\-kind
+\item 
+real(kind=dbl\_\-kind), parameter \hyperlink{namespaceice__forcing_ab32ef53cee9c09cc217d6228c94dcf44}{ice\_\-forcing::frcvdf} = 0.24\_\-dbl\_\-kind
+\item 
+real(kind=dbl\_\-kind), parameter \hyperlink{namespaceice__forcing_a11540aeb60ff2b8a10675369dde6d6c3}{ice\_\-forcing::frcidr} = 0.31\_\-dbl\_\-kind
+\item 
+real(kind=dbl\_\-kind), parameter \hyperlink{namespaceice__forcing_ad4255bb85a309ae7a9ee20c1e951aa07}{ice\_\-forcing::frcidf} = 0.17\_\-dbl\_\-kind
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks, nfld, 12) \hyperlink{namespaceice__forcing_a726eacdcd2c76eb6ed122e4b1543d02d}{ice\_\-forcing::ocn\_\-frc\_\-m}
+\item 
+logical(kind=log\_\-kind) \hyperlink{namespaceice__forcing_a08581fb1de6afa9fa693b22a508447ff}{ice\_\-forcing::restore\_\-sst}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__forcing_a5a4e01d0d2029ae1b1f11eb0c3ce5d8c}{ice\_\-forcing::trestore}
+\item 
+real(kind=dbl\_\-kind) \hyperlink{namespaceice__forcing_a6a5e91929910782bb955be2569a01a35}{ice\_\-forcing::trest}
+\item 
+logical(kind=log\_\-kind) \hyperlink{namespaceice__forcing_a22e743605ad0e639e906f24289ef0cb1}{ice\_\-forcing::dbug}
+\end{DoxyCompactItemize}

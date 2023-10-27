@@ -1,0 +1,74 @@
+\hypertarget{ice__timers_8F90}{
+\section{ice\_\-timers.F90 File Reference}
+\label{ice__timers_8F90}\index{ice\_\-timers.F90@{ice\_\-timers.F90}}
+}
+\subsection*{Data Types}
+\begin{DoxyCompactItemize}
+\item 
+type \hyperlink{typeice__timers_1_1timer__data}{ice\_\-timers::timer\_\-data}
+\end{DoxyCompactItemize}
+\subsection*{Modules}
+\begin{DoxyCompactItemize}
+\item 
+module \hyperlink{namespaceice__timers}{ice\_\-timers}
+\end{DoxyCompactItemize}
+\subsection*{Functions/Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{namespaceice__timers_aee6dba44293652055d7e94592a9496da}{ice\_\-timers::init\_\-ice\_\-timers}
+\item 
+subroutine \hyperlink{namespaceice__timers_ae611f993fd7e53a0106a3ce5bf10c89f}{ice\_\-timers::get\_\-ice\_\-timer} (timer\_\-id, name\_\-choice, num\_\-blocks, num\_\-nodes)
+\item 
+subroutine \hyperlink{namespaceice__timers_a888b240d9ec89cc7a91d2cb25b59f4e0}{ice\_\-timers::ice\_\-timer\_\-clear} (timer\_\-id)
+\item 
+subroutine \hyperlink{namespaceice__timers_a308c3af934358cb1f050df7cce19ce79}{ice\_\-timers::ice\_\-timer\_\-start} (timer\_\-id, block\_\-id)
+\item 
+subroutine \hyperlink{namespaceice__timers_ab483bb3b29e1839baf5a6bc2ad720ca8}{ice\_\-timers::ice\_\-timer\_\-stop} (timer\_\-id, block\_\-id)
+\item 
+subroutine \hyperlink{namespaceice__timers_a8b8114bad0fd653247cdc104256c83ab}{ice\_\-timers::ice\_\-timer\_\-print} (timer\_\-id, stats)
+\item 
+subroutine \hyperlink{namespaceice__timers_ace88d185debbc44901eff5a1d54d7fde}{ice\_\-timers::ice\_\-timer\_\-print\_\-all} (stats)
+\item 
+subroutine \hyperlink{namespaceice__timers_a7e731661ee334413867a1c3c6356c129}{ice\_\-timers::ice\_\-timer\_\-check} (timer\_\-id, block\_\-id)
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+integer(int\_\-kind) \hyperlink{namespaceice__timers_af4544096584c21d56bb41d500d4a1e7b}{ice\_\-timers::timer\_\-total}
+\item 
+integer(int\_\-kind) \hyperlink{namespaceice__timers_a2f62f4afeed2dc2700a9bf7c15e6d746}{ice\_\-timers::timer\_\-step}
+\item 
+integer(int\_\-kind) \hyperlink{namespaceice__timers_ada6ea9e52bcd16e1d5ea869c9ef86e30}{ice\_\-timers::timer\_\-dynamics}
+\item 
+integer(int\_\-kind) \hyperlink{namespaceice__timers_a661df1c3c16f3dbba252198a2de779c6}{ice\_\-timers::timer\_\-advect}
+\item 
+integer(int\_\-kind) \hyperlink{namespaceice__timers_ab9384dde0a037de0babca404c47d3084}{ice\_\-timers::timer\_\-column}
+\item 
+integer(int\_\-kind) \hyperlink{namespaceice__timers_af9a7c2e62659a0c8babe31eeb749aabd}{ice\_\-timers::timer\_\-thermo}
+\item 
+integer(int\_\-kind) \hyperlink{namespaceice__timers_a6fd87221d7d148cbbd9b6c885a235034}{ice\_\-timers::timer\_\-sw}
+\item 
+integer(int\_\-kind) \hyperlink{namespaceice__timers_a9005547a6ce9d2b619697fc3c7167df7}{ice\_\-timers::timer\_\-ridge}
+\item 
+integer(int\_\-kind) \hyperlink{namespaceice__timers_ab82172beab2bd8755db6ebcfe7ae5f35}{ice\_\-timers::timer\_\-catconv}
+\item 
+integer(int\_\-kind) \hyperlink{namespaceice__timers_a08bc2ebb9f8789a162d1f1ee3df678a2}{ice\_\-timers::timer\_\-couple}
+\item 
+integer(int\_\-kind) \hyperlink{namespaceice__timers_af250a2fa78a031dcb6f923aa2afb2813}{ice\_\-timers::timer\_\-readwrite}
+\item 
+integer(int\_\-kind) \hyperlink{namespaceice__timers_a6b3fa397674377c5596ab9a0a4e1beb2}{ice\_\-timers::timer\_\-diags}
+\item 
+integer(int\_\-kind) \hyperlink{namespaceice__timers_a97b81f9ad9a98de0710a2f1859113352}{ice\_\-timers::timer\_\-hist}
+\item 
+integer(int\_\-kind), parameter \hyperlink{namespaceice__timers_aa410a1135c41a4e3216716ae83adfd64}{ice\_\-timers::max\_\-timers} = 50
+\item 
+type(timer\_\-data), dimension(max\_\-timers) \hyperlink{namespaceice__timers_a7bda531f2d88a00f031b6d6f8f104474}{ice\_\-timers::all\_\-timers}
+\item 
+real(dbl\_\-kind) \hyperlink{namespaceice__timers_a6e77da30d9249c18d6b65ff45dc46ea4}{ice\_\-timers::clock\_\-rate}
+\item 
+integer(int\_\-kind) \hyperlink{namespaceice__timers_a1659ba1f7b638e76d301c36b9b061f85}{ice\_\-timers::timerRoot}
+\item 
+real(dbl\_\-kind), dimension(max\_\-timers) \hyperlink{namespaceice__timers_a3974283b5a3de2b611895ae971fb9b86}{ice\_\-timers::all\_\-ltime}
+\item 
+real(dbl\_\-kind), dimension(:), allocatable \hyperlink{namespaceice__timers_ac5562b4ab5e728d8135200ab10795610}{ice\_\-timers::all\_\-gtime}
+\end{DoxyCompactItemize}

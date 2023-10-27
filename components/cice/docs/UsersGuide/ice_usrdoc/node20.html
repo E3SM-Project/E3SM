@@ -1,0 +1,91 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<!--Converted with LaTeX2HTML 2002-2-1 (1.71)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>Model Input Datasets</TITLE>
+<META NAME="description" CONTENT="Model Input Datasets">
+<META NAME="keywords" CONTENT="ice_usrdoc">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=utf-8">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="ice_usrdoc.css">
+
+<LINK REL="next" HREF="node21.html">
+<LINK REL="previous" HREF="node8.html">
+<LINK REL="up" HREF="ice_usrdoc.html">
+<LINK REL="next" HREF="node21.html">
+</HEAD>
+
+<BODY BGCOLOR=white LINK=BLUE VLINK=PURPLE>
+
+<A NAME="tex2html332"
+  HREF="node21.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
+<A NAME="tex2html328"
+  HREF="ice_usrdoc.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
+<A NAME="tex2html322"
+  HREF="node19.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
+<A NAME="tex2html330"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  <BR>
+<B> Next:</B> <A NAME="tex2html333"
+  HREF="node21.html">Run Types</A>
+<B>Up:</B> <A NAME="tex2html329"
+  HREF="ice_usrdoc.html">ice_usrdoc</A>
+<B> Previous:</B> <A NAME="tex2html323"
+  HREF="node19.html">Example 2: History File</A>
+<BR> <P>
+
+<!--End of Navigation Panel-->
+
+<H1><A NAME="SECTION00050000000000000000">
+Model Input Datasets</A>
+</H1>
+  
+<P>
+The coupled CICE model requires a minimum of three files to run:
+
+<P>
+
+<UL>
+<LI><B>global_${ICE_GRID}.grid</B> is a binary file containing
+        grid information
+</LI>
+<LI><B>global_${ICE_GRID}.kmt</B> is a binary file containing
+        land mask information
+</LI>
+<LI><B>iced.0001-01-01.${ICE_GRID}.20lay</B>
+         are binary files containing initial condition information 
+         for the gx1v6 and gx3v7 grids, respectively. The thickness 
+         distribution in this restart file contains 5 categories, each 
+         with 4 layers.
+</LI>
+</UL>
+
+<P>
+Depending on the grid selected in the scripts, the appropriate <B>global*</B>
+and <B>iced*</B> files will be used in the executable directory. These files
+are read directory from the system input data directory and not copied
+to the executable directory.  Currently, only gx3v7, gx1v6, tx1v1, and tx0.1v2 
+grids are supported for the ice and ocean models.  Note that these files can
+now be used in netCDF format. 
+<BR>
+<P>
+<BR> <HR>
+<ADDRESS>
+<I>David Bailey <BR>
+2011-08-16</I>
+</ADDRESS>
+</BODY>
+</HTML>

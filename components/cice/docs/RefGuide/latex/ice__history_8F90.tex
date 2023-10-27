@@ -1,0 +1,61 @@
+\hypertarget{ice__history_8F90}{
+\section{ice\_\-history.F90 File Reference}
+\label{ice__history_8F90}\index{ice\_\-history.F90@{ice\_\-history.F90}}
+}
+\subsection*{Modules}
+\begin{DoxyCompactItemize}
+\item 
+module \hyperlink{namespaceice__history}{ice\_\-history}
+\end{DoxyCompactItemize}
+\subsection*{Functions/Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{namespaceice__history_a99fbe7f0b61b42e909dad8bfff950536}{ice\_\-history::init\_\-hist} (dt)
+\item 
+subroutine \hyperlink{namespaceice__history_a09981e8df56a439fdddc4fcbb1066ecd}{ice\_\-history::ice\_\-write\_\-hist} (dt)
+\item 
+subroutine \hyperlink{namespaceice__history_a97e4c9d297248bf62ca51169bf82a846}{ice\_\-history::define\_\-hist\_\-field} (id, vname, vunit, vcoord, vcellmeas, vdesc, vcomment, cona, conb, ns1, vhistfreq)
+\item 
+subroutine \hyperlink{namespaceice__history_a16cf4059a24eed8a2908cecdba018383}{ice\_\-history::accum\_\-hist\_\-field} (id, iblk, field\_\-accum)
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+character(len=16) \hyperlink{namespaceice__history_a795d9a5379207bc00848c3d58be6fac2}{ice\_\-history::vname\_\-in}
+\item 
+character(len=55) \hyperlink{namespaceice__history_a000ee3af05f02fbff13085400a751e53}{ice\_\-history::vdesc\_\-in}
+\item 
+character(len=55) \hyperlink{namespaceice__history_ab6f7ee9f2623bb2e08b57018462544df}{ice\_\-history::vcomment\_\-in}
+\item 
+character(len=16), parameter \hyperlink{namespaceice__history_ab16190577859fe12663ca28b0690e5ec}{ice\_\-history::tstr}
+\item 
+character(len=16), parameter \hyperlink{namespaceice__history_a2b8d89b4e6bf73f99efde8b74906cef9}{ice\_\-history::ustr}
+\item 
+character(len=16), parameter \hyperlink{namespaceice__history_a56409d6f67844894d11f17ca553864bf}{ice\_\-history::tcstr}
+\item 
+character(len=16), parameter \hyperlink{namespaceice__history_a6d6a4603e818d63fe00df57441c0a5fb}{ice\_\-history::ucstr}
+\item 
+real(kind=dbl\_\-kind), dimension(max\_\-nstrm) \hyperlink{namespaceice__history_a8f63bda9e9e4d0a76e49e17002210ae4}{ice\_\-history::avgct}
+\item 
+logical(kind=log\_\-kind) \hyperlink{namespaceice__history_ac6635a8bcde54a554d4b60c7c6566b26}{ice\_\-history::f\_\-tmask} = .true.
+\item 
+logical(kind=log\_\-kind) \hyperlink{namespaceice__history_a7b8cc0a9e56bbe22f0015aa2062953d0}{ice\_\-history::f\_\-tarea} = .true.
+\item 
+logical(kind=log\_\-kind) \hyperlink{namespaceice__history_ac39fd46be06edb447fb96f16103e4d96}{ice\_\-history::f\_\-uarea} = .true.
+\item 
+logical(kind=log\_\-kind) \hyperlink{namespaceice__history_a6effc6ebe9b5dc7d958341622f11530c}{ice\_\-history::f\_\-dxt} = .true.
+\item 
+logical(kind=log\_\-kind) \hyperlink{namespaceice__history_a7976eedce7471cfcf14fe54b09e5e2a0}{ice\_\-history::f\_\-dyt} = .true.
+\item 
+logical(kind=log\_\-kind) \hyperlink{namespaceice__history_ac2cca9bb022f44a98a6cff9a59cd19e3}{ice\_\-history::f\_\-dxu} = .true.
+\item 
+logical(kind=log\_\-kind) \hyperlink{namespaceice__history_a5fe48a0bc8e7dcdbe8689feadd8cdd70}{ice\_\-history::f\_\-dyu} = .true.
+\item 
+logical(kind=log\_\-kind) \hyperlink{namespaceice__history_a7e63313bc71fed15ff1d16cbaf4d74ea}{ice\_\-history::f\_\-HTN} = .true.
+\item 
+logical(kind=log\_\-kind) \hyperlink{namespaceice__history_ac61273f25f1bb3b60c8cc5c55c8fd490}{ice\_\-history::f\_\-HTE} = .true.
+\item 
+logical(kind=log\_\-kind) \hyperlink{namespaceice__history_ae355872badcbed142dd282929330dae7}{ice\_\-history::f\_\-ANGLE} = .true.
+\item 
+logical(kind=log\_\-kind) \hyperlink{namespaceice__history_a31c241b97efeccd9b191577aa4bf3b4a}{ice\_\-history::f\_\-ANGLET} = .true.
+\end{DoxyCompactItemize}

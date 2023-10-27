@@ -1,0 +1,151 @@
+<?xml version="1.0"?>
+
+<!--
+
+       ConfigInfo.xml					    Nov./15/2007
+
+       File with optimized decomposition information for CICE and CAM
+
+-->
+<configInfo>
+
+  <decomp>
+    <maxblocks>0</maxblocks> 
+    <decompset>null</decompset>
+  </decomp>
+
+<!-- -------------------------------------------------------------------------------- -->
+  <!-- tx0.1v2 resolution -->
+
+  <decomp nproc="18000" res="tx0.1v[1234]" >
+    <maxblocks >14</maxblocks>
+    <bsize_x   >6</bsize_x>
+    <bsize_y   >6</bsize_y>
+    <decomptype>spacecurve</decomptype>
+  </decomp>
+
+<!-- -------------------------------------------------------------------------------- -->
+  <!-- gx1v[3456] resolution -->
+
+  <decomp nproc="64" res="gx1v[3456]" >
+    <maxblocks >2</maxblocks>
+    <bsize_x   >10</bsize_x>
+    <bsize_y   >96</bsize_y>
+    <decomptype>cartesian</decomptype>
+    <decompset>slenderX2</decompset>
+  </decomp>
+
+  <decomp nproc="128" res="gx1v[3456]" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >5</bsize_x>
+    <bsize_y   >192</bsize_y>
+    <decomptype>cartesian</decomptype>
+    <decompset>square-pop</decompset>
+  </decomp>
+
+  <decomp nproc="160" res="gx1v[3456]" >
+    <maxblocks >2</maxblocks>
+    <bsize_x   >4</bsize_x>
+    <bsize_y   >96</bsize_y>
+    <decomptype>cartesian</decomptype>
+    <decompset>slenderX2</decompset>
+  </decomp>
+
+  <decomp nproc="320" res="gx1v[3456]" >
+    <maxblocks >2</maxblocks>
+    <bsize_x   >2</bsize_x>
+    <bsize_y   >96</bsize_y>
+    <decomptype>cartesian</decomptype>
+    <decompset>slenderX2</decompset>
+  </decomp>
+
+  <decomp nproc="640" res="gx1v[3456]" >
+    <maxblocks >2</maxblocks>
+    <bsize_x   >1</bsize_x>
+    <bsize_y   >96</bsize_y>
+    <decomptype>cartesian</decomptype>
+    <decompset>slenderX2</decompset>
+  </decomp>
+
+  <decomp nproc="1280" res="gx1v[3456]" >
+    <maxblocks >2</maxblocks>
+    <bsize_x   >8</bsize_x>
+    <bsize_y   >6</bsize_y>
+    <decomptype>spacecurve</decomptype>
+  </decomp>
+
+<!-- -------------------------------------------------------------------------------- -->
+  <!-- gx3v? resolution -->
+  <decomp nproc="1" res="gx3v[567]" >
+    <maxblocks >4</maxblocks>
+    <bsize_x   >100</bsize_x>
+    <bsize_y   >29</bsize_y>
+    <decomptype>cartesian</decomptype>
+    <decompset>slenderX1</decompset>
+  </decomp>
+
+  <decomp nproc="2" res="gx3v[567]" >
+    <maxblocks >4</maxblocks>
+    <bsize_x   >50</bsize_x>
+    <bsize_y   >29</bsize_y>
+    <decomptype>cartesian</decomptype>
+    <decompset>slenderX1</decompset>
+  </decomp>
+
+  <decomp nproc="4" res="gx3v[567]" >
+    <maxblocks >4</maxblocks>
+    <bsize_x   >25</bsize_x>
+    <bsize_y   >29</bsize_y>
+    <decomptype>cartesian</decomptype>
+    <decompset>slenderX1</decompset>
+  </decomp>
+
+  <decomp nproc="5" res="gx3v[567]" >
+    <maxblocks >4</maxblocks>
+    <bsize_x   >20</bsize_x>
+    <bsize_y   >29</bsize_y>
+    <decomptype>cartesian</decomptype>
+    <decompset>slenderX1</decompset>
+  </decomp>
+
+  <decomp nproc="8" res="gx3v[567]" >
+    <maxblocks >2</maxblocks>
+    <bsize_x   >25</bsize_x>
+    <bsize_y   >29</bsize_y>
+    <decomptype>cartesian</decomptype>
+    <decompset>slenderX2</decompset>
+  </decomp>
+
+  <decomp nproc="10" res="gx3v[567]" >
+    <maxblocks >2</maxblocks>
+    <bsize_x   >20</bsize_x>
+    <bsize_y   >29</bsize_y>
+    <decomptype>cartesian</decomptype>
+    <decompset>slenderX2</decompset>
+  </decomp>
+
+  <decomp nproc="20" res="gx3v[567]" >
+    <maxblocks >2</maxblocks>
+    <bsize_x   >10</bsize_x>
+    <bsize_y   >29</bsize_y>
+    <decomptype>cartesian</decomptype>
+    <decompset>slenderX2</decompset>
+  </decomp>
+
+  <decomp nproc="40" res="gx3v[567]" >
+    <maxblocks >2</maxblocks>
+    <bsize_x   >5</bsize_x>
+    <bsize_y   >29</bsize_y>
+    <decomptype>cartesian</decomptype>
+    <decompset>slenderX2</decompset>
+  </decomp>
+
+  <decomp nproc="50" res="gx3v[567]" >
+    <maxblocks >2</maxblocks>
+    <bsize_x   >4</bsize_x>
+    <bsize_y   >29</bsize_y>
+    <decomptype>cartesian</decomptype>
+    <decompset>slenderX2</decompset>
+  </decomp>
+
+</configInfo>

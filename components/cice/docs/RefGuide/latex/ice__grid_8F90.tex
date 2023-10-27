@@ -1,0 +1,165 @@
+\hypertarget{ice__grid_8F90}{
+\section{ice\_\-grid.F90 File Reference}
+\label{ice__grid_8F90}\index{ice\_\-grid.F90@{ice\_\-grid.F90}}
+}
+\subsection*{Modules}
+\begin{DoxyCompactItemize}
+\item 
+module \hyperlink{namespaceice__grid}{ice\_\-grid}
+\end{DoxyCompactItemize}
+\subsection*{Functions/Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{namespaceice__grid_ace97d5a2cdb55b3e8caa37f125635f14}{ice\_\-grid::init\_\-grid1}
+\item 
+subroutine \hyperlink{namespaceice__grid_a1443c2d00f599d16be96edeb376c3e97}{ice\_\-grid::init\_\-grid2}
+\item 
+subroutine \hyperlink{namespaceice__grid_a24e5c873e7aef7bffaa80de04d205f1c}{ice\_\-grid::popgrid}
+\item 
+subroutine \hyperlink{namespaceice__grid_a830c0e85f52a27b04394190410c74730}{ice\_\-grid::popgrid\_\-nc}
+\item 
+subroutine \hyperlink{namespaceice__grid_ae6e42c3f57ad49e30c85c71573096781}{ice\_\-grid::panarctic\_\-grid}
+\item 
+subroutine \hyperlink{namespaceice__grid_a2368fc9f9adb4dd4c869e9e618923640}{ice\_\-grid::rectgrid}
+\item 
+subroutine \hyperlink{namespaceice__grid_a2eadb37992f11dff1d497737f391f976}{ice\_\-grid::primary\_\-grid\_\-lengths\_\-HTN} (work\_\-g)
+\item 
+subroutine \hyperlink{namespaceice__grid_a101630e53001c3cf050c5c5672199c25}{ice\_\-grid::primary\_\-grid\_\-lengths\_\-HTE} (work\_\-g)
+\item 
+subroutine \hyperlink{namespaceice__grid_a3b4d1b3eb2836fed2bf8389411d1dbf0}{ice\_\-grid::makemask}
+\item 
+subroutine \hyperlink{namespaceice__grid_a6d381958e459356fe9b135a76d3423e4}{ice\_\-grid::Tlatlon}
+\item 
+subroutine \hyperlink{namespaceice__grid_afcc1556abeece73115e27355f13c1f66}{ice\_\-grid::t2ugrid\_\-vector} (work)
+\item 
+subroutine \hyperlink{namespaceice__grid_af263876d35043749020fcd9c12766b3f}{ice\_\-grid::to\_\-ugrid} (work1, work2)
+\item 
+subroutine \hyperlink{namespaceice__grid_aefb15c768a63706ec6a5155d55b6c5a9}{ice\_\-grid::u2tgrid\_\-vector} (work)
+\item 
+subroutine \hyperlink{namespaceice__grid_a63f5a2363aeb189e80ffb2294d20c42b}{ice\_\-grid::to\_\-tgrid} (work1, work2)
+\item 
+subroutine \hyperlink{namespaceice__grid_ac06419b8058ea2a7164cf726ac07b544}{ice\_\-grid::sinlat} (a, k)
+\item 
+subroutine \hyperlink{namespaceice__grid_a26e7cc8fc629dd16d1f98839ebb9b5ff}{ice\_\-grid::bsslzr} (bes, n)
+\item 
+subroutine \hyperlink{namespaceice__grid_a5cd4fd8007e449d3daca8a8ddd45b1b0}{ice\_\-grid::gridbox\_\-corners}
+\item 
+subroutine \hyperlink{namespaceice__grid_acfca25b6f395314aa5ccacde317d5bac}{ice\_\-grid::gridbox\_\-verts} (work\_\-g, vbounds)
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+character(len=char\_\-len\_\-long), save \hyperlink{namespaceice__grid_af3bcebba9676775105d70d32996d3ce5}{ice\_\-grid::grid\_\-format}
+\item 
+character(len=char\_\-len\_\-long), save \hyperlink{namespaceice__grid_ac080d4ddf9dfc9375611416d1c425155}{ice\_\-grid::grid\_\-file}
+\item 
+character(len=char\_\-len\_\-long), save \hyperlink{namespaceice__grid_a21b896a78dcb089ba19cddd8a763ec94}{ice\_\-grid::kmt\_\-file}
+\item 
+character(len=char\_\-len\_\-long), save \hyperlink{namespaceice__grid_a927cd355e5ebbeb5b943262b4d8a1c74}{ice\_\-grid::grid\_\-type}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a42016e793e21df58800428163f3eac13}{ice\_\-grid::dxt}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_ae46b1f5dbbef49a552a33a86b1f887b8}{ice\_\-grid::dyt}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a9fecdcb5623bfc308ef4f2ddb4d284b6}{ice\_\-grid::dxu}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_ad2b38c10d13244b2b4da1e461c2ef207}{ice\_\-grid::dyu}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a881253aa819ce18c46c4bffb3d558616}{ice\_\-grid::HTE}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a6d5e0411ab66c52d72c0bcc75f794eab}{ice\_\-grid::HTN}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_af9d3e2476e44dd679c4062b370f21ffa}{ice\_\-grid::tarea}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_aa8008e6fedd2e53d57bee5d6fa898de9}{ice\_\-grid::uarea}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_ab853acbf3fa50d832ffed201f760ef88}{ice\_\-grid::tarear}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_acf709799675ca52c31d335eb09a46fcf}{ice\_\-grid::uarear}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a24fc3cf53e5e2c356bd8e4110112f39c}{ice\_\-grid::tinyarea}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a233932d1edd125ed1e3c0cc7b990f256}{ice\_\-grid::tarean}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_ad08766f36b378acddead7f3503d7be19}{ice\_\-grid::tareas}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a15766c63c75fd52d6d8ea3d651ecba26}{ice\_\-grid::ULON}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a98cabaeec38bbcfe0d2844d8dae12434}{ice\_\-grid::ULAT}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a2b90fd0fa35a54c0313dac995f929ee7}{ice\_\-grid::TLON}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a76fff4cfe2a27c44abe9fd445f806f25}{ice\_\-grid::TLAT}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a0a538e97fcd87790e7fae5de82bd0e77}{ice\_\-grid::ANGLE}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_aa8fc09d102ada560318d68276c1dfd57}{ice\_\-grid::ANGLET}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a30e2151554a97e140124f4cb4317a054}{ice\_\-grid::cyp}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a3c40a8ee2794b13b04b0598c90bf420f}{ice\_\-grid::cxp}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_adb5e2792c5861e949ad784e35f485c08}{ice\_\-grid::cym}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a83a8de6d0e58a6771b3d915acd63afd7}{ice\_\-grid::cxm}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a0247c390ce33b9435bbff4edbff8b9e7}{ice\_\-grid::dxhy}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_ab6ee5703ec9bc808f8ebcf436960d722}{ice\_\-grid::dyhx}
+\item 
+real(kind=dbl\_\-kind), dimension(4, nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_ae3bd428fa166bb43e833ff27111c5d8e}{ice\_\-grid::lont\_\-bounds}
+\item 
+real(kind=dbl\_\-kind), dimension(4, nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_ab343eaee175150d30612b98bf5e83faf}{ice\_\-grid::latt\_\-bounds}
+\item 
+real(kind=dbl\_\-kind), dimension(4, nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_abaf36c701426b67cd588146d434b1f99}{ice\_\-grid::lonu\_\-bounds}
+\item 
+real(kind=dbl\_\-kind), dimension(4, nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a03b1e73bc95079d90193478f58f192ce}{ice\_\-grid::latu\_\-bounds}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_aa84e4b92963d682ab3222a9d5716cbe8}{ice\_\-grid::xav}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a637cce7adf54c42ab41eeaf347cf824e}{ice\_\-grid::yav}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a7c8bb3b029d335971804fce931af7a4b}{ice\_\-grid::xxav}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_aa4182840814568ebe32038898cd5a7ad}{ice\_\-grid::xyav}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_ae982b98ad7bfa759bb9a1da9dd749783}{ice\_\-grid::yyav}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a62131a38b595f37c91ebbec351691ef3}{ice\_\-grid::xxxav}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a471e3cdf6d11b7f3831afcdfb354fbfc}{ice\_\-grid::xxyav}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_ab0c9d28119dfb18bfc26a3f493b2e844}{ice\_\-grid::xyyav}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a9ed5ccbe07d1272b819d05221f756b06}{ice\_\-grid::yyyav}
+\item 
+real(kind=dbl\_\-kind), dimension(2, 2, nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_ac0cdb9f8f4e8be0dcf32a5e7adb1ac53}{ice\_\-grid::mne}
+\item 
+real(kind=dbl\_\-kind), dimension(2, 2, nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a9d5b1bf4f3c68140602c96bf28865733}{ice\_\-grid::mnw}
+\item 
+real(kind=dbl\_\-kind), dimension(2, 2, nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a63866b0446065c97c825f70fc29a3654}{ice\_\-grid::mse}
+\item 
+real(kind=dbl\_\-kind), dimension(2, 2, nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a517a26693b149509ae9e4a6c2f310dda}{ice\_\-grid::msw}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a7ecb27b1b130ed860c56ab81f4a9373e}{ice\_\-grid::hm}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_aa8b13eb710c7be4a90e210294e37b5af}{ice\_\-grid::uvm}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a5241715733bdedb6dc95cff6f23292de}{ice\_\-grid::ocn\_\-gridcell\_\-frac}
+\item 
+logical(kind=log\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a5de6731a3b8601be3495a4c306832bf0}{ice\_\-grid::tmask}
+\item 
+logical(kind=log\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_a02f5ae5edcea6185af4949d9be61cc26}{ice\_\-grid::umask}
+\item 
+logical(kind=log\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_ae9873cb5a374679eb9105cbd0b3adaef}{ice\_\-grid::lmask\_\-n}
+\item 
+logical(kind=log\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_aab33134c872608cbbcb505d3f788bb2d}{ice\_\-grid::lmask\_\-s}
+\item 
+real(kind=dbl\_\-kind), parameter \hyperlink{namespaceice__grid_aea53b08fccd72dbe7e8a4689ab26534c}{ice\_\-grid::dxrect} = 30.e5\_\-dbl\_\-kind
+\item 
+real(kind=dbl\_\-kind), parameter \hyperlink{namespaceice__grid_a5c8fd584afc136dde0c222634c2fe240}{ice\_\-grid::dyrect} = 30.e5\_\-dbl\_\-kind
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks), save \hyperlink{namespaceice__grid_ab75f2e02f6911b1eacbb7a0647f947b7}{ice\_\-grid::rndex\_\-global}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__grid_a77ce4807a6b38d81367a3a7d67e2aa7c}{ice\_\-grid::work1}
+\end{DoxyCompactItemize}

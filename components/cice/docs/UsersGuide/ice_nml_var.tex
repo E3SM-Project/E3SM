@@ -1,0 +1,492 @@
+%\\=======================================================================
+% SVN: $Id: ice_nml_var.tex 5 2005-12-12 17:41:05Z mvr $
+%=======================================================================
+% Namelist Variables
+
+CICE uses the same namelists for both the coupled and uncoupled models.
+This section describes the namelist variables in the namelist {\tt ice\_nml},
+which determine time management, output frequency, model physics, and filenames
+The ice namelists for the coupled model are now located in
+{\bf \$CASE/Buildconf}.  
+
+A script reads the input namelist at runtime, and writes the namelist
+information to the file {\bf ice\_in} in the directory where the model 
+executable is located.  Therefore, the namelist will be updated even if the 
+ice model is not recompiled.  The default values of the ice setup, grid, 
+tracer, and physics namelists are set in {\bf ice\_init.F90}.  The prescribed
+ice option along with the history namelist variables are set
+in {\bf ice\_prescribed.F90} and {\bf ice\_history.F90} respectively. 
+If they are not set in the namelist 
+in the script, they will assume the default values listed in 
+Tables \ref{table:setup_nml}-\ref{table:ice_pio_nml}, which list all available 
+namelist parameters.  The default values shown here are
+for the coupled model, which is set up for a production run. Only a few of 
+these variables are required to be set in the namelist; these values are 
+noted in the paragraphs below.  An example of the default namelist is shown in 
+Section \ref{example1_nml}.
+
+\begin{table}[hb]
+  \begin{center}
+  \caption{Namelist Variables for Run Management (setup_nml)}
+  \label{table:setup_nml}
+   \begin{tabular}{p{2.0cm}p{2.0cm}p{4.0cm}p{6.5cm}} \hline
+Varible  & Type & Default Value & Description               \\
+
+\hline \hline
+
+{\tt ice\_ic}&  character  & default & Filename for initial and branch runs \\
+             &             &         & 'default' uses default initialization \\
+             &             &         & 'none' initializes with no ice \\
+
+{\tt xndt\_dyn}&  Integer  & 1 & Times to loop through (sub-cycle) ice dynamics \\
+
+{\tt diagfreq} &  Integer &  24 & Frequency of diagnostics written
+                     (min, max, hemispheric sums) to standard output   \\
+         &          &     & 24  =$>$ writes once every 24 timesteps  \\
+         &          &     & 1  =$>$ diagnostics written each timestep \\
+         &          &     & 0  =$>$ no diagnostics written \\
+
+{\tt histfreq} & Character Array & 'm','x','x','x','x' & 
+                            Frequency of output written to history streams \\
+         &          &     & 'D' or 'd' writes daily data \\
+         &          &     & 'W' or 'w' writes weekly data \\
+         &          &     & 'M' or 'm' writes monthly data \\
+         &          &     & 'Y' or 'y' writes yearly data \\
+         &          &     & '1' writes every timestep \\
+         &          &     & 'x' no history data is written \\
+
+{\tt histfreq\_n} & Integer & 1,1,1,1,1 & Frequency history data is written to each stream \\
+
+{\tt hist\_avg}  &  Logical & .true. & If true, averaged history
+                       information is written out at a frequency
+                       determined by histfreq.  If false, instantaneous
+                       values rather than time-averages are written. \\
+
+{\tt pointer\_file} & Character & 'rpointer.ice' & Pointer file that
+                                   contains the name of the restart file. \\
+
+{\tt lcdf64}&  Logical  & .false. & Use 64-bit offset in netcdf files \\
+
+  \hline
+  \end{tabular}
+  \end{center}
+\end{table}
+
+The main run management namelist options are shown in Table 
+\ref{table:setup_nml}. While additional namelist variables are available in
+the uncoupled version, they are set by the driver in CESM. Variables set by
+the driver include: {\tt dt}, {\tt runid}, {\tt runtype}, {\tt istep0}, 
+{\tt days\_per\_year}, {\tt restart} and {\tt dumpfreq}. These should be 
+changed in the CESM configuration files:\\
+
+%begin{htmlonly}
+  %htmladdnormallink{CESM scripts}{../../cesm/cesm\_doc/book1.html}.\\
+%end{htmlonly}
+%begin{latexonly}
+  {\tt CESM scripts (http://www.cesm.ucar.edu/models/cesm1.0/cesm\_doc/book1.html)}.\\
+%end{latexonly}
+
+\subsection{Changing the timestep}
+\label{setup_nml_mgmt}
+
+{\tt dt} is the timestep in seconds for the ice model thermodynamics.
+The thermodynamics component is stable but not necessarily accurate for any 
+value of the timestep.  The value chosen for {\tt dt} depends on the stability 
+of the transport and the grid resolution.  A conservative estimate of {\tt dt} 
+for the transport using the upwind advection scheme is:
+
+\begin{equation}
+  \Delta t < \frac{min(\Delta x, \Delta y)}{4 max(u, v)} .
+\end{equation}
+Maximum values for {\tt dt} for the two standard CESM POP grids, assuming 
+$max(u,v) = 0.5 m/s$, are shown in Table \ref{table:max_dt}.  The default
+timestep for CICE is 30 minutes, which must be equal to the coupling interval
+set in the CESM configuration files.
+
+\begin{table}
+  \begin{center}
+  \caption{Maximum values for ice model timestep {\tt dt}}
+  \label{table:max_dt}
+  \begin{tabular}{lll} \hline
+  Grid & $min(\Delta x, \Delta y)$ & $max \Delta t$   \\
+  \hline \hline
+
+gx3v5   & 28845.9 m & 4.0 hr \\
+gx1v3   &  8558.2 m & 1.2 hr \\
+
+  \hline
+  \end{tabular}
+  \end{center}
+\end{table}
+
+Occasionally, ice velocities are calculated that are larger than what is
+assumed when the model timestep is chosen.  This causes a CFL violation
+in the transport scheme.  A namelist option was added ({\tt xndt\_dyn})
+to subcycle the dynamics to get through these instabilities that arise
+during long integrations.  The default value for this variable is one,
+and is typically increased to two when the ice model reaches an instability.
+The value in the namelist should be returned to one by the user when the
+model integrates past that point.
+
+\subsection{Writing Output}
+
+The namelist variables that control the frequency of the model diagnostics, 
+netCDF history, and restart files are shown in Table \ref{table:setup_nml}.  By 
+default, diagnostics are written out once every 48 timesteps to the ascii file
+{\bf ice.log.\$LID} (see section \ref{stdout}). {\tt \$LID} is a time stamp 
+that is set in the main script.   
+
+The namelist variable {\tt histfreq} controls the output frequency of the 
+netCDF history files; writing monthly averages is the default.  The content of 
+the history files is described in section \ref{history}.  The value of 
+{\tt hist\_avg} determines if instantaneous or averaged variables are written 
+at the frequency set by {\tt histfreq}.  If {\tt histfreq} is set to '1' for 
+instantaneous output, {\tt hist\_avg} is set to {\tt .false.} within the source 
+code to avoid conflicts.  The latest version of CICE allows for multiple
+history streams, currently set to a maximum of 5.  The namelist variables, 
+{\tt histfreq} and {\tt histfreq\_n} are now arrays which allow for different
+frequency history file sets.  More detail on this is available in \ref{history}.
+
+The namelist variable {\tt pointer\_file} is set to the name of the pointer file
+containing the restart file name that will be read when model execution
+begins.  The pointer file resides in the scripts directory and is created 
+initially by the ice setup script but is overwritten every time a new restart 
+file is created.  It will contain the name of the latest restart file.  The 
+default filename {\it ice.restart\_file} shown in Table 
+\ref{table:setup_nml} will not work unless some modifications are made to 
+the ice setup script and a file is created with this name and contains the name 
+of a valid restart file; this variable must be set in the namelist.  More 
+information on restart pointer files can be found in section \ref{pointer_files}.
+
+The variables {\tt dumpfreq} and {\tt dumpfreq\_n} control the 
+output frequency of the netCDF restart files; writing one restart file per 
+year is the default and is set by the CESM driver. The default format for
+restart files is now netCDF, but this can be changed to binary through
+the namelist variable, {\tt restart\_format}.
+
+If {\tt print\_points} is {\tt .true.}, diagnostic data is printed out for two
+grid points, one near the north pole and one near the Weddell Sea.  The points
+are set via namelist variables {\tt latpnt} and {\tt lonpnt}.  This option can 
+be helpful for debugging.
+
+{\tt incond\_dir}, {\tt restart\_dir} and {\tt history\_dir} are the directories
+where the initial condition file, the restart files and the history files will
+be written, respectively.  These values are set at the top of the setup script
+and have been modified from the default values to meet the requirements of the
+CESM filenaming convention.  This allows each type of output file to be written
+to a separate directory.  If the default values are used, all of the output
+files will be written to the executable directory.
+
+{\tt incond\_file}, {\tt dump\_file} and {\tt history\_file} are the root
+filenames for the initial condition file, the restart files and the history 
+files, respectively.  These strings have been determined by the requirements 
+of the CESM filenaming convention, so the default values are set by the CESM
+driver.  See \ref{restart_files} and \ref{history_files} for an explanation 
+of how the rest of the filename is created.
+
+\subsection{Model Physics}
+
+The namelist variables for the ice model physics are listed in Table 
+\ref{ice_nml}.  {\tt restart} is almost always true since most
+run types begin by reading in a binary restart file.  See section 
+\ref{runtypes} for a description of the run types and about using
+restart files and internally generated model data as initial conditions.
+{\tt kcolumn} is a flag that will run the model as a single column if is
+set to 1.  This option has not been thoroughly tested and is not supported. 
+
+The calculation of the ice velocities is subcycled {\tt ndte} times per
+timestep so that the elastic waves are damped before the next timestep. The
+subcycling timestep is calculated as {\tt dte = dt/ndte}
+and must be sufficiently smaller than the damping timescale {\tt T},
+which needs to be sufficiently shorter than {\tt dt}.
+
+\begin{equation}
+ dte < T < dt
+\end{equation}
+
+This relationship is discussed in \cite{hunk01}; also see \cite{cice08}, 
+section 4.4.  The best ratio for [dte : T : dt] is [1 : 40 : 120]. Typical 
+combinations of {\tt dt} and {\tt ndte} are (3600., 120), (7200., 240) 
+(10800., 120). The default ndte is 120 as set in {\bf ice\_init.F90}.
+
+{\tt kitd} determines the scheme used to redistribute sea ice within the ice 
+thickness distribution (ITD) as the ice grows and melts.  The linear remapping 
+scheme is the default and approximates the thickness distribution in each 
+category as a linear function (\cite{lips01}).  The delta function method 
+represents {\it g(h)} in each category as a delta function (\cite{bitz01}).  
+This method can leave some categories mostly empty at any given time and cause 
+jumps in the properties of {\it g(h)}.
+
+{\tt kdyn} determines the ice dynamics used in the model.  The default is the
+elastic-viscous-plastic (EVP) dynamics \cite{hunk97}.  If {\tt kdyn} is set to o
+0, the ice dynamics is inactive. In this case, ice velocities are not computed
+and ice is not transported.  Since the initial ice velocities are read in
+from the restart file, the maximum and minimum velocities written to the 
+log file will be non-zero in this case, but they are not used in any calculations.
+
+The value of {\tt kstrength} determines which formulation is used to
+calculate the strength of the pack ice.  The \cite{hibl79} calculation
+depends on mean ice thickness and open water fraction.  The calculation
+of \cite{roth75b} is based on energetics and should not be used if the
+ice that participates in ridging is not well resolved.  
+
+{\tt evp\_damping} is used to control the damping of elastic waves in
+the ice dynamics.  It is typically set to {\tt .true}. for high-resolution
+simulations where the elastic waves are not sufficiently damped out in a
+small timestep without a significant amount of subcycling.  This procedure
+works by reducing the effective ice strength that's used by the dynamics
+and is not a supported option.
+
+{\tt advection} determines the horizontal transport scheme used. The default
+scheme is the incremental remapping method (\cite{lipshunke04}).  This method
+is less diffusive and is computationally efficient for large numbers of 
+categories or tracers.  The upwind scheme is also available. The upwind scheme 
+is only first order accurate.
+ 
+The base values of the snow and ice albedos for the CCSM3 shortwave option
+are set in the namelist.  The ice albedos are those for ice thicker than 
+{\tt ahmax}, which is currently set at 0.5 m.  This thickness is a parameter 
+that can be changed in {\bf ice\_shortwave.F90}. The snow albedos are for 
+cold snow. 
+
+For the new delta-Eddington shortwave radiative transfer scheme 
+\cite{Briegleb07}, the base albedos are computed based on the inherent 
+optical properties of snow, sea ice, and melt ponds. These albedos are 
+tunable through adjustments to the snow grain radius, {\tt R\_snw}, 
+temperature to transition to melting snow, and maximum snow grain radius.
+
+\begin{table}[hb]
+  \begin{center}
+  \caption{Namelist Variables for Model Physics (ice_nml)}
+  \label{ice_nml}
+  \begin{tabular}{p{3cm}p{2cm}p{3cm}p{3cm}p{3cm}p{6.5cm}} \hline
+  Variable Name & Type & CESM-CAM4 gx3 dipole-grid default & CESM-CAM4 gx1 dipole-grid default & CESM-CAM5 gx1 dipole-grid default & Description              \\
+\hline \hline
+
+{\tt ndte} & Integer & 1 & 1 & 1 & Number of sub-cycles in EVP dynamics. \\
+
+{\tt kcolumn} &  Integer & 0 & 0 & 0 & Column model flag. \\
+              &          &   &   &   & 0 = off  \\
+              &          &   &   &   & 1 = column model (not tested or supported)\\
+
+{\tt kitd} &  Integer & 1 & 1 & 1 & Determines ITD conversion \\
+           &          &   &   &   & 0 = delta scheme \\
+           &          &   &   &   & 1 = linear remapping \\
+
+{\tt kdyn} &  Integer & 1 & 1 & 1 & Determines ice dynamics \\
+           &          &   &   &   & 0 = No ice dynamics\\
+           &          &   &   &   & 1 = Elastic viscous plastic dynamics\\
+
+{\tt kstrength} &  Integer & 1 & 1 & 1 & Determines pressure formulation \\
+                &          &   &   &   & 0 = \cite{hibl79} parameterization \\
+                &          &   &   &   & 1 = \cite{roth75b} parameterization \\
+
+{\tt evp\_damping} &  Logical & .false. & .false. & .false. & If true, use damping procedure
+                                             in evp dynamics (not supported). \\
+
+{\tt advection} &  Character & remap & remap & remap & Determines horizontal
+                                               advection scheme. \\
+                &            &       &       &       & 'remap' = incremental remapping \\
+                &            &       &       &       & 'upwind' = first order advection \\
+
+{\tt shortwave} & Character & dEdd & dEdd & dEdd & Shortwave Radiative Transfer Scheme \\
+                &           &      &      &      & 'default' = CCSM3 Shortwave \\
+                &           &      &      &      & 'dEdd' = delta-Eddington Shortwave \\
+
+{\tt albicev} &  Double & 0.68 & 0.75 & 0.75 & Visible ice albedo (CCSM3)\\
+
+{\tt albicei} &  Double & 0.30 & 0.45 & 0.45 & Near-infrared ice albedo (CCSM3)\\
+
+{\tt albsnowv} & Double & 0.91 & 0.98 & 0.98 & Visible snow albedo (CCSM3)\\
+
+{\tt albsnowi} & Double & 0.63 & 0.73 & 0.73 & Near-infrared snow albedo (CCSM3)\\
+
+{\tt R\_ice} & Double & 0.0 & 0.0 & 0.0 & Base ice tuning parameter (dEdd)\\
+
+{\tt R\_pnd} & Double & 0.0 & 0.0 & 0.0 & Base pond tuning parameter (dEdd)\\
+
+{\tt R\_snw} & Double & -2.0 & 1.5 & 1.75 & Base snow grain radius tuning parameter (dEdd)\\
+
+{\tt dT\_mlt\_in} & Double & 2.0 & 1.5 & 1.0 & Snow melt onset temperature parameter (dEdd)\\
+
+{\tt rsnw\_mlt\_in} & Double & 2000. & 1500. & 1000. & Snow melt maximum radius (dEdd)\\
+
+  \hline
+  \end{tabular}
+  \end{center}
+\end{table}
+\subsection{Tracer Namelist}
+
+The namelist parameters listed in Table \ref{table:tracer_nml} are for
+adding tracers. See section on tracers.
+
+\begin{table}
+  \begin{center}
+  \caption{Namelist Variables for Tracers (tracer_nml)}
+  \label{table:tracer_nml}
+  \begin{tabular}{p{2.5cm}p{2.5cm}p{3cm}p{6.0cm}} \hline
+  Varible & Type & Default Value & Description               \\
+\hline \hline
+
+{\tt tr\_iage} & Logical & .true. &  Ice age passive tracer \\
+
+{\tt tr\_FY} & Logical & .true. &  First-year ice area passive tracer \\
+
+{\tt tr\_lvl} & Logical & .false. &  Level ice area passive tracer \\
+
+{\tt tr\_pond} & Logical & .true. &  Melt pond physics and tracer \\
+
+{\tt tr\_aero} & Logical & .true. &  Aerosol physics and tracer \\
+
+  \hline
+  \end{tabular}
+  \end{center}
+\end{table}
+
+\subsection{Prescribed Ice Namelist}
+
+The namelist parameters listed in Table \ref{table:ice_prescribed_nml} are for
+the prescribed ice option as used in AMIP and F compset (standalone CAM) runs
+\ref{prescribed}.
+
+\begin{table}
+  \begin{center}
+  \caption{Namelist Variables for Prescribed Ice Option (ice_prescribed_nml)}
+  \label{table:ice_prescribed_nml}
+  \begin{tabular}{p{4.0cm}p{2.0cm}p{3cm}p{6.0cm}} \hline
+  Varible & Type & Default Value & Description               \\
+\hline \hline
+
+{\tt prescribed\_ice} & Logical & .false. &  Flag to turn on prescribed ice \\
+
+{\tt prescribed\_ice\_fill } & Logical & .false. &  Flag to turn fill option \\
+
+{\tt stream\_year\_first } & Integer & 1 & First year of prescribed ice data \\
+
+{\tt stream\_year\_last } & Integer & 1 & Last year of prescribed ice data \\
+
+{\tt model\_year\_align } & Integer & 1 & Year in model run that aligns with stream\_year\_first \\
+
+{\tt stream\_domfilename } & Character & & Prescribed ice stream data file \\
+
+{\tt stream\_fldfilename } & Character & & Prescribed ice stream data file \\
+
+{\tt stream\_fldvarname } & Character &  ice\_cov &  Ice fraction field name \\
+
+  \hline
+  \end{tabular}
+  \end{center}
+\end{table}
+
+\subsection{Grid Namelist}
+
+The namelist parameters listed in Table \ref{table:grid_nml} are for
+grid and mask information.  During execution, the ice model reads grid and 
+land mask information from the files {\tt grid\_file} and {\tt kmt\_file} that 
+should be located in the executable directory. There are commands in the 
+scripts that copy these files from the input data directory, rename them from 
+{\bf global\_\${ICE\_GRID}.grid} and {\bf global\_\${ICE\_GRID}.kmt} to the
+default filenames shown in Table \ref{table:grid_nml}.
+
+\begin{table}
+  \begin{center}
+  \caption{Namelist Variables for Grid and Mask Information (grid_nml)}
+  \label{table:grid_nml}
+  \begin{tabular}{p{2.5cm}p{2.5cm}p{3cm}p{6.0cm}} \hline
+  Varible & Type & Default Value & Description               \\
+\hline \hline
+
+{\tt grid\_type} &  Character & 'displaced\_pole' &  Determines grid type. \\
+          &            &   &  'displaced\_pole' \\
+          &            &   &  'tripole' \\
+          &            &   &  'rectangular' \\
+
+{\tt grid\_format} & Character & binary & Grid file format (binary or netCDF) \\
+
+{\tt grid\_file} &  Character & 'data.domain.grid' &  Input filename
+                                           containing grid information. \\
+
+{\tt kmt\_file} &  Character & 'data.domain.kmt' &  Input filename
+                                       containing land mask information. \\
+
+{\tt kcatbound} & Integer & 0 & How category boundaries are set (0 or 1) \\
+
+  \hline
+  \end{tabular}
+  \end{center}
+\end{table}
+
+For coupled runs, supported grids include the {\tt 'displaced\_pole'} grids 
+(gx3v7 and gx1v6) and the {\tt 'tripole'} grids.
+
+\subsection{Domain Namelist}
+
+The namelist parameters listed in Table \ref{table:domain_nml} are for
+computational domain decomposition information. These are generally set in
+the build configure scripts based on the number of processors. See the CESM
+scripts documentation.
+
+\begin{table}
+  \begin{center}
+  \caption{Namelist Variables for Domain Decomposition Information (domain_nml)}
+  \label{table:domain_nml}
+  \begin{tabular}{p{4.0cm}p{2cm}p{2cm}p{6.0cm}} \hline
+  Varible & Type & Default Value & Description               \\
+\hline \hline
+
+{\tt processor\_shape} & Character & 'square-pop' & Approximate block shapes \\
+
+{\tt ew\_boundary\_type} & Character & 'cyclic' & Boundary conditions in E-W direction\\
+
+{\tt ns\_boundary\_type} & Character & 'open' & Boundary conditions in N-S direction\\
+
+{\tt distribution\_type} & Character & 'cartesian' & How blocks are split onto processors \\
+ & & & 'cartesian' \\
+ & & & 'spacecurve' \\
+ & & & 'rake' \\
+
+{\tt distribution\_wght} & Character & 'erfc' & How blocks are weighted when using space-filling curves (erfc or file) \\
+
+{\tt distribution\_wght\_file} & Character & '' & File containing space-filling curve weights when not using erfc weighting \\
+
+  \hline
+  \end{tabular}
+  \end{center}
+\end{table}
+
+\subsection{PIO Namelist}
+
+The namelist parameters listed in Table \ref{table:ice_pio_nml} are for
+controlling parallel input/output.  Only a brief overview will be
+given here, but more on parallel input/output can be found at:\\
+
+%begin{htmlonly}
+  %htmladdnormallink
+%     {http://web.ncar.teragrid.org/~dennis/pio_doc/html}
+%     {http://web.ncar.teragrid.org/~dennis/pio_doc/html}.\\
+%end{htmlonly}
+%begin{latexonly}
+  {\tt http://web.ncar.teragrid.org/\~{}dennis/pio\_doc/html}.\\
+%end{latexonly}
+
+\begin{table}
+  \begin{center}
+  \caption{Namelist Variables for Parallel I/O (ice_pio_nml)}
+  \label{table:ice_pio_nml}
+  \begin{tabular}{p{2.5cm}p{2.5cm}p{3cm}p{6.0cm}} \hline
+  Varible & Type & Default Value & Description               \\
+\hline \hline
+
+{\tt ice\_num\_iotasks} & Integer & -1 & Number of I/O tasks. \\
+                        &         &    & default -1 selects all processors. \\
+
+{\tt ice\_pio\_stride} & Integer & -1 & Stride between I/O tasks. \\
+                        &        &    & -1 selects defaulto stride. \\
+
+{\tt ice\_pio\_type\_name} & Character & netcdf & Underlying library used. \\
+                        &        &     & default is netcdf. \\
+
+  \hline
+  \end{tabular}
+  \end{center}
+\end{table}

@@ -1,0 +1,93 @@
+\hypertarget{ice__diagnostics_8F90}{
+\section{ice\_\-diagnostics.F90 File Reference}
+\label{ice__diagnostics_8F90}\index{ice\_\-diagnostics.F90@{ice\_\-diagnostics.F90}}
+}
+\subsection*{Modules}
+\begin{DoxyCompactItemize}
+\item 
+module \hyperlink{namespaceice__diagnostics}{ice\_\-diagnostics}
+\end{DoxyCompactItemize}
+\subsection*{Functions/Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{namespaceice__diagnostics_a29d618a92dc5fe3345aad30da147f0b1}{ice\_\-diagnostics::runtime\_\-diags} (dt)
+\item 
+subroutine \hyperlink{namespaceice__diagnostics_a5bf9b233f90e5bf0702b9c358a71f42d}{ice\_\-diagnostics::init\_\-mass\_\-diags}
+\item 
+subroutine \hyperlink{namespaceice__diagnostics_a32eee6ddd1b9f9450d3efabd6c21a54b}{ice\_\-diagnostics::init\_\-diags}
+\item 
+subroutine \hyperlink{namespaceice__diagnostics_adbff5d6397108c366de11a71a997b9eb}{ice\_\-diagnostics::print\_\-state} (plabel, i, j, iblk)
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+character(len=char\_\-len) \hyperlink{namespaceice__diagnostics_a0a7c9100fd06a3512e3f27d229758d8c}{ice\_\-diagnostics::diag\_\-file}
+\item 
+logical(kind=log\_\-kind) \hyperlink{namespaceice__diagnostics_a673176ef3ac5261be4052bc66ecec3cf}{ice\_\-diagnostics::print\_\-points}
+\item 
+logical(kind=log\_\-kind) \hyperlink{namespaceice__diagnostics_a0f58339d06d864451082d8805eaa03b1}{ice\_\-diagnostics::print\_\-global}
+\item 
+integer(kind=int\_\-kind), parameter \hyperlink{namespaceice__diagnostics_aab9ed37bb736e9c83d4bf276c8010dc2}{ice\_\-diagnostics::npnt} = 2
+\item 
+logical(kind=log\_\-kind), parameter \hyperlink{namespaceice__diagnostics_a2a08d0704bb691e6ffeaec5bd6d8cbc4}{ice\_\-diagnostics::check\_\-umax} = .false.
+\item 
+real(kind=dbl\_\-kind), parameter \hyperlink{namespaceice__diagnostics_aa1bd3bdd9f09aa609191984ea21310c9}{ice\_\-diagnostics::umax\_\-stab} = 1.0\_\-dbl\_\-kind
+\item 
+real(kind=dbl\_\-kind), parameter \hyperlink{namespaceice__diagnostics_aabe1b0ea631c03eded45a36cdd99fd21}{ice\_\-diagnostics::aice\_\-extmin} = 0.15\_\-dbl\_\-kind
+\item 
+real(kind=dbl\_\-kind), dimension(npnt) \hyperlink{namespaceice__diagnostics_a098c8da869ccfcbbd1ed9aea5124ee59}{ice\_\-diagnostics::latpnt}
+\item 
+real(kind=dbl\_\-kind), dimension(npnt) \hyperlink{namespaceice__diagnostics_ac674492c3212f73e6ab2a93e41774c0b}{ice\_\-diagnostics::lonpnt}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__diagnostics_a1a0b626616a7d9a32101d00161d2b574}{ice\_\-diagnostics::iindx}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__diagnostics_ae14da62eafd352886088d4688a3a2129}{ice\_\-diagnostics::jindx}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__diagnostics_a531e9ef9082091f153db74c9a1816c12}{ice\_\-diagnostics::bindx}
+\item 
+real(kind=dbl\_\-kind), dimension(npnt) \hyperlink{namespaceice__diagnostics_ae9176a1e4ff6d526241dfbc185fef462}{ice\_\-diagnostics::pdhi}
+\item 
+real(kind=dbl\_\-kind), dimension(npnt) \hyperlink{namespaceice__diagnostics_aafb0c3e7a68ebfdd564e56305618c799}{ice\_\-diagnostics::pdhs}
+\item 
+real(kind=dbl\_\-kind), dimension(npnt) \hyperlink{namespaceice__diagnostics_afaeca519ef7de2238cb47f6f1b6c3032}{ice\_\-diagnostics::pde}
+\item 
+real(kind=dbl\_\-kind), dimension(npnt) \hyperlink{namespaceice__diagnostics_a463e02d524db51f3b7cfe43b74753ea7}{ice\_\-diagnostics::plat}
+\item 
+real(kind=dbl\_\-kind), dimension(npnt) \hyperlink{namespaceice__diagnostics_a19e637460f07e8d9b9b9973903ec467a}{ice\_\-diagnostics::plon}
+\item 
+integer(kind=int\_\-kind), dimension(npnt) \hyperlink{namespaceice__diagnostics_a1b77eb5ad27f3307cbff090ad8011f0a}{ice\_\-diagnostics::piloc}
+\item 
+integer(kind=int\_\-kind), dimension(npnt) \hyperlink{namespaceice__diagnostics_a6ba83151bf36d6683bf55801185296ca}{ice\_\-diagnostics::pjloc}
+\item 
+integer(kind=int\_\-kind), dimension(npnt) \hyperlink{namespaceice__diagnostics_afb89b35222316a961a8e669d4c3a8e9a}{ice\_\-diagnostics::pbloc}
+\item 
+integer(kind=int\_\-kind), dimension(npnt) \hyperlink{namespaceice__diagnostics_a265877fbf85570a11a36cee45d4b1044}{ice\_\-diagnostics::pmloc}
+\item 
+real(kind=dbl\_\-kind) \hyperlink{namespaceice__diagnostics_a07a894a84b541e5cdb03c7b30cfa6bdd}{ice\_\-diagnostics::totmn}
+\item 
+real(kind=dbl\_\-kind) \hyperlink{namespaceice__diagnostics_abdb06061e5db5f354797848bbd36dbb2}{ice\_\-diagnostics::totms}
+\item 
+real(kind=dbl\_\-kind) \hyperlink{namespaceice__diagnostics_a810e9254a399aaee3f3bc9f45fda5616}{ice\_\-diagnostics::totmin}
+\item 
+real(kind=dbl\_\-kind) \hyperlink{namespaceice__diagnostics_a34eaaab8fe90658931ee055c55fa4ef6}{ice\_\-diagnostics::totmis}
+\item 
+real(kind=dbl\_\-kind) \hyperlink{namespaceice__diagnostics_a2ca0dd7abee30b5f5efc72fc53a8e1a2}{ice\_\-diagnostics::toten}
+\item 
+real(kind=dbl\_\-kind) \hyperlink{namespaceice__diagnostics_ae008664e2d6b21a926cf781260b3c251}{ice\_\-diagnostics::totes}
+\item 
+real(kind=dbl\_\-kind), dimension(n\_\-aeromx) \hyperlink{namespaceice__diagnostics_ae86e38feca7ea19893e632dd3ff7a5a9}{ice\_\-diagnostics::totaeron}
+\item 
+real(kind=dbl\_\-kind), dimension(n\_\-aeromx) \hyperlink{namespaceice__diagnostics_a0fbcc49b04eb0b1f8ec682886abec653}{ice\_\-diagnostics::totaeros}
+\item 
+character(char\_\-len) \hyperlink{namespaceice__diagnostics_a155e02068d3900d95eda6c6a3a52cb9f}{ice\_\-diagnostics::plabel}
+\item 
+integer(kind=int\_\-kind), parameter \hyperlink{namespaceice__diagnostics_a56f414ee41003dd64ac88912858325bb}{ice\_\-diagnostics::check\_\-step} = 999999999
+\item 
+integer(kind=int\_\-kind), parameter \hyperlink{namespaceice__diagnostics_ac94aaaf81208df171bff46a024ccdcb1}{ice\_\-diagnostics::iblkp} = 1
+\item 
+integer(kind=int\_\-kind), parameter \hyperlink{namespaceice__diagnostics_a7effd9287958acac49fd0283763b7bee}{ice\_\-diagnostics::ip} = 3
+\item 
+integer(kind=int\_\-kind), parameter \hyperlink{namespaceice__diagnostics_a10a3f8830dada38c8bc78c01adf3e435}{ice\_\-diagnostics::jp} = 5
+\item 
+integer(kind=int\_\-kind), parameter \hyperlink{namespaceice__diagnostics_ad2f5352613b9b67de6d460e59a6b8bc4}{ice\_\-diagnostics::mtask} = 0
+\end{DoxyCompactItemize}

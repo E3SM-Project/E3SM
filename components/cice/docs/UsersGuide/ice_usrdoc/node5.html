@@ -1,0 +1,83 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<!--Converted with LaTeX2HTML 2002-2-1 (1.71)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>Coupled Model Scripts</TITLE>
+<META NAME="description" CONTENT="Coupled Model Scripts">
+<META NAME="keywords" CONTENT="ice_usrdoc">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=utf-8">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="ice_usrdoc.css">
+
+<LINK REL="next" HREF="node6.html">
+<LINK REL="previous" HREF="node4.html">
+<LINK REL="up" HREF="node4.html">
+<LINK REL="next" HREF="node6.html">
+</HEAD>
+
+<BODY BGCOLOR=white LINK=BLUE VLINK=PURPLE>
+
+<A NAME="tex2html146"
+  HREF="node6.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
+<A NAME="tex2html142"
+  HREF="node4.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
+<A NAME="tex2html136"
+  HREF="node4.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
+<A NAME="tex2html144"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  <BR>
+<B> Next:</B> <A NAME="tex2html147"
+  HREF="node6.html">The Build Environment</A>
+<B>Up:</B> <A NAME="tex2html143"
+  HREF="node4.html">The CICE Scripts</A>
+<B> Previous:</B> <A NAME="tex2html137"
+  HREF="node4.html">The CICE Scripts</A>
+<BR> <P>
+
+<!--End of Navigation Panel-->
+
+<H2><A NAME="SECTION00031000000000000000"></A>
+<A NAME="coupled_scripts"></A>
+<BR>
+Coupled Model Scripts
+</H2>
+
+<P>
+The CESM1 scripts have been significantly upgraded from CCSM3 and are
+based on a completely different design philosophy.  The new scripts will
+generate a set of "resolved scripts" for a specific configuration determined
+by the user. The configuration includes components, resolution, run type, and
+machine. The run and setup scripts that were previously in the <B>/scripts</B>
+directory for CCSM3 are now generated automatically.  See the CESM1 User's 
+Guide for information on how to use the new scripts:
+<BR>
+<P>
+The file that contains the ice model namelist is now located in 
+<B>$CASE/Buildconf</B>. The
+script containing the environment variables used for building the executable
+file for the ice model is also in <B>$CASE/Buildconf</B>.
+The contents of the ice model namelist are described in section <A HREF="node8.html#namelist">3</A>.
+
+<P>
+
+<P>
+<BR> <HR>
+<ADDRESS>
+<I>David Bailey <BR>
+2011-08-16</I>
+</ADDRESS>
+</BODY>
+</HTML>

@@ -1,0 +1,83 @@
+\hypertarget{namespaceice__comp__mct}{
+\section{ice\_\-comp\_\-mct Module Reference}
+\label{namespaceice__comp__mct}\index{ice\_\-comp\_\-mct@{ice\_\-comp\_\-mct}}
+}
+\subsection*{Functions/Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{namespaceice__comp__mct_aea0306f80417faf23e2153503a468ed0}{ice\_\-init\_\-mct} (EClock, cdata\_\-i, x2i\_\-i, i2x\_\-i, NLFilename)
+\item 
+subroutine \hyperlink{namespaceice__comp__mct_a7e9300fd6b2392c92d54b05f84464939}{ice\_\-run\_\-mct} (EClock, cdata\_\-i, x2i\_\-i, i2x\_\-i)
+\item 
+subroutine \hyperlink{namespaceice__comp__mct_acd10abc7ef002e1d5e3223ce079bad2b}{ice\_\-final\_\-mct} ()
+\item 
+subroutine \hyperlink{namespaceice__comp__mct_a44b387bdc97aa66b1bd25afd2b68ec09}{ice\_\-SetGSMap\_\-mct} (mpicom\_\-ice, ICEID, gsMap\_\-ice)
+\item 
+subroutine \hyperlink{namespaceice__comp__mct_a0b623ba08317afe1cf24e68494b092da}{ice\_\-export\_\-mct} (i2x\_\-i)
+\item 
+subroutine \hyperlink{namespaceice__comp__mct_a64a861144b6d897f984676031622b7f9}{ice\_\-import\_\-mct} (x2i\_\-i)
+\item 
+subroutine \hyperlink{namespaceice__comp__mct_a13b99c3351533da77b875c4de8cf6cf8}{ice\_\-domain\_\-mct} (lsize, gsMap\_\-i, dom\_\-i)
+\item 
+character(len=char\_\-len\_\-long) \hyperlink{namespaceice__comp__mct_a06dea082678c790cef2bcb75c338b6d2}{restart\_\-filename} (yr\_\-spec, mon\_\-spec, day\_\-spec, sec\_\-spec)
+\end{DoxyCompactItemize}
+
+
+\subsection{Function/Subroutine Documentation}
+\hypertarget{namespaceice__comp__mct_a13b99c3351533da77b875c4de8cf6cf8}{
+\index{ice\_\-comp\_\-mct@{ice\_\-comp\_\-mct}!ice\_\-domain\_\-mct@{ice\_\-domain\_\-mct}}
+\index{ice\_\-domain\_\-mct@{ice\_\-domain\_\-mct}!ice_comp_mct@{ice\_\-comp\_\-mct}}
+\subsubsection[{ice\_\-domain\_\-mct}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-comp\_\-mct::ice\_\-domain\_\-mct (integer,intent(in) {\em lsize}, \/  type(mct\_\-gsMap),intent(in) {\em gsMap\_\-i}, \/  type(mct\_\-ggrid),intent(inout) {\em dom\_\-i})\hspace{0.3cm}{\ttfamily  \mbox{[}private\mbox{]}}}}
+\label{namespaceice__comp__mct_a13b99c3351533da77b875c4de8cf6cf8}
+
+
+Definition at line 1240 of file ice\_\-comp\_\-mct.F90.\hypertarget{namespaceice__comp__mct_a0b623ba08317afe1cf24e68494b092da}{
+\index{ice\_\-comp\_\-mct@{ice\_\-comp\_\-mct}!ice\_\-export\_\-mct@{ice\_\-export\_\-mct}}
+\index{ice\_\-export\_\-mct@{ice\_\-export\_\-mct}!ice_comp_mct@{ice\_\-comp\_\-mct}}
+\subsubsection[{ice\_\-export\_\-mct}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-comp\_\-mct::ice\_\-export\_\-mct (type(mct\_\-aVect),intent(inout) {\em i2x\_\-i})\hspace{0.3cm}{\ttfamily  \mbox{[}private\mbox{]}}}}
+\label{namespaceice__comp__mct_a0b623ba08317afe1cf24e68494b092da}
+
+
+Definition at line 783 of file ice\_\-comp\_\-mct.F90.\hypertarget{namespaceice__comp__mct_acd10abc7ef002e1d5e3223ce079bad2b}{
+\index{ice\_\-comp\_\-mct@{ice\_\-comp\_\-mct}!ice\_\-final\_\-mct@{ice\_\-final\_\-mct}}
+\index{ice\_\-final\_\-mct@{ice\_\-final\_\-mct}!ice_comp_mct@{ice\_\-comp\_\-mct}}
+\subsubsection[{ice\_\-final\_\-mct}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-comp\_\-mct::ice\_\-final\_\-mct ()}}
+\label{namespaceice__comp__mct_acd10abc7ef002e1d5e3223ce079bad2b}
+
+
+Definition at line 683 of file ice\_\-comp\_\-mct.F90.\hypertarget{namespaceice__comp__mct_a64a861144b6d897f984676031622b7f9}{
+\index{ice\_\-comp\_\-mct@{ice\_\-comp\_\-mct}!ice\_\-import\_\-mct@{ice\_\-import\_\-mct}}
+\index{ice\_\-import\_\-mct@{ice\_\-import\_\-mct}!ice_comp_mct@{ice\_\-comp\_\-mct}}
+\subsubsection[{ice\_\-import\_\-mct}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-comp\_\-mct::ice\_\-import\_\-mct (type(mct\_\-aVect),intent(inout) {\em x2i\_\-i})\hspace{0.3cm}{\ttfamily  \mbox{[}private\mbox{]}}}}
+\label{namespaceice__comp__mct_a64a861144b6d897f984676031622b7f9}
+
+
+Definition at line 931 of file ice\_\-comp\_\-mct.F90.\hypertarget{namespaceice__comp__mct_aea0306f80417faf23e2153503a468ed0}{
+\index{ice\_\-comp\_\-mct@{ice\_\-comp\_\-mct}!ice\_\-init\_\-mct@{ice\_\-init\_\-mct}}
+\index{ice\_\-init\_\-mct@{ice\_\-init\_\-mct}!ice_comp_mct@{ice\_\-comp\_\-mct}}
+\subsubsection[{ice\_\-init\_\-mct}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-comp\_\-mct::ice\_\-init\_\-mct (type(ESMF\_\-Clock),intent(in) {\em EClock}, \/  type(seq\_\-cdata),intent(inout) {\em cdata\_\-i}, \/  type(mct\_\-aVect),intent(inout) {\em x2i\_\-i}, \/  type(mct\_\-aVect),intent(inout) {\em i2x\_\-i}, \/  character(len=$\ast$),intent(in),optional {\em NLFilename})}}
+\label{namespaceice__comp__mct_aea0306f80417faf23e2153503a468ed0}
+
+
+Definition at line 106 of file ice\_\-comp\_\-mct.F90.\hypertarget{namespaceice__comp__mct_a7e9300fd6b2392c92d54b05f84464939}{
+\index{ice\_\-comp\_\-mct@{ice\_\-comp\_\-mct}!ice\_\-run\_\-mct@{ice\_\-run\_\-mct}}
+\index{ice\_\-run\_\-mct@{ice\_\-run\_\-mct}!ice_comp_mct@{ice\_\-comp\_\-mct}}
+\subsubsection[{ice\_\-run\_\-mct}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-comp\_\-mct::ice\_\-run\_\-mct (type(ESMF\_\-Clock),intent(in) {\em EClock}, \/  type(seq\_\-cdata),intent(inout) {\em cdata\_\-i}, \/  type(mct\_\-aVect),intent(inout) {\em x2i\_\-i}, \/  type(mct\_\-aVect),intent(inout) {\em i2x\_\-i})}}
+\label{namespaceice__comp__mct_a7e9300fd6b2392c92d54b05f84464939}
+
+
+Definition at line 345 of file ice\_\-comp\_\-mct.F90.\hypertarget{namespaceice__comp__mct_a44b387bdc97aa66b1bd25afd2b68ec09}{
+\index{ice\_\-comp\_\-mct@{ice\_\-comp\_\-mct}!ice\_\-SetGSMap\_\-mct@{ice\_\-SetGSMap\_\-mct}}
+\index{ice\_\-SetGSMap\_\-mct@{ice\_\-SetGSMap\_\-mct}!ice_comp_mct@{ice\_\-comp\_\-mct}}
+\subsubsection[{ice\_\-SetGSMap\_\-mct}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-comp\_\-mct::ice\_\-SetGSMap\_\-mct (integer,intent(in) {\em mpicom\_\-ice}, \/  integer,intent(in) {\em ICEID}, \/  type(mct\_\-gsMap),intent(inout) {\em gsMap\_\-ice})\hspace{0.3cm}{\ttfamily  \mbox{[}private\mbox{]}}}}
+\label{namespaceice__comp__mct_a44b387bdc97aa66b1bd25afd2b68ec09}
+
+
+Definition at line 704 of file ice\_\-comp\_\-mct.F90.\hypertarget{namespaceice__comp__mct_a06dea082678c790cef2bcb75c338b6d2}{
+\index{ice\_\-comp\_\-mct@{ice\_\-comp\_\-mct}!restart\_\-filename@{restart\_\-filename}}
+\index{restart\_\-filename@{restart\_\-filename}!ice_comp_mct@{ice\_\-comp\_\-mct}}
+\subsubsection[{restart\_\-filename}]{\setlength{\rightskip}{0pt plus 5cm}character(len=char\_\-len\_\-long) ice\_\-comp\_\-mct::restart\_\-filename (integer,intent(in) {\em yr\_\-spec}, \/  integer,intent(in) {\em mon\_\-spec}, \/  integer,intent(in) {\em day\_\-spec}, \/  integer,intent(in) {\em sec\_\-spec})\hspace{0.3cm}{\ttfamily  \mbox{[}private\mbox{]}}}}
+\label{namespaceice__comp__mct_a06dea082678c790cef2bcb75c338b6d2}
+
+
+Definition at line 1392 of file ice\_\-comp\_\-mct.F90.

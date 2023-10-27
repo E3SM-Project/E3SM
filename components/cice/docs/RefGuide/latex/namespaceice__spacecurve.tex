@@ -1,0 +1,256 @@
+\hypertarget{namespaceice__spacecurve}{
+\section{ice\_\-spacecurve Module Reference}
+\label{namespaceice__spacecurve}\index{ice\_\-spacecurve@{ice\_\-spacecurve}}
+}
+\subsection*{Data Types}
+\begin{DoxyCompactItemize}
+\item 
+type \hyperlink{typeice__spacecurve_1_1factor__t}{factor\_\-t}
+\end{DoxyCompactItemize}
+\subsection*{Functions/Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+integer(int\_\-kind) \hyperlink{namespaceice__spacecurve_a03cdfff51ffab50dee8974ba594b53bb}{Cinco} (l, type, ma, md, ja, jd)
+\item 
+integer(int\_\-kind) \hyperlink{namespaceice__spacecurve_afe83a0d2757c7c07a40d410b98e66728}{PeanoM} (l, type, ma, md, ja, jd)
+\item 
+integer(int\_\-kind) \hyperlink{namespaceice__spacecurve_aceffac45ebe5bc652860f543913c8c83}{Hilbert} (l, type, ma, md, ja, jd)
+\item 
+integer(int\_\-kind) \hyperlink{namespaceice__spacecurve_a3b9b759e23a9275195d27bdf3b78ebfa}{IncrementCurve} (ja, jd)
+\item 
+integer(int\_\-kind) \hyperlink{namespaceice__spacecurve_a2010d172fdabf272358d0f809c046175}{log2} (n)
+\item 
+logical \hyperlink{namespaceice__spacecurve_a2f6ae79d60cad9d3e019550e76cb5706}{IsLoadBalanced} (nelem, npart)
+\item 
+integer(int\_\-kind) \hyperlink{namespaceice__spacecurve_ae30af6486456c0f4098a6c03aea8ec6d}{GenCurve} (l, type, ma, md, ja, jd)
+\item 
+integer \hyperlink{namespaceice__spacecurve_a6c86eb0e04276a6417a2010753af3895}{FirstFactor} (fac)
+\item 
+logical \hyperlink{namespaceice__spacecurve_a269b5f206b1895faa78dfb38c8a5cc4e}{FindandMark} (fac, val, f2)
+\item 
+subroutine \hyperlink{namespaceice__spacecurve_a873b84a1b720159b0a0d4dd6a4f1df1c}{MatchFactor} (fac1, fac2, val, found)
+\item 
+integer \hyperlink{namespaceice__spacecurve_a57f86858b3f4450ed95750ff8405f12f}{ProdFactor} (fac)
+\item 
+subroutine \hyperlink{namespaceice__spacecurve_a64dc0958c7c88a5de6316e7c2f6189b5}{PrintFactor} (msg, fac)
+\item 
+type(\hyperlink{typeice__spacecurve_1_1factor__t}{factor\_\-t}) \hyperlink{namespaceice__spacecurve_a0e21c6fb09762431569057a3a6a1ceac}{Factor} (num)
+\item 
+logical \hyperlink{namespaceice__spacecurve_a918d591b92dcee27d6d7f50c92022d69}{IsFactorable} (n)
+\item 
+subroutine \hyperlink{namespaceice__spacecurve_a841d5cc5194de1c7aef94576c0eb5405}{map} (l)
+\item 
+subroutine \hyperlink{namespaceice__spacecurve_ab6b0639f3e032362a2ad97a2e4e160e5}{PrintCurve} (Mesh)
+\item 
+subroutine \hyperlink{namespaceice__spacecurve_a317f0810215a0c684a8073ff21eb71b1}{GenSpaceCurve} (Mesh)
+\item 
+subroutine \hyperlink{namespaceice__spacecurve_aa67766fe40142781287d478cff83322e}{qsort} (a)
+\item 
+subroutine \hyperlink{namespaceice__spacecurve_a99e4bd1c6625a5a14e10c5fa91f0df33}{partition} (a, marker)
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+integer(int\_\-kind), dimension(:,:), allocatable \hyperlink{namespaceice__spacecurve_a39f2092f453a0a651c4efda8291bc0cf}{dir}
+\item 
+integer(int\_\-kind), dimension(:,:), allocatable \hyperlink{namespaceice__spacecurve_a1338f6fba84ddb72ad229795cc040231}{ordered}
+\item 
+integer(int\_\-kind), dimension(:), allocatable \hyperlink{namespaceice__spacecurve_a440379dc8df1be7a6903b0df94d181b1}{pos}
+\item 
+integer(int\_\-kind) \hyperlink{namespaceice__spacecurve_aee0a00b4e25e4f5c770a300d2093feb7}{maxdim}
+\item 
+integer(int\_\-kind) \hyperlink{namespaceice__spacecurve_ad07b7ca9c91db52f0cee81fac7c71c5a}{vcnt}
+\item 
+logical \hyperlink{namespaceice__spacecurve_a486a46d8f8d78fea131f7fe3d429b0dc}{verbose} = .FALSE.
+\item 
+type(\hyperlink{typeice__spacecurve_1_1factor__t}{factor\_\-t}), save \hyperlink{namespaceice__spacecurve_aa520de333aa94f300555f836420d5b30}{fact}
+\end{DoxyCompactItemize}
+
+
+\subsection{Function/Subroutine Documentation}
+\hypertarget{namespaceice__spacecurve_a03cdfff51ffab50dee8974ba594b53bb}{
+\index{ice\_\-spacecurve@{ice\_\-spacecurve}!Cinco@{Cinco}}
+\index{Cinco@{Cinco}!ice_spacecurve@{ice\_\-spacecurve}}
+\subsubsection[{Cinco}]{\setlength{\rightskip}{0pt plus 5cm}integer(int\_\-kind) ice\_\-spacecurve::Cinco (integer(int\_\-kind),intent(in) {\em l}, \/  integer(int\_\-kind),intent(in) {\em type}, \/  integer(int\_\-kind),intent(in) {\em ma}, \/  integer(int\_\-kind),intent(in) {\em md}, \/  integer(int\_\-kind),intent(in) {\em ja}, \/  integer(int\_\-kind),intent(in) {\em jd})\hspace{0.3cm}{\ttfamily  \mbox{[}private\mbox{]}}}}
+\label{namespaceice__spacecurve_a03cdfff51ffab50dee8974ba594b53bb}
+
+
+Definition at line 75 of file ice\_\-spacecurve.F90.\hypertarget{namespaceice__spacecurve_a0e21c6fb09762431569057a3a6a1ceac}{
+\index{ice\_\-spacecurve@{ice\_\-spacecurve}!Factor@{Factor}}
+\index{Factor@{Factor}!ice_spacecurve@{ice\_\-spacecurve}}
+\subsubsection[{Factor}]{\setlength{\rightskip}{0pt plus 5cm}type ({\bf factor\_\-t}) ice\_\-spacecurve::Factor (integer(int\_\-kind),intent(in) {\em num})}}
+\label{namespaceice__spacecurve_a0e21c6fb09762431569057a3a6a1ceac}
+
+
+Definition at line 1223 of file ice\_\-spacecurve.F90.\hypertarget{namespaceice__spacecurve_a269b5f206b1895faa78dfb38c8a5cc4e}{
+\index{ice\_\-spacecurve@{ice\_\-spacecurve}!FindandMark@{FindandMark}}
+\index{FindandMark@{FindandMark}!ice_spacecurve@{ice\_\-spacecurve}}
+\subsubsection[{FindandMark}]{\setlength{\rightskip}{0pt plus 5cm}logical ice\_\-spacecurve::FindandMark (type (factor\_\-t) {\em fac}, \/  integer {\em val}, \/  logical {\em f2})\hspace{0.3cm}{\ttfamily  \mbox{[}private\mbox{]}}}}
+\label{namespaceice__spacecurve_a269b5f206b1895faa78dfb38c8a5cc4e}
+
+
+Definition at line 1139 of file ice\_\-spacecurve.F90.\hypertarget{namespaceice__spacecurve_a6c86eb0e04276a6417a2010753af3895}{
+\index{ice\_\-spacecurve@{ice\_\-spacecurve}!FirstFactor@{FirstFactor}}
+\index{FirstFactor@{FirstFactor}!ice_spacecurve@{ice\_\-spacecurve}}
+\subsubsection[{FirstFactor}]{\setlength{\rightskip}{0pt plus 5cm}integer ice\_\-spacecurve::FirstFactor (type (factor\_\-t) {\em fac})\hspace{0.3cm}{\ttfamily  \mbox{[}private\mbox{]}}}}
+\label{namespaceice__spacecurve_a6c86eb0e04276a6417a2010753af3895}
+
+
+Definition at line 1121 of file ice\_\-spacecurve.F90.\hypertarget{namespaceice__spacecurve_ae30af6486456c0f4098a6c03aea8ec6d}{
+\index{ice\_\-spacecurve@{ice\_\-spacecurve}!GenCurve@{GenCurve}}
+\index{GenCurve@{GenCurve}!ice_spacecurve@{ice\_\-spacecurve}}
+\subsubsection[{GenCurve}]{\setlength{\rightskip}{0pt plus 5cm}integer(int\_\-kind) ice\_\-spacecurve::GenCurve (integer(int\_\-kind),intent(in) {\em l}, \/  integer(int\_\-kind),intent(in) {\em type}, \/  integer(int\_\-kind),intent(in) {\em ma}, \/  integer(int\_\-kind),intent(in) {\em md}, \/  integer(int\_\-kind),intent(in) {\em ja}, \/  integer(int\_\-kind),intent(in) {\em jd})\hspace{0.3cm}{\ttfamily  \mbox{[}private\mbox{]}}}}
+\label{namespaceice__spacecurve_ae30af6486456c0f4098a6c03aea8ec6d}
+
+
+Definition at line 1076 of file ice\_\-spacecurve.F90.\hypertarget{namespaceice__spacecurve_a317f0810215a0c684a8073ff21eb71b1}{
+\index{ice\_\-spacecurve@{ice\_\-spacecurve}!GenSpaceCurve@{GenSpaceCurve}}
+\index{GenSpaceCurve@{GenSpaceCurve}!ice_spacecurve@{ice\_\-spacecurve}}
+\subsubsection[{GenSpaceCurve}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-spacecurve::GenSpaceCurve (integer(int\_\-kind),dimension(:,:),intent(inout),target {\em Mesh})}}
+\label{namespaceice__spacecurve_a317f0810215a0c684a8073ff21eb71b1}
+
+
+Definition at line 1631 of file ice\_\-spacecurve.F90.\hypertarget{namespaceice__spacecurve_aceffac45ebe5bc652860f543913c8c83}{
+\index{ice\_\-spacecurve@{ice\_\-spacecurve}!Hilbert@{Hilbert}}
+\index{Hilbert@{Hilbert}!ice_spacecurve@{ice\_\-spacecurve}}
+\subsubsection[{Hilbert}]{\setlength{\rightskip}{0pt plus 5cm}integer(int\_\-kind) ice\_\-spacecurve::Hilbert (integer(int\_\-kind),intent(in) {\em l}, \/  integer(int\_\-kind),intent(in) {\em type}, \/  integer(int\_\-kind),intent(in) {\em ma}, \/  integer(int\_\-kind),intent(in) {\em md}, \/  integer(int\_\-kind),intent(in) {\em ja}, \/  integer(int\_\-kind),intent(in) {\em jd})\hspace{0.3cm}{\ttfamily  \mbox{[}private\mbox{]}}}}
+\label{namespaceice__spacecurve_aceffac45ebe5bc652860f543913c8c83}
+
+
+Definition at line 808 of file ice\_\-spacecurve.F90.\hypertarget{namespaceice__spacecurve_a3b9b759e23a9275195d27bdf3b78ebfa}{
+\index{ice\_\-spacecurve@{ice\_\-spacecurve}!IncrementCurve@{IncrementCurve}}
+\index{IncrementCurve@{IncrementCurve}!ice_spacecurve@{ice\_\-spacecurve}}
+\subsubsection[{IncrementCurve}]{\setlength{\rightskip}{0pt plus 5cm}integer(int\_\-kind) ice\_\-spacecurve::IncrementCurve (integer(int\_\-kind) {\em ja}, \/  integer(int\_\-kind) {\em jd})}}
+\label{namespaceice__spacecurve_a3b9b759e23a9275195d27bdf3b78ebfa}
+
+
+Definition at line 941 of file ice\_\-spacecurve.F90.\hypertarget{namespaceice__spacecurve_a918d591b92dcee27d6d7f50c92022d69}{
+\index{ice\_\-spacecurve@{ice\_\-spacecurve}!IsFactorable@{IsFactorable}}
+\index{IsFactorable@{IsFactorable}!ice_spacecurve@{ice\_\-spacecurve}}
+\subsubsection[{IsFactorable}]{\setlength{\rightskip}{0pt plus 5cm}logical ice\_\-spacecurve::IsFactorable (integer(int\_\-kind),intent(in) {\em n})}}
+\label{namespaceice__spacecurve_a918d591b92dcee27d6d7f50c92022d69}
+
+
+Definition at line 1335 of file ice\_\-spacecurve.F90.\hypertarget{namespaceice__spacecurve_a2f6ae79d60cad9d3e019550e76cb5706}{
+\index{ice\_\-spacecurve@{ice\_\-spacecurve}!IsLoadBalanced@{IsLoadBalanced}}
+\index{IsLoadBalanced@{IsLoadBalanced}!ice_spacecurve@{ice\_\-spacecurve}}
+\subsubsection[{IsLoadBalanced}]{\setlength{\rightskip}{0pt plus 5cm}logical ice\_\-spacecurve::IsLoadBalanced (integer(int\_\-kind),intent(in) {\em nelem}, \/  integer(int\_\-kind),intent(in) {\em npart})}}
+\label{namespaceice__spacecurve_a2f6ae79d60cad9d3e019550e76cb5706}
+
+
+Definition at line 1029 of file ice\_\-spacecurve.F90.\hypertarget{namespaceice__spacecurve_a2010d172fdabf272358d0f809c046175}{
+\index{ice\_\-spacecurve@{ice\_\-spacecurve}!log2@{log2}}
+\index{log2@{log2}!ice_spacecurve@{ice\_\-spacecurve}}
+\subsubsection[{log2}]{\setlength{\rightskip}{0pt plus 5cm}integer(int\_\-kind) ice\_\-spacecurve::log2 (integer(int\_\-kind),intent(in) {\em n})}}
+\label{namespaceice__spacecurve_a2010d172fdabf272358d0f809c046175}
+
+
+Definition at line 982 of file ice\_\-spacecurve.F90.\hypertarget{namespaceice__spacecurve_a841d5cc5194de1c7aef94576c0eb5405}{
+\index{ice\_\-spacecurve@{ice\_\-spacecurve}!map@{map}}
+\index{map@{map}!ice_spacecurve@{ice\_\-spacecurve}}
+\subsubsection[{map}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-spacecurve::map (integer(int\_\-kind) {\em l})\hspace{0.3cm}{\ttfamily  \mbox{[}private\mbox{]}}}}
+\label{namespaceice__spacecurve_a841d5cc5194de1c7aef94576c0eb5405}
+
+
+Definition at line 1379 of file ice\_\-spacecurve.F90.\hypertarget{namespaceice__spacecurve_a873b84a1b720159b0a0d4dd6a4f1df1c}{
+\index{ice\_\-spacecurve@{ice\_\-spacecurve}!MatchFactor@{MatchFactor}}
+\index{MatchFactor@{MatchFactor}!ice_spacecurve@{ice\_\-spacecurve}}
+\subsubsection[{MatchFactor}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-spacecurve::MatchFactor (type (factor\_\-t) {\em fac1}, \/  type (factor\_\-t) {\em fac2}, \/  integer {\em val}, \/  logical {\em found})}}
+\label{namespaceice__spacecurve_a873b84a1b720159b0a0d4dd6a4f1df1c}
+
+
+Definition at line 1166 of file ice\_\-spacecurve.F90.\hypertarget{namespaceice__spacecurve_a99e4bd1c6625a5a14e10c5fa91f0df33}{
+\index{ice\_\-spacecurve@{ice\_\-spacecurve}!partition@{partition}}
+\index{partition@{partition}!ice_spacecurve@{ice\_\-spacecurve}}
+\subsubsection[{partition}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-spacecurve::partition (INTEGER,dimension(:),intent(inout) {\em a}, \/  INTEGER,intent(out) {\em marker})}}
+\label{namespaceice__spacecurve_a99e4bd1c6625a5a14e10c5fa91f0df33}
+
+
+Definition at line 1706 of file ice\_\-spacecurve.F90.\hypertarget{namespaceice__spacecurve_afe83a0d2757c7c07a40d410b98e66728}{
+\index{ice\_\-spacecurve@{ice\_\-spacecurve}!PeanoM@{PeanoM}}
+\index{PeanoM@{PeanoM}!ice_spacecurve@{ice\_\-spacecurve}}
+\subsubsection[{PeanoM}]{\setlength{\rightskip}{0pt plus 5cm}integer(int\_\-kind) ice\_\-spacecurve::PeanoM (integer(int\_\-kind),intent(in) {\em l}, \/  integer(int\_\-kind),intent(in) {\em type}, \/  integer(int\_\-kind),intent(in) {\em ma}, \/  integer(int\_\-kind),intent(in) {\em md}, \/  integer(int\_\-kind),intent(in) {\em ja}, \/  integer(int\_\-kind),intent(in) {\em jd})\hspace{0.3cm}{\ttfamily  \mbox{[}private\mbox{]}}}}
+\label{namespaceice__spacecurve_afe83a0d2757c7c07a40d410b98e66728}
+
+
+Definition at line 585 of file ice\_\-spacecurve.F90.\hypertarget{namespaceice__spacecurve_ab6b0639f3e032362a2ad97a2e4e160e5}{
+\index{ice\_\-spacecurve@{ice\_\-spacecurve}!PrintCurve@{PrintCurve}}
+\index{PrintCurve@{PrintCurve}!ice_spacecurve@{ice\_\-spacecurve}}
+\subsubsection[{PrintCurve}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-spacecurve::PrintCurve (integer(int\_\-kind),dimension(:,:),intent(in),target {\em Mesh})}}
+\label{namespaceice__spacecurve_ab6b0639f3e032362a2ad97a2e4e160e5}
+
+
+Definition at line 1425 of file ice\_\-spacecurve.F90.\hypertarget{namespaceice__spacecurve_a64dc0958c7c88a5de6316e7c2f6189b5}{
+\index{ice\_\-spacecurve@{ice\_\-spacecurve}!PrintFactor@{PrintFactor}}
+\index{PrintFactor@{PrintFactor}!ice_spacecurve@{ice\_\-spacecurve}}
+\subsubsection[{PrintFactor}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-spacecurve::PrintFactor (character(len=$\ast$) {\em msg}, \/  type (factor\_\-t) {\em fac})}}
+\label{namespaceice__spacecurve_a64dc0958c7c88a5de6316e7c2f6189b5}
+
+
+Definition at line 1203 of file ice\_\-spacecurve.F90.\hypertarget{namespaceice__spacecurve_a57f86858b3f4450ed95750ff8405f12f}{
+\index{ice\_\-spacecurve@{ice\_\-spacecurve}!ProdFactor@{ProdFactor}}
+\index{ProdFactor@{ProdFactor}!ice_spacecurve@{ice\_\-spacecurve}}
+\subsubsection[{ProdFactor}]{\setlength{\rightskip}{0pt plus 5cm}integer ice\_\-spacecurve::ProdFactor (type (factor\_\-t) {\em fac})}}
+\label{namespaceice__spacecurve_a57f86858b3f4450ed95750ff8405f12f}
+
+
+Definition at line 1188 of file ice\_\-spacecurve.F90.\hypertarget{namespaceice__spacecurve_aa67766fe40142781287d478cff83322e}{
+\index{ice\_\-spacecurve@{ice\_\-spacecurve}!qsort@{qsort}}
+\index{qsort@{qsort}!ice_spacecurve@{ice\_\-spacecurve}}
+\subsubsection[{qsort}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-spacecurve::qsort (integer,dimension(:),intent(inout) {\em a})}}
+\label{namespaceice__spacecurve_aa67766fe40142781287d478cff83322e}
+
+
+Definition at line 1693 of file ice\_\-spacecurve.F90.
+
+\subsection{Variable Documentation}
+\hypertarget{namespaceice__spacecurve_a39f2092f453a0a651c4efda8291bc0cf}{
+\index{ice\_\-spacecurve@{ice\_\-spacecurve}!dir@{dir}}
+\index{dir@{dir}!ice_spacecurve@{ice\_\-spacecurve}}
+\subsubsection[{dir}]{\setlength{\rightskip}{0pt plus 5cm}integer(int\_\-kind),dimension(:,:),allocatable {\bf ice\_\-spacecurve::dir}}}
+\label{namespaceice__spacecurve_a39f2092f453a0a651c4efda8291bc0cf}
+
+
+Definition at line 50 of file ice\_\-spacecurve.F90.\hypertarget{namespaceice__spacecurve_aa520de333aa94f300555f836420d5b30}{
+\index{ice\_\-spacecurve@{ice\_\-spacecurve}!fact@{fact}}
+\index{fact@{fact}!ice_spacecurve@{ice\_\-spacecurve}}
+\subsubsection[{fact}]{\setlength{\rightskip}{0pt plus 5cm}type ({\bf factor\_\-t}),save {\bf ice\_\-spacecurve::fact}}}
+\label{namespaceice__spacecurve_aa520de333aa94f300555f836420d5b30}
+
+
+Definition at line 62 of file ice\_\-spacecurve.F90.\hypertarget{namespaceice__spacecurve_aee0a00b4e25e4f5c770a300d2093feb7}{
+\index{ice\_\-spacecurve@{ice\_\-spacecurve}!maxdim@{maxdim}}
+\index{maxdim@{maxdim}!ice_spacecurve@{ice\_\-spacecurve}}
+\subsubsection[{maxdim}]{\setlength{\rightskip}{0pt plus 5cm}integer(int\_\-kind) {\bf ice\_\-spacecurve::maxdim}}}
+\label{namespaceice__spacecurve_aee0a00b4e25e4f5c770a300d2093feb7}
+
+
+Definition at line 56 of file ice\_\-spacecurve.F90.\hypertarget{namespaceice__spacecurve_a1338f6fba84ddb72ad229795cc040231}{
+\index{ice\_\-spacecurve@{ice\_\-spacecurve}!ordered@{ordered}}
+\index{ordered@{ordered}!ice_spacecurve@{ice\_\-spacecurve}}
+\subsubsection[{ordered}]{\setlength{\rightskip}{0pt plus 5cm}integer(int\_\-kind),dimension(:,:),allocatable {\bf ice\_\-spacecurve::ordered}}}
+\label{namespaceice__spacecurve_a1338f6fba84ddb72ad229795cc040231}
+
+
+Definition at line 50 of file ice\_\-spacecurve.F90.\hypertarget{namespaceice__spacecurve_a440379dc8df1be7a6903b0df94d181b1}{
+\index{ice\_\-spacecurve@{ice\_\-spacecurve}!pos@{pos}}
+\index{pos@{pos}!ice_spacecurve@{ice\_\-spacecurve}}
+\subsubsection[{pos}]{\setlength{\rightskip}{0pt plus 5cm}integer(int\_\-kind),dimension(:),allocatable {\bf ice\_\-spacecurve::pos}}}
+\label{namespaceice__spacecurve_a440379dc8df1be7a6903b0df94d181b1}
+
+
+Definition at line 53 of file ice\_\-spacecurve.F90.\hypertarget{namespaceice__spacecurve_ad07b7ca9c91db52f0cee81fac7c71c5a}{
+\index{ice\_\-spacecurve@{ice\_\-spacecurve}!vcnt@{vcnt}}
+\index{vcnt@{vcnt}!ice_spacecurve@{ice\_\-spacecurve}}
+\subsubsection[{vcnt}]{\setlength{\rightskip}{0pt plus 5cm}integer(int\_\-kind) {\bf ice\_\-spacecurve::vcnt}}}
+\label{namespaceice__spacecurve_ad07b7ca9c91db52f0cee81fac7c71c5a}
+
+
+Definition at line 56 of file ice\_\-spacecurve.F90.\hypertarget{namespaceice__spacecurve_a486a46d8f8d78fea131f7fe3d429b0dc}{
+\index{ice\_\-spacecurve@{ice\_\-spacecurve}!verbose@{verbose}}
+\index{verbose@{verbose}!ice_spacecurve@{ice\_\-spacecurve}}
+\subsubsection[{verbose}]{\setlength{\rightskip}{0pt plus 5cm}logical {\bf ice\_\-spacecurve::verbose} = .FALSE.}}
+\label{namespaceice__spacecurve_a486a46d8f8d78fea131f7fe3d429b0dc}
+
+
+Definition at line 60 of file ice\_\-spacecurve.F90.

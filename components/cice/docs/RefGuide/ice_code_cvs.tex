@@ -1,0 +1,33 @@
+%=======================================================================
+% CVS: $Id: ice_code_cvs.tex 5 2005-12-12 17:41:05Z mvr $
+% CVS: $Source$
+% CVS: $Name$
+%=======================================================================
+
+\section{Code Management under CVS}
+
+CSIM uses {\bf \textsl{CVS}} for revision control.  CVS is a tool that documents the
+history of source code changes and maintains this history on a source tree.  It documents
+each change with a time stamp and the user name of the person who made it.  The
+user making the changes adds some text describing the changes.  A tag is created,
+which gives a label to the collection of revisions.
+
+Tags on the {\bf \textsl{CVS main trunk}}, the main line of development for CSIM, are of the
+form csim\#\_\#\_\#, where \# represents an integer.  
+Modifications to the first number are for major model versions that usually coincide
+with CCSM releases.  Increments are made to the middle number when model physics are
+significantly modified or added.  These versions are typically not publically released.
+Changes to the last number represent incremental changes to the model, such as bug fixes
+or cosmetic changes.
+
+Development work that is experimental or requires major code changes should be done
+on a {\bf \textsl{CVS branch}}, a line of development separate from the main trunk. Branches
+are used so that the changes do not appear on the main trunk until they
+are thoroughly tested.  CVS branch names are of the form csim\#\_\#\_\#\_brnch\_desc
+where the first three numbers denote the tag on the main trunk where the branch was
+created.  The string of characters at the end of the tag name gives the purpose of the
+branch. For example, csim4\_8\_16\_brnch\_bugfix was rooted at version csim4\_8\_16 on
+the main trunk, and is a branch to make a bug fix.  Tags created along the branch should
+have the form csim\#\_\#\_\#\_brnchT\_desc\#.  This is basically the branch name with a
+'T' to differentiate the tag name from the branch name, and a number at the end to 
+denote where along the branch the tag was made.

@@ -1,0 +1,314 @@
+\hypertarget{namespaceice__fileunits}{
+\section{ice\_\-fileunits Module Reference}
+\label{namespaceice__fileunits}\index{ice\_\-fileunits@{ice\_\-fileunits}}
+}
+\subsection*{Functions/Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{namespaceice__fileunits_adf82bd4005c28d7632bc120150ca5ebc}{init\_\-fileunits}
+\item 
+subroutine \hyperlink{namespaceice__fileunits_ad6283e44cc881fd1d0d6250cbb83a2e2}{get\_\-fileunit} (iunit)
+\item 
+subroutine \hyperlink{namespaceice__fileunits_a6e1bf3b046e5d9d67076539af78445ef}{release\_\-all\_\-fileunits}
+\item 
+subroutine \hyperlink{namespaceice__fileunits_a6edc4f5f2fe087f5651f7d4b7f595eeb}{release\_\-fileunit} (iunit)
+\item 
+subroutine \hyperlink{namespaceice__fileunits_a78c54163676e7d85998ab6bd968c1c52}{flush\_\-fileunit} (iunit)
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+character(len=char\_\-len) \hyperlink{namespaceice__fileunits_af588ef6b480e0e304e6b78cfd39aa602}{diag\_\-type}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__fileunits_a18ec8e581589b8dbeb70fbc61ae4a293}{nu\_\-grid}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__fileunits_aaedfa4e4a189894dfedd14d7feabe219}{nu\_\-kmt}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__fileunits_a1c0f914707e7a61a579be21df178f061}{nu\_\-nml}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__fileunits_a946485641238cb0c4d99bb164de395eb}{nu\_\-forcing}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__fileunits_a025a35472bb3adec583dbd13beddfa57}{nu\_\-dump}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__fileunits_ae4a1de3342cf6bce1bd90d7517833d5d}{nu\_\-restart}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__fileunits_a8232286371f4a1cf56670431049eec01}{nu\_\-dump\_\-aero}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__fileunits_ada7b0914203fb0183cdf612624f0df75}{nu\_\-restart\_\-aero}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__fileunits_aed4fd8df7055b78ad592b4395acb95a0}{nu\_\-dump\_\-age}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__fileunits_a89e50699c9cae8e65d7fadbc1f065677}{nu\_\-restart\_\-age}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__fileunits_aa4b048a7f0b7630f6ecfb8c0e183cbaa}{nu\_\-dump\_\-FY}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__fileunits_af4ce2955d95671c93625715de173b82a}{nu\_\-restart\_\-FY}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__fileunits_a69cd946de2cd0d55f727d51f55a03052}{nu\_\-dump\_\-pond}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__fileunits_a9eb37e0f01221f9f3d7925da1c0838c0}{nu\_\-restart\_\-pond}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__fileunits_aef0d982897260808734543575407020b}{nu\_\-rst\_\-pointer}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__fileunits_a5ef8e946ea55345ba52282ad21ff1d91}{nu\_\-history}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__fileunits_ad736df9f3244eeab32a92724cef14695}{nu\_\-hdr}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__fileunits_a5a65f292ace9ba700843f3e293922842}{nu\_\-diag}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__fileunits_a4bd0122585694768cb4c57dd73954900}{nu\_\-timing}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__fileunits_a65eb74a162a71d932a76d174b05903a5}{diag\_\-level}
+\item 
+character(6), parameter \hyperlink{namespaceice__fileunits_aec528ed6b00fd0cb2d1e2c5892835bd1}{nml\_\-filename}
+\item 
+integer(kind=int\_\-kind), parameter \hyperlink{namespaceice__fileunits_ad61888d9e876b102bb3e1c2b6653eadc}{ice\_\-stdin} = 5
+\item 
+integer(kind=int\_\-kind), parameter \hyperlink{namespaceice__fileunits_a36939520ad7720151c3579da581946e7}{ice\_\-stdout} = 6
+\item 
+integer(kind=int\_\-kind), parameter \hyperlink{namespaceice__fileunits_aa45e19d657680ed407b944234295c499}{ice\_\-stderr} = 6
+\item 
+integer(kind=int\_\-kind), parameter \hyperlink{namespaceice__fileunits_a4398f02a1fc60cb19a367c3c398c3912}{ice\_\-IOUnitsMinUnits} = 11
+\item 
+integer(kind=int\_\-kind), parameter \hyperlink{namespaceice__fileunits_a51e62a76a75cf9695476d895543860a8}{ice\_\-IOUnitsMaxUnits} = 99
+\item 
+logical(kind=log\_\-kind), dimension(ice\_\-iounitsmaxunits) \hyperlink{namespaceice__fileunits_ac18233d112e8380d29b2a9269451ea4b}{ice\_\-IOUnitsInUse}
+\end{DoxyCompactItemize}
+
+
+\subsection{Function/Subroutine Documentation}
+\hypertarget{namespaceice__fileunits_a78c54163676e7d85998ab6bd968c1c52}{
+\index{ice\_\-fileunits@{ice\_\-fileunits}!flush\_\-fileunit@{flush\_\-fileunit}}
+\index{flush\_\-fileunit@{flush\_\-fileunit}!ice_fileunits@{ice\_\-fileunits}}
+\subsubsection[{flush\_\-fileunit}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-fileunits::flush\_\-fileunit (integer (kind=int\_\-kind),intent(in) {\em iunit})}}
+\label{namespaceice__fileunits_a78c54163676e7d85998ab6bd968c1c52}
+
+
+Definition at line 282 of file ice\_\-fileunits.F90.\hypertarget{namespaceice__fileunits_ad6283e44cc881fd1d0d6250cbb83a2e2}{
+\index{ice\_\-fileunits@{ice\_\-fileunits}!get\_\-fileunit@{get\_\-fileunit}}
+\index{get\_\-fileunit@{get\_\-fileunit}!ice_fileunits@{ice\_\-fileunits}}
+\subsubsection[{get\_\-fileunit}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-fileunits::get\_\-fileunit (integer (kind=int\_\-kind),intent(out) {\em iunit})}}
+\label{namespaceice__fileunits_ad6283e44cc881fd1d0d6250cbb83a2e2}
+
+
+Definition at line 158 of file ice\_\-fileunits.F90.\hypertarget{namespaceice__fileunits_adf82bd4005c28d7632bc120150ca5ebc}{
+\index{ice\_\-fileunits@{ice\_\-fileunits}!init\_\-fileunits@{init\_\-fileunits}}
+\index{init\_\-fileunits@{init\_\-fileunits}!ice_fileunits@{ice\_\-fileunits}}
+\subsubsection[{init\_\-fileunits}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-fileunits::init\_\-fileunits ()}}
+\label{namespaceice__fileunits_adf82bd4005c28d7632bc120150ca5ebc}
+
+
+Definition at line 99 of file ice\_\-fileunits.F90.\hypertarget{namespaceice__fileunits_a6e1bf3b046e5d9d67076539af78445ef}{
+\index{ice\_\-fileunits@{ice\_\-fileunits}!release\_\-all\_\-fileunits@{release\_\-all\_\-fileunits}}
+\index{release\_\-all\_\-fileunits@{release\_\-all\_\-fileunits}!ice_fileunits@{ice\_\-fileunits}}
+\subsubsection[{release\_\-all\_\-fileunits}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-fileunits::release\_\-all\_\-fileunits ()}}
+\label{namespaceice__fileunits_a6e1bf3b046e5d9d67076539af78445ef}
+
+
+Definition at line 213 of file ice\_\-fileunits.F90.\hypertarget{namespaceice__fileunits_a6edc4f5f2fe087f5651f7d4b7f595eeb}{
+\index{ice\_\-fileunits@{ice\_\-fileunits}!release\_\-fileunit@{release\_\-fileunit}}
+\index{release\_\-fileunit@{release\_\-fileunit}!ice_fileunits@{ice\_\-fileunits}}
+\subsubsection[{release\_\-fileunit}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-fileunits::release\_\-fileunit (integer (kind=int\_\-kind),intent(in) {\em iunit})}}
+\label{namespaceice__fileunits_a6edc4f5f2fe087f5651f7d4b7f595eeb}
+
+
+Definition at line 244 of file ice\_\-fileunits.F90.
+
+\subsection{Variable Documentation}
+\hypertarget{namespaceice__fileunits_a65eb74a162a71d932a76d174b05903a5}{
+\index{ice\_\-fileunits@{ice\_\-fileunits}!diag\_\-level@{diag\_\-level}}
+\index{diag\_\-level@{diag\_\-level}!ice_fileunits@{ice\_\-fileunits}}
+\subsubsection[{diag\_\-level}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind) {\bf ice\_\-fileunits::diag\_\-level}}}
+\label{namespaceice__fileunits_a65eb74a162a71d932a76d174b05903a5}
+
+
+Definition at line 69 of file ice\_\-fileunits.F90.\hypertarget{namespaceice__fileunits_af588ef6b480e0e304e6b78cfd39aa602}{
+\index{ice\_\-fileunits@{ice\_\-fileunits}!diag\_\-type@{diag\_\-type}}
+\index{diag\_\-type@{diag\_\-type}!ice_fileunits@{ice\_\-fileunits}}
+\subsubsection[{diag\_\-type}]{\setlength{\rightskip}{0pt plus 5cm}character (len=char\_\-len) {\bf ice\_\-fileunits::diag\_\-type}}}
+\label{namespaceice__fileunits_af588ef6b480e0e304e6b78cfd39aa602}
+
+
+Definition at line 45 of file ice\_\-fileunits.F90.\hypertarget{namespaceice__fileunits_ac18233d112e8380d29b2a9269451ea4b}{
+\index{ice\_\-fileunits@{ice\_\-fileunits}!ice\_\-IOUnitsInUse@{ice\_\-IOUnitsInUse}}
+\index{ice\_\-IOUnitsInUse@{ice\_\-IOUnitsInUse}!ice_fileunits@{ice\_\-fileunits}}
+\subsubsection[{ice\_\-IOUnitsInUse}]{\setlength{\rightskip}{0pt plus 5cm}logical (kind=log\_\-kind),dimension(ice\_\-iounitsmaxunits) {\bf ice\_\-fileunits::ice\_\-IOUnitsInUse}}}
+\label{namespaceice__fileunits_ac18233d112e8380d29b2a9269451ea4b}
+
+
+Definition at line 87 of file ice\_\-fileunits.F90.\hypertarget{namespaceice__fileunits_a51e62a76a75cf9695476d895543860a8}{
+\index{ice\_\-fileunits@{ice\_\-fileunits}!ice\_\-IOUnitsMaxUnits@{ice\_\-IOUnitsMaxUnits}}
+\index{ice\_\-IOUnitsMaxUnits@{ice\_\-IOUnitsMaxUnits}!ice_fileunits@{ice\_\-fileunits}}
+\subsubsection[{ice\_\-IOUnitsMaxUnits}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind),parameter {\bf ice\_\-fileunits::ice\_\-IOUnitsMaxUnits} = 99}}
+\label{namespaceice__fileunits_a51e62a76a75cf9695476d895543860a8}
+
+
+Definition at line 83 of file ice\_\-fileunits.F90.\hypertarget{namespaceice__fileunits_a4398f02a1fc60cb19a367c3c398c3912}{
+\index{ice\_\-fileunits@{ice\_\-fileunits}!ice\_\-IOUnitsMinUnits@{ice\_\-IOUnitsMinUnits}}
+\index{ice\_\-IOUnitsMinUnits@{ice\_\-IOUnitsMinUnits}!ice_fileunits@{ice\_\-fileunits}}
+\subsubsection[{ice\_\-IOUnitsMinUnits}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind),parameter {\bf ice\_\-fileunits::ice\_\-IOUnitsMinUnits} = 11}}
+\label{namespaceice__fileunits_a4398f02a1fc60cb19a367c3c398c3912}
+
+
+Definition at line 83 of file ice\_\-fileunits.F90.\hypertarget{namespaceice__fileunits_aa45e19d657680ed407b944234295c499}{
+\index{ice\_\-fileunits@{ice\_\-fileunits}!ice\_\-stderr@{ice\_\-stderr}}
+\index{ice\_\-stderr@{ice\_\-stderr}!ice_fileunits@{ice\_\-fileunits}}
+\subsubsection[{ice\_\-stderr}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind),parameter {\bf ice\_\-fileunits::ice\_\-stderr} = 6}}
+\label{namespaceice__fileunits_aa45e19d657680ed407b944234295c499}
+
+
+Definition at line 75 of file ice\_\-fileunits.F90.\hypertarget{namespaceice__fileunits_ad61888d9e876b102bb3e1c2b6653eadc}{
+\index{ice\_\-fileunits@{ice\_\-fileunits}!ice\_\-stdin@{ice\_\-stdin}}
+\index{ice\_\-stdin@{ice\_\-stdin}!ice_fileunits@{ice\_\-fileunits}}
+\subsubsection[{ice\_\-stdin}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind),parameter {\bf ice\_\-fileunits::ice\_\-stdin} = 5}}
+\label{namespaceice__fileunits_ad61888d9e876b102bb3e1c2b6653eadc}
+
+
+Definition at line 75 of file ice\_\-fileunits.F90.\hypertarget{namespaceice__fileunits_a36939520ad7720151c3579da581946e7}{
+\index{ice\_\-fileunits@{ice\_\-fileunits}!ice\_\-stdout@{ice\_\-stdout}}
+\index{ice\_\-stdout@{ice\_\-stdout}!ice_fileunits@{ice\_\-fileunits}}
+\subsubsection[{ice\_\-stdout}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind),parameter {\bf ice\_\-fileunits::ice\_\-stdout} = 6}}
+\label{namespaceice__fileunits_a36939520ad7720151c3579da581946e7}
+
+
+Definition at line 75 of file ice\_\-fileunits.F90.\hypertarget{namespaceice__fileunits_aec528ed6b00fd0cb2d1e2c5892835bd1}{
+\index{ice\_\-fileunits@{ice\_\-fileunits}!nml\_\-filename@{nml\_\-filename}}
+\index{nml\_\-filename@{nml\_\-filename}!ice_fileunits@{ice\_\-fileunits}}
+\subsubsection[{nml\_\-filename}]{\setlength{\rightskip}{0pt plus 5cm}character (6),parameter {\bf ice\_\-fileunits::nml\_\-filename}}}
+\label{namespaceice__fileunits_aec528ed6b00fd0cb2d1e2c5892835bd1}
+
+
+Definition at line 72 of file ice\_\-fileunits.F90.\hypertarget{namespaceice__fileunits_a5a65f292ace9ba700843f3e293922842}{
+\index{ice\_\-fileunits@{ice\_\-fileunits}!nu\_\-diag@{nu\_\-diag}}
+\index{nu\_\-diag@{nu\_\-diag}!ice_fileunits@{ice\_\-fileunits}}
+\subsubsection[{nu\_\-diag}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind) {\bf ice\_\-fileunits::nu\_\-diag}}}
+\label{namespaceice__fileunits_a5a65f292ace9ba700843f3e293922842}
+
+
+Definition at line 48 of file ice\_\-fileunits.F90.\hypertarget{namespaceice__fileunits_a025a35472bb3adec583dbd13beddfa57}{
+\index{ice\_\-fileunits@{ice\_\-fileunits}!nu\_\-dump@{nu\_\-dump}}
+\index{nu\_\-dump@{nu\_\-dump}!ice_fileunits@{ice\_\-fileunits}}
+\subsubsection[{nu\_\-dump}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind) {\bf ice\_\-fileunits::nu\_\-dump}}}
+\label{namespaceice__fileunits_a025a35472bb3adec583dbd13beddfa57}
+
+
+Definition at line 48 of file ice\_\-fileunits.F90.\hypertarget{namespaceice__fileunits_a8232286371f4a1cf56670431049eec01}{
+\index{ice\_\-fileunits@{ice\_\-fileunits}!nu\_\-dump\_\-aero@{nu\_\-dump\_\-aero}}
+\index{nu\_\-dump\_\-aero@{nu\_\-dump\_\-aero}!ice_fileunits@{ice\_\-fileunits}}
+\subsubsection[{nu\_\-dump\_\-aero}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind) {\bf ice\_\-fileunits::nu\_\-dump\_\-aero}}}
+\label{namespaceice__fileunits_a8232286371f4a1cf56670431049eec01}
+
+
+Definition at line 48 of file ice\_\-fileunits.F90.\hypertarget{namespaceice__fileunits_aed4fd8df7055b78ad592b4395acb95a0}{
+\index{ice\_\-fileunits@{ice\_\-fileunits}!nu\_\-dump\_\-age@{nu\_\-dump\_\-age}}
+\index{nu\_\-dump\_\-age@{nu\_\-dump\_\-age}!ice_fileunits@{ice\_\-fileunits}}
+\subsubsection[{nu\_\-dump\_\-age}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind) {\bf ice\_\-fileunits::nu\_\-dump\_\-age}}}
+\label{namespaceice__fileunits_aed4fd8df7055b78ad592b4395acb95a0}
+
+
+Definition at line 48 of file ice\_\-fileunits.F90.\hypertarget{namespaceice__fileunits_aa4b048a7f0b7630f6ecfb8c0e183cbaa}{
+\index{ice\_\-fileunits@{ice\_\-fileunits}!nu\_\-dump\_\-FY@{nu\_\-dump\_\-FY}}
+\index{nu\_\-dump\_\-FY@{nu\_\-dump\_\-FY}!ice_fileunits@{ice\_\-fileunits}}
+\subsubsection[{nu\_\-dump\_\-FY}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind) {\bf ice\_\-fileunits::nu\_\-dump\_\-FY}}}
+\label{namespaceice__fileunits_aa4b048a7f0b7630f6ecfb8c0e183cbaa}
+
+
+Definition at line 48 of file ice\_\-fileunits.F90.\hypertarget{namespaceice__fileunits_a69cd946de2cd0d55f727d51f55a03052}{
+\index{ice\_\-fileunits@{ice\_\-fileunits}!nu\_\-dump\_\-pond@{nu\_\-dump\_\-pond}}
+\index{nu\_\-dump\_\-pond@{nu\_\-dump\_\-pond}!ice_fileunits@{ice\_\-fileunits}}
+\subsubsection[{nu\_\-dump\_\-pond}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind) {\bf ice\_\-fileunits::nu\_\-dump\_\-pond}}}
+\label{namespaceice__fileunits_a69cd946de2cd0d55f727d51f55a03052}
+
+
+Definition at line 48 of file ice\_\-fileunits.F90.\hypertarget{namespaceice__fileunits_a946485641238cb0c4d99bb164de395eb}{
+\index{ice\_\-fileunits@{ice\_\-fileunits}!nu\_\-forcing@{nu\_\-forcing}}
+\index{nu\_\-forcing@{nu\_\-forcing}!ice_fileunits@{ice\_\-fileunits}}
+\subsubsection[{nu\_\-forcing}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind) {\bf ice\_\-fileunits::nu\_\-forcing}}}
+\label{namespaceice__fileunits_a946485641238cb0c4d99bb164de395eb}
+
+
+Definition at line 48 of file ice\_\-fileunits.F90.\hypertarget{namespaceice__fileunits_a18ec8e581589b8dbeb70fbc61ae4a293}{
+\index{ice\_\-fileunits@{ice\_\-fileunits}!nu\_\-grid@{nu\_\-grid}}
+\index{nu\_\-grid@{nu\_\-grid}!ice_fileunits@{ice\_\-fileunits}}
+\subsubsection[{nu\_\-grid}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind) {\bf ice\_\-fileunits::nu\_\-grid}}}
+\label{namespaceice__fileunits_a18ec8e581589b8dbeb70fbc61ae4a293}
+
+
+Definition at line 48 of file ice\_\-fileunits.F90.\hypertarget{namespaceice__fileunits_ad736df9f3244eeab32a92724cef14695}{
+\index{ice\_\-fileunits@{ice\_\-fileunits}!nu\_\-hdr@{nu\_\-hdr}}
+\index{nu\_\-hdr@{nu\_\-hdr}!ice_fileunits@{ice\_\-fileunits}}
+\subsubsection[{nu\_\-hdr}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind) {\bf ice\_\-fileunits::nu\_\-hdr}}}
+\label{namespaceice__fileunits_ad736df9f3244eeab32a92724cef14695}
+
+
+Definition at line 48 of file ice\_\-fileunits.F90.\hypertarget{namespaceice__fileunits_a5ef8e946ea55345ba52282ad21ff1d91}{
+\index{ice\_\-fileunits@{ice\_\-fileunits}!nu\_\-history@{nu\_\-history}}
+\index{nu\_\-history@{nu\_\-history}!ice_fileunits@{ice\_\-fileunits}}
+\subsubsection[{nu\_\-history}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind) {\bf ice\_\-fileunits::nu\_\-history}}}
+\label{namespaceice__fileunits_a5ef8e946ea55345ba52282ad21ff1d91}
+
+
+Definition at line 48 of file ice\_\-fileunits.F90.\hypertarget{namespaceice__fileunits_aaedfa4e4a189894dfedd14d7feabe219}{
+\index{ice\_\-fileunits@{ice\_\-fileunits}!nu\_\-kmt@{nu\_\-kmt}}
+\index{nu\_\-kmt@{nu\_\-kmt}!ice_fileunits@{ice\_\-fileunits}}
+\subsubsection[{nu\_\-kmt}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind) {\bf ice\_\-fileunits::nu\_\-kmt}}}
+\label{namespaceice__fileunits_aaedfa4e4a189894dfedd14d7feabe219}
+
+
+Definition at line 48 of file ice\_\-fileunits.F90.\hypertarget{namespaceice__fileunits_a1c0f914707e7a61a579be21df178f061}{
+\index{ice\_\-fileunits@{ice\_\-fileunits}!nu\_\-nml@{nu\_\-nml}}
+\index{nu\_\-nml@{nu\_\-nml}!ice_fileunits@{ice\_\-fileunits}}
+\subsubsection[{nu\_\-nml}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind) {\bf ice\_\-fileunits::nu\_\-nml}}}
+\label{namespaceice__fileunits_a1c0f914707e7a61a579be21df178f061}
+
+
+Definition at line 48 of file ice\_\-fileunits.F90.\hypertarget{namespaceice__fileunits_ae4a1de3342cf6bce1bd90d7517833d5d}{
+\index{ice\_\-fileunits@{ice\_\-fileunits}!nu\_\-restart@{nu\_\-restart}}
+\index{nu\_\-restart@{nu\_\-restart}!ice_fileunits@{ice\_\-fileunits}}
+\subsubsection[{nu\_\-restart}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind) {\bf ice\_\-fileunits::nu\_\-restart}}}
+\label{namespaceice__fileunits_ae4a1de3342cf6bce1bd90d7517833d5d}
+
+
+Definition at line 48 of file ice\_\-fileunits.F90.\hypertarget{namespaceice__fileunits_ada7b0914203fb0183cdf612624f0df75}{
+\index{ice\_\-fileunits@{ice\_\-fileunits}!nu\_\-restart\_\-aero@{nu\_\-restart\_\-aero}}
+\index{nu\_\-restart\_\-aero@{nu\_\-restart\_\-aero}!ice_fileunits@{ice\_\-fileunits}}
+\subsubsection[{nu\_\-restart\_\-aero}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind) {\bf ice\_\-fileunits::nu\_\-restart\_\-aero}}}
+\label{namespaceice__fileunits_ada7b0914203fb0183cdf612624f0df75}
+
+
+Definition at line 48 of file ice\_\-fileunits.F90.\hypertarget{namespaceice__fileunits_a89e50699c9cae8e65d7fadbc1f065677}{
+\index{ice\_\-fileunits@{ice\_\-fileunits}!nu\_\-restart\_\-age@{nu\_\-restart\_\-age}}
+\index{nu\_\-restart\_\-age@{nu\_\-restart\_\-age}!ice_fileunits@{ice\_\-fileunits}}
+\subsubsection[{nu\_\-restart\_\-age}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind) {\bf ice\_\-fileunits::nu\_\-restart\_\-age}}}
+\label{namespaceice__fileunits_a89e50699c9cae8e65d7fadbc1f065677}
+
+
+Definition at line 48 of file ice\_\-fileunits.F90.\hypertarget{namespaceice__fileunits_af4ce2955d95671c93625715de173b82a}{
+\index{ice\_\-fileunits@{ice\_\-fileunits}!nu\_\-restart\_\-FY@{nu\_\-restart\_\-FY}}
+\index{nu\_\-restart\_\-FY@{nu\_\-restart\_\-FY}!ice_fileunits@{ice\_\-fileunits}}
+\subsubsection[{nu\_\-restart\_\-FY}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind) {\bf ice\_\-fileunits::nu\_\-restart\_\-FY}}}
+\label{namespaceice__fileunits_af4ce2955d95671c93625715de173b82a}
+
+
+Definition at line 48 of file ice\_\-fileunits.F90.\hypertarget{namespaceice__fileunits_a9eb37e0f01221f9f3d7925da1c0838c0}{
+\index{ice\_\-fileunits@{ice\_\-fileunits}!nu\_\-restart\_\-pond@{nu\_\-restart\_\-pond}}
+\index{nu\_\-restart\_\-pond@{nu\_\-restart\_\-pond}!ice_fileunits@{ice\_\-fileunits}}
+\subsubsection[{nu\_\-restart\_\-pond}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind) {\bf ice\_\-fileunits::nu\_\-restart\_\-pond}}}
+\label{namespaceice__fileunits_a9eb37e0f01221f9f3d7925da1c0838c0}
+
+
+Definition at line 48 of file ice\_\-fileunits.F90.\hypertarget{namespaceice__fileunits_aef0d982897260808734543575407020b}{
+\index{ice\_\-fileunits@{ice\_\-fileunits}!nu\_\-rst\_\-pointer@{nu\_\-rst\_\-pointer}}
+\index{nu\_\-rst\_\-pointer@{nu\_\-rst\_\-pointer}!ice_fileunits@{ice\_\-fileunits}}
+\subsubsection[{nu\_\-rst\_\-pointer}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind) {\bf ice\_\-fileunits::nu\_\-rst\_\-pointer}}}
+\label{namespaceice__fileunits_aef0d982897260808734543575407020b}
+
+
+Definition at line 48 of file ice\_\-fileunits.F90.\hypertarget{namespaceice__fileunits_a4bd0122585694768cb4c57dd73954900}{
+\index{ice\_\-fileunits@{ice\_\-fileunits}!nu\_\-timing@{nu\_\-timing}}
+\index{nu\_\-timing@{nu\_\-timing}!ice_fileunits@{ice\_\-fileunits}}
+\subsubsection[{nu\_\-timing}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind) {\bf ice\_\-fileunits::nu\_\-timing}}}
+\label{namespaceice__fileunits_a4bd0122585694768cb4c57dd73954900}
+
+
+Definition at line 48 of file ice\_\-fileunits.F90.

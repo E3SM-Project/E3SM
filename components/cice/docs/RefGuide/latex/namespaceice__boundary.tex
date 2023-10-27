@@ -1,0 +1,251 @@
+\hypertarget{namespaceice__boundary}{
+\section{ice\_\-boundary Module Reference}
+\label{namespaceice__boundary}\index{ice\_\-boundary@{ice\_\-boundary}}
+}
+\subsection*{Data Types}
+\begin{DoxyCompactItemize}
+\item 
+type \hyperlink{typeice__boundary_1_1ice__halo}{ice\_\-halo}
+\item 
+interface \hyperlink{interfaceice__boundary_1_1ice__HaloUpdate}{ice\_\-HaloUpdate}
+\item 
+interface \hyperlink{interfaceice__boundary_1_1ice__HaloExtrapolate}{ice\_\-HaloExtrapolate}
+\end{DoxyCompactItemize}
+\subsection*{Functions/Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+type(\hyperlink{typeice__boundary_1_1ice__halo}{ice\_\-halo}) \hyperlink{namespaceice__boundary_a75ebd3c57772fed459b69767634757d0}{ice\_\-HaloCreate} (dist, nsBoundaryType, ewBoundaryType, nxGlobal)
+\item 
+subroutine \hyperlink{namespaceice__boundary_a87df2a8a2b6172c4e0e56332a02521b8}{ice\_\-HaloUpdate2DR8} (array, halo, fieldLoc, fieldKind, fillValue)
+\item 
+subroutine \hyperlink{namespaceice__boundary_abc01c17b506f2d8ae4df422170803c6a}{ice\_\-HaloUpdate\_\-stress} (array1, array2, halo, fieldLoc, fieldKind, fillValue)
+\item 
+subroutine \hyperlink{namespaceice__boundary_ab91c33c3f42ce191fc4edd0d19f8e6ac}{ice\_\-HaloUpdate2DR4} (array, halo, fieldLoc, fieldKind, fillValue)
+\item 
+subroutine \hyperlink{namespaceice__boundary_a2054b95b373530c4cc9db12585f020dc}{ice\_\-HaloUpdate2DI4} (array, halo, fieldLoc, fieldKind, fillValue)
+\item 
+subroutine \hyperlink{namespaceice__boundary_a1b2030ac006215973cc7919ed7a0b8ba}{ice\_\-HaloUpdate3DR8} (array, halo, fieldLoc, fieldKind, fillValue)
+\item 
+subroutine \hyperlink{namespaceice__boundary_a124672d4024a3a64a1c1ed1b8c8d000b}{ice\_\-HaloUpdate3DR4} (array, halo, fieldLoc, fieldKind, fillValue)
+\item 
+subroutine \hyperlink{namespaceice__boundary_aded647fb747da9f8efb04f5a67a4247b}{ice\_\-HaloUpdate3DI4} (array, halo, fieldLoc, fieldKind, fillValue)
+\item 
+subroutine \hyperlink{namespaceice__boundary_adbf64712e93e11b0d0b099666f723af3}{ice\_\-HaloUpdate4DR8} (array, halo, fieldLoc, fieldKind, fillValue)
+\item 
+subroutine \hyperlink{namespaceice__boundary_a57e7b05282c54e5996798a87fa1a2e16}{ice\_\-HaloUpdate4DR4} (array, halo, fieldLoc, fieldKind, fillValue)
+\item 
+subroutine \hyperlink{namespaceice__boundary_aae151e9a894787fddeb6510b20919203}{ice\_\-HaloUpdate4DI4} (array, halo, fieldLoc, fieldKind, fillValue)
+\item 
+subroutine \hyperlink{namespaceice__boundary_af0d91bf9b575aaf512efac718c9b099c}{ice\_\-HaloIncrementMsgCount} (sndCounter, rcvCounter, srcProc, dstProc, msgSize)
+\item 
+subroutine \hyperlink{namespaceice__boundary_afcc8942d5d5ac4c20ac64915b98f376c}{ice\_\-HaloMsgCreate} (halo, srcBlock, srcProc, srcLocalID, dstBlock, dstProc, dstLocalID, direction)
+\item 
+subroutine \hyperlink{namespaceice__boundary_a9a42897a89fe284fadbec048591e5742}{ice\_\-HaloExtrapolate2DR8} (ARRAY, dist, ew\_\-bndy\_\-type, ns\_\-bndy\_\-type)
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+integer(int\_\-kind) \hyperlink{namespaceice__boundary_aa836a7146cb8129f59f4a457b5100c2c}{bufSizeSend}
+\item 
+integer(int\_\-kind) \hyperlink{namespaceice__boundary_a4faa8fff704b4598309e0cdb8a777032}{bufSizeRecv}
+\item 
+integer(int\_\-kind), dimension(:,:), allocatable \hyperlink{namespaceice__boundary_a2554f422dd4f1b67e0affadd17f11069}{bufSendI4}
+\item 
+integer(int\_\-kind), dimension(:,:), allocatable \hyperlink{namespaceice__boundary_a59b118d50a3fe964e4109999b54f432b}{bufRecvI4}
+\item 
+real(real\_\-kind), dimension(:,:), allocatable \hyperlink{namespaceice__boundary_a78f43d9e66420f40a9140762b7b69427}{bufSendR4}
+\item 
+real(real\_\-kind), dimension(:,:), allocatable \hyperlink{namespaceice__boundary_a9924032ec4c94a255c40c319d1577a08}{bufRecvR4}
+\item 
+real(dbl\_\-kind), dimension(:,:), allocatable \hyperlink{namespaceice__boundary_a6fd3fc7d61b1eb43afbd050a0d073c90}{bufSendR8}
+\item 
+real(dbl\_\-kind), dimension(:,:), allocatable \hyperlink{namespaceice__boundary_a8322278cdca5c48f9a5bad7118fcbecd}{bufRecvR8}
+\item 
+integer(int\_\-kind), dimension(:,:), allocatable \hyperlink{namespaceice__boundary_a3bcbb0d2bf24f90a72bbbedfd53ec6bd}{bufTripoleI4}
+\item 
+real(real\_\-kind), dimension(:,:), allocatable \hyperlink{namespaceice__boundary_a8d42883469648c0eef77bb2f2c830853}{bufTripoleR4}
+\item 
+real(dbl\_\-kind), dimension(:,:), allocatable \hyperlink{namespaceice__boundary_a0cf3692aba462080bcd506c8e2b56b21}{bufTripoleR8}
+\end{DoxyCompactItemize}
+
+
+\subsection{Function/Subroutine Documentation}
+\hypertarget{namespaceice__boundary_a75ebd3c57772fed459b69767634757d0}{
+\index{ice\_\-boundary@{ice\_\-boundary}!ice\_\-HaloCreate@{ice\_\-HaloCreate}}
+\index{ice\_\-HaloCreate@{ice\_\-HaloCreate}!ice_boundary@{ice\_\-boundary}}
+\subsubsection[{ice\_\-HaloCreate}]{\setlength{\rightskip}{0pt plus 5cm}type ({\bf ice\_\-halo}) ice\_\-boundary::ice\_\-HaloCreate (type ({\bf distrb}),intent(in) {\em dist}, \/  character ($\ast$),intent(in) {\em nsBoundaryType}, \/  character ($\ast$),intent(in) {\em ewBoundaryType}, \/  integer (int\_\-kind),intent(in) {\em nxGlobal})}}
+\label{namespaceice__boundary_a75ebd3c57772fed459b69767634757d0}
+
+
+Definition at line 154 of file ice\_\-boundary.F90.\hypertarget{namespaceice__boundary_a9a42897a89fe284fadbec048591e5742}{
+\index{ice\_\-boundary@{ice\_\-boundary}!ice\_\-HaloExtrapolate2DR8@{ice\_\-HaloExtrapolate2DR8}}
+\index{ice\_\-HaloExtrapolate2DR8@{ice\_\-HaloExtrapolate2DR8}!ice_boundary@{ice\_\-boundary}}
+\subsubsection[{ice\_\-HaloExtrapolate2DR8}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-boundary::ice\_\-HaloExtrapolate2DR8 (real (dbl\_\-kind),dimension(:,:,:),intent(inout) {\em ARRAY}, \/  type ({\bf distrb}),intent(in) {\em dist}, \/  character (char\_\-len) {\em ew\_\-bndy\_\-type}, \/  character (char\_\-len) {\em ns\_\-bndy\_\-type})\hspace{0.3cm}{\ttfamily  \mbox{[}private\mbox{]}}}}
+\label{namespaceice__boundary_a9a42897a89fe284fadbec048591e5742}
+
+
+Definition at line 6571 of file ice\_\-boundary.F90.\hypertarget{namespaceice__boundary_af0d91bf9b575aaf512efac718c9b099c}{
+\index{ice\_\-boundary@{ice\_\-boundary}!ice\_\-HaloIncrementMsgCount@{ice\_\-HaloIncrementMsgCount}}
+\index{ice\_\-HaloIncrementMsgCount@{ice\_\-HaloIncrementMsgCount}!ice_boundary@{ice\_\-boundary}}
+\subsubsection[{ice\_\-HaloIncrementMsgCount}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-boundary::ice\_\-HaloIncrementMsgCount (integer (int\_\-kind),dimension(:),intent(inout) {\em sndCounter}, \/  integer (int\_\-kind),dimension(:),intent(inout) {\em rcvCounter}, \/  integer (int\_\-kind),intent(in) {\em srcProc}, \/  integer (int\_\-kind),intent(in) {\em dstProc}, \/  integer (int\_\-kind),intent(in) {\em msgSize})\hspace{0.3cm}{\ttfamily  \mbox{[}private\mbox{]}}}}
+\label{namespaceice__boundary_af0d91bf9b575aaf512efac718c9b099c}
+
+
+Definition at line 5339 of file ice\_\-boundary.F90.\hypertarget{namespaceice__boundary_afcc8942d5d5ac4c20ac64915b98f376c}{
+\index{ice\_\-boundary@{ice\_\-boundary}!ice\_\-HaloMsgCreate@{ice\_\-HaloMsgCreate}}
+\index{ice\_\-HaloMsgCreate@{ice\_\-HaloMsgCreate}!ice_boundary@{ice\_\-boundary}}
+\subsubsection[{ice\_\-HaloMsgCreate}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-boundary::ice\_\-HaloMsgCreate (type (ice\_\-halo),intent(inout) {\em halo}, \/  integer (int\_\-kind),intent(in) {\em srcBlock}, \/  integer (int\_\-kind),intent(in) {\em srcProc}, \/  integer (int\_\-kind),intent(in) {\em srcLocalID}, \/  integer (int\_\-kind),intent(in) {\em dstBlock}, \/  integer (int\_\-kind),intent(in) {\em dstProc}, \/  integer (int\_\-kind),intent(in) {\em dstLocalID}, \/  character ($\ast$),intent(in) {\em direction})\hspace{0.3cm}{\ttfamily  \mbox{[}private\mbox{]}}}}
+\label{namespaceice__boundary_afcc8942d5d5ac4c20ac64915b98f376c}
+
+
+Definition at line 5434 of file ice\_\-boundary.F90.\hypertarget{namespaceice__boundary_a2054b95b373530c4cc9db12585f020dc}{
+\index{ice\_\-boundary@{ice\_\-boundary}!ice\_\-HaloUpdate2DI4@{ice\_\-HaloUpdate2DI4}}
+\index{ice\_\-HaloUpdate2DI4@{ice\_\-HaloUpdate2DI4}!ice_boundary@{ice\_\-boundary}}
+\subsubsection[{ice\_\-HaloUpdate2DI4}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-boundary::ice\_\-HaloUpdate2DI4 (integer (int\_\-kind),dimension(:,:,:),intent(inout) {\em array}, \/  type (ice\_\-halo),intent(in) {\em halo}, \/  integer (int\_\-kind),intent(in) {\em fieldLoc}, \/  integer (int\_\-kind),intent(in) {\em fieldKind}, \/  integer (int\_\-kind),intent(in),optional {\em fillValue})\hspace{0.3cm}{\ttfamily  \mbox{[}private\mbox{]}}}}
+\label{namespaceice__boundary_a2054b95b373530c4cc9db12585f020dc}
+
+
+Definition at line 2129 of file ice\_\-boundary.F90.\hypertarget{namespaceice__boundary_ab91c33c3f42ce191fc4edd0d19f8e6ac}{
+\index{ice\_\-boundary@{ice\_\-boundary}!ice\_\-HaloUpdate2DR4@{ice\_\-HaloUpdate2DR4}}
+\index{ice\_\-HaloUpdate2DR4@{ice\_\-HaloUpdate2DR4}!ice_boundary@{ice\_\-boundary}}
+\subsubsection[{ice\_\-HaloUpdate2DR4}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-boundary::ice\_\-HaloUpdate2DR4 (real (real\_\-kind),dimension(:,:,:),intent(inout) {\em array}, \/  type (ice\_\-halo),intent(in) {\em halo}, \/  integer (int\_\-kind),intent(in) {\em fieldLoc}, \/  integer (int\_\-kind),intent(in) {\em fieldKind}, \/  real (real\_\-kind),intent(in),optional {\em fillValue})\hspace{0.3cm}{\ttfamily  \mbox{[}private\mbox{]}}}}
+\label{namespaceice__boundary_ab91c33c3f42ce191fc4edd0d19f8e6ac}
+
+
+Definition at line 1733 of file ice\_\-boundary.F90.\hypertarget{namespaceice__boundary_a87df2a8a2b6172c4e0e56332a02521b8}{
+\index{ice\_\-boundary@{ice\_\-boundary}!ice\_\-HaloUpdate2DR8@{ice\_\-HaloUpdate2DR8}}
+\index{ice\_\-HaloUpdate2DR8@{ice\_\-HaloUpdate2DR8}!ice_boundary@{ice\_\-boundary}}
+\subsubsection[{ice\_\-HaloUpdate2DR8}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-boundary::ice\_\-HaloUpdate2DR8 (real (dbl\_\-kind),dimension(:,:,:),intent(inout) {\em array}, \/  type (ice\_\-halo),intent(in) {\em halo}, \/  integer (int\_\-kind),intent(in) {\em fieldLoc}, \/  integer (int\_\-kind),intent(in) {\em fieldKind}, \/  real (dbl\_\-kind),intent(in),optional {\em fillValue})\hspace{0.3cm}{\ttfamily  \mbox{[}private\mbox{]}}}}
+\label{namespaceice__boundary_a87df2a8a2b6172c4e0e56332a02521b8}
+
+
+Definition at line 1029 of file ice\_\-boundary.F90.\hypertarget{namespaceice__boundary_aded647fb747da9f8efb04f5a67a4247b}{
+\index{ice\_\-boundary@{ice\_\-boundary}!ice\_\-HaloUpdate3DI4@{ice\_\-HaloUpdate3DI4}}
+\index{ice\_\-HaloUpdate3DI4@{ice\_\-HaloUpdate3DI4}!ice_boundary@{ice\_\-boundary}}
+\subsubsection[{ice\_\-HaloUpdate3DI4}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-boundary::ice\_\-HaloUpdate3DI4 (integer (int\_\-kind),dimension(:,:,:,:),intent(inout) {\em array}, \/  type (ice\_\-halo),intent(in) {\em halo}, \/  integer (int\_\-kind),intent(in) {\em fieldLoc}, \/  integer (int\_\-kind),intent(in) {\em fieldKind}, \/  integer (int\_\-kind),intent(in),optional {\em fillValue})\hspace{0.3cm}{\ttfamily  \mbox{[}private\mbox{]}}}}
+\label{namespaceice__boundary_aded647fb747da9f8efb04f5a67a4247b}
+
+
+Definition at line 3439 of file ice\_\-boundary.F90.\hypertarget{namespaceice__boundary_a124672d4024a3a64a1c1ed1b8c8d000b}{
+\index{ice\_\-boundary@{ice\_\-boundary}!ice\_\-HaloUpdate3DR4@{ice\_\-HaloUpdate3DR4}}
+\index{ice\_\-HaloUpdate3DR4@{ice\_\-HaloUpdate3DR4}!ice_boundary@{ice\_\-boundary}}
+\subsubsection[{ice\_\-HaloUpdate3DR4}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-boundary::ice\_\-HaloUpdate3DR4 (real (real\_\-kind),dimension(:,:,:,:),intent(inout) {\em array}, \/  type (ice\_\-halo),intent(in) {\em halo}, \/  integer (int\_\-kind),intent(in) {\em fieldLoc}, \/  integer (int\_\-kind),intent(in) {\em fieldKind}, \/  real (real\_\-kind),intent(in),optional {\em fillValue})\hspace{0.3cm}{\ttfamily  \mbox{[}private\mbox{]}}}}
+\label{namespaceice__boundary_a124672d4024a3a64a1c1ed1b8c8d000b}
+
+
+Definition at line 2982 of file ice\_\-boundary.F90.\hypertarget{namespaceice__boundary_a1b2030ac006215973cc7919ed7a0b8ba}{
+\index{ice\_\-boundary@{ice\_\-boundary}!ice\_\-HaloUpdate3DR8@{ice\_\-HaloUpdate3DR8}}
+\index{ice\_\-HaloUpdate3DR8@{ice\_\-HaloUpdate3DR8}!ice_boundary@{ice\_\-boundary}}
+\subsubsection[{ice\_\-HaloUpdate3DR8}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-boundary::ice\_\-HaloUpdate3DR8 (real (dbl\_\-kind),dimension(:,:,:,:),intent(inout) {\em array}, \/  type (ice\_\-halo),intent(in) {\em halo}, \/  integer (int\_\-kind),intent(in) {\em fieldLoc}, \/  integer (int\_\-kind),intent(in) {\em fieldKind}, \/  real (dbl\_\-kind),intent(in),optional {\em fillValue})\hspace{0.3cm}{\ttfamily  \mbox{[}private\mbox{]}}}}
+\label{namespaceice__boundary_a1b2030ac006215973cc7919ed7a0b8ba}
+
+
+Definition at line 2525 of file ice\_\-boundary.F90.\hypertarget{namespaceice__boundary_aae151e9a894787fddeb6510b20919203}{
+\index{ice\_\-boundary@{ice\_\-boundary}!ice\_\-HaloUpdate4DI4@{ice\_\-HaloUpdate4DI4}}
+\index{ice\_\-HaloUpdate4DI4@{ice\_\-HaloUpdate4DI4}!ice_boundary@{ice\_\-boundary}}
+\subsubsection[{ice\_\-HaloUpdate4DI4}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-boundary::ice\_\-HaloUpdate4DI4 (integer (int\_\-kind),dimension(:,:,:,:,:),intent(inout) {\em array}, \/  type (ice\_\-halo),intent(in) {\em halo}, \/  integer (int\_\-kind),intent(in) {\em fieldLoc}, \/  integer (int\_\-kind),intent(in) {\em fieldKind}, \/  integer (int\_\-kind),intent(in),optional {\em fillValue})\hspace{0.3cm}{\ttfamily  \mbox{[}private\mbox{]}}}}
+\label{namespaceice__boundary_aae151e9a894787fddeb6510b20919203}
+
+
+Definition at line 4858 of file ice\_\-boundary.F90.\hypertarget{namespaceice__boundary_a57e7b05282c54e5996798a87fa1a2e16}{
+\index{ice\_\-boundary@{ice\_\-boundary}!ice\_\-HaloUpdate4DR4@{ice\_\-HaloUpdate4DR4}}
+\index{ice\_\-HaloUpdate4DR4@{ice\_\-HaloUpdate4DR4}!ice_boundary@{ice\_\-boundary}}
+\subsubsection[{ice\_\-HaloUpdate4DR4}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-boundary::ice\_\-HaloUpdate4DR4 (real (real\_\-kind),dimension(:,:,:,:,:),intent(inout) {\em array}, \/  type (ice\_\-halo),intent(in) {\em halo}, \/  integer (int\_\-kind),intent(in) {\em fieldLoc}, \/  integer (int\_\-kind),intent(in) {\em fieldKind}, \/  real (real\_\-kind),intent(in),optional {\em fillValue})\hspace{0.3cm}{\ttfamily  \mbox{[}private\mbox{]}}}}
+\label{namespaceice__boundary_a57e7b05282c54e5996798a87fa1a2e16}
+
+
+Definition at line 4377 of file ice\_\-boundary.F90.\hypertarget{namespaceice__boundary_adbf64712e93e11b0d0b099666f723af3}{
+\index{ice\_\-boundary@{ice\_\-boundary}!ice\_\-HaloUpdate4DR8@{ice\_\-HaloUpdate4DR8}}
+\index{ice\_\-HaloUpdate4DR8@{ice\_\-HaloUpdate4DR8}!ice_boundary@{ice\_\-boundary}}
+\subsubsection[{ice\_\-HaloUpdate4DR8}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-boundary::ice\_\-HaloUpdate4DR8 (real (dbl\_\-kind),dimension(:,:,:,:,:),intent(inout) {\em array}, \/  type (ice\_\-halo),intent(in) {\em halo}, \/  integer (int\_\-kind),intent(in) {\em fieldLoc}, \/  integer (int\_\-kind),intent(in) {\em fieldKind}, \/  real (dbl\_\-kind),intent(in),optional {\em fillValue})\hspace{0.3cm}{\ttfamily  \mbox{[}private\mbox{]}}}}
+\label{namespaceice__boundary_adbf64712e93e11b0d0b099666f723af3}
+
+
+Definition at line 3896 of file ice\_\-boundary.F90.\hypertarget{namespaceice__boundary_abc01c17b506f2d8ae4df422170803c6a}{
+\index{ice\_\-boundary@{ice\_\-boundary}!ice\_\-HaloUpdate\_\-stress@{ice\_\-HaloUpdate\_\-stress}}
+\index{ice\_\-HaloUpdate\_\-stress@{ice\_\-HaloUpdate\_\-stress}!ice_boundary@{ice\_\-boundary}}
+\subsubsection[{ice\_\-HaloUpdate\_\-stress}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-boundary::ice\_\-HaloUpdate\_\-stress (real (dbl\_\-kind),dimension(:,:,:),intent(inout) {\em array1}, \/  array2, \/  type (ice\_\-halo),intent(in) {\em halo}, \/  integer (int\_\-kind),intent(in) {\em fieldLoc}, \/  integer (int\_\-kind),intent(in) {\em fieldKind}, \/  real (dbl\_\-kind),intent(in),optional {\em fillValue})}}
+\label{namespaceice__boundary_abc01c17b506f2d8ae4df422170803c6a}
+
+
+Definition at line 1425 of file ice\_\-boundary.F90.
+
+\subsection{Variable Documentation}
+\hypertarget{namespaceice__boundary_a59b118d50a3fe964e4109999b54f432b}{
+\index{ice\_\-boundary@{ice\_\-boundary}!bufRecvI4@{bufRecvI4}}
+\index{bufRecvI4@{bufRecvI4}!ice_boundary@{ice\_\-boundary}}
+\subsubsection[{bufRecvI4}]{\setlength{\rightskip}{0pt plus 5cm}integer (int\_\-kind),dimension(:,:),allocatable {\bf ice\_\-boundary::bufRecvI4}}}
+\label{namespaceice__boundary_a59b118d50a3fe964e4109999b54f432b}
+
+
+Definition at line 117 of file ice\_\-boundary.F90.\hypertarget{namespaceice__boundary_a9924032ec4c94a255c40c319d1577a08}{
+\index{ice\_\-boundary@{ice\_\-boundary}!bufRecvR4@{bufRecvR4}}
+\index{bufRecvR4@{bufRecvR4}!ice_boundary@{ice\_\-boundary}}
+\subsubsection[{bufRecvR4}]{\setlength{\rightskip}{0pt plus 5cm}real (real\_\-kind),dimension(:,:),allocatable {\bf ice\_\-boundary::bufRecvR4}}}
+\label{namespaceice__boundary_a9924032ec4c94a255c40c319d1577a08}
+
+
+Definition at line 121 of file ice\_\-boundary.F90.\hypertarget{namespaceice__boundary_a8322278cdca5c48f9a5bad7118fcbecd}{
+\index{ice\_\-boundary@{ice\_\-boundary}!bufRecvR8@{bufRecvR8}}
+\index{bufRecvR8@{bufRecvR8}!ice_boundary@{ice\_\-boundary}}
+\subsubsection[{bufRecvR8}]{\setlength{\rightskip}{0pt plus 5cm}real (dbl\_\-kind),dimension(:,:),allocatable {\bf ice\_\-boundary::bufRecvR8}}}
+\label{namespaceice__boundary_a8322278cdca5c48f9a5bad7118fcbecd}
+
+
+Definition at line 125 of file ice\_\-boundary.F90.\hypertarget{namespaceice__boundary_a2554f422dd4f1b67e0affadd17f11069}{
+\index{ice\_\-boundary@{ice\_\-boundary}!bufSendI4@{bufSendI4}}
+\index{bufSendI4@{bufSendI4}!ice_boundary@{ice\_\-boundary}}
+\subsubsection[{bufSendI4}]{\setlength{\rightskip}{0pt plus 5cm}integer (int\_\-kind),dimension(:,:),allocatable {\bf ice\_\-boundary::bufSendI4}}}
+\label{namespaceice__boundary_a2554f422dd4f1b67e0affadd17f11069}
+
+
+Definition at line 117 of file ice\_\-boundary.F90.\hypertarget{namespaceice__boundary_a78f43d9e66420f40a9140762b7b69427}{
+\index{ice\_\-boundary@{ice\_\-boundary}!bufSendR4@{bufSendR4}}
+\index{bufSendR4@{bufSendR4}!ice_boundary@{ice\_\-boundary}}
+\subsubsection[{bufSendR4}]{\setlength{\rightskip}{0pt plus 5cm}real (real\_\-kind),dimension(:,:),allocatable {\bf ice\_\-boundary::bufSendR4}}}
+\label{namespaceice__boundary_a78f43d9e66420f40a9140762b7b69427}
+
+
+Definition at line 121 of file ice\_\-boundary.F90.\hypertarget{namespaceice__boundary_a6fd3fc7d61b1eb43afbd050a0d073c90}{
+\index{ice\_\-boundary@{ice\_\-boundary}!bufSendR8@{bufSendR8}}
+\index{bufSendR8@{bufSendR8}!ice_boundary@{ice\_\-boundary}}
+\subsubsection[{bufSendR8}]{\setlength{\rightskip}{0pt plus 5cm}real (dbl\_\-kind),dimension(:,:),allocatable {\bf ice\_\-boundary::bufSendR8}}}
+\label{namespaceice__boundary_a6fd3fc7d61b1eb43afbd050a0d073c90}
+
+
+Definition at line 125 of file ice\_\-boundary.F90.\hypertarget{namespaceice__boundary_a4faa8fff704b4598309e0cdb8a777032}{
+\index{ice\_\-boundary@{ice\_\-boundary}!bufSizeRecv@{bufSizeRecv}}
+\index{bufSizeRecv@{bufSizeRecv}!ice_boundary@{ice\_\-boundary}}
+\subsubsection[{bufSizeRecv}]{\setlength{\rightskip}{0pt plus 5cm}integer (int\_\-kind) {\bf ice\_\-boundary::bufSizeRecv}}}
+\label{namespaceice__boundary_a4faa8fff704b4598309e0cdb8a777032}
+
+
+Definition at line 113 of file ice\_\-boundary.F90.\hypertarget{namespaceice__boundary_aa836a7146cb8129f59f4a457b5100c2c}{
+\index{ice\_\-boundary@{ice\_\-boundary}!bufSizeSend@{bufSizeSend}}
+\index{bufSizeSend@{bufSizeSend}!ice_boundary@{ice\_\-boundary}}
+\subsubsection[{bufSizeSend}]{\setlength{\rightskip}{0pt plus 5cm}integer (int\_\-kind) {\bf ice\_\-boundary::bufSizeSend}}}
+\label{namespaceice__boundary_aa836a7146cb8129f59f4a457b5100c2c}
+
+
+Definition at line 113 of file ice\_\-boundary.F90.\hypertarget{namespaceice__boundary_a3bcbb0d2bf24f90a72bbbedfd53ec6bd}{
+\index{ice\_\-boundary@{ice\_\-boundary}!bufTripoleI4@{bufTripoleI4}}
+\index{bufTripoleI4@{bufTripoleI4}!ice_boundary@{ice\_\-boundary}}
+\subsubsection[{bufTripoleI4}]{\setlength{\rightskip}{0pt plus 5cm}integer (int\_\-kind),dimension(:,:),allocatable {\bf ice\_\-boundary::bufTripoleI4}}}
+\label{namespaceice__boundary_a3bcbb0d2bf24f90a72bbbedfd53ec6bd}
+
+
+Definition at line 135 of file ice\_\-boundary.F90.\hypertarget{namespaceice__boundary_a8d42883469648c0eef77bb2f2c830853}{
+\index{ice\_\-boundary@{ice\_\-boundary}!bufTripoleR4@{bufTripoleR4}}
+\index{bufTripoleR4@{bufTripoleR4}!ice_boundary@{ice\_\-boundary}}
+\subsubsection[{bufTripoleR4}]{\setlength{\rightskip}{0pt plus 5cm}real (real\_\-kind),dimension(:,:),allocatable {\bf ice\_\-boundary::bufTripoleR4}}}
+\label{namespaceice__boundary_a8d42883469648c0eef77bb2f2c830853}
+
+
+Definition at line 138 of file ice\_\-boundary.F90.\hypertarget{namespaceice__boundary_a0cf3692aba462080bcd506c8e2b56b21}{
+\index{ice\_\-boundary@{ice\_\-boundary}!bufTripoleR8@{bufTripoleR8}}
+\index{bufTripoleR8@{bufTripoleR8}!ice_boundary@{ice\_\-boundary}}
+\subsubsection[{bufTripoleR8}]{\setlength{\rightskip}{0pt plus 5cm}real (dbl\_\-kind),dimension(:,:),allocatable {\bf ice\_\-boundary::bufTripoleR8}}}
+\label{namespaceice__boundary_a0cf3692aba462080bcd506c8e2b56b21}
+
+
+Definition at line 141 of file ice\_\-boundary.F90.

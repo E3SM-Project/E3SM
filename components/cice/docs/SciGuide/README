@@ -1,0 +1,8 @@
+This version of ice_scidoc.tex is Bruce's TEX version of the
+model description.  To get the dvi file, I typed tex ice_scidoc.tex.
+I put this file in the repository so I know where to find it next time
+the scientific documentation needs to be rewritten.  It should be
+rewritten in latex, and have an html readable version.  Also, the
+references can be removed from the text, and master_list.bib can
+be used.  The Makefile won't work with this file.  The .tex file
+originated in /home/bruceb/ccsm/csimpap/ccsm3seaice/ccsm3_description.

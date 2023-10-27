@@ -1,0 +1,68 @@
+\hypertarget{ice__distribution_8F90}{
+\section{ice\_\-distribution.F90 File Reference}
+\label{ice__distribution_8F90}\index{ice\_\-distribution.F90@{ice\_\-distribution.F90}}
+}
+\subsection*{Data Types}
+\begin{DoxyCompactItemize}
+\item 
+type \hyperlink{typeice__distribution_1_1distrb}{ice\_\-distribution::distrb}
+\end{DoxyCompactItemize}
+\subsection*{Modules}
+\begin{DoxyCompactItemize}
+\item 
+module \hyperlink{namespaceice__distribution}{ice\_\-distribution}
+\end{DoxyCompactItemize}
+\subsection*{Functions/Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+type(distrb) \hyperlink{namespaceice__distribution_aa44f38ec08146a52959957cbad5b093d}{ice\_\-distribution::create\_\-distribution} (dist\_\-type, nprocs, maxBlock, work\_\-per\_\-block, prob\_\-per\_\-block, blockType, bStats, FixMaxBlock)
+\item 
+subroutine \hyperlink{namespaceice__distribution_a8f328e752d1852d365225748260e0729}{ice\_\-distribution::create\_\-local\_\-block\_\-ids} (block\_\-ids, distribution)
+\item 
+subroutine \hyperlink{namespaceice__distribution_a53b1d1fb3c8ddf978561163a12c8b1a4}{ice\_\-distribution::proc\_\-decomposition} (nprocs, nprocs\_\-x, nprocs\_\-y)
+\item 
+subroutine \hyperlink{namespaceice__distribution_ae535b4181fd7a39a623c9b02de3c1fcf}{ice\_\-distribution::ice\_\-distributionDestroy} (distribution)
+\item 
+subroutine \hyperlink{namespaceice__distribution_af81cb7cb3d7c4651703ab5141b5a98d1}{ice\_\-distribution::ice\_\-distributionGet} (distribution, nprocs, communicator, numLocalBlocks, blockLocation, blockLocalID, blockGlobalID)
+\item 
+subroutine \hyperlink{namespaceice__distribution_a07a309ffe5759ad00fc5f886ce65c175}{ice\_\-distribution::ice\_\-distributionGetBlockLoc} (distribution, blockID, processor, localID)
+\item 
+subroutine \hyperlink{namespaceice__distribution_a9a144b7580fefe29842479948f00f810}{ice\_\-distribution::ice\_\-distributionGetBlockID} (distribution, localID, blockID)
+\item 
+type(distrb) \hyperlink{namespaceice__distribution_a879fa1e845de0c882360a4e48c1ff50d}{ice\_\-distribution::create\_\-distrb\_\-cart} (nprocs, workPerBlock)
+\item 
+type(distrb) \hyperlink{namespaceice__distribution_aa5edcd4e7149b4d79d4b503b37607e9a}{ice\_\-distribution::create\_\-distrb\_\-rake} (nprocs, workPerBlock)
+\item 
+type(distrb) \hyperlink{namespaceice__distribution_af881e23fc62ccdac1da09fed38e55236}{ice\_\-distribution::create\_\-distrb\_\-spacecurve} (nprocs, maxBlock, work\_\-per\_\-block, prob\_\-per\_\-block, blockType, bStats, FixMaxBlock)
+\item 
+subroutine \hyperlink{namespaceice__distribution_a9dcac951f0df38305378d4edc49b40ae}{ice\_\-distribution::TypePartition} (blockType, minblocks, maxblocks, blockLocation)
+\item 
+subroutine \hyperlink{namespaceice__distribution_abcbf14893b6e339874e46663dd6d9640}{ice\_\-distribution::PartitionCurve} (work\_\-per\_\-block, work\_\-per\_\-proc, blockLocation, distance, nproc, max\_\-blocks, Stats, FixMaxBlock, ierr)
+\item 
+subroutine \hyperlink{namespaceice__distribution_a209b009c99baf5ef254c40774baeaccc}{ice\_\-distribution::wPartition} (cost\_\-per\_\-block, blockLocation, distance, nproc, max\_\-blocks, maxValue, maxDil, amaxBlocks, amaxDil)
+\item 
+subroutine \hyperlink{namespaceice__distribution_aa6d69913a71458cdcb71836b2c12c941}{ice\_\-distribution::ice\_\-distributionRake} (procWork, procID, blockWork, priority, distribution)
+\item 
+subroutine \hyperlink{namespaceice__distribution_abcbe271722878acfc0ee93ce9d8a1342}{ice\_\-distribution::PrintPartitionLB} (Location, n, bStats)
+\item 
+subroutine \hyperlink{namespaceice__distribution_ad81ef2e05e7990db5bd6ed4d80cc6761}{ice\_\-distribution::EstimateCost} (coeffMatrix, n, Cost)
+\item 
+subroutine \hyperlink{namespaceice__distribution_a672be5ed19afd4bc4b99de14c174471e}{ice\_\-distribution::ConvertStatsBlock2Proc} (Location, bStats, pStats)
+\item 
+subroutine \hyperlink{namespaceice__distribution_afb1f8a57908d1a795f7976247cfd935c}{ice\_\-distribution::WriteProbabilityStats} (coeffMatrix, n)
+\item 
+subroutine \hyperlink{namespaceice__distribution_a671ab022211c1686b8fd0adf14d752b5}{ice\_\-distribution::WriteIntegerArray} (fname, n, array)
+\item 
+subroutine \hyperlink{namespaceice__distribution_a273a42a83659ff86cfa8099c186ec503}{ice\_\-distribution::WriteDblArray} (fname, n, array)
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+integer(int\_\-kind), parameter \hyperlink{namespaceice__distribution_a70c7db6c7a84f62b66e1a5880040b9aa}{ice\_\-distribution::lndType} = 0
+\item 
+integer(int\_\-kind), parameter \hyperlink{namespaceice__distribution_a9a24a6c9c4809cf7bcc2f823d5658e91}{ice\_\-distribution::icefreeType} = 1
+\item 
+integer(int\_\-kind), parameter \hyperlink{namespaceice__distribution_ad7d8ab8d3b272938146dae0343de0ffb}{ice\_\-distribution::iceType} = 2
+\item 
+character(char\_\-len) \hyperlink{namespaceice__distribution_a3f7e1befe15a2793e62360b81c5fa130}{ice\_\-distribution::processor\_\-shape}
+\end{DoxyCompactItemize}

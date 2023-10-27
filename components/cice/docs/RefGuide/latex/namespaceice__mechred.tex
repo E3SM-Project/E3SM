@@ -1,0 +1,143 @@
+\hypertarget{namespaceice__mechred}{
+\section{ice\_\-mechred Module Reference}
+\label{namespaceice__mechred}\index{ice\_\-mechred@{ice\_\-mechred}}
+}
+\subsection*{Functions/Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{namespaceice__mechred_a22ae992e7f20fe021992af92a29f81e1}{ridge\_\-ice} (nx\_\-block, ny\_\-block, dt\_\-dyn, dt\_\-thm, icells, indxi, indxj, rdg\_\-conv, rdg\_\-shear, aicen, trcrn, vicen, vsnon, eicen, esnon, aice0, trcr\_\-depend, l\_\-stop, istop, jstop, dardg1dt, dardg2dt, dvirdgdt, opening, fresh, fhocn, fsoot)
+\item 
+subroutine \hyperlink{namespaceice__mechred_a0b56099ad3d0f301b3dfaab8aba87ef4}{asum\_\-ridging} (nx\_\-block, ny\_\-block, icells, indxi, indxj, aicen, aice0, asum)
+\item 
+subroutine \hyperlink{namespaceice__mechred_a387bb4361bc395e2cc8d9ab50ef03728}{ridge\_\-prep} (nx\_\-block, ny\_\-block, icells, indxi, indxj, dt, rdg\_\-conv, rdg\_\-shear, asum, closing\_\-net, divu\_\-adv, opning)
+\item 
+subroutine \hyperlink{namespaceice__mechred_aa337d7f3df7eb6c6f9e3724e2d350e0c}{ridge\_\-itd} (nx\_\-block, ny\_\-block, icells, indxi, indxj, aicen, vicen, aice0, aksum, apartic, hrmin, hrmax, hrexp, krdg)
+\item 
+subroutine \hyperlink{namespaceice__mechred_ad5b2abaa36fa52ab9a96420dbf8d48cc}{ridge\_\-shift} (nx\_\-block, ny\_\-block, icells, indxi, indxj, dt, aicen, trcrn, vicen, vsnon, eicen, esnon, aice0, trcr\_\-depend, aksum, apartic, hrmin, hrmax, hrexp, krdg, closing\_\-net, opning, ardg1, ardg2, virdg, aopen, msnow\_\-mlt, esnow\_\-mlt, msoot, l\_\-stop, istop, jstop)
+\item 
+subroutine \hyperlink{namespaceice__mechred_af7cf08ba4d3da94152517c6058b2f219}{ridge\_\-check} (nx\_\-block, ny\_\-block, icells, indxi, indxj, dt, asum, closing\_\-net, divu\_\-adv, opning, iterate\_\-ridging)
+\item 
+subroutine \hyperlink{namespaceice__mechred_a11d0a7efe6faca932079c613d5a7fdb7}{ice\_\-strength} (nx\_\-block, ny\_\-block, ilo, ihi, jlo, jhi, icells, indxi, indxj, aice, vice, aice0, aicen, vicen, strength)
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__mechred_a2272185e4ee38f92dbb9908fca1dac0a}{kstrength}
+\item 
+real(kind=dbl\_\-kind), parameter \hyperlink{namespaceice__mechred_ae649373b3c64951beea9cf6d3436124a}{Cf} = 17.\_\-dbl\_\-kind
+\item 
+real(kind=dbl\_\-kind), parameter \hyperlink{namespaceice__mechred_a0cca318f045e71a7ff69619f4186399c}{Cs} = p25
+\item 
+real(kind=dbl\_\-kind), parameter \hyperlink{namespaceice__mechred_ae1333fb1d2c19a54662644143d18489c}{Cp} = p5$\ast$gravit$\ast$(rhow-\/rhoi)$\ast$rhoi/rhow
+\item 
+real(kind=dbl\_\-kind), parameter \hyperlink{namespaceice__mechred_a528a8cc57e3a5cb9d679d26baa6cec27}{fsnowrdg} = p5
+\item 
+real(kind=dbl\_\-kind), parameter \hyperlink{namespaceice__mechred_a85e0edec0423e8de65aaa8ddfa61d02e}{Gstar} = p15
+\item 
+logical(kind=log\_\-kind), parameter \hyperlink{namespaceice__mechred_a28f8598357ef3851a6288dfdd581732d}{l\_\-conservation\_\-check} = .true.
+\end{DoxyCompactItemize}
+
+
+\subsection{Function/Subroutine Documentation}
+\hypertarget{namespaceice__mechred_a0b56099ad3d0f301b3dfaab8aba87ef4}{
+\index{ice\_\-mechred@{ice\_\-mechred}!asum\_\-ridging@{asum\_\-ridging}}
+\index{asum\_\-ridging@{asum\_\-ridging}!ice_mechred@{ice\_\-mechred}}
+\subsubsection[{asum\_\-ridging}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-mechred::asum\_\-ridging (integer (kind=int\_\-kind),intent(in) {\em nx\_\-block}, \/  integer (kind=int\_\-kind),intent(in) {\em ny\_\-block}, \/  integer (kind=int\_\-kind),intent(in) {\em icells}, \/  integer (kind=int\_\-kind),dimension (nx\_\-block$\ast$ny\_\-block),intent(in) {\em indxi}, \/  integer (kind=int\_\-kind),dimension (nx\_\-block$\ast$ny\_\-block),intent(in) {\em indxj}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,ncat),intent(in) {\em aicen}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em aice0}, \/  real (kind=dbl\_\-kind),dimension (icells),intent(out) {\em asum})}}
+\label{namespaceice__mechred_a0b56099ad3d0f301b3dfaab8aba87ef4}
+
+
+Definition at line 576 of file ice\_\-mechred.F90.\hypertarget{namespaceice__mechred_a11d0a7efe6faca932079c613d5a7fdb7}{
+\index{ice\_\-mechred@{ice\_\-mechred}!ice\_\-strength@{ice\_\-strength}}
+\index{ice\_\-strength@{ice\_\-strength}!ice_mechred@{ice\_\-mechred}}
+\subsubsection[{ice\_\-strength}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-mechred::ice\_\-strength (integer (kind=int\_\-kind),intent(in) {\em nx\_\-block}, \/  integer (kind=int\_\-kind),intent(in) {\em ny\_\-block}, \/  integer (kind=int\_\-kind),intent(in) {\em ilo}, \/  integer (kind=int\_\-kind),intent(in) {\em ihi}, \/  integer (kind=int\_\-kind),intent(in) {\em jlo}, \/  integer (kind=int\_\-kind),intent(in) {\em jhi}, \/  integer (kind=int\_\-kind),intent(in) {\em icells}, \/  integer (kind=int\_\-kind),dimension (nx\_\-block$\ast$ny\_\-block),intent(in) {\em indxi}, \/  integer (kind=int\_\-kind),dimension (nx\_\-block$\ast$ny\_\-block),intent(in) {\em indxj}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em aice}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em vice}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em aice0}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,ncat),intent(in) {\em aicen}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,ncat),intent(in) {\em vicen}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(out) {\em strength})}}
+\label{namespaceice__mechred_a11d0a7efe6faca932079c613d5a7fdb7}
+
+
+Definition at line 1878 of file ice\_\-mechred.F90.\hypertarget{namespaceice__mechred_af7cf08ba4d3da94152517c6058b2f219}{
+\index{ice\_\-mechred@{ice\_\-mechred}!ridge\_\-check@{ridge\_\-check}}
+\index{ridge\_\-check@{ridge\_\-check}!ice_mechred@{ice\_\-mechred}}
+\subsubsection[{ridge\_\-check}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-mechred::ridge\_\-check (integer (kind=int\_\-kind),intent(in) {\em nx\_\-block}, \/  integer (kind=int\_\-kind),intent(in) {\em ny\_\-block}, \/  integer (kind=int\_\-kind),intent(in) {\em icells}, \/  integer (kind=int\_\-kind),dimension (nx\_\-block$\ast$ny\_\-block),intent(in) {\em indxi}, \/  integer (kind=int\_\-kind),dimension (nx\_\-block$\ast$ny\_\-block),intent(in) {\em indxj}, \/  real (kind=dbl\_\-kind),intent(in) {\em dt}, \/  real (kind=dbl\_\-kind),dimension (icells),intent(in) {\em asum}, \/  real (kind=dbl\_\-kind),dimension (icells),intent(inout) {\em closing\_\-net}, \/  real (kind=dbl\_\-kind),dimension (icells),intent(inout) {\em divu\_\-adv}, \/  real (kind=dbl\_\-kind),dimension (icells),intent(inout) {\em opning}, \/  logical (kind=log\_\-kind),intent(out) {\em iterate\_\-ridging})}}
+\label{namespaceice__mechred_af7cf08ba4d3da94152517c6058b2f219}
+
+
+Definition at line 1797 of file ice\_\-mechred.F90.\hypertarget{namespaceice__mechred_a22ae992e7f20fe021992af92a29f81e1}{
+\index{ice\_\-mechred@{ice\_\-mechred}!ridge\_\-ice@{ridge\_\-ice}}
+\index{ridge\_\-ice@{ridge\_\-ice}!ice_mechred@{ice\_\-mechred}}
+\subsubsection[{ridge\_\-ice}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-mechred::ridge\_\-ice (integer (kind=int\_\-kind),intent(in) {\em nx\_\-block}, \/  integer (kind=int\_\-kind),intent(in) {\em ny\_\-block}, \/  real (kind=dbl\_\-kind),intent(in) {\em dt\_\-dyn}, \/  real (kind=dbl\_\-kind),intent(in) {\em dt\_\-thm}, \/  integer (kind=int\_\-kind),intent(in) {\em icells}, \/  integer (kind=int\_\-kind),dimension (nx\_\-block$\ast$ny\_\-block),intent(in) {\em indxi}, \/  integer (kind=int\_\-kind),dimension (nx\_\-block$\ast$ny\_\-block),intent(in) {\em indxj}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(in) {\em rdg\_\-conv}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(in) {\em rdg\_\-shear}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,ncat),intent(inout) {\em aicen}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,ntrcr,ncat),intent(inout) {\em trcrn}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,ncat),intent(inout) {\em vicen}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,ncat),intent(inout) {\em vsnon}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,ntilyr),intent(inout) {\em eicen}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,ntslyr),intent(inout) {\em esnon}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(inout) {\em aice0}, \/  integer (kind=int\_\-kind),dimension(ntrcr),intent(in) {\em trcr\_\-depend}, \/  logical (kind=log\_\-kind),intent(out) {\em l\_\-stop}, \/  integer (kind=int\_\-kind),intent(out) {\em istop}, \/  integer (kind=int\_\-kind),intent(out) {\em jstop}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(inout),optional {\em dardg1dt}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(inout),optional {\em dardg2dt}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(inout),optional {\em dvirdgdt}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(inout),optional {\em opening}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(inout),optional {\em fresh}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(inout),optional {\em fhocn}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block,n\_\-aeromx),intent(inout),optional {\em fsoot})}}
+\label{namespaceice__mechred_a22ae992e7f20fe021992af92a29f81e1}
+
+
+Definition at line 119 of file ice\_\-mechred.F90.\hypertarget{namespaceice__mechred_aa337d7f3df7eb6c6f9e3724e2d350e0c}{
+\index{ice\_\-mechred@{ice\_\-mechred}!ridge\_\-itd@{ridge\_\-itd}}
+\index{ridge\_\-itd@{ridge\_\-itd}!ice_mechred@{ice\_\-mechred}}
+\subsubsection[{ridge\_\-itd}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-mechred::ridge\_\-itd (integer (kind=int\_\-kind),intent(in) {\em nx\_\-block}, \/  integer (kind=int\_\-kind),intent(in) {\em ny\_\-block}, \/  integer (kind=int\_\-kind),intent(in) {\em icells}, \/  integer (kind=int\_\-kind),dimension (nx\_\-block$\ast$ny\_\-block),intent(in) {\em indxi}, \/  integer (kind=int\_\-kind),dimension (nx\_\-block$\ast$ny\_\-block),intent(in) {\em indxj}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,ncat),intent(in) {\em aicen}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,ncat),intent(in) {\em vicen}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em aice0}, \/  real (kind=dbl\_\-kind),dimension (icells),intent(out) {\em aksum}, \/  real (kind=dbl\_\-kind),dimension (icells,0:ncat),intent(out) {\em apartic}, \/  real (kind=dbl\_\-kind),dimension (icells,ncat),intent(out) {\em hrmin}, \/  real (kind=dbl\_\-kind),dimension (icells,ncat),intent(out) {\em hrmax}, \/  real (kind=dbl\_\-kind),dimension (icells,ncat),intent(out) {\em hrexp}, \/  real (kind=dbl\_\-kind),dimension (icells,ncat),intent(out) {\em krdg})}}
+\label{namespaceice__mechred_aa337d7f3df7eb6c6f9e3724e2d350e0c}
+
+
+Definition at line 776 of file ice\_\-mechred.F90.\hypertarget{namespaceice__mechred_a387bb4361bc395e2cc8d9ab50ef03728}{
+\index{ice\_\-mechred@{ice\_\-mechred}!ridge\_\-prep@{ridge\_\-prep}}
+\index{ridge\_\-prep@{ridge\_\-prep}!ice_mechred@{ice\_\-mechred}}
+\subsubsection[{ridge\_\-prep}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-mechred::ridge\_\-prep (integer (kind=int\_\-kind),intent(in) {\em nx\_\-block}, \/  integer (kind=int\_\-kind),intent(in) {\em ny\_\-block}, \/  integer (kind=int\_\-kind),intent(in) {\em icells}, \/  integer (kind=int\_\-kind),dimension (nx\_\-block$\ast$ny\_\-block),intent(in) {\em indxi}, \/  integer (kind=int\_\-kind),dimension (nx\_\-block$\ast$ny\_\-block),intent(in) {\em indxj}, \/  real (kind=dbl\_\-kind),intent(in) {\em dt}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(in) {\em rdg\_\-conv}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(in) {\em rdg\_\-shear}, \/  real (kind=dbl\_\-kind),dimension(icells),intent(inout) {\em asum}, \/  real (kind=dbl\_\-kind),dimension(icells),intent(out) {\em closing\_\-net}, \/  real (kind=dbl\_\-kind),dimension(icells),intent(out) {\em divu\_\-adv}, \/  real (kind=dbl\_\-kind),dimension(icells),intent(out) {\em opning})}}
+\label{namespaceice__mechred_a387bb4361bc395e2cc8d9ab50ef03728}
+
+
+Definition at line 650 of file ice\_\-mechred.F90.\hypertarget{namespaceice__mechred_ad5b2abaa36fa52ab9a96420dbf8d48cc}{
+\index{ice\_\-mechred@{ice\_\-mechred}!ridge\_\-shift@{ridge\_\-shift}}
+\index{ridge\_\-shift@{ridge\_\-shift}!ice_mechred@{ice\_\-mechred}}
+\subsubsection[{ridge\_\-shift}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-mechred::ridge\_\-shift (integer (kind=int\_\-kind),intent(in) {\em nx\_\-block}, \/  integer (kind=int\_\-kind),intent(in) {\em ny\_\-block}, \/  integer (kind=int\_\-kind),intent(in) {\em icells}, \/  integer (kind=int\_\-kind),dimension (nx\_\-block$\ast$ny\_\-block),intent(in) {\em indxi}, \/  integer (kind=int\_\-kind),dimension (nx\_\-block$\ast$ny\_\-block),intent(in) {\em indxj}, \/  real (kind=dbl\_\-kind),intent(in) {\em dt}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,ncat),intent(inout) {\em aicen}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,ntrcr,ncat),intent(inout) {\em trcrn}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,ncat),intent(inout) {\em vicen}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,ncat),intent(inout) {\em vsnon}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,ntilyr),intent(inout) {\em eicen}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,ntslyr),intent(inout) {\em esnon}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(inout) {\em aice0}, \/  integer (kind=int\_\-kind),dimension (ntrcr),intent(in) {\em trcr\_\-depend}, \/  real (kind=dbl\_\-kind),dimension (icells),intent(in) {\em aksum}, \/  real (kind=dbl\_\-kind),dimension (icells,0:ncat),intent(in) {\em apartic}, \/  real (kind=dbl\_\-kind),dimension (icells,ncat),intent(in) {\em hrmin}, \/  real (kind=dbl\_\-kind),dimension (icells,ncat),intent(in) {\em hrmax}, \/  real (kind=dbl\_\-kind),dimension (icells,ncat),intent(in) {\em hrexp}, \/  real (kind=dbl\_\-kind),dimension (icells,ncat),intent(in) {\em krdg}, \/  real (kind=dbl\_\-kind),dimension(icells),intent(inout) {\em closing\_\-net}, \/  real (kind=dbl\_\-kind),dimension(icells),intent(inout) {\em opning}, \/  real (kind=dbl\_\-kind),dimension(icells),intent(inout) {\em ardg1}, \/  real (kind=dbl\_\-kind),dimension(icells),intent(inout) {\em ardg2}, \/  real (kind=dbl\_\-kind),dimension(icells),intent(inout) {\em virdg}, \/  real (kind=dbl\_\-kind),dimension(icells),intent(inout) {\em aopen}, \/  real (kind=dbl\_\-kind),dimension(icells),intent(inout) {\em msnow\_\-mlt}, \/  real (kind=dbl\_\-kind),dimension(icells),intent(inout) {\em esnow\_\-mlt}, \/  real (kind=dbl\_\-kind),dimension(icells,n\_\-aeromx),intent(inout) {\em msoot}, \/  logical (kind=log\_\-kind),intent(inout) {\em l\_\-stop}, \/  integer (kind=int\_\-kind),intent(inout) {\em istop}, \/  integer (kind=int\_\-kind),intent(inout) {\em jstop})}}
+\label{namespaceice__mechred_ad5b2abaa36fa52ab9a96420dbf8d48cc}
+
+
+Definition at line 1102 of file ice\_\-mechred.F90.
+
+\subsection{Variable Documentation}
+\hypertarget{namespaceice__mechred_ae649373b3c64951beea9cf6d3436124a}{
+\index{ice\_\-mechred@{ice\_\-mechred}!Cf@{Cf}}
+\index{Cf@{Cf}!ice_mechred@{ice\_\-mechred}}
+\subsubsection[{Cf}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),parameter {\bf ice\_\-mechred::Cf} = 17.\_\-dbl\_\-kind}}
+\label{namespaceice__mechred_ae649373b3c64951beea9cf6d3436124a}
+
+
+Definition at line 72 of file ice\_\-mechred.F90.\hypertarget{namespaceice__mechred_ae1333fb1d2c19a54662644143d18489c}{
+\index{ice\_\-mechred@{ice\_\-mechred}!Cp@{Cp}}
+\index{Cp@{Cp}!ice_mechred@{ice\_\-mechred}}
+\subsubsection[{Cp}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),parameter {\bf ice\_\-mechred::Cp} = p5$\ast$gravit$\ast$(rhow-\/rhoi)$\ast$rhoi/rhow}}
+\label{namespaceice__mechred_ae1333fb1d2c19a54662644143d18489c}
+
+
+Definition at line 72 of file ice\_\-mechred.F90.\hypertarget{namespaceice__mechred_a0cca318f045e71a7ff69619f4186399c}{
+\index{ice\_\-mechred@{ice\_\-mechred}!Cs@{Cs}}
+\index{Cs@{Cs}!ice_mechred@{ice\_\-mechred}}
+\subsubsection[{Cs}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),parameter {\bf ice\_\-mechred::Cs} = p25}}
+\label{namespaceice__mechred_a0cca318f045e71a7ff69619f4186399c}
+
+
+Definition at line 72 of file ice\_\-mechred.F90.\hypertarget{namespaceice__mechred_a528a8cc57e3a5cb9d679d26baa6cec27}{
+\index{ice\_\-mechred@{ice\_\-mechred}!fsnowrdg@{fsnowrdg}}
+\index{fsnowrdg@{fsnowrdg}!ice_mechred@{ice\_\-mechred}}
+\subsubsection[{fsnowrdg}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),parameter {\bf ice\_\-mechred::fsnowrdg} = p5}}
+\label{namespaceice__mechred_a528a8cc57e3a5cb9d679d26baa6cec27}
+
+
+Definition at line 72 of file ice\_\-mechred.F90.\hypertarget{namespaceice__mechred_a85e0edec0423e8de65aaa8ddfa61d02e}{
+\index{ice\_\-mechred@{ice\_\-mechred}!Gstar@{Gstar}}
+\index{Gstar@{Gstar}!ice_mechred@{ice\_\-mechred}}
+\subsubsection[{Gstar}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),parameter {\bf ice\_\-mechred::Gstar} = p15}}
+\label{namespaceice__mechred_a85e0edec0423e8de65aaa8ddfa61d02e}
+
+
+Definition at line 72 of file ice\_\-mechred.F90.\hypertarget{namespaceice__mechred_a2272185e4ee38f92dbb9908fca1dac0a}{
+\index{ice\_\-mechred@{ice\_\-mechred}!kstrength@{kstrength}}
+\index{kstrength@{kstrength}!ice_mechred@{ice\_\-mechred}}
+\subsubsection[{kstrength}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind) {\bf ice\_\-mechred::kstrength}}}
+\label{namespaceice__mechred_a2272185e4ee38f92dbb9908fca1dac0a}
+
+
+Definition at line 64 of file ice\_\-mechred.F90.\hypertarget{namespaceice__mechred_a28f8598357ef3851a6288dfdd581732d}{
+\index{ice\_\-mechred@{ice\_\-mechred}!l\_\-conservation\_\-check@{l\_\-conservation\_\-check}}
+\index{l\_\-conservation\_\-check@{l\_\-conservation\_\-check}!ice_mechred@{ice\_\-mechred}}
+\subsubsection[{l\_\-conservation\_\-check}]{\setlength{\rightskip}{0pt plus 5cm}logical (kind=log\_\-kind),parameter {\bf ice\_\-mechred::l\_\-conservation\_\-check} = .true.}}
+\label{namespaceice__mechred_a28f8598357ef3851a6288dfdd581732d}
+
+
+Definition at line 93 of file ice\_\-mechred.F90.

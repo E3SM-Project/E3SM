@@ -1,0 +1,233 @@
+\hypertarget{ice__flux_8F90}{
+\section{ice\_\-flux.F90 File Reference}
+\label{ice__flux_8F90}\index{ice\_\-flux.F90@{ice\_\-flux.F90}}
+}
+\subsection*{Modules}
+\begin{DoxyCompactItemize}
+\item 
+module \hyperlink{namespaceice__flux}{ice\_\-flux}
+\end{DoxyCompactItemize}
+\subsection*{Functions/Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{namespaceice__flux_ac74f9f7368cb2f65428e77204441ef67}{ice\_\-flux::init\_\-coupler\_\-flux}
+\item 
+subroutine \hyperlink{namespaceice__flux_aa03a1e25e4227bda9639c5a178891acd}{ice\_\-flux::init\_\-flux\_\-atm}
+\item 
+subroutine \hyperlink{namespaceice__flux_a985af4afe9ebb697857f3f5eaf714545}{ice\_\-flux::init\_\-flux\_\-ocn}
+\item 
+subroutine \hyperlink{namespaceice__flux_a510c385b0536089d8f4a00ff9c3701cb}{ice\_\-flux::init\_\-history\_\-therm}
+\item 
+subroutine \hyperlink{namespaceice__flux_adf87450fd972c99fd3d0d4514df29fa9}{ice\_\-flux::init\_\-history\_\-dyn}
+\item 
+subroutine \hyperlink{namespaceice__flux_aef9c3629a862eb2f134c9aa6b7935acc}{ice\_\-flux::merge\_\-fluxes} (nx\_\-block, ny\_\-block, icells, indxi, indxj, aicen, flw, coszn, strairxn, strairyn, fsurfn, fcondtopn, fsensn, flatn, fswabsn, flwoutn, evapn, Trefn, Qrefn, freshn, fsaltn, fhocnn, fswthrun, strairxT, strairyT, fsurf, fcondtop, fsens, flat, fswabs, flwout, evap, Tref, Qref, fresh, fsalt, fhocn, fswthru, melttn, meltsn, meltbn, congeln, snoicen, meltt, melts, meltb, congel, snoice)
+\item 
+subroutine \hyperlink{namespaceice__flux_a66344c677dd9f73743df68dcf3d203d9}{ice\_\-flux::scale\_\-fluxes} (nx\_\-block, ny\_\-block, tmask, aice, Tf, Tair, Qa, strairxT, strairyT, fsens, flat, fswabs, flwout, evap, Tref, Qref, fresh, fsalt, fhocn, fswthru, fsoot, alvdr, alidr, alvdf, alidf)
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_a4e0e291e34267f30266f8a41db36affb}{ice\_\-flux::sig1}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_a7bf5a07a0946af77cd35135d6ce11771}{ice\_\-flux::sig2}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_aee8a0e6c9637760d2b7153f40ffe0dc1}{ice\_\-flux::strairx}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_af29d53fccf8950eaca0c31ea018640aa}{ice\_\-flux::strairy}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_a3302aaf2e5a99949808d98b685228ecf}{ice\_\-flux::strocnx}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_a0e146ebf56010398ef99ba1539dbc1ce}{ice\_\-flux::strocny}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_a1380a09740e78ddbcc3abe4edc2b3e2f}{ice\_\-flux::strtltx}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_ac9c1e92371b4e39d2aa9f38548b011ff}{ice\_\-flux::strtlty}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_aff350f7a31d4c9cc9429ef1a14d1c91f}{ice\_\-flux::strintx}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_a8bfac55007c715a028b0ac9b8e9daed5}{ice\_\-flux::strinty}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_a24c9cd15dee4efbf6d35e4bafb03a6e0}{ice\_\-flux::daidtd}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_ab2731d6607c7b88522d1a843d4a38a50}{ice\_\-flux::dvidtd}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_ac0303bfce72171bb93ea1a621dc453eb}{ice\_\-flux::dardg1dt}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_a8d3dec0f51ebd0b3aaf71909b190656a}{ice\_\-flux::dardg2dt}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_ade5480c0fdf0d8989ec199ab6c494df2}{ice\_\-flux::dvirdgdt}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_ae0a39366aa114290bad9340508d55fd7}{ice\_\-flux::opening}
+\item 
+logical(kind=log\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_a2c8f3b751fc60ac7a93605e6bb887b0f}{ice\_\-flux::iceumask}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_a4406d054e8437ab55dc01d6e5b9c8882}{ice\_\-flux::prs\_\-sig}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_aa2cb3a98eac5adcd5441f55fe26be618}{ice\_\-flux::fm}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_a760e7ef6ee3c277e293ab9a2f92685cb}{ice\_\-flux::zlvl}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_accb62713c4d53aa9f56bccfa4faf6507}{ice\_\-flux::uatm}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_ace0435fd53553a1cae783a932576a39f}{ice\_\-flux::vatm}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_a1f1bd9712740289c1c1348265a70e838}{ice\_\-flux::wind}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_a81beec3343cd05b99ad439d5586d6156}{ice\_\-flux::potT}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_add98ec71fa0c35dbd9a7afcfa897081d}{ice\_\-flux::Tair}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_af6a4cdca38aa449d2c23bd0faaead20a}{ice\_\-flux::Qa}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_ab8b07cf5accff1bc998fda8a9255f504}{ice\_\-flux::rhoa}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_af1a375e8ebfd339a67514570411f3562}{ice\_\-flux::swvdr}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_a8c5ea2d2d5d2cd3a07df830e1b7df7c8}{ice\_\-flux::swvdf}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_a9062bc1d6f167d11fe38ea7308cea20b}{ice\_\-flux::swidr}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_aa83ef052badcc8ce13f5cdcfd363ae0d}{ice\_\-flux::swidf}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_a5a996f0c777a83d0532daa407dae18e5}{ice\_\-flux::flw}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, ncat, max\_\-blocks) \hyperlink{namespaceice__flux_a248789dd1933e5c3a277f54582b46099}{ice\_\-flux::fsurfn\_\-f}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, ncat, max\_\-blocks) \hyperlink{namespaceice__flux_af7ddfda012c0a29dc4624f3914ea09f9}{ice\_\-flux::fcondtopn\_\-f}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, ncat, max\_\-blocks) \hyperlink{namespaceice__flux_a5538859203f81cabe03440a3b69f69a4}{ice\_\-flux::flatn\_\-f}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_a82a0812de1a89016e9cdb1b60e3cab05}{ice\_\-flux::frain}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_ada95784733af0019d97dc30baf7511b4}{ice\_\-flux::fsnow}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, n\_\-aeromx, max\_\-blocks) \hyperlink{namespaceice__flux_ad99dce71f61486e2450ba1fc5318abb9}{ice\_\-flux::faero}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_a0549ab71dd5d6a3d23fc54b03daa9aba}{ice\_\-flux::sss}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_a760acd33d8c9c15ba312e94fc8b6cdec}{ice\_\-flux::sst}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_af09eb2a499606f27cd8ba847a999df71}{ice\_\-flux::frzmlt}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_a3facf6772fad8bd7af98c69cd56db10c}{ice\_\-flux::Tf}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_a178c03fc7b766259d4b973b4d055aa1d}{ice\_\-flux::qdp}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_ab583d7ec90095ce5df9f425a98b70dbd}{ice\_\-flux::hmix}
+\item 
+character(char\_\-len) \hyperlink{namespaceice__flux_a230173f0ff542e8f4cdc68f1c6a469f9}{ice\_\-flux::Tfrzpt}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_ad76df6df986573fcb622fb418d960f37}{ice\_\-flux::fsens}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_ab2d967d4946f473fc077416bdd6cd13f}{ice\_\-flux::flat}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_af3384816a4840e4df4c79f158e6e9762}{ice\_\-flux::fswabs}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_a1ec39d9db775aa2496c0c0ad3ab9c8e4}{ice\_\-flux::flwout}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_a6a0b5fa95bab43f29f8cbd6cbd8f047f}{ice\_\-flux::Tref}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_ac332e72481b7da42322f9e2581f09434}{ice\_\-flux::Qref}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_abfe856f2125b879db70ba8a8a43aaefd}{ice\_\-flux::evap}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_a87ebd7f059dc2e9052efba54a0d361ec}{ice\_\-flux::alvdr}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_a43c7f22f8888770c074c9affc70d5a6b}{ice\_\-flux::alidr}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_a2cb96fbc3ffddc795321900557ce8ff6}{ice\_\-flux::alvdf}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_a18a9ac0e0bdd270272fbdc48beab2c8e}{ice\_\-flux::alidf}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks, max\_\-nstrm) \hyperlink{namespaceice__flux_a43a0dd63e5a473c4acb725f534c3192d}{ice\_\-flux::albcnt}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_adbdb875a7e468b890dba7204d972c05a}{ice\_\-flux::fresh}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_a93da98d35da9e23e802edb93bcaf7477}{ice\_\-flux::fsalt}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_ad13e4555d29196de5e5e1130432c5a3a}{ice\_\-flux::fhocn}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_a2b935c4127f16509133036f6cf544794}{ice\_\-flux::fswthru}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, n\_\-aeromx, max\_\-blocks) \hyperlink{namespaceice__flux_a7b0cfe6f97cfa89da6c797550ce6c4f0}{ice\_\-flux::fsoot}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_a848ade46ff78dbaa4ff31b24abd7bd3c}{ice\_\-flux::fswfac}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_af1c56f1d4d98b83318a54b61776ea37e}{ice\_\-flux::scale\_\-factor}
+\item 
+logical(kind=log\_\-kind) \hyperlink{namespaceice__flux_ac97b083c2136cd4e0deb365a3a3f4f6b}{ice\_\-flux::update\_\-ocn\_\-f}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_a95351534eb982b4f0afc45ae4455c392}{ice\_\-flux::strairx\_\-ocn}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_a4e7200c0bea830cf623a6cdf2218cf1c}{ice\_\-flux::strairy\_\-ocn}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_aa2a8953e1c37a1f09551ac626a62263b}{ice\_\-flux::fsens\_\-ocn}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_aa7641984ea4c796e511a25d93fd3b86f}{ice\_\-flux::flat\_\-ocn}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_a0242ff7a5b643169198472b59e49cfa7}{ice\_\-flux::flwout\_\-ocn}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_adea597318ddb4be7d507f86cc3b48f05}{ice\_\-flux::evap\_\-ocn}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_a0d5c384f44be34217703bef2e23ebdc6}{ice\_\-flux::alvdr\_\-ocn}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_a28770e51f25a00f4a215c889264041b8}{ice\_\-flux::alidr\_\-ocn}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_a3060ba0c930f8b0676cfc2a6af612769}{ice\_\-flux::alvdf\_\-ocn}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_a9d1893a1b54339b70d7119c4c03163c8}{ice\_\-flux::alidf\_\-ocn}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_af9f2e55cc441e661ab391bd3c4640ce4}{ice\_\-flux::Tref\_\-ocn}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_afece1d3107dcbd97234912ff91e89d8b}{ice\_\-flux::Qref\_\-ocn}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_a27dbd3d1fc36c0ddb4c39c806d935775}{ice\_\-flux::fsurf}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_a0ba73c84e3792cf8704a33f6d95e7f95}{ice\_\-flux::fcondtop}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_acb44c9e01061e258c35b8dbadf412741}{ice\_\-flux::congel}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_a5e63c63db5a472f4041fc150316b8c67}{ice\_\-flux::frazil}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_a081cc6f264496624fb6bce9e69e74d9c}{ice\_\-flux::snoice}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_aa99daffd05f84f37a6036ce5901100af}{ice\_\-flux::meltt}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_aae0e112fe38b436d979dc7fe86cdcb8f}{ice\_\-flux::melts}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_acdba57f616cfb780f910b8214a5b6121}{ice\_\-flux::meltb}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_a6aafbe05e11bff91bc937c605cf9d121}{ice\_\-flux::meltl}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_aff988ec903f1e7908e7b8a176ea792ed}{ice\_\-flux::daidtt}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_a7c8b98f21bf9431f5d2a10d6643f0752}{ice\_\-flux::dvidtt}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_a9f86616260452938fcc37213fcb284f8}{ice\_\-flux::mlt\_\-onset}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_aa58df919e95f30bf2b824e6585dbd9e5}{ice\_\-flux::frz\_\-onset}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, ncat, max\_\-blocks) \hyperlink{namespaceice__flux_aa05e0fe10c9628c94efe017d79f0cd1e}{ice\_\-flux::fsurfn}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, ncat, max\_\-blocks) \hyperlink{namespaceice__flux_a0f22ed9bcb531d5ea26305f27ed19d05}{ice\_\-flux::fcondtopn}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, ncat, max\_\-blocks) \hyperlink{namespaceice__flux_a43363f554cd27a966c89394ce573135e}{ice\_\-flux::flatn}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_a962d1e42294e09b10fb22bc3554aa71b}{ice\_\-flux::fresh\_\-gbm}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_ac48af307927403704bd7ad20cb0d54b3}{ice\_\-flux::fsalt\_\-gbm}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_a0262e88be5633673703d664fdb6e5123}{ice\_\-flux::fhocn\_\-gbm}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_ac9af65dc6cf70d6aed3b1eafc170c7a4}{ice\_\-flux::fswthru\_\-gbm}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_aaea76ee9c1cbdc7807e6de1b05378957}{ice\_\-flux::rside}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_acc02310f399ca37f700f432975393813}{ice\_\-flux::fsw}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_af909ebcaf2c2e92389a7dfce1e42f5c7}{ice\_\-flux::coszen}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_aff0f1042e74134275ef6e30a2719c03f}{ice\_\-flux::rdg\_\-conv}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__flux_a4b3e399d9f8de85996ef9292690e425e}{ice\_\-flux::rdg\_\-shear}
+\end{DoxyCompactItemize}

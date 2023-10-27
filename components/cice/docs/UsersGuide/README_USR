@@ -1,0 +1,47 @@
+================================================================================
+                                 README_USR
+================================================================================
+
+This file describes how to create a basic user's manual using a set of 
+templates.  It is the least mature of the document templates.  Parts of
+it, such as a table of input and output values, should be generated 
+automatically by processing annoted namelists or resource files with an 
+auto-documentation tool.  (We still need the tool.)
+
+A user's manual includes the parts shown in the table below.  Brackets []
+indicate that a part is optional.  In the filenames, "comp" refers to the 
+component or library that the whole user's manual or user's manual chapter
+describes.  
+
+--------------------------------------------------------------------------------
+Part		Template File	    Description
+--------------------------------------------------------------------------------
+document	<comp>_usrdoc.tex   Document shell with software release number
+--------------------------------------------------------------------------------
+
+To create a new user's guide, fill in the template file.  In 
+<comp>_usrdoc.tex, be sure to comment out the \input of any files you aren't 
+including and specify the \input filenames of files that you are including.
+
+Build a dvi file from LaTeX documents:
+
+	do_latex <comp> usr
+
+Produce an html version of the documentation:
+
+	do_l2h <comp> usr
+
+The html files are placed in a directory called <comp>_usrdoc.
+
+The dvipdf tool can be used to produce a pdf:
+
+	dvipdf <comp>_usrdoc.dvi
+
+================================================================================
+C. DeLuca (cdeluca@ucar.edu)                                      March 13, 2000
+
+
+
+
+
+

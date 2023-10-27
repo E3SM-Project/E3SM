@@ -1,0 +1,72 @@
+\hypertarget{ice__spacecurve_8F90}{
+\section{ice\_\-spacecurve.F90 File Reference}
+\label{ice__spacecurve_8F90}\index{ice\_\-spacecurve.F90@{ice\_\-spacecurve.F90}}
+}
+\subsection*{Data Types}
+\begin{DoxyCompactItemize}
+\item 
+type \hyperlink{typeice__spacecurve_1_1factor__t}{ice\_\-spacecurve::factor\_\-t}
+\end{DoxyCompactItemize}
+\subsection*{Modules}
+\begin{DoxyCompactItemize}
+\item 
+module \hyperlink{namespaceice__spacecurve}{ice\_\-spacecurve}
+\end{DoxyCompactItemize}
+\subsection*{Functions/Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+integer(int\_\-kind) \hyperlink{namespaceice__spacecurve_a03cdfff51ffab50dee8974ba594b53bb}{ice\_\-spacecurve::Cinco} (l, type, ma, md, ja, jd)
+\item 
+integer(int\_\-kind) \hyperlink{namespaceice__spacecurve_afe83a0d2757c7c07a40d410b98e66728}{ice\_\-spacecurve::PeanoM} (l, type, ma, md, ja, jd)
+\item 
+integer(int\_\-kind) \hyperlink{namespaceice__spacecurve_aceffac45ebe5bc652860f543913c8c83}{ice\_\-spacecurve::Hilbert} (l, type, ma, md, ja, jd)
+\item 
+integer(int\_\-kind) \hyperlink{namespaceice__spacecurve_a3b9b759e23a9275195d27bdf3b78ebfa}{ice\_\-spacecurve::IncrementCurve} (ja, jd)
+\item 
+integer(int\_\-kind) \hyperlink{namespaceice__spacecurve_a2010d172fdabf272358d0f809c046175}{ice\_\-spacecurve::log2} (n)
+\item 
+logical \hyperlink{namespaceice__spacecurve_a2f6ae79d60cad9d3e019550e76cb5706}{ice\_\-spacecurve::IsLoadBalanced} (nelem, npart)
+\item 
+integer(int\_\-kind) \hyperlink{namespaceice__spacecurve_ae30af6486456c0f4098a6c03aea8ec6d}{ice\_\-spacecurve::GenCurve} (l, type, ma, md, ja, jd)
+\item 
+integer \hyperlink{namespaceice__spacecurve_a6c86eb0e04276a6417a2010753af3895}{ice\_\-spacecurve::FirstFactor} (fac)
+\item 
+logical \hyperlink{namespaceice__spacecurve_a269b5f206b1895faa78dfb38c8a5cc4e}{ice\_\-spacecurve::FindandMark} (fac, val, f2)
+\item 
+subroutine \hyperlink{namespaceice__spacecurve_a873b84a1b720159b0a0d4dd6a4f1df1c}{ice\_\-spacecurve::MatchFactor} (fac1, fac2, val, found)
+\item 
+integer \hyperlink{namespaceice__spacecurve_a57f86858b3f4450ed95750ff8405f12f}{ice\_\-spacecurve::ProdFactor} (fac)
+\item 
+subroutine \hyperlink{namespaceice__spacecurve_a64dc0958c7c88a5de6316e7c2f6189b5}{ice\_\-spacecurve::PrintFactor} (msg, fac)
+\item 
+type(factor\_\-t) \hyperlink{namespaceice__spacecurve_a0e21c6fb09762431569057a3a6a1ceac}{ice\_\-spacecurve::Factor} (num)
+\item 
+logical \hyperlink{namespaceice__spacecurve_a918d591b92dcee27d6d7f50c92022d69}{ice\_\-spacecurve::IsFactorable} (n)
+\item 
+subroutine \hyperlink{namespaceice__spacecurve_a841d5cc5194de1c7aef94576c0eb5405}{ice\_\-spacecurve::map} (l)
+\item 
+subroutine \hyperlink{namespaceice__spacecurve_ab6b0639f3e032362a2ad97a2e4e160e5}{ice\_\-spacecurve::PrintCurve} (Mesh)
+\item 
+subroutine \hyperlink{namespaceice__spacecurve_a317f0810215a0c684a8073ff21eb71b1}{ice\_\-spacecurve::GenSpaceCurve} (Mesh)
+\item 
+subroutine \hyperlink{namespaceice__spacecurve_aa67766fe40142781287d478cff83322e}{ice\_\-spacecurve::qsort} (a)
+\item 
+subroutine \hyperlink{namespaceice__spacecurve_a99e4bd1c6625a5a14e10c5fa91f0df33}{ice\_\-spacecurve::partition} (a, marker)
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+integer(int\_\-kind), dimension(:,:), allocatable \hyperlink{namespaceice__spacecurve_a39f2092f453a0a651c4efda8291bc0cf}{ice\_\-spacecurve::dir}
+\item 
+integer(int\_\-kind), dimension(:,:), allocatable \hyperlink{namespaceice__spacecurve_a1338f6fba84ddb72ad229795cc040231}{ice\_\-spacecurve::ordered}
+\item 
+integer(int\_\-kind), dimension(:), allocatable \hyperlink{namespaceice__spacecurve_a440379dc8df1be7a6903b0df94d181b1}{ice\_\-spacecurve::pos}
+\item 
+integer(int\_\-kind) \hyperlink{namespaceice__spacecurve_aee0a00b4e25e4f5c770a300d2093feb7}{ice\_\-spacecurve::maxdim}
+\item 
+integer(int\_\-kind) \hyperlink{namespaceice__spacecurve_ad07b7ca9c91db52f0cee81fac7c71c5a}{ice\_\-spacecurve::vcnt}
+\item 
+logical \hyperlink{namespaceice__spacecurve_a486a46d8f8d78fea131f7fe3d429b0dc}{ice\_\-spacecurve::verbose} = .FALSE.
+\item 
+type(factor\_\-t), save \hyperlink{namespaceice__spacecurve_aa520de333aa94f300555f836420d5b30}{ice\_\-spacecurve::fact}
+\end{DoxyCompactItemize}

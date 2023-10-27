@@ -1,0 +1,881 @@
+\hypertarget{namespaceice__forcing}{
+\section{ice\_\-forcing Module Reference}
+\label{namespaceice__forcing}\index{ice\_\-forcing@{ice\_\-forcing}}
+}
+\subsection*{Functions/Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{namespaceice__forcing_aa113a0f4916cea9631de05496daf36c6}{init\_\-forcing\_\-atmo}
+\item 
+subroutine \hyperlink{namespaceice__forcing_a53be2f27b17125aea7195b3e14874b44}{init\_\-forcing\_\-ocn} (dt)
+\item 
+subroutine \hyperlink{namespaceice__forcing_ab2f60fb9ecb6411647c4995b88de8732}{get\_\-forcing\_\-atmo}
+\item 
+subroutine \hyperlink{namespaceice__forcing_a3c95ab18cff7177ae785d882338cd72e}{get\_\-forcing\_\-ocn} (dt)
+\item 
+subroutine \hyperlink{namespaceice__forcing_a45d48692f330fef1618489012ca9d0a7}{read\_\-data} (flag, recd, yr, ixm, ixx, ixp, maxrec, data\_\-file, field\_\-data, field\_\-loc, field\_\-type)
+\item 
+subroutine \hyperlink{namespaceice__forcing_a33953eccfa9abefcd935133786fa04b3}{read\_\-data\_\-nc} (flag, recd, yr, ixm, ixx, ixp, maxrec, data\_\-file, fieldname, field\_\-data, field\_\-loc, field\_\-type)
+\item 
+subroutine \hyperlink{namespaceice__forcing_ae59c1f1aebe7408876c324fd7e2f5e5f}{read\_\-clim\_\-data} (readflag, recd, ixm, ixx, ixp, data\_\-file, field\_\-data, field\_\-loc, field\_\-type)
+\item 
+subroutine \hyperlink{namespaceice__forcing_a9da649682a06b9b9fb085742a770d940}{interp\_\-coeff\_\-monthly} (recslot)
+\item 
+subroutine \hyperlink{namespaceice__forcing_a9357ad1d7f2850b9ac32cb5f6b6aa7cb}{interp\_\-coeff} (recnum, recslot, secint, dataloc)
+\item 
+subroutine \hyperlink{namespaceice__forcing_aaa8b12715d3c39535f631da2fcc76c21}{interpolate\_\-data} (field\_\-data, field)
+\item 
+subroutine \hyperlink{namespaceice__forcing_a4dc16c54400bfdb9cdf1298aa63d7c0f}{file\_\-year} (data\_\-file, yr)
+\item 
+subroutine \hyperlink{namespaceice__forcing_af5f411a97331efb9556841318e740684}{prepare\_\-forcing} (nx\_\-block, ny\_\-block, ilo, ihi, jlo, jhi, hm, Tair, fsw, \hyperlink{namespaceice__forcing_a251b0646126ab48de9758116bec0c414}{cldf}, flw, frain, fsnow, Qa, rhoa, uatm, vatm, strax, stray, zlvl, wind, swvdr, swvdf, swidr, swidf, potT, ANGLET, Tsfc, sst, aice)
+\item 
+subroutine \hyperlink{namespaceice__forcing_a18335b8937585695c3ddddd162b39414}{ncar\_\-files} (yr)
+\item 
+subroutine \hyperlink{namespaceice__forcing_a24793c87569906af2dce6abb1be1f204}{ncar\_\-data}
+\item 
+subroutine \hyperlink{namespaceice__forcing_adbed1e81d23690718cc666b6bb1c964e}{ecmwf\_\-files} (yr)
+\item 
+subroutine \hyperlink{namespaceice__forcing_a7d343f266bce5c9e7a7062d07fc3b57e}{ECMWF\_\-data}
+\item 
+subroutine \hyperlink{namespaceice__forcing_a4efb2f31dda4004f4fefadeac72d74a5}{LY\_\-files} (yr)
+\item 
+subroutine \hyperlink{namespaceice__forcing_af090b8a3141de745a9f1893256289b0b}{LY\_\-data}
+\item 
+subroutine \hyperlink{namespaceice__forcing_af98a1525343c579e040a9dfd3493ada4}{compute\_\-shortwave} (nx\_\-block, ny\_\-block, ilo, ihi, jlo, jhi, TLON, TLAT, hm, Qa, \hyperlink{namespaceice__forcing_a251b0646126ab48de9758116bec0c414}{cldf}, fsw)
+\item 
+subroutine \hyperlink{namespaceice__forcing_a72e60597f70954128768b0082b1a4579}{Qa\_\-fixLY} (nx\_\-block, ny\_\-block, Tair, Qa)
+\item 
+subroutine \hyperlink{namespaceice__forcing_a47009d309c3885ec335b6595792ffb39}{hadgem\_\-files} (yr)
+\item 
+subroutine \hyperlink{namespaceice__forcing_a39483ffb7ca71d3bc78cfb98b9dbbdbc}{hadgem\_\-data}
+\item 
+subroutine \hyperlink{namespaceice__forcing_a7a1e37c4eee269322492ab28f1e99737}{monthly\_\-files} (yr)
+\item 
+subroutine \hyperlink{namespaceice__forcing_aa45c8ecbe140ec4fa53e278301462374}{monthly\_\-data}
+\item 
+subroutine \hyperlink{namespaceice__forcing_a83eb2b44b9507b6136d8ca5969356058}{ocn\_\-data\_\-clim} (dt)
+\item 
+subroutine \hyperlink{namespaceice__forcing_aeb55eba5600676c3b7eb42cf02d337c1}{ocn\_\-data\_\-ncar\_\-init}
+\item 
+subroutine \hyperlink{namespaceice__forcing_a1b5cad2ae77729861f402fa1ef5a2140}{ocn\_\-data\_\-ncar} (dt)
+\item 
+subroutine \hyperlink{namespaceice__forcing_a6b38f04cff511ea4f70d58e89dfaf0e5}{ocn\_\-data\_\-hadgem} (dt)
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__forcing_a50c7cbc293e8bdff5e53f79b141e4a9b}{ycycle}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__forcing_a00220497cafa391e9105c65fad81c982}{fyear\_\-init}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__forcing_a9e840876f677642389293c4dda357eef}{fyear}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__forcing_aebf7ee5db66f4a38134d1314a4de3f8f}{fyear\_\-final}
+\item 
+character(char\_\-len\_\-long) \hyperlink{namespaceice__forcing_ab619dc21fc4da36e5f02a12ca1e7944d}{height\_\-file}
+\item 
+character(char\_\-len\_\-long) \hyperlink{namespaceice__forcing_a807421aa54b1f2f0416c158c1909b5bd}{uwind\_\-file}
+\item 
+character(char\_\-len\_\-long) \hyperlink{namespaceice__forcing_a81253ba2712f47539e7e4f1d0d35d885}{vwind\_\-file}
+\item 
+character(char\_\-len\_\-long) \hyperlink{namespaceice__forcing_a096f17ea955001c7c2f968e84e0bf5b5}{wind\_\-file}
+\item 
+character(char\_\-len\_\-long) \hyperlink{namespaceice__forcing_a49c9fbd4c57cb5e160f88fd18db10938}{strax\_\-file}
+\item 
+character(char\_\-len\_\-long) \hyperlink{namespaceice__forcing_a5539f8ddd2633d9b318092daf9745cf9}{stray\_\-file}
+\item 
+character(char\_\-len\_\-long) \hyperlink{namespaceice__forcing_aa081200ee80895fd9ca58398d4171467}{potT\_\-file}
+\item 
+character(char\_\-len\_\-long) \hyperlink{namespaceice__forcing_ab4ce88faae0d80e903bc827b71109573}{tair\_\-file}
+\item 
+character(char\_\-len\_\-long) \hyperlink{namespaceice__forcing_a2a98f60110b3268470cdb52f6b63486c}{humid\_\-file}
+\item 
+character(char\_\-len\_\-long) \hyperlink{namespaceice__forcing_a91b13032a46cf179bc526aaacf04608d}{rhoa\_\-file}
+\item 
+character(char\_\-len\_\-long) \hyperlink{namespaceice__forcing_ad4465d0f13c0141d16998d7771003a45}{fsw\_\-file}
+\item 
+character(char\_\-len\_\-long) \hyperlink{namespaceice__forcing_a80a3c80bad2ac9ab38aff61fdaf8084e}{flw\_\-file}
+\item 
+character(char\_\-len\_\-long) \hyperlink{namespaceice__forcing_a872adfb9cc20037a1b0dc19f317438bd}{rain\_\-file}
+\item 
+character(char\_\-len\_\-long) \hyperlink{namespaceice__forcing_a33afd2f71d0f18c27e6a2e78388dbb31}{sst\_\-file}
+\item 
+character(char\_\-len\_\-long) \hyperlink{namespaceice__forcing_a679cbae21b157e961355e2d69701a241}{sss\_\-file}
+\item 
+character(char\_\-len\_\-long) \hyperlink{namespaceice__forcing_a6aaf5d68f7a6e2eca9949390469c09eb}{pslv\_\-file}
+\item 
+character(char\_\-len\_\-long) \hyperlink{namespaceice__forcing_a91c5310add7d3da3da2f948d150844ca}{sublim\_\-file}
+\item 
+character(char\_\-len\_\-long) \hyperlink{namespaceice__forcing_aa253506c47f71090fd11a5b309eecf7e}{snow\_\-file}
+\item 
+character(char\_\-len\_\-long), dimension(ncat) \hyperlink{namespaceice__forcing_a22a86e9e628aeff874655d16792b2637}{topmelt\_\-file}
+\item 
+character(char\_\-len\_\-long), dimension(ncat) \hyperlink{namespaceice__forcing_a0278acba1215b398580f3e503a8baf11}{botmelt\_\-file}
+\item 
+real(kind=dbl\_\-kind) \hyperlink{namespaceice__forcing_a56dcb1f5a344ec3a10ce9138f9418e51}{c1intp}
+\item 
+real(kind=dbl\_\-kind) \hyperlink{namespaceice__forcing_ad041327090c6188e198972d2e2162197}{c2intp}
+\item 
+real(kind=dbl\_\-kind) \hyperlink{namespaceice__forcing_a7818997d422d32d4d238d866a60e50a7}{ftime}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__forcing_ad802bdcf2b496e0e3b0cf226abe288ec}{oldrecnum} = 0
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__forcing_abf29b2295f18d12d51a4d993a2589770}{oldrecslot} = 1
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks) \hyperlink{namespaceice__forcing_a251b0646126ab48de9758116bec0c414}{cldf}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, 2, max\_\-blocks) \hyperlink{namespaceice__forcing_a423a50a8e4373aae7be0c11fe1ab7e0f}{fsw\_\-data}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, 2, max\_\-blocks) \hyperlink{namespaceice__forcing_aa497c4b2e2bdd7e83e0b08b306c364c8}{cldf\_\-data}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, 2, max\_\-blocks) \hyperlink{namespaceice__forcing_ae97592cfaa6f6f1dfe5a12391e7f912d}{fsnow\_\-data}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, 2, max\_\-blocks) \hyperlink{namespaceice__forcing_ad7ad20c7d13ff53a459e4f18b8eeccbf}{Tair\_\-data}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, 2, max\_\-blocks) \hyperlink{namespaceice__forcing_a3e020efe327d9945b65433fa30d543ef}{uatm\_\-data}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, 2, max\_\-blocks) \hyperlink{namespaceice__forcing_a369b83c4f0776d66c624871fbb32767d}{vatm\_\-data}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, 2, max\_\-blocks) \hyperlink{namespaceice__forcing_a5b562d2a30773faba85cbae322e64162}{wind\_\-data}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, 2, max\_\-blocks) \hyperlink{namespaceice__forcing_a553d40f9acc76f1b6dc8fc56cddccf87}{strax\_\-data}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, 2, max\_\-blocks) \hyperlink{namespaceice__forcing_af5d69277a6de176e90f0b2329fef928c}{stray\_\-data}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, 2, max\_\-blocks) \hyperlink{namespaceice__forcing_aa702ee11143b22380ab015e34da2cd55}{Qa\_\-data}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, 2, max\_\-blocks) \hyperlink{namespaceice__forcing_ab950a2df7e588896b30862fc06c54496}{rhoa\_\-data}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, 2, max\_\-blocks) \hyperlink{namespaceice__forcing_a8be75ef0261c9c45a8a2b4983813d2ea}{potT\_\-data}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, 2, max\_\-blocks) \hyperlink{namespaceice__forcing_ad17a564b4d1aff388f9e96432340e0f8}{zlvl\_\-data}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, 2, max\_\-blocks) \hyperlink{namespaceice__forcing_a22c2a2d054007cbf4c83142fba90a332}{flw\_\-data}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, 2, max\_\-blocks) \hyperlink{namespaceice__forcing_ab6d2ed507a72720751a324430fb30e40}{sst\_\-data}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, 2, max\_\-blocks) \hyperlink{namespaceice__forcing_afc0212ff56f8450191bde0697eec98c0}{sss\_\-data}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, 2, max\_\-blocks) \hyperlink{namespaceice__forcing_abf31afbe922f5e349590ae3e542e2116}{uocn\_\-data}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, 2, max\_\-blocks) \hyperlink{namespaceice__forcing_af9f5d7d98f0d9a7a1754c8e066a5ecc7}{vocn\_\-data}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, 2, max\_\-blocks) \hyperlink{namespaceice__forcing_aeefce6613d18c1281edaf501aa11ce4a}{sublim\_\-data}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, 2, max\_\-blocks) \hyperlink{namespaceice__forcing_a33507a33e635005acfc8ac3fcb8f330d}{frain\_\-data}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, 2, max\_\-blocks, ncat) \hyperlink{namespaceice__forcing_a76dd37d14a04398b8cddb3930e86f682}{topmelt\_\-data}
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, 2, max\_\-blocks, ncat) \hyperlink{namespaceice__forcing_a3f2b5aab55a596bdea86fc066fb03fc9}{botmelt\_\-data}
+\item 
+character(char\_\-len) \hyperlink{namespaceice__forcing_a47d5ef141d5d07f3facede3ccda065b9}{atm\_\-data\_\-format}
+\item 
+character(char\_\-len) \hyperlink{namespaceice__forcing_a9d9be81629d968253c14a8c0a5984bda}{ocn\_\-data\_\-format}
+\item 
+character(char\_\-len) \hyperlink{namespaceice__forcing_a0a79982d0d62aeee3a33ef50513f3d23}{atm\_\-data\_\-type}
+\item 
+character(char\_\-len\_\-long) \hyperlink{namespaceice__forcing_ade690adebb1115f5b496db9148e05784}{atm\_\-data\_\-dir}
+\item 
+character(char\_\-len\_\-long) \hyperlink{namespaceice__forcing_a654560673c82ff131fd490ed0e7f36ff}{ocn\_\-data\_\-dir}
+\item 
+character(char\_\-len\_\-long) \hyperlink{namespaceice__forcing_aec28b3a9dba2ddef0ac023a96fc361bc}{oceanmixed\_\-file}
+\item 
+integer(kind=int\_\-kind), parameter \hyperlink{namespaceice__forcing_ae1362a8a47b05e49acfce2142d98fdd5}{nfld} = 8
+\item 
+real(kind=dbl\_\-kind), parameter \hyperlink{namespaceice__forcing_a076bfda8ebb5a4f63d65ec503c12f0d4}{frcvdr} = 0.28\_\-dbl\_\-kind
+\item 
+real(kind=dbl\_\-kind), parameter \hyperlink{namespaceice__forcing_ab32ef53cee9c09cc217d6228c94dcf44}{frcvdf} = 0.24\_\-dbl\_\-kind
+\item 
+real(kind=dbl\_\-kind), parameter \hyperlink{namespaceice__forcing_a11540aeb60ff2b8a10675369dde6d6c3}{frcidr} = 0.31\_\-dbl\_\-kind
+\item 
+real(kind=dbl\_\-kind), parameter \hyperlink{namespaceice__forcing_ad4255bb85a309ae7a9ee20c1e951aa07}{frcidf} = 0.17\_\-dbl\_\-kind
+\item 
+real(kind=dbl\_\-kind), dimension(nx\_\-block, ny\_\-block, max\_\-blocks, \hyperlink{namespaceice__forcing_ae1362a8a47b05e49acfce2142d98fdd5}{nfld}, 12) \hyperlink{namespaceice__forcing_a726eacdcd2c76eb6ed122e4b1543d02d}{ocn\_\-frc\_\-m}
+\item 
+logical(kind=log\_\-kind) \hyperlink{namespaceice__forcing_a08581fb1de6afa9fa693b22a508447ff}{restore\_\-sst}
+\item 
+integer(kind=int\_\-kind) \hyperlink{namespaceice__forcing_a5a4e01d0d2029ae1b1f11eb0c3ce5d8c}{trestore}
+\item 
+real(kind=dbl\_\-kind) \hyperlink{namespaceice__forcing_a6a5e91929910782bb955be2569a01a35}{trest}
+\item 
+logical(kind=log\_\-kind) \hyperlink{namespaceice__forcing_a22e743605ad0e639e906f24289ef0cb1}{dbug}
+\end{DoxyCompactItemize}
+
+
+\subsection{Function/Subroutine Documentation}
+\hypertarget{namespaceice__forcing_af98a1525343c579e040a9dfd3493ada4}{
+\index{ice\_\-forcing@{ice\_\-forcing}!compute\_\-shortwave@{compute\_\-shortwave}}
+\index{compute\_\-shortwave@{compute\_\-shortwave}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{compute\_\-shortwave}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-forcing::compute\_\-shortwave (integer (kind=int\_\-kind),intent(in) {\em nx\_\-block}, \/  integer (kind=int\_\-kind),intent(in) {\em ny\_\-block}, \/  integer (kind=int\_\-kind),intent(in) {\em ilo}, \/  integer (kind=int\_\-kind),intent(in) {\em ihi}, \/  integer (kind=int\_\-kind),intent(in) {\em jlo}, \/  integer (kind=int\_\-kind),intent(in) {\em jhi}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(in) {\em TLON}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(in) {\em TLAT}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(in) {\em hm}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(in) {\em Qa}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(in) {\em cldf}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(inout) {\em fsw})}}
+\label{namespaceice__forcing_af98a1525343c579e040a9dfd3493ada4}
+
+
+Definition at line 2290 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a7d343f266bce5c9e7a7062d07fc3b57e}{
+\index{ice\_\-forcing@{ice\_\-forcing}!ECMWF\_\-data@{ECMWF\_\-data}}
+\index{ECMWF\_\-data@{ECMWF\_\-data}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{ECMWF\_\-data}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-forcing::ECMWF\_\-data ()}}
+\label{namespaceice__forcing_a7d343f266bce5c9e7a7062d07fc3b57e}
+
+
+Definition at line 1844 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_adbed1e81d23690718cc666b6bb1c964e}{
+\index{ice\_\-forcing@{ice\_\-forcing}!ecmwf\_\-files@{ecmwf\_\-files}}
+\index{ecmwf\_\-files@{ecmwf\_\-files}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{ecmwf\_\-files}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-forcing::ecmwf\_\-files (integer (kind=int\_\-kind),intent(in) {\em yr})}}
+\label{namespaceice__forcing_adbed1e81d23690718cc666b6bb1c964e}
+
+
+Definition at line 1762 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a4dc16c54400bfdb9cdf1298aa63d7c0f}{
+\index{ice\_\-forcing@{ice\_\-forcing}!file\_\-year@{file\_\-year}}
+\index{file\_\-year@{file\_\-year}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{file\_\-year}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-forcing::file\_\-year (character (char\_\-len\_\-long),intent(inout) {\em data\_\-file}, \/  integer (kind=int\_\-kind),intent(in) {\em yr})}}
+\label{namespaceice__forcing_a4dc16c54400bfdb9cdf1298aa63d7c0f}
+
+
+Definition at line 1195 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_ab2f60fb9ecb6411647c4995b88de8732}{
+\index{ice\_\-forcing@{ice\_\-forcing}!get\_\-forcing\_\-atmo@{get\_\-forcing\_\-atmo}}
+\index{get\_\-forcing\_\-atmo@{get\_\-forcing\_\-atmo}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{get\_\-forcing\_\-atmo}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-forcing::get\_\-forcing\_\-atmo ()}}
+\label{namespaceice__forcing_ab2f60fb9ecb6411647c4995b88de8732}
+
+
+Definition at line 424 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a3c95ab18cff7177ae785d882338cd72e}{
+\index{ice\_\-forcing@{ice\_\-forcing}!get\_\-forcing\_\-ocn@{get\_\-forcing\_\-ocn}}
+\index{get\_\-forcing\_\-ocn@{get\_\-forcing\_\-ocn}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{get\_\-forcing\_\-ocn}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-forcing::get\_\-forcing\_\-ocn (real (kind=dbl\_\-kind),intent(in) {\em dt})}}
+\label{namespaceice__forcing_a3c95ab18cff7177ae785d882338cd72e}
+
+
+Definition at line 540 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a39483ffb7ca71d3bc78cfb98b9dbbdbc}{
+\index{ice\_\-forcing@{ice\_\-forcing}!hadgem\_\-data@{hadgem\_\-data}}
+\index{hadgem\_\-data@{hadgem\_\-data}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{hadgem\_\-data}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-forcing::hadgem\_\-data ()}}
+\label{namespaceice__forcing_a39483ffb7ca71d3bc78cfb98b9dbbdbc}
+
+
+Definition at line 2576 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a47009d309c3885ec335b6595792ffb39}{
+\index{ice\_\-forcing@{ice\_\-forcing}!hadgem\_\-files@{hadgem\_\-files}}
+\index{hadgem\_\-files@{hadgem\_\-files}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{hadgem\_\-files}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-forcing::hadgem\_\-files (integer (kind=int\_\-kind),intent(in) {\em yr})}}
+\label{namespaceice__forcing_a47009d309c3885ec335b6595792ffb39}
+
+
+Definition at line 2388 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_aa113a0f4916cea9631de05496daf36c6}{
+\index{ice\_\-forcing@{ice\_\-forcing}!init\_\-forcing\_\-atmo@{init\_\-forcing\_\-atmo}}
+\index{init\_\-forcing\_\-atmo@{init\_\-forcing\_\-atmo}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{init\_\-forcing\_\-atmo}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-forcing::init\_\-forcing\_\-atmo ()}}
+\label{namespaceice__forcing_aa113a0f4916cea9631de05496daf36c6}
+
+
+Definition at line 170 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a53be2f27b17125aea7195b3e14874b44}{
+\index{ice\_\-forcing@{ice\_\-forcing}!init\_\-forcing\_\-ocn@{init\_\-forcing\_\-ocn}}
+\index{init\_\-forcing\_\-ocn@{init\_\-forcing\_\-ocn}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{init\_\-forcing\_\-ocn}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-forcing::init\_\-forcing\_\-ocn (real (kind=dbl\_\-kind),intent(in) {\em dt})}}
+\label{namespaceice__forcing_a53be2f27b17125aea7195b3e14874b44}
+
+
+Definition at line 222 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a9357ad1d7f2850b9ac32cb5f6b6aa7cb}{
+\index{ice\_\-forcing@{ice\_\-forcing}!interp\_\-coeff@{interp\_\-coeff}}
+\index{interp\_\-coeff@{interp\_\-coeff}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{interp\_\-coeff}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-forcing::interp\_\-coeff (integer (kind=int\_\-kind),intent(in) {\em recnum}, \/  integer (kind=int\_\-kind),intent(in) {\em recslot}, \/  real (kind=dbl\_\-kind),intent(in) {\em secint}, \/  integer (kind=int\_\-kind),intent(in) {\em dataloc})}}
+\label{namespaceice__forcing_a9357ad1d7f2850b9ac32cb5f6b6aa7cb}
+
+
+Definition at line 1078 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a9da649682a06b9b9fb085742a770d940}{
+\index{ice\_\-forcing@{ice\_\-forcing}!interp\_\-coeff\_\-monthly@{interp\_\-coeff\_\-monthly}}
+\index{interp\_\-coeff\_\-monthly@{interp\_\-coeff\_\-monthly}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{interp\_\-coeff\_\-monthly}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-forcing::interp\_\-coeff\_\-monthly (integer (kind=int\_\-kind),intent(in) {\em recslot})}}
+\label{namespaceice__forcing_a9da649682a06b9b9fb085742a770d940}
+
+
+Definition at line 1018 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_aaa8b12715d3c39535f631da2fcc76c21}{
+\index{ice\_\-forcing@{ice\_\-forcing}!interpolate\_\-data@{interpolate\_\-data}}
+\index{interpolate\_\-data@{interpolate\_\-data}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{interpolate\_\-data}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-forcing::interpolate\_\-data (real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block,2,max\_\-blocks),intent(in) {\em field\_\-data}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block,max\_\-blocks),intent(out) {\em field})}}
+\label{namespaceice__forcing_aaa8b12715d3c39535f631da2fcc76c21}
+
+
+Definition at line 1148 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_af090b8a3141de745a9f1893256289b0b}{
+\index{ice\_\-forcing@{ice\_\-forcing}!LY\_\-data@{LY\_\-data}}
+\index{LY\_\-data@{LY\_\-data}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{LY\_\-data}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-forcing::LY\_\-data ()}}
+\label{namespaceice__forcing_af090b8a3141de745a9f1893256289b0b}
+
+
+Definition at line 2081 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a4efb2f31dda4004f4fefadeac72d74a5}{
+\index{ice\_\-forcing@{ice\_\-forcing}!LY\_\-files@{LY\_\-files}}
+\index{LY\_\-files@{LY\_\-files}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{LY\_\-files}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-forcing::LY\_\-files (integer (kind=int\_\-kind),intent(in) {\em yr})}}
+\label{namespaceice__forcing_a4efb2f31dda4004f4fefadeac72d74a5}
+
+
+Definition at line 2012 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_aa45c8ecbe140ec4fa53e278301462374}{
+\index{ice\_\-forcing@{ice\_\-forcing}!monthly\_\-data@{monthly\_\-data}}
+\index{monthly\_\-data@{monthly\_\-data}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{monthly\_\-data}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-forcing::monthly\_\-data ()}}
+\label{namespaceice__forcing_aa45c8ecbe140ec4fa53e278301462374}
+
+
+Definition at line 2906 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a7a1e37c4eee269322492ab28f1e99737}{
+\index{ice\_\-forcing@{ice\_\-forcing}!monthly\_\-files@{monthly\_\-files}}
+\index{monthly\_\-files@{monthly\_\-files}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{monthly\_\-files}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-forcing::monthly\_\-files (integer (kind=int\_\-kind),intent(in) {\em yr})}}
+\label{namespaceice__forcing_a7a1e37c4eee269322492ab28f1e99737}
+
+
+Definition at line 2834 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a24793c87569906af2dce6abb1be1f204}{
+\index{ice\_\-forcing@{ice\_\-forcing}!ncar\_\-data@{ncar\_\-data}}
+\index{ncar\_\-data@{ncar\_\-data}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{ncar\_\-data}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-forcing::ncar\_\-data ()}}
+\label{namespaceice__forcing_a24793c87569906af2dce6abb1be1f204}
+
+
+Definition at line 1595 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a18335b8937585695c3ddddd162b39414}{
+\index{ice\_\-forcing@{ice\_\-forcing}!ncar\_\-files@{ncar\_\-files}}
+\index{ncar\_\-files@{ncar\_\-files}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{ncar\_\-files}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-forcing::ncar\_\-files (integer (kind=int\_\-kind),intent(in) {\em yr})}}
+\label{namespaceice__forcing_a18335b8937585695c3ddddd162b39414}
+
+
+Definition at line 1516 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a83eb2b44b9507b6136d8ca5969356058}{
+\index{ice\_\-forcing@{ice\_\-forcing}!ocn\_\-data\_\-clim@{ocn\_\-data\_\-clim}}
+\index{ocn\_\-data\_\-clim@{ocn\_\-data\_\-clim}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{ocn\_\-data\_\-clim}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-forcing::ocn\_\-data\_\-clim (real (kind=dbl\_\-kind),intent(in) {\em dt})}}
+\label{namespaceice__forcing_a83eb2b44b9507b6136d8ca5969356058}
+
+
+Definition at line 3089 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a6b38f04cff511ea4f70d58e89dfaf0e5}{
+\index{ice\_\-forcing@{ice\_\-forcing}!ocn\_\-data\_\-hadgem@{ocn\_\-data\_\-hadgem}}
+\index{ocn\_\-data\_\-hadgem@{ocn\_\-data\_\-hadgem}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{ocn\_\-data\_\-hadgem}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-forcing::ocn\_\-data\_\-hadgem (real (kind=dbl\_\-kind),intent(in) {\em dt})}}
+\label{namespaceice__forcing_a6b38f04cff511ea4f70d58e89dfaf0e5}
+
+
+Definition at line 3597 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a1b5cad2ae77729861f402fa1ef5a2140}{
+\index{ice\_\-forcing@{ice\_\-forcing}!ocn\_\-data\_\-ncar@{ocn\_\-data\_\-ncar}}
+\index{ocn\_\-data\_\-ncar@{ocn\_\-data\_\-ncar}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{ocn\_\-data\_\-ncar}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-forcing::ocn\_\-data\_\-ncar (real (kind=dbl\_\-kind),intent(in) {\em dt})}}
+\label{namespaceice__forcing_a1b5cad2ae77729861f402fa1ef5a2140}
+
+
+Definition at line 3402 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_aeb55eba5600676c3b7eb42cf02d337c1}{
+\index{ice\_\-forcing@{ice\_\-forcing}!ocn\_\-data\_\-ncar\_\-init@{ocn\_\-data\_\-ncar\_\-init}}
+\index{ocn\_\-data\_\-ncar\_\-init@{ocn\_\-data\_\-ncar\_\-init}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{ocn\_\-data\_\-ncar\_\-init}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-forcing::ocn\_\-data\_\-ncar\_\-init ()}}
+\label{namespaceice__forcing_aeb55eba5600676c3b7eb42cf02d337c1}
+
+
+Definition at line 3238 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_af5f411a97331efb9556841318e740684}{
+\index{ice\_\-forcing@{ice\_\-forcing}!prepare\_\-forcing@{prepare\_\-forcing}}
+\index{prepare\_\-forcing@{prepare\_\-forcing}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{prepare\_\-forcing}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-forcing::prepare\_\-forcing (integer (kind=int\_\-kind),intent(in) {\em nx\_\-block}, \/  integer (kind=int\_\-kind),intent(in) {\em ny\_\-block}, \/  integer (kind=int\_\-kind),intent(in) {\em ilo}, \/  integer (kind=int\_\-kind),intent(in) {\em ihi}, \/  integer (kind=int\_\-kind),intent(in) {\em jlo}, \/  integer (kind=int\_\-kind),intent(in) {\em jhi}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(in) {\em hm}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(in) {\em Tair}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(inout) {\em fsw}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(inout) {\em cldf}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(inout) {\em flw}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(inout) {\em frain}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(inout) {\em fsnow}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(inout) {\em Qa}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(inout) {\em rhoa}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(inout) {\em uatm}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(inout) {\em vatm}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(inout) {\em strax}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(inout) {\em stray}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(inout) {\em zlvl}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(inout) {\em wind}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(inout) {\em swvdr}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(inout) {\em swvdf}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(inout) {\em swidr}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(inout) {\em swidf}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(inout) {\em potT}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(in) {\em ANGLET}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(in) {\em Tsfc}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(in) {\em sst}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(in) {\em aice})}}
+\label{namespaceice__forcing_af5f411a97331efb9556841318e740684}
+
+
+Definition at line 1246 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a72e60597f70954128768b0082b1a4579}{
+\index{ice\_\-forcing@{ice\_\-forcing}!Qa\_\-fixLY@{Qa\_\-fixLY}}
+\index{Qa\_\-fixLY@{Qa\_\-fixLY}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{Qa\_\-fixLY}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-forcing::Qa\_\-fixLY (integer (kind=int\_\-kind),intent(in) {\em nx\_\-block}, \/  integer (kind=int\_\-kind),intent(in) {\em ny\_\-block}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(in) {\em Tair}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(inout) {\em Qa})}}
+\label{namespaceice__forcing_a72e60597f70954128768b0082b1a4579}
+
+
+Definition at line 2350 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_ae59c1f1aebe7408876c324fd7e2f5e5f}{
+\index{ice\_\-forcing@{ice\_\-forcing}!read\_\-clim\_\-data@{read\_\-clim\_\-data}}
+\index{read\_\-clim\_\-data@{read\_\-clim\_\-data}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{read\_\-clim\_\-data}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-forcing::read\_\-clim\_\-data (logical (kind=log\_\-kind),intent(in) {\em readflag}, \/  integer (kind=int\_\-kind),intent(in) {\em recd}, \/  integer (kind=int\_\-kind),intent(in) {\em ixm}, \/  integer (kind=int\_\-kind),intent(in) {\em ixx}, \/  integer (kind=int\_\-kind),intent(in) {\em ixp}, \/  character (char\_\-len\_\-long),intent(in) {\em data\_\-file}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block,2,max\_\-blocks),intent(out) {\em field\_\-data}, \/  integer (kind=int\_\-kind),intent(in) {\em field\_\-loc}, \/  integer (kind=int\_\-kind),intent(in) {\em field\_\-type})}}
+\label{namespaceice__forcing_ae59c1f1aebe7408876c324fd7e2f5e5f}
+
+
+Definition at line 920 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a45d48692f330fef1618489012ca9d0a7}{
+\index{ice\_\-forcing@{ice\_\-forcing}!read\_\-data@{read\_\-data}}
+\index{read\_\-data@{read\_\-data}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{read\_\-data}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-forcing::read\_\-data (logical (kind=log\_\-kind),intent(in) {\em flag}, \/  integer (kind=int\_\-kind),intent(in) {\em recd}, \/  integer (kind=int\_\-kind),intent(in) {\em yr}, \/  integer (kind=int\_\-kind),intent(in) {\em ixm}, \/  integer (kind=int\_\-kind),intent(in) {\em ixx}, \/  integer (kind=int\_\-kind),intent(in) {\em ixp}, \/  maxrec, \/  character (char\_\-len\_\-long) {\em data\_\-file}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block,2,max\_\-blocks),intent(out) {\em field\_\-data}, \/  integer (kind=int\_\-kind),intent(in) {\em field\_\-loc}, \/  integer (kind=int\_\-kind),intent(in) {\em field\_\-type})}}
+\label{namespaceice__forcing_a45d48692f330fef1618489012ca9d0a7}
+
+
+Definition at line 585 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a33953eccfa9abefcd935133786fa04b3}{
+\index{ice\_\-forcing@{ice\_\-forcing}!read\_\-data\_\-nc@{read\_\-data\_\-nc}}
+\index{read\_\-data\_\-nc@{read\_\-data\_\-nc}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{read\_\-data\_\-nc}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-forcing::read\_\-data\_\-nc (logical (kind=log\_\-kind),intent(in) {\em flag}, \/  integer (kind=int\_\-kind),intent(in) {\em recd}, \/  integer (kind=int\_\-kind),intent(in) {\em yr}, \/  integer (kind=int\_\-kind),intent(in) {\em ixm}, \/  integer (kind=int\_\-kind),intent(in) {\em ixx}, \/  integer (kind=int\_\-kind),intent(in) {\em ixp}, \/  maxrec, \/  character (char\_\-len\_\-long) {\em data\_\-file}, \/  character (char\_\-len),intent(in) {\em fieldname}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block,2,max\_\-blocks),intent(out) {\em field\_\-data}, \/  integer (kind=int\_\-kind),intent(in) {\em field\_\-loc}, \/  integer (kind=int\_\-kind),intent(in) {\em field\_\-type})}}
+\label{namespaceice__forcing_a33953eccfa9abefcd935133786fa04b3}
+
+
+Definition at line 747 of file ice\_\-forcing.F90.
+
+\subsection{Variable Documentation}
+\hypertarget{namespaceice__forcing_ade690adebb1115f5b496db9148e05784}{
+\index{ice\_\-forcing@{ice\_\-forcing}!atm\_\-data\_\-dir@{atm\_\-data\_\-dir}}
+\index{atm\_\-data\_\-dir@{atm\_\-data\_\-dir}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{atm\_\-data\_\-dir}]{\setlength{\rightskip}{0pt plus 5cm}character(char\_\-len\_\-long) {\bf ice\_\-forcing::atm\_\-data\_\-dir}}}
+\label{namespaceice__forcing_ade690adebb1115f5b496db9148e05784}
+
+
+Definition at line 127 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a47d5ef141d5d07f3facede3ccda065b9}{
+\index{ice\_\-forcing@{ice\_\-forcing}!atm\_\-data\_\-format@{atm\_\-data\_\-format}}
+\index{atm\_\-data\_\-format@{atm\_\-data\_\-format}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{atm\_\-data\_\-format}]{\setlength{\rightskip}{0pt plus 5cm}character(char\_\-len) {\bf ice\_\-forcing::atm\_\-data\_\-format}}}
+\label{namespaceice__forcing_a47d5ef141d5d07f3facede3ccda065b9}
+
+
+Definition at line 117 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a0a79982d0d62aeee3a33ef50513f3d23}{
+\index{ice\_\-forcing@{ice\_\-forcing}!atm\_\-data\_\-type@{atm\_\-data\_\-type}}
+\index{atm\_\-data\_\-type@{atm\_\-data\_\-type}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{atm\_\-data\_\-type}]{\setlength{\rightskip}{0pt plus 5cm}character(char\_\-len) {\bf ice\_\-forcing::atm\_\-data\_\-type}}}
+\label{namespaceice__forcing_a0a79982d0d62aeee3a33ef50513f3d23}
+
+
+Definition at line 117 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a3f2b5aab55a596bdea86fc066fb03fc9}{
+\index{ice\_\-forcing@{ice\_\-forcing}!botmelt\_\-data@{botmelt\_\-data}}
+\index{botmelt\_\-data@{botmelt\_\-data}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{botmelt\_\-data}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block,2,max\_\-blocks,ncat) {\bf ice\_\-forcing::botmelt\_\-data}}}
+\label{namespaceice__forcing_a3f2b5aab55a596bdea86fc066fb03fc9}
+
+
+Definition at line 112 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a0278acba1215b398580f3e503a8baf11}{
+\index{ice\_\-forcing@{ice\_\-forcing}!botmelt\_\-file@{botmelt\_\-file}}
+\index{botmelt\_\-file@{botmelt\_\-file}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{botmelt\_\-file}]{\setlength{\rightskip}{0pt plus 5cm}character (char\_\-len\_\-long),dimension(ncat) {\bf ice\_\-forcing::botmelt\_\-file}}}
+\label{namespaceice__forcing_a0278acba1215b398580f3e503a8baf11}
+
+
+Definition at line 75 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a56dcb1f5a344ec3a10ce9138f9418e51}{
+\index{ice\_\-forcing@{ice\_\-forcing}!c1intp@{c1intp}}
+\index{c1intp@{c1intp}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{c1intp}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind) {\bf ice\_\-forcing::c1intp}}}
+\label{namespaceice__forcing_a56dcb1f5a344ec3a10ce9138f9418e51}
+
+
+Definition at line 79 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_ad041327090c6188e198972d2e2162197}{
+\index{ice\_\-forcing@{ice\_\-forcing}!c2intp@{c2intp}}
+\index{c2intp@{c2intp}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{c2intp}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind) {\bf ice\_\-forcing::c2intp}}}
+\label{namespaceice__forcing_ad041327090c6188e198972d2e2162197}
+
+
+Definition at line 79 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a251b0646126ab48de9758116bec0c414}{
+\index{ice\_\-forcing@{ice\_\-forcing}!cldf@{cldf}}
+\index{cldf@{cldf}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{cldf}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block,max\_\-blocks) {\bf ice\_\-forcing::cldf}}}
+\label{namespaceice__forcing_a251b0646126ab48de9758116bec0c414}
+
+
+Definition at line 87 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_aa497c4b2e2bdd7e83e0b08b306c364c8}{
+\index{ice\_\-forcing@{ice\_\-forcing}!cldf\_\-data@{cldf\_\-data}}
+\index{cldf\_\-data@{cldf\_\-data}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{cldf\_\-data}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block,2,max\_\-blocks) {\bf ice\_\-forcing::cldf\_\-data}}}
+\label{namespaceice__forcing_aa497c4b2e2bdd7e83e0b08b306c364c8}
+
+
+Definition at line 90 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a22e743605ad0e639e906f24289ef0cb1}{
+\index{ice\_\-forcing@{ice\_\-forcing}!dbug@{dbug}}
+\index{dbug@{dbug}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{dbug}]{\setlength{\rightskip}{0pt plus 5cm}logical (kind=log\_\-kind) {\bf ice\_\-forcing::dbug}}}
+\label{namespaceice__forcing_a22e743605ad0e639e906f24289ef0cb1}
+
+
+Definition at line 155 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a22c2a2d054007cbf4c83142fba90a332}{
+\index{ice\_\-forcing@{ice\_\-forcing}!flw\_\-data@{flw\_\-data}}
+\index{flw\_\-data@{flw\_\-data}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{flw\_\-data}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block,2,max\_\-blocks) {\bf ice\_\-forcing::flw\_\-data}}}
+\label{namespaceice__forcing_a22c2a2d054007cbf4c83142fba90a332}
+
+
+Definition at line 90 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a80a3c80bad2ac9ab38aff61fdaf8084e}{
+\index{ice\_\-forcing@{ice\_\-forcing}!flw\_\-file@{flw\_\-file}}
+\index{flw\_\-file@{flw\_\-file}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{flw\_\-file}]{\setlength{\rightskip}{0pt plus 5cm}character (char\_\-len\_\-long) {\bf ice\_\-forcing::flw\_\-file}}}
+\label{namespaceice__forcing_a80a3c80bad2ac9ab38aff61fdaf8084e}
+
+
+Definition at line 55 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a33507a33e635005acfc8ac3fcb8f330d}{
+\index{ice\_\-forcing@{ice\_\-forcing}!frain\_\-data@{frain\_\-data}}
+\index{frain\_\-data@{frain\_\-data}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{frain\_\-data}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block,2,max\_\-blocks) {\bf ice\_\-forcing::frain\_\-data}}}
+\label{namespaceice__forcing_a33507a33e635005acfc8ac3fcb8f330d}
+
+
+Definition at line 90 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_ad4255bb85a309ae7a9ee20c1e951aa07}{
+\index{ice\_\-forcing@{ice\_\-forcing}!frcidf@{frcidf}}
+\index{frcidf@{frcidf}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{frcidf}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),parameter {\bf ice\_\-forcing::frcidf} = 0.17\_\-dbl\_\-kind}}
+\label{namespaceice__forcing_ad4255bb85a309ae7a9ee20c1e951aa07}
+
+
+Definition at line 136 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a11540aeb60ff2b8a10675369dde6d6c3}{
+\index{ice\_\-forcing@{ice\_\-forcing}!frcidr@{frcidr}}
+\index{frcidr@{frcidr}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{frcidr}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),parameter {\bf ice\_\-forcing::frcidr} = 0.31\_\-dbl\_\-kind}}
+\label{namespaceice__forcing_a11540aeb60ff2b8a10675369dde6d6c3}
+
+
+Definition at line 136 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_ab32ef53cee9c09cc217d6228c94dcf44}{
+\index{ice\_\-forcing@{ice\_\-forcing}!frcvdf@{frcvdf}}
+\index{frcvdf@{frcvdf}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{frcvdf}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),parameter {\bf ice\_\-forcing::frcvdf} = 0.24\_\-dbl\_\-kind}}
+\label{namespaceice__forcing_ab32ef53cee9c09cc217d6228c94dcf44}
+
+
+Definition at line 136 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a076bfda8ebb5a4f63d65ec503c12f0d4}{
+\index{ice\_\-forcing@{ice\_\-forcing}!frcvdr@{frcvdr}}
+\index{frcvdr@{frcvdr}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{frcvdr}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),parameter {\bf ice\_\-forcing::frcvdr} = 0.28\_\-dbl\_\-kind}}
+\label{namespaceice__forcing_a076bfda8ebb5a4f63d65ec503c12f0d4}
+
+
+Definition at line 136 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_ae97592cfaa6f6f1dfe5a12391e7f912d}{
+\index{ice\_\-forcing@{ice\_\-forcing}!fsnow\_\-data@{fsnow\_\-data}}
+\index{fsnow\_\-data@{fsnow\_\-data}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{fsnow\_\-data}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block,2,max\_\-blocks) {\bf ice\_\-forcing::fsnow\_\-data}}}
+\label{namespaceice__forcing_ae97592cfaa6f6f1dfe5a12391e7f912d}
+
+
+Definition at line 90 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a423a50a8e4373aae7be0c11fe1ab7e0f}{
+\index{ice\_\-forcing@{ice\_\-forcing}!fsw\_\-data@{fsw\_\-data}}
+\index{fsw\_\-data@{fsw\_\-data}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{fsw\_\-data}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block,2,max\_\-blocks) {\bf ice\_\-forcing::fsw\_\-data}}}
+\label{namespaceice__forcing_a423a50a8e4373aae7be0c11fe1ab7e0f}
+
+
+Definition at line 90 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_ad4465d0f13c0141d16998d7771003a45}{
+\index{ice\_\-forcing@{ice\_\-forcing}!fsw\_\-file@{fsw\_\-file}}
+\index{fsw\_\-file@{fsw\_\-file}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{fsw\_\-file}]{\setlength{\rightskip}{0pt plus 5cm}character (char\_\-len\_\-long) {\bf ice\_\-forcing::fsw\_\-file}}}
+\label{namespaceice__forcing_ad4465d0f13c0141d16998d7771003a45}
+
+
+Definition at line 55 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a7818997d422d32d4d238d866a60e50a7}{
+\index{ice\_\-forcing@{ice\_\-forcing}!ftime@{ftime}}
+\index{ftime@{ftime}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{ftime}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind) {\bf ice\_\-forcing::ftime}}}
+\label{namespaceice__forcing_a7818997d422d32d4d238d866a60e50a7}
+
+
+Definition at line 79 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a9e840876f677642389293c4dda357eef}{
+\index{ice\_\-forcing@{ice\_\-forcing}!fyear@{fyear}}
+\index{fyear@{fyear}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{fyear}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind) {\bf ice\_\-forcing::fyear}}}
+\label{namespaceice__forcing_a9e840876f677642389293c4dda357eef}
+
+
+Definition at line 49 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_aebf7ee5db66f4a38134d1314a4de3f8f}{
+\index{ice\_\-forcing@{ice\_\-forcing}!fyear\_\-final@{fyear\_\-final}}
+\index{fyear\_\-final@{fyear\_\-final}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{fyear\_\-final}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind) {\bf ice\_\-forcing::fyear\_\-final}}}
+\label{namespaceice__forcing_aebf7ee5db66f4a38134d1314a4de3f8f}
+
+
+Definition at line 49 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a00220497cafa391e9105c65fad81c982}{
+\index{ice\_\-forcing@{ice\_\-forcing}!fyear\_\-init@{fyear\_\-init}}
+\index{fyear\_\-init@{fyear\_\-init}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{fyear\_\-init}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind) {\bf ice\_\-forcing::fyear\_\-init}}}
+\label{namespaceice__forcing_a00220497cafa391e9105c65fad81c982}
+
+
+Definition at line 49 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_ab619dc21fc4da36e5f02a12ca1e7944d}{
+\index{ice\_\-forcing@{ice\_\-forcing}!height\_\-file@{height\_\-file}}
+\index{height\_\-file@{height\_\-file}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{height\_\-file}]{\setlength{\rightskip}{0pt plus 5cm}character (char\_\-len\_\-long) {\bf ice\_\-forcing::height\_\-file}}}
+\label{namespaceice__forcing_ab619dc21fc4da36e5f02a12ca1e7944d}
+
+
+Definition at line 55 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a2a98f60110b3268470cdb52f6b63486c}{
+\index{ice\_\-forcing@{ice\_\-forcing}!humid\_\-file@{humid\_\-file}}
+\index{humid\_\-file@{humid\_\-file}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{humid\_\-file}]{\setlength{\rightskip}{0pt plus 5cm}character (char\_\-len\_\-long) {\bf ice\_\-forcing::humid\_\-file}}}
+\label{namespaceice__forcing_a2a98f60110b3268470cdb52f6b63486c}
+
+
+Definition at line 55 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_ae1362a8a47b05e49acfce2142d98fdd5}{
+\index{ice\_\-forcing@{ice\_\-forcing}!nfld@{nfld}}
+\index{nfld@{nfld}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{nfld}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind),parameter {\bf ice\_\-forcing::nfld} = 8}}
+\label{namespaceice__forcing_ae1362a8a47b05e49acfce2142d98fdd5}
+
+
+Definition at line 132 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_aec28b3a9dba2ddef0ac023a96fc361bc}{
+\index{ice\_\-forcing@{ice\_\-forcing}!oceanmixed\_\-file@{oceanmixed\_\-file}}
+\index{oceanmixed\_\-file@{oceanmixed\_\-file}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{oceanmixed\_\-file}]{\setlength{\rightskip}{0pt plus 5cm}character(char\_\-len\_\-long) {\bf ice\_\-forcing::oceanmixed\_\-file}}}
+\label{namespaceice__forcing_aec28b3a9dba2ddef0ac023a96fc361bc}
+
+
+Definition at line 127 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a654560673c82ff131fd490ed0e7f36ff}{
+\index{ice\_\-forcing@{ice\_\-forcing}!ocn\_\-data\_\-dir@{ocn\_\-data\_\-dir}}
+\index{ocn\_\-data\_\-dir@{ocn\_\-data\_\-dir}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{ocn\_\-data\_\-dir}]{\setlength{\rightskip}{0pt plus 5cm}character(char\_\-len\_\-long) {\bf ice\_\-forcing::ocn\_\-data\_\-dir}}}
+\label{namespaceice__forcing_a654560673c82ff131fd490ed0e7f36ff}
+
+
+Definition at line 127 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a9d9be81629d968253c14a8c0a5984bda}{
+\index{ice\_\-forcing@{ice\_\-forcing}!ocn\_\-data\_\-format@{ocn\_\-data\_\-format}}
+\index{ocn\_\-data\_\-format@{ocn\_\-data\_\-format}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{ocn\_\-data\_\-format}]{\setlength{\rightskip}{0pt plus 5cm}character(char\_\-len) {\bf ice\_\-forcing::ocn\_\-data\_\-format}}}
+\label{namespaceice__forcing_a9d9be81629d968253c14a8c0a5984bda}
+
+
+Definition at line 117 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a726eacdcd2c76eb6ed122e4b1543d02d}{
+\index{ice\_\-forcing@{ice\_\-forcing}!ocn\_\-frc\_\-m@{ocn\_\-frc\_\-m}}
+\index{ocn\_\-frc\_\-m@{ocn\_\-frc\_\-m}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{ocn\_\-frc\_\-m}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,max\_\-blocks,{\bf nfld},12) {\bf ice\_\-forcing::ocn\_\-frc\_\-m}}}
+\label{namespaceice__forcing_a726eacdcd2c76eb6ed122e4b1543d02d}
+
+
+Definition at line 142 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_ad802bdcf2b496e0e3b0cf226abe288ec}{
+\index{ice\_\-forcing@{ice\_\-forcing}!oldrecnum@{oldrecnum}}
+\index{oldrecnum@{oldrecnum}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{oldrecnum}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind) {\bf ice\_\-forcing::oldrecnum} = 0}}
+\label{namespaceice__forcing_ad802bdcf2b496e0e3b0cf226abe288ec}
+
+
+Definition at line 83 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_abf29b2295f18d12d51a4d993a2589770}{
+\index{ice\_\-forcing@{ice\_\-forcing}!oldrecslot@{oldrecslot}}
+\index{oldrecslot@{oldrecslot}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{oldrecslot}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind) {\bf ice\_\-forcing::oldrecslot} = 1}}
+\label{namespaceice__forcing_abf29b2295f18d12d51a4d993a2589770}
+
+
+Definition at line 83 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a8be75ef0261c9c45a8a2b4983813d2ea}{
+\index{ice\_\-forcing@{ice\_\-forcing}!potT\_\-data@{potT\_\-data}}
+\index{potT\_\-data@{potT\_\-data}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{potT\_\-data}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block,2,max\_\-blocks) {\bf ice\_\-forcing::potT\_\-data}}}
+\label{namespaceice__forcing_a8be75ef0261c9c45a8a2b4983813d2ea}
+
+
+Definition at line 90 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_aa081200ee80895fd9ca58398d4171467}{
+\index{ice\_\-forcing@{ice\_\-forcing}!potT\_\-file@{potT\_\-file}}
+\index{potT\_\-file@{potT\_\-file}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{potT\_\-file}]{\setlength{\rightskip}{0pt plus 5cm}character (char\_\-len\_\-long) {\bf ice\_\-forcing::potT\_\-file}}}
+\label{namespaceice__forcing_aa081200ee80895fd9ca58398d4171467}
+
+
+Definition at line 55 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a6aaf5d68f7a6e2eca9949390469c09eb}{
+\index{ice\_\-forcing@{ice\_\-forcing}!pslv\_\-file@{pslv\_\-file}}
+\index{pslv\_\-file@{pslv\_\-file}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{pslv\_\-file}]{\setlength{\rightskip}{0pt plus 5cm}character (char\_\-len\_\-long) {\bf ice\_\-forcing::pslv\_\-file}}}
+\label{namespaceice__forcing_a6aaf5d68f7a6e2eca9949390469c09eb}
+
+
+Definition at line 55 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_aa702ee11143b22380ab015e34da2cd55}{
+\index{ice\_\-forcing@{ice\_\-forcing}!Qa\_\-data@{Qa\_\-data}}
+\index{Qa\_\-data@{Qa\_\-data}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{Qa\_\-data}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block,2,max\_\-blocks) {\bf ice\_\-forcing::Qa\_\-data}}}
+\label{namespaceice__forcing_aa702ee11143b22380ab015e34da2cd55}
+
+
+Definition at line 90 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a872adfb9cc20037a1b0dc19f317438bd}{
+\index{ice\_\-forcing@{ice\_\-forcing}!rain\_\-file@{rain\_\-file}}
+\index{rain\_\-file@{rain\_\-file}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{rain\_\-file}]{\setlength{\rightskip}{0pt plus 5cm}character (char\_\-len\_\-long) {\bf ice\_\-forcing::rain\_\-file}}}
+\label{namespaceice__forcing_a872adfb9cc20037a1b0dc19f317438bd}
+
+
+Definition at line 55 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a08581fb1de6afa9fa693b22a508447ff}{
+\index{ice\_\-forcing@{ice\_\-forcing}!restore\_\-sst@{restore\_\-sst}}
+\index{restore\_\-sst@{restore\_\-sst}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{restore\_\-sst}]{\setlength{\rightskip}{0pt plus 5cm}logical (kind=log\_\-kind) {\bf ice\_\-forcing::restore\_\-sst}}}
+\label{namespaceice__forcing_a08581fb1de6afa9fa693b22a508447ff}
+
+
+Definition at line 146 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_ab950a2df7e588896b30862fc06c54496}{
+\index{ice\_\-forcing@{ice\_\-forcing}!rhoa\_\-data@{rhoa\_\-data}}
+\index{rhoa\_\-data@{rhoa\_\-data}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{rhoa\_\-data}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block,2,max\_\-blocks) {\bf ice\_\-forcing::rhoa\_\-data}}}
+\label{namespaceice__forcing_ab950a2df7e588896b30862fc06c54496}
+
+
+Definition at line 90 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a91b13032a46cf179bc526aaacf04608d}{
+\index{ice\_\-forcing@{ice\_\-forcing}!rhoa\_\-file@{rhoa\_\-file}}
+\index{rhoa\_\-file@{rhoa\_\-file}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{rhoa\_\-file}]{\setlength{\rightskip}{0pt plus 5cm}character (char\_\-len\_\-long) {\bf ice\_\-forcing::rhoa\_\-file}}}
+\label{namespaceice__forcing_a91b13032a46cf179bc526aaacf04608d}
+
+
+Definition at line 55 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_aa253506c47f71090fd11a5b309eecf7e}{
+\index{ice\_\-forcing@{ice\_\-forcing}!snow\_\-file@{snow\_\-file}}
+\index{snow\_\-file@{snow\_\-file}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{snow\_\-file}]{\setlength{\rightskip}{0pt plus 5cm}character (char\_\-len\_\-long) {\bf ice\_\-forcing::snow\_\-file}}}
+\label{namespaceice__forcing_aa253506c47f71090fd11a5b309eecf7e}
+
+
+Definition at line 55 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_afc0212ff56f8450191bde0697eec98c0}{
+\index{ice\_\-forcing@{ice\_\-forcing}!sss\_\-data@{sss\_\-data}}
+\index{sss\_\-data@{sss\_\-data}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{sss\_\-data}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block,2,max\_\-blocks) {\bf ice\_\-forcing::sss\_\-data}}}
+\label{namespaceice__forcing_afc0212ff56f8450191bde0697eec98c0}
+
+
+Definition at line 90 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a679cbae21b157e961355e2d69701a241}{
+\index{ice\_\-forcing@{ice\_\-forcing}!sss\_\-file@{sss\_\-file}}
+\index{sss\_\-file@{sss\_\-file}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{sss\_\-file}]{\setlength{\rightskip}{0pt plus 5cm}character (char\_\-len\_\-long) {\bf ice\_\-forcing::sss\_\-file}}}
+\label{namespaceice__forcing_a679cbae21b157e961355e2d69701a241}
+
+
+Definition at line 55 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_ab6d2ed507a72720751a324430fb30e40}{
+\index{ice\_\-forcing@{ice\_\-forcing}!sst\_\-data@{sst\_\-data}}
+\index{sst\_\-data@{sst\_\-data}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{sst\_\-data}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block,2,max\_\-blocks) {\bf ice\_\-forcing::sst\_\-data}}}
+\label{namespaceice__forcing_ab6d2ed507a72720751a324430fb30e40}
+
+
+Definition at line 90 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a33afd2f71d0f18c27e6a2e78388dbb31}{
+\index{ice\_\-forcing@{ice\_\-forcing}!sst\_\-file@{sst\_\-file}}
+\index{sst\_\-file@{sst\_\-file}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{sst\_\-file}]{\setlength{\rightskip}{0pt plus 5cm}character (char\_\-len\_\-long) {\bf ice\_\-forcing::sst\_\-file}}}
+\label{namespaceice__forcing_a33afd2f71d0f18c27e6a2e78388dbb31}
+
+
+Definition at line 55 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a553d40f9acc76f1b6dc8fc56cddccf87}{
+\index{ice\_\-forcing@{ice\_\-forcing}!strax\_\-data@{strax\_\-data}}
+\index{strax\_\-data@{strax\_\-data}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{strax\_\-data}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block,2,max\_\-blocks) {\bf ice\_\-forcing::strax\_\-data}}}
+\label{namespaceice__forcing_a553d40f9acc76f1b6dc8fc56cddccf87}
+
+
+Definition at line 90 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a49c9fbd4c57cb5e160f88fd18db10938}{
+\index{ice\_\-forcing@{ice\_\-forcing}!strax\_\-file@{strax\_\-file}}
+\index{strax\_\-file@{strax\_\-file}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{strax\_\-file}]{\setlength{\rightskip}{0pt plus 5cm}character (char\_\-len\_\-long) {\bf ice\_\-forcing::strax\_\-file}}}
+\label{namespaceice__forcing_a49c9fbd4c57cb5e160f88fd18db10938}
+
+
+Definition at line 55 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_af5d69277a6de176e90f0b2329fef928c}{
+\index{ice\_\-forcing@{ice\_\-forcing}!stray\_\-data@{stray\_\-data}}
+\index{stray\_\-data@{stray\_\-data}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{stray\_\-data}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block,2,max\_\-blocks) {\bf ice\_\-forcing::stray\_\-data}}}
+\label{namespaceice__forcing_af5d69277a6de176e90f0b2329fef928c}
+
+
+Definition at line 90 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a5539f8ddd2633d9b318092daf9745cf9}{
+\index{ice\_\-forcing@{ice\_\-forcing}!stray\_\-file@{stray\_\-file}}
+\index{stray\_\-file@{stray\_\-file}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{stray\_\-file}]{\setlength{\rightskip}{0pt plus 5cm}character (char\_\-len\_\-long) {\bf ice\_\-forcing::stray\_\-file}}}
+\label{namespaceice__forcing_a5539f8ddd2633d9b318092daf9745cf9}
+
+
+Definition at line 55 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_aeefce6613d18c1281edaf501aa11ce4a}{
+\index{ice\_\-forcing@{ice\_\-forcing}!sublim\_\-data@{sublim\_\-data}}
+\index{sublim\_\-data@{sublim\_\-data}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{sublim\_\-data}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block,2,max\_\-blocks) {\bf ice\_\-forcing::sublim\_\-data}}}
+\label{namespaceice__forcing_aeefce6613d18c1281edaf501aa11ce4a}
+
+
+Definition at line 90 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a91c5310add7d3da3da2f948d150844ca}{
+\index{ice\_\-forcing@{ice\_\-forcing}!sublim\_\-file@{sublim\_\-file}}
+\index{sublim\_\-file@{sublim\_\-file}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{sublim\_\-file}]{\setlength{\rightskip}{0pt plus 5cm}character (char\_\-len\_\-long) {\bf ice\_\-forcing::sublim\_\-file}}}
+\label{namespaceice__forcing_a91c5310add7d3da3da2f948d150844ca}
+
+
+Definition at line 55 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_ad7ad20c7d13ff53a459e4f18b8eeccbf}{
+\index{ice\_\-forcing@{ice\_\-forcing}!Tair\_\-data@{Tair\_\-data}}
+\index{Tair\_\-data@{Tair\_\-data}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{Tair\_\-data}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block,2,max\_\-blocks) {\bf ice\_\-forcing::Tair\_\-data}}}
+\label{namespaceice__forcing_ad7ad20c7d13ff53a459e4f18b8eeccbf}
+
+
+Definition at line 90 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_ab4ce88faae0d80e903bc827b71109573}{
+\index{ice\_\-forcing@{ice\_\-forcing}!tair\_\-file@{tair\_\-file}}
+\index{tair\_\-file@{tair\_\-file}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{tair\_\-file}]{\setlength{\rightskip}{0pt plus 5cm}character (char\_\-len\_\-long) {\bf ice\_\-forcing::tair\_\-file}}}
+\label{namespaceice__forcing_ab4ce88faae0d80e903bc827b71109573}
+
+
+Definition at line 55 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a76dd37d14a04398b8cddb3930e86f682}{
+\index{ice\_\-forcing@{ice\_\-forcing}!topmelt\_\-data@{topmelt\_\-data}}
+\index{topmelt\_\-data@{topmelt\_\-data}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{topmelt\_\-data}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block,2,max\_\-blocks,ncat) {\bf ice\_\-forcing::topmelt\_\-data}}}
+\label{namespaceice__forcing_a76dd37d14a04398b8cddb3930e86f682}
+
+
+Definition at line 112 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a22a86e9e628aeff874655d16792b2637}{
+\index{ice\_\-forcing@{ice\_\-forcing}!topmelt\_\-file@{topmelt\_\-file}}
+\index{topmelt\_\-file@{topmelt\_\-file}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{topmelt\_\-file}]{\setlength{\rightskip}{0pt plus 5cm}character (char\_\-len\_\-long),dimension(ncat) {\bf ice\_\-forcing::topmelt\_\-file}}}
+\label{namespaceice__forcing_a22a86e9e628aeff874655d16792b2637}
+
+
+Definition at line 75 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a6a5e91929910782bb955be2569a01a35}{
+\index{ice\_\-forcing@{ice\_\-forcing}!trest@{trest}}
+\index{trest@{trest}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{trest}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind) {\bf ice\_\-forcing::trest}}}
+\label{namespaceice__forcing_a6a5e91929910782bb955be2569a01a35}
+
+
+Definition at line 152 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a5a4e01d0d2029ae1b1f11eb0c3ce5d8c}{
+\index{ice\_\-forcing@{ice\_\-forcing}!trestore@{trestore}}
+\index{trestore@{trestore}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{trestore}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind) {\bf ice\_\-forcing::trestore}}}
+\label{namespaceice__forcing_a5a4e01d0d2029ae1b1f11eb0c3ce5d8c}
+
+
+Definition at line 149 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a3e020efe327d9945b65433fa30d543ef}{
+\index{ice\_\-forcing@{ice\_\-forcing}!uatm\_\-data@{uatm\_\-data}}
+\index{uatm\_\-data@{uatm\_\-data}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{uatm\_\-data}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block,2,max\_\-blocks) {\bf ice\_\-forcing::uatm\_\-data}}}
+\label{namespaceice__forcing_a3e020efe327d9945b65433fa30d543ef}
+
+
+Definition at line 90 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_abf31afbe922f5e349590ae3e542e2116}{
+\index{ice\_\-forcing@{ice\_\-forcing}!uocn\_\-data@{uocn\_\-data}}
+\index{uocn\_\-data@{uocn\_\-data}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{uocn\_\-data}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block,2,max\_\-blocks) {\bf ice\_\-forcing::uocn\_\-data}}}
+\label{namespaceice__forcing_abf31afbe922f5e349590ae3e542e2116}
+
+
+Definition at line 90 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a807421aa54b1f2f0416c158c1909b5bd}{
+\index{ice\_\-forcing@{ice\_\-forcing}!uwind\_\-file@{uwind\_\-file}}
+\index{uwind\_\-file@{uwind\_\-file}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{uwind\_\-file}]{\setlength{\rightskip}{0pt plus 5cm}character (char\_\-len\_\-long) {\bf ice\_\-forcing::uwind\_\-file}}}
+\label{namespaceice__forcing_a807421aa54b1f2f0416c158c1909b5bd}
+
+
+Definition at line 55 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a369b83c4f0776d66c624871fbb32767d}{
+\index{ice\_\-forcing@{ice\_\-forcing}!vatm\_\-data@{vatm\_\-data}}
+\index{vatm\_\-data@{vatm\_\-data}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{vatm\_\-data}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block,2,max\_\-blocks) {\bf ice\_\-forcing::vatm\_\-data}}}
+\label{namespaceice__forcing_a369b83c4f0776d66c624871fbb32767d}
+
+
+Definition at line 90 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_af9f5d7d98f0d9a7a1754c8e066a5ecc7}{
+\index{ice\_\-forcing@{ice\_\-forcing}!vocn\_\-data@{vocn\_\-data}}
+\index{vocn\_\-data@{vocn\_\-data}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{vocn\_\-data}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block,2,max\_\-blocks) {\bf ice\_\-forcing::vocn\_\-data}}}
+\label{namespaceice__forcing_af9f5d7d98f0d9a7a1754c8e066a5ecc7}
+
+
+Definition at line 90 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a81253ba2712f47539e7e4f1d0d35d885}{
+\index{ice\_\-forcing@{ice\_\-forcing}!vwind\_\-file@{vwind\_\-file}}
+\index{vwind\_\-file@{vwind\_\-file}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{vwind\_\-file}]{\setlength{\rightskip}{0pt plus 5cm}character (char\_\-len\_\-long) {\bf ice\_\-forcing::vwind\_\-file}}}
+\label{namespaceice__forcing_a81253ba2712f47539e7e4f1d0d35d885}
+
+
+Definition at line 55 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a5b562d2a30773faba85cbae322e64162}{
+\index{ice\_\-forcing@{ice\_\-forcing}!wind\_\-data@{wind\_\-data}}
+\index{wind\_\-data@{wind\_\-data}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{wind\_\-data}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block,2,max\_\-blocks) {\bf ice\_\-forcing::wind\_\-data}}}
+\label{namespaceice__forcing_a5b562d2a30773faba85cbae322e64162}
+
+
+Definition at line 90 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a096f17ea955001c7c2f968e84e0bf5b5}{
+\index{ice\_\-forcing@{ice\_\-forcing}!wind\_\-file@{wind\_\-file}}
+\index{wind\_\-file@{wind\_\-file}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{wind\_\-file}]{\setlength{\rightskip}{0pt plus 5cm}character (char\_\-len\_\-long) {\bf ice\_\-forcing::wind\_\-file}}}
+\label{namespaceice__forcing_a096f17ea955001c7c2f968e84e0bf5b5}
+
+
+Definition at line 55 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_a50c7cbc293e8bdff5e53f79b141e4a9b}{
+\index{ice\_\-forcing@{ice\_\-forcing}!ycycle@{ycycle}}
+\index{ycycle@{ycycle}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{ycycle}]{\setlength{\rightskip}{0pt plus 5cm}integer (kind=int\_\-kind) {\bf ice\_\-forcing::ycycle}}}
+\label{namespaceice__forcing_a50c7cbc293e8bdff5e53f79b141e4a9b}
+
+
+Definition at line 49 of file ice\_\-forcing.F90.\hypertarget{namespaceice__forcing_ad17a564b4d1aff388f9e96432340e0f8}{
+\index{ice\_\-forcing@{ice\_\-forcing}!zlvl\_\-data@{zlvl\_\-data}}
+\index{zlvl\_\-data@{zlvl\_\-data}!ice_forcing@{ice\_\-forcing}}
+\subsubsection[{zlvl\_\-data}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block,2,max\_\-blocks) {\bf ice\_\-forcing::zlvl\_\-data}}}
+\label{namespaceice__forcing_ad17a564b4d1aff388f9e96432340e0f8}
+
+
+Definition at line 90 of file ice\_\-forcing.F90.

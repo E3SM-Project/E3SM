@@ -1,0 +1,153 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<!--Converted with LaTeX2HTML 2002-2-1 (1.71)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>Introduction</TITLE>
+<META NAME="description" CONTENT="Introduction">
+<META NAME="keywords" CONTENT="ice_usrdoc">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=utf-8">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="ice_usrdoc.css">
+
+<LINK REL="next" HREF="node4.html">
+<LINK REL="previous" HREF="node1.html">
+<LINK REL="up" HREF="ice_usrdoc.html">
+<LINK REL="next" HREF="node3.html">
+</HEAD>
+
+<BODY BGCOLOR=white LINK=BLUE VLINK=PURPLE>
+
+<A NAME="tex2html108"
+  HREF="node3.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
+<A NAME="tex2html104"
+  HREF="ice_usrdoc.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
+<A NAME="tex2html98"
+  HREF="node1.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
+<A NAME="tex2html106"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  <BR>
+<B> Next:</B> <A NAME="tex2html109"
+  HREF="node3.html">What's new in CICE4?</A>
+<B>Up:</B> <A NAME="tex2html105"
+  HREF="ice_usrdoc.html">ice_usrdoc</A>
+<B> Previous:</B> <A NAME="tex2html99"
+  HREF="node1.html">Contents</A>
+<BR> <P>
+
+<!--End of Navigation Panel-->
+
+<H1><A NAME="SECTION00020000000000000000">
+Introduction</A>
+</H1>
+  
+<P>
+This User's Guide accompanies the CESM1 User's Guide, and is intended
+for those who would like to run CICE coupled, on a supported
+platform, and "out of the box".  Users running CICE fully coupled should first
+look at the CESM1 User's Guide:
+<BR>
+<P>
+It includes a quick start guide for downloading the CESM1 source code and 
+input datasets, and information on how to configure,
+build and run the model.  The supported configurations and scripts for building
+the fully coupled model are also described in the CESM1 User's Guide.  The CICE
+User's Guide is intended for users interested in making modifications to the
+ice model scripts or namelists or running the uncoupled ice model.  Users
+interested in modifying the source code should see the CICE Code Reference/
+Developer's Guide.
+
+<P>
+CICE4 is the latest version of the Los Alamos Sea Ice Model, sometimes
+referred to as the Community Ice CodE.  It is the
+result of a community effort to develop a portable, efficient sea ice model
+that can be run coupled in a global climate model or uncoupled as a stand-alone
+ice model. It has been released as the sea ice component of the Community
+Earth System Model (CESM), a fully-coupled global climate model that
+provides simulations of the earths past, present and future climate states.
+CICE4 is supported on high- and low-resolution Greenland Pole
+and tripole grids, which are identical to those used by the Parallel Ocean 
+Program (POP) ocean model.  The high resolution version is best suited for 
+simulating present-day and future climate scenarios while the low resolution 
+option is used for paleoclimate simulations and debugging.  An uncoupled 
+version of CICE is available separately from Los Alamos National Laboratory:
+<BR>
+<P>
+It provides a means of running the sea ice model independent of the other CESM 
+components.  It reads in atmospheric and ocean forcing, which eliminates the 
+need for the flux coupler, and the atmosphere, land and ocean data models.  It 
+can be run on a reduced number of processors, or without MPI (Message Passing 
+Interface) for researchers without access to these computer resources.
+
+<P>
+The physics in the uncoupled ice model are identical to those in the
+ice model used in the fully coupled system.  CICE is a dynamic-thermodynamic
+model that includes a subgrid-scale ice thickness distribution ((<A
+ HREF="node40.html#bitz01">Bitz et&nbsp;al.(2001)</A>);
+(<A
+ HREF="node40.html#lips01">Lipscomb(2001)</A>)).  It uses the energy conserving thermodynamics 
+of (<A
+ HREF="node40.html#bitz99">Bitz and Lipscomb(1999)</A>), has multiple layers in each thickness category, and accounts
+for the influences of brine pockets within the ice cover.  The ice dynamics
+utilizes the elastic-viscous-plastic (EVP) rheology of (<A
+ HREF="node40.html#hunk97">Hunke and Dukowicz(1997)</A>).  Sea ice
+ridging follows (<A
+ HREF="node40.html#roth75b">Rothrock(1975)</A>) and (<A
+ HREF="node40.html#thor75">Thorndike et&nbsp;al.(1975)</A>).  A slab ocean mixed layer model
+is included.  A Scientific Reference is available that contains more detailed
+information on the model physics. 
+
+<P>
+An attempt has been made throughout this document to provide the following
+text convention.  Variable names used in the code are <TT>typewritten</TT>.
+Subroutine names are given in <I>italic</I>, and file names are in <B>boldface</B>.
+
+<P>
+<BR> <HR>
+<!--Table of Child-Links-->
+<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
+
+<UL>
+<LI><A NAME="tex2html110"
+  HREF="node3.html">What's new in CICE4?</A>
+</UL>
+<!--End of Table of Child-Links-->
+<HR>
+<A NAME="tex2html108"
+  HREF="node3.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
+<A NAME="tex2html104"
+  HREF="ice_usrdoc.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
+<A NAME="tex2html98"
+  HREF="node1.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
+<A NAME="tex2html106"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  <BR>
+<B> Next:</B> <A NAME="tex2html109"
+  HREF="node3.html">What's new in CICE4?</A>
+<B>Up:</B> <A NAME="tex2html105"
+  HREF="ice_usrdoc.html">ice_usrdoc</A>
+<B> Previous:</B> <A NAME="tex2html99"
+  HREF="node1.html">Contents</A>
+
+<!--End of Navigation Panel-->
+<ADDRESS>
+<I>David Bailey <BR>
+2011-08-16</I>
+</ADDRESS>
+</BODY>
+</HTML>

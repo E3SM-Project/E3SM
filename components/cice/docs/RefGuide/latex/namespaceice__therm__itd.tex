@@ -1,0 +1,62 @@
+\hypertarget{namespaceice__therm__itd}{
+\section{ice\_\-therm\_\-itd Module Reference}
+\label{namespaceice__therm__itd}\index{ice\_\-therm\_\-itd@{ice\_\-therm\_\-itd}}
+}
+\subsection*{Functions/Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{namespaceice__therm__itd_acd44275babbe78e10bc9ddcbd1c631cd}{linear\_\-itd} (nx\_\-block, ny\_\-block, icells, indxi, indxj, trcr\_\-depend, aicen\_\-init, vicen\_\-init, aicen, trcrn, vicen, vsnon, eicen, esnon, aice, aice0, l\_\-stop, istop, jstop)
+\item 
+subroutine \hyperlink{namespaceice__therm__itd_a6eda9b04392b3bc42d5b8cb373e8fc7d}{fit\_\-line} (nx\_\-block, ny\_\-block, iflag, icells, indxii, indxjj, indxij, aicen, hice, hbL, hbR, g0, g1, hL, hR)
+\item 
+subroutine \hyperlink{namespaceice__therm__itd_a6c41e380c1a3c0ee4f833a4f31f80de2}{add\_\-new\_\-ice} (nx\_\-block, ny\_\-block, icells, indxi, indxj, tmask, dt, aicen, trcrn, vicen, eicen, aice0, aice, frzmlt, frazil, frz\_\-onset, yday, fresh, fsalt, Tf, l\_\-stop, istop, jstop)
+\item 
+subroutine \hyperlink{namespaceice__therm__itd_a31484de362b540a7b089bea7e7cc8e81}{lateral\_\-melt} (nx\_\-block, ny\_\-block, ilo, ihi, jlo, jhi, dt, fresh, fsalt, fhocn, fsoot, rside, meltl, aicen, vicen, vsnon, eicen, esnon, trcrn)
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+real(kind=dbl\_\-kind), parameter \hyperlink{namespaceice__therm__itd_addb09aa25c77eb5ffb880aab7ddff915}{hfrazilmin} = 0.05\_\-dbl\_\-kind
+\end{DoxyCompactItemize}
+
+
+\subsection{Function/Subroutine Documentation}
+\hypertarget{namespaceice__therm__itd_a6c41e380c1a3c0ee4f833a4f31f80de2}{
+\index{ice\_\-therm\_\-itd@{ice\_\-therm\_\-itd}!add\_\-new\_\-ice@{add\_\-new\_\-ice}}
+\index{add\_\-new\_\-ice@{add\_\-new\_\-ice}!ice_therm_itd@{ice\_\-therm\_\-itd}}
+\subsubsection[{add\_\-new\_\-ice}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-therm\_\-itd::add\_\-new\_\-ice (integer (kind=int\_\-kind),intent(in) {\em nx\_\-block}, \/  integer (kind=int\_\-kind),intent(in) {\em ny\_\-block}, \/  integer (kind=int\_\-kind),intent(in) {\em icells}, \/  integer (kind=int\_\-kind),dimension (nx\_\-block$\ast$ny\_\-block),intent(in) {\em indxi}, \/  integer (kind=int\_\-kind),dimension (nx\_\-block$\ast$ny\_\-block),intent(in) {\em indxj}, \/  logical (kind=log\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em tmask}, \/  real (kind=dbl\_\-kind),intent(in) {\em dt}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,ncat),intent(inout) {\em aicen}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,ntrcr,ncat),intent(inout) {\em trcrn}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,ncat),intent(inout) {\em vicen}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,ntilyr),intent(inout) {\em eicen}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(inout) {\em aice0}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em aice}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em frzmlt}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(inout) {\em frazil}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(inout),optional {\em frz\_\-onset}, \/  real (kind=dbl\_\-kind),intent(in),optional {\em yday}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(inout) {\em fresh}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(inout) {\em fsalt}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em Tf}, \/  logical (kind=log\_\-kind),intent(out) {\em l\_\-stop}, \/  integer (kind=int\_\-kind),intent(out) {\em istop}, \/  integer (kind=int\_\-kind),intent(out) {\em jstop})}}
+\label{namespaceice__therm__itd_a6c41e380c1a3c0ee4f833a4f31f80de2}
+
+
+Definition at line 838 of file ice\_\-therm\_\-itd.F90.\hypertarget{namespaceice__therm__itd_a6eda9b04392b3bc42d5b8cb373e8fc7d}{
+\index{ice\_\-therm\_\-itd@{ice\_\-therm\_\-itd}!fit\_\-line@{fit\_\-line}}
+\index{fit\_\-line@{fit\_\-line}!ice_therm_itd@{ice\_\-therm\_\-itd}}
+\subsubsection[{fit\_\-line}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-therm\_\-itd::fit\_\-line (integer (kind=int\_\-kind),intent(in) {\em nx\_\-block}, \/  integer (kind=int\_\-kind),intent(in) {\em ny\_\-block}, \/  integer (kind=int\_\-kind),intent(in) {\em iflag}, \/  integer (kind=int\_\-kind),intent(in) {\em icells}, \/  integer (kind=int\_\-kind),dimension (icells),intent(in) {\em indxii}, \/  integer (kind=int\_\-kind),dimension (icells),intent(in) {\em indxjj}, \/  integer (kind=int\_\-kind),dimension (icells),intent(in) {\em indxij}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(in) {\em aicen}, \/  real (kind=dbl\_\-kind),dimension (icells),intent(in) {\em hice}, \/  real (kind=dbl\_\-kind),dimension (icells),intent(in) {\em hbL}, \/  real (kind=dbl\_\-kind),dimension (icells),intent(in) {\em hbR}, \/  real (kind=dbl\_\-kind),dimension (iflag),intent(out) {\em g0}, \/  real (kind=dbl\_\-kind),dimension (iflag),intent(out) {\em g1}, \/  real (kind=dbl\_\-kind),dimension (iflag),intent(out) {\em hL}, \/  real (kind=dbl\_\-kind),dimension (iflag),intent(out) {\em hR})}}
+\label{namespaceice__therm__itd_a6eda9b04392b3bc42d5b8cb373e8fc7d}
+
+
+Definition at line 710 of file ice\_\-therm\_\-itd.F90.\hypertarget{namespaceice__therm__itd_a31484de362b540a7b089bea7e7cc8e81}{
+\index{ice\_\-therm\_\-itd@{ice\_\-therm\_\-itd}!lateral\_\-melt@{lateral\_\-melt}}
+\index{lateral\_\-melt@{lateral\_\-melt}!ice_therm_itd@{ice\_\-therm\_\-itd}}
+\subsubsection[{lateral\_\-melt}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-therm\_\-itd::lateral\_\-melt (integer (kind=int\_\-kind),intent(in) {\em nx\_\-block}, \/  integer (kind=int\_\-kind),intent(in) {\em ny\_\-block}, \/  integer (kind=int\_\-kind),intent(in) {\em ilo}, \/  integer (kind=int\_\-kind),intent(in) {\em ihi}, \/  integer (kind=int\_\-kind),intent(in) {\em jlo}, \/  integer (kind=int\_\-kind),intent(in) {\em jhi}, \/  real (kind=dbl\_\-kind),intent(in) {\em dt}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(inout) {\em fresh}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(inout) {\em fsalt}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(inout) {\em fhocn}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block,n\_\-aeromx),intent(inout) {\em fsoot}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(in) {\em rside}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block),intent(inout) {\em meltl}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,ncat),intent(inout) {\em aicen}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,ncat),intent(inout) {\em vicen}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,ncat),intent(inout) {\em vsnon}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,ntilyr),intent(inout) {\em eicen}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,ntslyr),intent(inout) {\em esnon}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,ntrcr,ncat),intent(in) {\em trcrn})}}
+\label{namespaceice__therm__itd_a31484de362b540a7b089bea7e7cc8e81}
+
+
+Definition at line 1239 of file ice\_\-therm\_\-itd.F90.\hypertarget{namespaceice__therm__itd_acd44275babbe78e10bc9ddcbd1c631cd}{
+\index{ice\_\-therm\_\-itd@{ice\_\-therm\_\-itd}!linear\_\-itd@{linear\_\-itd}}
+\index{linear\_\-itd@{linear\_\-itd}!ice_therm_itd@{ice\_\-therm\_\-itd}}
+\subsubsection[{linear\_\-itd}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ice\_\-therm\_\-itd::linear\_\-itd (integer (kind=int\_\-kind),intent(in) {\em nx\_\-block}, \/  integer (kind=int\_\-kind),intent(in) {\em ny\_\-block}, \/  integer (kind=int\_\-kind),intent(in) {\em icells}, \/  integer (kind=int\_\-kind),dimension (nx\_\-block$\ast$ny\_\-block),intent(in) {\em indxi}, \/  integer (kind=int\_\-kind),dimension (nx\_\-block$\ast$ny\_\-block),intent(in) {\em indxj}, \/  integer (kind=int\_\-kind),dimension (ntrcr),intent(in) {\em trcr\_\-depend}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block,ncat),intent(in) {\em aicen\_\-init}, \/  real (kind=dbl\_\-kind),dimension(nx\_\-block,ny\_\-block,ncat),intent(in) {\em vicen\_\-init}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,ncat),intent(inout) {\em aicen}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,ntrcr,ncat),intent(inout) {\em trcrn}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,ncat),intent(inout) {\em vicen}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,ncat),intent(inout) {\em vsnon}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,ntilyr),intent(inout) {\em eicen}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block,ntslyr),intent(inout) {\em esnon}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(inout) {\em aice}, \/  real (kind=dbl\_\-kind),dimension (nx\_\-block,ny\_\-block),intent(inout) {\em aice0}, \/  logical (kind=log\_\-kind),intent(out) {\em l\_\-stop}, \/  integer (kind=int\_\-kind),intent(out) {\em istop}, \/  integer (kind=int\_\-kind),intent(out) {\em jstop})}}
+\label{namespaceice__therm__itd_acd44275babbe78e10bc9ddcbd1c631cd}
+
+
+Definition at line 58 of file ice\_\-therm\_\-itd.F90.
+
+\subsection{Variable Documentation}
+\hypertarget{namespaceice__therm__itd_addb09aa25c77eb5ffb880aab7ddff915}{
+\index{ice\_\-therm\_\-itd@{ice\_\-therm\_\-itd}!hfrazilmin@{hfrazilmin}}
+\index{hfrazilmin@{hfrazilmin}!ice_therm_itd@{ice\_\-therm\_\-itd}}
+\subsubsection[{hfrazilmin}]{\setlength{\rightskip}{0pt plus 5cm}real (kind=dbl\_\-kind),parameter {\bf ice\_\-therm\_\-itd::hfrazilmin} = 0.05\_\-dbl\_\-kind}}
+\label{namespaceice__therm__itd_addb09aa25c77eb5ffb880aab7ddff915}
+
+
+Definition at line 44 of file ice\_\-therm\_\-itd.F90.

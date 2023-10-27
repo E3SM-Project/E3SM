@@ -1,0 +1,95 @@
+%=======================================================================
+% SVN: $Id: ice_build.tex 5 2005-12-12 17:41:05Z mvr $
+%=======================================================================
+
+\subsection{The Build Environment}
+
+The build and configure environment has changed significantly from previous
+versions of CESM. The build namelist and configure utilities are based on
+the CAM scripts (). 
+
+The \textbf{configure} utility includes setting compile
+time parameters such as the horizontal grid, the sea ice mode (prognostic or
+prescribed), tracers, etc. Additional options 
+can be set using the \textbf{configure} utility such as the decomposition,
+and the number of tasks, but these are typically set via CESM enviroment
+variables. However, the CAM scripts set some of these explicitly through
+the configure command line. For example one such configure line in the
+CESM scripts is:
+
+\begin{verbatim}
+
+#--------------------------------------------------------------------
+# Invoke cice configure
+#--------------------------------------------------------------------
+
+
+set hgrid = "-hgrid $ICE_GRID"
+if ($ICE_GRID =~ *T*) set hgrid = "-hgrid ${ICE_NX}x${ICE_NY}"
+
+set mode = "-cice_mode $CICE_MODE"
+
+cd $CASEBUILD/ciceconf || exit -1
+$CODEROOT/ice/cice/bld/configure $hgrid $mode -nodecomp $CICE_CONFIG_OPTS || exit -1
+
+\end{verbatim}
+
+This example sets the horizontal grid and the mode (prognostic or prescribed).  The \textbf{build namelist} utility sets up the namelist which controls the
+run time options for the CICE model. This utility sets namelist flags based
+on compile time settings from \textbf{configure} and some standard defaults
+based on horizontal grids and other options. The typical execution during
+the CESM configure is:
+
+\begin{verbatim}
+
+  $CODEROOT/ice/cice/bld/build-namelist -config config_cache.xml \
+         -csmdata \$DIN_LOC_ROOT -infile ccsm_namelist \
+         -inputdata $CASEBUILD/cice.input_data_list \
+         -namelist "&cice $CICE_NAMELIST_OPTS /" || exit -1
+
+\end{verbatim}
+
+Again, the typical usage of the \textbf{build namelist} tool is through
+the CESM scripts, but can be called via the command line interface.
+
+\subsubsection{CICE Preprocessor Flags}
+
+Preprocessor flags are activated in the form {\tt -Doption} in the 
+{\bf cice.buildexe.csh} script.  Only advanced users should change
+these options.  See the CESM User's Guide or the CICE reference guide
+for more information on these.  The flags specific to the ice model are:
+
+\begin{verbatim}
+CPPDEFS :=  $(CPPDEFS) -DCESMCOUPLED -Dcoupled -Dncdf -DNCAT=5 -DNXGLOB=$()
+-DNYGLOB=$() -DNTR_AERO=3 -DBLCKX=$() -DBLCKY=$() -DMXBLCKS=$()
+\end{verbatim}
+
+The options {\tt -DCESMCOUPLED} and  {\tt -Dcoupled} are set to activate the 
+coupling interface.  This will include the source code in 
+{\bf ice\_comp\_mct.F90}, for example.  In coupled runs, the CESM coupler 
+multiplies the fluxes by the ice area, so they are divided by the ice area 
+in CICE to get the correct fluxes.
+
+The options {\tt -DBLCKX=\$(CICE\_BLCKX)} and {\tt -DBLCKY=\$(CICE\_BLCKY)} 
+set the block sizes used in each grid direction.  These values are 
+set automatically in the scripts for the coupled model.  Note that {\tt BLCKX} 
+and {\tt BLCKY} must divide evenly into the grid, and are used only for MPI 
+grid decomposition.  If {\tt BLCX} or {\tt BLCKY} do not divide evenly into 
+the grid, which determines the number of blocks in each direction, the model 
+setup will exit from the setup script and print an error message to the 
+{\bf ice.bldlog*} (build log) file.
+
+The flag {\tt -DMXBLCKS} is essentially the threading option. This controls
+the number of "blocks" per processor. This can describe the number of OpenMP
+threads on an MPI task, or can simply be that a single MPI task handles
+a number of blocks.
+
+The flat {\tt -DNTR\_AERO=n} flag turns on the aerosol deposition physics in
+the sea ice where {\tt n} is the number of tracer species and {\tt 0} turns
+off the tracers. More details on this are in the section on tracers. 
+
+The flag {\tt -D\_MPI} sets up the message passing interface.  This must be set
+for runs using a parallel environment.  To get a better idea of what code
+is included or excluded at compile time, grep for {\tt ifdef} and {\tt ifndef}
+in the source code or look at the {\bf *.f90} files in the /{\bf obj} directory.
+
