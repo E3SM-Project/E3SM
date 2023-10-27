@@ -47,6 +47,6 @@ void create_nudging_weights_ncfile(int ncols, int nlevs, const std::string& file
 TEST_CASE("create_nudging_weights","create_nudging_weights")
 {
   create_nudging_weights_ncfile(218, 6, "nudging_weights_remapped.nc");
-  create_nudging_weights_ncfile(218, 128, "nudging_weights.nc");
+  create_nudging_weights_ncfile(218, 128, "nudging_weights_nudged.nc");
 }
 } // end namespace
