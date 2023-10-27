@@ -313,7 +313,7 @@ _TESTS = {
     "e3sm_extra_coverage" : {
         "inherit" : ("e3sm_atm_extra_coverage", "e3sm_ocnice_extra_coverage"),
         "tests"   : (
-            "SMS_D_Ln3.TL319_EC30to60E2r2_wQU225EC30to60E2r2.GMPAS-JRA-WW3",
+            "SMS_D_Ln3.TL319_EC30to60E2r2_wQU225EC30to60E2r2.GMPAS-JRA1p5-WW3.ww3-jra_1958",
             )
         },
 

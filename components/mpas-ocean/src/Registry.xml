@@ -314,17 +314,17 @@
 					description="If true, Redi slope is tapered near sfc based on Large et al 1997"
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_Redi_N2_based_taper_enable" type="logical" default_value=".true."
-					description="If true apply the N2 limiting of Danabasoglu and Marshall 2007"
-					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_Redi_N2_based_taper_min" type="real" default_value="0.1"
-					description="minimum taper value for the N2 limiting of Danabasoglu and Marshall 2007"
-					possible_values="greater than zero and less than 1"
-		/>
-		<nml_option name="config_Redi_N2_based_taper_limit_term1" type="logical" default_value=".true."
+		<nml_option name="config_Redi_limit_term1" type="logical" default_value=".true."
 					description="If true, the N2 limiting is applied to the horizontal diffusion term"
 					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_Redi_use_quasi_monotone_limiter" type="logical" default_value=".true."
+					description="If true, fluxes are reduced to prevent tracers from violating monotonicity. Cross-term fluxes are scaled toward zero to prevent tracers from under/overshooting the min/max values in adjacent cells and layers"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_Redi_quasi_monotone_safety_factor" type="real" default_value="0.9"
+					description="A safety factor applied to flux scaling when monotonicity is violated. Smaller values scale fluxes toward zero more aggressively."
+					possible_values="A value between 0 and 1"
 		/>
 		<nml_option name="config_Redi_min_layers_diag_terms" type="integer" default_value="6"
 					description="Redi diagonal terms (2 and 3) are turned off from layer 1 through config_Redi_min_layers_diag_terms-1, and on from config_Redi_min_layers_diag_terms to nVertLevels. The Redi diagonal terms are not guaranteed to produce bounded tracer fields, and in practice produce growing temperatures in a few columns with fewer than 5 vertical cells. Redi is meant for isopycnal mixing in the deep ocean, so not applying Redi diagonal terms in very shallow regions is an acceptable solution."
@@ -3008,10 +3008,6 @@
 			description="spatially and depth varying GM kappa.  The scaling is based on the Brunt Vaisala Frequency relative to a maximum value below the mixed layer, follows from Danabasoglu and Marshall 2007.  If config_GM_closure is not set to N2_dependent the scaling value is set to 1 everywhere."
 			packages="gm"
 		/>
-		<var name="RediKappaScaling" type="real" dimensions="nVertLevelsP1 nCells Time" units="1"
-			description="Scaling coefficient for GM kappa. Varies from 0 to 1.  The scaling is based on the Brunt Vaisala Frequency relative to a maximum value below the mixed layer, follows from Danabasoglu and Marshall 2007.  If config_Redi_N2_based_taper_enable = .false. the scaling is set to 1 everywhere."
-			packages="gm"
-		/>
 		<var name="RediKappaSfcTaper" type="real" dimensions="nVertLevelsP1 nCells Time" units="1"
 			description="Scaling coefficient for Redi kappa. Varies from 0 to 1."
 			packages="gm"
@@ -3148,6 +3144,14 @@
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="slopeTriadDown" type="real" dimensions="nVertLevels TWO nEdges Time" units="non-dimensional" default_value="0.0"
+			 description="Magnitude of slope of isopycnal surface, using triad through this cell and edge, angled up. Uses expansion of equation of state."
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="limiterUp" type="real" dimensions="nVertLevels TWO nEdges Time" units="non-dimensional" default_value="0.0"
+			 description="Magnitude of slope of isopycnal surface, using triad through this cell and edge, angled up. Uses expansion of equation of state."
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="limiterDown" type="real" dimensions="nVertLevels TWO nEdges Time" units="non-dimensional" default_value="0.0"
 			 description="Magnitude of slope of isopycnal surface, using triad through this cell and edge, angled up. Uses expansion of equation of state."
 			 packages="forwardMode;analysisMode"
 		/>
