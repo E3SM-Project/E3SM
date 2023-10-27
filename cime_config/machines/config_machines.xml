@@ -4402,6 +4402,7 @@
       <env name="BLA_VENDOR">Generic</env>
       <env name="ESSL_PATH">$ENV{OLCF_ESSL_ROOT}</env>
       <env name="HDF5_ROOT">$ENV{OLCF_HDF5_ROOT}</env>
+      <env name="HDF5_USE_STATIC_LIBRARIES">True</env>
       <env name="PGI_ACC_POOL_ALLOC">0</env>
       <env name="SMPIARGS"> </env>
     </environment_variables>
