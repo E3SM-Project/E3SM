@@ -21,6 +21,8 @@
     <support_level>Experimental, under development</support_level>
   </compset>
 
+<!-- THIS NEEDS TO BE CHANGED BELOW BY JON AND ANDREW -->
+
   <compset>
       <alias>F2010-SCREAMv1</alias> <!-- Coupled land-atm compset (using SCREAMv1), 2010 initial conditions -->
       <lname>2010_SCREAM_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP</lname>
@@ -39,6 +41,8 @@
       <support_level>Experimental, under development</support_level>
   </compset>
 
+<!-- THIS NEEDS TO BE CHANGED ABOVE BY JON AND ANDREW -->
+
   <compset>
       <alias>F2010-SCREAMv1-MPASSI</alias> <!-- Coupled land-atm compset (using SCREAMv1), 2010 initial conditions -->
       <lname>2010_SCREAM_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV_SIAC_SESP</lname>
@@ -51,11 +55,15 @@
       <support_level>Experimental, under development</support_level>
   </compset>
 
+<!-- THIS NEEDS TO BE CHANGED BELOW BY JON AND ANDREW -->
+
   <compset>
       <alias>F2010-SCREAMv1-noAero</alias> <!-- Coupled land-atm compset (using SCREAMv1), 2010 initial conditions, turn off Aerosol forcing -->
       <lname>2010_SCREAM%noAero_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP</lname>
       <support_level>Experimental, under development</support_level>
   </compset>
+
+<!-- THIS NEEDS TO BE CHANGED ABOVE BY JON AND ANDREW -->
 
   <compset>
       <alias>F2010-SCREAMv1-MPASSI-noAero</alias> <!-- Coupled land-atm compset (using SCREAMv1), 2010 initial conditions, turn off Aerosol forcing -->
