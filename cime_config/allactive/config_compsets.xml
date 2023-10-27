@@ -16,7 +16,7 @@
     TIME = Time period (e.g. 2000, HIST, RCP8...)
     ATM  = [EAM, SATM, SCREAM]
     LND  = [ELM,  SLND]
-    ICE  = [MPASSI, CICE, DICE, SICE]
+    ICE  = [MPASSI, DICE, SICE]
     OCN  = [MPASO, DOCN, SOCN]
     ROF  = [MOSART, SROF]
     GLC  = [MALI, SGLC]
@@ -396,13 +396,14 @@
   <lname>1850_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_MALI%STATIC_SWAV</lname>
 </compset>
 
-<!-- OCN + CICE + GLC Only Compsets -->
+<!-- OCN + SEAICE + GLC Only Compsets -->
 <compset>
   <alias>MPAS_LISIO_TEST</alias>
   <lname>2000_DATM%NYF_SLND_MPASSI_MPASO_DROF%NYF_MALI%SIA_SWAV</lname>
 </compset>
 
 <!-- Slab ocean cases -->
+<!-- THIS NEEDS TO BE FIXED BELOW BY JON AND ANDREW -->
 <compset>
   <alias>E1850C5ELM</alias>
   <lname>1850_EAM_ELM%SP_CICE_DOCN%SOM_MOSART_SGLC_SWAV</lname>
@@ -427,6 +428,7 @@
   <alias>E20TRC5CNECACTCBC</alias>
   <lname>20TR_EAM_ELM%CNECACTCBC_CICE_DOCN%SOM_MOSART_SGLC_SWAV</lname>
 </compset>
+<!-- THIS NEEDS TO BE FIXED ABOVE BY JON AND ANDREW -->
 
 <entries>
 
