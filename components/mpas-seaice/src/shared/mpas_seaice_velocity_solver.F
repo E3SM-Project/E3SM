@@ -64,7 +64,7 @@ module seaice_velocity_solver
        sinOceanTurningAngle = 0.0_RKIND, & ! northern hemisphere
        cosOceanTurningAngle = 1.0_RKIND, & ! northern hemisphere
        seaiceAreaMinimum = puny, &         
-       seaiceMassMinimum = 10*puny         
+       seaiceMassMinimum = 10.0_RKIND*puny         
 
 contains
 
