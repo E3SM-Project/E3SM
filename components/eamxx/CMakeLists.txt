@@ -25,7 +25,7 @@ set (EKAT_CMAKE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../externals/ekat/cmake)
 list(APPEND CMAKE_MODULE_PATH
      ${CMAKE_CURRENT_SOURCE_DIR}/cmake
      ${EKAT_CMAKE_PATH}
-     ${EKAT_CMAKE_PATH}/pkg_build
+     ${EKAT_CMAKE_PATH}/tpls
 )
 if (SCREAM_CIME_BUILD)
   list(APPEND CMAKE_MODULE_PATH
