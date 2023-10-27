@@ -1065,7 +1065,7 @@
     <default_value>1</default_value>
     <group>build_grid</group>
     <file>env_build.xml</file>
-    <desc>number of ice thickness categories - DO NOT EDIT (set by CICE configure)</desc>
+    <desc>number of ice thickness categories - DO NOT EDIT (set by MPAS-SeaIce configure)</desc>
   </entry>
 
   <entry id="ROF_GRID">

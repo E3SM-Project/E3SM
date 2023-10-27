@@ -1420,7 +1420,7 @@ contains
        call seq_flds_add(i2x_states,"Si_bpress")
        call seq_flds_add(x2o_states,"Si_bpress")
        longname = 'Sea ice basal pressure'
-       stdname  = 'cice_basal_pressure'
+       stdname  = 'mpassi_basal_pressure'
        units    = 'Pa'
        attname  = 'Si_bpress'
        call metadata_set(attname, longname, stdname, units)
