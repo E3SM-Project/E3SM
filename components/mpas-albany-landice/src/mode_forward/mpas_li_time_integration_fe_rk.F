@@ -202,6 +202,7 @@ module li_time_integration_fe_rk
       allocate(fluxAcrossGroundingLineAccum(nEdges+1))
 
       temperaturePrev(:,:) = 0.0_RKIND
+      waterFracPrev(:,:) = 0.0_RKIND
       layerThicknessPrev(:,:) = 0.0_RKIND
       layerThicknessTmp(:,:) = 0.0_RKIND
       damage3dPrev(:,:) = 0.0_RKIND
@@ -293,7 +294,6 @@ module li_time_integration_fe_rk
       if ( (trim(config_time_integration) == 'forward_euler') .or. &
            ((trim(config_time_integration) == 'runge_kutta') .and. &
            (config_rk_order == 1)) ) then
-         config_rk_order = 1
          nRKstages = 1
          rkSubstepWeights(:) = 1.0_RKIND
       elseif ( (trim(config_time_integration) == 'runge_kutta') .and. &
@@ -344,12 +344,14 @@ module li_time_integration_fe_rk
             err = 1
             call mpas_log_write('config_rk3_stages must 3 or 4', &
                                 messageType=MPAS_LOG_ERR)
+            return
         endif
       else
          err = 1
          call mpas_log_write('config_time_integration = ' // trim(config_time_integration) &
                              // ' is not supported with config_rk_order = $i', &
                              intArgs=(/config_rk_order/), messageType=MPAS_LOG_ERR)
+         return
       endif 
 ! *** Start RK loop ***
       do rkStage = 1, nRKstages
@@ -387,6 +389,9 @@ module li_time_integration_fe_rk
             layerThickness(:,:) = rkSSPweights(rkStage) * layerThicknessPrev(:,:) + &
                                      (1.0_RKIND - rkSSPweights(rkStage)) * layerThickness(:,:)
             thickness = sum(layerThickness, 1)
+            ! Calculate masks after updating thickness
+            call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+            err = ior(err, err_tmp)
 
             if (trim(config_thermal_solver) .ne. 'none') then
                do iCell = 1, nCells
@@ -433,12 +438,6 @@ module li_time_integration_fe_rk
 
          endif
        
-         call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
-         err = ior(err, err_tmp)
-
-         call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
-         call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
- 
          ! === Ensure damage is within bounds before velocity solve ===
          if ( config_finalize_damage_after_advection ) then
              call mpas_timer_start("finalize damage")
@@ -486,6 +485,14 @@ module li_time_integration_fe_rk
 ! Finalize budget updates
       ! Calculate volume converted from grounded to floating
       ! This needs to be determined after SMB/BMB are applied because those can change floating/grounded state
+      call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+      call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
+
+      call mpas_timer_start("halo updates")
+      call mpas_dmpar_field_halo_exch(domain, 'cellMask')
+      call mpas_dmpar_field_halo_exch(domain, 'edgeMask')
+      call mpas_timer_stop("halo updates")
+
       call li_grounded_to_floating(cellMaskPrev, cellMask, thickness, groundedToFloatingThickness, nCells)
       sfcMassBalApplied(:) = sfcMassBalAccum(:)
       groundedSfcMassBalApplied(:) = groundedSfcMassBalAccum(:)
