@@ -253,6 +253,7 @@ TEST_CASE("nudging") {
                           "np1.2000-01-01-00000.nc";
   params_mid.set<std::vector<std::string>>("nudging_filename",{nudging_f});
   params_mid.set<std::vector<std::string>>("nudging_fields",{"T_mid","qv","U","V"});
+  params_mid.set<int>("use_nudging_weights",0);
   std::shared_ptr<AtmosphereProcess> nudging_mid = std::make_shared<Nudging>(io_comm,params_mid);
 
   nudging_mid->set_grids(gm);
