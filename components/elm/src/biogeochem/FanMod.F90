@@ -49,11 +49,11 @@ module FanMod
   real(r8), parameter :: SHR_CONST_MWDAIR  = 28.966_R8       ! molecular weight dry air ~ kg/kmole
 #else
   private
-  public update_org_n
-  public eval_fluxes_storage
-  public update_npool
-  public update_4pool
-  public update_urea
+  public update_org_n ! evaluate decomposition/mineralization N fluxes; update organic N pools and flux into soil
+  public eval_fluxes_storage ! Evaluate nitrogen volatization fluxes in animal housings and storage
+  public update_npool ! evaluate fluxes and update states of TAN in n-pool model
+  public update_4pool ! evaluate fluxes and update states of the 4 slurry pools
+  public update_urea ! similar as update_npool for urea except no NO3 and volatization occur
 #endif
   
   ! Indices in flux arrays, soil:

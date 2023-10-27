@@ -57,9 +57,10 @@ module FanUpdateMod
 
   private
   ! !PUBLIC MEMBER FUNCTIONS:
-  public fanInit
-  public fan_eval
-  public fan_to_sminn
+  public fanInit ! read namelist and set fan mode
+  public fan_eval ! main call to FAN module
+  public fan_to_sminn ! Collect the FAN fluxes into totals which are either passed to the CLM N cycle
+                      ! or used diagnostically. 
 
   ! Structure of FAN TAN pools: number of age classes for N each type:
   integer, parameter :: num_cls_slr = 4 ! slurry (S0,S1,S2,S3)
