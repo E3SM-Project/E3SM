@@ -193,6 +193,8 @@
         <command name="unload">cray-hdf5-parallel</command>
         <command name="unload">cray-netcdf-hdf5parallel</command>
         <command name="unload">cray-parallel-netcdf</command>
+        <command name="unload">cray-netcdf</command>
+        <command name="unload">cray-hdf5</command>
         <command name="unload">PrgEnv-gnu</command>
         <command name="unload">PrgEnv-intel</command>
         <command name="unload">PrgEnv-nvidia</command>
@@ -200,7 +202,10 @@
         <command name="unload">PrgEnv-aocc</command>
         <command name="unload">intel</command>
         <command name="unload">intel-oneapi</command>
+        <command name="unload">nvidia</command>
+        <command name="unload">aocc</command>
         <command name="unload">cudatoolkit</command>
+        <command name="unload">climate-utils</command>
         <command name="unload">craype-accel-nvidia80</command>
         <command name="unload">craype-accel-host</command>
         <command name="unload">perftools-base</command>
@@ -341,11 +346,19 @@
         <command name="unload">cray-hdf5-parallel</command>
         <command name="unload">cray-netcdf-hdf5parallel</command>
         <command name="unload">cray-parallel-netcdf</command>
+        <command name="unload">cray-netcdf</command>
+        <command name="unload">cray-hdf5</command>
         <command name="unload">PrgEnv-gnu</command>
+        <command name="unload">PrgEnv-intel</command>
         <command name="unload">PrgEnv-nvidia</command>
         <command name="unload">PrgEnv-cray</command>
         <command name="unload">PrgEnv-aocc</command>
+        <command name="unload">intel</command>
+        <command name="unload">intel-oneapi</command>
+        <command name="unload">nvidia</command>
+        <command name="unload">aocc</command>
         <command name="unload">cudatoolkit</command>
+        <command name="unload">climate-utils</command>
         <command name="unload">craype-accel-nvidia80</command>
         <command name="unload">craype-accel-host</command>
         <command name="unload">perftools-base</command>
@@ -474,6 +487,8 @@
         <command name="unload">cray-hdf5-parallel</command>
         <command name="unload">cray-netcdf-hdf5parallel</command>
         <command name="unload">cray-parallel-netcdf</command>
+        <command name="unload">cray-netcdf</command>
+        <command name="unload">cray-hdf5</command>
         <command name="unload">PrgEnv-gnu</command>
         <command name="unload">PrgEnv-intel</command>
         <command name="unload">PrgEnv-nvidia</command>
@@ -481,7 +496,10 @@
         <command name="unload">PrgEnv-aocc</command>
         <command name="unload">intel</command>
         <command name="unload">intel-oneapi</command>
+        <command name="unload">nvidia</command>
+        <command name="unload">aocc</command>
         <command name="unload">cudatoolkit</command>
+        <command name="unload">climate-utils</command>
         <command name="unload">craype-accel-nvidia80</command>
         <command name="unload">craype-accel-host</command>
         <command name="unload">perftools-base</command>
@@ -508,7 +526,7 @@
 
       <modules compiler="amdclang">
         <command name="load">PrgEnv-aocc</command>
-        <command name="load">aocc/3.2.0</command>
+        <command name="load">aocc/4.0.0</command>
         <command name="load">cray-libsci</command>
       </modules>
 
