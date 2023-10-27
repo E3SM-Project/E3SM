@@ -319,7 +319,7 @@
       </pes>
     </mach>
   </grid>
-  <grid name="oi%oEC30to60E2r2.+w%wQU225EC30to60E2r2|oi%oEC60to30v3.+w%wQU225EC60to30">
+  <grid name="oi%EC30to60E2r2.+w%wQU225EC30to60E2r2|oi%oEC60to30v3.+w%wQU225EC60to30">
     <mach name="anvil|chrysalis">
       <pes compset="DATM.+MPASO.+WW3" pesize="any">
         <comment>none</comment>
