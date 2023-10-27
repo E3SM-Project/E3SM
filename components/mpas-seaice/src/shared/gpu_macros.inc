@@ -1,19 +1,19 @@
 #ifdef MPAS_OPENACC
 
-#define GPU  acc
-#define GPUC acc               /* continuation line macro */
-#define GPUF acc )             /* final line of GPU directive */
-#define ENTER_DATA  enter data
-#define EXIT_DATA   exit data
-#define DATA        data
-#define DATA_END    end data
-#define COPY_IN_LP  copyin(    /* for multi-line variable lists */
-#define COPY_OUT_LP copyout(   /* for multi-line variable lists */
-#define COPY_DEL_LP delete(
-#define UPDATE_D(v) update device v
-#define UPDATE_D_LP update device(
-#define UPDATE_H(v) update host v   /* !$GPU UPDATE_H((stressDivergenceU, stressDivergenceV)) -> !$acc update host (stressDivergenceU, stressDivergenceV) */
-#define UPDATE_H_LP update host(    /* for multi-line variable lists */
+#define GPU 1
+#define GPUC 1
+#define GPUF 1
+#define ENTER_DATA 1
+#define EXIT_DATA 1
+#define DATA 1
+#define DATA_END 1
+#define COPY_IN_LP 1
+#define COPY_OUT_LP 1
+#define COPY_DEL_LP 1
+#define UPDATE_D(v) v
+#define UPDATE_D_LP 1
+#define UPDATE_H(v) v
+#define UPDATE_H_LP 1
 
 #else
 

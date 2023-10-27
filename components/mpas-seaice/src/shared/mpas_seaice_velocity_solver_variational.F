@@ -428,7 +428,8 @@ contains
 #ifdef MPAS_OPENMP_OFFLOAD
 !$omp target teams distribute parallel do
 #elif MPAS_OPENACC
-!$acc parallel loop gang worker
+!YSK
+!!$acc parallel loop gang worker
 #else
 !$omp parallel do default(shared) private(iGradientVertex, iBasisVertex, iVertex, jVertex, &
 !$omp&                                    strain11Tmp, strain22Tmp, strain12Tmp)
@@ -684,7 +685,8 @@ contains
 #ifdef MPAS_OPENMP_OFFLOAD
 !$omp target teams distribute parallel do
 #elif MPAS_OPENACC
-!$acc parallel loop gang worker
+!YSK
+!!$acc parallel loop gang worker
 #else
 !$omp parallel do default(shared) private(iVertexOnCell)
 #endif
@@ -964,7 +966,8 @@ contains
 #ifdef MPAS_OPENMP_OFFLOAD
 !$omp target teams distribute parallel do
 #elif MPAS_OPENACC
-!$acc parallel loop gang worker
+!YSK
+!!$acc parallel loop gang worker
 #else
 !$omp parallel do default(shared) private(stressDivergenceUVertex, stressDivergenceVVertex, &
 !$omp&   iSurroundingCell, iCell, iVelocityVertex, stressDivergenceUCell, stressDivergenceVCell, iStressVertex)
