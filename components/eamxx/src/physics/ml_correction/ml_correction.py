@@ -8,12 +8,20 @@ from scream_run.steppers.machine_learning import (
     predict,
 )
 
+
 def get_ML_model(model_path):
     if model_path == "NONE":
         return None
     config = MachineLearningConfig(models=[model_path])
     model = open_model(config)
-    return model    
+    return model
+
+
+def ensure_correction_ordering(correction):
+    for key in correction:
+        correction[key] = correction[key].transpose("ncol", "z")
+    return correction
+
 
 def get_ML_correction(model, T_mid, qv, cos_zenith, dt):
     ds = xr.Dataset(
@@ -23,7 +31,7 @@ def get_ML_correction(model, T_mid, qv, cos_zenith, dt):
             cos_zenith_angle=(["ncol"], cos_zenith),
         )
     )
-    return predict(model, ds, dt)
+    return ensure_correction_ordering(predict(model, ds, dt))
 
 
 def update_fields(

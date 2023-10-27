@@ -33,6 +33,8 @@ void MLCorrection::set_grids(
   // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level and
   // interfaces
   FieldLayout scalar3d_layout_mid{{COL, LEV}, {m_num_cols, m_num_levs}};
+  FieldLayout horiz_wind_layout { {COL,CMP,LEV}, {m_num_cols,2,m_num_levs} };
+
   
   /* ----------------------- WARNING --------------------------------*/
   /* The following is a HACK to get things moving, we don't want to
@@ -42,8 +44,7 @@ void MLCorrection::set_grids(
    */
   add_field<Updated>("T_mid", scalar3d_layout_mid, K, grid_name, ps);
   add_field<Updated>("qv",    scalar3d_layout_mid, Q, grid_name, "tracers", ps);
-  add_field<Updated>("U",     scalar3d_layout_mid, m/s, grid_name, ps);
-  add_field<Updated>("V",     scalar3d_layout_mid, m/s, grid_name, ps);
+  add_field<Updated>("horiz_winds",   horiz_wind_layout,   m/s,     grid_name, ps);
   /* ----------------------- WARNING --------------------------------*/
   add_group<Updated>("tracers", grid_name, 1, Bundling::Required);
 }
@@ -70,9 +71,9 @@ void MLCorrection::run_impl(const double dt) {
   const auto &qv       = qv_field.get_view<Real **, Host>();
   const auto &T_mid_field = get_field_out("T_mid");
   const auto &T_mid       = T_mid_field.get_view<Real **, Host>();
-  const auto &u_field = get_field_out("U");
+  const auto &u_field = get_field_out("horiz_winds").get_component(0);
   const auto &u       = u_field.get_view<Real **, Host>();
-  const auto &v_field = get_field_out("V");
+  const auto &v_field = get_field_out("horiz_winds").get_component(1);
   const auto &v       = v_field.get_view<Real **, Host>();
 
   // having m_lat and m_lon in set_grids breaks the standalone unit test
