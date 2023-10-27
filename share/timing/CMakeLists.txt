@@ -46,10 +46,10 @@ if (FREEFLAGS)
   set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${FREEFLAGS}")
 endif()
 
-add_library(timing ${SRCS_F90} ${SRCS_C})
-target_include_directories(timing PRIVATE ${TIMING_INCLUDE_DIRS})
-target_compile_definitions(timing PRIVATE ${TIMING_CPPDEFS})
-set_target_properties(timing PROPERTIES PUBLIC_HEADER "gptl.h;${CMAKE_BINARY_DIR}/perf_mod.mod;${CMAKE_BINARY_DIR}/perf_utils.mod;")
+add_library(gptl ${SRCS_F90} ${SRCS_C})
+target_include_directories(gptl PRIVATE ${TIMING_INCLUDE_DIRS})
+target_compile_definitions(gptl PRIVATE ${TIMING_CPPDEFS})
+set_target_properties(gptl PROPERTIES PUBLIC_HEADER "gptl.h;${CMAKE_BINARY_DIR}/perf_mod.mod;${CMAKE_BINARY_DIR}/perf_utils.mod;")
 
-install(TARGETS timing
+install(TARGETS gptl
   PUBLIC_HEADER DESTINATION include)

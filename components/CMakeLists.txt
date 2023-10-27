@@ -36,6 +36,10 @@ function(set_compilers_e3sm)
     set(E3SM_DEFAULT_BUILD_TYPE "RELEASE" CACHE STRING "Default build type, inferred from ${DEBUG}")
   endif()
 
+  set(CMAKE_CXX_COMPILER     ${CMAKE_CXX_COMPILER}     CACHE STRING "The CXX compiler")
+  set(CMAKE_C_COMPILER       ${CMAKE_C_COMPILER}       CACHE STRING "The C   compiler")
+  set(CMAKE_Fortran_COMPILER ${CMAKE_Fortran_COMPILER} CACHE STRING "The Fortran compiler")
+
   # USE_CUDA or USE_HIP is set through Macros.cmake
   # For instance: cime_config/machines/cmake_macros/gnugpu_summit.cmake
   # If it exists, then set parent's scope to true; otherwise to false
