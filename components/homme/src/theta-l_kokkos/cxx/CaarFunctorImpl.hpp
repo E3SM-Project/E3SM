@@ -351,7 +351,7 @@ struct CaarFunctorImpl {
     Kokkos::fence();
     GPTLstop("caar compute");
 
-#ifndef TESTER_SIMPLE
+#ifndef TESTER_NOMPI
     if (nerr > 0)
       check_print_abort_on_bad_elems("CaarFunctorImpl::run TagPreExchange", data.n0);
 

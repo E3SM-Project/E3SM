@@ -18,6 +18,11 @@ SET (NUM_POINTS 4)
 SET (NUM_PLEV 12)
 SET (QSIZE_D 4)
 SET (PIO_INTERP TRUE)
+
+#these vars shared between all targets, so changing one var, like TESTE_NOMPI
+#for one test only won't work, config is built once and for the last test
+SET (TESTER_NOMPI TRUE)
+
 HommeConfigFile (${THIS_CONFIG_IN} ${THIS_CONFIG_HC} ${THIS_CONFIG_H} )
 
 ADD_LIBRARY(thetal_kokkos_ut_lib
@@ -231,6 +236,7 @@ SET (CONFIG_DEFINES HAVE_CONFIG_H)
 
 
   ##########################################3 simple CAAR
+
   SET (C1_UT_CXX_SRCS
    ${THETA_UT_DIR}/c1_ut.cpp
   )
@@ -241,10 +247,9 @@ SET (CONFIG_DEFINES HAVE_CONFIG_H)
     SET (NUM_CPUS 1)
   ENDIF()
 
-  SET (CONFIG_DEFINES_C1 TESTER_SIMPLE ${CONFIG_DEFINES})
-  cxx_unit_test (c1_ut "${CAAR_UT_F90_SRCS}" "${C1_UT_CXX_SRCS}" "${CAAR_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES_C1}" ${NUM_CPUS})
+#cxx_unit_test_simple (s1_ut "${S1_SRCS}" "${SPHERE_OP_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES_SIMPLE}" ${NUM_CPUS})  
+cxx_unit_test_simple (c1_ut "${C1_UT_CXX_SRCS}" "${CAAR_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
   TARGET_LINK_LIBRARIES(c1_ut thetal_kokkos_ut_lib)
-
 
   # ### Remap functor unit test
 

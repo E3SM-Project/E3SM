@@ -126,6 +126,12 @@ macro(cxx_unit_test_simple target_name target_cxx_srcs include_dirs config_defin
   #  SET_TARGET_PROPERTIES(${target_name} PROPERTIES Fortran_MODULE_DIRECTORY ${MODULE_DIR})
   #ENDIF()
 
+#this shows that for tests in share and in thetal config_defines differ
+#conf defines here ------------- TESTER_NOMPI;HAVE_CONFIG_H
+#conf defines here ------------- TESTER_NOMPI;PLEV=128;QSIZE_D=10;_MPI=1;_PRIM;NP=4;NC=4
+#conf defines here ------------- TESTER_NOMPI;PLEV=128;QSIZE_D=10;_MPI=1;_PRIM;NP=4;NC=4
+#message("conf defines here ------------- ${config_defines}")
+
   # Compile definitions and flags
   SET_TARGET_PROPERTIES(${target_name} PROPERTIES COMPILE_DEFINITIONS "${config_defines}")
   IF(BUILD_HOMME_WITHOUT_PIOLIBRARY)
