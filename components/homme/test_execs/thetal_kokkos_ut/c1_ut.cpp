@@ -13,8 +13,8 @@
 #include "utilities/SyncUtils.hpp"
 #include "utilities/ViewUtils.hpp"
 
-#define NNE 10
-#define HOWMANY 20
+#define NNE 20
+#define HOWMANY 200
 
 
 using namespace Homme;
