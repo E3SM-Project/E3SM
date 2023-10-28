@@ -292,7 +292,7 @@
     <DESC>Perlmutter GPU nodes at NERSC.  Phase1 only: Each GPU node has single AMD EPYC 7713 64-Core (Milan) (256GB) and 4 nvidia A100's.</DESC>
     <NODENAME_REGEX>$ENV{NERSC_HOST}:perlmutter</NODENAME_REGEX>
     <OS>Linux</OS>
-    <COMPILERS>gnugpu,gnu,nvidiagpu,nvidia</COMPILERS>
+    <COMPILERS>gnugpu,gnu,nvidiagpu,nvidia,nvhpcacc</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>e3sm_g</PROJECT>
     <SAVE_TIMING_DIR>/global/cfs/cdirs/e3sm</SAVE_TIMING_DIR>
@@ -321,7 +321,10 @@
       <executable>srun</executable>
       <arguments>
         <arg name="label"> --label</arg>
+<!--
         <arg name="num_tasks"> -n {{ total_tasks }} -N {{ num_nodes }}</arg>
+-->
+        <arg name="num_tasks"> -n {{ total_tasks }}</arg>
         <arg name="thread_count">-c $SHELL{echo 128/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
         <arg name="binding"> $SHELL{if [ 64 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads";fi;} </arg>
         <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
@@ -361,6 +364,13 @@
       <modules compiler="nvidia.*">
         <command name="load">PrgEnv-nvidia</command>
         <command name="load">nvidia/22.7</command>
+      </modules>
+
+      <modules compiler="nvhpcacc">
+        <command name="load">PrgEnv-nvhpc/8.4.0</command>
+        <command name="load">nvidia/22.7</command>
+        <command name="load">cudatoolkit/11.7</command>
+        <command name="load">craype-accel-nvidia80</command>
       </modules>
 
       <modules compiler="gnugpu">
@@ -414,12 +424,20 @@
     <environment_variables compiler="nvidiagpu">
       <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
     </environment_variables>
+    <environment_variables compiler="nvhpcacc">
+      <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
+    </environment_variables>
     <environment_variables compiler="gnu.*" mpilib="mpich">
       <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.9.1/cray-mpich-8.1.25/gcc-11.2.0; else echo "$ADIOS2_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="nvidia.*" mpilib="mpich">
       <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.9.1/cray-mpich-8.1.25/nvidia-22.7; else echo "$ADIOS2_ROOT"; fi}</env>
     </environment_variables>
+<!--
+    <environment_variables compiler="nvhpcacc" mpilib="mpich">
+      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.9.1/cray-mpich-8.1.25/nvidia-22.7; else echo "$ADIOS2_ROOT"; fi}</env>
+    </environment_variables>
+-->
     <resource_limits>
       <resource name="RLIMIT_STACK">-1</resource>
     </resource_limits>

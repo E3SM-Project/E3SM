@@ -31,7 +31,8 @@ else()
 endif()
 
 #YSK
-set(LDFLAGS "${LDFLAGS} -h acc")
+#set(LDFLAGS "${LDFLAGS} -acc -Minfo=accel")
+set(LDFLAGS "${LDFLAGS} -acc")
 
 set(CMAKE_C_COMPILER ${MPICC})
 set(CMAKE_CXX_COMPILER ${MPICXX})
@@ -64,7 +65,8 @@ if (USE_KOKKOS)
 endif()
 
 #YSK
-set(FFLAGS "${FFLAGS} -h acc")
+#set(FFLAGS "${FFLAGS} -acc -Minfo=accel")
+set(FFLAGS "${FFLAGS} -acc")
 
 set(CMAKE_Fortran_FLAGS "${FFLAGS}")
 set(CMAKE_C_FLAGS "${CFLAGS}")
