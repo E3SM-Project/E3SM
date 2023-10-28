@@ -17,7 +17,7 @@ atmosphere_processes:
     nudging_filename: [shoc_p3_source_data_${POSTFIX}.INSTANT.nsteps_x${NUM_STEPS}.${RUN_T0}.nc]
     nudging_fields: ["T_mid", "qv"]
     nudging_timescale: 0
-    use_nudging_weights: 0
+    use_nudging_weights: false
     nudging_weights_file: nudging_weights_${REMAPPED}.nc      
     source_pressure_type: ${VERT_TYPE}
     source_pressure_file: vertical_remap.nc ## Only used in the case of STATIC_1D_VERTICAL_PROFILE

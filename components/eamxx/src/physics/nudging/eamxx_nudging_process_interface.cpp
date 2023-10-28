@@ -11,7 +11,7 @@ Nudging::Nudging (const ekat::Comm& comm, const ekat::ParameterList& params)
   m_datafiles  = m_params.get<std::vector<std::string>>("nudging_filename");
   m_timescale = m_params.get<int>("nudging_timescale",0);
   m_fields_nudge = m_params.get<std::vector<std::string>>("nudging_fields");
-  m_use_weights   = m_params.get<int>("use_nudging_weights",1);
+  m_use_weights   = m_params.get<bool>("use_nudging_weights",false);
   auto src_pres_type = m_params.get<std::string>("source_pressure_type","TIME_DEPENDENT_3D_PROFILE");
   if (src_pres_type=="TIME_DEPENDENT_3D_PROFILE") {
     m_src_pres_type = TIME_DEPENDENT_3D_PROFILE;
@@ -84,10 +84,10 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 
 }
 // =========================================================================================
-void Nudging::apply_tendency(Field& base, const Field& next, const int dt)
+void Nudging::apply_tendency(Field& base, const Field& next, const Real dt)
 {
   // Calculate the weight to apply the tendency
-  const Real dtend = Real(dt)/Real(m_timescale);
+  const Real dtend = dt/Real(m_timescale);
   EKAT_REQUIRE_MSG(dtend>=0,"Error! Nudging::apply_tendency - timescale tendency of " << std::to_string(dt) 
 		  << " / " << std::to_string(m_timescale) << " = " << std::to_string(dtend) 
 		  << " is invalid.  Please check the timescale and/or dt");
@@ -98,10 +98,10 @@ void Nudging::apply_tendency(Field& base, const Field& next, const int dt)
   base.update(tend,dtend,Real(1.0));
 }
 // =========================================================================================
-void Nudging::apply_weighted_tendency(Field& base, const Field& next, const Field& weights, const int dt)
+void Nudging::apply_weighted_tendency(Field& base, const Field& next, const Field& weights, const Real dt)
 {
   // Calculate the weight to apply the tendency
-  const Real dtend = Real(dt)/Real(m_timescale);
+  const Real dtend = dt/Real(m_timescale);
   EKAT_REQUIRE_MSG(dtend>=0,"Error! Nudging::apply_tendency - timescale tendency of " << std::to_string(dt)
                   << " / " << std::to_string(m_timescale) << " = " << std::to_string(dtend)
                   << " is invalid.  Please check the timescale and/or dt");
@@ -338,9 +338,7 @@ void Nudging::run_impl (const double dt)
       Kokkos::deep_copy(atm_state_view,int_state_view);
     } else {
       // Back out a tendency and apply it.
-      if (m_use_weights <= 0) {
-        apply_tendency(atm_state_field, int_state_field, dt);
-      } else {
+      if (m_use_weights) {
         // get nudging weights field
         // NOTES: do we really need the vertical interpolation for nudging weights? Since we are going to 
         //        use the same grids as the case by providing the nudging weights file.
@@ -349,7 +347,9 @@ void Nudging::run_impl (const double dt)
         auto nudging_weights_field = get_helper_field("nudging_weights");
         // appply the nudging tendencies to the ATM states
         apply_weighted_tendency(atm_state_field, int_state_field, nudging_weights_field, dt);
-      }
+      } else {
+	 apply_tendency(atm_state_field, int_state_field, dt);
+      }      
     }
   }
 }
