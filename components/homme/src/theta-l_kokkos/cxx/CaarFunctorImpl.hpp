@@ -373,6 +373,14 @@ struct CaarFunctorImpl {
     profiling_pause();
   }
 
+#define K1
+#undef K2
+#undef K3
+#undef K4
+#undef K5
+#undef K6
+#undef K7
+
   KOKKOS_INLINE_FUNCTION
   void operator()(const TagPreExchange&, const TeamMember &team, int& nerr) const {
     // In this body, we use '====' to separate sync epochs (delimited by barriers)
@@ -380,54 +388,76 @@ struct CaarFunctorImpl {
 
     KernelVariables kv(team, m_tu);
 
+#ifdef K1    
     // =========== EPOCH 1 =========== //
     compute_div_vdp(kv);
+#endif
 
+#ifdef K2 
     // =========== EPOCH 2 =========== //
     kv.team_barrier();
-
     // Computes pi, omega, and phi.
     const bool ok = compute_scan_quantities(kv);
     if ( ! ok) nerr = 1;
+#endif
 
+#if 0
     if (m_rsplit==0 || !m_theta_hydrostatic_mode) {
       // ============ EPOCH 2.1 =========== //
       kv.team_barrier();
       compute_interface_quantities(kv);
     }
+#endif
 
+#if 0    
     if (m_rsplit==0) {
       // ============= EPOCH 2.2 ============ //
       kv.team_barrier();
       compute_vertical_advection(kv);
     }
+#endif
 
+#ifdef K3    
     // ============= EPOCH 3 ============== //
     kv.team_barrier();
     compute_accumulated_quantities(kv);
+#endif
 
+#if 0
     // Compute update quantities
     if (!m_theta_hydrostatic_mode) {
       compute_w_and_phi_tens (kv);
     }
+#endif
 
+#ifdef K4
     compute_dp_and_theta_tens (kv);
+#endif
 
+#ifdef K5
     // ============= EPOCH 4 =========== //
     // compute_v_tens reuses some buffers used by compute_dp_and_theta_tens 
     kv.team_barrier();
     compute_v_tens (kv);
+#endif
 
+#if 0    
     // Update states
     if (!m_theta_hydrostatic_mode) {
       compute_w_and_phi_np1(kv);
     }
-    compute_dp3d_and_theta_np1(kv);
+#endif
 
+#ifdef K6
+    compute_dp3d_and_theta_np1(kv);
+#endif
+
+#ifdef K7
     // ============= EPOCH 5 =========== //
     // v_tens has been computed after last barrier. Need to make sure it's done
     kv.team_barrier();
     compute_v_np1(kv);
+#endif
   }
 
   KOKKOS_INLINE_FUNCTION
