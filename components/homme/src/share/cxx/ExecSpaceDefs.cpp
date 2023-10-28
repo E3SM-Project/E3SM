@@ -179,7 +179,7 @@ team_num_threads_vectors_for_gpu (
                            num_vectors );
   }
 #else
-  return std::make_pair(16,2);
+  return std::make_pair(4,16);
 #endif  
 }
 
