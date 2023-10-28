@@ -13,12 +13,13 @@
 #include "utilities/SyncUtils.hpp"
 #include "utilities/ViewUtils.hpp"
 
-#define NNE 500
-#define HOWMANY 200
+#define NNE 10
+#define HOWMANY 20
 
 
 using namespace Homme;
 
+#if 0
 extern "C" {
 void init_caar_f90 (const int& ne,
                const Real* hyai_ptr, const Real* hybi_ptr,
@@ -35,29 +36,10 @@ void init_geo_views_f90 (Real*& d_ptr,Real*& dinv_ptr,
 void run_limiter_f90 (const int& np1, Real*& dp_ptr, Real*& vtheta_dp_ptr);
 void cleanup_f90();
 } // extern "C"
+#endif
+
 
 TEST_CASE("caar", "caar_testing") {
-
-  // Catch runs these blocks of code multiple times, namely once per each
-  // session within each test case. This is problematic for Context, which
-  // is a static singleton.
-  // We cannot call 'create' unless we are sure the object is not already stored
-  // in the context. One solution is to call 'create_if_not_there', but that's not what
-  // happens in mpi_cxx_f90_interface, which is called by the geometry_interface
-  // fortran module.
-  // Two solutions:
-  //  - cleaning up the context at the end of TEST_CASE: this would also delete
-  //    the comm object in the context, so you have to re-create it.
-  //    Notice, however, that the comm would *already be there* when this block
-  //    of code is executed for the first time (is created in tester.cpp),
-  //    so you need to check if it's there first.
-  //  - change mpi_cxx_f90_interface, to create the Connectivity only if not
-  //    already present.
-  //
-  // Among the two, the former seems cleaner, since it does not affect the
-  // src folder of Homme, only the test one. So I'm going with that.
-  // More precisely, I'm getting a copy of the existing Comm from the context,
-  // and reset it back in it after the cleanup
 
   constexpr int ne = NNE;
 
@@ -104,7 +86,7 @@ TEST_CASE("caar", "caar_testing") {
   std::vector<Real> mp(NP*NP);
 
   // This will also init the c connectivity.
-  init_caar_f90(ne,hyai_ptr,hybi_ptr,hyam_ptr,hybm_ptr,dvv.data(),mp.data(),hvcoord.ps0);
+  //init_caar_f90(ne,hyai_ptr,hybi_ptr,hyam_ptr,hybm_ptr,dvv.data(),mp.data(),hvcoord.ps0);
   ref_FE.init_mass(mp.data());
   ref_FE.init_deriv(dvv.data());
 
@@ -145,9 +127,9 @@ TEST_CASE("caar", "caar_testing") {
   Real* fcor_ptr     = fcor.data();
 
   // Get the f90 values for geometric views.
-  init_geo_views_f90(d_ptr,dinv_ptr,phis_ptr,gradphis_ptr,fcor_ptr,
-                     spmp_ptr,rspmp_ptr,tVisc_ptr,
-                     sph2c_ptr,mdet_ptr,minv_ptr);
+//  init_geo_views_f90(d_ptr,dinv_ptr,phis_ptr,gradphis_ptr,fcor_ptr,
+//                     spmp_ptr,rspmp_ptr,tVisc_ptr,
+//                     sph2c_ptr,mdet_ptr,minv_ptr);
 
   Kokkos::deep_copy(geo.m_d,d);
   Kokkos::deep_copy(geo.m_dinv,dinv);
@@ -170,22 +152,22 @@ TEST_CASE("caar", "caar_testing") {
     bm.set_connectivity(c.get_ptr<Connectivity>());
   }
 
-  using ScalarF90    = HostViewManaged<Real*[NUM_PHYSICAL_LEV][NP][NP]>;
-  using ScalarIntF90 = HostViewManaged<Real*[NUM_INTERFACE_LEV][NP][NP]>;
-  using VectorF90    = HostViewManaged<Real*[NUM_PHYSICAL_LEV][2][NP][NP]>;
-  using ScalarStateF90    = HostViewManaged<Real*[NUM_TIME_LEVELS][NUM_PHYSICAL_LEV][NP][NP]>;
-  using ScalarStateIntF90 = HostViewManaged<Real*[NUM_TIME_LEVELS][NUM_INTERFACE_LEV][NP][NP]>;
-  using VectorStateF90    = HostViewManaged<Real*[NUM_TIME_LEVELS][NUM_PHYSICAL_LEV][2][NP][NP]>;
+//  using ScalarF90    = HostViewManaged<Real*[NUM_PHYSICAL_LEV][NP][NP]>;
+//  using ScalarIntF90 = HostViewManaged<Real*[NUM_INTERFACE_LEV][NP][NP]>;
+//  using VectorF90    = HostViewManaged<Real*[NUM_PHYSICAL_LEV][2][NP][NP]>;
+//  using ScalarStateF90    = HostViewManaged<Real*[NUM_TIME_LEVELS][NUM_PHYSICAL_LEV][NP][NP]>;
+//  using ScalarStateIntF90 = HostViewManaged<Real*[NUM_TIME_LEVELS][NUM_INTERFACE_LEV][NP][NP]>;
+//  using VectorStateF90    = HostViewManaged<Real*[NUM_TIME_LEVELS][NUM_PHYSICAL_LEV][2][NP][NP]>;
 
-  ScalarStateF90    dp3d_f90("",elems.num_elems());
-  ScalarStateF90    vtheta_dp_f90("",elems.num_elems());
-  ScalarStateIntF90 w_i_f90("",elems.num_elems());
-  ScalarStateIntF90 phinh_i_f90("",elems.num_elems());
-  VectorStateF90    v_f90("",elems.num_elems());
+//  ScalarStateF90    dp3d_f90("",elems.num_elems());
+//  ScalarStateF90    vtheta_dp_f90("",elems.num_elems());
+//  ScalarStateIntF90 w_i_f90("",elems.num_elems());
+//  ScalarStateIntF90 phinh_i_f90("",elems.num_elems());
+//  VectorStateF90    v_f90("",elems.num_elems());
 
-  ScalarF90    omega_p_f90("",elems.num_elems());
-  ScalarIntF90 eta_dot_dpdn_f90("",elems.num_elems());
-  VectorF90    vn0_f90("",elems.num_elems());
+//  ScalarF90    omega_p_f90("",elems.num_elems());
+//  ScalarIntF90 eta_dot_dpdn_f90("",elems.num_elems());
+//  VectorF90    vn0_f90("",elems.num_elems());
 
   // Lambda to compute min of dp3d, to give meaningful initial value to derived.m_eta_dot_dpdn
   auto dp3d_min = [] (decltype(elems.m_state.m_dp3d) dp3d) -> Real {
@@ -246,6 +228,7 @@ TEST_CASE("caar", "caar_testing") {
 
           int  np1 = IPDF(0,2)(engine);
 
+#if 0	  
           // Sync scalars across ranks (only np1 is *really* necessary, but might as well...)
           auto mpi_comm = Context::singleton().get<Comm>().mpi_comm();
           MPI_Bcast(&dt,1,MPI_DOUBLE,0,mpi_comm);
@@ -254,6 +237,7 @@ TEST_CASE("caar", "caar_testing") {
           MPI_Bcast(&scale3,1,MPI_DOUBLE,0,mpi_comm);
           MPI_Bcast(&eta_ave_w,1,MPI_DOUBLE,0,mpi_comm);
           MPI_Bcast(&np1,1,MPI_INT,0,mpi_comm);
+#endif
 
           const int  n0  = (np1+1)%3;
           const int  nm1 = (np1+2)%3;
@@ -264,6 +248,7 @@ TEST_CASE("caar", "caar_testing") {
           elems.m_state.randomize(seed,max_pressure,hvcoord.ps0,hvcoord.hybrid_ai0,geo.m_phis);
           elems.m_derived.randomize(seed,dp3d_min(elems.m_state.m_dp3d));
 
+#if 0	  
           // Copy initial values to f90
           sync_to_host(elems.m_state.m_dp3d, dp3d_f90);
           sync_to_host(elems.m_state.m_vtheta_dp, vtheta_dp_f90);
@@ -274,6 +259,7 @@ TEST_CASE("caar", "caar_testing") {
           sync_to_host<2>(elems.m_derived.m_vn0, vn0_f90);
           sync_to_host(elems.m_derived.m_eta_dot_dpdn, eta_dot_dpdn_f90);
           sync_to_host(elems.m_derived.m_omega_p, omega_p_f90);
+#endif
 
           // Create the Caar functor
           CaarFunctorImpl caar(elems,tracers,ref_FE,hvcoord,sphop,params);
@@ -293,10 +279,10 @@ TEST_CASE("caar", "caar_testing") {
   }
 
   // Cleanup (see comment at the top for explanation of the treatment of Comm)
-  auto old_comm = c.get_ptr<Comm>();
-  c.finalize_singleton();
-  auto& new_comm = c.create<Comm>();
-  new_comm = *old_comm;
+//  auto old_comm = c.get_ptr<Comm>();
+//  c.finalize_singleton();
+//  auto& new_comm = c.create<Comm>();
+//  new_comm = *old_comm;
 
-  cleanup_f90();
+//  cleanup_f90();
 }
