@@ -1032,6 +1032,29 @@ module ocn_time_integration_split
 
                   end if ! tidal potential forcing
 
+                  ! direct application of tidal boundary condition
+                  if (config_use_tidal_forcing .and. trim(config_tidal_forcing_type) == 'direct') then
+                     call mpas_pool_get_array(forcingPool, &
+                                           'sshSubcycleCurWithTides', &
+                                            sshSubcycleCurWithTides)
+                     call mpas_pool_get_array(forcingPool, 'tidalInputMask', tidalInputMask)
+                     call mpas_pool_get_array(forcingPool, 'tidalBCValue', tidalBCValue)
+                     !$omp parallel
+                     !$omp do schedule(runtime)
+                     do iCell=1, nCellsAll
+                        ! boolean mask for now, could generalize to tappered sponge layer
+                        ! only modify layer thicknesses on tidal boundary
+                        do k = minLevelCell(iCell), maxLevelCell(iCell)
+                           sshSubcycleCurWithTides(iCell) = sshSubcycleCur(iCell) + &
+                               (tidalInputMask(iCell)*(tidalBCValue(iCell) - sshSubcycleCur(iCell)))
+                        end do
+                     end do
+                     !$omp end do
+                     !$omp end parallel
+                     call mpas_pool_get_array(forcingPool, &
+                                          'sshSubcycleCurWithTides', &
+                                           sshSubcycleCur)
+                  end if
                   if (edgeHaloComputeCounter <= 1) then
                      nEdges = nEdgesOwned
                   else
@@ -1258,6 +1281,37 @@ module ocn_time_integration_split
                                     'sshSubcycleNewWithTides',  &
                                      sshSubcycleNew)
                   end if ! tidal potential forcing
+                  ! direct application of tidal boundary condition
+                  if (config_use_tidal_forcing .and. trim(config_tidal_forcing_type) == 'direct') then
+                     call mpas_pool_get_array(forcingPool, &
+                                           'sshSubcycleCurWithTides',  &
+                                            sshSubcycleCurWithTides)
+                     call mpas_pool_get_array(forcingPool, &
+                                           'sshSubcycleNewWithTides',  &
+                                            sshSubcycleNewWithTides)
+                     call mpas_pool_get_array(forcingPool, 'tidalInputMask', tidalInputMask)
+                     call mpas_pool_get_array(forcingPool, 'tidalBCValue', tidalBCValue)
+                     !$omp parallel
+                     !$omp do schedule(runtime)
+                     do iCell=1, nCellsAll
+                        ! boolean mask for now, could generalize to tappered sponge layer
+                        ! only modify layer thicknesses on tidal boundary
+                        do k = minLevelCell(iCell), maxLevelCell(iCell)
+                           sshSubcycleCurWithTides(iCell) = sshSubcycleCur(iCell) + &
+                               (tidalInputMask(iCell)*(tidalBCValue(iCell) - sshSubcycleCur(iCell)))
+                           sshSubcycleNewWithTides(iCell) = sshSubcycleNew(iCell) + &
+                               (tidalInputMask(iCell)*(tidalBCValue(iCell) - sshSubcycleNew(iCell)))
+                        end do
+                     end do
+                     !$omp end do
+                     !$omp end parallel
+                     call mpas_pool_get_array(forcingPool, &
+                                    'sshSubcycleCurWithTides',  &
+                                     sshSubcycleCur)
+                     call mpas_pool_get_array(forcingPool, &
+                                    'sshSubcycleNewWithTides',  &
+                                     sshSubcycleNew)
+                  end if
 
                   ! Need to initialize btr_vel_temp over one more halo
                   ! than we are computing over
@@ -2602,7 +2656,9 @@ module ocn_time_integration_split
 
             ! only modify layer thicknesses on tidal boundary
             do k = minLevelCell(iCell), maxLevelCell(iCell)
-              layerThicknessNew(k, iCell) = tidalInputMask(iCell)*(tidalBCValue(iCell) + bottomDepth(iCell))*(restingThickness(k,iCell)/totalDepth)
+              layerThicknessNew(k, iCell) = tidalInputMask(iCell)* &
+                                            (tidalBCValue(iCell) + bottomDepth(iCell))* &
+                                            (restingThickness(k,iCell)/totalDepth)
               !(1.0_RKIND - tidalInputMask(iCell))*layerThicknessNew(k, iCell)  ! generalized tappered assumption code
             end do
           end if
