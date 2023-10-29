@@ -195,20 +195,20 @@ class compute_sphere_operator_test_ml {
   Real alpha;
 
   // tag for divergence_sphere_wk
-  struct TagDivergenceSphereWkML {};
+  struct TagDivergenceSphereML {};
 
   KOKKOS_INLINE_FUNCTION
-  void operator()(const TagDivergenceSphereWkML &,
+  void operator()(const TagDivergenceSphereML &,
                   const TeamMember& team) const {
     KernelVariables kv(team);
 
-    sphere_ops.divergence_sphere_wk(kv,
+    sphere_ops.divergence_sphere(kv,
                          Homme::subview(vector_input_d, kv.ie),
                          Homme::subview(scalar_output_d,kv.ie));
   }  // end of op() for divergence_sphere_wk_ml
 
-  void run_functor_divergence_sphere_wk() {
-    auto policy = Homme::get_default_team_policy<ExecSpace, TagDivergenceSphereWkML>(_num_elems);
+  void run_functor_divergence_sphere() {
+    auto policy = Homme::get_default_team_policy<ExecSpace, TagDivergenceSphereML>(_num_elems);
     sphere_ops.allocate_buffers(policy);
 
     for(int iii = 0; iii < HOWMANY ; iii++){
@@ -227,7 +227,7 @@ TEST_CASE("divergence_sphere_wk",
   constexpr const int elements = ELEMS;
 
   compute_sphere_operator_test_ml testing_div_ml(elements);
-  testing_div_ml.run_functor_divergence_sphere_wk();
+  testing_div_ml.run_functor_divergence_sphere();
 
   std::cout << "test div_wk multilevel finished. \n";
 
