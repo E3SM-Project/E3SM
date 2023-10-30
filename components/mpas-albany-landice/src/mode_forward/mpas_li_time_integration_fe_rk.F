@@ -289,25 +289,28 @@ module li_time_integration_fe_rk
       ! by one index. e.g., the coefficients for RK4 are usually written
       ! (0, 1/2, 1/2, 1), while we use (1/2, 1/2, 1). The last entry of 1.0
       ! is simply for ease of implementation.
-      rkSSPweights(:) = 1.0_RKIND ! updated for each case below
-      rkTendWeights(:) = 1.0_RKIND ! updated for each case below
+      rkSSPweights(:) = -9999.0_RKIND ! Initialized to this value to make it obvious if
+                                      ! a weight is used that should not be. Appropriate
+                                      ! weights are updated for each case below
+      rkTendWeights(:) = -9999.0_RKIND
+      rkSubstepWeights(:) = -9999.0_RKIND
       if ( (trim(config_time_integration) == 'forward_euler') .or. &
            ((trim(config_time_integration) == 'runge_kutta') .and. &
            (config_rk_order == 1)) ) then
          nRKstages = 1
-         rkSubstepWeights(:) = 1.0_RKIND
+         rkSSPweights(1) = 1.0_RKIND
+         rkTendWeights(1) = 1.0_RKIND
+         rkSubstepWeights(1) = 1.0_RKIND
       elseif ( (trim(config_time_integration) == 'runge_kutta') .and. &
                (config_rk_order == 2) ) then
          ! use Strong Stability Preserving RK2. Could also
          ! add config option to use standard endpoint or midpoint methods, but
          ! these are algorithmically more complex and less suitable for our domains 
          nRKstages = 2
-         rkSubstepWeights(:) = 1.0_RKIND
+         rkSubstepWeights(1:2) = 1.0_RKIND
 
          rkSSPweights(1) = 1.0_RKIND
          rkSSPweights(2) = 0.5_RKIND
-         rkSSPweights(3) = 0.0_RKIND
-         rkSSPweights(4) = 0.0_RKIND
 
          rkTendWeights(1) = 0.5_RKIND
          rkTendWeights(2) = 0.5_RKIND
@@ -316,12 +319,11 @@ module li_time_integration_fe_rk
          if (config_rk3_stages == 3) then
             ! use three-stage Strong Stability Preserving RK3
             nRKstages = 3
-            rkSubstepWeights(:) = 1.0_RKIND
+            rkSubstepWeights(1:3) = 1.0_RKIND
 
             rkSSPweights(1) = 1.0_RKIND
             rkSSPweights(2) = 3.0_RKIND / 4.0_RKIND
             rkSSPweights(3) = 1.0_RKIND / 3.0_RKIND
-            rkSSPweights(4) = 0.0_RKIND
 
             rkTendWeights(1) = 1.0_RKIND / 6.0_RKIND
             rkTendWeights(2) = 1.0_RKIND / 6.0_RKIND
