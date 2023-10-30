@@ -5,6 +5,7 @@
 
 #include "physics/share/physics_constants.hpp"
 
+#include "share/util/scream_utils.hpp"
 #include "share/util/scream_setup_random_test.hpp"
 #include "share/util/scream_common_physics_functions.hpp"
 #include "share/field/field_utils.hpp"
@@ -34,14 +35,6 @@ create_gm (const ekat::Comm& comm, const int ncols, const int nlevs) {
   gm->build_grids();
 
   return gm;
-}
-
-template<typename VT>
-typename VT::HostMirror
-cmvdc (const VT& v) {
-  auto vh = Kokkos::create_mirror_view(v);
-  Kokkos::deep_copy(vh,v);
-  return vh;
 }
 
 //-----------------------------------------------------------------------------------------------//

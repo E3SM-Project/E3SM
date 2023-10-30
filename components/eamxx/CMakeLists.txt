@@ -217,6 +217,9 @@ if (NOT SCREAM_SMALL_KERNELS)
   set(EKAT_DISABLE_WORKSPACE_SHARING TRUE CACHE STRING "")
 endif()
 
+# For now, only used in share/grid/remap/refining_remapper_rma.*pp
+option (EAMXX_ENABLE_EXPERIMENTAL_CODE "Compile one-sided MPI for refining remappers" OFF)
+
 # Handle input root
 if (SCREAM_MACHINE AND NOT SCREAM_INPUT_ROOT)
     execute_process(COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/scripts/query-cime ${SCREAM_MACHINE} DIN_LOC_ROOT
