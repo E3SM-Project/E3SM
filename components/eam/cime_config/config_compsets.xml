@@ -6,7 +6,7 @@
    or in the CIME documenation
    </help>
 
-<!-- JON AND ANDREW REPLACE BELOW WITH MPAS-SI -- >
+<!-- JON AND ANDREW REPLACE BELOW WITH MPAS-SI -->
 
   <compset>
     <alias>F1850C5L45BGC</alias>
@@ -18,7 +18,7 @@
     <lname>1850_EAM%CMIP6_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
-<!-- JON AND ANDREW REPLACE ABOVE WITH MPAS-SI -- >
+<!-- JON AND ANDREW REPLACE ABOVE WITH MPAS-SI -->
 
   <compset>
     <alias>F1850</alias>
@@ -35,7 +35,7 @@
     <lname>1850_EAM%CHEMUCI-LINOZV3-MAM5_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
   </compset>
 
-<!-- JON AND ANDREW REPLACE BELOW WITH MPAS-SI -- >
+<!-- JON AND ANDREW REPLACE BELOW WITH MPAS-SI -->
 
   <compset>
     <alias>F1850S-AR5-superfast</alias>
@@ -52,7 +52,7 @@
     <lname>1950_EAM%CMIP6_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
-<!-- JON AND ANDREW REPLACE ABOVE WITH MPAS-SI -- >
+<!-- JON AND ANDREW REPLACE ABOVE WITH MPAS-SI -->
 
   <compset>
     <alias>F1950</alias>
@@ -74,14 +74,14 @@
     <lname>20TR_EAM%CHEMUCI-LINOZV3-MAM5_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
   </compset>
 
-<!-- JON AND ANDREW REPLACE BELOW WITH MPAS-SI -- >
+<!-- JON AND ANDREW REPLACE BELOW WITH MPAS-SI -->
 
   <compset>
     <alias>F20TR-CICE</alias>
     <lname>20TR_EAM%CMIP6_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
-<!-- JON AND ANDREW REPLACE ABOVE WITH MPAS-SI -- >
+<!-- JON AND ANDREW REPLACE ABOVE WITH MPAS-SI -->
 
   <compset>
     <alias>F20TR</alias>
@@ -93,14 +93,14 @@
     <lname>20TR_EAM%CMIP6-P3_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
   </compset>
 
-<!-- JON AND ANDREW REPLACE BELOW WITH MPAS-SI -- >
+<!-- JON AND ANDREW REPLACE BELOW WITH MPAS-SI -->
 
   <compset>
     <alias>F2010-CICE</alias>
     <lname>2010_EAM%CMIP6_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
-<!-- JON AND ANDREW REPLACE ABOVE WITH MPAS-SI -- >
+<!-- JON AND ANDREW REPLACE ABOVE WITH MPAS-SI -->
 
   <compset>
     <alias>F2010</alias>
@@ -138,7 +138,7 @@
   <!-- *********************************** -->
 
 
-<!-- JON AND ANDREW REPLACE BELOW WITH MPAS-SI -- >
+<!-- JON AND ANDREW REPLACE BELOW WITH MPAS-SI -->
 
   <compset>
     <alias>FSCM</alias>
@@ -175,7 +175,7 @@
     <lname>RICO_EAM%SCM-MMF2_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
-<!-- JON AND ANDREW REPLACE ABOVE WITH MPAS-SI -- >
+<!-- JON AND ANDREW REPLACE ABOVE WITH MPAS-SI -->
 
 
   <!-- ************************************************* -->
@@ -229,7 +229,7 @@
 
   <!-- SCREAM compsets with CMIP6 2010 forcings -->
 
-<!-- JON AND ANDREW REPLACE BELOW WITH MPAS-SI -- >
+<!-- JON AND ANDREW REPLACE BELOW WITH MPAS-SI -->
 
   <compset>
     <alias>F2010-SCREAM-LR</alias>
@@ -251,7 +251,7 @@
     <lname>2010_EAM%SCREAM-HR-DYAMOND1_ELM45%SPBC_CICE%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
   </compset>
 
-<!-- JON AND ANDREW REPLACE ABOVE WITH MPAS-SI -- >
+<!-- JON AND ANDREW REPLACE ABOVE WITH MPAS-SI -->
 
   <compset>
     <alias>F2010-SCREAM-LR-DYAMOND1-MPASSI</alias>
@@ -263,7 +263,7 @@
     <lname>2010_EAM%SCREAM-HR-DYAMOND1_ELM45%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
   </compset>
 
-<!-- JON AND ANDREW REPLACE BELOW WITH MPAS-SI -- >
+<!-- JON AND ANDREW REPLACE BELOW WITH MPAS-SI -->
 
    <compset>
     <alias>F2010-SCREAM-LR-DYAMOND2</alias>
@@ -275,7 +275,7 @@
     <lname>2010_EAM%SCREAM-HR-DYAMOND2_ELM45%SPBC_CICE%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
   </compset>
 
-<!-- JON AND ANDREW REPLACE ABOVE WITH MPAS-SI -- >
+<!-- JON AND ANDREW REPLACE ABOVE WITH MPAS-SI -->
   
   <compset>
     <alias>F2010-SCREAM-LR-DYAMOND2-MPASSI</alias>
@@ -287,14 +287,14 @@
     <lname>2010_EAM%SCREAM-HR-DYAMOND2_ELM45%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
   </compset>
 
-<!-- JON AND ANDREW REPLACE BELOW WITH MPAS-SI -- >
+<!-- JON AND ANDREW REPLACE BELOW WITH MPAS-SI -->
 
   <compset>
     <alias>FDPSCREAM-ARM97</alias>
       <lname>ARM97_EAM%DPSCREAM_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
-<!-- JON AND ANDREW REPLACE ABOVE WITH MPAS-SI -- >
+<!-- JON AND ANDREW REPLACE ABOVE WITH MPAS-SI -->
 
   <!-- *********************************** -->
   <!-- Radiative-Convective Equilibrium (RCE) -->
@@ -319,14 +319,14 @@
   <!-- *********************************** -->
   
 
-<!-- JON AND ANDREW REPLACE BELOW WITH MPAS-SI -- >
+<!-- JON AND ANDREW REPLACE BELOW WITH MPAS-SI -->
 
   <compset>
     <alias>FSCRAV1C-L</alias>
     <lname>2000_SCREAM%AV1C-L_ELM45%SPBC_CICE%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
   </compset>  
 
-<!-- JON AND ANDREW REPLACE ABOVE WITH MPAS-SI -- >
+<!-- JON AND ANDREW REPLACE ABOVE WITH MPAS-SI -->
 
   <compset>
     <alias>FIDEAL</alias>
@@ -345,7 +345,7 @@
 
   <!-- F compsets with climatological SST -->
 
-<!-- JON AND ANDREW REPLACE BELOW WITH MPAS-SI -- >
+<!-- JON AND ANDREW REPLACE BELOW WITH MPAS-SI -->
 
   <compset>
     <alias>F2010-MMF1</alias>
@@ -362,7 +362,7 @@
     <lname>2010_EAM%MMF2-AWFL_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
-<!-- JON AND ANDREW REPLACE ABOVE WITH MPAS-SI -- >
+<!-- JON AND ANDREW REPLACE ABOVE WITH MPAS-SI -->
 
 
   <!-- F compsets with transient SST (AMIP) -->
