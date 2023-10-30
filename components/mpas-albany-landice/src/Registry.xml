@@ -489,8 +489,8 @@
 		            possible_values="'forward_euler' or 'runge_kutta'"
 		/>
                 <nml_option name="config_rk_order" type="integer" default_value="2" units="unitless"
-                            description="Order of Runge-Kutta time integration to use. A value of 1 is equivalent to forward euler. Values of 2 and 3 indicate strong-stability preserving RK2 and RK3. There is currently no support for classical RK2 or RK4 methods."
-                            possible_values="1, 2, 3"
+                            description="Order of Runge-Kutta time integration to use. A value of 1 would be equivalent to forward euler, but will cause an error to avoid unnecessary redundancy. Values of 2 and 3 indicate strong-stability preserving RK2 and RK3. There is currently no support for classical RK2 or RK4 methods."
+                            possible_values="2 or 3"
                 />
 		<nml_option name="config_rk3_stages" type="integer" default_value="3" units="stages"
                         description="Number of stages for strong stability preserving RK3 time integration. If set to 3, this involves 3 velocity solves and a maximum CFL fraction of 1. If set to 4, this involves 4 velocity solves, but the maximum CFL fraction is 2."

@@ -296,9 +296,7 @@ module li_time_integration_fe_rk
                                       ! weights are updated for each case below
       rkTendWeights(:) = -9999.0_RKIND
       rkSubstepWeights(:) = -9999.0_RKIND
-      if ( (trim(config_time_integration) == 'forward_euler') .or. &
-           ((trim(config_time_integration) == 'runge_kutta') .and. &
-           (config_rk_order == 1)) ) then
+      if (trim(config_time_integration) == 'forward_euler') then
          nRKstages = 1
          rkSSPweights(1) = 1.0_RKIND
          rkTendWeights(1) = 1.0_RKIND
