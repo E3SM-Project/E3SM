@@ -178,28 +178,21 @@ function(build_model COMP_CLASS COMP_NAME)
     list(APPEND SOURCES ${CMAKE_CURRENT_BINARY_DIR}/${BASENAME})
   endforeach ()
 
-  # Set compiler flags for source files
+  # Set special fixed/free compiler flags for non-cosp fortran files. This logic
+  # can maybe be replaced/reworked once we have Fortran_FORMAT property
+  # working
   foreach (SOURCE_FILE IN LISTS SOURCES)
     get_filename_component(SOURCE_EXT ${SOURCE_FILE} EXT)
 
-    # Set flags based on file extension. File extensions may change if the globs used by
-    # gather_sources changes.
-    if (SOURCE_EXT STREQUAL ".c")
-
-    elseif (SOURCE_EXT STREQUAL ".cpp")
-
-    else()
-
-      # Cosp manages its own flags
-      if (NOT SOURCE_FILE IN_LIST COSP_SOURCES)
-        # Flags are slightly different for different fortran extensions
-        if (SOURCE_EXT STREQUAL ".F" OR SOURCE_EXT STREQUAL ".f")
-          e3sm_add_flags("${SOURCE_FILE}" "${FIXEDFLAGS}")
-        elseif (SOURCE_EXT STREQUAL ".f90")
-          e3sm_add_flags("${SOURCE_FILE}" "${FREEFLAGS}")
-        elseif (SOURCE_EXT STREQUAL ".F90")
-          e3sm_add_flags("${SOURCE_FILE}" "${FREEFLAGS} ${CONTIGUOUS_FLAG}")
-        endif()
+    # Cosp manages its own flags
+    if (NOT SOURCE_FILE IN_LIST COSP_SOURCES)
+      # Flags are slightly different for different fortran extensions
+      if (SOURCE_EXT STREQUAL ".F" OR SOURCE_EXT STREQUAL ".f")
+        e3sm_add_flags("${SOURCE_FILE}" "${FIXEDFLAGS}")
+      elseif (SOURCE_EXT STREQUAL ".f90")
+        e3sm_add_flags("${SOURCE_FILE}" "${FREEFLAGS}")
+      elseif (SOURCE_EXT STREQUAL ".F90")
+        e3sm_add_flags("${SOURCE_FILE}" "${FREEFLAGS} ${CONTIGUOUS_FLAG}")
       endif()
     endif()
   endforeach()
