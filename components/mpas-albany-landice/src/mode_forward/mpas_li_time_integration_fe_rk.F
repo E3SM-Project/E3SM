@@ -109,7 +109,8 @@ module li_time_integration_fe_rk
       integer :: err_tmp
       type (mpas_pool_type), pointer :: geometryPool, thermalPool, meshPool, velocityPool
       
-      logical, pointer :: config_restore_calving_front
+      logical, pointer :: config_restore_calving_front, &
+                          config_restore_calving_front_prevent_retreat
       logical, pointer :: config_calculate_damage
       logical, pointer :: config_finalize_damage_after_advection
       character (len=StrKIND), pointer :: config_thickness_advection
@@ -160,6 +161,7 @@ module li_time_integration_fe_rk
       err_tmp = 0
 
       call mpas_pool_get_config(liConfigs, 'config_restore_calving_front', config_restore_calving_front)
+      call mpas_pool_get_config(liConfigs, 'config_restore_calving_front_prevent_retreat', config_restore_calving_front_prevent_retreat)
       call mpas_pool_get_config(liConfigs, 'config_calculate_damage',config_calculate_damage)
       call mpas_pool_get_config(liConfigs, 'config_finalize_damage_after_advection', config_finalize_damage_after_advection)
       call mpas_pool_get_config(liConfigs, 'config_thickness_advection', config_thickness_advection)
@@ -475,6 +477,11 @@ module li_time_integration_fe_rk
 
          call mpas_timer_stop("halo updates")
 
+         if (config_restore_calving_front) then
+            ! restore the calving front to its initial position before velocity solve.
+            call li_restore_calving_front(domain, err_tmp)
+            err = ior(err, err_tmp)
+         endif
 
          ! Update velocity for each RK step
          ! === Solve Velocity =====================
@@ -531,8 +538,8 @@ module li_time_integration_fe_rk
       call li_calve_ice(domain, err_tmp)
       err = ior(err, err_tmp)
 
-      if (config_restore_calving_front) then
-         ! restore the calving front to its initial position; calving options are ignored
+      if (config_restore_calving_front .and. config_restore_calving_front_prevent_retreat) then
+         ! restore the calving front to its initial position before velocity solve.
          call li_restore_calving_front(domain, err_tmp)
          err = ior(err, err_tmp)
       endif
