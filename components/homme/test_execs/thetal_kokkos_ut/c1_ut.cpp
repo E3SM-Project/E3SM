@@ -13,7 +13,7 @@
 #include "utilities/SyncUtils.hpp"
 #include "utilities/ViewUtils.hpp"
 
-#define NNE 200
+#define NNE 1000
 #define HOWMANY 200
 
 
