@@ -1311,11 +1311,11 @@
 					description="Barotropic subcycles proceed from $t$ to $t+n\Delta t$, where $n$ is this configuration option."
 					possible_values="Any positive integer, but typically 1 or 2"
 		/>
-		<nml_option name="config_btr_gam1_velWt1" type="real" default_value="0.5"
+		<nml_option name="config_btr_gam1_velWt1" type="real" default_value="0.5333"
 					description="Weighting of velocity in the SSH predictor step in stage 2. When zero, previous subcycle time is used; when one, new subcycle time is used."
 					possible_values="between 0 and 1"
 		/>
-		<nml_option name="config_btr_gam2_SSHWt1" type="real" default_value="1.0"
+		<nml_option name="config_btr_gam2_SSHWt1" type="real" default_value="0.5333"
 					description="Weighting of SSH in the velocity corrector step in stage 2. When zero, previous subcycle time is used; when one, new subcycle time is used."
 					possible_values="between 0 and 1"
 		/>
