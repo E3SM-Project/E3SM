@@ -200,7 +200,7 @@ contains
          call mpas_dmpar_field_halo_exch(domain, 'validOceanMask')
          call mpas_timer_stop("halo updates")
 
-         ! Algorithem 3: perform horizontal extrapolation until the validOceanMask is unchanged
+         ! Algorithm 3: perform horizontal extrapolation until the validOceanMask is unchanged
          allocate(validOceanMaskOld(nISMIP6OceanLayers,nCells+1))
          validOceanMaskOld(:,:) = validOceanMask(:,:)
          ! get initial 3D valid data based on the original ISMIP6 field
