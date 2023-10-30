@@ -1682,6 +1682,12 @@ is the value of that variable from the *previous* time level!
                 <var name="seedOceanMaskHorizInit" type="integer" dimensions="nCells Time" units="none"
                      description="initial 2D seedMask before the over-extrapolation, for benchmark/debug purpose"
                 />
+                <var name="TFoceanOld" type="real" dimensions="nISMIP6OceanLayers nCells" units="deg. C"
+                     default_value="1.0"
+                />
+                <var name="TFocean" type="real" dimensions="nISMIP6OceanLayers nCells" units="deg. C"
+                     default_value="0.0"
+                />
         </var_struct>
 <!-- ================ -->
 
