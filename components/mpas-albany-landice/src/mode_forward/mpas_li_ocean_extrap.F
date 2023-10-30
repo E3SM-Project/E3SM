@@ -180,12 +180,11 @@ contains
          call mpas_pool_get_dimension(meshPool, 'nISMIP6OceanLayers', nISMIP6OceanLayers)
          call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_zOcean', ismip6shelfMelt_zOcean)
          call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_zBndsOcean', ismip6shelfMelt_zBndsOcean)
-         call mpas_log_write('==HH: layertop depth $r ', realArgs=(/ismip6shelfMelt_zOcean/))
          availOceanMask(:,:) = 0
          validOceanMask(:,:) = 0
          do iCell = 1, nCellsSolve
             do iLayer = 1, nISMIP6OceanLayers
-               layerTop = 30!ismip6shelfMelt_zOcean(1, iLayer)
+               layerTop = ismip6shelfMelt_zBndsOcean(1, iLayer)
                if ( (seedOceanMaskHoriz(iCell) == 1) .and. (bedTopography(iCell) <  layerTop) ) then
                   availOceanMask(iLayer,iCell) = 1
                endif
