@@ -202,8 +202,7 @@ contains
 
          ! Algorithem 3: perform horizontal extrapolation until the validOceanMask is unchanged
          allocate(validOceanMaskOld(nISMIP6OceanLayers,nCells+1))
-         validOceanMaskOld(:,:) = 0.0
-
+         validOceanMaskOld(:,:) = validOceanMask(:,:)
          ! get initial 3D valid data based on the original ISMIP6 field
          TFoceanOld(:,:) = ismip6shelfMelt_3dThermalForcing(:,:) * validOceanMask(:,:)
          TFoceanOld(:,:) = 1.0 !HH: for now, have the ocean TF field as the field of ones to make it easy to verify the horizonal/vertical averaging.
@@ -239,8 +238,8 @@ contains
                   endif
                   call mpas_log_write('==HH: Added $i new cells to the local validOceanMask', intArgs=(/newMaskCountLocal/))
                enddo
+               validOceanMaskOld(:,:) = validOceanMask(:,:)
             enddo
-            validOceanMaskOld(:,:) = validOceanMask(:,:)
             TFoceanOld(:,:) = TFoceanNew(:,:)
             ! Accumulate cells added locally until we do the next global reduce
             newMaskCountLocalAccum = newMaskCountLocalAccum + newMaskCountLocal
