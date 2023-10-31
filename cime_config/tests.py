@@ -659,33 +659,85 @@ _TESTS = {
     "eam_nl" : {
         "tests"    : (
             "SBN.ne4_oQU240.F2010.eam-thetadycore",
-#            "SBN.ne11_ne11.F2010-CICE.eam-thetadycore",
+#
+#            "SBN.ne11_ne11.F2010-CICE.eam-thetadycore",   
+#CHANGE TO?>            "SBN.ne11_oQU240.F2010.eam-thetadycore",
+#
 #            "SBN.ne16_ne16.F2010-CICE.eam-thetadycore",
+#CHANGE TO?>            "SBN.ne16_oQU240.F2010.eam-thetadycore",
+#
 #            "SBN.ne30_ne30.F2010-CICE.eam-thetadycore",
-#            "SBN.ne45pg2_r05_oECv3.F2010-CICE.allactive-thetadycore",
+#CHANGE TO?>            "SBN.ne30_EC30to60E2r2.F2010.eam-thetadycore",
+#
+            "SBN.ne45pg2_r05_oECv3.F2010.allactive-thetadycore", 
+#
 #            "SBN.ne120_ne120.F2010-CICE.eam-thetadycore",
+#CHANGE TO?>            "SBN.ne120_oRRS18to6v3.F2010.eam-thetadycore",
+#
 #            "SBN.ne240_ne240.F2010-CICE.eam-thetadycore",
+#CHANGE TO?>            "SBN.ne240_oRRS18to6v3.F2010.eam-thetadycore",
+#
 #            "SBN.ne512np4_360x720cru_ne512np4.F2010-CICE.allactive-thetadycore",
+#CHANGE TO?>            "SBN.ne512np4_360x720cru_oRRS18to6v3.F2010.allactive-thetadycore",
+#
 #            "SBN.ne1024np4_360x720cru_ne1024np4.F2010-CICE.allactive-thetadycore",
+#CHANGE TO?>            "SBN.ne1024np4_360x720cru_oRRS18to6v3.F2010.allactive-thetadycore",
+#
 #            "SBN.conusx4v1_conusx4v1.F2010-CICE.eam-thetadycore",
+#CHANGE TO?>            "SBN.conusx4v1_WC14to60E2r3.F2010.eam-thetadycore",
+#
 #            "SBN.enax4v1_enax4v1.F2010-CICE.eam-thetadycore",
+#CHANGE TO?>            "SBN.enax4v1_WC14to60E2r3.F2010.eam-thetadycore",
+#
 #            "SBN.northamericax4v1_r0125_northamericax4v1.F2010-CICE.eam-thetadycore",
+#CHANGE TO?>            "SBN.northamericax4v1_r0125_WC14to60E2r3.F2010.eam-thetadycore",
+#
 #            "SBN.antarcticax4v1_r0125_antarcticax4v1.F2010-CICE.allactive-thetadycore",
+#CHANGE TO?>            "SBN.antarcticax4v1_r0125_SOwISC12to60E2r4.F2010.allactive-thetadycore",
+#
 #            "SBN.antarcticax4v1pg2_r0125_antarcticax4v1pg2.F2010-CICE.allactive-thetadycore",
+#CHANGE TO?>            "SBN.antarcticax4v1pg2_r0125_SOwISC12to60E2r4.F2010.allactive-thetadycore",
+#
             "SBN.ne4_oQU240.F2010.eam-preqxdycore",
+#
 #            "SBN.ne11_ne11.F2010-CICE.eam-preqxdycore",
+#CHANGE TO?>            "SBN.ne11_oQU240.F2010.eam-preqxdycore",
+#
 #            "SBN.ne16_ne16.F2010-CICE.eam-preqxdycore",
+#CHANGE TO?>            "SBN.ne16_oQU240.F2010.eam-preqxdycore",
+#
 #            "SBN.ne30_ne30.F2010-CICE.eam-preqxdycore",
+#CHANGE TO?>            "SBN.ne30_EC30to60E2r2.F2010.eam-preqxdycore",
+#
 #            "SBN.ne45pg2_r05_oECv3.F2010-CICE.allactive-preqxdycore",
+#CHANGE TO?>            "SBN.ne45pg2_r05_oECv3.F2010.allactive-preqxdycore",
+#
 #            "SBN.ne120_ne120.F2010-CICE.eam-preqxdycore",
+#CHANGE TO?>            "SBN.ne120_oRRS18to6v3.F2010.eam-preqxdycore",
+#
 #            "SBN.ne240_ne240.F2010-CICE.eam-preqxdycore",
+#CHANGE TO?>            "SBN.ne240_oRRS18to6v3.F2010.eam-preqxdycore",
+#
 #            "SBN.ne512np4_360x720cru_ne512np4.F2010-CICE.allactive-preqxdycore",
+#CHANGE TO?>            "SBN.ne512np4_360x720cru_oRRS18to6v3.F2010.allactive-preqxdycore",
+#
 #            "SBN.ne1024np4_360x720cru_ne1024np4.F2010-CICE.allactive-preqxdycore",
+#CHANGE TO?>            "SBN.ne1024np4_360x720cru_oRRS18to6v3.F2010.allactive-preqxdycore",
+#
 #            "SBN.conusx4v1_conusx4v1.F2010-CICE.eam-preqxdycore",
+#CHANGE TO?>            "SBN.conusx4v1_WC14to60E2r3.F2010.eam-preqxdycore",
+#
 #            "SBN.enax4v1_enax4v1.F2010-CICE.eam-preqxdycore",
+#CHANGE TO?>            "SBN.enax4v1_WC14to60E2r3.F2010.eam-preqxdycore",
+#
 #            "SBN.northamericax4v1_r0125_northamericax4v1.F2010-CICE.eam-preqxdycore",
+#CHANGE TO?>            "SBN.northamericax4v1_r0125_WC14to60E2r3.F2010.eam-preqxdycore",
+#
 #            "SBN.antarcticax4v1_r0125_antarcticax4v1.F2010-CICE.allactive-preqxdycore",
+#CHANGE TO?>            "SBN.antarcticax4v1_r0125_SOwISC12to60E2r4.F2010.allactive-preqxdycore",
+#
 #            "SBN.antarcticax4v1pg2_r0125_antarcticax4v1pg2.F2010-CICE.allactive-preqxdycore",
+#CHANGE TO?>            "SBN.antarcticax4v1pg2_r0125_SOwISC12to60E2r4.F2010.allactive-preqxdycore",
             )
     },
 
