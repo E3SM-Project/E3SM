@@ -5,8 +5,6 @@
 
 #include "ekat/ekat_assert.hpp"
 
-#include <pio.h>
-
 // Extend ekat mpi type for pair of double int, used
 // in find_closest_lat_lon_index_and_rank()
 namespace ekat {
@@ -83,9 +81,9 @@ setup_io_info(const std::string& file_name,
     fields.push_back(lon_f);
 
     // Read from file
-    AtmosphereInput dp_ic_reader(file_name, io_grid, fields);
-    dp_ic_reader.read_variables();
-    dp_ic_reader.finalize();
+    AtmosphereInput file_reader(file_name, io_grid, fields);
+    file_reader.read_variables();
+    file_reader.finalize();
 
     // Find column index of closest lat/lon to target_lat/lon params
     auto lat_v = fields[0].get_view<Real*>();
@@ -135,6 +133,8 @@ read_fields_from_file_for_iop (const std::string& file_name,
                                const util::TimeStamp& initial_ts,
                                const field_mgr_ptr field_mgr)
 {
+  const auto dummy_units = ekat::units::Units::nondimensional();
+
   EKAT_REQUIRE_MSG(field_names_nc.size()==field_names_eamxx.size(),
                   "Error! Field name arrays must have same size.\n");
 
@@ -161,35 +161,34 @@ read_fields_from_file_for_iop (const std::string& file_name,
   }
 
   // Create vector of fields with correct dimensions to read from file
-  std::vector<Field> fields;
+  std::vector<Field> io_fields;
   for (size_t i=0; i<field_names_nc.size(); ++i) {
     const auto& nc_name    = field_names_nc[i];
     const auto& eamxx_name = field_names_eamxx[i];
-
-    auto fm_field = eamxx_name!=nc_name
-                    ?
-                    field_mgr->get_field(eamxx_name).alias(nc_name)
-                    :
-                    field_mgr->get_field(eamxx_name);
+    const auto& fm_field = eamxx_name!=nc_name
+                           ?
+                           field_mgr->get_field(eamxx_name).alias(nc_name)
+                           :
+                           field_mgr->get_field(eamxx_name);
     auto fm_fid = fm_field.get_header().get_identifier();
-    auto dims = fm_fid.get_layout().dims();
     EKAT_REQUIRE_MSG(fm_fid.get_layout().tag(0)==FieldTag::Column,
                      "Error! IOP inputs read from IC/topo file must have Column "
                      "as first dim tag.\n");
 
     // Set first dimension to match input file
+    auto dims = fm_fid.get_layout().dims();
     dims[0] = io_grid->get_num_local_dofs();
-    FieldLayout dp_fl(fm_fid.get_layout().tags(), dims);
-    FieldIdentifier dp_fid(fm_fid.name(), dp_fl, fm_fid.get_units(), io_grid->name());
-    Field dp_field(dp_fid);
-    dp_field.allocate_view();
-    fields.push_back(dp_field);
+    FieldLayout io_fl(fm_fid.get_layout().tags(), dims);
+    FieldIdentifier io_fid(fm_fid.name(), io_fl, fm_fid.get_units(), io_grid->name());
+    Field io_field(io_fid);
+    io_field.allocate_view();
+    io_fields.push_back(io_field);
   }
 
   // Read data from file
-  AtmosphereInput dp_ic_reader(file_name,io_grid,fields);
-  dp_ic_reader.read_variables();
-  dp_ic_reader.finalize();
+  AtmosphereInput file_reader(file_name,io_grid,io_fields);
+  file_reader.read_variables();
+  file_reader.finalize();
 
   // For each field, broadcast data from closest lat/lon column to all processors
   // and copy data into each field's column in the field manager.
