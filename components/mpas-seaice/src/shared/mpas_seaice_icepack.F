@@ -1,27 +1,28 @@
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  seaice_column
+!  seaice_icepack
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 12th January 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
+!> This module was derived from the original column physics driver by Adrian K. Turner and modified by the Icepack merge team.
 !>
 !
 !-----------------------------------------------------------------------
 
-module seaice_column
+module seaice_icepack
+
+  use icepack_intfc, only: &
+      icepack_warnings_aborted
 
   use mpas_derived_types
   use mpas_pool_routines
   use mpas_timekeeping
   use mpas_timer
-  use mpas_log, only: mpas_log_write
+  use mpas_log, only: mpas_log_write, mpas_log_info
 
   use seaice_error
-
-  use ice_kinds_mod, only: &
-       char_len_long
 
   implicit none
 
@@ -29,31 +30,26 @@ module seaice_column
   save
 
   public :: &
-       seaice_init_column_physics_package_parameters, &
-       seaice_init_column_physics_package_variables, &
-       seaice_column_predynamics_time_integration, &
-       seaice_column_dynamics_time_integration, &
-       seaice_column_postdynamics_time_integration, &
-       seaice_init_column_shortwave, &
-       seaice_column_aggregate, &
-       seaice_column_aggregate_simple, &
-       seaice_column_initial_air_drag_coefficient, &
-       seaice_column_reinitialize_fluxes, &
-       seaice_column_reinitialize_diagnostics_thermodynamics, &
-       seaice_column_reinitialize_diagnostics_dynamics, &
-       seaice_column_reinitialize_diagnostics_bgc, &
-       seaice_column_coupling_prep, &
-       seaice_column_finalize, &
-       seaice_column_init_trcr, &
-       seaice_column_init_itd, &
-       seaice_column_init_ocean_conc, &
-       seaice_column_ice_strength, &
-       seaice_column_sea_freezing_temperature, &
-       seaice_column_liquidus_temperature, &
-       seaice_column_enthalpy_snow, &
-       seaice_column_enthalpy_ice, &
-       seaice_column_salinity_profile, &
-       seaice_init_column_constants
+       seaice_init_icepack_physics_package_parameters, &
+       seaice_init_icepack_physics_package_variables, &
+       seaice_icepack_predynamics_time_integration, &
+       seaice_icepack_dynamics_time_integration, &
+       seaice_icepack_postdynamics_time_integration, &
+       seaice_init_icepack_shortwave, &
+       seaice_icepack_aggregate, &
+       seaice_icepack_aggregate_simple, &
+       seaice_icepack_initial_air_drag_coefficient, &
+       seaice_icepack_reinitialize_fluxes, &
+       seaice_icepack_reinitialize_diagnostics_thermodynamics, &
+       seaice_icepack_reinitialize_diagnostics_dynamics, &
+       seaice_icepack_reinitialize_diagnostics_bgc, &
+       seaice_icepack_coupling_prep, &
+       seaice_icepack_finalize, &
+       seaice_icepack_init_trcr, &
+       seaice_icepack_init_ocean_conc, &
+       seaice_icepack_enthalpy_ice, &
+       seaice_init_icepack_constants, &
+       seaice_icepack_write_warnings
 
   ! tracer object
   type, private :: ciceTracerObjectType
@@ -157,7 +153,7 @@ module seaice_column
           index_nonreactiveConcLayer, &  ! nlt_bgc_PON
           index_humicsConcLayer          ! nlt_bgc_hum
 
-     ! indexes of bio tracers with types in tracer array
+     ! indices of bio tracers with types in tracer array
      integer, dimension(:), allocatable :: &
           index_algaeConc, &                       ! nt_bgc_N
           index_algalCarbon, &                     ! nt_bgc_C
@@ -192,8 +188,7 @@ module seaice_column
   real(kind=RKIND), dimension(:), allocatable :: &
        tracerArrayCell
 
-  ! warnings string kind
-  integer, parameter :: strKINDWarnings = char_len_long
+  integer, parameter :: strKINDWarnings = strKIND
 
 contains
 
@@ -203,17 +198,17 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  seaice_init_column_physics_package_parameters
+!  seaice_init_icepack_physics_package_parameters
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 18th March 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
 !-----------------------------------------------------------------------
 
-  subroutine seaice_init_column_physics_package_parameters(domain)
+  subroutine seaice_init_icepack_physics_package_parameters(domain)
 
     type(domain_type), intent(inout) :: domain
 
@@ -224,34 +219,31 @@ contains
     if (config_use_column_physics) then
 
        ! set non activated variable pointers to other memory
-       call init_column_non_activated_pointers(domain)
+       call init_icepack_non_activated_pointers(domain)
 
        ! initialize the column package tracer object
        call init_column_tracer_object(domain, ciceTracerObject)
 
        ! initialize the column package parameters
-       call init_column_package_parameters(domain, ciceTracerObject)
-
-       ! initialize active column processes
-       call init_column_active_processes(domain)
+       call init_icepack_package_parameters(domain, ciceTracerObject)
 
     endif
 
-  end subroutine seaice_init_column_physics_package_parameters
+  end subroutine seaice_init_icepack_physics_package_parameters
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  seaice_init_column_physics_package_variables
+!  seaice_init_icepack_physics_package_variables
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 18th March 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
 !-----------------------------------------------------------------------
 
-  subroutine seaice_init_column_physics_package_variables(domain, clock)
+  subroutine seaice_init_icepack_physics_package_variables(domain, clock)
 
     type(domain_type), intent(inout) :: domain
 
@@ -289,17 +281,17 @@ contains
        ! snow
        call MPAS_pool_get_config(domain % configs, "config_use_column_snow_tracers", config_use_column_snow_tracers)
        if (config_use_column_snow_tracers) &
-            call init_column_snow_tracers(domain)
+            call init_icepack_snow_tracers(domain)
 
        ! shortwave
        call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
        call MPAS_pool_get_config(domain % configs, "config_use_column_shortwave", config_use_column_shortwave)
        if (config_do_restart .and. config_use_column_shortwave) &
-            call seaice_init_column_shortwave(domain, clock)
+            call seaice_init_icepack_shortwave(domain, clock)
 
     endif
 
-  end subroutine seaice_init_column_physics_package_variables
+  end subroutine seaice_init_icepack_physics_package_variables
 
 !-----------------------------------------------------------------------
 ! column package initialization routine wrappers
@@ -310,8 +302,8 @@ contains
 !  init_column_itd
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 5th Feburary 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
@@ -319,7 +311,8 @@ contains
 
   subroutine init_column_itd(domain)
 
-    use ice_colpkg, only: colpkg_init_itd
+    use icepack_intfc, only: &
+         icepack_init_itd
 
     type(domain_type), intent(inout) :: domain
 
@@ -335,12 +328,6 @@ contains
     integer, pointer :: &
          nCategories
 
-    logical :: &
-         abortFlag
-
-    character(len=strKIND) :: &
-         abortMessage
-
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nCategories", nCategories)
 
     block => domain % blocklist
@@ -350,20 +337,11 @@ contains
 
        call MPAS_pool_get_array(initial, "categoryThicknessLimits", categoryThicknessLimits)
 
-       ! code abort
-       abortFlag = .false.
-       abortMessage = ""
-
-       call colpkg_init_itd(&
+       call icepack_init_itd(&
             nCategories, &
-            categoryThicknessLimits, &
-            abortFlag, &
-            abortMessage)
+            categoryThicknessLimits)
 
-       ! code abort
-       if (abortFlag) then
-          call mpas_log_write("init_column_itd: "//trim(abortMessage), messageType=MPAS_LOG_CRIT)
-       endif
+       call seaice_icepack_write_warnings(icepack_warnings_aborted())
 
        block => block % next
     end do
@@ -372,11 +350,11 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  init_column_thermo
+!  init_column_thermodynamic_profiles
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 5th Feburary 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
@@ -384,9 +362,9 @@ contains
 
   subroutine init_column_thermodynamic_profiles(domain)
 
-    use ice_colpkg, only: &
-         colpkg_init_thermo, &
-         colpkg_liquidus_temperature
+    use icepack_intfc, only: &
+         icepack_init_thermo, &
+         icepack_liquidus_temperature
 
     type(domain_type), intent(inout) :: domain
 
@@ -419,9 +397,10 @@ contains
 
        allocate(initialSalinityProfileVertical(1:nIceLayers+1))
 
-       call colpkg_init_thermo(&
+       call icepack_init_thermo(&
             nIceLayers, &
             initialSalinityProfileVertical)
+       call seaice_icepack_write_warnings(icepack_warnings_aborted())
 
        call MPAS_pool_get_subpool(block % structs, "initial", initial)
 
@@ -434,7 +413,7 @@ contains
              ! these profiles are not used by mushy
              initialSalinityProfile(iIceLayer,iCell)           = initialSalinityProfileVertical(iIceLayer)
              initialMeltingTemperatureProfile(iIceLayer,iCell) = &
-                  colpkg_liquidus_temperature(initialSalinityProfileVertical(iIceLayer))
+                  icepack_liquidus_temperature(initialSalinityProfileVertical(iIceLayer))
 
           enddo ! iIceLayer
        enddo ! iCell
@@ -448,12 +427,12 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  init_column_snow_tracers
+!  init_icepack_snow_tracers
 !
 !> \brief Initializes snow physics tracers
 !>
 !> \author Nicole Jeffery, LANL
-!> \date 1 April 2017
+!> \date 1 April 2017; modified for icepack July 2023
 !> \details
 !>
 !> The following snow tracers are initialized:
@@ -465,11 +444,14 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine init_column_snow_tracers(domain)
+  subroutine init_icepack_snow_tracers(domain)
 
     use seaice_constants, only: &
          seaicePuny, &
          seaiceDensitySnow
+
+    use icepack_intfc, only: &
+         icepack_init_snow
 
     type(domain_type), intent(in) :: &
          domain
@@ -519,6 +501,8 @@ contains
          iSnowLayer, &
          iCategory
 
+    call icepack_init_snow()
+
     call MPAS_pool_get_config(domain % configs, "config_use_effective_snow_density", config_use_effective_snow_density)
     call MPAS_pool_get_config(domain % configs, "config_use_snow_grain_radius", config_use_snow_grain_radius)
     call MPAS_pool_get_config(domain % configs, "config_fallen_snow_radius", config_fallen_snow_radius)
@@ -554,8 +538,7 @@ contains
           call MPAS_pool_get_array(tracers, "snowDensity", snowDensity, 1)
 
           if (.not. config_do_restart_snow_density) then
-
-             snowDensity(:,:,:)          = config_new_snow_density  !0.0_RKIND
+             snowDensity(:,:,:)          = config_new_snow_density
              do iCell = 1, nCellsSolve
                 if (snowVolumeCell(iCell) .gt. seaicePuny) then
                    snowDensityViaCompaction(iCell) = config_new_snow_density
@@ -626,25 +609,25 @@ contains
         block => block % next
      end do
 
-  end subroutine init_column_snow_tracers
+  end subroutine init_icepack_snow_tracers
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  init_column_shortwave
+!  init_icepack_shortwave
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 5th Feburary 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
 !-----------------------------------------------------------------------
 
-  subroutine seaice_init_column_shortwave(domain, clock)
+  subroutine seaice_init_icepack_shortwave(domain, clock)
 
-    use ice_colpkg, only: &
-         colpkg_init_orbit, &
-         colpkg_clear_warnings
+    use icepack_intfc, only: &
+         icepack_init_orbit, &
+         icepack_init_radiation
 
     use seaice_constants, only: &
          seaicePuny
@@ -652,12 +635,6 @@ contains
     type(domain_type), intent(inout) :: domain
 
     type(MPAS_clock_type), intent(in) :: clock
-
-    logical :: &
-         abortFlag
-
-    character(len=strKIND) :: &
-         abortMessage
 
     type(block_type), pointer :: &
          block
@@ -713,29 +690,18 @@ contains
          config_shortwave_type
 
     logical, pointer :: &
-         config_do_restart, &
-         config_use_snicar_ad
+         config_do_restart
+
+    call icepack_init_radiation()
+    call seaice_icepack_write_warnings(icepack_warnings_aborted())
 
     call MPAS_pool_get_config(domain % configs, "config_shortwave_type", config_shortwave_type)
     call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
-    call MPAS_pool_get_config(domain % configs, "config_use_snicar_ad", config_use_snicar_ad)
 
-    if (trim(config_shortwave_type) == "dEdd") then
+    if (trim(config_shortwave_type(1:4)) == "dEdd") then
 
-       ! code abort
-       abortFlag = .false.
-       abortMessage = ""
-
-       call colpkg_clear_warnings()
-       call colpkg_init_orbit(&
-            abortFlag, &
-            abortMessage)
-       call column_write_warnings(abortFlag)
-
-       ! code abort
-       if (abortFlag) then
-          call mpas_log_write("colpkg_init_orbit: "//trim(abortMessage), messageType=MPAS_LOG_CRIT)
-      endif
+       call icepack_init_orbit()
+       call seaice_icepack_write_warnings(icepack_warnings_aborted())
 
     endif
 
@@ -851,15 +817,15 @@ contains
        block => block % next
     end do
 
-  end subroutine seaice_init_column_shortwave
+  end subroutine seaice_init_icepack_shortwave
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
 !  init_column_thermodynamic_tracers
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 5th Feburary 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
@@ -867,7 +833,8 @@ contains
 
   subroutine init_column_thermodynamic_tracers(domain)
 
-    use ice_colpkg, only: colpkg_init_trcr
+    use icepack_intfc, only: &
+         icepack_init_trcr
 
     type(domain_type), intent(inout) :: domain
 
@@ -931,7 +898,7 @@ contains
        do iCell = 1, nCellsSolve
           do iCategory = 1, nCategories
 
-             call colpkg_init_trcr(&
+             call icepack_init_trcr(&
                   airTemperature(iCell), &
                   seaFreezingTemperature(iCell), &
                   initialSalinityProfile(:,iCell), &
@@ -948,6 +915,8 @@ contains
        block => block % next
     end do
 
+    call seaice_icepack_write_warnings(icepack_warnings_aborted())
+
   end subroutine init_column_thermodynamic_tracers
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -955,8 +924,8 @@ contains
 !  init_column_level_ice_tracers
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 6th Feburary 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
@@ -1008,40 +977,40 @@ contains
 !-----------------------------------------------------------------------
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  seaice_column_finalize
+!  seaice_icepack_finalize
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 29th October 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
 !-----------------------------------------------------------------------
 
-  subroutine seaice_column_finalize(domain)
+  subroutine seaice_icepack_finalize(domain)
 
     type(domain_type), intent(inout) :: domain
 
-    call finalize_column_non_activated_pointers(domain)
+    call finalize_icepack_non_activated_pointers(domain)
 
-  end subroutine seaice_column_finalize
+  end subroutine seaice_icepack_finalize
 
 !-----------------------------------------------------------------------
 ! runtime
 !-----------------------------------------------------------------------
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  seaice_column_predynamics_time_integration
+!  seaice_icepack_predynamics_time_integration
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 6th Feburary 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
 !-----------------------------------------------------------------------
 
-  subroutine seaice_column_predynamics_time_integration(domain, clock)
+  subroutine seaice_icepack_predynamics_time_integration(domain, clock)
 
     type(domain_type), intent(inout) :: domain
 
@@ -1128,21 +1097,21 @@ contains
 
     endif
 
-  end subroutine seaice_column_predynamics_time_integration
+  end subroutine seaice_icepack_predynamics_time_integration
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  seaice_column_dynamics_time_integration
+!  seaice_icepack_dynamics_time_integration
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 6th Feburary 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
 !-----------------------------------------------------------------------
 
-  subroutine seaice_column_dynamics_time_integration(domain, clock)
+  subroutine seaice_icepack_dynamics_time_integration(domain, clock)
 
     type(domain_type), intent(inout) :: domain
 
@@ -1198,26 +1167,26 @@ contains
     else
 
        call mpas_timer_start("Column aggregate")
-       call seaice_column_aggregate_simple(domain)
+       call seaice_icepack_aggregate_simple(domain)
        call mpas_timer_stop("Column aggregate")
 
     endif
 
-  end subroutine seaice_column_dynamics_time_integration
+  end subroutine seaice_icepack_dynamics_time_integration
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  seaice_column_postdynamics_time_integration
+!  seaice_icepack_postdynamics_time_integration
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 6th Feburary 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
 !-----------------------------------------------------------------------
 
-  subroutine seaice_column_postdynamics_time_integration(domain, clock)
+  subroutine seaice_icepack_postdynamics_time_integration(domain, clock)
 
     type(domain_type), intent(inout) :: domain
 
@@ -1261,20 +1230,20 @@ contains
        !-----------------------------------------------------------------
 
        call mpas_timer_start("Column coupling prep")
-       call seaice_column_coupling_prep(domain)
+       call seaice_icepack_coupling_prep(domain)
        call mpas_timer_stop("Column coupling prep")
 
     endif
 
-  end subroutine seaice_column_postdynamics_time_integration
+  end subroutine seaice_icepack_postdynamics_time_integration
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
 !  column_vertical_thermodynamics
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 20th January 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
@@ -1282,9 +1251,8 @@ contains
 
   subroutine column_vertical_thermodynamics(domain, clock)
 
-    use ice_colpkg, only: &
-         colpkg_step_therm1, &
-         colpkg_clear_warnings
+    use icepack_intfc, only: &
+         icepack_step_therm1
 
     use seaice_constants, only: &
          seaicePuny
@@ -1384,10 +1352,13 @@ contains
          seaSurfaceTemperature, &
          seaSurfaceSalinity, &
          seaFreezingTemperature, &
+         bottomTemperature, &
          oceanStressCellU, &
          oceanStressCellV, &
          freezingMeltingPotential, &
          lateralIceMeltFraction, &
+         lateralIceMeltRate, &
+         lateralHeatFlux, &
          snowfallRate, &
          rainfallRate, &
          pondFreshWaterFlux, &
@@ -1400,19 +1371,24 @@ contains
          sensibleHeatFlux, &
          latentHeatFlux, &
          evaporativeWaterFlux, &
+         evaporativeWaterFluxSnow, &
+         evaporativeWaterFluxIce, &
          oceanFreshWaterFlux, &
          oceanSaltFlux, &
          oceanHeatFlux, &
          oceanShortwaveFlux, &
+         bottomConductiveFlux, &
          surfaceIceMelt, &
          basalIceMelt, &
          lateralIceMelt, &
          snowMelt, &
          congelation, &
          snowiceFormation, &
+         snowThicknessChangeCell, &
          frazilFormation, &
          meltOnset, &
          freezeOnset, &
+         snowIceInterfaceTemperature, &
          oceanHeatFluxIceBottom, &
          openWaterArea, &
          snowLossToLeads, &
@@ -1438,6 +1414,7 @@ contains
          pondLidMeltFluxFraction, &
          surfaceHeatFluxCategory, &
          surfaceConductiveFluxCategory, &
+         bottomConductiveFluxCategory, &
          latentHeatFluxCouple, &
          sensibleHeatFluxCouple, &
          surfaceHeatFluxCouple, &
@@ -1486,8 +1463,7 @@ contains
 
     logical :: &
          northernHemisphereMask, &
-         abortFlag, &
-         anyAbort
+         abortFlag
 
     character(len=strKIND) :: &
          abortMessage, &
@@ -1603,6 +1579,7 @@ contains
 
        call MPAS_pool_get_array(ocean_coupling, "seaSurfaceTemperature", seaSurfaceTemperature)
        call MPAS_pool_get_array(ocean_coupling, "seaSurfaceSalinity", seaSurfaceSalinity)
+       call MPAS_pool_get_array(ocean_coupling, "bottomTemperature", bottomTemperature)
        call MPAS_pool_get_array(ocean_coupling, "freezingMeltingPotential", freezingMeltingPotential)
        call MPAS_pool_get_array(ocean_coupling, "seaFreezingTemperature", seaFreezingTemperature)
 
@@ -1626,6 +1603,8 @@ contains
        call MPAS_pool_get_array(drag, "dragFloeSeparation", dragFloeSeparation)
 
        call MPAS_pool_get_array(melt_growth_rates, "lateralIceMeltFraction", lateralIceMeltFraction)
+       call MPAS_pool_get_array(melt_growth_rates, "lateralIceMeltRate", lateralIceMeltRate)
+       call MPAS_pool_get_array(melt_growth_rates, "lateralHeatFlux", lateralHeatFlux)
        call MPAS_pool_get_array(melt_growth_rates, "surfaceIceMelt", surfaceIceMelt)
        call MPAS_pool_get_array(melt_growth_rates, "surfaceIceMeltCategory", surfaceIceMeltCategory)
        call MPAS_pool_get_array(melt_growth_rates, "basalIceMelt", basalIceMelt )
@@ -1637,6 +1616,7 @@ contains
        call MPAS_pool_get_array(melt_growth_rates, "congelationCategory", congelationCategory)
        call MPAS_pool_get_array(melt_growth_rates, "snowiceFormation", snowiceFormation)
        call MPAS_pool_get_array(melt_growth_rates, "snowiceFormationCategory", snowiceFormationCategory)
+       call MPAS_pool_get_array(melt_growth_rates, "snowThicknessChangeCell", snowThicknessChangeCell)
        call MPAS_pool_get_array(melt_growth_rates, "snowThicknessChangeCategory", snowThicknessChangeCategory)
        call MPAS_pool_get_array(melt_growth_rates, "frazilFormation", frazilFormation)
 
@@ -1650,12 +1630,16 @@ contains
        call MPAS_pool_get_array(atmos_fluxes, "latentHeatFlux", latentHeatFlux)
        call MPAS_pool_get_array(atmos_fluxes, "latentHeatFluxCategory", latentHeatFluxCategory)
        call MPAS_pool_get_array(atmos_fluxes, "evaporativeWaterFlux", evaporativeWaterFlux)
+       call MPAS_pool_get_array(atmos_fluxes, "evaporativeWaterFluxSnow", evaporativeWaterFluxSnow)
+       call MPAS_pool_get_array(atmos_fluxes, "evaporativeWaterFluxIce", evaporativeWaterFluxIce)
 
        call MPAS_pool_get_array(ocean_fluxes, "oceanFreshWaterFlux", oceanFreshWaterFlux)
        call MPAS_pool_get_array(ocean_fluxes, "oceanSaltFlux", oceanSaltFlux)
        call MPAS_pool_get_array(ocean_fluxes, "oceanHeatFlux", oceanHeatFlux)
        call MPAS_pool_get_array(ocean_fluxes, "oceanShortwaveFlux", oceanShortwaveFlux)
        call MPAS_pool_get_array(ocean_fluxes, "oceanHeatFluxIceBottom", oceanHeatFluxIceBottom)
+       call MPAS_pool_get_array(ocean_fluxes, "bottomConductiveFlux", bottomConductiveFlux)
+       call MPAS_pool_get_array(ocean_fluxes, "bottomConductiveFluxCategory", bottomConductiveFluxCategory)
 
        call MPAS_pool_get_array(shortwave, "surfaceShortwaveFlux", surfaceShortwaveFlux)
        call MPAS_pool_get_array(shortwave, "interiorShortwaveFlux", interiorShortwaveFlux)
@@ -1674,6 +1658,7 @@ contains
 
        call MPAS_pool_get_array(diagnostics, "meltOnset", meltOnset)
        call MPAS_pool_get_array(diagnostics, "freezeOnset", freezeOnset)
+       call MPAS_pool_get_array(diagnostics, "snowIceInterfaceTemperature", snowIceInterfaceTemperature)
 
        call MPAS_pool_get_array(snow, "snowLossToLeads", snowLossToLeads)
        call MPAS_pool_get_array(snow, "snowMeltMassCell", snowMeltMassCell)
@@ -1703,7 +1688,6 @@ contains
        ! code abort
        abortFlag = .false.
        abortMessage = ""
-       anyAbort = .false.
 
        !$omp parallel do default(shared) private(iCategory,iAerosol,northernHemisphereMask,&
        !$omp&  abortMessage) firstprivate(specificSnowAerosol,specificIceAerosol) &
@@ -1749,144 +1733,145 @@ contains
              northernHemisphereMask = .false.
           endif
 
-          call colpkg_clear_warnings()
-          call colpkg_step_therm1(&
-               config_dt, &
-               nCategories, &
-               nIceLayers, &
-               nSnowLayers, &
-               nAerosols, &
-               openWaterArea(iCell), &
-               iceAreaCategoryInitial(:,iCell), &
-               iceVolumeCategoryInitial(:,iCell), &
-               snowVolumeCategoryInitial(:,iCell), &
-               iceAreaCell(iCell), &
-               iceAreaCategory(1,:,iCell), &
-               iceVolumeCell(iCell), &
-               iceVolumeCategory(1,:,iCell), &
-               snowVolumeCell(iCell), &
-               snowVolumeCategory(1,:,iCell), &
-               uVelocityCell(iCell), &
-               vVelocityCell(iCell), &
-               surfaceTemperature(1,:,iCell), &
-               snowEnthalpy(:,:,iCell), &
-               iceEnthalpy(:,:,iCell), &
-               iceSalinity(:,:,iCell), &
-               snowIceMass(:,:,iCell), &
-               snowLiquidMass(:,:,iCell), &
-               levelIceArea(1,:,iCell), &
-               levelIceVolume(1,:,iCell), &
-               pondArea(1,:,iCell), &
-               pondDepth(1,:,iCell), &
-               pondLidThickness(1,:,iCell), &
-               iceAge(1,:,iCell), &
-               firstYearIceArea(1,:,iCell), &
-               snowGrainRadius(:,:,iCell), &
-               config_use_snow_liquid_ponds, &
-               specificSnowAerosol(:,:,:), &
-               specificIceAerosol(:,:,:), &
-               uAirVelocity(iCell), &
-               vAirVelocity(iCell), &
-               windSpeed(iCell), &
-               airLevelHeight(iCell), &
-               airSpecificHumidity(iCell), &
-               airDensity(iCell), &
-               airTemperature(iCell), &
-               atmosReferenceTemperature2m(iCell), &
-               atmosReferenceHumidity2m(iCell), &
-               atmosReferenceSpeed10m(iCell), &
-               airOceanDragCoefficientRatio(iCell), &
-               oceanDragCoefficient(iCell), &
-               oceanDragCoefficientSkin(iCell), &
-               oceanDragCoefficientFloe(iCell), &
-               oceanDragCoefficientKeel(iCell), &
-               airDragCoefficient(iCell), &
-               airDragCoefficientSkin(iCell), &
-               airDragCoefficientFloe(iCell), &
-               airDragCoefficientPond(iCell), &
-               airDragCoefficientRidge(iCell), &
-               dragFreeboard(iCell), &
-               dragIceSnowDraft(iCell), &
-               dragRidgeHeight(iCell), &
-               dragRidgeSeparation(iCell), &
-               dragKeelDepth(iCell), &
-               dragKeelSeparation(iCell), &
-               dragFloeLength(iCell), &
-               dragFloeSeparation(iCell), &
-               airStressForcingU(iCell), &
-               airStressForcingV(iCell), &
-               airStressCellU(iCell), &
-               airStressCellV(iCell), &
-               airPotentialTemperature(iCell), &
-               seaSurfaceTemperature(iCell), &
-               seaSurfaceSalinity(iCell), &
-               seaFreezingTemperature(iCell), &
-               oceanStressCellU(iCell), &
-               oceanStressCellV(iCell), &
-               oceanHeatFluxIceBottom(iCell), &
-               freezingMeltingPotential(iCell), &
-               lateralIceMeltFraction(iCell), &
-               snowfallRate(iCell), &
-               rainfallRate(iCell), &
-               pondFreshWaterFlux(iCell), &
-               snowLossToLeads(iCell), &
-               surfaceHeatFlux(iCell), &
-               surfaceHeatFluxCategory(:,iCell), &
-               surfaceConductiveFlux(iCell), &
-               surfaceConductiveFluxCategory(:,iCell), &
-               surfaceShortwaveFlux(:,iCell), &
-               interiorShortwaveFlux(:,iCell), &
-               penetratingShortwaveFlux(:,iCell), &
-               absorbedShortwaveFlux(iCell), &
-               longwaveUp(iCell), &
-               absorbedShortwaveSnowLayer(:,:,iCell), &
-               absorbedShortwaveIceLayer(:,:,iCell), &
-               longwaveDown(iCell), &
-               solarZenithAngleCosine(iCell), &
-               sensibleHeatFlux(iCell), &
-               sensibleHeatFluxCategory(:,iCell), &
-               latentHeatFlux(iCell), &
-               latentHeatFluxCategory(:,iCell), &
-               evaporativeWaterFlux(iCell), &
-               oceanFreshWaterFlux(iCell), &
-               oceanSaltFlux(iCell), &
-               oceanHeatFlux(iCell), &
-               oceanShortwaveFlux(iCell), &
-               latentHeatFluxCouple(:,iCell), &
-               sensibleHeatFluxCouple(:,iCell), &
-               surfaceHeatFluxCouple(:,iCell), &
-               surfaceConductiveFluxCouple(:,iCell), &
-               atmosAerosolFlux(:,iCell), &
-               oceanAerosolFlux(:,iCell), &
-               pondSnowDepthDifference(:,iCell), &
-               pondLidMeltFluxFraction(:,iCell), &
-               surfaceIceMelt(iCell), &
-               surfaceIceMeltCategory(:,iCell), &
-               basalIceMelt(iCell), &
-               basalIceMeltCategory(:,iCell), &
-               lateralIceMelt(iCell), &
-               snowMelt(iCell), &
-               snowMeltCategory(:,iCell), &
-               snowMeltMassCell(iCell), &
-               snowMeltMassCategory(:,iCell), &
-               congelation(iCell), &
-               congelationCategory(:,iCell), &
-               snowiceFormation(iCell), &
-               snowiceFormationCategory(:,iCell), &
-               snowThicknessChangeCategory(:,iCell), &
-               frazilFormation(iCell), &
-               northernHemisphereMask, &
-               .not. northernHemisphereMask, &
-               meltOnset(iCell), &
-               freezeOnset(iCell), &
-               dayOfYear, &
-               abortFlag, &
-               abortMessage, &
-               config_use_prescribed_ice)
-          call column_write_warnings(abortFlag)
+          call icepack_step_therm1(&
+               dt=config_dt, &
+               ncat=nCategories, &
+               nilyr=nIceLayers, &
+               nslyr=nSnowLayers, &
+               aicen_init=iceAreaCategoryInitial(:,iCell), &
+               vicen_init=iceVolumeCategoryInitial(:,iCell), &
+               vsnon_init=snowVolumeCategoryInitial(:,iCell), &
+               aice=iceAreaCell(iCell), &
+               aicen=iceAreaCategory(1,:,iCell), &
+               vice=iceVolumeCell(iCell), &
+               vicen=iceVolumeCategory(1,:,iCell), &
+               vsno=snowVolumeCell(iCell), &
+               vsnon=snowVolumeCategory(1,:,iCell), &
+               uvel=uVelocityCell(iCell), &
+               vvel=vVelocityCell(iCell), &
+               Tsfc=surfaceTemperature(1,:,iCell), &
+               zqsn=snowEnthalpy(:,:,iCell), &
+               zqin=iceEnthalpy(:,:,iCell), &
+               zSin=iceSalinity(:,:,iCell), &
+               alvl=levelIceArea(1,:,iCell), &
+               vlvl=levelIceVolume(1,:,iCell), &
+               apnd=pondArea(1,:,iCell), &
+               hpnd=pondDepth(1,:,iCell), &
+               ipnd=pondLidThickness(1,:,iCell), &
+               iage=iceAge(1,:,iCell), &
+               FY=firstYearIceArea(1,:,iCell), &
+               aerosno=specificSnowAerosol(:,:,:), &
+               aeroice=specificIceAerosol(:,:,:), &
+               uatm=uAirVelocity(iCell), &
+               vatm=vAirVelocity(iCell), &
+               wind=windSpeed(iCell), &
+               zlvl=airLevelHeight(iCell), &
+               Qa=airSpecificHumidity(iCell), &
+               rhoa=airDensity(iCell), &
+               Tair=airTemperature(iCell), &
+               Tref=atmosReferenceTemperature2m(iCell), &
+               Qref=atmosReferenceHumidity2m(iCell), &
+               Uref=atmosReferenceSpeed10m(iCell), &
+               Cdn_atm_ratio=airOceanDragCoefficientRatio(iCell), &
+               Cdn_ocn=oceanDragCoefficient(iCell), &
+               Cdn_ocn_skin=oceanDragCoefficientSkin(iCell), &
+               Cdn_ocn_floe=oceanDragCoefficientFloe(iCell), &
+               Cdn_ocn_keel=oceanDragCoefficientKeel(iCell), &
+               Cdn_atm=airDragCoefficient(iCell), &
+               Cdn_atm_skin=airDragCoefficientSkin(iCell), &
+               Cdn_atm_floe=airDragCoefficientFloe(iCell), &
+               Cdn_atm_pond=airDragCoefficientPond(iCell), &
+               Cdn_atm_rdg=airDragCoefficientRidge(iCell), &
+               hfreebd=dragFreeboard(iCell), &
+               hdraft=dragIceSnowDraft(iCell), &
+               hridge=dragRidgeHeight(iCell), &
+               distrdg=dragRidgeSeparation(iCell), &
+               hkeel=dragKeelDepth(iCell), &
+               dkeel=dragKeelSeparation(iCell), &
+               lfloe=dragFloeLength(iCell), &
+               dfloe=dragFloeSeparation(iCell), &
+               strax=airStressForcingU(iCell), &
+               stray=airStressForcingV(iCell), &
+               strairxT=airStressCellU(iCell), &
+               strairyT=airStressCellV(iCell), &
+               potT=airPotentialTemperature(iCell), &
+               sst=seaSurfaceTemperature(iCell), &
+               sss=seaSurfaceSalinity(iCell), &
+               Tf=seaFreezingTemperature(iCell), &
+               strocnxT=oceanStressCellU(iCell), &
+               strocnyT=oceanStressCellV(iCell), &
+               fbot=oceanHeatFluxIceBottom(iCell), &
+               Tbot=bottomTemperature(iCell), &
+               Tsnice=snowIceInterfaceTemperature(iCell), &
+               frzmlt=freezingMeltingPotential(iCell), &
+               rside=lateralIceMeltFraction(iCell), &
+               wlat=lateralIceMeltRate(iCell), &
+               fside=lateralHeatFlux(iCell), &
+               fsnow=snowfallRate(iCell), &
+               frain=rainfallRate(iCell), &
+               fpond=pondFreshWaterFlux(iCell), &
+               fsloss=snowLossToLeads(iCell), &
+               fsurf=surfaceHeatFlux(iCell), &
+               fsurfn=surfaceHeatFluxCategory(:,iCell), &
+               fcondtop=surfaceConductiveFlux(iCell), &
+               fcondtopn=surfaceConductiveFluxCategory(:,iCell), &
+               fcondbot=bottomConductiveFlux(iCell), &
+               fcondbotn=bottomConductiveFluxCategory(:,iCell), &
+               fswsfcn=surfaceShortwaveFlux(:,iCell), &
+               fswintn=interiorShortwaveFlux(:,iCell), &
+               fswthrun=penetratingShortwaveFlux(:,iCell), &
+               fswabs=absorbedShortwaveFlux(iCell), &
+               flwout=longwaveUp(iCell), &
+               Sswabsn=absorbedShortwaveSnowLayer(:,:,iCell), &
+               Iswabsn=absorbedShortwaveIceLayer(:,:,iCell), &
+               flw=longwaveDown(iCell), &
+               fsens=sensibleHeatFlux(iCell), &
+               fsensn=sensibleHeatFluxCategory(:,iCell), &
+               flat=latentHeatFlux(iCell), &
+               flatn=latentHeatFluxCategory(:,iCell), &
+               evap=evaporativeWaterFlux(iCell), &
+               evaps=evaporativeWaterFluxSnow(iCell), &
+               evapi=evaporativeWaterFluxIce(iCell), &
+               fresh=oceanFreshWaterFlux(iCell), &
+               fsalt=oceanSaltFlux(iCell), &
+               fhocn=oceanHeatFlux(iCell), &
+               fswthru=oceanShortwaveFlux(iCell), & !??
+               flatn_f=latentHeatFluxCouple(:,iCell), &
+               fsensn_f=sensibleHeatFluxCouple(:,iCell), &
+               fsurfn_f=surfaceHeatFluxCouple(:,iCell), &
+               fcondtopn_f=surfaceConductiveFluxCouple(:,iCell) , &
+               faero_atm=atmosAerosolFlux(:,iCell), &
+               faero_ocn=oceanAerosolFlux(:,iCell), &
+               dhsn=pondSnowDepthDifference(:,iCell), &
+               ffracn=pondLidMeltFluxFraction(:,iCell), &
+               meltt=surfaceIceMelt(iCell), &
+               melttn=surfaceIceMeltCategory(:,iCell), &
+               meltb=basalIceMelt(iCell), &
+               meltbn=basalIceMeltCategory(:,iCell), &
+               melts=snowMelt(iCell), &
+               meltsn=snowMeltCategory(:,iCell), &
+               congel=congelation(iCell), &
+               congeln=congelationCategory(:,iCell), &
+               snoice=snowiceFormation(iCell), &
+               snoicen=snowiceFormationCategory(:,iCell), &
+               dsnow=snowThicknessChangeCell(iCell), &
+               dsnown=snowThicknessChangeCategory(:,iCell), &
+               meltsliq=snowMeltMassCell(iCell), &
+               meltsliqn=snowMeltMassCategory(:,iCell), &
+               rsnwn=snowGrainRadius(:,:,iCell), &
+               smicen=snowIceMass(:,:,iCell), &
+               smliqn=snowLiquidMass(:,:,iCell), &
+               lmask_n=northernHemisphereMask, &
+               lmask_s=(.not. northernHemisphereMask), &
+               mlt_onset=meltOnset(iCell), &
+               frz_onset=freezeOnset(iCell), &
+               yday=dayOfYear, &
+               prescribed_ice=config_use_prescribed_ice)
+          abortFlag = icepack_warnings_aborted()
+          call seaice_icepack_write_warnings(abortFlag)
 
-          ! code abort
-          if (abortFlag .and. .not. anyAbort) then
+          ! cell-specific abort message
+          if (abortFlag) then
              call mpas_log_write("column_vertical_thermodynamics: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
              call mpas_log_write("iCell: $i", messageType=MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell)/))
 
@@ -1985,6 +1970,7 @@ contains
              call mpas_log_write("oceanHeatFluxIceBottom: $r", messageType=MPAS_LOG_ERR, realArgs=(/oceanHeatFluxIceBottom(iCell)/))
              call mpas_log_write("freezingMeltingPotential: $r", messageType=MPAS_LOG_ERR, realArgs=(/freezingMeltingPotential(iCell)/))
              call mpas_log_write("lateralIceMeltFraction: $r", messageType=MPAS_LOG_ERR, realArgs=(/lateralIceMeltFraction(iCell)/))
+             call mpas_log_write("lateralIceMeltRate: $r", messageType=MPAS_LOG_ERR, realArgs=(/lateralIceMeltRate(iCell)/))
              call mpas_log_write("snowfallRate: $r", messageType=MPAS_LOG_ERR, realArgs=(/snowfallRate(iCell)/))
              call mpas_log_write("rainfallRate: $r", messageType=MPAS_LOG_ERR, realArgs=(/rainfallRate(iCell)/))
              call mpas_log_write("pondFreshWaterFlux: $r", messageType=MPAS_LOG_ERR, realArgs=(/pondFreshWaterFlux(iCell)/))
@@ -2043,9 +2029,6 @@ contains
              call mpas_log_write("freezeOnset: $r", messageType=MPAS_LOG_ERR, realArgs=(/freezeOnset(iCell)/))
              call mpas_log_write("dayOfYear: $r", messageType=MPAS_LOG_ERR, realArgs=(/dayOfYear/))
              call mpas_log_write("config_use_prescribed_ice: $l", messageType=MPAS_LOG_ERR, logicArgs=(/config_use_prescribed_ice/))
-             anyAbort = .true.
-             abortFlag = .false.
-             abortMessage = ""
           endif
 
           ! aerosol
@@ -2075,9 +2058,9 @@ contains
 
        enddo ! iCell
 
-       ! code abort
-       call seaice_critical_error_write_block(domain, block, anyAbort)
-       call seaice_check_critical_error(domain, anyAbort)
+       ! error-checking
+       call seaice_critical_error_write_block(domain, block, abortFlag)
+       call seaice_check_critical_error(domain, abortFlag)
 
        ! aerosols
        deallocate(specificSnowAerosol)
@@ -2093,8 +2076,8 @@ contains
 !  column_itd_thermodynamics
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 21th January 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
@@ -2102,9 +2085,8 @@ contains
 
   subroutine column_itd_thermodynamics(domain, clock)
 
-    use ice_colpkg, only: &
-         colpkg_step_therm2, &
-         colpkg_clear_warnings
+    use icepack_intfc, only: &
+         icepack_step_therm2
 
     type(domain_type), intent(inout) :: domain
 
@@ -2119,6 +2101,8 @@ contains
          tracers_aggregate, &
          atmos_coupling, &
          ocean_coupling, &
+!         wave_coupling, &
+!         floe_size_distribution, &
          ocean_fluxes, &
          melt_growth_rates, &
          ponds, &
@@ -2139,6 +2123,7 @@ contains
     integer, pointer :: &
          nCellsSolve, &
          nCategories, &
+!         nFloeCategories, &
          nIceLayers, &
          nSnowLayers, &
          nAerosols, &
@@ -2151,7 +2136,9 @@ contains
          iceAreaCell, &
          seaFreezingTemperature, &
          seaSurfaceSalinity, &
+         lateralHeatFlux, &
          lateralIceMeltFraction, &
+         lateralIceMeltRate, &
          lateralIceMelt, &
          freezingMeltingPotential, &
          frazilFormation, &
@@ -2165,8 +2152,13 @@ contains
          biologyGrid, &
          verticalGrid, &
          interfaceBiologyGrid, &
-         zSalinityFlux, &
          frazilGrowthDiagnostic
+!         frazilGrowthDiagnostic, &
+!         WaveFrequency,      &
+!         WaveFreqBinWidth,   &
+!         SignificantWaveHeight,&
+!         FloeSizeBinCenter,  &
+!         FloeSizeBinWidth
 
     real(kind=RKIND), dimension(:,:), pointer :: &
          iceAreaCategoryInitial, &
@@ -2175,6 +2167,12 @@ contains
          oceanBioFluxes, &
          oceanBioConcentrations, &
          initialSalinityProfile
+!         WaveSpectra, &
+!         DFloeSizeNewIce, &
+!         DFloeSizeLateralGrowth, &
+!         DFloeSizeLateralMelt, &
+!         DFloeSizeWaves, &
+!         DFloeSizeWeld
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          iceAreaCategory, &
@@ -2217,7 +2215,6 @@ contains
 
     logical :: &
          abortFlag, &
-         anyAbort, &
          setGetPhysicsTracers, &
          setGetBGCTracers, &
          checkCarbon
@@ -2250,6 +2247,8 @@ contains
        call MPAS_pool_get_subpool(block % structs, "initial", initial)
        call MPAS_pool_get_subpool(block % structs, "diagnostics", diagnostics)
        call MPAS_pool_get_subpool(block % structs, "aerosols", aerosols)
+!       call MPAS_pool_get_subpool(block % structs, "wave_coupling", wave_coupling)
+!       call MPAS_pool_get_subpool(block % structs, "floe_size_distribution", floe_size_distribution)
 
        call MPAS_pool_get_config(block % configs, "config_dt", config_dt)
        call MPAS_pool_get_config(block % configs, "config_update_ocean_fluxes", config_update_ocean_fluxes)
@@ -2257,6 +2256,7 @@ contains
 
        call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
        call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
+!       call MPAS_pool_get_dimension(mesh, "nFloeCategories", nFloeCategories)
        call MPAS_pool_get_dimension(mesh, "nIceLayers", nIceLayers)
        call MPAS_pool_get_dimension(mesh, "nSnowLayers", nSnowLayers)
        call MPAS_pool_get_dimension(mesh, "nAerosols", nAerosols)
@@ -2282,11 +2282,26 @@ contains
        call MPAS_pool_get_array(ocean_coupling, "seaFreezingTemperature", seaFreezingTemperature)
        call MPAS_pool_get_array(ocean_coupling, "seaSurfaceSalinity", seaSurfaceSalinity)
 
+!       call MPAS_pool_get_array(wave_coupling, "SignificantWaveHeight", SignificantWaveHeight)
+!       call MPAS_pool_get_array(wave_coupling, "WaveSpectra", WaveSpectra)
+!       call MPAS_pool_get_array(wave_coupling, "WaveFrequency", WaveFrequency)
+!       call MPAS_pool_get_array(wave_coupling, "WaveFreqBinWidth", WaveFreqBinWidth)
+
+!       call MPAS_pool_get_array(floe_size_distribution, "FloeSizeBinCenter", FloeSizeBinCenter)
+!       call MPAS_pool_get_array(floe_size_distribution, "FloeSizeBinWidth", FloeSizeBinWidth)
+!       call MPAS_pool_get_array(floe_size_distribution, "DFloeSizeNewIce", DFloeSizeNewIce)
+!       call MPAS_pool_get_array(floe_size_distribution, "DFloeSizeLateralGrowth", DFloeSizeLateralGrowth)
+!       call MPAS_pool_get_array(floe_size_distribution, "DFloeSizeLateralMelt", DFloeSizeLateralMelt)
+!       call MPAS_pool_get_array(floe_size_distribution, "DFloeSizeWeld", DFloeSizeWeld)
+!       call MPAS_pool_get_array(floe_size_distribution, "DFloeSizeWaves", DFloeSizeWaves)
+
        call MPAS_pool_get_array(ocean_fluxes, "oceanFreshWaterFlux", oceanFreshWaterFlux)
        call MPAS_pool_get_array(ocean_fluxes, "oceanSaltFlux", oceanSaltFlux)
        call MPAS_pool_get_array(ocean_fluxes, "oceanHeatFlux", oceanHeatFlux)
 
+       call MPAS_pool_get_array(melt_growth_rates, "lateralHeatFlux", lateralHeatFlux)
        call MPAS_pool_get_array(melt_growth_rates, "lateralIceMeltFraction", lateralIceMeltFraction)
+       call MPAS_pool_get_array(melt_growth_rates, "lateralIceMeltRate", lateralIceMeltRate)
        call MPAS_pool_get_array(melt_growth_rates, "lateralIceMelt", lateralIceMelt)
        call MPAS_pool_get_array(melt_growth_rates, "frazilFormation", frazilFormation)
        call MPAS_pool_get_array(melt_growth_rates, "frazilGrowthDiagnostic", frazilGrowthDiagnostic)
@@ -2301,7 +2316,6 @@ contains
        call MPAS_pool_get_array(biogeochemistry, "biologyGrid", biologyGrid)
        call MPAS_pool_get_array(biogeochemistry, "verticalGrid", verticalGrid)
        call MPAS_pool_get_array(biogeochemistry, "interfaceBiologyGrid", interfaceBiologyGrid)
-       call MPAS_pool_get_array(biogeochemistry, "zSalinityFlux", zSalinityFlux)
 
        call MPAS_pool_get_array(initial, "initialSalinityProfile", initialSalinityProfile)
        call MPAS_pool_get_array(initial, "categoryThicknessLimits", categoryThicknessLimits)
@@ -2328,7 +2342,6 @@ contains
        ! code abort
        abortFlag = .false.
        abortMessage = ""
-       anyAbort = .false.
 
        !$omp parallel do default(shared) private(iCategory,iBioTracers,iBioData,&
        !$omp&   totalCarbonInitial,abortMessage,oceanBioFluxesTemp,totalCarbonFinal,&
@@ -2361,60 +2374,73 @@ contains
 
           oceanBioFluxesTemp(:) = 0.0_RKIND
 
-          call colpkg_clear_warnings()
-          call colpkg_step_therm2(&
-               config_dt, &
-               nCategories, &
-               nAerosols, &
-               ciceTracerObject % nBioTracers, & !nbtrcr, intent(in)
-               nIcelayers, &
-               nSnowLayers, &
-               categoryThicknessLimits(:), & !hin_max, intent(inout), dimension(0:ncat)
-               nBioLayers, &
-               iceAreaCategory(1,:,iCell), &
-               iceVolumeCategory(1,:,iCell), &
-               snowVolumeCategory(1,:,iCell), &
-               iceAreaCategoryInitial(:,iCell), &
-               iceVolumeCategoryInitial(:,iCell), &
-               tracerArrayCategory, & !trcrn,   intent(inout)
-               openWaterArea(iCell), &
-               iceAreaCell(iCell), &
-               ciceTracerObject % parentIndex, & !trcr_depend,     intent(in)
-               ciceTracerObject % firstAncestorMask, & !trcr_base, intent(in)
-               ciceTracerObject % ancestorNumber, & !n_trcr_strata,intent(in)
-               ciceTracerObject % ancestorIndices, & !nt_strata,   intent(in)
-               seaFreezingTemperature(iCell), &
-               seaSurfaceSalinity(iCell), &
-               initialSalinityProfile(:,iCell), &
-               lateralIceMeltFraction(iCell), &
-               lateralIceMelt(iCell), &
-               freezingMeltingPotential(iCell), &
-               frazilFormation(iCell), &
-               rainfallRate(iCell), &
-               pondFreshWaterFlux(iCell), &
-               oceanFreshWaterFlux(iCell), &
-               oceanSaltFlux(iCell), &
-               oceanHeatFlux(iCell), &
-               config_update_ocean_fluxes, &       !update_ocn_f, intent(in)
-               biologyGrid(:), &                   !bgrid, intent(in)
-               verticalGrid(:), &                  !cgrid, intent(in)
-               interfaceBiologyGrid(:), &          !igrid, intent(in)
-               oceanAerosolFlux(:,iCell), &
-               newlyFormedIceLogical(:), &         !first_ice, intent(inout)
-               zSalinityFlux(iCell), &
-               oceanBioFluxesTemp(:), &
-               oceanBioConcentrationsUsed(:), &    !ocean_bio, intent(in)
-               abortFlag, &
-               abortMessage, &
-               frazilGrowthDiagnostic(iCell), &
-               freezeOnset(iCell), &
-               dayOfYear)
+          ! CICE calculates the Sig Wave Height from the wave spectrum as follows before step therm2:
+          ! we will use the Sig Wave Height from WW3, but could use this for testing without WW3
+          ! if (tr_fsd) wave_sig_ht(i,j,iblk) = c4*SQRT(SUM(wave_spectrum(i,j,:,iblk)*dwavefreq(:)))
 
-               do iBioTracers = 1, ciceTracerObject % nBioTracers
-                  oceanBioFluxes(iBioTracers,iCell) = oceanBioFluxes(iBioTracers,iCell) + oceanBioFluxesTemp(iBioTracers)
-               enddo
+          call icepack_step_therm2(&
+               dt=config_dt, &
+               ncat=nCategories, &
+               nltrcr=ciceTracerObject % nBioTracers, & ! CHECK/FIX for BGC
+               nilyr=nIcelayers, &
+               nslyr=nSnowLayers, &
+               hin_max=categoryThicknessLimits(:), &
+               nblyr=nBioLayers, &
+               aicen=iceAreaCategory(1,:,iCell), &
+               vicen=iceVolumeCategory(1,:,iCell), &
+               vsnon=snowVolumeCategory(1,:,iCell), &
+               aicen_init=iceAreaCategoryInitial(:,iCell), &  
+               vicen_init=iceVolumeCategoryInitial(:,iCell), &
+               trcrn=tracerArrayCategory, &
+               aice0=openWaterArea(iCell), &
+               aice=iceAreaCell(iCell), &
+               trcr_depend=ciceTracerObject % parentIndex,   &
+               trcr_base=ciceTracerObject % firstAncestorMask, & 
+               n_trcr_strata=ciceTracerObject % ancestorNumber, &
+               nt_strata=ciceTracerObject % ancestorIndices, &
+               Tf=seaFreezingTemperature(iCell), &
+               sss=seaSurfaceSalinity(iCell), &
+               salinz=initialSalinityProfile(:,iCell), &
+               rside=lateralIceMeltFraction(iCell),   &
+               meltl=lateralIceMelt(iCell), &
+               fside=lateralHeatFlux(iCell), &
+               wlat=lateralIceMeltRate(iCell), &
+               frzmlt=freezingMeltingPotential(iCell), &
+               frazil=frazilFormation(iCell), &
+               frain=rainfallRate(iCell), &
+               fpond=pondFreshWaterFlux(iCell), &
+               fresh=oceanFreshWaterFlux(iCell), &
+               fsalt=oceanSaltFlux(iCell), &
+               fhocn=oceanHeatFlux(iCell), &
+               bgrid=biologyGrid(:), &
+               cgrid=verticalGrid(:), &
+               igrid=interfaceBiologyGrid(:),  &
+               faero_ocn=oceanAerosolFlux(:,iCell), &
+               first_ice=newlyFormedIceLogical(:), & 
+               flux_bio=oceanBioFluxesTemp(:), &
+               ocean_bio=oceanBioConcentrationsUsed(:), &
+               frazil_diag=frazilGrowthDiagnostic(iCell), &
+               frz_onset=freezeOnset(iCell), & ! optional
+               yday=dayOfYear) ! optional
+!               yday=dayOfYear, & ! optional
+!               fiso_ocn=, & !optional - isotope flux to ocean  (kg/m^2/s)
+!               HDO_ocn=, & ! optional - ocean concentration of HDO (kg/kg)
+!               H2_16O_ocn=, & ! optional - ocean concentration of H2_16O (kg/kg) 
+!               H2_18O_ocn=, & ! optional - ocean concentration of H2_18O (kg/kg)
+!               nfsd=nFloeCategories, &
+!               wave_sig_ht=SignificantWaveHeight(iCell), &
+!               wave_spectrum=WaveSpectra(:,iCell),    &
+!               wavefreq=WaveFrequency(:),       &
+!               dwavefreq=WaveFreqBinWidth(:),      &
+!               d_afsd_latg=DFloeSizeLateralGrowth(:,iCell),    &
+!               d_afsd_newi=DFloeSizeNewIce(:,iCell),   &
+!               d_afsd_latm=DFloeSizeLateralMelt(:,iCell),   &
+!               d_afsd_weld=DFloeSizeWeld(:,iCell),   &
+!               floe_rad_c=FloeSizeBinCenter(:), &  
+!               floe_binwidth=FloeSizeBinWidth(:))
 
-          call column_write_warnings(abortFlag)
+          abortFlag = icepack_warnings_aborted()
+          call seaice_icepack_write_warnings(abortFlag)
 
           ! update
           do iCategory = 1, nCategories
@@ -2451,20 +2477,17 @@ contains
             endif
           endif
 
-          ! code abort
-          if (abortFlag .and. .not. anyAbort) then
+          ! cell-specific abort message
+          if (abortFlag) then
              call mpas_log_write("column_itd_thermodynamics: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
              call mpas_log_write("iCell: $i", messageType=MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell)/))
-             abortFlag = .false.
-             abortMessage = ""
-             anyAbort = .true.
           endif
 
        enddo ! iCell
 
-       ! code abort
-       call seaice_critical_error_write_block(domain, block, anyAbort)
-       call seaice_check_critical_error(domain, anyAbort)
+       ! error checking
+       call seaice_critical_error_write_block(domain, block, abortFlag)
+       call seaice_check_critical_error(domain, abortFlag)
 
        if (checkCarbon) then
           deallocate(totalCarbonCatFinal)
@@ -2487,8 +2510,8 @@ contains
 !  column_prep_radiation
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 21th January 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
@@ -2496,7 +2519,8 @@ contains
 
   subroutine column_prep_radiation(domain)
 
-    use ice_colpkg, only: colpkg_prep_radiation
+    use icepack_intfc, only: &
+         icepack_prep_radiation
 
     type(domain_type), intent(inout) :: domain
 
@@ -2532,7 +2556,11 @@ contains
     real(kind=RKIND), dimension(:,:), pointer :: &
          surfaceShortwaveFlux, &
          interiorShortwaveFlux, &
-         penetratingShortwaveFlux
+         penetratingShortwaveFlux, &
+         penetratingShortwaveFluxVisibleDirect, &
+         penetratingShortwaveFluxVisibleDiffuse, &
+         penetratingShortwaveFluxIRDirect, &
+         penetratingShortwaveFluxIRDiffuse
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          iceAreaCategory, &
@@ -2575,38 +2603,45 @@ contains
        call MPAS_pool_get_array(shortwave, "surfaceShortwaveFlux", surfaceShortwaveFlux)
        call MPAS_pool_get_array(shortwave, "interiorShortwaveFlux", interiorShortwaveFlux)
        call MPAS_pool_get_array(shortwave, "penetratingShortwaveFlux", penetratingShortwaveFlux)
+       call MPAS_pool_get_array(shortwave, "penetratingShortwaveFluxVisibleDirect", penetratingShortwaveFluxVisibleDirect)
+       call MPAS_pool_get_array(shortwave, "penetratingShortwaveFluxVisibleDiffuse", penetratingShortwaveFluxVisibleDiffuse)
+       call MPAS_pool_get_array(shortwave, "penetratingShortwaveFluxIRDirect", penetratingShortwaveFluxIRDirect)
+       call MPAS_pool_get_array(shortwave, "penetratingShortwaveFluxIRDiffuse", penetratingShortwaveFluxIRDiffuse)
        call MPAS_pool_get_array(shortwave, "shortwaveLayerPenetration", shortwaveLayerPenetration)
        call MPAS_pool_get_array(shortwave, "absorbedShortwaveSnowLayer", absorbedShortwaveSnowLayer)
        call MPAS_pool_get_array(shortwave, "absorbedShortwaveIceLayer", absorbedShortwaveIceLayer)
 
        do iCell = 1, nCellsSolve
 
-          call colpkg_prep_radiation(&
-               nCategories, &
-               nIceLayers, &
-               nSnowLayers, &
-               iceAreaCell(iCell), &
-               iceAreaCategory(1,:,iCell), &
-               shortwaveVisibleDirectDown(iCell), &
-               shortwaveVisibleDiffuseDown(iCell), &
-               shortwaveIRDirectDown(iCell), &
-               shortwaveIRDiffuseDown(iCell), &
-               albedoVisibleDirectArea(iCell), &
-               albedoVisibleDiffuseArea(iCell), &
-               albedoIRDirectArea(iCell), &
-               albedoIRDiffuseArea(iCell), &
-               shortwaveScalingFactor(iCell), &
-               surfaceShortwaveFlux(:,iCell), &
-               interiorShortwaveFlux(:,iCell), &
-               penetratingShortwaveFlux(:,iCell), &
-               shortwaveLayerPenetration(:,:,iCell), &
-               absorbedShortwaveSnowLayer(:,:,iCell), &
-               absorbedShortwaveIceLayer(:,:,iCell))
+          call icepack_prep_radiation(&
+               aice=iceAreaCell(iCell), &
+               aicen=iceAreaCategory(1,:,iCell), &
+               swvdr=shortwaveVisibleDirectDown(iCell), &
+               swvdf=shortwaveVisibleDiffuseDown(iCell), &
+               swidr=shortwaveIRDirectDown(iCell), &
+               swidf=shortwaveIRDiffuseDown(iCell), &
+               alvdr_ai=albedoVisibleDirectArea(iCell), &
+               alvdf_ai=albedoVisibleDiffuseArea(iCell), &
+               alidr_ai=albedoIRDirectArea(iCell), &
+               alidf_ai=albedoIRDiffuseArea(iCell), &
+               scale_factor=shortwaveScalingFactor(iCell), &
+               fswsfcn=surfaceShortwaveFlux(:,iCell), &
+               fswintn=interiorShortwaveFlux(:,iCell), &
+               fswthrun=penetratingShortwaveFlux(:,iCell), &
+               fswthrun_vdr=penetratingShortwaveFluxVisibleDirect(:,iCell), &
+               fswthrun_vdf=penetratingShortwaveFluxVisibleDiffuse(:,iCell), &
+               fswthrun_idr=penetratingShortwaveFluxIRDirect(:,iCell), &
+               fswthrun_idf=penetratingShortwaveFluxIRDiffuse(:,iCell), &
+               fswpenln=shortwaveLayerPenetration(:,:,iCell), &
+               Sswabsn=absorbedShortwaveSnowLayer(:,:,iCell), &
+               Iswabsn=absorbedShortwaveIceLayer(:,:,iCell))
 
        enddo ! iCell
 
        block => block % next
     end do
+
+    call seaice_icepack_write_warnings(icepack_warnings_aborted())
 
   end subroutine column_prep_radiation
 
@@ -2617,7 +2652,7 @@ contains
 !> \brief Enable snow grain aging, effective snow density, wind compaction and redistribution
 !>
 !> \author Nicole Jeffery, LANL
-!> \date 3rd April 2017
+!> \date 3rd April 2017. Modified for icepack July 2023
 !> \details
 !>
 !> Snow physics improvements include:
@@ -2633,10 +2668,10 @@ contains
 
   subroutine column_snow(domain)
 
-    use ice_colpkg, only: &
-         colpkg_step_snow, &
-         colpkg_clear_warnings, &
-         colpkg_get_warnings
+    use icepack_intfc, only: &
+         icepack_step_snow, &
+         icepack_warnings_clear, &
+         icepack_warnings_aborted
 
     use seaice_constants, only: &
          seaicePuny, &
@@ -2695,21 +2730,13 @@ contains
          snowMeltMassCell
 
     real(kind=RKIND), pointer :: &
-         config_dt, &
-         config_new_snow_density, &
-         config_max_snow_density, &
-         config_minimum_wind_compaction, &
-         config_wind_compaction_factor, &
-         config_snow_redistribution_factor
+         config_dt
 
     integer, pointer :: &
          nCellsSolve, &
          nSnowLayers, &
          nIceLayers, &
-         nCategories, &
-         nGrainAgingTemperature, &
-         nGrainAgingTempGradient, &
-         nGrainAgingSnowDensity
+         nCategories
 
     integer :: &
          iCell, &
@@ -2726,9 +2753,6 @@ contains
          abortMessage, &
          abortLocation
 
-    character(len=strKINDWarnings), dimension(:), allocatable :: &
-         warnings
-
     block => domain % blocklist
     do while (associated(block))
 
@@ -2743,29 +2767,18 @@ contains
        call MPAS_pool_get_config(block % configs, "config_use_effective_snow_density", config_use_effective_snow_density)
        call MPAS_pool_get_config(block % configs, "config_use_snow_grain_radius", config_use_snow_grain_radius)
        call MPAS_pool_get_config(block % configs, "config_dt", config_dt)
-       call MPAS_pool_get_config(block % configs, "config_new_snow_density", config_new_snow_density)
-       call MPAS_pool_get_config(block % configs, "config_max_snow_density", config_max_snow_density)
-       call MPAS_pool_get_config(block % configs, "config_minimum_wind_compaction", config_minimum_wind_compaction)
-       call MPAS_pool_get_config(block % configs, "config_wind_compaction_factor", config_wind_compaction_factor)
-       call MPAS_pool_get_config(block % configs, "config_snow_redistribution_factor", config_snow_redistribution_factor)
        call MPAS_pool_get_config(block % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
 
        call MPAS_pool_get_dimension(block % dimensions, "nCellsSolve", nCellsSolve)
        call MPAS_pool_get_dimension(block % dimensions, "nCategories", nCategories)
        call MPAS_pool_get_dimension(block % dimensions, "nSnowLayers", nSnowLayers)
        call MPAS_pool_get_dimension(block % dimensions, "nIceLayers", nIceLayers)
-       call MPAS_pool_get_dimension(block % dimensions, "nGrainAgingTemperature", nGrainAgingTemperature)
-       call MPAS_pool_get_dimension(block % dimensions, "nGrainAgingTempGradient", nGrainAgingTempGradient)
-       call MPAS_pool_get_dimension(block % dimensions, "nGrainAgingSnowDensity", nGrainAgingSnowDensity)
 
        call MPAS_pool_get_array(snow, "snowDensityViaContent", snowDensityViaContent)
        call MPAS_pool_get_array(snow, "snowDensityViaCompaction", snowDensityViaCompaction)
        call MPAS_pool_get_array(snow, "snowMeltMassCategory", snowMeltMassCategory)
        call MPAS_pool_get_array(snow, "snowMeltMassCell", snowMeltMassCell)
        call MPAS_pool_get_array(snow, "snowLossToLeads", snowLossToLeads)
-       call MPAS_pool_get_array(snow, "snowEmpiricalGrowthParameterTau", snowEmpiricalGrowthParameterTau)
-       call MPAS_pool_get_array(snow, "snowEmpiricalGrowthParameterKappa", snowEmpiricalGrowthParameterKappa)
-       call MPAS_pool_get_array(snow, "snowPropertyRate", snowPropertyRate)
 
        call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory, 1)
        call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory, 1)
@@ -2794,55 +2807,40 @@ contains
        setGetPhysicsTracers = .true.
        setGetBGCTracers     = config_use_column_biogeochemistry
 
-       ! code abort
-       abortFlag = .false.
-       abortMessage = ""
-
        do iCell = 1, nCellsSolve
 
-          call colpkg_clear_warnings()
-          call colpkg_step_snow (&
-               config_dt, &
-               windSpeed(iCell), &
-               nIceLayers, &
-               nSnowLayers, &
-               nCategories, &
-               iceAreaCell(iCell), &
-               iceAreaCategory(1,:,iCell), &
-               iceVolumeCategory(1,:,iCell), &
-               snowVolumeCategory(1,:,iCell), &
-               levelIceArea(1,:,iCell), &
-               levelIceVolume(1,:,iCell), &
-               snowIceMass(:,:,iCell), &
-               snowLiquidMass(:,:,iCell), &
-               snowDensity(:,:,iCell), &
-               snowDensityViaCompaction(iCell), &
-               snowGrainRadius(:,:,iCell), &
-               iceEnthalpy(1,:,iCell), &
-               iceSalinity(1,:,iCell), &
-               surfaceTemperature(1,:,iCell), &
-               snowEnthalpy(:,:,iCell), &
-               oceanFreshWaterFlux(iCell), &
-               oceanHeatFlux(iCell), &
-               snowLossToLeads(iCell), &
-               snowfallRate(iCell), &
-               config_new_snow_density, &
-               config_max_snow_density, &
-               config_minimum_wind_compaction, &
-               config_wind_compaction_factor, &
-               config_snow_redistribution_factor, &
-               snowEmpiricalGrowthParameterTau(:,:,:), &
-               snowEmpiricalGrowthParameterKappa(:,:,:), &
-               snowPropertyRate(:,:,:), &
-               nGrainAgingTemperature, &
-               nGrainAgingTempGradient, &
-               nGrainAgingSnowDensity, &
-               abortFlag, &
-               abortMessage)
+          abortFlag = .false.
+          abortMessage = ""
 
-          call column_write_warnings(abortFlag)
-          ! code abort
-          if (abortFlag) exit
+          call icepack_warnings_clear()
+          call icepack_step_snow (&
+               dt=config_dt, &
+               wind=windSpeed(iCell), &
+               nilyr=nIceLayers, &
+               nslyr=nSnowLayers, &
+               ncat=nCategories, &
+               aice=iceAreaCell(iCell), &
+               aicen=iceAreaCategory(1,:,iCell), &
+               vicen=iceVolumeCategory(1,:,iCell), &
+               vsnon=snowVolumeCategory(1,:,iCell), &
+               alvl=levelIceArea(1,:,iCell), &
+               vlvl=levelIceVolume(1,:,iCell), &
+               smice=snowIceMass(:,:,iCell), &
+               smliq=snowLiquidMass(:,:,iCell), &
+               rhos_cmpn=snowDensity(:,:,iCell), &
+               rsnw=snowGrainRadius(:,:,iCell), &
+               zqin1=iceEnthalpy(1,:,iCell), &
+               zSin1=iceSalinity(1,:,iCell), &
+               Tsfc=surfaceTemperature(1,:,iCell), &
+               zqsn=snowEnthalpy(:,:,iCell), &
+               fresh=oceanFreshWaterFlux(iCell), &
+               fhocn=oceanHeatFlux(iCell), &
+               fsloss=snowLossToLeads(iCell), &
+               fsnow=snowfallRate(iCell) &
+               )
+
+          abortFlag = icepack_warnings_aborted()
+          call seaice_icepack_write_warnings(abortFlag)
 
           if (config_use_snow_grain_radius) then
              snowDensityViaContent(iCell) = 0.0_RKIND
@@ -2866,10 +2864,6 @@ contains
 
        enddo !iCell
 
-       ! code abort
-       call seaice_critical_error_write_block(domain, block, abortFlag)
-       call seaice_check_critical_error(domain, abortFlag)
-
        block => block % next
     end do
 
@@ -2880,8 +2874,8 @@ contains
 !  column_radiation
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 21th January 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
@@ -2889,12 +2883,11 @@ contains
 
   subroutine column_radiation(domain, clock, lInitialization)
 
-    use ice_colpkg, only: &
-         colpkg_step_radiation, &
-         colpkg_clear_warnings
+    use icepack_intfc, only: &
+         icepack_step_radiation
 
     use seaice_constants, only: &
-         pii
+         seaicePi
 
     type(domain_type), intent(inout) :: domain
 
@@ -2911,16 +2904,14 @@ contains
          atmos_coupling, &
          shortwave, &
          ponds, &
-         aerosols, &
-         biogeochemistry, &
-         snicar, &
-         snow
+         biogeochemistry
 
     ! configs
     real(kind=RKIND), pointer :: &
          config_dt
 
     logical, pointer :: &
+         config_use_snow_grain_radius, &
          config_use_shortwave_bioabsorption, &
          config_use_brine, &
          config_use_modal_aerosols, &
@@ -2958,36 +2949,21 @@ contains
          surfaceShortwaveFlux, &
          interiorShortwaveFlux, &
          penetratingShortwaveFlux, &
+         penetratingShortwaveFluxVisibleDirect, &
+         penetratingShortwaveFluxVisibleDiffuse, &
+         penetratingShortwaveFluxIRDirect, &
+         penetratingShortwaveFluxIRDiffuse, &
          bareIceAlbedoCategory, &
          snowAlbedoCategory, &
          pondAlbedoCategory, &
          effectivePondAreaCategory, &
          pondSnowDepthDifference, &
          pondLidMeltFluxFraction, &
-         aerosolMassExtinctionCrossSection, &
-         aerosolSingleScatterAlbedo, &
-         aerosolAsymmetryParameter, &
-         modalMassExtinctionCrossSection, &
-         modalSingleScatterAlbedo, &
-         modalAsymmetryParameter, &
          albedoVisibleDirectCategory, &
          albedoVisibleDiffuseCategory, &
          albedoIRDirectCategory, &
          albedoIRDiffuseCategory, &
-         snowFractionCategory, &
-         iceAsymmetryParameterDirect, &
-         iceAsymmetryParameterDiffuse, &
-         iceSingleScatterAlbedoDirect, &
-         iceSingleScatterAlbedoDiffuse, &
-         iceMassExtinctionCrossSectionDirect, &
-         iceMassExtinctionCrossSectionDiffuse, &
-         aerosolAsymmetryParameter5band, &
-         aerosolMassExtinctionCrossSection5band, &
-         aerosolSingleScatterAlbedo5band, &
-         modalAsymmetryParameter5band, &
-         modalMassExtinctionCrossSection5band, &
-         modalSingleScatterAlbedo5band, &
-         snowRadiusInStandardRadiationSchemeCategory
+         snowFractionCategory
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          iceAreaCategory, &
@@ -3006,9 +2982,7 @@ contains
          iceScatteringAerosol, &
          iceBodyAerosol, &
          brineFraction, &
-         modalBCabsorptionParameter, &
          bioTracerShortwave, &
-         modalBCabsorptionParameter5band, &
          snowGrainRadius
 
     real(kind=RKIND), pointer :: &
@@ -3020,21 +2994,23 @@ contains
     character(len=strKIND) :: &
          calendarType ! needed for CESM like coupled simulations
 
-    ! aerosols array
+    ! aerosols and snow grain radius arrays
     real(kind=RKIND), dimension(:,:), allocatable :: &
-         aerosolsArray
+         aerosolsArray, &
+         snow_grain_radius
 
     ! local
     integer :: &
          iCell, &
+         iSnowLayer, &
          iCategory, &
          iAerosol, &
-         iTracer
-!         nspint_5bd, &  ! for checking against icepack array values
-!         nmbrad_snicar  ! for checking against icepack array values
+         iBioTracers
 
     integer, dimension(:), allocatable :: &
-         index_shortwaveAerosol
+         index_shortwaveAerosol, &
+         index_verticalAerosolsConc, &
+         index_algaeConc
 
     real(kind=RKIND) :: &
          dayOfYear, &
@@ -3057,6 +3033,7 @@ contains
     ! get days in year
     call get_days_in_year(domain, clock, daysInYear)
 
+    call MPAS_pool_get_config(domain % configs, "config_use_snow_grain_radius", config_use_snow_grain_radius)
     call MPAS_pool_get_config(domain % configs, "config_use_brine", config_use_brine)
     call MPAS_pool_get_config(domain % configs, "config_use_shortwave_bioabsorption", config_use_shortwave_bioabsorption)
     call MPAS_pool_get_config(domain % configs, "config_use_modal_aerosols",config_use_modal_aerosols)
@@ -3070,10 +3047,7 @@ contains
        call MPAS_pool_get_subpool(block % structs, "atmos_coupling", atmos_coupling)
        call MPAS_pool_get_subpool(block % structs, "shortwave", shortwave)
        call MPAS_pool_get_subpool(block % structs, "ponds", ponds)
-       call MPAS_pool_get_subpool(block % structs, "aerosols", aerosols)
        call MPAS_pool_get_subpool(block % structs, "biogeochemistry", biogeochemistry)
-       call MPAS_pool_get_subpool(block % structs, "snicar", snicar)
-       call MPAS_pool_get_subpool(block % structs, "snow", snow)
 
        call MPAS_pool_get_config(block % configs, "config_dt", config_dt)
        call MPAS_pool_get_config(block % configs, "config_snow_redistribution_scheme", config_snow_redistribution_scheme)
@@ -3121,6 +3095,10 @@ contains
        call MPAS_pool_get_array(shortwave, "surfaceShortwaveFlux", surfaceShortwaveFlux)
        call MPAS_pool_get_array(shortwave, "interiorShortwaveFlux", interiorShortwaveFlux)
        call MPAS_pool_get_array(shortwave, "penetratingShortwaveFlux", penetratingShortwaveFlux)
+       call MPAS_pool_get_array(shortwave, "penetratingShortwaveFluxVisibleDirect", penetratingShortwaveFluxVisibleDirect)
+       call MPAS_pool_get_array(shortwave, "penetratingShortwaveFluxVisibleDiffuse", penetratingShortwaveFluxVisibleDiffuse)
+       call MPAS_pool_get_array(shortwave, "penetratingShortwaveFluxIRDirect", penetratingShortwaveFluxIRDirect)
+       call MPAS_pool_get_array(shortwave, "penetratingShortwaveFluxIRDiffuse", penetratingShortwaveFluxIRDiffuse)
        call MPAS_pool_get_array(shortwave, "shortwaveLayerPenetration", shortwaveLayerPenetration)
        call MPAS_pool_get_array(shortwave, "absorbedShortwaveSnowLayer", absorbedShortwaveSnowLayer)
        call MPAS_pool_get_array(shortwave, "absorbedShortwaveIceLayer", absorbedShortwaveIceLayer)
@@ -3133,66 +3111,9 @@ contains
        call MPAS_pool_get_array(ponds, "pondSnowDepthDifference", pondSnowDepthDifference)
        call MPAS_pool_get_array(ponds, "pondLidMeltFluxFraction", pondLidMeltFluxFraction)
 
-       call MPAS_pool_get_array(aerosols, "aerosolMassExtinctionCrossSection", aerosolMassExtinctionCrossSection)
-       call MPAS_pool_get_array(aerosols, "aerosolSingleScatterAlbedo", aerosolSingleScatterAlbedo)
-       call MPAS_pool_get_array(aerosols, "aerosolAsymmetryParameter", aerosolAsymmetryParameter)
-       call MPAS_pool_get_array(aerosols, "modalMassExtinctionCrossSection", modalMassExtinctionCrossSection)
-       call MPAS_pool_get_array(aerosols, "modalSingleScatterAlbedo", modalSingleScatterAlbedo)
-       call MPAS_pool_get_array(aerosols, "modalAsymmetryParameter", modalAsymmetryParameter)
-       call MPAS_pool_get_array(aerosols, "modalBCabsorptionParameter", modalBCabsorptionParameter)
-
        call MPAS_pool_get_array(biogeochemistry, "bioTracerShortwave", bioTracerShortwave)
        call MPAS_pool_get_array(biogeochemistry, "verticalShortwaveGrid", verticalShortwaveGrid)
        call MPAS_pool_get_array(biogeochemistry, "verticalGrid", verticalGrid)
-
-       ! snicar 5-band snow IOPs
-       call MPAS_pool_get_array(snicar, "iceAsymmetryParameterDirect", iceAsymmetryParameterDirect)
-       call MPAS_pool_get_array(snicar, "iceAsymmetryParameterDiffuse", iceAsymmetryParameterDiffuse)
-       call MPAS_pool_get_array(snicar, "iceSingleScatterAlbedoDirect", iceSingleScatterAlbedoDirect)
-       call MPAS_pool_get_array(snicar, "iceSingleScatterAlbedoDiffuse", iceSingleScatterAlbedoDiffuse)
-       call MPAS_pool_get_array(snicar, "iceMassExtinctionCrossSectionDirect", iceMassExtinctionCrossSectionDirect)
-       call MPAS_pool_get_array(snicar, "iceMassExtinctionCrossSectionDiffuse", iceMassExtinctionCrossSectionDiffuse)
-       call MPAS_pool_get_array(snicar, "aerosolMassExtinctionCrossSection5band", aerosolMassExtinctionCrossSection5band)
-       call MPAS_pool_get_array(snicar, "aerosolSingleScatterAlbedo5band", aerosolSingleScatterAlbedo5band)
-       call MPAS_pool_get_array(snicar, "aerosolAsymmetryParameter5band", aerosolAsymmetryParameter5band)
-       call MPAS_pool_get_array(snicar, "modalMassExtinctionCrossSection5band", modalMassExtinctionCrossSection5band)
-       call MPAS_pool_get_array(snicar, "modalSingleScatterAlbedo5band", modalSingleScatterAlbedo5band)
-       call MPAS_pool_get_array(snicar, "modalAsymmetryParameter5band", modalAsymmetryParameter5band)
-       call MPAS_pool_get_array(snicar, "modalBCabsorptionParameter5band", modalBCabsorptionParameter5band)
-
-! write out corner values of arrays to compare with values from icepack tables (subroutine icepack_init_radiation)
-!    call mpas_log_write(' ')
-!    call mpas_log_write(" ----- snicar parameters (column) -----")
-!    nspint_5bd = size(iceAsymmetryParameterDirect,1)
-!    nmbrad_snicar = size(iceAsymmetryParameterDirect,2)
-!    call mpas_log_write('nspint_5bd $i',intArgs=(/nspint_5bd/))
-!    call mpas_log_write('nmbrad_snicar $i',intArgs=(/nmbrad_snicar/))
-!    call mpas_log_write('ssp_sasymmdr(1,1) $r',realArgs=(/iceAsymmetryParameterDirect(1,1)/))
-!    call mpas_log_write('ssp_sasymmdr(nspint_5bd,1) $r',realArgs=(/iceAsymmetryParameterDirect(nspint_5bd,1)/))
-!    call mpas_log_write('ssp_sasymmdr(1,nmbrad_snicar) $r',realArgs=(/iceAsymmetryParameterDirect(1,nmbrad_snicar)/))
-!    call mpas_log_write('ssp_sasymmdr(nspint_5bd,nmbrad_snicar) $r',realArgs=(/iceAsymmetryParameterDirect(nspint_5bd,nmbrad_snicar)/))
-!    call mpas_log_write('ssp_sasymmdc(1,1) $r',realArgs=(/iceAsymmetryParameterDiffuse(1,1)/))
-!    call mpas_log_write('ssp_sasymmdc(nspint_5bd,1) $r',realArgs=(/iceAsymmetryParameterDiffuse(nspint_5bd,1)/))
-!    call mpas_log_write('ssp_sasymmdc(1,nmbrad_snicar) $r',realArgs=(/iceAsymmetryParameterDiffuse(1,nmbrad_snicar)/))
-!    call mpas_log_write('ssp_sasymmdc(nspint_5bd,nmbrad_snicar) $r',realArgs=(/iceAsymmetryParameterDiffuse(nspint_5bd,nmbrad_snicar)/))
-!    call mpas_log_write('ssp_snwalbdr(1,1) $r',realArgs=(/iceSingleScatterAlbedoDirect(1,1)/))
-!    call mpas_log_write('ssp_snwalbdr(nspint_5bd,1) $r',realArgs=(/iceSingleScatterAlbedoDirect(nspint_5bd,1)/))
-!    call mpas_log_write('ssp_snwalbdr(1,nmbrad_snicar) $r',realArgs=(/iceSingleScatterAlbedoDirect(1,nmbrad_snicar)/))
-!    call mpas_log_write('ssp_snwalbdr(nspint_5bd,nmbrad_snicar) $r',realArgs=(/iceSingleScatterAlbedoDirect(nspint_5bd,nmbrad_snicar)/))
-!    call mpas_log_write('ssp_snwalbdc(1,1) $r',realArgs=(/iceSingleScatterAlbedoDiffuse(1,1)/))
-!    call mpas_log_write('ssp_snwalbdc(nspint_5bd,1) $r',realArgs=(/iceSingleScatterAlbedoDiffuse(nspint_5bd,1)/))
-!    call mpas_log_write('ssp_snwalbdc(1,nmbrad_snicar) $r',realArgs=(/iceSingleScatterAlbedoDiffuse(1,nmbrad_snicar)/))
-!    call mpas_log_write('ssp_snwalbdc(nspint_5bd,nmbrad_snicar) $r',realArgs=(/iceSingleScatterAlbedoDiffuse(nspint_5bd,nmbrad_snicar)/))
-!    call mpas_log_write('ssp_snwextdr(1,1) $r',realArgs=(/iceMassExtinctionCrossSectionDirect(1,1)/))
-!    call mpas_log_write('ssp_snwextdr(nspint_5bd,1) $r',realArgs=(/iceMassExtinctionCrossSectionDirect(nspint_5bd,1)/))
-!    call mpas_log_write('ssp_snwextdr(1,nmbrad_snicar) $r',realArgs=(/iceMassExtinctionCrossSectionDirect(1,nmbrad_snicar)/))
-!    call mpas_log_write('ssp_snwextdr(nspint_5bd,nmbrad_snicar) $r',realArgs=(/iceMassExtinctionCrossSectionDirect(nspint_5bd,nmbrad_snicar)/))
-!    call mpas_log_write('ssp_snwextdc(1,1) $r',realArgs=(/iceMassExtinctionCrossSectionDiffuse(1,1)/))
-!    call mpas_log_write('ssp_snwextdc(nspint_5bd,1) $r',realArgs=(/iceMassExtinctionCrossSectionDiffuse(nspint_5bd,1)/))
-!    call mpas_log_write('ssp_snwextdc(1,nmbrad_snicar) $r',realArgs=(/iceMassExtinctionCrossSectionDiffuse(1,nmbrad_snicar)/))
-!    call mpas_log_write('ssp_snwextdc(nspint_5bd,nmbrad_snicar) $r',realArgs=(/iceMassExtinctionCrossSectionDiffuse(nspint_5bd,nmbrad_snicar)/))
-
-       call MPAS_pool_get_array(snow, "snowRadiusInStandardRadiationSchemeCategory", snowRadiusInStandardRadiationSchemeCategory)
 
        ! calendar type
        call MPAS_pool_get_config(block % configs, "config_calendar_type", config_calendar_type)
@@ -3204,21 +3125,33 @@ contains
 
        ! aerosols array
        allocate(aerosolsArray(4*nAerosols,nCategories))
-       allocate(index_shortwaveAerosol(maxAerosolType))
 
+       allocate(index_shortwaveAerosol(maxAerosolType))
+       allocate(index_verticalAerosolsConc(maxAerosolType))
+       allocate(index_algaeConc(nAlgae))
        if (.not. config_use_column_biogeochemistry) then
           index_shortwaveAerosol(1:maxAerosolType) = 1
+          index_verticalAerosolsConc(1:maxAerosolType) = 1
+          index_algaeConc(1:nAlgae) = 1
        else
           do iAerosol = 1, maxAerosolType
-               index_shortwaveAerosol(iAerosol) =  ciceTracerObject % index_verticalAerosolsConcShortwave(iAerosol)
+             index_shortwaveAerosol(iAerosol) =  ciceTracerObject % index_verticalAerosolsConcShortwave(iAerosol)
+             index_verticalAerosolsConc(iAerosol) = ciceTracerObject % index_verticalAerosolsConc(iAerosol)
+          enddo
+          do iBioTracers = 1, nAlgae
+             index_algaeConc(iBioTracers) = ciceTracerObject % index_algaeConc(iBioTracers)
           enddo
        endif
 
        setGetPhysicsTracers = .true.
        setGetBGCTracers     = config_use_column_biogeochemistry
 
-       !$omp parallel do default(shared) firstprivate(aerosolsArray,index_shortwaveAerosol) &
-       !$omp&                                 private(iCategory,iAerosol,lonCellColumn)
+       ! snow grain radius array
+       allocate(snow_grain_radius(nSnowLayers,nCategories))
+
+       !$omp parallel do default(shared) &
+       !$omp&   firstprivate(aerosolsArray,index_shortwaveAerosol,snow_grain_radius) &
+       !$omp&   private(iCategory,iAerosol,lonCellColumn,iSnowLayer)
        do iCell = 1, nCellsSolve
 
           ! set aerosols array
@@ -3233,101 +3166,76 @@ contains
              enddo ! iAerosol
           enddo ! iCategory
 
+          snow_grain_radius(:,:) = 0.0_RKIND
+          if (config_use_snow_grain_radius) then           
+             do iCategory = 1, nCategories
+                do iSnowLayer = 1, nSnowLayers
+                   snow_grain_radius(iSnowLayer, iCategory) = snowGrainRadius(iSnowLayer,iCategory,iCell)
+                enddo ! iSnowLayer
+             enddo ! iCategory
+          endif
+
           lonCellColumn = lonCell(iCell)
-          if (lonCellColumn > pii) lonCellColumn = lonCellColumn - 2.0_RKIND * pii
+          if (lonCellColumn > seaicePi) lonCellColumn = lonCellColumn - 2.0_RKIND * seaicePi
 
           ! set the category tracer array
           call set_cice_tracer_array_category(block, ciceTracerObject, &
                  tracerArrayCategory, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
-          call colpkg_clear_warnings()
-          call colpkg_step_radiation(&
-               config_dt, &
-               nCategories, &
-               nAlgae, &
-               nBioLayers, &
-               ciceTracerObject % nTracers, &
-               ciceTracerObject % nBioTracers, &
-               ciceTracerObject % nBioTracersShortwave, &
-               nIceLayers, &
-               nSnowLayers, &
-               nAerosols, &
-               nzAerosols, &
-               config_use_shortwave_bioabsorption, &
-               ciceTracerObject % index_chlorophyllShortwave, &
-               index_shortwaveAerosol, &   ! nlt_zaero_sw, dimension(:), intent(in)
-               verticalShortwaveGrid(:), & ! swgrid, dimension (:), intent(in)
-               verticalGrid(:), &          !  igrid, dimension (:), intent(in)
-               brineFraction(1,:,iCell), &
-               iceAreaCategory(1,:,iCell), &
-               iceVolumeCategory(1,:,iCell), &
-               snowVolumeCategory(1,:,iCell), &
-               surfaceTemperature(1,:,iCell), &
-               levelIceArea(1,:,iCell), &
-               pondArea(1,:,iCell), &
-               pondDepth(1,:,iCell), &
-               pondLidThickness(1,:,iCell), &
-               config_snow_redistribution_scheme, &
-               snowGrainRadius(:,:,iCell), &
-               aerosolsArray, &
-               bioTracerShortwave(:,:,iCell), &
-               tracerArrayCategory, & ! trcrn, dimension(:,:), intent(in)
-               latCell(iCell), &
-               lonCellColumn, &
-               calendarType, &
-               daysInYear, &
-               dayOfNextShortwaveCalculation, &
-               dayOfYear, &
-               secondsIntoDay, &
-               aerosolMassExtinctionCrossSection(:,:), & ! kaer_tab,    dimension(:,:), intent(in)
-               aerosolSingleScatterAlbedo(:,:), &        ! waer_tab,    dimension(:,:), intent(in)
-               aerosolAsymmetryParameter(:,:), &         ! gaer_tab,    dimension(:,:), intent(in)
-               modalMassExtinctionCrossSection(:,:), &   ! kaer_bc_tab, dimension(:,:), intent(in)
-               modalSingleScatterAlbedo(:,:), &          ! waer_bc_tab, dimension(:,:), intent(in)
-               modalAsymmetryParameter(:,:), &           ! gaer_bc_tab, dimension(:,:), intent(in)
-               modalBCabsorptionParameter(:,:,:), &      ! bcenh,       dimension(:,:,:), intent(in)
-               config_use_modal_aerosols, &
-               shortwaveVisibleDirectDown(iCell), &
-               shortwaveVisibleDiffuseDown(iCell), &
-               shortwaveIRDirectDown(iCell), &
-               shortwaveIRDiffuseDown(iCell), &
-               solarZenithAngleCosine(iCell), &
-               snowfallRate(iCell), &
-               albedoVisibleDirectCategory(:,iCell), &
-               albedoVisibleDiffuseCategory(:,iCell), &
-               albedoIRDirectCategory(:,iCell), &
-               albedoIRDiffuseCategory(:,iCell), &
-               surfaceShortwaveFlux(:,iCell), &
-               interiorShortwaveFlux(:,iCell), &
-               penetratingShortwaveFlux(:,iCell), &
-               shortwaveLayerPenetration(:,:,iCell), &
-               absorbedShortwaveSnowLayer(:,:,iCell), &
-               absorbedShortwaveIceLayer(:,:,iCell), &
-               bareIceAlbedoCategory(:,iCell), &
-               snowAlbedoCategory(:,iCell), &
-               pondAlbedoCategory(:,iCell), &
-               effectivePondAreaCategory(:,iCell), &
-               snowFractionCategory(:,iCell), &
-               pondSnowDepthDifference(:,iCell), &
-               pondLidMeltFluxFraction(:,iCell), &
-               .false., &
-               lInitialization, &
-               iceAsymmetryParameterDirect(:,:), &
-               iceAsymmetryParameterDiffuse(:,:), &
-               iceSingleScatterAlbedoDirect(:,:), &
-               iceSingleScatterAlbedoDiffuse(:,:), &
-               iceMassExtinctionCrossSectionDirect(:,:), &
-               iceMassExtinctionCrossSectionDiffuse(:,:), &
-               aerosolMassExtinctionCrossSection5band(:,:), &
-               aerosolSingleScatterAlbedo5band(:,:), &
-               aerosolAsymmetryParameter5band(:,:), &
-               modalMassExtinctionCrossSection5band(:,:), &
-               modalSingleScatterAlbedo5band(:,:), &
-               modalAsymmetryParameter5band(:,:), &
-               modalBCabsorptionParameter5band(:,:,:), &
-               snowRadiusInStandardRadiationSchemeCategory(:,iCell))
-
-          call column_write_warnings(.false.)
+          call icepack_step_radiation(&
+               dt=config_dt, &
+               swgrid=verticalShortwaveGrid(:), &
+               igrid=verticalGrid(:), &
+               fbri=brineFraction(1,:,iCell), &
+               aicen=iceAreaCategory(1,:,iCell), &
+               vicen=iceVolumeCategory(1,:,iCell), &
+               vsnon=snowVolumeCategory(1,:,iCell), &
+               Tsfcn=surfaceTemperature(1,:,iCell), &
+               alvln=levelIceArea(1,:,iCell), &
+               apndn=pondArea(1,:,iCell), &
+               hpndn=pondDepth(1,:,iCell), &
+               ipndn=pondLidThickness(1,:,iCell), &
+               aeron=aerosolsArray, &
+               bgcNn=tracerArrayCategory(index_algaeConc(:),:), &
+               zaeron=tracerArrayCategory(index_verticalAerosolsConc(:),:), &
+               trcrn_bgcsw=bioTracerShortwave(:,:,iCell), &
+               TLAT=latCell(iCell), &
+               TLON=lonCellColumn, &
+               calendar_type=calendarType, &
+               days_per_year=daysInYear, &
+               nextsw_cday=dayOfNextShortwaveCalculation, &
+               yday=dayOfYear, &
+               sec=secondsIntoDay, &
+               swvdr=shortwaveVisibleDirectDown(iCell), &
+               swvdf=shortwaveVisibleDiffuseDown(iCell), &
+               swidr=shortwaveIRDirectDown(iCell), &
+               swidf=shortwaveIRDiffuseDown(iCell), &
+               coszen=solarZenithAngleCosine(iCell), &
+               fsnow=snowfallRate(iCell), &
+               alvdrn=albedoVisibleDirectCategory(:,iCell), &
+               alvdfn=albedoVisibleDiffuseCategory(:,iCell), &
+               alidrn=albedoIRDirectCategory(:,iCell), &
+               alidfn=albedoIRDiffuseCategory(:,iCell), &
+               fswsfcn=surfaceShortwaveFlux(:,iCell), &
+               fswintn=interiorShortwaveFlux(:,iCell), &
+               fswthrun=penetratingShortwaveFlux(:,iCell), &
+               fswthrun_vdr=penetratingShortwaveFluxVisibleDirect(:,iCell), &
+               fswthrun_vdf=penetratingShortwaveFluxVisibleDiffuse(:,iCell), &
+               fswthrun_idr=penetratingShortwaveFluxIRDirect(:,iCell), &
+               fswthrun_idf=penetratingShortwaveFluxIRDiffuse(:,iCell), &
+               fswpenln=shortwaveLayerPenetration(:,:,iCell), &
+               Sswabsn=absorbedShortwaveSnowLayer(:,:,iCell), &
+               Iswabsn=absorbedShortwaveIceLayer(:,:,iCell), &
+               albicen=bareIceAlbedoCategory(:,iCell), &
+               albsnon=snowAlbedoCategory(:,iCell), &
+               albpndn=pondAlbedoCategory(:,iCell), &
+               apeffn=effectivePondAreaCategory(:,iCell), &
+               snowfracn=snowFractionCategory(:,iCell), &
+               dhsn=pondSnowDepthDifference(:,iCell), &
+               ffracn=pondLidMeltFluxFraction(:,iCell), &
+               rsnow=snow_grain_radius(:,:), &
+               l_print_point=.false., &
+               initonly=lInitialization)
 
           ! set the category tracer array
           call get_cice_tracer_array_category(block, ciceTracerObject, &
@@ -3335,12 +3243,18 @@ contains
 
        enddo ! iCell
 
+       deallocate(snow_grain_radius)
+
        ! aerosols array
        deallocate(aerosolsArray)
        deallocate(index_shortwaveAerosol)
+       deallocate(index_verticalAerosolsConc)
+       deallocate(index_algaeConc)
 
        block => block % next
     end do
+
+    call seaice_icepack_write_warnings(icepack_warnings_aborted())
 
   end subroutine column_radiation
 
@@ -3349,8 +3263,8 @@ contains
 !  column_ridging
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 21th January 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
@@ -3358,9 +3272,8 @@ contains
 
   subroutine column_ridging(domain)
 
-    use ice_colpkg, only: &
-         colpkg_step_ridge, &
-         colpkg_clear_warnings
+    use icepack_intfc, only: &
+         icepack_step_ridge
 
     type(domain_type), intent(inout) :: domain
 
@@ -3414,8 +3327,7 @@ contains
          areaGainRidge, &
          iceVolumeRidged, &
          openingRateRidge, &
-         categoryThicknessLimits, &
-         zSalinityFlux
+         categoryThicknessLimits
 
     real(kind=RKIND), dimension(:,:), pointer :: &
          oceanAerosolFlux, &
@@ -3453,13 +3365,8 @@ contains
          newlyFormedIceLogical
 
     logical :: &
-         abortFlag, &
          setGetPhysicsTracers, &
          setGetBGCTracers
-
-    character(len=strKIND) :: &
-         abortMessage, &
-         abortLocation
 
     block => domain % blocklist
     do while (associated(block))
@@ -3527,7 +3434,6 @@ contains
 
        call MPAS_pool_get_array(biogeochemistry, "newlyFormedIce", newlyFormedIce)
        call MPAS_pool_get_array(biogeochemistry, "oceanBioFluxes", oceanBioFluxes)
-       call MPAS_pool_get_array(biogeochemistry, "zSalinityFlux", zSalinityFlux)
 
        call MPAS_pool_get_array(initial, "categoryThicknessLimits", categoryThicknessLimits)
 
@@ -3536,10 +3442,6 @@ contains
 
        setGetPhysicsTracers = .true.
        setGetBGCTracers     = config_use_column_biogeochemistry
-
-       ! code abort
-       abortFlag = .false.
-       abortMessage = ""
 
        do iCell = 1, nCellsSolve
 
@@ -3552,53 +3454,48 @@ contains
           call set_cice_tracer_array_category(block, ciceTracerObject, &
                  tracerArrayCategory, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
-          call colpkg_clear_warnings()
-          call colpkg_step_ridge(&
-               dynamicsTimeStep, &
-               config_dynamics_subcycle_number, &
-               nIceLayers, &
-               nSnowLayers, &
-               nBioLayers, &
-               nCategories, &
-               categoryThicknessLimits, & ! hin_max, dimension(0:ncat), intent(inout)
-               ridgeConvergence(iCell), &
-               ridgeShear(iCell), &
-               seaFreezingTemperature(iCell), &
-               iceAreaCategory(1,:,iCell), &
-               tracerArrayCategory, &              ! trcrn, dimension(:,:), intent(inout)
-               iceVolumeCategory(1,:,iCell), &
-               snowVolumeCategory(1,:,iCell), &
-               openWaterArea(iCell), &
-               ciceTracerObject % parentIndex, & ! trcr_depend
-               ciceTracerObject % firstAncestorMask, & ! trcr_base
-               ciceTracerObject % ancestorNumber, & ! n_trcr_strata
-               ciceTracerObject % ancestorIndices, & ! nt_strata
-               areaLossRidge(iCell), &
-               areaGainRidge(iCell), &
-               iceVolumeRidged(iCell), &
-               openingRateRidge(iCell), &
-               pondFreshWaterFlux(iCell), &
-               oceanFreshWaterFlux(iCell), &
-               oceanHeatFlux(iCell), &
-               nAerosols, &
-               oceanAerosolFlux(:,iCell), &
-               ridgeParticipationFunction(:,iCell), &
-               ratioRidgeThicknessToIce(:,iCell), &
-               fractionNewRidgeArea(:,iCell), &
-               fractionNewRidgeVolume(:,iCell), &
-               areaLossRidgeCategory(:,iCell), &
-               areaGainRidgeCategory(:,iCell), &
-               iceVolumeRidgedCategory(:,iCell), &
-               raftingIceArea(:,iCell), &
-               raftingIceVolume(:,iCell), &
-               iceAreaCell(iCell), &
-               oceanSaltFlux(iCell), &
-               newlyFormedIceLogical(:), &
-               zSalinityFlux(iCell), &
-               oceanBioFluxes(:,iCell), &
-               abortFlag, &
-               abortMessage)
-          call column_write_warnings(abortFlag)
+          call icepack_step_ridge(&
+               dt=dynamicsTimeStep, &
+               ndtd=config_dynamics_subcycle_number, &
+               nilyr=nIceLayers, &
+               nslyr=nSnowLayers, &
+               nblyr=nBioLayers, &
+               ncat=nCategories, &
+               hin_max=categoryThicknessLimits, & ! hin_max, dimension(0:ncat), intent(inout)
+               rdg_conv=ridgeConvergence(iCell), &
+               rdg_shear=ridgeShear(iCell), &
+               aicen=iceAreaCategory(1,:,iCell), &
+               trcrn=tracerArrayCategory, &              ! trcrn, dimension(:,:), intent(inout)
+               vicen=iceVolumeCategory(1,:,iCell), &
+               vsnon=snowVolumeCategory(1,:,iCell), &
+               aice0=openWaterArea(iCell), &
+               trcr_depend=ciceTracerObject % parentIndex, & ! trcr_depend
+               trcr_base=ciceTracerObject % firstAncestorMask, & ! trcr_base
+               n_trcr_strata=ciceTracerObject % ancestorNumber, & ! n_trcr_strata
+               nt_strata=ciceTracerObject % ancestorIndices, & ! nt_strata
+               dardg1dt=areaLossRidge(iCell), &
+               dardg2dt=areaGainRidge(iCell), &
+               dvirdgdt=iceVolumeRidged(iCell), &
+               opening=openingRateRidge(iCell), &
+               fpond=pondFreshWaterFlux(iCell), &
+               fresh=oceanFreshWaterFlux(iCell), &
+               fhocn=oceanHeatFlux(iCell), &
+               n_aero=nAerosols, &
+               faero_ocn=oceanAerosolFlux(:,iCell), & ! DC no fiso_ocn argument
+               aparticn=ridgeParticipationFunction(:,iCell), &
+               krdgn=ratioRidgeThicknessToIce(:,iCell), &
+               aredistn=fractionNewRidgeArea(:,iCell), &
+               vredistn=fractionNewRidgeVolume(:,iCell), &
+               dardg1ndt=areaLossRidgeCategory(:,iCell), &
+               dardg2ndt=areaGainRidgeCategory(:,iCell), &
+               dvirdgndt=iceVolumeRidgedCategory(:,iCell), &
+               araftn=raftingIceArea(:,iCell), &
+               vraftn=raftingIceVolume(:,iCell), &
+               aice=iceAreaCell(iCell), &
+               fsalt=oceanSaltFlux(iCell), &
+               first_ice=newlyFormedIceLogical(:), &
+               flux_bio=oceanBioFluxes(:,iCell), & ! DC no closing argument
+               Tf=seaFreezingTemperature(iCell))
 
           ! update
           do iCategory = 1, nCategories
@@ -3610,18 +3507,9 @@ contains
           call get_cice_tracer_array_category(block, ciceTracerObject, &
                  tracerArrayCategory, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
-          ! code abort
-          if (abortFlag) then
-             call mpas_log_write("column_ridging: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
-             call mpas_log_write("iCell: $i", messageType=MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell)/))
-             exit
-          endif
-
        enddo ! iCell
 
-       ! code abort
-       call seaice_critical_error_write_block(domain, block, abortFlag)
-       call seaice_check_critical_error(domain, abortFlag)
+       call seaice_icepack_write_warnings(icepack_warnings_aborted())
 
        ! newly formed ice
        deallocate(newlyFormedIceLogical)
@@ -3723,8 +3611,8 @@ contains
          seaSurfaceSalinity, &
          seaFreezingTemperature, &
          snowfallRate, &
-         zSalinityFlux, &
-         zSalinityGDFlux, &
+         zSalinityFlux, &      !echmod deprecate
+         zSalinityGDFlux, &    !echmod deprecate
          oceanMixedLayerDepth, &
          totalSkeletalAlgae, &
          oceanNitrateConc, &
@@ -3750,7 +3638,7 @@ contains
          totalVerticalBiologyIce, &
          totalVerticalBiologySnow, &
          penetratingShortwaveFlux, &
-         zSalinityIceDensity, &
+         zSalinityIceDensity, &    !echmod deprecate
          basalIceMeltCategory, &
          surfaceIceMeltCategory, &
          congelationCategory, &
@@ -3922,9 +3810,9 @@ contains
        call MPAS_pool_get_array(biogeochemistry, "oceanBioConcentrations", oceanBioConcentrations)
        call MPAS_pool_get_array(biogeochemistry, "totalVerticalBiologyIce", totalVerticalBiologyIce)
        call MPAS_pool_get_array(biogeochemistry, "totalVerticalBiologySnow", totalVerticalBiologySnow)
-       call MPAS_pool_get_array(biogeochemistry, "zSalinityIceDensity", zSalinityIceDensity)
-       call MPAS_pool_get_array(biogeochemistry, "zSalinityFlux", zSalinityFlux)
-       call MPAS_pool_get_array(biogeochemistry, "zSalinityGDFlux", zSalinityGDFlux)
+       call MPAS_pool_get_array(biogeochemistry, "zSalinityIceDensity", zSalinityIceDensity)  !echmod deprecate
+       call MPAS_pool_get_array(biogeochemistry, "zSalinityFlux", zSalinityFlux)              !echmod deprecate
+       call MPAS_pool_get_array(biogeochemistry, "zSalinityGDFlux", zSalinityGDFlux)          !echmod deprecate
        call MPAS_pool_get_array(biogeochemistry, "atmosBioFluxes", atmosBioFluxes)
        call MPAS_pool_get_array(biogeochemistry, "atmosBlackCarbonFlux", atmosBlackCarbonFlux)
        call MPAS_pool_get_array(biogeochemistry, "atmosDustFlux", atmosDustFlux)
@@ -4057,6 +3945,8 @@ contains
              oceanBioConcentrationsUsed(iBioTracers) = oceanBioConcentrations(iBioData,iCell)
           enddo ! iBioTracers
 
+          abortFlag = .false.
+
           call set_cice_tracer_array_category(block, ciceTracerObject, &
                tracerArrayCategory, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
@@ -4093,9 +3983,9 @@ contains
                totalChlorophyll(iCell), &
                penetratingShortwaveFlux(:,iCell), &
                rayleighCriteria, &
-               zSalinityIceDensity(:,iCell), &
-               zSalinityFlux(iCell), &
-               zSalinityGDFlux(iCell), &
+               zSalinityIceDensity(:,iCell), &      !echmod deprecate
+               zSalinityFlux(iCell), &              !echmod deprecate
+               zSalinityGDFlux(iCell), &            !echmod deprecate
                biologyGrid, &
                interfaceBiologyGrid, &
                interfaceGrid, &
@@ -4173,11 +4063,7 @@ contains
           endif
 
           ! code abort
-          if (abortFlag) then
-             call mpas_log_write("column_biogeochemistry: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
-             call mpas_log_write("iCell: $i", messageType=MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell)/))
-             exit
-          endif
+          if (abortFlag) exit
 
           totalSkeletalAlgae(iCell) = 0.0_RKIND
           bioShortwaveFluxCell(:,iCell) = 0.0_RKIND
@@ -4206,6 +4092,10 @@ contains
        enddo ! iCell
 
        ! code abort
+       if (abortFlag) then
+          call mpas_log_write("column_biogeochemistry: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
+          call mpas_log_write("iCell: $i", messageType=MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell)/))
+       endif
        call seaice_critical_error_write_block(domain, block, abortFlag)
        call seaice_check_critical_error(domain, abortFlag)
 
@@ -4357,8 +4247,8 @@ contains
 !  seaice_column_update_state
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 31st March 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
@@ -4400,7 +4290,7 @@ contains
 
     ! aggregate state variables
     call mpas_timer_start("Column aggregate")
-    call seaice_column_aggregate(domain)
+    call seaice_icepack_aggregate(domain)
     call mpas_timer_stop("Column aggregate")
 
     ! get configs
@@ -4466,19 +4356,19 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  seaice_column_aggregate
+!  seaice_icepack_aggregate
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 6th March 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
 !-----------------------------------------------------------------------
 
-  subroutine seaice_column_aggregate(domain)
+  subroutine seaice_icepack_aggregate(domain)
 
-    use ice_colpkg, only: colpkg_aggregate
+    use icepack_intfc, only: icepack_aggregate
 
     type(domain_type), intent(inout) :: domain
 
@@ -4552,23 +4442,23 @@ contains
           call set_cice_tracer_array_category(block, ciceTracerObject, &
                tracerArrayCategory, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
-          call colpkg_aggregate(&
-               nCategories, &
-               seaFreezingTemperature(iCell), &
-               iceAreaCategory(1,:,iCell), &
-               tracerArrayCategory, & ! trcrn
-               iceVolumeCategory(1,:,iCell), &
-               snowVolumeCategory(1,:,iCell), &
-               iceAreaCell(iCell), &
-               tracerArrayCell, & ! trcr
-               iceVolumeCell(iCell), &
-               snowVolumeCell(iCell), &
-               openWaterArea(iCell), &
-               ciceTracerObject % nTracers, &
-               ciceTracerObject % parentIndex, & ! trcr_depend
+          call icepack_aggregate(                    &
+               nCategories,                          &
+               iceAreaCategory(1,:,iCell),           &
+               tracerArrayCategory,                  & ! trcrn
+               iceVolumeCategory(1,:,iCell),         &
+               snowVolumeCategory(1,:,iCell),        &
+               iceAreaCell(iCell),                   &
+               tracerArrayCell,                      & ! trcr
+               iceVolumeCell(iCell),                 &
+               snowVolumeCell(iCell),                &
+               openWaterArea(iCell),                 &
+               ciceTracerObject % nTracers,          &
+               ciceTracerObject % parentIndex,       & ! trcr_depend
                ciceTracerObject % firstAncestorMask, & ! trcr_base
-               ciceTracerObject % ancestorNumber, & ! n_trcr_strata
-               ciceTracerObject % ancestorIndices) ! nt_strata
+               ciceTracerObject % ancestorNumber,    & ! n_trcr_strata
+               ciceTracerObject % ancestorIndices,   & ! nt_strata
+               seaFreezingTemperature(iCell))          ! Tf
 
           ! set the cell tracer array
           call get_cice_tracer_array_cell(block, ciceTracerObject, &
@@ -4579,21 +4469,23 @@ contains
        block => block % next
     end do
 
-  end subroutine seaice_column_aggregate
+    call seaice_icepack_write_warnings(icepack_warnings_aborted())
+
+  end subroutine seaice_icepack_aggregate
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  seaice_column_aggregate_simple
+!  seaice_icepack_aggregate_simple
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 29th August 2021
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
 !-----------------------------------------------------------------------
 
-  subroutine seaice_column_aggregate_simple(domain)
+  subroutine seaice_icepack_aggregate_simple(domain)
 
     type(domain_type), intent(inout) :: domain
 
@@ -4664,21 +4556,21 @@ contains
        block => block % next
     end do
 
-  end subroutine seaice_column_aggregate_simple
+  end subroutine seaice_icepack_aggregate_simple
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  seaice_column_coupling_prep
+!  seaice_icepack_coupling_prep
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 6th April
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
 !-----------------------------------------------------------------------
 
-  subroutine seaice_column_coupling_prep(domain)
+  subroutine seaice_icepack_coupling_prep(domain)
 
     use seaice_constants, only: &
          seaicePuny, &
@@ -4808,7 +4700,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_ratio_C_to_N_proteins", config_ratio_C_to_N_proteins)
 
     if (config_use_ocean_mixed_layer) &
-         call seaice_column_ocean_mixed_layer(domain)
+         call seaice_icepack_ocean_mixed_layer(domain)
 
     block => domain % blocklist
     do while (associated(block))
@@ -5120,15 +5012,15 @@ contains
 
     call seaice_column_scale_fluxes(domain)
 
-  end subroutine seaice_column_coupling_prep
+  end subroutine seaice_icepack_coupling_prep
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
 !  seaice_column_scale_fluxes
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 6th April
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
@@ -5389,21 +5281,21 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  seaice_column_ocean_mixed_layer
+!  seaice_icepack_ocean_mixed_layer
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 6th April
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
 !-----------------------------------------------------------------------
 
-  subroutine seaice_column_ocean_mixed_layer(domain)
+  subroutine seaice_icepack_ocean_mixed_layer(domain)
 
-    use ice_colpkg, only: &
-         colpkg_atm_boundary, &
-         colpkg_ocn_mixed_layer
+    use icepack_intfc, only: &
+         icepack_atm_boundary, &
+         icepack_ocn_mixed_layer
 
     use seaice_constants, only: &
          seaiceOceanAlbedo
@@ -5423,7 +5315,6 @@ contains
 
     real(kind=RKIND), dimension(:), pointer :: &
          seaSurfaceTemperature, &
-         seaSurfaceSalinity, &
          seaFreezingTemperature, &
          oceanMixedLayerDepth, &
          oceanHeatFluxConvergence, &
@@ -5437,7 +5328,6 @@ contains
          longwaveDown, &
          iceAreaCell, &
          freezingMeltingPotential, &
-         frazilMassAdjust, &
          shortwaveVisibleDirectDown, &
          shortwaveVisibleDiffuseDown, &
          shortwaveIRDirectDown, &
@@ -5446,8 +5336,6 @@ contains
          airOceanDragCoefficientRatio, &
          oceanHeatFlux, &
          oceanShortwaveFlux, &
-         oceanFreshWaterFlux, &
-         oceanSaltFlux, &
          airStressOceanU, &
          airStressOceanV, &
          atmosReferenceTemperature2mOcean, &
@@ -5470,9 +5358,6 @@ contains
     real(kind=RKIND), pointer :: &
          config_dt
 
-    character(len=strKIND), pointer :: &
-         config_ocean_mixed_layer_type
-
     integer :: &
          iCell
 
@@ -5486,7 +5371,6 @@ contains
          config_use_test_ice_shelf
 
     call MPAS_pool_get_config(domain % configs, "config_dt", config_dt)
-    call MPAS_pool_get_config(domain % configs, "config_ocean_mixed_layer_type", config_ocean_mixed_layer_type)
 
     block => domain % blocklist
     do while (associated(block))
@@ -5502,10 +5386,8 @@ contains
        call MPAS_pool_get_dimension(oceanCoupling, "nCellsSolve", nCellsSolve)
 
        call MPAS_pool_get_array(oceanCoupling, "seaSurfaceTemperature", seaSurfaceTemperature)
-       call MPAS_pool_get_array(oceanCoupling, "seaSurfaceSalinity", seaSurfaceSalinity)
        call MPAS_pool_get_array(oceanCoupling, "seaFreezingTemperature", seaFreezingTemperature)
        call MPAS_pool_get_array(oceanCoupling, "freezingMeltingPotential", freezingMeltingPotential)
-       call MPAS_pool_get_array(oceanCoupling, "frazilMassAdjust", frazilMassAdjust)
        call MPAS_pool_get_array(oceanCoupling, "oceanMixedLayerDepth", oceanMixedLayerDepth)
        call MPAS_pool_get_array(oceanCoupling, "oceanHeatFluxConvergence", oceanHeatFluxConvergence)
 
@@ -5530,8 +5412,6 @@ contains
 
        call MPAS_pool_get_array(oceanFluxes, "oceanHeatFlux", oceanHeatFlux)
        call MPAS_pool_get_array(oceanFluxes, "oceanShortwaveFlux", oceanShortwaveFlux)
-       call MPAS_pool_get_array(oceanFluxes, "oceanFreshWaterFlux", oceanFreshWaterFlux)
-       call MPAS_pool_get_array(oceanFluxes, "oceanSaltFlux", oceanSaltFlux)
 
        call MPAS_pool_get_array(oceanAtmosphere, "airStressOceanU", airStressOceanU)
        call MPAS_pool_get_array(oceanAtmosphere, "airStressOceanV", airStressOceanV)
@@ -5546,132 +5426,69 @@ contains
        call MPAS_pool_get_array(oceanAtmosphere, "latentHeatFluxOcean", latentHeatFluxOcean)
        call MPAS_pool_get_array(oceanAtmosphere, "evaporativeWaterFluxOcean", evaporativeWaterFluxOcean)
 
-       if (trim(config_ocean_mixed_layer_type) == "cice") then
+       do iCell = 1, nCellsSolve
+          call icepack_atm_boundary(&
+               sfctype='ocn', &
+               Tsf=seaSurfaceTemperature(iCell), &
+               potT=airPotentialTemperature(iCell), &
+               uatm=uAirVelocity(iCell), &
+               vatm=vAirVelocity(iCell), &
+               wind=windSpeed(iCell), &
+               zlvl=airLevelHeight(iCell), &
+               Qa=airSpecificHumidity(iCell), &
+               rhoa=airDensity(iCell), &
+               strx=airStressOceanU(iCell), &
+               stry=airStressOceanV(iCell), &
+               Tref=atmosReferenceTemperature2mOcean(iCell), &
+               Qref=atmosReferenceHumidity2mOcean(iCell), &
+               delt=potentialTemperatureDifference, &
+               delq=specificHumidityDifference, &
+               lhcoef=latentTransferCoefficient, &
+               shcoef=sensibleTransferCoefficient, &
+               Cdn_atm=airDragCoefficient(iCell), &
+               Cdn_atm_ratio_n=airOceanDragCoefficientRatio(iCell))
 
-          do iCell = 1, nCellsSolve
+          albedoVisibleDirectOcean(iCell)  = seaiceOceanAlbedo
+          albedoIRDirectOcean(iCell)       = seaiceOceanAlbedo
+          albedoVisibleDiffuseOcean(iCell) = seaiceOceanAlbedo
+          albedoIRDiffuseOcean(iCell)      = seaiceOceanAlbedo
 
-             call colpkg_atm_boundary(&
-                  'ocn', &
-                  seaSurfaceTemperature(iCell), &
-                  airPotentialTemperature(iCell), &
-                  uAirVelocity(iCell), &
-                  vAirVelocity(iCell), &
-                  windSpeed(iCell), &
-                  airLevelHeight(iCell), &
-                  airSpecificHumidity(iCell), &
-                  airDensity(iCell), &
-                  airStressOceanU(iCell), &
-                  airStressOceanV(iCell), &
-                  atmosReferenceTemperature2mOcean(iCell), &
-                  atmosReferenceHumidity2mOcean(iCell), &
-                  potentialTemperatureDifference, &
-                  specificHumidityDifference, &
-                  latentTransferCoefficient, &
-                  sensibleTransferCoefficient, &
-                  airDragCoefficient(iCell), &
-                  airOceanDragCoefficientRatio(iCell))
+          call icepack_ocn_mixed_layer(&
+               alvdr_ocn=albedoVisibleDirectOcean(iCell), &
+               swvdr=shortwaveVisibleDirectDown(iCell), &
+               alidr_ocn=albedoIRDirectOcean(iCell), &
+               swidr=shortwaveIRDirectDown(iCell), &
+               alvdf_ocn=albedoVisibleDiffuseOcean(iCell), &
+               swvdf=shortwaveVisibleDiffuseDown(iCell), &
+               alidf_ocn=albedoIRDiffuseOcean(iCell), &
+               swidf=shortwaveIRDiffuseDown(iCell), &
+               sst=seaSurfaceTemperature(iCell), &
+               flwout_ocn=longwaveUpOcean(iCell), &
+               fsens_ocn=sensibleHeatFluxOcean(iCell), &
+               shcoef=sensibleTransferCoefficient, &
+               flat_ocn=latentHeatFluxOcean(iCell), &
+               lhcoef=latentTransferCoefficient, &
+               evap_ocn=evaporativeWaterFluxOcean(iCell), &
+               flw=longwaveDown(iCell), &
+               delt=potentialTemperatureDifference, &
+               delq=specificHumidityDifference, &
+               aice=iceAreaCell(iCell), &
+               fhocn=oceanHeatFlux(iCell), &
+               fswthru=oceanShortwaveFlux(iCell), &
+               hmix=oceanMixedLayerDepth(iCell), &
+               Tf=seaFreezingTemperature(iCell), &
+               qdp=oceanHeatFluxConvergence(iCell), &
+               frzmlt=freezingMeltingPotential(iCell), &
+               dt=config_dt)
 
-             albedoVisibleDirectOcean(iCell)  = seaiceOceanAlbedo
-             albedoIRDirectOcean(iCell)       = seaiceOceanAlbedo
-             albedoVisibleDiffuseOcean(iCell) = seaiceOceanAlbedo
-             albedoIRDiffuseOcean(iCell)      = seaiceOceanAlbedo
-
-             call colpkg_ocn_mixed_layer(&
-                  albedoVisibleDirectOcean(iCell), &
-                  shortwaveVisibleDirectDown(iCell), &
-                  albedoIRDirectOcean(iCell), &
-                  shortwaveIRDirectDown(iCell), &
-                  albedoVisibleDiffuseOcean(iCell), &
-                  shortwaveVisibleDiffuseDown(iCell), &
-                  albedoIRDiffuseOcean(iCell), &
-                  shortwaveIRDiffuseDown(iCell), &
-                  seaSurfaceTemperature(iCell), &
-                  longwaveUpOcean(iCell), &
-                  sensibleHeatFluxOcean(iCell), &
-                  sensibleTransferCoefficient, &
-                  latentHeatFluxOcean(iCell), &
-                  latentTransferCoefficient, &
-                  evaporativeWaterFluxOcean(iCell), &
-                  longwaveDown(iCell), &
-                  potentialTemperatureDifference, &
-                  specificHumidityDifference, &
-                  iceAreaCell(iCell), &
-                  oceanHeatFlux(iCell), &
-                  oceanShortwaveFlux(iCell), &
-                  oceanMixedLayerDepth(iCell), &
-                  seaFreezingTemperature(iCell), &
-                  oceanHeatFluxConvergence(iCell), &
-                  freezingMeltingPotential(iCell), &
-                  config_dt)
-
-          enddo ! iCell
-
-       else if (trim(config_ocean_mixed_layer_type) == "e3sm") then
-
-          do iCell = 1, nCellsSolve
-
-             call colpkg_atm_boundary(&
-                  'ocn', &
-                  seaSurfaceTemperature(iCell), &
-                  airPotentialTemperature(iCell), &
-                  uAirVelocity(iCell), &
-                  vAirVelocity(iCell), &
-                  windSpeed(iCell), &
-                  airLevelHeight(iCell), &
-                  airSpecificHumidity(iCell), &
-                  airDensity(iCell), &
-                  airStressOceanU(iCell), &
-                  airStressOceanV(iCell), &
-                  atmosReferenceTemperature2mOcean(iCell), &
-                  atmosReferenceHumidity2mOcean(iCell), &
-                  potentialTemperatureDifference, &
-                  specificHumidityDifference, &
-                  latentTransferCoefficient, &
-                  sensibleTransferCoefficient, &
-                  airDragCoefficient(iCell), &
-                  airOceanDragCoefficientRatio(iCell))
-
-             albedoVisibleDirectOcean(iCell)  = seaiceOceanAlbedo
-             albedoIRDirectOcean(iCell)       = seaiceOceanAlbedo
-             albedoVisibleDiffuseOcean(iCell) = seaiceOceanAlbedo
-             albedoIRDiffuseOcean(iCell)      = seaiceOceanAlbedo
-
-             call seaice_ocean_mixed_layer_e3sm(&
-                  oceanMixedLayerDepth(iCell), &
-                  seaSurfaceTemperature(iCell), &
-                  seaSurfaceSalinity(iCell), &
-                  freezingMeltingPotential(iCell), &
-                  frazilMassAdjust(iCell), &
-                  oceanHeatFlux(iCell), &
-                  oceanShortwaveFlux(iCell), &
-                  oceanFreshWaterFlux(iCell), &
-                  oceanSaltFlux(iCell), &
-                  oceanHeatFluxConvergence(iCell), &
-                  albedoVisibleDirectOcean(iCell), &
-                  shortwaveVisibleDirectDown(iCell), &
-                  albedoIRDirectOcean(iCell), &
-                  shortwaveIRDirectDown(iCell), &
-                  albedoVisibleDiffuseOcean(iCell), &
-                  shortwaveVisibleDiffuseDown(iCell), &
-                  albedoIRDiffuseOcean(iCell), &
-                  shortwaveIRDiffuseDown(iCell), &
-                  sensibleTransferCoefficient, &
-                  latentTransferCoefficient, &
-                  longwaveDown(iCell), &
-                  potentialTemperatureDifference, &
-                  specificHumidityDifference, &
-                  iceAreaCell(iCell), &
-                  seaFreezingTemperature(iCell), &
-                  config_dt)
-
-          enddo ! iCell
-
-       endif
+       enddo ! iCell
 
        block => block % next
     enddo
 
-    ! remove frazil from below ice shelves if were testing that
+    call seaice_icepack_write_warnings(icepack_warnings_aborted())
+
+    ! remove frazil from below ice shelves if we are testing that
     call MPAS_pool_get_config(domain % configs, "config_use_test_ice_shelf", config_use_test_ice_shelf)
 
     if (config_use_test_ice_shelf) then
@@ -5699,317 +5516,13 @@ contains
 
     endif !
 
-  end subroutine seaice_column_ocean_mixed_layer
-
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-!
-!  seaice_ocean_mixed_layer_e3sm
-!
-!> \brief E3SM ocean coupling proxy
-!> \author Adrian K. Turner, LANL
-!> \date 9th July 2022
-!> \details Representation of ocean processes and coupling in e3sm. This
-!>  routine mimics the ocean/sea ice coupling in e3sm using MPAS-Ocn,
-!>  including updates to ocean thickness, temperature and salinity from
-!>  interactions with sea ice and frazil formation.
-!
-!-----------------------------------------------------------------------
-
-  subroutine seaice_ocean_mixed_layer_e3sm(&
-       oceanMixedLayerDepth, &
-       seaSurfaceTemperature, &
-       seaSurfaceSalinity, &
-       freezingMeltingPotential, &
-       frazilMassAdjust, &
-       oceanHeatFlux, &
-       oceanShortwaveFlux, &
-       oceanFreshWaterFlux, &
-       oceanSaltFlux, &
-       oceanHeatFluxConvergence, &
-       albedoVisibleDirectOcean, &
-       shortwaveVisibleDirectDown, &
-       albedoIRDirectOcean, &
-       shortwaveIRDirectDown, &
-       albedoVisibleDiffuseOcean, &
-       shortwaveVisibleDiffuseDown, &
-       albedoIRDiffuseOcean, &
-       shortwaveIRDiffuseDown, &
-       sensibleTransferCoefficient, &
-       latentTransferCoefficient, &
-       longwaveDown, &
-       potentialTemperatureDifference, &
-       specificHumidityDifference, &
-       iceAreaCell, &
-       seaFreezingTemperature, &
-       timeStep)
-
-    use seaice_constants, only: &
-         seaiceFreshWaterFreezingPoint, &
-         seaiceStefanBoltzmann, &
-         seaiceDensitySeaWater, &
-         seaiceSeaWaterSpecificHeat, &
-         seaiceLatentHeatVaporization, &
-         seaiceReferenceSalinity
-
-    real(kind=RKIND), intent(inout) :: &
-         oceanMixedLayerDepth, &
-         seaSurfaceTemperature, &
-         seaSurfaceSalinity
-
-    real(kind=RKIND), intent(out) :: &
-         freezingMeltingPotential
-
-    real(kind=RKIND), intent(inout) :: &
-         frazilMassAdjust, &
-         oceanFreshWaterFlux, &
-         oceanSaltFlux
-
-    real(kind=RKIND), intent(in) :: &
-         oceanHeatFlux, &
-         oceanShortwaveFlux, &
-         oceanHeatFluxConvergence, &
-         albedoVisibleDirectOcean, &
-         shortwaveVisibleDirectDown, &
-         albedoIRDirectOcean, &
-         shortwaveIRDirectDown, &
-         albedoVisibleDiffuseOcean, &
-         shortwaveVisibleDiffuseDown, &
-         albedoIRDiffuseOcean, &
-         shortwaveIRDiffuseDown, &
-         sensibleTransferCoefficient, &
-         latentTransferCoefficient, &
-         longwaveDown, &
-         potentialTemperatureDifference, &
-         specificHumidityDifference, &
-         iceAreaCell, &
-         seaFreezingTemperature, &
-         timeStep
-
-    real(kind=RKIND) :: &
-         absorbedShortwaveOcean, &
-         seaSurfaceTemperatureKelvin, &
-         longwaveUpOcean, &
-         sensibleHeatFluxOcean, &
-         latentHeatFluxOcean, &
-         evaporativeWaterFluxOcean, &
-         openWaterHeatFlux, &
-         iceHeatFlux, &
-         totalHeatFlux, &
-         fflux_factor, &
-         hflux_factor, &
-         sflux_factor, &
-         maxFreezingMeltingPotential, &
-         changeOceanMixedLayerDepth, &
-         changeSeaSurfaceTemperature, &
-         changeSeaSurfaceSalinity
-
-    real(kind=RKIND) :: &
-         potential, &
-         freezingEnergy, &
-         newFrazilIceThickness, &
-         newThicknessWeightedSaltContent, &
-         frazilLayerThicknessTendency, &
-         frazilSalinityTendency, &
-         frazilTemperatureTendency, &
-         seaIceEnergy, &
-         accumulatedFrazilIceMass, &
-         sumNewFrazilIceThickness, &
-         ocn_cpl_dt, &
-         o2x_Fioo_q, &
-         o2x_Fioo_frazil, &
-         x2i_Fioo_q, &
-         x2i_Fioo_frazil, &
-         frazilMassFlux, &
-         frazilMassFluxRev
-
-    real(kind=RKIND), parameter :: &
-         config_specific_heat_sea_water = 3.996e3_RKIND, &
-         rho_sw = 1.026e3_RKIND, &
-         cp_sw = 3.996e3_RKIND, &
-         config_frazil_heat_of_fusion = 3.337e5_RKIND, &
-         config_frazil_ice_density = 1000.0_RKIND, &
-         config_frazil_fractional_thickness_limit = 0.1_RKIND, &
-         config_frazil_sea_ice_reference_salinity = 4.0_RKIND
-
-    ocn_cpl_dt = timeStep
-
-    !-----------------------------------------------------------------------------------
-    ! ice_comp_mct - export
-    !-----------------------------------------------------------------------------------
-
-    oceanFreshWaterFlux = oceanFreshWaterFlux + frazilMassAdjust/iceAreaCell
-    oceanSaltFlux       = oceanSaltFlux       + seaiceReferenceSalinity*0.001_RKIND*frazilMassAdjust/iceAreaCell
-
-    !-----------------------------------------------------------------------------------
-    ! Ocean surface fluxes
-    !-----------------------------------------------------------------------------------
-
-    ! shortwave radiative flux
-    absorbedShortwaveOcean = &
-         (1.0_RKIND-albedoVisibleDirectOcean)  * shortwaveVisibleDirectDown + &
-         (1.0_RKIND-albedoIRDirectOcean)       * shortwaveIRDirectDown + &
-         (1.0_RKIND-albedoVisibleDiffuseOcean) * shortwaveVisibleDiffuseDown + &
-         (1.0_RKIND-albedoIRDiffuseOcean)      * shortwaveIRDiffuseDown
-
-    ! ocean surface temperature in Kelvin
-    seaSurfaceTemperatureKelvin = seaSurfaceTemperature + seaiceFreshWaterFreezingPoint
-
-    ! longwave radiative flux
-    longwaveUpOcean = -seaiceStefanBoltzmann * seaSurfaceTemperatureKelvin**4
-
-    ! downward latent and sensible heat fluxes
-    sensibleHeatFluxOcean     = sensibleTransferCoefficient * potentialTemperatureDifference
-    latentHeatFluxOcean       = latentTransferCoefficient * specificHumidityDifference
-    evaporativeWaterFluxOcean = -latentHeatFluxOcean / seaiceLatentHeatVaporization
-
-    ! open water heat flux
-    openWaterHeatFlux = &
-         sensibleHeatFluxOcean + &
-         latentHeatFluxOcean + &
-         longwaveUpOcean + &
-         longwaveDown + &
-         absorbedShortwaveOcean
-    openWaterHeatFlux = openWaterHeatFlux * (1.0_RKIND - iceAreaCell)
-
-    ! ice heat flux
-    iceHeatFlux = &
-         oceanHeatFlux + &
-         oceanShortwaveFlux
-
-    ! total heat flux
-    totalHeatFlux = openWaterHeatFlux + iceHeatFlux - oceanHeatFluxConvergence
-
-    !-----------------------------------------------------------------------------------
-    ! MPAS-Ocn frazil formation - mpas_ocn_frazil_forcing.F
-    !-----------------------------------------------------------------------------------
-    potential = oceanMixedLayerDepth * config_specific_heat_sea_water * rho_sw * (seaSurfaceTemperature - seaFreezingTemperature)
-
-    freezingEnergy = max(0.0_RKIND, -potential)
-    newFrazilIceThickness = freezingEnergy / (config_frazil_heat_of_fusion * config_frazil_ice_density)
-    newFrazilIceThickness = min(newFrazilIceThickness, oceanMixedLayerDepth * config_frazil_fractional_thickness_limit)
-    newThicknessWeightedSaltContent = newFrazilIceThickness * config_frazil_sea_ice_reference_salinity * 0.001_RKIND
-
-    frazilLayerThicknessTendency = - newFrazilIceThickness * (config_frazil_ice_density / seaiceDensitySeaWater)
-    frazilSalinityTendency = - newThicknessWeightedSaltContent
-    frazilTemperatureTendency =  + (newFrazilIceThickness * config_frazil_heat_of_fusion * config_frazil_ice_density) / (config_specific_heat_sea_water * rho_sw)
-
-    sumNewFrazilIceThickness = newFrazilIceThickness
-    accumulatedFrazilIceMass = sumNewFrazilIceThickness * config_frazil_ice_density
-
-    !-----------------------------------------------------------------------------------
-    ! Modify ocean state
-    !-----------------------------------------------------------------------------------
-
-    ! change in mixed layer depth
-    changeOceanMixedLayerDepth = (oceanFreshWaterFlux * timeStep) / seaiceDensitySeaWater + frazilLayerThicknessTendency
-    oceanMixedLayerDepth = oceanMixedLayerDepth + changeOceanMixedLayerDepth
-
-    ! change in sea surface temperature
-    changeSeaSurfaceTemperature = (totalHeatFlux * timeStep) / (oceanMixedLayerDepth * seaiceDensitySeaWater * seaiceSeaWaterSpecificHeat) + frazilTemperatureTendency / oceanMixedLayerDepth
-    seaSurfaceTemperature = seaSurfaceTemperature + changeSeaSurfaceTemperature - (changeOceanMixedLayerDepth * seaSurfaceTemperature) / oceanMixedLayerDepth
-
-    ! change in sea surface salinity
-    changeSeaSurfaceSalinity = (oceanSaltFlux * timeStep) / (oceanMixedLayerDepth * seaiceDensitySeaWater * 0.001_RKIND) + frazilSalinityTendency / oceanMixedLayerDepth
-    seaSurfaceSalinity = seaSurfaceSalinity + changeSeaSurfaceSalinity - (changeOceanMixedLayerDepth * seaSurfaceSalinity) / oceanMixedLayerDepth
-
-    ! compute potential to freeze or melt ice
-    !maxFreezingMeltingPotential = 1000.0_RKIND
-    !freezingMeltingPotential = ((seaFreezingTemperature - seaSurfaceTemperature) * seaiceDensitySeaWater * seaiceSeaWaterSpecificHeat * oceanMixedLayerDepth) / timeStep
-    !freezingMeltingPotential = min(max(freezingMeltingPotential,-maxFreezingMeltingPotential),maxFreezingMeltingPotential)
-
-    ! if sst is below freezing, reset sst to Tf
-    !if (seaSurfaceTemperature <= seaFreezingTemperature) seaSurfaceTemperature = seaFreezingTemperature
-
-    !-----------------------------------------------------------------------------------
-    ! ocn_comp_mct - export
-    !-----------------------------------------------------------------------------------
-    if (accumulatedFrazilIceMass > 0.0_RKIND) then
-       seaIceEnergy = accumulatedFrazilIceMass * config_frazil_heat_of_fusion
-    else
-       seaIceEnergy = min(rho_sw*cp_sw*oceanMixedLayerDepth*(seaFreezingTemperature - seaSurfaceTemperature), 0.0_RKIND)
-    endif
-
-    o2x_Fioo_q = seaIceEnergy / ocn_cpl_dt
-    o2x_Fioo_frazil = accumulatedFrazilIceMass / ocn_cpl_dt
-
-    !-----------------------------------------------------------------------------------
-    ! coupler
-    !-----------------------------------------------------------------------------------
-    x2i_Fioo_q = o2x_Fioo_q
-    x2i_Fioo_frazil = o2x_Fioo_frazil
-
-    !-----------------------------------------------------------------------------------
-    ! ice_comp_mct - import
-    !-----------------------------------------------------------------------------------
-    freezingMeltingPotential = x2i_Fioo_q
-    frazilMassFlux = x2i_Fioo_frazil
-
-    call seaice_frazil_mass(freezingMeltingPotential, frazilMassFluxRev, seaSurfaceSalinity)
-    frazilMassAdjust = frazilMassFlux-frazilMassFluxRev
-
-  end subroutine seaice_ocean_mixed_layer_e3sm
-
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-!
-!  seaice_frazil_mass
-!
-!> \brief Calculate sea ice frazil formation from freezig potential
-!> \author Adrian K. Turner, LANL
-!> \date 9th July 2022
-!> \details Used in ice_comp_mct to determine frazil formation and
-!>  replicated here for use with the e3sm ocean coupling proxy
-!
-!-----------------------------------------------------------------------
-
-  subroutine seaice_frazil_mass(freezingPotential, frazilMassFlux, seaSurfaceSalinity)
-
-    use ice_mushy_physics, only:  &
-         liquidus_temperature_mush, &
-         enthalpy_mush
-
-    use ice_colpkg_shared, only: &
-         dSin0_frazil,             &
-         phi_init
-
-    use seaice_constants, only: &
-         seaiceDensityIce
-
-    real (kind=RKIND),      intent(in)   :: freezingPotential
-    real (kind=RKIND),      intent(in)   :: seaSurfaceSalinity
-
-    real (kind=RKIND),      intent(out)  :: frazilMassFlux
-
-    real(kind=RKIND) :: &
-         Si0new,          &
-         Ti,              &
-         qi0new,          &
-         vi0new
-
-    if (freezingPotential > 0.0_RKIND) then
-
-       if (seaSurfaceSalinity > 2.0_RKIND * dSin0_frazil) then
-          Si0new = seaSurfaceSalinity - dSin0_frazil
-       else
-          Si0new = seaSurfaceSalinity**2 / (4.0_RKIND*dSin0_frazil)
-       endif
-       Ti = liquidus_temperature_mush(Si0new/phi_init)
-       qi0new = enthalpy_mush(Ti, Si0new)
-
-       frazilMassFlux = -freezingPotential*seaiceDensityIce/qi0new
-
-    else
-
-       frazilMassFlux = 0.0_RKIND
-
-    endif
-
-  end subroutine seaice_frazil_mass
+  end subroutine seaice_icepack_ocean_mixed_layer
 
 !-----------------------------------------------------------------------
 ! Other passthrough functions to column package
 !-----------------------------------------------------------------------
 
-  subroutine seaice_column_init_trcr(&
+  subroutine seaice_icepack_init_trcr(&
        airTemperature, &
        seaFreezingTemperature, &
        initialSalinityProfile, &
@@ -6020,8 +5533,8 @@ contains
        iceEnthalpy, &
        snowEnthalpy)
 
-    use ice_colpkg, only: &
-         colpkg_init_trcr
+    use icepack_intfc, only: &
+         icepack_init_trcr
 
     integer, intent(in) :: &
          nIceLayers, & ! number of ice layers
@@ -6042,7 +5555,7 @@ contains
          iceEnthalpy, & ! ice enthalpy profile (J/m3)
          snowEnthalpy   ! snow enthalpy profile (J/m3)
 
-    call colpkg_init_trcr(airTemperature, &
+    call icepack_init_trcr(airTemperature, &
          seaFreezingTemperature, &
          initialSalinityProfile, &
          initialMeltingTemperatureProfile, &
@@ -6052,42 +5565,13 @@ contains
          iceEnthalpy, &
          snowEnthalpy)
 
-  end subroutine seaice_column_init_trcr
+    call seaice_icepack_write_warnings(icepack_warnings_aborted())
+
+  end subroutine seaice_icepack_init_trcr
 
   !-----------------------------------------------------------------------
 
-  subroutine seaice_column_init_itd(&
-       nCategories, &
-       categoryThicknessLimits, &
-       abortFlag, &
-       abortMessage)
-
-    use ice_colpkg, only: &
-         colpkg_init_itd
-
-    integer, intent(in) :: &
-         nCategories ! number of thickness categories
-
-    real(kind=RKIND), intent(out) :: &
-         categoryThicknessLimits(0:nCategories)  ! category limits (m)
-
-    logical, intent(inout) :: &
-         abortFlag ! if true, print diagnostics and abort model
-
-    character(len=*), intent(out) :: &
-         abortMessage ! abort error message
-
-    call colpkg_init_itd(&
-         nCategories, &
-         categoryThicknessLimits, &
-         abortFlag, &
-         abortMessage)
-
-  end subroutine seaice_column_init_itd
-
-  !-----------------------------------------------------------------------
-
-  subroutine seaice_column_init_ocean_conc(&
+  subroutine seaice_icepack_init_ocean_conc(&
        oceanAmmoniumConc, &
        oceanDMSPConc, &
        oceanDMSConc, &
@@ -6159,213 +5643,68 @@ contains
          carbonToNitrogenRatioAlgae, &
          carbonToNitrogenRatioDON)
 
-  end subroutine seaice_column_init_ocean_conc
+  end subroutine seaice_icepack_init_ocean_conc
 
   !-----------------------------------------------------------------------
 
-  subroutine seaice_column_ice_strength(&
-       nCategories, &
-       iceAreaCell, &
-       iceVolumeCell, &
-       openWaterArea, &
-       iceAreaCategory, &
-       iceVolumeCategory, &
-       icePressure)
+  function seaice_icepack_enthalpy_ice(iceTemperature, iceSalinity, &
+                                       config_thermodynamics_type) result(iceEnthalpy)
 
-    use ice_colpkg, only: &
-         colpkg_ice_strength
+    use icepack_intfc, only: icepack_enthalpy_mush
 
-    integer, intent(in) :: &
-         nCategories ! number of thickness categories
-
-    real(kind=RKIND), intent(in) :: &
-         iceAreaCell, &   ! concentration of ice
-         iceVolumeCell, & ! volume per unit area of ice (m)
-         openWaterArea    ! concentration of open water
-
-    real(kind=RKIND), dimension(:), intent(in) :: &
-         iceAreaCategory, & ! concentration of ice
-         iceVolumeCategory  ! volume per unit area of ice (m)
-
-    real(kind=RKIND), intent(inout) :: &
-         icePressure ! ice strength (N/m)
-
-    call colpkg_ice_strength(&
-         nCategories, &
-         iceAreaCell, &
-         iceVolumeCell, &
-         openWaterArea, &
-         iceAreaCategory, &
-         iceVolumeCategory, &
-         icePressure)
-
-  end subroutine seaice_column_ice_strength
-
-  !-----------------------------------------------------------------------
-
-  function seaice_column_sea_freezing_temperature(seaSurfaceSalinity) result(seaFreezingTemperature)
-
-    use ice_colpkg, only: &
-         colpkg_sea_freezing_temperature
-
-    real(kind=RKIND), intent(in) :: seaSurfaceSalinity
-    real(kind=RKIND) :: seaFreezingTemperature
-
-    seaFreezingTemperature = colpkg_sea_freezing_temperature(seaSurfaceSalinity)
-
-  end function seaice_column_sea_freezing_temperature
-
-  !-----------------------------------------------------------------------
-
-  function seaice_column_liquidus_temperature(salinity) result(liquidusTemperature)
-
-    use ice_colpkg, only: &
-         colpkg_liquidus_temperature
-
-    real(kind=RKIND), intent(in) :: salinity
-    real(kind=RKIND) :: liquidusTemperature
-
-    liquidusTemperature = colpkg_liquidus_temperature(salinity)
-
-  end function seaice_column_liquidus_temperature
-
-  !-----------------------------------------------------------------------
-
-  function seaice_column_enthalpy_snow(snowTemperature) result(snowEnthalpy)
-
-    use ice_colpkg, only: &
-         colpkg_enthalpy_snow
-
-    real(kind=RKIND), intent(in) :: snowTemperature
-    real(kind=RKIND) :: snowEnthalpy
-
-    snowEnthalpy = colpkg_enthalpy_snow(snowTemperature)
-
-  end function seaice_column_enthalpy_snow
-
-  !-----------------------------------------------------------------------
-
-  function seaice_column_enthalpy_ice(iceTemperature, iceSalinity) result(iceEnthalpy)
-
-    use ice_colpkg, only: &
-         colpkg_enthalpy_ice
+    use seaice_constants, only: &
+        seaiceMeltingTemperatureDepression, & ! melting temperature depression factor (C/ppt)
+        seaiceDensityIce, &                   ! density of ice (kg/m^3)
+        seaiceFreshIceSpecificHeat, &         ! specific heat of fresh ice (J/kg/K)
+        seaiceLatentHeatMelting, &            ! latent heat of melting of fresh ice (J/kg)
+        seaiceSeaWaterSpecificHeat            ! specific heat of ocn (J/kg/K)
 
     real(kind=RKIND), intent(in) :: iceTemperature
     real(kind=RKIND), intent(in) :: iceSalinity
     real(kind=RKIND) :: iceEnthalpy
 
-    iceEnthalpy = colpkg_enthalpy_ice(iceTemperature, iceSalinity)
+    real(kind=RKIND) :: Tmlt
 
-  end function seaice_column_enthalpy_ice
+    character(len=strKIND), pointer :: config_thermodynamics_type
 
-  !-----------------------------------------------------------------------
+    if (trim(config_thermodynamics_type) == "mushy") then
 
-  function seaice_column_salinity_profile(depth) result(iceSalinity)
+       iceEnthalpy = icepack_enthalpy_mush(iceTemperature, iceSalinity)
 
-    use ice_colpkg, only: &
-         colpkg_salinity_profile
+    else
 
-    real(kind=RKIND), intent(in) :: &
-         depth ! depth
+       Tmlt = -iceSalinity*seaiceMeltingTemperatureDepression
+       iceEnthalpy = -(seaiceDensityIce * (seaiceFreshIceSpecificHeat*(Tmlt-iceTemperature) &
+                     + seaiceLatentHeatMelting*(1.0_RKIND-Tmlt/iceTemperature) &
+                     - seaiceSeaWaterSpecificHeat*Tmlt))
 
-    real(kind=RKIND) :: &
-         iceSalinity ! initial salinity profile
+    endif
 
-    iceSalinity = colpkg_salinity_profile(depth)
-
-  end function seaice_column_salinity_profile
+  end function seaice_icepack_enthalpy_ice
 
 !-----------------------------------------------------------------------
 ! initialize constants
 !-----------------------------------------------------------------------
 
-  subroutine seaice_init_column_constants()
+  subroutine seaice_init_icepack_constants()
+
+    use icepack_intfc, only: &
+         icepack_configure
 
     use seaice_constants, only: &
-         seaiceGravity, &
          seaicePuny, &
-         seaiceDensityIce, &
-         seaiceDensitySnow, &
-         seaiceDensitySeaWater, &
-         seaiceDensityFreshwater, &
-         seaiceStefanBoltzmann, &
-         seaiceIceSnowEmissivity, &
-         seaiceFreshWaterFreezingPoint, &
-         seaiceAirSpecificHeat, &
-         seaiceWaterVaporSpecificHeat, &
-         seaiceSeaWaterSpecificHeat, &
-         seaiceLatentHeatVaporization, &
-         seaiceLatentHeatSublimation, &
-         seaiceLatentHeatMelting, &
-         seaiceReferenceSalinity, &
-         seaiceOceanAlbedo, &
-         seaiceVonKarmanConstant, &
-         seaiceIceSurfaceRoughness, &
-         seaiceStabilityReferenceHeight, &
-         seaiceIceStrengthConstantHiblerP, &
-         seaiceIceStrengthConstantHiblerC, &
-         skeletalLayerThickness, &
-         gramsCarbonPerMolCarbon, &
          iceAreaMinimum, &
          iceThicknessMinimum, &
          snowThicknessMinimum
 
-    use ice_constants_colpkg, only: &
-         gravit, &
-         rhoi, &
-         rhos, &
-         rhow, &
-         puny, &
-         stefan_boltzmann, &
-         emissivity, &
-         Tffresh, &
-         cp_air, &
-         cp_wv, &
-         cp_ocn, &
-         Lvap, &
-         Lsub, &
-         Lfresh, &
-         ice_ref_salinity, &
-         Pstar, &
-         Cstar, &
-         albocn, &
-         rhofresh, &
-         vonkar, &
-         iceruf, &
-         zref, &
-         sk_l, &
-         R_gC2molC
-
-    seaiceGravity                    = gravit
-    seaicePuny                       = puny
-    seaiceDensityIce                 = rhoi
-    seaiceDensitySnow                = rhos
-    seaiceDensitySeaWater            = rhow
-    seaiceDensityFreshwater          = rhofresh
-    seaiceStefanBoltzmann            = stefan_boltzmann
-    seaiceIceSnowEmissivity          = emissivity
-    seaiceFreshWaterFreezingPoint    = Tffresh
-    seaiceAirSpecificHeat            = cp_air
-    seaiceWaterVaporSpecificHeat     = cp_wv
-    seaiceSeaWaterSpecificHeat       = cp_ocn
-    seaiceLatentHeatVaporization     = Lvap
-    seaiceLatentHeatSublimation      = Lsub
-    seaiceLatentHeatMelting          = Lfresh
-    seaiceReferenceSalinity          = ice_ref_salinity
-    seaiceOceanAlbedo                = albocn
-    seaiceVonKarmanConstant          = vonkar
-    seaiceIceSurfaceRoughness        = iceruf
-    seaiceStabilityReferenceHeight   = zref
-    seaiceIceStrengthConstantHiblerP = Pstar
-    seaiceIceStrengthConstantHiblerC = Cstar
-    skeletalLayerThickness           = sk_l
-    gramsCarbonPerMolCarbon          = R_gC2molC
+    call icepack_configure()
+    call seaice_icepack_write_warnings(icepack_warnings_aborted())
 
     iceAreaMinimum       = seaicePuny
     iceThicknessMinimum  = seaicePuny
     snowThicknessMinimum = seaicePuny
 
-  end subroutine seaice_init_column_constants
+  end subroutine seaice_init_icepack_constants
 
 !-----------------------------------------------------------------------
 ! CICE tracer object
@@ -6492,13 +5831,12 @@ contains
          config_use_ice_age, &
          config_use_first_year_ice, &
          config_use_level_ice, &
-         config_use_cesm_meltponds, &
          config_use_level_meltponds, &
          config_use_topo_meltponds, &
          config_use_aerosols, &
          config_use_brine, &
          config_use_column_biogeochemistry, &
-         config_use_vertical_zsalinity, &
+!         config_use_vertical_zsalinity, &      !echmod deprecate
          config_use_vertical_biochemistry, &
          config_use_vertical_tracers, &
          config_use_skeletal_biochemistry, &
@@ -6538,7 +5876,6 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_use_ice_age", config_use_ice_age)
     call MPAS_pool_get_config(domain % configs, "config_use_first_year_ice", config_use_first_year_ice)
     call MPAS_pool_get_config(domain % configs, "config_use_level_ice", config_use_level_ice)
-    call MPAS_pool_get_config(domain % configs, "config_use_cesm_meltponds", config_use_cesm_meltponds)
     call MPAS_pool_get_config(domain % configs, "config_use_level_meltponds", config_use_level_meltponds)
     call MPAS_pool_get_config(domain % configs, "config_use_topo_meltponds", config_use_topo_meltponds)
     call MPAS_pool_get_config(domain % configs, "config_use_aerosols", config_use_aerosols)
@@ -6547,7 +5884,7 @@ contains
 
     call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
     call MPAS_pool_get_config(domain % configs, "config_use_brine", config_use_brine)
-    call MPAS_pool_get_config(domain % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
+!    call MPAS_pool_get_config(domain % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)  !echmod deprecate
     call MPAS_pool_get_config(domain % configs, "config_use_vertical_tracers", config_use_vertical_tracers)
     call MPAS_pool_get_config(domain % configs, "config_use_skeletal_biochemistry", config_use_skeletal_biochemistry)
     call MPAS_pool_get_config(domain % configs, "config_use_vertical_biochemistry", config_use_vertical_biochemistry)
@@ -6605,8 +5942,7 @@ contains
          tracerObject % nTracers = tracerObject % nTracers + 2
 
     ! pond tracers
-    if (config_use_cesm_meltponds .or. &
-        config_use_level_meltponds .or. &
+    if (config_use_level_meltponds .or. &
         config_use_topo_meltponds) &
          tracerObject % nTracers = tracerObject % nTracers + 2
 
@@ -6615,7 +5951,7 @@ contains
         config_use_topo_meltponds) &
          tracerObject % nTracers = tracerObject % nTracers + 1
 
-    ! snow density (density from compaction)
+    ! snow density (density tracer is density from compaction)
     if (config_use_effective_snow_density) then
        tracerObject % nTracers = tracerObject % nTracers + nSnowLayers
     endif
@@ -6645,11 +5981,11 @@ contains
        if (config_use_brine) &
             tracerObject % nTracers = tracerObject % nTracers + 1
 
-       ! vertical zSalinity
-       if (config_use_vertical_zsalinity) then
-          tracerObject % nTracers = tracerObject % nTracers + nBioLayers
-          tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + 1
-       endif
+       ! vertical zSalinity                               !echmod deprecate
+!       if (config_use_vertical_zsalinity) then
+!          tracerObject % nTracers = tracerObject % nTracers + nBioLayers
+!          tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + 1
+!       endif
        nMobileTracers = 0
 
        ! Skeletal Biogeochemistry
@@ -6783,7 +6119,6 @@ contains
          config_use_ice_age, &
          config_use_first_year_ice, &
          config_use_level_ice, &
-         config_use_cesm_meltponds, &
          config_use_level_meltponds, &
          config_use_topo_meltponds, &
          config_use_aerosols, &
@@ -6802,7 +6137,6 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_use_ice_age", config_use_ice_age)
     call MPAS_pool_get_config(domain % configs, "config_use_first_year_ice", config_use_first_year_ice)
     call MPAS_pool_get_config(domain % configs, "config_use_level_ice", config_use_level_ice)
-    call MPAS_pool_get_config(domain % configs, "config_use_cesm_meltponds", config_use_cesm_meltponds)
     call MPAS_pool_get_config(domain % configs, "config_use_level_meltponds", config_use_level_meltponds)
     call MPAS_pool_get_config(domain % configs, "config_use_topo_meltponds", config_use_topo_meltponds)
     call MPAS_pool_get_config(domain % configs, "config_use_aerosols", config_use_aerosols)
@@ -6857,8 +6191,7 @@ contains
     tracerObject % index_pondDepth        = indexMissingValue
     tracerObject % index_pondLidThickness = indexMissingValue
 
-    if (config_use_cesm_meltponds .or. &
-        config_use_level_meltponds .or. &
+    if (config_use_level_meltponds .or. &
         config_use_topo_meltponds) then
        nTracers = nTracers + 1
        tracerObject % index_pondArea = nTracers
@@ -6930,7 +6263,6 @@ contains
          config_use_ice_age, &
          config_use_first_year_ice, &
          config_use_level_ice, &
-         config_use_cesm_meltponds, &
          config_use_level_meltponds, &
          config_use_topo_meltponds, &
          config_use_aerosols, &
@@ -6950,7 +6282,6 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_use_ice_age", config_use_ice_age)
     call MPAS_pool_get_config(domain % configs, "config_use_first_year_ice", config_use_first_year_ice)
     call MPAS_pool_get_config(domain % configs, "config_use_level_ice", config_use_level_ice)
-    call MPAS_pool_get_config(domain % configs, "config_use_cesm_meltponds", config_use_cesm_meltponds)
     call MPAS_pool_get_config(domain % configs, "config_use_level_meltponds", config_use_level_meltponds)
     call MPAS_pool_get_config(domain % configs, "config_use_topo_meltponds", config_use_topo_meltponds)
     call MPAS_pool_get_config(domain % configs, "config_use_aerosols", config_use_aerosols)
@@ -6987,12 +6318,6 @@ contains
     if (config_use_level_ice) then
        tracerObject % parentIndex(tracerObject % index_levelIceArea)   = 0
        tracerObject % parentIndex(tracerObject % index_levelIceVolume) = 1
-    endif
-
-    ! cesm melt ponds
-    if (config_use_cesm_meltponds) then
-       tracerObject % parentIndex(tracerObject % index_pondArea)  = 0
-       tracerObject % parentIndex(tracerObject % index_pondDepth) = 2 + tracerObject % index_pondArea
     endif
 
     ! level ice ponds
@@ -7121,26 +6446,15 @@ contains
          tracerObject
 
     logical, pointer :: &
-         config_use_cesm_meltponds, &
          config_use_level_meltponds, &
          config_use_topo_meltponds
 
-    call MPAS_pool_get_config(domain % configs, "config_use_cesm_meltponds", config_use_cesm_meltponds)
     call MPAS_pool_get_config(domain % configs, "config_use_level_meltponds", config_use_level_meltponds)
     call MPAS_pool_get_config(domain % configs, "config_use_topo_meltponds", config_use_topo_meltponds)
 
     ! initialize
     tracerObject % ancestorNumber = 0
     tracerObject % ancestorIndices = 0
-
-    ! cesm meltponds
-    if (config_use_cesm_meltponds) then
-
-       ! melt pond depth
-       tracerObject % ancestorNumber (tracerObject % index_pondDepth)   = 1
-       tracerObject % ancestorIndices(tracerObject % index_pondDepth,1) = tracerObject % index_pondArea ! on melt pond area
-
-    endif
 
     ! level melt ponds
     if (config_use_level_meltponds) then
@@ -7368,7 +6682,6 @@ contains
          config_use_ice_age, &
          config_use_first_year_ice, &
          config_use_level_ice, &
-         config_use_cesm_meltponds, &
          config_use_level_meltponds, &
          config_use_topo_meltponds, &
          config_use_aerosols, &
@@ -7411,7 +6724,6 @@ contains
     call MPAS_pool_get_config(block % configs, "config_use_ice_age", config_use_ice_age)
     call MPAS_pool_get_config(block % configs, "config_use_first_year_ice", config_use_first_year_ice)
     call MPAS_pool_get_config(block % configs, "config_use_level_ice", config_use_level_ice)
-    call MPAS_pool_get_config(block % configs, "config_use_cesm_meltponds", config_use_cesm_meltponds)
     call MPAS_pool_get_config(block % configs, "config_use_level_meltponds", config_use_level_meltponds)
     call MPAS_pool_get_config(block % configs, "config_use_topo_meltponds", config_use_topo_meltponds)
     call MPAS_pool_get_config(block % configs, "config_use_aerosols", config_use_aerosols)
@@ -7483,8 +6795,7 @@ contains
     endif
 
     ! pond tracers
-    if (config_use_cesm_meltponds .or. &
-        config_use_level_meltponds .or. &
+    if (config_use_level_meltponds .or. &
         config_use_topo_meltponds) then
        tracerArrayCategory(nTracers,:) = pondArea(1,:,iCell)
        nTracers = nTracers + 1
@@ -7556,7 +6867,6 @@ contains
          config_use_ice_age, &
          config_use_first_year_ice, &
          config_use_level_ice, &
-         config_use_cesm_meltponds, &
          config_use_level_meltponds, &
          config_use_topo_meltponds, &
          config_use_aerosols, &
@@ -7600,7 +6910,6 @@ contains
     call MPAS_pool_get_config(block % configs, "config_use_ice_age", config_use_ice_age)
     call MPAS_pool_get_config(block % configs, "config_use_first_year_ice", config_use_first_year_ice)
     call MPAS_pool_get_config(block % configs, "config_use_level_ice", config_use_level_ice)
-    call MPAS_pool_get_config(block % configs, "config_use_cesm_meltponds", config_use_cesm_meltponds)
     call MPAS_pool_get_config(block % configs, "config_use_level_meltponds", config_use_level_meltponds)
     call MPAS_pool_get_config(block % configs, "config_use_topo_meltponds", config_use_topo_meltponds)
     call MPAS_pool_get_config(block % configs, "config_use_aerosols", config_use_aerosols)
@@ -7672,8 +6981,7 @@ contains
     endif
 
     ! pond tracers
-    if (config_use_cesm_meltponds .or. &
-        config_use_level_meltponds .or. &
+    if (config_use_level_meltponds .or. &
         config_use_topo_meltponds) then
        pondArea(1,:,iCell) = tracerArrayCategory(nTracers,:)
        nTracers = nTracers + 1
@@ -7745,7 +7053,6 @@ contains
          config_use_ice_age, &
          config_use_first_year_ice, &
          config_use_level_ice, &
-         config_use_cesm_meltponds, &
          config_use_level_meltponds, &
          config_use_topo_meltponds, &
          config_use_aerosols, &
@@ -7790,7 +7097,6 @@ contains
     call MPAS_pool_get_config(block % configs, "config_use_ice_age", config_use_ice_age)
     call MPAS_pool_get_config(block % configs, "config_use_first_year_ice", config_use_first_year_ice)
     call MPAS_pool_get_config(block % configs, "config_use_level_ice", config_use_level_ice)
-    call MPAS_pool_get_config(block % configs, "config_use_cesm_meltponds", config_use_cesm_meltponds)
     call MPAS_pool_get_config(block % configs, "config_use_level_meltponds", config_use_level_meltponds)
     call MPAS_pool_get_config(block % configs, "config_use_topo_meltponds", config_use_topo_meltponds)
     call MPAS_pool_get_config(block % configs, "config_use_aerosols", config_use_aerosols)
@@ -7862,8 +7168,7 @@ contains
     endif
 
     ! pond tracers
-    if (config_use_cesm_meltponds .or. &
-        config_use_level_meltponds .or. &
+    if (config_use_level_meltponds .or. &
         config_use_topo_meltponds) then
        tracerArrayCell(nTracers) = pondAreaCell(iCell)
        nTracers = nTracers + 1
@@ -7935,7 +7240,6 @@ contains
          config_use_ice_age, &
          config_use_first_year_ice, &
          config_use_level_ice, &
-         config_use_cesm_meltponds, &
          config_use_level_meltponds, &
          config_use_topo_meltponds, &
          config_use_aerosols, &
@@ -7980,7 +7284,6 @@ contains
     call MPAS_pool_get_config(block % configs, "config_use_ice_age", config_use_ice_age)
     call MPAS_pool_get_config(block % configs, "config_use_first_year_ice", config_use_first_year_ice)
     call MPAS_pool_get_config(block % configs, "config_use_level_ice", config_use_level_ice)
-    call MPAS_pool_get_config(block % configs, "config_use_cesm_meltponds", config_use_cesm_meltponds)
     call MPAS_pool_get_config(block % configs, "config_use_level_meltponds", config_use_level_meltponds)
     call MPAS_pool_get_config(block % configs, "config_use_topo_meltponds", config_use_topo_meltponds)
     call MPAS_pool_get_config(block % configs, "config_use_aerosols", config_use_aerosols)
@@ -8052,8 +7355,7 @@ contains
     endif
 
     ! pond tracers
-    if (config_use_cesm_meltponds .or. &
-        config_use_level_meltponds .or. &
+    if (config_use_level_meltponds .or. &
         config_use_topo_meltponds) then
        pondAreaCell(iCell) = tracerArrayCell(nTracers)
        nTracers = nTracers + 1
@@ -8127,7 +7429,7 @@ contains
     logical, pointer :: &
          config_use_skeletal_biochemistry, &
          config_use_vertical_biochemistry, &
-         config_use_vertical_zsalinity, &
+!         config_use_vertical_zsalinity, &      !echmod deprecate
          config_use_vertical_tracers, &
          config_use_brine, &
          config_use_nitrate, &
@@ -8195,7 +7497,7 @@ contains
          iLayers
 
     call MPAS_pool_get_config(block % configs, "config_use_skeletal_biochemistry", config_use_skeletal_biochemistry)
-    call MPAS_pool_get_config(block % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
+!    call MPAS_pool_get_config(block % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)      !echmod deprecate
     call MPAS_pool_get_config(block % configs, "config_use_vertical_biochemistry", config_use_vertical_biochemistry)
     call MPAS_pool_get_config(block % configs, "config_use_vertical_tracers", config_use_vertical_tracers)
     call MPAS_pool_get_config(block % configs, "config_use_brine", config_use_brine)
@@ -8459,13 +7761,13 @@ contains
           enddo
        endif
 
-       ! salinity used with BL99 thermodynamics
-       if (config_use_vertical_zsalinity) then
-          do iLayers = 1, nBioLayers
-             tracerArrayCategory(tracerObject % index_verticalSalinity+iLayers-1,:) = &
-                  verticalSalinity(iLayers,:,iCell)
-          enddo
-       endif
+       ! salinity used with BL99 thermodynamics        !echmod deprecate
+!       if (config_use_vertical_zsalinity) then
+!          do iLayers = 1, nBioLayers
+!             tracerArrayCategory(tracerObject % index_verticalSalinity+iLayers-1,:) = &
+!                  verticalSalinity(iLayers,:,iCell)
+!          enddo
+!       endif
     endif
 
   end subroutine set_cice_biogeochemistry_tracer_array_category
@@ -8499,7 +7801,7 @@ contains
     logical, pointer :: &
          config_use_skeletal_biochemistry, &
          config_use_vertical_biochemistry, &
-         config_use_vertical_zsalinity, &
+!         config_use_vertical_zsalinity, &      !echmod deprecate
          config_use_vertical_tracers, &
          config_use_brine, &
          config_use_nitrate, &
@@ -8568,7 +7870,7 @@ contains
 
     call MPAS_pool_get_config(block % configs, "config_use_skeletal_biochemistry", config_use_skeletal_biochemistry)
     call MPAS_pool_get_config(block % configs, "config_use_vertical_biochemistry", config_use_vertical_biochemistry)
-    call MPAS_pool_get_config(block % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
+!    call MPAS_pool_get_config(block % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)       !echmod deprecate
     call MPAS_pool_get_config(block % configs, "config_use_vertical_tracers", config_use_vertical_tracers)
     call MPAS_pool_get_config(block % configs, "config_use_brine", config_use_brine)
     call MPAS_pool_get_config(block % configs, "config_use_nitrate", config_use_nitrate)
@@ -8839,13 +8141,13 @@ contains
           enddo
        endif
 
-       ! salinity used with BL99 thermodynamics
-       if (config_use_vertical_zsalinity) then
-          do iLayers = 1, nBioLayers
-             verticalSalinity(iLayers,:,iCell) = &
-                  tracerArrayCategory(tracerObject % index_verticalSalinity+iLayers-1,:)
-          enddo
-       endif
+       ! salinity used with BL99 thermodynamics        !echmod deprecate
+!       if (config_use_vertical_zsalinity) then
+!          do iLayers = 1, nBioLayers
+!             verticalSalinity(iLayers,:,iCell) = &
+!                  tracerArrayCategory(tracerObject % index_verticalSalinity+iLayers-1,:)
+!          enddo
+!       endif
     endif
 
   end subroutine get_cice_biogeochemistry_tracer_array_category
@@ -8879,7 +8181,7 @@ contains
     logical, pointer :: &
          config_use_skeletal_biochemistry, &
          config_use_vertical_biochemistry, &
-         config_use_vertical_zsalinity, &
+!         config_use_vertical_zsalinity, &       !echmod deprecate
          config_use_vertical_tracers, &
          config_use_brine, &
          config_use_nitrate, &
@@ -8968,7 +8270,7 @@ contains
 
     call MPAS_pool_get_config(block % configs, "config_use_skeletal_biochemistry", config_use_skeletal_biochemistry)
     call MPAS_pool_get_config(block % configs, "config_use_vertical_biochemistry", config_use_vertical_biochemistry)
-    call MPAS_pool_get_config(block % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
+!    call MPAS_pool_get_config(block % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)      !echmod deprecate
     call MPAS_pool_get_config(block % configs, "config_use_vertical_tracers", config_use_vertical_tracers)
     call MPAS_pool_get_config(block % configs, "config_use_brine", config_use_brine)
     call MPAS_pool_get_config(block % configs, "config_use_nitrate", config_use_nitrate)
@@ -9332,12 +8634,12 @@ contains
           enddo
        endif
 
-       ! salinity for use with BL99 thermodynamics
-       if (config_use_vertical_zsalinity) then
-          do iLayers = 1, nBioLayers
-             tracerArrayCell(tracerObject % index_verticalSalinity+iLayers-1)  = verticalSalinityCell(iLayers,iCell)
-          enddo
-       endif
+       ! salinity used with BL99 thermodynamics        !echmod deprecate
+!       if (config_use_vertical_zsalinity) then
+!          do iLayers = 1, nBioLayers
+!             tracerArrayCell(tracerObject % index_verticalSalinity+iLayers-1)  = verticalSalinityCell(iLayers,iCell)
+!          enddo
+!       endif
     endif
 
   end subroutine set_cice_biogeochemistry_tracer_array_cell
@@ -9371,7 +8673,7 @@ contains
     logical, pointer :: &
          config_use_skeletal_biochemistry, &
          config_use_vertical_biochemistry, &
-         config_use_vertical_zsalinity, &
+!         config_use_vertical_zsalinity, &       !echmod deprecate
          config_use_vertical_tracers, &
          config_use_brine, &
          config_use_nitrate, &
@@ -9460,7 +8762,7 @@ contains
 
     call MPAS_pool_get_config(block % configs, "config_use_skeletal_biochemistry", config_use_skeletal_biochemistry)
     call MPAS_pool_get_config(block % configs, "config_use_vertical_biochemistry", config_use_vertical_biochemistry)
-    call MPAS_pool_get_config(block % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
+!    call MPAS_pool_get_config(block % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)       !echmod deprecate
     call MPAS_pool_get_config(block % configs, "config_use_vertical_tracers", config_use_vertical_tracers)
     call MPAS_pool_get_config(block % configs, "config_use_brine", config_use_brine)
     call MPAS_pool_get_config(block % configs, "config_use_nitrate", config_use_nitrate)
@@ -9828,12 +9130,12 @@ contains
           enddo
        endif
 
-       ! salinity for use with BL99 thermodynamics
-       if (config_use_vertical_zsalinity) then
-          do iLayers = 1, nBioLayers
-             verticalSalinityCell(iLayers,iCell) = tracerArrayCell(tracerObject % index_verticalSalinity+iLayers-1)
-          enddo
-       endif
+       ! salinity used with BL99 thermodynamics        !echmod deprecate
+!       if (config_use_vertical_zsalinity) then
+!          do iLayers = 1, nBioLayers
+!             verticalSalinityCell(iLayers,iCell) = tracerArrayCell(tracerObject % index_verticalSalinity+iLayers-1)
+!          enddo
+!       endif
     endif
 
   end subroutine get_cice_biogeochemistry_tracer_array_cell
@@ -9844,17 +9146,17 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  init_column_package_parameters
+!  init_icepack_package_parameters
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 2nd Feburary 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
 !-----------------------------------------------------------------------
 
-  subroutine init_column_package_parameters(domain, tracerObject)
+  subroutine init_icepack_package_parameters(domain, tracerObject)
 
     type(domain_type), intent(inout) :: domain
 
@@ -9865,26 +9167,27 @@ contains
     call check_column_package_configs(domain)
 
     ! set the tracer flags
-    call init_column_package_tracer_flags(domain)
+    call init_icepack_package_tracer_flags(domain)
 
     ! set the tracer numbers
-    call init_column_package_tracer_numbers(tracerObject)
+    call init_icepack_package_tracer_sizes(domain, tracerObject)
 
     ! set the tracers indices
-    call init_column_package_tracer_indices(tracerObject)
+    call init_icepack_package_tracer_indices(tracerObject)
 
     ! set the column parameters
-    call init_column_package_configs(domain)
+    call init_column_package_configs(domain) !echmod - temporary until colpkg_constants are moved
+    call init_icepack_package_configs(domain)
 
-  end subroutine init_column_package_parameters
+  end subroutine init_icepack_package_parameters
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
 !  check_column_package_configs
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 5th Feburary 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
@@ -9917,6 +9220,7 @@ contains
          config_itd_conversion_type, &
          config_category_bounds_type, &
          config_pond_refreezing_type, &
+         config_salt_flux_coupling_type, &
          config_ocean_heat_transfer_type, &
          config_sea_freezing_temperature_type, &
          config_snow_redistribution_scheme
@@ -9929,7 +9233,7 @@ contains
          config_use_cesm_meltponds, &  ! deprecated
          config_use_level_meltponds, &
          config_use_topo_meltponds, &
-         config_use_vertical_zsalinity, &
+         config_use_vertical_zsalinity, &      ! deprecated
          config_use_brine, &
          config_use_vertical_tracers, &
          config_use_vertical_biochemistry, &
@@ -9979,6 +9283,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_itd_conversion_type", config_itd_conversion_type)
     call MPAS_pool_get_config(domain % configs, "config_category_bounds_type", config_category_bounds_type)
     call MPAS_pool_get_config(domain % configs, "config_pond_refreezing_type", config_pond_refreezing_type)
+    call MPAS_pool_get_config(domain % configs, "config_salt_flux_coupling_type", config_salt_flux_coupling_type)
     call MPAS_pool_get_config(domain % configs, "config_calc_surface_stresses", config_calc_surface_stresses)
     call MPAS_pool_get_config(domain % configs, "config_calc_surface_temperature", config_calc_surface_temperature)
     call MPAS_pool_get_config(domain % configs, "config_max_meltwater_retained_fraction", config_max_meltwater_retained_fraction)
@@ -9992,7 +9297,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_ocean_heat_transfer_type", config_ocean_heat_transfer_type)
     call MPAS_pool_get_config(domain % configs, "config_sea_freezing_temperature_type", config_sea_freezing_temperature_type)
     call MPAS_pool_get_config(domain % configs, "config_use_brine", config_use_brine)
-    call MPAS_pool_get_config(domain % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
+    call MPAS_pool_get_config(domain % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)      ! deprecated
     call MPAS_pool_get_config(domain % configs, "config_use_shortwave_bioabsorption", config_use_shortwave_bioabsorption)
     call MPAS_pool_get_config(domain % configs, "config_use_vertical_tracers", config_use_vertical_tracers)
     call MPAS_pool_get_config(domain % configs, "config_use_skeletal_biochemistry", config_use_skeletal_biochemistry)
@@ -10025,7 +9330,7 @@ contains
     ! check config_thermodynamics_type value
     if (trim(config_thermodynamics_type) == "zero layer") then
        call mpas_log_write(&
-            "check_column_package_configs: config_thermodynamics_type) = zero layer but 0-layer thermo is being deprecated", &
+            "check_column_package_configs: config_thermodynamics_type) = zero layer but 0-layer thermo has been deprecated", &
             messageType=MPAS_LOG_WARN)
     endif
 
@@ -10042,7 +9347,7 @@ contains
 
     ! check config_shortwave_type value
     if (.not. (trim(config_shortwave_type) == "ccsm3" .or. &
-               trim(config_shortwave_type) == "dEdd")) then
+               trim(config_shortwave_type(1:4)) == "dEdd")) then
        call config_error("config_shortwave_type", config_shortwave_type, "'ccsm3' or 'dEdd'")
     endif
 
@@ -10073,10 +9378,10 @@ contains
     endif
 
     ! check config_atmos_boundary_method value
-    if (.not. (trim(config_atmos_boundary_method) == "ccsm3" .or. &
+    if (.not. (trim(config_atmos_boundary_method) == "similarity" .or. &
                trim(config_atmos_boundary_method) == "constant" .or. &
-               trim(config_atmos_boundary_method) == "similarity")) then  ! similarity = ccsm3 = default
-       call config_error("config_atmos_boundary_method", config_atmos_boundary_method, "'similarity' or 'constant' or 'cccsm3'")
+               trim(config_atmos_boundary_method) == "mixed")) then
+       call config_error("config_atmos_boundary_method", config_atmos_boundary_method, "'similarity' or 'constant' or 'mixed'")
     endif
 
     ! check config_itd_conversion_type value
@@ -10101,6 +9406,11 @@ contains
        call config_error("config_pond_refreezing_type", config_pond_refreezing_type, "'cesm' or 'hlid'")
     endif
 
+    ! check config_salt_flux_coupling_type
+    if (.not. trim(config_salt_flux_coupling_type) == "constant") then
+       call config_error("config_salt_flux_coupling_type", config_salt_flux_coupling_type, "'constant'")
+    endif
+
     ! check for consistency in snow vertical dimension
     if (config_nSnowLayers /= nSnowlayers) &
        call mpas_log_write(&
@@ -10116,7 +9426,7 @@ contains
     ! deprecate cesm ponds
     if (config_use_cesm_meltponds) then
        call mpas_log_write(&
-            "check_column_package_configs: config_use_cesm_meltponds = .true. but cesm ponds are being deprecated", &
+            "check_column_package_configs: config_use_cesm_meltponds = .true. but cesm ponds have been deprecated", &
             messageType=MPAS_LOG_CRIT)
     endif
 
@@ -10126,7 +9436,6 @@ contains
 
     ! check only single meltpond option on
     nPondSchemesActive = 0
-    if (config_use_cesm_meltponds)  nPondSchemesActive = nPondSchemesActive + 1
     if (config_use_level_meltponds) nPondSchemesActive = nPondSchemesActive + 1
     if (config_use_topo_meltponds)  nPondSchemesActive = nPondSchemesActive + 1
     if (nPondSchemesActive > 1) then
@@ -10163,10 +9472,9 @@ contains
     endif
 
     ! check config_snow_redistribution_scheme
-      if ((trim(config_snow_redistribution_scheme) == "ITDrdg" .or. &
-         trim(config_snow_redistribution_scheme) == "ITDsd") .and. .not. config_use_effective_snow_density) then
+      if (trim(config_snow_redistribution_scheme) == "ITDrdg".and. .not. config_use_effective_snow_density) then
        call mpas_log_write(&
-         "check_column_package_configs: config_snow_redistribution = 'ITD' but config_use_effective_snow_density is false", &
+         "check_column_package_configs: config_snow_redistribution = 'ITDrdg' but config_use_effective_snow_density is false", &
             messageType=MPAS_LOG_CRIT)
     endif
 
@@ -10177,18 +9485,11 @@ contains
             messageType=MPAS_LOG_CRIT)
     endif
 
-    ! check cesm ponds and freezing lids inconsistency
-    if (config_use_cesm_meltponds .and. trim(config_pond_refreezing_type) /= "cesm") then
-       call mpas_log_write(&
-            "check_column_package_configs: config_use_cesm_meltponds = .true. and config_pond_refreezing_type /= 'cesm'", &
-            messageType=MPAS_LOG_CRIT)
-    endif
-
     ! check dEdd shortwave if using ponds
-    use_meltponds = (config_use_cesm_meltponds .or. config_use_level_meltponds .or. config_use_topo_meltponds)
-    if (trim(config_shortwave_type) /= 'dEdd' .and. use_meltponds .and. config_calc_surface_temperature) then
+    use_meltponds = (config_use_level_meltponds .or. config_use_topo_meltponds)
+    if (trim(config_shortwave_type(1:4)) /= 'dEdd' .and. use_meltponds .and. config_calc_surface_temperature) then
        call mpas_log_write(&
-            "check_column_package_configs: config_shortwave_type) /= 'dEdd' .and. use_meltponds = .true.", &
+            "check_column_package_configs: config_shortwave_type(1:4)) /= 'dEdd' .and. use_meltponds = .true.", &
             messageType=MPAS_LOG_ERR)
        call mpas_log_write(&
             ".and. config_calc_surface_temperature ==.true.", &
@@ -10230,13 +9531,6 @@ contains
             messageType=MPAS_LOG_CRIT)
     endif
 
-    ! check am not using form drag with cesm ponds
-    if (config_use_form_drag .and. config_use_cesm_meltponds) then
-       call mpas_log_write(&
-            "check_column_package_configs: config_use_form_drag = .true. and config_use_cesm_meltponds = .true.", &
-            messageType=MPAS_LOG_CRIT)
-    endif
-
     ! check using form drag but not level ice
     if (config_use_form_drag .and. .not. config_use_level_ice) then
        call mpas_log_write(&
@@ -10265,15 +9559,9 @@ contains
             messageType=MPAS_LOG_CRIT)
     endif
 
-    ! deprecate zsalinity
-    if (config_use_vertical_zsalinity) then
-       call mpas_log_write(&
-            "check_column_package_configs: vertical zSalinity has been deprecated", &
-            messageType=MPAS_LOG_CRIT)
-    endif
-
     ! check biogeochemistry flags:
-    if (.not. config_use_column_biogeochemistry .and. (config_use_brine .or. config_use_vertical_zsalinity .or. &
+!    if (.not. config_use_column_biogeochemistry .and. (config_use_brine .or. config_use_vertical_zsalinity .or. &
+    if (.not. config_use_column_biogeochemistry .and. (config_use_brine .or. &
         config_use_vertical_biochemistry .or. config_use_shortwave_bioabsorption .or. config_use_vertical_tracers .or. &
         config_use_skeletal_biochemistry .or. config_use_nitrate .or. config_use_carbon .or. config_use_chlorophyll .or. &
         config_use_ammonium .or. config_use_silicate .or. config_use_DMS .or. config_use_nonreactive .or. config_use_humics .or. &
@@ -10284,11 +9572,10 @@ contains
             messageType=MPAS_LOG_CRIT)
     endif
 
-    ! check vertical zSalinity requirements
-    if (config_use_vertical_zsalinity .and. ((.not. config_use_brine) .or. &
-         (.not. (trim(config_thermodynamics_type) == "BL99")))) then
+    ! deprecate vertical zSalinity
+    if (config_use_vertical_zsalinity) then
        call mpas_log_write(&
-            "check_column_package_configs: vertical zSalinity requires config_use_brine = true and 'BL99' ", &
+            "check_column_package_configs: config_use_vertical_zsalinity = .true. but vertical zSalinity has been deprecated", &
             messageType=MPAS_LOG_CRIT)
     endif
 
@@ -10309,9 +9596,9 @@ contains
     endif
 
     ! check that the shortwave scheme and bioabsorption is consistent
-    if (config_use_shortwave_bioabsorption .and. .not. (trim(config_shortwave_type) == "dEdd")) then
+    if (config_use_shortwave_bioabsorption .and. .not. (trim(config_shortwave_type(1:4)) == "dEdd")) then
        call mpas_log_write(&
-            "check_column_package_configs: shortwave bioabsorption requires config_shortwave_type ==  'dEdd'", &
+            "check_column_package_configs: shortwave bioabsorption requires config_shortwave_type(1:4) ==  'dEdd'", &
             messageType=MPAS_LOG_CRIT)
     endif
 
@@ -10326,66 +9613,20 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  init_column_active_processes
+!  init_icepack_package_tracer_flags
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 14th September 2022
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
 !-----------------------------------------------------------------------
 
-  subroutine init_column_active_processes(domain)
+  subroutine init_icepack_package_tracer_flags(domain)
 
-    use ice_colpkg, only: &
-         colpkg_init_active_processes
-
-    type(domain_type), intent(inout) :: domain
-
-    logical, pointer :: &
-         config_use_latent_processes, &
-         config_use_lateral_melt, &
-         config_use_congelation_basal_melt
-
-    call MPAS_pool_get_config(domain % configs, "config_use_latent_processes", config_use_latent_processes)
-    call MPAS_pool_get_config(domain % configs, "config_use_lateral_melt", config_use_lateral_melt)
-    call MPAS_pool_get_config(domain % configs, "config_use_congelation_basal_melt", config_use_congelation_basal_melt)
-
-    call colpkg_init_active_processes(&
-         config_use_latent_processes, &
-         config_use_lateral_melt, &
-         config_use_congelation_basal_melt)
-
-  end subroutine init_column_active_processes
-
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-!
-!  init_column_package_tracer_flags
-!
-!> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 2nd Feburary 2015
-!> \details
-!>
-!
-!-----------------------------------------------------------------------
-
-  subroutine init_column_package_tracer_flags(domain)
-
-    !use ice_colpkg_tracers, only: &
-    !     tr_iage      , & ! if .true., use age tracer
-    !     tr_FY        , & ! if .true., use first-year area tracer
-    !     tr_lvl       , & ! if .true., use level ice tracer
-    !     tr_pond      , & ! if .true., use melt pond tracer
-    !     tr_pond_cesm , & ! if .true., use cesm pond tracer
-    !     tr_pond_lvl  , & ! if .true., use level-ice pond tracer
-    !     tr_pond_topo , & ! if .true., use explicit topography-based ponds
-    !     tr_aero      , & ! if .true., use aerosol tracers
-    !     tr_brine         ! if .true., brine height differs from ice thickness
-
-    use ice_colpkg, only: &
-         colpkg_init_tracer_flags
+    use icepack_intfc, only: &
+         icepack_init_tracer_flags
 
     type(domain_type), intent(inout) :: domain
 
@@ -10393,12 +9634,11 @@ contains
          config_use_ice_age, &
          config_use_first_year_ice, &
          config_use_level_ice, &
-         config_use_cesm_meltponds, &
          config_use_level_meltponds, &
          config_use_topo_meltponds, &
          config_use_aerosols, &
          config_use_brine, &
-         config_use_vertical_zsalinity, &
+!         config_use_vertical_zsalinity, &      !echmod deprecate
          config_use_zaerosols, &
          config_use_nitrate, &
          config_use_DON, &
@@ -10422,12 +9662,11 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_use_ice_age", config_use_ice_age)
     call MPAS_pool_get_config(domain % configs, "config_use_first_year_ice", config_use_first_year_ice)
     call MPAS_pool_get_config(domain % configs, "config_use_level_ice", config_use_level_ice)
-    call MPAS_pool_get_config(domain % configs, "config_use_cesm_meltponds", config_use_cesm_meltponds)
     call MPAS_pool_get_config(domain % configs, "config_use_level_meltponds", config_use_level_meltponds)
     call MPAS_pool_get_config(domain % configs, "config_use_topo_meltponds", config_use_topo_meltponds)
     call MPAS_pool_get_config(domain % configs, "config_use_aerosols", config_use_aerosols)
     call MPAS_pool_get_config(domain % configs, "config_use_brine", config_use_brine)
-    call MPAS_pool_get_config(domain % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
+!    call MPAS_pool_get_config(domain % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)   !echmod deprecate
     call MPAS_pool_get_config(domain % configs, "config_use_zaerosols", config_use_zaerosols)
     call MPAS_pool_get_config(domain % configs, "config_use_nitrate", config_use_nitrate)
     call MPAS_pool_get_config(domain % configs, "config_use_DON", config_use_DON)
@@ -10448,314 +9687,181 @@ contains
     if (config_use_skeletal_biochemistry .or. config_use_vertical_biochemistry) &
          use_nitrogen = .true.
 
-    use_meltponds = (config_use_cesm_meltponds .or. config_use_level_meltponds .or. config_use_topo_meltponds)
+    use_meltponds = (config_use_level_meltponds .or. config_use_topo_meltponds)
 
-    call colpkg_init_tracer_flags(&
-         config_use_ice_age, &
-         config_use_first_year_ice, &
-         config_use_level_ice, &
-         use_meltponds, &
-         config_use_cesm_meltponds, &
-         config_use_level_meltponds, &
-         config_use_topo_meltponds, &
-         config_use_effective_snow_density, &
-         config_use_snow_grain_radius, &
-         config_use_aerosols, &
-         config_use_brine, &
-         config_use_vertical_zsalinity, &
-         config_use_zaerosols, &
-         config_use_nitrate, &
-         use_nitrogen, &
-         config_use_DON, &
-         config_use_carbon, &
-         config_use_chlorophyll, &
-         config_use_ammonium, &
-         config_use_silicate, &
-         config_use_DMS, &
-         config_use_iron, &
-         config_use_humics, &
-         config_use_nonreactive)
+    call icepack_init_tracer_flags(&
+         tr_iage_in      = config_use_ice_age, &
+         tr_FY_in        = config_use_first_year_ice, &
+         tr_lvl_in       = config_use_level_ice, &
+         tr_pond_in      = use_meltponds, &
+         tr_pond_lvl_in  = config_use_level_meltponds, &
+         tr_pond_topo_in = config_use_topo_meltponds, &
+         !tr_fsd_in       = , &
+         tr_aero_in      = config_use_aerosols, &
+         !tr_iso_in       = , &
+         tr_brine_in     = config_use_brine, &
+         tr_zaero_in     = config_use_zaerosols, &
+         tr_bgc_Nit_in   = config_use_nitrate, &
+         tr_bgc_N_in     = use_nitrogen, &
+         tr_bgc_DON_in   = config_use_DON, &
+         tr_bgc_C_in     = config_use_carbon, &
+         tr_bgc_chl_in   = config_use_chlorophyll, &
+         tr_bgc_Am_in    = config_use_ammonium, &
+         tr_bgc_Sil_in   = config_use_silicate, &
+         tr_bgc_DMS_in   = config_use_DMS, &
+         tr_bgc_Fe_in    = config_use_iron, &
+         tr_bgc_hum_in   = config_use_humics, &
+         tr_bgc_PON_in   = config_use_nonreactive)
 
-    !tr_iage      = config_use_ice_age
-    !tr_FY        = config_use_first_year_ice
-    !tr_lvl       = config_use_level_ice
-    !tr_pond      = use_meltponds
-    !tr_pond_cesm = config_use_cesm_meltponds
-    !tr_pond_lvl  = config_use_level_meltponds
-    !tr_pond_topo = config_use_topo_meltponds
-    !tr_snow      = config_use_effective_snow_density
-    !tr_rsnw      = config_use_snow_grain_radius
-    !tr_aero      = config_use_aerosols
-    !tr_brine     = config_use_brine
-    !tr_bgc_S     = config_use_vertical_zsalinity
-    !tr_zaero     = config_use_zaerosols
-    !tr_bgc_Nit   = config_use_nitrate
-    !tr_bgc_N     = use_nitrogen
-    !tr_bgc_DON   = config_use_DON
-    !tr_bgc_C     = config_use_carbon
-    !tr_bgc_chl   = config_use_chlorophyll
-    !tr_bgc_Am    = config_use_ammonium
-    !tr_bgc_Sil   = config_use_silicate
-    !tr_bgc_DMS   = config_use_DMS
-    !tr_bgc_Fe    = config_use_iron
-    !tr_bgc_hum   = config_use_humics
-    !tr_bgc_PON   = config_use_nonreactive
+    call seaice_icepack_write_warnings(icepack_warnings_aborted())
 
-  end subroutine init_column_package_tracer_flags
+  end subroutine init_icepack_package_tracer_flags
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  init_column_package_tracer_numbers
+!  init_icepack_package_tracer_sizes
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 9th Feburary 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
 !-----------------------------------------------------------------------
 
-  subroutine init_column_package_tracer_numbers(tracerObject)
+  subroutine init_icepack_package_tracer_sizes(domain, tracerObject)
 
-    !use ice_colpkg_tracers, only: &
-    !     ntrcr, &
-    !     nbtrcr, &
-    !     nbtrcr_sw
+    use icepack_intfc, only: &
+         icepack_init_tracer_sizes
 
-    use ice_colpkg, only: &
-         colpkg_init_tracer_numbers
+    type(domain_type), intent(in) :: &
+         domain
 
     type(ciceTracerObjectType), intent(in) :: &
          tracerObject
 
-    call colpkg_init_tracer_numbers(&
-         tracerObject % nTracers, &
-         tracerObject % nBioTracers, &
-         tracerObject % nBioTracersShortwave)
+    integer, pointer :: &
+         nCategories, &
+         nIceLayers, &
+         nSnowLayers, &
+         nAerosols, &
+         nBioLayers
 
-    !ntrcr     = tracerObject % nTracers
-    !nbtrcr    = tracerObject % nBioTracers
-    !nbtrcr_sw = tracerObject % nBioTracersShortwave
+    call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nCategories", nCategories)
+    call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nIceLayers", nIceLayers)
+    call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nSnowLayers", nSnowLayers)
+    call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nBioLayers", nBioLayers)
+    call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nAerosols", nAerosols)
 
-  end subroutine init_column_package_tracer_numbers
+    call icepack_init_tracer_sizes(&
+         ncat_in      = nCategories, &
+         nilyr_in     = nIceLayers, &
+         nslyr_in     = nSnowLayers, &
+         nblyr_in     = nBioLayers, &
+         !nfsd_in      = , &
+         !n_algae_in   = , &
+         !n_DOC_in     = , &
+         n_aero_in    = nAerosols, &
+         !n_iso_in     = , &
+         !n_DON_in     = , &
+         !n_DIC_in     = , &
+         !n_fed_in     = , &
+         !n_fep_in     = , &
+         !n_zaero_in   = , &
+         ntrcr_in     = tracerObject % nTracers, &
+         !ntrcr_o_in   = , &
+         nbtrcr_in    = tracerObject % nBioTracers, &
+         nbtrcr_sw_in = tracerObject % nBioTracersShortwave)
+
+    call seaice_icepack_write_warnings(icepack_warnings_aborted())
+
+  end subroutine init_icepack_package_tracer_sizes
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  init_column_package_tracer_indices
+!  init_icepack_package_tracer_indices
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 5th Feburary 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
 !-----------------------------------------------------------------------
 
-  subroutine init_column_package_tracer_indices(tracerObject)
+  subroutine init_icepack_package_tracer_indices(tracerObject)
 
-    !use ice_colpkg_tracers, only: &
-    !     nt_Tsfc, &       ! ice/snow temperature
-    !     nt_qice, &       ! volume-weighted ice enthalpy (in layers)
-    !     nt_qsno, &       ! volume-weighted snow enthalpy (in layers)
-    !     nt_sice, &       ! volume-weighted ice bulk salinity (CICE grid layers)
-    !     nt_fbri, &       ! volume fraction of ice with dynamic salt (hinS/vicen*aicen)
-    !     nt_iage, &       ! volume-weighted ice age
-    !     nt_FY, &         ! area-weighted first-year ice area
-    !     nt_alvl, &       ! level ice area fraction
-    !     nt_vlvl, &       ! level ice volume fraction
-    !     nt_apnd, &       ! melt pond area fraction
-    !     nt_hpnd, &       ! melt pond depth
-    !     nt_ipnd, &       ! melt pond refrozen lid thickness
-    !     nt_aero, &       ! starting index for aerosols in ice
-    !     nt_smice, &      ! snow ice mass
-    !     nt_smliq, &      ! snow liquid mass
-    !     nt_rsnw, &       ! snow grain radius
-    !     nt_rhos, &       ! snow density tracer
-    !     nt_fbri, &       ! volume fraction of ice with dynamic salt (hinS/vicen*aicen)
-    !     nt_bgc_Nit, &    ! nutrients
-    !     nt_bgc_Am, &     !
-    !     nt_bgc_Sil, &    !
-    !     nt_bgc_DMSPp, &  ! trace gases (skeletal layer)
-    !     nt_bgc_DMSPd, &  !
-    !     nt_bgc_DMS, &    !
-    !     nt_bgc_PON, &    ! zooplankton and detritus
-    !     nt_bgc_hum, &    ! humic material
-    !                      ! bio layer indicess
-    !     nlt_bgc_Nit, &   ! nutrients
-    !     nlt_bgc_Am, &    !
-    !     nlt_bgc_Sil, &   !
-    !     nlt_bgc_DMSPp, & ! trace gases (skeletal layer)
-    !     nlt_bgc_DMSPd, & !
-    !     nlt_bgc_DMS, &   !
-    !     nlt_bgc_PON, &   ! zooplankton and detritus
-    !     nlt_bgc_hum, &   ! humic material
-    !     nlt_chl_sw, &    ! points to total chla in trcrn_sw
-    !     nt_zbgc_frac, &  ! fraction of tracer in the mobile phase
-    !     nt_bgc_S, &      ! Bulk salinity in fraction ice with dynamic salinity (Bio grid)
-    !     nt_bgc_N, &      ! diatoms, phaeocystis, pico/small
-    !     nt_bgc_C, &      ! diatoms, phaeocystis, pico/small
-    !     nt_bgc_chl, &    ! diatoms, phaeocystis, pico/small
-    !     nlt_bgc_N, &     ! diatoms, phaeocystis, pico/small
-    !     nlt_bgc_C, &     ! diatoms, phaeocystis, pico/small
-    !     nlt_bgc_chl, &   ! diatoms, phaeocystis, pico/small
-    !     nt_bgc_DOC, &    ! dissolved organic carbon
-    !     nlt_bgc_DOC, &   ! dissolved organic carbon
-    !     nt_bgc_DON, &    ! dissolved organic nitrogen
-    !     nlt_bgc_DON, &   ! dissolved organic nitrogen
-    !     nt_bgc_DIC, &    ! dissolved inorganic carbon
-    !     nlt_bgc_DIC, &   ! dissolved inorganic carbon
-    !     nt_bgc_Fed, &    ! dissolved iron
-    !     nt_bgc_Fep, &    ! particulate iron
-    !     nlt_bgc_Fed, &   ! dissolved iron
-    !     nlt_bgc_Fep, &   ! particulate iron
-    !     nt_zaero, &      ! black carbon and other aerosols
-    !     nlt_zaero, &     ! black carbon and other aerosols
-    !     nlt_zaero_sw     ! black carbon and other aerosols
-
-    use ice_colpkg, only: &
-         colpkg_init_tracer_indices
+    use icepack_intfc, only: &
+         icepack_init_tracer_indices
 
     type(ciceTracerObjectType), intent(in) :: &
          tracerObject
 
-    call colpkg_init_tracer_indices(&
-         tracerObject % index_surfaceTemperature, &
-         tracerObject % index_iceEnthalpy, &
-         tracerObject % index_snowEnthalpy, &
-         tracerObject % index_iceSalinity, &
-         tracerObject % index_brineFraction, &
-         tracerObject % index_iceAge, &
-         tracerObject % index_firstYearIceArea, &
-         tracerObject % index_levelIceArea, &
-         tracerObject % index_levelIceVolume, &
-         tracerObject % index_pondArea, &
-         tracerObject % index_pondDepth, &
-         tracerObject % index_pondLidThickness, &
-         tracerObject % index_aerosols, &
-         tracerObject % index_snowIceMass, &
-         tracerObject % index_snowLiquidMass, &
-         tracerObject % index_snowGrainRadius, &
-         tracerObject % index_snowDensity, &
-         tracerObject % index_verticalAerosolsConc, &
-         tracerObject % index_algaeConc, &
-         tracerObject % index_algalCarbon, &
-         tracerObject % index_algalChlorophyll, &
-         tracerObject % index_DOCConc, &
-         tracerObject % index_DONConc, &
-         tracerObject % index_DICConc, &
-         tracerObject % index_dissolvedIronConc, &
-         tracerObject % index_particulateIronConc, &
-         tracerObject % index_nitrateConc, &
-         tracerObject % index_ammoniumConc, &
-         tracerObject % index_silicateConc, &
-         tracerObject % index_DMSPpConc, &
-         tracerObject % index_DMSPdConc, &
-         tracerObject % index_DMSConc, &
-         tracerObject % index_humicsConc, &
-         tracerObject % index_nonreactiveConc, &
-         tracerObject % index_verticalAerosolsConcLayer, &
-         tracerObject % index_algaeConcLayer, &
-         tracerObject % index_algalCarbonLayer, &
-         tracerObject % index_algalChlorophyllLayer, &
-         tracerObject % index_DOCConcLayer, &
-         tracerObject % index_DONConcLayer, &
-         tracerObject % index_DICConcLayer, &
-         tracerObject % index_dissolvedIronConcLayer, &
-         tracerObject % index_particulateIronConcLayer, &
-         tracerObject % index_nitrateConcLayer, &
-         tracerObject % index_ammoniumConcLayer, &
-         tracerObject % index_silicateConcLayer, &
-         tracerObject % index_DMSPpConcLayer, &
-         tracerObject % index_DMSPdConcLayer, &
-         tracerObject % index_DMSConcLayer, &
-         tracerObject % index_humicsConcLayer, &
-         tracerObject % index_nonreactiveConcLayer, &
-         tracerObject % index_mobileFraction, &
-         tracerObject % index_verticalSalinity, &
-         tracerObject % index_chlorophyllShortwave, &
-         tracerObject % index_verticalAerosolsConcShortwave, &
-         tracerObject % nAlgaeIndex, &
-         tracerObject % nAlgalCarbonIndex, &
-         tracerObject % nAlgalChlorophyllIndex, &
-         tracerObject % nDOCIndex, &
-         tracerObject % nDONIndex, &
-         tracerObject % nDICIndex, &
-         tracerObject % nDissolvedIronIndex, &
-         tracerObject % nParticulateIronIndex, &
-         tracerObject % nzAerosolsIndex, &
-         tracerObject % index_LayerIndexToDataArray, &
-         tracerObject % index_LayerIndexToBioIndex, &
-         tracerObject % nBioTracers)
+    call icepack_init_tracer_indices(&
+         nt_Tsfc_in       = tracerObject % index_surfaceTemperature, &
+         nt_qice_in       = tracerObject % index_iceEnthalpy, &
+         nt_qsno_in       = tracerObject % index_snowEnthalpy, &
+         nt_sice_in       = tracerObject % index_iceSalinity, &
+         nt_fbri_in       = tracerObject % index_brineFraction, &
+         nt_iage_in       = tracerObject % index_iceAge, &
+         nt_FY_in         = tracerObject % index_firstYearIceArea, &
+         nt_alvl_in       = tracerObject % index_levelIceArea, &
+         nt_vlvl_in       = tracerObject % index_levelIceVolume, &
+         nt_apnd_in       = tracerObject % index_pondArea, &
+         nt_hpnd_in       = tracerObject % index_pondDepth, &
+         nt_ipnd_in       = tracerObject % index_pondLidThickness, &
+         nt_smice_in      = tracerObject % index_snowIceMass, &
+         nt_smliq_in      = tracerObject % index_snowLiquidMass, &
+         nt_rhos_in       = tracerObject % index_snowDensity, &
+         nt_rsnw_in       = tracerObject % index_snowGrainRadius, &
+         !nt_fsd
+         !nt_isosno_in
+         !nt_isoice_in
+         nt_aero_in       = tracerObject % index_aerosols, &
+         nt_zaero_in      = tracerObject % index_verticalAerosolsConc, & ! name change?nt_zaeros -> nt_zaero
+         !nt_bgc_C_in      = tracerObject % index_algalCarbon, & ! not supported
+         nt_bgc_N_in      = tracerObject % index_algaeConc, &
+         nt_bgc_chl_in    = tracerObject % index_algalChlorophyll, &
+         nt_bgc_DOC_in    = tracerObject % index_DOCConc, &
+         nt_bgc_DON_in    = tracerObject % index_DONConc, &
+         nt_bgc_DIC_in    = tracerObject % index_DICConc, &
+         nt_bgc_Fed_in    = tracerObject % index_dissolvedIronConc, &
+         nt_bgc_Fep_in    = tracerObject % index_particulateIronConc, &
+         nt_bgc_Nit_in    = tracerObject % index_nitrateConc, &
+         nt_bgc_Am_in     = tracerObject % index_ammoniumConc, &
+         nt_bgc_Sil_in    = tracerObject % index_silicateConc, &
+         nt_bgc_DMSPp_in  = tracerObject % index_DMSPpConc, &
+         nt_bgc_DMSPd_in  = tracerObject % index_DMSPdConc, &
+         nt_bgc_DMS_in    = tracerObject % index_DMSConc, &
+         nt_bgc_hum_in    = tracerObject % index_humicsConc, &
+         nt_bgc_PON_in    = tracerObject % index_nonreactiveConc, &
+         nlt_zaero_in     = tracerObject % index_verticalAerosolsConcLayer, &
+!         nlt_bgc_C_in     = tracerObject % index_algalCarbonLayer, &                !echmod: not fully supported
+         nlt_bgc_N_in     = tracerObject % index_algaeConcLayer, &
+         nlt_bgc_chl_in   = tracerObject % index_algalChlorophyllLayer, &
+         nlt_bgc_DOC_in   = tracerObject % index_DOCConcLayer, &
+         nlt_bgc_DON_in   = tracerObject % index_DONConcLayer, &
+         nlt_bgc_DIC_in   = tracerObject % index_DICConcLayer, &
+         nlt_bgc_Fed_in   = tracerObject % index_dissolvedIronConcLayer, &
+         nlt_bgc_Fep_in   = tracerObject % index_particulateIronConcLayer, &
+         nlt_bgc_Nit_in   = tracerObject % index_nitrateConcLayer, &
+         nlt_bgc_Am_in    = tracerObject % index_ammoniumConcLayer, &
+         nlt_bgc_Sil_in   = tracerObject % index_silicateConcLayer, &
+         nlt_bgc_DMSPp_in = tracerObject % index_DMSPpConcLayer, &
+         nlt_bgc_DMSPd_in = tracerObject % index_DMSPdConcLayer, &
+         nlt_bgc_DMS_in   = tracerObject % index_DMSConcLayer, &
+         nlt_bgc_hum_in   = tracerObject % index_humicsConcLayer, &
+         nlt_bgc_PON_in   = tracerObject % index_nonreactiveConcLayer, &
+         nt_zbgc_frac_in  = tracerObject % index_mobileFraction, &
+         nt_bgc_S_in      = tracerObject % index_verticalSalinity, & ! name change nt_zbgc_S->nt_bgc_S_in
+         nlt_chl_sw_in    = tracerObject % index_chlorophyllShortwave, &
+         nlt_zaero_sw_in  = tracerObject % index_verticalAerosolsConcShortwave, &
+         bio_index_o_in   = tracerObject % index_LayerIndexToDataArray, &
+         bio_index_in     = tracerObject % index_LayerIndexToBioIndex)
 
-    !nt_Tsfc       = tracerObject % index_surfaceTemperature
-    !nt_qice       = tracerObject % index_iceEnthalpy
-    !nt_qsno       = tracerObject % index_snowEnthalpy
-    !nt_sice       = tracerObject % index_iceSalinity
-    !nt_iage       = tracerObject % index_iceAge
-    !nt_FY         = tracerObject % index_firstYearIceArea
-    !nt_alvl       = tracerObject % index_levelIceArea
-    !nt_vlvl       = tracerObject % index_levelIceVolume
-    !nt_apnd       = tracerObject % index_pondArea
-    !nt_hpnd       = tracerObject % index_pondDepth
-    !nt_ipnd       = tracerObject % index_pondLidThickness
-    !nt_aero       = tracerObject % index_aerosols
-    !nt_smice      = tracerObject % index_snowIceMass
-    !nt_rsnw       = tracerObject % index_snowGrainRadius
-    !nt_rhos       = tracerObject % index_snowDensity
-    !nt_smliq      = tracerObject % index_snowLiquidMass
-    !nt_fbri       = tracerObject % index_brineFraction
-    !nt_zaeros     = tracerObject % index_verticalAerosolsConc
-    !nt_bgc_N      = tracerObject % index_algaeConc
-    !nt_bgc_C      = tracerObject % index_algalCarbon
-    !nt_bgc_chl    = tracerObject % index_algalChlorophyll
-    !nt_bgc_DOC    = tracerObject % index_DOCConc
-    !nt_bgc_DON    = tracerObject % index_DONConc
-    !nt_bgc_DIC    = tracerObject % index_DICConc
-    !nt_bgc_Fed    = tracerObject % index_dissolvedIronConc
-    !nt_bgc_Fep    = tracerObject % index_particulateIronConc
-    !nt_bgc_Nit    = tracerObject % index_nitrateConc
-    !nt_bgc_Am     = tracerObject % index_ammoniumConc
-    !nt_bgc_Sil    = tracerObject % index_silicateConc
-    !nt_bgc_DMSPp  = tracerObject % index_DMSPpConc
-    !nt_bgc_DMSPd  = tracerObject % index_DMSPdConc
-    !nt_bgc_DMS    = tracerObject % index_DMSConc
-    !nt_bgc_hum    = tracerObject % index_humicsConc
-    !nt_bgc_PON    = tracerObject % index_nonreactiveConc
-    !nlt_zaero     = tracerObject % index_verticalAerosolsConcLayer
-    !nlt_bgc_N     = tracerObject % index_algaeConcLayer
-    !nlt_bgc_C     = tracerObject % index_algalCarbonLayer
-    !nlt_bgc_chl   = tracerObject % index_algalChlorophyllLayer
-    !nlt_bgc_DOC   = tracerObject % index_DOCConcLayer
-    !nlt_bgc_DON   = tracerObject % index_DONConcLayer
-    !nlt_bgc_DIC   = tracerObject % index_DICConcLayer
-    !nlt_bgc_Fed   = tracerObject % index_dissolvedIronConcLayer
-    !nlt_bgc_Fep   = tracerObject % index_particulateIronConcLayer
-    !nlt_bgc_Nit   = tracerObject % index_nitrateConcLayer
-    !nlt_bgc_Am    = tracerObject % index_ammoniumConcLayer
-    !nlt_bgc_Sil   = tracerObject % index_silicateConcLayer
-    !nlt_bgc_DMSPp = tracerObject % index_DMSPpConcLayer
-    !nlt_bgc_DMSPd = tracerObject % index_DMSPdConcLayer
-    !nlt_bgc_DMS   = tracerObject % index_DMSConcLayer
-    !nlt_bgc_hum   = tracerObject % index_humicsConcLayer
-    !nlt_bgc_PON   = tracerObject % index_nonreactiveConcLayer
-    !nt_zbgc_frac  = tracerObject % index_mobileFraction
-    !nt_zbgc_S     = tracerObject % index_verticalSalinity
-    !nlt_chl_sw    = tracerObject % index_chlorophyllShortwave
-    !nlt_zaero_sw  = tracerObject % index_verticalAerosolsConcShortwave
-    !max_algae     = tracerObject % nAlgaeIndex
-    !max_algae     = tracerObject % nAlgalCarbonIndex
-    !max_algae     = tracerObject % nAlgalChlorophyllIndex
-    !max_doc       = tracerObject % nDOCIndex
-    !max_don       = tracerObject % nDONIndex
-    !max_dic       = tracerObject % nDICIndex
-    !max_fe        = tracerObject % nDissolvedIronIndex
-    !max_fe        = tracerObject % nParticulateIronIndex
-    !max_aero      = tracerObject % nzAerosolsIndex
-    !bio_index_o   = tracerObject % index_LayerIndexToDataArray
-    !bio_index     = tracerObject % index_LayerIndexToBioIndex
-    !nbtrcr        = tracerObject % nBioTracers
+    call seaice_icepack_write_warnings(icepack_warnings_aborted())
 
-  end subroutine init_column_package_tracer_indices
+  end subroutine init_icepack_package_tracer_indices
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -10769,7 +9875,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine init_column_package_configs(domain)
+  subroutine init_column_package_configs(domain)   !colpkg routine - remove
 
     !use ice_colpkg_shared, only: &
     !     ktherm, &
@@ -11146,8 +10252,8 @@ contains
          config_new_snow_density, &
          config_max_snow_density, &
          config_minimum_wind_compaction, &
-         config_snow_redistribution_factor, &
          config_wind_compaction_factor, &
+         config_snow_redistribution_factor, &
          config_max_dry_snow_radius
 
     integer, pointer :: &
@@ -11352,8 +10458,8 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_new_snow_density", config_new_snow_density)
     call MPAS_pool_get_config(domain % configs, "config_max_snow_density", config_max_snow_density)
     call MPAS_pool_get_config(domain % configs, "config_minimum_wind_compaction", config_minimum_wind_compaction)
-    call MPAS_pool_get_config(domain % configs, "config_snow_redistribution_factor", config_snow_redistribution_factor)
     call MPAS_pool_get_config(domain % configs, "config_wind_compaction_factor", config_wind_compaction_factor)
+    call MPAS_pool_get_config(domain % configs, "config_snow_redistribution_factor", config_snow_redistribution_factor)
     call MPAS_pool_get_config(domain % configs, "config_max_dry_snow_radius", config_max_dry_snow_radius)
 
     call colpkg_init_parameters(&
@@ -11544,8 +10650,8 @@ contains
          config_new_snow_density, &
          config_max_snow_density, &
          config_minimum_wind_compaction, &
-         config_snow_redistribution_factor, &
-         config_wind_compaction_factor)
+         config_wind_compaction_factor, &
+         config_snow_redistribution_factor)
 
     !-----------------------------------------------------------------------
     ! Parameters for thermodynamics
@@ -11553,7 +10659,6 @@ contains
 
     ! ktherm:
     ! type of thermodynamics
-    ! 0 = 0-layer approximation
     ! 1 = Bitz and Lipscomb 1999
     ! 2 = mushy layer theory
     !ktherm = config_cice_int("config_thermodynamics_type", config_thermodynamics_type)
@@ -11730,10 +10835,6 @@ contains
     ! 'mushy' conforms with ktherm=2
     !tfrz_option = config_sea_freezing_temperature_type
 
-    ! dragio:
-    ! neutral ice-ocean drag coefficient
-    ! dragio = config_ice_ocean_drag_coefficient
-
     !-----------------------------------------------------------------------
     ! Parameters for the ice thickness distribution
     !-----------------------------------------------------------------------
@@ -11818,9 +10919,10 @@ contains
     ! if true, solve skeletal biochemistry
     !skl_bgc = config_use_skeletal_biochemistry
 
-    ! solve_zsal:
-    ! if true, update salinity profile from solve_S_dt
-    !solve_zsal = config_use_vertical_zsalinity
+! zsalinity has been deprecated
+!    ! solve_zsal:
+!    ! if true, update salinity profile from solve_S_dt
+!    !solve_zsal = config_use_vertical_zsalinity
 
     ! modal_aero:
     ! if true, use modal aerosal optical properties
@@ -12307,13 +11409,13 @@ contains
     ! ratio of C to N in proteins (mol/mol)
     ! ratio_C2N_proteins = config_ratio_C_to_N_proteins
 
-    ! grid_oS:
-    ! for bottom flux (zsalinity)
-    !grid_oS = config_zsalinity_molecular_sublayer
+!    ! grid_oS:
+!    ! for bottom flux (zsalinity)
+!    !grid_oS = config_zsalinity_molecular_sublayer
 
     ! l_skS:
-    ! 0.02 characteristic skeletal layer thickness (m) (zsalinity)
-    !l_skS = config_zsalinity_gravity_drainage_scale
+!    ! 0.02 characteristic skeletal layer thickness (m) (zsalinity)
+!    !l_skS = config_zsalinity_gravity_drainage_scale
 
     !-----------------------------------------------------------------------
     ! Parameters for snow
@@ -12355,11 +11457,1876 @@ contains
     ! wind compaction factor (kg s/m^4)
     ! drhosdwind = config_wind_compaction_factor
 
+  end subroutine init_column_package_configs
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  init_icepack_package_configs
+!
+!> \brief
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
+!> \details
+!>
+!
+!-----------------------------------------------------------------------
+
+  subroutine init_icepack_package_configs(domain)
+
+    use icepack_intfc, only: &
+         icepack_init_parameters, &
+         icepack_write_parameters, &
+         icepack_configure, &
+         icepack_query_parameters ! debugging
+
+    use seaice_constants, only: &
+         seaicePuny, &                       ! a small number
+         seaiceBigNumber, &                     ! a large number
+         seaiceSecondsPerDay, &              ! number of seconds in 1 day
+         seaiceDensityIce, &                 ! density of ice (kg/m^3)
+         seaiceDensitySnow, &                ! density of snow (kg/m^3)
+         seaiceDensitySeaWater, &            ! density of seawater (kg/m^3)
+         seaiceDensityFreshwater, &          ! density of freshwater (kg/m^3)
+         seaiceFreshIceSpecificHeat, &       ! specific heat of fresh ice (J/kg/K)
+         seaiceWaterVaporSpecificHeat, &     ! specific heat of water vapor (J/kg/K)
+         seaiceAirSpecificHeat, &            ! specific heat of air (J/kg/K)
+         seaiceSeaWaterSpecificHeat, &       ! specific heat of ocn (J/kg/K)
+         seaiceLatentHeatVaporization, &     ! latent heat, vaporization freshwater (J/kg)
+         seaiceZvir, &                       ! rh2o/rair - 1.0
+         seaiceLatentHeatSublimation, &      ! latent heat, sublimation freshwater (J/kg)
+         seaiceLatentHeatMelting, &          ! latent heat of melting of fresh ice (J/kg)
+         seaiceIceSurfaceMeltingTemperature, &  ! melting temp. ice top surface  (C)
+         seaiceSnowSurfaceMeltingTemperature, & ! melting temp. snow top surface  (C)
+         seaiceStefanBoltzmann, &            ! J m-2 K-4 s-1
+         seaiceIceSnowEmissivity, &          ! emissivity of snow and ice
+         seaiceSnowSurfaceScatteringLayer, & ! snow surface scattering layer thickness (m)
+         seaiceStabilityReferenceHeight, &   ! stability reference height (m)
+         seaiceFreshWaterFreezingPoint, &    ! freezing temp of fresh ice (K)
+         seaiceIceSurfaceRoughness, &        ! ice surface roughness (m)
+         seaiceVonKarmanConstant, &          ! Von Karman constant
+         seaiceOceanAlbedo, &                ! Ocean albedo
+         seaiceReferenceSalinity, &          ! ice reference salinity (ppt)
+         seaiceMaximumSalinity, &            ! ice maximum salinity (ppt)
+         seaiceMeltingTemperatureDepression, &  ! melting temperature depression factor (C/ppt)
+         seaiceFrazilSalinityReduction, &    ! bulk salinity reduction of newly formed frazil (ppt)
+         seaiceFrazilIcePorosity, &          ! initial liquid fraction of frazil
+         seaicePi, &                         ! pi
+         seaiceGravity, &                    ! gravitational acceleration (m/s^2)
+         seaiceSnowPatchiness, &             ! snow patchiness parameter
+         seaiceIceStrengthConstantHiblerP, & ! P* constant in Hibler strength formulation
+         seaiceIceStrengthConstantHiblerC, & ! C* constant in Hibler strength formulation
+         skeletalLayerThickness, &           ! skeletal layer thickness
+         seaiceSnowMinimumDensity, &         ! minimum snow density (kg/m^3)
+         seaiceBrineDynamicViscosity, &      ! dynamic viscosity of brine (kg/m/s)
+         seaiceFreezingTemperatureConstant, &! constant freezing temp of seawater (C)
+         seaiceExtinctionCoef, &             ! vis extnctn coef in ice, wvlngth<700nm (1/m)
+         seaiceFreshIceConductivity, &       ! thermal conductivity of fresh ice(W/m/deg)
+         seaiceSnowMinimumThickness, &       ! min snow thickness for computing zTsn (m)
+         seaiceFrazilMinimumThickness, &     ! min thickness of new frazil ice
+         seaiceAlbedoWtVisibleDirect, &      ! visible, direct
+         seaiceAlbedoWtNearIRDirect, &       ! near IR, direct
+         seaiceAlbedoWtVisibleDiffuse, &     ! visible, diffuse
+         seaiceAlbedoWtNearIRDiffuse, &      ! near IR, diffuse
+         seaiceQsatQiceConstant, &           ! constant for saturation humidity over ice
+         seaiceQsatTiceConstant, &           ! constant for saturation humidity over ice
+         seaiceQsatQocnConstant, &           ! constant for saturation humidity over ocean
+         seaiceQsatTocnConstant              ! constant for saturation humidity over ocean
+
+    type(domain_type), intent(inout) :: &
+         domain
+
+    type(MPAS_pool_type), pointer :: &
+         snow
+
+    character(len=strKIND), pointer :: &
+         config_thermodynamics_type, &
+         config_heat_conductivity_type, &
+         config_shortwave_type, &
+         config_albedo_type, &
+         config_ice_strength_formulation, &
+         config_ridging_participation_function, &
+         config_ridging_redistribution_function, &
+         config_atmos_boundary_method, &
+         config_itd_conversion_type, &
+         config_category_bounds_type, &
+         config_pond_refreezing_type, &
+         config_salt_flux_coupling_type, &
+         config_ocean_heat_transfer_type, &
+         config_frazil_coupling_type, &
+         config_sea_freezing_temperature_type, &
+         config_skeletal_bgc_flux_type, &
+         config_snow_redistribution_scheme
+
+    logical, pointer :: &
+         config_use_snicar_ad, &
+         config_calc_surface_temperature, &
+         config_update_ocean_fluxes, &
+         config_use_form_drag, &
+         config_use_high_frequency_coupling, &
+         config_use_ocean_mixed_layer, &
+         config_calc_surface_stresses, &
+         config_use_vertical_tracers, &
+         config_scale_initial_vertical_bgc, &
+         config_use_vertical_biochemistry, &
+         config_use_shortwave_bioabsorption, &
+         config_use_skeletal_biochemistry, &
+         config_use_modal_aerosols, &
+         config_use_snow_liquid_ponds, &
+         config_use_snow_grain_radius, &
+         config_use_shortwave_redistribution
+
+    real(kind=RKIND), pointer :: &
+         config_min_friction_velocity, &
+         config_ice_ocean_drag_coefficient, &
+         config_snow_thermal_conductivity, &
+         config_rapid_mode_channel_radius, &
+         config_rapid_model_critical_Ra, &
+         config_rapid_mode_aspect_ratio, &
+         config_slow_mode_drainage_strength, &
+         config_slow_mode_critical_porosity, &
+         config_macro_drainage_timescale, &
+         config_congelation_ice_porosity, &
+!         config_frazil_ice_porosity, &
+!         config_frazil_salinity_reduction, &
+         config_visible_ice_albedo, &
+         config_infrared_ice_albedo, &
+         config_visible_snow_albedo, &
+         config_infrared_snow_albedo, &
+         config_variable_albedo_thickness_limit, &
+!         config_snow_surface_scattering_layer_depth, &
+         config_ice_shortwave_tuning_parameter, &
+         config_pond_shortwave_tuning_parameter, &
+         config_snow_shortwave_tuning_parameter, &
+         config_shortwave_redistribution_fraction, &
+         config_shortwave_redistribution_threshold, &
+         config_temp_change_snow_grain_radius_change, &
+         config_max_melting_snow_grain_radius, &
+         config_algae_absorption_coefficient, &
+         config_ridging_efolding_scale, &
+         config_ratio_ridging_work_to_PE, &
+         config_snow_to_ice_transition_depth, &
+         config_pond_flushing_factor, &
+         config_min_meltwater_retained_fraction, &
+         config_max_meltwater_retained_fraction, &
+         config_pond_depth_to_fraction_ratio, &
+         config_snow_on_pond_ice_tapering_parameter, &
+         config_critical_pond_ice_thickness, &
+         config_biogrid_bottom_molecular_sublayer, &
+         config_bio_gravity_drainage_length_scale, &
+         config_biogrid_top_molecular_sublayer, &
+         config_new_ice_fraction_biotracer, &
+         config_fraction_biotracer_in_frazil, &
+         config_snow_porosity_at_ice_surface, &
+         config_ratio_Si_to_N_diatoms, &
+         config_ratio_Si_to_N_small_plankton, &
+         config_ratio_Si_to_N_phaeocystis, &
+         config_ratio_S_to_N_diatoms, &
+         config_ratio_S_to_N_small_plankton, &
+         config_ratio_S_to_N_phaeocystis, &
+         config_ratio_Fe_to_C_diatoms, &
+         config_ratio_Fe_to_C_small_plankton, &
+         config_ratio_Fe_to_C_phaeocystis, &
+         config_ratio_Fe_to_N_diatoms, &
+         config_ratio_Fe_to_N_small_plankton, &
+         config_ratio_Fe_to_N_phaeocystis, &
+         config_ratio_Fe_to_DON, &
+         config_ratio_Fe_to_DOC_saccharids, &
+         config_ratio_Fe_to_DOC_lipids, &
+         config_respiration_fraction_of_growth, &
+         config_rapid_mobile_to_stationary_time, &
+         config_long_mobile_to_stationary_time, &
+         config_algal_maximum_velocity, &
+         config_ratio_Fe_to_dust, &
+         config_solubility_of_Fe_in_dust, &
+         config_chla_absorptivity_of_diatoms, &
+         config_chla_absorptivity_of_small_plankton, &
+         config_chla_absorptivity_of_phaeocystis, &
+         config_light_attenuation_diatoms, &
+         config_light_attenuation_small_plankton, &
+         config_light_attenuation_phaeocystis, &
+         config_light_inhibition_diatoms, &
+         config_light_inhibition_small_plankton, &
+         config_light_inhibition_phaeocystis, &
+         config_maximum_growth_rate_diatoms, &
+         config_maximum_growth_rate_small_plankton, &
+         config_maximum_growth_rate_phaeocystis, &
+         config_temperature_growth_diatoms, &
+         config_temperature_growth_small_plankton, &
+         config_temperature_growth_phaeocystis, &
+         config_grazed_fraction_diatoms, &
+         config_grazed_fraction_small_plankton, &
+         config_grazed_fraction_phaeocystis, &
+         config_mortality_diatoms, &
+         config_mortality_small_plankton, &
+         config_mortality_phaeocystis, &
+         config_temperature_mortality_diatoms, &
+         config_temperature_mortality_small_plankton, &
+         config_temperature_mortality_phaeocystis, &
+         config_exudation_diatoms, &
+         config_exudation_small_plankton, &
+         config_exudation_phaeocystis, &
+         config_nitrate_saturation_diatoms, &
+         config_nitrate_saturation_small_plankton, &
+         config_nitrate_saturation_phaeocystis, &
+         config_ammonium_saturation_diatoms, &
+         config_ammonium_saturation_small_plankton, &
+         config_ammonium_saturation_phaeocystis, &
+         config_silicate_saturation_diatoms, &
+         config_silicate_saturation_small_plankton, &
+         config_silicate_saturation_phaeocystis, &
+         config_iron_saturation_diatoms, &
+         config_iron_saturation_small_plankton, &
+         config_iron_saturation_phaeocystis, &
+         config_fraction_spilled_to_DON, &
+         config_degredation_of_DON, &
+         config_fraction_DON_ammonium, &
+         config_fraction_loss_to_saccharids, &
+         config_fraction_loss_to_lipids, &
+         config_fraction_exudation_to_saccharids, &
+         config_fraction_exudation_to_lipids, &
+         config_remineralization_saccharids, &
+         config_remineralization_lipids, &
+         config_maximum_brine_temperature, &
+         config_salinity_dependence_of_growth, &
+         config_minimum_optical_depth, &
+         config_slopped_grazing_fraction, &
+         config_excreted_fraction, &
+         config_fraction_mortality_to_ammonium, &
+         config_fraction_iron_remineralized, &
+         config_nitrification_rate, &
+         config_desorption_loss_particulate_iron, &
+         config_maximum_loss_fraction, &
+         config_maximum_ratio_iron_to_saccharids, &
+         config_respiration_loss_to_DMSPd, &
+         config_DMSP_to_DMS_conversion_fraction, &
+         config_DMSP_to_DMS_conversion_time, &
+         config_DMS_oxidation_time, &
+         config_mobility_type_diatoms, &
+         config_mobility_type_small_plankton, &
+         config_mobility_type_phaeocystis, &
+         config_mobility_type_nitrate, &
+         config_mobility_type_ammonium, &
+         config_mobility_type_silicate, &
+         config_mobility_type_DMSPp, &
+         config_mobility_type_DMSPd, &
+         config_mobility_type_humics, &
+         config_mobility_type_saccharids, &
+         config_mobility_type_lipids, &
+         config_mobility_type_inorganic_carbon, &
+         config_mobility_type_proteins, &
+         config_mobility_type_dissolved_iron, &
+         config_mobility_type_particulate_iron, &
+         config_mobility_type_black_carbon1, &
+         config_mobility_type_black_carbon2, &
+         config_mobility_type_dust1, &
+         config_mobility_type_dust2, &
+         config_mobility_type_dust3, &
+         config_mobility_type_dust4, &
+         config_ratio_C_to_N_diatoms, &
+         config_ratio_C_to_N_small_plankton, &
+         config_ratio_C_to_N_phaeocystis, &
+         config_ratio_chla_to_N_diatoms, &
+         config_ratio_chla_to_N_small_plankton, &
+         config_ratio_chla_to_N_phaeocystis, &
+         config_scales_absorption_diatoms, &
+         config_scales_absorption_small_plankton, &
+         config_scales_absorption_phaeocystis, &
+         config_ratio_C_to_N_proteins, &
+         config_fallen_snow_radius, &
+         config_new_snow_density, &
+         config_max_snow_density, &
+         config_minimum_wind_compaction, &
+         config_wind_compaction_factor, &
+         config_snow_redistribution_factor, &
+         config_max_dry_snow_radius
+
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
+         snowEmpiricalGrowthParameterTau, &
+         snowEmpiricalGrowthParameterKappa, &
+         snowPropertyRate
+
+    integer, pointer :: &
+         config_boundary_layer_iteration_number, &
+         nGrainAgingTemperature, &
+         nGrainAgingTempGradient, &
+         nGrainAgingSnowDensity
+
+    integer :: &
+         config_thermodynamics_type_int, &
+         config_ice_strength_formulation_int, &
+         config_ridging_participation_function_int, &
+         config_ridging_redistribution_function_int, &
+         config_itd_conversion_type_int, &
+         config_category_bounds_type_int
+
+    character(len=strKIND) :: tmp_config_shortwave_type
+    character(len=strKIND) :: tmp_config_snw_ssp_table
+    character(len=strKIND) :: snw_aging_table = 'snicar'
+
+    ! debugging
+    integer :: itmp1, itmp2
+    real(kind=RKIND) :: rtmp1, rtmp2
+    character(len=strKIND) :: ctmp1, ctmp2
+
+    call MPAS_pool_get_config(domain % configs, "config_thermodynamics_type", config_thermodynamics_type)
+    call MPAS_pool_get_config(domain % configs, "config_heat_conductivity_type", config_heat_conductivity_type)
+    call MPAS_pool_get_config(domain % configs, "config_ocean_heat_transfer_type", config_ocean_heat_transfer_type)
+    call MPAS_pool_get_config(domain % configs, "config_calc_surface_temperature", config_calc_surface_temperature)
+    call MPAS_pool_get_config(domain % configs, "config_update_ocean_fluxes", config_update_ocean_fluxes)
+    call MPAS_pool_get_config(domain % configs, "config_frazil_coupling_type", config_frazil_coupling_type)
+    call MPAS_pool_get_config(domain % configs, "config_min_friction_velocity", config_min_friction_velocity)
+    call MPAS_pool_get_config(domain % configs, "config_ice_ocean_drag_coefficient", config_ice_ocean_drag_coefficient)
+    call MPAS_pool_get_config(domain % configs, "config_snow_thermal_conductivity", config_snow_thermal_conductivity)
+    call MPAS_pool_get_config(domain % configs, "config_rapid_mode_channel_radius", config_rapid_mode_channel_radius)
+    call MPAS_pool_get_config(domain % configs, "config_rapid_model_critical_Ra", config_rapid_model_critical_Ra)
+    call MPAS_pool_get_config(domain % configs, "config_rapid_mode_aspect_ratio", config_rapid_mode_aspect_ratio)
+    call MPAS_pool_get_config(domain % configs, "config_slow_mode_drainage_strength", config_slow_mode_drainage_strength)
+    call MPAS_pool_get_config(domain % configs, "config_slow_mode_critical_porosity", config_slow_mode_critical_porosity)
+    call MPAS_pool_get_config(domain % configs, "config_macro_drainage_timescale", config_macro_drainage_timescale)
+    call MPAS_pool_get_config(domain % configs, "config_congelation_ice_porosity", config_congelation_ice_porosity)
+!    call MPAS_pool_get_config(domain % configs, "config_frazil_ice_porosity", config_frazil_ice_porosity)
+!    call MPAS_pool_get_config(domain % configs, "config_frazil_salinity_reduction", config_frazil_salinity_reduction)
+    call MPAS_pool_get_config(domain % configs, "config_shortwave_type", config_shortwave_type)
+    call MPAS_pool_get_config(domain % configs, "config_use_snicar_ad", config_use_snicar_ad)
+    call MPAS_pool_get_config(domain % configs, "config_albedo_type", config_albedo_type)
+    call MPAS_pool_get_config(domain % configs, "config_visible_ice_albedo", config_visible_ice_albedo)
+    call MPAS_pool_get_config(domain % configs, "config_infrared_ice_albedo", config_infrared_ice_albedo)
+    call MPAS_pool_get_config(domain % configs, "config_visible_snow_albedo", config_visible_snow_albedo)
+    call MPAS_pool_get_config(domain % configs, "config_infrared_snow_albedo", config_infrared_snow_albedo)
+    call MPAS_pool_get_config(domain % configs, "config_variable_albedo_thickness_limit", config_variable_albedo_thickness_limit)
+!    call MPAS_pool_get_config(domain % configs, "config_snow_surface_scattering_layer_depth", config_snow_surface_scattering_layer_depth)
+    call MPAS_pool_get_config(domain % configs, "config_ice_shortwave_tuning_parameter", config_ice_shortwave_tuning_parameter)
+    call MPAS_pool_get_config(domain % configs, "config_pond_shortwave_tuning_parameter", config_pond_shortwave_tuning_parameter)
+    call MPAS_pool_get_config(domain % configs, "config_snow_shortwave_tuning_parameter", config_snow_shortwave_tuning_parameter)
+    call MPAS_pool_get_config(domain % configs, "config_use_shortwave_redistribution", config_use_shortwave_redistribution)
+    call MPAS_pool_get_config(domain % configs, "config_shortwave_redistribution_fraction", config_shortwave_redistribution_fraction)
+    call MPAS_pool_get_config(domain % configs, "config_shortwave_redistribution_threshold", config_shortwave_redistribution_threshold)
+    call MPAS_pool_get_config(domain % configs, "config_temp_change_snow_grain_radius_change", &
+                                                 config_temp_change_snow_grain_radius_change)
+    call MPAS_pool_get_config(domain % configs, "config_max_melting_snow_grain_radius", config_max_melting_snow_grain_radius)
+    call MPAS_pool_get_config(domain % configs, "config_algae_absorption_coefficient", config_algae_absorption_coefficient)
+    call MPAS_pool_get_config(domain % configs, "config_ice_strength_formulation", config_ice_strength_formulation)
+    call MPAS_pool_get_config(domain % configs, "config_ridging_participation_function", config_ridging_participation_function)
+    call MPAS_pool_get_config(domain % configs, "config_ridging_redistribution_function", config_ridging_redistribution_function)
+    call MPAS_pool_get_config(domain % configs, "config_ridging_efolding_scale", config_ridging_efolding_scale)
+    call MPAS_pool_get_config(domain % configs, "config_ratio_ridging_work_to_PE", config_ratio_ridging_work_to_PE)
+    call MPAS_pool_get_config(domain % configs, "config_atmos_boundary_method", config_atmos_boundary_method)
+    call MPAS_pool_get_config(domain % configs, "config_calc_surface_stresses", config_calc_surface_stresses)
+    call MPAS_pool_get_config(domain % configs, "config_use_form_drag", config_use_form_drag)
+    call MPAS_pool_get_config(domain % configs, "config_use_high_frequency_coupling", config_use_high_frequency_coupling)
+    call MPAS_pool_get_config(domain % configs, "config_boundary_layer_iteration_number", config_boundary_layer_iteration_number)
+    call MPAS_pool_get_config(domain % configs, "config_use_ocean_mixed_layer", config_use_ocean_mixed_layer)
+    call MPAS_pool_get_config(domain % configs, "config_sea_freezing_temperature_type", config_sea_freezing_temperature_type)
+    call MPAS_pool_get_config(domain % configs, "config_itd_conversion_type", config_itd_conversion_type)
+    call MPAS_pool_get_config(domain % configs, "config_category_bounds_type", config_category_bounds_type)
+    call MPAS_pool_get_config(domain % configs, "config_snow_to_ice_transition_depth", config_snow_to_ice_transition_depth)
+    call MPAS_pool_get_config(domain % configs, "config_pond_refreezing_type", config_pond_refreezing_type)
+    call MPAS_pool_get_config(domain % configs, "config_salt_flux_coupling_type", config_salt_flux_coupling_type)
+    call MPAS_pool_get_config(domain % configs, "config_pond_flushing_factor", config_pond_flushing_factor)
+    call MPAS_pool_get_config(domain % configs, "config_min_meltwater_retained_fraction", config_min_meltwater_retained_fraction)
+    call MPAS_pool_get_config(domain % configs, "config_max_meltwater_retained_fraction", config_max_meltwater_retained_fraction)
+    call MPAS_pool_get_config(domain % configs, "config_pond_depth_to_fraction_ratio", config_pond_depth_to_fraction_ratio)
+    call MPAS_pool_get_config(domain % configs, "config_snow_on_pond_ice_tapering_parameter", &
+                                                 config_snow_on_pond_ice_tapering_parameter)
+    call MPAS_pool_get_config(domain % configs, "config_critical_pond_ice_thickness", config_critical_pond_ice_thickness)
+    call MPAS_pool_get_config(domain % configs, "config_skeletal_bgc_flux_type", config_skeletal_bgc_flux_type)
+    call MPAS_pool_get_config(domain % configs, "config_use_vertical_tracers", config_use_vertical_tracers)
+    call MPAS_pool_get_config(domain % configs, "config_scale_initial_vertical_bgc", config_scale_initial_vertical_bgc)
+    call MPAS_pool_get_config(domain % configs, "config_use_vertical_biochemistry", config_use_vertical_biochemistry)
+    call MPAS_pool_get_config(domain % configs, "config_use_shortwave_bioabsorption", config_use_shortwave_bioabsorption)
+    call MPAS_pool_get_config(domain % configs, "config_use_modal_aerosols", config_use_modal_aerosols)
+    call MPAS_pool_get_config(domain % configs, "config_use_skeletal_biochemistry", config_use_skeletal_biochemistry)
+    call MPAS_pool_get_config(domain % configs, "config_biogrid_bottom_molecular_sublayer", &
+                                                 config_biogrid_bottom_molecular_sublayer)
+    call MPAS_pool_get_config(domain % configs, "config_bio_gravity_drainage_length_scale", &
+                                                 config_bio_gravity_drainage_length_scale)
+    call MPAS_pool_get_config(domain % configs, "config_biogrid_top_molecular_sublayer", config_biogrid_top_molecular_sublayer)
+    call MPAS_pool_get_config(domain % configs, "config_new_ice_fraction_biotracer", config_new_ice_fraction_biotracer)
+    call MPAS_pool_get_config(domain % configs, "config_fraction_biotracer_in_frazil", config_fraction_biotracer_in_frazil)
+    call MPAS_pool_get_config(domain % configs, "config_snow_porosity_at_ice_surface", config_snow_porosity_at_ice_surface)
+    call MPAS_pool_get_config(domain % configs, "config_ratio_Si_to_N_diatoms", config_ratio_Si_to_N_diatoms)
+    call MPAS_pool_get_config(domain % configs, "config_ratio_Si_to_N_small_plankton", config_ratio_Si_to_N_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_ratio_Si_to_N_phaeocystis", config_ratio_Si_to_N_phaeocystis)
+    call MPAS_pool_get_config(domain % configs, "config_ratio_S_to_N_diatoms", config_ratio_S_to_N_diatoms)
+    call MPAS_pool_get_config(domain % configs, "config_ratio_S_to_N_small_plankton", config_ratio_S_to_N_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_ratio_S_to_N_phaeocystis", config_ratio_S_to_N_phaeocystis)
+    call MPAS_pool_get_config(domain % configs, "config_ratio_Fe_to_C_diatoms", config_ratio_Fe_to_C_diatoms)
+    call MPAS_pool_get_config(domain % configs, "config_ratio_Fe_to_C_small_plankton", config_ratio_Fe_to_C_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_ratio_Fe_to_C_phaeocystis", config_ratio_Fe_to_C_phaeocystis)
+    call MPAS_pool_get_config(domain % configs, "config_ratio_Fe_to_N_diatoms", config_ratio_Fe_to_N_diatoms)
+    call MPAS_pool_get_config(domain % configs, "config_ratio_Fe_to_N_small_plankton", config_ratio_Fe_to_N_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_ratio_Fe_to_N_phaeocystis", config_ratio_Fe_to_N_phaeocystis)
+    call MPAS_pool_get_config(domain % configs, "config_ratio_Fe_to_DON", config_ratio_Fe_to_DON)
+    call MPAS_pool_get_config(domain % configs, "config_ratio_Fe_to_DOC_saccharids", config_ratio_Fe_to_DOC_saccharids)
+    call MPAS_pool_get_config(domain % configs, "config_ratio_Fe_to_DOC_lipids", config_ratio_Fe_to_DOC_lipids)
+    call MPAS_pool_get_config(domain % configs, "config_respiration_fraction_of_growth", config_respiration_fraction_of_growth)
+    call MPAS_pool_get_config(domain % configs, "config_rapid_mobile_to_stationary_time", config_rapid_mobile_to_stationary_time)
+    call MPAS_pool_get_config(domain % configs, "config_long_mobile_to_stationary_time", config_long_mobile_to_stationary_time)
+    call MPAS_pool_get_config(domain % configs, "config_algal_maximum_velocity", config_algal_maximum_velocity)
+    call MPAS_pool_get_config(domain % configs, "config_ratio_Fe_to_dust", config_ratio_Fe_to_dust)
+    call MPAS_pool_get_config(domain % configs, "config_solubility_of_Fe_in_dust", config_solubility_of_Fe_in_dust)
+    call MPAS_pool_get_config(domain % configs, "config_chla_absorptivity_of_diatoms", config_chla_absorptivity_of_diatoms)
+    call MPAS_pool_get_config(domain % configs, "config_chla_absorptivity_of_small_plankton", &
+                                                 config_chla_absorptivity_of_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_chla_absorptivity_of_phaeocystis", config_chla_absorptivity_of_phaeocystis)
+    call MPAS_pool_get_config(domain % configs, "config_light_attenuation_diatoms", config_light_attenuation_diatoms)
+    call MPAS_pool_get_config(domain % configs, "config_light_attenuation_small_plankton", config_light_attenuation_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_light_attenuation_phaeocystis", config_light_attenuation_phaeocystis)
+    call MPAS_pool_get_config(domain % configs, "config_light_inhibition_diatoms", config_light_inhibition_diatoms)
+    call MPAS_pool_get_config(domain % configs, "config_light_inhibition_small_plankton", config_light_inhibition_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_light_inhibition_phaeocystis", config_light_inhibition_phaeocystis)
+    call MPAS_pool_get_config(domain % configs, "config_maximum_growth_rate_diatoms", config_maximum_growth_rate_diatoms)
+    call MPAS_pool_get_config(domain % configs, "config_maximum_growth_rate_small_plankton", &
+                                                 config_maximum_growth_rate_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_maximum_growth_rate_phaeocystis", config_maximum_growth_rate_phaeocystis)
+    call MPAS_pool_get_config(domain % configs, "config_temperature_growth_diatoms", config_temperature_growth_diatoms)
+    call MPAS_pool_get_config(domain % configs, "config_temperature_growth_small_plankton", &
+                                                 config_temperature_growth_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_temperature_growth_phaeocystis", config_temperature_growth_phaeocystis)
+    call MPAS_pool_get_config(domain % configs, "config_grazed_fraction_diatoms", config_grazed_fraction_diatoms)
+    call MPAS_pool_get_config(domain % configs, "config_grazed_fraction_small_plankton", config_grazed_fraction_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_grazed_fraction_phaeocystis", config_grazed_fraction_phaeocystis)
+    call MPAS_pool_get_config(domain % configs, "config_mortality_diatoms", config_mortality_diatoms)
+    call MPAS_pool_get_config(domain % configs, "config_mortality_small_plankton", config_mortality_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_mortality_phaeocystis", config_mortality_phaeocystis)
+    call MPAS_pool_get_config(domain % configs, "config_temperature_mortality_diatoms", config_temperature_mortality_diatoms)
+    call MPAS_pool_get_config(domain % configs, "config_temperature_mortality_small_plankton", &
+                                                 config_temperature_mortality_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_temperature_mortality_phaeocystis", &
+                                                 config_temperature_mortality_phaeocystis)
+    call MPAS_pool_get_config(domain % configs, "config_exudation_diatoms", config_exudation_diatoms)
+    call MPAS_pool_get_config(domain % configs, "config_exudation_small_plankton", config_exudation_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_exudation_phaeocystis", config_exudation_phaeocystis)
+    call MPAS_pool_get_config(domain % configs, "config_nitrate_saturation_diatoms", config_nitrate_saturation_diatoms)
+    call MPAS_pool_get_config(domain % configs, "config_nitrate_saturation_small_plankton", &
+                                                 config_nitrate_saturation_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_nitrate_saturation_phaeocystis", config_nitrate_saturation_phaeocystis)
+    call MPAS_pool_get_config(domain % configs, "config_ammonium_saturation_diatoms", config_ammonium_saturation_diatoms)
+    call MPAS_pool_get_config(domain % configs, "config_ammonium_saturation_small_plankton", &
+                                                 config_ammonium_saturation_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_ammonium_saturation_phaeocystis", &
+                                                 config_ammonium_saturation_phaeocystis)
+    call MPAS_pool_get_config(domain % configs, "config_silicate_saturation_diatoms", config_silicate_saturation_diatoms)
+    call MPAS_pool_get_config(domain % configs, "config_silicate_saturation_small_plankton", &
+                                                 config_silicate_saturation_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_silicate_saturation_phaeocystis", config_silicate_saturation_phaeocystis)
+    call MPAS_pool_get_config(domain % configs, "config_iron_saturation_diatoms", config_iron_saturation_diatoms)
+    call MPAS_pool_get_config(domain % configs, "config_iron_saturation_small_plankton", config_iron_saturation_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_iron_saturation_phaeocystis", config_iron_saturation_phaeocystis)
+    call MPAS_pool_get_config(domain % configs, "config_fraction_spilled_to_DON", config_fraction_spilled_to_DON)
+    call MPAS_pool_get_config(domain % configs, "config_degredation_of_DON", config_degredation_of_DON)
+    call MPAS_pool_get_config(domain % configs, "config_fraction_DON_ammonium", config_fraction_DON_ammonium)
+    call MPAS_pool_get_config(domain % configs, "config_fraction_loss_to_saccharids", config_fraction_loss_to_saccharids)
+    call MPAS_pool_get_config(domain % configs, "config_fraction_loss_to_lipids",  config_fraction_loss_to_lipids)
+    call MPAS_pool_get_config(domain % configs, "config_fraction_exudation_to_saccharids", config_fraction_exudation_to_saccharids)
+    call MPAS_pool_get_config(domain % configs, "config_fraction_exudation_to_lipids", config_fraction_exudation_to_lipids)
+    call MPAS_pool_get_config(domain % configs, "config_remineralization_saccharids", config_remineralization_saccharids)
+    call MPAS_pool_get_config(domain % configs, "config_remineralization_lipids", config_remineralization_lipids)
+    call MPAS_pool_get_config(domain % configs, "config_maximum_brine_temperature", config_maximum_brine_temperature)
+    call MPAS_pool_get_config(domain % configs, "config_salinity_dependence_of_growth", config_salinity_dependence_of_growth)
+    call MPAS_pool_get_config(domain % configs, "config_minimum_optical_depth", config_minimum_optical_depth)
+    call MPAS_pool_get_config(domain % configs, "config_slopped_grazing_fraction", config_slopped_grazing_fraction)
+    call MPAS_pool_get_config(domain % configs, "config_excreted_fraction", config_excreted_fraction)
+    call MPAS_pool_get_config(domain % configs, "config_fraction_mortality_to_ammonium", config_fraction_mortality_to_ammonium)
+    call MPAS_pool_get_config(domain % configs, "config_fraction_iron_remineralized", config_fraction_iron_remineralized)
+    call MPAS_pool_get_config(domain % configs, "config_nitrification_rate", config_nitrification_rate)
+    call MPAS_pool_get_config(domain % configs, "config_desorption_loss_particulate_iron", config_desorption_loss_particulate_iron)
+    call MPAS_pool_get_config(domain % configs, "config_maximum_loss_fraction", config_maximum_loss_fraction)
+    call MPAS_pool_get_config(domain % configs, "config_maximum_ratio_iron_to_saccharids", config_maximum_ratio_iron_to_saccharids)
+    call MPAS_pool_get_config(domain % configs, "config_respiration_loss_to_DMSPd", config_respiration_loss_to_DMSPd)
+    call MPAS_pool_get_config(domain % configs, "config_DMSP_to_DMS_conversion_fraction", config_DMSP_to_DMS_conversion_fraction)
+    call MPAS_pool_get_config(domain % configs, "config_DMSP_to_DMS_conversion_time", config_DMSP_to_DMS_conversion_time)
+    call MPAS_pool_get_config(domain % configs, "config_DMS_oxidation_time", config_DMS_oxidation_time)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_diatoms", config_mobility_type_diatoms)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_small_plankton", config_mobility_type_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_phaeocystis", config_mobility_type_phaeocystis)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_nitrate", config_mobility_type_nitrate)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_ammonium", config_mobility_type_ammonium)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_silicate", config_mobility_type_silicate)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_DMSPp", config_mobility_type_DMSPp)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_DMSPd", config_mobility_type_DMSPd)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_humics", config_mobility_type_humics)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_saccharids", config_mobility_type_saccharids)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_lipids", config_mobility_type_lipids)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_inorganic_carbon", config_mobility_type_inorganic_carbon)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_proteins", config_mobility_type_proteins)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_dissolved_iron", config_mobility_type_dissolved_iron)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_particulate_iron", config_mobility_type_particulate_iron)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_black_carbon1", config_mobility_type_black_carbon1)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_black_carbon2", config_mobility_type_black_carbon2)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_dust1", config_mobility_type_dust1)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_dust2", config_mobility_type_dust2)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_dust3", config_mobility_type_dust3)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_dust4", config_mobility_type_dust4)
+    call MPAS_pool_get_config(domain % configs, "config_ratio_C_to_N_diatoms", config_ratio_C_to_N_diatoms)
+    call MPAS_pool_get_config(domain % configs, "config_ratio_C_to_N_small_plankton", config_ratio_C_to_N_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_ratio_C_to_N_phaeocystis", config_ratio_C_to_N_phaeocystis)
+    call MPAS_pool_get_config(domain % configs, "config_ratio_chla_to_N_diatoms", config_ratio_chla_to_N_diatoms)
+    call MPAS_pool_get_config(domain % configs, "config_ratio_chla_to_N_small_plankton", config_ratio_chla_to_N_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_ratio_chla_to_N_phaeocystis", config_ratio_chla_to_N_phaeocystis)
+    call MPAS_pool_get_config(domain % configs, "config_scales_absorption_diatoms", config_scales_absorption_diatoms)
+    call MPAS_pool_get_config(domain % configs, "config_scales_absorption_small_plankton", config_scales_absorption_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_scales_absorption_phaeocystis", config_scales_absorption_phaeocystis)
+    call MPAS_pool_get_config(domain % configs, "config_ratio_C_to_N_proteins", config_ratio_C_to_N_proteins)
+    call MPAS_pool_get_config(domain % configs, "config_snow_redistribution_scheme", config_snow_redistribution_scheme)
+    call MPAS_pool_get_config(domain % configs, "config_fallen_snow_radius", config_fallen_snow_radius)
+    call MPAS_pool_get_config(domain % configs, "config_use_snow_liquid_ponds", config_use_snow_liquid_ponds)
+    call MPAS_pool_get_config(domain % configs, "config_new_snow_density", config_new_snow_density)
+    call MPAS_pool_get_config(domain % configs, "config_max_snow_density", config_max_snow_density)
+    call MPAS_pool_get_config(domain % configs, "config_minimum_wind_compaction", config_minimum_wind_compaction)
+    call MPAS_pool_get_config(domain % configs, "config_wind_compaction_factor", config_wind_compaction_factor)
+    call MPAS_pool_get_config(domain % configs, "config_snow_redistribution_factor", config_snow_redistribution_factor)
+    call MPAS_pool_get_config(domain % configs, "config_max_dry_snow_radius", config_max_dry_snow_radius)
+    call MPAS_pool_get_config(domain % configs, "config_use_snow_grain_radius", config_use_snow_grain_radius)
+    call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nGrainAgingTemperature", nGrainAgingTemperature)
+    call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nGrainAgingTempGradient", nGrainAgingTempGradient)
+    call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nGrainAgingSnowDensity", nGrainAgingSnowDensity)
+    call MPAS_pool_get_subpool(domain % blocklist % structs, "snow", snow)
+    call MPAS_pool_get_array(snow, "snowEmpiricalGrowthParameterTau", snowEmpiricalGrowthParameterTau)
+    call MPAS_pool_get_array(snow, "snowEmpiricalGrowthParameterKappa", snowEmpiricalGrowthParameterKappa)
+    call MPAS_pool_get_array(snow, "snowPropertyRate", snowPropertyRate)
+
+    config_thermodynamics_type_int = config_cice_int("config_thermodynamics_type", config_thermodynamics_type)
+    config_ice_strength_formulation_int = config_cice_int("config_ice_strength_formulation", config_ice_strength_formulation)
+    config_ridging_participation_function_int = config_cice_int("config_ridging_participation_function", config_ridging_participation_function)
+    config_ridging_redistribution_function_int = config_cice_int("config_ridging_redistribution_function", config_ridging_redistribution_function)
+    config_itd_conversion_type_int = config_cice_int("config_itd_conversion_type", config_itd_conversion_type)
+    config_category_bounds_type_int = config_cice_int("config_category_bounds_type", config_category_bounds_type)
+
+    if (config_use_snicar_ad .and. (trim(config_shortwave_type(1:4)) == "dEdd")) then
+       tmp_config_shortwave_type = 'dEdd_snicar_ad'
+       tmp_config_snw_ssp_table  = 'snicar'
+    else
+       tmp_config_shortwave_type = config_shortwave_type
+       tmp_config_snw_ssp_table  = 'test'
+    endif
+
+!echmod debugging
+    call mpas_log_write(' ')
+    call mpas_log_write(" ----- debugging parameters -----")
+    call mpas_log_write(" ----- compare values prior to icepack init -----")
+
+    rtmp1 = seaicePuny
+    call icepack_query_parameters(puny_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('puny differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaicePi  ! defined above using pi from ice_constants_colpkg.F90
+    call icepack_query_parameters(pi_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('pi differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceSecondsPerDay
+    call icepack_query_parameters(secday_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('secday differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceDensitySnow
+    call icepack_query_parameters(rhos_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('rhos differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceDensityIce
+    call icepack_query_parameters(rhoi_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('rhoi differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceDensitySeaWater
+    call icepack_query_parameters(rhow_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('rhow differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceAirSpecificHeat
+    call icepack_query_parameters(cp_air_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('cp_air differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceIceSnowEmissivity
+    call icepack_query_parameters(emissivity_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('emissivity differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceFreshIceSpecificHeat
+    call icepack_query_parameters(cp_ice_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('cp_ice differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceSeaWaterSpecificHeat
+    call icepack_query_parameters(cp_ocn_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('cp_ocn differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceIceSurfaceRoughness
+    call icepack_query_parameters(iceruf_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('iceruf differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceOceanAlbedo
+    call icepack_query_parameters(albocn_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('albocn differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceGravity
+    call icepack_query_parameters(gravit_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('gravit differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceDensityFreshwater
+    call icepack_query_parameters(rhofresh_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('rhofresh differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceZvir
+    call icepack_query_parameters(zvir_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('zvir differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceVonKarmanConstant
+    call icepack_query_parameters(vonkar_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('vonkar differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceWaterVaporSpecificHeat
+    call icepack_query_parameters(cp_wv_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('cp_wv differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceStefanBoltzmann
+    call icepack_query_parameters(stefan_boltzmann_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('stefan_boltzmann differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceReferenceSalinity
+    call icepack_query_parameters(ice_ref_salinity_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('ice_ref_salinity differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceMaximumSalinity
+    call icepack_query_parameters(saltmax_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('saltmax differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceMeltingTemperatureDepression
+    call icepack_query_parameters(depressT_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('depressT differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceFreshWaterFreezingPoint
+    call icepack_query_parameters(Tffresh_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('Tffresh differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceLatentHeatSublimation
+    call icepack_query_parameters(Lsub_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('Lsub differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceLatentHeatVaporization
+    call icepack_query_parameters(Lvap_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('Lvap differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceIceSurfaceMeltingTemperature
+    call icepack_query_parameters(Timelt_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('Timelt differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceSnowSurfaceMeltingTemperature
+    call icepack_query_parameters(Tsmelt_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('Tsmelt differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceiceStrengthConstantHiblerP
+    call icepack_query_parameters(Pstar_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('Pstar differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceiceStrengthConstantHiblerC
+    call icepack_query_parameters(Cstar_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('Cstar differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceStabilityReferenceHeight
+    call icepack_query_parameters(zref_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('zref differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceSnowPatchiness
+    call icepack_query_parameters(snowpatch_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('snowpatch differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    ctmp1 = config_frazil_coupling_type
+    call icepack_query_parameters(cpl_frazil_out=ctmp2)
+    if (trim(ctmp1) /= trim(ctmp2)) call mpas_log_write('cpl_frazil differs')
+
+!    rtmp1 = skeletalLayerThickness
+!    call icepack_query_parameters(sk_l_out=rtmp2)
+!    if (rtmp1 /= rtmp2) call mpas_log_write('sk_l differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    ! commented-out arguments take the default values from icepack_parameters.F90
+    call icepack_init_parameters(&
+         !argcheck_in             = , &               ! may not be needed in the driver
+         puny_in                 = seaicePuny, &
+         bignum_in               = seaiceBigNumber, &
+         pi_in                   = seaicePi, &
+         secday_in               = seaiceSecondsPerDay, &
+         rhos_in                 = seaiceDensitySnow, &
+         rhoi_in                 = seaiceDensityIce, &
+         rhow_in                 = seaiceDensitySeaWater, &
+         cp_air_in               = seaiceAirSpecificHeat, & !
+         emissivity_in           = seaiceIceSnowEmissivity, & !
+         cp_ice_in               = seaiceFreshIceSpecificHeat, & !
+         cp_ocn_in               = seaiceSeaWaterSpecificHeat, &
+         hfrazilmin_in           = seaiceFrazilMinimumThickness, &
+         !floediam_in             = , &
+         depressT_in             = seaiceMeltingTemperatureDepression, &
+         dragio_in               = config_ice_ocean_drag_coefficient, & ! calc_dragio not implemented
+         !thickness_ocn_layer1_in = , &        ! not yet implemented in MPAS-SI (stealth feature)
+         !iceruf_ocn_in           = , &        ! under-ice roughness, not yet implemented
+         albocn_in               = seaiceOceanAlbedo, &
+         gravit_in               = seaiceGravity, &
+         viscosity_dyn_in        = seaiceBrineDynamicViscosity, &
+         Tocnfrz_in              = seaiceFreezingTemperatureConstant, &
+         rhofresh_in             = seaiceDensityFreshwater, &
+         zvir_in                 = seaiceZvir, &
+         vonkar_in               = seaiceVonKarmanConstant, &
+         cp_wv_in                = seaiceWaterVaporSpecificHeat, & !
+         stefan_boltzmann_in     = seaiceStefanBoltzmann, &
+         ice_ref_salinity_in     = seaiceReferenceSalinity, & !
+         Tffresh_in              = seaiceFreshWaterFreezingPoint, &
+         Lsub_in                 = seaiceLatentHeatSublimation, & !
+         Lvap_in                 = seaiceLatentHeatVaporization, & !
+         Timelt_in               = seaiceIceSurfaceMeltingTemperature, & !
+         Tsmelt_in               = seaiceSnowSurfaceMeltingTemperature, & !
+         iceruf_in               = seaiceIceSurfaceRoughness, & !
+         Cf_in                   = config_ratio_ridging_work_to_PE, &
+         Pstar_in                = seaiceIceStrengthConstantHiblerP, &
+         Cstar_in                = seaiceIceStrengthConstantHiblerC, &
+         kappav_in               = seaiceExtinctionCoef, &
+         kice_in                 = seaiceFreshIceConductivity, &
+         ksno_in                 = config_snow_thermal_conductivity, &
+         zref_in                 = seaiceStabilityReferenceHeight, &
+         hs_min_in               = seaiceSnowMinimumThickness, &
+         snowpatch_in            = seaiceSnowPatchiness, & ! ccsm3 radiation scheme
+         !rhosi_in                = , &        ! brine, zbgc, zsalinity
+         sk_l_in                 = skeletalLayerThickness, & !
+         saltmax_in              = seaiceMaximumSalinity, &
+         phi_init_in             = seaiceFrazilIcePorosity, &
+         !min_salin_in            = , &        ! ktherm=1, brine, zsalinity
+         !salt_loss_in            = , &        ! brine, zsalinity
+         !min_bgc_in              = , &        ! shortwave
+         dSin0_frazil_in         = seaiceFrazilSalinityReduction, &
+         hs_ssl_in               = seaiceSnowSurfaceScatteringLayer, &
+         awtvdr_in               = seaiceAlbedoWtVisibleDirect, &
+         awtidr_in               = seaiceAlbedoWtNearIRDirect, &
+         awtvdf_in               = seaiceAlbedoWtVisibleDiffuse, &
+         awtidf_in               = seaiceAlbedoWtNearIRDiffuse, &
+         qqqice_in               = seaiceQsatQiceConstant, &
+         TTTice_in               = seaiceQsatTiceConstant, &
+         qqqocn_in               = seaiceQsatQocnConstant, &
+         TTTocn_in               = seaiceQsatTocnConstant, &
+         ktherm_in               = config_thermodynamics_type_int, &
+         conduct_in              = config_heat_conductivity_type, &
+         fbot_xfer_type_in       = config_ocean_heat_transfer_type, &
+         calc_Tsfc_in            = config_calc_surface_temperature, &
+         !dts_b_in                = , &        ! brine, zsalinity
+         cpl_frazil_in           = config_frazil_coupling_type, &
+         update_ocn_f_in         = config_update_ocean_fluxes, &
+         ustar_min_in            = config_min_friction_velocity, &
+         a_rapid_mode_in         = config_rapid_mode_channel_radius, &
+         Rac_rapid_mode_in       = config_rapid_model_critical_Ra, &
+         aspect_rapid_mode_in    = config_rapid_mode_aspect_ratio, &
+         dSdt_slow_mode_in       = config_slow_mode_drainage_strength, &
+         phi_c_slow_mode_in      = config_slow_mode_critical_porosity, &
+         phi_i_mushy_in          = config_congelation_ice_porosity, &
+         tscale_pnd_drain_in     = config_macro_drainage_timescale, &
+!         shortwave_in            = config_shortwave_type, &
+         shortwave_in            = tmp_config_shortwave_type, &
+         albedo_type_in          = config_albedo_type, &
+         albsnowi_in             = config_infrared_snow_albedo, &
+         albicev_in              = config_visible_ice_albedo, &
+         albicei_in              = config_infrared_ice_albedo, &
+         albsnowv_in             = config_visible_snow_albedo, &
+         ahmax_in                = config_variable_albedo_thickness_limit, &
+         R_ice_in                = config_ice_shortwave_tuning_parameter, &
+         R_pnd_in                = config_pond_shortwave_tuning_parameter, &
+         R_snw_in                = config_snow_shortwave_tuning_parameter, &
+         dT_mlt_in               = config_temp_change_snow_grain_radius_change, &
+         rsnw_mlt_in             = config_max_melting_snow_grain_radius, &
+         kalg_in                 = config_algae_absorption_coefficient, &
+         kstrength_in            = config_ice_strength_formulation_int, &
+         krdg_partic_in          = config_ridging_participation_function_int, &
+         krdg_redist_in          = config_ridging_redistribution_function_int, &
+         mu_rdg_in               = config_ridging_efolding_scale, &
+         atmbndy_in              = config_atmos_boundary_method, &
+         calc_strair_in          = config_calc_surface_stresses, &
+         formdrag_in             = config_use_form_drag, &
+         highfreq_in             = config_use_high_frequency_coupling, &
+         natmiter_in             = config_boundary_layer_iteration_number, &
+         !atmiter_conv_in         = , &        ! not yet implemented in MPAS-SI (stealth feature)
+         !calc_dragio_in          = , &        ! not yet implemented in MPAS-SI (stealth feature)
+         tfrz_option_in          = config_sea_freezing_temperature_type, &
+         kitd_in                 = config_itd_conversion_type_int, &
+         kcatbound_in            = config_category_bounds_type_int, &
+         hs0_in                  = config_snow_to_ice_transition_depth, &
+         frzpnd_in               = config_pond_refreezing_type, &
+         saltflux_option_in      = config_salt_flux_coupling_type, &
+         !floeshape_in            = , &
+         !wave_spec_in            = , &        ! not yet implemented in MPAS-SI (stealth feature)
+         !wave_spec_type_in       = , &        ! not yet implemented in MPAS-SI (stealth feature)
+         !nfreq_in                = , &        ! not yet implemented in MPAS-SI (stealth feature)
+         dpscale_in              = config_pond_flushing_factor, &
+         rfracmin_in             = config_min_meltwater_retained_fraction, &
+         rfracmax_in             = config_max_meltwater_retained_fraction, &
+         pndaspect_in            = config_pond_depth_to_fraction_ratio, &
+         hs1_in                  = config_snow_on_pond_ice_tapering_parameter, &
+         hp1_in                  = config_critical_pond_ice_thickness, &
+         bgc_flux_type_in        = config_skeletal_bgc_flux_type, &
+         z_tracers_in            = config_use_vertical_tracers, &
+         scale_bgc_in            = config_scale_initial_vertical_bgc, &
+         solve_zbgc_in           = config_use_vertical_biochemistry, &
+         modal_aero_in           = config_use_modal_aerosols, &
+         skl_bgc_in              = config_use_skeletal_biochemistry, &
+         grid_o_in               = config_biogrid_bottom_molecular_sublayer, &
+         l_sk_in                 = config_bio_gravity_drainage_length_scale, &
+         initbio_frac_in         = config_new_ice_fraction_biotracer, &
+!         grid_oS_in              = config_zsalinity_molecular_sublayer, &
+!         l_skS_in                = config_zsalinity_gravity_drainage_scale, &
+         dEdd_algae_in           = config_use_shortwave_bioabsorption, &
+         phi_snow_in             = config_snow_porosity_at_ice_surface, &
+         !T_max_in                = , &         ! BGC
+         !fsal_in                 = , &
+         !fr_resp_in              = , &
+         !algal_vel_in            = , &
+         !R_dFe2dust_in           = , &
+         !dustFe_sol_in           = , &
+         !op_dep_min_in           = , &
+         !fr_graze_s_in           = , &
+         !fr_graze_e_in           = , &
+         !fr_mort2min_in          = , &
+         !fr_dFe_in               = , &
+         !k_nitrif_in             = , &
+         !t_iron_conv_in          = , &
+         !max_loss_in             = , &
+         !max_dfe_doc1_in         = , &
+         !fr_resp_s_in            = , &
+         !conserv_check_in        = , &
+         !y_sk_DMS_in             = , &
+         !t_sk_conv_in            = , &
+         !t_sk_ox_in              = , &
+         !frazil_scav_in          = , &
+         sw_redist_in            = config_use_shortwave_redistribution, &
+         sw_frac_in              = config_shortwave_redistribution_fraction, &
+         sw_dtemp_in             = config_shortwave_redistribution_threshold, &
+         snwgrain_in             = config_use_snow_grain_radius, &
+         snwredist_in            = config_snow_redistribution_scheme, &
+         use_smliq_pnd_in        = config_use_snow_liquid_ponds, &
+         rsnw_fall_in            = config_fallen_snow_radius, &
+         rsnw_tmax_in            = config_max_dry_snow_radius, &
+         rhosnew_in              = config_new_snow_density, &
+         rhosmax_in              = config_max_snow_density, &
+         windmin_in              = config_minimum_wind_compaction, &
+         drhosdwind_in           = config_wind_compaction_factor, &
+         snwlvlfac_in            = config_snow_redistribution_factor, &
+         isnw_T_in               = nGrainAgingTemperature, &
+         isnw_Tgrd_in            = nGrainAgingTempGradient, &
+         isnw_rhos_in            = nGrainAgingSnowDensity, &
+         snowage_tau_in          = snowEmpiricalGrowthParameterTau(:,:,:), &
+         snowage_kappa_in        = snowEmpiricalGrowthParameterKappa(:,:,:), &
+         snowage_drdt0_in        = snowPropertyRate(:,:,:), &
+         snw_aging_table_in      = snw_aging_table, &
+         snw_ssp_table_in        = tmp_config_snw_ssp_table &
+         )
+
+    call seaice_icepack_write_warnings(icepack_warnings_aborted())
+
+!note that icepack_recompute_constants, called from icepck_init_parameters above, recomputes Lfresh
+! - make Lfresh optional for E3SM?
+
+! tcraig, this will write out icepack parameters to fort.101, need to uncomment 3 lines
+!    if (mpas_log_info % taskID == 0) then
+!      call icepack_write_parameters(101)
+!    endif
+!    call seaice_icepack_write_warnings(icepack_warnings_aborted())
+
+    call mpas_log_write(" ----- compare values after icepack init -----")
+
+    ! Lfresh is derived in Icepack, not sent in from driver
+    rtmp1 = seaiceLatentHeatMelting
+    call icepack_query_parameters(Lfresh_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('Lfresh differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    ! recheck values
+    rtmp1 = seaiceAirSpecificHeat
+    call icepack_query_parameters(cp_air_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('cp_air differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceIceSnowEmissivity
+    call icepack_query_parameters(emissivity_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('emissivity differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceFreshIceSpecificHeat
+    call icepack_query_parameters(cp_ice_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('cp_ice differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceSeaWaterSpecificHeat
+    call icepack_query_parameters(cp_ocn_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('cp_ocn differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceZvir
+    call icepack_query_parameters(zvir_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('zvir differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceLatentHeatSublimation
+    call icepack_query_parameters(Lsub_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('Lsub differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceSnowPatchiness
+    call icepack_query_parameters(snowpatch_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('snowpatch differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    ctmp1 = config_frazil_coupling_type
+    call icepack_query_parameters(cpl_frazil_out=ctmp2)
+    if (trim(ctmp1) /= trim(ctmp2)) call mpas_log_write('cpl_frazil differs')
+
+    call mpas_log_write(" ----- end debugging parameters -----")
+    call mpas_log_write(' ')
+!echmod debugging end
+
+! parameters that have not yet been fully implemented in the list above
+    !call icepack_init_parameters(& 
+    !     shortwave             = config_shortwave_type, &         ! not working correctly above
+    !     oceanmixed_ice        = config_use_ocean_mixed_layer, &  ! not used in Icepack/columnphysics (driver only)
+    !     grid_o_t              = config_biogrid_top_molecular_sublayer, &  ! not used in Icepack
+    !     frazil_scav           = config_fraction_biotracer_in_frazil, &    ! BGC 
+    !     ratio_Si2N_diatoms    = config_ratio_Si_to_N_diatoms, &
+    !     ratio_Si2N_sp         = config_ratio_Si_to_N_small_plankton, &
+    !     ratio_Si2N_phaeo      = config_ratio_Si_to_N_phaeocystis, &
+    !     ratio_S2N_diatoms     = config_ratio_S_to_N_diatoms, &
+    !     ratio_S2N_sp          = config_ratio_S_to_N_small_plankton, &
+    !     ratio_S2N_phaeo       = config_ratio_S_to_N_phaeocystis, &
+    !     ratio_Fe2C_diatoms    = config_ratio_Fe_to_C_diatoms, &
+    !     ratio_Fe2C_sp         = config_ratio_Fe_to_C_small_plankton, &
+    !     ratio_Fe2C_phaeo      = config_ratio_Fe_to_C_phaeocystis, &
+    !     ratio_Fe2N_diatoms    = config_ratio_Fe_to_N_diatoms, &
+    !     ratio_Fe2N_sp         = config_ratio_Fe_to_N_small_plankton, &
+    !     ratio_Fe2N_phaeo      = config_ratio_Fe_to_N_phaeocystis, &
+    !     ratio_Fe2DON          = config_ratio_Fe_to_DON, &
+    !     ratio_Fe2DOC_s        = config_ratio_Fe_to_DOC_saccharids, &
+    !     ratio_Fe2DOC_l        = config_ratio_Fe_to_DOC_lipids, &
+    !     fr_resp               = config_respiration_fraction_of_growth, &
+    !     tau_min               = config_rapid_mobile_to_stationary_time, &
+    !     tau_max               = config_long_mobile_to_stationary_time, &
+    !     algal_vel             = config_algal_maximum_velocity, &
+    !     R_dFe2dust            = config_ratio_Fe_to_dust, &
+    !     dustFe_sol            = config_solubility_of_Fe_in_dust, &
+    !     chlabs_diatoms        = config_chla_absorptivity_of_diatoms, &
+    !     chlabs_sp             = config_chla_absorptivity_of_small_plankton, &
+    !     chlabs_phaeo          = config_chla_absorptivity_of_phaeocystis, &
+    !     alpha2max_low_diatoms = config_light_attenuation_diatoms, &
+    !     alpha2max_low_sp      = config_light_attenuation_small_plankton, &
+    !     alpha2max_low_phaeo   = config_light_attenuation_phaeocystis, &
+    !     beta2max_diatoms      = config_light_inhibition_diatoms, &
+    !     beta2max_sp           = config_light_inhibition_small_plankton, &
+    !     beta2max_phaeo        = config_light_inhibition_phaeocystis, &
+    !     mu_max_diatoms        = config_maximum_growth_rate_diatoms, &
+    !     mu_max_sp             = config_maximum_growth_rate_small_plankton, &
+    !     mu_max_phaeo          = config_maximum_growth_rate_phaeocystis, &
+    !     mu_max_diatoms        = config_temperature_growth_diatoms, & ! rename
+    !     mu_max_sp             = config_temperature_growth_small_plankton, &
+    !     mu_max_phaeo          = config_temperature_growth_phaeocystis, &
+    !     fr_graze_diatoms      = config_grazed_fraction_diatoms, &
+    !     fr_graze_sp           = config_grazed_fraction_small_plankton, &
+    !     fr_graze_phaeo        = config_grazed_fraction_phaeocystis, &
+    !     mort_pre_diatoms      = config_mortality_diatoms, &
+    !     mort_pre_sp           = config_mortality_small_plankton, &
+    !     mort_pre_phaeo        = config_mortality_phaeocystis, &
+    !     mort_Tdep_diatoms     = config_temperature_mortality_diatoms, &
+    !     mort_Tdep_sp          = config_temperature_mortality_small_plankton, &
+    !     mort_Tdep_phaeo       = config_temperature_mortality_phaeocystis, &
+    !     k_exude_diatoms       = config_exudation_diatoms, &
+    !     k_exude_sp            = config_exudation_small_plankton, &
+    !     k_exude_phaeo         = config_exudation_phaeocystis, &
+    !     K_Nit_diatoms         = config_nitrate_saturation_diatoms, &
+    !     K_Nit_sp              = config_nitrate_saturation_small_plankton, &
+    !     K_Nit_phaeo           = config_nitrate_saturation_phaeocystis, &
+    !     K_Am_diatoms          = config_ammonium_saturation_diatoms, &
+    !     K_Am_sp               = config_ammonium_saturation_small_plankton, &
+    !     K_Am_phaeo            = config_ammonium_saturation_phaeocystis, &
+    !     K_Sil_diatoms         = config_silicate_saturation_diatoms, &
+    !     K_Sil_sp              = config_silicate_saturation_small_plankton, &
+    !     K_Sil_phaeo           = config_silicate_saturation_phaeocystis, &
+    !     K_Fe_diatoms          = config_iron_saturation_diatoms, &
+    !     K_Fe_sp               = config_iron_saturation_small_plankton, &
+    !     K_Fe_phaeo            = config_iron_saturation_phaeocystis, &
+    !     f_don_protein         = config_fraction_spilled_to_DON, &
+    !     kn_bac_protein        = config_degredation_of_DON, &
+    !     f_don_Am_protein      = config_fraction_DON_ammonium, &
+    !     f_doc_s               = config_fraction_loss_to_saccharids, &
+    !     f_doc_l               = config_fraction_loss_to_lipids, &
+    !     f_exude_s             = config_fraction_exudation_to_saccharids, &
+    !     f_exude_l             = config_fraction_exudation_to_lipids, &
+    !     k_bac_s               = config_remineralization_saccharids, &
+    !     k_bac_l               = config_remineralization_lipids, &
+    !     T_max                 = config_maximum_brine_temperature, &
+    !     fsal                  = config_salinity_dependence_of_growth, &
+    !     op_dep_min            = config_minimum_optical_depth, &
+    !     fr_graze_s            = config_slopped_grazing_fraction, &
+    !     fr_graze_e            = config_excreted_fraction, &
+    !     fr_mort2min           = config_fraction_mortality_to_ammonium, &
+    !     fr_dFe                = config_fraction_iron_remineralized, &
+    !     k_nitrif              = config_nitrification_rate, &
+    !     t_iron_conv           = config_desorption_loss_particulate_iron, &
+    !     max_loss              = config_maximum_loss_fraction, &
+    !     max_dfe_doc1          = config_maximum_ratio_iron_to_saccharids, &
+    !     fr_resp_s             = config_respiration_loss_to_DMSPd, &
+    !     y_sk_DMS              = config_DMSP_to_DMS_conversion_fraction, &
+    !     t_sk_conv             = config_DMSP_to_DMS_conversion_time, &
+    !     t_sk_ox               = config_DMS_oxidation_time, &
+    !     algaltype_diatoms     = config_mobility_type_diatoms, &
+    !     algaltype_sp          = config_mobility_type_small_plankton, &
+    !     algaltype_phaeo       = config_mobility_type_phaeocystis, &
+    !     nitratetype           = config_mobility_type_nitrate, &
+    !     ammoniumtype          = config_mobility_type_ammonium, &
+    !     silicatetype          = config_mobility_type_silicate, &
+    !     dmspptype             = config_mobility_type_DMSPp, &
+    !     dmspdtype             = config_mobility_type_DMSPd, &
+    !     humicstype            = config_mobility_type_humics, &
+    !     doctype_s             = config_mobility_type_saccharids, &
+    !     dictype_1             = config_mobility_type_lipids, &
+    !     dictype_1             = config_mobility_type_inorganic_carbon, &
+    !     dontype_protein       = config_mobility_type_proteins, &
+    !     fedtype_1             = config_mobility_type_dissolved_iron, &
+    !     feptype_1             = config_mobility_type_particulate_iron, &
+    !     zaerotype_bc1         = config_mobility_type_black_carbon1, &
+    !     zaerotype_bc2         = config_mobility_type_black_carbon2, &
+    !     zaerotype_dust1       = config_mobility_type_dust1, &
+    !     zaerotype_dust2       = config_mobility_type_dust2, &
+    !     zaerotype_dust3       = config_mobility_type_dust3, &
+    !     zaerotype_dust4       = config_mobility_type_dust4, &
+    !     ratio_C2N_diatoms     = config_ratio_C_to_N_diatoms, &
+    !     ratio_C2N_sp          = config_ratio_C_to_N_small_plankton, &
+    !     ratio_C2N_phaeo       = config_ratio_C_to_N_phaeocystis, &
+    !     ratio_chl2N_diatoms   = config_ratio_chla_to_N_diatoms, &
+    !     ratio_chl2N_sp        = config_ratio_chla_to_N_small_plankton, &
+    !     ratio_chl2N_phaeo     = config_ratio_chla_to_N_phaeocystis, &
+    !     F_abs_chl_diatoms     = config_scales_absorption_diatoms, &
+    !     F_abs_chl_sp          = config_scales_absorption_small_plankton, &
+    !     F_abs_chl_phaeo       = config_scales_absorption_phaeocystis, &
+    !     ratio_C2N_proteins    = config_ratio_C_to_N_proteins, &
+
+    !-----------------------------------------------------------------------
+    ! Parameters for thermodynamics
+    !-----------------------------------------------------------------------
+
+    ! ktherm:
+    ! type of thermodynamics
+    ! 1 = Bitz and Lipscomb 1999
+    ! 2 = mushy layer theory
+    !ktherm = config_cice_int("config_thermodynamics_type", config_thermodynamics_type)
+
+    ! conduct:
+    ! 'MU71' or 'bubbly'
+    !conduct = config_heat_conductivity_type
+
+    ! fbot_xfer_type:
+    ! transfer coefficient type for ice-ocean heat flux
+    !fbot_xfer_type = config_ocean_heat_transfer_type
+
+    ! calc_Tsfc:
+    ! if true, calculate surface temperature
+    ! if false, Tsfc is computed elsewhere and
+    ! atmos-ice fluxes are provided to CICE
+    !calc_Tsfc = config_calc_surface_temperature
+
+    ! ustar_min:
+    ! minimum friction velocity for ice-ocean heat flux
+    !ustar_min = config_min_friction_velocity
+
+    ! mushy thermodynamics:
+
+    ! a_rapid_mode:
+    ! channel radius for rapid drainage mode (m)
+    !a_rapid_mode = config_rapid_mode_channel_radius
+
+    ! Rac_rapid_mode:
+    ! critical rayleigh number for rapid drainage mode
+    !Rac_rapid_mode = config_rapid_model_critical_Ra
+
+    ! aspect_rapid_mode:
+    ! aspect ratio for rapid drainage mode (larger=wider)
+    !aspect_rapid_mode = config_rapid_mode_aspect_ratio
+
+    ! dSdt_slow_mode:
+    ! slow mode drainage strength (m s-1 K-1)
+    !dSdt_slow_mode = config_slow_mode_drainage_strength
+
+    ! phi_c_slow_mode:
+    ! liquid fraction porosity cutoff for slow mode
+    !phi_c_slow_mode = config_slow_mode_critical_porosity
+
+    ! tscale_pnd_drain:
+    ! Timescale for macroscopic drainage
+    !tscale_pnd_drain = config_macro_drainage_timescale
+
+    ! phi_i_mushy:
+    ! liquid fraction of congelation ice
+    !phi_i_mushy = config_congelation_ice_porosity
+
+    ! phi_init:
+    ! initial liquid fraction of frazil ice
+    !phi_init = seaiceFrazilIcePorosity
+
+    ! dSin0_frazil:
+    ! initial frazil salinity reduction
+    !dSin0_frazil = seaiceFrazilSalinityReduction
+
+    !-----------------------------------------------------------------------
+    ! Parameters for radiation
+    !-----------------------------------------------------------------------
+
+    ! shortwave:
+    ! shortwave method, 'default' ('ccsm3') or 'dEdd'
+    !shortwave = config_shortwave_type
+
+    ! albedo_type:
+    ! albedo parameterization, 'default' ('ccsm3') or 'constant'
+    ! shortwave='dEdd' overrides this parameter
+    !albedo_type = config_albedo_type
+
+    ! baseline albedos for ccsm3 shortwave, set in namelist
+
+    ! albicev:
+    ! visible ice albedo for h > ahmax
+    !albicev = config_visible_ice_albedo
+
+    ! albicei:
+    ! near-ir ice albedo for h > ahmax
+    !albicei = config_infrared_ice_albedo
+
+    ! albsnowv:
+    ! cold snow albedo, visible
+    !albsnowv = config_visible_snow_albedo
+
+    ! albsnowi:
+    ! cold snow albedo, near IR
+    !albsnowi = config_infrared_snow_albedo
+
+    ! ahmax:
+    ! thickness above which ice albedo is constant (m)
+    !ahmax = config_variable_albedo_thickness_limit
+
+    ! dEdd tuning parameters, set in namelist
+
+    ! hs_ssl:
+    ! snow surface scattering layer depth
+    !hs_ssl = seaiceSnowSurfaceScatteringLayer
+
+    ! R_ice:
+    ! sea ice tuning parameter; +1 > 1sig increase in albedo
+    !R_ice = config_ice_shortwave_tuning_parameter
+
+    ! R_pnd:
+    ! ponded ice tuning parameter; +1 > 1sig increase in albedo
+    !R_pnd = config_pond_shortwave_tuning_parameter
+
+    ! R_snw:
+    ! snow tuning parameter; +1 > ~.01 change in broadband albedo
+    !R_snw = config_snow_shortwave_tuning_parameter
+
+    ! sw_redist
+    ! Redistribute shortwave from layers near the melting temperature to the surface
+    !sw_redist = config_use_shortwave_redistribution
+
+    ! sw_frac
+    ! Fraction of shortwave moved from layers near the melting temperature to the surface
+    !sw_frac = config_shortwave_redistribution_fraction
+
+    ! sw_dtemp
+    ! Temperature threshold for moving shortwave to the surface
+    !sw_dtemp = config_shortwave_redistribution_threshold
+
+    ! dT_mlt:
+    ! change in temp for non-melt to melt snow grain radius change (C)
+    !dT_mlt = config_temp_change_snow_grain_radius_change
+
+    ! rsnw_mlt:
+    ! maximum melting snow grain radius (10^-6 m)
+    !rsnw_mlt = config_max_melting_snow_grain_radius
+
+    ! kalg:
+    ! algae absorption coefficient for 0.5 m thick layer
+    !kalg = config_algae_absorption_coefficient
+
+    !-----------------------------------------------------------------------
+    ! Parameters for ridging and strength
+    !-----------------------------------------------------------------------
+
+    ! kstrength:
+    ! 0 for simple Hibler (1979) formulation
+    ! 1 for Rothrock (1975) pressure formulation
+    !kstrength = config_cice_int("config_ice_strength_formulation", config_ice_strength_formulation)
+
+    ! krdg_partic:
+    ! 0 for Thorndike et al. (1975) formulation
+    ! 1 for exponential participation function
+    !krdg_partic = config_cice_int("config_ridging_participation_function", config_ridging_participation_function)
+
+    ! krdg_redist:
+    ! 0 for Hibler (1980) formulation
+    ! 1 for exponential redistribution function
+    !krdg_redist = config_cice_int("config_ridging_redistribution_function", config_ridging_redistribution_function)
+
+    ! mu_rdg:
+    ! gives e-folding scale of ridged ice (m^.5)
+    ! (krdg_redist = 1)
+    !mu_rdg = config_ridging_efolding_scale
+
+    ! Cf
+    ! ratio of ridging work to PE change in ridging (kstrength = 1)
+    !Cf = config_ratio_ridging_work_to_PE
+
+    !-----------------------------------------------------------------------
+    ! Parameters for atmosphere
+    !-----------------------------------------------------------------------
+
+    ! atmbndy:
+    ! atmo boundary method, 'similarity' or 'constant' or 'mixed'
+    !atmbndy = config_atmos_boundary_method
+
+    ! calc_strair:
+    ! if true, calculate wind stress components
+    !calc_strair = config_calc_surface_stresses
+
+    ! formdrag:
+    ! if true, calculate form drag
+    !formdrag = config_use_form_drag
+
+    ! highfreq:
+    ! if true, use high frequency coupling
+    !highfreq = config_use_high_frequency_coupling
+
+    ! natmiter:
+    ! number of iterations for boundary layer calculations
+    !natmiter = config_boundary_layer_iteration_number
+
+    !-----------------------------------------------------------------------
+    ! Parameters for ocean
+    !-----------------------------------------------------------------------
+
+    ! oceanmixed_ice:
+    ! if true, use ocean mixed layer
+    ! oceanmixed_ice = config_use_ocean_mixed_layer
+
+    ! fbot_xfer_type:
+    ! transfer coefficient type for ice-ocean heat flux
+    ! fbot_xfer_type = config_ocean_heat_transfer_type
+
+    ! tfrz_option:
+    ! form of ocean freezing temperature
+    ! 'minus1p8' = -1.8 C
+    ! 'linear_salt' = -depressT * sss
+    ! 'mushy' conforms with ktherm=2
+    ! tfrz_option = config_sea_freezing_temperature_type
+
+    ! dragio:
+    ! Neutral ice-ocean drag coefficient
+    ! dragio = config_ice_ocean_drag_coefficient
+
+    !-----------------------------------------------------------------------
+    ! Parameters for the ice thickness distribution
+    !-----------------------------------------------------------------------
+
+    ! kitd:
+    ! type of itd conversions
+    !   0 = delta function
+    !   1 = linear remap
+    !kitd = config_cice_int("config_itd_conversion_type", config_itd_conversion_type)
+
+    ! kcatbound:
+    !   0 = old category boundary formula
+    !   1 = new formula giving round numbers
+    !   2 = WMO standard
+    !   3 = asymptotic formula
+    !kcatbound = config_cice_int("config_category_bounds_type", config_category_bounds_type)
+
+    !-----------------------------------------------------------------------
+    ! Parameters for melt ponds
+    !-----------------------------------------------------------------------
+
+    ! hs0:
+    ! snow depth for transition to bare sea ice (m)
+    !hs0 = config_snow_to_ice_transition_depth
+
+    ! level-ice ponds
+
+    ! frzpnd:
+    ! pond refreezing parameterization
+    !frzpnd = config_pond_refreezing_type
+
+    ! dpscale:
+    ! alters e-folding time scale for flushing with BL99 thermodynamics
+    !dpscale = config_pond_flushing_factor
+
+    ! rfracmin:
+    ! minimum retained fraction of meltwater
+    !rfracmin = config_min_meltwater_retained_fraction
+
+    ! rfracmax:
+    ! maximum retained fraction of meltwater
+    !rfracmax = config_max_meltwater_retained_fraction
+
+    ! pndaspect:
+    ! ratio of pond depth to pond fraction
+    !pndaspect = config_pond_depth_to_fraction_ratio
+
+    ! hs1:
+    ! tapering parameter for snow on pond ice
+    !hs1 = config_snow_on_pond_ice_tapering_parameter
+
+    ! topo ponds
+
+    ! hp1
+    ! critical parameter for pond ice thickness
+    !hp1 = config_critical_pond_ice_thickness
+
+    !-----------------------------------------------------------------------
+    ! Parameters for biogeochemistry
+    !-----------------------------------------------------------------------
+
+    ! bgc_flux_type:
+    ! bgc_flux_type = config_skeletal_bgc_flux_type
+
+    ! z_tracers:
+    ! if .true., bgc or aerosol tracers are vertically resolved
+    !z_tracers = config_use_vertical_tracers
+
+    ! scale_bgc:
+    ! if .true., initialize bgc tracers proportionally with salinity
+    !scale_bgc = config_scale_initial_vertical_bgc
+
+    ! solve_zbgc:
+    ! if .true., solve vertical biochemistry portion of code
+    !solve_zbgc = config_use_vertical_biochemistry
+
+    ! dEdd_algae:
+    ! if .true., algal absorption of Shortwave is computed in the
+    !dEdd_algae = config_use_shortwave_bioabsorption
+
+    ! skl_bgc:
+    ! if true, solve skeletal biochemistry
+    !skl_bgc = config_use_skeletal_biochemistry
+
+! zsalinity has been deprecated
+!    ! solve_zsal:
+!    ! if true, update salinity profile from solve_S_dt
+!    !solve_zsal = config_use_vertical_zsalinity
+
+    ! modal_aero:
+    ! if true, use modal aerosal optical properties
+    ! only for use with tr_aero or tr_zaero
+    !modal_aero = config_use_shortwave_bioabsorption
+
+    ! grid_o:
+    ! for bottom flux
+    !grid_o = config_biogrid_bottom_molecular_sublayer
+
+    ! l_sk:
+    ! characteristic diffusive scale (brine) (m)
+    !l_sk =config_bio_gravity_drainage_length_scale
+
+    ! grid_o_t:
+    ! top grid point length scale
+    !grid_o_t = config_biogrid_top_molecular_sublayer
+
+    ! phi_snow:
+    ! porosity of snow
+    !phi_snow = config_snow_porosity_at_ice_surface
+
+    ! initbio_frac:
+    ! fraction of ocean tracer concentration used to initialize tracer
+    !initbio_frac = config_new_ice_fraction_biotracer
+
+    ! frazil_scav:
+    ! multiple of ocean tracer concentration due to frazil scavenging
+    !frazil_scav = config_fraction_biotracer_in_frazil
+
+    ! ratio_Si2N_diatoms:
+    ! ratio of algal Silicate to Nitrate (mol/mol)
+    ! ratio_Si2N_diatoms = config_ratio_Si_to_N_diatoms
+
+    ! ratio_Si2N_sp:
+    ! ratio of algal Silicate to Nitrogen (mol/mol)
+    ! ratio_Si2N_sp = config_ratio_Si_to_N_small_plankton
+
+    ! ratio_Si2N_phaeo:
+    ! ratio of algal Silicate to Nitrogen (mol/mol)
+    ! ratio_Si2N_phaeo = config_ratio_Si_to_N_phaeocystis
+
+    ! ratio_S2N_diatoms:
+    ! ratio of algal Sulphur to Nitrogen (mol/mol)
+    ! ratio_S2N_diatoms = config_ratio_S_to_N_diatoms
+
+    ! ratio_S2N_sp:
+    ! ratio of algal Sulphur to Nitrogen (mol/mol)
+    ! ratio_S2N_sp = config_ratio_S_to_N_small_plankton
+
+    ! ratio_S2N_phaeo:
+    ! ratio of algal Sulphur to Nitrogen (mol/mol)
+    ! ratio_S2N_phaeo = config_ratio_S_to_N_phaeocystis
+
+    ! ratio_Fe2C_diatoms:
+    ! ratio of algal iron to carbon (umol/mol)
+    ! ratio_Fe2C_diatoms = config_ratio_Fe_to_C_diatoms
+
+    ! ratio_Fe2C_sp:
+    ! ratio of algal iron to carbon (umol/mol)
+    ! ratio_Fe2C_sp = config_ratio_Fe_to_C_small_plankton
+
+    ! ratio_Fe2C_phaeo:
+    ! ratio of algal iron to carbon (umol/mol)
+    ! ratio_Fe2C_phaeo = config_ratio_Fe_to_C_phaeocystis
+
+    ! ratio_Fe2N_diatoms:
+    ! ratio of algal iron to nitrogen (umol/mol)
+    ! ratio_Fe2N_diatoms = config_ratio_Fe_to_N_diatoms
+
+    ! ratio_Fe2N_sp:
+    ! ratio of algal iron to nitrogen (umol/mol)
+    ! ratio_Fe2N_sp = config_ratio_Fe_to_N_small_plankton
+
+    ! ratio_Fe2N_phaeo:
+    ! ratio of algal iron to nitrogen (umol/mol)
+    ! ratio_Fe2N_phaeo = config_ratio_Fe_to_N_phaeocystis
+
+    ! ratio_Fe2DON:
+    ! ratio of iron to nitrogen of DON (nmol/umol)
+    ! ratio_Fe2DON = config_ratio_Fe_to_DON
+
+    ! ratio_Fe2DOC_s:
+    ! ratio of iron to carbon of DOC (nmol/umol) saccharids
+    ! ratio_Fe2DOC_s = config_ratio_Fe_to_DOC_saccharids
+
+    ! ratio_Fe2DOC_l:
+    ! ratio of iron to carbon of DOC (nmol/umol) lipids
+    ! ratio_Fe2DOC_l = config_ratio_Fe_to_DOC_lipids
+
+    ! fr_resp:
+    ! fraction of algal growth lost due to respiration
+    ! fr_resp = config_respiration_fraction_of_growth
+
+    ! tau_min:
+    ! rapid mobile to stationary exchanges (s) = 1.5 hours
+    ! tau_min = config_rapid_mobile_to_stationary_time
+
+    ! tau_max:
+    ! long time mobile to stationary exchanges (s) = 2 days
+    ! tau_max = config_long_mobile_to_stationary_time
+
+    ! algal_vel:
+    ! 0.5 cm/d(m/s) Lavoie 2005  1.5 cm/day
+    ! algal_vel = config_algal_maximum_velocity
+
+    ! R_dFe2dust:
+    !  g/g (3.5% content) Tagliabue 2009
+    ! R_dFe2dust = config_ratio_Fe_to_dust
+
+    ! dustFe_sol;
+    ! solubility fraction
+    ! dustFe_sol = config_solubility_of_Fe_in_dust
+
+    ! chlabs_diatoms:
+    ! chl absorption (1/m/(mg/m^3))
+    ! chlabs_diatoms = config_chla_absorptivity_of_diatoms
+
+    ! chlabs_sp:
+    ! chl absorption (1/m/(mg/m^3))
+    ! chlabs_sp = config_chla_absorptivity_of_small_plankton
+
+    ! chlabs_phaeo:
+    ! chl absorption (1/m/(mg/m^3))
+    ! chlabs_phaeo = config_chla_absorptivity_of_phaeocystis
+
+    ! alpha2max_low_diatoms:
+    ! light limitation diatoms (1/(W/m^2))
+    ! alpha2max_low_diatoms = config_light_attenuation_diatoms
+
+    ! alpha2max_low_sp:
+    ! light limitation small plankton (1/(W/m^2))
+    ! alpha2max_low_sp = config_light_attenuation_small_plankton
+
+    ! alpha2max_low_phaeo:
+    ! light limitation phaeocystis (1/(W/m^2))
+    ! alpha2max_low_phaeo = config_light_attenuation_phaeocystis
+
+    ! beta2max_diatoms:
+    ! light inhibition diatoms(1/(W/m^2))
+    ! beta2max_diatoms = config_light_inhibition_diatoms
+
+    ! beta2max_sp:
+    ! light inhibition small plankton(1/(W/m^2))
+    ! beta2max_sp = config_light_inhibition_small_plankton
+
+    ! beta2max_phaeo:
+    ! light inhibition phaeocystis (1/(W/m^2))
+    ! beta2max_phaeo = config_light_inhibition_phaeocystis
+
+    ! mu_max_diatoms:
+    ! maximum growth rate diatoms (1/day)
+    ! mu_max_diatoms = config_maximum_growth_rate_diatoms
+
+    ! mu_max_sp:
+    ! maximum growth rate small plankton (1/day)
+    ! mu_max_sp = config_maximum_growth_rate_small plankton
+
+    ! mu_max_phaeo:
+    ! maximum growth rate phaeocystis (1/day)
+    ! mu_max_phaeo = config_maximum_growth_rate_phaeocystis
+
+    ! grow_Tdep_sp:
+    ! Temperature dependence of growth small plankton (1/C)
+    ! grow_Tdep_sp = config_temperature_growth_small_plankton
+
+    ! grow_Tdep_phaeo:
+    ! Temperature dependence of growth phaeocystis (1/C)
+    ! grow_Tdep_phaeo = config_temperature_growth_phaeocystis
+
+    ! fr_graze_diatoms:
+    ! Fraction grazed diatoms
+    ! fr_graze_diatoms = config_grazed_fraction_diatoms
+
+    ! fr_graze_sp:
+    ! Fraction grazed small_plankton
+    ! fr_graze_sp = config_grazed_fraction_small_plankton
+
+    ! fr_graze_phaeo:
+    ! Fraction grazed phaeocystis
+    ! fr_graze_phaeo = config_grazed_fraction_phaeocystis
+
+    ! mort_pre_diatoms:
+    ! Mortality diatoms (1/day)
+    ! mort_pre_diatoms = config_mortality_diatoms
+
+    ! mort_pre_sp:
+    ! Mortality small_plankton (1/day)
+    ! mort_pre_sp = config_mortality_small_plankton
+
+    ! mort_pre_phaeo:
+    ! Mortality phaeocystis (1/day)
+    ! mort_pre_phaeo = config_mortality_phaeocystis
+
+    ! mort_Tdep_diatoms:
+    ! T dependence of mortality diatoms (1/C)
+    ! mort_Tdep_diatoms = config_temperature_mortality_diatoms
+
+    ! mort_Tdep_sp:
+    ! T dependence of mortality small plankton (1/C)
+    ! mort_Tdep_sp = config_temperature_mortality_small_plankton
+
+    ! mort_Tdep_phaeo:
+    ! T dependence of mortality phaeocystis (1/C)
+    ! mort_Tdep_phaeo = config_temperature_mortality_phaeocystis
+
+    ! k_exude_diatoms:
+    ! algal exudation diatoms (1/d)
+    ! k_exude_diatoms = config_exudation_diatoms
+
+    ! k_exude_sp:
+    ! algal exudation small_plankton (1/d)
+    ! k_exude_sp = config_exudation_small_plankton
+
+    ! k_exude_phaeo:
+    ! algal exudation phaeocystis (1/d)
+    ! k_exude_phaeo = config_exudation_phaeocystis
+
+    ! K_Nit_diatoms:
+    ! nitrate half saturation diatoms (mmol/m^3)
+    ! K_Nit_diatoms = config_nitrate_saturation_diatoms
+
+    ! K_Nit_sp:
+    ! nitrate half saturation small_plankton (mmol/m^3)
+    ! K_Nit_sp = config_nitrate_saturation_small_plankton
+
+    ! K_Nit_phaeo:
+    ! nitrate half saturation phaeocystis (mmol/m^3)
+    ! K_Nit_phaeocystis = config_nitrate_saturation_phaeocystis
+
+    ! K_Am_diatoms:
+    ! ammonium half saturation diatoms (mmol/m^3)
+    ! K_Am_diatoms = config_ammonium_saturation_diatoms
+
+    ! K_Am_sp:
+    ! ammonium half saturation small_plankton (mmol/m^3)
+    ! K_Am_sp = config_ammonium_saturation_small_plankton
+
+    ! K_Am_phaeo:
+    ! ammonium half saturation phaeocystis (mmol/m^3)
+    ! K_Am_phaeocystis = config_ammonium_saturation_phaeocystis
+
+    ! K_Sil_diatoms:
+    ! silicate half saturation diatoms (mmol/m^3)
+    ! K_Sil_diatoms = config_silicate_saturation_diatoms
+
+    ! K_Sil_sp:
+    ! silicate half saturation small_plankton (mmol/m^3)
+    ! K_Sil_sp = config_silicate_saturation_small_plankton
+
+    ! K_Sil_phaeo:
+    ! silicate half saturation phaeocystis (mmol/m^3)
+    ! K_Sil_phaeocystis = config_silicate_saturation_phaeocystis
+
+    ! K_Fe_diatoms:
+    ! iron half saturation diatoms (nM)
+    ! K_Fe_diatoms = config_iron_saturation_diatoms
+
+    ! K_Fe_sp:
+    ! iron half saturation small_plankton (nM)
+    ! K_Fe_sp = config_iron_saturation_small_plankton
+
+    ! K_Fe_phaeo:
+    ! iron half saturation phaeocystis (nM)
+    ! K_Fe_phaeocystis = config_iron_saturation_phaeocystis
+
+    ! f_don_protein:
+    ! fraction of spilled grazing to proteins    !
+    ! f_don_protein = config_fraction_spilled_to_DON
+
+    ! kn_bac_protein:
+    ! Bacterial degredation of DON (1/d)    !     !
+    ! kn_bac_protein = config_degredation_of_DON
+
+    ! f_don_Am_protein:
+    ! fraction of remineralized DON to ammonium    !
+    ! f_don_Am_protein = config_fraction_DON_ammonium
+
+    ! f_doc_s:
+    ! fraction of mortality to DOC saccharids
+    ! f_doc_s = config_fraction_loss_to_saccharids
+
+    ! f_doc_l:
+    ! fraction of mortality to DOC lipids
+    ! f_doc_l = config_fraction_loss_to_lipids
+
+    ! f_exude_s:
+    ! fraction of exudation to DOC saccharids
+    ! f_exude_s = config_fraction_exudation_to_saccharids
+
+    ! f_exude_l:
+    ! fraction of exudation to DOC lipids
+    ! f_exude_l = config_fraction_exudation_to_lipids
+
+    ! k_bac_s:
+    ! Bacterial degredation of DOC (1/d) saccharids
+    ! k_bac_s = config_remineralization_saccharids
+
+    ! k_bac_l:
+    ! Bacterial degredation of DOC (1/d) lipids
+    ! k_bac_l = config_remineralization_lipids
+
+    ! T_max:
+    ! maximum temperature (C)
+    ! T_max = config_maximum_brine_temperature
+
+    ! fsal:
+    ! Salinity limitation (ppt)
+    ! fsal = config_salinity_dependence_of_growth
+
+    ! op_dep_min:
+    ! Light attenuates for optical depths exceeding min
+    ! op_dep_min = config_minimum_optical_depth
+
+    ! fr_graze_s:
+    ! fraction of grazing spilled or slopped
+    ! fr_graze_s = config_slopped_grazing_fraction
+
+    ! fr_graze_e:
+    ! fraction of assimilation excreted
+    ! fr_graze_e = config_excreted_fraction
+
+    ! fr_mort2min:
+    ! fractionation of mortality to Am
+    ! fr_mort2min = config_fraction_mortality_to_ammonium
+
+    ! fr_dFe:
+    ! remineralized nitrogen (in units of algal iron)
+    ! fr_dFe = config_fraction_iron_remineralized
+
+    ! k_nitrif:
+    ! nitrification rate (1/day)
+    ! k_nitrif = config_nitrification_rate
+
+    ! t_iron_conv:
+    ! desorption loss pFe to dFe (day)
+    ! t_iron_conv = config_desorption_loss_particulate_iron
+
+    ! max_loss:
+    ! restrict uptake to % of remaining value
+    ! max_loss = config_maximum_loss_fraction
+
+    ! max_dfe_doc1:
+    ! max ratio of dFe to saccharides in the ice  (nM Fe/muM C)
+    ! max_dfe_doc1 = config_maximum_ratio_iron_to_saccharids
+
+    ! fr_resp_s:
+    ! DMSPd fraction of respiration loss as DMSPd
+    ! fr_resp_s = config_respiration_loss_to_DMSPd
+
+    ! y_sk_DMS:
+    ! fraction conversion given high yield
+    ! y_sk_DMS = config_DMSP_to_DMS_conversion_fraction
+
+    ! t_sk_conv:
+    ! Stefels conversion time (d)
+    ! t_sk_conv = config_DMSP_to_DMS_conversion_time
+
+    ! t_sk_ox:
+    ! DMS oxidation time (d)
+    ! t_sk_ox = config_DMS_oxidation_time
+
+    ! algaltype_diatoms:
+    ! mobility type diatoms
+    ! algaltype_diatoms = config_mobility_type_diatoms
+
+    ! algaltype_sp:
+    ! mobility type small_plankton
+    ! algaltype_sp = config_mobility_type_small_plankton
+
+    ! algaltype_phaeo:
+    ! mobility type phaeocystis
+    ! algaltype_phaeo = config_mobility_type_phaeocystis
+
+    ! nitratetype:
+    ! mobility type nitrate
+    ! nitratetype = config_mobility_type_nitrate
+
+    ! ammoniumtype:
+    ! mobility type ammonium
+    ! ammoniumtype = config_mobility_type_ammonium
+
+    ! silicatetype:
+    ! mobility type silicate
+    ! silicatetype = config_mobility_type_silicate
+
+    ! dmspptype:
+    ! mobility type DMSPp
+    ! dmspptype = config_mobility_type_DMSPp
+
+    ! dmspdtype:
+    ! mobility type DMSPd
+    ! dmspdtype = config_mobility_type_DMSPd
+
+    ! humicstype:
+    ! mobility type humics
+    ! humicstype = config_mobility_type_humics
+
+    ! doctype_s:
+    ! mobility type sachharids
+    ! doctype_s = config_mobility_type_saccharids
+
+    ! doctype_l:
+    ! mobility type lipids
+    ! doctype_l = config_mobility_type_lipids
+
+    ! dictype_1:
+    ! mobility type dissolved inorganic carbon
+    ! dictype_1 = config_mobility_type_inorganic_carbon
+
+    ! dontype_protein:
+    ! mobility type proteins
+    ! dontype_protein = config_mobility_type_proteins
+
+    ! fedtype_1:
+    ! mobility type dissolved iron
+    ! fedtype_1 =  config_mobility_type_dissolved_iron
+
+    ! feptype_1:
+    ! mobility type particulate iron
+    ! feptype_1 =  config_mobility_type_particulate_iron
+
+    ! zaerotype_bc1:
+    ! mobility type for black carbon 1
+    ! zaerotype_bc1 = config_mobility_type_black_carbon1
+
+    ! zaerotype_bc2:
+    ! mobility type for black carbon 2
+    ! zaerotype_bc2 = config_mobility_type_black_carbon2
+
+    ! zaerotype_dust1:
+    ! mobility type for dust 1
+    ! zaerotype_dust1 = config_mobility_type_dust1
+
+    ! zaerotype_dust2:
+    ! mobility type for dust 2
+    ! zaerotype_dust2 = config_mobility_type_dust2
+
+    ! zaerotype_dust3:
+    ! mobility type for dust 3
+    ! zaerotype_dust3 = config_mobility_type_dust3
+
+    ! zaerotype_dust4:
+    ! mobility type for dust 4
+    ! zaerotype_dust4 = config_mobility_type_dust4
+
+    ! ratio_C2N_diatoms:
+    ! algal C to N ratio (mol/mol) diatoms
+    ! ratio_C2N_diatoms = config_ratio_C_to_N_diatoms
+
+    ! ratio_C2N_sp:
+    ! algal C to N ratio (mol/mol) small_plankton
+    ! ratio_C2N_sp = config_ratio_C_to_N_small_plankton
+
+    ! ratio_C2N_phaeo:
+    ! algal C to N ratio (mol/mol) phaeocystis
+    ! ratio_C2N_phaeo = config_ratio_C_to_N_phaeocystis
+
+    ! ratio_chl2N_diatoms:
+    ! algal chla to N ratio (mol/mol) diatoms
+    ! ratio_chl2N_diatoms = config_ratio_chla_to_N_diatoms
+
+    ! ratio_chl2N_sp:
+    ! algal chla to N ratio (mol/mol) small_plankton
+    ! ratio_chl2N_sp = config_ratio_chla_to_N_small_plankton
+
+    ! ratio_chl2N_phaeo:
+    ! algal chla to N ratio (mol/mol) phaeocystis
+    ! ratio_chl2N_phaeo = config_ratio_chla_to_N_phaeocystis
+
+    ! F_abs_chl_diatoms:
+    ! scales absorbed radiation for dEdd diatoms
+    ! F_abs_chl_diatoms = config_scales_absorption_diatoms
+
+    ! F_abs_chl_sp:
+    ! scales absorbed radiation for dEdd small_plankton
+    ! F_abs_chl_sp = config_scales_absorption_small_plankton
+
+    ! F_abs_chl_phaeo:
+    ! scales absorbed radiation for dEdd phaeocystis
+    ! F_abs_chl_phaeo = config_scales_absorption_phaeocystis
+
+    ! ratio_C2N_proteins:
+    ! ratio of C to N in proteins (mol/mol)
+    ! ratio_C2N_proteins = config_ratio_C_to_N_proteins
+
+!    ! grid_oS:
+!    ! for bottom flux (zsalinity)
+!    !grid_oS = config_zsalinity_molecular_sublayer
+
+!    ! l_skS:
+!    ! 0.02 characteristic skeletal layer thickness (m) (zsalinity)
+!    !l_skS = config_zsalinity_gravity_drainage_scale
+
+    !-----------------------------------------------------------------------
+    ! Parameters for snow
+    !-----------------------------------------------------------------------
+
+    ! snwredist:
+    ! snow redistribution type
+    ! snwredist = config_snow_redistribution_scheme
+
+    ! use_smliq_pnd:
+    ! convert excess snow liquid to ponds
+    ! use_smliq_pnd = config_use_snow_liquid_ponds
+
+    ! rsnw_fall:
+    ! fallen snow grain radius (um)
+    ! rsnw_fall = config_fallen_snow_radius
+
+    ! rsnw_tmax:
+    ! maximum dry metamorphism snow grain radius (um)
+    ! rsnw_tmax = config_max_dry_snow_radius
+
+    ! rhosnew:
+    ! new snow density (kg/m^3)
+    ! rhosnew = config_new_snow_density
+
+    ! rhosmax:
+    ! maximum snow density (kg/m^3)
+    ! rhosmax = config_max_snow_density
+
+    ! windmin:
+    ! minimum wind speed to compact snow (m/s)
+    ! windmin = config_minimum_wind_compaction 
+
+    ! drhosdwind:
+    ! wind compaction factor (kg s/m^4)
+    ! drhosdwind = config_wind_compaction_factor
+
     ! ksno:
-    ! snow thermal conductivity
+    ! Thermal conductivity of snow (W/m/deg)
     ! ksno = config_snow_thermal_conductivity
 
-  end subroutine init_column_package_configs
+  end subroutine init_icepack_package_configs
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -12391,8 +13358,8 @@ contains
 !  config_cice_int
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 20th January 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
@@ -12412,8 +13379,6 @@ contains
     case ("config_thermodynamics_type")
 
        select case (trim(configValue))
-       case ("zero layer")
-          configValueCice = 0
        case ("BL99")
           configValueCice = 1
        case ("mushy")
@@ -12482,17 +13447,17 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  init_column_non_activated_pointers
+!  init_icepack_non_activated_pointers
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 5th March 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
 !-----------------------------------------------------------------------
 
-  subroutine init_column_non_activated_pointers(domain)
+  subroutine init_icepack_non_activated_pointers(domain)
 
     type(domain_type) :: domain
 
@@ -12536,7 +13501,7 @@ contains
          pkgTracerVerticalDONActive, &
          pkgTracerVerticalIronActive, &
          pkgTracerZAerosolsActive, &
-         pkgTracerZSalinityActive, &
+!         pkgTracerZSalinityActive, &           !echmod deprecate
          pkgColumnTracerEffectiveSnowDensityActive, &
          pkgColumnTracerSnowGrainRadiusActive
 
@@ -12603,7 +13568,7 @@ contains
        call MPAS_pool_get_package(block % packages, "pkgTracerVerticalDONActive", pkgTracerVerticalDONActive)
        call MPAS_pool_get_package(block % packages, "pkgTracerVerticalIronActive", pkgTracerVerticalIronActive)
        call MPAS_pool_get_package(block % packages, "pkgTracerZAerosolsActive", pkgTracerZAerosolsActive)
-       call MPAS_pool_get_package(block % packages, "pkgTracerZSalinityActive", pkgTracerZSalinityActive)
+!       call MPAS_pool_get_package(block % packages, "pkgTracerZSalinityActive", pkgTracerZSalinityActive) !echmod - deprecate
        call MPAS_pool_get_package(block % packages, "pkgColumnTracerEffectiveSnowDensityActive", pkgColumnTracerEffectiveSnowDensityActive)
        call MPAS_pool_get_package(block % packages, "pkgColumnTracerSnowGrainRadiusActive", pkgColumnTracerSnowGrainRadiusActive)
 
@@ -12751,20 +13716,20 @@ contains
           call set_stand_in_tracer_array(block, "verticalAerosolsSnow")
           call set_stand_in_tracer_array(block, "verticalAerosolsIce")
        endif
-       if (.not. pkgTracerZSalinityActive) then
-          call set_stand_in_tracer_array(block, "verticalSalinity")
-       endif
+!       if (.not. pkgTracerZSalinityActive) then                          !echmod - deprecate
+!          call set_stand_in_tracer_array(block, "verticalSalinity")
+!       endif
 
-       ! snow density tracers
+       ! snow density tracer
        if (.not. pkgColumnTracerEffectiveSnowDensityActive) then
           call set_stand_in_tracer_array(block, "snowDensity")
        endif
 
        ! snow grain radius
        if (.not. pkgColumnTracerSnowGrainRadiusActive) then
-          call set_stand_in_tracer_array(block, "snowGrainRadius")
           call set_stand_in_tracer_array(block, "snowLiquidMass")
           call set_stand_in_tracer_array(block, "snowIceMass")
+          call set_stand_in_tracer_array(block, "snowGrainRadius")
        endif
        !-----------------------------------------------------------------------
        ! other column packages
@@ -12818,21 +13783,21 @@ contains
        block => block % next
     end do
 
-  end subroutine init_column_non_activated_pointers
+  end subroutine init_icepack_non_activated_pointers
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  finalize_column_non_activated_pointers
+!  finalize_icepack_non_activated_pointers
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 29th October 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
 !-----------------------------------------------------------------------
 
-  subroutine finalize_column_non_activated_pointers(domain)
+  subroutine finalize_icepack_non_activated_pointers(domain)
 
     type(domain_type) :: domain
 
@@ -12875,7 +13840,7 @@ contains
          pkgTracerVerticalDONActive, &
          pkgTracerVerticalIronActive, &
          pkgTracerZAerosolsActive, &
-         pkgTracerZSalinityActive, &
+!         pkgTracerZSalinityActive, &                   !echmod deprecate
          pkgColumnTracerEffectiveSnowDensityActive, &
          pkgColumnTracerSnowGrainRadiusActive
 
@@ -12934,7 +13899,7 @@ contains
        call MPAS_pool_get_package(block % packages, "pkgTracerVerticalDONActive", pkgTracerVerticalDONActive)
        call MPAS_pool_get_package(block % packages, "pkgTracerVerticalIronActive", pkgTracerVerticalIronActive)
        call MPAS_pool_get_package(block % packages, "pkgTracerZAerosolsActive", pkgTracerZAerosolsActive)
-       call MPAS_pool_get_package(block % packages, "pkgTracerZSalinityActive", pkgTracerZSalinityActive)
+!       call MPAS_pool_get_package(block % packages, "pkgTracerZSalinityActive", pkgTracerZSalinityActive)      !echmod deprecate
        call MPAS_pool_get_package(block % packages, "pkgColumnTracerEffectiveSnowDensityActive", pkgColumnTracerEffectiveSnowDensityActive)
        call MPAS_pool_get_package(block % packages, "pkgColumnTracerSnowGrainRadiusActive", pkgColumnTracerSnowGrainRadiusActive)
 
@@ -13081,11 +14046,11 @@ contains
           call finalize_stand_in_tracer_array(block, "verticalAerosolsSnow")
           call finalize_stand_in_tracer_array(block, "verticalAerosolsIce")
        endif
-       if (.not. pkgTracerZSalinityActive) then
-          call finalize_stand_in_tracer_array(block, "verticalSalinity")
-       endif
+!       if (.not. pkgTracerZSalinityActive) then                            !echmod deprecate
+!          call finalize_stand_in_tracer_array(block, "verticalSalinity")
+!       endif
 
-       ! snow density tracers
+       ! snow density tracer
        if (.not. pkgColumnTracerEffectiveSnowDensityActive) then
           call finalize_stand_in_tracer_array(block, "snowDensity")
        endif
@@ -13144,7 +14109,7 @@ contains
        block => block % next
     end do
 
-  end subroutine finalize_column_non_activated_pointers
+  end subroutine finalize_icepack_non_activated_pointers
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -13223,8 +14188,8 @@ contains
 !  init_column_history_variables
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 3rd April 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
@@ -13257,17 +14222,17 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  seaice_column_initial_air_drag_coefficient
+!  seaice_icepack_initial_air_drag_coefficient
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
 !-----------------------------------------------------------------------
 
-  function seaice_column_initial_air_drag_coefficient() result(airDragCoefficient)
+  function seaice_icepack_initial_air_drag_coefficient() result(airDragCoefficient)
 
     use seaice_constants, only: &
          seaiceVonKarmanConstant, &
@@ -13280,21 +14245,21 @@ contains
     airDragCoefficient = (seaiceVonKarmanConstant/log(seaiceStabilityReferenceHeight/seaiceIceSurfaceRoughness)) &
                        * (seaiceVonKarmanConstant/log(seaiceStabilityReferenceHeight/seaiceIceSurfaceRoughness))
 
-  end function seaice_column_initial_air_drag_coefficient
+  end function seaice_icepack_initial_air_drag_coefficient
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  seaice_column_reinitialize_fluxes
+!  seaice_icepack_reinitialize_fluxes
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 31st August 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
 !-----------------------------------------------------------------------
 
-  subroutine seaice_column_reinitialize_fluxes(domain)
+  subroutine seaice_icepack_reinitialize_fluxes(domain)
 
     type(domain_type) :: domain
 
@@ -13304,7 +14269,7 @@ contains
     ! oceanic fluxes
     call seaice_column_reinitialize_oceanic_fluxes(domain)
 
-  end subroutine seaice_column_reinitialize_fluxes
+  end subroutine seaice_icepack_reinitialize_fluxes
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -13467,7 +14432,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  init_column_tracer_object_bio_tracer_number
+!  init_column_tracer_object_for_biogeochemistry
 !
 !> \brief
 !> \author Nicole Jeffery, LANL
@@ -13489,7 +14454,7 @@ contains
 
     logical, pointer :: &
          config_use_brine, &
-         config_use_vertical_zsalinity, &
+         config_use_vertical_zsalinity, &      !echmod deprecate
          config_use_vertical_biochemistry, &
          config_use_vertical_tracers, &
          config_use_skeletal_biochemistry, &
@@ -13637,7 +14602,7 @@ contains
     tracerObject % nTracers = tracerObject % nTracersNotBio
 
     call MPAS_pool_get_config(domain % configs, "config_use_brine", config_use_brine)
-    call MPAS_pool_get_config(domain % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
+    call MPAS_pool_get_config(domain % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)  !echmod deprecate
     call MPAS_pool_get_config(domain % configs, "config_use_shortwave_bioabsorption", config_use_shortwave_bioabsorption)
     call MPAS_pool_get_config(domain % configs, "config_use_vertical_tracers", config_use_vertical_tracers)
     call MPAS_pool_get_config(domain % configs, "config_use_skeletal_biochemistry", config_use_skeletal_biochemistry)
@@ -13862,7 +14827,7 @@ contains
          config_use_silicate, &
          config_use_DMS, &
          config_use_nonreactive, &
-         config_use_vertical_zsalinity, &
+         config_use_vertical_zsalinity, &      !echmod deprecate
          use_nitrogen, &
          config_use_carbon, &
          config_use_chlorophyll, &
@@ -13890,7 +14855,7 @@ contains
          tracerObject % index_humicsConc, &
          tracerObject % index_humicsConcLayer, &
          config_use_humics, &
-         config_use_vertical_zsalinity, &
+         config_use_vertical_zsalinity, &            !echmod deprecate
          config_use_skeletal_biochemistry, &
          config_use_vertical_tracers, &
          config_use_shortwave_bioabsorption, &
@@ -14027,8 +14992,8 @@ contains
 
     use ice_colpkg, only: &
          colpkg_init_bgc, &
-         colpkg_init_hbrine, &
-         colpkg_init_zsalinity
+         colpkg_init_hbrine!, &
+!         colpkg_init_zsalinity        !echmod deprecate
 
     type(domain_type), intent(inout) :: domain
 
@@ -14046,10 +15011,10 @@ contains
 
     logical, pointer :: &
          config_use_brine, &
-         config_use_vertical_zsalinity, &
+!         config_use_vertical_zsalinity, &      !echmod deprecate
          config_use_vertical_tracers, &
          config_use_skeletal_biochemistry, &
-         config_do_restart_zsalinity, &
+!         config_do_restart_zsalinity, &        !echmod deprecate
          config_do_restart_bgc, &
          config_do_restart_hbrine, &
          config_use_macromolecules
@@ -14128,15 +15093,17 @@ contains
          abortMessage
 
     call MPAS_pool_get_config(domain % configs, "config_use_brine", config_use_brine)
-    call MPAS_pool_get_config(domain % configs, "config_do_restart_zsalinity", config_do_restart_zsalinity)
+!    call MPAS_pool_get_config(domain % configs, "config_do_restart_zsalinity", config_do_restart_zsalinity)  !echmod deprecate
     call MPAS_pool_get_config(domain % configs, "config_do_restart_bgc", config_do_restart_bgc)
     call MPAS_pool_get_config(domain % configs, "config_do_restart_hbrine", config_do_restart_hbrine)
-    call MPAS_pool_get_config(domain % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
+!    call MPAS_pool_get_config(domain % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity) !echmod deprecate
     call MPAS_pool_get_config(domain % configs, "config_use_skeletal_biochemistry", config_use_skeletal_biochemistry)
     call MPAS_pool_get_config(domain % configs, "config_use_vertical_tracers", config_use_vertical_tracers)
     call MPAS_pool_get_config(domain % configs, "config_dt", config_dt)
     call MPAS_pool_get_config(domain % configs, "config_snow_porosity_at_ice_surface", config_snow_porosity_at_ice_surface)
     call MPAS_pool_get_config(domain % configs, "config_use_macromolecules", config_use_macromolecules)
+
+    abortFlag = .false.
 
     setGetPhysicsTracers = .false.
     setGetBGCTracers     = .true.
@@ -14211,10 +15178,6 @@ contains
             nIceLayers, &
             config_snow_porosity_at_ice_surface)
 
-       ! code abort
-       abortFlag = .false.
-       abortMessage = ""
-
        do iCell = 1, nCellsSolve
           if (.not. config_do_restart_hbrine) then
              ! initialize newly formed ice
@@ -14228,18 +15191,18 @@ contains
           call set_cice_tracer_array_category(block, tracerObject, &
                tracerArrayCategory, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
-          if (config_use_vertical_zsalinity) then
-             call colpkg_init_zsalinity(&
-                  nBioLayers, &
-                  tracerObject % nTracersNotBio, &
-                  config_do_restart_zsalinity, &
-                  rayleighCriteria, &
-                  rayleighCriteriaReal(iCell), &
-                  tracerArrayCategory(tracerObject % nTracersNotBio+1:tracerObject % nTracers,:), &
-                  tracerObject % index_verticalSalinity, &
-                  nCategories, &
-                  seaSurfaceSalinity(iCell))
-          endif
+!          if (config_use_vertical_zsalinity) then        !echmod deprecate
+!             call colpkg_init_zsalinity(&
+!                  nBioLayers, &
+!                  tracerObject % nTracersNotBio, &
+!                  config_do_restart_zsalinity, &
+!                  rayleighCriteria, &
+!                  rayleighCriteriaReal(iCell), &
+!                  tracerArrayCategory(tracerObject % nTracersNotBio+1:tracerObject % nTracers,:), &
+!                  tracerObject % index_verticalSalinity, &
+!                  nCategories, &
+!                  seaSurfaceSalinity(iCell))
+!          endif
 
           if (config_use_vertical_tracers .or. config_use_skeletal_biochemistry) then
              call colpkg_init_bgc(&
@@ -14282,14 +15245,11 @@ contains
                   abortFlag, &
                   abortMessage)
 
-             ! code abort
              if (abortFlag) then
                 call mpas_log_write(&
                      "init_column_biogeochemistry_profiles: colpkg_init_bgc: "//trim(abortMessage), &
                      messageType=MPAS_LOG_CRIT)
-                exit
              endif
-
           endif ! biogeochemistry
 
           ! get the category tracer array
@@ -14298,10 +15258,6 @@ contains
 
        enddo ! iCell
 
-       ! code abort
-       call seaice_critical_error_write_block(domain, block, abortFlag)
-       call seaice_check_critical_error(domain, abortFlag)
-
        block => block % next
     end do
 
@@ -14309,17 +15265,17 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  seaice_column_reinitialize_diagnostics_thermodynamics
+!  seaice_icepack_reinitialize_diagnostics_thermodynamics
 !
 !> \brief Reinitialize thermodynamics diagnostics
-!> \author Adrian K. Turner, LANL
-!> \date 27th September 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>  Reinitialize thermodynamics diagnostics
 !
 !-----------------------------------------------------------------------
 
-  subroutine seaice_column_reinitialize_diagnostics_thermodynamics(domain)
+  subroutine seaice_icepack_reinitialize_diagnostics_thermodynamics(domain)
 
     type(domain_type) :: domain
 
@@ -14510,7 +15466,7 @@ contains
           pondAlbedoCell    = 0.0_RKIND
 
           ! form drag
-          call MPAS_pool_get_config(block % configs, "config_ice_ocean_drag_coefficient", & 
+          call MPAS_pool_get_config(block % configs, "config_ice_ocean_drag_coefficient", &
                                     config_ice_ocean_drag_coefficient)
 
           call MPAS_pool_get_subpool(block % structs, "drag", dragPool)
@@ -14519,7 +15475,7 @@ contains
           call MPAS_pool_get_array(dragPool, "airDragCoefficient", airDragCoefficient)
 
           oceanDragCoefficient = config_ice_ocean_drag_coefficient
-          airDragCoefficient   = seaice_column_initial_air_drag_coefficient()
+          airDragCoefficient   = seaice_icepack_initial_air_drag_coefficient()
 
           call MPAS_pool_get_config(block % configs, "config_use_form_drag", config_use_form_drag)
 
@@ -14589,11 +15545,11 @@ contains
 
     endif ! config_use_column_physics
 
-  end subroutine seaice_column_reinitialize_diagnostics_thermodynamics
+  end subroutine seaice_icepack_reinitialize_diagnostics_thermodynamics
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  seaice_column_reinitialize_diagnostics_dynamics
+!  seaice_icepack_reinitialize_diagnostics_dynamics
 !
 !> \brief Reinitialize dynamics diagnostics
 !> \author Adrian K. Turner, LANL
@@ -14603,7 +15559,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine seaice_column_reinitialize_diagnostics_dynamics(domain)
+  subroutine seaice_icepack_reinitialize_diagnostics_dynamics(domain)
 
     type(domain_type) :: domain
 
@@ -14691,7 +15647,7 @@ contains
           surfaceTiltForceU   = 0.0_RKIND
           surfaceTiltForceV   = 0.0_RKIND
 
-          if (config_use_velocity_solver .and. trim(config_stress_divergence_scheme) == "weak") then
+          if (config_use_velocity_solver .and. trim(config_stress_divergence_scheme) == "weak") then !echmod BUG? - why is this here and wrapped in a config_use_column_physics conditional?
 
              call MPAS_pool_get_subpool(block % structs, "velocity_weak", velocityWeakPool)
 
@@ -14757,21 +15713,21 @@ contains
 
     endif ! config_use_column_physics
 
-  end subroutine seaice_column_reinitialize_diagnostics_dynamics
+  end subroutine seaice_icepack_reinitialize_diagnostics_dynamics
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  seaice_column_reinitialize_diagnostics_bgc
+!  seaice_icepack_reinitialize_diagnostics_bgc
 !
 !> \brief Reinitialize BGC diagnostics
-!> \author Adrian K. Turner, LANL
-!> \date 27th September 2015
+!> \author Adrian K. Turner, Nicole Jeffery, LANL
+!> \date 2022-2023
 !> \details
 !>  Reinitialize BGC diagnostics
 !
 !-----------------------------------------------------------------------
 
-  subroutine seaice_column_reinitialize_diagnostics_bgc(domain)
+  subroutine seaice_icepack_reinitialize_diagnostics_bgc(domain)
 
     type(domain_type) :: domain
 
@@ -14786,8 +15742,8 @@ contains
          primaryProduction, &
          netSpecificAlgalGrowthRate, &
          netBrineHeight, &
-         zSalinityFlux, &
-         zSalinityGDFlux, &
+!         zSalinityFlux, &        !echmod deprecate
+!         zSalinityGDFlux, &      !echmod deprecate
          totalChlorophyll, &
          totalCarbonContentCell
 
@@ -14808,8 +15764,8 @@ contains
          config_use_column_biogeochemistry, &
          config_use_column_shortwave, &
          config_use_column_physics, &
-         config_use_vertical_biochemistry, &
-         config_use_vertical_zsalinity
+         config_use_vertical_biochemistry!, &
+!         config_use_vertical_zsalinity         !echmod deprecate
 
     call MPAS_pool_get_config(domain % blocklist % configs, "config_use_column_physics", config_use_column_physics)
 
@@ -14821,7 +15777,7 @@ contains
           ! biogeochemistry
           call MPAS_pool_get_config(block % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
           call MPAS_pool_get_config(block % configs, "config_use_vertical_biochemistry", config_use_vertical_biochemistry)
-          call MPAS_pool_get_config(block % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
+!          call MPAS_pool_get_config(block % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)    !echmod deprecate
 
           if (config_use_column_biogeochemistry) then
 
@@ -14845,14 +15801,14 @@ contains
 
              end if
 
-             if (config_use_vertical_zsalinity) then
-                call MPAS_pool_get_array(biogeochemistryPool, "zSalinityFlux", zSalinityFlux)
-                call MPAS_pool_get_array(biogeochemistryPool, "zSalinityGDFlux", zSalinityGDFlux)
+!             if (config_use_vertical_zsalinity) then          !echmod deprecate
+!                call MPAS_pool_get_array(biogeochemistryPool, "zSalinityFlux", zSalinityFlux)
+!                call MPAS_pool_get_array(biogeochemistryPool, "zSalinityGDFlux", zSalinityGDFlux)
 
-                zSalinityFlux              = 0.0_RKIND
-                zSalinityGDFlux            = 0.0_RKIND
+!                zSalinityFlux              = 0.0_RKIND
+!                zSalinityGDFlux            = 0.0_RKIND
 
-             end if
+!             end if
 
              call MPAS_pool_get_array(biogeochemistryPool, "netBrineHeight", netBrineHeight)
              call MPAS_pool_get_array(biogeochemistryPool, "oceanBioFluxes", oceanBioFluxes)
@@ -14888,7 +15844,7 @@ contains
 
     endif ! config_use_column_physics
 
-  end subroutine seaice_column_reinitialize_diagnostics_bgc
+  end subroutine seaice_icepack_reinitialize_diagnostics_bgc
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -16277,6 +17233,8 @@ contains
 ! Warning messages
 !-----------------------------------------------------------------------
 
+!echmod: remove this subroutine and all calls to it 
+
   subroutine column_write_warnings(logAsErrors)
 
     use ice_colpkg, only: colpkg_get_warnings
@@ -16306,4 +17264,38 @@ contains
 
 !-----------------------------------------------------------------------
 
-end module seaice_column
+  subroutine seaice_icepack_write_warnings(logAsErrors)
+
+    use icepack_intfc, only: &
+         icepack_warnings_clear, &
+         icepack_warnings_getall
+
+    character(len=256), dimension(:), allocatable :: & ! icepack char_len_long=256
+         warnings
+
+    logical, intent(in) :: &
+         logAsErrors
+
+    integer :: &
+         iWarning
+
+    call icepack_warnings_getall(warnings)
+
+    if (logAsErrors) then
+       do iWarning = 1, size(warnings)
+          call mpas_log_write(trim(warnings(iWarning)), messageType=MPAS_LOG_ERR)
+       enddo ! iWarning
+       call mpas_log_write("icepack aborted", MPAS_LOG_CRIT)
+    else
+       do iWarning = 1, size(warnings)
+          call mpas_log_write(trim(warnings(iWarning)), messageType=MPAS_LOG_WARN)
+       enddo ! iWarning
+    endif
+
+    call icepack_warnings_clear()
+
+  end subroutine seaice_icepack_write_warnings
+
+  !-----------------------------------------------------------------------
+
+end module seaice_icepack
