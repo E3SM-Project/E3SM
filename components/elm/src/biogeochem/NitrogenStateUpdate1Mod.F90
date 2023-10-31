@@ -286,7 +286,7 @@ contains
               veg_ns%frootn(p)      = veg_ns%frootn(p)      + veg_nf%frootn_xfer_to_frootn(p)*dt
               veg_ns%frootn_xfer(p) = veg_ns%frootn_xfer(p) - veg_nf%frootn_xfer_to_frootn(p)*dt
 
-              if (woody(ivt(p)) == 1.0_r8) then
+              if (woody(ivt(p)) >= 1.0_r8) then
                   veg_ns%livestemn(p)       = veg_ns%livestemn(p)       + veg_nf%livestemn_xfer_to_livestemn(p)*dt
                   veg_ns%livestemn_xfer(p)  = veg_ns%livestemn_xfer(p)  - veg_nf%livestemn_xfer_to_livestemn(p)*dt
                   veg_ns%deadstemn(p)       = veg_ns%deadstemn(p)       + veg_nf%deadstemn_xfer_to_deadstemn(p)*dt
@@ -312,7 +312,7 @@ contains
               veg_ns%retransn(p) = veg_ns%retransn(p) + veg_nf%leafn_to_retransn(p)*dt
 
               ! live wood turnover and retranslocation fluxes
-              if (woody(ivt(p)) == 1._r8) then
+              if (woody(ivt(p)) >= 1.0_r8) then
                   veg_ns%livestemn(p)  = veg_ns%livestemn(p)  - veg_nf%livestemn_to_deadstemn(p)*dt
                   veg_ns%deadstemn(p)  = veg_ns%deadstemn(p)  + veg_nf%livestemn_to_deadstemn(p)*dt
                   veg_ns%livestemn(p)  = veg_ns%livestemn(p)  - veg_nf%livestemn_to_retransn(p)*dt
@@ -354,7 +354,7 @@ contains
               veg_ns%npool(p)           = veg_ns%npool(p)          - veg_nf%npool_to_frootn_storage(p)*dt
               veg_ns%frootn_storage(p)  = veg_ns%frootn_storage(p) + veg_nf%npool_to_frootn_storage(p)*dt
 
-              if (woody(ivt(p)) == 1._r8) then
+              if (woody(ivt(p)) >= 1.0_r8) then
                   veg_ns%npool(p)              = veg_ns%npool(p)              - veg_nf%npool_to_livestemn(p)*dt
                   veg_ns%livestemn(p)          = veg_ns%livestemn(p)          + veg_nf%npool_to_livestemn(p)*dt
                   veg_ns%npool(p)              = veg_ns%npool(p)              - veg_nf%npool_to_livestemn_storage(p)*dt
@@ -390,7 +390,7 @@ contains
               veg_ns%frootn_storage(p) = veg_ns%frootn_storage(p) - veg_nf%frootn_storage_to_xfer(p)*dt
               veg_ns%frootn_xfer(p)    = veg_ns%frootn_xfer(p)    + veg_nf%frootn_storage_to_xfer(p)*dt
 
-              if (woody(ivt(p)) == 1._r8) then
+              if (woody(ivt(p)) >= 1.0_r8) then
                   veg_ns%livestemn_storage(p)  = veg_ns%livestemn_storage(p)  - veg_nf%livestemn_storage_to_xfer(p)*dt
                   veg_ns%livestemn_xfer(p)     = veg_ns%livestemn_xfer(p)     + veg_nf%livestemn_storage_to_xfer(p)*dt
                   veg_ns%deadstemn_storage(p)  = veg_ns%deadstemn_storage(p)  - veg_nf%deadstemn_storage_to_xfer(p)*dt

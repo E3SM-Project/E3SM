@@ -477,7 +477,7 @@ contains
              this%livestemc_storage_patch(p) = 0._r8 
              this%livestemc_xfer_patch(p)    = 0._r8 
 
-             if (veg_vp%woody(veg_pp%itype(p)) == 1._r8) then
+             if (veg_vp%woody(veg_pp%itype(p)) >= 1.0_r8) then
                 this%deadstemc_patch(p) = 0.1_r8 * ratio
              else
                 this%deadstemc_patch(p) = 0._r8 

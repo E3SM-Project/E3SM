@@ -588,7 +588,7 @@ contains
           ! tree types need to be initialized with some stem mass so that
           ! roughness length is not zero in canopy flux calculation
 
-          if (veg_vp%woody(veg_pp%itype(p)) == 1._r8) then
+          if (veg_vp%woody(veg_pp%itype(p)) >= 1.0_r8) then
              this%deadstemn_patch(p) = deadstemc_patch(p) / veg_vp%deadwdcn(veg_pp%itype(p))
           else
              this%deadstemn_patch(p) = 0._r8

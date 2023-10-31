@@ -115,7 +115,7 @@ module pftvarcon
   real(r8), allocatable :: dsladlai(:)    !dSLA/dLAI [m^2/gC]
   real(r8), allocatable :: leafcn(:)      !leaf C:N [gC/gN]
   real(r8), allocatable :: flnr(:)        !fraction of leaf N in Rubisco [no units]
-  real(r8), allocatable :: woody(:)       !woody lifeform flag (0 or 1)
+  real(r8), allocatable :: woody(:)       !woody lifeform flag (0 = non-woody, 1 = tree, 2 = shrub)
   real(r8), allocatable :: lflitcn(:)     !leaf litter C:N (gC/gN)
   real(r8), allocatable :: frootcn(:)     !fine root C:N (gC/gN)
   real(r8), allocatable :: livewdcn(:)    !live wood (phloem and ray parenchyma) C:N (gC/gN)
@@ -1146,11 +1146,6 @@ contains
        end do
     end if
 
-    ! woody=2 for shrub NOT YET ready in rest of ELM code
-    do i = 0, npft-1
-       if (woody(i)>1) woody(i) == 1
-    end do
-
     call ncd_pio_closefile(ncid)
 
 
@@ -1239,6 +1234,10 @@ contains
     end if
 
    !-------------------------------------------------------------------------------------------
+    ! default: for tree and shrub always 1, now hard-coded as following
+    woody(ndllf_evr_tmp_tree:nbrdlf_dcd_brl_tree) = 1
+    woody(nbrdlf_evr_shrub:nbrdlf_dcd_brl_shrub)  = 2
+
     ! the following is initialized as 0 above for all PFT.
     ! here the hard-coded values (or flags) for default ELM PFT physiology will be working as original
     ! when not using those indexing of PFT orders anymore in other codes than here.

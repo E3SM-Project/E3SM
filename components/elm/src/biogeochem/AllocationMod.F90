@@ -583,7 +583,7 @@ contains
          ! These fluxes should already be in gC/m2/s
 
          mr = leaf_mr(p) + froot_mr(p)
-         if (woody(ivt(p)) == 1.0_r8) then
+         if (woody(ivt(p)) >= 1.0_r8) then
             mr = mr + livestem_mr(p) + livecroot_mr(p)
          else if (ivt(p) >= npcropmin) then
             if (croplive(p)) mr = mr + livestem_mr(p) + grain_mr(p)
@@ -815,7 +815,7 @@ contains
          ! determine N requirements
          ! determine P requirements   -X. YANG
 
-         if (woody(ivt(p)) == 1.0_r8) then
+         if (woody(ivt(p)) >= 1.0_r8) then
             c_allometry(p) = (1._r8+g1)*(1._r8+f1+f3*(1._r8+f2))
             n_allometry(p) = 1._r8/cnl + f1/cnfr + (f3*f4*(1._r8+f2))/cnlw + &
                  (f3*(1._r8-f4)*(1._r8+f2))/cndw
@@ -2372,7 +2372,7 @@ contains
              endif
 
              mr = leaf_mr(p) + froot_mr(p)
-             if (woody(ivt(p)) == 1.0_r8) then
+             if (woody(ivt(p)) >= 1.0_r8) then
                 mr = mr + livestem_mr(p) + livecroot_mr(p)
              else if (ivt(p) >= npcropmin) then
                 if (croplive(p)) mr = mr + livestem_mr(p) + grain_mr(p)
@@ -2466,7 +2466,7 @@ contains
              plant_calloc(p) = availc(p)
 
              ! here no down-regulation on allocatable C here, NP limitation is implemented in leaf-level NP control on GPP
-             if (woody(ivt(p)) == 1.0_r8) then
+             if (woody(ivt(p)) >= 1.0_r8) then
                  c_allometry(p) = (1._r8+g1)*(1._r8+f1+f3*(1._r8+f2))
                  n_allometry(p) = 1._r8/cnl + f1/cnfr + (f3*f4*(1._r8+f2))/cnlw + &
                      (f3*(1._r8-f4)*(1._r8+f2))/cndw
@@ -2549,7 +2549,7 @@ contains
             cpool_to_xsmrpool(p)  = cpool_to_xsmrpool(p) + nlc * (1._r8 - fcur) * (1 + g1)
             cpool_to_xsmrpool(p)  = cpool_to_xsmrpool(p) + nlc * f1 * fcur * (1 + g1)
             cpool_to_xsmrpool(p)  = cpool_to_xsmrpool(p) + nlc * f1 * (1._r8 - fcur) * (1 + g1)
-            if (woody(ivt(p)) == 1._r8) then
+            if (woody(ivt(p)) >= 1.0_r8) then
                cpool_to_xsmrpool(p)  = cpool_to_xsmrpool(p) + nlc * f3 * f4 * fcur * (1 + g1)
                cpool_to_xsmrpool(p)  = cpool_to_xsmrpool(p) + nlc * f3 * f4 * (1._r8 - fcur) * (1 + g1)
                cpool_to_xsmrpool(p)  = cpool_to_xsmrpool(p) + nlc * f3 * (1._r8 - f4) * fcur * (1 + g1)
@@ -2580,7 +2580,7 @@ contains
          cpool_to_leafc_storage(p)  = nlc * (1._r8 - fcur)
          cpool_to_frootc(p)         = nlc * f1 * fcur
          cpool_to_frootc_storage(p) = nlc * f1 * (1._r8 - fcur)
-         if (woody(ivt(p)) == 1._r8) then
+         if (woody(ivt(p)) >= 1.0_r8) then
             cpool_to_livestemc(p)          = nlc * f3 * f4 * fcur
             cpool_to_livestemc_storage(p)  = nlc * f3 * f4 * (1._r8 - fcur)
             cpool_to_deadstemc(p)          = nlc * f3 * (1._r8 - f4) * fcur
@@ -2633,7 +2633,7 @@ contains
          npool_to_leafn_storage(p)  = (nlc / cnl) * (1._r8 - fcur)
          npool_to_frootn(p)         = (nlc * f1 / cnfr) * fcur
          npool_to_frootn_storage(p) = (nlc * f1 / cnfr) * (1._r8 - fcur)
-         if (woody(ivt(p)) == 1._r8) then
+         if (woody(ivt(p)) >= 1.0_r8) then
             npool_to_livestemn(p)          = (nlc * f3 * f4 / cnlw) * fcur
             npool_to_livestemn_storage(p)  = (nlc * f3 * f4 / cnlw) * (1._r8 - fcur)
             npool_to_deadstemn(p)          = (nlc * f3 * (1._r8 - f4) / cndw) * fcur
@@ -2677,7 +2677,7 @@ contains
          ppool_to_leafp_storage(p)  = (nlc / cpl) * (1._r8 - fcur)
          ppool_to_frootp(p)         = (nlc * f1 / cpfr) * fcur
          ppool_to_frootp_storage(p) = (nlc * f1 / cpfr) * (1._r8 - fcur)
-         if (woody(ivt(p)) == 1._r8) then
+         if (woody(ivt(p)) >= 1.0_r8) then
             ppool_to_livestemp(p)          = (nlc * f3 * f4 / cplw) * fcur
             ppool_to_livestemp_storage(p)  = (nlc * f3 * f4 / cplw) * (1._r8 -fcur)
             ppool_to_deadstemp(p)          = (nlc * f3 * (1._r8 - f4) / cpdw) *fcur
@@ -2711,7 +2711,7 @@ contains
          ! growth is assigned here.
 
          gresp_storage = cpool_to_leafc_storage(p) + cpool_to_frootc_storage(p)
-         if (woody(ivt(p)) == 1._r8) then
+         if (woody(ivt(p)) >= 1.0_r8) then
             gresp_storage = gresp_storage + cpool_to_livestemc_storage(p)
             gresp_storage = gresp_storage + cpool_to_deadstemc_storage(p)
             gresp_storage = gresp_storage + cpool_to_livecrootc_storage(p)
@@ -2748,7 +2748,7 @@ contains
                  npool_to_frootn(p) = cpool_to_frootc(p) / cnfr
                  npool_to_frootn_storage(p) = cpool_to_frootc_storage(p) / cnfr
 
-                 if (woody(ivt(p)) == 1._r8) then
+                 if (woody(ivt(p)) >= 1.0_r8) then
                      supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_livestemc(p) / cnlw - npool_to_livestemn(p)
                      supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_livestemc_storage(p) / cnlw &
                           - npool_to_livestemn_storage(p)
@@ -2815,7 +2815,7 @@ contains
                      ppool_to_frootp(p) = cpool_to_frootc(p) / cpfr
                      ppool_to_frootp_storage(p) = cpool_to_frootc_storage(p) / cpfr
 
-                 if (woody(ivt(p)) == 1._r8) then
+                 if (woody(ivt(p)) >= 1.0_r8) then
 
                      supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_livestemc(p) / cplw &
                           - ppool_to_livestemp(p),0._r8)
@@ -3891,7 +3891,7 @@ contains
     alloc_froot = min(alloc_froot, 0.4_r8)
 
     ! stem allocation
-    if (woody == 1.0_r8) then
+    if (woody >= 1.0_r8) then
        alloc_stem = alloc_s0 * 3.0_r8 *  min(nu_scalar,w_scalar) / (2.0_r8 * light_scalar + min(nu_scalar,w_scalar))
     else
        alloc_stem = 0.0_r8
@@ -3908,7 +3908,7 @@ contains
 
     ! if lai greater than laimax then no allocation to leaf; leaf allocation goes to stem or fine root
     if (laindex > laimax) then
-       if (woody == 1.0_r8) then
+       if (woody >= 1.0_r8) then
           alloc_stem = alloc_stem + alloc_leaf/2._r8 - 0.005_r8
           alloc_froot = alloc_froot + alloc_leaf/2._r8 - 0.005_r8
        else

@@ -630,7 +630,7 @@ contains
     ystates(s_frootc)             = veg_cs%frootc(p)
     ystates(s_frootc_xfer)        = veg_cs%frootc_xfer(p)
     ystates(s_frootc_storage)     = veg_cs%frootc_storage(p)
-    if (woody(ivt(p)) == 1._r8) then
+    if (woody(ivt(p)) >= 1.0_r8) then
       ystates(s_livestemc)          = veg_cs%livestemc(p)
       ystates(s_livestemc_xfer)     = veg_cs%livestemc_xfer(p)
       ystates(s_livestemc_storage)  = veg_cs%livestemc_storage(p)
@@ -662,7 +662,7 @@ contains
          + veg_cf%cpool_froot_gr(p)         &
          + veg_cf%cpool_leaf_storage_gr(p)  &
          + veg_cf%cpool_froot_storage_gr(p)
-    if (woody(ivt(p)) == 1._r8) then
+    if (woody(ivt(p)) >= 1.0_r8) then
       ar_p = ar_p                                 &
          + veg_cf%livestem_curmr(p)             &
          + veg_cf%livecroot_curmr(p)            &
@@ -692,7 +692,7 @@ contains
     rfluxes(f_cpool_to_xsmrpool)            = veg_cf%cpool_to_xsmrpool(p)
     rfluxes(f_cpool_to_gresp_storage)       = veg_cf%cpool_to_gresp_storage(p)
     rfluxes(f_cpool_to_ar)                  = ar_p
-    if (woody(ivt(p)) == 1._r8) then
+    if (woody(ivt(p)) >= 1.0_r8) then
       rfluxes(f_cpool_to_livestemc)           = veg_cf%cpool_to_livestemc(p)
       rfluxes(f_cpool_to_livestemc_storage)   = veg_cf%cpool_to_livestemc_storage(p)
       rfluxes(f_cpool_to_deadstemc)           = veg_cf%cpool_to_deadstemc(p)
@@ -746,7 +746,7 @@ contains
     call fpmax(rfluxes(f_cpool_to_xsmrpool)            , veg_cf%cpool_to_xsmrpool(p))
     call fpmax(rfluxes(f_cpool_to_gresp_storage)       , veg_cf%cpool_to_gresp_storage(p))
 
-    if (woody(ivt(p)) == 1._r8) then
+    if (woody(ivt(p)) >= 1.0_r8) then
       call fpmax(rfluxes(f_cpool_to_livestemc)           , veg_cf%cpool_to_livestemc(p))
       call fpmax(rfluxes(f_cpool_to_livestemc_storage)   , veg_cf%cpool_to_livestemc_storage(p))
       call fpmax(rfluxes(f_cpool_to_deadstemc)           , veg_cf%cpool_to_deadstemc(p))
@@ -794,7 +794,7 @@ contains
       call ascal(veg_cf%cpool_froot_gr(p)            , rscal)
       call ascal(veg_cf%cpool_leaf_storage_gr(p)     , rscal)
       call ascal(veg_cf%cpool_froot_storage_gr(p)    , rscal)
-      if (woody(ivt(p)) == 1._r8) then
+      if (woody(ivt(p)) >= 1.0_r8) then
         call ascal(veg_cf%livestem_curmr(p)            , rscal)
         call ascal(veg_cf%livecroot_curmr(p)           , rscal)
         call ascal(veg_cf%cpool_livestem_gr(p)         , rscal)
@@ -864,7 +864,7 @@ contains
     ystates(s_frootn)              = veg_ns%frootn(p)
     ystates(s_frootn_xfer)         = veg_ns%frootn_xfer(p)
     ystates(s_frootn_storage)      = veg_ns%frootn_storage(p)
-    if (woody(ivt(p)) == 1.0_r8) then
+    if (woody(ivt(p)) >= 1.0_r8) then
       ystates(s_livestemn)           = veg_ns%livestemn(p)
       ystates(s_livestemn_xfer)      = veg_ns%livestemn_xfer(p)
       ystates(s_livestemn_storage)   = veg_ns%livestemn_storage(p)
@@ -894,7 +894,7 @@ contains
     rfluxes(f_npool_to_leafn_storage)        = veg_nf%npool_to_leafn_storage(p)
     rfluxes(f_npool_to_frootn)               = veg_nf%npool_to_frootn(p)
     rfluxes(f_npool_to_frootn_storage)       = veg_nf%npool_to_frootn_storage(p)
-    if (woody(ivt(p)) == 1.0_r8) then
+    if (woody(ivt(p)) >= 1.0_r8) then
       rfluxes(f_npool_to_livestemn)            = veg_nf%npool_to_livestemn(p)
       rfluxes(f_npool_to_livestemn_storage)    = veg_nf%npool_to_livestemn_storage(p)
       rfluxes(f_npool_to_livecrootn)           = veg_nf%npool_to_livecrootn(p)
@@ -950,7 +950,7 @@ contains
     call fpmax(rfluxes(f_npool_to_leafn_storage)        , veg_nf%npool_to_leafn_storage(p))
     call fpmax(rfluxes(f_npool_to_frootn)               , veg_nf%npool_to_frootn(p))
     call fpmax(rfluxes(f_npool_to_frootn_storage)       , veg_nf%npool_to_frootn_storage(p))
-    if (woody(ivt(p)) == 1.0_r8) then
+    if (woody(ivt(p)) >= 1.0_r8) then
       call fpmax(rfluxes(f_npool_to_livestemn)            , veg_nf%npool_to_livestemn(p))
       call fpmax(rfluxes(f_npool_to_livestemn_storage)    , veg_nf%npool_to_livestemn_storage(p))
       call fpmax(rfluxes(f_npool_to_livecrootn)           , veg_nf%npool_to_livecrootn(p))
@@ -1049,7 +1049,7 @@ contains
     ystates(s_frootn)              = veg_ps%frootp(p)
     ystates(s_frootn_xfer)         = veg_ps%frootp_xfer(p)
     ystates(s_frootn_storage)      = veg_ps%frootp_storage(p)
-    if (woody(ivt(p)) == 1.0_r8) then
+    if (woody(ivt(p)) >= 1.0_r8) then
       ystates(s_livestemn)           = veg_ps%livestemp(p)
       ystates(s_livestemn_xfer)      = veg_ps%livestemp_xfer(p)
       ystates(s_livestemn_storage)   = veg_ps%livestemp_storage(p)
@@ -1079,7 +1079,7 @@ contains
     rfluxes(f_npool_to_leafn_storage)        = veg_pf%ppool_to_leafp_storage(p)
     rfluxes(f_npool_to_frootn)               = veg_pf%ppool_to_frootp(p)
     rfluxes(f_npool_to_frootn_storage)       = veg_pf%ppool_to_frootp_storage(p)
-    if (woody(ivt(p)) == 1._r8) then
+    if (woody(ivt(p)) >= 1.0_r8) then
       rfluxes(f_npool_to_livestemn)            = veg_pf%ppool_to_livestemp(p)
       rfluxes(f_npool_to_livestemn_storage)    = veg_pf%ppool_to_livestemp_storage(p)
       rfluxes(f_npool_to_livecrootn)           = veg_pf%ppool_to_livecrootp(p)
@@ -1135,7 +1135,7 @@ contains
     call fpmax(rfluxes(f_npool_to_leafn_storage)        , veg_pf%ppool_to_leafp_storage(p))
     call fpmax(rfluxes(f_npool_to_frootn)               , veg_pf%ppool_to_frootp(p))
     call fpmax(rfluxes(f_npool_to_frootn_storage)       , veg_pf%ppool_to_frootp_storage(p))
-    if (woody(ivt(p)) == 1._r8) then
+    if (woody(ivt(p)) >= 1.0_r8) then
       call fpmax(rfluxes(f_npool_to_livestemn)            , veg_pf%ppool_to_livestemp(p))
       call fpmax(rfluxes(f_npool_to_livestemn_storage)    , veg_pf%ppool_to_livestemp_storage(p))
       call fpmax(rfluxes(f_npool_to_livecrootn)           , veg_pf%ppool_to_livecrootp(p))

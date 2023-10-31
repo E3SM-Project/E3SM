@@ -182,7 +182,7 @@ contains
 
          end if
 
-         if (woody(ivt(p)) == 1) then
+         if (woody(ivt(p)) >= 1.0_r8) then
             livestem_mr(p) = livestemn(p)*br_mr*tc
             livecroot_mr(p) = livecrootn(p)*br_mr*tc
          else if (ivt(p) >= npcropmin .and. livestemn(p) .gt. 0._r8) then

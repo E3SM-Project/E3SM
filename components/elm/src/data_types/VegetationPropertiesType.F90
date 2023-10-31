@@ -17,7 +17,7 @@ module VegetationPropertiesType
   ! !PUBLIC TYPES:
   type, public :: vegetation_properties_type
      integer , pointer :: noveg         (:)   => null() ! value for not vegetated
-     integer , pointer :: tree          (:)   => null() ! tree or not?
+     !integer , pointer :: tree          (:)   => null() ! tree or not?
      real(r8), pointer :: smpso         (:)   => null() ! soil water potential at full stomatal opening (mm)
      real(r8), pointer :: smpsc         (:)   => null() ! soil water potential at full stomatal closure (mm)
      real(r8), pointer :: fnitr         (:)   => null() ! foliage nitrogen limitation factor (-)
@@ -159,7 +159,7 @@ contains
     !
     ! !USES:
     use elm_varpar, only : numrad, numpft
-    use pftvarcon , only : ntree, smpso, smpsc, fnitr
+    use pftvarcon , only : smpso, smpsc, fnitr
     use pftvarcon , only : z0mr, displar, dleaf, rhol, rhos, taul, taus, xl
     use pftvarcon , only : c3psn, slatop, dsladlai, leafcn, flnr, woody
     use pftvarcon , only : lflitcn, frootcn, livewdcn, deadwdcn, froot_leaf, stem_leaf, croot_stem
@@ -190,7 +190,7 @@ contains
     !------------------------------------------------------------------------
 
     allocate(this%noveg         (0:numpft))        ; this%noveg        (:)   =huge(1)
-    allocate(this%tree          (0:numpft))        ; this%tree         (:)   =huge(1)
+    !allocate(this%tree          (0:numpft))        ; this%tree         (:)   =huge(1)
     allocate(this%smpso         (0:numpft))        ; this%smpso        (:)   =spval
     allocate(this%smpsc         (0:numpft))        ; this%smpsc        (:)   =spval
     allocate(this%fnitr         (0:numpft))        ; this%fnitr        (:)   =spval
@@ -308,11 +308,12 @@ contains
 
     do m = 0,numpft
 
-       if (m <= ntree) then
-          this%tree(m) = 1
-       else
-          this%tree(m) = 0
-       end if
+       ! not needed anymore: woody(m)=1 for tree, 2 for shrub, or 0 for any other
+       !if (woody(m) == 1) then
+       !   this%tree(m) = 1
+       !else
+       !   this%tree(m) = 0
+       !end if
 
        do ib = 1,numrad
           this%rhol(m,ib)   = rhol(m,ib)
