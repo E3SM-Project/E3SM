@@ -103,7 +103,10 @@ module atm_comp_mct
   integer, parameter  :: nlen = 256     ! Length of character strings
   character(len=nlen) :: fname_srf_cam  ! surface restart filename
   character(len=nlen) :: pname_srf_cam  ! surface restart full pathname
-
+#ifdef HAVE_MOAB
+  character(len=nlen) :: moab_fname_srf_cam  ! surface restart filename
+  character(len=nlen) :: moab_pname_srf_cam  ! surface restart full pathname
+#endif
   ! Filename specifier for restart surface file
   character(len=cl) :: rsfilename_spec_cam
 
@@ -119,6 +122,7 @@ module atm_comp_mct
   integer , private :: mblsize, totalmbls, nsend, totalmbls_r, nrecv
   real(r8) , allocatable, private :: a2x_am(:,:) ! atm to coupler, on atm mesh, on atm component pes
   real(r8) , allocatable, private :: x2a_am(:,:) ! coupler to atm, on atm mesh, on atm component pes
+  integer,                pointer :: global_ids(:) ! they could be dof(), but better maintain our own list
 
 #ifdef MOABCOMP
   integer  :: mpicom_atm_moab ! used just for mpi-reducing the difference between moab tags and mct avs
@@ -500,6 +504,9 @@ CONTAINS
           call t_startf('atm_read_srfrest_mct')
           call atm_read_srfrest_mct( EClock, x2a_a, a2x_a )
           call t_stopf('atm_read_srfrest_mct')
+#ifdef HAVE_MOAB
+          call atm_read_srfrest_moab ( EClock )
+#endif
 
           ! Sent .true. as an optional argument so that restart_init is set to .true.  in atm_import
 	      ! This will ensure BFB restarts whenever qneg4 updates fluxes on the restart time step
@@ -757,6 +764,10 @@ CONTAINS
        call atm_write_srfrest_mct( x2a_a, a2x_a, &
             yr_spec=yr_sync, mon_spec=mon_sync, day_spec=day_sync, sec_spec=tod_sync)
        call t_stopf('atm_write_srfrest_mct')
+#ifdef HAVE_MOAB
+       call atm_write_srfrest_moab(yr_spec=yr_sync, &
+            mon_spec=mon_sync, day_spec=day_sync, sec_spec=tod_sync)
+#endif
     end if
     
     ! Check for consistency of internal cam clock with master sync clock 
@@ -953,6 +964,241 @@ CONTAINS
 
   end subroutine atm_domain_mct
 
+#ifdef HAVE_MOAB
+  !===========================================================================================
+
+  subroutine atm_read_srfrest_moab( EClock )
+
+   !-----------------------------------------------------------------------
+   use cam_pio_utils, only: cam_pio_openfile, cam_pio_closefile, pio_subsystem
+   use iMOAB, only:    iMOAB_SetDoubleTagStorage
+   !
+   ! Arguments
+   !
+   type(ESMF_Clock),intent(inout) :: EClock
+   ! 
+   ! Local variables
+   !
+   integer               :: rcode        ! return error code
+   integer               :: yr_spec      ! Current year
+   integer               :: mon_spec     ! Current month
+   integer               :: day_spec     ! Current day
+   integer               :: sec_spec     ! Current time of day (sec)
+   integer               :: k
+   real(r8), allocatable :: tmp(:)
+   type(file_desc_t)     :: file
+   type(io_desc_t)       :: iodesc
+   type(var_desc_t)      :: varid
+   character(CL)         :: itemc       ! string converted to char
+   type(mct_string)      :: mstring     ! mct char type
+   character(CXX)        :: tagname
+
+   type(mct_list) :: temp_list
+   integer :: size_list, index_list, ent_type, ierr
+   !-----------------------------------------------------------------------
+
+   ! Determine and open surface restart dataset
+
+   call seq_timemgr_EClockGetData( EClock, curr_yr=yr_spec,curr_mon=mon_spec, &
+        curr_day=day_spec, curr_tod=sec_spec ) 
+   fname_srf_cam = interpret_filename_spec( rsfilename_spec_cam, case=get_restcase(), &
+        yr_spec=yr_spec, mon_spec=mon_spec, day_spec=day_spec, sec_spec= sec_spec )
+   moab_fname_srf_cam = 'moab_'//trim(fname_srf_cam)
+   moab_pname_srf_cam = trim(get_restartdir() )//trim(moab_fname_srf_cam)
+   call getfil(moab_pname_srf_cam, moab_fname_srf_cam)
+   
+   call cam_pio_openfile(File, moab_fname_srf_cam, 0)
+   
+   call pio_initdecomp(pio_subsystem, pio_double, (/ngcols/), global_ids, iodesc)
+   
+   allocate(tmp(size(global_ids)))
+   
+   call mct_list_init(temp_list, seq_flds_x2a_fields)
+   size_list=mct_list_nitem (temp_list) ! it should be the same as nsend
+
+   do k=1,nsend
+      call mct_list_get(mstring, k, temp_list)
+      itemc = mct_string_toChar(mstring)
+      call mct_string_clean(mstring)
+   
+
+      call pio_seterrorhandling(File, pio_bcast_error)
+      rcode = pio_inq_varid(File,'x2a_'//trim(itemc) ,varid)
+      if (rcode == pio_noerr) then
+         call pio_read_darray(File, varid, iodesc, tmp, rcode)
+         x2a_am(:,k) = tmp(:)
+      else
+         if (masterproc) then
+            write(iulog,*)'srfrest warning: field ',trim(itemc),' is not on restart file'
+            write(iulog,*)'for backwards compatibility will set it to 0'
+         end if
+         x2a_am(:,k) = 0._r8
+      end if
+      call pio_seterrorhandling(File, pio_internal_error)
+   end do
+
+   tagname=trim(seq_flds_x2a_fields)//C_NULL_CHAR
+    ent_type = 0 ! vertices, point cloud
+    ierr = iMOAB_SetDoubleTagStorage ( mphaid, tagname, totalmbls_r , ent_type, x2a_am )
+    if ( ierr > 0) then
+      call endrun('Error: fail to set  seq_flds_a2x_fields for atm physgrid moab mesh in restart')
+    endif
+
+   
+   call mct_list_clean(temp_list)
+
+   call mct_list_init(temp_list, seq_flds_a2x_fields)
+
+   do k=1,nrecv
+      call mct_list_get(mstring, k, temp_list)
+      itemc = mct_string_toChar(mstring)
+      call mct_string_clean(mstring)
+      rcode = pio_inq_varid(File,'a2x_'//trim(itemc) ,varid)
+
+      if (rcode == pio_noerr) then
+         call pio_read_darray(File, varid, iodesc, tmp, rcode)
+         a2x_am(:,k) = tmp(:)
+      else
+         if (masterproc) then
+            write(iulog,*)'srfrest warning: field ',trim(itemc),' is not on restart file'
+            write(iulog,*)'for backwards compatibility will set it to 0'
+         end if
+         a2x_am(:,k) = 0._r8
+      endif
+   end do
+   call mct_list_clean(temp_list)
+   tagname=trim(seq_flds_a2x_fields)//C_NULL_CHAR
+    ent_type = 0 ! vertices, point cloud
+    ierr = iMOAB_SetDoubleTagStorage ( mphaid, tagname, totalmbls , ent_type, a2x_am )
+    if ( ierr > 0) then
+      call endrun('Error: fail to set  seq_flds_a2x_fields for atm physgrid moab mesh in restart')
+    endif
+
+    tagname=trim(seq_flds_x2a_fields)//C_NULL_CHAR
+    ent_type = 0 ! vertices, point cloud
+    ierr = iMOAB_SetDoubleTagStorage ( mphaid, tagname, totalmbls_r , ent_type, x2a_am )
+    if ( ierr > 0) then
+      call endrun('Error: fail to set  seq_flds_x2a_fields for atm physgrid moab mesh in restart')
+    endif
+
+   call pio_freedecomp(File,iodesc)
+   call cam_pio_closefile(File)
+   deallocate(tmp)
+
+ end subroutine atm_read_srfrest_moab
+
+ !===========================================================================================
+
+ subroutine atm_write_srfrest_moab( yr_spec, mon_spec, day_spec, sec_spec )
+
+   !-----------------------------------------------------------------------
+   use cam_pio_utils, only: cam_pio_createfile, cam_pio_closefile, pio_subsystem
+   use cam_pio_utils, only: cam_pio_openfile
+   use cam_history_support, only: fillvalue
+   use iMOAB, only:    iMOAB_GetDoubleTagStorage
+   !
+   ! Arguments
+   !
+   integer        , intent(in) :: yr_spec         ! Simulation year
+   integer        , intent(in) :: mon_spec        ! Simulation month
+   integer        , intent(in) :: day_spec        ! Simulation day
+   integer        , intent(in) :: sec_spec        ! Seconds into current simulation day
+   !
+   ! Local variables
+   !
+   integer                   :: rcode        ! return error code
+   integer                   :: dimid(1), k
+   type(file_desc_t)         :: file
+   real(r8), allocatable     :: tmp(:)
+   type(var_desc_t), pointer :: varid_x2a(:), varid_a2x(:)
+   type(io_desc_t)           :: iodesc
+   character(CL)             :: itemc       ! string converted to char
+
+   type(mct_string)          :: mstring     ! mct char type
+   character(CXX)            :: tagname
+
+   type(mct_list) :: temp_list
+   integer :: size_list, index_list, ent_type, ierr
+
+   !-----------------------------------------------------------------------
+
+   ! Determine and open surface restart dataset
+
+      ! Determine and open surface restart dataset
+
+   fname_srf_cam = interpret_filename_spec( rsfilename_spec_cam, case=get_restcase(), &
+        yr_spec=yr_spec, mon_spec=mon_spec, day_spec=day_spec, sec_spec= sec_spec )
+   moab_fname_srf_cam = 'moab_'//trim(fname_srf_cam)
+   moab_pname_srf_cam = trim(get_restartdir() )//trim(moab_fname_srf_cam)
+   call getfil(moab_pname_srf_cam, moab_fname_srf_cam)
+   
+   call cam_pio_openfile(File, moab_fname_srf_cam, 0)
+   
+   call pio_initdecomp(pio_subsystem, pio_double, (/ngcols/), global_ids, iodesc)
+   allocate(tmp(size(global_ids)))
+   
+   rcode = pio_def_dim(File,'x2a_nx',ngcols,dimid(1))
+   call mct_list_init(temp_list ,seq_flds_x2a_fields)
+   size_list=mct_list_nitem (temp_list) ! it should be the same as nsend
+   allocate(varid_x2a(size_list))
+    
+   do index_list = 1, size_list
+      call mct_list_get(mstring,index_list,temp_list)
+      itemc = mct_string_toChar(mstring)
+      call mct_string_clean(mstring)
+      rcode = pio_def_var(File,'x2a_'//trim(itemc),PIO_DOUBLE,dimid,varid_x2a(k))
+      rcode = pio_put_att(File,varid_x2a(k),"_fillvalue",fillvalue)
+   enddo
+   call mct_list_clean(temp_list)
+
+   call mct_list_init(temp_list ,seq_flds_a2x_fields)
+   size_list=mct_list_nitem (temp_list) ! it should be the same as nrecv
+   allocate(varid_a2x(size_list))
+   
+   rcode = pio_def_dim(File,'a2x_nx',ngcols,dimid(1))
+   do k = 1,size_list
+      call mct_list_get(mstring,index_list,temp_list)
+      itemc = mct_string_toChar(mstring)
+      call mct_string_clean(mstring)
+      rcode = PIO_def_var(File,'a2x_'//trim(itemc),PIO_DOUBLE,dimid,varid_a2x(k))
+      rcode = PIO_put_att(File,varid_a2x(k),"_fillvalue",fillvalue)
+   enddo
+
+   rcode = pio_enddef(File)  ! don't check return code, might be enddef already
+
+! do we need to fill it up with values? 
+   ! ccsm sign convention is that fluxes are positive downward
+   tagname=trim(seq_flds_x2a_fields)//C_NULL_CHAR
+   ent_type = 0 ! vertices, point cloud
+   ierr = iMOAB_GetDoubleTagStorage ( mphaid, tagname, totalmbls_r , ent_type, x2a_am )
+   if ( ierr > 0) then
+     call endrun('Error: fail to get  seq_flds_x2a_fields for atm physgrid moab mesh for writing restart surface')
+   endif
+
+   tagname=trim(seq_flds_a2x_fields)//C_NULL_CHAR
+   ent_type = 0 ! vertices, point cloud
+   ierr = iMOAB_GetDoubleTagStorage ( mphaid, tagname, totalmbls , ent_type, a2x_am )
+   if ( ierr > 0) then
+     call endrun('Error: fail to get  seq_flds_a2x_fields for atm physgrid moab mesh for writing restart surface')
+   endif
+
+   do k=1,nsend
+      call pio_write_darray(File, varid_x2a(k), iodesc, x2a_am(:,k), rcode)
+   end do
+
+   do k=1,nrecv
+      call pio_write_darray(File, varid_a2x(k), iodesc, a2x_am(:,k), rcode)       
+   end do
+
+   deallocate(varid_x2a, varid_a2x)
+
+   call pio_freedecomp(File,iodesc)
+   call cam_pio_closefile(file)
+
+
+ end subroutine atm_write_srfrest_moab
+#endif
+
   !===========================================================================================
 
   subroutine atm_read_srfrest_mct( EClock, x2a_a, a2x_a)
@@ -1007,9 +1253,9 @@ CONTAINS
           call pio_read_darray(File, varid, iodesc, tmp, rcode)
           x2a_a%rattr(k,:) = tmp(:)
        else
-	    if (masterproc) then
-             write(iulog,*)'srfrest warning: field ',trim(itemc),' is not on restart file'
-             write(iulog,*)'for backwards compatibility will set it to 0'
+       if (masterproc) then
+            write(iulog,*)'srfrest warning: field ',trim(itemc),' is not on restart file'
+            write(iulog,*)'for backwards compatibility will set it to 0'
           end if
           x2a_a%rattr(k,:) = 0._r8
        end if
@@ -1175,6 +1421,7 @@ CONTAINS
     nlcols = get_nlcols_p()
     dims = 3 !
     allocate(vgids(nlcols))
+    allocate(global_ids(nlcols))
     allocate(moab_vert_coords(nlcols*dims))
     allocate(areavals(nlcols))
     allocate(chunk_index(nlcols))
@@ -1187,6 +1434,7 @@ CONTAINS
        do i = 1,ncols
           n=n+1
           vgids(n) = get_gcol_p(c,i)
+          global_ids(n) = vgids(n)
           latv = lats(i) ! these are in rads ?
           lonv = lons(i)
           moab_vert_coords(3*n-2)=COS(latv)*COS(lonv)
@@ -1405,7 +1653,7 @@ CONTAINS
     end do
     tagname=trim(seq_flds_a2x_fields)//C_NULL_CHAR
     ent_type = 0 ! vertices, point cloud
-    ierr = iMOAB_SetDoubleTagStorage ( mphaid, tagname, totalmbls , ent_type, a2x_am(1,1) )
+    ierr = iMOAB_SetDoubleTagStorage ( mphaid, tagname, totalmbls , ent_type, a2x_am )
     if ( ierr > 0) then
       call endrun('Error: fail to set  seq_flds_a2x_fields for atm physgrid moab mesh')
     endif
@@ -1468,7 +1716,7 @@ subroutine atm_import_moab(cam_in, restart_init )
     ! ccsm sign convention is that fluxes are positive downward
     tagname=trim(seq_flds_x2a_fields)//C_NULL_CHAR
     ent_type = 0 ! vertices, point cloud
-    ierr = iMOAB_GetDoubleTagStorage ( mphaid, tagname, totalmbls_r , ent_type, x2a_am(1,1) )
+    ierr = iMOAB_GetDoubleTagStorage ( mphaid, tagname, totalmbls_r , ent_type, x2a_am )
     if ( ierr > 0) then
       call endrun('Error: fail to get  seq_flds_a2x_fields for atm physgrid moab mesh')
     endif
