@@ -27,6 +27,9 @@ TEST_CASE("ml_correction-stand-alone", "") {
   const auto  nsteps = ts.get<int>("number_of_steps");
   const auto  t0_str = ts.get<std::string>("run_t0");
   const auto  t0     = util::str_to_time_stamp(t0_str);
+  const auto  ml     = ad_params.sublist("atmosphere_processes").sublist("MLCorrection");
+  const auto  ML_model_tq_path = ml.get<std::string>("ML_model_path_tq");
+  const auto  ML_model_uv_path = ml.get<std::string>("ML_model_path_uv");
 
   EKAT_ASSERT_MSG(dt > 0, "Error! Time step must be positive.\n");
 
@@ -68,10 +71,12 @@ TEST_CASE("ml_correction-stand-alone", "") {
   py::module sys = pybind11::module::import("sys");
   sys.attr("path").attr("insert")(1, CUSTOM_SYS_PATH);
   auto py_correction = py::module::import("test_correction");
-  py::object ob1     = py_correction.attr("modify_view")(
+  py::object ML_model_tq = py_correction.attr("get_ML_model")(ML_model_tq_path);
+  py::object ML_model_uv = py_correction.attr("get_ML_model")(ML_model_uv_path);  
+  py::object ob1  = py_correction.attr("modify_view")(
       py::array_t<Real, py::array::c_style | py::array::forcecast>(
           num_cols * num_levs, qv.data(), py::str{}),
-      num_cols, num_levs);
+      num_cols, num_levs, ML_model_tq, ML_model_uv);
   py::gil_scoped_release no_gil;
   ekat::enable_fpes(fpe_mask);
   REQUIRE(qv(1, 10) == reference);   // This is the one that is modified
