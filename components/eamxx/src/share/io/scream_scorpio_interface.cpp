@@ -144,6 +144,33 @@ int get_dimlen(const std::string& filename, const std::string& dimname)
   return len;
 }
 /* ----------------------------------------------------------------- */
+bool has_dim (const std::string& filename, const std::string& dimname)
+{
+  int ncid, dimid, err;
+
+  bool was_open = is_file_open_c2f(filename.c_str(),-1);
+  if (not was_open) {
+    register_file(filename,Read);
+  }
+
+  ncid = get_file_ncid_c2f (filename.c_str());
+  err = PIOc_inq_dimid(ncid,dimname.c_str(),&dimid);
+  if (err==PIO_EBADDIM) {
+    return false;
+  }
+
+  EKAT_REQUIRE_MSG (err==PIO_NOERR,
+      "Error! Something went wrong while retrieving dimension id.\n"
+      " - filename : " + filename + "\n"
+      " - dimname  : " + dimname + "\n"
+      " - pio error: " + std::to_string(err) + "\n");
+  if (not was_open) {
+    eam_pio_closefile(filename);
+  }
+
+  return true;
+}
+/* ----------------------------------------------------------------- */
 bool has_variable (const std::string& filename, const std::string& varname)
 {
   int ncid, varid, err;

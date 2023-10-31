@@ -19,34 +19,6 @@ namespace ekat {
 namespace scream {
 namespace control {
 
-// Helper functions for reading files
-namespace {
-// Currently EAMxx scorpio interface doesn't have a way to inquire about dimension names
-bool file_has_dim(const std::string& filename, const std::string& dimname)
-{
-  int ncid, dimid, err;
-
-  bool was_open = scorpio::is_file_open_c2f(filename.c_str(),-1);
-  if (not was_open) {
-    scorpio::register_file(filename,scorpio::FileMode::Read);
-  }
-
-  ncid = scorpio::get_file_ncid_c2f (filename.c_str());
-  err = PIOc_inq_dimid(ncid,dimname.c_str(),&dimid);
-  if (err==PIO_EBADDIM) return false;
-
-  EKAT_REQUIRE_MSG (err==PIO_NOERR,
-      "Error! Something went wrong while retrieving dimension id.\n"
-      " - filename : " + filename + "\n"
-      " - dimname  : " + dimname + "\n"
-      " - pio error: " + std::to_string(err) + "\n");
-  if (not was_open) {
-    scorpio::eam_pio_closefile(filename);
-  }
-  return true;
-}
-}
-
 IntensiveObservationPeriod::
 IntensiveObservationPeriod(const ekat::Comm& comm,
 	    	           const ekat::ParameterList& params)
@@ -74,7 +46,7 @@ setup_io_info(const std::string& file_name,
               const grid_ptr& grid)
 {
   const auto grid_name = grid->name();
-  
+
   // Create io grid if doesn't exist
   if (m_io_grids.count(grid_name) == 0) {
     // IO grid needs to have ncol dimension equal to the IC/topo file
@@ -101,7 +73,7 @@ setup_io_info(const std::string& file_name,
     Field lat_f(lat_fid);
     lat_f.allocate_view();
     fields.push_back(lat_f);
-    
+
     FieldIdentifier lon_fid("lon",
                             FieldLayout({FieldTag::Column},{ncols}),
                             ekat::units::Units::nondimensional(),
@@ -179,7 +151,7 @@ read_fields_from_file_for_iop (const std::string& file_name,
                    +grid_name+" grid, but m_lat_lon_info entry has not been created.\n");
 
   auto io_grid = m_io_grids[grid_name];
-  if (grid_name=="Physics GLL" && file_has_dim(file_name,"ncol_d")) {
+  if (grid_name=="Physics GLL" && scorpio::has_dim(file_name,"ncol_d")) {
     // If we are on GLL grid, and nc file contains "ncol_d" dimension,
     // we need to reset COL dim tag
     using namespace ShortFieldTagsNames;

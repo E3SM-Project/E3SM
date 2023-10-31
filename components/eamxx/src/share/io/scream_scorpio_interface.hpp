@@ -35,6 +35,7 @@ namespace scorpio {
   void register_file(const std::string& filename, const FileMode mode);
   /* Sets the IO decompostion for all variables in a particular filename.  Required after all variables have been registered.  Called once per file. */
   int get_dimlen(const std::string& filename, const std::string& dimname);
+  bool has_dim(const std::string& filename, const std::string& dimname);
   bool has_variable (const std::string& filename, const std::string& varname);
   void set_decomp(const std::string& filename);
   /* Sets the degrees-of-freedom for a particular variable in a particular file.  Called once for each variable, for each file. */
@@ -113,4 +114,4 @@ extern "C" {
 } // namespace scorpio
 } // namespace scream
 
-#endif // define SCREAM_SCORPIO_INTERFACE_HPP 
+#endif // define SCREAM_SCORPIO_INTERFACE_HPP
