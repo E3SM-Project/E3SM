@@ -1105,6 +1105,8 @@ contains
     end if
     fert_p_cft = 0.0_r8
 
+    wt_nat_patch(begg:endg, :, :) = 0.0_r8
+    wt_cft(begg:endg, :, :) = 0.0_r8
     if (.not. create_crop_landunit) then
        call ncd_io(ncid=ncid, varname='PCT_NAT_PFT', flag='read', data=wt_nat_patch, &
             dim1name=grlnd, readvar=readvar)
