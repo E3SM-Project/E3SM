@@ -127,6 +127,7 @@ module li_time_integration_fe_rk
                                                   groundedSfcMassBalApplied, &
                                                   groundedBasalMassBalApplied, &
                                                   floatingBasalMassBalApplied, &
+                                                  calvingThickness, &
                                                   fluxAcrossGroundingLine, &
                                                   fluxAcrossGroundingLineOnCells, &
                                                   groundedToFloatingThickness
@@ -135,6 +136,7 @@ module li_time_integration_fe_rk
                                                       groundedSfcMassBalAccum, &
                                                       groundedBasalMassBalAccum, &
                                                       floatingBasalMassBalAccum, &
+                                                      calvingThicknessAccum, &
                                                       fluxAcrossGroundingLineAccum
       real (kind=RKIND), dimension(:), pointer :: layerCenterSigma, layerThicknessFractions
       integer, dimension(:), pointer :: cellMaskPrev  ! cell mask before advection
@@ -201,6 +203,7 @@ module li_time_integration_fe_rk
       allocate(groundedSfcMassBalAccum(nCells+1))
       allocate(groundedBasalMassBalAccum(nCells+1))
       allocate(floatingBasalMassBalAccum(nCells+1))
+      allocate(calvingThicknessAccum(nCells+1))
       allocate(fluxAcrossGroundingLineAccum(nEdges+1))
 
       temperaturePrev(:,:) = 0.0_RKIND
@@ -218,6 +221,7 @@ module li_time_integration_fe_rk
       groundedSfcMassBalAccum(:) = 0.0_RKIND
       groundedBasalMassBalAccum(:) = 0.0_RKIND
       floatingBasalMassBalAccum(:) = 0.0_RKIND
+      calvingThicknessAccum(:) = 0.0_RKIND
       fluxAcrossGroundingLineAccum(:) = 0.0_RKIND
 
 ! === Prepare for advection (including CFL checks) ===========
@@ -375,6 +379,18 @@ module li_time_integration_fe_rk
          err = ior(err, err_tmp)
          call mpas_timer_stop("advect thickness and tracers")
 
+         ! ==== Apply iceberg calving ====
+         call mpas_timer_start("calve_ice")
+         call li_calve_ice(domain, err_tmp)
+         err = ior(err, err_tmp)
+
+         if (config_restore_calving_front) then
+            ! restore the calving front to its initial position before velocity solve.
+            call li_restore_calving_front(domain, err_tmp)
+            err = ior(err, err_tmp)
+         endif
+         call mpas_timer_stop("calve_ice")
+
          ! If using SSP RK, then update thickness and tracers incrementally.
          ! For first RK stage, thickness and tracer updates above are sufficient.
          ! Likewise, for the 4-stage SSP RK3 the last stage is just a forward euler update.
@@ -453,6 +469,7 @@ module li_time_integration_fe_rk
          call mpas_pool_get_array(geometryPool, 'basalMassBalApplied', basalMassBalApplied)
          call mpas_pool_get_array(geometryPool, 'floatingBasalMassBalApplied', floatingBasalMassBalApplied)
          call mpas_pool_get_array(geometryPool, 'groundedBasalMassBalApplied', groundedBasalMassBalApplied)
+         call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
          call mpas_pooL_get_array(velocityPool, 'fluxAcrossGroundingLine', fluxAcrossGroundingLine)
          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
 
@@ -462,6 +479,7 @@ module li_time_integration_fe_rk
          basalMassBalAccum = basalMassBalAccum + rkTendWeights(rkStage) * basalMassBalApplied
          groundedBasalMassBalAccum = groundedBasalMassBalAccum + rkTendWeights(rkStage) * groundedBasalMassBalApplied
          floatingBasalMassBalAccum = floatingBasalMassBalAccum + rkTendWeights(rkStage) * floatingBasalMassBalApplied
+         calvingThicknessAccum = calvingThicknessAccum + rkTendWeights(rkStage) * calvingThickness
          fluxAcrossGroundingLineAccum = fluxAcrossGroundingLineAccum + rkTendWeights(rkStage) * fluxAcrossGroundingLine
 
          ! Halo updates
@@ -474,12 +492,6 @@ module li_time_integration_fe_rk
          call mpas_dmpar_field_halo_exch(domain, 'passiveTracer2d')
 
          call mpas_timer_stop("halo updates")
-
-         if (config_restore_calving_front) then
-            ! restore the calving front to its initial position before velocity solve.
-            call li_restore_calving_front(domain, err_tmp)
-            err = ior(err, err_tmp)
-         endif
 
          ! Update velocity for each RK step
          ! === Solve Velocity =====================
@@ -506,6 +518,7 @@ module li_time_integration_fe_rk
       basalMassBalApplied(:) = basalMassBalAccum(:)
       groundedBasalMassBalApplied(:) = groundedBasalMassBalAccum(:)
       floatingBasalMassBalApplied(:) = floatingBasalMassBalAccum(:)
+      calvingThickness(:) = calvingThicknessAccum(:)
       fluxAcrossGroundingLine(:) = fluxAcrossGroundingLineAccum(:)
       
       fluxAcrossGroundingLineOnCells(:) = 0.0_RKIND
@@ -528,32 +541,6 @@ module li_time_integration_fe_rk
       enddo ! edges
 ! Reset time step to full length after RK loop
       deltat = deltatFull
-
-! === Calve ice ========================
-      call mpas_timer_start("calve_ice")
-
-      ! ice calving
-      call li_calve_ice(domain, err_tmp)
-      err = ior(err, err_tmp)
-
-      if (config_restore_calving_front .and. config_restore_calving_front_prevent_retreat) then
-         ! restore the calving front to its initial position before velocity solve.
-         call li_restore_calving_front(domain, err_tmp)
-         err = ior(err, err_tmp)
-      endif
-
-      call mpas_timer_stop("calve_ice")
-
-      call mpas_timer_start("halo updates")
-      call mpas_dmpar_field_halo_exch(domain, 'cellMask')
-      call mpas_dmpar_field_halo_exch(domain, 'edgeMask')
-      call mpas_dmpar_field_halo_exch(domain, 'vertexMask')
-      call mpas_timer_stop("halo updates")
-
-      ! Update stresses etc
-      ! === Solve Velocity =====================
-      call li_velocity_solve(domain, solveVelo=.false., err=err_tmp)
-      err = ior(err, err_tmp)
 
 ! === Update bed topo =====================
 ! It's not clear when the best time to do this is.
@@ -589,6 +576,7 @@ module li_time_integration_fe_rk
       deallocate(groundedSfcMassBalAccum)
       deallocate(groundedBasalMassBalAccum)
       deallocate(floatingBasalMassBalAccum)
+      deallocate(calvingThicknessAccum)
       deallocate(fluxAcrossGroundingLineAccum)
    !--------------------------------------------------------------------
    end subroutine li_time_integrator_forwardeuler_rungekutta
