@@ -43,6 +43,18 @@ function(gather_sources FILEPATH_DIRS_ARG CIMEROOT_ARG)
 
 endfunction()
 
+function(e3sm_get_source_property FILE_ARG PROPERTY_NAME)
+  if (FILE_ARG MATCHES "${CMAKE_BINARY_DIR}/.*") # is generated
+    set(REAL_FILE ${FILE_ARG})
+  else()
+    set(REAL_FILE "${PROJECT_SOURCE_DIR}/${FILE_ARG}")
+  endif()
+  get_property(RESULT SOURCE ${REAL_FILE} PROPERTY ${PROPERTY_NAME})
+
+  # Return data to parent
+  set(PROPERTY_RESULT ${RESULT} PARENT_SCOPE)
+endfunction()
+
 function(e3sm_set_source_property FILE_ARG PROPERTY_NAME PROPERTY_VALUE IS_APPEND)
   if (FILE_ARG MATCHES "${CMAKE_BINARY_DIR}/.*") # is generated
     set(REAL_FILE ${FILE_ARG})
@@ -65,6 +77,12 @@ function(e3sm_add_flags FILE_ARG FLAGS_ARG)
   e3sm_set_source_property(${FILE_ARG} COMPILE_FLAGS " ${FLAGS_ARG}" TRUE)
 endfunction()
 
-function(e3sm_deoptimize_file FILE_ARG FFLAGS_NOOPT)
-  e3sm_add_flags(${FILE_ARG} "${FFLAGS_NOOPT}")
+function(e3sm_deoptimize_file FILE_ARG)
+  e3sm_get_source_property(${FILE_ARG} LANGUAGE)
+  # Adding all DEBUG flags may be overkill
+  #e3sm_add_flags(${FILE_ARG} "${CMAKE_${PROPERTY_RESULT}_FLAGS_DEBUG}")
+  e3sm_add_flags(${FILE_ARG} "-O0")
+  if (COMPILER STREQUAL "nvidia")
+    e3sm_add_flags(${FILE_ARG} "-Mnofma")
+  endif()
 endfunction()

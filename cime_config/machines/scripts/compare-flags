@@ -55,7 +55,7 @@ OR
     parser.add_argument("-l", "--limit", dest="limits", action="append", default=[],
                         help="Limit compared files to files containing this substring. This option can be supplied multiple times")
 
-    parser.add_argument("-b", "--build-log", action="store_true", help="Compare build log files instead of cmake files")
+    parser.add_argument("-b", "--build-log", action="store_true", help="Compare build log files instead of cmake files. This works best when e3sm is built with -j1")
 
     parser.add_argument("-v", "--verbose", action="store_true", help="Print diff details")
 
@@ -87,7 +87,7 @@ def find_files(builddir_cmake, filename, limits):
         return all_files
 
 ###############################################################################
-def compare_tokens(line1, line2, unordered, verbose):
+def compare_tokens(line1, line2, unordered):
 ###############################################################################
     tokens1 = line1.split()
     tokens2 = line2.split()
@@ -97,24 +97,26 @@ def compare_tokens(line1, line2, unordered, verbose):
         tokens2.sort()
 
     result = True
+    message = ""
     if tokens1 != tokens2:
         result = False
 
-        if verbose:
-            tokens1_set = set(tokens1)
-            tokens2_set = set(tokens2)
-            one_not_two = tokens1_set - tokens2_set
-            two_not_one = tokens2_set - tokens1_set
-            print(f"    For line {line1}:")
-            print ("      Case1 had unique flags:")
+        tokens1_set = set(tokens1)
+        tokens2_set = set(tokens2)
+        one_not_two = tokens1_set - tokens2_set
+        two_not_one = tokens2_set - tokens1_set
+        #message += f"    For line {line1}:"
+        if one_not_two:
+            message += "      Case1 had unique flags:\n"
             for item in one_not_two:
-                print(f"        {item}")
+                message += f"        {item}\n"
 
-            print ("      Case2 had unique flags:")
+        if two_not_one:
+            message += "      Case2 had unique flags:\n"
             for item in two_not_one:
-                print(f"        {item}")
+                message += f"        {item}\n"
 
-    return result
+    return result, message
 
 ###############################################################################
 def compare_contents(case1, case2, file1, file2, contents1, contents2, unordered, verbose):
@@ -131,7 +133,10 @@ def compare_contents(case1, case2, file1, file2, contents1, contents2, unordered
 
     files_match = True
     for line1, line2 in zip(lines1, lines2):
-        files_match &= compare_tokens(line1, line2, unordered, verbose)
+        result, message = compare_tokens(line1, line2, unordered)
+        if verbose:
+            print(message)
+        files_match &= result
 
     if files_match:
         print("\n  FILES MATCHED")
@@ -212,11 +217,21 @@ def compare_logs(builddir1, builddir2, casename1, casename2, srcroot1, srcroot2,
     log1c = parse_log(log1)
     log2c = parse_log(log2, normalize=((casename2, casename1), (srcroot2, srcroot1)))
 
+    message_dict = {}
+
     for target, line1 in log1c.items():
         if target in log2c:
             line2 = log2c[target]
             print(f"Comparing target {target}")
-            curr_result = compare_tokens(line1, line2, unordered, verbose)
+
+            curr_result, message = compare_tokens(line1, line2, unordered)
+            if verbose and not curr_result:
+                if message in message_dict:
+                    print(f"  Same issue as {message_dict[message]}")
+                else:
+                    message_dict[message] = target
+                    print(message)
+
             result &= curr_result
             if curr_result:
                 print(f"  Target has identical build")

@@ -217,7 +217,7 @@ macro(build_model COMP_CLASS COMP_NAME)
 
   # Disable optimizations on some files that would take too long to compile, expect these to all be fortran files
   foreach (SOURCE_FILE IN LISTS NOOPT_FILES)
-    e3sm_deoptimize_file("${SOURCE_FILE}" "${FFLAGS_NOOPT}")
+    e3sm_deoptimize_file("${SOURCE_FILE}")
   endforeach()
 
   #-------------------------------------------------------------------------------
