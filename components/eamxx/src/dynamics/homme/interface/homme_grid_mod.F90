@@ -227,4 +227,19 @@ contains
     nlev_out = nlev
   end function get_nlev_f90
 
+  function get_dx_short_f90 (elem_idx) result (dx_short_out) bind(c)
+    use homme_context_mod, only: elem
+    !
+    ! Input(s)
+    !
+    integer (kind=c_int), intent(in), value :: elem_idx
+    !
+    ! Local(s)
+    !
+    real (kind=c_double) :: dx_short_out
+
+    ! elem_idx is 0-based, convert to 1-based
+    dx_short_out = elem(elem_idx+1)%dx_short
+  end function get_dx_short_f90
+
 end module homme_grid_mod

@@ -5,6 +5,8 @@
 #include "ekat/ekat_parameter_list.hpp"
 #include "share/atm_process/SCDataManager.hpp"
 
+#include "control/intensive_observation_period.hpp"
+
 #include "surface_coupling_utils.hpp"
 
 #include <string>
@@ -58,6 +60,15 @@ public:
   // Take and store data from SCDataManager
   void setup_surface_coupling_data(const SCDataManager &sc_data_manager);
 
+  // Setup IntensiveObservationPeriod (IOP) object for overwriting imports
+  // with data from IOP file with runs using IOP
+  void set_intensive_observational_period (const std::shared_ptr<control::IntensiveObservationPeriod>& iop) {
+    m_intensive_observation_period = iop;
+  }
+
+  // Overwrite imports for IOP cases with IOP file surface data
+  void overwrite_iop_imports (const bool called_during_initialization);
+
 protected:
 
   // The three main overrides for the subcomponent
@@ -66,7 +77,7 @@ protected:
   void finalize_impl   ();
 
   // Keep track of field dimensions
-  Int m_num_cols; 
+  Int m_num_cols;
 
   // Number of fields in cpl data
   Int m_num_cpl_imports;
@@ -97,6 +108,9 @@ protected:
   // The grid is needed for property checks
   std::shared_ptr<const AbstractGrid> m_grid;
 
+  // IOP object for setting certain imported fluxes when
+  // running EAMxx with an intensive observational period,
+  std::shared_ptr<control::IntensiveObservationPeriod> m_intensive_observation_period;
 }; // class SurfaceCouplingImporter
 
 } // namespace scream

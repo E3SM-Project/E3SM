@@ -1,6 +1,8 @@
 #ifndef SCREAM_ATMOSPHERE_PROCESS_HPP
 #define SCREAM_ATMOSPHERE_PROCESS_HPP
 
+#include "control/intensive_observation_period.hpp"
+
 #include "share/atm_process/atmosphere_process_utils.hpp"
 #include "share/atm_process/ATMBufferManager.hpp"
 #include "share/atm_process/SCDataManager.hpp"
@@ -98,6 +100,12 @@ public:
   // Upon return, the atm proc should have a valid and complete list
   // of in/out/inout FieldRequest and GroupRequest.
   virtual void set_grids (const std::shared_ptr<const GridsManager> grids_manager) = 0;
+
+  // If a process requires the IOP object, they can define this function for setting it
+  virtual void set_intensive_observational_period (const std::shared_ptr<control::IntensiveObservationPeriod>& iop) {
+    EKAT_ERROR_MSG("Error! "+name()+" is attempting to set an IntensiveObservationPeriod, "
+                   "but was not expecting one.\n");
+  }
 
   // These are the three main interfaces:
   //   - the initialize method sets up all the stuff the process needs in order to run,

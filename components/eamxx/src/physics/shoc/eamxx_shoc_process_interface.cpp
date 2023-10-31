@@ -451,6 +451,12 @@ void SHOCMacrophysics::run_impl (const double dt)
                        shoc_preprocess);
   Kokkos::fence();
 
+  if (m_intensive_observation_period) {
+    // For IOP case, we need to update cell length with correct
+    // spacing from planar grid.
+    Kokkos::deep_copy(shoc_preprocess.cell_length, m_intensive_observation_period->get_dynamics_dx_size());
+  }
+
   if (m_params.get<bool>("apply_tms", false)) {
     apply_turbulent_mountain_stress();
   }

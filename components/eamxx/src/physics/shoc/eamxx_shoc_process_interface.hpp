@@ -62,6 +62,11 @@ public:
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
 
+  // Set IOP object if necessary
+  void set_intensive_observational_period (const std::shared_ptr<control::IntensiveObservationPeriod>& iop) {
+    m_intensive_observation_period = iop;
+  }
+
   /*--------------------------------------------------------------------------------------------*/
   // Most individual processes have a pre-processing step that constructs needed variables from
   // the set of fields stored in the field manager.  A structure like this defines those operations,
@@ -530,6 +535,8 @@ protected:
   ekat::WorkspaceManager<Spack, KT::Device> workspace_mgr;
 
   std::shared_ptr<const AbstractGrid>   m_grid;
+
+  std::shared_ptr<control::IntensiveObservationPeriod> m_intensive_observation_period;
 }; // class SHOCMacrophysics
 
 } // namespace scream
