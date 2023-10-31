@@ -35,14 +35,6 @@ macro(build_model COMP_CLASS COMP_NAME)
     endforeach()
   endif()
 
-  # Source files don't live in components/cmake/$COMP_CLASS. This path won't work for
-  # generated files.
-  if (COMP_NAME STREQUAL "csm_share")
-    set(SOURCE_PATH ".")
-  else()
-    set(SOURCE_PATH "../..")
-  endif()
-
   #-------------------------------------------------------------------------------
   # Build & include dependency files
   #-------------------------------------------------------------------------------
@@ -191,11 +183,12 @@ macro(build_model COMP_CLASS COMP_NAME)
     if (NOT SOURCE_FILE IN_LIST COSP_SOURCES)
       # Flags are slightly different for different fortran extensions
       if (SOURCE_EXT STREQUAL ".F" OR SOURCE_EXT STREQUAL ".f")
-        e3sm_add_flags("${SOURCE_FILE}" "${FIXEDFLAGS}")
+        e3sm_set_source_property(${SOURCE_FILE} Fortran_FORMAT FIXED FALSE)
       elseif (SOURCE_EXT STREQUAL ".f90")
-        e3sm_add_flags("${SOURCE_FILE}" "${FREEFLAGS}")
+        e3sm_set_source_property(${SOURCE_FILE} Fortran_FORMAT FREE FALSE)
       elseif (SOURCE_EXT STREQUAL ".F90")
-        e3sm_add_flags("${SOURCE_FILE}" "${FREEFLAGS} ${CONTIGUOUS_FLAG}")
+        e3sm_set_source_property(${SOURCE_FILE} Fortran_FORMAT FREE FALSE)
+        e3sm_add_flags(${SOURCE_FILE} "${CONTIGUOUS_FLAG}")
       endif()
     endif()
   endforeach()
@@ -231,7 +224,7 @@ macro(build_model COMP_CLASS COMP_NAME)
     if (ITEM MATCHES "${CMAKE_BINARY_DIR}/.*") # is generated
       list(APPEND REAL_SOURCES ${ITEM})
     else()
-      list(APPEND REAL_SOURCES "${SOURCE_PATH}/${ITEM}")
+      list(APPEND REAL_SOURCES "${PROJECT_SOURCE_DIR}/${ITEM}")
     endif()
   endforeach()
 
