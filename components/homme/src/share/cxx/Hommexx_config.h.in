@@ -1,7 +1,9 @@
 #ifndef HOMMEXX_CONFIG_H
 #define HOMMEXX_CONFIG_H
 
-// Identifies whether this is a cuda/hip build
+// Identifies whether this is a cuda/hip build. This symbol is visible only in
+// the C++ code. Use HOMMEXX_ENABLE_GPU_F90 in F90 code when doing BFB-testing
+// builds.
 #cmakedefine HOMMEXX_ENABLE_GPU
 
 // Whether the CUDA exec space has been selected

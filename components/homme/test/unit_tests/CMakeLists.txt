@@ -11,7 +11,11 @@ macro(cxx_unit_test target_name target_f90_srcs target_cxx_srcs include_dirs con
   #ELSE()
     set(TMP ${USE_MPI_OPTIONS})
     separate_arguments(TMP)
-    ADD_TEST(${target_name}_test ${USE_MPIEXEC} -n ${NUM_CPUS} ${TMP} ./${target_name})
+    if (USE_MPI_RUN_SCRIPT)
+      ADD_TEST(${target_name}_test ${USE_MPI_RUN_SCRIPT} ${NUM_CPUS} ./${target_name})
+    else()
+      ADD_TEST(${target_name}_test ${USE_MPIEXEC} -n ${NUM_CPUS} ${TMP} ./${target_name})
+    endif()
   #ENDIF()
   SET_TESTS_PROPERTIES(${target_name}_test PROPERTIES LABELS "unit")
 
