@@ -192,74 +192,51 @@ read_fields_from_file_for_iop (const std::string& file_name,
 
   // For each field, broadcast data from closest lat/lon column to all processors
   // and copy data into each field's column in the field manager.
-  for (size_t i=0; i<fields.size(); ++i) {
-    const auto& field = fields[i];
-    const auto fname = field_names_eamxx[i]; // We need fname of eamxx field for below
-    auto fm_field = field_mgr->get_field(fname);
+  for (size_t i=0; i<io_fields.size(); ++i) {
+    const auto& io_field = io_fields[i];
+    const auto& fname = field_names_eamxx[i];
+    auto& fm_field = field_mgr->get_field(fname);
 
-    // We only need to transfer a single column of data, but that column
-    // is not necessarily the first column. Since column is the slowest view
-    // index, and we are guarenteed the fields are not subfields (since we
-    // created them above), all column data is contiguous in memory, therefore
-    // we can easily broadcast a single column to all processors. As a preprocess
-    // we first store the correct column data on the mpi rank with the closest
-    // lat/lon pair to be the first column of that ranks field.
-    const auto col_indx = m_lat_lon_info[grid_name].local_column_index_of_closest_column;
-    const auto col_mpi_rank = m_lat_lon_info[grid_name].mpi_rank_of_closest_column;
-    const auto& fl = field.get_header().get_identifier().get_layout();
-    const auto col_size = fl.size()/fl.dim(0);
-    auto field_data = field.get_internal_view_data<Real,Host>();
-    if (m_comm.rank() == col_mpi_rank && col_indx!=0) {
-      for (auto k=0; k<col_size; ++k) {
-        field_data[k] = field_data[col_indx*col_size+k];
+    // Create a temporary field to store the data from the
+    // single column of the closest lat/lon pair
+    const auto io_fid = io_field.get_header().get_identifier();
+    auto dims = io_fid.get_layout().dims();
+    dims[0] = 1;
+    FieldLayout col_data_fl(io_fid.get_layout().tags(), dims);
+    FieldIdentifier col_data_fid("col_data", col_data_fl, dummy_units, "");
+    Field col_data(col_data_fid);
+    col_data.allocate_view();
+
+    // MPI rank with closest column index store column data
+    const auto mpi_rank_with_col = m_lat_lon_info[grid_name].mpi_rank_of_closest_column;
+    if (m_comm.rank() == mpi_rank_with_col) {
+      const auto col_indx_with_data = m_lat_lon_info[grid_name].local_column_index_of_closest_column;
+      if (col_data.rank() == 1) {
+        col_data.get_view<Real*,Host>()(0) = io_field.get_view<Real*,Host>()(col_indx_with_data);
+      } else {
+        col_data.subfield(0,0).deep_copy<Host>(io_field.subfield(0,col_indx_with_data));
       }
     }
-    // Broadcast first column of data to all other ranks
-    m_comm.broadcast(field.get_internal_view_data<Real,Host>(), col_size, col_mpi_rank);
 
-    // Copy first column of field view into all columns of field manager field view.
-    // Note: unlike above, we cannot guarentee that FM fields are not subfields, so
-    //       their memory may not be contiguous, so we can't access raw view data.
-    switch (fm_field.rank()) {
-      case 1: {
-        auto dst_view = fm_field.get_view<Real*, Host>();
-        for (size_t i0=0; i0<dst_view.extent(0); ++i0) {
-          dst_view(i0) = field_data[0];
-        }
-        break;
+    // Broadcast column data to all other ranks
+    const auto col_size = col_data.get_header().get_identifier().get_layout().size();
+    m_comm.broadcast(col_data.get_internal_view_data<Real,Host>(), col_size, mpi_rank_with_col);
+
+    // Copy column data to all columns in field manager field
+    const auto ncols = fm_field.get_header().get_identifier().get_layout().dim(0);
+    for (auto icol=0; icol<ncols; ++icol) {
+      if (col_data.rank() == 1) {
+        fm_field.get_view<Real*,Host>()(icol) = col_data.get_view<Real*,Host>()(0);
+      } else {
+        fm_field.subfield(0,icol).deep_copy<Host>(col_data.subfield(0,0));
       }
-      case 2: {
-        auto dst_view = fm_field.get_view<Real**, Host>();
-        for (size_t i0=0; i0<dst_view.extent(0); ++i0) {
-          for (size_t i1=0; i1<dst_view.extent(1); ++i1) {
-            dst_view(i0, i1) = field_data[i1];
-        }}
-        break;
-      }
-      case 3: {
-        auto dst_view = fm_field.get_view<Real***, Host>();
-        for (size_t i0=0; i0<dst_view.extent(0); ++i0) {
-          for (size_t i1=0; i1<dst_view.extent(1); ++i1) {
-            for (size_t i2=0; i2<dst_view.extent(2); ++i2) {
-              dst_view(i0, i1, i2) = field_data[i1*dst_view.extent(2)+i2];
-        }}}
-        break;
-      }
-      default:
-        // Currently only up to rank 3 inputs needed from IC file.
-        // Additional ranks can easily be added if needed.
-        EKAT_ERROR_MSG ("Error! Unexpected field rank (" + std::to_string(fm_field.rank()) + ") "
-                        "when transferring IOP ICs for field "+fm_field.name()+". If needed, this "
-                        "can be implemented by adding another case.\n");
     }
 
     // Sync fields to device
     fm_field.sync_to_dev();
-  }
 
-  // Set the initial time stamp on FM fields
-  for (const auto& fn : field_names_eamxx) {
-    field_mgr->get_field(fn).get_header().get_tracking().update_time_stamp(initial_ts);
+    // Set the initial time stamp on FM fields
+    fm_field.get_header().get_tracking().update_time_stamp(initial_ts);
   }
 }
 
