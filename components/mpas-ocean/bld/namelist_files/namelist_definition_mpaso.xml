@@ -1196,6 +1196,14 @@ Valid values: Any positive real number.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_use_SGR_opt" type="real"
+	category="forcing" group="forcing">
+Option to use or not subglacial runoff (SGR).
+
+Valid values: 0 - don't use SGR, 1 - use both mass and TS from SGR, 2 - use mass only from SGR , 3 - use TS only from SGR
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- coupling -->
 
