@@ -192,72 +192,40 @@ read_fields_from_file_for_iop (const std::string& file_name,
   dp_ic_reader.finalize();
 
   // For each field, broadcast data from closest lat/lon column to all processors
-  // and copy data into each field's column.
-
-  // Find the maximum size of transfer data over fields.
-  int max_data_size = 0;
-  for (auto& f : fields) {
-    const auto fl = f.get_header().get_identifier().get_layout();
-    if (fl.size()/fl.dim(0) > max_data_size) max_data_size = fl.size()/fl.dim(0);
-  }
-
-  Real transfer_data[max_data_size];
+  // and copy data into each field's column in the field manager.
   for (size_t i=0; i<fields.size(); ++i) {
-    const auto f = fields[i];
-    const auto fl = f.get_header().get_identifier().get_layout();
-    const auto field_rank = fl.rank();
-    const auto fname = field_names_eamxx[i];
+    const auto& field = fields[i];
+    const auto fname = field_names_eamxx[i]; // We need fname of eamxx field for below
+    auto fm_field = field_mgr->get_field(fname);
 
-    // If I am the rank with the minimum lat/lon distance,
-    // store data of values to broadcast.
-    const auto my_rank = m_comm.rank();
+    // We only need to transfer a single column of data, but that column
+    // is not necessarily the first column. Since column is the slowest view
+    // index, and we are guarenteed the fields are not subfields (since we
+    // created them above), all column data is contiguous in memory, therefore
+    // we can easily broadcast a single column to all processors. As a preprocess
+    // we first store the correct column data on the mpi rank with the closest
+    // lat/lon pair to be the first column of that ranks field.
+    const auto col_indx = m_lat_lon_info[grid_name].local_column_index_of_closest_column;
     const auto col_mpi_rank = m_lat_lon_info[grid_name].mpi_rank_of_closest_column;
-    if (my_rank == col_mpi_rank) {
-      const auto col_idx = m_lat_lon_info[grid_name].local_column_index_of_closest_column;
-      switch (field_rank) {
-        case 1: {
-          auto src_view = f.get_view<Real*, Host>();
-          transfer_data[0] = src_view(col_idx);
-          break;
-        }
-        case 2: {
-          auto src_view = f.get_view<Real**, Host>();
-          for (auto i1=0; i1<fl.dim(1); ++i1) {
-            transfer_data[i1] = src_view(col_idx, i1);
-          }
-          break;
-        }
-        case 3: {
-          auto src_view = f.get_view<Real***, Host>();
-          for (auto i1=0; i1<fl.dim(1); ++i1) {
-            for (auto i2=0; i2<fl.dim(2); ++i2) {
-              transfer_data[i2+i1*fl.dim(2)] = src_view(col_idx, i1, i2);
-          }}
-          break;
-        }
-        default:
-          // Currently only up to rank 3 inputs needed from IC file.
-          // Additional ranks can easily be added if needed.
-          EKAT_ERROR_MSG ("Error! Unexpected field rank (" + std::to_string(field_rank) + ") when transferring "
-                          "IOP ICs for field "+fname+". If needed, this can be implemented by adding another case.\n");
+    const auto& fl = field.get_header().get_identifier().get_layout();
+    const auto col_size = fl.size()/fl.dim(0);
+    auto field_data = field.get_internal_view_data<Real,Host>();
+    if (m_comm.rank() == col_mpi_rank && col_indx!=0) {
+      for (auto k=0; k<col_size; ++k) {
+        field_data[k] = field_data[col_indx*col_size+k];
       }
     }
+    // Broadcast first column of data to all other ranks
+    m_comm.broadcast(field.get_internal_view_data<Real,Host>(), col_size, col_mpi_rank);
 
-    // Broadcast data to other processors
-    const auto data_size_needed = fl.size()/fl.dim(0);
-    m_comm.broadcast(transfer_data, data_size_needed, col_mpi_rank);
-
-    // For each processor, copy data  into each column
-    auto fm_field = field_mgr->get_field(fname);
-    auto fm_field_rank = fm_field.get_header().get_identifier().get_layout().rank();
-    // Sanity check
-    EKAT_REQUIRE_MSG(field_rank==fm_field_rank,
-                     "Error! Field ranks mismatch for "+fname+" when transfering IOP ICs.\n");
-    switch (field_rank) {
+    // Copy first column of field view into all columns of field manager field view.
+    // Note: unlike above, we cannot guarentee that FM fields are not subfields, so
+    //       their memory may not be contiguous, so we can't access raw view data.
+    switch (fm_field.rank()) {
       case 1: {
         auto dst_view = fm_field.get_view<Real*, Host>();
         for (size_t i0=0; i0<dst_view.extent(0); ++i0) {
-          dst_view(i0) = transfer_data[0];
+          dst_view(i0) = field_data[0];
         }
         break;
       }
@@ -265,7 +233,7 @@ read_fields_from_file_for_iop (const std::string& file_name,
         auto dst_view = fm_field.get_view<Real**, Host>();
         for (size_t i0=0; i0<dst_view.extent(0); ++i0) {
           for (size_t i1=0; i1<dst_view.extent(1); ++i1) {
-            dst_view(i0, i1) = transfer_data[i1];
+            dst_view(i0, i1) = field_data[i1];
         }}
         break;
       }
@@ -274,15 +242,16 @@ read_fields_from_file_for_iop (const std::string& file_name,
         for (size_t i0=0; i0<dst_view.extent(0); ++i0) {
           for (size_t i1=0; i1<dst_view.extent(1); ++i1) {
             for (size_t i2=0; i2<dst_view.extent(2); ++i2) {
-              dst_view(i0, i1, i2) = transfer_data[i2+i1*dst_view.extent(2)];
+              dst_view(i0, i1, i2) = field_data[i1*dst_view.extent(2)+i2];
         }}}
         break;
       }
       default:
         // Currently only up to rank 3 inputs needed from IC file.
         // Additional ranks can easily be added if needed.
-        EKAT_ERROR_MSG ("Error! Unexpected field rank (" + std::to_string(field_rank) + ") when transferring "
-                        "IOP ICs for field "+fname+". If needed, this can be implemented by adding another case.\n");
+        EKAT_ERROR_MSG ("Error! Unexpected field rank (" + std::to_string(fm_field.rank()) + ") "
+                        "when transferring IOP ICs for field "+fm_field.name()+". If needed, this "
+                        "can be implemented by adding another case.\n");
     }
 
     // Sync fields to device
