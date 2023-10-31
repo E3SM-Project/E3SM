@@ -141,6 +141,8 @@ contains
          !------------------------------------------------------
 
          ! displayed pools
+           veg_cf%m_leafc_to_litter(p)     = 0._r8 
+           veg_cf%m_livestemc_to_litter(p) = 0._r8 
          if(ivt(p) < npcropmin .or. (ivt(p) >= npcropmin .and. croplive(p))) then
            veg_cf%m_leafc_to_litter(p)               = veg_cs%leafc(p)               * m
            veg_cf%m_livestemc_to_litter(p)           = veg_cs%livestemc(p)           * m
