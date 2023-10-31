@@ -3,6 +3,10 @@
 # we want.
 macro(build_model COMP_CLASS COMP_NAME)
 
+  # We want real variables, not macro expansions
+  set(COMP_CLASS ${COMP_CLASS})
+  set(COMP_NAME ${COMP_NAME})
+
   # We support component-specific configuration of flags, etc, so this setup
   # need to be done here.
   include(${SRCROOT}/components/cmake/common_setup.cmake)

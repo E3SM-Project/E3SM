@@ -43,7 +43,7 @@ if (compile_threaded)
   list(APPEND CPPDEFS "-DMPAS_OPENMP")
 endif()
 
-set(INCLUDES "${INSTALL_SHAREDPATH}/include" "${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/${NINST_VALUE}/csm_share" "${INSTALL_SHAREDPATH}/pio" "${CMAKE_CURRENT_SOURCE_DIR}/external/ezxml" "${CMAKE_BINARY_DIR}/framework" "${CMAKE_BINARY_DIR}/operators")
+set(INCLUDES "${INSTALL_SHAREDPATH}/include" "${CMAKE_CURRENT_SOURCE_DIR}/external/ezxml" "${CMAKE_BINARY_DIR}/framework" "${CMAKE_BINARY_DIR}/operators")
 
 if (USE_KOKKOS)
   include(${INSTALL_SHAREDPATH}/kokkos_generated_settings.cmake)
@@ -67,8 +67,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/operators/operators.cmake)
 add_library(common)
 target_compile_definitions(common PRIVATE ${CPPDEFS})
 target_include_directories(common PRIVATE ${INCLUDES})
-find_package(PIO REQUIRED)
-target_link_libraries(common PUBLIC spio)
+target_link_libraries(common PUBLIC spio csm_share)
 
 genf90_targets("${COMMON_RAW_SOURCES}" "${INCLUDES}" "${CPPDEFS}" "" "")
 target_sources(common PRIVATE ${SOURCES})

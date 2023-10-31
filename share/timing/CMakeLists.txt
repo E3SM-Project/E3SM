@@ -7,6 +7,9 @@ FortranCInterface_HEADER(cmake_fortran_c_interface.h
 
 include(${CASEROOT}/Macros.cmake)
 
+# Just assume all files are free
+set(CMAKE_Fortran_FORMAT FREE)
+
 set(SRCS_C
   GPTLget_memusage.c
   GPTLprint_memusage.c
@@ -40,10 +43,6 @@ endif()
 
 if (CPRE)
   # Not sure what to do here or if this is really needed
-endif()
-
-if (FREEFLAGS)
-  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${FREEFLAGS}")
 endif()
 
 add_library(gptl ${SRCS_F90} ${SRCS_C})
