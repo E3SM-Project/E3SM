@@ -174,7 +174,8 @@ def parse_log(logf, normalize=None):
     for line in log_content.splitlines():
         if "e3sm_compile_wrap.py" in line:
             if normalize is not None:
-                line = line.replace(normalize[0], normalize[1])
+                for repl, repl_with in normalize:
+                    line = line.replace(repl, repl_with)
 
             args = line.split()
             arglen = len(args)
@@ -185,7 +186,7 @@ def parse_log(logf, normalize=None):
                     break
 
                 if arg.startswith("lib") and arg.endswith(".a"):
-                    if args[idx-1] == "ranlib":
+                    if args[idx-1].endswith("ranlib"):
                         target = "skipme"
                     else:
                         target = arg
@@ -195,13 +196,13 @@ def parse_log(logf, normalize=None):
                 print(f"WARNING: Failed to parse line {line}")
 
             if target != "skipme":
-                assert target not in result, f"{target} appears twice in log {logf}?"
+                assert target not in result, f"{target} appears twice in log {logf}?\nFirst encountered: {result[target]}\n\nAnd again: {line}"
                 result[target] = line
 
     return result
 
 ###############################################################################
-def compare_logs(builddir1, builddir2, casename1, casename2, unordered, verbose):
+def compare_logs(builddir1, builddir2, casename1, casename2, srcroot1, srcroot2, unordered, verbose):
 ###############################################################################
     result = True
 
@@ -209,12 +210,18 @@ def compare_logs(builddir1, builddir2, casename1, casename2, unordered, verbose)
     log2 = get_log_from_blddir(builddir2)
 
     log1c = parse_log(log1)
-    log2c = parse_log(log2, normalize=(casename2, casename1))
+    log2c = parse_log(log2, normalize=((casename2, casename1), (srcroot2, srcroot1)))
 
     for target, line1 in log1c.items():
         if target in log2c:
             line2 = log2c[target]
-            result &= compare_tokens(line1, line2, unordered, verbose)
+            print(f"Comparing target {target}")
+            curr_result = compare_tokens(line1, line2, unordered, verbose)
+            result &= curr_result
+            if curr_result:
+                print(f"  Target has identical build")
+            else:
+                print(f"  Target did not have identical build")
 
         else:
             print(f"WARNING: target {target} is missing from case2")
@@ -239,6 +246,9 @@ def compare_flags(case1, case2, unordered, limits, build_log, verbose):
     casename1 = run_cmd_no_fail("./xmlquery CASE --value", from_dir=case1)
     casename2 = run_cmd_no_fail("./xmlquery CASE --value", from_dir=case2)
 
+    srcroot1 = run_cmd_no_fail("./xmlquery SRCROOT --value", from_dir=case1)
+    srcroot2 = run_cmd_no_fail("./xmlquery SRCROOT --value", from_dir=case2)
+
     builddir1_cmake = builddir1 / "cmake-bld"
     builddir2_cmake = builddir2 / "cmake-bld"
 
@@ -248,7 +258,7 @@ def compare_flags(case1, case2, unordered, limits, build_log, verbose):
         f"{builddir2_cmake} is not an existing directory, you need to run case.build in {case2}"
 
     if build_log:
-        result = compare_logs(builddir1, builddir2, casename1, casename2, unordered, verbose)
+        result = compare_logs(builddir1, builddir2, casename1, casename2, srcroot1, srcroot2, unordered, verbose)
 
     else:
         flag_files1 = find_files(builddir1_cmake, "flags.make", limits)

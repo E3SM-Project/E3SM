@@ -1,4 +1,7 @@
-function(build_model COMP_CLASS COMP_NAME)
+# This function must be a macro so that it does not get its own scope.
+# This way, changes to CMAKE_* vars affect the directory which is what
+# we want.
+macro(build_model COMP_CLASS COMP_NAME)
 
   # We support component-specific configuration of flags, etc, so this setup
   # need to be done here.
@@ -298,4 +301,4 @@ function(build_model COMP_CLASS COMP_NAME)
   # Set flags for target
   target_include_directories(${TARGET_NAME} PRIVATE ${INCLDIR})
 
-endfunction(build_model)
+endmacro(build_model)

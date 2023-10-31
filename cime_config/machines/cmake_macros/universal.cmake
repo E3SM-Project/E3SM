@@ -10,3 +10,14 @@ endif()
 
 # Unless told otherwise, set has_contiguous to FALSE
 set(HAS_F2008_CONTIGUOUS "FALSE")
+
+# Do not use any automatic settings for these
+set(CMAKE_Fortran_FLAGS "")
+set(CMAKE_Fortran_FLAGS_DEBUG "")
+set(CMAKE_Fortran_FLAGS_RELEASE "")
+set(CMAKE_C_FLAGS "")
+set(CMAKE_C_FLAGS_DEBUG "")
+set(CMAKE_C_FLAGS_RELEASE "")
+set(CMAKE_CXX_FLAGS "")
+set(CMAKE_CXX_FLAGS_DEBUG "")
+set(CMAKE_CXX_FLAGS_RELEASE "")
