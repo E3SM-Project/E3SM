@@ -234,10 +234,12 @@ module ocn_time_integration_split
          benthosTracersCur,    &! old benthosTracer arrays
          benthosTracersNew      ! new benthosTracer arrays
 
+      integer, pointer :: &
+         nBenthicVertLevels     ! number of benthic vertical levels
+
       integer :: &
          startIndex, endIndex, &! start, end index for tracer groups
-         indexSalinity,        &! tracer index for salinity
-         nBenthicVertLevels     ! number of benthic vertical levels
+         indexSalinity          ! tracer index for salinity
 
       integer :: iTracer, numTracers, numActiveTracers
 
