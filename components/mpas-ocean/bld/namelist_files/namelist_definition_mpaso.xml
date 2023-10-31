@@ -204,7 +204,7 @@ Default: Defined in namelist_defaults.xml
 	category="time_integration" group="time_integration">
 Time integration method.
 
-Valid values: 'split_explicit', 'RK4', 'unsplit_explicit', 'split_implicit', 'LTS'
+Valid values: 'split_explicit', 'RK4', 'unsplit_explicit', 'split_implicit', 'LTS', 'split_explicit_ab2'
 Default: Defined in namelist_defaults.xml
 </entry>
 
