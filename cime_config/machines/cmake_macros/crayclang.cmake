@@ -17,7 +17,6 @@ if (NOT compile_threaded)
 	# Details: `explain ftn-1077`
   string(APPEND CMAKE_Fortran_FLAGS " -M1077")
 endif()
-string(APPEND CMAKE_Fortran_FLAGS_DEBUG " -O0")
 set(HAS_F2008_CONTIGUOUS "TRUE")
 string(APPEND CMAKE_EXE_LINKER_FLAGS " -Wl,--allow-multiple-definition")
 

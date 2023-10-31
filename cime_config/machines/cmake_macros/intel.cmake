@@ -14,7 +14,6 @@ string(APPEND CMAKE_Fortran_FLAGS_DEBUG   " -O0 -g -check uninit -check bounds -
 string(APPEND CMAKE_CXX_FLAGS " -fp-model source")
 string(APPEND CPPDEFS " -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL")
 string(APPEND CMAKE_Fortran_FLAGS " -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model source")
-string(APPEND CMAKE_Fortran_FLAGS_DEBUG " -O0")
 string(APPEND CMAKE_Fortran_FORMAT_FIXED_FLAG " -fixed -132")
 string(APPEND CMAKE_Fortran_FORMAT_FREE_FLAG " -free")
 set(HAS_F2008_CONTIGUOUS "TRUE")

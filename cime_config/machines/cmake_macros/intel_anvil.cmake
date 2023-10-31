@@ -1,7 +1,6 @@
 if (compile_threaded)
   string(APPEND CMAKE_C_FLAGS " -static-intel")
   string(APPEND CMAKE_Fortran_FLAGS " -static-intel")
-  string(APPEND CMAKE_Fortran_FLAGS_DEBUG " -static-intel")
   string(APPEND CMAKE_EXE_LINKER_FLAGS " -static-intel")
   string(APPEND CMAKE_C_FLAGS_DEBUG " -heap-arrays")
   string(APPEND CMAKE_Fortran_FLAGS_DEBUG " -heap-arrays")
