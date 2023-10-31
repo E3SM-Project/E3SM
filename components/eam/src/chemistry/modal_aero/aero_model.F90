@@ -2637,10 +2637,9 @@ do_lphase2_conditional: &
        ! note that:
        !     vmr0 holds vmr before gas-phase chemistry
        !     dvmrdt and dvmrcwdt hold vmr and vmrcw before aqueous chemistry
-! ++MW
        call modal_aero_amicphys_intr(                &
             1,                  1,                   &
-            1,                  0,                   &
+            1,                  1,                   &
             lchnk,     ncol,    nstep,               &
             loffset,   delt,                         &
             latndx,    lonndx,                       &
@@ -2652,7 +2651,6 @@ do_lphase2_conditional: &
             dvmrdt,             dvmrcwdt,            &
             dgnum,              dgnumwet,            &
             wetdens                                  )
-! --MW
 
 !      subroutine modal_aero_amicphys_intr(          &
 !           mdo_gasaerexch,     mdo_rename,          &
