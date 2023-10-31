@@ -4494,10 +4494,22 @@ mainloop1_ipair:  do n = 1, ntot_amode
          ( 1.0_r8 + ybetajj0(1)*deltat*qnum_tmpa(nacc) ) 
       qnum_tmpc(nacc) = (qnum_tmpa(nacc) + qnum_tmpb(nacc))*0.5_r8
 
+#if ( defined MODAL_AERO_5MODE_AGEDCARBON )
+! a-carbon mode number loss - analytical solution
+      tmpa = max( 0.0_r8, deltat*ybetajj0(2) )
+      qnum_tmpb(naca) = qnum_tmpa(naca) / &
+         ( 1.0_r8 + ybetajj0(2)*deltat*qnum_tmpa(naca) )
+      qnum_tmpc(naca) = (qnum_tmpa(naca) + qnum_tmpb(naca))*0.5_r8
+#endif
+
 ! pcarbon mode number loss - approximate analytical solution
 !    using average number conc. for accum mode
       if (npca > 0) then
+#if ( defined MODAL_AERO_5MODE_AGEDCARBON )
+         tmpa = max( 0.0_r8, deltat*ybetaij0(2)*qnum_tmpc(naca) )
+#else
          tmpa = max( 0.0_r8, deltat*ybetaij0(2)*qnum_tmpc(nacc) )
+#endif
          tmpb = max( 0.0_r8, deltat*ybetaii0(2) )
          tmpn = qnum_tmpa(npca)
          if (tmpa < 1.0e-5_r8) then
@@ -4533,7 +4545,10 @@ mainloop1_ipair:  do n = 1, ntot_amode
 ! aitken mode number loss - approximate analytical solution
 !    using average number conc. for accum, pcarbon, and marine-org accum modes
       tmpa = ybetaij0(1)*qnum_tmpc(nacc)
+#if ( defined MODAL_AERO_5MODE_AGEDCARBON )
+#else
       if (npca  > 0) tmpa = tmpa + ybetaij0(3)*qnum_tmpc(npca)
+#endif
       if (nmacc > 0) tmpa = tmpa + ybetaij0(4)*qnum_tmpc(nmacc)
       tmpa = max( 0.0_r8, deltat*tmpa )
       tmpb = max( 0.0_r8, deltat*ybetaii0(1) )
@@ -4628,7 +4643,11 @@ mainloop1_ipair:  do n = 1, ntot_amode
          tmp2 = max( 0.0_r8, ybetaij3(3)*qnum_tmpc(npca) )
          tmp3 = max( 0.0_r8, ybetaij3(4)*qnum_tmpc(nmacc) )
       else if (npca > 0) then
+#if ( defined MODAL_AERO_5MODE_AGEDCARBON )
+         tmp2 = 0.0_r8
+#else
          tmp2 = max( 0.0_r8, ybetaij3(3)*qnum_tmpc(npca) )
+#endif
          tmp3 = 0.0_r8
       else
          tmp2 = 0.0_r8
@@ -4655,6 +4674,13 @@ mainloop1_ipair:  do n = 1, ntot_amode
                                     = qaer_del_coag_in(iaer,i_agepair_macc) + tmp_dq*tmp3
             end do
          else if (npca > 0) then
+#if ( defined MODAL_AERO_5MODE_AGEDCARBON )
+            do iaer = 1, naer
+               tmp_dq = tmp_xf*qaer_tmpa(iaer,nait)
+               qaer_tmpb(iaer,nait) = qaer_tmpb(iaer,nait) - tmp_dq
+               qaer_tmpb(iaer,nacc) = qaer_tmpb(iaer,nacc) + tmp_dq
+            end do
+#else
             tmp2 = tmp2/tmpa
             tmp1 = 1.0_r8 - tmp2
             do iaer = 1, naer
@@ -4665,6 +4691,7 @@ mainloop1_ipair:  do n = 1, ntot_amode
                qaer_del_coag_in(iaer,i_agepair_pca) &
                                     = qaer_del_coag_in(iaer,i_agepair_pca) + tmp_dq*tmp2
             end do
+#endif
          else
             do iaer = 1, naer
                tmp_dq = tmp_xf*qaer_tmpa(iaer,nait)
@@ -4734,6 +4761,18 @@ mainloop1_ipair:  do n = 1, ntot_amode
 ! mass transfer out of pcarbon mode 
 !    uses average number conc. for accum mode
       if (npca > 0) then
+#if ( defined MODAL_AERO_5MODE_AGEDCARBON )
+         tmpc = max( 0.0_r8, ybetaij3(2)*qnum_tmpc(naca) )
+         tmpc = deltat*tmpc
+         if (tmpc > epsilonx2) then
+            tmp_xf = 1.0_r8 - exp(-tmpc)
+            do iaer = 1, naer
+               tmp_dq = tmp_xf*qaer_tmpa(iaer,npca)
+               qaer_tmpb(iaer,npca) = qaer_tmpb(iaer,npca) - tmp_dq
+               qaer_tmpb(iaer,naca) = qaer_tmpb(iaer,naca) + tmp_dq
+            end do
+         end if
+#else
          tmpc = max( 0.0_r8, ybetaij3(2)*qnum_tmpc(nacc) )
          tmpc = deltat*tmpc
          if (tmpc > epsilonx2) then
@@ -4744,6 +4783,7 @@ mainloop1_ipair:  do n = 1, ntot_amode
                qaer_tmpb(iaer,nacc) = qaer_tmpb(iaer,nacc) + tmp_dq
             end do
          end if
+#endif
       end if
 
 ! mass transfer out of accum mode - there is no transfer out of this mode
@@ -5599,21 +5639,6 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
             na = nait ; nb = nacc
          else if (ip == 2) then
             na = npca ; nb = naca
-         else if (ip == 3) then
-            na = nait ; nb = nmacc
-            nc = nacc
-         else if (ip == 4) then
-            na = nmait ; nb = nacc
-         else if (ip == 5) then
-            na = nmait ; nb = npca
-         else if (ip == 6) then
-            na = nmait ; nb = nait
-         else if (ip == 7) then
-            na = nmait ; nb = nmacc
-         else if (ip == 8) then
-            na = nmacc ; nb = nacc
-         else if (ip == 9) then
-            na = nmacc ; nb = npca
          end if
 #else
          if (ip == 1) then
