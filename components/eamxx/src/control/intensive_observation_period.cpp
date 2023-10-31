@@ -31,7 +31,7 @@ IntensiveObservationPeriod(const ekat::Comm& comm,
 
   EKAT_REQUIRE_MSG(m_params.isParameter("target_latitude") && m_params.isParameter("target_longitude"),
                    "Error! Using intensive observation period files requires "
-                   "target_lat and target_lon be gives as parameters in "
+                   "target_latitude and target_longitude be gives as parameters in "
                    "\"intensive_observation_period_options\" in the input yaml file.\n");
   const auto target_lat = m_params.get<Real>("target_latitude");
   const auto target_lon = m_params.get<Real>("target_longitude");
