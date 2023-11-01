@@ -1,11 +1,24 @@
 cmake_minimum_required(VERSION 3.18)
 
 # Needs to happen before project call
+function(set_compilers_e3sm)
+  # Grab CXX compiler from CIME
+  include(${CASEROOT}/Macros.cmake)
+
+  set(CMAKE_CXX_COMPILER     ${CMAKE_CXX_COMPILER}     CACHE STRING "The CXX compiler")
+  set(CMAKE_C_COMPILER       ${CMAKE_C_COMPILER}       CACHE STRING "The C   compiler")
+  set(CMAKE_Fortran_COMPILER ${CMAKE_Fortran_COMPILER} CACHE STRING "The Fortran compiler")
+
+endfunction()
+set_compilers_e3sm()
+
 include(${CASEROOT}/Macros.cmake)
 
 project(GPTL C Fortran)
 
 set(CMAKE_VERBOSE_MAKEFILE TRUE)
+
+include(${CASEROOT}/Macros.cmake)
 
 include(FortranCInterface)
 FortranCInterface_HEADER(cmake_fortran_c_interface.h
@@ -49,9 +62,12 @@ if (CPRE)
   # Not sure what to do here or if this is really needed
 endif()
 
+set(CPPDEFS "${CPPDEFS} ${TIMING_CPPDEFS}")
+separate_arguments(CPPDEFS_LIST UNIX_COMMAND "${CPPDEFS}")
+
 add_library(gptl ${SRCS_F90} ${SRCS_C})
 target_include_directories(gptl PRIVATE ${TIMING_INCLUDE_DIRS})
-target_compile_definitions(gptl PRIVATE ${TIMING_CPPDEFS})
+target_compile_definitions(gptl PRIVATE ${CPPDEFS_LIST})
 set_target_properties(gptl PROPERTIES PUBLIC_HEADER "gptl.h;${CMAKE_BINARY_DIR}/perf_mod.mod;${CMAKE_BINARY_DIR}/perf_utils.mod;")
 
 install(TARGETS gptl
