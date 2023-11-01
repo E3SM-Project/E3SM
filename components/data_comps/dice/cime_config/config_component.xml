@@ -44,10 +44,10 @@
     <desc>DICE mode. DICE is a combination of a data model and a prognostic model.
       The data functionality reads in ice coverage. The prognostic functionality
       calculates the ice/atmosphere and ice/ocean fluxes. DICE receives the same
-      atmospheric input from the coupler as the active CICE model (i.e., atmospheric
+      atmospheric input from the coupler as the active MPAS-SeaIce model (i.e., atmospheric
       states, shortwave fluxes, and ocean ice melt flux). DICE acts very similarly
-      to CICE running in prescribed mode.) Currently, this component is only
-      used to drive POP in C compsets.
+      to MPAS-SeaIce running in prescribed mode.) Currently, this component is only
+      used to drive MPAS-Ocean in C compsets.
       If DICE_MODE is set to ssmi or ssmi_iaf, it is a prognostic mode.
       It requires data be sent to the ice model.
       Ice fraction (extent) data is read from an input stream,

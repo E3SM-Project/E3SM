@@ -66,21 +66,6 @@
     </rpointer>
   </comp_archive_spec>
 
-  <comp_archive_spec compname="cice" compclass="ice">
-    <rest_file_extension>[ri]</rest_file_extension>
-    <hist_file_extension>h\d*</hist_file_extension>
-    <rest_history_varname>unset</rest_history_varname>
-    <rpointer>
-      <rpointer_file>rpointer.ice$NINST_STRING</rpointer_file>
-      <rpointer_content>./$CASE.cice$NINST_STRING.r.$DATENAME.nc</rpointer_content>
-    </rpointer>
-    <test_file_names>
-      <tfile disposition="copy">rpointer.ice</tfile>
-      <tfile disposition="copy">casename.cice.r.1976-01-01-00000.nc</tfile>
-      <tfile disposition="move">casename.cice.h.1976-01-01-00000.nc</tfile>
-    </test_file_names>
-  </comp_archive_spec>
-
   <comp_archive_spec compname="mpassi" compclass="ice" exclude_testing="true">
     <rest_file_extension>rst</rest_file_extension>
     <rest_file_extension>rst.am.timeSeriesStatsMonthly</rest_file_extension>

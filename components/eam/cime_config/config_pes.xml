@@ -1160,7 +1160,8 @@
           <nthrds_wav>1</nthrds_wav>
         </nthrds>
       </pes>
-      <pes compset=".*EAM.+ELM.+CICE.+DOCN.+SROF.+SGLC.+SWAV.*" pesize="L">
+
+      <pes compset=".*EAM.+ELM.+MPASSI.+DOCN.+SROF.+SGLC.+SWAV.*" pesize="L">
         <comment>ne120 F-compset on 384 nodes</comment>
         <MAX_TASKS_PER_NODE>256</MAX_TASKS_PER_NODE>
         <MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
@@ -1195,6 +1196,7 @@
           <rootpe_wav>0</rootpe_wav>
         </rootpe>
       </pes>
+
     </mach>
   </grid>
   <!-- end ne120 PEs -->

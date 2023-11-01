@@ -43,7 +43,7 @@ contains
     logical, intent(in)  :: mastertask ! for io
     ! minus1p8 is constant -1.8C
     ! linear_salt is linear equation
-    ! mushy for CICE mushy-layer nonlinear equation
+    ! mushy for MPAS-SeaIce mushy-layer nonlinear equation
 
     !---------------------------------------------------------------
     ! Check tfreeze_option
