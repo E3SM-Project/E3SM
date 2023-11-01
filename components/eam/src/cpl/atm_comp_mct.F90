@@ -1014,16 +1014,14 @@ CONTAINS
    allocate(tmp(size(global_ids)))
    
    call mct_list_init(temp_list, seq_flds_x2a_fields)
-   size_list=mct_list_nitem (temp_list) ! it should be the same as nsend
+   size_list=mct_list_nitem (temp_list) ! it should be the same as nrecv
 
-   do k=1,nsend
+   do k=1,nrecv
       call mct_list_get(mstring, k, temp_list)
       itemc = mct_string_toChar(mstring)
-      call mct_string_clean(mstring)
-   
-
       call pio_seterrorhandling(File, pio_bcast_error)
       rcode = pio_inq_varid(File,'x2a_'//trim(itemc) ,varid)
+      call mct_string_clean(mstring)
       if (rcode == pio_noerr) then
          call pio_read_darray(File, varid, iodesc, tmp, rcode)
          x2a_am(:,k) = tmp(:)
@@ -1049,11 +1047,11 @@ CONTAINS
 
    call mct_list_init(temp_list, seq_flds_a2x_fields)
 
-   do k=1,nrecv
+   do k=1,nsend
       call mct_list_get(mstring, k, temp_list)
       itemc = mct_string_toChar(mstring)
-      call mct_string_clean(mstring)
       rcode = pio_inq_varid(File,'a2x_'//trim(itemc) ,varid)
+      call mct_string_clean(mstring)
 
       if (rcode == pio_noerr) then
          call pio_read_darray(File, varid, iodesc, tmp, rcode)
@@ -1126,41 +1124,43 @@ CONTAINS
 
       ! Determine and open surface restart dataset
 
-   fname_srf_cam = interpret_filename_spec( rsfilename_spec_cam, case=get_restcase(), &
-        yr_spec=yr_spec, mon_spec=mon_spec, day_spec=day_spec, sec_spec= sec_spec )
    moab_fname_srf_cam = 'moab_'//trim(fname_srf_cam)
-   moab_pname_srf_cam = trim(get_restartdir() )//trim(moab_fname_srf_cam)
-   call getfil(moab_pname_srf_cam, moab_fname_srf_cam)
    
-   call cam_pio_openfile(File, moab_fname_srf_cam, 0)
+   call cam_pio_createfile(File, trim(moab_fname_srf_cam))
+   if (masterproc) then
+      write(iulog,*)'create file :', trim(moab_fname_srf_cam) 
+   end if
    
    call pio_initdecomp(pio_subsystem, pio_double, (/ngcols/), global_ids, iodesc)
    allocate(tmp(size(global_ids)))
    
    rcode = pio_def_dim(File,'x2a_nx',ngcols,dimid(1))
    call mct_list_init(temp_list ,seq_flds_x2a_fields)
-   size_list=mct_list_nitem (temp_list) ! it should be the same as nsend
+   size_list=mct_list_nitem (temp_list) ! it should be the same as nrecv
    allocate(varid_x2a(size_list))
+   if (masterproc) then
+      write(iulog,*)'size list:', size_list, seq_flds_x2a_fields 
+   end if
     
-   do index_list = 1, size_list
-      call mct_list_get(mstring,index_list,temp_list)
+   do k = 1, size_list
+      call mct_list_get(mstring, k, temp_list)
       itemc = mct_string_toChar(mstring)
-      call mct_string_clean(mstring)
       rcode = pio_def_var(File,'x2a_'//trim(itemc),PIO_DOUBLE,dimid,varid_x2a(k))
+      call mct_string_clean(mstring)
       rcode = pio_put_att(File,varid_x2a(k),"_fillvalue",fillvalue)
    enddo
    call mct_list_clean(temp_list)
 
    call mct_list_init(temp_list ,seq_flds_a2x_fields)
-   size_list=mct_list_nitem (temp_list) ! it should be the same as nrecv
+   size_list=mct_list_nitem (temp_list) ! it should be the same as nsend
    allocate(varid_a2x(size_list))
    
    rcode = pio_def_dim(File,'a2x_nx',ngcols,dimid(1))
    do k = 1,size_list
-      call mct_list_get(mstring,index_list,temp_list)
+      call mct_list_get(mstring,k,temp_list)
       itemc = mct_string_toChar(mstring)
-      call mct_string_clean(mstring)
       rcode = PIO_def_var(File,'a2x_'//trim(itemc),PIO_DOUBLE,dimid,varid_a2x(k))
+      call mct_string_clean(mstring)
       rcode = PIO_put_att(File,varid_a2x(k),"_fillvalue",fillvalue)
    enddo
 
@@ -1182,11 +1182,11 @@ CONTAINS
      call endrun('Error: fail to get  seq_flds_a2x_fields for atm physgrid moab mesh for writing restart surface')
    endif
 
-   do k=1,nsend
+   do k=1,nrecv
       call pio_write_darray(File, varid_x2a(k), iodesc, x2a_am(:,k), rcode)
    end do
 
-   do k=1,nrecv
+   do k=1,nsend
       call pio_write_darray(File, varid_a2x(k), iodesc, a2x_am(:,k), rcode)       
    end do
 
