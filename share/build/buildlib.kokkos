@@ -78,8 +78,8 @@ def buildlib(bldroot, installpath, case):
     # We want to get the compiler and kokkos_options from Macros.make
     # (generated from cmake_macros), but we want to otherwise
     # let kokkos control flags
-    _, _, cxx, _, _, _, _, _, _, _, _, kokkos_options_raw = \
-        extract_from_macros(case, "kokkos", extra_vars=("KOKKOS_OPTIONS"))
+    macro_vals = extract_from_macros(case, "kokkos", extra_vars=("KOKKOS_OPTIONS",))
+    cxx, kokkos_options_raw = macro_vals[2], macro_vals[-1]
 
     kokkos_options = kokkos_options_raw.split(":=")[-1].strip()
 
