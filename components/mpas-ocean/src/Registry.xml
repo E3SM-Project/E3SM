@@ -3858,11 +3858,11 @@
 		/>
 		<var name="sshSubcycleCurWithTides" type="real" dimensions="nCells Time" units="m"
 			description="SSH - tidal potential in split explicit "
-			packages="tidalPotentialForcingPKG"
+			packages="tidalPotentialForcingPKG;tidalForcing"
 		/>
 		<var name="sshSubcycleNewWithTides" type="real" dimensions="nCells Time" units="m"
 			description="SSH - tidal potential in split explicit "
-			packages="tidalPotentialForcingPKG"
+			packages="tidalPotentialForcingPKG;tidalForcing"
 		/>
 		<var name="coastalSmoothingFactor" type="real" dimensions="nCells" units="1"
 			 description="Multiplication factors to smooth ssh at coastlines for SAL caculation"
