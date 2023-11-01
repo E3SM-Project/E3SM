@@ -17,12 +17,9 @@ set(O2MODELSRC
 
 if (NOT DEBUG)
   foreach(ITEM IN LISTS O2MODELSRC)
-    e3sm_remove_flags("${ITEM}" "-O3")
     e3sm_add_flags("${ITEM}" "-O2")
   endforeach()
   foreach(ITEM IN LISTS O1MODELSRC)
-    e3sm_remove_flags("${ITEM}" "-O3")
-    e3sm_remove_flags("${ITEM}" "-O2")
     e3sm_add_flags("${ITEM}" "-O1")
   endforeach()
 endif()
