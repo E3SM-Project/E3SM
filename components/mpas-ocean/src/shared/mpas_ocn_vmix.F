@@ -459,7 +459,7 @@ contains
       integer :: iEdge, k, cell1, cell2, N, Nsurf
 
       !real (kind=RKIND), dimension(:), allocatable :: bTemp, C, rTemp
-      real (kind=RKIND), dimension(:), allocatable :: bTemp, rTemp, CPrev, CNext !YSK
+      real (kind=RKIND), dimension(:), allocatable :: bTemp, rTemp !YSK
       real (kind=RKIND) :: CPrev, CNext !YSK
       real (kind=RKIND) :: A, m
 
