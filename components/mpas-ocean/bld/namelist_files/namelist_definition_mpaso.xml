@@ -1200,7 +1200,7 @@ Default: Defined in namelist_defaults.xml
 	category="forcing" group="forcing">
 Option to use or not subglacial runoff (SGR).
 
-Valid values: 0 - don't use SGR, 1 - use both mass and TS from SGR, 2 - use mass only from SGR , 3 - use TS only from SGR
+Valid values: 0 - don't use SGR, 1 - use both mass and TS from SGR, 2 - use mass only from SGR , 3 - use TS only from SGR, -1 use all + KPP
 Default: Defined in namelist_defaults.xml
 </entry>
 
