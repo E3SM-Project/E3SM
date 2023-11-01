@@ -841,7 +841,8 @@ subroutine dcmip2016_test1_pg_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl
      call toy_print(hybrid, tl%nstep, rcd)
   end if
 
-  if (ftype == 0) then
+  ! In standalone Homme, for all ftype values, FQ is tendency.
+  if (.true.) then !(ftype == 0) then
      ! Convert FQ from state to Qdp tendency.
      do ie = nets,nete
         do k = 1,nlev
