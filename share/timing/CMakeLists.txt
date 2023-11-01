@@ -5,6 +5,8 @@ include(${CASEROOT}/Macros.cmake)
 
 project(GPTL C Fortran)
 
+set(CMAKE_VERBOSE_MAKEFILE TRUE)
+
 include(FortranCInterface)
 FortranCInterface_HEADER(cmake_fortran_c_interface.h
   MACRO_NAMESPACE  "FCI_")
