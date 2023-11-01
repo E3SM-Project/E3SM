@@ -26,9 +26,9 @@ function(set_compilers_e3sm)
     set(CMAKE_BUILD_TYPE "RELEASE" CACHE STRING "build type, inferred from ${DEBUG}")
   endif()
 
-  set(CMAKE_CXX_COMPILER     ${CXX} CACHE STRING "The CXX compiler")
-  set(CMAKE_C_COMPILER       ${CC}  CACHE STRING "The C   compiler")
-  set(CMAKE_Fortran_COMPILER ${FC}  CACHE STRING "The Fortran compiler")
+  set(CMAKE_CXX_COMPILER     ${CMAKE_CXX_COMPILER}     CACHE STRING "The CXX compiler")
+  set(CMAKE_C_COMPILER       ${CMAKE_C_COMPILER}       CACHE STRING "The C   compiler")
+  set(CMAKE_Fortran_COMPILER ${CMAKE_Fortran_COMPILER} CACHE STRING "The Fortran compiler")
 
   # USE_CUDA or USE_HIP is set through Macros.cmake
   # For instance: cime_config/machines/cmake_macros/gnugpu_summit.cmake

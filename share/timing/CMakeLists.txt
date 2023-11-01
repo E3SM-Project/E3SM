@@ -1,11 +1,13 @@
 cmake_minimum_required(VERSION 3.18)
+
+# Needs to happen before project call
+include(${CASEROOT}/Macros.cmake)
+
 project(GPTL C Fortran)
 
 include(FortranCInterface)
 FortranCInterface_HEADER(cmake_fortran_c_interface.h
   MACRO_NAMESPACE  "FCI_")
-
-include(${CASEROOT}/Macros.cmake)
 
 # Just assume all files are free
 set(CMAKE_Fortran_FORMAT FREE)
