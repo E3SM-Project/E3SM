@@ -1567,7 +1567,7 @@ module ocn_time_integration_split_ab2
 
          !$omp parallel
          !$omp do schedule(runtime)
-         do iEdge = 1, nEdgesOwned
+         do iEdge = 1, nEdgesAll
             barotropicThicknessFlux(iEdge) = &
             barotropicThicknessFlux(iEdge) &
                    /(nBtrSubcycles*config_btr_subcycle_loop_factor)
