@@ -8,10 +8,17 @@
 // Extend ekat mpi type for pair of double int, used
 // in find_closest_lat_lon_index_and_rank()
 namespace ekat {
+#ifdef SCREAM_DOUBLE_PRECISION
   template<>
   MPI_Datatype get_mpi_type<std::pair<double, int>> () {
     return MPI_DOUBLE_INT;
   }
+#else
+  template<>
+  MPI_Datatype get_mpi_type<std::pair<float, int>> () {
+    return MPI_FLOAT_INT;
+  }
+#endif
 }
 
 namespace scream {
