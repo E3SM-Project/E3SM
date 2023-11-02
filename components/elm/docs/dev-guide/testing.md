@@ -72,7 +72,7 @@ test suite.
 cd cime/scripts
 ```
 
-A few things that you need to decide at this stage include the directory location where the baselines will be saved, the name and ID for the baselines, the project allocation that you will use for running the simulation, if you would like to recieve email notirications about tests, etc.
+A few things that you need to decide at this stage include the directory location where the baselines will be saved, the name and ID for the baselines, the project allocation that you will use for running the simulation, if you would like to receive email notifications about tests, etc.
 
 ```bash
 # Define the directory to hold the baseline 
@@ -126,6 +126,8 @@ Now run the `e3sm_land_developer`
 
 The cases would be named `*.G.*` to denote one is generating the baselines.
 It will take a while to compile all the cases and submit the code.
+It can take a long time (>30mins) for the test suite to run. To avoid interrupting the test suite
+in the middle, one can run the test suite within a `screen` command.
 After the cases have been successfully compiled and submitted, you can check that 
 status of test by running the `cs.status.${TEST_ID}` file that was created in the scratch directory.
 
