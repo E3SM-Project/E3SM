@@ -207,9 +207,7 @@ read_fields_from_file_for_iop (const std::string& file_name,
     // Create a temporary field to store the data from the
     // single column of the closest lat/lon pair
     const auto io_fid = io_field.get_header().get_identifier();
-    auto dims = io_fid.get_layout().dims();
-    dims[0] = 1;
-    FieldLayout col_data_fl(io_fid.get_layout().tags(), dims);
+    FieldLayout col_data_fl = io_fid.get_layout().strip_dim(0);
     FieldIdentifier col_data_fid("col_data", col_data_fl, dummy_units, "");
     Field col_data(col_data_fid);
     col_data.allocate_view();
@@ -218,11 +216,7 @@ read_fields_from_file_for_iop (const std::string& file_name,
     const auto mpi_rank_with_col = m_lat_lon_info[grid_name].mpi_rank_of_closest_column;
     if (m_comm.rank() == mpi_rank_with_col) {
       const auto col_indx_with_data = m_lat_lon_info[grid_name].local_column_index_of_closest_column;
-      if (col_data.rank() == 1) {
-        col_data.get_view<Real*,Host>()(0) = io_field.get_view<Real*,Host>()(col_indx_with_data);
-      } else {
-        col_data.subfield(0,0).deep_copy<Host>(io_field.subfield(0,col_indx_with_data));
-      }
+      col_data.deep_copy(io_field.subfield(0,col_indx_with_data));
     }
 
     // Broadcast column data to all other ranks
@@ -232,11 +226,7 @@ read_fields_from_file_for_iop (const std::string& file_name,
     // Copy column data to all columns in field manager field
     const auto ncols = fm_field.get_header().get_identifier().get_layout().dim(0);
     for (auto icol=0; icol<ncols; ++icol) {
-      if (col_data.rank() == 1) {
-        fm_field.get_view<Real*,Host>()(icol) = col_data.get_view<Real*,Host>()(0);
-      } else {
-        fm_field.subfield(0,icol).deep_copy<Host>(col_data.subfield(0,0));
-      }
+      fm_field.subfield(0,icol).deep_copy<Host>(col_data);
     }
 
     // Sync fields to device
