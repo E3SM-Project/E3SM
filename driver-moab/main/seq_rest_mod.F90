@@ -366,6 +366,7 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al)
 
     use seq_comm_mct,     only: mbaxid, mbixid, mboxid, mblxid, mbrxid, mbofxid ! coupler side instances
     use iMOAB,            only: iMOAB_GetGlobalInfo
+    use seq_comm_mct ,    only: num_moab_exports ! it is used only as a counter for moab h5m files
     
     implicit none
 
@@ -433,6 +434,7 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al)
          do_bgc_budgets=do_bgc_budgets)
 
     if (iamin_CPLID) then
+        call seq_io_read(moab_rest_file, num_moab_exports, 'seq_num_moab_exports')
 !        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
         if (atm_present) then
            call seq_io_read(moab_rest_file, mbaxid, 'fractions_ax', 'afrac:ifrac:ofrac:lfrac:lfrin')
@@ -941,6 +943,7 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al)
 
     use seq_comm_mct,     only: mbaxid, mbixid, mboxid, mblxid, mbrxid, mbofxid ! coupler side instances
     use iMOAB,            only: iMOAB_GetGlobalInfo
+    use seq_comm_mct ,    only: num_moab_exports ! it is used only as a counter for moab h5m files
 
     implicit none
 
@@ -1129,6 +1132,8 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al)
           call seq_io_write(rest_file,ivar,'seq_timemgr_curr_ymd' ,whead=whead,wdata=wdata)
           call seq_timemgr_EClockGetData( EClock_d, curr_tod=ivar)
           call seq_io_write(rest_file,ivar,'seq_timemgr_curr_tod' ,whead=whead,wdata=wdata)
+
+          call seq_io_write(rest_file, num_moab_exports,'seq_num_moab_exports', whead=whead, wdata=wdata )
 
           call seq_io_write(rest_file,ds,'budg_dataG',whead=whead,wdata=wdata)
           call seq_io_write(rest_file,ns,'budg_ns',whead=whead,wdata=wdata)

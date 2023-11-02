@@ -2472,7 +2472,6 @@ contains
           endif
        enddo
 
-       num_moab_exports = num_moab_exports + 1
        ! Run atm_init_mct with init phase of 2
        call component_init_cc(Eclock_a, atm, atm_init,                   &
             infodata, NLFilename,                                        &
@@ -2876,7 +2875,6 @@ contains
     Time_bstep = mpi_wtime()
     do while ( .not. stop_alarm)
 
-       num_moab_exports = num_moab_exports + 1
        call t_startf('CPL:RUN_LOOP', hashint(1))
        call t_startf('CPL:CLOCK_ADVANCE')
 
@@ -2885,7 +2883,7 @@ contains
        !  (this is time that models should have before they return
        !  to the driver).  Write timestamp and run alarm status
        !----------------------------------------------------------
-
+       num_moab_exports = num_moab_exports + 1! this is moab clock used for debugging
        call seq_timemgr_clockAdvance( seq_SyncClock, force_stop, force_stop_ymd, force_stop_tod)
        call seq_timemgr_EClockGetData( EClock_d, curr_ymd=ymd, curr_tod=tod)
        call shr_cal_date2ymd(ymd,year,month,day)
