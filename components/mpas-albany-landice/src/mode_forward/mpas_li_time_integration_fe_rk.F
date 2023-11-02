@@ -403,6 +403,8 @@ module li_time_integration_fe_rk
             call mpas_pool_get_array(thermalPool, 'temperature', temperature)
             call mpas_pool_get_array(thermalPool, 'waterFrac', waterFrac)
 
+            ! get layerThickness after calving
+            call li_calculate_layerThickness(meshPool, thickness, layerThickness)
             layerThicknessTmp(:,:) = layerThickness(:,:)
             layerThickness(:,:) = rkSSPweights(rkStage) * layerThicknessPrev(:,:) + &
                                      (1.0_RKIND - rkSSPweights(rkStage)) * layerThickness(:,:)
