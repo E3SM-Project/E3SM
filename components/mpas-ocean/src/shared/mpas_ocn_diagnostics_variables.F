@@ -121,13 +121,12 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:,:), pointer :: velocityZonal
 
    real(kind=RKIND), dimension(:,:), pointer :: gmKappaScaling
-   real(kind=RKIND), dimension(:,:), pointer :: RediKappaScaling
    real(kind=RKIND), dimension(:,:), pointer :: RediKappaSfcTaper
    real(kind=RKIND), dimension(:,:), pointer :: k33
    real(kind=RKIND), dimension(:,:), pointer :: gradDensityEddy
    real(kind=RKIND), dimension(:), pointer   :: gmBolusKappa
    real(kind=RKIND), dimension(:), pointer   :: cGMphaseSpeed
-   real(kind=RKIND), dimension(:,:,:), pointer :: slopeTriadUp, slopeTriadDown
+   real(kind=RKIND), dimension(:,:,:), pointer :: limiterUp, limiterDown, slopeTriadUp, slopeTriadDown
 
    integer, dimension(:), pointer :: indMLD
    real(kind=RKIND), dimension(:), pointer :: dThreshMLD
@@ -265,8 +264,6 @@ contains
       if (config_use_GM.or.config_use_Redi) then
          call mpas_pool_get_array(diagnosticsPool, 'RediKappa', &
                    RediKappa)
-         call mpas_pool_get_array(diagnosticsPool, 'RediKappaScaling', &
-                   RediKappaScaling)
          call mpas_pool_get_array(diagnosticsPool, 'RediKappaSfcTaper', &
                    RediKappaSfcTaper)
          call mpas_pool_get_array(diagnosticsPool, 'rediLimiterCount', &
@@ -420,6 +417,10 @@ contains
                    slopeTriadUp)
          call mpas_pool_get_array(diagnosticsPool, 'slopeTriadDown', &
                    slopeTriadDown)
+         call mpas_pool_get_array(diagnosticsPool, 'limiterUp', &
+                   limiterUp)
+         call mpas_pool_get_array(diagnosticsPool, 'limiterDown', &
+                   limiterDown)
 
          ! GM-related fields
          call mpas_pool_get_array(diagnosticsPool, 'cGMphaseSpeed', &
@@ -719,6 +720,7 @@ contains
          !$acc                   SSHGradient,                     &
          !$acc                   circulation,                     &
          !$acc                   slopeTriadUp,                    &
+         !$acc                   limiterUp,                       &
          !$acc                   gradSSHZonal,                    &
          !$acc                   cGMphaseSpeed,                   &
          !$acc                   velocityZonal,                   &
@@ -729,6 +731,7 @@ contains
          !$acc                   layerThickEdgeFlux,              &
          !$acc                   layerThickEdgeMean,              &
          !$acc                   slopeTriadDown,                  &
+         !$acc                   limiterDown,                     &
          !$acc                   normRelVortEdge,                 &
          !$acc                   surfaceVelocity,                 &
          !$acc                   vertVelocityTop,                 &
@@ -792,7 +795,6 @@ contains
          !$acc                   RediKappa,         &
          !$acc                   gmBolusKappa,      &
          !$acc                   gmKappaScaling,    &
-         !$acc                   RediKappaScaling,  &
          !$acc                   rediLimiterCount,  &
          !$acc                   RediKappaSfcTaper, &
          !$acc                   RediHorizontalTaper,  &
@@ -961,6 +963,8 @@ contains
          !$acc                   SSHGradient,                     &
          !$acc                   circulation,                     &
          !$acc                   slopeTriadUp,                    &
+         !$acc                   limiterUp,                       &
+         !$acc                   limiterDown,                     &
          !$acc                   gradSSHZonal,                    &
          !$acc                   cGMphaseSpeed,                   &
          !$acc                   velocityZonal,                   &
@@ -1034,7 +1038,6 @@ contains
          !$acc                   RediKappa,         &
          !$acc                   gmBolusKappa,      &
          !$acc                   gmKappaScaling,    &
-         !$acc                   RediKappaScaling,  &
          !$acc                   rediLimiterCount,  &
          !$acc                   RediKappaSfcTaper, &
          !$acc                   RediHorizontalTaper,  &
@@ -1161,6 +1164,8 @@ contains
                  SSHGradient,                     &
                  circulation,                     &
                  slopeTriadUp,                    &
+                 limiterUp,                       &
+                 limiterDown,                     &
                  gradSSHZonal,                    &
                  cGMphaseSpeed,                   &
                  velocityZonal,                   &
@@ -1230,7 +1235,6 @@ contains
          nullify(RediKappa,         &
                  gmBolusKappa,      &
                  gmKappaScaling,    &
-                 RediKappaScaling,  &
                  rediLimiterCount,  &
                  RediKappaSfcTaper, &
                  RediHorizontalTaper, &

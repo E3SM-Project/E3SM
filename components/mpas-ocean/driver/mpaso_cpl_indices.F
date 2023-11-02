@@ -65,7 +65,7 @@ module mpaso_cpl_indices
   integer :: index_x2o_Si_ifrac        ! fractional ice wrt ocean
   integer :: index_x2o_Si_bpress       ! ice basal pressure
   integer :: index_x2o_So_duu10n       ! 10m wind speed squared           (m^2/s^2)
-  integer :: index_x2o_Sa_pslv         ! atmospheri sea level pressure    (Pa)
+  integer :: index_x2o_Sa_pslv         ! atmospheric sea level pressure   (Pa)
   integer :: index_x2o_Sa_co2prog      ! bottom atm level prognostic CO2
   integer :: index_x2o_Sa_co2diag      ! bottom atm level diagnostic CO2
   integer :: index_x2o_Foxx_taux       ! zonal wind stress (taux)         (W/m2   )

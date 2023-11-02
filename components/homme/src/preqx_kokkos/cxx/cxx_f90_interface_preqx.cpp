@@ -349,10 +349,12 @@ void init_boundary_exchanges_c ()
   bmm[MPI_EXCHANGE]->set_connectivity(connectivity);
   bmm[MPI_EXCHANGE_MIN_MAX]->set_connectivity(connectivity);
 
-  // Euler BEs
-  auto& esf = Context::singleton().get<EulerStepFunctor>();
-  esf.reset(params);
-  esf.init_boundary_exchanges();
+  if (params.qsize > 0) {
+    // Euler BEs
+    auto& esf = Context::singleton().get<EulerStepFunctor>();
+    esf.reset(params);
+    esf.init_boundary_exchanges();
+  }
 
   // RK stages BE's
   auto& cf = Context::singleton().get<CaarFunctor>();

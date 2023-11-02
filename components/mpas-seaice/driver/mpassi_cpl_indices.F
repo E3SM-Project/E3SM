@@ -71,7 +71,6 @@ module mpassi_cpl_indices
   integer :: index_x2i_Sa_u            ! bottom atm level zon wind
   integer :: index_x2i_Sa_v            ! bottom atm level mer wind
   integer :: index_x2i_Sa_tbot         ! bottom atm level temp
-  integer :: index_x2i_Sa_pbot         ! bottom atm level pressure
   integer :: index_x2i_Sa_ptem         ! bottom atm level pot temp
   integer :: index_x2i_Sa_shum         ! bottom atm level spec hum
   integer :: index_x2i_Sa_dens         ! bottom atm level air den
@@ -200,7 +199,6 @@ contains
     index_x2i_Sa_v          = mct_avect_indexra(x2i,'Sa_v')
     index_x2i_Sa_tbot       = mct_avect_indexra(x2i,'Sa_tbot')
     index_x2i_Sa_ptem       = mct_avect_indexra(x2i,'Sa_ptem')
-    index_x2i_Sa_pbot       = mct_avect_indexra(x2i,'Sa_pbot')
     index_x2i_Sa_shum       = mct_avect_indexra(x2i,'Sa_shum')
     index_x2i_Sa_dens       = mct_avect_indexra(x2i,'Sa_dens')
     index_x2i_So_dhdx       = mct_avect_indexra(x2i,'So_dhdx')

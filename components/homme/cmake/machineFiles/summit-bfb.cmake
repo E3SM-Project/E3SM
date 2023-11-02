@@ -13,11 +13,11 @@ set(CMAKE_C_FLAGS "-w" CACHE STRING "")
 set(ADD_CXX_FLAGS "-Xcudafe --diag_suppress=esa_on_defaulted_function_ignored -Wno-unknown-pragmas --fmad=false -O0" CACHE STRING "")
 set(ADD_Fortran_FLAGS " -ffp-contract=off -O0" CACHE STRING "")
 set(OPT_FLAGS "-O0" CACHE STRING "")
-set(DEBUG_FLAGS "-ffp-contract=off -g"CACHE STRING "")
+set(DEBUG_FLAGS "-ffp-contract=off -g" CACHE STRING "")
 
 
 #SET (HOMMEXX_MPI_ON_DEVICE FALSE CACHE BOOL "")
-SET (HOMMEXX_CUDA_MAX_WARP_PER_TEAM "16" CACHE STRING  "")
+SET (HOMMEXX_CUDA_MAX_WARP_PER_TEAM "8" CACHE STRING  "")
 
 SET (NETCDF_DIR $ENV{OLCF_NETCDF_FORTRAN_ROOT} CACHE FILEPATH "")
 SET (NetCDF_Fortran_PATH $ENV{OLCF_NETCDF_FORTRAN_ROOT}  CACHE STRING "")
@@ -59,4 +59,5 @@ set (HOMME_TESTING_PROFILE "dev" CACHE STRING "")
 set (USE_NUM_PROCS 4 CACHE STRING "")
 
 #set (OPT_FLAGS "-mcpu=power9 -mtune=power9" CACHE STRING "")
-SET (USE_MPI_OPTIONS "--bind-to core" CACHE FILEPATH "")
+
+set (USE_MPI_RUN_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/cmake/machineFiles/summit-run.sh" CACHE STRING "")

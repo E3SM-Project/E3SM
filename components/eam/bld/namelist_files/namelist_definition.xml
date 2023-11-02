@@ -1084,6 +1084,12 @@ Heating rate conversion factor associated with convective gravity waves
 Default: 20.0
 </entry>
 
+<entry id="hdepth_scaling_factor" type="real" category="gw_drag"
+       group="gw_drag_nl" valid_values="" >
+Scaling factor for the heating depth
+Default: 1.0
+</entry>
+
 <entry id="effgw_beres" type="real" category="gw_drag"
        group="gw_drag_nl" valid_values="" >
 Efficiency associated with convective gravity waves from the Beres

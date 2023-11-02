@@ -1,7 +1,7 @@
 
 # build_options.mk stuff handled here
-list(APPEND CPPDEFS "-DCORE_SEAICE" "-Dcoupled" "-DCCSMCOUPLED")
-list(APPEND INCLUDES "${CMAKE_BINARY_DIR}/core_seaice/column" "${CMAKE_BINARY_DIR}/core_seaice/shared" "${CMAKE_BINARY_DIR}/core_seaice/analysis_members" "${CMAKE_BINARY_DIR}/core_seaice/model_forward")
+list(APPEND CPPDEFS "-DCORE_SEAICE" "-Dcoupled" "-DCCSMCOUPLED" "-DUSE_SNICARHC")
+list(APPEND INCLUDES "${CMAKE_BINARY_DIR}/core_seaice/icepack/columnphysics" "${CMAKE_BINARY_DIR}/core_seaice/column" "${CMAKE_BINARY_DIR}/core_seaice/shared" "${CMAKE_BINARY_DIR}/core_seaice/analysis_members" "${CMAKE_BINARY_DIR}/core_seaice/model_forward")
 
 
 # driver (files live in E3SM)
@@ -9,6 +9,42 @@ list(APPEND RAW_SOURCES
   ../../mpas-seaice/driver/ice_comp_mct.F
   ../../mpas-seaice/driver/mpassi_cpl_indices.F
   ../../mpas-seaice/driver/mpassi_mct_vars.F
+)
+
+# icepack
+list(APPEND RAW_SOURCES
+  core_seaice/icepack/columnphysics/icepack_aerosol.F90
+  core_seaice/icepack/columnphysics/icepack_age.F90
+  core_seaice/icepack/columnphysics/icepack_algae.F90
+  core_seaice/icepack/columnphysics/icepack_atmo.F90
+  core_seaice/icepack/columnphysics/icepack_brine.F90
+  core_seaice/icepack/columnphysics/icepack_firstyear.F90
+  core_seaice/icepack/columnphysics/icepack_flux.F90
+  core_seaice/icepack/columnphysics/icepack_fsd.F90
+  core_seaice/icepack/columnphysics/icepack_intfc.F90
+  core_seaice/icepack/columnphysics/icepack_isotope.F90
+  core_seaice/icepack/columnphysics/icepack_itd.F90
+  core_seaice/icepack/columnphysics/icepack_kinds.F90
+  core_seaice/icepack/columnphysics/icepack_mechred.F90
+  core_seaice/icepack/columnphysics/icepack_meltpond_lvl.F90
+  core_seaice/icepack/columnphysics/icepack_meltpond_topo.F90
+  core_seaice/icepack/columnphysics/icepack_mushy_physics.F90
+  core_seaice/icepack/columnphysics/icepack_ocean.F90
+  core_seaice/icepack/columnphysics/icepack_orbital.F90
+  core_seaice/icepack/columnphysics/icepack_parameters.F90
+  core_seaice/icepack/columnphysics/icepack_shortwave.F90
+  core_seaice/icepack/columnphysics/icepack_shortwave_data.F90
+  core_seaice/icepack/columnphysics/icepack_snow.F90
+  core_seaice/icepack/columnphysics/icepack_therm_bl99.F90
+  core_seaice/icepack/columnphysics/icepack_therm_itd.F90
+  core_seaice/icepack/columnphysics/icepack_therm_mushy.F90
+  core_seaice/icepack/columnphysics/icepack_therm_shared.F90
+  core_seaice/icepack/columnphysics/icepack_therm_vertical.F90
+  core_seaice/icepack/columnphysics/icepack_tracers.F90
+  core_seaice/icepack/columnphysics/icepack_warnings.F90
+  core_seaice/icepack/columnphysics/icepack_wavefracspec.F90
+  core_seaice/icepack/columnphysics/icepack_zbgc.F90
+  core_seaice/icepack/columnphysics/icepack_zbgc_shared.F90
 )
 
 # column
@@ -70,6 +106,7 @@ list(APPEND RAW_SOURCES
   core_seaice/shared/mpas_seaice_numerics.F
   core_seaice/shared/mpas_seaice_constants.F
   core_seaice/shared/mpas_seaice_column.F
+  core_seaice/shared/mpas_seaice_icepack.F
   core_seaice/shared/mpas_seaice_diagnostics.F
   core_seaice/shared/mpas_seaice_error.F
   core_seaice/shared/mpas_seaice_mesh_pool.F
