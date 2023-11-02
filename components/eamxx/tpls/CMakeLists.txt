@@ -5,8 +5,12 @@
 
 # First pioc/piof, since we link against it in csm_share (at least in CIME build)
 
-find_package(PIO REQUIRED)
-find_package(CsmShare REQUIRED)
+include (${SCREAM_BASE_DIR}/cmake/tpls/Scorpio.cmake)
+CreateScorpioTargets()
+
+# Then csm_share
+include (${SCREAM_BASE_DIR}/cmake/tpls/CsmShare.cmake)
+CreateCsmShareTarget()
 
 # MAM aerosol support
 if (SCREAM_ENABLE_MAM)
