@@ -98,9 +98,7 @@ public:
 
   // ----- Setters ----- //
 
-  // Note: as soon as a dimension is set, it cannot be changed.
   void set_dimension  (const int idim, const int dimension);
-  void set_dimensions (const std::vector<int>& dims);
 
 protected:
 
