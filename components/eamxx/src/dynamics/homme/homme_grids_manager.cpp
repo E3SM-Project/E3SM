@@ -137,7 +137,7 @@ void HommeGridsManager::build_dynamics_grid () {
     return;
   }
 
-  using gid_t = AbstractGrid::gid_type;
+  using gid_type = AbstractGrid::gid_type;
 
   // Get dimensions and create "empty" grid
   const int nlelem = get_num_local_elems_f90();
@@ -156,8 +156,8 @@ void HommeGridsManager::build_dynamics_grid () {
   auto lat     = dyn_grid->create_geometry_data("lat",layout2d,rad);
   auto lon     = dyn_grid->create_geometry_data("lon",layout2d,rad);
 
-  auto dg_dofs_h = dg_dofs.get_view<gid_t*,Host>();
-  auto cg_dofs_h = cg_dofs.get_view<gid_t*,Host>();
+  auto dg_dofs_h = dg_dofs.get_view<gid_type*,Host>();
+  auto cg_dofs_h = cg_dofs.get_view<gid_type*,Host>();
   auto elgpgp_h  = elgpgp.get_view<int**,Host>();
   auto lat_h     = lat.get_view<Real***,Host>();
   auto lon_h     = lon.get_view<Real***,Host>();
@@ -217,9 +217,9 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance) {
   auto lon  = phys_grid->create_geometry_data("lon",layout2d,rad);
   auto area = phys_grid->create_geometry_data("area",layout2d,rad*rad);
 
-  using gid_t = AbstractGrid::gid_type;
+  using gid_type = AbstractGrid::gid_type;
 
-  auto dofs_h = dofs.get_view<gid_t*,Host>();
+  auto dofs_h = dofs.get_view<gid_type*,Host>();
   auto lat_h  = lat.get_view<Real*,Host>();
   auto lon_h  = lon.get_view<Real*,Host>();
   auto area_h = area.get_view<Real*,Host>();

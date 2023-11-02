@@ -1,6 +1,7 @@
 #include "coarsening_remapper.hpp"
 
 #include "share/grid/point_grid.hpp"
+#include "share/grid/grid_import_export.hpp"
 #include "share/io/scorpio_input.hpp"
 
 #include <ekat/kokkos/ekat_kokkos_utils.hpp>
@@ -15,156 +16,10 @@ CoarseningRemapper::
 CoarseningRemapper (const grid_ptr_type& src_grid,
                     const std::string& map_file,
                     const bool track_mask)
- : AbstractRemapper()
- , m_comm (src_grid->get_comm())
+ : HorizInterpRemapperBase (src_grid,map_file,InterpType::Coarsen)
  , m_track_mask (track_mask)
 {
   using namespace ShortFieldTagsNames;
-
-  // Sanity checks
-  EKAT_REQUIRE_MSG (src_grid->type()==GridType::Point,
-      "Error! CoarseningRemapper only works on PointGrid grids.\n"
-      "  - src grid name: " + src_grid->name() + "\n"
-      "  - src_grid_type: " + e2str(src_grid->type()) + "\n");
-  EKAT_REQUIRE_MSG (src_grid->is_unique(),
-      "Error! CoarseningRemapper requires a unique source grid.\n");
-
-  // This is a coarsening remapper. We only go in one direction
-  m_bwd_allowed = false;
-
-  // Create io_grid, containing the indices of the triplets
-  // in the map file that this rank has to read
-  auto my_gids = get_my_triplets_gids (map_file,src_grid);
-  auto io_grid = std::make_shared<PointGrid>("",my_gids.size(),0,m_comm);
-
-  auto dofs_gids = io_grid->get_dofs_gids();
-  auto dofs_gids_h = dofs_gids.get_view<gid_t*,Host>();
-  std::memcpy(dofs_gids_h.data(),my_gids.data(),my_gids.size()*sizeof(gid_t));
-  dofs_gids.sync_to_dev();
-
-  // Create CRS matrix views
-
-  // Read in triplets.
-  const int nlweights = io_grid->get_num_local_dofs();
-  std::vector<gid_t> row_gids_h(nlweights);
-  std::vector<gid_t> col_gids_h(nlweights);
-  std::vector<Real>  S_h (nlweights);
-
-  // scream's gids are of type int, while scorpio wants long int as offsets.
-  std::vector<scorpio::offset_t> dofs_offsets(nlweights);
-  for (int i=0; i<nlweights; ++i) {
-    dofs_offsets[i] = dofs_gids_h[i];
-  }
-
-  const auto grid_idx = std::to_string(io_grid->get_unique_grid_id());
-  const std::string idx_decomp_tag = "CR::ctor,dt=int,grid-idx=" + grid_idx;
-  const std::string val_decomp_tag = "CR::ctor,dt=real,grid-idx=" + grid_idx;
-
-  scorpio::register_file(map_file,scorpio::FileMode::Read);
-  scorpio::register_variable(map_file, "row", "row", {"n_s"}, "int", idx_decomp_tag);
-  scorpio::register_variable(map_file, "col", "col", {"n_s"}, "int", idx_decomp_tag);
-  scorpio::register_variable(map_file, "S",   "S",   {"n_s"}, "real", val_decomp_tag);
-  scorpio::set_dof(map_file,"row",nlweights,dofs_offsets.data());
-  scorpio::set_dof(map_file,"col",nlweights,dofs_offsets.data());
-  scorpio::set_dof(map_file,"S",nlweights,dofs_offsets.data());
-  scorpio::set_decomp(map_file);
-  scorpio::grid_read_data_array(map_file,"row",-1,row_gids_h.data(),nlweights);
-  scorpio::grid_read_data_array(map_file,"col",-1,col_gids_h.data(),nlweights);
-  scorpio::grid_read_data_array(map_file,"S",  -1,S_h.data(),       nlweights);
-  scorpio::eam_pio_closefile(map_file);
-
-  // Offset the cols ids to match the source grid.
-  // Determine the min id among the cols array, we
-  // also add the min_dof for the grid.
-  // Note: The cols field is not guaranteed to have the
-  // min offset value, but the rows will be numbered
-  // by 1 from least to greatest.  So we use row_gids to calculate
-  // the remap min.
-  int remap_min_dof = std::numeric_limits<int>::max();  // Really big INT
-  for (int id=0; id<nlweights; id++) {
-    remap_min_dof = std::min(row_gids_h[id],remap_min_dof);
-  }
-  int global_remap_min_dof;
-  m_comm.all_reduce(&remap_min_dof,&global_remap_min_dof,1,MPI_MIN);
-
-  gid_t col_offset = global_remap_min_dof - src_grid->get_global_min_dof_gid();
-  for (int ii=0; ii<nlweights; ii++) {
-    col_gids_h[ii] -= col_offset;
-  }
-
-  // Create an "overlapped" tgt grid, that is, a grid where each rank
-  // owns all tgt rows that are affected by at least one of the cols
-  // in its src_grid
-  std::set<gid_t> ov_tgt_gids;
-  for (int i=0; i<nlweights; ++i) {
-    ov_tgt_gids.insert(row_gids_h[i]-1);
-  }
-  const int num_ov_tgt_gids = ov_tgt_gids.size();
-  auto ov_tgt_grid = std::make_shared<PointGrid>("ov_tgt_grid",num_ov_tgt_gids,0,m_comm);
-  auto ov_tgt_gids_h = ov_tgt_grid->get_dofs_gids().get_view<gid_t*,Host>();
-  auto it = ov_tgt_gids.begin();
-  for (int i=0; i<num_ov_tgt_gids; ++i, ++it) {
-    ov_tgt_gids_h[i] = *it;
-  }
-  ov_tgt_grid->get_dofs_gids().sync_to_dev();
-
-  m_ov_tgt_grid = ov_tgt_grid;
-  const int num_ov_row_gids = m_ov_tgt_grid->get_num_local_dofs();
-
-  // Now we have to create the weights CRS matrix
-  m_row_offsets = view_1d<int>("",num_ov_row_gids+1);
-  m_col_lids    = view_1d<int>("",nlweights);
-  m_weights     = view_1d<Real>("",nlweights);
-
-  // Sort col_gids_h and row_gids_h by row gid. It is easier to sort
-  // the array [0,...,n), and use it later to index the row/col/weight
-  // views in the correct order.
-  std::vector<int> id (nlweights);
-  std::iota(id.begin(),id.end(),0);
-  auto compare = [&] (const int i, const int j) -> bool {
-    return row_gids_h[i] < row_gids_h[j];
-  };
-  std::sort(id.begin(),id.end(),compare);
-
-  // Create mirror views
-  auto row_offsets_h = Kokkos::create_mirror_view(m_row_offsets);
-  auto col_lids_h    = Kokkos::create_mirror_view(m_col_lids);
-  auto weights_h     = Kokkos::create_mirror_view(m_weights);
-
-  for (int i=0; i<nlweights; ++i) {
-    col_lids_h(i) = gid2lid(col_gids_h[id[i]],src_grid);
-    weights_h(i)  = S_h[id[i]];
-  }
-
-  Kokkos::deep_copy(m_weights,weights_h);
-  Kokkos::deep_copy(m_col_lids,col_lids_h);
-
-  // Compute row offsets
-  std::vector<int> row_counts(num_ov_row_gids);
-  for (int i=0; i<nlweights; ++i) {
-    ++row_counts[gid2lid(row_gids_h[i]-1,m_ov_tgt_grid)];
-  }
-  std::partial_sum(row_counts.begin(),row_counts.end(),row_offsets_h.data()+1);
-  EKAT_REQUIRE_MSG (
-      row_offsets_h(num_ov_row_gids)==nlweights,
-      "Error! Something went wrong while computing row offsets.\n"
-      "  - local nnz       : " + std::to_string(nlweights) + "\n"
-      "  - row_offsets(end): " + std::to_string(row_offsets_h(num_ov_row_gids)) + "\n");
-
-  Kokkos::deep_copy(m_row_offsets,row_offsets_h);
-
-  const int nlevs  = src_grid->get_num_vertical_levels();
-
-  auto tgt_grid_gids = m_ov_tgt_grid->get_unique_gids ();
-  const int ngids = tgt_grid_gids.size();
-
-  auto tgt_grid = std::make_shared<PointGrid>("horiz_remap_tgt_grid",ngids,nlevs,m_comm);
-
-  auto tgt_grid_gids_h = tgt_grid->get_dofs_gids().get_view<gid_t*,Host>();
-  std::memcpy(tgt_grid_gids_h.data(),tgt_grid_gids.data(),ngids*sizeof(gid_t));
-  tgt_grid->get_dofs_gids().sync_to_dev();
-
-  this->set_grids(src_grid,tgt_grid);
 
   // Replicate the src grid geo data in the tgt grid. We use this remapper to do
   // the remapping (if needed), and clean it up afterwards.
@@ -178,12 +33,12 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
       // Not a field to be coarsened (perhaps a vertical coordinate field).
       // Simply copy it in the tgt grid, but we still need to assign the new grid name.
       FieldIdentifier tgt_data_fid(src_data_fid.name(),src_data_fid.get_layout(),src_data_fid.get_units(),m_tgt_grid->name());
-      auto tgt_data = tgt_grid->create_geometry_data(tgt_data_fid);
+      auto tgt_data = m_coarse_grid->create_geometry_data(tgt_data_fid);
       tgt_data.deep_copy(src_data);
     } else {
       // This field needs to be remapped
       auto tgt_data_fid = create_tgt_fid(src_data_fid);
-      auto tgt_data = tgt_grid->create_geometry_data(tgt_data_fid);
+      auto tgt_data = m_coarse_grid->create_geometry_data(tgt_data_fid);
       register_field(src_data,tgt_data);
     }
   }
@@ -191,14 +46,14 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
   if (get_num_fields()>0) {
     remap(true);
 
-    // The remap phase only alters the fields on device. We need to sync them to host as well
+    // The remap phase only alters the fields on device.
+    // We need to sync them to host as well
     for (int i=0; i<get_num_fields(); ++i) {
       auto tgt_data = get_tgt_field(i);
       tgt_data.sync_to_host();
     }
   }
   clean_up();
-
 }
 
 CoarseningRemapper::
@@ -213,72 +68,9 @@ CoarseningRemapper::
   }
 }
 
-FieldLayout CoarseningRemapper::
-create_src_layout (const FieldLayout& tgt_layout) const
-{
-  using namespace ShortFieldTagsNames;
-  const auto lt = get_layout_type(tgt_layout.tags());
-  auto src = FieldLayout::invalid();
-  const bool midpoints = tgt_layout.has_tag(LEV);
-  const int vec_dim = tgt_layout.is_vector_layout() ? tgt_layout.dim(CMP) : -1;
-  switch (lt) {
-    case LayoutType::Scalar2D:
-      src = m_src_grid->get_2d_scalar_layout();
-      break;
-    case LayoutType::Vector2D:
-      src = m_src_grid->get_2d_vector_layout(CMP,vec_dim);
-      break;
-    case LayoutType::Scalar3D:
-      src = m_src_grid->get_3d_scalar_layout(midpoints);
-      break;
-    case LayoutType::Vector3D:
-      src = m_src_grid->get_3d_vector_layout(midpoints,CMP,vec_dim);
-      break;
-    default:
-      EKAT_ERROR_MSG ("Layout not supported by CoarseningRemapper: " + e2str(lt) + "\n");
-  }
-  return src;
-}
-FieldLayout CoarseningRemapper::
-create_tgt_layout (const FieldLayout& src_layout) const
-{
-  using namespace ShortFieldTagsNames;
-  const auto lt = get_layout_type(src_layout.tags());
-  auto tgt = FieldLayout::invalid();
-  const bool midpoints = src_layout.has_tag(LEV);
-  const int vec_dim = src_layout.is_vector_layout() ? src_layout.dim(CMP) : -1;
-  switch (lt) {
-    case LayoutType::Scalar2D:
-      tgt = m_tgt_grid->get_2d_scalar_layout();
-      break;
-    case LayoutType::Vector2D:
-      tgt = m_tgt_grid->get_2d_vector_layout(CMP,vec_dim);
-      break;
-    case LayoutType::Scalar3D:
-      tgt = m_tgt_grid->get_3d_scalar_layout(midpoints);
-      break;
-    case LayoutType::Vector3D:
-      tgt = m_tgt_grid->get_3d_vector_layout(midpoints,CMP,vec_dim);
-      break;
-    default:
-      EKAT_ERROR_MSG ("Layout not supported by CoarseningRemapper: " + e2str(lt) + "\n");
-  }
-  return tgt;
-}
-
-void CoarseningRemapper::
-do_register_field (const identifier_type& src, const identifier_type& tgt)
-{
-  m_src_fields.push_back(field_type(src));
-  m_tgt_fields.push_back(field_type(tgt));
-}
-
 void CoarseningRemapper::
 do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
 {
-  m_src_fields[ifield] = src;
-  m_tgt_fields[ifield] = tgt;
-
   // Assume no mask tracking for this field. Can correct below
   m_field_idx_to_mask_idx[ifield] = -1;
 
@@ -289,7 +81,9 @@ do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
           "Error! Field " + src.name() + " stores a mask field but not a mask value.\n");
       const auto& src_mask_val = src.get_header().get_extra_data<Real>("mask_value");
 
-      auto& tgt_hdr = m_tgt_fields[ifield].get_header();
+      Field tgt_copy = tgt;
+
+      auto& tgt_hdr = tgt_copy.get_header();
       if (tgt_hdr.has_extra_data("mask_value")) {
         const auto& tgt_mask_val = tgt_hdr.get_extra_data<Real>("mask_value");
 
@@ -340,21 +134,7 @@ do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
           "  - mask layout: " + to_string(m_lt) + "\n");
     }
   }
-
-  // If this was the last field to be bound, we can setup the MPI schedule
-  if (this->m_state==RepoState::Closed &&
-      (this->m_num_bound_fields+1)==this->m_num_registered_fields) {
-    create_ov_tgt_fields ();
-    setup_mpi_data_structures ();
-  }
-}
-
-void CoarseningRemapper::do_registration_ends ()
-{
-  if (this->m_num_bound_fields==this->m_num_registered_fields) {
-    create_ov_tgt_fields ();
-    setup_mpi_data_structures ();
-  }
+  HorizInterpRemapperBase::do_bind_field(ifield,src,tgt);
 }
 
 void CoarseningRemapper::do_remap_fwd ()
@@ -373,28 +153,34 @@ void CoarseningRemapper::do_remap_fwd ()
   // Helpef function, to establish if a field can be handled with packs
   auto can_pack_field = [](const Field& f) {
     const auto& ap = f.get_header().get_alloc_properties();
-    return ap.is_compatible<RPack<SCREAM_PACK_SIZE>>();
+    return (ap.get_last_extent() % SCREAM_PACK_SIZE) == 0;
   };
 
   // Loop over each field
   for (int i=0; i<m_num_fields; ++i) {
     // First, perform the local mat-vec. Recall that in these y=Ax products,
     // x is the src field, and y is the overlapped tgt field.
-    const auto& f_src    = m_src_fields[i];
-    const auto& f_ov_tgt = m_ov_tgt_fields[i];
+    const auto& f_src = m_src_fields[i];
+    const auto& f_ov  = m_ov_fields[i];
 
     const int mask_idx = m_field_idx_to_mask_idx[i];
-    const Field* mask_ptr = nullptr;
     if (mask_idx>0) {
       // Pass the mask to the local_mat_vec routine
-      mask_ptr = &m_src_fields[mask_idx];
-    }
+      const auto& mask = m_src_fields[mask_idx];
 
-    // If possible, dispatch kernel with SCREAM_PACK_SIZE
-    if (can_pack_field(f_src) and can_pack_field(f_ov_tgt)) {
-      local_mat_vec<SCREAM_PACK_SIZE>(f_src,f_ov_tgt,mask_ptr);
+      // If possible, dispatch kernel with SCREAM_PACK_SIZE
+      if (can_pack_field(f_src) and can_pack_field(f_ov)) {
+        local_mat_vec<SCREAM_PACK_SIZE>(f_src,f_ov,mask);
+      } else {
+        local_mat_vec<1>(f_src,f_ov,mask);
+      }
     } else {
-      local_mat_vec<1>(f_src,f_ov_tgt,mask_ptr);
+      // If possible, dispatch kernel with SCREAM_PACK_SIZE
+      if (can_pack_field(f_src) and can_pack_field(f_ov)) {
+        local_mat_vec<SCREAM_PACK_SIZE>(f_src,f_ov);
+      } else {
+        local_mat_vec<1>(f_src,f_ov);
+      }
     }
   }
 
@@ -559,13 +345,11 @@ rescale_masked_fields (const Field& x, const Field& mask) const
       break;
     }
   }
-
-
 }
 
 template<int PackSize>
 void CoarseningRemapper::
-local_mat_vec (const Field& x, const Field& y, const Field* mask) const
+local_mat_vec (const Field& x, const Field& y, const Field& mask) const
 {
   using RangePolicy = typename KT::RangePolicy;
   using MemberType  = typename KT::MemberType;
@@ -575,7 +359,7 @@ local_mat_vec (const Field& x, const Field& y, const Field* mask) const
 
   const auto& src_layout = x.get_header().get_identifier().get_layout();
   const int rank = src_layout.rank();
-  const int nrows = m_ov_tgt_grid->get_num_local_dofs();
+  const int nrows = m_ov_coarse_grid->get_num_local_dofs();
   auto row_offsets = m_row_offsets;
   auto col_lids = m_col_lids;
   auto weights = m_weights;
@@ -590,24 +374,14 @@ local_mat_vec (const Field& x, const Field& y, const Field* mask) const
       // along the 2nd dimension.
       auto x_view = x.get_strided_view<const Real*>();
       auto y_view = y.get_strided_view<      Real*>();
-      view_1d<Real> mask_view;
-      if (mask != nullptr) {
-        mask_view = mask->get_strided_view<Real*>();
-      }
+      auto mask_view = mask.get_strided_view<Real*>();
       Kokkos::parallel_for(RangePolicy(0,nrows),
                            KOKKOS_LAMBDA(const int& row) {
         const auto beg = row_offsets(row);
         const auto end = row_offsets(row+1);
-        if (mask != nullptr) {
-          y_view(row) = weights(beg)*x_view(col_lids(beg))*mask_view(col_lids(beg));
-          for (int icol=beg+1; icol<end; ++icol) {
-            y_view(row) += weights(icol)*x_view(col_lids(icol))*mask_view(col_lids(icol));
-          }
-        } else {
-          y_view(row) = weights(beg)*x_view(col_lids(beg));
-          for (int icol=beg+1; icol<end; ++icol) {
-            y_view(row) += weights(icol)*x_view(col_lids(icol));
-          }
+        y_view(row) = weights(beg)*x_view(col_lids(beg))*mask_view(col_lids(beg));
+        for (int icol=beg+1; icol<end; ++icol) {
+          y_view(row) += weights(icol)*x_view(col_lids(icol))*mask_view(col_lids(icol));
         }
       });
       break;
@@ -618,16 +392,13 @@ local_mat_vec (const Field& x, const Field& y, const Field* mask) const
       auto y_view = y.get_view<      Pack**>();
       view_1d<const Real> mask_1d;
       view_2d<const Pack> mask_2d;
-      bool mask1d = false; // Init should not be needed, but removes a compiler warning
-      if (mask != nullptr) {
-        // If the mask comes from FieldAtLevel, it's only defined on columns (rank=1)
-        // If the mask comes from vert interpolation remapper, it is defined on ncols x nlevs (rank=2)
-        mask1d = mask->rank()==1;
-        if (mask1d) {
-          mask_1d = mask->get_view<const Real*>();
-        } else {
-          mask_2d = mask->get_view<const Pack**>();
-        }
+      // If the mask comes from FieldAtLevel, it's only defined on columns (rank=1)
+      // If the mask comes from vert interpolation remapper, it is defined on ncols x nlevs (rank=2)
+      bool mask1d = mask.rank()==1;
+      if (mask1d) {
+        mask_1d = mask.get_view<const Real*>();
+      } else {
+        mask_2d = mask.get_view<const Pack**>();
       }
       const int dim1 = PackInfo::num_packs(src_layout.dim(1));
       auto policy = ESU::get_default_team_policy(nrows,dim1);
@@ -639,18 +410,11 @@ local_mat_vec (const Field& x, const Field& y, const Field* mask) const
         const auto end = row_offsets(row+1);
         Kokkos::parallel_for(Kokkos::TeamVectorRange(team,dim1),
                             [&](const int j){
-          if (mask != nullptr) {
-            y_view(row,j) = weights(beg)*x_view(col_lids(beg),j) *
-                            (mask1d ? mask_1d (col_lids(beg)) : mask_2d(col_lids(beg),j));
-            for (int icol=beg+1; icol<end; ++icol) {
-              y_view(row,j) += weights(icol)*x_view(col_lids(icol),j) *
-                            (mask1d ? mask_1d (col_lids(icol)) : mask_2d(col_lids(icol),j));
-            }
-          } else {
-            y_view(row,j) = weights(beg)*x_view(col_lids(beg),j);
-            for (int icol=beg+1; icol<end; ++icol) {
-              y_view(row,j) += weights(icol)*x_view(col_lids(icol),j);
-            }
+          y_view(row,j) = weights(beg)*x_view(col_lids(beg),j) *
+                          (mask1d ? mask_1d (col_lids(beg)) : mask_2d(col_lids(beg),j));
+          for (int icol=beg+1; icol<end; ++icol) {
+            y_view(row,j) += weights(icol)*x_view(col_lids(icol),j) *
+                          (mask1d ? mask_1d (col_lids(icol)) : mask_2d(col_lids(icol),j));
           }
         });
       });
@@ -663,16 +427,13 @@ local_mat_vec (const Field& x, const Field& y, const Field* mask) const
       // Note, the mask is still assumed to be defined on COLxLEV so still only 2D for case 3.
       view_1d<const Real> mask_1d;
       view_2d<const Pack> mask_2d;
-      bool mask1d = false; // Init should not be needed, but removes a compiler warning
-      if (mask != nullptr) {
-        mask1d = mask->rank()==1;
-        // If the mask comes from FieldAtLevel, it's only defined on columns (rank=1)
-        // If the mask comes from vert interpolation remapper, it is defined on ncols x nlevs (rank=2)
-        if (mask1d) {
-          mask_1d = mask->get_view<const Real*>();
-        } else {
-          mask_2d = mask->get_view<const Pack**>();
-        }
+      bool mask1d = mask.rank()==1;
+      // If the mask comes from FieldAtLevel, it's only defined on columns (rank=1)
+      // If the mask comes from vert interpolation remapper, it is defined on ncols x nlevs (rank=2)
+      if (mask1d) {
+        mask_1d = mask.get_view<const Real*>();
+      } else {
+        mask_2d = mask.get_view<const Pack**>();
       }
       const int dim1 = src_layout.dim(1);
       const int dim2 = PackInfo::num_packs(src_layout.dim(2));
@@ -687,18 +448,11 @@ local_mat_vec (const Field& x, const Field& y, const Field* mask) const
                             [&](const int idx){
           const int j = idx / dim2;
           const int k = idx % dim2;
-          if (mask != nullptr) {
-            y_view(row,j,k) = weights(beg)*x_view(col_lids(beg),j,k) * 
-                            (mask1d ? mask_1d (col_lids(beg)) : mask_2d(col_lids(beg),k));
-            for (int icol=beg+1; icol<end; ++icol) {
-              y_view(row,j,k) += weights(icol)*x_view(col_lids(icol),j,k) *
-                            (mask1d ? mask_1d (col_lids(icol)) : mask_2d(col_lids(icol),k));
-            }
-          } else {
-            y_view(row,j,k) = weights(beg)*x_view(col_lids(beg),j,k);
-            for (int icol=beg+1; icol<end; ++icol) {
-              y_view(row,j,k) += weights(icol)*x_view(col_lids(icol),j,k);
-            }
+          y_view(row,j,k) = weights(beg)*x_view(col_lids(beg),j,k) * 
+                          (mask1d ? mask_1d (col_lids(beg)) : mask_2d(col_lids(beg),k));
+          for (int icol=beg+1; icol<end; ++icol) {
+            y_view(row,j,k) += weights(icol)*x_view(col_lids(icol),j,k) *
+                          (mask1d ? mask_1d (col_lids(icol)) : mask_2d(col_lids(icol),k));
           }
         });
       });
@@ -717,13 +471,13 @@ void CoarseningRemapper::pack_and_send ()
   using MemberType  = typename KT::MemberType;
   using ESU         = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
 
-  const int num_send_gids = m_ov_tgt_grid->get_num_local_dofs();
+  const int num_send_gids = m_ov_coarse_grid->get_num_local_dofs();
   const auto pid_lid_start = m_send_pid_lids_start;
   const auto lids_pids = m_send_lids_pids;
   const auto buf = m_send_buffer;
 
   for (int ifield=0; ifield<m_num_fields; ++ifield) {
-    const auto& f  = m_ov_tgt_fields[ifield];
+    const auto& f  = m_ov_fields[ifield];
     const auto& fl = f.get_header().get_identifier().get_layout();
     const auto f_pid_offsets = ekat::subview(m_send_f_pid_offsets,ifield);
 
@@ -789,6 +543,7 @@ void CoarseningRemapper::pack_and_send ()
       default:
         EKAT_ERROR_MSG ("Unexpected field rank in CoarseningRemapper::pack.\n"
             "  - MPI rank  : " + std::to_string(m_comm.rank()) + "\n"
+            "  - field name: " + f.name() + "\n"
             "  - field rank: " + std::to_string(fl.rank()) + "\n");
     }
   }
@@ -912,90 +667,6 @@ void CoarseningRemapper::recv_and_unpack ()
   }
 }
 
-
-std::vector<CoarseningRemapper::gid_t>
-CoarseningRemapper::
-get_my_triplets_gids (const std::string& map_file,
-                      const grid_ptr_type& src_grid) const
-{
-  using namespace ShortFieldTagsNames;
-
-  scorpio::register_file(map_file,scorpio::FileMode::Read);
-  // 1. Create a "helper" grid, with as many dofs as the number
-  //    of triplets in the map file, and divided linearly across ranks
-  const int ngweights = scorpio::get_dimlen(map_file,"n_s");
-  const auto io_grid_linear = create_point_grid ("helper",ngweights,1,m_comm);
-  const int nlweights = io_grid_linear->get_num_local_dofs();
-
-  gid_t offset = nlweights;
-  m_comm.scan(&offset,1,MPI_SUM);
-  offset -= nlweights; // scan is inclusive, but we need exclusive
-
-  // Create a unique decomp tag, which ensures all coarsening remappers have
-  // their own decomposition
-  const std::string idx_decomp_tag = "CR::gmtg,grid-idx=" + std::to_string(io_grid_linear->get_unique_grid_id());
-
-  // 2. Read a chunk of triplets col indices
-  std::vector<gid_t> cols(nlweights);
-  std::vector<gid_t> rows(nlweights); // Needed to calculate min_dof
-
-  scorpio::register_variable(map_file, "col", "col", {"n_s"}, "int", idx_decomp_tag);
-  scorpio::register_variable(map_file, "row", "row", {"n_s"}, "int", idx_decomp_tag);
-  std::vector<scorpio::offset_t> dofs_offsets(nlweights);
-  std::iota(dofs_offsets.begin(),dofs_offsets.end(),offset);
-  scorpio::set_dof(map_file,"col",nlweights,dofs_offsets.data());
-  scorpio::set_dof(map_file,"row",nlweights,dofs_offsets.data());
-  scorpio::set_decomp(map_file);
-  scorpio::grid_read_data_array(map_file,"col",-1,cols.data(),cols.size());
-  scorpio::grid_read_data_array(map_file,"row",-1,rows.data(),rows.size());
-  scorpio::eam_pio_closefile(map_file);
-
-  // Offset the cols ids to match the source grid.
-  // Determine the min id among the cols array, we
-  // also add the min_dof for the grid.
-  int remap_min_dof = std::numeric_limits<int>::max();
-  for (int id=0; id<nlweights; id++) {
-    remap_min_dof = std::min(rows[id],remap_min_dof);
-  }
-  int global_remap_min_dof;
-  m_comm.all_reduce(&remap_min_dof,&global_remap_min_dof,1,MPI_MIN);
-
-  gid_t col_offset = global_remap_min_dof - src_grid->get_global_min_dof_gid();
-  for (auto& id : cols) {
-    id -= col_offset;
-  }
-
-  // 3. Get the owners of the cols gids we read in, according to the src grid
-  auto owners = src_grid->get_owners(cols);
-
-  // 4. Group gids we read by the pid we need to send them to
-  std::map<int,std::vector<int>> pid2gids_send;
-  for (int i=0; i<nlweights; ++i) {
-    const auto pid = owners[i];
-    pid2gids_send[pid].push_back(i+offset);
-  }
-
-  // 5. Obtain the dual map of the one above: a list of gids we need to
-  //    receive, grouped by the pid we recv them from
-  auto pid2gids_recv = recv_gids_from_pids(pid2gids_send);
-
-  // 6. Cat all the list of gids in one
-  int num_my_triplets = 0;
-  for (const auto& it : pid2gids_recv) {
-    num_my_triplets += it.second.size();
-  }
-  std::vector<gid_t> my_triplets_gids(num_my_triplets);
-  int num_copied = 0;
-  for (const auto& it : pid2gids_recv) {
-    auto dst = my_triplets_gids.data()+num_copied;
-    auto src = it.second.data();
-    std::memcpy (dst,src,it.second.size()*sizeof(int));
-    num_copied += it.second.size();
-  }
-
-  return my_triplets_gids;
-}
-
 std::vector<int>
 CoarseningRemapper::get_pids_for_recv (const std::vector<int>& send_to_pids) const
 {
@@ -1089,32 +760,6 @@ recv_gids_from_pids (const std::map<int,std::vector<int>>& pid2gids_send) const
   return pid2gids_recv;
 }
 
-void CoarseningRemapper::create_ov_tgt_fields ()
-{
-  using FL = FieldLayout;
-  m_ov_tgt_fields.reserve(m_num_fields);
-  const int num_ov_cols = m_ov_tgt_grid->get_num_local_dofs();
-  const auto ov_gn = m_ov_tgt_grid->name();
-  for (int i=0; i<m_num_fields; ++i) {
-    const auto& f_src = m_src_fields[i];
-    const auto& f_tgt = m_tgt_fields[i];
-    const auto& fid = f_tgt.get_header().get_identifier();
-    auto tags = fid.get_layout().tags();
-    auto dims = fid.get_layout().dims();
-    dims[0] = num_ov_cols;
-    FieldIdentifier ov_fid (fid.name(),FL(tags,dims),fid.get_units(),ov_gn,fid.data_type());
-
-    // Note: with C++17, emplace_back already returns a ref
-    m_ov_tgt_fields.emplace_back(ov_fid);
-    auto& ov_f = m_ov_tgt_fields.back();
-
-    // Use same alloc props as src fields, to allow packing in local_mat_vec
-    const auto pack_size = f_src.get_header().get_alloc_properties().get_largest_pack_size();
-    ov_f.get_header().get_alloc_properties().request_allocation(pack_size);
-    ov_f.allocate_view();
-  }
-}
-
 void CoarseningRemapper::setup_mpi_data_structures ()
 {
   using namespace ShortFieldTagsNames;
@@ -1128,13 +773,9 @@ void CoarseningRemapper::setup_mpi_data_structures ()
   std::vector<int> field_col_size (m_num_fields);
   int sum_fields_col_sizes = 0;
   for (int i=0; i<m_num_fields; ++i) {
-    const auto& f  = m_ov_tgt_fields[i];  // Doesn't matter if tgt or ov_tgt
+    const auto& f  = m_src_fields[i];
     const auto& fl = f.get_header().get_identifier().get_layout();
-    if (fl.dim(0)>0) {
-      field_col_size[i] = fl.size() / fl.dim(0);
-    } else {
-      field_col_size[i] = fl.size();
-    }
+    field_col_size[i] = fl.strip_dim(COL).size();
     sum_fields_col_sizes += field_col_size[i];
   }
 
@@ -1142,15 +783,15 @@ void CoarseningRemapper::setup_mpi_data_structures ()
   //                   Setup SEND structures                   //
   // --------------------------------------------------------- //
 
-  // 1. Retrieve pid (and associated lid) of all ov_tgt gids
+  // 1. Retrieve pid (and associated lid) of all ov gids
   //    on the tgt grid
-  const auto ov_gids = m_ov_tgt_grid->get_dofs_gids().get_view<const gid_t*,Host>();
+  const auto ov_gids = m_ov_coarse_grid->get_dofs_gids().get_view<const gid_type*,Host>();
   auto gids_owners = m_tgt_grid->get_owners (ov_gids);
 
   // 2. Group dofs to send by remote pid
   const int num_ov_gids = ov_gids.size();
   std::map<int,std::vector<int>> pid2lids_send;
-  std::map<int,std::vector<gid_t>> pid2gids_send;
+  std::map<int,std::vector<gid_type>> pid2gids_send;
   for (int i=0; i<num_ov_gids; ++i) {
     const int pid = gids_owners[i];
     pid2lids_send[pid].push_back(i);
@@ -1224,10 +865,11 @@ void CoarseningRemapper::setup_mpi_data_structures ()
   // 2. Convert the gids to lids, and arrange them by lid
   std::vector<std::vector<int>> lid2pids_recv(num_tgt_dofs);
   int num_total_recv_gids = 0;
+  auto tgt_gid2lid = m_tgt_grid->get_gid2lid_map();
   for (const auto& it : pid2gids_recv) {
     const int pid = it.first;
     for (auto gid : it.second) {
-      const int lid = gid2lid(gid,m_tgt_grid);
+      const int lid = tgt_gid2lid[gid];
       lid2pids_recv[lid].push_back(pid);
     }
     num_total_recv_gids += it.second.size();
@@ -1242,7 +884,7 @@ void CoarseningRemapper::setup_mpi_data_structures ()
   auto recv_lids_beg_h  = Kokkos::create_mirror_view(m_recv_lids_beg);
   auto recv_lids_end_h  = Kokkos::create_mirror_view(m_recv_lids_end);
 
-  auto tgt_dofs_h = m_tgt_grid->get_dofs_gids().get_view<const gid_t*,Host>();
+  auto tgt_dofs_h = m_tgt_grid->get_dofs_gids().get_view<const gid_type*,Host>();
   for (int i=0,pos=0; i<num_tgt_dofs; ++i) {
     recv_lids_beg_h(i) = pos;
     const int gid = tgt_dofs_h[i];
@@ -1326,17 +968,7 @@ void CoarseningRemapper::clean_up ()
   m_send_req.clear();
   m_recv_req.clear();
 
-  // Clear all fields
-  m_src_fields.clear();
-  m_tgt_fields.clear();
-  m_ov_tgt_fields.clear();
-
-  // Reset the state of the base class
-  m_state = RepoState::Clean;
-  m_num_fields = 0;
-  m_num_registered_fields = 0;
-  m_fields_are_bound.clear();
-  m_num_bound_fields = 0;
+  HorizInterpRemapperBase::clean_up();
 }
 
 } // namespace scream

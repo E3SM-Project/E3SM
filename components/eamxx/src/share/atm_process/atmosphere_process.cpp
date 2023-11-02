@@ -72,6 +72,14 @@ void AtmosphereProcess::initialize (const TimeStamp& t0, const RunType run_type)
   set_fields_and_groups_pointers();
   m_time_stamp = t0;
   initialize_impl(run_type);
+
+  // Create all start-of-step fields needed for tendencies calculation
+  for (const auto& it : m_proc_tendencies) {
+    const auto& tname = it.first;
+    const auto& fname = m_tend_to_field.at(tname);
+    m_start_of_step_fields[fname] = get_field_out(fname).clone();
+  }
+
   if (this->type()!=AtmosphereProcessType::Group) {
     stop_timer (m_timer_prefix + this->name() + "::init");
   }
@@ -203,6 +211,7 @@ void AtmosphereProcess::setup_tendencies_requests () {
   // field with the requested name. If more than one is found (must be
   // that we have same field on multiple grids), error out.
   using namespace ekat::units;
+  using strlist_t = std::list<std::string>;
   for (const auto& tn : tend_list) {
     std::string grid_found = "";
     auto tokens = field_grid(tn);
@@ -232,7 +241,7 @@ void AtmosphereProcess::setup_tendencies_requests () {
 
         // Create tend FID and request field
         FieldIdentifier t_fid(tname,layout,units,gname,dtype);
-        add_field<Computed>(t_fid,"ACCUMULATED");
+        add_field<Computed>(t_fid,strlist_t{"ACCUMULATED","DIVIDE_BY_DT"});
         grid_found = gname;
       }
     }
@@ -475,30 +484,32 @@ void AtmosphereProcess::run_column_conservation_check () const {
 void AtmosphereProcess::init_step_tendencies () {
   if (m_compute_proc_tendencies) {
     start_timer(m_timer_prefix + this->name() + "::compute_tendencies");
-    for (auto& it : m_proc_tendencies) {
-      const auto& tname = it.first;
-      const auto& fname = m_tend_to_field.at(tname);
+    for (auto& it : m_start_of_step_fields) {
+      const auto& fname = it.first;
       const auto& f     = get_field_out(fname);
-
-      auto& tend = it.second;
-      tend.deep_copy(f);
+            auto& f_beg = it.second;
+      f_beg.deep_copy(f);
     }
     stop_timer(m_timer_prefix + this->name() + "::compute_tendencies");
   }
 }
 
 void AtmosphereProcess::compute_step_tendencies (const double dt) {
+  using namespace ShortFieldTagsNames;
   if (m_compute_proc_tendencies) {
-    m_atm_logger->debug("[" + this->name() + "] compuiting tendencies...");
+    m_atm_logger->debug("[" + this->name() + "] computing tendencies...");
     start_timer(m_timer_prefix + this->name() + "::compute_tendencies");
     for (auto it : m_proc_tendencies) {
+      // Note: f_beg is nonconst, so we can store step tendency in it
       const auto& tname = it.first;
       const auto& fname = m_tend_to_field.at(tname);
       const auto& f     = get_field_out(fname);
+            auto& f_beg = m_start_of_step_fields.at(fname);
+            auto& tend  = it.second;
 
-      auto& tend      = it.second;
-
-      tend.update(f,1/dt,-1/dt);
+      // Compute tend from this atm proc step, then sum into overall atm timestep tendency
+      f_beg.update(f,1,-1);
+      tend.update(f_beg,1,1);
     }
     stop_timer(m_timer_prefix + this->name() + "::compute_tendencies");
   }

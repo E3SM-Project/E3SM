@@ -59,8 +59,8 @@ VerticalRemapper (const grid_ptr_type& src_grid,
   auto tgt_grid_gids = src_grid->get_unique_gids();
   const int ngids = tgt_grid_gids.size();
   auto tgt_grid = std::make_shared<PointGrid>("vertical_remap_tgt_grid",ngids,m_num_remap_levs,m_comm);
-  auto tgt_grid_gids_h = tgt_grid->get_dofs_gids().get_view<gid_t*,Host>();
-  std::memcpy(tgt_grid_gids_h.data(),tgt_grid_gids.data(),ngids*sizeof(gid_t));
+  auto tgt_grid_gids_h = tgt_grid->get_dofs_gids().get_view<gid_type*,Host>();
+  std::memcpy(tgt_grid_gids_h.data(),tgt_grid_gids.data(),ngids*sizeof(gid_type));
   tgt_grid->get_dofs_gids().sync_to_dev();
   this->set_grids(src_grid,tgt_grid);
 

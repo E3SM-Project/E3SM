@@ -735,9 +735,9 @@ create_p2d_map () {
   auto se_dyn = std::dynamic_pointer_cast<const SEGrid>(m_dyn_grid);
   EKAT_REQUIRE_MSG(se_dyn, "Error! Something went wrong casting dyn grid to a SEGrid.\n");
 
-  using gid_t = AbstractGrid::gid_type;
-  auto dyn_gids  = se_dyn->get_cg_dofs_gids().get_view<const gid_t*>();
-  auto phys_gids = m_phys_grid->get_dofs_gids().get_view<const gid_t*>();
+  using gid_type = AbstractGrid::gid_type;
+  auto dyn_gids  = se_dyn->get_cg_dofs_gids().get_view<const gid_type*>();
+  auto phys_gids = m_phys_grid->get_dofs_gids().get_view<const gid_type*>();
 
   auto policy = KokkosTypes<DefaultDevice>::RangePolicy(0,num_phys_dofs);
   m_p2d = decltype(m_p2d) ("",num_phys_dofs);

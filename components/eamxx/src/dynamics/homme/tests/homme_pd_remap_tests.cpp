@@ -39,6 +39,7 @@ TEST_CASE("remap", "") {
   using IPDF = std::uniform_int_distribution<int>;
   using FID = FieldIdentifier;
   using FL  = FieldLayout;
+  using gid_type = AbstractGrid::gid_type;
 
   constexpr int pg_gll = 0;
   constexpr int PackSize = HOMMEXX_VECTOR_SIZE;
@@ -81,8 +82,8 @@ TEST_CASE("remap", "") {
   // Get physics and dynamics grids, and their dofs
   auto phys_grid = gm.get_grid("Physics GLL");
   auto dyn_grid  = std::dynamic_pointer_cast<const SEGrid>(gm.get_grid("Dynamics"));
-  auto h_p_dofs = phys_grid->get_dofs_gids().get_view<const gid_t*,Host>();
-  auto h_d_dofs = dyn_grid->get_cg_dofs_gids().get_view<const gid_t*,Host>();
+  auto h_p_dofs = phys_grid->get_dofs_gids().get_view<const gid_type*,Host>();
+  auto h_d_dofs = dyn_grid->get_cg_dofs_gids().get_view<const gid_type*,Host>();
   auto h_d_lid2idx = dyn_grid->get_lid_to_idx_map().get_view<const int**,Host>();
 
   // Get some dimensions for Homme
@@ -573,6 +574,7 @@ TEST_CASE("combo_remap", "") {
   using IPDF = std::uniform_int_distribution<int>;
   using FID = FieldIdentifier;
   using FL  = FieldLayout;
+  using gid_type = AbstractGrid::gid_type;
 
   constexpr int pg_gll = 0;
   constexpr int PackSize = HOMMEXX_VECTOR_SIZE;
@@ -615,8 +617,8 @@ TEST_CASE("combo_remap", "") {
   // Get physics and dynamics grids, and their dofs
   auto phys_grid = gm.get_grid("Physics GLL");
   auto dyn_grid  = std::dynamic_pointer_cast<const SEGrid>(gm.get_grid("Dynamics"));
-  auto h_p_dofs = phys_grid->get_dofs_gids().get_view<const gid_t*,Host>();
-  auto h_d_dofs = dyn_grid->get_cg_dofs_gids().get_view<const gid_t*,Host>();
+  auto h_p_dofs = phys_grid->get_dofs_gids().get_view<const gid_type*,Host>();
+  auto h_d_dofs = dyn_grid->get_cg_dofs_gids().get_view<const gid_type*,Host>();
   auto h_d_lid2idx = dyn_grid->get_lid_to_idx_map().get_view<const int**,Host>();
 
   // Get some dimensions for Homme

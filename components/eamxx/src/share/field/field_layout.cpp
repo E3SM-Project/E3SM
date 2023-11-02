@@ -79,9 +79,9 @@ FieldLayout FieldLayout::strip_dim (const int idim) const {
 void FieldLayout::set_dimension (const int idim, const int dimension) {
   EKAT_REQUIRE_MSG(idim>=0 && idim<m_rank, "Error! Index out of bounds.");
   EKAT_REQUIRE_MSG(dimension>=0, "Error! Dimensions must be non-negative.");
-  EKAT_REQUIRE_MSG(m_dims[idim] == -1, "Error! You cannot reset field dimensions once set.\n");
   m_dims[idim] = dimension;
 
+  // Recompute extents
   auto extents = Kokkos::create_mirror_view(m_extents);
   Kokkos::deep_copy(extents,m_extents);
   extents(idim) = dimension;
