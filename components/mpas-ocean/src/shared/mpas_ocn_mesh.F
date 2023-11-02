@@ -346,8 +346,7 @@ contains
 
       !YSK
 
-      call mpas_log_write('########### nVertLevels = $i at MESH', intArgs=(/ nVertLevels /))
-      call mpas_log_write('########### nEdgesOwned = $i at MESH', intArgs=(/ nEdgesOwned /))
+      call mpas_log_write('########### YSK allocate')
 
       allocate(bTemp(nVertLevels, nEdgesOwned))
       allocate(rTemp(nVertLevels, nEdgesOwned))
@@ -673,7 +672,8 @@ contains
          !$acc                   coeffs_reconstruct)
 
          !YSK
-         !!$acc enter data create(bTemp, rTemp)
+         call mpas_log_write('######## YSK acc enter data create(bTemp, rTemp) ####')
+         !$acc enter data create(bTemp, rTemp)
 
 !-------------------------------------------------------------------------------
 
@@ -806,6 +806,7 @@ contains
       !$acc                  coeffs_reconstruct)
 
       !YSK
+      call mpas_log_write('######## YSK acc exit data delete(bTemp, rTemp) ####')
       !$acc exit data delete(bTemp, rTemp)
 
       ! Reset all scalars to zero
@@ -908,6 +909,7 @@ contains
                   invAreaCell)
 
       !YSK
+      call mpas_log_write('######## YSK deallocate(bTemp, rTemp) ####')
       deallocate(bTemp, rTemp)
 
 !-------------------------------------------------------------------------------

@@ -467,22 +467,21 @@ contains
 
       if(.not.velVmixOn) return
 
-      call mpas_log_write('########### nVertLevels = $i at VMIX', intArgs=(/ nVertLevels /))
-      call mpas_log_write('########### nEdgesOwned = $i at VMIX', intArgs=(/ nEdgesOwned /))
 
       !allocate(bTemp(nVertLevels),C(nVertLevels),rTemp(nVertLevels))
       !YSK allocate(bTemp(nVertLevels),rTemp(nVertLevels)) !YSK
 
+      call mpas_log_write('########### VMIX ')
+
 #ifdef MPAS_OPENACC
       !!$acc enter data create(bTemp, C, rTemp)
       !YSK !$acc enter data create(bTemp, rTemp) !YSK
-
-      !$acc enter data present_or_create(bTemp, rTemp)
+      !YSK !$acc enter data present_or_create(bTemp, rTemp)
 
       !$acc parallel loop present(maxLevelEdgeTop, minLevelEdgeBot, cellsOnEdge, &
       !$acc    layerThickEdgeDrag, layerThickEdgeMean, layerThickness, vertViscTopOfEdge, &
       !$acc    normalVelocity, landIceEdgeFraction, kineticEnergyCell, bTemp, rTemp) &
-      !$acc    private(Nsurf, N, cell1, cell2, A, bTemp, m, rTemp, k, CPrev, CNext) &
+      !$acc    private(Nsurf, N, cell1, cell2, A, m, k, CPrev, CNext) &
 !YSK      !$acc    present(bTemp, rTemp)
       !!$acc    private(Nsurf, N, cell1, cell2, A, bTemp, C, m, rTemp, k) !YSK
       !YSK !$acc    normalVelocity, landIceEdgeFraction, kineticEnergyCell) &
