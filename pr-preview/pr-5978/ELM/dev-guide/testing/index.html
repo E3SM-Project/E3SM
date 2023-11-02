@@ -12,7 +12,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.4.5">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.4.7">
     
     
       
@@ -20,7 +20,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.6a10b989.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.4b4a2bd9.min.css">
       
         
         <link rel="stylesheet" href="../../../assets/stylesheets/palette.356b1318.min.css">
@@ -734,7 +734,7 @@ git<span class="w"> </span>submodule<span class="w"> </span>update<span class="w
 test suite.</p>
 <div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>cime/scripts
 </code></pre></div>
-<p>A few things that you need to decide at this stage include the directory location where the baselines will be saved, the name and ID for the baselines, the project allocation that you will use for running the simulation, if you would like to recieve email notirications about tests, etc.</p>
+<p>A few things that you need to decide at this stage include the directory location where the baselines will be saved, the name and ID for the baselines, the project allocation that you will use for running the simulation, if you would like to receive email notifications about tests, etc.</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Define the directory to hold the baseline </span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">MY_BASELINE_DIR</span><span class="o">=</span>/global/cscratch1/sd/gbisht/e3sm_baselines
 
@@ -778,6 +778,8 @@ useful arguments for <code>./create_test</code>:</p>
 </code></pre></div>
 <p>The cases would be named <code>*.G.*</code> to denote one is generating the baselines.
 It will take a while to compile all the cases and submit the code.
+It can take a long time (&gt;30mins) for the test suite to run. To avoid interrupting the test suite
+in the middle, one can run the test suite within a <code>screen</code> command.
 After the cases have been successfully compiled and submitted, you can check that 
 status of test by running the <code>cs.status.${TEST_ID}</code> file that was created in the scratch directory.</p>
 <h2 id="step-2-compare-against-previously-generated-baselines">Step-2: Compare against previously generated baselines</h2>
