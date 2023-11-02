@@ -2650,7 +2650,7 @@ module ocn_time_integration_split_ab2
                                 scratchPool, tracersPool, 2)
 
       call mpas_dmpar_field_halo_exch(domain, 'surfaceFrictionVelocity')
-
+      call mpas_dmpar_field_halo_exch(domain, 'tangentialVelocity')
 #ifdef MPAS_OPENACC
       !$acc update host(layerThickEdgeFlux, layerThickEdgeMean)
       !$acc update host(relativeVorticity, circulation)
