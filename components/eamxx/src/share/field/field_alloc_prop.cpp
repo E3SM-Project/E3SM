@@ -161,31 +161,33 @@ void FieldAllocProp::commit (const layout_ptr_type& layout)
   // Store pointer to layout for future use (in case subview is called)
   m_layout = layout;
 
-  // Loop on all value type sizes.
-  m_last_extent = 0;
-  int last_phys_extent = m_layout->dims().back();
-  for (auto vts : m_value_type_sizes) {
-    // The number of scalar_type in a value_type
-    const int vt_len = vts / m_scalar_type_size;
-
-    // Update the max pack size
-    m_pack_size_max = std::max(m_pack_size_max,vt_len);
-
-    // The number of value_type's needed in the fast-striding dimension
-    const int num_vt = (last_phys_extent + vt_len - 1) / vt_len;
-
-    // The total number of scalars with num_vt value_type entries
-    const int num_st = num_vt*vt_len;
-
-    // The size of such allocation (along the last dim only)
-    m_last_extent = std::max(m_last_extent, num_st);
-  }
-
-  // If we have a partitioned grid, with some ranks not owning any grid point,
-  // we may end up with a layout of size 0
   if (m_layout->size()==0) {
-    m_alloc_size = 0;
+    // Zero-dimensional fields are supported, so we may end up with a
+    // layout of size 0. In this case allocate a single scalar, but
+    // set the last extent to 0 since we have no dimension.
+    m_alloc_size = m_scalar_type_size;
+    m_last_extent = 0;
   } else {
+    // Loop on all value type sizes.
+    m_last_extent = 0;
+    int last_phys_extent = m_layout->dims().back();
+    for (auto vts : m_value_type_sizes) {
+      // The number of scalar_type in a value_type
+      const int vt_len = vts / m_scalar_type_size;
+
+      // Update the max pack size
+      m_pack_size_max = std::max(m_pack_size_max,vt_len);
+
+      // The number of value_type's needed in the fast-striding dimension
+      const int num_vt = (last_phys_extent + vt_len - 1) / vt_len;
+
+      // The total number of scalars with num_vt value_type entries
+      const int num_st = num_vt*vt_len;
+
+      // The size of such allocation (along the last dim only)
+      m_last_extent = std::max(m_last_extent, num_st);
+    }
+
     m_alloc_size = (m_layout->size() / last_phys_extent) // All except the last dimension
                    * m_last_extent * m_scalar_type_size;
   }

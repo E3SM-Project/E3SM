@@ -347,6 +347,41 @@ TEST_CASE("field", "") {
       }
     }
   }
+
+  SECTION ("rank0_field") {
+    // Create 0d field
+    FieldIdentifier fid0("f_0d", FieldLayout({}), Units::nondimensional(), "dummy_grid");
+    Field f0(fid0);
+    f0.allocate_view();
+
+    // Create 1d field
+    FieldIdentifier fid1("f_1d", FieldLayout({COL}, {5}), Units::nondimensional(), "dummy_grid");
+    Field f1(fid1);
+    f1.allocate_view();
+
+    // Randomize 1d field
+    randomize(f1,engine,pdf);
+
+    auto v0 = f0.get_view<Real, Host>();
+    auto v1 = f1.get_view<Real*, Host>();
+
+    // Deep copy subfield of 1d field -> 0d field and check result
+    for (size_t i=0; i<v1.extent(0); ++i) {
+      f0.deep_copy(f1.subfield(0, i));
+      REQUIRE(v0() == v1(i));
+    }
+
+    // Randomize 0d field
+    randomize(f0,engine,pdf);
+
+    // Deep copy 0d field -> subfield of 1d field and check result
+    for (size_t i=0; i<v1.extent(0); ++i) {
+      f1.subfield(0, i).deep_copy(f0);
+      REQUIRE(v1(i) == v0());
+    }
+
+    printf("DONE\n");
+  }
 }
 
 TEST_CASE("field_group") {
