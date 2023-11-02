@@ -1222,6 +1222,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
       call cldera_set_field_part_data("AODVIS" ,lchnk-begchunk+1,aodvis)
       call cldera_set_field_part_data("AODALL" ,lchnk-begchunk+1,aodall)
       call cldera_set_field_part_data("AODABS" ,lchnk-begchunk+1,aodabs)
+      call cldera_set_field_part_data("AODSO4" ,lchnk-begchunk+1,so4aod)
       call cldera_set_field_part_data("BURDENSO4" ,lchnk-begchunk+1,burdenso4)
 #endif
 

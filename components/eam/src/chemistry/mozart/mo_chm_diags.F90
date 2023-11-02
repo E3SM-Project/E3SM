@@ -9,6 +9,10 @@ module mo_chm_diags
   use mo_chem_utls, only : get_rxt_ndx, get_spc_ndx
   use cam_history,  only : fieldname_len
   use mo_jeuv,      only : neuv
+#if defined(CLDERA_PROFILING)
+  use ppgrid,         only: begchunk
+  use cldera_interface_mod, only: cldera_set_field_part_data
+#endif
 
   private
 
@@ -630,6 +634,9 @@ contains
        call outfld( 'Mass_so4', mass_so4(:ncol,:),ncol,lchnk)
        call outfld( 'Mass_soa', mass_soa(:ncol,:),ncol,lchnk)
     endif
+#if defined(CLDERA_PROFILING)
+    call cldera_set_field_part_data("Mass_so4" ,lchnk-begchunk+1,mass_so4(:ncol,:))
+#endif
 #endif
 
     call outfld( 'NOX',  vmr_nox(:ncol,:),  ncol, lchnk )

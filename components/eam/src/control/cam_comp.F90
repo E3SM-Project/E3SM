@@ -140,7 +140,7 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
    character(len=cs) :: filein ! Input namelist filename
 #if defined(CLDERA_PROFILING)
    character(len=max_str_len) :: fname
-   integer :: c, nfields, idx, rank, icmp, nparts, part_dim, ipart, fsize, ncols
+   integer :: c, nfields, idx, rank, icmp, nparts, part_dim, ipart, fsize, ncols, icall
    integer :: nlcols,irank
    integer :: dims(3)
    integer, allocatable :: cols_gids(:)
@@ -150,6 +150,7 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
    real(r8), pointer :: field1d(:), field2d(:,:), field3d(:,:,:)
    type(physics_buffer_desc), pointer :: field_desc
    character(len=5) :: int_str
+   character(len=4) :: diag(0:2) = (/'    ','_d1 ','_d2 '/)
 #endif
    !-----------------------------------------------------------------------
    etamid = nan
@@ -346,15 +347,44 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
    call cldera_add_partitioned_field("aod_so2", 1,dims,dimnames,nparts,part_dim,.false.)
    call cldera_add_partitioned_field("aod_ash", 1,dims,dimnames,nparts,part_dim,.false.)
    call cldera_add_partitioned_field("aod_sulf",1,dims,dimnames,nparts,part_dim,.false.)
-   call cldera_add_partitioned_field("FSDS", 1,dims,dimnames,nparts,part_dim,.false.)
-   call cldera_add_partitioned_field("FSDSC", 1,dims,dimnames,nparts,part_dim,.false.)
-   call cldera_add_partitioned_field("FLNT", 1,dims,dimnames,nparts,part_dim,.false.)
-   call cldera_add_partitioned_field("FLUT", 1,dims,dimnames,nparts,part_dim,.false.)
-   call cldera_add_partitioned_field("FLUTC", 1,dims,dimnames,nparts,part_dim,.false.)
-   call cldera_add_partitioned_field("FLNS", 1,dims,dimnames,nparts,part_dim,.false.)
+   do icall = 2,0,-1 ! profile climate calculation & two diags for now
+      call cldera_add_partitioned_field("SOLIN"//diag(icall), 1,dims,dimnames,nparts,part_dim,.false.)
+      call cldera_add_partitioned_field("FSDS"//diag(icall), 1,dims,dimnames,nparts,part_dim,.false.)
+      call cldera_add_partitioned_field("FSNIRTOA"//diag(icall), 1,dims,dimnames,nparts,part_dim,.false.)
+      call cldera_add_partitioned_field("FSNRTOAC"//diag(icall), 1,dims,dimnames,nparts,part_dim,.false.)
+      call cldera_add_partitioned_field("FSNRTOAS"//diag(icall), 1,dims,dimnames,nparts,part_dim,.false.)
+      call cldera_add_partitioned_field("FSNT"//diag(icall), 1,dims,dimnames,nparts,part_dim,.false.)
+      call cldera_add_partitioned_field("FSNS"//diag(icall), 1,dims,dimnames,nparts,part_dim,.false.)
+      call cldera_add_partitioned_field("FSNTC"//diag(icall), 1,dims,dimnames,nparts,part_dim,.false.)
+      call cldera_add_partitioned_field("FSNSC"//diag(icall), 1,dims,dimnames,nparts,part_dim,.false.)
+      call cldera_add_partitioned_field("FSDSC"//diag(icall), 1,dims,dimnames,nparts,part_dim,.false.)
+      call cldera_add_partitioned_field("FSNTOA"//diag(icall), 1,dims,dimnames,nparts,part_dim,.false.)
+      call cldera_add_partitioned_field("FSUTOA"//diag(icall), 1,dims,dimnames,nparts,part_dim,.false.)
+      call cldera_add_partitioned_field("FSNTOAC"//diag(icall), 1,dims,dimnames,nparts,part_dim,.false.)
+      call cldera_add_partitioned_field("FSUTOAC"//diag(icall), 1,dims,dimnames,nparts,part_dim,.false.)
+      call cldera_add_partitioned_field("SOLS"//diag(icall), 1,dims,dimnames,nparts,part_dim,.false.)
+      call cldera_add_partitioned_field("SOLL"//diag(icall), 1,dims,dimnames,nparts,part_dim,.false.)
+      call cldera_add_partitioned_field("SOLSD"//diag(icall), 1,dims,dimnames,nparts,part_dim,.false.)
+      call cldera_add_partitioned_field("SOLLD"//diag(icall), 1,dims,dimnames,nparts,part_dim,.false.)
+      call cldera_add_partitioned_field("FSN200"//diag(icall), 1,dims,dimnames,nparts,part_dim,.false.)
+      call cldera_add_partitioned_field("FSN200C"//diag(icall), 1,dims,dimnames,nparts,part_dim,.false.)
+      call cldera_add_partitioned_field("SWCF"//diag(icall), 1,dims,dimnames,nparts,part_dim,.false.)
+      call cldera_add_partitioned_field("FLNT"//diag(icall), 1,dims,dimnames,nparts,part_dim,.false.)
+      call cldera_add_partitioned_field("FLUT"//diag(icall), 1,dims,dimnames,nparts,part_dim,.false.)
+      call cldera_add_partitioned_field("FLUTC"//diag(icall), 1,dims,dimnames,nparts,part_dim,.false.)
+      call cldera_add_partitioned_field("FLNTC"//diag(icall), 1,dims,dimnames,nparts,part_dim,.false.)
+      call cldera_add_partitioned_field("FLNS"//diag(icall), 1,dims,dimnames,nparts,part_dim,.false.)
+      call cldera_add_partitioned_field("FLDSC"//diag(icall), 1,dims,dimnames,nparts,part_dim,.false.)
+      call cldera_add_partitioned_field("FLNSC"//diag(icall), 1,dims,dimnames,nparts,part_dim,.false.)
+      call cldera_add_partitioned_field("LWCF"//diag(icall), 1,dims,dimnames,nparts,part_dim,.false.)
+      call cldera_add_partitioned_field("FLN200"//diag(icall), 1,dims,dimnames,nparts,part_dim,.false.)
+      call cldera_add_partitioned_field("FLN200C"//diag(icall), 1,dims,dimnames,nparts,part_dim,.false.)
+      call cldera_add_partitioned_field("FLDS"//diag(icall), 1,dims,dimnames,nparts,part_dim,.false.)
+   end do
+   call cldera_add_partitioned_field("AODSO4", 1,dims,dimnames,nparts,part_dim,.false.)
    call cldera_add_partitioned_field("BURDENSO4", 1,dims,dimnames,nparts,part_dim,.false.)
 
-   !2d, mid points
+   ! 2d, mid points
    dims(2) = pver
    dimnames(2) = 'lev'
    call cldera_add_partitioned_field("T",2,dims,dimnames,nparts,part_dim)
@@ -369,6 +399,15 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
    call cldera_add_partitioned_field("exner",2,dims,dimnames,nparts,part_dim)
    call cldera_add_partitioned_field("zm",2,dims,dimnames,nparts,part_dim)
 
+   ! 2d, mid points (copy)
+   do icall = 2,0,-1 ! profile climate calculation & two diags for now
+      call cldera_add_partitioned_field('QRS'//diag(icall), 2,dims,dimnames,nparts,part_dim,.false.)
+      call cldera_add_partitioned_field('QRSC'//diag(icall), 2,dims,dimnames,nparts,part_dim,.false.)
+      call cldera_add_partitioned_field("QRL"//diag(icall), 2,dims,dimnames,nparts,part_dim,.false.)
+      call cldera_add_partitioned_field("QRLC"//diag(icall), 2,dims,dimnames,nparts,part_dim,.false.)
+   end do
+   call cldera_add_partitioned_field("Mass_so4",2,dims,dimnames,nparts,part_dim,.false.)
+
    ! 2d, interfaces
    dims(2) = pver+1
    dimnames(2) = "ilev"
@@ -382,11 +421,11 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
 
    ! cam_in fields
    call cldera_add_partitioned_field("TREFHT", 1,dims,dimnames,nparts,part_dim)
+   call cldera_add_partitioned_field("QREFHT", 1,dims,dimnames,nparts,part_dim)
    call cldera_add_partitioned_field("TS", 1,dims,dimnames,nparts,part_dim)
    call cldera_add_partitioned_field("QFLX", 1,dims,dimnames,nparts,part_dim)
-
-   ! cam_out fields
-   call cldera_add_partitioned_field("FLDS", 1,dims,dimnames,nparts,part_dim)
+   call cldera_add_partitioned_field("SHFLX", 1,dims,dimnames,nparts,part_dim)
+   call cldera_add_partitioned_field("LHFLX", 1,dims,dimnames,nparts,part_dim)
 
    ! Set fields data
    do ipart = 1,nparts
@@ -482,19 +521,23 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
      field1d => cam_in(c)%tref(:)
      call cldera_set_field_part_size("TREFHT",ipart,ncols)
      call cldera_set_field_part_data("TREFHT",ipart,field1d)
+     field1d => cam_in(c)%qref(:)
+     call cldera_set_field_part_size("QREFHT",ipart,ncols)
+     call cldera_set_field_part_data("QREFHT",ipart,field1d)
      field1d => cam_in(c)%ts(:)
      call cldera_set_field_part_size("TS",ipart,ncols)
      call cldera_set_field_part_data("TS",ipart,field1d)
      field1d => cam_in(c)%cflx(:,1)
      call cldera_set_field_part_size("QFLX",ipart,ncols)
      call cldera_set_field_part_data("QFLX",ipart,field1d)
+     field1d => cam_in(c)%shf(:)
+     call cldera_set_field_part_size("SHFLX",ipart,ncols)
+     call cldera_set_field_part_data("SHFLX",ipart,field1d)
+     field1d => cam_in(c)%lhf(:)
+     call cldera_set_field_part_size("LHFLX",ipart,ncols)
+     call cldera_set_field_part_data("LHFLX",ipart,field1d)
 
-     ! cam_out fields
-     field1d => cam_out(c)%flwds(:)
-     call cldera_set_field_part_size("FLDS",ipart,ncols)
-     call cldera_set_field_part_data("FLDS",ipart,field1d)
-
-     ! Copied field (AOD)
+     ! Copied field
      call cldera_set_field_part_size("AEROD_v", ipart,ncols)
      call cldera_set_field_part_size("AODALL", ipart,ncols)
      call cldera_set_field_part_size("ABSORB", ipart,ncols)
@@ -504,13 +547,47 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
      call cldera_set_field_part_size("aod_so2", ipart,ncols)
      call cldera_set_field_part_size("aod_ash", ipart,ncols)
      call cldera_set_field_part_size("aod_sulf",ipart,ncols)
-     call cldera_set_field_part_size("FSDS"   , ipart,ncols)
-     call cldera_set_field_part_size("FSDSC"   , ipart,ncols)
-     call cldera_set_field_part_size("FLNT"   , ipart,ncols)
-     call cldera_set_field_part_size("FLUT"   , ipart,ncols)
-     call cldera_set_field_part_size("FLUTC"   , ipart,ncols)
-     call cldera_set_field_part_size("FLNS"   , ipart,ncols)
+     do icall = 2,0,-1 ! profile climate calculation & two diags for now
+       call cldera_set_field_part_size("SOLIN"//diag(icall), ipart,ncols)
+       call cldera_set_field_part_size("FSDS"//diag(icall), ipart,ncols)
+       call cldera_set_field_part_size("FSNIRTOA"//diag(icall), ipart,ncols)
+       call cldera_set_field_part_size("FSNRTOAC"//diag(icall), ipart,ncols)
+       call cldera_set_field_part_size("FSNRTOAS"//diag(icall), ipart,ncols)
+       call cldera_set_field_part_size("FSNT"//diag(icall), ipart,ncols)
+       call cldera_set_field_part_size("FSNS"//diag(icall), ipart,ncols)
+       call cldera_set_field_part_size("FSNTC"//diag(icall), ipart,ncols)
+       call cldera_set_field_part_size("FSNSC"//diag(icall), ipart,ncols)
+       call cldera_set_field_part_size("FSDSC"//diag(icall), ipart,ncols)
+       call cldera_set_field_part_size("FSNTOA"//diag(icall), ipart,ncols)
+       call cldera_set_field_part_size("FSUTOA"//diag(icall), ipart,ncols)
+       call cldera_set_field_part_size("FSNTOAC"//diag(icall), ipart,ncols)
+       call cldera_set_field_part_size("FSUTOAC"//diag(icall), ipart,ncols)
+       call cldera_set_field_part_size("SOLS"//diag(icall), ipart,ncols)
+       call cldera_set_field_part_size("SOLL"//diag(icall), ipart,ncols)
+       call cldera_set_field_part_size("SOLSD"//diag(icall), ipart,ncols)
+       call cldera_set_field_part_size("SOLLD"//diag(icall), ipart,ncols)
+       call cldera_set_field_part_size("FSN200"//diag(icall), ipart,ncols)
+       call cldera_set_field_part_size("FSN200C"//diag(icall), ipart,ncols)
+       call cldera_set_field_part_size("SWCF"//diag(icall), ipart,ncols)
+       call cldera_set_field_part_size("FLNT"//diag(icall), ipart,ncols)
+       call cldera_set_field_part_size("FLUT"//diag(icall), ipart,ncols)
+       call cldera_set_field_part_size("FLUTC"//diag(icall), ipart,ncols)
+       call cldera_set_field_part_size("FLNTC"//diag(icall), ipart,ncols)
+       call cldera_set_field_part_size("FLNS"//diag(icall), ipart,ncols)
+       call cldera_set_field_part_size("FLDSC"//diag(icall), ipart,ncols)
+       call cldera_set_field_part_size("FLNSC"//diag(icall), ipart,ncols)
+       call cldera_set_field_part_size("LWCF"//diag(icall), ipart,ncols)
+       call cldera_set_field_part_size("FLN200"//diag(icall), ipart,ncols)
+       call cldera_set_field_part_size("FLN200C"//diag(icall), ipart,ncols)
+       call cldera_set_field_part_size("FLDS"//diag(icall), ipart,ncols)
+       call cldera_set_field_part_size("QRS"//diag(icall), ipart,ncols)
+       call cldera_set_field_part_size("QRSC"//diag(icall), ipart,ncols)
+       call cldera_set_field_part_size("QRL"//diag(icall), ipart,ncols)
+       call cldera_set_field_part_size("QRLC"//diag(icall), ipart,ncols)
+     end do
+     call cldera_set_field_part_size("AODSO4", ipart,ncols)
      call cldera_set_field_part_size("BURDENSO4"   , ipart,ncols)
+     call cldera_set_field_part_size("Mass_so4", ipart,ncols)
    enddo
 
    call cldera_commit_all_fields()
