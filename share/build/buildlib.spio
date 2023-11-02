@@ -197,10 +197,12 @@ def buildlib(bldroot, installpath, case):
         netcdf4_string = "NetCDF_C_HAS_PARALLEL:BOOL=TRUE"
 
     adios_string = "WITH_ADIOS2:BOOL=ON"
+    hdf5_string = "WITH_HDF5:BOOL=ON"
     expect_string_found = False
     pnetcdf_found = False
     netcdf4_parallel_found = False
     adios_found = False
+    hdf5_found = False
 
     cache_file = open(os.path.join(pio_bld_dir,"CMakeCache.txt"), "r")
     for line in cache_file:
@@ -212,6 +214,8 @@ def buildlib(bldroot, installpath, case):
             netcdf4_parallel_found = True
         if re.search(adios_string, line):
             adios_found = True
+        if re.search(hdf5_string, line):
+            hdf5_found = True
 
     if pio_version == 1:
         installed_lib = os.path.join(installpath, "lib", "libpio.a")
@@ -268,6 +272,8 @@ def buildlib(bldroot, installpath, case):
         valid_values += ",netcdf4p,netcdf4c"
     if adios_found:
         valid_values += ",adios"
+    if hdf5_found:
+        valid_values += ",hdf5"
 
     _set_pio_valid_values(case, valid_values)
 
