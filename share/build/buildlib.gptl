@@ -6,6 +6,7 @@ from CIME.build import get_standard_makefile_args
 
 logger = logging.getLogger(__name__)
 
+###############################################################################
 def parse_command_line(args, description):
 ###############################################################################
     parser = argparse.ArgumentParser(
@@ -40,10 +41,17 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     return args.buildroot, args.installpath, args.caseroot
 
+###############################################################################
 def buildlib(bldroot, installpath, case):
 ###############################################################################
     caseroot = case.get_value("CASEROOT")
     comp_interface = case.get_value("COMP_INTERFACE")
+
+    gptl_dir = os.environ.get("GPTL_ROOT")
+    if gptl_dir is not None:
+        # We are using a pre-installed gptl
+        expect(os.path.exists(gptl_dir), f"Non-existent gptl root {gptl_dir}")
+        return
 
     gptl_dir = os.path.join(case.get_value("SRCROOT"), "share", "timing")
     gmake_opts = "-f {gptl}/Makefile install -C {bldroot} MACFILE={macfile} COMP_NAME=gptl GPTL_DIR={gptl} GPTL_LIBDIR={bldroot}"\
@@ -57,10 +65,13 @@ def buildlib(bldroot, installpath, case):
     cmd = "{} {}".format(gmake_cmd, gmake_opts)
     run_bld_cmd_ensure_logging(cmd, logger)
 
+###############################################################################
 def _main(argv, documentation):
+###############################################################################
     bldroot, installpath, caseroot = parse_command_line(argv, documentation)
     with Case(caseroot) as case:
         buildlib(bldroot, installpath, case)
 
+###############################################################################
 if (__name__ == "__main__"):
     _main(sys.argv, __doc__)

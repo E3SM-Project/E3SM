@@ -1,8 +1,6 @@
 %YAML 1.1
 ---
 ANONYMOUS:
-# In order to use ML, change Tpetra to Epetra in the following line, 
-# and "Preconditioner Type: MueLu" to " Preconditioner Type: ML" several lines below 
   Build Type: Tpetra
 
 # Discretization Description
@@ -87,12 +85,6 @@ ANONYMOUS:
               Preconditioner Type: MueLu
               Preconditioner Types: 
                 
-                Ifpack: 
-                  Overlap: 1
-                  Prec Type: ILU
-                  Ifpack Settings: 
-                    'fact: level-of-fill': 0
-                    
                 Ifpack2: 
                   Overlap: 1
                   Prec Type: ILUT                
@@ -238,29 +230,4 @@ ANONYMOUS:
                       Coordinates: myRebalanceProlongatorFact
                       Importer: myRepartitionFact
                       
-                ML:
-                  Base Method Defaults: none                      
-                  ML Settings:
-                    default values: SA
-                    ML output: 0
-                    'repartition: enable': 1
-                    'repartition: max min ratio': 1.327e+00
-                    'repartition: min per proc': 600
-                    'repartition: Zoltan dimensions': 2
-                    'repartition: start level': 4
-                    'semicoarsen: number of levels': 2
-                    'semicoarsen: coarsen rate': 14
-                    'smoother: sweeps': 4
-                    'smoother: type': Gauss-Seidel
-                    'smoother: Chebyshev eig boost': 1.2e+00
-                    'smoother: sweeps (level 0)': 1
-                    'smoother: type (level 0)': line Gauss-Seidel
-                    'smoother: line GS Type': standard
-                    'smoother: damping factor': 1.0e+00
-                    'smoother: pre or post': both
-                    'coarse: type': Gauss-Seidel
-                    'coarse: sweeps': 4
-                    'coarse: max size': 2000
-                    'coarse: pre or post': pre
-                    max levels: 7
 

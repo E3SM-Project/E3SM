@@ -30,6 +30,7 @@
 
 <!-- calving -->
 <config_calving>'none'</config_calving>
+<config_apply_calving_mask>.false.</config_apply_calving_mask>
 <config_use_Albany_flowA_eqn_for_vM>.false.</config_use_Albany_flowA_eqn_for_vM>
 <config_calving_topography>-500.0</config_calving_topography>
 <config_calving_thickness>300.0</config_calving_thickness>
@@ -40,6 +41,7 @@
 <config_data_calving>.false.</config_data_calving>
 <config_calving_timescale>0.0</config_calving_timescale>
 <config_restore_calving_front>.true.</config_restore_calving_front>
+<config_restore_calving_front_prevent_retreat>.true.</config_restore_calving_front_prevent_retreat>
 <config_remove_icebergs>.false.</config_remove_icebergs>
 <config_remove_small_islands>.false.</config_remove_small_islands>
 <config_calving_speed_limit>100.0</config_calving_speed_limit>
@@ -94,6 +96,7 @@
 <config_temperature_profile_variability_phase>0.0</config_temperature_profile_variability_phase>
 <config_temperature_profile_GL_depth_fraction>0.25</config_temperature_profile_GL_depth_fraction>
 <config_front_mass_bal_grounded>'none'</config_front_mass_bal_grounded>
+<config_use_3d_thermal_forcing_for_face_melt>.false.</config_use_3d_thermal_forcing_for_face_melt>
 <config_beta_ocean_thermal_forcing>1.18</config_beta_ocean_thermal_forcing>
 <config_add_ocean_thermal_forcing>0.0</config_add_ocean_thermal_forcing>
 <config_alpha_subglacial_discharge>0.39</config_alpha_subglacial_discharge>
@@ -117,8 +120,10 @@
 <config_max_adaptive_timestep>3.15e9</config_max_adaptive_timestep>
 <config_adaptive_timestep_CFL_fraction>0.25</config_adaptive_timestep_CFL_fraction>
 <config_adaptive_timestep_calvingCFL_fraction>1.0</config_adaptive_timestep_calvingCFL_fraction>
+<config_adaptive_timestep_faceMeltingCFL_fraction>1.0</config_adaptive_timestep_faceMeltingCFL_fraction>
 <config_adaptive_timestep_include_DCFL>.false.</config_adaptive_timestep_include_DCFL>
 <config_adaptive_timestep_include_calving>.true.</config_adaptive_timestep_include_calving>
+<config_adaptive_timestep_include_face_melting>.true.</config_adaptive_timestep_include_face_melting>
 <config_adaptive_timestep_force_interval>'1000-00-00_00:00:00'</config_adaptive_timestep_force_interval>
 
 <!-- time_management -->

@@ -1733,7 +1733,7 @@ contains
        endif
        if (lphase .eq. 2) then
         fldcw => qqcw_get_field(pbuf, mm,lchnk)
-        fldcw(:,:) = fldcw(:,:) + dcondt_resusp3d(mm+pcnst,:,:) !*dt
+        fldcw(:ncol,:) = fldcw(:ncol,:) + dcondt_resusp3d(mm+pcnst,:ncol,:) !*dt
 !The dcondt_resusp3d is detrained aerosol AMOUNT (i.e., both mass
 !and number for four modes).
 !For dcondt_resusp3d(idx,:,:), idx=16,...,40 -> interstial aerosols
@@ -2000,10 +2000,10 @@ lphase_jnmw_conditional: &
                 end where
                 if (convproc_do_aer) then
                    !Feed in the saved cloudborne mixing ratios from phase 2
-                   qqcw_in(:,:) = qqcw_sav(:,:,lspec)
+                   qqcw_in(:ncol,:) = qqcw_sav(:ncol,:,lspec)
                 else
                    fldcw => qqcw_get_field(pbuf, mm,lchnk)
-                   qqcw_in(:,:) = fldcw(:,:)
+                   qqcw_in(:ncol,:) = fldcw(:ncol,:)
                 endif
 
                 call wetdepa_v2( &

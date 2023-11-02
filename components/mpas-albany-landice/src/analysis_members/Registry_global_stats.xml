@@ -85,6 +85,9 @@
                 <var name="totalCalvingFlux" type="real" dimensions="Time" units="kg yr^{-1}"
                         description="total, area integrated mass loss due to calving. Positive values represent ice loss."
                 />
+                <var name="totalFaceMeltingFlux" type="real" dimensions="Time" units="kg yr^{-1}"
+                        description="total, area integrated mass loss due to face melting. Positive values represent ice loss."
+                />
                 <var name="groundingLineFlux" type="real" dimensions="Time" units="kg yr^{-1}"
                         description="total mass flux across all grounding lines.  Note that flux from floating to grounded ice makes a negative contribution to this metric."
                 />

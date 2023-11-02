@@ -6,22 +6,15 @@ list(APPEND INCLUDES "${CMAKE_BINARY_DIR}/core_ocean/shared") # Only need this f
 list(APPEND INCLUDES "core_ocean/gotm/include")
 
 # check if lapack is linked
-find_package(LAPACK)
-find_package(BLAS)
 if (LAPACK_FOUND AND BLAS_FOUND)
   list(APPEND CPPDEFS "-DUSE_LAPACK")
-  list(APPEND LIBRARIES "${LAPACK_LIBRARIES};${BLAS_LIBRARIES}")
+  list(APPEND LIBRARIES BLAS::BLAS LAPACK::LAPACK)
 endif()
 
 if (USE_PETSC)
-  find_package(PETSc)
-  if (PETSC_FOUND)
-    list(APPEND CPPDEFS "-DUSE_PETSC")
-    list(APPEND INCLUDES "${PETSC_INCLUDES}")
-    list(APPEND LIBRARIES "${PETSC_LIBRARIES}")
-  else()
-    message(FATAL_ERROR "USE_PETSC is ON but find_package could not find petsc")
-  endif()
+  list(APPEND CPPDEFS "-DUSE_PETSC")
+  list(APPEND INCLUDES "${PETSC_INCLUDES}")
+  list(APPEND LIBRARIES "${PETSC_LIBRARIES}")
 endif()
 
 # driver (files live in E3SM)

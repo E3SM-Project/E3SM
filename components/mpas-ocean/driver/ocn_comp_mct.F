@@ -675,7 +675,7 @@ contains
         call ocn_forcing_build_fraction_absorbed_array(meshPool, statePool, forcingPool, ierr, 1)
         call mpas_timer_start("land_ice_build_arrays", .false.)
         call ocn_surface_land_ice_fluxes_build_arrays(meshPool, forcingPool, scratchPool, &
-                                                      statePool, dt=0.0_RKIND, err=ierr)
+                                                      statePool, err=ierr)
         call mpas_timer_stop("land_ice_build_arrays")
 
         call ocn_frazil_forcing_build_arrays(domain, meshPool, forcingPool, statePool, ierr)
@@ -962,8 +962,10 @@ contains
 
             call mpas_timer_start("land_ice_build_arrays", .false.)
             call ocn_surface_land_ice_fluxes_build_arrays(meshPool, &
-                                                          forcingPool, scratchPool, statePool, dt, ierr)
+                                                          forcingPool, scratchPool, statePool, ierr)
             call mpas_timer_stop("land_ice_build_arrays")
+            call ocn_surface_land_ice_fluxes_accumulate_fluxes(meshPool, forcingPool, &
+                                                               statePool, dt, ierr)
 
             call ocn_frazil_forcing_build_arrays(domain, meshPool, forcingPool, statePool, ierr)
 
@@ -1562,7 +1564,7 @@ contains
 !    The following fields are sometimes received from the coupler,
 !      depending on model options:
 !
-!    o  pbot   -- bottom atm pressure                      (Pa)
+!    o  pslv   -- atmospheric pressure at sea level        (Pa)
 !    o  duu10n -- 10m wind speed squared                   (m^2/s^2)
 !    o  co2prog-- bottom atm level prognostic co2
 !    o  co2diag-- bottom atm level diagnostic co2
@@ -2025,7 +2027,7 @@ contains
            rainFlux(i) = x2o_o % rAttr(index_x2o_Faxa_rain, n)
         end if
         if ( atmosphericPressureField % isActive ) then
-           atmosphericPressure(i) = x2o_o % rAttr(index_x2o_Sa_pbot,   n)
+           atmosphericPressure(i) = x2o_o % rAttr(index_x2o_Sa_pslv,   n)
         end if
         if ( seaIcePressureField % isActive ) then
            ! Set seaIcePressure to be limited to 5m of pressure

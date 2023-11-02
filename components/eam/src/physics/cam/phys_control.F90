@@ -26,6 +26,7 @@ public :: &
    phys_do_flux_avg,  &! return true to average surface fluxes
    cam_physpkg_is,    &! query for the name of the physics package
    cam_chempkg_is,    &! query for the name of the chemistry package
+   set_additional_diagn_in_phys_control, &! set switch for additional diagn
    waccmx_is
 
 ! Private module data
@@ -172,6 +173,9 @@ logical, public, protected :: use_gw_convect = .false.
 
 !GW energy fix
 logical, public, protected :: use_gw_energy_fix = .false.
+
+!additional diagnostics switch
+logical, public, protected :: print_additional_diagn_phys_control = .false.
 
 ! Switches that turn on/off individual parameterizations.
 !
@@ -487,7 +491,7 @@ subroutine phys_ctl_readnl(nlfile)
    ! check MMF parameters
    if (use_MMF) then
       ! Check settings for MMF_microphysics_scheme
-      if ( .not.(MMF_microphysics_scheme .eq. 'm2005' .or. &
+      if ( .not.(MMF_microphysics_scheme .eq. 'p3' .or. &
                  MMF_microphysics_scheme .eq. 'sam1mom' )) then
          write(iulog,*)'phys_setopts: illegal value of MMF_microphysics_scheme:', MMF_microphysics_scheme
          call endrun('phys_setopts: illegal value of MMF_microphysics_scheme')
@@ -522,7 +526,7 @@ subroutine phys_ctl_readnl(nlfile)
                       .or. cam_chempkg_is('linoz_mam4_resus_mom') &
                       .or. cam_chempkg_is('linoz_mam4_resus_mom_soag') &
                       .or. cam_chempkg_is('superfast_mam4_resus_mom_soag') &
-                      .or. cam_chempkg_is('superfast_mam5_resus_mom_soag') &
+                      .or. cam_chempkg_is('chemuci_linozv3_mam5_vbs') &
                       .or. cam_chempkg_is('super_fast_llnl_mam3') &
                       .or. cam_chempkg_is('trop_mozart_mam3') &
                       .or. cam_chempkg_is('trop_strat_mam3') &
@@ -864,4 +868,14 @@ function phys_do_flux_avg()
 end function phys_do_flux_avg
 
 !===============================================================================
+
+subroutine set_additional_diagn_in_phys_control(print_additional_diagn_in)
+
+  logical, intent(in) :: print_additional_diagn_in
+
+  print_additional_diagn_phys_control = print_additional_diagn_in
+
+end subroutine set_additional_diagn_in_phys_control
+
+
 end module phys_control

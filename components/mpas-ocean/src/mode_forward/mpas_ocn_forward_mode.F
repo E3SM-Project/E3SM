@@ -77,7 +77,7 @@ module ocn_forward_mode
    use ocn_tracer_surface_restoring
    use ocn_gm
    use ocn_submesoscale_eddies
-   use ocn_stokes_drift 
+   use ocn_stokes_drift
    use ocn_manufactured_solution
 
    use ocn_high_freq_thickness_hmix_del2
@@ -701,8 +701,10 @@ module ocn_forward_mode
            call ocn_forcing_build_fraction_absorbed_array(meshPool, statePool, forcingPool, ierr, 1)
            call mpas_timer_start("land_ice_build_arrays")
            call ocn_surface_land_ice_fluxes_build_arrays(meshPool, &
-                                                         forcingPool, scratchPool, statePool, dt, err)
+                                                         forcingPool, scratchPool, statePool, err)
            call mpas_timer_stop("land_ice_build_arrays")
+           call ocn_surface_land_ice_fluxes_accumulate_fluxes(meshPool, forcingPool, &
+                                                              statePool, dt, err)
 
            call ocn_frazil_forcing_build_arrays(domain, meshPool, forcingPool, statePool, err)
            call ocn_tidal_forcing_build_array(domain, meshPool, forcingPool, statePool, err)
@@ -711,8 +713,12 @@ module ocn_forward_mode
 
            call ocn_eddy_compute_mixed_layer_depth(statePool, forcingPool)
            if (config_use_GM .or. config_submesoscale_enable) then
-               call mpas_timer_start("submesoscale eddy velocity compute", .false.)
                call ocn_eddy_compute_buoyancy_gradient()
+           end if
+
+           if (config_submesoscale_enable) then
+               call mpas_timer_start("submesoscale eddy velocity compute", .false.)
+               call ocn_submesoscale_compute_velocity()
                call mpas_timer_stop("submesoscale eddy velocity compute")
            end if
 

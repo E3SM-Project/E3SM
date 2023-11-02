@@ -237,6 +237,9 @@ OPTIONS
      -vichydro                Toggle to turn on VIC hydrologic parameterizations (default is off)
                               This turns on the namelist variable: use_vichydro
      -betr_mode               Turn on betr model for tracer transport in soil. [on|off] default is off.
+     -solar_rad_scheme "value"  Type of solar radiation scheme
+                                pp = Plane-Parallel
+                                top = Subgrid topographic parameterization
 
 
 Note: The precedence for setting the values of namelist variables is (highest to lowest):
@@ -305,6 +308,7 @@ sub process_commandline {
                nutrient              => "default",
                nutrient_comp_pathway => "default",
                soil_decomp           => "default",
+               solar_rad_scheme      => "default",
              );
 
   GetOptions(
@@ -356,6 +360,7 @@ sub process_commandline {
              "nutrient=s"                => \$opts{'nutrient'},
              "nutrient_comp_pathway=s"   => \$opts{'nutrient_comp_pathway'},
              "soil_decomp=s"             => \$opts{'soil_decomp'},
+             "solar_rad_scheme=s"        => \$opts{'solar_rad_scheme'},
             )  or usage();
 
   # Give usage message.
@@ -679,6 +684,7 @@ sub process_namelist_commandline_options {
   setup_cmdl_bgc_spinup($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
   setup_cmdl_vichydro($opts, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_cmdl_betr_mode($opts, $nl_flags, $definition, $defaults, $nl, $physv);
+  setup_cmdl_solar_rad_scheme($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
 }
 
 #-------------------------------------------------------------------------------
@@ -1085,6 +1091,50 @@ sub setup_cmdl_methane {
         }
     }
   }
+}
+
+#-------------------------------------------------------------------------------
+
+sub setup_cmdl_solar_rad_scheme {
+
+  my ($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv) = @_;
+
+  my $var = "solar_rad_scheme";
+  my $val;
+
+  # If "-solar_rad_scheme pp" or "-solar_rad_scheme" is unspecified, then
+  # we will set "use_top_solar_rad = .false."
+  if ( $opts->{$var} eq "pp" || $opts->{$var} eq "default" ) {
+    $val = ".false.";
+  } else {
+    # For "-solar_rad_scheme top", set "use_top_solar_rad = .true."
+    if ( $opts->{$var} eq "top" ) {
+      $val = ".true.";
+    } else {
+      fatal_error("The -solar_rad_scheme $opts->{'solar_rad_scheme'} is unknown");
+    }
+  }
+
+  my $var='use_top_solar_rad';
+  # Check if the value of use_top_solar_rad based on above alogrithm does not match the
+  # value of use_top_solar_rad in user_nl_elm
+  if (defined($nl->get_value($var)) && $nl->get_value($var) ne $val) {
+
+    # If "-solar_rad_scheme <pp|top>" was not specified, then simply use the value
+    # that was specified in the "user_nl_elm".
+    if ($opts->{'solar_rad_scheme'} eq "default") {
+      $val = $nl->get_value($var);
+    } else {
+      # Otherwise report an error
+      my $namelist_value = $nl->get_value('use_top_solar_rad');
+      fatal_error("$var = $namelist_value, which is inconsistent with the commandline setting of -solar_rad_scheme $opts->{'solar_rad_scheme'}");
+    }
+  }
+
+  # Lastly, define the value of use_top_solar_rad
+  my $group = $definition->get_group_name($var);
+  $nl->set_variable_value($group, $var, $val);
+
 }
 
 #-------------------------------------------------------------------------------

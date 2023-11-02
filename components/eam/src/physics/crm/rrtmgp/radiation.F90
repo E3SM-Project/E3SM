@@ -2623,7 +2623,6 @@ contains
       use cam_abortutils, only: endrun
       real(r8), pointer :: pbuf(:)
       integer :: err, idx
-      logical :: use_MMF
       character(len=16) :: MMF_microphysics_scheme
 
       idx = pbuf_get_index('CLDFSNOW', errcode=err)
@@ -2634,9 +2633,11 @@ contains
       end if
 
       ! Reset to false if using MMF with 1-mom scheme
-      call phys_getopts(use_MMF_out           = use_MMF          )
       call phys_getopts(MMF_microphysics_scheme_out = MMF_microphysics_scheme)
-      if (use_MMF .and. (trim(MMF_microphysics_scheme) == 'sam1mom')) then
+      if (trim(MMF_microphysics_scheme) == 'sam1mom') then
+         do_snow_optics = .false.
+      end if
+      if (trim(MMF_microphysics_scheme) == 'p3') then
          do_snow_optics = .false.
       end if
 
