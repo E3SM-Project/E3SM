@@ -99,7 +99,7 @@ contains
       integer, dimension(:), pointer :: cellMask, nEdgesOnCell
       integer, dimension(:,:), pointer :: cellsOnCell
       integer :: iCell, jCell, iLayer, iNeighbor, iter, err_tmp
-      integer :: newMaskCountLocalAccum_horiz
+      integer :: GlobalLoopCount, newMaskCountGlobal
 
       ! No init is needed.
       err = 0
@@ -202,19 +202,17 @@ contains
          ! flood-fill the valid ocean mask and TF field through
          ! horizontal and vertial extrapolation
          TFocean(:,:) = 0.0 !HH temp variable assignment
-         newMaskCountGlobal_total = 1
+         newMaskCountGlobal = 1
          GlobalLoopCount = 0
-         do while (newMaskCountGlobal_total > 0)
-            newMaskCountGlobal_total = 0
+         do while (newMaskCountGlobal > 0)
+            newMaskCountGlobal = 0
             GlobalLoopCount = GlobalLoopCount + 1
             ! call the horizontal extrapolation routine
-            call horizontal_extrapolation(domain, availOceanMask, validOceanMask, newMaskCountGlobal_horiz, TFocean, err_tmp)
+            call horizontal_extrapolation(domain, availOceanMask, validOceanMask, TFocean, err_tmp)
             err = ior(err, err_tmp)
             ! call the vertical extrapolation routine
-            call vertical_extrapolation(domain, availOceanMask, validOceanMask, newMaskCountGlobal_vert, TFocean, err_tmp)
+            call vertical_extrapolation(domain, availOceanMask, validOceanMask, newMaskCountGlobal, TFocean, err_tmp)
             err = ior(err, err_tmp)
-            ! check the total number of new masks
-            newMaskCountGlobal_total = newMaskCountGlobal_horiz + newMaskCountGlobal_vert
          enddo
       else
          ! do nothing
@@ -250,7 +248,7 @@ contains
 
 !-----------------------------------------------------------------------
 
-   subroutine horizontal_extrapolation(domain, availOceanMask, validOceanMask, newMaskCountGlobal, TFocean, err)
+   subroutine horizontal_extrapolation(domain, availOceanMask, validOceanMask, TFocean, err)
 
       !-----------------------------------------------------------------
       ! input variables
@@ -268,7 +266,6 @@ contains
       !-----------------------------------------------------------------
       ! output variables
       !-----------------------------------------------------------------
-      integer, intent(out) :: newMaskCountGlobal
 
       !-----------------------------------------------------------------
       ! local variables
@@ -285,7 +282,7 @@ contains
       integer, dimension(:), pointer :: cellMask, nEdgesOnCell
       integer, dimension(:,:), pointer :: cellsOnCell
       integer :: iCell, jCell, iLayer, iNeighbor, iter
-      integer :: localLoopCount, newValidCount, newMaskCountLocalAccum
+      integer :: localLoopCount, newValidCount, newMaskCountLocalAccum, newMaskCountGlobal
 
       err = 0
 
@@ -357,9 +354,13 @@ contains
          call mpas_timer_stop("halo updates")
          ! update count of cells added to mask globally
          call mpas_dmpar_sum_int(domain % dminfo, newMaskCountLocalAccum, newMaskCountGlobal)
+         call mpas_log_write('Horizontal extrap: Added total $i new cells to validOceanMask', intArgs=(/newMaskCountGlobal/))
       enddo
+      call mpas_log_write('Horizontal extrapolation done after $i loops', intArgs=(/localLoopCount/))
 
       deallocate(validOceanMaskOld)
+
+
 
    end subroutine horizontal_extrapolation
 !-----------------------------------------------------------------------
@@ -446,19 +447,11 @@ contains
       do iCell = 1, nCellsSolve
          do iLayer = 2, nISMIP6OceanLayers
             if ( (availOceanMask(iLayer,iCell) == 1) .and. (validOceanMaskOld(iLayer,iCell) == 0) ) then
-               if ( iLayer == nISMIP6OceanLayers ) then
-                  if ( validOceanMaskOld(iLayer-1,iCell) == 1 ) then
-                     validOceanMask(iLayer,iCell) = 1
-                     TFocean(iLayer,iCell) = (TFoceanOld(iLayer-1,iCell)) !HH: need to correct for pressure melting point change
-                     newMaskCountLocalAccum = newMaskCountLocalAccum + 1
-                  endif
-               else
-                  if ( (validOceanMaskOld(iLayer-1,iCell) == 1) .or. (validOceanMaskOld(iLayer+1,iCell) == 1) ) then
-                     validOceanMask(iLayer,iCell) = 1
-                     TFocean(iLayer,iCell) = (TFoceanOld(iLayer-1,iCell) + TFoceanOld(iLayer+1,iCell)) / 2
-                     newMaskCountLocalAccum = newMaskCountLocalAccum + 1
-                  endif
-               endif
+              if ( validOceanMaskOld(iLayer-1,iCell) == 1 ) then
+                 validOceanMask(iLayer,iCell) = 1
+                 TFocean(iLayer,iCell) = (TFoceanOld(iLayer-1,iCell)) !HH: need to correct for pressure melting point change
+                 newMaskCountLocalAccum = newMaskCountLocalAccum + 1
+              endif
             endif
          enddo
       enddo
@@ -470,7 +463,7 @@ contains
       call mpas_timer_stop("halo updates")
       ! update count of cells added to mask globally
       call mpas_dmpar_sum_int(domain % dminfo, newMaskCountLocalAccum, newMaskCountGlobal)
-      call mpas_log_write('Added total $i new cells to the validOceanMask', intArgs=(/newMaskCountGlobal/))
+      call mpas_log_write('Vertical extrap: Added total $i new cells to the validOceanMask', intArgs=(/newMaskCountGlobal/))
 
       deallocate(validOceanMaskOld)
 
