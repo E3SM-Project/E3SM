@@ -3,7 +3,8 @@
 namespace scream {
 
 FieldAllocProp::FieldAllocProp (const int scalar_size)
- : m_value_type_sizes (1,scalar_size)
+ : m_layout           (FieldLayout::invalid())
+ , m_value_type_sizes (1,scalar_size)
  , m_scalar_type_size (scalar_size)
  , m_pack_size_max    (1)
  , m_alloc_size       (0)
@@ -44,43 +45,34 @@ subview (const int idim, const int k, const bool dynamic) const {
 
   // Set new layout basic stuff
   FieldAllocProp props(m_scalar_type_size);
-  props.m_committed = false;
+  props.m_committed = true;
   props.m_scalar_type_size = m_scalar_type_size;
-  props.m_pack_size_max = m_pack_size_max;
-  props.m_alloc_size = m_alloc_size / m_layout.dim(idim);
-  props.m_subview_info = SubviewInfo(idim,k,m_layout.dim(idim),dynamic);
-
-  // The output props should still store a FieldLayout, in case
-  // they are further subviewed. We have all we need here to build
-  // a layout from scratch, but it would duplicate what is inside
-  // the FieldIdentifier that will be built for the corresponding
-  // field. Therefore, we'll require the user to still call 'commit',
-  // passing the layout from the field id.
-  // HOWEVER, this may cause bugs, cause the user might make a mistake,
-  // and pass the wrong layout. Therefore, we build a "temporary" one,
-  // which will be replaced during the call to 'commit'.
   props.m_layout = m_layout.strip_dim(idim);
 
   // Output is contioguous if either
   //  - this->m_contiguous=true AND idim==0
   //  - m_layout.dim(i)==1 for all i<idim
-  //  - props.m_layout.rank()==0
-  props.m_contiguous = m_contiguous || props.m_layout.rank()==0;
-  for (int i=0; i<idim; ++i) {
-    if (m_layout.dim(i)>0) {
-      props.m_contiguous = false;
-      break;
-    }
-  }
+  //  - m_layout.rank()==1 (we end up with a rank-0 subview)
+  auto is_one = [](int i) { return i==1; };
+  props.m_contiguous = (m_contiguous and idim==0)
+                       || m_layout.rank()==1
+                       || std::all_of(m_layout.dims().begin(),m_layout.dims().begin()+idim,is_one);
 
-  // Figure out strides
+  props.m_subview_info = SubviewInfo(idim,k,m_layout.dim(idim),dynamic);
+
+  // Figure out strides/packs
   const int rm1 = m_layout.rank()-1;
   if (idim==rm1) {
-    // We're slicing the possibly padded dim, so everything else is as in the layout
+    // We're slicing the possibly padded dim, so everything else is as in the layout,
+    // and there is no packing
     props.m_last_extent = m_layout.dim(idim);
+    props.m_pack_size_max = 1;
+    props.m_alloc_size = m_alloc_size / m_last_extent;
   } else {
-    // We are keeping the last dim, so same last extent
+    // We are keeping the last dim, so same last extent and max pack size
     props.m_last_extent = m_last_extent;
+    props.m_pack_size_max = m_pack_size_max;
+    props.m_alloc_size = m_alloc_size / m_layout.dim(idim);
   }
   return props;
 }
@@ -134,16 +126,6 @@ void FieldAllocProp::commit (const layout_type& layout)
     return;
   }
 
-  if (m_alloc_size>0) {
-    // This obj was created as a subview of another alloc props obj.
-    // Check that input layout matches the stored one
-    EKAT_REQUIRE_MSG (layout==m_layout,
-        "Error! The input field layout does not match the stored one.\n");
-
-    m_committed = true;
-    return;
-  }
-
   // Sanity checks: we must have requested at least one value type, and the identifier needs all dimensions set by now.
   EKAT_REQUIRE_MSG(m_value_type_sizes.size()>0,
       "Error! No value types requested for the allocation.\n");
@@ -157,6 +139,7 @@ void FieldAllocProp::commit (const layout_type& layout)
     // Zero-dimensional fields are supported. In this case allocate a single
     // scalar, but set the last extent to 0 since we have no dimension.
     m_alloc_size = m_scalar_type_size;
+    m_pack_size_max = 1;
     m_last_extent = 0;
   } else {
     // Loop on all value type sizes.
@@ -179,8 +162,8 @@ void FieldAllocProp::commit (const layout_type& layout)
       m_last_extent = std::max(m_last_extent, num_st);
     }
 
-    m_alloc_size = (m_layout.size() / last_phys_extent) // All except the last dimension
-                   * m_last_extent * m_scalar_type_size;
+    m_alloc_size = m_layout.size() / last_phys_extent  // All except the last dimension
+                 * m_last_extent * m_scalar_type_size; // Last dimension must account for padding (if any)
   }
 
   m_contiguous = true;

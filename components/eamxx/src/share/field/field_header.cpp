@@ -68,7 +68,6 @@ create_subfield_header (const FieldIdentifier& id,
 
   // Create alloc props
   fh->m_alloc_prop = std::make_shared<FieldAllocProp>(parent->get_alloc_properties().subview(idim,k,dynamic));
-  fh->m_alloc_prop->commit(id.get_layout());
 
   return fh;
 }
