@@ -25,5 +25,4 @@ set(SCXX "icpc")
 set(SFC "ifort")
 
 # Intel has to link fortran mains with fortran
-string(APPEND CMAKE_EXE_LINKER_FLAGS " -cxxlib")
 set(E3SM_LINK_WITH_FORTRAN "TRUE")

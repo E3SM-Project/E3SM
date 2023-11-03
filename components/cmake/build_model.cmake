@@ -254,6 +254,12 @@ macro(build_model COMP_CLASS COMP_NAME)
 
     if (E3SM_LINK_WITH_FORTRAN)
       set_target_properties(${TARGET_NAME} PROPERTIES LINKER_LANGUAGE Fortran)
+
+      # A bit hacky, some platforms need help with the fortran linker
+      if (COMPILER STREQUAL "intel")
+        string(APPEND CMAKE_EXE_LINKER_FLAGS " -cxxlib")
+      endif()
+
     else()
       set_target_properties(${TARGET_NAME} PROPERTIES LINKER_LANGUAGE CXX)
     endif()
