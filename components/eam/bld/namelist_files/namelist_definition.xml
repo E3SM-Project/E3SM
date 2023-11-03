@@ -1084,6 +1084,12 @@ Heating rate conversion factor associated with convective gravity waves
 Default: 20.0
 </entry>
 
+<entry id="hdepth_scaling_factor" type="real" category="gw_drag"
+       group="gw_drag_nl" valid_values="" >
+Scaling factor for the heating depth
+Default: 1.0
+</entry>
+
 <entry id="effgw_beres" type="real" category="gw_drag"
        group="gw_drag_nl" valid_values="" >
 Efficiency associated with convective gravity waves from the Beres
@@ -4270,6 +4276,54 @@ End layer of L4 for gas chemistry tracers 2D budget diagnostic output
 Default: 72
 </entry>
 
+<entry id="UCIgaschmbudget_2D_L1_s" type="integer" category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+Start layer of L1 for gas chemistry tracers 2D budget diagnostic output
+Default: 1
+</entry>
+
+<entry id="UCIgaschmbudget_2D_L1_e" type="integer" category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+End layer of L1 for gas chemistry tracers 2D budget diagnostic output
+Default: 26
+</entry>
+
+<entry id="UCIgaschmbudget_2D_L2_s" type="integer" category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+Start layer of L2 for gas chemistry tracers 2D budget diagnostic output
+Default: 27
+</entry>
+
+<entry id="UCIgaschmbudget_2D_L2_e" type="integer" category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+End layer of L2 for gas chemistry tracers 2D budget diagnostic output
+Default: 38
+</entry>
+
+<entry id="UCIgaschmbudget_2D_L3_s" type="integer" category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+Start layer of L3 for gas chemistry tracers 2D budget diagnostic output
+Default: 39
+</entry>
+
+<entry id="UCIgaschmbudget_2D_L3_e" type="integer" category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+End layer of L3 for gas chemistry tracers 2D budget diagnostic output
+Default: 58
+</entry>
+
+<entry id="UCIgaschmbudget_2D_L4_s" type="integer" category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+Start layer of L4 for gas chemistry tracers 2D budget diagnostic output
+Default: 59
+</entry>
+
+<entry id="UCIgaschmbudget_2D_L4_e" type="integer" category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+End layer of L4 for gas chemistry tracers 2D budget diagnostic output
+Default: 72
+</entry>
+
 <entry id="history_UCIgaschmbudget_2D" type="logical"  category="diagnostics"
        group="phys_ctl_nl" valid_values="" >
 Switch for gas chemistry tracers 2D budget diagnostic output
@@ -6428,7 +6482,7 @@ pressure gradient discretization error.
 Default: 0
 </entry>
 <entry id="hv_ref_profiles" type="integer" category="se"
-       group="ctl_nl" valid_values="0,1,2" >
+       group="ctl_nl" valid_values="0,1,2,6" >
 Modifications to hyperviscosity to minimize dissipation of
 background reference states.
 Default: 0
