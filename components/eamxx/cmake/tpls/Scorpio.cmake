@@ -21,6 +21,14 @@ macro (CreateScorpioTargets)
     add_library (piof INTERFACE)
     target_link_libraries (piof INTERFACE spio)
 
+    #set(SCORPIO_INC_DIR ${INSTALL_SHAREDPATH}/include)
+    # HACK: CIME only copies headers from the bld dir to the CSM_SHR_INCLUDE dir
+    #       This means all the pioc headers in the src folder are not copied.
+    #       It would be nice if CIME used the cmake-generated makefile, and
+    #       ran 'make install' rather than copy files. Alas, we don't control
+    #       that, so we need another way. Including the src tree folder works.
+    target_include_directories(pioc INTERFACE ${SCREAM_BASE_DIR}/../../externals/scorpio/src/clib)
+
   else ()
     # Not a CIME build. We'll add scorpio as a subdir
 

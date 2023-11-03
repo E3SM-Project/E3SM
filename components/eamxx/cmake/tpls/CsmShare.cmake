@@ -1,13 +1,12 @@
 macro (CreateCsmShareTarget)
-  if (TARGET csm_share)
-    message (FATAL_ERROR "Error! The target csm_share already exists!")
-  endif()
-
   if (SCREAM_CIME_BUILD)
     find_package(CsmShare REQUIRED)
 
   else()
     # Build csm_share library manually
+    if (TARGET csm_share)
+      message (FATAL_ERROR "Error! The target csm_share already exists!")
+    endif()
 
     # Set variables needed for processing genf90 templates
     set(CIMEROOT ${SCREAM_BASE_DIR}/../../cime)
@@ -18,7 +17,7 @@ macro (CreateCsmShareTarget)
     include(Sourcelist_utils)
 
     # GENF90_SOURCE lists source files we will need to run through the genf90 perl script
-    set (GENF90_SOURCE 
+    set (GENF90_SOURCE
         ${SCREAM_BASE_DIR}/../../share/util/shr_infnan_mod.F90.in
         ${SCREAM_BASE_DIR}/../../share/util/shr_assert_mod.F90.in
     )
