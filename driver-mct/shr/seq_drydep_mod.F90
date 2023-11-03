@@ -36,7 +36,7 @@ module seq_drydep_mod
   ! !PRIVATE ARRAY SIZES
 
   integer, private, parameter :: maxspc = 210              ! Maximum number of species
-  integer, public,  parameter :: n_species_table = 192      ! Number of species to work with
+  integer, public,  parameter :: n_species_table = 200      ! Number of species to work with
   integer, private, parameter :: NSeas = 5                 ! Number of seasons
   integer, private, parameter :: NLUse = 11                ! Number of land-use types
 
@@ -280,6 +280,14 @@ module seq_drydep_mod
        ,1.e-36_r8 & ! HCN
        ,1.e-36_r8 & ! CH3CN
        ,1.e-36_r8 & ! SO2
+       ,0.1_r8    & ! SOAG0
+       ,0.1_r8    & ! SOAG15
+       ,0.1_r8    & ! SOAG24
+       ,0.1_r8    & ! SOAG35
+       ,0.1_r8    & ! SOAG34
+       ,0.1_r8    & ! SOAG33
+       ,0.1_r8    & ! SOAG32
+       ,0.1_r8    & ! SOAG31
        ,0.1_r8    & ! SOAGff0
        ,0.1_r8    & ! SOAGff1
        ,0.1_r8    & ! SOAGff2
@@ -489,6 +497,14 @@ module seq_drydep_mod
          ,'HCN      ' &
          ,'CH3CN    ' &
          ,'SO2      ' &
+         ,'SOAG0    ' &
+         ,'SOAG15   ' &
+         ,'SOAG24   ' &
+         ,'SOAG35   ' &
+         ,'SOAG34   ' &
+         ,'SOAG33   ' &
+         ,'SOAG32   ' &
+         ,'SOAG31   ' &
          ,'SOAGff0  ' &
          ,'SOAGff1  ' &
          ,'SOAGff2  ' &
@@ -685,6 +701,14 @@ module seq_drydep_mod
        ,9.02e+00_r8, 8258._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  & ! HCN
        ,5.28e+01_r8, 3970._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  & ! CH3CN
        ,1.36e+00_r8, 3100._r8,1.30e-02_r8,1960._r8,6.6e-08_r8, 1500._r8  & ! SO2
+       ,7.59e+03_r8, 6013.95_r8,0._r8   ,    0._r8,0._r8     ,    0._r8  & ! SOAG0
+       ,7.94e+04_r8, 6013.95_r8,0._r8   ,    0._r8,0._r8     ,    0._r8  & ! SOAG15
+       ,2.57e+05_r8, 6013.95_r8,0._r8   ,    0._r8,0._r8     ,    0._r8  & ! SOAG24
+       ,7.94e+04_r8, 6013.95_r8,0._r8   ,    0._r8,0._r8     ,    0._r8  & ! SOAG35
+       ,2.57e+05_r8, 6013.95_r8,0._r8   ,    0._r8,0._r8     ,    0._r8  & ! SOAG34
+       ,8.32e+05_r8, 6013.95_r8,0._r8   ,    0._r8,0._r8     ,    0._r8  & ! SOAG33
+       ,2.69e+06_r8, 6013.95_r8,0._r8   ,    0._r8,0._r8     ,    0._r8  & ! SOAG32
+       ,8.71e+06_r8, 6013.95_r8,0._r8   ,    0._r8,0._r8     ,    0._r8  & ! SOAG31
        ,1.3e+07_r8,     0._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  & ! SOAGff0
        ,3.2e+05_r8,     0._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  & ! SOAGff1
        ,4.0e+05_r8,     0._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  & ! SOAGff2 
@@ -836,7 +860,9 @@ module seq_drydep_mod
        58.0768013_r8, 76.0910034_r8, 89.070126_r8,  90.078067_r8,  222.000000_r8, &
        68.1141968_r8, 70.0877991_r8, 70.0877991_r8, 46.0657997_r8, 147.125946_r8, &
        119.074341_r8, 162.117935_r8, 100.112999_r8, 27.0256_r8   , 41.0524_r8   , &
-       64.064800_r8,  250._r8,       250._r8,       250._r8,       250._r8,       &
+       64.064800_r8,  250.445_r8,    250.445_r8,    250.445_r8,    250.445_r8,    &
+       250.445_r8,    250.445_r8,    250.445_r8,    250.445_r8, &
+       250._r8,       250._r8,       250._r8,       250._r8,       &
        250._r8,       250._r8,       250._r8,       250._r8,       250._r8,       &
        250._r8,       250._r8,       250._r8,       250._r8,       250._r8,       &
        250._r8,       170.3_r8,      170.3_r8,      170.3_r8,       170.3_r8,     &
