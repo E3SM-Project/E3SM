@@ -574,7 +574,7 @@ contains
     integer:: kmo                     ! month of year  (1, ..., 12)
     integer:: kda                     ! day of month   (1, ..., 31) 
     integer:: mcsec                   ! seconds of day (0, ..., seconds/day) 
-    integer :: nstep 
+    integer :: nstep
     !-----------------------------------------------------------------------
 
     associate(                                                                            &
@@ -618,7 +618,7 @@ contains
       ! set time steps
       dt = dtime_mod
       kyr = year_curr; kmo = mon_curr; kda = day_curr; mcsec = secs_curr;
-      nstep = get_nstep() 
+
       err_found = .false.
 
       if(.not.use_fates)then
@@ -733,7 +733,7 @@ contains
       end do ! end of columns loop
 
 
-      if (err_found .and. nstep_mod>1) then
+      if (err_found .and. nstep>1) then
 #ifndef _OPENACC
          c = err_index
          write(iulog,*)'column pbalance error = ', col_errpb(c), c
