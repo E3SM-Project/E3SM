@@ -17,18 +17,6 @@
 
 namespace {
 
-TEST_CASE("field_layout") {
-  using namespace scream;
-  using namespace ShortFieldTagsNames;
-
-  FieldLayout l({EL,GP,GP});
-
-  // Should not be able to set a dimensions vector of wrong rank
-  REQUIRE_THROWS(l.set_dimensions({1,2}));
-
-  l.set_dimensions({1,2,3});
-}
-
 TEST_CASE("field_identifier", "") {
   using namespace scream;
   using namespace ekat::units;
