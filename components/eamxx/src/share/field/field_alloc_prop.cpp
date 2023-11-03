@@ -101,7 +101,7 @@ void FieldAllocProp::request_allocation (const FieldAllocProp& src)
 int FieldAllocProp::get_padding () const {
   EKAT_REQUIRE_MSG(is_committed(),
       "Error! You cannot query the allocation padding until after calling commit().");
-  int padding = m_last_extent - m_layout.dims().back();
+  int padding = m_layout.rank()==0 ? 0 : m_last_extent - m_layout.dims().back();
   return padding;
 }
 
