@@ -161,10 +161,9 @@ void FieldAllocProp::commit (const layout_ptr_type& layout)
   // Store pointer to layout for future use (in case subview is called)
   m_layout = layout;
 
-  if (m_layout->size()==0) {
-    // Zero-dimensional fields are supported, so we may end up with a
-    // layout of size 0. In this case allocate a single scalar, but
-    // set the last extent to 0 since we have no dimension.
+  if (m_layout->rank()==0) {
+    // Zero-dimensional fields are supported. In this case allocate a single
+    // scalar, but set the last extent to 0 since we have no dimension.
     m_alloc_size = m_scalar_type_size;
     m_last_extent = 0;
   } else {

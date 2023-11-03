@@ -136,9 +136,6 @@ inline int FieldLayout::dim (const int idim) const {
 }
 
 inline long long FieldLayout::size () const {
-  // A rank-0 field should have size 0.
-  if (m_rank == 0) return 0;
-
   EKAT_REQUIRE_MSG(are_dimensions_set(),
       "Error! Field dimensions not yet set.\n");
   long long prod = 1;
