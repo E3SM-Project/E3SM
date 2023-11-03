@@ -23,3 +23,6 @@ set(MPIFC "mpif90")
 set(SCC "icc")
 set(SCXX "icpc")
 set(SFC "ifort")
+
+# Intel has to link fortran mains with fortran
+set(E3SM_LINK_WITH_FORTRAN "TRUE")

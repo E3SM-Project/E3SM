@@ -11,6 +11,9 @@ endif()
 # Unless told otherwise, set has_contiguous to FALSE
 set(HAS_F2008_CONTIGUOUS "FALSE")
 
+# By default, link with CXX
+set(E3SM_LINK_WITH_FORTRAN "FALSE")
+
 # Do not use any automatic settings for these
 set(CMAKE_Fortran_FLAGS "")
 set(CMAKE_Fortran_FLAGS_DEBUG "")
@@ -23,3 +26,5 @@ set(CMAKE_CXX_FLAGS_DEBUG "")
 set(CMAKE_CXX_FLAGS_RELEASE "")
 set(CMAKE_Fortran_FORMAT_FIXED_FLAG "")
 set(CMAKE_Fortran_FORMAT_FREE_FLAG "")
+
+

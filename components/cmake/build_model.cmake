@@ -252,7 +252,12 @@ macro(build_model COMP_CLASS COMP_NAME)
     # Make sure we link blas/lapack
     target_link_libraries(${TARGET_NAME} BLAS::BLAS LAPACK::LAPACK)
 
-    set_target_properties(${TARGET_NAME} PROPERTIES LINKER_LANGUAGE CXX)
+    if (E3SM_LINK_WITH_FORTRAN)
+      set_target_properties(${TARGET_NAME} PROPERTIES LINKER_LANGUAGE Fortran)
+    else()
+      set_target_properties(${TARGET_NAME} PROPERTIES LINKER_LANGUAGE CXX)
+    endif()
+
   else()
     set(TARGET_NAME ${COMP_CLASS})
     add_library(${TARGET_NAME})
