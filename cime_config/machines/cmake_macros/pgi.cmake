@@ -42,3 +42,6 @@ set(MPIFC "mpif90")
 set(SCC "pgcc")
 set(SCXX "pgc++")
 set(SFC "pgf95")
+
+# PGI has to link fortran mains with fortran
+set(E3SM_LINK_WITH_FORTRAN "TRUE")

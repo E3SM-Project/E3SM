@@ -41,3 +41,6 @@ set(SCC "pgcc")
 set(SCXX "pgc++")
 set(SFC "pgfortran")
 set(PIO_FILESYSTEM_HINTS "gpfs")
+
+# PGI has to link fortran mains with fortran
+set(E3SM_LINK_WITH_FORTRAN "TRUE")
