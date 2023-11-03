@@ -379,8 +379,6 @@ TEST_CASE("field", "") {
       f1.subfield(0, i).deep_copy(f0);
       REQUIRE(v1(i) == v0());
     }
-
-    printf("DONE\n");
   }
 }
 
