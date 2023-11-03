@@ -96,6 +96,8 @@ LayoutType get_layout_type (const std::vector<FieldTag>& field_tags) {
   const int n_element = count(tags,EL);
   const int n_column  = count(tags,COL);
   const int ngp       = count(tags,GP);
+  const int nvlevs    = count(tags,LEV) + count(tags,ILEV);
+  const int ncomps    = count(tags,CMP);
 
   // Start from undefined/invalid
   LayoutType result = LayoutType::Invalid;
@@ -112,6 +114,14 @@ LayoutType get_layout_type (const std::vector<FieldTag>& field_tags) {
 
     // Remove the column tag
     erase(tags,COL);
+  } else if (tags.size()==0) {
+    return LayoutType::Scalar0D;
+  } else if (tags.size()==1 and tags[0]==CMP) {
+    return LayoutType::Vector0D;
+  } else if (tags.size()==1 and nvlevs==1) {
+    return LayoutType::Scalar1D;
+  } else if (tags.size()==2 and ncomps==1 and nvlevs==1) {
+    return LayoutType::Vector1D;
   } else {
     // Not a supported layout.
     return result;

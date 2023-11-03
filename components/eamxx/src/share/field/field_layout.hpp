@@ -16,6 +16,10 @@ namespace scream
 // The type of the layout, that is, the kind of field it represent.
 enum class LayoutType {
   Invalid,
+  Scalar0D,
+  Vector0D,
+  Scalar1D,
+  Vector1D,
   Scalar2D,
   Vector2D,
   Tensor2D,
@@ -27,6 +31,10 @@ enum class LayoutType {
 inline std::string e2str (const LayoutType lt) {
   std::string name;
   switch (lt) {
+    case LayoutType::Scalar0D: name = "Scalar0D"; break;
+    case LayoutType::Vector0D: name = "Vector0D"; break;
+    case LayoutType::Scalar1D: name = "Scalar1D"; break;
+    case LayoutType::Vector1D: name = "Vector1D"; break;
     case LayoutType::Scalar2D: name = "Scalar2D"; break;
     case LayoutType::Vector2D: name = "Vector2D"; break;
     case LayoutType::Tensor2D: name = "Tensor2D"; break;
