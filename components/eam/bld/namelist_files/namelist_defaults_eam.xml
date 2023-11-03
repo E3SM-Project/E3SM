@@ -1319,17 +1319,44 @@
 <history_gaschmbudget>         .false.  </history_gaschmbudget>
 <history_gaschmbudget_2D>      .false.  </history_gaschmbudget_2D>
 <history_gaschmbudget_2D_levels>   .false.  </history_gaschmbudget_2D_levels>
-<gaschmbudget_2D_L1_s>         1        </gaschmbudget_2D_L1_s>
-<gaschmbudget_2D_L1_e>         26       </gaschmbudget_2D_L1_e>
-<gaschmbudget_2D_L2_s>         27       </gaschmbudget_2D_L2_s>
-<gaschmbudget_2D_L2_e>         38       </gaschmbudget_2D_L2_e>
-<gaschmbudget_2D_L3_s>         39       </gaschmbudget_2D_L3_s>
-<gaschmbudget_2D_L3_e>         58       </gaschmbudget_2D_L3_e>
-<gaschmbudget_2D_L4_s>         59       </gaschmbudget_2D_L4_s>
-<gaschmbudget_2D_L4_e>         72       </gaschmbudget_2D_L4_e>
 <history_UCIgaschmbudget_2D>      .false.  </history_UCIgaschmbudget_2D>
 <history_UCIgaschmbudget_2D_levels>   .false.  </history_UCIgaschmbudget_2D_levels>
 <history_chemdyg_summary>      .false.  </history_chemdyg_summary>
+
+<!-- chemdyg vertical block diagnostics -->
+<gaschmbudget_2D_L1_s>         1        </gaschmbudget_2D_L1_s>
+<gaschmbudget_2D_L1_e nlev="72">         26       </gaschmbudget_2D_L1_e>
+<gaschmbudget_2D_L2_s nlev="72">         27       </gaschmbudget_2D_L2_s>
+<gaschmbudget_2D_L2_e nlev="72">         38       </gaschmbudget_2D_L2_e>
+<gaschmbudget_2D_L3_s nlev="72">         39       </gaschmbudget_2D_L3_s>
+<gaschmbudget_2D_L3_e nlev="72">         58       </gaschmbudget_2D_L3_e>
+<gaschmbudget_2D_L4_s nlev="72">         59       </gaschmbudget_2D_L4_s>
+<gaschmbudget_2D_L4_e nlev="72">         72       </gaschmbudget_2D_L4_e>
+
+<gaschmbudget_2D_L1_e nlev="80">         34       </gaschmbudget_2D_L1_e>
+<gaschmbudget_2D_L2_s nlev="80">         35       </gaschmbudget_2D_L2_s>
+<gaschmbudget_2D_L2_e nlev="80">         46       </gaschmbudget_2D_L2_e>
+<gaschmbudget_2D_L3_s nlev="80">         47       </gaschmbudget_2D_L3_s>
+<gaschmbudget_2D_L3_e nlev="80">         66       </gaschmbudget_2D_L3_e>
+<gaschmbudget_2D_L4_s nlev="80">         67       </gaschmbudget_2D_L4_s>
+<gaschmbudget_2D_L4_e nlev="80">         80       </gaschmbudget_2D_L4_e>
+
+<UCIgaschmbudget_2D_L1_s>         1        </UCIgaschmbudget_2D_L1_s>
+<UCIgaschmbudget_2D_L1_e nlev="72">         26       </UCIgaschmbudget_2D_L1_e>
+<UCIgaschmbudget_2D_L2_s nlev="72">         27       </UCIgaschmbudget_2D_L2_s>
+<UCIgaschmbudget_2D_L2_e nlev="72">         38       </UCIgaschmbudget_2D_L2_e>
+<UCIgaschmbudget_2D_L3_s nlev="72">         39       </UCIgaschmbudget_2D_L3_s>
+<UCIgaschmbudget_2D_L3_e nlev="72">         58       </UCIgaschmbudget_2D_L3_e>
+<UCIgaschmbudget_2D_L4_s nlev="72">         59       </UCIgaschmbudget_2D_L4_s>
+<UCIgaschmbudget_2D_L4_e nlev="72">         72       </UCIgaschmbudget_2D_L4_e>
+
+<UCIgaschmbudget_2D_L1_e nlev="80">         34       </UCIgaschmbudget_2D_L1_e>
+<UCIgaschmbudget_2D_L2_s nlev="80">         35       </UCIgaschmbudget_2D_L2_s>
+<UCIgaschmbudget_2D_L2_e nlev="80">         46       </UCIgaschmbudget_2D_L2_e>
+<UCIgaschmbudget_2D_L3_s nlev="80">         47       </UCIgaschmbudget_2D_L3_s>
+<UCIgaschmbudget_2D_L3_e nlev="80">         66       </UCIgaschmbudget_2D_L3_e>
+<UCIgaschmbudget_2D_L4_s nlev="80">         67       </UCIgaschmbudget_2D_L4_s>
+<UCIgaschmbudget_2D_L4_e nlev="80">         80       </UCIgaschmbudget_2D_L4_e>
 
 <!-- BSINGH - ndrop.F90 "repeated g1 equation" bug fix flag -->
 <fix_g1_err_ndrop>             .false.  </fix_g1_err_ndrop>

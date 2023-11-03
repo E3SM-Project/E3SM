@@ -92,25 +92,25 @@ logical           :: history_gaschmbudget = .false.    ! output gas chemistry tr
 logical           :: history_gaschmbudget_2D = .false. ! output 2D gas chemistry tracer concentrations and tendencies
 logical           :: history_gaschmbudget_2D_levels = .false. ! output 2D gas chemistry tracer concentrations and tendencies within certain layers
 integer           :: history_gaschmbudget_num = 2      ! Tape number for instantaneous gas chemistry budget output
-integer           :: gaschmbudget_2D_L1_s = 1          ! Start layer of L1 for 2D gas chemistry tracer budget 
-integer           :: gaschmbudget_2D_L1_e = 26         ! End layer of L1 for 2D gas chemistry tracer budget 
-integer           :: gaschmbudget_2D_L2_s = 27         ! Start layer of L2 for 2D gas chemistry tracer budget 
-integer           :: gaschmbudget_2D_L2_e = 38         ! End layer of L2 for 2D gas chemistry tracer budget 
-integer           :: gaschmbudget_2D_L3_s = 39         ! Start layer of L3 for 2D gas chemistry tracer budget 
-integer           :: gaschmbudget_2D_L3_e = 58         ! End layer of L3 for 2D gas chemistry tracer budget 
-integer           :: gaschmbudget_2D_L4_s = 59         ! Start layer of L4 for 2D gas chemistry tracer budget 
-integer           :: gaschmbudget_2D_L4_e = 72         ! End layer of L4 for 2D gas chemistry tracer budget 
+integer           :: gaschmbudget_2D_L1_s              ! Start layer of L1 for 2D gas chemistry tracer budget 
+integer           :: gaschmbudget_2D_L1_e              ! End layer of L1 for 2D gas chemistry tracer budget 
+integer           :: gaschmbudget_2D_L2_s              ! Start layer of L2 for 2D gas chemistry tracer budget 
+integer           :: gaschmbudget_2D_L2_e              ! End layer of L2 for 2D gas chemistry tracer budget 
+integer           :: gaschmbudget_2D_L3_s              ! Start layer of L3 for 2D gas chemistry tracer budget 
+integer           :: gaschmbudget_2D_L3_e              ! End layer of L3 for 2D gas chemistry tracer budget 
+integer           :: gaschmbudget_2D_L4_s              ! Start layer of L4 for 2D gas chemistry tracer budget 
+integer           :: gaschmbudget_2D_L4_e              ! End layer of L4 for 2D gas chemistry tracer budget 
 logical           :: history_UCIgaschmbudget_2D = .false. ! output 2D UCI gas chemistry tracer concentrations and tendencies
 logical           :: history_UCIgaschmbudget_2D_levels = .false. ! output 2D UCI gas chemistry tracer concentrations and tendencies within certain layers
 logical           :: history_chemdyg_summary = .false.    ! output necessary variables for ChemDyg 
-integer           :: UCIgaschmbudget_2D_L1_s = 1          ! Start layer of L1 for 2D UCI gas chemistry tracer budget 
-integer           :: UCIgaschmbudget_2D_L1_e = 26         ! End layer of L1 for 2D UCI gas chemistry tracer budget 
-integer           :: UCIgaschmbudget_2D_L2_s = 27         ! Start layer of L2 for 2D UCI gas chemistry tracer budget 
-integer           :: UCIgaschmbudget_2D_L2_e = 38         ! End layer of L2 for 2D UCI gas chemistry tracer budget 
-integer           :: UCIgaschmbudget_2D_L3_s = 39         ! Start layer of L3 for 2D UCI gas chemistry tracer budget 
-integer           :: UCIgaschmbudget_2D_L3_e = 58         ! End layer of L3 for 2D UCI gas chemistry tracer budget 
-integer           :: UCIgaschmbudget_2D_L4_s = 59         ! Start layer of L4 for 2D UCI gas chemistry tracer budget 
-integer           :: UCIgaschmbudget_2D_L4_e = 72         ! End layer of L4 for 2D UCI gas chemistry tracer budget 
+integer           :: UCIgaschmbudget_2D_L1_s              ! Start layer of L1 for 2D UCI gas chemistry tracer budget 
+integer           :: UCIgaschmbudget_2D_L1_e              ! End layer of L1 for 2D UCI gas chemistry tracer budget 
+integer           :: UCIgaschmbudget_2D_L2_s              ! Start layer of L2 for 2D UCI gas chemistry tracer budget 
+integer           :: UCIgaschmbudget_2D_L2_e              ! End layer of L2 for 2D UCI gas chemistry tracer budget 
+integer           :: UCIgaschmbudget_2D_L3_s              ! Start layer of L3 for 2D UCI gas chemistry tracer budget 
+integer           :: UCIgaschmbudget_2D_L3_e              ! End layer of L3 for 2D UCI gas chemistry tracer budget 
+integer           :: UCIgaschmbudget_2D_L4_s              ! Start layer of L4 for 2D UCI gas chemistry tracer budget 
+integer           :: UCIgaschmbudget_2D_L4_e              ! End layer of L4 for 2D UCI gas chemistry tracer budget 
 logical           :: ssalt_tuning         = .false.    ! sea salt tuning flag for progseasalts_intr.F90
 logical           :: resus_fix            = .false.    ! to address resuspension bug fix in wetdep.F90 
 logical           :: convproc_do_aer      = .false.    ! to apply unified convective transport/removal for aerosols
