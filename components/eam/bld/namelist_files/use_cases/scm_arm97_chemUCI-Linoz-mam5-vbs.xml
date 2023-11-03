@@ -3,7 +3,6 @@
 
 <namelist_defaults>
 
-<ncdata                                           scam="1"  >atm/cam/inic/homme/eam_i_chemUCI_Linozv3_ne4np4_L72_c20220926.nc</ncdata>
 <iopfile                                          scam="1"  >atm/cam/scam/iop/ARM97_iopfile_4scam.nc</iopfile>
 <soag_ext_file >atm/cam/chem/trop_mozart_aero/emis/aces4bgc_nvsoa_soag_elev_2000_c160427.nc</soag_ext_file>
 <scmlat                                           scam="1"  >   36.6     </scmlat>

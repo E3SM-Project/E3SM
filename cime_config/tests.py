@@ -389,9 +389,9 @@ _TESTS = {
     #e3sm v3atm related tests for development
     "e3sm_v3atm_integration" : {
         "tests" : (
-            "ERP_Ld3.ne4pg2_oQU480.F2010-P3",
-            "ERS_Ld3.ne4pg2_oQU480.F20TR-P3",
-            "SMS_Ld1.ne30pg2_EC30to60E2r2.WCYCL1850-P3.allactive-wcprod",
+            "ERP_Ld3.ne4pg2_oQU480.F2010",
+            "ERS_Ld3.ne4pg2_oQU480.F20TR",
+            "SMS_Ld1.ne30pg2_EC30to60E2r2.WCYCL1850.allactive-wcprod",
             )
         },
 
