@@ -15,6 +15,7 @@ concurrency:
   
 jobs:
   Build-and-Deploy-docs:
+    if: ${{ github.event.repository.name != 'scream' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -23,7 +24,7 @@ jobs:
           fetch-depth: 0 # Needed, or else gh-pages won't be fetched, and push rejected
           submodules: false # speeds up clone and not building anything in submodules
       - name: Show action trigger
-        run: echo "= The job was automatically triggered by a ${{github.event_name}} event."
+        run: echo "= The job was automatically triggered by a ${{github.event_name}} event on repo ${{github.event.repository.name}}."
       - name: Set up Python 3.10
         uses: actions/setup-python@v4.7.0
         with:
