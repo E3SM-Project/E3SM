@@ -120,22 +120,13 @@ implicit none
   real (kind=real_kind) ::  rhati(np,np,nlevp), invrhatm(np,np,nlev), invrhati(np,np,nlevp)
 
   r0=rearth
-  !r0 = 1.0
-
-!print *, 'g, r0', g, r0
-!print *, 'EOS phi_i', phi_i
 
   rheighti = phi_i/g + r0
-  !rheighti = 1.0
   rheightm(:,:,1:nlev) = (rheighti(:,:,1:nlev) + rheighti(:,:,2:nlevp))/2.0
   rhati = rheighti/r0 ! r/r0
   rhatm = rheightm/r0
   invrhatm = 1.0/rhatm
   invrhati = 1.0/rhati
-
-!print *, 'EOS rhati', rhati
-!print *, 'EOS rhatm', rhatm
-
 
   ! check for bad state that will crash exponential function below
   if (theta_hydrostatic_mode) then
@@ -214,10 +205,7 @@ print *, 'phi_i', phi_i(1,1,:)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
 
 !!!!!
-   pnh_i(:,:,1) = hvcoord%hyai(1)*hvcoord%ps0  ! hydrostatic ptop    
-!#ifdef DA
-!   pnh_i(:,:,1) = pnh(:,:,1)*0.6
-!#endif
+   pnh_i(:,:,1) = hvcoord%hyai(1)*hvcoord%ps0*invrhati(:,:,1)*invrhati(:,:,1)  ! hydrostatic ptop/rhat^2
 
    ! surface boundary condition pnh_i determined by w equation to enforce
    ! w b.c.  This is computed in the RHS calculation.  Here, we use
@@ -240,7 +228,6 @@ print *, 'phi_i', phi_i(1,1,:)
 
 !original
    dpnh_dp_i(:,:,1)  = 2*(pnh(:,:,1)-pnh_i(:,:,1))/dp3d_i(:,:,1)
-!   dpnh_dp_i(:,:,1)  = 1.0
 
    dpnh_dp_i(:,:,nlevp)  = 2*(pnh_i(:,:,nlevp)-pnh(:,:,nlev))/dp3d_i(:,:,nlevp)
    do k=2,nlev
@@ -264,28 +251,10 @@ print *, 'phi_i', phi_i(1,1,:)
       enddo
       pnh_i_out=pnh_i    
    endif
-
-!print *, 'dp3d is', dp3d(1,1,1:nlev)
-!print *, 'mu is ', dpnh_dp_i(1,1,1:nlevp)
-!print *, 'pnh(:,:,1),pnh_i(:,:,1)', pnh(1,1,1),pnh_i(1,1,1)
-
-!print *, 'is pnh_i requested? ', present(pnh_i_out)
-!if (present(pnh_i_out)) then
-!print *, '---- pnh_i is', pnh_i(1,1,1:nlevp)
-!endif
-!print *, 'pnh_m is', pnh(1,1,1:nlev)
  
   endif ! hydrostatic/nonhydrostatic version
 
-
-!print *, 'EOS dpnh_dp', dpnh_dp_i
-
-
-
-
-
-  end subroutine 
-
+  end subroutine pnh_and_exner_from_eos2
 
 !this sub needs a different version for da
 !if dp is usually d(phydro), then for da dp3d is d(pmass)
