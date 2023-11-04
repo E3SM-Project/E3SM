@@ -1656,7 +1656,7 @@ contains
 #endif
 
    if (adjustment) then 
-
+!stop
       ! hard adjust Q from physics.  negativity check done in physics
       do k=1,nlev
          do j=1,np
@@ -1691,6 +1691,10 @@ contains
       end do
 #endif
    else ! end of adjustment
+
+!standalone homme is here
+!stop
+!print *, elem%derived%FQ(:,:,:,:)
       ! apply forcing to Qdp
       elem%derived%FQps(:,:)=0
       do q=1,qsize
@@ -1717,6 +1721,9 @@ contains
 
       ! to conserve dry mass in the precese of Q1 forcing:
       ps(:,:) = ps(:,:) + dt*elem%derived%FQps(:,:)
+
+!print *, elem%derived%FQps(:,:)
+
    endif ! if adjustment
 
 
@@ -1751,10 +1758,13 @@ contains
          call get_hydro_pressure(phydro,elem%state%dp3d(:,:,:,np1),hvcoord)
       endif
       do k=1,nlev
+
+!da issue?
          pnh(:,:,k)=phydro(:,:,k) + pprime(:,:,k)
 #ifdef HOMMEXX_BFB_TESTING
          exner(:,:,k)=bfb_pow(pnh(:,:,k)/p0,Rgas/Cp)
 #else
+!da issue
          exner(:,:,k)=(pnh(:,:,k)/p0)**(Rgas/Cp)
 #endif
       enddo
@@ -1763,12 +1773,17 @@ contains
    !update temperature
    call get_R_star(rstarn1,elem%state%Q(:,:,:,1))
    tn1(:,:,:) = tn1(:,:,:) + dt*elem%derived%FT(:,:,:)
-   
+
+!zero
+!print *, elem%derived%FT(:,:,:)
    
    ! now we have tn1,dp,pnh - compute corresponding theta and phi:
+!da issue
    vthn1 =  (rstarn1(:,:,:)/Rgas)*tn1(:,:,:)*elem%state%dp3d(:,:,:,np1)/exner(:,:,:)
      
    phi_n1(:,:,nlevp)=elem%state%phinh_i(:,:,nlevp,np1)
+
+!da issue
    do k=nlev,1,-1
       phi_n1(:,:,k)=phi_n1(:,:,k+1) + Rgas*vthn1(:,:,k)*exner(:,:,k)/pnh(:,:,k)
    enddo
@@ -1777,10 +1792,15 @@ contains
    ! this method is using new dp, new exner, new-new r*, new t
    elem%derived%FVTheta(:,:,:) = &
         (vthn1 - elem%state%vtheta_dp(:,:,:,np1))/dt
-   
+ 
+!not zero
+!print *, elem%derived%FVTheta(:,:,1)
+  
    elem%derived%FPHI(:,:,:) = &
         (phi_n1 - elem%state%phinh_i(:,:,:,np1))/dt
    
+!print *, elem%derived%FPHI(:,:,1:2)
+
 #endif
 
   call t_stopf("ApplyCAMForcing_tracers")

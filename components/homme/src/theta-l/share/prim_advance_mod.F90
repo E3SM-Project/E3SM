@@ -528,6 +528,8 @@ contains
   do ie=nets,nete
 
      elem(ie)%state%vtheta_dp(:,:,:,np1) = elem(ie)%state%vtheta_dp(:,:,:,np1) + dt*elem(ie)%derived%FVTheta(:,:,:)
+
+!print *, elem(ie)%derived%FPHI(1,1,1:2)
      elem(ie)%state%phinh_i(:,:,1:nlev,np1) = elem(ie)%state%phinh_i(:,:,1:nlev,np1) + dt*elem(ie)%derived%FPHI(:,:,1:nlev)
 
      elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,np1) + dt*elem(ie)%derived%FM(:,:,1:2,:)
@@ -1396,9 +1398,9 @@ print *, 'be phi lev 3', elem(1)%state%phinh_i(1,1,1:2,3)
 
 #ifdef DA
         !da metric
-!        w_tens(:,:,k) = w_tens(:,:,k) +scale1*(v_i(:,:,1,k)*v_i(:,:,1,k)+v_i(:,:,2,k)*v_i(:,:,2,k))/rheighti(:,:,k)
+        w_tens(:,:,k) = w_tens(:,:,k) +scale1*(v_i(:,:,1,k)*v_i(:,:,1,k)+v_i(:,:,2,k)*v_i(:,:,2,k))/rheighti(:,:,k)
         !da cos
-!        w_tens(:,:,k) = w_tens(:,:,k) +scale1*elem(ie)%fcorcosine(:,:)*v_i(:,:,1,k)
+        w_tens(:,:,k) = w_tens(:,:,k) +scale1*elem(ie)%fcorcosine(:,:)*v_i(:,:,1,k)
 #endif
 
         ! phi - tendency on interfaces
@@ -1460,9 +1462,9 @@ endif
 
 #ifdef DA
      !da metric
-!     w_tens(:,:,k) = w_tens(:,:,k) +scale1*(v_i(:,:,1,k)*v_i(:,:,1,k)+v_i(:,:,2,k)*v_i(:,:,2,k))/rheighti(:,:,k)
+     w_tens(:,:,k) = w_tens(:,:,k) +scale1*(v_i(:,:,1,k)*v_i(:,:,1,k)+v_i(:,:,2,k)*v_i(:,:,2,k))/rheighti(:,:,k)
      !da cos
-!     w_tens(:,:,k) = w_tens(:,:,k) +scale1*elem(ie)%fcorcosine(:,:)*v_i(:,:,1,k)
+     w_tens(:,:,k) = w_tens(:,:,k) +scale1*elem(ie)%fcorcosine(:,:)*v_i(:,:,1,k)
 #endif
 
      !why do we have this for phi?
@@ -1628,9 +1630,9 @@ endif
 
               !da
 #ifdef DA
-!              vtens1(i,j,k) = vtens1(i,j,k) - scale1*elem(ie)%state%w_i(i,j,k,n0)*(  v1/rheightm(i,j,k) &
-!                                                                                  + elem(ie)%fcorcosine(i,j) )
-!              vtens2(i,j,k) = vtens2(i,j,k) - scale1*elem(ie)%state%w_i(i,j,k,n0)*v2/rheightm(i,j,k)
+              vtens1(i,j,k) = vtens1(i,j,k) - scale1*elem(ie)%state%w_i(i,j,k,n0)*(  v1/rheightm(i,j,k) &
+                                                                                  + elem(ie)%fcorcosine(i,j) )
+              vtens2(i,j,k) = vtens2(i,j,k) - scale1*elem(ie)%state%w_i(i,j,k,n0)*v2/rheightm(i,j,k)
 #endif
 
 #endif
