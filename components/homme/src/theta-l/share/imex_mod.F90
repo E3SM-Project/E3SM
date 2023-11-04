@@ -11,7 +11,7 @@ module imex_mod
   use derivative_mod,     only: derivative_t
   use time_mod,           only: timelevel_t, timelevel_qdp
   use physical_constants, only: g, kappa
-  use eos,                only: pnh_and_exner_from_eos, pnh_and_exner_from_eos2, phi_from_eos
+  use eos,                only: pnh_and_exner_from_eos, pnh_and_exner_from_eos3, phi_from_eos
   use element_state,      only: max_itercnt, max_deltaerr, max_reserr
   use control_mod,        only: theta_hydrostatic_mode, qsplit
   use perf_mod,           only: t_startf, t_stopf
@@ -258,18 +258,20 @@ contains
           enddo
           w_np1(:,:,1:nlev) = (phi_np1(:,:,1:nlev) -  phi_n0(:,:,1:nlev) )/(dt2*g)
        endif
-       call pnh_and_exner_from_eos2(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,np1),elem(ie)%state%dp3d(:,:,:,np1),&
-            dphi,pnh,exner,dpnh_dp_i,phi_np1,'dirk1')
+       call pnh_and_exner_from_eos3(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,np1),elem(ie)%state%dp3d(:,:,:,np1),&
+            dphi,pnh,exner,dpnh_dp_i,elem(ie)%state%phis,'dirk1')
        Fn(:,:,1:nlev) = w_np1(:,:,1:nlev) - &
             (w_n0(:,:,1:nlev) + g*dt2 * (dpnh_dp_i(:,:,1:nlev)-1))
 
 
        itercount=0
        do while (itercount < maxiter) 
+
+!try numerical with DA too?
           ! numerical J:
-          !call get_dirk_jacobian(JacL,JacD,JacU,dt2,elem(ie)%state%dp3d(:,:,:,np1),dphi,pnh,0,1d-4,hvcoord,dpnh_dp_i,vtheta_dp) 
+          !call get_dirk_jacobian(JacL,JacD,JacU,dt2,elem(ie)%state%dp3d(:,:,:,np1),dphi,elem(ie)%state%phis,pnh,0,1d-4,hvcoord,dpnh_dp_i,vtheta_dp) 
           ! analytic J:
-          call get_dirk_jacobian(JacL,JacD,JacU,dt2,elem(ie)%state%dp3d(:,:,:,np1),dphi,pnh,1) 
+          call get_dirk_jacobian(JacL,JacD,JacU,dt2,elem(ie)%state%dp3d(:,:,:,np1),dphi,elem(ie)%state%phis,pnh,1) 
 
           x(:,:,1:nlev) = -Fn(:,:,1:nlev)
 
@@ -321,8 +323,8 @@ contains
              w_np1(:,:,k) = w_np1(:,:,k) + alphas*x(:,:,k)
           end do
 
-          call pnh_and_exner_from_eos2(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,np1),&
-               elem(ie)%state%dp3d(:,:,:,np1),dphi,pnh,exner,dpnh_dp_i,phi_np1,'dirk2')
+          call pnh_and_exner_from_eos3(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,np1),&
+               elem(ie)%state%dp3d(:,:,:,np1),dphi,pnh,exner,dpnh_dp_i,elem(ie)%state%phis,'dirk2')
           Fn(:,:,1:nlev) = w_np1(:,:,1:nlev) - (w_n0(:,:,1:nlev) + g*dt2 * (dpnh_dp_i(:,:,1:nlev)-1))
 
           ! this is not used in this loop, so move out of loop
@@ -364,7 +366,7 @@ contains
   end subroutine compute_stage_value_dirk
 
 
-  subroutine get_dirk_jacobian(JacL,JacD,JacU,dt2,dp3d,dphi,pnh,exact,&
+  subroutine get_dirk_jacobian(JacL,JacD,JacU,dt2,dp3d,dphi,phis,pnh,exact,&
      epsie,hvcoord,dpnh_dp_i,vtheta_dp)
   !================================================================================
   ! compute Jacobian of F(phi) = sum(dphi) +const + (dt*g)^2 *(1-dp/dpi) column wise
@@ -390,6 +392,7 @@ contains
     real (kind=real_kind), intent(in)  :: dp3d(np,np,nlev)
     real (kind=real_kind), intent(inout) :: pnh(np,np,nlev)
     real (kind=real_kind), intent(in)  :: dphi(np,np,nlev)
+    real (kind=real_kind), intent(in)  :: phis(np,np)
     real (kind=real_kind), intent(in)  :: dt2
 
     real (kind=real_kind), intent(in), optional :: epsie ! epsie is the differencing size in the approx. Jacobian
@@ -452,7 +455,7 @@ contains
            !dpnh_dp_i_epsie(:,:,:)=1.d0
            delta_mu=0
         else
-           call pnh_and_exner_from_eos2(hvcoord,vtheta_dp,dp3d,dphi_temp,pnh,exner,dpnh_dp_i_epsie,delta_mu,'get_dirk_jacobian')
+           call pnh_and_exner_from_eos3(hvcoord,vtheta_dp,dp3d,dphi_temp,pnh,exner,dpnh_dp_i_epsie,phis,'get_dirk_jacobian')
            delta_mu(:,:,:)=(g*dt2)**2*(dpnh_dp_i(:,:,:)-dpnh_dp_i_epsie(:,:,:))/epsie
         end if
 
@@ -513,7 +516,7 @@ print *, 'IN IMEX my ie is ', ie
        do k=1,nlev
           dphi(:,:,k)=phi_i(:,:,k+1)-phi_i(:,:,k)
        enddo
-       call get_dirk_jacobian(JacL,JacD,JacU,dt,dp3d,dphi,pnh,1)
+       call get_dirk_jacobian(JacL,JacD,JacU,dt,dp3d,dphi,phis,pnh,1)
 
       ! compute infinity norm of the initial Jacobian 
        norminfJ0=0.d0
@@ -549,7 +552,7 @@ print *, 'IN IMEX my ie is ', ie
           do k=1,nlev
              dphi(:,:,k)=phi_i(:,:,k+1)-phi_i(:,:,k)
           enddo
-          call get_dirk_jacobian(Jac2L,Jac2D,Jac2U,dt,dp3d,dphi,pnh,0,&
+          call get_dirk_jacobian(Jac2L,Jac2D,Jac2U,dt,dp3d,dphi,phis,pnh,0,&
              epsie,hvcoord,dpnh_dp_i,vtheta_dp)
 
           if (maxval(abs(JacD(:,:,:)-Jac2D(:,:,:))) > jacerrorvec(j)) then 
