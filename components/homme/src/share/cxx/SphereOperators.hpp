@@ -244,6 +244,65 @@ public:
     kv.team_barrier();
   }
 
+
+
+  KOKKOS_INLINE_FUNCTION void
+  divergence_sphere_wk_sl (const KernelVariables &kv,
+                           const ExecViewUnmanaged<const Real [2][NP][NP]>& v,
+                           const ExecViewUnmanaged<      Real    [NP][NP]>& div_v) const
+  {
+    // Make sure the buffers have been created
+    assert (vector_buf_sl.size()>0);
+
+    const auto& D_inv = Homme::subview(m_dinv,kv.ie);
+    const auto& spheremp = Homme::subview(m_spheremp,kv.ie);
+    const auto& gv_buf = Homme::subview(vector_buf_sl,kv.team_idx,0);
+
+    // copied from strong divergence as is but without metdet
+    // conversion to contravariant
+    constexpr int np_squared = NP * NP;
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, np_squared),
+                         [&](const int loop_idx) {
+      const int igp = loop_idx / NP;
+      const int jgp = loop_idx % NP;
+      const auto& v0 = v(0,igp,jgp);
+      const auto& v1 = v(1,igp,jgp);
+      gv_buf(0,igp,jgp) = D_inv(0,0,igp,jgp) * v0 + D_inv(1,0,igp,jgp) * v1;
+      gv_buf(1,igp,jgp) = D_inv(0,1,igp,jgp) * v0 + D_inv(1,1,igp,jgp) * v1;
+    });
+    kv.team_barrier();
+
+    // in strong div
+    // kgp = i in strong code, jgp=j, igp=l
+    // in weak div, n is like j in strong div,
+    // n(weak)=j(strong)=jgp
+    // m(weak)=l(strong)=igp
+    // j(weak)=i(strong)=kgp
+    constexpr int div_iters = NP * NP;
+    // keeping indices' names as in F
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, div_iters),
+                         [&](const int loop_idx) {
+      // Note: for this one time, it is better if m strides faster, due to
+      //       the way the views are accessed.
+      const int mgp = loop_idx % NP;
+      const int ngp = loop_idx / NP;
+      Real dd = 0.0;
+      for (int jgp = 0; jgp < NP; ++jgp) {
+        dd -= (spheremp(ngp, jgp) * gv_buf(0, ngp, jgp) * dvv(jgp, mgp) +
+               spheremp(jgp, mgp) * gv_buf(1, jgp, mgp) * dvv(jgp, ngp)) *
+              m_scale_factor_inv;
+      }
+      div_v(ngp, mgp) = dd;
+    });
+    kv.team_barrier();
+
+  } // end of divergence_sphere_wk_sl
+
+
+
+
+
+#if 0
   KOKKOS_INLINE_FUNCTION void
   divergence_sphere_wk_sl (const KernelVariables &kv,
                            const ExecViewUnmanaged<const Real [2][NP][NP]>& v,
@@ -277,24 +336,10 @@ public:
       const int igp = loop_idx / NP;
       const int jgp = loop_idx % NP;
 
-#if 0
-      const auto& v0 = v(0,igp,jgp);
-      const auto& v1 = v(1,igp,jgp);
-      gv_buf(0,igp,jgp) = D_inv(0,0,igp,jgp) * v0 + D_inv(1,0,igp,jgp) * v1;
-      gv_buf(1,igp,jgp) = D_inv(0,1,igp,jgp) * v0 + D_inv(1,1,igp,jgp) * v1;
-#else
-      //ggv[linind1] = *(&D_inv(0,0,0,0) + linind3) * (*v0) + *(&D_inv(0,0,0,0) + linind4) * (*v1);
-      //ggv[linind2] = *(&D_inv(0,0,0,0) + linind3) * (*v0) + *(&D_inv(0,0,0,0) + linind4) * (*v1);
-
       int linind1 = s1 * 0 + s2 * igp + s3 * jgp;
       const auto& vv0 = (&v(0,0,0) + linind1);
       int linind2 = s1 * 1 + s2 * igp + s3 * jgp;
       const auto& vv1 = (&v(0,0,0) + linind2);
-
-//std::cout << "igp, jgp" << igp <<" " <<  jgp << " "  << "\n";
-//std::cout << "s1 s2 s3 " << s1 <<" " <<  s2 << " "  << s3<< "\n";
-//std::cout << "linind1 " << linind1 << "\n";
-//std::cout << "v(0,igp,jgp) and *(&v(0,0,0) + linind1) " << v(0,igp,jgp) << " "<<*(&v(0,0,0) + linind1) << "\n";
 
       int linind3 = d1 * 0 + d2 * 0 + d3 * igp + d4 * jgp;
       int linind4 = d1 * 1 + d2 * 0 + d3 * igp + d4 * jgp;
@@ -303,8 +348,6 @@ public:
       linind3 = d1 * 0 + d2 * 1 + d3 * igp + d4 * jgp;
       linind4 = d1 * 1 + d2 * 1 + d3 * igp + d4 * jgp;
       *(&gv_buf(0,0,0)+linind2) = *(&D_inv(0,0,0,0)+linind3) * (*vv0) + *(&D_inv(0,0,0,0)+linind4) * (*vv1);
-
-#endif
 
     });
     kv.team_barrier();
@@ -348,6 +391,8 @@ public:
     kv.team_barrier();
 
   } // end of divergence_sphere_wk_sl
+#endif
+
 
   // Note that divergence_sphere requires scratch space of 3 x NP x NP Reals
   // This must be called from the device space
@@ -932,14 +977,6 @@ public:
     kv.team_barrier();
 
   }//end of divergence_sphere_wk
-
-
-
-
-
-
-
-
 
 
 #endif

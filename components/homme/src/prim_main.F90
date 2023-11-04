@@ -242,15 +242,12 @@ program prim_main
      do while(tl%nstep<nstep)
 
      if(tl%nstep < 2) then 
-!print *, 'HAHAHHAHA'
-!stop
-             call t_disablef()
+        call t_disablef()
      endif
      if(tl%nstep >= 2) call t_enablef()
         call t_startf('prim_run')
         call prim_run_subcycle(elem, hybrid,nets,nete, tstep, .false., tl, hvcoord,1)
         call t_stopf('prim_run')
-
      end do
 #if (defined HORIZ_OPENMP)
      !$OMP END PARALLEL
