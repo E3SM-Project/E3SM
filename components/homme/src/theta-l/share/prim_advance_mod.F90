@@ -523,7 +523,7 @@ contains
   type (hvcoord_t),       intent(in)    :: hvcoord
   integer,                intent(in)    :: np1,nets,nete
 
-#if 0
+#if 1
   integer :: k,ie
   do ie=nets,nete
 

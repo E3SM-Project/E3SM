@@ -50,8 +50,8 @@ implicit none
 ! instead of hvcoord%ps0, which is set by CAM to ~1021mb
 !  
   type (hvcoord_t),     intent(in)  :: hvcoord             ! hybrid vertical coordinate struct
-  real (kind=real_kind), intent(in) :: vtheta_dp(np,np,nlev)   
-  real (kind=real_kind), intent(in) :: dp3d(np,np,nlev)   
+  real (kind=real_kind), intent(in) :: vtheta_dp(np,np,nlev)
+  real (kind=real_kind), intent(in) :: dp3d(np,np,nlev)
   real (kind=real_kind), intent(in) :: phi_i(np,np,nlevp)
   real (kind=real_kind), intent(out) :: pnh(np,np,nlev)        ! nh nonhyrdo pressure
   real (kind=real_kind), intent(out) :: dpnh_dp_i(np,np,nlevp) ! d(pnh) / d(pi)
@@ -74,7 +74,6 @@ implicit none
           dpnh_dp_i,phi_i,'not specified',pnh_i_out)
   endif
   end subroutine pnh_and_exner_from_eos
-
 
 
 subroutine pnh_and_exner_from_eos2(hvcoord,vtheta_dp,dp3d,dphi,pnh,exner,&
@@ -343,7 +342,7 @@ print *, 'phi_i', phi_i(1,1,:)
 
 
 subroutine pnh_and_exner_from_eos3(hvcoord,vtheta_dp,dp3d,dphi,pnh,exner,&
-     dpnh_dp_i,phis,caller,pnh_i_out)
+     dpnh_dp_i,phis,caller,pnh_i_out,p_exner)
 implicit none
 !
 ! Use Equation of State to compute exner pressure, nh presure
@@ -369,6 +368,7 @@ implicit none
   real (kind=real_kind), intent(in)  :: phis(np,np)
   character(len=*),      intent(in)  :: caller       ! name for error
   real (kind=real_kind), intent(out), optional :: pnh_i_out(np,np,nlevp)  ! pnh on interfaces
+  real (kind=real_kind), intent(inout), optional :: p_exner(np,np,nlev) 
 
 
   !   local
@@ -383,13 +383,14 @@ implicit none
   logical :: ierr
 
   real (kind=real_kind) ::  rheighti(np,np,nlevp), rheightm(np,np,nlev), rhatm(np,np,nlev), r0
-  real (kind=real_kind) ::  rhati(np,np,nlevp), invrhatm(np,np,nlev), invrhati(np,np,nlevp)
+  real (kind=real_kind) ::  rhati(np,np,nlevp), invrhatm(np,np,nlev), invrhati(np,np,nlevp), &
+                            newrhatsquared(np,np,nlev)
 
   !construct phi_i here
 
   phi_i(:,:,nlevp) = phis(:,:)
   do k=nlev,1,-1
-    phi_i(:,:,k) = phi_i(:,:,k+1) + dphi(:,:,k)
+    phi_i(:,:,k) = phi_i(:,:,k+1) - dphi(:,:,k)
   enddo
 
   r0=rearth
@@ -400,6 +401,14 @@ implicit none
   rhatm = rheightm/r0
   invrhatm = 1.0/rhatm
   invrhati = 1.0/rhati
+
+  newrhatsquared = (rhati(:,:,1:nlev)*rhati(:,:,1:nlev)   + &
+                    rhati(:,:,2:nlevp)*rhati(:,:,2:nlevp) + &
+                    rhati(:,:,1:nlev)*rhati(:,:,2:nlevp))/3.0
+
+!print *, 'eos rtills', newrhatsquared(1,1,nlev)
+!print *, 'eos rhat k+1', rhati(1,1,nlevp)
+!print *, 'eos rhat k', rhati(1,1,nlev)
 
   ! check for bad state that will crash exponential function below
   if (theta_hydrostatic_mode) then
@@ -463,7 +472,10 @@ print *, 'phi_i', phi_i(1,1,:)
 
      !da
 #ifdef DA
-     p_over_exner(:,:,k) = p_over_exner(:,:,k)*invrhatm(:,:,k)*invrhatm(:,:,k)
+     !p_over_exner(:,:,k) = p_over_exner(:,:,k)*invrhatm(:,:,k)*invrhatm(:,:,k)
+     p_over_exner(:,:,k) = p_over_exner(:,:,k)/newrhatsquared(:,:,k)
+
+!print *, 'newrhatsq', newrhatsquared(1,1,k)
 #endif
 
 #ifndef HOMMEXX_BFB_TESTING
@@ -477,6 +489,9 @@ print *, 'phi_i', phi_i(1,1,:)
 ! boundary terms
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
 
+   if(present(p_exner))then
+   p_exner(:,:,:) = p_over_exner(:,:,:)
+   endif
 !!!!!
    pnh_i(:,:,1) = hvcoord%hyai(1)*hvcoord%ps0*invrhati(:,:,1)*invrhati(:,:,1)  ! hydrostatic ptop/rhat^2
 
