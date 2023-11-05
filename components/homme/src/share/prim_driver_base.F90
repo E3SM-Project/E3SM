@@ -1656,13 +1656,8 @@ contains
 
    dphi(:,:,1:nlev)=elem%state%phinh_i(:,:,2:nlevp,np1)-elem%state%phinh_i(:,:,1:nlev,np1)
 
-!print *, 'dphi', dphi(1,1,:)
-
 !   call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,np1),dp,&
 !        elem%state%phinh_i(:,:,:,np1),pnh,exner,dpnh_dp_i,p_exner=p_exner)
-
-!subroutine pnh_and_exner_from_eos3(hvcoord,vtheta_dp,dp3d,dphi,pnh,exner,&
-!     dpnh_dp_i,phis,caller,pnh_i_out,p_exner)
 
    call pnh_and_exner_from_eos3(hvcoord,elem%state%vtheta_dp(:,:,:,np1),dp,&
         dphi,pnh,exner,dpnh_dp_i,elem%state%phis,'forcing',p_exner=p_exner)
@@ -1794,12 +1789,9 @@ contains
    tn1(:,:,:) = tn1(:,:,:) + dt*elem%derived%FT(:,:,:)
 
    ! now we have tn1,dp,pnh - compute corresponding theta and phi:
-!da issue
    vthn1 =  (rstarn1(:,:,:)/Rgas)*tn1(:,:,:)*elem%state%dp3d(:,:,:,np1)/exner(:,:,:)
      
    phi_n1(:,:,nlevp)=elem%state%phinh_i(:,:,nlevp,np1)
-
-!print *, 'phi currently', elem%state%phinh_i(1,1,:,np1)
 
 !da issue
    do k=nlev,1,-1
@@ -1808,40 +1800,11 @@ contains
       !bottom rhat
       rs = phi_n1(:,:,k+1)/gravit/r0 + 1.0
      
-      !top r
-      !r1=( rs**3.0 + 3.0*r0*r0*Rgas*vthn1(:,:,k)*exner(:,:,k)/pnh(:,:,k)/gravit )**(1.0/3.0)
-
       !top rhat
       r1=( rs**3.0 + 3.0*Rgas*vthn1(:,:,k)/p_exner(:,:,k)/gravit/r0 )**(1.0/3.0)
-!print *, 'recover r1/r0 from old phi', elem%state%phinh_i(1,1,k,np1)/gravit/r0 + 1.0
-!print *, 'a1^3 - as^3 from old phi', (elem%state%phinh_i(1,1,k,np1)/gravit/r0 + 1.0)**3.0-rs(1,1)**3.0
-
-      !r1=  3.0*Rgas*vthn1(:,:,k)/p_exner(:,:,k)/gravit/r0
-!      r1=  3.0*Rgas*vthn1(:,:,k)/p_exner(:,:,k)/gravit/r0
-!print *,'new a1^3 - as^3', r1(1,1)
-!print *, 'p_exner', p_exner(1,1,k)
-!compute p/Pi here
-!aa=elem%state%phinh_i(1,1,k,np1)-elem%state%phinh_i(1,1,k+1,np1)
-!bb=elem%state%phinh_i(1,1,k,np1)/gravit/r0 + 1.0
-!print *, 'rhat k+1', rs(1,1)
-!print *, 'rhat k', bb
-!print *, 'p_exner recomp', 3.0*Rgas*vthn1(1,1,k)/aa/(bb*bb+bb*rs(1,1)+rs(1,1)*rs(1,1))
-!print *, 'dphi', aa
-!print *, 'rhattildes', (bb*bb+bb*rs(1,1)+rs(1,1)*rs(1,1))/3.0
-!print *, 'vthn1(1,1,k)',vthn1(1,1,k)
-!print *, 'old new vtheta', elem%state%vtheta_dp(1,1,k,np1), vthn1(1,1,k)
-!now try to recover a and then phi
-!print *, 'a', (r1(1,1)+rs(1,1)**3.0)**(1.0/3.0)
-!print *, 'new phi', gravit*( (r1(1,1)+rs(1,1)**3.0)**(1.0/3.0) - 1.0)*r0
 
       phi_n1(:,:,k)=gravit*r0*(r1-1.0)
     
-
-!print *, 'k', k
-!print *, 'rs', rs(1,1)
-!print *, 'r1', r1(1,1)
-!print *, 'phi', phi_n1(1,1,k)
-!stop
    enddo
    
    !finally, compute difference for FVTheta

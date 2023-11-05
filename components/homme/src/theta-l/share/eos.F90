@@ -235,8 +235,7 @@ print *, 'phi_i', phi_i(1,1,:)
 
 #ifdef DA
    !da
-   !keeep the bottom val unchanged and set to 1
-   !dpnh_dp_i(:,:,1:nlevp) = dpnh_dp_i(:,:,1:nlevp)*rhati(:,:,1:nlevp)*rhati(:,:,1:nlevp)
+   !keep the bottom val unchanged and set to 1
    dpnh_dp_i(:,:,1:nlev) = dpnh_dp_i(:,:,1:nlev)*rhati(:,:,1:nlev)*rhati(:,:,1:nlev)
 #endif   
 
@@ -387,7 +386,6 @@ implicit none
                             newrhatsquared(np,np,nlev)
 
   !construct phi_i here
-
   phi_i(:,:,nlevp) = phis(:,:)
   do k=nlev,1,-1
     phi_i(:,:,k) = phi_i(:,:,k+1) - dphi(:,:,k)
@@ -405,10 +403,6 @@ implicit none
   newrhatsquared = (rhati(:,:,1:nlev)*rhati(:,:,1:nlev)   + &
                     rhati(:,:,2:nlevp)*rhati(:,:,2:nlevp) + &
                     rhati(:,:,1:nlev)*rhati(:,:,2:nlevp))/3.0
-
-!print *, 'eos rtills', newrhatsquared(1,1,nlev)
-!print *, 'eos rhat k+1', rhati(1,1,nlevp)
-!print *, 'eos rhat k', rhati(1,1,nlev)
 
   ! check for bad state that will crash exponential function below
   if (theta_hydrostatic_mode) then
@@ -524,8 +518,7 @@ print *, 'phi_i', phi_i(1,1,:)
 
 #ifdef DA
    !da
-   !keeep the bottom val unchanged and set to 1
-   !dpnh_dp_i(:,:,1:nlevp) = dpnh_dp_i(:,:,1:nlevp)*rhati(:,:,1:nlevp)*rhati(:,:,1:nlevp)
+   !keep the bottom val unchanged and set to 1
    dpnh_dp_i(:,:,1:nlev) = dpnh_dp_i(:,:,1:nlev)*rhati(:,:,1:nlev)*rhati(:,:,1:nlev)
 #endif   
 
@@ -543,12 +536,6 @@ print *, 'phi_i', phi_i(1,1,:)
   endif ! hydrostatic/nonhydrostatic version
 
   end subroutine pnh_and_exner_from_eos3
-
-
-
-
-
-
 
 
 
