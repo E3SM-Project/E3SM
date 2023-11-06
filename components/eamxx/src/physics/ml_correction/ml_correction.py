@@ -91,6 +91,22 @@ def get_ML_correction_sfc_fluxes(
     sw_flux_dn,
     dt,
 ):    
+    """Get ML correction for overriding surface fluxes (net shortwave and downward longwave)
+    ML model should have the following output variables:
+        net_shortwave_sfc_flux_via_transmissivity
+        override_for_time_adjusted_total_sky_downward_longwave_flux_at_surface
+
+    Args:
+        model: pre-trained ML model for radiative fluxes
+        T_mid: air  temperature
+        qv: specific humidity
+        cos_zenith: cosine zenith angle
+        lat: latitude
+        phis: surface geopotential
+        sfc_alb_dif_vis: surface albedo for diffuse shortwave radiation
+        sw_flux_dn: downward shortwave flux
+        dt: time step (s)
+    """    
     SW_flux_dn_at_model_top = sw_flux_dn[:, 0]
     ds = xr.Dataset(
         data_vars=dict(
