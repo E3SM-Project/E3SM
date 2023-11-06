@@ -158,6 +158,10 @@ module ocn_mesh
    real(kind=RKIND), public, dimension(:, :), allocatable :: &
       edgeAreaFractionOfCell
 
+   !YSK
+   real(kind=RKIND), public, dimension(:,:), allocatable :: &
+      bTemp, rTemp
+
    !}}}
 
    !----------------------------------------------------------------------------
@@ -339,6 +343,13 @@ contains
       do i = 2, n
          nVerticesHalo(i - 1) = nVerticesArrayTmp(i)
       end do
+
+      !YSK
+
+      call mpas_log_write('########### YSK allocate')
+
+      allocate(bTemp(nVertLevels, nEdgesOwned))
+      allocate(rTemp(nVertLevels, nEdgesOwned))
 
       ! set pointers for a lot of connectivity info
       call mpas_pool_get_array(meshPool, 'nEdgesOnEdge', &
@@ -660,6 +671,10 @@ contains
          !$acc                   cellTangentPlane,         &
          !$acc                   coeffs_reconstruct)
 
+         !YSK
+         call mpas_log_write('######## YSK acc enter data create(bTemp, rTemp) ####')
+         !$acc enter data create(bTemp, rTemp)
+
 !-------------------------------------------------------------------------------
 
    end subroutine ocn_meshCreate !}}}
@@ -790,6 +805,10 @@ contains
       !$acc                  cellTangentPlane,  &
       !$acc                  coeffs_reconstruct)
 
+      !YSK
+      call mpas_log_write('######## YSK acc exit data delete(bTemp, rTemp) ####')
+      !$acc exit data delete(bTemp, rTemp)
+
       ! Reset all scalars to zero
       onSphere  = .false.
       sphereRadius = 0.0_RKIND
@@ -888,6 +907,10 @@ contains
                   edgeSignOnVertex, &
                   edgeAreaFractionOfCell, &
                   invAreaCell)
+
+      !YSK
+      call mpas_log_write('######## YSK deallocate(bTemp, rTemp) ####')
+      deallocate(bTemp, rTemp)
 
 !-------------------------------------------------------------------------------
 
