@@ -3591,18 +3591,7 @@ module VegetationDataType
             this%totvegc(p) + &
             this%xsmrpool(p) + &
             this%ctrunc(p)
-       if(abs(this%totpftc(p)) >= 1.e+20) then
-          print *, "p:",p 
-          print *, "totvegc",this%totvegc(p)
-          print *, "dispvegc:",this%dispvegc(p)
-          print *, "grainc :", this%grainc(p)
-          print *, "leafc:",this%leafc(p) 
-          print *, "frootc:",this%frootc(p) 
-          print *, "livestemc:",this%livestemc(p)
-          print *, "deadstemc:",this%deadstemc(p) 
-          print *, "livecrootc:",this%livecrootc(p)
-          print *, "deadcrootc:",this%deadcrootc(p) 
-        end if 
+       
        ! (WOODC) - wood C
        this%woodc(p) = &
             this%deadstemc(p)    + &
@@ -8296,7 +8285,6 @@ module VegetationDataType
             this%m_gresp_storage_to_litter_fire(p)      + &
             this%m_gresp_xfer_to_litter_fire(p)        
             
-         !if(get_do_harvest()) then 
             this%litfall(p) = this%litfall(p) + &
               this%hrv_leafc_to_litter(p)                 + &
               this%hrv_leafc_storage_to_litter(p)         + &
@@ -8318,16 +8306,15 @@ module VegetationDataType
               this%hrv_gresp_storage_to_litter(p)         + &
               this%hrv_gresp_xfer_to_litter(p)            + &
               this%hrv_cpool_to_litter(p)
-       ! end if 
+       
        ! patch-level fire losses (VEGFIRE)
        this%vegfire(p) = 0._r8
 
        ! patch-level wood harvest
-      ! if(use_crop) then 
        this%wood_harvestc(p) = &
             this%hrv_deadstemc_to_prod10c(p) + &
             this%hrv_deadstemc_to_prod100c(p)
-      !endif 
+       
        if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
           this%wood_harvestc(p) = &
                this%wood_harvestc(p) + &
@@ -8394,10 +8381,8 @@ module VegetationDataType
             this%m_leafc_to_litter_fire(p) + &
             this%leafc_to_litter(p)
        
-       !if(use_crop) then 
-         this%leafc_loss(p) =  this%leafc_loss(p) + &
+       this%leafc_loss(p) =  this%leafc_loss(p) + &
             this%hrv_leafc_to_litter(p)  
-       !end if 
 
        if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
           this%leafc_loss(p) = &
@@ -8428,22 +8413,20 @@ module VegetationDataType
             this%m_livecrootc_to_fire(p)             + &
             this%m_deadcrootc_to_fire(p)             
            
-       ! if(use_crop) then     
-            this%woodc_loss(p) = this%woodc_loss(p) + &
-               this%hrv_livestemc_to_litter(p)          + &
-               this%hrv_livestemc_storage_to_litter(p)  + &
-               this%hrv_livestemc_xfer_to_litter(p)     + &
-               this%hrv_deadstemc_to_prod10c(p)         + &
-               this%hrv_deadstemc_to_prod100c(p)        + &
-               this%hrv_deadstemc_storage_to_litter(p)  + &
-               this%hrv_deadstemc_xfer_to_litter(p)     + &
-               this%hrv_livecrootc_to_litter(p)         + &
-               this%hrv_livecrootc_storage_to_litter(p) + &
-               this%hrv_livecrootc_xfer_to_litter(p)    + &
-               this%hrv_deadcrootc_to_litter(p)         + &
-               this%hrv_deadcrootc_storage_to_litter(p) + &
-               this%hrv_deadcrootc_xfer_to_litter(p)
-        !end if 
+        this%woodc_loss(p) = this%woodc_loss(p) + &
+            this%hrv_livestemc_to_litter(p)          + &
+            this%hrv_livestemc_storage_to_litter(p)  + &
+            this%hrv_livestemc_xfer_to_litter(p)     + &
+            this%hrv_deadstemc_to_prod10c(p)         + &
+            this%hrv_deadstemc_to_prod100c(p)        + &
+            this%hrv_deadstemc_storage_to_litter(p)  + &
+            this%hrv_deadstemc_xfer_to_litter(p)     + &
+            this%hrv_livecrootc_to_litter(p)         + &
+            this%hrv_livecrootc_storage_to_litter(p) + &
+            this%hrv_livecrootc_xfer_to_litter(p)    + &
+            this%hrv_deadcrootc_to_litter(p)         + &
+            this%hrv_deadcrootc_storage_to_litter(p) + &
+            this%hrv_deadcrootc_xfer_to_litter(p)
        ! putting the harvested crop stem and grain in the wood loss bdrewniak
        if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
           this%woodc_loss(p) = &
