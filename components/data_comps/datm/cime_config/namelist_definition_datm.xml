@@ -2082,7 +2082,7 @@
       <value stream="CORE2_IAF.NCEP.U_10">2009</value>
       <value stream="CORE2_IAF.NCEP.V_10">2009</value>
       <value stream="CORE2_IAF.CORE2.ArcFactor">2009</value>
-      <value stream="co2tseries.20tr" cime_model="e3sm">2014</value>
+      <value stream="co2tseries.20tr" cime_model="e3sm">2007</value>
       <value stream="co2tseries.20tr" cime_model="cesm">2014</value>
       <value stream="CORE_IAF_JRA.*2018">$DATM_CLMNCEP_YR_END</value>
       <value stream="CORE_IAF_JRA.*">$DATM_CLMNCEP_YR_END</value>
@@ -2101,7 +2101,7 @@
       <value stream="presaero.e3smwcv2">1850</value>
       <value stream="presaero.cplwch">2014</value>
       <value stream="presaero.clim" cime_model="e3sm">1</value>
-      <value stream="presaero.trans_1850-2000" cime_model="e3sm">2014</value>
+      <value stream="presaero.trans_1850-2000" cime_model="e3sm">2006</value>
       <value stream="presaero.clim_1850" cime_model="cesm">1850</value>
       <value stream="presaero.clim_2000" cime_model="cesm">2000</value>
       <value stream="presaero.clim_2010" cime_model="cesm">2010</value>
