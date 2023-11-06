@@ -18,6 +18,7 @@ def get_ML_model(model_path):
 
 
 def ensure_correction_ordering(correction):
+    """Ensure that the ordering of the correction is always (ncol, z)"""
     for key in correction:
         if "z" in correction[key].dims:
             correction[key] = correction[key].transpose("ncol", "z")
@@ -25,6 +26,15 @@ def ensure_correction_ordering(correction):
 
 
 def get_ML_correction_dQ1_dQ2(model, T_mid, qv, cos_zenith, dt):
+    """Get ML correction for air temperature (dQ1) and specific humidity (dQ2)
+
+    Args:
+        model: pre-trained ML model for dQ1 and dQ2
+        T_mid: air temperature
+        qv: specific humidity
+        cos_zenith: cosine zenith angle
+        dt: time step (s)
+    """
     ds = xr.Dataset(
         data_vars=dict(
             T_mid=(["ncol", "z"], T_mid),
@@ -36,6 +46,19 @@ def get_ML_correction_dQ1_dQ2(model, T_mid, qv, cos_zenith, dt):
 
 
 def get_ML_correction_dQu_dQv(model, T_mid, qv, cos_zenith, lat, phis, u, v, dt):
+    """Get ML correction for eastward wind (dQu or dQxwind) and northward wind (dQv or dQywind)
+
+    Args:
+        model: pre-trained ML model for dQu and dQv
+        T_mid: air  temperature
+        qv: specific humidity
+        cos_zenith: cosine zenith angle
+        lat: latitude
+        phis: surface geopotential
+        u: horizontal wind in x-direction
+        v: horizontal wind in y-direction
+        dt: time step (s)
+    """
     ds = xr.Dataset(
         data_vars=dict(
             T_mid=(["ncol", "z"], T_mid),
@@ -67,9 +90,7 @@ def get_ML_correction_sfc_fluxes(
     sfc_alb_dif_vis,
     sw_flux_dn,
     dt,
-):
-    # surface_diffused_shortwave_albedo is sfc_alb_dif_vis
-    # total_sky_downward_shortwave_flux_at_top_of_atmosphere is SW_flux_dn_at_model_top
+):    
     SW_flux_dn_at_model_top = sw_flux_dn[:, 0]
     ds = xr.Dataset(
         data_vars=dict(
