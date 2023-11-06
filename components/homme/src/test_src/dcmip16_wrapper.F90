@@ -528,7 +528,11 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
       th_c = theta_kess(i,j,nlev:1:-1)
 
       ! get forced versions of u,v,p,qv,qc,qr. rho is constant
-      lat=0.0
+      if (case_planar_bubble) then
+         lat = 0
+      else
+         lat = elem(ie)%spherep(i,j)%lat
+      end if
       call DCMIP2016_PHYSICS(test, u_c, v_c, p_c, th_c, qv_c, qc_c, qr_c, rho_c, dt, z_c, zi_c, lat, nlev, &
                              precl(i,j,ie), pbl_type, prec_type)
 
@@ -951,7 +955,7 @@ subroutine dcmip2016_test2_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, t
       zi_c = zi (i,j,nlevp:1:-1)
       th_c = theta_kess(i,j,nlev:1:-1)
 
-      lat=0.0
+      lat=0.0 ! unused in test 2
       ! get forced versions of u,v,p,qv,qc,qr. rho is constant
       call DCMIP2016_PHYSICS(test, u_c, v_c, p_c, th_c, qv_c, qc_c, qr_c, rho_c, dt, z_c, zi_c, lat, nlev, &
                              precl(i,j,ie), pbl_type, prec_type)
