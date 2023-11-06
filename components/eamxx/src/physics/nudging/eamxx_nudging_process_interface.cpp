@@ -81,7 +81,6 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
     m_num_src_levs = scorpio::get_dimlen(m_static_vertical_pressure_file,"lev");
     scorpio::eam_pio_closefile(m_static_vertical_pressure_file);
   }
-
 }
 // =========================================================================================
 void Nudging::apply_tendency(Field& base, const Field& next, const Real dt)
@@ -114,8 +113,8 @@ void Nudging::apply_weighted_tendency(Field& base, const Field& next, const Fiel
   auto next_view = next.get_view<      Real**>();
   auto w_view    = weights.get_view<   Real**>();
 
-  const int num_cols       = w_view.extent(0);
-  const int num_vert_packs = w_view.extent(1);
+  const int num_cols       = base_view.extent(0);
+  const int num_vert_packs = base_view.extent(1);
   Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0}, {num_cols, num_vert_packs}), KOKKOS_LAMBDA(int i, int j) {
     tend_view(i,j) = next_view(i,j)*w_view(i,j) - base_view(i,j)*w_view(i,j);
   });
