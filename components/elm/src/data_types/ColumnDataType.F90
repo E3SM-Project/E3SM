@@ -7368,7 +7368,6 @@ contains
          do j = 1, nlevdecomp_full
             do fi = 1,num_column
                i = filter_column(fi)
-               ! only initializing in the first time-step
                this%externalc_to_decomp_cpools(i,j,k) = value_column
             end do
          end do
@@ -7376,7 +7375,6 @@ contains
       do fi = 1,num_column
          i = filter_column(fi)
          this%f_co2_soil(i) = value_column
-         ! only initializing in the first time-step
          this%externalc_to_decomp_delta(i) = value_column
       end do
     end if 
@@ -7384,14 +7382,8 @@ contains
     do k = 1, ndecomp_pools
        do fi = 1,num_column
           i = filter_column(fi)
-          !this%decomp_cpools_leached(i,k) = value_column
-          !this%decomp_cpools_erode(i,k) = value_column
-          !this%decomp_cpools_deposit(i,k) = value_column
           this%decomp_cpools_yield(i,k) = value_column !if ero_ccycle
           this%m_decomp_cpools_to_fire(i,k) = value_column
-          !NOTE: Can't see where these are used. pflotran maybe??
-          !this%bgc_cpool_ext_inputs_vr(i,:, k) = value_column 
-          !this%bgc_cpool_ext_loss_vr(i,:, k) = value_column
        end do
     end do 
 
@@ -7457,9 +7449,7 @@ contains
          do j = 1, nlevdecomp_full
             do fi = 1,num_column
                i = filter_column(fi)
-              ! this%m_decomp_cpools_to_fire_vr(i,j,k) = value_column
                this%decomp_cpools_transport_tendency(i,j,k) = value_column
-              ! this%decomp_cpools_yield_vr(i,j,k) = value_column
             end do
          end do
       end do
@@ -8805,44 +8795,6 @@ contains
           this%harvest_n_to_litr_lig_n(i,j)          = value_column
           this%harvest_n_to_cwdn(i,j)                = value_column
 
-          !this%smin_no3_leached_vr(i,j)           = value_column
-          !this%smin_no3_runoff_vr(i,j)            = value_column
-          !this%n2_n2o_ratio_denit_vr(i,j)         = value_column
-          !this%pot_f_nit_vr(i,j)                  = value_column
-          !this%pot_f_denit_vr(i,j)                = value_column
-          !this%actual_immob_no3_vr(i,j)           = value_column
-          !this%actual_immob_nh4_vr(i,j)           = value_column
-          !this%smin_no3_to_plant_vr(i,j)          = value_column
-          !this%smin_nh4_to_plant_vr(i,j)          = value_column
-          !this%f_n2o_denit_vr(i,j)                = value_column
-          !this%f_n2o_nit_vr(i,j)                  = value_column
-
-          !this%smin_no3_massdens_vr(i,j)          = value_column
-          !this%k_nitr_t_vr(i,j)                   = value_column
-          !this%k_nitr_ph_vr(i,j)                  = value_column
-          !this%k_nitr_h2o_vr(i,j)                 = value_column
-          !this%k_nitr_vr(i,j)                     = value_column
-          !this%wfps_vr(i,j)                       = value_column
-          !this%fmax_denit_carbonsubstrate_vr(i,j) = value_column
-          !this%fmax_denit_nitrate_vr(i,j)         = value_column
-          !this%f_denit_base_vr(i,j)               = value_column
-
-          !this%diffus(i,j)                        = value_column
-          !this%ratio_k1(i,j)                      = value_column
-          !this%ratio_no3_co2(i,j)                 = value_column
-          !this%soil_co2_prod(i,j)                 = value_column
-          !this%fr_WFPS(i,j)                       = value_column
-          !this%soil_bulkdensity(i,j)              = value_column
-
-          !this%r_psi(i,j)                         = value_column
-          !this%anaerobic_frac(i,j)                = value_column
-
-
-          !this%potential_immob_vr(i,j)               = value_column
-          !this%actual_immob_vr(i,j)                  = value_column
-          !this%sminn_to_plant_vr(i,j)                = value_column
-          !this%supplement_to_sminn_vr(i,j)           = value_column
-          !this%gross_nmin_vr(i,j)                    = value_column
           this%net_nmin_vr(i,j)                      = value_column
           this%sminn_nh4_input_vr(i,j)               = value_column !not used anywhere?
           this%sminn_no3_input_vr(i,j)               = value_column !not used anywhere?
@@ -8914,9 +8866,6 @@ contains
        this%sminn_input(i)               = value_column
        this%sminn_nh4_input(i)           = value_column
        this%sminn_no3_input(i)           = value_column
-       !this%somn_erode(i)                = value_column
-       !this%somn_deposit(i)              = value_column
-       !this%somn_yield(i)                = value_column
        ! Zero p2c column fluxes
        this%fire_nloss(i) = value_column
        this%wood_harvestn(i) = value_column
@@ -8927,9 +8876,6 @@ contains
     do k = 1, ndecomp_pools
        do fi = 1,num_column
           i = filter_column(fi)
-          !this%decomp_npools_leached(i,k) = value_column
-          !this%decomp_npools_erode(i,k) = value_column
-          !this%decomp_npools_deposit(i,k) = value_column
           this%decomp_npools_yield(i,k) = value_column !ero_ccyle
           this%m_decomp_npools_to_fire(i,k) = value_column
           !NOTE: when are these used?
@@ -10509,16 +10455,6 @@ contains
       end do
    end do
 
-   ! do l = 1, ndecomp_cascade_transitions
-   !    do j = 1, nlevdecomp_full
-   !       do fi = 1,num_column
-   !          i = filter_column(fi)
-   !          this%decomp_cascade_ptransfer_vr(i,j,l) = value_column
-   !          this%decomp_cascade_sminp_flux_vr(i,j,l) = value_column
-   !       end do
-   !    end do
-   ! end do
-
     ! pflotran
     if(nstep_mod == 0 .or. is_first_restart_step() ) then 
       do k = 1, ndecomp_pools
@@ -10533,14 +10469,12 @@ contains
     do j = 1, nlevdecomp_full
        do fi = 1,num_column
           i = filter_column(fi)
-          ! only initializing in the first time-step
           this%sminp_net_transport_vr(i,j) = value_column
        end do
     end do
 
     do fi = 1,num_column
        i = filter_column(fi)
-       ! only initializing in the first time-step
        this%externalp_to_decomp_delta(i) = value_column
        this%sminp_net_transport_delta(i)   = value_column
      end do

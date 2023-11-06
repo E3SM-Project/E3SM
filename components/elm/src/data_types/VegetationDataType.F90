@@ -8619,7 +8619,6 @@ module VegetationDataType
        do fi = 1,num_patch
           i = filter_patch(fi)
 
-         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           this%leafc_xfer_to_leafc(i)                 = value_patch
           this%frootc_xfer_to_frootc(i)               = value_patch
           this%livestemc_xfer_to_livestemc(i)         = value_patch
