@@ -112,7 +112,7 @@ macro(createTestExec execName execType macroNP macroNC
   ADD_DEFINITIONS(-DHAVE_CONFIG_H)
 
   ADD_EXECUTABLE(${execName} ${EXEC_SOURCES})
-  SET_TARGET_PROPERTIES(${execName} PROPERTIES LINKER_LANGUAGE Fortran)
+  SET_TARGET_PROPERTIES(${execName} PROPERTIES LINKER_LANGUAGE CXX)
   IF(BUILD_HOMME_WITHOUT_PIOLIBRARY)
     TARGET_COMPILE_DEFINITIONS(${execName} PUBLIC HOMME_WITHOUT_PIOLIBRARY)
   ENDIF()
@@ -156,7 +156,11 @@ macro(createTestExec execName execType macroNP macroNC
   ENDIF ()
 
   IF (HOMME_USE_KOKKOS)
+  if("${E3SM_KOKKOS_PATH}" STREQUAL "")
     target_link_libraries(${execName} kokkos)
+  else()
+    link_to_kokkos(${execName})
+  endif()
   ENDIF ()
 
   # Move the module files out of the way so the parallel build
@@ -169,8 +173,8 @@ macro(createTestExec execName execType macroNP macroNC
     TARGET_LINK_LIBRARIES(${execName} -mkl)
   ELSE()
     IF (NOT HOMME_FIND_BLASLAPACK)
-      TARGET_LINK_LIBRARIES(${execName} lapack blas)
-      ADD_DEPENDENCIES(${execName} blas lapack)
+	    #TARGET_LINK_LIBRARIES(${execName} lapack blas)
+	    #ADD_DEPENDENCIES(${execName} blas lapack)
     ENDIF()
   ENDIF()
 

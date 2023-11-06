@@ -30,7 +30,8 @@ struct RemapStateProvider {
   ElementsState     m_state;
   ElementsGeometry  m_geometry;
   HybridVCoord      m_hvcoord;
-  bool              m_process_nh_vars;
+  //bool              m_process_nh_vars;
+  int              m_process_nh_vars;
 
   // These two morally are d(w_i)/ds and d(phinh_i)/ds.
   // However, since in the remap we need to multiply by ds
@@ -51,25 +52,72 @@ struct RemapStateProvider {
     assert (params.params_set);
 
 #ifdef HOMMEXX_BFB_TESTING
-    m_process_nh_vars = true;
+//    m_process_nh_vars = true;
+    m_process_nh_vars = 1;
 #else
-    m_process_nh_vars = !params.theta_hydrostatic_mode;
+//    m_process_nh_vars = !params.theta_hydrostatic_mode;
+    if(params.theta_hydrostatic_mode){
+	    m_process_nh_vars = 0;
+    }else{
+            m_process_nh_vars = 1;}
 #endif
+    std::cout << "as int: hey m_process_nh_vars " << m_process_nh_vars << "\n";
+if(m_process_nh_vars==1){
+    std::cout << "hey m_process_nh_vars is true \n";
+}else
+{
+    std::cout << "hey m_process_nh_vars is false \n";
+}
 
-    if (m_process_nh_vars) {
+
+    if (m_process_nh_vars > 0) {
+    
+std::cout << "INSIDE w phi assignment m_process_nh_vars is true \n";
+
       m_delta_w     = decltype(m_delta_w) ("w_i increments",elements.num_elems());
       m_delta_phinh = decltype(m_delta_phinh) ("phinh_i increments",elements.num_elems());
     }
 
+if(m_process_nh_vars){
+    std::cout << "2hey m_process_nh_vars is true \n";
+}else
+{
+    std::cout << "2hey m_process_nh_vars is false \n";
+}
+
     m_hvcoord = Context::singleton().get<HybridVCoord>();
     assert (m_hvcoord.m_inited);
 
+if(m_process_nh_vars){
+    std::cout << "3hey m_process_nh_vars is true \n";
+}else
+{
+    std::cout << "3hey m_process_nh_vars is false \n";
+}
+
     m_eos.init(params.theta_hydrostatic_mode,m_hvcoord);
     m_elem_ops.init(m_hvcoord);
-  }
+
+  if(m_process_nh_vars){
+    std::cout << "4hey m_process_nh_vars is true \n";
+}else
+{
+    std::cout << "4hey m_process_nh_vars is false \n";
+}
+  
+    }
 
   int requested_buffer_size (int num_teams) const {
-    if (!m_process_nh_vars) {
+
+if(m_process_nh_vars){
+    std::cout << "IN REQUESTED hey m_process_nh_vars is true \n";
+}else
+{
+    std::cout << "IN REQUESTED hey m_process_nh_vars is false \n";
+}
+
+    //if (!m_process_nh_vars) {
+    if (m_process_nh_vars==0) {
       return 0;
     }
 
@@ -81,8 +129,20 @@ struct RemapStateProvider {
   }
 
   void init_buffers(const FunctorsBuffersManager& fbm, int num_teams) {
-    if (!m_process_nh_vars) {
-      return;
+
+if(m_process_nh_vars){
+    std::cout << "IN BUFFERS hey m_process_nh_vars is true \n";
+}else
+{
+    std::cout << "IN BUFFERS hey m_process_nh_vars is false \n";
+}
+
+
+    //if (!m_process_nh_vars) {
+    if (m_process_nh_vars==0) {
+
+    std::cout << "hey we should be returning from init_buffers \n";
+     return;
     }
 
     Scalar* mem = reinterpret_cast<Scalar*>(fbm.get_memory());
@@ -95,17 +155,20 @@ struct RemapStateProvider {
 
   KOKKOS_INLINE_FUNCTION
   int num_states_remap() const {
-    return (m_process_nh_vars ? 5 : 3);
+    //return (m_process_nh_vars ? 5 : 3);
+    return ( (m_process_nh_vars>0) ? 5 : 3);
   }
 
   KOKKOS_INLINE_FUNCTION
   int num_states_preprocess() const {
-    return (m_process_nh_vars ? 2 : 0);
+    //return (m_process_nh_vars ? 2 : 0);
+    return ( (m_process_nh_vars>0) ? 2 : 0);
   }
 
   KOKKOS_INLINE_FUNCTION
   int num_states_postprocess() const {
-    return (m_process_nh_vars ? 2 : 0);
+    //return (m_process_nh_vars ? 2 : 0);
+    return ((m_process_nh_vars>0) ? 2 : 0);
   }
 
   KOKKOS_INLINE_FUNCTION

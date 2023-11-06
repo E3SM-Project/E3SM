@@ -141,7 +141,7 @@ struct LimiterFunctor {
                               [&](const int k,Real& result) {
 #ifndef HOMMEXX_BFB_TESTING
         if(diff_as_real(k) < 0){
-          printf("WARNING:CAAR: dp3d too small. k=%d, dp3d(k)=%f, dp0=%f \n",
+          Kokkos::print("WARNING:CAAR: dp3d too small. k=%d, dp3d(k)=%f, dp0=%f \n",
            k+1,dp_as_real(k),dp0_as_real(k));
         }
 #endif
@@ -202,7 +202,7 @@ struct LimiterFunctor {
         for (int ivec=0; ivec<VECTOR_SIZE; ++ivec) {
           if ( (vtheta_dp(ilev)[ivec] - m_vtheta_thresh*dp(ilev)[ivec]) < 0) {
 #ifndef HOMMEXX_BFB_TESTING
-             printf("WARNING:CAAR: k=%d,theta(k)=%f<%f=th_thresh, applying limiter \n",
+             Kokkos::print("WARNING:CAAR: k=%d,theta(k)=%f<%f=th_thresh, applying limiter \n",
                ilev*VECTOR_SIZE+ivec+1,vtheta_dp(ilev)[ivec]/dp(ilev)[ivec],m_vtheta_thresh);
 #endif
              vtheta_dp(ilev)[ivec]=m_vtheta_thresh*dp(ilev)[ivec];
