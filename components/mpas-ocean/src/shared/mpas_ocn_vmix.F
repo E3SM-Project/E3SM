@@ -478,13 +478,14 @@ contains
       !YSK !$acc enter data create(bTemp, rTemp) !YSK
       !YSK !$acc enter data present_or_create(bTemp, rTemp)
 
+!YSK      !$acc    present(bTemp, rTemp)
+      !!$acc    private(Nsurf, N, cell1, cell2, A, bTemp, C, m, rTemp, k) !YSK
+      !YSK !$acc    normalVelocity, landIceEdgeFraction, kineticEnergyCell)
+
       !$acc parallel loop present(maxLevelEdgeTop, minLevelEdgeBot, cellsOnEdge, &
       !$acc    layerThickEdgeDrag, layerThickEdgeMean, layerThickness, vertViscTopOfEdge, &
       !$acc    normalVelocity, landIceEdgeFraction, kineticEnergyCell, bTemp, rTemp) &
-      !$acc    private(Nsurf, N, cell1, cell2, A, m, k, CPrev, CNext) &
-!YSK      !$acc    present(bTemp, rTemp)
-      !!$acc    private(Nsurf, N, cell1, cell2, A, bTemp, C, m, rTemp, k) !YSK
-      !YSK !$acc    normalVelocity, landIceEdgeFraction, kineticEnergyCell) &
+      !$acc    private(Nsurf, N, cell1, cell2, A, m, k, CPrev, CNext)
 #else
       !$omp parallel
       !$omp do schedule(runtime) private(Nsurf, N, cell1, cell2, A, bTemp, C, m, rTemp, k)

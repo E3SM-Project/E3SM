@@ -1118,7 +1118,8 @@ contains
             iEdge = edgesOnVertex(i, iVertex)
             rTmp  = dcEdge(iEdge)*dvEdge(iEdge)*0.25_RKIND/ &
                     areaTriangle(iVertex)
-            !$acc loop seq
+!YSK
+!            !$acc loop seq
             do k = 1, nVertLevels
                kineticEnergyVertex(k,iVertex) = &
                kineticEnergyVertex(k,iVertex) + rTmp* &
