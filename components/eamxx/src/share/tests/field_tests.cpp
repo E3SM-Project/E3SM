@@ -355,7 +355,7 @@ TEST_CASE("field", "") {
 
     // Deep copy subfield of 1d field -> 0d field and check result
     for (size_t i=0; i<v1.extent(0); ++i) {
-      f0.deep_copy(f1.subfield(0, i));
+      f0.deep_copy<Host>(f1.subfield(0, i));
       REQUIRE(v0() == v1(i));
     }
 
@@ -364,7 +364,7 @@ TEST_CASE("field", "") {
 
     // Deep copy 0d field -> subfield of 1d field and check result
     for (size_t i=0; i<v1.extent(0); ++i) {
-      f1.subfield(0, i).deep_copy(f0);
+      f1.subfield(0, i).deep_copy<Host>(f0);
       REQUIRE(v1(i) == v0());
     }
   }
