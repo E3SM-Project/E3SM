@@ -269,9 +269,9 @@ contains
 
 !try numerical with DA too?
           ! numerical J:
-          !call get_dirk_jacobian(JacL,JacD,JacU,dt2,elem(ie)%state%dp3d(:,:,:,np1),dphi,elem(ie)%state%phis,pnh,0,1d-4,hvcoord,dpnh_dp_i,vtheta_dp) 
+          call get_dirk_jacobian(JacL,JacD,JacU,dt2,elem(ie)%state%dp3d(:,:,:,np1),dphi,elem(ie)%state%phis,pnh,0,1d-4,hvcoord,dpnh_dp_i,elem(ie)%state%vtheta_dp(:,:,:,np1)) 
           ! analytic J:
-          call get_dirk_jacobian(JacL,JacD,JacU,dt2,elem(ie)%state%dp3d(:,:,:,np1),dphi,elem(ie)%state%phis,pnh,1) 
+          !call get_dirk_jacobian(JacL,JacD,JacU,dt2,elem(ie)%state%dp3d(:,:,:,np1),dphi,elem(ie)%state%phis,pnh,1) 
 
           x(:,:,1:nlev) = -Fn(:,:,1:nlev)
 
