@@ -1,6 +1,8 @@
 #include "eamxx_ml_correction_process_interface.hpp"
 #include "ekat/ekat_assert.hpp"
 #include "ekat/util/ekat_units.hpp"
+#include "ekat/kokkos/ekat_kokkos_utils.hpp"
+#include "ekat/kokkos/ekat_subview_utils.hpp"
 #include "share/field/field_utils.hpp"
 
 namespace scream {
@@ -10,6 +12,7 @@ MLCorrection::MLCorrection(const ekat::Comm &comm,
     : AtmosphereProcess(comm, params) {
   m_ML_model_path_tq = m_params.get<std::string>("ML_model_path_tq");
   m_ML_model_path_uv = m_params.get<std::string>("ML_model_path_uv");
+  m_ML_model_path_sfc_fluxes = m_params.get<std::string>("ML_model_path_sfc_fluxes");
   m_fields_ml_output_variables = m_params.get<std::vector<std::string>>("ML_output_fields");
   m_ML_correction_unit_test = m_params.get<bool>("ML_correction_unit_test");
 }
@@ -36,11 +39,18 @@ void MLCorrection::set_grids(
   // interfaces
   FieldLayout scalar2d_layout{ {COL}, {m_num_cols}};
   FieldLayout scalar3d_layout_mid{{COL, LEV}, {m_num_cols, m_num_levs}};
+  FieldLayout scalar3d_layout_int{{COL, ILEV}, {m_num_cols, m_num_levs+1}};
   FieldLayout horiz_wind_layout { {COL,CMP,LEV}, {m_num_cols,2,m_num_levs} };
   if (not m_ML_correction_unit_test) {
     const auto m2 = m*m;
     const auto s2 = s*s;
+    auto Wm2 = W / m / m;
+    auto nondim = m/m;
     add_field<Required>("phis", scalar2d_layout, m2/s2, grid_name, ps);
+    add_field<Updated>("SW_flux_dn", scalar3d_layout_int, Wm2, grid_name, ps);
+    add_field<Required>("sfc_alb_dif_vis", scalar2d_layout, nondim, grid_name, ps);
+    add_field<Updated>("sfc_flux_sw_net", scalar2d_layout, Wm2, grid_name);
+    add_field<Updated>("sfc_flux_lw_dn", scalar2d_layout, Wm2, grid_name);
     m_lat  = m_grid->get_geometry_data("lat");
     m_lon  = m_grid->get_geometry_data("lon");      
   }
@@ -69,6 +79,7 @@ void MLCorrection::initialize_impl(const RunType /* run_type */) {
   py_correction = pybind11::module::import("ml_correction");
   ML_model_tq = py_correction.attr("get_ML_model")(m_ML_model_path_tq);
   ML_model_uv = py_correction.attr("get_ML_model")(m_ML_model_path_uv);
+  ML_model_sfc_fluxes = py_correction.attr("get_ML_model")(m_ML_model_path_sfc_fluxes);
   ekat::enable_fpes(fpe_mask);
 }
 
@@ -77,16 +88,15 @@ void MLCorrection::run_impl(const double dt) {
   // use model time to infer solar zenith angle for the ML prediction
   auto current_ts = timestamp();
   std::string datetime_str = current_ts.get_date_string() + " " + current_ts.get_time_string();
-  const auto &qv_field = get_field_out("qv");
-  const auto &qv       = qv_field.get_view<Real **, Host>();
-  const auto &T_mid_field = get_field_out("T_mid");
-  const auto &T_mid       = T_mid_field.get_view<Real **, Host>();
-  const auto &phis_field  = get_field_in("phis");
-  const auto &phis        = phis_field.get_view<const Real *, Host>();
-  const auto &u_field = get_field_out("horiz_winds").get_component(0);
-  const auto &u       = u_field.get_view<Real **, Host>();
-  const auto &v_field = get_field_out("horiz_winds").get_component(1);
-  const auto &v       = v_field.get_view<Real **, Host>();
+  const auto &qv              = get_field_out("qv").get_view<Real **, Host>();
+  const auto &T_mid           = get_field_out("T_mid").get_view<Real **, Host>();
+  const auto &phis            = get_field_in("phis").get_view<const Real *, Host>();
+  const auto &SW_flux_dn      = get_field_out("SW_flux_dn").get_view<Real **, Host>();
+  const auto &sfc_alb_dif_vis = get_field_in("sfc_alb_dif_vis").get_view<const Real *, Host>();  
+  const auto &sfc_flux_sw_net = get_field_out("sfc_flux_sw_net").get_view<Real *, Host>();
+  const auto &sfc_flux_lw_dn  = get_field_out("sfc_flux_lw_dn").get_view<Real *, Host>();
+  const auto &u               = get_field_out("horiz_winds").get_component(0).get_view<Real **, Host>();
+  const auto &v               = get_field_out("horiz_winds").get_component(1).get_view<Real **, Host>();
 
   auto h_lat  = m_lat.get_view<const Real*,Host>();
   auto h_lon  = m_lon.get_view<const Real*,Host>();
@@ -94,8 +104,7 @@ void MLCorrection::run_impl(const double dt) {
   const auto& tracers = get_group_out("tracers");
   const auto& tracers_info = tracers.m_info;
   Int num_tracers = tracers_info->size();
-  Real qv_max_before = field_max<Real>(qv_field);
-  Real qv_min_before = field_min<Real>(qv_field);
+
   ekat::disable_all_fpes();  // required for importing numpy
   if ( Py_IsInitialized() == 0 ) {
     pybind11::initialize_interpreter();
@@ -115,12 +124,19 @@ void MLCorrection::run_impl(const double dt) {
       pybind11::array_t<Real, pybind11::array::c_style | pybind11::array::forcecast>(
           m_num_cols, h_lon.data(), pybind11::str{}),
       pybind11::array_t<Real, pybind11::array::c_style | pybind11::array::forcecast>(
-          m_num_cols, phis.data(), pybind11::str{}),                                                           
-      m_num_cols, m_num_levs, num_tracers, dt, ML_model_tq, ML_model_uv, datetime_str);
+          m_num_cols, phis.data(), pybind11::str{}),   
+      pybind11::array_t<Real, pybind11::array::c_style | pybind11::array::forcecast>(
+          m_num_cols * (m_num_levs+1), SW_flux_dn.data(), pybind11::str{}),
+      pybind11::array_t<Real, pybind11::array::c_style | pybind11::array::forcecast>(
+          m_num_cols, sfc_alb_dif_vis.data(), pybind11::str{}),
+      pybind11::array_t<Real, pybind11::array::c_style | pybind11::array::forcecast>(
+          m_num_cols, sfc_flux_sw_net.data(), pybind11::str{}),   
+      pybind11::array_t<Real, pybind11::array::c_style | pybind11::array::forcecast>(
+          m_num_cols, sfc_flux_lw_dn.data(), pybind11::str{}),                                                                                                   
+      m_num_cols, m_num_levs, num_tracers, dt, 
+      ML_model_tq, ML_model_uv, ML_model_sfc_fluxes, datetime_str);
   pybind11::gil_scoped_release no_gil;  
-  ekat::enable_fpes(fpe_mask);
-  Real qv_max_after = field_max<Real>(qv_field);
-  Real qv_min_after = field_min<Real>(qv_field);        
+  ekat::enable_fpes(fpe_mask);   
 }
 
 // =========================================================================================

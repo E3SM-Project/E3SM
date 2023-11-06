@@ -19,7 +19,8 @@ def get_ML_model(model_path):
 
 def ensure_correction_ordering(correction):
     for key in correction:
-        correction[key] = correction[key].transpose("ncol", "z")
+        if "z" in correction[key].dims:
+            correction[key] = correction[key].transpose("ncol", "z")
     return correction
 
 
@@ -32,6 +33,7 @@ def get_ML_correction_dQ1_dQ2(model, T_mid, qv, cos_zenith, dt):
         )
     )
     return ensure_correction_ordering(predict(model, ds, dt))
+
 
 def get_ML_correction_dQu_dQv(model, T_mid, qv, cos_zenith, lat, phis, u, v, dt):
     ds = xr.Dataset(
@@ -51,8 +53,40 @@ def get_ML_correction_dQu_dQv(model, T_mid, qv, cos_zenith, lat, phis, u, v, dt)
         output["dQu"] = output.pop("dQxwind")
     if "dQywind" in output.keys():
         output["dQv"] = output.pop("dQywind")
-            
+
     return output
+
+
+def get_ML_correction_sfc_fluxes(
+    model,
+    T_mid,
+    qv,
+    cos_zenith,
+    lat,
+    phis,
+    sfc_alb_dif_vis,
+    sw_flux_dn,
+    dt,
+):
+    # surface_diffused_shortwave_albedo is sfc_alb_dif_vis
+    # total_sky_downward_shortwave_flux_at_top_of_atmosphere is SW_flux_dn_at_model_top
+    SW_flux_dn_at_model_top = sw_flux_dn[:, 0]
+    ds = xr.Dataset(
+        data_vars=dict(
+            T_mid=(["ncol", "z"], T_mid),
+            qv=(["ncol", "z"], qv),
+            lat=(["ncol"], lat),
+            surface_geopotential=(["ncol"], phis),
+            cos_zenith_angle=(["ncol"], cos_zenith),
+            surface_diffused_shortwave_albedo=(["ncol"], sfc_alb_dif_vis),
+            total_sky_downward_shortwave_flux_at_top_of_atmosphere=(
+                ["ncol"],
+                SW_flux_dn_at_model_top,
+            ),
+        )
+    )
+    return predict(model, ds, dt)
+
 
 def update_fields(
     T_mid,
@@ -62,12 +96,17 @@ def update_fields(
     lat,
     lon,
     phis,
+    sw_flux_dn,
+    sfc_alb_dif_vis,
+    sfc_flux_sw_net,
+    sfc_flux_lw_dn,
     Ncol,
     Nlev,
     num_tracers,
     dt,
     model_tq,
     model_uv,
+    model_sfc_fluxes,
     current_time,
 ):
     """
@@ -78,6 +117,10 @@ def update_fields(
     lat: latitude
     lon: longitude
     phis: surface geopotential
+    SW_flux_dn_at_model_top: downwelling shortwave flux at the top of the model
+    sfc_alb_dif_vis: surface diffuse shortwave albedo
+    sfc_flux_sw_net
+    sfc_flux_lw_dn
     Ncol: number of columns
     Nlev: number of levels
     num_tracers: number of tracers
@@ -99,10 +142,29 @@ def update_fields(
         lat,
     )
     if model_tq is not None:
-        correction_tq = get_ML_correction_dQ1_dQ2(model_tq, T_mid, qv[:, 0, :], cos_zenith, dt)
+        correction_tq = get_ML_correction_dQ1_dQ2(
+            model_tq, T_mid, qv[:, 0, :], cos_zenith, dt
+        )
         T_mid[:, :] += correction_tq["dQ1"].values * dt
         qv[:, 0, :] += correction_tq["dQ2"].values * dt
     if model_uv is not None:
-        correction_uv = get_ML_correction_dQu_dQv(model_uv, T_mid, qv[:, 0, :], cos_zenith, lat, phis, u, v, dt)
+        correction_uv = get_ML_correction_dQu_dQv(
+            model_uv, T_mid, qv[:, 0, :], cos_zenith, lat, phis, u, v, dt
+        )
         u[:, :] += correction_uv["dQu"].values * dt
-        v[:, :] += correction_uv["dQv"].values * dt        
+        v[:, :] += correction_uv["dQv"].values * dt
+    if model_sfc_fluxes is not None:
+        sw_flux_dn = np.reshape(sw_flux_dn, (-1, Nlev+1))
+        correction_sfc_fluxes = get_ML_correction_sfc_fluxes(
+            model_sfc_fluxes,
+            T_mid,
+            qv[:, 0, :],
+            cos_zenith,
+            lat,
+            phis,
+            sfc_alb_dif_vis,
+            sw_flux_dn,
+            dt,
+        )
+        sfc_flux_sw_net[:] = correction_sfc_fluxes["net_shortwave_sfc_flux_via_transmissivity"].values
+        sfc_flux_lw_dn[:] = correction_sfc_fluxes["override_for_time_adjusted_total_sky_downward_longwave_flux_at_surface"].values
