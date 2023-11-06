@@ -135,7 +135,8 @@ module li_time_integration_fe_rk
                                                       groundedSfcMassBalAccum, &
                                                       groundedBasalMassBalAccum, &
                                                       floatingBasalMassBalAccum, &
-                                                      fluxAcrossGroundingLineAccum
+                                                      fluxAcrossGroundingLineAccum, &
+                                                      fluxAcrossGroundingLineOnCellsAccum
       real (kind=RKIND), dimension(:), pointer :: layerCenterSigma, layerThicknessFractions
       integer, dimension(:), pointer :: cellMaskPrev  ! cell mask before advection
       real (kind=RKIND), dimension(:,:), allocatable :: layerThicknessPrev, &
@@ -202,6 +203,7 @@ module li_time_integration_fe_rk
       allocate(groundedBasalMassBalAccum(nCells+1))
       allocate(floatingBasalMassBalAccum(nCells+1))
       allocate(fluxAcrossGroundingLineAccum(nEdges+1))
+      allocate(fluxAcrossGroundingLineOnCellsAccum(nCells+1))
 
       temperaturePrev(:,:) = 0.0_RKIND
       waterFracPrev(:,:) = 0.0_RKIND
@@ -219,6 +221,7 @@ module li_time_integration_fe_rk
       groundedBasalMassBalAccum(:) = 0.0_RKIND
       floatingBasalMassBalAccum(:) = 0.0_RKIND
       fluxAcrossGroundingLineAccum(:) = 0.0_RKIND
+      fluxAcrossGroundingLineOnCellsAccum(:) = 0.0_RKIND
 
 ! === Prepare for advection (including CFL checks) ===========
 ! This has to come first currently, because it sets the time step!
@@ -454,6 +457,7 @@ module li_time_integration_fe_rk
          call mpas_pool_get_array(geometryPool, 'floatingBasalMassBalApplied', floatingBasalMassBalApplied)
          call mpas_pool_get_array(geometryPool, 'groundedBasalMassBalApplied', groundedBasalMassBalApplied)
          call mpas_pooL_get_array(velocityPool, 'fluxAcrossGroundingLine', fluxAcrossGroundingLine)
+         call mpas_pooL_get_array(velocityPool, 'fluxAcrossGroundingLineOnCells', fluxAcrossGroundingLineOnCells)
          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
 
          ! update budgets
@@ -463,6 +467,7 @@ module li_time_integration_fe_rk
          groundedBasalMassBalAccum = groundedBasalMassBalAccum + rkTendWeights(rkStage) * groundedBasalMassBalApplied
          floatingBasalMassBalAccum = floatingBasalMassBalAccum + rkTendWeights(rkStage) * floatingBasalMassBalApplied
          fluxAcrossGroundingLineAccum = fluxAcrossGroundingLineAccum + rkTendWeights(rkStage) * fluxAcrossGroundingLine
+         fluxAcrossGroundingLineOnCellsAccum = fluxAcrossGroundingLineOnCellsAccum + rkTendWeights(rkStage) * fluxAcrossGroundingLineOnCells
 
          ! Halo updates
          call mpas_timer_start("halo updates")
@@ -490,8 +495,10 @@ module li_time_integration_fe_rk
       enddo
 
 ! Finalize budget updates
-      ! Calculate volume converted from grounded to floating
-      ! This needs to be determined after SMB/BMB are applied because those can change floating/grounded state
+      ! Update masks after RK integration
+      call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+      err = ior(err, err_tmp)
+
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
       call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
 
@@ -500,32 +507,18 @@ module li_time_integration_fe_rk
       call mpas_dmpar_field_halo_exch(domain, 'edgeMask')
       call mpas_timer_stop("halo updates")
 
+      ! Calculate volume converted from grounded to floating
+      ! This needs to be determined after SMB/BMB are applied because those can change floating/grounded state
       call li_grounded_to_floating(cellMaskPrev, cellMask, thickness, groundedToFloatingThickness, nCells)
+
       sfcMassBalApplied(:) = sfcMassBalAccum(:)
       groundedSfcMassBalApplied(:) = groundedSfcMassBalAccum(:)
       basalMassBalApplied(:) = basalMassBalAccum(:)
       groundedBasalMassBalApplied(:) = groundedBasalMassBalAccum(:)
       floatingBasalMassBalApplied(:) = floatingBasalMassBalAccum(:)
       fluxAcrossGroundingLine(:) = fluxAcrossGroundingLineAccum(:)
-      
-      fluxAcrossGroundingLineOnCells(:) = 0.0_RKIND
-      do iEdge = 1, nEdges
-         if (li_mask_is_grounding_line(edgeMask(iEdge))) then
-            iCell1 = cellsOnEdge(1,iEdge)
-            iCell2 = cellsOnEdge(2,iEdge)
-            if (li_mask_is_grounded_ice(cellMask(iCell1))) then
-               theGroundedCell = iCell1
-            else
-               theGroundedCell = iCell2
-            endif
-            if ( thickness(theGroundedCell) > 0.0_RKIND ) then
-               fluxAcrossGroundingLineOnCells(theGroundedCell) = fluxAcrossGroundingLineOnCells(theGroundedCell) + &
-                       fluxAcrossGroundingLine(iEdge) / thickness(theGroundedCell) * config_ice_density  ! adjust to correct units
-            else
-               fluxAcrossGroundingLineOnCells(theGroundedCell) = 0.0_RKIND
-            endif
-         endif
-      enddo ! edges
+      fluxAcrossGroundingLineOnCells(:) = fluxAcrossGroundingLineOnCellsAccum(:)
+
 ! Reset time step to full length after RK loop
       deltat = deltatFull
 

@@ -630,10 +630,6 @@ module li_advection
          call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
          err = ior(err, err_tmp)
 
-         ! Calculate volume converted from grounded to floating
-         ! This needs to be determined after SMB/BMB are applied because those can change floating/grounded state
-         call li_grounded_to_floating(cellMaskTemporaryField % array, cellMask, thickness, groundedToFloatingThickness, nCells)
-
          ! Calculate flux across grounding line
          ! Do this after new thickness & mask have been calculated, including SMB/BMB
          fluxAcrossGroundingLine(:) = 0.0_RKIND
