@@ -2914,7 +2914,7 @@ end subroutine wrap_update_hifrq_hist
       end do
    end do
 
-   call UpdateFatesRMeansTStep(this%fates(nc)%sites,this%fates(nc)%bc_in)
+   call UpdateFatesRMeansTStep(this%fates(nc)%sites,this%fates(nc)%bc_in,this%fates(nc)%bc_out)
    
   end subroutine WrapUpdateFatesRmean
 
