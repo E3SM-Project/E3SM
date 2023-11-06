@@ -49,7 +49,7 @@
 <config_dt ocn_grid="SOwISC12to60E2r4">'00:10:00'</config_dt>
 <config_dt ocn_grid="ECwISC30to60E2r1">'00:30:00'</config_dt>
 <config_dt ocn_grid="ECwISC30to60E3r2">'00:30:00'</config_dt>
-<config_time_integrator>'split_explicit'</config_time_integrator>
+<config_time_integrator>'split_explicit_ab2'</config_time_integrator>
 <config_number_of_time_levels>2</config_number_of_time_levels>
 
 <!-- hmix -->
