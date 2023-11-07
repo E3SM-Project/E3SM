@@ -48,6 +48,7 @@ module mo_extfrc
   integer :: PH_emis_m(nfire), PH_emis_n(nfire) ! fire emission indices
   logical :: plumerise = .false.
   logical :: emis_constrained_frp = .false.
+  logical :: diag_run = .false.
 contains
 
   subroutine extfrc_inti( extfrc_specifier, extfrc_type, extfrc_cycle_yr, extfrc_fixed_ymd, extfrc_fixed_tod)
@@ -480,7 +481,7 @@ contains
                                                      frcing_vertical_plume_old(k)*(zint(icol,k)-zint(icol,k+1))*km_to_cm
                            ! write(iulog,*)'kzm_level ',k, 'old emis ', frcing_vertical_plume_old(k)
                          enddo
-                         if (forcings(m)%species == 'bc_a4')then
+                         if (forcings(m)%species == 'bc_a4' )then
                          ! convert molecular/cm2/s to kw/m2/s, based on Wooster et al., 2005, equation 14                           
                          ! mass (kg/s) = emis*1.0E4/Avogadr_cst*12/1000
                          ! FRP (kW/m2) = mass/0.368*1000
@@ -522,7 +523,7 @@ contains
                                ph_z(icol) = k
                             endif 
                          enddo 
-                         if (forcings(m)%species == 'bc_a4')then
+                         if (forcings(m)%species == 'bc_a4' .and. diag_run )then
                          write(iulog,*) 'kzm_fire_species ', forcings(m)%species, isec
                          write(iulog,*) 'kzm_FRP ',frp,frp4plume
                          write(iulog,*)'kzm_plume_rise_calculation_running'
@@ -567,7 +568,6 @@ contains
                             !write(iulog,*)'kzm_level ',k, 'new emis ', frcing_vertical_plume_new(k) 
                          enddo 
                          forcings(m)%fields(isec)%data(icol,:,lchnk) = frcing_vertical_plume_new(pver:1:-1) ! reverse back    
-                         write(iulog,*)'kzm_fire_forcing_data_finished '
                      end if
                   enddo 
                 endif ! if fire emission released 
