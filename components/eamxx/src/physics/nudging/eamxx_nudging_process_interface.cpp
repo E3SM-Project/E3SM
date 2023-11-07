@@ -170,9 +170,12 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   m_time_interp.initialize_data_from_files();
 
   // load nudging weights from file
+  // NOTE: the regional nudging use the same grid as the run, no need to
+  // do the interpolation.
   if (m_use_weights)
   {
-    create_helper_field("nudging_weights", scalar3d_layout_mid, grid_name, ps);
+    FieldLayout scalar3d_layout_grid { {COL,LEV}, {m_num_cols, m_num_levs} };	  
+    create_helper_field("nudging_weights", scalar3d_layout_grid, grid_name, ps);
     std::vector<Field> fields;
     auto nudging_weights = get_helper_field("nudging_weights");
     fields.push_back(nudging_weights);

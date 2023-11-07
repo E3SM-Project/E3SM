@@ -79,7 +79,7 @@ void create_nudging_weights_ncfile(int ntimes, int ncols, int nlevs, const std::
 TEST_CASE("create_vert_remap_and_weights","create_vert_remap_and_weights")
 {
   create_vert_remap();
-  create_nudging_weights_ncfile(1, 218, 81, "nudging_weights_remapped.nc");
-  create_nudging_weights_ncfile(1, 218, 128, "nudging_weights_nudged.nc");
+  create_nudging_weights_ncfile(1, 218, 72, "nudging_weights_remapped.nc");
+  create_nudging_weights_ncfile(1, 218, 72, "nudging_weights_nudged.nc");
 }
 } // end namespace
