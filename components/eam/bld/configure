@@ -1425,6 +1425,9 @@ if ($chem_pkg =~ '_mam3') {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_7MODE ';
 } elsif ($chem_pkg =~ '_mam9') {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_9MODE ';
+} else {
+    # Hack to get FIDEAL to build with tagged tracers mods
+    $chem_cppdefs = ' -DMODAL_AERO_3MODE ';
 }
 
 if ($bc_dep_to_snow_updates == 1) {

@@ -375,14 +375,10 @@ subroutine set_srf_wetdep(aerdepwetis, aerdepwetcw, cam_out)
       bcphiwet_sum = 0.0_r8
       do ispec = 1, nbc
          if (idx_bc1(1)>0) then
-            do ispec = 1, nbc
-               bcphiwet_sum = bcphiwet_sum +aerdepwetis(i,idx_bc1(ispec))+aerdepwetcw(i,idx_bc1(ispec))
-            enddo
+            bcphiwet_sum = bcphiwet_sum +aerdepwetis(i,idx_bc1(ispec))+aerdepwetcw(i,idx_bc1(ispec))
          endif
          if (idx_bc4(1)>0) then
-            do ispec = 1, nbc
-               bcphiwet_sum = bcphiwet_sum +aerdepwetis(i,idx_bc4(ispec))+aerdepwetcw(i,idx_bc4(ispec))
-            enddo
+            bcphiwet_sum = bcphiwet_sum +aerdepwetis(i,idx_bc4(ispec))+aerdepwetcw(i,idx_bc4(ispec))
          endif
       enddo
       cam_out%bcphiwet(i) = -(bcphiwet_sum)
@@ -673,12 +669,12 @@ subroutine set_srf_drydep(aerdepdryis, aerdepdrycw, cam_out)
       cam_out%ocphidry(i) = ocphidry_sum
 
       ocphodry_sum = 0.0_r8
-      if (idx_pom4(1)>0)
+      if (idx_pom4(1)>0) then
          do ispec = 1, npoa
             ocphodry_sum = ocphodry_sum + aerdepdryis(i,idx_pom4(ispec))+aerdepdrycw(i,idx_pom4(ispec))
          enddo
       endif
-      if (idx_soa2(1)>0)
+      if (idx_soa2(1)>0) then
          do ispec = 1, nsoa
             ocphodry_sum = ocphodry_sum + aerdepdryis(i,idx_soa2(ispec))+aerdepdrycw(i,idx_soa2(ispec))
          enddo

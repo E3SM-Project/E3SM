@@ -808,11 +808,19 @@ do jso4=1,nso4
 !
 
     call t_startf('aero_model_gasaerexch')
+#ifdef MODAL_AERO
     call aero_model_gasaerexch( imozart-1, ncol, lchnk, delt, latndx, lonndx, reaction_rates, &
                                 tfld, pmid, pdel, troplev, mbar, relhum, &
                                 zm,  qh2o, cwat, cldfr, ncldwtr, &
                                 invariants(:,:,indexm), invariants, del_h2so4_gasprod,  &
                                 vmr0, vmr, pbuf )
+#else
+    call aero_model_gasaerexch( imozart-1, ncol, lchnk, delt, latndx, lonndx, reaction_rates, &
+                                tfld, pmid, pdel, troplev, mbar, relhum, &
+                                zm,  qh2o, cwat, cldfr, ncldwtr, &
+                                invariants(:,:,indexm), invariants, del_h2so4_gasprod(:,:,1), &
+                                vmr0, vmr, pbuf )
+#endif
     call t_stopf('aero_model_gasaerexch')
 
     if ( has_strato_chem ) then 
