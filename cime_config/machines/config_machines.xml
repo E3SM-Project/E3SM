@@ -270,7 +270,7 @@
       <env name="BLA_VENDOR">Generic</env>
     </environment_variables>
     <environment_variables compiler="nvidia" mpilib="mpich">
-      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.9.1/cray-mpich-8.1.25/nvidia-22.7; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.8.3.patch/cray-mpich-8.1.15/nvidia-21.11; else echo "$ADIOS2_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="nvidia">
       <env name="BLAS_ROOT">$SHELL{if [ -z "$BLAS_ROOT" ]; then echo /opt/nvidia/hpc_sdk/Linux_x86_64/22.7/compilers; else echo "$BLAS_ROOT"; fi}</env>
@@ -321,10 +321,7 @@
       <executable>srun</executable>
       <arguments>
         <arg name="label"> --label</arg>
-<!--
         <arg name="num_tasks"> -n {{ total_tasks }} -N {{ num_nodes }}</arg>
--->
-        <arg name="num_tasks"> -n {{ total_tasks }}</arg>
         <arg name="thread_count">-c $SHELL{echo 128/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
         <arg name="binding"> $SHELL{if [ 64 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads";fi;} </arg>
         <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
@@ -431,13 +428,11 @@
       <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.9.1/cray-mpich-8.1.25/gcc-11.2.0; else echo "$ADIOS2_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="nvidia.*" mpilib="mpich">
-      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.9.1/cray-mpich-8.1.25/nvidia-22.7; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.8.3.patch/cray-mpich-8.1.15/nvidia-21.11; else echo "$ADIOS2_ROOT"; fi}</env>
     </environment_variables>
-<!--
     <environment_variables compiler="nvhpcacc" mpilib="mpich">
-      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.9.1/cray-mpich-8.1.25/nvidia-22.7; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.8.3.patch/cray-mpich-8.1.15/nvidia-21.11; else echo "$ADIOS2_ROOT"; fi}</env>
     </environment_variables>
--->
     <resource_limits>
       <resource name="RLIMIT_STACK">-1</resource>
     </resource_limits>
