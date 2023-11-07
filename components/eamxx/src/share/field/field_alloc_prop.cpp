@@ -162,8 +162,12 @@ void FieldAllocProp::commit (const layout_type& layout)
       m_last_extent = std::max(m_last_extent, num_st);
     }
 
-    m_alloc_size = m_layout.size() / last_phys_extent  // All except the last dimension
-                 * m_last_extent * m_scalar_type_size; // Last dimension must account for padding (if any)
+    if (m_layout.size()>0) {
+      m_alloc_size = m_layout.size() / last_phys_extent  // All except the last dimension
+                   * m_last_extent * m_scalar_type_size; // Last dimension must account for padding (if any)
+    } else {
+      m_alloc_size = 0;
+    }
   }
 
   m_contiguous = true;
