@@ -21,3 +21,5 @@ set(MPIFC "ftn")
 set(SCC "cc")
 set(SCXX "CC")
 set(SFC "ftn")
+
+string(APPEND FFLAGS " -Minfo=accel -noacc")
