@@ -34,7 +34,6 @@ set (NUM_STEPS  5)
 set (ATM_TIME_STEP 300)
 set (POSTFIX nudged)
 set (VERT_TYPE TIME_DEPENDENT_3D_PROFILE)
-set (REMAPPED nudged)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input_nudging.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/input_nudging.yaml)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/output.yaml
@@ -48,7 +47,6 @@ set (NUM_STEPS  5)
 set (ATM_TIME_STEP 300)
 set (POSTFIX nudged_remapped)
 set (VERT_TYPE STATIC_1D_VERTICAL_PROFILE)
-set (REMAPPED remapped) 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input_nudging.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/input_nudging_remapped.yaml)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/output.yaml
