@@ -211,7 +211,19 @@ contains
                        'zonal velocity (m/s)' )
        call addfld( 'vfld_ph', (/ 'lev' /), 'I',  'm/s', &
                        'meridional velocity (m/s)' )
-       
+       !wt_ini_e3sm_out, wt_end_e3sm_out, rbuoy_ini_e3sm_out, rbuoy_end_e3sm_out
+       call addfld( 'wt_ini_e3sm_out', (/ 'lev' /), 'I',  'm/s', &
+                       'verticle velocity (m/s)' )
+       call addfld( 'wt_end_e3sm_out', (/ 'lev' /), 'I',  'm/s', &
+                       'verticle velocity (m/s)' )
+       call addfld( 'rbuoy_ini_e3sm_out', (/ 'lev' /), 'I',  'm/s', &
+                       'verticle velocity (m/s)' )
+       call addfld( 'rbuoy_end_e3sm_out', (/ 'lev' /), 'I',  'm/s', &
+                       'verticle velocity (m/s)' )      
+       call addfld( 't_ini_e3sm_out', (/ 'lev' /), 'I',  'temperature', &
+                       'verticle velocity (m/s)' )
+       call addfld( 't_end_e3sm_out', (/ 'lev' /), 'I',  'temperature', &
+                       'verticle velocity (m/s)' )
     endif
     !---------------------------------------------------------------------
     if (masterproc) then
@@ -413,6 +425,9 @@ contains
     real(r8) :: clon(pcols)                   ! current longitudes(radians)
     real(r8) :: tl, frp, frp_memory(pcols), frp4plume! 
     integer :: iyear,imo,iday_m,tod,tod_saved
+    real(r8) :: wt_ini_e3sm_out(pcols,pver), wt_end_e3sm_out(pcols,pver), &
+                rbuoy_ini_e3sm_out(pcols,pver), rbuoy_end_e3sm_out(pcols,pver), &
+                t_ini_e3sm_out(pcols,pver), t_end_e3sm_out(pcols,pver)
     if( extfrc_cnt < 1 .or. extcnt < 1 ) then
        return
     end if
@@ -477,7 +492,10 @@ contains
                             call cal_plume_height(plume_height,zmidr(icol,:), pmid(icol,:), &
                                  tfld(icol,:), relhum(icol,:), qh2o(icol,:), ufld(icol,:), &
                                  vfld(icol,:), clat(icol)/(3.1415_r8)*180.0_r8, &
-                                 clon(icol)/(3.1415_r8)*180.0_r8, tl, pt_v, frp, frp4plume)
+                                 clon(icol)/(3.1415_r8)*180.0_r8, tl, pt_v, frp, frp4plume, &
+                                 wt_ini_e3sm_out(icol,:), wt_end_e3sm_out(icol,:), &
+                                 rbuoy_ini_e3sm_out(icol,:), rbuoy_end_e3sm_out(icol,:), &
+                                 t_ini_e3sm_out(icol,:), t_end_e3sm_out(icol,:) )
                             plume_height_EM(icol) = plume_height ! in meter
                             heat_flux_plume(icol) = frp4plume ! in kw/m2
                             
@@ -497,19 +515,6 @@ contains
                             plume_height = plume_height_EM(icol) 
                          endif 
                          
-                         write(iulog,*) 'kzm_fire_species ', forcings(m)%species, isec
-                         write(iulog,*) 'kzm_FRP ',frp,frp4plume
-                         write(iulog,*)'kzm_plume_rise_calculation_running'
-                         write(iulog,*)'kzm_plume_rise_calculation_lat ', clat(icol)/(3.1415_r8)*180.0_r8
-                         write(iulog,*)'kzm_plume_rise_calculation_lon ', clon(icol)/(3.1415_r8)*180.0_r8  
-                         write(iulog,*)'kzm_plume_time ', iyear,imo,iday_m,tod
-                         write(iulog,*)'kzm_plume_height ', plume_height, 'local time ',tl 
-                         !write(iulog,*)'kzm_plume_FRP ', frp 
-                         !write(iulog,*)'kzm_plume environment data begin: zmidr pmid tfld relhum qh2o ufld vfld '
-                         !do k = pver,30,-1
-                         !   write(iulog,*)k, zmidr(icol,k) ,pmid(icol,k), pt_v(k), relhum(icol,k), qh2o(icol,k), ufld(icol,k),vfld(icol,k)  
-                         !enddo
-                         !write(iulog,*)'kzm_plume environment data end'
                          ! match plume height to model vertical grid
                          ph_z(icol) = pver
                          do k = 2, pver
@@ -517,7 +522,23 @@ contains
                                ph_z(icol) = k
                             endif 
                          enddo 
+                         if (forcings(m)%species == 'bc_a4')then
+                         write(iulog,*) 'kzm_fire_species ', forcings(m)%species, isec
+                         write(iulog,*) 'kzm_FRP ',frp,frp4plume
+                         write(iulog,*)'kzm_plume_rise_calculation_running'
+                         write(iulog,*)'kzm_plume_rise_calculation_lat ', clat(icol)/(3.1415_r8)*180.0_r8
+                         write(iulog,*)'kzm_plume_rise_calculation_lon ', clon(icol)/(3.1415_r8)*180.0_r8
+                         write(iulog,*)'kzm_plume_time ', iyear,imo,iday_m,tod
+                         write(iulog,*)'kzm_plume_height ', plume_height, 'local time ',tl
+                         !write(iulog,*)'kzm_plume_FRP ', frp
+                         !write(iulog,*)'kzm_plume environment data begin: zmidr pmid tfld relhum qh2o ufld vfld '
+                         do k = pver,50,-1
+                            write(iulog,*)k, wt_ini_e3sm_out(icol,k),wt_end_e3sm_out(icol,k), &
+                                            rbuoy_ini_e3sm_out(icol,k),rbuoy_end_e3sm_out(icol,k), &
+                                             t_ini_e3sm_out(icol,k),t_end_e3sm_out(icol,k)
+                         enddo
                          write(iulog,*)'kzm_plume_layer ', ph_z(icol)
+                         endif
                          ! reset the forcing
                          ! get initial emission from forcing data
                          !frcing_vertical_plume_old(1:pver) = forcings(m)%fields(isec)%data(icol,pver:1:-1,lchnk) ! reverse
@@ -582,6 +603,13 @@ contains
          call outfld('qh2o_ph', qh2o(:ncol,:), ncol, lchnk)
          call outfld('ufld_ph', ufld(:ncol,:), ncol, lchnk)
          call outfld('vfld_ph', vfld(:ncol,:), ncol, lchnk) 
+         call outfld('wt_ini_e3sm_out', wt_ini_e3sm_out(:ncol,:), ncol, lchnk) 
+         call outfld('t_ini_e3sm_out', t_ini_e3sm_out(:ncol,:), ncol, lchnk) 
+         call outfld('wt_end_e3sm_out', wt_end_e3sm_out(:ncol,:), ncol, lchnk) 
+         call outfld('t_end_e3sm_out', t_end_e3sm_out(:ncol,:), ncol, lchnk) 
+         call outfld('rbuoy_ini_e3sm_out', rbuoy_ini_e3sm_out(:ncol,:), ncol, lchnk) 
+         call outfld('rbuoy_end_e3sm_out', rbuoy_end_e3sm_out(:ncol,:), ncol, lchnk) 
+         
        endif 
        
     end do src_loop
@@ -590,7 +618,9 @@ contains
 
 ! subroutines for plumerise
   subroutine cal_plume_height( plume_height,zmidr_v, pmid_v, tfld_v, relhum_v, qh2o_v, &
-                               ufld_v, vfld_v,lat,lon,tl,pt_v,frp,frp4plume )
+                               ufld_v, vfld_v,lat,lon,tl,pt_v,frp,frp4plume,&
+                               wt_ini_e3sm_col, wt_end_e3sm_col, rbuoy_ini_e3sm_col, rbuoy_end_e3sm_col,&
+                               t_ini_e3sm_col,t_end_e3sm_col )
     use smk_plumerise, only : smk_pr_driver  
     !use time_manager,  only: get_curr_date
     implicit none
@@ -605,6 +635,9 @@ contains
     real(r8), intent(in)  ::   vfld_v(pver)            ! meridional velocity (m/s)
     real(r8), intent(in)  ::   frp
     real(r8), intent(out)  ::   frp4plume, tl
+    real(r8), intent(out) ::  wt_ini_e3sm_col(pver), wt_end_e3sm_col(pver), & 
+                              rbuoy_ini_e3sm_col(pver), rbuoy_end_e3sm_col(pver), &
+                              t_ini_e3sm_col(pver), t_end_e3sm_col(pver)
     ! local variables
     real(r8)  :: env(8, pver) ! meterology profiles for this column 
     real(r8)  :: gfed_area  ! fire parameters
@@ -612,6 +645,8 @@ contains
     real(r8)  :: pt_v(pver)  ! potential temperature
     integer :: i,ihr,imn,iyear,imo,iday_m,tod 
     real(r8) :: frp_peak,frp_h,frp_b,frp_sigma
+    real(r8) :: wt_ini_e3sm(pver), wt_end_e3sm(pver), rbuoy_ini_e3sm(pver), rbuoy_end_e3sm(pver)
+    real(r8) :: t_ini_e3sm(pver), t_end_e3sm(pver)
    ! get plume height
    ! env: geopotential height, pressure, temp(state%t), relative humidity(state%),
    ! env: potential T, specific humidity, U, V
@@ -629,7 +664,7 @@ contains
        env(6,:) = qh2o_v(pver:1:-1)
        env(7,:) = ufld_v(pver:1:-1)
        env(8,:) = vfld_v(pver:1:-1)
-       plume_height = 1000.0
+       !plume_height = 1000.0
        gfed_area = 100.0*9.0
        !lat = 100.0
        !frp diurnal cycle based on Ke et al., 2021 (WTNA region diurnal cycle)
@@ -641,7 +676,7 @@ contains
        ! local time
        call get_curr_date (iyear,imo,iday_m,tod)  ! year, time of day [sec]
        ihr  = tod/3600
-       imn  = mod( tod,3600 )/3600
+       imn  = mod( tod,3600 )/3600.0_r8
        if (lon > 180.0_r8) then
           tl = ihr*1.0_r8 + imn*1.0_r8 + (lon-360.0)/15.0_r8 ! behind of UTC
        else
@@ -657,8 +692,15 @@ contains
        else 
           frp4plume=frp_peak*(exp(-0.5*(tl-frp_h)*(tl-frp_h)/frp_sigma/frp_sigma)+frp_b) 
        endif
-       call smk_pr_driver(plume_height , env, gfed_area, frp4plume, lat )
-       plume_height = plume_height*1000.0_r8 ! in meter
+       call smk_pr_driver(plume_height , env, gfed_area, frp4plume, lat, &
+            wt_ini_e3sm, wt_end_e3sm, rbuoy_ini_e3sm, rbuoy_end_e3sm,t_ini_e3sm,t_end_e3sm )
+       wt_ini_e3sm_col(:) = wt_ini_e3sm(pver:1:-1)
+       t_ini_e3sm_col(:) = t_ini_e3sm(pver:1:-1)
+       wt_end_e3sm_col(:) = wt_end_e3sm(pver:1:-1)
+       t_end_e3sm_col(:) = t_end_e3sm(pver:1:-1)
+       rbuoy_ini_e3sm_col(:) = rbuoy_ini_e3sm(pver:1:-1)
+       rbuoy_end_e3sm_col(:) = rbuoy_end_e3sm(pver:1:-1)
+
        !if(masterproc) write(iulog,*) 'plume_height ', plume_height
   end subroutine cal_plume_height
 !----------------------------------------------------------------------------------------
