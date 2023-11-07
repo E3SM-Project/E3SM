@@ -20,7 +20,7 @@ module RtmMod
                                frivinp_rtm, finidat_rtm, nrevsn_rtm,rstraflag,ngeom,nlayers,rinittemp, &
                                nsrContinue, nsrBranch, nsrStartup, nsrest, &
                                inst_index, inst_suffix, inst_name, wrmflag, inundflag, &
-                               smat_option, decomp_option, barrier_timers, heatflag, sediflag, &
+                               smat_option, decomp_option, barrier_timers, heatflag, sediflag, do_all_budget, &
                                isgrid2d, data_bgc_fluxes_to_ocean_flag, use_lnd_rof_two_way, use_ocn_rof_two_way
   use RtmFileUtils    , only : getfil, getavu, relavu
   use RtmTimeManager  , only : timemgr_init, get_nstep, get_curr_date, advance_timestep
@@ -272,7 +272,7 @@ contains
          rtmhist_fincl1,  rtmhist_fincl2, rtmhist_fincl3, &
          rtmhist_fexcl1,  rtmhist_fexcl2, rtmhist_fexcl3, &
          rtmhist_avgflag_pertape, decomp_option, wrmflag,rstraflag,ngeom,nlayers,rinittemp, &
-         inundflag, smat_option, delt_mosart, barrier_timers,          &
+         inundflag, smat_option, delt_mosart, barrier_timers, do_all_budget, &
          RoutingMethod, DLevelH2R, DLevelR, sediflag, heatflag, data_bgc_fluxes_to_ocean_flag
 
     namelist /inund_inparm / opt_inund, &
@@ -293,6 +293,7 @@ contains
     inundflag   = .false.
     sediflag    = .false.
     heatflag    = .false.
+    do_all_budget = .false.
     barrier_timers = .false.
     finidat_rtm = ' '
     nrevsn_rtm  = ' '
@@ -382,6 +383,7 @@ contains
     call mpi_bcast (wrmflag,        1, MPI_LOGICAL, 0, mpicom_rof, ier)
     call mpi_bcast (sediflag,       1, MPI_LOGICAL, 0, mpicom_rof, ier)
     call mpi_bcast (heatflag,       1, MPI_LOGICAL, 0, mpicom_rof, ier)
+    call mpi_bcast (do_all_budget,  1, MPI_LOGICAL, 0, mpicom_rof, ier)
     call mpi_bcast (rstraflag,      1, MPI_LOGICAL, 0, mpicom_rof, ier)
     call mpi_bcast (rinittemp,      1, MPI_REAL8, 0, mpicom_rof, ier)
     call mpi_bcast (ngeom,          1, MPI_INTEGER, 0, mpicom_rof, ier)
@@ -471,6 +473,7 @@ contains
        write(iulog,*) '   wrmflag               = ',wrmflag
        write(iulog,*) '   inundflag             = ',inundflag
        write(iulog,*) '   sediflag              = ',sediflag
+       write(iulog,*) '   do_all_budget         = ',do_all_budget
        write(iulog,*) '   use_lnd_rof_two_way   = ',use_lnd_rof_two_way
        write(iulog,*) '   heatflag              = ',heatflag
        write(iulog,*) '   barrier_timers        = ',barrier_timers
@@ -2070,7 +2073,6 @@ contains
 !EOP
     integer  :: i, j, n, nr, ns, nt, n2, nf, idam ! indices
     integer, parameter :: budget_terms_total = 80
-    logical  :: output_all_budget_terms = .false.   ! output flag
     real(r8) :: budget_terms (budget_terms_total,nt_rtm)    ! local budget sums
     real(r8) :: budget_global(budget_terms_total,nt_rtm)    ! global budget sums
 
@@ -2831,6 +2833,7 @@ contains
     !-----------------------------------
 
     budget_write = .false.
+    if (do_all_budget) budget_write = .true.
     if (day == 1 .and. mon == 1) budget_write = .true.
     if (tod == 0) budget_write = .true.
 
@@ -3082,7 +3085,7 @@ contains
 
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   dvolume dstor = ',nt,budget_global(bv_dstor_f,nt)-budget_global(bv_dstor_i,nt)
             write(iulog,'(2a,i4,f22.6  )') trim(subname),' * dvolume total = ',nt,budget_volume   !(Global volume change during a coupling period. --Inund.)
-          if (output_all_budget_terms) then           
+          if (do_all_budget) then           
             if (inundflag .and. Tctl%OPT_inund .eq. 1 .and. nt .eq. 1) then                                                                 
                 write(iulog,'(2a,i4,f22.6,a)') trim(subname),' x dvolume check = ',nt,budget_volume - &
                                                                              (budget_global(bv_wh_f,nt)-budget_global(bv_wh_i,nt) + &
@@ -3124,7 +3127,7 @@ contains
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   input subnetwork channel bank erosion = ',nt,budget_global(br_etexch,nt)
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   input main channel bank erosion = ',nt,budget_global(br_erexch,nt)
             write(iulog,'(2a,i4,f22.6  )') trim(subname),' * input total   = ',nt,budget_input
-          if (output_all_budget_terms) then
+          if (do_all_budget) then
             write(iulog,'(2a,i4,f22.6,a)') trim(subname),' x input check   = ',nt,budget_input - &
                                                                              (budget_global(br_qsur,nt)+budget_global(br_qsub,nt)+ &
                                                                               budget_global(br_qgwl,nt)+budget_global(br_qdto,nt)), &
@@ -3141,7 +3144,7 @@ contains
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   output flood  = ',nt,budget_global(br_flood,nt)    !(Former flood to land. --Inund.)
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   output supply = ',nt,budget_global(bv_dsupp_f,nt)-budget_global(bv_dsupp_i,nt)
             write(iulog,'(2a,i4,f22.6  )') trim(subname),' * output total  = ',nt,budget_output
-          if (output_all_budget_terms) then
+          if (do_all_budget) then
             write(iulog,'(2a,i4,f22.6,a)') trim(subname),' x output check  = ',nt,budget_output - &
                                                                              (budget_global(br_ocnout,nt) + budget_global(br_direct,nt) + &
                                                                               budget_global(br_flood,nt) + &
@@ -3156,21 +3159,21 @@ contains
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   other reg lnd = ',nt,budget_global(br_erorpn,nt) - budget_global(br_erorcn,nt)
 
             write(iulog,'(2a,i4,f22.6  )') trim(subname),' * other total   = ',nt,budget_other
-          if (output_all_budget_terms) then
+          if (do_all_budget) then
             write(iulog,'(2a,i4,f22.6,a)') trim(subname),' x other check   = ',nt,budget_other - &
                                                                             (budget_global(br_erolpn,nt) - budget_global(br_erolcn,nt) + &
                                                                              budget_global(br_erorpn,nt) - budget_global(br_erorcn,nt)), &
                                                                             ' (should be zero)'
           endif
             write(iulog,'(2a)') trim(subname),'----------------'
-          if (output_all_budget_terms) then
+          if (do_all_budget) then
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   sum dvolume   = ',nt,budget_volume     !(Global volume change during a coupling period. --Inund.)
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   sum input     = ',nt,budget_input
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   sum output    = ',nt,budget_output
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   sum other     = ',nt,budget_other      !(Channel outflow volume difference between previous and current MOSART sub-step. --Inund.) 
           endif
             write(iulog,'(2a,i4,f22.6,a)') trim(subname),' * sum budget ** = ',nt,budget_total,' (should be zero, dv-in+out-oth)'
-          if (output_all_budget_terms) then
+          if (do_all_budget) then
             ! accum budget is just dv-i+o and should show that over time, the other terms go to zero (lag yes, reg land no)
             write(iulog,'(2a)') trim(subname),'----------------'
             write(iulog,'(2a,i4,f22.6,a)') trim(subname),' x accum budget  = ',nt,budget_global(bv_naccum,nt),' (should tend to zero over run, dv-in+out)'          ! (Average water balance error of all coupling periods up to now. --Inund.)
@@ -4760,7 +4763,7 @@ contains
  use shr_sys_mod   , only : shr_sys_flush
  use WRM_type_mod  , only : WRMUnit
  use RunoffMod     , only : rtmCTL
- use RtmVar         , only : iulog, ngeom, nlayers
+ use RtmVar        , only : iulog, ngeom, nlayers
     
  implicit none
  real(r8) :: M_W,M_L,gm_j,d_res,dd_in,C_a,C_v
