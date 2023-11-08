@@ -26,6 +26,9 @@ else ()
     string (REPLACE " " ";" YAKL_HIP_FLAGS_LIST ${YAKL_HIP_FLAGS})
   endif()
 
+  ####### SYCL here
+
+
   set (YAKL_SOURCE_DIR ${SCREAM_BASE_DIR}/../../externals/YAKL)
   add_subdirectory(${YAKL_SOURCE_DIR} ${CMAKE_BINARY_DIR}/externals/YAKL)
 

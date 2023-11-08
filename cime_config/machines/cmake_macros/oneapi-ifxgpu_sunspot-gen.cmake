@@ -22,5 +22,9 @@ string(APPEND SYCL_FLAGS " -\-intel -Xclang -fsycl-allow-virtual-functions -fsyc
 #string(APPEND SYCL_FLAGS " -\-intel -fsycl")
 string(APPEND CXX_LDFLAGS " -Wl,-\-defsym,main=MAIN_\_ -lifcore -\-intel -Xclang -fsycl-allow-virtual-functions -fsycl -lsycl -mlong-double-64 -fsycl-link-huge-device-code -fsycl-device-code-split=per_kernel -fsycl-targets=spir64")
 
+SET(CMAKE_CXX_COMPILER "mpicxx" CACHE STRING "")
+SET(CMAKE_C_COMPILER "mpicc" CACHE STRING "")
+SET(CMAKE_FORTRAN_COMPILER "mpifort" CACHE STRING "")
+
 
 
