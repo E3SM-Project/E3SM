@@ -531,7 +531,13 @@ module li_time_integration_fe_rk
       call mpas_timer_start("calve_ice")
 
       ! ice calving
-      call li_calve_ice(domain, err_tmp, solveVeloAfterCalving)
+      if ( config_update_velocity_before_calving ) then
+         call li_calve_ice(domain, err_tmp, solveVeloAfterCalving)
+      else
+         call li_calve_ice(domain, err_tmp)
+         solveVeloAfterCalving = .true.
+      endif
+
       err = ior(err, err_tmp)
       if (config_restore_calving_front) then
          ! restore the calving front to its initial position before velocity solve.
