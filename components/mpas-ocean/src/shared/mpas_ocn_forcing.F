@@ -27,6 +27,7 @@ module ocn_forcing
    use mpas_dmpar
    use ocn_constants
    use ocn_diagnostics_variables
+   use ocn_config !IV comment
 
    implicit none
    private
@@ -196,6 +197,8 @@ contains
               transmissionCoeffTop = transmissionCoeffBot
            end do
         end do
+
+        call mpas_log_write('config_use_SGR_opt: $r', realArgs=(/config_use_SGR_opt/))
 
     end subroutine ocn_forcing_build_fraction_absorbed_array!}}}
 
