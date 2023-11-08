@@ -168,7 +168,7 @@ module seaice_constants
        seaiceQsatQocnConstant            = 627572.4_RKIND    ,&
        seaiceQsatTocnConstant            = 5107.4_RKIND
 
-!Are these needed for standalone runs?
+! Are these needed for standalone runs?
 !      ! orbital parameters
 !      integer, public :: iyear_AD  ! Year to calculate orbit for
 !      real(kind=RKIND),public :: eccen  ! Earth's orbital eccentricity

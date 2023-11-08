@@ -1699,7 +1699,7 @@
 	<nml_record name="thermodynamics" in_defaults="true">
 		<nml_option name="config_thermodynamics_type" type="character" default_value="mushy" units="unitless"
 			description="Vertical themodynamics type."
-			possible_values="'zero layer', 'BL99', or 'mushy'"
+			possible_values="'BL99', or 'mushy'"
 			icepack_name="ktherm"
 		/>
 		<nml_option name="config_heat_conductivity_type" type="character" default_value="bubbly" units="unitless"

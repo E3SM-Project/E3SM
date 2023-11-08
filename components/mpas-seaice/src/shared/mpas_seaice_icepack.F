@@ -9541,7 +9541,7 @@ contains
             messageType=MPAS_LOG_CRIT)
     endif
 
-    ! check mushy physics and calculate surface temperature
+    ! check mushy physics and surface temperature calculation
     if (trim(config_thermodynamics_type) == "mushy" .and. .not. config_calc_surface_temperature) then
        call mpas_log_write(&
             "check_column_package_configs: config_thermodynamics_type = 'mushy' and config_calc_surface_temperature = .false.", &
