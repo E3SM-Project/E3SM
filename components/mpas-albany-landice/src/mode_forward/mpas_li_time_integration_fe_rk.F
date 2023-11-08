@@ -96,12 +96,10 @@ module li_time_integration_fe_rk
 
       type (domain_type), intent(inout) :: &
          domain          !< Input/Output: domain object
-
       !-----------------------------------------------------------------
       ! output variables
       !-----------------------------------------------------------------
       integer, intent(out) :: err !< Output: error flag
-
       !-----------------------------------------------------------------
       ! local variables
       !-----------------------------------------------------------------
@@ -113,6 +111,7 @@ module li_time_integration_fe_rk
                           config_restore_calving_front_prevent_retreat
       logical, pointer :: config_calculate_damage
       logical, pointer :: config_finalize_damage_after_advection
+      logical, pointer :: config_update_velocity_before_calving
       character (len=StrKIND), pointer :: config_thickness_advection
       character (len=StrKIND), pointer :: config_thermal_solver
       character (len=StrKIND), pointer :: config_time_integration
@@ -157,9 +156,11 @@ module li_time_integration_fe_rk
       real (kind=RKIND), dimension(4) :: rkSSPweights
       real (kind=RKIND), dimension(4) :: rkTendWeights ! Weights used for calculating budget terms
       integer :: nRKstages
+      logical :: solveVeloAfterCalving
 
       err = 0
       err_tmp = 0
+      solveVeloAfterCalving = .false.
 
       call mpas_pool_get_config(liConfigs, 'config_restore_calving_front', config_restore_calving_front)
       call mpas_pool_get_config(liConfigs, 'config_restore_calving_front_prevent_retreat', config_restore_calving_front_prevent_retreat)
@@ -171,6 +172,7 @@ module li_time_integration_fe_rk
       call mpas_pool_get_config(liConfigs, 'config_rk3_stages', config_rk3_stages)
       call mpas_pool_get_config(liConfigs, 'config_time_integration', config_time_integration)
       call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
+      call mpas_pool_get_config(liConfigs, 'config_update_velocity_before_calving', config_update_velocity_before_calving)
 
       call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
       call mpas_pool_get_subpool(domain % blocklist % structs, 'thermal', thermalPool)
@@ -480,17 +482,20 @@ module li_time_integration_fe_rk
 
          call mpas_timer_stop("halo updates")
 
-         if (config_restore_calving_front) then
-            ! restore the calving front to its initial position before velocity solve.
-            call li_restore_calving_front(domain, err_tmp)
-            err = ior(err, err_tmp)
-         endif
-
          ! Update velocity for each RK step
          ! === Solve Velocity =====================
-         call li_velocity_solve(domain, solveVelo=.true., err=err_tmp)
-         err = ior(err, err_tmp)
+         if ( config_update_velocity_before_calving .or. ( (.not. config_update_velocity_before_calving) &
+              .and. (rkStage < nRKstages) ) ) then
 
+            if (config_restore_calving_front) then
+               ! restore the calving front to its initial position before velocity solve.
+               call li_restore_calving_front(domain, err_tmp)
+               err = ior(err, err_tmp)
+            endif
+
+            call li_velocity_solve(domain, solveVelo=.true., err=err_tmp)
+            err = ior(err, err_tmp)
+         endif
 ! *** end RK loop ***
       enddo
 
@@ -526,15 +531,13 @@ module li_time_integration_fe_rk
       call mpas_timer_start("calve_ice")
 
       ! ice calving
-      call li_calve_ice(domain, err_tmp)
+      call li_calve_ice(domain, err_tmp, solveVeloAfterCalving)
       err = ior(err, err_tmp)
-
-      if (config_restore_calving_front .and. config_restore_calving_front_prevent_retreat) then
+      if (config_restore_calving_front) then
          ! restore the calving front to its initial position before velocity solve.
          call li_restore_calving_front(domain, err_tmp)
          err = ior(err, err_tmp)
       endif
-
       call mpas_timer_stop("calve_ice")
 
       call mpas_timer_start("halo updates")
@@ -543,11 +546,11 @@ module li_time_integration_fe_rk
       call mpas_dmpar_field_halo_exch(domain, 'vertexMask')
       call mpas_timer_stop("halo updates")
 
-      ! Update stresses etc
-      ! === Solve Velocity =====================
-      call li_velocity_solve(domain, solveVelo=.false., err=err_tmp)
-      err = ior(err, err_tmp)
-
+! === Solve velocity for final state =====================
+      if (solveVeloAfterCalving) then
+         call li_velocity_solve(domain, solveVelo=.true., err=err_tmp)
+         err = ior(err, err_tmp)
+      endif
 ! === Update bed topo =====================
 ! It's not clear when the best time to do this is.
 ! Seems cleaner to do it either before or after all of the time evolution of the ice

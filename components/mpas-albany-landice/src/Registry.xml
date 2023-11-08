@@ -292,6 +292,10 @@
                         description="If true, then distribute unablatedVolumeDynCell among dynamic neighbors when converting ablation velocity to ablation thickness. This should only be used as a clean-up measure, while limiting the timestep based on ablation velocity should be used as the primary method of getting accurate ablation thickness from ablation velocity.  If you choose to set config_adaptive_timestep_calvingCFL_fraction much larger than 1.0 (which is not recommended), setting this option to true usually results in more accurate calving behavior. "
                         possible_values=".true. or .false."
                 />
+                <nml_option name="config_update_velocity_before_calving" type="logical" default_value=".true." units="unitless"
+                            description="If true, add an additional velocity solve between advection and calving. If false, use velocity field from beginning of time step to calculate calving rate. For certain calving laws, like damage threshold calving, it is not necessary to update the velocity before calving, while for von Mises stress and eigencalving, it is more accurate to have an updated velocity state before solving for calvingThickness."
+                            possible_values=".true. or .false."
+                />
 	</nml_record>
 
 	<nml_record name="thermal_solver" in_defaults="true">
