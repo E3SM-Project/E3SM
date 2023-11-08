@@ -259,17 +259,6 @@ module li_time_integration_fe_rk
       err = ior(err, err_tmp)
       call mpas_timer_stop("vertical therm")
 
-! === Update subglacial hydrology  ===========
-! It's not clear where the best place to call this should be.
-! Seems sensible to put it after thermal evolution is complete to get updated basal melting source term.
-! Also seems (might be?) better to put it after geometry evolution.
-! We want it before the velocity solve since the hydro model can control  the velo basal b.c.
-! This was moved to be before geometry evolution to simplify RK time integration.
-      call mpas_timer_start("subglacial hydro")
-      call li_SGH_solve(domain, err_tmp)
-      err = ior(err, err_tmp)
-      call mpas_timer_stop("subglacial hydro")
-
 ! *** TODO: Should basal melt rate calculation, column physics, and hydrology go inside RK loop? ***
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
       call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness)
@@ -510,6 +499,7 @@ module li_time_integration_fe_rk
       call mpas_timer_start("halo updates")
       call mpas_dmpar_field_halo_exch(domain, 'cellMask')
       call mpas_dmpar_field_halo_exch(domain, 'edgeMask')
+      call mpas_dmpar_field_halo_exch(domain, 'vertexMask')
       call mpas_timer_stop("halo updates")
 
       ! Calculate volume converted from grounded to floating
@@ -526,6 +516,16 @@ module li_time_integration_fe_rk
 
 ! Reset time step to full length after RK loop
       deltat = deltatFull
+
+! === Update subglacial hydrology  ===========
+! It's not clear where the best place to call this should be.
+! Seems sensible to put it after thermal evolution is complete to get updated basal melting source term.
+! Also seems (might be?) better to put it after geometry evolution.
+! We want it before the velocity solve since the hydro model can control  the velo basal b.c.
+      call mpas_timer_start("subglacial hydro")
+      call li_SGH_solve(domain, err_tmp)
+      err = ior(err, err_tmp)
+      call mpas_timer_stop("subglacial hydro")
 
 ! === Calve ice ========================
       call mpas_timer_start("calve_ice")
@@ -552,17 +552,18 @@ module li_time_integration_fe_rk
       call mpas_dmpar_field_halo_exch(domain, 'vertexMask')
       call mpas_timer_stop("halo updates")
 
-! === Solve velocity for final state =====================
-      if (solveVeloAfterCalving) then
-         call li_velocity_solve(domain, solveVelo=.true., err=err_tmp)
-         err = ior(err, err_tmp)
-      endif
 ! === Update bed topo =====================
 ! It's not clear when the best time to do this is.
 ! Seems cleaner to do it either before or after all of the time evolution of the ice
 ! is complete.  Putting it after.
       call li_bedtopo_solve(domain, err=err_tmp)
       err = ior(err, err_tmp)
+
+! === Solve velocity for final state =====================
+      if (solveVeloAfterCalving) then
+         call li_velocity_solve(domain, solveVelo=.true., err=err_tmp)
+         err = ior(err, err_tmp)
+      endif
 
 ! === Calculate diagnostic variables for new state =====================
 
