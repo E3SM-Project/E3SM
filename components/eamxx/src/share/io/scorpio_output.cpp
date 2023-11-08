@@ -896,9 +896,14 @@ register_variables(const std::string& filename,
                    const std::string& fp_precision,
                    const scorpio::FileMode mode)
 {
-
   using namespace scorpio;
   using namespace ShortFieldTagsNames;
+  using strvec_t = std::vector<std::string>;
+
+  EKAT_REQUIRE_MSG (ekat::contains(strvec_t{"float","single","double","real"},fp_precision),
+      "Error! Invalid/unsupported value for fp_precision.\n"
+      "  - input value: " + fp_precision + "\n"
+      "  - supported values: float, single, double, real\n");
 
   // Helper lambdas
   auto set_decomp_tag = [&](const FieldLayout& layout) {
@@ -963,8 +968,9 @@ register_variables(const std::string& filename,
     if (mode != FileMode::Append ) {
       // Add FillValue as an attribute of each variable
       // FillValue is a protected metadata, do not add it if it already existed
-      if (fp_precision == "real") {
-        Real fill_value = m_fill_value;
+      if (fp_precision=="double" or
+          (fp_precision=="real" and std::is_same<Real,double>::value)) {
+        double fill_value = m_fill_value;
         set_variable_metadata(filename, name, "_FillValue",fill_value);
       } else {
         float fill_value = m_fill_value;

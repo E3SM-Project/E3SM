@@ -566,10 +566,11 @@ void OutputManager::
 set_params (const ekat::ParameterList& params,
             const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs)
 {
-  m_params = params;
-  if (m_is_model_restart_output) {
-    using vos_t = std::vector<std::string>;
+  using vos_t = std::vector<std::string>;
 
+  m_params = params;
+
+  if (m_is_model_restart_output) {
     // We build some restart parameters internally
     auto avg_type = m_params.get<std::string>("Averaging Type","INSTANT");
     m_avg_type = str2avg(avg_type);
@@ -614,8 +615,11 @@ set_params (const ekat::ParameterList& params,
     // Allow user to ask for higher precision for normal model output,
     // but default to single to save on storage
     const auto& prec = m_params.get<std::string>("Floating Point Precision", "single");
-    EKAT_REQUIRE_MSG (prec=="single" || prec=="double" || prec=="real",
-        "Error! Invalid floating point precision '" + prec + "'.\n");
+    vos_t valid_prec = {"single", "float", "double", "real"};
+    EKAT_REQUIRE_MSG (ekat::contains(valid_prec,prec),
+        "Error! Invalid/unsupported value for 'Floating Point Precision'.\n"
+        "  - input value: " + prec + "\n"
+        "  - supported values: float, single, double, real\n");
   }
 }
 /*===============================================================================================*/
