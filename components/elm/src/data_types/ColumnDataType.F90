@@ -1521,9 +1521,6 @@ contains
          ptr_col=this%frac_h2osfc)
     
     this%frac_h2osfc_act(begc:endc) = spval
-    call hist_addfld1d (fname='FH2OSFCact',  units='unitless',  &
-         avgflag='A', long_name='actual fraction of ground covered by surface water', &
-         ptr_col=this%frac_h2osfc_act)
          
     if (use_cn) then
        this%wf(begc:endc) = spval
