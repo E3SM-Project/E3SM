@@ -2810,7 +2810,7 @@
       <nx>4085395</nx>
       <ny>1</ny>
       <file grid="ice|ocn">$DIN_LOC_ROOT/share/domains/domain.ocn.RRSwISC6to18E3r1.230914.nc</file>
-      <desc>RRSwISC6to18E3r1 is a MPAS ocean grid generated with the jigsaw/compass process using XXXXX. Additionally, it has ocean in ice-shelf cavities:</desc>
+      <desc>RRSwISC6to18E3r1 is a MPAS ocean grid generated with the jigsaw/compass process using a mesh density function that is roughly proportional to the Rossby radius of deformation, with 18 km gridcells at low and 6 km gridcells at high latitudes. Additionally, it has ocean in ice-shelf cavities:</desc>
     </domain>
 
     <!-- ROF (river) grids-->
