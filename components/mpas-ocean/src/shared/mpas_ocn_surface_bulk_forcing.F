@@ -352,7 +352,7 @@ contains
                                     + seaIceFreshWaterFlux(iCell) + icebergFreshWaterFlux(iCell) + iceRunoffFlux(iCell) ) / rho_sw
         surfaceThicknessFluxRunoff(iCell) = riverRunoffFlux(iCell) / rho_sw
 
-        if ((config_use_SGR_opt == 1) .or. (config_use_SGR_opt == 2) .or. (config_use_SGR_opt == -1)) then
+        if ((config_use_sgr_opt == 1) .or. (config_use_sgr_opt == 2) .or. (config_use_sgr_opt == -1)) then
                surfaceThicknessFluxSubglacialRunoff(iCell) = subglacialRunoffFlux(iCell) / areaCell(iCell)
         else
                surfaceThicknessFluxSubglacialRunoff(iCell) = 0.0_RKIND
@@ -587,7 +587,7 @@ contains
                       * max(tracerGroup(index_temperature_flux,minLevelCell(iCell),iCell), 0.0_RKIND) / rho_sw
 
            ! Subglacial runoff can have temperature below 0.0C, since it can come out at great depth
-           if ((config_use_SGR_opt == 1) .or. (config_use_SGR_opt == 3) .or. (config_use_SGR_opt == -1)) then
+           if ((config_use_sgr_opt == 1) .or. (config_use_sgr_opt == 3) .or. (config_use_sgr_opt == -1)) then
                tracersSurfaceFluxSubglacialRunoff(index_temperature_flux,iCell) = subglacialRunoffFlux(iCell) * &
                    ocn_freezing_temperature(salinity=0.0_RKIND, pressure=landIcePressure(iCell), &
                                              inLandIceCavity=.true.) / areaCell(iCell)

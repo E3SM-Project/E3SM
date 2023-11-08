@@ -706,9 +706,13 @@
 					description="The length scale of exponential decay of subglacial runoff. Fluxes are multiplied by $e^{z/\gamma}$, where this coefficient is $\gamma$."
 					possible_values="Any positive real number."
 		/>
-		<nml_option name="config_use_SGR_opt" type="real" default_value="0" units="non-dimensional"
-					description="option to use or not subglacial runoff (SGR)"
-					possible_values="0 - don't use SGR, 1 - use both mass and TS from SGR, 2 - use mass only from SGR , 3 - use TS only from SGR, -1 use all + KPP."
+		<nml_option name="config_sgr_flux_vertical_location" type="character" default_value="top"
+					description="Selects the vertical location where subglacial runoff is fluxed."
+					possible_values="'top','uniform', 'bottom'"
+		/>
+		<nml_option name="config_use_sgr_opt" type="integer" default_value="0" units="non-dimensional"
+					description="option to use or not subglacial runoff (sgr)"
+					possible_values="0 - don't use sgr, 1 - use both mass and TS from sgr, 2 - use mass only from sgr , 3 - use TS only from sgr, -1 use all + KPP."
 		/>
 	</nml_record>
 	<nml_record name="time_varying_forcing" mode="init;forward">
