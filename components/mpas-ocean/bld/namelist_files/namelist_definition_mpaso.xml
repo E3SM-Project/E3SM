@@ -1175,14 +1175,6 @@ Default: Defined in namelist_defaults.xml
 
 <!-- coupling -->
 
-<entry id="config_ssh_grad_relax_timescale" type="real"
-	category="coupling" group="coupling">
-Timescale for relaxation of the ssh gradient for coupling. A value of 0.0 (default) removes any relaxation and gives instantaneous response.
-
-Valid values: Any positive real number.
-Default: Defined in namelist_defaults.xml
-</entry>
-
 <entry id="config_remove_AIS_coupler_runoff" type="logical"
 	category="coupling" group="coupling">
 If true, solid and liquid runoff from the Antarctic Ice Sheet (below 60S latitude) coming from the coupled is zeroed in the coupler import routines.  To be used with data iceberg fluxes coming from the sea ice model.
