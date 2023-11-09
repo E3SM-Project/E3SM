@@ -24,43 +24,43 @@
 		<package name="areaVariablesAMPKG" description="This package includes variables required for the areaVariables analysis member."/>
 	</packages>
 	<var_struct name="areaVariablesAM" time_levs="1" packages="areaVariablesAMPKG">
-		<var name="snowfallRateInitialArea" type="real" dimensions="nCells Time" units="UNITS HERE"
-			description="DESCRIPTION HERE"
+		<var name="snowfallRateInitialArea" type="real" dimensions="nCells Time" units="kg/m^2/s"
+			description="Snowfall rate weighted by the initial sea ice area in a cell during each timestep"
 		/>
-		<var name="rainfallRateInitialArea" type="real" dimensions="nCells Time" units="UNITS HERE"
-			description="DESCRIPTION HERE"
+		<var name="rainfallRateInitialArea" type="real" dimensions="nCells Time" units="kg/m^2/s"
+			description="Rainfall rate weighted by the initial sea ice area in a cell during each tomestep"
 		/>
-		<var name="absorbedShortwaveFluxInitialArea" type="real" dimensions="nCells Time" units="UNITS HERE"
-			description="DESCRIPTION HERE"
+		<var name="absorbedShortwaveFluxInitialArea" type="real" dimensions="nCells Time" units="W/m^2"
+			description="Shortwave absorbed over the initial sea ice area in a cell during each timestep (downwelling positive)"
 		/>
-		<var name="latentHeatFluxInitialArea" type="real" dimensions="nCells Time" units="UNITS HERE"
-			description="DESCRIPTION HERE"
+		<var name="latentHeatFluxInitialArea" type="real" dimensions="nCells Time" units="W/m^2"
+			description="Latent heat flux over the initial sea ice area in a cell during each timestep (downwelling positive)"
 		/>
-		<var name="sensibleHeatFluxInitialArea" type="real" dimensions="nCells Time" units="UNITS HERE"
-			description="DESCRIPTION HERE"
+		<var name="sensibleHeatFluxInitialArea" type="real" dimensions="nCells Time" units="W/m^2"
+			description="Sensible heat flux over the initial sea ice area in a cell during each timestep (downwelling positive)"
 		/>
-		<var name="longwaveUpInitialArea" type="real" dimensions="nCells Time" units="UNITS HERE"
-			description="DESCRIPTION HERE"
+		<var name="longwaveUpInitialArea" type="real" dimensions="nCells Time" units="W/m^2"
+			description="Longwave emitted from the initial sea ice area in a cell during each timestep (upwelling negative)"
 		/>
-		<var name="evaporativeWaterFluxInitialArea" type="real" dimensions="nCells Time" units="UNITS HERE"
-			description="DESCRIPTION HERE"
+		<var name="evaporativeWaterFluxInitialArea" type="real" dimensions="nCells Time" units="kg/m^2/s"
+			description="Evaporitive water flux the initial sea ice area in a cell during each timestep (condensation positive)"
 		/>
-		<var name="surfaceHeatFluxInitialArea" type="real" dimensions="nCells Time" units="UNITS HERE"
-			description="DESCRIPTION HERE"
+		<var name="surfaceHeatFluxInitialArea" type="real" dimensions="nCells Time" units="W/m^2"
+			description="Net heat flux at top surface of initial sea ice area in a cell during each timestep, excluding conductive heat (downwelling positive)"
 		/>
-		<var name="surfaceConductiveFluxInitialArea" type="real" dimensions="nCells Time" units="UNITS HERE"
-			description="DESCRIPTION HERE"
+		<var name="surfaceConductiveFluxInitialArea" type="real" dimensions="nCells Time" units="W/m^2"
+			description="Conductive heat flux at top surface of initial sea ice area in a cell during each timestep (downwelling positive)"
 		/>
-		<var name="surfaceHeatFluxCategoryInitialArea" type="real" dimensions="nCategories nCells Time" units="UNITS HERE"
-			description="DESCRIPTION HERE"
+		<var name="surfaceHeatFluxCategoryInitialArea" type="real" dimensions="nCategories nCells Time" units="W/m^2"
+			description="surfaceHeatFluxInitialArea for individual thickness categories of sea ice"
 		/>
-		<var name="surfaceConductiveFluxCategoryInitialArea" type="real" dimensions="nCategories nCells Time" units="UNITS HERE"
-			description="DESCRIPTION HERE"
+		<var name="surfaceConductiveFluxCategoryInitialArea" type="real" dimensions="nCategories nCells Time" units="W/m^2"
+			description="surfaceConductiveFluxInitialArea for individual thickness categories of sea ice"
 		/>
-		<var name="latentHeatFluxCategoryInitialArea" type="real" dimensions="nCategories nCells Time" units="UNITS HERE"
-			description="DESCRIPTION HERE"
+		<var name="latentHeatFluxCategoryInitialArea" type="real" dimensions="nCategories nCells Time" units="W/m^2"
+			description="latentHeatFluxInitialArea for individual thickness categories of sea ice"
 		/>
-		<var name="sensibleHeatFluxCategoryInitialArea" type="real" dimensions="nCategories nCells Time" units="UNITS HERE"
-			description="DESCRIPTION HERE"
+		<var name="sensibleHeatFluxCategoryInitialArea" type="real" dimensions="nCategories nCells Time" units="W/m^2"
+			description="sensibleHeatFluxInitialArea for individual thickness categories of sea ice"
 		/>
 	</var_struct>
