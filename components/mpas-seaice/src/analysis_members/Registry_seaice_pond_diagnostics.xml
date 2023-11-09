@@ -24,25 +24,26 @@
 		<package name="pondDiagnosticsAMPKG" description="This package includes variables required for the pondDiagnostics analysis member."/>
 	</packages>
 	<var_struct name="pondDiagnosticsAM" time_levs="1" packages="pondDiagnosticsAMPKG">
-		<var name="meltPondArea" type="real" dimensions="nCells Time" units="UNITS HERE"
-			description="DESCRIPTION HERE"
+		<var name="meltPondArea" type="real" dimensions="nCells Time" units="1"
+			description="Melt pond area fraction in a grid cell"
 		/>
-		<var name="meltPondAreaFinalArea" type="real" dimensions="nCells Time" units="UNITS HERE"
-			description="DESCRIPTION HERE"
+		<var name="meltPondAreaFinalArea" type="real" dimensions="nCells Time" units="1"
+			description="Melt pond fraction for the final area of sea ice at the end of each timestep"
 		/>
-		<var name="meltPondDepth" type="real" dimensions="nCells Time" units="UNITS HERE"
-			description="DESCRIPTION HERE"
+		<var name="meltPondDepth" type="real" dimensions="nCells Time" units="m"
+
+			description="Melt pond depth in a grid cell weighted by area fraction of each thickness category"
 		/>
-		<var name="meltPondDepthFinalArea" type="real" dimensions="nCells Time" units="UNITS HERE"
-			description="DESCRIPTION HERE"
+		<var name="meltPondDepthFinalArea" type="real" dimensions="nCells Time" units="m"
+			description="Melt pond depth in a grid cell weighted by area fraction of each thickness category at the end of each timestep"
 		/>
-		<var name="meltPondLidThickness" type="real" dimensions="nCells Time" units="UNITS HERE"
-			description="DESCRIPTION HERE"
+		<var name="meltPondLidThickness" type="real" dimensions="nCells Time" units="m"
+			description="Melt pond refrozen lid thickness in a grid cell weighted by area fraction of each thickness category"
 		/>
-		<var name="meltPondLidThicknessFinalArea" type="real" dimensions="nCells Time" units="UNITS HERE"
-			description="DESCRIPTION HERE"
+		<var name="meltPondLidThicknessFinalArea" type="real" dimensions="nCells Time" units="m"
+			description="Melt pond refrozen lid thickness in a grid cell weighted by area fraction of each thickness category at the end of each timestep"
 		/>
-		<var name="meltPondDepthCategory" type="real" dimensions="nCategories nCells Time" units="UNITS HERE"
-			description="DESCRIPTION HERE"
+		<var name="meltPondDethCategory" type="real" dimensions="nCategories nCells Time" units="m"
+			description="meltPondDepth for each thickness category of sea ice"
 		/>
 	</var_struct>
