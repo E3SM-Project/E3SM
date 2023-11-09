@@ -74,7 +74,7 @@ Module smk_plumerise
  !real(r8):: plume_data(3)
 
  !- turn ON (=1), OFF (=0) the env wind effect on plume rise
- integer, parameter :: wind_eff = 1
+ integer, parameter :: wind_eff = 0
 
 !---------------------------------------------------------------------------
 !Module rconstants
@@ -536,7 +536,7 @@ heat_fluxW = frp*1000.
 
 mdur =  199. !53        ! duration of burn, minutes
 bload = 10.      ! total loading, kg/m**2 
-moist = 40.0      ! fuel moisture, %. average fuel moisture,percent dry
+moist = 10.0      ! fuel moisture, %. average fuel moisture,percent dry
 
 !maxtime =mdur+2  ! model time, min
  maxtime =mdur-1  ! model time, min
@@ -547,9 +547,9 @@ moist = 40.0      ! fuel moisture, %. average fuel moisture,percent dry
 ! alpha = 0.2     !- entrainment constant
 ! alpha = 0.05      !- entrainment constant
 ! alpha = 0.075
- alpha(1)=0.05
- alpha(2:10)=0.05
- alpha(11:200)=0.05
+ alpha(1)=0.02
+ alpha(2:10)=0.02
+ alpha(11:200)=0.02
 ! alpha(16:200)=.3
 
 !-------------------- printout ----------------------------------------
@@ -951,8 +951,8 @@ SUBROUTINE BURN(EFLUX, WATER)
 !- calculates the energy flux and water content at lboundary
 !use plumegen_coms                               
 !real(r8), parameter :: HEAT = 21.E6 !Joules/kg
-real(r8), parameter :: HEAT = 15.5E6 !Joules/kg - cerrado
-!real(r8), parameter :: HEAT = 19.3E6 !Joules/kg - floresta em Alta Floresta (MT)
+!real(r8), parameter :: HEAT = 15.5E6 !Joules/kg - cerrado
+real(r8), parameter :: HEAT = 19.3E6 !Joules/kg - floresta em Alta Floresta (MT)
 real(r8):: eflux,water
 !
 ! The emission factor for water is 0.5. The water produced, in kg,

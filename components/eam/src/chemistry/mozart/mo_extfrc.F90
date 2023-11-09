@@ -665,7 +665,7 @@ contains
        env(7,:) = ufld_v(pver:1:-1)
        env(8,:) = vfld_v(pver:1:-1)
        !plume_height = 1000.0
-       gfed_area = 100.0*9.0
+       gfed_area = 900.0_r8
        !lat = 100.0
        !frp diurnal cycle based on Ke et al., 2021 (WTNA region diurnal cycle)
        !this cycle also similar to WRF-chem fire diurnal cycle used in Kumar et al., 2022
@@ -688,7 +688,8 @@ contains
           tl = tl + 24.0
        endif 
        if (emis_constrained_frp) then
-          frp4plume=frp
+          frp4plume=frp*36.0_r8
+          gfed_area = 25.0_r8
        else 
           frp4plume=frp_peak*(exp(-0.5*(tl-frp_h)*(tl-frp_h)/frp_sigma/frp_sigma)+frp_b) 
        endif
