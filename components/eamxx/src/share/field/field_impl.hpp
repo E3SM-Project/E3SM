@@ -194,7 +194,7 @@ deep_copy_impl (const Field& src) {
   const auto& layout     =     get_header().get_identifier().get_layout();
   const auto& layout_src = src.get_header().get_identifier().get_layout();
   EKAT_REQUIRE_MSG(layout==layout_src,
-       "ERROR: Unable to copy field " + src.get_header().get_identifier().name() + 
+       "ERROR: Unable to copy field " + src.get_header().get_identifier().name() +
           " to field " + get_header().get_identifier().name() + ".  Layouts don't match.");
   const auto  rank = layout.rank();
   // Note: we can't just do a deep copy on get_view_impl<HD>(), since this
@@ -218,6 +218,13 @@ deep_copy_impl (const Field& src) {
   auto policy = RangePolicy(0,layout.size());
 
   switch (rank) {
+    case 0:
+      {
+        auto v     =     get_view<      ST,HD>();
+        auto v_src = src.get_view<const ST,HD>();
+        v() = v_src();
+      }
+      break;
     case 1:
       {
         if (src_alloc_props.contiguous() and tgt_alloc_props.contiguous()) {
@@ -318,6 +325,12 @@ void Field::deep_copy_impl (const ST value) {
   const auto& layout = get_header().get_identifier().get_layout();
   const auto  rank   = layout.rank();
   switch (rank) {
+    case 0:
+      {
+        auto v = get_view<ST,HD>();
+        v() = value;
+      }
+      break;
     case 1:
       {
         if (m_header->get_alloc_properties().contiguous()) {

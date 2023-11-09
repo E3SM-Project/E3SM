@@ -54,8 +54,6 @@ create_subfield_header (const FieldIdentifier& id,
   // Sanity checks
   EKAT_REQUIRE_MSG (parent!=nullptr,
       "Error! Invalid pointer for parent header.\n");
-  EKAT_REQUIRE_MSG (id.get_layout_ptr()!=nullptr,
-      "Error! Input field identifier has an invalid layout pointer.\n");
 
   // Create header, and set up parent/child
   auto fh = create_header(id);
@@ -70,7 +68,6 @@ create_subfield_header (const FieldIdentifier& id,
 
   // Create alloc props
   fh->m_alloc_prop = std::make_shared<FieldAllocProp>(parent->get_alloc_properties().subview(idim,k,dynamic));
-  fh->m_alloc_prop->commit(id.get_layout_ptr());
 
   return fh;
 }

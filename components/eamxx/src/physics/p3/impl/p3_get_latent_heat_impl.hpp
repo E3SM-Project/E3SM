@@ -10,8 +10,6 @@ template<typename S, typename D>
 void Functions<S,D>
 ::get_latent_heat(const Int& nj, const Int& nk, view_2d<Spack>& v, view_2d<Spack>& s, view_2d<Spack>& f)
 {
-  using ExeSpace = typename KT::ExeSpace;
-
   constexpr Scalar latvap  = C::LatVap;
   constexpr Scalar latice  = C::LatIce;
 

@@ -137,6 +137,12 @@ void randomize (const Field& f, Engine& engine, PDF&& pdf)
 {
   const auto& fl = f.get_header().get_identifier().get_layout();
   switch (fl.rank()) {
+    case 0:
+      {
+        auto v = f.template get_view<ST,Host>();
+        v() = pdf(engine);
+      }
+      break;
     case 1:
       {
         auto v = f.template get_view<ST*,Host>();

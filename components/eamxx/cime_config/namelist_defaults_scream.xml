@@ -231,6 +231,8 @@ be lost if SCREAM_HACK_XML is not enabled.
       <nudging_filename type="array(string)"/>
       <nudging_fields type="array(string)" doc="List of fields to be nudged.  Note, syntax of 'A:B' represents nudging field A with data from field B in files, syntax of 'A' assumes that nudging file has the same variables name as EAMxx"/>
       <nudging_timescale type="integer" doc="Timescale to apply nudging tendencies, 0: full replacement, >0: actual timescale">0</nudging_timescale>
+      <use_nudging_weights type="logical" doc="Flag for nudging weights option"/>
+      <nudging_weights_file type="string" doc="weights that relax the nudging fields update"/>
       <source_pressure_type type="string" 
 	                    valid_values="TIME_DEPENDENT_3D_PROFILE,STATIC_1D_VERTICAL_PROFILE"
 			    doc="Flag for how source pressure levels are handled in the nudging dataset.
