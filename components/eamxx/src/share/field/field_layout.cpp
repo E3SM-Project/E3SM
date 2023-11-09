@@ -6,21 +6,15 @@ namespace scream
 {
 
 FieldLayout::FieldLayout (const std::initializer_list<FieldTag>& tags)
- : m_rank(tags.size())
- , m_tags(tags)
+ : FieldLayout(std::vector<FieldTag>(tags))
 {
-  m_dims.resize(m_rank,-1);
-  m_extents = decltype(m_extents)("",m_rank);
-  Kokkos::deep_copy(m_extents,-1);
+  // Nothing to do here
 }
 
 FieldLayout::FieldLayout (const std::vector<FieldTag>& tags)
- : m_rank(tags.size())
- , m_tags(tags)
+ : FieldLayout(tags,std::vector<int>(tags.size(),-1))
 {
-  m_dims.resize(m_rank,-1);
-  m_extents = decltype(m_extents)("",m_rank);
-  Kokkos::deep_copy(m_extents,-1);
+  // Nothing to do here
 }
 
 FieldLayout::FieldLayout (const std::vector<FieldTag>& tags,
@@ -30,8 +24,9 @@ FieldLayout::FieldLayout (const std::vector<FieldTag>& tags,
 {
   m_dims.resize(m_rank,-1);
   m_extents = decltype(m_extents)("",m_rank);
-  Kokkos::deep_copy(m_extents,-1);
-  set_dimensions(dims);
+  for (int idim=0; idim<m_rank; ++idim) {
+    set_dimension(idim,dims[idim]);
+  }
 }
 
 bool FieldLayout::is_vector_layout () const {
@@ -69,6 +64,10 @@ FieldLayout FieldLayout::strip_dim (const FieldTag tag) const {
 }
 
 FieldLayout FieldLayout::strip_dim (const int idim) const {
+  EKAT_REQUIRE_MSG (idim>=0 and idim<m_rank,
+      "Error! Cannot strip dimension, because it is out of bounds.\n"
+      "  - input dim index: " + std::to_string(idim) + "\n"
+      "  - layout rank    : " + std::to_string(m_rank) + "\n");
   std::vector<FieldTag> t = tags();
   std::vector<int>      d = dims();
   t.erase(t.begin()+idim);
@@ -81,20 +80,10 @@ void FieldLayout::set_dimension (const int idim, const int dimension) {
   EKAT_REQUIRE_MSG(dimension>=0, "Error! Dimensions must be non-negative.");
   m_dims[idim] = dimension;
 
-  // Recompute extents
-  auto extents = Kokkos::create_mirror_view(m_extents);
-  Kokkos::deep_copy(extents,m_extents);
-  extents(idim) = dimension;
-  Kokkos::deep_copy(m_extents,extents);
-}
-
-void FieldLayout::set_dimensions (const std::vector<int>& dims) {
-  // Check, then set dims
-  EKAT_REQUIRE_MSG(dims.size()==static_cast<size_t>(m_rank),
-                     "Error! Input dimensions vector not properly sized.");
-  for (int idim=0; idim<m_rank; ++idim) {
-    set_dimension(idim,dims[idim]);
-  }
+  // Recompute device extents
+  auto extents_h = Kokkos::create_mirror_view(m_extents);
+  std::copy_n(m_dims.begin(),m_rank,extents_h.data());
+  Kokkos::deep_copy(m_extents,extents_h);
 }
 
 LayoutType get_layout_type (const std::vector<FieldTag>& field_tags) {
@@ -107,6 +96,8 @@ LayoutType get_layout_type (const std::vector<FieldTag>& field_tags) {
   const int n_element = count(tags,EL);
   const int n_column  = count(tags,COL);
   const int ngp       = count(tags,GP);
+  const int nvlevs    = count(tags,LEV) + count(tags,ILEV);
+  const int ncomps    = count(tags,CMP);
 
   // Start from undefined/invalid
   LayoutType result = LayoutType::Invalid;
@@ -123,6 +114,14 @@ LayoutType get_layout_type (const std::vector<FieldTag>& field_tags) {
 
     // Remove the column tag
     erase(tags,COL);
+  } else if (tags.size()==0) {
+    return LayoutType::Scalar0D;
+  } else if (tags.size()==1 and tags[0]==CMP) {
+    return LayoutType::Vector0D;
+  } else if (tags.size()==1 and nvlevs==1) {
+    return LayoutType::Scalar1D;
+  } else if (tags.size()==2 and ncomps==1 and nvlevs==1) {
+    return LayoutType::Vector1D;
   } else {
     // Not a supported layout.
     return result;
