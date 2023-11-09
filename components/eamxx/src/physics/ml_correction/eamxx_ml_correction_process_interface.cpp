@@ -1,8 +1,6 @@
 #include "eamxx_ml_correction_process_interface.hpp"
 #include "ekat/ekat_assert.hpp"
 #include "ekat/util/ekat_units.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
-#include "ekat/kokkos/ekat_subview_utils.hpp"
 #include "share/field/field_utils.hpp"
 
 namespace scream {
@@ -48,7 +46,7 @@ void MLCorrection::set_grids(
     auto nondim = m/m;
     add_field<Required>("phis", scalar2d_layout, m2/s2, grid_name);
     add_field<Updated>("SW_flux_dn", scalar3d_layout_int, Wm2, grid_name, ps);
-    add_field<Required>("sfc_alb_dif_vis", scalar2d_layout, nondim, grid_name, ps);
+    add_field<Required>("sfc_alb_dif_vis", scalar2d_layout, nondim, grid_name);
     add_field<Updated>("sfc_flux_sw_net", scalar2d_layout, Wm2, grid_name);
     add_field<Updated>("sfc_flux_lw_dn", scalar2d_layout, Wm2, grid_name);
     m_lat  = m_grid->get_geometry_data("lat");
