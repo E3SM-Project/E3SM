@@ -29,7 +29,7 @@ def buildlib(bldroot, installpath, case):
     for item in it:
         cmake_args += " -D{}={}".format(item,next(it))
 
-    atm_dyn_tgt = case.get_value("ATM_DYN_TARGET")
+    atm_dyn_tgt = case.get_value("CAM_TARGET")
     cmake_args += " -DSCREAM_DYN_TARGET={}".format(atm_dyn_tgt)
     cmake_args += " -DSCREAM_CIME_BUILD=ON"
 

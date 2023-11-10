@@ -17,7 +17,6 @@ module seaice_high_frequency_output
    use mpas_dmpar
    use mpas_timekeeping
    use mpas_stream_manager
-   use ice_constants_colpkg
 
    implicit none
    private

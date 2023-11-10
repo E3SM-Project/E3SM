@@ -31,7 +31,6 @@
          cp_ocn    = 4218._dbl_kind   ,&! specific heat of ocn    (J/kg/K)
                                         ! freshwater value needed for enthalpy
          depressT  = 0.054_dbl_kind   ,&! Tf:brine salinity ratio (C/ppt)
-         dragio    = 0.00536_dbl_kind ,&! ice-ocn drag coefficient
          albocn    = 0.06_dbl_kind    ,&! ocean albedo
          gravit    = 9.80616_dbl_kind ,&! gravitational acceleration (m/s^2)
          viscosity_dyn = 1.79e-3_dbl_kind, & ! dynamic viscosity of brine (kg/m/s)
@@ -70,7 +69,6 @@
          ! kseaice is used only for zero-layer thermo
          kseaice= 2.00_dbl_kind  ,&! thermal conductivity of sea ice (W/m/deg)
                                    ! (used in zero layer thermodynamics option)
-         ksno   = 0.30_dbl_kind  ,&! thermal conductivity of snow  (W/m/deg)
          zref   = 10._dbl_kind   ,&! reference height for stability (m)
          hs_min = 1.e-4_dbl_kind ,&! min snow thickness for computing zTsn (m)
          snowpatch = 0.02_dbl_kind, & ! parameter for fractional snow area (m)
@@ -112,11 +110,9 @@
       real(kind=dbl_kind),public :: decln  ! solar declination angle in radians
       real(kind=dbl_kind),public :: eccf   ! earth orbit eccentricity factor
       logical(kind=log_kind),public :: log_print ! Flags print of status/error
-    
+
       ! snow parameters
       real (kind=dbl_kind), parameter, public :: &
-         snwlvlfac =   0.3_dbl_kind, & ! 30% rule: fractional increase in snow depth
-                                       ! over ridged ice, compared with level ice
          rhosmin   = 100.0_dbl_kind    ! minimum snow density (kg/m^3)
 
       !-----------------------------------------------------------------

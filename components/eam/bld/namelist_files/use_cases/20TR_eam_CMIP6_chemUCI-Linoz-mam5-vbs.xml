@@ -58,11 +58,10 @@
 <airpl_emis_file></airpl_emis_file>   <!-- need to be empty, but if specifying empty here, the value would be root of input_data_path -->
 
 <!-- Prescribed oxidants for aerosol chemistry.   Ozone is from CMIP6 input4MIPS file -->
-<tracer_cnst_type    >CYCLICAL</tracer_cnst_type>
-<tracer_cnst_cycle_yr>1995</tracer_cnst_cycle_yr>
-<tracer_cnst_file    >ch4_oxid_1.9x2.5_L26_1990-1999clim.c090804.nc</tracer_cnst_file>
+<tracer_cnst_type    >INTERP_MISSING_MONTHS</tracer_cnst_type>
+<tracer_cnst_file    >oxid_1.9x2.5_L26_1850-2015_c20181106.nc</tracer_cnst_file>
 <tracer_cnst_filelist>''</tracer_cnst_filelist>
-<tracer_cnst_datapath>atm/cam/chem/methane</tracer_cnst_datapath>
+<tracer_cnst_datapath>atm/cam/chem/trop_mozart_aero/oxid</tracer_cnst_datapath>
 <tracer_cnst_specifier>'prsd_O3:O3','prsd_NO3:NO3','prsd_OH:OH'</tracer_cnst_specifier>
 
 <!-- prescribed methane  -->
@@ -98,7 +97,7 @@
 <!-- Stratospheric ozone (Linoz) updated using CMIP6 input4MIPS GHG concentrations -->
 <chlorine_loading_file      >atm/cam/chem/trop_mozart/ub/Linoz_Chlorine_Loading_CMIP6_0003-2017_c20171114.nc</chlorine_loading_file>
 <chlorine_loading_type      >SERIAL</chlorine_loading_type>
-<linoz_data_file            >linv3_1849-2015_2010JPL_cmip6_historical_10deg_58km_c20210625.nc</linoz_data_file>
+<linoz_data_file            >linv3_1849-2017_CMIP6_Hist_10deg_58km_c20230705.nc</linoz_data_file>
 <linoz_data_path            >atm/cam/chem/trop_mozart/ub</linoz_data_path>
 <linoz_data_type            >INTERP_MISSING_MONTHS</linoz_data_type>
 

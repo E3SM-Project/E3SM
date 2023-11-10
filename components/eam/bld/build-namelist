@@ -791,6 +791,8 @@ if ( (($chem ne 'none') && ($chem ne 'spa')) or ( $prog_species ) ){
       add_default($nl, 'clim_soilw_file' );
       add_default($nl, 'season_wes_file' );
     }
+
+    add_default($nl, 'lght_no_prd_factor' );
 }
 
 # Initial conditions
@@ -827,6 +829,7 @@ add_default($nl,'ieflx_opt');
 add_default($nl,'use_hetfrz_classnuc');
 add_default($nl,'hist_hetfrz_classnuc');
 add_default($nl,'gw_convect_hcf');
+add_default($nl,'hdepth_scaling_factor');
 add_default($nl,'linoz_psc_T');
 if ($cfg->get('microphys') =~ /^mg2/) {
     add_default($nl,'micro_mg_dcs_tdep');
@@ -1130,7 +1133,7 @@ if ($aer_model eq 'mam' ) {
   if ($chem =~ /_mam4/) {$aero_modes = '4mode';}
   if ($chem =~ /_mam4_mom/) {$aero_modes = '4mode_mom';}
   if ($chem =~ /_mam4_resus_mom/) {$aero_modes = '4mode_mom';}
-  if ($chem =~ /_mam5_resus_mom/) {$aero_modes = '5mode';}
+  if ($chem =~ /_mam5/) {$aero_modes = '5mode';}
   if ($chem =~ /_mam7/) {$aero_modes = '7mode';}
   if ($chem =~ /_mam9/) {$aero_modes = '9mode';}
 
@@ -1705,13 +1708,9 @@ if ( !($phys eq 'ideal' or $phys eq 'adiabatic') ) {
 # Cloud optics; for MMF be specific about which optics package to use
 if ($rad_pkg eq 'rrtmg' or $rad_pkg eq 'rrtmgp') {
     if ($cfg->get('use_MMF')) {
-        if ($cfg->get('MMF_microphysics_scheme') eq 'sam1mom') {
-            add_default($nl, 'liqcldoptics', 'val' => 'slingo');
-            add_default($nl, 'icecldoptics', 'val' => 'ebertcurry');
-        } else {
-            add_default($nl, 'liqcldoptics', 'val' => 'gammadist');
-            add_default($nl, 'icecldoptics', 'val' => 'mitchell');
-        }
+        # NOTE: eventually we should switch PAM optics to gammadist+mitchell
+        add_default($nl, 'liqcldoptics', 'val' => 'slingo');
+        add_default($nl, 'icecldoptics', 'val' => 'ebertcurry');
     } else {
         add_default($nl, 'liqcldoptics');
         add_default($nl, 'icecldoptics');
@@ -3093,7 +3092,7 @@ if ($chem eq 'linoz_mam4_resus_mom' || $chem eq 'linoz_mam4_resus_mom_soag') {
     }
 }
 
-if ($chem eq 'superfast_mam4_resus_mom_soag' || $chem eq 'superfast_mam5_resus_mom_soag') {
+if ($chem eq 'superfast_mam4_resus_mom_soag' || $chem eq 'chemuci_linozv3_mam5_vbs') {
 
     # Surface emission datasets:
     my %species;
@@ -3900,6 +3899,9 @@ if ($chem =~ /_mam/) {
 
 #Sea Salt aerosol emission scale factors
 add_default($nl, 'seasalt_emis_scale');
+
+#DMS emission scale factor
+add_default($nl, 'dms_emis_scale') if (get_default_value('dms_emis_scale')) ;
 
 # Turbulent Mountain Stress
 add_default($nl, 'do_tms');

@@ -112,9 +112,19 @@ def compare_contents(case1, case2, file1, file2, contents1, contents2, unordered
                 files_match = False
 
             if verbose:
-                for token1, token2 in zip(tokens1, tokens2):
-                    if token1 != token2:
-                        print(f"    {token1} != {token2}")
+                tokens1_set = set(tokens1)
+                tokens2_set = set(tokens2)
+                one_not_two = tokens1_set - tokens2_set
+                two_not_one = tokens2_set - tokens1_set
+                print(f"    For line {line1}:")
+                print(f"      Case1 had unique flags:")
+                for item in one_not_two:
+                    print(f"        {item}")
+
+                print(f"      Case2 had unique flags:")
+                for item in two_not_one:
+                    print(f"        {item}")
+
             else:
                 break
 

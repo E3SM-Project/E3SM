@@ -25,6 +25,7 @@ module crm_state_module
       real(crm_rknd), allocatable :: v_wind(:,:,:,:)       ! CRM v-wind component
       real(crm_rknd), allocatable :: w_wind(:,:,:,:)       ! CRM w-wind component
       real(crm_rknd), allocatable :: temperature(:,:,:,:)  ! CRM temperature
+      real(crm_rknd), allocatable :: rho_dry(:,:,:,:)      ! CRM dry density
       real(crm_rknd), allocatable :: qv(:,:,:,:)           ! CRM water vapor
 
       ! 1-moment microphsics variables
@@ -44,8 +45,15 @@ module crm_state_module
       real(crm_rknd), allocatable :: bm(:,:,:,:) ! averaged riming volume
 
       ! "previous" state variables needed for P3
-      real(crm_rknd), allocatable :: t_prev(:,:,:,:)  ! previous CRM time step temperature
+      real(crm_rknd), allocatable :: t_prev(:,:,:,:) ! previous CRM time step temperature
       real(crm_rknd), allocatable :: q_prev(:,:,:,:) ! previous CRM time step water vapor
+
+      ! SHOC quantities that need to persist between CRM calls
+      real(crm_rknd), allocatable :: shoc_tk     (:,:,:,:) ! eddy coefficient for momentum [m2/s]
+      real(crm_rknd), allocatable :: shoc_tkh    (:,:,:,:) ! eddy coefficient for heat     [m2/s]
+      real(crm_rknd), allocatable :: shoc_wthv   (:,:,:,:) ! buoyancy flux                 [K m/s]
+      real(crm_rknd), allocatable :: shoc_relvar (:,:,:,:) ! relative cloud water variance
+      real(crm_rknd), allocatable :: shoc_cldfrac(:,:,:,:) ! Cloud fraction
 
    end type crm_state_type
    !------------------------------------------------------------------------------------------------
@@ -63,12 +71,14 @@ contains
       if (.not. allocated(state%v_wind))      allocate(state%v_wind(ncrms,crm_nx,crm_ny,crm_nz))
       if (.not. allocated(state%w_wind))      allocate(state%w_wind(ncrms,crm_nx,crm_ny,crm_nz))
       if (.not. allocated(state%temperature)) allocate(state%temperature(ncrms,crm_nx,crm_ny,crm_nz))
+      if (.not. allocated(state%rho_dry))     allocate(state%rho_dry(ncrms,crm_nx,crm_ny,crm_nz))
       if (.not. allocated(state%qv))          allocate(state%qv(ncrms,crm_nx,crm_ny,crm_nz))
 
       call prefetch(state%u_wind)
       call prefetch(state%v_wind)
       call prefetch(state%w_wind)
       call prefetch(state%temperature)
+      call prefetch(state%rho_dry)
       call prefetch(state%qv)
 
       if (trim(MMF_microphysics_scheme) .eq. 'sam1mom') then
@@ -99,6 +109,19 @@ contains
          call prefetch(state%bm)
          call prefetch(state%t_prev)
          call prefetch(state%q_prev)
+
+         ! SHOC variables
+         if (.not. allocated(state%shoc_tk      ))  allocate(state%shoc_tk      (ncrms,crm_nx,crm_ny,crm_nz))
+         if (.not. allocated(state%shoc_tkh     ))  allocate(state%shoc_tkh     (ncrms,crm_nx,crm_ny,crm_nz))
+         if (.not. allocated(state%shoc_wthv    ))  allocate(state%shoc_wthv    (ncrms,crm_nx,crm_ny,crm_nz))
+         if (.not. allocated(state%shoc_relvar  ))  allocate(state%shoc_relvar  (ncrms,crm_nx,crm_ny,crm_nz))
+         if (.not. allocated(state%shoc_cldfrac ))  allocate(state%shoc_cldfrac (ncrms,crm_nx,crm_ny,crm_nz))
+         call prefetch(state%shoc_tk      )
+         call prefetch(state%shoc_tkh     )
+         call prefetch(state%shoc_relvar  )
+         call prefetch(state%shoc_wthv    )
+         call prefetch(state%shoc_cldfrac )
+
       end if
 
    end subroutine crm_state_initialize
@@ -111,6 +134,7 @@ contains
       if (allocated(state%v_wind))      deallocate(state%v_wind)
       if (allocated(state%w_wind))      deallocate(state%w_wind)
       if (allocated(state%temperature)) deallocate(state%temperature)
+      if (allocated(state%rho_dry))     deallocate(state%rho_dry)
       if (allocated(state%qv))          deallocate(state%qv)
 
       if (allocated(state%qp)) deallocate(state%qp)
@@ -127,6 +151,13 @@ contains
       if (allocated(state%bm)) deallocate(state%bm)
       if (allocated(state%t_prev)) deallocate(state%t_prev)
       if (allocated(state%q_prev)) deallocate(state%q_prev)
+
+      ! SHOC variables
+      if (allocated(state%shoc_tk      )) deallocate(state%shoc_tk      )
+      if (allocated(state%shoc_tkh     )) deallocate(state%shoc_tkh     )
+      if (allocated(state%shoc_wthv    )) deallocate(state%shoc_wthv    )
+      if (allocated(state%shoc_relvar  )) deallocate(state%shoc_relvar  )
+      if (allocated(state%shoc_cldfrac )) deallocate(state%shoc_cldfrac )
       
    end subroutine crm_state_finalize
 end module crm_state_module

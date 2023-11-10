@@ -133,6 +133,7 @@ module conv_water
    use physics_types,   only: physics_state
    use cam_history,     only: outfld
    use phys_control,    only: phys_getopts
+   use shr_infnan_mod,  only: shr_infnan_isnan
    
    implicit none
 
@@ -364,8 +365,17 @@ module conv_water
    call pbuf_get_field(pbuf, sh_cldliq1_idx, sh_cldliq  )
    call pbuf_get_field(pbuf, sh_cldice1_idx, sh_cldice  )
 
-   sh_cldliq(:ncol,:pver)=sh_icwmr(:ncol,:pver)*(1-fice(:ncol,:pver))*sh_frac(:ncol,:pver)
-   sh_cldice(:ncol,:pver)=sh_icwmr(:ncol,:pver)*fice(:ncol,:pver)*sh_frac(:ncol,:pver)
+   do k = 1, pver
+      do i = 1, ncol
+         if (shr_infnan_isnan( fice(i,k) )) then
+            sh_cldliq(i,k) = 0._r8
+            sh_cldice(i,k) = 0._r8
+         else
+            sh_cldliq(i,k)=sh_icwmr(i,k)*(1-fice(i,k))*sh_frac(i,k)
+            sh_cldice(i,k)=sh_icwmr(i,k)*   fice(i,k) *sh_frac(i,k)
+         endif
+      end do
+   end do
 
   ! Output convective IC WMRs
    

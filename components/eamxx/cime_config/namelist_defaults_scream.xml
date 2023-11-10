@@ -35,7 +35,7 @@ be lost if SCREAM_HACK_XML is not enabled.
   -->
   <selectors>
     <selector name="hgrid" case_env="ATM_GRID"/>
-    <selector name="dyn" case_env="ATM_DYN_TARGET"/>
+    <selector name="dyn" case_env="CAM_TARGET"/>
     <selector name="nlev" case_env="SCREAM_CMAKE_OPTIONS" regex=".*SCREAM_NUM_VERTICAL_LEV ([0-9]+).*"/>
   </selectors>
 

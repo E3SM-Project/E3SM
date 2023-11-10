@@ -221,7 +221,7 @@ _TESTS = {
     "e3sm_atm_nbfb" : {
         "tests" : (
             "PGN_P1x1.ne4_oQU240.F2010",
-            "TSC.ne4_oQU240.F2010-CICE",
+            "TSC.ne4_oQU240.F2010",
             "MVK_PS.ne4_oQU240.F2010",
             )
         },
@@ -313,7 +313,7 @@ _TESTS = {
     "e3sm_extra_coverage" : {
         "inherit" : ("e3sm_atm_extra_coverage", "e3sm_ocnice_extra_coverage"),
         "tests"   : (
-            "SMS_D_Ln3.TL319_EC30to60E2r2_wQU225EC30to60E2r2.GMPAS-JRA-WW3",
+            "SMS_D_Ln3.TL319_EC30to60E2r2_wQU225EC30to60E2r2.GMPAS-JRA1p5-WW3.ww3-jra_1958",
             )
         },
 
@@ -339,6 +339,7 @@ _TESTS = {
             "ERP_Ln9.ne4pg2_oQU480.WCYCL20TRNS-MMF1.allactive-mmf_fixed_subcycle",
             "ERS_Ln9.ne4pg2_ne4pg2.FRCE-MMF1.eam-cosp_nhtfrq9",
             "SMS_Ln5.ne4_ne4.FSCM-ARM97-MMF1",
+            "SMS_Ln3.ne4pg2_ne4pg2.F2010-MMF2",
             )
         },
 
@@ -424,6 +425,7 @@ _TESTS = {
                  "SMS.ne4_oQU240.F2010.eam-thetahy_ftype0",
                  "SMS.ne4_oQU240.F2010.eam-thetahy_ftype1",
                  "SMS.ne4_oQU240.F2010.eam-thetahy_ftype2",
+                 "SMS.ne4_oQU240.F2010.eam-thetahy_ftype2_energy",
                  "SMS.ne4_oQU240.F2010.eam-thetahy_ftype4",
                  "SMS.ne4_oQU240.F2010.eam-thetanh_ftype0",
                  "SMS.ne4_oQU240.F2010.eam-thetanh_ftype1",

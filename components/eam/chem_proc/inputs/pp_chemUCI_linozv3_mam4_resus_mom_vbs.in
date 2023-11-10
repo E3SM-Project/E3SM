@@ -282,6 +282,7 @@ CHEMISTRY
  End Reactions
 
  Ext Forcing
+      NO
       NO2 <- dataset
       SO2 <- dataset
       so4_a1 <- dataset
