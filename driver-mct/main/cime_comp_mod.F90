@@ -4312,8 +4312,8 @@ contains
        if (lnd_c2_rof) call prep_rof_accum_lnd(timer='CPL:lndpost_accl2r')
        if (lnd_c2_glc .or. do_hist_l2x1yrg) call prep_glc_accum_lnd(timer='CPL:lndpost_accl2g' )
 
-       write(logunit,*) '(cime_run_lnd_recv_post) iac_accum',&
-                           ymd, tod
+       !`write(logunit,*) '(cime_run_lnd_recv_post) iac_accum',&
+       !                    ymd, tod
 
        if (lnd_c2_iac) call prep_iac_accum(timer='CPL:lndpost_accl2z')
 

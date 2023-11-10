@@ -135,7 +135,7 @@ contains
                 ! TRS - iac co2 coupling
                 ! For now, just use the monthly value, without any
                 ! interpolation.  This will change with the rebase.
-                cam_in(c)%fco2_iac(i) = -x2a(index_x2a_Fazz_co2sfc_iac(mon_spec),ig)
+                !cam_in(c)%fco2_iac(i) = -x2a(index_x2a_Fazz_co2sfc_iac(mon_spec),ig)
              endif
           endif
           if (index_x2a_Faoo_fco2_ocn /= 0) then
@@ -195,7 +195,7 @@ contains
              
              ! co2 flux from fossil fuel
              if (index_x2a_Fazz_co2sfc_iac(1) /= 0) then
-                cam_in(c)%cflx(i,c_i(2)) = cam_in(c)%fco2_iac(i)
+             !   cam_in(c)%cflx(i,c_i(2)) = cam_in(c)%fco2_iac(i)
              else if (co2_readFlux_fuel) then
 !++BEH  vvv old implementation vvv
 !                cam_in(c)%cflx(i,c_i(2)) = data_flux_fuel%co2flx(i,c)
