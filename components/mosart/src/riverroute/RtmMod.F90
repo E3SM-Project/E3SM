@@ -50,6 +50,7 @@ module RtmMod
   use WRM_subw_IO_mod , only : WRM_init, WRM_computeRelease
   use MOSARTinund_PreProcs_MOD, only : calc_chnlMannCoe, preprocess_elevProf
   use MOSARTinund_Core_MOD    , only : MOSARTinund_simulate, ManningEq, ChnlFPexchg
+  use MOSART_Budgets_mod, only: MOSART_WaterBudget_Extraction
   use RtmIO
   use mct_mod
   use perf_mod
@@ -3049,6 +3050,7 @@ contains
        ! global sum
        call shr_mpi_sum(budget_terms,budget_global,mpicom_rof,'mosart global budget',all=.false.)
 
+       
        ! write budget
        if (masterproc) then
           write(iulog,'(2a,i10,i6)') trim(subname),' MOSART BUDGET diagnostics (million m3) for ',ymd,tod
@@ -3078,7 +3080,7 @@ contains
 
             ! If inundation scheme is turned on :
             if (inundflag .and. Tctl%OPT_inund .eq. 1 ) then
-              if ( nt .eq. 1 ) then
+              if ( nt .eq. nt_nliq ) then
                 write(iulog,'(2a,i4,f22.6  )') trim(subname),'   dvolume wf    = ',nt,budget_global(bv_fp_f,nt)-budget_global(bv_fp_i,nt)
               end if
             end if
@@ -3110,10 +3112,10 @@ contains
             write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volumet final = ',nt,budget_global(bv_wt_f,nt)
             write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volumer  init = ',nt,budget_global(bv_wr_i,nt)
             write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volumer final = ',nt,budget_global(bv_wr_f,nt)
-            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volumer  init = ',nt,budget_global(bv_t_al_i,nt)
-            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volumer final = ',nt,budget_global(bv_t_al_f,nt)
-            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volumer  init = ',nt,budget_global(bv_r_al_i,nt)
-            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volumer final = ',nt,budget_global(bv_r_al_f,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volumest init = ',nt,budget_global(bv_t_al_i,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volumestfinal = ',nt,budget_global(bv_t_al_f,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volumesr init = ',nt,budget_global(bv_r_al_i,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volumesrfinal = ',nt,budget_global(bv_r_al_f,nt)
             write(iulog,'(2a,i4,f22.6  )') trim(subname),' x storage  init = ',nt,budget_global(bv_dstor_i,nt)
             write(iulog,'(2a,i4,f22.6  )') trim(subname),' x storage final = ',nt,budget_global(bv_dstor_f,nt)
           endif
@@ -3130,12 +3132,10 @@ contains
           if (do_all_budget) then
             write(iulog,'(2a,i4,f22.6,a)') trim(subname),' x input check   = ',nt,budget_input - &
                                                                              (budget_global(br_qsur,nt)+budget_global(br_qsub,nt)+ &
-                                                                              budget_global(br_qgwl,nt)+budget_global(br_qdto,nt)), &
+                                                                              budget_global(br_qgwl,nt)+budget_global(br_qdto,nt)+ &
                                                                               budget_global(br_ehexch,nt)+budget_global(br_etexch,nt)+ &
-                                                                              budget_global(br_erexch,nt), & !+budget_global(br_qdem,nt)), &
-                                                                             ' (should be zero)'
+                                                                              budget_global(br_erexch,nt)), ' (should be zero)'
                                                                              ! + budget_global(br_qdem,nt)), commented out by Tian 3/13/2018
-
                                                                              
           endif
             write(iulog,'(2a)') trim(subname),'----------------'
@@ -3198,6 +3198,11 @@ contains
             if ((budget_total) > 1.0e-6) then
                write(iulog,'(2a,i4)') trim(subname),' ***** BUDGET WARNING error gt 1. m3 for nt = ',nt
             endif
+
+            if (nt .eq. nt_nliq) then
+               call MOSART_WaterBudget_Extraction(budget_global, budget_terms_total, bv_volt_i, bv_volt_f, budget_input, budget_output, budget_other)
+            endif
+
           enddo   ! (do nt = 1,nt_rtm   --Inund.)
           write(iulog,'(a)') '----------------------------------- '
 
@@ -3360,12 +3365,12 @@ contains
                 write(iulog,'(a, f22.6)') trim(tracerID)//'   Volume in main channel active layer (1e9kg)=', budget_glb_inund(bv_r_al_f, nt)
 
                 ! If inundation scheme is on & the 1st tracer (liquid water) :
-                if ( inundflag .and. Tctl%OPT_inund .eq. 1 .and. nt .eq. 1 ) then
+                if ( inundflag .and. Tctl%OPT_inund .eq. 1 .and. nt .eq. nt_nliq ) then
                    write(iulog,'(a, f22.6)') trim(tracerID)//'   Volume over floodplains (km^3)             =', budget_glb_inund(bv_fp_f, nt)
                 end if
 
                 ! If inundation scheme is on & the 1st tracer (liquid water) :
-                if ( inundflag .and. Tctl%OPT_inund .eq. 1 .and. nt .eq. 1 ) then
+                if ( inundflag .and. Tctl%OPT_inund .eq. 1 .and. nt .eq. nt_nliq ) then
 
                    write(iulog,'(a)') ' '
                    write(iulog,'(a)') trim(tracerID)//'---------------------------------'
@@ -3429,6 +3434,7 @@ contains
           endif
        endif   ! (End of if (masterproc). --Inund.)
 
+       
        call t_stopf('mosartr_budget')
     endif  ! budget_write   (end of if (budget_check .and. budget_write). --Inund.)
 
