@@ -452,7 +452,7 @@ public:
         // Need to update dp, pnh and exner. Currently, pnh is storing pnh-pi
         // Compute hydrostatic p from dp. Store in exner, then add to pnh
         auto p_i = Homme::subview(m_pi_i,kv.team_idx,igp,jgp);
-        m_elem_ops.compute_hydrostatic_p(kv,dp,p_i,exner);
+        m_elem_ops.compute_hydrostatic_p(kv,dp_adj,p_i,exner);
         Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                              [&](const int ilev) {
           pnh(ilev) += exner(ilev);
