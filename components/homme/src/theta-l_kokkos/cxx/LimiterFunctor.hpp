@@ -67,10 +67,10 @@ struct LimiterFunctor {
       , m_hvcoord(hvcoord)
       , m_state(elements.m_state)
       , m_geometry(elements.m_geometry)
-      , m_policy_dp3d_lim (Homme::get_default_team_policy<ExecSpace,TagDp3dLimiter>(m_num_elems))
-      , m_tu(m_policy_dp3d_lim)
       , m_dp3d_thresh(params.dp3d_thresh)
       , m_vtheta_thresh(params.vtheta_thresh)
+      , m_policy_dp3d_lim (Homme::get_default_team_policy<ExecSpace,TagDp3dLimiter>(m_num_elems))
+      , m_tu(m_policy_dp3d_lim)
   {
     m_np1 = -1;
   }
