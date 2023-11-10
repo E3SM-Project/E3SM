@@ -20,6 +20,7 @@ module seaice_velocity_solver
   use mpas_dmpar
   use mpas_timer
   use mpas_log, only: mpas_log_write, mpas_log_info
+  use ice_constants_colpkg, only: puny
 
   implicit none
 
@@ -62,8 +63,8 @@ module seaice_velocity_solver
   real(kind=RKIND), parameter, private :: &
        sinOceanTurningAngle = 0.0_RKIND, & ! northern hemisphere
        cosOceanTurningAngle = 1.0_RKIND, & ! northern hemisphere
-       seaiceAreaMinimum = 0.001_RKIND, &
-       seaiceMassMinimum = 0.01_RKIND
+       seaiceAreaMinimum = puny, &
+       seaiceMassMinimum = 10.0_RKIND*puny
 
 contains
 
