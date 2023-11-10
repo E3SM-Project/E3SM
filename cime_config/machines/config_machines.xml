@@ -3101,7 +3101,7 @@
        <modules>
           <command name="purge"></command>
           <command name="use">/soft/modulefiles</command>
-          <command name="load">spack cmake</command>
+	  <command name="load">spack cmake/3.24.2 python/3.9.13-gcc-11.2.0-76jlbxs</command>
           <command name="use">/soft/restricted/CNDA/updates/modulefiles</command>
         </modules>
         <modules compiler="!gnu">
@@ -3199,7 +3199,7 @@
        <modules>
           <command name="purge"></command>
           <command name="use">/soft/modulefiles</command>
-          <command name="load">spack cmake</command>
+	  <command name="load">spack cmake/3.24.2 python/3.9.13-gcc-11.2.0-76jlbxs</command>
           <command name="use">/soft/restricted/CNDA/updates/modulefiles</command>
         </modules>
         <modules compiler="!gnu">
