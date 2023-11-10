@@ -216,7 +216,7 @@ read_fields_from_file_for_iop (const std::string& file_name,
     const auto mpi_rank_with_col = m_lat_lon_info[grid_name].mpi_rank_of_closest_column;
     if (m_comm.rank() == mpi_rank_with_col) {
       const auto col_indx_with_data = m_lat_lon_info[grid_name].local_column_index_of_closest_column;
-      col_data.deep_copy(io_field.subfield(0,col_indx_with_data));
+      col_data.deep_copy<Host>(io_field.subfield(0,col_indx_with_data));
     }
 
     // Broadcast column data to all other ranks
