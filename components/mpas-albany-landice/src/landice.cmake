@@ -57,7 +57,7 @@ list(APPEND RAW_SOURCES
   core_landice/mode_forward/mpas_li_core.F
   core_landice/mode_forward/mpas_li_core_interface.F
   core_landice/mode_forward/mpas_li_time_integration.F
-  core_landice/mode_forward/mpas_li_time_integration_fe.F
+  core_landice/mode_forward/mpas_li_time_integration_fe_rk.F
   core_landice/mode_forward/mpas_li_diagnostic_vars.F
   core_landice/mode_forward/mpas_li_advection.F
   core_landice/mode_forward/mpas_li_calving.F

@@ -292,6 +292,10 @@
                         description="If true, then distribute unablatedVolumeDynCell among dynamic neighbors when converting ablation velocity to ablation thickness. This should only be used as a clean-up measure, while limiting the timestep based on ablation velocity should be used as the primary method of getting accurate ablation thickness from ablation velocity.  If you choose to set config_adaptive_timestep_calvingCFL_fraction much larger than 1.0 (which is not recommended), setting this option to true usually results in more accurate calving behavior. "
                         possible_values=".true. or .false."
                 />
+                <nml_option name="config_update_velocity_before_calving" type="logical" default_value=".false." units="unitless"
+                            description="If true, add an additional velocity solve between advection and calving. If false, use velocity field from beginning of time step to calculate calving rate. For certain calving laws, like damage threshold calving, it is not necessary to update the velocity before calving, while for von Mises stress and eigencalving, it is more accurate to have an updated velocity state before solving for calvingThickness."
+                            possible_values=".true. or .false."
+                />
 	</nml_record>
 
 	<nml_record name="thermal_solver" in_defaults="true">
@@ -485,8 +489,16 @@
 		            possible_values="Any time interval of the format 'YYYY-MM-DD_HH:MM:SS', but limited by CFL condition."
 		/>
 		<nml_option name="config_time_integration" type="character" default_value="forward_euler" units="unitless"
-		            description="Time integration method (currently, only forward Euler is supported)."
-		            possible_values="'forward_euler'"
+		            description="Time integration method."
+		            possible_values="'forward_euler' or 'runge_kutta'"
+		/>
+                <nml_option name="config_rk_order" type="integer" default_value="2" units="unitless"
+                            description="Order of Runge-Kutta time integration to use. A value of 1 would be equivalent to forward euler, but will cause an error to avoid unnecessary redundancy. Values of 2 and 3 indicate strong-stability preserving RK2 and RK3. There is currently no support for classical RK2 or RK4 methods."
+                            possible_values="2 or 3"
+                />
+		<nml_option name="config_rk3_stages" type="integer" default_value="3" units="stages"
+                        description="Number of stages for strong stability preserving RK3 time integration. If set to 3, this involves 3 velocity solves and a maximum CFL fraction of 1. If set to 4, this involves 4 velocity solves, but the maximum CFL fraction is 2."
+                        possible_values="3 or 4"
 		/>
 		<nml_option name="config_adaptive_timestep" type="logical" default_value=".false." units="unitless"
 			description="Determines if the time step should be adjusted based on the CFL condition or should be steady in time. If true, the config_dt_* options are ignored."

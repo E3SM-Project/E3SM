@@ -9,17 +9,17 @@
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  li_time_integration_fe
+!  li_time_integration_fe_rk
 !
-!> \brief MPAS land ice Forward Euler time integration scheme
-!> \author Matt Hoffman
-!> \date   17 April 2011
+!> \brief MPAS land ice Forward Euler and Runge-Kutta time integration schemes
+!> \author Matt Hoffman, Trevor Hillebrand
+!> \date   17 April 2011, Runge-Kutta added Sept 2023
 !> \details
-!>  This module contains the Forward Euler time integration scheme
+!>  This module contains the Forward Euler and Runge-Kutta time integration schemes
 !
 !-----------------------------------------------------------------------
 
-module li_time_integration_fe
+module li_time_integration_fe_rk
 
    use mpas_derived_types
    use mpas_pool_routines
@@ -30,11 +30,13 @@ module li_time_integration_fe
 
    use li_advection
    use li_calving, only: li_calve_ice, li_restore_calving_front, li_calculate_damage, li_finalize_damage_after_advection
-   use li_thermal, only: li_thermal_solver
+   use li_thermal, only: li_thermal_solver, li_enthalpy_to_temperature_kelvin
    use li_iceshelf_melt
    use li_diagnostic_vars
    use li_setup
    use li_constants
+   use li_mesh
+   use li_mask
 
    implicit none
    private
@@ -51,7 +53,7 @@ module li_time_integration_fe
    !
    !--------------------------------------------------------------------
 
-   public :: li_time_integrator_forwardeuler
+   public :: li_time_integrator_forwardeuler_rungekutta
 
    !--------------------------------------------------------------------
    !
@@ -67,20 +69,22 @@ module li_time_integration_fe
 
 !***********************************************************************
 !
-!  routine li_time_integrator_forwardeuler
+!  routine li_time_integrator_forwardeuler_rungekutta
 !
-!> \brief   Forward Euler time integration scheme
-!> \author  Matthew Hoffman
-!> \date    10 January 2012
+!> \brief   Forward Euler and Runge-Kutta time integration schemes
+!> \author  Matthew Hoffman, Trevor Hillebrand
+!> \date    10 January 2012, updated Sept 2023 for Runge-Kutta
 !> \details
-!>  This routine performs Forward Euler time integration.
+!>  This routine performs Forward Euler and Runge-Kutta time integration.
 !
 !-----------------------------------------------------------------------
-   subroutine li_time_integrator_forwardeuler(domain, err)
+   subroutine li_time_integrator_forwardeuler_rungekutta(domain, err)
 
       use li_subglacial_hydro
       use li_velocity
       use li_bedtopo
+      use li_mask
+      use li_advection, only: li_grounded_to_floating
 
       !-----------------------------------------------------------------
       ! input variables
@@ -92,28 +96,134 @@ module li_time_integration_fe
 
       type (domain_type), intent(inout) :: &
          domain          !< Input/Output: domain object
-
       !-----------------------------------------------------------------
       ! output variables
       !-----------------------------------------------------------------
       integer, intent(out) :: err !< Output: error flag
-
       !-----------------------------------------------------------------
       ! local variables
       !-----------------------------------------------------------------
       type (block_type), pointer :: block
       integer :: err_tmp
-
-      logical, pointer :: config_restore_calving_front
+      type (mpas_pool_type), pointer :: geometryPool, thermalPool, meshPool, velocityPool
+      
+      logical, pointer :: config_restore_calving_front, &
+                          config_restore_calving_front_prevent_retreat
       logical, pointer :: config_calculate_damage
       logical, pointer :: config_finalize_damage_after_advection
+      logical, pointer :: config_update_velocity_before_calving
+      character (len=StrKIND), pointer :: config_thickness_advection
+      character (len=StrKIND), pointer :: config_thermal_solver
+      character (len=StrKIND), pointer :: config_time_integration
+      integer, pointer :: config_rk_order, config_rk3_stages
+      integer :: rkStage, iCell, iTracer, k
+      real (kind=RKIND), dimension(:,:), pointer :: layerThickness, &
+                                                    temperature, &
+                                                    waterFrac
+      real (kind=RKIND), dimension(:), pointer :: thickness, damage, passiveTracer2d
+      real (kind=RKIND), dimension(:), pointer :: sfcMassBalApplied, &
+                                                  basalMassBalApplied, &
+                                                  groundedSfcMassBalApplied, &
+                                                  groundedBasalMassBalApplied, &
+                                                  floatingBasalMassBalApplied, &
+                                                  fluxAcrossGroundingLine, &
+                                                  fluxAcrossGroundingLineOnCells, &
+                                                  groundedToFloatingThickness
+      real (kind=RKIND), dimension(:), allocatable :: sfcMassBalAccum, &
+                                                      basalMassBalAccum, &
+                                                      groundedSfcMassBalAccum, &
+                                                      groundedBasalMassBalAccum, &
+                                                      floatingBasalMassBalAccum, &
+                                                      fluxAcrossGroundingLineAccum, &
+                                                      fluxAcrossGroundingLineOnCellsAccum
+      real (kind=RKIND), dimension(:), pointer :: layerCenterSigma, layerThicknessFractions
+      integer, dimension(:), pointer :: cellMaskPrev  ! cell mask before advection
+      real (kind=RKIND), dimension(:,:), allocatable :: layerThicknessPrev, &
+                                                        layerThicknessTmp, &
+                                                        temperaturePrev, &
+                                                        waterFracPrev, &
+                                                        passiveTracer3d, &
+                                                        passiveTracer3dPrev, &
+                                                        damage3d, &
+                                                        damage3dPrev
+      integer, pointer :: nVertLevels
+      integer, pointer :: nCells, nEdges
+      integer :: iCell1, iCell2, iEdge, theGroundedCell
+      integer, dimension(:), pointer :: edgeMask, cellMask
+      real (kind=RKIND), pointer :: deltat, config_ice_density
+      real (kind=RKIND) :: deltatFull
+      real (kind=RKIND), dimension(4) :: rkSubstepWeights
+      real (kind=RKIND), dimension(4) :: rkSSPweights
+      real (kind=RKIND), dimension(4) :: rkTendWeights ! Weights used for calculating budget terms
+      integer :: nRKstages
+      logical :: solveVeloAfterCalving
 
       err = 0
       err_tmp = 0
+      solveVeloAfterCalving = .false.
 
       call mpas_pool_get_config(liConfigs, 'config_restore_calving_front', config_restore_calving_front)
+      call mpas_pool_get_config(liConfigs, 'config_restore_calving_front_prevent_retreat', config_restore_calving_front_prevent_retreat)
       call mpas_pool_get_config(liConfigs, 'config_calculate_damage',config_calculate_damage)
-      call mpas_pool_get_config(liConfigs, 'config_finalize_damage_after_advection',config_finalize_damage_after_advection)
+      call mpas_pool_get_config(liConfigs, 'config_finalize_damage_after_advection', config_finalize_damage_after_advection)
+      call mpas_pool_get_config(liConfigs, 'config_thickness_advection', config_thickness_advection)
+      call mpas_pool_get_config(liConfigs, 'config_thermal_solver', config_thermal_solver)
+      call mpas_pool_get_config(liConfigs, 'config_rk_order', config_rk_order)
+      call mpas_pool_get_config(liConfigs, 'config_rk3_stages', config_rk3_stages)
+      call mpas_pool_get_config(liConfigs, 'config_time_integration', config_time_integration)
+      call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
+      call mpas_pool_get_config(liConfigs, 'config_update_velocity_before_calving', config_update_velocity_before_calving)
+
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'thermal', thermalPool)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'velocity', velocityPool)
+
+      call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
+      call mpas_pool_get_array(meshPool, 'deltat', deltat)
+      call mpas_pool_get_array(meshPool, 'layerCenterSigma', layerCenterSigma)
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+
+      call mpas_pool_get_array(velocityPool, 'fluxAcrossGroundingLineOnCells', fluxAcrossGroundingLineOnCells)
+      call mpas_pool_get_array(geometryPool, 'groundedToFloatingThickness', groundedToFloatingThickness)
+
+      allocate(temperaturePrev(nVertLevels, nCells+1))
+      allocate(waterFracPrev(nVertLevels, nCells+1))
+      allocate(layerThicknessPrev(nVertLevels, nCells+1))
+      allocate(layerThicknessTmp(nVertLevels, nCells+1))
+      allocate(damage3dPrev(nVertLevels, nCells+1))
+      allocate(damage3d(nVertLevels, nCells+1))
+      allocate(passiveTracer3dPrev(nVertLevels, nCells+1))
+      allocate(passiveTracer3d(nVertLevels, nCells+1))
+      allocate(cellMaskPrev(nCells+1))
+
+      allocate(sfcMassBalAccum(nCells+1))
+      allocate(basalMassBalAccum(nCells+1))
+      allocate(groundedSfcMassBalAccum(nCells+1))
+      allocate(groundedBasalMassBalAccum(nCells+1))
+      allocate(floatingBasalMassBalAccum(nCells+1))
+      allocate(fluxAcrossGroundingLineAccum(nEdges+1))
+      allocate(fluxAcrossGroundingLineOnCellsAccum(nCells+1))
+
+      temperaturePrev(:,:) = 0.0_RKIND
+      waterFracPrev(:,:) = 0.0_RKIND
+      layerThicknessPrev(:,:) = 0.0_RKIND
+      layerThicknessTmp(:,:) = 0.0_RKIND
+      damage3dPrev(:,:) = 0.0_RKIND
+      damage3d(:,:) = 0.0_RKIND
+      passiveTracer3dPrev(:,:) = 0.0_RKIND
+      cellMaskPrev(:) = 0
+      passiveTracer3d(:,:) = 0.0_RKIND
+
+      sfcMassBalAccum(:) = 0.0_RKIND
+      basalMassBalAccum(:) = 0.0_RKIND
+      groundedSfcMassBalAccum(:) = 0.0_RKIND
+      groundedBasalMassBalAccum(:) = 0.0_RKIND
+      floatingBasalMassBalAccum(:) = 0.0_RKIND
+      fluxAcrossGroundingLineAccum(:) = 0.0_RKIND
+      fluxAcrossGroundingLineOnCellsAccum(:) = 0.0_RKIND
 
 ! === Prepare for advection (including CFL checks) ===========
 ! This has to come first currently, because it sets the time step!
@@ -135,6 +245,8 @@ module li_time_integration_fe
       err = ior(err, err_tmp)
       call mpas_timer_stop("face melting for grounded ice")
 
+! *** TODO: Should basal melt rate calculation and column physics go inside RK loop? ***
+
 ! === Basal melting for floating ice ===========
       call mpas_timer_start("basal melting for floating ice")
       call li_basal_melt_floating_ice(domain, err_tmp)
@@ -147,27 +259,263 @@ module li_time_integration_fe
       err = ior(err, err_tmp)
       call mpas_timer_stop("vertical therm")
 
-! === calculate damage ===========
-      if (config_calculate_damage) then
-          call mpas_timer_start("damage")
-          call li_calculate_damage(domain, err_tmp)
-          err = ior(err, err_tmp)
-          call mpas_timer_stop("damage")
-      endif
+! *** TODO: Should basal melt rate calculation, column physics, and hydrology go inside RK loop? ***
+      call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+      call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness)
+      call mpas_pool_get_array(geometryPool, 'passiveTracer2d', passiveTracer2d)
+      call mpas_pool_get_array(geometryPool, 'damage', damage)
+      call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 
-! === Compute new state for prognostic variables ==================================
-      call mpas_timer_start("advect thickness and tracers")
-      call advection_solver(domain, err_tmp)
+      call mpas_pool_get_array(thermalPool, 'temperature', temperature)
+      call mpas_pool_get_array(thermalPool, 'waterFrac', waterFrac)
+      ! Save relevant fields before RK loop, to be used in update at the end
+      temperaturePrev(:,:) = temperature(:,:)
+      waterFracPrev(:,:) = waterFrac(:,:)
+      layerThicknessPrev(:,:) = layerThickness(:,:)
+      cellMaskPrev(:) = cellMask(:)
+      do k = 1, nVertLevels
+         damage3dPrev(k,:) = damage(:)
+         passiveTracer3dPrev(k,:) = passiveTracer2d(:)
+      enddo
+      deltatFull = deltat ! Save deltat in order to reset it at end of RK loop
+
+      ! Set RK weights based on desired time integration method. Note
+      ! that rkSubstepWeights are used to update at each sub-step, and
+      ! are thus offset from the typical writing of the coefficients
+      ! by one index. e.g., the coefficients for RK4 are usually written
+      ! (0, 1/2, 1/2, 1), while we use (1/2, 1/2, 1). The last entry of 1.0
+      ! is simply for ease of implementation.
+      rkSSPweights(:) = -9999.0_RKIND ! Initialized to this value to make it obvious if
+                                      ! a weight is used that should not be. Appropriate
+                                      ! weights are updated for each case below
+      rkTendWeights(:) = -9999.0_RKIND
+      rkSubstepWeights(:) = -9999.0_RKIND
+      if (trim(config_time_integration) == 'forward_euler') then
+         nRKstages = 1
+         rkSSPweights(1) = 1.0_RKIND
+         rkTendWeights(1) = 1.0_RKIND
+         rkSubstepWeights(1) = 1.0_RKIND
+      elseif ( (trim(config_time_integration) == 'runge_kutta') .and. &
+               (config_rk_order == 2) ) then
+         ! use Strong Stability Preserving RK2. Could also
+         ! add config option to use standard endpoint or midpoint methods, but
+         ! these are algorithmically more complex and less suitable for our domains 
+         nRKstages = 2
+         rkSubstepWeights(1:2) = 1.0_RKIND
+
+         rkSSPweights(1) = 1.0_RKIND
+         rkSSPweights(2) = 0.5_RKIND
+
+         rkTendWeights(1) = 0.5_RKIND
+         rkTendWeights(2) = 0.5_RKIND
+      elseif ( (trim(config_time_integration) == 'runge_kutta') .and. &
+               (config_rk_order == 3) ) then
+         if (config_rk3_stages == 3) then
+            ! use three-stage Strong Stability Preserving RK3
+            nRKstages = 3
+            rkSubstepWeights(1:3) = 1.0_RKIND
+
+            rkSSPweights(1) = 1.0_RKIND
+            rkSSPweights(2) = 3.0_RKIND / 4.0_RKIND
+            rkSSPweights(3) = 1.0_RKIND / 3.0_RKIND
+
+            rkTendWeights(1) = 1.0_RKIND / 6.0_RKIND
+            rkTendWeights(2) = 1.0_RKIND / 6.0_RKIND
+            rkTendWeights(3) = 2.0_RKIND / 3.0_RKIND
+        elseif (config_rk3_stages == 4) then
+            ! use four-stage Strong Stability Preserving RK3
+            nRKstages = 4
+            rkSubstepWeights(:) = 0.5_RKIND
+
+            rkSSPweights(1) = 1.0_RKIND
+            rkSSPweights(2) = 0.0_RKIND
+            rkSSPweights(3) = 2.0_RKIND / 3.0_RKIND
+            rkSSPweights(4) = 0.0_RKIND
+
+            rkTendWeights(1) = 1.0_RKIND / 6.0_RKIND
+            rkTendWeights(2) = 1.0_RKIND / 6.0_RKIND
+            rkTendWeights(3) = 1.0_RKIND / 6.0_RKIND
+            rkTendWeights(4) = 1.0_RKIND / 2.0_RKIND
+        else
+            err = 1
+            call mpas_log_write('config_rk3_stages must 3 or 4', &
+                                messageType=MPAS_LOG_ERR)
+            return
+        endif
+      else
+         err = 1
+         call mpas_log_write('config_time_integration = ' // trim(config_time_integration) &
+                             // ' is not supported with config_rk_order = $i', &
+                             intArgs=(/config_rk_order/), messageType=MPAS_LOG_ERR)
+         return
+      endif 
+! *** Start RK loop ***
+      do rkStage = 1, nRKstages
+         call mpas_log_write('beginning rk stage $i of $i', &
+                             intArgs=(/rkStage, nRKstages/))
+         deltat = deltatFull * rkSubstepWeights(rkStage)
+
+         ! === calculate damage ===========
+         if (config_calculate_damage) then
+             call mpas_timer_start("damage")
+             call li_calculate_damage(domain, err_tmp)
+             err = ior(err, err_tmp)
+             call mpas_timer_stop("damage")
+         endif
+
+         ! === Compute new state for prognostic variables ===
+         call mpas_timer_start("advect thickness and tracers")
+         call advection_solver(domain, err_tmp)
+         err = ior(err, err_tmp)
+         call mpas_timer_stop("advect thickness and tracers")
+
+         ! If using SSP RK, then update thickness and tracers incrementally.
+         ! For first RK stage, thickness and tracer updates above are sufficient.
+         ! Likewise, for the 4-stage SSP RK3 the last stage is just a forward euler update.
+         if ( (rkStage > 1) .and. (rkStage < 4) )  then
+            call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+            call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness)
+            call mpas_pool_get_array(geometryPool, 'passiveTracer2d', passiveTracer2d)
+            call mpas_pool_get_array(geometryPool, 'damage', damage)
+
+            call mpas_pool_get_array(thermalPool, 'temperature', temperature)
+            call mpas_pool_get_array(thermalPool, 'waterFrac', waterFrac)
+
+            layerThicknessTmp(:,:) = layerThickness(:,:)
+            layerThickness(:,:) = rkSSPweights(rkStage) * layerThicknessPrev(:,:) + &
+                                     (1.0_RKIND - rkSSPweights(rkStage)) * layerThickness(:,:)
+            thickness = sum(layerThickness, 1)
+            ! Calculate masks after updating thickness
+            call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+            err = ior(err, err_tmp)
+
+            if (trim(config_thermal_solver) .ne. 'none') then
+               do iCell = 1, nCells
+                  do k = 1, nVertLevels
+                     if (layerThickness(k,iCell) > 0.0_RKIND) then
+                        temperature(k,iCell) = ( rkSSPweights(rkStage) * temperaturePrev(k,iCell) * layerThicknessPrev(k,iCell) + &
+                                             (1.0_RKIND - rkSSPweights(rkStage)) * temperature(k,iCell) * &
+                                             layerThicknessTmp(k,iCell) ) / layerThickness(k,iCell)
+                        waterFrac(k,iCell) = ( rkSSPweights(rkStage) * waterFracPrev(k,iCell) * layerThicknessPrev(k,iCell) + &
+                                             (1.0_RKIND - rkSSPweights(rkStage)) * waterFrac(k,iCell) * &
+                                             layerThicknessTmp(k,iCell) ) / layerThickness(k,iCell)
+                     endif
+                  enddo
+               enddo
+            endif
+
+            if (config_calculate_damage) then
+               do iCell = 1, nCells
+                  do k = 1, nVertLevels
+                     if (layerThickness(k,iCell) > 0.0_RKIND) then
+                        damage3d(k,iCell) = ( rkSSPweights(rkStage) * damage3dPrev(k,iCell) * layerThicknessPrev(k,iCell) + &
+                                              (1.0_RKIND - rkSSPweights(rkStage)) * damage(iCell) * &
+                                              layerThicknessTmp(k,iCell) ) / layerThickness(k,iCell)
+                     else
+                        damage3d(k,iCell) = 0.0_RKIND
+                     endif
+                  enddo
+                  damage(iCell) = sum(damage3d(:, iCell) * layerThicknessFractions)
+               enddo
+            endif
+
+            do iCell = 1, nCells
+               do k = 1, nVertLevels
+                  if (layerThickness(k,iCell) > 0.0_RKIND) then
+                     passiveTracer3d(k,iCell) = ( rkSSPweights(rkStage) * passiveTracer3dPrev(k,iCell) * layerThicknessPrev(k,iCell) + &
+                                                  (1.0_RKIND - rkSSPweights(rkStage)) * passiveTracer2d(iCell) * &
+                                                  layerThicknessTmp(k,iCell) ) / layerThickness(k,iCell)
+                  else
+                     passiveTracer3d(k,iCell) = 0.0_RKIND
+                  endif
+               enddo
+               passiveTracer2d(iCell) = sum(passiveTracer3d(:,iCell) * layerThicknessFractions)
+            enddo
+
+         endif
+       
+         ! === Ensure damage is within bounds before velocity solve ===
+         if ( config_finalize_damage_after_advection ) then
+             call mpas_timer_start("finalize damage")
+             call li_finalize_damage_after_advection(domain, err_tmp)
+             err = ior(err, err_tmp)
+             call mpas_timer_stop("finalize damage")
+         endif
+
+         call mpas_pool_get_array(geometryPool, 'sfcMassBalApplied', sfcMassBalApplied)
+         call mpas_pool_get_array(geometryPool, 'groundedSfcMassBalApplied', groundedSfcMassBalApplied)
+         call mpas_pool_get_array(geometryPool, 'basalMassBalApplied', basalMassBalApplied)
+         call mpas_pool_get_array(geometryPool, 'floatingBasalMassBalApplied', floatingBasalMassBalApplied)
+         call mpas_pool_get_array(geometryPool, 'groundedBasalMassBalApplied', groundedBasalMassBalApplied)
+         call mpas_pooL_get_array(velocityPool, 'fluxAcrossGroundingLine', fluxAcrossGroundingLine)
+         call mpas_pooL_get_array(velocityPool, 'fluxAcrossGroundingLineOnCells', fluxAcrossGroundingLineOnCells)
+         call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+
+         ! update budgets
+         sfcMassBalAccum = sfcMassBalAccum + rkTendWeights(rkStage) * sfcMassBalApplied
+         groundedSfcMassBalAccum = groundedSfcMassBalAccum + rkTendWeights(rkStage) * groundedSfcMassBalApplied
+         basalMassBalAccum = basalMassBalAccum + rkTendWeights(rkStage) * basalMassBalApplied
+         groundedBasalMassBalAccum = groundedBasalMassBalAccum + rkTendWeights(rkStage) * groundedBasalMassBalApplied
+         floatingBasalMassBalAccum = floatingBasalMassBalAccum + rkTendWeights(rkStage) * floatingBasalMassBalApplied
+         fluxAcrossGroundingLineAccum = fluxAcrossGroundingLineAccum + rkTendWeights(rkStage) * fluxAcrossGroundingLine
+         fluxAcrossGroundingLineOnCellsAccum = fluxAcrossGroundingLineOnCellsAccum + rkTendWeights(rkStage) * fluxAcrossGroundingLineOnCells
+
+         ! Halo updates
+         call mpas_timer_start("halo updates")
+
+         call mpas_dmpar_field_halo_exch(domain, 'thickness')
+         call mpas_dmpar_field_halo_exch(domain, 'temperature')
+         call mpas_dmpar_field_halo_exch(domain, 'waterFrac')
+         call mpas_dmpar_field_halo_exch(domain, 'damage')
+         call mpas_dmpar_field_halo_exch(domain, 'passiveTracer2d')
+
+         call mpas_timer_stop("halo updates")
+
+         ! Update velocity for each RK step
+         ! === Solve Velocity =====================
+         if ( config_update_velocity_before_calving .or. ( (.not. config_update_velocity_before_calving) &
+              .and. (rkStage < nRKstages) ) ) then
+
+            if (config_restore_calving_front) then
+               ! restore the calving front to its initial position before velocity solve.
+               call li_restore_calving_front(domain, err_tmp)
+               err = ior(err, err_tmp)
+            endif
+
+            call li_velocity_solve(domain, solveVelo=.true., err=err_tmp)
+            err = ior(err, err_tmp)
+         endif
+! *** end RK loop ***
+      enddo
+
+! Finalize budget updates
+      ! Update masks after RK integration
+      call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
       err = ior(err, err_tmp)
-      call mpas_timer_stop("advect thickness and tracers")
 
-! === finalize damage after advection ===========
-      if (config_finalize_damage_after_advection) then
-          call mpas_timer_start("finalize damage")
-          call li_finalize_damage_after_advection(domain, err_tmp)
-          err = ior(err, err_tmp)
-          call mpas_timer_stop("finalize damage")
-      endif
+      call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+      call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
+
+      call mpas_timer_start("halo updates")
+      call mpas_dmpar_field_halo_exch(domain, 'cellMask')
+      call mpas_dmpar_field_halo_exch(domain, 'edgeMask')
+      call mpas_dmpar_field_halo_exch(domain, 'vertexMask')
+      call mpas_timer_stop("halo updates")
+
+      ! Calculate volume converted from grounded to floating
+      ! This needs to be determined after SMB/BMB are applied because those can change floating/grounded state
+      call li_grounded_to_floating(cellMaskPrev, cellMask, thickness, groundedToFloatingThickness, nCells)
+
+      sfcMassBalApplied(:) = sfcMassBalAccum(:)
+      groundedSfcMassBalApplied(:) = groundedSfcMassBalAccum(:)
+      basalMassBalApplied(:) = basalMassBalAccum(:)
+      groundedBasalMassBalApplied(:) = groundedBasalMassBalAccum(:)
+      floatingBasalMassBalApplied(:) = floatingBasalMassBalAccum(:)
+      fluxAcrossGroundingLine(:) = fluxAcrossGroundingLineAccum(:)
+      fluxAcrossGroundingLineOnCells(:) = fluxAcrossGroundingLineOnCellsAccum(:)
+
+! Reset time step to full length after RK loop
+      deltat = deltatFull
 
 ! === Update subglacial hydrology  ===========
 ! It's not clear where the best place to call this should be.
@@ -183,15 +531,19 @@ module li_time_integration_fe
       call mpas_timer_start("calve_ice")
 
       ! ice calving
-      call li_calve_ice(domain, err_tmp)
-      err = ior(err, err_tmp)
+      if ( config_update_velocity_before_calving ) then
+         call li_calve_ice(domain, err_tmp, solveVeloAfterCalving)
+      else
+         call li_calve_ice(domain, err_tmp)
+         solveVeloAfterCalving = .true.
+      endif
 
+      err = ior(err, err_tmp)
       if (config_restore_calving_front) then
-         ! restore the calving front to its initial position; calving options are ignored
+         ! restore the calving front to its initial position before velocity solve.
          call li_restore_calving_front(domain, err_tmp)
          err = ior(err, err_tmp)
       endif
-
       call mpas_timer_stop("calve_ice")
 
       call mpas_timer_start("halo updates")
@@ -207,10 +559,11 @@ module li_time_integration_fe
       call li_bedtopo_solve(domain, err=err_tmp)
       err = ior(err, err_tmp)
 
-! === Solve Velocity =====================
-      ! During time-stepping, we always solveVelo
-      call li_velocity_solve(domain, solveVelo=.true., err=err_tmp)
-      err = ior(err, err_tmp)
+! === Solve velocity for final state =====================
+      if (solveVeloAfterCalving) then
+         call li_velocity_solve(domain, solveVelo=.true., err=err_tmp)
+         err = ior(err, err_tmp)
+      endif
 
 ! === Calculate diagnostic variables for new state =====================
 
@@ -222,11 +575,26 @@ module li_time_integration_fe
 
       ! === error check
       if (err == 1) then
-          call mpas_log_write("An error has occurred in li_time_integrator_forwardeuler.", MPAS_LOG_ERR)
+          call mpas_log_write("An error has occurred in li_time_integrator_forwardeuler_rungekutta.", MPAS_LOG_ERR)
       endif
 
+      deallocate(temperaturePrev)
+      deallocate(waterFracPrev)
+      deallocate(layerThicknessPrev)
+      deallocate(layerThicknessTmp)
+      deallocate(damage3dPrev)
+      deallocate(damage3d)
+      deallocate(passiveTracer3dPrev)
+      deallocate(passiveTracer3d)
+      deallocate(cellMaskPrev)
+      deallocate(sfcMassBalAccum)
+      deallocate(basalMassBalAccum)
+      deallocate(groundedSfcMassBalAccum)
+      deallocate(groundedBasalMassBalAccum)
+      deallocate(floatingBasalMassBalAccum)
+      deallocate(fluxAcrossGroundingLineAccum)
    !--------------------------------------------------------------------
-   end subroutine li_time_integrator_forwardeuler
+   end subroutine li_time_integrator_forwardeuler_rungekutta
 
 
 
@@ -286,7 +654,7 @@ module li_time_integration_fe
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity
       real (kind=RKIND), dimension(:,:), pointer :: layerNormalVelocity
       real (kind=RKIND), pointer :: calvingCFLdt, faceMeltingCFLdt
-      integer, pointer :: processLimitingTimestep
+      integer, pointer :: processLimitingTimestep, config_rk_order, config_rk3_stages
       integer, dimension(:), pointer :: edgeMask
 
       logical, pointer :: config_print_thickness_advection_info
@@ -294,7 +662,8 @@ module li_time_integration_fe
       logical, pointer :: config_adaptive_timestep_include_DCFL
 
       character (len=StrKIND), pointer :: &
-           config_thickness_advection   ! method for advecting thickness and tracers
+           config_thickness_advection, &  ! method for advecting thickness and tracers
+           config_time_integration
 
       integer :: &
            allowableAdvecDtProcNumberHere, &
@@ -346,6 +715,9 @@ module li_time_integration_fe
       call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep', config_adaptive_timestep)
       call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep_include_DCFL', config_adaptive_timestep_include_DCFL)
       call mpas_pool_get_config(liConfigs, 'config_thickness_advection', config_thickness_advection)
+      call mpas_pool_get_config(liConfigs, 'config_time_integration', config_time_integration)
+      call mpas_pool_get_config(liConfigs, 'config_rk_order', config_rk_order)
+      call mpas_pool_get_config(liConfigs, 'config_rk3_stages', config_rk3_stages)
 
       if (trim(config_thickness_advection) == 'none') then
          if (config_adaptive_timestep) then
@@ -391,7 +763,6 @@ module li_time_integration_fe
          err = ior(err, err_tmp)
 
          allowableAdvecDtOnProc = min(allowableAdvecDtOnProc, allowableAdvecDt)
-
          ! Calculate diffusive CFL timestep, if needed
          ! This used to be only calculated if (config_adaptive_timestep_include_DCFL) but for simplicity,
          ! now it is always calculated.  That allows assessment of the DCFL even when it is not being obeyed
@@ -416,6 +787,12 @@ module li_time_integration_fe
          block => block % next
       end do
 
+      ! If using 4-stage SSPRK3, CFL number of 2 is theoretically allowed
+      if ( (trim(config_time_integration) == 'runge_kutta') .and. &
+         (config_rk_order == 3) .and. (config_rk3_stages == 4) ) then
+          allowableAdvecDtOnProc = allowableAdvecDtOnProc * 2.0_RKIND
+          allowableDiffDtOnProc = allowableDiffDtOnProc * 2.0_RKIND
+      endif
 
       ! Local advective CFL info
       call mpas_set_timeInterval(allowableAdvecDtOnProcInterval, dt=allowableAdvecDtOnProc, ierr=err_tmp)
@@ -604,7 +981,6 @@ module li_time_integration_fe
       ! input/output variables
       !-----------------------------------------------------------------
       type (domain_type), intent(inout) :: domain  !< Input/Output: domain object
-
       !-----------------------------------------------------------------
       ! output variables
       !-----------------------------------------------------------------
@@ -626,6 +1002,7 @@ module li_time_integration_fe
       real (kind=RKIND), dimension(:), pointer :: thicknessOld
       real (kind=RKIND), dimension(:), pointer :: thicknessNew
       real (kind=RKIND), dimension(:), pointer :: thickness
+      real (kind=RKIND), dimension(:,:), pointer :: layerThickness
 
       real (kind=RKIND), dimension(:,:), pointer :: temperature
       real (kind=RKIND), dimension(:,:), pointer :: waterFrac
@@ -814,7 +1191,10 @@ module li_time_integration_fe
          if ( config_restore_thickness_after_advection ) then
             call mpas_pool_get_array(geometryPool, 'thickness', thickness)
             call mpas_pool_get_array(geometryPool, 'thicknessOld', thicknessOld)
+            call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness)
             thickness(:) = thicknessOld(:)
+
+            call li_calculate_layerThickness(meshPool, thickness, layerThickness)
          endif
 
          call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
@@ -1201,5 +1581,5 @@ module li_time_integration_fe
     end subroutine advance_clock
 
 
-end module li_time_integration_fe
+end module li_time_integration_fe_rk
 

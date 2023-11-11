@@ -74,7 +74,7 @@ module li_calving
 !> (3) Calve ice based on an ice thickness threshold
 !-----------------------------------------------------------------------
 
-   subroutine li_calve_ice(domain, err)
+   subroutine li_calve_ice(domain, err, solveVeloAfterCalving)
 
       use li_advection
 
@@ -92,7 +92,7 @@ module li_calving
       ! output variables
       !-----------------------------------------------------------------
       integer, intent(out) :: err !< Output: error flag
-
+      logical, intent(out), optional :: solveVeloAfterCalving
       !-----------------------------------------------------------------
       ! local variables
       !-----------------------------------------------------------------
@@ -111,13 +111,14 @@ module li_calving
       logical, pointer :: config_apply_calving_mask
       real(kind=RKIND), pointer :: config_calving_timescale
 
-      integer, pointer :: nCells
+      integer, pointer :: nCells, nCellsSolve
       integer, pointer :: config_number_of_blocks
 
       real (kind=RKIND), pointer :: deltat  !< time step (s)
 
       integer, dimension(:), pointer :: &
-           indexToCellID       ! list of global cell IDs
+           indexToCellID, &       ! list of global cell IDs
+           cellMask
 
       real (kind=RKIND) ::  &
            calvingFraction ! fraction of ice that calves in each column; depends on calving_timescale
@@ -136,13 +137,21 @@ module li_calving
 
       real (kind=RKIND), dimension(:), pointer :: calvingVelocity
 
+      real (kind=RKIND), dimension(:), pointer :: areaCell
+
       type (field1dReal), pointer :: originalThicknessField
 
       real (kind=RKIND), dimension(:), pointer :: originalThickness
 
+      type (field1dInteger), pointer :: cellMaskTemporaryField
+
       integer :: iCell
 
+      real (kind=RKIND), parameter :: smallNumber = 1.0e-6_RKIND
+
       integer :: err_tmp
+
+      real (kind=RKIND), dimension(1) :: calvingSumLocal, calvingSumGlobal
 
       err = 0
       err_tmp = 0
@@ -154,6 +163,15 @@ module li_calving
       call mpas_pool_get_config(liConfigs, 'config_print_calving_info', config_print_calving_info)
       call mpas_pool_get_config(liConfigs, 'config_data_calving', config_data_calving)
       call mpas_pool_get_config(liConfigs, 'config_number_of_blocks', config_number_of_blocks)
+
+      if (present(solveVeloAfterCalving)) then
+         call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
+         call mpas_pool_get_field(geometryPool, 'cellMaskTemporary', cellMaskTemporaryField)
+         call mpas_allocate_scratch_field(cellMaskTemporaryField, .true.)
+         call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+         ! Store cellMask prior to calving
+         cellMaskTemporaryField % array(:) = cellMask(:)
+      endif
 
       ! Zero calvingThickness here instead of or in addition to in individual subroutines.
       ! This is necessary when using damage threshold calving with other calving
@@ -206,7 +224,7 @@ module li_calving
       ! However, the eigencalving method requires multiple applications of the calvingThickness
       ! to the thickness.  So the simplest method to apply data calving is to store the old
       ! thickness and then set it back when we are done.
-      if (config_data_calving) then
+      if ( config_data_calving .or. present(solveVeloAfterCalving) ) then
          call mpas_pool_get_subpool(domain % blocklist % structs, 'scratch', scratchPool)
          call mpas_pool_get_field(scratchPool, 'workCell2',  originalThicknessField)
          call mpas_allocate_scratch_field(originalThicknessField, single_block_in = .false.)
@@ -337,8 +355,22 @@ module li_calving
 
          block => block % next
       end do
+      if (present(solveVeloAfterCalving)) then
+         call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+         call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+         call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
+         calvingSumLocal(1) = sum(calvingThickness(1:nCellsSolve) * areaCell(1:nCellsSolve) * &
+                               real(li_mask_is_dynamic_ice_int(cellMaskTemporaryField % array(1:nCellsSolve)), RKIND))
+         call mpas_dmpar_sum_real_array(domain % dminfo, 1, calvingSumLocal(1), calvingSumGlobal(1))
+         if (calvingSumGlobal(1) > smallNumber) then
+            solveVeloAfterCalving = .true.
+         else
+            solveVeloAfterCalving = .false.
+         endif
+         call mpas_deallocate_scratch_field(cellMaskTemporaryField, .true.)
+      endif
 
-      if (config_data_calving) then
+      if ( config_data_calving .or. present(solveVeloAfterCalving) ) then
          call mpas_deallocate_scratch_field(originalThicknessField, single_block_in=.false.)
       endif
 
