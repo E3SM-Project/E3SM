@@ -1923,8 +1923,8 @@
 			<var name="accumulatedLandIceHeat"/>
 			<var name="accumulatedLandIceFrazilMass"/>
 			<var name="frazilSurfacePressure"/>
-			<var name="filteredSSHGradientZonal"/>
-			<var name="filteredSSHGradientMeridional"/>
+			<var name="SSHGradientZonal"/>
+			<var name="SSHGradientMeridional"/>
 			<var name="forcingGroupNames"/>
 			<var name="forcingGroupRestartTimes"/>
             <var name="gotmVertViscTopOfCell"/>
@@ -3663,12 +3663,12 @@
 				 description="Time averaged meridional gradient of SSH"
 			/>
 		</var_array>
-		<var name="filteredSSHGradientZonal" type="real" dimensions="nCells Time" units="1"
-			description="Time filtered zonal gradient of SSH"
+		<var name="SSHGradientZonal" type="real" dimensions="nCells Time" units="1"
+			description="Zonal gradient of SSH"
 			packages="forwardMode;analysisMode"
 		/>
-		<var name="filteredSSHGradientMeridional" type="real" dimensions="nCells Time" units="1"
-			description="Time filtered meridional gradient of SSH"
+		<var name="SSHGradientMeridional" type="real" dimensions="nCells Time" units="1"
+			description="Meridional gradient of SSH"
 			packages="forwardMode;analysisMode"
 		/>
 		<var name="avgTotalFreshWaterTemperatureFlux" type="real" dimensions="nCells Time" units="C m s^-1"
