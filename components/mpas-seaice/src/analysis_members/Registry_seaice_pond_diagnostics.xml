@@ -43,7 +43,7 @@
 		<var name="meltPondLidThicknessFinalArea" type="real" dimensions="nCells Time" units="m"
 			description="Melt pond refrozen lid thickness in a grid cell weighted by area fraction of each thickness category at the end of each timestep"
 		/>
-		<var name="meltPondDethCategory" type="real" dimensions="nCategories nCells Time" units="m"
+		<var name="meltPondDepthCategory" type="real" dimensions="nCategories nCells Time" units="m"
 			description="meltPondDepth for each thickness category of sea ice"
 		/>
 	</var_struct>
