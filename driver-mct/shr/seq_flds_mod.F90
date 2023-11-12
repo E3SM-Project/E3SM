@@ -394,11 +394,7 @@ contains
          flds_co2a, flds_co2b, flds_co2c, flds_co2_dmsa, flds_wiso, glc_nec, &
          ice_ncat, seq_flds_i2o_per_cat, flds_bgc_oi, &
          nan_check_component_fields, rof_heat, atm_flux_method, atm_gustiness, &
-<<<<<<< HEAD
-         rof2ocn_nutrients, lnd_rof_two_way, ocn_rof_two_way
-=======
-         rof2ocn_nutrients, iac_npft, iac_nharvest
->>>>>>> Adds driver-mct file changes
+         rof2ocn_nutrients, lnd_rof_two_way, ocn_rof_two_way, iac_npft, iac_nharvest
 
     ! user specified new fields
     integer,  parameter :: nfldmax = 200
@@ -4055,14 +4051,11 @@ contains
        write(logunit,*) subname//': seq_flds_w2x_fluxes= ',trim(seq_flds_w2x_fluxes)
        write(logunit,*) subname//': seq_flds_x2w_states= ',trim(seq_flds_x2w_states)
        write(logunit,*) subname//': seq_flds_x2w_fluxes= ',trim(seq_flds_x2w_fluxes)
-<<<<<<< HEAD
        write(logunit,*) subname//': seq_flds_o2x_states_to_rof=',trim(seq_flds_o2x_states_to_rof)
-=======
        write(logunit,*) subname//': seq_flds_z2x_states= ',trim(seq_flds_z2x_states)
        write(logunit,*) subname//': seq_flds_z2x_fluxes= ',trim(seq_flds_z2x_fluxes)
        write(logunit,*) subname//': seq_flds_x2z_states= ',trim(seq_flds_x2z_states)
        write(logunit,*) subname//': seq_flds_x2z_fluxes= ',trim(seq_flds_x2z_fluxes)
->>>>>>> Adds driver-mct file changes
     end if
 
     call catFields(seq_flds_dom_fields, seq_flds_dom_coord , seq_flds_dom_other )

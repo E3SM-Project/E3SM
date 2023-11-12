@@ -66,7 +66,7 @@ contains
     use spmdMod          , only : masterproc, npes, spmd_init
     use elm_varctl       , only : nsrStartup, nsrContinue, nsrBranch, use_lnd_rof_two_way
     use elm_cpl_indices  , only : elm_cpl_indices_set
-    use elm_varctl       , only : clm_varctl_set_iac_active_only, iac_active
+    use elm_varctl       , only : elm_varctl_set_iac_active_only, iac_active
     use perf_mod         , only : t_startf, t_stopf
     use mct_mod
     use ESMF

@@ -547,10 +547,10 @@ contains
     kif=mct_aVect_indexRA(fractions_a,"ifrac")
     kof=mct_aVect_indexRA(fractions_a,"ofrac")
     klf_st = mct_aVect_indexRA(fractions_a,"lfrac")
+    kzf=mct_aVect_indexRA(fractions_a,"zfrac")
     fracstr_st = 'lfrac'
     if (samegrid_al) then
        klf = mct_aVect_indexRA(fractions_a,"lfrac")
-    kzf=mct_aVect_indexRA(fractions_a,"zfrac")
        fracstr = 'lfrac'
     else
        klf = mct_aVect_indexRA(fractions_a,"lfrin")
