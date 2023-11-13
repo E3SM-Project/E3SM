@@ -63,24 +63,17 @@ private_except_cuda:
   mam_coupling::view_3d state_q_,  qqcw_;// odap_aer_,
   mam_coupling::view_2d ext_cmip6_lw_;
 
-  mam_coupling::complex_view_2d specrefndxlw_;
-
   // number of horizontal columns and vertical levels
   int ncol_, nlev_;
 
   // number of shortwave and longwave radiation bands
   int nswbands_, nlwbands_;
-  // FIXME: we need to save this values in a different file.
-  Kokkos::complex<Real> crefwlw_[mam4::modal_aer_opt::nlwbands];
-  Kokkos::complex<Real> crefwsw_[mam4::modal_aer_opt::nswbands];
 
-  mam_coupling::view_3d absplw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nlwbands];
-  mam_coupling::view_1d refrtablw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nlwbands];
-  mam_coupling::view_1d refitablw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nlwbands];
+
 
   mam_coupling::view_2d mass_, radsurf_, logradsurf_  ;
   mam_coupling::view_3d cheb_, dgnumwet_m_, dgnumdry_m_;
-  mam_coupling::complex_view_3d specrefindex_;
+  mam_coupling::complex_view_3d specrefindex_; // work array
   mam_coupling::view_3d qaerwat_m_, ext_cmip6_lw_inv_m_;
   // FIXME: move this values to mam_coupling
   mam_coupling::const_view_2d z_mid_, z_iface_, p_int_, p_del_;
@@ -93,18 +86,30 @@ private_except_cuda:
   mam_coupling::DryAtmosphere dry_atm_;
   mam_coupling::AerosolState  wet_aero_;//,
 
-
+  // inputs:
   mam_coupling::view_3d ssa_cmip6_sw_, af_cmip6_sw_, ext_cmip6_sw_;
 
-  mam_coupling::complex_view_2d specrefndxsw_;
+  // These inputs maybe are from a netCDF file:
+  mam_coupling::complex_view_2d specrefndxsw_; // complex refractive index for water visible
+  mam_coupling::complex_view_2d specrefndxlw_; // complex refractive index for water infrared
 
+  // FIXME: we need to save these values in a different file.
+  // set complex representation of refractive indices as module data
+  // I need netcdf files : read_water_refindex(modal_aer_opt.F90)
+  Kokkos::complex<Real> crefwlw_[mam4::modal_aer_opt::nlwbands];
+  Kokkos::complex<Real> crefwsw_[mam4::modal_aer_opt::nswbands];
+
+  // Inputs from netCDF files. I already got files and code to read them.
   mam_coupling::view_3d  abspsw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nswbands];
   mam_coupling::view_3d  extpsw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nswbands];
   mam_coupling::view_3d  asmpsw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nswbands];
 
-
   mam_coupling::view_1d refrtabsw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nswbands];
   mam_coupling::view_1d refitabsw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nswbands];
+
+  mam_coupling::view_3d absplw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nlwbands];
+  mam_coupling::view_1d refrtablw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nlwbands];
+  mam_coupling::view_1d refitablw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nlwbands];
 
   // work arrays
   mam_coupling::view_2d air_density_;
