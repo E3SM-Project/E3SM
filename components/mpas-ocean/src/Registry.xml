@@ -2878,6 +2878,11 @@
 			 missing_value="FILLVAL" missing_value_mask="cellMask"
 			 packages="forwardMode;analysisMode"
 		/>
+		<var name="divergenceVertex" type="real" dimensions="nVertLevels nVertices Time" units="s^-1"
+			 description="divergence at vertex"
+			 missing_value="FILLVAL" missing_value_mask="vertexMask"
+			 packages="forwardMode;analysisMode"
+		/>
 		<var name="circulation" type="real" dimensions="nVertLevels nVertices Time" units="m^2 s^-1"
 			 description="area-integrated vorticity"
 			 missing_value="FILLVAL" missing_value_mask="vertexMask"
