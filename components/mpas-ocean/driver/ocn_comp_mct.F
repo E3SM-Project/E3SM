@@ -207,9 +207,9 @@ contains
     logical, pointer :: config_use_surface_salinity_monthly_restoring
     character (len=StrKIND), pointer :: config_land_ice_flux_mode
 
-    ! Added for coupling interval initialization
+    ! ssh coupling interval initialization
     integer, pointer :: index_avgZonalSSHGradient, index_avgMeridionalSSHGradient
-    real (kind=RKIND), dimension(:),   pointer :: SSHGradientZonal, SSHGradientMeridional
+    real (kind=RKIND), dimension(:),   pointer :: avgSSHGradientZonal, avgSSHGradientMeridional
     real (kind=RKIND), dimension(:,:), pointer :: avgSSHGradient
 
     interface
@@ -752,10 +752,10 @@ contains
           call mpas_pool_get_dimension(forcingPool, 'index_avgSSHGradientZonal', index_avgZonalSSHGradient)
           call mpas_pool_get_dimension(forcingPool, 'index_avgSSHGradientMeridional', index_avgMeridionalSSHGradient)
           call mpas_pool_get_array(forcingPool, 'avgSSHGradient', avgSSHGradient)
-          call mpas_pool_get_array(forcingPool, 'SSHGradientZonal', SSHGradientZonal)
-          call mpas_pool_get_array(forcingPool, 'SSHGradientMeridional', SSHGradientMeridional)
-          SSHGradientZonal      = avgSSHGradient(index_avgZonalSSHGradient,     :)
-          SSHGradientMeridional = avgSSHGradient(index_avgMeridionalSSHGradient, :)
+          call mpas_pool_get_array(forcingPool, 'avgSSHGradientZonal', avgSSHGradientZonal)
+          call mpas_pool_get_array(forcingPool, 'avgSSHGradientMeridional', avgSSHGradientMeridional)
+          avgSSHGradientZonal      = avgSSHGradient(index_avgZonalSSHGradient,     :)
+          avgSSHGradientMeridional = avgSSHGradient(index_avgMeridionalSSHGradient, :)
           block_ptr => block_ptr % next
        end do
     endif
@@ -889,7 +889,7 @@ contains
 
       ! Added for coupling interval initialization
       integer, pointer :: index_avgZonalSSHGradient, index_avgMeridionalSSHGradient
-      real (kind=RKIND), dimension(:),   pointer :: SSHGradientZonal, SSHGradientMeridional
+      real (kind=RKIND), dimension(:),   pointer :: avgSSHGradientZonal, avgSSHGradientMeridional
       real (kind=RKIND), dimension(:,:), pointer :: avgSSHGradient
       real (kind=RKIND) :: timeFilterFactor
 
@@ -1110,10 +1110,10 @@ contains
          call mpas_pool_get_dimension(forcingPool, 'index_avgSSHGradientZonal', index_avgZonalSSHGradient)
          call mpas_pool_get_dimension(forcingPool, 'index_avgSSHGradientMeridional', index_avgMeridionalSSHGradient)
          call mpas_pool_get_array(forcingPool, 'avgSSHGradient', avgSSHGradient)
-         call mpas_pool_get_array(forcingPool, 'SSHGradientZonal', SSHGradientZonal)
-         call mpas_pool_get_array(forcingPool, 'SSHGradientMeridional', SSHGradientMeridional)
-         SSHGradientZonal = avgSSHGradient(index_avgZonalSSHGradient, :)
-         SSHGradientMeridional = avgSSHGradient(index_avgMeridionalSSHGradient, :)
+         call mpas_pool_get_array(forcingPool, 'avgSSHGradientZonal', avgSSHGradientZonal)
+         call mpas_pool_get_array(forcingPool, 'avgSSHGradientMeridional', avgSSHGradientMeridional)
+         avgSSHGradientZonal = avgSSHGradient(index_avgZonalSSHGradient, :)
+         avgSSHGradientMeridional = avgSSHGradient(index_avgMeridionalSSHGradient, :)
          block_ptr => block_ptr % next
       end do
 
@@ -2548,7 +2548,7 @@ contains
    integer, dimension(:), pointer :: landIceMask
 
    real (kind=RKIND), dimension(:), pointer :: seaIceEnergy, accumulatedFrazilIceMass, frazilSurfacePressure, &
-                                               SSHGradientZonal, SSHGradientMeridional, &
+                                               avgSSHGradientZonal, avgSSHGradientMeridional, &
                                                avgTotalFreshWaterTemperatureFlux, &
                                                avgCO2_gas_flux, DMSFlux, surfaceUpwardCO2Flux, &
                                                avgOceanSurfaceDIC, &
@@ -2619,8 +2619,8 @@ contains
      call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
      call mpas_pool_get_array(forcingPool, 'avgTracersSurfaceValue', avgTracersSurfaceValue)
      call mpas_pool_get_array(forcingPool, 'avgSurfaceVelocity', avgSurfaceVelocity)
-     call mpas_pool_get_array(forcingPool, 'SSHGradientZonal', SSHGradientZonal)
-     call mpas_pool_get_array(forcingPool, 'SSHGradientMeridional', SSHGradientMeridional)
+     call mpas_pool_get_array(forcingPool, 'avgSSHGradientZonal', avgSSHGradientZonal)
+     call mpas_pool_get_array(forcingPool, 'avgSSHGradientMeridional', avgSSHGradientMeridional)
      call mpas_pool_get_array(forcingPool, 'avgTotalFreshWaterTemperatureFlux', avgTotalFreshWaterTemperatureFlux)
      if ( frazilIceActive ) then
         call mpas_pool_get_array(forcingPool, 'seaIceEnergy', seaIceEnergy)
@@ -2674,14 +2674,10 @@ contains
        o2x_o % rAttr(index_o2x_So_v, n) = avgSurfaceVelocity(index_avgMeridionalSurfaceVelocity, i)
 
        o2x_o % rAttr(index_o2x_So_ssh, n)  = ssh(i)
-       o2x_o % rAttr(index_o2x_So_dhdx, n) = SSHGradientZonal(i)
-       o2x_o % rAttr(index_o2x_So_dhdy, n) = SSHGradientMeridional(i)
+       o2x_o % rAttr(index_o2x_So_dhdx, n) = avgSSHGradientZonal(i)
+       o2x_o % rAttr(index_o2x_So_dhdy, n) = avgSSHGradientMeridional(i)
 
        o2x_o % rAttr(index_o2x_Faoo_h2otemp, n) = avgTotalFreshWaterTemperatureFlux(i) * rho_sw * cp_sw
-
-       if (ocn_rof_two_way) then
-         o2x_o % rAttr(index_o2x_So_ssh, n)       = ssh(i)
-       end if
 
        if ( frazilIceActive ) then
           ! negative when frazil ice can be melted
