@@ -813,10 +813,10 @@ module ocn_time_integration_split_ab2
                         ! Here uNew is a work variable containing
                         !  -fEdge(iEdge)*normalBaroclinicVelocityPerp(k,iEdge)
                         uTemp(k,iEdge) = normalBaroclinicVelocityCur(k,iEdge) &
-                                 + 1.50_RKIND * dt * (normalVelocityTend(k,iEdge) &
+                                 + (1.50_RKIND-0.005_RKIND) * dt * (normalVelocityTend(k,iEdge) &
                                  + normalVelocityNew(k,iEdge) &
                                  + sshGrad) &
-                                 -  0.5_RKIND * dt * ( normalVelocityTendOld(k,iEdge) &
+                                 - ( 0.5_RKIND-0.005_RKIND) * dt * ( normalVelocityTendOld(k,iEdge) &
                                                             +CoriolisTermOld(k,iEdge) )
                      enddo ! vertical
 
@@ -850,9 +850,9 @@ module ocn_time_integration_split_ab2
                         ! Here uNew is a work variable containing
                         !  -fEdge(iEdge)*normalBaroclinicVelocityPerp(k,iEdge)
                         uTemp(k,iEdge) = normalBaroclinicVelocityCur(k,iEdge) &
-                                 + 1.50_RKIND * dt * (normalVelocityTend(k,iEdge) &
+                                 + (1.50_RKIND-0.005_RKIND) * dt * (normalVelocityTend(k,iEdge) &
                                  + sshGrad) &
-                                 -  0.5_RKIND * dt * normalVelocityTendOld(k,iEdge) &
+                                 - ( 0.5_RKIND-0.005_RKIND) * dt * normalVelocityTendOld(k,iEdge) &
                                  +                     dt * normalVelocityNew(k,iEdge)
                      enddo ! vertical
 

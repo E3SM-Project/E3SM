@@ -404,7 +404,7 @@ contains
 
          call mpas_pool_get_array(diagnosticsPool, 'viscosity', viscosity)
          call mpas_pool_get_array(diagnosticsPool, 'divergence', divergence)
-         call mpas_pool_get_array(diagnosticsPool, 'divergence', divergenceVertex)
+         call mpas_pool_get_array(diagnosticsPool, 'divergenceVertex', divergenceVertex)
          call mpas_pool_get_array(diagnosticsPool, 'circulation', circulation)
 
          call mpas_pool_get_array(diagnosticsPool, 'velocityX', velocityX)

@@ -257,7 +257,7 @@ contains
       call ocn_diagnostic_solve_vortVel(relativeVorticity, &
              layerThickEdgeFlux, normalVelocity, normalTransportVelocity, &
              vertVelocityTop, vertTransportVelocityTop, relativeVorticityCell, &
-             divergence, divergenceVertex, kineticEnergyCell, tangentialVelocity)
+             divergence, kineticEnergyCell, tangentialVelocity, divergenceVertex)
 
       !compute vertical velocity due to gm bolus velocity if requested
       if (config_use_gm) then
@@ -327,7 +327,7 @@ contains
       call ocn_diagnostic_solve_vorticity(dt, normalVelocity, tangentialVelocity, &
                 layerThickness, relativeVorticity, &
                 normRelVortEdge, normPlanetVortEdge, &
-                normalizedRelativeVorticityCell)
+                normalizedRelativeVorticityCell, relativeVorticityCell)
 
       !
       ! Surface pressure
@@ -634,9 +634,7 @@ contains
       !$acc parallel loop gang vector &
       !$acc    present(tangentialVelocity, normalVelocity, &
       !$acc            weightsOnEdge, nEdgesOnEdge, edgesOnEdge, &
-      !$acc            minLevelEdgeBot, maxLevelEdgeTop,         &
-      !$acc            tangentialTransportVelocity, &
-      !$acc            normalTransportVelocity) &
+      !$acc            minLevelEdgeBot, maxLevelEdgeTop)
       !$acc    private(i, k, kmin, kmax, eoe, weightsOnEdge_temp)
 #else
       !$omp parallel
@@ -1250,7 +1248,8 @@ contains
                          layerThickness, relativeVorticity, &
                          normalizedRelativeVorticityEdge, &
                          normalizedPlanetaryVorticityEdge, &
-                         normalizedRelativeVorticityCell)!{{{
+                         normalizedRelativeVorticityCell, &
+                         relativeVorticityCell)!{{{
 
       !-----------------------------------------------------------------
       ! input variables
@@ -1262,7 +1261,7 @@ contains
          normalVelocity,     &!< [in] velocity normal to edge
          tangentialVelocity, &!< [in] velocity tangent to edge
          layerThickness,     &!< [in] layer thickness
-         relativeVorticity    !< [in] relative vorticity at cell center
+         relativeVorticityCell   !< [in] relative vorticity at cell center
 
       !-----------------------------------------------------------------
       ! output variables
@@ -1271,7 +1270,8 @@ contains
       real (kind=RKIND), dimension(:,:), intent(out) :: &
          normalizedRelativeVorticityEdge,  &!< [out] rel vort at edge
          normalizedPlanetaryVorticityEdge, &!< [out] planet vort edge
-         normalizedRelativeVorticityCell    !< [out] rel vort in cell
+         normalizedRelativeVorticityCell,  &!< [out] rel vort in cell
+         relativeVorticity   !< [in] relative vorticity at cell center
 
       !-----------------------------------------------------------------
       ! local variables
@@ -1339,6 +1339,7 @@ contains
 #endif
       do iVertex = 1, nVertices
          invAreaTri1 = 1.0_RKIND / areaTriangle(iVertex)
+         relativeVorticity(:,iVertex) = 0.0_RKIND
          do k = 1, maxLevelVertexBot(iVertex)
             layerThicknessVertex = 0.0_RKIND
             do i = 1, vertexDegree
@@ -1346,8 +1347,12 @@ contains
                layerThicknessVertex = layerThicknessVertex &
                                     + layerThickness(k,iCell) &
                                     * kiteAreasOnVertex(i,iVertex)
+               relativeVorticity(k,iVertex) = relativeVorticity(k,iVertex) &
+                                    + relativeVorticityCell(k,iCell) &
+                                    * kiteAreasOnVertex(i,iVertex)
             end do
             layerThicknessVertex = layerThicknessVertex*invAreaTri1
+            relativeVorticity(k,iVertex) = relativeVorticity(k,iVertex)*invAreaTri1
             if (layerThicknessVertex == 0) cycle
 
             normalizedRelativeVorticityVertex(k,iVertex) = &
@@ -2265,7 +2270,7 @@ contains
 
 #ifdef MPAS_OPENACC
       !$acc parallel loop gang vector &
-      !$acc    present(divergence, kineticEnergyCell, &
+      !$acc    present(kineticEnergyCell, &
       !$acc            vertVelocityTop, vertTransportVelocityTop, &
       !$acc            normalVelocity, normalTransportVelocity, &
       !$acc            layerThicknessEdgeFlux, dcEdge, dvEdge, &
