@@ -132,6 +132,9 @@ void pre_timeloop() {
   YAKL_SCOPE( crm_output_fluxsgs_qt    , :: crm_output_fluxsgs_qt );
   YAKL_SCOPE( crm_output_tkez          , :: crm_output_tkez ); 
   YAKL_SCOPE( crm_output_tkew          , :: crm_output_tkew ); 
+  YAKL_SCOPE( crm_output_tkeqc         , :: crm_output_tkeqc ); 
+  YAKL_SCOPE( crm_output_tkeqt         , :: crm_output_tkeqt); 
+  YAKL_SCOPE( crm_output_tkeb          , :: crm_output_tkeb ); 
   YAKL_SCOPE( crm_output_tkesgsz       , :: crm_output_tkesgsz ); 
   YAKL_SCOPE( crm_output_tkz           , :: crm_output_tkz ); 
   YAKL_SCOPE( crm_output_flux_qp       , :: crm_output_flux_qp ); 
@@ -456,6 +459,9 @@ void pre_timeloop() {
       crm_output_fluxsgs_qt(k,icrm) = 0.0;
       crm_output_tkez      (k,icrm) = 0.0;
       crm_output_tkew      (k,icrm) = 0.0;
+      crm_output_tkeqc     (k,icrm) = 0.0;
+      crm_output_tkeqt     (k,icrm) = 0.0;
+      crm_output_tkeb      (k,icrm) = 0.0;
       crm_output_tkesgsz   (k,icrm) = 0.0;
       crm_output_tkz       (k,icrm) = 0.0;
       crm_output_flux_qp   (k,icrm) = 0.0;
