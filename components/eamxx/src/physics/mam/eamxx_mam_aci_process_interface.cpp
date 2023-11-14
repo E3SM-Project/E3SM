@@ -38,7 +38,7 @@ void MAMAci::set_grids(const std::shared_ptr<const GridsManager> grids_manager) 
 
   using namespace ekat::units;
   auto q_unit = kg/kg; // units of mass mixing ratios of tracers
-  auto n_unit = kg/kg; // units of number mixing ratios of tracers
+  auto n_unit = 1/kg; // units of number mixing ratios of tracers
 
   add_field<Required>("qc",             scalar3d_layout_mid, q_unit, grid_name, "tracers"); // cloud liquid mass mixing ratio [kg/kg]
   add_field<Required>("qi",             scalar3d_layout_mid, q_unit, grid_name, "tracers"); // cloud ice mass mixing ratio [kg/kg]
