@@ -747,6 +747,16 @@ struct Functions
     const P3Runtime& runtime_options,
     const Smask& context = Smask(true) );
 
+  // 
+  KOKKOS_FUNCTION
+  static void CNT_couple(const Spack& frzimm, const Spack& frzcnt,
+    const Spack& frzdep, const Spack& rho,
+    const Spack& qc_incld, const Spack& nc_incld,
+    const int Iflag,
+    Spack& ncheti_cnt, Spack& qcheti_cnt,
+    Spack& nicnt, Spack& qucnt,
+    Spack& ninuc_cnt, Spack& qinuc_cnt);
+
   // Computes droplet self collection
   KOKKOS_FUNCTION
   static void droplet_self_collection(const Spack& rho, const Spack& inv_rho,
@@ -1120,6 +1130,7 @@ struct Functions
     const Scalar& max_total_ni,
     const bool& do_predict_nc,
     const bool& do_prescribed_CCN,
+    const bool& use_hetfrz_classnuc,
     const Scalar& dt,
     const Scalar& inv_dt,
     const view_dnu_table& dnu,
@@ -1442,6 +1453,7 @@ void init_tables_from_f90_c(Real* vn_table_vals_data, Real* vm_table_vals_data,
 # include "p3_rain_self_collection_impl.hpp"
 # include "p3_impose_max_total_ni_impl.hpp"
 # include "p3_calc_rime_density_impl.hpp"
+# include "p3_CNT_couple_impl.hpp"
 # include "p3_cldliq_imm_freezing_impl.hpp"
 # include "p3_droplet_self_coll_impl.hpp"
 # include "p3_cloud_sed_impl.hpp"
