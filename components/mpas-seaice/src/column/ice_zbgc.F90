@@ -679,9 +679,9 @@
          snow_bio_net(mm) = snow_bio_net(mm) &
                           + trcrn(bio_index(mm)+nblyr+1)*dvssl &
                           + trcrn(bio_index(mm)+nblyr+2)*dvint
-         flux_bio    (mm) = flux_bio (mm) + flux_bion (mm)*aice_init
-         zbgc_snow   (mm) = zbgc_snow(mm) + zbgc_snown(mm)*aice_init/dt
-         zbgc_atm    (mm) = zbgc_atm (mm) + zbgc_atmn (mm)*aice_init/dt
+         flux_bio    (mm) = flux_bio (mm) + flux_bion (mm)*aicen
+         zbgc_snow   (mm) = zbgc_snow(mm) + zbgc_snown(mm)*aicen/dt
+         zbgc_atm    (mm) = zbgc_atm (mm) + zbgc_atmn (mm)*aicen/dt
 
       enddo     ! mm
       ! diagnostics : mean cell bio interface grid profiles
