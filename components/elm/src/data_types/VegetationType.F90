@@ -66,6 +66,7 @@ module VegetationType
      logical , pointer :: is_veg        (:) => null() ! This is an ACTIVE fates patch
      logical , pointer :: is_bareground (:) => null() ! ?
      real(r8), pointer :: wt_ed         (:) => null() ! TODO mv ? can this be removed
+     real(r8), pointer :: sp_pftorder_index (:) => null() ! index to map 'p' onto the order of FATES patches in SP mode     
      logical , pointer :: is_fates      (:) => null() ! true for patch vector space reserved
                                                       ! for FATES.
                                                       ! this is static and is true for all
