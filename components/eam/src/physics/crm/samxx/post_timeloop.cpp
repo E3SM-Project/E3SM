@@ -75,6 +75,7 @@ void post_timeloop() {
   YAKL_SCOPE( crm_output_qci          , :: crm_output_qci );
   YAKL_SCOPE( crm_output_qpl          , :: crm_output_qpl );
   YAKL_SCOPE( crm_output_qpi          , :: crm_output_qpi );
+  YAKL_SCOPE( crm_output_bou          , :: crm_output_bou );
   YAKL_SCOPE( crm_output_tk           , :: crm_output_tk );
   YAKL_SCOPE( crm_output_tkh          , :: crm_output_tkh );
   YAKL_SCOPE( crm_output_z0m          , :: crm_output_z0m );
@@ -144,6 +145,9 @@ void post_timeloop() {
   YAKL_SCOPE( crm_output_tkesgsz      , :: crm_output_tkesgsz );
   YAKL_SCOPE( crm_output_tkez         , :: crm_output_tkez );
   YAKL_SCOPE( crm_output_tkew         , :: crm_output_tkew );
+  YAKL_SCOPE( crm_output_tkeb         , :: crm_output_tkeb );
+  YAKL_SCOPE( crm_output_tkeqc        , :: crm_output_tkeqc);
+  YAKL_SCOPE( crm_output_tkeqt        , :: crm_output_tkeqt);
   YAKL_SCOPE( crm_output_tkz          , :: crm_output_tkz );
   YAKL_SCOPE( crm_output_precflux     , :: crm_output_precflux );
   YAKL_SCOPE( crm_output_qp_fall      , :: crm_output_qp_fall );
@@ -175,6 +179,7 @@ void post_timeloop() {
   YAKL_SCOPE( crm_output_t_vt_ls      , :: crm_output_t_vt_ls );
   YAKL_SCOPE( crm_output_q_vt_ls      , :: crm_output_q_vt_ls );
   YAKL_SCOPE( crm_output_u_vt_ls      , :: crm_output_u_vt_ls );
+  YAKL_SCOPE( crm_output_bou_ls       , :: crm_output_bou_ls );
   YAKL_SCOPE( t_vt_tend               , :: t_vt_tend );
   YAKL_SCOPE( q_vt_tend               , :: q_vt_tend );
   YAKL_SCOPE( u_vt_tend               , :: u_vt_tend );
@@ -229,6 +234,11 @@ void post_timeloop() {
     vln  (k,icrm) = 0.0;
   });
   
+  parallel_for( SimpleBounds<2>(plev-ptop+1,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+    int l = plev-(k+1);
+    yakl::atomicAdd(crm_output_bou_ls(k,icrm) , crm_output_bou(k,j,i,icrm));
+  });
+
   // for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( ncrms , YAKL_LAMBDA (int icrm) {
     colprec (icrm)=0;
@@ -378,6 +388,7 @@ void post_timeloop() {
     crm_output_qci(k,j,i,icrm) = qci(k,j,i,icrm);
     crm_output_qpl(k,j,i,icrm) = qpl(k,j,i,icrm);
     crm_output_qpi(k,j,i,icrm) = qpi(k,j,i,icrm);
+    crm_output_bou(k,j,i,icrm) = tabs(k,j,i,icrm)*(1+0.61*qv(k,j,i,icrm)-(qcl(k,j,i,icrm)+qci(k,j,i,icrm)+qpl(k,j,i,icrm)+qpi(k,j,i,icrm)));
   });
 
   // for (int icrm=0; icrm<ncrms; icrm++) {
@@ -506,18 +517,35 @@ void post_timeloop() {
   // for (int k=0; k<nzm; k++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
-    real u2z = 0.0;
-    real v2z = 0.0;
-    real w2z = 0.0;
+    int l = plev-(k+1);
+    int lp1   = plev-(k+1+1);
+    real u2z  = 0.0;
+    real v2z  = 0.0;
+    real w2z  = 0.0;
+    real wqcz = 0.0;
+    real wqtz = 0.0;
+    real wb   = 0.0;
     for (int j=0; j<ny; j++) {
       for (int i=0; i<nx; i++) {
         real tmp1 = (u(k,j+offy_u,i+offx_u,icrm)-u0(k,icrm));
         real tmp2 = (v(k,j+offy_v,i+offx_v,icrm)-v0(k,icrm));
         real tmp3 = w(k+1,j+offy_w,i+offx_w,icrm);
         real tmp4 = w(k,j+offy_w,i+offx_w,icrm);
-        u2z = u2z+tmp1*tmp1;
-        v2z = v2z+tmp2*tmp2;
-        w2z = w2z+0.5*(tmp3*tmp3+tmp4*tmp4);
+        real tmp5 = qcl(k+1,j+offy_w,i+offx_w,icrm)-crm_output_qc_mean(lp1,icrm)/factor_xy;
+        real tmp6 = qcl(k,j+offy_w,i+offx_w,icrm)-crm_output_qc_mean(l,icrm)/factor_xy;
+        real tmp7 = qci(k+1,j+offy_w,i+offx_w,icrm)-crm_output_qi_mean(lp1,icrm)/factor_xy;
+        real tmp8 = qci(k,j+offy_w,i+offx_w,icrm)-crm_output_qi_mean(l,icrm)/factor_xy;
+        real tmp9 = tmp5+tmp7;
+        real tmp10= tmp6+tmp8;
+        real tmp11= crm_output_bou(k+1,j+offy_w,i+offx_w,icrm)-crm_output_bou_ls(lp1,icrm)
+        real tmp12= crm_output_bou(k,j+offy_w,i+offx_w,icrm)-crm_output_bou_ls(l,icrm)
+
+        u2z  = u2z+tmp1*tmp1;
+        v2z  = v2z+tmp2*tmp2;
+        w2z  = w2z+0.5*(tmp3*tmp3+tmp4*tmp4);
+        wqcz = wqcz+0.5*(tmp3*tmp5+tmp4*tmp6);
+        wqtz = wqiz+0.5*(tmp3*tmp9+tmp4*tmp10);
+        wb   = wb+0.5*(tmp3*tmp11+tmp4*tmp12);
       }
     }
 
@@ -554,7 +582,9 @@ void post_timeloop() {
     crm_output_tkesgsz   (l,icrm)= rho(k,icrm)*tmp*factor_xy;
     crm_output_tkez      (l,icrm)= rho(k,icrm)*0.5*(u2z+v2z*YES3D+w2z)*factor_xy + crm_output_tkesgsz(l,icrm);
     crm_output_tkew      (l,icrm)= rho(k,icrm)*0.5*w2z*factor_xy;
-
+    crm_output_tkeqc     (l,icrm)= rho(k,icrm)*0.5*wqcz*factor_xy;
+    crm_output_tkeqt     (l,icrm)= rho(k,icrm)*0.5*wqtz*factor_xy;
+    crm_output_tkeb      (l,icrm)= rho(k,icrm)*0.5*wb*factor_xy;
     tmp = 0.0;
     for (int j=0; j<ny; j++) {
       for (int i=0; i<nx; i++) {
