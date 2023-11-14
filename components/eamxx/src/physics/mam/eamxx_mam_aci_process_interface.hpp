@@ -22,6 +22,15 @@ public:
   void initialize_impl(const RunType run_type) override;
   void run_impl(const double dt) override;
   void finalize_impl() override;
+
+
+  //Local variables
+  
+  // number of horizontal columns and vertical levels
+  int ncol_, nlev_;
+
+  // physics grid for column information
+  std::shared_ptr<const AbstractGrid> grid_;
 }; // MAMAci
 
 } // namespace scream
