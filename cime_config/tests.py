@@ -129,7 +129,7 @@ _TESTS = {
             "ERP_Ln18.ne4_oQU240.F2010.eam-condidiag_rhi",
             )
         },
-    
+
     "e3sm_zm_developer" : {
         "tests"   : (
             "ERP.ne4pg2_oQU480.F2010.eam-zm_enhancements",
@@ -221,7 +221,7 @@ _TESTS = {
     "e3sm_atm_nbfb" : {
         "tests" : (
             "PGN_P1x1.ne4_oQU240.F2010",
-            "TSC.ne4_oQU240.F2010",
+            "TSC_PS.ne4_oQU240.F2010",
             "MVK_PS.ne4_oQU240.F2010",
             )
         },
