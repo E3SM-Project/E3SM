@@ -24,7 +24,6 @@ TEST_CASE("mam4-aci-standalone", "") {
   ekat::logger::Logger<> logger("mam4-aci",
                                 ekat::logger::LogLevel::debug, atm_comm);
 
-
   // Load ad parameter list
   std::string fname = "input_aci.yaml";
   ekat::ParameterList ad_params("Atmosphere Driver");
