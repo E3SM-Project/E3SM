@@ -514,6 +514,7 @@ void GllFvRemapImpl
       kv.team_barrier(); // w2, w3, w4 in use
       // T_f
       loop_ik(ttrf, tvr, [&] (int i, int k) { T(ie,i,k) = th_f(i,k)*exner_f(i,k); });
+      kv.team_barrier(); // w2, w3 in use
     }
 
     // (u,v)
@@ -647,6 +648,7 @@ run_fv_phys_to_dyn (const int timeidx, const CPhys2T& Ts, const CPhys3T& uvs,
         // modify omega. Thus, zero FM so that the third component is 0.
         loop_ik(ttrg, tvr, [&] (int i, int k) { fm_ie(2,i,k) = 0; });
       }
+      kv.team_barrier();
     }
 
     { // T

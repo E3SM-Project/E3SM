@@ -3,7 +3,7 @@
   partmethod        = 4
   topology          = "plane"
   geometry          = "plane"
-  test_case         = "planar_rising_bubble"
+  test_case         = "planar_rising_bubble_pg2"
   theta_hydrostatic_mode = .false.
   theta_advect_form = 1
   vert_remap_q_alg  = 10
