@@ -39,6 +39,9 @@ module CanopyStateType
 
      real(r8) , pointer :: tlai_patch               (:)   ! patch canopy one-sided leaf area index, no burying by snow
      real(r8) , pointer :: tsai_patch               (:)   ! patch canopy one-sided stem area index, no burying by snow
+     real(r8) , pointer :: tlai_hist_patch          (:)   ! patch canopy one-sided leaf area index, for SP mode
+     real(r8) , pointer :: tsai_hist_patch          (:)   ! patch canopy one-sided stem area index, for SP mode
+     real(r8) , pointer :: htop_hist_patch          (:)   ! patch canopy height, for SP mode     
      real(r8) , pointer :: elai_patch               (:)   ! patch canopy one-sided leaf area index with burying by snow
      real(r8) , pointer :: esai_patch               (:)   ! patch canopy one-sided stem area index with burying by snow
      real(r8) , pointer :: elai240_patch            (:)   ! patch canopy one-sided leaf area index with burying by snow average over 10days
