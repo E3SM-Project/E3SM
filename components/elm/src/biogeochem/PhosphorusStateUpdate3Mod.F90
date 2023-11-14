@@ -181,10 +181,7 @@ contains
                             col_pf%sminp_to_plant_vr(c,j)*dt - col_pf%labilep_to_secondp_vr(c,j)*dt - &
                             col_pf%sminp_leached_vr(c,j)*dt ))
 
-                 if (temp_solutionp(c,j) < 0.0_r8) then
-                    if(col_pf%labilep_to_secondp_vr(c,j)+col_pf%sminp_leached_vr(c,j) == 0._r8) then 
-                       print *, "Divding by zero!" 
-                    end if 
+                 if (temp_solutionp(c,j) < 0.0_r8 .and. (col_pf%labilep_to_secondp_vr(c,j)+col_pf%sminp_leached_vr(c,j) .ne. 0._r8) ) then
                     col_pf%labilep_to_secondp_vr(c,j) = col_pf%labilep_to_secondp_vr(c,j)/ &
                             (col_pf%labilep_to_secondp_vr(c,j)+col_pf%sminp_leached_vr(c,j))* &
                             (temp_solutionp(c,j) + col_pf%labilep_to_secondp_vr(c,j)*dt + &

@@ -432,7 +432,6 @@ contains
 
                ! limit the flux to a positive value
                sminp_leached_vr(c,j) = max(sminp_leached_vr(c,j), 0._r8)
-
             end do
          end do
 

@@ -249,7 +249,7 @@ contains
        call shr_sys_flush(logunit)
 
     end if
-    
+
     if (rof_present .and. ocn_present) then
 
        call seq_comm_getData(CPLID, &
@@ -266,7 +266,7 @@ contains
           call mct_aVect_zero(o2racc_ox(eoi))
        end do
        o2racc_ox_cnt = 0
-      
+
        allocate(o2r_rx(num_inst_rof))
        do eri = 1,num_inst_rof
           call mct_avect_init(o2r_rx(eri), rList=seq_flds_o2x_fields_to_rof, lsize=lsize_r)
@@ -412,6 +412,7 @@ contains
     type(mct_aVect), pointer :: x2r_rx
     character(*), parameter  :: subname = '(prep_rof_mrg)'
     !---------------------------------------------------------------
+
     call t_drvstartf (trim(timer_mrg), barrier=mpicom_CPLID)
     do eri = 1,num_inst_rof
        efi = mod((eri-1),num_inst_frc) + 1
@@ -507,7 +508,7 @@ contains
     character(*), parameter   :: subname = '(prep_rof_merge) '
 
     !-----------------------------------------------------------------------
-    
+
     call seq_comm_getdata(CPLID, iamroot=iamroot)
     lsize = mct_aVect_lsize(x2r_r)
 
