@@ -1923,8 +1923,7 @@
 			<var name="accumulatedLandIceHeat"/>
 			<var name="accumulatedLandIceFrazilMass"/>
 			<var name="frazilSurfacePressure"/>
-			<var name="avgSSHGradientZonal"/>
-			<var name="avgSSHGradientMeridional"/>
+			<var_array name="avgSSHGradient"/>
 			<var name="forcingGroupNames"/>
 			<var name="forcingGroupRestartTimes"/>
             <var name="gotmVertViscTopOfCell"/>
