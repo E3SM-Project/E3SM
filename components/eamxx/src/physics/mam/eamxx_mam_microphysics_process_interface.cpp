@@ -252,10 +252,12 @@ void MAMMicrophysics::run_impl(const double dt) {
   double t = 0.0;
 
   // ... look up photolysis rates from our table
-  // FIXME: figure this out
+  // FIXME: do we need this here, or could we do it per-level?
+  /*
   Real cwat = cldw;
   mam4::mo_photo::table_photo(reaction_rates, pmid, pdel, tfld, col_dens, zen_angle,
     asdir, cwat, cldfr, esfact, ncol);
+  */
 
   // loop over atmosphere columns and compute aerosol microphyscs
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const ThreadTeam& team) {
@@ -263,6 +265,7 @@ void MAMMicrophysics::run_impl(const double dt) {
 
     // fetch column-specific atmosphere state data
     auto atm = mam_coupling::atmosphere_for_column(dry_atm_, icol);
+    auto z_iface = ekat::subview(dry_atm_.z_iface, icol);
     Real z_surf = dry_atm_.z_surf;
     Real phis = dry_atm_.phis(icol);
 
@@ -288,6 +291,7 @@ void MAMMicrophysics::run_impl(const double dt) {
       Real pmid = atm.pressure(k);
       Real pdel = atm.hydrostatic_dp(k);
       Real zm   = atm.height(k);
+      Real zi   = z_iface(k);
       Real pblh = atm.planetary_boundary_layer_height;
       Real qv   = atm.vapor_mixing_ratio(k);
       Real cld  = atm.cloud_fraction(k);
@@ -319,8 +323,7 @@ void MAMMicrophysics::run_impl(const double dt) {
       //---------------------
       // Gas Phase Chemistry
       //---------------------
-      // (doesn't belong here, but it's here till we get things working)
-      impl::gas_phase_chemistry(q);
+      impl::gas_phase_chemistry(zm, zi, phis, temp, pmid, pdel, dt, q);
 
       //----------------------
       // Aerosol microphysics

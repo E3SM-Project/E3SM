@@ -8,22 +8,29 @@ using mam4::utils::min_max_bound;
 // performs gas phase chemistry calculations on a single level of a single
 // atmospheric column
 KOKKOS_INLINE_FUNCTION
-void gas_phase_chemistry(Real zm, Real zi, Real phis, Real temp, Real pmid, Real q[mam4::gas_chemistry::gas_pcnst]) {
+void gas_phase_chemistry(Real zm, Real zi, Real phis, Real temp, Real pmid, Real pdel, Real dt,
+                         Real q[mam4::gas_chemistry::gas_pcnst]) {
   constexpr Real rga = 1.0/haero::Constants::gravity;
   constexpr Real mwdry = 1.0/haero::Constants::molec_weight_dry_air;
   constexpr Real m2km = 0.01; // converts m -> km
 
   // FIXME: The following things are chemical mechanism dependent! See mam4xx/src/mam4xx/gas_chem_mechanism.hpp)
   constexpr int gas_pcnst = mam4::gas_chemistry::gas_pcnst;
-  constexpr int rxntot = 7; // number of chemical reactions
-  constexpr int extcnt = 9; // number of species with external forcing
-  constexpr int nfs = 8;    // number of "fixed species"
+  constexpr int rxntot = 7;  // number of chemical reactions
+  constexpr int extcnt = 9;  // number of species with external forcing
+  constexpr int nfs = 8;     // number of "fixed species"
+  constexpr int nabscol = 2; // number of "absorbing column densities"
+  constexpr int indexm = 0;  // index of total atm density in invariants array
+
+  constexpr int ndx_h2so4 = 0; // FIXME: get_spc_ndx('H2SO4')
+  constexpr int o3_ndx = 0;    // FIXME: get_spc_ndx('O3')
+  constexpr int synoz_ndx = 0; // FIXME: get_extfrc_ndx('SYNOZ')
 
   // fetch the zenith angle (not its cosine!) in degrees for this column.
   // FIXME: For now, we fix the zenith angle. At length, we need to compute it
   // FIXME: from EAMxx's current set of orbital parameters, which requires some
   // FIXME: conversation with the EAMxx team.
-  Real zenith = 0.0; // [deg]
+  Real zen_angle = 0.0; // [deg]
 
   // xform geopotential height from m to km and pressure from Pa to mb
   Real zsurf = rga * phis;
@@ -50,41 +57,41 @@ void gas_phase_chemistry(Real zm, Real zi, Real phis, Real temp, Real pmid, Real
 
   // ... set the "invariants"
   Real invariants[nfs];
-  setinv(invariants, temp, h2ovmr, vmr, pmid, ncol, lchnk, pbuf);
+  // setinv(invariants, temp, h2ovmr, vmr, pmid); FIXME
 
   // ... set the column densities at the upper boundary
   // FIXME: This is level-independent, but we can probably get away with
   // FIXME: calling it at all levels
-  set_ub_col(col_delta, vmr, invariants, pdel, ncol, lchnk);
+  Real col_delta[nabscol];
+  // set_ub_col(col_delta, vmr, invariants, pdel); FIXME
 
   // ... set rates for "tabular" and user specified reactions
-  Real rxt_rates[3];
+  Real reaction_rates[rxntot];
   mam4::gas_chemistry::setrxt(reaction_rates, temp);
 
   // compute the relative humidity
-  // FIXME: We have a better way of doing this in EAMxx
-  Real satq;
-  qsat(temp, pmid, satv, satq);
-  Real relhum = min_max_bound(0, 1, 0.622 * h2ovmr/satq);
+  Real relhum = mam4::conversions::relative_humidity_from_vapor_mixing_ratio(qh2o, temp, pmid);
 
-  mam4::gas_chemistry::usrrxt(reaction_rates, temp, invariants, invariants[indexm]);
-  mam4::gas_chemistry::adjrxt(reaction_rates, invariants, invariants[indexm]);
+  // FIXME: we need to figure out the arguments for these functions
+  //mam4::gas_chemistry::usrrxt(reaction_rates, temp, invariants, invariants[indexm]);
+  //mam4::gas_chemistry::adjrxt(reaction_rates, invariants, invariants[indexm]);
 
   //===================================
   // Photolysis rates at time = t(n+1)
   //===================================
 
   // ... set the column density
-  // FIXME: Again, level-independent
-  setcol(col_delta, col_dens);
+  Real col_dens[nabscol];
+  //setcol(col_delta, col_dens); // FIXME
 
-  // ... calculate the photodissociation rates
-  // FIXME: This looks like an EAM Fortran call.
-  Real esfact = 1.0;
-  shr_orb_decl(calday, eccen, mvelpp, lambm0, obliqr, delta, esfact);
+  // ... lookup the photolysis rates from table
+  // FIXME: We need to rethink this so we don't need all column data
+  //table_photo(...);
 
   // ... compute the extraneous frcing at time = t(n+1)
-  mam4::mo_setext::setext(extfrc, lchnk, ncol, zintr);
+  Real extfrc[extcnt];
+  // FIXME: Same thing: can we do this for each single level?
+  // mam4::mo_setext::setext(extfrc, zintr);
 
   for (int mm = 0; mm < extcnt; ++mm) {
     if (mm != synoz_ndx) {
@@ -93,13 +100,14 @@ void gas_phase_chemistry(Real zm, Real zi, Real phis, Real temp, Real pmid, Real
   }
 
   // ... Form the washout rates
-  sethet(het_rates, pmid, zmid, phis, tfld, cmfdqr, prain, nevapr, delt,
-    invariants[indexm], vmr, ncol, lchnk);
+  Real het_rates[gas_pcnst];
+  //sethet(het_rates, pmid, zmid, phis, temp, cmfdqr, prain, nevapr, delt,
+  //       invariants[indexm], vmr);
 
-  ltrop_sol = 0; // apply solver to all levels
+  int ltrop_sol = 0; // apply solver to all levels
 
   // save h2so4 before gas phase chem (for later new particle nucleation)
-  del_h2so4_gasprod = q[ndx_h2so4];
+  Real del_h2so4_gasprod = q[ndx_h2so4];
 
   //===========================
   // Class solution algorithms
@@ -107,15 +115,15 @@ void gas_phase_chemistry(Real zm, Real zi, Real phis, Real temp, Real pmid, Real
 
   // ... solve for "Implicit" species
   // FIXME: need to figure out arguments to ported C++ code
-  mam4::gas_chemistry::imp_sol(q, reaction_rates, het_rates, extfrc, delt,
-    invariants[indexm], ncol, lchnk, ltrop_sol);
+  //mam4::gas_chemistry::imp_sol(vmr, reaction_rates, het_rates, extfrc, dt,
+  //  invariants[indexm], ltrop_sol);
 
   /* I don't think we need to worry about this, do we?
   if (convproc_do_aer) {
     vmr2mmr(vmr, mmr_new, mbar, ncol);
     mmr_new(:ncol,:,:) = 0.5_r8*( mmr(:ncol,:,:)+mmr_new(:ncol,:,:) );
     //RCE - mmr_new = average of mmr values before and after imp_sol
-    het_diags(het_rates(:ncol,:,:), mmr_new(:ncol,:,:), pdel(:ncol,:), lchnk, ncol );
+    het_diags(het_rates(:ncol,:,:), mmr_new(:ncol,:,:), pdel(:ncol,:));
   }
   */
 
