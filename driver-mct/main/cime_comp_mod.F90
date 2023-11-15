@@ -428,6 +428,7 @@ module cime_comp_mod
   logical  :: ocn_c2_ice             ! .true.  => ocn to ice coupling on
   logical  :: ocn_c2_glcshelf        ! .true.  => ocn to glc ice shelf coupling on
   logical  :: ocn_c2_wav             ! .true.  => ocn to wav coupling on
+  logical  :: ocn_c2_rof             ! .true.  => ocn to rof coupling on  
   logical  :: ice_c2_atm             ! .true.  => ice to atm coupling on
   logical  :: ice_c2_ocn             ! .true.  => ice to ocn coupling on
   logical  :: ice_c2_wav             ! .true.  => ice to wav coupling on
@@ -1941,7 +1942,7 @@ contains
 
        call prep_ice_init(infodata, ocn_c2_ice, glc_c2_ice, glcshelf_c2_ice, rof_c2_ice )
 
-       call prep_rof_init(infodata, lnd_c2_rof, atm_c2_rof)
+       call prep_rof_init(infodata, lnd_c2_rof, atm_c2_rof, ocn_c2_rof)
 
        call prep_glc_init(infodata, lnd_c2_glc, ocn_c2_glcshelf)
 
