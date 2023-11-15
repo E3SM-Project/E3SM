@@ -254,7 +254,7 @@ module seq_flds_mod
   character(CXX) :: seq_flds_x2g_fields
   character(CXX) :: seq_flds_w2x_fields
   character(CXX) :: seq_flds_x2w_fields
-
+  character(CXX) :: seq_flds_o2x_fields_to_rof
   !----------------------------------------------------------------------------
   ! component names
   !----------------------------------------------------------------------------
