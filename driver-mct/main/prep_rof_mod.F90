@@ -18,7 +18,7 @@ module prep_rof_mod
   use mct_mod
   use perf_mod
   use component_type_mod, only: component_get_x2c_cx, component_get_c2x_cx
-  use component_type_mod, only: rof, lnd, atm
+  use component_type_mod, only: rof, lnd, atm, ocn
   use prep_lnd_mod, only: prep_lnd_get_mapper_Fr2l
   use map_lnd2rof_irrig_mod, only: map_lnd2rof_irrig
 
@@ -66,12 +66,15 @@ module prep_rof_mod
   ! attribute vectors
   type(mct_aVect), pointer :: l2r_rx(:)
   type(mct_aVect), pointer :: a2r_rx(:)
+  type(mct_aVect), pointer :: o2r_rx(:)
 
   ! accumulation variables
   type(mct_aVect), pointer :: l2racc_lx(:)   ! lnd export, lnd grid, cpl pes
   integer        , target  :: l2racc_lx_cnt  ! l2racc_lx: number of time samples accumulated
   type(mct_aVect), pointer :: a2racc_ax(:)   ! atm export, atm grid, cpl pes
   integer        , target  :: a2racc_ax_cnt  ! a2racc_ax: number of time samples accumulated
+  type(mct_aVect), pointer :: o2racc_ox(:)   ! ocn export, ocn grid, cpl pes
+  integer        , target  :: o2racc_ox_cnt  ! o2racc_ox: number of time samples accumulated
 
   ! other module variables
   integer :: mpicom_CPLID  ! MPI cpl communicator
@@ -108,9 +111,10 @@ contains
     integer                     :: lsize_l
     integer                     :: lsize_a
     integer                     :: lsize_o
-    integer                     :: eli, eri, eai
+    integer                     :: eli, eri, eai, eoi
     logical                     :: samegrid_lr   ! samegrid lnd and rof
     logical                     :: samegrid_ar   ! samegrid atm and rof
+    logical                     :: samegrid_ro   ! samegrid ocn and rof    
     logical                     :: esmf_map_flag ! .true. => use esmf for mapping
     logical                     :: rof_present   ! .true.  => rof is present
     logical                     :: lnd_present   ! .true.  => lnd is present
