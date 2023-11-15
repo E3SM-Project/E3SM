@@ -864,6 +864,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <dt_tracer_factor constraints="ge 1" hgrid=".*pg2">6</dt_tracer_factor>
     <hypervis_subcycle_q hgrid=".*pg2">6</hypervis_subcycle_q>
     <transport_alg hgrid=".*pg2">12</transport_alg>
+    <semi_lagrange_trajectory_nsubstep>0</semi_lagrange_trajectory_nsubstep>
     <!-- Other settings that we'll trigger based on pg2 for convenience -->
     <se_ftype valid_values="0,2" hgrid=".*pg2">2</se_ftype>
     <mesh_file type="file">none</mesh_file>

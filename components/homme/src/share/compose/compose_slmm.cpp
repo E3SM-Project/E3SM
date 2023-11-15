@@ -98,11 +98,12 @@ init (const typename IslMpi<MT>::Advecter::ConstPtr& advecter,
       const mpi::Parallel::Ptr& p,
       Int np, Int nlev, Int qsize, Int qsized, Int nelemd,
       const Int* nbr_id_rank, const Int* nirptr,
-      Int halo) {
-  slmm_throw_if(halo < 1 || halo > 2, "halo must be 1 (default) or 2.");
+      Int halo, Int traj_3d, Int traj_nsubstep) {
+  slmm_throw_if(halo < 1, "halo must be 1 (default) or larger.");
   auto tracer_arrays = homme::init_tracer_arrays(nelemd, nlev, np, qsize, qsized);
   auto cm = std::make_shared<IslMpi<MT> >(p, advecter, tracer_arrays, np, nlev,
-                                          qsize, qsized, nelemd, halo);
+                                          qsize, qsized, nelemd, halo, traj_3d,
+                                          traj_nsubstep);
   setup_comm_pattern(*cm, nbr_id_rank, nirptr);
   return cm;
 }
@@ -111,12 +112,42 @@ init (const typename IslMpi<MT>::Advecter::ConstPtr& advecter,
 // already has a ref to the const'ed one.
 template <typename MT>
 void finalize_init_phase (IslMpi<MT>& cm, typename IslMpi<MT>::Advecter& advecter) {
-  if (cm.halo == 2)
+  if (cm.halo > 1)
     extend_halo::extend_local_meshes<MT>(*cm.p, cm.ed_h, advecter);
   advecter.fill_nearest_points_if_needed();
   advecter.sync_to_device();
   sync_to_device(cm);
 }
+
+template <typename MT>
+void set_hvcoord (IslMpi<MT>& cm, const Real etai_beg, const Real etai_end,
+                  const Real* etam) {
+  if (cm.etam.size() > 0) return;
+#if defined COMPOSE_HORIZ_OPENMP
+# pragma omp barrier
+# pragma omp master
+#endif
+  {
+    slmm_assert(cm.nlev > 0);
+    cm.etai_beg = etai_beg;
+    cm.etai_end = etai_end;
+    cm.etam = typename IslMpi<MT>::template ArrayD<Real*>("etam", cm.nlev);
+    const auto h = ko::create_mirror_view(cm.etam);
+    for (int k = 0; k < cm.nlev; ++k) {
+      h(k) = etam[k];
+      slmm_assert(k == 0 || h(k) > h(k-1));
+      slmm_assert(h(k) > 0 && h(k) < 1);
+    }
+    ko::deep_copy(cm.etam, h);
+  }
+#if defined COMPOSE_HORIZ_OPENMP
+# pragma omp barrier
+#endif
+}
+
+template void set_hvcoord(
+  IslMpi<ko::MachineTraits>& cm, const Real etai_beg, const Real etai_end,
+  const Real* etam);
 
 // Set pointers to HOMME data arrays.
 template <typename MT>
@@ -297,8 +328,9 @@ void slmm_init_impl (
   homme::Int nelemd, homme::Int cubed_sphere_map, homme::Int geometry,
   const homme::Int* lid2gid, const homme::Int* lid2facenum,
   const homme::Int* nbr_id_rank, const homme::Int* nirptr,
-  homme::Int sl_nearest_point_lev, homme::Int, homme::Int, homme::Int,
-  homme::Int)
+  homme::Int sl_halo, homme::Int sl_traj_3d, homme::Int sl_traj_nsubstep,
+  homme::Int sl_nearest_point_lev,
+  homme::Int, homme::Int, homme::Int, homme::Int)
 {
   amb::dev_init_threads();
   homme::slmm_init(np, nelem, nelemd, transport_alg, cubed_sphere_map,
@@ -308,7 +340,7 @@ void slmm_init_impl (
   const auto p = homme::mpi::make_parallel(MPI_Comm_f2c(fcomm));
   homme::g_csl_mpi = homme::islmpi::init<homme::HommeMachineTraits>(
     homme::g_advecter, p, np, nlev, qsize, qsized, nelemd,
-    nbr_id_rank, nirptr, 2 /* halo */);
+    nbr_id_rank, nirptr, sl_halo, sl_traj_3d, sl_traj_nsubstep);
   amb::dev_fin_threads();
 }
 
@@ -374,6 +406,42 @@ void slmm_check_ref2sphere (homme::Int ie, homme::Cartesian3D* p) {
   amb::dev_fin_threads();
 }
 
+void slmm_set_hvcoord (const homme::Real etai_beg, const homme::Real etai_end,
+                       const homme::Real* etam) {
+  amb::dev_init_threads();
+  slmm_assert(homme::g_csl_mpi);
+  homme::islmpi::set_hvcoord(*homme::g_csl_mpi, etai_beg, etai_end, etam);
+  amb::dev_fin_threads();
+}
+
+void slmm_calc_v_departure (
+  homme::Int nets, homme::Int nete, homme::Int step, homme::Real dtsub,
+  homme::Real* dep_points, homme::Int dep_points_ndim, homme::Real* vnode,
+  homme::Real* vdep, homme::Int* info)
+{
+  amb::dev_init_threads();
+  check_threading();
+  slmm_assert(homme::g_csl_mpi);
+  slmm_assert(homme::g_csl_mpi->sendsz.empty()); // alloc_mpi_buffers was called
+  auto& cm = *homme::g_csl_mpi;
+  slmm_assert(cm.dep_points_ndim == dep_points_ndim);
+  {
+    slmm::Timer timer("h2d");
+    homme::sl_traj_h2d(*cm.tracer_arrays, dep_points, vnode, vdep,
+                       cm.dep_points_ndim);
+  }
+  homme::islmpi::calc_v_departure(cm, nets - 1, nete - 1, step - 1,
+                                  dtsub, dep_points, vnode, vdep);
+  *info = 0;
+  {
+    slmm::Timer timer("d2h");
+    homme::sl_traj_d2h(*cm.tracer_arrays, dep_points, vnode, vdep,
+                       cm.dep_points_ndim);
+  }
+  amb::dev_fin_threads();
+}
+
+// Request extra data to be transferred for analysis.
 static bool s_h2d, s_d2h;
 
 void slmm_csl_set_elem_data (
@@ -389,34 +457,35 @@ void slmm_csl_set_elem_data (
   amb::dev_fin_threads();
 }
 
-void slmm_csl (
-  homme::Int nets, homme::Int nete, homme::Cartesian3D* dep_points,
-  homme::Real* minq, homme::Real* maxq, homme::Int* info)
-{
+void slmm_csl (homme::Int nets, homme::Int nete, homme::Real* dep_points,
+               homme::Int dep_points_ndim, homme::Real* minq, homme::Real* maxq,
+               homme::Int* info) {
   amb::dev_init_threads();
   check_threading();
   slmm_assert(homme::g_csl_mpi);
   slmm_assert(homme::g_csl_mpi->sendsz.empty()); // alloc_mpi_buffers was called
-  { slmm::Timer timer("h2d");
-    //if (homme::g_csl_mpi->p->amroot() && s_h2d) printf("sl_h2d\n");
-    homme::sl_h2d(*homme::g_csl_mpi->tracer_arrays, s_h2d, dep_points); }
+  auto& cm = *homme::g_csl_mpi;
+  slmm_assert(cm.dep_points_ndim == dep_points_ndim);
+  {
+    slmm::Timer timer("h2d");
+    homme::sl_h2d(*cm.tracer_arrays, s_h2d, dep_points, cm.dep_points_ndim);
+  }
   *info = 0;
-#if 0
-#pragma message "RM TRY-CATCH WHILE DEV'ING"
+#if 1
   try {
-    homme::islmpi::step(*homme::g_csl_mpi, nets - 1, nete - 1,
-                        reinterpret_cast<homme::Real*>(dep_points), minq, maxq);
+    homme::islmpi::step(cm, nets - 1, nete - 1, dep_points, minq, maxq);
   } catch (const std::exception& e) {
     std::cerr << e.what();
     *info = -1;
   }
 #else
-  homme::islmpi::step(*homme::g_csl_mpi, nets - 1, nete - 1,
-                      reinterpret_cast<homme::Real*>(dep_points), minq, maxq);
+  homme::islmpi::step(cm, nets - 1, nete - 1, dep_points, minq, maxq);
 #endif
-  { slmm::Timer timer("d2h");
-    //if (homme::g_csl_mpi->p->amroot() && s_d2h) printf("sl_d2h\n");
-    homme::sl_d2h(*homme::g_csl_mpi->tracer_arrays, s_d2h, dep_points, minq, maxq); }
+  {
+    slmm::Timer timer("d2h");
+    homme::sl_d2h(*cm.tracer_arrays, s_d2h, dep_points, cm.dep_points_ndim,
+                  minq, maxq);
+  }
   amb::dev_fin_threads();
 }
 
