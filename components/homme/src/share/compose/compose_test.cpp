@@ -327,7 +327,7 @@ struct StandaloneTracersTester {
 #endif
   }
 };
- 
+
 static StandaloneTracersTester::Ptr g_stt;
 } // namespace test
 } // namespace compose
