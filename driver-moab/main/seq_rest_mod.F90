@@ -1349,19 +1349,21 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al)
 #ifdef MOABDEBUG
   subroutine  write_moab_state ( before_reading ) ! debug, write files 
     use seq_comm_mct,     only: mbaxid, mbixid, mboxid, mblxid, mbrxid, mbofxid ! coupler side instances
+    use seq_comm_mct,     only: num_moab_exports
     use iso_c_binding 
     use iMOAB, only:  iMOAB_WriteMesh
 
     implicit none
 
     type(logical)       , intent(in)    :: before_reading    ! driver clock
-    character*32             :: outfile, wopts, prefx
+    character*32             :: outfile, wopts, prefx, lnum
     integer ierr;
     character(len=*),parameter :: subname = "(write_moab_state) "
 
-    prefx = 'After_'
+    write(lnum,"(I0.2)")num_moab_exports ! smaller than 99
+    prefx = 'AfterR'//trim(lnum)
     wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
-    if ( before_reading ) prefx = 'Before_'
+    if ( before_reading ) prefx = 'BeforeR'//trim(lnum)
     if (mbrxid .ge. 0 ) then !  we are on coupler pes, for sure
       outfile = trim(prefx)//'RofCpl.h5m'//C_NULL_CHAR
       ierr = iMOAB_WriteMesh(mbrxid, trim(outfile), trim(wopts))
