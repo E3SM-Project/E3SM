@@ -1,4 +1,11 @@
-function(build_model COMP_CLASS COMP_NAME)
+# This function must be a macro so that it does not get its own scope.
+# This way, changes to CMAKE_* vars affect the directory which is what
+# we want.
+macro(build_model COMP_CLASS COMP_NAME)
+
+  # We want real variables, not macro expansions
+  set(COMP_CLASS ${COMP_CLASS})
+  set(COMP_NAME ${COMP_NAME})
 
   # We support component-specific configuration of flags, etc, so this setup
   # need to be done here.
@@ -30,14 +37,6 @@ function(build_model COMP_CLASS COMP_NAME)
     foreach(ITEM IN LISTS COMP_CLASSES)
       list(APPEND INCLDIR "${EXEROOT}/cmake-bld/cmake/${ITEM}")
     endforeach()
-  endif()
-
-  # Source files don't live in components/cmake/$COMP_CLASS. This path won't work for
-  # generated files.
-  if (COMP_NAME STREQUAL "csm_share")
-    set(SOURCE_PATH ".")
-  else()
-    set(SOURCE_PATH "../..")
   endif()
 
   #-------------------------------------------------------------------------------
@@ -89,7 +88,7 @@ function(build_model COMP_CLASS COMP_NAME)
         set(YAKL_SYCL_FLAGS "${CPPDEFS} ${SYCL_FLAGS}")
       else()
         # For CPU C++ compilers duplicate flags are fine, the last ones win typically
-        set(YAKL_CXX_FLAGS "${CPPDEFS} ${CXXFLAGS}")
+        set(YAKL_CXX_FLAGS "${CPPDEFS} ${CMAKE_CXX_FLAGS}")
         set(YAKL_ARCH "")
       endif()
       message(STATUS "Building YAKL")
@@ -178,30 +177,22 @@ function(build_model COMP_CLASS COMP_NAME)
     list(APPEND SOURCES ${CMAKE_CURRENT_BINARY_DIR}/${BASENAME})
   endforeach ()
 
-  # Set compiler flags for source files
+  # Set special fixed/free compiler flags for non-cosp fortran files. This logic
+  # can maybe be replaced/reworked once we have Fortran_FORMAT property
+  # working
   foreach (SOURCE_FILE IN LISTS SOURCES)
     get_filename_component(SOURCE_EXT ${SOURCE_FILE} EXT)
 
-    # Set flags based on file extension. File extensions may change if the globs used by
-    # gather_sources changes.
-    if (SOURCE_EXT STREQUAL ".c")
-      e3sm_add_flags("${SOURCE_FILE}" "${CFLAGS}")
-    elseif (SOURCE_EXT STREQUAL ".cpp")
-      e3sm_add_flags("${SOURCE_FILE}" "${CXXFLAGS}")
-    else()
-      # This is a fortran source
-      e3sm_add_flags("${SOURCE_FILE}" "${FFLAGS}")
-
-      # Cosp manages its own flags
-      if (NOT SOURCE_FILE IN_LIST COSP_SOURCES)
-        # Flags are slightly different for different fortran extensions
-        if (SOURCE_EXT STREQUAL ".F" OR SOURCE_EXT STREQUAL ".f")
-          e3sm_add_flags("${SOURCE_FILE}" "${FIXEDFLAGS}")
-        elseif (SOURCE_EXT STREQUAL ".f90")
-          e3sm_add_flags("${SOURCE_FILE}" "${FREEFLAGS}")
-        elseif (SOURCE_EXT STREQUAL ".F90")
-          e3sm_add_flags("${SOURCE_FILE}" "${FREEFLAGS} ${CONTIGUOUS_FLAG}")
-        endif()
+    # Cosp manages its own flags
+    if (NOT SOURCE_FILE IN_LIST COSP_SOURCES)
+      # Flags are slightly different for different fortran extensions
+      if (SOURCE_EXT STREQUAL ".F" OR SOURCE_EXT STREQUAL ".f")
+        e3sm_set_source_property(${SOURCE_FILE} Fortran_FORMAT FIXED FALSE)
+      elseif (SOURCE_EXT STREQUAL ".f90")
+        e3sm_set_source_property(${SOURCE_FILE} Fortran_FORMAT FREE FALSE)
+      elseif (SOURCE_EXT STREQUAL ".F90")
+        e3sm_set_source_property(${SOURCE_FILE} Fortran_FORMAT FREE FALSE)
+        e3sm_add_flags(${SOURCE_FILE} "${CONTIGUOUS_FLAG}")
       endif()
     endif()
   endforeach()
@@ -226,7 +217,7 @@ function(build_model COMP_CLASS COMP_NAME)
 
   # Disable optimizations on some files that would take too long to compile, expect these to all be fortran files
   foreach (SOURCE_FILE IN LISTS NOOPT_FILES)
-    e3sm_deoptimize_file("${SOURCE_FILE}" "${FFLAGS_NOOPT}")
+    e3sm_deoptimize_file("${SOURCE_FILE}")
   endforeach()
 
   #-------------------------------------------------------------------------------
@@ -237,7 +228,7 @@ function(build_model COMP_CLASS COMP_NAME)
     if (ITEM MATCHES "${CMAKE_BINARY_DIR}/.*") # is generated
       list(APPEND REAL_SOURCES ${ITEM})
     else()
-      list(APPEND REAL_SOURCES "${SOURCE_PATH}/${ITEM}")
+      list(APPEND REAL_SOURCES "${PROJECT_SOURCE_DIR}/${ITEM}")
     endif()
   endforeach()
 
@@ -261,7 +252,18 @@ function(build_model COMP_CLASS COMP_NAME)
     # Make sure we link blas/lapack
     target_link_libraries(${TARGET_NAME} BLAS::BLAS LAPACK::LAPACK)
 
-    set_target_properties(${TARGET_NAME} PROPERTIES LINKER_LANGUAGE ${LD})
+    if (E3SM_LINK_WITH_FORTRAN)
+      set_target_properties(${TARGET_NAME} PROPERTIES LINKER_LANGUAGE Fortran)
+
+      # A bit hacky, some platforms need help with the fortran linker
+      if (COMPILER STREQUAL "intel")
+        string(APPEND CMAKE_EXE_LINKER_FLAGS " -cxxlib")
+      endif()
+
+    else()
+      set_target_properties(${TARGET_NAME} PROPERTIES LINKER_LANGUAGE CXX)
+    endif()
+
   else()
     set(TARGET_NAME ${COMP_CLASS})
     add_library(${TARGET_NAME})
@@ -307,4 +309,4 @@ function(build_model COMP_CLASS COMP_NAME)
   # Set flags for target
   target_include_directories(${TARGET_NAME} PRIVATE ${INCLDIR})
 
-endfunction(build_model)
+endmacro(build_model)

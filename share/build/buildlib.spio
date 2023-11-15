@@ -145,9 +145,10 @@ def buildlib(bldroot, installpath, case):
     cmake_opts += "-DPIO_ENABLE_TESTS:BOOL=OFF -DPIO_USE_MALLOC:BOOL=ON "
     cmake_opts += f"-DUSER_CMAKE_MODULE_PATH:LIST={cimeroot}/CIME/non_py/src/CMake "
 
-    # Scorpio should just load the E3SM macros once  are using cmake names for things
-    sfc, scc, scxx, mfc, mcc, mcxx, fflags, cflags, cxxflags, cppdefs, ldflags, cxx_libs, spio_cmake_opts, pio_hints = \
-        extract_from_macros(case, "spio", extra_vars=("CXX_LIBS", "CMAKE_OPTS", "PIO_FILESYSTEM_HINTS"))
+    # Scorpio cmake system is not 100% compatible with the e3sm macros, so we have
+    # to pull out the items we need from the macros
+    sfc, scc, scxx, mfc, mcc, mcxx, fflags, cflags, cxxflags, cppdefs, ldflags, spio_cmake_opts, pio_hints = \
+        extract_from_macros(case, "spio", extra_vars=("SPIO_CMAKE_OPTS", "PIO_FILESYSTEM_HINTS"))
 
     cppdefs += " -DTIMING"
 
@@ -168,9 +169,6 @@ def buildlib(bldroot, installpath, case):
     cmake_opts += f"-DCMAKE_CXX_FLAGS:STRING='{cxxflags} {incl_flag} {cppdefs}' "
     if spio_cmake_opts:
         cmake_opts += spio_cmake_opts + " "
-
-    if cxx_libs:
-        ldflags += " " + cxx_libs
 
     if pio_hints:
         cmake_opts += f"-DPIO_FILESYSTEM_HINTS:STRING='$(PIO_FILESYSTEM_HINTS)' "

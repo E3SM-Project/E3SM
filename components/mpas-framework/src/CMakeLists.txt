@@ -30,12 +30,6 @@ else()
   set(ESMFDIR "noesmf")
 endif()
 
-set(CMAKE_C_COMPILER ${MPICC})
-set(CMAKE_CXX_COMPILER ${MPICXX})
-set(CMAKE_Fortran_COMPILER ${MPIFC})
-set(CMAKE_EXE_LINKER_FLAGS "${LDFLAGS}")
-set(CMAKE_VERBOSE_MAKEFILE TRUE)
-
 # Set up CPPDEFS
 set(FILE_OFFSET "-DOFFSET64BIT")
 if (CPPDEFS)
@@ -49,17 +43,13 @@ if (compile_threaded)
   list(APPEND CPPDEFS "-DMPAS_OPENMP")
 endif()
 
-set(INCLUDES "${INSTALL_SHAREDPATH}/include" "${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/${NINST_VALUE}/csm_share" "${INSTALL_SHAREDPATH}/pio" "${CMAKE_CURRENT_SOURCE_DIR}/external/ezxml" "${CMAKE_BINARY_DIR}/framework" "${CMAKE_BINARY_DIR}/operators")
+set(INCLUDES "${INSTALL_SHAREDPATH}/include" "${CMAKE_CURRENT_SOURCE_DIR}/external/ezxml" "${CMAKE_BINARY_DIR}/framework" "${CMAKE_BINARY_DIR}/operators")
 
 if (USE_KOKKOS)
   include(${INSTALL_SHAREDPATH}/kokkos_generated_settings.cmake)
   string (REPLACE ";" " " KOKKOS_CXXFLAGS_STR "${KOKKOS_CXXFLAGS}")
-  set(CXXFLAGS "${CXXFLAGS} ${KOKKOS_CXXFLAGS_STR}")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${KOKKOS_CXXFLAGS_STR}")
 endif()
-
-set(CMAKE_Fortran_FLAGS "${FFLAGS}")
-set(CMAKE_C_FLAGS "${CFLAGS}")
-set(CMAKE_CXX_FLAGS "${CXXFLAGS}")
 
 # Include custom cmake libraries used for mpas
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake_utils.cmake)
@@ -77,8 +67,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/operators/operators.cmake)
 add_library(common)
 target_compile_definitions(common PRIVATE ${CPPDEFS})
 target_include_directories(common PRIVATE ${INCLUDES})
-find_package(PIO REQUIRED)
-target_link_libraries(common PUBLIC spio)
+target_link_libraries(common PUBLIC spio csm_share)
 
 genf90_targets("${COMMON_RAW_SOURCES}" "${INCLUDES}" "${CPPDEFS}" "" "")
 target_sources(common PRIVATE ${SOURCES})
