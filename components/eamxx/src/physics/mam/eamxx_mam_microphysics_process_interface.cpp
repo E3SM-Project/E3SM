@@ -96,7 +96,7 @@ void MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Required>("ni", scalar3d_layout_mid, n_unit, grid_name, "tracers"); // ice number mixing ratio
   add_field<Required>("pbl_height", scalar2d_layout_col, m, grid_name); // planetary boundary layer height
   add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa, grid_name); // p_del, hydrostatic pressure
-  add_field<Required>("phis",           scalar2d_layout_col, m2/s2, grid_name, ps);
+  add_field<Required>("phis",           scalar2d_layout_col, m2/s2, grid_name);
   add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid_name); // cloud fraction
 
   // droplet activation can alter cloud liquid and number mixing ratios
@@ -254,7 +254,7 @@ void MAMMicrophysics::run_impl(const double dt) {
   // ... look up photolysis rates from our table
   // FIXME: figure this out
   Real cwat = cldw;
-  table_photo(reaction_rates, pmid, pdel, tfld, col_dens, zen_angle,
+  mam4::mo_photo::table_photo(reaction_rates, pmid, pdel, tfld, col_dens, zen_angle,
     asdir, cwat, cldfr, esfact, ncol);
 
   // loop over atmosphere columns and compute aerosol microphyscs
@@ -334,7 +334,7 @@ void MAMMicrophysics::run_impl(const double dt) {
       Real dgncur_awet[num_modes] = {};
       Real wetdens[num_modes]     = {};
       Real qaerwat[num_modes]     = {};
-      impl::compute_water_content(progs, k, dgncur_a, dgncur_awet, wetdens, qaerwet);
+      impl::compute_water_content(progs, k, qv, temp, pmid, dgncur_a, dgncur_awet, wetdens, qaerwat);
 
       // compute aerosol microphysics
       impl::modal_aero_amicphys_intr(config_, ncol_, step_, dt, t, pmid, pdel,

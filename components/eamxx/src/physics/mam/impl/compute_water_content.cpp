@@ -4,10 +4,11 @@ namespace scream::impl {
 
 KOKKOS_INLINE_FUNCTION
 void compute_water_content(const mam4::Prognostics &progs, int k,
+                           Real qv, Real temp, Real pmid,
                            Real dgncur_a[mam4::AeroConfig::num_modes()],
                            Real dgncur_awet[mam4::AeroConfig::num_modes()],
                            Real wetdens[mam4::AeroConfig::num_modes()],
-                           Real qaerwet[mam4::AeroConfig::num_modes()]) {
+                           Real qaerwat[mam4::AeroConfig::num_modes()]) {
   constexpr int num_modes = mam4::AeroConfig::num_modes();
   constexpr int num_aero_ids = mam4::AeroConfig::num_aerosol_ids();
 

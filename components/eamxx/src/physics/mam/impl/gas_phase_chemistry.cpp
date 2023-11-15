@@ -8,17 +8,21 @@ using mam4::utils::min_max_bound;
 // performs gas phase chemistry calculations on a single level of a single
 // atmospheric column
 KOKKOS_INLINE_FUNCTION
-void gas_phase_chemistry(Real zm, Real zi, Real phis, Real q[mam4::gas_chemistry::gas_pcnst]) {
-  constexpr Real rga = 1.0/haero::gravity;
+void gas_phase_chemistry(Real zm, Real zi, Real phis, Real temp, Real pmid, Real q[mam4::gas_chemistry::gas_pcnst]) {
+  constexpr Real rga = 1.0/haero::Constants::gravity;
+  constexpr Real mwdry = 1.0/haero::Constants::molec_weight_dry_air;
   constexpr Real m2km = 0.01; // converts m -> km
-                              //
+
   // FIXME: The following things are chemical mechanism dependent! See mam4xx/src/mam4xx/gas_chem_mechanism.hpp)
   constexpr int gas_pcnst = mam4::gas_chemistry::gas_pcnst;
   constexpr int rxntot = 7; // number of chemical reactions
   constexpr int extcnt = 9; // number of species with external forcing
+  constexpr int nfs = 8;    // number of "fixed species"
 
   // fetch the zenith angle (not its cosine!) in degrees for this column.
-  // FIXME: RRTMGP does this in Fortran--shall we also for now?
+  // FIXME: For now, we fix the zenith angle. At length, we need to compute it
+  // FIXME: from EAMxx's current set of orbital parameters, which requires some
+  // FIXME: conversation with the EAMxx team.
   Real zenith = 0.0; // [deg]
 
   // xform geopotential height from m to km and pressure from Pa to mb
@@ -27,16 +31,26 @@ void gas_phase_chemistry(Real zm, Real zi, Real phis, Real q[mam4::gas_chemistry
   Real zmid = m2km * (zm + zsurf);
   Real zint = m2km * (zi + zsurf);
 
-  // ... set atmosphere mean mass
-  set_mean_mass(mbar);
+  // ... map incoming mass mixing ratios to working array
+  Real mmr[gas_pcnst] = {};
+  // FIXME: come back and fix this
+
+  // ... set atmosphere mean mass to the molecular weight of dry air
+  Real mbar = mwdry;
+
+  // ... Xform from mmr to vmr
+  Real vmr[gas_pcnst];
+  for (int i = 0; i < gas_pcnst; ++i) {
+    vmr[i] = mam4::conversions::vmr_from_mmr(mmr[i], mbar);
+  }
 
   // ... xform water vapor from mmr to vmr and set upper bndy values
   Real qh2o = q[0];
-  Real h2ovmr;
-  h2o_to_vmr(qh2o, h2ovmr, mbar);
+  Real h2ovmr = mam4::conversions::vmr_from_mmr(qh2o, mbar);
 
   // ... set the "invariants"
-  setinv(invariants, tfld, h2ovmr, vmr, pmid, ncol, lchnk, pbuf);
+  Real invariants[nfs];
+  setinv(invariants, temp, h2ovmr, vmr, pmid, ncol, lchnk, pbuf);
 
   // ... set the column densities at the upper boundary
   // FIXME: This is level-independent, but we can probably get away with
@@ -45,16 +59,16 @@ void gas_phase_chemistry(Real zm, Real zi, Real phis, Real q[mam4::gas_chemistry
 
   // ... set rates for "tabular" and user specified reactions
   Real rxt_rates[3];
-  mam4::gas_chemistry::setrxt(reaction_rates, tfld);
+  mam4::gas_chemistry::setrxt(reaction_rates, temp);
 
   // compute the relative humidity
   // FIXME: We have a better way of doing this in EAMxx
   Real satq;
-  qsat(tfld, pmid, satv, satq);
+  qsat(temp, pmid, satv, satq);
   Real relhum = min_max_bound(0, 1, 0.622 * h2ovmr/satq);
 
-  usrrxt(reaction_rates, tfld, invariants, invariants[indexm]);
-  adjrxt(reaction_rates, invariants, invariants[indexm]);
+  mam4::gas_chemistry::usrrxt(reaction_rates, temp, invariants, invariants[indexm]);
+  mam4::gas_chemistry::adjrxt(reaction_rates, invariants, invariants[indexm]);
 
   //===================================
   // Photolysis rates at time = t(n+1)
@@ -70,7 +84,7 @@ void gas_phase_chemistry(Real zm, Real zi, Real phis, Real q[mam4::gas_chemistry
   shr_orb_decl(calday, eccen, mvelpp, lambm0, obliqr, delta, esfact);
 
   // ... compute the extraneous frcing at time = t(n+1)
-  setext(extfrc, lchnk, ncol, zintr);
+  mam4::mo_setext::setext(extfrc, lchnk, ncol, zintr);
 
   for (int mm = 0; mm < extcnt; ++mm) {
     if (mm != synoz_ndx) {
@@ -93,7 +107,7 @@ void gas_phase_chemistry(Real zm, Real zi, Real phis, Real q[mam4::gas_chemistry
 
   // ... solve for "Implicit" species
   // FIXME: need to figure out arguments to ported C++ code
-  imp_sol(q, reaction_rates, het_rates, extfrc, delt,
+  mam4::gas_chemistry::imp_sol(q, reaction_rates, het_rates, extfrc, delt,
     invariants[indexm], ncol, lchnk, ltrop_sol);
 
   /* I don't think we need to worry about this, do we?
