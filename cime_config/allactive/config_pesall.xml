@@ -1035,10 +1035,10 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%ne30np4.pg2_l%.+_oi%SOwISC12to60E2r4">
+  <grid name="a%ne30np4.pg2_l%.+_oi%SOwISC12to60E*">
     <mach name="anvil">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SWAV.+" pesize="L">
-        <comment> -compset WCYCL*/CRYO* -res SOwISC12to60E2r4* on 75 nodes pure-MPI, ~5 sypd </comment>
+        <comment> -compset WCYCL*/CRYO* -res SOwISC12to60E* on 75 nodes pure-MPI, ~5 sypd </comment>
         <ntasks>
           <ntasks_atm>900</ntasks_atm>
           <ntasks_lnd>900</ntasks_lnd>
@@ -1059,7 +1059,7 @@
     </mach>
     <mach name="chrysalis">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SWAV.+" pesize="L">
-        <comment> -compset WCYCL*/CRYO* -res ne30pg*SOwISC12to60E2r4* on 105 nodes pure-MPI, ~18.5 sypd </comment>
+        <comment> -compset WCYCL*/CRYO* -res ne30pg*SOwISC12to60E* on 105 nodes pure-MPI, ~18.5 sypd </comment>
         <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
         <ntasks>
           <ntasks_atm>2700</ntasks_atm>
@@ -1079,7 +1079,7 @@
         </rootpe>
       </pes>
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SWAV.+" pesize="M">
-        <comment> -compset WCYCL*/CRYO* -res ne30pg*SOwISC12to60E2r4* on 54 nodes pure-MPI, ~11 sypd </comment>
+        <comment> -compset WCYCL*/CRYO* -res ne30pg*SOwISC12to60E* on 54 nodes pure-MPI, ~11 sypd </comment>
         <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
         <ntasks>
           <ntasks_atm>1350</ntasks_atm>
