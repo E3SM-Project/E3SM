@@ -24,16 +24,16 @@
 		<package name="ridgingDiagnosticsAMPKG" description="This package includes variables required for the ridgingDiagnostics analysis member."/>
 	</packages>
 	<var_struct name="ridgingDiagnosticsAM" time_levs="1" packages="ridgingDiagnosticsAMPKG">
-		<var name="levelIceAreaAverage" type="real" dimensions="nCells Time" units="-"
+		<var name="levelIceAreaAverage" type="real" dimensions="nCells Time" units="1"
 			description="level ice cell fraction"
 		/>
-		<var name="ridgedIceAreaAverage" type="real" dimensions="nCells Time" units="-"
+		<var name="ridgedIceAreaAverage" type="real" dimensions="nCells Time" units="1"
 			description="ridged ice cell fraction"
 		/>
-		<var name="levelIceVolumeAverage" type="real" dimensions="nCells Time" units="-"
+		<var name="levelIceVolumeAverage" type="real" dimensions="nCells Time" units="m"
 			description="level ice cell volume"
 		/>
-		<var name="ridgedIceVolumeAverage" type="real" dimensions="nCells Time" units="-"
+		<var name="ridgedIceVolumeAverage" type="real" dimensions="nCells Time" units="m"
 			description="ridged ice cell volume"
 		/>
 	</var_struct>
