@@ -75,9 +75,7 @@ else()
   set(CPPDEFS "${CPPDEFS} -DHAVE_MPI")
 endif()
 
-if (PIO_VERSION STREQUAL "1")
-  set(CPPDEFS "${CPPDEFS} -DPIO1")
-endif()
+set(CPPDEFS "${CPPDEFS} -DPIO${PIO_VERSION}")
 
 # Not clear how to escape commas for libraries with their own configure
 # script, and they don't need this defined anyway, so leave this out of
