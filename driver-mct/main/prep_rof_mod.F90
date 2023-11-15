@@ -6,7 +6,7 @@ module prep_rof_mod
   use shr_kind_mod,     only: cl => SHR_KIND_CL
   use shr_kind_mod,     only: cxx => SHR_KIND_CXX
   use shr_sys_mod,      only: shr_sys_abort, shr_sys_flush
-  use seq_comm_mct,     only: num_inst_lnd, num_inst_rof, num_inst_frc, num_inst_atm
+  use seq_comm_mct,     only: num_inst_lnd, num_inst_rof, num_inst_frc, num_inst_atm, num_inst_ocn
   use seq_comm_mct,     only: CPLID, ROFID, logunit
   use seq_comm_mct,     only: seq_comm_getData=>seq_comm_setptrs
   use seq_infodata_mod, only: seq_infodata_type, seq_infodata_getdata
@@ -62,7 +62,8 @@ module prep_rof_mod
   type(seq_map), pointer :: mapper_Sa2r
   type(seq_map), pointer :: mapper_Fa2r
   type(seq_map), pointer :: mapper_Fl2r
-
+  type(seq_map), pointer :: mapper_So2r
+  
   ! attribute vectors
   type(mct_aVect), pointer :: l2r_rx(:)
   type(mct_aVect), pointer :: a2r_rx(:)
