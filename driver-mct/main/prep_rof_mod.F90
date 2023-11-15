@@ -90,7 +90,7 @@ contains
 
   !================================================================================================
 
-  subroutine prep_rof_init(infodata, lnd_c2_rof, atm_c2_rof)
+  subroutine prep_rof_init(infodata, lnd_c2_rof, atm_c2_rof,ocn_c2_rof)
 
     !---------------------------------------------------------------
     ! Description
@@ -101,11 +101,13 @@ contains
     type(seq_infodata_type) , intent(in)    :: infodata
     logical                 , intent(in)    :: lnd_c2_rof ! .true.  => lnd to rof coupling on
     logical                 , intent(in)    :: atm_c2_rof ! .true.  => atm to rof coupling on
+    logical                 , intent(in)    :: ocn_c2_rof ! .true.  => ocn to rof coupling on    
     !
     ! Local Variables
     integer                     :: lsize_r
     integer                     :: lsize_l
     integer                     :: lsize_a
+    integer                     :: lsize_o
     integer                     :: eli, eri, eai
     logical                     :: samegrid_lr   ! samegrid lnd and rof
     logical                     :: samegrid_ar   ! samegrid atm and rof
@@ -113,12 +115,15 @@ contains
     logical                     :: rof_present   ! .true.  => rof is present
     logical                     :: lnd_present   ! .true.  => lnd is present
     logical                     :: atm_present   ! .true.  => atm is present
+    logical                     :: ocn_present   ! .true.  => ocn is present    
     logical                     :: iamroot_CPLID ! .true. => CPLID masterproc
     character(CL)               :: atm_gnam      ! atm grid
     character(CL)               :: lnd_gnam      ! lnd grid
     character(CL)               :: rof_gnam      ! rof grid
+    character(CL)               :: ocn_gnam      ! ocn grid    
     type(mct_aVect) , pointer   :: l2x_lx
     type(mct_aVect) , pointer   :: a2x_ax
+    type(mct_aVect) , pointer   :: o2x_ox    
     type(mct_aVect) , pointer   :: x2r_rx
     integer                     :: index_irrig
     character(*)    , parameter :: subname = '(prep_rof_init)'
