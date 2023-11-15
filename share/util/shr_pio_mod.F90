@@ -669,7 +669,7 @@ contains
        iotype = pio_iotype_netcdf4p
     else if ( typename .eq. 'NETCDF4C') then
        iotype = pio_iotype_netcdf4c
-#ifdef PIO2
+#ifndef PIO1
     else if ( typename .eq. 'ADIOS') then
        iotype = pio_iotype_adios
 #endif
