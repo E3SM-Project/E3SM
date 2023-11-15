@@ -89,32 +89,15 @@ cmake_install.cmake
 CTestTestfile.cmake
 external
 Makefile
+omega_build.sh
+omega_ctest.sh
+omega_env.sh
+omega_run.sh
 src
 test
 ```
 
-To build the Omega, execute the `make` command in the build directory.
-
-Typical output will look something like:
-
-```sh
->> make
-Scanning dependencies of target yakl
-[ 10%] Building Fortran object external/YAKL/CMakeFiles/yakl.dir/src/YAKL_gator_mod.F90.o
-[ 20%] Building CXX object external/YAKL/CMakeFiles/yakl.dir/src/YAKL.cpp.o
-[ 30%] Linking CXX static library libyakl.a
-[ 30%] Built target yakl
-[ 40%] Building CXX object src/CMakeFiles/OmegaLib.dir/base/MachEnv.cpp.o
-[ 50%] Building CXX object src/CMakeFiles/OmegaLib.dir/ocn/OcnDummy.cpp.o
-[ 60%] Linking CXX static library libOmegaLib.a
-[ 60%] Built target OmegaLib
-[ 70%] Building CXX object src/CMakeFiles/omega.exe.dir/drivers/DrvDummy.cpp.o
-[ 80%] Linking CXX executable omega.exe
-[ 80%] Built target omega.exe
-[ 90%] Building CXX object test/CMakeFiles/testDataTypes.exe.dir/base/DataTypesTest.cpp.o
-[100%] Linking CXX executable testDataTypes.exe
-[100%] Built target testDataTypes.exe
-```
+To build the Omega, execute the `./omega_build.sh` command in the build directory.
 
 If the build succeeds, the Omega library and executable are created in the
 `src` sub-directory of the build directory.
@@ -135,10 +118,15 @@ Afterwards, a user can use the `make install` command to copy the Omega library
 and executable to the `lib` and `bin` sub-directories under the directory
 specified by `DOMEGA_INSTALL_PREFIX`.
 
-To run the Omega test suite, execute the `ctest` command.
+The `./omega_ctest.sh` command runs Omega unit tests. To run the tests, MPI
+parallel job launcher such as SLURM srun should be available. You may first
+get allocation of an interactive computing node or use batch system.
+
+For example, if you are on an interactive computingnode, you can run
+Omega unit test by running `omega_ctest.sh` as shown below.
 
 ```sh
->> ctest
+>> ./omega_ctest.sh
 Test project <cmake working directory>
     Start 1: DATA_TYPES_TEST
 1/1 Test #1: DATA_TYPES_TEST ..................   Passed    0.03 sec
