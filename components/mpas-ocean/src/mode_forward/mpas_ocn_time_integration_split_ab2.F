@@ -15,7 +15,8 @@
 !> \details
 !>  This module contains the routine for the split explicit time
 !>  integration scheme, where the second-order Adams Bashforth (AB2)
-!>  time stepping method is applied to the baroclinic system.
+!>  time stepping method is applied to the momentum equation of
+!>  the baroclinic system.
 !>  This module was developed based on the original split explicit code
 !>  written by Mark Petersen, Doug Jacobsen, and Todd Ringler.
 !>
@@ -120,8 +121,10 @@ module ocn_time_integration_split_ab2
 !> \date   October 2023
 !> \details
 !>  This routine integrates the ocean model forward one master time
-!>  step (dt) using a split-explicit AB2 method in which the fast
-!>  barotropic mode is sub-cycled using a shorter explicit time step.
+!>  step (dt) using a split-explicit AB2 method for the momentum
+!>  equation of the baroclinic system in which the fast barotropic mode
+!>  is sub-cycled using a shorter explicit time step (continuity:
+!>  Forward-backward; tracer: Forward-Euler method).
 !>  This routine was developed based on the original split explicit code
 !>  written by Mark Petersen, Doug Jacobsen, and Todd Ringler.
 !
@@ -813,11 +816,11 @@ module ocn_time_integration_split_ab2
                         ! Here uNew is a work variable containing
                         !  -fEdge(iEdge)*normalBaroclinicVelocityPerp(k,iEdge)
                         uTemp(k,iEdge) = normalBaroclinicVelocityCur(k,iEdge) &
-                                 + 1.50_RKIND * dt * (normalVelocityTend(k,iEdge) &
+                                 + 1.5_RKIND * dt * (normalVelocityTend(k,iEdge) &
                                  + normalVelocityNew(k,iEdge) &
                                  + sshGrad) &
-                                 -  0.5_RKIND * dt * ( normalVelocityTendOld(k,iEdge) &
-                                                            +CoriolisTermOld(k,iEdge) )
+                                 - 0.5_RKIND * dt * ( normalVelocityTendOld(k,iEdge) &
+                                                     +CoriolisTermOld(k,iEdge) )
                      enddo ! vertical
 
                      do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
@@ -850,10 +853,10 @@ module ocn_time_integration_split_ab2
                         ! Here uNew is a work variable containing
                         !  -fEdge(iEdge)*normalBaroclinicVelocityPerp(k,iEdge)
                         uTemp(k,iEdge) = normalBaroclinicVelocityCur(k,iEdge) &
-                                 + 1.50_RKIND * dt * (normalVelocityTend(k,iEdge) &
+                                 + 1.5_RKIND * dt * (normalVelocityTend(k,iEdge) &
                                  + sshGrad) &
-                                 -  0.5_RKIND * dt * normalVelocityTendOld(k,iEdge) &
-                                 +                     dt * normalVelocityNew(k,iEdge)
+                                 - 0.5_RKIND * dt * normalVelocityTendOld(k,iEdge) &
+                                 +             dt * normalVelocityNew(k,iEdge)
                      enddo ! vertical
 
                      do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
@@ -1998,8 +2001,6 @@ module ocn_time_integration_split_ab2
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
          elseif (splitExplicitStep == numTSIterations) then
-
-
 
             ! The predictor-corrector scheme is applied to the layer thickenss
             ! equation.
