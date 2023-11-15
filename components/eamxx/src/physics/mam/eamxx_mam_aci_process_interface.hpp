@@ -1,6 +1,8 @@
 #ifndef EAMXX_MAM_ACI_HPP
 #define EAMXX_MAM_ACI_HPP
 
+//#include <physics/mam/mam_coupling.hpp>
+//#include <mam4xx/mam4.hpp>
 #include <share/atm_process/atmosphere_process.hpp>
 
 namespace scream
