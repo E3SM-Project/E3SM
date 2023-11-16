@@ -179,6 +179,8 @@ char* gas_mmr_names(int gas_id) {
   return gas_mmr_names_[gas_id];
 }
 
+} // end anonymous namespace
+
 // Given a MAM aerosol mode index, returns the name of the related interstitial
 // modal number mixing ratio field in EAMxx ("num_a<1-based-mode-index>")
 KOKKOS_INLINE_FUNCTION
@@ -198,8 +200,6 @@ const char* cld_aero_nmr_field_name(const int mode) {
   }
   return const_cast<const char*>(cld_aero_nmr_names(mode));
 }
-
-} // end anonymous namespace
 
 // Given a MAM aerosol mode index and the index of the MAM aerosol species
 // within it, returns the name of the relevant interstitial mass mixing ratio

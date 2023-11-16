@@ -216,6 +216,9 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
     dry_aero_.gas_mmr[g] = buffer_.dry_gas_mmr[g];
   }
 
+  // create our photolysis rate calculation table
+  // FIXME: need to do this!
+
   // set up our preprocess/postprocess functors
   preprocess_.initialize(ncol_, nlev_, wet_atm_, wet_aero_, dry_atm_, dry_aero_);
   postprocess_.initialize(ncol_, nlev_, wet_atm_, wet_aero_, dry_atm_, dry_aero_);
@@ -273,17 +276,24 @@ void MAMMicrophysics::run_impl(const double dt) {
     // set up diagnostics
     mam4::Diagnostics diags(nlev_);
 
+    // set up photolysis work arrays for this column.
+    mam4::mo_photo::PhotoTableWorkArrays photo_work_arrays;
+    // FIXME: set views here
+
     // ... look up photolysis rates from our table
     // NOTE: the table interpolation operates on an entire column of data, so we
-    // NOTE: must do it before dispatching to individual levels
-    /*
-    Real zenith_angle = 0.0; // FIXME: need to get this from EAMxx
+    // NOTE: must do it before dispatching to individual vertical levels
+    Real zenith_angle = 0.0; // FIXME: need to get this from EAMxx [radians]
     Real surf_albedo = 0.0; // FIXME: surface albedo
-    Real cwat = cldw;
-    mam4::ColumnView col_dens, lwc; // FIXME
+    Real esfact = 0.0; // FIXME: earth-sun distance factor
+    mam4::ColumnView col_dens; // FIXME: column density
+    mam4::ColumnView lwc; // FIXME: liquid water cloud content
+    /* FIXME: This isn't compiling at the moment because atm has ConstColumnViews
+     * FIXME: and table_photo expects ColumnViews. A perfect example of how C++
+     * FIXME: language features cause C++ problems.
     mam4::mo_photo::table_photo(photo_rates, atm.pressure, atm.hydrostatic_dp,
-      atm.temperature, col_dens, zenith_angle, surf_albedo, cwat,
-      cldfr, esfact, ncol);
+      atm.temperature, col_dens, zenith_angle, surf_albedo, lwc,
+      atm.cloud_fraction, esfact, photo_table_, photo_work_arrays);
      */
 
     // compute aerosol microphysics on each vertical level within this column
