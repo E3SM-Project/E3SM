@@ -908,7 +908,7 @@ namespace scream {
             check_range(optics.tau,  0, std::numeric_limits<Real>::max(), "rrtmgp_lw:optics.tau");
 #endif
 
-            // Compute clean-sky fluxes before we add in aerosols
+            // Compute clean-clear-sky fluxes before we add in aerosols and clouds
             rte_lw(max_gauss_pts, gauss_Ds, gauss_wts, optics, top_at_1, lw_sources, emis_sfc, clnsky_fluxes);
 
             // Combine gas and aerosol optics
@@ -924,7 +924,7 @@ namespace scream {
             // Compute allsky fluxes
             rte_lw(max_gauss_pts, gauss_Ds, gauss_wts, optics, top_at_1, lw_sources, emis_sfc, fluxes);
 
-            // Compute clean-clear-sky fluxes
+            // Compute clean-sky fluxes
             rte_lw(max_gauss_pts, gauss_Ds, gauss_wts, optics_no_aerosols, top_at_1, lw_sources, emis_sfc, clnclrsky_fluxes);
 
         }
