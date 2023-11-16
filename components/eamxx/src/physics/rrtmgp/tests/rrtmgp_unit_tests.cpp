@@ -4,6 +4,7 @@
 #include "YAKL.h"
 #include "physics/share/physics_constants.hpp"
 #include "physics/rrtmgp/shr_orb_mod_c2f.hpp"
+#include "physics/rrtmgp/mo_load_coefficients.h"
 
 // Names of input files we will need.
 std::string coefficients_file_sw = SCREAM_DATA_DIR "/init/rrtmgp-data-sw-g112-210809.nc";
@@ -840,4 +841,200 @@ TEST_CASE("rrtmgp_aerocom_cloudtop") {
   eff_radius_qi_at_cldtop.deallocate();
 
   yakl::finalize();
+}
+
+TEST_CASE("rrtmgp_clnclr_calls") {
+
+    // Scalar types
+    using ekat::Int;
+    #ifdef SCREAM_DOUBLE_PRECISION
+    using Real = double;
+    #else
+    using Real = float;
+    #endif
+
+    using namespace ekat::logger;
+    using logger_t = Logger<LogNoFile,LogRootRank>;
+
+    ekat::Comm comm(MPI_COMM_WORLD);
+    auto logger = std::make_shared<logger_t>("",LogLevel::info,comm);
+
+    // Initialize YAKL
+    if (!yakl::isInitialized()) { yakl::init(); }
+
+    // Create arrays
+    const int ncol = 1;
+    const int nlaym = 4;
+    const int nlay = 5;
+    logger->info(ncol);
+    logger->info(nlay);
+    auto p_lay = real2d("p_lay", ncol, nlaym);
+    auto t_lay = real2d("t_lay", ncol, nlaym);
+    auto p_lev = real2d("p_lev", ncol, nlay);
+    auto t_lev = real2d("t_lev", ncol, nlay);
+    auto mu0 = real1d("mu0", ncol);
+
+    memset(p_lay, 1000.0);
+    memset(t_lay, 275.0);
+    memset(p_lev, 1000.0);
+    memset(t_lev, 275.0);
+
+    memset(mu0, 0.5);
+
+    GasOpticsRRTMGP k_dist_sw;
+    GasOpticsRRTMGP k_dist_lw;
+
+    // Set up GasConcs
+    // Need to initialize RRTMGP with dummy gases
+    logger->info("Init gases...\n");
+    GasConcs gas_concs;
+    int ngas = 8;
+    string1d gas_names("gas_names",ngas);
+    gas_names(1) = std::string("h2o");
+    gas_names(2) = std::string("co2");
+    gas_names(3) = std::string("o3" );
+    gas_names(4) = std::string("n2o");
+    gas_names(5) = std::string("co" );
+    gas_names(6) = std::string("ch4");
+    gas_names(7) = std::string("o2" );
+    gas_names(8) = std::string("n2" );
+    gas_concs.init(gas_names,ncol,nlaym);
+    logger->info("Init RRTMGP...\n");
+    scream::rrtmgp::rrtmgp_initialize(gas_concs, coefficients_file_sw, coefficients_file_lw, cloud_optics_file_sw, cloud_optics_file_lw, logger);
+    load_and_init(k_dist_sw, coefficients_file_sw, gas_concs);
+    load_and_init(k_dist_lw, coefficients_file_lw, gas_concs);
+    
+    // Set up OpticalPRos2str
+    
+    auto nswbands = k_dist_sw.get_nband();
+    auto nlwbands = k_dist_lw.get_nband();
+    auto ngpt_sw = k_dist_sw.get_ngpt();
+    auto ngpt_lw = k_dist_lw.get_ngpt();
+
+    auto sfc_alb_dir = real2d("sfc_alb_dir", ncol, nswbands);
+    auto sfc_alb_dif = real2d("sfc_alb_dif", ncol, nswbands);
+    memset(sfc_alb_dir, 0.1);
+    memset(sfc_alb_dif, 0.2);
+
+    OpticalProps2str aerosol_sw;
+    OpticalProps1scl aerosol_lw;
+    aerosol_sw.init(k_dist_sw.get_band_lims_wavenumber());
+    aerosol_sw.alloc_2str(ncol, nlaym);
+    memset(aerosol_sw.tau, 100.0);
+    memset(aerosol_sw.ssa, 0.5);
+    memset(aerosol_sw.g, 0.1);
+
+    OpticalProps2str clouds_sw;
+    OpticalProps1scl clouds_lw;
+    clouds_sw.init(k_dist_sw.get_band_lims_wavenumber(), k_dist_sw.get_band_lims_gpoint());
+    clouds_sw.alloc_2str(ncol, nlaym);
+    memset(clouds_sw.tau, 50.0);
+    memset(clouds_sw.ssa, 0.4);
+    memset(clouds_sw.g, 0.05);
+
+    auto sw_flux_up = real2d("sw_flux_up", ncol, nlay);
+    auto sw_flux_dn = real2d("sw_flux_dn", ncol, nlay);
+    auto sw_flux_dn_dir = real2d("sw_flux_dn_dir", ncol, nlay);
+    auto sw_bnd_flux_up = real3d("sw_bnd_flux_up", ncol, nlay, nswbands);
+    auto sw_bnd_flux_dn = real3d("sw_bnd_flux_dn", ncol, nlay, nswbands);
+    auto sw_bnd_flux_dn_dir = real3d("sw_bnd_flux_dn_dir", ncol, nlay, nswbands);
+
+    auto sw_clnclrsky_flux_up = real2d("sw_clnclrsky_flux_up", ncol, nlay);
+    auto sw_clnclrsky_flux_dn = real2d("sw_clnclrsky_flux_dn", ncol, nlay);
+    auto sw_clnclrsky_flux_dn_dir = real2d("sw_clnclrsky_flux_dn_dir", ncol, nlay);
+
+    auto sw_clrsky_flux_up = real2d("sw_clrsky_flux_up", ncol, nlay);
+    auto sw_clrsky_flux_dn = real2d("sw_clrsky_flux_dn", ncol, nlay);
+    auto sw_clrsky_flux_dn_dir = real2d("sw_clrsky_flux_dn_dir", ncol, nlay);
+
+    auto sw_clnsky_flux_up = real2d("sw_clnsky_flux_up", ncol, nlay);
+    auto sw_clnsky_flux_dn = real2d("sw_clnsky_flux_dn", ncol, nlay);
+    auto sw_clnsky_flux_dn_dir = real2d("sw_clnsky_flux_dn_dir", ncol, nlay);    
+
+    FluxesByband fluxes_sw;
+    fluxes_sw.flux_up = sw_flux_up;
+    fluxes_sw.flux_dn = sw_flux_dn;
+    fluxes_sw.flux_dn_dir = sw_flux_dn_dir;
+    fluxes_sw.bnd_flux_up = sw_bnd_flux_up;
+    fluxes_sw.bnd_flux_dn = sw_bnd_flux_dn;
+    fluxes_sw.bnd_flux_dn_dir = sw_bnd_flux_dn_dir;
+    // Clean-clear-sky
+    FluxesBroadband clnclrsky_fluxes_sw;
+    clnclrsky_fluxes_sw.flux_up = sw_clnclrsky_flux_up;
+    clnclrsky_fluxes_sw.flux_dn = sw_clnclrsky_flux_dn;
+    clnclrsky_fluxes_sw.flux_dn_dir = sw_clnclrsky_flux_dn_dir;
+    // Clear-sky
+    FluxesBroadband clrsky_fluxes_sw;
+    clrsky_fluxes_sw.flux_up = sw_clrsky_flux_up;
+    clrsky_fluxes_sw.flux_dn = sw_clrsky_flux_dn;
+    clrsky_fluxes_sw.flux_dn_dir = sw_clrsky_flux_dn_dir;
+    // Clean-sky
+    FluxesBroadband clnsky_fluxes_sw;
+    clnsky_fluxes_sw.flux_up = sw_clnsky_flux_up;
+    clnsky_fluxes_sw.flux_dn = sw_clnsky_flux_dn;
+    clnsky_fluxes_sw.flux_dn_dir = sw_clnsky_flux_dn_dir;
+
+    // Setup pointers to RRTMGP LW fluxes
+    logger->info(ncol);
+    logger->info(nlay);
+    auto lw_flux_up = real2d("lw_flux_up", ncol, nlay);
+    auto lw_flux_dn = real2d("lw_flux_dn", ncol, nlay);
+    auto lw_bnd_flux_up = real3d("lw_bnd_flux_up", ncol, nlay, nlwbands);
+    auto lw_bnd_flux_dn = real3d("lw_bnd_flux_dn", ncol, nlay, nlwbands);
+
+    auto lw_clnclrsky_flux_up = real2d("lw_clnclrsky_flux_up", ncol, nlay);
+    auto lw_clnclrsky_flux_dn = real2d("lw_clnclrsky_flux_dn", ncol, nlay);
+
+    auto lw_clrsky_flux_up = real2d("lw_clrsky_flux_up", ncol, nlay);
+    auto lw_clrsky_flux_dn = real2d("lw_clrsky_flux_dn", ncol, nlay);
+
+    auto lw_clnsky_flux_up = real2d("lw_clnsky_flux_up", ncol, nlay);
+    auto lw_clnsky_flux_dn = real2d("lw_clnsky_flux_dn", ncol, nlay);
+
+    FluxesByband fluxes_lw;
+    fluxes_lw.flux_up = lw_flux_up;
+    fluxes_lw.flux_dn = lw_flux_dn;
+    fluxes_lw.bnd_flux_up = lw_bnd_flux_up;
+    fluxes_lw.bnd_flux_dn = lw_bnd_flux_dn;
+    // Clean-clear-sky
+    FluxesBroadband clnclrsky_fluxes_lw;
+    clnclrsky_fluxes_lw.flux_up = lw_clnclrsky_flux_up;
+    clnclrsky_fluxes_lw.flux_dn = lw_clnclrsky_flux_dn;
+    // Clear-sky
+    FluxesBroadband clrsky_fluxes_lw;
+    clrsky_fluxes_lw.flux_up = lw_clrsky_flux_up;
+    clrsky_fluxes_lw.flux_dn = lw_clrsky_flux_dn;
+    // Clean-sky
+    FluxesBroadband clnsky_fluxes_lw;
+    clnsky_fluxes_lw.flux_up = lw_clnsky_flux_up;
+    clnsky_fluxes_lw.flux_dn = lw_clnsky_flux_dn;
+
+    const Real tsi_scaling = 1;
+
+    scream::rrtmgp::rrtmgp_sw(ncol, nlaym,
+        k_dist_sw,
+        p_lay, t_lay, p_lev, t_lev,
+        gas_concs,
+        sfc_alb_dir, sfc_alb_dif, mu0,
+        aerosol_sw, clouds_sw,
+        fluxes_sw, clnclrsky_fluxes_sw, clrsky_fluxes_sw, clnsky_fluxes_sw,
+        tsi_scaling,
+        logger
+    );
+
+    logger->info(sw_clnsky_flux_up.createHostCopy()(1,3));
+
+    // REQUIRE(sw_clnsky_flux_up.createHostCopy()(1,1) == sw_flux_up.createHostCopy()(1,1));  // ??
+    // REQUIRE(sw_clnsky_flux_up.createHostCopy()(1,2) == sw_flux_up.createHostCopy()(1,2));  // ??
+    // REQUIRE(sw_clnsky_flux_up.createHostCopy()(1,3) == sw_flux_up.createHostCopy()(1,3));  // ??
+
+    scream::rrtmgp::rrtmgp_finalize();
+
+    p_lay.deallocate();
+    t_lay.deallocate();
+    p_lev.deallocate();
+    t_lev.deallocate();
+    sfc_alb_dir.deallocate();
+    sfc_alb_dif.deallocate();
+    mu0.deallocate();
 }
