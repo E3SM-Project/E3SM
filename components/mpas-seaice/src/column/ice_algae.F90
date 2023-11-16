@@ -304,7 +304,7 @@
 
       carbonError = carbonInitial-carbonFlux*dt-carbonFinal
 
-      if (abs(carbonError) > accuracy * maxval ((/carbonInitial, carbonFinal/))) then
+      if (abs(carbonError) > max(puny,accuracy * maxval ((/carbonInitial, carbonFinal/)))) then
             write(warning,*) 'carbonError:', carbonError
             call add_warning(warning)
             write(warning,*) 'carbonInitial:', carbonInitial
@@ -314,6 +314,8 @@
             write(warning,*) 'carbonFlux (positive into ocean):', carbonFlux
             call add_warning(warning)
             write(warning,*) 'accuracy * maxval ((/carbonInitial, carbonFinal/:)', accuracy * maxval ((/carbonInitial, carbonFinal/))
+            call add_warning(warning)
+            write(warning,*) 'puny', puny
             call add_warning(warning)
             if (aicen > c0) then
             hsnow_f = vsnon/aicen
@@ -1016,7 +1018,7 @@
       ! local parameters
 
       real (kind=dbl_kind), parameter :: &
-         accuracy = 1.0e-14_dbl_kind, &
+         accuracy = 1.0e-13_dbl_kind, & ! 1.0e-14_dbl_kind, &
          r_c  = 3.0e3_dbl_kind     , & ! ice crystal radius (um)
          r_bac= 4.7_dbl_kind    , & ! diatom large radius (um)
          r_alg= 10.0_dbl_kind    , & ! diatom small radius (um)
@@ -1062,7 +1064,7 @@
             iphin_N(k) = iphin(k)
             bphin_N(1) = bphi_min
 
-            if (abs(trcrn(bio_index(m) + k-1)) < puny) then
+            if (abs(trcrn(bio_index(m) + k-1)) < accuracy) then
                flux_bio(m) = flux_bio(m) + trcrn(bio_index(m) + k-1)* hbri_old * dz(k)/dt
                trcrn(bio_index(m) + k-1) = c0
                in_init_cons(k,m) = c0
@@ -1410,7 +1412,7 @@
       do m = 1,nbtrcr
          do k = 1,nblyr+1                  ! back to bulk quantity
             bio_tmp = (biomat_brine(k,m) + react(k,m))*iphin_N(k)
-            if (tr_bgc_C .and. m .eq. nlt_bgc_DIC(1) .and. bio_tmp < -puny) then  ! satisfy DIC demands from ocean
+            if (tr_bgc_C .and. m .eq. nlt_bgc_DIC(1) .and. bio_tmp .le. -accuracy) then  ! satisfy DIC demands from ocean
                 write(warning, *) 'DIC demand from ocean'
                 call add_warning(warning)
                 write(warning, *) 'm, nlt_bgc_DIC(1), bio_tmp, react(k,m):'
@@ -1453,7 +1455,7 @@
                 call add_warning(warning)
                 l_stop = .true.
                 stop_label = 'C in algal_dyn not conserved'
-            elseif (abs(bio_tmp) < puny) then
+            elseif (abs(bio_tmp) < accuracy) then
                flux_bio(m) = flux_bio(m) + bio_tmp*dz(k)*hbri/dt
                bio_tmp = c0
             elseif (bio_tmp > 1.0e8_dbl_kind) then

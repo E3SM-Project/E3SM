@@ -2747,10 +2747,6 @@ contains
                      oceanNitrateConc(iCell), &
                      oceanSilicateConc(iCell),&
                      oceanZAerosolConc(:,iCell), &
-                     maxDICType, &
-                     maxDONType, &
-                     maxIronType, &
-                     maxAerosolType, &
                      carbonToNitrogenRatioAlgae, &
                      carbonToNitrogenRatioDON)
 
