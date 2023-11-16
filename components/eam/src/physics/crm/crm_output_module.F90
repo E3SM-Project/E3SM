@@ -13,7 +13,7 @@ module crm_output_module
       real(crm_rknd), allocatable :: qci(:,:,:,:)
       real(crm_rknd), allocatable :: qpl(:,:,:,:)
       real(crm_rknd), allocatable :: qpi(:,:,:,:)
-
+      real(crm_rknd), allocatable :: bou(:,:,:,:)
       real(crm_rknd), allocatable :: tk (:,:,:,:)
       real(crm_rknd), allocatable :: tkh(:,:,:,:)
       real(crm_rknd), allocatable :: prec_crm(:,:,:) ! CRM precipiation rate (surface)
@@ -117,6 +117,9 @@ module crm_output_module
       real(crm_rknd), allocatable :: fluxsgs_qt   (:,:)  ! sgs non-precip water flux   [kg/m2/s]
       real(crm_rknd), allocatable :: tkez         (:,:)  ! tke profile                 [kg/m/s2]
       real(crm_rknd), allocatable :: tkew         (:,:)  ! vertical velocity variance  [kg/m/s2]
+      real(crm_rknd), allocatable :: tkeqc        (:,:)  ! liquid water flux           [kg/m/s2]
+      real(crm_rknd), allocatable :: tkeqt        (:,:)  ! total water flux            [kg/m/s2]
+      real(crm_rknd), allocatable :: tkeb         (:,:)  ! buoyancy flux               [kg/m/s2]
       real(crm_rknd), allocatable :: tkesgsz      (:,:)  ! sgs tke profile             [kg/m/s2]
       real(crm_rknd), allocatable :: tkz          (:,:)  ! tk profile                  [m2/s]
       real(crm_rknd), allocatable :: flux_u       (:,:)  ! x-momentum flux             [m2/s2]
@@ -136,6 +139,8 @@ module crm_output_module
       real(crm_rknd), allocatable :: tauy     (:)    ! merid CRM surface stress perturbation      [N/m2]
       real(crm_rknd), allocatable :: z0m          (:)    ! surface stress                             [N/m2]
       real(crm_rknd), allocatable :: subcycle_factor(:)    ! crm cpu efficiency
+      real(crm_rknd), allocatable :: bou_ls       (:,:)  ! large-scale forcing of dry density   [kg/m3/s]
+      
 
    end type crm_output_type
 
@@ -150,6 +155,7 @@ contains
       ! Allocate instantaneous outputs
       if (.not. allocated(output%qcl)) allocate(output%qcl(ncol,crm_nx,crm_ny,crm_nz))
       if (.not. allocated(output%qci)) allocate(output%qci(ncol,crm_nx,crm_ny,crm_nz))
+      if (.not. allocated(output%bou)) allocate(output%bou(ncol,crm_nx,crm_ny,crm_nz))
       if (.not. allocated(output%qpl)) allocate(output%qpl(ncol,crm_nx,crm_ny,crm_nz))
       if (.not. allocated(output%qpi)) allocate(output%qpi(ncol,crm_nx,crm_ny,crm_nz))
 
@@ -279,6 +285,9 @@ contains
       if (.not. allocated(output%fluxsgs_qt   )) allocate(output%fluxsgs_qt   (ncol,nlev))
       if (.not. allocated(output%tkez         )) allocate(output%tkez         (ncol,nlev))
       if (.not. allocated(output%tkew         )) allocate(output%tkew         (ncol,nlev))
+      if (.not. allocated(output%tkeqc        )) allocate(output%tkeqc         (ncol,nlev))
+      if (.not. allocated(output%tkeqt        )) allocate(output%tkeqt        (ncol,nlev))
+      if (.not. allocated(output%tkeb         )) allocate(output%tkeb         (ncol,nlev))
       if (.not. allocated(output%tkesgsz      )) allocate(output%tkesgsz      (ncol,nlev))
       if (.not. allocated(output%tkz          )) allocate(output%tkz          (ncol,nlev))
       if (.not. allocated(output%flux_u       )) allocate(output%flux_u       (ncol,nlev))
@@ -286,6 +295,7 @@ contains
       if (.not. allocated(output%flux_qp      )) allocate(output%flux_qp      (ncol,nlev))
       if (.not. allocated(output%precflux     )) allocate(output%precflux     (ncol,nlev))
       if (.not. allocated(output%qt_ls        )) allocate(output%qt_ls        (ncol,nlev))
+      if (.not. allocated(output%bou_ls       )) allocate(output%bou_ls        (ncol,nlev))
       if (.not. allocated(output%qt_trans     )) allocate(output%qt_trans     (ncol,nlev))
       if (.not. allocated(output%qp_trans     )) allocate(output%qp_trans     (ncol,nlev))
       if (.not. allocated(output%qp_fall      )) allocate(output%qp_fall      (ncol,nlev))
@@ -303,6 +313,7 @@ contains
       call prefetch(output%qltend  )
       call prefetch(output%qcltend )
       call prefetch(output%qiltend )
+      call prefetch(output%bou     )
 
       call prefetch(output%t_vt_tend )
       call prefetch(output%q_vt_tend )
@@ -330,6 +341,9 @@ contains
       call prefetch(output%fluxsgs_qt    )
       call prefetch(output%tkez          )
       call prefetch(output%tkew          )
+      call prefetch(output%tkeqc         )
+      call prefetch(output%tkeqt         )
+      call prefetch(output%tkeb          )
       call prefetch(output%tkesgsz       )
       call prefetch(output%tkz           )
       call prefetch(output%flux_u        )
@@ -337,6 +351,7 @@ contains
       call prefetch(output%flux_qp       )
       call prefetch(output%precflux      )
       call prefetch(output%qt_ls         )
+      call prefetch(output%bou_ls        )
       call prefetch(output%qt_trans      )
       call prefetch(output%qp_trans      )
       call prefetch(output%qp_fall       )
@@ -355,7 +370,7 @@ contains
       output%qci = 0
       output%qpl = 0
       output%qpi = 0
-
+      output%bou = 0
       output%tk = 0
       output%tkh = 0
       output%prec_crm = 0
@@ -450,6 +465,9 @@ contains
       output%fluxsgs_qt    = 0
       output%tkez          = 0
       output%tkew          = 0
+      output%tkeqc         = 0
+      output%tkeqt         = 0
+      output%tkeb          = 0
       output%tkesgsz       = 0
       output%tkz           = 0
       output%flux_u        = 0
@@ -457,6 +475,7 @@ contains
       output%flux_qp       = 0
       output%precflux      = 0
       output%qt_ls         = 0
+      output%bou_ls        = 0
       output%qt_trans      = 0
       output%qp_trans      = 0
       output%qp_fall       = 0
@@ -571,6 +590,9 @@ contains
       if (allocated(output%fluxsgs_qt)) deallocate(output%fluxsgs_qt)
       if (allocated(output%tkez)) deallocate(output%tkez)
       if (allocated(output%tkew)) deallocate(output%tkew)
+      if (allocated(output%tkeqc)) deallocate(output%tkeqc)
+      if (allocated(output%tkeqt)) deallocate(output%tkeqt)
+      if (allocated(output%tkeb)) deallocate(output%tkeb)
       if (allocated(output%tkesgsz)) deallocate(output%tkesgsz)
       if (allocated(output%tkz)) deallocate(output%tkz)
       if (allocated(output%flux_u)) deallocate(output%flux_u)

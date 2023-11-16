@@ -136,7 +136,10 @@ void allocate() {
   t01              = real2d( "t01             "                        , nzm    , ncrms ); 
   q01              = real2d( "q01             "                        , nzm    , ncrms ); 
   qp0              = real2d( "qp0             "                        , nzm    , ncrms ); 
+  bou0             = real2d( "bou0             "                       , nzm    , ncrms ); 
   qn0              = real2d( "qn0             "                        , nzm    , ncrms ); 
+  qc0              = real2d( "qc0             "                        , nzm    , ncrms ); 
+  qi0              = real2d( "qi0             "                        , nzm    , ncrms ); 
   prespot          = real2d( "prespot         "                        , nzm    , ncrms ); 
   rho              = real2d( "rho             "                        , nzm    , ncrms ); 
   rhow             = real2d( "rhow            "                        , nz     , ncrms ); 
@@ -319,7 +322,10 @@ void allocate() {
   yakl::memset(t01               ,0.);
   yakl::memset(q01               ,0.);
   yakl::memset(qp0               ,0.);
+  yakl::memset(bou0              ,0.);
   yakl::memset(qn0               ,0.);
+  yakl::memset(qc0               ,0.);
+  yakl::memset(qi0               ,0.);
   yakl::memset(prespot           ,0.);
   yakl::memset(rho               ,0.);
   yakl::memset(rhow              ,0.);
@@ -607,7 +613,10 @@ void finalize() {
   t01              = real2d();
   q01              = real2d();
   qp0              = real2d();
+  bou0             = real2d();
   qn0              = real2d();
+  qc0              = real2d();
+  qi0              = real2d();
   prespot          = real2d();
   rho              = real2d();
   rhow             = real2d();
@@ -1093,6 +1102,7 @@ void copy_outputs(real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_
   crm_output_q_vt_ls        .deep_copy_to( ::crm_output_q_vt_ls         ); 
   crm_output_u_vt_ls        .deep_copy_to( ::crm_output_u_vt_ls         ); 
   crm_output_bou_ls         .deep_copy_to( ::crm_output_bou_ls          );
+  crm_output_bou            .deep_copy_to( ::crm_output_bou             );
 #ifdef MMF_MOMENTUM_FEEDBACK
   crm_output_ultend         .deep_copy_to( ::crm_output_ultend          ); 
   crm_output_vltend         .deep_copy_to( ::crm_output_vltend          ); 
@@ -1103,7 +1113,6 @@ void copy_outputs(real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_
   crm_output_qci            .deep_copy_to( ::crm_output_qci             );
   crm_output_qpl            .deep_copy_to( ::crm_output_qpl             );
   crm_output_qpi            .deep_copy_to( ::crm_output_qpi             );
-  crm_output_bou            .deep_copy_to( ::crm_output_bou             );
   crm_output_z0m            .deep_copy_to( ::crm_output_z0m             ); 
   crm_output_taux           .deep_copy_to( ::crm_output_taux            ); 
   crm_output_tauy           .deep_copy_to( ::crm_output_tauy            ); 
@@ -1514,7 +1523,10 @@ void perturb_arrays() {
     perturb( t01               , mag );
     perturb( q01               , mag );
     perturb( qp0               , mag );
+    perturb( bou0              , mag );
     perturb( qn0               , mag );
+    perturb( qc0               , mag );
+    perturb( qi0               , mag );
     perturb( prespot           , mag );
     perturb( rho               , mag );
     perturb( rhow              , mag );
@@ -1657,7 +1669,10 @@ real2d tke0            ;
 real2d t01             ;
 real2d q01             ;
 real2d qp0             ;
+real2d bou0            ;
 real2d qn0             ;
+real2d qc0             ;
+real2d qi0             ;
 real2d prespot         ;
 real2d rho             ;
 real2d rhow            ;
