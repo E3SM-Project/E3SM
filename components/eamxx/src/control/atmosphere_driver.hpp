@@ -2,6 +2,7 @@
 #define SCREAM_ATMOSPHERE_DRIVER_HPP
 
 #include "control/surface_coupling_utils.hpp"
+#include "control/intensive_observation_period.hpp"
 #include "share/field/field_manager.hpp"
 #include "share/grid/grids_manager.hpp"
 #include "share/util/scream_time_stamp.hpp"
@@ -69,6 +70,9 @@ public:
 
   // Set AD params
   void init_scorpio (const int atm_id = 0);
+
+  // Setup IntensiveObservationalPeriod
+  void setup_intensive_observation_period ();
 
   // Create atm processes, without initializing them
   void create_atm_processes ();
@@ -202,6 +206,8 @@ protected:
   std::shared_ptr<ATMBufferManager>         m_memory_buffer;
   std::shared_ptr<SCDataManager>            m_surface_coupling_import_data_manager;
   std::shared_ptr<SCDataManager>            m_surface_coupling_export_data_manager;
+
+  std::shared_ptr<IntensiveObservationPeriod> m_intensive_observation_period;
 
   // This is the time stamp at the beginning of the time step.
   util::TimeStamp                           m_current_ts;
