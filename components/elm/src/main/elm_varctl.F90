@@ -526,6 +526,11 @@ module elm_varctl
    ! MPI syncing
    !----------------------------------------------------------
    integer, public :: mpi_sync_nstep_freq = 0
+   
+   !----------------------------------------------------------
+   ! Modified infiltration scheme in surface water storage
+   !----------------------------------------------------------
+   logical, public :: use_modified_infil = .false.
 
 contains
 

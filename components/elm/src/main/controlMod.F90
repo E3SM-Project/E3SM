@@ -319,6 +319,9 @@ contains
 		 
     namelist /elm_inparm/ &
          snow_shape, snicar_atm_type, use_dust_snow_internal_mixing 
+    
+    namelist /elm_inparm/ & 
+         use_modified_infil
 
     ! ----------------------------------------------------------------------
     ! Default values
@@ -940,6 +943,9 @@ contains
     call mpi_bcast (use_dust_snow_internal_mixing, 1, MPI_LOGICAL, 0, mpicom, ier)
 	
     call mpi_bcast (mpi_sync_nstep_freq, 1, MPI_INTEGER, 0, mpicom, ier)
+    
+    ! use modified infiltration scheme in surface water storage
+    call mpi_bcast (use_modified_infil, 1, MPI_LOGICAL, 0, mpicom, ier)
 
   end subroutine control_spmd
 
@@ -1199,7 +1205,9 @@ contains
     write(iulog,*) '    use_lnd_rof_two_way    = ', use_lnd_rof_two_way
     write(iulog,*) '    lnd_rof_coupling_nstep = ', lnd_rof_coupling_nstep
     write(iulog,*) '    mpi_sync_nstep_freq    = ', mpi_sync_nstep_freq
-
+    
+    write(iulog,*) '    use_modified_infil = ', use_modified_infil
+    
   end subroutine control_print
 
 end module controlMod
