@@ -2576,7 +2576,7 @@ contains
                                                avgOceanSurfaceFeParticulate, &
                                                avgOceanSurfaceFeDissolved, &
                                                ssh
-! DMS PLACE HOLDER (add to Registry_ecosys.xml)avgDMSFlux
+! DMS PLACE HOLDER (also add in ocean code)    avgDMS_gas_flux
 
 
    real (kind=RKIND), dimension(:,:), pointer :: avgTracersSurfaceValue, avgSurfaceVelocity, &
@@ -2678,7 +2678,7 @@ contains
      endif
 
 !    PLACEHOLDER FOR DMS FLUX
-!    call mpas_pool_get_array(forcingPool, 'avgDMSFlux', avgDMSFlux)
+!    call mpas_pool_get_array(forcingPool, 'avgDMS_gas_flux', avgDMS_gas_flux)
 
      do i = 1, nCellsSolve
        n = n + 1
@@ -2774,8 +2774,8 @@ contains
           o2x_o % rAttr(index_o2x_So_don1, n) = 0.0_RKIND
        endif
 
-!      Placeholder for DMS
-!      o2x_o % rAttr(index_o2x_Faoo_fdms_ocn, n) = avgDMSFlux(i)
+!      PLACEHOLDER FOR DMS
+!      o2x_o % rAttr(index_o2x_Faoo_fdms_ocn, n) = avgDMS_gas_flux(i)
 
        if ( trim(config_land_ice_flux_mode) .eq. 'standalone' .or. &
             trim(config_land_ice_flux_mode) .eq. 'coupled'  ) then
