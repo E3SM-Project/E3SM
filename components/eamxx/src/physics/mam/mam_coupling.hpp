@@ -183,7 +183,7 @@ char* gas_mmr_names(int gas_id) {
 // modal number mixing ratio field in EAMxx ("num_a<1-based-mode-index>")
 KOKKOS_INLINE_FUNCTION
 const char* int_aero_nmr_field_name(const int mode) {
-  if (!int_aero_nmr_names(mode)) {
+  if (!int_aero_nmr_names(mode)[0]) {
     concat_2_strings("num_a", aero_mode_name(mode), int_aero_nmr_names(mode));
   }
   return const_cast<const char*>(int_aero_nmr_names(mode));
@@ -193,7 +193,7 @@ const char* int_aero_nmr_field_name(const int mode) {
 // modal number mixing ratio field in EAMxx ("num_c<1-based-mode-index>>")
 KOKKOS_INLINE_FUNCTION
 const char* cld_aero_nmr_field_name(const int mode) {
-  if (!cld_aero_nmr_names(mode)) {
+  if (!cld_aero_nmr_names(mode)[0]) {
     concat_2_strings("num_c", aero_mode_name(mode), cld_aero_nmr_names(mode));
   }
   return const_cast<const char*>(cld_aero_nmr_names(mode));
@@ -208,7 +208,7 @@ const char* cld_aero_nmr_field_name(const int mode) {
 // string ("").
 KOKKOS_INLINE_FUNCTION
 const char* int_aero_mmr_field_name(const int mode, const int species) {
-  if (!int_aero_mmr_names(mode, species)) {
+  if (!int_aero_mmr_names(mode, species)[0]) {
     const auto aero_id = mam4::mode_aero_species(mode, species);
     if (aero_id != mam4::AeroId::None) {
       concat_3_strings(aero_species_name(static_cast<int>(aero_id)),
@@ -226,7 +226,7 @@ const char* int_aero_mmr_field_name(const int mode, const int species) {
 // string ("").
 KOKKOS_INLINE_FUNCTION
 const char* cld_aero_mmr_field_name(const int mode, const int species) {
-  if (!cld_aero_mmr_names(mode, species)) {
+  if (!cld_aero_mmr_names(mode, species)[0]) {
     const auto aero_id = mam4::mode_aero_species(mode, species);
     if (aero_id != mam4::AeroId::None) {
       concat_3_strings(aero_species_name(static_cast<int>(aero_id)),
@@ -241,7 +241,7 @@ const char* cld_aero_mmr_field_name(const int mode, const int species) {
 // mixing ratio field in EAMxx ("aero_gas_mmr_<gas>")
 KOKKOS_INLINE_FUNCTION
 const char* gas_mmr_field_name(const int gas) {
-  if (!gas_mmr_names(gas)) {
+  if (!gas_mmr_names(gas)[0]) {
     concat_2_strings("aero_gas_mmr_", gas_species_name(gas), gas_mmr_names(gas));
   }
   return const_cast<const char*>(gas_mmr_names(gas));
