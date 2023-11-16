@@ -248,16 +248,11 @@ void MAMMicrophysics::run_impl(const double dt) {
   // reset internal WSM variables
   //workspace_mgr_.reset_internals();
 
-  // FIXME: nothing depends on simulation time (yet), so we can just use zero for now
+  // NOTE: nothing depends on simulation time (yet), so we can just use zero for now
   double t = 0.0;
 
-  // ... look up photolysis rates from our table
-  // FIXME: do we need this here, or could we do it per-level?
-  /*
-  Real cwat = cldw;
-  mam4::mo_photo::table_photo(reaction_rates, pmid, pdel, tfld, col_dens, zen_angle,
-    asdir, cwat, cldfr, esfact, ncol);
-  */
+  // here's where we store photolysis rates
+  view_2d photo_rates("photo", nlev_, 1);
 
   // loop over atmosphere columns and compute aerosol microphyscs
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const ThreadTeam& team) {
@@ -277,6 +272,19 @@ void MAMMicrophysics::run_impl(const double dt) {
 
     // set up diagnostics
     mam4::Diagnostics diags(nlev_);
+
+    // ... look up photolysis rates from our table
+    // NOTE: the table interpolation operates on an entire column of data, so we
+    // NOTE: must do it before dispatching to individual levels
+    /*
+    Real zenith_angle = 0.0; // FIXME: need to get this from EAMxx
+    Real surf_albedo = 0.0; // FIXME: surface albedo
+    Real cwat = cldw;
+    mam4::ColumnView col_dens, lwc; // FIXME
+    mam4::mo_photo::table_photo(photo_rates, atm.pressure, atm.hydrostatic_dp,
+      atm.temperature, col_dens, zenith_angle, surf_albedo, cwat,
+      cldfr, esfact, ncol);
+     */
 
     // compute aerosol microphysics on each vertical level within this column
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_), [&](const int k) {
