@@ -231,6 +231,12 @@ int run(int argc, char** argv) {
     if (!rrtmgpTest::all_close(lw_flux_up_ref , lw_flux_up , 0.001)) nerr++;
     if (!rrtmgpTest::all_close(lw_flux_dn_ref , lw_flux_dn , 0.001)) nerr++;
 
+    // Because the aerosol optical properties are all set to zero, these fluxes must be equal
+    if (!rrtmgpTest::all_close(sw_flux_up , sw_clnsky_flux_up , 0.0000000001)) nerr++;
+    if (!rrtmgpTest::all_close(sw_clrsky_flux_up , sw_clnclrsky_flux_up , 0.0000000001)) nerr++;
+    if (!rrtmgpTest::all_close(sw_flux_dn , sw_clnsky_flux_dn , 0.0000000001)) nerr++;
+    if (!rrtmgpTest::all_close(sw_clrsky_flux_dn , sw_clnclrsky_flux_dn , 0.0000000001)) nerr++;
+
     logger->info("Cleaning up...\n");
     // Clean up or else YAKL will throw errors
     scream::rrtmgp::rrtmgp_finalize();
