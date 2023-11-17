@@ -59,6 +59,14 @@ void MAMAci::set_grids(const std::shared_ptr<const GridsManager> grids_manager) 
         add_field<Updated>(int_mmr_field_name, scalar3d_layout_mid, q_unit, grid_name, "tracers");
       }
     }
+    for (int c = 0; c < mam_coupling::num_aero_species(); ++c) {
+      const char* cld_mmr_field_name = mam_coupling::cld_aero_mmr_field_name(m, c);
+      std::cout<<cld_mmr_field_name<<std::endl;
+      if (strlen(cld_mmr_field_name) > 0) {
+        //NOTE: DO NOT add cld borne aerosols to the "tracer" group as these are NOT advected
+        add_field<Updated>(cld_mmr_field_name, scalar3d_layout_mid, q_unit, grid_name);
+      }
+    }
   }
 
   /*NOTE on other inputs for the aci process:

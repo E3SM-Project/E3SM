@@ -51,6 +51,28 @@ initial_conditions:
   pom_a4: 1e-5
   bc_a4: 1e-5
   mom_a4: 1e-5
+  #cloud borne aerosols
+  soa_c1: 1e-5
+  so4_c1: 1e-5
+  pom_c1: 1e-5
+  bc_c1: 1e-5
+  nacl_c1: 1e-5
+  dst_c1: 1e-5
+  mom_c1: 1e-5
+  soa_c2: 1e-5
+  so4_c2: 1e-5
+  nacl_c2: 1e-5
+  mom_c2: 1e-5
+  soa_c3: 1e-5
+  so4_c3: 1e-5
+  pom_c3: 1e-5
+  bc_c3: 1e-5
+  nacl_c3: 1e-5
+  dst_c3: 1e-5
+  mom_c3: 1e-5
+  pom_c4: 1e-5
+  bc_c4: 1e-5
+  mom_c4: 1e-5
   qv: 0.0018908932854425809 # computed from relative humidity = 0.5 using Hardy formulae
 
 # The parameters for I/O control
