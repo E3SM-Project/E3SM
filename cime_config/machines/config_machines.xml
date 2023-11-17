@@ -3073,6 +3073,136 @@
     </resource_limits>
   </machine>
 
+  <machine MACH="aurora">    <DESC>ANL Aurora ECP machine, Aurora consists of multiple racks, each with many nodes, for a total of over 10,000 nodes, batch system is pbspro</DESC>
+    <NODENAME_REGEX>aurora-uan-.*</NODENAME_REGEX>    <OS>LINUX</OS>
+    <COMPILERS>oneapi-ifx,oneapi-ifxgpu,oneapi-ifort,gnu</COMPILERS>
+    <MPILIBS>mpich,impi,openmpi</MPILIBS>
+    <CHARGE_ACCOUNT>CSC249ADSE15_CNDA</CHARGE_ACCOUNT>
+    <SAVE_TIMING_DIR>/lus/gecko/CSC249ADSE15_CNDA/performance_archive</SAVE_TIMING_DIR>
+    <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
+    <CIME_OUTPUT_ROOT>/lus/gecko/projects/CSC249ADSE15_CNDA/$USER/scratch</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/lus/gecko/projects/CSC249ADSE15_CNDA/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/lus/gecko/projects/CSC249ADSE15_CNDA/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/lus/gecko/projects/CSC249ADSE15_CNDA/baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/lus/gecko/projects/CSC249ADSE15_CNDA/tools/cprnc/cprnc</CCSM_CPRNC>
+    <GMAKE_J>16</GMAKE_J>
+    <TESTS>e3sm_developer</TESTS>
+    <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
+    <BATCH_SYSTEM>pbspro</BATCH_SYSTEM>
+    <SUPPORTED_BY>e3sm</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>208</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="oneapi-ifx">208</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="oneapi-ifxgpu">104</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>104</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="oneapi-ifx">104</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="oneapi-ifxgpu">12</MAX_MPITASKS_PER_NODE>
+    <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED> 
+    <mpirun mpilib="default">
+       <executable>mpiexec</executable>
+       <!--executable>numactl -m 2-3 mpiexec</executable--><!--for HBM runs-->
+       <arguments>
+          <arg name="total_num_tasks">-np {{ total_tasks }} --label</arg>
+          <arg name="ranks_per_node">-ppn {{ tasks_per_node }}</arg>
+          <arg name="ranks_bind">--cpu-bind $ENV{RANKS_BIND} -envall</arg>
+          <arg name="threads_per_rank">-d $ENV{OMP_NUM_THREADS}</arg>
+          <arg name="gpu_maps">$ENV{GPU_TILE_COMPACT}</arg>
+       </arguments>
+    </mpirun>
+    <mpirun mpilib="openmpi">
+        <executable>mpirun</executable>
+        <arguments>
+           <arg name="num_tasks">--tag-output -n {{ total_tasks }}</arg>
+           <arg name="tasks_per_node"> --map-by ppr:{{ tasks_per_numa }}:socket:PE=$ENV{OMP_NUM_THREADS} --bind-to hwthread</arg>
+        </arguments>
+    </mpirun>
+    <module_system type="module" allow_error="true">
+       <init_path lang="sh">$ENV{HOME}/lmod.sh</init_path>
+       <init_path lang="csh">/soft/sunspot_migrate/soft/packaging/lmod/lmod/csh</init_path>
+       <init_path lang="python">/soft/sunspot_migrate/soft/packaging/lmod/lmod/env_modules_python.py</init_path>
+       <cmd_path lang="sh">module</cmd_path>
+       <cmd_path lang="csh">module</cmd_path>
+       <cmd_path lang="python">/soft/sunspot_migrate/soft/packaging/lmod/lmod/libexec/lmod python</cmd_path>
+       <modules>
+          <command name="purge"></command>
+          <command name="use">/soft/modulefiles</command>
+          <command name="load">spack-pe-gcc cmake</command>
+          <command name="use">/soft/restricted/CNDA/updates/modulefiles</command>
+        </modules>
+        <modules compiler="!gnu">
+          <command name="load">oneapi/eng-compiler/2023.05.15.007</command>
+          <!--command name="load">mpich/52.2/icc-all-pmix-gpu</command-->
+          <!--command name="load">oneapi/eng-compiler/.2023.05.15.002-rc02</command-->
+          <!--command name="load">oneapi/eng-compiler/.2023.05.15.003-rc08</command-->
+          <!--command name="load">oneapi/eng-compiler/2022.10.15.006</command-->
+          <!--command name="load">mpich/50.2/icc-all-pmix-gpu</command-->
+          <!--command name="load">intel_compute_runtime/release/22.43.24595.30</command-->
+          <command name="load">intel_compute_runtime/release/agama-devel-682.22</command>
+        </modules>
+        <modules compiler="gnu">
+           <command name="unload">spack-pe-gcc cmake</command>
+           <command name="load">gcc/10.3.0</command>
+        </modules>
+        <modules>
+          <command name="load">cray-pals</command>
+          <!--command name="load">append-deps/default</command-->
+          <command name="load">libfabric/1.15.2.0</command>
+        </modules>
+     </module_system>
+     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+     <environment_variables>
+        <env name="NETCDF_C_PATH">/lus/gecko/projects/CSC249ADSE15_auroratmp_CNDA/software/oneAPI.2022.12.30.003/netcdf</env>
+        <env name="NETCDF_FORTRAN_PATH">/lus/gecko/projects/CSC249ADSE15_auroratmp_CNDA/software/oneAPI.2022.12.30.003/netcdf</env>
+        <env name="NETCDF_PATH">/lus/gecko/projects/CSC249ADSE15_auroratmp_CNDA/software/oneAPI.2022.12.30.003/netcdf</env>
+        <env name="PNETCDF_PATH">/lus/gecko/projects/CSC249ADSE15_auroratmp_CNDA/software/oneAPI.2022.12.30.003/pnetcdf</env>
+        <env name="HDF5_PATH">/lus/gecko/projects/CSC249ADSE15_auroratmp_CNDA/software/oneAPI.2022.12.30.003/hdf5</env>
+        <env name="LD_LIBRARY_PATH">/lus/gecko/projects/CSC249ADSE15_auroratmp_CNDA/software/oneAPI.2022.12.30.003/netcdf/lib:/lus/gecko/projects/CSC249ADSE15_auroratmp_CNDA/software/oneAPI.2022.12.30.003/pnetcdf/lib:/lus/gecko/projects/CSC249ADSE15_auroratmp_CNDA/software/oneAPI.2022.12.30.003/hdf5/lib:$ENV{LD_LIBRARY_PATH}</env>
+        <env name="RANKS_BIND">list:0-7,104-111:8-15,112-119:16-23,120-127:24-31,128-135:32-39,136-143:40-47,144-151:52-59,156-163:60-67,164-171:68-75,172-179:76-83,180-187:84-91,188-195:92-99,196-203</env>
+     </environment_variables>
+     <environment_variables mpilib="mpich" DEBUG="TRUE">
+        <env name="HYDRA_TOPO_DEBUG">1</env>
+     </environment_variables>
+     <environment_variables mpilib="impi">
+        <env name="I_MPI_DEBUG">10</env>
+        <env name="I_MPI_PIN_DOMAIN">omp</env>
+        <env name="I_MPI_PIN_ORDER">spread</env>
+        <env name="I_MPI_PIN_CELL">unit</env>
+     </environment_variables>
+     <environment_variables compiler="oneapi-ifxgpu">
+        <env name="ONEAPI_DEVICE_SELECTOR">level_zero:gpu</env>
+        <env name="ONEAPI_MPICH_GPU">NO_GPU</env>
+        <env name="MPIR_CVAR_ENABLE_GPU">0</env>
+        <env name="romio_cb_read">disable</env>
+        <env name="romio_cb_write">disable</env>
+        <env name="SYCL_CACHE_PERSISTENT">1</env>
+        <env name="GATOR_INITIAL_MB">4000MB</env>
+        <env name="GATOR_DISABLE">0</env>
+        <env name="GPU_TILE_COMPACT">/soft/tools/mpi_wrapper_utils/gpu_tile_compact.sh</env>
+        <env name="FI_CXI_DEFAULT_CQ_SIZE">131072</env>
+        <env name="FI_CXI_CQ_FILL_PERCENT">20</env>
+    </environment_variables>
+    <environment_variables compiler="oneapi-ifx">
+        <env name="LIBOMPTARGET_DEBUG">0</env><!--default 0, max 5 -->
+        <env name="OMP_TARGET_OFFLOAD">DISABLED</env><!--default OMP_TARGET_OFFLOAD=MANDATORY-->
+        <env name="FI_CXI_DEFAULT_CQ_SIZE">131072</env>
+        <env name="FI_CXI_CQ_FILL_PERCENT">20</env>
+        <env name="MPIR_CVAR_ENABLE_GPU">0</env>
+        <env name="GPU_TILE_COMPACT"> </env>
+    </environment_variables>
+    <environment_variables SMP_PRESENT="TRUE" compiler="!gnu">
+        <env name="KMP_AFFINITY">verbose,granularity=thread,balanced</env>
+        <env name="OMP_STACKSIZE">128M</env>
+    </environment_variables>
+    <environment_variables SMP_PRESENT="TRUE" compiler="gnu">
+        <env name="OMP_PLACES">threads</env>
+        <env name="OMP_STACKSIZE">128M</env>
+    </environment_variables>
+    <resource_limits>
+        <resource name="RLIMIT_STACK">-1</resource>
+    </resource_limits>
+  </machine>
+  
   <machine MACH="sooty">
     <DESC>PNL cluster, OS is Linux, batch system is SLURM</DESC>
     <NODENAME_REGEX>sooty</NODENAME_REGEX>
