@@ -1204,14 +1204,45 @@ Valid values: 'top','uniform', 'bottom'.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_use_sgr_opt" type="integer"
+<entry id="config_use_sgr_opt_kpp" type="integer"
 	category="forcing" group="forcing">
-Option to use or not subglacial runoff (SGR).
+Option to use or not subglacial runoff (sgr) in kpp calculation.
 
-Valid values: 0 - don't use SGR, 1 - use both mass and TS from SGR, 2 - use mass only from SGR , 3 - use TS only from SGR, -1 use all + KPP
+Valid values: 0 - don't use, 1 - use
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_use_sgr_opt_temp" type="char*1024"
+	category="forcing" group="forcing">
+Option to choose sgr temperature
+
+Valid values: 'sgr','current', 'prescribed'.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_sgr_opt_salt" type="char*1024"
+	category="forcing" group="forcing">
+Option to choose sgr salinity
+
+Valid values: 'sgr','current', 'prescribed'.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_sgr_temperature" type="real"
+	category="forcing" group="forcing">
+Option to choose sgr temperature, applied when config_use_sgr_opt_temp = 'prescribed'
+
+Valid values: Any real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_sgr_salinity" type="real"
+	category="forcing" group="forcing">
+Option to choose sgr salinity, applied when config_use_sgr_opt_temp = 'prescribed'
+
+Valid values: Any real number.
+Default: Defined in namelist_defaults.xml
+</entry>
 
 <!-- coupling -->
 

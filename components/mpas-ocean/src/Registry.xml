@@ -710,10 +710,27 @@
 					description="Selects the vertical location where subglacial runoff is fluxed."
 					possible_values="'top','uniform', 'bottom'"
 		/>
-		<nml_option name="config_use_sgr_opt" type="integer" default_value="0" units="non-dimensional"
-					description="option to use or not subglacial runoff (sgr)"
-					possible_values="0 - don't use sgr, 1 - use both mass and TS from sgr, 2 - use mass only from sgr , 3 - use TS only from sgr, -1 use all + KPP."
+		<nml_option name="config_use_sgr_opt_kpp" type="integer" default_value="0" units="non-dimensional"
+					description="option to use or not subglacial runoff (sgr) in kpp calculation"
+					possible_values="0 - don't use, 1 - use"
 		/>
+		<nml_option name="config_use_sgr_opt_temp" type="character" default_value="sgr"
+					description="option to choose sgr temperature"
+					possible_values="'sgr','current', 'prescribed'"
+		/>
+		<nml_option name="config_use_sgr_opt_salt" type="character" default_value="sgr"
+					description="option to choose sgr salinity"
+					possible_values="'sgr','current', 'prescribed'"
+		/>
+		<nml_option name="config_sgr_temperature" type="real" default_value="0.0" units="C"
+			        description="option to set fixed sgr temperature, applied when config_use_sgr_opt_temp = 'prescribed'"
+					possible_values="Any real number."
+		/>
+		<nml_option name="config_sgr_salinity" type="real" default_value="0.0" units="1.e-3"
+					description="option to set fixed sgr salinity, applied when config_use_sgr_opt_salt = 'prescribed'"
+					possible_values="Any positive real number"
+		/>
+
 	</nml_record>
 	<nml_record name="time_varying_forcing" mode="init;forward">
 		<nml_option name="config_use_time_varying_atmospheric_forcing" type="logical" default_value=".false."

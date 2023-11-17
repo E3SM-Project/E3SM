@@ -344,7 +344,12 @@
 <config_flux_attenuation_coefficient_runoff>10.0</config_flux_attenuation_coefficient_runoff>
 <config_flux_attenuation_coefficient_subglacial_runoff>0.001</config_flux_attenuation_coefficient_subglacial_runoff>
 <config_sgr_flux_vertical_location>'top'</config_sgr_flux_vertical_location>
-<config_use_sgr_opt>0</config_use_sgr_opt>
+<config_use_sgr_opt_kpp>0</config_use_sgr_opt_kpp>
+<config_use_sgr_opt_temp>'sgr'</config_use_sgr_opt_temp>
+<config_use_sgr_opt_salt>'sgr'</config_use_sgr_opt_salt>
+<config_sgr_temperature>0.0</config_sgr_temperature>
+<config_sgr_salinity>0.0</config_sgr_salinity>
+
 
 <!-- coupling -->
 <config_remove_AIS_coupler_runoff>.false.</config_remove_AIS_coupler_runoff>
