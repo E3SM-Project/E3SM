@@ -1126,17 +1126,18 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                crm_output%mcuup, crm_output%mcudn, crm_output%qc_mean, crm_output%qi_mean, crm_output%qs_mean, &
                crm_output%qg_mean, crm_output%qr_mean, crm_output%mu_crm, crm_output%md_crm, crm_output%eu_crm, &
                crm_output%du_crm, crm_output%ed_crm, crm_output%flux_qt, crm_output%flux_u, crm_output%flux_v, &
-               crm_output%fluxsgs_qt, crm_output%tkez, crm_output%tkew, crm_output%tkesgsz, crm_output%tkz, crm_output%flux_qp, &
+               crm_output%fluxsgs_qt, crm_output%tkez, crm_output%tkew, crm_output%tkeqc, crm_output%tkeqt, crm_output%tkeb,&
+               crm_output%tkesgsz, crm_output%tkz, crm_output%flux_qp, &
                crm_output%precflux, crm_output%qt_trans, crm_output%qp_trans, crm_output%qp_fall, crm_output%qp_evp, &
                crm_output%qp_src, crm_output%qt_ls, crm_output%t_ls, crm_output%jt_crm, crm_output%mx_crm, crm_output%cltot, &
                crm_output%clhgh, crm_output%clmed, crm_output%cllow, &
                crm_output%sltend, crm_output%qltend, crm_output%qcltend, crm_output%qiltend, &
                crm_output%t_vt_tend, crm_output%q_vt_tend, crm_output%u_vt_tend, &
-               crm_output%t_vt_ls, crm_output%q_vt_ls, crm_output%u_vt_ls, &
+               crm_output%t_vt_ls, crm_output%q_vt_ls, crm_output%u_vt_ls, crm_output%bou_ls, &
 #if defined(MMF_MOMENTUM_FEEDBACK)
                crm_output%ultend, crm_output%vltend, &
 #endif /* MMF_MOMENTUM_FEEDBACK */
-               crm_output%tk, crm_output%tkh, crm_output%qcl, crm_output%qci, crm_output%qpl, crm_output%qpi, &
+               crm_output%tk, crm_output%tkh, crm_output%qcl, crm_output%qci, crm_output%qpl, crm_output%qpi, crm_output%bou, &
                crm_output%z0m, crm_output%taux, crm_output%tauy, crm_output%precc, crm_output%precl, crm_output%precsc, &
                crm_output%precsl, crm_output%prec_crm,                         &
 #ifdef MMF_ESMT
