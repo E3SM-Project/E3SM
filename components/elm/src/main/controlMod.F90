@@ -38,7 +38,7 @@ module controlMod
   use CanopyHydrologyMod      , only: CanopyHydrology_readnl
   use SurfaceAlbedoType        , only: albice, lake_melt_icealb
   use UrbanParamsType         , only: urban_hac, urban_traffic
-  use FrictionVelocityMod     , only: implicit_stress, atm_gustiness
+  use FrictionVelocityMod     , only: implicit_stress, atm_gustiness, force_land_gustiness
   use elm_varcon              , only: h2osno_max
   use elm_varctl              , only: use_dynroot
   use AllocationMod         , only: nu_com_phosphatase,nu_com_nfix
@@ -234,7 +234,7 @@ contains
 
     ! Stress options
     namelist /elm_inparm/ &
-         implicit_stress, atm_gustiness
+         implicit_stress, atm_gustiness, force_land_gustiness
 
     ! vertical soil mixing variables
     namelist /elm_inparm/  &
@@ -830,6 +830,7 @@ contains
     call mpi_bcast (urban_traffic , 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (implicit_stress, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (atm_gustiness, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (force_land_gustiness, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (nsegspc, 1, MPI_INTEGER, 0, mpicom, ier)
     call mpi_bcast (subgridflag , 1, MPI_INTEGER, 0, mpicom, ier)
     call mpi_bcast (wrtdia, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -1141,6 +1142,7 @@ contains
     write(iulog,*) '   urban traffic flux   = ', urban_traffic
     write(iulog,*) '   implicit_stress   = ', implicit_stress
     write(iulog,*) '   atm_gustiness   = ', atm_gustiness
+    write(iulog,*) '   force_land_gustiness   = ', force_land_gustiness
     write(iulog,*) '   more vertical layers = ', more_vertlayers
     
     write(iulog,*) '   Sub-grid topographic effects on solar radiation   = ', use_top_solar_rad  ! TOP solar radiation parameterization
