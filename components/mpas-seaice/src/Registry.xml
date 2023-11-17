@@ -3788,12 +3788,14 @@
 		     dimensions="nCells Time"
 		     units="K"
 		     default_value="253.0"
+                     long_name="2m air temperature"
 		/>
 		<var name="airSpecificHumidity"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="1"
 		     default_value="0.0006"
+                     long_name="2m air humidity"
 		/>
 		<var name="airDensity"
 		     type="real"
@@ -3826,6 +3828,7 @@
 		     dimensions="nCells Time"
 		     units="W m-2"
 		     default_value="180.0"
+                     long_name="Downwelling longwave radiation"
 		/>
 		<var name="rainfallRate"
 		     type="real"
@@ -3889,6 +3892,7 @@
 		     type="real"
 		     dimensions="nCells Time"
 		     units="W m-2"
+                     long_name="Downwelling shortwave radiation"
 		/>
 		<var name="cloudFraction"
 		     type="real"
@@ -3941,12 +3945,14 @@
 		     type="real"
 		     dimensions="nCells Time"
 		     units="C"
+                     long_name="Sea surface temperature"
 		/>
 		<var name="seaSurfaceSalinity"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="1e-3"
 		     default_value="34.0"
+                     long_name="Sea surface salinity"
 		/>
 		<var name="seaFreezingTemperature"
 		     type="real"
@@ -3962,6 +3968,7 @@
 		     type="real"
 		     dimensions="nCells Time"
 		     units="W m-2"
+                     long_name="Ocean freezing/melting potential"
 		/>
 		<var name="frazilMassAdjust"
 		     type="real"
@@ -4110,6 +4117,7 @@
 		     type="real"
 		     dimensions="nCells Time"
 		     units="N m-1"
+                     long_name="Ice pressure"
 		/>
 		<var name="stressDivergenceU"
 		     type="real"
@@ -4205,11 +4213,13 @@
 		     type="real"
 		     dimensions="nCells Time"
 		     units="percent day-1"
+                     long_name="Ice divergence"
 		/>
 		<var name="shear"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="percent day-1"
+                     long_name="Ice shear"
 		/>
 		<var name="dynamicallyLockedCellsMask"
 		     type="integer"
@@ -4369,12 +4379,14 @@
 		     dimensions="maxEdges nCells Time"
 		     units="N m-1"
 		     name_in_code="principalStress1"
+                     long_name="First component of principal stress (variational formulation)"
 		/>
 		<var name="principalStress2Var"
 		     type="real"
 		     dimensions="maxEdges nCells Time"
 		     units="N m-1"
 		     name_in_code="principalStress2"
+                     long_name="Second component of principal stress (variational formulation)"
 		/>
 		<var name="replacementPressureVar"
 		     type="real"
@@ -4523,6 +4535,7 @@
 		     type="real"
 		     dimensions="nCells Time"
 		     units="m s-1"
+                     long_name="Surface ice melt"
 		/>
 		<var name="surfaceIceMeltCategory"
 		     type="real"
@@ -4533,6 +4546,7 @@
 		     type="real"
 		     dimensions="nCells Time"
 		     units="m s-1"
+                     long_name="Basal ice melt"
 		/>
 		<var name="basalIceMeltCategory"
 		     type="real"
@@ -4543,11 +4557,13 @@
 		     type="real"
 		     dimensions="nCells Time"
 		     units="m s-1"
+                     long_name="Lateral ice melt"
 		/>
 		<var name="snowMelt"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="m s-1"
+                     long_name="Snow melt"
 		/>
 		<var name="snowMeltCategory"
 		     type="real"
@@ -4558,6 +4574,7 @@
 		     type="real"
 		     dimensions="nCells Time"
 		     units="m s-1"
+                     long_name="Congelation ice growth"
 		/>
 		<var name="congelationCategory"
 		     type="real"
@@ -4568,6 +4585,7 @@
 		     type="real"
 		     dimensions="nCells Time"
 		     units="m s-1"
+                     long_name="Snow-ice formation"
 		/>
 		<var name="snowiceFormationCategory"
 		     type="real"
@@ -4593,6 +4611,7 @@
 		     type="real"
 		     dimensions="nCells Time"
 		     units="m s-1"
+                     long_name="Frazil ice formation"
 		/>
 		<var name="frazilGrowthDiagnostic"
 		     type="real"
@@ -4905,6 +4924,8 @@
 		<var name="shortwaveScalingFactor"
 		     type="real"
 		     dimensions="nCells Time"
+                     units="1"
+                     long_name="Shortwave scaling factor"
 		/>
 		<var name="surfaceShortwaveFlux"
 		     type="real"
@@ -5694,29 +5715,37 @@
 		     type="real"
 		     dimensions="nCells Time"
 		     units="s-1"
+                     long_name="Time derivative of ice area due to transport"
 		/>
 		<var name="iceVolumeTendencyTransport"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="m s-1"
+                     long_name="Time derivative of ice volume due to transport"
 		/>
 		<var name="iceAgeTendencyTransport"
 		     type="real"
 		     dimensions="nCells Time"
+                     units="s s-1"
+                     long_name="Time derivative of ice age due to transport"
 		/>
 		<var name="iceAreaTendencyThermodynamics"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="s-1"
+                     long_name="Time derivative of ice area due to thermodynamics"
 		/>
 		<var name="iceVolumeTendencyThermodynamics"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="m s-1"
+                     long_name="Time derivative of ice volume due to thermodynamics"
 		/>
 		<var name="iceAgeTendencyThermodynamics"
 		     type="real"
 		     dimensions="nCells Time"
+                     units="s s-1"
+                     long_name="Time derivative of ice age due to thermodynamics"
 		/>
 		<var name="freezingMeltingPotentialInitial"
 		     type="real"
