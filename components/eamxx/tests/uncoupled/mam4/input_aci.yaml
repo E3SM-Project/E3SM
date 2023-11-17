@@ -26,6 +26,31 @@ initial_conditions:
   Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
   T_mid: 273.0
   p_mid: 1.e5
+  num_a1: 1.e5
+  bc_a1: 1.e-5
+  num_a2: 1e5
+  num_a3: 1e5
+  num_a4: 1e5
+  soa_a1: 1e-5
+  so4_a1: 1e-5
+  pom_a1: 1e-5
+  nacl_a1: 1e-5
+  dst_a1: 1e-5
+  mom_a1: 1e-5
+  soa_a2: 1e-5
+  so4_a2: 1e-5
+  nacl_a2: 1e-5
+  mom_a2: 1e-5
+  soa_a3: 1e-5
+  so4_a3: 1e-5
+  pom_a3: 1e-5
+  bc_a3: 1e-5
+  nacl_a3: 1e-5
+  dst_a3: 1e-5
+  mom_a3: 1e-5
+  pom_a4: 1e-5
+  bc_a4: 1e-5
+  mom_a4: 1e-5
   qv: 0.0018908932854425809 # computed from relative humidity = 0.5 using Hardy formulae
 
 # The parameters for I/O control

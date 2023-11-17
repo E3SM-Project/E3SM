@@ -50,7 +50,7 @@ void MAMAci::set_grids(const std::shared_ptr<const GridsManager> grids_manager) 
   add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa,     grid_name); // Layer thickness(pdel) [Pa] at midpoints
 
   // (interstitial) aerosol tracers of interest: mass (q) and number (n) mixing ratios
-  /*for (int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+  for (int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
     const char* int_nmr_field_name = mam_coupling::int_aero_nmr_field_name(m);
     add_field<Updated>(int_nmr_field_name, scalar3d_layout_mid, n_unit, grid_name, "tracers");
     for (int a = 0; a < mam_coupling::num_aero_species(); ++a) {
@@ -59,7 +59,8 @@ void MAMAci::set_grids(const std::shared_ptr<const GridsManager> grids_manager) 
         add_field<Updated>(int_mmr_field_name, scalar3d_layout_mid, q_unit, grid_name, "tracers");
       }
     }
-  }*/
+  }
+
   /*NOTE on other inputs for the aci process:
   1. reciprocal of pseudo_density (rpdel): computed from the pseudo_density
   2. geopotential height at midpoints: computed geopotential height at interfaces, which inturn is computed using
