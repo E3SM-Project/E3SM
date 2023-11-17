@@ -3200,7 +3200,7 @@
 		     dimensions="nCells Time"
 		     units="C"
 		     standard_name="sea_ice_surface_temperature"
-		     description="Surface temperature of ice/snow"
+		     description="Average surface temperature over ice/snow"
 		/>
 		<var name="iceEnthalpyCell"
 		     type="real"
@@ -3218,7 +3218,7 @@
 		     type="real"
 		     dimensions="nSnowLayers nCells Time"
 		     units="J m-3"
-		     description="Total heat content per unit volume of snow in snow layer"
+		     description="Heat content per unit volume of snow in snow layer"
 		/>
 		<var name="snowIceMassCell"
 		     type="real"
@@ -3238,14 +3238,14 @@
 		     type="real"
 		     dimensions="nSnowLayers nCells Time"
 		     units="um"
-		     description="Effective snow grain radius"
+		     description="Average effective snow grain radius over snow layer"
 		     packages="pkgColumnTracerSnowGrainRadius"
 		/>
 		<var name="snowDensityCell"
 		     type="real"
 		     dimensions="nSnowLayers nCells Time"
 		     units="kg m-3"
-		     description="Prognostic snow density"
+		     description="Average prognostic snow density over snow layer"
 		     packages="pkgColumnTracerEffectiveSnowDensity"
 		/>
 		<var name="iceAgeCell"
@@ -3253,14 +3253,14 @@
 		     dimensions="nCells Time"
 		     units="s"
 		     standard_name="age_of_sea_ice"
-                     description="Chronological age tracer"
+                     description="Average chronological age of sea ice"
 		     packages="pkgColumnTracerIceAge"
 		/>
 		<var name="firstYearIceAreaCell"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="1"
-                     description="Area tracer for first-year ice"
+                     description="First-year area fraction of sea ice"
 		     packages="pkgColumnTracerFirstYearIce"
 		/>
 		<var name="levelIceAreaCell"
@@ -3295,7 +3295,7 @@
 		     type="real"
 		     dimensions="nCells Time"
 		     units="m"
-                     description="Cell-average thickness of refrozen pond water"
+                     description="Average thickness of refrozen pond water over ponds"
 		     packages="pkgColumnTracerLidThickness"
 		/>
 		<var name="snowScatteringAerosolCell"
@@ -4965,31 +4965,37 @@
 		     type="real"
 		     dimensions="nCategories nCells Time"
 		     units="1"
+                     description="Bare ice albedo per category"
 		/>
 		<var name="snowAlbedoCategory"
 		     type="real"
 		     dimensions="nCategories nCells Time"
 		     units="1"
+                     description="Snow albedo per category"
 		/>
 		<var name="pondAlbedoCategory"
 		     type="real"
 		     dimensions="nCategories nCells Time"
 		     units="1"
+                     description="Pond albedo per category"
 		/>
 		<var name="bareIceAlbedoCell"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="1"
+                     description="Cell-averaged bare ice albedo"
 		/>
 		<var name="snowAlbedoCell"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="1"
+                     description="Cell-averaged snow albedo"
 		/>
 		<var name="pondAlbedoCell"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="1"
+                     description="Cell-averaged pond albedo"
 		/>
 		<var name="effectivePondAreaCategory"
 		     type="real"

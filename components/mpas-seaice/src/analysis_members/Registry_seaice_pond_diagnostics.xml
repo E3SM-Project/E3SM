@@ -25,25 +25,24 @@
 	</packages>
 	<var_struct name="pondDiagnosticsAM" time_levs="1" packages="pondDiagnosticsAMPKG">
 		<var name="meltPondArea" type="real" dimensions="nCells Time" units="1"
-			description="Melt pond area fraction in a grid cell"
+                        description="Fraction of sea ice area covered in ponds"
 		/>
 		<var name="meltPondAreaFinalArea" type="real" dimensions="nCells Time" units="1"
-			description="Melt pond fraction for the final area of sea ice at the end of each timestep"
+			description="Fraction of grid cell covered in ponds at end of timestep"
 		/>
 		<var name="meltPondDepth" type="real" dimensions="nCells Time" units="m"
-
-			description="Melt pond depth in a grid cell weighted by area fraction of each thickness category"
+			description="Average depth of ponds over sea ice"
 		/>
 		<var name="meltPondDepthFinalArea" type="real" dimensions="nCells Time" units="m"
-			description="Melt pond depth in a grid cell weighted by area fraction of each thickness category at the end of each timestep"
+			description="Cell-average depth of ponds at end of timestep"
 		/>
 		<var name="meltPondLidThickness" type="real" dimensions="nCells Time" units="m"
-			description="Melt pond refrozen lid thickness in a grid cell weighted by area fraction of each thickness category"
+			description="Average pond refrozen lid thickness over sea ice"
 		/>
 		<var name="meltPondLidThicknessFinalArea" type="real" dimensions="nCells Time" units="m"
-			description="Melt pond refrozen lid thickness in a grid cell weighted by area fraction of each thickness category at the end of each timestep"
+			description="Cell-average pond refrozen lid thickness at end of timestep"
 		/>
 		<var name="meltPondDepthCategory" type="real" dimensions="nCategories nCells Time" units="m"
-			description="meltPondDepth for each thickness category of sea ice"
+			description="Pond depth for each thickness category of sea ice"
 		/>
 	</var_struct>
