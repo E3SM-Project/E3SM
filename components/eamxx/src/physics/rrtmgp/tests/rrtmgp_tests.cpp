@@ -236,6 +236,14 @@ int run(int argc, char** argv) {
     if (!rrtmgpTest::all_close(sw_clrsky_flux_up , sw_clnclrsky_flux_up , 0.0000000001)) nerr++;
     if (!rrtmgpTest::all_close(sw_flux_dn , sw_clnsky_flux_dn , 0.0000000001)) nerr++;
     if (!rrtmgpTest::all_close(sw_clrsky_flux_dn , sw_clnclrsky_flux_dn , 0.0000000001)) nerr++;
+    if (!rrtmgpTest::all_close(sw_flux_dir , sw_clnsky_flux_dir , 0.0000000001)) nerr++;
+    if (!rrtmgpTest::all_close(sw_clrsky_flux_dir , sw_clnclrsky_flux_dir , 0.0000000001)) nerr++;
+    if (!rrtmgpTest::all_close(lw_flux_up , lw_clnsky_flux_up , 0.0000000001)) nerr++;
+    if (!rrtmgpTest::all_close(lw_clrsky_flux_up , lw_clnclrsky_flux_up , 0.0000000001)) nerr++;
+    if (!rrtmgpTest::all_close(lw_flux_dn , lw_clnsky_flux_dn , 0.0000000001)) nerr++;
+    if (!rrtmgpTest::all_close(lw_clrsky_flux_dn , lw_clnclrsky_flux_dn , 0.0000000001)) nerr++;
+
+    logger->info(nerr);
 
     logger->info("Cleaning up...\n");
     // Clean up or else YAKL will throw errors

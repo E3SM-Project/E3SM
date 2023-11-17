@@ -909,7 +909,7 @@ namespace scream {
 #endif
 
             // Compute clean-clear-sky fluxes before we add in aerosols and clouds
-            rte_lw(max_gauss_pts, gauss_Ds, gauss_wts, optics, top_at_1, lw_sources, emis_sfc, clnsky_fluxes);
+            rte_lw(max_gauss_pts, gauss_Ds, gauss_wts, optics, top_at_1, lw_sources, emis_sfc, clnclrsky_fluxes);
 
             // Combine gas and aerosol optics
             aerosol.increment(optics);
@@ -925,7 +925,7 @@ namespace scream {
             rte_lw(max_gauss_pts, gauss_Ds, gauss_wts, optics, top_at_1, lw_sources, emis_sfc, fluxes);
 
             // Compute clean-sky fluxes
-            rte_lw(max_gauss_pts, gauss_Ds, gauss_wts, optics_no_aerosols, top_at_1, lw_sources, emis_sfc, clnclrsky_fluxes);
+            rte_lw(max_gauss_pts, gauss_Ds, gauss_wts, optics_no_aerosols, top_at_1, lw_sources, emis_sfc, clnsky_fluxes);
 
         }
 
