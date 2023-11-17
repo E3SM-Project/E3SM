@@ -77,7 +77,7 @@
 		<var name="energyChange" type="real" dimensions="nHemispheres Time" units="J"
 			description="Total energy change of ice and snow during time step"
 		/>
-		<var name="energyChangeFlux" type="real" dimensions="nHemispheres Time" units="W/m2"
+		<var name="energyChangeFlux" type="real" dimensions="nHemispheres Time" units="W m-2"
 			description="Total energy change flux of ice and snow during time step"
 		/>
 		<var name="netEnergyFlux" type="real" dimensions="nHemispheres Time" units="W"
@@ -136,22 +136,22 @@
                 <var name="iceMassChange" type="real" dimensions="nHemispheres Time" units="kg"
 			description="Total mass change of ice and snow during time step"
 		/>
-		<var name="iceMassChangeFlux" type="real" dimensions="nHemispheres Time" units="kg/m2s"
+		<var name="iceMassChangeFlux" type="real" dimensions="nHemispheres Time" units="kg m-2 s-1"
 			description="Total mass change flux of ice and snow during time step"
 		/>
                 <var name="oceanMassChange" type="real" dimensions="nHemispheres Time" units="kg"
 			description="Total mass change of ice and snow during time step"
 		/>
-		<var name="oceanMassChangeFlux" type="real" dimensions="nHemispheres Time" units="kg/m2s"
+		<var name="oceanMassChangeFlux" type="real" dimensions="nHemispheres Time" units="kg m-2 s-1"
 			description="Total mass change flux of ice and snow during time step"
 		/>
                 <var name="massChange" type="real" dimensions="nHemispheres Time" units="kg"
 			description="Total mass change of ice and snow during time step"
 		/>
-		<var name="massChangeFlux" type="real" dimensions="nHemispheres Time" units="kg/m2s"
+		<var name="massChangeFlux" type="real" dimensions="nHemispheres Time" units="kg m-2 s-1"
 			description="Total mass change flux of ice and snow during time step"
 		/>
-		<var name="netMassFlux" type="real" dimensions="nHemispheres Time" units="kg/s"
+		<var name="netMassFlux" type="real" dimensions="nHemispheres Time" units="kg s-1"
 			description="Net mass flux to ice"
 		/>
 		<var name="absoluteMassError" type="real" dimensions="nHemispheres Time" units="kg"
@@ -192,10 +192,10 @@
 		<var name="saltChange" type="real" dimensions="nHemispheres Time" units="kg"
 			description="Total salt change of ice and snow during time step"
 		/>
-		<var name="saltChangeFlux" type="real" dimensions="nHemispheres Time" units="kg/m2s"
+		<var name="saltChangeFlux" type="real" dimensions="nHemispheres Time" units="kg m-2 s-1"
 			description="Total salt change flux of ice and snow during time step"
 		/>
-		<var name="netSaltFlux" type="real" dimensions="nHemispheres Time" units="kg/s"
+		<var name="netSaltFlux" type="real" dimensions="nHemispheres Time" units="kg s-1"
 			description="Net salt flux to ice"
 		/>
 		<var name="absoluteSaltError" type="real" dimensions="nHemispheres Time" units="kg"
