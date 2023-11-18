@@ -24,6 +24,7 @@ userGuide/QuickStart
 userGuide/OmegaBuild
 userGuide/DataTypes
 userGuide/MachEnv
+userGuide/Broadcast
 userGuide/Logging
 ```
 
@@ -34,6 +35,7 @@ userGuide/Logging
 devGuide/QuickStart
 devGuide/DataTypes
 devGuide/MachEnv
+devGuide/Broadcast
 devGuide/CondaEnv
 devGuide/Linting
 devGuide/Docs

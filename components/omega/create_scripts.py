@@ -348,7 +348,7 @@ class OmegaMachines(Machines):
             f.write("#!/usr/bin/env bash\n\n")
 
             f.write("source ./omega_env.sh\n")
-            f.write("ctest # --rerun-failed --output-on-failure\n")
+            f.write("ctest $* # --rerun-failed --output-on-failure\n")
 
         st = os.stat(omega_env)
         os.chmod(omega_env, st.st_mode | stat.S_IEXEC)

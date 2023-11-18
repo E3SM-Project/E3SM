@@ -47,7 +47,7 @@ function with simplified arguments.
 
 ### 4.1 Data types and parameters
 
-For non-blocking broadcasts, we will alias the MPI_request type
+For non-blocking broadcasts, we will alias the `MPI_request` type
 to a Broadcast ID:
 
 ```c++
@@ -67,15 +67,15 @@ The first form is the simplest for a broadcast within the default
 environment and from the master task:
 
 ```c++
-int Broadcast([data type] value);
+int Broadcast([data type] Value);
 ```
 
 where `[data type]` is one of the supported types (I4, I8 R4, R8, Real,
 boolean, std::string). In actual use, this would look like:
 
 ```c++
-ierr = Broadcast(myIntVar);
-ierr = Broadcast(myRealVar);
+int Err = Broadcast(MyIntValue);
+int Err = Broadcast(MyRealValue);
 [etc for all data types]
 ```
 
@@ -88,8 +88,8 @@ This is similar to the above, but adds the additional argument
 for the source rank to broadcast from.
 
 ```c++
-int Broadcast([data type] value,  ///< [in] value to be broadcast
-              const int srcRank   ///< [in] rank to broadcast from
+int Broadcast([data type] Value,  ///< [in] value to be broadcast
+              const int SrcRank   ///< [in] rank to broadcast from
               );      //
 ```
 
@@ -98,8 +98,8 @@ int Broadcast([data type] value,  ///< [in] value to be broadcast
 As in 4.2.1, but adds the machine environment as an argument:
 
 ```c++
-int Broadcast([data type] value,    ///< [in] value to be broadcast
-              const MachEnv subEnv, ///< [in] defined OMEGA environment
+int Broadcast([data type] Value,     ///< [in] value to be broadcast
+              const MachEnv *SubEnv, ///< [in] defined OMEGA environment
               );
 ```
 
@@ -108,9 +108,9 @@ int Broadcast([data type] value,    ///< [in] value to be broadcast
 As in 4.2.2, but adds the machine environment as an argument:
 
 ```c++
-int Broadcast([data type] value,     ///< [in] value to be broadcast
-              const MachEnv subEnv,  ///< [in] defined OMEGA environment
-              const int srcRank      ///< [in] rank to broadcast from
+int Broadcast([data type] Value,     ///< [in] value to be broadcast
+              const MachEnv *SubEnv, ///< [in] defined OMEGA environment
+              const int SrcRank      ///< [in] rank to broadcast from
               );
 ```
 
@@ -128,9 +128,9 @@ included to wait for the request to complete. A non-blocking
 sequence would look like:
 
 ```c++
-BroadcastID myReqID = IBroadcast(myVar);
+BroadcastID myReqID = IBroadcast(MyVar);
 [ perform other tasks/computation ]
-int err = IBroadcastWait(myReqID);
+int Err = IBroadcastWait(MyReqID);
 ```
 
 ## 5 Verification and Testing
