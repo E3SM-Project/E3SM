@@ -120,35 +120,6 @@ add_field<Computed>("soaaod",  scalar2d_layout_mid, nondim, grid_name);
 add_field<Computed>("bcaod",  scalar2d_layout_mid, nondim, grid_name);
 add_field<Computed>("seasaltaod",  scalar2d_layout_mid, nondim, grid_name);
 
-
-
-#if 0
-{
-auto host_1d = view_1d_host(refindex_real_lw_host.data(), refindex_real_lw_host.size());
-scorpio::register_file(tables_filename,scorpio::Read);
-std::string var_name = "refindex_real_lw";
-std::vector<std::string> vec_of_dims;
-vec_of_dims.push_back("lw_band");
-vec_of_dims.push_back("refindex_real");
-scorpio::register_dimension(tables_filename, vec_of_dims[0], vec_of_dims[0], nlwbands, 0);
-scorpio::register_dimension(tables_filename, vec_of_dims[1], vec_of_dims[1], refindex_real, 0);
-std::reverse(vec_of_dims.begin(),vec_of_dims.end());
-const auto& fp_precision = "double";
-std::string io_decomp_tag ="dt=real,grid-idx=0,layout=lw_band16-refindex_real7";
-scorpio::register_variable(tables_filename, var_name, var_name,
-                              vec_of_dims, fp_precision, io_decomp_tag);
-printf("After register_variable \n");
-std::vector<scorpio::offset_t> var_dof(host_1d.size());
-std::iota(var_dof.begin(),var_dof.end(),0);
-scorpio::set_dof(tables_filename,var_name,var_dof.size(),var_dof.data());
-
-scorpio::grid_read_data_array(tables_filename,var_name,-1,host_1d.data(), host_1d.size());
-scorpio::set_decomp(tables_filename);
-scorpio::eam_pio_closefile(tables_filename);}
-#endif
-
-
-
   // FieldLayout scalar3d_refrtablw_layout { {NMODES,LWBND, LEV},
   //                                    {mam4::AeroConfig::num_modes,
   //                                     mam4::modal_aer_opt::nlwbands,
@@ -461,6 +432,7 @@ void MAMOptics::initialize_impl(const RunType run_type) {
 
   AtmosphereInput mode2_rrtmg(rrtmg_params, grid_, host_views, layouts);
   // -1000 forces the interface to read a dataset that does not have time as variable.
+  //TODO: the -1000 is a fix of scorpio interface for dataset that does have time variables.
   mode2_rrtmg.read_variables(-1000);
   mode2_rrtmg.finalize();
 
@@ -605,6 +577,30 @@ void MAMOptics::initialize_impl(const RunType run_type) {
     abspsw_[d1][d5](d2,d3,d4) = abspsw_host(d5,0,d4,d3,d2);
     extpsw_[d1][d5](d2,d3,d4) = extpsw_host(d5,0,d4,d3,d2);
   } // d5
+
+
+#if 0
+{
+auto host_1d = view_1d_host(refindex_real_lw_host.data(), refindex_real_lw_host.size());
+scorpio::register_file(tables_filename_mode4,scorpio::Read);
+std::string var_name = "refindex_real_lw";
+std::vector<std::string> vec_of_dims;
+vec_of_dims.push_back("lw_band");
+vec_of_dims.push_back("refindex_real");
+scorpio::register_dimension(tables_filename_mode4, vec_of_dims[0], vec_of_dims[0], nlwbands, 0);
+scorpio::register_dimension(tables_filename_mode4, vec_of_dims[1], vec_of_dims[1], refindex_real, 0);
+std::reverse(vec_of_dims.begin(),vec_of_dims.end());
+const auto& fp_precision = "real";
+std::string io_decomp_tag ="dt=real,grid-idx=0,layout=lw_band16-refindex_real7";
+scorpio::register_variable(tables_filename_mode4, var_name, var_name,
+                              vec_of_dims, fp_precision, io_decomp_tag);
+std::vector<scorpio::offset_t> var_dof(host_1d.size());
+std::iota(var_dof.begin(),var_dof.end(),0);
+scorpio::set_dof(tables_filename_mode4,var_name,var_dof.size(),var_dof.data());
+scorpio::set_decomp(tables_filename_mode4);
+scorpio::grid_read_data_array(tables_filename_mode4,var_name,-1000,host_1d.data(), host_1d.size());
+scorpio::eam_pio_closefile(tables_filename_mode4);}
+#endif
 
 
   // for (int j = 0; j < nlwbands; j++){
