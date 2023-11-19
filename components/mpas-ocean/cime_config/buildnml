@@ -267,6 +267,17 @@ def buildnml(case, caseroot, compname):
             ic_date = '210203'
             ic_prefix = 'mpaso.SOwISC12to60E2r4.rstFromG-anvil'
 
+    elif ocn_grid == 'SO12to60E2r5':
+        decomp_date = '20221118'
+        decomp_prefix = 'mpas-o.graph.info.'
+        restoring_file = 'sss.PHC3.0_monthlyClimatology.SO12to60E2r5.221128.nc'
+        analysis_mask_file = 'SO12to60E2r5_mocBasinsAndTransects20210623.nc'
+        ic_date = '20221118'
+        ic_prefix = 'mpaso.SO12to60E2r5'
+        if ocn_ic_mode == 'spunup':
+            ic_date = '999999'
+            ic_prefix = 'mpaso.SO12to60E2r5.rstFromG-anvil'
+
     elif ocn_grid == 'ECwISC30to60E2r1':
         decomp_date = '200915'
         decomp_prefix = 'mpas-o.graph.info.'
