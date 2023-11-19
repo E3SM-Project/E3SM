@@ -647,6 +647,11 @@
     <alias>I20TRWCCNPCROP</alias>
     <lname>20TR_DATM%CPLWCH_ELM%CNPRDCTCBC-CROP_SICE_SOCN_MOSART_SGLC_SWAV</lname>
   </compset>
+
+  <compset>
+    <alias>I20TRWCCNPWFMCROP</alias>
+    <lname>20TR_DATM%CPLWCH_ELM%CNPRDCTCBCWFM-CROP_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+  </compset>
 <!---I GSWP3v1 BGCv2  compsets-->
   <compset>
     <alias>I1850GSWCNPCROP</alias>
@@ -655,6 +660,14 @@
   <compset>
     <alias>I20TRGSWCNPCROP</alias>
     <lname>20TR_DATM%GSWP3v1_ELM%CNPRDCTCBC-CROP_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>I1850GSWCNPWFMCROP</alias>
+    <lname>1850_DATM%GSWP3v1_ELM%CNPRDCTCBCWFM-CROP_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>I20TRGSWCNPWFMCROP</alias>
+    <lname>20TR_DATM%GSWP3v1_ELM%CNPRDCTCBCWFM-CROP_SICE_SOCN_MOSART_SGLC_SWAV</lname>
   </compset>
 
   <!---I compset system tests -->
