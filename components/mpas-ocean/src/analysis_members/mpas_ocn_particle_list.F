@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.io/license.html
+! distributed with this code, or at http://mpas-dev.github.com/license.html
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -165,6 +165,9 @@ contains
 
      integer, intent(out) :: err !< Output: error flag
 
+!maltrud debug
+!write(*,*)' DEBUG24 entering mpas_particle_list_build_and_assign_particle_list'
+
      err = 0
      ! build / allocate the listPLSend, setting ioProc (currentBlock read in as haloData)
      call build_block_particlelists(domain, err)
@@ -206,6 +209,9 @@ contains
      call MPI_Barrier(domain % dminfo % comm, err)
 #endif
      !}}}
+!maltrud debug
+!write(*,*)' DEBUG24 exiting mpas_particle_list_build_and_assign_particle_list'
+
    end subroutine mpas_particle_list_build_and_assign_particle_list !}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -698,6 +704,8 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
       call removeValueFromIntList(sendProcNeighs, domain % dminfo % my_proc_id)
 
       deallocate(intArray, completeList, sendRequestID, recvRequestID)
+!maltrud debug BUG
+      deallocate(recvList)
       ! need to update IO processors as to the change also so that they know where to get data from!!!
       ! should uncomment for testing when multiple sendProcs are utilized (parallel IO)
       LIGHT_DEBUG_WRITE('sendProcSendList after = ' COMMA sendProcSendList)
@@ -927,6 +935,14 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
                                         orderingVector => NULL()
       character (len=StrKIND) :: message
 
+!maltrud debug
+      real (kind=RKIND), dimension(:), pointer :: Array1DRealPointerColumn => NULL()
+      real (kind=RKIND), dimension(:), pointer :: Array1DRealPointerDebug => NULL()
+      integer :: ii, levels
+      levels = 60
+
+
+
       err = 0
 
       block => domain % blocklist
@@ -948,6 +964,9 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
 
         allocate(Array1DRealPointer(count_particlelist(particlelist)))
         allocate(Array1DIntPointer(count_particlelist(particlelist)))
+!maltrud debug
+        allocate(Array1DRealPointerDebug(count_particlelist(particlelist)))
+        allocate(Array1DRealPointerColumn(count_particlelist(particlelist)*levels))
 
         ! iterate over contents of pool and transfer
         call mpas_pool_begin_iteration(lagrPartTrackPool)
@@ -964,9 +983,39 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
               LIGHT_DEBUG_WRITE('memory arraysize= ' COMMA  size(field1DRealPointer % array))
               LIGHT_DEBUG_WRITE(trim(dimItr % memberName) COMMA ' = ' COMMA field1DRealPointer % array)
               !}}}
-              call get_halo_data_from_particle_list_array(particlelist, dimItr % memberName, Array1DRealPointer)
+            if(trim(dimItr % memberName) == 'particleColumnTemperature' .or.  &
+               trim(dimItr % memberName) == 'particleColumnSalinity' .or.  &
+               trim(dimItr % memberName) == 'particleColumnGlobalID' .or.  &
+               trim(dimItr % memberName) == 'particleColumnDepth' .or.  &
+               trim(dimItr % memberName) == 'particleColumnLon' .or.  &
+               trim(dimItr % memberName) == 'particleColumnLat' ) then
+                 call get_halo_data_from_particle_list_array(particlelist, &
+                    dimItr % memberName, Array1DRealPointerColumn)
               ! reorder
-              field1DRealPointer % array = Array1DRealPointer(orderingVector)
+                 do ii = 1, size(orderingVector)
+                   field1DRealPointer % array(ii) = &
+                     Array1DRealPointerColumn(orderingVector(ii))
+                 enddo
+            else
+                 call get_halo_data_from_particle_list_array(particlelist, &
+                    dimItr % memberName, Array1DRealPointer)
+              ! reorder
+                 do ii = 1, size(orderingVector)
+                   field1DRealPointer % array(ii) = &
+                     Array1DRealPointer(orderingVector(ii))
+                 enddo
+!                field1DRealPointer % array = Array1DRealPointer(orderingVector)
+            endif
+
+!maltrud debug
+!if(trim(dimItr % memberName)=='particleTemperature') write(*,*)'DEBUG11: ',orderingVector
+!if(trim(dimItr % memberName)=='particleTemperature') write(*,*)'DEBUG12: ',Array1DRealPointer
+!if(trim(dimItr % memberName)=='particleTemperature') write(*,*)'DEBUG13: ',Array1DRealPointer(orderingVector)
+!  do ii = 1, size(orderingVector)
+!    Array1DRealPointerDebug(ii) =  Array1DRealPointer(orderingVector(ii))
+!  enddo
+!if(trim(dimItr % memberName)=='particleTemperature') write(*,*)'DEBUG14: ',Array1DRealPointerDebug
+
             elseif (dimItr % dataType == MPAS_POOL_INTEGER) then
               ! get data and place it in appropriate array
               call mpas_pool_get_field(lagrPartTrackPool, dimItr % memberName, field1DIntPointer)
@@ -990,6 +1039,9 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
         deallocate(orderingVector)
         deallocate(Array1DRealPointer)
         deallocate(Array1DIntPointer)
+!maltrud debug
+        deallocate(Array1DRealPointerDebug)
+        deallocate(Array1DRealPointerColumn)
 
         block => block % next
       end do
@@ -1173,7 +1225,12 @@ subroutine get_halo_data_from_particle_list_1Dreal_array &  !{{{
     ! input data
     type (mpas_particle_list_type), pointer, intent(in) :: particlelist
     character(len=*), intent(in) :: dataName
-    real (kind=RKIND), dimension(:), pointer, intent(out) :: array1DRealPointer
+!maltrud maybe say its inout?
+!   real (kind=RKIND), dimension(:), pointer, intent(out) :: array1DRealPointer
+    real (kind=RKIND), dimension(:), intent(inout) :: array1DRealPointer
+!maltrud maybe say its not a pointer?
+!   real (kind=RKIND), dimension(:), pointer, intent(out) :: array1DRealPointer
+!   real (kind=RKIND), dimension(:), intent(out) :: array1DRealPointer
 
     ! subroutine data
     integer :: dataNumber
@@ -1181,9 +1238,14 @@ subroutine get_halo_data_from_particle_list_1Dreal_array &  !{{{
     type (field0DReal), pointer :: field0DRealPointer
 
     ! allocate the array if it isn't allocated
-    if(.not.associated(array1DRealPointer)) then
-      allocate(array1DRealPointer(count_particlelist(particlelist)))
-    end if
+!maltrud everything gets reallocated
+! doesnt allow .not.allocated, such just skip it
+!   if(.not.associated(array1DRealPointer)) then
+!   if(.not.allocated(array1DRealPointer)) then
+!maltrud debug
+!write(*,*)' DEBUG56: reallocating ',trim(dataName),count_particlelist(particlelist)
+!     allocate(array1DRealPointer(count_particlelist(particlelist)))
+!   end if
 
     ! loop over all elements of the list and insert the data
     dataNumber = 1
@@ -3465,6 +3527,7 @@ end subroutine allocate_list_particlelists !}}}
        real (kind=RKIND), dimension(:), pointer :: val
      end type
      real (kind=RKIND), dimension(:), pointer :: realVal
+     real (kind=RKIND), dimension(:), pointer :: realValColumn
      type array1DInt_list
        integer, dimension(:), pointer :: val
      end type
@@ -3472,6 +3535,7 @@ end subroutine allocate_list_particlelists !}}}
      type (array1DInt_list), dimension(:), pointer :: array1DIntSend, array1DIntRecv
      type (array1DReal_list), dimension(:), pointer :: array1DRealSend, array1DRealRecv
      character (len=StrKIND) :: message
+     integer :: counter, k, levels
 
      ! for each entry in the halo pool, want to send and recv the data
 
@@ -3481,13 +3545,23 @@ end subroutine allocate_list_particlelists !}}}
 
      numReals = 0
      numInts = 0
+     levels = 60
      call mpas_pool_get_subpool(domain % blocklist % structs, 'lagrPartTrackHalo', lagrPartTrackPool)
      call mpas_pool_begin_iteration(lagrPartTrackPool)
      do while(mpas_pool_get_next_member(lagrPartTrackPool, dimItr))
        if (dimItr % memberType == MPAS_POOL_FIELD) then
          !print *,  'transfering ', trim(dimItr % memberName)
          if (dimItr % dataType == MPAS_POOL_REAL) then
-           numReals = numReals + 1
+            if(trim(dimItr % memberName) == 'particleColumnTemperature' .or.  &
+               trim(dimItr % memberName) == 'particleColumnSalinity' .or.  &
+               trim(dimItr % memberName) == 'particleColumnGlobalID' .or.  &
+               trim(dimItr % memberName) == 'particleColumnDepth' .or.  &
+               trim(dimItr % memberName) == 'particleColumnLon' .or.  &
+               trim(dimItr % memberName) == 'particleColumnLat' ) then
+              numReals = numReals + levels
+            else
+              numReals = numReals + 1
+            endif
          elseif (dimItr % dataType == MPAS_POOL_INTEGER) then
            numInts = numInts + 1
          end if
@@ -3540,23 +3614,46 @@ end subroutine allocate_list_particlelists !}}}
        if (nPartSend(i) > 0) then
          allocate(array1DRealSend(i)%val(nPartSend(i)*numReals))
          allocate(realVal(nPartSend(i)))
-         j = 1
+         allocate(realValColumn(nPartSend(i)*levels))
+         counter = 1
          ! perform the parallel communication
          call mpas_pool_begin_iteration(lagrPartTrackPool)
          do while(mpas_pool_get_next_member(lagrPartTrackPool, dimItr))
            if (dimItr % memberType == MPAS_POOL_FIELD) then
              if (dimItr % dataType == MPAS_POOL_REAL) then ! {{{
-               call get_halo_data_from_particle_list_array(listSend(i)%list, dimItr % memberName, &
-                 realVal)
-               do ii=1,nPartSend(i)
-                 array1DRealSend(i)%val((ii+(j-1)*nPartSend(i))) = realval(ii)
-               end do
-               j = j + 1
-             end if ! }}}
-           end if
-         end do
+               if(trim(dimItr % memberName) == 'particleColumnTemperature' .or.  &
+                  trim(dimItr % memberName) == 'particleColumnSalinity' .or.  &
+                  trim(dimItr % memberName) == 'particleColumnGlobalID' .or.  &
+                  trim(dimItr % memberName) == 'particleColumnDepth' .or.  &
+                  trim(dimItr % memberName) == 'particleColumnLon' .or.  &
+                  trim(dimItr % memberName) == 'particleColumnLat' ) then
+                  call get_halo_data_from_particle_list_array(listSend(i)%list, &
+                    dimItr % memberName, realValColumn)
+                  do ii=1,nPartSend(i)
+                   do k = 1, levels
+                    j = (ii - 1)*levels + k
+!maltrud debug
+!write(*,*)' DEBUG53: ',i,ii,k,j,counter,nPartSend(i)*levels
+                    array1DRealSend(i)%val(counter) = realValColumn(j)
+                    counter = counter + 1
+                   enddo
+                  end do
+
+               else  ! not a column field
+                
+                  call get_halo_data_from_particle_list_array(listSend(i)%list, &
+                    dimItr % memberName, realVal)
+                  do ii=1,nPartSend(i)
+                    array1DRealSend(i)%val(counter) = realVal(ii)
+                    counter = counter + 1
+                  end do
+               endif  ! column field
+             end if !  MPAS_POOL_REAL }}}
+           end if  !  MPAS_POOL_FIELD
+         end do  ! dimItr loop
          deallocate(realVal)
-       end if
+         deallocate(realValColumn)
+       end if  !  nPartSend > 0
      end do !}}}
 
      ! send
@@ -3583,18 +3680,43 @@ end subroutine allocate_list_particlelists !}}}
      ! store values
      do i=1,numProcs ! {{{{
        if(nPartRecv(i) > 0) then
-         j = 1
+         allocate(realVal(nPartRecv(i)))
+         allocate(realValColumn(nPartRecv(i)*levels))
+         counter = 1
          call mpas_pool_begin_iteration(lagrPartTrackPool)
          do while(mpas_pool_get_next_member(lagrPartTrackPool, dimItr))
            if (dimItr % memberType == MPAS_POOL_FIELD) then
              if (dimItr % dataType == MPAS_POOL_REAL) then ! {{{
                ! place it in particle list
-               call add_halo_data_to_particle_list_array(listRecv(i)%list, dimItr % memberName, &
-                       array1DRealRecv(i)%val((1+(j-1)*nPartRecv(i)) : (j*nPartRecv(i))))
-               j = j + 1
+               if(trim(dimItr % memberName) == 'particleColumnTemperature' .or.  &
+                  trim(dimItr % memberName) == 'particleColumnSalinity' .or.  &
+                  trim(dimItr % memberName) == 'particleColumnGlobalID' .or.  &
+                  trim(dimItr % memberName) == 'particleColumnDepth' .or.  &
+                  trim(dimItr % memberName) == 'particleColumnLon' .or.  &
+                  trim(dimItr % memberName) == 'particleColumnLat' ) then
+                  do ii=1,nPartRecv(i)
+                   do k = 1, levels
+                    j = (ii - 1)*levels + k
+                    realValColumn(j) = array1DRealRecv(i)%val(counter)
+                    counter = counter + 1
+                   enddo
+                  end do
+                  call add_halo_data_to_particle_list_array(listRecv(i)%list, &
+                    dimItr % memberName, realValColumn)
+               else
+                  do ii=1,nPartRecv(i)
+                    realVal(ii) = array1DRealRecv(i)%val(counter)
+                    counter = counter + 1
+                  end do
+                  call add_halo_data_to_particle_list_array(listRecv(i)%list, &
+                    dimItr % memberName, realVal)
+               endif
+
              end if ! }}}
            end if
          end do
+         deallocate(realVal)
+         deallocate(realValColumn)
        end if
      end do ! }}}
 
@@ -3909,6 +4031,9 @@ end subroutine allocate_list_particlelists !}}}
 
       err = 0
 
+!maltrud debug
+!write(*,*)' DEBUG25:  entering read_haloData'
+
       block => domain % blocklist
       do while (associated(block))
         ! allocate pointers
@@ -3956,6 +4081,9 @@ end subroutine allocate_list_particlelists !}}}
          block => block % next
       end do
       LIGHT_DEBUG_WRITE('Finished reading halo data')
+
+!maltrud debug
+!write(*,*)' DEBUG25:  exiting read_haloData'
 
    end subroutine read_haloData!}}}
 
@@ -4191,9 +4319,13 @@ end subroutine allocate_list_particlelists !}}}
        ! THIS LINE CAUSED A VERY, VERY, VERY NASTY BUG-- BE CAREFUL ABOUT GETTING THE LOCATION OF POTENTIALLY NULLS!
        nPartList = count_particlelist(block % particlelist)
        nPartList_particles = count_particlelist_particles(block % particlelist)
-       LIGHT_DEBUG_WRITE('block = ' COMMA block % blockID COMMA ' nPartList= ' COMMA  nPartList COMMA ' nparticles = ' COMMA nPartList_particles)
+!maltrud debug
+!      LIGHT_DEBUG_WRITE('block = ' COMMA block % blockID COMMA ' nPartList= ' COMMA  nPartList COMMA ' nparticles = ' COMMA nPartList_particles)
+write(*,*)'block = ' , block % blockID , ' nPartList= ' ,  nPartList , ' nparticles = ' , nPartList_particles
        if (nPartList > nPartList_particles) then
-         LIGHT_DEBUG_WRITE('Possible error! ' COMMA nPartList - nPartList_particles COMMA ' particles on particle list is not allocated!')
+!maltrud debug
+!        LIGHT_DEBUG_WRITE('Possible error! ' COMMA nPartList - nPartList_particles COMMA ' particles on particle list is not allocated!')
+write(*,*)'Possible error! ' , nPartList - nPartList_particles , ' particles on particle list is not allocated!'
        end if
 
        block => block % next

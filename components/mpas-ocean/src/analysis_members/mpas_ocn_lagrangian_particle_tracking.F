@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.io/license.html
+! distributed with this code, or at http://mpas-dev.github.com/license.html
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -254,6 +254,12 @@ contains
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: scratchPool
       type (mpas_pool_type), pointer :: tracersPool
+      type (mpas_pool_type), pointer :: forcingPool
+      type (mpas_pool_type), pointer :: diagnosticsPool
+      type (mpas_pool_type), pointer :: ecosysAuxiliary
+      type (mpas_pool_type), pointer :: ecosysDiagFieldsLevel2
+      type (mpas_pool_type), pointer :: tracersSurfaceFluxPool
+
       type (mpas_pool_type), pointer :: lagrPartTrackFieldsPool, lagrPartTrackCellsPool, lagrPartTrackScratchPool
       integer, dimension(:), pointer :: cellOwnerBlock
       integer, pointer :: currentBlock, ioBlock, indexToParticleID, transfered, currentCellGlobalID
@@ -264,6 +270,12 @@ contains
       real (kind=RKIND), pointer :: xParticle, yParticle, zParticle, buoyancyParticle !, &
 !        lonVel, latVel, sumU, sumV, sumUU, sumUV, sumVV
       real (kind=RKIND), pointer :: lonParticle, latParticle
+!maltrud new
+!     real (kind=RKIND), pointer :: lonParticleDummy, latParticleDummy
+      real (kind=RKIND) :: lonParticleDummy, latParticleDummy
+      real (kind=RKIND), pointer :: zLevelTemp
+      real (kind=RKIND), target :: zLevelColumn
+
       real (kind=RKIND), dimension(3) :: xSubStep, diffSubStep, diffParticlePosition
       real (kind=RKIND), pointer :: zLevelParticle
       real (kind=RKIND), dimension(:,:), pointer :: areaBArray
@@ -280,7 +292,7 @@ contains
       integer, dimension(:), pointer :: maxLevelCell, indexToCellID
 
       integer theVertex, iLevel, iLevelBuoyancy, aVertex, &
-        nSteps, timeStep, subStep, subStepOrder, timeInterpOrder, aTimeLevel, nCellVertices, blockProc, arrayIndex
+        nSteps, timeStep, subStep, subStepOrder, timeInterpOrder, aTimeLevel, nCellVertices, blockProc, arrayIndex, kLevel
       integer, pointer :: nCells, nVertLevels, iCell
       integer, dimension(:), pointer :: nCellVerticesArray
       integer, dimension(:,:), pointer :: cellsOnCell
@@ -310,6 +322,9 @@ contains
                           index_salinity
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
 
+      real (kind=RKIND), dimension(:,:), pointer :: velocityZonal
+      real (kind=RKIND), dimension(:,:), pointer :: velocityMeridional
+
       real (kind=RKIND), pointer :: particleTemperature
 
       real (kind=RKIND), pointer :: particleSalinity
@@ -322,8 +337,29 @@ contains
                           index_SiO3, &
                           index_NH4, &
                           index_Fe, &
-                          index_O2
+                          index_O2, &
+                          index_spChl, &
+                          index_diatChl, &
+                          index_diazChl, &
+                          index_spC, &
+                          index_diatC, &
+                          index_diazC, &
+                          index_zooC
       real (kind=RKIND), dimension(:,:,:), pointer :: ecosysTracers
+      real (kind=RKIND), dimension(:,:), pointer :: ecosysTracersSurfaceFlux
+
+      real (kind=RKIND), dimension(:,:), pointer :: ecosys_diag_O2_PRODUCTION
+      real (kind=RKIND), dimension(:,:), pointer :: ecosys_diag_O2_CONSUMPTION
+
+      real (kind=RKIND), dimension(:), pointer :: ecosys_diag_dpCO2
+      real (kind=RKIND), dimension(:), pointer :: ecosys_diag_pCO2surface
+      real (kind=RKIND), dimension(:), pointer :: ecosys_diag_atmPressure
+      real (kind=RKIND), dimension(:), pointer :: ecosys_diag_ifrac
+      real (kind=RKIND), dimension(:), pointer :: atmosphericCO2
+      real (kind=RKIND), dimension(:), pointer :: CO2_gas_flux
+      real (kind=RKIND), dimension(:), pointer :: dThreshMLD
+
+      real (kind=RKIND), allocatable, dimension(:,:,:) :: surfaceTo3Dhack
 
       ! DIC
       real (kind=RKIND), pointer :: particleDIC
@@ -349,7 +385,52 @@ contains
       ! O2
       real (kind=RKIND), pointer :: particleO2
 
+      real (kind=RKIND), pointer :: particle_dpCO2
+      real (kind=RKIND), pointer :: particle_O2_gas_flux
+      real (kind=RKIND), pointer :: particle_CO2_gas_flux
+      real (kind=RKIND), pointer :: particle_atmosphericCO2
+      real (kind=RKIND), pointer :: particle_pCO2surface
+      real (kind=RKIND), pointer :: particle_ifrac
+      real (kind=RKIND), pointer :: particle_atmPressure
+      real (kind=RKIND), pointer :: particle_MLD
+
+      ! velocity components
+      real (kind=RKIND), pointer :: particleVelZonal
+      real (kind=RKIND), pointer :: particleVelMerid
+
+! maltrud this IS a Registry variable
+      real (kind=RKIND), pointer :: particleScratch
+
+      integer :: field2dnum
+      integer, parameter :: num2dFields = 8
+
       REAL (kind=RKIND), parameter :: eps=1e-12
+
+!maltrud new
+      integer :: particleCounter, columnIndex, ii, numParticles, numLinks
+      type (mpas_pool_type), pointer :: lagrPartTrackPool
+      type (field1DReal), pointer :: field1DRealPointer
+      real (kind=RKIND), dimension(:), pointer :: Array1DRealPointerColumnTemperature => NULL()
+      real (kind=RKIND), dimension(:), pointer :: Array1DRealPointerColumnSalinity => NULL()
+      real (kind=RKIND), dimension(:), pointer :: Array1DRealPointerColumnGlobalID => NULL()
+      real (kind=RKIND), dimension(:), pointer :: Array1DRealPointerColumnDepth => NULL()
+      real (kind=RKIND), dimension(:), pointer :: Array1DRealPointerColumnLon => NULL()
+      real (kind=RKIND), dimension(:), pointer :: Array1DRealPointerColumnLat => NULL()
+      real (kind=RKIND), dimension(:), pointer :: Array1DRealPointerColumnDIC => NULL()
+      real (kind=RKIND), dimension(:), pointer :: Array1DRealPointerColumnNO3 => NULL()
+      real (kind=RKIND), dimension(:), pointer :: Array1DRealPointerColumnO2 => NULL()
+      real (kind=RKIND), dimension(:), pointer :: Array1DRealPointerColumnALK => NULL()
+      real (kind=RKIND), dimension(:), pointer :: Array1DRealPointerColumnPO4 => NULL()
+      real (kind=RKIND), dimension(:), pointer :: Array1DRealPointerColumnSiO3 => NULL()
+      real (kind=RKIND), dimension(:), pointer :: Array1DRealPointerColumnVelZonal => NULL()
+      real (kind=RKIND), dimension(:), pointer :: Array1DRealPointerColumnVelMerid => NULL()
+      real (kind=RKIND), dimension(:), pointer :: Array1DRealPointerColumnTotalPhytoChl => NULL()
+      real (kind=RKIND), dimension(:), pointer :: Array1DRealPointerColumnTotalPhytoC => NULL()
+      real (kind=RKIND), dimension(:), pointer :: Array1DRealPointerColumnZooC => NULL()
+      real (kind=RKIND), dimension(:), pointer :: Array1DRealPointerColumnO2_Consumption => NULL()
+      real (kind=RKIND), dimension(:), pointer :: Array1DRealPointerColumnO2_Production => NULL()
+
+      type (mpas_particle_list_type), pointer :: ParticleLinkCurr
 
 
       err = 0
@@ -390,10 +471,16 @@ contains
         call mpas_pool_get_subpool(block % structs, 'state', statePool)
         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
         call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
+        call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
+        call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
+
         call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
         call mpas_pool_get_subpool(block % structs, 'lagrPartTrackFields', lagrPartTrackFieldsPool)
         call mpas_pool_get_subpool(block % structs, 'lagrPartTrackScratch', lagrPartTrackScratchPool)
         call mpas_pool_get_subpool(block % structs, 'lagrPartTrackCells', lagrPartTrackCellsPool)
+
+!maltrud new
+        call mpas_pool_get_subpool(block % structs, 'lagrPartTrackHalo', lagrPartTrackPool)
 
         ! particlelist should be stored in the structs pool probably (need to seriously rework the code!)
         particlelist => block % particlelist
@@ -420,6 +507,8 @@ contains
         call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
         call mpas_pool_get_dimension(tracersPool, 'index_temperature', index_temperature)
         call mpas_pool_get_dimension(tracersPool, 'index_salinity', index_salinity)
+        call mpas_pool_get_array(diagnosticsPool, 'velocityZonal', velocityZonal)
+        call mpas_pool_get_array(diagnosticsPool, 'velocityMeridional', velocityMeridional)
         if (config_use_ecosysTracers) then
           call mpas_pool_get_array(tracersPool, 'ecosysTracers', ecosysTracers, timeLevel)
           call mpas_pool_get_dimension(tracersPool, 'index_DIC', index_DIC)
@@ -430,6 +519,38 @@ contains
           call mpas_pool_get_dimension(tracersPool, 'index_NH4', index_NH4)
           call mpas_pool_get_dimension(tracersPool, 'index_Fe', index_Fe)
           call mpas_pool_get_dimension(tracersPool, 'index_O2', index_O2)
+          call mpas_pool_get_dimension(tracersPool, 'index_spChl', index_spChl)
+          call mpas_pool_get_dimension(tracersPool, 'index_diatChl', index_diatChl)
+          call mpas_pool_get_dimension(tracersPool, 'index_diazChl', index_diazChl)
+          call mpas_pool_get_dimension(tracersPool, 'index_spC', index_spC)
+          call mpas_pool_get_dimension(tracersPool, 'index_diatC', index_diatC)
+          call mpas_pool_get_dimension(tracersPool, 'index_diazC', index_diazC)
+          call mpas_pool_get_dimension(tracersPool, 'index_zooC', index_zooC)
+
+          call mpas_pool_get_subpool(forcingPool, 'ecosysAuxiliary', ecosysAuxiliary)
+          call mpas_pool_get_subpool(forcingPool, 'ecosysDiagFieldsLevel2', &
+             ecosysDiagFieldsLevel2)
+          call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceFlux', &
+             tracersSurfaceFluxPool)
+
+          call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_O2_PRODUCTION', &
+             ecosys_diag_O2_PRODUCTION)
+          call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_O2_CONSUMPTION', &
+             ecosys_diag_O2_CONSUMPTION)
+          call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_dpCO2', &
+             ecosys_diag_dpCO2)
+          call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_pCO2surface', &
+             ecosys_diag_pCO2surface)
+          call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_atmPressure', &
+             ecosys_diag_atmPressure)
+          call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_ifrac', &
+             ecosys_diag_ifrac)
+          call mpas_pool_get_array(ecosysAuxiliary, 'atmosphericCO2', atmosphericCO2)
+          call mpas_pool_get_array(ecosysAuxiliary, 'CO2_gas_flux', CO2_gas_flux)
+          call mpas_pool_get_array(diagnosticsPool, 'dThreshMLD', dThreshMLD)
+
+          call mpas_pool_get_array(tracersSurfaceFluxPool, 'ecosysTracersSurfaceFlux', &
+             ecosysTracersSurfaceFlux)
         end if
 
         call mpas_pool_get_array(meshPool, 'verticesOnCell', verticesOnCell)
@@ -498,9 +619,100 @@ contains
         call mpas_particle_list_test_num_current_particlelist(domain)
 #endif
 
+!maltrud new
+! the function for counting the number of particles in a list is in 
+!  mpas_ocn_particle_list.F and is not public so hardwire it here
+        numParticles = 0
+        numLinks = 0
+        particleLinkCurr => particlelist
+        do while(associated(particleLinkCurr))
+          if (associated(particleLinkCurr % particle)) then
+            numParticles = numParticles + 1
+          end if
+          numLinks = numLinks + 1
+          particleLinkCurr => particleLinkCurr % next
+        end do
+
+!maltrud debug
+!write(*,*)'DEBUG38: ',numParticles,numLinks
+
+!maltrud use -1 initial value to distinguish from IC which has 0
+        if (config_AM_lagrPartTrack_sample_temperature) then
+          allocate(Array1DRealPointerColumnTemperature(numParticles*nVertLevels))
+          Array1DRealPointerColumnTemperature = -1.0_RKIND
+        endif
+        if (config_AM_lagrPartTrack_sample_salinity) then
+          allocate(Array1DRealPointerColumnSalinity(numParticles*nVertLevels))
+          Array1DRealPointerColumnSalinity = -1.0_RKIND
+        endif
+        if (config_AM_lagrPartTrack_sample_temperature .or.  &
+            config_AM_lagrPartTrack_sample_salinity) then
+          allocate(Array1DRealPointerColumnGlobalID(numParticles*nVertLevels))
+          Array1DRealPointerColumnGlobalID = -1.0_RKIND
+          allocate(Array1DRealPointerColumnDepth(numParticles*nVertLevels))
+          Array1DRealPointerColumnDepth = -1.0_RKIND
+          allocate(Array1DRealPointerColumnLon(numParticles*nVertLevels))
+          Array1DRealPointerColumnLon = -1.0_RKIND
+          allocate(Array1DRealPointerColumnLat(numParticles*nVertLevels))
+          Array1DRealPointerColumnLat = -1.0_RKIND
+        endif
+
+          allocate(Array1DRealPointerColumnVelZonal(numParticles*nVertLevels))
+          Array1DRealPointerColumnVelZonal = -1.0_RKIND
+          allocate(Array1DRealPointerColumnVelMerid(numParticles*nVertLevels))
+          Array1DRealPointerColumnVelMerid = -1.0_RKIND
+
+        if (config_use_ecosysTracers) then
+          if (config_AM_lagrPartTrack_sample_DIC) then
+            allocate(Array1DRealPointerColumnDIC(numParticles*nVertLevels))
+            Array1DRealPointerColumnDIC = -1.0_RKIND
+          endif
+          if (config_AM_lagrPartTrack_sample_NO3) then
+            allocate(Array1DRealPointerColumnNO3(numParticles*nVertLevels))
+            Array1DRealPointerColumnNO3 = -1.0_RKIND
+          endif
+          if (config_AM_lagrPartTrack_sample_O2) then
+            allocate(Array1DRealPointerColumnO2(numParticles*nVertLevels))
+            Array1DRealPointerColumnO2 = -1.0_RKIND
+          endif
+!maltrud allocate all column arrays
+            allocate(Array1DRealPointerColumnALK(numParticles*nVertLevels))
+            Array1DRealPointerColumnALK = -1.0_RKIND
+            allocate(Array1DRealPointerColumnPO4(numParticles*nVertLevels))
+            Array1DRealPointerColumnPO4 = -1.0_RKIND
+            allocate(Array1DRealPointerColumnSiO3(numParticles*nVertLevels))
+            Array1DRealPointerColumnSiO3 = -1.0_RKIND
+            allocate(Array1DRealPointerColumnTotalPhytoChl(numParticles*nVertLevels))
+            Array1DRealPointerColumnTotalPhytoChl = -1.0_RKIND
+            allocate(Array1DRealPointerColumnTotalPhytoC(numParticles*nVertLevels))
+            Array1DRealPointerColumnTotalPhytoC = -1.0_RKIND
+            allocate(Array1DRealPointerColumnZooC(numParticles*nVertLevels))
+            Array1DRealPointerColumnZooC = -1.0_RKIND
+            allocate(Array1DRealPointerColumnO2_Consumption(numParticles*nVertLevels))
+            Array1DRealPointerColumnO2_Consumption = -1.0_RKIND
+            allocate(Array1DRealPointerColumnO2_Production(numParticles*nVertLevels))
+            Array1DRealPointerColumnO2_Production = -1.0_RKIND
+
+            allocate(surfaceTo3Dhack(num2dFields, nVertLevels, nCells))
+
+            do kLevel = 1, nVertLevels
+              surfaceTo3Dhack(1,klevel,:) = ecosys_diag_dpCO2(:)
+              surfaceTo3Dhack(2,klevel,:) = ecosysTracersSurfaceFlux(index_O2,:)
+              surfaceTo3Dhack(3,klevel,:) = CO2_gas_flux(:)
+              surfaceTo3Dhack(4,klevel,:) = atmosphericCO2(:)
+              surfaceTo3Dhack(5,klevel,:) = ecosys_diag_pCO2surface(:)
+              surfaceTo3Dhack(6,klevel,:) = ecosys_diag_ifrac(:)
+              surfaceTo3Dhack(7,klevel,:) = ecosys_diag_atmPressure(:)
+              surfaceTo3Dhack(8,klevel,:) = dThreshMLD(:)
+            enddo  !  kLevel
+        endif
+
         !!!!!!!!!! LOOP OVER PARTICLES !!!!!!!!!!
         ! update the particle position (just from initialized value for now)
         ! this is a loop over particle list and its datastructures
+!maltrud new
+        particleCounter = 1
+
         do while(associated(particlelist)) !{{{
           ! get pointers / option values
           particle => particlelist % particle
@@ -536,6 +748,10 @@ contains
           call mpas_pool_get_array(particle % haloDataPool, 'particleTemperature', particleTemperature)
           call mpas_pool_get_array(particle % haloDataPool, 'particleSalinity', particleSalinity)
 
+          call mpas_pool_get_array(particle % haloDataPool, 'particleVelZonal', particleVelZonal)
+          call mpas_pool_get_array(particle % haloDataPool, 'particleVelMerid', particleVelMerid)
+          call mpas_pool_get_array(particle % haloDataPool, 'particleScratch', particleScratch)
+
           if (config_use_ecosysTracers) then
             call mpas_pool_get_array(particle % haloDataPool, 'particleDIC', particleDIC)
             call mpas_pool_get_array(particle % haloDataPool, 'particleALK', particleALK)
@@ -545,6 +761,15 @@ contains
             call mpas_pool_get_array(particle % haloDataPool, 'particleNH4', particleNH4)
             call mpas_pool_get_array(particle % haloDataPool, 'particleFe', particleFe)
             call mpas_pool_get_array(particle % haloDataPool, 'particleO2', particleO2)
+
+            call mpas_pool_get_array(particle % haloDataPool, 'particle_dpCO2', particle_dpCO2)
+            call mpas_pool_get_array(particle % haloDataPool, 'particle_O2_gas_flux', particle_O2_gas_flux)
+            call mpas_pool_get_array(particle % haloDataPool, 'particle_CO2_gas_flux', particle_CO2_gas_flux)
+            call mpas_pool_get_array(particle % haloDataPool, 'particle_atmosphericCO2', particle_atmosphericCO2)
+            call mpas_pool_get_array(particle % haloDataPool, 'particle_pCO2surface', particle_pCO2surface)
+            call mpas_pool_get_array(particle % haloDataPool, 'particle_ifrac', particle_ifrac)
+            call mpas_pool_get_array(particle % haloDataPool, 'particle_atmPressure', particle_atmPressure)
+            call mpas_pool_get_array(particle % haloDataPool, 'particle_MLD', particle_MLD)
           end if
 
 !          call mpas_pool_get_array(particle % haloDataPool, 'lonVel', lonVel)
@@ -791,6 +1016,35 @@ contains
              if (config_AM_lagrPartTrack_sample_temperature) then
               !call mpas_log_write(' testing output for temperature')
               if (config_AM_lagrPartTrack_sample_horizontal_interp) then
+! do profile first so we can use particleTemperature as a temporary
+!maltrud debug
+                do kLevel = 1, maxLevelCell(iCell)
+                zLevelColumn = zMid(kLevel,iCell) + 1.e-3_RKIND
+                zLevelTemp => zLevelColumn
+!maltrud debug
+!if(klevel==1) write(*,*)' ZLEVEL = ',zLevelTemp,zLevelColumn, zLevelParticle,verticalTreatment
+                call interp_scalars(particleTemperature, activeTracers(index_temperature,:,:), &
+                  verticesOnCell(:,iCell), nCellVerticesArray(iCell), &
+                  particlePosition(1),particlePosition(2),particlePosition(3), &
+                  xVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                  yVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                  zVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                  xCell, yCell, zCell, &
+                  meshPool, &
+                  cellsOnVertex, &
+                  1, maxLevelCell, iCell, buoyancyParticle, buoyancyTimeInterp, &
+                  zLevelTemp, zMid, kLevel)
+                  columnIndex = (particleCounter - 1)*nVertLevels + kLevel
+                  Array1DRealPointerColumnTemperature(columnIndex) = particleTemperature
+ if(indexToParticleID==2006) write(*,*)' DEBUG39: ',indexToParticleID,klevel,particleTemperature
+!if(indexToParticleID==2006) write(*,*)' DEBUG39: ',indexToParticleID,klev,particleCounter,klevel,columnIndex,particleTemperature
+!maltrud debug
+!if(kLevel<500) write(*,*)'DEBUG33: ',kLevel,columnIndex,iCell,zLevelColumn,particleCounter,particleTemperature,Array1DRealPointerColumn(columnIndex),maxLevelCell(iCell)
+!if(kLevel>=55) write(*,*)'DEBUG333: ',kLevel,iCell,zMid(:,iCell)
+                enddo  !  kLevel
+!maltrud debug
+! write(*,*)' ZLEVEL1 = ',zLevelTemp, zLevelColumn, zLevelParticle
+
                 call interp_scalars(particleTemperature, activeTracers(index_temperature,:,:), &
                   verticesOnCell(:,iCell), nCellVerticesArray(iCell), &
                   particlePosition(1),particlePosition(2),particlePosition(3), &
@@ -812,6 +1066,25 @@ contains
              if (config_AM_lagrPartTrack_sample_salinity) then
               !call mpas_log_write(' testing output for salinity')
               if (config_AM_lagrPartTrack_sample_horizontal_interp) then
+! do profile first so we can use particleSalinity as a temporary
+                do kLevel = 1, maxLevelCell(iCell)
+                zLevelColumn = zMid(kLevel,iCell) + 1.e-3_RKIND
+                zLevelTemp => zLevelColumn
+                call interp_scalars(particleSalinity, activeTracers(index_salinity,:,:), &
+                  verticesOnCell(:,iCell), nCellVerticesArray(iCell), &
+                  particlePosition(1),particlePosition(2),particlePosition(3), &
+                  xVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                  yVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                  zVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                  xCell, yCell, zCell, &
+                  meshPool, &
+                  cellsOnVertex, &
+                  1, maxLevelCell, iCell, buoyancyParticle, buoyancyTimeInterp, &
+                  zLevelTemp, zMid, kLevel)
+                  columnIndex = (particleCounter - 1)*nVertLevels + kLevel
+                  Array1DRealPointerColumnSalinity(columnIndex) = particleSalinity
+                enddo  !  kLevel
+
                 call interp_scalars(particleSalinity, activeTracers(index_salinity,:,:), &
                   verticesOnCell(:,iCell), nCellVerticesArray(iCell), &
                   particlePosition(1),particlePosition(2),particlePosition(3), &
@@ -831,12 +1104,125 @@ contains
              end if
            end if
 
+! do velocity
+              !call mpas_log_write(' testing output for velZonal')
+              if (config_AM_lagrPartTrack_sample_horizontal_interp) then
+                do kLevel = 1, maxLevelCell(iCell)
+                zLevelColumn = zMid(kLevel,iCell) + 1.e-3_RKIND
+                zLevelTemp => zLevelColumn
+                call interp_scalars(particleVelZonal, velocityZonal(:,:), &
+                  verticesOnCell(:,iCell), nCellVerticesArray(iCell), &
+                  particlePosition(1),particlePosition(2),particlePosition(3), &
+                  xVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                  yVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                  zVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                  xCell, yCell, zCell, &
+                  meshPool, &
+                  cellsOnVertex, &
+                  1, maxLevelCell, iCell, buoyancyParticle, buoyancyTimeInterp, &
+                  zLevelTemp, zMid, kLevel)
+                  columnIndex = (particleCounter - 1)*nVertLevels + kLevel
+                  Array1DRealPointerColumnVelZonal(columnIndex) = particleVelZonal
+                enddo  !  kLevel
+
+                call interp_scalars(particleVelZonal, velocityZonal(:,:), &
+                  verticesOnCell(:,iCell), nCellVerticesArray(iCell), &
+                  particlePosition(1),particlePosition(2),particlePosition(3), &
+                  xVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                  yVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                  zVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                  xCell, yCell, zCell, &
+                  meshPool, &
+                  cellsOnVertex, &
+                  verticalTreatment, maxLevelCell, iCell, buoyancyParticle, buoyancyTimeInterp, &
+                  zLevelParticle, zMid, indexLevel)
+              else
+                call interp_cell_scalars(iLevel, maxLevelCell(iCell), -zLevelParticle, -zMid(:,iCell), &
+                  velocityZonal(:,iCell), particleVelZonal)
+              end if
+              !call mpas_log_write('done testing output for velZonal')
+
+              !call mpas_log_write(' testing output for velMeridional')
+              if (config_AM_lagrPartTrack_sample_horizontal_interp) then
+                do kLevel = 1, maxLevelCell(iCell)
+                zLevelColumn = zMid(kLevel,iCell) + 1.e-3_RKIND
+                zLevelTemp => zLevelColumn
+                call interp_scalars(particleVelMerid, velocityMeridional(:,:), &
+                  verticesOnCell(:,iCell), nCellVerticesArray(iCell), &
+                  particlePosition(1),particlePosition(2),particlePosition(3), &
+                  xVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                  yVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                  zVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                  xCell, yCell, zCell, &
+                  meshPool, &
+                  cellsOnVertex, &
+                  1, maxLevelCell, iCell, buoyancyParticle, buoyancyTimeInterp, &
+                  zLevelTemp, zMid, kLevel)
+                  columnIndex = (particleCounter - 1)*nVertLevels + kLevel
+                  Array1DRealPointerColumnVelMerid(columnIndex) = particleVelMerid
+                enddo  !  kLevel
+
+                call interp_scalars(particleVelMerid, velocityMeridional(:,:), &
+                  verticesOnCell(:,iCell), nCellVerticesArray(iCell), &
+                  particlePosition(1),particlePosition(2),particlePosition(3), &
+                  xVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                  yVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                  zVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                  xCell, yCell, zCell, &
+                  meshPool, &
+                  cellsOnVertex, &
+                  verticalTreatment, maxLevelCell, iCell, buoyancyParticle, buoyancyTimeInterp, &
+                  zLevelParticle, zMid, indexLevel)
+              else
+                call interp_cell_scalars(iLevel, maxLevelCell(iCell), -zLevelParticle, -zMid(:,iCell), &
+                  velocityMeridional(:,iCell), particleVelMerid)
+              end if
+              !call mpas_log_write('done testing output for velMerid')
+
+          if (config_AM_lagrPartTrack_sample_temperature .or.  &
+              config_AM_lagrPartTrack_sample_salinity) then
+
+!maltrud debug
+            call convert_latlon_from_xyz(latParticleDummy, lonParticleDummy, &
+              particlePosition(1),particlePosition(2),particlePosition(3))
+!latParticleDummy = 1.0_RKIND
+!lonParticleDummy = 1.0_RKIND
+            do kLevel = 1, maxLevelCell(iCell)
+              columnIndex = (particleCounter - 1)*nVertLevels + kLevel
+              Array1DRealPointerColumnGlobalID(columnIndex) = indexToParticleID
+!if(indexToParticleID==1160 .or. indexToParticleID==1161 .or. indexToParticleID==1162) write(*,*)' DEBUG40: ',indexToParticleID,particleCounter,klevel,columnIndex,Array1DRealPointerColumnGlobalID(columnIndex)
+              Array1DRealPointerColumnDepth(columnIndex) = zMid(kLevel,iCell)
+              Array1DRealPointerColumnLon(columnIndex) = lonParticleDummy
+              Array1DRealPointerColumnLat(columnIndex) = latParticleDummy
+            enddo
+          endif
+
            if (config_use_ecosysTracers) then
              call mpas_pool_get_array(tracersPool, 'ecosysTracers', ecosysTracers, timeLevel)
              if ( associated(ecosysTracers) ) then
                if (config_AM_lagrPartTrack_sample_DIC) then
                  !call mpas_log_write('testing output for DIC')
                  if (config_AM_lagrPartTrack_sample_horizontal_interp) then
+! do profile first so we can use particleDIC as a temporary
+!maltrud debug
+                   do kLevel = 1, maxLevelCell(iCell)
+                zLevelColumn = zMid(kLevel,iCell) + 1.e-3_RKIND
+                zLevelTemp => zLevelColumn
+                   call interp_scalars(particleDIC, ecosysTracers(index_DIC,:,:), &
+                     verticesOnCell(:,iCell), nCellVerticesArray(iCell), &
+                     particlePosition(1),particlePosition(2),particlePosition(3), &
+                     xVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                     yVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                     zVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                     xCell, yCell, zCell, &
+                     meshPool, &
+                     cellsOnVertex, &
+                     1, maxLevelCell, iCell, buoyancyParticle, buoyancyTimeInterp, &
+                     zLevelTemp, zMid, kLevel)
+                     columnIndex = (particleCounter - 1)*nVertLevels + kLevel
+                     Array1DRealPointerColumnDIC(columnIndex) = particleDIC
+                   enddo  !  kLevel
+
                    call interp_scalars(particleDIC, ecosysTracers(index_DIC,:,:), &
                      verticesOnCell(:,iCell), nCellVerticesArray(iCell), &
                      particlePosition(1),particlePosition(2),particlePosition(3), &
@@ -858,6 +1244,24 @@ contains
                if (config_AM_lagrPartTrack_sample_ALK) then
                  !call mpas_log_write('testing output for ALK')
                  if (config_AM_lagrPartTrack_sample_horizontal_interp) then
+                   do kLevel = 1, maxLevelCell(iCell)
+                zLevelColumn = zMid(kLevel,iCell) + 1.e-3_RKIND
+                zLevelTemp => zLevelColumn
+                   call interp_scalars(particleALK, ecosysTracers(index_ALK,:,:), &
+                     verticesOnCell(:,iCell), nCellVerticesArray(iCell), &
+                     particlePosition(1),particlePosition(2),particlePosition(3), &
+                     xVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                     yVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                     zVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                     xCell, yCell, zCell, &
+                     meshPool, &
+                     cellsOnVertex, &
+                     1, maxLevelCell, iCell, buoyancyParticle, buoyancyTimeInterp, &
+                     zLevelTemp, zMid, kLevel)
+                     columnIndex = (particleCounter - 1)*nVertLevels + kLevel
+                     Array1DRealPointerColumnALK(columnIndex) = particleALK
+                   enddo  !  kLevel
+
                    call interp_scalars(particleALK, ecosysTracers(index_ALK,:,:), &
                      verticesOnCell(:,iCell), nCellVerticesArray(iCell), &
                      particlePosition(1),particlePosition(2),particlePosition(3), &
@@ -879,6 +1283,24 @@ contains
                if (config_AM_lagrPartTrack_sample_PO4) then
                  !call mpas_log_write('testing output for PO4')
                  if (config_AM_lagrPartTrack_sample_horizontal_interp) then
+                   do kLevel = 1, maxLevelCell(iCell)
+                zLevelColumn = zMid(kLevel,iCell) + 1.e-3_RKIND
+                zLevelTemp => zLevelColumn
+                   call interp_scalars(particlePO4, ecosysTracers(index_PO4,:,:), &
+                     verticesOnCell(:,iCell), nCellVerticesArray(iCell), &
+                     particlePosition(1),particlePosition(2),particlePosition(3), &
+                     xVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                     yVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                     zVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                     xCell, yCell, zCell, &
+                     meshPool, &
+                     cellsOnVertex, &
+                     1, maxLevelCell, iCell, buoyancyParticle, buoyancyTimeInterp, &
+                     zLevelTemp, zMid, kLevel)
+                     columnIndex = (particleCounter - 1)*nVertLevels + kLevel
+                     Array1DRealPointerColumnPO4(columnIndex) = particlePO4
+                   enddo  !  kLevel
+
                    call interp_scalars(particlePO4, ecosysTracers(index_PO4,:,:), &
                      verticesOnCell(:,iCell), nCellVerticesArray(iCell), &
                      particlePosition(1),particlePosition(2),particlePosition(3), &
@@ -900,6 +1322,26 @@ contains
                if (config_AM_lagrPartTrack_sample_NO3) then
                  !call mpas_log_write('testing output for NO3')
                  if (config_AM_lagrPartTrack_sample_horizontal_interp) then
+! do profile first so we can use particleNO3 as a temporary
+!maltrud debug
+                   do kLevel = 1, maxLevelCell(iCell)
+                zLevelColumn = zMid(kLevel,iCell) + 1.e-3_RKIND
+                zLevelTemp => zLevelColumn
+                   call interp_scalars(particleNO3, ecosysTracers(index_NO3,:,:), &
+                     verticesOnCell(:,iCell), nCellVerticesArray(iCell), &
+                     particlePosition(1),particlePosition(2),particlePosition(3), &
+                     xVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                     yVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                     zVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                     xCell, yCell, zCell, &
+                     meshPool, &
+                     cellsOnVertex, &
+                     1, maxLevelCell, iCell, buoyancyParticle, buoyancyTimeInterp, &
+                     zLevelTemp, zMid, kLevel)
+                     columnIndex = (particleCounter - 1)*nVertLevels + kLevel
+                     Array1DRealPointerColumnNO3(columnIndex) = particleNO3
+                   enddo  !  kLevel
+
                    call interp_scalars(particleNO3, ecosysTracers(index_NO3,:,:), &
                      verticesOnCell(:,iCell), nCellVerticesArray(iCell), &
                      particlePosition(1),particlePosition(2),particlePosition(3), &
@@ -921,6 +1363,24 @@ contains
                if (config_AM_lagrPartTrack_sample_SiO3) then
                  !call mpas_log_write('testing output for SiO3')
                  if (config_AM_lagrPartTrack_sample_horizontal_interp) then
+                   do kLevel = 1, maxLevelCell(iCell)
+                zLevelColumn = zMid(kLevel,iCell) + 1.e-3_RKIND
+                zLevelTemp => zLevelColumn
+                   call interp_scalars(particleSiO3, ecosysTracers(index_SiO3,:,:), &
+                     verticesOnCell(:,iCell), nCellVerticesArray(iCell), &
+                     particlePosition(1),particlePosition(2),particlePosition(3), &
+                     xVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                     yVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                     zVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                     xCell, yCell, zCell, &
+                     meshPool, &
+                     cellsOnVertex, &
+                     1, maxLevelCell, iCell, buoyancyParticle, buoyancyTimeInterp, &
+                     zLevelTemp, zMid, kLevel)
+                     columnIndex = (particleCounter - 1)*nVertLevels + kLevel
+                     Array1DRealPointerColumnSiO3(columnIndex) = particleSiO3
+                   enddo  !  kLevel
+
                    call interp_scalars(particleSiO3, ecosysTracers(index_SiO3,:,:), &
                      verticesOnCell(:,iCell), nCellVerticesArray(iCell), &
                      particlePosition(1),particlePosition(2),particlePosition(3), &
@@ -984,6 +1444,26 @@ contains
                if (config_AM_lagrPartTrack_sample_O2) then
                  !call mpas_log_write('testing output for O2')
                  if (config_AM_lagrPartTrack_sample_horizontal_interp) then
+! do profile first so we can use particleO2 as a temporary
+!maltrud debug
+                   do kLevel = 1, maxLevelCell(iCell)
+                zLevelColumn = zMid(kLevel,iCell) + 1.e-3_RKIND
+                zLevelTemp => zLevelColumn
+                   call interp_scalars(particleO2, ecosysTracers(index_O2,:,:), &
+                     verticesOnCell(:,iCell), nCellVerticesArray(iCell), &
+                     particlePosition(1),particlePosition(2),particlePosition(3), &
+                     xVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                     yVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                     zVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                     xCell, yCell, zCell, &
+                     meshPool, &
+                     cellsOnVertex, &
+                     1, maxLevelCell, iCell, buoyancyParticle, buoyancyTimeInterp, &
+                     zLevelTemp, zMid, kLevel)
+                     columnIndex = (particleCounter - 1)*nVertLevels + kLevel
+                     Array1DRealPointerColumnO2(columnIndex) = particleO2
+                   enddo  !  kLevel
+
                    call interp_scalars(particleO2, ecosysTracers(index_O2,:,:), &
                      verticesOnCell(:,iCell), nCellVerticesArray(iCell), &
                      particlePosition(1),particlePosition(2),particlePosition(3), &
@@ -1001,6 +1481,210 @@ contains
                  end if
                  !call mpas_log_write('done testing output for O2')
                end if
+
+! maltrud do all of the rest without if statement
+
+                   do kLevel = 1, maxLevelCell(iCell)
+                zLevelColumn = zMid(kLevel,iCell) + 1.e-3_RKIND
+                zLevelTemp => zLevelColumn
+                   call interp_scalars(particleScratch, ecosysTracers(index_spChl,:,:), &
+                     verticesOnCell(:,iCell), nCellVerticesArray(iCell), &
+                     particlePosition(1),particlePosition(2),particlePosition(3), &
+                     xVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                     yVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                     zVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                     xCell, yCell, zCell, &
+                     meshPool, &
+                     cellsOnVertex, &
+                     1, maxLevelCell, iCell, buoyancyParticle, buoyancyTimeInterp, &
+                     zLevelTemp, zMid, kLevel)
+                     columnIndex = (particleCounter - 1)*nVertLevels + kLevel
+                     Array1DRealPointerColumnTotalPhytoChl(columnIndex) = particleScratch
+                   enddo  !  kLevel
+
+                   do kLevel = 1, maxLevelCell(iCell)
+                zLevelColumn = zMid(kLevel,iCell) + 1.e-3_RKIND
+                zLevelTemp => zLevelColumn
+                   call interp_scalars(particleScratch, ecosysTracers(index_diatChl,:,:), &
+                     verticesOnCell(:,iCell), nCellVerticesArray(iCell), &
+                     particlePosition(1),particlePosition(2),particlePosition(3), &
+                     xVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                     yVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                     zVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                     xCell, yCell, zCell, &
+                     meshPool, &
+                     cellsOnVertex, &
+                     1, maxLevelCell, iCell, buoyancyParticle, buoyancyTimeInterp, &
+                     zLevelTemp, zMid, kLevel)
+                     columnIndex = (particleCounter - 1)*nVertLevels + kLevel
+                     Array1DRealPointerColumnTotalPhytoChl(columnIndex) = &
+                       Array1DRealPointerColumnTotalPhytoChl(columnIndex) + particleScratch
+                   enddo  !  kLevel
+
+                   do kLevel = 1, maxLevelCell(iCell)
+                zLevelColumn = zMid(kLevel,iCell) + 1.e-3_RKIND
+                zLevelTemp => zLevelColumn
+                   call interp_scalars(particleScratch, ecosysTracers(index_diazChl,:,:), &
+                     verticesOnCell(:,iCell), nCellVerticesArray(iCell), &
+                     particlePosition(1),particlePosition(2),particlePosition(3), &
+                     xVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                     yVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                     zVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                     xCell, yCell, zCell, &
+                     meshPool, &
+                     cellsOnVertex, &
+                     1, maxLevelCell, iCell, buoyancyParticle, buoyancyTimeInterp, &
+                     zLevelTemp, zMid, kLevel)
+                     columnIndex = (particleCounter - 1)*nVertLevels + kLevel
+                     Array1DRealPointerColumnTotalPhytoChl(columnIndex) = &
+                       Array1DRealPointerColumnTotalPhytoChl(columnIndex) + particleScratch
+                   enddo  !  kLevel
+
+                   do kLevel = 1, maxLevelCell(iCell)
+                zLevelColumn = zMid(kLevel,iCell) + 1.e-3_RKIND
+                zLevelTemp => zLevelColumn
+                   call interp_scalars(particleScratch, ecosysTracers(index_spC,:,:), &
+                     verticesOnCell(:,iCell), nCellVerticesArray(iCell), &
+                     particlePosition(1),particlePosition(2),particlePosition(3), &
+                     xVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                     yVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                     zVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                     xCell, yCell, zCell, &
+                     meshPool, &
+                     cellsOnVertex, &
+                     1, maxLevelCell, iCell, buoyancyParticle, buoyancyTimeInterp, &
+                     zLevelTemp, zMid, kLevel)
+                     columnIndex = (particleCounter - 1)*nVertLevels + kLevel
+                     Array1DRealPointerColumnTotalPhytoC(columnIndex) = particleScratch
+                   enddo  !  kLevel
+
+                   do kLevel = 1, maxLevelCell(iCell)
+                zLevelColumn = zMid(kLevel,iCell) + 1.e-3_RKIND
+                zLevelTemp => zLevelColumn
+                   call interp_scalars(particleScratch, ecosysTracers(index_diatC,:,:), &
+                     verticesOnCell(:,iCell), nCellVerticesArray(iCell), &
+                     particlePosition(1),particlePosition(2),particlePosition(3), &
+                     xVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                     yVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                     zVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                     xCell, yCell, zCell, &
+                     meshPool, &
+                     cellsOnVertex, &
+                     1, maxLevelCell, iCell, buoyancyParticle, buoyancyTimeInterp, &
+                     zLevelTemp, zMid, kLevel)
+                     columnIndex = (particleCounter - 1)*nVertLevels + kLevel
+                     Array1DRealPointerColumnTotalPhytoC(columnIndex) = &
+                       Array1DRealPointerColumnTotalPhytoC(columnIndex) + particleScratch
+                   enddo  !  kLevel
+
+                   do kLevel = 1, maxLevelCell(iCell)
+                zLevelColumn = zMid(kLevel,iCell) + 1.e-3_RKIND
+                zLevelTemp => zLevelColumn
+                   call interp_scalars(particleScratch, ecosysTracers(index_diazC,:,:), &
+                     verticesOnCell(:,iCell), nCellVerticesArray(iCell), &
+                     particlePosition(1),particlePosition(2),particlePosition(3), &
+                     xVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                     yVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                     zVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                     xCell, yCell, zCell, &
+                     meshPool, &
+                     cellsOnVertex, &
+                     1, maxLevelCell, iCell, buoyancyParticle, buoyancyTimeInterp, &
+                     zLevelTemp, zMid, kLevel)
+                     columnIndex = (particleCounter - 1)*nVertLevels + kLevel
+                     Array1DRealPointerColumnTotalPhytoC(columnIndex) = &
+                       Array1DRealPointerColumnTotalPhytoC(columnIndex) + particleScratch
+                   enddo  !  kLevel
+
+                   do kLevel = 1, maxLevelCell(iCell)
+                zLevelColumn = zMid(kLevel,iCell) + 1.e-3_RKIND
+                zLevelTemp => zLevelColumn
+                   call interp_scalars(particleScratch, ecosysTracers(index_zooC,:,:), &
+                     verticesOnCell(:,iCell), nCellVerticesArray(iCell), &
+                     particlePosition(1),particlePosition(2),particlePosition(3), &
+                     xVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                     yVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                     zVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                     xCell, yCell, zCell, &
+                     meshPool, &
+                     cellsOnVertex, &
+                     1, maxLevelCell, iCell, buoyancyParticle, buoyancyTimeInterp, &
+                     zLevelTemp, zMid, kLevel)
+                     columnIndex = (particleCounter - 1)*nVertLevels + kLevel
+                     Array1DRealPointerColumnZooC(columnIndex) = particleScratch
+                   enddo  !  kLevel
+
+                   do kLevel = 1, maxLevelCell(iCell)
+                zLevelColumn = zMid(kLevel,iCell) + 1.e-3_RKIND
+                zLevelTemp => zLevelColumn
+                   call interp_scalars(particleScratch, ecosys_diag_O2_CONSUMPTION, &
+                     verticesOnCell(:,iCell), nCellVerticesArray(iCell), &
+                     particlePosition(1),particlePosition(2),particlePosition(3), &
+                     xVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                     yVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                     zVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                     xCell, yCell, zCell, &
+                     meshPool, &
+                     cellsOnVertex, &
+                     1, maxLevelCell, iCell, buoyancyParticle, buoyancyTimeInterp, &
+                     zLevelTemp, zMid, kLevel)
+                     columnIndex = (particleCounter - 1)*nVertLevels + kLevel
+                     Array1DRealPointerColumnO2_Consumption(columnIndex) = particleScratch
+                   enddo  !  kLevel
+
+                   do kLevel = 1, maxLevelCell(iCell)
+                zLevelColumn = zMid(kLevel,iCell) + 1.e-3_RKIND
+                zLevelTemp => zLevelColumn
+                   call interp_scalars(particleScratch, ecosys_diag_O2_PRODUCTION, &
+                     verticesOnCell(:,iCell), nCellVerticesArray(iCell), &
+                     particlePosition(1),particlePosition(2),particlePosition(3), &
+                     xVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                     yVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                     zVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                     xCell, yCell, zCell, &
+                     meshPool, &
+                     cellsOnVertex, &
+                     1, maxLevelCell, iCell, buoyancyParticle, buoyancyTimeInterp, &
+                     zLevelTemp, zMid, kLevel)
+                     columnIndex = (particleCounter - 1)*nVertLevels + kLevel
+                     Array1DRealPointerColumnO2_Production(columnIndex) = particleScratch
+                   enddo  !  kLevel
+
+! now do surface fields
+                klevel = 1
+                zLevelColumn = zMid(klevel,iCell) + 1.e-3_RKIND
+                zLevelTemp => zLevelColumn
+                   do field2dnum = 1, num2dFields
+                   call interp_scalars(particleScratch, surfaceTo3Dhack(field2dnum,:,:), &
+                     verticesOnCell(:,iCell), nCellVerticesArray(iCell), &
+                     particlePosition(1),particlePosition(2),particlePosition(3), &
+                     xVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                     yVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                     zVertex(verticesOnCell(1:nCellVerticesArray(iCell),iCell)), &
+                     xCell, yCell, zCell, &
+                     meshPool, &
+                     cellsOnVertex, &
+                     1, maxLevelCell, iCell, buoyancyParticle, buoyancyTimeInterp, &
+                     zLevelTemp, zMid, kLevel)
+                     if(field2dnum == 1) then
+                       particle_dpCO2 = particleScratch
+                     elseif(field2dnum == 2) then
+                       particle_O2_gas_flux = particleScratch
+                     elseif(field2dnum == 3) then
+                       particle_CO2_gas_flux = particleScratch
+                     elseif(field2dnum == 4) then
+                       particle_atmosphericCO2 = particleScratch
+                     elseif(field2dnum == 5) then
+                       particle_pCO2surface = particleScratch
+                     elseif(field2dnum == 6) then
+                       particle_ifrac = particleScratch
+                     elseif(field2dnum == 7) then
+                       particle_atmPressure = particleScratch
+                     elseif(field2dnum == 8) then
+                       particle_MLD = particleScratch
+                     endif
+                   enddo  !  field2dnum
+
              end if
            end if
 
@@ -1091,7 +1775,187 @@ contains
 
           ! get next particle to process on the list
           particlelist => particlelist % next
+          particleCounter = particleCounter + 1
         end do !}}}
+
+!maltrud new
+!  put column array into the particle data structure
+!maltrud debug use -2 to distinguish from 0 for IC and -1 after allocation of Array1DRealPointerColumn
+
+        if (config_AM_lagrPartTrack_sample_temperature) then
+          call mpas_pool_get_field(lagrPartTrackPool, 'particleColumnTemperature', &
+           field1DRealPointer)
+          field1DRealPointer % array = -2.0_RKIND
+          do ii = 1, numParticles*nVertLevels
+           field1DRealPointer % array(ii) = Array1DRealPointerColumnTemperature(ii)
+!maltrud debug
+!write(*,*)'DEBUG34: ',ii,Array1DRealPointerColumnTemperature(ii),field1DRealPointer % array(ii),numParticles
+          enddo
+          deallocate(Array1DRealPointerColumnTemperature)
+        endif
+
+        if (config_AM_lagrPartTrack_sample_salinity) then
+          call mpas_pool_get_field(lagrPartTrackPool, 'particleColumnSalinity', &
+           field1DRealPointer)
+          field1DRealPointer % array = -2.0_RKIND
+          do ii = 1, numParticles*nVertLevels
+           field1DRealPointer % array(ii) = Array1DRealPointerColumnSalinity(ii)
+          enddo
+          deallocate(Array1DRealPointerColumnSalinity)
+        endif
+
+          call mpas_pool_get_field(lagrPartTrackPool, 'particleColumnVelZonal', &
+           field1DRealPointer)
+          field1DRealPointer % array = -2.0_RKIND
+          do ii = 1, numParticles*nVertLevels
+           field1DRealPointer % array(ii) = Array1DRealPointerColumnVelZonal(ii)
+          enddo
+          deallocate(Array1DRealPointerColumnVelZonal)
+
+          call mpas_pool_get_field(lagrPartTrackPool, 'particleColumnVelMerid', &
+           field1DRealPointer)
+          field1DRealPointer % array = -2.0_RKIND
+          do ii = 1, numParticles*nVertLevels
+           field1DRealPointer % array(ii) = Array1DRealPointerColumnVelMerid(ii)
+          enddo
+          deallocate(Array1DRealPointerColumnVelMerid)
+
+        if (config_AM_lagrPartTrack_sample_temperature .or.  &
+            config_AM_lagrPartTrack_sample_salinity) then
+          call mpas_pool_get_field(lagrPartTrackPool, 'particleColumnGlobalID', &
+           field1DRealPointer)
+          field1DRealPointer % array = -2.0_RKIND
+          do ii = 1, numParticles*nVertLevels
+           field1DRealPointer % array(ii) = Array1DRealPointerColumnGlobalID(ii)
+if(Array1DRealPointerColumnGlobalID(ii)==78 .and. mod((ii-1),nVertLevels)==0) write(*,*)' DEBUG41: ',ii,Array1DRealPointerColumnGlobalID(ii),field1DRealPointer % array(ii)
+!if(Array1DRealPointerColumnGlobalID(ii)==1160 .or. Array1DRealPointerColumnGlobalID(ii)==1161 .or. Array1DRealPointerColumnGlobalID(ii)==1162) write(*,*)' DEBUG41: ',ii,Array1DRealPointerColumnGlobalID(ii),field1DRealPointer % array(ii)
+          enddo
+          deallocate(Array1DRealPointerColumnGlobalID)
+          call mpas_pool_get_field(lagrPartTrackPool, 'particleColumnDepth', &
+           field1DRealPointer)
+          field1DRealPointer % array = -2.0_RKIND
+          do ii = 1, numParticles*nVertLevels
+           field1DRealPointer % array(ii) = Array1DRealPointerColumnDepth(ii)
+          enddo
+          deallocate(Array1DRealPointerColumnDepth)
+          call mpas_pool_get_field(lagrPartTrackPool, 'particleColumnLon', &
+           field1DRealPointer)
+          field1DRealPointer % array = -2.0_RKIND
+          do ii = 1, numParticles*nVertLevels
+           field1DRealPointer % array(ii) = Array1DRealPointerColumnLon(ii)
+          enddo
+          deallocate(Array1DRealPointerColumnLon)
+          call mpas_pool_get_field(lagrPartTrackPool, 'particleColumnLat', &
+           field1DRealPointer)
+          field1DRealPointer % array = -2.0_RKIND
+          do ii = 1, numParticles*nVertLevels
+           field1DRealPointer % array(ii) = Array1DRealPointerColumnLat(ii)
+          enddo
+          deallocate(Array1DRealPointerColumnLat)
+        endif
+
+        if (config_use_ecosysTracers) then
+          if (config_AM_lagrPartTrack_sample_DIC) then
+            call mpas_pool_get_field(lagrPartTrackPool, 'particleColumnDIC', &
+             field1DRealPointer)
+            field1DRealPointer % array = -2.0_RKIND
+            do ii = 1, numParticles*nVertLevels
+             field1DRealPointer % array(ii) = Array1DRealPointerColumnDIC(ii)
+            enddo
+            deallocate(Array1DRealPointerColumnDIC)
+          endif
+
+          if (config_AM_lagrPartTrack_sample_ALK) then
+            call mpas_pool_get_field(lagrPartTrackPool, 'particleColumnALK', &
+             field1DRealPointer)
+            field1DRealPointer % array = -2.0_RKIND
+            do ii = 1, numParticles*nVertLevels
+             field1DRealPointer % array(ii) = Array1DRealPointerColumnALK(ii)
+            enddo
+            deallocate(Array1DRealPointerColumnALK)
+          endif
+
+          if (config_AM_lagrPartTrack_sample_PO4) then
+            call mpas_pool_get_field(lagrPartTrackPool, 'particleColumnPO4', &
+             field1DRealPointer)
+            field1DRealPointer % array = -2.0_RKIND
+            do ii = 1, numParticles*nVertLevels
+             field1DRealPointer % array(ii) = Array1DRealPointerColumnPO4(ii)
+            enddo
+            deallocate(Array1DRealPointerColumnPO4)
+          endif
+
+          if (config_AM_lagrPartTrack_sample_NO3) then
+            call mpas_pool_get_field(lagrPartTrackPool, 'particleColumnNO3', &
+             field1DRealPointer)
+            field1DRealPointer % array = -2.0_RKIND
+            do ii = 1, numParticles*nVertLevels
+             field1DRealPointer % array(ii) = Array1DRealPointerColumnNO3(ii)
+            enddo
+            deallocate(Array1DRealPointerColumnNO3)
+          endif
+
+          if (config_AM_lagrPartTrack_sample_SiO3) then
+            call mpas_pool_get_field(lagrPartTrackPool, 'particleColumnSiO3', &
+             field1DRealPointer)
+            field1DRealPointer % array = -2.0_RKIND
+            do ii = 1, numParticles*nVertLevels
+             field1DRealPointer % array(ii) = Array1DRealPointerColumnSiO3(ii)
+            enddo
+            deallocate(Array1DRealPointerColumnSiO3)
+          endif
+
+          if (config_AM_lagrPartTrack_sample_O2) then
+            call mpas_pool_get_field(lagrPartTrackPool, 'particleColumnO2', &
+             field1DRealPointer)
+            field1DRealPointer % array = -2.0_RKIND
+            do ii = 1, numParticles*nVertLevels
+             field1DRealPointer % array(ii) = Array1DRealPointerColumnO2(ii)
+            enddo
+            deallocate(Array1DRealPointerColumnO2)
+          endif
+
+          call mpas_pool_get_field(lagrPartTrackPool, 'particleColumnTotalPhytoChl', &
+           field1DRealPointer)
+          field1DRealPointer % array = -2.0_RKIND
+          do ii = 1, numParticles*nVertLevels
+           field1DRealPointer % array(ii) = Array1DRealPointerColumnTotalPhytoChl(ii)
+          enddo
+          deallocate(Array1DRealPointerColumnTotalPhytoChl)
+
+          call mpas_pool_get_field(lagrPartTrackPool, 'particleColumnTotalPhytoC', &
+           field1DRealPointer)
+          field1DRealPointer % array = -2.0_RKIND
+          do ii = 1, numParticles*nVertLevels
+           field1DRealPointer % array(ii) = Array1DRealPointerColumnTotalPhytoC(ii)
+          enddo
+          deallocate(Array1DRealPointerColumnTotalPhytoC)
+
+          call mpas_pool_get_field(lagrPartTrackPool, 'particleColumnZooC', &
+           field1DRealPointer)
+          field1DRealPointer % array = -2.0_RKIND
+          do ii = 1, numParticles*nVertLevels
+           field1DRealPointer % array(ii) = Array1DRealPointerColumnZooC(ii)
+          enddo
+          deallocate(Array1DRealPointerColumnZooC)
+
+          call mpas_pool_get_field(lagrPartTrackPool, 'particleColumnO2_Consumption', &
+           field1DRealPointer)
+          field1DRealPointer % array = -2.0_RKIND
+          do ii = 1, numParticles*nVertLevels
+           field1DRealPointer % array(ii) = Array1DRealPointerColumnO2_Consumption(ii)
+          enddo
+          deallocate(Array1DRealPointerColumnO2_Consumption)
+
+          call mpas_pool_get_field(lagrPartTrackPool, 'particleColumnO2_Production', &
+           field1DRealPointer)
+          field1DRealPointer % array = -2.0_RKIND
+          do ii = 1, numParticles*nVertLevels
+           field1DRealPointer % array(ii) = Array1DRealPointerColumnO2_Production(ii)
+          enddo
+          deallocate(Array1DRealPointerColumnO2_Production)
+
+        endif  ! config_use_ecosysTracers
 
         ! get next block
         block => block % next
@@ -1129,6 +1993,38 @@ contains
 #ifdef MPAS_DEBUG
       call mpas_timer_stop("trans_from_block_to_blockLPT")
 #endif
+
+
+
+
+!maltrud debug
+      block => domain % blocklist
+      do while (associated(block))
+!maltrud debug
+!write(*,*)'DEBUG41: block'
+
+        call mpas_pool_get_subpool(block % structs, 'lagrPartTrackHalo', lagrPartTrackPool)
+!maltrud debug
+!write(*,*)'DEBUG42: get_subpool'
+! ASSUME 1 particle
+        call mpas_pool_get_field(lagrPartTrackPool, 'particleColumnTemperature', &
+           field1DRealPointer)
+!        do ii = 1, numParticles*nVertLevels
+!          field1DRealPointer % array(ii) = &
+!            Array1DRealPointerColumn(ii)
+!maltrud debug
+!write(*,*)'DEBUG43: ', field1DRealPointer % array
+!        enddo
+        ! get next block
+        block => block % next
+      end do
+
+
+
+
+
+
+
 
       ! do IO communications if this is an output time step
       if (mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='lagrPartTrackOutput', &
@@ -3055,7 +3951,9 @@ contains
      !-----------------------------------------------------------------
      real (kind=RKIND) :: zLevelParticle                     !< vertical level z location
      integer :: iLevel                                       !< vertical level index
-     integer :: iCell                                        !< local cell index for horizontal cell location
+!maltrud debug shouldnt iCell be intent(in)?
+!    integer :: iCell                                        !< local cell index for horizontal cell location
+     integer, intent(in) :: iCell                                        !< local cell index for horizontal cell location
      integer :: triangleIndex                                !< index of triangle for interpolation
      real (kind=RKIND), dimension(3) :: scalarTriangle       !< interpolated values on triangle
      integer :: iVertex                                      !< vertex index variable
@@ -3294,9 +4192,30 @@ contains
 #endif
 !}}}
 
+!maltrud debug
+   if (scalarTriangle(1) == -999.0_RKIND .and. scalarTriangle(2) == -999.0_RKIND &
+       .and. scalarTriangle(3) == -999.0_RKIND) then
+     particleScalar = -888.0_RKIND
+   elseif (scalarTriangle(2) == -999.0_RKIND .and. scalarTriangle(3) == -999.0_RKIND) then
+     particleScalar = scalarTriangle(1)
+   elseif (scalarTriangle(1) == -999.0_RKIND .and. scalarTriangle(3) == -999.0_RKIND) then
+     particleScalar = scalarTriangle(2)
+   elseif (scalarTriangle(2) == -999.0_RKIND .and. scalarTriangle(1) == -999.0_RKIND) then
+     particleScalar = scalarTriangle(3)
+   elseif (scalarTriangle(1) == -999.0_RKIND) then
+     particleScalar = (scalarTriangle(2) * lambda(2) + &
+                       scalarTriangle(3) * lambda(3))/(lambda(2)+lambda(3))
+   elseif (scalarTriangle(2) == -999.0_RKIND) then
+     particleScalar = (scalarTriangle(1) * lambda(1) + &
+                       scalarTriangle(3) * lambda(3))/(lambda(1)+lambda(3))
+   elseif (scalarTriangle(3) == -999.0_RKIND) then
+     particleScalar = (scalarTriangle(2) * lambda(2) + &
+                       scalarTriangle(1) * lambda(1))/(lambda(2)+lambda(1))
+   else
      particleScalar = scalarTriangle(1) * lambda(1) + &
                       scalarTriangle(2) * lambda(2) + &
                       scalarTriangle(3) * lambda(3)
+   endif
      !}}}
 
      ! debugging output !{{{
@@ -3373,6 +4292,12 @@ contains
      integer :: aVertex, theVertex, iHigh, iLow
      real (kind=RKIND) :: eps=1e-14
 
+!maltrud debug
+     logical :: aboveBottom
+     aboveBottom = .true.
+     phiInterp = 0.0_RKIND
+!if(iLevel>=55) write(*,*)' DEBUG39: ',iLevel,zVals
+
      if(iLevel < 1) then
        ! top level
        if (iLevel == 0) then
@@ -3381,21 +4306,45 @@ contains
        else if (iLevel == -1) then
          phiInterp = phiVals(1)
        end if
+!maltrud debug
+!write(*,*)' DEBUG36: ',iLevel,phiInterp
      else
        call get_bounding_indices(iLow, iHigh, zInterp, zVals, iLevel, nVertLevels)
 
        ! interpolate to vertical level now
-       if(abs(zVals(iHigh) - zVals(iLow)) < eps) then
+!maltrud debug
+!      if(abs(zVals(iHigh) - zVals(iLow)) < eps) then
          ! we really can't distinguish between each of these points numerically, just take the
          ! average of both
+!        alpha = 0.5_RKIND
+!maltrud debug it still appears that we can get bad values for iLow, iHigh
+              iLow = max(iLow, 1)
+              iHigh = max(iHigh, 2)
+       if(abs(zVals(iHigh) - zVals(iLow)) < eps .and. &
+          abs(zVals(iHigh) - zVals(iHigh-1)) < eps) then
+!maltrud debug
+!write(*,*)' DEBUG38: ',iLevel,iLow,iHigh,alpha,zVals(iLow),zVals(iHigh),phiVals(iLow),phiVals(iHigh)
+! it seems that if this is true then we are below the bottom so dont interpolate
+         aboveBottom = .false.
          alpha = 0.5_RKIND
+       elseif(abs(zVals(iHigh) - zVals(iLow)) < eps .and. &
+          abs(zVals(iHigh) - zVals(iHigh-1)) >= eps) then
+         alpha = 1.0_RKIND
        else
          ! interpolate to vertical level now
          alpha = (zInterp - zVals(iLow))/(zVals(iHigh) - zVals(iLow))
        end if
 
        ! interpolate to the vertical level
+!maltrud debug
+       if (aboveBottom) then
        phiInterp = alpha * phiVals(iHigh) + (1.0_RKIND - alpha) * phiVals(iLow)
+       else
+       phiInterp = -999.0_RKIND
+!maltrud debug
+!write(*,*)' DEBUG37: ',iLevel,iLow,iHigh,alpha,phiInterp
+       endif
+
      end if
 
    end subroutine interp_cell_scalars!}}}
@@ -3631,6 +4580,10 @@ contains
        iLow  = iLevel + 1
      end if
 
+!maltrud new make sure iLow and iHigh are not out of range
+     iHigh = max(iHigh,1)
+     iLow = min(iLow,nVertLevels)
+
      ! check to make sure points are in range
      ! optimization point: smarter algorithm won't have to call this ever
      if(.not.((phiInterp <= phiVals(iHigh)) .and. (phiInterp >= phiVals(iLow)))) then
@@ -3675,21 +4628,42 @@ contains
      !-----------------------------------------------------------------
      integer :: aLevel
      character (len=StrKIND) :: message
+!maltrud new
+     logical :: foundParticleLevel
+
+!maltrud new
+     foundParticleLevel = .false.
 
      ! make no assumptions
      do aLevel = 1, nVertLevels-1
        if(phiVals(aLevel) <= phiInterp .and. phiInterp <= phiVals(aLevel+1)) then
          iLow  = aLevel
          iHigh = aLevel+1
+!maltrud new
+         foundParticleLevel = .true.
          exit
        else if (phiVals(aLevel+1) <= phiInterp .and. phiInterp <= phiVals(aLevel)) then
          iLow  = aLevel+1
          iHigh = aLevel
+!maltrud new
+         foundParticleLevel = .true.
          exit
        else
-         call mpas_log_write('Value for interpolation was not found!', MPAS_LOG_CRIT)
+!maltrud debug
+!rite(*,*)' FAIL: ',aLevel,phiInterp,phiVals(aLevel),phiVals(aLevel+1)
+!        call mpas_log_write('Value for interpolation was not found!', MPAS_LOG_CRIT)
+!maltrud new
+         foundParticleLevel = .false.
        end if
      end do
+
+!maltrud debug
+if(.not. foundParticleLevel)  then
+  write(*,*)' FAIL: ',aLevel,phiInterp,phiVals(aLevel),phiVals(aLevel+1)
+         call mpas_log_write('Value for interpolation was not found!', MPAS_LOG_CRIT)
+endif
+!maltrud debug
+!write(*,*)'DEBUG35 brute force: ',aLevel,phiInterp,phiVals(aLevel),phiVals(aLevel+1)
 
 #ifdef MPAS_DEBUG
      if(phiVals(iLow) <= phiInterp .and. phiInterp <= phiVals(iHigh)) then
