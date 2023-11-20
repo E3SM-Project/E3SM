@@ -283,18 +283,18 @@ def buildnml(case, caseroot, compname):
         if ocn_ismf == 'data':
             data_ismf_file = 'prescribed_ismf_adusumilli2020.ECwISC30to60E2r1.230429.nc'
 
-    elif ocn_grid == 'ECwISC30to60E3r2':
-        decomp_date = '20230901'
+    elif ocn_grid == 'ECwISC30to60E3r5':
+        decomp_date = '20231127'
         decomp_prefix = 'partitions/mpas-o.graph.info.'
-        restoring_file = 'sss.PHC2_monthlyClimatology.ECwISC30to60E3r2.20230901.nc'
-        analysis_mask_file = 'ECwISC30to60E3r2_mocBasinsAndTransects20210623.nc'
-        ic_date = '20230901'
-        ic_prefix = 'mpaso.ECwISC30to60E3r2'
+        restoring_file = 'sss.PHC2_monthlyClimatology.ECwISC30to60E3r5.20231127.nc'
+        analysis_mask_file = 'ECwISC30to60E3r5_mocBasinsAndTransects20210623.nc'
+        ic_date = '20231127'
+        ic_prefix = 'mpaso.ECwISC30to60E3r5'
         if ocn_ic_mode == 'spunup':
-            ic_date = '230914'
-            ic_prefix = 'mpaso.ECwISC30to60E3r2.rstFromG-chrysalis'
+            ic_date = 'XXXXXX'
+            ic_prefix = 'mpaso.ECwISC30to60E3r5.rstFromG-chrysalis'
         if ocn_ismf == 'data':
-            data_ismf_file = 'prescribed_ismf_adusumilli2020.ECwISC30to60E3r2.20230901.nc'
+            data_ismf_file = 'prescribed_ismf_adusumilli2020.ECwISC30to60E3r5.20231127.nc'
 
     #--------------------------------------------------------------------
     # Set OCN_FORCING = datm_forced_restoring if restoring file is available
