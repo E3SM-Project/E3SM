@@ -29,6 +29,7 @@ extern "C" {
   void eam_init_pio_subsystem_c2f(const int mpicom, const int atm_id);
   void eam_pio_finalize_c2f();
   void eam_pio_closefile_c2f(const char*&& filename);
+  void eam_pio_flush_file_c2f(const char*&& filename);
   void pio_update_time_c2f(const char*&& filename,const double time);
   void register_dimension_c2f(const char*&& filename, const char*&& shortname, const char*&& longname, const int global_length, const bool partitioned);
   void register_variable_c2f(const char*&& filename, const char*&& shortname, const char*&& longname,
@@ -100,6 +101,9 @@ void register_file(const std::string& filename, const FileMode mode) {
 void eam_pio_closefile(const std::string& filename) {
 
   eam_pio_closefile_c2f(filename.c_str());
+}
+void eam_flush_file(const std::string& filename) {
+  eam_pio_flush_file_c2f(filename.c_str());
 }
 /* ----------------------------------------------------------------- */
 void set_decomp(const std::string& filename) {

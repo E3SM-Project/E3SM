@@ -31,6 +31,7 @@ namespace scorpio {
   void eam_pio_finalize();
   /* Close a file currently open in scorpio */
   void eam_pio_closefile(const std::string& filename);
+  void eam_flush_file(const std::string& filename);
   /* Register a new file to be used for input/output with the scorpio module */
   void register_file(const std::string& filename, const FileMode mode);
   /* Sets the IO decompostion for all variables in a particular filename.  Required after all variables have been registered.  Called once per file. */
