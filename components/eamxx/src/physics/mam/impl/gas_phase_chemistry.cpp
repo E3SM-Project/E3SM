@@ -1,4 +1,3 @@
-#include <mam4xx/gas_chem_mechanism.hpp>
 #include <mam4xx/mam4.hpp>
 
 namespace scream::impl {
@@ -9,6 +8,7 @@ using mam4::utils::min_max_bound;
 // atmospheric column
 KOKKOS_INLINE_FUNCTION
 void gas_phase_chemistry(Real zm, Real zi, Real phis, Real temp, Real pmid, Real pdel, Real dt,
+                         const view_1d& photo_rates, // per-column photolysis rates
                          Real q[mam4::gas_chemistry::gas_pcnst]) {
   constexpr Real rga = 1.0/haero::Constants::gravity;
   constexpr Real mwdry = 1.0/haero::Constants::molec_weight_dry_air;
@@ -84,10 +84,6 @@ void gas_phase_chemistry(Real zm, Real zi, Real phis, Real temp, Real pmid, Real
   Real col_dens[nabscol];
   //setcol(col_delta, col_dens); // FIXME
 
-  // ... lookup the photolysis rates from table
-  // FIXME: We need to rethink this so we don't need all column data
-  //table_photo(...);
-
   // ... compute the extraneous frcing at time = t(n+1)
   Real extfrc[extcnt];
   // FIXME: Same thing: can we do this for each single level?
@@ -113,10 +109,19 @@ void gas_phase_chemistry(Real zm, Real zi, Real phis, Real temp, Real pmid, Real
   // Class solution algorithms
   //===========================
 
+  // copy photolysis rates to reaction_rates
+
   // ... solve for "Implicit" species
-  // FIXME: need to figure out arguments to ported C++ code
-  //mam4::gas_chemistry::imp_sol(vmr, reaction_rates, het_rates, extfrc, dt,
-  //  invariants[indexm], ltrop_sol);
+  bool factor[mam4::gas_chemistry::itermax];
+  for (int i = 0; i < mam4::gas_chemistry::itermax; ++i) {
+    factor[i] = true;
+  }
+  Real epsilon[mam4::gas_chemistry::clscnt4];
+  imp_slv_inti(epsilon);
+  Real prod_out[mam4::gas_chemistry::clscnt4], loss_out[mam4::gas_chemistry::clscnt4];
+  mam4::gas_chemistry::imp_sol(vmr, reaction_rates, het_rates, extfrc, dt,
+    mam4::gas_chemistry::permute_4, mam4::gas_chemistry::clsmap_4, factor,
+    epsilon, prod_out, loss_out);
 
   /* I don't think we need to worry about this, do we?
   if (convproc_do_aer) {

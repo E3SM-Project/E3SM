@@ -177,6 +177,7 @@ private_except_cuda:
   mam_coupling::AerosolState  wet_aero_, dry_aero_;
 
   // photolysis rate table (column-independent)
+  std::string                    photo_table_file_;
   mam4::mo_photo::PhotoTableData photo_table_;
 
   // column areas, latitudes, longitudes

@@ -1,4 +1,5 @@
 #include <physics/mam/eamxx_mam_microphysics_process_interface.hpp>
+#include <share/io/scream_scorpio_interface.hpp>
 #include <share/property_checks/field_lower_bound_check.hpp>
 #include <share/property_checks/field_within_interval_check.hpp>
 
@@ -52,6 +53,8 @@ void MAMMicrophysics::configure(const ekat::ParameterList& params) {
   // NOTE: safe to change these without code modifications.
   config_.gaexch_h2so4_uptake_optaa = 2;
   config_.newnuc_h2so4_conc_optaa = 2;
+
+  // FIXME: fetch photolysis table filename
 }
 
 void MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
@@ -158,6 +161,29 @@ void MAMMicrophysics::init_buffers(const ATMBufferManager &buffer_manager) {
                    "Error! Used memory != requested memory for MAMMicrophysics.");
 }
 
+namespace {
+
+// reads the photolysis table (used for gas phase chemistry) from the file with
+// the given name
+mam4::mo_photo::PhotoTableData read_photo_table(const std::string filename) {
+  scream::scorpio::register_file(filename, scream::scorpio::Read);
+
+  mam4::mo_photo::PhotoTableData table;
+
+  // read in dimension data
+  table.nw = scream::scorpio::get_dimlen(filename, "numwl");
+  table.nump = scream::scorpio::get_dimlen(filename, "numz");
+  table.numsza = scream::scorpio::get_dimlen(filename, "numsza");
+  table.numcolo3 = scream::scorpio::get_dimlen(filename, "numcolo3fact");
+  table.numalb = scream::scorpio::get_dimlen(filename, "numalb");
+
+  // FIXME: still trying to figure out which files we need
+
+  return table;
+}
+
+}
+
 void MAMMicrophysics::initialize_impl(const RunType run_type) {
 
   step_ = 0;
@@ -217,7 +243,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   }
 
   // create our photolysis rate calculation table
-  // FIXME: need to do this!
+  photo_table_ = read_photo_table(photo_table_file_);
 
   // set up our preprocess/postprocess functors
   preprocess_.initialize(ncol_, nlev_, wet_atm_, wet_aero_, dry_atm_, dry_aero_);
@@ -288,13 +314,9 @@ void MAMMicrophysics::run_impl(const double dt) {
     Real esfact = 0.0; // FIXME: earth-sun distance factor
     mam4::ColumnView col_dens; // FIXME: column density
     mam4::ColumnView lwc; // FIXME: liquid water cloud content
-    /* FIXME: This isn't compiling at the moment because atm has ConstColumnViews
-     * FIXME: and table_photo expects ColumnViews. A perfect example of how C++
-     * FIXME: language features cause C++ problems.
     mam4::mo_photo::table_photo(photo_rates, atm.pressure, atm.hydrostatic_dp,
       atm.temperature, col_dens, zenith_angle, surf_albedo, lwc,
       atm.cloud_fraction, esfact, photo_table_, photo_work_arrays);
-     */
 
     // compute aerosol microphysics on each vertical level within this column
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_), [&](const int k) {
