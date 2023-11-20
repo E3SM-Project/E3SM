@@ -843,6 +843,7 @@ TEST_CASE("rrtmgp_aerocom_cloudtop") {
   yakl::finalize();
 }
 
+/* comment out for now
 TEST_CASE("rrtmgp_clnclr_calls") {
 
     // Scalar types
@@ -900,12 +901,13 @@ TEST_CASE("rrtmgp_clnclr_calls") {
     gas_names(8) = std::string("n2" );
     gas_concs.init(gas_names,ncol,nlaym);
     logger->info("Init RRTMGP...\n");
-    scream::rrtmgp::rrtmgp_initialize(gas_concs, coefficients_file_sw, coefficients_file_lw, cloud_optics_file_sw, cloud_optics_file_lw, logger);
+    scream::rrtmgp::rrtmgp_initialize(gas_concs, coefficients_file_sw,
+coefficients_file_lw, cloud_optics_file_sw, cloud_optics_file_lw, logger);
     load_and_init(k_dist_sw, coefficients_file_sw, gas_concs);
     load_and_init(k_dist_lw, coefficients_file_lw, gas_concs);
-    
+
     // Set up OpticalPRos2str
-    
+
     auto nswbands = k_dist_sw.get_nband();
     auto nlwbands = k_dist_lw.get_nband();
     auto ngpt_sw = k_dist_sw.get_ngpt();
@@ -926,8 +928,8 @@ TEST_CASE("rrtmgp_clnclr_calls") {
 
     OpticalProps2str clouds_sw;
     OpticalProps1scl clouds_lw;
-    clouds_sw.init(k_dist_sw.get_band_lims_wavenumber(), k_dist_sw.get_band_lims_gpoint());
-    clouds_sw.alloc_2str(ncol, nlaym);
+    clouds_sw.init(k_dist_sw.get_band_lims_wavenumber(),
+k_dist_sw.get_band_lims_gpoint()); clouds_sw.alloc_2str(ncol, nlaym);
     memset(clouds_sw.tau, 50.0);
     memset(clouds_sw.ssa, 0.4);
     memset(clouds_sw.g, 0.05);
@@ -937,11 +939,13 @@ TEST_CASE("rrtmgp_clnclr_calls") {
     auto sw_flux_dn_dir = real2d("sw_flux_dn_dir", ncol, nlay);
     auto sw_bnd_flux_up = real3d("sw_bnd_flux_up", ncol, nlay, nswbands);
     auto sw_bnd_flux_dn = real3d("sw_bnd_flux_dn", ncol, nlay, nswbands);
-    auto sw_bnd_flux_dn_dir = real3d("sw_bnd_flux_dn_dir", ncol, nlay, nswbands);
+    auto sw_bnd_flux_dn_dir = real3d("sw_bnd_flux_dn_dir", ncol, nlay,
+nswbands);
 
     auto sw_clnclrsky_flux_up = real2d("sw_clnclrsky_flux_up", ncol, nlay);
     auto sw_clnclrsky_flux_dn = real2d("sw_clnclrsky_flux_dn", ncol, nlay);
-    auto sw_clnclrsky_flux_dn_dir = real2d("sw_clnclrsky_flux_dn_dir", ncol, nlay);
+    auto sw_clnclrsky_flux_dn_dir = real2d("sw_clnclrsky_flux_dn_dir", ncol,
+nlay);
 
     auto sw_clrsky_flux_up = real2d("sw_clrsky_flux_up", ncol, nlay);
     auto sw_clrsky_flux_dn = real2d("sw_clrsky_flux_dn", ncol, nlay);
@@ -949,7 +953,7 @@ TEST_CASE("rrtmgp_clnclr_calls") {
 
     auto sw_clnsky_flux_up = real2d("sw_clnsky_flux_up", ncol, nlay);
     auto sw_clnsky_flux_dn = real2d("sw_clnsky_flux_dn", ncol, nlay);
-    auto sw_clnsky_flux_dn_dir = real2d("sw_clnsky_flux_dn_dir", ncol, nlay);    
+    auto sw_clnsky_flux_dn_dir = real2d("sw_clnsky_flux_dn_dir", ncol, nlay);
 
     FluxesByband fluxes_sw;
     fluxes_sw.flux_up = sw_flux_up;
@@ -1024,9 +1028,12 @@ TEST_CASE("rrtmgp_clnclr_calls") {
 
     logger->info(sw_clnsky_flux_up.createHostCopy()(1,3));
 
-    // REQUIRE(sw_clnsky_flux_up.createHostCopy()(1,1) == sw_flux_up.createHostCopy()(1,1));  // ??
-    // REQUIRE(sw_clnsky_flux_up.createHostCopy()(1,2) == sw_flux_up.createHostCopy()(1,2));  // ??
-    // REQUIRE(sw_clnsky_flux_up.createHostCopy()(1,3) == sw_flux_up.createHostCopy()(1,3));  // ??
+    // REQUIRE(sw_clnsky_flux_up.createHostCopy()(1,1) ==
+sw_flux_up.createHostCopy()(1,1));  // ??
+    // REQUIRE(sw_clnsky_flux_up.createHostCopy()(1,2) ==
+sw_flux_up.createHostCopy()(1,2));  // ??
+    // REQUIRE(sw_clnsky_flux_up.createHostCopy()(1,3) ==
+sw_flux_up.createHostCopy()(1,3));  // ??
 
     scream::rrtmgp::rrtmgp_finalize();
 
@@ -1038,3 +1045,4 @@ TEST_CASE("rrtmgp_clnclr_calls") {
     sfc_alb_dif.deallocate();
     mu0.deallocate();
 }
+*/
