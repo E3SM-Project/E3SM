@@ -586,7 +586,7 @@ set_params (const ekat::ParameterList& params,
         "Error! For restart output, max snapshots per file must be 1.\n"
         "   Note: you don't have to specify this parameter for restart output.\n");
 
-    m_output_file_specs.flush_frequency = m_params.get("flush_frequencyuency",1);
+    m_output_file_specs.flush_frequency = m_params.get("flush_frequency",1);
     EKAT_REQUIRE_MSG (m_output_file_specs.flush_frequency==1,
         "Error! For restart output, file flush frequency must be 1.\n"
         "   Note: you don't have to specify this parameter for restart output.\n");
@@ -619,7 +619,7 @@ set_params (const ekat::ParameterList& params,
     constexpr auto large_int = 1000000;
     m_output_file_specs.max_snapshots_in_file = m_params.get<int>("Max Snapshots Per File",large_int);
     m_filename_prefix = m_params.get<std::string>("filename_prefix");
-    m_output_file_specs.flush_frequency = m_params.get("flush_frequencyuency",m_output_file_specs.max_snapshots_in_file);
+    m_output_file_specs.flush_frequency = m_params.get("flush_frequency",m_output_file_specs.max_snapshots_in_file);
 
     // Allow user to ask for higher precision for normal model output,
     // but default to single to save on storage
