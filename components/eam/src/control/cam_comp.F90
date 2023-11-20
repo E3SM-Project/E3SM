@@ -140,7 +140,7 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
    character(len=cs) :: filein ! Input namelist filename
 #if defined(CLDERA_PROFILING)
    character(len=max_str_len) :: fname
-   integer :: c, nfields, idx, rank, icmp, nparts, part_dim, ipart, fsize, ncols, icall
+   integer :: c, nfields, idx, rank, icmp, nparts, part_dim, ipart, fsize, ncols, icall, tag_loop
    integer :: nlcols,irank
    integer :: dims(3)
    integer, allocatable :: cols_gids(:)
@@ -151,6 +151,7 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
    type(physics_buffer_desc), pointer :: field_desc
    character(len=5) :: int_str
    character(len=4) :: diag(0:2) = (/'    ','_d1 ','_d2 '/)
+   character(len=2) :: tagged_suffix(3) = (/'01', '02', '03'/)
 #endif
    !-----------------------------------------------------------------------
    etamid = nan
@@ -383,6 +384,10 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
    end do
    call cldera_add_partitioned_field("AODSO4", 1,dims,dimnames,nparts,part_dim,.false.)
    call cldera_add_partitioned_field("BURDENSO4", 1,dims,dimnames,nparts,part_dim,.false.)
+   do tag_loop = 1,3 ! only three tags needed for now
+      call cldera_add_partitioned_field("AODSO4"//tagged_suffix(tag_loop), 1,dims,dimnames,nparts,part_dim,.false.)
+      call cldera_add_partitioned_field("BURDENSO4"//tagged_suffix(tag_loop), 1,dims,dimnames,nparts,part_dim,.false.)
+   end do
 
    ! 2d, mid points
    dims(2) = pver
@@ -407,6 +412,9 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
       call cldera_add_partitioned_field("QRLC"//diag(icall), 2,dims,dimnames,nparts,part_dim,.false.)
    end do
    call cldera_add_partitioned_field("Mass_so4",2,dims,dimnames,nparts,part_dim,.false.)
+   do tag_loop = 1,3 ! only three tags needed for now
+      call cldera_add_partitioned_field("Mass_so4"//tagged_suffix(tag_loop),2,dims,dimnames,nparts,part_dim,.false.)
+   end do
 
    ! 2d, interfaces
    dims(2) = pver+1
@@ -586,8 +594,13 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
        call cldera_set_field_part_size("QRLC"//diag(icall), ipart,ncols)
      end do
      call cldera_set_field_part_size("AODSO4", ipart,ncols)
-     call cldera_set_field_part_size("BURDENSO4"   , ipart,ncols)
+     call cldera_set_field_part_size("BURDENSO4", ipart,ncols)
      call cldera_set_field_part_size("Mass_so4", ipart,ncols)
+     do tag_loop = 1,3 ! only three tags needed for now
+       call cldera_set_field_part_size("AODSO4"//tagged_suffix(tag_loop), ipart,ncols)
+       call cldera_set_field_part_size("BURDENSO4"//tagged_suffix(tag_loop), ipart,ncols)
+       call cldera_set_field_part_size("Mass_so4"//tagged_suffix(tag_loop), ipart,ncols)
+     end do
    enddo
 
    call cldera_commit_all_fields()

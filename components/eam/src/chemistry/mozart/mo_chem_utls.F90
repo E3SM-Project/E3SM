@@ -15,6 +15,7 @@ contains
 
     use chem_mods,     only : gas_pcnst
     use mo_tracname,   only : tracnam => solsym
+    use cam_logfile,   only: iulog 
 
     implicit none
 

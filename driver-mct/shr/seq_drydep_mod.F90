@@ -36,7 +36,10 @@ module seq_drydep_mod
   ! !PRIVATE ARRAY SIZES
 
   integer, private, parameter :: maxspc = 210              ! Maximum number of species
-  integer, public,  parameter :: n_species_table = 192      ! Number of species to work with
+!++hybrown
+!  integer, public,  parameter :: n_species_table = 192      ! Number of species to work with
+  integer, public,  parameter :: n_species_table = 222      ! Number of species to work with 192 + 30 (so4) = 222
+!--hybrown
   integer, private, parameter :: NSeas = 5                 ! Number of seasons
   integer, private, parameter :: NLUse = 11                ! Number of land-use types
 
@@ -61,6 +64,9 @@ module seq_drydep_mod
   integer,  public, allocatable, dimension(:) :: mapping   ! mapping to species table
   ! --- Indices for each species ---
   integer,  public :: h2_ndx, ch4_ndx, co_ndx, pan_ndx, mpan_ndx, so2_ndx, o3_ndx, o3a_ndx, xpan_ndx
+!++hybrown
+integer,  public :: so201_ndx, so202_ndx, so203_ndx, so204_ndx, so205_ndx, so206_ndx, so207_ndx, so208_ndx, so209_ndx, so210_ndx, so211_ndx, so212_ndx, so213_ndx, so214_ndx, so215_ndx, so216_ndx, so217_ndx, so218_ndx, so219_ndx, so220_ndx, so221_ndx, so222_ndx, so223_ndx, so224_ndx, so225_ndx, so226_ndx, so227_ndx, so228_ndx, so229_ndx, so230_ndx
+!--hybrown
 
   !---------------------------------------------------------------------------
   ! Table 1 from Wesely, Atmos. Environment, 1989, p1293
@@ -280,6 +286,38 @@ module seq_drydep_mod
        ,1.e-36_r8 & ! HCN
        ,1.e-36_r8 & ! CH3CN
        ,1.e-36_r8 & ! SO2
+!++hybrown
+       ,1.e-36_r8 & ! SO2
+       ,1.e-36_r8 & ! SO2
+       ,1.e-36_r8 & ! SO2
+       ,1.e-36_r8 & ! SO2
+       ,1.e-36_r8 & ! SO2
+       ,1.e-36_r8 & ! SO2
+       ,1.e-36_r8 & ! SO2
+       ,1.e-36_r8 & ! SO2
+       ,1.e-36_r8 & ! SO2
+       ,1.e-36_r8 & ! SO2
+       ,1.e-36_r8 & ! SO2
+       ,1.e-36_r8 & ! SO2
+       ,1.e-36_r8 & ! SO2
+       ,1.e-36_r8 & ! SO2
+       ,1.e-36_r8 & ! SO2
+       ,1.e-36_r8 & ! SO2
+       ,1.e-36_r8 & ! SO2
+       ,1.e-36_r8 & ! SO2
+       ,1.e-36_r8 & ! SO2
+       ,1.e-36_r8 & ! SO2
+       ,1.e-36_r8 & ! SO2
+       ,1.e-36_r8 & ! SO2
+       ,1.e-36_r8 & ! SO2
+       ,1.e-36_r8 & ! SO2
+       ,1.e-36_r8 & ! SO2
+       ,1.e-36_r8 & ! SO2
+       ,1.e-36_r8 & ! SO2
+       ,1.e-36_r8 & ! SO2
+       ,1.e-36_r8 & ! SO2
+       ,1.e-36_r8 & ! SO2
+!--hybrown
        ,0.1_r8    & ! SOAGff0
        ,0.1_r8    & ! SOAGff1
        ,0.1_r8    & ! SOAGff2
@@ -489,6 +527,38 @@ module seq_drydep_mod
          ,'HCN      ' &
          ,'CH3CN    ' &
          ,'SO2      ' &
+!++hybrown
+       ,'SO201    '                       &
+       ,'SO202    '                       &
+       ,'SO203    '                       &
+       ,'SO204    '                       &
+       ,'SO205    '                       &
+       ,'SO206    '                       &
+       ,'SO207    '                       &
+       ,'SO208    '                       &
+       ,'SO209    '                       &
+       ,'SO210    '                       &
+       ,'SO211    '                       &
+       ,'SO212    '                       &
+       ,'SO213    '                       &
+       ,'SO214    '                       &
+       ,'SO215    '                       &
+       ,'SO216    '                       &
+       ,'SO217    '                       &
+       ,'SO218    '                       &
+       ,'SO219    '                       &
+       ,'SO220    '                       &
+       ,'SO221    '                       &
+       ,'SO222    '                       &
+       ,'SO223    '                       &
+       ,'SO224    '                       &
+       ,'SO225    '                       &
+       ,'SO226    '                       &
+       ,'SO227    '                       &
+       ,'SO228    '                       &
+       ,'SO229    '                       &
+       ,'SO230    '                       &
+!--hybrown
          ,'SOAGff0  ' &
          ,'SOAGff1  ' &
          ,'SOAGff2  ' &
@@ -685,6 +755,38 @@ module seq_drydep_mod
        ,9.02e+00_r8, 8258._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  & ! HCN
        ,5.28e+01_r8, 3970._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  & ! CH3CN
        ,1.36e+00_r8, 3100._r8,1.30e-02_r8,1960._r8,6.6e-08_r8, 1500._r8  & ! SO2
+!++hybrown
+       ,1.36e+00_r8, 3100._r8,1.30e-02_r8,1960._r8,6.6e-08_r8, 1500._r8  & ! SO201
+       ,1.36e+00_r8, 3100._r8,1.30e-02_r8,1960._r8,6.6e-08_r8, 1500._r8  & ! SO202
+       ,1.36e+00_r8, 3100._r8,1.30e-02_r8,1960._r8,6.6e-08_r8, 1500._r8  & ! SO203
+       ,1.36e+00_r8, 3100._r8,1.30e-02_r8,1960._r8,6.6e-08_r8, 1500._r8  & ! SO204
+       ,1.36e+00_r8, 3100._r8,1.30e-02_r8,1960._r8,6.6e-08_r8, 1500._r8  & ! SO205
+       ,1.36e+00_r8, 3100._r8,1.30e-02_r8,1960._r8,6.6e-08_r8, 1500._r8  & ! SO206
+       ,1.36e+00_r8, 3100._r8,1.30e-02_r8,1960._r8,6.6e-08_r8, 1500._r8  & ! SO207
+       ,1.36e+00_r8, 3100._r8,1.30e-02_r8,1960._r8,6.6e-08_r8, 1500._r8  & ! SO208
+       ,1.36e+00_r8, 3100._r8,1.30e-02_r8,1960._r8,6.6e-08_r8, 1500._r8  & ! SO209
+       ,1.36e+00_r8, 3100._r8,1.30e-02_r8,1960._r8,6.6e-08_r8, 1500._r8  & ! SO210
+       ,1.36e+00_r8, 3100._r8,1.30e-02_r8,1960._r8,6.6e-08_r8, 1500._r8  & ! SO211
+       ,1.36e+00_r8, 3100._r8,1.30e-02_r8,1960._r8,6.6e-08_r8, 1500._r8  & ! SO212
+       ,1.36e+00_r8, 3100._r8,1.30e-02_r8,1960._r8,6.6e-08_r8, 1500._r8  & ! SO213
+       ,1.36e+00_r8, 3100._r8,1.30e-02_r8,1960._r8,6.6e-08_r8, 1500._r8  & ! SO214
+       ,1.36e+00_r8, 3100._r8,1.30e-02_r8,1960._r8,6.6e-08_r8, 1500._r8  & ! SO215
+       ,1.36e+00_r8, 3100._r8,1.30e-02_r8,1960._r8,6.6e-08_r8, 1500._r8  & ! SO216
+       ,1.36e+00_r8, 3100._r8,1.30e-02_r8,1960._r8,6.6e-08_r8, 1500._r8  & ! SO217
+       ,1.36e+00_r8, 3100._r8,1.30e-02_r8,1960._r8,6.6e-08_r8, 1500._r8  & ! SO218
+       ,1.36e+00_r8, 3100._r8,1.30e-02_r8,1960._r8,6.6e-08_r8, 1500._r8  & ! SO219
+       ,1.36e+00_r8, 3100._r8,1.30e-02_r8,1960._r8,6.6e-08_r8, 1500._r8  & ! SO220
+       ,1.36e+00_r8, 3100._r8,1.30e-02_r8,1960._r8,6.6e-08_r8, 1500._r8  & ! SO221
+       ,1.36e+00_r8, 3100._r8,1.30e-02_r8,1960._r8,6.6e-08_r8, 1500._r8  & ! SO222
+       ,1.36e+00_r8, 3100._r8,1.30e-02_r8,1960._r8,6.6e-08_r8, 1500._r8  & ! SO223
+       ,1.36e+00_r8, 3100._r8,1.30e-02_r8,1960._r8,6.6e-08_r8, 1500._r8  & ! SO224
+       ,1.36e+00_r8, 3100._r8,1.30e-02_r8,1960._r8,6.6e-08_r8, 1500._r8  & ! SO225
+       ,1.36e+00_r8, 3100._r8,1.30e-02_r8,1960._r8,6.6e-08_r8, 1500._r8  & ! SO226
+       ,1.36e+00_r8, 3100._r8,1.30e-02_r8,1960._r8,6.6e-08_r8, 1500._r8  & ! SO227
+       ,1.36e+00_r8, 3100._r8,1.30e-02_r8,1960._r8,6.6e-08_r8, 1500._r8  & ! SO228
+       ,1.36e+00_r8, 3100._r8,1.30e-02_r8,1960._r8,6.6e-08_r8, 1500._r8  & ! SO229
+       ,1.36e+00_r8, 3100._r8,1.30e-02_r8,1960._r8,6.6e-08_r8, 1500._r8  & ! SO230
+!--hybrown
        ,1.3e+07_r8,     0._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  & ! SOAGff0
        ,3.2e+05_r8,     0._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  & ! SOAGff1
        ,4.0e+05_r8,     0._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  & ! SOAGff2 
@@ -836,7 +938,16 @@ module seq_drydep_mod
        58.0768013_r8, 76.0910034_r8, 89.070126_r8,  90.078067_r8,  222.000000_r8, &
        68.1141968_r8, 70.0877991_r8, 70.0877991_r8, 46.0657997_r8, 147.125946_r8, &
        119.074341_r8, 162.117935_r8, 100.112999_r8, 27.0256_r8   , 41.0524_r8   , &
-       64.064800_r8,  250._r8,       250._r8,       250._r8,       250._r8,       &
+       64.064800_r8, &
+!++hybrown
+       64.064800_r8, 64.064800_r8, 64.064800_r8, 64.064800_r8, 64.064800_r8, &
+       64.064800_r8, 64.064800_r8, 64.064800_r8, 64.064800_r8, 64.064800_r8, &
+       64.064800_r8, 64.064800_r8, 64.064800_r8, 64.064800_r8, 64.064800_r8, &
+       64.064800_r8, 64.064800_r8, 64.064800_r8, 64.064800_r8, 64.064800_r8, &
+       64.064800_r8, 64.064800_r8, 64.064800_r8, 64.064800_r8, 64.064800_r8, &
+       64.064800_r8, 64.064800_r8, 64.064800_r8, 64.064800_r8, 64.064800_r8, &
+!-hybrown
+       250._r8,       250._r8,       250._r8,       250._r8,       &
        250._r8,       250._r8,       250._r8,       250._r8,       250._r8,       &
        250._r8,       250._r8,       250._r8,       250._r8,       250._r8,       &
        250._r8,       170.3_r8,      170.3_r8,      170.3_r8,       170.3_r8,     &
@@ -1033,7 +1144,11 @@ CONTAINS
     end if
 
     h2_ndx=-1; ch4_ndx=-1; co_ndx=-1; mpan_ndx = -1; pan_ndx = -1; so2_ndx=-1; o3_ndx=-1; xpan_ndx=-1
-
+!++hybrown
+    so201_ndx=-1; so202_ndx=-1; so203_ndx=-1; so204_ndx=-1; so205_ndx=-1; so206_ndx=-1; so207_ndx=-1; so208_ndx=-1; so209_ndx=-1; so210_ndx=-1
+    so211_ndx=-1; so212_ndx=-1; so213_ndx=-1; so214_ndx=-1; so215_ndx=-1; so216_ndx=-1; so217_ndx=-1; so218_ndx=-1; so219_ndx=-1; so220_ndx=-1
+    so221_ndx=-1; so222_ndx=-1; so223_ndx=-1; so224_ndx=-1; so225_ndx=-1; so226_ndx=-1; so227_ndx=-1; so228_ndx=-1; so229_ndx=-1; so230_ndx=-1
+!--hybrown
     !--- Loop over drydep species that need to be worked with ---
     do i=1,n_drydep
        if ( len_trim(drydep_list(i))==0 ) exit
@@ -1059,6 +1174,10 @@ CONTAINS
              test_name = 'OX'
           case( 'Pb' )
              test_name = 'HNO3'
+!++hybrown
+          case( 'H2SO4', 'H2SO401', 'H2SO402', 'H2SO403', 'H2SO404', 'H2SO405', 'H2SO406', 'H2SO407', 'H2SO408', 'H2SO409', 'H2SO410', 'H2SO411', 'H2SO412', 'H2SO413', 'H2SO414', 'H2SO415', 'H2SO416', 'H2SO417', 'H2SO418', 'H2SO419', 'H2SO420', 'H2SO421', 'H2SO422', 'H2SO423', 'H2SO424', 'H2SO425', 'H2SO426', 'H2SO427', 'H2SO428', 'H2SO429', 'H2SO430' )
+             test_name = 'HNO3'
+!--hybrown
           case( 'SOGM','SOGI','SOGT','SOGB','SOGX' )
              test_name = 'CH3OOH'
           case( 'SOA', 'SO4', 'CB1', 'CB2', 'OC1', 'OC2', 'NH4', 'SA1', 'SA2', 'SA3', 'SA4' )
@@ -1123,6 +1242,38 @@ CONTAINS
        if ( trim(drydep_list(i)) == 'MPAN' ) mpan_ndx = i
        if ( trim(drydep_list(i)) == 'PAN' )  pan_ndx  = i
        if ( trim(drydep_list(i)) == 'SO2' )  so2_ndx  = i
+!++hybrown
+       if ( trim(drydep_list(i)) == 'SO201' )  so201_ndx  = i
+       if ( trim(drydep_list(i)) == 'SO202' )  so202_ndx  = i
+       if ( trim(drydep_list(i)) == 'SO203' )  so203_ndx  = i
+       if ( trim(drydep_list(i)) == 'SO204' )  so204_ndx  = i
+       if ( trim(drydep_list(i)) == 'SO205' )  so205_ndx  = i
+       if ( trim(drydep_list(i)) == 'SO206' )  so206_ndx  = i
+       if ( trim(drydep_list(i)) == 'SO207' )  so207_ndx  = i
+       if ( trim(drydep_list(i)) == 'SO208' )  so208_ndx  = i
+       if ( trim(drydep_list(i)) == 'SO209' )  so209_ndx  = i
+       if ( trim(drydep_list(i)) == 'SO210' )  so210_ndx  = i
+       if ( trim(drydep_list(i)) == 'SO211' )  so211_ndx  = i
+       if ( trim(drydep_list(i)) == 'SO212' )  so212_ndx  = i
+       if ( trim(drydep_list(i)) == 'SO213' )  so213_ndx  = i
+       if ( trim(drydep_list(i)) == 'SO214' )  so214_ndx  = i
+       if ( trim(drydep_list(i)) == 'SO215' )  so215_ndx  = i
+       if ( trim(drydep_list(i)) == 'SO216' )  so216_ndx  = i
+       if ( trim(drydep_list(i)) == 'SO217' )  so217_ndx  = i
+       if ( trim(drydep_list(i)) == 'SO218' )  so218_ndx  = i
+       if ( trim(drydep_list(i)) == 'SO219' )  so219_ndx  = i
+       if ( trim(drydep_list(i)) == 'SO220' )  so220_ndx  = i
+       if ( trim(drydep_list(i)) == 'SO221' )  so221_ndx  = i
+       if ( trim(drydep_list(i)) == 'SO222' )  so222_ndx  = i
+       if ( trim(drydep_list(i)) == 'SO223' )  so223_ndx  = i
+       if ( trim(drydep_list(i)) == 'SO224' )  so224_ndx  = i
+       if ( trim(drydep_list(i)) == 'SO225' )  so225_ndx  = i
+       if ( trim(drydep_list(i)) == 'SO226' )  so226_ndx  = i
+       if ( trim(drydep_list(i)) == 'SO227' )  so227_ndx  = i
+       if ( trim(drydep_list(i)) == 'SO228' )  so228_ndx  = i
+       if ( trim(drydep_list(i)) == 'SO229' )  so229_ndx  = i
+       if ( trim(drydep_list(i)) == 'SO230' )  so230_ndx  = i
+!--hybrown
        if ( trim(drydep_list(i)) == 'OX' .or. trim(drydep_list(i)) == 'O3' ) o3_ndx  = i
        if ( trim(drydep_list(i)) == 'O3A' ) o3a_ndx  = i
        if ( trim(drydep_list(i)) == 'XPAN' ) xpan_ndx = i

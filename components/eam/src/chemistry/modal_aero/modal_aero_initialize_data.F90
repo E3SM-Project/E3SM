@@ -59,11 +59,109 @@ contains
          'num_c3  ' /)
 #endif
 
-
-
-    integer :: m, l, iptr
-    integer :: i,idx
+    integer :: m, l, iptr, i, idx, n, tot_spec, ispec, iso4, isoa, ipoa, ibc, iso4g, isoag, indtmp
     character(len=3) :: trnum       ! used to hold mode number (as characters)
+    character(len=20) :: dumStr1, specNameMode
+    character(len=1000) :: msg, tmpSpecName
+
+    iso4g = 0
+    iso4  = 0
+    isoag = 0
+    isoa  = 0
+    ipoa  = 0
+    ibc   = 0
+    do ispec = 1, pcnst
+       tmpSpecName = trim(adjustl(cnst_name(ispec)))
+
+       !YYANG - collect SO4G->H2SO4 species
+       if(index(tmpSpecName,'h2so4') > 0 .or. index(tmpSpecName,'H2SO4') > 0 ) then
+          iso4g = iso4g + 1
+          so4gSpecName(iso4g) = tmpSpecName
+       endif
+
+       !BSINGH - collect SOAG species
+       if(index(tmpSpecName,'soag') > 0 .or. index(tmpSpecName,'SOAG') > 0 ) then
+          isoag = isoag + 1
+          soagSpecName(isoag) = tmpSpecName
+       endif
+
+       !BSINGH - collect soa,poa and bc species
+       indtmp = index(tmpSpecName,'_a1')
+       if(indtmp > 0) then !BSINGH - This will exclude SOAG species as SOAG species do not have '_a' at the end
+
+
+          !YYANG -  For so4 species
+          if(index(tmpSpecName,'so4') > 0 .or. index(tmpSpecName,'SO4') > 0 ) then
+             iso4 = iso4 + 1
+             so4SpecName(iso4) = tmpSpecName(1:indtmp-1)
+          endif
+
+          !BSINGH -  For soa species
+          if(index(tmpSpecName,'soa') > 0 .or. index(tmpSpecName,'SOA') > 0 ) then
+             isoa = isoa + 1
+             soaSpecName(isoa) = tmpSpecName(1:indtmp-1)
+          endif
+
+          !BSINGH -  For poa species
+          if(index(tmpSpecName,'pom') > 0 .or. index(tmpSpecName,'POM') > 0 ) then
+             ipoa = ipoa + 1
+             poaSpecName(ipoa) = tmpSpecName(1:indtmp-1)
+          endif
+
+          !BSINGH -  For bc species
+          if(index(tmpSpecName,'bc') > 0 .or. index(tmpSpecName,'BC') > 0 ) then
+             ibc = ibc + 1
+             bcSpecName(ibc) = tmpSpecName(1:indtmp-1)
+          endif
+       endif
+    enddo
+    !BSINGH - Sanity check for isoag, isoa, ipoa and ibc
+    !BSINGH - isoag should be equal to nsoa
+    !BSINGH - isoa  should be equal to nsoa
+    !BSINGH - ipoa  should be equal to npoa
+    !BSINGH - ibc   should be equal to nbc
+
+    if(iso4g .ne. nso4 .or. iso4 .ne. nso4 .or. isoag .ne. nsoa .or. isoa .ne. nsoa .or. ipoa .ne. npoa .or. ibc .ne. nbc) then
+       !BSINGH - printout values of isoag, isoa, ipoa and ibc
+       write(msg,*)'MODAL_AER_INITIALIZE_DATA.F90: Error while populating soa, poa or bc species:[nso4=',nso4,'nsoa=',nsoa,' npoa=',npoa,' nbc=',nbc,']:',&
+            ' [iso4g=',iso4g,' [isoag=',isoag,' iso4=',iso4,' isoa=',isoa,' ipoa=',ipoa,' ibc=',ibc,']'
+       call endrun(msg)
+    endif
+
+
+    lptr2_so4_g_amode(:) = -999888777
+    do i = 1, nso4
+       call search_list_of_names( &
+          so4gspecname(i), lptr2_so4_g_amode(i), cnst_name, pcnst )
+       if (lptr2_so4_g_amode(i) <= 0) then
+          write(msg,'(a,2i5,2x,a)') &
+             'subr modal_aero_register - SO4G error for', &
+             i, nso4, so4gspecname(i)
+          call endrun( msg )
+       end if
+    end do
+
+
+    lptr2_soa_g_amode(:) = -999888777
+    do i = 1, nsoa
+       call search_list_of_names( &
+          soagspecname(i), lptr2_soa_g_amode(i), cnst_name, pcnst )
+       if (lptr2_soa_g_amode(i) <= 0) then
+          write(msg,'(a,2i5,2x,a)') &
+             'subr modal_aero_register - SOAG error for', &
+             i, nsoa, soagspecname(i)
+          call endrun( msg )
+       end if
+    end do
+
+
+    do m = 1, ntot_amode
+       if(nspec_amode(m).gt.nspec_max)then
+          write(iulog,*)'nspec_amode(m).gt.nspec_max in modal_aero_register'
+          write(iulog,*)'m,nspec_amode(m), nspec_max=',m, nspec_amode(m), nspec_max
+          call endrun()
+       end if
+    end do
 
        !   input species to hold aerosol water and "kohler-c"
        !     xname_waterptr(:ntot_amode)   = (/ 'wat_a1  ', 'wat_a2  ', 'wat_a3  ', &
@@ -73,12 +171,20 @@ contains
        ! JPE 02022011: These could also be parameters but a bug in the pathscale compiler prevents
        !               parameter initialization of 2D variables
 #if ( defined MODAL_AERO_7MODE )
-       xname_massptr(:nspec_amode(1),1)   = (/ 'so4_a1  ', 'nh4_a1  ', &
-            'pom_a1  ', 'soa_a1  ', 'bc_a1   ', 'ncl_a1  ' /)
-       xname_massptrcw(:nspec_amode(1),1) = (/ 'so4_c1  ', 'nh4_c1  ', &
-            'pom_c1  ', 'soa_c1  ', 'bc_c1   ', 'ncl_c1  ' /)
-       xname_spectype(:nspec_amode(1),1)  = (/ 'sulfate   ', 'ammonium  ', &
-            'p-organic ', 's-organic ', 'black-c   ', 'seasalt   ' /)
+
+    !Add the common species
+    tot_spec = 2 ! Keep track of number of species to be added
+!!!!!!!!!!!!!!!!!!!!!!!!Change to 2 after SO4 tag
+    if(tot_spec>nspec_amode(1))then
+       write(msg,*)'MODAL_AERO_INITIALIZE_DATA: Number of species exceeded nspec_amode(Mode 1)  ', &
+         ',nspec_amode=',nspec_amode(1),' while adding common species'
+       call endrun(msg)
+    endif
+    xname_massptr(:tot_spec,1)   = (/ 'nh4_a1  ', 'ncl_a1  ' /)
+    xname_massptrcw(:tot_spec,1) = (/ 'nh4_c1  ', 'ncl_c1  ' /)
+!BSINGH - "spectype" is no longer used
+    xname_spectype(:tot_spec,1)  = (/ 'ammonium  ', 'seasalt   ' /)
+
 #elif ( defined MODAL_AERO_9MODE )
        xname_massptr(:nspec_amode(1),1)   = (/ 'so4_a1  ', 'nh4_a1  ', &
             'pom_a1  ', 'soa_a1  ', 'bc_a1   ', 'ncl_a1  ', &
@@ -90,35 +196,112 @@ contains
             'p-organic ', 's-organic ', 'black-c   ', 'seasalt   ', &
             'm-poly    ', 'm-prot    ', 'm-lip     ' /)
 #elif ( defined MODAL_AERO_4MODE_MOM )
-       xname_massptr(:nspec_amode(1),1)   = (/ 'so4_a1  ', &
-            'pom_a1  ', 'soa_a1  ', 'bc_a1   ', &
-            'dst_a1  ', 'ncl_a1  ', 'mom_a1  ' /)
-       xname_massptrcw(:nspec_amode(1),1) = (/ 'so4_c1  ', &
-            'pom_c1  ', 'soa_c1  ', 'bc_c1   ', &
-            'dst_c1  ', 'ncl_c1  ', 'mom_c1  ' /)
-       xname_spectype(:nspec_amode(1),1)  = (/ 'sulfate   ', &
-            'p-organic ', 's-organic ', 'black-c   ', &
-            'dust      ', 'seasalt   ', 'm-organic ' /)
+!       xname_massptr(:nspec_amode(1),1)   = (/ 'so4_a1  ', &
+!            'pom_a1  ', 'soa_a1  ', 'bc_a1   ', &
+!            'dst_a1  ', 'ncl_a1  ', 'mom_a1  ' /)
+!       xname_massptrcw(:nspec_amode(1),1) = (/ 'so4_c1  ', &
+!            'pom_c1  ', 'soa_c1  ', 'bc_c1   ', &
+!            'dst_c1  ', 'ncl_c1  ', 'mom_c1  ' /)
+!       xname_spectype(:nspec_amode(1),1)  = (/ 'sulfate   ', &
+!            'p-organic ', 's-organic ', 'black-c   ', &
+!            'dust      ', 'seasalt   ', 'm-organic ' /)
+    tot_spec = 3 ! Keep track of number of species to be added
+!!!!!!!!!Change to 3 after SO4 tag
+    if(tot_spec>nspec_amode(1)) then
+       write(msg,*)'MODAL_AERO_INITIALIZE_DATA: Number of species exceeded nspec_amode(Mode 1)  ', &
+            ',nspec_amode=',nspec_amode(1),' while adding common species'
+       call endrun(msg)
+    endif
+    xname_massptr(:tot_spec,1)   = (/ 'dst_a1  ', 'ncl_a1  ', 'mom_a1  ' /)
+    xname_massptrcw(:tot_spec,1) = (/ 'dst_c1  ', 'ncl_c1  ', 'mom_c1  ' /)
+!BSINGH - "spectype" is no longer used
+    xname_spectype(:tot_spec,1)  = (/ 'dust      ', 'seasalt   ', 'm-organic '/)
 #elif ( defined MODAL_AERO_3MODE || defined MODAL_AERO_4MODE )
-       xname_massptr(:nspec_amode(1),1)   = (/ 'so4_a1  ', &
-            'pom_a1  ', 'soa_a1  ', 'bc_a1   ', &
-            'dst_a1  ', 'ncl_a1  ' /)
-       xname_massptrcw(:nspec_amode(1),1) = (/ 'so4_c1  ', &
-            'pom_c1  ', 'soa_c1  ', 'bc_c1   ', &
-            'dst_c1  ', 'ncl_c1  ' /)
-       xname_spectype(:nspec_amode(1),1)  = (/ 'sulfate   ', &
-            'p-organic ', 's-organic ', 'black-c   ', &
-            'dust      ', 'seasalt   ' /)
+!       xname_massptr(:nspec_amode(1),1)   = (/ 'so4_a1  ', &
+!            'pom_a1  ', 'soa_a1  ', 'bc_a1   ', &
+!            'dst_a1  ', 'ncl_a1  ' /)
+!       xname_massptrcw(:nspec_amode(1),1) = (/ 'so4_c1  ', &
+!            'pom_c1  ', 'soa_c1  ', 'bc_c1   ', &
+!            'dst_c1  ', 'ncl_c1  ' /)
+!       xname_spectype(:nspec_amode(1),1)  = (/ 'sulfate   ', &
+!            'p-organic ', 's-organic ', 'black-c   ', &
+!            'dust      ', 'seasalt   ' /)
+    tot_spec = 2 ! Keep track of number of species to be added
+!!!!!!!!!Change to 2 after SO4 tag
+    if(tot_spec>nspec_amode(1)) then
+       write(msg,*)'MODAL_AERO_INITIALIZE_DATA: Number of species exceeded nspec_amode(Mode 1)  ', &
+            ',nspec_amode=',nspec_amode(1),' while adding common species'
+       call endrun(msg)
+    endif
+    xname_massptr(:tot_spec,1)   = (/ 'dst_a1  ', 'ncl_a1  ' /)
+    xname_massptrcw(:tot_spec,1) = (/ 'dst_c1  ', 'ncl_c1  ' /)
+!BSINGH - "spectype" is no longer used
+    xname_spectype(:tot_spec,1)  = (/ 'dust      ', 'seasalt   ' /)
 #endif
+
+!Add SO4,SOA,POA and BC species for mode 1
+    do n = 1, NSO4
+       tot_spec = tot_spec + 1
+       if(tot_spec>nspec_amode(1)) then
+          write(msg,*)'MODAL_AERO_INITIALIZE_DATA: Number of species exceeded nspec_amode(Mode 1) in SO4', &
+               ' add do-loop, nspec_amode=',nspec_amode(1),' while adding',trim(adjustl(so4SpecName(n)))
+          call endrun(msg)
+       endif
+       xname_massptr(tot_spec,1)   = trim(adjustl(so4SpecName(n)))//'_a1'
+       xname_massptrcw(tot_spec,1) = trim(adjustl(so4SpecName(n)))//'_c1'
+       xname_spectype(tot_spec,1)  = 'sulfate '
+    enddo
+
+    do n = 1, NSOA
+       tot_spec = tot_spec + 1
+       if(tot_spec>nspec_amode(1)) then
+          write(msg,*)'MODAL_AERO_INITIALIZE_DATA: Number of species exceeded nspec_amode(Mode 1) in SOA', &
+               ' add do-loop, nspec_amode=',nspec_amode(1),' while adding',trim(adjustl(soaSpecName(n)))
+          call endrun(msg)
+       endif
+       xname_massptr(tot_spec,1)   = trim(adjustl(soaSpecName(n)))//'_a1'
+       xname_massptrcw(tot_spec,1) = trim(adjustl(soaSpecName(n)))//'_c1'
+       xname_spectype(tot_spec,1)  = 's-organic '
+    enddo
+
+    do n = 1, NPOA
+       tot_spec = tot_spec + 1
+       if(tot_spec>nspec_amode(1)) then
+          write(msg,*)'MODAL_AERO_INITIALIZE_DATA: Number of species exceeded nspec_amode(Mode 1) in POA', &
+            ' add do-loop, nspec_amode=',nspec_amode(1),' while adding',trim(adjustl(poaSpecName(n)))
+          call endrun(msg)
+       endif
+       xname_massptr(tot_spec,1)   = trim(adjustl(poaSpecName(n)))//'_a1'
+       xname_massptrcw(tot_spec,1) = trim(adjustl(poaSpecName(n)))//'_c1'
+       xname_spectype(tot_spec,1)  = 'p-organic '
+    enddo
+
+    do n = 1, NBC
+       tot_spec = tot_spec + 1
+       if(tot_spec>nspec_amode(1)) then
+          write(msg,*)'MODAL_AERO_INITIALIZE_DATA: Number of species exceeded nspec_amode(Mode 1) in BC', &
+               ' add do-loop, nspec_amode=',nspec_amode(1),' while adding',trim(adjustl(bcSpecName(n)))
+          call endrun(msg)
+       endif
+       xname_massptr(tot_spec,1)   = trim(adjustl(bcSpecName(n)))//'_a1'
+       xname_massptrcw(tot_spec,1) = trim(adjustl(bcSpecName(n)))//'_c1'
+       xname_spectype(tot_spec,1)  = 'black-c '
+    enddo
 
        ! mode 2 (aitken) species
 #if ( defined MODAL_AERO_7MODE )
-       xname_massptr(:nspec_amode(2),2)   = (/ 'so4_a2  ', 'nh4_a2  ', &
-            'soa_a2  ', 'ncl_a2  ' /)
-       xname_massptrcw(:nspec_amode(2),2) = (/ 'so4_c2  ', 'nh4_c2  ', &
-            'soa_c2  ', 'ncl_c2  ' /)
-       xname_spectype(:nspec_amode(2),2)  = (/ 'sulfate   ', 'ammonium  ', &
-            's-organic ', 'seasalt   ' /)
+
+    tot_spec = 2 ! Keep track of number of species to be added
+    if(tot_spec>nspec_amode(2)) then
+       write(msg,*)'MODAL_AERO_INITIALIZE_DATA: Number of species exceeded nspec_amode(Mode 2)  ', &
+         ',nspec_amode=',nspec_amode(2),' while adding common species'
+       call endrun(msg)
+    endif
+    xname_massptr(:tot_spec,2)   = (/ 'nh4_a2  ', 'ncl_a2  ' /)
+    xname_massptrcw(:tot_spec,2) = (/ 'nh4_c2  ', 'ncl_c2  ' /)
+!BSINGH - "spectype" is no longer used
+    xname_spectype(:tot_spec,2)  = (/ 'ammonium  ', 'seasalt   ' /)
+
 #elif ( defined MODAL_AERO_9MODE )
        xname_massptr(:nspec_amode(2),2)   = (/ 'so4_a2  ', 'nh4_a2  ', &
             'soa_a2  ', 'ncl_a2  ', &
@@ -130,26 +313,86 @@ contains
             's-organic ', 'seasalt   ', &
             'm-poly    ', 'm-prot    ', 'm-lip     ' /)
 #elif ( defined MODAL_AERO_4MODE_MOM )
-       xname_massptr(:nspec_amode(2),2)   = (/ 'so4_a2  ', &
-            'soa_a2  ', 'ncl_a2  ', 'mom_a2  ' /)
-       xname_massptrcw(:nspec_amode(2),2) = (/ 'so4_c2  ', &
-            'soa_c2  ', 'ncl_c2  ', 'mom_c2  ' /)
-       xname_spectype(:nspec_amode(2),2)  = (/ 'sulfate   ', &
-            's-organic ', 'seasalt   ', 'm-organic ' /)
+!       xname_massptr(:nspec_amode(2),2)   = (/ 'so4_a2  ', &
+!            'soa_a2  ', 'ncl_a2  ', 'mom_a2  ' /)
+!       xname_massptrcw(:nspec_amode(2),2) = (/ 'so4_c2  ', &
+!            'soa_c2  ', 'ncl_c2  ', 'mom_c2  ' /)
+!       xname_spectype(:nspec_amode(2),2)  = (/ 'sulfate   ', &
+!            's-organic ', 'seasalt   ', 'm-organic ' /)
+    tot_spec = 2 ! Keep track of number of species to be added
+    if(tot_spec>nspec_amode(2))then
+       write(msg,*)'MODAL_AERO_INITIALIZE_DATA: Number of species exceeded nspec_amode(Mode 2)  ', &
+            ',nspec_amode=',nspec_amode(2),' while adding common species'
+       call endrun(msg)
+    endif
+    xname_massptr(:tot_spec,2)   = (/ 'ncl_a2  ', 'mom_a2  ' /)
+    xname_massptrcw(:tot_spec,2) = (/ 'ncl_c2  ', 'mom_c2  ' /)
+    xname_spectype(:tot_spec,2)  = (/ 'seasalt   ', 'm-organic ' /)
 #elif ( defined MODAL_AERO_3MODE || defined MODAL_AERO_4MODE )
-       xname_massptr(:nspec_amode(2),2)   = (/ 'so4_a2  ', &
-            'soa_a2  ', 'ncl_a2  ' /)
-       xname_massptrcw(:nspec_amode(2),2) = (/ 'so4_c2  ', &
-            'soa_c2  ', 'ncl_c2  ' /)
-       xname_spectype(:nspec_amode(2),2)  = (/ 'sulfate   ', &
-            's-organic ', 'seasalt   ' /)
+!       xname_massptr(:nspec_amode(2),2)   = (/ 'so4_a2  ', &
+!            'soa_a2  ', 'ncl_a2  ' /)
+!       xname_massptrcw(:nspec_amode(2),2) = (/ 'so4_c2  ', &
+!            'soa_c2  ', 'ncl_c2  ' /)
+!       xname_spectype(:nspec_amode(2),2)  = (/ 'sulfate   ', &
+!            's-organic ', 'seasalt   ' /)
+
+    tot_spec = 1 ! Keep track of number of species to be added
+    if(tot_spec>nspec_amode(2))then
+       write(msg,*)'MODAL_AERO_INITIALIZE_DATA: Number of species exceeded nspec_amode(Mode 2)  ', &
+            ',nspec_amode=',nspec_amode(2),' while adding common species'
+       call endrun(msg)
+    endif
+    xname_massptr(:tot_spec,2)   = (/ 'ncl_a2  ' /)
+    xname_massptrcw(:tot_spec,2) = (/ 'ncl_c2  ' /)
+    xname_spectype(:tot_spec,2)  = (/ 'seasalt   ' /)
 #endif
 
+    !Add SO4 species for mode 2
+    do n = 1, NSO4
+       tot_spec = tot_spec + 1
+       if(tot_spec>nspec_amode(2)) then
+          write(msg,*)'MODAL_AERO_INITIALIZE_DATA: Number of species exceeded nspec_amode(Mode 2) in SO4', &
+               ' add do-loop, nspec_amode=',nspec_amode(2),' while adding',trim(adjustl(so4SpecName(n)))
+          call endrun(msg)
+       endif
+       xname_massptr(tot_spec,2)   = trim(adjustl(so4SpecName(n)))//'_a2'
+       xname_massptrcw(tot_spec,2) = trim(adjustl(so4SpecName(n)))//'_c2'
+       xname_spectype(tot_spec,2)  = 'sulfate '
+    enddo
+
+    !Add SOA species for mode 2
+    do n = 1, NSOA
+       tot_spec = tot_spec + 1
+       if(tot_spec>nspec_amode(2)) then
+          write(msg,*)'MODAL_AERO_INITIALIZE_DATA: Number of species exceeded nspec_amode(Mode 2) in SOA', &
+               ' add do-loop, nspec_amode=',nspec_amode(2),' while adding',trim(adjustl(soaSpecName(n)))
+          call endrun(msg)
+       endif
+       xname_massptr(tot_spec,2)   = trim(adjustl(soaSpecName(n)))//'_a2'
+       xname_massptrcw(tot_spec,2) = trim(adjustl(soaSpecName(n)))//'_c2'
+       xname_spectype(tot_spec,2)  = 's-organic '
+    enddo
+
 #if ( defined MODAL_AERO_7MODE )
-       ! mode 3 (primary carbon) species
-       xname_massptr(:nspec_amode(3),3)   = (/ 'pom_a3  ', 'bc_a3   ' /)
-       xname_massptrcw(:nspec_amode(3),3) = (/ 'pom_c3  ', 'bc_c3   ' /)
-       xname_spectype(:nspec_amode(3),3)  = (/ 'p-organic ', 'black-c   ' /)
+
+    tot_spec = 0
+    do n = 1, NPOA
+       tot_spec = tot_spec + 1
+       if(tot_spec>nspec_amode(3)) then
+          write(msg,*)'MODAL_AERO_INITIALIZE_DATA: Number of species exceeded nspec_amode(Mode 3) in POA', &
+               ' add do-loop, nspec_amode=',nspec_amode(3),' while adding',trim(adjustl(poaSpecName(n)))
+          call endrun(msg)
+       endif
+    enddo
+
+    do n = 1, NBC
+       tot_spec = tot_spec + 1
+       if(tot_spec>nspec_amode(3)) then
+          write(msg,*)'MODAL_AERO_INITIALIZE_DATA: Number of species exceedednspec_amode(Mode 3) in BC', &
+               ' add do-loop, nspec_amode=',nspec_amode(3),' while adding',trim(adjustl(bcSpecName(n)))
+          call endrun(msg)
+       endif
+    enddo
 #elif ( defined MODAL_AERO_9MODE )
        ! mode 3 (primary carbon) species & marine organic species
        xname_massptr(:nspec_amode(3),3)   = (/ 'pom_a3  ', 'bc_a3   ', &
@@ -160,65 +403,218 @@ contains
             'm-poly    ', 'm-prot    ', 'm-lip     ' /)
 #elif ( defined MODAL_AERO_3MODE || defined MODAL_AERO_4MODE )
        ! mode 3 (coarse dust & seasalt) species
-#if (defined RAIN_EVAP_TO_COARSE_AERO)
-          xname_massptr(:nspec_amode(3),3)   = (/ 'dst_a3  ', 'ncl_a3  ', 'so4_a3  ', 'bc_a3   ','pom_a3  ','soa_a3  ' /)
-          xname_massptrcw(:nspec_amode(3),3) = (/ 'dst_c3  ', 'ncl_c3  ', 'so4_c3  ', 'bc_c3   ','pom_c3  ','soa_c3  ' /)
-          xname_spectype(:nspec_amode(3),3)  = (/ 'dust      ', 'seasalt   ', 'sulfate   ', 'black-c   ','p-organic ', &
-               's-organic ' /)
-#else
-          xname_massptr(:nspec_amode(3),3)   = (/ 'dst_a3  ', 'ncl_a3  ', 'so4_a3  ' /)
-          xname_massptrcw(:nspec_amode(3),3) = (/ 'dst_c3  ', 'ncl_c3  ', 'so4_c3  ' /)
-          xname_spectype(:nspec_amode(3),3)  = (/ 'dust      ', 'seasalt   ', 'sulfate   ' /)
-#endif
+    tot_spec = 2 ! Keep track of number of species to be added
+    if(tot_spec>nspec_amode(3))then
+       write(msg,*)'MODAL_AERO_INITIALIZE_DATA: Number of species exceeded nspec_amode(Mode 3)  ', &
+            ',nspec_amode=',nspec_amode(3),' while adding common species'
+       call endrun(msg)
+    endif
+    xname_massptr(:tot_spec,3)   = (/ 'dst_a3  ', 'ncl_a3  ' /)
+    xname_massptrcw(:tot_spec,3) = (/ 'dst_c3  ', 'ncl_c3  ' /)
+    xname_spectype(:tot_spec,3)  = (/ 'dust      ', 'seasalt   ' /)
+
 #elif ( defined MODAL_AERO_4MODE_MOM )
        ! mode 3 (coarse dust & seasalt) species
 #if (defined RAIN_EVAP_TO_COARSE_AERO)
-          xname_massptr(:nspec_amode(3),3)   = &
-          (/ 'dst_a3  ', 'ncl_a3  ', 'so4_a3  ', 'bc_a3   ','pom_a3  ','soa_a3  ', 'mom_a3  ' /)
-          xname_massptrcw(:nspec_amode(3),3) = &
-          (/ 'dst_c3  ', 'ncl_c3  ', 'so4_c3  ', 'bc_c3   ','pom_c3  ','soa_c3  ', 'mom_c3  ' /)
-          xname_spectype(:nspec_amode(3),3)  = (/ 'dust      ', 'seasalt   ', 'sulfate   ', 'black-c   ','p-organic ', &
-               's-organic ', 'm-organic ' /)
+    tot_spec = 3 ! Keep track of number of species to be added
+    if(tot_spec>nspec_amode(3))then
+       write(msg,*)'MODAL_AERO_INITIALIZE_DATA: Number of species exceeded nspec_amode(Mode 3)  ', &
+            ',nspec_amode=',nspec_amode(3),' while adding common species'
+       call endrun(msg)
+    endif
+    xname_massptr(:tot_spec,3)   = (/ 'dst_a3  ', 'ncl_a3  ', 'mom_a3  ' /)
+    xname_massptrcw(:tot_spec,3) = (/ 'dst_c3  ', 'ncl_c3  ', 'mom_c3  ' /)
+    xname_spectype(:tot_spec,3)  = (/ 'dust      ', 'seasalt   ', 'm-organic ' /)
 #else
-          xname_massptr(:nspec_amode(3),3)   = (/ 'dst_a3  ', 'ncl_a3  ', 'so4_a3  ' /)
-          xname_massptrcw(:nspec_amode(3),3) = (/ 'dst_c3  ', 'ncl_c3  ', 'so4_c3  ' /)
-          xname_spectype(:nspec_amode(3),3)  = (/ 'dust      ', 'seasalt   ', 'sulfate   ' /)
+    tot_spec = 2 ! Keep track of number of species to be added
+    if(tot_spec>nspec_amode(3))then
+       write(msg,*)'MODAL_AERO_INITIALIZE_DATA: Number of species exceeded nspec_amode(Mode 3)  ', &
+            ',nspec_amode=',nspec_amode(3),' while adding common species'
+       call endrun(msg)
+    endif
+    xname_massptr(:tot_spec,3)   = (/ 'dst_a3  ', 'ncl_a3  ' /)
+    xname_massptrcw(:tot_spec,3) = (/ 'dst_c3  ', 'ncl_c3  ' /)
+    xname_spectype(:tot_spec,3)  = (/ 'dust      ', 'seasalt   ' /)
 #endif
+#endif
+
+    !Add SO4, SOA(EVAP), POA(EVAP) and BC(EVAP) species for mode 3
+    do n = 1, NSO4
+       tot_spec = tot_spec + 1
+       if(tot_spec>nspec_amode(3)) then
+          write(msg,*)'MODAL_AERO_INITIALIZE_DATA: Number of species exceeded nspec_amode(Mode 3) in SO4', &
+               ' add do-loop, nspec_amode=',nspec_amode(3),' while adding',trim(adjustl(so4SpecName(n)))
+          call endrun(msg)
+       endif
+       xname_massptr(tot_spec,3)   = trim(adjustl(so4SpecName(n)))//'_a3'
+       xname_massptrcw(tot_spec,3) = trim(adjustl(so4SpecName(n)))//'_c3'
+       xname_spectype(tot_spec,3)  = 'sulfate '
+    enddo
+
+
+#if (defined RAIN_EVAP_TO_COARSE_AERO)
+    do n = 1, NSOA
+       tot_spec = tot_spec + 1
+       if(tot_spec>nspec_amode(3)) then
+          write(msg,*)'MODAL_AERO_INITIALIZE_DATA: Number of species exceeded nspec_amode(Mode 3) in SOA', &
+               ' add do-loop, nspec_amode=',nspec_amode(3),' while adding',trim(adjustl(soaSpecName(n)))
+          call endrun(msg)
+       endif
+       xname_massptr(tot_spec,3)   = trim(adjustl(soaSpecName(n)))//'_a3'
+       xname_massptrcw(tot_spec,3) = trim(adjustl(soaSpecName(n)))//'_c3'
+       xname_spectype(tot_spec,3)  = 's-organic '
+    enddo
+
+    do n = 1, NPOA
+       tot_spec = tot_spec + 1
+       if(tot_spec>nspec_amode(3)) then
+          write(msg,*)'MODAL_AERO_INITIALIZE_DATA: Number of species exceeded nspec_amode(Mode 3) in POA', &
+            ' add do-loop, nspec_amode=',nspec_amode(3),' while adding',trim(adjustl(poaSpecName(n)))
+          call endrun(msg)
+       endif
+       xname_massptr(tot_spec,3)   = trim(adjustl(poaSpecName(n)))//'_a3'
+       xname_massptrcw(tot_spec,3) = trim(adjustl(poaSpecName(n)))//'_c3'
+       xname_spectype(tot_spec,3)  = 'p-organic '
+    enddo
+
+    do n = 1, NBC
+       tot_spec = tot_spec + 1
+       if(tot_spec>nspec_amode(3)) then
+          write(msg,*)'MODAL_AERO_INITIALIZE_DATA: Number of species exceeded nspec_amode(Mode 3) in BC', &
+               ' add do-loop, nspec_amode=',nspec_amode(3),' while adding',trim(adjustl(bcSpecName(n)))
+          call endrun(msg)
+       endif
+       xname_massptr(tot_spec,3)   = trim(adjustl(bcSpecName(n)))//'_a3'
+       xname_massptrcw(tot_spec,3) = trim(adjustl(bcSpecName(n)))//'_c3'
+       xname_spectype(tot_spec,3)  = 'black-c '
+    enddo
 #endif
 
 #if ( defined MODAL_AERO_4MODE_MOM )
-       ! mode 4 (primary carbon) species
-       xname_massptr(:nspec_amode(4),4)   = (/ 'pom_a4  ', 'bc_a4   ', 'mom_a4  ' /)
-       xname_massptrcw(:nspec_amode(4),4) = (/ 'pom_c4  ', 'bc_c4   ', 'mom_c4  ' /)
-       xname_spectype(:nspec_amode(4),4)  = (/ 'p-organic ', 'black-c   ', 'm-organic ' /)
+    tot_spec = 1 ! Keep track of number of species to be added
+    if(tot_spec>nspec_amode(4)) then
+       write(msg,*)'MODAL_AERO_INITIALIZE_DATA: Number of species exceeded nspec_amode(Mode 4)  ', &
+            ',nspec_amode=',nspec_amode(1),' while adding common species'
+       call endrun(msg)
+    endif
+    xname_massptr(:tot_spec,4)   = (/ 'mom_a4  ' /)
+    xname_massptrcw(:tot_spec,4) = (/ 'mom_c4  ' /)
+!BSINGH - "spectype" is no longer used
+    xname_spectype(:tot_spec,4)  = (/ 'm-organic ' /)
+
+    do n = 1, NPOA
+       tot_spec = tot_spec + 1
+       if(tot_spec>nspec_amode(4)) then
+          write(msg,*)'MODAL_AERO_INITIALIZE_DATA: Number of species exceeded nspec_amode(Mode 4) in POA', &
+            ' add do-loop, nspec_amode=',nspec_amode(4),' while adding',trim(adjustl(poaSpecName(n)))
+          call endrun(msg)
+       endif
+       xname_massptr(tot_spec,4)   = trim(adjustl(poaSpecName(n)))//'_a4'
+       xname_massptrcw(tot_spec,4) = trim(adjustl(poaSpecName(n)))//'_c4'
+       xname_spectype(tot_spec,4)  = 'p-organic '
+    enddo
+
+    do n = 1, NBC
+       tot_spec = tot_spec + 1
+       if(tot_spec>nspec_amode(4)) then
+          write(msg,*)'MODAL_AERO_INITIALIZE_DATA: Number of species exceeded nspec_amode(Mode 4) in BC', &
+               ' add do-loop, nspec_amode=',nspec_amode(4),' while adding',trim(adjustl(bcSpecName(n)))
+          call endrun(msg)
+       endif
+       xname_massptr(tot_spec,4)   = trim(adjustl(bcSpecName(n)))//'_a4'
+       xname_massptrcw(tot_spec,4) = trim(adjustl(bcSpecName(n)))//'_c4'
+       xname_spectype(tot_spec,4)  = 'black-c '
+    enddo
+
 #elif ( defined MODAL_AERO_4MODE )
        ! mode 4 (primary carbon) species
-       xname_massptr(:nspec_amode(4),4)   = (/ 'pom_a4  ', 'bc_a4   ' /)
-       xname_massptrcw(:nspec_amode(4),4) = (/ 'pom_c4  ', 'bc_c4   ' /)
-       xname_spectype(:nspec_amode(4),4)  = (/ 'p-organic ', 'black-c   ' /)
+!       xname_massptr(:nspec_amode(4),4)   = (/ 'pom_a4  ', 'bc_a4   ' /)
+!       xname_massptrcw(:nspec_amode(4),4) = (/ 'pom_c4  ', 'bc_c4   ' /)
+!       xname_spectype(:nspec_amode(4),4)  = (/ 'p-organic ', 'black-c   ' /)
+    tot_spec = 0
+    if(tot_spec>nspec_amode(4)) then
+       write(msg,*)'MODAL_AERO_INITIALIZE_DATA: Number of species exceeded nspec_amode(Mode 4)  ', &
+            ',nspec_amode=',nspec_amode(1),' while adding common species'
+       call endrun(msg)
+    endif
+
+    do n = 1, NPOA
+       tot_spec = tot_spec + 1
+       if(tot_spec>nspec_amode(4)) then
+          write(msg,*)'MODAL_AERO_INITIALIZE_DATA: Number of species exceeded nspec_amode(Mode 4) in POA', &
+            ' add do-loop, nspec_amode=',nspec_amode(4),' while adding',trim(adjustl(poaSpecName(n)))
+          call endrun(msg)
+       endif
+       xname_massptr(tot_spec,4)   = trim(adjustl(poaSpecName(n)))//'_a4'
+       xname_massptrcw(tot_spec,4) = trim(adjustl(poaSpecName(n)))//'_c4'
+       xname_spectype(tot_spec,4)  = 'p-organic '
+    enddo
+
+    do n = 1, NBC
+       tot_spec = tot_spec + 1
+       if(tot_spec>nspec_amode(4)) then
+          write(msg,*)'MODAL_AERO_INITIALIZE_DATA: Number of species exceeded nspec_amode(Mode 4) in BC', &
+               ' add do-loop, nspec_amode=',nspec_amode(4),' while adding',trim(adjustl(bcSpecName(n)))
+          call endrun(msg)
+       endif
+       xname_massptr(tot_spec,4)   = trim(adjustl(bcSpecName(n)))//'_a4'
+       xname_massptrcw(tot_spec,4) = trim(adjustl(bcSpecName(n)))//'_c4'
+       xname_spectype(tot_spec,4)  = 'black-c '
+    enddo
+
 #endif
 
-
 #if ( defined MODAL_AERO_7MODE || defined MODAL_AERO_9MODE )
-       ! mode 4 (fine seasalt) species
-       xname_massptr(:nspec_amode(4),4)   = (/ 'ncl_a4  ', 'so4_a4  ', 'nh4_a4  ' /)
-       xname_massptrcw(:nspec_amode(4),4) = (/ 'ncl_c4  ', 'so4_c4  ', 'nh4_c4  ' /)
-       xname_spectype(:nspec_amode(4),4)  = (/ 'seasalt   ', 'sulfate   ', 'ammonium  ' /)
+       ! mode 4,5,6,7 species
+    tot_spec = 2
+    xname_massptr(:tot_spec,4)   = (/ 'ncl_a4  ', 'nh4_a4  ' /)
+    xname_massptrcw(:tot_spec,4) = (/ 'ncl_c4  ', 'nh4_c4  ' /)
+    xname_spectype(:tot_spec,4)  = (/ 'seasalt      ', 'ammonium   ' /)
 
-       ! mode 5 (fine dust) species
-       xname_massptr(:nspec_amode(5),5)   = (/ 'dst_a5  ', 'so4_a5  ', 'nh4_a5  ' /)
-       xname_massptrcw(:nspec_amode(5),5) = (/ 'dst_c5  ', 'so4_c5  ', 'nh4_c5  ' /)
-       xname_spectype(:nspec_amode(5),5)  = (/ 'dust      ', 'sulfate   ', 'ammonium  ' /)
+    xname_massptr(:tot_spec,5)   = (/ 'dst_a5  ', 'nh4_a5  ' /)
+    xname_massptrcw(:tot_spec,5) = (/ 'dst_c5  ', 'nh4_c5  ' /)
+    xname_spectype(:tot_spec,5)  = (/ 'dust      ', 'ammonium   ' /)
 
-       ! mode 6 (coarse seasalt) species
-       xname_massptr(:nspec_amode(6),6)   = (/ 'ncl_a6  ', 'so4_a6  ', 'nh4_a6  ' /)
-       xname_massptrcw(:nspec_amode(6),6) = (/ 'ncl_c6  ', 'so4_c6  ', 'nh4_c6  ' /)
-       xname_spectype(:nspec_amode(6),6)  = (/ 'seasalt   ', 'sulfate   ', 'ammonium  ' /)
+    xname_massptr(:tot_spec,6)   = (/ 'ncl_a6  ', 'nh4_a6  ' /)
+    xname_massptrcw(:tot_spec,6) = (/ 'ncl_c6  ', 'nh4_c6  ' /)
+    xname_spectype(:tot_spec,6)  = (/ 'seasalt      ', 'ammonium   ' /
 
-       ! mode 7 (coarse dust) species
-       xname_massptr(:nspec_amode(7),7)   = (/ 'dst_a7  ', 'so4_a7  ', 'nh4_a7  ' /)
-       xname_massptrcw(:nspec_amode(7),7) = (/ 'dst_c7  ', 'so4_c7  ', 'nh4_c7  ' /)
-       xname_spectype(:nspec_amode(7),7)  = (/ 'dust      ', 'sulfate   ', 'ammonium  ' /)
+    xname_massptr(:tot_spec,7)   = (/ 'dst_a7  ', 'nh4_a7  ' /)
+    xname_massptrcw(:tot_spec,7) = (/ 'dst_c7  ', 'nh4_c7  ' /)
+    xname_spectype(:tot_spec,7)  = (/ 'dust      ', 'ammonium   ' /
+
+    !Add SO4 species for mode 4,5,6,7
+    tot_spec = 2
+    do n = 1, NSO4
+       tot_spec = tot_spec + 1
+       xname_massptr(tot_spec,4)   = trim(adjustl(so4SpecName(n)))//'_a4'
+       xname_massptrcw(tot_spec,4) = trim(adjustl(so4SpecName(n)))//'_c4'
+       xname_spectype(tot_spec,4)  = 'sulfate '
+    enddo
+
+    tot_spec = 2
+    do n = 1, NSO4
+       tot_spec = tot_spec + 1
+       xname_massptr(tot_spec,5)   = trim(adjustl(so4SpecName(n)))//'_a5'
+       xname_massptrcw(tot_spec,5) = trim(adjustl(so4SpecName(n)))//'_c5'
+       xname_spectype(tot_spec,5)  = 'sulfate '
+    enddo
+
+    tot_spec = 2
+    do n = 1, NSO4
+       tot_spec = tot_spec + 1
+       xname_massptr(tot_spec,6)   = trim(adjustl(so4SpecName(n)))//'_a6'
+       xname_massptrcw(tot_spec,6) = trim(adjustl(so4SpecName(n)))//'_c6'
+       xname_spectype(tot_spec,6)  = 'sulfate '
+    enddo
+
+    tot_spec = 2
+    do n = 1, NSO4
+       tot_spec = tot_spec + 1
+       xname_massptr(tot_spec,7)   = trim(adjustl(so4SpecName(n)))//'_a7'
+       xname_massptrcw(tot_spec,7) = trim(adjustl(so4SpecName(n)))//'_c7'
+       xname_spectype(tot_spec,7)  = 'sulfate '
+    enddo
 #endif
 
 #if ( defined MODAL_AERO_9MODE )
@@ -684,11 +1080,14 @@ loop:    do i = icldphy+1, pcnst
        !   ALSO sets values of specdens_XX_amode and specmw_XX_amode
        !       (XX = so4, om, bc, dust, seasalt)
        !
+       use constituents, only: pcnst, cnst_name
        implicit none
 
        !   local variables
-       integer l, l2, m
+       integer :: i, l, l2, lmassa, lmassc, m, iso4, isoa, ipoa, ibc, ipoap1, iso4p1, isoap1, ibcp1
+       character(len=1000) :: msg
        character*8 dumname
+       character*3 :: tmpch3
        integer, parameter :: init_val=-999888777
 
        !   all processes set the pointers
@@ -731,6 +1130,11 @@ loop:    do i = icldphy+1, pcnst
        end do
 
        do m = 1, ntot_amode
+          !BSINGH- iniitialize ipoa, isoa and ibc to zero for each mode
+          iso4 = 0
+          ipoa = 0
+          isoa = 0
+          ibc  = 0
           lptr_so4_a_amode(m)   = init_val
           lptr_so4_cw_amode(m)  = init_val
           lptr_msa_a_amode(m)   = init_val
@@ -757,75 +1161,752 @@ loop:    do i = icldphy+1, pcnst
           lptr_mom_cw_amode(m) = init_val
           lptr_dust_a_amode(m)  = init_val
           lptr_dust_cw_amode(m) = init_val
+
+          !BSINGH - 2D pointers
+          lptr2_so4_a_amode(m,:)  = init_val
+          lptr2_so4_cw_amode(m,:) = init_val
+          lptr2_pom_a_amode(m,:)  = init_val
+          lptr2_pom_cw_amode(m,:) = init_val
+          lptr2_soa_a_amode(m,:)  = init_val
+          lptr2_soa_cw_amode(m,:) = init_val
+          lptr2_bc_a_amode(m,:)   = init_val
+          lptr2_bc_cw_amode(m,:)  = init_val
+
+          if (m < 10) then
+             write( tmpch3, '(i1,2x)' ) m
+          else if (m < 100) then
+             write( tmpch3, '(i2,1x)' ) m
+          else
+             write( tmpch3, '(i3)' ) m
+          end if
+
+
           do l = 1, nspec_amode(m)
-             l2 = lspectype_amode(l,m)
-             if ( (specname_amode(l2) .eq. 'sulfate') .and.  &
-                  (lptr_so4_a_amode(m) .le. 0) ) then
-                lptr_so4_a_amode(m)  = lmassptr_amode(l,m)
-                lptr_so4_cw_amode(m) = lmassptrcw_amode(l,m)
+             !BSINGH - store the +1 (or p1) values for ipoa, isoa and ibc
+             iso4p1 = iso4 + 1
+             ipoap1 = ipoa + 1
+             isoap1 = isoa + 1
+             ibcp1  = ibc  + 1
+
+!             l2 = lspectype_amode(l,m)
+             lmassa  = lmassptr_amode(l,m)
+             lmassc = lmassptrcw_amode(l,m)
+             if (lmassa > 0 .and. lmassa <= pcnst) then
+                write( msg, '(2a,3(1x,i12),2x,a)' ) &
+                   'subr initaermodes_setspecptrs error setting lptr_', &
+                   ' - m, l, lmassa, cnst_name = ', m, l, lmassa, cnst_name(lmassa)
+             else
+                write( msg, '(2a,3(1x,i12),2x,a)' ) &
+                   'subr initaermodes_setspecptrs error setting lptr_', &
+                   ' - m, l, lmassa, cnst_name = ', m, l, lmassa, '??????'
+                call endrun( msg )
              end if
-             if ( (specname_amode(l2) .eq. 'msa') .and.      &
-                  (lptr_msa_a_amode(m) .le. 0) ) then
-                lptr_msa_a_amode(m)  = lmassptr_amode(l,m)
-                lptr_msa_cw_amode(m) = lmassptrcw_amode(l,m)
+
+!             if ( (cnst_name(lmassa) == 'so4_a'//tmpch3) .and.   &
+!                  (lptr_so4_a_amode(m) <= 0) ) then
+!                lptr_so4_a_amode(m)  = lmassa
+!                lptr_so4_cw_amode(m) = lmassc
+
+            if ( (cnst_name(lmassa) == 'msa_a'//tmpch3) .and.   &
+                       (lptr_msa_a_amode(m) <= 0) ) then
+                lptr_msa_a_amode(m)  = lmassa
+                lptr_msa_cw_amode(m) = lmassc
+
+             else if ( (cnst_name(lmassa) == 'nh4_a'//tmpch3) .and.   &
+                       (lptr_nh4_a_amode(m) <= 0) ) then
+                lptr_nh4_a_amode(m)  = lmassa
+                lptr_nh4_cw_amode(m) = lmassc
+
+             else if ( (cnst_name(lmassa) == 'no3_a'//tmpch3) .and.   &
+                       (lptr_no3_a_amode(m) <= 0) ) then
+                lptr_no3_a_amode(m)  = lmassa
+                lptr_no3_cw_amode(m) = lmassc
+
+             else if ( (cnst_name(lmassa) == 'mpoly_a'//tmpch3) .and.   &
+                       (lptr_mpoly_a_amode(m) <= 0) ) then
+                lptr_mpoly_a_amode(m)  = lmassa
+                lptr_mpoly_cw_amode(m) = lmassc
+
+             else if ( (cnst_name(lmassa) == 'mprot_a'//tmpch3) .and.   &
+                       (lptr_mprot_a_amode(m) <= 0) ) then
+                lptr_mprot_a_amode(m)  = lmassa
+                lptr_mprot_cw_amode(m) = lmassc
+
+             else if ( (cnst_name(lmassa) == 'mlip_a'//tmpch3) .and.   &
+                       (lptr_mlip_a_amode(m) <= 0) ) then
+                lptr_mlip_a_amode(m)  = lmassa
+                lptr_mlip_cw_amode(m) = lmassc
+
+             else if ( (cnst_name(lmassa) == 'mom_a'//tmpch3) .and.   &
+                       (lptr_mom_a_amode(m) <= 0) ) then
+                lptr_mom_a_amode(m)  = lmassa
+                lptr_mom_cw_amode(m) = lmassc
+
+
+             !---------------------------
+             !BSINGH - so4 may have multi<=species
+             else if ( (cnst_name(lmassa) == 'so4_a'//tmpch3) .and.   &
+                     (lptr_so4_a_amode(m) <= 0) ) then
+                lptr_so4_a_amode(m)  = lmassa
+                lptr_so4_cw_amode(m) = lmassc
+                !BSINGH - Update 2D pointers also
+                call update2dPtrs(m,lmassa,lmassc,lptr2_so4_a_amode,lptr2_so4_cw_amode,iso4,iso4p1)
+
+
+             else if ( (cnst_name(lmassa) == 'so401_a'//tmpch3)) then
+                if (lptr2_so4_a_amode(m,iso4p1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_so4_a_amode,lptr2_so4_cw_amode,iso4,iso4p1)
+                endif
+             else if ( (cnst_name(lmassa) == 'so402_a'//tmpch3)) then
+                if (lptr2_so4_a_amode(m,iso4p1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_so4_a_amode,lptr2_so4_cw_amode,iso4,iso4p1)
+                endif
+             else if ( (cnst_name(lmassa) == 'so403_a'//tmpch3)) then
+                if (lptr2_so4_a_amode(m,iso4p1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_so4_a_amode,lptr2_so4_cw_amode,iso4,iso4p1)
+                endif
+             else if ( (cnst_name(lmassa) == 'so404_a'//tmpch3)) then
+                if (lptr2_so4_a_amode(m,iso4p1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_so4_a_amode,lptr2_so4_cw_amode,iso4,iso4p1)
+                endif
+             else if ( (cnst_name(lmassa) == 'so405_a'//tmpch3)) then
+                if (lptr2_so4_a_amode(m,iso4p1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_so4_a_amode,lptr2_so4_cw_amode,iso4,iso4p1)
+                endif
+             else if ( (cnst_name(lmassa) == 'so406_a'//tmpch3)) then
+                if (lptr2_so4_a_amode(m,iso4p1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_so4_a_amode,lptr2_so4_cw_amode,iso4,iso4p1)
+                endif
+             else if ( (cnst_name(lmassa) == 'so407_a'//tmpch3)) then
+                if (lptr2_so4_a_amode(m,iso4p1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_so4_a_amode,lptr2_so4_cw_amode,iso4,iso4p1)
+                endif
+             else if ( (cnst_name(lmassa) == 'so408_a'//tmpch3)) then
+                if (lptr2_so4_a_amode(m,iso4p1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_so4_a_amode,lptr2_so4_cw_amode,iso4,iso4p1)
+                endif
+             else if ( (cnst_name(lmassa) == 'so409_a'//tmpch3)) then
+                if (lptr2_so4_a_amode(m,iso4p1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_so4_a_amode,lptr2_so4_cw_amode,iso4,iso4p1)
+                endif
+             else if ( (cnst_name(lmassa) == 'so410_a'//tmpch3)) then
+                if (lptr2_so4_a_amode(m,iso4p1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_so4_a_amode,lptr2_so4_cw_amode,iso4,iso4p1)
+                endif
+             else if ( (cnst_name(lmassa) == 'so411_a'//tmpch3)) then
+                if (lptr2_so4_a_amode(m,iso4p1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_so4_a_amode,lptr2_so4_cw_amode,iso4,iso4p1)
+                endif
+             else if ( (cnst_name(lmassa) == 'so412_a'//tmpch3)) then
+                if (lptr2_so4_a_amode(m,iso4p1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_so4_a_amode,lptr2_so4_cw_amode,iso4,iso4p1)
+                endif
+             else if ( (cnst_name(lmassa) == 'so413_a'//tmpch3)) then
+                if (lptr2_so4_a_amode(m,iso4p1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_so4_a_amode,lptr2_so4_cw_amode,iso4,iso4p1)
+                endif
+             else if ( (cnst_name(lmassa) == 'so414_a'//tmpch3)) then
+                if (lptr2_so4_a_amode(m,iso4p1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_so4_a_amode,lptr2_so4_cw_amode,iso4,iso4p1)
+                endif
+             else if ( (cnst_name(lmassa) == 'so415_a'//tmpch3)) then
+                if (lptr2_so4_a_amode(m,iso4p1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_so4_a_amode,lptr2_so4_cw_amode,iso4,iso4p1)
+                endif
+             else if ( (cnst_name(lmassa) == 'so416_a'//tmpch3)) then
+                if (lptr2_so4_a_amode(m,iso4p1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_so4_a_amode,lptr2_so4_cw_amode,iso4,iso4p1)
+                endif
+             else if ( (cnst_name(lmassa) == 'so417_a'//tmpch3)) then
+                if (lptr2_so4_a_amode(m,iso4p1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_so4_a_amode,lptr2_so4_cw_amode,iso4,iso4p1)
+                endif
+             else if ( (cnst_name(lmassa) == 'so418_a'//tmpch3)) then
+                if (lptr2_so4_a_amode(m,iso4p1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_so4_a_amode,lptr2_so4_cw_amode,iso4,iso4p1)
+                endif
+             else if ( (cnst_name(lmassa) == 'so419_a'//tmpch3)) then
+                if (lptr2_so4_a_amode(m,iso4p1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_so4_a_amode,lptr2_so4_cw_amode,iso4,iso4p1)
+                endif
+             else if ( (cnst_name(lmassa) == 'so420_a'//tmpch3)) then
+                if (lptr2_so4_a_amode(m,iso4p1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_so4_a_amode,lptr2_so4_cw_amode,iso4,iso4p1)
+                endif
+             else if ( (cnst_name(lmassa) == 'so421_a'//tmpch3)) then
+                if (lptr2_so4_a_amode(m,iso4p1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_so4_a_amode,lptr2_so4_cw_amode,iso4,iso4p1)
+                endif
+             else if ( (cnst_name(lmassa) == 'so422_a'//tmpch3)) then
+                if (lptr2_so4_a_amode(m,iso4p1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_so4_a_amode,lptr2_so4_cw_amode,iso4,iso4p1)
+                endif
+             else if ( (cnst_name(lmassa) == 'so423_a'//tmpch3)) then
+                if (lptr2_so4_a_amode(m,iso4p1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_so4_a_amode,lptr2_so4_cw_amode,iso4,iso4p1)
+                endif
+            else if ( (cnst_name(lmassa) == 'so424_a'//tmpch3)) then
+                if (lptr2_so4_a_amode(m,iso4p1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_so4_a_amode,lptr2_so4_cw_amode,iso4,iso4p1)
+                endif
+             else if ( (cnst_name(lmassa) == 'so425_a'//tmpch3)) then
+                if (lptr2_so4_a_amode(m,iso4p1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_so4_a_amode,lptr2_so4_cw_amode,iso4,iso4p1)
+                endif
+             else if ( (cnst_name(lmassa) == 'so426_a'//tmpch3)) then
+                if (lptr2_so4_a_amode(m,iso4p1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_so4_a_amode,lptr2_so4_cw_amode,iso4,iso4p1)
+                endif
+             else if ( (cnst_name(lmassa) == 'so427_a'//tmpch3)) then
+                if (lptr2_so4_a_amode(m,iso4p1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_so4_a_amode,lptr2_so4_cw_amode,iso4,iso4p1)
+                endif
+             else if ( (cnst_name(lmassa) == 'so428_a'//tmpch3)) then
+                if (lptr2_so4_a_amode(m,iso4p1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_so4_a_amode,lptr2_so4_cw_amode,iso4,iso4p1)
+                endif
+             else if ( (cnst_name(lmassa) == 'so429_a'//tmpch3)) then
+                if (lptr2_so4_a_amode(m,iso4p1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_so4_a_amode,lptr2_so4_cw_amode,iso4,iso4p1)
+                endif
+             else if ( (cnst_name(lmassa) == 'so430_a'//tmpch3)) then
+                if (lptr2_so4_a_amode(m,iso4p1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_so4_a_amode,lptr2_so4_cw_amode,iso4,iso4p1)
+                endif
+
+
+             !BSINGH - POA may have multi<=species (Anthro, Bio etc.)
+             else if ( (cnst_name(lmassa) == 'pom_a'//tmpch3) .and.   &
+                       (lptr_pom_a_amode(m) <= 0) ) then
+                lptr_pom_a_amode(m)  = lmassa
+                lptr_pom_cw_amode(m) = lmassc
+
+                !BSINGH - Update 2D pointers also
+                call update2dPtrs(m,lmassa,lmassc,lptr2_pom_a_amode,lptr2_pom_cw_amode,ipoa,ipoap1)
+
+
+             else if ( (cnst_name(lmassa) == 'pom01_a'//tmpch3)) then
+                if (lptr2_pom_a_amode(m,ipoap1) <= 0)  then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_pom_a_amode,lptr2_pom_cw_amode,ipoa,ipoap1)
+                endif
+            else if ( (cnst_name(lmassa) == 'pom02_a'//tmpch3)) then
+                if (lptr2_pom_a_amode(m,ipoap1) <= 0)  then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_pom_a_amode,lptr2_pom_cw_amode,ipoa,ipoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'pom03_a'//tmpch3)) then
+                if (lptr2_pom_a_amode(m,ipoap1) <= 0)  then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_pom_a_amode,lptr2_pom_cw_amode,ipoa,ipoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'pom04_a'//tmpch3)) then
+                if (lptr2_pom_a_amode(m,ipoap1) <= 0)  then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_pom_a_amode,lptr2_pom_cw_amode,ipoa,ipoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'pom05_a'//tmpch3)) then
+                if (lptr2_pom_a_amode(m,ipoap1) <= 0)  then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_pom_a_amode,lptr2_pom_cw_amode,ipoa,ipoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'pom06_a'//tmpch3)) then
+                if (lptr2_pom_a_amode(m,ipoap1) <= 0)  then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_pom_a_amode,lptr2_pom_cw_amode,ipoa,ipoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'pom07_a'//tmpch3)) then
+                if (lptr2_pom_a_amode(m,ipoap1) <= 0)  then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_pom_a_amode,lptr2_pom_cw_amode,ipoa,ipoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'pom08_a'//tmpch3)) then
+                if (lptr2_pom_a_amode(m,ipoap1) <= 0)  then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_pom_a_amode,lptr2_pom_cw_amode,ipoa,ipoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'pom09_a'//tmpch3)) then
+                if (lptr2_pom_a_amode(m,ipoap1) <= 0)  then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_pom_a_amode,lptr2_pom_cw_amode,ipoa,ipoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'pom10_a'//tmpch3)) then
+                if (lptr2_pom_a_amode(m,ipoap1) <= 0)  then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_pom_a_amode,lptr2_pom_cw_amode,ipoa,ipoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'pom11_a'//tmpch3)) then
+                if (lptr2_pom_a_amode(m,ipoap1) <= 0)  then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_pom_a_amode,lptr2_pom_cw_amode,ipoa,ipoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'pom12_a'//tmpch3)) then
+                if (lptr2_pom_a_amode(m,ipoap1) <= 0)  then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_pom_a_amode,lptr2_pom_cw_amode,ipoa,ipoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'pom13_a'//tmpch3)) then
+                if (lptr2_pom_a_amode(m,ipoap1) <= 0)  then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_pom_a_amode,lptr2_pom_cw_amode,ipoa,ipoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'pom14_a'//tmpch3)) then
+                if (lptr2_pom_a_amode(m,ipoap1) <= 0)  then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_pom_a_amode,lptr2_pom_cw_amode,ipoa,ipoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'pom15_a'//tmpch3)) then
+                if (lptr2_pom_a_amode(m,ipoap1) <= 0)  then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_pom_a_amode,lptr2_pom_cw_amode,ipoa,ipoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'pom16_a'//tmpch3)) then
+                if (lptr2_pom_a_amode(m,ipoap1) <= 0)  then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_pom_a_amode,lptr2_pom_cw_amode,ipoa,ipoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'pom17_a'//tmpch3)) then
+                if (lptr2_pom_a_amode(m,ipoap1) <= 0)  then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_pom_a_amode,lptr2_pom_cw_amode,ipoa,ipoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'pom18_a'//tmpch3)) then
+                if (lptr2_pom_a_amode(m,ipoap1) <= 0)  then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_pom_a_amode,lptr2_pom_cw_amode,ipoa,ipoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'pom19_a'//tmpch3)) then
+                if (lptr2_pom_a_amode(m,ipoap1) <= 0)  then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_pom_a_amode,lptr2_pom_cw_amode,ipoa,ipoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'pom20_a'//tmpch3)) then
+                if (lptr2_pom_a_amode(m,ipoap1) <= 0)  then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_pom_a_amode,lptr2_pom_cw_amode,ipoa,ipoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'pom21_a'//tmpch3)) then
+                if (lptr2_pom_a_amode(m,ipoap1) <= 0)  then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_pom_a_amode,lptr2_pom_cw_amode,ipoa,ipoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'pom22_a'//tmpch3)) then
+                if (lptr2_pom_a_amode(m,ipoap1) <= 0)  then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_pom_a_amode,lptr2_pom_cw_amode,ipoa,ipoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'pom23_a'//tmpch3)) then
+                if (lptr2_pom_a_amode(m,ipoap1) <= 0)  then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_pom_a_amode,lptr2_pom_cw_amode,ipoa,ipoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'pom24_a'//tmpch3)) then
+                if (lptr2_pom_a_amode(m,ipoap1) <= 0)  then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_pom_a_amode,lptr2_pom_cw_amode,ipoa,ipoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'pom25_a'//tmpch3)) then
+                if (lptr2_pom_a_amode(m,ipoap1) <= 0)  then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_pom_a_amode,lptr2_pom_cw_amode,ipoa,ipoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'pom26_a'//tmpch3)) then
+                if (lptr2_pom_a_amode(m,ipoap1) <= 0)  then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_pom_a_amode,lptr2_pom_cw_amode,ipoa,ipoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'pom27_a'//tmpch3)) then
+                if (lptr2_pom_a_amode(m,ipoap1) <= 0)  then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_pom_a_amode,lptr2_pom_cw_amode,ipoa,ipoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'pom28_a'//tmpch3)) then
+                if (lptr2_pom_a_amode(m,ipoap1) <= 0)  then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_pom_a_amode,lptr2_pom_cw_amode,ipoa,ipoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'pom29_a'//tmpch3)) then
+                if (lptr2_pom_a_amode(m,ipoap1) <= 0)  then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_pom_a_amode,lptr2_pom_cw_amode,ipoa,ipoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'pom30_a'//tmpch3)) then
+                if (lptr2_pom_a_amode(m,ipoap1) <= 0)  then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_pom_a_amode,lptr2_pom_cw_amode,ipoa,ipoap1)
+                endif
+
+
+             !---------------------------
+             !BSINGH - SOA may have multi<=species
+             else if ( (cnst_name(lmassa) == 'soa_a'//tmpch3) .and.   &
+                     (lptr_soa_a_amode(m) <= 0) ) then
+                lptr_soa_a_amode(m)  = lmassa
+                lptr_soa_cw_amode(m) = lmassc
+                !BSINGH - Update 2D pointers also
+                call update2dPtrs(m,lmassa,lmassc,lptr2_soa_a_amode,lptr2_soa_cw_amode,isoa,isoap1)
+
+
+             else if ( (cnst_name(lmassa) == 'soa01_a'//tmpch3)) then
+                if (lptr2_soa_a_amode(m,isoap1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_soa_a_amode,lptr2_soa_cw_amode,isoa,isoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'soa02_a'//tmpch3)) then
+                if (lptr2_soa_a_amode(m,isoap1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_soa_a_amode,lptr2_soa_cw_amode,isoa,isoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'soa03_a'//tmpch3)) then
+                if (lptr2_soa_a_amode(m,isoap1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_soa_a_amode,lptr2_soa_cw_amode,isoa,isoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'soa04_a'//tmpch3)) then
+                if (lptr2_soa_a_amode(m,isoap1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_soa_a_amode,lptr2_soa_cw_amode,isoa,isoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'soa05_a'//tmpch3)) then
+                if (lptr2_soa_a_amode(m,isoap1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_soa_a_amode,lptr2_soa_cw_amode,isoa,isoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'soa06_a'//tmpch3)) then
+                if (lptr2_soa_a_amode(m,isoap1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_soa_a_amode,lptr2_soa_cw_amode,isoa,isoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'soa07_a'//tmpch3)) then
+                if (lptr2_soa_a_amode(m,isoap1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_soa_a_amode,lptr2_soa_cw_amode,isoa,isoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'soa08_a'//tmpch3)) then
+                if (lptr2_soa_a_amode(m,isoap1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_soa_a_amode,lptr2_soa_cw_amode,isoa,isoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'soa09_a'//tmpch3)) then
+                if (lptr2_soa_a_amode(m,isoap1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_soa_a_amode,lptr2_soa_cw_amode,isoa,isoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'soa10_a'//tmpch3)) then
+                if (lptr2_soa_a_amode(m,isoap1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_soa_a_amode,lptr2_soa_cw_amode,isoa,isoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'soa11_a'//tmpch3)) then
+                if (lptr2_soa_a_amode(m,isoap1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_soa_a_amode,lptr2_soa_cw_amode,isoa,isoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'soa12_a'//tmpch3)) then
+                if (lptr2_soa_a_amode(m,isoap1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_soa_a_amode,lptr2_soa_cw_amode,isoa,isoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'soa13_a'//tmpch3)) then
+                if (lptr2_soa_a_amode(m,isoap1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_soa_a_amode,lptr2_soa_cw_amode,isoa,isoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'soa14_a'//tmpch3)) then
+                if (lptr2_soa_a_amode(m,isoap1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_soa_a_amode,lptr2_soa_cw_amode,isoa,isoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'soa15_a'//tmpch3)) then
+                if (lptr2_soa_a_amode(m,isoap1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_soa_a_amode,lptr2_soa_cw_amode,isoa,isoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'soa16_a'//tmpch3)) then
+                if (lptr2_soa_a_amode(m,isoap1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_soa_a_amode,lptr2_soa_cw_amode,isoa,isoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'soa17_a'//tmpch3)) then
+                if (lptr2_soa_a_amode(m,isoap1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_soa_a_amode,lptr2_soa_cw_amode,isoa,isoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'soa18_a'//tmpch3)) then
+                if (lptr2_soa_a_amode(m,isoap1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_soa_a_amode,lptr2_soa_cw_amode,isoa,isoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'soa19_a'//tmpch3)) then
+                if (lptr2_soa_a_amode(m,isoap1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_soa_a_amode,lptr2_soa_cw_amode,isoa,isoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'soa20_a'//tmpch3)) then
+                if (lptr2_soa_a_amode(m,isoap1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_soa_a_amode,lptr2_soa_cw_amode,isoa,isoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'soa21_a'//tmpch3)) then
+                if (lptr2_soa_a_amode(m,isoap1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_soa_a_amode,lptr2_soa_cw_amode,isoa,isoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'soa22_a'//tmpch3)) then
+                if (lptr2_soa_a_amode(m,isoap1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_soa_a_amode,lptr2_soa_cw_amode,isoa,isoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'soa23_a'//tmpch3)) then
+                if (lptr2_soa_a_amode(m,isoap1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_soa_a_amode,lptr2_soa_cw_amode,isoa,isoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'soa24_a'//tmpch3)) then
+                if (lptr2_soa_a_amode(m,isoap1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_soa_a_amode,lptr2_soa_cw_amode,isoa,isoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'soa25_a'//tmpch3)) then
+                if (lptr2_soa_a_amode(m,isoap1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_soa_a_amode,lptr2_soa_cw_amode,isoa,isoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'soa26_a'//tmpch3)) then
+                if (lptr2_soa_a_amode(m,isoap1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_soa_a_amode,lptr2_soa_cw_amode,isoa,isoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'soa27_a'//tmpch3)) then
+                if (lptr2_soa_a_amode(m,isoap1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_soa_a_amode,lptr2_soa_cw_amode,isoa,isoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'soa28_a'//tmpch3)) then
+                if (lptr2_soa_a_amode(m,isoap1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_soa_a_amode,lptr2_soa_cw_amode,isoa,isoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'soa29_a'//tmpch3)) then
+                if (lptr2_soa_a_amode(m,isoap1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_soa_a_amode,lptr2_soa_cw_amode,isoa,isoap1)
+                endif
+             else if ( (cnst_name(lmassa) == 'soa30_a'//tmpch3)) then
+                if (lptr2_soa_a_amode(m,isoap1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_soa_a_amode,lptr2_soa_cw_amode,isoa,isoap1)
+                endif
+
+                !-------------------------
+                !BSINGH - BC may have multi<=species (Anthro, Bio etc.)
+             else if ( (cnst_name(lmassa) == 'bc_a'//tmpch3) .and.  &
+                  (lptr_bc_a_amode(m) <= 0) ) then
+                lptr_bc_a_amode(m)  = lmassa
+                lptr_bc_cw_amode(m) = lmassc
+                !BSINGH - Update 2D pointers also
+                call update2dPtrs(m,lmassa,lmassc,lptr2_bc_a_amode,lptr2_bc_cw_amode,ibc,ibcp1)
+
+             else if ( (cnst_name(lmassa) == 'bc01_a'//tmpch3)) then
+                if (lptr2_bc_a_amode(m,ibcp1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_bc_a_amode,lptr2_bc_cw_amode,ibc,ibcp1)
+                endif
+             else if ( (cnst_name(lmassa) == 'bc02_a'//tmpch3)) then
+                if (lptr2_bc_a_amode(m,ibcp1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_bc_a_amode,lptr2_bc_cw_amode,ibc,ibcp1)
+                endif
+             else if ( (cnst_name(lmassa) == 'bc03_a'//tmpch3)) then
+                if (lptr2_bc_a_amode(m,ibcp1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_bc_a_amode,lptr2_bc_cw_amode,ibc,ibcp1)
+                endif
+             else if ( (cnst_name(lmassa) == 'bc04_a'//tmpch3)) then
+                if (lptr2_bc_a_amode(m,ibcp1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_bc_a_amode,lptr2_bc_cw_amode,ibc,ibcp1)
+                endif
+             else if ( (cnst_name(lmassa) == 'bc05_a'//tmpch3)) then
+                if (lptr2_bc_a_amode(m,ibcp1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_bc_a_amode,lptr2_bc_cw_amode,ibc,ibcp1)
+                endif
+             else if ( (cnst_name(lmassa) == 'bc06_a'//tmpch3)) then
+                if (lptr2_bc_a_amode(m,ibcp1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_bc_a_amode,lptr2_bc_cw_amode,ibc,ibcp1)
+                endif
+             else if ( (cnst_name(lmassa) == 'bc07_a'//tmpch3)) then
+                if (lptr2_bc_a_amode(m,ibcp1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_bc_a_amode,lptr2_bc_cw_amode,ibc,ibcp1)
+                endif
+             else if ( (cnst_name(lmassa) == 'bc08_a'//tmpch3)) then
+                if (lptr2_bc_a_amode(m,ibcp1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_bc_a_amode,lptr2_bc_cw_amode,ibc,ibcp1)
+                endif
+             else if ( (cnst_name(lmassa) == 'bc09_a'//tmpch3)) then
+                if (lptr2_bc_a_amode(m,ibcp1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_bc_a_amode,lptr2_bc_cw_amode,ibc,ibcp1)
+                endif
+             else if ( (cnst_name(lmassa) == 'bc10_a'//tmpch3)) then
+                if (lptr2_bc_a_amode(m,ibcp1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_bc_a_amode,lptr2_bc_cw_amode,ibc,ibcp1)
+                endif
+             else if ( (cnst_name(lmassa) == 'bc11_a'//tmpch3)) then
+                if (lptr2_bc_a_amode(m,ibcp1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_bc_a_amode,lptr2_bc_cw_amode,ibc,ibcp1)
+                endif
+             else if ( (cnst_name(lmassa) == 'bc12_a'//tmpch3)) then
+                if (lptr2_bc_a_amode(m,ibcp1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_bc_a_amode,lptr2_bc_cw_amode,ibc,ibcp1)
+                endif
+             else if ( (cnst_name(lmassa) == 'bc13_a'//tmpch3)) then
+                if (lptr2_bc_a_amode(m,ibcp1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_bc_a_amode,lptr2_bc_cw_amode,ibc,ibcp1)
+                endif
+             else if ( (cnst_name(lmassa) == 'bc14_a'//tmpch3)) then
+                if (lptr2_bc_a_amode(m,ibcp1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_bc_a_amode,lptr2_bc_cw_amode,ibc,ibcp1)
+                endif
+             else if ( (cnst_name(lmassa) == 'bc15_a'//tmpch3)) then
+                if (lptr2_bc_a_amode(m,ibcp1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_bc_a_amode,lptr2_bc_cw_amode,ibc,ibcp1)
+                endif
+             else if ( (cnst_name(lmassa) == 'bc16_a'//tmpch3)) then
+                if (lptr2_bc_a_amode(m,ibcp1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_bc_a_amode,lptr2_bc_cw_amode,ibc,ibcp1)
+                endif
+             else if ( (cnst_name(lmassa) == 'bc17_a'//tmpch3)) then
+                if (lptr2_bc_a_amode(m,ibcp1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_bc_a_amode,lptr2_bc_cw_amode,ibc,ibcp1)
+                endif
+             else if ( (cnst_name(lmassa) == 'bc18_a'//tmpch3)) then
+                if (lptr2_bc_a_amode(m,ibcp1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_bc_a_amode,lptr2_bc_cw_amode,ibc,ibcp1)
+                endif
+             else if ( (cnst_name(lmassa) == 'bc19_a'//tmpch3)) then
+                if (lptr2_bc_a_amode(m,ibcp1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_bc_a_amode,lptr2_bc_cw_amode,ibc,ibcp1)
+                endif
+             else if ( (cnst_name(lmassa) == 'bc20_a'//tmpch3)) then
+                if (lptr2_bc_a_amode(m,ibcp1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_bc_a_amode,lptr2_bc_cw_amode,ibc,ibcp1)
+                endif
+             else if ( (cnst_name(lmassa) == 'bc21_a'//tmpch3)) then
+                if (lptr2_bc_a_amode(m,ibcp1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_bc_a_amode,lptr2_bc_cw_amode,ibc,ibcp1)
+                endif
+             else if ( (cnst_name(lmassa) == 'bc22_a'//tmpch3)) then
+                if (lptr2_bc_a_amode(m,ibcp1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_bc_a_amode,lptr2_bc_cw_amode,ibc,ibcp1)
+                endif
+             else if ( (cnst_name(lmassa) == 'bc23_a'//tmpch3)) then
+                if (lptr2_bc_a_amode(m,ibcp1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_bc_a_amode,lptr2_bc_cw_amode,ibc,ibcp1)
+                endif
+             else if ( (cnst_name(lmassa) == 'bc24_a'//tmpch3)) then
+                if (lptr2_bc_a_amode(m,ibcp1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_bc_a_amode,lptr2_bc_cw_amode,ibc,ibcp1)
+                endif
+             else if ( (cnst_name(lmassa) == 'bc25_a'//tmpch3)) then
+                if (lptr2_bc_a_amode(m,ibcp1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_bc_a_amode,lptr2_bc_cw_amode,ibc,ibcp1)
+                endif
+             else if ( (cnst_name(lmassa) == 'bc26_a'//tmpch3)) then
+                if (lptr2_bc_a_amode(m,ibcp1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_bc_a_amode,lptr2_bc_cw_amode,ibc,ibcp1)
+                endif
+            else if ( (cnst_name(lmassa) == 'bc27_a'//tmpch3)) then
+                if (lptr2_bc_a_amode(m,ibcp1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_bc_a_amode,lptr2_bc_cw_amode,ibc,ibcp1)
+                endif
+             else if ( (cnst_name(lmassa) == 'bc28_a'//tmpch3)) then
+                if (lptr2_bc_a_amode(m,ibcp1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_bc_a_amode,lptr2_bc_cw_amode,ibc,ibcp1)
+                endif
+             else if ( (cnst_name(lmassa) == 'bc29_a'//tmpch3)) then
+                if (lptr2_bc_a_amode(m,ibcp1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_bc_a_amode,lptr2_bc_cw_amode,ibc,ibcp1)
+                endif
+             else if ( (cnst_name(lmassa) == 'bc30_a'//tmpch3)) then
+                if (lptr2_bc_a_amode(m,ibcp1) <= 0) then
+                   !BSINGH - Update 2D pointers also
+                   call update2dPtrs(m,lmassa,lmassc,lptr2_bc_a_amode,lptr2_bc_cw_amode,ibc,ibcp1)
+                endif
+
+
+             else if ( (cnst_name(lmassa) == 'ncl_a'//tmpch3) .and. &
+                  (lptr_nacl_a_amode(m) <= 0) ) then
+                lptr_nacl_a_amode(m)  = lmassa
+                lptr_nacl_cw_amode(m) = lmassc
+
+             else if ( (cnst_name(lmassa) == 'dst_a'//tmpch3) .and. &
+                  (lptr_dust_a_amode(m) <= 0) ) then
+                lptr_dust_a_amode(m)  = lmassa
+                lptr_dust_cw_amode(m) = lmassc
+
+             else
+                call endrun( msg )
              end if
-             if ( (specname_amode(l2) .eq. 'ammonium') .and.  &
-                  (lptr_nh4_a_amode(m) .le. 0) ) then
-                lptr_nh4_a_amode(m)  = lmassptr_amode(l,m)
-                lptr_nh4_cw_amode(m) = lmassptrcw_amode(l,m)
-             end if
-             if ( (specname_amode(l2) .eq. 'nitrate') .and.  &
-                  (lptr_no3_a_amode(m) .le. 0) ) then
-                lptr_no3_a_amode(m)  = lmassptr_amode(l,m)
-                lptr_no3_cw_amode(m) = lmassptrcw_amode(l,m)
-             end if
-             if ( (specname_amode(l2) .eq. 'p-organic') .and.   &
-                  (lptr_pom_a_amode(m) .le. 0) ) then
-                lptr_pom_a_amode(m)  = lmassptr_amode(l,m)
-                lptr_pom_cw_amode(m) = lmassptrcw_amode(l,m)
-             end if
-             if ( (specname_amode(l2) .eq. 'm-poly') .and.   &
-                  (lptr_mpoly_a_amode(m) .le. 0) ) then
-                lptr_mpoly_a_amode(m)= lmassptr_amode(l,m)
-                lptr_mpoly_cw_amode(m)= lmassptrcw_amode(l,m)
-             end if
-             if ( (specname_amode(l2) .eq. 'm-prot') .and.   &
-                  (lptr_mprot_a_amode(m) .le. 0) ) then
-                lptr_mprot_a_amode(m)= lmassptr_amode(l,m)
-                lptr_mprot_cw_amode(m)= lmassptrcw_amode(l,m)
-             end if
-             if ( (specname_amode(l2) .eq. 'm-lip') .and.   &
-                  (lptr_mlip_a_amode(m) .le. 0) ) then
-                lptr_mlip_a_amode(m) = lmassptr_amode(l,m)
-                lptr_mlip_cw_amode(m)= lmassptrcw_amode(l,m)
-             end if
-             if ( (specname_amode(l2) .eq. 's-organic') .and.   &
-                  (lptr_soa_a_amode(m) .le. 0) ) then
-                lptr_soa_a_amode(m)  = lmassptr_amode(l,m)
-                lptr_soa_cw_amode(m) = lmassptrcw_amode(l,m)
-             end if
-             if ( (specname_amode(l2) .eq. 'black-c') .and.  &
-                  (lptr_bc_a_amode(m) .le. 0) ) then
-                lptr_bc_a_amode(m)  = lmassptr_amode(l,m)
-                lptr_bc_cw_amode(m) = lmassptrcw_amode(l,m)
-             end if
-             if ( (specname_amode(l2) .eq. 'seasalt') .and.  &
-                  (lptr_nacl_a_amode(m) .le. 0) ) then
-                lptr_nacl_a_amode(m)  = lmassptr_amode(l,m)
-                lptr_nacl_cw_amode(m) = lmassptrcw_amode(l,m)
-             end if
-             if ( (specname_amode(l2) .eq. 'm-organic') .and.  &
-                  (lptr_mom_a_amode(m) .le. 0) ) then
-                lptr_mom_a_amode(m)  = lmassptr_amode(l,m)
-                lptr_mom_cw_amode(m) = lmassptrcw_amode(l,m)
-             end if
-             if ( (specname_amode(l2) .eq. 'dust') .and.     &
-                  (lptr_dust_a_amode(m) .le. 0) ) then
-                lptr_dust_a_amode(m)  = lmassptr_amode(l,m)
-                lptr_dust_cw_amode(m) = lmassptrcw_amode(l,m)
-             end if
-          end do
-       end do
+
+          end do ! l
+
+      end do !m
+
 
        !   all processes set values of specdens_XX_amode and specmw_XX_amode
        specdens_so4_amode = 2.0_r8
@@ -910,12 +1991,6 @@ loop:    do i = icldphy+1, pcnst
 
        dumname = 'none'
        write(iulog,9240)
-       write(iulog,9000) 'sulfate    '
-       do m = 1, ntot_amode
-          call initaermodes_setspecptrs_write2( m,                    &
-               lptr_so4_a_amode(m), lptr_so4_cw_amode(m),  'so4' )
-       end do
-
        write(iulog,9000) 'msa        '
        do m = 1, ntot_amode
           call initaermodes_setspecptrs_write2( m,                    &
@@ -934,23 +2009,74 @@ loop:    do i = icldphy+1, pcnst
                lptr_no3_a_amode(m), lptr_no3_cw_amode(m),  'no3' )
        end do
 
+       !BSINGH - SO4 may have multiple species
+       write(iulog,9000) 'sulfate  '
+       do m = 1, ntot_amode
+          if(NSO4 == 1) then
+             call initaermodes_setspecptrs_write2( m, &
+                  lptr_so4_a_amode(m), lptr_so4_cw_amode(m),  'so4' )
+          endif
+          do i = 1, nso4
+             write(dumname,'(a,i2.2)') 'so4', i
+             call initaermodes_setspecptrs_write2b( m, &
+                  lptr2_so4_a_amode(m,i), lptr2_so4_cw_amode(m,i), dumname(1:5) )
+          end do
+       end do
+       do i = 1, nso4
+          l = lptr2_so4_g_amode(i)
+          write(iulog,'(i4,2x,i12,2x,a,20x,a,i2.2,a)') i, l, cnst_name(l), 'lptr2_so4', i, '_g'
+       end do
+
+
+       !BSINGH - POA may have multiple species [Remove this hardwiring in
+       !future.]
        write(iulog,9000) 'p-organic  '
        do m = 1, ntot_amode
-          call initaermodes_setspecptrs_write2( m,                    &
-               lptr_pom_a_amode(m), lptr_pom_cw_amode(m),  'pom' )
+          if(NPOA == 1) then
+             call initaermodes_setspecptrs_write2( m, &
+                  lptr_pom_a_amode(m), lptr_pom_cw_amode(m),  'pom' )
+          endif
+          do i = 1, npoa
+             write(dumname,'(a,i2.2)') 'pom', i
+             call initaermodes_setspecptrs_write2b( m, &
+                  lptr2_pom_a_amode(m,i), lptr2_pom_cw_amode(m,i),  dumname(1:5) )
+          end do
        end do
-
+       !--------------------------------
+       !BSINGH - SOA may have multiple species
        write(iulog,9000) 's-organic  '
        do m = 1, ntot_amode
-          call initaermodes_setspecptrs_write2( m,                    &
-               lptr_soa_a_amode(m), lptr_soa_cw_amode(m),  'soa' )
+          if(NSOA == 1) then
+             call initaermodes_setspecptrs_write2( m, &
+                  lptr_soa_a_amode(m), lptr_soa_cw_amode(m),  'soa' )
+          endif
+          do i = 1, nsoa
+             write(dumname,'(a,i2.2)') 'soa', i
+             call initaermodes_setspecptrs_write2b( m, &
+                  lptr2_soa_a_amode(m,i), lptr2_soa_cw_amode(m,i), dumname(1:5) )
+          end do
+       end do
+       do i = 1, nsoa
+          l = lptr2_soa_g_amode(i)
+          write(iulog,'(i4,2x,i12,2x,a,20x,a,i2.2,a)') i, l, cnst_name(l), 'lptr2_soa', i, '_g'
        end do
 
+
+       !--------------------------------
+       !BSINGH - BC may have multiple species
        write(iulog,9000) 'black-c    '
        do m = 1, ntot_amode
-          call initaermodes_setspecptrs_write2( m,                    &
-               lptr_bc_a_amode(m), lptr_bc_cw_amode(m),  'bc' )
+          if(NBC == 1) then
+             call initaermodes_setspecptrs_write2( m,                    &
+                  lptr_bc_a_amode(m), lptr_bc_cw_amode(m),  'bc' )
+          endif
+          do i = 1, nbc
+             write(dumname,'(a,i2.2)') 'bc', i
+             call initaermodes_setspecptrs_write2b( m, &
+                  lptr2_bc_a_amode(m,i), lptr2_bc_cw_amode(m,i), dumname(1:5) )
+          end do
        end do
+
 
        write(iulog,9000) 'seasalt   '
        do m = 1, ntot_amode
@@ -1025,6 +2151,34 @@ loop:    do i = icldphy+1, pcnst
 
        return
      end subroutine initaermodes_setspecptrs_write2
+
+     subroutine initaermodes_setspecptrs_write2b( &
+          m, laptr, lcptr, txtdum )
+       !
+       !   does some output for initaermodes_setspecptrs
+
+       use constituents, only: pcnst, cnst_name
+
+       implicit none
+
+       !   subr arguments
+       integer, intent(in) :: m, laptr, lcptr
+       character*(*), intent(in) :: txtdum
+
+       !   local variables
+       character*8 dumnamea, dumnamec
+
+       dumnamea = 'none'
+       dumnamec = 'none'
+       if (laptr .gt. 0) dumnamea = cnst_name(laptr)
+       if (lcptr .gt. 0) dumnamec = cnst_name(lcptr)
+       write(iulog,9241) m, laptr, dumnamea, lcptr, dumnamec, txtdum
+
+9241   format( i4, 2( 2x, i12, 2x, a ),                                &
+            4x, 'lptr2_', a, '_a/cw_amode' )
+
+       return
+     end subroutine initaermodes_setspecptrs_write2b
 
 
      !==============================================================
@@ -1217,6 +2371,22 @@ loop:    do i = icldphy+1, pcnst
      end subroutine modal_aero_initialize_q
 
 
+     subroutine update2dPtrs(m,la,lc,lptr2_a,lptr2_cw,i,ip1)
+       !BSINGH - This subrotuine updated 2D pointer arrays (lptr2_a and
+       !lptr2_cw)
+       !Intenet - ins
+       integer, intent(in) :: m, la,lc,ip1
+
+       !Intent - inouts
+       integer, dimension(:,:), intent(inout) :: lptr2_a, lptr2_cw
+
+       !Intent - out
+       integer :: i
+
+       i = ip1  !BSINGH - increment i for next species
+       lptr2_a(m,i)  = la
+       lptr2_cw(m,i) = lc
+     end subroutine update2dPtrs
 
      !==============================================================
    end module modal_aero_initialize_data

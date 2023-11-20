@@ -35,6 +35,7 @@ use cam_abortutils,        only: endrun
 use modal_aero_wateruptake, only: modal_aero_wateruptake_dr
 use modal_aero_calcsize,    only: modal_aero_calcsize_diag,modal_aero_calcsize_sub
 use shr_log_mod ,           only: errmsg => shr_log_errmsg
+use modal_aero_data,only: nso4, nbc, npoa, nsoa
 #if defined(CLDERA_PROFILING)
 use ppgrid,         only: begchunk
 use cldera_interface_mod, only: cldera_set_field_part_data
@@ -67,8 +68,23 @@ complex(r8) :: crefwlw(nlwbands) ! complex refractive index for water infrared
 integer :: dgnumwet_idx = -1
 integer :: qaerwat_idx  = -1
 
-character(len=4) :: diag(0:n_diag) = (/'    ','_d1 ','_d2 ','_d3 ','_d4 ','_d5 ', &
-                                       '_d6 ','_d7 ','_d8 ','_d9 ','_d10'/)
+character(len=4) :: diag(0:n_diag) = (/'    ','_d1 ','_d2 ','_d3 ','_d4 ','_d5 ','_d6 ','_d7 ','_d8 ','_d9 ','_d10', &
+                                       '_d11','_d12','_d13','_d14','_d15','_d16','_d17', '_d18','_d19','_d20', &
+                                       '_d21','_d22','_d23','_d24','_d25','_d26','_d27', '_d28','_d29','_d30', &
+                                       '_d31','_d32','_d33','_d34','_d35','_d36','_d37', '_d38','_d39','_d40', &
+                                       '_d41','_d42','_d43','_d44','_d45','_d46','_d47', '_d48','_d49','_d50', &
+                                       '_d51','_d52','_d53','_d54','_d55','_d56','_d57', '_d58','_d59','_d60', &
+                                       '_d61','_d62','_d63','_d64','_d65','_d66','_d67', '_d68','_d69','_d70', &
+                                       '_d71','_d72','_d73','_d74','_d75','_d76','_d77', '_d78','_d79','_d80', &
+                                       '_d81','_d82','_d83','_d84','_d85','_d86','_d87', '_d88','_d89','_d90', &
+                                       '_d91','_d92','_d93','_d94','_d95','_d96','_d97', '_d98','_d99'/)
+
+    character(len=2) :: tagged_sulfur_suffix(30) = (/ '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', &
+                                                      '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', &
+                                                      '21', '22', '23', '24', '25', '26', '27', '28', '29', '30'/)
+    character(len=2) :: tagged_carbon_suffix(30) = (/ '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', &
+                                                      '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', &
+                                                      '21', '22', '23', '24', '25', '26', '27', '28', '29', '30'/)
 
 !Declare the following threadprivate variables to be used for calcsize and water uptake
 !These are defined as module level variables to aviod allocation-deallocation in a loop
@@ -141,6 +157,8 @@ subroutine modal_aer_opt_init()
    logical :: call_list(0:n_diag)
    integer :: ilist, nmodes, m_ncoef, m_prefr, m_prefi
    integer :: errcode, istat
+
+   integer :: tag_loop
 
    character(len=*), parameter :: routine='modal_aer_opt_init'
    !----------------------------------------------------------------------------
@@ -260,6 +278,44 @@ subroutine modal_aer_opt_init()
 #endif
    call addfld ('SSAVIS',horiz_only,    'A','  ','Aerosol singel-scatter albedo', flag_xyfill=.true.)
 
+   if (nbc>1) then
+   do tag_loop = 1, nbc
+      call addfld ('BURDENBC'//tagged_carbon_suffix(tag_loop),horiz_only, 'A','kg/m2'      ,'Burden BC', flag_xyfill=.true.)
+      call add_default ('BURDENBC'//tagged_carbon_suffix(tag_loop)     , 1, ' ')
+      call addfld ('AODBC'//tagged_carbon_suffix(tag_loop),horiz_only,    'A',' ','Aerosol optical depth 550 nm', flag_xyfill=.true.)
+      call add_default ('AODBC'//tagged_carbon_suffix(tag_loop)     , 1, ' ')
+      call addfld ('AODABSBC'//tagged_carbon_suffix(tag_loop),horiz_only, 'A','  ','Aerosol absorption optical depth 550 nm', flag_xyfill=.true.)
+      call add_default ('AODABSBC'//tagged_carbon_suffix(tag_loop)     , 1, ' ')
+   end do
+   end if
+
+
+   if (npoa>1) then
+   do tag_loop = 1, npoa
+      call addfld ('BURDENPOM'//tagged_carbon_suffix(tag_loop),horiz_only, 'A','kg/m2'      ,'Burden POM', flag_xyfill=.true.)
+      call add_default ('BURDENPOM'//tagged_carbon_suffix(tag_loop)     , 1, ' ')
+      call addfld ('AODPOM'//tagged_carbon_suffix(tag_loop),horiz_only,    'A',' ','Aerosol optical depth 550 nm', flag_xyfill=.true.)
+      call add_default ('AODPOM'//tagged_carbon_suffix(tag_loop)     , 1, ' ')
+   end do
+   end if
+
+   if (nsoa>1) then
+   do tag_loop = 1, nsoa
+      call addfld ('BURDENSOA'//tagged_carbon_suffix(tag_loop),horiz_only, 'A','kg/m2'      ,'Burden SOA', flag_xyfill=.true.)
+      call add_default ('BURDENSOA'//tagged_carbon_suffix(tag_loop)     , 1, ' ')
+      call addfld ('AODSOA'//tagged_carbon_suffix(tag_loop),horiz_only,    'A',' ','Aerosol optical depth 550 nm', flag_xyfill=.true.)
+      call add_default ('AODSOA'//tagged_carbon_suffix(tag_loop)     , 1, ' ')
+   end do
+   end if
+
+   if (nso4>1) then
+   do tag_loop = 1, nso4
+      call addfld ('BURDENSO4'//tagged_sulfur_suffix(tag_loop),horiz_only, 'A','kg/m2'      ,'Burden SO4', flag_xyfill=.true.)
+      call add_default ('BURDENSO4'//tagged_sulfur_suffix(tag_loop)     , 1, ' ')
+      call addfld ('AODSO4'//tagged_sulfur_suffix(tag_loop),horiz_only,    'A',' ','Aerosol optical depth 550 nm', flag_xyfill=.true.)
+      call add_default ('AODSO4'//tagged_sulfur_suffix(tag_loop)     , 1, ' ')
+   end do
+   end if
 
    if (history_amwg) then
       call add_default ('AODDUST1'     , 1, ' ')
@@ -384,7 +440,6 @@ subroutine modal_aer_opt_init()
 
    do ilist = 1, n_diag
       if (call_list(ilist)) then
-
          call addfld ('EXTINCT'//diag(ilist), (/ 'lev' /), 'A','1/m', &
               'Aerosol extinction', flag_xyfill=.true.)
          call addfld ('ABSORB'//diag(ilist),  (/ 'lev' /), 'A','1/m', &
@@ -439,6 +494,8 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
    integer :: nmodes
    integer :: nspec
    integer :: istat
+   character*32         :: spec_name
+   integer :: tag_loop
 
    real(r8) :: mass(pcols,pver)        ! layer mass
    real(r8) :: air_density(pcols,pver) ! (kg/m3)
@@ -534,6 +591,33 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
    ! total species AOD
    real(r8) :: dustaod(pcols), so4aod(pcols), bcaod(pcols), &
                pomaod(pcols), soaaod(pcols), seasaltaod(pcols)
+
+   real(r8) :: burdenbc_tag(pcols,nbc)
+   real(r8) :: scatbc_tag(pcols,nbc)
+   real(r8) :: absbc_tag(pcols,nbc)
+   real(r8) :: hygrobc_tag(pcols,nbc)
+   real(r8) :: bcaod_tag(pcols,nbc)
+   real(r8) :: aodabsbc_tag(pcols,nbc)
+
+   real(r8) :: burdenpom_tag(pcols,npoa)
+   real(r8) :: scatpom_tag(pcols,npoa)
+   real(r8) :: abspom_tag(pcols,npoa)
+   real(r8) :: hygropom_tag(pcols,npoa)
+   real(r8) :: pomaod_tag(pcols,npoa)
+
+   real(r8) :: burdensoa_tag(pcols,nsoa)
+   real(r8) :: scatsoa_tag(pcols,nsoa)
+   real(r8) :: abssoa_tag(pcols,nsoa)
+   real(r8) :: hygrosoa_tag(pcols,nsoa)
+   real(r8) :: soaaod_tag(pcols,nsoa)
+
+   real(r8) :: burdenso4_tag(pcols,nso4)
+   real(r8) :: scatso4_tag(pcols,nso4)
+   real(r8) :: absso4_tag(pcols,nso4)
+   real(r8) :: hygroso4_tag(pcols,nso4)
+   real(r8) :: so4aod_tag(pcols,nso4)
+
+
 #if ( defined MODAL_AERO_4MODE_MOM )
    real(r8) :: momaod(pcols)
 #elif ( defined MODAL_AERO_9MODE )
@@ -610,6 +694,18 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
    bcaod(:ncol)          = 0.0_r8
    seasaltaod(:ncol)     = 0.0_r8
 
+   burdenbc_tag(:ncol,:)       = 0.0_r8
+   aodabsbc_tag(:ncol,:)       = 0.0_r8
+   bcaod_tag(:ncol,:)       = 0.0_r8
+
+   burdenpom_tag(:ncol,:)       = 0.0_r8
+   pomaod_tag(:ncol,:)       = 0.0_r8
+
+   burdensoa_tag(:ncol,:)       = 0.0_r8
+   soaaod_tag(:ncol,:)       = 0.0_r8
+
+   burdenso4_tag(:ncol,:)       = 0.0_r8
+   so4aod_tag(:ncol,:)       = 0.0_r8
 
    ! diags for other bands
    aoduv(:ncol)          = 0.0_r8
@@ -690,6 +786,22 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
             scatseasalt(:ncol)  = 0._r8
             absseasalt(:ncol)   = 0._r8
             hygroseasalt(:ncol) = 0._r8
+            scatbc_tag(:ncol,:)       = 0._r8
+            absbc_tag(:ncol,:)       = 0._r8
+            hygrobc_tag(:ncol,:)       = 0._r8
+
+            scatpom_tag(:ncol,:)       = 0._r8
+            abspom_tag(:ncol,:)       = 0._r8
+            hygropom_tag(:ncol,:)       = 0._r8
+
+            scatsoa_tag(:ncol,:)       = 0._r8
+            abssoa_tag(:ncol,:)       = 0._r8
+            hygrosoa_tag(:ncol,:)       = 0._r8
+
+            scatso4_tag(:ncol,:)       = 0._r8
+            absso4_tag(:ncol,:)       = 0._r8
+            hygroso4_tag(:ncol,:)       = 0._r8
+
 #if ( defined MODAL_AERO_4MODE_MOM )
             scatmom(:ncol)  = 0._r8
             absmom(:ncol)   = 0._r8
@@ -738,37 +850,36 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
                         hygrodust(i)  = vol(i)*hygro_aer
                      end do
                   end if
-
                   if (trim(spectype) == 'sulfate') then
                      do i = 1, ncol
                         burdenso4(i) = burdenso4(i) + specmmr(i,k)*mass(i,k)
-                        scatso4(i)   = vol(i)*specrefr
-                        absso4(i)    = -vol(i)*specrefi
-                        hygroso4(i)  = vol(i)*hygro_aer
+                        scatso4(i)   = scatso4(i)+vol(i)*specrefr
+                        absso4(i)    = absso4(i)-vol(i)*specrefi
+                        hygroso4(i)  = hygroso4(i)+vol(i)*hygro_aer
                      end do
                   end if
                   if (trim(spectype) == 'black-c') then
                      do i = 1, ncol
                         burdenbc(i) = burdenbc(i) + specmmr(i,k)*mass(i,k)
-                        scatbc(i)   = vol(i)*specrefr
-                        absbc(i)    = -vol(i)*specrefi
-                        hygrobc(i)  = vol(i)*hygro_aer
+                        scatbc(i)   = scatbc(i)+vol(i)*specrefr
+                        absbc(i)    = absbc(i)-vol(i)*specrefi
+                        hygrobc(i)  = hygrobc(i)+vol(i)*hygro_aer
                    end do
                   end if
                   if (trim(spectype) == 'p-organic') then
                      do i = 1, ncol
                         burdenpom(i) = burdenpom(i) + specmmr(i,k)*mass(i,k)
-                        scatpom(i)   = vol(i)*specrefr
-                        abspom(i)    = -vol(i)*specrefi
-                        hygropom(i)  = vol(i)*hygro_aer
-                      end do
+                        scatpom(i)   = scatpom(i)+vol(i)*specrefr
+                        abspom(i)    = abspom(i)-vol(i)*specrefi
+                        hygropom(i)  = hygropom(i)+vol(i)*hygro_aer
+                     end do
                   end if
                   if (trim(spectype) == 's-organic') then
                      do i = 1, ncol
                         burdensoa(i) = burdensoa(i) + specmmr(i,k)*mass(i,k)
-                        scatsoa(i)   = vol(i)*specrefr
-                        abssoa(i)    = -vol(i)*specrefi
-                        hygrosoa(i)  = vol(i)*hygro_aer
+                        scatsoa(i)   = scatsoa(i)+vol(i)*specrefr
+                        abssoa(i)    = abssoa(i)-vol(i)*specrefi
+                        hygrosoa(i)  = hygrosoa(i)+vol(i)*hygro_aer
                      end do
                   end if
                   if (trim(spectype) == 'seasalt') then
@@ -779,6 +890,55 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
                         hygroseasalt(i)  = vol(i)*hygro_aer
                       end do
                   end if
+
+
+                 call rad_cnst_get_info(list_idx, m, l, spec_name=spec_name)
+
+                  do tag_loop = 1, nbc
+                  if (trim(spec_name) == 'bc'//tagged_carbon_suffix(tag_loop)//'_a1' .or. trim(spec_name) == 'bc'//tagged_carbon_suffix(tag_loop)//'_a3' .or. trim(spec_name) == 'bc'//tagged_carbon_suffix(tag_loop)//'_a4' .or. trim(spec_name)=='bc'//tagged_carbon_suffix(tag_loop)) then
+                     do i = 1, ncol
+                        burdenbc_tag(i,tag_loop) = burdenbc_tag(i,tag_loop) + specmmr(i,k)*mass(i,k)
+                        scatbc_tag(i,tag_loop)   = scatbc_tag(i,tag_loop)+vol(i)*specrefr
+                        absbc_tag(i,tag_loop)    = absbc_tag(i,tag_loop)-vol(i)*specrefi
+                        hygrobc_tag(i,tag_loop)  = hygrobc_tag(i,tag_loop)+vol(i)*hygro_aer
+                     end do
+                  end if
+                  end do
+
+                  do tag_loop = 1, npoa
+                  if (trim(spec_name) == 'pom'//tagged_carbon_suffix(tag_loop)//'_a1' .or. trim(spec_name) == 'pom'//tagged_carbon_suffix(tag_loop)//'_a3' .or. trim(spec_name) == 'pom'//tagged_carbon_suffix(tag_loop)//'_a4' .or. trim(spec_name)=='pom'//tagged_carbon_suffix(tag_loop)) then
+                     do i = 1, ncol
+                        burdenpom_tag(i,tag_loop) = burdenpom_tag(i,tag_loop) + specmmr(i,k)*mass(i,k)
+                        scatpom_tag(i,tag_loop)   = scatpom_tag(i,tag_loop)+vol(i)*specrefr
+                        abspom_tag(i,tag_loop)    = abspom_tag(i,tag_loop)-vol(i)*specrefi
+                        hygropom_tag(i,tag_loop)  = hygropom_tag(i,tag_loop)+vol(i)*hygro_aer
+                     end do
+                  end if
+                  end do
+
+                  do tag_loop = 1, nsoa
+                  if (trim(spec_name) == 'soa'//tagged_carbon_suffix(tag_loop)//'_a1' .or. trim(spec_name)=='soa'//tagged_carbon_suffix(tag_loop)//'_a2' .or. trim(spec_name)=='soa'//tagged_carbon_suffix(tag_loop)//'_a3' .or. trim(spec_name)=='soa'//tagged_carbon_suffix(tag_loop)) then
+                     do i = 1, ncol
+                        burdensoa_tag(i,tag_loop) = burdensoa_tag(i,tag_loop) + specmmr(i,k)*mass(i,k)
+                        scatsoa_tag(i,tag_loop)   = scatsoa_tag(i,tag_loop)+vol(i)*specrefr
+                        abssoa_tag(i,tag_loop)    = abssoa_tag(i,tag_loop)-vol(i)*specrefi
+                        hygrosoa_tag(i,tag_loop)  = hygrosoa_tag(i,tag_loop)+vol(i)*hygro_aer
+                     end do
+                  end if
+                  end do
+
+                  do tag_loop = 1, nso4
+                  if (trim(spec_name) == 'so4'//tagged_sulfur_suffix(tag_loop)//'_a1' .or. trim(spec_name)=='so4'//tagged_sulfur_suffix(tag_loop)//'_a2' .or. trim(spec_name)=='so4'//tagged_sulfur_suffix(tag_loop)//'_a3' .or. trim(spec_name)=='so4'//tagged_sulfur_suffix(tag_loop)) then
+                     do i = 1, ncol
+                        burdenso4_tag(i,tag_loop) = burdenso4_tag(i,tag_loop) + specmmr(i,k)*mass(i,k)
+                        scatso4_tag(i,tag_loop)   = scatso4_tag(i,tag_loop)+vol(i)*specrefr
+                        absso4_tag(i,tag_loop)    = absso4_tag(i,tag_loop)-vol(i)*specrefi
+                        hygroso4_tag(i,tag_loop)  = hygroso4_tag(i,tag_loop)+vol(i)*hygro_aer
+                     end do
+                  end if
+                  end do
+
+
 #if ( defined MODAL_AERO_4MODE_MOM )
                   if (trim(spectype) == 'm-organic') then
                      do i = 1, ncol
@@ -963,6 +1123,26 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
                      scatbc(i)      = (scatbc(i) + scath2o*hygrobc(i)/sumhygro)/sumscat
                      absbc(i)       = (absbc(i) + absh2o*hygrobc(i)/sumhygro)/sumabs
 
+                     do tag_loop = 1, nbc
+                     scatbc_tag(i,tag_loop)      = (scatbc_tag(i,tag_loop) + scath2o*hygrobc_tag(i,tag_loop)/sumhygro)/sumscat
+                     absbc_tag(i,tag_loop)      = (absbc_tag(i,tag_loop) + absh2o*hygrobc_tag(i,tag_loop)/sumhygro)/sumabs
+                     end do
+
+                     do tag_loop = 1, npoa
+                     scatpom_tag(i,tag_loop)      = (scatpom_tag(i,tag_loop) + scath2o*hygropom_tag(i,tag_loop)/sumhygro)/sumscat
+                     abspom_tag(i,tag_loop)      = (abspom_tag(i,tag_loop) + absh2o*hygropom_tag(i,tag_loop)/sumhygro)/sumabs
+                     end do
+
+                     do tag_loop = 1, nsoa
+                     scatsoa_tag(i,tag_loop)      = (scatsoa_tag(i,tag_loop) + scath2o*hygrosoa_tag(i,tag_loop)/sumhygro)/sumscat
+                     abssoa_tag(i,tag_loop)      = (abssoa_tag(i,tag_loop) + absh2o*hygrosoa_tag(i,tag_loop)/sumhygro)/sumabs
+                     end do
+
+                     do tag_loop = 1, nso4
+                     scatso4_tag(i,tag_loop)      = (scatso4_tag(i,tag_loop) + scath2o*hygroso4_tag(i,tag_loop)/sumhygro)/sumscat
+                     absso4_tag(i,tag_loop)      = (absso4_tag(i,tag_loop) + absh2o*hygroso4_tag(i,tag_loop)/sumhygro)/sumabs
+                     end do
+
                      scatseasalt(i) = (scatseasalt(i) + scath2o*hygroseasalt(i)/sumhygro)/sumscat
                      absseasalt(i)  = (absseasalt(i) + absh2o*hygroseasalt(i)/sumhygro)/sumabs
 
@@ -983,6 +1163,10 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
 
                      aodabsbc(i)    = aodabsbc(i) + absbc(i)*dopaer(i)*(1.0_r8-palb(i))
 
+                     do tag_loop = 1, nbc
+                     aodabsbc_tag(i,tag_loop)    = aodabsbc_tag(i,tag_loop) + absbc_tag(i,tag_loop)*dopaer(i)*(1.0_r8-palb(i))
+                     end do
+
                      aodc           = (absdust(i)*(1.0_r8 - palb(i)) + palb(i)*scatdust(i))*dopaer(i)
                      dustaod(i)     = dustaod(i) + aodc
 
@@ -997,6 +1181,28 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
 
                      aodc           = (absbc(i)*(1.0_r8 - palb(i)) + palb(i)*scatbc(i))*dopaer(i)
                      bcaod(i)       = bcaod(i) + aodc
+
+
+                     do tag_loop = 1, nbc
+                     aodc           = (absbc_tag(i,tag_loop)*(1.0_r8 - palb(i)) + palb(i)*scatbc_tag(i,tag_loop))*dopaer(i)
+                     bcaod_tag(i,tag_loop)       = bcaod_tag(i,tag_loop) + aodc
+                     end do
+
+                     do tag_loop = 1, npoa
+                     aodc           = (abspom_tag(i,tag_loop)*(1.0_r8 - palb(i)) + palb(i)*scatpom_tag(i,tag_loop))*dopaer(i)
+                     pomaod_tag(i,tag_loop)       = pomaod_tag(i,tag_loop) + aodc
+                     end do
+
+                     do tag_loop = 1, nsoa
+                     aodc           = (abssoa_tag(i,tag_loop)*(1.0_r8 - palb(i)) + palb(i)*scatsoa_tag(i,tag_loop))*dopaer(i)
+                     soaaod_tag(i,tag_loop)       = soaaod_tag(i,tag_loop) + aodc
+                     end do
+
+                     do tag_loop = 1, nso4
+                     aodc           = (absso4_tag(i,tag_loop)*(1.0_r8 - palb(i)) + palb(i)*scatso4_tag(i,tag_loop))*dopaer(i)
+                     so4aod_tag(i,tag_loop)       = so4aod_tag(i,tag_loop) + aodc
+                     end do
+
 
                      aodc           = (absseasalt(i)*(1.0_r8 - palb(i)) + palb(i)*scatseasalt(i))*dopaer(i)
                      seasaltaod(i)  = seasaltaod(i) + aodc
@@ -1166,11 +1372,16 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
 
          aodabsbc(idxnite(i))   = fillvalue
 
+         aodabsbc_tag(idxnite(i),:)   = fillvalue
          dustaod(idxnite(i))    = fillvalue
          so4aod(idxnite(i))     = fillvalue
          pomaod(idxnite(i))     = fillvalue
          soaaod(idxnite(i))     = fillvalue
          bcaod(idxnite(i))      = fillvalue
+         bcaod_tag(idxnite(i),:)   = fillvalue
+         pomaod_tag(idxnite(i),:)   = fillvalue
+         soaaod_tag(idxnite(i),:)   = fillvalue
+         so4aod_tag(idxnite(i),:)   = fillvalue
 #if ( defined MODAL_AERO_4MODE_MOM )
          momaod(idxnite(i)) = fillvalue
 #elif ( defined MODAL_AERO_9MODE )
@@ -1209,6 +1420,36 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
       call outfld('AODBC',         bcaod,         pcols, lchnk)
       call outfld('AODSS',         seasaltaod,    pcols, lchnk)
 
+      if (nbc>1) then
+      do tag_loop = 1,nbc
+      call outfld('BURDENBC'//tagged_carbon_suffix(tag_loop)  , burdenbc_tag(:,tag_loop),      pcols, lchnk)
+      call outfld('AODABSBC'//tagged_carbon_suffix(tag_loop)  , aodabsbc_tag(:,tag_loop),      pcols, lchnk)
+      call outfld('AODBC'//tagged_carbon_suffix(tag_loop)  , bcaod_tag(:,tag_loop),      pcols, lchnk)
+      end do
+      end if
+
+      if (npoa>1) then
+      do tag_loop = 1,npoa
+      call outfld('BURDENPOM'//tagged_carbon_suffix(tag_loop)  , burdenpom_tag(:,tag_loop),      pcols, lchnk)
+      call outfld('AODPOM'//tagged_carbon_suffix(tag_loop)  , pomaod_tag(:,tag_loop),      pcols, lchnk)
+      end do
+      end if
+
+      if (nsoa>1) then
+      do tag_loop = 1,nsoa
+      call outfld('BURDENSOA'//tagged_carbon_suffix(tag_loop)  , burdensoa_tag(:,tag_loop),      pcols, lchnk)
+      call outfld('AODSOA'//tagged_carbon_suffix(tag_loop)  , soaaod_tag(:,tag_loop),      pcols, lchnk)
+      end do
+      end if
+
+      if (nso4>1) then
+      do tag_loop = 1,nso4
+      call outfld('BURDENSO4'//tagged_sulfur_suffix(tag_loop)  , burdenso4_tag(:,tag_loop),      pcols, lchnk)
+      call outfld('AODSO4'//tagged_sulfur_suffix(tag_loop)  , so4aod_tag(:,tag_loop),      pcols, lchnk)
+      end do
+      end if
+
+
 #if ( defined MODAL_AERO_4MODE_MOM )
       call outfld('AODMOM',         momaod,    pcols, lchnk)
 #elif ( defined MODAL_AERO_9MODE )
@@ -1224,6 +1465,14 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
       call cldera_set_field_part_data("AODABS" ,lchnk-begchunk+1,aodabs)
       call cldera_set_field_part_data("AODSO4" ,lchnk-begchunk+1,so4aod)
       call cldera_set_field_part_data("BURDENSO4" ,lchnk-begchunk+1,burdenso4)
+
+      if (nso4>1) then
+         do tag_loop = 1,nso4
+            if (tag_loop>3) exit ! Only three tags needed for now
+            call cldera_set_field_part_data("AODSO4"//tagged_sulfur_suffix(tag_loop),lchnk-begchunk+1,so4aod_tag(:,tag_loop))
+            call cldera_set_field_part_data("BURDENSO4"//tagged_sulfur_suffix(tag_loop),lchnk-begchunk+1,burdenso4_tag(:,tag_loop))
+         end do
+      end if
 #endif
 
    end if

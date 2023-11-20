@@ -76,9 +76,18 @@ logical :: spectralflux  = .false. ! calculate fluxes (up and down) per band.
 
 logical :: use_rad_dt_cosz  = .false. ! if true, uses the radiation dt for all cosz calculations !BSINGH - Added for solar insolation calc.
 
-
-character(len=4) :: diag(0:N_DIAG) =(/'    ','_d1 ','_d2 ','_d3 ','_d4 ','_d5 ','_d6 ','_d7 ','_d8 ','_d9 ','_d10'/)
-
+!++hybrown
+character(len=4) :: diag(0:N_DIAG) = (/'    ','_d1 ','_d2 ','_d3 ','_d4 ','_d5 ','_d6 ','_d7 ','_d8 ','_d9 ','_d10', &
+                                       '_d11','_d12','_d13','_d14','_d15','_d16','_d17', '_d18','_d19','_d20', &
+                                       '_d21','_d22','_d23','_d24','_d25','_d26','_d27', '_d28','_d29','_d30', &
+                                       '_d31','_d32','_d33','_d34','_d35','_d36','_d37', '_d38','_d39','_d40', &
+                                       '_d41','_d42','_d43','_d44','_d45','_d46','_d47', '_d48','_d49','_d50', &
+                                       '_d51','_d52','_d53','_d54','_d55','_d56','_d57', '_d58','_d59','_d60', &
+                                       '_d61','_d62','_d63','_d64','_d65','_d66','_d67', '_d68','_d69','_d70', &
+                                       '_d71','_d72','_d73','_d74','_d75','_d76','_d77', '_d78','_d79','_d80', &
+                                       '_d81','_d82','_d83','_d84','_d85','_d86','_d87', '_d88','_d89','_d90', &
+                                       '_d91','_d92','_d93','_d94','_d95','_d96','_d97', '_d98','_d99'/)
+!--hybrown
 logical :: dohirs = .false. ! diagnostic  brightness temperatures at the top of the
                             ! atmosphere for 7 TOVS/HIRS channels (2,4,6,8,10,11,12) and 4 TOVS/MSU 
                             ! channels (1,2,3,4).

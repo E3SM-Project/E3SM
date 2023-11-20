@@ -28,6 +28,8 @@ use modal_aero_data, only: ntot_amode, numptr_amode, modename_amode
 use modal_aero_data,  only: numptrcw_amode, mprognum_amode, qqcw_get_field, &
      modeptr_accum, modeptr_aitken, ntot_aspectype, cnst_name_cw
 
+use modal_aero_data,  only: nso4, nsoa, npoa, nbc
+
 #endif
 !---------------------------------------------------------------------------------------------------------
 !---------------------------------------------------------------------------------------------------------
@@ -54,7 +56,7 @@ integer :: dgnum_idx = -1 !pbuf id for dgnum
 
 integer, parameter :: maxpair_csizxf = N_DIAG
 #ifdef MODAL_AERO
-integer, parameter :: maxspec_csizxf = ntot_aspectype
+integer, parameter, public :: maxspec_csizxf = nso4+nsoa+npoa+nbc+ntot_aspectype-4
 #else
 ! TODO: this is a kludge.  This value should probably be assigned
 ! elsewhere for the non-modal case.  S.M. Burrows.
@@ -696,7 +698,6 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
 
    !Now compute dry diameter for both interstitial and cloud borne aerosols
    do imode = 1, nmodes
-
       !----------------------------------------------------------------------
       !Initialize all parameters to the default values for the mode
       !----------------------------------------------------------------------
@@ -713,7 +714,6 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
       !----------------------------------------------------------------------
       !(for radiation diagnostics, # of species in a mode can be differnet from the default)
       call rad_cnst_get_info(list_idx_local, imode, nspec=nspec)
-
       !----------------------------------------------------------------------
       !Compute dry volume mixrats (aerosol diameter)
       !Current default: number mmr is prognosed
@@ -820,7 +820,6 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
          if ((lsfrm > 0) .and. (lstoo > 0)) then
             tmpnamea = cnst_name_cw(lsfrm)
             tmpnameb = cnst_name_cw(lstoo)
-
             fieldname = trim(tmpnamea) // '_sfcsiz3'
             call outfld( fieldname, qsrflx(:,lsfrm,3,cld_brn_aero), pcols, lchnk)
 
@@ -1149,7 +1148,6 @@ real(r8), parameter :: relax_factor = 27.0_r8 !relax_factor=3**3=27,
 real(r8), parameter :: szadj_block_fac = 1.0e6_r8
 real(r8) :: dgnumlo, dgnumhi, sigmag, cmn_factor
 
-
 call rad_cnst_get_mode_props(list_idx, imode, dgnumlo=dgnumlo, dgnumhi=dgnumhi, sigmag=sigmag)
 cmn_factor = exp(4.5_r8*log(sigmag)**2.0_r8)*pi/6.0_r8
 !v2nmin = voltonumbhi is proportional to dgnumhi**(-3),
@@ -1434,7 +1432,7 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, update_mmr, tadjinv, &
   real(r8) :: xfercoef_num_ait2acc, xfercoef_vol_ait2acc
   real(r8) :: xfercoef_num_acc2ait, xfercoef_vol_acc2ait
   real(r8) :: xfertend, xfertend_num(2,2)
-  logical  :: noxf_acc2ait(ntot_aspectype), accum_exists, aitken_exists
+  logical  :: noxf_acc2ait(maxspec_csizxf), accum_exists, aitken_exists 
 
   character(len=32)  :: spec_name
   character(len=800) :: err_msg
@@ -1499,7 +1497,6 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, update_mmr, tadjinv, &
   !Now compute species which can be transfered
   !Get # of species in accumulation mode
   call rad_cnst_get_info(list_idx, iacc, nspec = nspec_acc) !output:nspec_acc
-
   do ispec_acc = 1, nspec_acc     !Go through all species within accumulation mode (only species, not number (e.g. num_a1))
      call rad_cnst_get_info(list_idx, iacc, ispec_acc,spec_name=spec_name) !output:spec_name
      call cnst_get_ind(spec_name, idx)
@@ -1513,10 +1510,9 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, update_mmr, tadjinv, &
 
   ! v2n_geomean is voltonumb at the "geometrically-defined" mid-point
   ! between the aitken and accum modes
-
   call rad_cnst_get_mode_props(list_idx, iait, dgnum=dgnum, sigmag=sigmag)
   voltonumb_ait   = 1._r8 / ( (pi/6._r8)*(dgnum**3.0_r8)*exp(4.5_r8*log(sigmag)**2.0_r8) )
-
+ 
   call rad_cnst_get_mode_props(list_idx, iacc, dgnum=dgnum, sigmag=sigmag)
   voltonumb_acc   = 1._r8 / ( (pi/6._r8)*(dgnum**3._r8)*exp(4.5_r8*log(sigmag)**2._r8) )
 

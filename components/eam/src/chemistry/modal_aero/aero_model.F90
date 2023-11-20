@@ -21,7 +21,7 @@ module aero_model
   use chem_mods,      only: gas_pcnst, adv_mass
   use mo_tracname,    only: solsym
 
-  use modal_aero_data,only: cnst_name_cw
+  use modal_aero_data,only: cnst_name_cw, nso4
   use modal_aero_data,only: ntot_amode, modename_amode
 
   implicit none
@@ -84,7 +84,7 @@ module aero_model
   integer :: index_tot_mass(ntot_amode,10) = -1
   integer :: index_chm_mass(ntot_amode,10) = -1
 
-  integer :: ndx_h2so4
+  integer :: ndx_h2so4(nso4)
   character(len=fieldname_len) :: dgnum_name(ntot_amode)
 
   !For aero_model_wetdep subroutine
@@ -213,6 +213,11 @@ contains
     character(len=6) :: test_name
     character(len=100) :: errmes
     character(len=2)  :: unit_basename  ! Units 'kg' or '1' 
+
+    character(len=2) :: tagged_sulfur_suffix(30) = (/ '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', &
+                                                      '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', &
+                                                      '21', '22', '23', '24', '25', '26', '27', '28', '29', '30'/)
+    integer :: tag_loop
 
     if ( masterproc ) write(iulog,'(a,i5)') 'aero_model_init iflagaa=', iflagaa ! REASTER 08/04/2015
 
@@ -631,7 +636,7 @@ contains
              end select
           end if
        endif
-       
+      
        call cnst_get_ind(trim(solsym(m)), nspc, abrtf=.false. ) ! REASTER 08/04/2015
 !      if(nspc > 0 .and. .not.cnst_name_cw(nspc) == ' ') then   ! REASTER 08/04/2015
        if( nspc > 0 ) then                                      ! REASTER 08/04/2015
@@ -659,7 +664,6 @@ contains
           else
              unit_basename = 'kg'  
           endif
-
           call addfld( cnst_name_cw(n), (/ 'lev' /), 'A',                unit_basename//'/kg ', &
                trim(cnst_name_cw(n))//' in cloud water')
           call addfld (trim(cnst_name_cw(n))//'SFWET',horiz_only,  'A', unit_basename//'/m2/s ', &
@@ -704,7 +708,13 @@ contains
        endif
     end do
 
-    ndx_h2so4 = get_spc_ndx('H2SO4')
+ if (nso4==1) then
+    ndx_h2so4 = get_spc_ndx( 'H2SO4' )
+ else if (nso4>1) then
+    do tag_loop = 1,nso4
+       ndx_h2so4(tag_loop) = get_spc_ndx('H2SO4'//tagged_sulfur_suffix(tag_loop))
+    end do
+ end if
 
     ! for aero_model_surfarea called from mo_usrrxt
     do l=1,ntot_amode
@@ -2224,7 +2234,7 @@ do_lphase2_conditional: &
                          sflx(1:ncol)=sflx(1:ncol)+rcscavt(1:ncol,k)*state%pdel(1:ncol,k)/gravit
                       enddo
                       call outfld( trim(cnst_name_cw(mm))//'SFSEC', sflx, pcols, lchnk)
-                      
+            
                       sflx(:)=0.0_r8
                       do k=1,pver
                          sflx(1:ncol)=sflx(1:ncol)+rsscavt(1:ncol,k)*state%pdel(1:ncol,k)/gravit
@@ -2394,7 +2404,7 @@ do_lphase2_conditional: &
     real(r8), intent(in) :: relhum(:,:)            ! relative humidity
     real(r8), intent(in) :: airdens(:,:)           ! total atms density (molec/cm**3)
     real(r8), intent(in) :: invariants(:,:,:)
-    real(r8), intent(in) :: del_h2so4_gasprod(:,:) 
+    real(r8), intent(in) :: del_h2so4_gasprod(:,:,:) 
     real(r8), intent(in) :: zm(:,:) 
     real(r8), intent(in) :: qh2o(:,:) 
     real(r8), intent(in) :: cwat(:,:)          ! cloud liquid water content (kg/kg)
@@ -2408,9 +2418,9 @@ do_lphase2_conditional: &
     
     integer :: n, m
     integer :: i,k
-    integer :: nstep
+    integer :: nstep, jso4
 
-    real(r8) :: del_h2so4_aeruptk(ncol,pver)
+    real(r8) :: del_h2so4_aeruptk(ncol,pver,nso4)
 
     real(r8), pointer :: dgnum(:,:,:), dgnumwet(:,:,:), wetdens(:,:,:)
     real(r8), pointer :: pblh(:)                    ! pbl height (m)
@@ -2527,11 +2537,13 @@ do_lphase2_conditional: &
     ! do gas-aerosol exchange, nucleation, and coagulation using old routines
 
        ! do gas-aerosol exchange (h2so4, msa, nh3 condensation)
-       if (ndx_h2so4 > 0) then
-          del_h2so4_aeruptk(1:ncol,:) = vmr(1:ncol,:,ndx_h2so4)
+    do jso4=1,nso4
+       if (ndx_h2so4(jso4) > 0) then
+          del_h2so4_aeruptk(1:ncol,:,jso4) = vmr(1:ncol,:,ndx_h2so4(jso4))
        else
-          del_h2so4_aeruptk(:,:) = 0.0_r8
+          del_h2so4_aeruptk(:,:,jso4) = 0.0_r8
        endif
+    end do
 
        call t_startf('modal_gas-aer_exchng')
 
@@ -2543,9 +2555,11 @@ do_lphase2_conditional: &
             dvmrdt,             dvmrcwdt,     &
             dgnum,              dgnumwet     )
 
-       if (ndx_h2so4 > 0) then
-          del_h2so4_aeruptk(1:ncol,:) = vmr(1:ncol,:,ndx_h2so4) - del_h2so4_aeruptk(1:ncol,:)
+    do jso4=1,nso4
+       if (ndx_h2so4(jso4) > 0) then
+          del_h2so4_aeruptk(1:ncol,:,jso4) = vmr(1:ncol,:,ndx_h2so4(jso4)) - del_h2so4_aeruptk(1:ncol,:,jso4)
        endif
+    end do
 
        call t_stopf('modal_gas-aer_exchng')
 

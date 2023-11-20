@@ -7,7 +7,7 @@ module cldaero_mod
 
   use shr_kind_mod, only : r8 => shr_kind_r8
   use ppgrid,       only : pcols, pver
-
+  use modal_aero_data, only : nso4
   implicit none
   private
 
@@ -17,7 +17,7 @@ module cldaero_mod
   public :: cldaero_deallocate
 
   type cldaero_conc_t
-     real(r8), pointer :: so4c(:,:)
+     real(r8), pointer :: so4c(:,:,:)
      real(r8), pointer :: nh4c(:,:)
      real(r8), pointer :: no3c(:,:)
      real(r8), pointer :: xlwc(:,:)
@@ -32,12 +32,12 @@ contains
     type(cldaero_conc_t), pointer:: cldconc
 
     allocate( cldconc )
-    allocate( cldconc%so4c(pcols,pver) )
+    allocate( cldconc%so4c(pcols,pver,nso4) )
     allocate( cldconc%nh4c(pcols,pver) )
     allocate( cldconc%no3c(pcols,pver) )
     allocate( cldconc%xlwc(pcols,pver) )
 
-    cldconc%so4c(:,:) = 0._r8
+    cldconc%so4c(:,:,:) = 0._r8
     cldconc%nh4c(:,:) = 0._r8
     cldconc%no3c(:,:) = 0._r8
     cldconc%xlwc(:,:) = 0._r8

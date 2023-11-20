@@ -10,7 +10,20 @@
       implicit none
       save
 
-     integer, parameter ::  maxd_aspectype = 14
+#ifdef USE_CLDERA_TAGGED_TRACERS
+      integer, parameter, public :: nbc = NBC   ! number of differently tagged black-carbon species
+      integer, parameter, public :: npoa = NPOA   ! number of differently tagged primary-organic   species
+      integer, parameter, public :: nsoa = NSOA   ! number of differently tagged secondary-organic species
+      integer, parameter, public :: nsoag = NSOA   ! number of differently tagged secondary-organic species
+      integer, parameter, public :: nso4 = NSO4
+#else
+      integer, parameter, public :: nbc = 1
+      integer, parameter, public :: npoa = 1
+      integer, parameter, public :: nsoa = 1
+      integer, parameter, public :: nsoag = 1
+      integer, parameter, public :: nso4 = 1
+#endif
+
     ! aerosol mode definitions
     !
 #if ( defined MODAL_AERO_7MODE )
@@ -23,17 +36,16 @@
     integer, parameter :: ntot_amode = 3
 #endif
 
+      integer, parameter :: maxd_aspectype = NSO4 + NSOA + NPOA + NBC + 3 + 2
+!maxd_aspectype crashes initialization when trying to run with single tagged species.
+!+2 for ammonium and nitrate to account for the specname_amode and specmw_amode arrays below. 
+      integer, parameter :: nspec_max      = NSO4 + NSOA + NPOA + NBC + 3
+
 #if (( defined MODAL_AERO_3MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM )) && ( defined RAIN_EVAP_TO_COARSE_AERO )
     logical, parameter :: rain_evap_to_coarse_aero = .true.
 #else
     logical, parameter :: rain_evap_to_coarse_aero = .false.
 #endif
-
-    ! carbonaceous species counters - will eventually be set by configuration options
-    integer, parameter :: nbc   = 1  ! number of differently tagged black-carbon      aerosol species
-    integer, parameter :: npoa  = 1  ! number of differently tagged primary-organic   aerosol species
-    integer, parameter :: nsoa  = 1  ! number of differently tagged secondary-organic aerosol species
-    integer, parameter :: nsoag = 1  ! number of differently tagged secondary-organic gas     species
 
     !
     ! definitions for aerosol chemical components
@@ -120,21 +132,21 @@
     integer, parameter :: nspec_amode(ntot_amode)           = (/ 9, 7, 5, 3, 3, 3, 3, 3, 3/)  ! SS
 #elif ( defined MODAL_AERO_4MODE_MOM )
 #if (defined RAIN_EVAP_TO_COARSE_AERO)
-    integer, parameter :: nspec_amode(ntot_amode)           = (/ 7, 4, 7, 3 /)
+    integer, parameter :: nspec_amode(ntot_amode)           = (/ NSO4+NSOA+NPOA+NBC+3, NSO4+NSOA+2, NSO4+NBC+NPOA+NSOA+3, NBC+NPOA+1 /)
 #else
-    integer, parameter :: nspec_amode(ntot_amode)           = (/ 7, 4, 3, 3 /)
+    integer, parameter :: nspec_amode(ntot_amode)           = (/ NSO4+NSOA+NPOA+NBC+3, NSO4+NSOA+2, NSO4+2, NBC+NPOA+1 /)
 #endif
 #elif ( defined MODAL_AERO_4MODE )
 #if (defined RAIN_EVAP_TO_COARSE_AERO)
-    integer, parameter :: nspec_amode(ntot_amode)           = (/ 6, 3, 6, 2 /)
+    integer, parameter :: nspec_amode(ntot_amode)           = (/ NSO4+NSOA+NPOA+NBC+2, NSO4+NSOA+1, NSO4+NBC+NPOA+NSOA+2, NBC+NPOA /)
 #else
-    integer, parameter :: nspec_amode(ntot_amode)           = (/ 6, 3, 3, 2 /)
+    integer, parameter :: nspec_amode(ntot_amode)           = (/ NSO4+NSOA+NPOA+NBC+2, NSO4+NSOA+1, NSO4+2, NBC+NPOA /)
 #endif
 #elif ( defined MODAL_AERO_3MODE )
 #if (defined RAIN_EVAP_TO_COARSE_AERO)
-    integer, parameter :: nspec_amode(ntot_amode)           = (/ 6, 3, 6 /)
+    integer, parameter :: nspec_amode(ntot_amode)           = (/ NSO4+NSOA+NPOA+NBC+2, NSO4+NSOA+1, NSO4+NBC+NPOA+NSOA+2 /)
 #else
-    integer, parameter :: nspec_amode(ntot_amode)           = (/ 6, 3, 3 /)
+    integer, parameter :: nspec_amode(ntot_amode)           = (/ NSO4+NSOA+NPOA+NBC+2, NSO4+NSOA+1, NSO4+2 /)
 #endif
 #endif
 
@@ -238,9 +250,12 @@
           modeptr_coardust,  modeptr_coarseas
 
       integer &
-          lptr2_soa_a_amode(ntot_amode,nsoa), &
-          lptr2_soa_g_amode(nsoag)
-
+          lptr2_bc_a_amode(ntot_amode,nbc)  , lptr2_bc_cw_amode(ntot_amode,nbc), &
+          lptr2_pom_a_amode(ntot_amode,npoa), lptr2_pom_cw_amode(ntot_amode,npoa), &
+          lptr2_soa_a_amode(ntot_amode,nsoa), lptr2_soa_cw_amode(ntot_amode,nsoa), &
+          lptr2_soa_g_amode(nsoag), &
+          lptr2_so4_a_amode(ntot_amode,nso4), lptr2_so4_cw_amode(ntot_amode,nso4), &
+          lptr2_so4_g_amode(nso4)
       real(r8) ::             &
           specmw_so4_amode,     specdens_so4_amode,       &
           specmw_nh4_amode,     specdens_nh4_amode,       &
@@ -273,6 +288,9 @@
       real(r8) :: qneg3_worst_thresh_amode(pcnst)
 
       integer, private :: qqcw(pcnst)=-1 ! Remaps modal_aero indices into pbuf
+
+      character(len=20) :: so4SpecName(nso4), soaSpecName(nsoa), poaSpecName(npoa), bcSpecName(nbc)
+      character(len=20) :: so4gSpecName(nso4), soagSpecName(nsoa)
 
       contains
 
