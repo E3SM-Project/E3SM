@@ -30,6 +30,10 @@ public:
   // number of horizontal columns and vertical levels
   int ncol_, nlev_;
 
+  // number of aerosol modes
+  int num_modes_;
+
+
   // physics grid for column information
   std::shared_ptr<const AbstractGrid> grid_;
 }; // MAMAci

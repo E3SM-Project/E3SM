@@ -37,8 +37,8 @@ void MAMAci::set_grids(const std::shared_ptr<const GridsManager> grids_manager) 
   FieldLayout scalar3d_layout_int { {COL,ILEV}, {ncol_, nlev_+1} }; //interfaces
 
   using namespace ekat::units;
-  auto q_unit = kg/kg; // units of mass mixing ratios of tracers
-  auto n_unit = 1/kg; // units of number mixing ratios of tracers
+  const auto q_unit = kg/kg; // units of mass mixing ratios of tracers
+  const auto n_unit = 1/kg; // units of number mixing ratios of tracers
 
   add_field<Required>("qc",             scalar3d_layout_mid, q_unit, grid_name, "tracers"); // cloud liquid mass mixing ratio [kg/kg]
   add_field<Required>("qi",             scalar3d_layout_mid, q_unit, grid_name, "tracers"); // cloud ice mass mixing ratio [kg/kg]
@@ -68,6 +68,23 @@ void MAMAci::set_grids(const std::shared_ptr<const GridsManager> grids_manager) 
       }
     }
   }
+
+  //input for aci codes that existed in PBUF in EAM
+  //These outputs should come from the cloud macrophysics process (e.g., SHOC)
+  const auto m2 = m*m;
+  const auto s2 = s*s;
+  //FIXME BALLI: w_sec,  is at OLD time step; strat_cld_frac and liq_strat_cld_frac may also need OLD time
+  add_field<Required>("w_sec",              scalar3d_layout_mid, m2/s2,  grid_name); // Vertical velocity variance (wp2) at midpoints
+
+  auto nondim = Units::nondimensional();
+  add_field<Required>("strat_cld_frac",     scalar3d_layout_mid, nondim, grid_name); // Stratiform cloud fraction at midpoints
+  add_field<Required>("liq_strat_cld_frac", scalar3d_layout_mid, nondim, grid_name); // Liquid stratiform cloud fraction  at midpoints
+  add_field<Required>("kvh",                scalar3d_layout_mid, m2/s, grid_name); // Eddy diffusivity for heat
+  
+  // Layout for 4D (2d horiz X 1d vertical x number of modes) variables
+  FieldLayout scalar4d_layout_mid{ {COL, LEV, NUM_MODES}, {ncol_, nlev_, num_modes_} }; // mid points
+  add_field<Required>("dgnum", scalar4d_layout_mid, m, grid_name); // dry diameter of aerosols
+  
 
   /*NOTE on other inputs for the aci process:
   1. reciprocal of pseudo_density (rpdel): computed from the pseudo_density
