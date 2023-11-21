@@ -4,6 +4,7 @@
 #include <share/property_checks/field_within_interval_check.hpp>
 
 #include "scream_config.h" // for SCREAM_CIME_BUILD
+#include "impl/compute_column_density.cpp"
 #include "impl/compute_water_content.cpp"
 #include "impl/gas_phase_chemistry.cpp"
 
@@ -280,8 +281,8 @@ void MAMMicrophysics::run_impl(const double dt) {
   // NOTE: nothing depends on simulation time (yet), so we can just use zero for now
   double t = 0.0;
 
-  // here's where we store photolysis rates
-  view_2d photo_rates("photo", nlev_, 1);
+  // here's where we store photolysis rates for all columns
+  view_2d photo_rates("photo", nlev_, mam4::mo_photo::phtcnt);
 
   // loop over atmosphere columns and compute aerosol microphyscs
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const ThreadTeam& team) {
@@ -302,6 +303,10 @@ void MAMMicrophysics::run_impl(const double dt) {
     // set up diagnostics
     mam4::Diagnostics diags(nlev_);
 
+    // calculate column densities
+    view_2d col_dens; // FIXME
+    impl::compute_column_density(team, atm, col_dens);
+
     // set up photolysis work arrays for this column.
     mam4::mo_photo::PhotoTableWorkArrays photo_work_arrays;
     // FIXME: set views here
@@ -312,11 +317,14 @@ void MAMMicrophysics::run_impl(const double dt) {
     Real zenith_angle = 0.0; // FIXME: need to get this from EAMxx [radians]
     Real surf_albedo = 0.0; // FIXME: surface albedo
     Real esfact = 0.0; // FIXME: earth-sun distance factor
-    mam4::ColumnView col_dens; // FIXME: column density
     mam4::ColumnView lwc; // FIXME: liquid water cloud content
+    /*
+    FIXME: why is col_dens considered a ColumnView in mam4xx if we need it to
+    FIXME: be a view_2d here (because each vertical level has nabscol values)?
     mam4::mo_photo::table_photo(photo_rates, atm.pressure, atm.hydrostatic_dp,
       atm.temperature, col_dens, zenith_angle, surf_albedo, lwc,
       atm.cloud_fraction, esfact, photo_table_, photo_work_arrays);
+     */
 
     // compute aerosol microphysics on each vertical level within this column
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_), [&](const int k) {
@@ -363,7 +371,16 @@ void MAMMicrophysics::run_impl(const double dt) {
       //---------------------
       // Gas Phase Chemistry
       //---------------------
-      impl::gas_phase_chemistry(zm, zi, phis, temp, pmid, pdel, dt, q);
+      Real photo_rates_k[mam4::mo_photo::phtcnt];
+      for (int i = 0; i < mam4::mo_photo::phtcnt; ++i) {
+        photo_rates_k[i] = photo_rates(k, i);
+      }
+      Real col_dens_k[mam4::gas_chemistry::nabscol];
+      for (int i = 0; i < mam4::gas_chemistry::nabscol; ++i) {
+        col_dens_k[i] = col_dens(k, i);
+      }
+      impl::gas_phase_chemistry(zm, zi, phis, temp, pmid, pdel, dt,
+                                col_dens_k, photo_rates_k, q);
 
       //----------------------
       // Aerosol microphysics

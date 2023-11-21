@@ -8,19 +8,27 @@ using mam4::utils::min_max_bound;
 // atmospheric column
 KOKKOS_INLINE_FUNCTION
 void gas_phase_chemistry(Real zm, Real zi, Real phis, Real temp, Real pmid, Real pdel, Real dt,
-                         const view_1d& photo_rates, // per-column photolysis rates
+                         Real col_dens[mam4::gas_chemistry::nabscol],
+                         Real photo_rates[mam4::mo_photo::phtcnt],    // per-column photolysis rates
                          Real q[mam4::gas_chemistry::gas_pcnst]) {
   constexpr Real rga = 1.0/haero::Constants::gravity;
   constexpr Real mwdry = 1.0/haero::Constants::molec_weight_dry_air;
   constexpr Real m2km = 0.01; // converts m -> km
 
   // FIXME: The following things are chemical mechanism dependent! See mam4xx/src/mam4xx/gas_chem_mechanism.hpp)
-  constexpr int gas_pcnst = mam4::gas_chemistry::gas_pcnst;
-  constexpr int rxntot = 7;  // number of chemical reactions
-  constexpr int extcnt = 9;  // number of species with external forcing
-  constexpr int nfs = 8;     // number of "fixed species"
-  constexpr int nabscol = 2; // number of "absorbing column densities"
+  constexpr int gas_pcnst = mam4::gas_chemistry::gas_pcnst; // number of gas phase species
+  constexpr int rxntot = mam4::gas_chemistry::rxntot;       // number of chemical reactions
+  constexpr int extcnt = mam4::gas_chemistry::extcnt;       // number of species with external forcing
+  constexpr int nfs = mam4::gas_chemistry::nfs;             // number of "fixed species"
+  constexpr int nabscol = mam4::gas_chemistry::nabscol;     // number of "absorbing column densities"
   constexpr int indexm = 0;  // index of total atm density in invariants array
+
+  constexpr int phtcnt = mam4::mo_photo::phtcnt; // number of photolysis reactions
+
+  constexpr int itermax = mam4::gas_chemistry::itermax;
+  constexpr int clscnt4 = mam4::gas_chemistry::clscnt4;
+  int permute_4[gas_pcnst]; // = mam4::gas_chemistry::permute_4; FIXME
+  int clsmap_4[gas_pcnst];  // = mam4::gas_chemistry::clsmap_4; FIXME
 
   constexpr int ndx_h2so4 = 0; // FIXME: get_spc_ndx('H2SO4')
   constexpr int o3_ndx = 0;    // FIXME: get_spc_ndx('O3')
@@ -55,15 +63,9 @@ void gas_phase_chemistry(Real zm, Real zi, Real phis, Real temp, Real pmid, Real
   Real qh2o = q[0];
   Real h2ovmr = mam4::conversions::vmr_from_mmr(qh2o, mbar);
 
-  // ... set the "invariants"
+  // ... compute the column's invariants
   Real invariants[nfs];
   // setinv(invariants, temp, h2ovmr, vmr, pmid); FIXME
-
-  // ... set the column densities at the upper boundary
-  // FIXME: This is level-independent, but we can probably get away with
-  // FIXME: calling it at all levels
-  Real col_delta[nabscol];
-  // set_ub_col(col_delta, vmr, invariants, pdel); FIXME
 
   // ... set rates for "tabular" and user specified reactions
   Real reaction_rates[rxntot];
@@ -79,10 +81,6 @@ void gas_phase_chemistry(Real zm, Real zi, Real phis, Real temp, Real pmid, Real
   //===================================
   // Photolysis rates at time = t(n+1)
   //===================================
-
-  // ... set the column density
-  Real col_dens[nabscol];
-  //setcol(col_delta, col_dens); // FIXME
 
   // ... compute the extraneous frcing at time = t(n+1)
   Real extfrc[extcnt];
@@ -109,19 +107,21 @@ void gas_phase_chemistry(Real zm, Real zi, Real phis, Real temp, Real pmid, Real
   // Class solution algorithms
   //===========================
 
-  // copy photolysis rates to reaction_rates
+  // copy photolysis rates into reaction_rates (assumes photolysis rates come first)
+  for (int i = 0; i < phtcnt; ++i) {
+    reaction_rates[i] = photo_rates[i];
+  }
 
   // ... solve for "Implicit" species
-  bool factor[mam4::gas_chemistry::itermax];
-  for (int i = 0; i < mam4::gas_chemistry::itermax; ++i) {
+  bool factor[itermax];
+  for (int i = 0; i < itermax; ++i) {
     factor[i] = true;
   }
-  Real epsilon[mam4::gas_chemistry::clscnt4];
-  imp_slv_inti(epsilon);
-  Real prod_out[mam4::gas_chemistry::clscnt4], loss_out[mam4::gas_chemistry::clscnt4];
+  Real epsilon[clscnt4];
+  mam4::gas_chemistry::imp_slv_inti(epsilon);
+  Real prod_out[clscnt4], loss_out[clscnt4];
   mam4::gas_chemistry::imp_sol(vmr, reaction_rates, het_rates, extfrc, dt,
-    mam4::gas_chemistry::permute_4, mam4::gas_chemistry::clsmap_4, factor,
-    epsilon, prod_out, loss_out);
+    permute_4, clsmap_4, factor, epsilon, prod_out, loss_out);
 
   /* I don't think we need to worry about this, do we?
   if (convproc_do_aer) {
