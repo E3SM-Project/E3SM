@@ -1913,6 +1913,7 @@
       <grid name="rof">null</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
+      <grid name="iac">0.9x1.25</grid>
       <mask>oEC60to30v3</mask>
     </model_grid>
 
