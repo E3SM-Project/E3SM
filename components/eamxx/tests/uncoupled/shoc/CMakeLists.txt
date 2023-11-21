@@ -1,11 +1,11 @@
 include (ScreamUtils)
 
 # Create the test
-SET (TEST_LABELS "shoc;physics;driver")
-set (NEED_LIBS shoc scream_control scream_share diagnostics)
-CreateUnitTest(shoc_standalone "shoc_standalone.cpp" "${NEED_LIBS}" LABELS ${TEST_LABELS}
+CreateADUnitTest(shoc_standalone
+  LABELS shoc physics
+  LIBS shoc
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
-  PROPERTIES FIXTURES_SETUP shoc_generate_output_nc_files
+  FIXTURES_SETUP_INDIVIDUAL shoc_generate_output_nc_files
 )
 
 # Set AD configurable options
@@ -23,7 +23,8 @@ GetInputFile(cam/topo/${EAMxx_tests_TOPO_FILE})
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/input.yaml)
-configure_file(shoc_standalone_output.yaml shoc_standalone_output.yaml)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/output.yaml
+               ${CMAKE_CURRENT_BINARY_DIR}/output.yaml)
 
 ## Finally compare all MPI rank output files against the single rank output as a baseline, using CPRNC
 ## Only if running with 2+ ranks configurations
@@ -31,7 +32,8 @@ configure_file(shoc_standalone_output.yaml shoc_standalone_output.yaml)
 if (TEST_RANK_END GREATER TEST_RANK_START)
   include (BuildCprnc)
   BuildCprnc()
-  SET (BASE_TEST_NAME "shoc")
+  set (BASE_TEST_NAME "shoc")
+  set (FIXTURES_BASE_NAME shoc_generate_output_nc_files)
   math (EXPR CMP_RANK_START ${TEST_RANK_START}+1)
   foreach (MPI_RANKS RANGE ${CMP_RANK_START} ${TEST_RANK_END})
 
@@ -42,9 +44,9 @@ if (TEST_RANK_END GREATER TEST_RANK_START)
     add_test (NAME ${TEST_NAME}
               COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}
               WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-    set_tests_properties(${TEST_NAME} PROPERTIES LABELS "${TEST_LABELS}"
-              RESOURCE_LOCK ${BASE_TEST_NAME}
-              FIXTURES_REQUIRED shoc_generate_output_nc_files)
+    set_tests_properties(${TEST_NAME} PROPERTIES
+        LABELS "shoc;physics"
+        FIXTURES_REQUIRED "${FIXTURES_BASE_NAME}_np${MPI_RANKS}_omp1;${FIXTURES_BASE_NAME}_np1_omp1")
   endforeach()
 endif()
 
@@ -59,8 +61,8 @@ foreach (NRANKS RANGE ${TEST_RANK_START} ${TEST_RANK_END})
     -t shoc_T_mid_tend shoc_qv_tend shoc_tke_tend shoc_horiz_winds_tend shoc_sgs_buoy_flux_tend shoc_eddy_diff_mom_tend shoc_qc_tend shoc_cldfrac_liq_tend
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
   set_tests_properties (${tname} PROPERTIES
-    FIXTURES_REQUIRED shoc_generate_output_nc_files
-    LABELS "${TEST_LABELS}")
+    LABELS "shoc;physics"
+    FIXTURES_REQUIRED shoc_generate_output_nc_files_np${NRANKS}_omp1)
 endforeach()
 
 # Check that the content of sliced vars U/V and corresponding surf_mom_flux
@@ -80,7 +82,8 @@ foreach (RANK RANGE ${TEST_RANK_START} ${TEST_RANK_END})
                              "surf_mom_flux(:,:,2)=surf_mom_flux_V(:,:)"
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
   set_tests_properties (check_surf_mom_flux_slices_np${RANK} PROPERTIES
-            FIXTURES_REQUIRED shoc_generate_output_nc_files)
+      LABELS "shoc;physics"
+      FIXTURES_REQUIRED shoc_generate_output_nc_files_np${RANK}_omp1)
 endforeach()
 
 ################################
@@ -97,7 +100,7 @@ add_test (NAME check_U_V_slices_fail_diff
           WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 set_tests_properties (check_U_V_slices_fail_diff PROPERTIES
           WILL_FAIL TRUE
-          FIXTURES_REQUIRED shoc_generate_output_nc_files)
+          FIXTURES_REQUIRED shoc_generate_output_nc_files_np1_omp1)
 
 # Wrong layout
 add_test (NAME check_U_V_slices_fail_layout
@@ -106,7 +109,7 @@ add_test (NAME check_U_V_slices_fail_layout
           WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 set_tests_properties (check_U_V_slices_fail_layout PROPERTIES
           WILL_FAIL TRUE
-          FIXTURES_REQUIRED shoc_generate_output_nc_files)
+          FIXTURES_REQUIRED shoc_generate_output_nc_files_np1_omp1)
 
 # Missing variable(s)
 add_test (NAME check_U_V_slices_fail_missing
@@ -115,4 +118,4 @@ add_test (NAME check_U_V_slices_fail_missing
           WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 set_tests_properties (check_U_V_slices_fail_missing PROPERTIES
           WILL_FAIL TRUE
-          FIXTURES_REQUIRED shoc_generate_output_nc_files)
+          FIXTURES_REQUIRED shoc_generate_output_nc_files_np1_omp1)

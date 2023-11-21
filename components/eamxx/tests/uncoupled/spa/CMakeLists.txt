@@ -1,13 +1,11 @@
 include (ScreamUtils)
 
 # Create the test
-SET (TEST_LABELS "spa;physics;driver")
-set (NEED_LIBS spa scream_control scream_share diagnostics)
-
-# Test atmosphere processes
-CreateUnitTest(spa_stand_alone "spa_stand_alone.cpp" "${NEED_LIBS}" LABELS ${TEST_LABELS}
+CreateADUnitTest(spa_stand_alone
+  LABELS spa physics
+  LIBS spa
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
-  PROPERTIES FIXTURES_SETUP spa_generate_output_nc_files
+  FIXTURES_SETUP_INDIVIDUAL spa_generate_output_nc_files
 )
 
 # Set AD configurable options
@@ -18,8 +16,8 @@ set (RUN_T0 2021-10-12-45000)
 ## Copy (and configure) yaml files needed by tests
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/input.yaml)
-CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/spa_standalone_output.yaml
-               ${CMAKE_CURRENT_BINARY_DIR}/spa_standalone_output.yaml)
+CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/output.yaml
+               ${CMAKE_CURRENT_BINARY_DIR}/output.yaml)
 
 # Ensure test input files are present in the data dir
 set (TEST_INPUT_FILES
@@ -47,8 +45,9 @@ if (TEST_RANK_END GREATER TEST_RANK_START)
     add_test (NAME ${TEST_NAME}
               COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}
               WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-    set_tests_properties(${TEST_NAME} PROPERTIES LABELS "${TEST_LABELS}"
-              RESOURCE_LOCK ${BASE_TEST_NAME}
-              FIXTURES_REQUIRED spa_generate_output_nc_files)
+    set_tests_properties(${TEST_NAME} PROPERTIES
+        LABELS spa physics
+        FIXTURES_REQUIRED spa_generate_output_nc_files_np${MPI_RANKS}_omp1
+                          spa_generate_output_nc_files_np1_omp1)
   endforeach()
 endif()

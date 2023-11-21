@@ -5,12 +5,11 @@ include (ScreamUtils)
 CreateDynamicsLib("theta-l_kokkos"  4   72   10)
 
 # Create the test
-set (TEST_LABELS "dynamics;driver;tms;shoc;cld;p3;rrtmgp;physics")
-set (NEED_LIBS cld_fraction nudging tms shoc spa p3 scream_rrtmgp ${dynLibName} scream_control scream_share physics_share diagnostics)
-CreateUnitTest(homme_shoc_cld_spa_p3_rrtmgp_pg2 "homme_shoc_cld_spa_p3_rrtmgp_pg2.cpp" "${NEED_LIBS}"
-  LABELS ${TEST_LABELS}
+CreateADUnitTest(homme_shoc_cld_spa_p3_rrtmgp_pg2
+  LABELS dynamics tms shoc cld p3 rrtmgp physics
+  LIBS cld_fraction nudging tms shoc spa p3 scream_rrtmgp ${dynLibName} diagnostics
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
-  PROPERTIES FIXTURES_SETUP homme_shoc_cld_spa_p3_rrtmgp_pg2_generate_output_nc_files
+  FIXTURES_SETUP_INDIVIDUAL homme_shoc_cld_spa_p3_rrtmgp_pg2_generate_output_nc_files
 )
 
 # Set AD configurable options
@@ -25,8 +24,8 @@ math (EXPR MAC_MIC_SUBCYCLES "(${ATM_TIME_STEP} + ${SHOC_MAX_DT} - 1) / ${SHOC_M
 ## Copy (and configure) yaml files needed by tests
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/input.yaml)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/homme_shoc_cld_spa_p3_rrtmgp_pg2_output.yaml
-               ${CMAKE_CURRENT_BINARY_DIR}/homme_shoc_cld_spa_p3_rrtmgp_pg2_output.yaml)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/output.yaml
+               ${CMAKE_CURRENT_BINARY_DIR}/output.yaml)
 
 # Set homme's test options, so that we can configure the namelist correctly
 # Discretization/algorithm settings
@@ -92,8 +91,9 @@ if (TEST_RANK_END GREATER TEST_RANK_START)
     add_test (NAME ${TEST_NAME}
               COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}
               WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-    set_tests_properties(${TEST_NAME} PROPERTIES LABELS "${TEST_LABELS}"
-              RESOURCE_LOCK ${BASE_TEST_NAME}
-              FIXTURES_REQUIRED homme_shoc_cld_spa_p3_rrtmgp_pg2_generate_output_nc_files)
+    set (FIXTURE_BASE_NAME homme_shoc_cld_spa_p3_rrtmgp_pg2_generate_output_nc_files)
+    set_tests_properties(${TEST_NAME} PROPERTIES
+        LABELS dynamics tms shoc cld p3 rrtmgp physics
+        FIXTURES_REQUIRED "${FIXTURE_BASE_NAME}_np${MPI_RANKS}_omp1;${FIXTURE_BASE_NAME}_np1_omp1")
   endforeach()
 endif()

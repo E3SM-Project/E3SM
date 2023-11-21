@@ -5,13 +5,11 @@ include (ScreamUtils)
 CreateDynamicsLib("theta-l_kokkos"  4   72   10)
 
 # Create the test
-set (TEST_LABELS "dynamics;driver")
-set (NEED_LIBS ${dynLibName} scream_control scream_share diagnostics)
-
-CreateUnitTest(homme_standalone "homme_standalone.cpp" "${NEED_LIBS}"
-  LABELS ${TEST_LABELS}
+CreateADUnitTest(homme_standalone
+  LABELS dynamics
+  LIBS ${dynLibName}
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
-  PROPERTIES FIXTURES_SETUP homme_generate_output_nc_files
+  FIXTURES_SETUP_INDIVIDUAL homme_generate_output_nc_files
 )
 
 # Set AD configurable options
@@ -21,8 +19,8 @@ set (RUN_T0 2021-10-12-45000)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/input.yaml)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/homme_standalone_output.yaml
-               ${CMAKE_CURRENT_BINARY_DIR}/homme_standalone_output.yaml)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/output.yaml
+               ${CMAKE_CURRENT_BINARY_DIR}/output.yaml)
 
 # Set homme's test options, so that we can configure the namelist correctly
 
@@ -71,6 +69,7 @@ if (TEST_RANK_END GREATER TEST_RANK_START)
   include (BuildCprnc)
   BuildCprnc()
   set (BASE_TEST_NAME "homme")
+  set (FIXTURES_BASE_NAME homme_generate_output_nc_files)
   math (EXPR CMP_RANK_START ${TEST_RANK_START}+1)
   foreach (MPI_RANKS RANGE ${CMP_RANK_START} ${TEST_RANK_END})
 
@@ -80,8 +79,8 @@ if (TEST_RANK_END GREATER TEST_RANK_START)
     add_test (NAME ${TEST_NAME}
               COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}
               WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-    set_tests_properties(${TEST_NAME} PROPERTIES LABELS "${TEST_LABELS}"
-              RESOURCE_LOCK ${BASE_TEST_NAME}
-              FIXTURES_REQUIRED homme_generate_output_nc_files)
+    set_tests_properties(${TEST_NAME} PROPERTIES
+        LABELS dynamics
+        FIXTURES_REQUIRED "${FIXTURES_BASE_NAME}_np${MPI_RANKS}_omp1;${FIXTURES_BASE_NAME}_np1_omp1")
   endforeach()
 endif()
