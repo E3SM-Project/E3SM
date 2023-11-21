@@ -373,6 +373,17 @@ struct CaarFunctorImpl {
     profiling_pause();
   }
 
+#ifndef TESTER_NOMPI
+#define K1
+#define K2
+#define K3
+#define K4
+#define K5
+#define K6
+#define K7
+
+#else
+
 #define K1
 #undef K2
 #undef K3
@@ -380,6 +391,8 @@ struct CaarFunctorImpl {
 #undef K5
 #undef K6
 #undef K7
+#endif
+
 
   KOKKOS_INLINE_FUNCTION
   void operator()(const TagPreExchange&, const TeamMember &team, int& nerr) const {
@@ -532,15 +545,28 @@ struct CaarFunctorImpl {
       const int igp = idx / NP;
       const int jgp = idx % NP;
 
+//#define SUB
+#undef SUB
+
+#ifdef SUB
       auto u = Homme::subview(m_state.m_v,kv.ie,m_data.n0,0,igp,jgp);
       auto v = Homme::subview(m_state.m_v,kv.ie,m_data.n0,1,igp,jgp);
       auto dp3d = Homme::subview(m_state.m_dp3d,kv.ie,m_data.n0,igp,jgp);
       auto udp = Homme::subview(m_buffers.vdp,kv.team_idx,0,igp,jgp);
       auto vdp = Homme::subview(m_buffers.vdp,kv.team_idx,1,igp,jgp);
+#endif
+
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team, NUM_LEV),
                            [&] (const int& ilev) {
+#ifdef SUB
         udp(ilev) = u(ilev)*dp3d(ilev);
         vdp(ilev) = v(ilev)*dp3d(ilev);
+#else
+        m_buffers.vdp(kv.team_idx,0,igp,jgp,ilev) = m_state.m_dp3d(kv.ie,m_data.n0,igp,jgp,ilev)*
+                       m_state.m_v(kv.ie,m_data.n0,0,igp,jgp,ilev);
+        m_buffers.vdp(kv.team_idx,1,igp,jgp,ilev) = m_state.m_dp3d(kv.ie,m_data.n0,igp,jgp,ilev)*
+                       m_state.m_v(kv.ie,m_data.n0,1,igp,jgp,ilev);
+#endif
       });
     });
     kv.team_barrier();
