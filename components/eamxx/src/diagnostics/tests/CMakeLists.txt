@@ -2,7 +2,7 @@
 
 function (createDiagTest test_name test_srcs)
   CreateUnitTest(${test_name} "${test_srcs}"
-    LIBS scream_share diagnostics physics_share
+    LIBS diagnostics physics_share
     LABELS diagnostics)
 endfunction ()
 

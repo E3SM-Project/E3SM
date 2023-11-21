@@ -50,7 +50,7 @@ function(CreateUnitTestExec exec_name test_srcs)
 ###############################################################################
   # Call Ekat function, with a couple of extra params
   EkatCreateUnitTestExec("${exec_name}" "${test_srcs}" ${ARGN}
-    EXCLUDE_TEST_SESSION LIBS scream_test_support)
+    EXCLUDE_TEST_SESSION LIBS scream_share scream_test_support)
 endfunction(CreateUnitTestExec)
 
 ###############################################################################
