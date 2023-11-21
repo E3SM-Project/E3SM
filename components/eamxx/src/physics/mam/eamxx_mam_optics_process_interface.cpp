@@ -179,22 +179,6 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   Kokkos::deep_copy(specrefndxlw_, 1.0);
 
 
-  for (int d1 = 0; d1 < ntot_amode; ++d1)
-  for (int d5 = 0; d5 < nlwbands; ++d5) {
-        absplw_[d1][d5] =
-            mam_coupling::view_3d("absplw_", mam4::modal_aer_opt::coef_number,
-                                             mam4::modal_aer_opt::refindex_real,
-                                             mam4::modal_aer_opt::refindex_im);
-
-  }
-
-  for (int d1 = 0; d1 < ntot_amode; ++d1)
-  for (int d3 = 0; d3 < nlwbands; ++d3) {
-        refrtablw_[d1][d3] = mam_coupling::view_1d("refrtablw",
-        mam4::modal_aer_opt::refindex_real);
-        refitablw_[d1][d3] = mam_coupling::view_1d("refitablw",
-         mam4::modal_aer_opt::refindex_im);
-  } // d3
 
    for (int i = 0; i < nlwbands; ++i) {
     crefwlw_[i] = 1.0;
@@ -232,26 +216,6 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   specrefndxsw_ = mam_coupling::complex_view_2d("specrefndxlw_",nswbands, maxd_aspectype );
   Kokkos::deep_copy(specrefndxsw_, 1.0);
 
-  for (int d1 = 0; d1 < ntot_amode; ++d1)
-  {
-    for (int d3 = 0; d3 < nswbands; ++d3) {
-    refrtabsw_[d1][d3] = mam_coupling::view_1d ("refrtabsw", mam4::modal_aer_opt::refindex_real);
-    refitabsw_[d1][d3] = mam_coupling::view_1d("refitabsw", mam4::modal_aer_opt::refindex_im);
-    } // d3
-  } // d1
-
-  // allocate memory for tables: abspsw,extpsw,asmpsw
-  for (int d1 = 0; d1 < ntot_amode; ++d1)
-      for (int d5 = 0; d5 < nswbands; ++d5) {
-        abspsw_[d1][d5] =
-            mam_coupling::view_3d("abspsw", mam4::modal_aer_opt::coef_number, mam4::modal_aer_opt::refindex_real, mam4::modal_aer_opt::refindex_im);
-        extpsw_[d1][d5] =
-            mam_coupling::view_3d("extpsw", mam4::modal_aer_opt::coef_number, mam4::modal_aer_opt::refindex_real, mam4::modal_aer_opt::refindex_im);
-        asmpsw_[d1][d5] =
-            mam_coupling::view_3d("asmpsw", mam4::modal_aer_opt::coef_number, mam4::modal_aer_opt::refindex_real, mam4::modal_aer_opt::refindex_im);
-  } // d5
-
-
    // work array
    air_density_ = mam_coupling::view_2d("air_density", ncol_,  nlev_);
    ext_cmip6_sw_inv_m_ = mam_coupling::view_3d ("ext_cmip6_sw_inv_m", ncol_, nswbands, nlev_);
@@ -270,314 +234,149 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   constexpr int coef_number = mam4::modal_aer_opt::coef_number;
 
   using view_1d_host = typename KT::view_1d<Real>::HostMirror;
-  using view_2d_host = typename KT::view_2d<Real>::HostMirror;
-  using view_5d_host = Kokkos::View<Real *****>::HostMirror;
-
-  auto refindex_real_lw_host = view_2d_host("refrtablw_real_host", nlwbands, refindex_real);
-  auto refindex_im_lw_host = view_2d_host("refrtablw_im_host", nlwbands, refindex_im);
-
-  auto refindex_real_sw_host = view_2d_host("refrtabsw_real_host", nswbands, refindex_real);
-  auto refindex_im_sw_host = view_2d_host("refrtabsw_im_host", nswbands, refindex_im);
-
-  // absplw(lw_band, mode, refindex_im, refindex_real, coef_number)
-  auto absplw_host = view_5d_host("absplw_host", nlwbands, 1,
-   refindex_im, refindex_real,  coef_number);
-
-  auto asmpsw_host = view_5d_host("asmpsw_host", nswbands, 1, refindex_im, refindex_real, coef_number);
-  auto extpsw_host = view_5d_host("extpsw_host", nswbands, 1, refindex_im, refindex_real, coef_number);
-  auto abspsw_host = view_5d_host("abspsw_host", nswbands, 1, refindex_im, refindex_real, coef_number);
-
-     // Set up input structure to read data from file.
+  // Set up input structure to read data from file.
   using strvec_t = std::vector<std::string>;
 
-  FieldLayout scalar_refindex_real_lw_layout { {LWBAND, NREFINDEX_REAL},
-                                     {nlwbands,
-                                      refindex_real} };
+  mam_coupling::AerosolOpticsDeviceData aerosol_optics_device_data;
+// FIXME: move to a function
+for (int d1 = 0; d1 < ntot_amode; ++d1)
+{
+  for (int d5 = 0; d5 < nlwbands; ++d5) {
+        absplw_[d1][d5] =
+            mam_coupling::view_3d("absplw_", coef_number,
+                                             refindex_real,
+                                             refindex_im);
+        // FIXME
+        aerosol_optics_device_data.absplw[d1][d5]=absplw_[d1][d5];
+  }
 
-  FieldLayout scalar_refindex_im_lw_layout { {LWBAND, NREFINDEX_IM},
-                                     {nlwbands,
-                                      refindex_im} };
+   for (int d3 = 0; d3 < nlwbands; ++d3) {
+        refrtablw_[d1][d3] = mam_coupling::view_1d("refrtablw",
+       refindex_real);
+        refitablw_[d1][d3] = mam_coupling::view_1d("refitablw",
+       refindex_im);
+         // FIXME
+         aerosol_optics_device_data.refrtablw[d1][d3]=refrtablw_[d1][d3];
+         aerosol_optics_device_data.refitablw[d1][d3]=refitablw_[d1][d3];
+  } // d3
 
+  for (int d3 = 0; d3 < nswbands; ++d3) {
+    refrtabsw_[d1][d3] = mam_coupling::view_1d ("refrtabsw", refindex_real);
+    refitabsw_[d1][d3] = mam_coupling::view_1d("refitabsw", refindex_im);
+    //FIXME
+    aerosol_optics_device_data.refrtabsw[d1][d3]=refrtabsw_[d1][d3];
+    aerosol_optics_device_data.refitabsw[d1][d3]=refitabsw_[d1][d3];
+    } // d3
 
-  //
-  FieldLayout scalar_refindex_real_sw_layout { {SWBAND, NREFINDEX_REAL},
-                                     {nswbands,
-                                      refindex_real} };
+      // allocate memory for tables: abspsw,extpsw,asmpsw
 
-  FieldLayout scalar_refindex_im_sw_layout { {SWBAND, NREFINDEX_IM},
-                                     {nswbands,
-                                      refindex_im} };
+     for (int d5 = 0; d5 < nswbands; ++d5) {
+        abspsw_[d1][d5] =
+            mam_coupling::view_3d("abspsw", coef_number, refindex_real, refindex_im);
+        extpsw_[d1][d5] =
+            mam_coupling::view_3d("extpsw", coef_number, refindex_real, refindex_im);
+        asmpsw_[d1][d5] =
+            mam_coupling::view_3d("asmpsw", coef_number, refindex_real, refindex_im);
+     //FIXME
+    aerosol_optics_device_data.abspsw[d1][d5]=abspsw_[d1][d5];
+    aerosol_optics_device_data.extpsw[d1][d5]=extpsw_[d1][d5];
+    aerosol_optics_device_data.asmpsw[d1][d5]=asmpsw_[d1][d5];
+     } // d5
+  }
 
-  FieldLayout scalar_absplw_layout { {LWBAND, MODE, NREFINDEX_IM, NREFINDEX_REAL, NCOEF_NUMBER},
-                                     {nlwbands, 1, refindex_im, refindex_real,  coef_number} };
-  // use also for extpsw, abspsw
-  FieldLayout scalar_asmpsw_layout { {SWBAND, MODE, NREFINDEX_IM, NREFINDEX_REAL, NCOEF_NUMBER},
-                                     { nswbands, 1, refindex_im, refindex_real, coef_number} };
+#if 1
 
-    // Create param list
-  ekat::ParameterList rrtmg_params;
-
-  rrtmg_params.set<strvec_t>("Field Names",{
-                                      "asmpsw",// need aditinal work
-                                      "extpsw", // need aditinal work
-                                      "abspsw",// need aditinal work
-                                      "absplw", // need aditinal work
-                                      "refindex_real_sw", // done copy
-                                      "refindex_im_sw", // done copy
-                                      "refindex_real_lw", // done copy
-                                      "refindex_im_lw" // done copy
-                                      });
-
-  rrtmg_params.set("Skip_Grid_Checks",true);
+  mam_coupling::AerosolOpticsHostData aerosol_optics_host_data;
 
   std::map<std::string,FieldLayout>  layouts;
-
   std::map<std::string,view_1d_host> host_views;
+  ekat::ParameterList rrtmg_params;
 
-  host_views["refindex_real_sw"]
-   = view_1d_host(refindex_real_sw_host.data(),
-   refindex_real_sw_host.size());
+  mam_coupling::set_parameters_table(aerosol_optics_host_data,
+                                     rrtmg_params,
+                                     layouts,
+                                     host_views );
 
-   host_views["refindex_im_sw"]
-   = view_1d_host(refindex_im_sw_host.data(),
-   refindex_im_sw_host.size());
-
-  host_views["refindex_real_lw"]
-   = view_1d_host(refindex_real_lw_host.data(),
-   refindex_real_lw_host.size());
-
-   host_views["refindex_im_lw"]
-   = view_1d_host(refindex_im_lw_host.data(),
-   refindex_im_lw_host.size());
-
-   host_views["absplw"]
-   = view_1d_host(absplw_host.data(),
-   absplw_host.size());
-
-    host_views["asmpsw"]
-   = view_1d_host(asmpsw_host.data(),
-   asmpsw_host.size());
-
-    host_views["extpsw"]
-   = view_1d_host(extpsw_host.data(),
-   extpsw_host.size());
-
-    host_views["abspsw"]
-   = view_1d_host(abspsw_host.data(),
-   abspsw_host.size());
-
-  layouts.emplace("refindex_real_lw", scalar_refindex_real_lw_layout);
-  layouts.emplace("refindex_im_lw", scalar_refindex_im_lw_layout);
-  layouts.emplace("refindex_real_sw", scalar_refindex_real_sw_layout);
-  layouts.emplace("refindex_im_sw", scalar_refindex_im_sw_layout);
-  layouts.emplace("absplw", scalar_absplw_layout);
-  layouts.emplace("asmpsw", scalar_asmpsw_layout);
-  layouts.emplace("extpsw", scalar_asmpsw_layout);
-  layouts.emplace("abspsw", scalar_asmpsw_layout);
-
-  // Now that we have all the variables defined we can use the scorpio_input class to grab the data.
-  // Note that we do not need the grid input because, table in this parameterization does not depend on col.
   std::string tables_filename_mode1 = "mam4_mode1_rrtmg_aeronetdust_c141106.nc";
-  rrtmg_params.set("Filename",tables_filename_mode1);
-
-  AtmosphereInput mode1_rrtmg(rrtmg_params, grid_, host_views, layouts);
-  // -1000 forces the interface to read a dataset that does not have time as variable.
-  mode1_rrtmg.read_variables(-1000);
-  mode1_rrtmg.finalize();
-
-  // copy data from host to device for mode 1
-  int d1=0;
-  for (int d3 = 0; d3 < nswbands; ++d3) {
-    auto real_host_d3 = Kokkos::subview(refindex_real_sw_host, d3, Kokkos::ALL());
-    Kokkos::deep_copy(refrtabsw_[d1][d3],real_host_d3);
-    auto im_host_d3 = Kokkos::subview(refindex_im_sw_host, d3, Kokkos::ALL());
-    Kokkos::deep_copy(refitabsw_[d1][d3],im_host_d3);
-  } // d3
-
-  for (int d3 = 0; d3 < nlwbands; ++d3) {
-    auto real_host_d3 = Kokkos::subview(refindex_real_lw_host, d3, Kokkos::ALL());
-    Kokkos::deep_copy(refrtablw_[d1][d3],real_host_d3);
-    auto im_host_d3 = Kokkos::subview(refindex_im_lw_host, d3, Kokkos::ALL());
-    Kokkos::deep_copy(refitablw_[d1][d3],im_host_d3);
-  } // d3
-
-  // NOTE: we need to reorder dimenstions in absplw
-  // netcfd : (lw_band, mode, refindex_im, refindex_real, coef_number)
-  // mam4xx : (mode, lw_band, coef_number, refindex_real, refindex_im )
-  // e3sm : (ntot_amode,coef_number,refindex_real,refindex_im,nlwbands)
-  // FIXME: it maybe not work in gpus.
-  for (int d5 = 0; d5 < nlwbands; ++d5) {
-  for (int d2 = 0; d2 < coef_number; d2++)
-  for (int d3 = 0; d3 < refindex_real; d3++)
-  for (int d4 = 0; d4 < refindex_im; d4++)
-        absplw_[d1][d5](d2,d3,d4) = absplw_host(d5,0,d4,d3,d2);
-  }// d5
-
-  // asmpsw, abspsw, extpsw
-  // netcfd : (sw_band, mode, refindex_im, refindex_real, coef_number)
-  // mam4xx : (mode, sw_band, coef_number, refindex_real, refindex_im )
-
-  for (int d5 = 0; d5 < nswbands; ++d5)
-  for (int d2 = 0; d2 < coef_number; d2++)
-  for (int d3 = 0; d3 < refindex_real; d3++)
-  for (int d4 = 0; d4 < refindex_im; d4++)
-  {
-    asmpsw_[d1][d5](d2,d3,d4) = asmpsw_host(d5,0,d4,d3,d2);
-    abspsw_[d1][d5](d2,d3,d4) = abspsw_host(d5,0,d4,d3,d2);
-    extpsw_[d1][d5](d2,d3,d4) = extpsw_host(d5,0,d4,d3,d2);
-  } // d5
+  mam_coupling::read_rrtmg_table(tables_filename_mode1,
+                                 0,// mode No
+                                 rrtmg_params, grid_,
+                                 host_views,
+                                 layouts,
+                                 aerosol_optics_host_data,
+                                 aerosol_optics_device_data);
 
   std::string tables_filename_mode2 = "mam4_mode2_rrtmg_c130628.nc";
-  rrtmg_params.set("Filename",tables_filename_mode2);
-
-  AtmosphereInput mode2_rrtmg(rrtmg_params, grid_, host_views, layouts);
-  // -1000 forces the interface to read a dataset that does not have time as variable.
-  //TODO: the -1000 is a fix of scorpio interface for dataset that does have time variables.
-  mode2_rrtmg.read_variables(-1000);
-  mode2_rrtmg.finalize();
-
-  // copy data from host to device for mode 2
-  d1=1;
-  for (int d3 = 0; d3 < nswbands; ++d3) {
-    auto real_host_d3 = Kokkos::subview(refindex_real_sw_host, d3, Kokkos::ALL());
-    Kokkos::deep_copy(refrtabsw_[d1][d3],real_host_d3);
-    auto im_host_d3 = Kokkos::subview(refindex_im_sw_host, d3, Kokkos::ALL());
-    Kokkos::deep_copy(refitabsw_[d1][d3],im_host_d3);
-  } // d3
-
-  for (int d3 = 0; d3 < nlwbands; ++d3) {
-    auto real_host_d3 = Kokkos::subview(refindex_real_lw_host, d3, Kokkos::ALL());
-    Kokkos::deep_copy(refrtablw_[d1][d3],real_host_d3);
-    auto im_host_d3 = Kokkos::subview(refindex_im_lw_host, d3, Kokkos::ALL());
-    Kokkos::deep_copy(refitablw_[d1][d3],im_host_d3);
-  } // d3
-
-    // NOTE: we need to reorder dimenstions in absplw
-  // netcfd : (lw_band, mode, refindex_im, refindex_real, coef_number)
-  // mam4xx : (mode, lw_band, coef_number, refindex_real, refindex_im )
-  // e3sm : (ntot_amode,coef_number,refindex_real,refindex_im,nlwbands)
-  // FIXME: it maybe not work in gpus.
-  for (int d5 = 0; d5 < nlwbands; ++d5) {
-  for (int d2 = 0; d2 < coef_number; d2++)
-  for (int d3 = 0; d3 < refindex_real; d3++)
-  for (int d4 = 0; d4 < refindex_im; d4++)
-        absplw_[d1][d5](d2,d3,d4) = absplw_host(d5,0,d4,d3,d2);
-  }// d5
-
-  // asmpsw, abspsw, extpsw
-  // netcfd : (sw_band, mode, refindex_im, refindex_real, coef_number)
-  // mam4xx : (mode, sw_band, coef_number, refindex_real, refindex_im )
-
-  for (int d5 = 0; d5 < nswbands; ++d5)
-  for (int d2 = 0; d2 < coef_number; d2++)
-  for (int d3 = 0; d3 < refindex_real; d3++)
-  for (int d4 = 0; d4 < refindex_im; d4++)
-  {
-    asmpsw_[d1][d5](d2,d3,d4) = asmpsw_host(d5,0,d4,d3,d2);
-    abspsw_[d1][d5](d2,d3,d4) = abspsw_host(d5,0,d4,d3,d2);
-    extpsw_[d1][d5](d2,d3,d4) = extpsw_host(d5,0,d4,d3,d2);
-  } // d5
+  mam_coupling::read_rrtmg_table(tables_filename_mode2,
+                                 1,// mode No
+                                 rrtmg_params, grid_,
+                                 host_views,
+                                 layouts,
+                                 aerosol_optics_host_data,
+                                 aerosol_optics_device_data);
 
   std::string tables_filename_mode3 = "mam4_mode3_rrtmg_aeronetdust_c141106.nc";
-  rrtmg_params.set("Filename",tables_filename_mode3);
-
-  AtmosphereInput mode3_rrtmg(rrtmg_params, grid_, host_views, layouts);
-  // -1000 forces the interface to read a dataset that does not have time as variable.
-  mode3_rrtmg.read_variables(-1000);
-  mode3_rrtmg.finalize();
-
-  // copy data from host to device for mode 3
-  d1=2;
-  for (int d3 = 0; d3 < nswbands; ++d3) {
-    auto real_host_d3 = Kokkos::subview(refindex_real_sw_host, d3, Kokkos::ALL());
-    Kokkos::deep_copy(refrtabsw_[d1][d3],real_host_d3);
-    auto im_host_d3 = Kokkos::subview(refindex_im_sw_host, d3, Kokkos::ALL());
-    Kokkos::deep_copy(refitabsw_[d1][d3],im_host_d3);
-  } // d3
-
-  for (int d3 = 0; d3 < nlwbands; ++d3) {
-    auto real_host_d3 = Kokkos::subview(refindex_real_lw_host, d3, Kokkos::ALL());
-    Kokkos::deep_copy(refrtablw_[d1][d3],real_host_d3);
-    auto im_host_d3 = Kokkos::subview(refindex_im_lw_host, d3, Kokkos::ALL());
-    Kokkos::deep_copy(refitablw_[d1][d3],im_host_d3);
-  } // d3
-
-    // NOTE: we need to reorder dimenstions in absplw
-  // netcfd : (lw_band, mode, refindex_im, refindex_real, coef_number)
-  // mam4xx : (mode, lw_band, coef_number, refindex_real, refindex_im )
-  // e3sm : (ntot_amode,coef_number,refindex_real,refindex_im,nlwbands)
-  // FIXME: it maybe not work in gpus.
-  for (int d5 = 0; d5 < nlwbands; ++d5) {
-  for (int d2 = 0; d2 < coef_number; d2++)
-  for (int d3 = 0; d3 < refindex_real; d3++)
-  for (int d4 = 0; d4 < refindex_im; d4++)
-        absplw_[d1][d5](d2,d3,d4) = absplw_host(d5,0,d4,d3,d2);
-  }// d5
-
-  // asmpsw, abspsw, extpsw
-  // netcfd : (sw_band, mode, refindex_im, refindex_real, coef_number)
-  // mam4xx : (mode, sw_band, coef_number, refindex_real, refindex_im )
-
-  for (int d5 = 0; d5 < nswbands; ++d5)
-  for (int d2 = 0; d2 < coef_number; d2++)
-  for (int d3 = 0; d3 < refindex_real; d3++)
-  for (int d4 = 0; d4 < refindex_im; d4++)
-  {
-    asmpsw_[d1][d5](d2,d3,d4) = asmpsw_host(d5,0,d4,d3,d2);
-    abspsw_[d1][d5](d2,d3,d4) = abspsw_host(d5,0,d4,d3,d2);
-    extpsw_[d1][d5](d2,d3,d4) = extpsw_host(d5,0,d4,d3,d2);
-  } // d5
+  mam_coupling::read_rrtmg_table(tables_filename_mode3,
+                                 2,// mode No
+                                 rrtmg_params, grid_,
+                                 host_views,
+                                 layouts,
+                                 aerosol_optics_host_data,
+                                 aerosol_optics_device_data);
 
   std::string tables_filename_mode4 = "mam4_mode4_rrtmg_c130628.nc";
-  rrtmg_params.set("Filename",tables_filename_mode4);
+  mam_coupling::read_rrtmg_table(tables_filename_mode4,
+                                 3,// mode No
+                                 rrtmg_params, grid_,
+                                 host_views,
+                                 layouts,
+                                 aerosol_optics_host_data,
+                                 aerosol_optics_device_data);
 
-  AtmosphereInput mode4_rrtmg(rrtmg_params, grid_, host_views, layouts);
-  // -1000 forces the interface to read a dataset that does not have time as variable.
-  mode4_rrtmg.read_variables(-1000);
-  mode4_rrtmg.finalize();
+#endif
 
-  // copy data from host to device for mode 4
-  d1=3;
-  for (int d3 = 0; d3 < nswbands; ++d3) {
-    auto real_host_d3 = Kokkos::subview(refindex_real_sw_host, d3, Kokkos::ALL());
-    Kokkos::deep_copy(refrtabsw_[d1][d3],real_host_d3);
-    auto im_host_d3 = Kokkos::subview(refindex_im_sw_host, d3, Kokkos::ALL());
-    Kokkos::deep_copy(refitabsw_[d1][d3],im_host_d3);
-  } // d3
 
-  for (int d3 = 0; d3 < nlwbands; ++d3) {
-    auto real_host_d3 = Kokkos::subview(refindex_real_lw_host, d3, Kokkos::ALL());
-    Kokkos::deep_copy(refrtablw_[d1][d3],real_host_d3);
-    auto im_host_d3 = Kokkos::subview(refindex_im_lw_host, d3, Kokkos::ALL());
-    Kokkos::deep_copy(refitablw_[d1][d3],im_host_d3);
-  } // d3
-
-    // NOTE: we need to reorder dimenstions in absplw
-  // netcfd : (lw_band, mode, refindex_im, refindex_real, coef_number)
-  // mam4xx : (mode, lw_band, coef_number, refindex_real, refindex_im )
-  // e3sm : (ntot_amode,coef_number,refindex_real,refindex_im,nlwbands)
-  // FIXME: it maybe not work in gpus.
-  for (int d5 = 0; d5 < nlwbands; ++d5) {
-  for (int d2 = 0; d2 < coef_number; d2++)
-  for (int d3 = 0; d3 < refindex_real; d3++)
-  for (int d4 = 0; d4 < refindex_im; d4++)
-        absplw_[d1][d5](d2,d3,d4) = absplw_host(d5,0,d4,d3,d2);
-  }// d5
-
-  // asmpsw, abspsw, extpsw
-  // netcfd : (sw_band, mode, refindex_im, refindex_real, coef_number)
-  // mam4xx : (mode, sw_band, coef_number, refindex_real, refindex_im )
-
-  for (int d5 = 0; d5 < nswbands; ++d5)
-  for (int d2 = 0; d2 < coef_number; d2++)
-  for (int d3 = 0; d3 < refindex_real; d3++)
-  for (int d4 = 0; d4 < refindex_im; d4++)
+  #if 1
   {
-    asmpsw_[d1][d5](d2,d3,d4) = asmpsw_host(d5,0,d4,d3,d2);
-    abspsw_[d1][d5](d2,d3,d4) = abspsw_host(d5,0,d4,d3,d2);
-    extpsw_[d1][d5](d2,d3,d4) = extpsw_host(d5,0,d4,d3,d2);
-  } // d5
+  // FIXME: we need to get this name from the yaml file.
+  std::string table_name = "water_refindex_rrtmg_c080910.nc";
 
+  FieldLayout scalar_refindex_im_water_sw_layout { {SWBAND},
+                                     {nswbands} };
+
+  ekat::ParameterList refindex_water_params;
+  refindex_water_params.set<strvec_t>("Field Names",{"refindex_im_water_sw"});
+  refindex_water_params.set("Skip_Grid_Checks",true);
+
+  std::map<std::string,view_1d_host> host_views_water;
+
+  view_1d_host refindex_im_water_sw_host("view_1d_host", nswbands);
+
+  host_views_water["refindex_im_water_sw"]
+   = refindex_im_water_sw_host;
+
+  std::map<std::string,FieldLayout>  layouts_water;
+
+  layouts_water.emplace("refindex_im_water_sw",
+  scalar_refindex_im_water_sw_layout);
+
+  refindex_water_params.set("Filename",table_name);
+
+  AtmosphereInput refindex_water(refindex_water_params, grid_,
+  host_views_water, layouts_water);
+  // -1000 forces the interface to read a dataset that does not have time as variable.
+  refindex_water.read_variables();
+  refindex_water.finalize();
+
+  printf("reading refindex_im_water_sw\n");
+  for (int i = 0; i < nswbands; i++)
+  {
+    printf("val(%d) = %e \n", i, refindex_im_water_sw_host(i) );
+  }
+
+
+  }
+#endif
 
 #if 0
 {
