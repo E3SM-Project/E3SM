@@ -41,7 +41,7 @@ struct CaarFunctorImpl {
 
   struct Buffers {
     static constexpr int num_3d_scalar_mid_buf = 10;
-    static constexpr int num_3d_vector_mid_buf =  5;
+    static constexpr int num_3d_vector_mid_buf =  6; //<-- for vvdp variable
     static constexpr int num_3d_scalar_int_buf =  6;
     static constexpr int num_3d_vector_int_buf =  3;
 
@@ -75,6 +75,9 @@ struct CaarFunctorImpl {
     ExecViewUnmanaged<Scalar*    [NP][NP][NUM_LEV_P]>   w_tens;
     ExecViewUnmanaged<Scalar*    [NP][NP][NUM_LEV_P]>   phi_tens;
   };
+
+    ExecViewUnmanaged<Scalar* [2][NP][NP][NUM_LEV]  >   vvdp;
+    //ExecViewUnmanaged<Scalar* [2][NP][NP][NUM_LEV]  >   vv_tens;
 
   using deriv_type = ReferenceElement::deriv_type;
 
@@ -256,6 +259,10 @@ struct CaarFunctorImpl {
 
     m_buffers.vdp      = decltype(m_buffers.vdp     )(mem,nslots);
     mem += m_buffers.vdp.size();
+
+    vvdp      = decltype(vvdp     )(mem,nslots);
+    mem += vvdp.size();
+
     m_buffers.v_tens   = decltype(m_buffers.v_tens  )(mem,nslots);
     mem += m_buffers.v_tens.size();
 
@@ -562,9 +569,14 @@ struct CaarFunctorImpl {
         udp(ilev) = u(ilev)*dp3d(ilev);
         vdp(ilev) = v(ilev)*dp3d(ilev);
 #else
-        m_buffers.vdp(kv.team_idx,0,igp,jgp,ilev) = m_state.m_dp3d(kv.ie,m_data.n0,igp,jgp,ilev)*
+        //m_buffers.vdp(kv.team_idx,0,igp,jgp,ilev) = m_state.m_dp3d(kv.ie,m_data.n0,igp,jgp,ilev)*
+        //               m_state.m_v(kv.ie,m_data.n0,0,igp,jgp,ilev);
+        //m_buffers.vdp(kv.team_idx,1,igp,jgp,ilev) = m_state.m_dp3d(kv.ie,m_data.n0,igp,jgp,ilev)*
+        //               m_state.m_v(kv.ie,m_data.n0,1,igp,jgp,ilev);
+
+        vvdp(kv.team_idx,0,igp,jgp,ilev) = m_state.m_dp3d(kv.ie,m_data.n0,igp,jgp,ilev)*
                        m_state.m_v(kv.ie,m_data.n0,0,igp,jgp,ilev);
-        m_buffers.vdp(kv.team_idx,1,igp,jgp,ilev) = m_state.m_dp3d(kv.ie,m_data.n0,igp,jgp,ilev)*
+        vvdp(kv.team_idx,1,igp,jgp,ilev) = m_state.m_dp3d(kv.ie,m_data.n0,igp,jgp,ilev)*
                        m_state.m_v(kv.ie,m_data.n0,1,igp,jgp,ilev);
 #endif
       });
@@ -572,9 +584,57 @@ struct CaarFunctorImpl {
     kv.team_barrier();
 
     // Compute div(vdp)
+#if 0
     m_sphere_ops.divergence_sphere(kv,
-        Homme::subview(m_buffers.vdp, kv.team_idx),
+        Homme::subview(vvdp, kv.team_idx),
         Homme::subview(m_buffers.div_vdp, kv.team_idx));
+#endif
+
+    const Real aa = 1.0, bb=0.0;
+
+#if 0    
+    m_sphere_ops.divergence_sphere_cm<CombineMode::Replace>(kv,
+        Homme::subview(vvdp, kv.team_idx),
+        Homme::subview(m_buffers.div_vdp, kv.team_idx),
+	aa, bb, NUM_LEV);
+#endif
+
+//inlined version of divergence_sphere_cm    
+    const auto& D_inv = Homme::subview(m_sphere_ops.m_dinv, kv.ie);
+    const auto& metdet = Homme::subview(m_sphere_ops.m_metdet, kv.ie);
+    ExecViewUnmanaged<Scalar[2][NP][NP][NUM_LEV]> gv_buf(
+		  Homme::subview(m_sphere_ops.vector_buf_ml,kv.team_idx, 0).data());
+    constexpr int np_squared = NP * NP;
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, np_squared),
+                         [&](const int loop_idx) {
+      const int igp = loop_idx / NP;
+      const int jgp = loop_idx % NP;
+      Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team, NUM_LEV), [&] (const int& ilev) {
+        const auto& v0 = vvdp(kv.team_idx,0, igp, jgp, ilev);
+        const auto& v1 = vvdp(kv.team_idx,1, igp, jgp, ilev);
+        gv_buf(0,igp,jgp,ilev) = (D_inv(0,0,igp,jgp) * v0 + D_inv(1,0,igp,jgp) * v1) * metdet(igp,jgp);
+        gv_buf(1,igp,jgp,ilev) = (D_inv(0,1,igp,jgp) * v0 + D_inv(1,1,igp,jgp) * v1) * metdet(igp,jgp);
+      });
+    });
+    kv.team_barrier();
+    // j, l, i -> i, j, k
+    constexpr int div_iters = NP * NP;
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, div_iters),
+                         [&](const int loop_idx) {
+      const int igp = loop_idx / NP;
+      const int jgp = loop_idx % NP;
+      Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team, NUM_LEV), [&] (const int& ilev) {
+        Scalar dudx, dvdy;
+        for (int kgp = 0; kgp < NP; ++kgp) {
+          dudx += m_sphere_ops.dvv(jgp, kgp) * gv_buf(0, igp, kgp, ilev);
+          dvdy += m_sphere_ops.dvv(igp, kgp) * gv_buf(1, kgp, jgp, ilev);
+        }
+        combine<CombineMode::Replace>((dudx + dvdy) * (1.0 / metdet(igp, jgp) * m_sphere_ops.m_scale_factor_inv),
+                     m_buffers.div_vdp(kv.team_idx,igp, jgp, ilev), aa, bb);
+      });
+    });
+    kv.team_barrier();
+
   }
 
   KOKKOS_INLINE_FUNCTION
