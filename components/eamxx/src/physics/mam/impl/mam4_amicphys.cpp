@@ -1533,8 +1533,7 @@ void mam_amicphys_1gridcell(
 
 KOKKOS_INLINE_FUNCTION
 void modal_aero_amicphys_intr(
-    const AmicPhysConfig& config, const int ncol, const int nstep,
-    const Real deltat, const Real t, const Real pmid, const Real pdel,
+    const AmicPhysConfig& config, const int nstep, const Real deltat, const Real t, const Real pmid, const Real pdel,
     const Real zm, const Real pblh, const Real qv, const Real cld,
     Real q[gas_pcnst()], Real qqcw[gas_pcnst()], const Real q_pregaschem[gas_pcnst()],
     const Real q_precldchem[gas_pcnst()], const Real qqcw_precldchem[gas_pcnst()],
@@ -1545,7 +1544,6 @@ void modal_aero_amicphys_intr(
     Real qaerwat[AeroConfig::num_modes()]) {
 
   /*
-      ncol                 ! number of atmospheric columns in the chunk
       nstep                ! model time-step number
       nqtendbb             ! dimension for q_tendbb
       nqqcwtendbb          ! dimension f

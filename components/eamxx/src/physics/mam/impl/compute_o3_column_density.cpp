@@ -1,10 +1,7 @@
 namespace scream::impl {
 
-using KT      = ekat::KokkosTypes<DefaultDevice>;
-using view_2d = typename KT::template view_2d<Real>;
-
 KOKKOS_INLINE_FUNCTION
-void compute_column_density(const ThreadTeam& team, const haero::Atmosphere& atm, view_2d& col_dens) {
+void compute_o3_column_density(const ThreadTeam& team, const haero::Atmosphere& atm, ColumnView& o3_col_dens) {
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team, atm.num_levels()), [&](const int k) {
     constexpr int nabscol = mam4::gas_chemistry::nabscol; // number of absorbing densities
     constexpr int gas_pcnst = mam4::gas_chemistry::gas_pcnst; // number of gas phase species
@@ -39,7 +36,7 @@ void compute_column_density(const ThreadTeam& team, const haero::Atmosphere& atm
     Real col_delta[nabscol]; // o2, o3 column density above model [1/cm^2]
     //set_ub_col(col_delta, vmr, invariants, pdel); FIXME
   });
-  //setcol(col_delta, col_dens); // FIXME
+  //setcol(col_delta, o3_col_dens); // FIXME
 }
 
 } // namespace scream::impl

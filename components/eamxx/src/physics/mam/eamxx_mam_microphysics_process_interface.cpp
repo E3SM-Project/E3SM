@@ -4,13 +4,13 @@
 #include <share/property_checks/field_within_interval_check.hpp>
 
 #include "scream_config.h" // for SCREAM_CIME_BUILD
-#include "impl/compute_column_density.cpp"
-#include "impl/compute_water_content.cpp"
-#include "impl/gas_phase_chemistry.cpp"
 
 #include <ekat/ekat_assert.hpp>
 
 // NOTE: see the impl/ directory for the contents of the impl namespace
+#include "impl/compute_o3_column_density.cpp"
+#include "impl/compute_water_content.cpp"
+#include "impl/gas_phase_chemistry.cpp"
 
 namespace scream
 {
@@ -55,7 +55,7 @@ void MAMMicrophysics::configure(const ekat::ParameterList& params) {
   config_.gaexch_h2so4_uptake_optaa = 2;
   config_.newnuc_h2so4_conc_optaa = 2;
 
-  // FIXME: fetch photolysis table filename
+  // FIXME: fetch photolysis table filename(s)
 }
 
 void MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
@@ -303,9 +303,9 @@ void MAMMicrophysics::run_impl(const double dt) {
     // set up diagnostics
     mam4::Diagnostics diags(nlev_);
 
-    // calculate column densities
-    view_2d col_dens; // FIXME
-    impl::compute_column_density(team, atm, col_dens);
+    // calculate o3 column densities (first component of col_dens in Fortran code)
+    ColumnView o3_col_dens; // FIXME
+    impl::compute_o3_column_density(team, atm, o3_col_dens);
 
     // set up photolysis work arrays for this column.
     mam4::mo_photo::PhotoTableWorkArrays photo_work_arrays;
@@ -318,13 +318,9 @@ void MAMMicrophysics::run_impl(const double dt) {
     Real surf_albedo = 0.0; // FIXME: surface albedo
     Real esfact = 0.0; // FIXME: earth-sun distance factor
     mam4::ColumnView lwc; // FIXME: liquid water cloud content
-    /*
-    FIXME: why is col_dens considered a ColumnView in mam4xx if we need it to
-    FIXME: be a view_2d here (because each vertical level has nabscol values)?
     mam4::mo_photo::table_photo(photo_rates, atm.pressure, atm.hydrostatic_dp,
-      atm.temperature, col_dens, zenith_angle, surf_albedo, lwc,
+      atm.temperature, o3_col_dens, zenith_angle, surf_albedo, lwc,
       atm.cloud_fraction, esfact, photo_table_, photo_work_arrays);
-     */
 
     // compute aerosol microphysics on each vertical level within this column
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_), [&](const int k) {
@@ -375,12 +371,8 @@ void MAMMicrophysics::run_impl(const double dt) {
       for (int i = 0; i < mam4::mo_photo::phtcnt; ++i) {
         photo_rates_k[i] = photo_rates(k, i);
       }
-      Real col_dens_k[mam4::gas_chemistry::nabscol];
-      for (int i = 0; i < mam4::gas_chemistry::nabscol; ++i) {
-        col_dens_k[i] = col_dens(k, i);
-      }
       impl::gas_phase_chemistry(zm, zi, phis, temp, pmid, pdel, dt,
-                                col_dens_k, photo_rates_k, q);
+                                o3_col_dens(k), photo_rates_k, q);
 
       //----------------------
       // Aerosol microphysics
@@ -397,7 +389,7 @@ void MAMMicrophysics::run_impl(const double dt) {
       impl::compute_water_content(progs, k, qv, temp, pmid, dgncur_a, dgncur_awet, wetdens, qaerwat);
 
       // compute aerosol microphysics
-      impl::modal_aero_amicphys_intr(config_, ncol_, step_, dt, t, pmid, pdel,
+      impl::modal_aero_amicphys_intr(config_, step_, dt, t, pmid, pdel,
                                      zm, pblh, qv, cld, q, qqcw, q_pregaschem,
                                      q_precldchem, qqcw_precldchem, q_tendbb,
                                      qqcw_tendbb, dgncur_a, dgncur_awet,
@@ -407,16 +399,22 @@ void MAMMicrophysics::run_impl(const double dt) {
       // LINOZ chemistry
       //-----------------
 
-      /*
+      // FIXME: There are a ton of linoz_* quantities that we need to get from
+      // FIXME: somewhere.
+      // lin_strat_chem_solve_kk(o3col, temp, sza, pmid, dt, rlats, ...);
+      // lin_strat_sfcsink_kk(...); // ???
+      /* Here are the Fortran calls
       lin_strat_chem_solve(ncol, lchnk, col_dens(:,:,1), tfld, zen_angle, pmid, delt, rlats, troplev,
         linoz_o3_clim, linoz_t_clim, linoz_o3col_clim, linoz_PmL_clim, linoz_dPmL_dO3, linoz_dPmL_dT,
         linoz_dPmL_dO3col, linoz_cariolle_psc,
         vmr(:,:,o3_ndx));
       lin_strat_sfcsink(ncol, lchnk, delt, pdel(:ncol,:), vmr(:,:,o3_ndx));
+      */
 
       // ... check for negative values and reset to zero
-      negtrc(vmr, ncol);
-      */
+      for (int i = 0; i < gas_pcnst; ++i) {
+        if (q[i] < 0.0) q[i] = 0.0;
+      }
 
       //----------------
       // Dry deposition
