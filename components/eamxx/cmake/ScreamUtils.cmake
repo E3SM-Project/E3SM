@@ -54,10 +54,18 @@ function(CreateUnitTestExec exec_name test_srcs)
 endfunction(CreateUnitTestExec)
 
 ###############################################################################
+function(CreateADUnitTestExec exec_name)
+###############################################################################
+  # Call the function above specifying some params
+  CreateUnitTestExec("${exec_name}" "${SCREAM_SRC_DIR}/share/util/eamxx_ad_test.cpp"
+    LIBS scream_control scream_io diagnostics ${ARGN})
+endfunction(CreateADUnitTestExec)
+
+###############################################################################
 function(CreateUnitTestFromExec test_name test_exec)
 ###############################################################################
   cmake_parse_arguments(cutfe "${SCREAM_CUT_TEST_OPTIONS}" "${SCREAM_CUT_TEST_1V_ARGS}" "${SCREAM_CUT_TEST_MV_ARGS}" ${ARGN})
-  CheckMacroArgs(CreateUnitTestExec cutfe "${SCREAM_CUT_TEST_OPTIONS}" "${SCREAM_CUT_TEST_1V_ARGS}" "${SCREAM_CUT_TEST_MV_ARGS}")
+  CheckMacroArgs(CreateUnitTestFromExec cutfe "${SCREAM_CUT_TEST_OPTIONS}" "${SCREAM_CUT_TEST_1V_ARGS}" "${SCREAM_CUT_TEST_MV_ARGS}")
 
   #
   # If asking for mpi/omp ranks/threads, verify we stay below the max number of threads
@@ -136,6 +144,15 @@ function(CreateUnitTest test_name test_srcs)
   CreateUnitTestFromExec("${test_name}" "${test_name}" ${options_TestPhase})
 
 endfunction(CreateUnitTest)
+
+###############################################################################
+function(CreateADUnitTest test_name)
+###############################################################################
+
+  # Call the function above specifying some params
+  CreateUnitTest("${test_name}" "${SCREAM_SRC_DIR}/share/util/eamxx_ad_test.cpp"
+    LABELS driver LIBS scream_control scream_io diagnostics ${ARGN})
+endfunction(CreateADUnitTest)
 
 ###############################################################################
 function(GetInputFile src_path)
