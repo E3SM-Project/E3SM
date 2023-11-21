@@ -460,9 +460,9 @@
 <config_btr_dt ocn_grid="oQU240">'0000_00:03:00'</config_btr_dt>
 <config_btr_dt ocn_grid="oQU240wLI">'0000_00:03:00'</config_btr_dt>
 <config_btr_dt ocn_grid="oQU120">'0000_00:01:30'</config_btr_dt>
-<config_btr_dt ocn_grid="oEC60to30v3">'0000_00:01:00'</config_btr_dt>
-<config_btr_dt ocn_grid="oEC60to30v3wLI">'0000_00:01:00'</config_btr_dt>
-<config_btr_dt ocn_grid="ECwISC30to60E1r2">'0000_00:01:00'</config_btr_dt>
+<config_btr_dt ocn_grid="oEC60to30v3">'0000_00:01:15'</config_btr_dt>
+<config_btr_dt ocn_grid="oEC60to30v3wLI">'0000_00:01:15'</config_btr_dt>
+<config_btr_dt ocn_grid="ECwISC30to60E1r2">'0000_00:01:15'</config_btr_dt>
 <config_btr_dt ocn_grid="oRRS30to10v3">'0000_00:00:24'</config_btr_dt>
 <config_btr_dt ocn_grid="oRRS30to10v3wLI">'0000_00:00:18'</config_btr_dt>
 <config_btr_dt ocn_grid="oRRS18to6v3">'0000_00:00:12'</config_btr_dt>
@@ -470,17 +470,17 @@
 <config_btr_dt ocn_grid="oARRM60to10">'0000_00:00:24'</config_btr_dt>
 <config_btr_dt ocn_grid="oARRM60to6">'0000_00:00:10'</config_btr_dt>
 <config_btr_dt ocn_grid="ARRM10to60E2r1">'0000_00:00:24'</config_btr_dt>
-<config_btr_dt ocn_grid="EC30to60E2r2">'0000_00:01:00'</config_btr_dt>
+<config_btr_dt ocn_grid="EC30to60E2r2">'0000_00:01:15'</config_btr_dt>
 <config_btr_dt ocn_grid="WC14to60E2r3">'0000_00:00:15'</config_btr_dt>
 <config_btr_dt ocn_grid="WCAtl12to45E2r4">'0000_00:00:15'</config_btr_dt>
 <config_btr_dt ocn_grid="SOwISC12to60E2r4">'0000_00:00:15'</config_btr_dt>
-<config_btr_dt ocn_grid="ECwISC30to60E2r1">'0000_00:01:00'</config_btr_dt>
-<config_btr_dt ocn_grid="ECwISC30to60E3r2">'0000_00:01:00'</config_btr_dt>
+<config_btr_dt ocn_grid="ECwISC30to60E2r1">'0000_00:01:15'</config_btr_dt>
+<config_btr_dt ocn_grid="ECwISC30to60E3r2">'0000_00:01:15'</config_btr_dt>
 <config_n_btr_cor_iter>2</config_n_btr_cor_iter>
 <config_vel_correction>.true.</config_vel_correction>
 <config_btr_subcycle_loop_factor>2</config_btr_subcycle_loop_factor>
-<config_btr_gam1_velWt1>0.5</config_btr_gam1_velWt1>
-<config_btr_gam2_SSHWt1>1.0</config_btr_gam2_SSHWt1>
+<config_btr_gam1_velWt1>0.5333</config_btr_gam1_velWt1>
+<config_btr_gam2_SSHWt1>0.5333</config_btr_gam2_SSHWt1>
 <config_btr_gam3_velWt2>1.0</config_btr_gam3_velWt2>
 <config_btr_solve_SSH2>.false.</config_btr_solve_SSH2>
 
