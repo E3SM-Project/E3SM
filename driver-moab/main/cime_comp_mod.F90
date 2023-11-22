@@ -2673,6 +2673,7 @@ contains
     integer               :: i, nodeId
     character(len=15)     :: c_ymdtod
     character(len=18)     :: c_mprof_file
+    integer               :: cur_step_no ! step number 
 
 101 format( A, i10.8, i8, 12A, A, F8.2, A, F8.2 )
 102 format( A, i10.8, i8, A, 8L3 )
@@ -2885,6 +2886,11 @@ contains
        !----------------------------------------------------------
        num_moab_exports = num_moab_exports + 1! this is moab clock used for debugging
        call seq_timemgr_clockAdvance( seq_SyncClock, force_stop, force_stop_ymd, force_stop_tod)
+       call seq_timemgr_EClockGetData(EClock_d, stepno=cur_step_no)
+       if (iamroot_CPLID) then
+         write(logunit,*) ' num_moab_exports , cur_step_no ',num_moab_exports, cur_step_no
+         call shr_sys_flush(logunit)
+       endif
        call seq_timemgr_EClockGetData( EClock_d, curr_ymd=ymd, curr_tod=tod)
        call shr_cal_date2ymd(ymd,year,month,day)
        stop_alarm    = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_stop)

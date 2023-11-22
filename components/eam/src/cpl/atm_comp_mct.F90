@@ -92,6 +92,10 @@ module atm_comp_mct
   private :: atm_domain_mct
   private :: atm_read_srfrest_mct
   private :: atm_write_srfrest_mct
+#ifdef HAVE_MOAB
+  private :: atm_read_srfrest_moab
+  private :: atm_write_srfrest_moab
+#endif
 
 !--------------------------------------------------------------------------
 ! Private data
@@ -444,7 +448,7 @@ CONTAINS
 
        first_time = .false.
 
-    else
+    else ! so here first_time == .false.
        
        ! For initial run, run cam radiation/clouds and return
        ! For restart run, read restart x2a_a
@@ -467,26 +471,26 @@ CONTAINS
        call seq_timemgr_EClockGetData(EClock,curr_ymd=CurrentYMD, StepNo=StepNo, dtime=DTime_Sync )
        if (StepNo == 0) then
 #ifdef MOABCOMP
-    ! loop over all fields in seq_flds_x2a_fields
-    call mct_list_init(temp_list ,seq_flds_x2a_fields)
-    size_list=mct_list_nitem (temp_list)
-    ent_type = 0 ! entity type is vertex for phys atm
-    if (rank2 .eq. 0) print *, num_moab_exports, trim(seq_flds_x2a_fields), ' atm import check'
-    modelStr='atm init2'
-    do index_list = 1, size_list
-      call mct_list_get(mctOStr,index_list,temp_list)
-      mct_field = mct_string_toChar(mctOStr)
-      tagname= trim(mct_field)//C_NULL_CHAR
-      call seq_comm_compare_mb_mct(modelStr, mpicom_atm_moab, x2a_a, mct_field,  mphaid, tagname, ent_type, difference)
-    enddo
-    call mct_list_clean(temp_list)
+         ! loop over all fields in seq_flds_x2a_fields
+          call mct_list_init(temp_list ,seq_flds_x2a_fields)
+          size_list=mct_list_nitem (temp_list)
+          ent_type = 0 ! entity type is vertex for phys atm
+          if (rank2 .eq. 0) print *, num_moab_exports, trim(seq_flds_x2a_fields), ' atm import check'
+          modelStr='atm init2'
+          do index_list = 1, size_list
+            call mct_list_get(mctOStr,index_list,temp_list)
+            mct_field = mct_string_toChar(mctOStr)
+            tagname= trim(mct_field)//C_NULL_CHAR
+            call seq_comm_compare_mb_mct(modelStr, mpicom_atm_moab, x2a_a, mct_field,  mphaid, tagname, ent_type, difference)
+          enddo
+          call mct_list_clean(temp_list)
 
 #endif
-          ! so the cam import is before moab    
+       ! so the cam import is before moab    
           call atm_import( x2a_a%rattr, cam_in )
 #ifdef HAVE_MOAB
-          ! move moab import after cam import, so moab takes precedence
-          call atm_import_moab(cam_in)
+       ! move moab import after cam import, so moab takes precedence
+          call atm_import_moab(Eclock, cam_in)
 #endif    
 
 
@@ -494,12 +498,12 @@ CONTAINS
           call t_startf('CAM_run1')
           call cam_run1 ( cam_in, cam_out ) 
           call t_stopf('CAM_run1')
-          
+        
           call atm_export( cam_out, a2x_a%rattr )
 #ifdef HAVE_MOAB
           call atm_export_moab(cam_out)
 #endif   
-       else
+       else ! if (StepNo != 0) then
 
           call t_startf('atm_read_srfrest_mct')
           call atm_read_srfrest_mct( EClock, x2a_a, a2x_a )
@@ -512,7 +516,7 @@ CONTAINS
 	      ! This will ensure BFB restarts whenever qneg4 updates fluxes on the restart time step
           call atm_import( x2a_a%rattr, cam_in, .true. )
 #ifdef HAVE_MOAB
-          call atm_import_moab(cam_in, .true. )
+          call atm_import_moab(Eclock, cam_in, .true. )
 #endif   
 
           call t_startf('cam_run1')
@@ -664,7 +668,7 @@ CONTAINS
     call mct_list_clean(temp_list)
 #endif
 
-     call atm_import_moab(cam_in)
+     call atm_import_moab(Eclock, cam_in)
 #endif
    
     call t_stopf  ('CAM_import')
@@ -971,7 +975,7 @@ CONTAINS
 
    !-----------------------------------------------------------------------
    use cam_pio_utils, only: cam_pio_openfile, cam_pio_closefile, pio_subsystem
-   use iMOAB, only:    iMOAB_SetDoubleTagStorage
+   use iMOAB, only:    iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
    !
    ! Arguments
    !
@@ -995,6 +999,11 @@ CONTAINS
 
    type(mct_list) :: temp_list
    integer :: size_list, index_list, ent_type, ierr
+#ifdef MOABDEBUG
+   character*100 outfile, wopts, lnum
+   integer           :: atm_step_no
+#endif
+
    !-----------------------------------------------------------------------
 
    ! Determine and open surface restart dataset
@@ -1071,17 +1080,21 @@ CONTAINS
     if ( ierr > 0) then
       call endrun('Error: fail to set  seq_flds_a2x_fields for atm physgrid moab mesh in restart')
     endif
-
-    tagname=trim(seq_flds_x2a_fields)//C_NULL_CHAR
-    ent_type = 0 ! vertices, point cloud
-    ierr = iMOAB_SetDoubleTagStorage ( mphaid, tagname, totalmbls_r , ent_type, x2a_am )
-    if ( ierr > 0) then
-      call endrun('Error: fail to set  seq_flds_x2a_fields for atm physgrid moab mesh in restart')
-    endif
+   
+   ! write moab phys atm after reading restart surface file
 
    call pio_freedecomp(File,iodesc)
    call cam_pio_closefile(File)
    deallocate(tmp)
+#ifdef MOABDEBUG
+    call seq_timemgr_EClockGetData( EClock, stepno=atm_step_no)
+    write(lnum,"(I0.2)")atm_step_no
+    outfile = 'AtmPhys_R'//trim(lnum)//'.h5m'//C_NULL_CHAR
+    wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
+    ierr = iMOAB_WriteMesh(mphaid, outfile, wopts)
+    if (ierr > 0 )  &
+      call endrun('Error: fail to write the atm phys mesh file after restart')
+#endif
 
  end subroutine atm_read_srfrest_moab
 
@@ -1671,7 +1684,7 @@ CONTAINS
 
   end subroutine atm_export_moab
 
-subroutine atm_import_moab(cam_in, restart_init )
+subroutine atm_import_moab(Eclock, cam_in, restart_init )
 
     !-----------------------------------------------------------------------
     use cam_cpl_indices
@@ -1691,6 +1704,7 @@ subroutine atm_import_moab(cam_in, restart_init )
     ! Arguments
     !
     ! real(r8)      , intent(in)    :: x2a_am(:,:) will be retrieved from moab tags, and used to set cam_in 
+    type(ESMF_Clock),intent(inout) :: EClock
     type(cam_in_t), intent(inout) :: cam_in(begchunk:endchunk)
     logical, optional, intent(in) :: restart_init
     !
@@ -1707,11 +1721,26 @@ subroutine atm_import_moab(cam_in, restart_init )
 
     character(CXX) ::  tagname ! 
     integer  :: ent_type, ierr
+    integer  :: cur_atm_stepno
+#ifdef MOABDEBUG
+    character*100 outfile, wopts, lnum
+#endif
+
+    call seq_timemgr_EClockGetData( EClock, stepno=cur_atm_stepno )
+#ifdef MOABDEBUG
+    write(lnum,"(I0.2)")cur_atm_stepno
+    outfile = 'AtmPhysImp_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+    wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
+    ierr = iMOAB_WriteMesh(mphaid, outfile, wopts)
+    if (ierr > 0 )  &
+      call endrun('Error: fail to write the moab atm phys mesh before import ')
+#endif
     !-----------------------------------------------------------------------
     overwrite_flds = .true.
     ! don't overwrite fields if invoked during the initialization phase 
     ! of a 'continue' or 'branch' run type with data from .rs file
     if (present(restart_init)) overwrite_flds = .not. restart_init
+    
 
     ! ccsm sign convention is that fluxes are positive downward
     tagname=trim(seq_flds_x2a_fields)//C_NULL_CHAR
