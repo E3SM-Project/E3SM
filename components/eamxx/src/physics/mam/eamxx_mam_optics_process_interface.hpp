@@ -97,8 +97,10 @@ private_except_cuda:
   mam_coupling::view_2d ext_cmip6_lw_;
 
   // These inputs maybe are from a netCDF file:
-  mam_coupling::complex_view_2d specrefndxsw_; // complex refractive index for water visible
-  mam_coupling::complex_view_2d specrefndxlw_; // complex refractive index for water infrared
+  // complex refractive index for aersol species
+  mam_coupling::complex_view_2d specrefndxsw_; // ready
+  // complex refractive index for aersol species
+  mam_coupling::complex_view_2d specrefndxlw_;// ready
 
   // FIXME: Maybe use a 1D view instead of arrays of complex.
   Kokkos::complex<Real> crefwlw_[mam4::modal_aer_opt::nlwbands]; // ready

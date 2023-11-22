@@ -16,6 +16,9 @@ using view_1d_host = typename KT::view_1d<Real>::HostMirror;
 using view_2d_host = typename KT::view_2d<Real>::HostMirror;
 using view_5d_host = Kokkos::View<Real *****>::HostMirror;
 
+constexpr int nlwbands = mam4::modal_aer_opt::nlwbands;
+constexpr int nswbands = mam4::modal_aer_opt::nswbands;
+
 struct AerosolOpticsHostData {
 // host views
 view_2d_host refindex_real_sw_host;
@@ -60,8 +63,6 @@ void set_parameters_table(AerosolOpticsHostData &aerosol_optics_host_data,
 
   constexpr int refindex_real = mam4::modal_aer_opt::refindex_real;
   constexpr int refindex_im = mam4::modal_aer_opt::refindex_im;
-  constexpr int nlwbands = mam4::modal_aer_opt::nlwbands;
-  constexpr int nswbands = mam4::modal_aer_opt::nswbands;
   constexpr int coef_number = mam4::modal_aer_opt::coef_number;
 
   auto refindex_real_lw_host = view_2d_host("refrtablw_real_host", nlwbands, refindex_real);
@@ -177,8 +178,6 @@ void read_rrtmg_table(const std::string& table_filename,
 
   constexpr int refindex_real = mam4::modal_aer_opt::refindex_real;
   constexpr int refindex_im = mam4::modal_aer_opt::refindex_im;
-  constexpr int nlwbands = mam4::modal_aer_opt::nlwbands;
-  constexpr int nswbands = mam4::modal_aer_opt::nswbands;
   constexpr int coef_number = mam4::modal_aer_opt::coef_number;
 
 
@@ -242,8 +241,7 @@ void read_water_refindex(const std::string& table_filename,
   // refractive index for water read in read_water_refindex
   // crefwsw(nswbands) ! complex refractive index for water visible
   // crefwlw(nlwbands) ! complex refractive index for water infrared
-  constexpr int nlwbands = mam4::modal_aer_opt::nlwbands;
-  constexpr int nswbands = mam4::modal_aer_opt::nswbands;
+
   using namespace ShortFieldTagsNames;
   using view_1d_host = typename KT::view_1d<Real>::HostMirror;
   // Set up input structure to read data from file.
@@ -318,7 +316,80 @@ void read_water_refindex(const std::string& table_filename,
   }
 
   }
-//read_water_water_refindex
+//read_refindex_aero
+
+inline
+void set_refindex(std::string surname,
+                  ekat::ParameterList& params,
+                  std::map<std::string,view_1d_host>& host_views,
+                  std::map<std::string,FieldLayout>&  layouts )
+{
+  // set variables names
+  using view_1d_host = typename KT::view_1d<Real>::HostMirror;
+  using strvec_t = std::vector<std::string>;
+  using namespace ShortFieldTagsNames;
+
+  std::string refindex_real_sw = "refindex_real_"+surname+"_sw";
+  std::string refindex_im_sw = "refindex_im_"+surname+"_sw";
+  std::string refindex_real_lw = "refindex_real_"+surname+"_lw";
+  std::string refindex_im_lw = "refindex_im_"+surname+"_lw";
+
+  params.set("Skip_Grid_Checks",true);
+  params.set<strvec_t>("Field Names",{ refindex_real_sw,
+                                       refindex_im_sw,
+                                       refindex_real_lw,
+                                       refindex_im_lw
+                                       });
+  // allocate host views
+  host_views[refindex_real_sw]   =  view_1d_host(refindex_real_sw, nswbands);
+  host_views[refindex_im_sw]     =  view_1d_host(refindex_im_sw, nswbands);
+  host_views[refindex_real_lw]   = view_1d_host(refindex_real_lw, nlwbands);
+  host_views[refindex_im_lw]     = view_1d_host(refindex_im_lw, nlwbands);
+
+  FieldLayout scalar_refindex_sw_layout { {SWBAND}, {nswbands} };
+  FieldLayout scalar_refindex_lw_layout { {LWBAND}, {nlwbands} };
+
+  layouts.emplace(refindex_real_sw,
+  scalar_refindex_sw_layout);
+  layouts.emplace(refindex_im_sw,
+  scalar_refindex_sw_layout);
+  layouts.emplace(refindex_real_lw,
+  scalar_refindex_lw_layout);
+  layouts.emplace(refindex_im_lw,
+  scalar_refindex_lw_layout);
+
+}  //set_refindex_aero
+
+inline
+void copy_refindex_aerosol_to_device(const int species_id,
+std::map<std::string,view_1d_host>& host_views,
+mam_coupling::complex_view_2d  &specrefndxsw, // complex refractive index for water visible
+  mam_coupling::complex_view_2d &specrefndxlw)
+{
+  std::string sw_real_name = "refindex_real_aer_sw";
+  std::string lw_real_name = "refindex_real_aer_lw";
+  std::string sw_im_name = "refindex_im_aer_sw";
+  std::string lw_im_name = "refindex_im_aer_lw";
+
+  // using complex_view_2d_host = typename KT::view_1d<Kokkos::complex<Real>>::HostMirror;
+  // FIXME: can we do this copy without making another host view?
+  // Here I assume that specrefndxsw and specrefndxlw are already allocated.
+  auto specrefndxsw_host = Kokkos::create_mirror_view(specrefndxsw);
+  auto specrefndxlw_host = Kokkos::create_mirror_view(specrefndxlw);
+
+  for (int i = 0; i < nswbands; i++)
+  {
+    specrefndxsw_host(i,species_id).real() = host_views[sw_real_name](i);
+    specrefndxsw_host(i,species_id).imag() = host_views[sw_im_name](i);
+  }
+  for (int i = 0; i < nlwbands; i++)
+  {
+    specrefndxlw_host(i,species_id).real() = host_views[lw_real_name](i);
+    specrefndxlw_host(i,species_id).imag() = host_views[lw_im_name](i);
+  }
+  Kokkos::deep_copy(specrefndxsw, specrefndxsw_host);
+  Kokkos::deep_copy(specrefndxlw, specrefndxlw_host);
+} // copy_refindex_to_device
 
 } // namespace scream::mam_coupling
 

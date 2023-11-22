@@ -206,12 +206,6 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   Kokkos::deep_copy(ext_cmip6_lw_, 1.0);
   // Kokkos::deep_copy(odap_aer_, 1.0);
 
-  // FIXME: I need to get these variables from a netCDF file.
-  specrefndxsw_ = mam_coupling::complex_view_2d("specrefndxlw_",nswbands, maxd_aspectype );
-  Kokkos::deep_copy(specrefndxsw_, 1.0);
-  specrefndxlw_  = mam_coupling::complex_view_2d("specrefndxlw_",nlwbands, maxd_aspectype );
-  Kokkos::deep_copy(specrefndxlw_, 1.0);
-
 
 #endif
  // read table info
@@ -286,51 +280,112 @@ for (int d1 = 0; d1 < ntot_amode; ++d1)
                                      rrtmg_params,
                                      layouts,
                                      host_views );
-  // FIXME: get table name from input files.
-  std::string tables_filename_mode1 = "mam4_mode1_rrtmg_aeronetdust_c141106.nc";
-  mam_coupling::read_rrtmg_table(tables_filename_mode1,
-                                 0,// mode No
+
+  //FIXME: this name need to be pass in the input file.
+  std::vector<std::string> name_table_modes=
+  {
+  "mam4_mode1_rrtmg_aeronetdust_c141106.nc",
+  "mam4_mode2_rrtmg_c130628.nc",
+  "mam4_mode3_rrtmg_aeronetdust_c141106.nc",
+  "mam4_mode4_rrtmg_c130628.nc"
+  };
+
+  for (int imode = 0; imode < ntot_amode; imode++)
+  {
+    mam_coupling::read_rrtmg_table(name_table_modes[imode],
+                                 imode,// mode No
                                  rrtmg_params, grid_,
                                  host_views,
                                  layouts,
                                  aerosol_optics_host_data,
                                  aerosol_optics_device_data);
-   // FIXME: get table name from input files.
-  std::string tables_filename_mode2 = "mam4_mode2_rrtmg_c130628.nc";
-  mam_coupling::read_rrtmg_table(tables_filename_mode2,
-                                 1,// mode No
-                                 rrtmg_params, grid_,
-                                 host_views,
-                                 layouts,
-                                 aerosol_optics_host_data,
-                                 aerosol_optics_device_data);
-    // FIXME: get table name from input files.
-  std::string tables_filename_mode3 = "mam4_mode3_rrtmg_aeronetdust_c141106.nc";
-  mam_coupling::read_rrtmg_table(tables_filename_mode3,
-                                 2,// mode No
-                                 rrtmg_params, grid_,
-                                 host_views,
-                                 layouts,
-                                 aerosol_optics_host_data,
-                                 aerosol_optics_device_data);
- // FIXME: get table name from input files.
-  std::string tables_filename_mode4 = "mam4_mode4_rrtmg_c130628.nc";
-  mam_coupling::read_rrtmg_table(tables_filename_mode4,
-                                 3,// mode No
-                                 rrtmg_params, grid_,
-                                 host_views,
-                                 layouts,
-                                 aerosol_optics_host_data,
-                                 aerosol_optics_device_data);
+  }
 
 #endif
 
-
-#if 1
 // FIXME: we need to get this name from the yaml file.
 std::string table_name = "water_refindex_rrtmg_c080910.nc";
 mam_coupling::read_water_refindex(table_name, grid_, crefwlw_,crefwsw_);
-#endif
+
+//
+{
+   // FIXME: I need to get these variables from a netCDF file.
+  specrefndxsw_ = mam_coupling::complex_view_2d("specrefndxlw_",nswbands, maxd_aspectype );
+  // Kokkos::deep_copy(specrefndxsw_, 1.0);
+  specrefndxlw_  = mam_coupling::complex_view_2d("specrefndxlw_",nlwbands, maxd_aspectype );
+  // Kokkos::deep_copy(specrefndxlw_, 1.0);
+
+ // make a list of host views
+  std::map<std::string,view_1d_host> host_views_aero;
+  // defines layouts
+  std::map<std::string,FieldLayout>  layouts_aero;
+  ekat::ParameterList params_aero;
+  std::string surname_aero="aer";
+  mam_coupling::set_refindex(surname_aero, params_aero, host_views_aero, layouts_aero );
+
+  // read data
+  /*
+  soa:s-organic: /compyfs/inputdata/atm/cam/physprops/ocphi_rrtmg_c100508.nc
+  dst:dust:      /compyfs/inputdata/atm/cam/physprops/dust_aeronet_rrtmg_c141106.nc
+  ncl:seasalt:   /compyfs/inputdata/atm/cam/physprops/ssam_rrtmg_c100508.nc
+  so4:sulfate:   /compyfs/inputdata/atm/cam/physprops/sulfate_rrtmg_c080918.nc
+  pom:p-organic: /compyfs/inputdata/atm/cam/physprops/ocpho_rrtmg_c130709.nc
+  bc :black-c:   /compyfs/inputdata/atm/cam/physprops/bcpho_rrtmg_c100508.nc
+  mom:m-organic: /compyfs/inputdata/atm/cam/physprops/poly_rrtmg_c130816.nc */
+  std::vector<std::string> name_table_aerosols=
+  {
+  "ocphi_rrtmg_c100508.nc", // soa:s-organic
+  "dust_aeronet_rrtmg_c141106.nc",//dst:dust:
+  "ssam_rrtmg_c100508.nc", // ncl:seasalt
+  "sulfate_rrtmg_c080918.nc", // so4:sulfate
+  "ocpho_rrtmg_c130709.nc", // pom:p-organic
+  "bcpho_rrtmg_c100508.nc", // bc :black-c
+  "poly_rrtmg_c130816.nc" // mom:m-organic
+  };
+
+  //FIXME: make a function that return a index given the species name
+// specname_amode(ntot_aspectype) = (/ 'sulfate (0)   ',
+//  'ammonium (1) ', 'nitrate (2)   ', &
+      //  'p-organic (3) ', 's-organic (4) ', 'black-c (5)  ', &
+      //  'seasalt (6)  ', 'dust  (7)    ', &
+      //  'm-organic (8)' /)
+  // FIXME: move this info to a conf file
+  std::vector<int> species_ids=
+  {
+  4, // soa:s-organic
+  7,//dst:dust:
+  6, // ncl:seasalt
+  0, // so4:sulfate
+  3, // pom:p-organic
+  5, // bc :black-c
+  8 // mom:m-organic
+  };
+
+  const int n_spec = size(name_table_aerosols);
+  for (int ispec = 0; ispec < n_spec; ispec++)
+  {
+
+    // read data
+    auto table_name = name_table_aerosols[ispec];
+    // need to update table name
+    params_aero.set("Filename",table_name);
+    AtmosphereInput refindex_aerosol(params_aero, grid_,
+    host_views_aero, layouts_aero);
+    refindex_aerosol.read_variables();
+    refindex_aerosol.finalize();
+
+    // copy data to device
+    int species_id =species_ids[ispec]; // FIXME: I need the species index for soa
+    mam_coupling::copy_refindex_aerosol_to_device(species_id,
+                                             host_views_aero,
+                                             specrefndxsw_, // complex refractive index for water visible
+                                             specrefndxlw_);
+
+  } // done ispec
+
+}
+
+
 
 #if 0
 {
