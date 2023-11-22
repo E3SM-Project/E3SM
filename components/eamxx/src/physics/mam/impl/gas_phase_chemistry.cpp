@@ -70,7 +70,6 @@ void gas_phase_chemistry(Real zm, Real zi, Real phis, Real temp, Real pmid, Real
 
   // ... compute the extraneous frcing at time = t(n+1)
   Real extfrc[extcnt];
-  // FIXME: Same thing: can we do this for each single level?
   // mam4::mo_setext::setext(extfrc, zintr); // FIXME: not ported yet
 
   for (int mm = 0; mm < extcnt; ++mm) {
