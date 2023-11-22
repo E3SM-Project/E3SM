@@ -31,6 +31,8 @@ view_5d_host extpsw_host;
 
 struct AerosolOpticsDeviceData {
 // devices views
+// FIXME: move this code to mam4x and simplify number of inputs for aerosol_optics
+// FIXME: add description of these tables.
 view_1d refitabsw[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nswbands];
 view_1d refrtabsw[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nswbands];
 view_1d refrtablw[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nlwbands];

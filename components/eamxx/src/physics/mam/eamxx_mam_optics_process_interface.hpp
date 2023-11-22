@@ -101,16 +101,17 @@ private_except_cuda:
   Kokkos::complex<Real> crefwsw_[mam4::modal_aer_opt::nswbands];
 
   // Inputs from netCDF files. I already got files and code to read them.
-  mam_coupling::view_3d  abspsw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nswbands];
-  mam_coupling::view_3d  extpsw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nswbands];
-  mam_coupling::view_3d  asmpsw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nswbands];
+  // ready means: I added code to read this table from netcdf. I will delete this comment.
+  mam_coupling::view_3d  abspsw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nswbands]; // ready
+  mam_coupling::view_3d  extpsw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nswbands]; // ready
+  mam_coupling::view_3d  asmpsw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nswbands]; // ready
 
-  mam_coupling::view_1d refrtabsw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nswbands];
-  mam_coupling::view_1d refitabsw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nswbands];
+  mam_coupling::view_1d refrtabsw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nswbands]; // ready
+  mam_coupling::view_1d refitabsw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nswbands]; // ready
 
-  mam_coupling::view_3d absplw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nlwbands];
-  mam_coupling::view_1d refrtablw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nlwbands];
-  mam_coupling::view_1d refitablw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nlwbands];
+  mam_coupling::view_3d absplw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nlwbands]; // ready
+  mam_coupling::view_1d refrtablw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nlwbands]; // ready
+  mam_coupling::view_1d refitablw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nlwbands]; // ready
 
   // work arrays
   mam_coupling::view_2d air_density_;
