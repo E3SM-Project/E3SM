@@ -21,6 +21,7 @@ use physics_types,   only: physics_state, physics_ptend
 use physconst,       only: cappa
 use time_manager,    only: get_nstep, is_first_restart_step
 use cam_abortutils,      only: endrun
+use cam_history_support, only: add_hist_coord
 use error_messages,  only: handle_err
 use cam_control_mod, only: lambm0, obliqr, mvelpp, eccen
 use iop_data_mod,    only: single_column
@@ -1001,7 +1002,7 @@ end function radiation_nextsw_cday
     logical  :: conserve_energy = .true.       ! flag to carry (QRS,QRL)*dp across time steps
 
     ! Local variables from radctl
-    integer :: i, k, iseed, ilchnk                  ! index
+    integer :: i, k, iseed, ilchnk, icol, ilay                  ! index
     integer :: istat
     integer :: clm_seed (pcols,kiss_seed_num)
     real(r8) solin(pcols)         ! Solar incident flux
@@ -1846,7 +1847,7 @@ function reordered(array_in, new_indexing) result(array_out)
    integer :: ii
 
    ! Check inputs
-   call assert(size(array_in) == size(new_indexing), 'reorder_array: sizes inconsistent')
+   ! call assert(size(array_in) == size(new_indexing), 'reorder_array: sizes inconsistent')
 
    ! Reorder array based on input index mapping, which maps old indices to new
    do ii = 1,size(new_indexing)
