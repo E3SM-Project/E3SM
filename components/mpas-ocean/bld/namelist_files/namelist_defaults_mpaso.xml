@@ -491,7 +491,7 @@
 <config_btr_dt ocn_grid="SOwISC12to60E2r4">'0000_00:00:15'</config_btr_dt>
 <config_btr_dt ocn_grid="ECwISC30to60E2r1">'0000_00:01:15'</config_btr_dt>
 <config_btr_dt ocn_grid="ECwISC30to60E3r2">'0000_00:01:15'</config_btr_dt>
-<config_btr_dt ocn_grid="IcoswISC30E3r5">'0000_00:00:45'</config_btr_dt>
+<config_btr_dt ocn_grid="IcoswISC30E3r5">'0000_00:01:00'</config_btr_dt>
 <config_n_btr_cor_iter>2</config_n_btr_cor_iter>
 <config_vel_correction>.true.</config_vel_correction>
 <config_btr_subcycle_loop_factor>2</config_btr_subcycle_loop_factor>
