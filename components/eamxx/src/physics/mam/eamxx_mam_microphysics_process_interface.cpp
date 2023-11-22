@@ -55,7 +55,13 @@ void MAMMicrophysics::configure(const ekat::ParameterList& params) {
   config_.gaexch_h2so4_uptake_optaa = 2;
   config_.newnuc_h2so4_conc_optaa = 2;
 
+  // linear stratospheric chemistry parameters
+  // config_.o3_lbl = 70;
+  // FIXME: fetch o3 climatology data
+
+  // photolysis
   // FIXME: fetch photolysis table filename(s)
+
 }
 
 void MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
@@ -281,12 +287,25 @@ void MAMMicrophysics::run_impl(const double dt) {
   // NOTE: nothing depends on simulation time (yet), so we can just use zero for now
   double t = 0.0;
 
-  // here's where we store photolysis rates for all columns
+  // here's where we store per-column photolysis rates
+  // FIXME: should probably be allocated in the buffer
   view_2d photo_rates("photo", nlev_, mam4::mo_photo::phtcnt);
+
+  // climatology data for linear stratospheric chemistry
+  // FIXME: these views should probably be allocated in the buffer
+  // FIXME: need to figure out where this data comes from
+  view_2d linoz_o3_clim("linoz_o3_clim", ncol_, nlev_);           // ozone (climatology) [vmr]
+  view_2d linoz_o3col_clim("linoz_o3col_clim", ncol_, nlev_);     // column o3 above box (climatology) [Dobson Units (DU)]
+  view_2d linoz_t_clim("linoz_o3col_clim", ncol_, nlev_);         // temperature (climatology) [K]
+  view_2d linoz_Pml_clim("linoz_Pml_clim", ncol_, nlev_);         // P minus L (climatology) [vmr/s]
+  view_2d linoz_dPml_dO3("linoz_dPml_dO3", ncol_, nlev_);         // sensitivity of P minus L to O3 [1/s]
+  view_2d linoz_dPml_dT("linoz_dPml_dT", ncol_, nlev_);           // sensitivity of P minus L to T3 [K]
+  view_2d linoz_dPml_dO3col("linoz_dPml_dT", ncol_, nlev_);       // sensitivity of P minus L to overhead O3 column [vmr/DU]
+  view_2d linoz_cariolle_psc("linoz_cariolle_psc", ncol_, nlev_); // Cariolle parameter for PSC loss of ozone [1/s]
 
   // loop over atmosphere columns and compute aerosol microphyscs
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const ThreadTeam& team) {
-    const Int icol = team.league_rank(); // column index
+    const int icol = team.league_rank(); // column index
 
     // fetch column-specific atmosphere state data
     auto atm = mam_coupling::atmosphere_for_column(dry_atm_, icol);
@@ -399,17 +418,26 @@ void MAMMicrophysics::run_impl(const double dt) {
       // LINOZ chemistry
       //-----------------
 
-      // FIXME: There are a ton of linoz_* quantities that we need to get from
-      // FIXME: somewhere.
-      // lin_strat_chem_solve_kk(o3col, temp, sza, pmid, dt, rlats, ...);
-      // lin_strat_sfcsink_kk(...); // ???
-      /* Here are the Fortran calls
-      lin_strat_chem_solve(ncol, lchnk, col_dens(:,:,1), tfld, zen_angle, pmid, delt, rlats, troplev,
-        linoz_o3_clim, linoz_t_clim, linoz_o3col_clim, linoz_PmL_clim, linoz_dPmL_dO3, linoz_dPmL_dT,
-        linoz_dPmL_dO3col, linoz_cariolle_psc,
-        vmr(:,:,o3_ndx));
-      lin_strat_sfcsink(ncol, lchnk, delt, pdel(:ncol,:), vmr(:,:,o3_ndx));
-      */
+      // FIXME: the following things are diagnostics, which we're not
+      // FIXME: including in the first rev
+      Real do3_linoz, do3_linoz_psc, ss_o3, o3col_du_diag, o3clim_linoz_diag,
+           sza_degrees;
+
+      lin_strat_chem_solve_kk(o3col, temp, sza, pmid, dt, rlats,
+        linoz_o3_clim(icol, k), linoz_t_clim(icol, k), linoz_o3col_clim(icol, k),
+        linoz_PmL_clim(icol, k), linoz_dPmL_dO3(icol, k), linoz_dPmL_dT(icol, k),
+        linoz_dPmL_dO3col(icol, k), linoz_cariolle_psc(icol, k),
+        config_.chlorine_loading, config_.psc_T, q[o3_ndx],
+        do3_linoz, do3_linoz_psc, ss_o3,
+        o3col_du_diag, o3clim_linoz_diag, sza_degrees));
+
+
+      // update source terms above the ozone decay threshold
+      if (k > nlev_ - config_.o3_lbl - 1) {
+        Real do3_mass; // diagnostic, not needed
+        lin_strat_sfcsink_kk(dt, pdel, q[o3_ndx], config_.o3_sfc, config_.o3_tau,
+                             do3_mass);
+      }
 
       // ... check for negative values and reset to zero
       for (int i = 0; i < gas_pcnst; ++i) {
