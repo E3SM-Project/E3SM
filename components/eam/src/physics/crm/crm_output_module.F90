@@ -155,7 +155,7 @@ contains
       ! Allocate instantaneous outputs
       if (.not. allocated(output%qcl)) allocate(output%qcl(ncol,crm_nx,crm_ny,crm_nz))
       if (.not. allocated(output%qci)) allocate(output%qci(ncol,crm_nx,crm_ny,crm_nz))
-      if (.not. allocated(output%bou)) allocate(output%bou(ncol,crm_nx,crm_ny,crm_nz))
+      ! if (.not. allocated(output%bou)) allocate(output%bou(ncol,crm_nx,crm_ny,crm_nz))
       if (.not. allocated(output%qpl)) allocate(output%qpl(ncol,crm_nx,crm_ny,crm_nz))
       if (.not. allocated(output%qpi)) allocate(output%qpi(ncol,crm_nx,crm_ny,crm_nz))
 
@@ -295,7 +295,7 @@ contains
       if (.not. allocated(output%flux_qp      )) allocate(output%flux_qp      (ncol,nlev))
       if (.not. allocated(output%precflux     )) allocate(output%precflux     (ncol,nlev))
       if (.not. allocated(output%qt_ls        )) allocate(output%qt_ls        (ncol,nlev))
-      if (.not. allocated(output%bou_ls       )) allocate(output%bou_ls        (ncol,nlev))
+      ! if (.not. allocated(output%bou_ls       )) allocate(output%bou_ls        (ncol,nlev))
       if (.not. allocated(output%qt_trans     )) allocate(output%qt_trans     (ncol,nlev))
       if (.not. allocated(output%qp_trans     )) allocate(output%qp_trans     (ncol,nlev))
       if (.not. allocated(output%qp_fall      )) allocate(output%qp_fall      (ncol,nlev))
@@ -313,7 +313,7 @@ contains
       call prefetch(output%qltend  )
       call prefetch(output%qcltend )
       call prefetch(output%qiltend )
-      call prefetch(output%bou     )
+      ! call prefetch(output%bou     )
 
       call prefetch(output%t_vt_tend )
       call prefetch(output%q_vt_tend )
@@ -351,7 +351,7 @@ contains
       call prefetch(output%flux_qp       )
       call prefetch(output%precflux      )
       call prefetch(output%qt_ls         )
-      call prefetch(output%bou_ls        )
+      ! call prefetch(output%bou_ls        )
       call prefetch(output%qt_trans      )
       call prefetch(output%qp_trans      )
       call prefetch(output%qp_fall       )
@@ -370,7 +370,7 @@ contains
       output%qci = 0
       output%qpl = 0
       output%qpi = 0
-      output%bou = 0
+      ! output%bou = 0
       output%tk = 0
       output%tkh = 0
       output%prec_crm = 0
@@ -475,7 +475,7 @@ contains
       output%flux_qp       = 0
       output%precflux      = 0
       output%qt_ls         = 0
-      output%bou_ls        = 0
+      ! output%bou_ls        = 0
       output%qt_trans      = 0
       output%qp_trans      = 0
       output%qp_fall       = 0

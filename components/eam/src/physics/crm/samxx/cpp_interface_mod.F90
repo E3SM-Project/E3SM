@@ -30,11 +30,11 @@ module cpp_interface_mod
                    crm_output_clhgh, crm_output_clmed, crm_output_cllow, &
                    crm_output_sltend, crm_output_qltend, crm_output_qcltend, crm_output_qiltend, &
                    crm_output_t_vt_tend, crm_output_q_vt_tend, crm_output_u_vt_tend, &
-                   crm_output_t_vt_ls, crm_output_q_vt_ls, crm_output_u_vt_ls, crm_output_bou_ls,&
+                   crm_output_t_vt_ls, crm_output_q_vt_ls, crm_output_u_vt_ls, &
 #ifdef MMF_MOMENTUM_FEEDBACK
                    crm_output_ultend, crm_output_vltend, &
 #endif 
-                   crm_output_tk, crm_output_tkh, crm_output_qcl, crm_output_qci, crm_output_qpl, crm_output_qpi, crm_output_bou,&
+                   crm_output_tk, crm_output_tkh, crm_output_qcl, crm_output_qci, crm_output_qpl, crm_output_qpi, &
                    crm_output_z0m, crm_output_taux, crm_output_tauy, crm_output_precc, crm_output_precl, crm_output_precsc, &
                    crm_output_precsl, crm_output_prec_crm,        & 
 #ifdef MMF_ESMT
@@ -75,7 +75,7 @@ module cpp_interface_mod
                                       crm_output_clhgh, crm_output_clmed, crm_output_cllow, &
                                       crm_output_sltend, crm_output_qltend, crm_output_qcltend, &
                                       crm_output_t_vt_tend, crm_output_q_vt_tend, crm_output_t_vt_ls, crm_output_q_vt_ls, &
-                                      crm_input_u_vt, crm_output_u_vt_tend, crm_output_u_vt_ls, crm_output_bou_ls,&
+                                      crm_input_u_vt, crm_output_u_vt_tend, crm_output_u_vt_ls, &
 #ifdef MMF_MOMENTUM_FEEDBACK
                                       crm_output_ultend, crm_output_vltend, &
 #endif
