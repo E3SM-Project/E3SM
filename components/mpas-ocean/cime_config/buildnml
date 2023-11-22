@@ -1202,7 +1202,6 @@ def buildnml(case, caseroot, compname):
             lines.append('<var name="accumulatedSubglacialRunoffFlux"/>')
             lines.append('<var name="accumulatedIceRunoffFlux"/>')
             lines.append('<var name="accumulatedRemovedRiverRunoffFlux"/>')
-            lines.append('<var name="accumulatedRemovedSubglacialRunoffFlux"/>')
             lines.append('<var name="accumulatedRemovedIceRunoffFlux"/>')
             lines.append('<var name="accumulatedIcebergFlux"/>')
             lines.append('<var name="accumulatedFrazilFlux"/>')
