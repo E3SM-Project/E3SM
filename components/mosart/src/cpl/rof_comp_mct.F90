@@ -460,7 +460,7 @@ contains
 
 #endif
 
-    call rof_import_moab( )
+    call rof_import_moab(EClock )
 #endif
     
 
@@ -1210,9 +1210,9 @@ end subroutine rof_export_moab
 
 !====================================================================================
  
-  subroutine rof_import_moab( )
+  subroutine rof_import_moab( EClock )
 
-    use iMOAB, only : iMOAB_GetDoubleTagStorage
+    use iMOAB, only : iMOAB_GetDoubleTagStorage, iMOAB_WriteMesh
     !---------------------------------------------------------------------------
     ! DESCRIPTION:
     ! Obtain the runoff input from the moab coupler
@@ -1220,6 +1220,7 @@ end subroutine rof_export_moab
     !
     ! ARGUMENTS:
     implicit none
+    type(ESMF_Clock) , intent(inout) :: EClock    ! Input synchronization clock from driver
      
     !
     ! LOCAL VARIABLES
@@ -1228,10 +1229,25 @@ end subroutine rof_export_moab
     real(R8) :: shum
     character(CXX) ::  tagname ! 
     integer  :: ent_type, ierr
+    integer :: cur_rof_stepno
 
     character(len=32), parameter :: sub = 'rof_import_moab'
     !---------------------------------------------------------------------------
-    
+#ifdef MOABDEBUG
+    character*100 outfile, wopts, lnum
+#endif
+
+    call seq_timemgr_EClockGetData( EClock, stepno=cur_rof_stepno )
+#ifdef MOABDEBUG
+    write(lnum,"(I0.2)")cur_rof_stepno
+    outfile = 'RofImp_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+    wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
+    ierr = iMOAB_WriteMesh(mrofid, outfile, wopts)
+    if (ierr > 0 )  then
+       call shr_sys_abort(sub//'Error: fail to write rof state')
+    endif
+#endif   
+
     ! populate the array x2r_rm with data from MOAB tags
     tagname=trim(seq_flds_x2r_fields)//C_NULL_CHAR
     ent_type = 0 ! vertices, point cloud

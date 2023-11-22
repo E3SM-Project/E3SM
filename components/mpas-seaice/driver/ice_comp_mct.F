@@ -849,7 +849,7 @@ contains
     call mct_list_clean(temp_list)
 #endif
 
-    call ice_import_moab()
+    call ice_import_moab(Eclock)
 #endif 
     
 
@@ -1183,7 +1183,7 @@ contains
     enddo
     call mct_list_clean(temp_list)
 #endif
-      call ice_import_moab()
+      call ice_import_moab(Eclock)
 #endif
       
 
@@ -3346,7 +3346,7 @@ contains
 ! !IROUTINE: ice_import_moab
 ! !INTERFACE:
 
- subroutine ice_import_moab()!{{{
+ subroutine ice_import_moab(Eclock)!{{{
 
 ! !DESCRIPTION:
 !-----------------------------------------------------------------------
@@ -3426,6 +3426,8 @@ contains
 ! !REVISION HISTORY:
 !  same as module
      use iMOAB,  only       : iMOAB_GetDoubleTagStorage, iMOAB_WriteMesh
+
+    type(ESMF_Clock)            , intent(inout) :: EClock
 
 !EOP
 !BOC
@@ -3557,6 +3559,21 @@ contains
       atmosDustFlux
    character(CXX) :: tagname
    integer        :: ierr, ent_type
+   integer :: cur_ice_stepno
+#ifdef MOABDEBUG
+    character*100 outfile, wopts, lnum
+#endif
+
+    call seq_timemgr_EClockGetData( EClock, stepno=cur_ice_stepno )
+#ifdef MOABDEBUG
+    write(lnum,"(I0.2)")cur_ice_stepno
+    outfile = 'IceImp_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+    wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
+    ierr = iMOAB_WriteMesh(MPSIID, outfile, wopts)
+    if (ierr > 0 )  then
+       write(iceLogUnit,*) 'Fail to write ice state '
+    endif
+#endif   
 !----------------------------------------------------------------------- 
 !
 !  zero out padded cells 

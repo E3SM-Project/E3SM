@@ -141,7 +141,7 @@ contains
     type(seq_cdata), intent(inout) :: cdata_o
     type(mct_aVect), intent(inout) :: x2o_o, o2x_o
     character(len=*), optional, intent(in) :: NLFilename ! Namelist filename
-!
+
 ! !REVISION HISTORY:
 ! Author: Doug Jacobsen
 !EOP
@@ -907,7 +907,7 @@ contains
     call mct_list_clean(temp_list)
 #endif
 
-    call ocn_import_moab(errorCode)
+    call ocn_import_moab(Eclock, errorCode)
     if (errorCode /= 0) then
        call mpas_log_write('Error in ocn_import_moab', MPAS_LOG_CRIT)
     endif
@@ -1053,7 +1053,7 @@ contains
     call mct_list_clean(temp_list)
 #endif
 
-      call ocn_import_moab(ierr)
+      call ocn_import_moab(Eclock, ierr)
       if (ierr /= 0) then
          call mpas_log_write('Error in ocn_import_moab', MPAS_LOG_CRIT)
       endif
@@ -3143,7 +3143,7 @@ contains
 
 ! import method from moab
 ! copied from ocn_import_mct, will replace x2o_o AV with x2o_om array read locally
- subroutine ocn_import_moab( errorCode)!{{{
+ subroutine ocn_import_moab( Eclock, errorCode)!{{{
 
 ! !DESCRIPTION:
 !-----------------------------------------------------------------------
@@ -3187,7 +3187,7 @@ contains
 
 ! !OUTPUT PARAMETERS:
 
-   use iMOAB,  only       : iMOAB_GetDoubleTagStorage
+   use iMOAB,  only       : iMOAB_GetDoubleTagStorage, iMOAB_WriteMesh
      !EOP
      !BOC
      !-----------------------------------------------------------------------
@@ -3200,7 +3200,7 @@ contains
       !-----------------------------------------------------------------------
       integer :: ent_type, ierr
       character(CXX) :: tagname
-
+   type(ESMF_Clock), intent(inout) :: EClock
    integer, intent(out) :: &
       errorCode              ! returned error code
 
@@ -3330,7 +3330,21 @@ contains
 !  zero out padded cells 
 !
 !-----------------------------------------------------------------------
+    integer :: cur_ocn_stepno
+#ifdef MOABDEBUG
+    character*100 outfile, wopts, lnum
+#endif
 
+    call seq_timemgr_EClockGetData( EClock, stepno=cur_ocn_stepno )
+#ifdef MOABDEBUG
+    write(lnum,"(I0.2)")cur_ocn_stepno
+    outfile = 'OcnImp_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+    wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
+    ierr = iMOAB_WriteMesh(MPOID, outfile, wopts)
+    if (ierr > 0 )  then
+       write(ocnLogUnit,*) 'Fail to write ocean state '
+    endif
+#endif   
    errorCode = 0
 
 !  get moab tags from MPOID
