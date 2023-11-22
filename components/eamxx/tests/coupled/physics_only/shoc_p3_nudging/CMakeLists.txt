@@ -42,7 +42,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/output.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/output_nudged.yaml)
 CreateUnitTestFromExec (shoc_p3_nudged shoc_p3_nudging
       EXE_ARGS "--use-colour no --ekat-test-params ifile=input_nudging.yaml"
-      FIXTURES_SETUP shoc_p3_nudged FIXTURES_REQUIRED shoc_p3_source_data)
+      FIXTURES_REQUIRED shoc_p3_source_data)
 
 # Run a test with nudging turned on using remapped source data for nudging:
 set (NUM_STEPS  5)
@@ -55,6 +55,5 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/output.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/output_nudged_remapped.yaml)
 CreateUnitTestFromExec (shoc_p3_nudged_remapped shoc_p3_nudging
       EXE_ARGS "--use-colour no --ekat-test-params ifile=input_nudging_remapped.yaml"
-      FIXTURES_SETUP shoc_p3_nudged
       FIXTURES_REQUIRED shoc_p3_source_data)
 
