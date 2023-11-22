@@ -1,6 +1,6 @@
 include (ScreamUtils)
 
-set (BASE_TEST_NAME shoc_cld_p3_spa_rrtmgp)
+set (BASE_TEST_NAME shoc_cld_spa_p3_rrtmgp)
 set (FIXTURES_BASE_NAME ${BASE_TEST_NAME}_generate_output_nc_files)
 
 # Create the test
@@ -55,7 +55,7 @@ if (TEST_RANK_END GREATER TEST_RANK_START)
               COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}
               WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
     set_tests_properties(${TEST_NAME} PROPERTIES
-        LABELS  shoc cld spa p3 rrtmgp physics nudging
+        LABELS  "shoc;cld;spa;p3;rrtmgp;physics;nudging"
         FIXTURES_REQUIRED "${FIXTURES_BASE_NAME}_np1_omp1;${FIXTURES_BASE_NAME}_np${MPI_RANKS}_omp1")
   endforeach()
 endif()
