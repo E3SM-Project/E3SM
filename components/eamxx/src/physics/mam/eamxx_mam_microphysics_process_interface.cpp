@@ -33,35 +33,34 @@ std::string MAMMicrophysics::name() const {
 
 void MAMMicrophysics::configure(const ekat::ParameterList& params) {
   // enable/disable specific parameterizations
-  config_.do_cond = true;
-  config_.do_rename = true;
-  config_.do_newnuc = true;
-  config_.do_coag = true;
+  config_.amicphys.do_cond = true;
+  config_.amicphys.do_rename = true;
+  config_.amicphys.do_newnuc = true;
+  config_.amicphys.do_coag = true;
 
   // configure the specific aerosol microphysics parameterizations
 
-  config_.nucleation = {};
-  config_.nucleation.dens_so4a_host = 1770.0;
-  config_.nucleation.mw_so4a_host = 115.0;
-  config_.nucleation.newnuc_method_user_choice = 2;
-  config_.nucleation.pbl_nuc_wang2008_user_choice = 1;
-  config_.nucleation.adjust_factor_pbl_ratenucl = 1.0;
-  config_.nucleation.accom_coef_h2so4 = 1.0;
-  config_.nucleation.newnuc_adjust_factor_dnaitdt = 1.0;
+  config_.amicphys.nucleation = {};
+  config_.amicphys.nucleation.dens_so4a_host = 1770.0;
+  config_.amicphys.nucleation.mw_so4a_host = 115.0;
+  config_.amicphys.nucleation.newnuc_method_user_choice = 2;
+  config_.amicphys.nucleation.pbl_nuc_wang2008_user_choice = 1;
+  config_.amicphys.nucleation.adjust_factor_pbl_ratenucl = 1.0;
+  config_.amicphys.nucleation.accom_coef_h2so4 = 1.0;
+  config_.amicphys.nucleation.newnuc_adjust_factor_dnaitdt = 1.0;
 
   // these parameters guide the coupling between parameterizations
   // NOTE: mam4xx was ported with these parameters set thus. It's probably not
   // NOTE: safe to change these without code modifications.
-  config_.gaexch_h2so4_uptake_optaa = 2;
-  config_.newnuc_h2so4_conc_optaa = 2;
-
-  // linear stratospheric chemistry parameters
-  // config_.o3_lbl = 70;
-  // FIXME: fetch o3 climatology data
+  config_.amicphys.gaexch_h2so4_uptake_optaa = 2;
+  config_.amicphys.newnuc_h2so4_conc_optaa = 2;
 
   // photolysis
   // FIXME: fetch photolysis table filename(s)
 
+  // linear stratospheric chemistry parameters
+  // config_.linoz.o3_lbl = 70;
+  // FIXME: fetch o3 climatology data
 }
 
 void MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
@@ -293,7 +292,6 @@ void MAMMicrophysics::run_impl(const double dt) {
 
   // climatology data for linear stratospheric chemistry
   // FIXME: these views should probably be allocated in the buffer
-  // FIXME: need to figure out where this data comes from
   view_2d linoz_o3_clim("linoz_o3_clim", ncol_, nlev_);           // ozone (climatology) [vmr]
   view_2d linoz_o3col_clim("linoz_o3col_clim", ncol_, nlev_);     // column o3 above box (climatology) [Dobson Units (DU)]
   view_2d linoz_t_clim("linoz_o3col_clim", ncol_, nlev_);         // temperature (climatology) [K]
@@ -302,6 +300,8 @@ void MAMMicrophysics::run_impl(const double dt) {
   view_2d linoz_dPml_dT("linoz_dPml_dT", ncol_, nlev_);           // sensitivity of P minus L to T3 [K]
   view_2d linoz_dPml_dO3col("linoz_dPml_dT", ncol_, nlev_);       // sensitivity of P minus L to overhead O3 column [vmr/DU]
   view_2d linoz_cariolle_psc("linoz_cariolle_psc", ncol_, nlev_); // Cariolle parameter for PSC loss of ozone [1/s]
+
+  ColumnView o3_col_dens; // FIXME: where to allocate?
 
   // loop over atmosphere columns and compute aerosol microphyscs
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const ThreadTeam& team) {
@@ -323,8 +323,7 @@ void MAMMicrophysics::run_impl(const double dt) {
     mam4::Diagnostics diags(nlev_);
 
     // calculate o3 column densities (first component of col_dens in Fortran code)
-    ColumnView o3_col_dens; // FIXME
-    impl::compute_o3_column_density(team, atm, o3_col_dens);
+    impl::compute_o3_column_density(team, atm, progs, o3_col_dens);
 
     // set up photolysis work arrays for this column.
     mam4::mo_photo::PhotoTableWorkArrays photo_work_arrays;
@@ -359,28 +358,30 @@ void MAMMicrophysics::run_impl(const double dt) {
       Real qv   = atm.vapor_mixing_ratio(k);
       Real cld  = atm.cloud_fraction(k);
 
-      // aerosol/gas species work arrays (volume mixing ratios (VMR), equivalent
-      // to tracer mixing ratios (TMR))
-      Real q[gas_pcnst] = {};
-      Real qqcw[gas_pcnst] = {};
-
-      // extract aerosol state variables into "working arrays"
+      // extract aerosol state variables into "working arrays" (mass mixing ratios)
       // (in EAM, this is done in the gas_phase_chemdr subroutine defined within
       //  mozart/mo_gas_phase_chemdr.F90)
+      Real q[gas_pcnst] = {};
+      Real qqcw[gas_pcnst] = {};
       mam_coupling::transfer_prognostics_to_work_arrays(progs, k, q, qqcw);
 
+      // convert mass mixing ratios to volume mixing ratios (VMR), equivalent
+      // to tracer mixing ratios (TMR))
+      Real vmr[gas_pcnst], vmrcw[gas_pcnst];
+      mam_coupling::convert_work_arrays_to_vmr(q, qqcw, vmr, vmrcw);
+
       // aerosol/gas species tendencies (output)
-      Real q_tendbb[gas_pcnst][nqtendbb] = {};
-      Real qqcw_tendbb[gas_pcnst][nqtendbb] = {};
+      Real vmr_tendbb[gas_pcnst][nqtendbb] = {};
+      Real vmrcw_tendbb[gas_pcnst][nqtendbb] = {};
 
       // create work array copies to retain "pre-chemistry" values
-      Real q_pregaschem[gas_pcnst] = {};
-      Real q_precldchem[gas_pcnst] = {};
-      Real qqcw_precldchem[gas_pcnst] = {};
+      Real vmr_pregaschem[gas_pcnst] = {};
+      Real vmr_precldchem[gas_pcnst] = {};
+      Real vmrcw_precldchem[gas_pcnst] = {};
       for (int i = 0; i < gas_pcnst; ++i) {
-        q_pregaschem[i] = q[i];
-        q_precldchem[i] = q[i];
-        qqcw_precldchem[i] = qqcw[i];
+        vmr_pregaschem[i] = vmr[i];
+        vmr_precldchem[i] = vmr[i];
+        vmrcw_precldchem[i] = vmrcw[i];
       }
 
       //---------------------
@@ -391,11 +392,18 @@ void MAMMicrophysics::run_impl(const double dt) {
         photo_rates_k[i] = photo_rates(k, i);
       }
       impl::gas_phase_chemistry(zm, zi, phis, temp, pmid, pdel, dt,
-                                o3_col_dens(k), photo_rates_k, q);
+                                o3_col_dens(k), photo_rates_k, vmr);
 
       //----------------------
       // Aerosol microphysics
       //----------------------
+
+      // aqueous chemistry ... FIXME: not yet ported
+      /* call setsox( ncol, lchnk, loffset,  & ! in
+         delt, pmid, pdel, tfld,   & ! in
+         mbar, cwat, cldfr,cldnum, & ! in
+         airdens,      & ! in
+         vmrcw,      vmr           ) ! inout */
 
       // calculate aerosol water content using water uptake treatment
       // * dry and wet diameters [m]
@@ -407,11 +415,11 @@ void MAMMicrophysics::run_impl(const double dt) {
       Real qaerwat[num_modes]     = {};
       impl::compute_water_content(progs, k, qv, temp, pmid, dgncur_a, dgncur_awet, wetdens, qaerwat);
 
-      // compute aerosol microphysics
-      impl::modal_aero_amicphys_intr(config_, step_, dt, t, pmid, pdel,
-                                     zm, pblh, qv, cld, q, qqcw, q_pregaschem,
-                                     q_precldchem, qqcw_precldchem, q_tendbb,
-                                     qqcw_tendbb, dgncur_a, dgncur_awet,
+      // do aerosol microphysics (gas-aerosol exchange, nucleation, coagulation)
+      impl::modal_aero_amicphys_intr(config_.amicphys, step_, dt, t, pmid, pdel,
+                                     zm, pblh, qv, cld, vmr, vmrcw, vmr_pregaschem,
+                                     vmr_precldchem, vmrcw_precldchem, vmr_tendbb,
+                                     vmrcw_tendbb, dgncur_a, dgncur_awet,
                                      wetdens, qaerwat);
 
       //-----------------
@@ -427,30 +435,31 @@ void MAMMicrophysics::run_impl(const double dt) {
         linoz_o3_clim(icol, k), linoz_t_clim(icol, k), linoz_o3col_clim(icol, k),
         linoz_PmL_clim(icol, k), linoz_dPmL_dO3(icol, k), linoz_dPmL_dT(icol, k),
         linoz_dPmL_dO3col(icol, k), linoz_cariolle_psc(icol, k),
-        config_.chlorine_loading, config_.psc_T, q[o3_ndx],
+        config_.linoz.chlorine_loading, config_.linoz.psc_T, vmr[o3_ndx],
         do3_linoz, do3_linoz_psc, ss_o3,
         o3col_du_diag, o3clim_linoz_diag, sza_degrees));
 
 
       // update source terms above the ozone decay threshold
-      if (k > nlev_ - config_.o3_lbl - 1) {
+      if (k > nlev_ - config_.linoz.o3_lbl - 1) {
         Real do3_mass; // diagnostic, not needed
-        lin_strat_sfcsink_kk(dt, pdel, q[o3_ndx], config_.o3_sfc, config_.o3_tau,
-                             do3_mass);
+        lin_strat_sfcsink_kk(dt, pdel, vmr[o3_ndx], config_.linoz.o3_sfc,
+          config_.linoz.o3_tau, do3_mass);
       }
 
       // ... check for negative values and reset to zero
       for (int i = 0; i < gas_pcnst; ++i) {
-        if (q[i] < 0.0) q[i] = 0.0;
+        if (vmr[i] < 0.0) vmr[i] = 0.0;
       }
 
       //----------------
       // Dry deposition
       //----------------
 
-      // FIXME
+      // FIXME: not yet ported
 
-      // unpack updated prognostics from work arrays
+      // transfer updated prognostics from work arrays
+      mam_coupling::convert_work_arrays_to_mmr(vmr, vmrcw, q, qqcw);
       mam_coupling::transfer_work_arrays_to_prognostics(q, qqcw, progs, k);
     });
   });

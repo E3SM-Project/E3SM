@@ -85,8 +85,33 @@ private_except_cuda:
   // number of horizontal columns and vertical levels
   int ncol_, nlev_;
 
-  // aerosol microphysics configuration (see impl/mam4_amicphys.cpp)
-  impl::AmicPhysConfig config_;
+  // configuration data
+  struct Config {
+    struct { // photolysis parameters
+      // FIXME: are all these files needed?
+      char rsf_file[MAX_FILENAME_LEN];
+      char exo_coldens_file[MAX_FILENAME_LEN];
+      char tuv_xsect_file[MAX_FILENAME_LEN];
+      char o2_xsect_file[MAX_FILENAME_LEN];
+      char xs_coef_file[MAX_FILENAME_LEN];
+      char xs_short_file[MAX_FILENAME_LEN];
+      char xs_long_file[MAX_FILENAME_LEN];
+      char electron_file[MAX_FILENAME_LEN];
+      char euvac_file[MAX_FILENAME_LEN];
+      char euvacdat_file[MAX_FILENAME_LEN];
+    } photolysis;
+
+    struct { // stratospheric chemistry parameters
+      int o3_lbl; // number of layers with ozone decay from the surface
+      int o3_sfc; // set from namelist input linoz_sfc
+      int o3_tau; // set from namelist input linoz_tau
+      Real psc_T; // set from namelist input linoz_psc_T
+    } linoz;
+
+    // (see impl/mam4_amicphys.cpp)
+    impl::AmicPhysConfig amic_phys;
+  };
+  Config config_;
 
   // Atmosphere processes often have a pre-processing step that constructs
   // required variables from the set of fields stored in the field manager.

@@ -7,6 +7,8 @@
 
 namespace scream::impl {
 
+#define MAX_FILENAME_LEN 128
+
 using namespace mam4;
 
 // number of constituents in gas chemistry "work arrays"
@@ -39,12 +41,6 @@ struct AmicPhysConfig {
 
   // controls how nucleation interprets h2so4 concentrations
   int newnuc_h2so4_conc_optaa;
-
-  // stratospheric chemistry parameters
-  int o3_lbl; // number of layers with ozone decay from the surface
-  int o3_sfc; // set from namelist input linoz_sfc
-  int o3_tau; // set from namelist input linoz_tau
-  Real psc_T; // set from namelist input linoz_psc_T
 };
 
 namespace {
