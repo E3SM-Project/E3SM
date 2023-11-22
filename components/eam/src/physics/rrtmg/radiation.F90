@@ -1002,7 +1002,9 @@ end function radiation_nextsw_cday
     logical  :: conserve_energy = .true.       ! flag to carry (QRS,QRL)*dp across time steps
 
     ! Local variables from radctl
-    integer :: i, k, iseed, ilchnk, icol, ilay                  ! index
+    integer :: i, k, iseed, ilchnk, icol, ilay ! index
+    integer :: ibndsw_in, ibndsw_out           ! index
+    integer :: irrtmg_to_irrtmgp               ! reorder index from rrtmgp to rrtmgp?
     integer :: istat
     integer :: clm_seed (pcols,kiss_seed_num)
     real(r8) solin(pcols)         ! Solar incident flux
@@ -1061,7 +1063,6 @@ end function radiation_nextsw_cday
     real(r8) :: aer_tau_bnd_sw(pcols,0:pver,nswbands) ! aerosol extinction optical depth
     real(r8) :: aer_ssa_bnd_sw(pcols,0:pver,nswbands) ! aerosol single scattering albedo
     real(r8) :: aer_asm_bnd_sw(pcols,0:pver,nswbands) ! aerosol assymetry parameter
-    real(r8) :: aer_tau_bnd_lw(pcols,0:pver,nlwbands) ! aerosol longwave optical depth
     
 
     ! Gathered indicies of day and night columns 
@@ -1316,38 +1317,40 @@ end function radiation_nextsw_cday
                   aer_tau_bnd_sw = 0._r8
                   aer_ssa_bnd_sw = 0._r8
                   aer_asm_bnd_sw = 0._r8
+
+                  irrtmg_to_irrtmgp = 1 ! yes, reorder index from rrtmg to rrtmgp
+
                   ! Extract quantities from products
                   do icol = 1,ncol
-                     ! Copy cloud optical depth over directly
-                     aer_tau_bnd_sw(icol,1:pver,1:nswbands) = aer_tau(icol,1:pver,1:nswbands)
-                     ! Extract single scattering albedo from the product-defined fields
-                     where (aer_tau(icol,1:pver,1:nswbands) > 0)
-                        aer_ssa_bnd_sw(icol,1:pver,1:nswbands) &
-                           = aer_tau_w(icol,1:pver,1:nswbands) / aer_tau(icol,1:pver,1:nswbands)
-                     elsewhere
-                        aer_ssa_bnd_sw(icol,1:pver,1:nswbands) = 1._r8
-                     endwhere
-                     ! Extract assymmetry parameter from the product-defined fields
-                     where (aer_tau_w(icol,1:pver,1:nswbands) > 0)
-                        aer_asm_bnd_sw(icol,1:pver,1:nswbands) &
-                           = aer_tau_w_g(icol,1:pver,1:nswbands) / aer_tau_w(icol,1:pver,1:nswbands)
-                     elsewhere
-                        aer_asm_bnd_sw(icol,1:pver,1:nswbands) = 0._r8
-                     endwhere
-                  end do
-
-                  ! Now reorder bands to be consistent with RRTMGP
-                  ! TODO: fix the input files themselves!
-                  do icol = 1,size(aer_tau_bnd_sw,1)
-                     do ilay = 1,size(aer_tau_bnd_sw,2)
-                        aer_tau_bnd_sw(icol,ilay,:) = reordered(aer_tau_bnd_sw(icol,ilay,:), rrtmg_to_rrtmgp_swbands)
-                        aer_ssa_bnd_sw(icol,ilay,:) = reordered(aer_ssa_bnd_sw(icol,ilay,:), rrtmg_to_rrtmgp_swbands)
-                        aer_asm_bnd_sw(icol,ilay,:) = reordered(aer_asm_bnd_sw(icol,ilay,:), rrtmg_to_rrtmgp_swbands)
+                     do ibndsw_out = 1,nswbands
+                        ! reorder bands if desired
+                        if (irrtmg_to_irrtmgp == 1) then
+                           ibndsw_in = rrtmg_to_rrtmgp_swbands(ibndsw_out)
+                        else
+                           ibndsw_in = ibndsw_out
+                        end if
+                        ! Copy cloud optical depth over directly
+                        aer_tau_bnd_sw(icol,1:pver,ibndsw_out) = aer_tau(icol,1:pver,ibndsw_in)
+                        ! Extract single scattering albedo from the product-defined fields
+                        where (aer_tau(icol,1:pver,ibndsw_in) > 0)
+                           aer_ssa_bnd_sw(icol,1:pver,ibndsw_out) &
+                              = aer_tau_w(icol,1:pver,ibndsw_in) / aer_tau(icol,1:pver,ibndsw_in)
+                        elsewhere
+                           aer_ssa_bnd_sw(icol,1:pver,ibndsw_out) = 1._r8
+                        endwhere
+                        ! Extract assymmetry parameter from the product-defined fields
+                        where (aer_tau_w(icol,1:pver,ibndsw_in) > 0)
+                           aer_asm_bnd_sw(icol,1:pver,ibndsw_out) &
+                              = aer_tau_w_g(icol,1:pver,ibndsw_in) / aer_tau_w(icol,1:pver,ibndsw_in)
+                        elsewhere
+                           aer_asm_bnd_sw(icol,1:pver,ibndsw_out) = 0._r8
+                        endwhere
                      end do
                   end do
 
-
+                  ! Output aerosol SW optical depth
                   call output_aerosol_optics_sw(state, aer_tau_bnd_sw, aer_ssa_bnd_sw, aer_asm_bnd_sw)
+
                   call t_startf ('rad_rrtmg_sw')
                   call rad_rrtmg_sw( &
                        lchnk,        ncol,         num_rrtmg_levs, r_state,                    &
@@ -1827,34 +1830,6 @@ subroutine output_aerosol_optics_lw(state, tau)
                state%ncol, state%lchnk)
 
 end subroutine output_aerosol_optics_lw
-
-!----------------------------------------------------------------------------
-
-
-!----------------------------------------------------------------------------
-
-! Utility function to reorder an array given a new indexing
-function reordered(array_in, new_indexing) result(array_out)
-
-   ! Inputs
-   real(r8), intent(in) :: array_in(:)
-   integer, intent(in) :: new_indexing(:)
-
-   ! Output, reordered array
-   real(r8), dimension(size(array_in)) :: array_out
-
-   ! Loop index
-   integer :: ii
-
-   ! Check inputs
-   ! call assert(size(array_in) == size(new_indexing), 'reorder_array: sizes inconsistent')
-
-   ! Reorder array based on input index mapping, which maps old indices to new
-   do ii = 1,size(new_indexing)
-      array_out(ii) = array_in(new_indexing(ii))
-   end do
-
-end function reordered
 
 !----------------------------------------------------------------------------
 
