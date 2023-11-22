@@ -5,6 +5,5 @@ if (NOT SCREAM_BASELINES_ONLY)
   CreateUnitTest(tms_tests compute_tms_tests.cpp
     LIBS tms
     THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
-    DEP tms_tests_ut_np1_omp1
   )
 endif()

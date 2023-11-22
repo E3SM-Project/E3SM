@@ -76,13 +76,14 @@ if (NOT SCREAM_BASELINES_ONLY)
   CreateUnitTest(shoc_tests    "${SHOC_TESTS_SRCS}"
     LIBS shoc
     THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
-    DEP shoc_tests_ut_np1_omp1)
+  )
 
   if (NOT SCREAM_SMALL_KERNELS)
     CreateUnitTest(shoc_sk_tests "${SHOC_TESTS_SRCS}"
       LIBS shoc_sk
       THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
-      DEP shoc_tests_ut_np1_omp1 EXE_ARGS shoc_main_bfb)
+      EXE_ARGS shoc_main_bfb
+    )
   endif()
 endif()
 

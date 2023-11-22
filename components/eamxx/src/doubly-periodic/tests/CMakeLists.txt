@@ -23,5 +23,5 @@ if (NOT SCREAM_BASELINES_ONLY)
   CreateUnitTest(dp_tests "${DP_TESTS_SRCS}"
     LIBS dp
     THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
-    DEP dp_tests_ut_np1_omp1)
+  )
 endif()
