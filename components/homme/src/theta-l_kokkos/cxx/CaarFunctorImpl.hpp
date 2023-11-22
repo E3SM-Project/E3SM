@@ -552,10 +552,12 @@ struct CaarFunctorImpl {
       const int igp = idx / NP;
       const int jgp = idx % NP;
 
-//#define SUB
-#undef SUB
+//OGIGINAL = subviews + call to div
 
-#ifdef SUB
+//#define ORIGINAL
+#undef ORIGINAL
+
+#ifdef ORIGINAL
       auto u = Homme::subview(m_state.m_v,kv.ie,m_data.n0,0,igp,jgp);
       auto v = Homme::subview(m_state.m_v,kv.ie,m_data.n0,1,igp,jgp);
       auto dp3d = Homme::subview(m_state.m_dp3d,kv.ie,m_data.n0,igp,jgp);
@@ -565,7 +567,7 @@ struct CaarFunctorImpl {
 
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team, NUM_LEV),
                            [&] (const int& ilev) {
-#ifdef SUB
+#ifdef ORIGINAL
         udp(ilev) = u(ilev)*dp3d(ilev);
         vdp(ilev) = v(ilev)*dp3d(ilev);
 #else
@@ -584,11 +586,11 @@ struct CaarFunctorImpl {
     kv.team_barrier();
 
     // Compute div(vdp)
-#if 0
+#ifdef ORIGINAL
     m_sphere_ops.divergence_sphere(kv,
         Homme::subview(vvdp, kv.team_idx),
         Homme::subview(m_buffers.div_vdp, kv.team_idx));
-#endif
+#else
 
     const Real aa = 1.0, bb=0.0;
 
@@ -634,6 +636,7 @@ struct CaarFunctorImpl {
       });
     });
     kv.team_barrier();
+#endif
 
   }
 
