@@ -181,6 +181,7 @@ void read_rrtmg_table(const std::string& table_filename,
   constexpr int nswbands = mam4::modal_aer_opt::nswbands;
   constexpr int coef_number = mam4::modal_aer_opt::coef_number;
 
+
   params.set("Filename",table_filename);
   AtmosphereInput rrtmg(params, grid, host_views_1d, layouts);
   // // -1000 forces the interface to read a dataset that does not have time as variable.
@@ -242,11 +243,15 @@ void read_water_refindex(const std::string& table_filename,
   // crefwsw(nswbands) ! complex refractive index for water visible
   // crefwlw(nlwbands) ! complex refractive index for water infrared
   constexpr int nlwbands = mam4::modal_aer_opt::nlwbands;
-  constexpr int nswbands = mam4::modal_aer_opt::nswbands;  
+  constexpr int nswbands = mam4::modal_aer_opt::nswbands;
+  using namespace ShortFieldTagsNames;
+  using view_1d_host = typename KT::view_1d<Real>::HostMirror;
+  // Set up input structure to read data from file.
+  using strvec_t = std::vector<std::string>;
 
   // here a made a list of variables that I want to read from netcdf files
   ekat::ParameterList params;
-  params.set("Filename",table_name);
+  params.set("Filename",table_filename);
   params.set("Skip_Grid_Checks",true);
 
   params.set<strvec_t>("Field Names",{
@@ -269,7 +274,7 @@ void read_water_refindex(const std::string& table_filename,
   host_views_water["refindex_im_water_lw"]
    = refindex_im_water_lw_host;
    host_views_water["refindex_real_water_lw"]
-   = refindex_real_water_lw_host; 
+   = refindex_real_water_lw_host;
 
   // defines layouts
   std::map<std::string,FieldLayout>  layouts_water;
@@ -293,27 +298,27 @@ void read_water_refindex(const std::string& table_filename,
   refindex_water.read_variables();
   refindex_water.finalize();
 
-  //move data to device 
+  //move data to device
   // FIXME: check this correct or can be done in a better way.
   // maybe make a 1D vied of Kokkos::complex<Real>
   for (int i = 0; i < nlwbands; ++i)
   {
-    Kokkos::complex<Real> temp;
-    temp.real() =refindex_real_water_lw_host(i);
-    temp.imag() = refindex_im_water_lw_host(i);
-    Kokkos::deep_copy(crefwlw[i],temp);
+    // Kokkos::complex<Real> temp;
+    crefwlw[i].real() = refindex_real_water_lw_host(i);
+    crefwlw[i].imag() = refindex_im_water_lw_host(i);
+    // Kokkos::deep_copy(crefwlw[i],temp);
   }
 
   for (int i = 0; i < nswbands; ++i)
   {
-    Kokkos::complex<Real> temp;
-    temp.real() =refindex_real_water_sw_host(i);
-    temp.imag() = refindex_im_water_sw_host(i);
-    Kokkos::deep_copy(crefwsw[i],temp);
+    // Kokkos::complex<Real> temp;
+    crefwsw[i].real() = refindex_real_water_sw_host(i);
+    crefwsw[i].imag() = refindex_im_water_sw_host(i);
+    // Kokkos::deep_copy(crefwsw[i],temp);
   }
 
   }
-//read_water_water_refindex 
+//read_water_water_refindex
 
 } // namespace scream::mam_coupling
 

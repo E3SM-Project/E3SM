@@ -168,7 +168,7 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   state_q_ = mam_coupling::view_3d("state_q_", ncol_, nlev_, nvars);
   Kokkos::deep_copy(state_q_,10);
   qqcw_ = mam_coupling::view_3d("qqcw_", ncol_, nlev_, nvars);
-  Kokkos::deep_copy(qqcw_,10);  
+  Kokkos::deep_copy(qqcw_,10);
 
   // FIXME: work arrays
   mass_ = mam_coupling::view_2d("mass", ncol_,  nlev_);
@@ -192,7 +192,7 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   ext_cmip6_lw_inv_m_ = mam_coupling::view_3d ("ext_cmip6_lw_inv_m", ncol_, nlev_, nlwbands);
 
 
-  // aer_rad_props_sw inputs that are prescribed, i.e., we need a netcdf file. 
+  // aer_rad_props_sw inputs that are prescribed, i.e., we need a netcdf file.
   ssa_cmip6_sw_ = mam_coupling::view_3d ("ssa_cmip6_sw", ncol_, nlev_, nswbands);
   af_cmip6_sw_ = mam_coupling::view_3d ("af_cmip6_sw", ncol_, nlev_, nswbands);
   ext_cmip6_sw_= mam_coupling::view_3d ("ext_cmip6_sw", ncol_, nlev_, nswbands);
@@ -206,7 +206,7 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   Kokkos::deep_copy(ext_cmip6_lw_, 1.0);
   // Kokkos::deep_copy(odap_aer_, 1.0);
 
-  // FIXME: I need to get these variables from a netCDF file. 
+  // FIXME: I need to get these variables from a netCDF file.
   specrefndxsw_ = mam_coupling::complex_view_2d("specrefndxlw_",nswbands, maxd_aspectype );
   Kokkos::deep_copy(specrefndxsw_, 1.0);
   specrefndxlw_  = mam_coupling::complex_view_2d("specrefndxlw_",nlwbands, maxd_aspectype );
@@ -286,7 +286,7 @@ for (int d1 = 0; d1 < ntot_amode; ++d1)
                                      rrtmg_params,
                                      layouts,
                                      host_views );
-
+  // FIXME: get table name from input files.
   std::string tables_filename_mode1 = "mam4_mode1_rrtmg_aeronetdust_c141106.nc";
   mam_coupling::read_rrtmg_table(tables_filename_mode1,
                                  0,// mode No
@@ -295,7 +295,7 @@ for (int d1 = 0; d1 < ntot_amode; ++d1)
                                  layouts,
                                  aerosol_optics_host_data,
                                  aerosol_optics_device_data);
-
+   // FIXME: get table name from input files.
   std::string tables_filename_mode2 = "mam4_mode2_rrtmg_c130628.nc";
   mam_coupling::read_rrtmg_table(tables_filename_mode2,
                                  1,// mode No
@@ -304,7 +304,7 @@ for (int d1 = 0; d1 < ntot_amode; ++d1)
                                  layouts,
                                  aerosol_optics_host_data,
                                  aerosol_optics_device_data);
-
+    // FIXME: get table name from input files.
   std::string tables_filename_mode3 = "mam4_mode3_rrtmg_aeronetdust_c141106.nc";
   mam_coupling::read_rrtmg_table(tables_filename_mode3,
                                  2,// mode No
@@ -313,7 +313,7 @@ for (int d1 = 0; d1 < ntot_amode; ++d1)
                                  layouts,
                                  aerosol_optics_host_data,
                                  aerosol_optics_device_data);
-
+ // FIXME: get table name from input files.
   std::string tables_filename_mode4 = "mam4_mode4_rrtmg_c130628.nc";
   mam_coupling::read_rrtmg_table(tables_filename_mode4,
                                  3,// mode No

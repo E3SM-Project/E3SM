@@ -62,7 +62,7 @@ protected_except_cuda:
 private_except_cuda:
   // state variable
   mam_coupling::view_3d state_q_,  qqcw_;// odap_aer_,
-  
+
   // number of horizontal columns and vertical levels
   int ncol_, nlev_;
 
@@ -90,7 +90,7 @@ private_except_cuda:
   // Get extinction so as to supply to modal_aero_sw routine for computing EXTINCT variable
   // ext_cmip6_sw => null()
   // call pbuf_get_field(pbuf, idx_ext_sw, ext_cmip6_sw)
-  // is_cmip6_volc true if cmip6 style volcanic file is read otherwise false 
+  // is_cmip6_volc true if cmip6 style volcanic file is read otherwise false
   // these inputs are prescribed.
   mam_coupling::view_3d ssa_cmip6_sw_, af_cmip6_sw_, ext_cmip6_sw_;
   //long wave extinction in the units of [1/km]
@@ -123,8 +123,8 @@ private_except_cuda:
 
   // physics grid for column information
   std::shared_ptr<const AbstractGrid> grid_;
-  
-  // work arrays 
+
+  // work arrays
   // FIXME: one use one work array and define all these variables in mam4xx
   mam_coupling::view_2d mass_, radsurf_, logradsurf_  ;
   mam_coupling::view_3d cheb_, dgnumwet_m_, dgnumdry_m_;
