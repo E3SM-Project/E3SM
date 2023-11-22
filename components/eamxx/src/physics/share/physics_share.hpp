@@ -7,16 +7,16 @@ namespace scream {
 
 extern "C" {
 
-Real cxx_pow(Real base, Real exp);
-Real cxx_sqrt(Real base);
-Real cxx_cbrt(Real base);
-Real cxx_gamma(Real input);
-Real cxx_log(Real input);
-Real cxx_log10(Real input);
-Real cxx_exp(Real input);
-Real cxx_expm1(Real input);
-Real cxx_tanh(Real input);
-Real cxx_erf(Real input);
+Real scream_pow(Real base, Real exp);
+Real scream_sqrt(Real base);
+Real scream_cbrt(Real base);
+Real scream_gamma(Real input);
+Real scream_log(Real input);
+Real scream_log10(Real input);
+Real scream_exp(Real input);
+Real scream_expm1(Real input);
+Real scream_tanh(Real input);
+Real scream_erf(Real input);
 
 }
 

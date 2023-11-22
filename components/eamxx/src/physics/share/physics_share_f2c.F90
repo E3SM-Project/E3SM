@@ -21,7 +21,7 @@ interface
   ! the C++ versions in order to stay BFB.
   !
 
-  function cxx_pow(base, exp) bind(C)
+  function scream_pow(base, exp) bind(C)
     use iso_c_binding
 
     !arguments:
@@ -29,98 +29,98 @@ interface
     real(kind=c_real), value, intent(in)  :: exp
 
     ! return
-    real(kind=c_real)               :: cxx_pow
-  end function cxx_pow
+    real(kind=c_real)               :: scream_pow
+  end function scream_pow
 
-  function cxx_sqrt(base) bind(C)
+  function scream_sqrt(base) bind(C)
     use iso_c_binding
 
     !arguments:
     real(kind=c_real), value, intent(in)  :: base
 
     ! return
-    real(kind=c_real)               :: cxx_sqrt
-  end function cxx_sqrt
+    real(kind=c_real)               :: scream_sqrt
+  end function scream_sqrt
 
-  function cxx_cbrt(base) bind(C)
+  function scream_cbrt(base) bind(C)
     use iso_c_binding
 
     !arguments:
     real(kind=c_real), value, intent(in)  :: base
 
     ! return
-    real(kind=c_real)               :: cxx_cbrt
-  end function cxx_cbrt
+    real(kind=c_real)               :: scream_cbrt
+  end function scream_cbrt
 
-  function cxx_gamma(input) bind(C)
+  function scream_gamma(input) bind(C)
     use iso_c_binding
 
     !arguments:
     real(kind=c_real), value, intent(in) :: input
 
     ! return
-    real(kind=c_real)            :: cxx_gamma
-  end function cxx_gamma
+    real(kind=c_real)            :: scream_gamma
+  end function scream_gamma
 
-  function cxx_log(input) bind(C)
+  function scream_log(input) bind(C)
     use iso_c_binding
 
     !arguments:
     real(kind=c_real), value, intent(in) :: input
 
     ! return
-    real(kind=c_real)            :: cxx_log
-  end function cxx_log
+    real(kind=c_real)            :: scream_log
+  end function scream_log
 
-  function cxx_log10(input) bind(C)
+  function scream_log10(input) bind(C)
     use iso_c_binding
 
     !arguments:
     real(kind=c_real), value, intent(in) :: input
 
     ! return
-    real(kind=c_real)            :: cxx_log10
-  end function cxx_log10
+    real(kind=c_real)            :: scream_log10
+  end function scream_log10
 
-  function cxx_exp(input) bind(C)
+  function scream_exp(input) bind(C)
     use iso_c_binding
 
     !arguments:
     real(kind=c_real), value, intent(in) :: input
 
     ! return
-    real(kind=c_real)            :: cxx_exp
-  end function cxx_exp
+    real(kind=c_real)            :: scream_exp
+  end function scream_exp
 
-  function cxx_expm1(input) bind(C)
+  function scream_expm1(input) bind(C)
     use iso_c_binding
 
     !arguments:
     real(kind=c_real), value, intent(in) :: input
 
     ! return
-    real(kind=c_real)            :: cxx_expm1
-  end function cxx_expm1
+    real(kind=c_real)            :: scream_expm1
+  end function scream_expm1
   
-  function cxx_tanh(input) bind(C)
+  function scream_tanh(input) bind(C)
     use iso_c_binding
 
     !arguments:
     real(kind=c_real), value, intent(in) :: input
 
     ! return
-    real(kind=c_real)            :: cxx_tanh
-  end function cxx_tanh
+    real(kind=c_real)            :: scream_tanh
+  end function scream_tanh
 
-  function cxx_erf(input) bind(C)
+  function scream_erf(input) bind(C)
     use iso_c_binding
 
     !arguments:
     real(kind=c_real), value, intent(in)  :: input
 
     ! return
-    real(kind=c_real) :: cxx_erf
-  end function cxx_erf
+    real(kind=c_real) :: scream_erf
+  end function scream_erf
 
 end interface
 
