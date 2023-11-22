@@ -232,6 +232,89 @@ void read_rrtmg_table(const std::string& table_filename,
 
 }
 
+inline
+void read_water_refindex(const std::string& table_filename,
+                     const std::shared_ptr<const AbstractGrid>& grid,
+                     Kokkos::complex<Real> crefwlw[mam4::modal_aer_opt::nlwbands],
+                     Kokkos::complex<Real> crefwsw[mam4::modal_aer_opt::nswbands])
+  {
+  // refractive index for water read in read_water_refindex
+  // crefwsw(nswbands) ! complex refractive index for water visible
+  // crefwlw(nlwbands) ! complex refractive index for water infrared
+  constexpr int nlwbands = mam4::modal_aer_opt::nlwbands;
+  constexpr int nswbands = mam4::modal_aer_opt::nswbands;  
+
+  // here a made a list of variables that I want to read from netcdf files
+  ekat::ParameterList params;
+  params.set("Filename",table_name);
+  params.set("Skip_Grid_Checks",true);
+
+  params.set<strvec_t>("Field Names",{
+    "refindex_im_water_lw",
+    "refindex_im_water_sw",
+    "refindex_real_water_lw",
+    "refindex_real_water_sw"});
+  // make a list of host views
+  std::map<std::string,view_1d_host> host_views_water;
+  // fist allocate host views.
+  view_1d_host refindex_im_water_sw_host("refindex_im_water_sw_host", nswbands);
+  view_1d_host refindex_real_water_sw_host("refindex_real_water_sw_host", nswbands);
+  view_1d_host refindex_im_water_lw_host("refindex_im_water_lw_host", nlwbands);
+  view_1d_host refindex_real_water_lw_host("refindex_real_water_lw_host", nlwbands);
+
+  host_views_water["refindex_im_water_sw"]
+   = refindex_im_water_sw_host;
+   host_views_water["refindex_real_water_sw"]
+   = refindex_real_water_sw_host;
+  host_views_water["refindex_im_water_lw"]
+   = refindex_im_water_lw_host;
+   host_views_water["refindex_real_water_lw"]
+   = refindex_real_water_lw_host; 
+
+  // defines layouts
+  std::map<std::string,FieldLayout>  layouts_water;
+  FieldLayout scalar_refindex_water_sw_layout { {SWBAND},
+                                                   {nswbands} };
+  FieldLayout scalar_refindex_water_lw_layout { {LWBAND},
+                                                   {nlwbands} };
+
+  layouts_water.emplace("refindex_im_water_sw",
+  scalar_refindex_water_sw_layout);
+  layouts_water.emplace("refindex_real_water_sw",
+  scalar_refindex_water_sw_layout);
+  layouts_water.emplace("refindex_im_water_lw",
+  scalar_refindex_water_lw_layout);
+  layouts_water.emplace("refindex_real_water_lw",
+  scalar_refindex_water_lw_layout);
+
+  // create a object to read data
+  AtmosphereInput refindex_water(params, grid,
+  host_views_water, layouts_water);
+  refindex_water.read_variables();
+  refindex_water.finalize();
+
+  //move data to device 
+  // FIXME: check this correct or can be done in a better way.
+  // maybe make a 1D vied of Kokkos::complex<Real>
+  for (int i = 0; i < nlwbands; ++i)
+  {
+    Kokkos::complex<Real> temp;
+    temp.real() =refindex_real_water_lw_host(i);
+    temp.imag() = refindex_im_water_lw_host(i);
+    Kokkos::deep_copy(crefwlw[i],temp);
+  }
+
+  for (int i = 0; i < nswbands; ++i)
+  {
+    Kokkos::complex<Real> temp;
+    temp.real() =refindex_real_water_sw_host(i);
+    temp.imag() = refindex_im_water_sw_host(i);
+    Kokkos::deep_copy(crefwsw[i],temp);
+  }
+
+  }
+//read_water_water_refindex 
+
 } // namespace scream::mam_coupling
 
 #endif

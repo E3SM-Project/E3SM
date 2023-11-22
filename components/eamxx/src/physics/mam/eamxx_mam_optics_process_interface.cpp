@@ -165,28 +165,10 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   constexpr int maxd_aspectype = mam4::ndrop::maxd_aspectype;
   constexpr int ntot_amode = mam4::AeroConfig::num_modes();
 
-
   state_q_ = mam_coupling::view_3d("state_q_", ncol_, nlev_, nvars);
   Kokkos::deep_copy(state_q_,10);
   qqcw_ = mam_coupling::view_3d("qqcw_", ncol_, nlev_, nvars);
-  Kokkos::deep_copy(qqcw_,10);
-  ext_cmip6_lw_ = mam_coupling::view_2d("ext_cmip6_lw_", nlev_, nlwbands);
-  // odap_aer_ = mam_coupling::view_2d("odap_aer_", nlev_, nlwbands);
-  specrefndxlw_  = mam_coupling::complex_view_2d("specrefndxlw_",nlwbands, maxd_aspectype );
-
-  Kokkos::deep_copy(ext_cmip6_lw_, 1.0);
-  // Kokkos::deep_copy(odap_aer_, 1.0);
-  Kokkos::deep_copy(specrefndxlw_, 1.0);
-
-
-
-   for (int i = 0; i < nlwbands; ++i) {
-    crefwlw_[i] = 1.0;
-   }
-
-   for (int i = 0; i < nswbands; ++i) {
-    crefwsw_[i] = 1.0;
-   }
+  Kokkos::deep_copy(qqcw_,10);  
 
   // FIXME: work arrays
   mass_ = mam_coupling::view_2d("mass", ncol_,  nlev_);
@@ -198,14 +180,19 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   radsurf_ = mam_coupling::view_2d("radsurf",ncol_, nlev_);
   logradsurf_ = mam_coupling::view_2d("logradsurf",ncol_,nlev_);
 
+  air_density_ = mam_coupling::view_2d("air_density", ncol_,  nlev_);
+  ext_cmip6_sw_inv_m_ = mam_coupling::view_3d ("ext_cmip6_sw_inv_m", ncol_, nswbands, nlev_);
+
+
   const int nwbands = nlwbands > nswbands ? nlwbands: nswbands;
 
   specrefindex_=mam_coupling::complex_view_3d("specrefindex", ncol_,
-   mam4::modal_aer_opt::max_nspec, nwbands);
+  mam4::modal_aer_opt::max_nspec, nwbands);
   qaerwat_m_ = mam_coupling::view_3d ("qaerwat_m", ncol_, nlev_, ntot_amode);
   ext_cmip6_lw_inv_m_ = mam_coupling::view_3d ("ext_cmip6_lw_inv_m", ncol_, nlev_, nlwbands);
 
-  // aer_rad_props_sw inputs
+
+  // aer_rad_props_sw inputs that are prescribed, i.e., we need a netcdf file. 
   ssa_cmip6_sw_ = mam_coupling::view_3d ("ssa_cmip6_sw", ncol_, nlev_, nswbands);
   af_cmip6_sw_ = mam_coupling::view_3d ("af_cmip6_sw", ncol_, nlev_, nswbands);
   ext_cmip6_sw_= mam_coupling::view_3d ("ext_cmip6_sw", ncol_, nlev_, nswbands);
@@ -213,24 +200,27 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   Kokkos::deep_copy(af_cmip6_sw_, 1.0);
   Kokkos::deep_copy(ext_cmip6_sw_, 1.0);
 
+  ext_cmip6_lw_ = mam_coupling::view_2d("ext_cmip6_lw_", nlev_, nlwbands);
+  // odap_aer_ = mam_coupling::view_2d("odap_aer_", nlev_, nlwbands);
+
+  Kokkos::deep_copy(ext_cmip6_lw_, 1.0);
+  // Kokkos::deep_copy(odap_aer_, 1.0);
+
+  // FIXME: I need to get these variables from a netCDF file. 
   specrefndxsw_ = mam_coupling::complex_view_2d("specrefndxlw_",nswbands, maxd_aspectype );
   Kokkos::deep_copy(specrefndxsw_, 1.0);
+  specrefndxlw_  = mam_coupling::complex_view_2d("specrefndxlw_",nlwbands, maxd_aspectype );
+  Kokkos::deep_copy(specrefndxlw_, 1.0);
 
-   // work array
-   air_density_ = mam_coupling::view_2d("air_density", ncol_,  nlev_);
-   ext_cmip6_sw_inv_m_ = mam_coupling::view_3d ("ext_cmip6_sw_inv_m", ncol_, nswbands, nlev_);
 
 #endif
  // read table info
 #if 1
 {
-
   using namespace ShortFieldTagsNames;
 
   constexpr int refindex_real = mam4::modal_aer_opt::refindex_real;
   constexpr int refindex_im = mam4::modal_aer_opt::refindex_im;
-  constexpr int nlwbands = mam4::modal_aer_opt::nlwbands;
-  constexpr int nswbands = mam4::modal_aer_opt::nswbands;
   constexpr int coef_number = mam4::modal_aer_opt::coef_number;
 
   using view_1d_host = typename KT::view_1d<Real>::HostMirror;
@@ -336,46 +326,10 @@ for (int d1 = 0; d1 < ntot_amode; ++d1)
 #endif
 
 
-  #if 1
-  {
-  // FIXME: we need to get this name from the yaml file.
-  std::string table_name = "water_refindex_rrtmg_c080910.nc";
-
-  FieldLayout scalar_refindex_im_water_sw_layout { {SWBAND},
-                                     {nswbands} };
-
-  ekat::ParameterList refindex_water_params;
-  refindex_water_params.set<strvec_t>("Field Names",{"refindex_im_water_sw"});
-  refindex_water_params.set("Skip_Grid_Checks",true);
-
-  std::map<std::string,view_1d_host> host_views_water;
-
-  view_1d_host refindex_im_water_sw_host("view_1d_host", nswbands);
-
-  host_views_water["refindex_im_water_sw"]
-   = refindex_im_water_sw_host;
-
-  std::map<std::string,FieldLayout>  layouts_water;
-
-  layouts_water.emplace("refindex_im_water_sw",
-  scalar_refindex_im_water_sw_layout);
-
-  refindex_water_params.set("Filename",table_name);
-
-  AtmosphereInput refindex_water(refindex_water_params, grid_,
-  host_views_water, layouts_water);
-  // -1000 forces the interface to read a dataset that does not have time as variable.
-  refindex_water.read_variables();
-  refindex_water.finalize();
-
-  printf("reading refindex_im_water_sw\n");
-  for (int i = 0; i < nswbands; i++)
-  {
-    printf("val(%d) = %e \n", i, refindex_im_water_sw_host(i) );
-  }
-
-
-  }
+#if 1
+// FIXME: we need to get this name from the yaml file.
+std::string table_name = "water_refindex_rrtmg_c080910.nc";
+mam_coupling::read_water_refindex(table_name, grid_, crefwlw_,crefwsw_);
 #endif
 
 #if 0
@@ -400,19 +354,6 @@ scorpio::set_decomp(tables_filename_mode4);
 scorpio::grid_read_data_array(tables_filename_mode4,var_name,-1000,host_1d.data(), host_1d.size());
 scorpio::eam_pio_closefile(tables_filename_mode4);}
 #endif
-
-
-  // for (int j = 0; j < nlwbands; j++){
-  // for (int i = 0; i < refindex_real; i++)
-  // {
-  //   printf("refindex_real_lw_t(%d, %d) %e \n ",j, i, refindex_real_lw_host(j,i));
-  // }
-
-  // for (int i = 0; i < refindex_im; i++)
-  // {
-  //   printf("refindex_im_lw_t(%d, %d) %e \n ",j, i, refindex_im_lw_host(j,i));
-  // }
-  // }
   }
 #endif
 }

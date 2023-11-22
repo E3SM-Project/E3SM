@@ -62,21 +62,14 @@ protected_except_cuda:
 private_except_cuda:
   // state variable
   mam_coupling::view_3d state_q_,  qqcw_;// odap_aer_,
-  mam_coupling::view_2d ext_cmip6_lw_;
-
+  
   // number of horizontal columns and vertical levels
   int ncol_, nlev_;
 
   // number of shortwave and longwave radiation bands
   int nswbands_, nlwbands_;
 
-
-
-  mam_coupling::view_2d mass_, radsurf_, logradsurf_  ;
-  mam_coupling::view_3d cheb_, dgnumwet_m_, dgnumdry_m_;
-  mam_coupling::complex_view_3d specrefindex_; // work array
-  mam_coupling::view_3d qaerwat_m_, ext_cmip6_lw_inv_m_;
-  // FIXME: move this values to mam_coupling
+  // FIXME: move these values to mam_coupling
   mam_coupling::const_view_2d z_mid_, z_iface_, p_int_, p_del_;
 
   // MAM4 aerosol particle size description
@@ -88,17 +81,28 @@ private_except_cuda:
   mam_coupling::AerosolState  wet_aero_;//,
 
   // inputs:
+  // I do not know how to get these inputs.
+  // components/eam/src/physics/rrtmg/radiation.F90 in Line 1330
+  // Obtain read in values for ssa and asymmetry factor (af) from the
+  //volcanic input file
+  // call pbuf_get_field(pbuf, idx_ssa_sw, ssa_cmip6_sw)
+  // pbuf_get_field(pbuf, idx_af_sw,  af_cmip6_sw)
+  // Get extinction so as to supply to modal_aero_sw routine for computing EXTINCT variable
+  // ext_cmip6_sw => null()
+  // call pbuf_get_field(pbuf, idx_ext_sw, ext_cmip6_sw)
+  // is_cmip6_volc true if cmip6 style volcanic file is read otherwise false 
+  // these inputs are prescribed.
   mam_coupling::view_3d ssa_cmip6_sw_, af_cmip6_sw_, ext_cmip6_sw_;
+  //long wave extinction in the units of [1/km]
+  mam_coupling::view_2d ext_cmip6_lw_;
 
   // These inputs maybe are from a netCDF file:
   mam_coupling::complex_view_2d specrefndxsw_; // complex refractive index for water visible
   mam_coupling::complex_view_2d specrefndxlw_; // complex refractive index for water infrared
 
-  // FIXME: we need to save these values in a different file.
-  // set complex representation of refractive indices as module data
-  // I need netcdf files : read_water_refindex(modal_aer_opt.F90)
-  Kokkos::complex<Real> crefwlw_[mam4::modal_aer_opt::nlwbands];
-  Kokkos::complex<Real> crefwsw_[mam4::modal_aer_opt::nswbands];
+  // FIXME: Maybe use a 1D view instead of arrays of complex.
+  Kokkos::complex<Real> crefwlw_[mam4::modal_aer_opt::nlwbands]; // ready
+  Kokkos::complex<Real> crefwsw_[mam4::modal_aer_opt::nswbands];// ready
 
   // Inputs from netCDF files. I already got files and code to read them.
   // ready means: I added code to read this table from netcdf. I will delete this comment.
@@ -113,16 +117,24 @@ private_except_cuda:
   mam_coupling::view_1d refrtablw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nlwbands]; // ready
   mam_coupling::view_1d refitablw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nlwbands]; // ready
 
-  // work arrays
-  mam_coupling::view_2d air_density_;
-  mam_coupling::view_3d ext_cmip6_sw_inv_m_;
-
-  // aerosol processes
+    // aerosol processes
   //std::unique_ptr<mam4::OpticsProcess> optics_;
   // std::unique_ptr<mam4::CalcSizeProcess> calcsize_process_;
 
   // physics grid for column information
   std::shared_ptr<const AbstractGrid> grid_;
+  
+  // work arrays 
+  // FIXME: one use one work array and define all these variables in mam4xx
+  mam_coupling::view_2d mass_, radsurf_, logradsurf_  ;
+  mam_coupling::view_3d cheb_, dgnumwet_m_, dgnumdry_m_;
+  mam_coupling::view_3d qaerwat_m_, ext_cmip6_lw_inv_m_;
+  // FIXME: try to remove this work arrays:I may need to reorganized data in specrefndxsw_ and specrefndxlw_
+  mam_coupling::complex_view_3d specrefindex_; // work array
+  mam_coupling::view_2d air_density_;
+  mam_coupling::view_3d ext_cmip6_sw_inv_m_;
+
+
 }; // MAMOptics
 
 } // namespace scream
