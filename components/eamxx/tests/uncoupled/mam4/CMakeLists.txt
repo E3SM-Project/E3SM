@@ -5,7 +5,6 @@ CreateADUnitTest(mam4_nucleation_standalone
   LABELS mam4 physics
   LIBS mam
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
-  FIXTURES_SETUP_INDIVIDUAL mam4_generate_output_nc_files
 )
 
 # Set AD configurable options

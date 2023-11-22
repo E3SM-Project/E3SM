@@ -1,15 +1,18 @@
 include (ScreamUtils)
 
+set (BASE_TEST_NAME homme_shoc_cld_spa_p3_rrtmgp_pg2)
+set (FIXTURES_BASE_NAME ${BASE_TEST_NAME}_generate_output_nc_files)
+
 # Get or create the dynamics lib
 #                 HOMME_TARGET   NP PLEV QSIZE_D
 CreateDynamicsLib("theta-l_kokkos"  4   72   10)
 
 # Create the test
-CreateADUnitTest(homme_shoc_cld_spa_p3_rrtmgp_pg2
+CreateADUnitTest(${BASE_TEST_NAME}
   LABELS dynamics tms shoc cld p3 rrtmgp physics
   LIBS cld_fraction nudging tms shoc spa p3 scream_rrtmgp ${dynLibName} diagnostics
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
-  FIXTURES_SETUP_INDIVIDUAL homme_shoc_cld_spa_p3_rrtmgp_pg2_generate_output_nc_files
+  FIXTURES_SETUP_INDIVIDUAL ${FIXTURES_BASE_NAME}
 )
 
 # Set AD configurable options
@@ -81,7 +84,6 @@ if (TEST_RANK_END GREATER TEST_RANK_START)
   include (BuildCprnc)
   BuildCprnc()
 
-  set (BASE_TEST_NAME "homme_shoc_cld_spa_p3_rrtmgp_pg2")
   math (EXPR CMP_RANK_START ${TEST_RANK_START}+1)
   foreach (MPI_RANKS RANGE ${CMP_RANK_START} ${TEST_RANK_END})
 
@@ -91,9 +93,9 @@ if (TEST_RANK_END GREATER TEST_RANK_START)
     add_test (NAME ${TEST_NAME}
               COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}
               WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-    set (FIXTURE_BASE_NAME homme_shoc_cld_spa_p3_rrtmgp_pg2_generate_output_nc_files)
+    set (FIXTURES_BASE_NAME homme_shoc_cld_spa_p3_rrtmgp_pg2_generate_output_nc_files)
     set_tests_properties(${TEST_NAME} PROPERTIES
         LABELS dynamics tms shoc cld p3 rrtmgp physics
-        FIXTURES_REQUIRED "${FIXTURE_BASE_NAME}_np${MPI_RANKS}_omp1;${FIXTURE_BASE_NAME}_np1_omp1")
+        FIXTURES_REQUIRED "${FIXTURES_BASE_NAME}_np${MPI_RANKS}_omp1;${FIXTURES_BASE_NAME}_np1_omp1")
   endforeach()
 endif()

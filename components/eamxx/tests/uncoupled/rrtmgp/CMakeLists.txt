@@ -6,7 +6,7 @@ if (NOT SCREAM_BASELINES_ONLY)
 
   CreateUnitTest(rrtmgp_standalone_unit rrtmgp_standalone_unit.cpp
     LABELS rrtmgp physics driver
-    LIBS scream_rrtmgp rrtmgp scream_control yakl diagnostics
+    LIBS scream_rrtmgp rrtmgp scream_control yakl diagnostics rrtmgp_test_utils
     EXE_ARGS "--ekat-test-params rrtmgp_inputfile=${SCREAM_DATA_DIR}/init/rrtmgp-allsky.nc,rrtmgp_baseline=${SCREAM_TEST_DATA_DIR}/rrtmgp-allsky-baseline.nc"
   )
   # This test needs the allsky baselines file
@@ -78,7 +78,6 @@ if (NOT SCREAM_BASELINES_ONLY)
 
   ## Finally compare all MPI rank output files against the single rank output as a baseline, using CPRNC
   ## Only if running with 2+ ranks configurations
-  # This test requires CPRNC
   if (TEST_RANK_END GREATER TEST_RANK_START)
     math (EXPR CMP_RANK_START ${TEST_RANK_START}+1)
     set (FIXTURES_BASE_NAME rrtmgp_generate_output_nc_files)

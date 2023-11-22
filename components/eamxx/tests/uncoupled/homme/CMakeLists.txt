@@ -1,15 +1,18 @@
 include (ScreamUtils)
 
+set (BASE_TEST_NAME homme_standalone)
+set (FIXTURES_BASE_NAME ${BASE_TEST_NAME}_generate_output_nc_files)
+
 # Get or create the dynamics lib
 #                 HOMME_TARGET   NP PLEV QSIZE_D
 CreateDynamicsLib("theta-l_kokkos"  4   72   10)
 
 # Create the test
-CreateADUnitTest(homme_standalone
+CreateADUnitTest(${BASE_TEST_NAME}
   LABELS dynamics
   LIBS ${dynLibName}
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
-  FIXTURES_SETUP_INDIVIDUAL homme_generate_output_nc_files
+  FIXTURES_SETUP_INDIVIDUAL ${FIXTURES_BASE_NAME}
 )
 
 # Set AD configurable options
@@ -68,8 +71,6 @@ GetInputFile(cam/topo/${EAMxx_tests_TOPO_FILE})
 if (TEST_RANK_END GREATER TEST_RANK_START)
   include (BuildCprnc)
   BuildCprnc()
-  set (BASE_TEST_NAME "homme")
-  set (FIXTURES_BASE_NAME homme_generate_output_nc_files)
   math (EXPR CMP_RANK_START ${TEST_RANK_START}+1)
   foreach (MPI_RANKS RANGE ${CMP_RANK_START} ${TEST_RANK_END})
 

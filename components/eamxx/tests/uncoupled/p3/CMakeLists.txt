@@ -1,11 +1,14 @@
 include (ScreamUtils)
 
+set (BASE_TEST_NAME p3_standalone)
+set (FIXTURES_BASE_NAME ${BASE_TEST_NAME}_generate_output_nc_files)
+
 # Create the test
-CreateADUnitTest(p3_standalone
+CreateADUnitTest(${BASE_TEST_NAME}
   LABELS p3 physics
   LIBS p3
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
-  FIXTURES_SETUP_INDIVIDUAL p3_generate_output_nc_files
+  FIXTURES_SETUP_INDIVIDUAL ${FIXTURES_BASE_NAME}
 )
 
 # Set AD configurable options
@@ -28,8 +31,6 @@ GetInputFile(scream/init/${EAMxx_tests_IC_FILE_72lev})
 if (TEST_RANK_END GREATER TEST_RANK_START)
   include (BuildCprnc)
   BuildCprnc()
-  set (BASE_TEST_NAME p3)
-  set (FIXTURES_BASE_NAME p3_generate_output_nc_files)
   math (EXPR CMP_RANK_START ${TEST_RANK_START}+1)
   foreach (MPI_RANKS RANGE ${CMP_RANK_START} ${TEST_RANK_END})
 
@@ -55,5 +56,5 @@ foreach (NRANKS RANGE ${TEST_RANK_START} ${TEST_RANK_END})
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
   set_tests_properties (${tname} PROPERTIES
     LABELS "p3;physics"
-    FIXTURES_REQUIRED p3_generate_output_nc_files_np${NRANKS}_omp1)
+    FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_np${NRANKS}_omp1)
 endforeach()

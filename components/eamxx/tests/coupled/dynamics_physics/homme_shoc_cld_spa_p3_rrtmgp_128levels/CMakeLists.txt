@@ -1,15 +1,18 @@
 include (ScreamUtils)
 
+set (BASE_TEST_NAME homme_shoc_cld_spa_p3_rrtmgp_128levels)
+set (FIXTURES_BASE_NAME ${BASE_TEST_NAME}_generate_output_nc_files)
+
 # Get or create the dynamics lib
 #                 HOMME_TARGET   NP PLEV QSIZE_D
 CreateDynamicsLib("theta-l_kokkos"  4   128   10)
 
 # Create the test
-CreateADUnitTest(homme_shoc_cld_spa_p3_rrtmgp_128levels
+CreateADUnitTest(${BASE_TEST_NAME}
   LABELS dynamics shoc cld p3 rrtmgp physics
   LIBS cld_fraction shoc nudging spa p3 scream_rrtmgp ${dynLibName} diagnostics
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
-  FIXTURES_SETUP_INDIVIDUAL homme_shoc_cld_spa_p3_rrtmgp_128levels_generate_output_nc_files
+  FIXTURES_SETUP_INDIVIDUAL ${FIXTURES_BASE_NAME}
 )
 
 # Set AD configurable options

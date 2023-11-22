@@ -1,11 +1,14 @@
 include (ScreamUtils)
 
+set (BASE_TEST_NAME spa_standalone)
+set (FIXTURES_BASE_NAME ${BASE_TEST_NAME}_generate_output_nc_files)
+
 # Create the test
-CreateADUnitTest(spa_stand_alone
+CreateADUnitTest(${BASE_TEST_NAME}
   LABELS spa physics
   LIBS spa
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
-  FIXTURES_SETUP_INDIVIDUAL spa_generate_output_nc_files
+  FIXTURES_SETUP_INDIVIDUAL ${FIXTURES_BASE_NAME}
 )
 
 # Set AD configurable options
@@ -35,7 +38,6 @@ endforeach()
 if (TEST_RANK_END GREATER TEST_RANK_START)
   include (BuildCprnc)
   BuildCprnc()
-  SET (BASE_TEST_NAME "spa")
   math (EXPR CMP_RANK_START ${TEST_RANK_START}+1)
   foreach (MPI_RANKS RANGE ${CMP_RANK_START} ${TEST_RANK_END})
 
@@ -46,8 +48,7 @@ if (TEST_RANK_END GREATER TEST_RANK_START)
               COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}
               WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
     set_tests_properties(${TEST_NAME} PROPERTIES
-        LABELS spa physics
-        FIXTURES_REQUIRED spa_generate_output_nc_files_np${MPI_RANKS}_omp1
-                          spa_generate_output_nc_files_np1_omp1)
+        LABELS "spa;physics"
+        FIXTURES_REQUIRED "${FIXTURES_BASE_NAME}_np${MPI_RANKS}_omp1;${FIXTURES_BASE_NAME}_np1_omp1")
   endforeach()
 endif()

@@ -1,11 +1,14 @@
 include (ScreamUtils)
 
+set (BASE_TEST_NAME shoc_standalone)
+set (FIXTURES_BASE_NAME ${BASE_TEST_NAME}_generate_output_nc_files)
+
 # Create the test
-CreateADUnitTest(shoc_standalone
+CreateADUnitTest(${BASE_TEST_NAME}
   LABELS shoc physics
   LIBS shoc
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
-  FIXTURES_SETUP_INDIVIDUAL shoc_generate_output_nc_files
+  FIXTURES_SETUP_INDIVIDUAL ${FIXTURES_BASE_NAME}
 )
 
 # Set AD configurable options
@@ -32,13 +35,11 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/output.yaml
 if (TEST_RANK_END GREATER TEST_RANK_START)
   include (BuildCprnc)
   BuildCprnc()
-  set (BASE_TEST_NAME "shoc")
-  set (FIXTURES_BASE_NAME shoc_generate_output_nc_files)
   math (EXPR CMP_RANK_START ${TEST_RANK_START}+1)
   foreach (MPI_RANKS RANGE ${CMP_RANK_START} ${TEST_RANK_END})
 
-    set (SRC_FILE "${BASE_TEST_NAME}_standalone_output.INSTANT.nsteps_x1.np${MPI_RANKS}.${RUN_T0}.nc")
-    set (TGT_FILE "${BASE_TEST_NAME}_standalone_output.INSTANT.nsteps_x1.np${TEST_RANK_START}.${RUN_T0}.nc")
+    set (SRC_FILE "shoc_standalone_output.INSTANT.nsteps_x1.np${MPI_RANKS}.${RUN_T0}.nc")
+    set (TGT_FILE "shoc_standalone_output.INSTANT.nsteps_x1.np${TEST_RANK_START}.${RUN_T0}.nc")
 
     set (TEST_NAME "${BASE_TEST_NAME}_np${TEST_RANK_START}_vs_np${MPI_RANKS}_bfb")
     add_test (NAME ${TEST_NAME}
@@ -62,7 +63,7 @@ foreach (NRANKS RANGE ${TEST_RANK_START} ${TEST_RANK_END})
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
   set_tests_properties (${tname} PROPERTIES
     LABELS "shoc;physics"
-    FIXTURES_REQUIRED shoc_generate_output_nc_files_np${NRANKS}_omp1)
+    FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_np${NRANKS}_omp1)
 endforeach()
 
 # Check that the content of sliced vars U/V and corresponding surf_mom_flux
@@ -75,7 +76,7 @@ foreach (RANK RANGE ${TEST_RANK_START} ${TEST_RANK_END})
             -s ${nc_file} -c "horiz_winds(:,:,1,:)=U(:,:,:)" "horiz_winds(:,:,2,:)=V(:,:,:)"
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
   set_tests_properties (check_U_V_slices_np${RANK} PROPERTIES
-            FIXTURES_REQUIRED shoc_generate_output_nc_files)
+            FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_np${RANK}_omp1)
   add_test (NAME check_surf_mom_flux_slices_np${RANK}
             COMMAND ${SCREAM_BASE_DIR}/scripts/compare-nc-files
             -s ${nc_file} -c "surf_mom_flux(:,:,1)=surf_mom_flux_U(:,:)"
@@ -83,7 +84,7 @@ foreach (RANK RANGE ${TEST_RANK_START} ${TEST_RANK_END})
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
   set_tests_properties (check_surf_mom_flux_slices_np${RANK} PROPERTIES
       LABELS "shoc;physics"
-      FIXTURES_REQUIRED shoc_generate_output_nc_files_np${RANK}_omp1)
+      FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_np${RANK}_omp1)
 endforeach()
 
 ################################
@@ -100,7 +101,7 @@ add_test (NAME check_U_V_slices_fail_diff
           WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 set_tests_properties (check_U_V_slices_fail_diff PROPERTIES
           WILL_FAIL TRUE
-          FIXTURES_REQUIRED shoc_generate_output_nc_files_np1_omp1)
+          FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_np1_omp1)
 
 # Wrong layout
 add_test (NAME check_U_V_slices_fail_layout
@@ -109,7 +110,7 @@ add_test (NAME check_U_V_slices_fail_layout
           WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 set_tests_properties (check_U_V_slices_fail_layout PROPERTIES
           WILL_FAIL TRUE
-          FIXTURES_REQUIRED shoc_generate_output_nc_files_np1_omp1)
+          FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_np1_omp1)
 
 # Missing variable(s)
 add_test (NAME check_U_V_slices_fail_missing
@@ -118,4 +119,4 @@ add_test (NAME check_U_V_slices_fail_missing
           WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 set_tests_properties (check_U_V_slices_fail_missing PROPERTIES
           WILL_FAIL TRUE
-          FIXTURES_REQUIRED shoc_generate_output_nc_files_np1_omp1)
+          FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_np1_omp1)

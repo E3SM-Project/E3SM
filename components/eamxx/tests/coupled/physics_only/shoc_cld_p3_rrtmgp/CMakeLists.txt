@@ -1,11 +1,14 @@
 INCLUDE (ScreamUtils)
 
+set (BASE_TEST_NAME shoc_cld_p3_rrtmgp)
+set (FIXTURES_BASE_NAME ${BASE_TEST_NAME}_generate_output_nc_files)
+
 # Create the test
-CreateADUnitTest(shoc_cld_p3_rrtmgp
-  LIBS shoc cld_fraction p3 scream_rrtmgp diagnostics
+CreateADUnitTest(${BASE_TEST_NAME}
+  LIBS shoc cld_fraction p3 scream_rrtmgp
   LABELS  shoc cld p3 rrtmgp physics
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
-  FIXTURES_SETUP_INDIVIDUAL shoc_cld_p3_rrtmgp_generate_output_nc_files
+  FIXTURES_SETUP_INDIVIDUAL ${FIXTURES_BASE_NAME}
 )
 
 # Set AD configurable options
@@ -34,8 +37,6 @@ if (TEST_RANK_END GREATER TEST_RANK_START)
   include (BuildCprnc)
   BuildCprnc()
 
-  set (BASE_TEST_NAME "shoc_cld_p3_rrtmgp")
-  set (FIXTURES_BASE_NAME shoc_cld_p3_rrtmgp_generate_output_nc_files)
   math (EXPR CMP_RANK_START ${TEST_RANK_START}+1)
   foreach (MPI_RANKS RANGE ${CMP_RANK_START} ${TEST_RANK_END})
 
