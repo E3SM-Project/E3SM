@@ -50,7 +50,7 @@ module RtmMod
   use WRM_subw_IO_mod , only : WRM_init, WRM_computeRelease
   use MOSARTinund_PreProcs_MOD, only : calc_chnlMannCoe, preprocess_elevProf
   use MOSARTinund_Core_MOD    , only : MOSARTinund_simulate, ManningEq, ChnlFPexchg
-  use MOSART_Budgets_mod, only: MOSART_WaterBudget_Extraction
+  use MOSART_Budgets_mod, only: MOSART_WaterBudget_Extraction, MOSART_WaterBudget_Print, MOSART_WaterBudget_Reset
   use RtmIO
   use mct_mod
   use perf_mod
@@ -323,6 +323,8 @@ contains
     npt_elevProf = 11             
     threshold_slpRatio = 10.0_r8  
 
+    call MOSART_WaterBudget_Reset('all')
+
     nlfilename_rof = "mosart_in" // trim(inst_suffix)
     inquire (file = trim(nlfilename_rof), exist = lexist)
     if ( .not. lexist ) then
@@ -515,6 +517,9 @@ contains
        else
           if (masterproc) then
              write(iulog,*) '   MOSART river data       = ',trim(frivinp_rtm)
+             if (wrmflag .and. inundflag) then
+               write(iulog,*) subname,' MOSART wrmflag and inundflag both set to be true'
+             endif
           endif
        end if
     else
@@ -523,10 +528,6 @@ contains
        endif
        RETURN
     end if
-
-    if (wrmflag .and. inundflag) then
-       write(iulog,*) subname,' MOSART wrmflag and inundflag both set to be true'
-    endif
 
     if (coupling_period <= 0) then
        write(iulog,*) subname,' ERROR MOSART coupling_period invalid',coupling_period
@@ -2274,7 +2275,14 @@ contains
     end if
     
     if (budget_check) then
+      call get_curr_date(yr, mon, day, tod) !TZ
+      ymd = yr*10000 + mon*100 + day !TZ
+
        call t_startf('mosartr_budget')
+       call MOSART_WaterBudget_Reset()
+
+       write(iulog,*) trim(subname),'reset called (TZ): ymd=', ymd, 'tod=',tod
+
        do nt = 1,nt_rtm
        do nr = rtmCTL%begr,rtmCTL%endr
           budget_terms(bv_volt_i,nt) = budget_terms( bv_volt_i,nt) + rtmCTL%volr(nr,nt)
@@ -3200,7 +3208,10 @@ contains
             endif
 
             if (nt .eq. nt_nliq) then
-               call MOSART_WaterBudget_Extraction(budget_global, budget_terms_total, bv_volt_i, bv_volt_f, budget_input, budget_output, budget_other)
+               call MOSART_WaterBudget_Extraction(budget_global, budget_terms_total, bv_volt_i, bv_volt_f, &
+                 bv_wt_i, bv_wt_f, bv_wr_i, bv_wr_f, bv_wh_i, bv_wh_f, bv_dstor_i, bv_dstor_f, bv_fp_i, bv_fp_f, &
+                 budget_input, budget_output, budget_other)
+               call MOSART_WaterBudget_Print()
             endif
 
           enddo   ! (do nt = 1,nt_rtm   --Inund.)
