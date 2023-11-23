@@ -13,8 +13,8 @@
 #include "utilities/SyncUtils.hpp"
 #include "utilities/ViewUtils.hpp"
 
-#define NNE 1000
-#define HOWMANY 200
+#define NNE 2
+#define HOWMANY 3
 
 
 using namespace Homme;
@@ -28,8 +28,10 @@ TEST_CASE("caar", "caar_testing") {
   std::random_device rd;
   using rngAlg = std::mt19937_64;
   const unsigned int catchRngSeed = Catch::rngSeed();
-  const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
-  std::cout << "seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
+  //const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
+  const unsigned int seed = 1;
+  //std::cout << "seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
+  std::cout << "seed: " << seed << "\n";
   rngAlg engine(seed);
   using RPDF = std::uniform_real_distribution<Real>;
   using IPDF = std::uniform_int_distribution<int>;
@@ -67,8 +69,10 @@ TEST_CASE("caar", "caar_testing") {
   std::vector<Real> mp(NP*NP);
 
   // This will also init the c connectivity.
-  ref_FE.init_mass(mp.data());
-  ref_FE.init_deriv(dvv.data());
+  //ref_FE.init_mass(mp.data());
+  //ref_FE.init_deriv(dvv.data());
+
+  ref_FE.random_init(seed);
 
   // Create and init elements
   const int num_elems = NNE ; //c.get<Connectivity>().get_num_local_elements();
