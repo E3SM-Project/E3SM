@@ -286,6 +286,7 @@ contains
     endif
 
    !find_spectrc_ncol = INDEX(filename, 'bc_a4') !(zhang73)
+   if(flds(2)%fldnam.eq.'shf'.and.(.not.file%is_ncol)) file%is_ncol = .true. !set sfx_data%file%is_ncol=.true. (zhang73)
    if(masterproc.and.file%is_ncol) write(iulog,*) '(zhang73 trcdata_init) file%curr_data_times:',file%curr_data_times
    if (masterproc) then
       flds_loop1: do f = 1,mxnflds
@@ -1658,6 +1659,7 @@ contains
           gcol_p = get_gcol_p(c,j)
           loc_arr(j,c-begchunk+1) = wrkncol1d_in(gcol_p)
           !if(loc_arr(j,c-begchunk+1).gt.9e7) write(iulog,*)' (zhang73 read_ncol1d_trc) loc_arr at gcol_p(',gcol_p,'),j,c,ncols:',loc_arr(j,c-begchunk+1),j,c,ncols
+          !if(gcol_p==52860) write(iulog,*)' (zhang73 read_ncol1d_trc) loc_arr at (gcol_p=52860(CAx32v1pg2)):',loc_arr(j,c-begchunk+1)
         end do
       end do
 

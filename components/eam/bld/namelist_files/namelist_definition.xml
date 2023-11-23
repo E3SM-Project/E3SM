@@ -5308,6 +5308,58 @@ Tunable Linoz PSC ozone loss temperature (K) threshold
 Default: 193.0
 </entry>
 
+<!--(zhang73) for sfx_data-->
+<entry id="sfx_data_path" type="char*256" input_pathname="abs" category="cam_chem"
+       group="sfxdata_inparm" valid_values="" >
+Full pathname of the directory that contains the files specified in
+<varname>sfx_data_filelist</varname>.
+Default: none.
+</entry>
+<entry id="sfx_data_file" type="char*256" input_pathname="rel:sfx_data_path" category="cam_chem"
+       group="sfxdata_inparm" valid_values="" >
+Filename of dataset for sfx data.
+Default: none.
+</entry>
+<entry id="sfx_data_filelist" type="char*256" input_pathname="rel:sfx_data_datapath" category="cam_chem"
+       group="sfxdata_inparm" valid_values="" >
+Filename of file that contains a sequence of filenames of the sfx data.
+The filenames in this file are relative to the directory specied
+by <varname>sfx_data_datapath</varname>.
+Default: set by build-namelist.
+</entry>
+<entry id="sfx_data_type" type="char*24" category="cam_chem"
+       group="sfxdata_inparm" valid_values="CYCLICAL,SERIAL,INTERP_MISSING_MONTHS,FIXED" >
+Type of time interpolation for data in sfx_data files.
+Can be set to 'CYCLICAL', 'SERIAL', 'INTERP_MISSING_MONTHS', or 'FIXED'.
+Default: 'SERIAL'
+</entry>
+<entry id="sfx_data_rmfile" type="logical" category="cam_chem"
+       group="sfxdata_inparm" valid_values="TRUE,FALSE" >
+Remove the file containing sfx data from local disk when no longer needed.
+Default: FALSE
+</entry>
+<entry id="sfx_data_cycle_yr" type="integer" category="cam_chem"
+       group="sfxdata_inparm" valid_values="" >
+The  cycle year of the sfx data 
+if <varname>sfx_data_type</varname> is 'CYCLICAL'.
+Format: YYYY 
+Default: 0
+</entry>
+<entry id="sfx_data_fixed_ymd" type="integer" category="cam_chem"
+       group="sfxdata_inparm" valid_values="" >
+The date at which the sfx data  is fixed
+if <varname>sfx_data_type</varname> is 'FIXED'.
+Format: YYYYMMDD
+Default: 0
+</entry>
+<entry id="sfx_data_fixed_tod" type="integer" category="cam_chem"
+       group="sfxdata_inparm" valid_values="" >
+The time of day (seconds) corresponding to <varname>sfx_data_fixed_ymd</varname>
+at which the sfx data is fixed
+if <varname>sfx_data_type</varname> is 'FIXED'.
+Default: 0 seconds
+</entry>
+
 
 
 <entry id="tracer_cnst_datapath" type="char*256" input_pathname="abs" category="cam_chem"
