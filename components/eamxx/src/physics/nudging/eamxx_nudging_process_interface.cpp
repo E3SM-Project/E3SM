@@ -12,6 +12,19 @@ Nudging::Nudging (const ekat::Comm& comm, const ekat::ParameterList& params)
   m_timescale = m_params.get<int>("nudging_timescale",0);
   m_fields_nudge = m_params.get<std::vector<std::string>>("nudging_fields");
   m_use_weights   = m_params.get<bool>("use_nudging_weights",false);
+  // Whether or not to do horizontal refine remap
+  m_refine_remap = m_params.get<bool>("do_nudging_refine_remap", false);
+  if(m_refine_remap) {
+    // If we are doing horizontal refine remap, we need to get the map file
+    m_refine_remap_file =
+        m_params.get<std::string>("nudging_refine_remap_mapfile", "");
+    // Check that the file is provided; if not, throw an error
+    // TODO: add a submit error (in xml configs)
+    EKAT_REQUIRE_MSG(m_refine_remap_file == "",
+                     "Error! Nudging::Nudging - horizontal refine "
+                     "remap is enabled but no "
+                     "nudging_refine_remap_mapfile is provided.");
+  }
   auto src_pres_type = m_params.get<std::string>("source_pressure_type","TIME_DEPENDENT_3D_PROFILE");
   if (src_pres_type=="TIME_DEPENDENT_3D_PROFILE") {
     m_src_pres_type = TIME_DEPENDENT_3D_PROFILE;
@@ -125,15 +138,64 @@ void Nudging::initialize_impl (const RunType /* run_type */)
 {
   using namespace ShortFieldTagsNames;
 
-  // Initialize the time interpolator
-  auto grid_ext = m_grid->clone(m_grid->name(), false);
+  // Initialize the refining remapper stuff at the outset,
+  // because we need to know the grid information
+  if(m_refine_remap) {
+    // For now, we are doing the horizontal interpolation last,
+    // so we use the m_grid (model physics) as the target
+    // TODO: maybe clean this up?
+    auto grid_tgt = m_grid->clone(m_grid->name(), false);
+    auto refine_remapper_p2p =
+        std::make_shared<RefiningRemapperP2P>(grid_tgt, m_refine_remap_file);
+    refine_remapper = refine_remapper_p2p;
+  }
+
+  // Set the external grids
+  // We have three types of grids with different behaviors
+  // TODO: definitely clean this up
+
+  // The grid from the remapper needs a const AbstractGrid, but
+  // the other two grids need a non-const AbstractGrid
+  // TODO: What is actually going on here anyway?
+  std::shared_ptr<const scream::AbstractGrid> grid_hxt_const;
+  std::shared_ptr<scream::AbstractGrid> grid_hxt;
+  std::shared_ptr<scream::AbstractGrid> grid_ext;
+
+  if(m_refine_remap) {
+    // If we are refine-remapping, then get grid from remapper
+    grid_hxt_const = refine_remapper->get_src_grid();
+    // Deep clone it though to get rid of "const" stuff
+    grid_hxt = grid_hxt_const->clone(grid_hxt_const->name(), false);
+  } else {
+    // If not refine-remapping, then use whatever was used before,
+    // i.e., deep clone the physics grid
+    grid_hxt = m_grid->clone(m_grid->name(), false);
+  }
+
+  // The ultimate grid is grid_ext (external grid, i.e., files)
+  grid_ext = grid_hxt->clone(grid_hxt->name(), false);
+  // grid_ext can potentially have different levels
   grid_ext->reset_num_vertical_lev(m_num_src_levs);
-  FieldLayout scalar2d_layout_mid { {LEV}, {m_num_src_levs} };
-  FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols, m_num_src_levs} };
+  // Declare the layouts for the helper fields (ext --> mid)
+  FieldLayout scalar2d_layout_mid{{LEV}, {m_num_src_levs}};
+  FieldLayout scalar3d_layout_mid{{COL, LEV}, {m_num_cols, m_num_src_levs}};
+  // The penultimate grid is grid_hxt (external horiz grid, but model physics
+  // vert grid, so potentially a bit of a mess)
+  auto h_num_levs = grid_hxt->get_num_vertical_levels();
+  // Declare the layouts for the helper fields (hxt --> hid)
+  // TODO: use better names
+  FieldLayout scalar2d_layout_hid{{LEV}, {h_num_levs}};
+  FieldLayout scalar3d_layout_hid{{COL, LEV}, {m_num_cols, h_num_levs}};
+
+  // Note: below, we only need to deal with the pressure stuff on ext_grid, not
+  // hxt_grid because we are not doing vertical interpolation on the hxt_grid
+
+  // Initialize the time interpolator
   m_time_interp = util::TimeInterpolation(grid_ext, m_datafiles);
 
   constexpr int ps = SCREAM_PACK_SIZE;
-  const auto& grid_name = m_grid->name();
+  // To be extra careful, this should be the ext_grid
+  const auto& grid_name = grid_ext->name();
   if (m_src_pres_type == TIME_DEPENDENT_3D_PROFILE) {
     create_helper_field("p_mid_ext", scalar3d_layout_mid, grid_name, ps);
     auto pmid_ext = get_helper_field("p_mid_ext");
@@ -156,14 +218,19 @@ void Nudging::initialize_impl (const RunType /* run_type */)
     src_input.finalize();
     pmid_ext.sync_to_dev();
   }
+
+  // To create helper fields for later; we do both hxt and ext...
   for (auto name : m_fields_nudge) {
     std::string name_ext = name + "_ext";
+    std::string name_hxt = name + "_hxt";
     // Helper fields that will temporarily store the target state, which can then
     // be used to back out a nudging tendency
     auto field  = get_field_out_wrap(name);
     auto layout = field.get_header().get_identifier().get_layout();
     create_helper_field(name,     layout,              grid_name, ps);
     create_helper_field(name_ext, scalar3d_layout_mid, grid_name, ps);
+    create_helper_field(name_hxt, scalar3d_layout_hid, grid_name, ps);
+    // No need to follow with hxt because we are not reading it externally
     auto field_ext = get_helper_field(name_ext);
     m_time_interp.add_field(field_ext.alias(name),true);
   }
@@ -210,10 +277,12 @@ void Nudging::run_impl (const double dt)
   }
 
   for (auto name : m_fields_nudge) {
-    auto atm_state_field = get_field_out_wrap(name);
-    auto int_state_field = get_helper_field(name);
-    auto ext_state_field = get_helper_field(name+"_ext");
+    auto atm_state_field = get_field_out_wrap(name);      // int horiz, int vert
+    auto int_state_field = get_helper_field(name);        // int horiz, int vert
+    auto ext_state_field = get_helper_field(name+"_ext"); // ext horiz, ext vert
+    auto hxt_state_field = get_helper_field(name+"_hxt"); // ext horiz, int vert
     auto ext_state_view  = ext_state_field.get_view<mPack**>();
+    auto hxt_state_view  = hxt_state_field.get_view<mPack**>();
     auto atm_state_view  = atm_state_field.get_view<mPack**>();  // TODO: Right now assume whatever field is defined on COLxLEV
     auto int_state_view  = int_state_field.get_view<mPack**>();
     auto int_mask_view = m_buffer.int_mask_view;
@@ -268,11 +337,12 @@ void Nudging::run_impl (const double dt)
     });
 
     // Vertical Interpolation onto atmosphere state pressure levels
+    // Note that we are going from ext to hxt here
     if (m_src_pres_type == TIME_DEPENDENT_3D_PROFILE) {
       perform_vertical_interpolation<Real,1,2>(p_mid_ext_p,
                                                p_mid_v,
                                                ext_state_view,
-                                               int_state_view,
+                                               hxt_state_view,
                                                int_mask_view,
                                                m_num_src_levs,
                                                m_num_levs);
@@ -280,10 +350,24 @@ void Nudging::run_impl (const double dt)
       perform_vertical_interpolation<Real,1,2>(p_mid_ext_1d,
                                                p_mid_v,
                                                ext_state_view,
-                                               int_state_view,
+                                               hxt_state_view,
                                                int_mask_view,
                                                m_num_src_levs,
                                                m_num_levs);
+    }
+
+    // Refine remap onto target atmosphere state horiz grid ("int")
+    // Note that we are going from hxt to int here
+    if(m_refine_remap) {
+      // We have to register the fields
+      refine_remapper->registration_begins();
+      refine_remapper->register_field(hxt_state_field, int_state_field);
+      refine_remapper->registration_ends();
+      // Call the remapper
+      refine_remapper->remap(true);
+    } else {
+      // No horizontal interpolation, just copy the data
+      Kokkos::deep_copy(int_state_view, hxt_state_view);
     }
 
     // Check that none of the nudging targets are masked, if they are, set value to

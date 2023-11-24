@@ -13,6 +13,7 @@
 #include "share/grid/point_grid.hpp"
 #include "share/util/scream_vertical_interpolation.hpp"
 #include "share/util/scream_time_stamp.hpp"
+#include "share/grid/remap/refining_remapper_p2p.hpp"
 
 #include <string>
 
@@ -131,6 +132,14 @@ protected:
   std::map<std::string,Field> m_helper_fields;
 
   std::vector<std::string> m_fields_nudge;
+
+  /* Nudge from coarse data */
+  // if true, remap coarse data to fine grid
+  bool m_refine_remap;
+  // file containing coarse data mapping
+  std::string m_refine_remap_file;
+  // (refining) remapper object
+  std::shared_ptr<scream::RefiningRemapperP2P> refine_remapper;
 
   util::TimeInterpolation m_time_interp;
 
