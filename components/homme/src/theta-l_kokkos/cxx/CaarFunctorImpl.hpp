@@ -682,7 +682,7 @@ struct CaarFunctorImpl {
 
 #ifdef TESTER_NOMPI
 // a kernel only for perf c1 test, to put div(vdp) into dp tendency
-// to print it on host
+// to print it on host for verification
   KOKKOS_INLINE_FUNCTION
   void test_dp_tendency(KernelVariables &kv) const {
     // Compute vdp
