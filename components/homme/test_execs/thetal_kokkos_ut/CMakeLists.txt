@@ -21,7 +21,13 @@ SET (PIO_INTERP TRUE)
 
 #these vars shared between all targets, so changing one var, like TESTE_NOMPI
 #for one test only won't work, config is built once and for the last test
+
 SET (TESTER_NOMPI TRUE)
+
+#set it to false to test caar_ut
+#SET (TESTER_NOMPI FALSE)
+
+configure_file(${HOMME_SOURCE_DIR}/test_execs/thetal_kokkos_ut/compute-error.py ${CMAKE_CURRENT_BINARY_DIR}/compute-error.py COPYONLY)
 
 HommeConfigFile (${THIS_CONFIG_IN} ${THIS_CONFIG_HC} ${THIS_CONFIG_H} )
 
