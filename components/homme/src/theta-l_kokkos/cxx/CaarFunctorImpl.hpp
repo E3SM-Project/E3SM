@@ -579,10 +579,10 @@ struct CaarFunctorImpl {
       const int igp = idx / NP;
       const int jgp = idx % NP;
 
-//OGIGINAL = subviews + call to div
+//ORIGINAL = subviews + call to div
 
-//#define ORIGINAL
-#undef ORIGINAL
+#define ORIGINAL
+//#undef ORIGINAL
 
 #ifdef ORIGINAL
       auto u = Homme::subview(m_state.m_v,kv.ie,m_data.n0,0,igp,jgp);
@@ -632,7 +632,7 @@ struct CaarFunctorImpl {
 
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team, NUM_LEV),
                            [&] (const int& ilev) {
-std::cout << "div_vdp here " << m_buffers.div_vdp(kv.team_idx,igp,jgp,ilev)[0] << "\n";
+//std::cout << "div_vdp here " << m_buffers.div_vdp(kv.team_idx,igp,jgp,ilev)[0] << "\n";
       });
     });
 
@@ -685,7 +685,7 @@ std::cout << "div_vdp here " << m_buffers.div_vdp(kv.team_idx,igp,jgp,ilev)[0] <
         }
         combine<CombineMode::Replace>((dudx + dvdy) * (1.0 / metdet(igp, jgp) * m_sphere_ops.m_scale_factor_inv),
                      m_buffers.div_vdp(kv.team_idx,igp, jgp, ilev), aa, bb);
-std::cout << "div_vdp here " << m_buffers.div_vdp(kv.team_idx,igp,jgp,ilev)[0] << "\n";
+//std::cout << "div_vdp here " << m_buffers.div_vdp(kv.team_idx,igp,jgp,ilev)[0] << "\n";
       });
     });
     kv.team_barrier();
@@ -710,11 +710,11 @@ std::cout << "div_vdp here " << m_buffers.div_vdp(kv.team_idx,igp,jgp,ilev)[0] <
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                            [&](const int ilev) {
 //if(ilev == 0) 
-std::cout << "dp before " << ilev << " " << dp_np1(ilev)[0] << "\n";
-std::cout << "div " << ilev << " " << div_vdp(ilev)[0] << "\n";
+//std::cout << "dp before " << ilev << " " << dp_np1(ilev)[0] << "\n";
+//std::cout << "div " << ilev << " " << div_vdp(ilev)[0] << "\n";
           dp_np1(ilev)  += div_vdp(ilev);
 //if(ilev == 0) 
-std::cout << "dp after " << ilev << " " << dp_np1(ilev)[0] << "\n";
+//std::cout << "dp after " << ilev << " " << dp_np1(ilev)[0] << "\n";
       });
     });
   }

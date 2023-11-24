@@ -163,6 +163,27 @@ TEST_CASE("caar", "caar_testing") {
 
           // Run cxx
 	  for(int ii = 0; ii <  HOWMANY ; ii++)  caar.run(data);
+
+          // Compare answers
+          auto h_dp3d      = Kokkos::create_mirror_view(elems.m_state.m_dp3d);
+          Kokkos::deep_copy(h_dp3d     , elems.m_state.m_dp3d);
+
+//get dimensions
+std::cout << "NELEM = " << num_elems << "\n";
+std::cout << "NP = " << NP << "\n";
+std::cout << "NUM_PNHYS_LEVELS = " << NUM_PHYSICAL_LEV << "\n";
+
+std::cout.precision(20);
+
+          for (int ie=0; ie<num_elems; ++ie) {
+            auto dp3d_cxx      = viewAsReal(Homme::subview(h_dp3d,ie,np1));
+          for (int i=0; i<NP; ++i)
+          for (int j=0; j<NP; ++j)
+          for (int k=0; k<NUM_PHYSICAL_LEV; ++k)
+std::cout << "dp[" << ie << "," << i << "," << j << "," << k << "]=  " << dp3d_cxx(i,j,k)<< "\n";
+          }
+
+
 	}
       }
     }
