@@ -27,10 +27,14 @@ initial_conditions:
   T_mid: 273.0
   p_mid: 1.e5
   num_a1: 1.e5
+  num_c1: 1.e5
   bc_a1: 1.e-5
   num_a2: 1e5
   num_a3: 1e5
   num_a4: 1e5
+  num_c2: 1e5
+  num_c3: 1e5
+  num_c4: 1e5
   soa_a1: 1e-5
   so4_a1: 1e-5
   pom_a1: 1e-5

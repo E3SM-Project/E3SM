@@ -1,8 +1,14 @@
 #ifndef EAMXX_MAM_ACI_HPP
 #define EAMXX_MAM_ACI_HPP
 
+//For MAM4 aerosol configuration
 #include <physics/mam/mam_coupling.hpp>
+
+//For declaring ACI class derived from atm process class
 #include <share/atm_process/atmosphere_process.hpp>
+
+//For physical constants
+#include "physics/share/physics_constants.hpp"
 
 namespace scream
 {
@@ -31,7 +37,7 @@ public:
   int ncol_, nlev_;
 
   // number of aerosol modes
-  int num_modes_;
+  int num_aero_modes_;
 
 
   // physics grid for column information
