@@ -59,6 +59,9 @@ public:
 
   // Whether we use aerosol forcing in radiation
   bool m_do_aerosol_rad;
+  // Whether we do extra aerosol forcing calls
+  bool m_extra_clnsky_diag;
+  bool m_extra_clnclrsky_diag;
 
   // The orbital year, used for zenith angle calculations:
   // If > 0, use constant orbital year for duration of simulation

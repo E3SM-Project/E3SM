@@ -81,7 +81,8 @@ namespace scream {
                 real3d &sw_bnd_flux_up, real3d &sw_bnd_flux_dn, real3d &sw_bnd_flux_dn_dir,
                 real3d &lw_bnd_flux_up, real3d &lw_bnd_flux_dn,
                 const Real tsi_scaling,
-                const std::shared_ptr<spdlog::logger>& logger);
+                const std::shared_ptr<spdlog::logger>& logger,
+                const bool extra_clnclrsky_diag = false, const bool extra_clnsky_diag = false);
         /*
          * Perform any clean-up tasks
          */
@@ -97,7 +98,8 @@ namespace scream {
                 OpticalProps2str &aerosol, OpticalProps2str &clouds,
                 FluxesByband &fluxes, FluxesBroadband &clnclrsky_fluxes, FluxesBroadband &clrsky_fluxes, FluxesBroadband &clnsky_fluxes,
                 const Real tsi_scaling,
-                const std::shared_ptr<spdlog::logger>& logger);
+                const std::shared_ptr<spdlog::logger>& logger,
+                const bool extra_clnclrsky_diag, const bool extra_clnsky_diag);
         /*
          * Longwave driver (called by rrtmgp_main)
          */
@@ -107,7 +109,8 @@ namespace scream {
                 real2d &p_lay, real2d &t_lay, real2d &p_lev, real2d &t_lev,
                 GasConcs &gas_concs,
                 OpticalProps1scl &aerosol, OpticalProps1scl &clouds,
-                FluxesByband &fluxes, FluxesBroadband &clnclrsky_fluxes, FluxesBroadband &clrsky_fluxes, FluxesBroadband &clnsky_fluxes);
+                FluxesByband &fluxes, FluxesBroadband &clnclrsky_fluxes, FluxesBroadband &clrsky_fluxes, FluxesBroadband &clnsky_fluxes,
+                const bool extra_clnclrsky_diag, const bool extra_clnsky_diag);
         /*
          * Return a subcolumn mask consistent with a specified overlap assumption
          */

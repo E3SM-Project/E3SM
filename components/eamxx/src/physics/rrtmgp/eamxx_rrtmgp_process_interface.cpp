@@ -120,6 +120,10 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
     add_field<Required>("aero_tau_lw", scalar3d_lwband_layout, nondim, grid_name, ps);
   }
 
+  // Whether we do extra clean/clear sky calculations
+  m_extra_clnclrsky_diag = m_params.get<bool>("extra_clnclrsky_diag",false);
+  m_extra_clnsky_diag    = m_params.get<bool>("extra_clnsky_diag",false);
+
   // Set computed (output) fields
   add_field<Updated >("T_mid"     , scalar3d_layout_mid, K  , grid_name, ps);
   add_field<Computed>("SW_flux_dn", scalar3d_layout_int, Wm2, grid_name, "RESTART", ps);
@@ -904,7 +908,8 @@ void RRTMGPRadiation::run_impl (const double dt) {
         lw_clrsky_flux_up, lw_clrsky_flux_dn,
         lw_clnsky_flux_up, lw_clnsky_flux_dn,
         sw_bnd_flux_up   , sw_bnd_flux_dn   , sw_bnd_flux_dir      , lw_bnd_flux_up   , lw_bnd_flux_dn,
-        eccf, m_atm_logger
+        eccf, m_atm_logger,
+        m_extra_clnclrsky_diag, m_extra_clnsky_diag
       );
 
       // Update heating tendency
