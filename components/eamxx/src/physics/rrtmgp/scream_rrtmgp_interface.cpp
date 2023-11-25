@@ -756,9 +756,11 @@ namespace scream {
             OpticalProps2str optics;
             optics.alloc_2str(nday, nlay, k_dist);
 
-            // Allocate space for optical properties (no aerosols)
             OpticalProps2str optics_no_aerosols;
-            optics_no_aerosols.alloc_2str(nday, nlay, k_dist);
+            if (extra_clnsky_diag) {
+                // Allocate space for optical properties (no aerosols)
+                optics_no_aerosols.alloc_2str(nday, nlay, k_dist);
+            }
 
             // Limit temperatures for gas optics look-up tables
             auto t_lay_limited = real2d("t_lay_limited", nday, nlay);
@@ -818,7 +820,9 @@ namespace scream {
             // Combine gas and cloud optics
             clouds_day.delta_scale();
             clouds_day.increment(optics);
-            clouds_day.increment(optics_no_aerosols);
+            if (extra_clnsky_diag) {
+                clouds_day.increment(optics_no_aerosols);
+            }
             // Compute fluxes on daytime columns
             rte_sw(optics, top_at_1, mu0_day, toa_flux, sfc_alb_dir_T, sfc_alb_dif_T, fluxes_day);
             // Expand daytime fluxes to all columns
@@ -865,9 +869,11 @@ namespace scream {
             // Allocate space for optical properties
             OpticalProps1scl optics;
             optics.alloc_1scl(ncol, nlay, k_dist);
-            // Allocate space for optical properties (no aerosols)
             OpticalProps1scl optics_no_aerosols;
-            optics_no_aerosols.alloc_1scl(ncol, nlay, k_dist);
+            if (extra_clnsky_diag) {
+                // Allocate space for optical properties (no aerosols)
+                optics_no_aerosols.alloc_1scl(ncol, nlay, k_dist);
+            }
 
             // Boundary conditions
             SourceFuncLW lw_sources;
@@ -914,7 +920,7 @@ namespace scream {
 
             // Do gas optics
             k_dist.gas_optics(ncol, nlay, top_at_1, p_lay, p_lev, t_lay_limited, t_sfc, gas_concs, optics, lw_sources, real2d(), t_lev_limited);
-            if (extra_clnclrsky_diag) {
+            if (extra_clnsky_diag) {
                 k_dist.gas_optics(ncol, nlay, top_at_1, p_lay, p_lev, t_lay_limited, t_sfc, gas_concs, optics_no_aerosols, lw_sources, real2d(), t_lev_limited);
             }
 

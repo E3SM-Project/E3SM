@@ -308,6 +308,8 @@ be lost if SCREAM_HACK_XML is not enabled.
       <do_aerosol_rad>true</do_aerosol_rad>
       <do_aerosol_rad COMPSET=".*SCREAM.*noAero">false</do_aerosol_rad>
       <enable_column_conservation_checks>false</enable_column_conservation_checks>
+      <extra_clnclrsky_diag>false</extra_clnclrsky_diag>
+      <extra_clnsky_diag>false</extra_clnsky_diag>
     </rrtmgp>
 
     <mac_aero_mic inherit="atm_proc_group">
