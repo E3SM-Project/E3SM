@@ -121,8 +121,8 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   }
 
   // Whether we do extra clean/clear sky calculations
-  m_extra_clnclrsky_diag = m_params.get<bool>("extra_clnclrsky_diag", true);
-  m_extra_clnsky_diag    = m_params.get<bool>("extra_clnsky_diag", true);
+  m_extra_clnclrsky_diag = m_params.get<bool>("extra_clnclrsky_diag", false);
+  m_extra_clnsky_diag    = m_params.get<bool>("extra_clnsky_diag", false);
 
   // Set computed (output) fields
   add_field<Updated >("T_mid"     , scalar3d_layout_mid, K  , grid_name, ps);

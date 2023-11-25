@@ -866,6 +866,37 @@ namespace scream {
             // Problem size
             int nbnd = k_dist.get_nband();
 
+            // Associate local pointers for fluxes
+            auto &flux_up           = fluxes.flux_up;
+            auto &flux_dn           = fluxes.flux_dn;
+            auto &bnd_flux_up       = fluxes.bnd_flux_up;
+            auto &bnd_flux_dn       = fluxes.bnd_flux_dn;
+            auto &clnclrsky_flux_up = clnclrsky_fluxes.flux_up;
+            auto &clnclrsky_flux_dn = clnclrsky_fluxes.flux_dn;
+            auto &clrsky_flux_up    = clrsky_fluxes.flux_up;
+            auto &clrsky_flux_dn    = clrsky_fluxes.flux_dn;
+            auto &clnsky_flux_up    = clnsky_fluxes.flux_up;
+            auto &clnsky_flux_dn    = clnsky_fluxes.flux_dn;
+
+            // Reset fluxes to zero
+            parallel_for(
+                SimpleBounds<2>(nlay + 1, ncol), YAKL_LAMBDA(int ilev, int icol) {
+                    flux_up(icol, ilev)           = 0;
+                    flux_dn(icol, ilev)           = 0;
+                    clnclrsky_flux_up(icol, ilev) = 0;
+                    clnclrsky_flux_dn(icol, ilev) = 0;
+                    clrsky_flux_up(icol, ilev)    = 0;
+                    clrsky_flux_dn(icol, ilev)    = 0;
+                    clnsky_flux_up(icol, ilev)    = 0;
+                    clnsky_flux_dn(icol, ilev)    = 0;
+                });
+            parallel_for(
+                SimpleBounds<3>(nbnd, nlay + 1, ncol),
+                YAKL_LAMBDA(int ibnd, int ilev, int icol) {
+                    bnd_flux_up(icol, ilev, ibnd) = 0;
+                    bnd_flux_dn(icol, ilev, ibnd) = 0;
+                });
+
             // Allocate space for optical properties
             OpticalProps1scl optics;
             optics.alloc_1scl(ncol, nlay, k_dist);

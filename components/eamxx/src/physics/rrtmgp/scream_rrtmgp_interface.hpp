@@ -82,7 +82,7 @@ namespace scream {
                 real3d &lw_bnd_flux_up, real3d &lw_bnd_flux_dn,
                 const Real tsi_scaling,
                 const std::shared_ptr<spdlog::logger>& logger,
-                const bool extra_clnclrsky_diag = true, const bool extra_clnsky_diag = true);
+                const bool extra_clnclrsky_diag = false, const bool extra_clnsky_diag = false);
         /*
          * Perform any clean-up tasks
          */
