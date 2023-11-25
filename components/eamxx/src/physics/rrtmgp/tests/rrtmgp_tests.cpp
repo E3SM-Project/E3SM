@@ -215,9 +215,7 @@ int run(int argc, char** argv) {
             lw_clrsky_flux_up, lw_clrsky_flux_dn,
             lw_clnsky_flux_up, lw_clnsky_flux_dn,
             sw_bnd_flux_up, sw_bnd_flux_dn, sw_bnd_flux_dir,
-            lw_bnd_flux_up, lw_bnd_flux_dn, tsi_scaling, logger,
-            true, true // extra_clnclrsky_diag, extra_clnsky_diag
-            // set them to true because we actually test them below
+            lw_bnd_flux_up, lw_bnd_flux_dn, tsi_scaling, logger
           );
 
     // Check values against baseline
