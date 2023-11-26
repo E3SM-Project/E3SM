@@ -46,7 +46,7 @@
 		<var name="rmsIceSpeed" type="real" dimensions="nRegions Time" units="m s-1"
 			description="RMS ice speed by region"
 		/>
-		<var name="averageAlbedo" type="real" dimensions="nRegions Time" units="-"
+		<var name="averageAlbedo" type="real" dimensions="nRegions Time" units="1"
 			description="Average albedo by region"
 		/>
 		<var name="maximumIceVolume" type="real" dimensions="nRegions Time" units="km2"

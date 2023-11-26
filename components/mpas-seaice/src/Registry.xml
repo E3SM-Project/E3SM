@@ -3845,12 +3845,14 @@
 		     dimensions="nCells Time"
 		     units="m s-1"
 		     default_value="5.0"
+                     long_name="Surface u-wind at cell center in native model direction"
 		/>
 		<var name="vAirVelocity"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="m s-1"
 		     default_value="5.0"
+                     long_name="Surface v-wind at cell center in native model direction"
 		/>
 		<var name="atmosReferenceSpeed10m"
 		     type="real"
