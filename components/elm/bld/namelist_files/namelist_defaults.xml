@@ -87,6 +87,8 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <implicit_stress>.false.</implicit_stress>
 <!-- The atmosphere provides gustiness separate from mean wind. -->
 <atm_gustiness>.false.</atm_gustiness>
+<!-- Force the land to add further gustiness to any provided by the atmosphere. -->
+<force_land_gustiness>.false.</force_land_gustiness>
 
 <!-- ========================================================================================  -->
 <!-- VSFM default                                                                              -->
@@ -2089,6 +2091,7 @@ this mask will have smb calculated over the entire global land surface
 <use_fates_cohort_age_tracking use_fates=".true.">.false.</use_fates_cohort_age_tracking>
 <use_fates_sp                  use_fates=".true.">.false.</use_fates_sp>
 <fates_parteh_mode             use_fates=".true.">1</fates_parteh_mode>
+<fates_seeddisp_cadence        use_fates=".true.">0</fates_seeddisp_cadence>
 <use_fates_inventory_init      use_fates=".true.">.false.</use_fates_inventory_init>
 <fates_inventory_ctrl_filename use_fates=".true."> "/dev/null" </fates_inventory_ctrl_filename>
 <use_fates_nocomp              use_fates=".true." use_fates_sp=".true.">.true.</use_fates_nocomp>

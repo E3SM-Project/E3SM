@@ -4072,19 +4072,6 @@ If .true., a linearization of the response of the pbl scheme to surface stresses
 is sent to the coupler every time step, using the fields 'wsresp' and 'tau_est'.
 </entry>
 
-<entry id="export_gustiness" type="logical" category="pbl"
-       group="phys_ctl_nl" valid_values="" >
-If .true., a gustiness value will be exported to the coupler, which allows
-surface components to distinguish between the effect of mean wind and gustiness
-when calculating fluxes (and in particular surface drag).
-
-If .false., no extra value is exported, and gustiness is instead applied by the
-atmosphere by scaling up the exported wind fields (ubot and vbot). This is
-simpler and requires slightly less coupling overhead, but produces numerical
-artifacts (oscillations) in surface stresses, particularly when the gustiness is
-large compared with the mean wind.
-</entry>
-
 
 <!-- Flags for implementing code modifications under polar project -->
 
@@ -5539,6 +5526,25 @@ fmoa=2 for Gantt et al. (2011, ACP) parameterization; fmoa=3 for
 simple parameterization based on Quinn et al., 2014; fmoa=4 for
 Rinaldi et al. (JGR, 2013).
 Default:1
+</entry>
+
+<entry id="prescribed_macv2_datapath" type="char*256" input_pathname="abs" category="cam_chem"
+       group="prescribed_macv2_nl" valid_values="" >
+Full pathname of the directory that contains the files specified in
+<varname>prescribed_macv2_filelist</varname>.
+Default: set by build-namelist.
+</entry>
+
+<entry id="prescribed_macv2_file" type="char*256" input_pathname="rel:prescribed_macv2_datapath" category="cam_chem"
+       group="prescribed_macv2_nl" valid_values="" >
+Filename of dataset for prescribed macv2 anthropogenic aerosol forcing.
+Default: set by build-namelist.
+</entry>
+
+<entry id="do_macv2sp" type="logical"  category="cam_chem"
+       group="prescribed_macv2_nl" valid_values="">
+If set to .true., use MACv2-SP scheme for anthropogenic aerosol effects.
+Default: .false.
 </entry>
 
 <entry id="prescribed_ghg_datapath" type="char*256" input_pathname="abs" category="cam_chem"

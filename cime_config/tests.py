@@ -94,7 +94,8 @@ _TESTS = {
             "SMS.r05_r05.IELM.elm-topounit",
             "ERS.ELM_USRDAT.I1850ELM.elm-usrdat",
             "ERS.f09_f09.IELM.elm-lnd_rof_2way",
-            "ERS.r05_r05.IELM.elm-V2_ELM_MOSART_features"
+            "ERS.r05_r05.IELM.elm-V2_ELM_MOSART_features",
+            "ERS.ELM_USRDAT.IELM.elm-surface_water_dynamics"
             )
         },
 
@@ -129,7 +130,7 @@ _TESTS = {
             "ERP_Ln18.ne4_oQU240.F2010.eam-condidiag_rhi",
             )
         },
-    
+
     "e3sm_zm_developer" : {
         "tests"   : (
             "ERP.ne4pg2_oQU480.F2010.eam-zm_enhancements",
@@ -221,7 +222,7 @@ _TESTS = {
     "e3sm_atm_nbfb" : {
         "tests" : (
             "PGN_P1x1.ne4_oQU240.F2010",
-            "TSC.ne4_oQU240.F2010",
+            "TSC_PS.ne4_oQU240.F2010",
             "MVK_PS.ne4_oQU240.F2010",
             )
         },
@@ -288,12 +289,12 @@ _TESTS = {
         "inherit" : ("e3sm_developer", "e3sm_atm_integration", "e3sm_mmf_integration"),
         "time"    : "03:00:00",
         "tests"   : (
-            "ERS.ne11_oQU240.WCYCL1850NS",
+            "ERS.ne4pg2_oQU480.WCYCL1850NS",
             "SMS_D_Ld1.ne30pg2_EC30to60E2r2.WCYCL1850.allactive-wcprod",
             "SMS_D_Ld1.ne30pg2_EC30to60E2r2.WCYCLSSP370.allactive-wcprodssp",
             "ERS_Ld3.ne4_oQU240.F2010",
             #"ERT_Ld31.ne16_g37.B1850C5",#add this line back in with the new correct compset
-            "NCK.ne11_oQU240.WCYCL1850NS",
+            "NCK.ne4pg2_oQU480.WCYCL1850NS",
             "PET.f19_g16.X.allactive-mach-pet",
             "PET.f45_g37_rx1.A.allactive-mach-pet",
             "PET_Ln9_PS.ne30pg2_EC30to60E2r2.WCYCL1850.allactive-mach-pet",

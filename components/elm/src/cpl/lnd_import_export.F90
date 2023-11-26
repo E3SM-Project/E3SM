@@ -1049,7 +1049,7 @@ contains
          ! Horizontal windspeed (m/s)
          top_as%windbot(topo) = sqrt(top_as%ubot(topo)**2 + top_as%vbot(topo)**2)
          if (atm_gustiness) then
-            top_as%windbot(topo) = top_as%windbot(topo) + top_as%ugust(topo)
+            top_as%windbot(topo) = sqrt(top_as%windbot(topo)**2 + top_as%ugust(topo)**2)
          end if
          ! Relative humidity (percent)
          if (top_as%tbot(topo) > SHR_CONST_TKFRZ) then
@@ -1148,9 +1148,9 @@ contains
            ! assign the state forcing fields derived from other inputs
            ! Horizontal windspeed (m/s)
            top_as%windbot(topo) = sqrt(top_as%ubot(topo)**2 + top_as%vbot(topo)**2)
-         if (atm_gustiness) then
-            top_as%windbot(topo) = top_as%windbot(topo) + top_as%ugust(topo)
-         end if
+           if (atm_gustiness) then
+              top_as%windbot(topo) = sqrt(top_as%windbot(topo)**2 + top_as%ugust(topo)**2)
+           end if
            ! Relative humidity (percent)
            if (top_as%tbot(topo) > SHR_CONST_TKFRZ) then
             e = esatw(tdc(top_as%tbot(topo)))
@@ -1391,6 +1391,7 @@ contains
        l2x(index_l2x_Sl_tref,i)     =  lnd2atm_vars%t_ref2m_grc(g)
        l2x(index_l2x_Sl_qref,i)     =  lnd2atm_vars%q_ref2m_grc(g)
        l2x(index_l2x_Sl_u10,i)      =  lnd2atm_vars%u_ref10m_grc(g)
+       l2x(index_l2x_Sl_u10withgusts,i)=lnd2atm_vars%u_ref10m_with_gusts_grc(g)
        l2x(index_l2x_Fall_taux,i)   = -lnd2atm_vars%taux_grc(g)
        l2x(index_l2x_Fall_tauy,i)   = -lnd2atm_vars%tauy_grc(g)
        l2x(index_l2x_Fall_lat,i)    = -lnd2atm_vars%eflx_lh_tot_grc(g)

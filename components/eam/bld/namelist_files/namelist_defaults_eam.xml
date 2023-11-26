@@ -55,6 +55,7 @@
 <ncdata dyn="se" hgrid="ne30np4"  nlev="128" ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_ne30np4_SCREAM_L128_c160214.nc</ncdata>
 <ncdata dyn="se" hgrid="ne45np4"  nlev="72"  ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_ne45np4_L72_c20200611.nc</ncdata>
 <ncdata dyn="se" hgrid="ne120np4" nlev="72"  ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_0000-01-ne120np4_L72_c160318.nc</ncdata>
+<ncdata dyn="se" hgrid="ne120np4" nlev="80"  ic_ymd="101" >atm/cam/inic/homme/eami_mam4_Linoz_ne120np4_L80_c20231010.nc</ncdata>
 
 <!-- E3SMv3 Atmosphere Initial conditions -->
 <ncdata dyn="se" hgrid="ne4np4"   nlev="80"  ic_ymd="101" >atm/cam/inic/homme/eami_mam4_Linoz_ne4np4_L80_c20231010.nc</ncdata>
@@ -1132,9 +1133,6 @@
 
 <!-- Linearization of boundary layer winds -->
 <linearize_pbl_winds>.false.</linearize_pbl_winds>
-
-<!-- Export gustiness value -->
-<export_gustiness>.false.</export_gustiness>
 
 <!-- MMF CRM mean state acceleration -->
 <use_crm_accel    >.false.</use_crm_accel>
