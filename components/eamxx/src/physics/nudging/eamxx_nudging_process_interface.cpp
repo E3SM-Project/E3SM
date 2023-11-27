@@ -157,35 +157,36 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   // The grid from the remapper needs a const AbstractGrid, but
   // the other two grids need a non-const AbstractGrid
   // TODO: What is actually going on here anyway?
-  std::shared_ptr<const scream::AbstractGrid> grid_hxt_const;
-  std::shared_ptr<scream::AbstractGrid> grid_hxt;
+  std::shared_ptr<const scream::AbstractGrid> grid_ext_const;
   std::shared_ptr<scream::AbstractGrid> grid_ext;
+  std::shared_ptr<scream::AbstractGrid> grid_hxt;
 
   if(m_refine_remap) {
     // If we are refine-remapping, then get grid from remapper
-    grid_hxt_const = refine_remapper->get_src_grid();
+    grid_ext_const = refine_remapper->get_src_grid();
     // Deep clone it though to get rid of "const" stuff
-    grid_hxt = grid_hxt_const->clone(grid_hxt_const->name(), false);
+    grid_ext = grid_ext_const->clone(grid_ext_const->name(), false);
   } else {
     // If not refine-remapping, then use whatever was used before,
     // i.e., deep clone the physics grid
-    grid_hxt = m_grid->clone(m_grid->name(), false);
+    grid_ext = m_grid->clone(m_grid->name(), false);
   }
 
-  // The ultimate grid is grid_ext (external grid, i.e., files)
-  grid_ext = grid_hxt->clone(grid_hxt->name(), false);
-  // grid_ext can potentially have different levels
+  // The ultimate grid is grid_ext (external grid, i.e., files),
+  // so, grid_ext can potentially have different levels
   grid_ext->reset_num_vertical_lev(m_num_src_levs);
   // Declare the layouts for the helper fields (ext --> mid)
-  FieldLayout scalar2d_layout_mid{{LEV}, {m_num_src_levs}};
-  FieldLayout scalar3d_layout_mid{{COL, LEV}, {m_num_cols, m_num_src_levs}};
+  FieldLayout scalar2d_layout_mid { {LEV}, {m_num_src_levs} };
+  FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols, m_num_src_levs} };
   // The penultimate grid is grid_hxt (external horiz grid, but model physics
   // vert grid, so potentially a bit of a mess)
-  auto h_num_levs = grid_hxt->get_num_vertical_levels();
+  grid_hxt = grid_ext->clone(grid_ext->name(), false);
+  auto h_num_levs = m_num_levs;
+  grid_hxt->reset_num_vertical_lev(h_num_levs);
   // Declare the layouts for the helper fields (hxt --> hid)
   // TODO: use better names
-  FieldLayout scalar2d_layout_hid{{LEV}, {h_num_levs}};
-  FieldLayout scalar3d_layout_hid{{COL, LEV}, {m_num_cols, h_num_levs}};
+  FieldLayout scalar2d_layout_hid { {LEV}, {h_num_levs}};
+  FieldLayout scalar3d_layout_hid { {COL,LEV}, {m_num_cols, h_num_levs} };
 
   // Note: below, we only need to deal with the pressure stuff on ext_grid, not
   // hxt_grid because we are not doing vertical interpolation on the hxt_grid
@@ -356,7 +357,7 @@ void Nudging::run_impl (const double dt)
                                                m_num_levs);
     }
 
-    // Refine remap onto target atmosphere state horiz grid ("int")
+    // Refine-remap onto target atmosphere state horiz grid ("int")
     // Note that we are going from hxt to int here
     if(m_refine_remap) {
       // We have to register the fields
