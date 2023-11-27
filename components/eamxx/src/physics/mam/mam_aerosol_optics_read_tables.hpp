@@ -15,6 +15,7 @@ namespace scream::mam_coupling {
 using view_1d_host = typename KT::view_1d<Real>::HostMirror;
 using view_2d_host = typename KT::view_2d<Real>::HostMirror;
 using view_5d_host = Kokkos::View<Real *****>::HostMirror;
+using complex_view_1d = typename KT::view_1d<Kokkos::complex<Real>>;
 
 constexpr int nlwbands = mam4::modal_aer_opt::nlwbands;
 constexpr int nswbands = mam4::modal_aer_opt::nswbands;
@@ -32,22 +33,7 @@ view_5d_host asmpsw_host;
 view_5d_host extpsw_host;
 };
 
-struct AerosolOpticsDeviceData {
-// devices views
-// FIXME: move this code to mam4x and simplify number of inputs for aerosol_optics
-// FIXME: add description of these tables.
-view_1d refitabsw[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nswbands];
-view_1d refrtabsw[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nswbands];
-view_1d refrtablw[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nlwbands];
-view_1d refitablw[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nlwbands];
-
-view_3d abspsw[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nswbands];
-view_3d absplw[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nlwbands];
-view_3d asmpsw[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nswbands];
-view_3d extpsw[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nswbands];
-};
-
-
+using AerosolOpticsDeviceData = mam4::modal_aer_opt::AerosolOpticsDeviceData;
 
 inline
 void set_parameters_table(AerosolOpticsHostData &aerosol_optics_host_data,
@@ -235,8 +221,8 @@ void read_rrtmg_table(const std::string& table_filename,
 inline
 void read_water_refindex(const std::string& table_filename,
                      const std::shared_ptr<const AbstractGrid>& grid,
-                     Kokkos::complex<Real> crefwlw[mam4::modal_aer_opt::nlwbands],
-                     Kokkos::complex<Real> crefwsw[mam4::modal_aer_opt::nswbands])
+                     const complex_view_1d& crefwlw,
+                     const complex_view_1d& crefwsw)
   {
   // refractive index for water read in read_water_refindex
   // crefwsw(nswbands) ! complex refractive index for water visible
@@ -299,21 +285,23 @@ void read_water_refindex(const std::string& table_filename,
   //move data to device
   // FIXME: check this correct or can be done in a better way.
   // maybe make a 1D vied of Kokkos::complex<Real>
+  const auto crefwlw_host = Kokkos::create_mirror_view(crefwlw);
+  const auto crefwsw_host = Kokkos::create_mirror_view(crefwsw);
   for (int i = 0; i < nlwbands; ++i)
   {
     // Kokkos::complex<Real> temp;
-    crefwlw[i].real() = refindex_real_water_lw_host(i);
-    crefwlw[i].imag() = refindex_im_water_lw_host(i);
-    // Kokkos::deep_copy(crefwlw[i],temp);
+    crefwlw_host(i).real() = refindex_real_water_lw_host(i);
+    crefwlw_host(i).imag() = refindex_im_water_lw_host(i);
   }
+  Kokkos::deep_copy(crefwlw, crefwlw_host);
 
   for (int i = 0; i < nswbands; ++i)
   {
     // Kokkos::complex<Real> temp;
-    crefwsw[i].real() = refindex_real_water_sw_host(i);
-    crefwsw[i].imag() = refindex_im_water_sw_host(i);
-    // Kokkos::deep_copy(crefwsw[i],temp);
+    crefwsw_host(i).real() = refindex_real_water_sw_host(i);
+    crefwsw_host(i).imag() = refindex_im_water_sw_host(i);
   }
+  Kokkos::deep_copy(crefwsw, crefwsw_host);
 
   }
 //read_refindex_aero

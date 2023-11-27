@@ -220,54 +220,11 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   using view_1d_host = typename KT::view_1d<Real>::HostMirror;
   // Set up input structure to read data from file.
   using strvec_t = std::vector<std::string>;
-
-  mam_coupling::AerosolOpticsDeviceData aerosol_optics_device_data;
-// FIXME: move to a function
-for (int d1 = 0; d1 < ntot_amode; ++d1)
-{
-  for (int d5 = 0; d5 < nlwbands; ++d5) {
-        absplw_[d1][d5] =
-            mam_coupling::view_3d("absplw_", coef_number,
-                                             refindex_real,
-                                             refindex_im);
-        // FIXME
-        aerosol_optics_device_data.absplw[d1][d5]=absplw_[d1][d5];
-  }
-
-   for (int d3 = 0; d3 < nlwbands; ++d3) {
-        refrtablw_[d1][d3] = mam_coupling::view_1d("refrtablw",
-       refindex_real);
-        refitablw_[d1][d3] = mam_coupling::view_1d("refitablw",
-       refindex_im);
-         // FIXME
-         aerosol_optics_device_data.refrtablw[d1][d3]=refrtablw_[d1][d3];
-         aerosol_optics_device_data.refitablw[d1][d3]=refitablw_[d1][d3];
-  } // d3
-
-  for (int d3 = 0; d3 < nswbands; ++d3) {
-    refrtabsw_[d1][d3] = mam_coupling::view_1d ("refrtabsw", refindex_real);
-    refitabsw_[d1][d3] = mam_coupling::view_1d("refitabsw", refindex_im);
-    //FIXME
-    aerosol_optics_device_data.refrtabsw[d1][d3]=refrtabsw_[d1][d3];
-    aerosol_optics_device_data.refitabsw[d1][d3]=refitabsw_[d1][d3];
-    } // d3
-
-      // allocate memory for tables: abspsw,extpsw,asmpsw
-
-     for (int d5 = 0; d5 < nswbands; ++d5) {
-        abspsw_[d1][d5] =
-            mam_coupling::view_3d("abspsw", coef_number, refindex_real, refindex_im);
-        extpsw_[d1][d5] =
-            mam_coupling::view_3d("extpsw", coef_number, refindex_real, refindex_im);
-        asmpsw_[d1][d5] =
-            mam_coupling::view_3d("asmpsw", coef_number, refindex_real, refindex_im);
-     //FIXME
-    aerosol_optics_device_data.abspsw[d1][d5]=abspsw_[d1][d5];
-    aerosol_optics_device_data.extpsw[d1][d5]=extpsw_[d1][d5];
-    aerosol_optics_device_data.asmpsw[d1][d5]=asmpsw_[d1][d5];
-     } // d5
-  }
-
+    // Views in aerosol_optics_device_data_ are allocated in the following fuctions.
+  // Note: these function do not set values for aerosol_optics_device_data_.
+  mam4::modal_aer_opt::set_complex_views_modal_aero(aerosol_optics_device_data_);
+  mam4::modal_aer_opt::set_aerosol_optics_data_for_modal_aero_sw_views(aerosol_optics_device_data_);
+  mam4::modal_aer_opt::set_aerosol_optics_data_for_modal_aero_lw_views(aerosol_optics_device_data_);
 #if 1
 
   mam_coupling::AerosolOpticsHostData aerosol_optics_host_data;
@@ -298,23 +255,19 @@ for (int d1 = 0; d1 < ntot_amode; ++d1)
                                  host_views,
                                  layouts,
                                  aerosol_optics_host_data,
-                                 aerosol_optics_device_data);
+                                 aerosol_optics_device_data_);
   }
 
 #endif
 
 // FIXME: we need to get this name from the yaml file.
-std::string table_name = "water_refindex_rrtmg_c080910.nc";
-mam_coupling::read_water_refindex(table_name, grid_, crefwlw_,crefwsw_);
-
+std::string table_name_water = "water_refindex_rrtmg_c080910.nc";
+// it will syn data to device.
+mam_coupling::read_water_refindex(table_name_water, grid_,
+                                  aerosol_optics_device_data_.crefwlw,
+                                  aerosol_optics_device_data_.crefwsw);
 //
 {
-   // FIXME: I need to get these variables from a netCDF file.
-  specrefndxsw_ = mam_coupling::complex_view_2d("specrefndxlw_",nswbands, maxd_aspectype );
-  // Kokkos::deep_copy(specrefndxsw_, 1.0);
-  specrefndxlw_  = mam_coupling::complex_view_2d("specrefndxlw_",nlwbands, maxd_aspectype );
-  // Kokkos::deep_copy(specrefndxlw_, 1.0);
-
  // make a list of host views
   std::map<std::string,view_1d_host> host_views_aero;
   // defines layouts
@@ -378,8 +331,8 @@ mam_coupling::read_water_refindex(table_name, grid_, crefwlw_,crefwsw_);
     int species_id =species_ids[ispec]; // FIXME: I need the species index for soa
     mam_coupling::copy_refindex_aerosol_to_device(species_id,
                                              host_views_aero,
-                                             specrefndxsw_, // complex refractive index for water visible
-                                             specrefndxlw_);
+                                             aerosol_optics_device_data_.specrefndxsw, // complex refractive index for water visible
+                                             aerosol_optics_device_data_.specrefndxlw);
 
   } // done ispec
 
@@ -466,9 +419,6 @@ void MAMOptics::run_impl(const double dt) {
   auto  seasaltaod= get_field_out("seasaltaod").get_view<Real*>();
 
   Kokkos::deep_copy(bcaod,zero);
-
-
-
   printf("dt %e\n",dt);
 
   auto aero_nccn   = get_field_out("nccn").get_view<Real**>(); // FIXME: get rid of this
@@ -690,16 +640,9 @@ void MAMOptics::run_impl(const double dt) {
     lmassptr_amode,
     spechygro, specdens_amode,
     lspectype_amode,
-    specrefndxsw_, // specrefndxsw( nswbands, maxd_aspectype )
-    crefwlw_,
-    crefwsw_,
     // FIXME
     specname_amode,
-    extpsw_,
-    abspsw_,
-    asmpsw_,
-    refrtabsw_,
-    refitabsw_,
+    aerosol_optics_device_data_,
     // diagnostic
     extinct_icol, //        ! aerosol extinction [1/m]
     absorb_icol,  //         ! aerosol absorption [1/m]
@@ -758,12 +701,7 @@ mam4::aer_rad_props::aer_rad_props_lw(
     lmassptr_amode,
     spechygro, specdens_amode,
     lspectype_amode,
-    specrefndxlw_,
-    crefwlw_,
-    crefwsw_,
-    absplw_,
-    refrtablw_,
-    refitablw_,
+    aerosol_optics_device_data_,
     // work views
     mass_icol, cheb_icol, dgnumwet_m_icol,
     dgnumdry_m_icol, radsurf_icol,

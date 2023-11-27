@@ -96,28 +96,30 @@ private_except_cuda:
   //long wave extinction in the units of [1/km]
   mam_coupling::view_2d ext_cmip6_lw_;
 
-  // These inputs maybe are from a netCDF file:
-  // complex refractive index for aersol species
-  mam_coupling::complex_view_2d specrefndxsw_; // ready
-  // complex refractive index for aersol species
-  mam_coupling::complex_view_2d specrefndxlw_;// ready
+  mam_coupling::AerosolOpticsDeviceData aerosol_optics_device_data_;
 
-  // FIXME: Maybe use a 1D view instead of arrays of complex.
-  Kokkos::complex<Real> crefwlw_[mam4::modal_aer_opt::nlwbands]; // ready
-  Kokkos::complex<Real> crefwsw_[mam4::modal_aer_opt::nswbands];// ready
+  // // These inputs maybe are from a netCDF file:
+  // // complex refractive index for aersol species
+  // mam_coupling::complex_view_2d specrefndxsw_; // ready
+  // // complex refractive index for aersol species
+  // mam_coupling::complex_view_2d specrefndxlw_;// ready
 
-  // Inputs from netCDF files. I already got files and code to read them.
-  // ready means: I added code to read this table from netcdf. I will delete this comment.
-  mam_coupling::view_3d  abspsw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nswbands]; // ready
-  mam_coupling::view_3d  extpsw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nswbands]; // ready
-  mam_coupling::view_3d  asmpsw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nswbands]; // ready
+  // // FIXME: Maybe use a 1D view instead of arrays of complex.
+  // Kokkos::complex<Real> crefwlw_[mam4::modal_aer_opt::nlwbands]; // ready
+  // Kokkos::complex<Real> crefwsw_[mam4::modal_aer_opt::nswbands];// ready
 
-  mam_coupling::view_1d refrtabsw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nswbands]; // ready
-  mam_coupling::view_1d refitabsw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nswbands]; // ready
+  // // Inputs from netCDF files. I already got files and code to read them.
+  // // ready means: I added code to read this table from netcdf. I will delete this comment.
+  // mam_coupling::view_3d  abspsw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nswbands]; // ready
+  // mam_coupling::view_3d  extpsw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nswbands]; // ready
+  // mam_coupling::view_3d  asmpsw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nswbands]; // ready
 
-  mam_coupling::view_3d absplw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nlwbands]; // ready
-  mam_coupling::view_1d refrtablw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nlwbands]; // ready
-  mam_coupling::view_1d refitablw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nlwbands]; // ready
+  // mam_coupling::view_1d refrtabsw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nswbands]; // ready
+  // mam_coupling::view_1d refitabsw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nswbands]; // ready
+
+  // mam_coupling::view_3d absplw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nlwbands]; // ready
+  // mam_coupling::view_1d refrtablw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nlwbands]; // ready
+  // mam_coupling::view_1d refitablw_[mam4::AeroConfig::num_modes()][mam4::modal_aer_opt::nlwbands]; // ready
 
     // aerosol processes
   //std::unique_ptr<mam4::OpticsProcess> optics_;
