@@ -2832,7 +2832,7 @@
       <nx>465044</nx>
       <ny>1</ny>
       <file grid="ice|ocn">$DIN_LOC_ROOT/share/domains/domain.ocn.IcoswISC30E3r5.231121.nc</file>
-      <desc>IcoswISC30E3r5 is a MPAS ocean grid generated with the jigsaw/compass process XXX. Additionally, it has ocean in ice-shelf cavities:</desc>
+      <desc>IcoswISC30E3r5 is a MPAS ocean grid generated with the jigsaw/compass process using a dual mesh that is a subdivided icosahedron, resulting in a nearly uniform resolution of 30 km. Additionally, it has ocean in ice-shelf cavities:</desc>
     </domain>
 
     <!-- ROF (river) grids-->
