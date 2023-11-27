@@ -11,16 +11,13 @@
 		<var name="timeSeriesStatsOneString"
 			 type="text"
 			 dimensions="Time"
-			 units="unitless"
 		/>
 		<var name="timeSeriesStatsOneInteger"
 			 type="integer"
 			 dimensions="Time"
-			 units="unitless"
 		/>
 		<var name="timeSeriesStatsOneReal"
 			 type="real"
 			 dimensions="Time"
-			 units="unitless"
 		/>
 	</var_struct>
