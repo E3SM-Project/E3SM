@@ -13,8 +13,8 @@
 #include "utilities/SyncUtils.hpp"
 #include "utilities/ViewUtils.hpp"
 
-#define NNE 2
-#define HOWMANY 3
+#define NNE 1000
+#define HOWMANY 200
 
 
 using namespace Homme;
@@ -65,8 +65,8 @@ TEST_CASE("caar", "caar_testing") {
   const Real* hyam_ptr  = reinterpret_cast<Real*>(hyam.data());
   const Real* hybm_ptr  = reinterpret_cast<Real*>(hybm.data());
 
-  std::vector<Real> dvv(NP*NP);
-  std::vector<Real> mp(NP*NP);
+  //std::vector<Real> dvv(NP*NP);
+  //std::vector<Real> mp(NP*NP);
 
   // This will also init the c connectivity.
   //ref_FE.init_mass(mp.data());
