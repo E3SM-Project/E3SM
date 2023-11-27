@@ -28,6 +28,7 @@ module ocn_conservation_check
 
    use ocn_constants
    use ocn_config
+   use ocn_mesh
 
    implicit none
    private
@@ -960,7 +961,7 @@ v=accumulatedIcebergTemperatureFlux*rho_sw*cp_sw; write(m,"('IcebergTemperatureF
                 sumArray( 7) = sumArray( 7) + areaCell(iCell) * removedRiverRunoffFlux(iCell)
                 sumArray( 8) = sumArray( 8) + areaCell(iCell) * removedIceRunoffFlux(iCell)
                 sumArray( 9) = sumArray( 9) + areaCell(iCell) * icebergFreshwaterFlux(iCell)
-                sumArray(13) = sumArray(13) + areaCell(iCell) * subglacialRunoffFlux(iCell)
+                sumArray(13) = sumArray(13) + areaCell(iCell) * subglacialRunoffFlux(iCell) / areaCell(iCell) * rho_sw
             enddo
 
             if (config_use_frazil_ice_formation) then
