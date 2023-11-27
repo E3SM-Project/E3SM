@@ -9,18 +9,17 @@ using mam4::utils::min_max_bound;
 KOKKOS_INLINE_FUNCTION
 void gas_phase_chemistry(Real zm, Real zi, Real phis, Real temp, Real pmid, Real pdel, Real dt,
                          Real photo_rates[mam4::mo_photo::phtcnt],
-                         Real q[mam4::gas_chemistry::gas_pcnst]) { // VMRs
+                         Real q[mam4::gas_chemistry::gas_pcnst], // VMRs
+                         Real invariants[mam4::gas_chemistry::nfs]) { // inout
   constexpr Real rga = 1.0/haero::Constants::gravity;
-  constexpr Real mwdry = 1.0/haero::Constants::molec_weight_dry_air;
   constexpr Real m2km = 0.01; // converts m -> km
 
   // FIXME: The following things are chemical mechanism dependent! See mam4xx/src/mam4xx/gas_chem_mechanism.hpp)
   constexpr int gas_pcnst = mam4::gas_chemistry::gas_pcnst; // number of gas phase species
   constexpr int rxntot = mam4::gas_chemistry::rxntot;       // number of chemical reactions
   constexpr int extcnt = mam4::gas_chemistry::extcnt;       // number of species with external forcing
-  constexpr int nfs = mam4::gas_chemistry::nfs;             // number of "fixed species"
   constexpr int nabscol = mam4::gas_chemistry::nabscol;     // number of "absorbing column densities"
-  constexpr int indexm = 0;  // index of total atm density in invariants array
+  constexpr int indexm = 0;  // FIXME: index of total atm density in invariants array
 
   constexpr int phtcnt = mam4::mo_photo::phtcnt; // number of photolysis reactions
 
@@ -46,7 +45,6 @@ void gas_phase_chemistry(Real zm, Real zi, Real phis, Real temp, Real pmid, Real
   Real zint = m2km * (zi + zsurf);
 
   // ... compute the column's invariants
-  Real invariants[nfs];
   Real h2ovmr = q[0];
   // setinv(invariants, temp, h2ovmr, q, pmid); FIXME: nœt ported yet
 

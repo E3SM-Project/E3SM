@@ -337,7 +337,7 @@ void MAMMicrophysics::run_impl(const double dt) {
     Real zenith_angle = 0.0; // FIXME: need to get this from EAMxx [radians]
     Real surf_albedo = 0.0; // FIXME: surface albedo
     Real esfact = 0.0; // FIXME: earth-sun distance factor
-    mam4::ColumnView lwc; // FIXME: liquid water cloud content
+    mam4::ColumnView lwc; // FIXME: liquid water cloud content: where do we get this?
     mam4::mo_photo::table_photo(photo_rates, atm.pressure, atm.hydrostatic_dp,
       atm.temperature, o3_col_dens, zenith_angle, surf_albedo, lwc,
       atm.cloud_fraction, esfact, photo_table_, photo_work_arrays);
@@ -351,14 +351,14 @@ void MAMMicrophysics::run_impl(const double dt) {
       constexpr int nqtendbb = mam_coupling::nqtendbb();
 
       // extract atm state variables (input)
-      Real temp = atm.temperature(k);
-      Real pmid = atm.pressure(k);
-      Real pdel = atm.hydrostatic_dp(k);
-      Real zm   = atm.height(k);
-      Real zi   = z_iface(k);
-      Real pblh = atm.planetary_boundary_layer_height;
-      Real qv   = atm.vapor_mixing_ratio(k);
-      Real cld  = atm.cloud_fraction(k);
+      Real temp    = atm.temperature(k);
+      Real pmid    = atm.pressure(k);
+      Real pdel    = atm.hydrostatic_dp(k);
+      Real zm      = atm.height(k);
+      Real zi      = z_iface(k);
+      Real pblh    = atm.planetary_boundary_layer_height;
+      Real qv      = atm.vapor_mixing_ratio(k);
+      Real cldfrac = atm.cloud_fraction(k);
 
       // extract aerosol state variables into "working arrays" (mass mixing ratios)
       // (in EAM, this is done in the gas_phase_chemdr subroutine defined within
@@ -393,19 +393,27 @@ void MAMMicrophysics::run_impl(const double dt) {
       for (int i = 0; i < mam4::mo_photo::phtcnt; ++i) {
         photo_rates_k[i] = photo_rates(k, i);
       }
+      constexpr int nfs = mam4::gas_chemistry::nfs; // number of "fixed species"
+      // NOTE: we compute invariants here and pass them out to use later with
+      // NOTE: setsox
+      Real invariants[nfs];
       impl::gas_phase_chemistry(zm, zi, phis, temp, pmid, pdel, dt,
-                                photo_rates_k, vmr);
+                                photo_rates_k, vmr, invariants);
 
       //----------------------
       // Aerosol microphysics
       //----------------------
+      // the logic below is taken from the aero_model_gasaerexch subroutine in
+      // eam/src/chemistry/modal_aero/aero_model.F90
 
-      // aqueous chemistry ... FIXME: not yet ported
-      /* call setsox( ncol, lchnk, loffset,  & ! in
-         delt, pmid, pdel, tfld,   & ! in
-         mbar, cwat, cldfr,cldnum, & ! in
-         airdens,      & ! in
-         vmrcw,      vmr           ) ! inout */
+      // aqueous chemistry ...
+      const int loffset = 8; // FIXME: offset of first tracer in work arrays
+                             // FIXME: (taken from mam4xx setsox validation test)
+      const Real mbar = haero::Constants::molec_weight_dry_air; // FIXME: ???
+      constexpr int indexm = 0;  // FIXME: index of xhnm in invariants array (??)
+      Real cldnum = 0.0; // FIXME: droplet number concentration: where do we get this?
+      setsox_single_level(loffset, dt, pmid, pdel, temp, mbar, lwc(k),
+        cldfrac, cldnum, invariants[indexm], config_.setsox, vmrcw, vmr);
 
       // calculate aerosol water content using water uptake treatment
       // * dry and wet diameters [m]
@@ -419,7 +427,7 @@ void MAMMicrophysics::run_impl(const double dt) {
 
       // do aerosol microphysics (gas-aerosol exchange, nucleation, coagulation)
       impl::modal_aero_amicphys_intr(config_.amicphys, step_, dt, t, pmid, pdel,
-                                     zm, pblh, qv, cld, vmr, vmrcw, vmr_pregaschem,
+                                     zm, pblh, qv, cldfrac, vmr, vmrcw, vmr_pregaschem,
                                      vmr_precldchem, vmrcw_precldchem, vmr_tendbb,
                                      vmrcw_tendbb, dgncur_a, dgncur_awet,
                                      wetdens, qaerwat);

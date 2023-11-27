@@ -87,7 +87,8 @@ private_except_cuda:
 
   // configuration data
   struct Config {
-    struct { // photolysis parameters
+    // photolysis parameters
+    struct {
       // FIXME: are all these files needed?
       char rsf_file[MAX_FILENAME_LEN];
       char exo_coldens_file[MAX_FILENAME_LEN];
@@ -101,7 +102,8 @@ private_except_cuda:
       char euvacdat_file[MAX_FILENAME_LEN];
     } photolysis;
 
-    struct { // stratospheric chemistry parameters
+    // stratospheric chemistry parameters
+    struct {
       int o3_lbl; // number of layers with ozone decay from the surface
       int o3_sfc; // set from namelist input linoz_sfc
       int o3_tau; // set from namelist input linoz_tau
@@ -109,7 +111,10 @@ private_except_cuda:
       char chlorine_loading_file[MAX_FILENAME_LEN];
     } linoz;
 
-    // (see impl/mam4_amicphys.cpp)
+    // aqueous chemistry parameters
+    mam4::mo_setsox::Config setsox;
+
+    // aero microphysics configuration (see impl/mam4_amicphys.cpp)
     impl::AmicPhysConfig amicphys;
   };
   Config config_;
