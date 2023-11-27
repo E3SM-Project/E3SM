@@ -2,14 +2,14 @@ namespace scream::impl {
 
 KOKKOS_INLINE_FUNCTION
 void compute_o3_column_density(const ThreadTeam& team, const haero::Atmosphere& atm,
-                               const mam4::Prognostics &progs, ColumnView& o3_col_dens) {
+                               const mam4::Prognostics &progs, const ColumnView& o3_col_dens) {
+  constexpr int nabscol = mam4::gas_chemistry::nabscol;     // number of absorbing densities
+  constexpr int gas_pcnst = mam4::gas_chemistry::gas_pcnst; // number of gas phase species
+  constexpr int nfs = mam4::gas_chemistry::nfs;             // number of "fixed species"
+  constexpr Real mwdry = 1.0/haero::Constants::molec_weight_dry_air;
+
   Real col_deltas[mam4::nlev][nabscol]; // o2, o3 column density above model [1/cm^2]
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team, atm.num_levels()), [&](const int k) {
-    constexpr int nabscol = mam4::gas_chemistry::nabscol; // number of absorbing densities
-    constexpr int gas_pcnst = mam4::gas_chemistry::gas_pcnst; // number of gas phase species
-    constexpr int nfs = mam4::gas_chemistry::nfs;             // number of "fixed species"
-
-    constexpr Real mwdry = 1.0/haero::Constants::molec_weight_dry_air;
 
     Real temp = atm.temperature(k);
     Real pmid = atm.pressure(k);

@@ -106,10 +106,11 @@ private_except_cuda:
       int o3_sfc; // set from namelist input linoz_sfc
       int o3_tau; // set from namelist input linoz_tau
       Real psc_T; // set from namelist input linoz_psc_T
+      char chlorine_loading_file[MAX_FILENAME_LEN];
     } linoz;
 
     // (see impl/mam4_amicphys.cpp)
-    impl::AmicPhysConfig amic_phys;
+    impl::AmicPhysConfig amicphys;
   };
   Config config_;
 

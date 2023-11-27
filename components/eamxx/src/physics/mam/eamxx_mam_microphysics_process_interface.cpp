@@ -295,10 +295,10 @@ void MAMMicrophysics::run_impl(const double dt) {
   view_2d linoz_o3_clim("linoz_o3_clim", ncol_, nlev_);           // ozone (climatology) [vmr]
   view_2d linoz_o3col_clim("linoz_o3col_clim", ncol_, nlev_);     // column o3 above box (climatology) [Dobson Units (DU)]
   view_2d linoz_t_clim("linoz_o3col_clim", ncol_, nlev_);         // temperature (climatology) [K]
-  view_2d linoz_Pml_clim("linoz_Pml_clim", ncol_, nlev_);         // P minus L (climatology) [vmr/s]
-  view_2d linoz_dPml_dO3("linoz_dPml_dO3", ncol_, nlev_);         // sensitivity of P minus L to O3 [1/s]
-  view_2d linoz_dPml_dT("linoz_dPml_dT", ncol_, nlev_);           // sensitivity of P minus L to T3 [K]
-  view_2d linoz_dPml_dO3col("linoz_dPml_dT", ncol_, nlev_);       // sensitivity of P minus L to overhead O3 column [vmr/DU]
+  view_2d linoz_PmL_clim("linoz_PmL_clim", ncol_, nlev_);         // P minus L (climatology) [vmr/s]
+  view_2d linoz_dPmL_dO3("linoz_dPmL_dO3", ncol_, nlev_);         // sensitivity of P minus L to O3 [1/s]
+  view_2d linoz_dPmL_dT("linoz_dPmL_dT", ncol_, nlev_);           // sensitivity of P minus L to T3 [K]
+  view_2d linoz_dPmL_dO3col("linoz_dPmL_dT", ncol_, nlev_);       // sensitivity of P minus L to overhead O3 column [vmr/DU]
   view_2d linoz_cariolle_psc("linoz_cariolle_psc", ncol_, nlev_); // Cariolle parameter for PSC loss of ozone [1/s]
 
   ColumnView o3_col_dens; // FIXME: where to allocate?
@@ -306,6 +306,8 @@ void MAMMicrophysics::run_impl(const double dt) {
   // loop over atmosphere columns and compute aerosol microphyscs
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const ThreadTeam& team) {
     const int icol = team.league_rank(); // column index
+
+    Real col_lat = col_latitudes_(icol); // column latitude (degrees?)
 
     // fetch column-specific atmosphere state data
     auto atm = mam_coupling::atmosphere_for_column(dry_atm_, icol);
@@ -392,7 +394,7 @@ void MAMMicrophysics::run_impl(const double dt) {
         photo_rates_k[i] = photo_rates(k, i);
       }
       impl::gas_phase_chemistry(zm, zi, phis, temp, pmid, pdel, dt,
-                                o3_col_dens(k), photo_rates_k, vmr);
+                                photo_rates_k, vmr);
 
       //----------------------
       // Aerosol microphysics
@@ -429,21 +431,25 @@ void MAMMicrophysics::run_impl(const double dt) {
       // FIXME: the following things are diagnostics, which we're not
       // FIXME: including in the first rev
       Real do3_linoz, do3_linoz_psc, ss_o3, o3col_du_diag, o3clim_linoz_diag,
-           sza_degrees;
+           zenith_angle_degrees;
+      Real chlorine_loading = 0.0; // FIXME: Need to get this data from file
 
-      lin_strat_chem_solve_kk(o3col, temp, sza, pmid, dt, rlats,
+      Real rlats = col_lat * M_PI / 180.0; // convert column latitude to radians
+      int o3_ndx; // FIXME: need to set this
+      mam4::lin_strat_chem::lin_strat_chem_solve_kk(o3_col_dens(k), temp,
+        zenith_angle, pmid, dt, rlats,
         linoz_o3_clim(icol, k), linoz_t_clim(icol, k), linoz_o3col_clim(icol, k),
         linoz_PmL_clim(icol, k), linoz_dPmL_dO3(icol, k), linoz_dPmL_dT(icol, k),
         linoz_dPmL_dO3col(icol, k), linoz_cariolle_psc(icol, k),
-        config_.linoz.chlorine_loading, config_.linoz.psc_T, vmr[o3_ndx],
+        chlorine_loading, config_.linoz.psc_T, vmr[o3_ndx],
         do3_linoz, do3_linoz_psc, ss_o3,
-        o3col_du_diag, o3clim_linoz_diag, sza_degrees));
+        o3col_du_diag, o3clim_linoz_diag, zenith_angle_degrees);
 
 
       // update source terms above the ozone decay threshold
       if (k > nlev_ - config_.linoz.o3_lbl - 1) {
         Real do3_mass; // diagnostic, not needed
-        lin_strat_sfcsink_kk(dt, pdel, vmr[o3_ndx], config_.linoz.o3_sfc,
+        mam4::lin_strat_chem::lin_strat_sfcsink_kk(dt, pdel, vmr[o3_ndx], config_.linoz.o3_sfc,
           config_.linoz.o3_tau, do3_mass);
       }
 

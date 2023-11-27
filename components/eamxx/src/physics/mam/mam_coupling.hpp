@@ -820,10 +820,10 @@ void convert_work_arrays_to_vmr(const Real q[gas_pcnst()],
 // converts the quantities in the work arrays vmrs and vmrscw from mass/number
 // mixing ratios to volume/number mixing ratios
 KOKKOS_INLINE_FUNCTION
-void convert_work_arrays_to_mmr(const Real q[gas_pcnst()],
-                                const Real qqcw[gas_pcnst()],
-                                Real vmr[gas_pcnst()],
-                                Real vmrcw[gas_pcnst()]) {
+void convert_work_arrays_to_mmr(const Real vmr[gas_pcnst()],
+                                const Real vmrcw[gas_pcnst()],
+                                Real q[gas_pcnst()],
+                                Real qqcw[gas_pcnst()]) {
   DECLARE_PROG_TRANSFER_CONSTANTS
 
   for (int i = 0; i < gas_pcnst(); ++i) {

@@ -8,7 +8,6 @@ using mam4::utils::min_max_bound;
 // atmospheric column
 KOKKOS_INLINE_FUNCTION
 void gas_phase_chemistry(Real zm, Real zi, Real phis, Real temp, Real pmid, Real pdel, Real dt,
-                         Real col_dens[mam4::gas_chemistry::nabscol],
                          Real photo_rates[mam4::mo_photo::phtcnt],
                          Real q[mam4::gas_chemistry::gas_pcnst]) { // VMRs
   constexpr Real rga = 1.0/haero::Constants::gravity;
