@@ -1,11 +1,14 @@
 include (ScreamUtils)
 
+set (BASE_TEST_NAME p3_standalone)
+set (FIXTURES_BASE_NAME ${BASE_TEST_NAME}_generate_output_nc_files)
+
 # Create the test
-SET (TEST_LABELS "p3;physics;driver")
-set (NEED_LIBS p3 scream_control scream_share diagnostics)
-CreateUnitTest(p3_standalone "p3_standalone.cpp" "${NEED_LIBS}" LABELS ${TEST_LABELS}
+CreateADUnitTest(${BASE_TEST_NAME}
+  LABELS p3 physics
+  LIBS p3
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
-  PROPERTIES FIXTURES_SETUP p3_generate_output_nc_files
+  FIXTURES_SETUP_INDIVIDUAL ${FIXTURES_BASE_NAME}
 )
 
 # Set AD configurable options
@@ -16,7 +19,8 @@ set (RUN_T0 2021-10-12-45000)
 ## Copy (and configure) yaml files needed by tests
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/input.yaml)
-configure_file(p3_standalone_output.yaml p3_standalone_output.yaml)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/output.yaml
+               ${CMAKE_CURRENT_BINARY_DIR}/output.yaml)
 
 # Ensure test input files are present in the data dir
 GetInputFile(scream/init/${EAMxx_tests_IC_FILE_72lev})
@@ -27,19 +31,18 @@ GetInputFile(scream/init/${EAMxx_tests_IC_FILE_72lev})
 if (TEST_RANK_END GREATER TEST_RANK_START)
   include (BuildCprnc)
   BuildCprnc()
-  SET (BASE_TEST_NAME "p3")
   math (EXPR CMP_RANK_START ${TEST_RANK_START}+1)
   foreach (MPI_RANKS RANGE ${CMP_RANK_START} ${TEST_RANK_END})
 
-    set (SRC_FILE "${BASE_TEST_NAME}_standalone_output.INSTANT.nsteps_x1.np${MPI_RANKS}.${RUN_T0}.nc")
-    set (TGT_FILE "${BASE_TEST_NAME}_standalone_output.INSTANT.nsteps_x1.np${TEST_RANK_START}.${RUN_T0}.nc")
+    set (SRC_FILE "p3_standalone_output.INSTANT.nsteps_x1.np${MPI_RANKS}.${RUN_T0}.nc")
+    set (TGT_FILE "p3_standalone_output.INSTANT.nsteps_x1.np${TEST_RANK_START}.${RUN_T0}.nc")
     set (TEST_NAME "${BASE_TEST_NAME}_np${TEST_RANK_START}_vs_np${MPI_RANKS}_bfb")
     add_test (NAME ${TEST_NAME}
               COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}
               WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-    set_tests_properties(${TEST_NAME} PROPERTIES LABELS "${TEST_LABELS}"
-              RESOURCE_LOCK ${BASE_TEST_NAME}
-              FIXTURES_REQUIRED p3_generate_output_nc_files)
+    set_tests_properties(${TEST_NAME} PROPERTIES
+        LABELS "p3;physics"
+        FIXTURES_REQUIRED "${FIXTURES_BASE_NAME}_np${MPI_RANKS}_omp1;${FIXTURES_BASE_NAME}_np1_omp1")
   endforeach()
 endif()
 
@@ -52,6 +55,6 @@ foreach (NRANKS RANGE ${TEST_RANK_START} ${TEST_RANK_END})
     COMMAND ${script} -f ${fname} -v qc T_mid -t p3_qc_tend p3_T_mid_tend
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
   set_tests_properties (${tname} PROPERTIES
-    FIXTURES_REQUIRED p3_generate_output_nc_files
-    LABELS "${TEST_LABELS}")
+    LABELS "p3;physics"
+    FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_np${NRANKS}_omp1)
 endforeach()

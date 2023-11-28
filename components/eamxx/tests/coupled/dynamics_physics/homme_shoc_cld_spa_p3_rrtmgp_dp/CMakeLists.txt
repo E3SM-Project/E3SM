@@ -1,16 +1,19 @@
 include (ScreamUtils)
 
+set (BASE_TEST_NAME homme_shoc_cld_spa_p3_rrtmgp_dp)
+set (FIXTURES_BASE_NAME ${BASE_TEST_NAME}_generate_output_nc_files)
+
 # Get or create the dynamics lib
 #                 HOMME_TARGET   NP PLEV QSIZE_D
 CreateDynamicsLib("theta-l_kokkos"  4   128   10)
 
 # Create the test
-set (TEST_LABELS "dynamics;driver;shoc;cld;p3;rrtmgp;physics")
-set (NEED_LIBS cld_fraction nudging shoc spa p3 scream_rrtmgp ${dynLibName} scream_control scream_share physics_share diagnostics)
-CreateUnitTest(homme_shoc_cld_spa_p3_rrtmgp_dp "homme_shoc_cld_spa_p3_rrtmgp_dp.cpp" "${NEED_LIBS}"
+set (TEST_LABELS "dynamics;driver;shoc;cld;p3;rrtmgp;physics;dp")
+CreateUnitTest(homme_shoc_cld_spa_p3_rrtmgp_dp "homme_shoc_cld_spa_p3_rrtmgp_dp.cpp"
   LABELS ${TEST_LABELS}
+  LIBS cld_fraction shoc spa p3 scream_rrtmgp ${dynLibName} scream_control diagnostics
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
-  PROPERTIES FIXTURES_SETUP homme_shoc_cld_spa_p3_rrtmgp_dp_generate_output_nc_files
+  FIXTURES_SETUP_INDIVIDUAL ${FIXTURES_BASE_NAME}
 )
 
 # Set AD configurable options
@@ -25,8 +28,8 @@ math (EXPR MAC_MIC_SUBCYCLES "(${ATM_TIME_STEP} + ${SHOC_MAX_DT} - 1) / ${SHOC_M
 ## Copy (and configure) yaml files needed by tests
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/input.yaml)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/homme_shoc_cld_spa_p3_rrtmgp_dp_output.yaml
-               ${CMAKE_CURRENT_BINARY_DIR}/homme_shoc_cld_spa_p3_rrtmgp_dp_output.yaml)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/output.yaml
+               ${CMAKE_CURRENT_BINARY_DIR}/output.yaml)
 
 # Set homme's test options, so that we can configure the namelist correctly
 # Discretization/algorithm settings
@@ -95,8 +98,8 @@ if (TEST_RANK_END GREATER TEST_RANK_START)
     add_test (NAME ${TEST_NAME}
               COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}
               WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-    set_tests_properties(${TEST_NAME} PROPERTIES LABELS "${TEST_LABELS}"
-              RESOURCE_LOCK ${BASE_TEST_NAME}
-              FIXTURES_REQUIRED homme_shoc_cld_spa_p3_rrtmgp_dp_generate_output_nc_files)
+    set_tests_properties(${TEST_NAME} PROPERTIES
+        LABELS "${TEST_LABELS}"
+        FIXTURES_REQUIRED "${FIXTURES_BASE_NAME}_np${MPI_RANKS}_omp1;${FIXTURES_BASE_NAME}_np1_omp1")
   endforeach()
 endif()

@@ -1,11 +1,14 @@
 INCLUDE (ScreamUtils)
 
+set (BASE_TEST_NAME shoc_cld_p3_rrtmgp)
+set (FIXTURES_BASE_NAME ${BASE_TEST_NAME}_generate_output_nc_files)
+
 # Create the test
-set (TEST_LABELS "shoc;cld;p3;rrtmgp;physics;driver")
-set (NEED_LIBS shoc cld_fraction p3 scream_rrtmgp scream_control scream_share physics_share diagnostics)
-CreateUnitTest(shoc_cld_p3_rrtmgp shoc_cld_p3_rrtmgp.cpp "${NEED_LIBS}" LABELS ${TEST_LABELS}
+CreateADUnitTest(${BASE_TEST_NAME}
+  LIBS shoc cld_fraction p3 scream_rrtmgp
+  LABELS  shoc cld p3 rrtmgp physics
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
-  PROPERTIES FIXTURES_SETUP shoc_cld_p3_rrtmgp_generate_output_nc_files
+  FIXTURES_SETUP_INDIVIDUAL ${FIXTURES_BASE_NAME}
 )
 
 # Set AD configurable options
@@ -24,8 +27,8 @@ GetInputFile(cam/topo/${EAMxx_tests_TOPO_FILE})
 ## Copy (and configure) yaml files needed by tests
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/input.yaml)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/shoc_cld_p3_rrtmgp_output.yaml
-               ${CMAKE_CURRENT_BINARY_DIR}/shoc_cld_p3_rrtmgp_output.yaml)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/output.yaml
+               ${CMAKE_CURRENT_BINARY_DIR}/output.yaml)
 
 ## Finally compare all MPI rank output files against the single rank output as a baseline, using CPRNC
 ## Only if running with 2+ ranks configurations
@@ -34,7 +37,6 @@ if (TEST_RANK_END GREATER TEST_RANK_START)
   include (BuildCprnc)
   BuildCprnc()
 
-  set (BASE_TEST_NAME "shoc_cld_p3_rrtmgp")
   math (EXPR CMP_RANK_START ${TEST_RANK_START}+1)
   foreach (MPI_RANKS RANGE ${CMP_RANK_START} ${TEST_RANK_END})
 
@@ -44,8 +46,8 @@ if (TEST_RANK_END GREATER TEST_RANK_START)
     add_test (NAME ${TEST_NAME}
               COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}
               WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-    set_tests_properties(${TEST_NAME} PROPERTIES LABELS "${TEST_LABELS}"
-              RESOURCE_LOCK ${BASE_TEST_NAME}
-              FIXTURES_REQUIRED shoc_cld_p3_rrtmgp_generate_output_nc_files)
+    set_tests_properties(${TEST_NAME} PROPERTIES
+        LABELS "shoc;cld;p3;rrtmgp;physics"
+        FIXTURES_REQUIRED "${FIXTURES_BASE_NAME}_np1_omp1;${FIXTURES_BASE_NAME}_np${MPI_RANKS}_omp1")
   endforeach()
 endif()

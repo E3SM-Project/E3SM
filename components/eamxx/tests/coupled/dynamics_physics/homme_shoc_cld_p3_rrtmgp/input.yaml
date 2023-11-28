@@ -75,5 +75,5 @@ grids_manager:
 
 # The parameters for I/O control
 Scorpio:
-  output_yaml_files: ["homme_shoc_cld_p3_rrtmgp_output.yaml"]
+  output_yaml_files: ["output.yaml"]
 ...

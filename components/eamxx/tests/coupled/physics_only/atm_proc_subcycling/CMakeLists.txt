@@ -1,7 +1,8 @@
 INCLUDE (ScreamUtils)
 
 # Create the exec
-CreateUnitTestExec (shoc_p3 shoc_p3.cpp "shoc;p3;scream_control;diagnostics")
+CreateADUnitTestExec (shoc_p3
+  LIBS shoc p3 diagnostics)
 
 # Ensure test input files are present in the data dir
 GetInputFile(scream/init/${EAMxx_tests_IC_FILE_72lev})
@@ -23,7 +24,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/output_tend.yaml
 
 CreateUnitTestFromExec (shoc_p3_subcycled shoc_p3
       EXE_ARGS "--use-colour no --ekat-test-params ifile=input_subcycled.yaml"
-      PROPERTIES FIXTURES_SETUP subcycled)
+      FIXTURES_SETUP shoc_p3_subcycled)
 
 # Run a test without subcycling and more steps
 set (NUM_SUBCYCLES 1)
@@ -38,7 +39,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/output_tend.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/output_tend_monolithic.yaml)
 CreateUnitTestFromExec (shoc_p3_monolithic shoc_p3
       EXE_ARGS "--use-colour no --ekat-test-params ifile=input_monolithic.yaml"
-      PROPERTIES FIXTURES_SETUP monolithic)
+      FIXTURES_SETUP shoc_p3_monolithic)
 
 # Finally, compare output of the two tests
 include (BuildCprnc)
@@ -50,8 +51,9 @@ set (TEST_NAME check_subcycling)
 add_test (NAME ${TEST_NAME}
           COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}
           WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-set_tests_properties(${TEST_NAME} PROPERTIES LABELS "shoc;p3"
-          FIXTURES_REQUIRED "monolithic;subcycled")
+set_tests_properties(${TEST_NAME} PROPERTIES
+      LABELS shoc p3 infrastructure
+      FIXTURES_REQUIRED "shoc_p3_monolithic;shoc_p3_subcycled")
 
 # Check calculation of shoc tendencies when the parent group is subcycled
 set (script ${SCREAM_BASE_DIR}/scripts/check-tendencies)
@@ -60,5 +62,5 @@ add_test (NAME ${TEST_NAME}_tend_check
           COMMAND ${script} -f ${fname} -v tke -t shoc_tke_tend
           WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 set_tests_properties (${TEST_NAME}_tend_check PROPERTIES
-                      FIXTURES_REQUIRED subcycled
-                      LABELS "${TEST_LABELS}")
+      LABELS shoc p3 infrastructure
+      FIXTURES_REQUIRED shoc_p3_subcycled)

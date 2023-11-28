@@ -44,5 +44,5 @@ initial_conditions:
 
 # The parameters for I/O control
 Scorpio:
-  output_yaml_files: ["rrtmgp_standalone_output${SUFFIX}.yaml"]
+  output_yaml_files: ["output${SUFFIX}.yaml"]
 ...

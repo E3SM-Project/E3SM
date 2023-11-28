@@ -9,14 +9,14 @@ if (NOT SCREAM_BASELINES_ONLY)
   # Test dynamics-physics fields remapping
   CreateUnitTest(homme_pd_remap
       "homme_pd_remap_tests.cpp;test_helper_mod.F90"
-      "scream_share;${dynLibName}"
+      LIBS ${dynLibName}
       MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
-      LABELS "dynamics")
+      LABELS dynamics)
 
   # Test I/O on dyn grid
   CreateUnitTest(dyn_grid_io
       "dyn_grid_io.cpp;test_helper_mod.F90"
-      "scream_share;scream_io;${dynLibName}"
+      LIBS scream_io ${dynLibName}
       MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
-      LABELS "dynamics;io")
+      LABELS dynamics io)
 endif()

@@ -45,40 +45,27 @@ set(SCREAM_CUT_TEST_MV_ARGS ${CUT_TEST_MV_ARGS})
 # Scream always excludes the ekat test session since it has its own
 list(REMOVE_ITEM SCREAM_CUT_EXEC_OPTIONS EXCLUDE_TEST_SESSION)
 
-# Libs are a position arg for SCREAM, not an optional arg like in EKAT
-list(REMOVE_ITEM SCREAM_CUT_EXEC_MV_ARGS LIBS)
-
 ###############################################################################
-function(CreateUnitTestExec exec_name test_srcs scream_libs)
+function(CreateUnitTestExec exec_name test_srcs)
 ###############################################################################
-  cmake_parse_arguments(cute "${SCREAM_CUT_EXEC_OPTIONS}" "${SCREAM_CUT_EXEC_1V_ARGS}" "${SCREAM_CUT_EXEC_MV_ARGS}" ${ARGN})
-  CheckMacroArgs(CreateUnitTestExec cute "${SCREAM_CUT_EXEC_OPTIONS}" "${SCREAM_CUT_EXEC_1V_ARGS}" "${SCREAM_CUT_EXEC_MV_ARGS}")
-
-  separate_cut_arguments(cute "${SCREAM_CUT_EXEC_OPTIONS}" "${SCREAM_CUT_EXEC_1V_ARGS}" "${SCREAM_CUT_EXEC_MV_ARGS}" options)
-
-  set(TEST_INCLUDE_DIRS
-    ${SCREAM_INCLUDE_DIRS}
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_BINARY_DIR}
-  )
-
-  set(test_libs "${scream_libs};scream_test_support")
-  list(APPEND test_libs "${SCREAM_TPL_LIBRARIES}")
-
-  if (SCREAM_Fortran_FLAGS)
-    list(APPEND options COMPILER_F_FLAGS ${SCREAM_Fortran_FLAGS})
-  endif ()
-
-  EkatCreateUnitTestExec("${exec_name}" "${test_srcs}" ${options}
-    EXCLUDE_TEST_SESSION LIBS ${test_libs} INCLUDE_DIRS ${TEST_INCLUDE_DIRS})
-
+  # Call Ekat function, with a couple of extra params
+  EkatCreateUnitTestExec("${exec_name}" "${test_srcs}" ${ARGN}
+    EXCLUDE_TEST_SESSION LIBS scream_share scream_test_support)
 endfunction(CreateUnitTestExec)
+
+###############################################################################
+function(CreateADUnitTestExec exec_name)
+###############################################################################
+  # Call the function above specifying some params
+  CreateUnitTestExec("${exec_name}" "${SCREAM_SRC_DIR}/share/util/eamxx_ad_test.cpp"
+    LIBS scream_control scream_io diagnostics ${ARGN})
+endfunction(CreateADUnitTestExec)
 
 ###############################################################################
 function(CreateUnitTestFromExec test_name test_exec)
 ###############################################################################
   cmake_parse_arguments(cutfe "${SCREAM_CUT_TEST_OPTIONS}" "${SCREAM_CUT_TEST_1V_ARGS}" "${SCREAM_CUT_TEST_MV_ARGS}" ${ARGN})
-  CheckMacroArgs(CreateUnitTestExec cutfe "${SCREAM_CUT_TEST_OPTIONS}" "${SCREAM_CUT_TEST_1V_ARGS}" "${SCREAM_CUT_TEST_MV_ARGS}")
+  CheckMacroArgs(CreateUnitTestFromExec cutfe "${SCREAM_CUT_TEST_OPTIONS}" "${SCREAM_CUT_TEST_1V_ARGS}" "${SCREAM_CUT_TEST_MV_ARGS}")
 
   #
   # If asking for mpi/omp ranks/threads, verify we stay below the max number of threads
@@ -132,7 +119,7 @@ function(CreateUnitTestFromExec test_name test_exec)
 endfunction(CreateUnitTestFromExec)
 
 ###############################################################################
-function(CreateUnitTest test_name test_srcs scream_libs)
+function(CreateUnitTest test_name test_srcs)
 ###############################################################################
   set(options ${SCREAM_CUT_EXEC_OPTIONS} ${SCREAM_CUT_TEST_OPTIONS})
   set(oneValueArgs ${SCREAM_CUT_EXEC_1V_ARGS} ${SCREAM_CUT_TEST_1V_ARGS})
@@ -147,7 +134,7 @@ function(CreateUnitTest test_name test_srcs scream_libs)
   #------------------------------#
 
   separate_cut_arguments(cut "${SCREAM_CUT_EXEC_OPTIONS}" "${SCREAM_CUT_EXEC_1V_ARGS}" "${SCREAM_CUT_EXEC_MV_ARGS}" options_ExecPhase)
-  CreateUnitTestExec("${test_name}" "${test_srcs}" "${scream_libs}" ${options_ExecPhase})
+  CreateUnitTestExec("${test_name}" "${test_srcs}" ${options_ExecPhase})
 
   #------------------------------#
   #      Create Tests Phase      #
@@ -157,6 +144,15 @@ function(CreateUnitTest test_name test_srcs scream_libs)
   CreateUnitTestFromExec("${test_name}" "${test_name}" ${options_TestPhase})
 
 endfunction(CreateUnitTest)
+
+###############################################################################
+function(CreateADUnitTest test_name)
+###############################################################################
+
+  # Call the function above specifying some params
+  CreateUnitTest("${test_name}" "${SCREAM_SRC_DIR}/share/util/eamxx_ad_test.cpp"
+    LABELS driver LIBS scream_control scream_io diagnostics ${ARGN})
+endfunction(CreateADUnitTest)
 
 ###############################################################################
 function(GetInputFile src_path)

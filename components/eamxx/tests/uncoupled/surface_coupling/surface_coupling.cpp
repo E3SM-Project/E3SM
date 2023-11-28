@@ -10,7 +10,7 @@
 #include "share/scream_types.hpp"
 #include "share/util/scream_setup_random_test.hpp"
 
-#include "ekat/ekat_parse_yaml_file.hpp"
+#include <ekat/ekat_parse_yaml_file.hpp>
 #include <ekat/util/ekat_test_utils.hpp>
 
 #include <iomanip>
@@ -497,10 +497,9 @@ TEST_CASE("surface-coupling", "") {
 
   // Need to register products in the factory *before* we create any atm process or grids manager.
   auto& proc_factory = AtmosphereProcessFactory::instance();
-  auto& gm_factory = GridsManagerFactory::instance();
   proc_factory.register_product("SurfaceCouplingImporter",&create_atmosphere_process<SurfaceCouplingImporter>);
   proc_factory.register_product("SurfaceCouplingExporter",&create_atmosphere_process<SurfaceCouplingExporter>);
-  gm_factory.register_product("Mesh Free",&create_mesh_free_grids_manager);
+  register_mesh_free_grids_manager();
   register_diagnostics();
 
   // Create the AD
@@ -644,10 +643,6 @@ TEST_CASE("surface-coupling", "") {
 
   // Finalize  the AD
   ad.finalize();
-
-  // If we got here, we were able to run surface_coupling
-  REQUIRE(true);
 }
-
 
 } // empty namespace

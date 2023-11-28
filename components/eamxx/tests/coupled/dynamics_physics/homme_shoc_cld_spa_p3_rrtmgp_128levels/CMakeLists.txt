@@ -1,16 +1,18 @@
 include (ScreamUtils)
 
+set (BASE_TEST_NAME homme_shoc_cld_spa_p3_rrtmgp_128levels)
+set (FIXTURES_BASE_NAME ${BASE_TEST_NAME}_generate_output_nc_files)
+
 # Get or create the dynamics lib
 #                 HOMME_TARGET   NP PLEV QSIZE_D
 CreateDynamicsLib("theta-l_kokkos"  4   128   10)
 
 # Create the test
-set (TEST_LABELS "dynamics;driver;shoc;cld;p3;rrtmgp;physics")
-set (NEED_LIBS cld_fraction shoc nudging spa p3 scream_rrtmgp ${dynLibName} scream_control scream_share physics_share diagnostics)
-CreateUnitTest(homme_shoc_cld_spa_p3_rrtmgp_128levels "homme_shoc_cld_spa_p3_rrtmgp_128levels.cpp" "${NEED_LIBS}"
-  LABELS ${TEST_LABELS}
+CreateADUnitTest(${BASE_TEST_NAME}
+  LABELS dynamics shoc cld p3 rrtmgp physics
+  LIBS cld_fraction shoc nudging spa p3 scream_rrtmgp ${dynLibName} diagnostics
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
-  PROPERTIES FIXTURES_SETUP homme_shoc_cld_spa_p3_rrtmgp_128levels_generate_output_nc_files
+  FIXTURES_SETUP_INDIVIDUAL ${FIXTURES_BASE_NAME}
 )
 
 # Set AD configurable options
@@ -25,8 +27,8 @@ math (EXPR MAC_MIC_SUBCYCLES "(${ATM_TIME_STEP} + ${SHOC_MAX_DT} - 1) / ${SHOC_M
 ## Copy (and configure) yaml files needed by tests
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
              ${CMAKE_CURRENT_BINARY_DIR}/input.yaml)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/homme_shoc_cld_spa_p3_rrtmgp_128levels_output.yaml
-               ${CMAKE_CURRENT_BINARY_DIR}/homme_shoc_cld_spa_p3_rrtmgp_128levels_output.yaml)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/output.yaml
+               ${CMAKE_CURRENT_BINARY_DIR}/output.yaml)
 
 # Set homme's test options, so that we can configure the namelist correctly
 # Discretization/algorithm settings
@@ -77,11 +79,12 @@ endforeach()
 ## Finally compare all MPI rank output files against the single rank output as a baseline, using CPRNC
 ## Only if running with 2+ ranks configurations
 # This test requires CPRNC
+set (BASE_TEST_NAME "homme_shoc_cld_spa_p3_rrtmgp_128levels")
+set (FIXTURES_BASE_NAME homme_shoc_cld_spa_p3_rrtmgp_128levels_generate_output_nc_files)
 if (TEST_RANK_END GREATER TEST_RANK_START)
   include (BuildCprnc)
   BuildCprnc()
 
-  set (BASE_TEST_NAME "homme_shoc_cld_spa_p3_rrtmgp_128levels")
   math (EXPR CMP_RANK_START ${TEST_RANK_START}+1)
   foreach (MPI_RANKS RANGE ${CMP_RANK_START} ${TEST_RANK_END})
 
@@ -91,15 +94,14 @@ if (TEST_RANK_END GREATER TEST_RANK_START)
     add_test (NAME ${TEST_NAME}
               COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}
               WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-    set_tests_properties(${TEST_NAME} PROPERTIES LABELS "${TEST_LABELS}"
-              RESOURCE_LOCK ${BASE_TEST_NAME}
-              FIXTURES_REQUIRED homme_shoc_cld_spa_p3_rrtmgp_128levels_generate_output_nc_files)
+    set_tests_properties(${TEST_NAME} PROPERTIES
+        LABELS "dynamics;shoc;cld;p3;rrtmgp;physics"
+        FIXTURES_REQUIRED "${FIXTURES_BASE_NAME}_np${MPI_RANKS}_omp1;${FIXTURES_BASE_NAME}_np1_omp1")
   endforeach()
 endif()
 
 # Check tendency calculation
 foreach (NRANKS RANGE ${TEST_RANK_START} ${TEST_RANK_END})
-  set (BASE_TEST_NAME "homme_shoc_cld_spa_p3_rrtmgp_128levels")
   set (script ${SCREAM_BASE_DIR}/scripts/check-tendencies)
   set (fname ${BASE_TEST_NAME}_output.INSTANT.nsteps_x1.np${NRANKS}.${RUN_T0}.nc)
   set (tname ${BASE_TEST_NAME}_tend_check_np${NRANKS})
@@ -107,6 +109,6 @@ foreach (NRANKS RANGE ${TEST_RANK_START} ${TEST_RANK_END})
     COMMAND ${script} -f ${fname} -v qv T_mid -t EAMxx_qv_tend EAMxx_T_mid_tend
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
   set_tests_properties (${tname} PROPERTIES
-    FIXTURES_REQUIRED homme_shoc_cld_spa_p3_rrtmgp_128levels_generate_output_nc_files
-    LABELS "${TEST_LABELS}")
+      LABELS "dynamics;shoc;cld;p3;rrtmgp;physics"
+      FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_np${NRANKS}_omp1)
 endforeach()
