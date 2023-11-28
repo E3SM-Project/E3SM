@@ -281,15 +281,32 @@ void Nudging::run_impl (const double dt)
     p_mid_ext_1d   = get_helper_field("p_mid_ext").get_view<mPack*>();
   }
 
+  // Open the registration!
+  if(m_refine_remap) {
+    refine_remapper->registration_begins();
+  }
+
+  if(m_refine_remap) {
+    // Loop over the nudged fields
+    for (auto name : m_fields_nudge) {
+      auto atm_state_field = get_field_out_wrap(name);      // int horiz, int vert
+      auto int_state_field = get_helper_field(name);        // int horiz, int vert
+      auto ext_state_field = get_helper_field(name+"_ext"); // ext horiz, ext vert
+      auto hxt_state_field = get_helper_field(name+"_hxt"); // ext horiz, int vert
+      auto ext_state_view  = ext_state_field.get_view<mPack**>();
+      auto hxt_state_view  = hxt_state_field.get_view<mPack**>();
+      auto atm_state_view  = atm_state_field.get_view<mPack**>();  // TODO: Right now assume whatever field is defined on COLxLEV
+      auto int_state_view  = int_state_field.get_view<mPack**>();
+      refine_remapper->register_field(hxt_state_field, int_state_field);
+    }
+  }
+  // Close the registration!
+  if(m_refine_remap) {
+    refine_remapper->registration_ends();
+  }
+
+  // Loop over the nudged fields
   for (auto name : m_fields_nudge) {
-    auto atm_state_field = get_field_out_wrap(name);      // int horiz, int vert
-    auto int_state_field = get_helper_field(name);        // int horiz, int vert
-    auto ext_state_field = get_helper_field(name+"_ext"); // ext horiz, ext vert
-    auto hxt_state_field = get_helper_field(name+"_hxt"); // ext horiz, int vert
-    auto ext_state_view  = ext_state_field.get_view<mPack**>();
-    auto hxt_state_view  = hxt_state_field.get_view<mPack**>();
-    auto atm_state_view  = atm_state_field.get_view<mPack**>();  // TODO: Right now assume whatever field is defined on COLxLEV
-    auto int_state_view  = int_state_field.get_view<mPack**>();
     auto int_mask_view = m_buffer.int_mask_view;
     // Masked values in the source data can lead to strange behavior in the vertical interpolation.
     // We pre-process the data and map any masked values (sometimes called "filled" values) to the
@@ -364,10 +381,6 @@ void Nudging::run_impl (const double dt)
     // Refine-remap onto target atmosphere state horiz grid ("int")
     // Note that we are going from hxt to int here
     if(m_refine_remap) {
-      // We have to register the fields
-      refine_remapper->registration_begins();
-      refine_remapper->register_field(hxt_state_field, int_state_field);
-      refine_remapper->registration_ends();
       // Call the remapper
       refine_remapper->remap(true);
     } else {
