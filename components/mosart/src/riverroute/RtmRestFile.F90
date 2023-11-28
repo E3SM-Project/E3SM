@@ -400,10 +400,8 @@ contains
 if (wrmflag) then
     nvmax = 19
 else
-
     nvmax = 15
 endif
-
 
     do nv = 1,nvmax
     do nt = 1,nt_rtm
