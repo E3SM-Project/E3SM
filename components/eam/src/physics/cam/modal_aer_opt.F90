@@ -211,6 +211,7 @@ subroutine modal_aer_opt_init()
    ! Add diagnostic fields to history output.
 
    call addfld ('EXTINCT',(/ 'lev' /),    'A','/m','Aerosol extinction', flag_xyfill=.true.)
+   call addfld ('EXTINCT1020',(/ 'lev' /),    'A','/m','Aerosol extinction 1020 nm', flag_xyfill=.true.)
    call addfld ('tropopause_m',horiz_only,    'A',' m  ','tropopause level in meters', flag_xyfill=.true.)
    call addfld ('ABSORB',(/ 'lev' /),    'A','/m','Aerosol absorption', flag_xyfill=.true.)
    call addfld ('AODVIS',horiz_only,    'A','  ','Aerosol optical depth 550 nm', flag_xyfill=.true., &
@@ -371,6 +372,7 @@ subroutine modal_aer_opt_init()
       end if
       call add_default ('SSAVIS'       , 1, ' ')
       call add_default ('EXTINCT'      , 1, ' ')
+      call add_default ('EXTINCT1020'      , 1, ' ')
   end if
   if (cam_chempkg_is('trop_mam4').or.cam_chempkg_is('trop_mam4_resus').or. &
        cam_chempkg_is('trop_mam4_mom').or.cam_chempkg_is('trop_mam4_resus_mom').or. &
@@ -434,7 +436,9 @@ subroutine modal_aer_opt_init()
 
          call addfld ('EXTINCT'//diag(ilist), (/ 'lev' /), 'A','1/m', &
               'Aerosol extinction', flag_xyfill=.true.)
-         call addfld ('ABSORB'//diag(ilist),  (/ 'lev' /), 'A','1/m', &
+         call addfld ('EXTINCT1020'//diag(ilist), (/ 'lev' /), 'A','/m', &
+              'Aerosol extinction 1020 nm', flag_xyfill=.true.)
+         call addfld ('ABSORB'//diag(ilist),  (/ 'lev' /), 'A','/m', &
               'Aerosol absorption', flag_xyfill=.true.)
          call addfld ('AODVIS'//diag(ilist),       horiz_only, 'A','  ', &
               'Aerosol optical depth 550 nm', flag_xyfill=.true.)
@@ -446,6 +450,7 @@ subroutine modal_aer_opt_init()
               'Aerosol absorption optical depth 550 nm', flag_xyfill=.true.)
 
          call add_default ('EXTINCT'//diag(ilist), 1, ' ')
+         call add_default ('EXTINCT1020'//diag(ilist), 1, ' ')
          call add_default ('ABSORB'//diag(ilist),  1, ' ')
          call add_default ('AODVIS'//diag(ilist),  1, ' ')
          call add_default ('SAODVIS'//diag(ilist),  1, ' ')
@@ -534,6 +539,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
 
    ! Diagnostics
    real(r8) :: extinct(pcols,pver), tropopause_m(pcols)
+   real(r8) :: extinct1020(pcols,pver)
    real(r8) :: absorb(pcols,pver)
    real(r8) :: aodvis(pcols)               ! extinction optical depth
    real(r8) :: aodall(pcols)               ! extinction optical depth
@@ -655,6 +661,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
 
    ! diagnostics for visible band summed over modes
    extinct(1:ncol,:)     = 0.0_r8
+   extinct1020(1:ncol,:)     = 0.0_r8
    absorb(1:ncol,:)      = 0.0_r8
    aodvis(1:ncol)        = 0.0_r8
    saodvis(1:ncol)        = 0.0_r8
@@ -1022,6 +1029,14 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
 
             ! Save aerosol optical depth at longest visible wavelength
             ! sum over layers
+! HHLEE 20210322
+! wavelength at 1020 nm
+            if (isw .eq. 8) then
+               do i = 1, ncol 
+                  extinct1020(i,k) = extinct1020(i,k) + dopaer(i)*air_density(i,k)/mass(i,k)
+               end do 
+            end if   
+         
             if (savaervis) then
                ! aerosol extinction (/m)
                do i = 1, ncol
@@ -1255,6 +1270,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
    ! These fields are put out for diagnostic lists as well as the climate list.
    do i = 1, nnite
       extinct(idxnite(i),:) = fillvalue
+      extinct1020(idxnite(i),:) = fillvalue
       absorb(idxnite(i),:)  = fillvalue
       aodvis(idxnite(i))    = fillvalue
       saodvis(idxnite(i))    = fillvalue
@@ -1262,6 +1278,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
    end do
 
    call outfld('EXTINCT'//diag(list_idx),  extinct, pcols, lchnk)
+   call outfld('EXTINCT1020'//diag(list_idx),  extinct1020, pcols, lchnk)
    call outfld('tropopause_m', tropopause_m, pcols, lchnk)
    call outfld('ABSORB'//diag(list_idx),   absorb,  pcols, lchnk)
    call outfld('AODVIS'//diag(list_idx),   aodvis,  pcols, lchnk)
