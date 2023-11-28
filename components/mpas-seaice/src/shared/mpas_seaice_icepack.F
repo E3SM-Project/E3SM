@@ -11738,7 +11738,9 @@ contains
          config_minimum_wind_compaction, &
          config_wind_compaction_factor, &
          config_snow_redistribution_factor, &
-         config_max_dry_snow_radius
+         config_max_dry_snow_radius, &
+         config_floediam, &
+         config_floeshape
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          snowEmpiricalGrowthParameterTau, &
@@ -11978,9 +11980,13 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_snow_redistribution_factor", config_snow_redistribution_factor)
     call MPAS_pool_get_config(domain % configs, "config_max_dry_snow_radius", config_max_dry_snow_radius)
     call MPAS_pool_get_config(domain % configs, "config_use_snow_grain_radius", config_use_snow_grain_radius)
+    call MPAS_pool_get_config(domain % configs, "config_floediam", config_floediam)
+    call MPAS_pool_get_config(domain % configs, "config_floeshape", config_floeshape)
+
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nGrainAgingTemperature", nGrainAgingTemperature)
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nGrainAgingTempGradient", nGrainAgingTempGradient)
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nGrainAgingSnowDensity", nGrainAgingSnowDensity)
+
     call MPAS_pool_get_subpool(domain % blocklist % structs, "snow", snow)
     call MPAS_pool_get_array(snow, "snowEmpiricalGrowthParameterTau", snowEmpiricalGrowthParameterTau)
     call MPAS_pool_get_array(snow, "snowEmpiricalGrowthParameterKappa", snowEmpiricalGrowthParameterKappa)
@@ -12149,7 +12155,7 @@ contains
          cp_ice_in               = seaiceFreshIceSpecificHeat, & !
          cp_ocn_in               = seaiceSeaWaterSpecificHeat, &
          hfrazilmin_in           = seaiceFrazilMinimumThickness, &
-         !floediam_in             = , &
+         floediam_in             = config_floediam, &
          depressT_in             = seaiceMeltingTemperatureDepression, &
          dragio_in               = config_ice_ocean_drag_coefficient, & ! calc_dragio not implemented
          !thickness_ocn_layer1_in = , &        ! not yet implemented in MPAS-SI (stealth feature)
@@ -12242,7 +12248,7 @@ contains
          hs0_in                  = config_snow_to_ice_transition_depth, &
          frzpnd_in               = config_pond_refreezing_type, &
          saltflux_option_in      = config_salt_flux_coupling_type, &
-         !floeshape_in            = , &
+         floeshape_in            = config_floeshape, &
          !wave_spec_in            = , &        ! not yet implemented in MPAS-SI (stealth feature)
          !wave_spec_type_in       = , &        ! not yet implemented in MPAS-SI (stealth feature)
          !nfreq_in                = , &        ! not yet implemented in MPAS-SI (stealth feature)
@@ -12720,6 +12726,22 @@ contains
     !   2 = WMO standard
     !   3 = asymptotic formula
     !kcatbound = config_cice_int("config_category_bounds_type", config_category_bounds_type)
+
+    !-----------------------------------------------------------------------
+    ! Parameters for floe sizes
+    !-----------------------------------------------------------------------
+
+    ! floediam:
+    ! effective floe diameter for lateral melt (m)
+    ! default value is 300m from Steele (1992; doi:10.1029/92JC01755)
+    !floediam = config_floediam
+
+
+    ! floeshape:
+    ! bulk floe shape constant for lateral melt (unitless coefficient)
+    ! default value is 0.66 from Rothrock and Thorndike (1984; doi:10.1029/JC089iC04p06477)
+    !floeshape = config_floeshape
+
 
     !-----------------------------------------------------------------------
     ! Parameters for melt ponds
