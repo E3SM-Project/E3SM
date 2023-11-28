@@ -221,6 +221,11 @@ void Nudging::initialize_impl (const RunType /* run_type */)
     pmid_ext.sync_to_dev();
   }
 
+  // Open the registration!
+  if(m_refine_remap) {
+    refine_remapper->registration_begins();
+  }
+
   // To create helper fields for later; we do both hxt and ext...
   for (auto name : m_fields_nudge) {
     std::string name_ext = name + "_ext";
@@ -237,11 +242,21 @@ void Nudging::initialize_impl (const RunType /* run_type */)
     create_helper_field(name_hxt, scalar3d_layout_hid, grid_hxt_name, ps);
     // No need to follow with hxt because we are not reading it externally
     auto field_ext = get_helper_field(name_ext);
+    if(m_refine_remap) {
+      auto field_hxt = get_helper_field(name_hxt);
+      auto field_int = get_helper_field(name);
+      refine_remapper->register_field(field_hxt, field_int);
+    }
     m_time_interp.add_field(field_ext.alias(name),true);
     // auto field_hxt = get_helper_field(name_hxt);
     // m_time_interp.add_field(field_hxt.alias(name_hxt),true);
   }
   m_time_interp.initialize_data_from_files();
+
+  // Close the registration!
+  if(m_refine_remap) {
+    refine_remapper->registration_ends();
+  }
 
   // load nudging weights from file
   // NOTE: the regional nudging use the same grid as the run, no need to
@@ -413,26 +428,6 @@ void Nudging::run_impl (const double dt)
       }
     });
 
-  }
-
-  // Open the registration!
-  if(m_refine_remap) {
-    refine_remapper->registration_begins();
-  }
-
-  if(m_refine_remap) {
-    // Loop over the nudged fields
-    for (auto name : m_fields_nudge) {
-      auto atm_state_field = get_field_out_wrap(name);      // int horiz, int vert
-      auto int_state_field = get_helper_field(name);        // int horiz, int vert
-      auto ext_state_field = get_helper_field(name+"_ext"); // ext horiz, ext vert
-      auto hxt_state_field = get_helper_field(name+"_hxt"); // ext horiz, int vert
-      refine_remapper->register_field(hxt_state_field, int_state_field);
-    }
-  }
-  // Close the registration!
-  if(m_refine_remap) {
-    refine_remapper->registration_ends();
   }
 
   // Refine-remap onto target atmosphere state horiz grid ("int")
