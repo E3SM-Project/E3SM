@@ -17,10 +17,10 @@ Nudging::Nudging (const ekat::Comm& comm, const ekat::ParameterList& params)
   if(m_refine_remap) {
     // If we are doing horizontal refine remap, we need to get the map file
     m_refine_remap_file =
-        m_params.get<std::string>("nudging_refine_remap_mapfile", "");
+        m_params.get<std::string>("nudging_refine_remap_mapfile", "no-file-given");
     // Check that the file is provided; if not, throw an error
     // TODO: add a submit error (in xml configs)
-    EKAT_REQUIRE_MSG(m_refine_remap_file == "",
+    EKAT_REQUIRE_MSG(m_refine_remap_file != "no-file-given",
                      "Error! Nudging::Nudging - horizontal refine "
                      "remap is enabled but no "
                      "nudging_refine_remap_mapfile is provided.");
@@ -196,9 +196,9 @@ void Nudging::initialize_impl (const RunType /* run_type */)
 
   constexpr int ps = SCREAM_PACK_SIZE;
   // To be extra careful, this should be the ext_grid
-  const auto& grid_name = grid_ext->name();
+  const auto& grid_ext_name = grid_ext->name();
   if (m_src_pres_type == TIME_DEPENDENT_3D_PROFILE) {
-    create_helper_field("p_mid_ext", scalar3d_layout_mid, grid_name, ps);
+    create_helper_field("p_mid_ext", scalar3d_layout_mid, grid_ext_name, ps);
     auto pmid_ext = get_helper_field("p_mid_ext");
     m_time_interp.add_field(pmid_ext.alias("p_mid"),true);
   } else if (m_src_pres_type == STATIC_1D_VERTICAL_PROFILE) {
@@ -208,7 +208,7 @@ void Nudging::initialize_impl (const RunType /* run_type */)
     in_params.set("Skip_Grid_Checks",true);  // We need to skip grid checks because multiple ranks may want the same column of source data.
     std::map<std::string,view_1d_host<Real>> host_views;
     std::map<std::string,FieldLayout>  layouts;
-    create_helper_field("p_mid_ext", scalar2d_layout_mid, grid_name, ps);
+    create_helper_field("p_mid_ext", scalar2d_layout_mid, grid_ext_name, ps);
     auto pmid_ext = get_helper_field("p_mid_ext");
     auto pmid_ext_v = pmid_ext.get_view<Real*,Host>();
     in_params.set<std::vector<std::string>>("Field Names",{"p_levs"});
@@ -226,11 +226,14 @@ void Nudging::initialize_impl (const RunType /* run_type */)
     std::string name_hxt = name + "_hxt";
     // Helper fields that will temporarily store the target state, which can then
     // be used to back out a nudging tendency
+    auto grid_int_name = m_grid->name();
+    auto grid_ext_name = grid_ext->name();
+    auto grid_hxt_name = grid_hxt->name();
     auto field  = get_field_out_wrap(name);
     auto layout = field.get_header().get_identifier().get_layout();
-    create_helper_field(name,     layout,              grid_name, ps);
-    create_helper_field(name_ext, scalar3d_layout_mid, grid_name, ps);
-    create_helper_field(name_hxt, scalar3d_layout_hid, grid_name, ps);
+    create_helper_field(name,     layout,              grid_int_name, ps);
+    create_helper_field(name_ext, scalar3d_layout_mid, grid_ext_name, ps);
+    create_helper_field(name_hxt, scalar3d_layout_hid, grid_hxt_name, ps);
     // No need to follow with hxt because we are not reading it externally
     auto field_ext = get_helper_field(name_ext);
     m_time_interp.add_field(field_ext.alias(name),true);
