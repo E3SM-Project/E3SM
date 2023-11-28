@@ -24,17 +24,21 @@ module MOSART_Budgets_mod
   integer, parameter :: f_roff = 1
   integer, parameter :: f_rout = 2
   integer, parameter :: f_irri = 3
-  integer, parameter :: f_othr = 4
 
-  integer, parameter, public :: f_size = f_othr
+  integer, parameter, public :: f_size = f_irri
 
   character(len=16),parameter :: fname(f_size) = &
        (/&
        '     runoff (in)', &
        'streamflow (out)', &
-       '           irrig', &
-       '           other'  &
+       '           irrig'  &
        /)
+
+   !--- O for "other" term aggregated from flux to state ---
+
+  integer, parameter :: o_othr = 1
+
+  integer, parameter, public :: o_size = o_othr
 
   !--- S for state ---
   integer, parameter :: s_w_beg         = 1
@@ -78,6 +82,7 @@ module MOSART_Budgets_mod
        (/'    inst','   daily',' monthly','  annual','all_time' /)
 
   real(r8) :: budg_fluxG(f_size, p_size) ! global flux sum (volume/time)
+  real(r8) :: budg_other(o_size, p_size) ! global "other" term (volume)
   real(r8), public :: budg_stateG(s_size, p_size) ! global state sum (volume)
   real(r8) :: budg_fluxN(f_size, p_size) ! counter, valid only on root pe
 
@@ -111,18 +116,22 @@ contains
       do ip = 1,p_size
          if (ip == p_inst) then
             budg_fluxG(:,ip)  = 0.0_r8
+            budg_other(:,ip)  = 0.0_r8
             budg_fluxN(:,ip)  = 0.0_r8
          endif
          if (ip==p_day .and. sec==0) then
             budg_fluxG(:,ip)  = 0.0_r8
+            budg_other(:,ip)  = 0.0_r8
             budg_fluxN(:,ip)  = 0.0_r8
          endif
          if (ip==p_mon .and. day==1 .and. sec==0) then
             budg_fluxG(:,ip)  = 0.0_r8
+            budg_other(:,ip)  = 0.0_r8
             budg_fluxN(:,ip)  = 0.0_r8
          endif
          if (ip==p_ann .and. mon==1 .and. day==1 .and. sec==0) then
             budg_fluxG(:,ip)  = 0.0_r8
+            budg_other(:,ip)  = 0.0_r8
             budg_fluxN(:,ip)  = 0.0_r8
          endif
       enddo
@@ -131,26 +140,32 @@ contains
 
       if (trim(mode) == 'inst') then
          budg_fluxG  (:,p_inst)   = 0.0_r8
+         budg_other  (:,p_inst)   = 0.0_r8
          budg_stateG (:,p_inst)   = 0.0_r8
          budg_fluxN  (:,p_inst)   = 0.0_r8
       elseif (trim(mode) == 'day') then
          budg_fluxG  (:,p_day)    = 0.0_r8
+         budg_other  (:,p_day)    = 0.0_r8
          budg_stateG (:,p_day)    = 0.0_r8
          budg_fluxN  (:,p_day)    = 0.0_r8
       elseif (trim(mode) == 'mon') then
          budg_fluxG  (:,p_mon)    = 0.0_r8
+         budg_other  (:,p_mon)    = 0.0_r8
          budg_stateG (:,p_mon)    = 0.0_r8
          budg_fluxN  (:,p_mon)    = 0.0_r8
       elseif (trim(mode) == 'ann') then
          budg_fluxG  (:,p_ann)    = 0.0_r8
+         budg_other  (:,p_ann)    = 0.0_r8
          budg_stateG (:,p_ann)    = 0.0_r8
          budg_fluxN  (:,p_ann)    = 0.0_r8
       elseif (trim(mode) == 'inf') then
          budg_fluxG  (:,p_inf)    = 0.0_r8
+         budg_other  (:,p_inf)    = 0.0_r8
          budg_stateG (:,p_inf)    = 0.0_r8
          budg_fluxN  (:,p_inf)    = 0.0_r8
       elseif (trim(mode) == 'all') then
          budg_fluxG  (:,:)        = 0.0_r8
+         budg_other  (:,:)        = 0.0_r8
          budg_stateG (:,:)        = 0.0_r8
          budg_fluxN  (:,:)        = 0.0_r8
       else
@@ -189,9 +204,6 @@ contains
    integer                :: year_curr, month_curr, day_curr, sec_curr
    logical                :: update_state_beg, update_state_end
 
-   real(r8)               :: budg_fluxGtmp(f_size,p_size) ! temporary sum
-   real(r8)               :: budg_stateGtmp(s_size,p_size) ! temporary sum 
-
    character(*),parameter :: subName = '(Extraction) '
 
    unit_conversion = 1.d0/(4.0_r8*shr_const_pi*SHR_CONST_REARTH**2)*1.0e15_r8
@@ -199,22 +211,24 @@ contains
    budg_fluxG(f_roff,p_inst) = budget_in / get_step_size() 
    budg_fluxG(f_rout,p_inst) = -budget_out / get_step_size() 
    budg_fluxG(f_irri,p_inst) = 0.0_r8 ! need update later 
-   budg_fluxG(f_othr,p_inst) = budget_oth / get_step_size() 
+
+   budg_other(o_othr,p_inst) = budget_oth / get_step_size() 
      
-   budg_stateG(s_w_beg, p_inst) =  budget_global(bv_volt_beg,nt_nliq) ! assign values
-   budg_stateG(s_w_end, p_inst) =  budget_global(bv_volt_end,nt_nliq) ! 
-   budg_stateG(s_wchannel_beg, p_inst) =  budget_global(bv_wt_beg,nt_nliq) + budget_global(bv_wr_beg,nt_nliq) + budget_global(bv_wh_beg,nt_nliq) 
-   budg_stateG(s_wchannel_end, p_inst) =  budget_global(bv_wt_end,nt_nliq) + budget_global(bv_wr_end,nt_nliq) + budget_global(bv_wh_end,nt_nliq) 
-   budg_stateG(s_wdam_beg, p_inst) =  budget_global(bv_dstor_beg,nt_nliq) 
-   budg_stateG(s_wdam_end, p_inst) =  budget_global(bv_dstor_end,nt_nliq) 
-   budg_stateG(s_wflood_beg, p_inst) =  budget_global(bv_fp_beg,nt_nliq)  
-   budg_stateG(s_wflood_end, p_inst) =  budget_global(bv_fp_end,nt_nliq) 
+   budg_stateG(s_w_beg, p_inst) =  budget_global(bv_volt_beg,nt_nliq) * unit_conversion ! assign values
+   budg_stateG(s_w_end, p_inst) =  budget_global(bv_volt_end,nt_nliq) * unit_conversion ! 
+   budg_stateG(s_wchannel_beg, p_inst) =  (budget_global(bv_wt_beg,nt_nliq) + budget_global(bv_wr_beg,nt_nliq) + budget_global(bv_wh_beg,nt_nliq)) * unit_conversion 
+   budg_stateG(s_wchannel_end, p_inst) =  (budget_global(bv_wt_end,nt_nliq) + budget_global(bv_wr_end,nt_nliq) + budget_global(bv_wh_end,nt_nliq)) * unit_conversion 
+   budg_stateG(s_wdam_beg, p_inst) =  budget_global(bv_dstor_beg,nt_nliq) * unit_conversion
+   budg_stateG(s_wdam_end, p_inst) =  budget_global(bv_dstor_end,nt_nliq) * unit_conversion
+   budg_stateG(s_wflood_beg, p_inst) =  budget_global(bv_fp_beg,nt_nliq) * unit_conversion
+   budg_stateG(s_wflood_end, p_inst) =  budget_global(bv_fp_end,nt_nliq) * unit_conversion
 
    call get_prev_date(year_prev, month_prev, day_prev, sec_prev)
    call get_curr_date(year_curr, month_curr, day_curr, sec_curr)
 
    do ip = p_inst+1, p_size
       budg_fluxG(:,ip) = budg_fluxG(:,ip) + budg_fluxG(:,p_inst)
+      budg_other(:,ip) = budg_other(:,ip) + budg_other(:,p_inst)
 
       update_state_beg = .false.
       update_state_end = .false.
@@ -239,7 +253,7 @@ contains
          nf = s_wchannel_beg ; budg_stateG(nf,ip) = budg_stateG(nf, p_inst)
          nf = s_wdam_beg     ; budg_stateG(nf,ip) = budg_stateG(nf, p_inst)
          nf = s_wflood_beg   ; budg_stateG(nf,ip) = budg_stateG(nf, p_inst)
-         nf = s_wother_beg   ; budg_stateG(nf,ip) = (budg_fluxG(f_othr, ip) - budg_fluxG(f_othr,p_inst))*get_step_size() 
+         nf = s_wother_beg   ; budg_stateG(nf,ip) = (budg_other(o_othr, ip) - budg_other(o_othr,p_inst)) * unit_conversion * get_step_size() 
       endif
 
       if (update_state_end) then
@@ -247,7 +261,7 @@ contains
          nf = s_wchannel_end ; budg_stateG(nf,ip) = budg_stateG(nf, p_inst)
          nf = s_wdam_end     ; budg_stateG(nf,ip) = budg_stateG(nf, p_inst)
          nf = s_wflood_end   ; budg_stateG(nf,ip) = budg_stateG(nf, p_inst)
-         nf = s_wother_end   ; budg_stateG(nf,ip) = budg_fluxG(f_othr, ip)*get_step_size() 
+         nf = s_wother_end   ; budg_stateG(nf,ip) = budg_other(o_othr, ip) * unit_conversion * get_step_size() 
       endif
 
    end do
@@ -256,131 +270,133 @@ contains
   end subroutine MOSART_WaterBudget_Extraction
  !-----------------------------------------------------------------------
   subroutine MOSART_WaterBudget_Print()
-  !
- use RtmTimeManager, only : get_curr_date, get_prev_date, get_nstep, get_step_size
- !
- implicit none
- !
- integer :: budg_print_inst  = 0
- integer :: budg_print_daily = 0
- integer :: budg_print_month = 1
- integer :: budg_print_ann   = 1
- integer :: budg_print_ltann = 1
- integer :: budg_print_ltend = 0
- !
- ! !LOCAL VARIABLES:
- integer :: s,f,ic,nf,ip,is ! data array indicies
- integer :: plev        ! print level
- integer :: year, mon, day, sec
- integer :: cdate
- logical :: sumdone
- real(r8) :: budg_fluxGpr (f_size,p_size) ! values to print, scaled and such
+   !
+   use RtmTimeManager, only : get_curr_date, get_prev_date, get_nstep, get_step_size
+   !
+   implicit none
+   !
+   integer :: budg_print_inst  = 0
+   integer :: budg_print_daily = 0
+   integer :: budg_print_month = 1
+   integer :: budg_print_ann   = 1
+   integer :: budg_print_ltann = 1
+   integer :: budg_print_ltend = 0
+   !
+   ! !LOCAL VARIABLES:
+   integer :: s,f,ic,nf,ip,is ! data array indicies
+   integer :: plev        ! print level
+   integer :: year, mon, day, sec
+   integer :: cdate
+   logical :: sumdone
+   real(r8) :: budg_fluxGpr (f_size,p_size) ! values to print, scaled and such
 
- character(*),parameter :: subName = '(MOSART_WaterBudget_Print) '
+   character(*),parameter :: subName = '(MOSART_WaterBudget_Print) '
 
- sumdone = .false.
+   sumdone = .false.
 
- if (get_nstep() <= 1) then
-    call get_prev_date(year, mon, day, sec);
- else
-    call get_curr_date(year, mon, day, sec);
- end if
+   if (get_nstep() <= 1) then
+      call get_prev_date(year, mon, day, sec);
+   else
+      call get_curr_date(year, mon, day, sec);
+   end if
 
- cdate = year*10000 + mon*100 + day
+   cdate = year*10000 + mon*100 + day
 
- do ip = 1,p_size
-    plev = 0
-    if (ip == p_inst) then
-       plev = max(plev,budg_print_inst)
-    endif
-    if (ip==p_day .and. sec==0) then
-       plev = max(plev,budg_print_daily)
-    endif
-    if (ip==p_mon .and. day==1 .and. sec==0) then
-       plev = max(plev,budg_print_month)
-    endif
-    if (ip==p_ann .and. mon==1 .and. day==1 .and. sec==0) then
-       plev = max(plev,budg_print_ann)
-    endif
-    if (ip==p_inf .and. mon==1 .and. day==1 .and. sec==0) then
-       plev = max(plev,budg_print_ltann)
-    endif
+   do ip = 1,p_size
+      plev = 0
+      if (ip == p_inst) then
+         plev = max(plev,budg_print_inst)
+      endif
+      if (ip==p_day .and. sec==0) then
+         plev = max(plev,budg_print_daily)
+      endif
+      if (ip==p_mon .and. day==1 .and. sec==0) then
+         plev = max(plev,budg_print_month)
+      endif
+      if (ip==p_ann .and. mon==1 .and. day==1 .and. sec==0) then
+         plev = max(plev,budg_print_ann)
+      endif
+      if (ip==p_inf .and. mon==1 .and. day==1 .and. sec==0) then
+         plev = max(plev,budg_print_ltann)
+      endif
 
-    if (plev > 0) then
-          unit_conversion = 1.d0/(4.0_r8*shr_const_pi*SHR_CONST_REARTH**2)*1.0e15_r8
-       if (.not.sumdone) then
-          sumdone = .true.
-          budg_fluxGpr = budg_fluxG
-          budg_fluxGpr = budg_fluxGpr*unit_conversion
-          budg_fluxGpr = budg_fluxGpr/budg_fluxN
-       end if
+      if (plev > 0) then
+            unit_conversion = 1.d0/(4.0_r8*shr_const_pi*SHR_CONST_REARTH**2)*1.0e15_r8
+         if (.not.sumdone) then
+            sumdone = .true.
+            budg_fluxGpr = budg_fluxG
+            budg_fluxGpr = budg_fluxGpr*unit_conversion
+            budg_fluxGpr = budg_fluxGpr/budg_fluxN
+         end if
 
-       if (ip == p_day .and. get_nstep() == 1) cycle
-       if (ip == p_mon .and. get_nstep() == 1) cycle
-       if (ip == p_ann .and. get_nstep() == 1) cycle
-       if (ip == p_inf .and. get_nstep() == 1) cycle
+         if (ip == p_day .and. get_nstep() == 1) cycle
+         if (ip == p_mon .and. get_nstep() == 1) cycle
+         if (ip == p_ann .and. get_nstep() == 1) cycle
+         if (ip == p_inf .and. get_nstep() == 1) cycle
 
-       if (masterproc) then
-          write(iulog,*)''
-          write(iulog,*)'NET WATER FLUXES : period ',trim(pname(ip)),': date = ',cdate,sec
-          write(iulog,FA0)'  Time  ','  Time    '
-          write(iulog,FA0)'averaged','integrated'
-          write(iulog,FA0)'kg/m2s*1e6','kg/m2*1e6'
-          write(iulog,'(32("-"),"|",20("-"))')
-          do f = 1, f_size-1 ! Do not include "other" term in the flux budget calcuation
-             write(iulog,FF)fname(f),budg_fluxGpr(f,ip),budg_fluxG(f,ip)*unit_conversion*get_step_size()
-          end do
-          write(iulog,'(32("-"),"|",20("-"))')
-          write(iulog,FF)'   *SUM*', &
-                budg_fluxGpr(f_roff,ip)+budg_fluxGpr(f_rout,ip)+budg_fluxG(f_irri,ip), &
-               (budg_fluxGpr(f_roff,ip)+budg_fluxGpr(f_rout,ip)+budg_fluxG(f_irri,ip))*unit_conversion*get_step_size()
-          write(iulog,'(32("-"),"|",20("-"))')
+         if (masterproc) then
+            write(iulog,*)''
+            write(iulog,*)'NET WATER FLUXES : period ',trim(pname(ip)),': date = ',cdate,sec
+            write(iulog,FA0)'  Time  ','  Time    '
+            write(iulog,FA0)'averaged','integrated'
+            write(iulog,FA0)'kg/m2s*1e6','kg/m2*1e6'
+            write(iulog,'(32("-"),"|",20("-"))')
+            do f = 1, f_size
+               write(iulog,FF)fname(f),budg_fluxGpr(f,ip),budg_fluxG(f,ip)*unit_conversion*get_step_size()
+            end do
+            write(iulog,'(32("-"),"|",20("-"))')
+            write(iulog,FF)'   *SUM*', &
+                  sum(budg_fluxGpr(:,ip)), sum(budg_fluxG(:,ip))*unit_conversion*get_step_size()
+            write(iulog,'(32("-"),"|",20("-"))')
 
-         ! write(iulog,*) trim(subname),'(TZ)budg_fluxG', budg_fluxG(1,3),' fluxN=', budg_fluxN(1,3)
+            ! write(iulog,*) trim(subname),'(TZ)budg_fluxG', budg_fluxG(1,3),' fluxN=', budg_fluxN(1,3)
 
-          write(iulog,*)''
-          write(iulog,*)'WATER STATES (kg/m2*1e6): period ',trim(pname(ip)),': date = ',cdate,sec
-          write(iulog,FS0) &
-               '       channel   ', &
-               '       reservoir ', &
-               '       floodplain', &
-               '       other     ', &
-               '       TOTAL     '
-          write(iulog,'(89("-"),"|",23("-"))')
-          write(iulog,FS3) '         beg', &
-               budg_stateG(s_wchannel_beg, ip), &
-               budg_stateG(s_wdam_beg    , ip), &
-               budg_stateG(s_wflood_beg  , ip), &
-               budg_stateG(s_wother_beg  , ip), &
-               budg_stateG(s_w_beg       , ip)
-          write(iulog,FS3) '         end', &
-               budg_stateG(s_wchannel_end, ip), &
-               budg_stateG(s_wdam_end    , ip), &
-               budg_stateG(s_wflood_end  , ip), &
-               budg_stateG(s_wother_end  , ip), &
-               budg_stateG(s_w_end       , ip)
-          write(iulog,FS3)'*NET CHANGE*', &
-               (budg_stateG(s_wchannel_end,ip) - budg_stateG(s_wchannel_beg,ip)), &
-               (budg_stateG(s_wdam_end    ,ip) - budg_stateG(s_wdam_beg    ,ip)), &
-               (budg_stateG(s_wflood_end  ,ip) - budg_stateG(s_wflood_beg  ,ip)), &
-               (budg_stateG(s_wother_end  ,ip) - budg_stateG(s_wother_beg  ,ip)), &
-               (budg_stateG(s_w_end       ,ip) - budg_stateG(s_w_beg       ,ip))
-          write(iulog,'(89("-"),"|",23("-"))')
-          write(iulog,FS2)'   *SUM*    ', &
-               (budg_stateG(s_wchannel_end  ,ip) - budg_stateG(s_wchannel_beg  ,ip)) + &
-               (budg_stateG(s_wdam_end  ,ip) - budg_stateG(s_wdam_beg  ,ip)) + &
-               (budg_stateG(s_wflood_end  ,ip) - budg_stateG(s_wflood_beg  ,ip)) - &
-               (budg_stateG(s_wother_end  ,ip) - budg_stateG(s_wother_beg  ,ip)), &
-               !(budg_stateG(s_w_end     ,ip) - budg_stateG(s_w_beg     ,ip))
-               ((budg_stateG(s_wchannel_end  ,ip) - budg_stateG(s_wchannel_beg  ,ip)) + &
-               (budg_stateG(s_wdam_end  ,ip) - budg_stateG(s_wdam_beg  ,ip)) + &
-               (budg_stateG(s_wflood_end  ,ip) - budg_stateG(s_wflood_beg  ,ip)) - &
-               (budg_stateG(s_wother_end  ,ip) - budg_stateG(s_wother_beg  ,ip)))/budg_fluxN(1,ip)
-          write(iulog,'(89("-"),"|",23("-"))')
-       end if
-    end if
- end do
+            write(iulog,*)''
+            write(iulog,*)'WATER STATES (kg/m2*1e6): period ',trim(pname(ip)),': date = ',cdate,sec
+            write(iulog,FS0) &
+                  '       channel   ', &
+                  '       reservoir ', &
+                  '       floodplain', &
+                  '       other     ', &
+                  '       TOTAL     '
+            write(iulog,'(89("-"),"|",23("-"))')
+            write(iulog,FS3) '         beg', &
+                  budg_stateG(s_wchannel_beg, ip), &
+                  budg_stateG(s_wdam_beg    , ip), &
+                  budg_stateG(s_wflood_beg  , ip), &
+               - budg_stateG(s_wother_beg  , ip), & ! print out negative value in the table for display only, actual calucation uses positive
+                  budg_stateG(s_w_beg       , ip)- &
+                  budg_stateG(s_wother_beg  , ip)
+            write(iulog,FS3) '         end', &
+                  budg_stateG(s_wchannel_end, ip), &
+                  budg_stateG(s_wdam_end    , ip), &
+                  budg_stateG(s_wflood_end  , ip), &
+               - budg_stateG(s_wother_end  , ip), & ! print out negative value in the table for display only, actual calucation uses positive
+                  budg_stateG(s_w_end       , ip)- &
+                  budg_stateG(s_wother_end  , ip)
+            write(iulog,FS3)'*NET CHANGE*', &
+                  (budg_stateG(s_wchannel_end,ip) - budg_stateG(s_wchannel_beg,ip)), &
+                  (budg_stateG(s_wdam_end    ,ip) - budg_stateG(s_wdam_beg    ,ip)), &
+                  (budg_stateG(s_wflood_end  ,ip) - budg_stateG(s_wflood_beg  ,ip)), &
+                - (budg_stateG(s_wother_end  ,ip) - budg_stateG(s_wother_beg  ,ip)), &
+                  (budg_stateG(s_w_end       ,ip) - budg_stateG(s_wother_end  , ip)) - & 
+                  (budg_stateG(s_w_beg       ,ip) - budg_stateG(s_wother_beg  , ip))
+            write(iulog,'(89("-"),"|",23("-"))')
+            write(iulog,FS2)'   *SUM*    ', &
+                  (budg_stateG(s_wchannel_end  ,ip) - budg_stateG(s_wchannel_beg  ,ip)) + &
+                  (budg_stateG(s_wdam_end  ,ip) - budg_stateG(s_wdam_beg  ,ip)) + &
+                  (budg_stateG(s_wflood_end  ,ip) - budg_stateG(s_wflood_beg  ,ip)) - &
+                  (budg_stateG(s_wother_end  ,ip) - budg_stateG(s_wother_beg  ,ip)), &
+                  !(budg_stateG(s_w_end     ,ip) - budg_stateG(s_w_beg     ,ip))
+                  (budg_stateG(s_wchannel_end  ,ip) - budg_stateG(s_wchannel_beg  ,ip)) + &
+                  (budg_stateG(s_wdam_end  ,ip) - budg_stateG(s_wdam_beg  ,ip)) + &
+                  (budg_stateG(s_wflood_end  ,ip) - budg_stateG(s_wflood_beg  ,ip)) - &
+                  (budg_stateG(s_wother_end  ,ip) - budg_stateG(s_wother_beg  ,ip))
+            write(iulog,'(89("-"),"|",23("-"))')
+         end if
+      end if
+   end do
 
-end subroutine MOSART_WaterBudget_Print
+  end subroutine MOSART_WaterBudget_Print
 
 end module MOSART_Budgets_mod

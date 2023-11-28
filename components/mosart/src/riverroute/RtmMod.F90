@@ -2087,6 +2087,7 @@ contains
     real(r8) :: budget_input, budget_output, budget_volume, budget_total, &
                 budget_other
     logical  :: budget_check, budget_write  ! do global budget check
+    integer  :: nt_print ! number of tracers to be printed out
 
     ! BUDGET term ids
     ! budget computed in m3 over each coupling period
@@ -2275,13 +2276,9 @@ contains
     end if
     
     if (budget_check) then
-      call get_curr_date(yr, mon, day, tod) !TZ
-      ymd = yr*10000 + mon*100 + day !TZ
 
        call t_startf('mosartr_budget')
        call MOSART_WaterBudget_Reset()
-
-       write(iulog,*) trim(subname),'reset called (TZ): ymd=', ymd, 'tod=',tod
 
        do nt = 1,nt_rtm
        do nr = rtmCTL%begr,rtmCTL%endr
@@ -3048,7 +3045,7 @@ contains
        call t_stopf('mosartr_budget')
     endif  ! budget_check
 
-    if (budget_check .and. budget_write) then
+    if (budget_check) then
        call t_startf('mosartr_budget')
        !--- check budget
 
@@ -3061,8 +3058,15 @@ contains
        
        ! write budget
        if (masterproc) then
+         if (budget_write) then
           write(iulog,'(2a,i10,i6)') trim(subname),' MOSART BUDGET diagnostics (million m3) for ',ymd,tod
-          do nt = 1,nt_rtm
+         end if
+          if (sediflag) then
+            nt_print = nt_nsan
+          else
+            nt_print = nt_nice
+          endif
+          do nt = 1,nt_print
             budget_volume = (budget_global(bv_volt_f,nt) - budget_global(bv_volt_i,nt) + &
                              budget_global(bv_dstor_f,nt) - budget_global(bv_dstor_i,nt))   !(Global volume change during a coupling period. --Inund.)
             budget_input  = (budget_global(br_qsur,nt) + budget_global(br_qsub,nt) + &
@@ -3077,26 +3081,28 @@ contains
             budget_other  = budget_global(br_erolpn,nt) - budget_global(br_erolcn,nt) + &   !('previous MOSART sub-step channel outflow volume'-'current MOSART sub-step channel outflow volume'. --Inund.)
                             budget_global(br_erorpn,nt) - budget_global(br_erorcn,nt)       !(When WRM module is on: 'previous MOSART sub-step channel outflow volume'-'current MOSART sub-step channel outflow volume'. --Inund.)
             budget_total  = budget_volume - budget_input + budget_output - budget_other     !('budget_total' is supposed to be zero if water balance is perfect. --Inund.)
+            
+            if (budget_write) then
+             write(iulog,'(2a)') trim(subname),'-----------------------------------------------------------------'
+             write(iulog,'(2a,i4)')        trim(subname),'  tracer = ',nt
+             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   dvolume wh    = ',nt,budget_global(bv_wh_f,nt)-budget_global(bv_wh_i,nt)
+             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   dvolume wt    = ',nt,budget_global(bv_wt_f,nt)-budget_global(bv_wt_i,nt)
+             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   dvolume wr    = ',nt,budget_global(bv_wr_f,nt)-budget_global(bv_wr_i,nt)
+             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   dvolume t_al  = ',nt,budget_global(bv_t_al_f,nt)-budget_global(bv_t_al_i,nt)
+             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   dvolume r_al  = ',nt,budget_global(bv_r_al_f,nt)-budget_global(bv_r_al_i,nt)
 
-            write(iulog,'(2a)') trim(subname),'-----------------------------------------------------------------'
-            write(iulog,'(2a,i4)')        trim(subname),'  tracer = ',nt
-            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   dvolume wh    = ',nt,budget_global(bv_wh_f,nt)-budget_global(bv_wh_i,nt)
-            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   dvolume wt    = ',nt,budget_global(bv_wt_f,nt)-budget_global(bv_wt_i,nt)
-            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   dvolume wr    = ',nt,budget_global(bv_wr_f,nt)-budget_global(bv_wr_i,nt)
-            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   dvolume t_al  = ',nt,budget_global(bv_t_al_f,nt)-budget_global(bv_t_al_i,nt)
-            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   dvolume r_al  = ',nt,budget_global(bv_r_al_f,nt)-budget_global(bv_r_al_i,nt)
+             ! If inundation scheme is turned on :
+             if (inundflag .and. Tctl%OPT_inund .eq. 1 ) then
+               if ( nt .eq. nt_nliq ) then
+                 write(iulog,'(2a,i4,f22.6  )') trim(subname),'   dvolume wf    = ',nt,budget_global(bv_fp_f,nt)-budget_global(bv_fp_i,nt)
+               end if
+             end if
 
-            ! If inundation scheme is turned on :
-            if (inundflag .and. Tctl%OPT_inund .eq. 1 ) then
-              if ( nt .eq. nt_nliq ) then
-                write(iulog,'(2a,i4,f22.6  )') trim(subname),'   dvolume wf    = ',nt,budget_global(bv_fp_f,nt)-budget_global(bv_fp_i,nt)
-              end if
-            end if
-
-            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   dvolume dstor = ',nt,budget_global(bv_dstor_f,nt)-budget_global(bv_dstor_i,nt)
-            write(iulog,'(2a,i4,f22.6  )') trim(subname),' * dvolume total = ',nt,budget_volume   !(Global volume change during a coupling period. --Inund.)
-          if (do_all_budget) then           
-            if (inundflag .and. Tctl%OPT_inund .eq. 1 .and. nt .eq. 1) then                                                                 
+             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   dvolume dstor = ',nt,budget_global(bv_dstor_f,nt)-budget_global(bv_dstor_i,nt)
+             write(iulog,'(2a,i4,f22.6  )') trim(subname),' * dvolume total = ',nt,budget_volume   !(Global volume change during a coupling period. --Inund.)
+            endif
+            if (do_all_budget) then           
+             if (inundflag .and. Tctl%OPT_inund .eq. 1 .and. nt .eq. 1) then                                                                 
                 write(iulog,'(2a,i4,f22.6,a)') trim(subname),' x dvolume check = ',nt,budget_volume - &
                                                                              (budget_global(bv_wh_f,nt)-budget_global(bv_wh_i,nt) + &
                                                                               budget_global(bv_wt_f,nt)-budget_global(bv_wt_i,nt) + &
@@ -3104,29 +3110,31 @@ contains
                                                                               budget_global(bv_fp_f,nt)-budget_global(bv_fp_i,nt) + &
                                                                               budget_global(bv_dstor_f,nt)-budget_global(bv_dstor_i,nt)),&
                                                                               ' (should be zero)'
-            else
-                write(iulog,'(2a,i4,f22.6,a)') trim(subname),' x dvolume check = ',nt,budget_volume - &
+             else
+                 write(iulog,'(2a,i4,f22.6,a)') trim(subname),' x dvolume check = ',nt,budget_volume - &
                                                                              (budget_global(bv_wh_f,nt)-budget_global(bv_wh_i,nt) + &
                                                                               budget_global(bv_wt_f,nt)-budget_global(bv_wt_i,nt) + &
                                                                               budget_global(bv_wr_f,nt)-budget_global(bv_wr_i,nt) + &
                                                                               budget_global(bv_dstor_f,nt)-budget_global(bv_dstor_i,nt)),&
                                                                               ' (should be zero)'
-            endif
-            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volume   init = ',nt,budget_global(bv_volt_i,nt)
-            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volume  final = ',nt,budget_global(bv_volt_f,nt)
-            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volumeh  init = ',nt,budget_global(bv_wh_i,nt)
-            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volumeh final = ',nt,budget_global(bv_wh_f,nt)
-            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volumet  init = ',nt,budget_global(bv_wt_i,nt)
-            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volumet final = ',nt,budget_global(bv_wt_f,nt)
-            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volumer  init = ',nt,budget_global(bv_wr_i,nt)
-            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volumer final = ',nt,budget_global(bv_wr_f,nt)
-            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volumest init = ',nt,budget_global(bv_t_al_i,nt)
-            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volumestfinal = ',nt,budget_global(bv_t_al_f,nt)
-            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volumesr init = ',nt,budget_global(bv_r_al_i,nt)
-            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volumesrfinal = ',nt,budget_global(bv_r_al_f,nt)
-            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x storage  init = ',nt,budget_global(bv_dstor_i,nt)
-            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x storage final = ',nt,budget_global(bv_dstor_f,nt)
-          endif
+             endif           
+             write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volume   init = ',nt,budget_global(bv_volt_i,nt)
+             write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volume  final = ',nt,budget_global(bv_volt_f,nt)
+             write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volumeh  init = ',nt,budget_global(bv_wh_i,nt)
+             write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volumeh final = ',nt,budget_global(bv_wh_f,nt)
+             write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volumet  init = ',nt,budget_global(bv_wt_i,nt)
+             write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volumet final = ',nt,budget_global(bv_wt_f,nt)
+             write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volumer  init = ',nt,budget_global(bv_wr_i,nt)
+             write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volumer final = ',nt,budget_global(bv_wr_f,nt)
+             write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volumest init = ',nt,budget_global(bv_t_al_i,nt)
+             write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volumestfinal = ',nt,budget_global(bv_t_al_f,nt)
+             write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volumesr init = ',nt,budget_global(bv_r_al_i,nt)
+             write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volumesrfinal = ',nt,budget_global(bv_r_al_f,nt)
+             write(iulog,'(2a,i4,f22.6  )') trim(subname),' x storage  init = ',nt,budget_global(bv_dstor_i,nt)
+             write(iulog,'(2a,i4,f22.6  )') trim(subname),' x storage final = ',nt,budget_global(bv_dstor_f,nt)
+           endif
+
+           if (budget_write) then
             write(iulog,'(2a)') trim(subname),'----------------'
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   input surface = ',nt,budget_global(br_qsur,nt)
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   input subsurf = ',nt,budget_global(br_qsub,nt)
@@ -3137,7 +3145,8 @@ contains
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   input subnetwork channel bank erosion = ',nt,budget_global(br_etexch,nt)
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   input main channel bank erosion = ',nt,budget_global(br_erexch,nt)
             write(iulog,'(2a,i4,f22.6  )') trim(subname),' * input total   = ',nt,budget_input
-          if (do_all_budget) then
+           endif
+           if (do_all_budget) then
             write(iulog,'(2a,i4,f22.6,a)') trim(subname),' x input check   = ',nt,budget_input - &
                                                                              (budget_global(br_qsur,nt)+budget_global(br_qsub,nt)+ &
                                                                               budget_global(br_qgwl,nt)+budget_global(br_qdto,nt)+ &
@@ -3145,43 +3154,52 @@ contains
                                                                               budget_global(br_erexch,nt)), ' (should be zero)'
                                                                              ! + budget_global(br_qdem,nt)), commented out by Tian 3/13/2018
                                                                              
-          endif
+           endif
+
+           if (budget_write) then
             write(iulog,'(2a)') trim(subname),'----------------'
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   output runoff = ',nt,budget_global(br_ocnout,nt)   !(Outflows to oceans. --Inund.)
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   output direct = ',nt,budget_global(br_direct,nt)   !(Direct flows to oceans. --Inund.)
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   output flood  = ',nt,budget_global(br_flood,nt)    !(Former flood to land. --Inund.)
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   output supply = ',nt,budget_global(bv_dsupp_f,nt)-budget_global(bv_dsupp_i,nt)
             write(iulog,'(2a,i4,f22.6  )') trim(subname),' * output total  = ',nt,budget_output
-          if (do_all_budget) then
+           endif
+           if (do_all_budget) then
             write(iulog,'(2a,i4,f22.6,a)') trim(subname),' x output check  = ',nt,budget_output - &
                                                                              (budget_global(br_ocnout,nt) + budget_global(br_direct,nt) + &
                                                                               budget_global(br_flood,nt) + &
                                                                               budget_global(bv_dsupp_f,nt)-budget_global(bv_dsupp_i,nt)), &
                                                                              ' (should be zero)'
-          endif
-            write(iulog,'(2a)') trim(subname),'----------------'
+           endif
+           if (budget_write) then
+             write(iulog,'(2a)') trim(subname),'----------------'
             !(--Inund. 'previous MOSART sub-step channel outflow volume'-'current MOSART sub-step channel outflow volume': )
-            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   other dwn lag = ',nt,budget_global(br_erolpn,nt) - budget_global(br_erolcn,nt)
+             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   other dwn lag = ',nt,budget_global(br_erolpn,nt) - budget_global(br_erolcn,nt)
 
             !(--Inund. When WRM module is on: 'previous MOSART sub-step channel outflow volume'-'current MOSART sub-step channel outflow volume': )
-            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   other reg lnd = ',nt,budget_global(br_erorpn,nt) - budget_global(br_erorcn,nt)
+             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   other reg lnd = ',nt,budget_global(br_erorpn,nt) - budget_global(br_erorcn,nt)
 
-            write(iulog,'(2a,i4,f22.6  )') trim(subname),' * other total   = ',nt,budget_other
-          if (do_all_budget) then
-            write(iulog,'(2a,i4,f22.6,a)') trim(subname),' x other check   = ',nt,budget_other - &
+             write(iulog,'(2a,i4,f22.6  )') trim(subname),' * other total   = ',nt,budget_other
+           endif
+           if (do_all_budget) then
+             write(iulog,'(2a,i4,f22.6,a)') trim(subname),' x other check   = ',nt,budget_other - &
                                                                             (budget_global(br_erolpn,nt) - budget_global(br_erolcn,nt) + &
                                                                              budget_global(br_erorpn,nt) - budget_global(br_erorcn,nt)), &
                                                                             ' (should be zero)'
-          endif
-            write(iulog,'(2a)') trim(subname),'----------------'
-          if (do_all_budget) then
+           endif
+           if (budget_write) then
+             write(iulog,'(2a)') trim(subname),'----------------'
+           endif
+           if (do_all_budget) then
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   sum dvolume   = ',nt,budget_volume     !(Global volume change during a coupling period. --Inund.)
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   sum input     = ',nt,budget_input
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   sum output    = ',nt,budget_output
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   sum other     = ',nt,budget_other      !(Channel outflow volume difference between previous and current MOSART sub-step. --Inund.) 
-          endif
+           endif
+           if (budget_write) then
             write(iulog,'(2a,i4,f22.6,a)') trim(subname),' * sum budget ** = ',nt,budget_total,' (should be zero, dv-in+out-oth)'
-          if (do_all_budget) then
+           endif
+           if (do_all_budget) then
             ! accum budget is just dv-i+o and should show that over time, the other terms go to zero (lag yes, reg land no)
             write(iulog,'(2a)') trim(subname),'----------------'
             write(iulog,'(2a,i4,f22.6,a)') trim(subname),' x accum budget  = ',nt,budget_global(bv_naccum,nt),' (should tend to zero over run, dv-in+out)'          ! (Average water balance error of all coupling periods up to now. --Inund.)
@@ -3201,12 +3219,12 @@ contains
             write(iulog,'(2a,i4,f22.6  )') trim(subname),' x eroutup_avg   = ',nt,budget_global(br_eroutup,nt)     !(Total volume of upstream inflow amounts of all land cells. --Inund.)
             write(iulog,'(2a,i4,f22.6  )') trim(subname),' x erlateral     = ',nt,budget_global(br_erlat,nt)       !(Total volume of lateral inflow amounts of all main channels. --Inund.)
             write(iulog,'(2a)') trim(subname),'----------------'
-          endif
-
-            if ((budget_total) > 1.0e-6) then
+           endif
+           if (budget_write) then
+             if ((budget_total) > 1.0e-6) then
                write(iulog,'(2a,i4)') trim(subname),' ***** BUDGET WARNING error gt 1. m3 for nt = ',nt
-            endif
-
+             endif
+           endif
             if (nt .eq. nt_nliq) then
                call MOSART_WaterBudget_Extraction(budget_global, budget_terms_total, bv_volt_i, bv_volt_f, &
                  bv_wt_i, bv_wt_f, bv_wr_i, bv_wr_f, bv_wh_i, bv_wh_f, bv_dstor_i, bv_dstor_f, bv_fp_i, bv_fp_f, &
@@ -3214,10 +3232,10 @@ contains
                call MOSART_WaterBudget_Print()
             endif
 
-          enddo   ! (do nt = 1,nt_rtm   --Inund.)
-          write(iulog,'(a)') '----------------------------------- '
-
-          if (inundflag) then
+           enddo   ! (do nt = 1,nt_rtm   --Inund.)
+           write(iulog,'(a)') '----------------------------------- '
+         if (budget_write) then
+           if (inundflag) then
              write(iulog,'(a)') ' '
              write(iulog,'(a)') '=================================================== '
              write(iulog,'(a)') ' '
@@ -3442,12 +3460,12 @@ contains
              write(iulog,'(a)') ' '
              write(iulog,'(a)') '=================================================== '
              write(iulog,'(a)') ' '
-          endif
-       endif   ! (End of if (masterproc). --Inund.)
+           endif
+         endif
+        endif   ! (End of if (masterproc). --Inund.)
 
-       
-       call t_stopf('mosartr_budget')
-    endif  ! budget_write   (end of if (budget_check .and. budget_write). --Inund.)
+        call t_stopf('mosartr_budget')
+    endif  ! budget_check   (end of if (budget_check). --Inund.)
 
     !-----------------------------------
     ! Write out MOSART history file
