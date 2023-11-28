@@ -1170,7 +1170,8 @@ v=accumulatedLandIceFrazilFlux     ; write(m,"('  landIceFrazilFlux    ',es16.8,
            conservationCheckSaltAMPool, &
            meshPool, &
            statePool, &
-           forcingPool
+           forcingPool, &
+           tracersSurfaceFluxPool
 
       real(kind=RKIND), pointer :: &
            initialSalt, &
@@ -1260,6 +1261,7 @@ v=accumulatedLandIceFrazilFlux     ; write(m,"('  landIceFrazilFlux    ',es16.8,
             call mpas_pool_get_array(forcingPool, 'seaIceSalinityFlux', seaIceSalinityFlux)
             call mpas_pool_get_array(statePool, 'accumulatedFrazilIceSalinity', accumulatedFrazilIceSalinityOld, 1)
             call mpas_pool_get_array(statePool, 'accumulatedFrazilIceSalinity', accumulatedFrazilIceSalinityNew, 2)
+            call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceFlux',tracersSurfaceFluxPool)
             call mpas_pool_get_array(tracersSurfaceFluxPool, 'activeTracersSurfaceFluxSubglacialRunoff', activeTracersSurfaceFluxSubglacialRunoff)
             call mpas_pool_get_dimension(tracersSurfaceFluxPool, 'index_salinitySurfaceFlux', index_salinity_flux)
 
