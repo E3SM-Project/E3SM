@@ -109,7 +109,7 @@ contains
 
       err = 0
 
-      if ( .not. tidalfluxOn ) return
+      if ( .not. tidalFluxOn ) return
 
       call mpas_timer_start("tidal thickness tendency")
 
@@ -219,7 +219,7 @@ contains
 
       character (len=StrKIND), pointer :: xtime
 
-      if ( .not. tidalfluxOn ) return
+      if ( .not. tidalFluxOn ) return
 
       call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)

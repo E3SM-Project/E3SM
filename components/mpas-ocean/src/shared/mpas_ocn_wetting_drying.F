@@ -51,6 +51,7 @@ module ocn_wetting_drying
    !--------------------------------------------------------------------
 
    public :: ocn_wetting_drying_verify, ocn_prevent_drying_rk4
+   public :: ocn_wetting_velocity_factor_on_cell_edges
 
    !--------------------------------------------------------------------
    !
@@ -353,15 +354,12 @@ contains
 
       integer :: cell1, cell2, iEdge, iCell, k, i
 
-      real (kind=RKIND) :: divFlux, divOutFlux
+      real (kind=RKIND) :: divOutFlux
       real (kind=RKIND) :: layerThickness
-      real (kind=RKIND) :: hCrit, hRampMin, hEdgeTotal
 
       character (len=100) :: log_string
 
       err = 0
-
-      hCrit = config_drying_min_cell_height
 
       if (.not. config_zero_drying_velocity) return
 
@@ -386,37 +384,7 @@ contains
           end do
           layerThickness = layerThickness + dt * divOutFlux
 
-          ! if layer thickness is too small, limit divergence flux outwards with
-          ! opposite velocity
-          if (layerThickness <= &
-              hCrit + config_drying_safety_height) then
-            do i = 1, nEdgesOnCell(iCell)
-              iEdge = edgesOnCell(i, iCell)
-              if (k <= maxLevelEdgeBot(iEdge) .and. k >= minLevelEdgeTop(iEdge)) then
-                if ( normalVelocity(k, iEdge) * edgeSignOnCell(i, iCell) <= 0.0_RKIND ) then
-                  wettingVelocityFactor(k, iEdge) = 1.0_RKIND
-                end if
-              end if
-            end do
-          elseif (config_zero_drying_velocity_ramp .and. &
-                 (layerThickness > &
-                 hCrit + config_drying_safety_height) .and. &
-                 (layerThickness <= config_zero_drying_velocity_ramp_hmax)) then
-
-            hRampMin = config_zero_drying_velocity_ramp_hmin
-            ! Following O'Dea et al. (2021), if total upwinded wct is less than
-            ! 2*critical thickness, apply damping at each edge
-            do i = 1, nEdgesOnCell(iCell)
-              iEdge = edgesOnCell(i, iCell)
-              if (k <= maxLevelEdgeBot(iEdge) .and. k >= minLevelEdgeTop(iEdge)) then
-                if ( normalVelocity(k, iEdge) * edgeSignOnCell(i, iCell) <= 0.0_RKIND ) then
-                  wettingVelocityFactor(k, iEdge) = 1.0_RKIND - &
-                    tanh(50.0_RKIND * (layerThickness - hRampMin)/hRampMin)
-                end if
-              end if
-            end do
-
-          end if
+          call ocn_wetting_velocity_factor_on_cell_edges(wettingVelocityFactor, layerThickness, normalVelocity, iCell, k)
 
         end do
       end do
@@ -425,6 +393,91 @@ contains
 
    end subroutine ocn_wetting_drying_wettingVelocity !}}}
 
+!***********************************************************************
+!
+!  routine ocn_wetting_velocity_factor_on_cell_edges
+!
+!> \brief   Computes wettingVelocityFactor at edges of iCell
+!> \author  Giacomo Capodaglio
+!> \date    09/06/2023
+!> \details
+!>  This routine computes wettingVelocityFactor at the edges of iCell
+!
+!-----------------------------------------------------------------------
+   subroutine ocn_wetting_velocity_factor_on_cell_edges(wettingVelocityFactor, layerThicknessTmp, normalVelocity, iCell, k)!{{{
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), intent(in) :: &
+         layerThicknessTmp    !< Input: layer thickness to use for limiting
+
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+         normalVelocity       !< Input: transport
+
+      integer, intent(in) :: &
+         iCell                !< Input: wettingVelocityFactor is computed at the edges of iCell
+
+      integer, intent(in) :: &
+         k                    !< Input: wettingVelocityFactor is computed at layer k
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:,:), intent(inout) :: &
+         wettingVelocityFactor          !< Input/Output: velocity wettingVelocityFactor
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      integer :: i, iEdge
+
+      real (kind=RKIND) :: hCrit, hRampMin
+
+      hCrit = config_drying_min_cell_height
+
+      ! if layer thickness is too small, limit divergence flux outwards with
+      ! opposite velocity
+      if (layerThicknessTmp <= &
+         hCrit + config_drying_safety_height) then
+         do i = 1, nEdgesOnCell(iCell)
+            iEdge = edgesOnCell(i, iCell)
+            if (k <= maxLevelEdgeBot(iEdge) .and. k >= minLevelEdgeTop(iEdge)) then
+               if ( normalVelocity(k, iEdge) * edgeSignOnCell(i, iCell) <= 0.0_RKIND ) then
+                  wettingVelocityFactor(k, iEdge) = 1.0_RKIND
+               end if
+            end if
+         end do
+      elseif (config_zero_drying_velocity_ramp .and. &
+              (layerThicknessTmp > &
+              hCrit + config_drying_safety_height) .and. &
+              (layerThicknessTmp <= config_zero_drying_velocity_ramp_hmax)) then
+
+         hRampMin = config_zero_drying_velocity_ramp_hmin
+         ! Following O'Dea et al. (2021), if total upwinded wct is less than
+         ! 2*critical thickness, apply damping at each edge
+         do i = 1, nEdgesOnCell(iCell)
+            iEdge = edgesOnCell(i, iCell)
+            if (k <= maxLevelEdgeBot(iEdge) .and. k >= minLevelEdgeTop(iEdge)) then
+               if ( normalVelocity(k, iEdge) * edgeSignOnCell(i, iCell) <= 0.0_RKIND ) then
+                  wettingVelocityFactor(k, iEdge) = 1.0_RKIND - &
+                  tanh(50.0_RKIND * (layerThicknessTmp - hRampMin)/hRampMin)
+               end if
+            end if
+         end do
+
+      end if
+
+   end subroutine ocn_wetting_velocity_factor_on_cell_edges!}}}
 
 end module ocn_wetting_drying
 
