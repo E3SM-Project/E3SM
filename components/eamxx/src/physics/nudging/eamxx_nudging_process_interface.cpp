@@ -245,6 +245,7 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   // do the interpolation.
   if (m_use_weights)
   {
+    auto grid_name = m_grid->name();
     FieldLayout scalar3d_layout_grid { {COL,LEV}, {m_num_cols, m_num_levs} };	  
     create_helper_field("nudging_weights", scalar3d_layout_grid, grid_name, ps);
     std::vector<Field> fields;
