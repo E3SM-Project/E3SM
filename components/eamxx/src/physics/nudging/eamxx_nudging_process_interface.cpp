@@ -1,5 +1,6 @@
 #include "eamxx_nudging_process_interface.hpp"
 #include "share/util/scream_universal_constants.hpp"
+#include "share/field/field_utils.hpp"
 
 namespace scream
 {
@@ -293,10 +294,6 @@ void Nudging::run_impl (const double dt)
       auto int_state_field = get_helper_field(name);        // int horiz, int vert
       auto ext_state_field = get_helper_field(name+"_ext"); // ext horiz, ext vert
       auto hxt_state_field = get_helper_field(name+"_hxt"); // ext horiz, int vert
-      auto ext_state_view  = ext_state_field.get_view<mPack**>();
-      auto hxt_state_view  = hxt_state_field.get_view<mPack**>();
-      auto atm_state_view  = atm_state_field.get_view<mPack**>();  // TODO: Right now assume whatever field is defined on COLxLEV
-      auto int_state_view  = int_state_field.get_view<mPack**>();
       refine_remapper->register_field(hxt_state_field, int_state_field);
     }
   }
@@ -307,6 +304,14 @@ void Nudging::run_impl (const double dt)
 
   // Loop over the nudged fields
   for (auto name : m_fields_nudge) {
+    auto atm_state_field = get_field_out_wrap(name);      // int horiz, int vert
+    auto int_state_field = get_helper_field(name);        // int horiz, int vert
+    auto ext_state_field = get_helper_field(name+"_ext"); // ext horiz, ext vert
+    auto hxt_state_field = get_helper_field(name+"_hxt"); // ext horiz, int vert
+    auto ext_state_view  = ext_state_field.get_view<mPack**>();
+    auto hxt_state_view  = hxt_state_field.get_view<mPack**>();
+    auto atm_state_view  = atm_state_field.get_view<mPack**>();  // TODO: Right now assume whatever field is defined on COLxLEV
+    auto int_state_view  = int_state_field.get_view<mPack**>();
     auto int_mask_view = m_buffer.int_mask_view;
     // Masked values in the source data can lead to strange behavior in the vertical interpolation.
     // We pre-process the data and map any masked values (sometimes called "filled" values) to the
@@ -382,6 +387,9 @@ void Nudging::run_impl (const double dt)
     // Note that we are going from hxt to int here
     if(m_refine_remap) {
       // Call the remapper
+      print_field_hyperslab (ext_state_field);
+      print_field_hyperslab (hxt_state_field);
+      print_field_hyperslab (int_state_field);
       refine_remapper->remap(true);
     } else {
       // No horizontal interpolation, just copy the data
