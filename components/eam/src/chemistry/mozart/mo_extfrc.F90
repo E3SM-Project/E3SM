@@ -835,7 +835,8 @@ contains
           gfed_area = burnedarea/10000.0_r8
        else 
           frp4plume=frp_peak*(exp(-0.5*(tl-frp_h)*(tl-frp_h)/frp_sigma/frp_sigma)+frp_b) 
-          gfed_area=gridarea  
+          !gfed_area=gridarea
+          gfed_area = burnedarea/10000.0_r8 !still use burned area from emission file  
        endif
        call smk_pr_driver(plume_height , env, gfed_area, frp4plume, lat, &
             wt_ini_e3sm, wt_end_e3sm, rbuoy_ini_e3sm, rbuoy_end_e3sm,t_ini_e3sm,t_end_e3sm )
