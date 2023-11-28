@@ -95,7 +95,7 @@ if (TEST_RANK_END GREATER TEST_RANK_START)
               WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
     set (FIXTURES_BASE_NAME homme_shoc_cld_spa_p3_rrtmgp_pg2_generate_output_nc_files)
     set_tests_properties(${TEST_NAME} PROPERTIES
-        LABELS dynamics tms shoc cld p3 rrtmgp physics
+        LABELS "dynamics;tms;shoc;cld;p3;rrtmgp;physics"
         FIXTURES_REQUIRED "${FIXTURES_BASE_NAME}_np${MPI_RANKS}_omp1;${FIXTURES_BASE_NAME}_np1_omp1")
   endforeach()
 endif()
