@@ -15,6 +15,13 @@ namespace scream
 
 class MAMAci final : public scream::AtmosphereProcess {
 
+
+  using KT = ekat::KokkosTypes<DefaultDevice>;
+
+  // views for single- and multi-column data
+  using const_view_2d = typename KT::template view_2d<const Real>;
+  
+
 public:
   // Constructor
   MAMAci(const ekat::Comm& comm, const ekat::ParameterList& params);
@@ -38,6 +45,31 @@ public:
 
   // number of aerosol modes
   int num_aero_modes_;
+  
+
+  // Atmosphere processes often have a pre-processing step that constructs
+  // required variables from the set of fields stored in the field manager.
+  // This functor implements this step, which is called during run_impl.
+  struct Preprocess {
+    Preprocess() = default;
+
+
+    //const_view_2d pdel_;    // hydrostatic "pressure thickness" at grid
+                            // interfaces [Pa]
+    
+    // assigns local variables
+    void set_variables(const const_view_2d&     pdel) {
+      //p1del_ = pdel;
+    } // set_variables
+  }; // MAMAci::Preprocess
+
+
+  // pre- and postprocessing scratch pads
+  Preprocess preprocess_;
+
+  // local atmospheric state column variables
+  const_view_2d pdel_;    // hydrostatic "pressure thickness" at grid
+                          // interfaces [Pa]
 
 
   // physics grid for column information

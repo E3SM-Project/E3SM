@@ -14,7 +14,7 @@ MAMAci::MAMAci(
 
 
 //Return type of the process
-AtmosphereProcessType MAMAci::type() const {
+AtmosphereProcessType MAMAci::type() const{
   return AtmosphereProcessType::Physics;
 }
 
@@ -25,9 +25,9 @@ std::string MAMAci::name() const{
 
 //set grid for all the inputs and outputs
 void MAMAci::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
-  m_atm_logger->log(ekat::logger::LogLevel::info,"ACI set grid = ");
+  m_atm_logger->log(ekat::logger::LogLevel::info,"Calling ACI set grid");
 
-  grid_ = grids_manager->get_grid("Physics");
+  grid_ = grids_manager->get_grid("Physics"); //Use physics grid
   const auto& grid_name = grid_->name();
 
   ncol_ = grid_->get_num_local_dofs(); // Number of columns on this rank
@@ -55,6 +55,8 @@ void MAMAci::set_grids(const std::shared_ptr<const GridsManager> grids_manager) 
   add_field<Required>("p_mid",          scalar3d_layout_mid, Pa,     grid_name); // Total pressure [Pa] at midpoints
   add_field<Required>("p_int",          scalar3d_layout_int, Pa,     grid_name); // Total pressure [Pa] at interfaces
   add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa,     grid_name); // Layer thickness(pdel) [Pa] at midpoints
+
+  //MUST FIXME: The aerosols has a wet mixing ratio, we should convert that to dry
 
   // interstitial and cloudborne aerosol tracers of interest: mass (q) and number (n) mixing ratios
   for (int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
@@ -91,7 +93,7 @@ void MAMAci::set_grids(const std::shared_ptr<const GridsManager> grids_manager) 
   auto s2 = s*s;
   s2.set_string("s^2");
 
-  //FIXME BALLI: w_sec,  is at OLD time step; strat_cld_frac and liq_strat_cld_frac may also need OLD time
+  //MUST FIXME: w_sec,  is at OLD time step; strat_cld_frac and liq_strat_cld_frac may also need OLD time
   add_field<Required>("w_sec",              scalar3d_layout_mid, m2/s2,  grid_name); // Vertical velocity variance (wp2) at midpoints
 
   auto nondim = Units::nondimensional();
@@ -114,11 +116,25 @@ void MAMAci::set_grids(const std::shared_ptr<const GridsManager> grids_manager) 
 }
 
 void MAMAci::initialize_impl(const RunType run_type) {
-   m_atm_logger->log(ekat::logger::LogLevel::info,"ACI init = ");
+    m_atm_logger->log(ekat::logger::LogLevel::info,"Calling ACI init");
+    /*
+      NOTE: All other inputs should follow the way "pseudo_density" is initialized
+    */
+    const auto& p_del = get_field_in("pseudo_density").get_view<const Real**>();
+
+    // set atmosphere state data
+    pdel_ = p_del;
+
+    /*
+      NOTE: All derived variables (like rpdel and geopotential height) should be computed in
+      preprocess struct
+    */
+    //preprocess_.set_variables(pdel_);
+
 }
 
 void MAMAci::run_impl(const double dt) {
-  m_atm_logger->log(ekat::logger::LogLevel::info,"ACI run = ");
+  m_atm_logger->log(ekat::logger::LogLevel::info,"calling ACI run");
 
   //----------------------------------------------------------
   // Convert from omega to w (vertical velocity)
@@ -259,7 +275,7 @@ void MAMAci::run_impl(const double dt) {
     // Compute activated fraction of aerosols
     //-------------------------------------------------------------
 
-
+    std::cout<<"pdel_ in run_impl is:"<<pdel_(0,0)<<std::endl;
     /*
     NOTE: "deltain" is the model time step. "state_q" is a combination of tracers
     fields with "int_mmr_field_name" and "int_nmr_field_name". "z_mid" is computed.
@@ -289,7 +305,7 @@ void MAMAci::run_impl(const double dt) {
 }
 
 void MAMAci::finalize_impl(){
-  m_atm_logger->log(ekat::logger::LogLevel::info,"ACI final = ");
+  m_atm_logger->log(ekat::logger::LogLevel::info,"calling ACI final");
 }
 
 } // namespace scream
