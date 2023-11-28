@@ -238,6 +238,8 @@ void Nudging::initialize_impl (const RunType /* run_type */)
     // No need to follow with hxt because we are not reading it externally
     auto field_ext = get_helper_field(name_ext);
     m_time_interp.add_field(field_ext.alias(name),true);
+    // auto field_hxt = get_helper_field(name_hxt);
+    // m_time_interp.add_field(field_hxt.alias(name_hxt),true);
   }
   m_time_interp.initialize_data_from_files();
 
@@ -280,26 +282,6 @@ void Nudging::run_impl (const double dt)
     p_mid_ext_p = get_helper_field("p_mid_ext").get_view<mPack**>();
   } else if (m_src_pres_type == STATIC_1D_VERTICAL_PROFILE) {
     p_mid_ext_1d   = get_helper_field("p_mid_ext").get_view<mPack*>();
-  }
-
-  // Open the registration!
-  if(m_refine_remap) {
-    refine_remapper->registration_begins();
-  }
-
-  if(m_refine_remap) {
-    // Loop over the nudged fields
-    for (auto name : m_fields_nudge) {
-      auto atm_state_field = get_field_out_wrap(name);      // int horiz, int vert
-      auto int_state_field = get_helper_field(name);        // int horiz, int vert
-      auto ext_state_field = get_helper_field(name+"_ext"); // ext horiz, ext vert
-      auto hxt_state_field = get_helper_field(name+"_hxt"); // ext horiz, int vert
-      refine_remapper->register_field(hxt_state_field, int_state_field);
-    }
-  }
-  // Close the registration!
-  if(m_refine_remap) {
-    refine_remapper->registration_ends();
   }
 
   // Loop over the nudged fields
@@ -383,19 +365,6 @@ void Nudging::run_impl (const double dt)
                                                m_num_levs);
     }
 
-    // Refine-remap onto target atmosphere state horiz grid ("int")
-    // Note that we are going from hxt to int here
-    if(m_refine_remap) {
-      // Call the remapper
-      print_field_hyperslab (ext_state_field);
-      print_field_hyperslab (hxt_state_field);
-      print_field_hyperslab (int_state_field);
-      refine_remapper->remap(true);
-    } else {
-      // No horizontal interpolation, just copy the data
-      Kokkos::deep_copy(int_state_view, hxt_state_view);
-    }
-
     // Check that none of the nudging targets are masked, if they are, set value to
     // nearest unmasked value above.
     // NOTE: We use an algorithm whichs scans from TOM to the surface.
@@ -411,7 +380,7 @@ void Nudging::run_impl (const double dt)
        	       KOKKOS_LAMBDA(MemberType const& team) {
       const int icol = team.league_rank();
       auto int_mask_view_1d  = ekat::subview(int_mask_view,icol);
-      auto int_state_view_1d = ekat::subview(int_state_view,icol);
+      auto hxt_state_view_1d = ekat::subview(hxt_state_view,icol);
       Real fill_value;
       int  fill_idx = -1;
       // Scan top to surf and backfill all values near TOM that are masked.
@@ -420,12 +389,12 @@ void Nudging::run_impl (const double dt)
 	const auto iidx  = kk % mPack::n;
         // Check if this index is masked
 	if (!int_mask_view_1d(ipack)[iidx]) {
-	  fill_value = int_state_view_1d(ipack)[iidx];
+	  fill_value = hxt_state_view_1d(ipack)[iidx];
 	  fill_idx = kk;
 	  for (int jj=0; jj<fill_idx; ++jj) {
             const auto jpack = jj / mPack::n;
 	    const auto jidx  = jj % mPack::n;
-	    int_state_view_1d(jpack)[jidx] = fill_value;
+	    hxt_state_view_1d(jpack)[jidx] = fill_value;
 	  }
 	  break;
 	}
@@ -437,13 +406,67 @@ void Nudging::run_impl (const double dt)
 	const auto iidx  = kk % mPack::n;
         // Check if this index is masked
 	if (!int_mask_view_1d(ipack)[iidx]) {
-	  fill_value = int_state_view_1d(ipack)[iidx];
+	  fill_value = hxt_state_view_1d(ipack)[iidx];
 	} else {
-	  int_state_view_1d(ipack)[iidx] = fill_value;
+	  hxt_state_view_1d(ipack)[iidx] = fill_value;
 	}
       }
     });
 
+  }
+
+  // Open the registration!
+  if(m_refine_remap) {
+    refine_remapper->registration_begins();
+  }
+
+  if(m_refine_remap) {
+    // Loop over the nudged fields
+    for (auto name : m_fields_nudge) {
+      auto atm_state_field = get_field_out_wrap(name);      // int horiz, int vert
+      auto int_state_field = get_helper_field(name);        // int horiz, int vert
+      auto ext_state_field = get_helper_field(name+"_ext"); // ext horiz, ext vert
+      auto hxt_state_field = get_helper_field(name+"_hxt"); // ext horiz, int vert
+      refine_remapper->register_field(hxt_state_field, int_state_field);
+    }
+  }
+  // Close the registration!
+  if(m_refine_remap) {
+    refine_remapper->registration_ends();
+  }
+
+  // Refine-remap onto target atmosphere state horiz grid ("int")
+  // Note that we are going from hxt to int here
+  if(m_refine_remap) {
+    // Call the remapper
+    // print_field_hyperslab (ext_state_field);
+    // print_field_hyperslab (hxt_state_field);
+    // print_field_hyperslab (int_state_field);
+    refine_remapper->remap(true);
+  } else {
+    for (auto name : m_fields_nudge) {
+      auto atm_state_field = get_field_out_wrap(name);      // int horiz, int vert
+      auto int_state_field = get_helper_field(name);        // int horiz, int vert
+      auto ext_state_field = get_helper_field(name+"_ext"); // ext horiz, ext vert
+      auto hxt_state_field = get_helper_field(name+"_hxt"); // ext horiz, int vert
+      auto ext_state_view  = ext_state_field.get_view<mPack**>();
+      auto hxt_state_view  = hxt_state_field.get_view<mPack**>();
+      auto atm_state_view  = atm_state_field.get_view<mPack**>();  // TODO: Right now assume whatever field is defined on COLxLEV
+      auto int_state_view  = int_state_field.get_view<mPack**>();
+      // No horizontal interpolation, just copy the data
+      Kokkos::deep_copy(int_state_view, hxt_state_view);
+    }
+  }
+
+  for (auto name : m_fields_nudge) {
+    auto atm_state_field = get_field_out_wrap(name);      // int horiz, int vert
+    auto int_state_field = get_helper_field(name);        // int horiz, int vert
+    auto ext_state_field = get_helper_field(name+"_ext"); // ext horiz, ext vert
+    auto hxt_state_field = get_helper_field(name+"_hxt"); // ext horiz, int vert
+    auto ext_state_view  = ext_state_field.get_view<mPack**>();
+    auto hxt_state_view  = hxt_state_field.get_view<mPack**>();
+    auto atm_state_view  = atm_state_field.get_view<mPack**>();  // TODO: Right now assume whatever field is defined on COLxLEV
+    auto int_state_view  = int_state_field.get_view<mPack**>();
     // Apply the nudging tendencies to the ATM state
     if (m_timescale <= 0) {
       // We do direct replacement
