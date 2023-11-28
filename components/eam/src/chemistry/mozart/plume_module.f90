@@ -536,7 +536,8 @@ heat_fluxW = frp*1000.
 
 mdur =  199. !53        ! duration of burn, minutes
 bload = 10.      ! total loading, kg/m**2 
-moist = 10.0      ! fuel moisture, %. average fuel moisture,percent dry
+moist = 35.0      ! fuel moisture, %. average fuel moisture,percent dry
+!moist = 40.     ! kzm:change with frp
 
 !maxtime =mdur+2  ! model time, min
  maxtime =mdur-1  ! model time, min
@@ -919,7 +920,7 @@ wt_end_e3sm(:) = -999.0
 
 ! if the solution is going to a stationary phase, exit
    if(mintime > 40) then
-    if( abs(ztop_(mintime)-ztop_(mintime-10)) < DZ ) exit
+    if( abs(ztop_(mintime)-ztop_(mintime-30)) < DZ ) exit
    endif
    
     if(ilastprint == mintime) then
@@ -1416,7 +1417,6 @@ do k = 2,m1-2
 
 !srf- just for output
     rbuoy(k)=0.5*(scr1(k)+scr1(k+1))
- !   rbuoy(k)=0.333*(scr1(k-1)+scr1(k)+scr1(k+1))
     wt(k) = wt(k)+rbuoy(k)
 
  !  print*,'W-BUO',k,wt(k),scr1(k),scr1(k+1)
@@ -1461,6 +1461,7 @@ umgamai = 1./(1.+gama) ! compensa a falta do termo de aceleracao associado `as
 !-- for W: WBAR is only W(k)
 !     WBAR=0.5*(W(k)+W(k-1))           
       WBAR=W(k)          
+!      WBAR=0.333*(W(k)+W(k-1)+W(k+1))          
       RADIUS_BAR = 0.5*(RADIUS(k) + RADIUS(k-1))
 
 ! orig plump model

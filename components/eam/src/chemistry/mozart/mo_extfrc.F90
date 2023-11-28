@@ -11,8 +11,9 @@ module mo_extfrc
   use cam_history,  only : addfld, horiz_only, outfld, add_default
   use cam_logfile,  only : iulog
   use tracer_data,  only : trfld,trfile
-  use phys_grid,    only : get_rlat_all_p, get_rlon_all_p
+  use phys_grid,    only : get_rlat_all_p, get_rlon_all_p,get_area_all_p
   use time_manager,  only: get_curr_date
+  use mo_constants, only : pi, rgrav, rearth, avogadro
   implicit none
 
   type :: forcing
@@ -43,12 +44,15 @@ module mo_extfrc
   logical :: has_extfrc(gas_pcnst)
   type(forcing), allocatable  :: forcings(:)
   integer :: extfrc_cnt = 0
-  integer, parameter :: nfire = 4 !! two type of fire emission
-  integer :: nfire_count
+  integer, parameter :: nfire = 10 !!  fire emission
+  integer :: nfire_count, nba_count
   integer :: PH_emis_m(nfire), PH_emis_n(nfire) ! fire emission indices
+  integer :: BA_emis_m(nfire), BA_emis_n(nfire) ! BA indices
   logical :: plumerise = .false.
   logical :: emis_constrained_frp = .false.
-  logical :: diag_run = .false.
+  logical :: diag_run_plumerise = .false.
+  real    :: ef_bc_a4 = 0.55_r8*1.0e-03_r8*(1.0_r8/0.45_r8)
+  real    :: ef_oc_a4 = 10.9_r8*1.0e-03_r8*(1.0_r8/0.45_r8)
 contains
 
   subroutine extfrc_inti( extfrc_specifier, extfrc_type, extfrc_cycle_yr, extfrc_fixed_ymd, extfrc_fixed_tod)
@@ -105,6 +109,7 @@ contains
     call phys_getopts( history_aerosol_out        = history_aerosol, &
                        history_verbose_out        = history_verbose, &
                        emis_constrained_frp_out   = emis_constrained_frp, &
+                       diag_run_plumerise_out   = diag_run_plumerise, &
                        plumerise_out              = plumerise   )
 
     do i = 1, gas_pcnst
@@ -198,6 +203,8 @@ contains
                        'plumerise height caused by EM fires' ) 
        call addfld( 'heat_flux_plume', horiz_only, 'I',  'kw/m2', &
                        'heat flux used in plume-rise model' )
+       call addfld( 'burned_area', horiz_only, 'I',  'm2', &
+                       'burned_area used in plume-rise model' )
        call addfld( 'zmidr_ph', (/ 'lev' /), 'I',  'km', &
                        'midpoint geopotential in km realitive to surf' )
        call addfld( 'pmid_ph', (/ 'lev' /), 'I',  'Pa', &
@@ -212,6 +219,7 @@ contains
                        'zonal velocity (m/s)' )
        call addfld( 'vfld_ph', (/ 'lev' /), 'I',  'm/s', &
                        'meridional velocity (m/s)' )
+       
        !wt_ini_e3sm_out, wt_end_e3sm_out, rbuoy_ini_e3sm_out, rbuoy_end_e3sm_out
        call addfld( 'wt_ini_e3sm_out', (/ 'lev' /), 'I',  'm/s', &
                        'verticle velocity (m/s)' )
@@ -259,7 +267,10 @@ contains
     !-----------------------------------------------------------------------
     PH_emis_m(:) = -1 ! fire emission type
     PH_emis_n(:) = -1 ! fire emission sector 
+    BA_emis_m(:) = -1 ! fire BA type
+    BA_emis_n(:) = -1 ! fire BA sector
     nfire_count = 0 ! fire emission counted
+    nba_count   = 0 ! fire area count
     frcing_loop: do m = 1, extfrc_cnt
 
        forcings(m)%nsectors = 0
@@ -302,7 +313,9 @@ contains
              ! kzm note: here assumes fire emission are in ncol emission files 
              if (plumerise)then
                 !if (trim(forcings(m)%species) == 'bc_a4' .and. trim(varname) == 'EM')then
-                if (trim(varname) == 'EM' .or. trim(varname) == 'num_a1_BC_ELEV_EM' .or. trim(varname) == 'num_a1_POM_ELEV_EM')then
+                if (trim(varname) == 'EM' &
+                    .or. trim(varname) == 'num_a1_BC_ELEV_EM' & 
+                    .or. trim(varname) == 'num_a1_POM_ELEV_EM')then
                    nfire_count = nfire_count +1
                    if(masterproc) write(iulog,*) forcings(m)%species
                    if(masterproc) write(iulog,*) 'sector number = ', forcings(m)%nsectors
@@ -312,7 +325,16 @@ contains
                    if(masterproc) write(iulog,*) 'PH_emis_m', PH_emis_m(nfire_count)
                    if(masterproc) write(iulog,*) 'PH_emis_n', PH_emis_n(nfire_count)
 
-                end if
+                elseif (trim(varname) == 'BA')then
+                   nba_count = nba_count +1
+                   if(masterproc) write(iulog,*) forcings(m)%species
+                   if(masterproc) write(iulog,*) 'sector number = ', forcings(m)%nsectors
+                   if(masterproc) write(iulog,*) 'UCI wildfire BA in model type ', nba_count
+                   PH_emis_m(nba_count) = m
+                   PH_emis_n(nba_count) = forcings(m)%nsectors
+                   if(masterproc) write(iulog,*) 'BA_emis_m', BA_emis_m(nba_count)
+                   if(masterproc) write(iulog,*) 'BA_emis_n', BA_emis_n(nba_count)
+                endif
              endif
           else
              !write(iulog,*) 'extfrc_inti: Skipping variable ', trim(varname),', ndims = ',ndims,' , species=',trim(forcings(m)%species)
@@ -417,14 +439,16 @@ contains
     !------------------------------------------------------
     !    ... plume_height variables
     !-----------------------------------------------------
-    logical :: fire_detected
     real(r8) :: plume_height,emis_col
     real(r8) :: plume_height_EM(ncol), pt_v(pver), heat_flux_plume(ncol)
-    integer :: ph_z(ncol), fire_icol   ! index of levels of max plume height
+    integer :: ph_z(ncol)   ! index of levels of max plume height
     real(r8) :: frcing_col_plume,frcing_vertical_plume_old(pver),frcing_vertical_plume_new(pver)
     real(r8) :: clat(pcols)                   ! current latitudes(radians)
     real(r8) :: clon(pcols)                   ! current longitudes(radians)
-    real(r8) :: tl, frp, frp_memory(pcols), frp4plume! 
+    real(r8) :: burnedarea, heatflux,coef_bc,coef_pom
+    real(r8) :: burnedarea_plume(pcols)
+    real(r8) :: tl, frp, frp_memory(pcols), frp4plume,burnedarea_memory(pcols),heatflux_memory(pcols)! 
+    real(r8) :: area(ncol),frcing_col_plume_bc_memory(pcols),frcing_col_plume_pom_memory(pcols)
     integer :: iyear,imo,iday_m,tod,tod_saved
     real(r8) :: wt_ini_e3sm_out(pcols,pver), wt_end_e3sm_out(pcols,pver), &
                 rbuoy_ini_e3sm_out(pcols,pver), rbuoy_end_e3sm_out(pcols,pver), &
@@ -438,10 +462,102 @@ contains
     !--------------------------------------------------------
     !	... set non-zero forcings
     !--------------------------------------------------------
-    frp_memory(:) = -999.0_r8
+    frp_memory(:) = 0.0_r8
+    heatflux_memory(:) = 0.0_r8
+    frcing_col_plume_bc_memory(:) = 0.0_r8
+    burnedarea_memory(:) = 0.0_r8
     plume_height_EM(:) = 0._r8
     heat_flux_plume(:) = 0._r8
-    src_loop : do m = 1,extfrc_cnt
+    burnedarea_plume(:) = 0.0_r8
+    call get_area_all_p(lchnk, ncol, area)
+    area = area * rearth**2
+    coef_bc = 1.7847635e-19
+    coef_pom = 1.04986099e-19
+
+    ! loop for calculate fire area, heat flux, emission
+    src_loop1 : do m = 1,extfrc_cnt
+
+      n = forcings(m)%frc_ndx
+
+       frcing(:ncol,:,n) = 0._r8
+       do isec = 1,forcings(m)%nsectors
+          !check wildfire emission EM
+          if ((plumerise) .and. (forcings(m)%file%alt_data)) then
+             !plume-rise calculation for certain species
+             if ( forcings(m)%species == 'bc_a4' .and. forcings(m)%sectors(isec) == 'EM'    )then
+                frcing_vertical_plume_old(:pver) = 0._r8
+                frcing_vertical_plume_new(:pver) = 0._r8
+                ! loop for each col
+                do icol=1,pcols ! calculate if EM emitted
+                   frcing_col_plume = 0._r8 !set initial value for each column
+                   emis_col = sum(forcings(m)%fields(isec)%data(icol,:,lchnk))
+                   if ( emis_col  > 0.0_r8) then
+                         ! get initial emission from forcing data
+                         frcing_vertical_plume_old(1:pver) = forcings(m)%fields(isec)%data(icol,pver:1:-1,lchnk) ! reverse
+                         ! calculate the total emission in this column
+                         do k = 1,pver
+                            ! unit is molecular/m2
+                            frcing_col_plume = frcing_col_plume +  &
+                                                     frcing_vertical_plume_old(k)*(zint(icol,k)-zint(icol,k+1))*km_to_cm
+                           ! write(iulog,*)'kzm_level ',k, 'old emis ', frcing_vertical_plume_old(k)
+                         enddo
+                         ! heatflux related to total carbon burned
+                         frcing_col_plume_bc_memory(icol) = frcing_col_plume
+                         heatflux = (frcing_col_plume*1.0e4)/6.022e23_r8*12.0_r8 ! carbon g/m2/s
+                         heatflux = heatflux/0.45_r8 ! carbon to fuel, Rowell et al., 2013; unit g/m2/s
+                         heatflux = heatflux*1.0E-3_r8 ! convert to kg/m2/s
+                         heatflux = heatflux*19.6e6_r8 ! forest heat from burning (J/s/m2), Freitas et al., 2011
+                         heatflux = heatflux*1.0e-3_r8 ! KW/m2
+                         heatflux_memory(icol) = heatflux
+                         if (diag_run_plumerise) then
+                            write(iulog,*)'kzm_heat_flux ', heatflux, icol
+                         endif
+                         tod_saved = tod
+                   endif
+                 enddo
+              elseif ( trim(forcings(m)%species) == 'bc_a4' .and.  &
+                       trim(forcings(m)%sectors(isec)) == 'BA'     )then
+                 frcing_vertical_plume_old(:pver) = 0._r8
+                 frcing_vertical_plume_new(:pver) = 0._r8
+                 ! loop for each col 
+                 do icol=1,pcols ! calculate if EM emitted
+                   frcing_col_plume = 0._r8 !set initial value for each column
+                   emis_col = sum(forcings(m)%fields(isec)%data(icol,:,lchnk))
+                   if ( emis_col  > 0.0_r8) then
+                         ! get initial emission from forcing data
+                         frcing_vertical_plume_old(1:pver) = forcings(m)%fields(isec)%data(icol,pver:1:-1,lchnk) ! reverse
+                         ! calculate the total emission in this column
+                         do k = 1,pver
+                            ! unit is molecular/m2
+                            frcing_col_plume = frcing_col_plume +  &
+                                                     frcing_vertical_plume_old(k)*(zint(icol,k)-zint(icol,k+1))*km_to_cm
+                           ! write(iulog,*)'kzm_level ',k, 'old emis ', frcing_vertical_plume_old(k)
+                         enddo
+                         ! heatflux related to total carbon burned
+                         burnedarea = (frcing_col_plume) ! burned  m2/m2
+                         burnedarea_memory(icol) = burnedarea*area(icol) ! m2 burned
+                   endif
+                 enddo
+                
+              endif ! species and sector ifs
+           endif
+       enddo  !isec loop
+
+       !xfcname = trim(forcings(m)%species)//'_XFRC'
+       !call outfld( xfcname, frcing(:ncol,:,n), ncol, lchnk )
+
+       !frcing_col(:ncol) = 0._r8
+       !do k = 1,pver
+       !   frcing_col(:ncol) = frcing_col(:ncol) + frcing(:ncol,k,n)*(zint(:ncol,k)-zint(:ncol,k+1))*km_to_cm
+       !enddo
+       !xfcname = trim(forcings(m)%species)//'_CLXF'
+       !call outfld( xfcname, frcing_col(:ncol), ncol, lchnk )
+
+    end do src_loop1
+
+
+
+    src_loop2 : do m = 1,extfrc_cnt
 
       n = forcings(m)%frc_ndx
 
@@ -457,11 +573,11 @@ contains
 
           !check wildfire emission EM
           if ((plumerise) .and. (forcings(m)%file%alt_data)) then
-             fire_detected = .false.
-             fire_icol = -1
              !plume-rise calculation for certain species
-             if ((m == PH_emis_m(1) .and. isec == PH_emis_n(1)) .or. (m == PH_emis_m(2) .and. isec == PH_emis_n(2)) &
-                 .or. (m == PH_emis_m(3) .and. isec == PH_emis_n(3)) .or. (m == PH_emis_m(4) .and. isec == PH_emis_n(4)) )then
+             if ((m == PH_emis_m(1) .and. isec == PH_emis_n(1)) .or. & 
+                 (m == PH_emis_m(2) .and. isec == PH_emis_n(2)) .or. &
+                 (m == PH_emis_m(3) .and. isec == PH_emis_n(3)) .or. &
+                 (m == PH_emis_m(4) .and. isec == PH_emis_n(4)) )then
                 !plume_height_EM(:ncol) = 0._r8
                 !heat_flux_plume(:ncol) = 0._r8
                 !frcing_col_plume = 0._r8
@@ -481,25 +597,36 @@ contains
                                                      frcing_vertical_plume_old(k)*(zint(icol,k)-zint(icol,k+1))*km_to_cm
                            ! write(iulog,*)'kzm_level ',k, 'old emis ', frcing_vertical_plume_old(k)
                          enddo
-                         if (forcings(m)%species == 'bc_a4' )then
+                         if (forcings(m)%species == 'bc_a4' .and. forcings(m)%sectors(isec) == 'EM' )then
                          ! convert molecular/cm2/s to kw/m2/s, based on Wooster et al., 2005, equation 14                           
                          ! mass (kg/s) = emis*1.0E4/Avogadr_cst*12/1000
                          ! FRP (kW/m2) = mass/0.368*1000
-                            
-                            frp = (frcing_col_plume*1.0e4/0.03_r8)/6.022e23_r8*12.0/0.368
-                            frp = frp*10.0_r8 ! 
-                            frp_memory(icol) = frp 
+                            frp =  heatflux_memory(icol)*area(icol)/burnedarea_memory(icol) ! KW/m2
+                            burnedarea = burnedarea_memory(icol)
+                            !frp = (frcing_col_plume*1.0e4/0.03_r8)/6.022e23_r8*12.0/0.368
+                            !frp = frp*2 ! 
+                            !frp = (frcing_col_plume*1.0e4/0.03_r8)/6.022e23_r8*12.0_r8 ! carbon g/m2/s
+                            !frp = frp*2.0_r8 ! carbon to fuel, Rowell et al., 2013; unit g/m2/s
+                            !frp = frp*1.0E-3_r8 ! convert to kg/m2/s
+                            !frp = frp*19.6e6_r8 ! forest heat from burning (J/s/m2), Freitas et al., 2011  
+                            !frp = frp*1.0e-3_r8 ! KW/m2
+                            !frp_memory(icol) = frp 
                             tod_saved = tod
                             call cal_plume_height(plume_height,zmidr(icol,:), pmid(icol,:), &
                                  tfld(icol,:), relhum(icol,:), qh2o(icol,:), ufld(icol,:), &
                                  vfld(icol,:), clat(icol)/(3.1415_r8)*180.0_r8, &
-                                 clon(icol)/(3.1415_r8)*180.0_r8, tl, pt_v, frp, frp4plume, &
+                                 clon(icol)/(3.1415_r8)*180.0_r8, tl, pt_v, frp, burnedarea,frp4plume, &
                                  wt_ini_e3sm_out(icol,:), wt_end_e3sm_out(icol,:), &
                                  rbuoy_ini_e3sm_out(icol,:), rbuoy_end_e3sm_out(icol,:), &
-                                 t_ini_e3sm_out(icol,:), t_end_e3sm_out(icol,:) )
+                                 t_ini_e3sm_out(icol,:), t_end_e3sm_out(icol,:),area(icol) )
+                            plume_height = plume_height + zmidr(icol,pver)*1000.0_r8 ! plume height at middle of layer
                             plume_height_EM(icol) = plume_height ! in meter
-                            heat_flux_plume(icol) = frp4plume ! in kw/m2
-                            
+                            heat_flux_plume(icol) = frp4plume ! in kw/m2 
+                            if (emis_constrained_frp) then
+                               burnedarea_plume(icol) = burnedarea 
+                            else
+                               burnedarea_plume(icol) = area(icol)
+                            endif
                          elseif (forcings(m)%species == 'pom_a4' .or. forcings(m)%species == 'brc_a4')then
                             !frp = (frcing_col_plume*1.0e4/0.97_r8)/6.022e23_r8*12.0/0.368
                             !frp = frp*10.0_r8 !
@@ -523,9 +650,11 @@ contains
                                ph_z(icol) = k
                             endif 
                          enddo 
-                         if (forcings(m)%species == 'bc_a4' .and. diag_run )then
+                         if (forcings(m)%species == 'bc_a4' .and. diag_run_plumerise )then
                          write(iulog,*) 'kzm_fire_species ', forcings(m)%species, isec
+                         write(iulog,*) 'kzm_heatflux ', heatflux_memory(icol)
                          write(iulog,*) 'kzm_FRP ',frp,frp4plume
+                         write(iulog,*) 'kzm_area ',burnedarea_memory(icol), area(icol)
                          write(iulog,*)'kzm_plume_rise_calculation_running'
                          write(iulog,*)'kzm_plume_rise_calculation_lat ', clat(icol)/(3.1415_r8)*180.0_r8
                          write(iulog,*)'kzm_plume_rise_calculation_lon ', clon(icol)/(3.1415_r8)*180.0_r8
@@ -538,23 +667,35 @@ contains
                                             rbuoy_ini_e3sm_out(icol,k),rbuoy_end_e3sm_out(icol,k), &
                                              t_ini_e3sm_out(icol,k),t_end_e3sm_out(icol,k)
                          enddo
+                         write(iulog,*)'kzm_col_total_emis ', frcing_col_plume
                          write(iulog,*)'kzm_plume_layer ', ph_z(icol)
                          endif
-                         ! reset the forcing
-                         ! get initial emission from forcing data
-                         !frcing_vertical_plume_old(1:pver) = forcings(m)%fields(isec)%data(icol,pver:1:-1,lchnk) ! reverse
-                         ! calculate the total emission in this column
-                         !frcing_col_plume = 0.0_r8
-                         !do k = 1,pver
-                         !   frcing_col_plume = frcing_col_plume +  &
-                         !                            frcing_vertical_plume_old(k)*(zint(icol,k)-zint(icol,k+1))*km_to_cm
-                           ! write(iulog,*)'kzm_level ',k, 'old emis ', frcing_vertical_plume_old(k)
-                         !enddo
                          ! redistrict the emission
+                         
                          do k = 1,pver
                             ! option: release all emission into plume top layer
                             if (k == ph_z(icol)) then
-                               frcing_vertical_plume_new(k) =  frcing_col_plume/(abs(zint(icol,k)-zint(icol,k+1))*km_to_cm)
+                               frcing_col_plume = frcing_col_plume_bc_memory(icol)  
+                               if (forcings(m)%species == 'bc_a4')then
+                                  frcing_vertical_plume_new(k) =  frcing_col_plume/(abs(zint(icol,k)-zint(icol,k+1))*km_to_cm)
+                                  frcing_vertical_plume_new(k) =  frcing_vertical_plume_new(k)*ef_bc_a4
+                                  if (diag_run_plumerise) then
+                                     write(iulog,*) 'kzm_bc_a4_emis_at_layer ', k, frcing_vertical_plume_new(k)
+                                  endif
+                               elseif (forcings(m)%species == 'pom_a4' .or. forcings(m)%species == 'brc_a4')then
+                                  frcing_vertical_plume_new(k) =  frcing_col_plume/(abs(zint(icol,k)-zint(icol,k+1))*km_to_cm)
+                                  frcing_vertical_plume_new(k) =  frcing_vertical_plume_new(k)*ef_oc_a4
+                                  if (diag_run_plumerise) then
+                                     write(iulog,*) 'kzm_oc_a4_emis_at_layer ', k, frcing_vertical_plume_new(k)
+                                  endif
+                               elseif (forcings(m)%species == 'num_a4')then
+                                  frcing_vertical_plume_new(k) =  frcing_col_plume/(abs(zint(icol,k)-zint(icol,k+1))*km_to_cm) 
+                                  frcing_vertical_plume_new(k) =  frcing_vertical_plume_new(k)*ef_bc_a4/coef_bc + &
+                                                                  frcing_vertical_plume_new(k)*ef_oc_a4/coef_pom
+                                  if (diag_run_plumerise) then
+                                     write(iulog,*) 'kzm_num_a4_emis_at_layer ', k, frcing_vertical_plume_new(k)
+                                  endif
+                               endif
                             else
                                frcing_vertical_plume_new(k) =  0.0_r8 
                             endif                               
@@ -591,36 +732,36 @@ contains
        enddo
        xfcname = trim(forcings(m)%species)//'_CLXF'
        call outfld( xfcname, frcing_col(:ncol), ncol, lchnk )
-
-       ! output plume heights and environment
+       
+    end do src_loop2
+    ! output plume heights and environment
        if (plumerise)then
          call outfld( 'plume_height_EM', plume_height_EM, ncol, lchnk )
          call outfld( 'heat_flux_plume', heat_flux_plume, ncol, lchnk )
-         call outfld('zmidr_ph', zmidr(:ncol,:), ncol, lchnk) 
-         call outfld('pmid_ph', pmid(:ncol,:), ncol, lchnk) 
-         call outfld('tfld_ph', tfld(:ncol,:), ncol, lchnk) 
-         call outfld('relhum_ph', relhum(:ncol,:), ncol, lchnk) 
+         call outfld( 'burned_area', burnedarea_plume, ncol, lchnk )
+         call outfld('zmidr_ph', zmidr(:ncol,:), ncol, lchnk)
+         call outfld('pmid_ph', pmid(:ncol,:), ncol, lchnk)
+         call outfld('tfld_ph', tfld(:ncol,:), ncol, lchnk)
+         call outfld('relhum_ph', relhum(:ncol,:), ncol, lchnk)
          call outfld('qh2o_ph', qh2o(:ncol,:), ncol, lchnk)
          call outfld('ufld_ph', ufld(:ncol,:), ncol, lchnk)
-         call outfld('vfld_ph', vfld(:ncol,:), ncol, lchnk) 
-         call outfld('wt_ini_e3sm_out', wt_ini_e3sm_out(:ncol,:), ncol, lchnk) 
-         call outfld('t_ini_e3sm_out', t_ini_e3sm_out(:ncol,:), ncol, lchnk) 
-         call outfld('wt_end_e3sm_out', wt_end_e3sm_out(:ncol,:), ncol, lchnk) 
-         call outfld('t_end_e3sm_out', t_end_e3sm_out(:ncol,:), ncol, lchnk) 
-         call outfld('rbuoy_ini_e3sm_out', rbuoy_ini_e3sm_out(:ncol,:), ncol, lchnk) 
-         call outfld('rbuoy_end_e3sm_out', rbuoy_end_e3sm_out(:ncol,:), ncol, lchnk) 
-         
-       endif 
-       
-    end do src_loop
+         call outfld('vfld_ph', vfld(:ncol,:), ncol, lchnk)
+         call outfld('wt_ini_e3sm_out', wt_ini_e3sm_out(:ncol,:), ncol, lchnk)
+         call outfld('t_ini_e3sm_out', t_ini_e3sm_out(:ncol,:), ncol, lchnk)
+         call outfld('wt_end_e3sm_out', wt_end_e3sm_out(:ncol,:), ncol, lchnk)
+         call outfld('t_end_e3sm_out', t_end_e3sm_out(:ncol,:), ncol, lchnk)
+         call outfld('rbuoy_ini_e3sm_out', rbuoy_ini_e3sm_out(:ncol,:), ncol, lchnk)
+         call outfld('rbuoy_end_e3sm_out', rbuoy_end_e3sm_out(:ncol,:), ncol, lchnk)
+
+       endif
 
   end subroutine extfrc_set
 
 ! subroutines for plumerise
   subroutine cal_plume_height( plume_height,zmidr_v, pmid_v, tfld_v, relhum_v, qh2o_v, &
-                               ufld_v, vfld_v,lat,lon,tl,pt_v,frp,frp4plume,&
+                               ufld_v, vfld_v,lat,lon,tl,pt_v,frp,burnedarea,frp4plume,&
                                wt_ini_e3sm_col, wt_end_e3sm_col, rbuoy_ini_e3sm_col, rbuoy_end_e3sm_col,&
-                               t_ini_e3sm_col,t_end_e3sm_col )
+                               t_ini_e3sm_col,t_end_e3sm_col,gridarea )
     use smk_plumerise, only : smk_pr_driver  
     !use time_manager,  only: get_curr_date
     implicit none
@@ -634,6 +775,7 @@ contains
     real(r8), intent(in)  ::   ufld_v(pver)            ! zonal velocity (m/s)
     real(r8), intent(in)  ::   vfld_v(pver)            ! meridional velocity (m/s)
     real(r8), intent(in)  ::   frp
+    real(r8), intent(in)  ::   burnedarea,gridarea
     real(r8), intent(out)  ::   frp4plume, tl
     real(r8), intent(out) ::  wt_ini_e3sm_col(pver), wt_end_e3sm_col(pver), & 
                               rbuoy_ini_e3sm_col(pver), rbuoy_end_e3sm_col(pver), &
@@ -665,7 +807,7 @@ contains
        env(7,:) = ufld_v(pver:1:-1)
        env(8,:) = vfld_v(pver:1:-1)
        !plume_height = 1000.0
-       gfed_area = 900.0_r8
+       !gfed_area = burnedarea/10000.0_r8
        !lat = 100.0
        !frp diurnal cycle based on Ke et al., 2021 (WTNA region diurnal cycle)
        !this cycle also similar to WRF-chem fire diurnal cycle used in Kumar et al., 2022
@@ -688,10 +830,12 @@ contains
           tl = tl + 24.0
        endif 
        if (emis_constrained_frp) then
-          frp4plume=frp*36.0_r8
-          gfed_area = 25.0_r8
+          frp4plume = frp
+          !frp4plume= frp*36.0_r8!80._r8
+          gfed_area = burnedarea/10000.0_r8
        else 
           frp4plume=frp_peak*(exp(-0.5*(tl-frp_h)*(tl-frp_h)/frp_sigma/frp_sigma)+frp_b) 
+          gfed_area=gridarea  
        endif
        call smk_pr_driver(plume_height , env, gfed_area, frp4plume, lat, &
             wt_ini_e3sm, wt_end_e3sm, rbuoy_ini_e3sm, rbuoy_end_e3sm,t_ini_e3sm,t_end_e3sm )
