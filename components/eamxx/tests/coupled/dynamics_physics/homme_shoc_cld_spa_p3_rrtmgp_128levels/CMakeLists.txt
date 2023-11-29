@@ -9,8 +9,8 @@ CreateDynamicsLib("theta-l_kokkos"  4   128   10)
 
 # Create the test
 CreateADUnitTest(${TEST_BASE_NAME}
-  LABELS dynamics shoc cld p3 rrtmgp physics
-  LIBS cld_fraction shoc nudging spa p3 scream_rrtmgp ${dynLibName} diagnostics
+  LABELS dynamics shoc cld p3 rrtmgp physics spa
+  LIBS cld_fraction shoc nudging spa p3 scream_rrtmgp ${dynLibName}
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
   FIXTURES_SETUP_INDIVIDUAL ${FIXTURES_BASE_NAME}
 )
@@ -82,7 +82,7 @@ CreateRange(MpiRanks ${TEST_RANK_START} ${TEST_RANK_END})
 
 CompareNCFilesFamily (
   TEST_META_NAME ${TEST_BASE_NAME}_npMPIRANKS_vs_np1
-  FILE_META_NAME ${TEST_BASE_NAME}_output.INSTANT.nsteps_x${NUM_STEPS}.npMPIRANKS.${RUN_T0}.nc
+  FILE_META_NAME ${TEST_BASE_NAME}_output.INSTANT.nsteps_x1.npMPIRANKS.${RUN_T0}.nc
   MAGIC_STRING "MPIRANKS"
   MAGIC_VALUES "${MpiRanks}"
   LABELS dynamics physics shoc cld p3 rrtmgp spa PEM
