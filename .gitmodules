@@ -83,3 +83,7 @@
 	path = externals/mam4xx
 	url = git@github.com:eagles-project/mam4xx.git
 
+[submodule "externals/cprnc"]
+	path = externals/cprnc
+	url = https://github.com/ESMCI/cprnc
+	branch = main
