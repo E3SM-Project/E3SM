@@ -249,6 +249,7 @@ contains
    use clubb_intr,          only: clubb_readnl
    use chemistry,           only: chem_readnl
    use lin_strat_chem,      only: linoz_readnl
+   use sfx_data,            only: sfx_data_readnl !(zhang73)
    use prescribed_volcaero, only: prescribed_volcaero_readnl
    use aerodep_flx,         only: aerodep_flx_readnl
    use solar_data,          only: solar_data_readnl
@@ -497,6 +498,7 @@ contains
    call modal_aer_opt_readnl(nlfilename)
    call chem_readnl(nlfilename)
    call linoz_readnl(nlfilename)
+   call sfx_data_readnl(nlfilename) !(zhang73)
    call prescribed_volcaero_readnl(nlfilename)
    call solar_data_readnl(nlfilename)
    call tropopause_readnl(nlfilename)
