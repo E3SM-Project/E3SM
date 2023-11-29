@@ -2234,6 +2234,7 @@ contains
 #endif
       do iCell = 1, nCells
          relativeVorticityCell(:,iCell) = 0.0_RKIND
+         divergence(:,iCell) = 0.0_RKIND
          invAreaCell1 = invAreaCell(iCell)
          kmin = minLevelCell(iCell)
          kmax = maxLevelCell(iCell)
