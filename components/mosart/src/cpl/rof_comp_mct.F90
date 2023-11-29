@@ -346,7 +346,7 @@ contains
        if (ierr > 0 )  &
           call shr_sys_abort( sub//' Error: fail to set to 0 seq_flds_x2r_fields ')
   ! also load initial data to moab tags, fill with some initial data
-       call rof_export_moab()
+       call rof_export_moab(EClock)
 
 !  endif HAVE_MOAB
 #endif
@@ -476,7 +476,7 @@ contains
     call rof_export_mct( r2x_r )
 #ifdef HAVE_MOAB
     ! Map roff data to MOAB datatype ; load fields/tags in MOAB from rtmCTL%runoff 
-    call rof_export_moab()
+    call rof_export_moab(EClock)
 #endif
     call t_stopf ('lc_rof_export')
 
@@ -1089,7 +1089,7 @@ contains
   end subroutine init_moab_rof
 
 
-subroutine rof_export_moab()
+subroutine rof_export_moab(EClock)
  ! copy 
      !---------------------------------------------------------------------------
     ! DESCRIPTION:
@@ -1102,6 +1102,7 @@ subroutine rof_export_moab()
    use iMOAB,  only       :  iMOAB_WriteMesh
    implicit none
    !
+   type(ESMF_Clock) , intent(inout) :: EClock    ! Input synchronization clock from driver
    ! LOCAL VARIABLES
    integer :: ni, n, nt, nliq, nfrz, lsz, ierr, ent_type
    logical,save :: first_time = .true.
@@ -1109,6 +1110,7 @@ subroutine rof_export_moab()
 
    character*100 outfile, wopts, localmeshfile, lnum
    character(CXX) :: tagname
+   integer :: cur_rof_stepno
    !---------------------------------------------------------------------------
    nliq = 0
     nfrz = 0
@@ -1195,9 +1197,9 @@ subroutine rof_export_moab()
    ierr = iMOAB_SetDoubleTagStorage ( mrofid, tagname, totalmbls , ent_type, r2x_rm(1,1) )
    if (ierr > 0 )  &
       call shr_sys_abort( sub//' Error: fail to set moab '// trim(seq_flds_r2x_fields) )
-
+   call seq_timemgr_EClockGetData( EClock, stepno=cur_rof_stepno )
 #ifdef MOABDEBUG
-      write(lnum,"(I0.2)")num_moab_exports
+      write(lnum,"(I0.2)")cur_rof_stepno
       outfile = 'wholeRof_'//trim(lnum)//'.h5m'//C_NULL_CHAR
       wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
       ierr = iMOAB_WriteMesh(mrofid, outfile, wopts)

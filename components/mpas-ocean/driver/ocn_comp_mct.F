@@ -847,7 +847,7 @@ contains
     endif
 #ifdef HAVE_MOAB
     ! initial state has to be exported to moab too
-    call ocn_export_moab()
+    call ocn_export_moab(EClock)
 #endif
     ! Setup clock for initial runs
     if (runtype == "continue" .or. runtype == "branch" ) then
@@ -1307,7 +1307,7 @@ contains
       call ocn_export_mct(o2x_o, ierr)
       if (debugOn) call mpas_log_write('Finished exporting ocean state')
 #ifdef HAVE_MOAB
-      call ocn_export_moab()
+      call ocn_export_moab(EClock)
 #endif
       call check_clocks_sync(domain % clock, Eclock, ierr)
 
@@ -3952,7 +3952,7 @@ contains
 
  end subroutine ocn_import_moab!}}}
 
-   subroutine ocn_export_moab()   !{{{
+   subroutine ocn_export_moab(EClock)   !{{{
 
       ! !DESCRIPTION:
    !  This routine calls the routines necessary to send mpas ocean fields to MOAB coupler
@@ -3960,15 +3960,12 @@ contains
      use iMOAB,  only       : iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
      !EOP
      !BOC
-     !-----------------------------------------------------------------------
-     !
-     !  local variables
-      !-----------------------------------------------------------------------
+      type(ESMF_Clock) , intent(inout) :: EClock    ! Input synchronization clock from driver
       !
       !  local variables
       !
       !-----------------------------------------------------------------------
-      integer :: ent_type, ierr
+      integer :: ent_type, ierr, cur_ocn_stepno
       character(len=100) :: outfile, wopts, localmeshfile, lnum
       character(CXX) :: tagname
 
@@ -4217,8 +4214,9 @@ contains
       endif
    !-----------------------------------------------------------------------
    !EOC
+      call seq_timemgr_EClockGetData( EClock, stepno=cur_ocn_stepno )
 #ifdef MOABDEBUG
-      write(lnum,"(I0.2)")num_moab_exports
+      write(lnum,"(I0.2)")cur_ocn_stepno
       outfile = 'ocn_export_'//trim(lnum)//'.h5m'//C_NULL_CHAR
       wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
       ierr = iMOAB_WriteMesh(MPOID, outfile, wopts)

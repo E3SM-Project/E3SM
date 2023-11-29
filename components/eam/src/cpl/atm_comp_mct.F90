@@ -442,7 +442,7 @@ CONTAINS
        !
        ! Create initial atm export state inside moab 
        !
-       call atm_export_moab( cam_out )
+       call atm_export_moab(Eclock, cam_out )
 
 #endif
 
@@ -501,7 +501,7 @@ CONTAINS
         
           call atm_export( cam_out, a2x_a%rattr )
 #ifdef HAVE_MOAB
-          call atm_export_moab(cam_out)
+          call atm_export_moab(Eclock, cam_out)
 #endif   
        else ! if (StepNo != 0) then
 
@@ -735,7 +735,7 @@ CONTAINS
     ! call method to set all seq_flds_a2x_fields  on phys grid point cloud;
     ! it will be moved then to Atm Spectral mesh on coupler ; just to show how to move it to atm spectral
     ! on coupler
-       call atm_export_moab(cam_out)
+       call atm_export_moab(Eclock, cam_out)
 
 #endif
        call t_stopf ('CAM_export')
@@ -1593,7 +1593,7 @@ CONTAINS
 
   end subroutine init_moab_atm_phys
 
-  subroutine atm_export_moab(cam_out)
+  subroutine atm_export_moab(Eclock, cam_out)
   !-------------------------------------------------------------------
     use camsrfexch, only: cam_out_t
     use phys_grid , only: get_ncols_p, get_nlcols_p
@@ -1605,14 +1605,17 @@ CONTAINS
     !
     ! Arguments
     !
+    type(ESMF_Clock),intent(inout) :: EClock
     type(cam_out_t), intent(in)    :: cam_out(begchunk:endchunk)
 
     integer tagtype, numco, ent_type
-    character*100 outfile, wopts, lnum
     character(CXX) ::  tagname ! 
 
     integer ierr, c, nlcols, ig, i, ncols
+    integer  :: cur_atm_stepno
+
 #ifdef MOABDEBUG
+    character*100 outfile, wopts, lnum
     integer, save :: local_count = 0
     character*100 lnum2
 #endif 
@@ -1683,8 +1686,9 @@ CONTAINS
     if ( ierr > 0) then
       call endrun('Error: fail to set  seq_flds_a2x_fields for atm physgrid moab mesh')
     endif
+    call seq_timemgr_EClockGetData( EClock, stepno=cur_atm_stepno )
 #ifdef MOABDEBUG
-    write(lnum,"(I0.2)")num_moab_exports
+    write(lnum,"(I0.2)")cur_atm_stepno
     local_count = local_count + 1
     write(lnum2,"(I0.2)")local_count
     outfile = 'AtmPhys_'//trim(lnum)//'_'//trim(lnum2)//'.h5m'//C_NULL_CHAR

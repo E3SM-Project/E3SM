@@ -14,6 +14,7 @@ module lnd_comp_mct
   use lnd_import_export
   use iso_c_binding
   use elm_cpl_indices
+  use esmf, only: ESMF_clock
 
 #ifdef HAVE_MOAB
   use seq_comm_mct,       only: mlnid! id of moab land app
@@ -366,7 +367,7 @@ contains
       call lnd_export(bounds, lnd2atm_vars, lnd2glc_vars, l2x_l%rattr)
 #ifdef HAVE_MOAB
 !     Also send data through the MOAB path in driver-moab
-      call lnd_export_moab(bounds, lnd2atm_vars, lnd2glc_vars) ! it is private here
+      call lnd_export_moab(EClock, bounds, lnd2atm_vars, lnd2glc_vars) ! it is private here
 #endif
     endif
 
@@ -560,7 +561,7 @@ contains
 
 #endif
 ! calling MOAB's import last means this is what the model will use.
-    call lnd_import_moab( bounds, atm2lnd_vars, glc2lnd_vars)
+    call lnd_import_moab( EClock, bounds, atm2lnd_vars, glc2lnd_vars)
 #endif
 
     call t_stopf ('lc_lnd_import')
@@ -622,7 +623,7 @@ contains
        call t_startf ('lc_lnd_export')
        call lnd_export(bounds, lnd2atm_vars, lnd2glc_vars, l2x_l%rattr)
 #ifdef HAVE_MOAB
-       call lnd_export_moab(bounds, lnd2atm_vars, lnd2glc_vars) ! it is private here
+       call lnd_export_moab(EClock, bounds, lnd2atm_vars, lnd2glc_vars) ! it is private here
 #endif
        call t_stopf ('lc_lnd_export')
 #endif
@@ -1132,7 +1133,7 @@ contains
 
   end subroutine init_moab_land
 
-  subroutine lnd_export_moab( bounds, lnd2atm_vars, lnd2glc_vars)
+  subroutine lnd_export_moab(EClock, bounds, lnd2atm_vars, lnd2glc_vars)
 
     !---------------------------------------------------------------------------
     ! !DESCRIPTION:
@@ -1148,9 +1149,11 @@ contains
     use shr_megan_mod      , only : shr_megan_mechcomps_n
     use iMOAB,  only       : iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
     use seq_flds_mod, only : seq_flds_l2x_fields
+    use seq_timemgr_mod, only : seq_timemgr_eclockgetdata
     !
     ! !ARGUMENTS:
-    implicit none
+    !implicit none
+    type(ESMF_Clock),   intent(inout) :: EClock
     type(bounds_type) , intent(in)    :: bounds  ! bounds
     type(lnd2atm_type), intent(inout) :: lnd2atm_vars ! clm land to atmosphere exchange data type
     type(lnd2glc_type), intent(inout) :: lnd2glc_vars ! clm land to atmosphere exchange data type
@@ -1163,7 +1166,7 @@ contains
     integer  :: num   ! counter
     character(len=*), parameter :: sub = 'lnd_export_moab'
 
-    integer :: ent_type, ierr
+    integer :: ent_type, ierr, cur_lnd_stepno
     character(len=100) :: outfile, wopts, lnum
     character(CXX) :: tagname
     !---------------------------------------------------------------------------
@@ -1260,9 +1263,10 @@ contains
     ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, totalmbls , ent_type, l2x_lm(1,1) )
     if (ierr > 0 )  &
        call shr_sys_abort( sub//' Error: fail to set moab l2x '// trim(seq_flds_l2x_fields) )
- 
+
+    call seq_timemgr_EClockGetData( EClock, stepno=cur_lnd_stepno )
 #ifdef MOABDEBUG
-       write(lnum,"(I0.2)")num_moab_exports
+       write(lnum,"(I0.2)")cur_lnd_stepno
        outfile = 'lnd_export_'//trim(lnum)//'.h5m'//C_NULL_CHAR
        wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
        ierr = iMOAB_WriteMesh(mlnid, outfile, wopts)
@@ -1278,13 +1282,13 @@ contains
   ! the order of tags given by seq_flds_x2l_fields 
 
   !===============================================================================
-  subroutine lnd_import_moab( bounds, atm2lnd_vars, glc2lnd_vars)
+  subroutine lnd_import_moab(EClock, bounds, atm2lnd_vars, glc2lnd_vars)
 
     !---------------------------------------------------------------------------
     ! !DESCRIPTION:
     ! Convert the input data from the moab coupler to the land model 
     use seq_flds_mod     , only :  seq_flds_l2x_fields, seq_flds_x2l_fields
-    use iMOAB,  only       : iMOAB_GetDoubleTagStorage
+    use iMOAB,  only       : iMOAB_GetDoubleTagStorage, iMOAB_WriteMesh
     use shr_kind_mod     , only : CXX => SHR_KIND_CXX
     ! !USES:
     use elm_varctl       , only: co2_type, co2_ppmv, iulog, use_c13, create_glacier_mec_landunit, &
@@ -1300,9 +1304,11 @@ contains
     use fileutils        , only: getavu, relavu
     use spmdmod          , only: masterproc, mpicom, iam, npes, MPI_REAL8, MPI_INTEGER, MPI_STATUS_SIZE
     use elm_nlUtilsMod   , only : find_nlgroup_name
+    use seq_timemgr_mod, only : seq_timemgr_eclockgetdata
     use netcdf
     !
     ! !ARGUMENTS:
+    type(ESMF_Clock),    intent(inout) :: EClock
     type(bounds_type)  , intent(in)    :: bounds   ! bounds
     type(atm2lnd_type) , intent(inout) :: atm2lnd_vars      ! clm internal input data type
     type(glc2lnd_type) , intent(inout) :: glc2lnd_vars      ! clm internal input data type
@@ -1374,6 +1380,10 @@ contains
 ! moab extra stuff 
     character(CXX) ::  tagname ! hold all fields names
     integer        :: ent_type  ! for setting data 
+    integer        :: cur_lnd_stepno
+#ifdef MOABDEBUG
+    character*100 outfile, wopts, lnum
+#endif
 
     data caldaym / 1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366 /    
 
@@ -1431,6 +1441,16 @@ contains
        call endrun( sub//' ERROR: must have nonzero index_x2l_Sa_co2diag for co2_type equal to diagnostic' )
     end if
 
+
+    call seq_timemgr_EClockGetData( EClock, stepno=cur_lnd_stepno )
+#ifdef MOABDEBUG
+    write(lnum,"(I0.2)")cur_lnd_stepno
+    outfile = 'LndImp_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+    wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
+    ierr = iMOAB_WriteMesh(mlnid, outfile, wopts)
+    if (ierr > 0 )  &
+      call endrun('Error: fail to write the moab lnd mesh before import ')
+#endif
     tagname=trim(seq_flds_x2l_fields)//C_NULL_CHAR
     if (samegrid_al) then
       ent_type = 0 ! vertices, cells only if samegrid_al false

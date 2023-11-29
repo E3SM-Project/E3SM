@@ -814,7 +814,7 @@ contains
        call mpas_log_write('Error in ice_export_mct', MPAS_LOG_CRIT)
     endif
 #ifdef HAVE_MOAB
-    call ice_export_moab()
+    call ice_export_moab(EClock)
 #endif
 
     call t_stopf ('mpassi_mct_init')
@@ -1315,7 +1315,7 @@ contains
       if (debugOn) call mpas_log_write('Exporting state', masterOnly=.true.)
       call ice_export_mct(i2x_i, ierr)
 #ifdef HAVE_MOAB
-      call ice_export_moab()
+      call ice_export_moab(EClock)
 #endif
       if (debugOn) call mpas_log_write('Finished exporting state', masterOnly=.true.)
 
@@ -2989,7 +2989,7 @@ contains
    end subroutine datetime!}}}
 
 #ifdef HAVE_MOAB
-   subroutine ice_export_moab()
+   subroutine ice_export_moab(EClock)
 !BOP
 
    ! !DESCRIPTION:
@@ -2998,6 +2998,7 @@ contains
      use iMOAB,  only       : iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
    !EOP
    !BOC
+   type(ESMF_Clock) , intent(inout) :: EClock    ! Input synchronization clock from driver
    !-----------------------------------------------------------------------
    !
    !  local variables
@@ -3099,7 +3100,7 @@ contains
          oceanParticulateIronFlux,    &
          oceanDissolvedIronFlux
 
-      integer :: ent_type, ierr
+      integer :: ent_type, ierr, cur_ice_stepno
       character(len=32), parameter :: sub = 'ice_export_moab'
    
       character(len=100) :: outfile, wopts, localmeshfile, lnum
@@ -3333,9 +3334,9 @@ contains
          write(iceLogUnit,*) 'Fail to set MOAB fields '
       endif
       
-
+      call seq_timemgr_EClockGetData( EClock, stepno=cur_ice_stepno )
 #ifdef MOABDEBUG
-      write(lnum,"(I0.2)")num_moab_exports
+      write(lnum,"(I0.2)")cur_ice_stepno
       outfile = 'ice_export_'//trim(lnum)//'.h5m'//C_NULL_CHAR
       wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
       ierr = iMOAB_WriteMesh(MPSIID, outfile, wopts)
