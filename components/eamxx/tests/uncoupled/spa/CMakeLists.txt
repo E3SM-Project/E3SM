@@ -17,9 +17,9 @@ set (ATM_TIME_STEP 864000)
 set (RUN_T0 2021-10-12-45000)
 
 ## Copy (and configure) yaml files needed by tests
-CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/input.yaml)
-CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/output.yaml
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/output.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/output.yaml)
 
 # Ensure test input files are present in the data dir
@@ -33,15 +33,12 @@ foreach (file IN ITEMS ${TEST_INPUT_FILES})
 endforeach()
 
 # Compare output files produced by npX tests, to ensure they are bfb
-include (CompareNCFilesFamily)
+include (CompareNCFiles)
 
-CreateRange(MpiRanks ${TEST_RANK_START} ${TEST_RANK_END})
-
-CompareNCFilesFamily (
-  TEST_META_NAME ${TEST_BASE_NAME}_npMPIRANKS_vs_np1
+CompareNCFilesFamilyMpi (
+  TEST_BASE_NAME ${TEST_BASE_NAME}
   FILE_META_NAME ${TEST_BASE_NAME}_output.INSTANT.nsteps_x1.npMPIRANKS.${RUN_T0}.nc
-  MAGIC_STRING "MPIRANKS"
-  MAGIC_VALUES "${MpiRanks}"
-  LABELS spa physics PEM
-  FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_np1_omp1
-                    ${FIXTURES_BASE_NAME}_npMPIRANKS_omp1)
+  MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
+  LABELS spa physics
+  META_FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_npMPIRANKS_omp1
+)

@@ -46,18 +46,15 @@ if (NOT SCREAM_BASELINES_ONLY)
   )
 
   # Compare output files produced by npX tests, to ensure they are bfb
-  include (CompareNCFilesFamily)
+  include (CompareNCFiles)
 
-  CreateRange(MpiRanks ${TEST_RANK_START} ${TEST_RANK_END})
-
-  CompareNCFilesFamily (
-    TEST_META_NAME ${TEST_BASE_NAME}_not_chunked_npMPIRANKS_vs_np1
+  CompareNCFilesFamilyMpi (
+    TEST_BASE_NAME ${TEST_BASE_NAME}_not_chunked
     FILE_META_NAME ${TEST_BASE_NAME}_output_not_chunked.INSTANT.nsteps_x${NUM_STEPS}.npMPIRANKS.${RUN_T0}.nc
-    MAGIC_STRING "MPIRANKS"
-    MAGIC_VALUES "${MpiRanks}"
-    LABELS rrtmgp physics PEM
-    FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_not_chunked_np1_omp1
-                      ${FIXTURES_BASE_NAME}_not_chunked_npMPIRANKS_omp1)
+    MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
+    LABELS rrtmgp physics
+    META_FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_not_chunked_npMPIRANKS_omp1
+  )
 
 
   ## Test chunked version (only for ${TEST_RANK_END}) and compare against non-chunked
@@ -81,11 +78,10 @@ if (NOT SCREAM_BASELINES_ONLY)
       PROPERTIES PASS_REGULAR_EXPRESSION "(beg.end: 0, ${COL_CHUNK_SIZE})"
   )
 
-  CompareNCFilesFamily (
-    TEST_META_NAME ${TEST_BASE_NAME}_CHUNK_TYPE_vs_not_chunked
-    FILE_META_NAME ${TEST_BASE_NAME}_output_CHUNK_TYPE.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_END}.${RUN_T0}.nc
-    MAGIC_STRING "CHUNK_TYPE"
-    MAGIC_VALUES chunked not_chunked 
+  CompareNCFiles(
+    TEST_NAME ${TEST_BASE_NAME}_chunked_vs_not_chunked
+    SRC_FILE ${TEST_BASE_NAME}_output_chunked.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_END}.${RUN_T0}.nc
+    TGT_FILE ${TEST_BASE_NAME}_output_not_chunked.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_END}.${RUN_T0}.nc
     LABELS rrtmgp physics
     FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_chunked_np${TEST_RANK_END}_omp1
                       ${FIXTURES_BASE_NAME}_not_chunked_np${TEST_RANK_END}_omp1)

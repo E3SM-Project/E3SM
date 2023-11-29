@@ -78,15 +78,12 @@ foreach (file IN ITEMS ${TEST_INPUT_FILES})
 endforeach()
 
 # Compare output files produced by npX tests, to ensure they are bfb
-include (CompareNCFilesFamily)
+include (CompareNCFiles)
 
-CreateRange(MpiRanks ${TEST_RANK_START} ${TEST_RANK_END})
-
-CompareNCFilesFamily (
-  TEST_META_NAME ${TEST_BASE_NAME}_npMPIRANKS_vs_np1
+CompareNCFilesFamilyMpi (
+  TEST_BASE_NAME ${TEST_BASE_NAME}
   FILE_META_NAME ${TEST_BASE_NAME}_output.INSTANT.nsteps_x${NUM_STEPS}.npMPIRANKS.${RUN_T0}.nc
-  MAGIC_STRING "MPIRANKS"
-  MAGIC_VALUES "${MpiRanks}"
-  LABELS dynamics physics shoc cld p3 rrtmgp spa PEM
-  FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_np1_omp1
-                    ${FIXTURES_BASE_NAME}_npMPIRANKS_omp1)
+  MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
+  LABELS dynamics physics shoc cld p3 rrtmgp spa
+  META_FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_npMPIRANKS_omp1
+)
