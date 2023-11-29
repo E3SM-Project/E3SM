@@ -63,7 +63,6 @@ def determine_tick_step(degrees_covered):
 def plot_panel_map(
     n, fig, proj, var, clevels, cmap, title, parameter, conf=None, stats={}
 ):
-
     var = add_cyclic(var)
     lon = var.getLongitude()
     lat = var.getLatitude()
@@ -330,7 +329,7 @@ def plot_map(
             subpage = np.array(p).reshape(2, 2)
             subpage[1, :] = subpage[0, :] + subpage[1, :]
             subpage = subpage + np.array(border).reshape(2, 2)
-            subpage = list(((subpage) * page).flatten())
+            subpage = list(((subpage) * page).flatten())  # type: ignore
             extent = matplotlib.transforms.Bbox.from_extents(*subpage)
             # Save subplot
             subplot_suffix = ".%i." % (i) + f

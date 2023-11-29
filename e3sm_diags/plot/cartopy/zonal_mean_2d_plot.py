@@ -46,7 +46,6 @@ def get_ax_size(fig, ax):
 
 
 def plot_panel(n, fig, proj, var, clevels, cmap, title, parameters, stats=None):
-
     #    var_min = float(var.min())
     #    var_max = float(var.max())
     #    var_mean = cdutil.averager(var, axis='xy', weights='generate')
@@ -187,7 +186,6 @@ def plot_panel(n, fig, proj, var, clevels, cmap, title, parameters, stats=None):
 
 
 def plot(reference, test, diff, metrics_dict, parameter):
-
     # Create figure, projection
     fig = plt.figure(figsize=parameter.figsize, dpi=parameter.dpi)
     # proj = ccrs.PlateCarree(central_longitude=180)
@@ -277,7 +275,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
             subpage = np.array(p).reshape(2, 2)
             subpage[1, :] = subpage[0, :] + subpage[1, :]
             subpage = subpage + np.array(border).reshape(2, 2)
-            subpage = list(((subpage) * page).flatten())
+            subpage = list(((subpage) * page).flatten())  # type: ignore
             extent = matplotlib.transforms.Bbox.from_extents(*subpage)
             # Save subplot
             fname = fnm + ".%i." % (i) + f

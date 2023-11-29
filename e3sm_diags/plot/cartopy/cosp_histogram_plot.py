@@ -39,7 +39,6 @@ def get_ax_size(fig, ax):
 
 
 def plot_panel(n, fig, _, var, clevels, cmap, title, parameters, stats=None):
-
     # Contour levels
     levels = None
     norm = None
@@ -170,7 +169,6 @@ def plot_panel(n, fig, _, var, clevels, cmap, title, parameters, stats=None):
 
 
 def plot(reference, test, diff, _, parameter):
-
     # Create figure, projection
     fig = plt.figure(figsize=parameter.figsize, dpi=parameter.dpi)
 
@@ -251,7 +249,7 @@ def plot(reference, test, diff, _, parameter):
             subpage = np.array(p).reshape(2, 2)
             subpage[1, :] = subpage[0, :] + subpage[1, :]
             subpage = subpage + np.array(border).reshape(2, 2)
-            subpage = list(((subpage) * page).flatten())
+            subpage = list(((subpage) * page).flatten())  # type: ignore
             extent = matplotlib.transforms.Bbox.from_extents(*subpage)
             # Save subplot
             fname = fnm + ".%i." % (i) + f

@@ -133,12 +133,8 @@ def run_diag(parameter: CoreParameter) -> CoreParameter:
 
                 # Select plev.
                 for ilev in range(len(plev)):
-                    mv1 = mv1_p[
-                        ilev,
-                    ]
-                    mv2 = mv2_p[
-                        ilev,
-                    ]
+                    mv1 = mv1_p[ilev,]
+                    mv2 = mv2_p[ilev,]
 
                     for region in regions:
                         logger.info("Selected region: {}".format(region))

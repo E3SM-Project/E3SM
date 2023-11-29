@@ -293,7 +293,7 @@ def save_transient_variables_to_netcdf(set_num, variables_dict, label, parameter
     Save the transient variables to nc file.
     """
     if parameter.save_netcdf:
-        for (variable_name, variable) in variables_dict.items():
+        for variable_name, variable in variables_dict.items():
             # Set cdms preferences - no compression, no shuffling, no complaining
             cdms2.setNetcdfDeflateFlag(1)
             # 1-9, min to max - Comes at heavy IO (read/write time cost)

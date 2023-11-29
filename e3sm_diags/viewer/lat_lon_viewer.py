@@ -253,7 +253,6 @@ def _create_lat_lon_table_index(
 
 # --- Function to read CMIP6 model metrics  ---
 def read_cmip6_metrics_from_csv(path, variables, seasons):
-
     models = []
 
     with open(path, "r") as fin:
@@ -292,7 +291,6 @@ def read_cmip6_metrics_from_csv(path, variables, seasons):
 
 # --- Function to read E3SM Diags metrics  ---
 def read_e3sm_diags_metrics(path, variables, seasons, names=None):
-
     # List of available models
     models = []
     paths = []
@@ -674,7 +672,6 @@ def _create_csv_from_dict_taylor_diag(
         # Add samples for baseline simulation.
 
         if run_type == "model_vs_obs":
-
             # Read the control run data.
             # Example base line csv file name: JJA_metrics_table_taylor_diag_historical_1985-2014_E3SMv1.csv
             for ibase, base_line_csv_path in enumerate(base_line_csv_paths):

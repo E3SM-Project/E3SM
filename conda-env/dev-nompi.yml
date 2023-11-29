@@ -1,5 +1,9 @@
 # Conda development environment for testing local source code changes to `e3sm_diags` before merging them to production (`master` branch).
-name: e3sm_diags_dev
+# This version contains the no MPI version of `esmf` as a workaround for allowing VS Code's testing API to work.
+# The MPI version of `esmf` is usually installed by default, but it breaks VS Code's testing API because it throws a mysterious
+# `yaksa` warning.
+# More info: https://github.com/E3SM-Project/e3sm_diags/issues/737
+name: e3sm_diags_dev_nompi
 channels:
   - conda-forge
   - defaults
@@ -15,6 +19,7 @@ dependencies:
   - cdms2 3.1.5
   - cdutil 8.2.1
   - dask
+  - esmf >=8.4.0 nompi*
   - esmpy >=8.4.0
   - genutil 8.2.1
   - lxml

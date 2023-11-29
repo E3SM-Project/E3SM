@@ -126,7 +126,7 @@ def plot(var, regions_to_data, parameter):
             subpage = np.array(p).reshape(2, 2)
             subpage[1, :] = subpage[0, :] + subpage[1, :]
             subpage = subpage + np.array(border).reshape(2, 2)
-            subpage = list(((subpage) * page).flatten())
+            subpage = list(((subpage) * page).flatten())  # type: ignore
             extent = matplotlib.transforms.Bbox.from_extents(*subpage)
             # Save subplot
             fname = fnm + ".%i." % (i) + f

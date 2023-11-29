@@ -227,7 +227,7 @@ class Run:
 
         for cls_type in class_types:
             for p in parameters:
-                if type(p) == cls_type:
+                if isinstance(p, cls_type):
                     return p
 
         msg = "There's weren't any class of types {} in your parameters."

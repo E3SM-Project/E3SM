@@ -265,9 +265,9 @@ def _get_vars_from_te_stitch(
             vars_dict["yearmc"][k - 1, index - 1] = float(line_split[6])
             vars_dict["monthmc"][k - 1, index - 1] = float(line_split[7])
 
-    vars_dict["year_start"] = year_start
-    vars_dict["year_end"] = year_end
-    vars_dict["num_years"] = year_end - year_start + 1
+    vars_dict["year_start"] = year_start  # type: ignore
+    vars_dict["year_end"] = year_end  # type: ignore
+    vars_dict["num_years"] = year_end - year_start + 1  # type: ignore
     logger.info(
         f"TE Start Year: {vars_dict['year_start']}, TE End Year: {vars_dict['year_end']}, Total Years: {vars_dict['num_years']}"
     )
@@ -340,7 +340,6 @@ def _derive_metrics_per_basin(
             and lat[0] > basin_info[3]
             and lat[0] < basin_info[4]
         ):
-
             mod_num_ocn = mod_num_ocn + 1
             mod_mon.append(mon[0])
             mod_wnd.append(np.max(wind))
@@ -491,7 +490,7 @@ def _calc_mean_ace(vsmc: "MaskedArray", yearic: np.ndarray, num_rows: int) -> fl
                 wind_ts = wind[wind >= 35]
                 ace[i] = ace[i] + np.sum(wind_ts**2) / 1e4
 
-    return np.mean(ace)
+    return np.mean(ace)  # type: ignore
 
 
 def _calc_ts_intensity_dist(wind_speeds: List[int]) -> np.ndarray:

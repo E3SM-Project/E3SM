@@ -1,15 +1,21 @@
+"""The complete E3SM Diagnostic run.
+
+Due to the large amount of data required to run, this test will be run manually
+on Anvil (rather than as part of the CI tests).
+
+Run the following first:
+  - srun --pty --nodes=1 --time=01:00:00 /bin/bash
+  - source /lcrc/soft/climate/e3sm-unified/load_latest_e3sm_unified_chrysalis.sh
+  - Or: source /lcrc/soft/climate/e3sm-unified/load_latest_e3sm_unified_anvil.sh
+"""
 import os
-import unittest
 
 # This test should be run with the latest E3SM Diags tutorial code.
 from examples.run_v2_6_0_all_sets_E3SM_machines import run_lcrc
-from tests.integration.test_diags import compare_images
-
-# Due to the large amount of data required to run, this test will be run manually on Anvil
-# (rather than as part of the CI tests).
+from tests.integration.test_diags import _compare_images
 
 
-class TestCompleteRun(unittest.TestCase):
+class TestCompleteRun:
     def test_complete_run(self):
         actual_images_dir = run_lcrc(".")
 
@@ -25,20 +31,11 @@ class TestCompleteRun(unittest.TestCase):
                 path_to_actual_png = os.path.join(actual_images_dir, image_name)
                 path_to_expected_png = os.path.join(expected_images_dir, image_name)
 
-                compare_images(
-                    self,
+                mismatched_images = _compare_images(
                     mismatched_images,
                     image_name,
                     path_to_actual_png,
                     path_to_expected_png,
                 )
 
-        self.assertEqual(mismatched_images, [])
-
-
-if __name__ == "__main__":
-    # Run the following first:
-    # srun --pty --nodes=1 --time=01:00:00 /bin/bash
-    # source /lcrc/soft/climate/e3sm-unified/load_latest_e3sm_unified_chrysalis.sh
-    # Or: source /lcrc/soft/climate/e3sm-unified/load_latest_e3sm_unified_anvil.sh
-    unittest.main()
+        assert len(mismatched_images) == 0

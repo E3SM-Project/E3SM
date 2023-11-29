@@ -423,7 +423,6 @@ def run_diag_aerosol_activation(parameter: ARMDiagsParameter) -> ARMDiagsParamet
         logger.info("Selected region: {}".format(region))
         # Possible variables are ccn01, ccn02, ccn05
         for variable in variables:
-
             test_data = utils.dataset.Dataset(parameter, test=True)
 
             test_a_num = test_data.get_timeseries_variable("a_num", single_point=True)[
@@ -441,7 +440,6 @@ def run_diag_aerosol_activation(parameter: ARMDiagsParameter) -> ARMDiagsParamet
             )
 
             if "armdiags" in ref_name:
-
                 ref_file = os.path.join(
                     ref_path,
                     region[:3] + "armdiagsaciactivate" + region[3:5].upper() + ".c1.nc",
@@ -568,7 +566,6 @@ def run_diag_pdf_daily(parameter: ARMDiagsParameter):
 
 
 def run_diag(parameter: ARMDiagsParameter) -> ARMDiagsParameter:
-
     if parameter.diags_set == "annual_cycle":
         return run_diag_annual_cycle(parameter)
     elif parameter.diags_set == "diurnal_cycle":

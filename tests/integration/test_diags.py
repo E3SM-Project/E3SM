@@ -2,10 +2,12 @@ import os
 import re
 import shutil
 import subprocess
-import unittest
+from typing import List
 
+import pytest
 from PIL import Image, ImageChops, ImageDraw
 
+from e3sm_diags.logger import custom_logger
 from tests.integration.config import TEST_IMAGES_PATH, TEST_ROOT_PATH
 from tests.integration.utils import run_cmd_and_pipe_stderr
 
@@ -22,19 +24,40 @@ from tests.integration.utils import run_cmd_and_pipe_stderr
 # Set to False to place the results directory in tests/system
 CORI_WEB = False
 
+logger = custom_logger(__name__)
 
-def get_results_dir(output_list):
+
+@pytest.fixture(scope="module")
+def get_results_dir():
+    command = f"python {TEST_ROOT_PATH}/all_sets.py -d {TEST_ROOT_PATH}/all_sets.cfg"
+    stderr = run_cmd_and_pipe_stderr(command)
+
+    results_dir = _get_results_dir(stderr)
+    logger.info("results_dir={}".format(results_dir))
+
+    if CORI_WEB:
+        results_dir = _move_to_NERSC_webserver(
+            "/global/u1/f/(.*)/e3sm_diags",
+            "/global/cfs/cdirs/acme/www/{}",
+            results_dir,
+        )
+
+    return results_dir
+
+
+def _get_results_dir(stderr):
     """Given output from e3sm_diags_driver, extract the path to results_dir."""
-    for line in output_list:
+    for line in stderr:
         match = re.search("Viewer HTML generated at (.*)viewer.*.html", line)
         if match:
             results_dir = match.group(1)
             return results_dir
-    message = "No viewer directory listed in output: {}".format(output_list)
+
+    message = "No viewer directory listed in output: {}".format(stderr)
     raise RuntimeError(message)
 
 
-def move_to_web(machine_path_re_str, html_prefix_format_str, results_dir):
+def _move_to_NERSC_webserver(machine_path_re_str, html_prefix_format_str, results_dir):
     command = "git rev-parse --show-toplevel"
     top_level = subprocess.check_output(command.split()).decode("utf-8").splitlines()[0]
     match = re.search(machine_path_re_str, top_level)
@@ -43,10 +66,11 @@ def move_to_web(machine_path_re_str, html_prefix_format_str, results_dir):
     else:
         message = "Username could not be extracted from top_level={}".format(top_level)
         raise RuntimeError(message)
+
     html_prefix = html_prefix_format_str.format(username)
-    print("html_prefix={}".format(html_prefix))
+    logger.info("html_prefix={}".format(html_prefix))
     new_results_dir = "{}/{}".format(html_prefix, results_dir)
-    print("new_results_dir={}".format(new_results_dir))
+    logger.info("new_results_dir={}".format(new_results_dir))
     if os.path.exists(new_results_dir):
         command = "rm -r {}".format(new_results_dir)
         subprocess.check_output(command.split())
@@ -54,28 +78,16 @@ def move_to_web(machine_path_re_str, html_prefix_format_str, results_dir):
     subprocess.check_output(command.split())
     command = "chmod -R 755 {}".format(new_results_dir)
     subprocess.check_output(command.split())
+
     return new_results_dir
 
 
-def count_images(directory):
-    images = []
-    for root, _, filenames in os.walk(directory):
-        # download_data.py won't download files in the viewer directory
-        # because the webpage is more than a simple page of links.
-        if "viewer" not in root:
-            for file in filenames:
-                if file.endswith(".png"):
-                    images.append(file)
-    return len(images), images
-
-
-def compare_images(
-    test,
-    mismatched_images,
-    image_name,
-    path_to_actual_png,
-    path_to_expected_png,
-):
+def _compare_images(
+    mismatched_images: List[str],
+    image_name: str,
+    path_to_actual_png: str,
+    path_to_expected_png: str,
+) -> List[str]:
     # https://stackoverflow.com/questions/35176639/compare-images-python-pil
 
     actual_png = Image.open(path_to_actual_png).convert("RGB")
@@ -87,9 +99,9 @@ def compare_images(
         os.mkdir(diff_dir)
 
     bbox = diff.getbbox()
-    if not bbox:
-        # If `diff.getbbox()` is None, then the images are in theory equal
-        test.assertIsNone(diff.getbbox())
+    # If `diff.getbbox()` is None, then the images are in theory equal
+    if bbox is None:
+        pass
     else:
         # Sometimes, a few pixels will differ, but the two images appear identical.
         # https://codereview.stackexchange.com/questions/55902/fastest-way-to-count-non-zero-pixels-using-python-and-pillow
@@ -101,14 +113,15 @@ def compare_images(
             .getdata()
         )
         num_nonzero_pixels = sum(nonzero_pixels)
-        print("\npath_to_actual_png={}".format(path_to_actual_png))
-        print("path_to_expected_png={}".format(path_to_expected_png))
-        print("diff has {} nonzero pixels.".format(num_nonzero_pixels))
+        logger.info("\npath_to_actual_png={}".format(path_to_actual_png))
+        logger.info("path_to_expected_png={}".format(path_to_expected_png))
+        logger.info("diff has {} nonzero pixels.".format(num_nonzero_pixels))
         width, height = expected_png.size
         num_pixels = width * height
-        print("total number of pixels={}".format(num_pixels))
+        logger.info("total number of pixels={}".format(num_pixels))
         fraction = num_nonzero_pixels / num_pixels
-        print("num_nonzero_pixels/num_pixels fraction={}".format(fraction))
+        logger.info("num_nonzero_pixels/num_pixels fraction={}".format(fraction))
+
         # Fraction of mismatched pixels should be less than 0.02%
         if fraction >= 0.0002:
             mismatched_images.append(image_name)
@@ -131,25 +144,135 @@ def compare_images(
                 "PNG",
             )
 
+    return mismatched_images
 
-class TestAllSets(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        command = (
-            f"python {TEST_ROOT_PATH}/all_sets.py -d {TEST_ROOT_PATH}/all_sets.cfg"
+
+class TestAllSets:
+    @pytest.fixture(autouse=True)
+    def setup(self, get_results_dir):
+        self.results_dir = get_results_dir
+
+    def test_results_directory_ends_with_specific_directory(self):
+        assert self.results_dir.endswith("all_sets_results_test/")
+
+    def test_actual_images_produced_is_the_same_as_the_expected(self):
+        actual_num_images, actual_images = self._count_images_in_dir(
+            f"{TEST_ROOT_PATH}/all_sets_results_test"
         )
-        stderr = run_cmd_and_pipe_stderr(command)
-        # FIXME: "Type[TestAllSets]" has no attribute "results_dir"
-        TestAllSets.results_dir = get_results_dir(stderr)  # type: ignore
-        print("TestAllSets.results_dir={}".format(TestAllSets.results_dir))  # type: ignore
-        if CORI_WEB:
-            TestAllSets.results_dir = move_to_web(  # type: ignore
-                "/global/u1/f/(.*)/e3sm_diags",
-                "/global/cfs/cdirs/acme/www/{}",
-                TestAllSets.results_dir,  # type: ignore
-            )
+        expected_num_images, expected_images = self._count_images_in_dir(
+            TEST_IMAGES_PATH
+        )
 
-    def check_html_image(self, html_path, png_path, full_png_path):
+        assert actual_images == expected_images
+        assert actual_num_images == expected_num_images
+
+    def test_area_mean_time_series_plot_diffs(self):
+        set_name = "area_mean_time_series"
+        variables = ["TREFHT"]
+        for variable in variables:
+            variable_lower = variable.lower()
+
+            # Check PNG path is the same as the expected.
+            png_path = "{}/{}.png".format(set_name, variable)
+            full_png_path = "{}{}".format(self.results_dir, png_path)
+            path_exists = os.path.exists(full_png_path)
+
+            assert path_exists
+
+            # Check full HTML path is the same as the expected.
+            html_path = "{}viewer/{}/variable/{}/plot.html".format(
+                self.results_dir, set_name, variable_lower
+            )
+            self._check_html_image(html_path, png_path, full_png_path)
+
+    def test_cosp_histogram_plot_diffs(self):
+        self._check_plots_generic(
+            set_name="cosp_histogram",
+            case_id="MISR-COSP",
+            ref_name="MISRCOSP",
+            variables=["COSP_HISTOGRAM_MISR"],
+            region="global",
+        )
+
+    def test_enso_diags_map_diffs(self):
+        case_id = "TREFHT-response-map"
+        self._check_enso_map_plots(case_id)
+
+    def test_enso_diags_map_with_start_yrs_diffs(self):
+        case_id = "TREFHT-response-map-start-yrs"
+        self._check_enso_map_plots(case_id)
+
+    def test_enso_diags_map_test_with_ref_yrs_diffs(self):
+        case_id = "TREFHT-response-map-test-ref-yrs"
+        self._check_enso_map_plots(case_id)
+
+    def test_enso_diags_scatter_plot_diffs(self):
+        case_id = "TREFHT-response-scatter"
+        self._check_enso_scatter_plots(case_id)
+
+    def test_enso_diags_scatter_with_start_yrs_plot_diffs(self):
+        case_id = "TREFHT-response-scatter-start-yrs"
+        self._check_enso_scatter_plots(case_id)
+
+    def test_enso_diags_scatter_with_test_ref_yrs_plot_diffs(self):
+        case_id = "TREFHT-response-scatter-test-ref-yrs"
+        self._check_enso_scatter_plots(case_id)
+
+    def test_lat_lon_plot_diffs(self):
+        self._check_plots_plevs("lat_lon", "global", [850.0])
+
+    def test_lat_lon_regional_plot_diffs(self):
+        self._check_plots_plevs("lat_lon", "CONUS_RRM", [850.0])
+
+    def test_meridional_mean_2d_plot_diffs(self):
+        self._check_plots_2d("meridional_mean_2d")
+
+    def test_polar_plot_diffs(self):
+        self._check_plots_plevs("polar", "polar_S", [850.0])
+
+    def test_qbo_plot_diffs(self):
+        case_id = "qbo-test"
+        case_id_lower = case_id.lower()
+        set_name = "qbo"
+
+        # Check PNG path is the same as the expected.
+        png_path = "{}/{}/qbo_diags.png".format(set_name, case_id)
+        full_png_path = "{}{}".format(self.results_dir, png_path)
+        path_exists = os.path.exists(full_png_path)
+
+        assert path_exists
+
+        # Check full HTML path is the same as the expected.
+        # viewer/qbo/variable/era-interim/plot.html
+        html_path = "{}viewer/{}/variable/{}/plot.html".format(
+            self.results_dir, set_name, case_id_lower
+        )
+        self._check_html_image(html_path, png_path, full_png_path)
+
+    def test_streamflow_plot_diffs(self):
+        self._check_streamflow_plots()
+
+    def test_zonal_mean_2d_plot_diffs(self):
+        self._check_plots_2d("zonal_mean_2d")
+
+    def test_zonal_mean_xy_plot_diffs(self):
+        self._check_plots_plevs("zonal_mean_xy", "global", [200.0])
+
+    # Utility methods.
+    # --------------------------------------------------------------------------
+    def _count_images_in_dir(self, directory):
+        images = []
+        for root, _, filenames in os.walk(directory):
+            # download_data.py won't download files in the viewer directory
+            # because the webpage is more than a simple page of links.
+            if "viewer" not in root:
+                for file in filenames:
+                    if file.endswith(".png"):
+                        images.append(file)
+        return len(images), images
+
+    def _check_html_image(self, html_path, png_path, full_png_path):
+        # Check HTML image tags exist.
         img_src = None
         option_value = None
         href = None
@@ -167,9 +290,10 @@ class TestAllSets(unittest.TestCase):
                 if not href:
                     re_str = 'href="../../../../{}">'.format(png_path)
                     href = re.search(re_str, line)
-        self.assertIsNotNone(img_src)
-        self.assertIsNotNone(option_value)
-        self.assertIsNotNone(href)
+
+        assert img_src is not None
+        assert option_value is not None
+        assert href is not None
 
         image_name = os.path.split(png_path)[-1]
         path_to_actual_png = full_png_path
@@ -188,17 +312,16 @@ class TestAllSets(unittest.TestCase):
             check_images = True
 
         if check_images:
-            mismatched_images = []  # type: ignore
-            compare_images(
-                self,
+            mismatched_images: List[str] = []
+            _compare_images(
                 mismatched_images,
                 image_name,
                 path_to_actual_png,
                 path_to_expected_png,
             )
-            self.assertEqual(mismatched_images, [])
+            assert len(mismatched_images) == 0
 
-    def check_plots_generic(
+    def _check_plots_generic(
         self, set_name, case_id, ref_name, variables, region, plev=None
     ):
         case_id_lower = case_id.lower()
@@ -209,6 +332,9 @@ class TestAllSets(unittest.TestCase):
             variable_lower = variable.lower()
             for season in seasons:
                 season_lower = season.lower()
+
+                # Check PNG path is the same as the expected.
+
                 if plev:
                     # 200.9 would just show up as 200 in the file paths.
                     plev_str = "%.0f" % plev
@@ -226,10 +352,15 @@ class TestAllSets(unittest.TestCase):
                     season,
                     region,
                 )
-                full_png_path = "{}{}".format(TestAllSets.results_dir, png_path)  # type: ignore
-                self.assertTrue(os.path.exists(full_png_path))
+
+                full_png_path = "{}{}".format(self.results_dir, png_path)
+                path_exists = os.path.exists(full_png_path)
+
+                assert path_exists
+
+                # Check full HTML path is the same as the expected.
                 html_path = "{}viewer/{}/{}/{}-{}{}-{}/{}.html".format(
-                    TestAllSets.results_dir,  # type: ignore
+                    self.results_dir,
                     set_name,
                     case_id_lower,
                     variable_lower,
@@ -238,10 +369,10 @@ class TestAllSets(unittest.TestCase):
                     ref_name_lower,
                     season_lower,
                 )
-                self.check_html_image(html_path, png_path, full_png_path)
+                self._check_html_image(html_path, png_path, full_png_path)
 
-    def check_plots_2d(self, set_name):
-        self.check_plots_generic(
+    def _check_plots_2d(self, set_name):
+        self._check_plots_generic(
             set_name=set_name,
             case_id="ERA-Interim",
             ref_name="ERA-Interim",
@@ -249,9 +380,9 @@ class TestAllSets(unittest.TestCase):
             region="global",
         )
 
-    def check_plots_plevs(self, set_name, region, plevs):
+    def _check_plots_plevs(self, set_name, region, plevs):
         for plev in plevs:
-            self.check_plots_generic(
+            self._check_plots_generic(
                 set_name=set_name,
                 case_id="ERA-Interim",
                 ref_name="ERA-Interim",
@@ -260,40 +391,54 @@ class TestAllSets(unittest.TestCase):
                 plev=plev,
             )
 
-    def check_enso_map_plots(self, case_id):
+    def _check_enso_map_plots(self, case_id):
         case_id_lower = case_id.lower()
         nino_region_lower = "NINO34".lower()
         set_name = "enso_diags"
         variables = ["TREFHT"]
+
         for variable in variables:
             variable_lower = variable.lower()
+
+            # Check PNG path is the same as the expected.
             png_path = "{}/{}/regression-coefficient-{}-over-{}.png".format(
                 set_name, case_id, variable_lower, nino_region_lower
             )
-            full_png_path = "{}{}".format(TestAllSets.results_dir, png_path)  # type: ignore
-            self.assertTrue(os.path.exists(full_png_path))
-            html_path = "{}viewer/{}/map/{}/plot.html".format(
-                TestAllSets.results_dir, set_name, case_id_lower  # type: ignore
-            )
-            self.check_html_image(html_path, png_path, full_png_path)
+            full_png_path = "{}{}".format(self.results_dir, png_path)
+            path_exists = os.path.exists(full_png_path)
 
-    def check_enso_scatter_plots(self, case_id):
+            assert path_exists
+
+            # Check full HTML path is the same as the expected.
+            html_path = "{}viewer/{}/map/{}/plot.html".format(
+                self.results_dir, set_name, case_id_lower
+            )
+            self._check_html_image(html_path, png_path, full_png_path)
+
+    def _check_enso_scatter_plots(self, case_id):
         case_id_lower = case_id.lower()
         set_name = "enso_diags"
         variables = ["TREFHT"]
+
         for variable in variables:
             region = "NINO3"
+
+            # Check PNG path is the same as the expected.
             png_path = "{}/{}/feedback-{}-{}-TS-NINO3.png".format(
                 set_name, case_id, variable, region
             )
-            full_png_path = "{}{}".format(TestAllSets.results_dir, png_path)  # type: ignore
-            self.assertTrue(os.path.exists(full_png_path))
-            html_path = "{}viewer/{}/scatter/{}/plot.html".format(
-                TestAllSets.results_dir, set_name, case_id_lower  # type: ignore
-            )
-            self.check_html_image(html_path, png_path, full_png_path)
+            full_png_path = "{}{}".format(self.results_dir, png_path)
+            path_exists = os.path.exists(full_png_path)
 
-    def check_streamflow_plots(self):
+            assert path_exists
+
+            # Check full HTML path is the same as the expected.
+            html_path = "{}viewer/{}/scatter/{}/plot.html".format(
+                self.results_dir, set_name, case_id_lower
+            )
+            self._check_html_image(html_path, png_path, full_png_path)
+
+    def _check_streamflow_plots(self):
         case_id = "RIVER_DISCHARGE_OVER_LAND_LIQ_GSIM"
         case_id_lower = case_id.lower()
         set_name = "streamflow"
@@ -304,15 +449,22 @@ class TestAllSets(unittest.TestCase):
                 "annual_map",
                 "annual_scatter",
             ]:
+                # Check PNG path is the same as the expected.
                 png_path = "{}/{}/{}.png".format(set_name, case_id, plot_type)
                 expected = (
                     "streamflow/RIVER_DISCHARGE_OVER_LAND_LIQ_GSIM/{}.png".format(
                         plot_type
                     )
                 )
-                self.assertEqual(png_path, expected)
-                full_png_path = "{}{}".format(TestAllSets.results_dir, png_path)  # type: ignore
-                self.assertTrue(os.path.exists(full_png_path))
+                assert png_path == expected
+
+                # Check path exists
+                full_png_path = "{}{}".format(self.results_dir, png_path)
+                path_exists = os.path.exists(full_png_path)
+
+                assert path_exists
+
+                # Check HTML path is the same as the expected.
                 if plot_type == "seasonality_map":
                     plot_label = "seasonality-map"
                 elif plot_type == "annual_map":
@@ -327,105 +479,8 @@ class TestAllSets(unittest.TestCase):
                 expected = "viewer/streamflow/{}/river_discharge_over_land_liq_gsim-{}/plot.html".format(
                     plot_label, plot_type
                 )
-                self.assertEqual(html_path, expected)
-                full_html_path = "{}{}".format(TestAllSets.results_dir, html_path)  # type: ignore
-                self.check_html_image(full_html_path, png_path, full_png_path)
+                assert html_path == expected
 
-    # Test results_dir
-    def test_results_dir(self):
-        self.assertTrue(TestAllSets.results_dir.endswith("all_sets_results_test/"))  # type: ignore
-
-    # Test the image count
-    def test_image_count(self):
-        actual_num_images, actual_images = count_images(
-            f"{TEST_ROOT_PATH}/all_sets_results_test"
-        )
-        expected_num_images, expected_images = count_images(TEST_IMAGES_PATH)
-        self.assertEqual(actual_images, expected_images)
-        self.assertEqual(actual_num_images, expected_num_images)
-
-    # Test sets
-    def test_area_mean_time_series(self):
-        set_name = "area_mean_time_series"
-        variables = ["TREFHT"]
-        for variable in variables:
-            variable_lower = variable.lower()
-            png_path = "{}/{}.png".format(set_name, variable)
-            full_png_path = "{}{}".format(TestAllSets.results_dir, png_path)  # type: ignore
-            self.assertTrue(os.path.exists(full_png_path))
-            html_path = "{}viewer/{}/variable/{}/plot.html".format(
-                TestAllSets.results_dir, set_name, variable_lower  # type: ignore
-            )
-            self.check_html_image(html_path, png_path, full_png_path)
-
-    def test_cosp_histogram(self):
-        self.check_plots_generic(
-            set_name="cosp_histogram",
-            case_id="MISR-COSP",
-            ref_name="MISRCOSP",
-            variables=["COSP_HISTOGRAM_MISR"],
-            region="global",
-        )
-
-    def test_enso_diags_map(self):
-        case_id = "TREFHT-response-map"
-        self.check_enso_map_plots(case_id)
-
-    def test_enso_diags_map_start_yrs(self):
-        case_id = "TREFHT-response-map-start-yrs"
-        self.check_enso_map_plots(case_id)
-
-    def test_enso_diags_map_test_ref_yrs(self):
-        case_id = "TREFHT-response-map-test-ref-yrs"
-        self.check_enso_map_plots(case_id)
-
-    def test_enso_diags_scatter(self):
-        case_id = "TREFHT-response-scatter"
-        self.check_enso_scatter_plots(case_id)
-
-    def test_enso_diags_scatter_start_yrs(self):
-        case_id = "TREFHT-response-scatter-start-yrs"
-        self.check_enso_scatter_plots(case_id)
-
-    def test_enso_diags_scatter_test_ref_yrs(self):
-        case_id = "TREFHT-response-scatter-test-ref-yrs"
-        self.check_enso_scatter_plots(case_id)
-
-    def test_lat_lon(self):
-        self.check_plots_plevs("lat_lon", "global", [850.0])
-
-    def test_lat_lon_regional(self):
-        self.check_plots_plevs("lat_lon", "CONUS_RRM", [850.0])
-
-    def test_meridional_mean_2d(self):
-        self.check_plots_2d("meridional_mean_2d")
-
-    def test_polar(self):
-        self.check_plots_plevs("polar", "polar_S", [850.0])
-
-    def test_qbo(self):
-        case_id = "qbo-test"
-        case_id_lower = case_id.lower()
-        set_name = "qbo"
-        png_path = "{}/{}/qbo_diags.png".format(set_name, case_id)
-        full_png_path = "{}{}".format(TestAllSets.results_dir, png_path)  # type: ignore
-        print(full_png_path)
-        self.assertTrue(os.path.exists(full_png_path))
-        # viewer/qbo/variable/era-interim/plot.html
-        html_path = "{}viewer/{}/variable/{}/plot.html".format(
-            TestAllSets.results_dir, set_name, case_id_lower  # type: ignore
-        )
-        self.check_html_image(html_path, png_path, full_png_path)
-
-    def test_streamflow(self):
-        self.check_streamflow_plots()
-
-    def test_zonal_mean_2d(self):
-        self.check_plots_2d("zonal_mean_2d")
-
-    def test_zonal_mean_xy(self):
-        self.check_plots_plevs("zonal_mean_xy", "global", [200.0])
-
-
-if __name__ == "__main__":
-    unittest.main()
+                # Check the full HTML path is the same as the expected.
+                full_html_path = "{}{}".format(self.results_dir, html_path)
+                self._check_html_image(full_html_path, png_path, full_png_path)

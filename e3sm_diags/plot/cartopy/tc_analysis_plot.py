@@ -63,7 +63,6 @@ def get_ax_size(fig, ax):
 
 
 def plot_panel(n, fig, proj, var, var_num_years, region, title):
-
     ax = fig.add_axes(panel[n], projection=proj)
     ax.set_extent(plot_info[region][0], ccrs.PlateCarree())
 

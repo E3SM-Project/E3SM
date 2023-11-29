@@ -65,7 +65,6 @@ def determine_tick_step(degrees_covered):
 
 
 def plot_panel(n, fig, proj, var, amp, amp_ref, title, parameter):
-
     normalize_test_amp = parameter.normalize_test_amp
     specified_max_amp = parameter.normalize_amp_int
 
@@ -129,7 +128,7 @@ def plot_panel(n, fig, proj, var, amp, amp_ref, title, parameter):
     # If less than 0.50 is subtracted, then 0 W will overlap 0 E on the left side of the plot.
     # If a number is added, then the value won't show up at all.
     if global_domain or full_lon:
-        xticks = [0, 60, 120, 180, 240, 300, 359.99]
+        xticks = [0, 60, 120, 180, 240, 300, 359.99]  # type: ignore
     else:
         xticks = np.append(xticks, lon_east)
         proj = ccrs.PlateCarree()
@@ -309,7 +308,7 @@ def plot(test_tmax, test_amp, ref_tmax, ref_amp, parameter):
             subpage = np.array(p).reshape(2, 2)
             subpage[1, :] = subpage[0, :] + subpage[1, :]
             subpage = subpage + np.array(border).reshape(2, 2)
-            subpage = list(((subpage) * page).flatten())
+            subpage = list(((subpage) * page).flatten())  # type: ignore
             extent = matplotlib.transforms.Bbox.from_extents(*subpage)
             # Save subplot
             subplot_suffix = ".%i." % (i) + f

@@ -272,7 +272,11 @@ def run_diag_map(parameter: EnsoDiagsParameter) -> EnsoDiagsParameter:
                 )
 
                 # Reference
-                (ref_domain, ref_reg_coe, ref_confidence_levels,) = perform_regression(
+                (
+                    ref_domain,
+                    ref_reg_coe,
+                    ref_confidence_levels,
+                ) = perform_regression(
                     ref_data,
                     parameter,
                     var,

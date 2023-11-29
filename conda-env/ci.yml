@@ -36,4 +36,3 @@ dependencies:
   - sphinx
   - sphinx_rtd_theme
   - sphinx-multiversion
-prefix: /opt/miniconda3/envs/e3sm_diags_ci

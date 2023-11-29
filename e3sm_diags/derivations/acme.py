@@ -465,7 +465,8 @@ def cosp_bin_sum(
     tau_high0: Optional[float],
 ):
     """sum of cosp bins to calculate cloud fraction in specified cloud top pressure / height and
-    cloud thickness bins, input variable has dimension (cosp_prs,cosp_tau,lat,lon)/(cosp_ht,cosp_tau,lat,lon)"""
+    cloud thickness bins, input variable has dimension (cosp_prs,cosp_tau,lat,lon)/(cosp_ht,cosp_tau,lat,lon)
+    """
     prs: FileAxis = cld.getAxis(0)
     tau: FileAxis = cld.getAxis(1)
 

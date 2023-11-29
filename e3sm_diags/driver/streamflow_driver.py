@@ -285,7 +285,7 @@ def setup_test(parameter, var, using_test_mat_file):
     if parameter.print_statements:
         # For edison: 720x360x600
         logger.info("test_array.shape={}".format(test_array.shape))
-    if type(area_upstream) == cdms2.tvariable.TransientVariable:
+    if isinstance(area_upstream, cdms2.tvariable.TransientVariable):
         area_upstream = area_upstream.getValue()
 
     return area_upstream, test_array
@@ -489,7 +489,7 @@ def generate_export(
                 else:
                     monthly = mmat
 
-                if type(monthly) == cdms2.tvariable.TransientVariable:
+                if isinstance(monthly, cdms2.tvariable.TransientVariable):
                     monthly = monthly.getValue()
 
                 seasonality_index_ref, peak_month_ref = get_seasonality(monthly)
@@ -515,7 +515,7 @@ def generate_export(
             else:
                 monthly = mmat
 
-            if type(monthly) == cdms2.tvariable.TransientVariable:
+            if isinstance(monthly, cdms2.tvariable.TransientVariable):
                 monthly = monthly.getValue()
 
             seasonality_index_test, peak_month_test = get_seasonality(monthly)
