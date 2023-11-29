@@ -100,8 +100,12 @@ void gas_phase_chemistry(Real zm, Real zi, Real phis, Real temp, Real pmid, Real
   for (int i = 0; i < itermax; ++i) {
     factor[i] = true;
   }
+
+  // initialize error tolerances
   Real epsilon[clscnt4];
   mam4::gas_chemistry::imp_slv_inti(epsilon);
+
+  // solve chemical system implicitly
   Real prod_out[clscnt4], loss_out[clscnt4];
   mam4::gas_chemistry::imp_sol(q, reaction_rates, het_rates, extfrc, dt,
     permute_4, clsmap_4, factor, epsilon, prod_out, loss_out);
