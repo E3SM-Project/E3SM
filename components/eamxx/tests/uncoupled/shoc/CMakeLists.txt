@@ -101,7 +101,7 @@ add_test (NAME check_U_V_slices_fail_diff
           WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 set_tests_properties (check_U_V_slices_fail_diff PROPERTIES
           WILL_FAIL TRUE
-          FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_np1_omp1)
+          FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_np${TEST_RANK_START}_omp1)
 
 # Wrong layout
 add_test (NAME check_U_V_slices_fail_layout
@@ -110,7 +110,7 @@ add_test (NAME check_U_V_slices_fail_layout
           WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 set_tests_properties (check_U_V_slices_fail_layout PROPERTIES
           WILL_FAIL TRUE
-          FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_np1_omp1)
+          FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_np${TEST_RANK_START}_omp1)
 
 # Missing variable(s)
 add_test (NAME check_U_V_slices_fail_missing
@@ -119,4 +119,4 @@ add_test (NAME check_U_V_slices_fail_missing
           WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 set_tests_properties (check_U_V_slices_fail_missing PROPERTIES
           WILL_FAIL TRUE
-          FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_np1_omp1)
+          FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_np${TEST_RANK_START}_omp1)
