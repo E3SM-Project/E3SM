@@ -2,6 +2,44 @@ include(CMakeParseArguments) # Needed for backwards compatibility
 include(EkatCreateUnitTest)
 include(EkatUtils)
 
+# Create a list containing a range of integers
+function (CreateRange resultVar BEG END)
+  set(options SKIP_FIRST SKIP_LAST)
+  set(arg1v INC)
+  set(argMv)
+  cmake_parse_arguments(CR "${options}" "${arg1v}" "${argMv}" ${ARGN})
+
+  # Compute beg/end/inc based on input args
+  if (CR_SKIP_FIRST)
+    math(EXPR BEG "${BEG}+1")
+  endif()
+  if (CR_SKIP_LAST)
+    math(EXPR END "${END}-1")
+  endif()
+  if (NOT CR_INC)
+    set (CR_INC 1)
+  endif()
+
+  # Sanity check
+  if (NOT CR_INC GREATER 0)
+    message (FATAL_ERROR "INC must be a positive integer")
+  endif()
+  if (BEG GREATER END)
+    message (FATAL_ERROR "BEG is larger than END")
+  endif()
+
+  # Create range list
+  set (res_list)
+  set (N ${BEG})
+  while (NOT N GREATER END)
+    list (APPEND res_list ${N})
+    math (EXPR N "${N}+${CR_INC}")
+  endwhile()
+
+  # Set in parent scope
+  set (${resultVar} ${res_list} PARENT_SCOPE)
+endfunction()
+
 # This function takes the following arguments:
 #    - test_name: the base name of the test. We create an executable with this name
 #    - test_srcs: a list of src files for the executable.
