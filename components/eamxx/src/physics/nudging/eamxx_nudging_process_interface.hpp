@@ -14,6 +14,7 @@
 #include "share/util/scream_vertical_interpolation.hpp"
 #include "share/util/scream_time_stamp.hpp"
 #include "share/grid/remap/refining_remapper_p2p.hpp"
+#include "share/grid/remap/do_nothing_remapper.hpp"
 
 #include <string>
 
@@ -101,10 +102,8 @@ protected:
   void init_buffers(const ATMBufferManager &buffer_manager);
 
   // Creates an helper field, not to be shared with the AD's FieldManager
-  void create_helper_field (const std::string& name,
-                            const FieldLayout& layout,
-                            const std::string& grid_name,
-                            const int ps=0);
+  Field create_helper_field(const std::string &name, const FieldLayout &layout,
+                            const std::string &grid_name, const int ps = 0);
 
   // Query if a local field exists
   bool has_helper_field (const std::string& name) const { return m_helper_fields.find(name)!=m_helper_fields.end(); }
@@ -139,7 +138,13 @@ protected:
   // file containing coarse data mapping
   std::string m_refine_remap_file;
   // (refining) remapper object
-  std::shared_ptr<scream::RefiningRemapperP2P> refine_remapper;
+  std::shared_ptr<scream::AbstractRemapper> m_refine_remapper;
+  // grid for coarse data
+  std::shared_ptr<scream::AbstractGrid> grid_ext;
+  // grid after vertical interpolation
+  std::shared_ptr<scream::AbstractGrid> grid_hxt;
+  // grid after horizontal interpolation
+  std::shared_ptr<scream::AbstractGrid> grid_int;
 
   util::TimeInterpolation m_time_interp;
 
