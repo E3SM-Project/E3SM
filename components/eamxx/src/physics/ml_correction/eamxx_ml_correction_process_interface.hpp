@@ -55,10 +55,13 @@ class MLCorrection : public AtmosphereProcess {
   Int m_num_levs;
   Field m_lat;
   Field m_lon;
-  std::string m_ML_model_path;
+  std::string m_ML_model_path_tq;
+  std::string m_ML_model_path_uv;
   std::vector<std::string> m_fields_ml_output_variables;
+  bool m_ML_correction_unit_test;
   pybind11::module py_correction;
-  pybind11::object ML_model;
+  pybind11::object ML_model_tq;
+  pybind11::object ML_model_uv;
   int fpe_mask;
 };  // class MLCorrection
 

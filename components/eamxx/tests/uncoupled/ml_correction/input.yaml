@@ -11,8 +11,10 @@ time_stepping:
 atmosphere_processes:
   atm_procs_list: [MLCorrection]
   MLCorrection:
-    ML_model_path: NONE
+    ML_model_path_tq: NONE
+    ML_model_path_uv: NONE
     ML_output_fields: ["qv","T_mid"]
+    ML_correction_unit_test: True
 grids_manager:
   Type: Mesh Free
   grids_names: [Physics]
