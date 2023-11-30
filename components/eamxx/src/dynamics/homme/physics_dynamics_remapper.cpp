@@ -112,7 +112,7 @@ create_tgt_layout (const FieldLayout& src_layout) const {
   dims[0] = this->m_tgt_grid->get_num_local_dofs() / (HOMMEXX_NP*HOMMEXX_NP);
 
   // For position of GP and NP, it's easier to switch between 2d and 3d
-  auto lt = get_layout_type(src_layout.tags());
+  auto lt = src_layout.type();
   switch (lt) {
     case LayoutType::Scalar2D:
     case LayoutType::Vector2D:
@@ -260,7 +260,7 @@ initialize_device_variables()
 
     const auto& pl = ph.get_identifier().get_layout();
 
-    auto lt = get_layout_type(pl.tags());
+    auto lt = pl.type();
     h_layout(i) = etoi(lt);
 
     const bool is_field_3d = lt==LayoutType::Scalar3D || lt==LayoutType::Vector3D;
@@ -478,7 +478,7 @@ setup_boundary_exchange () {
   int num_3d_int = 0;
   for (int i=0; i<this->m_num_fields; ++i) {
     const auto& layout = m_dyn_fields[i].get_header().get_identifier().get_layout();
-    const auto lt = get_layout_type(layout.tags());
+    const auto lt = layout.type();
     switch (lt) {
       case LayoutType::Scalar2D:
         ++num_2d;
@@ -528,7 +528,7 @@ setup_boundary_exchange () {
   for (int i=0; i<this->m_num_fields; ++i) {
     const auto& layout = m_dyn_fields[i].get_header().get_identifier().get_layout();
     const auto& dims = layout.dims();
-    const auto lt = get_layout_type(layout.tags());
+    const auto lt = layout.type();
     switch (lt) {
       case LayoutType::Scalar2D:
         m_be->register_field(getHommeView<Real*[NP][NP]>(m_dyn_fields[i]));

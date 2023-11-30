@@ -31,12 +31,12 @@ TEST_CASE("field_layout", "") {
   FieldLayout fl5 ({COL,CMP,LEV},{1,1,1});
   FieldLayout fl6 ({COL,ISCCPTAU,ISCCPPRS,ILEV},{1,1,1,1});
 
-  REQUIRE (get_layout_type(fl1.tags())==LayoutType::Scalar2D);
-  REQUIRE (get_layout_type(fl2.tags())==LayoutType::Vector2D);
-  REQUIRE (get_layout_type(fl3.tags())==LayoutType::Tensor2D);
-  REQUIRE (get_layout_type(fl4.tags())==LayoutType::Scalar3D);
-  REQUIRE (get_layout_type(fl5.tags())==LayoutType::Vector3D);
-  REQUIRE (get_layout_type(fl6.tags())==LayoutType::Tensor3D);
+  REQUIRE (fl1.type()==LayoutType::Scalar2D);
+  REQUIRE (fl2.type()==LayoutType::Vector2D);
+  REQUIRE (fl3.type()==LayoutType::Tensor2D);
+  REQUIRE (fl4.type()==LayoutType::Scalar3D);
+  REQUIRE (fl5.type()==LayoutType::Vector3D);
+  REQUIRE (fl6.type()==LayoutType::Tensor3D);
 
   REQUIRE (not fl1.is_vector_layout());
   REQUIRE (    fl2.is_vector_layout());

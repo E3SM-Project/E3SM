@@ -381,7 +381,7 @@ TEST_CASE("coarsening_remap")
       auto msg = "   -> Checking field with layout " + to_string(l) + " " + dots;
       root_print (msg + "\n",comm);
       bool ok = true;
-      switch (get_layout_type(l.tags())) {
+      switch (l.type()) {
         case LayoutType::Scalar2D:
         {
           const auto v_src = gsrc.get_view<const Real*,Host>();

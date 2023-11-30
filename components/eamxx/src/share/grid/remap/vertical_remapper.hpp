@@ -64,7 +64,7 @@ public:
     for (int i=0; i<tgt_size; ++i) {
       tgt_col_size *= tgt_dims[i];
     }
-    return get_layout_type(src.tags())==get_layout_type(tgt.tags()) &&
+    return src.type()==tgt.type() &&
            src_col_size == tgt_col_size;
   }
 

@@ -37,13 +37,8 @@ public:
   FieldLayout create_src_layout (const FieldLayout& tgt) const override {
     using namespace ShortFieldTagsNames;
 
-    EKAT_REQUIRE_MSG (is_valid_tgt_layout(tgt),
-        "[DoNothingRemapper] Error! Input target layout is not valid for this remapper.\n"
-        " - input layout: " + to_string(tgt));
-
-    auto type = get_layout_type(tgt.tags());
-    auto src = FieldLayout::invalid();
-    switch (type) {
+    FieldLayout src = {{},{}};
+    switch (tgt.type()) {
       case LayoutType::Scalar2D:
         src = this->m_src_grid->get_2d_scalar_layout();
         break;
@@ -57,7 +52,9 @@ public:
         src = this->m_src_grid->get_3d_vector_layout(tgt.has_tag(LEV),tgt.dim(CMP));
         break;
       default:
-        EKAT_ERROR_MSG ("Error! Unsupported field layout.\n");
+        EKAT_ERROR_MSG (
+          "[DoNothingRemapper] Error! Input target layout is not valid for this remapper.\n"
+          " - input layout: " + to_string(tgt));
     }
     return src;
   }
@@ -65,13 +62,8 @@ public:
   FieldLayout create_tgt_layout (const FieldLayout& src) const override {
     using namespace ShortFieldTagsNames;
 
-    EKAT_REQUIRE_MSG (is_valid_src_layout(src),
-        "[DoNothingRemapper] Error! Input source layout is not valid for this remapper.\n"
-        " - input layout: " + to_string(src));
-
-    auto type = get_layout_type(src.tags());
-    auto tgt = FieldLayout::invalid();
-    switch (type) {
+    FieldLayout tgt = {{},{}};
+    switch (src.type()) {
       case LayoutType::Scalar2D:
         tgt = this->m_tgt_grid->get_2d_scalar_layout();
         break;
@@ -85,7 +77,9 @@ public:
         tgt = this->m_tgt_grid->get_3d_vector_layout(tgt.has_tag(LEV),tgt.dim(CMP));
         break;
       default:
-        EKAT_ERROR_MSG ("Error! Unsupported field layout.\n");
+        EKAT_ERROR_MSG (
+          "[DoNothingRemapper] Error! Input source layout is not valid for this remapper.\n"
+          " - input layout: " + to_string(src));
     }
     return tgt;
   }

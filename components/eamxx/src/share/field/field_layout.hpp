@@ -74,6 +74,8 @@ public:
 
   // ----- Getters ----- //
 
+  LayoutType type () const;
+
   // Name and layout informations
   const std::vector<FieldTag>& tags () const { return m_tags; }
   FieldTag tag  (const int idim) const;
@@ -128,7 +130,6 @@ protected:
 };
 
 bool operator== (const FieldLayout& fl1, const FieldLayout& fl2);
-LayoutType get_layout_type (const std::vector<FieldTag>& field_tags);
 std::string to_string (const FieldLayout& l);
 
 // ========================== IMPLEMENTATION ======================= //

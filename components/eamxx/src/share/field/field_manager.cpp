@@ -525,13 +525,13 @@ void FieldManager::registration_ends ()
         const auto& id = f->get_header().get_identifier();
         if (lt==LayoutType::Invalid) {
          f_layout = id.get_layout();
-         lt = get_layout_type(f_layout.tags());
+         lt = f_layout.type();
         } else {
-          EKAT_REQUIRE_MSG (lt==get_layout_type(id.get_layout().tags()),
+          EKAT_REQUIRE_MSG (lt==id.get_layout().type(),
               "Error! Found a group to bundle containing fields with different layouts.\n"
               "       Group name: " + cluster_name + "\n"
               "       Layout 1: " + e2str(lt) + "\n"
-              "       Layout 2: " + e2str(get_layout_type(id.get_layout().tags())) + "\n");
+              "       Layout 2: " + e2str(id.get_layout().type()) + "\n");
         }
       }
 
@@ -651,7 +651,7 @@ void FieldManager::registration_ends ()
     // whether they are 2d or 3d.
     auto f1 = m_fields.at(info.m_fields_names.front());
     auto f1_layout = f1->get_header().get_identifier().get_layout();
-    auto lt = get_layout_type(f1_layout.tags());
+    auto lt = f1_layout.type();
     FieldLayout g_layout = FieldLayout::invalid();
     if (lt==LayoutType::Scalar2D) {
       g_layout = m_grid->get_2d_vector_layout(size);

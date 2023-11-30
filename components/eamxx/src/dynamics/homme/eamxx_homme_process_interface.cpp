@@ -769,7 +769,7 @@ create_helper_field (const std::string& name,
   using namespace ekat::units;
   FieldIdentifier id(name,FieldLayout{tags,dims},Units::nondimensional(),grid);
 
-  const auto lt = get_layout_type(id.get_layout().tags());
+  const auto lt = id.get_layout().type();
 
   // Only request packed field for 3d quantities
   int pack_size = 1;

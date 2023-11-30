@@ -18,12 +18,12 @@ FieldLayout::FieldLayout (const std::vector<FieldTag>& tags,
 }
 
 bool FieldLayout::is_vector_layout () const {
-  const auto lt = get_layout_type (m_tags);
-  return lt==LayoutType::Vector2D || lt==LayoutType::Vector3D;
+  using namespace ShortFieldTagsNames;
+  return ekat::count(m_tags,CMP)==1;
 }
 
 bool FieldLayout::is_tensor_layout () const {
-  const auto lt = get_layout_type (m_tags);
+  const auto lt = type();
   return lt==LayoutType::Tensor2D || lt==LayoutType::Tensor3D;
 }
 
@@ -33,17 +33,10 @@ bool FieldLayout::is_tensor_layout () const {
 int FieldLayout::get_vector_component_idx () const {
   EKAT_REQUIRE_MSG (is_vector_layout(),
       "Error! 'get_vector_dim' available only for vector layouts.\n"
-      "       Current layout: " + e2str(get_layout_type(m_tags)) + "\n");
+      "       Current layout: " + e2str(type()) + "\n");
 
   using namespace ShortFieldTagsNames;
-  std::vector<FieldTag> vec_tags = {CMP,NGAS,SWBND,LWBND,SWGPT,ISCCPTAU,ISCCPPRS};
-  auto it = std::find_first_of (m_tags.cbegin(),m_tags.cend(),vec_tags.cbegin(),vec_tags.cend());
-
-  EKAT_REQUIRE_MSG (it!=m_tags.cend(),
-    "Error! Could not find a vector tag in the layout.\n"
-    " - layout: " + to_string(*this) + "\n");
-
-  return std::distance(m_tags.cbegin(),it);
+  return std::distance(m_tags.begin(),ekat::find(m_tags,CMP));
 }
 
 // get the extent of the CMP (Components) tag in the FieldLayout
@@ -63,15 +56,14 @@ std::vector<int> FieldLayout::get_tensor_dims () const {
   EKAT_REQUIRE_MSG (is_tensor_layout(),
       "Error! 'get_tensor_dims' available only for tensor layouts.\n"
       "       Current layout: " + to_string(*this) + "\n"
-      "       Layout type   : " + e2str(get_layout_type(m_tags)) + "\n");
+      "       Layout type   : " + e2str(type()) + "\n");
 
   using namespace ShortFieldTagsNames;
-  std::vector<FieldTag> cmp_tags = {CMP,NGAS,SWBND,LWBND,SWGPT,ISCCPTAU,ISCCPPRS};
 
   std::vector<int> idx;
   auto it = m_tags.begin();
   do {
-    it = std::find_first_of (it,m_tags.cend(),cmp_tags.cbegin(),cmp_tags.cend());
+    it = std::find(it,m_tags.cend(),CMP);
     if (it!=m_tags.end()) {
       idx.push_back(std::distance(m_tags.begin(),it));
       ++it;
@@ -136,12 +128,13 @@ void FieldLayout::set_dimension (const int idim, const int dimension) {
   Kokkos::deep_copy(m_extents,extents_h);
 }
 
-LayoutType get_layout_type (const std::vector<FieldTag>& field_tags) {
-  using ekat::erase;
-  using ekat::count;
+LayoutType FieldLayout::type () const {
   using namespace ShortFieldTagsNames;
 
-  auto tags = field_tags;
+  using ekat::erase;
+  using ekat::count;
+
+  auto tags = this->tags();
 
   const int n_element = count(tags,EL);
   const int n_column  = count(tags,COL);
@@ -177,7 +170,7 @@ LayoutType get_layout_type (const std::vector<FieldTag>& field_tags) {
     return LayoutType::Vector1D;
   } else {
     // Not a supported layout.
-    return result;
+    return LayoutType::Invalid;
   }
 
   // Get the size of what's left

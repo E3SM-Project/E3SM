@@ -263,7 +263,7 @@ TEST_CASE ("vertical_remap") {
   auto src_gids    = remap->get_src_grid()->get_dofs_gids().get_view<const gid_type*,Host>();
   for (const auto& f : src_f) {
     const auto& l = f.get_header().get_identifier().get_layout();
-    switch (get_layout_type(l.tags())) {
+    switch (l.type()) {
       case LayoutType::Scalar2D:
       {
         const auto v_src = f.get_view<Real*,Host>();
@@ -334,7 +334,7 @@ TEST_CASE ("vertical_remap") {
 
       f.sync_to_host();
 
-      switch (get_layout_type(lsrc.tags())) {
+      switch (lsrc.type()) {
         case LayoutType::Scalar2D:
         {
           // This is a flat array w/ no LEV tag so the interpolated value for source and target should match.

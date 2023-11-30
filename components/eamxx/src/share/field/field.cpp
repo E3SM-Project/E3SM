@@ -121,7 +121,7 @@ get_component (const int i, const bool dynamic) {
   const auto& fname = get_header().get_identifier().name();
   EKAT_REQUIRE_MSG (layout.is_vector_layout(),
       "Error! 'get_component' available only for vector fields.\n"
-      "       Layout of '" + fname + "': " + e2str(get_layout_type(layout.tags())) + "\n");
+      "       Layout of '" + fname + "': " + e2str(layout.type()) + "\n");
 
   const int idim = layout.get_vector_component_idx();
   EKAT_REQUIRE_MSG (i>=0 && i<layout.dim(idim),

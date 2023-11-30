@@ -146,7 +146,7 @@ is_valid_layout (const FieldLayout& layout) const
 {
   using namespace ShortFieldTagsNames;
 
-  const auto lt = get_layout_type(layout.tags());
+  const auto lt = layout.type();
   if (lt==LayoutType::Scalar0D or lt==LayoutType::Vector0D) {
     // 0d layouts are compatible with any grid
     // Let's return true early to avoid segfautls below
