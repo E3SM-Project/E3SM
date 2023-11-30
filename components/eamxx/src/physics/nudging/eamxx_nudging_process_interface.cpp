@@ -144,7 +144,7 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   // because we need to know the grid information.
   // For now, we are doing the horizontal interpolation last,
   // so we use the m_grid (model physics) as the target grid
-  grid_int = m_grid->clone(m_grid->name(), false);
+  grid_int = m_grid->clone(m_grid->name(), true);
   // We also need a temporary grid for the external grid
   std::shared_ptr<const scream::AbstractGrid> grid_ext_const;
   if(m_refine_remap) {
@@ -154,25 +154,25 @@ void Nudging::initialize_impl (const RunType /* run_type */)
     // If we are refine-remapping, then get grid from remapper
     grid_ext_const = m_refine_remapper->get_src_grid();
     // Deep clone it though to get rid of "const" stuff
-    grid_ext = grid_ext_const->clone(grid_ext_const->name(), false);
+    grid_ext = grid_ext_const->clone(grid_ext_const->name(), true);
     // The first grid is grid_ext (external grid, i.e., files),
     // so, grid_ext can potentially have different levels
     grid_ext->reset_num_vertical_lev(m_num_src_levs);
     // The second grid is grid_hxt (external horiz grid, but model physics
     // vert grid, so potentially a bit of a mess)
-    grid_hxt = grid_ext->clone(grid_ext->name(), false);
+    grid_hxt = grid_ext->clone(grid_ext->name(), true);
     grid_hxt->reset_num_vertical_lev(m_num_levs);
   } else {
     // DoNothingRemapper
     // If not refine-remapping, then use whatever was used before,
     // i.e., deep clone the physics grid
-    grid_ext = m_grid->clone(m_grid->name(), false);
+    grid_ext = m_grid->clone(m_grid->name(), true);
     // The first grid is grid_ext (external grid, i.e., files),
     // so, grid_ext can potentially have different levels
     grid_ext->reset_num_vertical_lev(m_num_src_levs);
     // The second grid is grid_hxt (external horiz grid, but model physics
     // vert grid, so potentially a bit of a mess)
-    grid_hxt = grid_ext->clone(grid_ext->name(), false);
+    grid_hxt = grid_ext->clone(grid_ext->name(), true);
     grid_hxt->reset_num_vertical_lev(m_num_levs);
     m_refine_remapper = std::make_shared<DoNothingRemapper>(grid_hxt, grid_int);
   }
