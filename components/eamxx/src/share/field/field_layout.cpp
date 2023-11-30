@@ -7,9 +7,28 @@ namespace scream
 
 FieldLayout::FieldLayout (const std::vector<FieldTag>& tags,
                           const std::vector<int>& dims)
- : m_rank(tags.size())
- , m_tags(tags)
+ : FieldLayout (tags,dims,tags2str(tags))
 {
+  // Nothing to do here
+}
+
+FieldLayout::FieldLayout (const std::vector<FieldTag>& tags,
+                         const std::vector<int>& dims,
+                          const std::vector<std::string>& names)
+ : m_rank (tags.size())
+ , m_tags (tags)
+ , m_names(names)
+{
+  EKAT_REQUIRE_MSG (dims.size()==tags.size(),
+      "Error! Tags and dims vectors dimensions mismatch.\n"
+      "  tags size: " + std::to_string(tags.size()) + "\n"
+      "  dims size: " + std::to_string(dims.size()) + "\n");
+
+  EKAT_REQUIRE_MSG (names.size()==tags.size(),
+      "Error! Tags and names vectors dimensions mismatch.\n"
+      "  tags size : " + std::to_string(tags.size()) + "\n"
+      "  names size: " + std::to_string(names.size()) + "\n");
+
   m_dims.resize(m_rank,-1);
   m_extents = decltype(m_extents)("",m_rank);
   for (int idim=0; idim<m_rank; ++idim) {
@@ -103,11 +122,13 @@ FieldLayout FieldLayout::strip_dim (const int idim) const {
       "Error! Cannot strip dimension, because it is out of bounds.\n"
       "  - input dim index: " + std::to_string(idim) + "\n"
       "  - layout rank    : " + std::to_string(m_rank) + "\n");
-  std::vector<FieldTag> t = tags();
-  std::vector<int>      d = dims();
+  std::vector<FieldTag>    t = tags();
+  std::vector<int>         d = dims();
+  std::vector<std::string> n = names();
   t.erase(t.begin()+idim);
   d.erase(d.begin()+idim);
-  return FieldLayout (t,d);
+  n.erase(n.begin()+idim);
+  return FieldLayout (t,n,d);
 }
 
 FieldLayout FieldLayout::clone_with_different_extent (const int idim, const int extent) const
@@ -127,6 +148,15 @@ void FieldLayout::set_dimension (const int idim, const int dimension) {
   auto extents_h = Kokkos::create_mirror_view(m_extents);
   std::copy_n(m_dims.begin(),m_rank,extents_h.data());
   Kokkos::deep_copy(m_extents,extents_h);
+}
+
+void FieldLayout::rename_dim (const int idim, const std::string& n) {
+  EKAT_REQUIRE_MSG(idim>=0 && idim<m_rank, "Error! Index out of bounds.");
+
+  m_names[idim] = n;
+}
+void FieldLayout::rename_dim (const FieldTag tag, const std::string& n) {
+  rename_dim(dim(tag),n);
 }
 
 void FieldLayout::compute_type () {
