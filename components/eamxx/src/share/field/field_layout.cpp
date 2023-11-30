@@ -13,11 +13,13 @@ FieldLayout::FieldLayout (const std::vector<FieldTag>& tags,
 }
 
 FieldLayout::FieldLayout (const std::vector<FieldTag>& tags,
-                         const std::vector<int>& dims,
+                          const std::vector<int>& dims,
                           const std::vector<std::string>& names)
  : m_rank (tags.size())
  , m_tags (tags)
  , m_names(names)
+ , m_dims (dims)
+ , m_extents ("",tags.size())
 {
   EKAT_REQUIRE_MSG (dims.size()==tags.size(),
       "Error! Tags and dims vectors dimensions mismatch.\n"
@@ -29,12 +31,7 @@ FieldLayout::FieldLayout (const std::vector<FieldTag>& tags,
       "  tags size : " + std::to_string(tags.size()) + "\n"
       "  names size: " + std::to_string(names.size()) + "\n");
 
-  m_dims.resize(m_rank,-1);
-  m_extents = decltype(m_extents)("",m_rank);
-  for (int idim=0; idim<m_rank; ++idim) {
-    set_dimension(idim,dims[idim]);
-  }
-
+  set_extents ();
   compute_type ();
 }
 
@@ -133,21 +130,12 @@ FieldLayout FieldLayout::strip_dim (const int idim) const {
 
 FieldLayout FieldLayout::clone_with_different_extent (const int idim, const int extent) const
 {
-  FieldLayout copy(m_tags,m_dims);
-  copy.set_dimension(idim,extent);
-
-  return copy;
-}
-
-void FieldLayout::set_dimension (const int idim, const int dimension) {
   EKAT_REQUIRE_MSG(idim>=0 && idim<m_rank, "Error! Index out of bounds.");
-  EKAT_REQUIRE_MSG(dimension>=0, "Error! Dimensions must be non-negative.");
-  m_dims[idim] = dimension;
+  EKAT_REQUIRE_MSG(extent>=0, "Error! Dimensions must be non-negative.");
 
-  // Recompute device extents
-  auto extents_h = Kokkos::create_mirror_view(m_extents);
-  std::copy_n(m_dims.begin(),m_rank,extents_h.data());
-  Kokkos::deep_copy(m_extents,extents_h);
+  auto dims = m_dims;
+  dims[idim] = extent;
+  return FieldLayout (m_tags,m_names,dims);
 }
 
 void FieldLayout::rename_dim (const int idim, const std::string& n) {
@@ -157,6 +145,12 @@ void FieldLayout::rename_dim (const int idim, const std::string& n) {
 }
 void FieldLayout::rename_dim (const FieldTag tag, const std::string& n) {
   rename_dim(dim(tag),n);
+}
+
+void FieldLayout::set_extents () {
+  auto extents_h = Kokkos::create_mirror_view(m_extents);
+  std::copy_n(m_dims.begin(),m_rank,extents_h.data());
+  Kokkos::deep_copy(m_extents,extents_h);
 }
 
 void FieldLayout::compute_type () {

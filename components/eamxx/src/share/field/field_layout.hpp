@@ -132,6 +132,7 @@ public:
 
 protected:
   void compute_type ();
+  void set_extents ();
 
   int                       m_rank;
   std::vector<FieldTag>     m_tags;
