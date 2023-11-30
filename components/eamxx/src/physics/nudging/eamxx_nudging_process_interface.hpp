@@ -13,7 +13,6 @@
 #include "share/grid/point_grid.hpp"
 #include "share/util/scream_vertical_interpolation.hpp"
 #include "share/util/scream_time_stamp.hpp"
-#include "share/grid/remap/refining_remapper_p2p.hpp"
 #include "share/grid/remap/do_nothing_remapper.hpp"
 
 #include <string>

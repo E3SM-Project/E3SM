@@ -1,5 +1,7 @@
 #include "eamxx_nudging_process_interface.hpp"
 #include "share/util/scream_universal_constants.hpp"
+#include "share/grid/remap/refining_remapper_p2p.hpp"
+#include "share/grid/remap/abstract_remapper.hpp"
 
 namespace scream
 {
