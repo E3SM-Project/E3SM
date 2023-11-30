@@ -24,16 +24,16 @@
 		<package name="miscellaneousAMPKG" description="This package includes variables required for the miscellaneous analysis member."/>
 	</packages>
 	<var_struct name="miscellaneousAM" time_levs="1" packages="miscellaneousAMPKG">
-		<var name="bulkSalinity" type="real" dimensions="nCells Time" units="ppt"
+		<var name="bulkSalinity" type="real" dimensions="nCells Time" units="1e-3"
 			description="Bulk salinity of ice in a cell"
 		/>
-		<var name="broadbandAlbedo" type="real" dimensions="nCells Time" units="-"
+		<var name="broadbandAlbedo" type="real" dimensions="nCells Time" units="1"
 			description="snow/sea ice broadband albedo"
 		/>
-		<var name="coriolisStressVertexU" type="real" dimensions="nVertices Time" units=""
+		<var name="coriolisStressVertexU" type="real" dimensions="nVertices Time" units="kg m-1 s-2"
 			description="Coriolis stress in U direction"
 		/>
-		<var name="coriolisStressVertexV" type="real" dimensions="nVertices Time" units=""
+		<var name="coriolisStressVertexV" type="real" dimensions="nVertices Time" units="kg m-1 s-2"
 			description="Coriolis stress in V direction"
 		/>
 	</var_struct>
