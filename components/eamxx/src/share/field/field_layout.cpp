@@ -15,6 +15,8 @@ FieldLayout::FieldLayout (const std::vector<FieldTag>& tags,
   for (int idim=0; idim<m_rank; ++idim) {
     set_dimension(idim,dims[idim]);
   }
+
+  compute_type ();
 }
 
 bool FieldLayout::is_vector_layout () const {
@@ -23,8 +25,7 @@ bool FieldLayout::is_vector_layout () const {
 }
 
 bool FieldLayout::is_tensor_layout () const {
-  const auto lt = type();
-  return lt==LayoutType::Tensor2D || lt==LayoutType::Tensor3D;
+  return m_type==LayoutType::Tensor2D || m_type==LayoutType::Tensor3D;
 }
 
 // get the index of the CMP (Components) tag in the FieldLayout
@@ -56,7 +57,7 @@ std::vector<int> FieldLayout::get_tensor_dims () const {
   EKAT_REQUIRE_MSG (is_tensor_layout(),
       "Error! 'get_tensor_dims' available only for tensor layouts.\n"
       "       Current layout: " + to_string(*this) + "\n"
-      "       Layout type   : " + e2str(type()) + "\n");
+      "       Layout type   : " + e2str(m_type) + "\n");
 
   using namespace ShortFieldTagsNames;
 
@@ -128,7 +129,12 @@ void FieldLayout::set_dimension (const int idim, const int dimension) {
   Kokkos::deep_copy(m_extents,extents_h);
 }
 
-LayoutType FieldLayout::type () const {
+void FieldLayout::compute_type () {
+  if (m_rank==0) {
+    m_type = LayoutType::Scalar0D;
+    return;
+  }
+
   using namespace ShortFieldTagsNames;
 
   using ekat::erase;
@@ -141,9 +147,6 @@ LayoutType FieldLayout::type () const {
   const int ngp       = count(tags,GP);
   const int nvlevs    = count(tags,LEV) + count(tags,ILEV);
   const int ncomps    = count(tags,CMP);
-
-  // Start from undefined/invalid
-  LayoutType result = LayoutType::Invalid;
 
   // We don't care about TimeLevel
   erase (tags,TL);
@@ -161,61 +164,56 @@ LayoutType FieldLayout::type () const {
     // Remove the column tag
     erase(tags,COL);
   } else if (tags.size()==0) {
-    return LayoutType::Scalar0D;
+    m_type = LayoutType::Scalar0D; return;
   } else if (tags.size()==1 and tags[0]==CMP) {
-    return LayoutType::Vector0D;
+    m_type = LayoutType::Vector0D; return;
   } else if (tags.size()==1 and nvlevs==1) {
-    return LayoutType::Scalar1D;
+    m_type = LayoutType::Scalar1D; return;
   } else if (tags.size()==2 and ncomps==1 and nvlevs==1) {
-    return LayoutType::Vector1D;
+    m_type = LayoutType::Vector1D; return;
   } else {
     // Not a supported layout.
-    return LayoutType::Invalid;
+    m_type = LayoutType::Invalid; return;
   }
 
   // Get the size of what's left
   const auto size = tags.size();
   auto is_lev_tag = [](const FieldTag t) {
-    std::vector<FieldTag> lev_tags = {LEV,ILEV};
-    return ekat::contains(lev_tags,t);
-  };
-  auto is_cmp_tag = [](const FieldTag t) {
-    std::vector<FieldTag> cmp_tags = {CMP,NGAS,SWBND,LWBND,SWGPT,ISCCPTAU,ISCCPPRS};
-    return ekat::contains(cmp_tags,t);
+    return t==LEV or t==ILEV;
   };
   switch (size) {
     case 0:
-      result = LayoutType::Scalar2D;
+      m_type = LayoutType::Scalar2D;
       break;
     case 1:
-      // The only tag left should be a cmp tag or a lev tag
-      if (is_cmp_tag(tags[0])) {
-        result = LayoutType::Vector2D;
+      // The only tag left should be 'CMP', 'TL', or 'LEV'/'ILEV'
+      if (tags[0]==CMP || tags[0]==TL) {
+        m_type = LayoutType::Vector2D;
       } else if (is_lev_tag(tags[0])) {
-        result = LayoutType::Scalar3D;
+        m_type = LayoutType::Scalar3D;
       }
       break;
     case 2:
       // Possible supported scenarios:
-      //  1) <CMP,LEV|ILEV>
-      //  3) <CMP1,CMP2>
-      // where CMP,CMP1,CMP2 are any tag in cmp_tags
-      if ( is_cmp_tag(tags[0]) and is_lev_tag(tags[1]) ) {
-        result = LayoutType::Vector3D;
-      } else if (is_cmp_tag(tags[0]) and is_cmp_tag(tags[1])) {
-        result = LayoutType::Tensor2D;
+      //  1) <CMP|TL,LEV|ILEV>
+      //  2) <TL,CMP>
+      if ( is_lev_tag(tags[1]) && (tags[0]==CMP || tags[0]==TL)) {
+        m_type = LayoutType::Vector3D;
+      } else if (tags[0]==TL && tags[1]==CMP ) {
+        m_type = LayoutType::Tensor2D;
       }
       break;
     case 3:
       // The only supported scenario is:
-      //  1) <CMP1, CMP2, LEV|ILEV>
-      // where CMP1,CMP2 are any tag in cmp_tags
-      if (is_cmp_tag(tags[0]) and is_cmp_tag(tags[1]) and is_lev_tag(tags[2])) {
-        result = LayoutType::Tensor3D;
+      //  1) <TL,  CMP, LEV|ILEV>
+      if ( tags[0]==TL && tags[1]==CMP && is_lev_tag(tags[2])) {
+        m_type = LayoutType::Tensor3D;
       }
+      break;
+    default:
+      // If nothing worked, this type is not recognized
+      m_type = LayoutType::Invalid;
   }
-
-  return result;
 }
 
 std::string to_string (const FieldLayout& layout)

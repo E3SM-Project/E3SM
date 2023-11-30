@@ -74,7 +74,7 @@ public:
 
   // ----- Getters ----- //
 
-  LayoutType type () const;
+  LayoutType type () const { return m_type; }
 
   // Name and layout informations
   const std::vector<FieldTag>& tags () const { return m_tags; }
@@ -118,6 +118,7 @@ public:
   FieldLayout clone_with_different_extent (const int idim, const int extent) const;
 
 protected:
+  void compute_type ();
 
   // Only this class is allowed to change a layout. Customers can request
   // a *slightly* different layout (via strip_dim or clone_with_different_extent)
@@ -127,6 +128,8 @@ protected:
   std::vector<FieldTag> m_tags;
   std::vector<int>      m_dims;
   extents_type          m_extents;
+
+  LayoutType            m_type;
 };
 
 bool operator== (const FieldLayout& fl1, const FieldLayout& fl2);
