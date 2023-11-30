@@ -3289,16 +3289,18 @@ contains
       !-----------------------------------------------------------------
 
       integer :: &
-         iCell, iEdge, i, &! loop indices for cell, edge, neighbors
-         kmin,            &! topmost active cell index
-         nCells,          &! number of cells
-         err,             &! local error code
-         timeLevel         ! time level for state variables (default 1)
+         iCell, iEdge, i, k, &! loop indices for cell, edge, neighbors
+         kmin,               &! topmost active cell index
+         nCells,             &! number of cells
+         err,                &! local error code
+         timeLevel            ! time level for state variables (default 1)
 
       real (kind=RKIND) :: &
          fracAbsorbed,       &! fraction of sfc flux absorbed
          fracAbsorbedRunoff, &! same for runoff
          fracAbsorbedSubglacialRunoff, &! same for subglacial runoff
+         zTop,zBot,          &! temporary variables
+         transmissionCoeffTop,transmissionCoeffBot,     &! temporary variables
          sumSurfaceStressSquared ! sum of sfc stress squared
 
       ! pointers for variable/pool retrievals
@@ -3488,10 +3490,31 @@ contains
                                  -layerThickness(kmin, iCell)/ &
                            config_flux_attenuation_coefficient_runoff))
          if (config_use_sgr_opt_kpp == 1) then
-               fracAbsorbedSubglacialRunoff = 1.0_RKIND &
+            if ( trim(config_sgr_flux_vertical_location) == 'top' ) then
+                fracAbsorbedSubglacialRunoff = 1.0_RKIND &
                       - exp( max(-100.0_RKIND, &
                                  -layerThickness(kmin, iCell)/ &
                            config_flux_attenuation_coefficient_subglacial_runoff))
+            else if ( trim(config_sgr_flux_vertical_location) == 'uniform' ) then
+               ! calculate total thickness into variable zTop
+               zTop = 0.0_RKIND
+               do k = minLevelCell(iCell), maxLevelCell(iCell)
+                  zTop = zTop + layerThickness(k,iCell)
+               end do
+               ! distribute flux evenly throughout water column
+               fracAbsorbedSubglacialRunoff = layerThickness(kmin, iCell) / zTop
+            else if ( trim(config_sgr_flux_vertical_location) == 'bottom' ) then
+               zTop = 0.0_RKIND
+               do k = maxLevelCell(iCell), minLevelCell(iCell), -1
+                  zBot = zTop - layerThickness(k,iCell)
+                  if (k == minLevelCell(iCell)) then
+                    transmissionCoeffTop = exp( max(zTop / config_flux_attenuation_coefficient_runoff, -100.0_RKIND) )
+                    transmissionCoeffBot = exp( max(zBot / config_flux_attenuation_coefficient_runoff, -100.0_RKIND) )
+                    fracAbsorbedSubglacialRunoff = transmissionCoeffTop - transmissionCoeffBot
+                  end if
+                  zTop = zBot
+               end do
+            end if
          else
                fracAbsorbedSubglacialRunoff = 0.0_RKIND
          end if
