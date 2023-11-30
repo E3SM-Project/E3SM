@@ -20,7 +20,15 @@ class MAMAci final : public scream::AtmosphereProcess {
 
   // views for single- and multi-column data
   using const_view_2d = typename KT::template view_2d<const Real>;
-  
+  using view_2d       = typename KT::template view_2d<Real>;
+  // rho is air density [kg/m3]
+  view_2d rho_;
+
+  // w0_ is large scale velocity (m/s)
+  view_2d w0_;
+
+  // Top level for troposphere cloud physics
+  const int top_lev_ = 6;
 
 public:
   // Constructor
@@ -70,8 +78,10 @@ public:
   // local atmospheric state column variables
   const_view_2d pdel_;    // hydrostatic "pressure thickness" at grid
                           // interfaces [Pa]
-
-
+  const_view_2d omega_; // Vertical pressure velocity [Pa/s] at midpoints
+  const_view_2d p_mid_; // Total pressure [Pa] at midpoints
+  const_view_2d T_mid_; // Temperature[K] at midpoints
+  
   // physics grid for column information
   std::shared_ptr<const AbstractGrid> grid_;
 }; // MAMAci

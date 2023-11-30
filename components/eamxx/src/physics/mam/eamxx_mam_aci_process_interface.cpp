@@ -33,6 +33,9 @@ void MAMAci::set_grids(const std::shared_ptr<const GridsManager> grids_manager) 
   ncol_ = grid_->get_num_local_dofs(); // Number of columns on this rank
   nlev_ = grid_->get_num_vertical_levels(); // Number of levels per column
 
+  Kokkos::resize(rho_, ncol_, nlev_);
+  Kokkos::resize(w0_, ncol_, nlev_);
+   
   // Define the different field layouts that will be used for this process
   using namespace ShortFieldTagsNames;
 
@@ -120,10 +123,11 @@ void MAMAci::initialize_impl(const RunType run_type) {
     /*
       NOTE: All other inputs should follow the way "pseudo_density" is initialized
     */
-    const auto& p_del = get_field_in("pseudo_density").get_view<const Real**>();
-
     // set atmosphere state data
-    pdel_ = p_del;
+    pdel_ = get_field_in("pseudo_density").get_view<const Real**>();
+    omega_ = get_field_in("omega").get_view<const Real**>();
+    p_mid_ = get_field_in("p_mid").get_view<const Real**>();
+    T_mid_ = get_field_in("T_mid").get_view<const Real**>();
 
     /*
       NOTE: All derived variables (like rpdel and geopotential height) should be computed in
@@ -147,6 +151,17 @@ void MAMAci::run_impl(const double dt) {
   static constexpr auto gravit = C::gravit; // Gravity [m/s2]
   static constexpr auto rair   = C::Rair;   // Gas constant for dry air [J/(kg*K) or J/Kg/K]
 
+  // NOTE: All the inputs are available to compute w0
+  for (int icol = 0; icol < ncol_; ++icol) {
+    for (int kk = 0; kk< top_lev_; ++kk)  { 
+      w0_(icol,kk) = 0;
+      rho_(icol, kk) = -999.0;
+    }
+    for (int kk = top_lev_; kk < nlev_; ++kk) {
+      rho_(icol,kk) = p_mid_(icol,kk)/(rair*T_mid_(icol,kk));
+      w0_(icol,kk) = -1.0*omega_(icol,kk)/(rho_(icol,kk)*gravit);
+    }
+  }
 
     /*
     NOTE: All the inputs are available to compute w0
