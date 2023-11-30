@@ -240,7 +240,6 @@ be lost if SCREAM_HACK_XML is not enabled.
     STATIC_1D_VERTICAL_PROFILE: The dataset uses a fixed in time single pressure profile, variable name 'p_lev' with dimension (nlev).">TIME_DEPENDENT_3D_PROFILE</source_pressure_type>
       <source_pressure_file type="string" doc="If STATIC_1D_VERTICAL_PROFILE, this is an optional arg to point to a file with the source pressure levels defined.  
     Default is to look for p_levs in the first nudging_filename file"/>
-      <do_nudging_refine_remap type="logical" doc="Flag for whether to remap nudging fields to the physics grid">false</do_nudging_refine_remap>
       <nudging_refine_remap_mapfile type="string" doc="File containing the remapping weights for nudging fields to the physics grid">"no-file-given"</nudging_refine_remap_mapfile>
     </nudging>
 

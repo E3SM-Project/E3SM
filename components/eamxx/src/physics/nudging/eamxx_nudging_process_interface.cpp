@@ -14,18 +14,15 @@ Nudging::Nudging (const ekat::Comm& comm, const ekat::ParameterList& params)
   m_timescale = m_params.get<int>("nudging_timescale",0);
   m_fields_nudge = m_params.get<std::vector<std::string>>("nudging_fields");
   m_use_weights   = m_params.get<bool>("use_nudging_weights",false);
-  // Whether or not to do horizontal refine remap
-  m_refine_remap = m_params.get<bool>("do_nudging_refine_remap", false);
-  if (m_refine_remap) {
-    // If we are doing horizontal refine remap, we need to get the map file
-    m_refine_remap_file = m_params.get<std::string>(
-        "nudging_refine_remap_mapfile", "no-file-given");
-    // Check that the file is provided; if not, throw an error
-    // TODO: add a submit error (in xml configs)
-    EKAT_REQUIRE_MSG(m_refine_remap_file != "no-file-given",
-                     "Error! Nudging::Nudging - horizontal refine "
-                     "remap is enabled but no "
-                     "nudging_refine_remap_mapfile is provided.");
+  // If we are doing horizontal refine remap, we need to get the map file from user
+  m_refine_remap_file = m_params.get<std::string>(
+      "nudging_refine_remap_mapfile", "no-file-given");
+  // If the user gives a mapfile, assume we are refine-remapping,
+  // and we will check later if the file actually does fine-remap 
+  if (m_refine_remap_file != "no-file-given") {
+    m_refine_remap = true;
+  } else {
+    m_refine_remap = false;
   }
   auto src_pres_type = m_params.get<std::string>("source_pressure_type","TIME_DEPENDENT_3D_PROFILE");
   if (src_pres_type=="TIME_DEPENDENT_3D_PROFILE") {
@@ -139,6 +136,13 @@ void Nudging::apply_weighted_tendency(Field& base, const Field& next, const Fiel
 void Nudging::initialize_impl (const RunType /* run_type */)
 {
   using namespace ShortFieldTagsNames;
+  // Set up pointers for grids
+  // grid for coarse data
+  std::shared_ptr<scream::AbstractGrid> grid_ext;
+  // grid after vertical interpolation
+  std::shared_ptr<scream::AbstractGrid> grid_hxt;
+  // grid after horizontal interpolation
+  std::shared_ptr<scream::AbstractGrid> grid_int;
 
   // Initialize the refining remapper stuff at the outset,
   // because we need to know the grid information.
@@ -153,6 +157,16 @@ void Nudging::initialize_impl (const RunType /* run_type */)
     auto grid_ext_const = m_refine_remapper->get_src_grid();
     // Deep clone it though to get rid of "const" stuff
     grid_ext = grid_ext_const->clone(grid_ext_const->name(), true);
+    /* quick check here to ensure we are in good stnading */
+    // If the user gives a mapfile, we assume we are refine-remapping,
+    // but we should check if the mapfile is actually remapping stuff,
+    // so we compare the global columns of the target and source grids
+    auto grid_int_global_cols = grid_int->get_num_global_dofs();
+    auto grid_ext_global_cols = grid_ext->get_num_global_dofs();
+    EKAT_REQUIRE_MSG(
+        grid_int_global_cols != grid_ext_global_cols,
+        "Error! Nudging::initialize_impl - the mapfile given for "
+        "refine-remapping does not remap anything.  Please check the mapfile.");
     // The first grid is grid_ext (external grid, i.e., files),
     // so, grid_ext can potentially have different levels
     grid_ext->reset_num_vertical_lev(m_num_src_levs);
@@ -174,12 +188,16 @@ void Nudging::initialize_impl (const RunType /* run_type */)
     grid_hxt->reset_num_vertical_lev(m_num_levs);
     m_refine_remapper = std::make_shared<DoNothingRemapper>(grid_hxt, grid_int);
   }
-  // Declare the layouts for the helper fields (ext --> mid)
-  FieldLayout scalar2d_layout_mid { {LEV}, {m_num_src_levs} };
-  FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols, m_num_src_levs} };
-  // Declare the layouts for the helper fields (hxt --> hid)
-  FieldLayout scalar2d_layout_hid { {LEV}, {m_num_levs}};
-  FieldLayout scalar3d_layout_hid { {COL,LEV}, {m_num_cols, m_num_levs} };
+  // Declare the layouts for the helper fields (int)
+  FieldLayout scalar2d_layout_mid { {LEV}, {m_num_levs} };
+  FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols, m_num_levs} };
+  auto m_num_cols_ext = grid_ext->get_num_local_dofs();
+  // Declare the layouts for the helper fields (hxt)
+  FieldLayout scalar2d_layout_mid_hxt { {LEV}, {m_num_levs}};
+  FieldLayout scalar3d_layout_mid_hxt { {COL,LEV}, {m_num_cols_ext, m_num_levs} };
+  // Declare the layouts for the helper fields (ext)
+  FieldLayout scalar2d_layout_mid_ext { {LEV}, {m_num_src_levs}};
+  FieldLayout scalar3d_layout_mid_ext { {COL,LEV}, {m_num_cols_ext, m_num_src_levs} };
 
   // Initialize the time interpolator
   m_time_interp = util::TimeInterpolation(grid_ext, m_datafiles);
@@ -188,7 +206,7 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   // To be extra careful, this should be the ext_grid
   const auto& grid_ext_name = grid_ext->name();
   if (m_src_pres_type == TIME_DEPENDENT_3D_PROFILE) {
-    auto pmid_ext = create_helper_field("p_mid_ext", scalar3d_layout_mid, grid_ext_name, ps);
+    auto pmid_ext = create_helper_field("p_mid_ext", scalar3d_layout_mid_ext, grid_ext_name, ps);
     m_time_interp.add_field(pmid_ext.alias("p_mid"),true);
   } else if (m_src_pres_type == STATIC_1D_VERTICAL_PROFILE) {
     // Load p_levs from source data file
@@ -197,11 +215,11 @@ void Nudging::initialize_impl (const RunType /* run_type */)
     in_params.set("Skip_Grid_Checks",true);  // We need to skip grid checks because multiple ranks may want the same column of source data.
     std::map<std::string,view_1d_host<Real>> host_views;
     std::map<std::string,FieldLayout>  layouts;
-    auto pmid_ext = create_helper_field("p_mid_ext", scalar2d_layout_mid, grid_ext_name, ps);
+    auto pmid_ext = create_helper_field("p_mid_ext", scalar2d_layout_mid_ext, grid_ext_name, ps);
     auto pmid_ext_v = pmid_ext.get_view<Real*,Host>();
     in_params.set<std::vector<std::string>>("Field Names",{"p_levs"});
     host_views["p_levs"] = pmid_ext_v;
-    layouts.emplace("p_levs",scalar2d_layout_mid);
+    layouts.emplace("p_levs",scalar2d_layout_mid_ext);
     AtmosphereInput src_input(in_params,grid_ext,host_views,layouts);
     src_input.read_variables(-1);
     src_input.finalize();
@@ -222,8 +240,8 @@ void Nudging::initialize_impl (const RunType /* run_type */)
     auto grid_hxt_name = grid_hxt->name();
     auto field  = get_field_out_wrap(name);
     auto layout = field.get_header().get_identifier().get_layout();
-    auto field_ext = create_helper_field(name_ext, scalar3d_layout_mid, grid_ext_name, ps);
-    auto field_hxt = create_helper_field(name_hxt, scalar3d_layout_hid, grid_hxt_name, ps);
+    auto field_ext = create_helper_field(name_ext, scalar3d_layout_mid_ext, grid_ext_name, ps);
+    auto field_hxt = create_helper_field(name_hxt, scalar3d_layout_mid_hxt, grid_hxt_name, ps);
     Field field_int;
     if (m_refine_remap) {
       field_int = create_helper_field(name, layout, grid_int_name, ps);
@@ -248,8 +266,7 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   if (m_use_weights)
   {
     auto grid_name = m_grid->name();
-    FieldLayout scalar3d_layout_grid { {COL,LEV}, {m_num_cols, m_num_levs} };
-    auto nudging_weights = create_helper_field("nudging_weights", scalar3d_layout_grid, grid_name, ps);
+    auto nudging_weights = create_helper_field("nudging_weights", scalar3d_layout_mid, grid_name, ps);
     std::vector<Field> fields;
     fields.push_back(nudging_weights);
     AtmosphereInput src_weights_input(m_weights_file, grid_ext, fields);

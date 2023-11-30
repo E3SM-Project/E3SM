@@ -140,12 +140,6 @@ protected:
   std::string m_refine_remap_file;
   // (refining) remapper object
   std::shared_ptr<scream::AbstractRemapper> m_refine_remapper;
-  // grid for coarse data
-  std::shared_ptr<scream::AbstractGrid> grid_ext;
-  // grid after vertical interpolation
-  std::shared_ptr<scream::AbstractGrid> grid_hxt;
-  // grid after horizontal interpolation
-  std::shared_ptr<scream::AbstractGrid> grid_int;
 
   util::TimeInterpolation m_time_interp;
 
