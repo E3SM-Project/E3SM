@@ -222,10 +222,8 @@ void Nudging::initialize_impl (const RunType /* run_type */)
     auto grid_hxt_name = grid_hxt->name();
     auto field  = get_field_out_wrap(name);
     auto layout = field.get_header().get_identifier().get_layout();
-    auto field_ext =
-        create_helper_field(name_ext, scalar3d_layout_mid, grid_ext_name, ps);
-    auto field_hxt =
-        create_helper_field(name_hxt, scalar3d_layout_hid, grid_hxt_name, ps);
+    auto field_ext = create_helper_field(name_ext, scalar3d_layout_mid, grid_ext_name, ps);
+    auto field_hxt = create_helper_field(name_hxt, scalar3d_layout_hid, grid_hxt_name, ps);
     Field field_int;
     if(m_refine_remap) {
       field_int = create_helper_field(name, layout, grid_int_name, ps);
@@ -251,8 +249,7 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   {
     auto grid_name = m_grid->name();
     FieldLayout scalar3d_layout_grid { {COL,LEV}, {m_num_cols, m_num_levs} };
-    auto nudging_weights = create_helper_field(
-        "nudging_weights", scalar3d_layout_grid, grid_name, ps);
+    auto nudging_weights = create_helper_field("nudging_weights", scalar3d_layout_grid, grid_name, ps);
     std::vector<Field> fields;
     fields.push_back(nudging_weights);
     AtmosphereInput src_weights_input(m_weights_file, grid_ext, fields);
@@ -454,9 +451,9 @@ void Nudging::finalize_impl()
   m_time_interp.finalize();
 }
 // =========================================================================================
-Field Nudging::create_helper_field(const std::string &name,
-                                             const FieldLayout &layout,
-                                             const std::string &grid_name,
+Field Nudging::create_helper_field(const std::string& name,
+                                             const FieldLayout& layout,
+                                             const std::string& grid_name,
                                              const int ps)
 {
   using namespace ekat::units;
