@@ -416,8 +416,9 @@ void Nudging::run_impl (const double dt)
 
   }
 
-  // Refine-remap onto target atmosphere state horiz grid ("int")
-  // Note that we are going from hxt to int here
+  // Refine-remap onto target atmosphere state horiz grid ("int");
+  // note that if the nudging data comes from the same grid as the model,
+  // this remap step is a no-op; otherwise, we refine-remap from hxt to int
   m_refine_remapper->remap(true);
 
   for (auto name : m_fields_nudge) {
