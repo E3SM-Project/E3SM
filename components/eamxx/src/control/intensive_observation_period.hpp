@@ -99,6 +99,12 @@ public:
   // Set fields using data loaded from the iop file
   void set_fields_from_iop_data(const field_mgr_ptr field_mgr);
 
+  // The IOP file may contain values for T that are
+  // 0 at or above the surface. Correct these values
+  // by providing a "t_correction" view where we
+  // replace all values T_iop(k) == 0 with t_correction(k).
+  void correct_temperature(const view_1d<Real>& t_correction);
+
   // Store grid spacing for use in SHOC ad interface
   void set_grid_spacing (const Real dx_short) {
     m_dynamics_dx_size = dx_short*1000;
@@ -168,17 +174,6 @@ private:
                            int model_nlevs,
                            const Field& hyam,
                            const Field& hybm);
-
-  // The IOP file may contain values for T that are
-  // 0 at or above the surface. Correct these values
-  // by providing a "t_correction" view where we
-  // replace all values T_iop(k) == 0 with t_correction(k).
-  void correct_temperature(const view_1d<Real>& t_correction);
-
-  // Given vector of IC field names, and a field manager, (potentially) overwrite
-  // inputs with values from IOP data.
-  void set_ic_from_iop_data(const vos& field_names_eamxx,
-                            const field_mgr_ptr field_mgr);
 
   ekat::Comm m_comm;
   ekat::ParameterList m_params;
