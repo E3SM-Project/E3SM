@@ -3237,7 +3237,7 @@ contains
             endif
 
            enddo   ! (do nt = 1,nt_rtm   --Inund.)
-           write(iulog,'(a)') '----------------------------------- '
+
          if (budget_write) then
            if (inundflag) then
              write(iulog,'(a)') ' '
