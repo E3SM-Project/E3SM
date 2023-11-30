@@ -145,14 +145,12 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   // For now, we are doing the horizontal interpolation last,
   // so we use the m_grid (model physics) as the target grid
   grid_int = m_grid->clone(m_grid->name(), true);
-  // We also need a temporary grid for the external grid
-  std::shared_ptr<const scream::AbstractGrid> grid_ext_const;
   if(m_refine_remap) {
     // P2P remapper
     m_refine_remapper =
         std::make_shared<RefiningRemapperP2P>(grid_int, m_refine_remap_file);
     // If we are refine-remapping, then get grid from remapper
-    grid_ext_const = m_refine_remapper->get_src_grid();
+    auto grid_ext_const = m_refine_remapper->get_src_grid();
     // Deep clone it though to get rid of "const" stuff
     grid_ext = grid_ext_const->clone(grid_ext_const->name(), true);
     // The first grid is grid_ext (external grid, i.e., files),
@@ -456,8 +454,10 @@ void Nudging::finalize_impl()
 }
 // =========================================================================================
 Field Nudging::create_helper_field(const std::string &name,
-                                   const FieldLayout &layout,
-                                   const std::string &grid_name, const int ps) {
+                                             const FieldLayout &layout,
+                                             const std::string &grid_name,
+                                             const int ps)
+{
   using namespace ekat::units;
   // For helper fields we don't bother w/ units, so we set them to non-dimensional
   FieldIdentifier id(name,layout,Units::nondimensional(),grid_name);
