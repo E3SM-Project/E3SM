@@ -834,7 +834,10 @@ contains
 
     logical,save        :: first_call = .true.
     integer, save       :: lSize
-    !
+    
+#ifdef MOABDEBUG
+    character*100 outfile, wopts, lnum
+#endif
     character(*),parameter :: subName =   '(seq_flux_ocnalb_mct) '
     !
     !-----------------------------------------------------------------------
@@ -1043,6 +1046,32 @@ contains
        endif
 
     endif
+#ifdef MOABDEBUG
+    if (mbofxid > 0) then
+        ! debug out file
+       write(lnum,"(I0.2)")num_moab_exports
+       outfile = 'OcnCpl2Albedo_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+       wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
+       ierr = iMOAB_WriteMesh(mbofxid, outfile, wopts)
+       if (ierr .ne. 0) then
+          write(logunit,*) subname,' error in writing second ocean inst (for flux comp) '
+          call shr_sys_abort(subname//' ERROR in writing second ocean inst (for flux comp)  ')
+       endif
+    endif
+    if (mboxid > 0) then
+       ! debug out file
+       write(lnum,"(I0.2)")num_moab_exports
+       outfile = 'OcnCplAlbedo_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+       wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
+       ierr = iMOAB_WriteMesh(mboxid, outfile, wopts)
+ 
+       if (ierr .ne. 0) then
+          write(logunit,*) subname,' error in writing ocean inst (for flux comp) '
+          call shr_sys_abort(subname//' ERROR in writing ocean inst (for flux comp)  ')
+       endif
+   endif
+#endif
+
 
   end subroutine seq_flux_ocnalb_mct
 
