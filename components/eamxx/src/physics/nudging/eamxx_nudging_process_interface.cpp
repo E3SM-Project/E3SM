@@ -17,13 +17,6 @@ Nudging::Nudging (const ekat::Comm& comm, const ekat::ParameterList& params)
   // If we are doing horizontal refine-remapping, we need to get the mapfile from user
   m_refine_remap_file = m_params.get<std::string>(
       "nudging_refine_remap_mapfile", "no-file-given");
-  // If the user gives a mapfile, assume we are refine-remapping,
-  // and we will check later if the file actually does refine-remap 
-  if (m_refine_remap_file != "no-file-given") {
-    m_refine_remap = true;
-  } else {
-    m_refine_remap = false;
-  }
   auto src_pres_type = m_params.get<std::string>("source_pressure_type","TIME_DEPENDENT_3D_PROFILE");
   if (src_pres_type=="TIME_DEPENDENT_3D_PROFILE") {
     m_src_pres_type = TIME_DEPENDENT_3D_PROFILE;
@@ -93,6 +86,46 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
     m_num_src_levs = scorpio::get_dimlen(m_static_vertical_pressure_file,"lev");
     scorpio::eam_pio_closefile(m_static_vertical_pressure_file);
   }
+
+  /* Check for consistency between nudging files, map file, and remapper */
+
+  // Number of columns globally
+  auto m_num_cols_global = m_grid->get_num_global_dofs(); 
+
+  // Get the information from the first nudging data file
+  scorpio::register_file(m_datafiles[0],scorpio::Read);
+  int num_cols_src = scorpio::get_dimlen(m_datafiles[0],"ncol");
+  scorpio::eam_pio_closefile(m_datafiles[0]);
+
+  if (num_cols_src != m_num_cols_global) {
+    // If differing cols, check if remap file is provided
+    EKAT_REQUIRE_MSG(m_refine_remap_file != "no-file-given",
+                     "Error! Nudging::set_grids - the number of columns in the nudging data file "
+                     << std::to_string(num_cols_src) << " does not match the number of columns in the "
+                     << "model grid " << std::to_string(m_num_cols_global) << ".  Please check the "
+                     << "nudging data file and/or the model grid.");
+    // If remap file is provided, check if it is consistent with the nudging data file
+    // First get the data from the mapfile
+    scorpio::register_file(m_refine_remap_file,scorpio::Read);
+    int num_cols_remap_a = scorpio::get_dimlen(m_refine_remap_file,"n_a");
+    int num_cols_remap_b = scorpio::get_dimlen(m_refine_remap_file,"n_b");
+    scorpio::eam_pio_closefile(m_refine_remap_file);
+    // Then, check if n_a (source) and n_b (target) are consistent
+    EKAT_REQUIRE_MSG(num_cols_remap_a == num_cols_src,
+                     "Error! Nudging::set_grids - the number of columns in the nudging data file "
+                     << std::to_string(num_cols_src) << " does not match the number of columns in the "
+                     << "mapfile " << std::to_string(num_cols_remap_a) << ".  Please check the "
+                     << "nudging data file and/or the mapfile.");
+    EKAT_REQUIRE_MSG(num_cols_remap_b == m_num_cols_global,
+                      "Error! Nudging::set_grids - the number of columns in the model grid "
+                      << std::to_string(m_num_cols_global) << " does not match the number of columns in the "
+                      << "mapfile " << std::to_string(num_cols_remap_b) << ".  Please check the "
+                      << "model grid and/or the mapfile.");
+    // If we get here, we are good to go!
+    m_refine_remap = true;
+  } else {
+    m_refine_remap = false;
+  }
 }
 // =========================================================================================
 void Nudging::apply_tendency(Field& base, const Field& next, const Real dt)
@@ -156,16 +189,6 @@ void Nudging::initialize_impl (const RunType /* run_type */)
     // Get grid from remapper, and clone it
     auto grid_ext_const = m_refine_remapper->get_src_grid();
     grid_ext = grid_ext_const->clone(grid_ext_const->name(), true);
-    /* quick check here to ensure we are in good stnading */
-    // If the user gives a mapfile, we assume we are refine-remapping,
-    // but we should check if the mapfile is actually remapping stuff,
-    // so we compare the global columns of the target and source grids
-    auto grid_int_global_cols = grid_int->get_num_global_dofs();
-    auto grid_ext_global_cols = grid_ext->get_num_global_dofs();
-    EKAT_REQUIRE_MSG(
-        grid_int_global_cols != grid_ext_global_cols,
-        "Error! Nudging::initialize_impl - the mapfile given for "
-        "refine-remapping does not remap anything.  Please check the mapfile.");
     // Finally, grid_ext may have different levels
     grid_ext->reset_num_vertical_lev(m_num_src_levs);
   } else {
