@@ -1198,8 +1198,6 @@ def buildnml(case, caseroot, compname):
                 lines.append('    <var name="velocityZonalTimesSalinity_GM"/>')
                 lines.append('    <var name="velocityMeridionalTimesSalinity_GM"/>')
                 lines.append('    <var name="normalGMBolusVelocityTimesSalinity"/>')
-                lines.append('    <var name="gmKappaScaling"/>')
-                lines.append('    <var name="gmBolusKappa"/>')
                 lines.append('    <var name="mocStreamvalLatAndDepthGM"/>')
                 lines.append('    <var name="mocStreamvalLatAndDepthRegionGM"/>')
 
