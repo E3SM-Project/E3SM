@@ -734,12 +734,12 @@
 	</nml_record>
 
 	<nml_record name="column_tracers" in_defaults="true">
-		<nml_option name="config_use_ice_age" type="logical" default_value="true" units="unitless"
+		<nml_option name="config_use_ice_age" type="logical" default_value="false" units="unitless"
 			description="If true use the ice age tracer."
 			possible_values="true or false"
 			icepack_name="tr_iage"
 		/>
-		<nml_option name="config_use_first_year_ice" type="logical" default_value="true" units="unitless"
+		<nml_option name="config_use_first_year_ice" type="logical" default_value="false" units="unitless"
 			description="If true use the first year ice tracer."
 			possible_values="true or false"
 			icepack_name="tr_FY"
