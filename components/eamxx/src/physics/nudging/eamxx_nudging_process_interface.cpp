@@ -16,7 +16,7 @@ Nudging::Nudging (const ekat::Comm& comm, const ekat::ParameterList& params)
   m_use_weights   = m_params.get<bool>("use_nudging_weights",false);
   // Whether or not to do horizontal refine remap
   m_refine_remap = m_params.get<bool>("do_nudging_refine_remap", false);
-  if(m_refine_remap) {
+  if (m_refine_remap) {
     // If we are doing horizontal refine remap, we need to get the map file
     m_refine_remap_file = m_params.get<std::string>(
         "nudging_refine_remap_mapfile", "no-file-given");
@@ -145,7 +145,7 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   // For now, we are doing the horizontal interpolation last,
   // so we use the m_grid (model physics) as the target grid
   grid_int = m_grid->clone(m_grid->name(), true);
-  if(m_refine_remap) {
+  if (m_refine_remap) {
     // P2P remapper
     m_refine_remapper =
         std::make_shared<RefiningRemapperP2P>(grid_int, m_refine_remap_file);
@@ -225,7 +225,7 @@ void Nudging::initialize_impl (const RunType /* run_type */)
     auto field_ext = create_helper_field(name_ext, scalar3d_layout_mid, grid_ext_name, ps);
     auto field_hxt = create_helper_field(name_hxt, scalar3d_layout_hid, grid_hxt_name, ps);
     Field field_int;
-    if(m_refine_remap) {
+    if (m_refine_remap) {
       field_int = create_helper_field(name, layout, grid_int_name, ps);
     } else {
       field_int             = field_hxt.alias(name);
@@ -451,7 +451,7 @@ void Nudging::finalize_impl()
   m_time_interp.finalize();
 }
 // =========================================================================================
-Field Nudging::create_helper_field(const std::string& name,
+Field Nudging::create_helper_field (const std::string& name,
                                              const FieldLayout& layout,
                                              const std::string& grid_name,
                                              const int ps)
