@@ -14,11 +14,11 @@ Nudging::Nudging (const ekat::Comm& comm, const ekat::ParameterList& params)
   m_timescale = m_params.get<int>("nudging_timescale",0);
   m_fields_nudge = m_params.get<std::vector<std::string>>("nudging_fields");
   m_use_weights   = m_params.get<bool>("use_nudging_weights",false);
-  // If we are doing horizontal refine remap, we need to get the map file from user
+  // If we are doing horizontal refine-remapping, we need to get the mapfile from user
   m_refine_remap_file = m_params.get<std::string>(
       "nudging_refine_remap_mapfile", "no-file-given");
   // If the user gives a mapfile, assume we are refine-remapping,
-  // and we will check later if the file actually does fine-remap 
+  // and we will check later if the file actually does refine-remap 
   if (m_refine_remap_file != "no-file-given") {
     m_refine_remap = true;
   } else {
@@ -166,16 +166,14 @@ void Nudging::initialize_impl (const RunType /* run_type */)
         grid_int_global_cols != grid_ext_global_cols,
         "Error! Nudging::initialize_impl - the mapfile given for "
         "refine-remapping does not remap anything.  Please check the mapfile.");
-    // The first grid is grid_ext (external grid, i.e., files),
-    // so, grid_ext can potentially have different levels
+    // Finally, grid_ext may have different levels
     grid_ext->reset_num_vertical_lev(m_num_src_levs);
   } else {
-    // DoNothingRemapper
-    // We set external grid as physics grid, but maybe different levs
+    // We set up a DoNothingRemapper, which will do nothing
+    m_refine_remapper = std::make_shared<DoNothingRemapper>(grid_int, grid_int);
+    // We clone physics grid, but maybe we have different levels
     grid_ext = m_grid->clone(m_grid->name(), true);
     grid_ext->reset_num_vertical_lev(m_num_src_levs);
-    // We set up a DoNothingRemapper, which will just copy the data
-    m_refine_remapper = std::make_shared<DoNothingRemapper>(grid_int, grid_int);
   }
   // The temporary grid is the external grid, but with
   // the same number of levels as the internal (physics) grid
@@ -231,7 +229,7 @@ void Nudging::initialize_impl (const RunType /* run_type */)
     std::string name_tmp = name + "_tmp";
     // Helper fields that will temporarily store the target state, which can then
     // be used to back out a nudging tendency
-    auto grid_int_name = m_grid->name();
+    auto grid_int_name = grid_int->name();
     auto grid_ext_name = grid_ext->name();
     auto grid_tmp_name = grid_tmp->name();
     auto field  = get_field_out_wrap(name);
@@ -240,7 +238,7 @@ void Nudging::initialize_impl (const RunType /* run_type */)
     auto field_tmp = create_helper_field(name_tmp, scalar3d_layout_mid_tmp, grid_tmp_name, ps);
     Field field_int;
     if (m_refine_remap) {
-      field_int = create_helper_field(name, layout, grid_int_name, ps);
+      field_int = create_helper_field(name, scalar3d_layout_mid, grid_int_name, ps);
     } else {
       field_int             = field_tmp.alias(name);
       m_helper_fields[name] = field_int;
@@ -248,7 +246,7 @@ void Nudging::initialize_impl (const RunType /* run_type */)
 
     // Register the fields with the remapper
     m_refine_remapper->register_field(field_tmp, field_int);
-    // Add them to time interpolator
+    // Add the fields to the time interpolator
     m_time_interp.add_field(field_ext.alias(name), true);
   }
   m_time_interp.initialize_data_from_files();
@@ -295,7 +293,6 @@ void Nudging::run_impl (const double dt)
     p_mid_ext_1d   = get_helper_field("p_mid_ext").get_view<mPack*>();
   }
 
-  // Loop over the nudged fields
   for (auto name : m_fields_nudge) {
     auto atm_state_field = get_field_out_wrap(name);      // int horiz, int vert
     auto int_state_field = get_helper_field(name);        // int horiz, int vert
@@ -426,7 +423,7 @@ void Nudging::run_impl (const double dt)
 
   }
 
-  // Refine-remap onto target atmosphere state horiz grid ("int");
+  // Refine-remap onto target atmosphere state horiz grid (int);
   // note that if the nudging data comes from the same grid as the model,
   // this remap step is a no-op; otherwise, we refine-remap from tmp to int
   m_refine_remapper->remap(true);
