@@ -137,25 +137,24 @@ void Nudging::initialize_impl (const RunType /* run_type */)
 {
   using namespace ShortFieldTagsNames;
   // Set up pointers for grids
-  // grid for coarse data
+  // external grid: from source data
   std::shared_ptr<scream::AbstractGrid> grid_ext;
-  // grid after vertical interpolation
-  std::shared_ptr<scream::AbstractGrid> grid_hxt;
-  // grid after horizontal interpolation
+  // temporary grid: after vertical interpolation
+  std::shared_ptr<scream::AbstractGrid> grid_tmp;
+  // internal grid: after horizontal interpolation
   std::shared_ptr<scream::AbstractGrid> grid_int;
 
   // Initialize the refining remapper stuff at the outset,
-  // because we need to know the grid information.
-  // For now, we are doing the horizontal interpolation last,
+  // because we need to know the grid information;
+  // for now, we are doing the horizontal interpolation last,
   // so we use the m_grid (model physics) as the target grid
   grid_int = m_grid->clone(m_grid->name(), true);
   if (m_refine_remap) {
     // P2P remapper
     m_refine_remapper =
         std::make_shared<RefiningRemapperP2P>(grid_int, m_refine_remap_file);
-    // If we are refine-remapping, then get grid from remapper
+    // Get grid from remapper, and clone it
     auto grid_ext_const = m_refine_remapper->get_src_grid();
-    // Deep clone it though to get rid of "const" stuff
     grid_ext = grid_ext_const->clone(grid_ext_const->name(), true);
     /* quick check here to ensure we are in good stnading */
     // If the user gives a mapfile, we assume we are refine-remapping,
@@ -170,32 +169,29 @@ void Nudging::initialize_impl (const RunType /* run_type */)
     // The first grid is grid_ext (external grid, i.e., files),
     // so, grid_ext can potentially have different levels
     grid_ext->reset_num_vertical_lev(m_num_src_levs);
-    // The second grid is grid_hxt (external horiz grid, but model physics
-    // vert grid, so potentially a bit of a mess)
-    grid_hxt = grid_ext->clone(grid_ext->name(), true);
-    grid_hxt->reset_num_vertical_lev(m_num_levs);
   } else {
     // DoNothingRemapper
-    // If not refine-remapping, then use whatever was used before,
-    // i.e., deep clone the physics grid
+    // We set external grid as physics grid, but maybe different levs
     grid_ext = m_grid->clone(m_grid->name(), true);
-    // The first grid is grid_ext (external grid, i.e., files),
-    // so, grid_ext can potentially have different levels
     grid_ext->reset_num_vertical_lev(m_num_src_levs);
-    // The second grid is grid_hxt (external horiz grid, but model physics
-    // vert grid, so potentially a bit of a mess)
-    grid_hxt = grid_ext->clone(grid_ext->name(), true);
-    grid_hxt->reset_num_vertical_lev(m_num_levs);
-    m_refine_remapper = std::make_shared<DoNothingRemapper>(grid_hxt, grid_int);
+    // We set up a DoNothingRemapper, which will just copy the data
+    m_refine_remapper = std::make_shared<DoNothingRemapper>(grid_int, grid_int);
   }
-  // Declare the layouts for the helper fields (int)
+  // The temporary grid is the external grid, but with
+  // the same number of levels as the internal (physics) grid
+  grid_tmp = grid_ext->clone(grid_ext->name(), true);
+  grid_tmp->reset_num_vertical_lev(m_num_levs);
+
+  // Declare the layouts for the helper fields (int: internal)
   FieldLayout scalar2d_layout_mid { {LEV}, {m_num_levs} };
   FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols, m_num_levs} };
+
+  // Get the number of external cols on current rank
   auto m_num_cols_ext = grid_ext->get_num_local_dofs();
-  // Declare the layouts for the helper fields (hxt)
-  FieldLayout scalar2d_layout_mid_hxt { {LEV}, {m_num_levs}};
-  FieldLayout scalar3d_layout_mid_hxt { {COL,LEV}, {m_num_cols_ext, m_num_levs} };
-  // Declare the layouts for the helper fields (ext)
+  // Declare the layouts for the helper fields (tmp: temporay))
+  FieldLayout scalar2d_layout_mid_tmp { {LEV}, {m_num_levs}};
+  FieldLayout scalar3d_layout_mid_tmp { {COL,LEV}, {m_num_cols_ext, m_num_levs} };
+  // Declare the layouts for the helper fields (ext: external)
   FieldLayout scalar2d_layout_mid_ext { {LEV}, {m_num_src_levs}};
   FieldLayout scalar3d_layout_mid_ext { {COL,LEV}, {m_num_cols_ext, m_num_src_levs} };
 
@@ -229,29 +225,29 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   // Open the registration!
   m_refine_remapper->registration_begins();
 
-  // To create helper fields for later; we do both hxt and ext...
+  // To create helper fields for later; we do both tmp and ext...
   for (auto name : m_fields_nudge) {
     std::string name_ext = name + "_ext";
-    std::string name_hxt = name + "_hxt";
+    std::string name_tmp = name + "_tmp";
     // Helper fields that will temporarily store the target state, which can then
     // be used to back out a nudging tendency
     auto grid_int_name = m_grid->name();
     auto grid_ext_name = grid_ext->name();
-    auto grid_hxt_name = grid_hxt->name();
+    auto grid_tmp_name = grid_tmp->name();
     auto field  = get_field_out_wrap(name);
     auto layout = field.get_header().get_identifier().get_layout();
     auto field_ext = create_helper_field(name_ext, scalar3d_layout_mid_ext, grid_ext_name, ps);
-    auto field_hxt = create_helper_field(name_hxt, scalar3d_layout_mid_hxt, grid_hxt_name, ps);
+    auto field_tmp = create_helper_field(name_tmp, scalar3d_layout_mid_tmp, grid_tmp_name, ps);
     Field field_int;
     if (m_refine_remap) {
       field_int = create_helper_field(name, layout, grid_int_name, ps);
     } else {
-      field_int             = field_hxt.alias(name);
+      field_int             = field_tmp.alias(name);
       m_helper_fields[name] = field_int;
     }
 
     // Register the fields with the remapper
-    m_refine_remapper->register_field(field_hxt, field_int);
+    m_refine_remapper->register_field(field_tmp, field_int);
     // Add them to time interpolator
     m_time_interp.add_field(field_ext.alias(name), true);
   }
@@ -265,6 +261,7 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   // do the interpolation.
   if (m_use_weights)
   {
+    auto grid_name = m_grid->name();
     auto nudging_weights = create_helper_field("nudging_weights", scalar3d_layout_mid, grid_name, ps);
     std::vector<Field> fields;
     fields.push_back(nudging_weights);
@@ -303,9 +300,9 @@ void Nudging::run_impl (const double dt)
     auto atm_state_field = get_field_out_wrap(name);      // int horiz, int vert
     auto int_state_field = get_helper_field(name);        // int horiz, int vert
     auto ext_state_field = get_helper_field(name+"_ext"); // ext horiz, ext vert
-    auto hxt_state_field = get_helper_field(name+"_hxt"); // ext horiz, int vert
+    auto tmp_state_field = get_helper_field(name+"_tmp"); // ext horiz, int vert
     auto ext_state_view  = ext_state_field.get_view<mPack**>();
-    auto hxt_state_view  = hxt_state_field.get_view<mPack**>();
+    auto tmp_state_view  = tmp_state_field.get_view<mPack**>();
     auto atm_state_view  = atm_state_field.get_view<mPack**>();  // TODO: Right now assume whatever field is defined on COLxLEV
     auto int_state_view  = int_state_field.get_view<mPack**>();
     auto int_mask_view = m_buffer.int_mask_view;
@@ -360,12 +357,12 @@ void Nudging::run_impl (const double dt)
     });
 
     // Vertical Interpolation onto atmosphere state pressure levels
-    // Note that we are going from ext to hxt here
+    // Note that we are going from ext to tmp here
     if (m_src_pres_type == TIME_DEPENDENT_3D_PROFILE) {
       perform_vertical_interpolation<Real,1,2>(p_mid_ext_p,
                                                p_mid_v,
                                                ext_state_view,
-                                               hxt_state_view,
+                                               tmp_state_view,
                                                int_mask_view,
                                                m_num_src_levs,
                                                m_num_levs);
@@ -373,7 +370,7 @@ void Nudging::run_impl (const double dt)
       perform_vertical_interpolation<Real,1,2>(p_mid_ext_1d,
                                                p_mid_v,
                                                ext_state_view,
-                                               hxt_state_view,
+                                               tmp_state_view,
                                                int_mask_view,
                                                m_num_src_levs,
                                                m_num_levs);
@@ -394,7 +391,7 @@ void Nudging::run_impl (const double dt)
        	       KOKKOS_LAMBDA(MemberType const& team) {
       const int icol = team.league_rank();
       auto int_mask_view_1d  = ekat::subview(int_mask_view,icol);
-      auto hxt_state_view_1d = ekat::subview(hxt_state_view,icol);
+      auto tmp_state_view_1d = ekat::subview(tmp_state_view,icol);
       Real fill_value;
       int  fill_idx = -1;
       // Scan top to surf and backfill all values near TOM that are masked.
@@ -403,12 +400,12 @@ void Nudging::run_impl (const double dt)
 	const auto iidx  = kk % mPack::n;
         // Check if this index is masked
 	if (!int_mask_view_1d(ipack)[iidx]) {
-	  fill_value = hxt_state_view_1d(ipack)[iidx];
+	  fill_value = tmp_state_view_1d(ipack)[iidx];
 	  fill_idx = kk;
 	  for (int jj=0; jj<fill_idx; ++jj) {
             const auto jpack = jj / mPack::n;
 	    const auto jidx  = jj % mPack::n;
-	    hxt_state_view_1d(jpack)[jidx] = fill_value;
+	    tmp_state_view_1d(jpack)[jidx] = fill_value;
 	  }
 	  break;
 	}
@@ -420,9 +417,9 @@ void Nudging::run_impl (const double dt)
 	const auto iidx  = kk % mPack::n;
         // Check if this index is masked
 	if (!int_mask_view_1d(ipack)[iidx]) {
-	  fill_value = hxt_state_view_1d(ipack)[iidx];
+	  fill_value = tmp_state_view_1d(ipack)[iidx];
 	} else {
-	  hxt_state_view_1d(ipack)[iidx] = fill_value;
+	  tmp_state_view_1d(ipack)[iidx] = fill_value;
 	}
       }
     });
@@ -431,7 +428,7 @@ void Nudging::run_impl (const double dt)
 
   // Refine-remap onto target atmosphere state horiz grid ("int");
   // note that if the nudging data comes from the same grid as the model,
-  // this remap step is a no-op; otherwise, we refine-remap from hxt to int
+  // this remap step is a no-op; otherwise, we refine-remap from tmp to int
   m_refine_remapper->remap(true);
 
   for (auto name : m_fields_nudge) {
