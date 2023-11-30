@@ -25,7 +25,7 @@ class IntensiveObservationPeriod
   using grid_ptr = std::shared_ptr<const AbstractGrid>;
 
   using KT = ekat::KokkosTypes<DefaultDevice>;
-  using ESU = ekat::ExeSpaceUtils<DefaultDevice>;
+  using ESU = ekat::ExeSpaceUtils<KT::ExeSpace>;
 
   template<typename ScalarT>
   using view_1d = KT::template view_1d<ScalarT>;

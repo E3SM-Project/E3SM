@@ -661,31 +661,36 @@ read_iop_file_data (const util::TimeStamp& current_ts)
       const auto nlevs_output = model_end - model_start;
       const auto total_nlevs = iop_field_v.extent_int(0);
 
-      ekat::LinInterp<Real,1> vert_interp(1, nlevs_input, nlevs_output);
-      Kokkos::parallel_for(Kokkos::TeamPolicy<KT::ExeSpace>(1, 1),
-                            KOKKOS_LAMBDA (const KT::MemberType& team) {
-        const auto x_src = Kokkos::subview(iop_file_pres_v, Kokkos::pair<int,int>(iop_file_start,iop_file_end));
-        const auto x_tgt = Kokkos::subview(model_pres_v, Kokkos::pair<int,int>(model_start,model_end));
-        const auto input = Kokkos::subview(iop_file_v, Kokkos::pair<int,int>(iop_file_start,iop_file_end));
-              auto output= Kokkos::subview(iop_field_v, Kokkos::pair<int,int>(model_start,model_end));
+      ekat::LinInterp<Real,Pack1d::n> vert_interp(1, nlevs_input, nlevs_output);
+      const auto policy = ESU::get_default_team_policy(1, total_nlevs);
+      Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
+        const auto x_src  = Kokkos::subview(iop_file_pres_v, Kokkos::pair<int,int>(iop_file_start,iop_file_end));
+        const auto x_tgt  = Kokkos::subview(model_pres_v, Kokkos::pair<int,int>(model_start,model_end));
+        const auto input  = Kokkos::subview(iop_file_v, Kokkos::pair<int,int>(iop_file_start,iop_file_end));
+        const auto output = Kokkos::subview(iop_field_v, Kokkos::pair<int,int>(model_start,model_end));
 
         vert_interp.setup(team, x_src, x_tgt);
         vert_interp.lin_interp(team, x_src, x_tgt, input, output);
-
-        // For certain fields we need to make sure to fill in the ends of
-        // the interpolated region with the value at model_start/model_end
-        if (fname == "T"    || fname == "q" || fname == "u" ||
-            fname == "u_ls" || fname == "v" || fname == "v_ls") {
-          if (model_start > 0) {
-            auto output_begin = Kokkos::subview(iop_field_v, Kokkos::pair<int,int>(0,model_start));
-            Kokkos::deep_copy(output_begin, output(model_start));
-          }
-          if (model_end < total_nlevs) {
-            auto output_end = Kokkos::subview(iop_field_v, Kokkos::pair<int,int>(model_end, total_nlevs));
-            Kokkos::deep_copy(output_end, output(model_end-1));
-          }
-        }
       });
+      Kokkos::fence();
+
+      // For certain fields we need to make sure to fill in the ends of
+      // the interpolated region with the value at model_start/model_end
+      if (fname == "T"    || fname == "q" || fname == "u" ||
+          fname == "u_ls" || fname == "v" || fname == "v_ls") {
+        if (model_start > 0) {
+          Kokkos::parallel_for(Kokkos::RangePolicy<>(0, model_start),
+                               KOKKOS_LAMBDA (const int ilev) {
+            iop_field_v(ilev) = iop_field_v(model_start);
+          });
+        }
+        if (model_end < total_nlevs) {
+          Kokkos::parallel_for(Kokkos::RangePolicy<>(model_end, total_nlevs),
+                               KOKKOS_LAMBDA (const int ilev) {
+            iop_field_v(ilev) = iop_field_v(model_end-1);
+          });
+        }
+      }
     }
   }
 
@@ -729,7 +734,8 @@ set_fields_from_iop_data(const field_mgr_ptr field_mgr)
 
   if (set_ps) {
     ps = field_mgr->get_field("ps").get_view<Real*>();
-    ps_iop = get_iop_field("Ps").get_view<Real>()();
+    get_iop_field("Ps").sync_to_host();
+    ps_iop = get_iop_field("Ps").get_view<Real, Host>()();
   }
   if (set_T_mid) {
     T_mid = field_mgr->get_field("T_mid").get_view<Real**>();
@@ -769,42 +775,40 @@ set_fields_from_iop_data(const field_mgr_ptr field_mgr)
 
   // Loop over all columns and deep copy to FM views
   const auto ncols = field_mgr->get_grid()->get_num_local_dofs();
-  Kokkos::parallel_for(Kokkos::RangePolicy<>(0, ncols), KOKKOS_LAMBDA(const int icol) {
+  const auto nlevs = field_mgr->get_grid()->get_num_vertical_levels();
+  const auto policy = ESU::get_default_team_policy(ncols, nlevs);
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const KT::MemberType& team) {
+    const auto icol = team.league_rank();
+
     if (set_ps) {
       ps(icol) = ps_iop;
     }
-    if (set_T_mid) {
-      auto T_mid_i = ekat::subview(T_mid, icol);
-      Kokkos::deep_copy(T_mid_i, t_iop);
-    }
-    if (set_horiz_winds_u) {
-      auto horiz_winds_u_i = ekat::subview(horiz_winds, icol, 0);
-      Kokkos::deep_copy(horiz_winds_u_i, u_iop);
-    }
-    if (set_horiz_winds_v) {
-      auto horiz_winds_v_i = ekat::subview(horiz_winds, icol, 1);
-      Kokkos::deep_copy(horiz_winds_v_i, v_iop);
-    }
-    if (set_qv) {
-      auto qv_i = ekat::subview(qv, icol);
-      Kokkos::deep_copy(qv_i, qv_iop);
-    }
-    if (set_nc) {
-      auto nc_i = ekat::subview(nc, icol);
-      Kokkos::deep_copy(nc_i, nc_iop);
-    }
-    if (set_qc) {
-      auto qc_i = ekat::subview(qc, icol);
-      Kokkos::deep_copy(qc_i, qc_iop);
-    }
-    if (set_qi) {
-      auto qi_i = ekat::subview(qi, icol);
-      Kokkos::deep_copy(qi_i, qi_iop);
-    }
-    if (set_ni) {
-      auto ni_i = ekat::subview(ni, icol);
-      Kokkos::deep_copy(ni_i, ni_iop);
-    }
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlevs), [&] (const int ilev) {
+      if (set_T_mid) {
+        T_mid(icol, ilev) = t_iop(ilev);
+      }
+      if (set_horiz_winds_u) {
+        horiz_winds(icol, 0, ilev) = u_iop(ilev);
+      }
+      if (set_horiz_winds_v) {
+        horiz_winds(icol, 1, ilev) = v_iop(ilev);
+      }
+      if (set_qv) {
+        qv(icol, ilev) = qv_iop(ilev);
+      }
+      if (set_nc) {
+        nc(icol, ilev) = nc_iop(ilev);
+      }
+      if (set_qc) {
+        qc(icol, ilev) = qc_iop(ilev);
+      }
+      if (set_qi) {
+        qi(icol, ilev) = qi_iop(ilev);
+      }
+      if (set_ni) {
+        ni(icol, ilev) = ni_iop(ilev);
+      }
+    });
   });
 }
 
