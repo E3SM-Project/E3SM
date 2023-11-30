@@ -124,37 +124,37 @@ create_layout (const FieldLayout& fl_in,
   const bool midpoints = fl_in.has_tag(LEV);
   const bool is3d = fl_in.has_tag(LEV) or fl_in.has_tag(ILEV);
   switch (type) {
-    case LayoutType::Scalar2D: [[ fallthrough ]];
-    case LayoutType::Scalar3D:
-      fl_out = is3d
-             ? grid->get_3d_scalar_layout(midpoints)
-             : grid->get_2d_scalar_layout();
+    case LayoutType::Scalar2D:
+      fl_out = m_tgt_grid->get_2d_scalar_layout();
       break;
-    case LayoutType::Vector2D: [[ fallthrough ]];
-    case LayoutType::Vector3D:
+    case LayoutType::Vector2D:
+      fl_out = m_tgt_grid->get_2d_vector_layout(fl_in.dim(CMP));
+      break;
+    case LayoutType::Tensor2D:
     {
-      auto vtag = fl_in.get_vector_tag();
-      auto vdim = fl_in.dim(vtag);
-      fl_out = is3d
-             ? grid->get_3d_vector_layout(midpoints,vtag,vdim)
-             : grid->get_2d_vector_layout(vtag,vdim);
+      std::vector<int> tdims;
+      for (auto idx : fl_in.get_tensor_dims()) {
+        tdims.push_back(fl_in.dim(idx));
+      }   
+
+      fl_out = m_tgt_grid->get_2d_tensor_layout(fl_in.dim(CMP));
       break;
     }
-
-    case LayoutType::Tensor2D: [[ fallthrough ]];
+    case LayoutType::Scalar3D:
+      fl_out = grid->get_3d_scalar_layout(midpoints);
+      break;
+    case LayoutType::Vector3D:
+      fl_out = grid->get_3d_vector_layout(midpoints,fl_in.dim(CMP));
+      break;
     case LayoutType::Tensor3D:
     {
-      auto ttags = fl_in.get_tensor_tags();
       std::vector<int> tdims;
       for (auto idx : fl_in.get_tensor_dims()) {
         tdims.push_back(fl_in.dim(idx));
       }
-      fl_out = is3d
-             ? grid->get_3d_tensor_layout(midpoints,ttags,tdims)
-             : grid->get_2d_tensor_layout(ttags,tdims);
+      fl_out = grid->get_3d_tensor_layout(midpoints,tdims);
       break;
     }
-
     default:
       EKAT_ERROR_MSG ("Layout not supported by HorizInterpRemapperBase:\n"
                       " - layout: " + to_string(fl_in) + "\n");

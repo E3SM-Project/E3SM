@@ -73,13 +73,11 @@ public:
   //       for a vector 3d field on a Point grid it will be (ncols,vector_dim,nlevs)
   FieldLayout get_vertical_layout (const bool midpoints) const;
   virtual FieldLayout get_2d_scalar_layout () const = 0;
-  virtual FieldLayout get_2d_vector_layout (const FieldTag vector_tag, const int vector_dim) const = 0;
-  virtual FieldLayout get_2d_tensor_layout (const std::vector<FieldTag>& cmp_tags,
-                                            const std::vector<int>& cmp_dims) const = 0;
+  virtual FieldLayout get_2d_vector_layout (const int vector_dim) const = 0;
+  virtual FieldLayout get_2d_tensor_layout (const std::vector<int>& cmp_dims) const = 0;
   virtual FieldLayout get_3d_scalar_layout (const bool midpoints) const = 0;
-  virtual FieldLayout get_3d_vector_layout (const bool midpoints, const FieldTag vector_tag, const int vector_dim) const = 0;
+  virtual FieldLayout get_3d_vector_layout (const bool midpoints, const int vector_dim) const = 0;
   virtual FieldLayout get_3d_tensor_layout (const bool midpoints,
-                                            const std::vector<FieldTag>& cmp_tags,
                                             const std::vector<int>& cmp_dims) const = 0;
 
   int get_num_vertical_levels () const { return m_num_vert_levs; }

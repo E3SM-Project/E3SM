@@ -48,11 +48,11 @@ PointGrid::get_2d_scalar_layout () const
 }
 
 FieldLayout
-PointGrid::get_2d_vector_layout (const FieldTag vector_tag, const int vector_dim) const
+PointGrid::get_2d_vector_layout (const int vector_dim) const
 {
   using namespace ShortFieldTagsNames;
 
-  return FieldLayout({COL,vector_tag},{get_num_local_dofs(),vector_dim});
+  return FieldLayout({COL,CMP},{get_num_local_dofs(),vector_dim});
 }
 
 FieldLayout
@@ -81,14 +81,14 @@ PointGrid::get_3d_scalar_layout (const bool midpoints) const
 }
 
 FieldLayout
-PointGrid::get_3d_vector_layout (const bool midpoints, const FieldTag vector_tag, const int vector_dim) const
+PointGrid::get_3d_vector_layout (const bool midpoints, const int vector_dim) const
 {
   using namespace ShortFieldTagsNames;
 
   int nvl = this->get_num_vertical_levels() + (midpoints ? 0 : 1);
   auto VL = midpoints ? LEV : ILEV;
 
-  return FieldLayout({COL,vector_tag,VL},{get_num_local_dofs(),vector_dim,nvl});
+  return FieldLayout({COL,CMP,VL},{get_num_local_dofs(),vector_dim,nvl});
 }
 
 FieldLayout

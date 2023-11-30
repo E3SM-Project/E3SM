@@ -48,13 +48,13 @@ public:
         src = this->m_src_grid->get_2d_scalar_layout();
         break;
       case LayoutType::Vector2D:
-        src = this->m_src_grid->get_2d_vector_layout(CMP,tgt.dim(CMP));
+        src = this->m_src_grid->get_2d_vector_layout(tgt.dim(CMP));
         break;
       case LayoutType::Scalar3D:
         src = this->m_src_grid->get_3d_scalar_layout(tgt.has_tag(LEV));
         break;
       case LayoutType::Vector3D:
-        src = this->m_src_grid->get_3d_vector_layout(tgt.has_tag(LEV),CMP,tgt.dim(CMP));
+        src = this->m_src_grid->get_3d_vector_layout(tgt.has_tag(LEV),tgt.dim(CMP));
         break;
       default:
         EKAT_ERROR_MSG ("Error! Unsupported field layout.\n");
@@ -76,13 +76,13 @@ public:
         tgt = this->m_tgt_grid->get_2d_scalar_layout();
         break;
       case LayoutType::Vector2D:
-        tgt = this->m_tgt_grid->get_2d_vector_layout(CMP,tgt.dim(CMP));
+        tgt = this->m_tgt_grid->get_2d_vector_layout(tgt.dim(CMP));
         break;
       case LayoutType::Scalar3D:
         tgt = this->m_tgt_grid->get_3d_scalar_layout(tgt.has_tag(LEV));
         break;
       case LayoutType::Vector3D:
-        tgt = this->m_tgt_grid->get_3d_vector_layout(tgt.has_tag(LEV),CMP,tgt.dim(CMP));
+        tgt = this->m_tgt_grid->get_3d_vector_layout(tgt.has_tag(LEV),tgt.dim(CMP));
         break;
       default:
         EKAT_ERROR_MSG ("Error! Unsupported field layout.\n");

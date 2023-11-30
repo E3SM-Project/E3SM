@@ -540,9 +540,9 @@ void FieldManager::registration_ends ()
 
       FieldLayout c_layout = FieldLayout::invalid();
       if (lt==LayoutType::Scalar2D) {
-        c_layout = m_grid->get_2d_vector_layout(CMP,cluster_ordered_fields.size());
+        c_layout = m_grid->get_2d_vector_layout(cluster_ordered_fields.size());
       } else {
-        c_layout = m_grid->get_3d_vector_layout(f_layout.tags().back()==LEV,CMP,cluster_ordered_fields.size());
+        c_layout = m_grid->get_3d_vector_layout(f_layout.tags().back()==LEV,cluster_ordered_fields.size());
       }
 
       // The units for the bundled field are nondimensional, cause checking whether
@@ -654,10 +654,10 @@ void FieldManager::registration_ends ()
     auto lt = get_layout_type(f1_layout.tags());
     FieldLayout g_layout = FieldLayout::invalid();
     if (lt==LayoutType::Scalar2D) {
-      g_layout = m_grid->get_2d_vector_layout(CMP,size);
+      g_layout = m_grid->get_2d_vector_layout(size);
     } else {
       bool mid = f1_layout.tags().back()==LEV;
-      g_layout = m_grid->get_3d_vector_layout(mid,CMP,size);
+      g_layout = m_grid->get_3d_vector_layout(mid,size);
     }
 
     FieldIdentifier g_fid(gname,g_layout,nondim,m_grid->name());

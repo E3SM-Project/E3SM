@@ -76,7 +76,6 @@ public:
 Field create_field (const std::string& name, const LayoutType lt, const AbstractGrid& grid)
 {
   const auto u = ekat::units::Units::nondimensional();
-  const auto CMP = ShortFieldTagsNames::CMP;
   const auto& gn = grid.name();
   const auto  ndims = 2;
   Field f;
@@ -84,12 +83,12 @@ Field create_field (const std::string& name, const LayoutType lt, const Abstract
     case LayoutType::Scalar2D:
       f = Field(FieldIdentifier(name,grid.get_2d_scalar_layout(),u,gn));  break;
     case LayoutType::Vector2D:
-      f = Field(FieldIdentifier(name,grid.get_2d_vector_layout(CMP,ndims),u,gn));  break;
+      f = Field(FieldIdentifier(name,grid.get_2d_vector_layout(ndims),u,gn));  break;
     case LayoutType::Scalar3D:
       f = Field(FieldIdentifier(name,grid.get_3d_scalar_layout(true),u,gn));  break;
       f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
     case LayoutType::Vector3D:
-      f = Field(FieldIdentifier(name,grid.get_3d_vector_layout(false,CMP,ndims),u,gn));  break;
+      f = Field(FieldIdentifier(name,grid.get_3d_vector_layout(false,ndims),u,gn));  break;
       f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
     default:
       EKAT_ERROR_MSG ("Invalid layout type for this unit test.\n");

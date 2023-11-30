@@ -121,16 +121,15 @@ create_layout (const FieldLayout& fl_in,
     case LayoutType::Scalar1D:
       fl_out = grid_out->get_vertical_layout(true);
       break;
+    case LayoutType::Vector2D:
+      tgt = m_tgt_grid->get_2d_vector_layout(fl_in.dim(CMP));
+      break;
     case LayoutType::Scalar3D:
       fl_out = grid_out->get_3d_scalar_layout(true);
       break;
     case LayoutType::Vector3D:
-    {
-      const auto vec_tag = fl_in.get_vector_tag();
-      const auto vec_dim = fl_in.dim(vec_tag);
-      fl_out = grid_out->get_3d_vector_layout(true,vec_tag,vec_dim);
+      fl_out = grid_out->get_3d_vector_layout(true,vec_dim,fl_in.dim(CMP));
       break;
-    }
     default:
       // NOTE: this also include Tensor3D. We don't really have any atm proc
       //       that needs to handle a tensor3d quantity, so no need to add it

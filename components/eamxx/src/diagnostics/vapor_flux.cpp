@@ -49,7 +49,7 @@ void VaporFluxDiagnostic::set_grids(const std::shared_ptr<const GridsManager> gr
 
   auto scalar2d = grid->get_2d_scalar_layout();
   auto scalar3d = grid->get_3d_scalar_layout(true);
-  auto vector3d = grid->get_3d_vector_layout(true,CMP,2);
+  auto vector3d = grid->get_3d_vector_layout(true,2);
 
   // The fields required for this diagnostic to be computed
   add_field<Required>("pseudo_density", scalar3d, Pa,  grid_name);
