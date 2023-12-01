@@ -283,7 +283,7 @@ initialize_iop_file(const util::TimeStamp& run_t0,
                       "");
   Field iop_file_pressure(fid);
   iop_file_pressure.allocate_view();
-  Real* data = iop_file_pressure.get_view<Real*, Host>().data();
+  auto data = iop_file_pressure.get_view<Real*, Host>().data();
   read_variable_from_file(iop_file, "lev", "real", {"lev"}, -1, data);
   // Convert to pressure to milibar (file gives pressure in Pa)
   for (int ilev=0; ilev<file_levs; ++ilev) data[ilev] /= 100;
@@ -535,7 +535,7 @@ read_iop_file_data (const util::TimeStamp& current_ts)
   int model_end;
   if (has_level_data) {
     // Load surface pressure (Ps) from iop file
-    Real* ps_data = surface_pressure.get_view<Real, Host>().data();
+    auto ps_data = surface_pressure.get_view<Real, Host>().data();
     read_variable_from_file(iop_file, "Ps", "real", {"lon","lat"}, iop_file_time_idx, ps_data);
     surface_pressure.sync_to_dev();
 
@@ -611,7 +611,7 @@ read_iop_file_data (const util::TimeStamp& current_ts)
 
     if (field.rank()==0) {
       // For scalar data, read iop file variable directly into field data
-      Real* data = field.get_view<Real, Host>().data();
+      auto data = field.get_view<Real, Host>().data();
       read_variable_from_file(iop_file, file_varname, "real", {"lon","lat"}, iop_file_time_idx, data);
       field.sync_to_dev();
     } else if (field.rank()==1) {
@@ -627,8 +627,8 @@ read_iop_file_data (const util::TimeStamp& current_ts)
       iop_file_field.allocate_view();
 
       // Read data from iop file.
-      Real data[file_levs];
-      read_variable_from_file(iop_file, file_varname, "real", {"lon","lat","lev"}, iop_file_time_idx, data);
+      std::vector<Real> data(file_levs);
+      read_variable_from_file(iop_file, file_varname, "real", {"lon","lat","lev"}, iop_file_time_idx, data.data());
 
       // Copy first adjusted_file_levs-1 values to field
       auto iop_file_v_h = iop_file_field.get_view<Real*,Host>();
