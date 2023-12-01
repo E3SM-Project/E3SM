@@ -2227,10 +2227,10 @@ module li_subglacial_hydro
             cell2 = cellsOnEdge(2, iEdge)
             !Look for edges with 1 cell on grounding ice and the other cell on land without ice
             if ((li_mask_is_grounded_ice(cellMask(cell1))) .and. ( .not. li_mask_is_ice(cellMask(cell2))) &
-               .and. (bedTopography(cell2) > config_sea_level)) then
+               .and. (bedTopography(cell2) >= config_sea_level)) then
                hydroTerrestrialMarginMask(iEdge) = 1
             elseif ((li_mask_is_grounded_ice(cellMask(cell2))) .and. ( .not. li_mask_is_ice(cellMask(cell1))) &
-               .and. (bedTopography(cell1) > config_sea_level)) then
+               .and. (bedTopography(cell1) >= config_sea_level)) then
                hydroTerrestrialMarginMask(iEdge) = 1
             endif
          enddo
