@@ -540,7 +540,7 @@ read_iop_file_data (const util::TimeStamp& current_ts)
     surface_pressure.sync_to_dev();
 
     // Pre-process file pressures, store number of file levels
-    // less than or equal to the surface pressure.
+    // where the last level is the first level equal to surface pressure.
     const auto iop_file_pres_v = iop_file_pressure.get_view<Real*>();
     // Sanity check
     EKAT_REQUIRE_MSG(file_levs+1 == iop_file_pres_v.extent_int(0),
@@ -548,16 +548,24 @@ read_iop_file_data (const util::TimeStamp& current_ts)
     const auto& Ps = surface_pressure.get_view<const Real>();
     Kokkos::parallel_reduce(file_levs+1, KOKKOS_LAMBDA (const int ilev, int& lmin) {
       if (ilev == file_levs) {
-        // Add surface pressure to iop file pressure
+        // Add surface pressure to last iop file pressure entry
         iop_file_pres_v(ilev) = Ps()/100;
-        lmin = file_levs+1; // Initialize adjusted_file_levels
       }
-      // Set upper bound on pressure values and set adjusted levels
       if (iop_file_pres_v(ilev) > Ps()/100) {
-        lmin = ilev;
+        // Set upper bound on pressure values
         iop_file_pres_v(ilev) = Ps()/100;
+      }
+      if (iop_file_pres_v(ilev) == Ps()/100) {
+        // Find minimum number of levels where the final
+        // level would contain the largest value.
+        if (ilev < lmin) lmin = ilev+1;
       }
     }, Kokkos::Min<int>(adjusted_file_levs));
+
+    EKAT_REQUIRE_MSG(adjusted_file_levs > 1,
+                     "Error! Pressures in iop file "+iop_file+" is are inccorrectly set. "
+                     "Surface pressure \"Ps\" (converted to milibar) should be greater "
+                     "than at least the 1st entry in midpoint pressures \"lev\".\n");
 
     // Compute model pressure levels
     const auto model_pres_v = model_pressure.get_view<Real*>();
@@ -569,7 +577,7 @@ read_iop_file_data (const util::TimeStamp& current_ts)
     });
 
     // Find file pressure levels just outside the range of model pressure levels
-    Kokkos::parallel_reduce(file_levs+1, KOKKOS_LAMBDA (const int& ilev, int& lmax, int& lmin) {
+    Kokkos::parallel_reduce(adjusted_file_levs, KOKKOS_LAMBDA (const int& ilev, int& lmax, int& lmin) {
       if (iop_file_pres_v(ilev) <= model_pres_v(0) && ilev > lmax) {
         lmax = ilev;
       }
