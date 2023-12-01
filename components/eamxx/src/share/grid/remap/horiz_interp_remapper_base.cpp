@@ -118,42 +118,27 @@ FieldLayout HorizInterpRemapperBase::
 create_layout (const FieldLayout& fl_in,
                const grid_ptr_type& grid) const
 {
-  using namespace ShortFieldTagsNames;
         auto fl_out = FieldLayout::invalid();
+  using namespace ShortFieldTagsNames;
   const bool midpoints = fl_in.has_tag(LEV);
-  const bool is3d = fl_in.has_tag(LEV) or fl_in.has_tag(ILEV);
   switch (fl_in.type()) {
     case LayoutType::Scalar2D:
-      fl_out = m_tgt_grid->get_2d_scalar_layout();
+      fl_out = grid->get_2d_scalar_layout();
       break;
     case LayoutType::Vector2D:
-      fl_out = m_tgt_grid->get_2d_vector_layout(fl_in.dim(CMP));
+      fl_out = grid->get_2d_vector_layout(fl_in.get_vector_dim());
       break;
     case LayoutType::Tensor2D:
-    {
-      std::vector<int> tdims;
-      for (auto idx : fl_in.get_tensor_dims()) {
-        tdims.push_back(fl_in.dim(idx));
-      }   
-
-      fl_out = m_tgt_grid->get_2d_tensor_layout(fl_in.dim(CMP));
+      fl_out = grid->get_2d_tensor_layout(fl_in.get_tensor_dims());
       break;
-    }
     case LayoutType::Scalar3D:
       fl_out = grid->get_3d_scalar_layout(midpoints);
       break;
     case LayoutType::Vector3D:
-      fl_out = grid->get_3d_vector_layout(midpoints,fl_in.dim(CMP));
+      fl_out = grid->get_3d_vector_layout(midpoints,fl_in.get_vector_dim());
       break;
     case LayoutType::Tensor3D:
-    {
-      std::vector<int> tdims;
-      for (auto idx : fl_in.get_tensor_dims()) {
-        tdims.push_back(fl_in.dim(idx));
-      }
-      fl_out = grid->get_3d_tensor_layout(midpoints,tdims);
-      break;
-    }
+      fl_out = grid->get_3d_tensor_layout(midpoints,fl_in.get_tensor_dims());
     default:
       EKAT_ERROR_MSG ("Layout not supported by HorizInterpRemapperBase:\n"
                       " - layout: " + to_string(fl_in) + "\n");
@@ -213,7 +198,7 @@ void HorizInterpRemapperBase::create_ov_fields ()
   for (int i=0; i<m_num_fields; ++i) {
     const auto& f = m_type==InterpType::Refine ? m_tgt_fields[i] : m_src_fields[i];
     const auto& fid = f.get_header().get_identifier();
-    const auto layout = fid.get_layout().clone_with_different_extent(0,num_ov_gids);
+    const auto layout = fid.get_layout().clone().reset_dim(0,num_ov_gids);
     FieldIdentifier ov_fid (fid.name(),layout,fid.get_units(),ov_gn,dt);
 
     auto& ov_f = m_ov_fields.emplace_back(ov_fid);

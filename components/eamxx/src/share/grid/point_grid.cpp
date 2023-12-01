@@ -48,25 +48,34 @@ PointGrid::get_2d_scalar_layout () const
 }
 
 FieldLayout
-PointGrid::get_2d_vector_layout (const int vector_dim) const
+PointGrid::get_2d_vector_layout (const int vector_dim, const std::string& vec_dim_name) const
 {
   using namespace ShortFieldTagsNames;
 
-  return FieldLayout({COL,CMP},{get_num_local_dofs(),vector_dim});
+  FieldLayout fl({COL,CMP},{get_num_local_dofs(),vector_dim});
+  fl.rename_dim(1,vec_dim_name);
+  return fl;
 }
 
 FieldLayout
-PointGrid::get_2d_tensor_layout (const std::vector<FieldTag>& cmp_tags,
-                                 const std::vector<int>& cmp_dims) const
+PointGrid::get_2d_tensor_layout (const std::vector<int>& cmp_dims,
+                                 const std::vector<std::string>& cmp_names) const
 {
+  EKAT_REQUIRE_MSG (cmp_names.size()==cmp_dims.size(),
+      "[PointGrid::get_2d_tensor_layout] Input vector dimensions mismatch.\n"
+      "  - grid name: " + name() + "\n"
+      "  - cmp_names: " + ekat::join(cmp_names,",") + "\n"
+      "  - cmp_dims : " + ekat::join(cmp_dims,",") + "\n");
   using namespace ShortFieldTagsNames;
 
-  std::vector<FieldTag> tags = {COL};
-  std::vector<int>      dims = {get_num_local_dofs()};
+  FieldLayout fl;
 
-  tags.insert(tags.end(),cmp_tags.begin(),cmp_tags.end());
-  dims.insert(dims.end(),cmp_dims.begin(),cmp_dims.end());
-  return FieldLayout(tags,dims);
+  fl.append_dim(COL, get_num_local_dofs());
+  for (size_t i=0; i<cmp_dims.size(); ++i) {
+    fl.append_dim(CMP,cmp_dims[i],cmp_names[i]);
+  }
+
+  return fl;
 }
 
 FieldLayout
@@ -81,34 +90,43 @@ PointGrid::get_3d_scalar_layout (const bool midpoints) const
 }
 
 FieldLayout
-PointGrid::get_3d_vector_layout (const bool midpoints, const int vector_dim) const
+PointGrid::get_3d_vector_layout (const bool midpoints, const int vector_dim,
+                                 const std::string& vec_dim_name) const
 {
   using namespace ShortFieldTagsNames;
 
   int nvl = this->get_num_vertical_levels() + (midpoints ? 0 : 1);
   auto VL = midpoints ? LEV : ILEV;
 
-  return FieldLayout({COL,CMP,VL},{get_num_local_dofs(),vector_dim,nvl});
+  FieldLayout fl({COL,CMP,VL},{get_num_local_dofs(),vector_dim,nvl});
+  fl.rename_dim(1,vec_dim_name);
+  return fl;
 }
 
 FieldLayout
 PointGrid::get_3d_tensor_layout (const bool midpoints,
-                                 const std::vector<FieldTag>& cmp_tags,
-                                 const std::vector<int>& cmp_dims) const
+                                 const std::vector<int>& cmp_dims,
+                                 const std::vector<std::string>& cmp_names) const
 {
+  EKAT_REQUIRE_MSG (cmp_names.size()==cmp_dims.size(),
+      "[PointGrid::get_2d_tensor_layout] Input vector dimensions mismatch.\n"
+      "  - grid name: " + name() + "\n"
+      "  - cmp_names: " + ekat::join(cmp_names,",") + "\n"
+      "  - cmp_dims : " + ekat::join(cmp_dims,",") + "\n");
   using namespace ShortFieldTagsNames;
 
   int nvl = this->get_num_vertical_levels() + (midpoints ? 0 : 1);
   auto VL = midpoints ? LEV : ILEV;
 
-  std::vector<FieldTag> tags = {COL};
-  std::vector<int>      dims = {get_num_local_dofs()};
+  FieldLayout fl;
 
-  tags.insert(tags.end(),cmp_tags.begin(),cmp_tags.end());
-  dims.insert(dims.end(),cmp_dims.begin(),cmp_dims.end());
-  tags.push_back(VL);
-  dims.push_back(nvl);
-  return FieldLayout(tags,dims);
+  fl.append_dim(COL, get_num_local_dofs());
+  for (size_t i=0; i<cmp_dims.size(); ++i) {
+    fl.append_dim(CMP,cmp_dims[i],cmp_names[i]);
+  }
+  fl.append_dim(VL,nvl);
+
+  return fl;
 }
 
 std::shared_ptr<AbstractGrid>

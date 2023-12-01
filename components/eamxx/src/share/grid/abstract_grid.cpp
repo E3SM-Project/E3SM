@@ -71,7 +71,36 @@ get_vertical_layout (const bool midpoints) const
   using namespace ShortFieldTagsNames;
   return midpoints ? FieldLayout ({ LEV},{m_num_vert_levs})
                    : FieldLayout ({ILEV},{m_num_vert_levs+1});
+}
 
+FieldLayout
+AbstractGrid::get_2d_vector_layout (const int vector_dim) const
+{
+  using namespace ShortFieldTagsNames;
+  return get_2d_vector_layout(vector_dim,e2str(CMP));
+}
+
+FieldLayout
+AbstractGrid::get_2d_tensor_layout (const std::vector<int>& cmp_dims) const
+{
+  using namespace ShortFieldTagsNames;
+  std::vector<std::string> names (cmp_dims.size(),e2str(CMP));
+  return get_2d_tensor_layout(cmp_dims,names);
+}
+
+FieldLayout
+AbstractGrid::get_3d_vector_layout (const bool midpoints, const int vector_dim) const
+{
+  using namespace ShortFieldTagsNames;
+  return get_3d_vector_layout(midpoints,vector_dim,e2str(CMP));
+}
+
+FieldLayout
+AbstractGrid::get_3d_tensor_layout (const bool midpoints, const std::vector<int>& cmp_dims) const
+{
+  using namespace ShortFieldTagsNames;
+  std::vector<std::string> names (cmp_dims.size(),e2str(CMP));
+  return get_3d_tensor_layout(midpoints,cmp_dims,names);
 }
 
 bool AbstractGrid::is_unique () const {
@@ -154,11 +183,11 @@ is_valid_layout (const FieldLayout& layout) const
       return true;
     case LayoutType::Scalar1D: [[fallthrough]];
     case LayoutType::Vector1D:
-      return layout.congruent(get_vertical_layout(midpoints);
+      return layout.congruent(get_vertical_layout(midpoints));
     case LayoutType::Scalar2D:
       return layout.congruent(get_2d_scalar_layout());
     case LayoutType::Scalar3D:
-      return layout.congruent(get_3d_scalar_layout(midpoints);
+      return layout.congruent(get_3d_scalar_layout(midpoints));
     case LayoutType::Vector2D:
       return layout.congruent(get_2d_vector_layout(layout.get_vector_dim()));
     case LayoutType::Vector3D:

@@ -657,7 +657,7 @@ void FieldManager::registration_ends ()
       g_layout = m_grid->get_2d_vector_layout(size);
     } else {
       bool mid = f1_layout.tags().back()==LEV;
-      g_layout = m_grid->get_3d_vector_layout(mid,size);
+      g_layout = m_grid->get_3d_vector_layout(mid,size,e2str(CMP));
     }
 
     FieldIdentifier g_fid(gname,g_layout,nondim,m_grid->name());

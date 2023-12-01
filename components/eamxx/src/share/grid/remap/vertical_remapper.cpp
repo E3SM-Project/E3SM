@@ -101,13 +101,11 @@ FieldLayout VerticalRemapper::
 create_layout (const FieldLayout& fl_in,
                const grid_ptr_type& grid_out) const
 {
-  using namespace ShortFieldTagsNames;
-
   // NOTE: for the vert remapper, it doesn't really make sense to distinguish
   //       between midpoints and interfaces: we're simply asking for a quantity
   //       at a given set of pressure levels. So we choose to have fl_out
   //       to *always* have LEV as vertical tag.
-  auto fl_out = FieldLayout::invalid();
+        auto fl_out = FieldLayout::invalid();
   switch (fl_in.type()) {
     case LayoutType::Scalar0D: [[ fallthrough ]];
     case LayoutType::Vector0D: [[ fallthrough ]];
@@ -120,14 +118,11 @@ create_layout (const FieldLayout& fl_in,
     case LayoutType::Scalar1D:
       fl_out = grid_out->get_vertical_layout(true);
       break;
-    case LayoutType::Vector2D:
-      tgt = m_tgt_grid->get_2d_vector_layout(fl_in.dim(CMP));
-      break;
     case LayoutType::Scalar3D:
       fl_out = grid_out->get_3d_scalar_layout(true);
       break;
     case LayoutType::Vector3D:
-      fl_out = grid_out->get_3d_vector_layout(true,vec_dim,fl_in.dim(CMP));
+      fl_out = grid_out->get_3d_vector_layout(true,fl_in.get_vector_dim());
       break;
     default:
       // NOTE: this also include Tensor3D. We don't really have any atm proc
