@@ -323,7 +323,7 @@ contains
     npt_elevProf = 11             
     threshold_slpRatio = 10.0_r8  
 
-    call MOSART_WaterBudget_Reset('all')
+   ! call MOSART_WaterBudget_Reset('all')
 
     nlfilename_rof = "mosart_in" // trim(inst_suffix)
     inquire (file = trim(nlfilename_rof), exist = lexist)
@@ -2154,6 +2154,8 @@ contains
     integer,parameter :: bv_fp2chnl       = 47 ! Volume of flows from floodplains to main channels (m^3).
     integer,parameter :: br_landOutflow   = 48 ! Total streamflow (flow rate) from land to oceans (m^3/s).
 
+    integer,parameter :: br_supply        = 49 ! supply rate
+
     integer,parameter :: bi_landArea      = 50 ! Total land area (m^2).
     integer,parameter :: bi_floodedArea   = 51 ! Total flooded area (including channel area) (m^2).
     integer,parameter :: bi_mainChnlArea  = 52 ! Total channel surface area (m^2).
@@ -2884,12 +2886,11 @@ contains
        if (wrmflag) then
           nt = 1
           do nr = rtmCTL%begr,rtmCTL%endr
-             budget_terms(bv_dsupp_f,nt) = budget_terms(bv_dsupp_f,nt) + StorWater%supply(nr)
-             ! convert supply from m3 per coupling delta (3hrs)  to mm/s (N. Sun)
-             if (StorWater%supply(nr) > 0) then            
-               StorWater%supply(nr) = StorWater%supply(nr)/delt_coupling               
-             endif
-          end do
+             budget_terms(bv_dsupp_f,nt) = budget_terms(bv_dsupp_f,nt) + StorWater%supply(nr)                      
+               StorWater%supply(nr) = StorWater%supply(nr)/delt_coupling  ! convert supply from m3 per coupling delta (10800 s)  to m3/s 
+          end do          
+          budget_terms(br_supply,nt) = budget_terms(bv_dsupp_f,nt) - budget_terms(bv_dsupp_i,nt) !  delta volume (m3) of supply over 3hrs 
+
           do idam = 1,ctlSubwWRM%LocalNumDam
              budget_terms(bv_dstor_f,nt) = budget_terms(bv_dstor_f,nt) + StorWater%storage(idam)
           enddo
@@ -3227,7 +3228,7 @@ contains
            endif
             if (nt .eq. nt_nliq) then
                call MOSART_WaterBudget_Extraction(budget_global, budget_terms_total, bv_volt_i, bv_volt_f, &
-                 bv_wt_i, bv_wt_f, bv_wr_i, bv_wr_f, bv_wh_i, bv_wh_f, bv_dstor_i, bv_dstor_f, bv_fp_i, bv_fp_f, &
+                 bv_wt_i, bv_wt_f, bv_wr_i, bv_wr_f, bv_wh_i, bv_wh_f, bv_dstor_i, bv_dstor_f, bv_fp_i, bv_fp_f, br_supply,&
                  budget_input, budget_output, budget_other)
                call MOSART_WaterBudget_Print()
             endif
