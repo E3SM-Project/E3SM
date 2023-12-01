@@ -333,7 +333,7 @@ contains
       !!!! TRANSECT VARIABLES !!!!
       integer, pointer :: nEdgesSolve, num_tracers
       integer :: iEdge, iTransect, c1, c2, currentTransect
-      integer, dimension(:), pointer :: minLevelCell, maxLevelCell, maxLevelEdgeTop
+      integer, dimension(:), pointer :: minLevelCell, maxLevelCell, maxLevelEdgeTop, nEdgesOnCell
       integer, dimension(:,:), pointer :: transectEdgeMasks, transectEdgeMaskSigns, cellsOnEdge, &
             transectsInGroup, edgesOnCell, edgeSignOnCell
 
