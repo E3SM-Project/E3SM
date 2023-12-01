@@ -147,11 +147,6 @@ public:
       SHF::linear_interp(team,zt_grid_s,zi_grid_s,rrho_s,rrho_i_s,nlev,nlev+1,0);
       team.team_barrier();
 
-      // For now, we are considering dy=dx. Here, we
-      // will need to compute dx/dy instead of cell_length
-      // if we have dy!=dx.
-      cell_length(i) = PF::calculate_dx_from_area(area(i),lat(i));
-
       const auto exner_int = PF::exner_function(p_int(i,nlevi_v)[nlevi_p]);
       const auto inv_exner_int_surf = 1/exner_int;
 
@@ -169,8 +164,6 @@ public:
     // Local variables
     int ncol, nlev, num_qtracers;
     Real z_surf;
-    view_1d_const  area;
-    view_1d_const  lat;
     view_2d_const  T_mid;
     view_2d_const  p_mid;
     view_2d_const  p_int;
@@ -186,7 +179,6 @@ public:
     view_2d        qc_copy;
     view_2d        z_mid;
     view_2d        z_int;
-    view_1d        cell_length;
     view_2d        shoc_s;
     view_2d        tke;
     view_2d        tke_copy;
@@ -210,7 +202,6 @@ public:
     // Assigning local variables
     void set_variables(const int ncol_, const int nlev_, const int num_qtracers_,
                        const Real z_surf_,
-                       const view_1d_const& area_, const view_1d_const& lat_,
                        const view_2d_const& T_mid_, const view_2d_const& p_mid_, const view_2d_const& p_int_, const view_2d_const& pseudo_density_,
                        const view_2d_const& omega_,
                        const view_1d_const& phis_, const view_1d_const& surf_sens_flux_, const view_1d_const& surf_evap_,
@@ -219,7 +210,6 @@ public:
                        const view_2d& qv_, const view_2d_const& qc_, const view_2d& qc_copy_,
                        const view_2d& tke_, const view_2d& tke_copy_,
                        const view_2d& z_mid_, const view_2d& z_int_,
-                       const view_1d& cell_length_,
                        const view_2d& dse_, const view_2d& rrho_, const view_2d& rrho_i_,
                        const view_2d& thv_, const view_2d& dz_,const view_2d& zt_grid_,const view_2d& zi_grid_, const view_1d& wpthlp_sfc_,
                        const view_1d& wprtp_sfc_,const view_1d& upwp_sfc_,const view_1d& vpwp_sfc_, const view_2d& wtracer_sfc_,
@@ -230,8 +220,6 @@ public:
       num_qtracers = num_qtracers_;
       z_surf = z_surf_;
       // IN
-      area = area_;
-      lat  = lat_;
       T_mid = T_mid_;
       p_mid = p_mid_;
       p_int = p_int_;
@@ -251,7 +239,6 @@ public:
       tke_copy = tke_copy_;
       z_mid = z_mid_;
       z_int = z_int_;
-      cell_length = cell_length_;
       rrho = rrho_;
       rrho_i = rrho_i_;
       thv = thv_;
@@ -389,9 +376,9 @@ public:
   // Structure for storing local variables initialized using the ATMBufferManager
   struct Buffer {
 #ifndef SCREAM_SMALL_KERNELS
-    static constexpr int num_1d_scalar_ncol = 5;
+    static constexpr int num_1d_scalar_ncol = 4;
 #else
-    static constexpr int num_1d_scalar_ncol = 18;
+    static constexpr int num_1d_scalar_ncol = 17;
 #endif
     static constexpr int num_1d_scalar_nlev = 1;
 #ifndef SCREAM_SMALL_KERNELS
@@ -403,7 +390,6 @@ public:
 #endif
     static constexpr int num_2d_vector_tr   = 1;
 
-    uview_1d<Real> cell_length;
     uview_1d<Real> wpthlp_sfc;
     uview_1d<Real> wprtp_sfc;
     uview_1d<Real> upwp_sfc;
@@ -505,9 +491,6 @@ protected:
   Int m_nadv;
   Int m_num_tracers;
   Int hdtime;
-
-  KokkosTypes<DefaultDevice>::view_1d<const Real> m_cell_area;
-  KokkosTypes<DefaultDevice>::view_1d<const Real> m_cell_lat;
 
   // Struct which contains local variables
   Buffer m_buffer;
