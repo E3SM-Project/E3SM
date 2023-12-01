@@ -110,6 +110,14 @@ Default: .false.
 If .true., heat model will be turned on.
 </entry>
 
+<entry id="do_all_budget" 
+       type="logical" 
+       category="mosart"
+       group="mosart_inparm">
+Default: .false.
+If .true., write all budget terms at every timestep to the ROF log file.
+</entry>
+
 <entry id="data_bgc_fluxes_to_ocean_flag" 
        type="logical" 
        category="mosart"
