@@ -805,8 +805,6 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="iceAgeTendencyTransport"/>')
             lines.append('    <var name="iceAgeCell"/>')
             lines.append('    <var name="firstYearIceAreaCell"/>')
-            lines.append('    <var name="levelIceAreaCell"/>')
-            lines.append('    <var name="levelIceVolumeCell"/>')
             lines.append('    <var name="ridgedIceAreaAverage"/>')
             lines.append('    <var name="ridgedIceVolumeAverage"/>')
             lines.append('    <var name="bulkSalinity"/>')
