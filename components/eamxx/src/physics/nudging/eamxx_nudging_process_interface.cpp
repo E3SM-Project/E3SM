@@ -116,6 +116,16 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
     // If we get here, we are good to go!
     m_refine_remap = true;
   } else {
+    // If the number of columns is the same, we don't need to do any remapping,
+    // but print a warning if the user provided a mapfile
+    if (m_refine_remap_file != "no-file-given") {
+      std::cout << "Warning! Nudging::set_grids - the number of columns in the nudging data file "
+                << std::to_string(num_cols_src) << " matches the number of columns in the "
+                << "model grid " << std::to_string(m_num_cols_global) << ".  The mapfile "
+                << m_refine_remap_file << " will NOT be used.  Please check the "
+                << "nudging data file and/or the model grid." << std::endl;
+    }
+    // Set m_refine_remap to false
     m_refine_remap = false;
   }
 }
