@@ -78,6 +78,10 @@ endif()
 if (PIO_VERSION STREQUAL "1")
   set(CPPDEFS "${CPPDEFS} -DPIO1")
 endif()
+# The code below is what we actually want but it's currently broken.
+# Once fixes are in place, uncomment the line below and remove the 3
+# lines above.
+# set(CPPDEFS "${CPPDEFS} -DPIO${PIO_VERSION}")
 
 # Not clear how to escape commas for libraries with their own configure
 # script, and they don't need this defined anyway, so leave this out of
