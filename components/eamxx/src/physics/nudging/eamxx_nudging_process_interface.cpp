@@ -109,10 +109,10 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
                      << "mapfile " << std::to_string(num_cols_remap_a) << ".  Please check the "
                      << "nudging data file and/or the mapfile.");
     EKAT_REQUIRE_MSG(num_cols_remap_b == m_num_cols_global,
-                      "Error! Nudging::set_grids - the number of columns in the model grid "
-                      << std::to_string(m_num_cols_global) << " does not match the number of columns in the "
-                      << "mapfile " << std::to_string(num_cols_remap_b) << ".  Please check the "
-                      << "model grid and/or the mapfile.");
+                     "Error! Nudging::set_grids - the number of columns in the model grid "
+                     << std::to_string(m_num_cols_global) << " does not match the number of columns in the "
+                     << "mapfile " << std::to_string(num_cols_remap_b) << ".  Please check the "
+                    << "model grid and/or the mapfile.");
     // If we get here, we are good to go!
     m_refine_remap = true;
   } else {
