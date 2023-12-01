@@ -759,7 +759,7 @@ void AtmosphereOutput::register_dimensions(const std::string& name)
     const auto& tags = layout.tags();
     const auto& dims = layout.dims();
     auto tag_name = m_io_grid->get_dim_name(layout,i);
-    if (tags[i]==CMP) {
+    if (tag_name=="dim") {
       tag_name += std::to_string(dims[i]);
     }
     auto tag_loc = m_dims.find(tag_name);
@@ -935,7 +935,7 @@ register_variables(const std::string& filename,
     std::vector<std::string> vec_of_dims;
     for (int i=0; i<layout.rank(); ++i) {
       auto tag_name = m_io_grid->get_dim_name(layout,i);
-      if (layout.tag(i)==CMP) {
+      if (tag_name=="dim") {
         tag_name += std::to_string(layout.dim(i));
       }
       vec_of_dims.push_back(tag_name); // Add dimensions string to vector of dims.
