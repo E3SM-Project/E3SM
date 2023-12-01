@@ -78,13 +78,9 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 
   //Now need to read in the file
   if (m_src_pres_type == TIME_DEPENDENT_3D_PROFILE) {
-    scorpio::register_file(m_datafiles[0],scorpio::Read);
     m_num_src_levs = scorpio::get_dimlen(m_datafiles[0],"lev");
-    scorpio::eam_pio_closefile(m_datafiles[0]);
   } else {
-    scorpio::register_file(m_static_vertical_pressure_file,scorpio::Read);
     m_num_src_levs = scorpio::get_dimlen(m_static_vertical_pressure_file,"lev");
-    scorpio::eam_pio_closefile(m_static_vertical_pressure_file);
   }
 
   /* Check for consistency between nudging files, map file, and remapper */
@@ -93,9 +89,7 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   auto m_num_cols_global = m_grid->get_num_global_dofs(); 
 
   // Get the information from the first nudging data file
-  scorpio::register_file(m_datafiles[0],scorpio::Read);
   int num_cols_src = scorpio::get_dimlen(m_datafiles[0],"ncol");
-  scorpio::eam_pio_closefile(m_datafiles[0]);
 
   if (num_cols_src != m_num_cols_global) {
     // If differing cols, check if remap file is provided
@@ -106,10 +100,8 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
                      << "nudging data file and/or the model grid.");
     // If remap file is provided, check if it is consistent with the nudging data file
     // First get the data from the mapfile
-    scorpio::register_file(m_refine_remap_file,scorpio::Read);
     int num_cols_remap_a = scorpio::get_dimlen(m_refine_remap_file,"n_a");
     int num_cols_remap_b = scorpio::get_dimlen(m_refine_remap_file,"n_b");
-    scorpio::eam_pio_closefile(m_refine_remap_file);
     // Then, check if n_a (source) and n_b (target) are consistent
     EKAT_REQUIRE_MSG(num_cols_remap_a == num_cols_src,
                      "Error! Nudging::set_grids - the number of columns in the nudging data file "
