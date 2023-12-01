@@ -2842,6 +2842,11 @@
 			 missing_value="FILLVAL" missing_value_mask="edgeMask"
 			 packages="forwardMode;analysisMode"
 		/>
+                <var name="tangentialTransportVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^-1"
+                         description="horizontal transport velocity, tangential to an edge"
+                         missing_value="FILLVAL" missing_value_mask="edgeMask"
+                         packages="forwardMode;analysisMode"
+                />
 		<var name="layerThicknessEdgeDrag" type="real" dimensions="nVertLevels nEdges Time" units="m"
 			 description="layer thickness to be used for drag terms"
 			 missing_value="FILLVAL" missing_value_mask="edgeMask"
@@ -2878,6 +2883,11 @@
 			 missing_value="FILLVAL" missing_value_mask="cellMask"
 			 packages="forwardMode;analysisMode"
 		/>
+               <var name="divergenceVertex" type="real" dimensions="nVertLevels nVertices Time" units="s^-1"
+                        description="divergence of horizontal velocity on vertices"
+                       missing_value="FILLVAL" missing_value_mask="cellMask"
+                        packages="forwardMode;analysisMode"
+               />
 		<var name="circulation" type="real" dimensions="nVertLevels nVertices Time" units="m^2 s^-1"
 			 description="area-integrated vorticity"
 			 missing_value="FILLVAL" missing_value_mask="vertexMask"

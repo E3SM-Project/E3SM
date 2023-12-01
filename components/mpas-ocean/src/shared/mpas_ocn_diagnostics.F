@@ -246,17 +246,19 @@ contains
 
       ! inputs: normalVelocity
       ! outputs: relativeVorticity, circulation
-      call ocn_relativeVorticity_circulation(relativeVorticity, circulation, normalVelocity, err)
+      call ocn_relativeVorticity_circulation(relativeVorticity, circulation, normalVelocity, &
+                                             normalTransportVelocity,tangentialTransportVelocity, &
+                                             tangentialVelocity,divergenceVertex, err)
 
       ! inputs: relativeVorticity, layerThickEdgeFlux, normalVelocity, normalTransportVelocity,
-      !         normalGMBolusVelocity
+      !         normalGMBolusVelocity, divergenceVertex
       ! outputs: vertTransportVelocityTop, vertGMBolusVelocityTop, relativeVorticityCell,
-      !          divergence, kineticEnergyCell, tangentialVelocity, vertMLEBolusVelocityTop
+      !          divergence, kineticEnergyCell, vertMLEBolusVelocityTop
       ! in and out: vertVelocityTop
       call ocn_diagnostic_solve_vortVel(relativeVorticity, &
              layerThickEdgeFlux, normalVelocity, normalTransportVelocity, &
              vertVelocityTop, vertTransportVelocityTop, relativeVorticityCell, &
-             divergence, kineticEnergyCell, tangentialVelocity)
+             divergence, kineticEnergyCell, divergenceVertex, tangentialVelocity, tangentialTransportVelocity)
 
       !compute vertical velocity due to gm bolus velocity if requested
       if (config_use_gm) then
@@ -586,7 +588,9 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_relativeVorticity_circulation(relativeVorticity, circulation, normalVelocity, err)!{{{
+   subroutine ocn_relativeVorticity_circulation(relativeVorticity, circulation, normalVelocity,       &
+                                                normalTransportVelocity, tangentialTransportVelocity, &
+                                                tangentialVelocity, divergenceVertex, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -595,7 +599,7 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         normalVelocity
+         normalVelocity, normalTransportVelocity
 
       !-----------------------------------------------------------------
       !
@@ -604,7 +608,8 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:), intent(out) :: &
-         relativeVorticity
+         relativeVorticity, divergenceVertex, &
+         tangentialVelocity, tangentialTransportVelocity
 
       real (kind=RKIND), dimension(:,:), intent(out) :: &
          circulation
@@ -617,14 +622,53 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iVertex, iEdge, i, k
+      integer :: iVertex, iEdge, i, k, eoe, kmin, kmax
 
-      real (kind=RKIND) :: invAreaTri1, r_tmp
+      real (kind=RKIND) :: invAreaTri1, r_tmp_vor, r_tmp_div, weightsOnEdge_temp
 
       err = 0
 
+      ! Compute tangential velocity & tangential transport velocity
+
 #ifdef MPAS_OPENACC
-      !$acc parallel loop collapse(2) present(circulation, relativeVorticity)
+      !$acc parallel loop gang vector &
+      !$acc    present(tangentialVelocity, normalVelocity, &
+      !$acc            weightsOnEdge, nEdgesOnEdge, edgesOnEdge, &
+      !$acc            minLevelEdgeBot, maxLevelEdgeTop,         &
+      !$acc            tangentialTransportVelocity, &
+      !$acc            normalTransportVelocity) &
+      !$acc    private(i, k, kmin, kmax, eoe, weightsOnEdge_temp)
+#else
+      !$omp parallel
+      !$omp do schedule(runtime) &
+      !$omp    private(i, k, kmin, kmax, eoe, weightsOnEdge_temp)
+#endif
+      do iEdge = 1, nEdgesAll
+         tangentialVelocity(:,iEdge) = 0.0_RKIND
+         tangentialTransportVelocity(:,iEdge) = 0.0_RKIND
+         kmin = minLevelEdgeBot(iEdge)
+         kmax = maxLevelEdgeTop(iEdge)
+         do i = 1, nEdgesOnEdge(iEdge)
+            eoe = edgesOnEdge(i,iEdge)
+            weightsOnEdge_temp = weightsOnEdge(i, iEdge)
+            do k = kmin,kmax
+               tangentialVelocity(k,iEdge) = &
+               tangentialVelocity(k,iEdge) + weightsOnEdge_temp* &
+                                             normalVelocity(k, eoe)
+               tangentialTransportVelocity(k,iEdge) = &
+               tangentialTransportVelocity(k,iEdge) + weightsOnEdge_temp* &
+                                             normalTransportVelocity(k, eoe)
+            end do
+         end do
+      end do
+#ifndef MPAS_OPENACC
+      !$omp end do
+      !$omp end parallel
+#endif
+
+
+#ifdef MPAS_OPENACC
+      !$acc parallel loop collapse(2) present(circulation, relativeVorticity,divergenceVertex)
 #else
       !$omp parallel
       !$omp do schedule(runtime)
@@ -633,6 +677,7 @@ contains
          do k = 1, nVertLevels
             circulation(k, iVertex) = 0.0_RKIND
             relativeVorticity(k, iVertex) = 0.0_RKIND
+            divergenceVertex(k, iVertex) = 0.0_RKIND
          enddo
       enddo
 #ifndef MPAS_OPENACC
@@ -643,19 +688,21 @@ contains
       !$acc parallel loop &
       !$acc          present(circulation, relativeVorticity, areaTriangle, edgesOnVertex, &
       !$acc                  maxLevelVertexBot, dcEdge, normalVelocity, edgeSignOnVertex, &
-      !$acc                  minLevelVertexTop) &
-      !$acc          private(invAreaTri1, iVertex, iEdge, k, r_tmp)
+      !$acc                  minLevelVertexTop,divergenceVertex,tangentialVelocity)     &
+      !$acc          private(invAreaTri1, iVertex, iEdge, k, r_tmp_vor, r_tmp_div)
 #else
-      !$omp do schedule(runtime) private(invAreaTri1, i, iEdge, k, r_tmp)
+      !$omp do schedule(runtime) private(invAreaTri1, i, iEdge, k, r_tmp_vor, r_tmp_div)
 #endif
       do iVertex = 1, nVerticesAll
          invAreaTri1 = 1.0_RKIND / areaTriangle(iVertex)
          do i = 1, vertexDegree
             iEdge = edgesOnVertex(i, iVertex)
             do k = minLevelVertexTop(iVertex), maxLevelVertexBot(iVertex)
-              r_tmp = dcEdge(iEdge) * normalVelocity(k, iEdge)
-              circulation(k, iVertex) = circulation(k, iVertex) + edgeSignOnVertex(i, iVertex) * r_tmp
-              relativeVorticity(k, iVertex) = relativeVorticity(k, iVertex) + edgeSignOnVertex(i, iVertex) * r_tmp * invAreaTri1
+               r_tmp_vor = dcEdge(iEdge) * normalVelocity(k, iEdge)
+               r_tmp_div = dcEdge(iEdge) * tangentialVelocity(k, iEdge)
+               circulation(k, iVertex) = circulation(k, iVertex) + edgeSignOnVertex(i, iVertex) * r_tmp_vor
+               relativeVorticity(k, iVertex) = relativeVorticity(k, iVertex) + edgeSignOnVertex(i, iVertex) * r_tmp_vor * invAreaTri1
+               divergenceVertex(k, iVertex) = divergenceVertex(k, iVertex) - edgeSignOnVertex(i, iVertex) * r_tmp_div * invAreaTri1
             end do
          end do
       end do
@@ -2115,7 +2162,8 @@ contains
                            normalVelocity, normalTransportVelocity, &
                            vertVelocityTop, vertTransportVelocityTop, &
                            relativeVorticityCell, divergence, &
-                           kineticEnergyCell, tangentialVelocity)!{{{
+                           kineticEnergyCell,divergenceVertex, &
+                           tangentialVelocity,tangentialTransportVelocity)!{{{
 
       !-----------------------------------------------------------------
       ! input variables
@@ -2125,7 +2173,10 @@ contains
          relativeVorticity,      &!< [in] relative vorticity in cells
          layerThicknessEdgeFlux, &!< [in] thickness flux at edge
          normalVelocity,         &!< [in] velocity normal to edge
-         normalTransportVelocity  !< [in] transport vel normal to edge
+         normalTransportVelocity,&!< [in] transport vel normal to edge
+         divergenceVertex,     &!< [in] divergence at vertex
+         tangentialVelocity,     &!< [in] tangential velocity
+         tangentialTransportVelocity !< [in] tangential transport velocity
 
       !-----------------------------------------------------------------
       ! output variables
@@ -2136,52 +2187,158 @@ contains
          vertTransportVelocityTop, &!< [out] vert transport vel at top
          relativeVorticityCell, &!< [out] relative vorticity in cell
          divergence,            &!< [out] divergence
-         kineticEnergyCell,     &!< [out] kinetic energy in cell
-         tangentialVelocity      !< [out] tangential velocity at edge
+         kineticEnergyCell       !< [out] kinetic energy in cell
 
       !-----------------------------------------------------------------
       ! local variables
       !-----------------------------------------------------------------
 
       integer :: &
-         i, j, k,               &! loop indices
-         iCell, iVertex, iEdge, &! indices for cells, vertices, edges
-         nCells, nEdges,        &! number of cells, edges
-         kmin, kmax,            &! min, max active vert level index
-         eoe,                   &! index for edge on edge
-         edgeSignOnCell_temp     ! local tmp for sign across edge
+         i, j, k,                   &! loop indices
+         iCell, iVertex, iEdge,     &! indices for cells, vertices, edges
+         nCells, nEdges, nVertices, &! number of cells, edges, vertices
+         kmin, kmax,                &! min, max active vert level index
+         eoe,                       &! index for edge on edge
+         edgeSignOnCell_temp,       &! local tmp for sign across edge
+         edgeSignOnVertex_temp
 
       real(kind=RKIND) :: &
          invAreaCell1,      &! 1/cell area
          dcEdge_temp,       &! local val of dcEdge
          dvEdge_temp,       &! local val of dvEdge
          r_tmp,             &! tmp for common factors
-         weightsOnEdge_temp  ! local tmp for weights on edge
+         weightsOnEdge_temp,&! local tmp for weights on edge
+         invAreaTri1         ! local tmp for areaTriangle inverse
 
       real (kind=RKIND), dimension(:), allocatable :: &
          div_hu,         &! local divergence of thick-weighted velocity
          div_huTransport  ! local div of thick-weighted transport vel
+      real (kind=RKIND), dimension(:,:), allocatable :: &
+         vertVelocityTopVertices, vertTransportVelocityTopVertices
+                          ! local vertical velocity at vertex
 
       ! End preamble
       !-----------------------------------------------------------------
       ! Begin code
 
       ! Compute relative vorticity in cells
+      ! Need 0,1,2 halo cells
+      nCells    = nCellsHalo(2)
+      nVertices = nVerticesHalo(2)
+
+      allocate(div_hu(nVertLevels),div_huTransport(nVertLevels))
+      allocate(vertVelocityTopVertices(nVertLevelsP1,nVerticesAll+1))
+      allocate(vertTransportVelocityTopVertices(nVertLevelsP1,nVerticesAll+1))
+
+      !$acc enter data create(div_hu,div_huTransport,  &
+      !$acc                   vertVelocityTopVertices, &
+      !$acc                   vertTransportVelocityTopVertices)
 
 #ifdef MPAS_OPENACC
       !$acc parallel loop gang vector &
-      !$acc    present(relativeVorticityCell, relativeVorticity, &
-      !$acc            invAreaCell, kiteAreasOnVertex, &
-      !$acc            nEdgesOnCell, kiteIndexOnCell, verticesOnCell, &
-      !$acc            minLevelCell, maxLevelCell) &
-      !$acc    private(i, iVertex, j, k, kmin, kmax, invAreaCell1)
+      !$acc    present(minLevelVertexTop,maxLevelVertexBot, &
+      !$acc            areaTriangle,div_hu,div_huTransport, &
+      !$acc            edgesOnVertex,dcEdge,edgeSignOnVertex, &
+      !$acc            layerThicknessEdgeFlux,tangentialVelocity, &
+      !$acc            tangentialTransportVelocity, &
+      !$acc            vertVelocityTopVertices, &
+      !$acc            vertTransportVelocityTopVertices) &
+      !$acc    private(i, k, invAreaTri1, kmin, kmax, edgeSignOnVertex_temp, &
+      !$acc            iEdge, dcEdge_temp, r_tmp)
 #else
       !$omp parallel
       !$omp do schedule(runtime) &
-      !$omp    private(i, iVertex, j, k, kmin, kmax, invAreaCell1)
+      !$omp    private(i, k, invAreaTri1, kmin, kmax, edgeSignOnVertex_temp, &
+      !$omp            iEdge, dcEdge_temp, r_tmp)
 #endif
-      do iCell = 1, nCellsOwned
-         relativeVorticityCell(:,iCell) = 0.0_RKIND
+      ! Compute vertical velocity
+      do iVertex = 1, nVertices
+         kmin = minLevelVertexTop(iVertex)
+         kmax = maxLevelVertexBot(iVertex)
+
+         if ( kmin > 0 .and. kmax > 0 ) then
+
+         invAreaTri1 = 1.0_RKIND / areaTriangle(iVertex)
+         div_hu(:)   = 0.0_RKIND
+         div_huTransport(:) = 0.0_RKIND
+
+         do i = 1, vertexDegree
+
+            iEdge = edgesOnVertex(i,iVertex)
+            dcEdge_temp = dcEdge(iEdge)
+            edgeSignOnVertex_temp = edgeSignOnVertex(i,iVertex)
+
+            do k = kmin,kmax
+               r_tmp = dcEdge_temp * layerThicknessEdgeFlux(k,iEdge) &
+                                   * invAreaTri1 * edgeSignOnVertex_temp
+               div_hu(k) = div_hu(k) - r_tmp * tangentialVelocity(k,iEdge)
+               div_huTransport(k) = div_huTransport(k) &
+                                     - r_tmp * tangentialTransportVelocity(k,iEdge)
+            end do
+         end do
+
+                  vertVelocityTopVertices(1:kmin,iVertex) = 0.0_RKIND
+         vertTransportVelocityTopVertices(1:kmin,iVertex) = 0.0_RKIND
+                  vertVelocityTopVertices(kmax+1,iVertex) = 0.0_RKIND
+         vertTransportVelocityTopVertices(kmax+1,iVertex) = 0.0_RKIND
+
+         ! Vertical velocity at top is zero (integrate from top to bottom)
+         do k = kmin,kmax
+            vertVelocityTopVertices(k+1,iVertex) =  &
+            vertVelocityTopVertices(k  ,iVertex) + div_hu(k)
+            vertTransportVelocityTopVertices(k+1,iVertex) =  &
+            vertTransportVelocityTopVertices(k  ,iVertex) + div_huTransport(k)
+         end do
+
+         endif ! kmin ; kmax
+
+      end do
+
+#ifndef MPAS_OPENACC
+      !$omp end do
+      !$omp end parallel
+#endif
+
+
+#ifdef MPAS_OPENACC
+      !$acc parallel loop gang vector collapse(2) &
+      !$acc    present(vertVelocityTop,vertTransportVelocityTop, &
+      !$acc            kineticEnergyCell,relativeVorticityCell,divergence)
+#else
+      !$omp parallel
+      !$omp do schedule(runtime)
+#endif
+      do iCell = 1,nCellsAll
+         do k = 1,nVertLevels
+                     vertVelocityTop(k,iCell) = 0.0_RKIND
+            vertTransportVelocityTop(k,iCell) = 0.0_RKIND
+                   kineticEnergyCell(k,iCell) = 0.0_RKIND
+               relativeVorticityCell(k,iCell) = 0.0_RKIND
+                          divergence(k,iCell) = 0.0_RKIND
+         end do
+      end do
+#ifndef MPAS_OPENACC
+      !$omp end parallel
+#endif
+
+
+      ! Compute relative vorticity in cells
+      ! Interpolation to cells & kinetic energy at cell
+#ifdef MPAS_OPENACC
+      !$acc    present(relativeVorticityCell, relativeVorticity, &
+      !$acc            invAreaCell, kiteAreasOnVertex, divergence, &
+      !$acc            nEdgesOnCell, kiteIndexOnCell, verticesOnCell, &
+      !$acc            minLevelCell, maxLevelCell, divergenceVertex, &
+      !$acc            normalVelocity,kineticEnergyCell) &
+      !$acc    private(i, iVertex, j, k, kmin, kmax, invAreaCell1, &
+      !$acc            iEdge, dcEdge_temp,dvEdge_temp,r_tmp)
+#else
+      !$omp parallel
+      !$omp do schedule(runtime) &
+      !$omp    private(i, iVertex, j, k, kmin, kmax, invAreaCell1, &
+      !$omp            iEdge,dcEdge_temp,dvEdge_temp,r_tmp)
+#endif
+      do iCell = 1, nCells
          invAreaCell1 = invAreaCell(iCell)
          kmin = minLevelCell(iCell)
          kmax = maxLevelCell(iCell)
@@ -2189,87 +2346,36 @@ contains
          do i = 1, nEdgesOnCell(iCell)
             j = kiteIndexOnCell(i, iCell)
             iVertex = verticesOnCell(i, iCell)
-            do k = kmin,kmax
-               relativeVorticityCell(k,iCell) = &
-               relativeVorticityCell(k,iCell) + &
-                        kiteAreasOnVertex(j,iVertex)* &
-                        relativeVorticity(k,iVertex)*invAreaCell1
-            end do
-         end do
-      end do
-#ifndef MPAS_OPENACC
-      !$omp end do
-      !$omp end parallel
-#endif
-
-      ! Need 0,1,2 halo cells
-      nCells = nCellsHalo(2)
-
-      !
-      ! Compute divergence, kinetic energy, and vertical velocity
-      !
-      allocate(div_hu(nVertLevels),div_huTransport(nVertLevels))
-      !$acc enter data create(div_hu, div_huTransport)
-
-#ifdef MPAS_OPENACC
-      !$acc parallel loop gang vector &
-      !$acc    present(divergence, kineticEnergyCell, &
-      !$acc            vertVelocityTop, vertTransportVelocityTop, &
-      !$acc            normalVelocity, normalTransportVelocity, &
-      !$acc            layerThicknessEdgeFlux, dcEdge, dvEdge, &
-      !$acc            invAreaCell, nEdgesOnCell, edgesOnCell, &
-      !$acc            edgeSignOnCell, minLevelCell, maxLevelCell) &
-      !$acc    private(div_hu, div_huTransport, i, k, kmin, kmax, &
-      !$acc            iEdge, invAreaCell1, r_tmp, dcEdge_temp, &
-      !$acc            dvEdge_temp, edgeSignOnCell_temp)
-#else
-      !$omp parallel
-      !$omp do schedule(runtime) &
-      !$omp    private(div_hu, div_huTransport, i, k, kmin, kmax, &
-      !$omp            iEdge, invAreaCell1, r_tmp, dcEdge_temp, &
-      !$omp            dvEdge_temp, edgeSignOnCell_temp)
-#endif
-      do iCell = 1, nCells
-         divergence(:,iCell) = 0.0_RKIND
-         kineticEnergyCell(:,iCell) = 0.0_RKIND
-         div_hu(:) = 0.0_RKIND
-         div_huTransport(:) = 0.0_RKIND
-         invAreaCell1 = invAreaCell(iCell)
-         kmin = minLevelCell(iCell)
-         kmax = maxLevelCell(iCell)
-         do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
-            edgeSignOnCell_temp = edgeSignOnCell(i, iCell)
             dcEdge_temp = dcEdge(iEdge)
             dvEdge_temp = dvEdge(iEdge)
             do k = kmin,kmax
                r_tmp = dvEdge_temp*normalVelocity(k,iEdge)*invAreaCell1
 
-               divergence(k,iCell) = divergence(k,iCell) &
-                                   - edgeSignOnCell_temp*r_tmp
-               div_hu(k) = div_hu(k) &
-                         - layerThicknessEdgeFlux(k,iEdge)* &
-                           edgeSignOnCell_temp*r_tmp
-               div_huTransport(k) = div_huTransport(k) &
-                                  - layerThicknessEdgeFlux(k,iEdge)* &
-                                    edgeSignOnCell_temp*dvEdge_temp* &
-                                    normalTransportVelocity(k,iEdge)* &
-                                    invAreaCell1
+               relativeVorticityCell(k,iCell) = &
+               relativeVorticityCell(k,iCell) + &
+                        kiteAreasOnVertex(j,iVertex)* &
+                        relativeVorticity(k,iVertex)*invAreaCell1
+
+               divergence(k,iCell) = &
+               divergence(k,iCell) + &
+                        kiteAreasOnVertex(j,iVertex)* &
+                        divergenceVertex(k,iVertex)*invAreaCell1
+
                kineticEnergyCell(k,iCell) = kineticEnergyCell(k,iCell) &
                                           + 0.25*r_tmp*dcEdge_temp* &
                                             normalVelocity(k,iEdge)
+
+               vertVelocityTop(k,iCell) = &
+               vertVelocityTop(k,iCell) + &
+                        kiteAreasOnVertex(j,iVertex)* &
+                        vertVelocityTopVertices(k,iVertex)*invAreaCell1
+
+               vertTransportVelocityTop(k,iCell) = &
+               vertTransportVelocityTop(k,iCell) + &
+                        kiteAreasOnVertex(j,iVertex)* &
+                        vertTransportVelocityTopVertices(k,iVertex)*invAreaCell1
             end do
-         end do
-         ! Vertical velocity at bottom is zero, initialized above.
-         vertVelocityTop(1:kmin-1,iCell) = 0.0_RKIND
-         vertVelocityTop(kmax+1  ,iCell) = 0.0_RKIND
-         vertTransportVelocityTop(1:kmin-1,iCell) = 0.0_RKIND
-         vertTransportVelocityTop(kmax+1  ,iCell) = 0.0_RKIND
-         do k = kmax, 1, -1
-            vertVelocityTop(k,iCell) = &
-            vertVelocityTop(k+1,iCell) - div_hu(k)
-            vertTransportVelocityTop(k,iCell) = &
-            vertTransportVelocityTop(k+1,iCell) - div_huTransport(k)
          end do
       end do
 #ifndef MPAS_OPENACC
@@ -2277,42 +2383,13 @@ contains
       !$omp end parallel
 #endif
 
-      !$acc exit data delete(div_hu, div_huTransport)
+      !$acc exit data delete(div_hu,div_huTransport,  &
+      !$acc                  vertVelocityTopVertices, &
+      !$acc                  vertTransportVelocityTopVertices)
+
       deallocate(div_hu,div_huTransport)
-
-      ! Compute tangential velocity
-
-      nEdges = nEdgesHalo(2)
-
-#ifdef MPAS_OPENACC
-      !$acc parallel loop gang vector &
-      !$acc    present(tangentialVelocity, normalVelocity, &
-      !$acc            weightsOnEdge, nEdgesOnEdge, edgesOnEdge, &
-      !$acc            minLevelEdgeBot, maxLevelEdgeTop) &
-      !$acc    private(i, k, kmin, kmax, eoe, weightsOnEdge_temp)
-#else
-      !$omp parallel
-      !$omp do schedule(runtime) &
-      !$omp    private(i, k, kmin, kmax, eoe, weightsOnEdge_temp)
-#endif
-      do iEdge = 1, nEdges
-         tangentialVelocity(:,iEdge) = 0.0_RKIND
-         kmin = minLevelEdgeBot(iEdge)
-         kmax = maxLevelEdgeTop(iEdge)
-         do i = 1, nEdgesOnEdge(iEdge)
-            eoe = edgesOnEdge(i,iEdge)
-            weightsOnEdge_temp = weightsOnEdge(i, iEdge)
-            do k = kmin,kmax
-               tangentialVelocity(k,iEdge) = &
-               tangentialVelocity(k,iEdge) + weightsOnEdge_temp* &
-                                             normalVelocity(k, eoe)
-            end do
-         end do
-      end do
-#ifndef MPAS_OPENACC
-      !$omp end do
-      !$omp end parallel
-#endif
+      deallocate(vertVelocityTopVertices)
+      deallocate(vertTransportVelocityTopVertices)
 
    !--------------------------------------------------------------------
 

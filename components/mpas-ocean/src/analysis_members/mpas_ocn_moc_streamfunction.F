@@ -333,9 +333,9 @@ contains
       !!!! TRANSECT VARIABLES !!!!
       integer, pointer :: nEdgesSolve, num_tracers
       integer :: iEdge, iTransect, c1, c2, currentTransect
-      integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeTop
+      integer, dimension(:), pointer :: minLevelCell, maxLevelCell, maxLevelEdgeTop
       integer, dimension(:,:), pointer :: transectEdgeMasks, transectEdgeMaskSigns, cellsOnEdge, &
-            transectsInGroup
+            transectsInGroup, edgesOnCell, edgeSignOnCell
 
       real (kind=RKIND) :: m3ps_to_Sv
       real (kind=RKIND), dimension(:), pointer ::  dvEdge, refLayerThickness
@@ -360,6 +360,9 @@ contains
       integer, pointer :: nRegions, nRegionGroups, maxRegionsInGroup
       integer :: regionGroupNumber, regionsInAddGroup
 
+      real (kind=RKIND),dimension(:),allocatable :: div_hu
+      real (kind=RKIND) :: invAreaCell1,r_tmp, dvEdge_temp,dcEdge_temp
+      integer :: kmin,kmax, edgeSignOnCell_temp
       !!!! END REGION VARIABLES
 
       call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nVertLevels', nVertLevels)
@@ -481,10 +484,47 @@ contains
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
          call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel)
          call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+         call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+         call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
+         call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
+         call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
          call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
          call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+         call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
          call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
 
+         !!!! Diagnostic vertVelocityTop on cells
+         allocate(div_hu(nVertLevels))
+
+         do iCell = 1, nCellsSolve
+            div_hu(:) = 0.0_RKIND
+            invAreaCell1 = 1.0_RKIND / areaCell(iCell)
+            kmin = minLevelCell(iCell)
+            kmax = maxLevelCell(iCell)
+            do i = 1, nEdgesOnCell(iCell)
+               iEdge = edgesOnCell(i, iCell)
+               c1 = cellsOnEdge(1,iEdge)
+               c2 = cellsOnEdge(2,iEdge)
+               edgeSignOnCell_temp = edgeSignOnCell(i, iCell)
+               dvEdge_temp = dvEdge(iEdge)
+               do k = kmin,kmax
+                  r_tmp = dvEdge_temp*normalVelocity(k,iEdge)*invAreaCell1
+                  div_hu(k) = div_hu(k) &
+                            - 0.5_RKIND*(layerThickness(k,c1) + layerThickness(k,c2)) &
+                            * edgeSignOnCell_temp*r_tmp
+               end do
+            end do
+            ! Vertical velocity at bottom is zero, initialized above.
+            vertVelocityTop(1:kmin,iCell) = 0.0_RKIND
+            vertVelocityTop(kmax+1  ,iCell) = 0.0_RKIND
+
+            do k = kmax, 1, -1
+               vertVelocityTop(k,iCell) = &
+               vertVelocityTop(k+1,iCell) - div_hu(k)
+            end do
+         end do
+
+         deallocate(div_hu)
 
          !!!! TRANSECT CALCULATION
          sumTransport = 0.0_RKIND
