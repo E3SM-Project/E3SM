@@ -1434,20 +1434,9 @@ void AtmosphereDriver::initialize_atm_procs ()
     setup_surface_coupling_processes();
   }
 
-  // For IOP runs, certain processes need to set the IOP object
   if (m_intensive_observation_period) {
-    if (m_atm_process_group->has_process("homme")) {
-      auto homme_process = m_atm_process_group->get_process_nonconst("homme");
-      homme_process->set_intensive_observational_period(m_intensive_observation_period);
-    }
-    if (m_atm_process_group->has_process("SurfaceCouplingImporter")) {
-       auto importer = m_atm_process_group->get_process_nonconst("SurfaceCouplingImporter");
-       importer->set_intensive_observational_period(m_intensive_observation_period);
-    }
-    if (m_atm_process_group->has_process("shoc")) {
-      auto shoc_process = m_atm_process_group->get_process_nonconst("shoc");
-      shoc_process->set_intensive_observational_period(m_intensive_observation_period);
-    }
+    // For IOP runs, make the IOP object available to all processors
+    m_atm_process_group->set_intensive_observation_period(m_intensive_observation_period);
   }
 
   // Initialize the processes

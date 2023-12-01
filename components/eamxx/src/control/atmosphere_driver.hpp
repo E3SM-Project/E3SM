@@ -71,7 +71,7 @@ public:
   // Set AD params
   void init_scorpio (const int atm_id = 0);
 
-  // Setup IntensiveObservationalPeriod
+  // Setup IntensiveObservationPeriod
   void setup_intensive_observation_period ();
 
   // Create atm processes, without initializing them

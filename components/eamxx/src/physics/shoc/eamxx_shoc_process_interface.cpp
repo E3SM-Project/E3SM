@@ -451,10 +451,12 @@ void SHOCMacrophysics::run_impl (const double dt)
                        shoc_preprocess);
   Kokkos::fence();
 
-  if (m_intensive_observation_period) {
+  const auto iop = get_intensive_observation_period();
+
+  if (iop) {
     // For IOP case, we need to update cell length with correct
     // spacing from planar grid.
-    Kokkos::deep_copy(shoc_preprocess.cell_length, m_intensive_observation_period->get_dynamics_dx_size());
+    Kokkos::deep_copy(shoc_preprocess.cell_length, iop->get_dynamics_dx_size());
   }
 
   if (m_params.get<bool>("apply_tms", false)) {

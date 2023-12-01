@@ -469,9 +469,10 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   rayleigh_friction_init();
 
   // If running with IOP, store grid length size
-  if (m_intensive_observation_period) {
+  const auto iop = get_intensive_observation_period();
+  if (iop) {
     const auto dx_short = get_dx_short_f90(0);
-    m_intensive_observation_period->set_grid_spacing(dx_short);
+    iop->set_grid_spacing(dx_short);
   }
 }
 

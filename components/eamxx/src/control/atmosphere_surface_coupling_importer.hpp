@@ -60,12 +60,6 @@ public:
   // Take and store data from SCDataManager
   void setup_surface_coupling_data(const SCDataManager &sc_data_manager);
 
-  // Setup IntensiveObservationPeriod (IOP) object for overwriting imports
-  // with data from IOP file with runs using IOP
-  void set_intensive_observational_period (const std::shared_ptr<control::IntensiveObservationPeriod>& iop) {
-    m_intensive_observation_period = iop;
-  }
-
   // Overwrite imports for IOP cases with IOP file surface data
   void overwrite_iop_imports (const bool called_during_initialization);
 
@@ -107,10 +101,6 @@ protected:
 
   // The grid is needed for property checks
   std::shared_ptr<const AbstractGrid> m_grid;
-
-  // IOP object for setting certain imported fluxes when
-  // running EAMxx with an intensive observational period,
-  std::shared_ptr<control::IntensiveObservationPeriod> m_intensive_observation_period;
 }; // class SurfaceCouplingImporter
 
 } // namespace scream

@@ -90,11 +90,6 @@ protected:
   void rayleigh_friction_init ();
   void rayleigh_friction_apply (const Real dt) const;
 
-  // Set IOP object if necessary
-  void set_intensive_observational_period (const std::shared_ptr<control::IntensiveObservationPeriod>& iop) {
-    m_intensive_observation_period = iop;
-  }
-
 public:
   // Fast boolean function returning whether Physics PGN is being used.
   bool fv_phys_active() const;
@@ -157,10 +152,6 @@ protected:
                     // if set to 0, no rayleigh friction is applied
 
   int m_bfb_hash_nstep;
-
-  // IOP object
-  std::shared_ptr<control::IntensiveObservationPeriod> m_intensive_observation_period;
-
 };
 
 } // namespace scream
