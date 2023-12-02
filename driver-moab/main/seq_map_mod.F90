@@ -434,7 +434,7 @@ end subroutine moab_map_init_rcfile
          endif
 
 
-#ifdef MOABCOMP
+#ifdef MOABDEBUG
          if (seq_comm_iamroot(CPLID)) then
             write(logunit,*) subname, 'iMOAB mapper ',trim(mapper%mbname), ' iMOAB_mapper  nfields', &
                   nfields,  ' fldlist_moab=', trim(fldlist_moab)
@@ -492,7 +492,7 @@ end subroutine moab_map_init_rcfile
 
 #ifdef HAVE_MOAB
        if ( valid_moab_context ) then
-#ifdef MOABCOMP
+#ifdef MOABDEBUG
          if (seq_comm_iamroot(CPLID)) then
             write(logunit, *) subname,' iMOAB mapper rearrange or copy ', mapper%mbname, ' send/recv tags ', trim(fldlist_moab), &
               ' mbpresent=', mbpresent, ' mbnorm=', mbnorm 
@@ -547,7 +547,7 @@ end subroutine moab_map_init_rcfile
                write(logunit,*) subname,' error setting init value for mapping norm factor ',ierr,trim(tagname)
                call shr_sys_abort(subname//' ERROR setting norm init value') ! serious enough
             endif
-#ifdef MOABCOMP
+#ifdef MOABDEBUG
             if (seq_comm_iamroot(CPLID)) then
                write(logunit, *) subname,' iMOAB mapper ', mapper%mbname, ' set norm8wt 1  on source with app id: ', mapper%src_mbid
                call shr_sys_flush(logunit)
@@ -580,7 +580,7 @@ end subroutine moab_map_init_rcfile
                do j = 1, lsize_src
                  targtags(j,:)= targtags(j,:)*wghts(j)
                enddo
-#ifdef MOABCOMP
+#ifdef MOABDEBUG
          if (seq_comm_iamroot(CPLID)) then
             write(logunit, *) subname,' iMOAB projection mapper: ', mapper%mbname, ' normalize nfields=', &
                nfields, ' arrsize_src on root:', arrsize_src, ' shape(targtags_ini)=', shape(targtags_ini)
@@ -630,7 +630,7 @@ end subroutine moab_map_init_rcfile
        endif
        if ( valid_moab_context ) then
 
-#ifdef MOABCOMP
+#ifdef MOABDEBUG
          if (seq_comm_iamroot(CPLID)) then
             write(logunit, *) subname,' iMOAB projection mapper: ',trim(mapper%mbname), ' between ', mapper%src_mbid, ' and ',  mapper%tgt_mbid, trim(fldlist_moab)
             call shr_sys_flush(logunit)

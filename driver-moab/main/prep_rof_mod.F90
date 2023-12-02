@@ -1013,12 +1013,16 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
     !---------------------------------------------------------------
     ! Description
     ! Finalize accumulation of land, atm, ocn input to river component
-    use iMOAB, only : iMOAB_SetDoubleTagStorage
+    use iMOAB, only : iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
+    use seq_comm_mct, only : num_moab_exports ! for debug
     ! Arguments
     !
     ! Local Variables
     character(CXX) ::tagname
     integer :: arrsize, ent_type, ierr
+#ifdef MOABDEBUG
+    character*32             :: outfile, wopts, lnum
+#endif
     character(*), parameter :: subname = '(prep_rof_accum_avg_moab)'
     !---------------------------------------------------------------
     if(l2racc_lm_cnt > 1) then
@@ -1034,6 +1038,17 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
       call shr_sys_abort(subname//' error in setting accumulated shared fields on rof on land instance ')
     endif
 
+#ifdef MOABDEBUG
+    if (mblxid .ge. 0 ) then !  we are on coupler pes, for sure
+     write(lnum,"(I0.2)")num_moab_exports
+     outfile = 'LndCplRofAvg'//trim(lnum)//'.h5m'//C_NULL_CHAR
+     wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+     ierr = iMOAB_WriteMesh(mblxid, trim(outfile), trim(wopts))
+     if (ierr .ne. 0) then
+      call shr_sys_abort(subname//' error in writing land at rof accum ')
+     endif
+    endif
+#endif
 
     if((a2racc_am_cnt > 1) .and. rof_heat) then
        a2racc_am = 1./a2racc_am_cnt * a2racc_am
@@ -1047,7 +1062,17 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
     if (ierr .ne. 0) then
       call shr_sys_abort(subname//' error in setting accumulated shared fields on rof on atm instance ')
     endif
-
+#ifdef MOABDEBUG
+    if (mbaxid .ge. 0 ) then !  we are on coupler pes, for sure
+     write(lnum,"(I0.2)")num_moab_exports
+     outfile = 'AtmCplRofAvg'//trim(lnum)//'.h5m'//C_NULL_CHAR
+     wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+     ierr = iMOAB_WriteMesh(mbaxid, trim(outfile), trim(wopts))
+     if (ierr .ne. 0) then
+      call shr_sys_abort(subname//' error in writing atm at rof accum ')
+     endif
+    endif
+#endif
     if(o2racc_om_cnt > 1) then
        o2racc_om = 1./o2racc_om_cnt *o2racc_om
     endif
@@ -1060,7 +1085,17 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
     if (ierr .ne. 0) then
       call shr_sys_abort(subname//' error in setting accumulated shared fields on rof on ocn instance ')
     endif
-
+#ifdef MOABDEBUG
+    if (mboxid .ge. 0 ) then !  we are on coupler pes, for sure
+     write(lnum,"(I0.2)")num_moab_exports
+     outfile = 'OcnCplRofAvg'//trim(lnum)//'.h5m'//C_NULL_CHAR
+     wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+     ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))
+     if (ierr .ne. 0) then
+      call shr_sys_abort(subname//' error in writing ocn at rof accum ')
+     endif
+    endif
+#endif
 
   end subroutine prep_rof_accum_avg_moab
 
