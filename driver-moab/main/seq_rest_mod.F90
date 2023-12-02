@@ -476,6 +476,7 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al)
                  trim(tagname), &
                  matrix = p_l2racc_lm )
              endif
+             call seq_io_read(rest_file, l2racc_lm_cnt ,'l2racc_lx_cnt')
 !           gsmap         => component_get_gsmap_cx(lnd(1))
 !           l2racc_lx     => prep_rof_get_l2racc_lx()
 !           l2racc_lx_cnt => prep_rof_get_l2racc_lx_cnt()
