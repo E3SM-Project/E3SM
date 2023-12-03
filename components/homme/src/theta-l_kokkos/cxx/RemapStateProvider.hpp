@@ -30,7 +30,7 @@ struct RemapStateProvider {
   ElementsState     m_state;
   ElementsGeometry  m_geometry;
   HybridVCoord      m_hvcoord;
-  //bool              m_process_nh_vars;
+  bool              m_process_nh_vars_bool;
   int              m_process_nh_vars;
 
   // These two morally are d(w_i)/ds and d(phinh_i)/ds.
@@ -52,22 +52,38 @@ struct RemapStateProvider {
     assert (params.params_set);
 
 #ifdef HOMMEXX_BFB_TESTING
-//    m_process_nh_vars = true;
+    m_process_nh_vars_bool = true;
     m_process_nh_vars = 1;
+    std::cout << "hey HOMMEXX_BFB_TESTING is defined \n";
 #else
-//    m_process_nh_vars = !params.theta_hydrostatic_mode;
+    m_process_nh_vars_bool = !params.theta_hydrostatic_mode;
     if(params.theta_hydrostatic_mode){
 	    m_process_nh_vars = 0;
     }else{
             m_process_nh_vars = 1;}
+    std::cout << "hey HOMMEXX_BFB_TESTING is NOT defined \n";
 #endif
+
     std::cout << "as int: hey m_process_nh_vars " << m_process_nh_vars << "\n";
+
+if(params.theta_hydrostatic_mode){
+    std::cout << "hey params.theta_hydrostatic_mode is true \n";
+}else{
+    std::cout << "hey params.theta_hydrostatic_mode is false \n";
+}
+
 if(m_process_nh_vars==1){
     std::cout << "hey m_process_nh_vars is true \n";
-}else
-{
+}else{
     std::cout << "hey m_process_nh_vars is false \n";
 }
+
+if(m_process_nh_vars_bool){
+    std::cout << "hey m_process_nh_vars_bool is true \n";
+}else{
+    std::cout << "hey m_process_nh_vars_bool is false \n";
+}
+
 
 
     if (m_process_nh_vars > 0) {
