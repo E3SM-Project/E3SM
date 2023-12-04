@@ -246,6 +246,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <mlcorrection inherit="atm_proc_base">
       <ML_model_path_tq type="string" doc="Path to pre-trained ML model for temperature and specific humidity"/>
       <ML_model_path_uv type="string" doc="Path to pre-trained ML model for wind fields"/>
+      <ML_model_path_sfc_fluxes type="string" doc="Path to pre-trained ML model for surface fluxes"/>
       <ML_output_fields type="array(string)" doc="ML correction output variables, the following variables are supported: T_mid,qv,u,v"/>
       <ML_correction_unit_test type="logical">false</ML_correction_unit_test>
     </mlcorrection>
