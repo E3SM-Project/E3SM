@@ -3,8 +3,7 @@
 
 #include "share/atm_process/atmosphere_process.hpp"
 
-// Only include headers/register processes which
-// have been built.
+// Only include headers and register processes for libs that have been linked in
 
 #ifdef EAMXX_HAS_P3
 #include "physics/p3/eamxx_p3_process_interface.hpp"
@@ -73,6 +72,9 @@ inline void register_physics () {
 #ifdef EAMXX_HAS_ML_CORRECTION
   proc_factory.register_product("MLCorrection",&create_atmosphere_process<MLCorrection>);
 #endif
+
+  // If no physics was enabled, silence compile warning about unused var
+  (void) proc_factory;
 }
 
 } // namespace scream

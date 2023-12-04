@@ -182,6 +182,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
 
       // File specs
       m_checkpoint_file_specs.max_snapshots_in_file = 1;
+      m_checkpoint_file_specs.flush_frequency = 1;
       m_checkpoint_file_specs.filename_with_mpiranks    = pl.get("MPI Ranks in Filename",false);
       m_checkpoint_file_specs.save_grid_data = false;
       m_checkpoint_file_specs.hist_restart_file = true;
@@ -487,6 +488,8 @@ void OutputManager::run(const util::TimeStamp& timestamp)
         eam_pio_closefile(filespecs.filename);
         filespecs.num_snapshots_in_file = 0;
         filespecs.is_open = false;
+      } else if (filespecs.file_needs_flush()) {
+        eam_flush_file (filespecs.filename);
       }
     };
 
@@ -566,10 +569,11 @@ void OutputManager::
 set_params (const ekat::ParameterList& params,
             const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs)
 {
-  m_params = params;
-  if (m_is_model_restart_output) {
-    using vos_t = std::vector<std::string>;
+  using vos_t = std::vector<std::string>;
 
+  m_params = params;
+
+  if (m_is_model_restart_output) {
     // We build some restart parameters internally
     auto avg_type = m_params.get<std::string>("Averaging Type","INSTANT");
     m_avg_type = str2avg(avg_type);
@@ -580,6 +584,11 @@ set_params (const ekat::ParameterList& params,
     m_output_file_specs.max_snapshots_in_file = m_params.get("Max Snapshots Per File",1);
     EKAT_REQUIRE_MSG (m_output_file_specs.max_snapshots_in_file==1,
         "Error! For restart output, max snapshots per file must be 1.\n"
+        "   Note: you don't have to specify this parameter for restart output.\n");
+
+    m_output_file_specs.flush_frequency = m_params.get("flush_frequency",1);
+    EKAT_REQUIRE_MSG (m_output_file_specs.flush_frequency==1,
+        "Error! For restart output, file flush frequency must be 1.\n"
         "   Note: you don't have to specify this parameter for restart output.\n");
 
     auto& fields_pl = m_params.sublist("Fields");
@@ -610,12 +619,16 @@ set_params (const ekat::ParameterList& params,
     constexpr auto large_int = 1000000;
     m_output_file_specs.max_snapshots_in_file = m_params.get<int>("Max Snapshots Per File",large_int);
     m_filename_prefix = m_params.get<std::string>("filename_prefix");
+    m_output_file_specs.flush_frequency = m_params.get("flush_frequency",m_output_file_specs.max_snapshots_in_file);
 
     // Allow user to ask for higher precision for normal model output,
     // but default to single to save on storage
     const auto& prec = m_params.get<std::string>("Floating Point Precision", "single");
-    EKAT_REQUIRE_MSG (prec=="single" || prec=="double" || prec=="real",
-        "Error! Invalid floating point precision '" + prec + "'.\n");
+    vos_t valid_prec = {"single", "float", "double", "real"};
+    EKAT_REQUIRE_MSG (ekat::contains(valid_prec,prec),
+        "Error! Invalid/unsupported value for 'Floating Point Precision'.\n"
+        "  - input value: " + prec + "\n"
+        "  - supported values: float, single, double, real\n");
   }
 }
 /*===============================================================================================*/

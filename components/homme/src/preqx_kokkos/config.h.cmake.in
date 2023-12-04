@@ -48,8 +48,9 @@
 /* Zoltan partitioning library */
 #cmakedefine01 HAVE_ZOLTAN
 
-/* Identifies whether this is a cuda/hip build */
-#cmakedefine HOMMEXX_ENABLE_GPU
+/* When doing BFB testing, we occasionally must use modified code. */
+/* Use this flag to protect such code. */
+#cmakedefine HOMMEXX_BFB_TESTING
 
 /* TRILINOS  library */
 #cmakedefine01 HAVE_TRILINOS

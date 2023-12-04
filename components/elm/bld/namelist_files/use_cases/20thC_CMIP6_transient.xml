@@ -41,7 +41,7 @@
 
 <fsurdat hgrid="r0125">lnd/clm2/surfdata_map/surfdata_0.125x0.125_simyr1850_c190730.nc</fsurdat>
 
-<fsurdat hgrid="r05">lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr1850_c190418.nc</fsurdat>
+<fsurdat hgrid="r05">lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr1850_c200609_with_TOP.nc</fsurdat>
 
 <check_finidat_year_consistency>.false.</check_finidat_year_consistency>
 <check_dynpft_consistency>.false.</check_dynpft_consistency>

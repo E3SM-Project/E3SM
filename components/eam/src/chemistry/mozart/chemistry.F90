@@ -106,6 +106,8 @@ module chemistry
   integer            :: ext_frc_fixed_ymd = 0
   integer            :: ext_frc_fixed_tod = 0
 
+  real(r8)           :: dms_emis_scale = 1._r8
+
   ! fixed stratosphere
   
   character(len=shr_kind_cl) :: fstrat_file = 'fstrat_file'
@@ -512,7 +514,8 @@ end function chem_is
          depvel_lnd_file, clim_soilw_file, season_wes_file, drydep_srf_file, &
          srf_emis_type, srf_emis_cycle_yr, srf_emis_fixed_ymd, srf_emis_fixed_tod, srf_emis_specifier,  &
          fstrat_file, fstrat_list, fstrat_efold_list, &
-         ext_frc_specifier, ext_frc_type, ext_frc_cycle_yr, ext_frc_fixed_ymd, ext_frc_fixed_tod
+         ext_frc_specifier, ext_frc_type, ext_frc_cycle_yr, ext_frc_fixed_ymd, ext_frc_fixed_tod, &
+         dms_emis_scale
 
     namelist /chem_inparm/ chem_rad_passive
 
@@ -687,6 +690,7 @@ end function chem_is
     call mpibcast (ext_frc_fixed_ymd, 1,                               mpiint,  0, mpicom)
     call mpibcast (ext_frc_fixed_tod, 1,                               mpiint,  0, mpicom)
 
+    call mpibcast (dms_emis_scale,    1,                               mpir8,   0, mpicom)
 
     ! fixed stratosphere
 
@@ -1145,7 +1149,7 @@ end function chem_is_active
     !-----------------------------------------------------------------------      
     !        ... Set surface emissions
     !-----------------------------------------------------------------------      
-    call set_srf_emissions( lchnk, ncol, sflx(:,:) )
+    call set_srf_emissions( lchnk, ncol, dms_emis_scale, sflx(:,:) )
 
     do m = 1,pcnst
        n = map2chm(m)

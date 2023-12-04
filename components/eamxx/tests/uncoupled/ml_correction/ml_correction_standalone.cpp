@@ -1,23 +1,23 @@
+#include <catch2/catch.hpp>
+
+#include "control/atmosphere_driver.hpp"
+#include "physics/register_physics.hpp"
+#include "share/grid/mesh_free_grids_manager.hpp"
+
+#include <ekat/ekat_parse_yaml_file.hpp>
+
 #include <pybind11/embed.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 
-#include <catch2/catch.hpp>
 #include <iomanip>
-
-#include "control/atmosphere_driver.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "ekat/ekat_parse_yaml_file.hpp"
-#include "physics/ml_correction/eamxx_ml_correction_process_interface.hpp"
-#include "share/atm_process/atmosphere_process.hpp"
-#include "share/grid/mesh_free_grids_manager.hpp"
-#include "share/scream_session.hpp"
 
 namespace scream {
 TEST_CASE("ml_correction-stand-alone", "") {
   using namespace scream;
   using namespace scream::control;
   namespace py      = pybind11;
+
   std::string fname = "input.yaml";
   ekat::ParameterList ad_params("Atmosphere Driver");
   parse_yaml_file(fname, ad_params);
@@ -35,11 +35,8 @@ TEST_CASE("ml_correction-stand-alone", "") {
 
   ekat::Comm atm_comm(MPI_COMM_WORLD);
 
-  auto &proc_factory = AtmosphereProcessFactory::instance();
-  auto &gm_factory   = GridsManagerFactory::instance();
-  proc_factory.register_product("MLCorrection",
-                                &create_atmosphere_process<MLCorrection>);
-  gm_factory.register_product("Mesh Free", &create_mesh_free_grids_manager);
+  register_physics();
+  register_mesh_free_grids_manager();
 
   AtmosphereDriver ad;
 
@@ -83,4 +80,5 @@ TEST_CASE("ml_correction-stand-alone", "") {
   REQUIRE(qv(0, 10) != reference);  // This one should be unchanged
   ad.finalize();
 }
+
 }  // namespace scream

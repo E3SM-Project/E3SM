@@ -519,13 +519,13 @@ void FieldManager::registration_ends ()
       // Figure out the layout of the fields in this cluster,
       // and make sure they all have the same layout
       LayoutType lt = LayoutType::Invalid;
-      std::shared_ptr<const FieldLayout> f_layout;
+      FieldLayout f_layout = FieldLayout::invalid();
       for (const auto& fname : cluster_ordered_fields) {
         const auto& f = m_fields.at(fname);
         const auto& id = f->get_header().get_identifier();
         if (lt==LayoutType::Invalid) {
-         f_layout = id.get_layout_ptr();
-         lt = get_layout_type(f_layout->tags());
+         f_layout = id.get_layout();
+         lt = get_layout_type(f_layout.tags());
         } else {
           EKAT_REQUIRE_MSG (lt==get_layout_type(id.get_layout().tags()),
               "Error! Found a group to bundle containing fields with different layouts.\n"
@@ -542,7 +542,7 @@ void FieldManager::registration_ends ()
       if (lt==LayoutType::Scalar2D) {
         c_layout = m_grid->get_2d_vector_layout(CMP,cluster_ordered_fields.size());
       } else {
-        c_layout = m_grid->get_3d_vector_layout(f_layout->tags().back()==LEV,CMP,cluster_ordered_fields.size());
+        c_layout = m_grid->get_3d_vector_layout(f_layout.tags().back()==LEV,CMP,cluster_ordered_fields.size());
       }
 
       // The units for the bundled field are nondimensional, cause checking whether

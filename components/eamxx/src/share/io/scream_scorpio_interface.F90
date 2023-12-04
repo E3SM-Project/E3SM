@@ -57,6 +57,7 @@ module scream_scorpio_interface
   public :: &
             lookup_pio_atm_file,         & ! Checks if a pio file is present
             eam_pio_closefile,           & ! Close a specfic pio file.
+            eam_pio_flush_file,          & ! Flushes I/O buffers to file
             eam_pio_enddef,              & ! Ends define mode phase, enters data mode phase
             eam_pio_redef,               & ! Pause data mode phase, re-enter define mode phase
             eam_init_pio_subsystem,      & ! Gather pio specific data from the component coupler
@@ -983,6 +984,29 @@ contains
     !call free_decomp()
 
   end subroutine eam_pio_closefile
+!=====================================================================!
+  ! Flushes IO buffers to file
+  subroutine eam_pio_flush_file(fname)
+    use pio, only: PIO_syncfile
+
+    character(len=*),  intent(in)    :: fname            ! Pio file name
+    !--
+    type(pio_atm_file_t),pointer     :: pio_atm_file
+    logical                          :: found
+
+    ! Find the pointer for this file
+    call lookup_pio_atm_file(trim(fname),pio_atm_file,found)
+
+    if (found) then
+      if ( is_write(pio_atm_file%purpose) ) then
+        call PIO_syncfile(pio_atm_file%pioFileDesc)
+      else
+        call errorHandle("PIO ERROR: unable to flush file: "//trim(fname)//", is not open in write mode",-999)
+      endif
+    else
+      call errorHandle("PIO ERROR: unable to flush file: "//trim(fname)//", was not found",-999)
+    end if
+  end subroutine eam_pio_flush_file
 !=====================================================================!
   ! Helper function to debug list of decomps
   subroutine print_decomp()

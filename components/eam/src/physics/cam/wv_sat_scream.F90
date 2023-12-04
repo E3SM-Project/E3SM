@@ -14,8 +14,8 @@ module wv_sat_scream
   use physics_utils,  only: rtype
   use micro_p3_utils, only: T_zerodegc
 #ifdef SCREAM_CONFIG_IS_CMAKE
-  use physics_share_f2c, only: cxx_pow, cxx_sqrt, cxx_cbrt, cxx_gamma, cxx_log, &
-                                 cxx_log10, cxx_exp, cxx_tanh
+  use physics_share_f2c, only: scream_pow, scream_sqrt, scream_cbrt, scream_gamma, scream_log, &
+                               scream_log10, scream_exp, scream_tanh
 #endif
 
 

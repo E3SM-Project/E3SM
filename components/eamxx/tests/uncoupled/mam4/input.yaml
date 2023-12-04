@@ -34,5 +34,5 @@ initial_conditions:
 
 # The parameters for I/O control
 Scorpio:
-  output_yaml_files: ["mam4_nucleation_output.yaml"]
+  output_yaml_files: ["output.yaml"]
 ...

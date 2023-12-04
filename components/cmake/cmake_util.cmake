@@ -12,7 +12,7 @@ function(gather_sources FILEPATH_DIRS_ARG CIMEROOT_ARG)
   set(GEN_F90_SOURCES_RESULT)
 
   foreach(DIRSEARCH ${FILEPATH_DIRS_ARG})
-    file(GLOB MATCHES RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}/../.." "${DIRSEARCH}/*.[Ffc]" "${DIRSEARCH}/*.[Ff]90" "${DIRSEARCH}/*.cpp" "${DIRSEARCH}/*.F90.in")
+    file(GLOB MATCHES RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE_PATH}" "${DIRSEARCH}/*.[Ffc]" "${DIRSEARCH}/*.[Ff]90" "${DIRSEARCH}/*.cpp" "${DIRSEARCH}/*.F90.in")
     if (MATCHES)
       foreach (MATCH IN LISTS MATCHES)
         get_filename_component(BASENAME ${MATCH} NAME)

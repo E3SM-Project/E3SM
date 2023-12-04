@@ -71,6 +71,8 @@ subroutine qneg4 (subnam  ,lchnk   ,ncol    ,ztodt   ,        &
          nptsexc = nptsexc + 1
          indxexc(nptsexc) = i
          qflx (i,1) = qflx (i,1) - excess(i)
+
+         !this does not help with energy trends, it makes them worse
          lhflx(i) = lhflx(i) - excess(i)*latvap
          shflx(i) = shflx(i) + excess(i)*latvap
       end if

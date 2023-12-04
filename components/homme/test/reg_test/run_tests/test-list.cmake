@@ -104,7 +104,9 @@ IF (BUILD_HOMME_THETA_KOKKOS)
     thetah-nhgw-kokkos.cmake
     thetanh-nhgw-kokkos.cmake
     thetah-nhgw-slice-kokkos.cmake
-    thetanh-nhgw-slice-kokkos.cmake)
+    thetanh-nhgw-slice-kokkos.cmake
+    thetanh-moist-bubble-sl.cmake
+    thetanh-moist-bubble-sl-kokkos.cmake)
   IF (HOMMEXX_BFB_TESTING)
     LIST(APPEND HOMME_ONEOFF_CVF_TESTS
       thetanh-moist-bubble
@@ -112,7 +114,8 @@ IF (BUILD_HOMME_THETA_KOKKOS)
       thetah-nhgw
       thetanh-nhgw
       thetah-nhgw-slice
-      thetanh-nhgw-slice)
+      thetanh-nhgw-slice
+      thetanh-moist-bubble-sl)
   ENDIF()
 
   #cmake/namelist will be built with create-... script

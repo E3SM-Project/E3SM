@@ -48,7 +48,7 @@ OR
 ###############################################################################
 def buildlib(bldroot, installpath, case):
 ###############################################################################
-    installed_kokkos_dir = os.environ.get("KOKKOS_PATH")
+    installed_kokkos_dir = os.environ.get("Kokkos_ROOT")
     if installed_kokkos_dir is not None:
         # We are trying to use a pre-installed kokkos. Look for the relevant folders/libs,
         # and if all looks good, return. Otherwise, crap out
@@ -65,7 +65,7 @@ def buildlib(bldroot, installpath, case):
         # cmake build system will do that soon enough, so any error will be caught there.
         return
     else:
-        print ("no value foudn in env for KOKKOS_PATH. building from scratch")
+        print ("no value foudn in env for Kokkos_ROOT. building from scratch")
 
     srcroot = case.get_value("SRCROOT")
     ekat_dir = os.path.join(srcroot, "externals", "ekat")

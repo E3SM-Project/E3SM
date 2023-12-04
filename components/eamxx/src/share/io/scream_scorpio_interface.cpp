@@ -29,6 +29,7 @@ extern "C" {
   void eam_init_pio_subsystem_c2f(const int mpicom, const int atm_id);
   void eam_pio_finalize_c2f();
   void eam_pio_closefile_c2f(const char*&& filename);
+  void eam_pio_flush_file_c2f(const char*&& filename);
   void pio_update_time_c2f(const char*&& filename,const double time);
   void register_dimension_c2f(const char*&& filename, const char*&& shortname, const char*&& longname, const int global_length, const bool partitioned);
   void register_variable_c2f(const char*&& filename, const char*&& shortname, const char*&& longname,
@@ -101,6 +102,9 @@ void eam_pio_closefile(const std::string& filename) {
 
   eam_pio_closefile_c2f(filename.c_str());
 }
+void eam_flush_file(const std::string& filename) {
+  eam_pio_flush_file_c2f(filename.c_str());
+}
 /* ----------------------------------------------------------------- */
 void set_decomp(const std::string& filename) {
 
@@ -142,6 +146,33 @@ int get_dimlen(const std::string& filename, const std::string& dimname)
   }
 
   return len;
+}
+/* ----------------------------------------------------------------- */
+bool has_dim (const std::string& filename, const std::string& dimname)
+{
+  int ncid, dimid, err;
+
+  bool was_open = is_file_open_c2f(filename.c_str(),-1);
+  if (not was_open) {
+    register_file(filename,Read);
+  }
+
+  ncid = get_file_ncid_c2f (filename.c_str());
+  err = PIOc_inq_dimid(ncid,dimname.c_str(),&dimid);
+  if (err==PIO_EBADDIM) {
+    return false;
+  }
+
+  EKAT_REQUIRE_MSG (err==PIO_NOERR,
+      "Error! Something went wrong while retrieving dimension id.\n"
+      " - filename : " + filename + "\n"
+      " - dimname  : " + dimname + "\n"
+      " - pio error: " + std::to_string(err) + "\n");
+  if (not was_open) {
+    eam_pio_closefile(filename);
+  }
+
+  return true;
 }
 /* ----------------------------------------------------------------- */
 bool has_variable (const std::string& filename, const std::string& varname)

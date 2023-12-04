@@ -2,7 +2,7 @@ function(build_model COMP_CLASS COMP_NAME)
 
   # We support component-specific configuration of flags, etc, so this setup
   # need to be done here.
-  include(${CMAKE_SOURCE_DIR}/cmake/common_setup.cmake)
+  include(${SRCROOT}/components/cmake/common_setup.cmake)
 
   set(MODELCONF_DIR "${BUILDCONF}/${COMP_NAME}conf")
 
@@ -34,8 +34,11 @@ function(build_model COMP_CLASS COMP_NAME)
 
   # Source files don't live in components/cmake/$COMP_CLASS. This path won't work for
   # generated files.
-  set(SOURCE_PATH "../..")
-  set(CIMESRC_PATH "../cime/src")
+  if (COMP_NAME STREQUAL "csm_share")
+    set(SOURCE_PATH ".")
+  else()
+    set(SOURCE_PATH "../..")
+  endif()
 
   #-------------------------------------------------------------------------------
   # Build & include dependency files
@@ -116,6 +119,22 @@ function(build_model COMP_CLASS COMP_NAME)
                              cmake/atm/../../eam/src/physics/crm/crm_ecpp_output_module.F90 )
     endif()
 
+    if (USE_PAM)
+      message(STATUS "Building PAM")
+      # PAM_HOME is where the samxx source code lives
+      set(PAM_HOME ${CMAKE_CURRENT_SOURCE_DIR}/../../eam/src/physics/crm/pam)
+      # PAM_BIN is where the samxx library will live
+      set(PAM_BIN  ${CMAKE_CURRENT_BINARY_DIR}/pam)
+      # Build the static samxx library
+      add_subdirectory(${PAM_HOME} ${PAM_BIN})
+      # Add samxx F90 files to the main E3SM build
+      set(SOURCES ${SOURCES} cmake/atm/../../eam/src/physics/crm/pam/params.F90
+                             cmake/atm/../../eam/src/physics/crm/crm_ecpp_output_module.F90
+                             cmake/atm/../../eam/src/physics/crm/pam/pam_driver.F90)
+      # Pam interface need to include modules from pam
+      include_directories(${PAM_BIN}/external/pam_core)
+    endif()
+
     # Add rrtmgp++ source code if asked for
     if (USE_RRTMGPXX)
       message(STATUS "Building RRTMGPXX")
@@ -146,44 +165,6 @@ function(build_model COMP_CLASS COMP_NAME)
   #-------------------------------------------------------------------------------
   # create list of component libraries - hard-wired for current e3sm components
   #-------------------------------------------------------------------------------
-
-  if (NOT USE_SHARED_CLM)
-    set(LNDOBJDIR "${EXEROOT}/lnd/obj")
-    set(LNDLIBDIR "${LIBROOT}")
-    if (COMP_LND STREQUAL "elm")
-      set(LNDLIB "libelm.a")
-    else()
-      set(LNDLIB "liblnd.a")
-    endif()
-    list(APPEND INCLDIR "${LNDOBJDIR}")
-  else()
-    set(LNDLIB "libclm.a")
-    set(LNDOBJDIR "${SHAREDLIBROOT}/${SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/clm/obj")
-    set(LNDLIBDIR "${EXEROOT}/${SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/lib")
-    list(APPEND INCLDIR "${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/include")
-    if (COMP_NAME STREQUAL "clm")
-      set(INCLUDE_DIR "${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/include")
-    endif()
-  endif()
-
-  if (NOT ULIBDEP)
-    if (LIBROOT)
-      list(APPEND INCLDIR "${LNDOBJDIR}")
-    endif()
-  endif()
-
-  if (COMP_GLC STREQUAL "cism")
-    set(ULIBDEP "${ULIBDEP} ${CISM_LIBDIR}/libglimmercismfortran.a")
-    if (CISM_USE_TRILINOS)
-      set(ULIBDEP "${ULIBDEP} ${CISM_LIBDIR}/libglimmercismcpp.a")
-    endif()
-  endif()
-  if (OCN_SUBMODEL STREQUAL "moby")
-    set(ULIBDEP "${ULIBDEP} ${LIBROOT}/libmoby.a")
-  endif()
-
-  set(CSMSHARELIB "${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/${NINST_VALUE}/lib/libcsm_share.a")
-  set(ULIBDEP "${ULIBDEP} ${CSMSHARELIB}")
 
   # do the necessary genf90s
   foreach (SRC_FILE IN LISTS GEN_F90_SOURCES)
@@ -226,9 +207,16 @@ function(build_model COMP_CLASS COMP_NAME)
   endforeach()
 
   # Load machine/compiler specific settings
-  set(COMPILER_SPECIFIC_DEPENDS ${CASEROOT}/Depends.${COMPILER}.cmake)
-  set(MACHINE_SPECIFIC_DEPENDS ${CASEROOT}/Depends.${MACH}.cmake)
-  set(PLATFORM_SPECIFIC_DEPENDS ${CASEROOT}/Depends.${MACH}.${COMPILER}.cmake)
+  if (COMP_NAME STREQUAL "csm_share")
+    # csm_share uses special Depends files, not customizable per case
+    set(DEPENDS_LOC "${SRCROOT}/share")
+  else()
+    set(DEPENDS_LOC "${CASEROOT}")
+  endif()
+
+  set(COMPILER_SPECIFIC_DEPENDS ${DEPENDS_LOC}/Depends.${COMPILER}.cmake)
+  set(MACHINE_SPECIFIC_DEPENDS ${DEPENDS_LOC}/Depends.${MACH}.cmake)
+  set(PLATFORM_SPECIFIC_DEPENDS ${DEPENDS_LOC}/Depends.${MACH}.${COMPILER}.cmake)
   set(TRY_TO_LOAD ${COMPILER_SPECIFIC_DEPENDS} ${MACHINE_SPECIFIC_DEPENDS} ${PLATFORM_SPECIFIC_DEPENDS})
   foreach(ITEM IN LISTS TRY_TO_LOAD)
     if (EXISTS ${ITEM})
@@ -245,11 +233,6 @@ function(build_model COMP_CLASS COMP_NAME)
   # build rules:
   #-------------------------------------------------------------------------------
 
-  if (MPILIB STREQUAL "mpi-serial")
-    set(MPISERIAL "${INSTALL_SHAREDPATH}/lib/libmpi-serial.a")
-    set(MLIBS "${MLIBS} ${MPISERIAL}")
-  endif()
-
   foreach(ITEM IN LISTS SOURCES)
     if (ITEM MATCHES "${CMAKE_BINARY_DIR}/.*") # is generated
       list(APPEND REAL_SOURCES ${ITEM})
@@ -262,35 +245,56 @@ function(build_model COMP_CLASS COMP_NAME)
     set(TARGET_NAME "${CIME_MODEL}.exe")
     add_executable(${TARGET_NAME})
     target_sources(${TARGET_NAME} PRIVATE ${REAL_SOURCES})
-    set(ALL_LIBS "${ULIBDEP} ${MCTLIBS} ${PIOLIB} ${GPTLLIB} ${SLIBS} ${MLIBS}")
-    separate_arguments(ALL_LIBS_LIST UNIX_COMMAND "${ALL_LIBS}")
+
+    separate_arguments(ALL_LIBS_LIST UNIX_COMMAND "${SLIBS}")
+
     foreach(ITEM IN LISTS COMP_CLASSES)
       if (NOT ITEM STREQUAL "cpl")
         target_link_libraries(${TARGET_NAME} ${ITEM})
       endif()
     endforeach()
+
     foreach(ITEM IN LISTS ALL_LIBS_LIST)
       target_link_libraries(${TARGET_NAME} ${ITEM})
     endforeach()
+
+    # Make sure we link blas/lapack
+    target_link_libraries(${TARGET_NAME} BLAS::BLAS LAPACK::LAPACK)
+
     set_target_properties(${TARGET_NAME} PROPERTIES LINKER_LANGUAGE ${LD})
   else()
     set(TARGET_NAME ${COMP_CLASS})
     add_library(${TARGET_NAME})
     target_sources(${TARGET_NAME} PRIVATE ${REAL_SOURCES})
-    if (COMP_NAME STREQUAL "eam")
-      if (USE_YAKL)
-        target_link_libraries(${TARGET_NAME} PRIVATE yakl)
-      endif()
-      if (USE_SAMXX)
-        target_link_libraries(${TARGET_NAME} PRIVATE samxx)
-      endif()
-      if (USE_RRTMGPXX)
+    if (COMP_NAME STREQUAL "csm_share")
+      find_package(NETCDF REQUIRED)
+      target_link_libraries(${TARGET_NAME} PRIVATE netcdf)
+    else()
+      target_link_libraries(${TARGET_NAME} PRIVATE csm_share)
+      if (COMP_NAME STREQUAL "eam")
+        if (USE_YAKL)
+          target_link_libraries(${TARGET_NAME} PRIVATE yakl)
+        endif()
+        if (USE_SAMXX)
+          target_link_libraries(${TARGET_NAME} PRIVATE samxx)
+        endif()
+        if (USE_PAM)
+          target_link_libraries(${TARGET_NAME} PRIVATE pam_driver)
+        endif()
+        if (USE_RRTMGPXX)
           target_link_libraries(${TARGET_NAME} PRIVATE rrtmgp rrtmgp_interface)
+        endif()
       endif()
+      if (COMP_NAME STREQUAL "elm")
+        if (USE_PETSC)
+          target_link_libraries(${TARGET_NAME} PRIVATE "${PETSC_LIBRARIES}")
+          target_include_directories(${TARGET_NAME} PRIVATE "${PETSC_INCLUDES}")
+        endif()
+      endif()
+      if (USE_KOKKOS)
+        target_link_libraries (${TARGET_NAME} PRIVATE Kokkos::kokkos)
+      endif ()
     endif()
-    if (USE_KOKKOS)
-      target_link_libraries (${TARGET_NAME} PRIVATE Kokkos::kokkos)
-    endif ()
   endif()
 
   # Subtle: In order for fortran dependency scanning to work, our CPPFPP/DEFS must be registered

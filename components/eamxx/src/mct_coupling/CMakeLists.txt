@@ -57,4 +57,4 @@ set_target_properties(atm PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR
 target_include_directories (atm PUBLIC ${CMAKE_BINARY_DIR}/cmake/atm)
 
 # Link libraries
-target_link_libraries(atm PRIVATE ${SCREAM_LIBS} mct)
+target_link_libraries(atm PRIVATE ${SCREAM_LIBS} csm_share)

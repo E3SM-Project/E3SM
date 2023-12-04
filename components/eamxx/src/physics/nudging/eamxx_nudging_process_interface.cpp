@@ -11,6 +11,7 @@ Nudging::Nudging (const ekat::Comm& comm, const ekat::ParameterList& params)
   m_datafiles  = m_params.get<std::vector<std::string>>("nudging_filename");
   m_timescale = m_params.get<int>("nudging_timescale",0);
   m_fields_nudge = m_params.get<std::vector<std::string>>("nudging_fields");
+  m_use_weights   = m_params.get<bool>("use_nudging_weights",false);
   auto src_pres_type = m_params.get<std::string>("source_pressure_type","TIME_DEPENDENT_3D_PROFILE");
   if (src_pres_type=="TIME_DEPENDENT_3D_PROFILE") {
     m_src_pres_type = TIME_DEPENDENT_3D_PROFILE;
@@ -21,6 +22,10 @@ Nudging::Nudging (const ekat::Comm& comm, const ekat::ParameterList& params)
   } else {
     EKAT_ERROR_MSG("ERROR! Nudging::parameter_list - unsupported source_pressure_type provided.  Current options are [TIME_DEPENDENT_3D_PROFILE,STATIC_1D_VERTICAL_PROFILE].  Please check");
   }
+  // use nudging weights
+  if (m_use_weights) 
+    m_weights_file = m_params.get<std::string>("nudging_weights_file");
+
   // TODO: Add some warning messages here.
   // 1. if m_timescale is <= 0 we will do direct replacement.
   // 2. if m_fields_nudge is empty or =NONE then we will skip nudging altogether.
@@ -63,6 +68,7 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   if (ekat::contains(m_fields_nudge,"U") or ekat::contains(m_fields_nudge,"V")) {
     add_field<Updated>("horiz_winds",   horiz_wind_layout,   m/s,     grid_name, ps);
   }
+
   /* ----------------------- WARNING --------------------------------*/
 
   //Now need to read in the file
@@ -77,10 +83,10 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   }
 }
 // =========================================================================================
-void Nudging::apply_tendency(Field& base, const Field& next, const int dt)
+void Nudging::apply_tendency(Field& base, const Field& next, const Real dt)
 {
   // Calculate the weight to apply the tendency
-  const Real dtend = Real(dt)/Real(m_timescale);
+  const Real dtend = dt/Real(m_timescale);
   EKAT_REQUIRE_MSG(dtend>=0,"Error! Nudging::apply_tendency - timescale tendency of " << std::to_string(dt) 
 		  << " / " << std::to_string(m_timescale) << " = " << std::to_string(dtend) 
 		  << " is invalid.  Please check the timescale and/or dt");
@@ -91,6 +97,30 @@ void Nudging::apply_tendency(Field& base, const Field& next, const int dt)
   base.update(tend,dtend,Real(1.0));
 }
 // =========================================================================================
+void Nudging::apply_weighted_tendency(Field& base, const Field& next, const Field& weights, const Real dt)
+{
+  // Calculate the weight to apply the tendency
+  const Real dtend = dt/Real(m_timescale);
+  EKAT_REQUIRE_MSG(dtend>=0,"Error! Nudging::apply_tendency - timescale tendency of " << std::to_string(dt)
+                  << " / " << std::to_string(m_timescale) << " = " << std::to_string(dtend)
+                  << " is invalid.  Please check the timescale and/or dt");
+  // Now apply the tendency.
+  Field tend = base.clone();
+
+  // Use update internal to set tendency, will be (weights*next - weights*base), note tend=base at this point.
+  auto base_view = base.get_view<const Real**>();
+  auto tend_view = tend.get_view<      Real**>();
+  auto next_view = next.get_view<      Real**>();
+  auto w_view    = weights.get_view<   Real**>();
+
+  const int num_cols       = base_view.extent(0);
+  const int num_vert_packs = base_view.extent(1);
+  Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0}, {num_cols, num_vert_packs}), KOKKOS_LAMBDA(int i, int j) {
+    tend_view(i,j) = next_view(i,j)*w_view(i,j) - base_view(i,j)*w_view(i,j);
+  });
+  base.update(tend, dtend, Real(1.0));
+}
+// =============================================================================================================
 void Nudging::initialize_impl (const RunType /* run_type */)
 {
   using namespace ShortFieldTagsNames;
@@ -139,6 +169,21 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   }
   m_time_interp.initialize_data_from_files();
 
+  // load nudging weights from file
+  // NOTE: the regional nudging use the same grid as the run, no need to
+  // do the interpolation.
+  if (m_use_weights)
+  {
+    FieldLayout scalar3d_layout_grid { {COL,LEV}, {m_num_cols, m_num_levs} };	  
+    create_helper_field("nudging_weights", scalar3d_layout_grid, grid_name, ps);
+    std::vector<Field> fields;
+    auto nudging_weights = get_helper_field("nudging_weights");
+    fields.push_back(nudging_weights);
+    AtmosphereInput src_weights_input(m_weights_file, grid_ext, fields);
+    src_weights_input.read_variables();
+    src_weights_input.finalize();
+    nudging_weights.sync_to_dev();
+  }
 }
 
 // =========================================================================================
@@ -163,6 +208,7 @@ void Nudging::run_impl (const double dt)
   } else if (m_src_pres_type == STATIC_1D_VERTICAL_PROFILE) {
     p_mid_ext_1d   = get_helper_field("p_mid_ext").get_view<mPack*>();
   }
+
   for (auto name : m_fields_nudge) {
     auto atm_state_field = get_field_out_wrap(name);
     auto int_state_field = get_helper_field(name);
@@ -294,9 +340,19 @@ void Nudging::run_impl (const double dt)
       Kokkos::deep_copy(atm_state_view,int_state_view);
     } else {
       // Back out a tendency and apply it.
-      apply_tendency(atm_state_field, int_state_field, dt);
+      if (m_use_weights) {
+        // get nudging weights field
+        // NOTES: do we really need the vertical interpolation for nudging weights? Since we are going to 
+        //        use the same grids as the case by providing the nudging weights file.
+        //        I would not apply the vertical interpolation here, but it depends...
+        //
+        auto nudging_weights_field = get_helper_field("nudging_weights");
+        // appply the nudging tendencies to the ATM states
+        apply_weighted_tendency(atm_state_field, int_state_field, nudging_weights_field, dt);
+      } else {
+	 apply_tendency(atm_state_field, int_state_field, dt);
+      }      
     }
-
   }
 }
 
