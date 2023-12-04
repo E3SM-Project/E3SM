@@ -264,6 +264,9 @@ contains
           ! multiple by area ratio
           if (present(seq_flds_x2c_fluxes)) then
              call mct_avect_vecmult(comp(eci)%x2c_cc, comp(eci)%drv2mdl, seq_flds_x2c_fluxes, mask_spval=.true.)
+#ifdef HAVE_MOAB
+             call factor_moab_comp(comp(eci), 'drv2mdl', seq_flds_x2c_fluxes)
+#endif
           end if
 
           ! call the component's specific init phase
@@ -280,6 +283,9 @@ contains
           ! only done in second phase of atm init
           if (present(seq_flds_c2x_fluxes)) then
              call mct_avect_vecmult(comp(eci)%c2x_cc, comp(eci)%mdl2drv, seq_flds_c2x_fluxes, mask_spval=.true.)
+#ifdef HAVE_MOAB
+             call factor_moab_comp(comp(eci), 'mdl2drv', seq_flds_c2x_fluxes)
+#endif
           end if
 
           if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)

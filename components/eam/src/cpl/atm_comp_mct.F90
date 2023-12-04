@@ -1775,7 +1775,7 @@ subroutine atm_import_moab(Eclock, cam_in, restart_init )
        ! NOTE:overwrite_flds is .FALSE. for the first restart
        ! time step making cflx(:,1)=0.0 for the first restart time step.
        ! cflx(:,1) should not be zeroed out, start the second index of cflx from 2.
-       cam_in(c)%cflx(:,2:) = 0._r8 
+       ! cam_in(c)%cflx(:,2:) = 0._r8 
                                                
        do i =1,ncols                                                               
           if (overwrite_flds) then
