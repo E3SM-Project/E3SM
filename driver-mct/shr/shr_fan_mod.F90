@@ -36,6 +36,8 @@ contains
     namelist /fan_inparm/ fan_nh3_to_atm
 
     call seq_comm_setptrs(id, mpicom=mpicomm)
+    ! Need to initilize to default value in case drv_flds_in doesn't exist
+    fan_nh3_to_atm = .false. 
     if (seq_comm_iamroot(id)) then
        inquire(file=trim(nlfilename), exist=exists)
        if (exists) then
@@ -55,7 +57,6 @@ contains
           close(fileunit)
           call shr_file_freeunit(fileunit)
        end if
-
     end if ! root
     call shr_mpi_bcast(fan_nh3_to_atm, mpicomm)
     have_fields = fan_nh3_to_atm
