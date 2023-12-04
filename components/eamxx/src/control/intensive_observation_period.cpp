@@ -638,9 +638,7 @@ read_iop_file_data (const util::TimeStamp& current_ts)
       const auto has_srf = m_iop_field_surface_varnames.count(fname)>0;
       if (has_srf) {
         const auto srf_varname = m_iop_field_surface_varnames[fname];
-        Real srf_data;
-        read_variable_from_file(iop_file, srf_varname, "real", {"lon","lat"}, iop_file_time_idx, &srf_data);
-        iop_file_v_h(adjusted_file_levs-1) = srf_data;
+        read_variable_from_file(iop_file, srf_varname, "real", {"lon","lat"}, iop_file_time_idx, &iop_file_v_h(adjusted_file_levs-1));
       } else {
         // No surface value exists, compute surface value
         const auto dx = iop_file_v_h(adjusted_file_levs-2) - iop_file_v_h(adjusted_file_levs-3);
