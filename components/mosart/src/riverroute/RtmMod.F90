@@ -1857,6 +1857,7 @@ contains
     if ((nsrest == nsrStartup .and. finidat_rtm /= ' ') .or. &
         (nsrest == nsrContinue) .or. & 
         (nsrest == nsrBranch  )) then
+
        call RtmRestFileRead( file=fnamer )
        !write(iulog,*) ' MOSART init file is read'
        TRunoff%wh   = rtmCTL%wh
