@@ -543,7 +543,7 @@ read_iop_file_data (const util::TimeStamp& current_ts)
     // where the last level is the first level equal to surface pressure.
     const auto iop_file_pres_v = iop_file_pressure.get_view<Real*>();
     // Sanity check
-    EKAT_REQUIRE_MSG(file_levs+1 == iop_file_pres_v.extent_int(0),
+    EKAT_REQUIRE_MSG(file_levs+1 == iop_file_pressure.get_header().get_identifier().get_layout().dim(0),
                     "Error! Unexpected size for helper field \"iop_file_pressure\"\n");
     const auto& Ps = surface_pressure.get_view<const Real>();
     Kokkos::parallel_reduce(file_levs+1, KOKKOS_LAMBDA (const int ilev, int& lmin) {
@@ -569,7 +569,7 @@ read_iop_file_data (const util::TimeStamp& current_ts)
 
     // Compute model pressure levels
     const auto model_pres_v = model_pressure.get_view<Real*>();
-    const auto model_nlevs = model_pres_v.extent(0);
+    const auto model_nlevs = model_pressure.get_header().get_identifier().get_layout().dim(0);
     const auto hyam_v = m_helper_fields["hyam"].get_view<const Real*>();
     const auto hybm_v = m_helper_fields["hybm"].get_view<const Real*>();
     Kokkos::parallel_for(model_nlevs, KOKKOS_LAMBDA (const int ilev) {
@@ -665,7 +665,7 @@ read_iop_file_data (const util::TimeStamp& current_ts)
 
       const auto nlevs_input = iop_file_end - iop_file_start;
       const auto nlevs_output = model_end - model_start;
-      const auto total_nlevs = iop_field_v.extent_int(0);
+      const auto total_nlevs = field.get_header().get_identifier().get_layout().dim(0);
 
       ekat::LinInterp<Real,Pack1d::n> vert_interp(1, nlevs_input, nlevs_output);
       const auto policy = ESU::get_default_team_policy(1, total_nlevs);
