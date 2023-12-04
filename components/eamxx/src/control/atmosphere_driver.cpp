@@ -325,7 +325,7 @@ void AtmosphereDriver::setup_surface_coupling_processes () const
   }
 }
 
-void AtmosphereDriver::reset_accummulated_fields ()
+void AtmosphereDriver::reset_accumulated_fields ()
 {
   constexpr Real zero = 0;
   for (auto fm_it : m_field_mgrs) {
@@ -825,9 +825,6 @@ initialize_fields ()
     }
   }
 
-  // Zero out accumulated fields
-  reset_accummulated_fields();
-
 #ifdef SCREAM_HAS_MEMORY_USAGE
   long long my_mem_usage = get_mem_usage(MB);
   long long max_mem_usage;
@@ -1226,6 +1223,7 @@ read_fields_from_file (const std::vector<std::string>& field_names_nc,
   }
 
   AtmosphereInput ic_reader(file_name,grid,fields);
+  ic_reader.set_logger(m_atm_logger);
   ic_reader.read_variables();
   ic_reader.finalize();
 
@@ -1264,6 +1262,7 @@ read_fields_from_file (const std::vector<std::string>& field_names,
   }
 
   AtmosphereInput ic_reader(file_name,grid,fields);
+  ic_reader.set_logger(m_atm_logger);
   ic_reader.read_variables();
   ic_reader.finalize();
 
@@ -1416,9 +1415,38 @@ void AtmosphereDriver::run (const int dt) {
     "Atmosphere step = " + std::to_string(m_current_ts.get_num_steps()) + "\n" +
     "  model start-of-step time = " + m_current_ts.get_date_string() + " " + m_current_ts.get_time_string() + "\n");
 
+  // Reset accum fields to 0
+  constexpr Real zero = 0;
+  for (auto fm_it : m_field_mgrs) {
+    const auto& fm = fm_it.second;
+    if (not fm->has_group("ACCUMULATED")) {
+      continue;
+    }
+
+    auto accum_group = fm->get_field_group("ACCUMULATED");
+    for (auto f_it : accum_group.m_fields) {
+      auto& track = f_it.second->get_header().get_tracking();
+      f_it.second->deep_copy(zero);
+      track.set_accum_start_time(m_current_ts);
+    }
+  }
+
   // The class AtmosphereProcessGroup will take care of dispatching arguments to
   // the individual processes, which will be called in the correct order.
   m_atm_process_group->run(dt);
+
+  // Some accumulated fields need to be divided by dt at the end of the atm step
+  for (auto fm_it : m_field_mgrs) {
+    const auto& fm = fm_it.second;
+    if (not fm->has_group("DIVIDE_BY_DT")) {
+      continue;
+    }
+
+    auto rescale_group = fm->get_field_group("DIVIDE_BY_DT");
+    for (auto f_it : rescale_group.m_fields) {
+      f_it.second->scale(Real(1) / dt);
+    }
+  }
 
   // Update current time stamps
   m_current_ts += dt;
@@ -1428,10 +1456,6 @@ void AtmosphereDriver::run (const int dt) {
   for (auto& out_mgr : m_output_managers) {
     out_mgr.run(m_current_ts);
   }
-
-  // Reset accum fields right away, so that if we have t=0 output,
-  // we don't run into errors in the IO or diagnostics layers.
-  reset_accummulated_fields();
 
 #ifdef SCREAM_HAS_MEMORY_USAGE
   long long my_mem_usage = get_mem_usage(MB);

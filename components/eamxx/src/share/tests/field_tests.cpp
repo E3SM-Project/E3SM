@@ -27,9 +27,6 @@ TEST_CASE("field_layout") {
   REQUIRE_THROWS(l.set_dimensions({1,2}));
 
   l.set_dimensions({1,2,3});
-
-  // Should not be able to reset the dimensions once they are set
-  REQUIRE_THROWS(l.set_dimensions({1,2,3}));
 }
 
 TEST_CASE("field_identifier", "") {

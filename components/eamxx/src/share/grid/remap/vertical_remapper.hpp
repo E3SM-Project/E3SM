@@ -110,7 +110,7 @@ public:
 protected:
 
   using KT = KokkosTypes<DefaultDevice>;
-  using gid_t = AbstractGrid::gid_type;
+  using gid_type = AbstractGrid::gid_type;
 
   template<int N>
   using RPack = ekat::Pack<Real,N>;

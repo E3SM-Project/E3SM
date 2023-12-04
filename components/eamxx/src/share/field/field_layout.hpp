@@ -84,7 +84,6 @@ public:
 
   long long  size () const;
 
-  bool is_dimension_set  (const int idim) const;
   bool are_dimensions_set () const;
 
   // Check if this layout is that of a vector field
@@ -137,8 +136,9 @@ inline int FieldLayout::dim (const int idim) const {
 }
 
 inline long long FieldLayout::size () const {
-  ekat::error::runtime_check(are_dimensions_set(), "Error! Field dimensions not yet set.\n",-1);
-  long long prod = m_rank>0 ? 1 : 0;
+  EKAT_REQUIRE_MSG(are_dimensions_set(),
+      "Error! Field dimensions not yet set.\n");
+  long long prod = 1;
   for (int idim=0; idim<m_rank; ++idim) {
     prod *= m_dims[idim];
   }
@@ -156,11 +156,6 @@ inline bool FieldLayout::has_tags (const std::vector<FieldTag>& tags) const {
     b &= has_tag(t);
   }
   return b;
-}
-
-inline bool FieldLayout::is_dimension_set (const int idim) const {
-  ekat::error::runtime_check(idim>=0 && idim<m_rank, "Error! Index out of bounds.", -1);
-  return m_dims[idim]>=0;
 }
 
 inline bool FieldLayout::are_dimensions_set () const {
