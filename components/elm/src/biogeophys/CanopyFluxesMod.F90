@@ -103,7 +103,8 @@ contains
     use elm_varsur         , only : firrig
     use TopounitType       , only : top_pp
     use QSatMod            , only : QSat
-    use FrictionVelocityMod, only : FrictionVelocity, MoninObukIni, implicit_stress
+    use FrictionVelocityMod, only : FrictionVelocity, MoninObukIni, &
+         implicit_stress, atm_gustiness, force_land_gustiness
     use SoilWaterRetentionCurveMod, only : soil_water_retention_curve_type
     use SurfaceResistanceMod, only : getlblcef
     use PhotosynthesisType, only : photosyns_vars_TimeStepInit
@@ -169,6 +170,7 @@ contains
     real(r8) :: zldis(bounds%begp:bounds%endp)       ! reference height "minus" zero displacement height [m]
     real(r8) :: zeta                                 ! dimensionless height used in Monin-Obukhov theory
     real(r8) :: wc                                   ! convective velocity [m/s]
+    real(r8) :: ugust_total(bounds%begp:bounds%endp) ! gustiness including convective velocity [m/s]
     real(r8) :: dth(bounds%begp:bounds%endp)         ! diff of virtual temp. between ref. height and surface
     real(r8) :: dthv(bounds%begp:bounds%endp)        ! diff of vir. poten. temp. between ref. height and surface
     real(r8) :: dqh(bounds%begp:bounds%endp)         ! diff of humidity between ref. height and surface
@@ -569,7 +571,7 @@ contains
       if(use_fates)then
 #ifndef _OPENACC
          call alm_fates%wrap_btran(bounds, fn, filterc_tmp(1:fn), soilstate_vars, &
-               temperature_vars, energyflux_vars, soil_water_retention_curve)
+               energyflux_vars, soil_water_retention_curve)
 #endif
       else
          !calculate root moisture stress
@@ -707,13 +709,14 @@ contains
          if (implicit_stress) then
             wind_speed0(p) = max(0.01_r8, hypot(forc_u(t), forc_v(t)))
             wind_speed_adj(p) = wind_speed0(p)
-            ur(p) = max(1.0_r8, wind_speed_adj(p) + ugust(t))
+            ur(p) = max(1.0_r8, sqrt(wind_speed_adj(p)**2 + ugust(t)**2))
 
             prev_tau(p) = tau_est(t)
          else
-            ur(p) = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)) + ugust(t))
+            ur(p) = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)+ugust(t)*ugust(t)))
          end if
          tau_diff(p) = 1.e100_r8
+         ugust_total(p) = ugust(t)
 
          dth(p) = thm(p)-taf(p)
          dqh(p) = forc_q(t)-qaf(p)
@@ -764,7 +767,7 @@ contains
          ! profiles of the surface boundary layer
          call FrictionVelocity (begp, endp, fn, filterp, &
               displa(begp:endp), z0mv(begp:endp), z0hv(begp:endp), z0qv(begp:endp), &
-              obu(begp:endp), itlef, ur(begp:endp), um(begp:endp), ustar(begp:endp), &
+              obu(begp:endp), itlef, ur(begp:endp), um(begp:endp), ugust_total(begp:endp), ustar(begp:endp), &
               temp1(begp:endp), temp2(begp:endp), temp12m(begp:endp), temp22m(begp:endp), fm(begp:endp), &
               frictionvel_vars)
 
@@ -790,7 +793,7 @@ contains
                call shr_flux_update_stress(wind_speed0(p), wsresp(t), tau_est(t), &
                     tau(p), prev_tau(p), tau_diff(p), prev_tau_diff(p), &
                     wind_speed_adj(p))
-               ur(p) = max(1.0_r8, wind_speed_adj(p) + ugust(t))
+               ur(p) = max(1.0_r8, sqrt(wind_speed_adj(p)**2 + ugust(t)**2))
             end if
 
             ! Bulk boundary layer resistance of leaves
@@ -877,7 +880,7 @@ contains
             call alm_fates%wrap_photosynthesis(bounds, fn, filterp(1:fn), &
                   svpts(begp:endp), eah(begp:endp), o2(begp:endp), &
                   co2(begp:endp), rb(begp:endp), dayl_factor(begp:endp), &
-                  atm2lnd_vars, temperature_vars, canopystate_vars, photosyns_vars)
+                  atm2lnd_vars, canopystate_vars, photosyns_vars)
 #endif
          else ! not use_fates
 
@@ -1123,8 +1126,13 @@ contains
                um(p) = max(ur(p),0.1_r8)
             else                     !unstable
                zeta = max(-100._r8,min(zeta,-0.01_r8))
-               wc = beta*(-grav*ustar(p)*thvstar*zii/thv(c))**0.333_r8
-               um(p) = sqrt(ur(p)*ur(p)+wc*wc)
+               if ((.not. atm_gustiness) .or. force_land_gustiness) then
+                  wc = beta*(-grav*ustar(p)*thvstar*zii/thv(c))**0.333_r8
+                  ugust_total(p) = sqrt(ugust(t)**2 + wc**2)
+                  um(p) = sqrt(ur(p)*ur(p)+wc*wc)
+               else
+                  um(p) = max(ur(p),0.1_r8)
+               end if
             end if
             obu(p) = zldis(p)/zeta
 

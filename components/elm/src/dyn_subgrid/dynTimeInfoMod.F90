@@ -111,7 +111,7 @@ contains
     ! Should be called every time step
     !
     ! !USES:
-    use clm_time_manager , only : get_curr_date, get_prev_date
+    use elm_time_manager , only : get_curr_date, get_prev_date
     !
     ! !ARGUMENTS:
     class(time_info_type), intent(inout) :: this      ! this object
@@ -154,7 +154,7 @@ contains
     ! This version of set_current_year obtains the current model year for you.
     !
     ! !USES:
-    use clm_time_manager , only : get_curr_date, get_prev_date, get_days_per_year
+    use elm_time_manager , only : get_curr_date, get_prev_date, get_days_per_year
     !
     ! !ARGUMENTS:
     class(time_info_type), intent(inout) :: this      ! this object

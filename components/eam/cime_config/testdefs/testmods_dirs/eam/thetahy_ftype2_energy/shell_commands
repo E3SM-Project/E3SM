@@ -1,0 +1,6 @@
+#!/bin/bash
+./xmlchange CAM_TARGET=theta-l
+./xmlchange ATM_NCPL=24
+./xmlchange POSTRUN_SCRIPT="$CIMEROOT/../components/homme/utils/e3sm_test/check_energy_conservation.py"
+
+

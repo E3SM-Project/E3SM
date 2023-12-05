@@ -367,7 +367,7 @@ contains
   !-----------------------------------------------------------------------
   subroutine Reset(mode, budg_fluxL, budg_fluxG, budg_fluxN, budg_stateL, budg_stateG)
     !
-    use clm_time_manager, only : get_curr_date, get_prev_date
+    use elm_time_manager, only : get_curr_date, get_prev_date
     !
     implicit none
     !
@@ -514,7 +514,7 @@ contains
 !-----------------------------------------------------------------------
   subroutine Accum(s_size, budg_fluxN, budg_fluxL, budg_stateL, budg_stateG)
     !
-    use clm_time_manager, only : get_curr_date, get_prev_date, get_nstep
+    use elm_time_manager, only : get_curr_date, get_prev_date, get_nstep
     !
     implicit none
     !
@@ -759,7 +759,7 @@ contains
        budg_print_inst,  budg_print_daily,  budg_print_month,  &
        budg_print_ann,  budg_print_ltann,  budg_print_ltend)
     !
-    use clm_time_manager, only : get_curr_date, get_prev_date, get_nstep, get_step_size
+    use elm_time_manager, only : get_curr_date, get_prev_date, get_nstep, get_step_size
     use shr_const_mod   , only : shr_const_pi
     !
     implicit none
@@ -847,7 +847,7 @@ contains
   !-----------------------------------------------------------------------
   subroutine CarbonBudget_Message(ip, cdate, sec, f_size, s_size, budg_stateG, budg_fluxG, budg_fluxGpr, unit_conversion)
     !
-    use clm_time_manager, only : get_curr_date, get_prev_date, get_nstep, get_step_size
+    use elm_time_manager, only : get_curr_date, get_prev_date, get_nstep, get_step_size
     use shr_const_mod   , only : shr_const_pi
     !
     implicit none
@@ -987,6 +987,9 @@ contains
     integer  :: f, s, p, count
     character(*),parameter :: subName = '(Restart_Write) '
 
+    budg_fluxGtmp = 0._r8
+    budg_stateGtmp = 0._r8
+
     call shr_mpi_sum(budg_fluxL, budg_fluxGtmp, mpicom, subName)
     call shr_mpi_sum(budg_stateL, budg_stateGtmp, mpicom, subName)
 
@@ -1117,7 +1120,7 @@ contains
     use elm_varcon       , only : spval
     use column_varcon    , only : icol_roof, icol_sunwall, icol_shadewall
     use column_varcon    , only : icol_road_perv, icol_road_imperv
-    use clm_time_manager , only : get_curr_date, get_prev_date, get_nstep
+    use elm_time_manager , only : get_curr_date, get_prev_date, get_nstep
     use GridcellDataType , only : gridcell_carbon_state
     use ColumnDataType   , only : column_carbon_state
     !
@@ -1177,7 +1180,7 @@ contains
     use elm_varcon       , only : spval
     use column_varcon    , only : icol_roof, icol_sunwall, icol_shadewall
     use column_varcon    , only : icol_road_perv, icol_road_imperv
-    use clm_time_manager , only : get_curr_date, get_prev_date, get_nstep
+    use elm_time_manager , only : get_curr_date, get_prev_date, get_nstep
     use GridcellDataType , only : gridcell_carbon_state
     use ColumnDataType   , only : column_carbon_state
     !

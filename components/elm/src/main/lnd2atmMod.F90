@@ -181,7 +181,9 @@ contains
       q_ref2m     => veg_ws%q_ref2m , &
       q_ref2m_grc => lnd2atm_vars%q_ref2m_grc      , &
       u10_elm_patch => frictionvel_vars%u10_elm_patch , &
+      u10_with_gusts_elm_patch => frictionvel_vars%u10_with_gusts_elm_patch, &
       u_ref10m_grc => lnd2atm_vars%u_ref10m_grc      , &
+      u_ref10m_with_gusts_grc => lnd2atm_vars%u_ref10m_with_gusts_grc      , &
       taux     => veg_ef%taux , &
       taux_grc => lnd2atm_vars%taux_grc      , &
       tauy     => veg_ef%tauy , &
@@ -256,6 +258,11 @@ contains
     call p2g(bounds, &
          u10_elm_patch(bounds%begp:bounds%endp) , &
          u_ref10m_grc (bounds%begg:bounds%endg)     , &
+         p2c_scale_type=unity, c2l_scale_type= unity, l2g_scale_type=unity)
+
+    call p2g(bounds, &
+         u10_with_gusts_elm_patch(bounds%begp:bounds%endp) , &
+         u_ref10m_with_gusts_grc (bounds%begg:bounds%endg)     , &
          p2c_scale_type=unity, c2l_scale_type= unity, l2g_scale_type=unity)
 
     call p2g(bounds, &

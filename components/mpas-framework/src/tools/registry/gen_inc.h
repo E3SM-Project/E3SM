@@ -8,10 +8,11 @@
 //
 
 #include "ezxml.h"
+#include <stdbool.h>
 
 void write_model_variables(ezxml_t registry);
 int write_field_pointer_arrays(FILE* fd);
-int set_pointer_name(int type, int ndims, char *pointer_name, int time_levs);
+int set_pointer_name(int type, int ndims, char *pointer_name, bool mult_time_levs);
 int add_package_to_list(const char * package, const char * package_list);
 int build_struct_package_lists(ezxml_t currentPosition, char * out_packages);
 int get_dimension_information(ezxml_t registry, const char *test_dimname, int *has_time, int *decomp);

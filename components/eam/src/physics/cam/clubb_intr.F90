@@ -1120,7 +1120,7 @@ end subroutine clubb_init_cnst
 
 #ifdef CLUBB_SGS
    use hb_diff,                   only: pblintd
-   use scamMOD,                   only: single_column,scm_clubb_iop_name
+   use iop_data_mod,              only: single_column
    use phys_grid,                 only: get_gcol_p
    use cldfrc2m,                  only: aist_vector
    use cam_history,               only: outfld
@@ -1510,7 +1510,6 @@ end subroutine clubb_init_cnst
    real(r8) :: gprec
    real(r8) :: prec_gust(pcols)
    real(r8) :: vmag_gust_dp(pcols),vmag_gust_cl(pcols)
-   real(r8) :: vmag(pcols)
    real(r8) :: gust_fac(pcols)
    real(r8) :: umb(pcols), vmb(pcols),up2b(pcols),vp2b(pcols)
    real(r8),parameter :: gust_facl = 1.2_r8 !gust fac for land
@@ -1520,10 +1519,14 @@ end subroutine clubb_init_cnst
    real(r8) :: sfc_v_diff_tau(pcols) ! Response to tau perturbation, m/s
    real(r8), parameter :: pert_tau = 0.1_r8 ! tau perturbation, Pa
 
+
+   real(r8) :: inv_exner_clubb_surf
+
+
 ! ZM gustiness equation below from Redelsperger et al. (2000)
 ! numbers are coefficients of the empirical equation
 
-   ugust(gprec,gfac) = gfac*log(1._R8+57801.6_R8*gprec-3.55332096e7_R8*(gprec**2.0_R8))
+   ugust(gprec) = log(1._R8+57801.6_R8*gprec-3.55332096e7_R8*(gprec**2.0_R8))
 
 #endif
    det_s(:)   = 0.0_r8
@@ -1833,6 +1836,7 @@ end subroutine clubb_init_cnst
    !  At each CLUBB call, initialize mean momentum  and thermo CLUBB state
    !  from the CAM state
 
+   rvm = 0._r8
    do k=1,pver   ! loop over levels
      do i=1,ncol ! loop over columns
 
@@ -1840,7 +1844,20 @@ end subroutine clubb_init_cnst
        rvm(i,k)     = state1%q(i,k,ixq)
        um(i,k)      = state1%u(i,k)
        vm(i,k)      = state1%v(i,k)
+
+#define NEWTHETAL
+#ifndef NEWTHETAL
        thlm(i,k)    = state1%t(i,k)*exner_clubb(i,k)-(latvap/cpair)*state1%q(i,k,ixcldliq)
+#else
+!NCAR
+!       thlm(i,k) = ( state1%t(i,k) &
+!                     - (latvap/cpairv(i,k,lchnk))*state1%q(i,k,ixcldliq) ) &
+!                   * inv_exner_clubb(i,k)
+
+       thlm(i,k) = ( state1%t(i,k) &
+                     - (latvap/cpair)*state1%q(i,k,ixcldliq) ) &
+                   * exner_clubb(i,k)
+#endif
 
        if (clubb_do_adv) then
           if (macmic_it .eq. 1) then
@@ -2000,59 +2017,6 @@ end subroutine clubb_init_cnst
         wm_zt(k+1) = real(dum1, kind = core_rknd)
       enddo
 
-      ! ------------------------------------------------- !
-      ! Begin case specific code for SCAM cases.          !
-      ! This section of code block NOT called in          !
-      ! global simulations                                !
-      ! ------------------------------------------------- !
-
-      if (single_column) then
-
-        !  Initialize zo if variable ustar is used
-
-        if (cam_in%landfrac(i) .ge. 0.5_r8) then
-           zo = 0.035_r8
-        else
-           zo = 0.0001_r8
-        endif
-
-        !  Compute surface wind (ubar)
-        ubar = sqrt(um(i,pver)**2+vm(i,pver)**2)
-        if (ubar .lt. 0.25_r8) ubar = 0.25_r8
-
-        !  Below denotes case specifics for surface momentum
-        !  and thermodynamic fluxes, depending on the case
-
-        !  Define ustar (based on case, if not variable)
-        ustar = 0.25_r8   ! Initialize ustar in case no case
-
-        if(trim(scm_clubb_iop_name) .eq. 'BOMEX_5day') then
-           ustar = 0.28_r8
-        endif
-
-        if(trim(scm_clubb_iop_name) .eq. 'ATEX_48hr') then
-           ustar = 0.30_r8
-        endif
-
-        if(trim(scm_clubb_iop_name) .eq. 'RICO_3day') then
-           ustar = 0.28_r8
-        endif
-
-        if(trim(scm_clubb_iop_name) .eq. 'arm97' .or. trim(scm_clubb_iop_name) .eq. 'gate' .or. &
-           trim(scm_clubb_iop_name) .eq. 'toga' .or. trim(scm_clubb_iop_name) .eq. 'mpace' .or. &
-           trim(scm_clubb_iop_name) .eq. 'ARM_CC') then
-
-             dum1   = real(zt_g(2), kind = r8)
-             bflx22 = (gravit/real(theta0, kind = r8))*real(wpthlp_sfc, kind = r8)
-             ustar  = diag_ustar(dum1,bflx22,ubar,zo)
-        endif
-
-        !  Compute the surface momentum fluxes, if this is a SCAM simulation
-        upwp_sfc = -real((um(i,pver)*ustar**2/ubar), kind = core_rknd)
-        vpwp_sfc = -real((vm(i,pver)*ustar**2/ubar), kind = core_rknd)
-
-      endif
-
       !  Set stats output and increment equal to CLUBB and host dt
       stats_tsamp = dtime
       stats_tout  = hdtime_core_rknd
@@ -2081,6 +2045,15 @@ end subroutine clubb_init_cnst
 
       !  Surface fluxes provided by host model
       wpthlp_sfc = real(cam_in%shf(i), kind = core_rknd)/(real(cpair, kind = core_rknd)*rho_ds_zm(1)) ! Sensible heat flux
+#if 1
+      inv_exner_clubb_surf = 1._r8/((state1%pmid(i,pver)/p0_clubb)**(rair/cpair)) !phl Option 2
+      wpthlp_sfc = wpthlp_sfc*inv_exner_clubb_surf
+#endif
+#if 0
+      inv_exner_clubb_surf = 1._r8/((state1%pint(i,pverp)/p0_clubb)**(rair/cpair)) !Peter B option
+      wpthlp_sfc = wpthlp_sfc*inv_exner_clubb_surf
+#endif
+
       wprtp_sfc  = real(cam_in%cflx(i,1), kind = core_rknd)/rho_ds_zm(1)                              ! Latent heat flux
       upwp_sfc   = real(cam_in%wsx(i), kind = core_rknd)/rho_ds_zm(1)                                 ! Surface meridional momentum flux
       vpwp_sfc   = real(cam_in%wsy(i), kind = core_rknd)/rho_ds_zm(1)                                 ! Surface zonal momentum flux
@@ -2489,7 +2462,11 @@ end subroutine clubb_init_cnst
       wv_a = 0._r8
       wl_a = 0._r8
       do k=1,pver
+#ifdef NEWTHETAL
+         enthalpy = cpair*thlm(i,k)/exner_clubb(i,k) + latvap*rcm(i,k)
+#else
          enthalpy = cpair*((thlm(i,k)+(latvap/cpair)*rcm(i,k))/exner_clubb(i,k))
+#endif
          clubb_s(k) = enthalpy + gravit*state1%zm(i,k)+state1%phis(i)
 !         se_a(i) = se_a(i) + clubb_s(k)*state1%pdel(i,k)*invrs_gravit
          se_a(i) = se_a(i) + enthalpy * state1%pdel(i,k)*invrs_gravit
@@ -2592,6 +2569,10 @@ end subroutine clubb_init_cnst
 
    enddo  ! end column loop
    call t_stopf('adv_clubb_core_col_loop')
+
+
+   call outfld('fixerCLUBB', te_a(:ncol)-te_b(:ncol), ncol, lchnk )
+
 
    ! Add constant to ghost point so that output is not corrupted
    if (clubb_do_adv) then
@@ -2880,20 +2861,6 @@ end subroutine clubb_init_cnst
       enddo
    enddo
 
-   if (single_column) then
-      if (trim(scm_clubb_iop_name) .eq. 'ATEX_48hr'       .or. &
-          trim(scm_clubb_iop_name) .eq. 'BOMEX_5day'      .or. &
-          trim(scm_clubb_iop_name) .eq. 'DYCOMSrf01_4day' .or. &
-          trim(scm_clubb_iop_name) .eq. 'DYCOMSrf02_06hr' .or. &
-          trim(scm_clubb_iop_name) .eq. 'RICO_3day'       .or. &
-          trim(scm_clubb_iop_name) .eq. 'ARM_CC') then
-
-             deepcu(:,:) = 0.0_r8
-             concld(:,:) = 0.0_r8
-
-      endif
-   endif
-
    ! --------------------------------------------------------------------------------- !
    !  COMPUTE THE ICE CLOUD FRACTION PORTION                                           !
    !  use the aist_vector function to compute the ice cloud fraction                   !
@@ -2999,12 +2966,11 @@ end subroutine clubb_init_cnst
            else
              gust_fac(i)   = gust_faco
            endif
-           vmag(i)         = max(1.e-5_r8,sqrt( umb(i)**2._r8 + vmb(i)**2._r8))
-           vmag_gust_dp(i) = ugust(min(prec_gust(i),6.94444e-4_r8),gust_fac(i)) ! Limit for the ZM gustiness equation set in Redelsperger et al. (2000)
-           vmag_gust_dp(i) = max(0._r8, vmag_gust_dp(i) )!/ vmag(i))
-           vmag_gust_cl(i) = gust_facc*(sqrt(max(0._r8,up2b(i)+vp2b(i))+vmag(i)**2._r8)-vmag(i))
-           vmag_gust_cl(i) = max(0._r8, vmag_gust_cl(i) )!/ vmag(i))
-           vmag_gust(i)    = vmag_gust_cl(i) + vmag_gust_dp(i)
+           vmag_gust_dp(i) = ugust(min(prec_gust(i),6.94444e-4_r8)) ! Limit for the ZM gustiness equation set in Redelsperger et al. (2000)
+           vmag_gust_dp(i) = max(0._r8, vmag_gust_dp(i) )
+           vmag_gust_cl(i) = sqrt(max(0._r8,up2b(i)+vp2b(i)))
+           vmag_gust(i)    = sqrt(gust_facc * vmag_gust_cl(i)**2 &
+                + gust_fac(i) * vmag_gust_dp(i)**2)
           do k=1,pver
              if (state1%zi(i,k)>pblh(i).and.state1%zi(i,k+1)<=pblh(i)) then
                 ktopi(i) = k

@@ -352,7 +352,7 @@ contains
     ! initialized, and after ecophyscon file is read in.
     !
     ! !USES:
-    use clm_time_manager, only: get_step_size
+    use elm_time_manager, only: get_step_size
     use elm_varpar      , only: crop_prog
     use elm_varcon      , only: secspday
     !
@@ -1939,7 +1939,7 @@ contains
     ! Code based on ORCHIDEE-MICT-BIOENERGY model (Li et al., 2018)
     ! !USES:
     use shr_const_mod    , only : SHR_CONST_TKFRZ
-    use clm_time_manager , only : get_curr_calday, get_days_per_year
+    use elm_time_manager , only : get_curr_calday, get_days_per_year
     use pftvarcon        , only : gddmin, hybgdd
     use pftvarcon        , only : minplanttemp, planttemp, senestemp, min_days_senes
     use elm_varcon       , only : spval, secspday
@@ -2151,7 +2151,7 @@ contains
     use pftvarcon       , only: npcropmin, npcropmax, nppercropmin, nppercropmax, mnNHplantdate
     use pftvarcon       , only: mnSHplantdate, mxNHplantdate
     use pftvarcon       , only: mxSHplantdate
-    use clm_time_manager, only: get_calday
+    use elm_time_manager, only: get_calday
     !
     ! !ARGUMENTS:
     implicit none
@@ -2562,6 +2562,7 @@ contains
     ! add flux for phosphorus - X.YANG
     ! !USES:
     use pftvarcon            , only : percrop
+    use elm_varctl           , only : use_crop
     !
     ! !ARGUMENTS:
       !$acc routine seq
@@ -2642,7 +2643,7 @@ contains
             ! The transfer rate is a linearly decreasing function of time,
             ! going to zero on the last timestep of the onset period
 
-            if (onset_counter(p) == dt .or. percrop(ivt(p)) == 1.0_r8) then
+            if (onset_counter(p) == dt .or. (use_crop .and. percrop(ivt(p)) == 1.0_r8) ) then
                t1 = 1.0_r8 / dt
             else
                t1 = 2.0_r8 / (onset_counter(p))

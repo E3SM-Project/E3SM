@@ -313,7 +313,7 @@ contains
     !
     ! !USES:
     use shr_infnan_mod      , only : isnan => shr_infnan_isnan, nan => shr_infnan_nan, assignment(=)
-    use clm_time_manager    , only : is_restart, get_nstep
+    use elm_time_manager    , only : is_restart, get_nstep
     use elm_varctl          , only : spinup_mortality_factor
     use CNStateType         , only : cnstate_type
     use restUtilMod

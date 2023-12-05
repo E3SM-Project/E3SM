@@ -75,7 +75,7 @@ contains
     use elm_varcon      , only : denh2o, denice, spval, hfus, tfrz, cpliq, cpice
     use elm_varpar      , only : nlevsno, nlevgrnd, nlevsoi
     use elm_varctl      , only : iulog, use_extrasnowlayers, use_lake_wat_storage
-    use clm_time_manager, only : get_step_size
+    use elm_time_manager, only : get_step_size
     use SnowHydrologyMod, only : SnowCompaction, CombineSnowLayers, SnowWater, BuildSnowFilter
     use SnowHydrologyMod, only : DivideSnowLayers, DivideExtraSnowLayers, SnowCapping
     use LakeCon         , only : lsadz
@@ -429,13 +429,12 @@ contains
             else
                h2osno(c) = h2osno(c) + (-qflx_sub_snow(p)+qflx_dew_snow(p))*dtime
             end if
+            h2osno(c) = max(h2osno(c), 0._r8)
             if (h2osno_temp > 0._r8) then
                snow_depth(c) = snow_depth(c) * h2osno(c) / h2osno_temp
             else
                snow_depth(c) = h2osno(c)/snow_bd !Assume a constant snow bulk density = 250.
             end if
-
-            h2osno(c) = max(h2osno(c), 0._r8)
          end if
 
          if (.not. use_extrasnowlayers) then

@@ -56,7 +56,7 @@ contains
     ! Downscaling is done over topounits if the number of topounits > 1.
     !
     ! !USES:
-    use clm_time_manager, only : get_nstep
+    use elm_time_manager, only : get_nstep
     use elm_varcon      , only : rair, cpair, grav, lapse_glcmec
     use elm_varcon      , only : glcmec_rain_snow_threshold, o2_molar_const
     use shr_const_mod   , only : SHR_CONST_TKFRZ
@@ -64,6 +64,7 @@ contains
     use elm_varctl      , only : glcmec_downscale_rain_snow_convert
     use domainMod       , only : ldomain
     use QsatMod         , only : Qsat
+    use FrictionVelocityMod, only: atm_gustiness
     !
     ! !ARGUMENTS:
     integer                    , intent(in)    :: g  
@@ -225,10 +226,16 @@ contains
              top_as%ubot(t)    = x2l(index_x2l_Sa_u,i)         ! forc_uxy  Atm state m/s
              top_as%vbot(t)    = x2l(index_x2l_Sa_v,i)         ! forc_vxy  Atm state m/s
              top_as%zbot(t)    = x2l(index_x2l_Sa_z,i)         ! zgcmxy    Atm state m
+             if (atm_gustiness) then
+                top_as%ugust(t)  = x2l(index_x2l_Sa_ugust,i)   ! ugust     Atm state m/s
+             end if
 		 
              ! assign the state forcing fields derived from other inputs
              ! Horizontal windspeed (m/s)
              top_as%windbot(t) = sqrt(top_as%ubot(t)**2 + top_as%vbot(t)**2)
+             if (atm_gustiness) then
+                top_as%windbot(t) = sqrt(top_as%windbot(t)**2 + top_as%ugust(t)**2)
+             end if
              ! Relative humidity (percent)
              if (top_as%tbot(t) > SHR_CONST_TKFRZ) then
                 e = esatw(tdc(top_as%tbot(t)))
@@ -257,6 +264,9 @@ contains
              top_as%ubot(t)    = x2l(index_x2l_Sa_u,i)         ! forc_uxy  Atm state m/s
              top_as%vbot(t)    = x2l(index_x2l_Sa_v,i)         ! forc_vxy  Atm state m/s
              top_as%zbot(t)    = x2l(index_x2l_Sa_z,i)         ! zgcmxy    Atm state m
+             if (atm_gustiness) then
+                top_as%ugust(t)  = x2l(index_x2l_Sa_ugust,i)   ! ugust     Atm state m/s
+             end if
           
              sum_qbot_g = sum_qbot_g + top_pp%wtgcell(t)*top_as%qbot(t)
              sum_wtsq_g = sum_wtsq_g + top_pp%wtgcell(t)
@@ -264,6 +274,9 @@ contains
              ! assign the state forcing fields derived from other inputs
              ! Horizontal windspeed (m/s)
              top_as%windbot(t) = sqrt(top_as%ubot(t)**2 + top_as%vbot(t)**2)
+             if (atm_gustiness) then
+                top_as%windbot(t) = sqrt(top_as%windbot(t)**2 + top_as%ugust(t)**2)
+             end if
              ! partial pressure of oxygen (Pa)
              top_as%po2bot(t) = o2_molar_const * top_as%pbot(t)
              ! air density (kg/m**3) - uses a temporary calculation
@@ -342,10 +355,16 @@ contains
        top_as%ubot(t)    = x2l(index_x2l_Sa_u,i)         ! forc_uxy  Atm state m/s
        top_as%vbot(t)    = x2l(index_x2l_Sa_v,i)         ! forc_vxy  Atm state m/s
        top_as%zbot(t)    = x2l(index_x2l_Sa_z,i)         ! zgcmxy    Atm state m
+       if (atm_gustiness) then
+          top_as%ugust(t)  = x2l(index_x2l_Sa_ugust,i)   ! ugust     Atm state m/s
+       end if
 		 
        ! assign the state forcing fields derived from other inputs
        ! Horizontal windspeed (m/s)
        top_as%windbot(t) = sqrt(top_as%ubot(t)**2 + top_as%vbot(t)**2)
+       if (atm_gustiness) then
+          top_as%windbot(t) = sqrt(top_as%windbot(t)**2 + top_as%ugust(t)**2)
+       end if
        ! Relative humidity (percent)
        if (top_as%tbot(t) > SHR_CONST_TKFRZ) then
           e = esatw(tdc(top_as%tbot(t)))
@@ -423,7 +442,7 @@ contains
     ! Downscaling is done over topounits.
     !
     ! !USES:
-    use clm_time_manager, only : get_nstep
+    use elm_time_manager, only : get_nstep
     use elm_varcon      , only : rair, cpair, grav, lapse_glcmec
     use elm_varcon      , only : glcmec_rain_snow_threshold
     use landunit_varcon , only : istice_mec 
@@ -527,7 +546,7 @@ contains
     ! Must be done AFTER temperature downscaling
     
     ! !USES:
-    use clm_time_manager, only : get_nstep
+    use elm_time_manager, only : get_nstep
     use domainMod       , only : ldomain
     use landunit_varcon , only : istice_mec
     use elm_varcon      , only : lapse_glcmec

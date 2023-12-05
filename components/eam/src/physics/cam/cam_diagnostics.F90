@@ -23,7 +23,7 @@ use wv_saturation, only: qsat, qsat_water, svp_ice
 use time_manager,  only: is_first_step
 use physconst,     only: cpair, rair, gravit, latvap, epsilo
 
-use scamMod,       only: single_column, wfld
+use iop_data_mod,  only: single_column, wfld
 use cam_abortutils,    only: endrun
 
 implicit none
@@ -319,6 +319,10 @@ subroutine diag_init()
    call addfld ('RHCFMIP',(/ 'lev' /), 'A','percent' ,'Relative humidity with respect to water above 273 K, ice below 273 K')
    call addfld ('PSL',horiz_only,    'A','Pa','Sea level pressure', &
       standard_name='air_pressure_at_mean_sea_level')
+
+
+   call addfld ('fixerCLUBB',horiz_only,    'A','J/m2','dTE fixed by CLUBB')
+
 
    call addfld ('T850',horiz_only,    'A','K','Temperature at 850 mbar pressure surface')
    call addfld ('T500',horiz_only,    'A','K','Temperature at 500 mbar pressure surface')
@@ -645,6 +649,7 @@ subroutine diag_init()
     standard_name = 'specific_humidity')
    call addfld ('U10',horiz_only,    'A','m/s','10m wind speed', &
      standard_name='wind_speed')
+   call addfld ('U10WITHGUSTS',horiz_only,    'A','m/s','10m wind speed with gustiness effects included')
    call addfld ('RHREFHT',horiz_only,    'A','1','Reference height relative humidity')
 
    call addfld ('LANDFRAC',horiz_only,    'A','1','Fraction of sfc area covered by land')
@@ -1757,6 +1762,10 @@ end subroutine diag_conv_tend_ini
 
 !! Boundary layer atmospheric stability, temperature, water vapor diagnostics
 
+    p_surf_t1 = 0._r8
+    p_surf_t2 = 0._r8
+    p_surf_q1 = 0._r8
+    p_surf_q2 = 0._r8
     if (hist_fld_active('T1000')      .or. &
         hist_fld_active('T9251000')   .or. & 
         hist_fld_active('TH9251000')  .or. &
@@ -2131,6 +2140,7 @@ subroutine diag_surf (cam_in, cam_out, ps, trefmxav, trefmnav )
     call outfld('TREFHTMN', cam_in%tref,      pcols, lchnk)
     call outfld('QREFHT',   cam_in%qref,      pcols, lchnk)
     call outfld('U10',      cam_in%u10,       pcols, lchnk)
+    call outfld('U10WITHGUSTS', cam_in%u10withgusts, pcols, lchnk)
 ! 
 ! Calculate and output reference height RH (RHREFHT)
 

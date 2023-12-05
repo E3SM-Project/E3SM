@@ -237,6 +237,9 @@ OPTIONS
      -vichydro                Toggle to turn on VIC hydrologic parameterizations (default is off)
                               This turns on the namelist variable: use_vichydro
      -betr_mode               Turn on betr model for tracer transport in soil. [on|off] default is off.
+     -solar_rad_scheme "value"  Type of solar radiation scheme
+                                pp = Plane-Parallel
+                                top = Subgrid topographic parameterization
 
 
 Note: The precedence for setting the values of namelist variables is (highest to lowest):
@@ -305,6 +308,7 @@ sub process_commandline {
                nutrient              => "default",
                nutrient_comp_pathway => "default",
                soil_decomp           => "default",
+               solar_rad_scheme      => "default",
              );
 
   GetOptions(
@@ -356,6 +360,7 @@ sub process_commandline {
              "nutrient=s"                => \$opts{'nutrient'},
              "nutrient_comp_pathway=s"   => \$opts{'nutrient_comp_pathway'},
              "soil_decomp=s"             => \$opts{'soil_decomp'},
+             "solar_rad_scheme=s"        => \$opts{'solar_rad_scheme'},
             )  or usage();
 
   # Give usage message.
@@ -679,6 +684,7 @@ sub process_namelist_commandline_options {
   setup_cmdl_bgc_spinup($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
   setup_cmdl_vichydro($opts, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_cmdl_betr_mode($opts, $nl_flags, $definition, $defaults, $nl, $physv);
+  setup_cmdl_solar_rad_scheme($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
 }
 
 #-------------------------------------------------------------------------------
@@ -784,11 +790,11 @@ sub setup_cmdl_fates_mode {
 
       # The following variables may be set by the user and are compatible with use_fates
       # no need to set defaults, covered in a different routine
-      my @list  = (  "fates_spitfire_mode", "use_vertsoilc", "use_century_decomp",
+      my @list  = (  "fates_spitfire_mode", "use_vertsoilc", "use_century_decomp", "fates_seeddisp_cadence",
                      "use_fates_planthydro", "use_fates_ed_st3", "use_fates_ed_prescribed_phys",
-		     "use_fates_inventory_init", "use_fates_fixed_biogeog", "use_fates_nocomp","use_fates_sp",
+                     "use_fates_inventory_init", "use_fates_fixed_biogeog", "use_fates_nocomp","use_fates_sp",
                      "fates_inventory_ctrl_filename","use_fates_logging", "use_fates_tree_damage",
-		     "use_fates_parteh_mode","use_fates_cohort_age_tracking","use_snicar_ad");
+                     "use_fates_parteh_mode","use_fates_cohort_age_tracking","use_snicar_ad");
       foreach my $var ( @list ) {
 	  if ( defined($nl->get_value($var))  ) {
 	      $nl_flags->{$var} = $nl->get_value($var);
@@ -849,6 +855,10 @@ sub setup_cmdl_fates_mode {
 	   fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
        }
        $var = "fates_inventory_ctrl_filename";
+       if ( defined($nl->get_value($var)) ) {
+	   fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
+       }
+       $var = "fates_seeddisp_cadence";
        if ( defined($nl->get_value($var)) ) {
 	   fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
        }
@@ -1085,6 +1095,50 @@ sub setup_cmdl_methane {
         }
     }
   }
+}
+
+#-------------------------------------------------------------------------------
+
+sub setup_cmdl_solar_rad_scheme {
+
+  my ($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv) = @_;
+
+  my $var = "solar_rad_scheme";
+  my $val;
+
+  # If "-solar_rad_scheme pp" or "-solar_rad_scheme" is unspecified, then
+  # we will set "use_top_solar_rad = .false."
+  if ( $opts->{$var} eq "pp" || $opts->{$var} eq "default" ) {
+    $val = ".false.";
+  } else {
+    # For "-solar_rad_scheme top", set "use_top_solar_rad = .true."
+    if ( $opts->{$var} eq "top" ) {
+      $val = ".true.";
+    } else {
+      fatal_error("The -solar_rad_scheme $opts->{'solar_rad_scheme'} is unknown");
+    }
+  }
+
+  my $var='use_top_solar_rad';
+  # Check if the value of use_top_solar_rad based on above alogrithm does not match the
+  # value of use_top_solar_rad in user_nl_elm
+  if (defined($nl->get_value($var)) && $nl->get_value($var) ne $val) {
+
+    # If "-solar_rad_scheme <pp|top>" was not specified, then simply use the value
+    # that was specified in the "user_nl_elm".
+    if ($opts->{'solar_rad_scheme'} eq "default") {
+      $val = $nl->get_value($var);
+    } else {
+      # Otherwise report an error
+      my $namelist_value = $nl->get_value('use_top_solar_rad');
+      fatal_error("$var = $namelist_value, which is inconsistent with the commandline setting of -solar_rad_scheme $opts->{'solar_rad_scheme'}");
+    }
+  }
+
+  # Lastly, define the value of use_top_solar_rad
+  my $group = $definition->get_group_name($var);
+  $nl->set_variable_value($group, $var, $val);
+
 }
 
 #-------------------------------------------------------------------------------
@@ -2335,6 +2389,7 @@ sub setup_logic_demand {
   $settings{'use_snicar_ad'}       = $nl_flags->{'use_snicar_ad'};
   $settings{'use_century_decomp'}  = $nl_flags->{'use_century_decomp'};
   $settings{'use_crop'}            = $nl_flags->{'use_crop'};
+  $settings{'use_modified_infil'}  = $nl_flags->{'use_modified_infil'};
   
   my $demand = $nl->get_value('clm_demand');
   if (defined($demand)) {
@@ -3173,6 +3228,7 @@ sub setup_logic_fates {
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_sp',                 'use_fates'=>$nl_flags->{'use_fates'});
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_nocomp',             'use_fates'=>$nl_flags->{'use_fates'});
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_tree_damage',        'use_fates'=>$nl_flags->{'use_fates'});
+    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_seeddisp_cadence',       'use_fates'=>$nl_flags->{'use_fates'});
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_paramfile', 'phys'=>$nl_flags->{'phys'});
 
   }

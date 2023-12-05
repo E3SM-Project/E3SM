@@ -197,11 +197,14 @@ end subroutine shr_mct_sMatReadnc
 !
 ! !REVISION HISTORY:
 !     2013 Aug 17: T. Craig
+!     2023 Mar 17: A. Bradley. Optionally return with Label1Found=.false. on
+!                  failure to find Label1.
 !
 ! !INTERFACE: ------------------------------------------------------------------
 
 subroutine shr_mct_queryConfigFile(mpicom, ConfigFileName, &
-           Label1,Value1,Label2,Value2,Label3,Value3)
+           Label1,Value1,Label2,Value2,Label3,Value3, &
+           Label1Found)
 
 ! !INPUT/OUTPUT PARAMETERS:
    integer          ,intent(in)  :: mpicom
@@ -212,6 +215,7 @@ subroutine shr_mct_queryConfigFile(mpicom, ConfigFileName, &
    character(len=*), intent(out),optional :: Value2
    character(len=*), intent(in) ,optional :: Label3
    character(len=*), intent(out),optional :: Value3
+   logical         , intent(out),optional :: Label1Found
 
 !EOP
    integer :: iret
@@ -223,10 +227,17 @@ subroutine shr_mct_queryConfigFile(mpicom, ConfigFileName, &
       call shr_sys_abort(trim(subname)//' File Not Found')
    endif
 
+   if (present(Label1Found)) Label1Found = .true.
    call i90_label(trim(Label1),iret)
    if(iret /= 0) then
-      write(s_logunit,*) trim(subname),"Cant find label ",Label1
-      call shr_sys_abort(trim(subname)//' Label1 Not Found')
+      if (present(Label1Found)) then
+         Label1Found = .false.
+         call I90_Release(iret)
+         return
+      else
+         write(s_logunit,*) trim(subname),"Cant find label ",Label1
+         call shr_sys_abort(trim(subname)//' Label1 Not Found')
+      end if
    endif
 
    call i90_gtoken(Value1,iret)

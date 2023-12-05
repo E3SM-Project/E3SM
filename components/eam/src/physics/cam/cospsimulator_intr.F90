@@ -29,6 +29,7 @@ module cospsimulator_intr
        numMODISTauBins, numMODISPresBins, numMODISReffIceBins, numMODISReffLiqBins,    &
        numISCCPTauBins, numISCCPPresBins, numMISRTauBins, reffICE_binEdges,            &
        reffICE_binCenters, reffLIQ_binEdges, reffLIQ_binCenters, LIDAR_NTYPE,          &
+       LIDAR_PHASE_TEMP,LIDAR_PHASE_TEMP_BNDS, &
        nCloudsatPrecipClass, &
        nsza_cosp         => PARASOL_NREFL,       &
        nprs_cosp         => npres,               &
@@ -36,6 +37,7 @@ module cospsimulator_intr
        ntau_cosp_modis   => ntau,                &
        nsr_cosp          => SR_BINS,             &
        nhtmisr_cosp      => numMISRHgtBins,      &
+       ntemp_cosp        => LIDAR_NTEMP,         &
        nhydro            => N_HYDRO, &
        cloudsat_preclvl
     use mod_cosp_stats,       only: cosp_change_vertical_grid
@@ -87,6 +89,8 @@ module cospsimulator_intr
   real(r8), target :: dbzelim_cosp(2,CLOUDSAT_DBZE_BINS)
   real(r8), target :: htmisrmid_cosp(nhtmisr_cosp)      ! htmisr midpoints of COSP misr simulator output
   real(r8), target :: htmisrlim_cosp(2,nhtmisr_cosp)
+  real(r8), target :: tmpmid_cosp(ntemp_cosp)      ! temperature midpoints of COSP lidar simulator output
+  real(r8), target :: tmplim_cosp(2,ntemp_cosp)
   real(r8), target :: taumid_cosp_modis(ntau_cosp_modis)! optical depth midpoints of COSP MODIS output
   real(r8), target :: taulim_cosp_modis(2,ntau_cosp_modis)
   real(r8), target :: reffICE_binEdges_cosp(2,numMODISReffIceBins)
@@ -299,6 +303,8 @@ CONTAINS
     dbzelim_cosp = cloudsat_binEdges
     htmisrmid_cosp = misr_histHgtCenters
     htmisrlim_cosp = misr_histHgtEdges
+    tmpmid_cosp = LIDAR_PHASE_TEMP 
+    tmplim_cosp = LIDAR_PHASE_TEMP_BNDS
     taumid_cosp_modis = tau_binCenters
     taulim_cosp_modis = tau_binEdges
     reffICE_binCenters_cosp = reffICE_binCenters
@@ -629,6 +635,13 @@ CONTAINS
             htmid_cosp, bounds_name='cosp_ht_bnds', bounds=htlim_cosp,         &
             vertical_coord=.true.)
     end if
+ 
+    if (llidar_sim) then
+       call add_hist_coord('cosp_temp', ntemp_cosp,                            &
+            'COSP Mean Temperature for calipso simulator outputs', 'C',   &
+            tmpmid_cosp, bounds_name='cosp_temp_bnds', bounds=tmplim_cosp,     &
+            vertical_coord=.true.)
+    end if
     
     if (llidar_sim) then
        call add_hist_coord('cosp_sr', nsr_cosp,                                &
@@ -771,16 +784,16 @@ CONTAINS
        call addfld('CLD_CAL_UN', (/'cosp_ht'/),'A','percent', 'Calipso Undefined-Phase Cloud Fraction',          &
             flag_xyfill=.true., fill_value=R_UNDEF)
        ! lclcalipsotmp (time,alt40,loc)
-       call addfld('CLD_CAL_TMP', (/'cosp_ht'/), 'A','percent', 'NOT SURE WHAT THIS IS Cloud Fraction',        &
+       call addfld('CLD_CAL_TMP', (/'cosp_temp'/), 'A','percent', 'Calipso Cloud Fraction as a function of temp',        &
             flag_xyfill=.true., fill_value=R_UNDEF)
        ! lclcalipsotmpliq (time,alt40,loc)
-       call addfld('CLD_CAL_TMPLIQ', (/'cosp_ht'/), 'A','percent', 'NOT SURE WHAT THIS IS Cloud Fraction',     &
+       call addfld('CLD_CAL_TMPLIQ', (/'cosp_temp'/), 'A','percent', 'Calipso Liquid Cloud Fraction as a function of temp',     &
             flag_xyfill=.true., fill_value=R_UNDEF)
        ! lclcalipsotmpice (time,alt40,loc)
-       call addfld('CLD_CAL_TMPICE', (/'cosp_ht'/), 'A','percent', 'NOT SURE WHAT THIS IS Cloud Fraction',     &
+       call addfld('CLD_CAL_TMPICE', (/'cosp_temp'/), 'A','percent', 'Calipso Ice Cloud Fraction as a function of temp',     &
             flag_xyfill=.true., fill_value=R_UNDEF)
        ! lclcalipsotmpun (time,alt40,loc)
-       call addfld('CLD_CAL_TMPUN', (/'cosp_ht'/), 'A','percent', 'NOT SURE WHAT THIS IS Cloud Fraction',      &
+       call addfld('CLD_CAL_TMPUN', (/'cosp_temp'/), 'A','percent', 'Calipso Undefined-Phase Cloud Fraction as a function of temp',      &
             flag_xyfill=.true., fill_value=R_UNDEF)
        ! lcltcalipsoice (time,loc)
        call addfld('CLDTOT_CAL_ICE', horiz_only,'A','percent','Calipso Total Ice Cloud Fraction',    &
@@ -1212,6 +1225,7 @@ CONTAINS
     use mod_cosp,             only: cosp_simulator
     use mod_quickbeam_optics, only: size_distribution
 #endif
+    use shr_infnan_mod,       only: shr_infnan_isnan
 
     ! ######################################################################################
     ! Inputs
@@ -1971,8 +1985,8 @@ CONTAINS
     reff_cosp(1:ncol,1:pver,2) = rei(1:ncol,1:pver)*1.e-6_r8          !! LSCICE  (same as effi and effice in stratiform.F90)
     reff_cosp(1:ncol,1:pver,3) = ls_reffrain(1:ncol,1:pver)*1.e-6_r8  !! LSRAIN  (calculated in cldwat2m_micro.F90, passed to stratiform.F90)
     reff_cosp(1:ncol,1:pver,4) = ls_reffsnow(1:ncol,1:pver)*1.e-6_r8  !! LSSNOW  (calculated in cldwat2m_micro.F90, passed to stratiform.F90)
-    reff_cosp(1:ncol,1:pver,5) = cv_reffliq(1:ncol,1:pver)*1.e-6_r8   !! CVCLIQ (calculated in stratiform.F90, not actually used in radiation)
-    reff_cosp(1:ncol,1:pver,6) = cv_reffice(1:ncol,1:pver)*1.e-6_r8   !! CVCICE (calculated in stratiform.F90, not actually used in radiation)
+    !reff_cosp(1:ncol,1:pver,5) = cv_reffliq(1:ncol,1:pver)*1.e-6_r8   !! CVCLIQ (calculated in stratiform.F90, not actually used in radiation)
+    !reff_cosp(1:ncol,1:pver,6) = cv_reffice(1:ncol,1:pver)*1.e-6_r8   !! CVCICE (calculated in stratiform.F90, not actually used in radiation)
     reff_cosp(1:ncol,1:pver,7) = ls_reffrain(1:ncol,1:pver)*1.e-6_r8  !! CVRAIN (same as stratiform per Andrew)
     reff_cosp(1:ncol,1:pver,8) = ls_reffsnow(1:ncol,1:pver)*1.e-6_r8  !! CVSNOW (same as stratiform per Andrew)
     reff_cosp(1:ncol,1:pver,9) = 0._r8                                !! LSGRPL (using radar default reff)
@@ -1991,11 +2005,15 @@ CONTAINS
     where (ls_reffsnow(1:ncol,1:pver) .eq. R_UNDEF)
        reff_cosp(1:ncol,1:pver,4) = 0._r8
     end where
-    where (cv_reffliq(1:ncol,1:pver) .eq. R_UNDEF)
+    where (shr_infnan_isnan(cv_reffliq(1:ncol,1:pver)) .or. (cv_reffliq(1:ncol,1:pver) .eq. R_UNDEF))
        reff_cosp(1:ncol,1:pver,5) = 0._r8
+    elsewhere
+       reff_cosp(1:ncol,1:pver,5) = cv_reffliq(1:ncol,1:pver)*1.e-6_r8
     end where
-    where (cv_reffice(1:ncol,1:pver) .eq. R_UNDEF)
+    where (shr_infnan_isnan(cv_reffice(1:ncol,1:pver)) .or. (cv_reffice(1:ncol,1:pver) .eq. R_UNDEF))
        reff_cosp(1:ncol,1:pver,6) = 0._r8
+    elsewhere
+       reff_cosp(1:ncol,1:pver,6) = cv_reffice(1:ncol,1:pver)*1.e-6_r8
     end where
     where (ls_reffrain(1:ncol,1:pver) .eq. R_UNDEF)
        reff_cosp(1:ncol,1:pver,7) = 0._r8
@@ -2339,10 +2357,10 @@ CONTAINS
        cld_cal_ice(1:ncol,1:nht_cosp)    = cospOUT%calipso_lidarcldphase(:,:,1)	   ! CAM version of clcalipsoice !+cosp1.4
        cld_cal_liq(1:ncol,1:nht_cosp)    = cospOUT%calipso_lidarcldphase(:,:,2)       ! CAM version of clcalipsoliq
        cld_cal_un(1:ncol,1:nht_cosp)     = cospOUT%calipso_lidarcldphase(:,:,3)	   ! CAM version of clcalipsoun
-       cld_cal_tmp(1:ncol,1:nht_cosp)    = cospOUT%calipso_lidarcldtmp(:,:,1)           	   ! CAM version of clcalipsotmp
-       cld_cal_tmpliq(1:ncol,1:nht_cosp) = cospOUT%calipso_lidarcldtmp(:,:,2)	                   ! CAM version of clcalipsotmpice
-       cld_cal_tmpice(1:ncol,1:nht_cosp) = cospOUT%calipso_lidarcldtmp(:,:,3)	                   ! CAM version of clcalipsotmpliq
-       cld_cal_tmpun(1:ncol,1:nht_cosp)  = cospOUT%calipso_lidarcldtmp(:,:,4)	                   ! CAM version of clcalipsotmpun, !+cosp1.4
+       cld_cal_tmp(1:ncol,1:ntemp_cosp)    = cospOUT%calipso_lidarcldtmp(:,:,1)    ! CAM version of clcalipsotmp
+       cld_cal_tmpice(1:ncol,1:ntemp_cosp) = cospOUT%calipso_lidarcldtmp(:,:,2)	   ! CAM version of clcalipsotmpice
+       cld_cal_tmpliq(1:ncol,1:ntemp_cosp) = cospOUT%calipso_lidarcldtmp(:,:,3)	   ! CAM version of clcalipsotmpliq
+       cld_cal_tmpun(1:ncol,1:ntemp_cosp)  = cospOUT%calipso_lidarcldtmp(:,:,4)	   ! CAM version of clcalipsotmpun, !+cosp1.4
        cld_cal(1:ncol,1:nht_cosp)                    = cospOUT%calipso_lidarcld(:,1:nht_cosp)  ! CAM version of clcalipso (time,height,profile)
        mol532_cal(1:ncol,1:nhtml_cosp)               = cospOUT%calipso_beta_mol                   ! CAM version of beta_mol532 (time,height_mlev,profile)
        atb532(1:ncol,1:nscol_cosp,1:nhtml_cosp)      = cospOUT%calipso_beta_tot                   ! atb532 (time,height_mlev,column,profile)

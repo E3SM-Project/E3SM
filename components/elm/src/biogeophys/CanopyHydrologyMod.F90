@@ -122,9 +122,9 @@ contains
      use atm2lndType        , only : atm2lnd_type
      !use domainMod          , only : ldomain
      use TopounitType       , only : top_pp
-     use clm_time_manager   , only : get_step_size
+     use elm_time_manager   , only : get_step_size
      use subgridAveMod      , only : p2c,p2g
-     use clm_time_manager   , only : get_step_size, get_prev_date, get_nstep
+     use elm_time_manager   , only : get_step_size, get_prev_date, get_nstep
      use SnowHydrologyMod   , only : NewSnowBulkDensity
      !
      ! !ARGUMENTS:
@@ -809,7 +809,8 @@ contains
           h2osfc       => col_ws%h2osfc       , & ! Output: [real(r8) (:)   ] surface water (mm)                                
           frac_sno     => col_ws%frac_sno     , & ! Output: [real(r8) (:)   ] fraction of ground covered by snow (0 to 1)       
           frac_sno_eff => col_ws%frac_sno_eff , & ! Output: [real(r8) (:)   ] eff. fraction of ground covered by snow (0 to 1)  
-          frac_h2osfc  => col_ws%frac_h2osfc    & ! Output: [real(r8) (:)   ] col fractional area with surface water greater than zero 
+          frac_h2osfc  => col_ws%frac_h2osfc  , & ! Output: [real(r8) (:)   ] col fractional area with surface water greater than zero 
+          frac_h2osfc_act => col_ws%frac_h2osfc_act & ! Output: [real(r8) (:)   ] col fractional area with surface water greater than zero
           )
 
        ! arbitrary lower limit on h2osfc for safer numerics...
@@ -848,6 +849,8 @@ contains
                 qflx_h2osfc2topsoi(c) = h2osfc(c)/dtime                
                 h2osfc(c)=0._r8
              endif
+             
+             frac_h2osfc_act(c) = frac_h2osfc(c)
 
              if (.not. present(no_update)) then
 
@@ -869,7 +872,8 @@ contains
           else !if landunit not istsoil/istcrop, set frac_h2osfc to zero
 
              frac_h2osfc(c) = 0._r8
-
+             frac_h2osfc_act(c) = 0._r8
+             
           endif
 
        end do

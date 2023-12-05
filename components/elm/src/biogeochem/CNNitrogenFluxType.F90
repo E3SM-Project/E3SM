@@ -1055,7 +1055,7 @@ subroutine NSummary_interface(this,bounds,num_soilc, filter_soilc)
 ! !USES:
    use elm_varpar  , only: nlevdecomp_full, ndecomp_pools
    use elm_varpar  , only: i_met_lit, i_cel_lit, i_lig_lit, i_cwd
-   use clm_time_manager    , only : get_step_size
+   use elm_time_manager    , only : get_step_size
 
 !   use elm_varctl    , only: pf_hmode
 !

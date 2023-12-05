@@ -101,6 +101,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     vert_remap_q_alg, &
     vert_remap_u_alg, &
     se_fv_phys_remap_alg, &
+    internal_diagnostics_level, &
     timestep_make_subcycle_parameters_consistent
 
 
@@ -315,7 +316,8 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
       hv_theta_thresh,   &
       vert_remap_q_alg, &
       vert_remap_u_alg, &
-      se_fv_phys_remap_alg
+      se_fv_phys_remap_alg, &
+      internal_diagnostics_level
 
 
 #if defined(CAM) || defined(SCREAM)
@@ -446,6 +448,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     semi_lagrange_nearest_point_lev = 256
     disable_diagnostics = .false.
     se_fv_phys_remap_alg = 1
+    internal_diagnostics_level = 0
     planar_slice = .false.
 
     theta_hydrostatic_mode = .true.    ! for preqx, this must be .true.
@@ -562,6 +565,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
            test_case      == "planar_nonhydro_mtn_wave"           .or. &
            test_case      == "planar_schar_mtn_wave"            .or. &
            test_case      == "planar_rising_bubble"             .or. &
+           test_case      == "planar_rising_bubble_pg2"         .or. &
            test_case      == "planar_density_current"             .or. &
            test_case      == "planar_baroclinic_instab"             .or. &
            test_case      == "planar_moist_rising_bubble"            .or. &
@@ -863,6 +867,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     call MPI_bcast(prescribed_wind,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(moisture,MAX_STRING_LEN,MPIChar_t ,par%root,par%comm,ierr)
     call MPI_bcast(se_fv_phys_remap_alg,1,MPIinteger_t ,par%root,par%comm,ierr)
+    call MPI_bcast(internal_diagnostics_level,1,MPIinteger_t ,par%root,par%comm,ierr)
 
     call MPI_bcast(restartfile,MAX_STRING_LEN,MPIChar_t ,par%root,par%comm,ierr)
     call MPI_bcast(restartdir,MAX_STRING_LEN,MPIChar_t ,par%root,par%comm,ierr)
@@ -1198,6 +1203,7 @@ end if
 
        write(iulog,*)"readnl: runtype       = ",runtype
        write(iulog,*)"readnl: se_fv_phys_remap_alg = ",se_fv_phys_remap_alg
+       write(iulog,*)"readnl: internal_diagnostics_level = ",internal_diagnostics_level
 
        if(hypervis_scaling /=0)then
           write(iulog,*)"Tensor hyperviscosity:  hypervis_scaling=",hypervis_scaling

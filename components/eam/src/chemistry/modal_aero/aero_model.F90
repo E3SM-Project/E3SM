@@ -23,6 +23,7 @@ module aero_model
 
   use modal_aero_data,only: cnst_name_cw
   use modal_aero_data,only: ntot_amode, modename_amode
+  use ref_pres,       only: top_lev => clim_modal_aero_top_lev    
 
   implicit none
   private
@@ -35,7 +36,7 @@ module aero_model
   public :: aero_model_wetdep     ! aerosol wet removal
   public :: aero_model_emissions  ! aerosol emissions
   public :: aero_model_surfarea   ! aerosol surface area for chemistry
-
+  public :: aero_model_strat_surfarea !  stratospheric aerosol wet surface area for chemistry
   ! These are made public to be used by MMF w/ ECPP
   public :: calc_1_impact_rate
   public :: dlndg_nimptblgrow
@@ -68,7 +69,7 @@ module aero_model
   integer :: icwmrsh_idx        = 0
   integer :: sh_frac_idx        = 0
   integer :: dp_frac_idx        = 0
-
+  integer :: wuc_idx            = 0
   integer :: imozart             = -1 
   logical :: history_aero_prevap_resusp = .false. ! controls output of prevap resusp tendencies to history
 
@@ -83,7 +84,6 @@ module aero_model
   integer, dimension(ntot_amode) :: num_idx = -1
   integer :: index_tot_mass(ntot_amode,10) = -1
   integer :: index_chm_mass(ntot_amode,10) = -1
-
   integer :: ndx_h2so4
   character(len=fieldname_len) :: dgnum_name(ntot_amode)
 
@@ -92,14 +92,16 @@ module aero_model
 
   ! Namelist variables
   integer :: mam_amicphys_optaa
-  logical :: sscav_tuning, convproc_do_aer, convproc_do_gas, resus_fix 
+  logical :: sscav_tuning, convproc_do_aer, convproc_do_gas, resus_fix
   logical :: get_presc_aero_data 
+  character(len=16) :: deep_scheme
   character(len=16) :: wetdep_list(pcnst) = ' '
   character(len=16) :: drydep_list(pcnst) = ' '
   real(r8)          :: sol_facti_cloud_borne = 1._r8
   real(r8)          :: sol_factb_interstitial  = 0.1_r8
   real(r8)          :: sol_factic_interstitial = 0.4_r8
   real(r8)          :: seasalt_emis_scale
+  real(r8)          :: small = 1.e-36
 
   integer :: ndrydep = 0
   integer,allocatable :: drydep_indices(:)
@@ -107,7 +109,6 @@ module aero_model
   integer,allocatable :: wetdep_indices(:)
   logical :: drydep_lq(pcnst)
   logical :: wetdep_lq(pcnst)
-
 
 contains
   
@@ -129,8 +130,8 @@ contains
     ! Namelist variables
     character(len=16) :: aer_wetdep_list(pcnst) = ' '
     character(len=16) :: aer_drydep_list(pcnst) = ' '
-
-    namelist /aerosol_nl/ aer_wetdep_list, aer_drydep_list, sol_facti_cloud_borne, seasalt_emis_scale, sscav_tuning, &
+    namelist /aerosol_nl/ aer_wetdep_list, aer_drydep_list,          &
+             sol_facti_cloud_borne, seasalt_emis_scale, sscav_tuning, &
        sol_factb_interstitial, sol_factic_interstitial
 
     !-----------------------------------------------------------------------------
@@ -164,7 +165,6 @@ contains
 
     wetdep_list = aer_wetdep_list
     drydep_list = aer_drydep_list
-
   end subroutine aero_model_readnl
 
   !=============================================================================
@@ -204,13 +204,14 @@ contains
     integer, intent(in) :: iflagaa
 
     ! local vars
-    integer :: id, l, m, n, nspc
+    integer :: id, j,l, m, n, nspc
 
     logical  :: history_aerosol ! Output MAM or SECT aerosol tendencies
     logical  :: history_verbose ! produce verbose history output
 
     character(len=*), parameter :: subrname = 'aero_model_init'
     character(len=20) :: dummy
+    
     character(len=fieldname_len) :: wetdep_name, depflx_name
     character(len=6) :: test_name
     character(len=100) :: errmes
@@ -224,7 +225,8 @@ contains
          convproc_do_gas_out = convproc_do_gas, &
          resus_fix_out       = resus_fix,       &
          get_presc_aero_data_out = get_presc_aero_data, &
-         mam_amicphys_optaa_out = mam_amicphys_optaa ) ! REASTER 08/04/2015
+         mam_amicphys_optaa_out = mam_amicphys_optaa, &
+         deep_scheme_out = deep_scheme ) 
 
 
     ! REASTER 08/04/2015 BEGIN
@@ -378,6 +380,8 @@ contains
     sh_frac_idx      = pbuf_get_index('SH_FRAC')
     dp_frac_idx      = pbuf_get_index('DP_FRAC')
 
+    ! Defense against configurations that do not use ZM
+    if (deep_scheme == 'ZM') wuc_idx          = pbuf_get_index('WUC')
 
     nwetdep = 0
     ndrydep = 0
@@ -479,7 +483,8 @@ contains
           endif
        enddo
 
-#if (defined MODAL_AERO_9MODE || MODAL_AERO_4MODE_MOM)
+#if (defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE)
+
        dummy = 'SSTSFMBL_OM'
        call addfld (dummy,horiz_only, 'A','kg/m2/s','Mobilization flux of marine organic matter at surface')
        if (history_aerosol) then
@@ -841,6 +846,46 @@ contains
     index_tot_mass(4,2) = get_spc_ndx('bc_a4')
     index_chm_mass(4,1) = get_spc_ndx('bc_a1' )
     !
+#elif ( defined MODAL_AERO_5MODE )
+    ! accumulation mode #1
+    !
+    index_tot_mass(1,1) = get_spc_ndx('so4_a1')
+    index_tot_mass(1,2) = get_spc_ndx('pom_a1')
+    index_tot_mass(1,3) = get_spc_ndx('soa_a1')
+    index_tot_mass(1,4) = get_spc_ndx('bc_a1' )
+    index_tot_mass(1,5) = get_spc_ndx('dst_a1')
+    index_tot_mass(1,6) = get_spc_ndx('ncl_a1')
+    index_tot_mass(1,7) = get_spc_ndx('mom_a1')
+    index_chm_mass(1,1) = get_spc_ndx('so4_a1')
+    index_chm_mass(1,2) = get_spc_ndx('soa_a1')
+    index_chm_mass(1,3) = get_spc_ndx('bc_a1' )
+     !
+    ! aitken mode
+    !
+    index_tot_mass(2,1) = get_spc_ndx('so4_a2')
+    index_tot_mass(2,2) = get_spc_ndx('soa_a2')
+    index_tot_mass(2,3) = get_spc_ndx('ncl_a2')
+    index_tot_mass(2,4) = get_spc_ndx('mom_a2')
+    index_chm_mass(2,1) = get_spc_ndx('so4_a2')
+    index_chm_mass(2,2) = get_spc_ndx('soa_a2')
+    ! coarse mode
+    !
+    index_tot_mass(3,1) = get_spc_ndx('dst_a3')
+    index_tot_mass(3,2) = get_spc_ndx('ncl_a3')
+    index_tot_mass(3,3) = get_spc_ndx('so4_a3')
+    index_chm_mass(3,1) = get_spc_ndx('so4_a3')
+    !
+    ! POM mode
+    !
+    index_tot_mass(4,1) = get_spc_ndx('pom_a4')
+    index_tot_mass(4,2) = get_spc_ndx('bc_a4')
+    index_tot_mass(4,3) = get_spc_ndx('mom_a4')
+    index_chm_mass(4,1) = get_spc_ndx('bc_a4' ) ! previous model use bc_a1, should be a typo
+    !
+    ! strat_coarse
+    index_tot_mass(5,1) = get_spc_ndx('so4_a5')
+    index_chm_mass(5,1) = get_spc_ndx('so4_a5')
+    
 #elif ( defined MODAL_AERO_7MODE )
     !
     ! accumulation mode #1
@@ -1314,7 +1359,9 @@ contains
 
 #if ( defined MODAL_AERO_3MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM )
        ntoo = modeptr_coarse
-#else
+#elif (defined MODAL_AERO_5MODE)
+       ntoo = modeptr_coarse
+#else       
        call endrun( 'modal_aero_wetscav_init: new resuspension not implemented for 7-mode or 9-mode MAM.')
 #endif
 
@@ -1381,7 +1428,7 @@ contains
        cam_out,                                                                 & !Intent-inout
        pbuf,                                                                    & !Pointer
        ptend,                                                                   & !Intent-out
-       clear_rh                                                                 ) !optional 
+       clear_rh                                                            ) !optional 
 
     use modal_aero_deposition, only: set_srf_wetdep
     use wetdep,                only: wetdepa_v2, wetdep_inputs_set, &
@@ -1426,6 +1473,7 @@ contains
     real(r8), optional,  intent(in)    :: clear_rh(pcols,pver) ! optional clear air relative humidity 
                                                                ! that gets passed to modal_aero_wateruptake_dr
 
+   real(r8) :: dcondt_resusp3d(2*pcnst,pcols, pver)
 
     ! local vars
 
@@ -1501,6 +1549,7 @@ contains
     real(r8), pointer :: rate1ord_cw2pr_st(:,:)
 
     real(r8), pointer :: fracis(:,:,:)   ! fraction of transported species that are insoluble
+    real(r8), pointer :: wuc(:,:)
 
     integer, parameter:: nsrflx_mzaer2cnvpr = 2  !RCE 2012/01/12 bgn
     real(r8)          :: aerdepwetis(pcols,pcnst) ! aerosol wet deposition (interstitial) 
@@ -1525,6 +1574,8 @@ contains
 
     lchnk = state%lchnk
     ncol  = state%ncol
+
+    dcondt_resusp3d(:,:,:) = 0._r8
 
     call physics_ptend_init(ptend, state%psetcols, 'aero_model_wetdep_ma', lq=wetdep_lq)
 
@@ -1629,6 +1680,74 @@ contains
        rtscavt_sv(:,:,:) = 0.0_r8
        rcscavt_cn_sv(:,:) = 0.0_r8
        rsscavt_cn_sv(:,:) = 0.0_r8
+    endif
+
+    if (convproc_do_aer) then
+
+       call pbuf_get_field(pbuf, icwmrdp_idx,     icwmrdp )
+       call pbuf_get_field(pbuf, icwmrsh_idx,     icwmrsh )
+       call pbuf_get_field(pbuf, sh_frac_idx,     sh_frac )
+       call pbuf_get_field(pbuf, dp_frac_idx,     dp_frac )
+
+       call t_startf('ma_convproc')
+
+       if ( deep_scheme == 'ZM' ) then
+          call pbuf_get_field(pbuf, wuc_idx,          wuc )
+          call ma_convproc_intr( state, ptend, pbuf, dt,                   &
+               dp_frac, icwmrdp, rprddp, evapcdp,                          &
+               sh_frac, icwmrsh, rprdsh, evapcsh,                          &
+               dlf, dlf2, cmfmc2, sh_e_ed_ratio,                           &
+               nsrflx_mzaer2cnvpr, qsrflx_mzaer2cnvpr, aerdepwetis,        &
+               mu, md, du, eu, ed, dp, dsubcld, jt, maxg, ideep, lengath,  &
+               species_class, mam_prevap_resusp_optaa,                     &
+               history_aero_prevap_resusp, &
+               dcondt_resusp3d=dcondt_resusp3d,wuc=wuc)
+       else
+          call ma_convproc_intr( state, ptend, pbuf, dt,                   &
+               dp_frac, icwmrdp, rprddp, evapcdp,                          &
+               sh_frac, icwmrsh, rprdsh, evapcsh,                          &
+               dlf, dlf2, cmfmc2, sh_e_ed_ratio,                           &
+               nsrflx_mzaer2cnvpr, qsrflx_mzaer2cnvpr, aerdepwetis,        &
+               mu, md, du, eu, ed, dp, dsubcld, jt, maxg, ideep, lengath,  &
+               species_class, mam_prevap_resusp_optaa,                     &
+               history_aero_prevap_resusp, &
+               dcondt_resusp3d=dcondt_resusp3d)
+       endif
+
+    do m = 1, ntot_amode ! main loop over aerosol modes
+     do lphase = strt_loop,end_loop, stride_loop
+      ! loop over interstitial (1) and cloud-borne (2) forms
+      do lspec = 0, nspec_amode(m) !+1 ! loop over number + chem constituents + water
+       if (lspec == 0) then ! number
+        if (lphase == 1) then
+         mm = numptr_amode(m)
+        else
+         mm = numptrcw_amode(m)
+        endif
+       else if (lspec <= nspec_amode(m)) then ! non-water mass
+        if (lphase == 1) then
+         mm = lmassptr_amode(lspec,m)
+        else
+         mm = lmassptrcw_amode(lspec,m)
+        endif
+       endif
+       if (lphase .eq. 2) then
+        fldcw => qqcw_get_field(pbuf, mm,lchnk)
+        fldcw(:ncol,:) = fldcw(:ncol,:) + dcondt_resusp3d(mm+pcnst,:ncol,:) !*dt
+!The dcondt_resusp3d is detrained aerosol AMOUNT (i.e., both mass
+!and number for four modes).
+!For dcondt_resusp3d(idx,:,:), idx=16,...,40 -> interstial aerosols
+!                              idx=56,...,80 -> cloud-borne aerosols
+! Currently, we assume that no aerosol resuspension occurrs during convective
+! cloud water detrainment. So, 100% of cloud-borne aerosols will be added to
+! stratiform cloud-borne aerosols and detrained interstial aerosol amount is
+! zero.
+       end if
+      end do ! loop over number + chem constituents + water <shanyp the loop is
+             ! changed: no aerosol water is considered.
+     end do  ! lphase
+    end do   ! m aerosol modes
+       call t_stopf('ma_convproc')
     endif
 
 mmode_loop_aa: &
@@ -1876,12 +1995,15 @@ lphase_jnmw_conditional: &
                 dqdt_tmp(:,:) = 0.0_r8
                 ! q_tmp reflects changes from modal_aero_calcsize and is the "most current" q
                 q_tmp(1:ncol,:) = state%q(1:ncol,:,mm) + ptend%q(1:ncol,:,mm)*dt
+                where(q_tmp(1:ncol,:).lt.small)
+                 q_tmp(1:ncol,:)=small
+                end where
                 if (convproc_do_aer) then
                    !Feed in the saved cloudborne mixing ratios from phase 2
-                   qqcw_in(:,:) = qqcw_sav(:,:,lspec)
+                   qqcw_in(:ncol,:) = qqcw_sav(:ncol,:,lspec)
                 else
                    fldcw => qqcw_get_field(pbuf, mm,lchnk)
-                   qqcw_in(:,:) = fldcw(:,:)
+                   qqcw_in(:ncol,:) = fldcw(:ncol,:)
                 endif
 
                 call wetdepa_v2( &
@@ -1946,9 +2068,8 @@ lphase_jnmw_conditional: &
                       sflx(i)=sflx(i)+dqdt_tmp(i,k)*state%pdel(i,k)/gravit
                    enddo
                 enddo
-                if ( .not. convproc_do_aer ) call outfld( trim(cnst_name(mm))//'SFWET', sflx, pcols, lchnk)
-                aerdepwetis(:ncol,mm) = sflx(:ncol)
-
+                aerdepwetis(:ncol,mm) = aerdepwetis(:ncol,mm) + sflx(:ncol)
+                if ( convproc_do_aer ) call outfld(trim(cnst_name(mm))//'SFWET', aerdepwetis(:,mm), pcols, lchnk)
                 sflx(:)=0._r8
                 do k=1,pver
                    do i=1,ncol
@@ -2256,25 +2377,26 @@ do_lphase2_conditional: &
        call set_srf_wetdep(aerdepwetis, aerdepwetcw, cam_out)
     endif
 
-    if (convproc_do_aer) then 
-       
-       call pbuf_get_field(pbuf, icwmrdp_idx,     icwmrdp )
-       call pbuf_get_field(pbuf, icwmrsh_idx,     icwmrsh )
-       call pbuf_get_field(pbuf, sh_frac_idx,     sh_frac )
-       call pbuf_get_field(pbuf, dp_frac_idx,     dp_frac )
-
-       call t_startf('ma_convproc')
-       call ma_convproc_intr( state, ptend, pbuf, dt,                   &
-            dp_frac, icwmrdp, rprddp, evapcdp,                          &
-            sh_frac, icwmrsh, rprdsh, evapcsh,                          &
-            dlf, dlf2, cmfmc2, sh_e_ed_ratio,                           &
-            nsrflx_mzaer2cnvpr, qsrflx_mzaer2cnvpr, aerdepwetis,        &
-            mu, md, du, eu, ed, dp, dsubcld, jt, maxg, ideep, lengath,  &
-            species_class, mam_prevap_resusp_optaa,                     &
-            history_aero_prevap_resusp                                  )
-       call t_stopf('ma_convproc')       
-    endif
-
+!Reorder the wet removal schemes, call deep convection wet removal first
+!then the stratiform wet removal.
+!    if (convproc_do_aer) then 
+!       
+!       call pbuf_get_field(pbuf, icwmrdp_idx,     icwmrdp )
+!       call pbuf_get_field(pbuf, icwmrsh_idx,     icwmrsh )
+!       call pbuf_get_field(pbuf, sh_frac_idx,     sh_frac )
+!       call pbuf_get_field(pbuf, dp_frac_idx,     dp_frac )
+!
+!       call t_startf('ma_convproc')
+!       call ma_convproc_intr( state, ptend, pbuf, dt,                   &
+!            dp_frac, icwmrdp, rprddp, evapcdp,                          &
+!            sh_frac, icwmrsh, rprdsh, evapcsh,                          &
+!            dlf, dlf2, cmfmc2, sh_e_ed_ratio,                           &
+!            nsrflx_mzaer2cnvpr, qsrflx_mzaer2cnvpr, aerdepwetis,        &
+!            mu, md, du, eu, ed, dp, dsubcld, jt, maxg, ideep, lengath,  &
+!            species_class, mam_prevap_resusp_optaa,                     &
+!            history_aero_prevap_resusp                                  )
+!       call t_stopf('ma_convproc')       
+!    endif
     call wetdep_inputs_unset(dep_inputs)
 
   end subroutine aero_model_wetdep
@@ -2367,14 +2489,49 @@ do_lphase2_conditional: &
 
   end subroutine aero_model_surfarea
 
+    !-------------------------------------------------------------------------
+  ! provides WET stratospheric aerosol surface area info for modal aerosols
+  ! if modal_strat_sulfate = TRUE -- called from mo_gas_phase_chemdr
+  !-------------------------------------------------------------------------
+  subroutine aero_model_strat_surfarea( ncol, mmr, pmid, temp, ltrop, pbuf, strato_sad )
+
+    ! dummy args
+    integer,  intent(in)    :: ncol
+    real(r8), intent(in)    :: mmr(:,:,:)
+    real(r8), intent(in)    :: pmid(:,:)
+    real(r8), intent(in)    :: temp(:,:)
+    integer,  intent(in)    :: ltrop(:) ! tropopause level indices
+    type(physics_buffer_desc), pointer :: pbuf(:)
+    real(r8), intent(out)   :: strato_sad(:,:)
+    !real(r8), intent(out)   :: reff_strat(:,:)
+
+    ! local vars
+    real(r8), pointer, dimension(:,:,:) :: dgnumwet
+    integer :: beglev(ncol)
+    integer :: endlev(ncol)
+
+    !reff_strat = 0._r8
+    strato_sad = 0._r8
+
+   ! if (.not.modal_strat_sulfate) return
+
+    call pbuf_get_field(pbuf, dgnumwet_idx, dgnumwet )
+
+    beglev(:ncol)=top_lev
+    endlev(:ncol)=ltrop(:ncol)
+    call surf_area_dens( ncol, mmr, pmid, temp, dgnumwet, beglev, endlev, strato_sad )
+
+  end subroutine aero_model_strat_surfarea
+
   !=============================================================================
   !=============================================================================
-  subroutine aero_model_gasaerexch( loffset, ncol, lchnk, delt, &
-                                    latndx, lonndx, reaction_rates, &
-                                    tfld, pmid, pdel, mbar, relhum, &
-                                    zm,  qh2o, cwat, cldfr, cldnum, &
+  subroutine aero_model_gasaerexch( loffset, ncol, lchnk, delt,              &
+                                    latndx, lonndx, reaction_rates,          &
+                                    tfld, pmid, pdel, mbar, relhum,          &
+                                    zm,  qh2o, cwat, cldfr, cldnum,          &
                                     airdens, invariants, del_h2so4_gasprod,  &
-                                    vmr0, vmr, pbuf )
+                                    vmr0, vmr, pbuf,                         &
+                                    troplev                                   ) 
 
     use time_manager,          only : get_nstep
     use modal_aero_amicphys,   only : modal_aero_amicphys_intr
@@ -2411,6 +2568,7 @@ do_lphase2_conditional: &
     real(r8), intent(in) :: vmr0(:,:,:)       ! initial mixing ratios (before gas-phase chem changes)
     real(r8), intent(inout) :: vmr(:,:,:)         ! mixing ratios ( vmr )
     type(physics_buffer_desc), pointer :: pbuf(:)
+    integer,  intent(in)  ::  troplev(pcols)   ! tropopause level
     
     ! local vars 
     
@@ -2605,7 +2763,8 @@ do_lphase2_conditional: &
             vmr0,                                    &
             dvmrdt,             dvmrcwdt,            &
             dgnum,              dgnumwet,            &
-            wetdens                                  )
+            wetdens,                                 &
+            troplev                                  )  
 !      subroutine modal_aero_amicphys_intr(          &
 !           mdo_gasaerexch,     mdo_rename,          &
 !           mdo_newnuc,         mdo_coag,            &
@@ -2728,6 +2887,87 @@ do_lphase2_conditional: &
 
   !===============================================================================
   ! private methods
+  !=============================================================================
+  subroutine surf_area_dens( ncol, mmr, pmid, temp, diam, beglev, endlev, sad, reff, sfc )
+    use mo_constants,    only : pi
+    use modal_aero_data, only : nspec_amode, alnsg_amode
+
+    ! dummy args
+    integer,  intent(in)  :: ncol
+    real(r8), intent(in)  :: mmr(:,:,:)
+    real(r8), intent(in)  :: pmid(:,:)
+    real(r8), intent(in)  :: temp(:,:)
+    real(r8), intent(in)  :: diam(:,:,:)
+    integer,  intent(in)  :: beglev(:)
+    integer,  intent(in)  :: endlev(:)
+    real(r8), intent(out) :: sad(:,:)
+    real(r8),optional, intent(out) :: reff(:,:)   
+    real(r8),optional, intent(out) :: sfc(:,:,:)
+
+    ! local vars
+    real(r8) :: sad_mode(pcols,pver,ntot_amode),radeff(pcols,pver)
+    real(r8) :: vol(pcols,pver),vol_mode(pcols,pver,ntot_amode)
+    real(r8) :: rho_air
+    integer  :: i,k,l,m
+    real(r8) :: chm_mass, tot_mass
+
+    !
+    ! Compute surface aero for each mode.
+    ! Total over all modes as the surface area for chemical reactions.
+    !
+
+    sad = 0._r8
+    sad_mode = 0._r8
+    vol = 0._r8
+    vol_mode = 0._r8
+    if (present(reff)) then 
+    reff = 0._r8
+    endif
+    do i = 1,ncol
+       do k = beglev(i),endlev(i)
+          rho_air = pmid(i,k)/(temp(i,k)*287.04_r8)
+          do l=1,ntot_amode
+             !
+             ! compute a mass weighting of the number
+             !
+             tot_mass = 0._r8
+             chm_mass = 0._r8
+             do m=1,nspec_amode(l)
+               if ( index_tot_mass(l,m) > 0 ) &
+                    tot_mass = tot_mass + mmr(i,k,index_tot_mass(l,m))
+               if ( index_chm_mass(l,m) > 0 ) &
+                    chm_mass = chm_mass + mmr(i,k,index_chm_mass(l,m))
+             end do
+             if ( tot_mass > 0._r8 ) then
+              ! surface area density
+               sad_mode(i,k,l) = chm_mass/tot_mass &
+                               * mmr(i,k,num_idx(l))*rho_air*pi*diam(i,k,l)**2._r8 &
+                               * exp(2._r8*alnsg_amode(l)**2._r8)  ! m^2/m^3
+               sad_mode(i,k,l) = 1.e-2_r8 * sad_mode(i,k,l) ! cm^2/cm^3
+
+              ! volume calculation, for use in effective radius calculation
+               vol_mode(i,k,l) = chm_mass/tot_mass &
+                               * mmr(i,k,num_idx(l))*rho_air*pi/6._r8*diam(i,k,l)**3._r8  &
+                               * exp(4.5_r8*alnsg_amode(l)**2._r8)  ! m^3/m^3 = cm^3/cm^3
+             else
+               sad_mode(i,k,l) = 0._r8
+               vol_mode(i,k,l) = 0._r8
+             end if
+          end do
+          sad(i,k) = sum(sad_mode(i,k,:))
+          vol(i,k) = sum(vol_mode(i,k,:))
+
+          if (present(reff)) then 
+          reff(i,k) = 3._r8*vol(i,k)/sad(i,k)
+          endif 
+       enddo
+    enddo
+    if (present(sfc)) then
+       sfc(:,:,:) = sad_mode(:,:,:)
+    endif
+
+  end subroutine surf_area_dens
+
 
 
   !===============================================================================

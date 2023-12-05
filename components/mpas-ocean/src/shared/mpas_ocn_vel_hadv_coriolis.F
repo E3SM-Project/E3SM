@@ -356,6 +356,10 @@ contains
          ! For RK4, coriolis tendency term includes f: (eta+f)/h.
          usePlanetVorticity = .true.
 
+      case ('LTS','lts')
+         ! For LTS, coriolis tendency term includes f: (eta+f)/h.
+         usePlanetVorticity = .true.
+
       case ('split_explicit')
          ! For split explicit, Coriolis tendency uses eta/h because
          ! the Coriolis term is added separately to the momentum
@@ -370,6 +374,12 @@ contains
 
       case ('split_implicit')
          ! For split implicit, Coriolis tendency uses eta/h because
+         ! the Coriolis term is added separately to the momentum
+         ! tendencies.
+         usePlanetVorticity = .false.
+
+      case ('split_explicit_ab2')
+         ! For split explicit AB2, Coriolis tendency uses eta/h because
          ! the Coriolis term is added separately to the momentum
          ! tendencies.
          usePlanetVorticity = .false.

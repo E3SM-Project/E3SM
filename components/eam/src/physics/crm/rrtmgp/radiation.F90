@@ -16,7 +16,7 @@ module radiation
    use shr_kind_mod,     only: r8=>shr_kind_r8, cl=>shr_kind_cl
    use ppgrid,           only: pcols, pver, pverp, begchunk, endchunk
    use cam_abortutils,   only: endrun
-   use scamMod,          only: scm_crm_mode, single_column
+   use iop_data_mod,     only: single_column
    use rad_constituents, only: N_DIAG
    use radconstants,     only: &
       nswbands, nlwbands, &
@@ -25,7 +25,7 @@ module radiation
       get_sw_spectral_boundaries, &
       rrtmg_to_rrtmgp_swbands
    use cam_history_support, only: add_hist_coord
-   use physconst, only: cpair, cappa, stebol
+   use physconst, only: cpair, cappa, gravit
 
    ! RRTMGP gas optics object to store coefficient information. This is imported
    ! here so that we can make the k_dist objects module data and only load them
@@ -738,13 +738,6 @@ contains
                   'Cosine of solar zenith angle', &
                   sampling_seq='rad_lwsw', flag_xyfill=.true.)
 
-      if (single_column .and. scm_crm_mode) then
-         call add_default ('FUS     ', 1, ' ')
-         call add_default ('FUSC    ', 1, ' ')
-         call add_default ('FDS     ', 1, ' ')
-         call add_default ('FDSC    ', 1, ' ')
-      end if
-
       ! Longwave radiation
       do icall = 0,N_DIAG
          if (active_calls(icall)) then
@@ -843,14 +836,6 @@ contains
 
       call addfld('EMIS', (/ 'lev' /), 'A', '1', 'Cloud longwave emissivity')
 
-      ! Add default fields for single column mode
-      if (single_column.and.scm_crm_mode) then
-         call add_default ('FUL     ', 1, ' ')
-         call add_default ('FULC    ', 1, ' ')
-         call add_default ('FDL     ', 1, ' ')
-         call add_default ('FDLC    ', 1, ' ')
-      endif
-
       ! HIRS/MSU diagnostic brightness temperatures
       if (dohirs) then
          call addfld(hirsname(1),horiz_only,'A','K','HIRS CH2 infra-red brightness temperature', &
@@ -915,6 +900,8 @@ contains
                      'Snow in-cloud extinction visible sw optical depth', &
                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
       endif
+
+
 
    end subroutine radiation_init
 
@@ -1118,7 +1105,7 @@ contains
 
       ! For running CFMIP Observation Simulator Package (COSP)
       use cospsimulator_intr, only: docosp, cospsimulator_intr_run, cosp_nradsteps
-
+      
       ! ---------------------------------------------------------------------------
       ! Arguments
       ! ---------------------------------------------------------------------------
@@ -1289,6 +1276,8 @@ contains
       ! Loop variables
       integer :: icol, ilay, iday
 
+
+      
       !----------------------------------------------------------------------
 
       ! Copy state so we can use CAM routines with arrays replaced with data
@@ -1386,13 +1375,16 @@ contains
                aer_tau_bnd_lw = 0
                if (do_aerosol_rad) then
                   if (radiation_do('sw')) then
+                     
                      call t_startf('rad_aerosol_optics_sw')
                      call set_aerosol_optics_sw( &
                           icall, dt, state, pbuf, night_indices(1:nnight), is_cmip6_volc, &
                           aer_tau_bnd_sw, aer_ssa_bnd_sw, aer_asm_bnd_sw,  &
                           clear_rh=clear_rh)
                      ! Now reorder bands to be consistent with RRTMGP
+                     
                      ! TODO: fix the input files themselves!
+                     ! Note that MACv2 may need changing too if the input files are reordered!
                      do icol = 1,size(aer_tau_bnd_sw,1)
                         do ilay = 1,size(aer_tau_bnd_sw,2)
                            aer_tau_bnd_sw(icol,ilay,:) = reordered(aer_tau_bnd_sw(icol,ilay,:), rrtmg_to_rrtmgp_swbands)
@@ -1401,6 +1393,9 @@ contains
                         end do
                      end do
                      call t_stopf('rad_aerosol_optics_sw')
+
+                     
+                     
                   end if ! radiation_do('sw')
                   if (radiation_do('lw')) then
                      call t_startf('rad_aerosol_optics_lw')
@@ -2638,7 +2633,6 @@ contains
       use cam_abortutils, only: endrun
       real(r8), pointer :: pbuf(:)
       integer :: err, idx
-      logical :: use_MMF
       character(len=16) :: MMF_microphysics_scheme
 
       idx = pbuf_get_index('CLDFSNOW', errcode=err)
@@ -2649,9 +2643,11 @@ contains
       end if
 
       ! Reset to false if using MMF with 1-mom scheme
-      call phys_getopts(use_MMF_out           = use_MMF          )
       call phys_getopts(MMF_microphysics_scheme_out = MMF_microphysics_scheme)
-      if (use_MMF .and. (trim(MMF_microphysics_scheme) == 'sam1mom')) then
+      if (trim(MMF_microphysics_scheme) == 'sam1mom') then
+         do_snow_optics = .false.
+      end if
+      if (trim(MMF_microphysics_scheme) == 'p3') then
          do_snow_optics = .false.
       end if
 

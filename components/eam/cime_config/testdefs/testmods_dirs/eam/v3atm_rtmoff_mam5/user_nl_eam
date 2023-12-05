@@ -1,0 +1,37 @@
+! The settings needed for chemUCI-Linozv3 in v3atm's 4th full smoke test
+! This is to ease testing with F20TR_chemUCI-Linozv3
+
+ ncdata = '$DIN_LOC_ROOT/atm/cam/inic/homme/NGD_v3atm.ne30pg2.eam.i.0001-01-01-00000.c20230106.nc'
+ tropopause_e90_thrd    = 80.0e-9
+ history_gaschmbudget_2D = .false.
+ history_gaschmbudget_2D_levels = .false.
+ history_UCIgaschmbudget_2D = .false.
+ history_UCIgaschmbudget_2D_levels = .false.
+! history_aero_optics    = .true.
+! history_aerosol        = .true.
+! history_amwg           = .true.
+! history_budget         = .true.
+! history_verbose        = .true.
+ cosp_lite = .true.
+
+ linoz_psc_t = 198.0
+
+! update species for using F20TR-chemUCI-Linozv3
+! follow https://acme-climate.atlassian.net/wiki/spaces/NGDAP/pages/3566043211/20220914.PAN.MZThet.v2.LR.bi-grid.amip.chemUCI+Linozv3
+! MAM5 files
+ rad_climate            = 'A:H2OLNZ:H2O', 'N:O2:O2', 'N:CO2:CO2',
+         'A:O3:O3', 'A:N2OLNZ:N2O', 'A:CH4LNZ:CH4',
+         'N:CFC11:CFC11', 'N:CFC12:CFC12',
+         'M:mam5_mode1:$DIN_LOC_ROOT/atm/cam/physprops/mam4_mode1_rrtmg_aeronetdust_c141106.nc',
+         'M:mam5_mode2:$DIN_LOC_ROOT/atm/cam/physprops/mam4_mode2_rrtmg_c130628.nc',
+         'M:mam5_mode3:$DIN_LOC_ROOT/atm/cam/physprops/mam4_mode3_rrtmg_aeronetdust_c141106.nc',
+         'M:mam5_mode4:$DIN_LOC_ROOT/atm/cam/physprops/mam4_mode4_rrtmg_c130628.nc'
+         'M:mam5_mode5:$DIN_LOC_ROOT/atm/cam/physprops/mam5_mode5_rrtmg_sig1.2_dgnl.40_c03072023.nc'
+
+
+! sad_file is needed for F20TR-chemUCI-Linozv3, not needed only after enabling MAM5
+
+ sad_file               = '$DIN_LOC_ROOT/atm/waccm/sulf/SAD_SULF_1849-2100_1.9x2.5_c090817.nc'
+
+! default using
+! sad_file               = '$DIN_LOC_ROOT/atm/waccm/sulf/SAD_SULF_1950-2011_1.9x2.5_c130102.nc'

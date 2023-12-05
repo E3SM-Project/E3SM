@@ -1,0 +1,35 @@
+	<nml_record name="parabolic_bowl" mode="init" configuration="parabolic_bowl">
+		<nml_option name="config_parabolic_bowl_vert_levels" type="integer" default_value="3" units="unitless"
+			description="Number of vertical levels in parabolic bowl."
+			possible_values="Any positive integer"
+	        />
+	        <nml_option name="config_parabolic_bowl_Coriolis_parameter" type="real" default_value="1.031e-4" units="1/s"
+			description="Coriolis paramter"
+			possible_values="Any real number"
+		/>
+	        <nml_option name="config_parabolic_bowl_eta0" type="real" default_value="2.0" units="m"
+			description="surface elevation magnitude"
+			possible_values="Any real number"
+		/>
+                <nml_option name="config_parabolic_bowl_b0" type="real" default_value="50.0" units="m"
+			description="maximum water depth"
+			possible_values="Any real number"
+		/>
+		<nml_option name="config_parabolic_bowl_omega" type="real" default_value="1.4544e-4" units="1/s"
+			description="Angular frequency of oscillation"
+			possible_values="Any real number"
+		/>
+		<nml_option name="config_parabolic_bowl_gravity" type="real" default_value="9.81" units="m/s^2"
+			description="Gravitational accerlation"
+			possible_values="Any real number"
+		/>
+	        <nml_option name="config_parabolic_bowl_adjust_domain_center" type="logical" default_value="true" units="unitless"
+			description="Flag to adjust mesh coordinates"
+			possible_values=".true. or .false."
+		/>
+	</nml_record>
+
+  
+
+
+
