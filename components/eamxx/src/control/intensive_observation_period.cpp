@@ -761,6 +761,10 @@ set_fields_from_iop_data(const field_mgr_ptr field_mgr)
   if (set_qv) {
     qv = field_mgr->get_field("qv").get_view<Real**>();
     qv_iop = get_iop_field("q").get_view<Real*>();
+
+    // Same as temperature, qv may need correction.
+    const auto qv_0 = ekat::subview(qv, 0);
+    correct_water_vapor(qv_0);
   }
   if (set_nc) {
     nc = field_mgr->get_field("nc").get_view<Real**>();
@@ -779,7 +783,7 @@ set_fields_from_iop_data(const field_mgr_ptr field_mgr)
     ni_iop = get_iop_field("NUMICE").get_view<Real*>();
   }
 
-  // Loop over all columns and deep copy to FM views
+  // Loop over all columns and copy IOP field values to FM views
   const auto ncols = field_mgr->get_grid()->get_num_local_dofs();
   const auto nlevs = field_mgr->get_grid()->get_num_vertical_levels();
   const auto policy = ESU::get_default_team_policy(ncols, nlevs);
@@ -838,6 +842,29 @@ correct_temperature(const view_1d<Real>& t_correction)
   // Replace values of T
   Kokkos::parallel_for(Kokkos::RangePolicy<>(0, ok_level), KOKKOS_LAMBDA (const int ilev) {
     T_iop(ilev) = t_correction(ilev);
+  });
+}
+
+void IntensiveObservationPeriod::
+correct_water_vapor(const view_1d<Real>& qv_correction)
+{
+  EKAT_REQUIRE_MSG(has_iop_field("q"), "Error! Trying to correct IOP water vapor, but no variable \"q\" exists.\n");
+
+  auto qv_iop = get_iop_field("q").get_view<Real*>();
+  EKAT_REQUIRE_MSG(qv_correction.extent(0) == qv_iop.extent(0),
+                    "Error! qv_correction has mismatched size with IOP field q. "
+                    +std::to_string(qv_correction.extent(0))+" != "
+                    +std::to_string(qv_iop.extent(0))+".\n");
+
+  // Find level index where qv_iop is no longer 0
+  int ok_level;
+  Kokkos::parallel_reduce(qv_iop.extent(0), KOKKOS_LAMBDA (const int ilev, int& lmin) {
+    if (qv_iop(ilev) > 0 && ilev < lmin) lmin = ilev;
+  }, Kokkos::Min<int>(ok_level));
+
+  // Replace values of qv
+  Kokkos::parallel_for(Kokkos::RangePolicy<>(0, ok_level), KOKKOS_LAMBDA (const int ilev) {
+    qv_iop(ilev) = qv_correction(ilev);
   });
 }
 
