@@ -1,7 +1,56 @@
 #include <physics/mam/eamxx_mam_aci_process_interface.hpp>
-
 namespace scream
 {
+
+KOKKOS_INLINE_FUNCTION
+Real subgrid_mean_updraft(const Real w0, const Real wsig)
+{
+/* ---------------------------------------------------------------------------------
+ Purpose: Calculate the mean updraft velocity inside a GCM grid assuming the
+          vertical velocity distribution is Gaussian and peaks at the
+          GCM resolved large-scale vertical velocity.
+          When icenul_wsub_scheme = 2, the model uses the mean updraft velocity as the
+          characteristic updraft velocity to calculate the ice nucleation rate.
+ Author:  Kai Zhang (kai.zhang@pnnl.gov)
+ Last Modified: Oct, 2015
+-------------------------------------------------------------------------------- */
+
+// interface
+
+//   in :: wsig  standard deviation (m/s)
+//   in :: w0  large scale vertical velocity (m/s)
+//   out::   mean updraft velocity(m/s) -> characteristic w*
+
+  // FIXME should nbin be a user parameter?
+  const int nbin = 50;
+  
+  using C  = physics::Constants<Real>;
+  constexpr Real pi       = C::Pi;
+  Real zz[nbin], wa = 0, ww = 0;
+  int kp = 0;
+
+  const Real sigma  = haero::max(0.001, wsig);
+  const Real wlarge = w0;
+
+  const Real xx = 6.0 * sigma / nbin;
+
+  for (int ibin = 0; ibin < nbin; ++ibin) {
+    Real yy = wlarge - 3.0*sigma + 0.5*xx;
+    yy += (ibin-1)*xx;
+    // wbar = integrator < w * f(w) * dw >
+    zz[ibin] = yy * haero::exp(-1.0*haero::square(yy-wlarge)/(2*sigma*sigma))/(sigma*haero::sqrt(2*pi))*xx;
+  }
+  for (int ibin = 0; ibin < nbin; ++ibin) {
+    if (zz[ibin] > 0) ++kp, wa += zz[ibin];
+  }
+  if (kp) {
+    // wbar = integrator < w * f(w) * dw >
+    ww = wa;
+  } else {
+    ww = 0.001;
+  }
+  return ww;
+}
 
   //FIXME: The following variables are namelist variables
   Real wsubmin = 1;
@@ -35,7 +84,12 @@ void MAMAci::set_grids(const std::shared_ptr<const GridsManager> grids_manager) 
 
   Kokkos::resize(rho_, ncol_, nlev_);
   Kokkos::resize(w0_, ncol_, nlev_);
-   
+  Kokkos::resize(tke_, ncol_, nlev_+1);
+  Kokkos::resize(wsub_, ncol_, nlev_);
+  Kokkos::resize(wsubice_, ncol_, nlev_);
+  Kokkos::resize(wsig_, ncol_, nlev_);
+  Kokkos::resize(w2_, ncol_, nlev_);
+
   // Define the different field layouts that will be used for this process
   using namespace ShortFieldTagsNames;
 
@@ -128,6 +182,7 @@ void MAMAci::initialize_impl(const RunType run_type) {
     omega_ = get_field_in("omega").get_view<const Real**>();
     p_mid_ = get_field_in("p_mid").get_view<const Real**>();
     T_mid_ = get_field_in("T_mid").get_view<const Real**>();
+    w_sec_ = get_field_in("w_sec").get_view<const Real**>();
 
     /*
       NOTE: All derived variables (like rpdel and geopotential height) should be computed in
@@ -152,75 +207,61 @@ void MAMAci::run_impl(const double dt) {
   static constexpr auto rair   = C::Rair;   // Gas constant for dry air [J/(kg*K) or J/Kg/K]
 
   // NOTE: All the inputs are available to compute w0
-  for (int icol = 0; icol < ncol_; ++icol) {
-    for (int kk = 0; kk< top_lev_; ++kk)  { 
+  auto team_policy = haero::ThreadTeamPolicy(ncol_, Kokkos::AUTO);
+  Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
+    const int icol = team.league_rank();
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, 0u, top_lev_), KOKKOS_LAMBDA(int kk) { 
       w0_(icol,kk) = 0;
       rho_(icol, kk) = -999.0;
-    }
-    for (int kk = top_lev_; kk < nlev_; ++kk) {
+    });
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, top_lev_, nlev_), KOKKOS_LAMBDA(int kk) { 
       rho_(icol,kk) = p_mid_(icol,kk)/(rair*T_mid_(icol,kk));
       w0_(icol,kk) = -1.0*omega_(icol,kk)/(rho_(icol,kk)*gravit);
-    }
-  }
+    });
+  });
 
-    /*
-    NOTE: All the inputs are available to compute w0
-    Fortran code:
-    w0 = 0
-    rho(:,:) = -999.0_r8
-    do kk = top_lev, pver
-       do icol = 1, ncol
-          rho(icol,kk) = pmid(icol,kk)/(rair*temperature(icol,kk))
-          w0(icol,kk) = -1._r8*omega(icol,kk)/(rho(icol,kk)*gravit)
-       enddo
-    enddo */
-
-    //---------------------------------------------------------
-    //Compute TKE using "w_sec"
-    //---------------------------------------------------------
-
-    /*
-    NOTE: All the inputs are available to compute tke
-    Fortran code:
-    tke(:ncol,:) = (3._r8/2._r8)*w_sec(:ncol,:)
-    */
+  //---------------------------------------------------------
+  //Compute TKE using "w_sec"
+  //---------------------------------------------------------
+  Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
+    const int icol = team.league_rank();
+    // FIXME Is this the correct boundary condition for tke at the surface?
+    tke_(icol,nlev_) = 0;
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, 0u, nlev_), KOKKOS_LAMBDA(int kk) { 
+      tke_(icol,kk) = (3.0/2.0)*w_sec_(icol,kk);
+    });
+  });
    //---------------------------------------------------------
    // Compute subgrid scale velocities(wsub, wsig and wsubice)
    //---------------------------------------------------------
   
-    // More refined computation of sub-grid vertical velocity
-    // Set to be zero at the surface by initialization.
-    /*
-    NOTE: All the inputs are available to compute wsub, wsig and wsubice
-          "min_max_bound" is present in MAM4xx  utils
-
-    Fortran code:
-    wsub(:ncol,:top_lev-1)  = wsubmin
-    wsubice(:ncol,:top_lev-1) = 0.001_r8
-    wsig(:ncol,:top_lev-1)  = 0.001_r8
-
-    do kk = top_lev, pver
-       do icol = 1, ncol
-          wsub(icol,kk)  = sqrt(0.5_r8*(tke(icol,kk) + tke(icol,kk+1))*(2._r8/3._r8))
-          wsig(icol,kk)  = min_max_bound(0.001_r8, 10._r8, wsub(icol,kk))
-          wsubice(icol,kk) = min_max_bound(0.2_r8, 10._r8, wsub(icol,kk))
-          wsub(icol,kk)  = max(wsubmin, wsub(icol,kk))
-       end do
-    end do
-    */
-
+  // More refined computation of sub-grid vertical velocity
+  // Set to be zero at the surface by initialization.
+  Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
+    const int icol = team.league_rank();
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, 0u, top_lev_), KOKKOS_LAMBDA(int kk) { 
+      wsub_(icol,kk)  = wsubmin;
+      wsubice_(icol,kk) = 0.001;
+      wsig_(icol,kk)  = 0.001;
+    });
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, top_lev_, nlev_), KOKKOS_LAMBDA(int kk) { 
+      wsub_(icol,kk)  = haero::sqrt(0.5*(tke_(icol,kk) + tke_(icol,kk+1))*(2.0/3.0));
+      wsig_(icol,kk)  = mam4::utils::min_max_bound(0.001, 10.0, wsub_(icol,kk));
+      wsubice_(icol,kk) = mam4::utils::min_max_bound(0.2, 10.0, wsub_(icol,kk));
+      wsub_(icol,kk)  = haero::max(wsubmin, wsub_(icol,kk));
+    });
+  });
 
     //---------------------------------------------------------
     // Compute subgrid mean updraft velocity (w2)
     //---------------------------------------------------------
   
-    /*
-    NOTE: All inputs are available. "subgrid_mean_updraft" is not ported yet but it is a very small routine
-    Fortran code:
-    w2(1:ncol,1:pver) = 0._r8
-    call subgrid_mean_updraft(ncol, w0, wsig, &!in
-         w2) !out
-    */
+    Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
+      const int icol = team.league_rank();
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, 0u, nlev_), KOKKOS_LAMBDA(int kk) { 
+        w2_(icol,kk) = subgrid_mean_updraft(w0_(icol,kk), wsig_(icol,kk));
+      });
+  });
 
     //-------------------------------------------------------------
     // Get number of activated aerosol for ice nucleation (naai)

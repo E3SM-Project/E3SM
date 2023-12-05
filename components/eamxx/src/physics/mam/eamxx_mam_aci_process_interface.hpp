@@ -27,7 +27,13 @@ class MAMAci final : public scream::AtmosphereProcess {
   // w0_ is large scale velocity (m/s)
   view_2d w0_;
 
+  // turbulent kinetic energy  [m^2/s^2]
+  view_2d tke_;
+
+  // Subgrid scale velocities
+  view_2d wsub_, wsubice_, wsig_, w2_;
   // Top level for troposphere cloud physics
+  // FIXME: This should be read in to make user selectable.
   const int top_lev_ = 6;
 
 public:
@@ -81,7 +87,8 @@ public:
   const_view_2d omega_; // Vertical pressure velocity [Pa/s] at midpoints
   const_view_2d p_mid_; // Total pressure [Pa] at midpoints
   const_view_2d T_mid_; // Temperature[K] at midpoints
-  
+  const_view_2d w_sec_; // Vertical velocity variance
+
   // physics grid for column information
   std::shared_ptr<const AbstractGrid> grid_;
 }; // MAMAci
