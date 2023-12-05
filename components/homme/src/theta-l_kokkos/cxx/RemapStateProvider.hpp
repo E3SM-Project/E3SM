@@ -84,6 +84,14 @@ if(m_process_nh_vars_bool){
     std::cout << "hey m_process_nh_vars_bool is false \n";
 }
 
+////////////////////////// put abort if bool assignment failed
+
+
+if(params.theta_hydrostatic_mode && m_process_nh_vars_bool)
+Kokkos::abort("BOOL assignment failed, (params.theta_hydrostatic_mode && m_process_nh_vars_bool) == TRUE.\n");
+
+
+
 
 
     if (m_process_nh_vars > 0) {
