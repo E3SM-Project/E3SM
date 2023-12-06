@@ -100,13 +100,15 @@ public:
   void set_fields_from_iop_data(const field_mgr_ptr field_mgr);
 
   // The IOP file may contain temperature values that are
-  // 0 at or above the surface. Correct these values
-  // by providing a "t_correction" view where we
-  // replace all values T_iop(k) == 0 with t_correction(k).
-  void correct_temperature(const view_1d<Real>& t_correction);
-
-  // Same as above, but for water vapor
-  void correct_water_vapor(const view_1d<Real>& qv_correction);
+  // 0 at or above the surface. Correct these values using
+  // the temperature T_mid (from field_mgr) where we
+  // replace all values T_iop(k) == 0 with T_mid(0, k).
+  // Likewise, at these k indices, we will replace q_iop(k)
+  // with qv(0, k).
+  // Note: We only need to use the first column because during
+  //       the loading of ICs, every columns will have the same
+  //       data.
+  void correct_temperature_and_water_vapor(const field_mgr_ptr field_mgr);
 
   // Store grid spacing for use in SHOC ad interface
   void set_grid_spacing (const Real dx_short) {

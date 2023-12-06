@@ -746,12 +746,6 @@ set_fields_from_iop_data(const field_mgr_ptr field_mgr)
   if (set_T_mid) {
     T_mid = field_mgr->get_field("T_mid").get_view<Real**>();
     t_iop = get_iop_field("T").get_view<Real*>();
-
-    // For temperature, we need to potentially correct the
-    // iop file data. We will use the first column from T_mid
-    // (all columns of T_mid should contain the same data).
-    const auto T_mid_0 = ekat::subview(T_mid, 0);
-    correct_temperature(T_mid_0);
   }
   if (set_horiz_winds_u || set_horiz_winds_v) {
     horiz_winds = field_mgr->get_field("horiz_winds").get_view<Real***>();
@@ -761,10 +755,6 @@ set_fields_from_iop_data(const field_mgr_ptr field_mgr)
   if (set_qv) {
     qv = field_mgr->get_field("qv").get_view<Real**>();
     qv_iop = get_iop_field("q").get_view<Real*>();
-
-    // Same as temperature, qv may need correction.
-    const auto qv_0 = ekat::subview(qv, 0);
-    correct_water_vapor(qv_0);
   }
   if (set_nc) {
     nc = field_mgr->get_field("nc").get_view<Real**>();
@@ -781,6 +771,12 @@ set_fields_from_iop_data(const field_mgr_ptr field_mgr)
   if (set_ni) {
     ni = field_mgr->get_field("ni").get_view<Real**>();
     ni_iop = get_iop_field("NUMICE").get_view<Real*>();
+  }
+
+  if (set_T_mid and set_qv) {
+    // Check if t_iop has any 0 entires near the top of the model
+    // and correct t_iop and q_iop accordingly.
+    correct_temperature_and_water_vapor(field_mgr);
   }
 
   // Loop over all columns and copy IOP field values to FM views
@@ -823,48 +819,29 @@ set_fields_from_iop_data(const field_mgr_ptr field_mgr)
 }
 
 void IntensiveObservationPeriod::
-correct_temperature(const view_1d<Real>& t_correction)
+correct_temperature_and_water_vapor(const field_mgr_ptr field_mgr)
 {
-  EKAT_REQUIRE_MSG(has_iop_field("T"), "Error! Trying to correct IOP temperature, but no variable \"T\" exists.\n");
+  EKAT_REQUIRE_MSG(has_iop_field("T"), "Error! Trying to correct IOP temperature, but no IOP field \"T\" exists.\n");
+  EKAT_REQUIRE_MSG(field_mgr->has_field("T_mid"), "Error! Trying to correct IOP temperature, but no FM field \"T_mid\" exists.\n");
+  EKAT_REQUIRE_MSG(has_iop_field("q"), "Error! Trying to correct IOP water vapor, but no IOP field \"q\" exists.\n");
+  EKAT_REQUIRE_MSG(field_mgr->has_field("qv"), "Error! Trying to correct IOP water vapor, but no FM field \"qv\" exists.\n");
 
-  auto T_iop = get_iop_field("T").get_view<Real*>();
-  EKAT_REQUIRE_MSG(t_correction.extent(0) == T_iop.extent(0),
-                    "Error! t_correction has mismatched size with IOP field T. "
-                    +std::to_string(t_correction.extent(0))+" != "
-                    +std::to_string(T_iop.extent(0))+".\n");
+  auto t_iop = get_iop_field("T").get_view<Real*>();
+  auto T_mid = field_mgr->get_field("T_mid").get_view<const Real**>();
+  auto q_iop = get_iop_field("q").get_view<Real*>();
+  auto qv   = field_mgr->get_field("qv").get_view<const Real**>();
 
-  // Find level index where T_iop is no longer 0
-  int ok_level;
-  Kokkos::parallel_reduce(T_iop.extent(0), KOKKOS_LAMBDA (const int ilev, int& lmin) {
-    if (T_iop(ilev) > 0 && ilev < lmin) lmin = ilev;
-  }, Kokkos::Min<int>(ok_level));
+  // Find the first valid level index for t_iop, i.e., first non-zero entry
+  int first_valid_idx;
+  const auto nlevs = field_mgr->get_grid()->get_num_vertical_levels();
+  Kokkos::parallel_reduce(nlevs, KOKKOS_LAMBDA (const int ilev, int& lmin) {
+    if (t_iop(ilev) > 0 && ilev < lmin) lmin = ilev;
+  }, Kokkos::Min<int>(first_valid_idx));
 
-  // Replace values of T
-  Kokkos::parallel_for(Kokkos::RangePolicy<>(0, ok_level), KOKKOS_LAMBDA (const int ilev) {
-    T_iop(ilev) = t_correction(ilev);
-  });
-}
-
-void IntensiveObservationPeriod::
-correct_water_vapor(const view_1d<Real>& qv_correction)
-{
-  EKAT_REQUIRE_MSG(has_iop_field("q"), "Error! Trying to correct IOP water vapor, but no variable \"q\" exists.\n");
-
-  auto qv_iop = get_iop_field("q").get_view<Real*>();
-  EKAT_REQUIRE_MSG(qv_correction.extent(0) == qv_iop.extent(0),
-                    "Error! qv_correction has mismatched size with IOP field q. "
-                    +std::to_string(qv_correction.extent(0))+" != "
-                    +std::to_string(qv_iop.extent(0))+".\n");
-
-  // Find level index where qv_iop is no longer 0
-  int ok_level;
-  Kokkos::parallel_reduce(qv_iop.extent(0), KOKKOS_LAMBDA (const int ilev, int& lmin) {
-    if (qv_iop(ilev) > 0 && ilev < lmin) lmin = ilev;
-  }, Kokkos::Min<int>(ok_level));
-
-  // Replace values of qv
-  Kokkos::parallel_for(Kokkos::RangePolicy<>(0, ok_level), KOKKOS_LAMBDA (const int ilev) {
-    qv_iop(ilev) = qv_correction(ilev);
+  // Replace values of T and q where t_iop contains zeros
+  Kokkos::parallel_for(Kokkos::RangePolicy<>(0, first_valid_idx), KOKKOS_LAMBDA (const int ilev) {
+    t_iop(ilev) = T_mid(0, ilev);
+    q_iop(ilev) = qv(0, ilev);
   });
 }
 
