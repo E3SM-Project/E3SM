@@ -46,9 +46,10 @@ sys.path.pop(0)
 
 
 # run a shell command
-def run_cmd_no_fail(cmd):
-    out = subprocess.run(cmd, shell=True, capture_output=True)
-    return str(out.stdout, 'UTF-8')
+def run_cmd_no_fail(cmd, env):
+    out = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, env=env)
+    retval = str(out.stdout, 'UTF-8').strip()
+    return retval
 
 
 # main class that extends Machines class
@@ -111,7 +112,7 @@ class OmegaMachines(Machines):
         for s in shell_ref_re.finditer(item_data):
             shell_cmd = s.groups()[0]
             item_data = item_data.replace(s.group(),
-                                          run_cmd_no_fail(shell_cmd))
+                                          run_cmd_no_fail(shell_cmd, outvar))
 
         for m in reference_re.finditer(item_data):
             var = m.groups()[0]
@@ -138,10 +139,10 @@ class OmegaMachines(Machines):
         return item_data
 
     # get module info
-    def get_modules(self, outvar):
+    def get_modules(self, outvar, exclude_envs):
 
         modcmds: typing.List[str] = []
-        outvar["__OMEGA_MODULE_COMMANDS__"] = modcmds
+        self.__OMEGA_MODULE_COMMANDS__ = modcmds
 
         module_system_node = self.get_child("module_system")
         module_system_type = self.get(module_system_node, "type")
@@ -150,6 +151,9 @@ class OmegaMachines(Machines):
             print((f"ERROR: '{module_system_type}' "
                    "module system is not supported."))
             exit(-1)
+
+        # get env. variables *before* applying module configurations
+        # specified in config_machines.xml
 
         out1 = subprocess.check_output("env", shell=True)
         env1 = str(out1, 'UTF-8')
@@ -161,6 +165,8 @@ class OmegaMachines(Machines):
         modcmd = "module"
 
         shcmds = []
+
+        # read module commands for the specified compiler and mpi library
 
         for module_node in module_nodes:
             compiler = self.get(module_node, "compiler")
@@ -194,26 +200,37 @@ class OmegaMachines(Machines):
 
         shcmds.append("env")
 
+        # get env. variables *after* applying module configurations
+        # specified in config_machines.xml
+
         out2 = subprocess.check_output(";".join(shcmds), shell=True)
         env2 = str(out2, 'UTF-8')
 
         parsed1 = {}
+        parsed2 = {}
 
         for (name, value) in pat_envvar.findall(env1):
             parsed1[name] = value
 
         for (name, value) in pat_envvar.findall(env2):
-            if name in parsed1:
+            parsed2[name] = value
+
+        for (name, value) in parsed2.items():
+            if name in parsed1.keys():
                 if parsed1[name] != value:
                     outvar[name] = value
             else:
                 outvar[name] = value
 
+        for (name, value) in parsed1.items():
+            if name not in parsed2.keys():
+                exclude_envs.append(name)
+
     # get environmental variables info
     def get_envs(self, outvar):
 
         exports: typing.Dict[str, str] = {}
-        outvar["__OMEGA_SCRIPT_EXPORTS__"] = exports
+        self.__OMEGA_SCRIPT_EXPORTS__ = exports
 
         envvar_nodes = self.get_children("environment_variables",
                                          root=self.machine_node)
@@ -284,16 +301,17 @@ class OmegaMachines(Machines):
     def gen_machinfo(self):
 
         outvar: typing.Dict[str, str] = {}
+        exclude_envs: typing.List[str] = []
 
         self.get_mpirun(outvar)
-        self.get_modules(outvar)
+        self.get_modules(outvar, exclude_envs)
         self.get_envs(outvar)
-        self.write_output(outvar)
+        self.write_output(outvar, exclude_envs)
         self.generate_scripts(outvar)
 
     # create a temporary cmake script to be included
     # in the main Omega cmake build system
-    def write_output(self, outvar):
+    def write_output(self, outvar, exclude_envs):
 
         with open(self.outpath, "w") as f:
             f.write("message(STATUS \"Reading E3SM machine info\")\n")
@@ -301,6 +319,9 @@ class OmegaMachines(Machines):
             for key, value in outvar.items():
                 if not key.startswith("__OMEGA_"):
                     f.write("set(ENV{%s} \"%s\")\n" % (key, value))
+
+            for name in exclude_envs:
+                f.write("unset(ENV{%s})\n" % name)
 
             f.write(f"set(MACH {self.machname})\n")
             f.write(f"set(OS {self.machos})\n")
@@ -325,11 +346,11 @@ class OmegaMachines(Machines):
             f.write("#!/usr/bin/env bash\n\n")
 
             f.write("# module commands\n")
-            for cmd in outvar["__OMEGA_MODULE_COMMANDS__"]:
+            for cmd in self.__OMEGA_MODULE_COMMANDS__:
                 f.write(cmd + "\n")
 
             f.write("\n# env. variables\n")
-            for key, value in outvar["__OMEGA_SCRIPT_EXPORTS__"].items():
+            for key, value in self.__OMEGA_SCRIPT_EXPORTS__.items():
                 f.write(f"export {key}=\"{value}\"\n")
 
         with open(omega_build, "w") as f:

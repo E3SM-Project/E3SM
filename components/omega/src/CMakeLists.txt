@@ -22,7 +22,7 @@ target_link_options(
     ${OMEGA_LINK_OPTIONS}
 )
 
-target_link_libraries(${OMEGA_LIB_NAME} spdlog yakl)
+target_link_libraries(${OMEGA_LIB_NAME} spdlog yakl pioc)
 
 # build Omega executable
 if(OMEGA_BUILD_EXECUTABLE)

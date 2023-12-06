@@ -56,17 +56,39 @@ macro(preset)
   endif()
 
   if(OMEGA_BUILD_TYPE STREQUAL "Debug")
-    list(APPEND _PY_OPTS "-d")
-  endif()
 
-  execute_process(COMMAND ${Python_EXECUTABLE} create_scripts.py ${_PY_OPTS}
-    OUTPUT_QUIET ERROR_QUIET
-    WORKING_DIRECTORY ${OMEGA_SOURCE_DIR}
-    OUTPUT_VARIABLE _MACHINE_INFO)
+    list(APPEND _PY_OPTS "-d")
+
+    execute_process(COMMAND ${Python_EXECUTABLE} create_scripts.py ${_PY_OPTS}
+      WORKING_DIRECTORY ${OMEGA_SOURCE_DIR}
+      OUTPUT_VARIABLE _MACHINE_INFO
+      ERROR_VARIABLE _ERROR_INFO)
+
+      message(STATUS "create_scripts.py output: ${_MACHINE_INFO}")
+      message(STATUS "create_scripts.py error: ${_ERROR_INFO}")
+
+  else()
+
+    execute_process(COMMAND ${Python_EXECUTABLE} create_scripts.py ${_PY_OPTS}
+      OUTPUT_QUIET ERROR_QUIET
+      WORKING_DIRECTORY ${OMEGA_SOURCE_DIR}
+      OUTPUT_VARIABLE _MACHINE_INFO)
+
+  endif()
 
   include(${_TMP_CMAKE_FILE})
   if(OMEGA_BUILD_TYPE STREQUAL "Release")
     file(REMOVE ${_TMP_CMAKE_FILE})
+  endif()
+
+  if(OMEGA_C_COMPILER)
+    find_program(_OMEGA_C_COMPILER ${OMEGA_C_COMPILER})
+  else()
+    if (MPILIB STREQUAL "mpi-serial")
+      find_program(_OMEGA_C_COMPILER ${SCC})
+    else()
+      find_program(_OMEGA_C_COMPILER ${MPICC})
+    endif()
   endif()
 
   if(OMEGA_CXX_COMPILER)
@@ -79,10 +101,28 @@ macro(preset)
     endif()
   endif()
 
+  if(OMEGA_Fortran_COMPILER)
+    find_program(_OMEGA_Fortran_COMPILER ${OMEGA_Fortran_COMPILER})
+  else()
+    if (MPILIB STREQUAL "mpi-serial")
+      find_program(_OMEGA_Fortran_COMPILER ${SFC})
+    else()
+      find_program(_OMEGA_Fortran_COMPILER ${MPIFC})
+    endif()
+  endif()
+
+  set(OMEGA_C_COMPILER ${_OMEGA_C_COMPILER})
+  set(CMAKE_C_COMPILER ${OMEGA_C_COMPILER})
+
   set(OMEGA_CXX_COMPILER ${_OMEGA_CXX_COMPILER})
   set(CMAKE_CXX_COMPILER ${OMEGA_CXX_COMPILER})
 
+  set(OMEGA_Fortran_COMPILER ${_OMEGA_Fortran_COMPILER})
+  set(CMAKE_Fortran_COMPILER ${OMEGA_Fortran_COMPILER})
+
+  message(STATUS "OMEGA_C_COMPILER = ${OMEGA_C_COMPILER}")
   message(STATUS "OMEGA_CXX_COMPILER = ${OMEGA_CXX_COMPILER}")
+  message(STATUS "OMEGA_Fortran_COMPILER = ${OMEGA_Fortran_COMPILER}")
   message(STATUS "MPI_EXEC = ${MPI_EXEC}")
 
 endmacro()
@@ -168,15 +208,15 @@ macro(update_variables)
   file(WRITE ${_TestMPISrcFile}  ${_TestMPISource})
 
   execute_process(
-	COMMAND ${OMEGA_CXX_COMPILER} -c ${_TestMPISrcFile} -o ${_TestMPIObjFile}
+    COMMAND ${OMEGA_CXX_COMPILER} -c ${_TestMPISrcFile} -o ${_TestMPIObjFile}
     OUTPUT_QUIET ERROR_QUIET
     RESULT_VARIABLE _MPI_TEST_RESULT
     OUTPUT_VARIABLE _MPI_TEST_OUTPUT
     ERROR_VARIABLE _MPI_TEST_ERROR)
 
   if(OMEGA_BUILD_TYPE EQUAL Release)
-	file(REMOVE ${_TestMPISrcFile})
-	file(REMOVE ${_TestMPIObjFile})
+    file(REMOVE ${_TestMPISrcFile})
+    file(REMOVE ${_TestMPIObjFile})
   endif()
 
   if (NOT _MPI_TEST_RESULT EQUAL 0)
@@ -205,47 +245,64 @@ macro(update_variables)
   # Check if CUDA or HIP is supported
   if((NOT DEFINED OMEGA_ARCH) OR (OMEGA_ARCH STREQUAL "NOT_DEFINED"))
 
-    execute_process(
-	  COMMAND ${OMEGA_CXX_COMPILER} --version
-      RESULT_VARIABLE _CXX_VER_RESULT
-      OUTPUT_VARIABLE _CXX_VER_OUTPUT)
+    if(USE_CUDA)
+      set(OMEGA_ARCH "CUDA")
 
-    if (_CXX_VER_RESULT EQUAL 0)
+    elseif(USE_HIP)
+      set(OMEGA_ARCH "HIP")
 
-      string(REGEX MATCH "HIP|hip"       _HIP_CHECK "${_CXX_VER_OUTPUT}")
-      string(REGEX MATCH "AMD|amd"       _AMD_CHECK "${_CXX_VER_OUTPUT}")
-      string(REGEX MATCH "NVCC|nvcc"     _NVCC_CHECK "${_CXX_VER_OUTPUT}")
-      string(REGEX MATCH "NVIDIA|nvidia" _NVIDIA_CHECK "${_CXX_VER_OUTPUT}")
+    else()
 
-      if(_HIP_CHECK AND _AMD_CHECK)
-        set(OMEGA_ARCH "HIP")
+      execute_process(
+        COMMAND ${OMEGA_CXX_COMPILER} --version
+        RESULT_VARIABLE _CXX_VER_RESULT
+        OUTPUT_VARIABLE _CXX_VER_OUTPUT)
 
-      elseif(_NVCC_CHECK AND _NVIDIA_CHECK)
-        set(OMEGA_ARCH "CUDA")
+      if (_CXX_VER_RESULT EQUAL 0)
 
+        string(REGEX MATCH "HIP|hip"       _HIP_CHECK "${_CXX_VER_OUTPUT}")
+        string(REGEX MATCH "AMD|amd"       _AMD_CHECK "${_CXX_VER_OUTPUT}")
+        string(REGEX MATCH "NVCC|nvcc"     _NVCC_CHECK "${_CXX_VER_OUTPUT}")
+        string(REGEX MATCH "NVIDIA|nvidia" _NVIDIA_CHECK "${_CXX_VER_OUTPUT}")
+
+        if(_HIP_CHECK AND _AMD_CHECK)
+          set(OMEGA_ARCH "HIP")
+
+        elseif(_NVCC_CHECK AND _NVIDIA_CHECK)
+          set(OMEGA_ARCH "CUDA")
+
+        else()
+          set(OMEGA_ARCH "")
+
+        endif()
       else()
         set(OMEGA_ARCH "")
 
       endif()
-    else()
-        set(OMEGA_ARCH "")
-
     endif()
   endif()
 
+  if(OMEGA_BUILD_TYPE STREQUAL "Debug")
+    message(STATUS "OMEGA_ARCH = ${OMEGA_ARCH}")
+  endif()
+
   if(OMEGA_ARCH STREQUAL "CUDA")
-    enable_language(CUDA)
+    set(CMAKE_CUDA_HOST_COMPILER ${CMAKE_CXX_COMPILER})
+    find_program(CMAKE_CUDA_COMPILER "nvcc")
+
+    if(OMEGA_BUILD_TYPE STREQUAL "Debug")
+      message(STATUS "CMAKE_CUDA_COMPILER = ${CMAKE_CUDA_COMPILER}")
+      message(STATUS "CMAKE_CUDA_HOST_COMPILER = ${CMAKE_CUDA_HOST_COMPILER}")
+    endif()
 
   elseif(OMEGA_ARCH STREQUAL "HIP")
-    enable_language(HIP)
+    set(CMAKE_HIP_HOST_COMPILER ${CMAKE_CXX_COMPILER})
+    find_program(CMAKE_HIP_COMPILER "hipcc")
 
-  elseif(USE_CUDA)
-    set(OMEGA_ARCH "CUDA")
-    enable_language(CUDA)
-
-  elseif(USE_HIP)
-    set(OMEGA_ARCH "HIP")
-    enable_language(HIP)
+    if(OMEGA_BUILD_TYPE STREQUAL "Debug")
+      message(STATUS "CMAKE_HIP_COMPILER = ${CMAKE_HIP_COMPILER}")
+      message(STATUS "CMAKE_HIP_HOST_COMPILER = ${CMAKE_HIP_HOST_COMPILER}")
+    endif()
 
   endif()
 

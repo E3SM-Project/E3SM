@@ -34,7 +34,7 @@ if (NOT DEFINED PROJECT_NAME)
   preset()
 
   project(${OMEGA_PROJECT_NAME}
-             LANGUAGES CXX
+          LANGUAGES CXX
          )
 
   set(CMAKE_CXX_STANDARD 17) # used in E3SM

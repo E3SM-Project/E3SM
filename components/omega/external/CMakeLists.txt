@@ -19,3 +19,25 @@ endif()
 if(OMEGA_DEBUG)
   target_compile_definitions(yakl INTERFACE YAKL_DEBUG=1)
 endif()
+
+# forward env. variables to Scorpio build
+if(DEFINED ENV{NETCDF_PATH})
+  set(NetCDF_PATH "$ENV{NETCDF_PATH}")
+endif()
+if(DEFINED ENV{NETCDF_C_PATH})
+  set(NetCDF_C_PATH "$ENV{NETCDF_C_PATH}")
+endif()
+if(DEFINED ENV{NETCDF_FORTRAN_PATH})
+  set(NetCDF_Fortran_PATH "$ENV{NETCDF_FORTRAN_PATH}")
+endif()
+if(DEFINED ENV{PNETCDF_PATH})
+  set(PnetCDF_PATH "$ENV{PNETCDF_PATH}")
+endif()
+
+option(PIO_ENABLE_TOOLS "" OFF)
+
+# Add the Scorpio library
+add_subdirectory(
+  ${E3SM_EXTERNALS_ROOT}/scorpio
+  ${CMAKE_CURRENT_BINARY_DIR}/scorpio
+)
