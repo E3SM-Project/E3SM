@@ -369,6 +369,7 @@ module ocn_benthos_parms
       elementTransportTendencies
 
    real (KIND=benthos_r8), allocatable, dimension(:,:) :: &
+      benthosEcosysTendencies, &
       elementDeepStorage, &
       PH_PREV_3D, &
       deepStorage
@@ -488,6 +489,7 @@ module ocn_benthos_parms
        useConstantDiffusivity,     & ! Turn off the depth dependence of diffusivty except no flux
        ! bottom boundary and no flux top boundary for solids
        useOceanBottomState,        & ! Use the ocean ecosys model to force the benthos
+       useCoupleOceanEcosys,       & ! 2-way coupling with the ocean ecosys model
        useBenthosMonthlyForcing      ! Use data file to force the benthos
   !---------------------------------------------------------------------
   !     Vertical transport parameters

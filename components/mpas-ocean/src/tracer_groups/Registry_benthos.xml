@@ -75,6 +75,10 @@
 			description="if true, use the ocean ecosys model to force the benthos"
 			possible_values=".true. or .false."
 		/>
+		<nml_option name="config_use_couple_ocean_ecosys" type="logical" default_value=".false." units="unitless"
+			description="if true, couple the ocean ecosys and the benthos biogeochemistry"
+			possible_values=".true. or .false."
+		/>
 		<nml_option name="config_use_benthos_monthly_forcing" type="logical" default_value=".false." units="unitless"
 			description="if true, use monthly data file of ocean fluxes and concentrations"
 			possible_values=".true. or .false."

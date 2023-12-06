@@ -62,7 +62,8 @@ module ocn_tracer_benthos
              ocn_get_benthos_terra_data,  &
              ocn_benthos_forcing_write_restart,  &
              ocn_benthos_terra_forcing_write_restart,  &
-             ocn_benthos_tracer_init
+             ocn_benthos_tracer_init, &
+             ocn_benthos_tracer_finalize
 
    integer, public:: &
       numBenthicColumnsMax, &
@@ -114,7 +115,7 @@ contains
       nEcosysTracers, statePool, tendPool, diagnosticsPool, forcingPool, &
       nCellsSolve, nBenthicVertLevels, bottomDepth, density, maxLevelCell, &
       nVertLevels, layerThickness, indexTemperature, indexSalinity, benthosTracersTend,&
-      dt,err, config_use_ecosysTracers, ecosysTracers)!{{{
+      dt,err, config_use_ecosysTracers, ecosysTracers, ecosysTracersTend)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -134,6 +135,10 @@ contains
       ! three dimensional arrays
       real (kind=RKIND), dimension(:,:,:), intent(in), optional :: &
          ecosysTracers             ! ocean BGC
+
+      ! three dimensional arrays
+      real (kind=RKIND), dimension(:,:,:), intent(inout), optional :: &
+         ecosysTracersTend         ! ocean BGC tracer tendency
 
       real (kind=RKIND), dimension(:,:,:), intent(in) :: &
          activeTracers     ! T and S
@@ -468,6 +473,135 @@ contains
       column = 1
 !     DWJ 08/05/2016: This loop needs OpenMP added to it.
 
+      ! allocate fields
+      allocate ( benthos_input%benthosTracerBulk(nBenthicVertLevels+1, numBenthicColumnsMax, benthos_tracer_cnt) )
+      allocate ( benthos_input%deepStorage(numBenthicColumnsMax, benthos_tracer_cnt))
+      allocate ( benthos_input%oceanBottomDepth(numBenthicColumnsMax))
+      allocate ( benthos_input%oceanBottomDensity(numBenthicColumnsMax))
+      allocate ( benthos_input%oceanBottomPressure(numBenthicColumnsMax))
+      allocate ( benthos_input%PH_PREV_3D(nBenthicVertLevels+1, numBenthicColumnsMax))
+      allocate ( benthos_input%bottom_level(numBenthicColumnsMax))
+      allocate ( benthos_input%oceanBottomTemperature(numBenthicColumnsMax))
+      allocate ( benthos_input%oceanBottomSalinity(numBenthicColumnsMax))
+      allocate ( benthos_input%oceanBottomPhosphate(numBenthicColumnsMax))
+      allocate ( benthos_input%oceanBottomAmmonium(numBenthicColumnsMax))
+      allocate ( benthos_input%oceanBottomNitrate(numBenthicColumnsMax))
+      allocate ( benthos_input%oceanBottomOxygen(numBenthicColumnsMax))
+      allocate ( benthos_input%oceanBottomIron(numBenthicColumnsMax))
+      allocate ( benthos_input%oceanBottomDIC(numBenthicColumnsMax))
+      allocate ( benthos_input%oceanBottomManganese(numBenthicColumnsMax))
+      allocate ( benthos_input%oceanBottomAlkalinity(numBenthicColumnsMax))
+      allocate ( benthos_input%oceanBottomSilicate(numBenthicColumnsMax))
+      allocate ( benthos_input%oceanPOCFlux(numBenthicColumnsMax))
+      allocate ( benthos_input%oceanPOPFlux(numBenthicColumnsMax))
+      allocate ( benthos_input%oceanPONFlux(numBenthicColumnsMax))
+      allocate ( benthos_input%oceanParticulateIronFlux(numBenthicColumnsMax))
+      allocate ( benthos_input%oceanCalciteFlux(numBenthicColumnsMax))
+      allocate ( benthos_input%oceanBiogenicSilicaFlux(numBenthicColumnsMax))
+      allocate ( benthos_input%oceanDustFlux(numBenthicColumnsMax))
+      allocate ( benthos_input%lithogenicFlux(numBenthicColumnsMax))
+      allocate ( benthos_input%terraPOCFlux(numBenthicColumnsMax))
+
+      allocate ( benthos_output%benthosTendencies(nBenthicVertLevels+1, numBenthicColumnsMax, benthos_tracer_cnt) )
+      if (config_use_couple_ocean_ecosys) then
+         allocate ( benthos_output%benthosEcosysTendencies(numBenthicColumnsMax, benthos_tracer_cnt) )
+      end if
+      allocate ( benthos_output%benthosTransportTendencies(nBenthicVertLevels+1, numBenthicColumnsMax, benthos_tracer_cnt) )
+      allocate ( benthos_output%benthosReactionTendencies(nBenthicVertLevels+1, numBenthicColumnsMax, benthos_tracer_cnt) )
+      allocate ( benthos_output%elementTendencies(nBenthicVertLevels+1, numBenthicColumnsMax, element_tracer_cnt) )
+      allocate ( benthos_output%elementReactionTendencies(nBenthicVertLevels+1, numBenthicColumnsMax, element_tracer_cnt) )
+      allocate ( benthos_output%elementTransportTendencies(nBenthicVertLevels+1, numBenthicColumnsMax, element_tracer_cnt) )
+      allocate ( benthos_output%elementDeepStorage(numBenthicColumnsMax, element_tracer_cnt) )
+
+      allocate ( benthos_output%PH_PREV_3D(nBenthicVertLevels+1, numBenthicColumnsMax))
+      allocate ( benthos_output%deepStorage(numBenthicColumnsMax, benthos_tracer_cnt))
+
+      allocate ( benthos_output%oceanBottomTemperature(numBenthicColumnsMax))
+      allocate ( benthos_output%oceanBottomSalinity(numBenthicColumnsMax))
+      allocate ( benthos_output%oceanBottomSilicate(numBenthicColumnsMax))
+      allocate ( benthos_output%oceanBottomDensity(numBenthicColumnsMax))
+      allocate ( benthos_output%oceanBottomPressure(numBenthicColumnsMax))
+      allocate ( benthos_output%oceanBottomDepth(numBenthicColumnsMax))
+      allocate ( benthos_output%oceanBottomPhosphate(numBenthicColumnsMax))
+      allocate ( benthos_output%oceanBottomAmmonium(numBenthicColumnsMax))
+      allocate ( benthos_output%oceanBottomNitrate(numBenthicColumnsMax))
+      allocate ( benthos_output%oceanBottomOxygen(numBenthicColumnsMax))
+      allocate ( benthos_output%oceanBottomIron(numBenthicColumnsMax))
+      allocate ( benthos_output%oceanBottomDIC(numBenthicColumnsMax))
+      allocate ( benthos_output%oceanBottomAlkalinity(numBenthicColumnsMax))
+      allocate ( benthos_output%oceanBottomCarbonDioxide(numBenthicColumnsMax))
+      allocate ( benthos_output%oceanBottomHydrogenSulfide(numBenthicColumnsMax))
+      allocate ( benthos_output%oceanBottomMethane(numBenthicColumnsMax))
+      allocate ( benthos_output%oceanBottomBicarbonate(numBenthicColumnsMax))
+      allocate ( benthos_output%oceanBottomCarbonate(numBenthicColumnsMax))
+      allocate ( benthos_output%oceanBottomSulfate(numBenthicColumnsMax))
+      allocate ( benthos_output%oceanBottomManganese(numBenthicColumnsMax))
+      allocate ( benthos_output%oceanPOCaFlux(numBenthicColumnsMax))
+      allocate ( benthos_output%oceanPOPaFlux(numBenthicColumnsMax))
+      allocate ( benthos_output%oceanPONaFlux(numBenthicColumnsMax))
+      allocate ( benthos_output%oceanPOCbFlux(numBenthicColumnsMax))
+      allocate ( benthos_output%oceanPOPbFlux(numBenthicColumnsMax))
+      allocate ( benthos_output%oceanPONbFlux(numBenthicColumnsMax))
+      allocate ( benthos_output%oceanPOCcFlux(numBenthicColumnsMax))
+      allocate ( benthos_output%oceanPOPcFlux(numBenthicColumnsMax))
+      allocate ( benthos_output%oceanPONcFlux(numBenthicColumnsMax))
+      allocate ( benthos_output%oceanCalciteFlux(numBenthicColumnsMax))
+      allocate ( benthos_output%oceanAragoniteFlux(numBenthicColumnsMax))
+      allocate ( benthos_output%oceanMgCalciteFlux(numBenthicColumnsMax))
+      allocate ( benthos_output%oceanManganeseOxideaFlux(numBenthicColumnsMax))
+      allocate ( benthos_output%oceanManganeseOxidebFlux(numBenthicColumnsMax))
+      allocate ( benthos_output%oceanIronOxyhydroxideaFlux(numBenthicColumnsMax))
+      allocate ( benthos_output%oceanIronOxyhydroxidebFlux(numBenthicColumnsMax))
+      allocate ( benthos_output%oceanIronBoundPhosphorusaFlux(numBenthicColumnsMax))
+      allocate ( benthos_output%oceanIronBoundPhosphorusbFlux(numBenthicColumnsMax))
+      allocate ( benthos_output%oceanPrecipManganeseOxidea(numBenthicColumnsMax))
+      allocate ( benthos_output%oceanPrecipManganeseOxideb(numBenthicColumnsMax))
+      allocate ( benthos_output%oceanPrecipIronOxyhydroxidea(numBenthicColumnsMax))
+      allocate ( benthos_output%oceanPrecipIronOxyhydroxideb(numBenthicColumnsMax))
+      allocate ( benthos_output%oceanPrecipIronBoundPhosphorusa(numBenthicColumnsMax))
+      allocate ( benthos_output%oceanPrecipIronBoundPhosphorusb(numBenthicColumnsMax))
+      allocate ( benthos_output%oceanTotalSedimentMassFlux(numBenthicColumnsMax))
+
+      allocate ( benthos_forcing%deepStoragePrescribedFlux(numBenthicColumnsMax, benthos_tracer_cnt) )
+      allocate ( benthos_forcing%benthosOceanSedimentFlux(numBenthicColumnsMax, benthos_tracer_cnt) )
+
+        !---------------------------------------------------------------------------
+        !   allocate flux diagnostic output fields
+        !   all fluxes are positive down
+        !---------------------------------------------------------------------------
+
+      allocate (benthos_flux_diagnostic_fields%deepStorageDiffVelFlux(numBenthicColumnsMax, benthos_tracer_cnt) )
+      allocate (benthos_flux_diagnostic_fields%deepStorageFlux(numBenthicColumnsMax, benthos_tracer_cnt) )
+      allocate (benthos_flux_diagnostic_fields%benthosOceanDiffVelFlux(numBenthicColumnsMax, benthos_tracer_cnt) )
+      allocate (benthos_flux_diagnostic_fields%benthosOceanFlux(numBenthicColumnsMax, benthos_tracer_cnt) )
+      allocate (benthos_flux_diagnostic_fields%elementSedimentation(numBenthicColumnsMax, element_tracer_cnt) )
+      allocate (benthos_flux_diagnostic_fields%elementBurialExchange(numBenthicColumnsMax, element_tracer_cnt) )
+      allocate (benthos_flux_diagnostic_fields%elementOceanExchange(numBenthicColumnsMax, element_tracer_cnt) )
+
+      !---------------------------------------------------------------------------
+      !   allocate diagnostic output fields
+      !---------------------------------------------------------------------------
+
+      ! 2D column integrated diagnostics
+
+      allocate (benthos_diagnostic_fields%relErrorTransport(numBenthicColumnsMax,benthos_tracer_cnt))
+      allocate (benthos_diagnostic_fields%relErrorElementsReactions(numBenthicColumnsMax,element_tracer_cnt))
+      allocate (benthos_diagnostic_fields%relErrorElements(numBenthicColumnsMax, element_tracer_cnt))
+      allocate (benthos_diagnostic_fields%diag_primarySourceTend(numBenthicColumnsMax, benthos_tracer_cnt) )
+      allocate (benthos_diagnostic_fields%diag_primarySinkTend(numBenthicColumnsMax, benthos_tracer_cnt) )
+      allocate (benthos_diagnostic_fields%diag_secondarySourceTend(numBenthicColumnsMax, benthos_tracer_cnt) )
+      allocate (benthos_diagnostic_fields%diag_secondarySinkTend(numBenthicColumnsMax, benthos_tracer_cnt) )
+      allocate (benthos_diagnostic_fields%diag_carbonateSourceTend(numBenthicColumnsMax, benthos_tracer_cnt) )
+      allocate (benthos_diagnostic_fields%diag_carbonateSinkTend(numBenthicColumnsMax, benthos_tracer_cnt) )
+
+      allocate (benthos_diagnostic_fields%diag_netElements(numBenthicColumnsMax, element_tracer_cnt) )
+      allocate (benthos_diagnostic_fields%diag_netBenthosTracersCell(numBenthicColumnsMax, benthos_tracer_cnt) )
+      allocate (benthos_diagnostic_fields%diag_netBenthosReactionTend(numBenthicColumnsMax, benthos_tracer_cnt) )
+      allocate (benthos_diagnostic_fields%diag_netBenthosTransportTend(numBenthicColumnsMax, benthos_tracer_cnt) )
+      allocate (benthos_diagnostic_fields%diag_netBenthosTend(numBenthicColumnsMax, benthos_tracer_cnt) )
+      allocate (benthos_diagnostic_fields%diag_netElementsReactionTend(numBenthicColumnsMax, element_tracer_cnt) )
+      allocate (benthos_diagnostic_fields%diag_netElementsTransportTend(numBenthicColumnsMax, element_tracer_cnt) )
+      allocate (benthos_diagnostic_fields%diag_netElementsTend(numBenthicColumnsMax, element_tracer_cnt) )
 
       do iCellBenthic=1,nBenthicCells
          iCell = indexToBenthosCells(iCellBenthic)
@@ -1217,6 +1351,138 @@ contains
 
        end do ! iCell
 
+      ! deallocate fields
+
+      deallocate ( benthos_input%benthosTracerBulk)
+      deallocate ( benthos_input%deepStorage)
+      deallocate ( benthos_input%oceanBottomDepth)
+      deallocate ( benthos_input%oceanBottomDensity)
+      deallocate ( benthos_input%oceanBottomPressure)
+!      deallocate ( benthos_input%tracerType(benthos_tracer_cnt) )
+      deallocate ( benthos_input%PH_PREV_3D)
+      deallocate ( benthos_input%bottom_level)
+      deallocate ( benthos_input%oceanBottomTemperature)
+      deallocate ( benthos_input%oceanBottomSalinity)
+      deallocate ( benthos_input%oceanBottomPhosphate)
+      deallocate ( benthos_input%oceanBottomAmmonium)
+      deallocate ( benthos_input%oceanBottomNitrate)
+      deallocate ( benthos_input%oceanBottomOxygen)
+      deallocate ( benthos_input%oceanBottomIron)
+      deallocate ( benthos_input%oceanBottomDIC)
+      deallocate ( benthos_input%oceanBottomManganese)
+      deallocate ( benthos_input%oceanBottomAlkalinity)
+      deallocate ( benthos_input%oceanBottomSilicate)
+      deallocate ( benthos_input%oceanPOCFlux)
+      deallocate ( benthos_input%oceanPOPFlux)
+      deallocate ( benthos_input%oceanPONFlux)
+      deallocate ( benthos_input%oceanParticulateIronFlux)
+      deallocate ( benthos_input%oceanCalciteFlux)
+      deallocate ( benthos_input%oceanBiogenicSilicaFlux)
+      deallocate ( benthos_input%oceanDustFlux)
+      deallocate ( benthos_input%lithogenicFlux)
+      deallocate ( benthos_input%terraPOCFlux)
+
+      deallocate ( benthos_output%benthosTendencies)
+      if (config_use_couple_ocean_ecosys) then
+         deallocate ( benthos_output%benthosEcosysTendencies)
+      end if
+      deallocate ( benthos_output%benthosTransportTendencies )
+      deallocate ( benthos_output%benthosReactionTendencies )
+      deallocate ( benthos_output%elementTendencies )
+      deallocate ( benthos_output%elementReactionTendencies )
+      deallocate ( benthos_output%elementTransportTendencies )
+      deallocate ( benthos_output%elementDeepStorage)
+
+      deallocate ( benthos_output%PH_PREV_3D)
+      deallocate ( benthos_output%deepStorage)
+
+      deallocate ( benthos_output%oceanBottomTemperature)
+      deallocate ( benthos_output%oceanBottomSalinity)
+      deallocate ( benthos_output%oceanBottomSilicate)
+      deallocate ( benthos_output%oceanBottomDensity)
+      deallocate ( benthos_output%oceanBottomPressure)
+      deallocate ( benthos_output%oceanBottomDepth)
+      deallocate ( benthos_output%oceanBottomPhosphate)
+      deallocate ( benthos_output%oceanBottomAmmonium)
+      deallocate ( benthos_output%oceanBottomNitrate)
+      deallocate ( benthos_output%oceanBottomOxygen)
+      deallocate ( benthos_output%oceanBottomIron)
+      deallocate ( benthos_output%oceanBottomDIC)
+      deallocate ( benthos_output%oceanBottomAlkalinity)
+      deallocate ( benthos_output%oceanBottomCarbonDioxide)
+      deallocate ( benthos_output%oceanBottomHydrogenSulfide)
+      deallocate ( benthos_output%oceanBottomMethane)
+      deallocate ( benthos_output%oceanBottomBicarbonate)
+      deallocate ( benthos_output%oceanBottomCarbonate)
+      deallocate ( benthos_output%oceanBottomSulfate)
+      deallocate ( benthos_output%oceanBottomManganese)
+      deallocate ( benthos_output%oceanPOCaFlux)
+      deallocate ( benthos_output%oceanPOPaFlux)
+      deallocate ( benthos_output%oceanPONaFlux)
+      deallocate ( benthos_output%oceanPOCbFlux)
+      deallocate ( benthos_output%oceanPOPbFlux)
+      deallocate ( benthos_output%oceanPONbFlux)
+      deallocate ( benthos_output%oceanPOCcFlux)
+      deallocate ( benthos_output%oceanPOPcFlux)
+      deallocate ( benthos_output%oceanPONcFlux)
+      deallocate ( benthos_output%oceanCalciteFlux)
+      deallocate ( benthos_output%oceanAragoniteFlux)
+      deallocate ( benthos_output%oceanMgCalciteFlux)
+      deallocate ( benthos_output%oceanManganeseOxideaFlux)
+      deallocate ( benthos_output%oceanManganeseOxidebFlux)
+      deallocate ( benthos_output%oceanIronOxyhydroxideaFlux)
+      deallocate ( benthos_output%oceanIronOxyhydroxidebFlux)
+      deallocate ( benthos_output%oceanIronBoundPhosphorusaFlux)
+      deallocate ( benthos_output%oceanIronBoundPhosphorusbFlux)
+      deallocate ( benthos_output%oceanPrecipManganeseOxidea)
+      deallocate ( benthos_output%oceanPrecipManganeseOxideb)
+      deallocate ( benthos_output%oceanPrecipIronOxyhydroxidea)
+      deallocate ( benthos_output%oceanPrecipIronOxyhydroxideb)
+      deallocate ( benthos_output%oceanPrecipIronBoundPhosphorusa)
+      deallocate ( benthos_output%oceanPrecipIronBoundPhosphorusb)
+      deallocate ( benthos_output%oceanTotalSedimentMassFlux)
+
+      deallocate ( benthos_forcing%deepStoragePrescribedFlux)
+      deallocate ( benthos_forcing%benthosOceanSedimentFlux)
+
+        !---------------------------------------------------------------------------
+        !   deallocate flux diagnostic output fields
+        !   all fluxes are positive down
+        !---------------------------------------------------------------------------
+
+      deallocate (benthos_flux_diagnostic_fields%deepStorageDiffVelFlux )
+      deallocate (benthos_flux_diagnostic_fields%deepStorageFlux )
+      deallocate (benthos_flux_diagnostic_fields%benthosOceanDiffVelFlux )
+      deallocate (benthos_flux_diagnostic_fields%benthosOceanFlux )
+      deallocate (benthos_flux_diagnostic_fields%elementSedimentation)
+      deallocate (benthos_flux_diagnostic_fields%elementBurialExchange)
+      deallocate (benthos_flux_diagnostic_fields%elementOceanExchange)
+
+      !---------------------------------------------------------------------------
+      !   deallocate diagnostic output fields
+      !---------------------------------------------------------------------------
+
+      ! 2D column integrated diagnostics
+
+      deallocate (benthos_diagnostic_fields%relErrorTransport)
+      deallocate (benthos_diagnostic_fields%relErrorElementsReactions)
+      deallocate (benthos_diagnostic_fields%relErrorElements)
+      deallocate (benthos_diagnostic_fields%diag_primarySourceTend )
+      deallocate (benthos_diagnostic_fields%diag_primarySinkTend )
+      deallocate (benthos_diagnostic_fields%diag_secondarySourceTend )
+      deallocate (benthos_diagnostic_fields%diag_secondarySinkTend )
+      deallocate (benthos_diagnostic_fields%diag_carbonateSourceTend )
+      deallocate (benthos_diagnostic_fields%diag_carbonateSinkTend )
+
+      deallocate (benthos_diagnostic_fields%diag_netElements )
+      deallocate (benthos_diagnostic_fields%diag_netBenthosTracersCell )
+      deallocate (benthos_diagnostic_fields%diag_netBenthosReactionTend )
+      deallocate (benthos_diagnostic_fields%diag_netBenthosTransportTend )
+      deallocate (benthos_diagnostic_fields%diag_netBenthosTend )
+      deallocate (benthos_diagnostic_fields%diag_netElementsReactionTend )
+      deallocate (benthos_diagnostic_fields%diag_netElementsTransportTend )
+      deallocate (benthos_diagnostic_fields%diag_netElementsTend )
+
       call mpas_timer_stop("benthos source-sink")
 
    !--------------------------------------------------------------------
@@ -1307,7 +1573,8 @@ contains
           config_use_ecosysTracers, &
           config_use_ocean_bottom_state, &
           config_use_benthos_monthly_forcing, &
-          config_use_benthos_monthly_terra_forcing
+          config_use_benthos_monthly_terra_forcing, &
+          config_use_couple_ocean_ecosys
 
         real (kind=RKIND), dimension(:), pointer :: &
            oceanBenthosPOCFluxData, &
@@ -1699,6 +1966,7 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_use_benthos_monthly_forcing',  config_use_benthos_monthly_forcing)
       call mpas_pool_get_config(ocnConfigs, 'config_use_benthos_monthly_terra_forcing',  config_use_benthos_monthly_terra_forcing)
       call mpas_pool_get_config(ocnConfigs, 'config_use_ocean_bottom_state',  config_use_ocean_bottom_state)
+      call mpas_pool_get_config(ocnConfigs, 'config_use_couple_ocean_ecosys',  config_use_couple_ocean_ecosys)
 
       call mpas_pool_get_subpool(forcingPool, 'benthosAuxiliary', benthosAuxiliaryPool)
       call mpas_pool_get_array(benthosAuxiliaryPool,'benthosVertGridPoints', benthosVertGridPoints)
@@ -1713,7 +1981,7 @@ contains
            config_use_bgc_sinking_flux, config_use_step_initial_profiles, &
            config_use_benthic_reactions, config_use_flux_correction, config_use_ocean_conc, &
            config_use_deep_source, config_use_constant_diffusivity, config_use_ocean_bottom_state,&
-           config_use_benthos_monthly_forcing)
+           config_use_benthos_monthly_forcing, config_use_couple_ocean_ecosys)
 
 !NJ-TEST: VERIFIED
 test_flag = .false.
@@ -1821,136 +2089,7 @@ test_flag = .false.
 
 !also check short_name with mpas variable name
 
-!-----------------------------------------------------------------------
-!  allocate input, forcing, diagnostic arrays
-!-----------------------------------------------------------------------
-
-      allocate ( benthos_input%benthosTracerBulk(nBenthicVertLevels+1, numBenthicColumnsMax, benthos_tracer_cnt) )
-      allocate ( benthos_input%deepStorage(numBenthicColumnsMax, benthos_tracer_cnt))
-      allocate ( benthos_input%oceanBottomDepth(numBenthicColumnsMax))
-      allocate ( benthos_input%oceanBottomDensity(numBenthicColumnsMax))
-      allocate ( benthos_input%oceanBottomPressure(numBenthicColumnsMax))
       allocate ( benthos_input%tracerType(benthos_tracer_cnt) )
-      allocate ( benthos_input%PH_PREV_3D(nBenthicVertLevels+1, numBenthicColumnsMax))
-      allocate ( benthos_input%bottom_level(numBenthicColumnsMax))
-      allocate ( benthos_input%oceanBottomTemperature(numBenthicColumnsMax))
-      allocate ( benthos_input%oceanBottomSalinity(numBenthicColumnsMax))
-      allocate ( benthos_input%oceanBottomPhosphate(numBenthicColumnsMax))
-      allocate ( benthos_input%oceanBottomAmmonium(numBenthicColumnsMax))
-      allocate ( benthos_input%oceanBottomNitrate(numBenthicColumnsMax))
-      allocate ( benthos_input%oceanBottomOxygen(numBenthicColumnsMax))
-      allocate ( benthos_input%oceanBottomIron(numBenthicColumnsMax))
-      allocate ( benthos_input%oceanBottomDIC(numBenthicColumnsMax))
-      allocate ( benthos_input%oceanBottomManganese(numBenthicColumnsMax))
-      allocate ( benthos_input%oceanBottomAlkalinity(numBenthicColumnsMax))
-      allocate ( benthos_input%oceanBottomSilicate(numBenthicColumnsMax))
-      allocate ( benthos_input%oceanPOCFlux(numBenthicColumnsMax))
-      allocate ( benthos_input%oceanPOPFlux(numBenthicColumnsMax))
-      allocate ( benthos_input%oceanPONFlux(numBenthicColumnsMax))
-      allocate ( benthos_input%oceanParticulateIronFlux(numBenthicColumnsMax))
-      allocate ( benthos_input%oceanCalciteFlux(numBenthicColumnsMax))
-      allocate ( benthos_input%oceanBiogenicSilicaFlux(numBenthicColumnsMax))
-      allocate ( benthos_input%oceanDustFlux(numBenthicColumnsMax))
-      allocate ( benthos_input%lithogenicFlux(numBenthicColumnsMax))
-      allocate ( benthos_input%terraPOCFlux(numBenthicColumnsMax))
-
-      allocate ( benthos_output%benthosTendencies(nBenthicVertLevels+1, numBenthicColumnsMax, benthos_tracer_cnt) )
-      allocate ( benthos_output%benthosTransportTendencies(nBenthicVertLevels+1, numBenthicColumnsMax, benthos_tracer_cnt) )
-      allocate ( benthos_output%benthosReactionTendencies(nBenthicVertLevels+1, numBenthicColumnsMax, benthos_tracer_cnt) )
-      allocate ( benthos_output%elementTendencies(nBenthicVertLevels+1, numBenthicColumnsMax, element_tracer_cnt) )
-      allocate ( benthos_output%elementReactionTendencies(nBenthicVertLevels+1, numBenthicColumnsMax, element_tracer_cnt) )
-      allocate ( benthos_output%elementTransportTendencies(nBenthicVertLevels+1, numBenthicColumnsMax, element_tracer_cnt) )
-      allocate ( benthos_output%elementDeepStorage(numBenthicColumnsMax, element_tracer_cnt) )
-
-      allocate ( benthos_output%PH_PREV_3D(nBenthicVertLevels+1, numBenthicColumnsMax))
-      allocate ( benthos_output%deepStorage(numBenthicColumnsMax, benthos_tracer_cnt))
-
-      allocate ( benthos_output%oceanBottomTemperature(numBenthicColumnsMax))
-      allocate ( benthos_output%oceanBottomSalinity(numBenthicColumnsMax))
-      allocate ( benthos_output%oceanBottomSilicate(numBenthicColumnsMax))
-      allocate ( benthos_output%oceanBottomDensity(numBenthicColumnsMax))
-      allocate ( benthos_output%oceanBottomPressure(numBenthicColumnsMax))
-      allocate ( benthos_output%oceanBottomDepth(numBenthicColumnsMax))
-      allocate ( benthos_output%oceanBottomPhosphate(numBenthicColumnsMax))
-      allocate ( benthos_output%oceanBottomAmmonium(numBenthicColumnsMax))
-      allocate ( benthos_output%oceanBottomNitrate(numBenthicColumnsMax))
-      allocate ( benthos_output%oceanBottomOxygen(numBenthicColumnsMax))
-      allocate ( benthos_output%oceanBottomIron(numBenthicColumnsMax))
-      allocate ( benthos_output%oceanBottomDIC(numBenthicColumnsMax))
-      allocate ( benthos_output%oceanBottomAlkalinity(numBenthicColumnsMax))
-      allocate ( benthos_output%oceanBottomCarbonDioxide(numBenthicColumnsMax))
-      allocate ( benthos_output%oceanBottomHydrogenSulfide(numBenthicColumnsMax))
-      allocate ( benthos_output%oceanBottomMethane(numBenthicColumnsMax))
-      allocate ( benthos_output%oceanBottomBicarbonate(numBenthicColumnsMax))
-      allocate ( benthos_output%oceanBottomCarbonate(numBenthicColumnsMax))
-      allocate ( benthos_output%oceanBottomSulfate(numBenthicColumnsMax))
-      allocate ( benthos_output%oceanBottomManganese(numBenthicColumnsMax))
-      allocate ( benthos_output%oceanPOCaFlux(numBenthicColumnsMax))
-      allocate ( benthos_output%oceanPOPaFlux(numBenthicColumnsMax))
-      allocate ( benthos_output%oceanPONaFlux(numBenthicColumnsMax))
-      allocate ( benthos_output%oceanPOCbFlux(numBenthicColumnsMax))
-      allocate ( benthos_output%oceanPOPbFlux(numBenthicColumnsMax))
-      allocate ( benthos_output%oceanPONbFlux(numBenthicColumnsMax))
-      allocate ( benthos_output%oceanPOCcFlux(numBenthicColumnsMax))
-      allocate ( benthos_output%oceanPOPcFlux(numBenthicColumnsMax))
-      allocate ( benthos_output%oceanPONcFlux(numBenthicColumnsMax))
-      allocate ( benthos_output%oceanCalciteFlux(numBenthicColumnsMax))
-      allocate ( benthos_output%oceanAragoniteFlux(numBenthicColumnsMax))
-      allocate ( benthos_output%oceanMgCalciteFlux(numBenthicColumnsMax))
-      allocate ( benthos_output%oceanManganeseOxideaFlux(numBenthicColumnsMax))
-      allocate ( benthos_output%oceanManganeseOxidebFlux(numBenthicColumnsMax))
-      allocate ( benthos_output%oceanIronOxyhydroxideaFlux(numBenthicColumnsMax))
-      allocate ( benthos_output%oceanIronOxyhydroxidebFlux(numBenthicColumnsMax))
-      allocate ( benthos_output%oceanIronBoundPhosphorusaFlux(numBenthicColumnsMax))
-      allocate ( benthos_output%oceanIronBoundPhosphorusbFlux(numBenthicColumnsMax))
-      allocate ( benthos_output%oceanPrecipManganeseOxidea(numBenthicColumnsMax))
-      allocate ( benthos_output%oceanPrecipManganeseOxideb(numBenthicColumnsMax))
-      allocate ( benthos_output%oceanPrecipIronOxyhydroxidea(numBenthicColumnsMax))
-      allocate ( benthos_output%oceanPrecipIronOxyhydroxideb(numBenthicColumnsMax))
-      allocate ( benthos_output%oceanPrecipIronBoundPhosphorusa(numBenthicColumnsMax))
-      allocate ( benthos_output%oceanPrecipIronBoundPhosphorusb(numBenthicColumnsMax))
-      allocate ( benthos_output%oceanTotalSedimentMassFlux(numBenthicColumnsMax))
-
-      allocate ( benthos_forcing%deepStoragePrescribedFlux(numBenthicColumnsMax, benthos_tracer_cnt) )
-      allocate ( benthos_forcing%benthosOceanSedimentFlux(numBenthicColumnsMax, benthos_tracer_cnt) )
-
-        !---------------------------------------------------------------------------
-        !   allocate flux diagnostic output fields
-        !   all fluxes are positive down
-        !---------------------------------------------------------------------------
-
-      allocate (benthos_flux_diagnostic_fields%deepStorageDiffVelFlux(numBenthicColumnsMax, benthos_tracer_cnt) )
-      allocate (benthos_flux_diagnostic_fields%deepStorageFlux(numBenthicColumnsMax, benthos_tracer_cnt) )
-      allocate (benthos_flux_diagnostic_fields%benthosOceanDiffVelFlux(numBenthicColumnsMax, benthos_tracer_cnt) )
-      allocate (benthos_flux_diagnostic_fields%benthosOceanFlux(numBenthicColumnsMax, benthos_tracer_cnt) )
-      allocate (benthos_flux_diagnostic_fields%elementSedimentation(numBenthicColumnsMax, element_tracer_cnt) )
-      allocate (benthos_flux_diagnostic_fields%elementBurialExchange(numBenthicColumnsMax, element_tracer_cnt) )
-      allocate (benthos_flux_diagnostic_fields%elementOceanExchange(numBenthicColumnsMax, element_tracer_cnt) )
-
-      !---------------------------------------------------------------------------
-      !   allocate diagnostic output fields
-      !---------------------------------------------------------------------------
-
-      ! 2D column integrated diagnostics
-
-      allocate (benthos_diagnostic_fields%relErrorTransport(numBenthicColumnsMax,benthos_tracer_cnt))
-      allocate (benthos_diagnostic_fields%relErrorElementsReactions(numBenthicColumnsMax,element_tracer_cnt))
-      allocate (benthos_diagnostic_fields%relErrorElements(numBenthicColumnsMax, element_tracer_cnt))
-      allocate (benthos_diagnostic_fields%diag_primarySourceTend(numBenthicColumnsMax, benthos_tracer_cnt) )
-      allocate (benthos_diagnostic_fields%diag_primarySinkTend(numBenthicColumnsMax, benthos_tracer_cnt) )
-      allocate (benthos_diagnostic_fields%diag_secondarySourceTend(numBenthicColumnsMax, benthos_tracer_cnt) )
-      allocate (benthos_diagnostic_fields%diag_secondarySinkTend(numBenthicColumnsMax, benthos_tracer_cnt) )
-      allocate (benthos_diagnostic_fields%diag_carbonateSourceTend(numBenthicColumnsMax, benthos_tracer_cnt) )
-      allocate (benthos_diagnostic_fields%diag_carbonateSinkTend(numBenthicColumnsMax, benthos_tracer_cnt) )
-
-      allocate (benthos_diagnostic_fields%diag_netElements(numBenthicColumnsMax, element_tracer_cnt) )
-      allocate (benthos_diagnostic_fields%diag_netBenthosTracersCell(numBenthicColumnsMax, benthos_tracer_cnt) )
-      allocate (benthos_diagnostic_fields%diag_netBenthosReactionTend(numBenthicColumnsMax, benthos_tracer_cnt) )
-      allocate (benthos_diagnostic_fields%diag_netBenthosTransportTend(numBenthicColumnsMax, benthos_tracer_cnt) )
-      allocate (benthos_diagnostic_fields%diag_netBenthosTend(numBenthicColumnsMax, benthos_tracer_cnt) )
-      allocate (benthos_diagnostic_fields%diag_netElementsReactionTend(numBenthicColumnsMax, element_tracer_cnt) )
-      allocate (benthos_diagnostic_fields%diag_netElementsTransportTend(numBenthicColumnsMax, element_tracer_cnt) )
-      allocate (benthos_diagnostic_fields%diag_netElementsTend(numBenthicColumnsMax, element_tracer_cnt) )
 
       !call MPAS_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
       !call MPAS_pool_get_config(domain % configs, 'config_do_restart_benthos', config_do_restart_benthos)
@@ -2483,6 +2622,33 @@ test_flag = .false.
    !--------------------------------------------------------------------
 
    end subroutine ocn_benthos_tracer_init!}}}
+
+!***********************************************************************
+!
+!  routine benthos_tracer_finalize
+!
+!> \brief   Finalizes Benthos
+!> \author  Nicole Jeffery
+!> \date    12/04/2023
+!> \details
+!>  This routine deallocates arrays and indices for benthos tracers
+!
+!-----------------------------------------------------------------------
+
+   subroutine ocn_benthos_tracer_finalize()!{{{
+
+
+      deallocate( benthos_indices%short_name )
+      deallocate( benthos_indices%long_name )
+      deallocate( benthos_indices%units )
+
+      deallocate( benthos_element_indices%short_name )
+      deallocate( benthos_element_indices%long_name )
+      deallocate( benthos_element_indices%units )
+
+      deallocate ( benthos_input%tracerType)
+
+   end subroutine ocn_benthos_tracer_finalize !}}}
 
 !***********************************************************************
 

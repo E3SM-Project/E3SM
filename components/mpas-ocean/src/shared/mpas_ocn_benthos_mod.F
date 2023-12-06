@@ -1913,7 +1913,7 @@ contains
             useFastSedimentation_in, usePositiveSedimentation_in, useBgcSinkingFlux_in, &
             useStepInitialProfiles_in, useBenthicReactions_in, useFluxCorrection_in, &
             useOceanConc_in, useDeepSource_in, useConstantDiffusivity_in, useOceanBottomState_in, &
-            useBenthosMonthlyForcing_in)
+            useBenthosMonthlyForcing_in, useCoupleOceanEcosys_in)
 
 ! !DESCRIPTION:
 !  Initialize flags for testcases
@@ -1941,6 +1941,7 @@ contains
        useDeepSource_in,             & ! false sets to zero all deep storage fluxes
        useConstantDiffusivity_in,    & ! true removes the depth dependence of the diffusivity
        useOceanBottomState_in,       & ! Use the ocean biogeochemistry to force the benthos
+       useCoupleOceanEcosys_in,      & ! 2-way coupling with the ocean ecosys model
        useBenthosMonthlyForcing_in     ! Use data file to force the benthos
 
 ! !OUTPUT PARAMETERS:
@@ -1964,6 +1965,7 @@ contains
   benthosTestCase = setBenthosFlags
   useOceanBottomState = useOceanBottomState_in
   useBenthosMonthlyForcing = useBenthosMonthlyForcing_in
+  useCoupleOceanEcosys = useCoupleOceanEcosys_in
 
  SELECT CASE (setBenthosFlags)
     CASE(:-1)

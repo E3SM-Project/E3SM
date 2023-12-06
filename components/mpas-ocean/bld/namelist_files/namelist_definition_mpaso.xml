@@ -3044,6 +3044,14 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_use_couple_ocean_ecosys" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, couple the ocean ecosys and the benthos biogeochemistry
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_use_benthos_monthly_forcing" type="logical"
         category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
 if true, use monthly data file of ocean fluxes and concentrations

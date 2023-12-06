@@ -483,8 +483,10 @@ module ocn_forward_mode
       ierr = ior(ierr,err_tmp)
       call ocn_tracer_CFC_init(domain, err_tmp)
       ierr = ior(ierr,err_tmp)
-      call ocn_benthos_tracer_init(domain, err_tmp)
-      ierr = ior(ierr,err_tmp)
+      if (config_use_benthosTracers) then
+         call ocn_benthos_tracer_init(domain, err_tmp)
+         ierr = ior(ierr,err_tmp)
+      end if
       if (ierr /= 0) then
          call mpas_log_write( &
               'Error initializing tracer tendency modules', &
@@ -889,6 +891,8 @@ module ocn_forward_mode
       call ocn_analysis_finalize(domain, ierr)
 
       call ocn_vmix_gotm_finalize(domain, ierr)
+
+      if (config_use_benthosTracers) call ocn_benthos_tracer_finalize()
 
       call ocn_submesoscale_finalize()
 

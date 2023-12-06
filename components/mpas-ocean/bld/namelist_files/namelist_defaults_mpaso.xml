@@ -594,6 +594,7 @@
 <config_use_deep_source>.true.</config_use_deep_source>
 <config_use_constant_diffusivity>.false.</config_use_constant_diffusivity>
 <config_use_ocean_bottom_state>.false.</config_use_ocean_bottom_state>
+<config_use_couple_ocean_ecosys>.false.</config_use_couple_ocean_ecosys>
 <config_use_benthos_monthly_forcing>.false.</config_use_benthos_monthly_forcing>
 <config_use_benthos_monthly_terra_forcing>.false.</config_use_benthos_monthly_terra_forcing>
 <config_do_benthos_spinup>.false.</config_do_benthos_spinup>

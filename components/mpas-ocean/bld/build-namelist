@@ -1115,6 +1115,7 @@ add_default($nl, 'config_use_ocean_conc');
 add_default($nl, 'config_use_deep_source');
 add_default($nl, 'config_use_constant_diffusivity');
 add_default($nl, 'config_use_ocean_bottom_state');
+add_default($nl, 'config_use_couple_ocean_ecosys');
 add_default($nl, 'config_use_benthos_monthly_forcing');
 add_default($nl, 'config_use_benthos_monthly_terra_forcing');
 add_default($nl, 'config_do_benthos_spinup');
