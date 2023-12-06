@@ -13,6 +13,7 @@ atmosphere_processes:
   MLCorrection:
     ML_model_path_tq: NONE
     ML_model_path_uv: NONE
+    ML_model_path_sfc_fluxes: NONE
     ML_output_fields: ["qv","T_mid"]
     ML_correction_unit_test: True
 grids_manager:
