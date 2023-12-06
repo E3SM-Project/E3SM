@@ -242,27 +242,6 @@ endif()
 # IAC/GCAM needs the xerces library, but for now I'm hardcoding for
 # compy, and we'll set up the proper configuration variables later.
 
-if (NOT USE_XERCES)
-  set(USE_XERCES TRUE)
-endif()
-
-if (USE_XERCES)
-  set(USE_CXX TRUE)
-  if (NOT XERCES_PATH)
-    # compy specific
-    # -lxerces-c -lstdc++
-    #set(XERCES_PATH "/qfs/people/crai556/xerces_intel_19.0.3")
-    set(XERCES_PATH "/qfs/people/d3a230/local/xerces_intel_19.0.5")
-  endif() 
-
-  if (NOT INC_XERCES)
-    set(INC_XERCES ${XERCES_PATH}/include)
-  endif()
-  if (NOT LIB_XERCES)
-    set(LIB_XERCES ${XERCES_PATH}/lib)
-  endif()
-endif()
-
 if (USE_KOKKOS)
   # LB 09/04/20
   #  The best thing to do would be to simply use ${INSTALL_SHAREDPATH}, and
@@ -395,7 +374,7 @@ else()
   list(APPEND INCLDIR "${INC_NETCDF_C}" "${INC_NETCDF_FORTRAN}")
 endif()
 
-foreach(ITEM MOD_NETCDF INC_MPI INC_PNETCDF INC_PETSC INC_TRILINOS INC_ALBANY INC_XERCES) # INC_MOAB)
+foreach(ITEM MOD_NETCDF INC_MPI INC_PNETCDF INC_PETSC INC_TRILINOS INC_ALBANY) # INC_MOAB)
   if (${ITEM})
     list(APPEND INCLDIR "${${ITEM}}")
   endif()
@@ -478,12 +457,6 @@ endif()
 # Add Albany libraries.  These are defined in the ALBANY_LINK_LIBS env var that was included above
 if (USE_ALBANY)
   set(SLIBS "${SLIBS} ${ALBANY_LINK_LIBS}")
-endif()
-
-# Add xerces libraries.  Again, hardcoded until we build configuration
-# later
-if (USE_XERCES)
-  set (SLIBS "${SLIBS} -Wl,-rpath,${LIB_XERCES} -L${LIB_XERCES} -lxerces-c -lstdc++")
 endif()
 
 # Add MOAB libraries.  These are defined in the MOAB_LINK_LIBS env var that was included above
