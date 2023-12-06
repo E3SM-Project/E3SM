@@ -1,37 +1,39 @@
-(omega-design-my-class)=
-# Template: MyClassOrModuleName
+(omega-design-mesh)=
+# Mesh 
 
 ## 1 Overview
 
-A short overview of the functionality this provides.
+The mesh class will contain the YAKL arrays which describe the mesh and are used in the computation of the tendency terms in the discrete governing equations.
 
 ## 2 Requirements
 
-### 2.1 Requirement: xxx
+### 2.1 Requirement: OMEGA will use the previously estabilished MPAS Mesh Spec
 
-State requirement clearly and simply, followed by justification.
-Avoid getting into design or implementation details
+The OMEGA mesh information should be compatiable with the [MPAS Mesh Specification](https://mpas-dev.github.io/files/documents/MPAS-MeshSpec.pdf).
 
-### 2.2 Requirement: yyy
+### 2.2 Requirement: Functionality is needed to read the mesh on the host and transfer relevant data to the device for comutation
 
-State requirement clearly and simply, followed by justification.
-Avoid getting into design or implementation details
+Not all mesh information is required in computing the tendency terms on the device, e.g. lonCell, latCell, etc. 
+However, other arrays will need to allocated and copied to the device for use in tendency computation.
+One option is to template the mesh class so a mesh object can be created for both the host and device, with a method to perform the copy between the two object types.
 
-### 2.3 Desired: zzz
+### 2.3 Requirement: Zero-based cell, edge, and vertex numbering
 
-Clear statement of desired feature and reason for including (e.g. design needs
-to take this into account for future capability).
+Although the existing MPAS Mesh spec uses a one-based mesh numbering, zero-based mesh numbering is required to be compatiable with the zero-based indexing used for YAKL arrays.
+
+### 2.4 Desired: Ability to support multiple independent mesh objects
+
+This flexibility is required to support future implmentations of spatially split barotropic and baroclinic modes that are computed on different resolution 
+
+### 2.5 Desired: OMEGA can read in a reduced number of mesh variables and compute the remaning array information online.
+
+Many of the mesh variables are not independent, e.g.  areaCell, weightsOnEdge, etc., and can be computed from a reduced set of mesh variables.
+This functionality could be used to reduce mesh/restart file size for high resoultion meshes.  
+Builiding in this flexibility would allow for all mesh-related calculations to be availiable within the code base instead of spreading them amonst various utility programs in MPAS-Tools.
+The functions used to compute the dependent mesh information can also be used to verify mesh information provided in the mesh input stream.
 
 ## 3 Algorithmic Formulation
 
-Describe any algorithms or point to references that are important for implementation
-
-You can include math in Latex format like his:
-
-$$
-(a + b)^2  &=  (a + b)(a + b) \\
-           &=  a^2 + 2ab + b^2
-$$
 
 ## 4 Design
 
