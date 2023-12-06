@@ -136,11 +136,9 @@ IntensiveObservationPeriod(const ekat::Comm& comm,
   if (not m_params.isParameter("iop_perturb_high"))     m_params.set<Real>("iop_perturb_high",     1050);
   if (not m_params.isParameter("zero_non_iop_tracers")) m_params.set<bool>("zero_non_iop_tracers", false);
 
-  // Use IOP file (if it exists) to initialize parameters
+  // Use IOP file to initialize parameters
   // and timestepping information
-  if (m_params.isParameter("iop_file")) {
-    initialize_iop_file(run_t0, model_nlevs, hyam, hybm);
-  }
+  initialize_iop_file(run_t0, model_nlevs, hyam, hybm);
 }
 
 void IntensiveObservationPeriod::
@@ -149,6 +147,9 @@ initialize_iop_file(const util::TimeStamp& run_t0,
                     const Field& hyam,
                     const Field& hybm)
 {
+  EKAT_REQUIRE_MSG(m_params.isParameter("iop_file"),
+                   "Error! Using IOP requires defining an iop_file parameter.\n");
+
   const auto iop_file = m_params.get<std::string>("iop_file");
 
   // Lambda for allocating space and storing information for potential iop fields.
@@ -230,9 +231,13 @@ initialize_iop_file(const util::TimeStamp& run_t0,
   setup_iop_field({"Q2"},       fl_vector);
   setup_iop_field({"omega"},    fl_vector, "Ptend");
 
-  // Make sure Ps is defined if using a iop file
+  // Make sure Ps, T, and q are defined in the iop file
   EKAT_REQUIRE_MSG(has_iop_field("Ps"),
                    "Error! Using IOP file requires variable \"Ps\".\n");
+  EKAT_REQUIRE_MSG(has_iop_field("T"),
+                   "Error! Using IOP file requires variable \"T\".\n");
+  EKAT_REQUIRE_MSG(has_iop_field("q"),
+                   "Error! Using IOP file requires variable \"q\".\n");
 
   // Initialize time information
   int bdate;
@@ -498,9 +503,6 @@ read_fields_from_file_for_iop (const std::string& file_name,
 void IntensiveObservationPeriod::
 read_iop_file_data (const util::TimeStamp& current_ts)
 {
-  // If no iop file is given, return early
-  if (not m_params.isParameter("iop_file")) return;
-
   const auto iop_file = m_params.get<std::string>("iop_file");
   const auto iop_file_time_idx = m_time_info.get_iop_file_time_idx(current_ts);
 
@@ -712,9 +714,6 @@ set_fields_from_iop_data(const field_mgr_ptr field_mgr)
     field_mgr->get_field_group("tracers").m_bundle->deep_copy(0);
   }
 
-  // If no iop file is given, return early
-  if (not m_params.isParameter("iop_file")) return;
-
   EKAT_REQUIRE_MSG(field_mgr->get_grid()->name() == "Physics GLL",
                    "Error! Attempting to set non-GLL fields using "
                    "data from the IOP file.\n");
@@ -773,11 +772,9 @@ set_fields_from_iop_data(const field_mgr_ptr field_mgr)
     ni_iop = get_iop_field("NUMICE").get_view<Real*>();
   }
 
-  if (set_T_mid and set_qv) {
-    // Check if t_iop has any 0 entires near the top of the model
-    // and correct t_iop and q_iop accordingly.
-    correct_temperature_and_water_vapor(field_mgr);
-  }
+  // Check if t_iop has any 0 entires near the top of the model
+  // and correct t_iop and q_iop accordingly.
+  correct_temperature_and_water_vapor(field_mgr);
 
   // Loop over all columns and copy IOP field values to FM views
   const auto ncols = field_mgr->get_grid()->get_num_local_dofs();
@@ -821,28 +818,30 @@ set_fields_from_iop_data(const field_mgr_ptr field_mgr)
 void IntensiveObservationPeriod::
 correct_temperature_and_water_vapor(const field_mgr_ptr field_mgr)
 {
-  EKAT_REQUIRE_MSG(has_iop_field("T"), "Error! Trying to correct IOP temperature, but no IOP field \"T\" exists.\n");
-  EKAT_REQUIRE_MSG(field_mgr->has_field("T_mid"), "Error! Trying to correct IOP temperature, but no FM field \"T_mid\" exists.\n");
-  EKAT_REQUIRE_MSG(has_iop_field("q"), "Error! Trying to correct IOP water vapor, but no IOP field \"q\" exists.\n");
-  EKAT_REQUIRE_MSG(field_mgr->has_field("qv"), "Error! Trying to correct IOP water vapor, but no FM field \"qv\" exists.\n");
-
-  auto t_iop = get_iop_field("T").get_view<Real*>();
-  auto T_mid = field_mgr->get_field("T_mid").get_view<const Real**>();
-  auto q_iop = get_iop_field("q").get_view<Real*>();
-  auto qv   = field_mgr->get_field("qv").get_view<const Real**>();
-
   // Find the first valid level index for t_iop, i.e., first non-zero entry
   int first_valid_idx;
   const auto nlevs = field_mgr->get_grid()->get_num_vertical_levels();
+  auto t_iop = get_iop_field("T").get_view<Real*>();
   Kokkos::parallel_reduce(nlevs, KOKKOS_LAMBDA (const int ilev, int& lmin) {
     if (t_iop(ilev) > 0 && ilev < lmin) lmin = ilev;
   }, Kokkos::Min<int>(first_valid_idx));
 
-  // Replace values of T and q where t_iop contains zeros
-  Kokkos::parallel_for(Kokkos::RangePolicy<>(0, first_valid_idx), KOKKOS_LAMBDA (const int ilev) {
-    t_iop(ilev) = T_mid(0, ilev);
-    q_iop(ilev) = qv(0, ilev);
-  });
+  // If first_valid_idx>0, we must correct IOP fields T and q corresponding to
+  // levels 0,...,first_valid_idx-1
+  if (first_valid_idx > 0) {
+    // If we have values of T and q to correct, we must have both T_mid and qv as FM fields
+    EKAT_REQUIRE_MSG(field_mgr->has_field("T_mid"), "Error! IOP requires FM to define T_mid.\n");
+    EKAT_REQUIRE_MSG(field_mgr->has_field("qv"),    "Error! IOP requires FM to define qv.\n");
+
+    // Replace values of T and q where t_iop contains zeros
+    auto T_mid = field_mgr->get_field("T_mid").get_view<const Real**>();
+    auto qv   = field_mgr->get_field("qv").get_view<const Real**>();
+    auto q_iop = get_iop_field("q").get_view<Real*>();
+    Kokkos::parallel_for(Kokkos::RangePolicy<>(0, first_valid_idx), KOKKOS_LAMBDA (const int ilev) {
+      t_iop(ilev) = T_mid(0, ilev);
+      q_iop(ilev) = qv(0, ilev);
+    });
+  }
 }
 
 } // namespace control
