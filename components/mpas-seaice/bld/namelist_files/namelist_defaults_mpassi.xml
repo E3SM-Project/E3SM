@@ -190,8 +190,8 @@
 <config_use_column_snow_tracers>true</config_use_column_snow_tracers>
 
 <!-- column_tracers -->
-<config_use_ice_age>true</config_use_ice_age>
-<config_use_first_year_ice>true</config_use_first_year_ice>
+<config_use_ice_age>false</config_use_ice_age>
+<config_use_first_year_ice>false</config_use_first_year_ice>
 <config_use_level_ice>true</config_use_level_ice>
 <config_use_cesm_meltponds>false</config_use_cesm_meltponds>
 <config_use_level_meltponds>true</config_use_level_meltponds>
