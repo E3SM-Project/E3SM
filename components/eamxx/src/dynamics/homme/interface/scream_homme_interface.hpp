@@ -55,6 +55,7 @@ void prim_run_f90 (const int nsplit_iteration);
 void prim_finalize_f90 ();
 
 // Grids specs
+bool is_planar_geometry_f90 ();
 int get_nlev_f90 ();
 int get_np_f90 ();
 int get_num_local_columns_f90 (const int pgN);

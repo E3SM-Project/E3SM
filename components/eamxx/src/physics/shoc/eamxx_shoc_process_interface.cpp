@@ -427,10 +427,13 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   m_npbl = SHF::shoc_init(nbot_shoc,ntop_shoc,pref_mid);
 
   // Compute cell length for input dx and dy.
-  const auto iop = get_intensive_observation_period();
   const auto ncols = m_num_cols;
   view_1d cell_length("cell_length", ncols);
-  if (not iop) {
+  if (m_grid->has_geometry_data("dx_short")) {
+    // We must be running with IntensiveObservationPeriod on, with a planar geometry
+    auto dx = m_grid->get_geometry_data("dx_short").get_view<const Real,Host>()();
+    Kokkos::deep_copy(cell_length, dx);
+  } else {
     const auto area = m_grid->get_geometry_data("area").get_view<const Real*>();
     const auto lat  = m_grid->get_geometry_data("lat").get_view<const Real*>();
     Kokkos::parallel_for(ncols, KOKKOS_LAMBDA (const int icol) {
@@ -439,8 +442,6 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
       // if we have dy!=dx.
       cell_length(icol) = PF::calculate_dx_from_area(area(icol),lat(icol));;
     });
-  } else {
-    Kokkos::deep_copy(cell_length, iop->get_dynamics_dx_size());
   }
   input.dx = cell_length;
   input.dy = cell_length;

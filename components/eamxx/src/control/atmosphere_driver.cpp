@@ -206,6 +206,9 @@ setup_intensive_observation_period ()
                                                  nlevs,
                                                  hyam,
                                                  hybm);
+
+  auto dx_short_f = phys_grid->get_geometry_data("dx_short");
+  m_intensive_observation_period->set_grid_spacing(dx_short_f.get_view<Real,Host>()());
 }
 
 void AtmosphereDriver::create_atm_processes()
@@ -1432,11 +1435,6 @@ void AtmosphereDriver::initialize_atm_procs ()
   // Setup SurfaceCoupling import and export (if they exist)
   if (m_surface_coupling_import_data_manager || m_surface_coupling_export_data_manager) {
     setup_surface_coupling_processes();
-  }
-
-  if (m_intensive_observation_period) {
-    // For IOP runs, make the IOP object available to all processors
-    m_atm_process_group->set_intensive_observation_period(m_intensive_observation_period);
   }
 
   // Initialize the processes
