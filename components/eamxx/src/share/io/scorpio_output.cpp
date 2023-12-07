@@ -846,7 +846,7 @@ void AtmosphereOutput::register_views()
   reset_dev_views();
 }
 /* ---------------------------------------------------------- */
-void AtmosphereOutput::set_avg_cnt_tracking(const std::string& name, const std::string& name_ext, const FieldLayout& layout)
+void AtmosphereOutput::set_avg_cnt_tracking(const std::string& name, const std::string& avg_cnt_suffix, const FieldLayout& layout)
 {
     // Make sure this field "name" hasn't already been regsitered with avg_cnt tracking.
     // Note, we check this because some diagnostics need to have their own tracking which
@@ -860,7 +860,7 @@ void AtmosphereOutput::set_avg_cnt_tracking(const std::string& name, const std::
     const auto tags = layout.tags();
     auto lt = get_layout_type(tags);
     if (m_add_time_dim && m_track_avg_cnt) {
-      std::string avg_cnt_name = "avg_count_" + e2str(lt) + "_" + name_ext;
+      std::string avg_cnt_name = "avg_count" + avg_cnt_suffix;
       for (int ii=0; ii<layout.rank(); ++ii) {
         auto tag_name = m_io_grid->get_dim_name(layout.tag(ii));
         avg_cnt_name += "_" + tag_name;
@@ -1283,7 +1283,7 @@ AtmosphereOutput::create_diagnostic (const std::string& diag_field_name) {
         diag_name = "FieldAtHeight";
       } else if (units=="mb" or units=="Pa" or units=="hPa") {
         diag_name = "FieldAtPressureLevel";
-	diag_avg_cnt_name = tokens[1]; // Set avg_cnt tracking for this specific slice
+	diag_avg_cnt_name = "_" + tokens[1]; // Set avg_cnt tracking for this specific slice
         m_track_avg_cnt = true; // If we have pressure slices we need to be tracking the average count.
       } else {
         EKAT_ERROR_MSG ("Error! Invalid units x for 'field_at_Nx' diagnostic.\n");
