@@ -342,6 +342,10 @@ void AtmosphereDriver::setup_surface_coupling_processes () const
 
       std::shared_ptr<SurfaceCouplingImporter> importer = std::dynamic_pointer_cast<SurfaceCouplingImporter>(atm_proc);
       importer->setup_surface_coupling_data(*m_surface_coupling_import_data_manager);
+
+      if (m_intensive_observation_period) {
+        importer->set_intensive_observation_period(m_intensive_observation_period);
+      }
     }
     if (atm_proc->type() == AtmosphereProcessType::SurfaceCouplingExporter) {
       exporter_found = true;
