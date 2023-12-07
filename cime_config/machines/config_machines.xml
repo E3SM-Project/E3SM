@@ -377,12 +377,12 @@
       </modules>
 
       <modules compiler="gnugpu">
-        <command name="load">cudatoolkit/11.5</command>
+        <command name="load">cudatoolkit/11.7</command>
         <command name="load">craype-accel-nvidia80</command>
       </modules>
 
       <modules compiler="nvidiagpu">
-        <command name="load">cudatoolkit/11.5</command>
+        <command name="load">cudatoolkit/11.7</command>
         <command name="load">craype-accel-nvidia80</command>
       </modules>
 
