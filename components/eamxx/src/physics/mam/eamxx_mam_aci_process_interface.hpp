@@ -18,9 +18,15 @@ class MAMAci final : public scream::AtmosphereProcess {
 
   using KT = ekat::KokkosTypes<DefaultDevice>;
 
+  mam4::NucleateIce nucleate_ice_;
+
   // views for single- and multi-column data
+  using view_1d       = typename KT::template view_1d<Real>;
   using const_view_2d = typename KT::template view_2d<const Real>;
   using view_2d       = typename KT::template view_2d<Real>;
+  using view_3d       = typename KT::template view_3d<Real>;
+  using const_view_3d = typename KT::template view_3d<const Real>;
+
   // rho is air density [kg/m3]
   view_2d rho_;
 
@@ -29,6 +35,34 @@ class MAMAci final : public scream::AtmosphereProcess {
 
   // turbulent kinetic energy  [m^2/s^2]
   view_2d tke_;
+
+  const_view_2d qv_dry_;
+  const_view_2d cldfrac_;
+  //const_view_2d w_updraft_;
+  view_2d w_updraft_;
+
+  view_2d aitken_dry_dia_;
+  view_2d q_coarse_dst_;
+  view_2d q_coarse_nacl_;
+  view_2d q_coarse_so4_;
+  view_2d q_coarse_mom_;
+  view_2d q_coarse_bc_;
+  view_2d q_coarse_pom_;
+  view_2d q_coarse_soa_;
+  view_2d n_coarse_;
+  view_2d n_aitken_;
+  view_3d dgnum_;
+  view_2d nihf_;
+  view_2d niim_;
+  view_2d nidep_;
+  view_2d nimey_;
+  view_2d naai_hom_;
+  view_2d naai_;
+  const_view_2d liqcldf_;
+  const_view_2d qc_;
+  const_view_2d qi_;
+  view_2d lcldn_;
+  view_2d lcldo_;
 
   // Subgrid scale velocities
   view_2d wsub_, wsubice_, wsig_, w2_;
