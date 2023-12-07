@@ -839,10 +839,28 @@ void AtmosphereOutput::register_views()
 
     // Now create and store a dev view to track the averaging count for this layout (if we are tracking)
     // We don't need to track average counts for files that are not tracking the time dim
+    set_avg_cnt_tracking(name,"",layout);
+  }
+
+  // Initialize the local views
+  reset_dev_views();
+}
+/* ---------------------------------------------------------- */
+void AtmosphereOutput::set_avg_cnt_tracking(const std::string& name, const std::string& name_ext, const FieldLayout& layout)
+{
+    // Make sure this field "name" hasn't already been regsitered with avg_cnt tracking.
+    // Note, we check this because some diagnostics need to have their own tracking which
+    // is created at the 'create_diagnostics' function.
+    if (m_field_to_avg_cnt_map.count(name)>0) {
+      return;
+    }
+    // Now create and store a dev view to track the averaging count for this layout (if we are tracking)
+    // We don't need to track average counts for files that are not tracking the time dim
+    const auto size = layout.size();
     const auto tags = layout.tags();
     auto lt = get_layout_type(tags);
     if (m_add_time_dim && m_track_avg_cnt) {
-      std::string avg_cnt_name = "avg_count_" + e2str(lt);
+      std::string avg_cnt_name = "avg_count_" + e2str(lt) + "_" + name_ext;
       for (int ii=0; ii<layout.rank(); ++ii) {
         auto tag_name = m_io_grid->get_dim_name(layout.tag(ii));
         avg_cnt_name += "_" + tag_name;
@@ -856,9 +874,6 @@ void AtmosphereOutput::register_views()
       m_host_views_1d.emplace(avg_cnt_name,Kokkos::create_mirror(m_dev_views_1d[avg_cnt_name]));
       m_layouts.emplace(avg_cnt_name,layout);
     }
-  }
-  // Initialize the local views
-  reset_dev_views();
 }
 /* ---------------------------------------------------------- */
 void AtmosphereOutput::
@@ -1229,14 +1244,15 @@ void AtmosphereOutput::set_diagnostics()
   }
 }
 
+/* ---------------------------------------------------------- */
 std::shared_ptr<AtmosphereDiagnostic>
-AtmosphereOutput::
-create_diagnostic (const std::string& diag_field_name) {
+AtmosphereOutput::create_diagnostic (const std::string& diag_field_name) {
   auto& diag_factory = AtmosphereDiagnosticFactory::instance();
 
   // Construct a diagnostic by this name
   ekat::ParameterList params;
   std::string diag_name;
+  std::string diag_avg_cnt_name = "";
 
   if (diag_field_name.find("_at_")!=std::string::npos) {
     // The diagnostic must be one of
@@ -1267,6 +1283,8 @@ create_diagnostic (const std::string& diag_field_name) {
         diag_name = "FieldAtHeight";
       } else if (units=="mb" or units=="Pa" or units=="hPa") {
         diag_name = "FieldAtPressureLevel";
+	diag_avg_cnt_name = tokens[1];  //ASD fix this to be correct string.
+        m_track_avg_cnt = true; // If we have pressure slices we need to be tracking the average count.
       } else {
         EKAT_ERROR_MSG ("Error! Invalid units x for 'field_at_Nx' diagnostic.\n");
       }
@@ -1327,6 +1345,13 @@ create_diagnostic (const std::string& diag_field_name) {
     diag->set_required_field (get_field(fname,"sim"));
   }
   diag->initialize(util::TimeStamp(),RunType::Initial);
+  // If specified, set avg_cnt tracking for this diagnostic.
+  if (m_add_time_dim && m_track_avg_cnt) {
+    const auto diag_field = diag->get_diagnostic();
+    const auto name       = diag_field.name();
+    const auto layout     = diag_field.get_header().get_identifier().get_layout();
+    set_avg_cnt_tracking(name,diag_avg_cnt_name,layout);
+  }
 
   return diag;
 }

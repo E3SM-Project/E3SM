@@ -174,6 +174,9 @@ protected:
   std::shared_ptr<AtmosphereDiagnostic>
   create_diagnostic (const std::string& diag_name);
 
+  // Tracking the averaging of any filled values:
+  void set_avg_cnt_tracking(const std::string& name, const std::string& name_ext, const FieldLayout& layout);
+
   // --- Internal variables --- //
   ekat::Comm                          m_comm;
 
