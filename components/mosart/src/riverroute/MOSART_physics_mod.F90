@@ -65,7 +65,7 @@ MODULE MOSART_physics_mod
     real(r8) :: temp_erout, localDeltaT, temp_haout, temp_Tt, temp_Tr, temp_T, temp_ha
     real(r8) :: mud_erout, san_erout, temp_ehexch, temp_etexch, temp_erexch
     real(r8) :: negchan 
-	integer  :: numSubSteps
+    integer  :: numSubSteps
     integer  :: yr,mon,day,tod
     real(r8) :: myTINYVALUE
     character(len=*),parameter :: subname = '(Euler)'
@@ -994,7 +994,7 @@ MODULE MOSART_physics_mod
        TRunoff%erout(iunit,nt) = -TRunoff%erin(iunit,nt)-TRunoff%erlateral(iunit,nt)
     else
        !TODO. If this channel is at basin outlet (downstream is ocean), use the KW method
-	   if(rtmCTL%mask(iunit) .eq. 3) then 
+       if(rtmCTL%mask(iunit) .eq. 3) then 
           call Routing_KW(iunit, nt, theDeltaT)
        else
           if(nt == nt_nliq) then 
@@ -1230,9 +1230,9 @@ MODULE MOSART_physics_mod
 
     if(nt==nt_nliq) then
         TRunoff%yh(iunit,nt) = TRunoff%wh(iunit,nt) !/ TUnit%area(iunit) / TUnit%frac(iunit) 
-	else
-	    TRunoff%yh(iunit,nt) = 0._r8
-	end if
+    else
+        TRunoff%yh(iunit,nt) = 0._r8
+    end if
 
   end subroutine updateState_hillslope
 
