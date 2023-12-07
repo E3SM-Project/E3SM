@@ -1,6 +1,8 @@
 #ifndef SCREAM_ATMOSPHERE_PROCESS_HPP
 #define SCREAM_ATMOSPHERE_PROCESS_HPP
 
+#include "control/intensive_observation_period.hpp"
+
 #include "share/atm_process/atmosphere_process_utils.hpp"
 #include "share/atm_process/ATMBufferManager.hpp"
 #include "share/atm_process/SCDataManager.hpp"
@@ -83,6 +85,8 @@ public:
 
   using prop_check_ptr = std::shared_ptr<PropertyCheck>;
 
+  using iop_ptr = std::shared_ptr<control::IntensiveObservationPeriod>;
+
   // Base constructor to set MPI communicator and params
   AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params);
 
@@ -98,6 +102,11 @@ public:
   // Upon return, the atm proc should have a valid and complete list
   // of in/out/inout FieldRequest and GroupRequest.
   virtual void set_grids (const std::shared_ptr<const GridsManager> grids_manager) = 0;
+
+  // Set a pointer to an IOP object
+  virtual void set_intensive_observation_period (const iop_ptr& iop) {
+    m_intensive_observation_period = iop;
+  }
 
   // These are the three main interfaces:
   //   - the initialize method sets up all the stuff the process needs in order to run,
@@ -286,6 +295,8 @@ protected:
   bool do_update_time_stamp () const { return m_update_time_stamps; }
 
   int get_internal_diagnostics_level () const { return m_internal_diagnostics_level; }
+
+  const iop_ptr& get_intensive_observation_period() const { return m_intensive_observation_period; }
 
   // Derived classes can used these method, so that if we change how fields/groups
   // requirement are stored (e.g., change the std container), they don't need to change
@@ -575,6 +586,9 @@ private:
 
   // Controls global hashing output for debugging non-BFBness.
   int m_internal_diagnostics_level;
+
+  // Intensive observation period object.
+  iop_ptr m_intensive_observation_period;
 };
 
 // ================= IMPLEMENTATION ================== //

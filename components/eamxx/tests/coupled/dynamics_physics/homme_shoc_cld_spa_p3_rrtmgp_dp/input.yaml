@@ -6,6 +6,7 @@ driver_options:
 
 intensive_observation_period_options:
   doubly_periodic_mode: true
+  iop_file: ${IOP_DATA_DIR}/DYCOMSrf01_iopfile_4scam.nc
   target_latitude: 31.5
   target_longitude: 238.5
 
@@ -23,7 +24,7 @@ initial_conditions:
   precip_ice_surf_mass: 0.0
 
 atmosphere_processes:
-  atm_procs_list: [homme,physics]
+  atm_procs_list: [sc_import,homme,physics]
   schedule_type: Sequential
   homme:
     Moisture: moist

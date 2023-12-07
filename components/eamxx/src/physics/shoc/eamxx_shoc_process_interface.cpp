@@ -35,9 +35,6 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   m_num_cols = m_grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = m_grid->get_num_vertical_levels();  // Number of levels per column
 
-  m_cell_area = m_grid->get_geometry_data("area").get_view<const Real*>(); // area of each cell
-  m_cell_lat  = m_grid->get_geometry_data("lat").get_view<const Real*>(); // area of each cell
-
   // Define the different field layouts that will be used for this process
   using namespace ShortFieldTagsNames;
 
@@ -157,9 +154,9 @@ void SHOCMacrophysics::init_buffers(const ATMBufferManager &buffer_manager)
   Real* mem = reinterpret_cast<Real*>(buffer_manager.get_memory());
 
   // 1d scalar views
-  using scalar_view_t = decltype(m_buffer.cell_length);
+  using scalar_view_t = decltype(m_buffer.wpthlp_sfc);
   scalar_view_t* _1d_scalar_view_ptrs[Buffer::num_1d_scalar_ncol] =
-    {&m_buffer.cell_length, &m_buffer.wpthlp_sfc, &m_buffer.wprtp_sfc, &m_buffer.upwp_sfc, &m_buffer.vpwp_sfc
+    {&m_buffer.wpthlp_sfc, &m_buffer.wprtp_sfc, &m_buffer.upwp_sfc, &m_buffer.vpwp_sfc
 #ifdef SCREAM_SMALL_KERNELS
      , &m_buffer.se_b, &m_buffer.ke_b, &m_buffer.wv_b, &m_buffer.wl_b
      , &m_buffer.se_a, &m_buffer.ke_a, &m_buffer.wv_a, &m_buffer.wl_a
@@ -267,7 +264,6 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   // Alias local variables from temporary buffer
   auto z_mid       = m_buffer.z_mid;
   auto z_int       = m_buffer.z_int;
-  auto cell_length = m_buffer.cell_length;
   auto wpthlp_sfc  = m_buffer.wpthlp_sfc;
   auto wprtp_sfc   = m_buffer.wprtp_sfc;
   auto upwp_sfc    = m_buffer.upwp_sfc;
@@ -300,15 +296,13 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
     Kokkos::deep_copy(cldfrac_liq,0.0);
   }
 
-  shoc_preprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers,z_surf,m_cell_area,m_cell_lat,
+  shoc_preprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers,z_surf,
                                 T_mid,p_mid,p_int,pseudo_density,omega,phis,surf_sens_flux,surf_evap,
-                                surf_mom_flux,qtracers,qv,qc,qc_copy,tke,tke_copy,z_mid,z_int,cell_length,
+                                surf_mom_flux,qtracers,qv,qc,qc_copy,tke,tke_copy,z_mid,z_int,
                                 dse,rrho,rrho_i,thv,dz,zt_grid,zi_grid,wpthlp_sfc,wprtp_sfc,upwp_sfc,vpwp_sfc,
                                 wtracer_sfc,wm_zt,inv_exner,thlm,qw);
 
   // Input Variables:
-  input.dx          = shoc_preprocess.cell_length;
-  input.dy          = shoc_preprocess.cell_length;
   input.zt_grid     = shoc_preprocess.zt_grid;
   input.zi_grid     = shoc_preprocess.zi_grid;
   input.pres        = p_mid;
@@ -431,6 +425,25 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   const int ntop_shoc = 0;
   const int nbot_shoc = m_num_levs;
   m_npbl = SHF::shoc_init(nbot_shoc,ntop_shoc,pref_mid);
+
+  // Compute cell length for input dx and dy.
+  const auto iop = get_intensive_observation_period();
+  const auto ncols = m_num_cols;
+  view_1d cell_length("cell_length", ncols);
+  if (not iop) {
+    const auto area = m_grid->get_geometry_data("area").get_view<const Real*>();
+    const auto lat  = m_grid->get_geometry_data("lat").get_view<const Real*>();
+    Kokkos::parallel_for(ncols, KOKKOS_LAMBDA (const int icol) {
+      // For now, we are considering dy=dx. Here, we
+      // will need to compute dx/dy instead of cell_length
+      // if we have dy!=dx.
+      cell_length(icol) = PF::calculate_dx_from_area(area(icol),lat(icol));;
+    });
+  } else {
+    Kokkos::deep_copy(cell_length, iop->get_dynamics_dx_size());
+  }
+  input.dx = cell_length;
+  input.dy = cell_length;
 }
 
 // =========================================================================================

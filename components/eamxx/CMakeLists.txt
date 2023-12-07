@@ -272,6 +272,7 @@ endif()
 
 set (SCREAM_DATA_DIR ${SCREAM_INPUT_ROOT}/atm/scream CACHE PATH "" FORCE)
 set (TOPO_DATA_DIR ${SCREAM_INPUT_ROOT}/atm/cam/topo CACHE PATH "" FORCE)
+set (IOP_DATA_DIR ${SCREAM_INPUT_ROOT}/atm/cam/scam/iop CACHE PATH "" FORCE)
 
 #
 # Handle test level
