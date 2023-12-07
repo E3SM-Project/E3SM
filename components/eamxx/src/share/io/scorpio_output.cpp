@@ -1283,7 +1283,7 @@ AtmosphereOutput::create_diagnostic (const std::string& diag_field_name) {
         diag_name = "FieldAtHeight";
       } else if (units=="mb" or units=="Pa" or units=="hPa") {
         diag_name = "FieldAtPressureLevel";
-	diag_avg_cnt_name = tokens[1];  //ASD fix this to be correct string.
+	diag_avg_cnt_name = tokens[1]; // Set avg_cnt tracking for this specific slice
         m_track_avg_cnt = true; // If we have pressure slices we need to be tracking the average count.
       } else {
         EKAT_ERROR_MSG ("Error! Invalid units x for 'field_at_Nx' diagnostic.\n");
