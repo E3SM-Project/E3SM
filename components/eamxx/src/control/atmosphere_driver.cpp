@@ -208,7 +208,7 @@ setup_intensive_observation_period ()
                                                  hybm);
 
   auto dx_short_f = phys_grid->get_geometry_data("dx_short");
-  m_intensive_observation_period->set_grid_spacing(dx_short_f.get_view<Real,Host>()());
+  m_intensive_observation_period->set_grid_spacing(dx_short_f.get_view<const Real,Host>()());
 }
 
 void AtmosphereDriver::create_atm_processes()
