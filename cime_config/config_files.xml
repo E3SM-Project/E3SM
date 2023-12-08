@@ -231,9 +231,9 @@
     <type>char</type>
     <default_value>unset</default_value>
     <values>
+      <value component="gcam"      >$SRCROOT/components/gcam</value>
       <value component="siac"      >$SRCROOT/components/stub_comps/siac</value>
       <value component="xiac"      >$SRCROOT/components/xcpl_comps/xiac</value>
-      <value component="gcam"  >$SRCROOT/components/gcam</value>
     </values>
     <group>case_comps</group>
     <file>env_case.xml</file>
