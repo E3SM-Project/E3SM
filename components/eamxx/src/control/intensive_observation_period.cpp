@@ -133,7 +133,6 @@ IntensiveObservationPeriod(const ekat::Comm& comm,
   if (not m_params.isParameter("iop_nudge_tq_low"))     m_params.set<Real>("iop_nudge_tq_low",     1050);
   if (not m_params.isParameter("iop_nudge_tq_high"))    m_params.set<Real>("iop_nudge_tq_high",    0);
   if (not m_params.isParameter("iop_nudge_tscale"))     m_params.set<Real>("iop_nudge_tscale",     10800);
-  if (not m_params.isParameter("iop_perturb_high"))     m_params.set<Real>("iop_perturb_high",     1050);
   if (not m_params.isParameter("zero_non_iop_tracers")) m_params.set<bool>("zero_non_iop_tracers", false);
 
   // Use IOP file to initialize parameters
