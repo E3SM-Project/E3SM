@@ -131,6 +131,7 @@ module seq_flds_mod
   use shr_ndep_mod      , only : shr_ndep_readnl
   use shr_dust_mod      , only : shr_dust_readnl
   use shr_flds_mod      , only : seq_flds_dom_coord=>shr_flds_dom_coord, seq_flds_dom_other=>shr_flds_dom_other
+  use shr_fan_mod       , only : shr_fan_readnl
 
   implicit none
   public
@@ -146,12 +147,13 @@ module seq_flds_mod
   character(len=CXX) :: fire_emis_fields    ! List of fire emission fields
   character(len=CX)  :: carma_fields        ! List of CARMA fields from lnd->atm
   character(len=CX)  :: ndep_fields         ! List of nitrogen deposition fields from atm->lnd/ocn
+  character(len=CX)  :: fan_fields          ! List of NH3 emission fields from lnd->atm
   integer            :: ice_ncat            ! number of sea ice thickness categories
   logical            :: seq_flds_i2o_per_cat! .true. if select per ice thickness category fields are passed from ice to ocean
 
   logical            :: rof_heat            ! .true. if river model includes temperature
   logical            :: add_ndep_fields     ! .true. => add ndep fields
-
+  logical            :: fan_have_fields     ! .true. if FAN coupled to atmosphere
   character(len=CS)  :: atm_flux_method     ! explicit => no extra fields needed
                                             ! implicit_stress => atm provides wsresp and tau_est
   logical            :: atm_gustiness       ! .true. if the atmosphere model produces gustiness
@@ -3784,6 +3786,21 @@ contains
 
        call metadata_set(shr_fire_emis_ztop_token, longname, stdname, units)
     endif
+
+    !-----------------------------------------------------------------------------
+    ! Read namelist for FAN NH3 emissions
+    ! If specified, the NH3 surface emission is sent to CAM. 
+    !-----------------------------------------------------------------------------
+
+    call shr_fan_readnl(nlfilename='drv_flds_in', ID=ID, fan_fields=fan_fields, have_fields=fan_have_fields)
+    if (fan_have_fields) then
+       call seq_flds_add(l2x_fluxes, trim(fan_fields))
+       call seq_flds_add(x2a_fluxes, trim(fan_fields))
+       longname = 'NH3 emission flux'
+       stdname = 'nh3_emis'
+       units = 'gN/m2/sec'
+       call metadata_set(fan_fields, longname, stdname, units)
+    end if
 
     !-----------------------------------------------------------------------------
     ! Dry Deposition fields

@@ -11,7 +11,7 @@ module WaterstateType
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use decompMod      , only : bounds_type
   use elm_varctl     , only : use_vancouver, use_mexicocity, use_cn, iulog, use_fates_planthydro, &
-                              use_hydrstress
+                              use_hydrstress, use_fan
   use elm_varpar     , only : nlevgrnd, nlevurb, nlevsno 
   use elm_varcon     , only : spval
   use LandunitType   , only : lun_pp                
@@ -34,7 +34,8 @@ module WaterstateType
      real(r8), pointer :: snow_layer_unity_col   (:,:) ! value 1 for each snow layer, used for history diagnostics
      real(r8), pointer :: bw_col                 (:,:) ! col partial density of water in the snow pack (ice + liquid) [kg/m3] 
      real(r8), pointer :: finundated_col         (:)   ! fraction of column that is inundated, this is for bgc caclulation in betr
-
+     real(r8), pointer :: h2osoi_tend_tsl_col    (:)   ! col moisture tendency due to vertical movement at topmost layer (m3/m3/s)
+ 
      real(r8), pointer :: rhvap_soi_col          (:,:)
      real(r8), pointer :: rho_vap_col            (:,:)
      real(r8), pointer :: smp_l_col              (:,:) ! col liquid phase soil matric potential, mm
@@ -207,6 +208,9 @@ contains
     allocate(this%bw_col                 (begc:endc,-nlevsno+1:0))        ; this%bw_col                 (:,:) = nan   
     allocate(this%smp_l_col              (begc:endc,-nlevsno+1:nlevgrnd)) ; this%smp_l_col              (:,:) = nan
     allocate(this%finundated_col         (begc:endc))                     ; this%finundated_col         (:)   = nan
+    if (use_fan) then
+       allocate(this%h2osoi_tend_tsl_col(begc:endc))                      ; this%h2osoi_tend_tsl_col    (:)   = nan
+    end if
 
     allocate(this%h2osno_col             (begc:endc))                     ; this%h2osno_col             (:)   = nan   
     allocate(this%h2osno_old_col         (begc:endc))                     ; this%h2osno_old_col         (:)   = nan   

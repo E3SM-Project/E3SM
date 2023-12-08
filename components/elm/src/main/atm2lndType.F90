@@ -11,7 +11,7 @@ module atm2lndType
   use shr_megan_mod , only : shr_megan_mechcomps_n
   use elm_varpar    , only : numrad, ndst, nlevgrnd !ndst = number of dust bins.
   use elm_varcon    , only : rair, grav, cpair, hfus, tfrz, spval
-  use elm_varctl    , only : iulog, use_c13, use_cn, use_lch4, use_fates
+  use elm_varctl    , only : iulog, use_c13, use_cn, use_lch4, use_fates, use_fan
   use seq_drydep_mod, only : n_drydep, drydep_method, DD_XLND
   use decompMod     , only : bounds_type
   use abortutils    , only : endrun
@@ -87,6 +87,11 @@ module atm2lndType
      real(r8), pointer :: forc_po2_grc                  (:)   => null() ! O2 partial pressure (Pa)
      real(r8), pointer :: forc_aer_grc                  (:,:) => null() ! aerosol deposition array
      real(r8), pointer :: forc_pch4_grc                 (:)   => null() ! CH4 partial pressure (Pa)
+     real(r8), pointer :: forc_ndep_mgrz_grc            (:)   => null() ! FAN nitrogen deposition (manure) rate (gN/m2/s)
+     real(r8), pointer :: forc_ndep_past_grc            (:)   => null() ! FAN nitrogen deposition (fertilizer) rate (gN/m2/s)
+     real(r8), pointer :: forc_ndep_urea_grc            (:)   => null() ! FAN nitrogen deposition, urea fertilizer fraction
+     real(r8), pointer :: forc_ndep_nitr_grc            (:)   => null() ! FAN nitrogen deposition, nitrate fertilizer fraction
+     real(r8), pointer :: forc_soilph_grc               (:)   => null() ! FAN soil pH
 
      real(r8), pointer :: forc_t_not_downscaled_grc     (:)   => null() ! not downscaled atm temperature (Kelvin)       
      real(r8), pointer :: forc_th_not_downscaled_grc    (:)   => null() ! not downscaled atm potential temperature (Kelvin)    
@@ -298,6 +303,13 @@ contains
     end if
     allocate(this%t_mo_patch                    (begp:endp))        ; this%t_mo_patch               (:)   = nan
     allocate(this%t_mo_min_patch                (begp:endp))        ; this%t_mo_min_patch           (:)   = spval ! TODO - initialize this elsewhere
+    if ( use_fan ) then
+       allocate(this%forc_ndep_mgrz_grc         (begg:endg))        ; this%forc_ndep_mgrz_grc            (:)   = ival
+       allocate(this%forc_ndep_past_grc         (begg:endg))        ; this%forc_ndep_past_grc            (:)   = ival
+       allocate(this%forc_ndep_urea_grc         (begg:endg))        ; this%forc_ndep_urea_grc            (:)   = ival
+       allocate(this%forc_ndep_nitr_grc         (begg:endg))        ; this%forc_ndep_nitr_grc            (:)   = ival
+       allocate(this%forc_soilph_grc            (begg:endg))        ; this%forc_soilph_grc               (:)   = ival
+    end if
 
   end subroutine InitAllocate
 
