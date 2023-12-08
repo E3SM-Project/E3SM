@@ -22,6 +22,7 @@ TEST_CASE("utils") {
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
   using kt = KokkosTypes<DefaultDevice>;
+  using kt_host = KokkosTypes<HostDevice>;
 
   using P8 = ekat::Pack<Real,8>;
 
@@ -170,6 +171,59 @@ TEST_CASE("utils") {
 
     REQUIRE(field_min<Real>(f1)==lmin);
     REQUIRE(field_min<Real>(f1,&comm)==gmin);
+  }
+
+  SECTION ("perturb") {
+    using namespace ShortFieldTagsNames;
+    using RPDF = std::uniform_real_distribution<Real>;
+    using IPDF = std::uniform_int_distribution<int>;
+    auto engine = setup_random_test ();
+
+    const int ncols = 6;
+    const int ncmps = 2;
+    const int nlevs = IPDF(3,9)(engine); // between 3-9 levels
+
+    // Create 1d, 2d, 3d fields with a level dimension, and set all to 1
+    FieldIdentifier fid1("f_1d", FieldLayout({LEV}, {nlevs}), Units::nondimensional(), "dummy_grid");
+    FieldIdentifier fid2("f_2d", FieldLayout({COL, LEV}, {ncols, nlevs}), Units::nondimensional(), "dummy_grid");
+    FieldIdentifier fid3("f_3d", FieldLayout({COL, CMP, LEV}, {ncols, ncmps, nlevs}), Units::nondimensional(), "dummy_grid");
+    Field f1(fid1), f2(fid2), f3(fid3);
+    f1.allocate_view(), f2.allocate_view(), f3.allocate_view();
+    f1.deep_copy(1), f2.deep_copy(1), f3.deep_copy(1);
+
+    // Create masks s.t. only last 3 levels are perturbed. For variety,
+    // 1d and 2d fields will use lambda mask and 3 field will use a view.
+    auto mask_lambda = [&nlevs] (const int& i0) {
+      return i0 >= nlevs-3;
+    };
+    kt_host::view_1d<bool> mask_view("mask_view", nlevs);
+    Kokkos::deep_copy(mask_view, false);
+    for (int ilev=0; ilev<nlevs; ++ilev) {
+      if (ilev >= nlevs-3) mask_view(ilev) = true;
+    }
+
+    // Compute random perturbation between [1, 2]
+    RPDF perturb_pdf(1, 2);
+    perturb(f1, engine, perturb_pdf, mask_lambda);
+    perturb(f2, engine, perturb_pdf, mask_lambda);
+    perturb(f3, engine, perturb_pdf, mask_view);
+
+    // Check that all field values are 1 for all but last 3 levels and between [2,3] otherwise.
+    const auto v1 = f1.get_view<Real*, Host>();
+    const auto v2 = f2.get_view<Real**, Host>();
+    const auto v3 = f3.get_view<Real***, Host>();
+
+    auto check_level = [&] (const int ilev, const Real val) {
+      if (ilev < nlevs-3) REQUIRE(val == 1);
+      else REQUIRE((2 <= val && val <= 3));
+    };
+    for (int icol=0; icol<ncols; ++icol) {
+      for (int icmp=0; icmp<ncmps; ++icmp) {
+        for (int ilev=0; ilev<nlevs; ++ilev) {
+          if (icol==0 && icmp==0) check_level(ilev, v1(ilev));
+          if (icmp==0) check_level(ilev, v2(icol,ilev));
+          check_level(ilev, v3(icol,icmp,ilev));
+    }}}
   }
 
   SECTION ("wrong_st") {

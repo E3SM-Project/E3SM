@@ -43,6 +43,41 @@ void randomize (const Field& f, Engine& engine, PDF&& pdf)
   impl::randomize<ST>(f,engine,pdf);
 }
 
+// Compute a random perturbation of a field for all view entries
+// field_view(:, k) when level_mask(k)==true. The field
+// must have level midpoint tag as last dimension, and level mask
+// should have size of last field dimension.
+template<typename Engine, typename PDF, typename MaskType>
+void perturb (const Field& f, Engine& engine, PDF&& pdf,
+	      const MaskType& level_mask)
+{
+  EKAT_REQUIRE_MSG(f.is_allocated(),
+       	           "Error! Cannot perturb the values of a field not yet allocated.\n");
+
+  // Deduce scalar type from pdf
+  using ST = decltype(pdf(engine));
+
+  // Check compatibility between PDF and field data type
+  const auto data_type = f.data_type();
+  EKAT_REQUIRE_MSG ((std::is_same_v<ST,int> && data_type==DataType::IntType) or
+		    (std::is_same_v<ST,float> && data_type==DataType::FloatType) or
+		    (std::is_same_v<ST,double> && data_type==DataType::DoubleType),
+		    "Error! Field data type incompatible with input PDF.\n");
+
+  using namespace ShortFieldTagsNames;
+  const auto& fl = f.get_header().get_identifier().get_layout();
+  // Field we are perturbing should have a level midpoint dimension,
+  // and it is required to be the last dimension
+  EKAT_REQUIRE_MSG(fl.has_tag(LEV),
+		   "Error! Trying to perturb field \""+f.name()+"\", but field "
+		   "has no level dimension.\n");
+  EKAT_REQUIRE_MSG(fl.tags().back() == LEV,
+                   "Error! Trying to perturb field \""+f.name()+"\", but field "
+	           "does not have level as last dimension.\n");
+
+  impl::perturb<ST>(f, engine, pdf, level_mask);
+}
+
 template<typename ST>
 ST frobenius_norm(const Field& f, const ekat::Comm* comm = nullptr)
 {

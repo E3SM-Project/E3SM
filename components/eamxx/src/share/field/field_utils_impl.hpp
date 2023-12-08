@@ -214,6 +214,59 @@ void randomize (const Field& f, Engine& engine, PDF&& pdf)
   f.sync_to_dev();
 }
 
+template<typename ST, typename Engine, typename PDF, typename MaskType>
+void perturb (const Field& f, Engine& engine, PDF&& pdf,
+	      const MaskType& level_mask)
+{
+  // All work done on host, make sure data is synced
+  f.sync_to_host();
+
+  const auto& fl = f.get_header().get_identifier().get_layout();
+  switch (fl.rank()) {
+  case 1:
+    {
+      auto v = f.get_view<ST*, Host>();
+      for (int i0=0; i0<fl.dim(0); ++i0) {
+        if (level_mask(i0)) {
+          const auto perturb_val = pdf(engine);
+          v(i0) *= (1 + perturb_val);
+        }
+      }
+    }
+    break;
+  case 2:
+    {
+      auto v = f.get_view<ST**, Host>();
+      for (int i0=0; i0<fl.dim(0); ++i0) {
+        for (int i1=0; i1<fl.dim(1); ++i1) {
+          if (level_mask(i1)) {
+            const auto perturb_val = pdf(engine);
+            v(i0, i1) *= (1 + perturb_val);
+          }
+	}}
+      }
+      break;
+    case 3:
+      {
+        auto v = f.get_view<ST***, Host>();
+        for (int i0=0; i0<fl.dim(0); ++i0) {
+          for (int i1=0; i1<fl.dim(1); ++i1) {
+            for (int i2=0; i2<fl.dim(2); ++i2) {
+              if (level_mask(i2)) {
+                const auto perturb_val = pdf(engine);
+                v(i0, i1, i2) *= (1 + perturb_val);
+              }
+	    }}}
+      }
+      break;
+    default:
+      EKAT_ERROR_MSG ("Error! Unsupported field rank.\n");
+  }
+
+  // Sync the dev view with the host view.
+  f.sync_to_dev();
+}
+
 template<typename ST>
 ST frobenius_norm(const Field& f, const ekat::Comm* comm)
 {
