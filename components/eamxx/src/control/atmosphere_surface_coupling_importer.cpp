@@ -171,7 +171,7 @@ void SurfaceCouplingImporter::do_import(const bool called_during_initialization)
   });
 
   // If IOP is defined, potentially overwrite imports with data from IOP file
-  if (get_intensive_observation_period()) {
+  if (m_intensive_observation_period) {
     overwrite_iop_imports(called_during_initialization);
   }
 }
@@ -181,7 +181,7 @@ void SurfaceCouplingImporter::overwrite_iop_imports (const bool called_during_in
   using policy_type = KokkosTypes<DefaultDevice>::RangePolicy;
   using C = physics::Constants<Real>;
 
-  const auto iop = get_intensive_observation_period();
+  const auto& iop = m_intensive_observation_period;
 
   const auto has_lhflx = iop->has_iop_field("lhflx");
   const auto has_shflx = iop->has_iop_field("shflx");

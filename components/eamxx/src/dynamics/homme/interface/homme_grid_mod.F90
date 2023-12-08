@@ -16,8 +16,20 @@ module homme_grid_mod
   public :: get_num_local_columns_f90, get_num_global_columns_f90
   public :: get_num_local_elems_f90, get_num_global_elems_f90
   public :: get_np_f90, get_nlev_f90
+  public :: is_planar_geometry_f90
 
 contains
+
+  function is_planar_geometry_f90 () result(planar) bind(c)
+    use control_mod, only: geometry
+    logical (kind=c_bool) :: planar
+
+    if (geometry == "plane") then
+      planar = .true.
+    else
+      planar = .false.
+    endif
+  end function is_planar_geometry_f90
 
   subroutine check_grids_inited (expected)
     use parallel_mod,      only: abortmp

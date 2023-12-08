@@ -264,6 +264,14 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance) {
     }
   }
 
+  if (is_planar_geometry_f90()) {
+    // If running with IOP, store grid length size
+    FieldLayout scalar0d({},{});
+    auto dx_short_f = phys_grid->create_geometry_data("dx_short",scalar0d,rad);
+    dx_short_f.get_view<Real,Host>()() = get_dx_short_f90(0);
+    dx_short_f.sync_to_dev();
+  }
+
   phys_grid->m_short_name = type;
   add_grid(phys_grid);
 }

@@ -35,7 +35,8 @@ public:
   template<typename DevT, typename ScalarT>
   using uview_2d = Unmanaged<view_2d<DevT, ScalarT>>;
 
-   using name_t = char[32];
+  using name_t = char[32];
+  using iop_ptr = std::shared_ptr<control::IntensiveObservationPeriod>;
 
   // Constructors
   SurfaceCouplingImporter (const ekat::Comm& comm, const ekat::ParameterList& params);
@@ -63,6 +64,9 @@ public:
   // Overwrite imports for IOP cases with IOP file surface data
   void overwrite_iop_imports (const bool called_during_initialization);
 
+  void set_intensive_observation_period (const iop_ptr& iop) {
+    m_intensive_observation_period = iop;
+  }
 protected:
 
   // The three main overrides for the subcomponent
@@ -98,6 +102,8 @@ protected:
   view_1d<DefaultDevice, SurfaceCouplingColumnInfo> m_column_info_d;
   decltype(m_column_info_d)::HostMirror             m_column_info_h;
 
+  // Intensive observation period object.
+  iop_ptr m_intensive_observation_period;
 
   // The grid is needed for property checks
   std::shared_ptr<const AbstractGrid> m_grid;
