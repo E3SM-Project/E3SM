@@ -82,14 +82,6 @@ Number of land types
 Number of emission sectors
 </entry>
 
-<entry id="num_emiss_regions"
-        type="integer"
-        category="gcam"
-        group="gcam_inparm"
-        valid_values="">
-Number of emission regions
-</entry>
-
 <entry id="num_emiss_ctys"
         type="integer"
         category="gcam"
@@ -393,7 +385,7 @@ Changes in land productivity from elm scale ag yield in gcam
 Changes in land productivity from elm scale carbon density in gcam
 </entry>
 
-<entry id="ehc_elm_co2_emissions"
+<entry id="ehc_eam_co2_emissions"
 	type="logical"
 	category="gcam"
 	group="gcam_inparm">

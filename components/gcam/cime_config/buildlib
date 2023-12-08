@@ -30,11 +30,9 @@ print file "$CASEROOT/SourceMods/src.gcam \n";
 #print file "/blues/gpfs/home/ac.shippert/local/src/boost_1_70_0 \n";
 
 # For compy:
-print file "/qfs/people/crai556/boost_intel_19.0.3/include \n";
-print file "/qfs/people/crai556/xerces_intel_19.0.3/include \n";
+print file "$SRCROOT/components/gcam/src/iac/gcam/util/boost_intel_19.0.3/include \n";
 
-print file "/qfs/people/crai556/boost_intel_19.0.3 \n";
-print file "/qfs/people/crai556/xerces_intel_19.0.3 \n";
+print file "$SRCROOT/components/gcam/src/iac/gcam/util/boost_intel_19.0.3 \n";
 
 # added eigen in the util directory
 print file "$SRCROOT/components/gcam/src/iac/gcam/util/eigen-3.4.0 \n"

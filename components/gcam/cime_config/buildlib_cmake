@@ -26,9 +26,6 @@ def buildlib(bldroot, installpath, case):
     caseroot  = case.get_value("CASEROOT")
     srcroot   = case.get_value("SRCROOT")
 
-    # This is a total kludge - hardcode a lib path for xerces
-    xercesdir = "/qfs/people/crai556/xerces_intel_19.0.3/lib"
-
     #-------------------------------------------------------
     # create Filepath in bldroot, unlike most other components,
     # We'll make our filepaths right here, to include just the
@@ -38,10 +35,8 @@ def buildlib(bldroot, installpath, case):
     # Some of this is hardcoded to work on compy only - boost and xerces
     filepaths = \
  """{caseroot}/SourceMods/src.gcam
-/qfs/people/crai556/boost_intel_19.0.3/include
-/qfs/people/crai556/xerces_intel_19.0.3/include
-/qfs/people/crai556/boost_intel_19.0.3
-/qfs/people/crai556/xerces_intel_19.0.3
+{srcroot}/components/gcam/src/iac/gcam/util/boost_intel_19.0.3/include
+{srcroot}/components/gcam/src/iac/gcam/util/boost_intel_19.0.3
 {srcroot}/components/gcam/src/iac/gcam/util/eigen-3.4.0
 {srcroot}/components/gcam/src/iac/gcam/cvs/objects
 {srcroot}/components/gcam/src/iac/coupling

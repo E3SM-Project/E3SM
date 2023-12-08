@@ -753,16 +753,6 @@
     machines.</desc>
   </entry>
 
-  <entry id="USE_XERCES">
-    <type>logical</type>
-    <valid_values>TRUE,FALSE</valid_values>
-    <default_value>FALSE</default_value>
-    <group>build_def</group>
-    <file>env_build.xml</file>
-    <desc>TRUE implies linking to the XERCES library - currently this is
-    used by GCAM.</desc>
-  </entry>
-
   <entry id="USE_MOAB">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>

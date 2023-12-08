@@ -322,7 +322,6 @@ add_default($nl, 'num_gcam_energy_regions');
 add_default($nl, 'num_gcam_land_regions');
 add_default($nl, 'num_iac2elm_landtypes');
 add_default($nl, 'num_emiss_sectors');
-add_default($nl, 'num_emiss_regions');
 add_default($nl, 'num_emiss_ctys');
 add_default($nl, 'num_periods');
 
@@ -367,7 +366,7 @@ add_default($nl, 'write_scalars');
 add_default($nl, 'write_co2');
 add_default($nl, 'elm_ehc_agyield_scaling');
 add_default($nl, 'elm_ehc_carbon_scaling');
-add_default($nl, 'ehc_elm_co2_emissions');
+add_default($nl, 'ehc_eam_co2_emissions');
 add_default($nl, 'gcam_spinup');
 add_default($nl, 'run_gcam');
 
