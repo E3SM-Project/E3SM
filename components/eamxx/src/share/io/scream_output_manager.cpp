@@ -149,6 +149,16 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
       std::vector<Field> fields;
       for (const auto& fn : grid.second->get_geometry_data_names()) {
         const auto& f = grid.second->get_geometry_data(fn);
+
+        if (f.rank()==0) {
+          // Right now, this only happens for `dx_short`, a single scalar
+          // coming from iop. Since that scalar is easily recomputed
+          // upon restart, we can skip this
+          // NOTE: without this, the code crash while attempting to get a
+          //       pio decomp for this var, since there are no dimensions.
+          //       Perhaps you can explore setting the var as a global att
+          continue;
+        }
         if (use_suffix) {
           fields.push_back(f.clone(f.name()+"_"+grid.second->m_short_name));
         } else {
