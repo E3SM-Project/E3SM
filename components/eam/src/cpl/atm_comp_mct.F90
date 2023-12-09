@@ -999,10 +999,6 @@ CONTAINS
 
    type(mct_list) :: temp_list
    integer :: size_list, index_list, ent_type, ierr
-#ifdef MOABDEBUG
-   character*100 outfile, wopts, lnum
-   integer           :: atm_step_no
-#endif
 
    !-----------------------------------------------------------------------
 
@@ -1086,15 +1082,6 @@ CONTAINS
    call pio_freedecomp(File,iodesc)
    call cam_pio_closefile(File)
    deallocate(tmp)
-#ifdef MOABDEBUG
-    call seq_timemgr_EClockGetData( EClock, stepno=atm_step_no)
-    write(lnum,"(I0.2)")atm_step_no
-    outfile = 'AtmPhys_R'//trim(lnum)//'.h5m'//C_NULL_CHAR
-    wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
-    ierr = iMOAB_WriteMesh(mphaid, outfile, wopts)
-    if (ierr > 0 )  &
-      call endrun('Error: fail to write the atm phys mesh file after restart')
-#endif
 
  end subroutine atm_read_srfrest_moab
 
@@ -1130,9 +1117,6 @@ CONTAINS
 
    type(mct_list) :: temp_list
    integer :: size_list, index_list, ent_type, ierr
-#ifdef MOABDEBUG
-   character*100 outfile, wopts, lnum
-#endif
 
    !-----------------------------------------------------------------------
 
@@ -1147,16 +1131,6 @@ CONTAINS
       write(iulog,*)'create file :', trim(moab_fname_srf_cam) 
    end if
 
-#ifdef MOABDEBUG
-   ! before writing the atm surf restart file from moab, write the moab state to be compared after reading the surface file in the restart run
-   ! it should be the same as AtmPhys_24_27.h5m file in one day restart run, but just to be sure 
-    write(lnum,"(I0.2)")num_moab_exports
-    outfile = 'AtmPhys'//trim(lnum)//'.h5m'//C_NULL_CHAR
-    wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
-    ierr = iMOAB_WriteMesh(mphaid, outfile, wopts)
-    if (ierr > 0 )  &
-      call endrun('Error: fail to write the atm phys mesh file after restart')
-#endif
    call pio_initdecomp(pio_subsystem, pio_double, (/ngcols/), global_ids, iodesc)
    allocate(tmp(size(global_ids)))
    
@@ -1739,19 +1713,8 @@ subroutine atm_import_moab(Eclock, cam_in, restart_init )
     character(CXX) ::  tagname ! 
     integer  :: ent_type, ierr
     integer  :: cur_atm_stepno
-#ifdef MOABDEBUG
-    character*100 outfile, wopts, lnum
-#endif
 
     call seq_timemgr_EClockGetData( EClock, stepno=cur_atm_stepno )
-#ifdef MOABDEBUG
-    write(lnum,"(I0.2)")cur_atm_stepno
-    outfile = 'AtmPhysImp_'//trim(lnum)//'.h5m'//C_NULL_CHAR
-    wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
-    ierr = iMOAB_WriteMesh(mphaid, outfile, wopts)
-    if (ierr > 0 )  &
-      call endrun('Error: fail to write the moab atm phys mesh before import ')
-#endif
     !-----------------------------------------------------------------------
     overwrite_flds = .true.
     ! don't overwrite fields if invoked during the initialization phase 
