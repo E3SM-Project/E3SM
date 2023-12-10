@@ -258,9 +258,7 @@ contains
            tracersPool
 
       real(kind=RKIND), dimension(:), pointer :: &
-           levelIceAreaAverage, &
            ridgedIceAreaAverage, &
-           levelIceVolumeAverage, &
            ridgedIceVolumeAverage
 
       real(kind=RKIND), dimension(:,:,:), pointer :: &
@@ -290,9 +288,7 @@ contains
          call MPAS_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
          call MPAS_pool_get_dimension(block % dimensions, 'nCategories', nCategories)
 
-         call MPAS_pool_get_array(ridgingDiagnosticsAMPool, "levelIceAreaAverage", levelIceAreaAverage)
          call MPAS_pool_get_array(ridgingDiagnosticsAMPool, "ridgedIceAreaAverage", ridgedIceAreaAverage)
-         call MPAS_pool_get_array(ridgingDiagnosticsAMPool, "levelIceVolumeAverage", levelIceVolumeAverage)
          call MPAS_pool_get_array(ridgingDiagnosticsAMPool, "ridgedIceVolumeAverage", ridgedIceVolumeAverage)
 
          call MPAS_pool_get_array(tracersPool, "iceAreaCategory", iceAreaCategory, 1)
@@ -302,24 +298,16 @@ contains
 
          do iCell = 1, nCellsSolve
 
-            levelIceAreaAverage(iCell)    = 0.0_RKIND
             ridgedIceAreaAverage(iCell)   = 0.0_RKIND
 
-            levelIceVolumeAverage(iCell)  = 0.0_RKIND
             ridgedIceVolumeAverage(iCell) = 0.0_RKIND
 
             do iCategory = 1, nCategories
 
-               levelIceAreaAverage(iCell) = &
-                    levelIceAreaAverage(iCell) + iceAreaCategory(1,iCategory,iCell) * &
-                    levelIceArea(1,iCategory,iCell)
                ridgedIceAreaAverage(iCell) = &
                     ridgedIceAreaAverage(iCell) + iceAreaCategory(1,iCategory,iCell) * &
                     (1.0_RKIND - levelIceArea(1,iCategory,iCell))
 
-               levelIceVolumeAverage(iCell) = &
-                    levelIceVolumeAverage(iCell) + iceVolumeCategory(1,iCategory,iCell) * &
-                    levelIceVolume(1,iCategory,iCell)
                ridgedIceVolumeAverage(iCell) = &
                     ridgedIceVolumeAverage(iCell) + iceVolumeCategory(1,iCategory,iCell) * &
                     (1.0_RKIND - levelIceVolume(1,iCategory,iCell))

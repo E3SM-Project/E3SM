@@ -759,7 +759,7 @@ contains
          strainShearing
 
     logical, pointer :: &
-         config_use_column_package
+         config_use_column_physics
 
     integer :: &
          iCell
@@ -803,9 +803,9 @@ contains
        enddo ! iCell
 
        ! ridging parameters
-       call MPAS_pool_get_config(blockPtr % configs, "config_use_column_package", config_use_column_package)
+       call MPAS_pool_get_config(blockPtr % configs, "config_use_column_physics", config_use_column_physics)
 
-       if (config_use_column_package) then
+       if (config_use_column_physics) then
 
           call MPAS_pool_get_subpool(blockPtr % structs, "ridging", ridgingPool)
 
@@ -828,7 +828,7 @@ contains
 
           enddo ! iCell
 
-       endif ! config_use_column_package
+       endif ! config_use_column_physics
 
        ! cleanup
        deallocate(Delta)

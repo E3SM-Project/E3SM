@@ -31,10 +31,10 @@
 		<package name="loadBalanceAMPKG" description="This package includes variables required for the loadBalance analysis member."/>
 	</packages>
 	<var_struct name="loadBalanceAM" time_levs="1" packages="loadBalanceAMPKG">
-		<var name="nCellsProcWithSeaIce" type="integer" dimensions="nProcs Time" units="-"
+		<var name="nCellsProcWithSeaIce" type="integer" dimensions="nProcs Time" units="1"
 			description="Number of cells with sea ice present per processor"
 		/>
-		<var name="nCellsProc" type="integer" dimensions="nProcs" units="-"
+		<var name="nCellsProc" type="integer" dimensions="nProcs" units="1"
 			description="Number of cells per processor"
 		/>
 	</var_struct>

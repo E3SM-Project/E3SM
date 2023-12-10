@@ -134,6 +134,9 @@
 ! Parameters for ocean
 !-----------------------------------------------------------------------
 
+      real (kind=dbl_kind), public :: &
+         dragio                   ! neutral ice-ocean drag coefficient
+
       logical (kind=log_kind), public :: &
          oceanmixed_ice           ! if true, use ocean mixed layer
 
@@ -191,7 +194,9 @@
          rhosnew   , & ! new snow density (kg/m^3)
          rhosmax   , & ! maximum snow density (kg/m^3)
          windmin   , & ! minimum wind speed to compact snow (m/s)
-         drhosdwind    ! wind compaction factor (kg s/m^4)
+         snwlvlfac , & ! snow loss factor for wind redistribution
+         drhosdwind, & ! wind compaction factor (kg s/m^4)
+         ksno          ! snow thermal conductivity (W/m/deg)
 
       character(len=char_len), public :: & 
          snwredist     ! type of snow redistribution

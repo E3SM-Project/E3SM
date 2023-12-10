@@ -63,8 +63,10 @@
 /* Whether to use OpenMP4 */
 #cmakedefine OMP4
 
-/* Whether this is a build for CUDA/HIP (used mostly for f90-vs-cxx bfb math functions impl) */
-#cmakedefine HOMMEXX_ENABLE_GPU
+/* Whether this is a build for CUDA/HIP (used for f90-vs-cxx bfb math functions */
+/* impl). This symbol is visible in the F90 code, unlike HOMMEXX_ENABLE_GPU */
+/* defined in Hommexx_config.h. */
+#cmakedefine HOMMEXX_ENABLE_GPU_F90
 
 /* temporary flag to compare f90-cxx until we settle on either cxx or f90 implementation */
 #cmakedefine XX_NONBFB_COMING

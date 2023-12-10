@@ -1696,7 +1696,7 @@ contains
     real(r8), intent(in)  :: mbar(ncol,pver)
     real(r8), intent(in)  :: rdelt        ! inverse of timestep (1/s)
     character(len=*), intent(in)  :: flag ! flag for diagnostic output locations
-    real(r8), optional, intent(in) :: tropFlagInt(ncol, pver)
+    real(r8), optional, intent(in) :: tropFlagInt(pcols, pver)
 
     !--------------------------------------------------------------------
     !	... local variables

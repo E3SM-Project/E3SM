@@ -92,25 +92,25 @@ logical           :: history_gaschmbudget = .false.    ! output gas chemistry tr
 logical           :: history_gaschmbudget_2D = .false. ! output 2D gas chemistry tracer concentrations and tendencies
 logical           :: history_gaschmbudget_2D_levels = .false. ! output 2D gas chemistry tracer concentrations and tendencies within certain layers
 integer           :: history_gaschmbudget_num = 2      ! Tape number for instantaneous gas chemistry budget output
-integer           :: gaschmbudget_2D_L1_s = 1          ! Start layer of L1 for 2D gas chemistry tracer budget 
-integer           :: gaschmbudget_2D_L1_e = 26         ! End layer of L1 for 2D gas chemistry tracer budget 
-integer           :: gaschmbudget_2D_L2_s = 27         ! Start layer of L2 for 2D gas chemistry tracer budget 
-integer           :: gaschmbudget_2D_L2_e = 38         ! End layer of L2 for 2D gas chemistry tracer budget 
-integer           :: gaschmbudget_2D_L3_s = 39         ! Start layer of L3 for 2D gas chemistry tracer budget 
-integer           :: gaschmbudget_2D_L3_e = 58         ! End layer of L3 for 2D gas chemistry tracer budget 
-integer           :: gaschmbudget_2D_L4_s = 59         ! Start layer of L4 for 2D gas chemistry tracer budget 
-integer           :: gaschmbudget_2D_L4_e = 72         ! End layer of L4 for 2D gas chemistry tracer budget 
+integer           :: gaschmbudget_2D_L1_s              ! Start layer of L1 for 2D gas chemistry tracer budget 
+integer           :: gaschmbudget_2D_L1_e              ! End layer of L1 for 2D gas chemistry tracer budget 
+integer           :: gaschmbudget_2D_L2_s              ! Start layer of L2 for 2D gas chemistry tracer budget 
+integer           :: gaschmbudget_2D_L2_e              ! End layer of L2 for 2D gas chemistry tracer budget 
+integer           :: gaschmbudget_2D_L3_s              ! Start layer of L3 for 2D gas chemistry tracer budget 
+integer           :: gaschmbudget_2D_L3_e              ! End layer of L3 for 2D gas chemistry tracer budget 
+integer           :: gaschmbudget_2D_L4_s              ! Start layer of L4 for 2D gas chemistry tracer budget 
+integer           :: gaschmbudget_2D_L4_e              ! End layer of L4 for 2D gas chemistry tracer budget 
 logical           :: history_UCIgaschmbudget_2D = .false. ! output 2D UCI gas chemistry tracer concentrations and tendencies
 logical           :: history_UCIgaschmbudget_2D_levels = .false. ! output 2D UCI gas chemistry tracer concentrations and tendencies within certain layers
 logical           :: history_chemdyg_summary = .false.    ! output necessary variables for ChemDyg 
-integer           :: UCIgaschmbudget_2D_L1_s = 1          ! Start layer of L1 for 2D UCI gas chemistry tracer budget 
-integer           :: UCIgaschmbudget_2D_L1_e = 26         ! End layer of L1 for 2D UCI gas chemistry tracer budget 
-integer           :: UCIgaschmbudget_2D_L2_s = 27         ! Start layer of L2 for 2D UCI gas chemistry tracer budget 
-integer           :: UCIgaschmbudget_2D_L2_e = 38         ! End layer of L2 for 2D UCI gas chemistry tracer budget 
-integer           :: UCIgaschmbudget_2D_L3_s = 39         ! Start layer of L3 for 2D UCI gas chemistry tracer budget 
-integer           :: UCIgaschmbudget_2D_L3_e = 58         ! End layer of L3 for 2D UCI gas chemistry tracer budget 
-integer           :: UCIgaschmbudget_2D_L4_s = 59         ! Start layer of L4 for 2D UCI gas chemistry tracer budget 
-integer           :: UCIgaschmbudget_2D_L4_e = 72         ! End layer of L4 for 2D UCI gas chemistry tracer budget 
+integer           :: UCIgaschmbudget_2D_L1_s              ! Start layer of L1 for 2D UCI gas chemistry tracer budget 
+integer           :: UCIgaschmbudget_2D_L1_e              ! End layer of L1 for 2D UCI gas chemistry tracer budget 
+integer           :: UCIgaschmbudget_2D_L2_s              ! Start layer of L2 for 2D UCI gas chemistry tracer budget 
+integer           :: UCIgaschmbudget_2D_L2_e              ! End layer of L2 for 2D UCI gas chemistry tracer budget 
+integer           :: UCIgaschmbudget_2D_L3_s              ! Start layer of L3 for 2D UCI gas chemistry tracer budget 
+integer           :: UCIgaschmbudget_2D_L3_e              ! End layer of L3 for 2D UCI gas chemistry tracer budget 
+integer           :: UCIgaschmbudget_2D_L4_s              ! Start layer of L4 for 2D UCI gas chemistry tracer budget 
+integer           :: UCIgaschmbudget_2D_L4_e              ! End layer of L4 for 2D UCI gas chemistry tracer budget 
 logical           :: ssalt_tuning         = .false.    ! sea salt tuning flag for progseasalts_intr.F90
 logical           :: resus_fix            = .false.    ! to address resuspension bug fix in wetdep.F90 
 logical           :: convproc_do_aer      = .false.    ! to apply unified convective transport/removal for aerosols
@@ -146,7 +146,6 @@ logical           :: micro_do_icesupersat
 logical           :: state_debug_checks   = .false.    ! Extra checks for validity of physics_state objects
                                                        ! in physics_update.
 logical           :: linearize_pbl_winds  = .false.
-logical           :: export_gustiness  = .false.
 logical, public, protected :: use_mass_borrower    = .false.     ! switch on tracer borrower, instead of using the QNEG3 clipping
 logical, public, protected :: use_qqflx_fixer      = .false.     ! switch on water vapor fixer to compensate changes in qflx
 logical, public, protected :: print_fixer_message  = .false.     ! switch on error message printout in log file
@@ -235,7 +234,7 @@ subroutine phys_ctl_readnl(nlfile)
       is_output_interactive_volc, &
       history_eddy, history_budget,  history_budget_histfile_num, history_waccm, &
       conv_water_in_rad, history_clubb, do_clubb_sgs, do_shoc_sgs, do_tms, state_debug_checks, &
-      linearize_pbl_winds, export_gustiness, &
+      linearize_pbl_winds, &
       use_mass_borrower, do_aerocom_ind3, &
       ieflx_opt, &
       history_gaschmbudget, history_gaschmbudget_2D, history_gaschmbudget_2D_levels, &
@@ -363,7 +362,6 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(micro_do_icesupersat,            1 , mpilog,  0, mpicom)
    call mpibcast(state_debug_checks,              1 , mpilog,  0, mpicom)
    call mpibcast(linearize_pbl_winds,             1 , mpilog,  0, mpicom)
-   call mpibcast(export_gustiness,                1 , mpilog,  0, mpicom)
    call mpibcast(use_hetfrz_classnuc,             1 , mpilog,  0, mpicom)
    call mpibcast(use_gw_oro,                      1 , mpilog,  0, mpicom)
    call mpibcast(use_gw_front,                    1 , mpilog,  0, mpicom)
@@ -491,7 +489,7 @@ subroutine phys_ctl_readnl(nlfile)
    ! check MMF parameters
    if (use_MMF) then
       ! Check settings for MMF_microphysics_scheme
-      if ( .not.(MMF_microphysics_scheme .eq. 'm2005' .or. &
+      if ( .not.(MMF_microphysics_scheme .eq. 'p3' .or. &
                  MMF_microphysics_scheme .eq. 'sam1mom' )) then
          write(iulog,*)'phys_setopts: illegal value of MMF_microphysics_scheme:', MMF_microphysics_scheme
          call endrun('phys_setopts: illegal value of MMF_microphysics_scheme')
@@ -600,7 +598,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
                         MMF_orientation_angle_out, use_MMF_VT_out, MMF_VT_wn_max_out, use_MMF_ESMT_out, &
                         use_crm_accel_out, crm_accel_factor_out, crm_accel_uv_out, &
                         do_clubb_sgs_out, do_shoc_sgs_out, do_tms_out, state_debug_checks_out, &
-                        linearize_pbl_winds_out, export_gustiness_out, &
+                        linearize_pbl_winds_out, &
                         do_aerocom_ind3_out,  &
                         use_mass_borrower_out, & 
                         use_qqflx_fixer_out, & 
@@ -692,7 +690,6 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    logical,           intent(out), optional :: print_fixer_message_out
    logical,           intent(out), optional :: state_debug_checks_out
    logical,           intent(out), optional :: linearize_pbl_winds_out
-   logical,           intent(out), optional :: export_gustiness_out
    logical,           intent(out), optional :: fix_g1_err_ndrop_out!BSINGH - bugfix for ndrop.F90
    logical,           intent(out), optional :: ssalt_tuning_out    
    logical,           intent(out), optional :: resus_fix_out       
@@ -799,7 +796,6 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    if ( present(print_fixer_message_out ) ) print_fixer_message_out  = print_fixer_message
    if ( present(state_debug_checks_out  ) ) state_debug_checks_out   = state_debug_checks
    if ( present(linearize_pbl_winds_out ) ) linearize_pbl_winds_out  = linearize_pbl_winds
-   if ( present(export_gustiness_out    ) ) export_gustiness_out     = export_gustiness
    if ( present(fix_g1_err_ndrop_out    ) ) fix_g1_err_ndrop_out     = fix_g1_err_ndrop
    if ( present(ssalt_tuning_out        ) ) ssalt_tuning_out         = ssalt_tuning   
    if ( present(resus_fix_out           ) ) resus_fix_out            = resus_fix      

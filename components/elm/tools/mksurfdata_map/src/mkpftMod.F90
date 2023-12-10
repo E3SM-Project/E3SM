@@ -40,7 +40,7 @@ module mkpftMod
   ! the fraction in pft_frc. Only the first few points are used until pft_frc = 0.0.
   !
   integer            :: m                     ! index
-  integer, parameter :: maxpft = 24           ! maximum # of PFT
+  integer, parameter :: maxpft = 50           ! maximum # of PFT
   integer, public    :: num_natpft            ! number of PFTs on the natural vegetation landunit, NOT including bare ground (includes generic crops for runs with create_crop_landunit=false)
   integer, public    :: num_cft               ! number of CFTs on the crop landunit
   integer, public    :: natpft_lb             ! lower bound for natural pft arrays
@@ -260,7 +260,33 @@ subroutine mkpft(ldomain, mapfname, fpft, ndiag, pctlnd_o, pctpft_o)
                    'winter_temperate_cereal            ', &
                    'irrigated_winter_temperate_cereal  ', &
                    'soybean                            ', &
-                   'irrigated_soybean                  ' /)
+                   'irrigated_soybean                  ', &
+                   'cassava                            ', &
+                   'irrigated_cassava                  ', &
+                   'cotton                             ', &
+                   'irrigated_cotton                   ', &
+                   'foddergrass                        ', &
+                   'irrigated_foddergrass              ', &
+                   'oilpalm                            ', &
+                   'irrigated_oilpalm                  ', &
+                   'other_grains                       ', &
+                   'irrigated_other_grains             ', &
+                   'rapeseed                           ', &
+                   'irrigated_rapeseed                 ', &
+                   'rice                               ', &
+                   'irrigated_rice                     ', &
+                   'roots_tubers                       ', &
+                   'irrigated_root_tubers              ', &
+                   'sugarcane                          ', &
+                   'irrigated_sugarcane                ', &
+                   'miscanthus                         ', &
+                   'irrigated_miscanthus               ', &
+                   'switchgrass                        ', &
+                   'irrigated_switchgrass              ', &
+                   'poplar                             ', &
+                   'irrigated_poplar                   ', &
+                   'willow                             ', &
+                   'irrigated_willow                   ' /)
   end if
   if (      numpft == numstdpft )then
      write(6,*)'Creating surface datasets with the standard # of PFTs =', numpft
@@ -870,10 +896,28 @@ subroutine mkpftAtt( ncid, dynlanduse, xtype )
         call ncd_defvar(ncid=ncid, varname='PCT_CFT', xtype=xtype, &
              dim1name='gridcell', dim2name='cft', &
              long_name='percent crop functional type on the crop landunit (% of landunit)', units='unitless')
+
+        ! fertilizer
+        call ncd_defvar(ncid=ncid, varname='NFERT', xtype=xtype, &
+             dim1name='gridcell', dim2name='cft', &
+             long_name='synthetic nitrogen fertilizer application rate', units='g/m^2')
+        call ncd_defvar(ncid=ncid, varname='PFERT', xtype=xtype, &
+             dim1name='gridcell', dim2name='cft', &
+             long_name='synthetic phosphorus fertilizer application rate', units='g/m^2')
+
      else
         call ncd_defvar(ncid=ncid, varname='PCT_CFT', xtype=xtype, &
              dim1name='lsmlon', dim2name='lsmlat', dim3name='cft', &
              long_name='percent crop functional type on the crop landunit (% of landunit)', units='unitless')
+
+       ! fertilizer
+        call ncd_defvar(ncid=ncid, varname='NFERT', xtype=xtype, &
+             dim1name='lsmlon', dim2name='lsmlat', dim3name='cft', &
+             long_name='synthetic nitrogen fertilizer application rate', units='g/m^2')
+        call ncd_defvar(ncid=ncid, varname='PFERT', xtype=xtype, &
+             dim1name='lsmlon', dim2name='lsmlat', dim3name='cft', &
+             long_name='synthetic phosphorus fertilizer application rate', units='g/m^2')
+
      end if
   end if
 

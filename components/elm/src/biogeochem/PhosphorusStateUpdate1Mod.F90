@@ -163,6 +163,19 @@ contains
             end do
          end if
 
+        ! P fertilization for crops
+      if ( crop_prog )then
+         do j = 1, nlevdecomp
+
+            ! column loop
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+                  ! P fertilization
+                  col_ps%solutionp_vr(c,j) = col_ps%solutionp_vr(c,j) + col_pf%fert_p_to_sminp(c)*dt * ndep_prof(c,j)
+            end do
+         end do
+      end if
+
       ! decomposition fluxes
       do k = 1, ndecomp_cascade_transitions
          do j = 1, nlevdecomp
