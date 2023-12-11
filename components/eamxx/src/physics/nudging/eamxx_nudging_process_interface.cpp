@@ -204,9 +204,12 @@ void Nudging::apply_vert_cutoff_tendency(Field &base, const Field &next,
       Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0},
                                              {num_cols, num_vert_packs}),
       KOKKOS_LAMBDA(int i, int j) {
-        if(pmid_view(i, j) > cutoff_view(i, j)) {
+        // If the pressure is above the cutoff, then we are closer to the surface
+        if (pmid_view(i, j) > cutoff_view(i, j)) {
+          // Don't apply the tendency closer to the surface
           tend_view(i, j) = 0.0;
         } else {
+          // Apply the tendency farther up from the surface
           tend_view(i, j) = next_view(i, j) - base_view(i, j);
         }
       });
