@@ -211,7 +211,7 @@ void Nudging::initialize_impl (const RunType /* run_type */)
 
   // Get the number of external cols on current rank
   auto m_num_cols_ext = grid_ext->get_num_local_dofs();
-  // Declare the layouts for the helper fields (tmp: temporay))
+  // Declare the layouts for the helper fields (tmp: temporary))
   FieldLayout scalar2d_layout_mid_tmp { {LEV}, {m_num_levs}};
   FieldLayout scalar3d_layout_mid_tmp { {COL,LEV}, {m_num_cols_ext, m_num_levs} };
   // Declare the layouts for the helper fields (ext: external)

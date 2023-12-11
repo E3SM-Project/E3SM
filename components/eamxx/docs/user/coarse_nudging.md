@@ -1,6 +1,6 @@
 # Nudging from coarse data
 
-Because EAMxx is designed to run at ultra high resolution, it is not feasible to produce nudging data at the same resolution.
+Because EAMxx is designed to support ultra-high resolutions (in fact, that was the initial reason for its inception), it is not feasible to produce nudging data at the same resolution.
 Instead, in EAMxx, it is possible to nudge from coarse data.
 This is done by remapping the coarse data provided by the user to the runtime physics grid of EAMxx.
 In order to enable nudging from coarse data, the user must provide nudging data at the coarse resolution desired and an appropriate     ncremap-compatible mapping file.
@@ -13,7 +13,7 @@ A limitation for now is that the nudging data must be provided explicitly, eithe
 This can be problematic for long list of files, but we are working on a solution to this problem.
 
 Let's say that the nudging data is provided as one file in the following path: `/path/to/nudging_data_ne4pg2_L72.nc`.
-Then, a mapping file is provided as `/path/to/mapping_file_ne4pg2_to_ne120pg2.nc`.
+Then, a mapping file is provided as `/another/path/to/mapping_file_ne4pg2_to_ne120pg2.nc`.
 Then if the physics grid is ne120pg2, the user must enable the nudging process, specify the nudging files, and provide the specifies the nudging data and a remap file.
 In other words, the following options are needed:
 
@@ -21,5 +21,5 @@ In other words, the following options are needed:
 ./atmchange atm_procs_list=(sc_import,nudging,homme,physics,sc_export)
 ./atmchange nudging_fields=U,V
 ./atmchange nudging_filename=/path/to/nudging_data_ne4pg2_L72.nc
-./atmchange nudging_refine_remap_mapfile=/path/to/mapping_file_ne4pg2_to_ne120pg2.nc
+./atmchange nudging_refine_remap_mapfile=/another/path/to/mapping_file_ne4pg2_to_ne120pg2.nc
 ```
