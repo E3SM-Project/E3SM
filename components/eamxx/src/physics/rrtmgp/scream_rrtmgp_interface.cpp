@@ -820,9 +820,6 @@ namespace scream {
             // Combine gas and cloud optics
             clouds_day.delta_scale();
             clouds_day.increment(optics);
-            if (extra_clnsky_diag) {
-                clouds_day.increment(optics_no_aerosols);
-            }
             // Compute fluxes on daytime columns
             rte_sw(optics, top_at_1, mu0_day, toa_flux, sfc_alb_dir_T, sfc_alb_dif_T, fluxes_day);
             // Expand daytime fluxes to all columns
@@ -840,6 +837,8 @@ namespace scream {
             });
 
             if (extra_clnsky_diag) {
+                // First increment clouds in optics_no_aerosols
+                clouds_day.increment(optics_no_aerosols);
                 // Compute cleansky (gas + clouds) fluxes on daytime columns
                 rte_sw(optics_no_aerosols, top_at_1, mu0_day, toa_flux, sfc_alb_dir_T, sfc_alb_dif_T, fluxes_day);
                 // Expand daytime fluxes to all columns
@@ -973,14 +972,13 @@ namespace scream {
 
             // Combine gas and cloud optics
             clouds.increment(optics);
-            if (extra_clnsky_diag) {
-                clouds.increment(optics_no_aerosols);
-            }
 
             // Compute allsky fluxes
             rte_lw(max_gauss_pts, gauss_Ds, gauss_wts, optics, top_at_1, lw_sources, emis_sfc, fluxes);
 
             if (extra_clnsky_diag) {
+                // First increment clouds to optics 
+                clouds.increment(optics_no_aerosols);
                 // Compute clean-sky fluxes
                 rte_lw(max_gauss_pts, gauss_Ds, gauss_wts, optics_no_aerosols, top_at_1, lw_sources, emis_sfc, clnsky_fluxes);
             }
