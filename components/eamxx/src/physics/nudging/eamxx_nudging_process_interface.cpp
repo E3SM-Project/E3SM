@@ -17,6 +17,8 @@ Nudging::Nudging (const ekat::Comm& comm, const ekat::ParameterList& params)
   // If we are doing horizontal refine-remapping, we need to get the mapfile from user
   m_refine_remap_file = m_params.get<std::string>(
       "nudging_refine_remap_mapfile", "no-file-given");
+  m_refine_remap_vert_cutoff = m_params.get<Real>(
+      "nudging_refine_remap_vert_cutoff", 0.0);
   auto src_pres_type = m_params.get<std::string>("source_pressure_type","TIME_DEPENDENT_3D_PROFILE");
   if (src_pres_type=="TIME_DEPENDENT_3D_PROFILE") {
     m_src_pres_type = TIME_DEPENDENT_3D_PROFILE;
@@ -125,6 +127,13 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
                 << m_refine_remap_file << " will NOT be used.  Please check the "
                 << "nudging data file and/or the model grid." << std::endl;
     }
+    // If the user gives us the vertical cutoff, warn them
+    if (m_refine_remap_vert_cutoff > 0.0) {
+      std::cout << "Warning! Nudging::set_grids - the vertical cutoff "
+                << std::to_string(m_refine_remap_vert_cutoff)
+                << " is larger than zero, but we are not remapping.  Please "
+                   "check your settings." << std::endl;
+    }
     // Set m_refine_remap to false
     m_refine_remap = false;
   }
@@ -165,6 +174,42 @@ void Nudging::apply_weighted_tendency(Field& base, const Field& next, const Fiel
   Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0}, {num_cols, num_vert_packs}), KOKKOS_LAMBDA(int i, int j) {
     tend_view(i,j) = next_view(i,j)*w_view(i,j) - base_view(i,j)*w_view(i,j);
   });
+  base.update(tend, dtend, Real(1.0));
+}
+// =========================================================================================
+void Nudging::apply_vert_cutoff_tendency(Field &base, const Field &next,
+                                         const Field &p_mid, const Real cutoff,
+                                         const Real dt) {
+  // Calculate the weight to apply the tendency
+  const Real dtend = dt / Real(m_timescale);
+  EKAT_REQUIRE_MSG(dtend >= 0,
+                   "Error! Nudging::apply_tendency - timescale tendency of "
+                       << std::to_string(dt) << " / "
+                       << std::to_string(m_timescale) << " = "
+                       << std::to_string(dtend)
+                       << " is invalid.  Please check the timescale and/or dt");
+  // Now apply the tendency.
+  Field tend = base.clone();
+
+  // Use update internal to set tendency, will be (weights*next - weights*base),
+  // note tend=base at this point.
+  auto base_view = base.get_view<const Real **>();
+  auto tend_view = tend.get_view<Real **>();
+  auto next_view = next.get_view<Real **>();
+  auto pmid_view = p_mid.get_view<Real **>();
+
+  const int num_cols       = base_view.extent(0);
+  const int num_vert_packs = base_view.extent(1);
+  Kokkos::parallel_for(
+      Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0},
+                                             {num_cols, num_vert_packs}),
+      KOKKOS_LAMBDA(int i, int j) {
+        if(pmid_view(i, j) > cutoff_view(i, j)) {
+          tend_view(i, j) = 0.0;
+        } else {
+          tend_view(i, j) = next_view(i, j) - base_view(i, j);
+        }
+      });
   base.update(tend, dtend, Real(1.0));
 }
 // =============================================================================================================
@@ -473,9 +518,12 @@ void Nudging::run_impl (const double dt)
         auto nudging_weights_field = get_helper_field("nudging_weights");
         // appply the nudging tendencies to the ATM states
         apply_weighted_tendency(atm_state_field, int_state_field, nudging_weights_field, dt);
+      } else if (m_refine_remap_vert_cutoff > 0.0) {
+        apply_vert_cutoff_tendency(atm_state_field, int_state_field,
+                                   p_mid_field, m_refine_remap_vert_cutoff, dt);
       } else {
-	 apply_tendency(atm_state_field, int_state_field, dt);
-      }      
+        apply_tendency(atm_state_field, int_state_field, dt);
+      }
     }
   }
 }
