@@ -21,11 +21,14 @@ One option is to template the mesh class so a mesh object can be created for bot
 
 Although the existing MPAS Mesh spec uses a one-based mesh numbering, zero-based mesh numbering is required to be compatiable with the zero-based indexing used for YAKL arrays.
 
-### 2.4 Desired: Ability to support multiple independent mesh objects
+### 2.4 Requirement: Work with Decomp class to decompose mesh
+
+
+### 2.5 Desired: Ability to support multiple independent mesh objects
 
 This flexibility is required to support future implmentations of spatially split barotropic and baroclinic modes that are computed on different resolution 
 
-### 2.5 Desired: OMEGA can read in a reduced number of mesh variables and compute the remaning array information online.
+### 2.6 Desired: OMEGA can read in a reduced number of mesh variables and compute the remaning array information online.
 
 Many of the mesh variables are not independent, e.g.  areaCell, weightsOnEdge, etc., and can be computed from a reduced set of mesh variables.
 This functionality could be used to reduce mesh/restart file size for high resoultion meshes.  
