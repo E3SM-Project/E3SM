@@ -307,9 +307,19 @@ be lost if SCREAM_HACK_XML is not enabled.
       <rad_frequency hgrid="ne0np4_conus_x4v1_lowcon">4</rad_frequency>
       <do_aerosol_rad type="logical" doc="Flag to turn on/off considering aerosols in radiation calculations">true</do_aerosol_rad>
       <do_aerosol_rad COMPSET=".*SCREAM.*noAero">false</do_aerosol_rad>
-      <enable_column_conservation_checkstype="logical">false</enable_column_conservation_checks>
-      <extra_clnclrsky_diag type="logical" doc="Flag to turn on/off an extra clean-clear-sky (with neither clouds nor aerosols) radiation call">false</extra_clnclrsky_diag>
-      <extra_clnsky_diag type="logical" doc="Flag to turn on/off an extra clean-sky (with no aerosols) radiation call">false</extra_clnsky_diag>
+      <enable_column_conservation_checks type="logical">false</enable_column_conservation_checks>
+      <extra_clnclrsky_diag
+        type="logical"
+        doc="Flag to turn on/off an extra clean-clear-sky (with neither clouds nor aerosols) radiation call"
+      >
+        false
+      </extra_clnclrsky_diag>
+      <extra_clnsky_diag
+        type="logical"
+        doc="Flag to turn on/off an extra clean-sky (with no aerosols) radiation call"
+      >
+        false
+      </extra_clnsky_diag>
     </rrtmgp>
 
     <mac_aero_mic inherit="atm_proc_group">
