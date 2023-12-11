@@ -244,13 +244,13 @@ be lost if SCREAM_HACK_XML is not enabled.
         type="string"
         doc="Refine-remapping mapfile from the source nudging dataset to the physics grid"
       >
-      "no-file-given"
+        "no-file-given"
       </nudging_refine_remap_mapfile>
       <nudging_refine_remap_vert_cutoff
         type="real"
         doc="A vertical cutoff to go with refine-remap logic (in units of p_mid) where the nudging is turned off above it (closer to the surface)"
       >
-      0.0
+        0.0
       </nudging_refine_remap_vert_cutoff>
     </nudging>
 
