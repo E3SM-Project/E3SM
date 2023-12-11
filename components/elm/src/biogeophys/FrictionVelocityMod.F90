@@ -20,6 +20,7 @@ module FrictionVelocityMod
 
   logical, public :: implicit_stress = .false.
   logical, public :: atm_gustiness = .false.
+  logical, public :: force_land_gustiness = .false.
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: FrictionVelocity       ! Calculate friction velocity
@@ -36,7 +37,7 @@ contains
   !------------------------------------------------------------------------------
   subroutine FrictionVelocity(lbn, ubn, fn, filtern, &
        displa, z0m, z0h, z0q, &
-       obu, iter, ur, um, ustar, &
+       obu, iter, ur, um, ugust, ustar, &
        temp1, temp2, temp12m, temp22m, fm,frictionvel_vars,landunit_index)
     !$acc routine seq
     ! !DESCRIPTION:
@@ -65,6 +66,7 @@ contains
     integer  , intent(in)    :: iter                     ! iteration number
     real(r8) , intent(in)    :: ur      ( lbn: )         ! wind speed at reference height [m/s] [lbn:ubn]
     real(r8) , intent(in)    :: um      ( lbn: )         ! wind speed including the stablity effect [m/s] [lbn:ubn]
+    real(r8) , intent(in)    :: ugust   ( lbn: )         ! Gustiness wind speed [m/s] [lbn:ubn]
     real(r8) , intent(out)   :: ustar   ( lbn: )         ! friction velocity [m/s] [lbn:ubn]
     real(r8) , intent(out)   :: temp1   ( lbn: )         ! relation for potential temperature profile [lbn:ubn]
     real(r8) , intent(out)   :: temp12m ( lbn: )         ! relation for potential temperature profile applied at 2-m [lbn:ubn]
@@ -97,6 +99,7 @@ contains
          vds              => frictionvel_vars%vds_patch        , & ! Output: [real(r8) (:) ] dry deposition velocity term (m/s) (for SO4 NH4NO3)
          u10              => frictionvel_vars%u10_patch        , & ! Output: [real(r8) (:) ] 10-m wind (m/s) (for dust model)
          u10_elm          => frictionvel_vars%u10_elm_patch    , & ! Output: [real(r8) (:) ] 10-m wind (m/s)
+         u10_with_gusts_elm=>frictionvel_vars%u10_with_gusts_elm_patch, & ! Output: [real(r8) (:) ] 10-m wind with gusts(m/s)
          va               => frictionvel_vars%va_patch         , & ! Output: [real(r8) (:) ] atmospheric wind speed plus convective velocity (m/s)
          fv               => frictionvel_vars%fv_patch           & ! Output: [real(r8) (:) ] friction velocity (m/s) (for dust model)
          )
@@ -166,52 +169,56 @@ contains
           if (present(landunit_index)) then
              do pp = pfti,pftf
                 if (zldis-z0m(n) <= 10._r8) then
-                   u10_elm(pp) = um(n)
+                   u10_with_gusts_elm(pp) = um(n)
                 else
                    if (zeta < -zetam) then
-                      u10_elm(pp) = um(n) - ( ustar(n)/vkc*(log(-zetam*obu(n)/(10._r8+z0m(n)))      &
+                      u10_with_gusts_elm(pp) = um(n) - ( ustar(n)/vkc*(log(-zetam*obu(n)/(10._r8+z0m(n))) &
                            - StabilityFunc1(-zetam)                              &
                            + StabilityFunc1((10._r8+z0m(n))/obu(n))              &
                            + 1.14_r8*((-zeta)**0.333_r8-(zetam)**0.333_r8)) )
                    else if (zeta < 0._r8) then
-                      u10_elm(pp) = um(n) - ( ustar(n)/vkc*(log(zldis/(10._r8+z0m(n)))           &
+                      u10_with_gusts_elm(pp) = um(n) - ( ustar(n)/vkc*(log(zldis/(10._r8+z0m(n))) &
                            - StabilityFunc1(zeta)                             &
                            + StabilityFunc1((10._r8+z0m(n))/obu(n))) )
                    else if (zeta <=  1._r8) then
-                      u10_elm(pp) = um(n) - ( ustar(n)/vkc*(log(zldis/(10._r8+z0m(n)))           &
+                      u10_with_gusts_elm(pp) = um(n) - ( ustar(n)/vkc*(log(zldis/(10._r8+z0m(n))) &
                            + 5._r8*zeta - 5._r8*(10._r8+z0m(n))/obu(n)) )
                    else
-                      u10_elm(pp) = um(n) - ( ustar(n)/vkc*(log(obu(n)/(10._r8+z0m(n)))             &
+                      u10_with_gusts_elm(pp) = um(n) - ( ustar(n)/vkc*(log(obu(n)/(10._r8+z0m(n))) &
                            + 5._r8 - 5._r8*(10._r8+z0m(n))/obu(n)                &
                            + (5._r8*log(zeta)+zeta-1._r8)) )
 
                    end if
                 end if
                 va(pp) = um(n)
+                ! Estimate u10 with effects of gustiness removed.
+                u10_elm(pp) = u10_with_gusts_elm(pp) * sqrt(max(0., um(n)**2 - ugust(n)**2)) / um(n)
              end do
           else
              if (zldis-z0m(n) <= 10._r8) then
-                u10_elm(n) = um(n)
+                u10_with_gusts_elm(n) = um(n)
              else
                 if (zeta < -zetam) then
-                   u10_elm(n) = um(n) - ( ustar(n)/vkc*(log(-zetam*obu(n)/(10._r8+z0m(n)))         &
+                   u10_with_gusts_elm(n) = um(n) - ( ustar(n)/vkc*(log(-zetam*obu(n)/(10._r8+z0m(n))) &
                         - StabilityFunc1(-zetam)                                 &
                         + StabilityFunc1((10._r8+z0m(n))/obu(n))                 &
                         + 1.14_r8*((-zeta)**0.333_r8-(zetam)**0.333_r8)) )
                 else if (zeta < 0._r8) then
-                   u10_elm(n) = um(n) - ( ustar(n)/vkc*(log(zldis/(10._r8+z0m(n)))              &
+                   u10_with_gusts_elm(n) = um(n) - ( ustar(n)/vkc*(log(zldis/(10._r8+z0m(n))) &
                         - StabilityFunc1(zeta)                                &
                         + StabilityFunc1((10._r8+z0m(n))/obu(n))) )
                 else if (zeta <=  1._r8) then
-                   u10_elm(n) = um(n) - ( ustar(n)/vkc*(log(zldis/(10._r8+z0m(n)))              &
+                   u10_with_gusts_elm(n) = um(n) - ( ustar(n)/vkc*(log(zldis/(10._r8+z0m(n))) &
                         + 5._r8*zeta - 5._r8*(10._r8+z0m(n))/obu(n)) )
                 else
-                   u10_elm(n) = um(n) - ( ustar(n)/vkc*(log(obu(n)/(10._r8+z0m(n)))    &
+                   u10_with_gusts_elm(n) = um(n) - ( ustar(n)/vkc*(log(obu(n)/(10._r8+z0m(n))) &
                         + 5._r8 - 5._r8*(10._r8+z0m(n))/obu(n)                   &
                         + (5._r8*log(zeta)+zeta-1._r8)) )
                 end if
              end if
              va(n) = um(n)
+             ! Estimate u10 with effects of gustiness removed.
+             u10_elm(n) = u10_with_gusts_elm(n) * sqrt(max(0., um(n)**2 - ugust(n)**2)) / um(n)
           end if
 
           !===================!

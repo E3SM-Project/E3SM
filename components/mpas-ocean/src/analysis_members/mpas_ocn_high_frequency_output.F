@@ -352,7 +352,8 @@ contains
          call mpas_pool_get_array(highFrequencyOutputAMPool, 'vertVelSFC', vertVelSFC)
 
          ! split explicit specific arrays
-         if ( config_time_integrator == trim('split_explicit') .or.  config_time_integrator == trim('split_implicit') ) then
+         if ( config_time_integrator == trim('split_explicit') .or.  config_time_integrator == trim('split_implicit') &
+                                                               .or.  config_time_integrator == trim('split_explicit_ab2') ) then
            call mpas_pool_get_array(statePool, 'normalBaroclinicVelocity', normalBaroclinicVelocity, 1)
            call mpas_pool_get_array(statePool, 'normalBarotropicVelocity', normalBarotropicVelocity, 1)
          endif
@@ -539,7 +540,8 @@ contains
            meridionalAreaWeightedCellVelAtBottom(iCell) = meridionalAreaWeightedCellVelAtBottom(iCell)/cellArea
          end do
 
-         if ( config_time_integrator == trim('split_explicit')) then
+         if ( config_time_integrator == trim('split_explicit') .or.  config_time_integrator == trim('split_implicit') &
+                                                               .or.  config_time_integrator == trim('split_explicit_ab2') ) then
 
            do iEdge = 1, nEdges
              normalBarotropicVel(iEdge) = normalBarotropicVelocity(iEdge)

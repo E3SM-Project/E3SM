@@ -54,6 +54,7 @@ SET (BOUNDARY_EXCHANGE_UT_F90_SRCS
   ${SRC_SHARE_DIR}/control_mod.F90
   ${SRC_SHARE_DIR}/coordinate_systems_mod.F90
   ${SRC_SHARE_DIR}/cube_mod.F90
+  ${SRC_SHARE_DIR}/planar_mod.F90
   ${SRC_SHARE_DIR}/derivative_mod_base.F90
   ${SRC_SHARE_DIR}/dimensions_mod.F90
   ${SRC_SHARE_DIR}/edge_mod_base.F90

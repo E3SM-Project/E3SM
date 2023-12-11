@@ -16,6 +16,7 @@ module CropType
   use elm_varctl          , only : iulog, use_crop
   use ColumnDataType      , only : col_es
   use VegetationDataType  , only : veg_es
+  use GridcellType        , only : grc_pp
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -38,7 +39,7 @@ module CropType
      logical , pointer :: cropplant_patch         (:)   ! patch Flag, true if planted
      integer , pointer :: harvdate_patch          (:)   ! patch harvest date
      real(r8), pointer :: fertnitro_patch         (:)   ! patch fertilizer nitrogen
-
+     real(r8), pointer :: fertphosp_patch         (:)   ! patch fertilizer phosphorus
      real(r8), pointer :: gddplant_patch          (:)   ! patch accum gdd past planting date for crop       (ddays)
      real(r8), pointer :: gddtsoi_patch           (:)   ! patch growing degree-days from planting (top two soil layers) (ddays)
      real(r8), pointer :: crpyld_patch            (:)   ! patch crop yield (bu/acre)
@@ -78,6 +79,7 @@ module CropType
 
      procedure, private :: InitAllocate 
      procedure, private :: InitHistory
+     procedure, private :: InitCold
      procedure, private, nopass :: checkDates
 
   end type crop_type
@@ -102,6 +104,7 @@ contains
 
     if (crop_prog) then
        call this%InitHistory(bounds)
+       call this%InitCold(bounds) 
     end if
 
   end subroutine Init
@@ -126,6 +129,7 @@ contains
     allocate(this%cropplant_patch        (begp:endp)) ; this%cropplant_patch        (:) = .false.
     allocate(this%harvdate_patch         (begp:endp)) ; this%harvdate_patch         (:) = huge(1) 
     allocate(this%fertnitro_patch        (begp:endp)) ; this%fertnitro_patch        (:) = spval
+    allocate(this%fertphosp_patch        (begp:endp)) ; this%fertphosp_patch        (:) = spval
     allocate(this%gddplant_patch         (begp:endp)) ; this%gddplant_patch         (:) = spval
     allocate(this%gddtsoi_patch          (begp:endp)) ; this%gddtsoi_patch          (:) = spval
     allocate(this%crpyld_patch           (begp:endp)) ; this%crpyld_patch           (:) = spval
@@ -169,6 +173,16 @@ contains
     !-----------------------------------------------------------------------
     
     begp = bounds%begp; endp = bounds%endp
+
+    this%fertnitro_patch(begp:endp) = spval
+    call hist_addfld1d (fname='FERTNITRO', units='gN/m2/yr', &
+         avgflag='A', long_name='Nitrogen fertilizer for each crop', &
+         ptr_patch=this%fertnitro_patch, default='inactive')
+
+    this%fertphosp_patch(begp:endp) = spval
+    call hist_addfld1d (fname='FERTPHOSP', units='gP/m2/yr', &
+         avgflag='A', long_name='Phosphorus fertilizer for each crop', &
+         ptr_patch=this%fertphosp_patch, default='inactive')
 
     this%gddplant_patch(begp:endp) = spval
     call hist_addfld1d (fname='GDDPLANT', units='ddays', &
@@ -248,30 +262,65 @@ contains
     this%p2ETo_patch(begp:endp,:) = spval
     call hist_addfld2d (fname='P2ETO', units='mm', type2d='month', &
          avgflag='A', long_name='Precipitation:Evapotranspiration ratio', &
-         ptr_patch=this%p2ETo_patch)
+         ptr_patch=this%p2ETo_patch, default = 'inactive')
 
     this%p2ETo_bar_patch(begp:endp,:) = spval
     call hist_addfld2d (fname='P2ETO_bar', units='mm', type2d='month', &
          avgflag='A', long_name='EWMA Precipitation:Evapotranspiration ratio', &
-         ptr_patch=this%p2ETo_bar_patch)
+         ptr_patch=this%p2ETo_bar_patch, default = 'inactive')
 
     this%prev_p2ETo_bar_patch(begp:endp,:) = spval
     call hist_addfld2d (fname='PREV_P2ETO_bar', units='mm', type2d='month', &
          avgflag='A', long_name='Previous EWMA Precipitation:Evapotranspirationratio', &
-         ptr_patch=this%prev_p2ETo_bar_patch)
+         ptr_patch=this%prev_p2ETo_bar_patch, default = 'inactive')
 
     this%P2E_rm_patch(begp:endp,:) = spval
     call hist_addfld2d (fname='P2E_rm', units='mm', type2d='month', &
          avgflag='A', long_name='Precipitation:Evapotranspiration ratio 4-month sum', &
-         ptr_patch=this%P2E_rm_patch)
+         ptr_patch=this%P2E_rm_patch, default = 'inactive')
 
     this%ETo_patch(begp:endp,:) = spval
     call hist_addfld2d (fname='ETO', units='mm', type2d='month', &
          avgflag='A', long_name='Reference Evapotranspiration', &
-         ptr_patch=this%ETo_patch)
+         ptr_patch=this%ETo_patch, default = 'inactive')
 
   end subroutine InitHistory
 
+
+    !-----------------------------------------------------------------------
+  subroutine InitCold(this, bounds)
+    ! !USES:
+    use LandunitType,    only : lun_pp
+    use landunit_varcon, only : istcrop
+    use VegetationType,  only : veg_pp
+    use GridcellType,    only : grc_pp
+    use elm_varsur,      only : fert_cft, fert_p_cft
+    ! !ARGUMENTS:
+    class(crop_type),  intent(inout) :: this
+    type(bounds_type), intent(in) :: bounds
+    !
+    ! !LOCAL VARIABLES:
+    integer :: t, c, l, g, p, m, topi, ti ! indices
+
+    character(len=*), parameter :: subname = 'InitCold'
+    if (use_crop) then
+       do p= bounds%begp,bounds%endp
+          g = veg_pp%gridcell(p)
+          l = veg_pp%landunit(p)
+          c = veg_pp%column(p)
+          t = veg_pp%topounit(p)
+          topi = grc_pp%topi(g)
+
+          if (lun_pp%itype(l) == istcrop) then
+             ti = t - topi + 1
+             m  = veg_pp%itype(p)
+             this%fertnitro_patch(p) = fert_cft(g,ti,m)
+             this%fertphosp_patch(p) = fert_p_cft(g,ti,m)
+          end if
+       end do
+    end if
+
+  end subroutine InitCold
 
     !-----------------------------------------------------------------------
   subroutine InitAccBuffer (this, bounds)

@@ -1481,7 +1481,7 @@ module ocn_time_integration_split
 
                !$omp parallel
                !$omp do schedule(runtime)
-               do iEdge = 1, nEdgesAll
+               do iEdge = 1, nEdgesOwned
                   normalBarotropicVelocityNew(iEdge) = &
                   normalBarotropicVelocityNew(iEdge) + &
                   normalBarotropicVelocitySubcycleNew(iEdge)

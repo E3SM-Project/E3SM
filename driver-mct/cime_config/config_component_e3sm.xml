@@ -204,6 +204,10 @@
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
+    <values match="last">
+      <value compset="_EAM">TRUE</value>
+      <value compset="SCREAM">FALSE</value>
+    </values>
     <group>run_flags</group>
     <file>env_run.xml</file>
     <desc>

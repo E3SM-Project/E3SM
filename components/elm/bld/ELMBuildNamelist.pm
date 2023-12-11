@@ -292,6 +292,7 @@ sub process_commandline {
                note                  => undef,
                drydep                => 0,
                megan                 => 0,
+               fan                   => "default",
                irrig                 => "default",
                res                   => "default",
                silent                => 0,
@@ -361,6 +362,7 @@ sub process_commandline {
              "nutrient_comp_pathway=s"   => \$opts{'nutrient_comp_pathway'},
              "soil_decomp=s"             => \$opts{'soil_decomp'},
              "solar_rad_scheme=s"        => \$opts{'solar_rad_scheme'},
+             "fan=s"                     => \$opts{'fan'},
             )  or usage();
 
   # Give usage message.
@@ -542,7 +544,8 @@ sub read_namelist_defaults {
   my @nl_defaults_files = ( "$nl_flags->{'cfgdir'}/namelist_files/namelist_defaults_overall.xml",
                             "$nl_flags->{'cfgdir'}/namelist_files/namelist_defaults.xml",
                             "$drvblddir/namelist_files/namelist_defaults_drv.xml",
-                            "$nl_flags->{'cfgdir'}/namelist_files/namelist_defaults_drydep.xml" );
+                            "$nl_flags->{'cfgdir'}/namelist_files/namelist_defaults_drydep.xml",
+                            "$nl_flags->{'cfgdir'}/namelist_files/namelist_defaults_fan.xml"  );
 
   # Add the location of the use case defaults files to the options hash
   $opts->{'use_case_dir'} = "$nl_flags->{'cfgdir'}/namelist_files/use_cases";
@@ -790,11 +793,11 @@ sub setup_cmdl_fates_mode {
 
       # The following variables may be set by the user and are compatible with use_fates
       # no need to set defaults, covered in a different routine
-      my @list  = (  "fates_spitfire_mode", "use_vertsoilc", "use_century_decomp",
+      my @list  = (  "fates_spitfire_mode", "use_vertsoilc", "use_century_decomp", "fates_seeddisp_cadence",
                      "use_fates_planthydro", "use_fates_ed_st3", "use_fates_ed_prescribed_phys",
-		     "use_fates_inventory_init", "use_fates_fixed_biogeog", "use_fates_nocomp","use_fates_sp",
+                     "use_fates_inventory_init", "use_fates_fixed_biogeog", "use_fates_nocomp","use_fates_sp",
                      "fates_inventory_ctrl_filename","use_fates_logging", "use_fates_tree_damage",
-		     "use_fates_parteh_mode","use_fates_cohort_age_tracking","use_snicar_ad");
+                     "use_fates_parteh_mode","use_fates_cohort_age_tracking","use_snicar_ad");
       foreach my $var ( @list ) {
 	  if ( defined($nl->get_value($var))  ) {
 	      $nl_flags->{$var} = $nl->get_value($var);
@@ -855,6 +858,10 @@ sub setup_cmdl_fates_mode {
 	   fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
        }
        $var = "fates_inventory_ctrl_filename";
+       if ( defined($nl->get_value($var)) ) {
+	   fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
+       }
+       $var = "fates_seeddisp_cadence";
        if ( defined($nl->get_value($var)) ) {
 	   fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
        }
@@ -1904,6 +1911,7 @@ sub process_namelist_inline_logic {
   setup_logic_fates($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_logic_bgc_spinup($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_logic_supplemental_nitrogen($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
+  setup_logic_fan($opts, $nl_flags, $definition, $defaults, $nl, $physv);
 
   #########################################
   # namelist group: clm_humanindex_inparm #
@@ -2385,6 +2393,7 @@ sub setup_logic_demand {
   $settings{'use_snicar_ad'}       = $nl_flags->{'use_snicar_ad'};
   $settings{'use_century_decomp'}  = $nl_flags->{'use_century_decomp'};
   $settings{'use_crop'}            = $nl_flags->{'use_crop'};
+  $settings{'use_modified_infil'}  = $nl_flags->{'use_modified_infil'};
   
   my $demand = $nl->get_value('clm_demand');
   if (defined($demand)) {
@@ -2990,6 +2999,61 @@ sub setup_logic_phosphorus_deposition {
 
 #-------------------------------------------------------------------------------
 
+sub setup_logic_fan {
+  my ($opts, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
+   
+  # Flags to control FAN (Flow of Agricultural Nitrogen) nitrogen deposition (manure and fertilizer)
+  #
+      if ( $nl_flags->{'bgc_mode'} =~/cn|bgc/ ) { 
+          if( $opts->{'fan'} ) {
+             add_default($opts, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fan',
+                         'use_cn'=>$nl_flags->{'use_cn'} );
+             $nl_flags->{'use_fan'} = $nl->get_value('use_fan');
+             add_default($opts, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fan_nh3_to_atm',
+                          'fan_mode'=>$opts->{'fan'});
+             $nl_flags->{'fan_nh3_to_atm'} = $nl->get_value('fan_nh3_to_atm');
+            }
+     
+          if ( value_is_true( $nl_flags->{'use_fates'} ) && value_is_true( $nl_flags->{'use_fan'} ) ) {
+             fatal_error("Cannot turn use_fan on when use_fates is on\n" );
+          }
+          if (!value_is_true($nl_flags->{'use_crop'}) && value_is_true( $nl_flags->{'use_fan'} )) {
+            fatal_error('Cannot use_fan if use_crop is false');
+          }   #
+
+          if( $opts->{'fan'} ) {
+             add_default($opts, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, "fanmapalgo", 'phys'=>$nl_flags->{'phys'},
+                      'use_cn'=>$nl_flags->{'use_cn'}, 'hgrid'=>$nl_flags->{'res'} );
+             add_default($opts, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, "stream_year_first_fan", 'phys'=>$nl_flags->{'phys'},
+                      'use_cn'=>$nl_flags->{'use_cn'}, 'sim_year'=>$nl_flags->{'sim_year'}, 'sim_year_range'=>$nl_flags->{'sim_year_range'});
+             add_default($opts, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, "stream_year_last_fan", 'phys'=>$nl_flags->{'phys'},
+                      'use_cn'=>$nl_flags->{'use_cn'}, 'sim_year'=>$nl_flags->{'sim_year'},'sim_year_range'=>$nl_flags->{'sim_year_range'});
+    # Set align year, if first and last years are different
+             if ( $nl->get_value("stream_year_first_fan") != $nl->get_value("stream_year_last_fan") ) {
+                add_default($opts, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, "model_year_align_fan", 'sim_year'=>$nl_flags->{'sim_year'},
+                       'sim_year_range'=>$nl_flags->{'sim_year_range'});
+              }
+                add_default($opts, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, "stream_fldfilename_fan", 'phys'=>$nl_flags->{'phys'},
+                       'use_cn'=>$nl_flags->{'use_cn'}, 'rcp'=>$nl_flags->{'rcp'}, 'hgrid'=>"1.9x2.5" );
+          } else {      
+           # If bgc is NOT CN/CNDV then make sure none of the ndep settings are set!
+             if ( defined($nl->get_value('stream_year_first_fan')) ||
+               defined($nl->get_value('stream_year_last_fan'))  ||
+               defined($nl->get_value('model_year_align_fan'))  ||
+               defined($nl->get_value('stream_fldfilename_fan'))
+             ) {
+                 fatal_error("When bgc is NOT CN, FATES or CNDV none of: stream_year_first_ndep," .
+                             "stream_year_last_ndep, model_year_align_ndep, nor stream_fldfilename_ndep" .
+                             " can be set! $nl_flags->{'bgc_mode'} \n");
+             }  
+          }
+
+      }
+ }    
+
+ 
+#-------------------------------------------------------------------------------
+ 
 sub setup_logic_popd_streams {
   # population density streams require elm and CN/BGC
   my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
@@ -3223,6 +3287,7 @@ sub setup_logic_fates {
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_sp',                 'use_fates'=>$nl_flags->{'use_fates'});
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_nocomp',             'use_fates'=>$nl_flags->{'use_fates'});
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_tree_damage',        'use_fates'=>$nl_flags->{'use_fates'});
+    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_seeddisp_cadence',       'use_fates'=>$nl_flags->{'use_fates'});
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_paramfile', 'phys'=>$nl_flags->{'phys'});
 
   }
@@ -3262,6 +3327,9 @@ sub write_output_files {
     }
     {
       push @groups, "elm_humanindex_inparm";
+      if ( $nl_flags->{'use_fan'} eq ".true." ) {
+        push @groups, "fan_nml";
+      }
     }
   }
 
@@ -3273,6 +3341,9 @@ sub write_output_files {
   # Drydep or MEGAN namelist
   if ($opts->{'drydep'} || $opts->{'megan'} ) {
     @groups = qw(drydep_inparm megan_emis_nl);
+    if ( $nl_flags->{'use_fan'} eq ".true." ) {
+      push @groups, "fan_inparm";
+    }
     $outfile = "$opts->{'dir'}/drv_flds_in";
     $nl->write($outfile, 'groups'=>\@groups, 'note'=>"$note" );
     verbose_message("Writing @groups namelists to $outfile");
@@ -3386,9 +3457,6 @@ sub add_default {
       } else {
         if ($is_input_pathname eq 'abs') {
           $val = set_abs_filepath($val, $inputdata_rootdir);
-          if ( $test_files and ($val !~ /null/) and (! -f "$val") ) {
-            fatal_error("file not found: $var = $val");
-          }
         }
       }
     }

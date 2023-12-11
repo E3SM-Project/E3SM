@@ -200,9 +200,9 @@
 					description="Length of model time-step."
 					possible_values="Any time stamp in 'YYYY-MM-DD_hh:mm:ss' format. Items can be removed from the left if they are unused."
 		/>
-		<nml_option name="config_time_integrator" type="character" default_value="split_explicit"
+		<nml_option name="config_time_integrator" type="character" default_value="split_explicit_ab2"
 					description="Time integration method."
-					possible_values="'split_explicit', 'RK4', 'unsplit_explicit', 'split_implicit', 'LTS'"
+					possible_values="'split_explicit', 'RK4', 'unsplit_explicit', 'split_implicit', 'LTS', 'split_explicit_ab2'"
 		/>
 		<nml_option name="config_number_of_time_levels" type="integer" default_value="2"
 					description="The number of time levels in the time-stepping scheme. This is used for array allocation."
@@ -1278,7 +1278,7 @@
 	</nml_record>
 	<nml_record name="split_timestep_share" mode="forward">
 		<nml_option name="config_n_ts_iter" type="integer" default_value="2"
-					description="number of large iterations over stages 1-3"
+					description="number of large iterations over stages 1-3; For the split_explicit_ab2 time integrator, this value only affects the first time step when it is not a restart run. For restart runs, this value has no effect on the split_explicit_ab2 time integrator."
 					possible_values="any positive integer, but typically 1, 2, or 3"
 		/>
 		<nml_option name="config_n_bcl_iter_beg" type="integer" default_value="1"
@@ -1311,11 +1311,11 @@
 					description="Barotropic subcycles proceed from $t$ to $t+n\Delta t$, where $n$ is this configuration option."
 					possible_values="Any positive integer, but typically 1 or 2"
 		/>
-		<nml_option name="config_btr_gam1_velWt1" type="real" default_value="0.5"
+		<nml_option name="config_btr_gam1_velWt1" type="real" default_value="0.5333"
 					description="Weighting of velocity in the SSH predictor step in stage 2. When zero, previous subcycle time is used; when one, new subcycle time is used."
 					possible_values="between 0 and 1"
 		/>
-		<nml_option name="config_btr_gam2_SSHWt1" type="real" default_value="1.0"
+		<nml_option name="config_btr_gam2_SSHWt1" type="real" default_value="0.5333"
 					description="Weighting of SSH in the velocity corrector step in stage 2. When zero, previous subcycle time is used; when one, new subcycle time is used."
 					possible_values="between 0 and 1"
 		/>
@@ -1590,6 +1590,7 @@
 		<package name="variableShortwave" description="This package includes variables required to compute spatially variable shortwave extinction coefficients"/>
 
 		<package name="splitTimeIntegrator" description="This package includes variables required for either the split or unsplit explicit time integrators."/>
+		<package name="splitAB2TimeIntegrator" description="This package includes variables required for the split explicit AB2 time integrators."/>
 		<package name="semiImplicitTimePKG" description="This package includes variables required for split-implicit time integrators."/>
 		<package name="thicknessFilter" description="This package includes variables required for frequency filtered thickness."/>
 		<package name="windStressBulkPKG" description="This package includes varibles required for bulk wind stress forcing."/>
@@ -1914,6 +1915,8 @@
 			<var name="landIceFloatingFraction"/>
 			<var name="seaIcePressure"/>
 			<var name="atmosphericPressure"/>
+			<var name="normalVelocityTendOld" packages="splitAB2TimeIntegrator" />
+			<var name="CoriolisTermOld" packages="splitAB2TimeIntegrator" />
 			<var_array name="tracersSurfaceValue"/>
 			<var_array name="surfaceVelocity"/>
 			<var_array name="SSHGradient"/>
@@ -3402,6 +3405,15 @@
 		<var name="ssh_sal_grad" type="real" dimensions="nEdges Time" units=""
 			description="gradient of sea surface height perturbation from self-attraction and loading"
 			packages="tidalPotentialForcingPKG"
+		/>
+		<!-- FIELD split_explicit AB2 time stepping -->
+		<var name="normalVelocityTendOld" type="real" dimensions="nVertLevels nEdges Time" units="m s^-2"
+                        description="time tendency of normal component of velocity at the previous time step used in the split-explicit AB2 time stepping"
+			packages="splitAB2TimeIntegrator"
+		/>
+		<var name="CoriolisTermOld" type="real" dimensions="nVertLevels nEdges Time" units="m s^-2"
+                        description="Coriolis term at the previous time step used in the split-explicit AB2 time stepping"
+			packages="splitAB2TimeIntegrator"
 		/>
 	</var_struct>
 	<var_struct name="shortwave" time_levs="1">

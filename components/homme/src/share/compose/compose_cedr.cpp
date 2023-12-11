@@ -239,7 +239,7 @@ void renumber_leaves (const tree::Node::Ptr& node, const Int horiz_nleaf,
 void attach_and_renumber_horizontal_trees (const tree::Node::Ptr& supnode,
                                            const tree::Node::Ptr& htree,
                                            const Int horiz_nleaf) {
-  Int level = -1, rank;
+  Int level = -1, rank = -1;
   for (Int k = 0; k < supnode->nkids; ++k) {
     auto& kid = supnode->kids[k];
     if (kid->nkids) {

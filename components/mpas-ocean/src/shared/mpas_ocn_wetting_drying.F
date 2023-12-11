@@ -146,7 +146,8 @@ contains
           ! use ssh as a proxy too for baroclinic mode
           ! Note: wetting-drying currently not supported for either of these time integration methods
           if (trim(config_time_integrator) == 'split_explicit' .or. &
-              trim(config_time_integrator) == 'split_implicit') then
+              trim(config_time_integrator) == 'split_implicit' .or. &
+              trim(config_time_integrator) == 'split_explicit_ab2') then
             layerThick = min(layerThicknessNew(k, iCell), &
                              (sshSubcycleNew(iCell) + bottomDepth(iCell))/maxLevelCell(iCell))
           else

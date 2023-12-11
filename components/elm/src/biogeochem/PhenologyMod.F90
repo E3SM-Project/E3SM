@@ -38,6 +38,7 @@ module PhenologyMod
   use CNNitrogenFluxType  , only : nitrogenflux_type
   use PhosphorusStateType , only : phosphorusstate_type
   use PhosphorusFluxType  , only : phosphorusflux_type
+  use SolarAbsorbedType   , only : solarabs_type
   !!!Added for gpu timing info
   use timeinfoMod
 
@@ -260,7 +261,7 @@ contains
   subroutine Phenology (num_soilc, filter_soilc, num_soilp, filter_soilp, &
        num_pcropp, filter_pcropp, num_ppercropp, filter_ppercropp, doalb, atm2lnd_vars, &
        crop_vars, canopystate_vars, soilstate_vars, &
-       cnstate_vars)
+       cnstate_vars, solarabs_vars)
     !
     ! !DESCRIPTION:
     ! Dynamic phenology routine for coupled carbon-nitrogen code (CN)
@@ -282,6 +283,7 @@ contains
     type(canopystate_type)   , intent(in)    :: canopystate_vars
     type(soilstate_type)     , intent(in)    :: soilstate_vars
     type(cnstate_type)       , intent(inout) :: cnstate_vars
+    type(solarabs_type)      , intent(in)    :: solarabs_vars
     !-----------------------------------------------------------------------
 
     ! each of the following phenology type routines includes a filter
@@ -301,7 +303,7 @@ contains
 
    if (num_pcropp > 0 ) then
        call CropPlantDate(num_soilp, filter_soilp, num_pcropp, filter_pcropp,&
-            cnstate_vars, crop_vars)
+            cnstate_vars, crop_vars, solarabs_vars)
    end if
 
     if (doalb .and. num_pcropp > 0 ) then
@@ -1403,6 +1405,7 @@ contains
     use pftvarcon        , only : lfemerg, grnfill, mxmat, minplanttemp, planttemp
     use elm_varcon       , only : spval, secspday
     use CropType         , only : tcvp, tcvt, cst
+    use elm_varctl       , only : fan_to_bgc_crop
     !
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_pcropp       ! number of prog crop patches in filter
@@ -1442,8 +1445,7 @@ contains
          froot_long         =>    veg_vp%froot_long                            , & ! Input:  [real(r8) (:) ]  fine root longevity (yrs)
 
          leafcn             =>    veg_vp%leafcn                                , & ! Input:  [real(r8) (:) ]  leaf C:N (gC/gN)
-         fertnitro          =>    veg_vp%fertnitro                             , & ! Input:  [real(r8) (:) ]  max fertilizer to be applied in total (kgN/m2)
-
+         manunitro          =>    veg_vp%manunitro             , & ! Input: max manure to apply (kgN/m2) 
          t_ref2m_min        =>    veg_es%t_ref2m_min           , & ! Input:  [real(r8) (:) ]  daily minimum of average 2 m height surface air temperature (K)
          t10                =>    veg_es%t_a10                 , & ! Input:  [real(r8) (:) ]  10-day running mean of the 2 m temperature (K)
          a5tmin             =>    veg_es%t_a5min               , & ! Input:  [real(r8) (:) ]  5-day running mean of min 2-m temperature
@@ -1451,6 +1453,8 @@ contains
          gdd020             =>    veg_es%gdd020                , & ! Input:  [real(r8) (:) ]  20 yr mean of gdd0
          gdd820             =>    veg_es%gdd820                , & ! Input:  [real(r8) (:) ]  20 yr mean of gdd8
          gdd1020            =>    veg_es%gdd1020               , & ! Input:  [real(r8) (:) ]  20 yr mean of gdd10
+         fertnitro          =>    crop_vars%fertnitro_patch    , & ! Input:  [real(r8) (:) ]  max N fertilizer to be applied in total (kgN/m2)
+         fertphosp          =>    crop_vars%fertphosp_patch    , & ! Input:  [real(r8) (:) ]  max P fertilizer to be applied in total (kgP/m2)
          hui                =>    crop_vars%gddplant_patch                     , & ! Input:  [real(r8) (:) ]  gdd since planting (gddplant)
          leafout            =>    crop_vars%gddtsoi_patch                      , & ! Input:  [real(r8) (:) ]  gdd from top soil layer temperature
 
@@ -1488,7 +1492,9 @@ contains
          leafcp             =>    veg_vp%leafcp                                , & ! Input:  [real(r8) (:) ]  leaf C:P (gC/gP)
          leafp_xfer         =>    veg_ps%leafp_xfer        , & ! Output: [real(r8) (:) ]  (gP/m2)   leaf P transfer
          crop_seedp_to_leaf =>    veg_pf%crop_seedp_to_leaf , & ! Output: [real(r8) (:) ]  (gP/m2/s) seed source to PFT-level
-         fert               =>    veg_nf%fert                  , & ! Output: [real(r8) (:) ]  (gN/m2/s) fertilizer applied each timestep
+         synthfert          =>    veg_nf%synthfert          , & ! Output: [real(r8) (:) ]  (gN/m2/s) fertilizer applied each timestep
+         manure             =>    veg_nf%manure             , & ! Output: [real(r8) (:) ]  (gN/m2/s) manure applied each timestep
+         fert_p             =>    veg_pf%fert_p             , & ! Output: [real(r8) (:) ]  (gP/m2/s) P fertilizer applied each timestep
          cvt                =>    crop_vars%cvt_patch                     , & ! Output:  [real(r8) ):)]  exp weighted moving average average CV precip
          cvp                =>    crop_vars%cvp_patch                     , & ! Output:  [real(r8) ):)]  exp weighted moving average average CV temp
          xt_bar             =>    crop_vars%xt_bar_patch                  , & ! Output:  [real(r8) ):)]  exp weighted moving average average monthly temp
@@ -1862,7 +1868,14 @@ contains
                   onset_flag(p)    = 1._r8
                   onset_counter(p) = dt
                   fert_counter(p)  = ndays_on * secspday
-                  fert(p) = fertnitro(ivt(p)) * 1000._r8 / fert_counter(p)
+                  fert_p(p) = fertphosp(p)  / fert_counter(p)
+                  synthfert(p) = fertnitro(p)  / fert_counter(p)
+                  if (.not. fan_to_bgc_crop) then
+                     manure(p) = (manunitro(ivt(p)) * 1000._r8) / fert_counter(p)
+                  else
+                     ! CLM default manure not used; FAN determines the application.
+                     manure(p) = 0.0_r8
+                  end if
                else
                   ! this ensures no re-entry to onset of phase2
                   ! b/c onset_counter(p) = onset_counter(p) - dt
@@ -1909,7 +1922,9 @@ contains
             ! assumes that onset of phase 2 took one time step only
 
             if (fert_counter(p) <= 0._r8) then
-               fert(p) = 0._r8
+               synthfert(p) = 0._r8
+               manure(p) = 0._r8
+               fert_p(p) = 0._r8
             else ! continue same fert application every timestep
                fert_counter(p) = fert_counter(p) - dt
             end if
@@ -1943,6 +1958,7 @@ contains
     use pftvarcon        , only : gddmin, hybgdd
     use pftvarcon        , only : minplanttemp, planttemp, senestemp, min_days_senes
     use elm_varcon       , only : spval, secspday
+    use elm_varctl       , only : fan_to_bgc_crop
     !
     ! !ARGUMENTS:
     integer              , intent(in)    :: num_ppercropp       ! number of prog perennial crop patches in filter
@@ -1972,10 +1988,11 @@ contains
          froot_long         =>    veg_vp%froot_long                   , & ! Input:  [real(r8) (:) ]  fine root longevity (yrs)
          leafcn             =>    veg_vp%leafcn                       , & ! Input:  [real(r8) (:) ]  leaf C:N (gC/gN)
          leafcp             =>    veg_vp%leafcp                       , & ! Input:  [real(r8) (:) ]  leaf C:P (gC/gP)
-         fertnitro          =>    veg_vp%fertnitro                    , & ! Input:  [real(r8) (:) ]  max fertilizer to be applied in total (kgN/m2)
-
+         manunitro          =>    veg_vp%manunitro                    , & ! Input: max manure to apply (kgN/m2) 
          t10                =>    veg_es%t_a10                        , & ! Input:  [real(r8) (:) ]  10-day running mean of the 2 m temperature (K)
          a10tmin            =>    veg_es%t_a10min                     , & ! Input:  [real(r8) (:) ]  10-day running mean of min 2-m temperature
+         fertnitro          =>    crop_vars%fertnitro_patch           , & ! Input:  [real(r8) (:) ]  max fertilizer to be applied in total (kgN/m2)
+         fertphosp          =>    crop_vars%fertphosp_patch           , & ! Input:  [real(r8) (:) ]  max P fertilizer to be applied in total (kgP/m2)
 
          harvdate           =>    crop_vars%harvdate_patch            , & ! Output: [integer  (:) ]  harvest date
          harvday            =>    crop_vars%harvday_patch             , & ! Ouptut: [real(r8) ):) ]  harvest day
@@ -1999,7 +2016,9 @@ contains
 
          crop_seedc_to_leaf =>    veg_cf%crop_seedc_to_leaf           , & ! Output: [real(r8) (:) ]  (gC/m2/s) seed source to PFT-level
 
-         fert               =>    veg_nf%fert                         , & ! Output: [real(r8) (:) ]  (gN/m2/s) fertilizer applied each timestep
+         synthfert          =>    veg_nf%synthfert                    , & ! Output: [real(r8) (:) ]  (gN/m2/s) fertilizer applied each timestep 
+         manure             =>    veg_nf%manure                       , & ! Output: [real(r8) (:) ]  (gN/m2/s) manure applied each timestep 
+         fert_p             =>    veg_pf%fert_p                       , & ! Output:  [real(r8) (:) ] (gP/m2/s) phosphorus fertilizer applied each timestep
          fert_counter       =>    veg_nf%fert_counter                 , & ! Output: [real(r8) (:) ]  >0 fertilize; <=0 not (seconds)
 
          leafn_xfer         =>    veg_ns%leafn_xfer                   , & ! Output: [real(r8) (:) ]  (gN/m2)   leaf N transfer
@@ -2069,7 +2088,9 @@ contains
 
                ! fertilizer counter
                if (fert_counter(p) <= 0._r8) then
-                  fert(p) = 0._r8
+                  synthfert(p) = 0._r8
+                  manure(p) = 0._r8
+                  fert_p(p) = 0._r8
                else ! continue same fert application every timestep
                   fert_counter(p) = fert_counter(p) - dt
                end if
@@ -2120,7 +2141,15 @@ contains
                   onset_gdd(p) = 0.0_r8
                   onset_counter(p) = min_days_senes(ivt(p)) * secspday
                   fert_counter(p)  = ndays_on * secspday
-                  fert(p) = fertnitro(ivt(p)) * 1000._r8 / fert_counter(p)
+                  fert_p(p) = fertphosp(p)  / fert_counter(p)
+                  synthfert(p) = fertnitro(p)  / fert_counter(p)
+                  if (.not. fan_to_bgc_crop) then
+                     manure(p) = (manunitro(ivt(p)) * 1000._r8) / fert_counter(p)
+                  else
+                     ! ELM default manure not used; FAN determines the
+                     ! application.
+                     manure(p) = 0.0_r8
+                  end if
                 end if
             end if    ! offset flag
          else     ! crop not live
@@ -2362,7 +2391,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine CropPlantDate (num_soilp, filter_soilp, num_pcropp, filter_pcropp, &
-        cnstate_vars, crop_vars)
+        cnstate_vars, crop_vars, solarabs_vars)
     !
     ! !DESCRIPTION:
     ! For determining the plant month for crops, plant day is established in
@@ -2383,7 +2412,7 @@ contains
     integer                , intent(in)    :: filter_pcropp(:)! filter for prognostic crop patches
     type(cnstate_type)     , intent(inout) :: cnstate_vars
     type(crop_type)        , intent(inout) :: crop_vars
-
+    type(solarabs_type)    , intent(in)    :: solarabs_vars
     !
     ! !LOCAL VARIABLES:
     integer :: p,c,m,t,n,h          ! indices
@@ -2396,7 +2425,7 @@ contains
     real(r8), parameter :: alpha = 0.05_r8  ! coefficient representing degree of weighting decrease
     real(r8), parameter :: mon = 12._r8     ! used for some calculations (number of days in month)
     real(r8) :: mu_p, mu_t, sigmasum_t, sigmasum_p, sigma_t, sigma_p
-    real(r8) :: es, ETout
+    real(r8) :: ETout, netrad
     integer, dimension(12) :: ndaypm= &
          (/31,28,31,30,31,30,31,31,30,31,30,31/) !days per month
     real(r8) :: dt
@@ -2411,7 +2440,8 @@ contains
          forc_wind      => top_as%windbot                   , & ! Input: [real(r8) (:) ]  atmospheric wind speed (m/s)
          forc_pbot      => top_as%pbot                      , & ! Input: [real(r8) (:) ]  downscaled surface pressure (Pa)
          eflx_soil_grnd => veg_ef%eflx_soil_grnd            , & ! Input: [real(r8) (:) ]  soil heat flux (W/m**2) [+ = into soil]
-         netrad         => veg_ef%netrad                    , & ! Input: [real(r8) (:) ]  net radiation (positive downward) (W/m**2)
+         eflx_lwrad_net => veg_ef%eflx_lwrad_net            , & ! Input: [real(r8) (:) ]  net infrared (longwave) rad (W/m**2) [+ = to atm]
+         fsa            => solarabs_vars%fsa_patch           , & ! Input: [real(r8) (:) ]  solar radiation absorbed (total) (W/m**2)
          nyrs_crop_active => crop_vars%nyrs_crop_active_patch,   & ! InOut:  [integer (:)  ]  number of years this crop patch has been active
          cvt            => crop_vars%cvt_patch              , & ! Output: [real(r8) (:) ]  coefficient of variance temperature
          cvp            => crop_vars%cvp_patch              , & ! Output: [real(r8) (:) ]     "     "    "    "    precipitation
@@ -2524,8 +2554,9 @@ contains
 
          xt(p,kmo) = xt(p,kmo) + t_ref2m(p) * fracday/ndaypm(kmo) ! monthly average temperature
          xp(p,kmo) = xp(p,kmo) + (forc_rain(t)+forc_snow(t))*dt   ! monthly average precipitation
-         ! calculate the potential evapotranspiration
-         call calculate_eto(t_ref2m(p), netrad(p), eflx_soil_grnd(p), forc_pbot(t), forc_rh(t), forc_wind(t), es, dt, ETout)
+         ! calculate the potential evapotranspiration 
+         netrad = fsa(p) + eflx_lwrad_net(p) ! moved this here because it is calculated too late
+         call calculate_eto(t_ref2m(p), netrad, eflx_soil_grnd(p), forc_pbot(t), forc_rh(t), forc_wind(t), dt, ETout)
          ! monthly ETo
          ETo(p,kmo) = ETo(p,kmo) + ETout
          ! calculate the P:PET for each month

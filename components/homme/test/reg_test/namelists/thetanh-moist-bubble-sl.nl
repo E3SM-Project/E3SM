@@ -27,7 +27,6 @@
   hypervis_order    = 2                         ! 2 = hyperviscosity
   hypervis_subcycle = 1                         ! 1 = no hypervis subcycling
   hypervis_subcycle_tom = 1
-  se_ftype=2
   limiter_option    = 9
   planar_slice=.true.
   lx = 20000.0

@@ -197,7 +197,7 @@ module pftvarcon
   real(r8), allocatable :: fsr_pft(:)
   real(r8), allocatable :: fd_pft(:)
   ! pft parameters for crop code
-  real(r8), allocatable :: fertnitro(:)    !fertilizer
+  real(r8), allocatable :: manunitro(:)    !fertilizer
   real(r8), allocatable :: fleafcn(:)      !C:N during grain fill; leaf
   real(r8), allocatable :: ffrootcn(:)     !C:N during grain fill; fine root
   real(r8), allocatable :: fstemcn(:)      !C:N during grain fill; stem
@@ -512,7 +512,7 @@ contains
     allocate( fm_droot      (0:mxpft) )
     allocate( fsr_pft       (0:mxpft) )
     allocate( fd_pft        (0:mxpft) )
-    allocate( fertnitro     (0:mxpft) )
+    allocate( manunitro     (0:mxpft) )
     allocate( fleafcn       (0:mxpft) )  
     allocate( ffrootcn      (0:mxpft) ) 
     allocate( fstemcn       (0:mxpft) )
@@ -715,7 +715,7 @@ contains
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
     call ncd_io('season_decid',season_decid, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
-    call ncd_io('fertnitro',fertnitro, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    call ncd_io('fertnitro',manunitro, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
     call ncd_io('fleafcn',fleafcn, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
@@ -1012,7 +1012,7 @@ contains
     call ncd_io('gcbr_q',gcbr_q, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv ) gcbr_q(:) = 0._r8
        
-    call ncd_io('mergetoelmpft', mergetoelmpft, 'read', ncid, readvar=readv)  
+    call ncd_io('mergetoclmpft', mergetoelmpft, 'read', ncid, readvar=readv)  
     if ( .not. readv ) then
        do i = 0, mxpft
           mergetoelmpft(i) = i
