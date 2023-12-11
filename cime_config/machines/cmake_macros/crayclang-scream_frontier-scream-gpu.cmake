@@ -1,10 +1,10 @@
-# set(MPICC "cc")
-# set(MPICXX "hipcc")
-# set(MPIFC "ftn")
-# set(SCC "cc")
-# set(SCXX "hipcc")
-# set(SFC "ftn")
-# 
+set(MPICC "mpicc")
+set(MPICXX "hipcc")
+set(MPIFC "ftn")
+set(SCC "cc")
+set(SCXX "hipcc")
+set(SFC "ftn")
+
 string(APPEND CPPDEFS " -DLINUX")
 if (COMP_NAME STREQUAL gptl)
     string(APPEND CPPDEFS " -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY")
@@ -24,10 +24,6 @@ string(APPEND CXX_LIBS " -lstdc++")
 
 string(APPEND SLIBS " -L$ENV{ROCM_PATH}/lib ")
 string(APPEND FFLAGS " -hipa0 -hzero -f free")
-
-SET(CMAKE_C_COMPILER "mpicc" CACHE STRING "")
-SET(CMAKE_Fortran_COMPILER "ftn" CACHE STRING "")
-SET(CMAKE_CXX_COMPILER "hipcc" CACHE STRING "")
 
 string(APPEND LDFLAGS " -L$ENV{ROCM_PATH}/lib -lamdhip64")
 string(APPEND CXXFLAGS " -I$ENV{ROCM_PATH}/include")
