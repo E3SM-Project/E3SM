@@ -246,7 +246,6 @@ int run(int argc, char** argv) {
     if (!rrtmgpTest::all_close(lw_flux_dn , lw_clnsky_flux_dn , 0.0000000001)) nerr++;
     if (!rrtmgpTest::all_close(lw_clrsky_flux_dn , lw_clnclrsky_flux_dn , 0.0000000001)) nerr++;
 
-    logger->info(nerr);
 
     logger->info("Cleaning up...\n");
     // Clean up or else YAKL will throw errors
