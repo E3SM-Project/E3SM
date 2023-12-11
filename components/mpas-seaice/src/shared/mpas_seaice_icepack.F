@@ -14406,6 +14406,7 @@ contains
   subroutine init_column_tracer_object_for_biogeochemistry(domain, tracerObject)
 
     use icepack_intfc, only: icepack_init_zbgc
+    use icepack_intfc, only: icepack_query_parameters
 
     type(domain_type), intent(in) :: &
          domain
@@ -14557,6 +14558,10 @@ contains
     integer :: &
          nTracers_temp, &
          iAerosols
+
+    real(kind=RKIND) :: &
+         rtmp1, &
+         rtmp2
 
     ! save tracer array size
     nTracers_temp = tracerObject % nTracers
@@ -14933,6 +14938,20 @@ contains
             messageType=MPAS_LOG_CRIT, intArgs=(/nTracers_temp, tracerObject % nTracers/))
     endif
 
+    call mpas_log_write(" ----- compare values after init_zbgc -----")
+
+    rtmp1 = config_new_ice_fraction_biotracer
+    call icepack_query_parameters(initbio_frac_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('initbio_frac differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = config_rapid_mobile_to_stationary_time
+    call icepack_query_parameters(tau_min_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('tau_min differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = config_long_mobile_to_stationary_time
+    call icepack_query_parameters(tau_max_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('tau_max differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
   end subroutine init_column_tracer_object_for_biogeochemistry
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -14970,10 +14989,8 @@ contains
 
     logical, pointer :: &
          config_use_brine, &
-!         config_use_vertical_zsalinity, &      !echmod deprecate
          config_use_vertical_tracers, &
          config_use_skeletal_biochemistry, &
-         config_do_restart_zsalinity, &
          config_do_restart_hbrine
 
     real(kind=RKIND), pointer :: &
@@ -15041,9 +15058,7 @@ contains
          abortMessage
 
     call MPAS_pool_get_config(domain % configs, "config_use_brine", config_use_brine)
-    call MPAS_pool_get_config(domain % configs, "config_do_restart_zsalinity", config_do_restart_zsalinity)
     call MPAS_pool_get_config(domain % configs, "config_do_restart_hbrine", config_do_restart_hbrine)
-!    call MPAS_pool_get_config(domain % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity) !echmod deprecate
     call MPAS_pool_get_config(domain % configs, "config_use_skeletal_biochemistry", config_use_skeletal_biochemistry)
     call MPAS_pool_get_config(domain % configs, "config_use_vertical_tracers", config_use_vertical_tracers)
     call MPAS_pool_get_config(domain % configs, "config_dt", config_dt)
