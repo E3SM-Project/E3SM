@@ -3073,7 +3073,8 @@
     </resource_limits>
   </machine>
 
-  <machine MACH="aurora">    <DESC>ANL Aurora ECP machine, Aurora consists of multiple racks, each with many nodes, for a total of over 10,000 nodes, batch system is pbspro</DESC>
+  <machine MACH="aurora">    
+    <DESC>ANL Aurora ECP machine, Aurora consists of multiple racks, each with many nodes, for a total of over 10,000 nodes, batch system is pbspro</DESC>
     <NODENAME_REGEX>aurora-uan-.*</NODENAME_REGEX>    <OS>LINUX</OS>
     <COMPILERS>oneapi-ifx,oneapi-ifxgpu,oneapi-ifort,gnu</COMPILERS>
     <MPILIBS>mpich,impi,openmpi</MPILIBS>
@@ -3131,13 +3132,6 @@
         </modules>
         <modules compiler="!gnu">
           <command name="load">oneapi/eng-compiler/2023.05.15.007</command>
-          <!--command name="load">mpich/52.2/icc-all-pmix-gpu</command-->
-          <!--command name="load">oneapi/eng-compiler/.2023.05.15.002-rc02</command-->
-          <!--command name="load">oneapi/eng-compiler/.2023.05.15.003-rc08</command-->
-          <!--command name="load">oneapi/eng-compiler/2022.10.15.006</command-->
-          <!--command name="load">mpich/50.2/icc-all-pmix-gpu</command-->
-          <!--command name="load">intel_compute_runtime/release/22.43.24595.30</command-->
-          <command name="load">intel_compute_runtime/release/agama-devel-682.22</command>
         </modules>
         <modules compiler="gnu">
            <command name="unload">spack-pe-gcc cmake</command>
