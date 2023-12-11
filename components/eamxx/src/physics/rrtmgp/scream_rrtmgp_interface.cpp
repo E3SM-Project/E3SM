@@ -977,7 +977,7 @@ namespace scream {
             rte_lw(max_gauss_pts, gauss_Ds, gauss_wts, optics, top_at_1, lw_sources, emis_sfc, fluxes);
 
             if (extra_clnsky_diag) {
-                // First increment clouds to optics 
+                // First increment clouds in optics_no_aerosols
                 clouds.increment(optics_no_aerosols);
                 // Compute clean-sky fluxes
                 rte_lw(max_gauss_pts, gauss_Ds, gauss_wts, optics_no_aerosols, top_at_1, lw_sources, emis_sfc, clnsky_fluxes);
