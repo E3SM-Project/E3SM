@@ -491,6 +491,23 @@
       </pes>
     </mach>
   </grid>
+  <grid name="a%ne4np4_l%ne4np4_oi%oQU240_r%r05">
+    <mach name="summit|ascent">
+      <pes compset="any" pesize="any">
+        <comment>summit|ascent: any compset on ne4_oQU240 grid</comment>
+        <ntasks>
+          <ntasks_atm>-2</ntasks_atm>
+          <ntasks_lnd>-2</ntasks_lnd>
+          <ntasks_rof>-2</ntasks_rof>
+          <ntasks_ice>-2</ntasks_ice>
+          <ntasks_ocn>-2</ntasks_ocn>
+          <ntasks_cpl>-2</ntasks_cpl>
+          <ntasks_glc>-2</ntasks_glc>
+          <ntasks_wav>-2</ntasks_wav>
+        </ntasks>
+      </pes>
+    </mach>
+  </grid>
   <grid name="a%ne16np4_|a%360x720cru">
     <mach name="any">
       <pes compset="any" pesize="any">
