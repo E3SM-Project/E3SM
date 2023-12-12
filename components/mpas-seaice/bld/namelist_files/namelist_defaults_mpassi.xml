@@ -25,6 +25,7 @@
 <config_dt ice_grid="SOwISC12to60E2r4">1800.0</config_dt>
 <config_dt ice_grid="ECwISC30to60E2r1">1800.0</config_dt>
 <config_dt ice_grid="IcoswISC30E3r5">1800.0</config_dt>
+<config_dt ice_grid="RRSwISC6to18E3r4">900.0</config_dt>
 <config_calendar_type>'noleap'</config_calendar_type>
 <config_start_time>'2000-01-01_00:00:00'</config_start_time>
 <config_stop_time>'none'</config_stop_time>
@@ -80,6 +81,7 @@
 <config_initial_latitude_north ice_grid="ARRM10to60E2r1">75.0</config_initial_latitude_north>
 <config_initial_latitude_north ice_grid="oRRS30to10v3wLI">85.0</config_initial_latitude_north>
 <config_initial_latitude_north ice_grid="oRRS18to6v3">85.0</config_initial_latitude_north>
+<config_initial_latitude_north ice_grid="RRSwISC6to18E3r4">85.0</config_initial_latitude_north>
 <config_initial_latitude_south>-60.0</config_initial_latitude_south>
 <config_initial_latitude_south ice_grid="oEC60to30v3wLI">-75.0</config_initial_latitude_south>
 <config_initial_latitude_south ice_grid="ECwISC30to60E1r2">-75.0</config_initial_latitude_south>
@@ -90,6 +92,7 @@
 <config_initial_latitude_south ice_grid="ARRM10to60E2r1">-85.0</config_initial_latitude_south>
 <config_initial_latitude_south ice_grid="oRRS30to10v3wLI">-85.0</config_initial_latitude_south>
 <config_initial_latitude_south ice_grid="oRRS18to6v3">-85.0</config_initial_latitude_south>
+<config_initial_latitude_south ice_grid="RRSwISC6to18E3r4">-85.0</config_initial_latitude_south>
 <config_initial_velocity_type>'uniform'</config_initial_velocity_type>
 <config_initial_uvelocity>0.0</config_initial_uvelocity>
 <config_initial_vvelocity>0.0</config_initial_vvelocity>
@@ -148,6 +151,7 @@
 <config_dynamics_subcycle_number ice_grid="SOwISC12to60E2r4">1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="ECwISC30to60E2r1">1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="IcoswISC30E3r5">1</config_dynamics_subcycle_number>
+<config_dynamics_subcycle_number ice_grid="RRSwISC6to18E3r4">2</config_dynamics_subcycle_number>
 <config_rotate_cartesian_grid>true</config_rotate_cartesian_grid>
 <config_include_metric_terms>true</config_include_metric_terms>
 <config_elastic_subcycle_number>120</config_elastic_subcycle_number>
