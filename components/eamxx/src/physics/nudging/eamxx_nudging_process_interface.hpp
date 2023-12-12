@@ -85,6 +85,13 @@ protected:
 
   void run_impl        (const double dt);
 
+  /* Nudge from coarse data */
+  // See more details later in this file
+  // Must add this here to make it public for CUDA
+  // (refining) remapper vertically-weighted tendency application
+  void apply_vert_cutoff_tendency(Field &base, const Field &next,
+                                  const Field &p_mid, const Real cutoff,
+                                  const Real dt);
 protected:
 
   Field get_field_out_wrap(const std::string& field_name);
