@@ -149,10 +149,6 @@ protected:
   std::shared_ptr<scream::AbstractRemapper> m_refine_remapper;
   // (refining) remapper vertical cutoff
   Real m_refine_remap_vert_cutoff;
-  // (refining) remapper vertically-weighted tendency application
-  void apply_vert_cutoff_tendency(Field &base, const Field &next,
-                                  const Field &p_mid, const Real cutoff,
-                                  const Real dt);
 
   util::TimeInterpolation m_time_interp;
 
