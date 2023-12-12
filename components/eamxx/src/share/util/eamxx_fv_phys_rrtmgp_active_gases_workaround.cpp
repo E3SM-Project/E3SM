@@ -2,7 +2,7 @@
 
 namespace scream {
 
-bool fvphyshack;
+bool fvphyshack = false;
 
 void fv_phys_rrtmgp_active_gases_set_restart (const bool restart) {
   TraceGasesWorkaround::singleton().set_restart(restart);

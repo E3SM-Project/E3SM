@@ -127,9 +127,6 @@ set_params(const ekat::ParameterList& atm_params)
   create_logger ();
 
   m_ad_status |= s_params_set;
-
-  const auto pg_type = "PG2";
-  fvphyshack = m_atm_params.sublist("grids_manager").get<std::string>("physics_grid_type", "None") == pg_type;
 }
 
 void AtmosphereDriver::
