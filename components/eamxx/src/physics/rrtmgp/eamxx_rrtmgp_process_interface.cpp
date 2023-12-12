@@ -109,7 +109,7 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
     // Add gas VOLUME mixing ratios (moles of gas / moles of air; what actually gets input to RRTMGP)
     if (it == "o3") {
       // o3 is read from file, or computed by chemistry
-      add_field<Updated >(it + "_volume_mix_ratio", scalar3d_layout_mid, molmol, grid_name, ps);
+      add_field<Required >(it + "_volume_mix_ratio", scalar3d_layout_mid, molmol, grid_name, ps);
       TraceGasesWorkaround::singleton().add_active_gas(it + "_volume_mix_ratio");
     } else {
       // the rest are computed from prescribed surface values
@@ -778,6 +778,10 @@ void RRTMGPRadiation::run_impl (const double dt) {
       const auto gas_mol_weights = m_gas_mol_weights;
       for (int igas = 0; igas < m_ngas; igas++) {
         auto name = m_gas_names[igas];
+
+        // We read o3 in as a vmr already
+        if (name=="o3") continue;
+
         auto d_vmr = get_field_out(name + "_volume_mix_ratio").get_view<Real**>();
         if (name == "h2o") {
           // h2o is (wet) mass mixing ratio in FM, otherwise known as "qv", which we've already read in above
@@ -791,8 +795,6 @@ void RRTMGPRadiation::run_impl (const double dt) {
             });
           });
           Kokkos::fence();
-        } else if (name == "o3") {
-          // We read o3 in as a vmr already
         } else if (name == "n2") {
           // n2 prescribed as a constant value
           Kokkos::deep_copy(d_vmr, m_params.get<double>("n2vmr", 0.7906));
