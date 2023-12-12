@@ -3,12 +3,16 @@
 #include "physics/rrtmgp/rrtmgp_utils.hpp"
 #include "physics/rrtmgp/shr_orb_mod_c2f.hpp"
 #include "physics/share/scream_trcmix.hpp"
+
+#include "share/util/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
 #include "share/util/scream_common_physics_functions.hpp"
 #include "share/util/scream_column_ops.hpp"
+
+#include "ekat/ekat_assert.hpp"
+
 #include "cpp/rrtmgp/mo_gas_concentrations.h"
 #include "YAKL.h"
-#include "ekat/ekat_assert.hpp"
 
 namespace scream {
 
@@ -106,6 +110,7 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
     if (it == "o3") {
       // o3 is read from file, or computed by chemistry
       add_field<Updated >(it + "_volume_mix_ratio", scalar3d_layout_mid, molmol, grid_name, ps);
+      TraceGasesWorkaround::singleton().add_active_gas(it + "_volume_mix_ratio");
     } else {
       // the rest are computed from prescribed surface values
       add_field<Computed>(it + "_volume_mix_ratio", scalar3d_layout_mid, molmol, grid_name, ps);

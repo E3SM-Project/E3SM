@@ -130,10 +130,6 @@ set_params(const ekat::ParameterList& atm_params)
 
   const auto pg_type = "PG2";
   fvphyshack = m_atm_params.sublist("grids_manager").get<std::string>("physics_grid_type", "None") == pg_type;
-  if (fvphyshack) {
-    // See the [rrtmgp active gases] note in share/util/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp
-    fv_phys_rrtmgp_active_gases_init(m_atm_params);
-  }
 }
 
 void AtmosphereDriver::
