@@ -1522,6 +1522,12 @@ contains
             call iac_rpointer_write(rdate)
          end if 
 
+         ! need to write rpointer files for two iac restart files
+         ! because the iac does not run in a step when the restart alarm is on
+         if(iac_active) then
+            call iac_rpointer_write(rdate)
+         end if 
+
          !----------------------------------------------
          ! pflotran (off now)
          ! if (use_pflotran) then

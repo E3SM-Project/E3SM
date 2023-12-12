@@ -550,7 +550,7 @@ contains
     kzf=mct_aVect_indexRA(fractions_a,"zfrac")
     fracstr_st = 'lfrac'
     if (samegrid_al) then
-       klf = mct_aVect_indexRA(fractions_a,"lfrac")
+    klf=mct_aVect_indexRA(fractions_a,"lfrac")
        fracstr = 'lfrac'
     else
        klf = mct_aVect_indexRA(fractions_a,"lfrin")
@@ -643,6 +643,13 @@ contains
                 else
                    mrgstr(ka) = trim(mrgstr(ka))//' = '//trim(fracstr)//'*l2x%'//trim(field_lnd(lindx(ka)))
                 end if
+             end if
+          end if
+          if (zindx(ka) > 0) then
+             if (zmerge(ka)) then
+                mrgstr(ka) = trim(mrgstr(ka))//' + zfrac*z2x%'//trim(field_iac(zindx(ka)))
+             else
+                mrgstr(ka) = trim(mrgstr(ka))//' = zfrac*z2x%'//trim(field_iac(zindx(ka)))
              end if
           end if
           if (zindx(ka) > 0) then

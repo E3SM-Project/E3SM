@@ -239,9 +239,6 @@ if (USE_ALBANY)
   string(REPLACE "ALBANY_LINK_LIBS=" "" ALBANY_LINK_LIBS "${ALBANY_OUTPUT}")
 endif()
 
-# IAC/GCAM needs the xerces library, but for now I'm hardcoding for
-# compy, and we'll set up the proper configuration variables later.
-
 if (USE_KOKKOS)
   # LB 09/04/20
   #  The best thing to do would be to simply use ${INSTALL_SHAREDPATH}, and

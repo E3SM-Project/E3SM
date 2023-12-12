@@ -1127,14 +1127,11 @@ contains
        opt_n   = dtime(seq_timemgr_nclock_iac), &
        RefTime = OffsetTime,                    &
        alarmname = trim(seq_timemgr_alarm_iacrun))
-    ! Now call the average at the 1800 tod of each year, like the run alarm
+    ! Now call the average at the 1800 tod of every five years 
     !    and call the average right before running the iac
     call ESMF_TimeIntervalSet( TimeStep, s=offset(seq_timemgr_nclock_iac),&
                                rc=rc)
     OffsetTime = CurrTime + TimeStep
-    !call ESMF_TimeIntervalSet( TimeStep, s=-offset(seq_timemgr_nclock_drv),&
-    !                           rc=rc )
-    !OffsetTime = OffsetTime + TimeStep
     call seq_timemgr_alarmInit(SyncClock%ECP(seq_timemgr_nclock_drv)%EClock, &
          EAlarm  = SyncClock%EAlarm(seq_timemgr_nclock_drv,seq_timemgr_nalarm_iacrun_avg),  &
          option  = seq_timemgr_optNSeconds,         &

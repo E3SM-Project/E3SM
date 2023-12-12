@@ -4795,7 +4795,7 @@ contains
           call seq_diag_ice_mct(ice(ens1), fractions_ix(ens1), infodata, do_i2x=.true.)
           if (do_bgc_budgets) then
              call seq_diagBGC_ice_mct(ice(ens1), fractions_ix(ens1), infodata, do_i2x=.true.)
-          endif
+       endif
        endif
        if (do_bgc_budgets) then
           if (atm_present) then

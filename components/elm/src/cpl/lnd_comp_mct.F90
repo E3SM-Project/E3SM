@@ -65,6 +65,7 @@ contains
     use seq_flds_mod     , only : seq_flds_x2l_fields, seq_flds_l2x_fields, lnd_rof_two_way
     use spmdMod          , only : masterproc, npes, spmd_init
     use elm_varctl       , only : nsrStartup, nsrContinue, nsrBranch, use_lnd_rof_two_way
+    use elm_varctl        , only: elm_varctl_set_iac_active_only, iac_active 
     use elm_cpl_indices  , only : elm_cpl_indices_set
     use elm_varctl       , only : elm_varctl_set_iac_active_only, iac_active
     use perf_mod         , only : t_startf, t_stopf
