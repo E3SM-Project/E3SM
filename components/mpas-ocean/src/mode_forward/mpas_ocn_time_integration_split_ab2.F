@@ -1783,88 +1783,92 @@ module ocn_time_integration_split_ab2
 
          call mpas_timer_stop("se halo thickness")
 
-         call mpas_timer_start('se tracer tend', .false.)
-         call ocn_tend_tracer(tendPool, statePool, forcingPool, &
-                              meshPool, swForcingPool, &
-                              dt, activeTracersOnly, 2)
+         if ( nowTimeStamp == initialTimeStamp .and. .not. config_do_restart ) then
 
-         call mpas_pool_get_array(tracersPool, 'activeTracers', &
-                                                tracersGroupCur, 1)
-         call mpas_pool_get_array(tracersPool, 'activeTracers', &
-                                                tracersGroupNew, 2)
-         call mpas_pool_get_array(statePool,   'normalVelocity', &
-                                                normalVelocityCur, 1)
-         call mpas_pool_get_array(tracersTendPool,'activeTracersTend', &
-                                                   activeTracersTend)
+            call mpas_timer_start('se tracer tend', .false.)
+            call ocn_tend_tracer(tendPool, statePool, forcingPool, &
+                                 meshPool, swForcingPool, &
+                                 dt, activeTracersOnly, 2)
+   
+            call mpas_pool_get_array(tracersPool, 'activeTracers', &
+                                                   tracersGroupCur, 1)
+            call mpas_pool_get_array(tracersPool, 'activeTracers', &
+                                                   tracersGroupNew, 2)
+            call mpas_pool_get_array(statePool,   'normalVelocity', &
+                                                   normalVelocityCur, 1)
+            call mpas_pool_get_array(tracersTendPool,'activeTracersTend', &
+                                                      activeTracersTend)
 
 #ifdef MPAS_OPENACC
-         !$acc enter data copyin(layerThicknessNew, normalVelocityNew)
-         !$acc enter data copyin(normalBarotropicVelocityNew, &
-         !$acc                   normalBaroclinicVelocityNew)
-         !$acc enter data copyin(activeTracersNew)
-         !$acc update device(layerThickEdgeFlux)
-         if (config_use_freq_filtered_thickness) then
-            !$acc enter data copyin(lowFreqDivergenceNew)
-            !$acc enter data copyin(lowFreqDivergenceCur)
-            !$acc enter data copyin(lowFreqDivergenceTend)
-         endif
-         if (splitExplicitStep < numTSIterations) then
-            !$acc update device (normalTransportVelocity)
-            !$acc enter data copyin(atmosphericPressure, seaIcePressure)
-            !$acc enter data copyin(sshNew)
-            !$acc update device(tracersSurfaceValue)
-            if ( associated(normalGMBolusVelocity) ) then
-               !$acc update device (normalGMBolusVelocity)
-            end if
-            if ( associated(normalMLEVelocity) ) then
-               !$acc update device (normalMLEvelocity)
-            end if
-            if ( associated(frazilSurfacePressure) ) then
-               !$acc enter data copyin(frazilSurfacePressure)
-            endif
-            if (landIcePressureOn) then
-               !$acc enter data copyin(landIcePressure)
-               !$acc enter data copyin(landIceDraft)
-            endif
+            !$acc enter data copyin(layerThicknessNew, normalVelocityNew)
+            !$acc enter data copyin(normalBarotropicVelocityNew, &
+            !$acc                   normalBaroclinicVelocityNew)
+            !$acc enter data copyin(activeTracersNew)
+            !$acc update device(layerThickEdgeFlux)
             if (config_use_freq_filtered_thickness) then
-               !$acc enter data copyin(highFreqThicknessNew)
-               !$acc enter data copyin(highFreqThicknessCur)
+               !$acc enter data copyin(lowFreqDivergenceNew)
+               !$acc enter data copyin(lowFreqDivergenceCur)
+               !$acc enter data copyin(lowFreqDivergenceTend)
             endif
-         elseif (splitExplicitStep == numTSIterations) then
-            !$acc enter data copyin(layerThicknessCur)
-            !$acc enter data copyin(layerThicknessTend)
-            !$acc enter data copyin(normalBaroclinicVelocityCur,sshCur)
-            if (config_compute_active_tracer_budgets) then
-               !$acc update device(activeTracerHorizontalAdvectionEdgeFlux)
-               !$acc update device(activeTracerHorizontalAdvectionTendency)
-               !$acc update device(activeTracerVerticalAdvectionTendency)
-               !$acc update device(activeTracerHorMixTendency)
-               !$acc update device(activeTracerSurfaceFluxTendency)
-               !$acc update device(temperatureShortWaveTendency)
-               !$acc update device(activeTracerNonLocalTendency)
+            if (splitExplicitStep < numTSIterations) then
+               !$acc update device (normalTransportVelocity)
+               !$acc enter data copyin(atmosphericPressure, seaIcePressure)
+               !$acc enter data copyin(sshNew)
+               !$acc update device(tracersSurfaceValue)
+               if ( associated(normalGMBolusVelocity) ) then
+                  !$acc update device (normalGMBolusVelocity)
+               end if
+               if ( associated(normalMLEVelocity) ) then
+                  !$acc update device (normalMLEvelocity)
+               end if
+               if ( associated(frazilSurfacePressure) ) then
+                  !$acc enter data copyin(frazilSurfacePressure)
+               endif
+               if (landIcePressureOn) then
+                  !$acc enter data copyin(landIcePressure)
+                  !$acc enter data copyin(landIceDraft)
+               endif
+               if (config_use_freq_filtered_thickness) then
+                  !$acc enter data copyin(highFreqThicknessNew)
+                  !$acc enter data copyin(highFreqThicknessCur)
+               endif
+            elseif (splitExplicitStep == numTSIterations) then
+               !$acc enter data copyin(layerThicknessCur)
+               !$acc enter data copyin(layerThicknessTend)
+               !$acc enter data copyin(normalBaroclinicVelocityCur,sshCur)
+               if (config_compute_active_tracer_budgets) then
+                  !$acc update device(activeTracerHorizontalAdvectionEdgeFlux)
+                  !$acc update device(activeTracerHorizontalAdvectionTendency)
+                  !$acc update device(activeTracerVerticalAdvectionTendency)
+                  !$acc update device(activeTracerHorMixTendency)
+                  !$acc update device(activeTracerSurfaceFluxTendency)
+                  !$acc update device(temperatureShortWaveTendency)
+                  !$acc update device(activeTracerNonLocalTendency)
+               endif
             endif
-         endif
 #endif
 
-         call mpas_timer_stop('se tracer tend')
-
-         ! update halo for tracer tendencies
-         call mpas_timer_start("se halo tracers")
-
-         call mpas_pool_begin_iteration(tracersTendPool)
-         do while (mpas_pool_get_next_member(tracersTendPool, &
-                                             groupItr) )
-            if (groupItr%memberType == MPAS_POOL_FIELD ) then
-               ! Only compute tendencies for active tracers if
-               ! activeTracersOnly flag is true.
-               if (.not. activeTracersOnly .or. &
-                   trim(groupItr%memberName)=='activeTracersTend') then
-                  call mpas_dmpar_field_halo_exch(domain, &
-                                                  groupItr%memberName)
+            call mpas_timer_stop('se tracer tend')
+   
+            ! update halo for tracer tendencies
+            call mpas_timer_start("se halo tracers")
+   
+            call mpas_pool_begin_iteration(tracersTendPool)
+            do while (mpas_pool_get_next_member(tracersTendPool, &
+                                                groupItr) )
+               if (groupItr%memberType == MPAS_POOL_FIELD ) then
+                  ! Only compute tendencies for active tracers if
+                  ! activeTracersOnly flag is true.
+                  if (.not. activeTracersOnly .or. &
+                      trim(groupItr%memberName)=='activeTracersTend') then
+                     call mpas_dmpar_field_halo_exch(domain, &
+                                                     groupItr%memberName)
+                  end if
                end if
-            end if
-         end do
-         call mpas_timer_stop("se halo tracers")
+            end do
+            call mpas_timer_stop("se halo tracers")
+
+         end if ! nowTimeStamp
 
          call mpas_timer_start('se loop fini')
 
@@ -2202,15 +2206,137 @@ module ocn_time_integration_split_ab2
 #endif
                do k = minLevelCell(iCell), maxLevelCell(iCell)
                   ! this is h_{n+1} = h_{n} + dt * hTend_{n+0.5}
-                  layerThicknessNew(k,iCell) = &
-                                         layerThicknessCur(k,iCell) + &
-                                     dt*layerThicknessTend(k,iCell)
+                  !layerThicknessNew(k,iCell) = &
+                  !                       layerThicknessCur(k,iCell) + &
+                  !                   dt*layerThicknessTend(k,iCell)
+
+                  ! this is h_{n+1}
+                  temp_h = layerThicknessCur(k,iCell) + dt* &
+                           layerThicknessTend(k,iCell)
+
+                  ! this is h_{n+1/2}
+                  layerThicknessNew(k,iCell) = 0.5* &
+                  (layerThicknessCur(k,iCell) + temp_h)
+                  
                end do
                end do
 #ifndef MPAS_OPENACC
                !$omp end do
                !$omp end parallel
 #endif
+
+               call mpas_timer_start('se tracer tend', .false.)
+               call ocn_tend_tracer(tendPool, statePool, forcingPool, &
+                                    meshPool, swForcingPool, &
+                                    dt, activeTracersOnly, 2)
+      
+               call mpas_pool_get_array(tracersPool, 'activeTracers', &
+                                                      tracersGroupCur, 1)
+               call mpas_pool_get_array(tracersPool, 'activeTracers', &
+                                                      tracersGroupNew, 2)
+               call mpas_pool_get_array(statePool,   'normalVelocity', &
+                                                      normalVelocityCur, 1)
+               call mpas_pool_get_array(tracersTendPool,'activeTracersTend', &
+                                                         activeTracersTend)
+
+#ifdef MPAS_OPENACC
+            !$acc parallel loop gang present (layerThicknessNew,   &
+            !$acc    minLevelCell, maxLevelCell,layerThicknessCur, &
+            !$acc    layerThicknessTend)
+#else
+            !$omp parallel
+            !$omp do schedule(runtime) private(k)
+#endif
+               do iCell = 1, nCellsAll
+#ifdef MPAS_OPENACC
+            !$acc loop vector
+#endif
+               do k = minLevelCell(iCell), maxLevelCell(iCell)
+                  ! this is h_{n+1} = h_{n} + dt * hTend_{n+0.5}
+                  !layerThicknessNew(k,iCell) = &
+                  !                       layerThicknessCur(k,iCell) + &
+                  !                   dt*layerThicknessTend(k,iCell)
+
+                  ! this is h_{n+1}
+                  layerThicknessNew(k,iCell) = layerThicknessCur(k,iCell) + dt* &
+                           layerThicknessTend(k,iCell)
+
+               end do
+               end do
+#ifndef MPAS_OPENACC
+               !$omp end do
+               !$omp end parallel
+#endif
+
+#ifdef MPAS_OPENACC
+               !$acc enter data copyin(layerThicknessNew, normalVelocityNew)
+               !$acc enter data copyin(normalBarotropicVelocityNew, &
+               !$acc                   normalBaroclinicVelocityNew)
+               !$acc enter data copyin(activeTracersNew)
+               !$acc update device(layerThickEdgeFlux)
+               if (config_use_freq_filtered_thickness) then
+                  !$acc enter data copyin(lowFreqDivergenceNew)
+                  !$acc enter data copyin(lowFreqDivergenceCur)
+                  !$acc enter data copyin(lowFreqDivergenceTend)
+               endif
+               if (splitExplicitStep < numTSIterations) then
+                  !$acc update device (normalTransportVelocity)
+                  !$acc enter data copyin(atmosphericPressure, seaIcePressure)
+                  !$acc enter data copyin(sshNew)
+                  !$acc update device(tracersSurfaceValue)
+                  if ( associated(normalGMBolusVelocity) ) then
+                     !$acc update device (normalGMBolusVelocity)
+                  end if
+                  if ( associated(normalMLEVelocity) ) then
+                     !$acc update device (normalMLEvelocity)
+                  end if
+                  if ( associated(frazilSurfacePressure) ) then
+                     !$acc enter data copyin(frazilSurfacePressure)
+                  endif
+                  if (landIcePressureOn) then
+                     !$acc enter data copyin(landIcePressure)
+                     !$acc enter data copyin(landIceDraft)
+                  endif
+                  if (config_use_freq_filtered_thickness) then
+                     !$acc enter data copyin(highFreqThicknessNew)
+                     !$acc enter data copyin(highFreqThicknessCur)
+                  endif
+               elseif (splitExplicitStep == numTSIterations) then
+                  !$acc enter data copyin(layerThicknessCur)
+                  !$acc enter data copyin(layerThicknessTend)
+                  !$acc enter data copyin(normalBaroclinicVelocityCur,sshCur)
+                  if (config_compute_active_tracer_budgets) then
+                     !$acc update device(activeTracerHorizontalAdvectionEdgeFlux)
+                     !$acc update device(activeTracerHorizontalAdvectionTendency)
+                     !$acc update device(activeTracerVerticalAdvectionTendency)
+                     !$acc update device(activeTracerHorMixTendency)
+                     !$acc update device(activeTracerSurfaceFluxTendency)
+                     !$acc update device(temperatureShortWaveTendency)
+                     !$acc update device(activeTracerNonLocalTendency)
+                  endif
+               endif
+#endif
+
+               call mpas_timer_stop('se tracer tend')
+      
+               ! update halo for tracer tendencies
+               call mpas_timer_start("se halo tracers")
+      
+               call mpas_pool_begin_iteration(tracersTendPool)
+               do while (mpas_pool_get_next_member(tracersTendPool, &
+                                                   groupItr) )
+                  if (groupItr%memberType == MPAS_POOL_FIELD ) then
+                     ! Only compute tendencies for active tracers if
+                     ! activeTracersOnly flag is true.
+                     if (.not. activeTracersOnly .or. &
+                         trim(groupItr%memberName)=='activeTracersTend') then
+                        call mpas_dmpar_field_halo_exch(domain, &
+                                                        groupItr%memberName)
+                     end if
+                  end if
+               end do
+               call mpas_timer_stop("se halo tracers")
+
 
             endif ! nowTimeStamp
 
