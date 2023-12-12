@@ -205,7 +205,7 @@ void Nudging::apply_vert_cutoff_tendency(Field &base, const Field &next,
                                              {num_cols, num_vert_packs}),
       KOKKOS_LAMBDA(int i, int j) {
         // If the pressure is above the cutoff, then we are closer to the surface
-        if (pmid_view(i, j) > cutoff_view(i, j)) {
+        if (pmid_view(i, j) > cutoff) {
           // Don't apply the tendency closer to the surface
           tend_view(i, j) = 0.0;
         } else {
@@ -523,8 +523,8 @@ void Nudging::run_impl (const double dt)
         apply_weighted_tendency(atm_state_field, int_state_field, nudging_weights_field, dt);
       } else if (m_refine_remap_vert_cutoff > 0.0) {
         // If we have a cutoff, we apply the tendency with p_mid cutoff
-        // First, get p_mid the field in the "atm" (i.e., "int") state
-        auto p_mid_field = get_field_in("p_mid")
+        // First, get p_mid the field in the atm (i.e., int) state
+        auto p_mid_field = get_field_in("p_mid");
         // Then, call the tendency with a Heaviside-like cutoff
         apply_vert_cutoff_tendency(atm_state_field, int_state_field,
                                    p_mid_field, m_refine_remap_vert_cutoff, dt);
