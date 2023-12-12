@@ -128,11 +128,11 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
 
   // Set computed (output) fields
   add_field<Updated >("T_mid"     , scalar3d_layout_mid, K  , grid_name);
-  add_field<Computed>("SW_flux_dn", scalar3d_layout_int, Wm2, grid_name, "RESTART");
-  add_field<Computed>("SW_flux_up", scalar3d_layout_int, Wm2, grid_name, "RESTART");
+  add_field<Computed>("SW_flux_dn", scalar3d_layout_int, Wm2, grid_name);
+  add_field<Computed>("SW_flux_up", scalar3d_layout_int, Wm2, grid_name);
   add_field<Computed>("SW_flux_dn_dir", scalar3d_layout_int, Wm2, grid_name);
-  add_field<Computed>("LW_flux_up", scalar3d_layout_int, Wm2, grid_name, "RESTART");
-  add_field<Computed>("LW_flux_dn", scalar3d_layout_int, Wm2, grid_name, "RESTART");
+  add_field<Computed>("LW_flux_up", scalar3d_layout_int, Wm2, grid_name);
+  add_field<Computed>("LW_flux_dn", scalar3d_layout_int, Wm2, grid_name);
   add_field<Computed>("SW_clnclrsky_flux_dn", scalar3d_layout_int, Wm2, grid_name);
   add_field<Computed>("SW_clnclrsky_flux_up", scalar3d_layout_int, Wm2, grid_name);
   add_field<Computed>("SW_clnclrsky_flux_dn_dir", scalar3d_layout_int, Wm2, grid_name);
@@ -148,25 +148,25 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Computed>("LW_clrsky_flux_dn", scalar3d_layout_int, Wm2, grid_name);
   add_field<Computed>("LW_clnsky_flux_up", scalar3d_layout_int, Wm2, grid_name);
   add_field<Computed>("LW_clnsky_flux_dn", scalar3d_layout_int, Wm2, grid_name);
-  add_field<Computed>("rad_heating_pdel", scalar3d_layout_mid, Pa*K/s, grid_name, "RESTART");
+  add_field<Computed>("rad_heating_pdel", scalar3d_layout_mid, Pa*K/s, grid_name);
   // Cloud properties added as computed fields for diagnostic purposes
-  add_field<Computed>("cldlow"        , scalar2d_layout, nondim, grid_name, "RESTART");
-  add_field<Computed>("cldmed"        , scalar2d_layout, nondim, grid_name, "RESTART");
-  add_field<Computed>("cldhgh"        , scalar2d_layout, nondim, grid_name, "RESTART");
-  add_field<Computed>("cldtot"        , scalar2d_layout, nondim, grid_name, "RESTART");
+  add_field<Computed>("cldlow"        , scalar2d_layout, nondim, grid_name);
+  add_field<Computed>("cldmed"        , scalar2d_layout, nondim, grid_name);
+  add_field<Computed>("cldhgh"        , scalar2d_layout, nondim, grid_name);
+  add_field<Computed>("cldtot"        , scalar2d_layout, nondim, grid_name);
   // 0.67 micron and 10.5 micron optical depth (needed for COSP)
-  add_field<Computed>("dtau067"       , scalar3d_layout_mid, nondim, grid_name, "RESTART");
-  add_field<Computed>("dtau105"       , scalar3d_layout_mid, nondim, grid_name, "RESTART");
-  add_field<Computed>("sunlit"        , scalar2d_layout    , nondim, grid_name, "RESTART");
+  add_field<Computed>("dtau067"       , scalar3d_layout_mid, nondim, grid_name);
+  add_field<Computed>("dtau105"       , scalar3d_layout_mid, nondim, grid_name);
+  add_field<Computed>("sunlit"        , scalar2d_layout    , nondim, grid_name);
   // Cloud-top diagnostics following AeroCOM recommendation
-  add_field<Computed>("T_mid_at_cldtop", scalar2d_layout, K, grid_name, "RESTART");
-  add_field<Computed>("p_mid_at_cldtop", scalar2d_layout, Pa, grid_name, "RESTART");
-  add_field<Computed>("cldfrac_ice_at_cldtop", scalar2d_layout, nondim, grid_name, "RESTART");
-  add_field<Computed>("cldfrac_liq_at_cldtop", scalar2d_layout, nondim, grid_name, "RESTART");
-  add_field<Computed>("cldfrac_tot_at_cldtop", scalar2d_layout, nondim, grid_name, "RESTART");
-  add_field<Computed>("cdnc_at_cldtop", scalar2d_layout, 1 / (m * m * m), grid_name, "RESTART");
-  add_field<Computed>("eff_radius_qc_at_cldtop", scalar2d_layout, micron, grid_name, "RESTART");
-  add_field<Computed>("eff_radius_qi_at_cldtop", scalar2d_layout, micron, grid_name, "RESTART");
+  add_field<Computed>("T_mid_at_cldtop", scalar2d_layout, K, grid_name);
+  add_field<Computed>("p_mid_at_cldtop", scalar2d_layout, Pa, grid_name);
+  add_field<Computed>("cldfrac_ice_at_cldtop", scalar2d_layout, nondim, grid_name);
+  add_field<Computed>("cldfrac_liq_at_cldtop", scalar2d_layout, nondim, grid_name);
+  add_field<Computed>("cldfrac_tot_at_cldtop", scalar2d_layout, nondim, grid_name);
+  add_field<Computed>("cdnc_at_cldtop", scalar2d_layout, 1 / (m * m * m), grid_name);
+  add_field<Computed>("eff_radius_qc_at_cldtop", scalar2d_layout, micron, grid_name);
+  add_field<Computed>("eff_radius_qi_at_cldtop", scalar2d_layout, micron, grid_name);
 
   // Translation of variables from EAM
   // --------------------------------------------------------------
@@ -179,13 +179,12 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   // netsw      sfc_flux_sw_net    net (down - up) SW flux at surface
   // flwds      sfc_flux_lw_dn     downwelling LW flux at surface
   // --------------------------------------------------------------
-  // These need to be added to restarts in the case of super-stepping
-  add_field<Computed>("sfc_flux_dir_nir", scalar2d_layout, Wm2, grid_name, "RESTART");
-  add_field<Computed>("sfc_flux_dir_vis", scalar2d_layout, Wm2, grid_name, "RESTART");
-  add_field<Computed>("sfc_flux_dif_nir", scalar2d_layout, Wm2, grid_name, "RESTART");
-  add_field<Computed>("sfc_flux_dif_vis", scalar2d_layout, Wm2, grid_name, "RESTART");
-  add_field<Computed>("sfc_flux_sw_net" , scalar2d_layout, Wm2, grid_name, "RESTART");
-  add_field<Computed>("sfc_flux_lw_dn"  , scalar2d_layout, Wm2, grid_name, "RESTART");
+  add_field<Computed>("sfc_flux_dir_nir", scalar2d_layout, Wm2, grid_name);
+  add_field<Computed>("sfc_flux_dir_vis", scalar2d_layout, Wm2, grid_name);
+  add_field<Computed>("sfc_flux_dif_nir", scalar2d_layout, Wm2, grid_name);
+  add_field<Computed>("sfc_flux_dif_vis", scalar2d_layout, Wm2, grid_name);
+  add_field<Computed>("sfc_flux_sw_net" , scalar2d_layout, Wm2, grid_name);
+  add_field<Computed>("sfc_flux_lw_dn"  , scalar2d_layout, Wm2, grid_name);
 
   // Boundary flux fields for energy and mass conservation checks
   if (has_column_conservation_check()) {
