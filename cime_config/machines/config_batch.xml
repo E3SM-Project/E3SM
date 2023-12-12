@@ -551,10 +551,10 @@
     </batch_system>
 
     <batch_system MACH="aurora" type="pbspro">
-      <batch_submit>/lus/gecko/projects/CSC249ADSE15_auroratmp_CNDA/tools/qsub/throttle</batch_submit>
+      <batch_submit>/lus/gecko/projects/CSC249ADSE15_CNDA/tools/qsub/throttle</batch_submit>
       <queues>
-        <queue walltimemax="00:59:00" jobmin="1" jobmax="3000" default="true">workq-route</queue>
-        <queue walltimemax="00:59:00" jobmin="1" jobmax="3000">workq</queue>
+        <queue walltimemax="00:59:00" jobmin="1" jobmax="10624" default="true">workq-route</queue>
+        <queue walltimemax="00:59:00" jobmin="1" jobmax="10624">workq</queue>
         <queue walltimemax="00:59:00" jobmin="1" jobmax="128">diag</queue>
       </queues>
     </batch_system>
