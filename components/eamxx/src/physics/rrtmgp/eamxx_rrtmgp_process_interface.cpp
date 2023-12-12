@@ -120,6 +120,10 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
     add_field<Required>("aero_tau_lw", scalar3d_lwband_layout, nondim, grid_name, ps);
   }
 
+  // Whether we do extra clean/clear sky calculations
+  m_extra_clnclrsky_diag = m_params.get<bool>("extra_clnclrsky_diag", false);
+  m_extra_clnsky_diag    = m_params.get<bool>("extra_clnsky_diag", false);
+
   // Set computed (output) fields
   add_field<Updated >("T_mid"     , scalar3d_layout_mid, K  , grid_name, ps);
   add_field<Computed>("SW_flux_dn", scalar3d_layout_int, Wm2, grid_name, "RESTART", ps);
@@ -127,11 +131,21 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Computed>("SW_flux_dn_dir", scalar3d_layout_int, Wm2, grid_name, ps);
   add_field<Computed>("LW_flux_up", scalar3d_layout_int, Wm2, grid_name, "RESTART", ps);
   add_field<Computed>("LW_flux_dn", scalar3d_layout_int, Wm2, grid_name, "RESTART", ps);
+  add_field<Computed>("SW_clnclrsky_flux_dn", scalar3d_layout_int, Wm2, grid_name, ps);
+  add_field<Computed>("SW_clnclrsky_flux_up", scalar3d_layout_int, Wm2, grid_name, ps);
+  add_field<Computed>("SW_clnclrsky_flux_dn_dir", scalar3d_layout_int, Wm2, grid_name, ps);
   add_field<Computed>("SW_clrsky_flux_dn", scalar3d_layout_int, Wm2, grid_name, ps);
   add_field<Computed>("SW_clrsky_flux_up", scalar3d_layout_int, Wm2, grid_name, ps);
   add_field<Computed>("SW_clrsky_flux_dn_dir", scalar3d_layout_int, Wm2, grid_name, ps);
+  add_field<Computed>("SW_clnsky_flux_dn", scalar3d_layout_int, Wm2, grid_name, ps);
+  add_field<Computed>("SW_clnsky_flux_up", scalar3d_layout_int, Wm2, grid_name, ps);
+  add_field<Computed>("SW_clnsky_flux_dn_dir", scalar3d_layout_int, Wm2, grid_name, ps);
+  add_field<Computed>("LW_clnclrsky_flux_up", scalar3d_layout_int, Wm2, grid_name, ps);
+  add_field<Computed>("LW_clnclrsky_flux_dn", scalar3d_layout_int, Wm2, grid_name, ps);
   add_field<Computed>("LW_clrsky_flux_up", scalar3d_layout_int, Wm2, grid_name, ps);
   add_field<Computed>("LW_clrsky_flux_dn", scalar3d_layout_int, Wm2, grid_name, ps);
+  add_field<Computed>("LW_clnsky_flux_up", scalar3d_layout_int, Wm2, grid_name, ps);
+  add_field<Computed>("LW_clnsky_flux_dn", scalar3d_layout_int, Wm2, grid_name, ps);
   add_field<Computed>("rad_heating_pdel", scalar3d_layout_mid, Pa*K/s, grid_name, "RESTART", ps);
   // Cloud properties added as computed fields for diagnostic purposes
   add_field<Computed>("cldlow"        , scalar2d_layout, nondim, grid_name, "RESTART");
@@ -276,16 +290,36 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
   mem += m_buffer.lw_flux_up.totElems();
   m_buffer.lw_flux_dn = decltype(m_buffer.lw_flux_dn)("lw_flux_dn", mem, m_col_chunk_size, m_nlay+1);
   mem += m_buffer.lw_flux_dn.totElems();
+  m_buffer.sw_clnclrsky_flux_up = decltype(m_buffer.sw_clnclrsky_flux_up)("sw_clnclrsky_flux_up", mem, m_col_chunk_size, m_nlay+1);
+  mem += m_buffer.sw_clnclrsky_flux_up.totElems();
+  m_buffer.sw_clnclrsky_flux_dn = decltype(m_buffer.sw_clnclrsky_flux_dn)("sw_clnclrsky_flux_dn", mem, m_col_chunk_size, m_nlay+1);
+  mem += m_buffer.sw_clnclrsky_flux_dn.totElems();
+  m_buffer.sw_clnclrsky_flux_dn_dir = decltype(m_buffer.sw_clnclrsky_flux_dn_dir)("sw_clnclrsky_flux_dn_dir", mem, m_col_chunk_size, m_nlay+1);
+  mem += m_buffer.sw_clnclrsky_flux_dn_dir.totElems();
   m_buffer.sw_clrsky_flux_up = decltype(m_buffer.sw_clrsky_flux_up)("sw_clrsky_flux_up", mem, m_col_chunk_size, m_nlay+1);
   mem += m_buffer.sw_clrsky_flux_up.totElems();
   m_buffer.sw_clrsky_flux_dn = decltype(m_buffer.sw_clrsky_flux_dn)("sw_clrsky_flux_dn", mem, m_col_chunk_size, m_nlay+1);
   mem += m_buffer.sw_clrsky_flux_dn.totElems();
   m_buffer.sw_clrsky_flux_dn_dir = decltype(m_buffer.sw_clrsky_flux_dn_dir)("sw_clrsky_flux_dn_dir", mem, m_col_chunk_size, m_nlay+1);
   mem += m_buffer.sw_clrsky_flux_dn_dir.totElems();
+  m_buffer.sw_clnsky_flux_up = decltype(m_buffer.sw_clnsky_flux_up)("sw_clnsky_flux_up", mem, m_col_chunk_size, m_nlay+1);
+  mem += m_buffer.sw_clnsky_flux_up.totElems();
+  m_buffer.sw_clnsky_flux_dn = decltype(m_buffer.sw_clnsky_flux_dn)("sw_clnsky_flux_dn", mem, m_col_chunk_size, m_nlay+1);
+  mem += m_buffer.sw_clnsky_flux_dn.totElems();
+  m_buffer.sw_clnsky_flux_dn_dir = decltype(m_buffer.sw_clnsky_flux_dn_dir)("sw_clnsky_flux_dn_dir", mem, m_col_chunk_size, m_nlay+1);
+  mem += m_buffer.sw_clnsky_flux_dn_dir.totElems();
+  m_buffer.lw_clnclrsky_flux_up = decltype(m_buffer.lw_clnclrsky_flux_up)("lw_clnclrsky_flux_up", mem, m_col_chunk_size, m_nlay+1);
+  mem += m_buffer.lw_clnclrsky_flux_up.totElems();
+  m_buffer.lw_clnclrsky_flux_dn = decltype(m_buffer.lw_clnclrsky_flux_dn)("lw_clnclrsky_flux_dn", mem, m_col_chunk_size, m_nlay+1);
+  mem += m_buffer.lw_clnclrsky_flux_dn.totElems();
   m_buffer.lw_clrsky_flux_up = decltype(m_buffer.lw_clrsky_flux_up)("lw_clrsky_flux_up", mem, m_col_chunk_size, m_nlay+1);
   mem += m_buffer.lw_clrsky_flux_up.totElems();
   m_buffer.lw_clrsky_flux_dn = decltype(m_buffer.lw_clrsky_flux_dn)("lw_clrsky_flux_dn", mem, m_col_chunk_size, m_nlay+1);
   mem += m_buffer.lw_clrsky_flux_dn.totElems();
+  m_buffer.lw_clnsky_flux_up = decltype(m_buffer.lw_clnsky_flux_up)("lw_clnsky_flux_up", mem, m_col_chunk_size, m_nlay+1);
+  mem += m_buffer.lw_clnsky_flux_up.totElems();
+  m_buffer.lw_clnsky_flux_dn = decltype(m_buffer.lw_clnsky_flux_dn)("lw_clnsky_flux_dn", mem, m_col_chunk_size, m_nlay+1);
+  mem += m_buffer.lw_clnsky_flux_dn.totElems();
   // 3d arrays with nswbands dimension (shortwave fluxes by band)
   m_buffer.sw_bnd_flux_up = decltype(m_buffer.sw_bnd_flux_up)("sw_bnd_flux_up", mem, m_col_chunk_size, m_nlay+1, m_nswbands);
   mem += m_buffer.sw_bnd_flux_up.totElems();
@@ -440,11 +474,21 @@ void RRTMGPRadiation::run_impl (const double dt) {
   auto d_sw_flux_dn_dir = get_field_out("SW_flux_dn_dir").get_view<Real**>();
   auto d_lw_flux_up = get_field_out("LW_flux_up").get_view<Real**>();
   auto d_lw_flux_dn = get_field_out("LW_flux_dn").get_view<Real**>();
+  auto d_sw_clnclrsky_flux_up = get_field_out("SW_clnclrsky_flux_up").get_view<Real**>();
+  auto d_sw_clnclrsky_flux_dn = get_field_out("SW_clnclrsky_flux_dn").get_view<Real**>();
+  auto d_sw_clnclrsky_flux_dn_dir = get_field_out("SW_clnclrsky_flux_dn_dir").get_view<Real**>();
   auto d_sw_clrsky_flux_up = get_field_out("SW_clrsky_flux_up").get_view<Real**>();
   auto d_sw_clrsky_flux_dn = get_field_out("SW_clrsky_flux_dn").get_view<Real**>();
   auto d_sw_clrsky_flux_dn_dir = get_field_out("SW_clrsky_flux_dn_dir").get_view<Real**>();
+  auto d_sw_clnsky_flux_up = get_field_out("SW_clnsky_flux_up").get_view<Real**>();
+  auto d_sw_clnsky_flux_dn = get_field_out("SW_clnsky_flux_dn").get_view<Real**>();
+  auto d_sw_clnsky_flux_dn_dir = get_field_out("SW_clnsky_flux_dn_dir").get_view<Real**>();
+  auto d_lw_clnclrsky_flux_up = get_field_out("LW_clnclrsky_flux_up").get_view<Real**>();
+  auto d_lw_clnclrsky_flux_dn = get_field_out("LW_clnclrsky_flux_dn").get_view<Real**>();
   auto d_lw_clrsky_flux_up = get_field_out("LW_clrsky_flux_up").get_view<Real**>();
   auto d_lw_clrsky_flux_dn = get_field_out("LW_clrsky_flux_dn").get_view<Real**>();
+  auto d_lw_clnsky_flux_up = get_field_out("LW_clnsky_flux_up").get_view<Real**>();
+  auto d_lw_clnsky_flux_dn = get_field_out("LW_clnsky_flux_dn").get_view<Real**>();
   auto d_rad_heating_pdel = get_field_out("rad_heating_pdel").get_view<Real**>();
   auto d_sfc_flux_dir_vis = get_field_out("sfc_flux_dir_vis").get_view<Real*>();
   auto d_sfc_flux_dir_nir = get_field_out("sfc_flux_dir_nir").get_view<Real*>();
@@ -564,11 +608,21 @@ void RRTMGPRadiation::run_impl (const double dt) {
       auto sw_flux_dn_dir  = subview_2d(m_buffer.sw_flux_dn_dir);
       auto lw_flux_up      = subview_2d(m_buffer.lw_flux_up);
       auto lw_flux_dn      = subview_2d(m_buffer.lw_flux_dn);
+      auto sw_clnclrsky_flux_up      = subview_2d(m_buffer.sw_clnclrsky_flux_up);
+      auto sw_clnclrsky_flux_dn      = subview_2d(m_buffer.sw_clnclrsky_flux_dn);
+      auto sw_clnclrsky_flux_dn_dir  = subview_2d(m_buffer.sw_clnclrsky_flux_dn_dir);
       auto sw_clrsky_flux_up      = subview_2d(m_buffer.sw_clrsky_flux_up);
       auto sw_clrsky_flux_dn      = subview_2d(m_buffer.sw_clrsky_flux_dn);
       auto sw_clrsky_flux_dn_dir  = subview_2d(m_buffer.sw_clrsky_flux_dn_dir);
+      auto sw_clnsky_flux_up      = subview_2d(m_buffer.sw_clnsky_flux_up);
+      auto sw_clnsky_flux_dn      = subview_2d(m_buffer.sw_clnsky_flux_dn);
+      auto sw_clnsky_flux_dn_dir  = subview_2d(m_buffer.sw_clnsky_flux_dn_dir);
+      auto lw_clnclrsky_flux_up      = subview_2d(m_buffer.lw_clnclrsky_flux_up);
+      auto lw_clnclrsky_flux_dn      = subview_2d(m_buffer.lw_clnclrsky_flux_dn);
       auto lw_clrsky_flux_up      = subview_2d(m_buffer.lw_clrsky_flux_up);
       auto lw_clrsky_flux_dn      = subview_2d(m_buffer.lw_clrsky_flux_dn);
+      auto lw_clnsky_flux_up      = subview_2d(m_buffer.lw_clnsky_flux_up);
+      auto lw_clnsky_flux_dn      = subview_2d(m_buffer.lw_clnsky_flux_dn);
       auto sw_bnd_flux_up  = subview_3d(m_buffer.sw_bnd_flux_up);
       auto sw_bnd_flux_dn  = subview_3d(m_buffer.sw_bnd_flux_dn);
       auto sw_bnd_flux_dir = subview_3d(m_buffer.sw_bnd_flux_dir);
@@ -847,9 +901,15 @@ void RRTMGPRadiation::run_impl (const double dt) {
         cld_tau_sw_bnd, cld_tau_lw_bnd,
         cld_tau_sw_gpt, cld_tau_lw_gpt,
         sw_flux_up       , sw_flux_dn       , sw_flux_dn_dir       , lw_flux_up       , lw_flux_dn,
-        sw_clrsky_flux_up, sw_clrsky_flux_dn, sw_clrsky_flux_dn_dir, lw_clrsky_flux_up, lw_clrsky_flux_dn,
+        sw_clnclrsky_flux_up, sw_clnclrsky_flux_dn, sw_clnclrsky_flux_dn_dir,
+        sw_clrsky_flux_up, sw_clrsky_flux_dn, sw_clrsky_flux_dn_dir,
+        sw_clnsky_flux_up, sw_clnsky_flux_dn, sw_clnsky_flux_dn_dir,
+        lw_clnclrsky_flux_up, lw_clnclrsky_flux_dn,
+        lw_clrsky_flux_up, lw_clrsky_flux_dn,
+        lw_clnsky_flux_up, lw_clnsky_flux_dn,
         sw_bnd_flux_up   , sw_bnd_flux_dn   , sw_bnd_flux_dir      , lw_bnd_flux_up   , lw_bnd_flux_dn,
-        eccf, m_atm_logger
+        eccf, m_atm_logger,
+        m_extra_clnclrsky_diag, m_extra_clnsky_diag
       );
 
       // Update heating tendency
@@ -949,11 +1009,21 @@ void RRTMGPRadiation::run_impl (const double dt) {
           d_sw_flux_dn_dir(icol,k)        = sw_flux_dn_dir(i+1,k+1);
           d_lw_flux_up(icol,k)            = lw_flux_up(i+1,k+1);
           d_lw_flux_dn(icol,k)            = lw_flux_dn(i+1,k+1);
+          d_sw_clnclrsky_flux_up(icol,k)     = sw_clnclrsky_flux_up(i+1,k+1);
+          d_sw_clnclrsky_flux_dn(icol,k)     = sw_clnclrsky_flux_dn(i+1,k+1);
+          d_sw_clnclrsky_flux_dn_dir(icol,k) = sw_clnclrsky_flux_dn_dir(i+1,k+1);
           d_sw_clrsky_flux_up(icol,k)     = sw_clrsky_flux_up(i+1,k+1);
           d_sw_clrsky_flux_dn(icol,k)     = sw_clrsky_flux_dn(i+1,k+1);
           d_sw_clrsky_flux_dn_dir(icol,k) = sw_clrsky_flux_dn_dir(i+1,k+1);
+          d_sw_clnsky_flux_up(icol,k)     = sw_clnsky_flux_up(i+1,k+1);
+          d_sw_clnsky_flux_dn(icol,k)     = sw_clnsky_flux_dn(i+1,k+1);
+          d_sw_clnsky_flux_dn_dir(icol,k) = sw_clnsky_flux_dn_dir(i+1,k+1);
+          d_lw_clnclrsky_flux_up(icol,k)     = lw_clnclrsky_flux_up(i+1,k+1);
+          d_lw_clnclrsky_flux_dn(icol,k)     = lw_clnclrsky_flux_dn(i+1,k+1);
           d_lw_clrsky_flux_up(icol,k)     = lw_clrsky_flux_up(i+1,k+1);
           d_lw_clrsky_flux_dn(icol,k)     = lw_clrsky_flux_dn(i+1,k+1);
+          d_lw_clnsky_flux_up(icol,k)     = lw_clnsky_flux_up(i+1,k+1);
+          d_lw_clnsky_flux_dn(icol,k)     = lw_clnsky_flux_dn(i+1,k+1);
         });
         // Extract optical properties for COSP
         Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay), [&] (const int& k) {

@@ -142,11 +142,21 @@ int run(int argc, char** argv) {
     real2d sw_flux_dir("sw_flux_dir", ncol, nlay+1);
     real2d lw_flux_up ("lw_flux_up" , ncol, nlay+1);
     real2d lw_flux_dn ("lw_flux_dn" , ncol, nlay+1);
+    real2d sw_clnclrsky_flux_up ("sw_clnclrsky_flux_up" , ncol, nlay+1);
+    real2d sw_clnclrsky_flux_dn ("sw_clnclrsky_flux_dn" , ncol, nlay+1);
+    real2d sw_clnclrsky_flux_dir("sw_clnclrsky_flux_dir", ncol, nlay+1);
     real2d sw_clrsky_flux_up ("sw_clrsky_flux_up" , ncol, nlay+1);
     real2d sw_clrsky_flux_dn ("sw_clrsky_flux_dn" , ncol, nlay+1);
     real2d sw_clrsky_flux_dir("sw_clrsky_flux_dir", ncol, nlay+1);
+    real2d sw_clnsky_flux_up ("sw_clnsky_flux_up" , ncol, nlay+1);
+    real2d sw_clnsky_flux_dn ("sw_clnsky_flux_dn" , ncol, nlay+1);
+    real2d sw_clnsky_flux_dir("sw_clnsky_flux_dir", ncol, nlay+1);
+    real2d lw_clnclrsky_flux_up ("lw_clnclrsky_flux_up" , ncol, nlay+1);
+    real2d lw_clnclrsky_flux_dn ("lw_clnclrsky_flux_dn" , ncol, nlay+1);
     real2d lw_clrsky_flux_up ("lw_clrsky_flux_up" , ncol, nlay+1);
     real2d lw_clrsky_flux_dn ("lw_clrsky_flux_dn" , ncol, nlay+1);
+    real2d lw_clnsky_flux_up ("lw_clnsky_flux_up" , ncol, nlay+1);
+    real2d lw_clnsky_flux_dn ("lw_clnsky_flux_dn" , ncol, nlay+1);
     real3d sw_bnd_flux_up ("sw_bnd_flux_up" , ncol, nlay+1, nswbands);
     real3d sw_bnd_flux_dn ("sw_bnd_flux_dn" , ncol, nlay+1, nswbands);
     real3d sw_bnd_flux_dir("sw_bnd_flux_dir", ncol, nlay+1, nswbands);
@@ -198,10 +208,17 @@ int run(int argc, char** argv) {
             cld_tau_sw, cld_tau_lw,  // outputs
             sw_flux_up, sw_flux_dn, sw_flux_dir,
             lw_flux_up, lw_flux_dn,
+            sw_clnclrsky_flux_up, sw_clnclrsky_flux_dn, sw_clnclrsky_flux_dir,
             sw_clrsky_flux_up, sw_clrsky_flux_dn, sw_clrsky_flux_dir,
+            sw_clnsky_flux_up, sw_clnsky_flux_dn, sw_clnsky_flux_dir,
+            lw_clnclrsky_flux_up, lw_clnclrsky_flux_dn,
             lw_clrsky_flux_up, lw_clrsky_flux_dn,
+            lw_clnsky_flux_up, lw_clnsky_flux_dn,
             sw_bnd_flux_up, sw_bnd_flux_dn, sw_bnd_flux_dir,
-            lw_bnd_flux_up, lw_bnd_flux_dn, tsi_scaling, logger);
+            lw_bnd_flux_up, lw_bnd_flux_dn, tsi_scaling, logger,
+            true, true // extra_clnclrsky_diag, extra_clnsky_diag
+            // set them both to true because we are testing them below
+          );
 
     // Check values against baseline
     logger->info("Check values...\n");
@@ -217,6 +234,19 @@ int run(int argc, char** argv) {
     if (!rrtmgpTest::all_close(lw_flux_up_ref , lw_flux_up , 0.001)) nerr++;
     if (!rrtmgpTest::all_close(lw_flux_dn_ref , lw_flux_dn , 0.001)) nerr++;
 
+    // Because the aerosol optical properties are all set to zero, these fluxes must be equal
+    if (!rrtmgpTest::all_close(sw_flux_up , sw_clnsky_flux_up , 0.0000000001)) nerr++;
+    if (!rrtmgpTest::all_close(sw_clrsky_flux_up , sw_clnclrsky_flux_up , 0.0000000001)) nerr++;
+    if (!rrtmgpTest::all_close(sw_flux_dn , sw_clnsky_flux_dn , 0.0000000001)) nerr++;
+    if (!rrtmgpTest::all_close(sw_clrsky_flux_dn , sw_clnclrsky_flux_dn , 0.0000000001)) nerr++;
+    if (!rrtmgpTest::all_close(sw_flux_dir , sw_clnsky_flux_dir , 0.0000000001)) nerr++;
+    if (!rrtmgpTest::all_close(sw_clrsky_flux_dir , sw_clnclrsky_flux_dir , 0.0000000001)) nerr++;
+    if (!rrtmgpTest::all_close(lw_flux_up , lw_clnsky_flux_up , 0.0000000001)) nerr++;
+    if (!rrtmgpTest::all_close(lw_clrsky_flux_up , lw_clnclrsky_flux_up , 0.0000000001)) nerr++;
+    if (!rrtmgpTest::all_close(lw_flux_dn , lw_clnsky_flux_dn , 0.0000000001)) nerr++;
+    if (!rrtmgpTest::all_close(lw_clrsky_flux_dn , lw_clnclrsky_flux_dn , 0.0000000001)) nerr++;
+
+
     logger->info("Cleaning up...\n");
     // Clean up or else YAKL will throw errors
     scream::rrtmgp::rrtmgp_finalize();
@@ -230,11 +260,21 @@ int run(int argc, char** argv) {
     sw_flux_dir.deallocate();
     lw_flux_up.deallocate();
     lw_flux_dn.deallocate();
+    sw_clnclrsky_flux_up.deallocate();
+    sw_clnclrsky_flux_dn.deallocate();
+    sw_clnclrsky_flux_dir.deallocate();
     sw_clrsky_flux_up.deallocate();
     sw_clrsky_flux_dn.deallocate();
     sw_clrsky_flux_dir.deallocate();
+    sw_clnsky_flux_up.deallocate();
+    sw_clnsky_flux_dn.deallocate();
+    sw_clnsky_flux_dir.deallocate();
+    lw_clnclrsky_flux_up.deallocate();
+    lw_clnclrsky_flux_dn.deallocate();
     lw_clrsky_flux_up.deallocate();
     lw_clrsky_flux_dn.deallocate();
+    lw_clnsky_flux_up.deallocate();
+    lw_clnsky_flux_dn.deallocate();
     sw_bnd_flux_up.deallocate();
     sw_bnd_flux_dn.deallocate();
     sw_bnd_flux_dir.deallocate();
