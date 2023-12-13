@@ -12,6 +12,11 @@ CreateScorpioTargets()
 include (${SCREAM_BASE_DIR}/cmake/tpls/CsmShare.cmake)
 CreateCsmShareTarget()
 
+if (NOT SCREAM_LIB_ONLY)
+  include(BuildCprnc)
+  BuildCprnc()
+endif()
+
 # MAM aerosol support
 if (SCREAM_ENABLE_MAM)
   # We use CMake's ExternalProject capability to build and install Haero.

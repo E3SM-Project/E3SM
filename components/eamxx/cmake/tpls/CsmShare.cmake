@@ -11,7 +11,9 @@ macro (CreateCsmShareTarget)
     # Set variables needed for processing genf90 templates
     set(CIMEROOT ${SCREAM_BASE_DIR}/../../cime)
     list(APPEND CMAKE_MODULE_PATH ${CIMEROOT}/CIME/non_py/src/CMake)
-    set(GENF90 ${CIMEROOT}/CIME/non_py/externals/genf90/genf90.pl)
+    # Setting GENF90_PATH here will prevent cprnc from trying to redefine the genf90 target
+    set(GENF90_PATH ${CIMEROOT}/CIME/non_py/externals/genf90)
+    set(GENF90 ${GENF90_PATH}/genf90.pl)
     set(ENABLE_GENF90 True)
     include(genf90_utils)
     include(Sourcelist_utils)
