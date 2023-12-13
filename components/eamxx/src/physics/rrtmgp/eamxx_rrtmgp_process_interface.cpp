@@ -566,6 +566,11 @@ void RRTMGPRadiation::run_impl (const double dt) {
                      obliqr, &delta, &eccf);
 
     // Precompute VMR for all gases, on all cols, before starting the chunks loop
+    //
+    // h2o is taken from qv
+    // o3 is computed elsewhere (either read from file or computed by chemistry);
+    // n2 and co are set to constants and are not handled by trcmix;
+    // the rest are handled by trcmix
     const auto gas_mol_weights = m_gas_mol_weights;
     for (int igas = 0; igas < m_ngas; igas++) {
       auto name = m_gas_names[igas];
@@ -809,17 +814,9 @@ void RRTMGPRadiation::run_impl (const double dt) {
       // set_vmr requires the input array size to have the correct size,
       // and the last chunk may have less columns, so create a temp of
       // correct size that uses m_buffer.tmp2d's pointer
-      //
-      // h2o is taken from qv and requies no initialization here;
-      // o3 is computed elsewhere (either read from file or computed by chemistry);
-      // n2 and co are set to constants and are not handled by trcmix;
-      // the rest are handled by trcmix
       real2d tmp2d = subview_2d(m_buffer.tmp2d);
       for (int igas = 0; igas < m_ngas; igas++) {
         auto name = m_gas_names[igas];
-
-        // We read o3 in as a vmr already
-        if (name=="o3") continue;
 
         auto d_vmr = get_field_out(name + "_volume_mix_ratio").get_view<Real**>();
 
