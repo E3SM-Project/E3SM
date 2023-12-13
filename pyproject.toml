@@ -37,6 +37,8 @@ skip = "e3sm_diags/e3sm_diags_driver.py"
 junit_family = "xunit2"
 addopts = "--cov=e3sm_diags --cov-report term --cov-report html:tests_coverage_reports/htmlcov --cov-report xml:tests_coverage_reports/coverage.xml -s"
 python_files = ["tests.py", "test_*.py"]
+# Only run the unit tests because integration tests take a long time.
+# Integration tests can be executed manually with `test.sh` or `pytest tests/integration`.
 testpaths = "tests/e3sm_diags"
 
 [tool.mypy]

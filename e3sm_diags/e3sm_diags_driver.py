@@ -347,15 +347,16 @@ def _collapse_results(parameters: List[List[CoreParameter]]) -> List[CoreParamet
     return output_parameters
 
 
-def main(parameters=[]):
+def main(parameters=[]) -> List[CoreParameter]:
     # Get the diagnostic run parameters
     # ---------------------------------
     parser = CoreParser()
 
     # If no parameters are passed, use the parser args as defaults. Otherwise,
     # create the dictionary of expected parameters.
-    if not parameters:
+    if len(parameters) == 0:
         parameters = get_parameters(parser)
+
     expected_parameters = create_parameter_dict(parameters)
 
     if not os.path.exists(parameters[0].results_dir):
@@ -407,6 +408,8 @@ def main(parameters=[]):
             f"actual and expected numbers: {d}"
         )
         raise Exception(message)
+
+    return parameters_results
 
 
 if __name__ == "__main__":

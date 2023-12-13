@@ -1,10 +1,12 @@
 import copy
+from itertools import chain
+from typing import List
 
 import e3sm_diags  # noqa: F401
 from e3sm_diags.e3sm_diags_driver import get_default_diags_path, main
 from e3sm_diags.logger import custom_logger, move_log_to_prov_dir
 from e3sm_diags.parameter import SET_TO_PARAMETERS
-from e3sm_diags.parameter.core_parameter import CoreParameter
+from e3sm_diags.parameter.core_parameter import DEFAULT_SETS, CoreParameter
 from e3sm_diags.parser.core_parser import CoreParser
 
 logger = custom_logger(__name__)
@@ -18,48 +20,280 @@ class Run:
     """
 
     def __init__(self):
-        self.sets_to_run = CoreParameter().sets
         self.parser = CoreParser()
 
-    def run_diags(self, parameters):
+        # The list of sets to run based on diagnostic parameters.
+        self.sets_to_run = []
+
+        # The path to the user-specified `.cfg` file using `-d/--diags` or
+        # the default diagnostics `.cfg` file.
+        self.cfg_path = None
+
+    @property
+    def is_cfg_file_arg_set(self):
+        """A property to check if `-d/--diags` was set to a `.cfg` filepath.
+
+        Returns
+        -------
+        bool
+            True if list contains more than one path, else False.
         """
-        Based on sets_to_run, run the diags with the list of parameters.
+        args = self.parser.view_args()
+        self.cfg_path = args.other_parameters
+
+        is_set = len(self.cfg_path) > 0
+
+        return is_set
+
+    def run_diags(
+        self, parameters: List[CoreParameter], use_cfg: bool = True
+    ) -> List[CoreParameter]:
+        """Run a set of diagnostics with a list of parameters.
+
+        Parameters
+        ----------
+        parameters : List[CoreParameter]
+            A list of parameters defined through the Python API.
+        use_cfg : bool, optional
+            Also run diagnostics using a `.cfg` file, by default True.
+
+              * If True, run all sets using the list of parameters passed in
+                this function and parameters defined in a .cfg file (if
+                defined), or use the .cfg file(s) for default diagnostics. This
+                is the default option.
+              * If False, only the parameters passed via ``parameters`` will be
+                run. The sets to run are based on the sets defined by the
+                parameters. This makes it easy to debug a few sets instead of
+                all of the debug sets too.
+
+        Returns
+        -------
+        List[CoreParameter]
+            A list of parameter objects with their results.
+
+        Raises
+        ------
+        RuntimeError
+            If a diagnostic run using a parameter fails for any reason.
         """
-        final_params = self.get_final_parameters(parameters)
-        if not final_params:
-            msg = "No parameters we able to be extracted."
-            msg += " Please check the parameters you defined."
-            raise RuntimeError(msg)
+        params = self.get_run_parameters(parameters, use_cfg)
+
+        if params is None or len(params) == 0:
+            raise RuntimeError(
+                "No parameters we able to be extracted. Please "
+                "check the parameters you defined."
+            )
 
         try:
-            main(final_params)
+            params_results = main(params)
         except Exception:
             logger.exception("Error traceback:", exc_info=True)
-        move_log_to_prov_dir(final_params[0].results_dir)
 
-    def get_final_parameters(self, parameters):
+        move_log_to_prov_dir(params_results[0].results_dir)
+
+        return params_results
+
+    def get_run_parameters(
+        self, parameters: List[CoreParameter], use_cfg: bool = True
+    ) -> List[CoreParameter]:
+        """Get the run parameters.
+
+        Parameters
+        ----------
+        parameters : List[CoreParameter]
+            A list of parameters defined through the Python API.
+        use_cfg : bool, optional
+            Use parameters defined in a .cfg file too, by default True.
+
+        Returns
+        -------
+        List[CoreParameter]
+            A list of run parameters.
         """
-        Based on sets_to_run and the list of parameters,
-        get the final list of paremeters to run the diags on.
-        """
-        if not parameters or not isinstance(parameters, list):
-            msg = "You must pass in a list of parameter objects."
-            raise RuntimeError(msg)
+        self._validate_parameters(parameters)
 
-        # For each of the passed in parameters, we can only have one of
-        # each type.
-        types = set([p.__class__ for p in parameters])
-        if len(types) != len(parameters):
-            msg = "You passed in two or more parameters of the same type."
-            raise RuntimeError(msg)
-
+        # FIXME: This line produces some unintended side-effects. For example,
+        # let's say we have two objects: 1. CoreParameter, 2. ZonalMean2DParameter.
+        # If object 1 has `plevs=[200]`, this value will get copied to object 2.
+        # Object 2 has a check to make sure plevs has more than 1 value. This
+        # breaks the diagnostic run as a result. The workaround is to loop
+        # over `run_diags()` function and run one parameter at a time.
         self._add_parent_attrs_to_children(parameters)
 
-        final_params = []
+        if use_cfg:
+            run_params = self._get_parameters_with_api_and_cfg(parameters)
+        else:
+            run_params = self._get_parameters_with_api_only(parameters)
+
+        self.parser.check_values_of_params(run_params)
+
+        return run_params
+
+    def _validate_parameters(self, parameters: List[CoreParameter]):
+        if parameters is None or not isinstance(parameters, list):
+            raise RuntimeError("You must pass in a list of parameter objects.")
+
+        param_types_list = [
+            p.__class__ for p in parameters if p.__class__ != CoreParameter
+        ]
+        param_types_set = set(param_types_list)
+
+        if len(param_types_set) != len(param_types_list):
+            raise RuntimeError(
+                "You passed in two or more non-CoreParameter objects of the same type."
+            )
+
+    def _get_parameters_with_api_and_cfg(
+        self, parameters: List[CoreParameter]
+    ) -> List[CoreParameter]:
+        """Get the run parameters using the Python API and .cfg file.
+
+        Parameters
+        ----------
+        parameters : List[CoreParameter]
+            A list of parameter objects defined by the Python API.
+
+        Returns
+        -------
+        List[CoreParameter]
+            A list of run parameters, including ones defined in a .cfg file.
+            Any non-CoreParameter objects will be replaced by a sub-class
+            based on the set (``SETS_TO_PARAMETERS``).
+        """
+        run_params = []
+
+        if self.is_cfg_file_arg_set:
+            cfg_params = self._get_custom_params_from_cfg_file()
+        else:
+            run_type = parameters[0].run_type
+            cfg_params = self._get_default_params_from_cfg_file(run_type)
+
+        if len(self.sets_to_run) == 0:
+            self.sets_to_run = DEFAULT_SETS
 
         for set_name in self.sets_to_run:
-            other_params = self._get_other_diags(parameters[0].run_type)
+            param = self._get_instance_of_param_class(
+                SET_TO_PARAMETERS[set_name], parameters
+            )
 
+            # Since each parameter will have lots of default values, we want to
+            # remove them. Otherwise when calling get_parameters(), these
+            # default values will take precedence over values defined in
+            # other_params.
+            self._remove_attrs_with_default_values(param)
+            param.sets = [set_name]
+
+            # # FIXME: Make a deep copy of cfg_params because there is some
+            # buggy code in this method that changes parameter attributes in
+            # place, which affects downstream operations. The original
+            # cfg_params needs to be perserved for each iteration of this
+            # for loop.
+            params = self.parser.get_parameters(
+                orig_parameters=param,
+                other_parameters=copy.deepcopy(cfg_params),
+                cmd_default_vars=False,
+                argparse_vals_only=False,
+            )
+
+            # Makes sure that any parameters that are selectors will be in param.
+            self._add_attrs_with_default_values(param)
+
+            # The select() call in get_parameters() was made for the original
+            # command-line way of using CDP. We just call it manually with the
+            # parameter object param.
+            params = self.parser.select(param, params)
+
+            run_params.extend(params)
+
+        return run_params
+
+    def _get_custom_params_from_cfg_file(self) -> List[CoreParameter]:
+        """Get parameters using the cfg file set by `-d`/`--diags`.
+
+        Returns
+        -------
+        List[CoreParameter]
+            A list of parameter objects.
+        """
+        params = self.parser.get_cfg_parameters(argparse_vals_only=False)
+
+        params_final = self._convert_params_to_subclass(params)
+
+        return params_final
+
+    def _get_default_params_from_cfg_file(self, run_type: str) -> List[CoreParameter]:
+        """Get parameters using the default diagnostic .cfg file(s).
+
+        Parameters
+        ----------
+        run_type : str
+            The run type used to check for which .cfg file(s) to reference.
+
+        Returns
+        -------
+        List[CoreParameter]
+            A list of parameter objects.
+        """
+        # Get the paths to the default diags .cfg file(s).
+        paths = []
+        for set_name in self.sets_to_run:
+            path = get_default_diags_path(set_name, run_type, False)
+            paths.append(path)
+
+        self.cfg_path = paths
+
+        # Convert the .cfg file(s) to parameter objects.
+        params = self.parser.get_cfg_parameters(
+            files_to_open=paths, argparse_vals_only=False
+        )
+
+        # Update parameter objects using subclass with default values.
+        params_final = self._convert_params_to_subclass(params)
+
+        return params_final
+
+    def _convert_params_to_subclass(
+        self, parameters: List[CoreParameter]
+    ) -> List[CoreParameter]:
+        new_params: List[CoreParameter] = []
+
+        # For each of the params, add in the default values using the parameter
+        # classes in SET_TO_PARAMETERS.
+        for param in parameters:
+            set_key = param.sets[0]
+            new_param = SET_TO_PARAMETERS[set_key]() + param
+
+            new_params.append(new_param)
+
+        return new_params
+
+    def _get_parameters_with_api_only(
+        self, parameters: List[CoreParameter]
+    ) -> List[CoreParameter]:
+        """Get the parameters defined through the Python API only.
+
+        This method replaces CoreParameter objects with the related sub-class
+        for the specified set.
+
+        Parameters
+        ----------
+        parameters : List[CoreParameter]
+            A list of parameter objects.
+
+        Returns
+        -------
+        List[CoreParameter]
+            A list of parameter objects defined through the Python API only.
+            Any non-CoreParameter objects will be replaced by a sub-class based
+            on the set (``SETS_TO_PARAMETERS``).
+        """
+        params = []
+
+        if len(self.sets_to_run) == 0:
+            sets_to_run = [param.sets for param in parameters]
+            self.sets_to_run = list(chain.from_iterable(sets_to_run))
+
+        for set_name in self.sets_to_run:
             # For each of the set_names, get the corresponding parameter.
             param = self._get_instance_of_param_class(
                 SET_TO_PARAMETERS[set_name], parameters
@@ -71,26 +305,14 @@ class Run:
             self._remove_attrs_with_default_values(param)
             param.sets = [set_name]
 
-            params = self.parser.get_parameters(
-                orig_parameters=param,
-                other_parameters=other_params,
-                cmd_default_vars=False,
-                argparse_vals_only=False,
-            )
-
-            # Makes sure that any parameters that are selectors
-            # will be in param.
+            # Makes sure that any parameters that are selectors will be in param.
             self._add_attrs_with_default_values(param)
-            # The select() call in get_parameters() was made for the original
-            # command-line way of using CDP.
-            # We just call it manually with the parameter object param.
-            params = self.parser.select(param, params)
 
-            final_params.extend(params)
+            params.append(param)
 
-        self.parser.check_values_of_params(final_params)
+        self.parser.check_values_of_params(params)
 
-        return final_params
+        return params
 
     def _add_parent_attrs_to_children(self, parameters):
         """
@@ -232,32 +454,6 @@ class Run:
 
         msg = "There's weren't any class of types {} in your parameters."
         raise RuntimeError(msg.format(class_types))
-
-    def _get_other_diags(self, run_type):
-        """
-        If the user has ran the script with a -d, get the diags for that.
-        If not, load the default diags based on sets_to_run and run_type.
-        """
-        args = self.parser.view_args()
-
-        # If the user has passed in args with -d.
-        if args.other_parameters:
-            params = self.parser.get_cfg_parameters(argparse_vals_only=False)
-        else:
-            default_diags_paths = [
-                get_default_diags_path(set_name, run_type, False)
-                for set_name in self.sets_to_run
-            ]
-            params = self.parser.get_cfg_parameters(
-                files_to_open=default_diags_paths, argparse_vals_only=False
-            )
-
-        # For each of the params, add in the default values
-        # using the parameter classes in SET_TO_PARAMETERS.
-        for i in range(len(params)):
-            params[i] = SET_TO_PARAMETERS[params[i].sets[0]]() + params[i]
-
-        return params
 
 
 runner = Run()

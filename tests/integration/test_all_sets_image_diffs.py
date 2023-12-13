@@ -1,161 +1,52 @@
 import os
 import re
-import shutil
-import subprocess
+import sys
 from typing import List
 
 import pytest
-from PIL import Image, ImageChops, ImageDraw
 
 from e3sm_diags.logger import custom_logger
+from e3sm_diags.run import runner
 from tests.integration.config import TEST_IMAGES_PATH, TEST_ROOT_PATH
-from tests.integration.utils import run_cmd_and_pipe_stderr
+from tests.integration.utils import _compare_images, _get_test_params
 
-# Run these tetsts on Cori by doing the following:
-# cd tests/system
-# module load python/2.7-anaconda-4.4
-# source activate e3sm_diags_env_dev
-# If code in e3sm_diags has been changed:
-# pip install /global/homes/f/<username>/e3sm_diags/
-# python test_diags.py
+CFG_PATH = os.path.join(TEST_ROOT_PATH, "all_sets.cfg")
 
-
-# Set to True to place the results directory on Cori's web server
-# Set to False to place the results directory in tests/system
-CORI_WEB = False
 
 logger = custom_logger(__name__)
 
 
 @pytest.fixture(scope="module")
-def get_results_dir():
-    command = f"python {TEST_ROOT_PATH}/all_sets.py -d {TEST_ROOT_PATH}/all_sets.cfg"
-    stderr = run_cmd_and_pipe_stderr(command)
+def run_diags_and_get_results_dir() -> str:
+    """Run the diagnostics and get the results directory containing the images.
 
-    results_dir = _get_results_dir(stderr)
-    logger.info("results_dir={}".format(results_dir))
+    The scope of this fixture is at the module level so that it only runs
+    once, then each individual test can reference the result directory.
 
-    if CORI_WEB:
-        results_dir = _move_to_NERSC_webserver(
-            "/global/u1/f/(.*)/e3sm_diags",
-            "/global/cfs/cdirs/acme/www/{}",
-            results_dir,
-        )
+    Returns
+    -------
+    str
+        The path to the results directory.
+    """
+    # Set -d flag to use the .cfg file for running additional diagnostic sets.
+    sys.argv.extend(["-d", CFG_PATH])
+
+    params = _get_test_params()
+    results = runner.run_diags(params)
+
+    results_dir = results[0].results_dir
+
+    logger.info(f"results_dir={results_dir}")
 
     return results_dir
 
 
-def _get_results_dir(stderr):
-    """Given output from e3sm_diags_driver, extract the path to results_dir."""
-    for line in stderr:
-        match = re.search("Viewer HTML generated at (.*)viewer.*.html", line)
-        if match:
-            results_dir = match.group(1)
-            return results_dir
-
-    message = "No viewer directory listed in output: {}".format(stderr)
-    raise RuntimeError(message)
-
-
-def _move_to_NERSC_webserver(machine_path_re_str, html_prefix_format_str, results_dir):
-    command = "git rev-parse --show-toplevel"
-    top_level = subprocess.check_output(command.split()).decode("utf-8").splitlines()[0]
-    match = re.search(machine_path_re_str, top_level)
-    if match:
-        username = match.group(1)
-    else:
-        message = "Username could not be extracted from top_level={}".format(top_level)
-        raise RuntimeError(message)
-
-    html_prefix = html_prefix_format_str.format(username)
-    logger.info("html_prefix={}".format(html_prefix))
-    new_results_dir = "{}/{}".format(html_prefix, results_dir)
-    logger.info("new_results_dir={}".format(new_results_dir))
-    if os.path.exists(new_results_dir):
-        command = "rm -r {}".format(new_results_dir)
-        subprocess.check_output(command.split())
-    command = "mv {} {}".format(results_dir, new_results_dir)
-    subprocess.check_output(command.split())
-    command = "chmod -R 755 {}".format(new_results_dir)
-    subprocess.check_output(command.split())
-
-    return new_results_dir
-
-
-def _compare_images(
-    mismatched_images: List[str],
-    image_name: str,
-    path_to_actual_png: str,
-    path_to_expected_png: str,
-) -> List[str]:
-    # https://stackoverflow.com/questions/35176639/compare-images-python-pil
-
-    actual_png = Image.open(path_to_actual_png).convert("RGB")
-    expected_png = Image.open(path_to_expected_png).convert("RGB")
-    diff = ImageChops.difference(actual_png, expected_png)
-
-    diff_dir = f"{TEST_ROOT_PATH}image_check_failures"
-    if not os.path.isdir(diff_dir):
-        os.mkdir(diff_dir)
-
-    bbox = diff.getbbox()
-    # If `diff.getbbox()` is None, then the images are in theory equal
-    if bbox is None:
-        pass
-    else:
-        # Sometimes, a few pixels will differ, but the two images appear identical.
-        # https://codereview.stackexchange.com/questions/55902/fastest-way-to-count-non-zero-pixels-using-python-and-pillow
-        nonzero_pixels = (
-            diff.crop(bbox)
-            .point(lambda x: 255 if x else 0)
-            .convert("L")
-            .point(bool)
-            .getdata()
-        )
-        num_nonzero_pixels = sum(nonzero_pixels)
-        logger.info("\npath_to_actual_png={}".format(path_to_actual_png))
-        logger.info("path_to_expected_png={}".format(path_to_expected_png))
-        logger.info("diff has {} nonzero pixels.".format(num_nonzero_pixels))
-        width, height = expected_png.size
-        num_pixels = width * height
-        logger.info("total number of pixels={}".format(num_pixels))
-        fraction = num_nonzero_pixels / num_pixels
-        logger.info("num_nonzero_pixels/num_pixels fraction={}".format(fraction))
-
-        # Fraction of mismatched pixels should be less than 0.02%
-        if fraction >= 0.0002:
-            mismatched_images.append(image_name)
-
-            simple_image_name = image_name.split("/")[-1].split(".")[0]
-            shutil.copy(
-                path_to_actual_png,
-                os.path.join(diff_dir, "{}_actual.png".format(simple_image_name)),
-            )
-            shutil.copy(
-                path_to_expected_png,
-                os.path.join(diff_dir, "{}_expected.png".format(simple_image_name)),
-            )
-            # https://stackoverflow.com/questions/41405632/draw-a-rectangle-and-a-text-in-it-using-pil
-            draw = ImageDraw.Draw(diff)
-            (left, upper, right, lower) = diff.getbbox()
-            draw.rectangle(((left, upper), (right, lower)), outline="red")
-            diff.save(
-                os.path.join(diff_dir, "{}_diff.png".format(simple_image_name)),
-                "PNG",
-            )
-
-    return mismatched_images
-
-
-class TestAllSets:
+class TestAllSetsImageDiffs:
     @pytest.fixture(autouse=True)
-    def setup(self, get_results_dir):
-        self.results_dir = get_results_dir
+    def setup(self, run_diags_and_get_results_dir):
+        self.results_dir = run_diags_and_get_results_dir
 
-    def test_results_directory_ends_with_specific_directory(self):
-        assert self.results_dir.endswith("all_sets_results_test/")
-
-    def test_actual_images_produced_is_the_same_as_the_expected(self):
+    def test_num_images_is_the_same_as_the_expected(self):
         actual_num_images, actual_images = self._count_images_in_dir(
             f"{TEST_ROOT_PATH}/all_sets_results_test"
         )
@@ -174,15 +65,16 @@ class TestAllSets:
 
             # Check PNG path is the same as the expected.
             png_path = "{}/{}.png".format(set_name, variable)
-            full_png_path = "{}{}".format(self.results_dir, png_path)
+            full_png_path = os.path.join(self.results_dir, png_path)
             path_exists = os.path.exists(full_png_path)
 
             assert path_exists
 
             # Check full HTML path is the same as the expected.
-            html_path = "{}viewer/{}/variable/{}/plot.html".format(
-                self.results_dir, set_name, variable_lower
+            filename = "viewer/{}/variable/{}/plot.html".format(
+                set_name, variable_lower
             )
+            html_path = os.path.join(self.results_dir, filename)
             self._check_html_image(html_path, png_path, full_png_path)
 
     def test_cosp_histogram_plot_diffs(self):
@@ -237,16 +129,15 @@ class TestAllSets:
 
         # Check PNG path is the same as the expected.
         png_path = "{}/{}/qbo_diags.png".format(set_name, case_id)
-        full_png_path = "{}{}".format(self.results_dir, png_path)
+        full_png_path = os.path.join(self.results_dir, png_path)
         path_exists = os.path.exists(full_png_path)
 
         assert path_exists
 
         # Check full HTML path is the same as the expected.
         # viewer/qbo/variable/era-interim/plot.html
-        html_path = "{}viewer/{}/variable/{}/plot.html".format(
-            self.results_dir, set_name, case_id_lower
-        )
+        filename = "viewer/{}/variable/{}/plot.html".format(set_name, case_id_lower)
+        html_path = os.path.join(self.results_dir, filename)
         self._check_html_image(html_path, png_path, full_png_path)
 
     def test_streamflow_plot_diffs(self):
@@ -353,14 +244,13 @@ class TestAllSets:
                     region,
                 )
 
-                full_png_path = "{}{}".format(self.results_dir, png_path)
+                full_png_path = os.path.join(self.results_dir, png_path)
                 path_exists = os.path.exists(full_png_path)
 
                 assert path_exists
 
                 # Check full HTML path is the same as the expected.
-                html_path = "{}viewer/{}/{}/{}-{}{}-{}/{}.html".format(
-                    self.results_dir,
+                filename = "viewer/{}/{}/{}-{}{}-{}/{}.html".format(
                     set_name,
                     case_id_lower,
                     variable_lower,
@@ -369,6 +259,7 @@ class TestAllSets:
                     ref_name_lower,
                     season_lower,
                 )
+                html_path = os.path.join(self.results_dir, filename)
                 self._check_html_image(html_path, png_path, full_png_path)
 
     def _check_plots_2d(self, set_name):
@@ -404,15 +295,14 @@ class TestAllSets:
             png_path = "{}/{}/regression-coefficient-{}-over-{}.png".format(
                 set_name, case_id, variable_lower, nino_region_lower
             )
-            full_png_path = "{}{}".format(self.results_dir, png_path)
+            full_png_path = os.path.join(self.results_dir, png_path)
             path_exists = os.path.exists(full_png_path)
 
             assert path_exists
 
             # Check full HTML path is the same as the expected.
-            html_path = "{}viewer/{}/map/{}/plot.html".format(
-                self.results_dir, set_name, case_id_lower
-            )
+            filename = "viewer/{}/map/{}/plot.html".format(set_name, case_id_lower)
+            html_path = os.path.join(self.results_dir, filename)
             self._check_html_image(html_path, png_path, full_png_path)
 
     def _check_enso_scatter_plots(self, case_id):
@@ -427,15 +317,14 @@ class TestAllSets:
             png_path = "{}/{}/feedback-{}-{}-TS-NINO3.png".format(
                 set_name, case_id, variable, region
             )
-            full_png_path = "{}{}".format(self.results_dir, png_path)
+            full_png_path = os.path.join(self.results_dir, png_path)
             path_exists = os.path.exists(full_png_path)
 
             assert path_exists
 
             # Check full HTML path is the same as the expected.
-            html_path = "{}viewer/{}/scatter/{}/plot.html".format(
-                self.results_dir, set_name, case_id_lower
-            )
+            filename = "viewer/{}/scatter/{}/plot.html".format(set_name, case_id_lower)
+            html_path = os.path.join(self.results_dir, filename)
             self._check_html_image(html_path, png_path, full_png_path)
 
     def _check_streamflow_plots(self):
@@ -459,7 +348,7 @@ class TestAllSets:
                 assert png_path == expected
 
                 # Check path exists
-                full_png_path = "{}{}".format(self.results_dir, png_path)
+                full_png_path = os.path.join(self.results_dir, png_path)
                 path_exists = os.path.exists(full_png_path)
 
                 assert path_exists
@@ -482,5 +371,5 @@ class TestAllSets:
                 assert html_path == expected
 
                 # Check the full HTML path is the same as the expected.
-                full_html_path = "{}{}".format(self.results_dir, html_path)
+                full_html_path = os.path.join(self.results_dir, html_path)
                 self._check_html_image(full_html_path, png_path, full_png_path)

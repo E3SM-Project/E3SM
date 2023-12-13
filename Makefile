@@ -55,6 +55,14 @@ clean-test: ## remove test and coverage artifacts
 	rm -fr .pytest_cache
 	rm -rf .mypy_cache
 
+clean-test-int-res: ## remove integration test results and image check failures
+	rm -rf tests/integration/all_sets_results_test
+	rm -rf tests/integration/image_check_failures
+
+clean-test-int-data:  # remove integration test data and images (expected) -- useful when they are updated
+	rm -rf tests/integration/integration_test_data
+	rm -rf tests/integration/integration_test_images
+
 # Quality Assurance
 # ----------------------
 pre-commit:  # run pre-commit quality assurance checks

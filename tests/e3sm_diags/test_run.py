@@ -35,7 +35,7 @@ class TestRun(unittest.TestCase):
     def test_lat_lon_ann(self):
         self.core_param.seasons = ["ANN"]
         self.runner.sets_to_run = ["lat_lon"]
-        parameters = self.runner.get_final_parameters([self.core_param])
+        parameters = self.runner.get_run_parameters([self.core_param])
 
         for param in parameters:
             bad_seasons = ["DJF", "MAM", "JJA", "SON"]
@@ -64,8 +64,8 @@ class TestRun(unittest.TestCase):
             "streamflow",
         ]
 
-        parameters = self.runner.get_final_parameters(
-            [self.core_param, ts_param, enso_param, streamflow_param]
+        parameters = self.runner.get_run_parameters(
+            [self.core_param, ts_param, enso_param, streamflow_param], use_cfg=True
         )
         # Counts the number of each set and each seasons to run the diags on.
         set_counter, season_counter = (
@@ -88,23 +88,25 @@ class TestRun(unittest.TestCase):
         # So, reduce the ANN count by the number of times these appear
         season_counter["ANN"] -= set_counter["enso_diags"]
         season_counter["ANN"] -= set_counter["streamflow"]
-        if not all(season_counter["ANN"] == count for count in season_counter.values()):
-            self.fail(
-                "In .cfg files, at least one season does not match the count for ANN: {}".format(
-                    season_counter
+
+        for season, count in season_counter.items():
+            if count != season_counter["ANN"]:
+                self.fail(
+                    "In .cfg files, at least one season does not match the count for ANN: {}".format(
+                        season_counter
+                    )
                 )
-            )
 
     def test_zonal_mean_2d(self):
         # Running zonal_mean_2d with the core param only.
         self.runner.sets_to_run = ["zonal_mean_2d"]
-        core_only_results = self.runner.get_final_parameters([self.core_param])
+        core_only_results = self.runner.get_run_parameters([self.core_param])
 
         # Running zonal_mean_2d with a set-specific param.
         # We pass in both the core and this parameter.
         zonal_mean_2d_param = ZonalMean2dParameter()
         zonal_mean_2d_param.plevs = [10.0, 20.0, 30.0]
-        both_results = self.runner.get_final_parameters(
+        both_results = self.runner.get_run_parameters(
             [self.core_param, zonal_mean_2d_param]
         )
 
@@ -121,7 +123,7 @@ class TestRun(unittest.TestCase):
         another_zonal_mean_2d_param.reference_data_path = "/something"
         another_zonal_mean_2d_param.test_data_path = "/something/else"
         another_zonal_mean_2d_param.results_dir = "/something/else/too"
-        zm_2d_only_results = self.runner.get_final_parameters(
+        zm_2d_only_results = self.runner.get_run_parameters(
             [another_zonal_mean_2d_param]
         )
 

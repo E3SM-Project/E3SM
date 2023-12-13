@@ -12,7 +12,7 @@ import os
 
 # This test should be run with the latest E3SM Diags tutorial code.
 from examples.run_v2_6_0_all_sets_E3SM_machines import run_lcrc
-from tests.integration.test_diags import _compare_images
+from tests.integration.utils import _compare_images
 
 
 class TestCompleteRun:

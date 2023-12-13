@@ -174,6 +174,7 @@ def plot_convection_onset_statistics(
         var_time_absolute = cwv.getTime().asComponentTime()
         time_interval = int(var_time_absolute[1].hour - var_time_absolute[0].hour)
 
+        # FIXME: UnboundLocalError: local variable 'cwv_max' referenced before assignment
         number_of_bins = int(np.ceil((cwv_max - cwv_min) / bin_width))
         bin_center = np.arange(
             (cwv_min + (bin_width / 2)),

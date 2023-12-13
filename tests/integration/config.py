@@ -1,5 +1,5 @@
-# Paths and directories used in the integration test. Configurations in
-# `all_sets.cfg` and `all_sets_modified.cfg` should match these paths.
+# Paths and directories used in the integration test. All `.cfg` paths
+# should align with these (e.g., `all_sets.cfg`).
 TEST_ROOT_PATH = "tests/integration/"
 TEST_DATA_DIR = "integration_test_data"
 TEST_IMAGES_DIR = "integration_test_images"

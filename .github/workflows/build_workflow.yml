@@ -99,10 +99,18 @@ jobs:
           mamba info
 
       - if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
-        name: Run Tests
+        name: Run Unit Tests
+        run: pytest tests/e3sm_diags
+
+      - if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+        name: Download Integration Test Data
+        run: python -m tests.integration.download_data
+
+      - if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+        name: Run Integration Tests
         env:
           CHECK_IMAGES: False
-        run: bash tests/test.sh
+        run: pytest tests/integration
 
   publish-docs:
     if: ${{ github.event_name == 'push' }}
