@@ -2074,3 +2074,392 @@ derived_variables = {
     "sitemptop": OrderedDict([(("sitemptop",), rename)]),
     "siv": OrderedDict([(("siv",), rename)]),
 }
+
+# Names of 2D aerosol burdens, including cloud-borne aerosols
+aero_burden_list = [
+    "ABURDENDUST",
+    "ABURDENSO4",
+    "ABURDENSO4_STR",
+    "ABURDENSO4_TRO",
+    "ABURDENPOM",
+    "ABURDENMOM",
+    "ABURDENSOA",
+    "ABURDENBC",
+    "ABURDENSEASALT",
+]
+
+
+def aero_burden_fxn(var):
+    """
+    Scale the aerosol burden by 1e6.
+
+    Parameters:
+        var (cdms2.TransientVariable): The input burden in kg/m2.
+
+    Returns:
+        burden (cdms2.TransientVariable): The output burden in 1e-6 kg/m2.
+    """
+    burden = var * 1e6
+    burden.units = "1e-6 kg/m2"
+    return burden
+
+
+# Add burden vars to derived_variables
+for aero_burden_item in aero_burden_list:
+    derived_variables[aero_burden_item] = OrderedDict(
+        [((aero_burden_item,), aero_burden_fxn)]
+    )
+
+
+# Names of 2D mass slices of aerosol species
+# Also add 3D masses while at it (if available)
+aero_mass_list = []
+for aero_name in ["dst", "mom", "pom", "so4", "soa", "ncl", "bc"]:
+    for aero_lev in ["_srf", "_200", "_330", "_500", "_850", ""]:
+        # Note that the empty string (last entry) will get the 3D mass fields
+        aero_mass_list.append(f"Mass_{aero_name}{aero_lev}")
+
+
+def aero_mass_fxn(var):
+    """
+    Scale the given mass by 1e12.
+
+    Parameters:
+        var (cdms2.TransientVariable): The input mass in kg/kg.
+
+    Returns:
+        cdms2.TransientVariable: The aerosol mass concentration in 1e-12 kg/kg units.
+    """
+    mass = var * 1e12
+    mass.units = "1e-12 kg/kg"
+    return mass
+
+
+# Add burden vars to derived_variables
+for aero_mass_item in aero_mass_list:
+    derived_variables[aero_mass_item] = OrderedDict(
+        [((aero_mass_item,), aero_mass_fxn)]
+    )
+
+# Add all the output_aerocom_aie.F90 variables to aero_rename_list
+# components/eam/src/physics/cam/output_aerocom_aie.F90
+aero_aerocom_list = [
+    "angstrm",
+    "aerindex",
+    "cdr",
+    "cdnc",
+    "cdnum",
+    "icnum",
+    "clt",
+    "lcc",
+    "lwp",
+    "iwp",
+    "icr",
+    "icc",
+    "cod",
+    "ccn",
+    "ttop",
+    "htop",
+    "ptop",
+    "autoconv",
+    "accretn",
+    "icnc",
+    "rh700",
+    "rwp",
+    "intccn",
+    "colrv",
+    "lwp2",
+    "iwp2",
+    "lwpbf",
+    "iwpbf",
+    "cdnumbf",
+    "icnumbf",
+    "aod400",
+    "aod700",
+    "colccn.1",
+    "colccn.3",
+    "ccn.1bl",
+    "ccn.3bl",
+]
+
+# Add aerocom vars to derived_variables
+for aero_aerocom_item in aero_aerocom_list:
+    derived_variables[aero_aerocom_item] = OrderedDict([((aero_aerocom_item,), rename)])
+
+
+def incldtop_cdnc(cdnc, lcc):
+    """
+    Return the in-cloud cloud droplet number concentration at cloud top.
+
+    Parameters:
+        cdnc (cdms2.TransientVariable): Cloud droplet number concentration in 1/m3.
+        lcc (cdms2.TransientVariable): Liquid cloud fraction.
+
+    Returns:
+        var (cdms2.TransientVariable): In-cloud cdnc at cloud top in 1/cm3.
+    """
+    var = cdnc * 1e-6 / lcc
+    var.units = "1/cm3"
+    var.long_name = "In-cloud-top CDNC"
+    return var
+
+
+def cldtop_cdnc(cdnc):
+    """
+    Return the in-grid cloud droplet number concentration at cloud top.
+
+    Args:
+        cdnc (cdms2.TransientVariable): Cloud droplet number concentration in 1/m3.
+
+    Returns:
+        var (cdms2.TransientVariable): In-grid cdnc at cloud top in 1/cm3.
+    """
+    var = cdnc * 1e-6
+    var.units = "1/cm3"
+    var.long_name = "In-grid cloud-top CDNC"
+    return var
+
+
+def incldtop_icnc(icnc, icc):
+    """
+    Return the in-cloud ice crystal number concentration at cloud top.
+
+    Parameters:
+        icnc (cdms2.TransientVariable): ice crystal number concentration in 1/m3.
+        icc (cdms2.TransientVariable): ice cloud fraction.
+
+    Returns:
+        var (cdms2.TransientVariable): In-cloud cdnc at cloud top in 1/cm3.
+    """
+    var = icnc * 1e-6 / icc
+    var.units = "1/cm3"
+    var.long_name = "In-cloud-top ICNC"
+    return var
+
+
+def cldtop_icnc(icnc):
+    """
+    Return the in-grid ice crystal number concentration at cloud top.
+
+    Args:
+        icnc (cdms2.TransientVariable): Cloud crystal number concentration in 1/m3.
+
+    Returns:
+        var (cdms2.TransientVariable): In-grid icnc at cloud top in 1/cm3.
+    """
+    var = icnc * 1e-6
+    var.units = "1/cm3"
+    var.long_name = "In-grid cloud-top ICNC"
+    return var
+
+
+def incld_lwp(lwp, lcc):
+    """
+    Return the in-cloud liquid water path (LWP).
+
+    Parameters:
+        lwp (cdms2.TransientVariable): Liquid water path in kg/m2.
+        lcc (cdms2.TransientVariable): Liquid cloud fraction.
+
+    Returns:
+        cdms2.TransientVariable: In-cloud liquid water path in g/cm3.
+    """
+    var = 1e3 * lwp / lcc
+    var.units = "g/cm3"
+    var.long_name = "In-cloud LWP"
+    return var
+
+
+def cld_lwp(lwp):
+    """
+    Return the grid-mean-cloud LWP in g/cm3.
+
+    Parameters:
+                lwp (cdms2.TransientVariable): Liquid Water Path (LWP) value.
+
+    Returns:
+           cdms2.TransientVariable: Grid-mean-cloud LWP in g/cm3.
+    """
+    var = 1e3 * lwp
+    var.units = "g/cm3"
+    var.long_name = "In-grid LWP"
+    return var
+
+
+def incld_iwp(iwp, icc):
+    """
+    Return the in-cloud ice water path (IWP).
+
+    Parameters:
+        iwp (cdms2.TransientVariable): Ice water path in kg/m2.
+        icc (cdms2.TransientVariable): Ice cloud fraction.
+
+    Returns:
+        cdms2.TransientVariable: In-cloud IWP in g/cm3.
+    """
+    var = 1e3 * iwp / icc
+    var.units = "g/cm3"
+    var.long_name = "In-cloud IWP"
+    return var
+
+
+def cld_iwp(iwp):
+    """
+    Return the in-grid ice water path (IWP).
+
+    Parameters:
+        iwp (cdms2.TransientVariable): Ice water path in kg/m2.
+
+    Returns:
+        cdms2.TransientVariable: In-grid IWP in g/cm3.
+    """
+    var = 1e3 * iwp
+    var.units = "g/cm3"
+    var.long_name = "In-grid IWP"
+    return var
+
+
+# add cdnc, icnc, lwp, iwp to derived_variables
+derived_variables.update(
+    {
+        "in_cloud_cdnc": OrderedDict([(("cdnc", "lcc"), incldtop_cdnc)]),
+        "in_grid_cdnc": OrderedDict([(("cdnc",), cldtop_cdnc)]),
+        "in_cloud_icnc": OrderedDict([(("icnc", "icc"), incldtop_icnc)]),
+        "in_grid_icnc": OrderedDict([(("icnc",), cldtop_icnc)]),
+        "in_cloud_lwp": OrderedDict([(("lwp", "lcc"), incld_lwp)]),
+        "in_grid_lwp": OrderedDict([(("lwp",), cld_lwp)]),
+        "in_cloud_iwp": OrderedDict([(("iwp", "icc"), incld_iwp)]),
+        "in_grid_iwp": OrderedDict([(("iwp",), cld_iwp)]),
+    }
+)
+
+
+def erf_tot(fsnt, flnt):
+    """
+    Calculate the total effective radiative forcing (ERFtot).
+
+    Args:
+        fsnt (cdms2.TransientVariable): The incoming sw radiation at the top of the atmosphere.
+        flnt (cdms2.TransientVariable): The outgoing lw radiation at the top of the atmosphere.
+
+    Returns:
+        var (cdms2.TransientVariable): The ERFtot which represents the total erf.
+
+    See Ghan 2013 for derivation of ERF decomposition: https://doi.org/10.5194/acp-13-9971-2013
+    """
+    var = fsnt - flnt
+    var.units = "W/m2"
+    var.long_name = "ERFtot: total effect"
+    return var
+
+
+def erf_ari(fsnt, flnt, fsnt_d1, flnt_d1):
+    """
+    Calculate aerosol--radiation interactions (ARI) part of effective radiative forcing (ERF).
+
+    Parameters:
+        fsnt (cdms2.TransientVariable): Net solar flux at the top of the atmosphere.
+        flnt (cdms2.TransientVariable): Net longwave flux at the top of the atmosphere.
+        fsnt_d1 (cdms2.TransientVariable): fsnt without aerosols.
+        flnt_d1 (cdms2.TransientVariable): flnt without aerosols.
+
+    Returns:
+        var (cdms2.TransientVariable): ERFari (aka, direct effect) in W/m2.
+
+    See Ghan 2013 for derivation of ERF decomposition: https://doi.org/10.5194/acp-13-9971-2013
+    """
+    var = (fsnt - flnt) - (fsnt_d1 - flnt_d1)
+    var.units = "W/m2"
+    var.long_name = "ERFari: direct effect"
+    return var
+
+
+def erf_aci(fsnt_d1, flnt_d1, fsntc_d1, flntc_d1):
+    """
+    Calculate aerosol--cloud interactions (ACI) part of effectie radiative forcing (ERF)
+
+    Parameters:
+        fsnt_d1 (cdms2.TransientVariable): Downward shortwave radiation toa without aerosols.
+        flnt_d1 (cdms2.TransientVariable): Upward longwave radiation toa without aerosols.
+        fsntc_d1 (cdms2.TransientVariable): fsnt_d1 without clouds.
+        flntc_d1 (cdms2.TransientVariable): flnt_d1 without clouds.
+
+    Returns:
+        var (cdms2.TransientVariable): ERFaci (aka, indirect effect) in W/m2.
+
+    See Ghan 2013 for derivation of ERF decomposition: https://doi.org/10.5194/acp-13-9971-2013
+    """
+    var = (fsnt_d1 - flnt_d1) - (fsntc_d1 - flntc_d1)
+    var.units = "W/m2"
+    var.long_name = "ERFaci: indirect effect"
+    return var
+
+
+def erf_res(fsntc_d1, flntc_d1):
+    """
+    Calculate the residual effect (RES) part of effective radiative forcin g.
+
+    Parameters:
+        fsntc_d1 (cdms2.TransientVariable): Downward solar radiation at the top of the atmosphere
+                          with neither clouds nor aerosols.
+        flntc_d1 (cdms2.TransientVariable): Upward longwave radiation at the top of the atmosphere
+                          with neither clouds nor aerosols.
+
+    Returns:
+        var (cdms2.TransientVariable): ERFres (aka, surface effect) in W/m2.
+
+    See Ghan 2013 for derivation of ERF decomposition: https://doi.org/10.5194/acp-13-9971-2013
+    """
+    var = fsntc_d1 - flntc_d1
+    var.units = "W/m2"
+    var.long_name = "ERFres: residual effect"
+    return var
+
+
+derived_variables.update(
+    {
+        "ERFtot": OrderedDict([(("FSNT", "FLNT"), erf_tot)]),
+        "ERFari": OrderedDict([(("FSNT", "FLNT", "FSNT_d1", "FLNT_d1"), erf_ari)]),
+        "ERFaci": OrderedDict(
+            [(("FSNT_d1", "FLNT_d1", "FSNTC_d1", "FLNTC_d1"), erf_aci)]
+        ),
+        "ERFres": OrderedDict([(("FSNTC_d1", "FLNTC_d1"), erf_res)]),
+    }
+)
+
+# Add more AOD terms
+# Note that AODVIS and AODDUST are already added elsewhere
+aero_aod_list = [
+    "AODBC",
+    "AODPOM",
+    "AODMOM",
+    "AODSO4",
+    "AODSO4_STR",
+    "AODSO4_TRO",
+    "AODSS",
+    "AODSOA",
+]
+
+# Add aod vars to derived_variables
+for aero_aod_item in aero_aod_list:
+    derived_variables[aero_aod_item] = OrderedDict([((aero_aod_item,), rename)])
+
+# Add 3D variables related to aerosols and chemistry
+# Note that O3 is already added above
+# Note that 3D mass vars are already added by the empty string above ""
+# Note that it is possible to create on-the-fly slices from these variables with
+# a function of the form:
+# def aero_3d_slice(var, lev):
+#     return var[lev, :, :]
+aero_chem_list = [
+    "DMS",
+    "H2O2",
+    "H2SO4",
+    "NO3",
+    "OH",
+    "SO2",
+]
+
+# Add aero/chem vars to derived_variables
+for aero_chem_item in aero_chem_list:
+    derived_variables[aero_chem_item] = OrderedDict([((aero_chem_item,), rename)])
