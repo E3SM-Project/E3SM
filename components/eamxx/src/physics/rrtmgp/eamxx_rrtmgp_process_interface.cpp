@@ -426,6 +426,16 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
 
   // Set property checks for fields in this process
   add_invariant_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),m_grid,100.0, 500.0,false);
+
+  // VMR of n2 and co is currently prescribed as a constant value, read from file
+  if (has_computed_field("n2_volume_mix_ratio",m_grid->name())) {
+    auto n2_vmr = get_field_out("n2_volume_mix_ratio").get_view<Real**>();
+    Kokkos::deep_copy(n2_vmr, m_params.get<double>("n2vmr", 0.7906));
+  }
+  if (has_computed_field("co_volume_mix_ratio",m_grid->name())) {
+    auto co_vmr = get_field_out("co_volume_mix_ratio").get_view<Real**>();
+    Kokkos::deep_copy(co_vmr, m_params.get<double>("covmr", 1.0e-7));
+  }
 }
 
 // =========================================================================================
@@ -575,8 +585,9 @@ void RRTMGPRadiation::run_impl (const double dt) {
     for (int igas = 0; igas < m_ngas; igas++) {
       auto name = m_gas_names[igas];
 
-      // We read o3 in as a vmr already
-      if (name=="o3") continue;
+      // We read o3 in as a vmr already. Also, n2 and co are currently set
+      // as a constant value, read from file during init. Skip these.
+      if (name=="o3" or name == "n2" or name == "co") continue;
 
       auto d_vmr = get_field_out(name + "_volume_mix_ratio").get_view<Real**>();
       if (name == "h2o") {
@@ -590,12 +601,6 @@ void RRTMGPRadiation::run_impl (const double dt) {
           });
         });
         Kokkos::fence();
-      } else if (name == "n2") {
-        // n2 prescribed as a constant value
-        Kokkos::deep_copy(d_vmr, m_params.get<double>("n2vmr", 0.7906));
-      } else if (name == "co") {
-        // co prescribed as a constant value
-        Kokkos::deep_copy(d_vmr, m_params.get<double>("covmr", 1.0e-7));
       } else {
         // This gives (dry) mass mixing ratios
         scream::physics::trcmix(
