@@ -24,23 +24,24 @@ RRTMGPRadiation::
 RRTMGPRadiation (const ekat::Comm& comm, const ekat::ParameterList& params)
   : AtmosphereProcess(comm, params)
 {
-  // Nothing to do here
-}  // RRTMGPRadiation::RRTMGPRadiation
+  // Gather the active gases from the rrtmgp parameter list and assign to the m_gas_names vector.
+  const auto& active_gases = m_params.get<std::vector<std::string>>("active_gases");
+  for (auto& it : active_gases) {
+    // Make sure only unique names are added
+    if (not ekat::contains(m_gas_names,it)) {
+      m_gas_names.push_back(it);
+      if (it=="o3") {
+        TraceGasesWorkaround::singleton().add_active_gas(it + "_volume_mix_ratio");
+      }
+    }
+  }
 
-// =========================================================================================
+  m_ngas = m_gas_names.size();
+}
+
 void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
 
   using namespace ekat::units;
-
-  // Gather the active gases from the rrtmgp parameter list and assign to the m_gas_names vector.
-  auto active_gases = m_params.get<std::vector<std::string>>("active_gases");
-  for (auto& it : active_gases) {
-    // Make sure only unique names are added
-    if (std::find(m_gas_names.begin(), m_gas_names.end(), it) == m_gas_names.end()) {
-      m_gas_names.push_back(it);
-    }
-  }
-  m_ngas = m_gas_names.size();
 
   // Declare the set of fields used by rrtmgp
   auto kgkg = kg/kg;
@@ -106,10 +107,10 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
     // Add gas VOLUME mixing ratios (moles of gas / moles of air; what actually gets input to RRTMGP)
     if (it == "o3") {
       // o3 is read from file, or computed by chemistry
-      add_field<Required >(it + "_volume_mix_ratio", scalar3d_layout_mid, molmol, grid_name);
-      TraceGasesWorkaround::singleton().add_active_gas(it + "_volume_mix_ratio");
+      add_field<Required>(it + "_volume_mix_ratio", scalar3d_layout_mid, molmol, grid_name);
     } else {
-      // the rest are computed from prescribed surface values
+      // the rest are computed by RRTMGP from prescribed surface values
+      // NOTE: this may change at some point
       add_field<Computed>(it + "_volume_mix_ratio", scalar3d_layout_mid, molmol, grid_name);
     }
   }
