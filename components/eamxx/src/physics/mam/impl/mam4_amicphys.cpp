@@ -7,7 +7,7 @@
 
 namespace scream::impl {
 
-#define MAX_FILENAME_LEN 128
+#define MAX_FILENAME_LEN 256
 
 using namespace mam4;
 

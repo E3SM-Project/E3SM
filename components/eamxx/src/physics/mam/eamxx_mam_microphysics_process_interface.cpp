@@ -31,7 +31,54 @@ std::string MAMMicrophysics::name() const {
   return "mam4_micro";
 }
 
+namespace {
+
+void set_data_file(const char *name, const char *path, char location[MAX_FILENAME_LEN]) {
+  EKAT_REQUIRE_MSG(strlen(SCREAM_DATA_DIR) + strlen(path) < MAX_FILENAME_LEN,
+    "Error! " << name << " path is too long (must be < " << MAX_FILENAME_LEN << " characters)");
+  sprintf(location, "%s/%s", SCREAM_DATA_DIR, path);
+}
+
+}
+
+#define set_file_location(data_file, path) set_data_file(#data_file, path, data_file)
+
+void MAMMicrophysics::set_defaults_() {
+  config_.amicphys.do_cond = true;
+  config_.amicphys.do_rename = true;
+  config_.amicphys.do_newnuc = true;
+  config_.amicphys.do_coag = true;
+
+  config_.amicphys.nucleation = {};
+  config_.amicphys.nucleation.dens_so4a_host = 1770.0;
+  config_.amicphys.nucleation.mw_so4a_host = 115.0;
+  config_.amicphys.nucleation.newnuc_method_user_choice = 2;
+  config_.amicphys.nucleation.pbl_nuc_wang2008_user_choice = 1;
+  config_.amicphys.nucleation.adjust_factor_pbl_ratenucl = 1.0;
+  config_.amicphys.nucleation.accom_coef_h2so4 = 1.0;
+  config_.amicphys.nucleation.newnuc_adjust_factor_dnaitdt = 1.0;
+
+  config_.amicphys.gaexch_h2so4_uptake_optaa = 2;
+  config_.amicphys.newnuc_h2so4_conc_optaa = 2;
+
+  // default data file locations (relative to SCREAM_DATA_DIR)
+  set_file_location(config_.photolysis.rsf_file,         "../waccm/phot/RSF_GT200nm_v3.0_c080811.nc");
+  set_file_location(config_.photolysis.exo_coldens_file, "../cam/chem/trop_mozart/phot/exo_coldens.nc");
+  //set_file_location(config_.photolysis.tuv_xsect_file, ???);
+  //set_file_location(config_.photolysis.o2_xsect_file,  ???);
+  //set_file_location(config_.photolysis.xs_coef_file,   ???);
+  //set_file_location(config_.photolysis.xs_short_file,  ???);
+  set_file_location(config_.photolysis.xs_long_file,     "../waccm/phot/temp_prs_GT200nm_JPL10_c130206.nc");
+  //set_file_location(config_.photolysis.electron_file,  ???);
+  //set_file_location(config_.photolysis.euvac_file,     ???);
+  //set_file_location(config_.photolysis.euvacdat_file,  ???);
+
+  set_file_location(config_.linoz.chlorine_loading_file, "../cam/chem/trop_mozart/ub/Linoz_Chlorine_Loading_CMIP6_0003-2017_c20171114.nc");
+}
+
 void MAMMicrophysics::configure(const ekat::ParameterList& params) {
+  set_defaults_();
+
   // enable/disable specific parameterizations
   config_.amicphys.do_cond = true;
   config_.amicphys.do_rename = true;
@@ -50,10 +97,10 @@ void MAMMicrophysics::configure(const ekat::ParameterList& params) {
   config_.amicphys.nucleation.newnuc_adjust_factor_dnaitdt = 1.0;
 
   // these parameters guide the coupling between parameterizations
-  // NOTE: mam4xx was ported with these parameters set thus. It's probably not
+  // NOTE: mam4xx was ported with these parameters fixed, so it's probably not
   // NOTE: safe to change these without code modifications.
-  config_.amicphys.gaexch_h2so4_uptake_optaa = 2;
-  config_.amicphys.newnuc_h2so4_conc_optaa = 2;
+  //config_.amicphys.gaexch_h2so4_uptake_optaa = 2;
+  //config_.amicphys.newnuc_h2so4_conc_optaa = 2;
 
   // photolysis
   // FIXME: fetch photolysis table filename(s)

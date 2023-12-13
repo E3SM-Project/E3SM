@@ -85,7 +85,8 @@ private_except_cuda:
   // number of horizontal columns and vertical levels
   int ncol_, nlev_;
 
-  // configuration data
+  // configuration data (for the moment, we plan to be able to move this to
+  // the device, so we can't use C++ strings)
   struct Config {
     // photolysis parameters
     struct {
@@ -223,6 +224,10 @@ private_except_cuda:
 
   // physics grid for column information
   std::shared_ptr<const AbstractGrid> grid_;
+
+  // sets defaults for "namelist parameters"
+  void set_defaults_();
+
 }; // MAMMicrophysics
 
 } // namespace scream
