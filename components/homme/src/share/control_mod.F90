@@ -679,7 +679,7 @@ use physical_constants, only: Lx, Ly, Sx, Sy
        Ly = 51.2D0 * 1000.0D0
        Sx = -25.6D0 * 1000.0D0
        Sy = -25.6D0 * 1000.0D0
-    else if (test_case == "planar_rising_bubble" ) then
+    else if (test_case == "planar_rising_bubble" .or. test_case == "planar_rising_bubble_pg2") then
        Lx = 2.0D0 * 10000.0D0
        Ly = 2.0D0 * 10000.0D0
        Sx = -10000.0D0
@@ -704,7 +704,7 @@ use physical_constants, only: Lx, Ly, Sx, Sy
     endif
     endif !if lx,ly,sx,sy are not set in nl
 
-    if (test_case == "planar_rising_bubble" ) then
+    if (test_case == "planar_rising_bubble" .or. test_case == "planar_rising_bubble_pg2") then
        case_planar_bubble = .TRUE.
     end if
 

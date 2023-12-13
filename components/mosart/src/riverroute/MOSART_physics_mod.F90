@@ -180,6 +180,7 @@ MODULE MOSART_physics_mod
 
        call t_startf('mosartr_subnetwork')    
        TRunoff%erlateral(:,:) = 0._r8
+       if (heatflag) THeat%ha_lateral(:) = 0._r8
        TRunoff%etexchange = 0._r8
        do nt=nt_nliq,nt_nice ! water transport
        if (TUnit%euler_calc(nt)) then
@@ -993,7 +994,7 @@ MODULE MOSART_physics_mod
        TRunoff%erout(iunit,nt) = -TRunoff%erin(iunit,nt)-TRunoff%erlateral(iunit,nt)
     else
        !TODO. If this channel is at basin outlet (downstream is ocean), use the KW method
-	   if(rtmCTL%mask(iunit) .eq. 3) then 
+       if(rtmCTL%mask(iunit) .eq. 3) then 
           call Routing_KW(iunit, nt, theDeltaT)
        else
           if(nt == nt_nliq) then 
@@ -1229,9 +1230,9 @@ MODULE MOSART_physics_mod
 
     if(nt==nt_nliq) then
         TRunoff%yh(iunit,nt) = TRunoff%wh(iunit,nt) !/ TUnit%area(iunit) / TUnit%frac(iunit) 
-	else
-	    TRunoff%yh(iunit,nt) = 0._r8
-	end if
+    else
+        TRunoff%yh(iunit,nt) = 0._r8
+    end if
 
   end subroutine updateState_hillslope
 

@@ -42,7 +42,6 @@ module elm_varcon
 
   real(r8), parameter :: n_melt=0.7                         ! fsca shape parameter
   real(r8), parameter :: e_ice=6.0                          ! soil ice impedance factor
-  real(r8), parameter :: pc = 0.4                           ! threshold probability
   real(r8), parameter :: mu = 0.13889                       ! connectivity exponent 
   real(r8) :: grav   = SHR_CONST_G                          ! gravity constant [m/s2]
   real(r8) :: sb     = SHR_CONST_STEBOL                     ! stefan-boltzmann constant  [W/m2/K4]

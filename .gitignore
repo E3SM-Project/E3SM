@@ -24,5 +24,8 @@ buildnmlc
 buildlibc
 buildlib_cmakec
 
+#the site directory
+site
+
 # Ignore emacs backup files
 *~

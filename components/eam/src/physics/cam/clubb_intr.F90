@@ -1510,7 +1510,6 @@ end subroutine clubb_init_cnst
    real(r8) :: gprec
    real(r8) :: prec_gust(pcols)
    real(r8) :: vmag_gust_dp(pcols),vmag_gust_cl(pcols)
-   real(r8) :: vmag(pcols)
    real(r8) :: gust_fac(pcols)
    real(r8) :: umb(pcols), vmb(pcols),up2b(pcols),vp2b(pcols)
    real(r8),parameter :: gust_facl = 1.2_r8 !gust fac for land
@@ -1527,7 +1526,7 @@ end subroutine clubb_init_cnst
 ! ZM gustiness equation below from Redelsperger et al. (2000)
 ! numbers are coefficients of the empirical equation
 
-   ugust(gprec,gfac) = gfac*log(1._R8+57801.6_R8*gprec-3.55332096e7_R8*(gprec**2.0_R8))
+   ugust(gprec) = log(1._R8+57801.6_R8*gprec-3.55332096e7_R8*(gprec**2.0_R8))
 
 #endif
    det_s(:)   = 0.0_r8
@@ -1837,6 +1836,7 @@ end subroutine clubb_init_cnst
    !  At each CLUBB call, initialize mean momentum  and thermo CLUBB state
    !  from the CAM state
 
+   rvm = 0._r8
    do k=1,pver   ! loop over levels
      do i=1,ncol ! loop over columns
 
@@ -2571,7 +2571,7 @@ end subroutine clubb_init_cnst
    call t_stopf('adv_clubb_core_col_loop')
 
 
-   call outfld('fixerCLUBB', te_a(:)-te_b(:), pcols, lchnk )
+   call outfld('fixerCLUBB', te_a(:ncol)-te_b(:ncol), ncol, lchnk )
 
 
    ! Add constant to ghost point so that output is not corrupted
@@ -2966,12 +2966,11 @@ end subroutine clubb_init_cnst
            else
              gust_fac(i)   = gust_faco
            endif
-           vmag(i)         = max(1.e-5_r8,sqrt( umb(i)**2._r8 + vmb(i)**2._r8))
-           vmag_gust_dp(i) = ugust(min(prec_gust(i),6.94444e-4_r8),gust_fac(i)) ! Limit for the ZM gustiness equation set in Redelsperger et al. (2000)
-           vmag_gust_dp(i) = max(0._r8, vmag_gust_dp(i) )!/ vmag(i))
-           vmag_gust_cl(i) = gust_facc*(sqrt(max(0._r8,up2b(i)+vp2b(i))+vmag(i)**2._r8)-vmag(i))
-           vmag_gust_cl(i) = max(0._r8, vmag_gust_cl(i) )!/ vmag(i))
-           vmag_gust(i)    = vmag_gust_cl(i) + vmag_gust_dp(i)
+           vmag_gust_dp(i) = ugust(min(prec_gust(i),6.94444e-4_r8)) ! Limit for the ZM gustiness equation set in Redelsperger et al. (2000)
+           vmag_gust_dp(i) = max(0._r8, vmag_gust_dp(i) )
+           vmag_gust_cl(i) = sqrt(max(0._r8,up2b(i)+vp2b(i)))
+           vmag_gust(i)    = sqrt(gust_facc * vmag_gust_cl(i)**2 &
+                + gust_fac(i) * vmag_gust_dp(i)**2)
           do k=1,pver
              if (state1%zi(i,k)>pblh(i).and.state1%zi(i,k+1)<=pblh(i)) then
                 ktopi(i) = k

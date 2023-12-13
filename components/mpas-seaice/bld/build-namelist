@@ -629,7 +629,11 @@ add_default($nl, 'config_recover_tracer_means_check');
 # Namelist group: column_package #
 ##################################
 
-add_default($nl, 'config_column_physics_type');
+if ($ice_bgc eq 'ice_bgc') {
+        add_default($nl, 'config_column_physics_type', 'val'=>"column_package");
+} else {
+        add_default($nl, 'config_column_physics_type');
+}
 add_default($nl, 'config_use_column_shortwave');
 add_default($nl, 'config_use_column_vertical_thermodynamics');
 if ($ice_bgc eq 'ice_bgc') {
@@ -892,9 +896,9 @@ add_default($nl, 'config_congelation_ice_porosity');
 add_default($nl, 'config_itd_conversion_type');
 add_default($nl, 'config_category_bounds_type');
 
-#############################
-# Namelist group:  floesize #
-#############################
+############################
+# Namelist group: floesize #
+############################
 add_default($nl, 'config_floeshape');
 add_default($nl, 'config_floediam');
 
@@ -1258,7 +1262,7 @@ my @groups = qw(seaice_model
                 meltponds
                 thermodynamics
                 itd
-		floesize
+                floesize
                 ridging
                 atmosphere
                 ocean

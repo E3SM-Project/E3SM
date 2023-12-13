@@ -4689,7 +4689,7 @@ contains
          cxxx,  cxxy,  cxyy,  cyyy,   &
          cxxxx, cxxxy, cxxyy, cxyyy, cyyyy
 
-    real(kind=RKIND) :: reciprocal, massTracerProd
+    real(kind=RKIND) ::  massTracerProd
 
     ! compute the barycenter coordinates, depending on how many tracer types were passed in
     ! Note: These formulas become more complex as the tracer hierarchy deepens.  See the model documentation for details.
@@ -4706,18 +4706,18 @@ contains
        c0 = center0
        cx = xGrad0
        cy = yGrad0
+
+       xBarycenter = 0.0_RKIND
+       yBarycenter = 0.0_RKIND
        if (abs(mean0) > 0.0_RKIND) then
-          reciprocal = 1.0_RKIND / mean0
-       else
-          reciprocal = 0.0_RKIND
+          xBarycenter = (c0 * geomAvgCell % x (iCell)  &
+                       + cx * geomAvgCell % xx(iCell)  + cy * geomAvgCell % xy(iCell))  &
+                       / mean0
+          yBarycenter = (c0 * geomAvgCell % y (iCell)  &
+                       + cx * geomAvgCell % xy(iCell)  + cy * geomAvgCell % yy(iCell))  &
+                       / mean0
        endif
 
-       xBarycenter = (c0 * geomAvgCell % x (iCell)  &
-                    + cx * geomAvgCell % xx(iCell)  + cy * geomAvgCell % xy(iCell))  &
-                    * reciprocal
-       yBarycenter = (c0 * geomAvgCell % y (iCell)  &
-                    + cx * geomAvgCell % xy(iCell)  + cy * geomAvgCell % yy(iCell))  &
-                    * reciprocal
 
     elseif (.not.present(mean2)) then
 
@@ -4730,21 +4730,19 @@ contains
        cxy = xGrad0  * yGrad1  + yGrad0  * xGrad1
        cyy = yGrad0  * yGrad1
 
+       xBarycenter = 0.0_RKIND
+       yBarycenter = 0.0_RKIND
        massTracerProd = mean0 * mean1
        if (abs(massTracerProd) > 0.0_RKIND) then
-          reciprocal = 1.0_RKIND / massTracerProd
-       else
-          reciprocal = 0.0_RKIND
+          xBarycenter = (c0  * geomAvgCell % x  (iCell) &
+                       + cx  * geomAvgCell % xx (iCell) + cy  * geomAvgCell % xy (iCell)  &
+                       + cxx * geomAvgCell % xxx(iCell) + cxy * geomAvgCell % xxy(iCell) + cyy * geomAvgCell % xyy(iCell)) &
+                       / massTracerProd
+          yBarycenter = (c0  * geomAvgCell % y  (iCell) &
+                       + cx  * geomAvgCell % xy (iCell) + cy  * geomAvgCell % yy (iCell)  &
+                       + cxx * geomAvgCell % xxy(iCell) + cxy * geomAvgCell % xyy(iCell) + cyy * geomAvgCell % yyy(iCell)) &
+                       / massTracerProd
        endif
-
-       xBarycenter = (c0  * geomAvgCell % x  (iCell) &
-                    + cx  * geomAvgCell % xx (iCell) + cy  * geomAvgCell % xy (iCell)  &
-                    + cxx * geomAvgCell % xxx(iCell) + cxy * geomAvgCell % xxy(iCell) + cyy * geomAvgCell % xyy(iCell)) &
-                    * reciprocal
-       yBarycenter = (c0  * geomAvgCell % y  (iCell) &
-                    + cx  * geomAvgCell % xy (iCell) + cy  * geomAvgCell % yy (iCell)  &
-                    + cxx * geomAvgCell % xxy(iCell) + cxy * geomAvgCell % xyy(iCell) + cyy * geomAvgCell % yyy(iCell)) &
-                    * reciprocal
 
     else  ! mass field, tracer1 and tracer2 are all present
 
@@ -4762,25 +4760,23 @@ contains
        cxyy  = yGrad0  * yGrad1  * xGrad2   + yGrad0  * xGrad1  * yGrad2  + xGrad0  * yGrad1  * yGrad2
        cyyy  = yGrad0  * yGrad1  * yGrad2
 
+       xBarycenter = 0.0_RKIND
+       yBarycenter = 0.0_RKIND
        massTracerProd = mean0 * mean1 * mean2
        if (abs(massTracerProd) > 0.0_RKIND) then
-          reciprocal = 1.0_RKIND / massTracerProd
-       else
-          reciprocal = 0.0_RKIND
+          xBarycenter = (c0   * geomAvgCell % x   (iCell) &
+                       + cx   * geomAvgCell % xx  (iCell) + cy   * geomAvgCell % xy  (iCell) &
+                       + cxx  * geomAvgCell % xxx (iCell) + cxy  * geomAvgCell % xxy (iCell) + cyy  * geomAvgCell % xyy (iCell) &
+                       + cxxx * geomAvgCell % xxxx(iCell) + cxxy * geomAvgCell % xxxy(iCell) + cxyy * geomAvgCell % xxyy(iCell) &
+                                                                                             + cyyy * geomAvgCell % xyyy(iCell)) &
+                       / massTracerProd
+          yBarycenter = (c0   * geomAvgCell % y   (iCell) &
+                       + cx   * geomAvgCell % xy  (iCell) + cy   * geomAvgCell % yy  (iCell) &
+                       + cxx  * geomAvgCell % xxy (iCell) + cxy  * geomAvgCell % xyy (iCell) + cyy  * geomAvgCell % yyy (iCell) &
+                       + cxxx * geomAvgCell % xxxy(iCell) + cxxy * geomAvgCell % xxyy(iCell) + cxyy * geomAvgCell % xyyy(iCell) &
+                                                                                             + cyyy * geomAvgCell % yyyy(iCell)) &
+                       / massTracerProd
        endif
-
-       xBarycenter = (c0   * geomAvgCell % x   (iCell) &
-                    + cx   * geomAvgCell % xx  (iCell) + cy   * geomAvgCell % xy  (iCell) &
-                    + cxx  * geomAvgCell % xxx (iCell) + cxy  * geomAvgCell % xxy (iCell) + cyy  * geomAvgCell % xyy (iCell) &
-                    + cxxx * geomAvgCell % xxxx(iCell) + cxxy * geomAvgCell % xxxy(iCell) + cxyy * geomAvgCell % xxyy(iCell) &
-                                                                                          + cyyy * geomAvgCell % xyyy(iCell)) &
-                    * reciprocal
-       yBarycenter = (c0   * geomAvgCell % y   (iCell) &
-                    + cx   * geomAvgCell % xy  (iCell) + cy   * geomAvgCell % yy  (iCell) &
-                    + cxx  * geomAvgCell % xxy (iCell) + cxy  * geomAvgCell % xyy (iCell) + cyy  * geomAvgCell % yyy (iCell) &
-                    + cxxx * geomAvgCell % xxxy(iCell) + cxxy * geomAvgCell % xxyy(iCell) + cxyy * geomAvgCell % xyyy(iCell) &
-                                                                                          + cyyy * geomAvgCell % yyyy(iCell)) &
-                    * reciprocal
 
     endif
 

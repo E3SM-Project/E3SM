@@ -57,7 +57,8 @@ contains
     use LakeCon             , only : lake_use_old_fcrit_minz0
     use LakeCon             , only : minz0lake, cur0, cus, curm, fcrit
     use QSatMod             , only : QSat
-    use FrictionVelocityMod , only : FrictionVelocity, MoninObukIni, implicit_stress
+    use FrictionVelocityMod , only : FrictionVelocity, MoninObukIni, &
+         implicit_stress, atm_gustiness, force_land_gustiness
     use elm_time_manager    , only : get_nstep
     !
     ! !ARGUMENTS:
@@ -123,6 +124,7 @@ contains
     real(r8) :: ur(bounds%begp:bounds%endp)        ! wind speed at reference height [m/s]
     real(r8) :: ustar(bounds%begp:bounds%endp)     ! friction velocity [m/s]
     real(r8) :: wc                                 ! convective velocity [m/s]
+    real(r8) :: ugust_total(bounds%begp:bounds%endp) ! gustiness including convective velocity [m/s]
     real(r8) :: zeta                               ! dimensionless height used in Monin-Obukhov theory
     real(r8) :: zldis(bounds%begp:bounds%endp)     ! reference height "minus" zero displacement height [m]
     real(r8) :: displa(bounds%begp:bounds%endp)    ! displacement (always zero) [m]
@@ -354,13 +356,14 @@ contains
          if (implicit_stress) then
             wind_speed0(p) = max(0.01_r8, hypot(forc_u(t), forc_v(t)))
             wind_speed_adj(p) = wind_speed0(p)
-            ur(p) = max(1.0_r8, wind_speed_adj(p) + ugust(t))
+            ur(p) = max(1.0_r8, sqrt(wind_speed_adj(p)**2 + ugust(t)**2))
 
             prev_tau(p) = tau_est(t)
          else
-            ur(p) = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)) + ugust(t))
+            ur(p) = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)+ugust(t)*ugust(t)))
          end if
          tau_diff(p) = 1.e100_r8
+         ugust_total(p) = ugust(t)
 
          dth(p)   = thm(p)-t_grnd(c)
          dqh(p)   = forc_q(t)-qsatg(c)
@@ -390,7 +393,8 @@ contains
 
          call FrictionVelocity(begp, endp, fncopy, fpcopy, &
               displa(begp:endp), z0mg(begp:endp), z0hg(begp:endp), z0qg(begp:endp), &
-              obu(begp:endp), iter, ur(begp:endp), um(begp:endp), ustar(begp:endp), &
+              obu(begp:endp), iter, ur(begp:endp), um(begp:endp), ugust_total(begp:endp), &
+              ustar(begp:endp), &
               temp1(begp:endp), temp2(begp:endp), temp12m(begp:endp), temp22m(begp:endp), &
               fm(begp:endp), frictionvel_vars)
 
@@ -435,7 +439,7 @@ contains
                call shr_flux_update_stress(wind_speed0(p), wsresp(t), tau_est(t), &
                     tau(p), prev_tau(p), tau_diff(p), prev_tau_diff(p), &
                     wind_speed_adj(p))
-               ur(p) = max(1.0_r8, wind_speed_adj(p) + ugust(t))
+               ur(p) = max(1.0_r8, sqrt(wind_speed_adj(p)**2 + ugust(t)**2))
             end if
 
             ! Get derivative of fluxes with respect to ground temperature
@@ -492,8 +496,13 @@ contains
                um(p) = max(ur(p),0.1_r8)
             else                     !unstable
                zeta = max(-100._r8,min(zeta,-0.01_r8))
-               wc = beta1*(-grav*ustar(p)*thvstar*zii/thv(c))**0.333_r8
-               um(p) = sqrt(ur(p)*ur(p)+wc*wc)
+               if ((.not. atm_gustiness) .or. force_land_gustiness) then
+                  wc = beta1*(-grav*ustar(p)*thvstar*zii/thv(c))**0.333_r8
+                  ugust_total(p) = sqrt(ugust(t)**2 + wc**2)
+                  um(p) = sqrt(ur(p)*ur(p)+wc*wc)
+               else
+                  um(p) = max(ur(p),0.1_r8)
+               end if
             end if
             obu(p) = zldis(p)/zeta
 

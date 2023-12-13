@@ -8,11 +8,14 @@ from CIME.utils import expect, run_bld_cmd_ensure_logging, run_cmd_no_fail, run_
 from CIME.case import Case
 from CIME.build import get_standard_makefile_args
 
+sys.path.append(os.path.dirname(__file__))
+from buildlib_util import extract_from_macros
+
 logger = logging.getLogger(__name__)
 
-
+###############################################################################
 def parse_command_line(args, description):
-    ###############################################################################
+###############################################################################
     parser = argparse.ArgumentParser(
         usage="""\n{0} [--debug]
 OR
@@ -44,11 +47,10 @@ OR
 
     return args.buildroot, args.installpath, args.caseroot
 
-
 ###############################################################################
 def buildlib(bldroot, installpath, case):
 ###############################################################################
-    installed_kokkos_dir = os.environ.get("KOKKOS_PATH")
+    installed_kokkos_dir = os.environ.get("Kokkos_ROOT")
     if installed_kokkos_dir is not None:
         # We are trying to use a pre-installed kokkos. Look for the relevant folders/libs,
         # and if all looks good, return. Otherwise, crap out
@@ -65,7 +67,7 @@ def buildlib(bldroot, installpath, case):
         # cmake build system will do that soon enough, so any error will be caught there.
         return
     else:
-        print ("no value foudn in env for KOKKOS_PATH. building from scratch")
+        print ("no value foudn in env for Kokkos_ROOT. building from scratch")
 
     srcroot = case.get_value("SRCROOT")
     ekat_dir = os.path.join(srcroot, "externals", "ekat")
@@ -76,26 +78,16 @@ def buildlib(bldroot, installpath, case):
     # We want to get the compiler and kokkos_options from Macros.make
     # (generated from cmake_macros), but we want to otherwise
     # let kokkos control flags
-    make_args = get_standard_makefile_args(case, shared_lib=True)
-    try:
-        output = run_cmd_no_fail("make -f Macros.make {} -p | grep KOKKOS_OPTIONS".format(make_args))
-    except CIMEError:
-        expect(False, "No KOKKOS_OPTIONS set in your cmake_macros for this machine/compiler.")
+    macro_vals = extract_from_macros(case, "kokkos", extra_vars=("KOKKOS_OPTIONS",))
+    cxx, kokkos_options_raw = macro_vals[2], macro_vals[-1]
 
-    kokkos_options = output.split(":=")[-1].strip()
+    kokkos_options = kokkos_options_raw.split(":=")[-1].strip()
 
     # We will take care of setting CMAKE_CXX_COMPILER unless user has explictly
     # set one in their KOKKOS_OPTIONS.
-    cxx = ""
     if "DCMAKE_CXX_COMPILER" not in kokkos_options:
         if "Kokkos_ENABLE_CUDA" in kokkos_options:
             cxx = os.path.join(kokkos_dir, "bin/nvcc_wrapper")
-        else:
-            cxx = (
-                run_cmd_no_fail("make -f Macros.make {} -p | grep SCXX".format(make_args))
-                .split(":=")[-1]
-                .strip()
-            )
 
         if "/" in cxx:
             cxx = "-DCMAKE_CXX_COMPILER={}".format(cxx)
@@ -107,12 +99,7 @@ def buildlib(bldroot, installpath, case):
     gmake_cmd = case.get_value("GMAKE")
     gmake_j = case.get_value("GMAKE_J")
 
-    gen_makefile_cmd = "cmake {kokkos_options} {cxx} -DCMAKE_INSTALL_PREFIX={installpath} {kokkos_dir}".format(
-        kokkos_dir=kokkos_dir,
-        kokkos_options=kokkos_options,
-        cxx=cxx,
-        installpath=installpath,
-    )
+    gen_makefile_cmd = f"cmake {kokkos_options} {cxx} -DCMAKE_INSTALL_PREFIX={installpath} {kokkos_dir}"
 
     # When later we use find_package to get kokkos in CMake, the folder
     # install_sharedpath/kokkos (which is bldroot here) gets picked over
@@ -131,12 +118,13 @@ def buildlib(bldroot, installpath, case):
     )
     run_bld_cmd_ensure_logging("{} install".format(gmake_cmd), logger, from_dir=bldroot)
 
-
+###############################################################################
 def _main(argv, documentation):
+###############################################################################
     bldroot, installpath, caseroot = parse_command_line(argv, documentation)
     with Case(caseroot, read_only=False) as case:
         buildlib(bldroot, installpath, case)
 
-
+###############################################################################
 if __name__ == "__main__":
     _main(sys.argv, __doc__)

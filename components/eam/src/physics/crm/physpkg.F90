@@ -549,6 +549,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
   use modal_aero_wateruptake,only: modal_aero_wateruptake_init
   use nucleate_ice_cam,      only: nucleate_ice_cam_init
   use hetfrz_classnuc_cam,   only: hetfrz_classnuc_cam_init
+  use prescribed_macv2,      only: macv2_rad_props_init
   !-----------------------------------------------------------------------------
   ! Input/output arguments
   !-----------------------------------------------------------------------------
@@ -629,6 +630,9 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
 
   ! Initialize ocean data
   if (has_mam_mom) call init_ocean_data()
+
+  ! Initialize MACv2-SP aerosols
+  call macv2_rad_props_init()
 
   ! co2 cycle            
   if (co2_transport()) call co2_init()

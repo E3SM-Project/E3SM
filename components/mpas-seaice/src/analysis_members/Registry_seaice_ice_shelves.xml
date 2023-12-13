@@ -24,7 +24,7 @@
 		<package name="iceShelvesAMPKG" description="This package includes variables required for the iceShelves analysis member."/>
 	</packages>
 	<var_struct name="iceShelvesAM" time_levs="1" packages="iceShelvesAMPKG">
-		<var name="iceAreaOverIceShelves" type="real" dimensions="Time" units="-"
+		<var name="iceAreaOverIceShelves" type="real" dimensions="Time" units="1"
 			description="Total ice area present where ice shelves exist"
 		/>
 	</var_struct>

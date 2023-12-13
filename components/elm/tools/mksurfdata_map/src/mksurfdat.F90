@@ -44,7 +44,7 @@ program mksurfdat
     use mkCH4inversionMod  , only : mkCH4inversion
     use mksoilphosphorusMod, only : mksoilphosphorus
     use mkSedMod           , only : mkgrvl, mkslp10, mkEROparams
-!
+    use mkFertMod          , only : mkfert!
 ! !ARGUMENTS:
     implicit none
 
@@ -150,6 +150,8 @@ program mksurfdat
     real(r8), allocatable  :: ero_c3(:)          ! ELM-Erosion c3 parameter (unitless) 
     real(r8), allocatable  :: tillage(:)         ! conserved tillage fraction (fraction)
     real(r8), allocatable  :: litho(:)           ! lithology erodiblity index (unitless)
+    real(r8), allocatable  :: nfert(:,:)         ! crop nitrogen fertilizer (g/m^2)
+    real(r8), allocatable  :: pfert(:,:)         ! crop phosphorus fertilizer (g/m^2)
 
 
     type(domain_type) :: ldomain
@@ -184,6 +186,7 @@ program mksurfdat
          mksrf_fgrvl,              &
          mksrf_fslp10,             &
          mksrf_fero,               &
+         mksrf_ffert,              &
          nglcec,                   &
          numpft,                   &
          soil_color,               &
@@ -219,6 +222,7 @@ program mksurfdat
          map_fphosphorus,          &
          map_fgrvl,                &
          map_fslp10,               &
+         map_ffert,                &
          map_fero,                 &
          outnc_large_files,        &
          outnc_double,             &
@@ -261,6 +265,7 @@ program mksurfdat
     !    mksrf_fgrvl ---- Soil gravel content dataset
     !    mksrf_fslp10 --- Slope percentile dataset
     !    mksrf_fero ----- ELM-Erosion parameters dataset 
+    !    mksrf_ffert ---- Crop Fertilizer dataset
     ! ======================================
     ! Must specify mapping file for the different datafiles above
     ! ======================================
@@ -289,6 +294,7 @@ program mksurfdat
     !    map_fgrvl ------- Mapping for mksrf_fgrvl
     !    map_fslp10 ------ Mapping for mksrf_fslp10
     !    map_fero -------- Mapping for mksrf_fero
+    !    map_ffert ------- Mapping for mksrf_ffert
     ! ======================================
     ! Optionally specify setting for:
     ! ======================================
@@ -456,7 +462,9 @@ program mksurfdat
                ero_c2(ns_o)                       , &
                ero_c3(ns_o)                       , &
                tillage(ns_o)                      , &
-               litho(ns_o)                        )
+               litho(ns_o)                        , &
+               nfert(ns_o,0:numpft)               , &
+               pfert(ns_o,0:numpft)               )
 
     landfrac_pft(:)       = spval 
     pctlnd_pft(:)         = spval
@@ -501,6 +509,8 @@ program mksurfdat
     ero_c3(:)             = spval 
     tillage(:)            = spval
     litho(:)              = spval
+    nfert(:,:)            = 0._r8
+    pfert(:,:)            = 0._r8
 
     ! ----------------------------------------------------------------------
     ! Open diagnostic output log file
@@ -544,6 +554,7 @@ program mksurfdat
     write(ndiag,*) 'VIC parameters from:         ',trim(mksrf_fvic)
     write(ndiag,*) 'CH4 parameters from:         ',trim(mksrf_fch4)
     write(ndiag,*) 'Soil phosphorus from:        ',trim(mksrf_fphosphorus)
+    write(ndiag,*) 'Fertilizer from:             ',trim(mksrf_ffert)
     write(ndiag,*)' mapping for pft              ',trim(map_fpft)
     write(ndiag,*)' mapping for lake water       ',trim(map_flakwat)
     write(ndiag,*)' mapping for wetland          ',trim(map_fwetlnd)
@@ -569,6 +580,7 @@ program mksurfdat
     write(ndiag,*)' mapping for soil gravel      ',trim(map_fgrvl)
     write(ndiag,*)' mapping for slope percentile ',trim(map_fslp10)
     write(ndiag,*)' mapping for erosion params   ',trim(map_fero)
+    write(ndiag,*)' mapping for fertilizer       ',trim(map_ffert)
 
     if (mksrf_fdynuse /= ' ') then
        write(6,*)'mksrf_fdynuse = ',trim(mksrf_fdynuse)
@@ -751,6 +763,9 @@ program mksurfdat
          ero_c1_o=ero_c1, ero_c2_o=ero_c2, ero_c3_o=ero_c3, tillage_o=tillage, &
          litho_o=litho)
 
+    call mkfert(ldomain, mapfname=map_ffert, datfname=mksrf_ffert, ndiag=ndiag, &
+         nfert_o=nfert, pfert_o=pfert)
+
     do n = 1,ns_o
 
        ! Assume wetland and/or lake when dataset landmask implies ocean 
@@ -778,6 +793,8 @@ program mksurfdat
           ero_c3(n)        = 0._r8
           tillage(n)       = 0._r8
           litho(n)         = 0._r8
+          nfert(n,:)       = 0._r8
+          pfert(n,:)       = 0._r8
        else
           pftdata_mask(n) = 1
        end if
@@ -977,6 +994,12 @@ program mksurfdat
     if (num_cft > 0) then
        call check_ret(nf_inq_varid(ncid, 'PCT_CFT', varid), subname)
        call check_ret(nf_put_var_double(ncid, varid, pctcft), subname)
+
+       call check_ret(nf_inq_varid(ncid, 'NFERT', varid), subname)
+       call check_ret(nf_put_var_double(ncid, varid, nfert),subname)
+
+       call check_ret(nf_inq_varid(ncid, 'PFERT', varid), subname)
+       call check_ret(nf_put_var_double(ncid, varid, pfert),subname)
     end if
 
     call check_ret(nf_inq_varid(ncid, 'FMAX', varid), subname)
@@ -1097,7 +1120,7 @@ program mksurfdat
     deallocate ( apatiteP, labileP, occludedP, secondaryP )
     deallocate ( grvl, slp10 )
     deallocate ( ero_c1, ero_c2, ero_c3, tillage, litho )
-
+    deallocate ( nfert, pfert )
     ! Synchronize the disk copy of a netCDF dataset with in-memory buffers
 
     call check_ret(nf_sync(ncid), subname)
