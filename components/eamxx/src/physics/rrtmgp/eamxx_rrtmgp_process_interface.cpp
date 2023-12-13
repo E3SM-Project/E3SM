@@ -604,7 +604,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
       } else {
         // This gives (dry) mass mixing ratios
         scream::physics::trcmix(
-          name, m_ncol, m_lat.get_view<const Real*>(), d_pmid, d_vmr,
+          name, m_nlay, m_lat.get_view<const Real*>(), d_pmid, d_vmr,
           m_co2vmr, m_n2ovmr, m_ch4vmr, m_f11vmr, m_f12vmr
         );
         // Back out volume mixing ratios
