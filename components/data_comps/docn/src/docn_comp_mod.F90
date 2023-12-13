@@ -31,6 +31,14 @@ module docn_comp_mod
   use docn_shr_mod   , only: sst_constant_value ! namelist input
   use docn_shr_mod   , only: nullstr
 
+#ifdef HAVE_MOAB
+!   character(1024)         :: domain_file        ! file containing domain info (set my input)
+  use seq_comm_mct,     only: mpoid  ! iMOAB pid for ocean mesh on component pes
+  use seq_comm_mct,     only: mboxid ! iMOAB id for MPAS ocean migrated mesh to coupler pes
+
+  use iso_c_binding
+
+#endif
 
   ! !PUBLIC TYPES:
   implicit none
@@ -100,6 +108,9 @@ CONTAINS
     ! !DESCRIPTION: initialize docn model
     use pio        , only : iosystem_desc_t
     use shr_pio_mod, only : shr_pio_getiosys, shr_pio_getiotype
+#ifdef HAVE_MOAB
+    use iMOAB, only: iMOAB_LoadMesh, iMOAB_AssignGlobalIDs
+#endif
     implicit none
 
     ! !INPUT/OUTPUT PARAMETERS:
@@ -224,6 +235,43 @@ CONTAINS
 
     call shr_dmodel_rearrGGrid(SDOCN%grid, ggrid, gsmap, rearr, mpicom)
     call t_stopf('docn_initmctdom')
+
+#ifdef HAVE_MOAB
+   ! domain_file = trim(SDOCN%domainFile)//C_NULL_CHAR ! Load this MPAS mesh file
+   ! call mpas_moab_instance(domain, ext_comp_id, mpoid)
+   if (my_task == master_task) then
+     write(logunit,*) ' loading OCN domain mesh from disk '
+   endif
+   ! "PARALLEL=READ_PART;PARTITION_METHOD=RCBZOLTAN;"
+   ierr = iMOAB_LoadMesh(mpoid, trim(SDOCN%domainFile)//C_NULL_CHAR, &
+            "PARALLEL=READ_PART;", 0)
+   if ( ierr /= 0 ) then
+      write(logunit,*) 'Failed to load ocean domain mesh'
+   endif
+   ierr = iMOAB_AssignGlobalIDs(mpoid, 1, 0, 1, 0)
+   if ( ierr /= 0 ) then
+      write(logunit,*) 'Failed to reassign global ocean domain mesh IDs'
+   endif
+   ! initialize moab tag fields array
+   !  mblsize = lsize
+   !  totalmbls = mblsize * nsend ! size of the double array for exporting to coupler
+   !  allocate (o2x_om(lsize, nsend) )
+   !  o2x_om = 0._r8
+   !  ! define tags according to the seq_flds_o2x_fields
+   !  tagtype = 1  ! dense, double
+   !  numco = 1 !  one value per cell / entity
+   !  tagname = trim(seq_flds_o2x_fields)//C_NULL_CHAR
+   !  ierrmb = iMOAB_DefineTagStorage(MPOID, tagname, tagtype, numco,  tagindex )
+   !  if ( ierrmb == 1 ) then
+   !    call mpas_log_write('cannot define tags for MOAB o2x fields ' // trim(seq_flds_o2x_fields), MPAS_LOG_ERR)
+   !  endif
+   !  !  set all tags to 0 in one method
+   !  ent_type = 1! cells
+   !  ierr = iMOAB_SetDoubleTagStorage ( MPOID, tagname, totalmbls , ent_type, o2x_om(1, 1) )
+   !  if ( ierr /= 0 ) then
+   !    write(ocnLogUnit,*) 'Fail to set MOAB fields '
+   !  endif
+#endif
 
     !----------------------------------------------------------------------------
     ! Initialize MCT attribute vectors
