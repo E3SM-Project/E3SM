@@ -1,5 +1,6 @@
 string(APPEND CMAKE_C_FLAGS_RELEASE " -O2")
 string(APPEND CMAKE_Fortran_FLAGS_RELEASE " -O2")
+string(APPEND CMAKE_CUDA_FLAGS " -forward-unknown-to-host-compiler")
 string(APPEND CMAKE_CUDA_FLAGS_RELEASE " -O3 -arch sm_70 --use_fast_math")
 string(APPEND CMAKE_CUDA_FLAGS_DEBUG " -O0 -g -arch sm_70")
 if (COMP_NAME STREQUAL gptl)

@@ -108,11 +108,21 @@ int main (int argc, char** argv) {
     real2d sw_flux_dn_dir("sw_flux_dn_dir", ncol, nlay+1);
     real2d lw_flux_up ("lw_flux_up" , ncol, nlay+1);
     real2d lw_flux_dn ("lw_flux_dn" , ncol, nlay+1);
+    real2d sw_clnclrsky_flux_up ("sw_clnclrsky_flux_up" , ncol, nlay+1);
+    real2d sw_clnclrsky_flux_dn ("sw_clnclrsky_flux_dn" , ncol, nlay+1);
+    real2d sw_clnclrsky_flux_dn_dir("sw_clnclrsky_flux_dn_dir", ncol, nlay+1);
     real2d sw_clrsky_flux_up ("sw_clrsky_flux_up" , ncol, nlay+1);
     real2d sw_clrsky_flux_dn ("sw_clrsky_flux_dn" , ncol, nlay+1);
     real2d sw_clrsky_flux_dn_dir("sw_clrsky_flux_dn_dir", ncol, nlay+1);
+    real2d sw_clnsky_flux_up ("sw_clnsky_flux_up" , ncol, nlay+1);
+    real2d sw_clnsky_flux_dn ("sw_clnsky_flux_dn" , ncol, nlay+1);
+    real2d sw_clnsky_flux_dn_dir("sw_clnsky_flux_dn_dir", ncol, nlay+1);
+    real2d lw_clnclrsky_flux_up ("lw_clnclrsky_flux_up" , ncol, nlay+1);
+    real2d lw_clnclrsky_flux_dn ("lw_clnclrsky_flux_dn" , ncol, nlay+1);
     real2d lw_clrsky_flux_up ("lw_clrsky_flux_up" , ncol, nlay+1);
     real2d lw_clrsky_flux_dn ("lw_clrsky_flux_dn" , ncol, nlay+1);
+    real2d lw_clnsky_flux_up ("lw_clnsky_flux_up" , ncol, nlay+1);
+    real2d lw_clnsky_flux_dn ("lw_clnsky_flux_dn" , ncol, nlay+1);
     real3d sw_bnd_flux_up ("sw_bnd_flux_up" , ncol, nlay+1, nswbands);
     real3d sw_bnd_flux_dn ("sw_bnd_flux_dn" , ncol, nlay+1, nswbands);
     real3d sw_bnd_flux_dir("sw_bnd_flux_dir", ncol, nlay+1, nswbands);
@@ -166,8 +176,12 @@ int main (int argc, char** argv) {
         cld_tau_sw, cld_tau_lw,  // outputs
         sw_flux_up, sw_flux_dn, sw_flux_dn_dir,
         lw_flux_up, lw_flux_dn,
+        sw_clnclrsky_flux_up, sw_clnclrsky_flux_dn, sw_clnclrsky_flux_dn_dir,
         sw_clrsky_flux_up, sw_clrsky_flux_dn, sw_clrsky_flux_dn_dir,
+        sw_clnsky_flux_up, sw_clnsky_flux_dn, sw_clnsky_flux_dn_dir,
+        lw_clnclrsky_flux_up, lw_clnclrsky_flux_dn,
         lw_clrsky_flux_up, lw_clrsky_flux_dn,
+        lw_clnsky_flux_up, lw_clnsky_flux_dn,
         sw_bnd_flux_up, sw_bnd_flux_dn, sw_bnd_flux_dir,
         lw_bnd_flux_up, lw_bnd_flux_dn, tsi_scaling,
         logger
@@ -219,11 +233,21 @@ int main (int argc, char** argv) {
     sw_flux_dn_dir.deallocate();
     lw_flux_up.deallocate();
     lw_flux_dn.deallocate();
+    sw_clnclrsky_flux_up.deallocate();
+    sw_clnclrsky_flux_dn.deallocate();
+    sw_clnclrsky_flux_dn_dir.deallocate();
     sw_clrsky_flux_up.deallocate();
     sw_clrsky_flux_dn.deallocate();
     sw_clrsky_flux_dn_dir.deallocate();
+    sw_clnsky_flux_up.deallocate();
+    sw_clnsky_flux_dn.deallocate();
+    sw_clnsky_flux_dn_dir.deallocate();
+    lw_clnclrsky_flux_up.deallocate();
+    lw_clnclrsky_flux_dn.deallocate();
     lw_clrsky_flux_up.deallocate();
     lw_clrsky_flux_dn.deallocate();
+    lw_clnsky_flux_up.deallocate();
+    lw_clnsky_flux_dn.deallocate();
     sw_bnd_flux_up.deallocate();
     sw_bnd_flux_dn.deallocate();
     sw_bnd_flux_dir.deallocate();

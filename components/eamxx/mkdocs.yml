@@ -26,6 +26,7 @@ nav:
       - 'CI and Nightly Testing': 'developer/ci_nightly.md'
   - 'Technical Guide':
     - 'AeroCOM cloud top': 'technical/aerocom_cldtop.md'
+    - 'Extra radiation calls': 'technical/clean_clear_sky.md'
 
 edit_uri: ""
 

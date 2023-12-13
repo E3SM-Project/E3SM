@@ -4,6 +4,7 @@
 #include "YAKL.h"
 #include "physics/share/physics_constants.hpp"
 #include "physics/rrtmgp/shr_orb_mod_c2f.hpp"
+#include "physics/rrtmgp/mo_load_coefficients.h"
 
 // Names of input files we will need.
 std::string coefficients_file_sw = SCREAM_DATA_DIR "/init/rrtmgp-data-sw-g112-210809.nc";
