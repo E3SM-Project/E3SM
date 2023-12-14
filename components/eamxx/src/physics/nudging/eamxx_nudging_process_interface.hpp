@@ -13,6 +13,7 @@
 #include "share/grid/point_grid.hpp"
 #include "share/util/scream_vertical_interpolation.hpp"
 #include "share/util/scream_time_stamp.hpp"
+#include "share/grid/remap/abstract_remapper.hpp"
 
 #include <string>
 
@@ -84,6 +85,13 @@ protected:
 
   void run_impl        (const double dt);
 
+  /* Nudge from coarse data */
+  // See more details later in this file
+  // Must add this here to make it public for CUDA
+  // (refining) remapper vertically-weighted tendency application
+  void apply_vert_cutoff_tendency(Field &base, const Field &next,
+                                  const Field &p_mid, const Real cutoff,
+                                  const Real dt);
 protected:
 
   Field get_field_out_wrap(const std::string& field_name);
@@ -100,7 +108,7 @@ protected:
   void init_buffers(const ATMBufferManager &buffer_manager);
 
   // Creates an helper field, not to be shared with the AD's FieldManager
-  void create_helper_field (const std::string& name,
+  Field create_helper_field (const std::string& name,
                             const FieldLayout& layout,
                             const std::string& grid_name,
                             const int ps=0);
@@ -131,6 +139,16 @@ protected:
   std::map<std::string,Field> m_helper_fields;
 
   std::vector<std::string> m_fields_nudge;
+
+  /* Nudge from coarse data */
+  // if true, remap coarse data to fine grid
+  bool m_refine_remap;
+  // file containing coarse data mapping
+  std::string m_refine_remap_file;
+  // (refining) remapper object
+  std::shared_ptr<scream::AbstractRemapper> m_refine_remapper;
+  // (refining) remapper vertical cutoff
+  Real m_refine_remap_vert_cutoff;
 
   util::TimeInterpolation m_time_interp;
 

@@ -8,6 +8,7 @@ nav:
     - 'Model output': 'user/model_output.md'
     - 'Model input': 'user/model_input.md'
     - 'Runtime parameters': 'common/eamxx_params.md'
+    - 'Coarse nudging': 'user/coarse_nudging.md'
   - 'Developer Guide':
     - 'Overview': 'developer/index.md'
     - 'Installation': 'common/installation.md'
