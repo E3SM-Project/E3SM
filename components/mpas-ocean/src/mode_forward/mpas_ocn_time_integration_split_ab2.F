@@ -1784,9 +1784,12 @@ module ocn_time_integration_split_ab2
          call mpas_timer_stop("se halo thickness")
 
          call mpas_timer_start('se tracer tend', .false.)
-         call ocn_tend_tracer(tendPool, statePool, forcingPool, &
-                              meshPool, swForcingPool, &
-                              dt, activeTracersOnly, 2)
+
+         if ( nowTimeStamp == initialTimeStamp .or. (.not. config_do_restart) ) then
+            call ocn_tend_tracer(tendPool, statePool, forcingPool, &
+                                 meshPool, swForcingPool, &
+                                 dt, activeTracersOnly, 2)
+         endif
 
          call mpas_pool_get_array(tracersPool, 'activeTracers', &
                                                 tracersGroupCur, 1)
@@ -1848,23 +1851,25 @@ module ocn_time_integration_split_ab2
 
          call mpas_timer_stop('se tracer tend')
 
-         ! update halo for tracer tendencies
-         call mpas_timer_start("se halo tracers")
+         if ( nowTimeStamp == initialTimeStamp .or. (.not. config_do_restart) ) then
+            ! update halo for tracer tendencies
+            call mpas_timer_start("se halo tracers")
 
-         call mpas_pool_begin_iteration(tracersTendPool)
-         do while (mpas_pool_get_next_member(tracersTendPool, &
-                                             groupItr) )
-            if (groupItr%memberType == MPAS_POOL_FIELD ) then
-               ! Only compute tendencies for active tracers if
-               ! activeTracersOnly flag is true.
-               if (.not. activeTracersOnly .or. &
-                   trim(groupItr%memberName)=='activeTracersTend') then
-                  call mpas_dmpar_field_halo_exch(domain, &
-                                                  groupItr%memberName)
+            call mpas_pool_begin_iteration(tracersTendPool)
+            do while (mpas_pool_get_next_member(tracersTendPool, &
+                                                groupItr) )
+               if (groupItr%memberType == MPAS_POOL_FIELD ) then
+                  ! Only compute tendencies for active tracers if
+                  ! activeTracersOnly flag is true.
+                  if (.not. activeTracersOnly .or. &
+                      trim(groupItr%memberName)=='activeTracersTend') then
+                     call mpas_dmpar_field_halo_exch(domain, &
+                                                     groupItr%memberName)
+                  end if
                end if
-            end if
-         end do
-         call mpas_timer_stop("se halo tracers")
+            end do
+            call mpas_timer_stop("se halo tracers")
+         endif
 
          call mpas_timer_start('se loop fini')
 
@@ -2010,20 +2015,24 @@ module ocn_time_integration_split_ab2
 #ifdef MPAS_OPENACC
             !$acc parallel loop gang present (layerThicknessNew,   &
             !$acc    minLevelCell, maxLevelCell,layerThicknessCur, &
-            !$acc    layerThicknessTend)
+            !$acc    layerThicknessTend) &
+            !$acc    private(temp_h)
 #else
             !$omp parallel
-            !$omp do schedule(runtime) private(k)
+            !$omp do schedule(runtime) private(k,temp_h)
 #endif
             do iCell = 1, nCellsAll
 #ifdef MPAS_OPENACC
             !$acc loop vector
 #endif
             do k = minLevelCell(iCell), maxLevelCell(iCell)
-               ! this is h_{*}
-               layerThicknessNew(k,iCell) = &
-                                     layerThicknessCur(k,iCell) + &
-                                  dt*layerThicknessTend(k,iCell)
+               ! this is h_{n+1}
+               temp_h = layerThicknessCur(k,iCell) + dt* &
+               layerThicknessTend(k,iCell)
+
+               ! this is h_{n+1/2}
+               layerThicknessNew(k,iCell) = 0.5* &
+               (layerThicknessCur(k,iCell) + temp_h)
             end do
             end do
 #ifndef MPAS_OPENACC
@@ -2037,28 +2046,29 @@ module ocn_time_integration_split_ab2
 
 #ifdef MPAS_OPENACC
                !$acc parallel loop present(layerThickEdgeFlux,layerThicknessNew, &
-               !$acc    layerThicknessCur, minLevelEdgeBot, maxLevelEdgeTop, &
+               !$acc    minLevelEdgeBot, maxLevelEdgeTop, &
                !$acc    cellsOnEdge)
 #else
                !$omp parallel
                !$omp do schedule(runtime) private(cell1, cell2, k)
 #endif
                do iEdge = 1, nEdgesAll
-                 ! initialize layerThicknessFlux to avoid divide by zero and NaN problems.
-                 layerThickEdgeFlux(:, iEdge) = -1.0e34_RKIND
-                 cell1 = cellsOnEdge(1,iEdge)
-                 cell2 = cellsOnEdge(2,iEdge)
-                 do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
-                   ! central differenced
-                   layerThickEdgeFlux(k,iEdge) = &
-                      0.25_RKIND * (layerThicknessNew(k,cell1) + layerThicknessNew(k,cell2)) &
-                    + 0.25_RKIND * (layerThicknessCur(k,cell1) + layerThicknessCur(k,cell2))
-                 end do
+                  ! initialize layerThicknessFlux to avoid divide by zero and NaN problems.
+                  layerThickEdgeFlux(:, iEdge) = -1.0e34_RKIND
+                  cell1 = cellsOnEdge(1,iEdge)
+                  cell2 = cellsOnEdge(2,iEdge)
+                  do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
+                    ! central differenced
+                    layerThickEdgeFlux(k,iEdge) = &
+                       0.5_RKIND * (layerThicknessNew(k,cell1) + layerThicknessNew(k,cell2))
+                  end do
                end do
 #ifndef MPAS_OPENACC
                !$omp end do
                !$omp end parallel
 #endif
+
+               !$acc update host(layerThickEdgeFlux)
 
                allocate(uTemp(nVertLevels,nEdgesAll))
 
@@ -2137,7 +2147,7 @@ module ocn_time_integration_split_ab2
 #ifdef MPAS_OPENACC
                !$acc parallel loop gang vector &
                !$acc          present(maxLevelCell, zMid, zTop, layerThicknessNew, &
-               !$acc          layerThicknessCur, bottomDepth, minLevelCell) &
+               !$acc             bottomDepth, minLevelCell) &
                !$acc          private(k)
 #else
                !$omp parallel
@@ -2151,19 +2161,17 @@ module ocn_time_integration_split_ab2
                   ! and z-coordinates are negative below the surface.
                   k = maxLevelCell(iCell)
                   zMid(k:nVertLevels,iCell) = -bottomDepth(iCell) + &
-                     0.5_RKIND*(0.5*(layerThicknessNew(k,iCell)+layerThicknessCur(k,iCell)))
+                                               layerThicknessNew(k,iCell)
                   zTop(k:nVertLevels,iCell) = -bottomDepth(iCell) + &
-                     (0.5*(layerThicknessNew(k,iCell)+layerThicknessCur(k,iCell)))
+                                               layerThicknessNew(k,iCell)
 
                   do k = maxLevelCell(iCell)-1, minLevelCell(iCell), -1
                      zMid(k,iCell) = zMid(k+1,iCell)  &
-                       + 0.25_RKIND*(  layerThicknessNew(k+1,iCell) &
-                                    +  layerThicknessNew(k  ,iCell)) &
-                       + 0.25_RKIND*(  layerThicknessCur(k+1,iCell) &
-                                    +  layerThicknessCur(k  ,iCell))
+                       + 0.5_RKIND*(  layerThicknessNew(k+1,iCell) &
+                                    + layerThicknessNew(k  ,iCell))
 
                      zTop(k,iCell) = zTop(k+1,iCell)  &
-                       + (0.5*(layerThicknessNew(k  ,iCell)+layerThicknessCur(k  ,iCell)))
+                       + layerThicknessNew(k  ,iCell)
                   end do
 
                end do
@@ -2171,7 +2179,6 @@ module ocn_time_integration_split_ab2
                !$omp end do
                !$omp end parallel
 #endif
-
 
 #ifdef MPAS_OPENACC
                !$acc update device(normalTransportVelocity)
@@ -2189,12 +2196,43 @@ module ocn_time_integration_split_ab2
                call mpas_timer_stop("se halo thickness")
 
 #ifdef MPAS_OPENACC
-            !$acc parallel loop gang present (layerThicknessNew,   &
-            !$acc    minLevelCell, maxLevelCell,layerThicknessCur, &
-            !$acc    layerThicknessTend)
+               !$acc update device(layerThicknessTend)
+#endif
+
+               if ( nowTimeStamp == initialTimeStamp .or. (.not. config_do_restart) ) then
+
+                  ! Compute tracer tendency here to use updated 
+                  !    layerThickEdgeFlux and normalTransportVelocity at {n+0.5}
+                  call ocn_tend_tracer(tendPool, statePool, forcingPool, &
+                                       meshPool, swForcingPool, &
+                                       dt, activeTracersOnly, 2)
+
+                  ! update halo for tracer tendencies
+                  call mpas_timer_start("se halo tracers")
+
+                  call mpas_pool_begin_iteration(tracersTendPool)
+                  do while (mpas_pool_get_next_member(tracersTendPool, &
+                                                      groupItr) )
+                     if (groupItr%memberType == MPAS_POOL_FIELD ) then
+                        ! Only compute tendencies for active tracers if
+                        ! activeTracersOnly flag is true.
+                        if (.not. activeTracersOnly .or. &
+                            trim(groupItr%memberName)=='activeTracersTend') then
+                           call mpas_dmpar_field_halo_exch(domain, &
+                                                           groupItr%memberName)
+                        end if
+                     end if
+                  end do
+                  call mpas_timer_stop("se halo tracers")
+               endif
+
+#ifdef MPAS_OPENACC
+               !$acc parallel loop gang present (layerThicknessNew,   &
+               !$acc    minLevelCell, maxLevelCell,layerThicknessCur, &
+               !$acc    layerThicknessTend)
 #else
-            !$omp parallel
-            !$omp do schedule(runtime) private(k)
+               !$omp parallel
+               !$omp do schedule(runtime) private(k)
 #endif
                do iCell = 1, nCellsAll
 #ifdef MPAS_OPENACC
