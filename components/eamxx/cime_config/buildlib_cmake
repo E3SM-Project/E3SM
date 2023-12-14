@@ -25,9 +25,16 @@ def buildlib(bldroot, installpath, case):
     expect (len(tokens) % 2 == 0, "Error! SCREAM_CMAKE_OPTIONS should contain a string of the form 'option1 value1 option2 value2 ...'\n")
     it = iter(tokens)
 
-    cmake_args = ""
+    # Parse all options and put them in a dict first. This allows to overwrite options via
+    #  ./xmlchange --append SCRAM_CMAKE_OPTIONS="NAME VALUE"
+    # rather than having to reset them all, running ./xmlquery first to see what the others are
+    cmake_args_dict = {}
     for item in it:
-        cmake_args += " -D{}={}".format(item,next(it))
+        cmake_args_dict[item] = next(it)
+
+    cmake_args = ""
+    for k,v in cmake_args_dict.items():
+        cmake_args += f" -D{k}={v}"
 
     atm_dyn_tgt = case.get_value("CAM_TARGET")
     cmake_args += " -DSCREAM_DYN_TARGET={}".format(atm_dyn_tgt)
