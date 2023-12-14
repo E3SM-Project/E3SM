@@ -577,7 +577,7 @@ _TESTS = {
             "ERS_Ln9.ne4_ne4.F2000-SCREAMv1-AQP1",
             "SMS_D_Ln9.ne4_ne4.F2010-SCREAMv1-noAero",
             "ERP_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1",
-            "ERS_D_Ln21.ne4pg2_ne4pg2.F2010-SCREAMv1.scream-rad_frequency_2",
+            "ERS_D_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.scream-rad_frequency_2",
             )
     },
 
