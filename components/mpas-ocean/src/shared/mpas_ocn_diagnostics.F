@@ -681,20 +681,19 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_diagnostic_solve_wctEdge(btrVelocity, sshCell, &
-                         bottomDepthEdge, wctEdge)!{{{
+   subroutine ocn_diagnostic_solve_wctEdge(btrVelocity, deltaSSH, &
+                         baroclinicThickness, wctEdge)!{{{
 
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:), intent(in) :: &
-         btrVelocity,   &!< barotropic velocity
-         sshCell,       &!< ssh at cells, used for centered water column
-                         !< thickness
-         bottomDepthEdge !< bottom depth centered at edges, used for
-                         !< centered water column thickness
-      ! bottomDepth is already present
+         btrVelocity,       &!< barotropic velocity
+         deltaSSH,          &!< ssh change from baroclinic step to barotropic
+                             !< substep
+         baroclinicThickness !< water column thickness on edges at the last
+                             !< baroclinic step (centered or upwinded)
 
       !-----------------------------------------------------------------
       ! output variables
@@ -725,9 +724,9 @@ contains
 
          ! Compute mean layer thickness at edge
 #ifdef MPAS_OPENACC
-         !$acc enter data copyin(bottomDepthEdge, sshCell, wctEdge)
+         !$acc enter data copyin(baroclinicThickness, deltaSSH, wctEdge)
          !$acc parallel loop &
-         !$acc    present(bottomDepthEdge, sshCell, wctEdge, cellsOnEdge) &
+         !$acc    present(baroclinicThickness, deltaSSH, wctEdge, cellsOnEdge) &
          !$acc    private(iEdge, cell1, cell2)
 #else
          !$omp parallel
@@ -737,8 +736,8 @@ contains
             if ( maxLevelEdgeTop(iEdge) == 0 ) cycle
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
-            wctEdge(iEdge) = 0.5_RKIND*(sshCell(cell1) + sshCell(cell2)) &
-                             + bottomDepthEdge(iEdge)
+            wctEdge(iEdge) = 0.5_RKIND*(deltaSSH(cell1) + deltaSSH(cell2)) &
+                             + baroclinicThickness(iEdge)
          end do
 #ifndef MPAS_OPENACC
          !$omp end do
@@ -746,16 +745,16 @@ contains
 #endif
 
 #ifdef MPAS_OPENACC
-         !$acc exit data copyout(wctEdge) delete(bottomDepthEdge, sshCell)
+         !$acc exit data copyout(wctEdge) delete(baroclinicThickness, deltaSSH)
 #endif
 
       case (thickEdgeFluxUpwind)
 
          ! Use upwind thickness as the edge flux value
 #ifdef MPAS_OPENACC
-         !$acc enter data copyin(bottomDepthEdge, sshCell, btrVelocity, wctEdge)
+         !$acc enter data copyin(baroclinicThickness, deltaSSH, btrVelocity, wctEdge)
          !$acc parallel loop &
-         !$acc    present(bottomDepthEdge, btrVelocity, sshCell, cellsOnEdge, maxLevelEdgeTop, wctEdge) &
+         !$acc    present(baroclinicThickness, btrVelocity, deltaSSH, cellsOnEdge, maxLevelEdgeTop, wctEdge) &
          !$acc    private(cell1, cell2, iEdge)
 #else
          !$omp parallel
@@ -766,12 +765,12 @@ contains
             cell1 = cellsOnEdge(1, iEdge)
             cell2 = cellsOnEdge(2, iEdge)
             if (btrVelocity(iEdge) > 0.0_RKIND) then
-               wctEdge(iEdge) = sshCell(cell1) + bottomDepthEdge(iEdge)
+               wctEdge(iEdge) = deltaSSH(cell1) + baroclinicThickness(iEdge)
             elseif (btrVelocity(iEdge) < 0.0_RKIND) then
-               wctEdge(iEdge) = sshCell(cell2) + bottomDepthEdge(iEdge)
+               wctEdge(iEdge) = deltaSSH(cell2) + baroclinicThickness(iEdge)
             else
-               wctEdge(iEdge) = max(sshCell(cell1), sshCell(cell2)) &
-                                + bottomDepthEdge(iEdge)
+               wctEdge(iEdge) = max(deltaSSH(cell1), deltaSSH(cell2)) &
+                                + baroclinicThickness(iEdge)
             end if
          end do
 #ifndef MPAS_OPENACC
@@ -780,7 +779,7 @@ contains
 #endif
 
 #ifdef MPAS_OPENACC
-         !$acc exit data copyout(wctEdge) delete(bottomDepthEdge, sshCell, btrVelocity)
+         !$acc exit data copyout(wctEdge) delete(baroclinicThickness, deltaSSH, btrVelocity)
 #endif
 
       case default
