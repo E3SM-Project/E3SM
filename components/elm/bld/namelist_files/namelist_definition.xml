@@ -735,7 +735,7 @@ Default configuration has no connection to soil or atmosphere.
 Optional flag to turn on the fan mode coupling atm/soil.
     fan_offline = use only fan for calculating emissions (no coupling)
     fan_soil    = fan coupled to soil bgc
-    fan_atm     = fan coupled to atmosphere 
+    fan_atm     = fan coupled to atmosphere
     fan_full    = fan coupled to both soil bgc and atmosphere
 </entry>
 
@@ -1211,7 +1211,7 @@ Fraction of manure N produced in crop columns but spread on native vegetation co
        group="fan_nml" valid_values="">
 Adsorption coefficient for ammonium in FAN. Must be >= 0, 0 means no adsorption.
 </entry>
- 
+
 <!-- ========================================================================================  -->
 <!-- lai_streams streams Namelist (when phys = CLM4_5)                              -->
 <!-- ========================================================================================  -->
@@ -1404,7 +1404,7 @@ Representative concentration pathway for future scenarios [radiative forcing at 
 
 <entry id="mask" type="char*20" category="default_settings"
        group="default_settings"
-       valid_values="USGS,gx3v7,gx1v6,navy,test,tx0.1v2,tx1v1,T62,TL319,cruncep,oEC60to30v3,oEC60to30v3wLI,ECwISC30to60E1r2,EC30to60E2r2,WC14to60E2r3,WCAtl12to45E2r4,SOwISC12to60E2r4,ECwISC30to60E2r1,oRRS18to6,oRRS18to6v3,oRRS15to5,oARRM60to10,oARRM60to6,ARRM10to60E2r1,oQU480,oQU240,oQU240wLI,oQU120,oRRS30to10v3,oRRS30to10v3wLI,360x720cru,NLDASww3a,NLDAS,tx0.1v2,ICOS10,ECwISC30to60E3r2,IcoswISC30E3r5">
+       valid_values="USGS,gx3v7,gx1v6,navy,test,tx0.1v2,tx1v1,T62,TL319,cruncep,oEC60to30v3,oEC60to30v3wLI,ECwISC30to60E1r2,EC30to60E2r2,WC14to60E2r3,WCAtl12to45E2r4,SOwISC12to60E2r4,ECwISC30to60E2r1,oRRS18to6,oRRS18to6v3,oRRS15to5,oARRM60to10,oARRM60to6,ARRM10to60E2r1,oQU480,oQU240,oQU240wLI,oQU120,oRRS30to10v3,oRRS30to10v3wLI,360x720cru,NLDASww3a,NLDAS,tx0.1v2,ICOS10,IcoswISC30E3r5">
 Land mask description
 </entry>
 
@@ -2095,7 +2095,7 @@ Toggle to turn on the soil erosion and OM pools feedback.
        group="elm_inparm" valid_values="" value=".false.">
 Toggle to use modifed infiltration scheme in h2osfc     .
 </entry>
-    
+
 <!-- ========================================================================================  -->
 <!-- Namelist options for land river coulping                                                  -->
 <!-- ========================================================================================  -->
