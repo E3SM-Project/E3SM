@@ -24,7 +24,7 @@ initial_conditions:
   precip_ice_surf_mass: 0.0
   perturbed_fields: [T_mid]
   perturbation_limit: 0.001
-  perturbation_pressure_lower_bound: 900.0 # in millibar
+  perturbation_minimum_pressure: 900.0 # in millibar
   perturbation_random_seed: 1805289383
 
 atmosphere_processes:

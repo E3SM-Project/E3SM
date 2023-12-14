@@ -1303,17 +1303,17 @@ void AtmosphereDriver::set_initial_conditions ()
     // for which the perturbation value will be randomly generated from.
     const auto perturbation_limit = ic_pl.get<Real>("perturbation_limits", 0.001);
 
-    // Define a level mask using reference pressure and the pressure_lower_bound parameter.
+    // Define a level mask using reference pressure and the perturbation_minimum_pressure parameter.
     // This mask dictates which levels we apply a perturbation.
     const auto gll_grid = m_grids_manager->get_grid("Physics GLL");
     gll_grid->get_geometry_data("hyam").sync_to_host(), gll_grid->get_geometry_data("hybm").sync_to_host();
     const auto hyam = gll_grid->get_geometry_data("hyam").get_view<const Real*, Host>();
     const auto hybm = gll_grid->get_geometry_data("hybm").get_view<const Real*, Host>();
     constexpr auto ps0 = physics::Constants<Real>::P0;
-    const auto pressure_lower_bound = ic_pl.get<Real>("perturbation_pressure_lower_bound", 1050.0);
+    const auto min_pressure = ic_pl.get<Real>("perturbation_minimum_pressure", 1050.0);
     auto pressure_mask = [&] (const int ilev) {
       const auto pref = (hyam(ilev)*ps0 + hybm(ilev)*ps0)/100; // Reference pressure ps0 is in Pa, convert to millibar
-      return pref > pressure_lower_bound;
+      return pref > min_pressure;
     };
 
     // Loop through fields and apply perturbation.
