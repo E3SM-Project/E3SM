@@ -61,18 +61,26 @@ void MAMMicrophysics::set_defaults_() {
   config_.amicphys.gaexch_h2so4_uptake_optaa = 2;
   config_.amicphys.newnuc_h2so4_conc_optaa = 2;
 
+  //===========================================================
   // default data file locations (relative to SCREAM_DATA_DIR)
+  //===========================================================
+
+  // many of these paths were extracted from
+  // e3smv2/bld/namelist_files/namelist_defaults_eam.xml
+
+  // photolysis
   set_file_location(config_.photolysis.rsf_file,         "../waccm/phot/RSF_GT200nm_v3.0_c080811.nc");
   set_file_location(config_.photolysis.exo_coldens_file, "../cam/chem/trop_mozart/phot/exo_coldens.nc");
-  //set_file_location(config_.photolysis.tuv_xsect_file, ???);
-  //set_file_location(config_.photolysis.o2_xsect_file,  ???);
-  //set_file_location(config_.photolysis.xs_coef_file,   ???);
-  //set_file_location(config_.photolysis.xs_short_file,  ???);
+  set_file_location(config_.photolysis.tuv_xsect_file,   "../cam/chem/trop_mozart/phot/tuv_xsect.nc");
+  set_file_location(config_.photolysis.o2_xsect_file,    "../cam/chem/trop_mozart/phot/o2src.nc");
+  set_file_location(config_.photolysis.xs_coef_file,     "../waccm/phot/effxstex.txt");
+  set_file_location(config_.photolysis.xs_short_file,    "../waccm/phot/xs_short_jpl06_c080930.nc");
   set_file_location(config_.photolysis.xs_long_file,     "../waccm/phot/temp_prs_GT200nm_JPL10_c130206.nc");
-  //set_file_location(config_.photolysis.electron_file,  ???);
-  //set_file_location(config_.photolysis.euvac_file,     ???);
-  //set_file_location(config_.photolysis.euvacdat_file,  ???);
+  set_file_location(config_.photolysis.electron_file,    "../waccm/phot/electron.dat");
+  set_file_location(config_.photolysis.euvac_file,       "../waccm/phot/euvac.nc");
+  set_file_location(config_.photolysis.euvacdat_file,    "../waccm/phot/euvac.dat");
 
+  // stratospheric chemistry
   set_file_location(config_.linoz.chlorine_loading_file, "../cam/chem/trop_mozart/ub/Linoz_Chlorine_Loading_CMIP6_0003-2017_c20171114.nc");
 }
 
