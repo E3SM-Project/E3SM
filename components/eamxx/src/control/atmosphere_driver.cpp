@@ -1299,7 +1299,7 @@ void AtmosphereDriver::set_initial_conditions ()
     std::mt19937_64 engine(seed);
     m_atm_logger->info("      For IC perturbation, random seed: "+std::to_string(seed));
 
-    // Get perterbation limit. Defines a range [-perturbation_limit, perturbation_limit]
+    // Get perturbation limit. Defines a range [-perturbation_limit, perturbation_limit]
     // for which the perturbation value will be randomly generated from.
     const auto perturbation_limit = ic_pl.get<Real>("perturbation_limits", 0.001);
 
@@ -1312,7 +1312,7 @@ void AtmosphereDriver::set_initial_conditions ()
     constexpr auto ps0 = physics::Constants<Real>::P0;
     const auto pressure_lower_bound = ic_pl.get<Real>("perturbation_pressure_lower_bound", 1050.0);
     auto pressure_mask = [&] (const int ilev) {
-      const auto pref = (hyam(ilev)*ps0 + hybm(ilev)*ps0)/100; // Reference pressure ps0 is in Pa, convert to milibar
+      const auto pref = (hyam(ilev)*ps0 + hybm(ilev)*ps0)/100; // Reference pressure ps0 is in Pa, convert to millibar
       return pref > pressure_lower_bound;
     };
 
