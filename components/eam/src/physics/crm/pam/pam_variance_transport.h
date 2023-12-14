@@ -171,13 +171,13 @@ inline void pam_variance_transport_apply_forcing( pam::PamCoupler &coupler ) {
     if (vt_rhov(k,n)>0.0) { rhov_pert_scale(k,n) = sqrt( 1.0 + crm_dt * vt_rhov_forcing_tend(k,n) / vt_rhov(k,n) ); }
     if (vt_uvel(k,n)>0.0) { uvel_pert_scale(k,n) = sqrt( 1.0 + crm_dt * vt_uvel_forcing_tend(k,n) / vt_uvel(k,n) ); }
     // enforce minimum scaling
-    temp_pert_scale(k,n) = max( temp_pert_scale(k,n), pert_scale_min );
-    rhov_pert_scale(k,n) = max( rhov_pert_scale(k,n), pert_scale_min );
-    uvel_pert_scale(k,n) = max( uvel_pert_scale(k,n), pert_scale_min );
+    temp_pert_scale(k,n) = std::max( temp_pert_scale(k,n), pert_scale_min );
+    rhov_pert_scale(k,n) = std::max( rhov_pert_scale(k,n), pert_scale_min );
+    uvel_pert_scale(k,n) = std::max( uvel_pert_scale(k,n), pert_scale_min );
     // enforce maximum scaling
-    temp_pert_scale(k,n) = min( temp_pert_scale(k,n), pert_scale_max );
-    rhov_pert_scale(k,n) = min( rhov_pert_scale(k,n), pert_scale_max );
-    uvel_pert_scale(k,n) = min( uvel_pert_scale(k,n), pert_scale_max );
+    temp_pert_scale(k,n) = std::min( temp_pert_scale(k,n), pert_scale_max );
+    rhov_pert_scale(k,n) = std::min( rhov_pert_scale(k,n), pert_scale_max );
+    uvel_pert_scale(k,n) = std::min( uvel_pert_scale(k,n), pert_scale_max );
   });
   //------------------------------------------------------------------------------------------------
   // apply variance forcing tendency
