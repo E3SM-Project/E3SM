@@ -44,7 +44,7 @@ CIME_VAR_RE = re.compile(r'[$][{](\w+)[}]')
 #    Examples:
 #      - constraints="ge 0; lt 4" means the value V must satisfy V>=0 && V<4.
 #      - constraints="mod 2 eq 0" means the value V must be a multiple of 2.
-METADATA_ATTRIBS = ("type", "valid_values", "locked", "constraints", "inherit", "doc")
+METADATA_ATTRIBS = ("type", "valid_values", "locked", "constraints", "inherit", "doc", "append")
 
 ###############################################################################
 def do_cime_vars(entry, case, refine=False, extra=None):
@@ -245,6 +245,8 @@ def evaluate_selectors(element, case, ez_selectors):
 
     selected_child = {} # elem_name -> evaluated XML element
     children_to_remove = []
+    child_base_value = {} # map elme name to values to be appended to if append=="base"
+    child_type  = {} # map elme name to its type (since only first entry may have type specified)
     for child in element:
         # Note: in our system, an XML element is either a "node" (has children)
         # or a "leaf" (has a value).
@@ -255,15 +257,36 @@ def evaluate_selectors(element, case, ez_selectors):
             child_name = child.tag
             child.text = None if child.text is None else child.text.strip(' \n')
             child_val = child.text
-
             selectors = child.attrib
+
+            if child_name not in child_type:
+                child_type[child_name] = selectors["type"] if "type" in selectors.keys() else "unset"
+
+            is_array = child_type[child_name].startswith("array")
+            expect (is_array or "append" not in selectors.keys(),
+                    "The 'append' metadata attribute is only supported for entries of array type\n"
+                    f" param name: {child_name}\n"
+                    f" param type: {child_type[child_name]}")
+
+            append = selectors["append"] if "append" in selectors.keys() else "no"
+            expect (append in ["no","base","last"],
+                    "Unrecognized value for 'append' attribute\n" +
+                    f"  param name  : {child_name}\n" +
+                    f"  append value: {append}\n" +
+                    f"  valid values: base, last\n")
             if selectors:
                 all_match = True
+                had_case_selectors = False
                 for k, v in selectors.items():
                     # Metadata attributes are used only when it's time to generate the input files
                     if k in METADATA_ATTRIBS:
+                        if k=="type" and child_name in selected_child.keys():
+                            if "type" in selected_child[child_name].attrib:
+                                expect (v==selected_child[child_name].attrib["type"],
+                                        f"The 'type' attribute of {child_name} is not consistent across different selectors")
                         continue
 
+                    had_case_selectors = True
                     val_re = re.compile(v)
 
                     if k in ez_selectors:
@@ -289,7 +312,6 @@ def evaluate_selectors(element, case, ez_selectors):
                         expect(val is not None,
                                "Bad selector '{0}' for child '{1}'. '{0}' is not a valid case value or easy selector".format(k, child_name))
 
-
                     if val is None or val_re.match(val) is None:
                         all_match = False
                         children_to_remove.append(child)
@@ -298,10 +320,18 @@ def evaluate_selectors(element, case, ez_selectors):
                 if all_match:
                     if child_name in selected_child.keys():
                         orig_child = selected_child[child_name]
-                        orig_child.text = child.text
+                        if append=="base":
+                            orig_child.text = child_base_value[child_name] + "," + child.text
+                        elif append=="last":
+                            orig_child.text = orig_child.text + "," + child.text
+                        else:
+                            orig_child.text = child.text
                         children_to_remove.append(child)
 
                     else:
+                        # If all selectors were the METADATA_ATTRIB ones, then this is the "base" value
+                        if not had_case_selectors:
+                            child_base_value[child_name] = child.text
                         selected_child[child_name] = child
                         # Make a copy of selectors.keys(), since selectors=child.attrib,
                         # and we might delete an entry, causing the error
@@ -310,6 +340,7 @@ def evaluate_selectors(element, case, ez_selectors):
             else:
                 expect(child_name not in selected_child,
                        "child '{}' element without selectors occurred after other parameter elements for this parameter".format(child_name))
+                child_base_value[child_name] = child.text
                 selected_child[child_name] = child
                 child.text = do_cime_vars(child_val, case)
 
