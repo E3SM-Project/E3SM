@@ -1,4 +1,4 @@
-set(CLDERA_PATH "/global/cfs/cdirs/m4014/cldera-tools/install/pmcpu")
+set(CLDERA_PATH "/global/cfs/cdirs/m4014/cldera-tools/install-master/pmcpu")
 string(APPEND CONFIG_ARGS " --host=cray")
 if (COMP_NAME STREQUAL gptl)
   string(APPEND CPPDEFS " -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_GETTIMEOFDAY")
