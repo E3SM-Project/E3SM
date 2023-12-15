@@ -146,7 +146,7 @@
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
 
     <environment_variables>
-      <env name="CLDERA_PATH">/global/cfs/cdirs/m4014/cldera-tools/install/pmcpu</env>
+      <env name="CLDERA_PATH">/global/cfs/cdirs/m4014/cldera-tools/install-master/pmcpu</env>
       <env name="MPICH_ENV_DISPLAY">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
       <env name="OMP_STACKSIZE">128M</env>
