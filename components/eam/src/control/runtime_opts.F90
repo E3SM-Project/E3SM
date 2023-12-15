@@ -280,6 +280,9 @@ contains
 #endif
    use radiation,           only: radiation_readnl
    use conditional_diag,    only: cnd_diag_readnl
+#if defined(MMF_SAMXX) || defined(MMF_PAM)
+   use prescribed_macv2,    only: prescribed_macv2_readnl
+#endif
 
 !---------------------------Arguments-----------------------------------
 
@@ -544,6 +547,10 @@ contains
 
    ! Read radiation namelist
    call radiation_readnl(nlfilename, dtime_in=dtime)
+
+#if defined(MMF_SAMXX) || defined(MMF_PAM)
+   call prescribed_macv2_readnl(nlfilename)
+#endif
 
    ! Print cam_inparm input variables to standard output
    if (masterproc) then

@@ -1,7 +1,6 @@
 set(PIO_FILESYSTEM_HINTS "lustre")
 string(APPEND CONFIG_ARGS " --host=cray")
-string(APPEND SLIBS " -qmkl")
-set(CXX_LINKER "FORTRAN")
+string(APPEND CMAKE_EXE_LINKER_FLAGS " -qmkl")
 
 set(MPICC "cc")
 set(MPICXX "CC")

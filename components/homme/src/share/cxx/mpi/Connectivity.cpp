@@ -240,7 +240,7 @@ void Connectivity::setup_ucon () {
   {
     /* Check that the connection counts are OK.
          Let max_elements_attached_to_node be the number of elements attached to
-       an element corner. For example, in a regular planar mesh, it's 4. for RRM
+       an element corner. For example, in a regular planar mesh, it's 4. For RRM
        it's <= 7, as established in src/share/dimensions_mod.F90.
          Let max_corner_elem be the max number of elements attached to a corner
        that are not accounted for by the two edges and the parent element. Thus,

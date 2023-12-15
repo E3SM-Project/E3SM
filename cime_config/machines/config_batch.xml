@@ -471,6 +471,36 @@
     </queues>
   </batch_system>
 
+  <batch_system MACH="muller" type="nersc_slurm">
+    <directives>
+      <directive> --constraint=gpu</directive>
+    </directives>
+    <directives compiler="gnugpu">
+      <directive> --gpus-per-task=1</directive>
+    </directives>
+    <directives COMPSET="!.*MMF.*" compiler="gnugpu">
+      <directive> --gpu-bind=none</directive>
+    </directives>
+    <directives COMPSET=".*MMF.*" compiler="gnugpu">
+      <directive> --gpu-bind=map_gpu:0,1,2,3</directive>
+    </directives>
+    <directives compiler="nvidiagpu">
+      <directive> --gpus-per-task=1</directive>
+      <directive> --gpu-bind=none</directive>
+    </directives>
+    <directives compiler="gnu">
+      <directive> -G 0</directive>
+    </directives>
+    <directives compiler="nvidia">
+      <directive> -G 0</directive>
+    </directives>
+    <queues>
+      <queue walltimemax="00:45:00" nodemax="64" default="true">regular</queue>
+      <queue walltimemax="00:45:00" nodemax="64" strict="true">preempt</queue>
+      <queue walltimemax="00:15:00" nodemax="8" strict="true">debug</queue>
+    </queues>
+  </batch_system>
+
   <batch_system MACH="alvarez" type="nersc_slurm">
     <directives>
       <directive> --constraint=cpu</directive>

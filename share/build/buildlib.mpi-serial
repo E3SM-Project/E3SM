@@ -67,9 +67,8 @@ def buildlib(bldroot, installpath, case):
     for _file in glob.iglob(os.path.join(mpi_serial_path, "*.h")):
         copyifnewer(_file, os.path.join(bldroot, os.path.basename(_file)))
 
-    # Hacky way of getting stuff from Macros.
     fc, cc, _, _, _, _, fflags, cflags, _, cppdefs, ldflags, ffree, config_args = \
-        extract_from_macros(case, "mpi-serial", extra_vars=("FREEFLAGS", "CONFIG_ARGS"))
+        extract_from_macros(case, "mpi-serial", extra_vars=("CMAKE_Fortran_FORMAT_FREE_FLAG", "CONFIG_ARGS"))
 
     fflags += f" {ffree}"
 

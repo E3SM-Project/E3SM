@@ -1,12 +1,10 @@
 if (COMP_NAME STREQUAL gptl)
-  string(APPEND CFLAGS " -DHAVE_SLASHPROC")
+  string(APPEND CMAKE_C_FLAGS " -DHAVE_SLASHPROC")
 endif()
 string(APPEND CPPDEFS " -DLINUX")
-if (DEBUG)
-  string(APPEND FFLAGS " -check all -ftrapuv -init=snan")
-endif()
-string(APPEND SLIBS " -L$ENV{CURL_PATH}/lib -lcurl")
-string(APPEND SLIBS " -lpmi")
+string(APPEND CMAKE_Fortran_FLAGS_DEBUG " -check all -ftrapuv -init=snan")
+string(APPEND CMAKE_EXE_LINKER_FLAGS " -L$ENV{CURL_PATH}/lib -lcurl")
+string(APPEND CMAKE_EXE_LINKER_FLAGS " -lpmi")
 
 set(PIO_FILESYSTEM_HINTS "lustre")
 

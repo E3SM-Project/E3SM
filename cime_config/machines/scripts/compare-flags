@@ -4,7 +4,7 @@
 Compare two build trees to see if compiler or link flags have changed.
 """
 
-import argparse, sys, os, subprocess, glob
+import argparse, sys, subprocess, glob
 from pathlib import Path
 
 ###############################################################################
@@ -40,7 +40,7 @@ OR
 
     \033[1;32m# same as ^, except limit to link flags for all components \033[0m
     > {0} $case1dir $case2dir -u -l link.txt
-""".format(os.path.basename(args[0])),
+""".format(Path(args[0])),
         description=description,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
@@ -54,6 +54,8 @@ OR
 
     parser.add_argument("-l", "--limit", dest="limits", action="append", default=[],
                         help="Limit compared files to files containing this substring. This option can be supplied multiple times")
+
+    parser.add_argument("-b", "--build-log", action="store_true", help="Compare build log files instead of cmake files. This works best when e3sm is built with -j1")
 
     parser.add_argument("-v", "--verbose", action="store_true", help="Print diff details")
 
@@ -85,6 +87,38 @@ def find_files(builddir_cmake, filename, limits):
         return all_files
 
 ###############################################################################
+def compare_tokens(line1, line2, unordered):
+###############################################################################
+    tokens1 = line1.split()
+    tokens2 = line2.split()
+
+    if unordered:
+        tokens1.sort()
+        tokens2.sort()
+
+    result = True
+    message = ""
+    if tokens1 != tokens2:
+        result = False
+
+        tokens1_set = set(tokens1)
+        tokens2_set = set(tokens2)
+        one_not_two = tokens1_set - tokens2_set
+        two_not_one = tokens2_set - tokens1_set
+        #message += f"    For line {line1}:"
+        if one_not_two:
+            message += "      Case1 had unique flags:\n"
+            for item in one_not_two:
+                message += f"        {item}\n"
+
+        if two_not_one:
+            message += "      Case2 had unique flags:\n"
+            for item in two_not_one:
+                message += f"        {item}\n"
+
+    return result, message
+
+###############################################################################
 def compare_contents(case1, case2, file1, file2, contents1, contents2, unordered, verbose):
 ###############################################################################
     print("###############################################################################")
@@ -99,37 +133,15 @@ def compare_contents(case1, case2, file1, file2, contents1, contents2, unordered
 
     files_match = True
     for line1, line2 in zip(lines1, lines2):
-        tokens1 = line1.split()
-        tokens2 = line2.split()
-
-        if unordered:
-            tokens1.sort()
-            tokens2.sort()
-
-        if tokens1 != tokens2:
-            if files_match:
-                print("  did NOT match")
-                files_match = False
-
-            if verbose:
-                tokens1_set = set(tokens1)
-                tokens2_set = set(tokens2)
-                one_not_two = tokens1_set - tokens2_set
-                two_not_one = tokens2_set - tokens1_set
-                print(f"    For line {line1}:")
-                print(f"      Case1 had unique flags:")
-                for item in one_not_two:
-                    print(f"        {item}")
-
-                print(f"      Case2 had unique flags:")
-                for item in two_not_one:
-                    print(f"        {item}")
-
-            else:
-                break
+        result, message = compare_tokens(line1, line2, unordered)
+        if verbose:
+            print(message)
+        files_match &= result
 
     if files_match:
-        print("  MATCHED")
+        print("\n  FILES MATCHED")
+    else:
+        print("\n  FILES DID NOT MATCH")
 
     return files_match
 
@@ -138,51 +150,143 @@ def compare_file_lists(case1, case2, files1, files2, unordered, verbose):
 ###############################################################################
     result = True
     for file1, file2 in zip(files1, files2):
-        file1p = Path(file1)
-        file2p = Path(file2)
+        assert file1 == file2, f"File orders did not match, {file1} != {file2}"
 
-        assert file1p.name == file2p.name, f"File orders did not match, {file1p.name} != {file2p.name}"
-
-        file1c = file1p.open().read()
-        file2c = file2p.open().read()
+        file1c = Path(file1).open("r", encoding="utf8").read()
+        file2c = Path(file2).open("r", encoding="utf8").read()
 
         result &= compare_contents(case1, case2, file1, file2, file1c, file2c, unordered, verbose)
 
     return result
 
 ###############################################################################
-def compare_flags(case1, case2, unordered, limits, verbose):
+def get_log_from_blddir(builddir):
+###############################################################################
+    logs = glob.glob(f"{builddir}/e3sm.bldlog.*")
+    assert len(logs) == 1, f"Expected to match exactly one log file, got {logs}"
+
+    logf = Path(logs[0])
+    assert logf.suffix != ".gz", f"Expected {logf} to be uncompressed"
+
+    return logf
+
+###############################################################################
+def parse_log(logf, normalize=None):
+###############################################################################
+    log_content = logf.open("r", encoding="utf8").read()
+
+    result = {}
+    for line in log_content.splitlines():
+        if "e3sm_compile_wrap.py" in line:
+            if normalize is not None:
+                for repl, repl_with in normalize:
+                    line = line.replace(repl, repl_with)
+
+            args = line.split()
+            arglen = len(args)
+            target = None
+            for idx, arg in enumerate(args):
+                if arg == "-o" and idx + 1 < arglen:
+                    target = args[idx + 1]
+                    break
+
+                if arg.startswith("lib") and arg.endswith(".a"):
+                    if args[idx-1].endswith("ranlib"):
+                        target = "skipme"
+                    else:
+                        target = arg
+
+            if target is None:
+                target = line
+                print(f"WARNING: Failed to parse line {line}")
+
+            if target != "skipme":
+                assert target not in result, f"{target} appears twice in log {logf}?\nFirst encountered: {result[target]}\n\nAnd again: {line}"
+                result[target] = line
+
+    return result
+
+###############################################################################
+def compare_logs(builddir1, builddir2, casename1, casename2, srcroot1, srcroot2, unordered, verbose):
 ###############################################################################
     result = True
 
-    assert os.path.isdir(case1), f"{case1} is not an existing directory"
-    assert os.path.isdir(case2), f"{case2} is not an existing directory"
+    log1 = get_log_from_blddir(builddir1)
+    log2 = get_log_from_blddir(builddir2)
 
-    builddir1 = run_cmd_no_fail("./xmlquery EXEROOT --value", from_dir=case1)
-    builddir2 = run_cmd_no_fail("./xmlquery EXEROOT --value", from_dir=case2)
+    log1c = parse_log(log1)
+    log2c = parse_log(log2, normalize=((casename2, casename1), (srcroot2, srcroot1)))
+
+    message_dict = {}
+
+    for target, line1 in log1c.items():
+        if target in log2c:
+            line2 = log2c[target]
+            print(f"Comparing target {target}")
+
+            curr_result, message = compare_tokens(line1, line2, unordered)
+            if verbose and not curr_result:
+                if message in message_dict:
+                    print(f"  Same issue as {message_dict[message]}")
+                else:
+                    message_dict[message] = target
+                    print(message)
+
+            result &= curr_result
+            if curr_result:
+                print(f"  Target has identical build")
+            else:
+                print(f"  Target did not have identical build")
+
+        else:
+            print(f"WARNING: target {target} is missing from case2")
+            result = False
+
+    return result
+
+###############################################################################
+def compare_flags(case1, case2, unordered, limits, build_log, verbose):
+###############################################################################
+    result = True
+
+    case1 = Path(case1)
+    case2 = Path(case2)
+
+    assert case1.is_dir(), f"{case1} is not an existing directory"
+    assert case2.is_dir(), f"{case2} is not an existing directory"
+
+    builddir1 = Path(run_cmd_no_fail("./xmlquery EXEROOT --value", from_dir=case1))
+    builddir2 = Path(run_cmd_no_fail("./xmlquery EXEROOT --value", from_dir=case2))
 
     casename1 = run_cmd_no_fail("./xmlquery CASE --value", from_dir=case1)
     casename2 = run_cmd_no_fail("./xmlquery CASE --value", from_dir=case2)
 
-    builddir1_cmake = os.path.join(builddir1, "cmake-bld")
-    builddir2_cmake = os.path.join(builddir2, "cmake-bld")
+    srcroot1 = run_cmd_no_fail("./xmlquery SRCROOT --value", from_dir=case1)
+    srcroot2 = run_cmd_no_fail("./xmlquery SRCROOT --value", from_dir=case2)
 
-    assert os.path.isdir(builddir1_cmake), \
+    builddir1_cmake = builddir1 / "cmake-bld"
+    builddir2_cmake = builddir2 / "cmake-bld"
+
+    assert builddir1_cmake.is_dir(), \
         f"{builddir1_cmake} is not an existing directory, you need to run case.build in {case1}"
-    assert os.path.isdir(builddir2_cmake), \
+    assert builddir2_cmake.is_dir(), \
         f"{builddir2_cmake} is not an existing directory, you need to run case.build in {case2}"
 
-    flag_files1 = find_files(builddir1_cmake, "flags.make", limits)
-    flag_files2 = find_files(builddir2_cmake, "flags.make", limits)
+    if build_log:
+        result = compare_logs(builddir1, builddir2, casename1, casename2, srcroot1, srcroot2, unordered, verbose)
 
-    link_files1 = find_files(builddir1_cmake, "link.txt", limits)
-    link_files2 = find_files(builddir2_cmake, "link.txt", limits)
+    else:
+        flag_files1 = find_files(builddir1_cmake, "flags.make", limits)
+        flag_files2 = find_files(builddir2_cmake, "flags.make", limits)
 
-    print()
+        link_files1 = find_files(builddir1_cmake, "link.txt", limits)
+        link_files2 = find_files(builddir2_cmake, "link.txt", limits)
 
-    result &= compare_file_lists(casename1, casename2, flag_files1, flag_files2, unordered, verbose)
+        print()
 
-    result &= compare_file_lists(casename1, casename2, link_files1, link_files2, unordered, verbose)
+        result &= compare_file_lists(casename1, casename2, flag_files1, flag_files2, unordered, verbose)
+
+        result &= compare_file_lists(casename1, casename2, link_files1, link_files2, unordered, verbose)
 
     if result:
         print("\nALL FILES MATCHED")

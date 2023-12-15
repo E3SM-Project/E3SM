@@ -25,7 +25,7 @@ module radiation
       get_sw_spectral_boundaries, &
       rrtmg_to_rrtmgp_swbands
    use cam_history_support, only: add_hist_coord
-   use physconst, only: cpair, cappa, stebol
+   use physconst, only: cpair, cappa, gravit
 
    ! RRTMGP gas optics object to store coefficient information. This is imported
    ! here so that we can make the k_dist objects module data and only load them
@@ -901,6 +901,8 @@ contains
                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
       endif
 
+
+
    end subroutine radiation_init
 
    subroutine radiation_final()
@@ -1103,7 +1105,7 @@ contains
 
       ! For running CFMIP Observation Simulator Package (COSP)
       use cospsimulator_intr, only: docosp, cospsimulator_intr_run, cosp_nradsteps
-
+      
       ! ---------------------------------------------------------------------------
       ! Arguments
       ! ---------------------------------------------------------------------------
@@ -1274,6 +1276,8 @@ contains
       ! Loop variables
       integer :: icol, ilay, iday
 
+
+      
       !----------------------------------------------------------------------
 
       ! Copy state so we can use CAM routines with arrays replaced with data
@@ -1371,13 +1375,16 @@ contains
                aer_tau_bnd_lw = 0
                if (do_aerosol_rad) then
                   if (radiation_do('sw')) then
+                     
                      call t_startf('rad_aerosol_optics_sw')
                      call set_aerosol_optics_sw( &
                           icall, dt, state, pbuf, night_indices(1:nnight), is_cmip6_volc, &
                           aer_tau_bnd_sw, aer_ssa_bnd_sw, aer_asm_bnd_sw,  &
                           clear_rh=clear_rh)
                      ! Now reorder bands to be consistent with RRTMGP
+                     
                      ! TODO: fix the input files themselves!
+                     ! Note that MACv2 may need changing too if the input files are reordered!
                      do icol = 1,size(aer_tau_bnd_sw,1)
                         do ilay = 1,size(aer_tau_bnd_sw,2)
                            aer_tau_bnd_sw(icol,ilay,:) = reordered(aer_tau_bnd_sw(icol,ilay,:), rrtmg_to_rrtmgp_swbands)
@@ -1386,6 +1393,9 @@ contains
                         end do
                      end do
                      call t_stopf('rad_aerosol_optics_sw')
+
+                     
+                     
                   end if ! radiation_do('sw')
                   if (radiation_do('lw')) then
                      call t_startf('rad_aerosol_optics_lw')

@@ -2318,10 +2318,6 @@ if ($cosp) {
     unless (-d $bld_dir or mkdirp($bld_dir)) {
         die "** Could not create the cosp build directory: $bld_dir\n";
     }
-
-    # Create the COSP Makefile from a template and copy it into the cosp bld directory
-    write_cosp_makefile("$cfgdir/../src/physics/cosp2/Makefile.cospinline.in", "$cosp_libdir/Makefile");
-    if ($print) { print "creating $cosp_libdir/Makefile\n"; }
 }
 
 

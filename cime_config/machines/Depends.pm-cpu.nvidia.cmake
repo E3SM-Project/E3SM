@@ -26,7 +26,6 @@ set(PERFOBJS
 
 if (NOT DEBUG)
   foreach(ITEM IN LISTS PERFOBJS)
-    e3sm_remove_flags("${ITEM}" "-O1")
     e3sm_add_flags("${ITEM}" "-O2")
   endforeach()
 endif()

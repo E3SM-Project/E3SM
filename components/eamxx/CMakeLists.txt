@@ -505,8 +505,6 @@ if (NOT DEFINED ENV{SCREAM_FAKE_ONLY})
 
   if (NOT SCREAM_LIB_ONLY)
     add_subdirectory(tests)
-    include(BuildCprnc)
-    BuildCprnc()
   endif()
 
   # Generate scream_config.h and scream_config.f

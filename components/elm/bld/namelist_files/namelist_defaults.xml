@@ -87,6 +87,8 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <implicit_stress>.false.</implicit_stress>
 <!-- The atmosphere provides gustiness separate from mean wind. -->
 <atm_gustiness>.false.</atm_gustiness>
+<!-- Force the land to add further gustiness to any provided by the atmosphere. -->
+<force_land_gustiness>.false.</force_land_gustiness>
 
 <!-- ========================================================================================  -->
 <!-- VSFM default                                                                              -->
@@ -116,7 +118,7 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
      for the CLM2 data in the CESM distribution -->
 <!-- Plant function types (relative to {csmdata}) -->
 <paramfile use_cn=".false." use_fates=".false." >lnd/clm2/paramdata/clm_params_c180301.nc</paramfile>
-<paramfile use_crop=".true." >lnd/clm2/paramdata/clm_params_c220120.nc</paramfile>
+<paramfile use_crop=".true." >lnd/clm2/paramdata/clm_params_c220224.nc</paramfile>
 <paramfile nu_com="ECA" use_fates=".true." use_crop=".false." >lnd/clm2/paramdata/clm_params.cbgc.c07292018.nc</paramfile>
 <paramfile nu_com="ECA" use_cn=".true." use_crop=".false." >lnd/clm2/paramdata/clm_params.cbgc.c07292018.nc</paramfile>
 <paramfile use_crop=".false." use_cn=".true."  >lnd/clm2/paramdata/clm_params_c211124.nc</paramfile>
@@ -355,7 +357,7 @@ lnd/clm2/surfdata_map/surfdata_10x15_mp24_simyr2000_c130927.nc</fsurdat>
 <fsurdat hgrid="1x1_numaIA"       sim_year="2000" use_crop=".true." >
 lnd/clm2/surfdata_map/surfdata_1x1_numaIA_mp24_simyr2000_c130927.nc</fsurdat>
 <fsurdat hgrid="1x1_smallvilleIA" sim_year="2000" use_crop=".true." >
-lnd/clm2/surfdata_map/surfdata_1x1_smallvilleIA_mp50_simyr2000_c210930.nc</fsurdat>
+lnd/clm2/surfdata_map/surfdata_1x1_smallvilleIA_mp50_simyr2000_c230905.nc</fsurdat>
 
 <fsurdat hgrid="5x5_amazon"    sim_year="2000" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_5x5_amazon_simyr2000_c130927.nc</fsurdat>
@@ -723,6 +725,45 @@ this mask will have smb calculated over the entire global land surface
 <pdepmapalgo use_cn=".true."   hgrid="1x1_asphaltjungleNJ" >nn</pdepmapalgo>
 <pdepmapalgo use_cn=".true."   hgrid="1x1_tropicAtl"       >nn</pdepmapalgo>
 <pdepmapalgo use_cn=".true."   hgrid="5x5_amazon"          >nn</pdepmapalgo>
+
++<!-- FAN Nitrogen (manure) deposition streams namelist defaults -->
+<stream_year_first_fan use_cn=".true."   sim_year="2000" >2010</stream_year_first_fan>
+<stream_year_last_fan  use_cn=".true."   sim_year="2000" >2010</stream_year_last_fan>
+
+<stream_year_first_fan use_cn=".true."   sim_year="1850" >2010</stream_year_first_fan>
+<stream_year_last_fan  use_cn=".true."   sim_year="1850" >2010</stream_year_last_fan>
+
+<stream_year_first_fan use_cn=".true."   sim_year="1000" >2010</stream_year_first_fan>
+<stream_year_last_fan  use_cn=".true."   sim_year="1000" >2010</stream_year_last_fan>
+
+<stream_year_first_fan use_cn=".true."   sim_year="constant" sim_year_range="1000-1002" >2010</stream_year_first_fan>
+<stream_year_last_fan  use_cn=".true."   sim_year="constant" sim_year_range="1000-1002" >2010</stream_year_last_fan>
+
+<stream_year_first_fan use_cn=".true."   sim_year="constant" sim_year_range="1000-1004" >2010</stream_year_first_fan>
+<stream_year_last_fan  use_cn=".true."   sim_year="constant" sim_year_range="1000-1004" >2010</stream_year_last_fan>
+
+<stream_year_first_fan use_cn=".true."   sim_year="constant" sim_year_range="1850-2000" >2010</stream_year_first_fan>
+<stream_year_last_fan  use_cn=".true."   sim_year="constant" sim_year_range="1850-2000" >2010</stream_year_last_fan>
+
+<stream_year_first_fan use_cn=".true."   sim_year="constant" sim_year_range="1850-2100" >2010</stream_year_first_fan>
+<stream_year_last_fan  use_cn=".true."   sim_year="constant" sim_year_range="1850-2100" >2010</stream_year_last_fan>
+
+<stream_year_first_fan use_cn=".true."   sim_year="constant" sim_year_range="2000-2100" >2010</stream_year_first_fan>
+<stream_year_last_fan  use_cn=".true."   sim_year="constant" sim_year_range="2000-2100" >2010</stream_year_last_fan>
+
+<stream_fldfilename_fan>lnd/clm2/ndepdata/fan_nitrogen_e3sm_f19_c20191010.nc</stream_fldfilename_fan>
+
+<fanmapalgo use_cn=".true."                               >bilinear</fanmapalgo>
+
+<fanmapalgo use_cn=".true."   hgrid="1x1_brazil"          >nn</fanmapalgo>
+<fanmapalgo use_cn=".true."   hgrid="1x1_mexicocityMEX"   >nn</fanmapalgo>
+<fanmapalgo use_cn=".true."   hgrid="1x1_vancouverCAN"    >nn</fanmapalgo>
+<fanmapalgo use_cn=".true."   hgrid="1x1_urbanc_alpha"    >nn</fanmapalgo>
+<fanmapalgo use_cn=".true."   hgrid="1x1_camdenNJ"        >nn</fanmapalgo>
+<fanmapalgo use_cn=".true."   hgrid="1x1_asphaltjungleNJ" >nn</fanmapalgo>
+<fanmapalgo use_cn=".true."   hgrid="1x1_tropicAtl"       >nn</fanmapalgo>
+<fanmapalgo use_cn=".true."   hgrid="5x5_amazon"          >nn</fanmapalgo>
+<fanmapalgo use_cn=".true."   hgrid="1x1_smallvilleIA"    >nn</fanmapalgo>
 
 <!-- LAI streams namelist defaults -->
 <use_lai_streams        >.false.</use_lai_streams>
@@ -2089,6 +2130,7 @@ this mask will have smb calculated over the entire global land surface
 <use_fates_cohort_age_tracking use_fates=".true.">.false.</use_fates_cohort_age_tracking>
 <use_fates_sp                  use_fates=".true.">.false.</use_fates_sp>
 <fates_parteh_mode             use_fates=".true.">1</fates_parteh_mode>
+<fates_seeddisp_cadence        use_fates=".true.">0</fates_seeddisp_cadence>
 <use_fates_inventory_init      use_fates=".true.">.false.</use_fates_inventory_init>
 <fates_inventory_ctrl_filename use_fates=".true."> "/dev/null" </fates_inventory_ctrl_filename>
 <use_fates_nocomp              use_fates=".true." use_fates_sp=".true.">.true.</use_fates_nocomp>
@@ -2099,5 +2141,11 @@ this mask will have smb calculated over the entire global land surface
 <use_vertsoilc                 bgc_mode="fates"  >.true.</use_vertsoilc>
 <use_century_decomp            bgc_mode="fates"  >.true.</use_century_decomp>
 <use_lch4                      bgc_mode="fates"  >.false.</use_lch4>
+
+<!-- flow of agricultural nitrogen (fan) model -->
+<use_fan use_cn=".true.">.false.</use_fan>
+<use_fan use_cn=".false.">.false.</use_fan>
+<use_fan use_fates=".true." >.false.</use_fan>
+<use_fan fan_mode='disable'>.false.</use_fan>
 
 </namelist_defaults>
