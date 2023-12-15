@@ -90,17 +90,8 @@ private_except_cuda:
   struct Config {
     // photolysis parameters
     struct {
-      // FIXME: are all these files needed?
       char rsf_file[MAX_FILENAME_LEN];
-      char exo_coldens_file[MAX_FILENAME_LEN];
-      char tuv_xsect_file[MAX_FILENAME_LEN];
-      char o2_xsect_file[MAX_FILENAME_LEN];
-      char xs_coef_file[MAX_FILENAME_LEN];
-      char xs_short_file[MAX_FILENAME_LEN];
       char xs_long_file[MAX_FILENAME_LEN];
-      char electron_file[MAX_FILENAME_LEN];
-      char euvac_file[MAX_FILENAME_LEN];
-      char euvacdat_file[MAX_FILENAME_LEN];
     } photolysis;
 
     // stratospheric chemistry parameters
@@ -209,7 +200,6 @@ private_except_cuda:
   mam_coupling::AerosolState  wet_aero_, dry_aero_;
 
   // photolysis rate table (column-independent)
-  std::string                    photo_table_file_;
   mam4::mo_photo::PhotoTableData photo_table_;
 
   // column areas, latitudes, longitudes

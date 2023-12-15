@@ -58,6 +58,9 @@ void MAMMicrophysics::set_defaults_() {
   config_.amicphys.nucleation.accom_coef_h2so4 = 1.0;
   config_.amicphys.nucleation.newnuc_adjust_factor_dnaitdt = 1.0;
 
+  // these parameters guide the coupling between parameterizations
+  // NOTE: mam4xx was ported with these parameters fixed, so it's probably not
+  // NOTE: safe to change these without code modifications.
   config_.amicphys.gaexch_h2so4_uptake_optaa = 2;
   config_.amicphys.newnuc_h2so4_conc_optaa = 2;
 
@@ -70,15 +73,7 @@ void MAMMicrophysics::set_defaults_() {
 
   // photolysis
   set_file_location(config_.photolysis.rsf_file,         "../waccm/phot/RSF_GT200nm_v3.0_c080811.nc");
-  set_file_location(config_.photolysis.exo_coldens_file, "../cam/chem/trop_mozart/phot/exo_coldens.nc");
-  set_file_location(config_.photolysis.tuv_xsect_file,   "../cam/chem/trop_mozart/phot/tuv_xsect.nc");
-  set_file_location(config_.photolysis.o2_xsect_file,    "../cam/chem/trop_mozart/phot/o2src.nc");
-  set_file_location(config_.photolysis.xs_coef_file,     "../waccm/phot/effxstex.txt");
-  set_file_location(config_.photolysis.xs_short_file,    "../waccm/phot/xs_short_jpl06_c080930.nc");
   set_file_location(config_.photolysis.xs_long_file,     "../waccm/phot/temp_prs_GT200nm_JPL10_c130206.nc");
-  set_file_location(config_.photolysis.electron_file,    "../waccm/phot/electron.dat");
-  set_file_location(config_.photolysis.euvac_file,       "../waccm/phot/euvac.nc");
-  set_file_location(config_.photolysis.euvacdat_file,    "../waccm/phot/euvac.dat");
 
   // stratospheric chemistry
   set_file_location(config_.linoz.chlorine_loading_file, "../cam/chem/trop_mozart/ub/Linoz_Chlorine_Loading_CMIP6_0003-2017_c20171114.nc");
@@ -86,36 +81,7 @@ void MAMMicrophysics::set_defaults_() {
 
 void MAMMicrophysics::configure(const ekat::ParameterList& params) {
   set_defaults_();
-
-  // enable/disable specific parameterizations
-  config_.amicphys.do_cond = true;
-  config_.amicphys.do_rename = true;
-  config_.amicphys.do_newnuc = true;
-  config_.amicphys.do_coag = true;
-
-  // configure the specific aerosol microphysics parameterizations
-
-  config_.amicphys.nucleation = {};
-  config_.amicphys.nucleation.dens_so4a_host = 1770.0;
-  config_.amicphys.nucleation.mw_so4a_host = 115.0;
-  config_.amicphys.nucleation.newnuc_method_user_choice = 2;
-  config_.amicphys.nucleation.pbl_nuc_wang2008_user_choice = 1;
-  config_.amicphys.nucleation.adjust_factor_pbl_ratenucl = 1.0;
-  config_.amicphys.nucleation.accom_coef_h2so4 = 1.0;
-  config_.amicphys.nucleation.newnuc_adjust_factor_dnaitdt = 1.0;
-
-  // these parameters guide the coupling between parameterizations
-  // NOTE: mam4xx was ported with these parameters fixed, so it's probably not
-  // NOTE: safe to change these without code modifications.
-  //config_.amicphys.gaexch_h2so4_uptake_optaa = 2;
-  //config_.amicphys.newnuc_h2so4_conc_optaa = 2;
-
-  // photolysis
-  // FIXME: fetch photolysis table filename(s)
-
-  // linear stratospheric chemistry parameters
-  // config_.linoz.o3_lbl = 70;
-  // FIXME: fetch o3 climatology data
+  // FIXME: implement "namelist" parsing
 }
 
 void MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
@@ -226,19 +192,35 @@ namespace {
 
 // reads the photolysis table (used for gas phase chemistry) from the file with
 // the given name
-mam4::mo_photo::PhotoTableData read_photo_table(const std::string filename) {
-  scream::scorpio::register_file(filename, scream::scorpio::Read);
-
-  mam4::mo_photo::PhotoTableData table;
+mam4::mo_photo::PhotoTableData read_photo_table(const char *rsf_file, const char* xs_long_file) {
+  scream::scorpio::register_file(rsf_file, scream::scorpio::Read);
+  scream::scorpio::register_file(xs_long_file, scream::scorpio::Read);
 
   // read in dimension data
-  table.nw = scream::scorpio::get_dimlen(filename, "numwl");
-  table.nump = scream::scorpio::get_dimlen(filename, "numz");
-  table.numsza = scream::scorpio::get_dimlen(filename, "numsza");
-  table.numcolo3 = scream::scorpio::get_dimlen(filename, "numcolo3fact");
-  table.numalb = scream::scorpio::get_dimlen(filename, "numalb");
+  int nw = scream::scorpio::get_dimlen(rsf_file, "numwl");
+  int nump = scream::scorpio::get_dimlen(rsf_file, "numz");
+  int numsza = scream::scorpio::get_dimlen(rsf_file, "numsza");
+  int numcolo3 = scream::scorpio::get_dimlen(rsf_file, "numcolo3fact");
+  int numalb = scream::scorpio::get_dimlen(rsf_file, "numalb");
 
-  // FIXME: still trying to figure out which files we need
+  int nt = scream::scorpio::get_dimlen(xѕ_long_file, "numtemp");
+  int np_xs = scream::scorpio::get_dimlen(xѕ_long_file, "numprs");
+  // FIXME: numj computed here in the Fortran code:
+  // FIXME: https://github.com/eagles-project/e3sm_mam4_refactor/blob/57fd4ac3532c24c07abd10d20f0f3ff489bd675e/components/eam/src/chemistry/mozart/mo_jlong.F90#L180
+  int numj = 0;
+
+  // allocate storage for the table
+  mam4::mo_photo::PhotoTableData table =
+    create_photo_table_data(nw, nt, np_xs, numj, nump, numsza, numcolo3, numalb);
+
+  // read data into the table
+  // FIXME: the call to read this table from rsf_file looks like this in the
+  // FIXME: original Fortran code:
+  // FIXME:
+  // FIXME: iret = nf90_inq_varid( ncid, 'RSF', varid )
+  // FIXME: iret = nf90_get_var( ncid, varid, rsf_tab )
+  // FIXME:
+  // FIXME: is there a SCORPIO-sensible way to accomplish this?
 
   return table;
 }
@@ -304,7 +286,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   }
 
   // create our photolysis rate calculation table
-  photo_table_ = read_photo_table(photo_table_file_);
+  photo_table_ = read_photo_table(config_.rsf_file, config_.xs_long_file);
 
   // set up our preprocess/postprocess functors
   preprocess_.initialize(ncol_, nlev_, wet_atm_, wet_aero_, dry_atm_, dry_aero_);
@@ -518,7 +500,6 @@ void MAMMicrophysics::run_impl(const double dt) {
         do3_linoz, do3_linoz_psc, ss_o3,
         o3col_du_diag, o3clim_linoz_diag, zenith_angle_degrees);
 
-
       // update source terms above the ozone decay threshold
       if (k > nlev_ - config_.linoz.o3_lbl - 1) {
         Real do3_mass; // diagnostic, not needed
@@ -531,11 +512,11 @@ void MAMMicrophysics::run_impl(const double dt) {
         if (vmr[i] < 0.0) vmr[i] = 0.0;
       }
 
-      //----------------
-      // Dry deposition
-      //----------------
+      //----------------------
+      // Dry deposition (gas)
+      //----------------------
 
-      // FIXME: not yet ported
+      // FIXME: not yet ported?
 
       // transfer updated prognostics from work arrays
       mam_coupling::convert_work_arrays_to_mmr(vmr, vmrcw, q, qqcw);
