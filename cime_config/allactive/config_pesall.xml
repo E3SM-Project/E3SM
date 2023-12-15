@@ -1460,6 +1460,29 @@
       </pes>
     </mach>
   </grid>
+  <grid name="a%ne30np4.pg2_l%r05_oi%IcoswISC30E3r5_r%r05_.+">
+    <mach name="chrysalis">
+      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SWAV.+" pesize="M">
+        <comment> --compset WCYCL* --res ne30pg2_r05_IcoswISC30E3r5 on 54 nodes pure-MPI, ~17.5 sypd </comment>
+        <ntasks>
+          <ntasks_atm>2752</ntasks_atm>
+          <ntasks_cpl>2752</ntasks_cpl>
+          <ntasks_ocn>704</ntasks_ocn>
+          <ntasks_ice>2048</ntasks_ice>
+          <ntasks_rof>704</ntasks_rof>
+          <ntasks_lnd>704</ntasks_lnd>
+        </ntasks>
+        <rootpe>
+          <rootpe_atm>0</rootpe_atm>
+          <rootpe_cpl>0</rootpe_cpl>
+          <rootpe_ocn>2752</rootpe_ocn>
+          <rootpe_ice>0</rootpe_ice>
+          <rootpe_rof>2048</rootpe_rof>
+          <rootpe_lnd>2048</rootpe_lnd>
+        </rootpe>
+      </pes>
+    </mach>
+  </grid>
   <grid name="a%ne30np4.pg.+_oi%EC30to60E2r2">
     <mach name="chrysalis">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SWAV.+" pesize="XS">
