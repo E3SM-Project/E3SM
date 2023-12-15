@@ -24,11 +24,10 @@ MODULE shr_const_mod
    real(R8),parameter :: SHR_CONST_BOLTZ   = 1.38065e-23_R8  ! Boltzmann's constant ~ J/K/molecule
    real(R8),parameter :: SHR_CONST_AVOGAD  = 6.02214e26_R8   ! Avogadro's number ~ molecules/kmole
    real(R8),parameter :: SHR_CONST_RGAS    = SHR_CONST_AVOGAD*SHR_CONST_BOLTZ       ! Universal gas constant ~ J/K/kmole
-   real(R8),parameter :: SHR_CONST_MOL_MASS_C = 12.0107_R8   ! carbon molar mass gC/mol
-   real(R8),parameter :: SHR_CONST_MOL_MASS_N = 14.0067_R8   ! nitrogen molar mass gC/mol
    real(R8),parameter :: SHR_CONST_MWDAIR  = 28.966_R8       ! molecular weight dry air ~ kg/kmole
    real(R8),parameter :: SHR_CONST_MWWV    = 18.016_R8       ! molecular weight water vapor
    real(R8),parameter :: SHR_CONST_MWC     = 12.0107_R8      ! molecular weight carbon
+   real(R8),parameter :: SHR_CONST_MWN     = 14.0067_R8      ! molecular weight nitrogen
    real(R8),parameter :: SHR_CONST_MWO     = 15.9994_R8      ! molecular weight oxygen
    real(R8),parameter :: SHR_CONST_MWCO2   = 44.0095_R8      ! molecular weight carbon dioxide
    real(R8),parameter :: SHR_CONST_RDAIR   = SHR_CONST_RGAS/SHR_CONST_MWDAIR        ! Dry air gas constant     ~ J/K/kg

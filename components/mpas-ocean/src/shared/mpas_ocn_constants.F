@@ -191,8 +191,8 @@ contains
        nitrogen_mol_mass            = 14.0067_RKIND ! grams nitrogen per mole
 
 #ifdef MPAS_ESM_SHR_CONST
-       carbon_mol_mass              = SHR_CONST_MOL_MASS_C ! carbon molar mass
-       nitrogen_mol_mass            = SHR_CONST_MOL_MASS_N ! nitrogen molar mass
+       carbon_mol_mass              = SHR_CONST_MWC ! molecular weight carbon
+       nitrogen_mol_mass            = SHR_CONST_MWN ! molecular weight nitrogen
 #endif
 
        !-----------------------------------------------------------------------

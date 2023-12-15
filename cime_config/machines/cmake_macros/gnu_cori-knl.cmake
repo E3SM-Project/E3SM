@@ -1,5 +1,0 @@
-if (NOT DEBUG)
-  string(APPEND CFLAGS " -O2")
-  string(APPEND FFLAGS " -O2")
-endif()
-string(APPEND CXX_LIBS " -lstdc++")

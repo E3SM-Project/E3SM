@@ -1,8 +1,15 @@
-function(build_model COMP_CLASS COMP_NAME)
+# This function must be a macro so that it does not get its own scope.
+# This way, changes to CMAKE_* vars affect the directory which is what
+# we want.
+macro(build_model COMP_CLASS COMP_NAME)
+
+  # We want real variables, not macro expansions
+  set(COMP_CLASS ${COMP_CLASS})
+  set(COMP_NAME ${COMP_NAME})
 
   # We support component-specific configuration of flags, etc, so this setup
   # need to be done here.
-  include(${CMAKE_SOURCE_DIR}/cmake/common_setup.cmake)
+  include(${SRCROOT}/components/cmake/common_setup.cmake)
 
   set(MODELCONF_DIR "${BUILDCONF}/${COMP_NAME}conf")
 
@@ -31,11 +38,6 @@ function(build_model COMP_CLASS COMP_NAME)
       list(APPEND INCLDIR "${EXEROOT}/cmake-bld/cmake/${ITEM}")
     endforeach()
   endif()
-
-  # Source files don't live in components/cmake/$COMP_CLASS. This path won't work for
-  # generated files.
-  set(SOURCE_PATH "../..")
-  set(CIMESRC_PATH "../cime/src")
 
   #-------------------------------------------------------------------------------
   # Build & include dependency files
@@ -68,14 +70,25 @@ function(build_model COMP_CLASS COMP_NAME)
     # If YAKL is needed, then set YAKL CMake vars
     if (USE_YAKL)
       # YAKL_ARCH can be CUDA, HIP, SYCL, OPENMP45, or empty
-      # USE_CUDA is set through Macros.cmake / config_compilers.xml
+      # USE_CUDA or USE_HIP are set through Macros.cmake
       if (USE_CUDA)
         set(YAKL_ARCH "CUDA")
-        # CUDA_FLAGS is set through Macros.cmake / config_compilers.xml
+        # CUDA_FLAGS is set through Macros.cmake
+        # For instance: cime_config/machines/cmake_macros/gnugpu_summit.cmake
         set(YAKL_CUDA_FLAGS "${CPPDEFS} ${CUDA_FLAGS}")
+      elseif (USE_HIP)
+        set(YAKL_ARCH "HIP")
+        # HIP_FLAGS are set through Macros.cmake
+        # For instance: cime_config/machines/cmake_macros/crayclanggpu_frontier.cmake
+        set(YAKL_HIP_FLAGS "${CPPDEFS} ${HIP_FLAGS}")
+      elseif (USE_SYCL)
+        set(YAKL_ARCH "SYCL")
+        # SYCL_FLAGS is set through Macros.cmake
+        # For instance: cime_config/machines/cmake_macros/oneapi-ifxgpu_sunspot.cmake
+        set(YAKL_SYCL_FLAGS "${CPPDEFS} ${SYCL_FLAGS}")
       else()
         # For CPU C++ compilers duplicate flags are fine, the last ones win typically
-        set(YAKL_CXX_FLAGS "${CPPDEFS} ${CXXFLAGS}")
+        set(YAKL_CXX_FLAGS "${CPPDEFS} ${CMAKE_CXX_FLAGS}")
         set(YAKL_ARCH "")
       endif()
       message(STATUS "Building YAKL")
@@ -103,6 +116,22 @@ function(build_model COMP_CLASS COMP_NAME)
       set(SOURCES ${SOURCES} cmake/atm/../../eam/src/physics/crm/samxx/cpp_interface_mod.F90
                              cmake/atm/../../eam/src/physics/crm/samxx/params.F90
                              cmake/atm/../../eam/src/physics/crm/crm_ecpp_output_module.F90 )
+    endif()
+
+    if (USE_PAM)
+      message(STATUS "Building PAM")
+      # PAM_HOME is where the samxx source code lives
+      set(PAM_HOME ${CMAKE_CURRENT_SOURCE_DIR}/../../eam/src/physics/crm/pam)
+      # PAM_BIN is where the samxx library will live
+      set(PAM_BIN  ${CMAKE_CURRENT_BINARY_DIR}/pam)
+      # Build the static samxx library
+      add_subdirectory(${PAM_HOME} ${PAM_BIN})
+      # Add samxx F90 files to the main E3SM build
+      set(SOURCES ${SOURCES} cmake/atm/../../eam/src/physics/crm/pam/params.F90
+                             cmake/atm/../../eam/src/physics/crm/crm_ecpp_output_module.F90
+                             cmake/atm/../../eam/src/physics/crm/pam/pam_driver.F90)
+      # Pam interface need to include modules from pam
+      include_directories(${PAM_BIN}/external/pam_core)
     endif()
 
     # Add rrtmgp++ source code if asked for
@@ -136,44 +165,6 @@ function(build_model COMP_CLASS COMP_NAME)
   # create list of component libraries - hard-wired for current e3sm components
   #-------------------------------------------------------------------------------
 
-  if (NOT USE_SHARED_CLM)
-    set(LNDOBJDIR "${EXEROOT}/lnd/obj")
-    set(LNDLIBDIR "${LIBROOT}")
-    if (COMP_LND STREQUAL "elm")
-      set(LNDLIB "libelm.a")
-    else()
-      set(LNDLIB "liblnd.a")
-    endif()
-    list(APPEND INCLDIR "${LNDOBJDIR}")
-  else()
-    set(LNDLIB "libclm.a")
-    set(LNDOBJDIR "${SHAREDLIBROOT}/${SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/clm/obj")
-    set(LNDLIBDIR "${EXEROOT}/${SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/lib")
-    list(APPEND INCLDIR "${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/include")
-    if (COMP_NAME STREQUAL "clm")
-      set(INCLUDE_DIR "${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/include")
-    endif()
-  endif()
-
-  if (NOT ULIBDEP)
-    if (LIBROOT)
-      list(APPEND INCLDIR "${LNDOBJDIR}")
-    endif()
-  endif()
-
-  if (COMP_GLC STREQUAL "cism")
-    set(ULIBDEP "${ULIBDEP} ${CISM_LIBDIR}/libglimmercismfortran.a")
-    if (CISM_USE_TRILINOS)
-      set(ULIBDEP "${ULIBDEP} ${CISM_LIBDIR}/libglimmercismcpp.a")
-    endif()
-  endif()
-  if (OCN_SUBMODEL STREQUAL "moby")
-    set(ULIBDEP "${ULIBDEP} ${LIBROOT}/libmoby.a")
-  endif()
-
-  set(CSMSHARELIB "${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/${NINST_VALUE}/lib/libcsm_share.a")
-  set(ULIBDEP "${ULIBDEP} ${CSMSHARELIB}")
-
   # do the necessary genf90s
   foreach (SRC_FILE IN LISTS GEN_F90_SOURCES)
     get_filename_component(BASENAME ${SRC_FILE} NAME)
@@ -186,38 +177,37 @@ function(build_model COMP_CLASS COMP_NAME)
     list(APPEND SOURCES ${CMAKE_CURRENT_BINARY_DIR}/${BASENAME})
   endforeach ()
 
-  # Set compiler flags for source files
+  # Set special fixed/free compiler flags for non-cosp fortran files. This logic
+  # can maybe be replaced/reworked once we have Fortran_FORMAT property
+  # working
   foreach (SOURCE_FILE IN LISTS SOURCES)
     get_filename_component(SOURCE_EXT ${SOURCE_FILE} EXT)
 
-    # Set flags based on file extension. File extensions may change if the globs used by
-    # gather_sources changes.
-    if (SOURCE_EXT STREQUAL ".c")
-      e3sm_add_flags("${SOURCE_FILE}" "${CFLAGS}")
-    elseif (SOURCE_EXT STREQUAL ".cpp")
-      e3sm_add_flags("${SOURCE_FILE}" "${CXXFLAGS}")
-    else()
-      # This is a fortran source
-      e3sm_add_flags("${SOURCE_FILE}" "${FFLAGS}")
-
-      # Cosp manages its own flags
-      if (NOT SOURCE_FILE IN_LIST COSP_SOURCES)
-        # Flags are slightly different for different fortran extensions
-        if (SOURCE_EXT STREQUAL ".F" OR SOURCE_EXT STREQUAL ".f")
-          e3sm_add_flags("${SOURCE_FILE}" "${FIXEDFLAGS}")
-        elseif (SOURCE_EXT STREQUAL ".f90")
-          e3sm_add_flags("${SOURCE_FILE}" "${FREEFLAGS}")
-        elseif (SOURCE_EXT STREQUAL ".F90")
-          e3sm_add_flags("${SOURCE_FILE}" "${FREEFLAGS} ${CONTIGUOUS_FLAG}")
-        endif()
+    # Cosp manages its own flags
+    if (NOT SOURCE_FILE IN_LIST COSP_SOURCES)
+      # Flags are slightly different for different fortran extensions
+      if (SOURCE_EXT STREQUAL ".F" OR SOURCE_EXT STREQUAL ".f")
+        e3sm_set_source_property(${SOURCE_FILE} Fortran_FORMAT FIXED FALSE)
+      elseif (SOURCE_EXT STREQUAL ".f90")
+        e3sm_set_source_property(${SOURCE_FILE} Fortran_FORMAT FREE FALSE)
+      elseif (SOURCE_EXT STREQUAL ".F90")
+        e3sm_set_source_property(${SOURCE_FILE} Fortran_FORMAT FREE FALSE)
+        e3sm_add_flags(${SOURCE_FILE} "${CONTIGUOUS_FLAG}")
       endif()
     endif()
   endforeach()
 
   # Load machine/compiler specific settings
-  set(COMPILER_SPECIFIC_DEPENDS ${CASEROOT}/Depends.${COMPILER}.cmake)
-  set(MACHINE_SPECIFIC_DEPENDS ${CASEROOT}/Depends.${MACH}.cmake)
-  set(PLATFORM_SPECIFIC_DEPENDS ${CASEROOT}/Depends.${MACH}.${COMPILER}.cmake)
+  if (COMP_NAME STREQUAL "csm_share")
+    # csm_share uses special Depends files, not customizable per case
+    set(DEPENDS_LOC "${SRCROOT}/share")
+  else()
+    set(DEPENDS_LOC "${CASEROOT}")
+  endif()
+
+  set(COMPILER_SPECIFIC_DEPENDS ${DEPENDS_LOC}/Depends.${COMPILER}.cmake)
+  set(MACHINE_SPECIFIC_DEPENDS ${DEPENDS_LOC}/Depends.${MACH}.cmake)
+  set(PLATFORM_SPECIFIC_DEPENDS ${DEPENDS_LOC}/Depends.${MACH}.${COMPILER}.cmake)
   set(TRY_TO_LOAD ${COMPILER_SPECIFIC_DEPENDS} ${MACHINE_SPECIFIC_DEPENDS} ${PLATFORM_SPECIFIC_DEPENDS})
   foreach(ITEM IN LISTS TRY_TO_LOAD)
     if (EXISTS ${ITEM})
@@ -227,23 +217,18 @@ function(build_model COMP_CLASS COMP_NAME)
 
   # Disable optimizations on some files that would take too long to compile, expect these to all be fortran files
   foreach (SOURCE_FILE IN LISTS NOOPT_FILES)
-    e3sm_deoptimize_file("${SOURCE_FILE}" "${FFLAGS_NOOPT}")
+    e3sm_deoptimize_file("${SOURCE_FILE}")
   endforeach()
 
   #-------------------------------------------------------------------------------
   # build rules:
   #-------------------------------------------------------------------------------
 
-  if (MPILIB STREQUAL "mpi-serial")
-    set(MPISERIAL "${INSTALL_SHAREDPATH}/lib/libmpi-serial.a")
-    set(MLIBS "${MLIBS} ${MPISERIAL}")
-  endif()
-
   foreach(ITEM IN LISTS SOURCES)
     if (ITEM MATCHES "${CMAKE_BINARY_DIR}/.*") # is generated
       list(APPEND REAL_SOURCES ${ITEM})
     else()
-      list(APPEND REAL_SOURCES "${SOURCE_PATH}/${ITEM}")
+      list(APPEND REAL_SOURCES "${PROJECT_SOURCE_DIR}/${ITEM}")
     endif()
   endforeach()
 
@@ -251,35 +236,67 @@ function(build_model COMP_CLASS COMP_NAME)
     set(TARGET_NAME "${CIME_MODEL}.exe")
     add_executable(${TARGET_NAME})
     target_sources(${TARGET_NAME} PRIVATE ${REAL_SOURCES})
-    set(ALL_LIBS "${ULIBDEP} ${MCTLIBS} ${PIOLIB} ${GPTLLIB} ${SLIBS} ${MLIBS}")
-    separate_arguments(ALL_LIBS_LIST UNIX_COMMAND "${ALL_LIBS}")
+
+    separate_arguments(ALL_LIBS_LIST UNIX_COMMAND "${SLIBS}")
+
     foreach(ITEM IN LISTS COMP_CLASSES)
       if (NOT ITEM STREQUAL "cpl")
         target_link_libraries(${TARGET_NAME} ${ITEM})
       endif()
     endforeach()
+
     foreach(ITEM IN LISTS ALL_LIBS_LIST)
       target_link_libraries(${TARGET_NAME} ${ITEM})
     endforeach()
-    set_target_properties(${TARGET_NAME} PROPERTIES LINKER_LANGUAGE ${LD})
+
+    # Make sure we link blas/lapack
+    target_link_libraries(${TARGET_NAME} BLAS::BLAS LAPACK::LAPACK)
+
+    if (E3SM_LINK_WITH_FORTRAN)
+      set_target_properties(${TARGET_NAME} PROPERTIES LINKER_LANGUAGE Fortran)
+
+      # A bit hacky, some platforms need help with the fortran linker
+      if (COMPILER STREQUAL "intel")
+        string(APPEND CMAKE_EXE_LINKER_FLAGS " -cxxlib")
+      endif()
+
+    else()
+      set_target_properties(${TARGET_NAME} PROPERTIES LINKER_LANGUAGE CXX)
+    endif()
+
   else()
     set(TARGET_NAME ${COMP_CLASS})
     add_library(${TARGET_NAME})
     target_sources(${TARGET_NAME} PRIVATE ${REAL_SOURCES})
-    if (COMP_NAME STREQUAL "eam")
-      if (USE_YAKL)
-        target_link_libraries(${TARGET_NAME} PRIVATE yakl)
-      endif()
-      if (USE_SAMXX)
-        target_link_libraries(${TARGET_NAME} PRIVATE samxx)
-      endif()
-      if (USE_RRTMGPXX)
+    if (COMP_NAME STREQUAL "csm_share")
+      find_package(NETCDF REQUIRED)
+      target_link_libraries(${TARGET_NAME} PRIVATE netcdf)
+    else()
+      target_link_libraries(${TARGET_NAME} PRIVATE csm_share)
+      if (COMP_NAME STREQUAL "eam")
+        if (USE_YAKL)
+          target_link_libraries(${TARGET_NAME} PRIVATE yakl)
+        endif()
+        if (USE_SAMXX)
+          target_link_libraries(${TARGET_NAME} PRIVATE samxx)
+        endif()
+        if (USE_PAM)
+          target_link_libraries(${TARGET_NAME} PRIVATE pam_driver)
+        endif()
+        if (USE_RRTMGPXX)
           target_link_libraries(${TARGET_NAME} PRIVATE rrtmgp rrtmgp_interface)
+        endif()
       endif()
+      if (COMP_NAME STREQUAL "elm")
+        if (USE_PETSC)
+          target_link_libraries(${TARGET_NAME} PRIVATE "${PETSC_LIBRARIES}")
+          target_include_directories(${TARGET_NAME} PRIVATE "${PETSC_INCLUDES}")
+        endif()
+      endif()
+      if (USE_KOKKOS)
+        target_link_libraries (${TARGET_NAME} PRIVATE Kokkos::kokkos)
+      endif ()
     endif()
-    if (USE_KOKKOS)
-      target_link_libraries (${TARGET_NAME} PRIVATE Kokkos::kokkos)
-    endif ()
   endif()
 
   # Subtle: In order for fortran dependency scanning to work, our CPPFPP/DEFS must be registered
@@ -292,4 +309,4 @@ function(build_model COMP_CLASS COMP_NAME)
   # Set flags for target
   target_include_directories(${TARGET_NAME} PRIVATE ${INCLDIR})
 
-endfunction(build_model)
+endmacro(build_model)

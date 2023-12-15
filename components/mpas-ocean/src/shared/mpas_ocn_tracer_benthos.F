@@ -2467,13 +2467,13 @@ test_flag = .false.
 !         if (bottomDepth(iCell) .le. 400.0_RKIND) then
             nBenthicCells = nBenthicCells + 1
             indexToBenthosCells(nBenthicCells) = iCell
-            call mpas_log_write('nBenthicCells: $i',MPAS_LOG_ERR,intArgs=(/nBenthicCells/))
-            call mpas_log_write('indexToBenthosCells(nBenthicCells): $i',MPAS_LOG_ERR,intArgs=(/indexToBenthosCells(nBenthicCells)/))
+            !call mpas_log_write('nBenthicCells: $i',MPAS_LOG_ERR,intArgs=(/nBenthicCells/))
+            !call mpas_log_write('indexToBenthosCells(nBenthicCells): $i',MPAS_LOG_ERR,intArgs=(/indexToBenthosCells(nBenthicCells)/))
          endif
        enddo
    ! prescribed initial concentration array
-      call mpas_log_write('After initialize Benthic mask',MPAS_LOG_ERR)
-      call mpas_log_write('Final nBenthicCells: $i',MPAS_LOG_ERR,intArgs=(/nBenthicCells/))
+   !   call mpas_log_write('After initialize Benthic mask',MPAS_LOG_ERR)
+   !   call mpas_log_write('Final nBenthicCells: $i',MPAS_LOG_ERR,intArgs=(/nBenthicCells/))
 
       if (.not. config_do_restart_benthos) then
           benthosTracersStorage(:,:) = 0.0_RKIND

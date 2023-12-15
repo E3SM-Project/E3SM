@@ -1,0 +1,11 @@
+!----------------------------------------------------------------------------------
+! Users should add all user specific namelist changes after these comments
+! in the form of
+!   namelist_var = new_namelist_value
+! *** EXCEPT FOR ***
+! 1. DO NOT CHANGE config_start_time, config_run_duration, config_stop_time,
+!    config_do_restart, config_Restart_timestamp_filename, config_calendar_type,
+!    config_set_restingThickness_to_IC, config_alter_ICs_for_pbcs
+! 2. To preview the namelists, invoke $CASEROOT preview-namelists and look at
+!    $RUNDIR/atm_in
+!----------------------------------------------------------------------------------

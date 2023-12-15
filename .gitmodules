@@ -8,10 +8,6 @@
 [submodule "sbetr"]
 	path = components/elm/src/external_models/sbetr
 	url = git@github.com:BeTR-biogeochemistry-modeling/sbetr.git
-[submodule "externals/kokkos"]
-	path = externals/kokkos
-	url = git@github.com:E3SM-Project/kokkos.git
-	branch = e3sm/kokkos
 [submodule "rrtmgp"]
 	path = components/eam/src/physics/rrtmgp/external
 	url = git@github.com:E3SM-Project/rte-rrtmgp.git
@@ -19,6 +15,14 @@
 [submodule "externals/scorpio"]
 	path = externals/scorpio
 	url = git@github.com:E3SM-Project/scorpio.git
+	branch = master
+[submodule "externals/mam4xx"]
+	path = externals/mam4xx
+	url = git@github.com:eagles-project/mam4xx.git
+	branch = master
+[submodule "externals/ekat"]
+	path = externals/ekat
+	url = git@github.com:E3SM-Project/EKAT.git
 	branch = master
 [submodule "externals/scorpio_classic"]
 	path = externals/scorpio_classic
@@ -52,6 +56,9 @@
 [submodule "components/mpas-ocean/src/gotm"]
 	path = components/mpas-ocean/src/gotm
 	url = git@github.com:E3SM-Project/GOTMcode.git
+[submodule "externals/haero"]
+	path = externals/haero
+	url = git@github.com:eagles-project/haero.git
 [submodule "externals/mct"]
 	path = externals/mct
 	url = git@github.com:MCSclimate/MCT.git
