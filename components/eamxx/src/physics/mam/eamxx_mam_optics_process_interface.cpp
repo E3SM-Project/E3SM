@@ -42,7 +42,8 @@ void MAMOptics::set_grids(const std::shared_ptr<const GridsManager> grids_manage
 
   // Define aerosol optics fields computed by this process.
   auto nondim = Units::nondimensional();
-  FieldLayout scalar3d_swband_layout { {COL, LEV, SWBND}, {ncol_, nlev_, nswbands_} };
+  //FieldLayout scalar3d_swband_layout { {COL, LEV, SWBND}, {ncol_, nlev_, nswbands_} };
+  FieldLayout scalar3d_swbandp_layout { {COL, ILEV, SWBND}, {ncol_, nlev_+1, nswbands_} };
   FieldLayout scalar3d_lwband_layout { {COL, LEV, LWBND}, {ncol_, nlev_, nlwbands_} };
 
   // layout for 3D (2d horiz X 1d vertical) variables
@@ -61,16 +62,16 @@ void MAMOptics::set_grids(const std::shared_ptr<const GridsManager> grids_manage
 
 #if 1
   // shortwave aerosol scattering asymmetry parameter [-]
-  add_field<Computed>("aero_g_sw",   scalar3d_swband_layout, nondim, grid_name);
+  add_field<Computed>("aero_g_sw",   scalar3d_swbandp_layout, nondim, grid_name);
   // shortwave aerosol single-scattering albedo [-]
-  add_field<Computed>("aero_ssa_sw", scalar3d_swband_layout, nondim, grid_name);
+  add_field<Computed>("aero_ssa_sw", scalar3d_swbandp_layout, nondim, grid_name);
   // shortwave aerosol optical depth [-]
-  add_field<Computed>("aero_tau_sw", scalar3d_swband_layout, nondim, grid_name);
+  add_field<Computed>("aero_tau_sw", scalar3d_swbandp_layout, nondim, grid_name);
   // longwave aerosol optical depth [-]
   add_field<Computed>("aero_tau_lw", scalar3d_lwband_layout, nondim, grid_name);
 
   // // aerosol extinction optical depth
-  add_field<Computed>("aero_tau_forward", scalar3d_swband_layout, nondim, grid_name);
+  add_field<Computed>("aero_tau_forward", scalar3d_swbandp_layout, nondim, grid_name);
 
     // FIXME: this field doesn't belong here, but this is a convenient place to
   // FIXME: put it for now.
@@ -162,35 +163,17 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   constexpr int nvars = mam4::ndrop::nvars;
   constexpr int nlwbands = mam4::modal_aer_opt::nlwbands;
   constexpr int nswbands = mam4::modal_aer_opt::nswbands;
-  constexpr int maxd_aspectype = mam4::ndrop::maxd_aspectype;
+  //constexpr int maxd_aspectype = mam4::ndrop::maxd_aspectype;
   constexpr int ntot_amode = mam4::AeroConfig::num_modes();
 
   state_q_ = mam_coupling::view_3d("state_q_", ncol_, nlev_, nvars);
   Kokkos::deep_copy(state_q_,10);
   qqcw_ = mam_coupling::view_3d("qqcw_", ncol_, nlev_, nvars);
   Kokkos::deep_copy(qqcw_,10);
-
-  // FIXME: work arrays
-  mass_ = mam_coupling::view_2d("mass", ncol_,  nlev_);
-  cheb_ = mam_coupling::view_3d("cheb", ncol_, mam4::modal_aer_opt::ncoef, nlev_);
-
-  dgnumwet_m_ = mam_coupling::view_3d("dgnumwet_m", ncol_, nlev_, ntot_amode);
-  dgnumdry_m_ = mam_coupling::view_3d("dgnumdry_m", ncol_, nlev_, ntot_amode);
-
-  radsurf_ = mam_coupling::view_2d("radsurf",ncol_, nlev_);
-  logradsurf_ = mam_coupling::view_2d("logradsurf",ncol_,nlev_);
-
-  air_density_ = mam_coupling::view_2d("air_density", ncol_,  nlev_);
-  ext_cmip6_sw_inv_m_ = mam_coupling::view_3d ("ext_cmip6_sw_inv_m", ncol_, nswbands, nlev_);
-
-
   const int nwbands = nlwbands > nswbands ? nlwbands: nswbands;
 
   specrefindex_=mam_coupling::complex_view_3d("specrefindex", ncol_,
   mam4::modal_aer_opt::max_nspec, nwbands);
-  qaerwat_m_ = mam_coupling::view_3d ("qaerwat_m", ncol_, nlev_, ntot_amode);
-  ext_cmip6_lw_inv_m_ = mam_coupling::view_3d ("ext_cmip6_lw_inv_m", ncol_, nlev_, nlwbands);
-
 
   // aer_rad_props_sw inputs that are prescribed, i.e., we need a netcdf file.
   ssa_cmip6_sw_ = mam_coupling::view_3d ("ssa_cmip6_sw", ncol_, nlev_, nswbands);
@@ -200,11 +183,18 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   Kokkos::deep_copy(af_cmip6_sw_, 1.0);
   Kokkos::deep_copy(ext_cmip6_sw_, 1.0);
 
-  ext_cmip6_lw_ = mam_coupling::view_2d("ext_cmip6_lw_", nlev_, nlwbands);
+  ext_cmip6_lw_ = mam_coupling::view_3d("ext_cmip6_lw_", ncol_, nlev_, nlwbands);
   // odap_aer_ = mam_coupling::view_2d("odap_aer_", nlev_, nlwbands);
 
   Kokkos::deep_copy(ext_cmip6_lw_, 1.0);
   // Kokkos::deep_copy(odap_aer_, 1.0);
+
+ // FIXME. I will need to use buffer. Ask Jeff
+  const int wlen_lw = mam4::modal_aer_opt::get_worksize_modal_aero_lw();
+  const int wlen_sw = mam4::modal_aer_opt::get_worksize_modal_aero_sw();
+  const int wlen = wlen_lw > wlen_sw ? wlen_lw : wlen_sw;
+  work_ = mam_coupling::view_2d("Work arrays",ncol_, wlen);
+
 
 
 #endif
@@ -213,13 +203,9 @@ void MAMOptics::initialize_impl(const RunType run_type) {
 {
   using namespace ShortFieldTagsNames;
 
-  constexpr int refindex_real = mam4::modal_aer_opt::refindex_real;
-  constexpr int refindex_im = mam4::modal_aer_opt::refindex_im;
-  constexpr int coef_number = mam4::modal_aer_opt::coef_number;
-
   using view_1d_host = typename KT::view_1d<Real>::HostMirror;
   // Set up input structure to read data from file.
-  using strvec_t = std::vector<std::string>;
+  // using strvec_t = std::vector<std::string>;
     // Views in aerosol_optics_device_data_ are allocated in the following fuctions.
   // Note: these function do not set values for aerosol_optics_device_data_.
   mam4::modal_aer_opt::set_complex_views_modal_aero(aerosol_optics_device_data_);
@@ -336,12 +322,16 @@ mam_coupling::read_water_refindex(table_name_water, grid_,
 
   } // done ispec
 
+
 }
 
 
 
 #if 0
 {
+  constexpr int coef_number = mam4::modal_aer_opt::coef_number;
+    constexpr int refindex_real = mam4::modal_aer_opt::refindex_real;
+  constexpr int refindex_im = mam4::modal_aer_opt::refindex_im;
 auto host_1d = view_1d_host(refindex_real_lw_host.data(), refindex_real_lw_host.size());
 scorpio::register_file(tables_filename_mode4,scorpio::Read);
 std::string var_name = "refindex_real_lw";
@@ -421,13 +411,16 @@ void MAMOptics::run_impl(const double dt) {
   Kokkos::deep_copy(bcaod,zero);
   printf("dt %e\n",dt);
 
+
+  // }
+
   auto aero_nccn   = get_field_out("nccn").get_view<Real**>(); // FIXME: get rid of this
 #endif
   // constexpr int pver = mam4::nlev;
-  constexpr int ntot_amode=mam4::AeroConfig::num_modes();
-  constexpr int maxd_aspectype = mam4::ndrop::maxd_aspectype;
-  constexpr int nspec_max = mam4::ndrop::nspec_max;
-  constexpr int num_aerosol_ids = mam4::AeroConfig::num_aerosol_ids();
+  //constexpr int ntot_amode=mam4::AeroConfig::num_modes();
+  //constexpr int maxd_aspectype = mam4::ndrop::maxd_aspectype;
+  //constexpr int nspec_max = mam4::ndrop::nspec_max;
+  //constexpr int num_aerosol_ids = mam4::AeroConfig::num_aerosol_ids();
 
   const Real t = 0.0;
 
@@ -452,11 +445,7 @@ void MAMOptics::run_impl(const double dt) {
     // Kokkos::deep_copy(aero_nccn, 50.0);
   } else {
 
-
-    const bool do_adjust = true;
-    const bool do_aitacc_transfer = true;
-    const bool update_mmr = false;
-
+#if 1
     // Compute optical properties on all local columns.
     // (Strictly speaking, we don't need this parallel_for here yet, but we leave
     //  it in anticipation of column-specific aerosol optics to come.)
@@ -490,102 +479,16 @@ void MAMOptics::run_impl(const double dt) {
       printf("pdeldry %e\n",pdeldry(0));
       printf("pdel %e\n",pdel(0));
 #endif
-      int nspec_amode[ntot_amode];
 
-          int lspectype_amode[maxd_aspectype][ntot_amode];
-          int lmassptr_amode[maxd_aspectype][ntot_amode];
-          Real specdens_amode[maxd_aspectype];
-          Real spechygro[maxd_aspectype];
-          int numptr_amode[ntot_amode];
-          int mam_idx[ntot_amode][nspec_max];
-          int mam_cnst_idx[ntot_amode][nspec_max];
-
-          mam4::ndrop::get_e3sm_parameters(nspec_amode, lspectype_amode, lmassptr_amode,
-                              numptr_amode, specdens_amode, spechygro, mam_idx,
-                              mam_cnst_idx);
-
-          Real sigmag_amode[ntot_amode] = {0.18000000000000000e+001,
-                                           0.16000000000000001e+001,
-                                           0.18000000000000000e+001,
-                                           0.16000000238418579e+001};
-
-#if 1
-          Real inv_density[ntot_amode]
-                          [num_aerosol_ids] = {};
-          Real num2vol_ratio_min[ntot_amode] = {};
-          Real num2vol_ratio_max[ntot_amode] = {};
-          Real num2vol_ratio_max_nmodes[ntot_amode] = {};
-          Real num2vol_ratio_min_nmodes[ntot_amode] = {};
-          Real num2vol_ratio_nom_nmodes[ntot_amode] = {};
-          Real dgnmin_nmodes[ntot_amode] = {};
-          Real dgnmax_nmodes[ntot_amode] = {};
-          Real dgnnom_nmodes[ntot_amode] = {};
-          Real mean_std_dev_nmodes[ntot_amode] = {};
-          // outputs
-          bool noxf_acc2ait[num_aerosol_ids] = {};
-          int n_common_species_ait_accum = {};
-          int ait_spec_in_acc[num_aerosol_ids] = {};
-          int acc_spec_in_ait[num_aerosol_ids] = {};
-
-           mam4::modal_aero_calcsize::init_calcsize(
-              inv_density, num2vol_ratio_min, num2vol_ratio_max,
-              num2vol_ratio_max_nmodes, num2vol_ratio_min_nmodes,
-              num2vol_ratio_nom_nmodes, dgnmin_nmodes, dgnmax_nmodes,
-              dgnnom_nmodes, mean_std_dev_nmodes,
-              // outputs
-              noxf_acc2ait, n_common_species_ait_accum, ait_spec_in_acc,
-              acc_spec_in_ait);
-
-          team.team_barrier();
-          {
-
-          for (int kk = mam4::ndrop::top_lev; kk < nlev_; ++kk) {
-
-            const auto state_q_k = Kokkos::subview(state_q_, icol, kk, Kokkos::ALL());
-            const auto qqcw_k = Kokkos::subview(qqcw_, icol, kk, Kokkos::ALL());
-            auto dgncur_i = Kokkos::subview(dgnumdry_m_, icol, kk, Kokkos::ALL());
-            Real dgncur_c[ntot_amode] = {};
-            mam4::modal_aero_calcsize::modal_aero_calcsize_sub(
-                state_q_k.data(), // in
-                qqcw_k.data(),    // in
-                dt, do_adjust, do_aitacc_transfer, update_mmr, lmassptr_amode,
-                numptr_amode,
-                inv_density, // in
-                num2vol_ratio_min, num2vol_ratio_max, num2vol_ratio_max_nmodes,
-                num2vol_ratio_min_nmodes, num2vol_ratio_nom_nmodes,
-                dgnmin_nmodes, dgnmax_nmodes, dgnnom_nmodes,
-                mean_std_dev_nmodes,
-                // outputs
-                noxf_acc2ait, n_common_species_ait_accum, ait_spec_in_acc,
-                acc_spec_in_ait, dgncur_i.data(), dgncur_c);
-          } // k
-          }
-          team.team_barrier();
-
-#endif
-
-
-  #if 1
-
-   auto mass_icol = ekat::subview(mass_, icol);
-   auto radsurf_icol = ekat::subview(radsurf_, icol);
-   auto logradsurf_icol = ekat::subview(logradsurf_, icol);
-
-   auto cheb_icol = ekat::subview(cheb_, icol);
-   auto dgnumwet_m_icol = ekat::subview(dgnumwet_m_, icol);
-   auto dgnumdry_m_icol = ekat::subview(dgnumdry_m_, icol);
    auto specrefindex_icol = ekat::subview(specrefindex_, icol);
-   auto qaerwat_m_icol = ekat::subview(qaerwat_m_, icol);
-   auto ext_cmip6_lw_inv_m_icol = ekat::subview(ext_cmip6_lw_inv_m_, icol);
+   auto ext_cmip6_lw_inv_m_icol = ekat::subview(ext_cmip6_lw_, icol);
    auto state_q_icol = ekat::subview(state_q_, icol);
-
-#endif
-
-#if 1
+   auto qqcw_icol = ekat::subview(qqcw_, icol);
 
   auto ssa_cmip6_sw_icol = ekat::subview(ssa_cmip6_sw_, icol);
   auto af_cmip6_sw_icol = ekat::subview(af_cmip6_sw_, icol);
   auto ext_cmip6_sw_icol = ekat::subview(ext_cmip6_sw_, icol);
+  auto ext_cmip6_lw_icol = ekat::subview(ext_cmip6_lw_, icol);
 
   // FIXME: check if this correct: Note that these variables have pver+1 levels
   // tau_w =>  aero_ssa_sw  (pcols,0:pver,nswbands) ! aerosol single scattering albedo * tau
@@ -597,127 +500,66 @@ void MAMOptics::run_impl(const double dt) {
   // tau  => aero_tau_sw (?)   (pcols,0:pver,nswbands) ! aerosol extinction optical depth
   auto tau_icol = ekat::subview(aero_tau_sw, icol);
 
-  auto air_density_icol = ekat::subview(air_density_, icol);
+  auto work_icol = ekat::subview(work_, icol);
 
-  auto ext_cmip6_sw_inv_m_icol = ekat::subview(ext_cmip6_sw_inv_m_, icol);
 
-  auto extinct_icol = ekat::subview(extinct, icol);
-  // aerosol absorption [1/m]
-  auto absorb_icol = ekat::subview(absorb, icol);
-  // dustaodmode[ntot_amode],
-  auto dustaodmode_icol = ekat::subview(dustaodmode, icol);
-  // aodmode[ntot_amode]
-  auto aodmode_icol = ekat::subview(aodmode, icol);
-  // burdenmode[ntot_amode]
-  auto burdenmode_icol = ekat::subview(burdenmode, icol);
-
-#if 1
-    // FIXME: following variables, wihout 2, are producing nans.
-    Real aodabsbc2 = zero;
-    Real bcaod2 = zero;
-    Real dustaod2 = zero;
-    Real momaod2 = zero;
-    Real pomaod2 = zero;
-    Real seasaltaod2 =zero;
-    Real so4aod2 = zero;
-    Real soaaod2 = zero;
-
-    team.team_barrier();
-
-     mam4::aer_rad_props::aer_rad_props_sw( dt, zi, pmid,
+    {
+     diagnostics_aerosol_optics_sw_.extinct = ekat::subview(extinct, icol);;
+     diagnostics_aerosol_optics_sw_.absorb  = ekat::subview(absorb, icol);
+     diagnostics_aerosol_optics_sw_.aodnir  = ekat::subview(aodnir,icol);
+     diagnostics_aerosol_optics_sw_.aoduv=ekat::subview(aoduv,icol);
+     diagnostics_aerosol_optics_sw_.dustaodmode=ekat::subview(dustaodmode, icol);
+     diagnostics_aerosol_optics_sw_.aodmode=ekat::subview(aodmode, icol);
+   diagnostics_aerosol_optics_sw_.burdenmode=ekat::subview(burdenmode, icol);
+   diagnostics_aerosol_optics_sw_.aodabsbc=ekat::subview(aodabsbc,icol);
+   diagnostics_aerosol_optics_sw_.aodvis=ekat::subview(aodvis,icol);
+   diagnostics_aerosol_optics_sw_.aodall=ekat::subview(aodall,icol);
+   diagnostics_aerosol_optics_sw_.ssavis=ekat::subview(ssavis,icol);
+   diagnostics_aerosol_optics_sw_.aodabs=ekat::subview(aodabs,icol);
+   diagnostics_aerosol_optics_sw_.burdendust=ekat::subview(burdendust,icol);
+   diagnostics_aerosol_optics_sw_.burdenso4=ekat::subview(burdenso4,icol);
+   diagnostics_aerosol_optics_sw_.burdenbc=ekat::subview(burdenbc,icol);
+   diagnostics_aerosol_optics_sw_.burdenpom=ekat::subview(burdenpom,icol);
+   diagnostics_aerosol_optics_sw_.burdensoa=ekat::subview(burdensoa,icol);
+   diagnostics_aerosol_optics_sw_.burdenseasalt=ekat::subview(burdenseasalt,icol);
+   diagnostics_aerosol_optics_sw_.burdenmom=ekat::subview(burdenmom,icol);
+   diagnostics_aerosol_optics_sw_.momaod=ekat::subview(momaod,icol);
+   diagnostics_aerosol_optics_sw_.dustaod=ekat::subview(dustaod,icol);
+   diagnostics_aerosol_optics_sw_.so4aod=ekat::subview(so4aod,icol); // total species AOD
+   diagnostics_aerosol_optics_sw_.pomaod=ekat::subview(pomaod,icol);
+   diagnostics_aerosol_optics_sw_.soaaod=ekat::subview(soaaod,icol);
+   diagnostics_aerosol_optics_sw_.bcaod=ekat::subview(bcaod,icol);
+   diagnostics_aerosol_optics_sw_.seasaltaod=ekat::subview(seasaltaod,icol);
+  }
+    mam4::aer_rad_props::aer_rad_props_sw( dt, zi, pmid,
     pint, temperature,
-    zm, state_q_icol,
+    zm, state_q_icol, qqcw_icol,
     pdel, pdeldry,
     cldn, ssa_cmip6_sw_icol,
     af_cmip6_sw_icol, ext_cmip6_sw_icol,
-    // nnite, idxnite,
-    // is_cmip6_volc,
-    // const ColumnView qqcw_fld[pcnst],
     tau_icol, tau_w_icol, tau_w_g_icol,
     tau_w_f_icol,
-    nspec_amode,
-    sigmag_amode,
-    lmassptr_amode,
-    spechygro, specdens_amode,
-    lspectype_amode,
     // FIXME
     specname_amode,
     aerosol_optics_device_data_,
-    // diagnostic
-    extinct_icol, //        ! aerosol extinction [1/m]
-    absorb_icol,  //         ! aerosol absorption [1/m]
-    aodnir[icol], aoduv[icol], dustaodmode_icol.data(),
-    aodmode_icol.data(), burdenmode_icol.data(), aodabsbc2,
-    aodvis[icol], aodall[icol], ssavis[icol], aodabs[icol], burdendust[icol],
-    burdenso4[icol], burdenbc[icol], burdenpom[icol], burdensoa[icol],
-    burdenseasalt[icol], burdenmom[icol], momaod2, dustaod2,
-    so4aod2, // total species AOD
-    pomaod2, soaaod2, bcaod2, seasaltaod2,
+    diagnostics_aerosol_optics_sw_,
     // work views
-    mass_icol, air_density_icol, cheb_icol,
-    dgnumwet_m_icol, dgnumdry_m_icol,
-    radsurf_icol, logradsurf_icol,
-    specrefindex_icol, qaerwat_m_icol,
-    ext_cmip6_sw_inv_m_icol);
+    specrefindex_icol, work_icol);
 
-    // printf("aodabsbc2 %e \n",aodabsbc2);
-#endif
-#endif
-
-
-          team.team_barrier();
-          {
-          for (int kk = mam4::ndrop::top_lev; kk < nlev_; ++kk) {
-
-            const auto state_q_k = Kokkos::subview(state_q_, icol, kk, Kokkos::ALL());
-            const auto qqcw_k = Kokkos::subview(qqcw_, icol, kk, Kokkos::ALL());
-            auto dgncur_i = Kokkos::subview(dgnumdry_m_, icol, kk, Kokkos::ALL());
-            Real dgncur_c[ntot_amode] = {};
-            mam4::modal_aero_calcsize::modal_aero_calcsize_sub(
-                state_q_k.data(), // in
-                qqcw_k.data(),    // in
-                dt, do_adjust, do_aitacc_transfer, update_mmr, lmassptr_amode,
-                numptr_amode,
-                inv_density, // in
-                num2vol_ratio_min, num2vol_ratio_max, num2vol_ratio_max_nmodes,
-                num2vol_ratio_min_nmodes, num2vol_ratio_nom_nmodes,
-                dgnmin_nmodes, dgnmax_nmodes, dgnnom_nmodes,
-                mean_std_dev_nmodes,
-                // outputs
-                noxf_acc2ait, n_common_species_ait_accum, ait_spec_in_acc,
-                acc_spec_in_ait, dgncur_i.data(), dgncur_c);
-          } // k
-          }
-
+#if 1
 mam4::aer_rad_props::aer_rad_props_lw(
     dt, pmid, pint,
     temperature, zm, zi,
-    state_q_icol, pdel, pdeldry,
-    cldn, ext_cmip6_lw_,
-    // const ColumnView qqcw_fld[pcnst],
-    odap_aer_icol,
-    //
-    nspec_amode, sigmag_amode,
-    lmassptr_amode,
-    spechygro, specdens_amode,
-    lspectype_amode,
+    state_q_icol, qqcw_icol, pdel, pdeldry,
+    cldn, ext_cmip6_lw_icol,
     aerosol_optics_device_data_,
-    // work views
-    mass_icol, cheb_icol, dgnumwet_m_icol,
-    dgnumdry_m_icol, radsurf_icol,
-    logradsurf_icol, specrefindex_icol,
-    qaerwat_m_icol, ext_cmip6_lw_inv_m_icol);
-
+    odap_aer_icol,
+    specrefindex_icol,
+    work_icol);
+#endif
 
     });
-
-// #if 0
-//     Kokkos::deep_copy(aero_g_sw, 0.5);
-//     Kokkos::deep_copy(aero_ssa_sw, 0.7);
-//     Kokkos::deep_copy(aero_tau_sw, 0.0);
-//     Kokkos::deep_copy(aero_tau_lw, 0.0);
-//     Kokkos::deep_copy(aero_nccn, 50.0);
-// #endif
+#endif
 
   }
   printf("Done  with aerosol_optics \n");

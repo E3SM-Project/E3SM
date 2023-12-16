@@ -94,9 +94,10 @@ private_except_cuda:
   // these inputs are prescribed.
   mam_coupling::view_3d ssa_cmip6_sw_, af_cmip6_sw_, ext_cmip6_sw_;
   //long wave extinction in the units of [1/km]
-  mam_coupling::view_2d ext_cmip6_lw_;
+  mam_coupling::view_3d ext_cmip6_lw_;
 
-  mam_coupling::AerosolOpticsDeviceData aerosol_optics_device_data_;
+  mam4::modal_aer_opt::AerosolOpticsDeviceData aerosol_optics_device_data_;
+  mam4::modal_aer_opt::DiagnosticsAerosolOpticsSW diagnostics_aerosol_optics_sw_;
 
   // // These inputs maybe are from a netCDF file:
   // // complex refractive index for aersol species
@@ -129,16 +130,9 @@ private_except_cuda:
   std::shared_ptr<const AbstractGrid> grid_;
 
   // work arrays
-  // FIXME: one use one work array and define all these variables in mam4xx
-  mam_coupling::view_2d mass_, radsurf_, logradsurf_  ;
-  mam_coupling::view_3d cheb_, dgnumwet_m_, dgnumdry_m_;
-  mam_coupling::view_3d qaerwat_m_, ext_cmip6_lw_inv_m_;
   // FIXME: try to remove this work arrays:I may need to reorganized data in specrefndxsw_ and specrefndxlw_
   mam_coupling::complex_view_3d specrefindex_; // work array
-  mam_coupling::view_2d air_density_;
-  mam_coupling::view_3d ext_cmip6_sw_inv_m_;
-
-
+  mam_coupling::view_2d work_;
 }; // MAMOptics
 
 } // namespace scream
