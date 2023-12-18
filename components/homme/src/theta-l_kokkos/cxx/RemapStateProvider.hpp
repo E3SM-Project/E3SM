@@ -56,11 +56,25 @@ struct RemapStateProvider {
     m_process_nh_vars = 1;
     std::cout << "hey HOMMEXX_BFB_TESTING is defined \n";
 #else
-    m_process_nh_vars_bool = !params.theta_hydrostatic_mode;
+
+if( m_process_nh_vars_bool){
+    std::cout << "hey BEFORE  m_process_nh_vars_bool is true \n";
+}else{
+    std::cout << "hey BEFORE  m_process_nh_vars_bool is false \n";
+}
+
+std::cout << "hey BEFORE params.theta_hydrostatic_mode " << params.theta_hydrostatic_mode << "\n";
+
+//    m_process_nh_vars_bool = false;
+//    m_process_nh_vars_bool = !params.theta_hydrostatic_mode;
     if(params.theta_hydrostatic_mode){
 	    m_process_nh_vars = 0;
+           m_process_nh_vars_bool = false;
     }else{
-            m_process_nh_vars = 1;}
+            m_process_nh_vars = 1;  
+    m_process_nh_vars_bool = true;
+    
+    }
     std::cout << "hey HOMMEXX_BFB_TESTING is NOT defined \n";
 #endif
 
@@ -72,6 +86,8 @@ if(params.theta_hydrostatic_mode){
     std::cout << "hey params.theta_hydrostatic_mode is false \n";
 }
 
+    std::cout << ">>>>>>>>>>>> m_process_nh_vars  " << m_process_nh_vars << " \n";
+    std::cout << ">>>>>>>>>>>> m_process_nh_vars_bool  " << m_process_nh_vars_bool << " \n";
 if(m_process_nh_vars==1){
     std::cout << "hey m_process_nh_vars is true \n";
 }else{
