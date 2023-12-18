@@ -119,11 +119,11 @@ macro (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE)
     endif()
 
     string(TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_ci)
-    if (CMAKE_BUILD_TYPE_ci STREQUAL "debug")
+    if (SCREAM_MACHINE STREQUAL "ascent" AND CMAKE_BUILD_TYPE_ci STREQUAL "debug")
       # --fmad=false is causing nondeterminism in RRTMGP on Ascent, perhaps due
       # to an nvcc bug. Provide a FLAGS entry to prevent SetCudaFlags from
-      # adding --fmad=false. Use -UNDEBUG as an entry for FLAGS so that
-      # cmake_parse_arguments defines it.
+      # adding --fmad=false. Use -UNDEBUG as an (inert) entry for FLAGS so that
+      # cmake_parse_arguments defines SCF_FLAGS.
       SetCudaFlags(${hommeLibName} CUDA_LANG FLAGS -UNDEBUG)
     else()
       # In the non-debug case, I want to make sure anything else that is done in
