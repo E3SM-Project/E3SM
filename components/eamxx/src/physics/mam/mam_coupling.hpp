@@ -300,10 +300,16 @@ struct Buffer {
   // column midpoint fields
   // ======================
 
+  // number of "scratch" fields that hold process-specific data
+  // (e.g. gas-phase chemistry fields that are only needed by aerosol
+  //  microphysics)
+  static constexpr int num_2d_scratch = 10;
+
   // number of local fields stored at column midpoints
   static constexpr int num_2d_mid = 8 + // number of dry atm fields
                                     2 * (num_aero_modes() + num_aero_tracers()) +
-                                    num_aero_gases();
+                                    num_aero_gases() +
+                                    num_2d_scratch;
 
   // (dry) atmospheric state
   uview_2d z_mid;     // height at midpoints
@@ -325,6 +331,9 @@ struct Buffer {
 
   // aerosol-related dry gas mass mixing ratios
   uview_2d dry_gas_mmr[num_aero_gases()];
+
+  // undedicated scratch fields for process-specific data
+  uview_2d scratch[num_2d_scratch];
 
   // =======================
   // column interface fields
@@ -437,6 +446,9 @@ inline size_t init_buffer(const ATMBufferManager &buffer_manager,
     &buffer.dry_gas_mmr[4],
     &buffer.dry_gas_mmr[5]
   };
+  for (int i = 0; i < Buffer::num_2d_scratch; ++i) {
+    view_2d_mid_ptrs[Buffer::num_2d_mid+i] = &buffer.scratch[i];
+  }
 
   for (int i = 0; i < Buffer::num_2d_mid; ++i) {
     *view_2d_mid_ptrs[i] = view_2d(mem, ncol, nlev);

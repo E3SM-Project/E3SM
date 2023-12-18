@@ -537,21 +537,27 @@ void MAMMicrophysics::run_impl(const double dt) {
   double t = 0.0;
 
   // here's where we store per-column photolysis rates
-  // FIXME: should probably be allocated in the buffer
-  view_2d photo_rates("photo", nlev_, mam4::mo_photo::phtcnt);
+  // FIXME: this isn't great, but will do for now
+  using View2D = haero::DeviceType::view_2d<Real>;
+  View2D photo_rates("photo_rates", nlev_, mam4::mo_photo::phtcnt);
 
   // climatology data for linear stratospheric chemistry
-  // FIXME: these views should probably be allocated in the buffer
-  view_2d linoz_o3_clim("linoz_o3_clim", ncol_, nlev_);           // ozone (climatology) [vmr]
-  view_2d linoz_o3col_clim("linoz_o3col_clim", ncol_, nlev_);     // column o3 above box (climatology) [Dobson Units (DU)]
-  view_2d linoz_t_clim("linoz_o3col_clim", ncol_, nlev_);         // temperature (climatology) [K]
-  view_2d linoz_PmL_clim("linoz_PmL_clim", ncol_, nlev_);         // P minus L (climatology) [vmr/s]
-  view_2d linoz_dPmL_dO3("linoz_dPmL_dO3", ncol_, nlev_);         // sensitivity of P minus L to O3 [1/s]
-  view_2d linoz_dPmL_dT("linoz_dPmL_dT", ncol_, nlev_);           // sensitivity of P minus L to T3 [K]
-  view_2d linoz_dPmL_dO3col("linoz_dPmL_dT", ncol_, nlev_);       // sensitivity of P minus L to overhead O3 column [vmr/DU]
-  view_2d linoz_cariolle_psc("linoz_cariolle_psc", ncol_, nlev_); // Cariolle parameter for PSC loss of ozone [1/s]
+  auto linoz_o3_clim      = buffer_.scratch[0]; // ozone (climatology) [vmr]
+  auto linoz_o3col_clim   = buffer_.scratch[1]; // column o3 above box (climatology) [Dobson Units (DU)]
+  auto linoz_t_clim       = buffer_.scratch[2]; // temperature (climatology) [K]
+  auto linoz_PmL_clim     = buffer_.scratch[3]; // P minus L (climatology) [vmr/s]
+  auto linoz_dPmL_dO3     = buffer_.scratch[4]; // sensitivity of P minus L to O3 [1/s]
+  auto linoz_dPmL_dT      = buffer_.scratch[5]; // sensitivity of P minus L to T3 [K]
+  auto linoz_dPmL_dO3col  = buffer_.scratch[6]; // sensitivity of P minus L to overhead O3 column [vmr/DU]
+  auto linoz_cariolle_psc = buffer_.scratch[7]; // Cariolle parameter for PSC loss of ozone [1/s]
 
-  ColumnView o3_col_dens; // FIXME: where to allocate?
+  // it's a bit wasteful to store this for all columns, but simpler from an
+  // allocation perspective
+  auto o3_col_dens = buffer_.scratch[8];
+
+  // FIXME: Read relevant linoz climatology data from file(s) based on time
+
+  // FIXME: Read relevant chlorine loading data from file based on time.
 
   // loop over atmosphere columns and compute aerosol microphyscs
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const ThreadTeam& team) {
@@ -575,7 +581,8 @@ void MAMMicrophysics::run_impl(const double dt) {
     mam4::Diagnostics diags(nlev_);
 
     // calculate o3 column densities (first component of col_dens in Fortran code)
-    impl::compute_o3_column_density(team, atm, progs, o3_col_dens);
+    auto o3_col_dens_i = ekat::subview(o3_col_dens, icol);
+    impl::compute_o3_column_density(team, atm, progs, o3_col_dens_i);
 
     // set up photolysis work arrays for this column.
     mam4::mo_photo::PhotoTableWorkArrays photo_work_arrays;
@@ -589,7 +596,7 @@ void MAMMicrophysics::run_impl(const double dt) {
     Real esfact = 0.0; // FIXME: earth-sun distance factor
     mam4::ColumnView lwc; // FIXME: liquid water cloud content: where do we get this?
     mam4::mo_photo::table_photo(photo_rates, atm.pressure, atm.hydrostatic_dp,
-      atm.temperature, o3_col_dens, zenith_angle, surf_albedo, lwc,
+      atm.temperature, o3_col_dens_i, zenith_angle, surf_albedo, lwc,
       atm.cloud_fraction, esfact, photo_table_, photo_work_arrays);
 
     // compute external forcings at time t(n+1) [molecules/cm^3/s]
@@ -696,15 +703,17 @@ void MAMMicrophysics::run_impl(const double dt) {
       // LINOZ chemistry
       //-----------------
 
-      // FIXME: the following things are diagnostics, which we're not
-      // FIXME: including in the first rev
+      // the following things are diagnostics, which we're not
+      // including in the first rev
       Real do3_linoz, do3_linoz_psc, ss_o3, o3col_du_diag, o3clim_linoz_diag,
            zenith_angle_degrees;
-      Real chlorine_loading = 0.0; // FIXME: Need to get this data from file
+
+      // FIXME: Need to get chlorine loading data from file
+      Real chlorine_loading = 0.0;
 
       Real rlats = col_lat * M_PI / 180.0; // convert column latitude to radians
       int o3_ndx; // FIXME: need to set this
-      mam4::lin_strat_chem::lin_strat_chem_solve_kk(o3_col_dens(k), temp,
+      mam4::lin_strat_chem::lin_strat_chem_solve_kk(o3_col_dens_i(k), temp,
         zenith_angle, pmid, dt, rlats,
         linoz_o3_clim(icol, k), linoz_t_clim(icol, k), linoz_o3col_clim(icol, k),
         linoz_PmL_clim(icol, k), linoz_dPmL_dO3(icol, k), linoz_dPmL_dT(icol, k),
@@ -729,7 +738,7 @@ void MAMMicrophysics::run_impl(const double dt) {
       // Dry deposition (gas)
       //----------------------
 
-      // FIXME: not yet ported?
+      // FIXME: need to find this in mam4xx
 
       // transfer updated prognostics from work arrays
       mam_coupling::convert_work_arrays_to_mmr(vmr, vmrcw, q, qqcw);
