@@ -3292,7 +3292,7 @@ contains
                i2x_im(n, index_i2x_Fioi_melth) = oceanHeatFlux(i)
                i2x_im(n, index_i2x_Fioi_swpen) = oceanShortwaveFlux(i)
                i2x_im(n, index_i2x_Fioi_meltw) = oceanFreshWaterFlux(i) + frazilMassAdjust(i)/ailohi
-               i2x_im(n, index_i2x_Fioi_salt ) = oceanSaltFlux(i) + ice_ref_salinity*p001*frazilMassAdjust(i)/ailohi
+               i2x_im(n, index_i2x_Fioi_salt ) = oceanSaltFlux(i) + seaiceReferenceSalinity*0.001_RKIND*frazilMassAdjust(i)/ailohi
                i2x_im(n, index_i2x_Fioi_taux ) = tauxo
                i2x_im(n, index_i2x_Fioi_tauy ) = tauyo
    
