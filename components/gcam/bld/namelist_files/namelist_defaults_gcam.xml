@@ -32,7 +32,7 @@ for the iac data in the e3sm distribution
 
 <!-- gcam config and init files, relative to inputdata -->
 <gcam_config>iac/giac/gcam/gcam_6_0/configuration/configuration_ref.xml</gcam_config>
-<base_gcam_co2_file>iac/giac/gcam/gcam_6_0/data/co2_2015_gcam_out.csv</base_gcam_co2_file>
+<base_gcam_co2_file>iac/giac/gcam/gcam_6_0/data/co2_2015_gcam_out_regional.csv</base_gcam_co2_file>
 <base_gcam_lu_wh_file>iac/giac/gcam/gcam_6_0/data/lu_wh_2015_gcam_out.csv</base_gcam_lu_wh_file>
 <base_co2_surface_file>iac/giac/gcam/gcam_6_0/data/CO2-em-SFC-anthro_0.9x1.25_input4MIPs_2014.csv</base_co2_surface_file>
 <base_co2_shipment_file>iac/giac/gcam/gcam_6_0/data/CO2-em-SHIP-anthro_0.9x1.25_input4MIPs_2014.csv</base_co2_shipment_file>
@@ -40,7 +40,7 @@ for the iac data in the e3sm distribution
 <base_npp_file>iac/giac/gcam/gcam_6_0/data/base_f09_annAvgMonthly_2010-2014_npp.csv</base_npp_file>
 <base_hr_file>iac/giac/gcam/gcam_6_0/data/base_f09_annAvgMonthly_2010-2014_hr.csv</base_hr_file>
 <base_pft_file>iac/giac/gcam/gcam_6_0/data/base_f09_annAvgMonthly_2010-2014_pft_wt.csv</base_pft_file>
-<gcam2elm_co2_mapping_file>iac/giac/gcam/gcam_6_0/mappings/co2.xml</gcam2elm_co2_mapping_file>
+<gcam2elm_co2_mapping_file>iac/giac/gcam/gcam_6_0/mappings/co2_regional.xml</gcam2elm_co2_mapping_file>
 <gcam2elm_luc_mapping_file>iac/giac/gcam/gcam_6_0/mappings/luc.xml</gcam2elm_luc_mapping_file>
 <gcam2elm_woodharvest_mapping_file>iac/giac/gcam/gcam_6_0/mappings/woodharvest.xml</gcam2elm_woodharvest_mapping_file>
 <gcam2elm_cdensity_mapping_file>iac/giac/gcam/gcam_6_0/mappings/cdensity.xml</gcam2elm_cdensity_mapping_file>
