@@ -737,7 +737,7 @@ SUBROUTINE dgbtrs_oacc( TRANS, N, KL, KU, NRHS, AB, LDAB, IPIV, B, LDB, INFO )
 
 
 
-subroutine dgbsv_oacc( N, KL, KU, NRHS, AB, LDAB, IPIV, B, LDB, INFO )
+subroutine dgbsv_oacc( N, KL, KU, NRHS, AB, LDAB, B, LDB, INFO )
 !$acc routine seq
 !  -- LAPACK driver routine (version 3.7.0) --
 !  -- LAPACK is a software package provided by Univ. of Tennessee,    --
@@ -748,7 +748,6 @@ subroutine dgbsv_oacc( N, KL, KU, NRHS, AB, LDAB, IPIV, B, LDB, INFO )
   INTEGER            INFO, KL, KU, LDAB, LDB, N, NRHS
 !*     ..
 !*     .. Array Arguments ..
-  INTEGER            IPIV( * )
   DOUBLE PRECISION   AB( LDAB, * ), B( LDB, * )
 !     ..
 !
@@ -759,6 +758,7 @@ subroutine dgbsv_oacc( N, KL, KU, NRHS, AB, LDAB, IPIV, B, LDB, INFO )
 !     ..
 !     .. Intrinsic Functions ..
   INTRINSIC          max
+  INTEGER   :: IPIV(1:n)
 !     ..
 !     .. Executable Statements ..
 !
