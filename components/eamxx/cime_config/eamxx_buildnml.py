@@ -273,7 +273,7 @@ def evaluate_selectors(element, case, ez_selectors):
                     "Unrecognized value for 'append' attribute\n" +
                     f"  param name  : {child_name}\n" +
                     f"  append value: {append}\n" +
-                    f"  valid values: base, last\n")
+                     "  valid values: base, last\n")
             if selectors:
                 all_match = True
                 had_case_selectors = False
