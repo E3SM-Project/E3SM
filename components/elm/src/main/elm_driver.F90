@@ -285,6 +285,7 @@ module elm_driver
       use ForcingUpdateMod , only : update_forcings_cplbypass
       use elm_instMod , only : cpl_bypass_input   
       use elm_varpar , only : ndecomp_pools 
+      use UrbanParamsType, only : urban_hac_int 
       #ifdef _OPENACC 
       #define gpuflag 1
       #else
@@ -639,7 +640,7 @@ module elm_driver
       call setProcFilters(bounds_proc, proc_filter_inactive_and_active, .true., glc2lnd_vars%icemask_grc)
       call cpu_time(stopt) 
       write(iulog,*) iam,"TIMING SetProcFilters :: ",(stopt-startt)*1.E+3, "ms"
-      !$acc enter data copyin(cpl_bypass_input%atm_input(:,:,1:5))
+      !$acc enter data copyin(cpl_bypass_input%atm_input(:,:,:,1:5))
       end if
       
       !$acc enter data copyin(nstep_mod, dtime_mod, &
@@ -1275,7 +1276,6 @@ module elm_driver
             write(iulog,*) iam, "TIMING LakeTemps :: ",(stopt-startt)*1.E+3,"ms"
             
             ! Set soil/snow temperatures including ground temperature
-            call check_errsoi(25,nstep_mod,"Test.txt","SoilTemp")
             call t_startf('soiltemperature')
             call cpu_time(startt)
             call SoilTemperature(bounds_proc,  &
@@ -1287,9 +1287,7 @@ module elm_driver
             write(iulog,*) iam,"TIMING SoilTemp ",(stopt-startt)*1.E+3,"ms"
 
             call t_stopf('soiltemperature')
-            write(iulog,*) nstep_mod, "col_es%t_h2osfc After SoilTemp:",col_es%t_h2osfc(25)  
             
-            call check_errsoi(25,nstep_mod,"Test.txt","SoilFluxes")
             call cpu_time(startt) 
             !$acc parallel loop independent gang vector private(nc,bounds_clump)
             do nc = 1,nclumps
@@ -1307,7 +1305,6 @@ module elm_driver
                !call t_stopf('bgp2')
                
             end do
-            call check_errsoi(25,nstep_mod, "Test.txt", "p2c")
 
             !$acc parallel loop independent gang vector private(nc,bounds_clump)
             do nc = 1,nclumps
@@ -1367,7 +1364,6 @@ module elm_driver
             ! LakeHydrology after the new snow filter is built
             !call t_startf('hylake')
             
-            call check_errsoi(25,nstep_mod,"Test.txt","LakeHydrology")
             call cpu_time(startt)
             call LakeHydrology(bounds_proc,                       &
             proc_filter%num_lakec, proc_filter%lakec,                &
@@ -1724,7 +1720,6 @@ module elm_driver
            
            call t_startf('hydro2 drainage')
            
-            call check_errsoi(25,nstep_mod,"Test.txt","Drainage")
            call HydrologyDrainage(bounds_proc,                 &
               proc_filter%num_nolakec, proc_filter%nolakec,       &
               proc_filter%num_hydrologyc, proc_filter%hydrologyc, &
@@ -1765,8 +1760,6 @@ module elm_driver
                      frictionvel_vars, cnstate_vars, &
                      canopystate_vars, crop_vars, dtime_mod)
             end if
-
-            call check_errsoi(25,nstep_mod,"Test.txt","Balance") 
             ! ============================================================================
             ! Check the energy and water balance, also carbon and nitrogen balance
             ! ============================================================================
@@ -1824,7 +1817,7 @@ module elm_driver
             ! Determine albedos for next time step
             ! ============================================================================
             
-            if (.false.) then
+            if (doalb) then
                !if(nstep_mod >1 ) call write_vars() 
                !$acc parallel loop independent gang private(nc,bounds_clump)
                do nc = 1,nclumps
@@ -1859,14 +1852,6 @@ module elm_driver
                      !call t_stopf('urbsurfalb')
                   end if
                end do
-               !if(nstep_mod >1 ) then 
-               !   call update_vars_SurfaceAlbedo(0,"Test") 
-               !   call update_vars_UrbanAlbedo(0,"Test") 
-               !   
-               !   call shr_sys_flush(iulog) 
-               !   call endrun() 
-               !end if 
-               
             end if
             
             #ifdef _CUDA
@@ -1964,9 +1949,8 @@ module elm_driver
                end if
             end do 
             call t_startf('hbuf')
-            call cpu_time(startt) 
-            ! call hist_update_hbuf_gpu(nstep_mod,transfer_tapes, nclumps)
-            call cpu_time(stopt) 
+            !call hist_update_hbuf_gpu(nstep_mod,transfer_tapes, nclumps)
+            call hist_update_hbuf(bounds_proc)  
             call t_stopf('hbuf')
             write(iulog,*) iam, "TIMING hist_update_hbuf :: ",(stopt-startt)*1.E+3,"ms"
             

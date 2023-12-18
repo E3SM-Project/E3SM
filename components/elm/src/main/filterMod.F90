@@ -374,7 +374,7 @@ contains
 
      allocate(this_filter%lakesnowc(bounds_proc%endc-bounds_proc%begc+1)); this_filter%lakesnowc(:) = 0;
      allocate(this_filter%lakenosnowc(bounds_proc%endc-bounds_proc%begc+1)); this_filter%lakenosnowc(:) = 0;
-
+    
 
   end subroutine createProcessorFilter
 
@@ -945,8 +945,6 @@ contains
     end do
     this_filter%num_hydrologyc = fhydroc
     this_filter%num_hydrononsoic = fhydronosoic
-    print *, "include inactive:", include_inactive
-    print *, "icemask_grc:" 
     fsmb = 0 
    !$acc parallel loop independent gang vector default(present) &
    !$acc   private(fidx1) copy(fsmb) present(this_filter%do_smb_c(:))
@@ -968,21 +966,6 @@ contains
        end if
     end do
     this_filter%num_do_smb_c = fsmb
-      
-    print *, "setProcFilters:soilc", this_filter%num_soilc
-    print *, "setProcFilters:soilp", this_filter%num_soilp
-    print *, "setProcFilters:pcropp", this_filter%num_pcropp 
-    print *, "setProcFilters:urbanp", this_filter%num_urbanp
-    print *, "setProcFilters:nourbanp", this_filter%num_nourbanp
-    print *, "setProcFilters:urbanc", this_filter%num_urbanc
-    print *, "setProcFilters:urbanl", this_filter%num_urbanl
-    print *, "setProcFilters:nourbanl", this_filter%num_nourbanl
-
-    print *, "setProcFilters:lakec", this_filter%num_lakec
-    print *, "setProcFilters:nolakec", this_filter%num_nolakec
-    print *, "setProcFilters:num_lakep :",this_filter%num_lakep 
-    print *, "setProcFilters:nolakep", this_filter%num_nolakep
-    print *,"num_do_smb_c : ", this_filter%num_do_smb_c 
 
    !$acc exit data delete(include_inactive) 
   end subroutine setProcFilters

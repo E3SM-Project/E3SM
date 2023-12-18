@@ -27,7 +27,7 @@ module dynSubgridDriverMod
   use glc2lndMod          , only : glc2lnd_type
   use dynLandunitAreaMod  , only : update_landunit_weights
   use CropType            , only : crop_type
-  ! use dyncropFileMod      , only : dyncrop_init, dyncrop_interp
+  use dyncropFileMod      , only : dyncrop_init, dyncrop_interp
   use filterMod           , only : filter, filter_inactive_and_active
 
   use GridcellDataType    , only : gridcell_carbon_state, gridcell_carbon_flux
@@ -67,9 +67,9 @@ contains
     ! !USES:
     use decompMod         , only : bounds_type, BOUNDS_LEVEL_PROC
     use decompMod         , only : get_proc_clumps, get_clump_bounds
-    ! use dynpftFileMod     , only : dynpft_init
-    ! use dynHarvestMod     , only : dynHarvest_init
-    ! use dynpftFileMod     , only : dynpft_interp
+    use dynpftFileMod     , only : dynpft_init
+    use dynHarvestMod     , only : dynHarvest_init
+    use dynpftFileMod     , only : dynpft_interp
     !
     ! !ARGUMENTS:
     type(bounds_type) , intent(in)    :: bounds  ! processor-level bounds
@@ -91,39 +91,36 @@ contains
     nclumps = get_proc_clumps()
 
     prior_weights        = prior_weights_type(bounds)
-    !patch_state_updater  = patch_state_updater_type(bounds)
-    !column_state_updater = column_state_updater_type(bounds, nclumps)
-    write(*,*) "initializing patch/column_state_updater" 
     call patch_state_updater%initPatchStateUpdater( bounds) 
     call column_state_updater%initColumnStateUpdater(bounds, nclumps)
 
     ! Initialize stuff for prescribed transient Patches
-    ! if (get_do_transient_pfts()) then
-    !    call dynpft_init(bounds, dynpft_filename=get_flanduse_timeseries())
-    ! end if
+     if (get_do_transient_pfts()) then
+        call dynpft_init(bounds, dynpft_filename=get_flanduse_timeseries())
+     end if
 
-    ! Initialize stuff for harvest (currently shares the flanduse_timeseries file)
-    ! if (get_do_harvest()) then
-    !    call dynHarvest_init(bounds, harvest_filename=get_flanduse_timeseries())
-    ! end if
+     ! Initialize stuff for harvest (currently shares the flanduse_timeseries file)
+     if (get_do_harvest()) then
+        call dynHarvest_init(bounds, harvest_filename=get_flanduse_timeseries())
+     end if
 
-    ! Initialize stuff for prescribed transient crops
-    ! if (get_do_transient_crops()) then
-    !    call dyncrop_init(bounds, dyncrop_filename=get_flanduse_timeseries())
-    ! end if
+     ! Initialize stuff for prescribed transient crops
+     if (get_do_transient_crops()) then
+        call dyncrop_init(bounds, dyncrop_filename=get_flanduse_timeseries())
+     end if
 
     ! ------------------------------------------------------------------------
     ! Set initial subgrid weights for aspects that are read from file. This is relevant
     ! for cold start and use_init_interp-based initialization.
     ! ------------------------------------------------------------------------
-    !
-    ! if (get_do_transient_pfts()) then
-    !    call dynpft_interp(bounds)
-    ! end if
+    
+     if (get_do_transient_pfts()) then
+        call dynpft_interp(bounds)
+     end if
 
-    ! if (get_do_transient_crops()) then
-    !    call dyncrop_interp(bounds, crop_vars)
-    ! end if
+     if (get_do_transient_crops()) then
+        call dyncrop_interp(bounds, crop_vars)
+     end if
 
     !$OMP PARALLEL DO PRIVATE (nc, bounds_clump)
     do nc = 1, nclumps

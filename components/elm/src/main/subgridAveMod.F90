@@ -2505,13 +2505,13 @@ end subroutine p2c_1d_filter_parallel
          allocate(main_scale_l2g_lookup(num_scale_types, max_lunit))
 
          !itype = unity 
-         !$acc parallel loop independent gang vector async(1) 
+         !!!$acc parallel loop independent gang vector default(present) 
          do lunit = 1,max_lunit
             main_scale_l2g_lookup(unity,lunit) = 1.0_r8
          end do 
 
          !itype = natveg
-         !$acc parallel loop independent gang vector async(2) 
+         !!!$acc parallel loop independent gang vector default(present) 
          do lunit = 1,max_lunit
             if(lunit == istsoil) then 
                main_scale_l2g_lookup(natveg,lunit) = 1.0_r8
@@ -2521,7 +2521,7 @@ end subroutine p2c_1d_filter_parallel
          end do 
 
          !itype = veg 
-         !$acc parallel loop independent gang vector async(3) 
+         !!!$acc parallel loop independent gang vector default(present) 
          do lunit = 1,max_lunit
             if(lunit == istsoil .or. lunit == istcrop ) then 
                main_scale_l2g_lookup(veg,lunit) = 1.0_r8
@@ -2531,7 +2531,7 @@ end subroutine p2c_1d_filter_parallel
          end do 
          
          !itype = ice 
-         !$acc parallel loop independent gang vector async(4) 
+         !!!$acc parallel loop independent gang vector default(present) 
          do lunit = 1,max_lunit
             if(lunit == istice .or. lunit == istice_mec ) then 
                main_scale_l2g_lookup(ice,lunit) = 1.0_r8
@@ -2541,7 +2541,7 @@ end subroutine p2c_1d_filter_parallel
          end do 
 
          !itype = nonurb
-         !$acc parallel loop independent gang vector async(5) 
+         !!$acc parallel loop independent gang vector default(present) 
          do lunit = 1,max_lunit
             main_scale_l2g_lookup(ice,lunit) = 1.0_r8
             if(lunit >= isturb_MIN .and. lunit <= isturb_MAX) then  
@@ -2550,7 +2550,7 @@ end subroutine p2c_1d_filter_parallel
          end do 
 
          !itype = lake
-         !$acc parallel loop independent gang vector async(6) 
+         !!$acc parallel loop independent gang vector default(present) 
          do lunit = 1,max_lunit
             if(lunit == istdlak) then 
                main_scale_l2g_lookup(ice,lunit) = 1.0_r8
@@ -2558,8 +2558,8 @@ end subroutine p2c_1d_filter_parallel
                main_scale_l2g_lookup(ice,lunit) = spval
             end if 
          end do 
-         !$acc wait 
-
+      
+         !$acc update device(main_scale_l2g_lookup(:,:))  
 
        end subroutine initialize_scale_l2g_lookup
 
@@ -2583,13 +2583,13 @@ end subroutine p2c_1d_filter_parallel
          allocate(main_scale_c2l(begc:endc,num_scale_types))
          
          ! c2l_scale_type == unity
-         !$acc parallel loop independent gang vector default(present) async(1)
+        !!! !$acc parallel loop independent gang vector default(present) 
          do c = begc,endc
             main_scale_c2l(c,unity) = 1.0_r8
          end do
          
          !c2l_scale_type == urbanf
-         !$acc parallel loop independent gang vector default(present) async(2)
+         !!!$acc parallel loop independent gang vector default(present) 
          do c = begc,endc
             l = col_pp%landunit(c)
             if (lun_pp%urbpoi(l)) then
@@ -2608,7 +2608,7 @@ end subroutine p2c_1d_filter_parallel
          end do
          
            ! c2l_scale_type == urbans 
-         !$acc parallel loop independent gang vector default(present) async(3)
+         !!!$acc parallel loop independent gang vector default(present) 
          do c = begc, endc
            l = col_pp%landunit(c)
            if (lun_pp%urbpoi(l)) then
@@ -2625,9 +2625,8 @@ end subroutine p2c_1d_filter_parallel
             main_scale_c2l(c,urbans) = 1.0_r8
            end if
          end do
-
-         !$acc wait 
-
+        
+         !$acc update device(main_scale_c2l(:,:)) 
        end subroutine initialize_scale_c2l
        
 end module subgridAveMod

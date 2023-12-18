@@ -240,19 +240,150 @@ module dynConsBiogeochemMod
                ! in this time step.  Based on the settings in cnIniTimeVar.
                
                ! pft-level carbon state variables
-               call CarbonStateVarsInit     (veg_cs, p)
-               call NitrogenStateVarsInit   (veg_ns, p)
-               call PhosphorusStateVarsInit (veg_ps, p)
-               call CanopyStateVarsInit     (canopystate_vars, p)
-               call CNStateVarsInit         (cnstate_vars, p, c)
-               call CarbonFluxVarsInit      (veg_cf, p)
-               call NitrogenFluxVarsInit    ( p)
-               call PhosphorusFluxVarsInit  ( p)
+               
+               veg_cs%leafc(p)              = 0._r8
+               veg_cs%leafc_storage(p)      = 0._r8
+               veg_cs%leafc_xfer(p)         = 0._r8
+               veg_cs%frootc(p)             = 0._r8
+               veg_cs%frootc_storage(p)     = 0._r8
+               veg_cs%frootc_xfer(p)        = 0._r8
+               veg_cs%livestemc(p)          = 0._r8
+               veg_cs%livestemc_storage(p)  = 0._r8
+               veg_cs%livestemc_xfer(p)     = 0._r8
+               veg_cs%deadstemc(p)          = 0._r8
+               veg_cs%deadstemc_storage(p)  = 0._r8
+               veg_cs%deadstemc_xfer(p)     = 0._r8
+               veg_cs%livecrootc(p)         = 0._r8
+               veg_cs%livecrootc_storage(p) = 0._r8
+               veg_cs%livecrootc_xfer(p)    = 0._r8
+               veg_cs%deadcrootc(p)         = 0._r8
+               veg_cs%deadcrootc_storage(p) = 0._r8
+               veg_cs%deadcrootc_xfer(p)    = 0._r8
+               veg_cs%gresp_storage(p)      = 0._r8
+               veg_cs%gresp_xfer(p)         = 0._r8
+               veg_cs%cpool(p)              = 0._r8
+               veg_cs%xsmrpool(p)           = 0._r8
+               veg_cs%ctrunc(p)             = 0._r8
+               veg_cs%dispvegc(p)           = 0._r8
+               veg_cs%storvegc(p)           = 0._r8
+               veg_cs%totvegc(p)            = 0._r8
+               veg_cs%totpftc(p)            = 0._r8
+               
+               veg_ns%leafn(p)              = 0._r8
+               veg_ns%leafn_storage(p)      = 0._r8
+               veg_ns%leafn_xfer(p)         = 0._r8
+               veg_ns%frootn(p)             = 0._r8
+               veg_ns%frootn_storage(p)     = 0._r8
+               veg_ns%frootn_xfer(p)        = 0._r8
+               veg_ns%livestemn(p)          = 0._r8
+               veg_ns%livestemn_storage(p)  = 0._r8
+               veg_ns%livestemn_xfer(p)     = 0._r8
+               veg_ns%deadstemn(p)          = 0._r8
+               veg_ns%deadstemn_storage(p)  = 0._r8
+               veg_ns%deadstemn_xfer(p)     = 0._r8
+               veg_ns%livecrootn(p)         = 0._r8
+               veg_ns%livecrootn_storage(p) = 0._r8
+               veg_ns%livecrootn_xfer(p)    = 0._r8
+               veg_ns%deadcrootn(p)         = 0._r8
+               veg_ns%deadcrootn_storage(p) = 0._r8
+               veg_ns%deadcrootn_xfer(p)    = 0._r8
+               veg_ns%retransn(p)           = 0._r8
+               veg_ns%npool(p)              = 0._r8
+               veg_ns%ntrunc(p)             = 0._r8
+               veg_ns%dispvegn(p)           = 0._r8
+               veg_ns%storvegn(p)           = 0._r8
+               veg_ns%totvegn(p)            = 0._r8
+               veg_ns%totpftn(p)            = 0._r8
+               
+               veg_ps%leafp(p)              = 0._r8
+               veg_ps%leafp_storage(p)      = 0._r8
+               veg_ps%leafp_xfer(p)         = 0._r8
+               veg_ps%frootp(p)             = 0._r8
+               veg_ps%frootp_storage(p)     = 0._r8
+               veg_ps%frootp_xfer(p)        = 0._r8
+               veg_ps%livestemp(p)          = 0._r8
+               veg_ps%livestemp_storage(p)  = 0._r8
+               veg_ps%livestemp_xfer(p)     = 0._r8
+               veg_ps%deadstemp(p)          = 0._r8
+               veg_ps%deadstemp_storage(p)  = 0._r8
+               veg_ps%deadstemp_xfer(p)     = 0._r8
+               veg_ps%livecrootp(p)         = 0._r8
+               veg_ps%livecrootp_storage(p) = 0._r8
+               veg_ps%livecrootp_xfer(p)    = 0._r8
+               veg_ps%deadcrootp(p)         = 0._r8
+               veg_ps%deadcrootp_storage(p) = 0._r8
+               veg_ps%deadcrootp_xfer(p)    = 0._r8
+               veg_ps%retransp(p)           = 0._r8
+               veg_ps%ppool(p)              = 0._r8
+               veg_ps%ptrunc(p)             = 0._r8
+               veg_ps%dispvegp(p)           = 0._r8
+               veg_ps%storvegp(p)           = 0._r8
+               veg_ps%totvegp(p)            = 0._r8
+               veg_ps%totpftp (p)           = 0._r8
+               
+               canopystate_vars%laisun_patch(p) = 0._r8
+               canopystate_vars%laisha_patch(p) = 0._r8
+               
+               cnstate_vars%dormant_flag_patch(p)          = 1._r8
+               cnstate_vars%days_active_patch(p)           = 0._r8
+               cnstate_vars%onset_flag_patch(p)            = 0._r8
+               cnstate_vars%onset_counter_patch(p)         = 0._r8
+               cnstate_vars%onset_gddflag_patch(p)         = 0._r8
+               cnstate_vars%onset_fdd_patch(p)             = 0._r8
+               cnstate_vars%onset_gdd_patch(p)             = 0._r8
+               cnstate_vars%onset_swi_patch(p)             = 0._r8
+               cnstate_vars%offset_flag_patch(p)           = 0._r8
+               cnstate_vars%offset_counter_patch(p)        = 0._r8
+               cnstate_vars%offset_fdd_patch(p)            = 0._r8
+               cnstate_vars%offset_swi_patch(p)            = 0._r8
+               cnstate_vars%lgsf_patch(p)                  = 0._r8
+               cnstate_vars%bglfr_patch(p)                 = 0._r8
+               cnstate_vars%bglfr_leaf_patch(p)            = 0._r8
+               cnstate_vars%bglfr_froot_patch(p)           = 0._r8
+               cnstate_vars%bgtr_patch(p)                  = 0._r8
+               cnstate_vars%annavg_t2m_patch(p)            = cnstate_vars%annavg_t2m_col(c)
+               cnstate_vars%tempavg_t2m_patch(p)           = 0._r8
+               cnstate_vars%alloc_pnow_patch(p)            = 1._r8
+               cnstate_vars%c_allometry_patch(p)           = 0._r8
+               cnstate_vars%n_allometry_patch(p)           = 0._r8
+               cnstate_vars%p_allometry_patch(p)           = 0._r8
+               cnstate_vars%tempsum_potential_gpp_patch(p) = 0._r8
+               cnstate_vars%annsum_potential_gpp_patch(p)  = 0._r8
+               cnstate_vars%tempmax_retransn_patch(p)      = 0._r8
+               cnstate_vars%annmax_retransn_patch(p)       = 0._r8
+               cnstate_vars%downreg_patch(p)               = 0._r8
+               
+               cnstate_vars%tempmax_retransp_patch(p)      = 0._r8
+               cnstate_vars%annmax_retransp_patch(p)       = 0._r8
+               
+               if ( use_c14 ) then
+                  cnstate_vars%rc14_atm_patch(p) = c14ratio
+                  cnstate_vars%rc14_atm_patch(p) = 0._r8
+               endif
+               veg_cf%xsmrpool_recover(p)      = 0._r8
+               veg_cf%plant_calloc(p)          = 0._r8
+               veg_cf%excess_cflux(p)          = 0._r8
+               veg_cf%prev_leafc_to_litter(p)  = 0._r8
+               veg_cf%prev_frootc_to_litter(p) = 0._r8
+               veg_cf%availc(p)                = 0._r8
+               veg_cf%gpp_before_downreg(p)    = 0._r8
+               veg_cf%tempsum_npp(p)           = 0._r8
+               veg_cf%annsum_npp(p)            = 0._r8
+      
+               if ( use_c13 ) then
+                  veg_cf%xsmrpool_c13ratio(p) = c13ratio
+               end if
+               veg_nf%plant_ndemand(p)         = 0._r8
+               veg_nf%avail_retransn(p)        = 0._r8
+               veg_nf%plant_nalloc(p)          = 0._r8
+               
+               veg_pf%plant_pdemand(p)         = 0._r8
+               veg_pf%avail_retransp(p)        = 0._r8
+               veg_pf%plant_palloc(p)          = 0._r8
                
                ! if ( use_c13 ) then
                !    call CarbonStateVarsInit(c13_veg_cs, p)
                ! endif
-               
                ! if ( use_c14 ) then
                !    call CarbonStateVarsInit(c14_veg_cs, p)
                ! endif

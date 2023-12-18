@@ -348,7 +348,8 @@ contains
          h2osoi_liq   =>    col_ws%h2osoi_liq   & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)
          )
     !$acc enter data create(sum1, sum2)
-    !$acc parallel loop independent gang vetor default(present) 
+    
+    !$acc parallel loop independent gang vector default(present) 
     do fc =1, num_lakec 
       c = filter_lakec(fc)  
       liquid_mass(c) = 0._r8 
