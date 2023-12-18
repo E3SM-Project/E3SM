@@ -3599,7 +3599,7 @@ contains
            rainFlux(i) = x2o_om(n, index_x2o_Faxa_rain)
         end if
         if ( atmosphericPressureField % isActive ) then
-           atmosphericPressure(i) = x2o_om(n, index_x2o_Sa_pbot)
+           atmosphericPressure(i) = x2o_om(n, index_x2o_Sa_pslv)
         end if
         if ( seaIcePressureField % isActive ) then
            ! Set seaIcePressure to be limited to 5m of pressure
