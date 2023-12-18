@@ -1511,6 +1511,25 @@
           <rootpe_lnd>2048</rootpe_lnd>
         </rootpe>
       </pes>
+      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SWAV.+" pesize="L">
+        <comment> --compset WCYCL* --res ne30pg2_r05_IcoswISC30E3r5 on 105 nodes pure-MPI, ~27.7 sypd </comment>
+        <ntasks>
+          <ntasks_atm>5440</ntasks_atm>
+          <ntasks_cpl>5440</ntasks_cpl>
+          <ntasks_ocn>1280</ntasks_ocn>
+          <ntasks_ice>4352</ntasks_ice>
+          <ntasks_rof>1088</ntasks_rof>
+          <ntasks_lnd>1088</ntasks_lnd>
+        </ntasks>
+        <rootpe>
+          <rootpe_atm>0</rootpe_atm>
+          <rootpe_cpl>0</rootpe_cpl>
+          <rootpe_ocn>5440</rootpe_ocn>
+          <rootpe_ice>0</rootpe_ice>
+          <rootpe_rof>4352</rootpe_rof>
+          <rootpe_lnd>4352</rootpe_lnd>
+        </rootpe>
+      </pes>
     </mach>
   </grid>
   <grid name="a%ne30np4.pg.+_oi%EC30to60E2r2">
