@@ -394,7 +394,7 @@
         </ntasks>
       </pes>
     </mach>
-    <mach name="pm-cpu|alvarez">
+    <mach name="pm-cpu|alvarez|ascent">
       <pes compset="any" pesize="any">
         <comment>elm: grid l%4x5 on 1 full node</comment>
         <ntasks>
