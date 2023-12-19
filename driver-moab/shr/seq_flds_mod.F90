@@ -647,6 +647,15 @@ contains
     attname  = 'Sa_z'
     call metadata_set(attname, longname, stdname, units)
 
+    ! topographic height (m)
+    call seq_flds_add(a2x_states,"Sa_topo")
+    call seq_flds_add(x2l_states,"Sa_topo")
+    longname = 'Surface height'
+    stdname  = 'height'
+    units    = 'm'
+    attname  = 'Sa_topo'
+    call metadata_set(attname, longname, stdname, units)
+
     ! zonal wind at the lowest model level (m/s)
     call seq_flds_add(a2x_states,"Sa_u")
     call seq_flds_add(x2l_states,"Sa_u")
@@ -1292,6 +1301,17 @@ contains
     stdname  = '10m_wind'
     units    = 'm'
     attname  = 'u10'
+    call metadata_set(attname, longname, stdname, units)
+
+    ! 10 meter wind with gustiness
+    call seq_flds_add(i2x_states,"Si_u10withgusts")
+    call seq_flds_add(xao_states,"So_u10withgusts")
+    call seq_flds_add(l2x_states,"Sl_u10withgusts")
+    call seq_flds_add(x2a_states,"Sx_u10withgusts")
+    longname = '10m wind with gustiness'
+    stdname  = ''
+    units    = 'm s-1'
+    attname  = 'u10withgusts'
     call metadata_set(attname, longname, stdname, units)
 
     ! Zonal surface stress"
