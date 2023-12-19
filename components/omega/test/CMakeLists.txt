@@ -22,7 +22,7 @@ target_link_options(
   ${OMEGA_LINK_OPTIONS}
 )
 
-target_link_libraries(${_TestDataTypesName} ${OMEGA_LIB_NAME} yakl)
+target_link_libraries(${_TestDataTypesName} ${OMEGA_LIB_NAME} yakl metis)
 
 add_test(
   NAME DATA_TYPES_TEST
@@ -116,6 +116,42 @@ target_link_options(
 target_link_libraries(${_TestLoggingName} ${OMEGA_LIB_NAME} yakl)
 
 add_test(NAME LOGGING_TEST COMMAND ./${_TestLoggingName})
+
+#############
+# Decomp test
+#############
+
+set(_TestDecompName testDecomp.exe)
+
+# Add broadcast test
+add_executable(${_TestDecompName} base/DecompTest.cpp)
+
+target_include_directories(
+  ${_TestDecompName}
+  PRIVATE
+  ${OMEGA_SOURCE_DIR}/src/base
+  ${OMEGA_SOURCE_DIR}/src/infra
+  ${PARMETIS_ROOT}/include
+)
+
+target_compile_options(
+  ${_TestDecompName}
+  PRIVATE
+  ${OMEGA_CXX_FLAGS}
+)
+
+target_link_options(
+  ${_TestDecompName}
+  PRIVATE
+  ${OMEGA_LINK_OPTIONS}
+)
+
+target_link_libraries(${_TestDecompName} ${OMEGA_LIB_NAME} yakl metis)
+
+add_test(
+  NAME DECOMP_TEST
+  COMMAND ${MPI_EXEC} -n 8 -- ./${_TestDecompName}
+)
 
 
 ##################

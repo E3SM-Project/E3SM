@@ -41,3 +41,20 @@ add_subdirectory(
   ${E3SM_EXTERNALS_ROOT}/scorpio
   ${CMAKE_CURRENT_BINARY_DIR}/scorpio
 )
+
+
+
+# Add the parmetis and related libraries
+
+# If not defined, assume the METIS paths are the same as ParMETIS
+if(NOT DEFINED METIS_ROOT)
+   set(METIS_ROOT ${PARMETIS_ROOT})
+endif()
+
+add_library(metis STATIC IMPORTED GLOBAL)
+set_target_properties(metis PROPERTIES
+   IMPORTED_LOCATION ${METIS_ROOT}/lib/libmetis.a)
+
+add_library(parmetis STATIC IMPORTED GLOBAL)
+set_target_properties(parmetis PROPERTIES
+   IMPORTED_LOCATION ${PARMETIS_ROOT}/lib/libparmetis.a)

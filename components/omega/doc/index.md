@@ -26,6 +26,7 @@ userGuide/DataTypes
 userGuide/MachEnv
 userGuide/Broadcast
 userGuide/Logging
+userGuide/Decomp
 ```
 
 ```{toctree}
@@ -42,6 +43,7 @@ devGuide/Docs
 devGuide/BuildDocs
 devGuide/CMakeBuild
 devGuide/Logging
+devGuide/Decomp
 ```
 
 ```{toctree}
