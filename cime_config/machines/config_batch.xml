@@ -555,7 +555,6 @@
       <queues>
         <queue walltimemax="00:59:00" jobmin="1" jobmax="10624" default="true">workq-route</queue>
         <queue walltimemax="00:59:00" jobmin="1" jobmax="10624">workq</queue>
-        <queue walltimemax="00:59:00" jobmin="1" jobmax="128">diag</queue>
       </queues>
     </batch_system>
     

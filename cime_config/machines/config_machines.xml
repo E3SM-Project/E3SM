@@ -3119,8 +3119,8 @@
        <modules>
           <command name="purge"></command>
           <command name="use">/soft/modulefiles</command>
-          <command name="load">spack-pe-gcc cmake</command>
           <command name="use">/soft/restricted/CNDA/updates/modulefiles</command>
+          <command name="load">spack-pe-gcc cmake</command>
         </modules>
         <modules compiler="!gnu">
           <command name="load">oneapi/eng-compiler/2023.05.15.007</command>
@@ -3138,12 +3138,10 @@
      <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
      <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
      <environment_variables>
-        <env name="NETCDF_C_PATH">/lus/gecko/projects/CSC249ADSE15_auroratmp_CNDA/software/oneAPI.2022.12.30.003/netcdf</env>
-        <env name="NETCDF_FORTRAN_PATH">/lus/gecko/projects/CSC249ADSE15_auroratmp_CNDA/software/oneAPI.2022.12.30.003/netcdf</env>
-        <env name="NETCDF_PATH">/lus/gecko/projects/CSC249ADSE15_auroratmp_CNDA/software/oneAPI.2022.12.30.003/netcdf</env>
-        <env name="PNETCDF_PATH">/lus/gecko/projects/CSC249ADSE15_auroratmp_CNDA/software/oneAPI.2022.12.30.003/pnetcdf</env>
-        <env name="HDF5_PATH">/lus/gecko/projects/CSC249ADSE15_auroratmp_CNDA/software/oneAPI.2022.12.30.003/hdf5</env>
-        <env name="LD_LIBRARY_PATH">/lus/gecko/projects/CSC249ADSE15_auroratmp_CNDA/software/oneAPI.2022.12.30.003/netcdf/lib:/lus/gecko/projects/CSC249ADSE15_auroratmp_CNDA/software/oneAPI.2022.12.30.003/pnetcdf/lib:/lus/gecko/projects/CSC249ADSE15_auroratmp_CNDA/software/oneAPI.2022.12.30.003/hdf5/lib:$ENV{LD_LIBRARY_PATH}</env>
+        <env name="NETCDF_C_PATH">/lus/gecko/projects/CSC249ADSE15_CNDA/software/netcdf-c/4.9.2/oneapi.eng.2023.05.15.007</env>
+        <env name="NETCDF_FORTRAN_PATH">/lus/gecko/projects/CSC249ADSE15_CNDA/software/netcdf-fortran/4.6.1/oneapi.eng.2023.05.15.007</env>
+        <env name="PNETCDF_PATH">/lus/gecko/projects/CSC249ADSE15_CNDA/software/pnetcdf/1.12.3/oneapi.eng.2023.05.15.007</env>
+        <env name="LD_LIBRARY_PATH">/lus/gecko/projects/CSC249ADSE15_CNDA/software/pnetcdf/1.12.3/oneapi.eng.2023.05.15.007/lib:/lus/gecko/projects/CSC249ADSE15_CNDA/software/netcdf-fortran/4.6.1/oneapi.eng.2023.05.15.007/lib:/lus/gecko/projects/CSC249ADSE15_CNDA/software/netcdf-c/4.9.2/oneapi.eng.2023.05.15.007/lib:$ENV{LD_LIBRARY_PATH}</env>
         <env name="RANKS_BIND">list:0-7,104-111:8-15,112-119:16-23,120-127:24-31,128-135:32-39,136-143:40-47,144-151:52-59,156-163:60-67,164-171:68-75,172-179:76-83,180-187:84-91,188-195:92-99,196-203</env>
      </environment_variables>
      <environment_variables DEBUG="TRUE">
