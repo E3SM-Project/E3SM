@@ -1707,20 +1707,6 @@
     </values>
   </entry>
 
-  <entry id="nlmaps_verbosity">
-    <type>integer</type>
-    <category>nlmaps</category>
-    <group>seq_infodata_inparm</group>
-    <desc>
-      Measure and print information about nonlinearly mapped fields. 0 means no
-      analysis is done or printed. >= 1 triggers analysis written to cpl.log.
-      default: 0
-    </desc>
-    <values>
-      <value>0</value>
-    </values>
-  </entry>
-
   <!-- =========================== -->
   <!-- group seq_timemgr_inparm    -->
   <!-- =========================== -->

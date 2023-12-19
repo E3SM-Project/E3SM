@@ -676,7 +676,7 @@
   <entry id="COMP_INTERFACE">
     <type>char</type>
     <valid_values>mct,nuopc,moab</valid_values>
-    <default_value>mct</default_value>
+    <default_value>moab</default_value>
     <group>build_def</group>
     <file>env_build.xml</file>
     <desc>use MCT component interface</desc>
@@ -2620,7 +2620,7 @@
 
   <entry id="PIO_TYPENAME">
     <type>char</type>
-    <valid_values>netcdf,pnetcdf,netcdf4p,netcdf4c,adios,default</valid_values>
+    <valid_values>netcdf,pnetcdf,netcdf4p,netcdf4c,adios,hdf5,default</valid_values>
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio io type</desc>
