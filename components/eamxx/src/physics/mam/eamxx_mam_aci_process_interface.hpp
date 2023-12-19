@@ -27,6 +27,12 @@ class MAMAci final : public scream::AtmosphereProcess {
   using view_3d       = typename KT::template view_3d<Real>;
   using const_view_3d = typename KT::template view_3d<const Real>;
 
+  template <typename Scalar, typename MemoryTraits = Kokkos::MemoryManaged>
+  using view_4d = KT::view<Scalar****,MemoryTraits>;
+
+  // FIXME the time step for microphysics [s] need to get from the input
+  const Real dtmicro_ = .0001;
+
   // rho is air density [kg/m3]
   view_2d rho_;
 
@@ -37,7 +43,7 @@ class MAMAci final : public scream::AtmosphereProcess {
   view_2d tke_;
 
   const_view_2d qv_dry_;
-  const_view_2d cldfrac_;
+  view_2d cldfrac_;
   //const_view_2d w_updraft_;
   view_2d w_updraft_;
 
@@ -60,9 +66,38 @@ class MAMAci final : public scream::AtmosphereProcess {
   view_2d naai_;
   const_view_2d liqcldf_;
   const_view_2d qc_;
-  const_view_2d qi_;
+  const_view_2d qi_;  
+  const_view_2d kvh_;  
+  view_2d cldo_;
+
+  view_2d zm_;
+  view_3d state_q_;
+  view_2d ncldwtr_;
+
   view_2d lcldn_;
   view_2d lcldo_;
+  view_2d qcld_;
+  view_2d tendnd_;
+  view_2d ptend_q_[mam4::ndrop::nvar_ptend_q];
+  view_3d ptend_q_inp_;
+  view_3d factnum_;
+  view_3d qqcw_inp_;
+  view_2d qqcw_[mam4::ndrop::ncnst_tot];
+  view_2d ndropcol_;
+  view_2d ndropmix_;
+  view_2d nsource_;
+  view_2d wtke_;
+  view_3d ccn_;
+  view_3d coltend_outp_;
+  view_2d coltend_[mam4::ndrop::ncnst_tot];
+  view_3d coltend_cw_outp_;
+  view_2d coltend_cw_[mam4::ndrop::ncnst_tot];
+  view_2d raercol_cw_[mam4::ndrop::pver][2];
+  view_2d raercol_[mam4::ndrop::pver][2];
+  view_3d nact_;
+  view_3d mact_;
+  view_2d scratch_mem_[15];
+
 
   // Subgrid scale velocities
   view_2d wsub_, wsubice_, wsig_, w2_;
@@ -116,11 +151,12 @@ public:
   Preprocess preprocess_;
 
   // local atmospheric state column variables
-  const_view_2d pdel_;    // hydrostatic "pressure thickness" at grid
-                          // interfaces [Pa]
   const_view_2d omega_; // Vertical pressure velocity [Pa/s] at midpoints
   const_view_2d p_mid_; // Total pressure [Pa] at midpoints
+  const_view_2d p_int_; // Total pressure [Pa] at interfaces
   const_view_2d T_mid_; // Temperature[K] at midpoints
+  const_view_2d pdel_;  // pressure thickess of layer [Pa]
+  view_2d rpdel_; // Inverse of pdel_
   const_view_2d w_sec_; // Vertical velocity variance
 
   // physics grid for column information

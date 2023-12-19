@@ -1,6 +1,7 @@
 #include <physics/mam/eamxx_mam_aci_process_interface.hpp>
 #include "ekat/util/ekat_units.hpp"
 #include "mam4xx/aero_config.hpp"
+#include "mam4xx/ndrop.hpp"
 namespace scream
 {
 
@@ -25,6 +26,7 @@ Real subgrid_mean_updraft(const Real w0, const Real wsig)
 
   // FIXME should nbin be a user parameter?
   const int nbin = 50;
+
   
   using C  = physics::Constants<Real>;
   constexpr Real pi       = C::Pi;
@@ -84,17 +86,21 @@ void MAMAci::set_grids(const std::shared_ptr<const GridsManager> grids_manager) 
   ncol_ = grid_->get_num_local_dofs(); // Number of columns on this rank
   nlev_ = grid_->get_num_vertical_levels(); // Number of levels per column
 
-  Kokkos::resize(rho_, ncol_, nlev_);
-  Kokkos::resize(w0_, ncol_, nlev_);
-  Kokkos::resize(tke_, ncol_, nlev_+1);
-  Kokkos::resize(wsub_, ncol_, nlev_);
+  Kokkos::resize(rho_,     ncol_, nlev_);
+  Kokkos::resize(w0_,      ncol_, nlev_);
+  Kokkos::resize(tke_,     ncol_, nlev_+1);
+  Kokkos::resize(wsub_,    ncol_, nlev_);
   Kokkos::resize(wsubice_, ncol_, nlev_);
-  Kokkos::resize(wsig_, ncol_, nlev_);
-  Kokkos::resize(w2_, ncol_, nlev_);
-  Kokkos::resize(lcldn_, ncol_, nlev_);
-  Kokkos::resize(lcldo_, ncol_, nlev_);
+  Kokkos::resize(wsig_,    ncol_, nlev_);
+  Kokkos::resize(w2_,      ncol_, nlev_);
+  Kokkos::resize(lcldn_,   ncol_, nlev_);
+  Kokkos::resize(lcldo_,   ncol_, nlev_);
   Kokkos::resize(aitken_dry_dia_, ncol_, nlev_);
+  Kokkos::resize(rpdel_,   ncol_, nlev_);
 
+  for (int  i=0; i<15; ++i) {
+     Kokkos::resize(scratch_mem_[i],ncol_, nlev_);
+  }
   // Define the different field layouts that will be used for this process
   using namespace ShortFieldTagsNames;
 
@@ -118,7 +124,9 @@ void MAMAci::set_grids(const std::shared_ptr<const GridsManager> grids_manager) 
   add_field<Required>("p_int",          scalar3d_layout_int, Pa,     grid_name); // Total pressure [Pa] at interfaces
   add_field<Required>("qv",             scalar3d_layout_mid, q_unit, grid_name); // Water vapor mixing ratio [kg vapor / kg dry air]
   add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa,     grid_name); // Layer thickness(pdel) [Pa] at midpoints
-  add_field<Required>("cldfrac_tot",    scalar3d_layout_mid, nondim, grid_name); // cloud fraction [nondimentional]
+
+  
+  // FIXME: These should all come from the intput file.  Might need to be added to the input file?
   //add_field<Required>("w_updraft",      scalar3d_layout_mid, q_unit, grid_name); // updraft velocity [m/s]
   //add_field<Required>("q_coarse_dst",   scalar3d_layout_mid, q_unit, grid_name); // Dust mixing ratio for coarse mode [kg/kg]
   //add_field<Required>("q_coarse_nacl",  scalar3d_layout_mid, q_unit, grid_name); // Salt mixing ratio for coarse mode [kg/kg]
@@ -129,6 +137,12 @@ void MAMAci::set_grids(const std::shared_ptr<const GridsManager> grids_manager) 
   //add_field<Required>("q_coarse_soa",   scalar3d_layout_mid, q_unit, grid_name); // Secondary Organic Aerosol mixing ratio for coarse mode [kg/kg]
   //add_field<Required>("n_coarse",       scalar3d_layout_mid, 1/kg,   grid_name); // Coarse mode number mixing ratio [1/kg dry air]
   //add_field<Required>("n_aitken",       scalar3d_layout_mid, 1/kg,   grid_name); // Aitken mode number mixing ratio [1/kg dry air]
+  //add_field<Required>("zm",             scalar3d_layout_mid, m,      grid_name); // geopotential height of level (m)
+  //add_field<Required>("state_q",FieldLayout{ {COL, LEV, CMP}, {ncol_, nlev_, mam4::ndrop::nvars} } , q_unit, grid_name); // aerosol mmrs [kg/kg]
+  //add_field<Required>("ncldwtr", , n_unit, grid_name); // initial droplet number mixing ratio [#/kg]
+  //add_field<Required>("cldo", , unitless, grid_name); // cloud fraction on previous time step [fraction]
+  //add_field<Required>("qqcw", FieldLayout{ {COL, LEV, CMP}, {ncol_, nlev_, mam4::ndrop::ncnst_tot} } , q_unit, grid_name); // cloud-borne aerosol mass, number mixing ratios [#/kg or kg/kg]
+
 
   add_field<Computed>("nihf",scalar3d_layout_mid , 1/m/m/m,   grid_name); // number conc of ice nuclei due to heterogeneous freezing [1/m3]
   add_field<Computed>("niim",scalar3d_layout_mid , 1/m/m/m,   grid_name); // number conc of ice nuclei due to immersion freezing (hetero nuc) [1/m3]
@@ -136,6 +150,22 @@ void MAMAci::set_grids(const std::shared_ptr<const GridsManager> grids_manager) 
   add_field<Computed>("nimey",scalar3d_layout_mid , 1/m/m/m,   grid_name); // number conc of ice nuclei due to meyers deposition [1/m3]
   add_field<Computed>("naai_hom",scalar3d_layout_mid , n_unit, grid_name); // number of activated aerosol for ice nucleation (homogeneous freezing only) [#/kg]
   add_field<Computed>("naai",scalar3d_layout_mid , n_unit, grid_name); // number of activated aerosol for ice nucleation[#/kg]
+  add_field<Computed>("qcld",scalar3d_layout_mid , n_unit, grid_name); // cloud droplet number mixing ratio [#/kg]
+  add_field<Computed>("ptend_q", FieldLayout{ {COL, LEV, CMP}, {ncol_, nlev_, mam4::ndrop::nvar_ptend_q}}, n_unit, grid_name); // tendencies for interstitial and cloud borne aerosols [#/kg]
+  add_field<Computed>("tendnd",scalar3d_layout_mid , n_unit/s, grid_name); // tendency in droplet number mixing ratio [#/kg/s]
+  add_field<Computed>("factnum", FieldLayout{ {COL, LEV, CMP}, {ncol_, nlev_, mam4::AeroConfig::num_modes()}}, nondim, grid_name); // activation fraction for aerosol number [fraction]
+  add_field<Computed>("ndropcol",scalar3d_layout_mid , n_unit/s, grid_name); // 
+  add_field<Computed>("ndropmix",scalar3d_layout_mid , n_unit/s, grid_name); // droplet number mixing ratio tendency due to mixing [#/kg/s]
+  add_field<Computed>("nsource",scalar3d_layout_mid , n_unit/s, grid_name); // droplet number mixing ratio source tendency [#/kg/s]
+  add_field<Computed>("wtke",scalar3d_layout_mid , n_unit/s, grid_name); // 
+  add_field<Computed>("ccn", FieldLayout{ {COL, LEV, CMP}, {ncol_, nlev_, mam4::ndrop::psat}}, n_unit, grid_name); //number conc of aerosols activated at supersat [#/m^3]
+                   //      note:  activation fraction fluxes are defined as
+                   //     fluxn = [flux of activated aero. number into cloud [#/m^2/s]]
+                   //           / [aero. number conc. in updraft, just below cloudbase [#/m^3]]
+  add_field<Computed>("coltend", FieldLayout{ {COL, LEV, CMP}, {ncol_, nlev_, mam4::ndrop::ncnst_tot} } , nondim, grid_name); // column tendency for diagnostic output
+  add_field<Computed>("coltend_cw", FieldLayout{ {COL, LEV, CMP}, {ncol_, nlev_, mam4::ndrop::ncnst_tot} } , nondim, grid_name); // column tendency 
+
+  add_field<Updated>("cldfrac_tot",    scalar3d_layout_mid, nondim, grid_name); // cloud fraction [nondimentional]
 
   //MUST FIXME: The aerosols has a wet mixing ratio, we should convert that to dry
 
@@ -179,7 +209,7 @@ void MAMAci::set_grids(const std::shared_ptr<const GridsManager> grids_manager) 
 
   add_field<Required>("strat_cld_frac",     scalar3d_layout_mid, nondim, grid_name); // Stratiform cloud fraction at midpoints
   add_field<Required>("liq_strat_cld_frac", scalar3d_layout_mid, nondim, grid_name); // Liquid stratiform cloud fraction  at midpoints
-  add_field<Required>("kvh",                scalar3d_layout_mid, m2/s, grid_name); // Eddy diffusivity for heat
+  add_field<Required>("kvh",                scalar3d_layout_int, m2/s, grid_name); // Eddy diffusivity for heat
   
   // Layout for 4D (2d horiz X 1d vertical x number of modes) variables
   num_aero_modes_ = mam_coupling::num_aero_modes();
@@ -204,10 +234,11 @@ void MAMAci::initialize_impl(const RunType run_type) {
     pdel_ = get_field_in("pseudo_density").get_view<const Real**>();
     omega_ = get_field_in("omega").get_view<const Real**>();
     p_mid_ = get_field_in("p_mid").get_view<const Real**>();
+    p_int_ = get_field_in("p_int").get_view<const Real**>();
     T_mid_ = get_field_in("T_mid").get_view<const Real**>();
     w_sec_ = get_field_in("w_sec").get_view<const Real**>();
     qv_dry_ = get_field_in("qv").get_view<const Real**>();
-    cldfrac_ = get_field_in("cldfrac_tot").get_view<const Real**>();
+    // FIXME: These should all come from the intput file.  Might need to be added to the input file?
     Kokkos::resize(w_updraft_, ncol_, nlev_); // w_updraft_ = get_field_in("w_updraft").get_view<const Real**>();
     Kokkos::resize(q_coarse_dst_, ncol_, nlev_); // q_coarse_dst_ = get_field_in("q_coarse_dst").get_view<Real**>();
     Kokkos::resize(q_coarse_nacl_, ncol_, nlev_); // q_coarse_nacl_ = get_field_in("q_coarse_nacl").get_view<Real**>();
@@ -218,6 +249,31 @@ void MAMAci::initialize_impl(const RunType run_type) {
     Kokkos::resize(q_coarse_soa_, ncol_, nlev_); // q_coarse_soa_ = get_field_in("q_coarse_soa").get_view<Real**>();
     Kokkos::resize(n_coarse_, ncol_, nlev_); // n_coarse_ = get_field_in("n_coarse").get_view<Real**>();
     Kokkos::resize(n_aitken_, ncol_, nlev_); // n_aitken_ = get_field_in("n_aitken").get_view<Real**>();
+    Kokkos::resize(zm_, ncol_, nlev_); // zm_ =  get_field_in("zm").get_view<const Real**>();
+    Kokkos::resize(state_q_, ncol_, nlev_, mam4::ndrop::nvars); // state_q_ =  get_field_in("state_q").get_view<const Real**>();
+    Kokkos::resize(ncldwtr_, ncol_, nlev_); // ncldwtr_ =  get_field_in("ncldwtr").get_view<const Real**>();
+    Kokkos::resize(cldo_, ncol_, nlev_); // cldo_ =  get_field_in("cldo").get_view<const Real**>();
+    Kokkos::resize(qqcw_inp_, ncol_, nlev_, mam4::ndrop::ncnst_tot); // qqcw_inp_ =  get_field_in("qqcw").get_view<const Real***>();
+
+    for (int i=0; i<mam4::ndrop::ncnst_tot; ++i) {
+      Kokkos::resize(qqcw_[i], ncol_, nlev_);
+      Kokkos::resize(coltend_[i],  ncol_, nlev_);
+      Kokkos::resize(coltend_cw_[i],  ncol_, nlev_);
+    }
+    for (int i=0; i<mam4::ndrop::nvar_ptend_q; ++i) {
+      Kokkos::resize(ptend_q_[i], ncol_, nlev_);
+    }
+    for (int i=0; i<mam4::ndrop::pver; ++i) {
+      for (int j=0; j<2; ++j) {
+        Kokkos::resize(raercol_cw_[i][j], ncol_, mam4::ndrop::ncnst_tot);
+        Kokkos::resize(raercol_[i][j], ncol_, mam4::ndrop::ncnst_tot);
+      }
+    }
+
+    Kokkos::resize(nact_,  ncol_, nlev_, mam4::AeroConfig::num_modes());
+    Kokkos::resize(mact_,  ncol_, nlev_, mam4::AeroConfig::num_modes());
+
+    cldfrac_ = get_field_out("cldfrac_tot").get_view<Real**>();
     dgnum_ = get_field_out("dgnum").get_view<Real***>();
     nihf_ = get_field_out("nihf").get_view<Real**>();
     niim_ = get_field_out("niim").get_view<Real**>();
@@ -225,9 +281,24 @@ void MAMAci::initialize_impl(const RunType run_type) {
     nimey_ = get_field_out("nimey").get_view<Real**>();
     naai_hom_ = get_field_out("naai_hom").get_view<Real**>();
     naai_ = get_field_out("naai").get_view<Real**>();
+    qcld_ = get_field_out("qcld").get_view<Real**>();
+    ptend_q_inp_ = get_field_out("ptend_q").get_view<Real***>();
+    tendnd_ = get_field_out("tendnd").get_view<Real**>();
+    factnum_ = get_field_out("factnum").get_view<Real***>();
+    ndropcol_ = get_field_out("ndropcol").get_view<Real**>();
+    ndropmix_ = get_field_out("ndropmix").get_view<Real**>();
+    nsource_ = get_field_out("nsource").get_view<Real**>();
+    wtke_ = get_field_out("wtke").get_view<Real**>();
+    ccn_ = get_field_out("ccn").get_view<Real***>();
+    coltend_outp_ = get_field_out("coltend").get_view<Real***>();
+    coltend_cw_outp_ = get_field_out("coltend_cw").get_view<Real***>();
+
+
+
     liqcldf_ = get_field_in("liq_strat_cld_frac").get_view<const Real**>();
     qc_ =  get_field_in("qc").get_view<const Real**>();
     qi_ =  get_field_in("qi").get_view<const Real**>();
+    kvh_ =  get_field_in("kvh").get_view<const Real**>();
 
 
   // configure the nucleation parameterization
@@ -264,6 +335,8 @@ void MAMAci::run_impl(const double dt) {
   auto tke = tke_;
   auto T_mid = T_mid_;
   auto p_mid = p_mid_;
+  auto p_int = p_int_;
+  auto pdel = pdel_;
   auto w_sec = w_sec_;
   auto wsub = wsub_;
   auto wsubice = wsubice_;
@@ -296,9 +369,67 @@ void MAMAci::run_impl(const double dt) {
   auto lcldn = lcldn_;
   auto lcldo = lcldo_;
   auto aitken_dry_dia = aitken_dry_dia_;
+  auto rpdel = rpdel_;
+  auto zm = zm_;
+  auto state_q = state_q_;
+  auto ncldwtr = ncldwtr_;
+  auto kvh = kvh_;
+  auto qcld = qcld_;
+  auto ptend_q_inp = ptend_q_inp_;
+  auto tendnd = tendnd_;
+  auto factnum = factnum_;
+  auto ndropcol =  ndropcol_ ;
+  auto ndropmix =  ndropmix_ ;
+  auto nsource = nsource_ ;
+  auto wtke =   wtke_ ;
+  auto cldo = cldo_;
+  auto qqcw_inp = qqcw_inp_;
+  auto ccn = ccn_;
+  auto coltend_outp = coltend_outp_;
+  auto coltend_cw_outp = coltend_cw_outp_;
+  auto nact = nact_;
+  auto mact = mact_;
+  auto eddy_diff = scratch_mem_[0];
+  auto zn = scratch_mem_[1];
+  auto csbot = scratch_mem_[2];
+  auto zs = scratch_mem_[3];
+  auto overlapp = scratch_mem_[4];
+  auto overlapm = scratch_mem_[5];
+  auto eddy_diff_kp = scratch_mem_[6];
+  auto eddy_diff_km = scratch_mem_[7];
+  auto qncld = scratch_mem_[8];
+  auto srcn = scratch_mem_[9];
+  auto source = scratch_mem_[10];
+  auto dz = scratch_mem_[11];
+  auto csbot_cscen = scratch_mem_[12];
+  auto raertend = scratch_mem_[13];
+  auto qqcwtend = scratch_mem_[14];
+
+  auto team_policy = haero::ThreadTeamPolicy(ncol_, Kokkos::AUTO);
+
+ // NOTE: All the inputs are available to compute w0
+  Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
+    const int icol = team.league_rank();
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, 0u, nlev), KOKKOS_LAMBDA(int kk) { 
+      for (int i=0; i<mam4::ndrop::ncnst_tot; ++i) {
+        qqcw_[i](icol,kk) = qqcw_inp(icol, kk, i);
+      }
+    });
+  });
+
+  Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
+    const int icol = team.league_rank();
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, 0u, nlev), KOKKOS_LAMBDA(int kk) { 
+      for (int i=0; i<mam4::ndrop::nvar_ptend_q; ++i) {
+        ptend_q_[i](icol,kk) = ptend_q_inp(icol, kk, i);
+      }
+    });
+  });
+
+
+  const Real dtmicro = dtmicro_;
 
   // NOTE: All the inputs are available to compute w0
-  auto team_policy = haero::ThreadTeamPolicy(ncol_, Kokkos::AUTO);
   Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
     const int icol = team.league_rank();
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, 0u, top_lev), KOKKOS_LAMBDA(int kk) { 
@@ -488,9 +619,132 @@ void MAMAci::run_impl(const double dt) {
        aer_cb(:ncol,:,ispec,lchnk_zb) = aer_cb(:ncol,:,ispec,lchnk_zb) * rho(:ncol,:)
     enddo
     */
+
+
     //-------------------------------------------------------------
     // Compute activated fraction of aerosols
     //-------------------------------------------------------------
+    const int ntot_amode = mam4::AeroConfig::num_modes();
+    const int maxd_aspectype = mam4::ndrop::maxd_aspectype;
+    const int nspec_max = mam4::ndrop::nspec_max;
+    int nspec_amode[ntot_amode];
+    int lspectype_amode[maxd_aspectype][ntot_amode];
+    int lmassptr_amode[maxd_aspectype][ntot_amode];
+    Real specdens_amode[maxd_aspectype];
+    Real spechygro[maxd_aspectype];
+    int numptr_amode[ntot_amode];
+    int mam_idx[ntot_amode][nspec_max];
+    int mam_cnst_idx[ntot_amode][nspec_max];
+    mam4::ndrop::get_e3sm_parameters(
+        nspec_amode, lspectype_amode, lmassptr_amode, numptr_amode,
+        specdens_amode, spechygro, mam_idx, mam_cnst_idx);
+    Real exp45logsig[ntot_amode],
+        alogsig[ntot_amode],
+        num2vol_ratio_min_nmodes[ntot_amode],
+        num2vol_ratio_max_nmodes[ntot_amode] = {};
+    Real aten = 0;
+    mam4::ndrop::ndrop_init(exp45logsig, alogsig, aten,
+                      num2vol_ratio_min_nmodes,  // voltonumbhi_amode
+                      num2vol_ratio_max_nmodes); // voltonumblo_amode
+    Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) { 
+      const int icol = team.league_rank();
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, 0u, nlev), KOKKOS_LAMBDA(int kk) { 
+        rpdel(icol,kk) = 1/pdel(icol,kk);
+      });
+    });
+
+
+
+    Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
+      const int icol = team.league_rank();    
+
+      mam4::ndrop::View1D raercol_cw[mam4::ndrop::pver][2];
+      mam4::ndrop::View1D raercol[mam4::ndrop::pver][2];
+      for (int i=0; i<mam4::ndrop::pver; ++i) {
+        for (int j=0; j<2; ++j) {
+          raercol_cw[i][j] = ekat::subview(raercol_cw_[i][j], icol);
+          raercol[i][j] = ekat::subview(raercol_[i][j], icol);
+        }
+      }
+      mam4::ColumnView qqcw[mam4::ndrop::ncnst_tot];
+      for (int i=0; i<mam4::ndrop::ncnst_tot; ++i) {
+        qqcw[i] = ekat::subview(qqcw_[i], icol);
+      }
+      mam4::ColumnView ptend_q[mam4::ndrop::nvar_ptend_q];
+      for (int i=0; i<mam4::ndrop::nvar_ptend_q; ++i) {
+        ptend_q[i] = ekat::subview(ptend_q_[i], icol);
+      }
+      
+      mam4::ColumnView coltend[mam4::ndrop::ncnst_tot], coltend_cw[mam4::ndrop::ncnst_tot];
+      for (int i=0; i<mam4::ndrop::ncnst_tot; ++i) {
+        coltend[i] = ekat::subview(coltend_[i], icol);
+        coltend_cw[i] = ekat::subview(coltend_cw_[i], icol);
+      }
+
+
+      mam4::ndrop::dropmixnuc(
+       team, dtmicro, 
+       ekat::subview(T_mid, icol), 
+       ekat::subview(p_mid, icol),
+       ekat::subview(p_int, icol),
+       ekat::subview(pdel, icol),
+       ekat::subview(rpdel, icol),
+       ekat::subview(zm, icol), //  ! in zm[kk] - zm[kk+1], for pver zm[kk-1] - zm[kk]
+       ekat::subview(state_q, icol),
+       ekat::subview(ncldwtr, icol),
+       ekat::subview(kvh, icol), // kvh[kk+1]
+       ekat::subview(cldfrac, icol),
+       lspectype_amode, specdens_amode, spechygro, lmassptr_amode,
+       num2vol_ratio_min_nmodes, num2vol_ratio_max_nmodes, numptr_amode,
+       nspec_amode, exp45logsig, alogsig, aten, mam_idx, mam_cnst_idx,
+       ekat::subview(qcld, icol),// out
+       ekat::subview(wsub, icol), // in
+       ekat::subview(cldo, icol), // in
+       qqcw, // inout
+       ptend_q, 
+       ekat::subview(tendnd, icol), 
+       ekat::subview(factnum,  icol), 
+       ekat::subview(ndropcol, icol), 
+       ekat::subview(ndropmix, icol), 
+       ekat::subview(nsource, icol), 
+       ekat::subview(wtke, icol), 
+       ekat::subview(ccn, icol), 
+       coltend, 
+       coltend_cw, 
+       raercol_cw, 
+       raercol, 
+       ekat::subview(nact, icol),
+       ekat::subview(mact, icol),
+       ekat::subview(eddy_diff, icol), 
+       // work arrays
+       ekat::subview(zn,  icol), 
+       ekat::subview(csbot,  icol), 
+       ekat::subview(zs,  icol), 
+       ekat::subview(overlapp,  icol), 
+       ekat::subview(overlapm,  icol), 
+       ekat::subview(eddy_diff_kp,  icol), 
+       ekat::subview(eddy_diff_km,  icol), 
+       ekat::subview(qncld,  icol), 
+       ekat::subview(srcn, icol), 
+       ekat::subview(source,  icol), 
+       ekat::subview(dz,  icol), 
+       ekat::subview(csbot_cscen,  icol), 
+       ekat::subview(raertend,  icol), 
+       ekat::subview(qqcwtend,  icol) );
+  });
+
+  Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
+    const int icol = team.league_rank();
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, 0u, nlev), KOKKOS_LAMBDA(int kk) { 
+      for (int i=0; i<mam4::ndrop::nvar_ptend_q; ++i) {
+         ptend_q_inp(icol, kk, i) = ptend_q_[i](icol,kk);
+      }
+      for (int i=0; i<mam4::ndrop::ncnst_tot; ++i) {
+        coltend_outp(icol, kk, i) = coltend_[i](icol,kk);
+        coltend_cw_outp(icol, kk, i) = coltend_cw_[i](icol,kk);
+      }
+    });
+  });
 
     std::cout<<"pdel_ in run_impl is:"<<pdel_(0,0)<<std::endl;
     /*
