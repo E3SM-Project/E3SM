@@ -755,10 +755,6 @@
 		/>
 	</nml_record>
 	<nml_record name="coupling" mode="init;forward">
-		<nml_option name="config_ssh_grad_relax_timescale" type="real" default_value="0.0" units="seconds"
-					description="Timescale for relaxation of the ssh gradient for coupling. A value of 0.0 (default) removes any relaxation and gives instantaneous response."
-					possible_values="Any positive real number."
-		/>
 		<nml_option name="config_remove_AIS_coupler_runoff" type="logical" default_value=".false."
 					description="If true, solid and liquid runoff from the Antarctic Ice Sheet (below 60S latitude) coming from the coupled is zeroed in the coupler import routines.  To be used with data iceberg fluxes coming from the sea ice model."
 					possible_values=".true. or .false."
@@ -1930,8 +1926,7 @@
 			<var name="accumulatedLandIceHeat"/>
 			<var name="accumulatedLandIceFrazilMass"/>
 			<var name="frazilSurfacePressure"/>
-			<var name="filteredSSHGradientZonal"/>
-			<var name="filteredSSHGradientMeridional"/>
+			<var_array name="avgSSHGradient"/>
 			<var name="forcingGroupNames"/>
 			<var name="forcingGroupRestartTimes"/>
             <var name="gotmVertViscTopOfCell"/>
@@ -3679,14 +3674,6 @@
 				 description="Time averaged meridional gradient of SSH"
 			/>
 		</var_array>
-		<var name="filteredSSHGradientZonal" type="real" dimensions="nCells Time" units="1"
-			description="Time filtered zonal gradient of SSH"
-			packages="forwardMode;analysisMode"
-		/>
-		<var name="filteredSSHGradientMeridional" type="real" dimensions="nCells Time" units="1"
-			description="Time filtered meridional gradient of SSH"
-			packages="forwardMode;analysisMode"
-		/>
 		<var name="avgTotalFreshWaterTemperatureFlux" type="real" dimensions="nCells Time" units="C m s^-1"
 			 description="Sum of heat fluxes associated with water fluxes cell centers sent to coupler. Positive into the ocean."
 		/>

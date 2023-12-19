@@ -698,7 +698,6 @@ add_default($nl, 'config_flux_attenuation_coefficient_runoff');
 # Namelist group: coupling #
 ############################
 
-add_default($nl, 'config_ssh_grad_relax_timescale');
 if (($OCN_ICEBERG eq 'true') && ($OCN_FORCING eq 'active_atm')) {
 	add_default($nl, 'config_remove_AIS_coupler_runoff', 'val'=>".true.");
 } else {
