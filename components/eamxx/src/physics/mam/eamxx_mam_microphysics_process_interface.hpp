@@ -108,6 +108,11 @@ private_except_cuda:
 
     // aero microphysics configuration (see impl/mam4_amicphys.cpp)
     impl::AmicPhysConfig amicphys;
+
+    // dry deposition parameters
+    struct {
+      char srf_file[MAX_FILENAME_LEN];
+    } drydep;
   };
   Config config_;
 

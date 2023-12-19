@@ -78,6 +78,9 @@ void MAMMicrophysics::set_defaults_() {
 
   // stratospheric chemistry
   set_file_location(config_.linoz.chlorine_loading_file, "../cam/chem/trop_mozart/ub/Linoz_Chlorine_Loading_CMIP6_0003-2017_c20171114.nc");
+
+  // dry deposition
+  set_file_location(config_.drydep.srf_file,             "../cam/chem/trop_mam/atmsrf_ne4pg2_200527.nc");
 }
 
 void MAMMicrophysics::configure(const ekat::ParameterList& params) {
@@ -501,6 +504,8 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
                                   config_.photolysis.rsf_file,
                                   config_.photolysis.xs_long_file);
 
+  // FIXME: read relevant land use data from drydep surface file
+
   // set up our preprocess/postprocess functors
   preprocess_.initialize(ncol_, nlev_, wet_atm_, wet_aero_, dry_atm_, dry_aero_);
   postprocess_.initialize(ncol_, nlev_, wet_atm_, wet_aero_, dry_atm_, dry_aero_);
@@ -555,9 +560,9 @@ void MAMMicrophysics::run_impl(const double dt) {
   // allocation perspective
   auto o3_col_dens = buffer_.scratch[8];
 
-  // FIXME: Read relevant linoz climatology data from file(s) based on time
+  // FIXME: read relevant linoz climatology data from file(s) based on time
 
-  // FIXME: Read relevant chlorine loading data from file based on time.
+  // FIXME: read relevant chlorine loading data from file based on time
 
   // loop over atmosphere columns and compute aerosol microphyscs
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const ThreadTeam& team) {
@@ -738,7 +743,8 @@ void MAMMicrophysics::run_impl(const double dt) {
       // Dry deposition (gas)
       //----------------------
 
-      // FIXME: need to find this in mam4xx
+      // FIXME: C++ port in progress!
+      //mam4::drydep::drydep_xactive(...);
 
       // transfer updated prognostics from work arrays
       mam_coupling::convert_work_arrays_to_mmr(vmr, vmrcw, q, qqcw);
