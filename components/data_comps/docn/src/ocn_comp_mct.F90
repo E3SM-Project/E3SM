@@ -20,10 +20,7 @@ module ocn_comp_mct
 
 #ifdef HAVE_MOAB
   use seq_comm_mct,     only: mpoid  ! iMOAB pid for ocean mesh on component pes
-  use seq_comm_mct,     only: mboxid ! iMOAB id for MPAS ocean migrated mesh to coupler pes
-
   use iso_c_binding
-
 #endif
 
   ! !PUBLIC TYPES:
@@ -170,8 +167,7 @@ CONTAINS
 
 
 #ifdef HAVE_MOAB
-  mboxid = compid
-  ierr = iMOAB_RegisterApplication(trim("DOCN_COMP")//C_NULL_CHAR, mpicom, mboxid, mpoid)
+  ierr = iMOAB_RegisterApplication(trim("DOCN")//C_NULL_CHAR, mpicom, compid, mpoid)
   if (ierr .ne. 0) then
     write(logunit,*) subname,' error in registering atm ocn intx'
     call shr_sys_abort(subname//' ERROR in registering atm ocn intx')

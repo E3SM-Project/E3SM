@@ -18,7 +18,7 @@ module prep_lnd_mod
   use seq_comm_mct,     only: mbrxid   !          iMOAB id of moab rof on coupler pes (FV now)
   use seq_comm_mct,     only: mbintxal ! iMOAB id for intx mesh between atm and lnd
   use seq_comm_mct,     only: mbintxrl ! iMOAB id for intx mesh between river and land
-  
+
   use seq_comm_mct,     only: mbaxid   ! iMOAB id for atm migrated mesh to coupler pes
   use seq_comm_mct,     only: atm_pg_active  ! whether the atm uses FV mesh or not ; made true if fv_nphys > 0
   use dimensions_mod,   only: np     ! for atmosphere
@@ -35,7 +35,7 @@ module prep_lnd_mod
   use iso_c_binding
 #ifdef  HAVE_MOAB
   use iMOAB , only: iMOAB_ComputeCommGraph, iMOAB_ComputeMeshIntersectionOnSphere, &
-    iMOAB_ComputeScalarProjectionWeights, iMOAB_DefineTagStorage, iMOAB_RegisterApplication, & 
+    iMOAB_ComputeScalarProjectionWeights, iMOAB_DefineTagStorage, iMOAB_RegisterApplication, &
     iMOAB_WriteMesh, iMOAB_GetMeshInfo, iMOAB_SetDoubleTagStorage
   use seq_comm_mct,     only : num_moab_exports
 #endif
@@ -143,8 +143,8 @@ contains
     character(CL)            :: rof_gnam      ! rof grid
     character(CL)            :: glc_gnam      ! glc grid
     type(mct_avect), pointer :: l2x_lx
-#ifdef HAVE_MOAB 
-   ! MOAB stuff 
+#ifdef HAVE_MOAB
+   ! MOAB stuff
     integer                  :: ierr, idintx, rank
     character*32             :: appname, outfile, wopts, lnum
     character*32             :: dm1, dm2, dofnameS, dofnameT, wgtIdef
@@ -236,9 +236,9 @@ contains
               call shr_sys_abort(subname//' ERROR in registering rof lnd intx')
             endif
             if (samegrid_lr)then
-! the same mesh , lnd and rof use the same dofs, but restricted 
+! the same mesh , lnd and rof use the same dofs, but restricted
                ! we do not compute intersection, so we will have to just send data from lnd to rof and viceversa, by GLOBAL_ID matching
-               ! so we compute just a comm graph, between lnd and rof dofs, on the coupler; target is rof 
+               ! so we compute just a comm graph, between lnd and rof dofs, on the coupler; target is rof
                ! land is full mesh
                call seq_comm_getData(CPLID ,mpigrp=mpigrp_CPLID)
                type1 = 3; !  full mesh for lrofarnd now
@@ -270,10 +270,10 @@ contains
               if (iamroot_CPLID) then
                 write(logunit,*) 'iMOAB intersection between  rof and lnd with id:', idintx
               end if
-              ! we also need to compute the comm graph for the second hop, from the rof on coupler to the 
+              ! we also need to compute the comm graph for the second hop, from the rof on coupler to the
               ! rof for the intx rof-lnd context (coverage)
-              !    
-              call seq_comm_getData(CPLID ,mpigrp=mpigrp_CPLID) 
+              !
+              call seq_comm_getData(CPLID ,mpigrp=mpigrp_CPLID)
               type1 = 3 ! land is FV now on coupler side
               type2 = 3;
 
@@ -283,7 +283,7 @@ contains
                 write(logunit,*) subname,' error in computing comm graph for second hop, lnd-rof'
                 call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, lnd-rof')
               endif
-              ! now take care of the mapper 
+              ! now take care of the mapper
             if ( mapper_Fr2l%src_mbid .gt. -1 ) then
                 if (iamroot_CPLID) then
                      write(logunit,F00) 'overwriting '//trim(mapper_Fr2l%mbname) &
@@ -292,22 +292,22 @@ contains
             endif
               mapper_Fr2l%src_mbid = mbrxid
               mapper_Fr2l%tgt_mbid = mblxid
-              mapper_Fr2l%intx_mbid = mbintxrl 
+              mapper_Fr2l%intx_mbid = mbintxrl
               mapper_Fr2l%src_context = rof(1)%cplcompid
               mapper_Fr2l%intx_context = idintx
               wgtIdef = 'scalar'//C_NULL_CHAR
               mapper_Fr2l%weight_identifier = wgtIdef
               mapper_Fr2l%mbname = 'mapper_Fr2l'
 
-              ! because we will project fields from rof to lnd grid, we need to define 
+              ! because we will project fields from rof to lnd grid, we need to define
               !  the r2x fields to lnd grid on coupler side
 
-              volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL; 
-              
+              volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL;
+
               dm1 = "fv"//C_NULL_CHAR
               dofnameS="GLOBAL_ID"//C_NULL_CHAR
               orderS = 1 !  fv-fv
-            
+
               dm2 = "fv"//C_NULL_CHAR
               dofnameT="GLOBAL_ID"//C_NULL_CHAR
               orderT = 1  !  not much arguing
@@ -349,13 +349,13 @@ contains
             endif
             tagname = trim(seq_flds_r2x_fields)//C_NULL_CHAR
             tagtype = 1 ! dense
-            numco = 1 ! 
+            numco = 1 !
             ierr = iMOAB_DefineTagStorage(mblxid, tagname, tagtype, numco,  tagindex )
             if (ierr .ne. 0) then
                write(logunit,*) subname,' error in defining tags for seq_flds_r2x_fields on lnd cpl'
                call shr_sys_abort(subname//' ERROR in  defining tags for seq_flds_r2x_fields on lnd cpl')
             endif
-                
+
  ! find out the number of local elements in moab mesh land instance on coupler
             ierr  = iMOAB_GetMeshInfo ( mblxid, nvert, nvise, nbl, nsurf, nvisBC )
             if (ierr .ne. 0) then
@@ -364,12 +364,12 @@ contains
             endif
             ! land is now cell mesh on coupler side
             mlsize = nvise(1)
-            ent_type = 1 ! cell 
+            ent_type = 1 ! cell
             ! set to 0 all fields that are projected from river
             nrflds = mct_aVect_nRattr(r2x_lx(1)) !  these are the numbers of fields in seq_flds_r2x_fields
             arrsize = nrflds*mlsize
             allocate (tmparray(arrsize)) ! mlsize is the size of local land
-            ! do we need to zero out others or just river ? 
+            ! do we need to zero out others or just river ?
             tmparray = 0._r8
             ierr = iMOAB_SetDoubleTagStorage(mblxid, tagname, arrsize , ent_type, tmparray)
             if (ierr .ne. 0) then
@@ -379,7 +379,7 @@ contains
             deallocate (tmparray)
 
          end if ! if ((mbrxid .ge. 0) .and.  (mblxid .ge. 0))
-! endif HAVE_MOAB 
+! endif HAVE_MOAB
 #endif
        call shr_sys_flush(logunit)
 
@@ -398,11 +398,11 @@ contains
           call seq_map_init_rcfile(mapper_Fa2l, atm(1), lnd(1), &
                'seq_maps.rc','atm2lnd_fmapname:','atm2lnd_fmaptype:',samegrid_al, &
                'mapper_Fa2l initialization',esmf_map_flag)
-! similar to prep_atm_init, lnd and atm reversed 
+! similar to prep_atm_init, lnd and atm reversed
 #ifdef HAVE_MOAB
-          ! important change: do not compute intx at all between atm and land when we have samegrid_al 
+          ! important change: do not compute intx at all between atm and land when we have samegrid_al
           ! we will use just a comm graph to send data from atm to land on coupler
-          ! this is just a rearrange in a way 
+          ! this is just a rearrange in a way
           if ((mbaxid .ge. 0) .and.  (mblxid .ge. 0) ) then
             appname = "ATM_LND_COU"//C_NULL_CHAR
             ! idintx is a unique number of MOAB app that takes care of intx between lnd and atm mesh
@@ -418,16 +418,18 @@ contains
                              //' mapper_Sa2l'
                 endif
             endif
+
+            ! set up the scalar mapper context
             mapper_Sa2l%src_mbid = mbaxid
             mapper_Sa2l%tgt_mbid = mblxid
             mapper_Sa2l%intx_mbid = mbintxal
             mapper_Sa2l%src_context = atm(1)%cplcompid
             mapper_Sa2l%intx_context = idintx
             wgtIdef = 'scalar'//C_NULL_CHAR
-            mapper_Sa2l%weight_identifier = wgtIdef 
+            mapper_Sa2l%weight_identifier = wgtIdef
             mapper_Sa2l%mbname = 'mapper_Sa2l'
-            
-            call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID) 
+
+            call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID)
             if (.not. samegrid_al) then ! tri grid case
               if (iamroot_CPLID) then
                 write(logunit,*) 'iMOAB intersection between atm and land with id:', idintx
@@ -451,14 +453,14 @@ contains
                 endif
               endif
 #endif
-              ! we also need to compute the comm graph for the second hop, from the atm on coupler to the 
+              ! we also need to compute the comm graph for the second hop, from the atm on coupler to the
               ! lnd for the intx atm-lnd context (coverage)
-              !    
+              !
               if (atm_pg_active) then
                 type1 = 3; !  fv for atm; cgll does not work anyway
               else
                 type1 = 1 ! this projection works (cgll to fv), but reverse does not ( fv - cgll)
-              endif 
+              endif
               type2 = 3; ! land is fv in this case (separate grid)
 
               ierr = iMOAB_ComputeCommGraph( mbaxid, mbintxal, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
@@ -467,9 +469,9 @@ contains
                 write(logunit,*) subname,' error in computing comm graph for second hop, atm-lnd'
                 call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, atm-lnd')
               endif
-  
-              volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL; 
-              
+
+              volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL;
+
               if (atm_pg_active) then
                 dm1 = "fv"//C_NULL_CHAR
                 dofnameS="GLOBAL_ID"//C_NULL_CHAR
@@ -504,16 +506,16 @@ contains
                   call shr_sys_abort(subname//' ERROR in computing weights for atm-lnd ')
               endif
 
-            else  ! the same mesh , atm and lnd use the same dofs, but lnd is a subset of atm 
+            else  ! the same mesh , atm and lnd use the same dofs, but lnd is a subset of atm
                 ! we do not compute intersection, so we will have to just send data from atm to land and viceversa, by GLOBAL_ID matching
-                ! so we compute just a comm graph, between atm and lnd dofs, on the coupler; target is lnd 
+                ! so we compute just a comm graph, between atm and lnd dofs, on the coupler; target is lnd
               ! land is point cloud in this case, type1 = 2
-              
+
               if (atm_pg_active) then
                   type1 = 3; !  fv for atm; cgll does not work anyway
               else
                   type1 = 1 ! this projection works (cgll to fv), but reverse does not ( fv - cgll)
-              endif 
+              endif
               type2 = 3;  ! FV mesh on coupler land
               ierr = iMOAB_ComputeCommGraph( mbaxid, mblxid, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
                                       atm(1)%cplcompid, lnd(1)%cplcompid)
@@ -521,7 +523,6 @@ contains
                 write(logunit,*) subname,' error in computing comm graph for second hop, atm-lnd'
                 call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, atm-lnd')
               endif
-              mapper_Sa2l%tgt_mbid = mblxid
               mapper_Sa2l%intx_context = lnd(1)%cplcompid
 
             endif ! if tri-grid
@@ -534,15 +535,15 @@ contains
                 endif
             endif
             mapper_Fa2l%src_mbid = mbaxid
-            mapper_Fa2l%tgt_mbid = mapper_Sa2l%tgt_mbid ! mblxid
+            mapper_Fa2l%tgt_mbid = mblxid
             mapper_Fa2l%intx_mbid = mbintxal
             mapper_Fa2l%src_context = atm(1)%cplcompid
             mapper_Fa2l%intx_context = mapper_Sa2l%intx_context
             wgtIdef = 'scalar'//C_NULL_CHAR
-            mapper_Fa2l%weight_identifier = wgtIdef 
+            mapper_Fa2l%weight_identifier = wgtIdef
             mapper_Fa2l%mbname = 'mapper_Fa2l'
 
-             
+
             ! in any case, we need to define the tags on landx from the phys atm seq_flds_a2x_fields
             tagtype = 1  ! dense, double
             numco = 1 !  one value per vertex / entity
@@ -551,11 +552,11 @@ contains
             if ( ierr > 0) then
                 call shr_sys_abort(subname//' fail to define seq_flds_a2x_fields for lnd x moab mesh ')
             endif
-            
-          endif    ! if ((mbaxid .ge. 0) .and.  (mblxid .ge. 0) ) then        
-            
-         
-#endif  
+
+          endif    ! if ((mbaxid .ge. 0) .and.  (mblxid .ge. 0) ) then
+
+
+#endif
        endif
        call shr_sys_flush(logunit)
 
@@ -658,12 +659,12 @@ contains
 
   end subroutine prep_lnd_mrg
 
-! this does almost nothing now, except documenting 
+! this does almost nothing now, except documenting
   subroutine prep_lnd_mrg_moab (infodata)
     type(seq_infodata_type) , intent(in) :: infodata
 
 
-    type(mct_avect) , pointer   :: a2x_l  ! used just for indexing 
+    type(mct_avect) , pointer   :: a2x_l  ! used just for indexing
     type(mct_avect) , pointer   :: r2x_l
     type(mct_avect) , pointer   :: g2x_l
     type(mct_avect) , pointer   :: x2l_l
@@ -783,7 +784,7 @@ contains
 
 #endif
 
-  end subroutine prep_lnd_mrg_moab 
+  end subroutine prep_lnd_mrg_moab
   !================================================================================================
 
   subroutine prep_lnd_merge( a2x_l, r2x_l, g2x_l, x2l_l )
