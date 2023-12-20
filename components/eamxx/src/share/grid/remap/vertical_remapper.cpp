@@ -60,22 +60,6 @@ VerticalRemapper (const grid_ptr_type& src_grid,
   tgt_grid->reset_num_vertical_lev(m_num_remap_levs);
   this->set_grids(src_grid,tgt_grid);
 
-  // Replicate the src grid geo data in the tgt grid.
-  const auto& src_geo_data_names = src_grid->get_geometry_data_names();
-  for (const auto& name : src_geo_data_names) {
-    const auto& src_data = src_grid->get_geometry_data(name);
-    const auto& src_data_fid = src_data.get_header().get_identifier();
-    const auto& layout = src_data_fid.get_layout();
-    // We only add geo data that is horizontal in nature,  vertical geo data won't be added because the vertical structure
-    // has a rigid definition already.
-    if (layout.tags().back()!=LEV && layout.tags().back()!=ILEV) {
-      // Simply copy it in the tgt grid, but we still need to assign the new grid name.
-      FieldIdentifier tgt_data_fid(src_data_fid.name(),src_data_fid.get_layout(),src_data_fid.get_units(),m_tgt_grid->name());
-      auto tgt_data = tgt_grid->create_geometry_data(tgt_data_fid);
-      tgt_data.deep_copy(src_data);
-    } 
-  }
-
   // Set the LEV and ILEV vertical profiles for interpolation from
   register_vertical_source_field(lev_prof);
   register_vertical_source_field(ilev_prof);
