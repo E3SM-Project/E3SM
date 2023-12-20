@@ -28,6 +28,7 @@ std::string MAMOptics::name() const {
 
 void MAMOptics::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
   using namespace ekat::units;
+  constexpr int nvars = mam4::ndrop::nvars;
 
   grid_ = grids_manager->get_grid("Physics");
   const auto& grid_name = grid_->name();
@@ -45,20 +46,26 @@ void MAMOptics::set_grids(const std::shared_ptr<const GridsManager> grids_manage
   //FieldLayout scalar3d_swband_layout { {COL, LEV, SWBND}, {ncol_, nlev_, nswbands_} };
   FieldLayout scalar3d_swbandp_layout { {COL, ILEV, SWBND}, {ncol_, nlev_+1, nswbands_} };
   FieldLayout scalar3d_lwband_layout { {COL, LEV, LWBND}, {ncol_, nlev_, nlwbands_} };
+  FieldLayout scalar3d_layout_int{ {COL, ILEV}, {ncol_, nlev_+1} };
 
   // layout for 3D (2d horiz X 1d vertical) variables
   FieldLayout scalar3d_layout_mid{ {COL, LEV}, {ncol_, nlev_} };
   // FIXME: I switch the order of dimension.
-  FieldLayout scalar3d_layout_int{ {COL, ILEV}, {ncol_, nlev_+1} };
+  FieldLayout scalar_state_q_layout{ {COL, LEV, NGAS}, {ncol_, nlev_,nvars} };
 
   add_field<Required>("T_mid", scalar3d_layout_mid, K, grid_name); // Temperature
   add_field<Required>("p_mid", scalar3d_layout_mid, Pa, grid_name); // total pressure
-  add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid_name); // total pressure
+
   add_field<Required>("z_int", scalar3d_layout_int, m, grid_name); // vertical position at interface
   add_field<Required>("z_mid", scalar3d_layout_mid, m, grid_name); // vertical position pressure
   add_field<Required>("p_int", scalar3d_layout_int, Pa, grid_name); // total pressure
   add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa, grid_name);
   add_field<Required>("pseudo_density_dry", scalar3d_layout_mid, Pa, grid_name);
+  // FIXME: dimenstion of state_q
+  add_field<Updated>("state_q", scalar_state_q_layout, kg/kg, grid_name);
+  add_field<Updated>("qqcw", scalar_state_q_layout, nondim, grid_name);
+  add_field<Required>("cldn", scalar3d_layout_mid, nondim, grid_name); // could fraction
+
 
 #if 1
   // shortwave aerosol scattering asymmetry parameter [-]
@@ -149,7 +156,7 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   // change to const Real
   p_int_     = get_field_in("p_int").get_view<const Real**>();
 
-  dry_atm_.cldfrac   = get_field_in("cldfrac_tot").get_view<const Real**>(); // FIXME: tot or liq?
+  dry_atm_.cldfrac   = get_field_in("cldn").get_view<const Real**>();
   // dry_atm_.pblh      = get_field_in("pbl_height").get_view<const Real*>();
   // FIXME: use const Real; why are using buffer in microphysics
   z_mid_     = get_field_in("z_mid").get_view<const Real**>();
@@ -160,16 +167,19 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   dry_atm_.p_del     = get_field_in("pseudo_density_dry").get_view<const Real**>();
 
   // FIXME: we have nvars in several process.
-  constexpr int nvars = mam4::ndrop::nvars;
+
   constexpr int nlwbands = mam4::modal_aer_opt::nlwbands;
   constexpr int nswbands = mam4::modal_aer_opt::nswbands;
   //constexpr int maxd_aspectype = mam4::ndrop::maxd_aspectype;
   constexpr int ntot_amode = mam4::AeroConfig::num_modes();
 
-  state_q_ = mam_coupling::view_3d("state_q_", ncol_, nlev_, nvars);
-  Kokkos::deep_copy(state_q_,10);
-  qqcw_ = mam_coupling::view_3d("qqcw_", ncol_, nlev_, nvars);
-  Kokkos::deep_copy(qqcw_,10);
+
+  // mam_coupling::view_3d("state_q_", ncol_, nlev_, nvars);
+  // Kokkos::deep_copy(state_q_,10);
+  //
+
+  // mam_coupling::view_3d("qqcw_", ncol_, nlev_, nvars);
+  // Kokkos::deep_copy(qqcw_,10);
   const int nwbands = nlwbands > nswbands ? nlwbands: nswbands;
 
   specrefindex_=mam_coupling::complex_view_3d("specrefindex", ncol_,
@@ -178,16 +188,14 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   // aer_rad_props_sw inputs that are prescribed, i.e., we need a netcdf file.
   ssa_cmip6_sw_ = mam_coupling::view_3d ("ssa_cmip6_sw", ncol_, nlev_, nswbands);
   af_cmip6_sw_ = mam_coupling::view_3d ("af_cmip6_sw", ncol_, nlev_, nswbands);
-  ext_cmip6_sw_= mam_coupling::view_3d ("ext_cmip6_sw", ncol_, nlev_, nswbands);
-  Kokkos::deep_copy(ssa_cmip6_sw_, 1.0);
-  Kokkos::deep_copy(af_cmip6_sw_, 1.0);
-  Kokkos::deep_copy(ext_cmip6_sw_, 1.0);
+  ext_cmip6_sw_= mam_coupling::view_3d ("ext_cmip6_sw", ncol_, nswbands, nlev_);
+  Kokkos::deep_copy(ssa_cmip6_sw_, 0.0);
+  Kokkos::deep_copy(af_cmip6_sw_, 0.0);
+  Kokkos::deep_copy(ext_cmip6_sw_, 0.0);
 
   ext_cmip6_lw_ = mam_coupling::view_3d("ext_cmip6_lw_", ncol_, nlev_, nlwbands);
-  // odap_aer_ = mam_coupling::view_2d("odap_aer_", nlev_, nlwbands);
+  Kokkos::deep_copy(ext_cmip6_lw_, 0.0);
 
-  Kokkos::deep_copy(ext_cmip6_lw_, 1.0);
-  // Kokkos::deep_copy(odap_aer_, 1.0);
 
  // FIXME. I will need to use buffer. Ask Jeff
   const int wlen_lw = mam4::modal_aer_opt::get_worksize_modal_aero_lw();
@@ -361,7 +369,9 @@ void MAMOptics::run_impl(const double dt) {
 #if 1
   const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_);
 #if 1
-  // get the aerosol optics fields
+
+  state_q_ = get_field_out("state_q").get_view<Real***>();
+  qqcw_ = get_field_out("qqcw").get_view<Real***>();
   auto aero_g_sw   = get_field_out("aero_g_sw").get_view<Real***>();
   auto aero_ssa_sw = get_field_out("aero_ssa_sw").get_view<Real***>();
   auto aero_tau_sw = get_field_out("aero_tau_sw").get_view<Real***>();
@@ -409,7 +419,9 @@ void MAMOptics::run_impl(const double dt) {
   auto  seasaltaod= get_field_out("seasaltaod").get_view<Real*>();
 
   Kokkos::deep_copy(bcaod,zero);
-  printf("dt %e\n",dt);
+  // printf("dt %e\n",dt);
+  Kokkos::deep_copy(extinct,zero);
+  Kokkos::deep_copy(absorb,zero);
 
 
   // }
@@ -480,8 +492,9 @@ void MAMOptics::run_impl(const double dt) {
       printf("pdel %e\n",pdel(0));
 #endif
 
+  //  printf("aerosol_optics_device_data_ %e \n", );
+
    auto specrefindex_icol = ekat::subview(specrefindex_, icol);
-   auto ext_cmip6_lw_inv_m_icol = ekat::subview(ext_cmip6_lw_, icol);
    auto state_q_icol = ekat::subview(state_q_, icol);
    auto qqcw_icol = ekat::subview(qqcw_, icol);
 
@@ -501,7 +514,7 @@ void MAMOptics::run_impl(const double dt) {
   auto tau_icol = ekat::subview(aero_tau_sw, icol);
 
   auto work_icol = ekat::subview(work_, icol);
-
+#if 1
 
     {
      diagnostics_aerosol_optics_sw_.extinct = ekat::subview(extinct, icol);;
@@ -546,7 +559,8 @@ void MAMOptics::run_impl(const double dt) {
     // work views
     specrefindex_icol, work_icol);
 
-#if 1
+
+#endif
 mam4::aer_rad_props::aer_rad_props_lw(
     dt, pmid, pint,
     temperature, zm, zi,
@@ -556,7 +570,7 @@ mam4::aer_rad_props::aer_rad_props_lw(
     odap_aer_icol,
     specrefindex_icol,
     work_icol);
-#endif
+
 
     });
 #endif

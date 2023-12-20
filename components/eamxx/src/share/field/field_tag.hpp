@@ -41,7 +41,14 @@ enum class FieldTag {
   LongWaveGpoint,
   IsccpTau,
   IsccpPrs,
-  num_modes
+  num_modes,
+  //
+  lw_band,
+  sw_band,
+  nrefindex_real,
+  nrefindex_im,
+  ncoef_number,
+  mode
 };
 
 // If using tags a lot, consider adding 'using namespace ShortFieldTagsNames'
@@ -67,6 +74,14 @@ namespace ShortFieldTagsNames {
   constexpr auto ISCCPTAU = FieldTag::IsccpTau;
   constexpr auto ISCCPPRS = FieldTag::IsccpPrs;
   constexpr auto NMODES = FieldTag::num_modes;
+  //
+  constexpr auto LWBAND = FieldTag::lw_band;
+  constexpr auto SWBAND = FieldTag::sw_band;
+  constexpr auto NREFINDEX_REAL = FieldTag::nrefindex_real;
+  constexpr auto NREFINDEX_IM = FieldTag::nrefindex_im;
+
+  constexpr auto NCOEF_NUMBER = FieldTag::ncoef_number;
+  constexpr auto MODE = FieldTag::mode;
 }
 
 inline std::string e2str (const FieldTag ft) {
@@ -121,6 +136,24 @@ inline std::string e2str (const FieldTag ft) {
       break;
     case FieldTag::num_modes:
       name = "num_modes";
+      break;
+    case FieldTag::lw_band:
+      name = "lw_band";
+      break;
+    case FieldTag::sw_band:
+      name = "sw_band";
+      break;
+    case FieldTag::nrefindex_real:
+      name = "refindex_real";
+      break;
+    case FieldTag::nrefindex_im:
+      name = "refindex_im";
+      break;
+    case FieldTag::ncoef_number:
+      name = "coef_number";
+      break;
+    case FieldTag::mode:
+      name = "mode";
       break;
     default:
       EKAT_ERROR_MSG("Error! Unrecognized field tag.");
