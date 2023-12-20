@@ -21,7 +21,7 @@ HorizInterpRemapperBase (const grid_ptr_type& fine_grid,
 {
   // Sanity checks
   EKAT_REQUIRE_MSG (fine_grid->type()==GridType::Point,
-      "Error! CoarseningRemapper only works on PointGrid grids.\n"
+      "Error! Horizontal interpolatory remap only works on PointGrid grids.\n"
       "  - fine grid name: " + fine_grid->name() + "\n"
       "  - fine_grid_type: " + e2str(fine_grid->type()) + "\n");
   EKAT_REQUIRE_MSG (fine_grid->is_unique(),
@@ -54,6 +54,10 @@ create_src_layout (const FieldLayout& tgt_layout) const
   EKAT_REQUIRE_MSG (m_src_grid!=nullptr,
       "Error! Cannot create source layout until the source grid has been set.\n");
 
+  EKAT_REQUIRE_MSG (is_valid_tgt_layout(tgt_layout),
+      "[HorizInterpRemapperBase] Error! Input target layout is not valid for this remapper.\n"
+      " - input layout: " + to_string(tgt_layout));
+
   using namespace ShortFieldTagsNames;
   const auto lt = get_layout_type(tgt_layout.tags());
   const bool midpoints = tgt_layout.has_tag(LEV);
@@ -83,6 +87,10 @@ create_tgt_layout (const FieldLayout& src_layout) const
 {
   EKAT_REQUIRE_MSG (m_tgt_grid!=nullptr,
       "Error! Cannot create target layout until the target grid has been set.\n");
+
+  EKAT_REQUIRE_MSG (is_valid_src_layout(src_layout),
+      "[HorizInterpRemapperBase] Error! Input source layout is not valid for this remapper.\n"
+      " - input layout: " + to_string(src_layout));
 
   using namespace ShortFieldTagsNames;
   const auto lt = get_layout_type(src_layout.tags());

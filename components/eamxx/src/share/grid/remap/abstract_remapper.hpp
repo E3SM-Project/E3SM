@@ -77,7 +77,7 @@ public:
   // during field registration).
   const identifier_type& get_src_field_id (const int ifield) const {
     EKAT_REQUIRE_MSG(ifield>=0 && ifield<m_num_registered_fields,
-                       "Error! Field index out of bounds.\n");
+        "Error! Field index out of bounds.\n");
     return do_get_src_field_id(ifield);
   }
 
@@ -85,25 +85,25 @@ public:
   // during field registration).
   const identifier_type& get_tgt_field_id (const int ifield) const {
     EKAT_REQUIRE_MSG(ifield>=0 && ifield<m_num_registered_fields,
-                       "Error! Field index out of bounds.\n");
+        "Error! Field index out of bounds.\n");
     return do_get_tgt_field_id(ifield);
   }
 
   // Returns the source field for the given field index.
   const field_type& get_src_field (const int ifield) const {
     EKAT_REQUIRE_MSG(m_state==RepoState::Closed,
-                       "Error! Cannot call 'get_src_field' until registration has ended.\n");
+        "Error! Cannot call 'get_src_field' until registration has ended.\n");
     EKAT_REQUIRE_MSG(ifield>=0 && ifield<m_num_registered_fields,
-                       "Error! Field index out of bounds.\n");
+        "Error! Field index out of bounds.\n");
     return do_get_src_field(ifield);
   }
 
   // Returns the target field for the given field index.
   const field_type& get_tgt_field (const int ifield) const {
     EKAT_REQUIRE_MSG(m_state==RepoState::Closed,
-                       "Error! Cannot call 'get_tgt_field' until registration has ended.\n");
+        "Error! Cannot call 'get_tgt_field' until registration has ended.\n");
     EKAT_REQUIRE_MSG(ifield>=0 && ifield<m_num_registered_fields,
-                       "Error! Field index out of bounds.\n");
+        "Error! Field index out of bounds.\n");
     return do_get_tgt_field(ifield);
   }
 
@@ -164,7 +164,17 @@ public:
     return src==tgt;
   }
 
+  virtual bool is_valid_src_layout (const layout_type& layout) const {
+    return is_valid_layout(layout,m_src_grid);
+  }
+  virtual bool is_valid_tgt_layout (const layout_type& layout) const {
+    return is_valid_layout(layout,m_tgt_grid);
+  }
+
 protected:
+
+  bool is_valid_layout (const layout_type& layout,
+                        const grid_ptr_type& grid) const;
 
   void set_grids (const grid_ptr_type& src_grid,
                   const grid_ptr_type& tgt_grid);

@@ -66,6 +66,10 @@ FieldLayout PhysicsDynamicsRemapper::
 create_src_layout (const FieldLayout& tgt_layout) const {
   using namespace ShortFieldTagsNames;
 
+  EKAT_REQUIRE_MSG (is_valid_tgt_layout(tgt_layout),
+      "[PhysicsDynamicsRemapper] Error! Input target layout is not valid for this remapper.\n"
+      " - input layout: " + to_string(tgt_layout));
+
   auto tags = tgt_layout.tags();
   auto dims = tgt_layout.dims();
 
@@ -95,6 +99,10 @@ create_src_layout (const FieldLayout& tgt_layout) const {
 FieldLayout PhysicsDynamicsRemapper::
 create_tgt_layout (const FieldLayout& src_layout) const {
   using namespace ShortFieldTagsNames;
+
+  EKAT_REQUIRE_MSG (is_valid_src_layout(src_layout),
+      "[PhysicsDynamicsRemapper] Error! Input source layout is not valid for this remapper.\n"
+      " - input layout: " + to_string(src_layout));
 
   auto tags = src_layout.tags();
   auto dims = src_layout.dims();
