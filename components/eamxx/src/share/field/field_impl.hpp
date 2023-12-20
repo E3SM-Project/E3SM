@@ -205,7 +205,7 @@ deep_copy_impl (const Field& src) {
     v() = v_src();
     return;
   }
-  
+
   // Note: we can't just do a deep copy on get_view_impl<HD>(), since this
   //       field might be a subfield of another. We need the reshaped view.
   //       Also, don't call Kokkos::deep_copy if this field and src have
@@ -450,6 +450,36 @@ scale (const ST beta)
   }
 }
 
+template<HostOrDevice HD>
+void Field::
+scale (const Field& x)
+{
+  const auto& dt = data_type();
+  if (dt==DataType::IntType) {
+    int fill_val = constants::DefaultFillValue<int>().value;
+    if (get_header().has_extra_data("mask_value")) {
+      fill_val = get_header().get_extra_data<int>("mask_value");
+    }
+    return update_impl<CombineMode::Multiply,HD,int>(x,0,0,fill_val);
+  } else if (dt==DataType::FloatType) {
+    float fill_val = constants::DefaultFillValue<float>().value;
+    if (get_header().has_extra_data("mask_value")) {
+      fill_val = get_header().get_extra_data<float>("mask_value");
+    }
+    return update_impl<CombineMode::Multiply,HD,float>(x,0,0,fill_val);
+  } else if (dt==DataType::DoubleType) {
+    double fill_val = constants::DefaultFillValue<double>().value;
+    if (get_header().has_extra_data("mask_value")) {
+      fill_val = get_header().get_extra_data<double>("mask_value");
+    }
+    return update_impl<CombineMode::Multiply,HD,double>(x,0,0,fill_val);
+  } else {
+    EKAT_ERROR_MSG ("Error! Unrecognized/unsupported field data type in Field::scale.\n");
+  }
+}
+
+
+
 template<CombineMode CM, HostOrDevice HD,typename ST>
 void Field::
 update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val)
@@ -502,6 +532,15 @@ update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val)
 
   auto policy = RangePolicy(0,x_l.size());
   switch (x_l.rank()) {
+    case 0:
+      {
+        auto xv = x.get_view<const ST,HD>();
+        auto yv =   get_view<      ST,HD>();
+        Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const int /*idx*/) {
+          combine_and_fill<CM>(xv(),yv(),fill_val,alpha,beta);
+        });
+      }
+      break;
     case 1:
       {
         // Must handle the case where one of the two views is strided
