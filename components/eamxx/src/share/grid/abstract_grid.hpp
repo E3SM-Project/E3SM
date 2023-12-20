@@ -82,6 +82,9 @@ public:
   // Whether this grid contains unique dof GIDs
   bool is_unique () const;
 
+  // Check if the input layout is compatible with this grid
+  bool is_valid_layout (const FieldLayout& layout) const;
+
   // When running with multiple ranks, fields are partitioned across ranks along this FieldTag
   virtual FieldTag get_partitioned_dim_tag () const = 0;
 

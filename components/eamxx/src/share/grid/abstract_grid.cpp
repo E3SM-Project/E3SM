@@ -134,6 +134,38 @@ bool AbstractGrid::is_unique () const {
   return unique_gids;
 }
 
+bool AbstractGrid::
+is_valid_layout (const FieldLayout& layout) const
+{
+  using namespace ShortFieldTagsNames;
+
+  const auto lt = get_layout_type(layout.tags());
+  const bool midpoints = layout.tags().back()==LEV;
+  const int vec_dim = layout.is_vector_layout() ? layout.dims()[layout.get_vector_dim()] : 0;
+
+  switch (lt) {
+    case LayoutType::Scalar0D: [[fallthrough]];
+    case LayoutType::Vector0D:
+      // 0d layouts are compatible with any grid
+      return true;
+    case LayoutType::Scalar1D: [[fallthrough]];
+    case LayoutType::Vector1D:
+      // 1d layouts need the right number of levels
+      return layout.dims().back() == m_num_vert_levs;
+    case LayoutType::Scalar2D:
+      return layout==get_2d_scalar_layout();
+    case LayoutType::Vector2D:
+      return layout==get_2d_vector_layout(CMP,vec_dim);
+    case LayoutType::Scalar3D:
+      return layout==get_3d_scalar_layout(midpoints);
+    case LayoutType::Vector3D:
+      return layout==get_3d_vector_layout(midpoints,CMP,vec_dim);
+    default:
+      // Anything else is probably no
+      return false;
+  }
+}
+
 auto AbstractGrid::
 get_global_min_dof_gid () const ->gid_type
 {

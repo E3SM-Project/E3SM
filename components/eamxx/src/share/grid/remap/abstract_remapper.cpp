@@ -135,34 +135,6 @@ void AbstractRemapper::remap (const bool forward) {
   }
 }
 
-bool AbstractRemapper::
-is_valid_layout (const layout_type& layout,
-                 const grid_ptr_type& grid) const
-{
-  using namespace ShortFieldTagsNames;
-
-  const auto lt = get_layout_type(layout.tags());
-  const bool midpoints = layout.tags().back()==LEV;
-  const int vec_dim = layout.is_vector_layout() ? layout.dims()[layout.get_vector_dim()] : 0;
-
-  switch (lt) {
-    case LayoutType::Scalar1D: [[fallthrough]];
-    case LayoutType::Vector1D:
-      return layout.dims().back() == grid->get_num_vertical_levels();
-    case LayoutType::Scalar2D:
-      return layout==grid->get_2d_scalar_layout();
-    case LayoutType::Vector2D:
-      return layout==grid->get_2d_vector_layout(CMP,vec_dim);
-    case LayoutType::Scalar3D:
-      return layout==grid->get_3d_scalar_layout(midpoints);
-    case LayoutType::Vector3D:
-      return layout==grid->get_3d_vector_layout(midpoints,CMP,vec_dim);
-    default:
-      // Anything else is probably not supported
-      return false;
-  }
-}
-
 void AbstractRemapper::
 set_grids (const grid_ptr_type& src_grid,
            const grid_ptr_type& tgt_grid)

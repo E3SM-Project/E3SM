@@ -165,16 +165,13 @@ public:
   }
 
   virtual bool is_valid_src_layout (const layout_type& layout) const {
-    return is_valid_layout(layout,m_src_grid);
+    return m_src_grid->is_valid_layout(layout);
   }
   virtual bool is_valid_tgt_layout (const layout_type& layout) const {
-    return is_valid_layout(layout,m_tgt_grid);
+    return m_tgt_grid->is_valid_layout(layout);
   }
 
 protected:
-
-  bool is_valid_layout (const layout_type& layout,
-                        const grid_ptr_type& grid) const;
 
   void set_grids (const grid_ptr_type& src_grid,
                   const grid_ptr_type& tgt_grid);
