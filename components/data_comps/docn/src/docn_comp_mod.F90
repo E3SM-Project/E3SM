@@ -34,10 +34,8 @@ module docn_comp_mod
 #ifdef HAVE_MOAB
 !   character(1024)         :: domain_file        ! file containing domain info (set my input)
   use seq_comm_mct,     only: mpoid  ! iMOAB pid for ocean mesh on component pes
-  use seq_comm_mct,     only: mboxid ! iMOAB id for MPAS ocean migrated mesh to coupler pes
 
   use iso_c_binding
-
 #endif
 
   ! !PUBLIC TYPES:
@@ -98,6 +96,18 @@ module docn_comp_mod
 CONTAINS
   !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+#ifdef HAVE_MOAB
+  SUBROUTINE errorout(ierr, message)
+  integer ierr
+  character*(*) message
+  if (ierr.ne.0) then
+    print *, message
+    call exit (1)
+  end if
+  return
+  end subroutine
+#endif
+
   !===============================================================================
   subroutine docn_comp_init(Eclock, x2o, o2x, &
        seq_flds_x2o_fields, seq_flds_o2x_fields, &
@@ -109,7 +119,10 @@ CONTAINS
     use pio        , only : iosystem_desc_t
     use shr_pio_mod, only : shr_pio_getiosys, shr_pio_getiotype
 #ifdef HAVE_MOAB
-    use iMOAB, only: iMOAB_LoadMesh, iMOAB_AssignGlobalIDs
+#include "moab/MOABConfig.h"
+    use iMOAB, only: iMOAB_LoadMesh, iMOAB_AssignGlobalIDs, iMOAB_UpdateMeshInfo, &
+                     iMOAB_DefineTagStorage, iMOAB_GetDoubleTagStorage, &
+                     iMOAB_SetDoubleTagStorage, iMOAB_GetMeshInfo, iMOAB_UpdateMeshInfo
 #endif
     implicit none
 
@@ -150,6 +163,13 @@ CONTAINS
     logical       :: write_restart=.false.
     type(iosystem_desc_t), pointer :: ocn_pio_subsystem
 
+#ifdef HAVE_MOAB
+    character*100  tagname
+    integer tagtype, numco, ncells, ent_type, tagindex
+    integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
+    real(R8), allocatable, target :: data(:)
+#endif
+
     !--- formats ---
     character(*), parameter :: F00   = "('(docn_comp_init) ',8a)"
     character(*), parameter :: F0L   = "('(docn_comp_init) ',a, l2)"
@@ -158,7 +178,7 @@ CONTAINS
     character(*), parameter :: F03   = "('(docn_comp_init) ',a,i8,a)"
     character(*), parameter :: F04   = "('(docn_comp_init) ',2a,2i8,'s')"
     character(*), parameter :: F05   = "('(docn_comp_init) ',a,2f10.4)"
-    character(*), parameter :: F06   = "('(docn_comp_init) ',a,f10.4)"
+    character(*), parameter :: F06   = "('(docn_comp_init) ',a,5i8)"
     character(*), parameter :: F90   = "('(docn_comp_init) ',73('='))"
     character(*), parameter :: F91   = "('(docn_comp_init) ',73('-'))"
     character(*), parameter :: subName = "(docn_comp_init) "
@@ -238,39 +258,61 @@ CONTAINS
 
 #ifdef HAVE_MOAB
    ! domain_file = trim(SDOCN%domainFile)//C_NULL_CHAR ! Load this MPAS mesh file
-   ! call mpas_moab_instance(domain, ext_comp_id, mpoid)
    if (my_task == master_task) then
      write(logunit,*) ' loading OCN domain mesh from disk '
    endif
    ! "PARALLEL=READ_PART;PARTITION_METHOD=RCBZOLTAN;"
    ierr = iMOAB_LoadMesh(mpoid, trim(SDOCN%domainFile)//C_NULL_CHAR, &
-            "PARALLEL=READ_PART;", 0)
+            "PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=", 0)
    if ( ierr /= 0 ) then
       write(logunit,*) 'Failed to load ocean domain mesh'
    endif
-   ierr = iMOAB_AssignGlobalIDs(mpoid, 1, 0, 1, 0)
-   if ( ierr /= 0 ) then
-      write(logunit,*) 'Failed to reassign global ocean domain mesh IDs'
-   endif
-   ! initialize moab tag fields array
-   !  mblsize = lsize
-   !  totalmbls = mblsize * nsend ! size of the double array for exporting to coupler
-   !  allocate (o2x_om(lsize, nsend) )
-   !  o2x_om = 0._r8
-   !  ! define tags according to the seq_flds_o2x_fields
-   !  tagtype = 1  ! dense, double
-   !  numco = 1 !  one value per cell / entity
-   !  tagname = trim(seq_flds_o2x_fields)//C_NULL_CHAR
-   !  ierrmb = iMOAB_DefineTagStorage(MPOID, tagname, tagtype, numco,  tagindex )
-   !  if ( ierrmb == 1 ) then
-   !    call mpas_log_write('cannot define tags for MOAB o2x fields ' // trim(seq_flds_o2x_fields), MPAS_LOG_ERR)
-   !  endif
-   !  !  set all tags to 0 in one method
-   !  ent_type = 1! cells
-   !  ierr = iMOAB_SetDoubleTagStorage ( MPOID, tagname, totalmbls , ent_type, o2x_om(1, 1) )
-   !  if ( ierr /= 0 ) then
-   !    write(ocnLogUnit,*) 'Fail to set MOAB fields '
-   !  endif
+   ! ierr = iMOAB_AssignGlobalIDs(mpoid, 1, 0, 1, 0)
+   ! if ( ierr /= 0 ) then
+   !    write(logunit,*) 'Failed to reassign global ocean domain mesh IDs'
+   ! endif
+
+   ierr = iMOAB_UpdateMeshInfo(mpoid)
+   call errorout(ierr, 'fail to update mesh info')
+
+   ! now get the local number of entities
+   ierr  = iMOAB_GetMeshInfo ( mpoid, nvert, nvise, nbl, nsurf, nvisBC );
+
+   ncells = nvise(3)
+   allocate(data(ncells))
+   data(:) = 0.0
+
+   ! element dense double tags
+   tagtype = 1  ! dense, double tag
+   numco = 1
+   ent_type = 1 ! now set the tag on elements
+
+   tagname='area'//C_NULL_CHAR
+   ierr = iMOAB_DefineTagStorage( mpoid, tagname, tagtype, numco, tagindex )
+   if (ierr > 0 )  &
+      call errorout(ierr, 'Error: fail to create area tag ')
+   ierr = iMOAB_GetDoubleTagStorage ( mpoid, tagname, ncells, ent_type, data)
+   if (ierr > 0 )  &
+      call errorout(ierr, 'Error: fail to get area tag ')
+
+   tagname='aream'//C_NULL_CHAR
+   ierr = iMOAB_DefineTagStorage( mpoid, tagname, tagtype, numco, tagindex )
+   if (ierr > 0 )  &
+      call errorout(ierr, 'Error: fail to create aream tag ')
+   ierr = iMOAB_SetDoubleTagStorage ( mpoid, tagname, ncells, ent_type, data)
+   if (ierr > 0 )  &
+      call errorout(ierr, 'Error: fail to set aream tag ')
+
+   data(:) = 1
+   ! tagtype = 1  ! dense, integer tag
+   tagname='mask'//C_NULL_CHAR
+   ierr = iMOAB_DefineTagStorage( mpoid, tagname, tagtype, numco, tagindex )
+   if (ierr > 0 )  &
+      call errorout(ierr, 'Error: fail to create mask tag ')
+   ierr = iMOAB_SetDoubleTagStorage ( mpoid, tagname, ncells, ent_type, data)
+   if (ierr > 0 )  &
+      call errorout(ierr, 'Error: fail to set mask tag ')
+
 #endif
 
     !----------------------------------------------------------------------------
@@ -429,12 +471,54 @@ CONTAINS
 
   !===============================================================================
 
+  subroutine moab_init_tag(lsize, tagname, avx, tagtype, numco, ent_type, &
+                           tagindex, index, dataarr, globalIds)
+
+    ! !DESCRIPTION:  run method for docn model
+#ifdef HAVE_MOAB
+    use iMOAB, only: iMOAB_DefineTagStorage, &
+                     iMOAB_SetDoubleTagStorageWithGid
+#endif
+
+    implicit none
+
+#ifdef HAVE_MOAB
+    integer :: ierr, n, lsize2
+    character(len=*), intent(in) :: tagname
+    type(mct_aVect), intent(in) :: avx
+    integer, intent(in) :: lsize, index, tagtype, numco, ent_type, tagindex
+    real(R8), intent(inout) :: dataarr(:)
+    integer, intent(in) :: globalIds(:) ! used for setting values associated with ids
+#endif
+
+   lsize2 = mct_avect_lsize(avx)
+   ! write(*,* ) "Setting data for tag: ", tagname
+   do n = 1,lsize2
+      dataarr(n) = avx%rAttr(index, n)
+   enddo
+   ierr = iMOAB_DefineTagStorage(mpoid, tagname, tagtype, numco, tagindex )
+   if (ierr > 0 )  &
+      call errorout(ierr, 'Error: fail to create tag ')
+   ierr = iMOAB_SetDoubleTagStorageWithGid ( mpoid, tagname, lsize2, ent_type, &
+                                             dataarr, globalIds)
+   if (ierr > 0 )  &
+      call errorout(ierr, 'Error: fail to set tag ')
+
+  end subroutine moab_init_tag
+
+
   subroutine docn_comp_run(EClock, x2o, o2x, &
        SDOCN, gsmap, ggrid, mpicom, compid, my_task, master_task, &
        inst_suffix, logunit, read_restart, write_restart, &
        target_ymd, target_tod, case_name)
 
     ! !DESCRIPTION:  run method for docn model
+#ifdef HAVE_MOAB
+    use iMOAB, only: iMOAB_GetMeshInfo, iMOAB_GetDoubleTagStorage, &
+                     iMOAB_SetDoubleTagStorage, iMOAB_DefineTagStorage, &
+                     iMOAB_SetDoubleTagStorageWithGid
+#endif
+
     implicit none
 
     ! !INPUT/OUTPUT PARAMETERS:
@@ -471,6 +555,16 @@ CONTAINS
     real(R8), parameter :: &
          swp = 0.67_R8*(exp((-1._R8*shr_const_zsrflyr) /1.0_R8)) + 0.33_R8*exp((-1._R8*shr_const_zsrflyr)/17.0_R8)
 
+#ifdef HAVE_MOAB
+    integer :: ierr     ! error code
+    integer :: kgg
+    character*100  tagname
+    integer tagtype, numco, ncells, ent_type, tagindex
+    integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
+    real(R8), allocatable, target :: data(:)
+    integer ,    allocatable :: GlobalIds(:) ! used for setting values associated with ids
+#endif
+
     character(*), parameter :: F00   = "('(docn_comp_run) ',8a)"
     character(*), parameter :: F01   = "('(docn_comp_run) ',a, i7,2x,i5,2x,i5,2x,d21.14)"
     character(*), parameter :: F04   = "('(docn_comp_run) ',2a,2i8,'s')"
@@ -478,6 +572,8 @@ CONTAINS
     !-------------------------------------------------------------------------------
 
     call t_startf('DOCN_RUN')
+
+    dbug = 1
 
     call t_startf('docn_run1')
     call seq_timemgr_EClockGetData( EClock, dtime=idt)
@@ -694,6 +790,87 @@ CONTAINS
     end select
 
     call t_stopf('docn_datamode')
+
+#ifdef HAVE_MOAB
+
+   ! now get the local number of entities
+   ierr  = iMOAB_GetMeshInfo ( mpoid, nvert, nvise, nbl, nsurf, nvisBC );
+
+   ncells = nvise(3)
+   allocate(data(lsize))
+   allocate(GlobalIds(lsize))
+   data(:) = 0.0
+
+   ! element dense double tags
+   ent_type = 1 ! now set the tag on elements
+
+   kgg = mct_aVect_indexIA(ggrid%data ,"GlobGridNum")
+   GlobalIds = ggrid%data%iAttr(kgg,:)
+
+   write (*,* ) "Local sizes: ", lsize, ncells
+
+   ! element dense double tags
+   tagtype = 1  ! dense, double tag
+   numco = 1
+   ent_type = 1 ! now set the tag on elements
+
+   call moab_init_tag(lsize, 'So_t'//C_NULL_CHAR, o2x, tagtype, numco, &
+                        ent_type, tagindex, kt, data, globalIds)
+
+   call moab_init_tag(lsize, 'So_s'//C_NULL_CHAR, o2x, tagtype, numco, &
+                        ent_type, tagindex, ks, data, globalIds)
+
+   call moab_init_tag(lsize, 'So_u'//C_NULL_CHAR, o2x, tagtype, numco, &
+                        ent_type, tagindex, ku, data, globalIds)
+
+   call moab_init_tag(lsize, 'So_v'//C_NULL_CHAR, o2x, tagtype, numco, &
+                        ent_type, tagindex, kv, data, globalIds)
+
+   call moab_init_tag(lsize, 'So_dhdx'//C_NULL_CHAR, o2x, tagtype, numco, &
+                        ent_type, tagindex, kdhdx, data, globalIds)
+
+   call moab_init_tag(lsize, 'So_dhdy'//C_NULL_CHAR, o2x, tagtype, numco, &
+                        ent_type, tagindex, kdhdy, data, globalIds)
+
+   if (kswp /= 0) then
+      call moab_init_tag(lsize, 'So_fswpen'//C_NULL_CHAR, o2x, tagtype, numco, &
+                           ent_type, tagindex, kswp, data, globalIds)
+   endif
+
+   call moab_init_tag(lsize, 'Fioo_q'//C_NULL_CHAR, o2x, tagtype, numco, &
+                        ent_type, tagindex, kq, data, globalIds)
+
+   call moab_init_tag(lsize, 'Foxx_swnet'//C_NULL_CHAR, x2o, tagtype, numco, &
+                        ent_type, tagindex, kswnet, data, globalIds)
+
+   call moab_init_tag(lsize, 'Foxx_lwup'//C_NULL_CHAR, x2o, tagtype, numco, &
+                        ent_type, tagindex, klwup, data, globalIds)
+
+   call moab_init_tag(lsize, 'Foxx_sen'//C_NULL_CHAR, x2o, tagtype, numco, &
+                        ent_type, tagindex, ksen, data, globalIds)
+
+   call moab_init_tag(lsize, 'Foxx_lat'//C_NULL_CHAR, x2o, tagtype, numco, &
+                        ent_type, tagindex, klat, data, globalIds)
+
+   call moab_init_tag(lsize, 'Foxx_rofi'//C_NULL_CHAR, x2o, tagtype, numco, &
+                        ent_type, tagindex, krofi, data, globalIds)
+
+   call moab_init_tag(lsize, 'Faxa_lwdn'//C_NULL_CHAR, x2o, tagtype, numco, &
+                        ent_type, tagindex, klwdn, data, globalIds)
+
+   call moab_init_tag(lsize, 'Faxa_snow'//C_NULL_CHAR, x2o, tagtype, numco, &
+                        ent_type, tagindex, ksnow, data, globalIds)
+
+   call moab_init_tag(lsize, 'Fioi_melth'//C_NULL_CHAR, x2o, tagtype, numco, &
+                        ent_type, tagindex, kmelth, data, globalIds)
+
+   call moab_init_tag(lsize, 'strm_h'//C_NULL_CHAR, avstrm, tagtype, numco, &
+                        ent_type, tagindex, kh, data, globalIds)
+
+   call moab_init_tag(lsize, 'strm_qbot'//C_NULL_CHAR, avstrm, tagtype, numco, &
+                        ent_type, tagindex, kqbot, data, globalIds)
+
+#endif
 
     !----------------------------------------------------------
     ! Debug output
