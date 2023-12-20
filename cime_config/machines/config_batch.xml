@@ -563,8 +563,9 @@
     <batch_system MACH="polaris" type="pbspro">
       <batch_submit>qsub</batch_submit>
       <queues>
-        <queue walltimemax="01:00:00" jobmin="1" jobmax="2" default="true">debug</queue>
-        <queue walltimemax="02:00:00" jobmin="10" jobmax="496">prod</queue>
+        <queue walltimemax="01:00:00" nodemin="1"  nodemax="2"   strict="true" default="true">debug</queue>
+        <queue walltimemax="01:00:00" nodemin="3"  nodemax="9"   strict="true">debug-scaling</queue>
+        <queue walltimemax="02:00:00" nodemin="10" nodemax="496" strict="true">prod</queue>
       </queues>
     </batch_system>
 

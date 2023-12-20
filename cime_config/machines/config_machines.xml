@@ -3141,14 +3141,16 @@
     <OS>Linux</OS>
     <COMPILERS>gnu,gnugpu,nvidia,nvidiagpu</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
-    <SAVE_TIMING_DIR>/lus/grand/projects/$PROJECT</SAVE_TIMING_DIR>
-    <SAVE_TIMING_DIR_PROJECTS>ClimateEnergy_4</SAVE_TIMING_DIR_PROJECTS>
-    <CIME_OUTPUT_ROOT>/lus/swift/home/$USER/polaris/scratch</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/lus/swift/home/azamatm/polaris/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/lus/swift/home/azamatm/polaris/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <PROJECT>SCREAM_Calib</PROJECT>
+    <CHARGE_ACCOUNT>SCREAM_Calib</CHARGE_ACCOUNT>
+    <SAVE_TIMING_DIR>/lus/grand/projects/SCREAM_Calib/E3SM/performance_archive</SAVE_TIMING_DIR>
+    <SAVE_TIMING_DIR_PROJECTS>SCREAM_Calib</SAVE_TIMING_DIR_PROJECTS>
+    <CIME_OUTPUT_ROOT>/lus/grand/projects/SCREAM_Calib/E3SM/$USER/scratch</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/lus/grand/projects/SCREAM_Calib/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/lus/grand/projects/SCREAM_Calib/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/lus/swift/home/$USER/polaris/baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/lus/swift/home/azamatm/polaris/tools/cprnc/cprnc</CCSM_CPRNC>
+    <BASELINE_ROOT>/lus/grand/projects/SCREAM_Calib/E3SM/baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/lus/grand/projects/projects/SCREAM_Calib/E3SM/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>32</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
     <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
