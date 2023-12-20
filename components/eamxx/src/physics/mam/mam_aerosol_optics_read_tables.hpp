@@ -291,15 +291,15 @@ void read_water_refindex(const std::string& table_filename,
   {
     // Kokkos::complex<Real> temp;
     crefwlw_host(i).real() = refindex_real_water_lw_host(i);
-    crefwlw_host(i).imag() = refindex_im_water_lw_host(i);
+    crefwlw_host(i).imag() = haero::abs(refindex_im_water_lw_host(i));
   }
   Kokkos::deep_copy(crefwlw, crefwlw_host);
-
+  // set complex representation of refractive indices as module data
   for (int i = 0; i < nswbands; ++i)
   {
     // Kokkos::complex<Real> temp;
     crefwsw_host(i).real() = refindex_real_water_sw_host(i);
-    crefwsw_host(i).imag() = refindex_im_water_sw_host(i);
+    crefwsw_host(i).imag() = haero::abs(refindex_im_water_sw_host(i));
   }
   Kokkos::deep_copy(crefwsw, crefwsw_host);
 
@@ -368,12 +368,12 @@ mam_coupling::complex_view_2d  &specrefndxsw, // complex refractive index for wa
   for (int i = 0; i < nswbands; i++)
   {
     specrefndxsw_host(i,species_id).real() = host_views[sw_real_name](i);
-    specrefndxsw_host(i,species_id).imag() = host_views[sw_im_name](i);
+    specrefndxsw_host(i,species_id).imag() = haero::abs(host_views[sw_im_name](i));
   }
   for (int i = 0; i < nlwbands; i++)
   {
     specrefndxlw_host(i,species_id).real() = host_views[lw_real_name](i);
-    specrefndxlw_host(i,species_id).imag() = host_views[lw_im_name](i);
+    specrefndxlw_host(i,species_id).imag() = haero::abs(host_views[lw_im_name](i));
   }
   Kokkos::deep_copy(specrefndxsw, specrefndxsw_host);
   Kokkos::deep_copy(specrefndxlw, specrefndxlw_host);
