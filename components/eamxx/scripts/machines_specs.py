@@ -37,7 +37,7 @@ MACHINE_METADATA = {
                 ["mpicxx","mpifort","mpicc"],
                  "bsub -Ip -qpdebug",
                  ""),
-    "ruby-intel" : (["module --force purge", "module load StdEnv cmake/3.19.2 mkl/2022.1.0 intel-classic/2021.6.0-magic netcdf-c-parallel/4.9.0 netcdf-fortran-parallel/4.6.0 mvapich2/2.3.7 parallel-netcdf/1.12.3 python/3.9.12"],
+    "ruby-intel" : (["module --force purge", "module use --append /usr/gdata/climdat/install/quartz/modulefiles", "module load StdEnv cmake/3.19.2 mkl/2022.1.0 intel-classic/2021.6.0-magic mvapich2/2.3.7 hdf5/1.12.2 netcdf-c/4.9.0 netcdf-fortran/4.6.0 parallel-netcdf/1.12.3 python/3.9.12 screamML-venv/0.0.1"],
                  ["mpicxx","mpifort","mpicc"],
                   "salloc --partition=pdebug",
                   ""),
