@@ -73,6 +73,11 @@ void periodic(int flag) {
   }
 
   if (flag == 3) {
+    #ifdef MMF_HYPERVISCOSITY
+      bound_exchange(u,nzm,2,3,2,2,1);
+      bound_exchange(v,nzm,2,2,2,3,2);
+      bound_exchange(w,nz ,2,2,2,2,3);
+    #endif
     bound_exchange(t,nzm,1,1,1,1, 4);
     for (int i=0; i<nsgs_fields; i++) {
       if (dosgs && advect_sgs) {
