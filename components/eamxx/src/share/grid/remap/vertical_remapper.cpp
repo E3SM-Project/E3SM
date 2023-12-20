@@ -56,12 +56,8 @@ VerticalRemapper (const grid_ptr_type& src_grid,
   scorpio::register_file(map_file,scorpio::FileMode::Read);
   m_num_remap_levs = scorpio::get_dimlen(map_file,"lev");
 
-  auto tgt_grid_gids = src_grid->get_unique_gids();
-  const int ngids = tgt_grid_gids.size();
-  auto tgt_grid = std::make_shared<PointGrid>("vertical_remap_tgt_grid",ngids,m_num_remap_levs,m_comm);
-  auto tgt_grid_gids_h = tgt_grid->get_dofs_gids().get_view<gid_type*,Host>();
-  std::memcpy(tgt_grid_gids_h.data(),tgt_grid_gids.data(),ngids*sizeof(gid_type));
-  tgt_grid->get_dofs_gids().sync_to_dev();
+  auto tgt_grid = src_grid->clone("vertical_remap_tgt_grid",true);
+  tgt_grid->reset_num_vertical_lev(m_num_remap_levs);
   this->set_grids(src_grid,tgt_grid);
 
   // Replicate the src grid geo data in the tgt grid.
@@ -79,7 +75,6 @@ VerticalRemapper (const grid_ptr_type& src_grid,
       tgt_data.deep_copy(src_data);
     } 
   }
-
 
   // Set the LEV and ILEV vertical profiles for interpolation from
   register_vertical_source_field(lev_prof,"mid");
