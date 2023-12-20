@@ -858,7 +858,6 @@ void AtmosphereOutput::set_avg_cnt_tracking(const std::string& name, const std::
     // We don't need to track average counts for files that are not tracking the time dim
     const auto size = layout.size();
     const auto tags = layout.tags();
-    auto lt = get_layout_type(tags);
     if (m_add_time_dim && m_track_avg_cnt) {
       std::string avg_cnt_name = "avg_count" + avg_cnt_suffix;
       for (int ii=0; ii<layout.rank(); ++ii) {

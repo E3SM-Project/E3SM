@@ -3,12 +3,16 @@
 #include "physics/rrtmgp/rrtmgp_utils.hpp"
 #include "physics/rrtmgp/shr_orb_mod_c2f.hpp"
 #include "physics/share/scream_trcmix.hpp"
+
+#include "share/util/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
 #include "share/util/scream_common_physics_functions.hpp"
 #include "share/util/scream_column_ops.hpp"
+
+#include "ekat/ekat_assert.hpp"
+
 #include "cpp/rrtmgp/mo_gas_concentrations.h"
 #include "YAKL.h"
-#include "ekat/ekat_assert.hpp"
 
 namespace scream {
 
@@ -20,23 +24,24 @@ RRTMGPRadiation::
 RRTMGPRadiation (const ekat::Comm& comm, const ekat::ParameterList& params)
   : AtmosphereProcess(comm, params)
 {
-  // Nothing to do here
-}  // RRTMGPRadiation::RRTMGPRadiation
+  // Gather the active gases from the rrtmgp parameter list and assign to the m_gas_names vector.
+  const auto& active_gases = m_params.get<std::vector<std::string>>("active_gases");
+  for (auto& it : active_gases) {
+    // Make sure only unique names are added
+    if (not ekat::contains(m_gas_names,it)) {
+      m_gas_names.push_back(it);
+      if (it=="o3") {
+        TraceGasesWorkaround::singleton().add_active_gas(it + "_volume_mix_ratio");
+      }
+    }
+  }
 
-// =========================================================================================
+  m_ngas = m_gas_names.size();
+}
+
 void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
 
   using namespace ekat::units;
-
-  // Gather the active gases from the rrtmgp parameter list and assign to the m_gas_names vector.
-  auto active_gases = m_params.get<std::vector<std::string>>("active_gases");
-  for (auto& it : active_gases) {
-    // Make sure only unique names are added
-    if (std::find(m_gas_names.begin(), m_gas_names.end(), it) == m_gas_names.end()) {
-      m_gas_names.push_back(it);
-    }
-  }
-  m_ngas = m_gas_names.size();
 
   // Declare the set of fields used by rrtmgp
   auto kgkg = kg/kg;
@@ -57,8 +62,6 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   m_nlay = m_grid->get_num_vertical_levels();
   m_lat  = m_grid->get_geometry_data("lat");
   m_lon  = m_grid->get_geometry_data("lon");
-  using SmallPack = ekat::Pack<Real,SCREAM_SMALL_PACK_SIZE>;
-  m_nlay_w_pack = SCREAM_SMALL_PACK_SIZE*ekat::npack<SmallPack>(m_nlay);
 
   // Figure out radiation column chunks stats
   m_col_chunk_size = std::min(m_params.get("column_chunk_size", m_ncol),m_ncol);
@@ -83,41 +86,41 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   FieldLayout scalar3d_swgpts_layout { {COL,SWGPT,LEV}, {m_ncol, m_nswgpts, m_nlay} };
   FieldLayout scalar3d_lwgpts_layout { {COL,LWGPT,LEV}, {m_ncol, m_nlwgpts, m_nlay} };
 
-  constexpr int ps = SCREAM_SMALL_PACK_SIZE;
   // Set required (input) fields here
-  add_field<Required>("p_mid" , scalar3d_layout_mid, Pa, grid_name, ps);
-  add_field<Required>("p_int", scalar3d_layout_int, Pa, grid_name, ps);
-  add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa, grid_name, ps);
+  add_field<Required>("p_mid" , scalar3d_layout_mid, Pa, grid_name);
+  add_field<Required>("p_int", scalar3d_layout_int, Pa, grid_name);
+  add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa, grid_name);
   add_field<Required>("sfc_alb_dir_vis", scalar2d_layout, nondim, grid_name);
   add_field<Required>("sfc_alb_dir_nir", scalar2d_layout, nondim, grid_name);
   add_field<Required>("sfc_alb_dif_vis", scalar2d_layout, nondim, grid_name);
   add_field<Required>("sfc_alb_dif_nir", scalar2d_layout, nondim, grid_name);
-  add_field<Required>("qc", scalar3d_layout_mid, kgkg, grid_name, ps);
-  add_field<Required>("nc", scalar3d_layout_mid, 1/kg, grid_name, ps);
-  add_field<Required>("qi", scalar3d_layout_mid, kgkg, grid_name, ps);
-  add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid_name, ps);
-  add_field<Required>("eff_radius_qc", scalar3d_layout_mid, micron, grid_name, ps);
-  add_field<Required>("eff_radius_qi", scalar3d_layout_mid, micron, grid_name, ps);
-  add_field<Required>("qv",scalar3d_layout_mid,kgkg,grid_name, ps);
+  add_field<Required>("qc", scalar3d_layout_mid, kgkg, grid_name);
+  add_field<Required>("nc", scalar3d_layout_mid, 1/kg, grid_name);
+  add_field<Required>("qi", scalar3d_layout_mid, kgkg, grid_name);
+  add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid_name);
+  add_field<Required>("eff_radius_qc", scalar3d_layout_mid, micron, grid_name);
+  add_field<Required>("eff_radius_qi", scalar3d_layout_mid, micron, grid_name);
+  add_field<Required>("qv",scalar3d_layout_mid,kgkg,grid_name);
   add_field<Required>("surf_lw_flux_up",scalar2d_layout,W/(m*m),grid_name);
   // Set of required gas concentration fields
   for (auto& it : m_gas_names) {
     // Add gas VOLUME mixing ratios (moles of gas / moles of air; what actually gets input to RRTMGP)
     if (it == "o3") {
       // o3 is read from file, or computed by chemistry
-      add_field<Updated >(it + "_volume_mix_ratio", scalar3d_layout_mid, molmol, grid_name, ps);
+      add_field<Required>(it + "_volume_mix_ratio", scalar3d_layout_mid, molmol, grid_name);
     } else {
-      // the rest are computed from prescribed surface values
-      add_field<Computed>(it + "_volume_mix_ratio", scalar3d_layout_mid, molmol, grid_name, ps);
+      // the rest are computed by RRTMGP from prescribed surface values
+      // NOTE: this may change at some point
+      add_field<Computed>(it + "_volume_mix_ratio", scalar3d_layout_mid, molmol, grid_name);
     }
   }
   // Required aerosol optical properties from SPA
   m_do_aerosol_rad = m_params.get<bool>("do_aerosol_rad",true);
   if (m_do_aerosol_rad) {
-    add_field<Required>("aero_tau_sw", scalar3d_swband_layout, nondim, grid_name, ps);
-    add_field<Required>("aero_ssa_sw", scalar3d_swband_layout, nondim, grid_name, ps);
-    add_field<Required>("aero_g_sw"  , scalar3d_swband_layout, nondim, grid_name, ps);
-    add_field<Required>("aero_tau_lw", scalar3d_lwband_layout, nondim, grid_name, ps);
+    add_field<Required>("aero_tau_sw", scalar3d_swband_layout, nondim, grid_name);
+    add_field<Required>("aero_ssa_sw", scalar3d_swband_layout, nondim, grid_name);
+    add_field<Required>("aero_g_sw"  , scalar3d_swband_layout, nondim, grid_name);
+    add_field<Required>("aero_tau_lw", scalar3d_lwband_layout, nondim, grid_name);
   }
 
   // Whether we do extra clean/clear sky calculations
@@ -125,46 +128,46 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   m_extra_clnsky_diag    = m_params.get<bool>("extra_clnsky_diag", false);
 
   // Set computed (output) fields
-  add_field<Updated >("T_mid"     , scalar3d_layout_mid, K  , grid_name, ps);
-  add_field<Computed>("SW_flux_dn", scalar3d_layout_int, Wm2, grid_name, "RESTART", ps);
-  add_field<Computed>("SW_flux_up", scalar3d_layout_int, Wm2, grid_name, "RESTART", ps);
-  add_field<Computed>("SW_flux_dn_dir", scalar3d_layout_int, Wm2, grid_name, ps);
-  add_field<Computed>("LW_flux_up", scalar3d_layout_int, Wm2, grid_name, "RESTART", ps);
-  add_field<Computed>("LW_flux_dn", scalar3d_layout_int, Wm2, grid_name, "RESTART", ps);
-  add_field<Computed>("SW_clnclrsky_flux_dn", scalar3d_layout_int, Wm2, grid_name, ps);
-  add_field<Computed>("SW_clnclrsky_flux_up", scalar3d_layout_int, Wm2, grid_name, ps);
-  add_field<Computed>("SW_clnclrsky_flux_dn_dir", scalar3d_layout_int, Wm2, grid_name, ps);
-  add_field<Computed>("SW_clrsky_flux_dn", scalar3d_layout_int, Wm2, grid_name, ps);
-  add_field<Computed>("SW_clrsky_flux_up", scalar3d_layout_int, Wm2, grid_name, ps);
-  add_field<Computed>("SW_clrsky_flux_dn_dir", scalar3d_layout_int, Wm2, grid_name, ps);
-  add_field<Computed>("SW_clnsky_flux_dn", scalar3d_layout_int, Wm2, grid_name, ps);
-  add_field<Computed>("SW_clnsky_flux_up", scalar3d_layout_int, Wm2, grid_name, ps);
-  add_field<Computed>("SW_clnsky_flux_dn_dir", scalar3d_layout_int, Wm2, grid_name, ps);
-  add_field<Computed>("LW_clnclrsky_flux_up", scalar3d_layout_int, Wm2, grid_name, ps);
-  add_field<Computed>("LW_clnclrsky_flux_dn", scalar3d_layout_int, Wm2, grid_name, ps);
-  add_field<Computed>("LW_clrsky_flux_up", scalar3d_layout_int, Wm2, grid_name, ps);
-  add_field<Computed>("LW_clrsky_flux_dn", scalar3d_layout_int, Wm2, grid_name, ps);
-  add_field<Computed>("LW_clnsky_flux_up", scalar3d_layout_int, Wm2, grid_name, ps);
-  add_field<Computed>("LW_clnsky_flux_dn", scalar3d_layout_int, Wm2, grid_name, ps);
-  add_field<Computed>("rad_heating_pdel", scalar3d_layout_mid, Pa*K/s, grid_name, "RESTART", ps);
+  add_field<Updated >("T_mid"     , scalar3d_layout_mid, K  , grid_name);
+  add_field<Computed>("SW_flux_dn", scalar3d_layout_int, Wm2, grid_name);
+  add_field<Computed>("SW_flux_up", scalar3d_layout_int, Wm2, grid_name);
+  add_field<Computed>("SW_flux_dn_dir", scalar3d_layout_int, Wm2, grid_name);
+  add_field<Computed>("LW_flux_up", scalar3d_layout_int, Wm2, grid_name);
+  add_field<Computed>("LW_flux_dn", scalar3d_layout_int, Wm2, grid_name);
+  add_field<Computed>("SW_clnclrsky_flux_dn", scalar3d_layout_int, Wm2, grid_name);
+  add_field<Computed>("SW_clnclrsky_flux_up", scalar3d_layout_int, Wm2, grid_name);
+  add_field<Computed>("SW_clnclrsky_flux_dn_dir", scalar3d_layout_int, Wm2, grid_name);
+  add_field<Computed>("SW_clrsky_flux_dn", scalar3d_layout_int, Wm2, grid_name);
+  add_field<Computed>("SW_clrsky_flux_up", scalar3d_layout_int, Wm2, grid_name);
+  add_field<Computed>("SW_clrsky_flux_dn_dir", scalar3d_layout_int, Wm2, grid_name);
+  add_field<Computed>("SW_clnsky_flux_dn", scalar3d_layout_int, Wm2, grid_name);
+  add_field<Computed>("SW_clnsky_flux_up", scalar3d_layout_int, Wm2, grid_name);
+  add_field<Computed>("SW_clnsky_flux_dn_dir", scalar3d_layout_int, Wm2, grid_name);
+  add_field<Computed>("LW_clnclrsky_flux_up", scalar3d_layout_int, Wm2, grid_name);
+  add_field<Computed>("LW_clnclrsky_flux_dn", scalar3d_layout_int, Wm2, grid_name);
+  add_field<Computed>("LW_clrsky_flux_up", scalar3d_layout_int, Wm2, grid_name);
+  add_field<Computed>("LW_clrsky_flux_dn", scalar3d_layout_int, Wm2, grid_name);
+  add_field<Computed>("LW_clnsky_flux_up", scalar3d_layout_int, Wm2, grid_name);
+  add_field<Computed>("LW_clnsky_flux_dn", scalar3d_layout_int, Wm2, grid_name);
+  add_field<Computed>("rad_heating_pdel", scalar3d_layout_mid, Pa*K/s, grid_name);
   // Cloud properties added as computed fields for diagnostic purposes
-  add_field<Computed>("cldlow"        , scalar2d_layout, nondim, grid_name, "RESTART");
-  add_field<Computed>("cldmed"        , scalar2d_layout, nondim, grid_name, "RESTART");
-  add_field<Computed>("cldhgh"        , scalar2d_layout, nondim, grid_name, "RESTART");
-  add_field<Computed>("cldtot"        , scalar2d_layout, nondim, grid_name, "RESTART");
+  add_field<Computed>("cldlow"        , scalar2d_layout, nondim, grid_name);
+  add_field<Computed>("cldmed"        , scalar2d_layout, nondim, grid_name);
+  add_field<Computed>("cldhgh"        , scalar2d_layout, nondim, grid_name);
+  add_field<Computed>("cldtot"        , scalar2d_layout, nondim, grid_name);
   // 0.67 micron and 10.5 micron optical depth (needed for COSP)
-  add_field<Computed>("dtau067"       , scalar3d_layout_mid, nondim, grid_name, "RESTART");
-  add_field<Computed>("dtau105"       , scalar3d_layout_mid, nondim, grid_name, "RESTART");
-  add_field<Computed>("sunlit"        , scalar2d_layout    , nondim, grid_name, "RESTART");
+  add_field<Computed>("dtau067"       , scalar3d_layout_mid, nondim, grid_name);
+  add_field<Computed>("dtau105"       , scalar3d_layout_mid, nondim, grid_name);
+  add_field<Computed>("sunlit"        , scalar2d_layout    , nondim, grid_name);
   // Cloud-top diagnostics following AeroCOM recommendation
-  add_field<Computed>("T_mid_at_cldtop", scalar2d_layout, K, grid_name, "RESTART");
-  add_field<Computed>("p_mid_at_cldtop", scalar2d_layout, Pa, grid_name, "RESTART");
-  add_field<Computed>("cldfrac_ice_at_cldtop", scalar2d_layout, nondim, grid_name, "RESTART");
-  add_field<Computed>("cldfrac_liq_at_cldtop", scalar2d_layout, nondim, grid_name, "RESTART");
-  add_field<Computed>("cldfrac_tot_at_cldtop", scalar2d_layout, nondim, grid_name, "RESTART");
-  add_field<Computed>("cdnc_at_cldtop", scalar2d_layout, 1 / (m * m * m), grid_name, "RESTART");
-  add_field<Computed>("eff_radius_qc_at_cldtop", scalar2d_layout, micron, grid_name, "RESTART");
-  add_field<Computed>("eff_radius_qi_at_cldtop", scalar2d_layout, micron, grid_name, "RESTART");
+  add_field<Computed>("T_mid_at_cldtop", scalar2d_layout, K, grid_name);
+  add_field<Computed>("p_mid_at_cldtop", scalar2d_layout, Pa, grid_name);
+  add_field<Computed>("cldfrac_ice_at_cldtop", scalar2d_layout, nondim, grid_name);
+  add_field<Computed>("cldfrac_liq_at_cldtop", scalar2d_layout, nondim, grid_name);
+  add_field<Computed>("cldfrac_tot_at_cldtop", scalar2d_layout, nondim, grid_name);
+  add_field<Computed>("cdnc_at_cldtop", scalar2d_layout, 1 / (m * m * m), grid_name);
+  add_field<Computed>("eff_radius_qc_at_cldtop", scalar2d_layout, micron, grid_name);
+  add_field<Computed>("eff_radius_qi_at_cldtop", scalar2d_layout, micron, grid_name);
 
   // Translation of variables from EAM
   // --------------------------------------------------------------
@@ -177,13 +180,12 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   // netsw      sfc_flux_sw_net    net (down - up) SW flux at surface
   // flwds      sfc_flux_lw_dn     downwelling LW flux at surface
   // --------------------------------------------------------------
-  // These need to be added to restarts in the case of super-stepping
-  add_field<Computed>("sfc_flux_dir_nir", scalar2d_layout, Wm2, grid_name, "RESTART");
-  add_field<Computed>("sfc_flux_dir_vis", scalar2d_layout, Wm2, grid_name, "RESTART");
-  add_field<Computed>("sfc_flux_dif_nir", scalar2d_layout, Wm2, grid_name, "RESTART");
-  add_field<Computed>("sfc_flux_dif_vis", scalar2d_layout, Wm2, grid_name, "RESTART");
-  add_field<Computed>("sfc_flux_sw_net" , scalar2d_layout, Wm2, grid_name, "RESTART");
-  add_field<Computed>("sfc_flux_lw_dn"  , scalar2d_layout, Wm2, grid_name, "RESTART");
+  add_field<Computed>("sfc_flux_dir_nir", scalar2d_layout, Wm2, grid_name);
+  add_field<Computed>("sfc_flux_dir_vis", scalar2d_layout, Wm2, grid_name);
+  add_field<Computed>("sfc_flux_dif_nir", scalar2d_layout, Wm2, grid_name);
+  add_field<Computed>("sfc_flux_dif_vis", scalar2d_layout, Wm2, grid_name);
+  add_field<Computed>("sfc_flux_sw_net" , scalar2d_layout, Wm2, grid_name);
+  add_field<Computed>("sfc_flux_lw_dn"  , scalar2d_layout, Wm2, grid_name);
 
   // Boundary flux fields for energy and mass conservation checks
   if (has_column_conservation_check()) {
@@ -425,6 +427,16 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
 
   // Set property checks for fields in this process
   add_invariant_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),m_grid,100.0, 500.0,false);
+
+  // VMR of n2 and co is currently prescribed as a constant value, read from file
+  if (has_computed_field("n2_volume_mix_ratio",m_grid->name())) {
+    auto n2_vmr = get_field_out("n2_volume_mix_ratio").get_view<Real**>();
+    Kokkos::deep_copy(n2_vmr, m_params.get<double>("n2vmr", 0.7906));
+  }
+  if (has_computed_field("co_volume_mix_ratio",m_grid->name())) {
+    auto co_vmr = get_field_out("co_volume_mix_ratio").get_view<Real**>();
+    Kokkos::deep_copy(co_vmr, m_params.get<double>("covmr", 1.0e-7));
+  }
 }
 
 // =========================================================================================
@@ -563,6 +575,50 @@ void RRTMGPRadiation::run_impl (const double dt) {
     auto calday = ts.frac_of_year_in_days() + 1;  // Want day + fraction; calday 1 == Jan 1 0Z
     shr_orb_decl_c2f(calday, eccen, mvelpp, lambm0,
                      obliqr, &delta, &eccf);
+
+    // Precompute VMR for all gases, on all cols, before starting the chunks loop
+    //
+    // h2o is taken from qv
+    // o3 is computed elsewhere (either read from file or computed by chemistry);
+    // n2 and co are set to constants and are not handled by trcmix;
+    // the rest are handled by trcmix
+    const auto gas_mol_weights = m_gas_mol_weights;
+    for (int igas = 0; igas < m_ngas; igas++) {
+      auto name = m_gas_names[igas];
+
+      // We read o3 in as a vmr already. Also, n2 and co are currently set
+      // as a constant value, read from file during init. Skip these.
+      if (name=="o3" or name == "n2" or name == "co") continue;
+
+      auto d_vmr = get_field_out(name + "_volume_mix_ratio").get_view<Real**>();
+      if (name == "h2o") {
+        // h2o is (wet) mass mixing ratio in FM, otherwise known as "qv", which we've already read in above
+        // Convert to vmr
+        const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_ncol, m_nlay);
+        Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+          const int icol = team.league_rank();
+          Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay), [&] (const int& k) {
+            d_vmr(icol,k) = PF::calculate_vmr_from_mmr(gas_mol_weights[igas],d_qv(icol,k),d_qv(icol,k));
+          });
+        });
+        Kokkos::fence();
+      } else {
+        // This gives (dry) mass mixing ratios
+        scream::physics::trcmix(
+          name, m_nlay, m_lat.get_view<const Real*>(), d_pmid, d_vmr,
+          m_co2vmr, m_n2ovmr, m_ch4vmr, m_f11vmr, m_f12vmr
+        );
+        // Back out volume mixing ratios
+        const auto air_mol_weight = PC::MWdry;
+        const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_ncol, m_nlay);
+        Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+          const int i = team.league_rank();
+          Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay), [&] (const int& k) {
+            d_vmr(i,k) = air_mol_weight / gas_mol_weights[igas] * d_vmr(i,k);
+          });
+        });
+      }
+    }
 
     // Loop over each chunk of columns
     for (int ic=0; ic<m_num_col_chunks; ++ic) {
@@ -764,52 +820,14 @@ void RRTMGPRadiation::run_impl (const double dt) {
       // set_vmr requires the input array size to have the correct size,
       // and the last chunk may have less columns, so create a temp of
       // correct size that uses m_buffer.tmp2d's pointer
-      //
-      // h2o is taken from qv and requies no initialization here;
-      // o3 is computed elsewhere (either read from file or computed by chemistry);
-      // n2 and co are set to constants and are not handled by trcmix;
-      // the rest are handled by trcmix
       real2d tmp2d = subview_2d(m_buffer.tmp2d);
-      const auto gas_mol_weights = m_gas_mol_weights;
       for (int igas = 0; igas < m_ngas; igas++) {
         auto name = m_gas_names[igas];
-        auto d_vmr = get_field_out(name + "_volume_mix_ratio").get_view<Real**>();
-        if (name == "h2o") {
-          // h2o is (wet) mass mixing ratio in FM, otherwise known as "qv", which we've already read in above
-          // Convert to vmr
-          const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
-          Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
-            const int i = team.league_rank();
-            const int icol = i + beg;
-            Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay), [&] (const int& k) {
-              d_vmr(icol,k) = PF::calculate_vmr_from_mmr(gas_mol_weights[igas],d_qv(icol,k),d_qv(icol,k));
-            });
-          });
-          Kokkos::fence();
-        } else if (name == "o3") {
-          // We read o3 in as a vmr already
-        } else if (name == "n2") {
-          // n2 prescribed as a constant value
-          Kokkos::deep_copy(d_vmr, m_params.get<double>("n2vmr", 0.7906));
-        } else if (name == "co") {
-          // co prescribed as a constant value
-          Kokkos::deep_copy(d_vmr, m_params.get<double>("covmr", 1.0e-7));
-        } else {
-          // This gives (dry) mass mixing ratios
-          scream::physics::trcmix(
-            name, m_lat.get_view<const Real*>(), d_pmid, d_vmr,
-            m_co2vmr, m_n2ovmr, m_ch4vmr, m_f11vmr, m_f12vmr
-          );
-          // Back out volume mixing ratios
-          const auto air_mol_weight = PC::MWdry;
-          const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_ncol, m_nlay);
-          Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
-            const int i = team.league_rank();
-            Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay), [&] (const int& k) {
-              d_vmr(i,k) = air_mol_weight / gas_mol_weights[igas] * d_vmr(i,k);
-            });
-          });
-        }
+        auto full_name = name + "_volume_mix_ratio";
+
+        // 'o3' is marked as 'Required' rather than 'Computed', so we need to get the proper field
+        auto f = name=="o3" ? get_field_in(full_name) : get_field_out(full_name);
+        auto d_vmr = f.get_view<const Real**>();
 
         // Copy to YAKL
         const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);

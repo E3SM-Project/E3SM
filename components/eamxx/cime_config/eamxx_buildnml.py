@@ -15,7 +15,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__f
 
 # SCREAM imports
 from eamxx_buildnml_impl import get_valid_selectors, get_child, refine_type, \
-        resolve_all_inheritances, gen_atm_proc_group, check_all_values
+        resolve_all_inheritances, gen_atm_proc_group, check_all_values, find_node
 from atm_manip import apply_atm_procs_list_changes_from_buffer, apply_non_atm_procs_list_changes_from_buffer
 
 from utils import ensure_yaml # pylint: disable=no-name-in-module
@@ -103,6 +103,107 @@ def do_cime_vars(entry, case, refine=False, extra=None):
             entry = refine_type(entry)
 
     return entry
+
+###############################################################################
+def perform_consistency_checks(case, xml):
+###############################################################################
+    """
+    There may be separate parts of the xml that must satisfy some consistency
+    Here, we run any such check, so we can catch errors before submit time
+
+    >>> from eamxx_buildnml_impl import MockCase
+    >>> xml_str = '''
+    ... <params>
+    ...   <rrtmgp>
+    ...     <rad_frequency type="integer">3</rad_frequency>
+    ...   </rrtmgp>
+    ... </params>
+    ... '''
+    >>> import xml.etree.ElementTree as ET
+    >>> xml = ET.fromstring(xml_str)
+    >>> case = MockCase({'ATM_NCPL':'24', 'REST_N':24, 'REST_OPTION':'nsteps'})
+    >>> perform_consistency_checks(case,xml)
+    >>> case = MockCase({'ATM_NCPL':'24', 'REST_N':2, 'REST_OPTION':'nsteps'})
+    >>> perform_consistency_checks(case,xml)
+    Traceback (most recent call last):
+    CIME.utils.CIMEError: ERROR: rrtmgp::rad_frequency incompatible with restart frequency.
+     Please, ensure restart happens on a step when rad is ON
+    >>> case = MockCase({'ATM_NCPL':'24', 'REST_N':10800, 'REST_OPTION':'nseconds'})
+    >>> perform_consistency_checks(case,xml)
+    >>> case = MockCase({'ATM_NCPL':'24', 'REST_N':7200, 'REST_OPTION':'nseconds'})
+    >>> perform_consistency_checks(case,xml)
+    Traceback (most recent call last):
+    CIME.utils.CIMEError: ERROR: rrtmgp::rad_frequency incompatible with restart frequency.
+     Please, ensure restart happens on a step when rad is ON
+      rest_tstep: 7200
+      rad_testep: 10800.0
+    >>> case = MockCase({'ATM_NCPL':'24', 'REST_N':180, 'REST_OPTION':'nminutes'})
+    >>> perform_consistency_checks(case,xml)
+    >>> case = MockCase({'ATM_NCPL':'24', 'REST_N':120, 'REST_OPTION':'nminutes'})
+    >>> perform_consistency_checks(case,xml)
+    Traceback (most recent call last):
+    CIME.utils.CIMEError: ERROR: rrtmgp::rad_frequency incompatible with restart frequency.
+     Please, ensure restart happens on a step when rad is ON
+      rest_tstep: 7200
+      rad_testep: 10800.0
+    >>> case = MockCase({'ATM_NCPL':'24', 'REST_N':6, 'REST_OPTION':'nhours'})
+    >>> perform_consistency_checks(case,xml)
+    >>> case = MockCase({'ATM_NCPL':'24', 'REST_N':8, 'REST_OPTION':'nhours'})
+    >>> perform_consistency_checks(case,xml)
+    Traceback (most recent call last):
+    CIME.utils.CIMEError: ERROR: rrtmgp::rad_frequency incompatible with restart frequency.
+     Please, ensure restart happens on a step when rad is ON
+      rest_tstep: 28800
+      rad_testep: 10800.0
+    >>> case = MockCase({'ATM_NCPL':'12', 'REST_N':2, 'REST_OPTION':'ndays'})
+    >>> perform_consistency_checks(case,xml)
+    >>> case = MockCase({'ATM_NCPL':'10', 'REST_N':2, 'REST_OPTION':'ndays'})
+    >>> perform_consistency_checks(case,xml)
+    Traceback (most recent call last):
+    CIME.utils.CIMEError: ERROR: rrtmgp::rad_frequency incompatible with restart frequency.
+     Please, ensure restart happens on a step when rad is ON
+     For daily (or less frequent) restart, rad_frequency must divide ATM_NCPL
+    """
+
+    # RRTMGP can be supercycled. Restarts cannot fall in the middle
+    # of a rad superstep
+    rrtmgp = find_node(xml,"rrtmgp")
+    rest_opt = case.get_value("REST_OPTION")
+    if rrtmgp is not None and rest_opt is not None and rest_opt not in ["never","none"]:
+        rest_n = int(case.get_value("REST_N"))
+        rad_freq = int(find_node(rrtmgp,"rad_frequency").text)
+        atm_ncpl = int(case.get_value("ATM_NCPL"))
+        atm_tstep = 86400 / atm_ncpl
+        rad_tstep = atm_tstep * rad_freq
+
+
+        if rad_freq==1:
+            pass
+        elif rest_opt in ["nsteps", "nstep"]:
+            expect (rest_n % rad_freq == 0,
+                    "rrtmgp::rad_frequency incompatible with restart frequency.\n"
+                    " Please, ensure restart happens on a step when rad is ON")
+        elif rest_opt in ["nseconds", "nsecond", "nminutes", "nminute", "nhours", "nhour"]:
+            if rest_opt in ["nseconds", "nsecond"]:
+                factor = 1
+            elif rest_opt in ["nminutes", "nminute"]:
+                factor = 60
+            else:
+                factor = 3600
+
+            rest_tstep = factor*rest_n
+            expect (rest_tstep % rad_tstep == 0,
+                    "rrtmgp::rad_frequency incompatible with restart frequency.\n"
+                    " Please, ensure restart happens on a step when rad is ON\n"
+                    f"  rest_tstep: {rest_tstep}\n"
+                    f"  rad_testep: {rad_tstep}")
+
+        else:
+            # for "very infrequent" restarts, we request rad_freq to divide atm_ncpl
+            expect (atm_ncpl % rad_freq ==0,
+                    "rrtmgp::rad_frequency incompatible with restart frequency.\n"
+                    " Please, ensure restart happens on a step when rad is ON\n"
+                    " For daily (or less frequent) restart, rad_frequency must divide ATM_NCPL")
 
 ###############################################################################
 def ordered_dump(data, item, Dumper=yaml.SafeDumper, **kwds):
@@ -535,6 +636,8 @@ def _create_raw_xml_file_impl(case, xml):
     # 8. Apply all changes in the SCREAM_ATMCHANGE_BUFFER that do not alter
     #    which atm processes are used
     apply_non_atm_procs_list_changes_from_buffer (case,xml)
+
+    perform_consistency_checks (case, xml)
 
     return xml
 
