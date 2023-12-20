@@ -2690,16 +2690,19 @@
         <command name="load">intel-classic/2021.6.0-magic</command>
         <command name="load">mvapich2/2.3.7</command>
         <command name="load">cmake/3.19.2</command>
-        <command name="load">netcdf-fortran-parallel/4.6.0</command>
-        <command name="load">netcdf-c-parallel/4.9.0</command>
+        <command name="use --append">/usr/gdata/climdat/install/quartz/modulefiles</command>
+        <command name="load">hdf5/1.12.2</command>
+        <command name="load">netcdf-c/4.9.0</command>
+        <command name="load">netcdf-fortran/4.6.0</command>
         <command name="load">parallel-netcdf/1.12.3</command>
+        <command name="load">screamML-venv/0.0.1</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <environment_variables compiler="intel">
-      <env name="NETCDF_PATH">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.6.0-mvapich2-2.3.7-intel-classic-2021.6.0/</env>
-      <env name="PNETCDF_PATH">/usr/tce/packages/parallel-netcdf/parallel-netcdf-1.12.3-mvapich2-2.3.7-intel-classic-2021.6.0/</env>
+      <env name="NETCDF_PATH">/usr/gdata/climdat/install/quartz/netcdf-fortran/</env>
+      <env name="PNETCDF_PATH">/usr/tce/packages/parallel-netcdf/parallel-netcdf-1.12.3-mvapich2-2.3.7-intel-classic-2021.6.0</env>
     </environment_variables>
   </machine>
 
