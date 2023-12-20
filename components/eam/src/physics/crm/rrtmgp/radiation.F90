@@ -1034,6 +1034,22 @@ contains
 
    end subroutine perturbation_growth_init
 
+#ifdef MMF_SEDIMENTATION
+   elemental real function sigmag(lwc_kg_m3)
+      ! This function estimates the geometric standard deviation of the 
+      ! cloud droplet size distribution from the liquid water content [g/m3] 
+      ! based on obs from RICO and ACE2
+      ! see Geoffroy et al (2010) https://doi.org/10.5194/acp-10-4835-2010
+      real, intent(in) :: lwc_kg_m3 ! liquid water content in kg/m3
+      real :: lwc_g_m3
+      lwc_g_m3 = 1.e3*lwc_kg_m3  ! convert lwc to g/m3 
+      ! limit the input values: 0.025 < LWC < 2 g/m3 
+      ! based on range of observations from Geoffroy et al (2010)
+      lwc_g_m3 = max(0.025, min(2., lwc_g_m3))
+      ! Estimate geometric std deviation of the cloud droplet size distribution
+      sigmag = 1.24 - 0.056*log( lwc_g_m3 )
+   end function sigmag
+#endif
 
    !===============================================================================
         
@@ -1101,6 +1117,10 @@ contains
 
 #ifdef MODAL_AERO
       use modal_aero_data, only: ntot_amode
+#endif
+
+#ifdef MMF_SEDIMENTATION
+      use physconst,       only: cpair, cappa, rair, rhoh2o, pi
 #endif
 
       ! For running CFMIP Observation Simulator Package (COSP)
@@ -1276,7 +1296,14 @@ contains
       ! Loop variables
       integer :: icol, ilay, iday
 
-
+#ifdef MMF_SEDIMENTATION
+      real, parameter :: Nc0_ocn = 70.   ! assumed cloud droplet number [#/cm3] over ocean/ice
+      real, parameter :: Nc0_lnd = 200.  ! assumed cloud droplet number [#/cm3] over land
+      real :: Nc0    ! cloud droplet number [#/cm3] calculated based on land fraction
+      real :: tv_rad
+      real :: rho_rad
+      real :: lwc_rad
+#endif
       
       !----------------------------------------------------------------------
 
@@ -1447,6 +1474,28 @@ contains
                      call get_gas_vmr(icall, state, pbuf, active_gases, vmr_col(:,:,ktop:kbot))
                      vmr_col(:,:,1) = vmr_col(:,:,2)  ! Extra layer above model top
                      call t_stopf('rad_gas_concentrations')
+
+#ifdef MMF_SEDIMENTATION
+                    ! When cloud droplet sedimentation is enabled with 1-mom 
+                    ! microphysics we need to account for the assumed droplet 
+                    ! concentration and geometric standard deviation (sigmag) 
+                    ! in the computation of cloud droplet effective radius.
+                     do iz = 1,crm_nz
+                        ilev = pver-iz+1
+                        do ic = 1,ncol
+                           ! Switch from maritime/ice ocean droplet concentration
+                           ! (~70/cm3) to land (~200/cm3) based on landfrac
+                           Nc0 = Nc0_ocn + (Nc0_lnd - Nc0_ocn)*landfrac(ic)
+                           ! compute approximate density
+                           tv_rad = crm_t(ic,ix,iy,iz) * ( 1. + 0.61*crm_qv(ic,ix,iy,iz) )! virtual temperature in K
+                           rho_rad = state%pmid(ic,ilev) / ( rair * tv_rad ) ! density in kg/m3
+                           lwc_rad = rho_rad * crm_qc(ic,ix,iy,iz) ! liquid water content in kg/m3
+                           rel(ic,ilev) = 1.e6 & ! convert to micron from meters
+                              * ( 3.*lwc_rad / (4.*pi*1.e6*Nc0*rhoh2o) )**(1./3.)& ! 1e6 converts Nc0 to #/m3
+                              * exp( log( sigmag(lwc_rad) )**2 ) 
+                        end do
+                     end do  
+#endif /* MMF_SEDIMENTATION */
 
                      ! Pack data
                      call t_startf('rad_pack_columns')

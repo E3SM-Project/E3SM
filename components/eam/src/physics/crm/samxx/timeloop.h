@@ -26,5 +26,9 @@
 #include "scalar_momentum.h"
 #include "crm_variance_transport.h"
 
+#ifdef MMF_SEDIMENTATION
+#include "cloud_droplet_fall.h"
+#endif
+
 void timeloop();
 

@@ -270,6 +270,21 @@ real constexpr wmin = 2.0;
 real constexpr cwp_threshold = .001;
 int  constexpr perturb_seed_scale = 1000;
 
+#ifdef MMF_SEDIMENTATION
+  // parameters to compute cloud droplet sedimentation.
+  real constexpr sigmag_fixed = 1.5; // assumed geometric standard deviation of cloud droplet size distribution
+  real constexpr Nc0 = 100.;         // assumed cloud droplet number [#/cm3]
+  // real constexpr Nc0_ocn =  70.;     // assumed cloud droplet number [#/cm3] over ocean
+  // real constexpr Nc0_lnd = 200.;     // assumed cloud droplet number [#/cm3] over land
+#endif
+
+// Enable hyperviscosity in SGS_TKE to limit grid-scale "noise" in 
+// velocity field near sharp inversions.  This was found to produce larger
+// stratocumulus liquid water paths in Wyant et al (2018, JAMES), though
+// further study may be needed to understand its effects on shallow and deep
+// convection. The timescale should be at least four times the crm timestep.
+real constexpr tau_MomentumHyperviscosity = 30.0;  // damping time scale for hyperviscosity [sec]
+
 typedef yakl::Array<real,1,yakl::memDevice,yakl::styleC> umgReal1d;
 typedef yakl::Array<real,2,yakl::memDevice,yakl::styleC> umgReal2d;
 typedef yakl::Array<real,3,yakl::memDevice,yakl::styleC> umgReal3d;
