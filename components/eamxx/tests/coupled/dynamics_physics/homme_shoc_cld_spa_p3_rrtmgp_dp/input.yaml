@@ -25,7 +25,6 @@ initial_conditions:
   perturbed_fields: [T_mid]
   perturbation_limit: 0.001
   perturbation_minimum_pressure: 900.0 # in millibar
-  perturbation_random_seed: 1805289383
 
 atmosphere_processes:
   atm_procs_list: [sc_import,homme,physics]

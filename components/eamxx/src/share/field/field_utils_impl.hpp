@@ -215,56 +215,70 @@ void randomize (const Field& f, Engine& engine, PDF&& pdf)
 }
 
 template<typename ST, typename Engine, typename PDF, typename MaskType>
-void perturb (const Field& f, Engine& engine, PDF&& pdf,
-	      const MaskType& level_mask)
+void perturb (const Field& f,
+              Engine& engine,
+              PDF&& pdf,
+              const unsigned int base_seed,
+              const MaskType& level_mask,
+              const Field& dof_gids)
 {
-  // All work done on host, make sure data is synced
-  f.sync_to_host();
-
   const auto& fl = f.get_header().get_identifier().get_layout();
-  switch (fl.rank()) {
-  case 1:
-    {
-      auto v = f.get_view<ST*, Host>();
-      for (int i0=0; i0<fl.dim(0); ++i0) {
-        if (level_mask(i0)) {
-          const auto perturb_val = pdf(engine);
-          v(i0) *= (1 + perturb_val);
+
+  // Check to see if field has a column dimension
+  using namespace ShortFieldTagsNames;
+  const bool has_column_dim = fl.has_tag(COL);
+
+  if (has_column_dim) {
+    // Because Column is the partitioned dimension, we must reset the
+    // RNG seed to be the same on every column so that a column will
+    // have the same value no matter where it exists in an MPI rank's
+    // set of local columns.
+    dof_gids.sync_to_host();
+    const auto gids = dof_gids.get_view<const int*, Host>();
+
+    // Create a field to store perturbation values with layout
+    // the same as f, but stripped of column and level dimension.
+    auto perturb_fl = fl.strip_dim(COL).strip_dim(LEV);
+    FieldIdentifier perturb_fid("perturb_field", perturb_fl, ekat::units::Units::nondimensional(), "");
+    Field perturb_f(perturb_fid);
+    perturb_f.allocate_view();
+
+    // Loop through columns as reset RNG seed based on GID of column
+    for (auto icol=0; icol<fl.dims().front(); ++icol) {
+      const auto new_seed = base_seed+gids(icol);
+      engine.seed(new_seed);
+
+      // Loop through levels. For each that satisfy the level_mask,
+      // apply a random perturbation to f.
+      //auto f_col = f.subfield(0, icol);
+      for (auto ilev=0; ilev<fl.dims().back(); ++ilev) {
+        if (level_mask(ilev)) {
+          randomize(perturb_f, engine, pdf);
+          f.subfield(0, icol).subfield(f.rank()-2, ilev).scale(perturb_f);
         }
       }
     }
-    break;
-  case 2:
-    {
-      auto v = f.get_view<ST**, Host>();
-      for (int i0=0; i0<fl.dim(0); ++i0) {
-        for (int i1=0; i1<fl.dim(1); ++i1) {
-          if (level_mask(i1)) {
-            const auto perturb_val = pdf(engine);
-            v(i0, i1) *= (1 + perturb_val);
-          }
-	}}
-      }
-      break;
-    case 3:
-      {
-        auto v = f.get_view<ST***, Host>();
-        for (int i0=0; i0<fl.dim(0); ++i0) {
-          for (int i1=0; i1<fl.dim(1); ++i1) {
-            for (int i2=0; i2<fl.dim(2); ++i2) {
-              if (level_mask(i2)) {
-                const auto perturb_val = pdf(engine);
-                v(i0, i1, i2) *= (1 + perturb_val);
-              }
-	    }}}
-      }
-      break;
-    default:
-      EKAT_ERROR_MSG ("Error! Unsupported field rank.\n");
-  }
+  } else {
+    // If no Column tag exists, this field is not partitioned.
+    // Set engine to base_seed to ensure computation is reproducible.
+    engine.seed(base_seed);
 
-  // Sync the dev view with the host view.
-  f.sync_to_dev();
+    // Create a field to store perturbation values with layout
+    // the same as f, but stripped of level dimension.
+    auto perturb_fl = fl.strip_dim(LEV);
+    FieldIdentifier perturb_fid("perturb_field", perturb_fl, ekat::units::Units::nondimensional(), "");
+    Field perturb_f(perturb_fid);
+    perturb_f.allocate_view();
+
+    // Loop through levels. For each that satisfy the level_mask,
+    // apply a random perturbation to f.
+    for (auto ilev=0; ilev<fl.dims().back(); ++ilev) {
+      if (level_mask(ilev)) {
+        randomize(perturb_f, engine, pdf);
+        f.subfield(f.rank()-1, ilev).scale(perturb_f);
+      }
+    }
+  }
 }
 
 template<typename ST>

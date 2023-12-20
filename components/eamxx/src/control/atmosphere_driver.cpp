@@ -1293,15 +1293,33 @@ void AtmosphereDriver::set_initial_conditions ()
                      "the GLL grid, but no Physics GLL FieldManager was defined.\n");
     const auto& fm = m_field_mgrs.at("Physics GLL");
 
-    // Setup RNG. If no random seed is requested in
-    // initial_conditions params, generate one using rand().
-    const auto seed = ic_pl.get<int>("perturbation_random_seed", rand());
-    std::mt19937_64 engine(seed);
+    // Setup RNG. There are two relevant params: generate_perturbation_random_seed and
+    // perturbation_random_seed. We have 3 cases:
+    //   1. Parameter generate_perturbation_random_seed is set true, assert perturbation_random_seed
+    //      is not given and generate a random seed using std::rand() to get an integer random value.
+    //   2. Parameter perturbation_random_seed is given, use this value for the seed.
+    //   3. Parameter perturbation_random_seed is not given and generate_perturbation_random_seed is
+    //      not given, use 0 as the random seed.
+    // Case 3 is considered the default (using seed=0).
+    int seed;
+    if (ic_pl.get<bool>("generate_perturbation_random_seed", false)) {
+      EKAT_REQUIRE_MSG(not ic_pl.isParameter("perturbation_random_seed"),
+                       "Error! Param generate_perturbation_random_seed=true, and "
+                       "a perturbation_random_seed is given. Only one of these can "
+                       "be defined for a simulation.\n");
+      std::srand(std::time(nullptr));
+      seed = std::rand();
+    } else {
+      seed = ic_pl.get<int>("perturbation_random_seed", 0);
+    }
     m_atm_logger->info("      For IC perturbation, random seed: "+std::to_string(seed));
+    std::mt19937_64 engine(seed);
 
-    // Get perturbation limit. Defines a range [-perturbation_limit, perturbation_limit]
-    // for which the perturbation value will be randomly generated from.
-    const auto perturbation_limit = ic_pl.get<Real>("perturbation_limits", 0.001);
+    // Get perturbation limit. Defines a range [1-perturbation_limit, 1+perturbation_limit]
+    // for which the perturbation value will be randomly generated from. Create a uniform
+    // distribution for this range.
+    const auto perturbation_limit = ic_pl.get<Real>("perturbation_limit", 0.001);
+    std::uniform_real_distribution<Real> pdf(1-perturbation_limit, 1+perturbation_limit);
 
     // Define a level mask using reference pressure and the perturbation_minimum_pressure parameter.
     // This mask dictates which levels we apply a perturbation.
@@ -1325,9 +1343,9 @@ void AtmosphereDriver::set_initial_conditions ()
                        "  - Grid:  "+fm->get_grid()->name()+"\n");
 
       auto field = fm->get_field(fname);
-      std::uniform_real_distribution<Real> pdf(-1.0*perturbation_limit, perturbation_limit);
-      perturb(field, engine, pdf, pressure_mask);
+      perturb(field, engine, pdf, seed, pressure_mask, fm->get_grid()->get_dofs_gids());
     }
+
     m_atm_logger->info("    [EAMxx] Adding random perturbation to ICs ... done!");
   }
 
