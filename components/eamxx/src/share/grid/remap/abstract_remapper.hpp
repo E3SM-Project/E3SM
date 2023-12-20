@@ -111,11 +111,6 @@ public:
   virtual FieldLayout create_tgt_layout (const FieldLayout& src_layout) const = 0;
 
   FieldIdentifier create_src_fid (const FieldIdentifier& tgt_fid) const {
-    EKAT_REQUIRE_MSG (tgt_fid.get_grid_name()==m_tgt_grid->name(),
-        "Error! Input FieldIdentifier has the wrong grid name:\n"
-        "   - input tgt fid grid name: " + tgt_fid.get_grid_name() + "\n"
-        "   - remapper tgt grid name:  " + m_tgt_grid->name() + "\n");
-
     const auto& name = tgt_fid.name();
     const auto& layout = create_src_layout(tgt_fid.get_layout());
     const auto& units = tgt_fid.get_units();
@@ -124,11 +119,6 @@ public:
   }
 
   FieldIdentifier create_tgt_fid (const FieldIdentifier& src_fid) const {
-    EKAT_REQUIRE_MSG (src_fid.get_grid_name()==m_src_grid->name(),
-        "Error! Input FieldIdentifier has the wrong grid name:\n"
-        "   - input src fid grid name: " + src_fid.get_grid_name() + "\n"
-        "   - remapper src grid name:  " + m_src_grid->name() + "\n");
-
     const auto& name = src_fid.name();
     const auto& layout = create_tgt_layout(src_fid.get_layout());
     const auto& units = src_fid.get_units();
