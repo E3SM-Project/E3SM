@@ -141,7 +141,9 @@ is_valid_layout (const FieldLayout& layout) const
 
   const auto lt = get_layout_type(layout.tags());
   const bool midpoints = layout.tags().back()==LEV;
-  const int vec_dim = layout.is_vector_layout() ? layout.dims()[layout.get_vector_dim()] : 0;
+  const bool is_vec = layout.is_vector_layout();
+  const int vec_dim = is_vec ? layout.dims()[layout.get_vector_dim()] : 0;
+  const auto vec_tag = is_vec ? layout.get_vector_tag() : INV;
 
   switch (lt) {
     case LayoutType::Scalar0D: [[fallthrough]];
@@ -156,11 +158,11 @@ is_valid_layout (const FieldLayout& layout) const
     case LayoutType::Scalar2D:
       return layout==get_2d_scalar_layout();
     case LayoutType::Vector2D:
-      return layout==get_2d_vector_layout(CMP,vec_dim);
+      return layout==get_2d_vector_layout(vec_tag,vec_dim);
     case LayoutType::Scalar3D:
       return layout==get_3d_scalar_layout(midpoints);
     case LayoutType::Vector3D:
-      return layout==get_3d_vector_layout(midpoints,CMP,vec_dim);
+      return layout==get_3d_vector_layout(midpoints,vec_tag,vec_dim);
     default:
       // Anything else is probably no
       return false;
