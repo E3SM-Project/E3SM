@@ -15,8 +15,8 @@
   theta_hydrostatic_mode = .false.
   ne                = 16                        ! number of elements per cube face
   qsize             = 0                         ! num tracer fields
-  nmax              = 100                     ! total number of steps: 3600s / tstep
-  statefreq         = 3456                       ! number of steps between screen dumps
+  nmax              = 5760                    ! total number of steps: 3600s / tstep
+  statefreq         = 5761                       ! number of steps between screen dumps
   restartfreq       = -1                        ! don't write restart files if < 0
   runtype           = 0                         ! 0 = new run
   tstep             = 5E-3                       ! largest timestep
@@ -35,9 +35,9 @@
   vtop              = 2.73919e-1                ! vertical coordinate at top of atm (z=10000m)
 /
 &analysis_nl
-  output_dir        = "/nscratch/asteyer/ecp_homme_convergence/"    ! destination dir for netcdf file
+  output_dir        = "/nscratch/asteyer/ecp_homme_convergence/test"    ! destination dir for netcdf file
   output_timeunits  = 0,                        ! 1=days, 2=hours, 0=timesteps
-  output_frequency  = 100,                      ! steps
+  output_frequency  = 5760,                      ! steps
   output_varnames1  ='T','ps','u','v','w','Th','geo','dp3d','area'   ! variables to write to file
   interp_type       = 0                         ! 0=native grid, 1=bilinear
   output_type       ='netcdf'                   ! netcdf or pnetcdf

@@ -1,5 +1,5 @@
 !
-! namelist for dcmip2012 test 3-1 nonhydrostatic gravity waves 
+! namelist for dcmip2012 test 3-1 nonhydrostatic gravity waves
 ! Small planet X = 125
 ! NE=27 (1.125 degrees)
 ! Scale NE30 viscosity: 1e15 -> 5.121e8
@@ -15,15 +15,15 @@
   theta_hydrostatic_mode = .false.
   ne                = 16                        ! number of elements per cube face
   qsize             = 0                         ! num tracer fields
-  nmax              = 100                       ! total number of steps: 3600s / tstep
-  statefreq         = 1000                         ! number of steps between screen dumps
+  nmax              = 34560                     ! total number of steps: 3600s / tstep
+  statefreq         = 3456                       ! number of steps between screen dumps
   restartfreq       = -1                        ! don't write restart files if < 0
   runtype           = 0                         ! 0 = new run
-  tstep             = 1.0                       ! largest timestep
+  tstep             = 5E-3                       ! largest timestep
   rsplit            = 0
   integration       = 'explicit'                ! explicit time integration
-  tstep_type        = 9                         ! 1 => default method
-  nu                = 0e8                       ! reduced earth hyperviz
+  tstep_type        = 5                         ! 1 => default method
+  nu                = 0e8                     ! reduced earth hyperviz
   nu_p              = 0e8
   hypervis_order    = 2                         ! 2 = hyperviscosity
   hypervis_subcycle = 1                         ! 1 = no hyperviz subcycling
@@ -35,9 +35,9 @@
   vtop              = 2.73919e-1                ! vertical coordinate at top of atm (z=10000m)
 /
 &analysis_nl
-  output_dir        = "/nscratch/asteyer/ecp_homme_convergence/test"  ! destination dir for netcdf file
+  output_dir        = "/nscratch/asteyer/ecp_homme_convergence/native_ne16_h_5Em3/"    ! destination dir for netcdf file
   output_timeunits  = 0,                        ! 1=days, 2=hours, 0=timesteps
-  output_frequency  = 1,                      ! steps
+  output_frequency  = 2,                      ! steps
   output_varnames1  ='T','ps','u','v','w','Th','geo','dp3d','area'   ! variables to write to file
   interp_type       = 0                         ! 0=native grid, 1=bilinear
   output_type       ='netcdf'                   ! netcdf or pnetcdf
