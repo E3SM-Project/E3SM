@@ -10,8 +10,7 @@
 namespace scream
 {
 
-template<typename ViewT,
-         typename = typename std::enable_if<Kokkos::is_view<ViewT>::value>::type>
+template<typename ViewT, typename>
 Field::
 Field (const identifier_type& id,
        const ViewT& view_d)
