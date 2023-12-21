@@ -158,17 +158,16 @@ LayoutType get_layout_type (const std::vector<FieldTag>& field_tags) {
       // Possible supported scenarios:
       //  1) <CMP|TL,LEV|ILEV>
       //  2) <TL,CMP>
-      if ( is_lev_tag(tags[1]) and is_vec_tag(tags[0]) ) {
+      if ( (is_vec_tag(tags[0]) or tags[0]==TL) and is_lev_tag(tags[1]) ) {
         result = LayoutType::Vector3D;
-      } else if (tags[0]==TL && tags[1]==CMP ) {
+      } else if (tags[0]==TL && is_vec_tag(tags[1]) ) {
         result = LayoutType::Tensor2D;
       }
       break;
     case 3:
       // The only supported scenario is:
       //  1) <TL,  CMP, LEV|ILEV>
-      if ( tags[0]==TL && tags[1]==CMP &&
-          (tags[2]==LEV || tags[2]==ILEV)) {
+      if ( tags[0]==TL && is_vec_tag(tags[1]) && is_lev_tag(tags[2]) ) {
         result = LayoutType::Tensor3D;
       }
   }
