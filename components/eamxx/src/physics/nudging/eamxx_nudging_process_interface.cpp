@@ -336,7 +336,7 @@ void Nudging::initialize_impl (const RunType /* run_type */)
     auto nudging_weights = create_helper_field("nudging_weights", scalar3d_layout_mid, grid_name, ps);
     std::vector<Field> fields;
     fields.push_back(nudging_weights);
-    AtmosphereInput src_weights_input(m_weights_file, grid_ext, fields);
+    AtmosphereInput src_weights_input(m_weights_file, m_grid, fields);
     src_weights_input.read_variables();
     src_weights_input.finalize();
     nudging_weights.sync_to_dev();
