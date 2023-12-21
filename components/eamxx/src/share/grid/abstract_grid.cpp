@@ -151,7 +151,8 @@ is_valid_layout (const FieldLayout& layout) const
     case LayoutType::Scalar1D: [[fallthrough]];
     case LayoutType::Vector1D:
       // 1d layouts need the right number of levels
-      return layout.dims().back() == m_num_vert_levs;
+      return layout.dims().back() == m_num_vert_levs or
+             layout.dims().back() == (m_num_vert_levs+1);
     case LayoutType::Scalar2D:
       return layout==get_2d_scalar_layout();
     case LayoutType::Vector2D:

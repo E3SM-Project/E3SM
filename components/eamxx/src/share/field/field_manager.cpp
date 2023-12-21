@@ -734,6 +734,7 @@ void FieldManager::add_field (const Field& f) {
       "Error! The method 'add_field' requires the input field to be already allocated.\n");
   EKAT_REQUIRE_MSG (m_grid->is_valid_layout(f.get_header().get_identifier().get_layout()),
       "Error! Input field to 'add_field' has a layout not compatible with the stored grid.\n"
+      "  - input field name : " + f.name() + "\n"
       "  - field manager grid: " + m_grid->name() + "\n"
       "  - input field layout:   " + to_string(f.get_header().get_identifier().get_layout()) + "\n");
   EKAT_REQUIRE_MSG (not has_field(f.name()),
