@@ -3017,7 +3017,7 @@ if ($chem eq 'superfast_mam4_brc_resus_mom') {
     my @files = ('airpl_emis_file', 'soil_erod_file', 'fstrat_file',
                  'sulf_file', 'tuv_xsect_file', 'o2_xsect_file', 'xs_long_file', 'rsf_file',
                  'solar_parms_file', 'exo_coldens_file', 'sad_file',
-                 'linoz_data_path' , 'linoz_data_file', 'chlorine_loading_file' );
+                 'linoz_data_path' , 'linoz_data_file', 'chlorine_loading_file', 'sfx_data_path','sfx_data_file'); #(zhang73)
     foreach my $file (@files) {
         add_default($nl, $file);
     }
@@ -3032,6 +3032,10 @@ if ($chem eq 'superfast_mam4_brc_resus_mom') {
     unless (defined $nl->get_value('linoz_data_type')) {
         add_default($nl, 'linoz_data_type',  'val'=>'CYCLICAL');
         add_default($nl, 'linoz_data_cycle_yr',  'val'=>'0');
+    }
+    unless (defined $nl->get_value('sfx_data_type')) { 
+        add_default($nl, 'sfx_data_type',  'val'=>'CYCLICAL'); #(zhang73)
+        add_default($nl, 'sfx_data_cycle_yr',  'val'=>'0');
     }
     unless (defined $nl->get_value('chlorine_loading_type')) {
         add_default($nl, 'chlorine_loading_type',  'val'=>'FIXED');
@@ -3297,7 +3301,7 @@ if ($chem eq 'superfast_mam4_resus_mom_soag') {
     my @files = ('airpl_emis_file', 'soil_erod_file', 'fstrat_file',
                  'sulf_file', 'tuv_xsect_file', 'o2_xsect_file', 'xs_long_file', 'rsf_file', 
                  'solar_parms_file', 'exo_coldens_file', 'sad_file', 
-                 'linoz_data_path' , 'linoz_data_file', 'chlorine_loading_file' );
+                 'linoz_data_path' , 'linoz_data_file', 'chlorine_loading_file', 'sfx_data_path','sfx_data_file'); 
     foreach my $file (@files) {
 	add_default($nl, $file);
     }
@@ -3312,6 +3316,10 @@ if ($chem eq 'superfast_mam4_resus_mom_soag') {
     unless (defined $nl->get_value('linoz_data_type')) {
 	add_default($nl, 'linoz_data_type',  'val'=>'CYCLICAL');
 	add_default($nl, 'linoz_data_cycle_yr',  'val'=>'0');
+    }
+    unless (defined $nl->get_value('sfx_data_type')) { 
+        add_default($nl, 'sfx_data_type',  'val'=>'CYCLICAL'); #(zhang73)
+        add_default($nl, 'sfx_data_cycle_yr',  'val'=>'0');
     }
     unless (defined $nl->get_value('chlorine_loading_type')) {
 	add_default($nl, 'chlorine_loading_type',  'val'=>'FIXED');

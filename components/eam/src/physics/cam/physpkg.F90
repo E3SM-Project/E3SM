@@ -752,6 +752,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     use rad_solar_var,      only: rad_solar_var_init
     use nudging,            only: Nudge_Model,nudging_init
     use output_aerocom_aie, only: output_aerocom_aie_init, do_aerocom_ind3
+    use sfx_data,           only: sfx_data_init !(zhang73)
 
 
     ! Input/output arguments
@@ -826,6 +827,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
 
     ! Prognostic chemistry.
     call chem_init(phys_state,pbuf2d, species_class)
+    call sfx_data_init() !(zhang73)
 
     ! Prescribed tracers
     call prescribed_ozone_init()
@@ -962,6 +964,8 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
 #if ( defined OFFLINE_DYN )
      use metdata,       only: get_met_srf1
 #endif
+    
+    use sfx_data,       only: sfx_data_adv !(zhang73)
 
     !
     ! Input arguments
@@ -1032,6 +1036,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
        !-----------------------------------------------------------------------
 
        call phys_timestep_init( phys_state, cam_out, pbuf2d)
+       call sfx_data_adv( pbuf2d, phys_state, cam_in) !(zhang73)
 
        call t_stopf ('physpkg_st1')
 
