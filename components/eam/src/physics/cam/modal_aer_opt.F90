@@ -211,6 +211,7 @@ subroutine modal_aer_opt_init()
    ! Add diagnostic fields to history output.
 
    call addfld ('EXTINCT',(/ 'lev' /),    'A','/m','Aerosol extinction', flag_xyfill=.true.)
+   call addfld ('EXTINCT1020',(/ 'lev' /),    'A','/m','Aerosol extinction 1020 nm', flag_xyfill=.true.)
    call addfld ('tropopause_m',horiz_only,    'A',' m  ','tropopause level in meters', flag_xyfill=.true.)
    call addfld ('ABSORB',(/ 'lev' /),    'A','/m','Aerosol absorption', flag_xyfill=.true.)
    call addfld ('AODVIS',horiz_only,    'A','  ','Aerosol optical depth 550 nm', flag_xyfill=.true., &
@@ -232,6 +233,8 @@ subroutine modal_aer_opt_init()
    call addfld ('AODDUST3',horiz_only,    'A','  ','Aerosol optical depth 550 nm model 3 from dust', flag_xyfill=.true.)
    call addfld ('AODDUST',horiz_only,    'A','  ','Aerosol optical depth 550 nm from dust', flag_xyfill=.true.)
    call addfld ('AODSO4',horiz_only,    'A','  ','Aerosol optical depth 550 nm from SO4', flag_xyfill=.true.)
+   call addfld ('AODSO4_STR',horiz_only,'A','  ','Aerosol optical depth 550 nm from stratospheric SO4', flag_xyfill=.true.)
+   call addfld ('AODSO4_TRO',horiz_only,'A','  ','Aerosol optical depth 550 nm from tropospheric SO4', flag_xyfill=.true.)
    call addfld ('AODPOM',horiz_only,    'A','  ','Aerosol optical depth 550 nm from POM', flag_xyfill=.true.)
    call addfld ('AODSOA',horiz_only,    'A','  ','Aerosol optical depth 550 nm from SOA', flag_xyfill=.true.)
    call addfld ('AODBC',horiz_only,    'A','  ','Aerosol optical depth 550 nm from BC', flag_xyfill=.true.)
@@ -254,13 +257,29 @@ subroutine modal_aer_opt_init()
    call addfld ('BURDENSOA',horiz_only,  'A','kg/m2'    ,'SOA aerosol burden'         , flag_xyfill=.true.)
    call addfld ('BURDENBC',horiz_only,  'A','kg/m2'     ,'Black carbon aerosol burden', flag_xyfill=.true.)
    call addfld ('BURDENSEASALT',horiz_only,  'A','kg/m2','Seasalt aerosol burden'     , flag_xyfill=.true.)
-!kzm
-#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_BRC)
+   ! ABURDEN... for interstitial and cloud-borne
+   call addfld ('ABURDENDUST',horiz_only,  'A','kg/m2'   ,'Dust aerosol burden (interstitial and cloud-borne)', flag_xyfill=.true.)
+   call addfld ('ABURDENSO4',horiz_only,  'A','kg/m2'    ,'Sulfate aerosol burden (interstitial and cloud-borne)', flag_xyfill=.true.)
+   call addfld ('ABURDENSO4_STR',horiz_only,  'A','kg/m2'    ,'Stratospheric sulfate aerosol burden (interstitial and cloud-borne)', flag_xyfill=.true.)
+   call addfld ('ABURDENSO4_TRO',horiz_only,  'A','kg/m2'    ,'Tropospheric sulfate aerosol burden (interstitial and cloud-borne)', flag_xyfill=.true.)
+   call addfld ('ABURDENPOM',horiz_only,  'A','kg/m2'    ,'POM aerosol burden (interstitial and cloud-borne)', flag_xyfill=.true.)
+   call addfld ('ABURDENPOM_STR',horiz_only,  'A','kg/m2'    ,'Stratospheric POM aerosol burden (interstitial and cloud-borne)', flag_xyfill=.true.)
+   call addfld ('ABURDENPOM_TRO',horiz_only,  'A','kg/m2'    ,'Tropospheric POM aerosol burden (interstitial and cloud-borne)', flag_xyfill=.true.)
+   call addfld ('ABURDENSOA',horiz_only,  'A','kg/m2'    ,'SOA aerosol burden (interstitial and cloud-borne)', flag_xyfill=.true.)
+   call addfld ('ABURDENBC',horiz_only,  'A','kg/m2'     ,'Black carbon aerosol burden (interstitial and cloud-borne)', flag_xyfill=.true.)
+   call addfld ('ABURDENBC_STR',horiz_only,  'A','kg/m2'     ,'Stratospheric Black carbon aerosol burden (interstitial and cloud-borne)', flag_xyfill=.true.)
+   call addfld ('ABURDENBC_TRO',horiz_only,  'A','kg/m2'     ,'Tropospheric Black carbon aerosol burden (interstitial and cloud-borne)', flag_xyfill=.true.)
+   call addfld ('ABURDENSEASALT',horiz_only,  'A','kg/m2','Seasalt aerosol burden (interstitial and cloud-borne)', flag_xyfill=.true.)
+#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_BRC )
    call addfld ('BURDENMOM',horiz_only,  'A','kg/m2'    ,'Marine organic aerosol burden', flag_xyfill=.true.)
+   call addfld ('ABURDENMOM',horiz_only,  'A','kg/m2'    ,'Marine organic aerosol burden (interstitial and cloud-borne)', flag_xyfill=.true.)
 #elif ( defined MODAL_AERO_9MODE )
    call addfld ('BURDENPOLY',horiz_only,  'A','kg/m2'   ,'Marine polysaccharide aerosol burden', flag_xyfill=.true.)
    call addfld ('BURDENPROT',horiz_only,  'A','kg/m2'   ,'Marine protein aerosol burden', flag_xyfill=.true.)
    call addfld ('BURDENLIP',horiz_only,  'A','kg/m2'    ,'Marine lipid aerosol burden'  , flag_xyfill=.true.)
+   call addfld ('ABURDENPOLY',horiz_only,  'A','kg/m2'   ,'Marine polysaccharide aerosol burden (interstitial and cloud-borne)', flag_xyfill=.true.)
+   call addfld ('ABURDENPROT',horiz_only,  'A','kg/m2'   ,'Marine protein aerosol burden (interstitial and cloud-borne)', flag_xyfill=.true.)
+   call addfld ('ABURDENLIP',horiz_only,  'A','kg/m2'    ,'Marine lipid aerosol burden (interstitial and cloud-borne)', flag_xyfill=.true.)
 #endif
    call addfld ('SSAVIS',horiz_only,    'A','  ','Aerosol singel-scatter albedo', flag_xyfill=.true.)
 
@@ -327,17 +346,33 @@ subroutine modal_aer_opt_init()
       call add_default ('BURDENSOA'    , 1, ' ')
       call add_default ('BURDENBC'     , 1, ' ')
       call add_default ('BURDENSEASALT', 1, ' ')
-!kzm
-#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_BRC)
+      call add_default ('ABURDENDUST'   , 1, ' ')
+      call add_default ('ABURDENSO4'    , 1, ' ')
+      call add_default ('ABURDENSO4_STR'    , 1, ' ')
+      call add_default ('ABURDENSO4_TRO'    , 1, ' ')
+      call add_default ('ABURDENPOM'    , 1, ' ')
+      call add_default ('ABURDENPOM_STR'    , 1, ' ')
+      call add_default ('ABURDENPOM_TRO'    , 1, ' ')
+      call add_default ('ABURDENSOA'    , 1, ' ')
+      call add_default ('ABURDENBC'     , 1, ' ')
+      call add_default ('ABURDENBC_STR'     , 1, ' ')
+      call add_default ('ABURDENBC_TRO'     , 1, ' ')
+      call add_default ('ABURDENSEASALT', 1, ' ')
+#if ( defined MODAL_AERO_4MODE_MOM ||  defined MODAL_AERO_4MODE_BRC)
       call add_default ('BURDENMOM'    , 1, ' ')
+      call add_default ('ABURDENMOM'    , 1, ' ')
 #elif ( defined MODAL_AERO_9MODE )
       call add_default ('BURDENPOLY'   , 1, ' ')
       call add_default ('BURDENPROT'   , 1, ' ')
       call add_default ('BURDENLIP'    , 1, ' ')
+      call add_default ('ABURDENPOLY'   , 1, ' ')
+      call add_default ('ABURDENPROT'   , 1, ' ')
+      call add_default ('ABURDENLIP'    , 1, ' ')
 #endif
       end if
       call add_default ('SSAVIS'       , 1, ' ')
       call add_default ('EXTINCT'      , 1, ' ')
+      call add_default ('EXTINCT1020'      , 1, ' ')
   end if
   if (cam_chempkg_is('trop_mam4').or.cam_chempkg_is('trop_mam4_resus').or. &
        cam_chempkg_is('trop_mam4_mom').or.cam_chempkg_is('trop_mam4_resus_mom').or. &
@@ -401,7 +436,9 @@ subroutine modal_aer_opt_init()
 
          call addfld ('EXTINCT'//diag(ilist), (/ 'lev' /), 'A','1/m', &
               'Aerosol extinction', flag_xyfill=.true.)
-         call addfld ('ABSORB'//diag(ilist),  (/ 'lev' /), 'A','1/m', &
+         call addfld ('EXTINCT1020'//diag(ilist), (/ 'lev' /), 'A','/m', &
+              'Aerosol extinction 1020 nm', flag_xyfill=.true.)
+         call addfld ('ABSORB'//diag(ilist),  (/ 'lev' /), 'A','/m', &
               'Aerosol absorption', flag_xyfill=.true.)
          call addfld ('AODVIS'//diag(ilist),       horiz_only, 'A','  ', &
               'Aerosol optical depth 550 nm', flag_xyfill=.true.)
@@ -413,6 +450,7 @@ subroutine modal_aer_opt_init()
               'Aerosol absorption optical depth 550 nm', flag_xyfill=.true.)
 
          call add_default ('EXTINCT'//diag(ilist), 1, ' ')
+         call add_default ('EXTINCT1020'//diag(ilist), 1, ' ')
          call add_default ('ABSORB'//diag(ilist),  1, ' ')
          call add_default ('AODVIS'//diag(ilist),  1, ' ')
          call add_default ('SAODVIS'//diag(ilist),  1, ' ')
@@ -461,6 +499,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
    real(r8) :: air_density(pcols,pver) ! (kg/m3)
 
    real(r8),    pointer :: specmmr(:,:)        ! species mass mixing ratio
+   real(r8),    pointer :: aspecmmr(:,:)       ! cloud-borne species mass mixing ratio
    real(r8)             :: specdens            ! species density (kg/m3)
    complex(r8), pointer :: specrefindex(:)     ! species refractive index
    character*32         :: spectype            ! species type
@@ -500,6 +539,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
 
    ! Diagnostics
    real(r8) :: extinct(pcols,pver), tropopause_m(pcols)
+   real(r8) :: extinct1020(pcols,pver)
    real(r8) :: absorb(pcols,pver)
    real(r8) :: aodvis(pcols)               ! extinction optical depth
    real(r8) :: aodall(pcols)               ! extinction optical depth
@@ -513,11 +553,17 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
    real(r8) :: burden(pcols)
    real(r8) :: burdendust(pcols), burdenso4(pcols), burdenbc(pcols), &
                burdenpom(pcols), burdensoa(pcols), burdenseasalt(pcols)
-!kzm
-#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_BRC)
+   real(r8) :: aburdendust(pcols), aburdenso4(pcols), &
+               aburdenso4_str(pcols), aburdenso4_tro(pcols), &
+               aburdenbc(pcols), aburdenpom(pcols), aburdensoa(pcols), aburdenseasalt(pcols), &
+               aburdenbc_str(pcols), aburdenbc_tro(pcols), &
+               aburdenpom_str(pcols), aburdenpom_tro(pcols)
+#if ( defined MODAL_AERO_4MODE_MOM ||  defined MODAL_AERO_4MODE_BRC)
    real(r8) :: burdenmom(pcols)
+   real(r8) :: aburdenmom(pcols)
 #elif ( defined MODAL_AERO_9MODE )
    real(r8) :: burdenpoly(pcols), burdenprot(pcols), burdenlip(pcols)
+   real(r8) :: aburdenpoly(pcols), aburdenprot(pcols), aburdenlip(pcols)
 #endif
 
    real(r8) :: aodmode(pcols)
@@ -554,9 +600,9 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
 
    ! total species AOD
    real(r8) :: dustaod(pcols), so4aod(pcols), bcaod(pcols), &
-               pomaod(pcols), soaaod(pcols), seasaltaod(pcols)
-!kzm 
-#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_BRC)
+               pomaod(pcols), soaaod(pcols), seasaltaod(pcols), &
+               so4aod_str(pcols), so4aod_tro(pcols)
+#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_BRC  )
    real(r8) :: momaod(pcols)
 #elif ( defined MODAL_AERO_9MODE )
    real(r8) :: polyaod(pcols), protaod(pcols), lipaod(pcols)
@@ -615,6 +661,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
 
    ! diagnostics for visible band summed over modes
    extinct(1:ncol,:)     = 0.0_r8
+   extinct1020(1:ncol,:)     = 0.0_r8
    absorb(1:ncol,:)      = 0.0_r8
    aodvis(1:ncol)        = 0.0_r8
    saodvis(1:ncol)        = 0.0_r8
@@ -622,18 +669,35 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
    aodabs(1:ncol)        = 0.0_r8
    burdendust(:ncol)     = 0.0_r8
    burdenso4(:ncol)      = 0.0_r8
+   so4aod_str(:ncol)     = 0.0_r8
+   so4aod_tro(:ncol)     = 0.0_r8
    burdenpom(:ncol)      = 0.0_r8
    burdensoa(:ncol)      = 0.0_r8
    burdenbc(:ncol)       = 0.0_r8
    burdenseasalt(:ncol)  = 0.0_r8
-!kzm
-#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_BRC)
+   aburdendust(:ncol)    = 0.0_r8
+   aburdenso4(:ncol)     = 0.0_r8
+   aburdenso4_str(:ncol) = 0.0_r8
+   aburdenso4_tro(:ncol) = 0.0_r8
+   aburdenpom(:ncol)     = 0.0_r8
+   aburdenpom_str(:ncol)     = 0.0_r8
+   aburdenpom_str(:ncol)     = 0.0_r8
+   aburdensoa(:ncol)     = 0.0_r8
+   aburdenbc(:ncol)      = 0.0_r8
+   aburdenbc_str(:ncol)      = 0.0_r8
+   aburdenbc_str(:ncol)      = 0.0_r8
+   aburdenseasalt(:ncol) = 0.0_r8
+#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_BRC )
    burdenmom(:ncol)      = 0.0_r8
+   aburdenmom(:ncol)     = 0.0_r8
    momaod(:ncol)         = 0.0_r8
 #elif ( defined MODAL_AERO_9MODE )
    burdenpoly(:ncol)     = 0.0_r8
    burdenprot(:ncol)     = 0.0_r8
    burdenlip(:ncol)      = 0.0_r8
+   aburdenpoly(:ncol)    = 0.0_r8
+   aburdenprot(:ncol)    = 0.0_r8
+   aburdenlip(:ncol)     = 0.0_r8
    polyaod(:ncol)        = 0.0_r8
    protaod(:ncol)        = 0.0_r8
    lipaod(:ncol)         = 0.0_r8
@@ -647,14 +711,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
    soaaod(:ncol)         = 0.0_r8
    bcaod(:ncol)          = 0.0_r8
    seasaltaod(:ncol)     = 0.0_r8
-!kzm
-#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_BRC)
-   burdenmom(:ncol)      = 0.0_r8
-#elif ( defined MODAL_AERO_9MODE )
-   burdenpoly(:ncol)     = 0.0_r8
-   burdenprot(:ncol)     = 0.0_r8
-   burdenlip(:ncol)      = 0.0_r8
-#endif
+
 
    ! diags for other bands
    aoduv(:ncol)          = 0.0_r8
@@ -755,6 +812,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
             ! aerosol species loop
             do l = 1, nspec
                call rad_cnst_get_aer_mmr(list_idx, m, l, 'a', state, pbuf, specmmr)
+               call rad_cnst_get_aer_mmr(list_idx, m, l, 'c', state, pbuf, aspecmmr)
                call rad_cnst_get_aer_props(list_idx, m, l, density_aer=specdens, &
                                            refindex_aer_sw=specrefindex, spectype=spectype, &
                                            hygro_aer=hygro_aer)
@@ -778,6 +836,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
                   if (trim(spectype) == 'dust') then
                      do i = 1, ncol
                         burdendust(i) = burdendust(i) + specmmr(i,k)*mass(i,k)
+                        aburdendust(i) = aburdendust(i) + specmmr(i,k)*mass(i,k) + aspecmmr(i,k)*mass(i,k)
                         dustvol(i)    = vol(i)
                         scatdust(i)   = vol(i)*specrefr
                         absdust(i)    = -vol(i)*specrefi
@@ -788,6 +847,12 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
                   if (trim(spectype) == 'sulfate') then
                      do i = 1, ncol
                         burdenso4(i) = burdenso4(i) + specmmr(i,k)*mass(i,k)
+                        aburdenso4(i) = aburdenso4(i) + specmmr(i,k)*mass(i,k) + aspecmmr(i,k)*mass(i,k)
+                        if ((k .le. trop_level(i)) .and. (is_output_interactive_volc)) then ! in stratosphere
+                           aburdenso4_str(i)    = aburdenso4_str(i) + specmmr(i,k)*mass(i,k) + aspecmmr(i,k)*mass(i,k)
+                        else
+                           aburdenso4_tro(i)    = aburdenso4_tro(i) + specmmr(i,k)*mass(i,k) + aspecmmr(i,k)*mass(i,k)
+                        endif    
                         scatso4(i)   = vol(i)*specrefr
                         absso4(i)    = -vol(i)*specrefi
                         hygroso4(i)  = vol(i)*hygro_aer
@@ -796,6 +861,12 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
                   if (trim(spectype) == 'black-c') then
                      do i = 1, ncol
                         burdenbc(i) = burdenbc(i) + specmmr(i,k)*mass(i,k)
+                        aburdenbc(i) = aburdenbc(i) + specmmr(i,k)*mass(i,k) + aspecmmr(i,k)*mass(i,k)
+                        if ((k .le. trop_level(i)) .and. (is_output_interactive_volc)) then ! in stratosphere
+                           aburdenbc_str(i)    = aburdenbc_str(i) + specmmr(i,k)*mass(i,k) + aspecmmr(i,k)*mass(i,k)
+                        else
+                           aburdenbc_tro(i)    = aburdenbc_tro(i) + specmmr(i,k)*mass(i,k) + aspecmmr(i,k)*mass(i,k)
+                        endif
                         scatbc(i)   = vol(i)*specrefr
                         absbc(i)    = -vol(i)*specrefi
                         hygrobc(i)  = vol(i)*hygro_aer
@@ -804,6 +875,12 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
                   if (trim(spectype) == 'p-organic') then
                      do i = 1, ncol
                         burdenpom(i) = burdenpom(i) + specmmr(i,k)*mass(i,k)
+                        aburdenpom(i) = aburdenpom(i) + specmmr(i,k)*mass(i,k) + aspecmmr(i,k)*mass(i,k)
+                        if ((k .le. trop_level(i)) .and. (is_output_interactive_volc)) then ! in stratosphere
+                           aburdenpom_str(i)    = aburdenpom_str(i) + specmmr(i,k)*mass(i,k) + aspecmmr(i,k)*mass(i,k)
+                        else
+                           aburdenpom_tro(i)    = aburdenpom_tro(i) + specmmr(i,k)*mass(i,k) + aspecmmr(i,k)*mass(i,k)
+                        endif
                         scatpom(i)   = vol(i)*specrefr
                         abspom(i)    = -vol(i)*specrefi
                         hygropom(i)  = vol(i)*hygro_aer
@@ -812,6 +889,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
                   if (trim(spectype) == 's-organic') then
                      do i = 1, ncol
                         burdensoa(i) = burdensoa(i) + specmmr(i,k)*mass(i,k)
+                        aburdensoa(i) = aburdensoa(i) + specmmr(i,k)*mass(i,k) + aspecmmr(i,k)*mass(i,k)
                         scatsoa(i)   = vol(i)*specrefr
                         abssoa(i)    = -vol(i)*specrefi
                         hygrosoa(i)  = vol(i)*hygro_aer
@@ -820,6 +898,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
                   if (trim(spectype) == 'seasalt') then
                      do i = 1, ncol
                         burdenseasalt(i) = burdenseasalt(i) + specmmr(i,k)*mass(i,k)
+                        aburdenseasalt(i) = aburdenseasalt(i) + specmmr(i,k)*mass(i,k) + aspecmmr(i,k)*mass(i,k)
                         scatseasalt(i)   = vol(i)*specrefr
                         absseasalt(i)    = -vol(i)*specrefi
                         hygroseasalt(i)  = vol(i)*hygro_aer
@@ -830,6 +909,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
                   if (trim(spectype) == 'm-organic') then
                      do i = 1, ncol
                         burdenmom(i) = burdenmom(i) + specmmr(i,k)*mass(i,k)
+                        aburdenmom(i) = aburdenmom(i) + specmmr(i,k)*mass(i,k) + aspecmmr(i,k)*mass(i,k)
                         scatmom(i)   = vol(i)*specrefr
                         absmom(i)    = -vol(i)*specrefi
                         hygromom(i)  = vol(i)*hygro_aer
@@ -839,6 +919,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
                   if (trim(spectype) == 'm-poly') then
                      do i = 1, ncol
                         burdenpoly(i) = burdenpoly(i) + specmmr(i,k)*mass(i,k)
+                        aburdenpoly(i) = aburdenpoly(i) + specmmr(i,k)*mass(i,k) + aspecmmr(i,k)*mass(i,k)
                         scatpoly(i)   = vol(i)*specrefr
                         abspoly(i)    = -vol(i)*specrefi
                         hygropoly(i)  = vol(i)*hygro_aer
@@ -847,6 +928,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
                   if (trim(spectype) == 'm-prot') then
                      do i = 1, ncol
                         burdenprot(i) = burdenprot(i) + specmmr(i,k)*mass(i,k)
+                        aburdenprot(i) = aburdenprot(i) + specmmr(i,k)*mass(i,k) + aspecmmr(i,k)*mass(i,k)
                         scatprot(i)   = vol(i)*specrefr
                         absprot(i)    = -vol(i)*specrefi
                         hygroprot(i)  = vol(i)*hygro_aer
@@ -855,6 +937,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
                   if (trim(spectype) == 'm-lip') then
                      do i = 1, ncol
                         burdenlip(i) = burdenlip(i) + specmmr(i,k)*mass(i,k)
+                        aburdenlip(i) = aburdenlip(i) + specmmr(i,k)*mass(i,k) + aspecmmr(i,k)*mass(i,k)
                         scatlip(i)   = vol(i)*specrefr
                         abslip(i)    = -vol(i)*specrefi
                         hygrolip(i)  = vol(i)*hygro_aer
@@ -946,6 +1029,14 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
 
             ! Save aerosol optical depth at longest visible wavelength
             ! sum over layers
+! HHLEE 20210322
+! wavelength at 1020 nm
+            if (isw .eq. 8) then
+               do i = 1, ncol 
+                  extinct1020(i,k) = extinct1020(i,k) + dopaer(i)*air_density(i,k)/mass(i,k)
+               end do 
+            end if   
+         
             if (savaervis) then
                ! aerosol extinction (/m)
                do i = 1, ncol
@@ -1041,6 +1132,11 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
 
                      aodc           = (absso4(i)*(1.0_r8 - palb(i)) + palb(i)*scatso4(i))*dopaer(i)
                      so4aod(i)      = so4aod(i) + aodc
+                     if ((k .le. trop_level(i)) .and. (is_output_interactive_volc)) then ! in stratosphere
+                        so4aod_str(i)      = so4aod_str(i) + aodc
+                     else   
+                        so4aod_tro(i)      = so4aod_tro(i) + aodc   
+                     endif    
 
                      aodc           = (abspom(i)*(1.0_r8 - palb(i)) + palb(i)*scatpom(i))*dopaer(i)
                      pomaod(i)      = pomaod(i) + aodc
@@ -1174,6 +1270,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
    ! These fields are put out for diagnostic lists as well as the climate list.
    do i = 1, nnite
       extinct(idxnite(i),:) = fillvalue
+      extinct1020(idxnite(i),:) = fillvalue
       absorb(idxnite(i),:)  = fillvalue
       aodvis(idxnite(i))    = fillvalue
       saodvis(idxnite(i))    = fillvalue
@@ -1181,6 +1278,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
    end do
 
    call outfld('EXTINCT'//diag(list_idx),  extinct, pcols, lchnk)
+   call outfld('EXTINCT1020'//diag(list_idx),  extinct1020, pcols, lchnk)
    call outfld('tropopause_m', tropopause_m, pcols, lchnk)
    call outfld('ABSORB'//diag(list_idx),   absorb,  pcols, lchnk)
    call outfld('AODVIS'//diag(list_idx),   aodvis,  pcols, lchnk)
@@ -1250,19 +1348,37 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
       call outfld('BURDENSOA' ,    burdensoa,     pcols, lchnk)
       call outfld('BURDENBC'  ,    burdenbc,      pcols, lchnk)
       call outfld('BURDENSEASALT', burdenseasalt, pcols, lchnk)
-!kzm
-#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_BRC)
+      call outfld('ABURDENDUST',    aburdendust,    pcols, lchnk)
+      call outfld('ABURDENSO4' ,    aburdenso4,     pcols, lchnk)
+      call outfld('ABURDENSO4_STR', aburdenso4_str, pcols, lchnk)
+      call outfld('ABURDENSO4_TRO', aburdenso4_tro, pcols, lchnk)
+      call outfld('ABURDENPOM' ,    aburdenpom,     pcols, lchnk)
+      call outfld('ABURDENPOM_STR' ,    aburdenpom_str,     pcols, lchnk)
+      call outfld('ABURDENPOM_TRO' ,    aburdenpom_tro,     pcols, lchnk)
+      call outfld('ABURDENSOA' ,    aburdensoa,     pcols, lchnk)
+      call outfld('ABURDENBC'  ,    aburdenbc,      pcols, lchnk)
+      call outfld('ABURDENBC_STR'  ,    aburdenbc_str,      pcols, lchnk)
+      call outfld('ABURDENBC_TRO'  ,    aburdenbc_tro,      pcols, lchnk)
+      call outfld('ABURDENSEASALT', aburdenseasalt, pcols, lchnk)
+
+#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_BRC )
       call outfld('BURDENMOM', burdenmom, pcols, lchnk)
+      call outfld('ABURDENMOM', aburdenmom, pcols, lchnk)
 #elif ( defined MODAL_AERO_9MODE )
       call outfld('BURDENPOLY', burdenpoly, pcols, lchnk)
       call outfld('BURDENPROT', burdenprot, pcols, lchnk)
       call outfld('BURDENLIP', burdenlip, pcols, lchnk)
+      call outfld('ABURDENPOLY', aburdenpoly, pcols, lchnk)
+      call outfld('ABURDENPROT', aburdenprot, pcols, lchnk)
+      call outfld('ABURDENLIP', aburdenlip, pcols, lchnk)
 #endif
 
       call outfld('AODABSBC',      aodabsbc,      pcols, lchnk)
 
       call outfld('AODDUST',       dustaod,       pcols, lchnk)
       call outfld('AODSO4',        so4aod,        pcols, lchnk)
+      call outfld('AODSO4_STR',    so4aod_str,    pcols, lchnk)
+      call outfld('AODSO4_TRO',    so4aod_tro,    pcols, lchnk)
       call outfld('AODPOM',        pomaod,        pcols, lchnk)
       call outfld('AODSOA',        soaaod,        pcols, lchnk)
       call outfld('AODBC',         bcaod,         pcols, lchnk)

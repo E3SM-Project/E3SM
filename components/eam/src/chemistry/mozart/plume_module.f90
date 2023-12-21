@@ -44,13 +44,14 @@ Module smk_plumerise
  real(r8), dimension(nkp) ::  dzm,dzt,zm,zt,vctr1,vctr2   &
  			,vt3dc,vt3df,vt3dk,vt3dg,scr1&
  			,vt3dj,vt3dn,vt3do,vt3da,scr2&
- 		       ,vt3db,vt3dd,vt3dl,vt3dm,vt3di,vt3dh,vt3de, rbuoy,dwdt_entr
-
+ 		       ,vt3db,vt3dd,vt3dl,vt3dm,vt3di,vt3dh,vt3de, rbuoy,dwdt_entr, & 
+                        rbuoy_ini,rbuoy_end !kzm diag output
+ !real(r8), dimension(pver) :: wt_ini_e3sm, wt_end_e3sm, rbuoy_ini_e3sm, rbuoy_end_e3sm
  !
  real(r8), dimension(nkp) ::  pke,the,thve,thee,pe,te,qvenv,rhe,dne,sce,tde,upe,vpe,vel_e ! environment at plume grid
  real(r8), dimension(1200) :: ucon,vcon,wcon,thtcon ,rvcon,picon,tmpcon,dncon,prcon &
  			,zcon,zzcon,scon,urcon,tdcon ! environment at RAMS  grid
- integer MTT
+ integer MTT,nstep
  !
  real(r8) DZ,DQSDZ,VISC(nkp),VISCOSITY,TSTPF   
  integer :: N,NM1,L,evp_l
@@ -73,7 +74,7 @@ Module smk_plumerise
  !real(r8):: plume_data(3)
 
  !- turn ON (=1), OFF (=0) the env wind effect on plume rise
- integer, parameter :: wind_eff = 1
+ integer, parameter :: wind_eff = 0
 
 !---------------------------------------------------------------------------
 !Module rconstants
@@ -124,7 +125,8 @@ real(r8), parameter ::                    &
 
 contains
 
-  subroutine  smk_pr_driver( plume_data , env, gfed_area, frp, lat )
+  subroutine  smk_pr_driver( plume_data , env, gfed_area, frp, lat, &
+             wt_ini_e3sm, wt_end_e3sm, rbuoy_ini_e3sm, rbuoy_end_e3sm,t_ini_e3sm,t_end_e3sm )
 
   integer :: m1,m2,m3,ia,iz,ja,jz,ibcon,mynum,i,j,k,iveg_ag,&
              k_CO_smold,k_PM25_smold,imm,k1,k2,kmt,use_sound,kk
@@ -134,7 +136,9 @@ contains
   real(r8):: ini_f ! ca1, ca2
   character (len=10):: cfsrdataname
   real(r8), intent(out):: plume_data
-  
+  real(r8), intent(out) :: wt_ini_e3sm(pver), wt_end_e3sm(pver), rbuoy_ini_e3sm(pver), rbuoy_end_e3sm(pver)
+  real(r8), intent(out) :: t_ini_e3sm(pver), t_end_e3sm(pver)
+   
  !- initial settings (should be changed for the coupling with 3d host model)
  ia=1;iz=1;ja=1;jz=1; m1=38
  ! m1 is a host model parameter 	      
@@ -187,7 +191,8 @@ contains
        call get_fire_properties(imm,iveg_ag,burnt_area,STD_burnt_area, frp)
        !print*, 'finish get_fire_properties'
        !------  generate plume rise    ------	     
-       call makeplume (kmt,ztopmax(imm),imm,lat,ini_f)    ! finish the vertical loope
+       call makeplume (kmt,ztopmax(imm),imm,lat,ini_f,&
+            wt_ini_e3sm, wt_end_e3sm, rbuoy_ini_e3sm, rbuoy_end_e3sm,t_ini_e3sm,t_end_e3sm)    ! finish the vertical loope
 
        !print*,' burnt_area (ha) - top cloud(km)- power (W m^2)' 
        !print*,burnt_area/10000.,ztopmax(imm)/1000.,heat_fluxW
@@ -195,7 +200,7 @@ contains
        !write(43,*) burnt_area/10000.,ztopmax(imm)/1000.,heat_fluxW
        !close(43)
        !plume_data(1) = burnt_area/10000.
-       plume_data = ztopmax(imm)/1000.
+       plume_data = ztopmax(imm) ! unit meter
        !plume_data(3) = heat_fluxW/1000.
        !plume_data(4) = 1.0
        !plume_data(5) = delta_theta
@@ -289,16 +294,13 @@ if(use_sound==1) then
      ! dimension 200
      k=k+1
      zcon(k)  =env(1,i) !-topo  !geopotential height
-     prcon(k) =env(2,i)/1000 ! kp !*100. ! mb to pascar
+     prcon(k) =env(2,i) ! kp !*100. ! mb to pascar
      tmpcon(k)=env(3,i)!+273.15  ! Kelve degree
      urcon(k) =env(4,i)  ! relative humidity
-!     urcon(k) =0.000001 
-    ! tdcon(k) =envm(8,i)  ! dew point Temp.
-     thtcon(k)=env(7,i)  ! potential Temp.
-     rvcon(k) =env(8,i)  ! specific humidity
-!     rvcon(k) = 0.000001
-     ucon(k)= env(5,i)   !- xm(10,i) *sin(3.1416* xm(9,i)/180.) ! u velocity
-     vcon(k)= env(6,i)          !- xm(10,i) *cos(3.1416* xm(9,i)/180.) ! v velocity 
+     thtcon(k)=env(5,i)  ! potential Temp.
+     rvcon(k) =env(6,i)  ! specific humidity
+     ucon(k)= env(7,i)   !- xm(10,i) *sin(3.1416* xm(9,i)/180.) ! u velocity
+     vcon(k)= env(8,i)          !- xm(10,i) *cos(3.1416* xm(9,i)/180.) ! v velocity 
      !print*, zcon(k)
     enddo
 
@@ -355,30 +357,25 @@ do k=1,kmt
    QSAT (k) = (.622 * ES) / (PE (k)*1.e-3 - ES) !saturation lwc g/g
 !   QSAT (k) = (.622 * ES*1000.) / (PE (k) - ES*1000.)
 !calcula qvenv
-!  qvenv(k)=0.01*rhe(k)*QSAT (k)
-!  qvenv(k)=max(qvenv(k),1e-8)
-!   print*, k, QSAT (k), es, pe(k), qvenv(k)
 !   stop
 enddo
-! open(169, file = 'environment_out.txt')
-! do i=1,50
-!  write(169, "(7F15.4)") pe(i), te(i), the(i), qvenv(i),rhe(i), qsat(i), 100.*ESAT(TE(i))
-! enddo
 
+    DO k=1,kmt
+       qvenv(k)=MAX(qvenv(k),1e-8)
+    ENDDO
 
+    DO k=1,kmt
+       thve(k)=the(k)*(1.+.61*qvenv(k)) ! virtual pot temperature
+    ENDDO
+    DO k=1,kmt
+       dne(k)= pe(k)/(rgas*te(k)*(1.+.61*qvenv(k))) !  dry air density (kg/m3)
+       vel_e(k) = sqrt(upe(k)**2+vpe(k)**2)         !-env wind (m/s)
+    ENDDO
 
-do k=1,kmt
-  thve(k)=the(k)*(1.+.61*qvenv(k)) ! virtual pot temperature
-enddo
 !  print*, thve(1:10)
 !  print*, the(1:10)
 !  print*, qvenv(1:10)
 !   print*, kmt
-do k=1,kmt
-  dne(k)= pe(k)/(rgas*te(k)*(1.+.61*qvenv(k))) !  dry air density (kg/m3)
-    
-  vel_e(k) = sqrt(upe(k)**2+vpe(k)**2)
-enddo
 !print*, dne(1:10)
 !------------------------------------------------------------
 else ! if there is no sounding data
@@ -434,7 +431,12 @@ if(wind_eff < 1)  vel_e = 0.
 do k=1,kmt
  pe(k) = pe(k)*1.e-3
 enddo 
-!print*, 'finish env. condition setting'
+
+!print*, 'PE, TE, PT, Q, U, V, density'
+!do k=1,kmt
+!print*, pe(k),te(k),the(k),qvenv(k),upe(k),vpe(k),dne(k)
+!print*,k
+!enddo
 end subroutine get_env_condition
 !-------------------------------------------------------------------------
 
@@ -443,7 +445,7 @@ subroutine set_grid()
 implicit none
 integer :: k,mzp
 
-dz=50. ! set constant grid spacing of plume grid model(meters)
+dz=100. ! set constant grid spacing of plume grid model(meters)
 
 mzp=nkp
 zt(1) = zsurf ! zsurf=0, defined at zero_plumegen_coms
@@ -534,7 +536,8 @@ heat_fluxW = frp*1000.
 
 mdur =  199. !53        ! duration of burn, minutes
 bload = 10.      ! total loading, kg/m**2 
-moist = 40.0      ! fuel moisture, %. average fuel moisture,percent dry
+moist = 35.0      ! fuel moisture, %. average fuel moisture,percent dry
+!moist = 40.     ! kzm:change with frp
 
 !maxtime =mdur+2  ! model time, min
  maxtime =mdur-1  ! model time, min
@@ -545,9 +548,9 @@ moist = 40.0      ! fuel moisture, %. average fuel moisture,percent dry
 ! alpha = 0.2     !- entrainment constant
 ! alpha = 0.05      !- entrainment constant
 ! alpha = 0.075
- alpha(1)=0.05
- alpha(2:10)=0.05
- alpha(11:200)=0.05
+ alpha(1)=0.02
+ alpha(2:10)=0.02
+ alpha(11:200)=0.02
 ! alpha(16:200)=.3
 
 !-------------------- printout ----------------------------------------
@@ -619,7 +622,8 @@ return
 end subroutine get_fire_properties
 !-------------------------------------------------------------------------------
 !
-SUBROUTINE MAKEPLUME ( kmt,ztopmax,imm, lat, ini_f)  
+SUBROUTINE MAKEPLUME ( kmt,ztopmax,imm, lat, ini_f,&
+           wt_ini_e3sm, wt_end_e3sm, rbuoy_ini_e3sm, rbuoy_end_e3sm, t_ini_e3sm,t_end_e3sm)  
 ! makeplume (kmt,ztopmax(imm),imm)
 ! *********************************************************************
 !
@@ -690,8 +694,10 @@ real(r8)::  vc, g,  r,  cp,  eps,  &
          tmelt,  heatsubl,  heatfus,  heatcond, tfreeze, &
          ztopmax, wmax, rmaxtime, es,ESAT_PR, heat,dt_save, lat
 real(r8):: ini_f
+real(r8), dimension(pver) :: wt_ini_e3sm, wt_end_e3sm, rbuoy_ini_e3sm, rbuoy_end_e3sm
+real(r8), dimension(pver) :: t_ini_e3sm,t_end_e3sm
 !
-integer :: imm
+integer :: imm,nk
 
 !
 ! ******************* SOME CONSTANTS **********************************
@@ -749,12 +755,13 @@ izprint  = 1          ! if = 0 => no printout
 rmaxtime = float(maxtime)
 !print*, 'rmaxtime  =' 
 !print*, rmaxtime
-!
+nstep = 0
+wt_end_e3sm(:) = -999.0
  DO WHILE (TIME.LE.RMAXTIME)  !beginning of time loop
 !print*, 'time  =' 
 !print*, time
 !   do itime=1,120
-
+    nstep = nstep + 1
 !-- set model top integration
     nm1 = min(kmt, kkmax + deltak)
     nm1 = min(nm1, 199)
@@ -779,13 +786,23 @@ rmaxtime = float(maxtime)
 !-- surface bounday conditions (k=1)
 !    L=1
     call lbound_mtt(ini_f)
+    !print*,'wt-lb ', wt(2),w(2),wc(2)
+!kzm output w
+    nk = pver-8 !kzm
+    if (nstep == 1) then
+       call htint(kmt, w,zm,nk,wt_ini_e3sm,zcon)
+       call htint(kmt, t,zm,nk,t_ini_e3sm,zcon)
+    else
+       call htint(kmt, w,zm,nk,wt_end_e3sm,zcon)
+       call htint(kmt, t,zm,nk,t_end_e3sm,zcon)
+    endif     
    ! print*,alpha(1:2)
 !-- dynamics for the level k>1 
 
 !-- W advection 
 !   call vel_advectc_plumerise(NM1,WC,WT,DNE,DZM)
     call vel_advectc_plumerise(NM1,WC,WT,RHO,DZM)
-  
+    !print*,'wt-vel_dav ', wt(2),w(2),wc(2) 
 !-- scalars advection 1
     call scl_advectc_plumerise('SC',NM1)
 
@@ -844,8 +861,8 @@ rmaxtime = float(maxtime)
     call hadvance_plumerise(1,nm1,dt,WC,WT,W,mintime) 
 
 !-- Buoyancy
-    call buoyancy_plumerise(NM1, T, TE, QV, QVENV, QH, QI, QC, WT, SCR1)
- 
+    call buoyancy_plumerise(NM1, T, TE, QV, QVENV, QH, QI, QC, WT, SCR1, kmt, rbuoy_ini_e3sm, rbuoy_end_e3sm)
+    !print*,'wt-buo ', wt(2),w(2),wc(2)
 !-- Entrainment 
     call entrainment(NM1,W,WT,RADIUS,ALPHA)
 
@@ -895,6 +912,7 @@ rmaxtime = float(maxtime)
 !
     ztop_(mintime) = ztop
     ztopmax = max (ztop, ztopmax) 
+    ztopmax = max (zm(2), ztopmax) 
     kkmax   = max (kk  , kkmax  ) 
 !    print * ,'ztopmax=', mintime,'mn ',ztop_(mintime), ztopmax!,wtmax
 
@@ -902,7 +920,7 @@ rmaxtime = float(maxtime)
 
 ! if the solution is going to a stationary phase, exit
    if(mintime > 40) then
-    if( abs(ztop_(mintime)-ztop_(mintime-10)) < DZ ) exit
+    if( abs(ztop_(mintime)-ztop_(mintime-30)) < DZ ) exit
    endif
    
     if(ilastprint == mintime) then
@@ -934,8 +952,8 @@ SUBROUTINE BURN(EFLUX, WATER)
 !- calculates the energy flux and water content at lboundary
 !use plumegen_coms                               
 !real(r8), parameter :: HEAT = 21.E6 !Joules/kg
-real(r8), parameter :: HEAT = 15.5E6 !Joules/kg - cerrado
-!real(r8), parameter :: HEAT = 19.3E6 !Joules/kg - floresta em Alta Floresta (MT)
+!real(r8), parameter :: HEAT = 15.5E6 !Joules/kg - cerrado
+real(r8), parameter :: HEAT = 19.3E6 !Joules/kg - floresta em Alta Floresta (MT)
 real(r8):: eflux,water
 !
 ! The emission factor for water is 0.5. The water produced, in kg,
@@ -1365,15 +1383,15 @@ return
 end subroutine predict_plumerise
 !-------------------------------------------------------------------------------
 !
-subroutine  buoyancy_plumerise(m1, T, TE, QV, QVENV, QH, QI, QC, WT, scr1)
+subroutine  buoyancy_plumerise(m1, T, TE, QV, QVENV, QH, QI, QC, WT, scr1, kmt, rbuoy_ini_e3sm, rbuoy_end_e3sm)
   !use plumegen_coms, only : rbuoy
 implicit none
-integer :: k,m1
+integer :: k,m1,kmt,nk
 real(r8), parameter :: g = 9.8, eps = 0.622, gama = 0.5 ! mass virtual coeff.
 real(r8), dimension(m1) :: T, TE, QV, QVENV, QH, QI, QC, WT, scr1
 real(r8):: TV,TVE,QWTOTL,umgamai
 real(r8), parameter ::  mu = 0.15 
-
+real(r8), dimension(pver) :: rbuoy_ini_e3sm, rbuoy_end_e3sm
 !- orig
 umgamai = 1./(1.+gama) ! compensa a falta do termo de aceleracao associado `as
                        ! das pertubacoes nao-hidrostaticas no campo de
@@ -1398,15 +1416,25 @@ enddo
 do k = 2,m1-2
 
 !srf- just for output
- !   rbuoy(k)=0.5*(scr1(k)+scr1(k+1))
-    rbuoy(k)=0.333*(scr1(k-1)+scr1(k)+scr1(k+1))
+    rbuoy(k)=0.5*(scr1(k)+scr1(k+1))
     wt(k) = wt(k)+rbuoy(k)
 
-!   print*,'W-BUO',k,wt(k),scr1(k),scr1(k+1)
+ !  print*,'W-BUO',k,wt(k),scr1(k),scr1(k+1)
 enddo
 !srf- just for output
     rbuoy(1)=rbuoy(2)
-    
+! added diagnostic output
+    nk = pver-8 !kzm
+    rbuoy_end(:) = rbuoy(:)
+   ! wt_end(:) = wt(:)
+   ! call htint(kmt, wt_end,zm,nk,wt_end_e3sm,zcon)
+    call htint(kmt, rbuoy_end,zm,nk,rbuoy_end_e3sm,zcon)
+if (nstep == 1) then
+    rbuoy_ini(:) = rbuoy(:)
+   ! wt_ini(:)    = wt(:) 
+    call htint(kmt, rbuoy_ini,zm,nk,rbuoy_ini_e3sm,zcon)
+   ! call htint(kmt, wt_ini,zm,nk,wt_ini_e3sm,zcon)
+endif   
 end subroutine  buoyancy_plumerise
 !-------------------------------------------------------------------------------
 !
@@ -1433,6 +1461,7 @@ umgamai = 1./(1.+gama) ! compensa a falta do termo de aceleracao associado `as
 !-- for W: WBAR is only W(k)
 !     WBAR=0.5*(W(k)+W(k-1))           
       WBAR=W(k)          
+!      WBAR=0.333*(W(k)+W(k-1)+W(k+1))          
       RADIUS_BAR = 0.5*(RADIUS(k) + RADIUS(k-1))
 
 ! orig plump model
@@ -2913,8 +2942,7 @@ SUBROUTINE htint (nzz1, vctra, eleva, nzz2, vctrb, elevb)
   INTEGER :: l
   INTEGER :: k
   INTEGER :: kk
-  REAL(r8)    :: wt
-
+  REAL(r8)    :: wgt
   l=1
 
   DO k=1,nzz2  ! interpolate from bottom to the effective layer
@@ -2922,13 +2950,13 @@ SUBROUTINE htint (nzz1, vctra, eleva, nzz2, vctrb, elevb)
         IF ( (elevb(k) <  eleva(1)) .OR. &
              ((elevb(k) >= eleva(l)) .AND. (elevb(k) <= eleva(l+1))) ) THEN
            ! when model grid between two sounding grids  
-           wt       = (elevb(k)-eleva(l))/(eleva(l+1)-eleva(l)) ! weight of interpolation
-           vctrb(k) = vctra(l)+(vctra(l+1)-vctra(l))*wt ! linearly interpolate
+           wgt       = (elevb(k)-eleva(l))/(eleva(l+1)-eleva(l)) ! weight of interpolation
+           vctrb(k) = vctra(l)+(vctra(l+1)-vctra(l))*wgt ! linearly interpolate
            EXIT
         ELSE IF ( elevb(k) >  eleva(nzz1))  THEN
            ! when model grid already higher than sounding top
-           wt       = (elevb(k)-eleva(nzz1))/(eleva(nzz1-1)-eleva(nzz1))
-           vctrb(k) = vctra(nzz1)+(vctra(nzz1-1)-vctra(nzz1))*wt
+           wgt       = (elevb(k)-eleva(nzz1))/(eleva(nzz1-1)-eleva(nzz1))
+           vctrb(k) = vctra(nzz1)+(vctra(nzz1-1)-vctra(nzz1))*wgt
            EXIT
         END IF
 
