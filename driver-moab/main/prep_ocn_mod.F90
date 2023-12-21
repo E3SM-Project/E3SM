@@ -550,7 +550,6 @@ contains
 
             endif ! if (.not. samegrid_ao)
 
-
 #ifdef MOABDEBUG
             wopts = C_NULL_CHAR
             call shr_mpi_commrank( mpicom_CPLID, rank )
