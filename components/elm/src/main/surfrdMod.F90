@@ -19,9 +19,15 @@ module surfrdMod
   use ncdio_pio       , only : file_desc_t, var_desc_t, ncd_pio_openfile, ncd_pio_closefile
   use ncdio_pio       , only : ncd_io, check_var, ncd_inqfdims, check_dim, ncd_inqdid, ncd_inqdlen
   use pio
-  use spmdMod       
+
+#ifdef HAVE_MOAB
+  use mct_mod         , only : mct_gsMap
+  use decompMod       , only : get_elmlevel_gsmap
+  ! use spmdMod         , only : iam  ! rank on the land communicator
+#endif
+  use spmdMod                         
   use topounit_varcon , only : max_topounits, has_topounit  
-  
+
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -109,7 +115,7 @@ contains
 
     if (isgrid2d) then
        allocate(idata2d(ni,nj))
-       idata2d(:,:) = 1	
+       idata2d(:,:) = 1
        call ncd_io(ncid=ncid, varname='LANDMASK', data=idata2d, flag='read', readvar=readvar)
        if (.not. readvar) then
           call ncd_io(ncid=ncid, varname='mask', data=idata2d, flag='read', readvar=readvar)
@@ -117,7 +123,7 @@ contains
        if (readvar) then
           do j = 1,nj
           do i = 1,ni
-             n = (j-1)*ni + i	
+             n = (j-1)*ni + i
              mask(n) = idata2d(i,j)
           enddo
           enddo
@@ -178,6 +184,11 @@ contains
 
     ! pflotran:beg-----------------------------
     integer :: j, np, nv
+#ifdef HAVE_MOAB
+    type(mct_gsMap),  pointer :: gsMap
+    integer :: i, iv , iseg, ig, local ! ni, nj, nv, nseg, global ig
+
+#endif
 
     ! pflotran:end-----------------------------
     character(len=32) :: subname = 'surfrd_get_grid'     ! subroutine name
@@ -247,6 +258,59 @@ contains
 
        end if
        ! pflotran:end-----------------------------------------------
+
+#ifdef HAVE_MOAB
+       ! read xv and yv for MOAB to learn mesh verticies
+       if (ldomain%nv>=3 ) then
+          call get_elmlevel_gsmap (grlnd, gsMap)
+          allocate(rdata3d(nv,ni,nj))  ! transpose from c, as this is fortran
+          vname = 'xv'
+          ! this should be improved in a distributed read, that does not use full grid ni * nj * nv 720*360*4*8 ~ 8Mb
+          call ncd_io(ncid=ncid, varname=trim(vname), data=rdata3d, flag='read', readvar=readvar)
+          if (.not. readvar) call endrun( msg=trim(subname)//' ERROR: xv  NOT on file'//errMsg(__FILE__, __LINE__))
+          ! fill up the ldomain%mblonv(begg:endg, 1:nv) array
+          local = begg
+          do iseg = 1, gsMap%ngseg
+             if (gsMap%pe_loc(iseg) .eq. iam) then
+                do ig = gsMap%start(iseg), gsMap%start(iseg) + gsMap%length(iseg) - 1
+                   j = (ig-1)/ni + 1
+                   i = ig - ni*(j-1)
+                   do iv = 1, nv
+                      if (local .le. endg) then
+                         ldomain%mblonv(local, iv ) = rdata3d(iv, i, j)
+                      else
+                         write (iulog, *), 'OVERFLOW', iseg, gsMap%pe_loc(iseg), gsMap%start(iseg), gsMap%length(iseg), local
+                      endif
+                   enddo
+                   local = local + 1
+                enddo
+             endif
+          enddo
+          ! repeat for mblatv
+          vname = 'yv'
+          call ncd_io(ncid=ncid, varname=trim(vname), data=rdata3d, flag='read', readvar=readvar)
+          if (.not. readvar) call endrun( msg=trim(subname)//' ERROR: yv  NOT on file'//errMsg(__FILE__, __LINE__))
+          ! fill up the ldomain%lonv(begg:endg, 1:nv) array
+          local = begg
+          do iseg = 1, gsMap%ngseg
+             if (gsMap%pe_loc(iseg) .eq. iam) then
+                do ig = gsMap%start(iseg), gsMap%start(iseg) + gsMap%length(iseg) - 1
+                   j = (ig-1)/ni + 1
+                   i = ig - ni*(j-1)
+                   do iv = 1, nv
+                       if (local .le. endg) then
+                          ldomain%mblatv(local, iv ) = rdata3d(iv, i, j)
+                       endif
+                   enddo
+                   local = local + 1
+                enddo
+             endif
+          enddo
+          ! deallocate what is not needed anymore (for half degree land model, ~8Mb)
+          deallocate(rdata3d)
+
+       end if
+#endif
     else
        call ncd_io(ncid=ncid, varname= 'AREA', flag='read', data=ldomain%area, &
             dim1name=grlnd, readvar=readvar)

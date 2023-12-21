@@ -30,6 +30,10 @@ if (USE_ALBANY OR USE_TRILINOS)
   find_package(Trilinos REQUIRED)
 endif()
 
+if (USE_MOAB)
+  find_package(MOAB REQUIRED)
+endif()
+
 if (USE_ALBANY)
   find_package(Albany REQUIRED)
 endif()

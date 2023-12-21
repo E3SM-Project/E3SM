@@ -17,7 +17,7 @@ module RtmMod
   use RtmSpmd         , only : masterproc, npes, iam, mpicom_rof, ROFID, mastertask, &
                                MPI_REAL8,MPI_INTEGER,MPI_CHARACTER,MPI_LOGICAL,MPI_MAX
   use RtmVar          , only : re, spval, rtmlon, rtmlat, iulog, ice_runoff, &
-                               frivinp_rtm, finidat_rtm, nrevsn_rtm,rstraflag,ngeom,nlayers,rinittemp, &
+                               frivinp_rtm, frivinp_mesh, finidat_rtm, nrevsn_rtm,rstraflag,ngeom,nlayers,rinittemp, &
                                nsrContinue, nsrBranch, nsrStartup, nsrest, &
                                inst_index, inst_suffix, inst_name, wrmflag, inundflag, &
                                smat_option, decomp_option, barrier_timers, heatflag, sediflag, &
@@ -144,7 +144,7 @@ contains
 ! !IROUTINE: Rtmini
 !
 ! !INTERFACE:
-  subroutine Rtmini(rtm_active,flood_active)
+  subroutine Rtmini(rtm_active,flood_active,rtm_mesh)
 !
 ! !DESCRIPTION:
 ! Initialize MOSART grid, mask, decomp
@@ -155,6 +155,7 @@ contains
     implicit none
     logical, intent(out) :: rtm_active
     logical, intent(out) :: flood_active
+    character(len=256), intent(out) :: rtm_mesh
 !
 ! !CALLED FROM:
 ! subroutine initialize in module initializeMod
@@ -267,7 +268,7 @@ contains
     !-------------------------------------------------------
 
     namelist /mosart_inparm / ice_runoff, do_rtm, do_rtmflood, &
-         frivinp_rtm, finidat_rtm, nrevsn_rtm, coupling_period, &
+         frivinp_rtm, frivinp_mesh, finidat_rtm, nrevsn_rtm, coupling_period, &
          rtmhist_ndens, rtmhist_mfilt, rtmhist_nhtfrq, &
          rtmhist_fincl1,  rtmhist_fincl2, rtmhist_fincl3, &
          rtmhist_fexcl1,  rtmhist_fexcl2, rtmhist_fexcl3, &
@@ -372,6 +373,7 @@ contains
 
     call mpi_bcast (finidat_rtm  , len(finidat_rtm)  , MPI_CHARACTER, 0, mpicom_rof, ier)
     call mpi_bcast (frivinp_rtm  , len(frivinp_rtm)  , MPI_CHARACTER, 0, mpicom_rof, ier)
+    call mpi_bcast (frivinp_mesh  , len(frivinp_mesh)  , MPI_CHARACTER, 0, mpicom_rof, ier)
     call mpi_bcast (nrevsn_rtm   , len(nrevsn_rtm)   , MPI_CHARACTER, 0, mpicom_rof, ier)
     call mpi_bcast (decomp_option, len(decomp_option), MPI_CHARACTER, 0, mpicom_rof, ier)
     call mpi_bcast (smat_option  , len(smat_option)  , MPI_CHARACTER, 0, mpicom_rof, ier)
@@ -504,6 +506,7 @@ contains
 
     rtm_active = do_rtm
     flood_active = do_rtmflood
+    rtm_mesh = frivinp_mesh
     
     if (do_rtm) then
        if (frivinp_rtm == ' ') then
@@ -587,6 +590,7 @@ contains
     call getfil(frivinp_rtm, locfn, 0 )
     if (masterproc) then
        write(iulog,*) 'Read in MOSART file name: ',trim(frivinp_rtm)
+       write(iulog,*) 'MOSART mesh file name: ',trim(frivinp_mesh)
        call shr_sys_flush(iulog)
     endif
 
