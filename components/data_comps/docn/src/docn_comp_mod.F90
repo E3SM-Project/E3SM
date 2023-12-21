@@ -326,6 +326,16 @@ CONTAINS
     call mct_aVect_init(o2x, rList=seq_flds_o2x_fields, lsize=lsize)
     call mct_aVect_zero(o2x)
 
+#ifdef HAVE_MOAB
+   ! tagtype = 1  ! dense, double tag
+   ierr = iMOAB_DefineTagStorage( mpoid, trim(seq_flds_o2x_fields)//C_NULL_CHAR, &
+                                     1, & ! tagtype
+                                     1, & ! number of components
+                                     tagindex )
+   if (ierr > 0 )  &
+      call errorout(ierr, 'Error: fail to create seq_flds_o2x_fields tags ')
+#endif
+
     kt    = mct_aVect_indexRA(o2x,'So_t')
     ks    = mct_aVect_indexRA(o2x,'So_s')
     ku    = mct_aVect_indexRA(o2x,'So_u')
@@ -337,6 +347,16 @@ CONTAINS
 
     call mct_aVect_init(x2o, rList=seq_flds_x2o_fields, lsize=lsize)
     call mct_aVect_zero(x2o)
+
+#ifdef HAVE_MOAB
+   ! tagtype = 1  ! dense, double tag
+   ierr = iMOAB_DefineTagStorage( mpoid, trim(seq_flds_x2o_fields)//C_NULL_CHAR, &
+                                     1, & ! tagtype
+                                     1, & ! number of components
+                                     tagindex )
+   if (ierr > 0 )  &
+      call errorout(ierr, 'Error: fail to create seq_flds_o2x_fields tags ')
+#endif
 
     kswnet = mct_aVect_indexRA(x2o,'Foxx_swnet')
     klwup  = mct_aVect_indexRA(x2o,'Foxx_lwup')
