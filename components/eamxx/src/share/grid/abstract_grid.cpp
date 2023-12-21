@@ -256,8 +256,19 @@ AbstractGrid::get_geometry_data_names () const
 void AbstractGrid::reset_num_vertical_lev (const int num_vertical_lev) {
   m_num_vert_levs = num_vertical_lev;
 
-  // TODO: when the PR storing geo data as Field goes in, you should
-  //       invalidate all geo data whose FieldLayout contains LEV/ILEV
+  using namespace ShortFieldTagsNames;
+
+  // Loop over geo data. If they have the LEV or ILEV tag, they are
+  // no longer valid, so we must erase them.
+  for (auto it=m_geo_fields.cbegin(); it!=m_geo_fields.cend(); ) {
+    const auto& fl = it->second.get_header().get_identifier().get_layout();
+    const auto has_lev = fl.has_tag(LEV) or fl.has_tag(ILEV);
+    if (has_lev) {
+      it = m_geo_fields.erase(it);
+    } else {
+      ++it;
+    }
+  }
 }
 
 std::vector<AbstractGrid::gid_type>
