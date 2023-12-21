@@ -99,6 +99,8 @@ public:
     m_hydrostatic = p.theta_hydrostatic_mode;
     m_qsize = p.qsize;
 
+    m_adjust_ps = (p.dt_remap_factor == 0);
+
     m_eos.init(m_hydrostatic,m_hvcoord);
     m_elem_ops.init(m_hvcoord);
   }
@@ -364,11 +366,13 @@ public:
             },added_mass);
           Kokkos::single(Kokkos::PerThread(kv.team), [&]() {
             ps += added_mass;
-          });       
-          Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
-                               [&](const int ilev) {
-            dp_adj(ilev) = dp(ilev) + dp(ilev)*(fq(ilev)-q(ilev));
           });
+          if (!m_adjust_ps) {
+            Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
+                                [&](const int ilev) {
+              dp_adj(ilev) = dp(ilev) + dp(ilev)*(fq(ilev)-q(ilev));
+            });
+          }
         } else {
           Real ps_forcing = 0.0;
           Dispatch<ExecSpace>::parallel_reduce(
@@ -379,10 +383,16 @@ public:
           Kokkos::single(Kokkos::PerThread(kv.team), [&]() {
             ps += ps_forcing*m_dt;
           });
-          Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
-                               [&](const int& ilev) {
-            dp_adj(ilev) = dp(ilev) + compute_fqdt_pack(ilev,fq,qdp);
-          });
+          if (!m_adjust_ps) {
+            Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
+                                [&](const int& ilev) {
+              dp_adj(ilev) = dp(ilev) + compute_fqdt_pack(ilev,fq,qdp);
+            });
+          }
+        }
+
+        if (m_adjust_ps) {
+          m_hvcoord.compute_dp_ref(kv,ps,dp_adj);
         }
       }
     });
@@ -450,15 +460,25 @@ public:
 
       if (m_moist) {
         // Need to update dp, pnh and exner. Currently, pnh is storing pnh-pi
-        // Compute hydrostatic p from dp. Store in exner, then add to pnh
-        auto p_i = Homme::subview(m_pi_i,kv.team_idx,igp,jgp);
-        m_elem_ops.compute_hydrostatic_p(kv,dp_adj,p_i,exner);
-        Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
-                             [&](const int ilev) {
-          pnh(ilev) += exner(ilev);
-          dp(ilev) = dp_adj(ilev);
-        });
-        
+        if (m_adjust_ps) {
+          Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
+                               [&](const int ilev) {
+            dp(ilev) = dp_adj(ilev);
+
+            pnh(ilev) += m_hvcoord.ps0*m_hvcoord.hybrid_am(ilev) +
+                                   ps *m_hvcoord.hybrid_bm(ilev);
+          });
+        } else {
+          // Compute hydrostatic p from dp. Store in exner, then add to pnh
+          auto p_i = Homme::subview(m_pi_i,kv.team_idx,igp,jgp);
+          m_elem_ops.compute_hydrostatic_p(kv,dp_adj,p_i,exner);
+          Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
+                              [&](const int ilev) {
+            pnh(ilev) += exner(ilev);
+            dp(ilev) = dp_adj(ilev);
+          });
+        }
+
         Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                              [&](const int ilev) {
           using namespace PhysicalConstants;
@@ -537,6 +557,7 @@ private:
   bool m_moist;
   bool m_hydrostatic;
   bool m_adjustment;
+  bool m_adjust_ps;
   Real m_dt;
 
   Kokkos::TeamPolicy<ExecSpace,TagStates>       m_policy_states;
