@@ -717,7 +717,7 @@
       If TRUE, the component libraries are always built with OpenMP capability.</desc>
   </entry>
 
-  <entry id="SMP_PRESENT">
+  <entry id="BUILD_THREADED">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>

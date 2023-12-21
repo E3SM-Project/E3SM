@@ -5,7 +5,7 @@ common_setup()
 include (${EKAT_MACH_FILES_PATH}/kokkos/intel-knl.cmake)
 
 if ("${PROJECT_NAME}" STREQUAL "E3SM")
-  if (SMP_PRESENT)
+  if (BUILD_THREADED)
     include (${EKAT_MACH_FILES_PATH}/kokkos/openmp.cmake)
   else()
     include (${EKAT_MACH_FILES_PATH}/kokkos/serial.cmake)
