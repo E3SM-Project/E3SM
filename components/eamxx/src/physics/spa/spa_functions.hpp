@@ -63,7 +63,6 @@ struct SPAFunctions
   struct SPATimeState {
     SPATimeState() = default;
     // Whether the timestate has been initialized.
-    bool inited = false;
     // The current month
     int current_month = -1;
     // Julian Date for the beginning of the month, as defined in

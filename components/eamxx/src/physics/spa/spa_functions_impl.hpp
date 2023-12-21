@@ -629,28 +629,26 @@ void SPAFunctions<S,D>
         SPAInput&        spa_beg,
         SPAInput&        spa_end)
 {
-
   // Now we check if we have to update the data that changes monthly
   // NOTE:  This means that SPA assumes monthly data to update.  Not
   //        any other frequency.
-  const auto month = ts.get_month();
-  if (month != time_state.current_month or !time_state.inited) {
-
+  const auto month = ts.get_month() - 1; // Make it 0-based
+  if (month != time_state.current_month) {
     // Update the SPA time state information
     time_state.current_month = month;
-    time_state.t_beg_month = util::TimeStamp({ts.get_year(),month,1}, {0,0,0}).frac_of_year_in_days();
-    time_state.days_this_month = util::days_in_month(ts.get_year(),month);
+    time_state.t_beg_month = util::TimeStamp({ts.get_year(),month+1,1}, {0,0,0}).frac_of_year_in_days();
+    time_state.days_this_month = util::days_in_month(ts.get_year(),month+1);
+
+    // Copy spa_end'data into spa_beg'data, and read in the new spa_end
+    std::swap(spa_beg,spa_end);
+
     // Update the SPA forcing data for this month and next month
     // Start by copying next months data to this months data structure.  
     // NOTE: If the timestep is bigger than monthly this could cause the wrong values
     //       to be assigned.  A timestep greater than a month is very unlikely so we
     //       will proceed.
-    // NOTE: we use zero-based time indexing here.
-    update_spa_data_from_file(spa_data_file_name,time_state.current_month-1,nswbands,nlwbands,spa_horiz_interp,spa_beg);
-    int next_month = time_state.current_month==12 ? 1 : time_state.current_month+1;
-    update_spa_data_from_file(spa_data_file_name,next_month-1,nswbands,nlwbands,spa_horiz_interp,spa_end);
-    // If time state was not initialized it is now:
-    time_state.inited = true;
+    int next_month = (time_state.current_month + 1) % 12;
+    update_spa_data_from_file(spa_data_file_name,next_month,nswbands,nlwbands,spa_horiz_interp,spa_end);
   }
 
 } // END updata_spa_timestate

@@ -70,8 +70,8 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   m_num_src_levs = scorpio::get_dimlen(m_spa_data_file,"lev");
   scorpio::eam_pio_closefile(m_spa_data_file);
   SPAHorizInterp.m_comm = m_comm;
-
 }
+
 // =========================================================================================
 size_t SPA::requested_buffer_size_in_bytes() const
 {
@@ -182,11 +182,10 @@ void SPA::initialize_impl (const RunType /* run_type */)
   SPAData_start = SPAFunc::SPAInput(m_dofs_gids.size(), m_num_src_levs+2, m_nswbands, m_nlwbands);
   SPAData_end   = SPAFunc::SPAInput(m_dofs_gids.size(), m_num_src_levs+2, m_nswbands, m_nlwbands);
 
-  // Update the local time state information and load the first set of SPA data for interpolation:
-  auto ts = timestamp();
-  SPATimeState.inited = false;
-  SPATimeState.current_month = ts.get_month();
-  SPAFunc::update_spa_timestate(m_spa_data_file,m_nswbands,m_nlwbands,ts,SPAHorizInterp,SPATimeState,SPAData_start,SPAData_end);
+  // Load the first month into spa_end. At the first time step, the data will be moved into spa_beg,
+  // and spa_end will be reloaded from file with the new month.
+  const int curr_month = timestamp().get_month()-1; // 0-based
+  SPAFunc::update_spa_data_from_file(m_spa_data_file,curr_month,m_nswbands,m_nlwbands,SPAHorizInterp,SPAData_end);
 
   // Set property checks for fields in this process
   using Interval = FieldWithinIntervalCheck;
