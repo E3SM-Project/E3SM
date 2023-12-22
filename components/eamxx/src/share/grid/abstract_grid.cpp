@@ -75,63 +75,71 @@ get_vertical_layout (const bool midpoints) const
 }
 
 bool AbstractGrid::is_unique () const {
-  // Get a copy of gids on host. CAREFUL: do not use the stored dofs,
-  // since we need to sort dofs in order to call unique, and we don't
-  // want to alter the order of gids in this grid.
-  auto dofs = m_dofs_gids.clone();
-  auto dofs_h = dofs.get_view<gid_type*,Host>();
+  auto compute_is_unique = [&]() {
+    // Get a copy of gids on host. CAREFUL: do not use the stored dofs,
+    // since we need to sort dofs in order to call unique, and we don't
+    // want to alter the order of gids in this grid.
+    auto dofs = m_dofs_gids.clone();
+    auto dofs_h = dofs.get_view<gid_type*,Host>();
 
-  std::sort(dofs_h.data(),dofs_h.data()+m_num_local_dofs);
-  auto unique_end = std::unique(dofs_h.data(),dofs_h.data()+m_num_local_dofs);
+    std::sort(dofs_h.data(),dofs_h.data()+m_num_local_dofs);
+    auto unique_end = std::unique(dofs_h.data(),dofs_h.data()+m_num_local_dofs);
 
-  int locally_unique = unique_end==(dofs_h.data()+m_num_local_dofs);
-  int unique;
-  m_comm.all_reduce(&locally_unique,&unique,1,MPI_PROD);
-  if (unique==0) {
-    return false;
-  }
-
-  // Each rank has unique gids locally. Now it's time to verify if they are also globally unique.
-  int max_dofs;
-  m_comm.all_reduce(&m_num_local_dofs,&max_dofs,1,MPI_MAX);
-  std::vector<gid_type> gids(max_dofs,-1);
-  int unique_gids = 1;
-
-  for (int pid=0; pid<m_comm.size(); ++pid) {
-    // Rank pid broadcasts its gids, everyone else checks if there are duplicates
-    if (pid==m_comm.rank()) {
-      auto start = dofs_h.data();
-      auto end   = start + m_num_local_dofs;
-      std::copy(start,end,gids.data());
+    int locally_unique = unique_end==(dofs_h.data()+m_num_local_dofs);
+    int unique;
+    m_comm.all_reduce(&locally_unique,&unique,1,MPI_PROD);
+    if (unique==0) {
+      return false;
     }
 
-    int ndofs = m_num_local_dofs;
-    m_comm.broadcast(&ndofs,1,pid);
-    m_comm.broadcast(gids.data(),ndofs,pid);
+    // Each rank has unique gids locally. Now it's time to verify if they are also globally unique.
+    int max_dofs;
+    m_comm.all_reduce(&m_num_local_dofs,&max_dofs,1,MPI_MAX);
+    std::vector<gid_type> gids(max_dofs,-1);
+    int unique_gids = 1;
 
-    int my_unique_gids = 1;
-    if (pid!=m_comm.rank()) {
-      // Checking two sorted arrays of length m and n for elements in common is O(m+n) ops.
-      int i=0, j=0;
-      while (i<m_num_local_dofs && j<ndofs && my_unique_gids==1) {
-        if (dofs_h[i]<gids[j]) {
-          ++i;
-        } else if (dofs_h[i]>gids[j]) {
-          ++j;
-        } else {
-          // Found a match. We can stop here
-          my_unique_gids = 0;
-          break;
+    for (int pid=0; pid<m_comm.size(); ++pid) {
+      // Rank pid broadcasts its gids, everyone else checks if there are duplicates
+      if (pid==m_comm.rank()) {
+        auto start = dofs_h.data();
+        auto end   = start + m_num_local_dofs;
+        std::copy(start,end,gids.data());
+      }
+
+      int ndofs = m_num_local_dofs;
+      m_comm.broadcast(&ndofs,1,pid);
+      m_comm.broadcast(gids.data(),ndofs,pid);
+
+      int my_unique_gids = 1;
+      if (pid!=m_comm.rank()) {
+        // Checking two sorted arrays of length m and n for elements in common is O(m+n) ops.
+        int i=0, j=0;
+        while (i<m_num_local_dofs && j<ndofs && my_unique_gids==1) {
+          if (dofs_h[i]<gids[j]) {
+            ++i;
+          } else if (dofs_h[i]>gids[j]) {
+            ++j;
+          } else {
+            // Found a match. We can stop here
+            my_unique_gids = 0;
+            break;
+          }
         }
       }
+      m_comm.all_reduce(&my_unique_gids,&unique_gids,1,MPI_PROD);
+      if (unique_gids==0) {
+        break;
+      }
     }
-    m_comm.all_reduce(&my_unique_gids,&unique_gids,1,MPI_PROD);
-    if (unique_gids==0) {
-      break;
-    }
-  }
+    return unique_gids==1;
+  };
 
-  return unique_gids;
+  static bool computed = false;
+  if (not computed) {
+    m_is_unique = compute_is_unique();
+    computed = true;
+  }
+  return m_is_unique;
 }
 
 bool AbstractGrid::
@@ -493,6 +501,7 @@ void AbstractGrid::copy_data (const AbstractGrid& src, const bool shallow)
       m_geo_fields[name] = src.m_geo_fields.at(name).clone();
     }
   }
+  m_is_unique = src.m_is_unique;
 }
 
 } // namespace scream
