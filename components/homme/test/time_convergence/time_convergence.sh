@@ -228,34 +228,6 @@ mpirun -np $NCPU $EXEC < testnl.nl
 mv $outputdir/dcmip2012_test31.nc $outputdir/tstep9_dt0p45.nc
 echo 'Done computing tstep_type = 9, dt = 0.45...'
 
-###########################################################                                                                                                        
-##### tstep_type = 9, dt = 0.225, nonhydrostatic      #####                                                                                                        
-###########################################################                                                                                                        
-set str1 = "tstep_type"
-set str2 = "nmax"
-set str3 = "output_frequency"
-set linenum1 = `grep -n $str1 testnl.nl | cut -d: -f1`
-set linenum2 = `grep -n $str2 testnl.nl | cut -d: -f1`
-set linenum3 = `grep -n $str3 testnl.nl | cut -d: -f1`
-set new1 = "  tsstep_type=9"
-set new2 = "  nmax=128"
-set new3 = "  output_frequency=128"
-sed -i "${linenum1}s,.*,$new1," testnl.nl
-sed -i "${linenum2}s,.*,$new2," testnl.nl
-sed -i "${linenum3}s,.*,$new3," testnl.nl
-set str1 = "tsstep_type"
-set str2 = "tstep"
-set linenum1 = `grep -n $str1 testnl.nl | cut -d: -f1`
-set linenum2 = `grep -n $str2 testnl.nl | cut -d: -f1`
-set new1 = "  tstep_type=9"
-set new2 = "  tstep=0.225"
-sed -i "${linenum1}s,.*,$new1," testnl.nl
-sed -i "${linenum2}s,.*,$new2," testnl.nl
-echo 'Computing tstep_type = 9, dt = 0.225...'
-mpirun -np $NCPU $EXEC < testnl.nl
-mv $outputdir/dcmip2012_test31.nc $outputdir/tstep9_dt0p225.nc
-echo 'Done computing tstep_type = 9, dt = 0.225...'
-
 #############################################################################                                                                                      
 #############################################################################                                                                                      
 ##### tstep_type = 10 NH RUNS                                                                                                                    
@@ -373,34 +345,6 @@ mpirun -np $NCPU $EXEC < testnl.nl
 mv $outputdir/dcmip2012_test31.nc $outputdir/tstep10_dt0p45.nc
 echo 'Done computing tstep_type = 10, dt = 0.45...'
 
-###########################################################                                                                                                        
-##### tstep_type = 10, dt = 0.225, nonhydrostatic     #####                                                                                                        
-###########################################################                                                                                                        
-set str1 = "tstep_type"
-set str2 = "nmax"
-set str3 = "output_frequency"
-set linenum1 = `grep -n $str1 testnl.nl | cut -d: -f1`
-set linenum2 = `grep -n $str2 testnl.nl | cut -d: -f1`
-set linenum3 = `grep -n $str3 testnl.nl | cut -d: -f1`
-set new1 = "  tsstep_type=10"
-set new2 = "  nmax=128"
-set new3 = "  output_frequency=128"
-sed -i "${linenum1}s,.*,$new1," testnl.nl
-sed -i "${linenum2}s,.*,$new2," testnl.nl
-sed -i "${linenum3}s,.*,$new3," testnl.nl
-set str1 = "tsstep_type"
-set str2 = "tstep"
-set linenum1 = `grep -n $str1 testnl.nl | cut -d: -f1`
-set linenum2 = `grep -n $str2 testnl.nl | cut -d: -f1`
-set new1 = "  tstep_type=10"
-set new2 = "  tstep=0.225"
-sed -i "${linenum1}s,.*,$new1," testnl.nl
-sed -i "${linenum2}s,.*,$new2," testnl.nl
-echo 'Computing tstep_type = 10, dt = 0.225...'
-mpirun -np $NCPU $EXEC < testnl.nl
-mv $outputdir/dcmip2012_test31.nc $outputdir/tstep10_dt0p225.nc
-echo 'Done computing tstep_type = 10, dt = 0.225...'
-
 #############################################################################                                                                                      
 #############################################################################                                                                                      
 ##### tstep_type = 5 NH RUNS                                                                                                                                 
@@ -517,34 +461,6 @@ echo 'Computing tstep_type = 5, dt = 0.45...'
 mpirun -np $NCPU $EXEC < testnl.nl
 mv $outputdir/dcmip2012_test31.nc $outputdir/tstep5_dt0p45.nc
 echo 'Done computing tstep_type = 5, dt = 0.45...'
-
-###########################################################                                                                                                        
-##### tstep_type = 5, dt = 0.225, nonhydrostatic      #####                                                                                                        
-###########################################################                                                                                                        
-set str1 = "tstep_type"
-set str2 = "nmax"
-set str3 = "output_frequency"
-set linenum1 = `grep -n $str1 testnl.nl | cut -d: -f1`
-set linenum2 = `grep -n $str2 testnl.nl | cut -d: -f1`
-set linenum3 = `grep -n $str3 testnl.nl | cut -d: -f1`
-set new1 = "  tsstep_type=5"
-set new2 = "  nmax=128"
-set new3 = "  output_frequency=128"
-sed -i "${linenum1}s,.*,$new1," testnl.nl
-sed -i "${linenum2}s,.*,$new2," testnl.nl
-sed -i "${linenum3}s,.*,$new3," testnl.nl
-set str1 = "tsstep_type"
-set str2 = "tstep"
-set linenum1 = `grep -n $str1 testnl.nl | cut -d: -f1`
-set linenum2 = `grep -n $str2 testnl.nl | cut -d: -f1`
-set new1 = "  tstep_type=5"
-set new2 = "  tstep=0.225"
-sed -i "${linenum1}s,.*,$new1," testnl.nl
-sed -i "${linenum2}s,.*,$new2," testnl.nl
-echo 'Computing tstep_type = 5, dt = 0.225...'
-mpirun -np $NCPU $EXEC < testnl.nl
-mv $outputdir/dcmip2012_test31.nc $outputdir/tstep5_dt0p225.nc
-echo 'Done computing tstep_type = 5, dt = 0.225...'
 
 
 #############################################################################                                                                                      
@@ -681,34 +597,6 @@ mpirun -np $NCPU $EXEC < testnl.nl
 mv $outputdir/dcmip2012_test31.nc $outputdir/tstep9h_dt0p45.nc
 echo 'Done computing tstep_type = 9, dt = 0.45...'
 
-###########################################################                                                                                                        
-##### tstep_type = 9, dt = 0.225, hydrostatic         #####                                                                                                        
-###########################################################                                                                                                        
-set str1 = "tstep_type"
-set str2 = "nmax"
-set str3 = "output_frequency"
-set linenum1 = `grep -n $str1 testnl.nl | cut -d: -f1`
-set linenum2 = `grep -n $str2 testnl.nl | cut -d: -f1`
-set linenum3 = `grep -n $str3 testnl.nl | cut -d: -f1`
-set new1 = "  tsstep_type=9"
-set new2 = "  nmax=128"
-set new3 = "  output_frequency=128"
-sed -i "${linenum1}s,.*,$new1," testnl.nl
-sed -i "${linenum2}s,.*,$new2," testnl.nl
-sed -i "${linenum3}s,.*,$new3," testnl.nl
-set str1 = "tsstep_type"
-set str2 = "tstep"
-set linenum1 = `grep -n $str1 testnl.nl | cut -d: -f1`
-set linenum2 = `grep -n $str2 testnl.nl | cut -d: -f1`
-set new1 = "  tstep_type=9"
-set new2 = "  tstep=0.225"
-sed -i "${linenum1}s,.*,$new1," testnl.nl
-sed -i "${linenum2}s,.*,$new2," testnl.nl
-echo 'Computing tstep_type = 9, dt = 0.225...'
-mpirun -np $NCPU $EXEC < testnl.nl
-mv $outputdir/dcmip2012_test31.nc $outputdir/tstep9h_dt0p225.nc
-echo 'Done computing tstep_type = 9, dt = 0.225...'
-
 #############################################################################                                                                                      
 #############################################################################                                                                                      
 ##### tstep_type = 10 NH RUNS                                                                                                                    
@@ -826,33 +714,6 @@ mpirun -np $NCPU $EXEC < testnl.nl
 mv $outputdir/dcmip2012_test31.nc $outputdir/tstep10h_dt0p45.nc
 echo 'Done computing tstep_type = 10, dt = 0.45...'
 
-###########################################################                                                                                                        
-##### tstep_type = 10, dt = 0.225, hydrostatic        #####                                                                                                        
-###########################################################                                                                                                        
-set str1 = "tstep_type"
-set str2 = "nmax"
-set str3 = "output_frequency"
-set linenum1 = `grep -n $str1 testnl.nl | cut -d: -f1`
-set linenum2 = `grep -n $str2 testnl.nl | cut -d: -f1`
-set linenum3 = `grep -n $str3 testnl.nl | cut -d: -f1`
-set new1 = "  tsstep_type=10"
-set new2 = "  nmax=128"
-set new3 = "  output_frequency=128"
-sed -i "${linenum1}s,.*,$new1," testnl.nl
-sed -i "${linenum2}s,.*,$new2," testnl.nl
-sed -i "${linenum3}s,.*,$new3," testnl.nl
-set str1 = "tsstep_type"
-set str2 = "tstep"
-set linenum1 = `grep -n $str1 testnl.nl | cut -d: -f1`
-set linenum2 = `grep -n $str2 testnl.nl | cut -d: -f1`
-set new1 = "  tstep_type=10"
-set new2 = "  tstep=0.225"
-sed -i "${linenum1}s,.*,$new1," testnl.nl
-sed -i "${linenum2}s,.*,$new2," testnl.nl
-echo 'Computing tstep_type = 10, dt = 0.225...'
-mpirun -np $NCPU $EXEC < testnl.nl
-mv $outputdir/dcmip2012_test31.nc $outputdir/tstep10h_dt0p225.nc
-echo 'Done computing tstep_type = 10, dt = 0.225...'
 
 #############################################################################                                                                                      
 #############################################################################                                                                                      
@@ -971,32 +832,12 @@ mpirun -np $NCPU $EXEC < testnl.nl
 mv $outputdir/dcmip2012_test31.nc $outputdir/tstep5h_dt0p45.nc
 echo 'Done computing tstep_type = 5, dt = 0.45...'
 
-###########################################################                                                                                                        
-##### tstep_type = 5, dt = 0.225, hydrostatic         #####                                                                                                        
-###########################################################                                                                                                        
-set str1 = "tstep_type"
-set str2 = "nmax"
-set str3 = "output_frequency"
-set linenum1 = `grep -n $str1 testnl.nl | cut -d: -f1`
-set linenum2 = `grep -n $str2 testnl.nl | cut -d: -f1`
-set linenum3 = `grep -n $str3 testnl.nl | cut -d: -f1`
-set new1 = "  tsstep_type=5"
-set new2 = "  nmax=128"
-set new3 = "  output_frequency=128"
-sed -i "${linenum1}s,.*,$new1," testnl.nl
-sed -i "${linenum2}s,.*,$new2," testnl.nl
-sed -i "${linenum3}s,.*,$new3," testnl.nl
-set str1 = "tsstep_type"
-set str2 = "tstep"
-set linenum1 = `grep -n $str1 testnl.nl | cut -d: -f1`
-set linenum2 = `grep -n $str2 testnl.nl | cut -d: -f1`
-set new1 = "  tstep_type=5"
-set new2 = "  tstep=0.225"
-sed -i "${linenum1}s,.*,$new1," testnl.nl
-sed -i "${linenum2}s,.*,$new2," testnl.nl
-echo 'Computing tstep_type = 5, dt = 0.225...'
-mpirun -np $NCPU $EXEC < testnl.nl
-mv $outputdir/dcmip2012_test31.nc $outputdir/tstep5h_dt0p225.nc
-echo 'Done computing tstep_type = 5, dt = 0.225...'
+
+module load anaconda3
+cd $outputdir
+cp $testdir/*.py $outputdir
+python3 convergence_Th.py
+python3 convergence_geo.py
+
 
 echo message | ts
