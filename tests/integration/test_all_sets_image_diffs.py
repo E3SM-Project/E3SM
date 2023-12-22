@@ -34,10 +34,14 @@ def run_diags_and_get_results_dir() -> str:
     params = _get_test_params()
     results = runner.run_diags(params)
 
-    results_dir = results[0].results_dir
+    # If results is None then that means some/all diagnostic set(s) failed.
+    # We use params[0].results_dir to check if any diagnostic sets passed.
+    if results is not None:
+        results_dir = results[0].results_dir
+    else:
+        results_dir = params[0].results_dir
 
     logger.info(f"results_dir={results_dir}")
-
     return results_dir
 
 

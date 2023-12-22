@@ -1,6 +1,6 @@
 import copy
 from itertools import chain
-from typing import List
+from typing import List, Union
 
 import e3sm_diags  # noqa: F401
 from e3sm_diags.e3sm_diags_driver import get_default_diags_path, main
@@ -47,7 +47,7 @@ class Run:
 
     def run_diags(
         self, parameters: List[CoreParameter], use_cfg: bool = True
-    ) -> List[CoreParameter]:
+    ) -> Union[List[CoreParameter], None]:
         """Run a set of diagnostics with a list of parameters.
 
         Parameters
@@ -68,8 +68,8 @@ class Run:
 
         Returns
         -------
-        List[CoreParameter]
-            A list of parameter objects with their results.
+        Union[List[CoreParameter], None]
+            A list of parameter objects with their results (if successful).
 
         Raises
         ------
@@ -77,6 +77,7 @@ class Run:
             If a diagnostic run using a parameter fails for any reason.
         """
         params = self.get_run_parameters(parameters, use_cfg)
+        params_results = None
 
         if params is None or len(params) == 0:
             raise RuntimeError(
@@ -89,7 +90,9 @@ class Run:
         except Exception:
             logger.exception("Error traceback:", exc_info=True)
 
-        move_log_to_prov_dir(params_results[0].results_dir)
+        # param_results might be None because the run(s) failed, so move
+        # the log using the `params[0].results_dir` instead.
+        move_log_to_prov_dir(params[0].results_dir)
 
         return params_results
 
@@ -449,7 +452,10 @@ class Run:
 
         for cls_type in class_types:
             for p in parameters:
-                if isinstance(p, cls_type):
+                # NOTE: This conditional is used instead of
+                # `isinstance(p, cls_type)` because we want to check for exact
+                # type matching and exclude sub-class matching.
+                if type(p) is cls_type:
                     return p
 
         msg = "There's weren't any class of types {} in your parameters."
