@@ -25,7 +25,7 @@ HorizInterpRemapperBase (const grid_ptr_type& fine_grid,
       "  - fine grid name: " + fine_grid->name() + "\n"
       "  - fine_grid_type: " + e2str(fine_grid->type()) + "\n");
   EKAT_REQUIRE_MSG (fine_grid->is_unique(),
-      "Error! CoarseningRemapper requires a unique source grid.\n");
+      "Error! HorizInterpRemapperBase requires a unique fine grid.\n");
 
   // This is a special remapper. We only go in one direction
   m_bwd_allowed = false;
@@ -61,23 +61,24 @@ create_src_layout (const FieldLayout& tgt_layout) const
   using namespace ShortFieldTagsNames;
   const auto lt = get_layout_type(tgt_layout.tags());
   const bool midpoints = tgt_layout.has_tag(LEV);
-  const int vec_dim = tgt_layout.is_vector_layout() ? tgt_layout.dim(CMP) : -1;
+  const auto vec_tag = tgt_layout.is_vector_layout() ? tgt_layout.get_vector_tag() : INV;
+  const int vec_dim  = tgt_layout.is_vector_layout() ? tgt_layout.dim(vec_tag) : -1;
   auto src = FieldLayout::invalid();
   switch (lt) {
     case LayoutType::Scalar2D:
       src = m_src_grid->get_2d_scalar_layout();
       break;
     case LayoutType::Vector2D:
-      src = m_src_grid->get_2d_vector_layout(CMP,vec_dim);
+      src = m_src_grid->get_2d_vector_layout(vec_tag,vec_dim);
       break;
     case LayoutType::Scalar3D:
       src = m_src_grid->get_3d_scalar_layout(midpoints);
       break;
     case LayoutType::Vector3D:
-      src = m_src_grid->get_3d_vector_layout(midpoints,CMP,vec_dim);
+      src = m_src_grid->get_3d_vector_layout(midpoints,vec_tag,vec_dim);
       break;
     default:
-      EKAT_ERROR_MSG ("Layout not supported by CoarseningRemapper: " + e2str(lt) + "\n");
+      EKAT_ERROR_MSG ("Layout not supported by HorizInterpRemapperBase: " + e2str(lt) + "\n");
   }
   return src;
 }
@@ -96,22 +97,23 @@ create_tgt_layout (const FieldLayout& src_layout) const
   const auto lt = get_layout_type(src_layout.tags());
   auto tgt = FieldLayout::invalid();
   const bool midpoints = src_layout.has_tag(LEV);
-  const int vec_dim = src_layout.is_vector_layout() ? src_layout.dim(CMP) : -1;
+  const auto vec_tag = src_layout.is_vector_layout() ? src_layout.get_vector_tag() : INV;
+  const int vec_dim  = src_layout.is_vector_layout() ? src_layout.dim(vec_tag) : -1;
   switch (lt) {
     case LayoutType::Scalar2D:
       tgt = m_tgt_grid->get_2d_scalar_layout();
       break;
     case LayoutType::Vector2D:
-      tgt = m_tgt_grid->get_2d_vector_layout(CMP,vec_dim);
+      tgt = m_tgt_grid->get_2d_vector_layout(vec_tag,vec_dim);
       break;
     case LayoutType::Scalar3D:
       tgt = m_tgt_grid->get_3d_scalar_layout(midpoints);
       break;
     case LayoutType::Vector3D:
-      tgt = m_tgt_grid->get_3d_vector_layout(midpoints,CMP,vec_dim);
+      tgt = m_tgt_grid->get_3d_vector_layout(midpoints,vec_tag,vec_dim);
       break;
     default:
-      EKAT_ERROR_MSG ("Layout not supported by CoarseningRemapper: " + e2str(lt) + "\n");
+      EKAT_ERROR_MSG ("Layout not supported by HorizInterpRemapperBase: " + e2str(lt) + "\n");
   }
   return tgt;
 }
