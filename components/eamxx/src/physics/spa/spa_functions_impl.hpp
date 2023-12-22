@@ -453,7 +453,7 @@ void SPAFunctions<S,D>
   stop_timer("EAMxx::SPA::update_spa_data_from_file::horiz_remap");
 
   // 3. Copy from the tgt field of the remapper into the spa_data, padding data if necessary
-  stop_timer("EAMxx::SPA::update_spa_data_from_file::copy_and_pad");
+  start_timer("EAMxx::SPA::update_spa_data_from_file::copy_and_pad");
   // Recall, the fields are registered in the order: ps, ccn3, g_sw, ssa_sw, tau_sw, tau_lw
   auto ps          = spa_horiz_interp.get_tgt_field (0).get_view<const Real*>();
   auto ccn3        = spa_horiz_interp.get_tgt_field (1).get_view<const Real**>();
@@ -494,9 +494,18 @@ void SPAFunctions<S,D>
     };
     Kokkos::parallel_for(Kokkos::TeamVectorRange(team,nlevs),copy_col);
 
-    // The 0-th entry is never touched, so it should be 0 ever since construction,
-    // but the last entry needs to be fixed to the last entry of the read-in data
+    // Set the first/last entries of the spa data, so that linear interp
+    // can extrapolate if the p_tgt is outside the p_src bounds
     Kokkos::single(Kokkos::PerTeam(team),[&]{
+      spa_data_ccn3(icol,0) = 0;
+      for (int isw=0; isw<nswbands; ++isw) {
+        spa_data_aero_g_sw(icol,isw,0)   = 0;
+        spa_data_aero_ssa_sw(icol,isw,0) = 0;
+        spa_data_aero_tau_sw(icol,isw,0) = 0;
+      }
+      for (int ilw=0; ilw<nlwbands; ++ilw) {
+        spa_data_aero_tau_lw(icol,ilw,0) = 0;
+      }
       spa_data_ccn3(icol,nlevs+1) = ccn3(icol,nlevs-1);
       for (int isw=0; isw<nswbands; ++isw) {
         spa_data_aero_g_sw(icol,isw,nlevs+1)   = aero_g_sw(icol,isw,nlevs-1);

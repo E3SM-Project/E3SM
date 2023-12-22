@@ -97,22 +97,29 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   AtmosphereInput hvcoord_reader(spa_data_file,io_grid,{hyam,hybm},true);
   hvcoord_reader.read_variables();
   hvcoord_reader.finalize();
-  auto hyam_v = hyam.get_view<Real*>();
-  auto hybm_v = hybm.get_view<Real*>();
-  auto nlevs = m_num_src_levs;
-  typename KokkosTypes<DefaultDevice>::RangePolicy policy(0,nlevs);
-  Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int k) {
-    SPAData_start.hyam(k) = hyam_v(k);
-    SPAData_start.hybm(k) = hybm_v(k);
-    SPAData_end.hyam(k)   = hyam_v(k);
-    SPAData_end.hybm(k)   = hybm_v(k);
-    if (k==(nlevs-1)) {
-      SPAData_start.hyam(k+1) = hyam_v(k);
-      SPAData_start.hybm(k+1) = hybm_v(k);
-      SPAData_end.hyam(k+1)   = hyam_v(k);
-      SPAData_end.hybm(k+1)   = hybm_v(k);
+
+  // Do the copy on host, cause it's just easier,
+  // and this is just a cheap loop during init
+  auto hyam_h = hyam.get_view<const Real*,Host>();
+  auto hybm_h = hybm.get_view<const Real*,Host>();
+  auto nlevs = io_grid->get_num_vertical_levels();
+  for (auto data : {SPAData_start, SPAData_end} ) {
+    auto spa_hyam = ekat::scalarize(data.hyam);
+    auto spa_hybm = ekat::scalarize(data.hybm);
+    auto spa_hyam_h = Kokkos::create_mirror_view(spa_hyam);
+    auto spa_hybm_h = Kokkos::create_mirror_view(spa_hybm);
+    for (int i=0; i<nlevs; ++i) {
+      spa_hyam_h(i+1) = hyam_h(i);
+      spa_hybm_h(i+1) = hybm_h(i);
     }
-  });
+    spa_hyam_h(0) = 0;
+    spa_hyam_h(nlevs+1) = 1e5;
+    spa_hybm_h(0) = 0;
+    spa_hybm_h(nlevs+1) = 0;
+
+    Kokkos::deep_copy(spa_hyam,spa_hyam_h);
+    Kokkos::deep_copy(spa_hybm,spa_hybm_h);
+  }
 
   // 4. Create reader for spa data
   SPADataReader = SPAFunc::create_spa_data_reader(SPAHorizInterp,spa_data_file);
