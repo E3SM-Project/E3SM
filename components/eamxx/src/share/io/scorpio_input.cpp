@@ -29,11 +29,13 @@ AtmosphereInput (const ekat::ParameterList& params,
 AtmosphereInput::
 AtmosphereInput (const std::string& filename,
                  const std::shared_ptr<const grid_type>& grid,
-                 const std::vector<Field>& fields)
+                 const std::vector<Field>& fields,
+                 const bool skip_grid_checks)
 {
   // Create param list and field manager on the fly
   ekat::ParameterList params;
   params.set("Filename",filename);
+  params.set("Skip_Grid_Checks",skip_grid_checks);
   auto& names = params.get<std::vector<std::string>>("Field Names",{});
 
   auto fm = std::make_shared<fm_type>(grid);
