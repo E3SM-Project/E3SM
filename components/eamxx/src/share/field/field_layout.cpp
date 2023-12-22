@@ -40,13 +40,18 @@ int FieldLayout::get_vector_dim () const {
       "       Current layout: " + e2str(get_layout_type(m_tags)) + "\n");
 
   using namespace ShortFieldTagsNames;
-  int idim = -1;
-  if (has_tag(CMP)) {
-    idim = std::distance(m_tags.begin(),ekat::find(m_tags,CMP));
-  } else {
-    EKAT_ERROR_MSG ("Error! Unrecognized layout for a '" + e2str(get_layout_type(m_tags)) + "' quantity.\n");
-  }
-  return idim;
+  std::vector<FieldTag> vec_tags = {CMP,NGAS,SWBND,LWBND,SWGPT,ISCCPTAU,ISCCPPRS};
+  auto it = std::find_first_of (m_tags.cbegin(),m_tags.cend(),vec_tags.cbegin(),vec_tags.cend());
+
+  EKAT_REQUIRE_MSG (it!=m_tags.cend(),
+    "Error! Could not find a vector tag in the layout.\n"
+    " - layout: " + to_string(*this) + "\n");
+
+  return std::distance(m_tags.cbegin(),it);
+}
+
+FieldTag FieldLayout::get_vector_tag () const {
+  return m_tags[get_vector_dim()];
 }
 
 FieldLayout FieldLayout::strip_dim (const FieldTag tag) const {
@@ -129,15 +134,23 @@ LayoutType get_layout_type (const std::vector<FieldTag>& field_tags) {
 
   // Get the size of what's left
   const auto size = tags.size();
+  auto is_lev_tag = [](const FieldTag t) {
+    std::vector<FieldTag> lev_tags = {LEV,ILEV};
+    return ekat::contains(lev_tags,t);
+  };
+  auto is_vec_tag = [](const FieldTag t) {
+    std::vector<FieldTag> vec_tags = {CMP,NGAS,SWBND,LWBND,SWGPT,ISCCPTAU,ISCCPPRS};
+    return ekat::contains(vec_tags,t);
+  };
   switch (size) {
     case 0:
       result = LayoutType::Scalar2D;
       break;
     case 1:
-      // The only tag left should be 'CMP', 'TL', or 'LEV'/'ILEV'
-      if (tags[0]==CMP || tags[0]==TL) {
+      // The only tag left should be a vec tag, 'TL', or a lev tag
+      if (is_vec_tag(tags[0]) or tags[0]==TL) {
         result = LayoutType::Vector2D;
-      } else if (tags[0]==LEV || tags[0]==ILEV) {
+      } else if (is_lev_tag(tags[0])) {
         result = LayoutType::Scalar3D;
       }
       break;
@@ -145,17 +158,16 @@ LayoutType get_layout_type (const std::vector<FieldTag>& field_tags) {
       // Possible supported scenarios:
       //  1) <CMP|TL,LEV|ILEV>
       //  2) <TL,CMP>
-      if ( (tags[1]==LEV || tags[1]==ILEV) && (tags[0]==CMP || tags[0]==TL)) {
+      if ( (is_vec_tag(tags[0]) or tags[0]==TL) and is_lev_tag(tags[1]) ) {
         result = LayoutType::Vector3D;
-      } else if (tags[0]==TL && tags[1]==CMP ) {
+      } else if (tags[0]==TL && is_vec_tag(tags[1]) ) {
         result = LayoutType::Tensor2D;
       }
       break;
     case 3:
       // The only supported scenario is:
       //  1) <TL,  CMP, LEV|ILEV>
-      if ( tags[0]==TL && tags[1]==CMP &&
-          (tags[2]==LEV || tags[2]==ILEV)) {
+      if ( tags[0]==TL && is_vec_tag(tags[1]) && is_lev_tag(tags[2]) ) {
         result = LayoutType::Tensor3D;
       }
   }

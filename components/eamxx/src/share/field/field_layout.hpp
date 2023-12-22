@@ -100,6 +100,7 @@ public:
   // If this is the layout of a vector field, get the idx of the vector dimension
   // Note: throws if is_vector_layout()==false.
   int get_vector_dim () const;
+  FieldTag get_vector_tag () const;
 
   FieldLayout strip_dim (const FieldTag tag) const;
   FieldLayout strip_dim (const int idim) const;

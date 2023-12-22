@@ -49,6 +49,7 @@ enum class FieldTag {
 //   using enum FieldTag;
 namespace ShortFieldTagsNames {
 
+  constexpr auto INV  = FieldTag::Invalid;
   constexpr auto EL   = FieldTag::Element;
   constexpr auto COL  = FieldTag::Column;
   constexpr auto GP   = FieldTag::GaussPoint;

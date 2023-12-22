@@ -37,6 +37,10 @@ public:
   FieldLayout create_src_layout (const FieldLayout& tgt) const override {
     using namespace ShortFieldTagsNames;
 
+    EKAT_REQUIRE_MSG (is_valid_tgt_layout(tgt),
+        "[DoNothingRemapper] Error! Input target layout is not valid for this remapper.\n"
+        " - input layout: " + to_string(tgt));
+
     auto type = get_layout_type(tgt.tags());
     FieldLayout src = {{}};
     switch (type) {
@@ -60,6 +64,10 @@ public:
 
   FieldLayout create_tgt_layout (const FieldLayout& src) const override {
     using namespace ShortFieldTagsNames;
+
+    EKAT_REQUIRE_MSG (is_valid_src_layout(src),
+        "[DoNothingRemapper] Error! Input source layout is not valid for this remapper.\n"
+        " - input layout: " + to_string(src));
 
     auto type = get_layout_type(src.tags());
     FieldLayout tgt = {{}};

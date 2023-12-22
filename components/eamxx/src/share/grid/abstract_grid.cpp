@@ -134,6 +134,41 @@ bool AbstractGrid::is_unique () const {
   return unique_gids;
 }
 
+bool AbstractGrid::
+is_valid_layout (const FieldLayout& layout) const
+{
+  using namespace ShortFieldTagsNames;
+
+  const auto lt = get_layout_type(layout.tags());
+  const bool midpoints = layout.tags().back()==LEV;
+  const bool is_vec = layout.is_vector_layout();
+  const int vec_dim = is_vec ? layout.dims()[layout.get_vector_dim()] : 0;
+  const auto vec_tag = is_vec ? layout.get_vector_tag() : INV;
+
+  switch (lt) {
+    case LayoutType::Scalar0D: [[fallthrough]];
+    case LayoutType::Vector0D:
+      // 0d layouts are compatible with any grid
+      return true;
+    case LayoutType::Scalar1D: [[fallthrough]];
+    case LayoutType::Vector1D:
+      // 1d layouts need the right number of levels
+      return layout.dims().back() == m_num_vert_levs or
+             layout.dims().back() == (m_num_vert_levs+1);
+    case LayoutType::Scalar2D:
+      return layout==get_2d_scalar_layout();
+    case LayoutType::Vector2D:
+      return layout==get_2d_vector_layout(vec_tag,vec_dim);
+    case LayoutType::Scalar3D:
+      return layout==get_3d_scalar_layout(midpoints);
+    case LayoutType::Vector3D:
+      return layout==get_3d_vector_layout(midpoints,vec_tag,vec_dim);
+    default:
+      // Anything else is probably no
+      return false;
+  }
+}
+
 auto AbstractGrid::
 get_global_min_dof_gid () const ->gid_type
 {
@@ -224,8 +259,19 @@ AbstractGrid::get_geometry_data_names () const
 void AbstractGrid::reset_num_vertical_lev (const int num_vertical_lev) {
   m_num_vert_levs = num_vertical_lev;
 
-  // TODO: when the PR storing geo data as Field goes in, you should
-  //       invalidate all geo data whose FieldLayout contains LEV/ILEV
+  using namespace ShortFieldTagsNames;
+
+  // Loop over geo data. If they have the LEV or ILEV tag, they are
+  // no longer valid, so we must erase them.
+  for (auto it=m_geo_fields.cbegin(); it!=m_geo_fields.cend(); ) {
+    const auto& fl = it->second.get_header().get_identifier().get_layout();
+    const auto has_lev = fl.has_tag(LEV) or fl.has_tag(ILEV);
+    if (has_lev) {
+      it = m_geo_fields.erase(it);
+    } else {
+      ++it;
+    }
+  }
 }
 
 std::vector<AbstractGrid::gid_type>
