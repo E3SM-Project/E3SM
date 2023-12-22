@@ -205,9 +205,30 @@ get_my_triplets (const std::string& map_file) const
   scorpio::set_dof(map_file,"S"  ,nlweights,dofs_offsets.data());
   scorpio::set_decomp(map_file);
 
-  scorpio::grid_read_data_array(map_file,"col",-1,cols.data(),cols.size());
-  scorpio::grid_read_data_array(map_file,"row",-1,rows.data(),rows.size());
-  scorpio::grid_read_data_array(map_file,"S"  ,-1,S.data(),S.size());
+  // Figure out if we are readint the right map, that is:
+  //  - n_a or n_b matches the fine grid ncols
+  //  - the map "direction" (fine->coarse or coarse->fine) mathces m_type
+  const int n_a = scorpio::get_dimlen(map_file,"n_a");
+  const int n_b = scorpio::get_dimlen(map_file,"n_b");
+  const int ncols_fine = m_fine_grid->get_num_global_dofs();
+  EKAT_REQUIRE_MSG (n_a==ncols_fine or n_b==ncols_fine,
+      "Error! The input map seems incompatible with the remapper fine grid.\n"
+      " - map file: " + map_file + "\n"
+      " - map file n_a: " + std::to_string(n_a) + "\n"
+      " - map file n_b: " + std::to_string(n_b) + "\n"
+      " - fine grid ncols: " + std::to_string(ncols_fine) + "\n");
+  const bool map_is_coarsening = n_a==ncols_fine;
+  EKAT_REQUIRE_MSG (map_is_coarsening==(m_type==InterpType::Coarsen),
+      "Error! The input map seems incompatible with the remapper type.\n"
+      " - map file: " + map_file + "\n"
+      " - map file n_a: " + std::to_string(n_a) + "\n"
+      " - map file n_b: " + std::to_string(n_b) + "\n"
+      " - fine grid ncols: " + std::to_string(ncols_fine) + "\n"
+      " - remapper type: " + std::string(m_type==InterpType::Refine ? "refine" : "coarsen") + "\n");
+
+  scorpio::grid_read_data_array(map_file,"col",-1,cols.data(),nlweights);
+  scorpio::grid_read_data_array(map_file,"row",-1,rows.data(),nlweights);
+  scorpio::grid_read_data_array(map_file,"S"  ,-1,S.data(),nlweights);
 
   scorpio::eam_pio_closefile(map_file);
 
