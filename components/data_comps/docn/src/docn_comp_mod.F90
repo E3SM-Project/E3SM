@@ -120,7 +120,7 @@ CONTAINS
     use shr_pio_mod, only : shr_pio_getiosys, shr_pio_getiotype
 #ifdef HAVE_MOAB
 #include "moab/MOABConfig.h"
-    use iMOAB, only: iMOAB_LoadMesh, iMOAB_AssignGlobalIDs, iMOAB_UpdateMeshInfo, &
+    use iMOAB, only: iMOAB_LoadMesh, iMOAB_UpdateMeshInfo, &
                      iMOAB_DefineTagStorage, iMOAB_GetDoubleTagStorage, &
                      iMOAB_SetDoubleTagStorage, iMOAB_GetMeshInfo, iMOAB_UpdateMeshInfo
 #endif
@@ -267,10 +267,6 @@ CONTAINS
    if ( ierr /= 0 ) then
       write(logunit,*) 'Failed to load ocean domain mesh'
    endif
-   ! ierr = iMOAB_AssignGlobalIDs(mpoid, 1, 0, 1, 0)
-   ! if ( ierr /= 0 ) then
-   !    write(logunit,*) 'Failed to reassign global ocean domain mesh IDs'
-   ! endif
 
    ierr = iMOAB_UpdateMeshInfo(mpoid)
    call errorout(ierr, 'fail to update mesh info')
