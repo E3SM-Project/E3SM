@@ -91,19 +91,18 @@ create_horiz_remapper (
 
   const int ncols_model = model_grid->get_num_global_dofs();
   std::shared_ptr<AbstractRemapper> remapper;
-  if (ncols_data!=ncols_model) {
+  EKAT_REQUIRE_MSG (ncols_data<=ncols_model,
+      "Error! We do not allow to coarsen spa data to fit the model. We only allow\n"
+      "       spa data to be at the same or coarser resolution as the model.\n");
+  if (ncols_data==ncols_model) {
+    remapper = std::make_shared<IdentityRemapper>(horiz_interp_tgt_grid,IdentityRemapper::SrcAliasTgt);
+  } else {
     // We must have a valid map file
     EKAT_REQUIRE_MSG (map_file!="",
         "ERROR: Spa data is on a different grid than the model one,\n"
         "       but spa_remap_file is missing from SPA parameter list.");
 
-    if (ncols_model>ncols_data) {
-      remapper = std::make_shared<RefiningRemapperP2P>(horiz_interp_tgt_grid,map_file);
-    } else {
-      remapper = std::make_shared<CoarseningRemapper>(horiz_interp_tgt_grid,map_file,false,false);
-    }
-  } else {
-    remapper = std::make_shared<IdentityRemapper>(horiz_interp_tgt_grid,IdentityRemapper::SrcAliasTgt);
+    remapper = std::make_shared<RefiningRemapperP2P>(horiz_interp_tgt_grid,map_file);
   }
 
   remapper->registration_begins();
