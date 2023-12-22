@@ -5,8 +5,84 @@
 #include "share/util/scream_array_utils.hpp"
 #include "share/util/scream_universal_constants.hpp"
 
+#include <ekat/ekat_type_traits.hpp>
+
 namespace scream
 {
+
+template<typename ViewT, typename>
+Field::
+Field (const identifier_type& id,
+       const ViewT& view_d)
+ : Field(id)
+{
+  constexpr auto N = ViewT::Rank;
+  using ScalarT  = typename ViewT::traits::value_type;
+  using ExeSpace = typename ViewT::traits::execution_space;
+
+  EKAT_REQUIRE_MSG ( (std::is_same<ExeSpace,typename device_t::execution_space>::value),
+      "Error! This constructor of Field requires a view from device.\n");
+
+  EKAT_REQUIRE_MSG (id.data_type()==get_data_type<ScalarT>(),
+      "Error! Input view data type does not match what is stored in the field identifier.\n"
+      " - field name: " + id.name() + "\n"
+      " - field data type: " + e2str(id.data_type()) + "\n");
+
+  const auto& fl = id.get_layout();
+  EKAT_REQUIRE_MSG (N==fl.rank(),
+      "Error! This constructor of Field requires a device view of the correct rank.\n"
+      " - field name: " + id.name() + "\n"
+      " - field rank: " + std::to_string(fl.rank()) + "\n"
+      " - view rank : " + std::to_string(N) + "\n");
+  for (int i=0; i<(N-1); ++i) {
+    EKAT_REQUIRE_MSG (view_d.extent_int(i)==fl.dims()[i],
+        "Error! Input view has the wrong i-th extent.\n"
+        " - field name: " + id.name() + "\n"
+        " - idim: " + std::to_string(i) + "\n"
+        " - layout i-th dim: " + std::to_string(fl.dims()[i]) + "\n"
+        " - view i-th dim: " + std::to_string(view_d.extent(i)) + "\n"); 
+  }
+
+  auto& alloc_prop = m_header->get_alloc_properties();
+  if (N>0 and view_d.extent_int(N-1)!=fl.dims().back()) {
+    EKAT_REQUIRE_MSG (view_d.extent_int(N-1)>=fl.dims()[N-1],
+        "Error! Input view has the wrong last extent.\n"
+        " - field name: " + id.name() + "\n"
+        " - layout last dim: " + std::to_string(fl.dims()[N-1]) + "\n"
+        " - view last dim: " + std::to_string(view_d.extent(N-1)) + "\n"); 
+
+    // We have a padded view. We don't know what the pack size was, so we pick the largest
+    // power of 2 that divides the last extent
+    auto last_view_dim = view_d.extent_int(N-1);
+    int last_fl_dim    = fl.dims().back();
+
+    // This should get the smallest pow of 2 that gives npacks*pack_size==view_last_dim
+    int ps = 1;
+    int packed_length = 0;
+    do {
+      ps *= 2;
+      auto npacks = (last_fl_dim + ps - 1) / ps;
+      packed_length = ps*npacks;
+    }
+    while (packed_length!=last_view_dim);
+
+    alloc_prop.request_allocation(ps);
+  }
+  alloc_prop.commit(fl);
+
+  // Create an unmanaged dev view, and its host mirror
+  const auto view_dim = alloc_prop.get_alloc_size();
+  char* data = reinterpret_cast<char*>(view_d.data());
+  std::cout << "fl: " << to_string(fl) << "\n"
+            << "view dim: " << view_dim << "\n";
+  m_data.d_view = decltype(m_data.d_view)(data,view_dim);
+  m_data.h_view = Kokkos::create_mirror_view(m_data.d_view);
+
+  // Since we created m_data.d_view from a raw pointer, we don't get any
+  // ref counting from the kokkos view. Hence, to ensure that the input view
+  // survives as long as this Field, we store it as extra data in the header
+  m_header->set_extra_data("orig_view",view_d);
+}
 
 template<typename DT, HostOrDevice HD>
 auto Field::get_view () const
