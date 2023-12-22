@@ -349,21 +349,15 @@ void set_refindex(std::string surname,
 }  //set_refindex_aero
 
 inline
-void copy_refindex_aerosol_to_device(const int species_id,
+void set_refindex_aerosol(const int species_id,
 std::map<std::string,view_1d_host>& host_views,
-mam_coupling::complex_view_2d  &specrefndxsw, // complex refractive index for water visible
-  mam_coupling::complex_view_2d &specrefndxlw)
+mam_coupling::complex_view_2d::HostMirror  &specrefndxsw_host, // complex refractive index for water visible
+mam_coupling::complex_view_2d::HostMirror &specrefndxlw_host)
 {
   std::string sw_real_name = "refindex_real_aer_sw";
   std::string lw_real_name = "refindex_real_aer_lw";
   std::string sw_im_name = "refindex_im_aer_sw";
   std::string lw_im_name = "refindex_im_aer_lw";
-
-  // using complex_view_2d_host = typename KT::view_1d<Kokkos::complex<Real>>::HostMirror;
-  // FIXME: can we do this copy without making another host view?
-  // Here I assume that specrefndxsw and specrefndxlw are already allocated.
-  auto specrefndxsw_host = Kokkos::create_mirror_view(specrefndxsw);
-  auto specrefndxlw_host = Kokkos::create_mirror_view(specrefndxlw);
 
   for (int i = 0; i < nswbands; i++)
   {
@@ -375,8 +369,8 @@ mam_coupling::complex_view_2d  &specrefndxsw, // complex refractive index for wa
     specrefndxlw_host(i,species_id).real() = host_views[lw_real_name](i);
     specrefndxlw_host(i,species_id).imag() = haero::abs(host_views[lw_im_name](i));
   }
-  Kokkos::deep_copy(specrefndxsw, specrefndxsw_host);
-  Kokkos::deep_copy(specrefndxlw, specrefndxlw_host);
+
+
 } // copy_refindex_to_device
 
 } // namespace scream::mam_coupling
