@@ -134,10 +134,9 @@ bool AbstractGrid::is_unique () const {
     return unique_gids==1;
   };
 
-  static bool computed = false;
-  if (not computed) {
+  if (not m_is_unique_computed) {
     m_is_unique = compute_is_unique();
-    computed = true;
+    m_is_unique_computed = true;
   }
   return m_is_unique;
 }
@@ -502,6 +501,7 @@ void AbstractGrid::copy_data (const AbstractGrid& src, const bool shallow)
     }
   }
   m_is_unique = src.m_is_unique;
+  m_is_unique_computed = src.m_is_unique_computed;
 }
 
 } // namespace scream
