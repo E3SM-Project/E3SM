@@ -260,6 +260,23 @@ contains
             wgtIdef = 'scalar'//C_NULL_CHAR
             mapper_So2a%weight_identifier = wgtIdef
             mapper_So2a%mbname = 'mapper_So2a'
+
+            ! Since we are projecting fields from OCN to ATM-PHY grid, we need to define
+            ! OCN o2x fields to ATM-PHY grid (or ATM-DYN (spectral) ) on coupler side
+            if (atm_pg_active) then
+               tagname = trim(seq_flds_o2x_fields)//C_NULL_CHAR
+               tagtype = 1 ! dense
+               numco = 1 !
+               ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in defining tags for seq_flds_o2x_fields'
+                  call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_o2x_fields')
+               endif
+            else ! spectral case, fix later TODO
+               numco = np*np !
+            endif !
+            
+
             if (.not. samegrid_ao) then ! data-OCN case
 
                ierr =  iMOAB_ComputeMeshIntersectionOnSphere (mboxid, mbaxid, mbintxoa)
@@ -295,22 +312,6 @@ contains
 
                mapper_So2a%intx_context = idintx
 
-               ! Since we are projecting fields from OCN to ATM-PHY grid, we need to define
-               ! OCN o2x fields to ATM-PHY grid (or ATM-DYN (spectral) ) on coupler side
-               if (atm_pg_active) then
-                  tagname = trim(seq_flds_o2x_fields)//C_NULL_CHAR
-                  tagtype = 1 ! dense
-                  numco = 1 !
-                  ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
-                  if (ierr .ne. 0) then
-                     write(logunit,*) subname,' error in defining tags for seq_flds_o2x_fields'
-                     call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_o2x_fields')
-                  endif
-               else ! spectral case, fix later TODO
-                  numco = np*np !
-               endif !
-               volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL;
-
                if (atm_pg_active) then
                   dm2 = "fv"//C_NULL_CHAR
                   dofnameT="GLOBAL_ID"//C_NULL_CHAR
@@ -328,6 +329,7 @@ contains
                noConserve = 0
                validate = 0 ! less verbose
                fInverseDistanceMap = 0
+               volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL;
                if (iamroot_CPLID) then
                   write(logunit,*) subname, 'launch iMOAB weights with args ', 'mbintxoa=', mbintxoa, ' wgtIdef=', wgtIdef, &
                      'dm1=', trim(dm1), ' orderS=',  orderS, 'dm2=', trim(dm2), ' orderT=', orderT, &
@@ -392,11 +394,8 @@ contains
             call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID)
             type1 = 3; !  fv for ocean and atm; fv-cgll does not work anyway
             type2 = 3;
-            ! we ideintified the app mbofxid with !id_join = id_join + 1000! kind of random
-            ! line 1267 in cplcomp_exchange_mod.F90
-            context_id = ocn(1)%cplcompid + 1000
-            ierr = iMOAB_ComputeCommGraph( mbofxid, mbintxoa, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
-                                        context_id, idintx)
+
+
             if (ierr .ne. 0) then
                write(logunit,*) subname,' error in computing comm graph for second hop, ocnf -atm'
                call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ocnf-atm')
@@ -408,14 +407,32 @@ contains
                              //' mapper_Sof2a'
                 endif
             endif
+            ! we identified the app mbofxid with !id_join = id_join + 1000! kind of random
+            ! line 1267 in cplcomp_exchange_mod.F90
+            context_id = ocn(1)%cplcompid + 1000
             mapper_Sof2a%src_mbid = mbofxid
             mapper_Sof2a%tgt_mbid = mbaxid
             mapper_Sof2a%intx_mbid = mbintxoa
             mapper_Sof2a%src_context = context_id
-            mapper_Sof2a%intx_context = mapper_So2a%intx_context
             wgtIdef = 'scalar'//C_NULL_CHAR
             mapper_Sof2a%weight_identifier = wgtIdef
             mapper_Sof2a%mbname = 'mapper_Sof2a'
+            if (.not. samegrid_ao) then ! data-OCN case
+               ! we use the same intx, because the mesh will be the same, between mbofxid and mboxid 
+              
+               ierr = iMOAB_ComputeCommGraph( mbofxid, mbintxoa, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
+                                          context_id, idintx)
+               mapper_Sof2a%intx_context = mapper_So2a%intx_context ! basically will use the same intx as ocean on coupler
+            else
+               ! this is a case appearing in the data ocean case --res ne4pg2_ne4pg2 --compset FAQP
+               ierr = iMOAB_ComputeCommGraph( mbofxid, mbaxid, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
+                                      context_id, atm(1)%cplcompid )
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in computing communication graph for second hop, ATM-OCN'
+                  call shr_sys_abort(subname//' ERROR in computing communication graph for second hop, ATM-OCN')
+               endif
+               mapper_Sof2a%intx_context = atm(1)%cplcompid
+            endif
          endif
 
 ! endif for HAVE_MOAB
@@ -456,7 +473,7 @@ contains
             mapper_Fo2a%tgt_mbid = mbaxid
             mapper_Fo2a%intx_mbid = mbintxoa
             mapper_Fo2a%src_context = ocn(1)%cplcompid
-            mapper_Fo2a%intx_context = mapper_So2a%intx_context
+            mapper_Fo2a%intx_context = mapper_So2a%intx_context ! it could be different, based on samegrid_ao
             wgtIdef = 'scalar'//C_NULL_CHAR
             mapper_Fo2a%weight_identifier = wgtIdef
             mapper_Fo2a%mbname = 'mapper_Fo2a'
@@ -471,8 +488,8 @@ contains
             mapper_Fof2a%src_mbid = mbofxid
             mapper_Fof2a%tgt_mbid = mbaxid
             mapper_Fof2a%intx_mbid = mbintxoa
-            mapper_Fof2a%src_context = ocn(1)%cplcompid
-            mapper_Fof2a%intx_context = mapper_So2a%intx_context
+            mapper_Fof2a%src_context = mapper_Sof2a%src_context ! we use the same source 1000 + ? 
+            mapper_Fof2a%intx_context = mapper_So2a%intx_context ! depends on samegrid_ao
             wgtIdef = 'scalar'//C_NULL_CHAR
             mapper_Fof2a%weight_identifier = wgtIdef
             mapper_Fof2a%mbname = 'mapper_Fof2a'
@@ -482,6 +499,21 @@ contains
 
       endif ! endif (ocn_present) then
       call shr_sys_flush(logunit)
+
+! because we will project fields from ocean to atm phys grid, we need to define
+      ! ice i2x fields to atm phys grid (or atm spectral ext ) on coupler side
+      if (atm_pg_active) then
+         tagname = trim(seq_flds_i2x_fields)//C_NULL_CHAR
+         tagtype = 1 ! dense
+         numco = 1 !
+         ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in defining tags for seq_flds_i2x_fields'
+            call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_i2x_fields')
+         endif
+      else ! spectral case, TODO
+         tagtype = 1 ! dense
+      endif
 
       if (ice_c2_atm) then
          if (iamroot_CPLID) then
@@ -545,20 +577,7 @@ contains
             wgtIdef = 'scalar'//C_NULL_CHAR
             mapper_Si2a%weight_identifier = wgtIdef
             mapper_Si2a%mbname = 'mapper_Si2a'
-            ! because we will project fields from ocean to atm phys grid, we need to define
-            ! ice i2x fields to atm phys grid (or atm spectral ext ) on coupler side
-            if (atm_pg_active) then
-               tagname = trim(seq_flds_i2x_fields)//C_NULL_CHAR
-               tagtype = 1 ! dense
-               numco = 1 !
-               ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
-               if (ierr .ne. 0) then
-                  write(logunit,*) subname,' error in defining tags for seq_flds_i2x_fields'
-                  call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_i2x_fields')
-               endif
-            else ! spectral case, TODO
-               tagtype = 1 ! dense
-            endif
+            
 
             volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL;
 
@@ -649,6 +668,21 @@ contains
       endif !  if (ice_present) then
       call shr_sys_flush(logunit)
 
+      if (mbaxid > 0) then
+          ! we still need to define seq_flds_l2x_fields on atm cpl mesh
+         if (atm_pg_active) then
+            tagname = trim(seq_flds_l2x_fields)//C_NULL_CHAR
+            tagtype = 1 ! dense
+            numco = 1 !
+            ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in defining tags for seq_flds_l2x_fields'
+               call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_l2x_fields')
+            endif
+         else ! spectral case, TODO
+            tagtype = 1 ! dense
+         endif
+      endif
       ! needed for domain checking
       if (lnd_present) then
          if (iamroot_CPLID) then
@@ -778,19 +812,6 @@ contains
                mapper_Fl2a%intx_context = atm(1)%cplcompid
 
             endif ! if tri-grid
-            ! we still need to define seq_flds_l2x_fields on atm cpl mesh
-            if (atm_pg_active) then
-               tagname = trim(seq_flds_l2x_fields)//C_NULL_CHAR
-               tagtype = 1 ! dense
-               numco = 1 !
-               ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
-               if (ierr .ne. 0) then
-                  write(logunit,*) subname,' error in defining tags for seq_flds_l2x_fields'
-                  call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_l2x_fields')
-               endif
-            else ! spectral case, TODO
-               tagtype = 1 ! dense
-            endif
          endif    ! if ((mbaxid .ge. 0) .and.  (mblxid .ge. 0) ) then
 #endif
       endif ! if lnd_present
