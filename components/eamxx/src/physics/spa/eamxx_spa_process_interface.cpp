@@ -3,7 +3,6 @@
 #include "share/util/scream_time_stamp.hpp"
 #include "share/io/scream_scorpio_interface.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
-#include "share/property_checks/field_lower_bound_check.hpp"
 
 #include "ekat/ekat_assert.hpp"
 #include "ekat/util/ekat_units.hpp"
@@ -17,7 +16,8 @@ namespace scream
 SPA::SPA (const ekat::Comm& comm, const ekat::ParameterList& params)
   : AtmosphereProcess(comm, params)
 {
-  // Nothing to do here
+  EKAT_REQUIRE_MSG(m_params.isParameter("spa_data_file"),
+      "ERROR: spa_data_file is missing from SPA parameter list.");
 }
 
 // =========================================================================================
@@ -60,16 +60,64 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   add_field<Computed>("aero_tau_sw",    scalar3d_swband_layout, nondim, grid_name,ps);
   add_field<Computed>("aero_tau_lw",    scalar3d_lwband_layout, nondim, grid_name,ps);
 
-  // Init output data structure
+  // We can already create some of the spa structures
+
+  // 1. Create SPAHorizInterp remapper
+  m_spa_data_file = m_params.get<std::string>("spa_data_file");
+  auto spa_map_file = m_params.isParameter("spa_remap_file")
+                    ? m_params.get<std::string>("spa_remap_file")
+                    : "";
+  SPAHorizInterp = SPAFunc::create_horiz_remapper (m_grid,m_spa_data_file,spa_map_file);
+
+  // Grab a sw and lw field from the horiz interp, and check sw/lw dim against what we hardcoded in this class
+  auto nswbands_data = SPAHorizInterp->get_src_field(4).get_header().get_identifier().get_layout().dim(SWBND);
+  auto nlwbands_data = SPAHorizInterp->get_src_field(5).get_header().get_identifier().get_layout().dim(LWBND);
+  EKAT_REQUIRE_MSG (nswbands_data==m_nswbands,
+      "Error! Spa data file has a different number of sw bands than the model.\n"
+      " - spa data swbands: " + std::to_string(nswbands_data) + "\n"
+      " - model swbands   : " + std::to_string(m_nswbands) + "\n");
+  EKAT_REQUIRE_MSG (nlwbands_data==m_nlwbands,
+      "Error! Spa data file has a different number of lw bands than the model.\n"
+      " - spa data lwbands: " + std::to_string(nlwbands_data) + "\n"
+      " - model lwbands   : " + std::to_string(m_nlwbands) + "\n");
+
+  const auto io_grid = SPAHorizInterp->get_src_grid();
+
+  // 2. Initialize the size of the SPAData structures.
+  // Note: add 2 to number of levels to allow extrapolation if model pressure is outside the data range
+  m_num_src_levs = io_grid->get_num_vertical_levels();
+  SPAData_start = SPAFunc::SPAInput(m_num_cols, m_num_src_levs+2, m_nswbands, m_nlwbands);
+  SPAData_end   = SPAFunc::SPAInput(m_num_cols, m_num_src_levs+2, m_nswbands, m_nlwbands);
   SPAData_out.init(m_num_cols,m_num_levs,m_nswbands,m_nlwbands,false);
 
-  // Note: only the number of levels associated with this data haven't been set.  We can
-  //       take this information directly from the spa data file.
-  m_spa_data_file = m_params.get<std::string>("spa_data_file");
-  scorpio::register_file(m_spa_data_file,scorpio::Read);
-  m_num_src_levs = scorpio::get_dimlen(m_spa_data_file,"lev");
-  scorpio::eam_pio_closefile(m_spa_data_file);
-  SPAHorizInterp.m_comm = m_comm;
+  // 3 Read in hyam/hybm in start/end data, and pad them
+  Field hyam(FieldIdentifier("hyam",io_grid->get_vertical_layout(true),nondim,io_grid->name()));
+  Field hybm(FieldIdentifier("hybm",io_grid->get_vertical_layout(true),nondim,io_grid->name()));
+  hyam.allocate_view();
+  hybm.allocate_view();
+
+  AtmosphereInput hvcoord_reader(m_spa_data_file,io_grid,{hyam,hybm},true);
+  hvcoord_reader.read_variables();
+  hvcoord_reader.finalize();
+  auto hyam_v = hyam.get_view<Real*>();
+  auto hybm_v = hybm.get_view<Real*>();
+  auto nlevs = m_num_src_levs;
+  typename KokkosTypes<DefaultDevice>::RangePolicy policy(0,nlevs);
+  Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int k) {
+    SPAData_start.hyam(k) = hyam_v(k);
+    SPAData_start.hybm(k) = hybm_v(k);
+    SPAData_end.hyam(k)   = hyam_v(k);
+    SPAData_end.hybm(k)   = hybm_v(k);
+    if (k==(nlevs-1)) {
+      SPAData_start.hyam(k+1) = hyam_v(k);
+      SPAData_start.hybm(k+1) = hybm_v(k);
+      SPAData_end.hyam(k+1)   = hyam_v(k);
+      SPAData_end.hybm(k+1)   = hybm_v(k);
+    }
+  });
+
+  // 4. Create reader for spa data
+  SPADataReader = SPAFunc::create_spa_data_reader(SPAHorizInterp,m_spa_data_file);
 }
 
 // =========================================================================================
@@ -150,44 +198,20 @@ void SPA::init_buffers(const ATMBufferManager &buffer_manager)
 // =========================================================================================
 void SPA::initialize_impl (const RunType /* run_type */)
 {
-  // Initialize SPA pressure state stucture and set pointers for the SPA output data to
-  // field managed variables.
+  // Initialize SPAData_out with the views from the out fields
   SPAData_out.CCN3               = get_field_out("nccn").get_view<Pack**>();
   SPAData_out.AER_G_SW           = get_field_out("aero_g_sw").get_view<Pack***>();
   SPAData_out.AER_SSA_SW         = get_field_out("aero_ssa_sw").get_view<Pack***>();
   SPAData_out.AER_TAU_SW         = get_field_out("aero_tau_sw").get_view<Pack***>();
   SPAData_out.AER_TAU_LW         = get_field_out("aero_tau_lw").get_view<Pack***>();
 
-  // Retrieve the remap and data file locations from the parameter list:
-  EKAT_REQUIRE_MSG(m_params.isParameter("spa_remap_file"),"ERROR: spa_remap_file is missing from SPA parameter list.");
-  EKAT_REQUIRE_MSG(m_params.isParameter("spa_data_file"),"ERROR: spa_data_file is missing from SPA parameter list.");
-  m_spa_remap_file = m_params.get<std::string>("spa_remap_file");
-
-  // Set the SPA remap weights.  
-  // TODO: We may want to provide an option to calculate weights on-the-fly. 
-  //       If so, then the EKAT_REQUIRE_MSG above will need to be removed and 
-  //       we can have a default m_spa_data_file option that is online calculation.
-  using ci_string = ekat::CaseInsensitiveString;
-  ci_string no_filename = "none";
-  if (m_spa_remap_file == no_filename) {
-    if (m_comm.am_i_root()) {
-      printf("WARNING: spa_remap_file has been set to 'NONE', assuming that SPA data and simulation are on the same grid - skipping horizontal interpolation\n");
-    }
-    SPAFunc::set_remap_weights_one_to_one(m_min_global_dof,m_dofs_gids,SPAHorizInterp);
-  } else {
-    SPAFunc::get_remap_weights_from_file(m_spa_remap_file,m_min_global_dof,m_dofs_gids,SPAHorizInterp);
-  }
-
-  // Initialize the size of the SPAData structures:  add 2 to number of levels for padding
-  SPAData_start = SPAFunc::SPAInput(m_dofs_gids.size(), m_num_src_levs+2, m_nswbands, m_nlwbands);
-  SPAData_end   = SPAFunc::SPAInput(m_dofs_gids.size(), m_num_src_levs+2, m_nswbands, m_nlwbands);
-
-  // Load the first month into spa_end. At the first time step, the data will be moved into spa_beg,
-  // and spa_end will be reloaded from file with the new month.
+  // Load the first month into spa_end.
+  // Note: At the first time step, the data will be moved into spa_beg,
+  //       and spa_end will be reloaded from file with the new month.
   const int curr_month = timestamp().get_month()-1; // 0-based
-  SPAFunc::update_spa_data_from_file(m_spa_data_file,curr_month,m_nswbands,m_nlwbands,SPAHorizInterp,SPAData_end);
+  SPAFunc::update_spa_data_from_file(*SPADataReader,curr_month,*SPAHorizInterp,SPAData_end);
 
-  // Set property checks for fields in this process
+  // 6. Set property checks for fields in this process
   using Interval = FieldWithinIntervalCheck;
   const auto eps = std::numeric_limits<double>::epsilon();
 
@@ -207,7 +231,7 @@ void SPA::run_impl (const double dt)
   /* Update the SPATimeState to reflect the current time, note the addition of dt */
   SPATimeState.t_now = ts.frac_of_year_in_days();
   /* Update time state and if the month has changed, update the data.*/
-  SPAFunc::update_spa_timestate(m_spa_data_file,m_nswbands,m_nlwbands,ts,SPAHorizInterp,SPATimeState,SPAData_start,SPAData_end);
+  SPAFunc::update_spa_timestate(*SPADataReader,ts,*SPAHorizInterp,SPATimeState,SPAData_start,SPAData_end);
 
   // Call the main SPA routine to get interpolated aerosol forcings.
   const auto& pmid_tgt = get_field_in("p_mid").get_view<const Pack**>();

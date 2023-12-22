@@ -3,8 +3,9 @@
 
 #include "physics/spa/spa_functions.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
-#include "ekat/ekat_parameter_list.hpp"
-#include "ekat/util/ekat_lin_interp.hpp"
+#include "share/io/scorpio_input.hpp"
+#include "share/grid/remap/abstract_remapper.hpp"
+#include <ekat/ekat_parameter_list.hpp>
 
 #include <string>
 
@@ -93,9 +94,13 @@ protected:
   std::string m_spa_remap_file;
   std::string m_spa_data_file;
 
+  // IO structure to read in data (keep it around to avoid re-creating PIO decomps)
+  std::shared_ptr<AtmosphereInput>   SPADataReader;
+
   // Structures to store the data used for interpolation
+  std::shared_ptr<AbstractRemapper>  SPAHorizInterp;
+
   SPAFunc::SPATimeState     SPATimeState;
-  SPAFunc::SPAHorizInterp   SPAHorizInterp;
   SPAFunc::SPAInput         SPAData_start;
   SPAFunc::SPAInput         SPAData_end;
   SPAFunc::SPAOutput        SPAData_out;

@@ -2,14 +2,12 @@
 #define SPA_FUNCTIONS_HPP
 
 #include "share/grid/abstract_grid.hpp"
-#include "share/grid/remap/horizontal_remap_utility.hpp"
-#include "share/scream_types.hpp"
+#include "share/grid/remap/abstract_remapper.hpp"
+#include "share/io/scorpio_input.hpp"
 #include "share/util/scream_time_stamp.hpp"
+#include "share/scream_types.hpp"
 
-#include "ekat/ekat_pack_kokkos.hpp"
-#include "ekat/ekat_pack_utils.hpp"
-#include "ekat/ekat_workspace.hpp"
-#include "ekat/mpi/ekat_comm.hpp"
+#include <ekat/ekat_pack_utils.hpp>
 
 namespace scream {
 namespace spa {
@@ -17,7 +15,6 @@ namespace spa {
 template <typename ScalarType, typename DeviceType>
 struct SPAFunctions
 {
-
   //
   // ------- Types --------
   //
@@ -35,9 +32,6 @@ struct SPAFunctions
 
   using KT = KokkosTypes<Device>;
   using MemberType = typename KT::MemberType;
-
-  using WorkspaceManager = typename ekat::WorkspaceManager<Spack, Device>;
-  using Workspace        = typename WorkspaceManager::Workspace;
 
   using gid_type = AbstractGrid::gid_type;
 
@@ -140,27 +134,20 @@ struct SPAFunctions
   // help to see a SPAOutput along a SPAInput in functions signatures
   using SPAOutput = SPAData;
 
-  struct SPAHorizInterp {
-    // This structure stores the information need by SPA to conduct horizontal
-    // interpolation from a set of source data to horizontal locations in the
-    // simulation grid.
-    // The source_grid_loc stores the column index in the source data,
-    // The target_grid_loc stores the column index in the target data that will be mapped to
-    // The weights stores the remapping weight to be applied to the source grid data for this location
-    //   in the target data.
-    SPAHorizInterp() = default;
-    explicit SPAHorizInterp(const ekat::Comm& comm)
-    {
-      m_comm = comm;
-    }
-    // Horizontal Remap
-    HorizontalMap horiz_map;
-    // Comm group used for SPA
-    ekat::Comm m_comm;
-
-  }; // SPAHorizInterp
   /* ------------------------------------------------------------------------------------------- */
   // SPA routines
+
+  static std::shared_ptr<AbstractRemapper>
+  create_horiz_remapper (
+      const std::shared_ptr<const AbstractGrid>& model_grid,
+      const std::string& spa_data_file,
+      const std::string& map_file);
+
+  static std::shared_ptr<AtmosphereInput>
+  create_spa_data_reader (
+      const std::shared_ptr<AbstractRemapper>& horiz_remapper,
+      const std::string& spa_data_file);
+
   static void spa_main(
     const SPATimeState& time_state,
     const view_2d<const Spack>& p_tgt,
@@ -170,34 +157,19 @@ struct SPAFunctions
     const SPAInput&   data_tmp,         // Temporary
     const SPAOutput&  data_out);
 
-  static void get_remap_weights_from_file(
-    const std::string&             remap_file_name,
-    const gid_type                 min_dof,
-    const view_1d<const gid_type>& dofs_gids,
-          SPAHorizInterp&          spa_horiz_interp);
-
-  static void set_remap_weights_one_to_one(
-    gid_type                       min_dof,
-    const view_1d<const gid_type>& dofs_gids,
-          SPAHorizInterp&          spa_horiz_interp);
-
   static void update_spa_data_from_file(
-    const std::string&    spa_data_file_name,
-    const int             time_index,
-    const int             nswbands,
-    const int             nlwbands,
-          SPAHorizInterp& spa_horiz_interp,
-          SPAInput&       spa_data);
+          AtmosphereInput&  spa_data_reader,
+    const int               time_index,
+          AbstractRemapper& spa_horiz_interp,
+          SPAInput&         spa_data);
 
   static void update_spa_timestate(
-    const std::string&     spa_data_file_name,
-    const int              nswbands,
-    const int              nlwbands,
-    const util::TimeStamp& ts,
-          SPAHorizInterp&  spa_horiz_interp,
-          SPATimeState&    time_state,
-          SPAInput&        spa_beg,
-          SPAInput&        spa_end);
+          AtmosphereInput&  spa_data_reader,
+    const util::TimeStamp&  ts,
+          AbstractRemapper& spa_horiz_interp,
+          SPATimeState&     time_state,
+          SPAInput&         spa_beg,
+          SPAInput&         spa_end);
 
   // The following three are called during spa_main
   static void perform_time_interpolation (
