@@ -22,13 +22,7 @@ struct SPAFunctions
   using Scalar = ScalarType;
   using Device = DeviceType;
 
-  template <typename S>
-  using BigPack = ekat::Pack<S,SCREAM_PACK_SIZE>;
-  template <typename S>
-  using SmallPack = ekat::Pack<S,SCREAM_SMALL_PACK_SIZE>;
-
-  using Pack = BigPack<Scalar>;
-  using Spack = SmallPack<Scalar>;
+  using Spack = ekat::Pack<Scalar,SCREAM_PACK_SIZE>;
 
   using KT = KokkosTypes<Device>;
   using MemberType = typename KT::MemberType;

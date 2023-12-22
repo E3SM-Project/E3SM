@@ -22,20 +22,13 @@ namespace scream
 class SPA : public AtmosphereProcess
 {
 public:
-  using gid_type         = AbstractGrid::gid_type;
+  using SPAFunc  = spa::SPAFunctions<Real, DefaultDevice>;
+  using Spack    = SPAFunc::Spack;
+  using KT       = ekat::KokkosTypes<DefaultDevice>;
 
-  using SPAFunc         = spa::SPAFunctions<Real, DefaultDevice>;
-  using Spack           = SPAFunc::Spack;
-  using Pack            = ekat::Pack<Real,Spack::n>;
-  using KT              = ekat::KokkosTypes<DefaultDevice>;
+  using view_1d = typename SPAFunc::view_1d<Spack>;
+  using view_2d = typename SPAFunc::view_2d<Spack>;
 
-  using view_1d         = typename SPAFunc::view_1d<Spack>;
-  using view_2d         = typename SPAFunc::view_2d<Spack>;
-  using view_3d         = typename SPAFunc::view_3d<Spack>;
-  using view_1d_dof     = typename SPAFunc::view_1d<const gid_type>;
-
-  template<typename ScalarT>
-  using uview_1d = Unmanaged<typename KT::template view_1d<ScalarT>>;
   template<typename ScalarT>
   using uview_2d = Unmanaged<typename KT::template view_2d<ScalarT>>;
 
@@ -78,21 +71,11 @@ protected:
   int m_num_cols; 
   int m_num_levs;
   int m_num_src_levs;
-  int m_nk_pack;
   int m_nswbands = 14;
   int m_nlwbands = 16;
 
-  // DOF information
-  view_1d_dof m_dofs_gids;
-  int         m_total_global_dofs; // Needed to make sure that remap data matches grid.
-  gid_type    m_min_global_dof;
-
   // Struct which contains temporary variables used during spa_main
   Buffer m_buffer;
-
-  // SPA specific files
-  std::string m_spa_remap_file;
-  std::string m_spa_data_file;
 
   // IO structure to read in data (keep it around to avoid re-creating PIO decomps)
   std::shared_ptr<AtmosphereInput>   SPADataReader;

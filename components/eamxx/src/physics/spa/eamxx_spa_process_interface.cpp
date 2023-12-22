@@ -36,8 +36,6 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   const auto& grid_name = m_grid->name();
   m_num_cols = m_grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = m_grid->get_num_vertical_levels();  // Number of levels per column
-  m_dofs_gids = m_grid->get_dofs_gids().get_view<const gid_type*>();
-  m_min_global_dof    = m_grid->get_global_min_dof_gid();
 
   // Define the different field layouts that will be used for this process
 
@@ -50,7 +48,7 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   FieldLayout scalar3d_lwband_layout { {COL,LWBND, LEV}, {m_num_cols, m_nlwbands, m_num_levs} }; 
 
   // Set of fields used strictly as input
-  constexpr int ps = Pack::n;
+  constexpr int ps = Spack::n;
   add_field<Required>("p_mid"      , scalar3d_layout_mid, Pa,     grid_name, ps);
 
   // Set of fields used strictly as output
@@ -63,11 +61,11 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   // We can already create some of the spa structures
 
   // 1. Create SPAHorizInterp remapper
-  m_spa_data_file = m_params.get<std::string>("spa_data_file");
-  auto spa_map_file = m_params.isParameter("spa_remap_file")
-                    ? m_params.get<std::string>("spa_remap_file")
-                    : "";
-  SPAHorizInterp = SPAFunc::create_horiz_remapper (m_grid,m_spa_data_file,spa_map_file);
+  auto spa_data_file = m_params.get<std::string>("spa_data_file");
+  auto spa_map_file  = m_params.isParameter("spa_remap_file")
+                     ? m_params.get<std::string>("spa_remap_file")
+                     : "";
+  SPAHorizInterp = SPAFunc::create_horiz_remapper (m_grid,spa_data_file,spa_map_file);
 
   // Grab a sw and lw field from the horiz interp, and check sw/lw dim against what we hardcoded in this class
   auto nswbands_data = SPAHorizInterp->get_src_field(4).get_header().get_identifier().get_layout().dim(SWBND);
@@ -96,7 +94,7 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   hyam.allocate_view();
   hybm.allocate_view();
 
-  AtmosphereInput hvcoord_reader(m_spa_data_file,io_grid,{hyam,hybm},true);
+  AtmosphereInput hvcoord_reader(spa_data_file,io_grid,{hyam,hybm},true);
   hvcoord_reader.read_variables();
   hvcoord_reader.finalize();
   auto hyam_v = hyam.get_view<Real*>();
@@ -117,7 +115,7 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   });
 
   // 4. Create reader for spa data
-  SPADataReader = SPAFunc::create_spa_data_reader(SPAHorizInterp,m_spa_data_file);
+  SPADataReader = SPAFunc::create_spa_data_reader(SPAHorizInterp,spa_data_file);
 }
 
 // =========================================================================================
@@ -199,11 +197,11 @@ void SPA::init_buffers(const ATMBufferManager &buffer_manager)
 void SPA::initialize_impl (const RunType /* run_type */)
 {
   // Initialize SPAData_out with the views from the out fields
-  SPAData_out.CCN3               = get_field_out("nccn").get_view<Pack**>();
-  SPAData_out.AER_G_SW           = get_field_out("aero_g_sw").get_view<Pack***>();
-  SPAData_out.AER_SSA_SW         = get_field_out("aero_ssa_sw").get_view<Pack***>();
-  SPAData_out.AER_TAU_SW         = get_field_out("aero_tau_sw").get_view<Pack***>();
-  SPAData_out.AER_TAU_LW         = get_field_out("aero_tau_lw").get_view<Pack***>();
+  SPAData_out.CCN3       = get_field_out("nccn").get_view<Spack**>();
+  SPAData_out.AER_G_SW   = get_field_out("aero_g_sw").get_view<Spack***>();
+  SPAData_out.AER_SSA_SW = get_field_out("aero_ssa_sw").get_view<Spack***>();
+  SPAData_out.AER_TAU_SW = get_field_out("aero_tau_sw").get_view<Spack***>();
+  SPAData_out.AER_TAU_LW = get_field_out("aero_tau_lw").get_view<Spack***>();
 
   // Load the first month into spa_end.
   // Note: At the first time step, the data will be moved into spa_beg,
@@ -234,7 +232,7 @@ void SPA::run_impl (const double dt)
   SPAFunc::update_spa_timestate(*SPADataReader,ts,*SPAHorizInterp,SPATimeState,SPAData_start,SPAData_end);
 
   // Call the main SPA routine to get interpolated aerosol forcings.
-  const auto& pmid_tgt = get_field_in("p_mid").get_view<const Pack**>();
+  const auto& pmid_tgt = get_field_in("p_mid").get_view<const Spack**>();
   SPAFunc::spa_main(SPATimeState, pmid_tgt, m_buffer.p_mid_src,
                     SPAData_start,SPAData_end,m_buffer.spa_temp,SPAData_out);
 }
