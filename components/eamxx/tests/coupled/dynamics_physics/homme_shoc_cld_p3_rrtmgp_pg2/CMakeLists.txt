@@ -1,6 +1,6 @@
 include (ScreamUtils)
 
-set (TEST_BASE_NAME homme_shoc_cld_spa_p3_rrtmgp_pg2)
+set (TEST_BASE_NAME homme_shoc_cld_p3_rrtmgp_pg2)
 set (FIXTURES_BASE_NAME ${TEST_BASE_NAME}_generate_output_nc_files)
 
 # Get or create the dynamics lib
@@ -10,7 +10,7 @@ CreateDynamicsLib("theta-l_kokkos"  4   72   10)
 # Create the test
 CreateADUnitTest(${TEST_BASE_NAME}
   LABELS dynamics tms shoc cld p3 rrtmgp physics pg2
-  LIBS cld_fraction nudging tms shoc spa p3 scream_rrtmgp ${dynLibName} diagnostics
+  LIBS cld_fraction nudging tms shoc p3 scream_rrtmgp ${dynLibName} diagnostics
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
   FIXTURES_SETUP_INDIVIDUAL ${FIXTURES_BASE_NAME}
 )
@@ -67,8 +67,6 @@ configure_file(${SCREAM_SRC_DIR}/dynamics/homme/tests/theta.nl
 
 # Ensure test input files are present in the data dir
 set (TEST_INPUT_FILES
-  scream/maps/map_ne4np4_to_ne2np4_mono.nc
-  scream/init/spa_file_unified_and_complete_ne4_20220428.nc
   scream/init/${EAMxx_tests_IC_FILE_72lev}
   cam/topo/${EAMxx_tests_TOPO_FILE}
 )

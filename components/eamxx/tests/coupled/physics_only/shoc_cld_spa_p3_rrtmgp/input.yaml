@@ -17,8 +17,7 @@ atmosphere_processes:
     schedule_type: Sequential
     number_of_subcycles: ${MAC_MIC_SUBCYCLES}
     spa:
-      spa_remap_file: ${SCREAM_DATA_DIR}/maps/map_ne4np4_to_ne2np4_mono.nc
-      spa_data_file: ${SCREAM_DATA_DIR}/init/spa_file_unified_and_complete_ne4_20220428.nc
+      spa_data_file: ${SCREAM_DATA_DIR}/init/spa_file_unified_and_complete_ne2np4L72_20231222.nc
     p3:
       max_total_ni: 740.0e3
     shoc:
