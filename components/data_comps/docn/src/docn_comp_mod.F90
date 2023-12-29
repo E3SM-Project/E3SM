@@ -495,27 +495,28 @@ CONTAINS
 
   end subroutine docn_comp_init
 
+#ifdef HAVE_MOAB
   !===============================================================================
 
   subroutine moab_init_tag(lsize, tagname, avx, tagtype, numco, ent_type, &
                            tagindex, index, dataarr, globalIds)
 
     ! !DESCRIPTION:  run method for docn model
-#ifdef HAVE_MOAB
+
     use iMOAB, only: iMOAB_DefineTagStorage, &
                      iMOAB_SetDoubleTagStorageWithGid
-#endif
+
 
     implicit none
 
-#ifdef HAVE_MOAB
+
     integer :: ierr, n, lsize2
     character(len=*), intent(in) :: tagname
     type(mct_aVect), intent(in) :: avx
     integer, intent(in) :: lsize, index, tagtype, numco, ent_type, tagindex
     real(R8), intent(inout) :: dataarr(:)
     integer, intent(in) :: globalIds(:) ! used for setting values associated with ids
-#endif
+
 
    lsize2 = mct_avect_lsize(avx)
    ! write(*,* ) "Setting data for tag: ", tagname
@@ -532,6 +533,7 @@ CONTAINS
 
   end subroutine moab_init_tag
 
+#endif
 
   subroutine docn_comp_run(EClock, x2o, o2x, &
        SDOCN, gsmap, ggrid, mpicom, compid, my_task, master_task, &
