@@ -47,7 +47,7 @@ endif()
 
 # See eamxx/src/dynamics/homme/CMakeLists.txt for an explanation of this
 # workaround.
-if (SCREAM_MACHINE STREQUAL "ascent" AND CMAKE_BUILD_TYPE_ci STREQUAL "debug")
+if (CMAKE_BUILD_TYPE_ci STREQUAL "debug")
   SetCudaFlags(yakl CUDA_LANG FLAGS -UNDEBUG)
 else()
   SetCudaFlags(yakl CUDA_LANG)
