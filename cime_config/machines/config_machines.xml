@@ -3177,11 +3177,11 @@
         <env name="MPIR_CVAR_ENABLE_GPU">0</env>
         <env name="GPU_TILE_COMPACT"> </env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE" compiler="!gnu">
+    <environment_variables BUILD_THREADED="TRUE" compiler="!gnu">
         <env name="KMP_AFFINITY">verbose,granularity=thread,balanced</env>
         <env name="OMP_STACKSIZE">128M</env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE" compiler="gnu">
+    <environment_variables BUILD_THREADED="TRUE" compiler="gnu">
         <env name="OMP_PLACES">threads</env>
         <env name="OMP_STACKSIZE">128M</env>
     </environment_variables>
