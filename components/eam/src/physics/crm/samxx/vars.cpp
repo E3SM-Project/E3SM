@@ -403,7 +403,11 @@ void init_values() {
   docam_sfc_fluxes = false;
   doprecip = false        ;
   dosgs = false           ;
+#ifdef MMF_DO_CORIOLIS
+  docoriolis = true      ;
+#else
   docoriolis = false      ;
+#endif
   dosurface = false       ;
   dowallx = false         ;
   dowally = false         ;
