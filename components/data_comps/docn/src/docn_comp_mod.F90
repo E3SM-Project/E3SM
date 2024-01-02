@@ -120,7 +120,7 @@ CONTAINS
     use shr_pio_mod, only : shr_pio_getiosys, shr_pio_getiotype
 #ifdef HAVE_MOAB
 #include "moab/MOABConfig.h"
-    use iMOAB, only: iMOAB_LoadMesh, iMOAB_AssignGlobalIDs, iMOAB_UpdateMeshInfo, &
+    use iMOAB, only: iMOAB_LoadMesh, iMOAB_UpdateMeshInfo, &
                      iMOAB_DefineTagStorage, iMOAB_GetDoubleTagStorage, &
                      iMOAB_SetDoubleTagStorage, iMOAB_GetMeshInfo, iMOAB_UpdateMeshInfo
 #endif
@@ -267,10 +267,6 @@ CONTAINS
    if ( ierr /= 0 ) then
       write(logunit,*) 'Failed to load ocean domain mesh'
    endif
-   ! ierr = iMOAB_AssignGlobalIDs(mpoid, 1, 0, 1, 0)
-   ! if ( ierr /= 0 ) then
-   !    write(logunit,*) 'Failed to reassign global ocean domain mesh IDs'
-   ! endif
 
    ierr = iMOAB_UpdateMeshInfo(mpoid)
    call errorout(ierr, 'fail to update mesh info')
@@ -369,6 +365,16 @@ CONTAINS
 
     call mct_aVect_init(avstrm, rList=flds_strm, lsize=lsize)
     call mct_aVect_zero(avstrm)
+
+#ifdef HAVE_MOAB
+   ! tagtype = 1  ! dense, double tag
+   ierr = iMOAB_DefineTagStorage( mpoid, trim(flds_strm)//C_NULL_CHAR, &
+                                     1, & ! tagtype
+                                     1, & ! number of components
+                                     tagindex )
+   if (ierr > 0 )  &
+      call errorout(ierr, 'Error: fail to create flds_strm tags ')
+#endif
 
     kh    = mct_aVect_indexRA(avstrm,'strm_h')
     kqbot = mct_aVect_indexRA(avstrm,'strm_qbot')
