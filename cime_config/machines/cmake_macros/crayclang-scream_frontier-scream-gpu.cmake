@@ -1,5 +1,5 @@
 set(MPICC "mpicc")
-set(MPICXX "hipcc")
+set(MPICXX "mpicxx")
 set(MPIFC "ftn")
 set(SCC "cc")
 set(SCXX "hipcc")
@@ -28,7 +28,6 @@ string(APPEND CMAKE_C_FLAGS_RELEASE " -O2 -hnoacc -hfp0 -hipa0")
 string(APPEND CMAKE_Fortran_FLAGS_RELEASE " -O2 -hnoacc -hfp0 -hipa0")
 string(APPEND CMAKE_CXX_FLAGS_RELEASE " -O2 ")
 
-string(APPEND CPPDEFS " -DLINUX")
 string(APPEND CPPDEFS " -DCPRCRAY")
 
 if (COMP_NAME STREQUAL gptl)
