@@ -527,6 +527,7 @@
 <config_check_ssh_consistency ocn_grid="SOwISC12to60E2r4">.false.</config_check_ssh_consistency>
 <config_check_ssh_consistency ocn_grid="ECwISC30to60E2r1">.false.</config_check_ssh_consistency>
 <config_check_ssh_consistency ocn_grid="IcoswISC30E3r5">.false.</config_check_ssh_consistency>
+<config_check_ssh_consistency ocn_grid="RRSwISC6to18E3r3">.false.</config_check_ssh_consistency>
 <config_filter_btr_mode>.false.</config_filter_btr_mode>
 <config_prescribe_velocity>.false.</config_prescribe_velocity>
 <config_prescribe_thickness>.false.</config_prescribe_thickness>
