@@ -45,10 +45,9 @@ void coriolis() {
       int ic=i+1;
       real w_av=0.25*(w(kc,j+offy_w,i+offx_w,icrm)+w(kc,j+offy_w,ib+offx_w,icrm)+
                       w(k,j+offy_w,i+offx_w,icrm)+w(k,j+offy_w,ib+offx_w,icrm));
-      dudt(na-1,k,j,i,icrm)=dudt(na-1,k,j,i,icrm)+fcory(j+offy_fcory,icrm)*
-                            (v(k,j+offy_v,i+offx_v,icrm)-vg0(k,icrm))-fcorzy(j,icrm)*w_av;
-      dvdt(na-1,k,j,i,icrm)=dvdt(na-1,k,j,i,icrm)-fcory(j+offy_fcory,icrm)*
-                            (u(k,j+offy_u,i+offx_u,icrm)-ug0(k,icrm));
+      // dudt(na-1,k,j,i,icrm)=dudt(na-1,k,j,i,icrm)+fcory(j+offy_fcory,icrm)*(v(k,j+offy_v,i+offx_v,icrm)-vg0(k,icrm))-fcorzy(j,icrm)*w_av;
+      dudt(na-1,k,j,i,icrm)=dudt(na-1,k,j,i,icrm) - fcorzy(j,icrm)*w_av;
+      // dvdt(na-1,k,j,i,icrm)=dvdt(na-1,k,j,i,icrm)-fcory(j+offy_fcory,icrm)*(u(k,j+offy_u,i+offx_u,icrm)-ug0(k,icrm));
     });
   }
 
