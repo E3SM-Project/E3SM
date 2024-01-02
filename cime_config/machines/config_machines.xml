@@ -136,10 +136,10 @@
       <env name="NETCDF_FORTRAN_PATH">/opt/cray/pe/netcdf-hdf5parallel/4.8.1.3/gnu/9.1/</env>
       <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf_version))}</env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE">
+    <environment_variables BUILD_THREADED="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE" compiler="gnu">
+    <environment_variables BUILD_THREADED="TRUE" compiler="gnu">
       <env name="OMP_PLACES">cores</env>
     </environment_variables>
   </machine>
@@ -783,7 +783,7 @@
       <env name="NETCDF_PATH">$SHELL{dirname $(dirname $(which nc-config))}</env>
       <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf_version))}</env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE">
+    <environment_variables BUILD_THREADED="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
@@ -898,7 +898,7 @@
       <env name="AMD_LOG_LEVEL">10</env>
       <env name="CRAY_ACC_DEBUG">3</env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE">
+    <environment_variables BUILD_THREADED="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
@@ -1021,7 +1021,7 @@
       <env name="AMD_LOG_LEVEL">10</env>
       <env name="CRAY_ACC_DEBUG">3</env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE">
+    <environment_variables BUILD_THREADED="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
@@ -1117,7 +1117,7 @@
       <env name="MPICH_GPU_SUPPORT_ENABLED">0</env>
     </environment_variables>
 
-    <environment_variables SMP_PRESENT="TRUE">
+    <environment_variables BUILD_THREADED="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
@@ -1200,7 +1200,7 @@
       <env name="PNETCDF_HINTS">romio_cb_read=disable</env>
     </environment_variables>
 
-    <environment_variables SMP_PRESENT="TRUE">
+    <environment_variables BUILD_THREADED="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
@@ -1795,7 +1795,7 @@
       <env name="NETCDF_PATH">/soft/apps/packages/climate/netcdf/4.7.4c-4.3.1cxx-4.4.4f-parallel/openmpi-2.1.5/gcc-8.2.0-static-hdf5-1.8.12-pnetcdf-1.12.0</env>
       <env name="PNETCDF_PATH">/soft/apps/packages/climate/pnetcdf/1.12.0/openmpi-2.1.5/gcc-8.2.0</env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE">
+    <environment_variables BUILD_THREADED="TRUE">
       <env name="OMP_STACKSIZE">64M</env>
     </environment_variables>
     <environment_variables>
@@ -1876,7 +1876,7 @@
       <env name="NETCDF_PATH">/nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/netcdf/4.8.0c-4.3.1cxx-4.5.3f-parallel/openmpi-4.1.6/gcc-12.1.0</env>
       <env name="PNETCDF_PATH">/nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/pnetcdf/1.12.3/openmpi-4.1.6/gcc-12.1.0</env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE">
+    <environment_variables BUILD_THREADED="TRUE">
       <env name="OMP_STACKSIZE">64M</env>
     </environment_variables>
     <environment_variables>
@@ -1968,7 +1968,7 @@
       <env name="NETCDF_PATH">/nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/netcdf/4.8.0c-4.3.1cxx-4.5.3f-parallel/openmpi-4.1.3/gcc-11.1.0</env>
       <env name="PNETCDF_PATH">/nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/pnetcdf/1.12.2/openmpi-4.1.3/gcc-11.1.0</env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE">
+    <environment_variables BUILD_THREADED="TRUE">
       <env name="OMP_STACKSIZE">64M</env>
     </environment_variables>
     <environment_variables>
@@ -2240,14 +2240,14 @@
     <environment_variables mpilib="impi" DEBUG="TRUE">
       <env name="I_MPI_DEBUG">10</env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE">
+    <environment_variables BUILD_THREADED="TRUE">
       <env name="OMP_STACKSIZE">64M</env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE" compiler="intel">
+    <environment_variables BUILD_THREADED="TRUE" compiler="intel">
       <env name="KMP_AFFINITY">granularity=core,balanced</env>
       <env name="KMP_HOT_TEAMS_MODE">1</env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE" compiler="gnu">
+    <environment_variables BUILD_THREADED="TRUE" compiler="gnu">
       <env name="OMP_PLACES">cores</env>
     </environment_variables>
   </machine>
@@ -2362,16 +2362,16 @@
       <env name="NETCDF_FORTRAN_PATH">$SHELL{dirname $(dirname $(which nf-config))}</env>
       <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf_version))}</env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE">
+    <environment_variables BUILD_THREADED="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE" compiler="intel" MAX_TASKS_PER_NODE="!128">
+    <environment_variables BUILD_THREADED="TRUE" compiler="intel" MAX_TASKS_PER_NODE="!128">
       <env name="KMP_AFFINITY">granularity=core,balanced</env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE" compiler="intel" MAX_TASKS_PER_NODE="128">
+    <environment_variables BUILD_THREADED="TRUE" compiler="intel" MAX_TASKS_PER_NODE="128">
       <env name="KMP_AFFINITY">granularity=thread,balanced</env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE" compiler="gnu">
+    <environment_variables BUILD_THREADED="TRUE" compiler="gnu">
       <env name="OMP_PLACES">cores</env>
     </environment_variables>
     <environment_variables compiler="intel" mpilib="openmpi">
@@ -2452,7 +2452,7 @@
       <env name="MV2_DEBUG_SHOW_BACKTRACE">1</env>
       <env name="MV2_SHOW_ENV_INFO">2</env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE">
+    <environment_variables BUILD_THREADED="TRUE">
       <env name="OMP_STACKSIZE">64M</env>
       <env name="OMP_PLACES">cores</env>
     </environment_variables>
@@ -2523,7 +2523,7 @@
       <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf_version))}</env>
       <env name="PATH">/lcrc/group/e3sm/soft/perl/5.26.0/bin:$ENV{PATH}</env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE">
+    <environment_variables BUILD_THREADED="TRUE">
       <env name="OMP_STACKSIZE">64M</env>
       <env name="OMP_PLACES">cores</env>
     </environment_variables>
@@ -2626,7 +2626,7 @@
     <environment_variables compiler="gnu">
       <env name="HDF5_ROOT">$SHELL{which h5dump | xargs dirname | xargs dirname}</env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE">
+    <environment_variables BUILD_THREADED="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
@@ -2835,10 +2835,10 @@
       <env name="SMP_VARS"> </env>
       <env name="NETCDF_PATH">$ENV{NETCDF_DIR}</env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE" compiler="intel">
+    <environment_variables BUILD_THREADED="TRUE" compiler="intel">
       <env name="SMP_VARS">-e OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS} -e OMP_STACKSIZE=128M -e KMP_AFFINITY=granularity=thread,scatter</env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE" compiler="!intel">
+    <environment_variables BUILD_THREADED="TRUE" compiler="!intel">
       <env name="SMP_VARS">-e OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS} -e OMP_STACKSIZE=128M -e OMP_PROC_BIND=spread -e OMP_PLACES=threads</env>
     </environment_variables>
   </machine>
@@ -2950,11 +2950,11 @@
       <env name="LIBOMPTARGET_DEBUG">0</env><!--default 0, max 5 -->
       <env name="OMP_TARGET_OFFLOAD">DISABLED</env><!--default OMP_TARGET_OFFLOAD=MANDATORY-->
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE" compiler="!gnu">
+    <environment_variables BUILD_THREADED="TRUE" compiler="!gnu">
       <env name="KMP_AFFINITY">verbose,granularity=thread,balanced</env>
       <env name="OMP_STACKSIZE">128M</env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE" compiler="gnu">
+    <environment_variables BUILD_THREADED="TRUE" compiler="gnu">
       <env name="OMP_PLACES">threads</env>
       <env name="OMP_STACKSIZE">128M</env>
     </environment_variables>
@@ -3068,11 +3068,11 @@
         <env name="MPIR_CVAR_ENABLE_GPU">0</env>
         <env name="GPU_TILE_COMPACT"> </env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE" compiler="!gnu">
+    <environment_variables BUILD_THREADED="TRUE" compiler="!gnu">
         <env name="KMP_AFFINITY">verbose,granularity=thread,balanced</env>
         <env name="OMP_STACKSIZE">128M</env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE" compiler="gnu">
+    <environment_variables BUILD_THREADED="TRUE" compiler="gnu">
         <env name="OMP_PLACES">threads</env>
         <env name="OMP_STACKSIZE">128M</env>
     </environment_variables>
@@ -3569,7 +3569,7 @@
     <environment_variables mpilib="impi" DEBUG="TRUE">
       <env name="I_MPI_DEBUG">10</env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE">
+    <environment_variables BUILD_THREADED="TRUE">
       <env name="OMP_STACKSIZE">64M</env>
       <env name="OMP_PLACES">cores</env>
     </environment_variables>
@@ -3668,7 +3668,7 @@
     <environment_variables mpilib="impi" DEBUG="TRUE">
       <env name="I_MPI_DEBUG">10</env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE">
+    <environment_variables BUILD_THREADED="TRUE">
       <env name="OMP_STACKSIZE">64M</env>
       <env name="OMP_PLACES">cores</env>
     </environment_variables>
@@ -4490,10 +4490,10 @@
       <env name="PGI_ACC_POOL_ALLOC">0</env>
       <env name="SMPIARGS"> </env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="FALSE">
+    <environment_variables BUILD_THREADED="FALSE">
       <env name="JSRUN_THREAD_VARS"> </env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE">
+    <environment_variables BUILD_THREADED="TRUE">
       <env name="JSRUN_THREAD_VARS">-E OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS} -E OMP_PROC_BIND=spread -E OMP_PLACES=threads -E OMP_STACKSIZE=256M</env>
     </environment_variables>
     <environment_variables compiler=".*gpu.*">
@@ -4666,10 +4666,10 @@
       <env name="PGI_ACC_POOL_ALLOC">0</env>
       <env name="SMPIARGS"> </env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="FALSE">
+    <environment_variables BUILD_THREADED="FALSE">
       <env name="JSRUN_THREAD_VARS"> </env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE">
+    <environment_variables BUILD_THREADED="TRUE">
       <env name="JSRUN_THREAD_VARS">-E OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS} -E OMP_PROC_BIND=spread -E OMP_PLACES=threads -E OMP_STACKSIZE=256M</env>
     </environment_variables>
     <environment_variables compiler=".*gpu.*">
@@ -4834,7 +4834,7 @@
       <env name="LD_LIBRARY_PATH">/home/groups/coegroup/e3sm/soft/openmpi/2.1.6/gcc/8.2.0/lib:/home/groups/coegroup/e3sm/soft/netcdf/4.4.1c-4.2cxx-4.4.4f/gcc/8.2.0/lib:$ENV{LD_LIBRARY_PATH}</env>
       <env name="PNETCDF_PATH">/home/groups/coegroup/e3sm/soft/pnetcdf/1.12.1/gcc/8.2.0/openmpi/2.1.6</env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE">
+    <environment_variables BUILD_THREADED="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PLACES">threads</env>
     </environment_variables>
@@ -4931,7 +4931,7 @@
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
     </environment_variables>
 
-    <environment_variables SMP_PRESENT="TRUE">
+    <environment_variables BUILD_THREADED="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PLACES">threads</env>
     </environment_variables>
@@ -5020,7 +5020,7 @@
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
     </environment_variables>
 
-    <environment_variables SMP_PRESENT="TRUE">
+    <environment_variables BUILD_THREADED="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PLACES">threads</env>
     </environment_variables>
@@ -5094,10 +5094,10 @@
       <env name="NETCDF_FORTRAN_PATH">$SHELL{dirname $(dirname $(which nf-config))}</env>
       <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf_version))}</env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE">
+    <environment_variables BUILD_THREADED="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE" compiler="gnu">
+    <environment_variables BUILD_THREADED="TRUE" compiler="gnu">
       <env name="OMP_PLACES">cores</env>
     </environment_variables>
   </machine>
