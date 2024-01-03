@@ -1,3 +1,4 @@
+mkFertMod.F90
 mkdomainMod.F90
 mkgridmapMod.F90
 mkindexmapMod.F90
