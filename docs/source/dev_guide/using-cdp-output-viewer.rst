@@ -99,7 +99,7 @@ The code below was used to create the figures above.
 
 .. code:: python
 
-    from cdp.cdp_viewer import OutputViewer
+    from e3sm_diags.viewer.core_viewer import OutputViewer
 
     viewer = OutputViewer(index_name='My Cool Results')
     viewer.add_page("My Results", ['Description', 'Generated File'])

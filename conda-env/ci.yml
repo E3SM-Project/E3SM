@@ -13,7 +13,6 @@ dependencies:
   - beautifulsoup4
   - cartopy >=0.17.0
   - cartopy_offlinedata
-  - cdp 1.7.0
   - cdms2 3.1.5
   - cdutil 8.2.1
   - dask
@@ -23,6 +22,7 @@ dependencies:
   - mache >=0.15.0
   - matplotlib-base
   - netcdf4
+  - output_viewer >=1.3.0
   - numpy >=1.23.0
   - shapely >=2.0.0,<3.0.0
   - xarray >=2023.02.0

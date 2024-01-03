@@ -616,7 +616,7 @@ create a file ``diff_diags_viewer.py`` paste in the below code.
         import os
         from .utils import add_header, h1_to_h3
         from .default_viewer import create_metadata
-        from cdp.cdp_viewer import OutputViewer
+        from e3sm_diags.viewer.core_viewer import OutputViewer
 
 
         def create_viewer(root_dir, parameters):

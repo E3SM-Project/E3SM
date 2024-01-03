@@ -8,6 +8,7 @@ import traceback
 from typing import Dict, List, Tuple
 
 import dask
+import dask.bag as db
 
 import e3sm_diags
 from e3sm_diags.logger import custom_logger
@@ -300,7 +301,7 @@ def _run_with_dask(parameters: List[CoreParameter]) -> List[CoreParameter]:
     https://docs.dask.org/en/stable/generated/dask.bag.map.html
     https://docs.dask.org/en/stable/generated/dask.dataframe.DataFrame.compute.html
     """
-    bag = dask.bag.from_sequence(parameters)
+    bag = db.from_sequence(parameters)
     config = {"scheduler": "processes", "multiprocessing.context": "fork"}
 
     num_workers = getattr(parameters[0], "num_workers", None)

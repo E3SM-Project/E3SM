@@ -1,7 +1,7 @@
 import os
 import shutil
 
-from cdp.cdp_viewer import OutputViewer
+from e3sm_diags.viewer.core_viewer import OutputViewer
 
 from .default_viewer import seasons_used
 from .lat_lon_viewer import _cvs_to_html

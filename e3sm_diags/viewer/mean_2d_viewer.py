@@ -1,6 +1,6 @@
 import os
 
-from cdp.cdp_viewer import OutputViewer
+from e3sm_diags.viewer.core_viewer import OutputViewer
 
 from .default_viewer import SEASONS, create_metadata, seasons_used
 from .utils import add_header, h1_to_h3

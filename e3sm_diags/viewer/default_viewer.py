@@ -10,10 +10,10 @@ from collections import OrderedDict
 from typing import Dict
 
 import numpy
-from cdp.cdp_viewer import OutputViewer
 
 from e3sm_diags.logger import custom_logger
 from e3sm_diags.parser import SET_TO_PARSER
+from e3sm_diags.viewer.core_viewer import OutputViewer
 
 from . import lat_lon_viewer, utils
 

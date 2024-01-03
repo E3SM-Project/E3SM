@@ -1,9 +1,8 @@
 import os
 from typing import Dict, List
 
-from cdp.cdp_viewer import OutputViewer
-
 from e3sm_diags.logger import custom_logger
+from e3sm_diags.viewer.core_viewer import OutputViewer
 
 from .default_viewer import create_metadata
 from .utils import add_header, h1_to_h3
