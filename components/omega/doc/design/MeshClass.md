@@ -54,40 +54,75 @@ Where appropriate, some additional derived quantities (e.g. reciprocals) will al
 
 ## 3 Algorithmic Formulation
 
+The algorithms required for computing dependent mesh quantities are currently implemented in the MPAS Mesh Converter utility.
 
 ## 4 Design
-
-You can include code blocks like this:
-
-```c++
-int var = value;
-```
 
 ### 4.1 Data types and parameters
 
 #### 4.1.1 Parameters
 
-List and define any configuration parameters or public constants.
+```c++
+
+```
 
 #### 4.1.2 Class/structs/data types
+The horizontal mesh information will be organized in a class with public YAKL arrays.
+Arrays that require a device copy will have a explicit variable.
+Connectivity arrays that are already contained in the Decomp class will be replicated in the horizontal mesh class via pointers.
+```c++
+class HorzMesh {
 
-Describe any public data types and/or the class definition
+public:
+
+  Array1DR8 AreaCell;
+  ArrayHost1DR8 AreaCellH;
+
+  Array2DI4 CellsOnCell; 
+  ArrayHost2DI4 CellsOnCellH;
+
+}
+```
 
 ### 4.2 Methods
 
-List and describe all public methods and their interfaces (actual code for
-interface that would be in header file). Describe typical use cases.
+There will be a constructor and destructor for the class with the constructor being responsible for calling several private methods.
+
+#### 4.2.1 Constructor
+The constructor will also be responsible for:
+  * use Decomp object to create reference to the decomposed connectivity arrays.
+  * reading the other local mesh information.
+  * computing and dependent mesh quantities.
+  * creating device copies of mesh information
+  * registering metadata with the I/O infrastructure
+
+```c++
+HorzMesh(Decomp decomp);
+```
+
+#### 4.2.2 Destructor
+A destructor will be available to release memory.
+
+#### 4.2.2 Read
+The mesh class requires a method to read in all other available mesh information that has been provided in the mesh file, but has not been initialized by the decomposition. This will be a private method called by the constructor.
+
+#### 4.2.3 Compute 
+The compute method will be a private method called by the constructor. It will be resonsible for calculating any dependent mesh information that is not provided in the mesh input file.
+
+#### 4.2.4 Device copy creation
+This method will be repsonsible for creating the device copies of the required mesh information on the host. It will be a private method called by the constructor.
+
+```c++
+AreaCell = AreaCellH.createDeviceCopy()
+
+```
+
+#### 4.2.5 Metadata registration
+The metadata associated with each mesh variable will be registred within the I/O infrastructure in a private method called by the constrctor.
+
 
 ## 5 Verification and Testing
 
-### 5.1 Test xxx
+### 5.1 Test mesh compute routines 
 
-Describe test including conditions for pass/fail
-List which requirements it tests:
-  - tests requirement xxx
-
-### 5.2 Test yyy
-
-Describe test including conditions for pass/fail
-List which requirements it tests:
-  - tests requirement zzz
+The sample domain used for the Decomp test will be used to test obtaining the correct local values and the mesh computation routines.
