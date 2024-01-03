@@ -793,7 +793,7 @@
 		/>
 		<nml_option name="config_tidal_forcing_model" type="character" default_value="off"
 					description="Selects the mode in which tidal forcing is computed."
-					possible_values="'off','monochromatic'"
+					possible_values="'off','monochromatic','linear'"
 		/>
 		<nml_option name="config_tidal_forcing_monochromatic_amp" type="real" default_value="2.0" units="m"
 					description="Value of amplitude of monochromatic tide."
@@ -810,6 +810,18 @@
 		<nml_option name="config_tidal_forcing_monochromatic_baseline" type="real" default_value="0.0" units="days"
 					description="Value of baseline monochromatic tide, e.g., sea level rise."
 					possible_values="Any positive real number."
+		/>
+		<nml_option name="config_tidal_forcing_linear_baseline" type="real" default_value="0.0" units="days"
+					description="Value of baseline linear tide, e.g., sea level rise."
+					possible_values="Any positive real number."
+		/>
+		<nml_option name="config_tidal_forcing_linear_min" type="real" default_value="-1.0" units="days"
+					description="Value of minimum tide."
+					possible_values="Any real number."
+		/>
+		<nml_option name="config_tidal_forcing_linear_rate" type="real" default_value="-8.0" units="days"
+					description="Value of tide rate of change in m per day."
+					possible_values="Any real number."
 		/>
 	</nml_record>
 	<nml_record name="self_attraction_loading" mode="init;forward">
@@ -3857,11 +3869,11 @@
 		/>
 		<var name="sshSubcycleCurWithTides" type="real" dimensions="nCells Time" units="m"
 			description="SSH - tidal potential in split explicit "
-			packages="tidalPotentialForcingPKG"
+			packages="tidalPotentialForcingPKG;tidalForcing"
 		/>
 		<var name="sshSubcycleNewWithTides" type="real" dimensions="nCells Time" units="m"
 			description="SSH - tidal potential in split explicit "
-			packages="tidalPotentialForcingPKG"
+			packages="tidalPotentialForcingPKG;tidalForcing"
 		/>
 		<var name="coastalSmoothingFactor" type="real" dimensions="nCells" units="1"
 			 description="Multiplication factors to smooth ssh at coastlines for SAL caculation"

@@ -245,6 +245,10 @@ contains
             SIN(2.0_RKIND*pii/config_tidal_forcing_monochromatic_period * daysSinceStartOfSim - &
             pii*config_tidal_forcing_monochromatic_phaseLag/180.0_RKIND) - &
             config_tidal_forcing_monochromatic_baseline
+        elseif (trim(config_tidal_forcing_model) == 'linear') then
+           tidalHeight = max(config_tidal_forcing_linear_min, &
+                             config_tidal_forcing_linear_baseline + &
+                             config_tidal_forcing_linear_rate * daysSinceStartOfSim)
         !else if (trim(config_tidal_forcing_type) == 'data') then
         !  ! data option
         !  ! pass
