@@ -403,6 +403,8 @@ void MAMOptics::run_impl(const double dt) {
     tau_w_f_icol,
     aerosol_optics_device_data_, work_icol);
 
+team.team_barrier();
+
 mam4::aer_rad_props::aer_rad_props_lw(team,
     dt, pmid, pint,
     temperature, zm, zi,
