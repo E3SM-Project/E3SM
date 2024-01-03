@@ -69,8 +69,8 @@ my %opts = (
                soil_snd=>undef,
                soil_col=>undef,
                soil_fmx=>undef,
-	       outnc_double=>undef,
-	       outnc_dims=>"2",     
+               outnc_double=>undef,
+               outnc_dims=>"2",
                usrname=>"",
                usr_mapdir=>"../../shared/mkmapdata",
                dynpft=>undef,
@@ -134,6 +134,7 @@ OPTIONS
                                    future scenarios 
                                    (by default $opts{'rcp'}, where -999.9 means historical ).
      -usrname "clm_usrdat_name"    CLM user data name to find grid file with.
+     -usr_mapalg "algorithm"       Algorithm string embedded in map file names (aave, nco, mono)
 
       NOTE: years, res, and rcp can be comma delimited lists.
 
@@ -248,6 +249,7 @@ sub trim($)
         "usr_gname=s"  => \$opts{'usr_gname'},
         "usr_gdate=s"  => \$opts{'usr_gdate'},
         "usr_mapdir=s" => \$opts{'usr_mapdir'},
+        "usr_mapalg=s" => \$opts{'usr_mapalg'},
         "crop"         => \$opts{'crop'},
         "hirespft"     => \$opts{'hirespft'},
         "c|rcp=s"      => \$opts{'rcp'},
@@ -293,12 +295,16 @@ sub trim($)
    #
    my @hresols;
    my $mapdate; 
+   my $mapalg = 'aave';
    if ( $opts{'hgrid'} eq "all" ) {
       my @all_hresols = $definition->get_valid_values( "res" );
       @hresols = @all_hresols;
    } elsif ( $opts{'hgrid'} eq "usrspec" ) {
       @hresols = $opts{'usr_gname'}; 
       $mapdate = $opts{'usr_gdate'}; 
+      if ( $opts{'usr_mapalg'} ne "" ) {
+          $mapalg  = $opts{'usr_mapalg'};
+      }
    } else {
       @hresols = split( ",", $opts{'hgrid'} );
       # Check that resolutions are valid
@@ -432,7 +438,7 @@ EOF
          $hgrd{$typ} = $hgrid;
          $lmsk{$typ} = $lmask;
 	 if ( $opts{'hgrid'} eq "usrspec" ) {
-	     $map{$typ} = $opts{'usr_mapdir'}."/map_${hgrid}_${lmask}_to_${res}_nomask_aave_da_c${mapdate}\.nc";
+	     $map{$typ} = $opts{'usr_mapdir'}."/map_${hgrid}_${lmask}_to_${res}_nomask_${mapalg}_da_c${mapdate}\.nc";
 	 } else {
 	     $map{$typ} = `$scrdir/../../bld/queryDefaultNamelist.pl $queryfilopts -namelist elmexp -options frm_hgrid=$hgrid,frm_lmask=$lmask,to_hgrid=$res,to_lmask=nomask -var map`;
 	 }
