@@ -263,8 +263,10 @@
       <env name="PERL5LIB">/global/cfs/cdirs/e3sm/perl/lib/perl5-only-switch</env>
       <env name="FI_CXI_RX_MATCH_MODE">software</env>
       <env name="MPICH_COLL_SYNC">MPI_Bcast</env>
-      <env name="Albany_ROOT">$SHELL{if [ -z "$Albany_ROOT" ]; then echo /global/common/software/e3sm/mali_tpls/albany-e3sm-serial-release-gcc; else echo "$Albany_ROOT"; fi}</env>
+      <env name="Albany_ROOT">$SHELL{if [ -z "$Albany_ROOT" ]; then echo /global/common/software/e3sm/mali_tpls/albany-e3sm-serial-release-gcc-cmake-fix; else echo "$Albany_ROOT"; fi}</env>
       <env name="Trilinos_ROOT">$SHELL{if [ -z "$Trilinos_ROOT" ]; then echo /global/common/software/e3sm/mali_tpls/trilinos-e3sm-serial-release-gcc; else echo "$Trilinos_ROOT"; fi}</env>
+      <env name="Kokkos_ROOT">$SHELL{if [ -z "$Kokkos_ROOT" ]; then echo Kokkos_ROOT=/global/common/software/e3sm/mali_tpls/trilinos-e3sm-serial-release-gcc; else echo "$Kokkos_ROOT"; fi}</env>
+      <!-- env name="LD_LIBRARY_PATH">$SHELL{if [ -z "$LD_LIBRARY_PATH" ]; then echo LD_LIBRARY_PATH=/global/common/software/fanssie/trilinos-e3sm-serial-release-gcc/lib:/global/common/software/fanssie/albany-e3sm-serial-release-gcc-cmake-fix/lib64; else echo "$LD_LIBRARY_PATH"; fi}</env -->
       <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
       <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
       <env name="GATOR_INITIAL_MB">4000MB</env>
@@ -291,8 +293,7 @@
       <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.9.1/cray-mpich-8.1.25/aocc-4.0.0; else echo "$ADIOS2_ROOT"; fi}</env>
     </environment_variables>
     <resource_limits>
-      <resource name="RLIMIT_STACK">-1</resource>
-    </resource_limits>
+      <resource name="RLIMIT_STACK">-1</resource> </resource_limits>
   </machine>
 
   <machine MACH="pm-gpu">

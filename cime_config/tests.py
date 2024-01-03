@@ -120,6 +120,12 @@ _TESTS = {
             )
         },
 
+    "e3sm_landice_developer" : {
+        "tests"   : (
+            "SMS.ne30pg2_r05_EC30to60E2r2_gis20.IGELM_MLI.elm-gis20kmSMS",
+            )
+        },
+
     "eam_condidiag" : {
         "tests"   : (
             "SMS_D_Ln5.ne4pg2_oQU480.F2010",
@@ -256,7 +262,7 @@ _TESTS = {
         },
 
     "e3sm_developer" : {
-        "inherit" : ("e3sm_land_developer", "e3sm_atm_developer", "e3sm_ice_developer"),
+        "inherit" : ("e3sm_land_developer", "e3sm_atm_developer", "e3sm_ice_developer", "e3sm_landice_developer"),
         "time"    : "0:45:00",
         "tests"   : (
             "ERS.f19_g16_rx1.A",

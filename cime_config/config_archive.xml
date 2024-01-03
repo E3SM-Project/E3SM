@@ -117,9 +117,8 @@
     </test_file_names>
   </comp_archive_spec>
 
-  <comp_archive_spec compname="mali" compclass="glc" exclude_testing="true">
+  <comp_archive_spec compname="mali" compclass="glc" exclude_testing="false">
     <rest_file_extension>rst</rest_file_extension>
-    <rest_file_extension>rst.am.timeSeriesStatsMonthly</rest_file_extension>
     <hist_file_extension>hist</hist_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
@@ -129,9 +128,8 @@
     <test_file_names>
       <tfile disposition="copy">rpointer.glc</tfile>
       <tfile disposition="copy">casename.mali.rst.1976-01-01_00000.nc</tfile>
-      <tfile disposition="copy">casename.mali.rst.am.timeSeriesStatsMonthly.1976-01-01_00000.nc</tfile>
-      <tfile disposition="move">casename.mali.hist.am.globalStats.1976-01-01.nc</tfile>
-      <tfile disposition="move">casename.mali.hist.am.highFrequencyOutput.1976-01-01_00.00.00.nc</tfile>
+      <tfile disposition="move">casename.mali.hist.1976-01-01_00000.nc</tfile>
+      <tfile disposition="move">casename.mali.hist.am.1976-01-01.nc</tfile>
     </test_file_names>
   </comp_archive_spec>
 
