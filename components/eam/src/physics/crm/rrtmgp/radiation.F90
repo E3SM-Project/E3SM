@@ -1476,22 +1476,22 @@ contains
                      call t_stopf('rad_gas_concentrations')
 
 #ifdef MMF_SEDIMENTATION
-                    ! When cloud droplet sedimentation is enabled with 1-mom 
-                    ! microphysics we need to account for the assumed droplet 
-                    ! concentration and geometric standard deviation (sigmag) 
-                    ! in the computation of cloud droplet effective radius.
+                     ! When cloud droplet sedimentation is enabled with 1-mom
+                     ! microphysics we need to account for the assumed droplet
+                     ! concentration and geometric standard deviation (sigmag)
+                     ! in the computation of cloud droplet effective radius.
                      do iz = 1,crm_nz
                         ilev = pver-iz+1
-                        do ic = 1,ncol
+                        do icol = 1,ncol
                            ! Switch from maritime/ice ocean droplet concentration
                            ! (~70/cm3) to land (~200/cm3) based on landfrac
-                           Nc0 = Nc0_ocn + (Nc0_lnd - Nc0_ocn)*landfrac(ic)
+                           Nc0 = Nc0_ocn + (Nc0_lnd - Nc0_ocn)*landfrac(icol)
                            ! compute approximate density
-                           tv_rad = crm_t(ic,ix,iy,iz) * ( 1. + 0.61*crm_qv(ic,ix,iy,iz) )! virtual temperature in K
-                           rho_rad = state%pmid(ic,ilev) / ( rair * tv_rad ) ! density in kg/m3
-                           lwc_rad = rho_rad * crm_qc(ic,ix,iy,iz) ! liquid water content in kg/m3
-                           rel(ic,ilev) = 1.e6 & ! convert to micron from meters
-                              * ( 3.*lwc_rad / (4.*pi*1.e6*Nc0*rhoh2o) )**(1./3.)& ! 1e6 converts Nc0 to #/m3
+                           tv_rad = crm_t(icol,ix,iy,iz) * ( 1. + 0.61*crm_qv(icol,ix,iy,iz) )! virtual temperature in K
+                           rho_rad = state%pmid(icol,ilev) / ( rair * tv_rad ) ! density in kg/m3
+                           lwc_rad = rho_rad * crm_qc(icol,ix,iy,iz) ! liquid water content in kg/m3
+                           rel(icol,ilev) = 1.e6 & ! convert to micron from meters
+                              * ( 3.*lwc_rad / (4.*pi*1.e6*Nc0*rhoh2o) )**(1./3.) & ! 1e6 converts Nc0 to #/m3
                               * exp( log( sigmag(lwc_rad) )**2 ) 
                         end do
                      end do  
