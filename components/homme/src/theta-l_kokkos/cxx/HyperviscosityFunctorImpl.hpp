@@ -397,7 +397,7 @@ protected:
   Buffers               m_buffers;
   HybridVCoord          m_hvcoord;
 
-  bool m_process_nh_vars;
+  int m_process_nh_vars;
 
   // Policies
   Kokkos::TeamPolicy<ExecSpace,TagUpdateStates>     m_policy_update_states;

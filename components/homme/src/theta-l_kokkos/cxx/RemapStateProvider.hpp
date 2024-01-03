@@ -88,7 +88,7 @@ if(params.theta_hydrostatic_mode){
 
     std::cout << ">>>>>>>>>>>> m_process_nh_vars  " << m_process_nh_vars << " \n";
     std::cout << ">>>>>>>>>>>> m_process_nh_vars_bool  " << m_process_nh_vars_bool << " \n";
-if(m_process_nh_vars==1){
+if(m_process_nh_vars){
     std::cout << "hey m_process_nh_vars is true \n";
 }else{
     std::cout << "hey m_process_nh_vars is false \n";
@@ -103,14 +103,14 @@ if(m_process_nh_vars_bool){
 ////////////////////////// put abort if bool assignment failed
 
 
-if(params.theta_hydrostatic_mode && m_process_nh_vars_bool)
-Kokkos::abort("BOOL assignment failed, (params.theta_hydrostatic_mode && m_process_nh_vars_bool) == TRUE.\n");
+//if(params.theta_hydrostatic_mode && m_process_nh_vars_bool)
+//Kokkos::abort("BOOL assignment failed, (params.theta_hydrostatic_mode && m_process_nh_vars_bool) == TRUE.\n");
 
 
 
 
 
-    if (m_process_nh_vars > 0) {
+    if (m_process_nh_vars) {
     
 std::cout << "INSIDE w phi assignment m_process_nh_vars is true \n";
 
@@ -156,8 +156,8 @@ if(m_process_nh_vars){
     std::cout << "IN REQUESTED hey m_process_nh_vars is false \n";
 }
 
-    //if (!m_process_nh_vars) {
-    if (m_process_nh_vars==0) {
+    if (!m_process_nh_vars) {
+    //if (m_process_nh_vars==0) {
       return 0;
     }
 
@@ -177,9 +177,7 @@ if(m_process_nh_vars){
     std::cout << "IN BUFFERS hey m_process_nh_vars is false \n";
 }
 
-
-    //if (!m_process_nh_vars) {
-    if (m_process_nh_vars==0) {
+    if (!m_process_nh_vars) {
 
     std::cout << "hey we should be returning from init_buffers \n";
      return;
@@ -196,19 +194,19 @@ if(m_process_nh_vars){
   KOKKOS_INLINE_FUNCTION
   int num_states_remap() const {
     //return (m_process_nh_vars ? 5 : 3);
-    return ( (m_process_nh_vars>0) ? 5 : 3);
+    return ( (m_process_nh_vars) ? 5 : 3);
   }
 
   KOKKOS_INLINE_FUNCTION
   int num_states_preprocess() const {
     //return (m_process_nh_vars ? 2 : 0);
-    return ( (m_process_nh_vars>0) ? 2 : 0);
+    return ( (m_process_nh_vars) ? 2 : 0);
   }
 
   KOKKOS_INLINE_FUNCTION
   int num_states_postprocess() const {
     //return (m_process_nh_vars ? 2 : 0);
-    return ((m_process_nh_vars>0) ? 2 : 0);
+    return ((m_process_nh_vars) ? 2 : 0);
   }
 
   KOKKOS_INLINE_FUNCTION
