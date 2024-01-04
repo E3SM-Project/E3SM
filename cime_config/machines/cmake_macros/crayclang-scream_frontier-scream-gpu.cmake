@@ -1,6 +1,6 @@
 set(MPICC "mpicc")
-set(MPICXX "mpicxx")
-set(MPIFC "ftn")
+set(MPICXX "hipcc") # mpicxx? Need OMPI_CXX equivalent?
+set(MPIFC "mpif90")
 set(SCC "cc")
 set(SCXX "hipcc")
 set(SFC "ftn")
@@ -17,7 +17,6 @@ if (compile_threaded)
   string(APPEND CMAKE_EXE_LINKER_FLAGS " -fopenmp")
 endif()
 
-string(APPEND CMAKE_EXE_LINKER_FLAGS " -L$ENV{ROCM_PATH}/lib ")
 string(APPEND CMAKE_Fortran_FLAGS " -hipa0 -hzero -f free")
 
 string(APPEND CMAKE_EXE_LINKER_FLAGS " -L$ENV{ROCM_PATH}/lib -lamdhip64")
@@ -34,3 +33,6 @@ if (COMP_NAME STREQUAL gptl)
   string(APPEND CPPDEFS " -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY")
 endif()
 set(PIO_FILESYSTEM_HINTS "lustre")
+
+string(APPEND KOKKOS_OPTIONS " -DKokkos_ENABLE_HIP=On -DKokkos_ARCH_VEGA90A=On -DCMAKE_CXX_FLAGS='-std=gnu++14'")
+set(USE_HIP "TRUE")

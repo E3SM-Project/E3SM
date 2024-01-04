@@ -1269,7 +1269,8 @@
         <command name="load">cmake/3.21.3</command>
         <command name="load">cray-hdf5-parallel/1.12.2.1</command>
         <command name="load">cray-netcdf-hdf5parallel/4.9.0.1</command>
-	<command name="load">cray-parallel-netcdf/1.12.3.1</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.1</command>
+        <command name="load">openblas/0.3.17</command>
         <command name="unload">darshan-runtime</command>
       </modules>
     </module_system>
@@ -1281,6 +1282,7 @@
     <environment_variables>
       <env name="NETCDF_PATH">$ENV{NETCDF_DIR}</env>
       <env name="PNETCDF_PATH">$ENV{PNETCDF_DIR}</env>
+      <env name="HDF5_ROOT"/> <!-- frontier cmake cannot find_package(HDF5) for some reason, so disable it -->
       <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
       <env name="MPICH_OFI_CXI_COUNTER_REPORT">2</env>
