@@ -19,6 +19,8 @@
 <!-- advection -->
 <config_thickness_advection>'fo'</config_thickness_advection>
 <config_tracer_advection>'none'</config_tracer_advection>
+<config_horiz_tracer_adv_order>3</config_horiz_tracer_adv_order>
+<config_advection_coef_3rd_order>0.25</config_advection_coef_3rd_order>
 <config_restore_thickness_after_advection>.false.</config_restore_thickness_after_advection>
 <config_zero_sfcMassBalApplied_over_bare_land>.true.</config_zero_sfcMassBalApplied_over_bare_land>
 
@@ -62,6 +64,7 @@
 <config_ismip6_retreat_k>-170.0</config_ismip6_retreat_k>
 <config_calving_error_threshold>0.1</config_calving_error_threshold>
 <config_distribute_unablatedVolumeDynCell>.false.</config_distribute_unablatedVolumeDynCell>
+<config_update_velocity_before_calving>.false.</config_update_velocity_before_calving>
 
 <!-- thermal_solver -->
 <config_thermal_solver>'none'</config_thermal_solver>
@@ -115,6 +118,8 @@
 <!-- time_integration -->
 <config_dt>'0000-00-01_00:00:00'</config_dt>
 <config_time_integration>'forward_euler'</config_time_integration>
+<config_rk_order>2</config_rk_order>
+<config_rk3_stages>3</config_rk3_stages>
 <config_adaptive_timestep>.false.</config_adaptive_timestep>
 <config_min_adaptive_timestep>3600.0</config_min_adaptive_timestep>
 <config_max_adaptive_timestep>3.15e9</config_max_adaptive_timestep>
@@ -159,6 +164,7 @@
 <config_print_thermal_info>.false.</config_print_thermal_info>
 <config_always_compute_fem_grid>.true.</config_always_compute_fem_grid>
 <config_print_velocity_cleanup_details>.false.</config_print_velocity_cleanup_details>
+<config_check_tracer_monotonicity>.false.</config_check_tracer_monotonicity>
 
 <!-- subglacial_hydro -->
 <config_SGH>.false.</config_SGH>
