@@ -275,7 +275,7 @@ contains
             else ! spectral case, fix later TODO
                numco = np*np !
             endif !
-            
+
 
             if (.not. samegrid_ao) then ! data-OCN case
 
@@ -388,13 +388,9 @@ contains
 
 ! FLUX make the app and mapper for the a2o flux mappings
          if ((mbaxid .ge. 0) .and.  (mbofxid .ge. 0)) then
-            ! we also need to compute the comm graph for the second hop, from the ocn on coupler to the
-            ! ocean for the intx ocean-atm context (coverage)
-            !
+            ! We also need to compute the comm graph for the second hop, from the OCN on the coupler to the
+            ! OCN for the intersection of OCN-ATM context (coverage)
             call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID)
-            type1 = 3; !  fv for ocean and atm; fv-cgll does not work anyway
-            type2 = 3;
-
 
             if (ierr .ne. 0) then
                write(logunit,*) subname,' error in computing comm graph for second hop, ocnf -atm'
@@ -414,15 +410,17 @@ contains
             mapper_Sof2a%tgt_mbid = mbaxid
             mapper_Sof2a%intx_mbid = mbintxoa
             mapper_Sof2a%src_context = context_id
+            mapper_Sof2a%intx_context = mapper_So2a%intx_context ! basically will use the same intx as ocean on coupler
             wgtIdef = 'scalar'//C_NULL_CHAR
             mapper_Sof2a%weight_identifier = wgtIdef
             mapper_Sof2a%mbname = 'mapper_Sof2a'
+
+            type1 = 3; !  fv for ocean and atm; fv-cgll does not work anyway
+            type2 = 3;
             if (.not. samegrid_ao) then ! data-OCN case
-               ! we use the same intx, because the mesh will be the same, between mbofxid and mboxid 
-              
+               ! we use the same intx, because the mesh will be the same, between mbofxid and mboxid
                ierr = iMOAB_ComputeCommGraph( mbofxid, mbintxoa, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
                                           context_id, idintx)
-               mapper_Sof2a%intx_context = mapper_So2a%intx_context ! basically will use the same intx as ocean on coupler
             else
                ! this is a case appearing in the data ocean case --res ne4pg2_ne4pg2 --compset FAQP
                ierr = iMOAB_ComputeCommGraph( mbofxid, mbaxid, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
@@ -431,7 +429,6 @@ contains
                   write(logunit,*) subname,' error in computing communication graph for second hop, ATM-OCN'
                   call shr_sys_abort(subname//' ERROR in computing communication graph for second hop, ATM-OCN')
                endif
-               mapper_Sof2a%intx_context = atm(1)%cplcompid
             endif
          endif
 
@@ -472,7 +469,7 @@ contains
             mapper_Fo2a%src_mbid = mboxid
             mapper_Fo2a%tgt_mbid = mbaxid
             mapper_Fo2a%intx_mbid = mbintxoa
-            mapper_Fo2a%src_context = ocn(1)%cplcompid
+            mapper_Fo2a%src_context = mapper_So2a%src_context ! ocn(1)%cplcompid
             mapper_Fo2a%intx_context = mapper_So2a%intx_context ! it could be different, based on samegrid_ao
             wgtIdef = 'scalar'//C_NULL_CHAR
             mapper_Fo2a%weight_identifier = wgtIdef
@@ -488,8 +485,8 @@ contains
             mapper_Fof2a%src_mbid = mbofxid
             mapper_Fof2a%tgt_mbid = mbaxid
             mapper_Fof2a%intx_mbid = mbintxoa
-            mapper_Fof2a%src_context = mapper_Sof2a%src_context ! we use the same source 1000 + ? 
-            mapper_Fof2a%intx_context = mapper_So2a%intx_context ! depends on samegrid_ao
+            mapper_Fof2a%src_context = mapper_Sof2a%src_context ! we use the same source 1000 + ?
+            mapper_Fof2a%intx_context = mapper_Sof2a%intx_context ! depends on samegrid_ao
             wgtIdef = 'scalar'//C_NULL_CHAR
             mapper_Fof2a%weight_identifier = wgtIdef
             mapper_Fof2a%mbname = 'mapper_Fof2a'
@@ -577,7 +574,7 @@ contains
             wgtIdef = 'scalar'//C_NULL_CHAR
             mapper_Si2a%weight_identifier = wgtIdef
             mapper_Si2a%mbname = 'mapper_Si2a'
-            
+
 
             volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL;
 

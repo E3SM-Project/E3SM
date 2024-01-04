@@ -526,6 +526,19 @@ contains
                mapper_Fa2o%intx_context = idintx
                !! All done for mapper_Fa2o --
 
+#ifdef MOABDEBUG
+               wopts = C_NULL_CHAR
+               call shr_mpi_commrank( mpicom_CPLID, rank )
+               if (rank .lt. 5) then
+                  write(lnum,"(I0.2)")rank !
+                  outfile = 'intx_ao_'//trim(lnum)// '.h5m' // C_NULL_CHAR
+                  ierr = iMOAB_WriteMesh(mbintxao, outfile, wopts) ! write local intx file
+                  if (ierr .ne. 0) then
+                     write(logunit,*) subname,' error in writing intx file '
+                     call shr_sys_abort(subname//' ERROR in writing intx file ')
+                  endif
+               endif
+#endif
             else ! if (samegrid_ao)
 
                ! ATM and OCN components use the same mesh and DoF numbering (OCN is a subset of ATM);
@@ -550,19 +563,6 @@ contains
 
             endif ! if (.not. samegrid_ao)
 
-#ifdef MOABDEBUG
-            wopts = C_NULL_CHAR
-            call shr_mpi_commrank( mpicom_CPLID, rank )
-            if (rank .lt. 5) then
-              write(lnum,"(I0.2)")rank !
-              outfile = 'intx_ao_'//trim(lnum)// '.h5m' // C_NULL_CHAR
-              ierr = iMOAB_WriteMesh(mbintxao, outfile, wopts) ! write local intx file
-              if (ierr .ne. 0) then
-                write(logunit,*) subname,' error in writing intx file '
-                call shr_sys_abort(subname//' ERROR in writing intx file ')
-              endif
-            endif
-#endif
          endif ! if ((mbaxid .ge. 0) .and. (mboxid .ge. 0))
 ! endif HAVE_MOAB
 #endif
