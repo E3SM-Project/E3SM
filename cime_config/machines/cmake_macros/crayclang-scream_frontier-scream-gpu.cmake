@@ -1,5 +1,5 @@
 set(MPICC "mpicc")
-set(MPICXX "hipcc") # mpicxx? Need OMPI_CXX equivalent?
+set(MPICXX "mpicxx") # Needs MPICH_CXX to use hipcc
 set(MPIFC "mpif90")
 set(SCC "cc")
 set(SCXX "hipcc")
