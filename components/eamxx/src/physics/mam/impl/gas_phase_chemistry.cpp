@@ -15,7 +15,7 @@ void gas_phase_chemistry(Real zm, Real zi, Real phis, Real temp, Real pmid, Real
   constexpr Real rga = 1.0/haero::Constants::gravity;
   constexpr Real m2km = 0.01; // converts m -> km
 
-  // FIXME: The following things are chemical mechanism dependent! See mam4xx/src/mam4xx/gas_chem_mechanism.hpp)
+  // The following things are chemical mechanism dependent! See mam4xx/src/mam4xx/gas_chem_mechanism.hpp)
   constexpr int gas_pcnst = mam4::gas_chemistry::gas_pcnst; // number of gas phase species
   constexpr int rxntot = mam4::gas_chemistry::rxntot;       // number of chemical reactions
   constexpr int extcnt = mam4::gas_chemistry::extcnt;       // number of species with external forcing
@@ -26,12 +26,21 @@ void gas_phase_chemistry(Real zm, Real zi, Real phis, Real temp, Real pmid, Real
 
   constexpr int itermax = mam4::gas_chemistry::itermax;
   constexpr int clscnt4 = mam4::gas_chemistry::clscnt4;
-  int permute_4[gas_pcnst]; // = mam4::gas_chemistry::permute_4; FIXME
-  int clsmap_4[gas_pcnst];  // = mam4::gas_chemistry::clsmap_4; FIXME
+  const auto permute_4 = mam4::gas_chemistry::permute_4;
+  const auto clsmap_4 = mam4::gas_chemistry::clsmap_4;
 
-  constexpr int ndx_h2so4 = 0; // FIXME: get_spc_ndx('H2SO4')
-  constexpr int o3_ndx = 0;    // FIXME: get_spc_ndx('O3')
-  constexpr int synoz_ndx = 0; // FIXME: get_extfrc_ndx('SYNOZ')
+  // These indices for species are fixed by the chemical mechanism
+  // std::string solsym[] = {"O3", "H2O2", "H2SO4", "SO2", "DMS", "SOAG",
+  //                         "so4_a1", "pom_a1", "soa_a1", "bc_a1", "dst_a1",
+  //                         "ncl_a1", "mom_a1", "num_a1", "so4_a2", "soa_a2",
+  //                         "ncl_a2", "mom_a2", "num_a2", "dst_a3", "ncl_a3",
+  //                         "so4_a3", "bc_a3", "pom_a3", "soa_a3", "mom_a3",
+  //                         "num_a3", "pom_a4", "bc_a4", "mom_a4", "num_a4"};
+  constexpr int ndx_h2so4 = 2;
+  constexpr int o3_ndx = 0;
+  // std::string extfrc_list[] = {"SO2", "so4_a1", "so4_a2", "pom_a4", "bc_a4",
+  //                              "num_a1", "num_a2", "num_a3", "num_a4", "SOAG"};
+  constexpr int synoz_ndx = -1;
 
   // fetch the zenith angle (not its cosine!) in degrees for this column.
   // FIXME: For now, we fix the zenith angle. At length, we need to compute it
@@ -47,16 +56,17 @@ void gas_phase_chemistry(Real zm, Real zi, Real phis, Real temp, Real pmid, Real
 
   // ... compute the column's invariants
   Real h2ovmr = q[0];
-  // setinv(invariants, temp, h2ovmr, q, pmid); FIXME: nœt ported yet
+  // setinv(invariants, temp, h2ovmr, q, pmid); FIXME: not ported yet
 
   // ... set rates for "tabular" and user specified reactions
   Real reaction_rates[rxntot];
   mam4::gas_chemistry::setrxt(reaction_rates, temp);
 
   // set reaction rates based on chemical invariants
-  // FIXME: figure out these indices
-  int usr_HO2_HO2_ndx = -1, usr_DMS_OH_ndx = -1,
-      usr_SO2_OH_ndx = -1, inv_h2o_ndx = -1;
+  // (indices (ndxes?) are taken from mam4 validation data and translated from
+  // 1-based indices to 0-based indices)
+  int usr_HO2_HO2_ndx = 1, usr_DMS_OH_ndx = 5,
+      usr_SO2_OH_ndx = 3, inv_h2o_ndx = 3;
   mam4::gas_chemistry::usrrxt(reaction_rates, temp, invariants, invariants[indexm],
                               usr_HO2_HO2_ndx, usr_DMS_OH_ndx,
                               usr_SO2_OH_ndx, inv_h2o_ndx);
@@ -108,15 +118,6 @@ void gas_phase_chemistry(Real zm, Real zi, Real phis, Real temp, Real pmid, Real
   Real prod_out[clscnt4], loss_out[clscnt4];
   mam4::gas_chemistry::imp_sol(q, reaction_rates, het_rates, extfrc_rates, dt,
     permute_4, clsmap_4, factor, epsilon, prod_out, loss_out);
-
-  /* I don't think we need to worry about this, do we?
-  if (convproc_do_aer) {
-    vmr2mmr(q, mmr_new, mbar, ncol);
-    mmr_new(:ncol,:,:) = 0.5_r8*( mmr(:ncol,:,:)+mmr_new(:ncol,:,:) );
-    //RCE - mmr_new = average of mmr values before and after imp_sol
-    het_diags(het_rates(:ncol,:,:), mmr_new(:ncol,:,:), pdel(:ncol,:));
-  }
-  */
 
   // save h2so4 change by gas phase chem (for later new particle nucleation)
   if (ndx_h2so4 > 0) {

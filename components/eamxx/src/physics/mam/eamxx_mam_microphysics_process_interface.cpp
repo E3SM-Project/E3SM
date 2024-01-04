@@ -521,7 +521,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   */
 
   // set up WSM for internal local variables
-  // FIXME: we'll probably need this later, but we'll just use ATMBufferManager for now
+  // (we'll probably need this later, but we'll just use ATMBufferManager for now)
   //const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_);
   //workspace_mgr_.setup(buffer_.wsm_data, nlev_+1, 13+(n_wind_slots+n_trac_slots), default_policy);
 }
@@ -542,7 +542,6 @@ void MAMMicrophysics::run_impl(const double dt) {
   double t = 0.0;
 
   // here's where we store per-column photolysis rates
-  // FIXME: this isn't great, but will do for now
   using View2D = haero::DeviceType::view_2d<Real>;
   View2D photo_rates("photo_rates", nlev_, mam4::mo_photo::phtcnt);
 
@@ -679,9 +678,9 @@ void MAMMicrophysics::run_impl(const double dt) {
       // eam/src/chemistry/modal_aero/aero_model.F90
 
       // aqueous chemistry ...
-      const int loffset = 8; // FIXME: offset of first tracer in work arrays
-                             // FIXME: (taken from mam4xx setsox validation test)
-      const Real mbar = haero::Constants::molec_weight_dry_air; // FIXME: ???
+      const int loffset = 8; // offset of first tracer in work arrays
+                             // (taken from mam4xx setsox validation test)
+      const Real mbar = haero::Constants::molec_weight_dry_air;
       constexpr int indexm = 0;  // FIXME: index of xhnm in invariants array (??)
       Real cldnum = 0.0; // FIXME: droplet number concentration: where do we get this?
       setsox_single_level(loffset, dt, pmid, pdel, temp, mbar, lwc(k),
@@ -717,7 +716,7 @@ void MAMMicrophysics::run_impl(const double dt) {
       Real chlorine_loading = 0.0;
 
       Real rlats = col_lat * M_PI / 180.0; // convert column latitude to radians
-      int o3_ndx; // FIXME: need to set this
+      int o3_ndx = 0; // index of "O3" in solsym array (in EAM)
       mam4::lin_strat_chem::lin_strat_chem_solve_kk(o3_col_dens_i(k), temp,
         zenith_angle, pmid, dt, rlats,
         linoz_o3_clim(icol, k), linoz_t_clim(icol, k), linoz_o3col_clim(icol, k),

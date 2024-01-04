@@ -467,9 +467,9 @@ inline size_t init_buffer(const ATMBufferManager &buffer_manager,
   // WSM data
   buffer.wsm_data = mem;
 
-  /* FIXME: this corresponds to the FIXME in the above function
-  // Compute workspace manager size to check used memory
-  // vs. requested memory
+  /*
+  // Compute workspace manager size to check used memory vs. requested memory
+  // (if needed)
   const auto policy      = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_);
   const int n_wind_slots = ekat::npack<Spack>(2)*Spack::n;
   const int n_trac_slots = ekat::npack<Spack>(m_num_tracers+3)*Spack::n;
@@ -788,7 +788,6 @@ void transfer_prognostics_to_work_arrays(const mam4::Prognostics &progs,
         qqcw[i] = progs.q_aero_c[m][a](k);
       } else { // constituent is a modal number mixing ratio
         int m = static_cast<int>(mode_index);
-        // FIXME: do we just use number mixing ratios in q/qqcw?
         q[i] = progs.n_mode_i[m](k);
         qqcw[i] = progs.n_mode_c[m](k);
       }
@@ -888,7 +887,6 @@ void transfer_work_arrays_to_prognostics(const Real q[gas_pcnst()],
         progs.q_aero_c[m][a](k) = qqcw[i];
       } else { // constituent is a modal number mixing ratio
         int m = static_cast<int>(mode_index);
-        // FIXME: do we just use number mixing ratios in q/qqcw?
         progs.n_mode_i[m](k) = q[i];
         progs.n_mode_c[m](k) = qqcw[i];
       }

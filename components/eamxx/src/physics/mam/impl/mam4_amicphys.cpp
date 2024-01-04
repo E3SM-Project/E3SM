@@ -725,7 +725,7 @@ void mam_amicphys_1subarea_clear(
     if (config.do_rename) {
       constexpr int nmodes = AeroConfig::num_modes();
       constexpr int naerosol_species = AeroConfig::num_aerosol_ids();
-      const Real smallest_dryvol_value = 1.0e-25; // FIXME: BAD_CONSTANT
+      const Real smallest_dryvol_value = 1.0e-25; // BAD_CONSTANT
       const int dest_mode_of_mode[nmodes] = {-1, 0, -1, -1};
 
       Real qnumcw_cur[num_modes] = {};
@@ -1191,7 +1191,7 @@ void mam_amicphys_1subarea_cloudy(
     if (config.do_rename) {
       constexpr int nmodes = AeroConfig::num_modes();
       constexpr int naerosol_species = AeroConfig::num_aerosol_ids();
-      const Real smallest_dryvol_value = 1.0e-25; // FIXME: BAD_CONSTANT
+      const Real smallest_dryvol_value = 1.0e-25; // BAD_CONSTANT
       const int dest_mode_of_mode[nmodes] = {-1, 0, -1, -1};
 
       Real qnumcw_cur[num_modes] = {};
