@@ -125,6 +125,10 @@
 		            possible_values="'file', 'thermal', 'basal_heat'"
 		/>
 
+		  <nml_option name="config_SGH_iter_smooth_waterPressureSlopeNormal" type="integer" default_value="1" units="none"
+					 description="number of iterations to smooth waterPressure over when calculating waterPressureSlopeNormal. Used only to keep channelPressureFreeze stable and will not affect other aspects of the model that rely on waterPressure." 	
+					 possible_values="positive integer or zero"
+		/>
 	</nml_record>
 
 <!-- ======================================================================= -->
@@ -162,7 +166,9 @@
                      description="water layer thickness in subglacial till from previous time step" />
                 <var name="waterPressure" type="real" dimensions="nCells Time" units="Pa"
                      description="pressure in subglacial hydrology system" />
-                <var name="waterPressureOld" type="real" dimensions="nCells Time" units="Pa"
+					 <var name="waterPressureSmooth" type="real" dimensions="nCells Time" units="Pa"
+								description="smoothed water pressure used only for calculation of channelPressureFreeze" />
+					 <var name="waterPressureOld" type="real" dimensions="nCells Time" units="Pa"
                      description="pressure in subglacial hydrology system from previous time step" />
                 <var name="waterPressureTendency" type="real" dimensions="nCells Time" units="Pa s^{-1}"
                      description="tendency in pressure in subglacial hydrology system" />
@@ -239,7 +245,7 @@
                 <var name="deltatSGHpressure" type="real" dimensions="Time" units="s"
                      description="time step length limited by pressure equation scheme in subglacial hydrology system" />
                 <var name="deltatSGH" type="real" dimensions="Time" units="s"
-                        description="time step used for evolving subglacial hydrology system" />
+                     description="time step used for evolving subglacial hydrology system" />
 	     	<var name="distGroundingLineDischargeCell" type="real" dimensions="Time nCells" units="m^{3} s^{-1}"
 		     description="distributed discharge across the grounding line, summed from grounding line edges to adjacent ungrounded cell. Values from all edges are summed if multiple grounding line edges border a single ungrounded cell" />
 	     	<var name="totalGroundingLineDischargeCell" type="real" dimensions="Time nCells" units="m^{3} s^{-1}"
@@ -247,6 +253,9 @@
 	     	<!-- channel variables -->
 	     	<var name="chnlGroundingLineDischargeCell" type="real" dimensions="Time nCells" units="m^{3} s^{-1}"
 		     description="channel discharge across the grounding line, summed from grounding line edges to adjacent ungrounded cell. Values from all edges are summed if multiple grounding line edges border a single ungrounded cell" />
+		<var name="pressureField" type="real" dimensions="nCells Time" units="Pa"
+		     description="Dummy variable used for smoothing waterPressureSlopeNormal" />
+		<!-- channel variables -->
                 <var name="channelArea" type="real" dimensions="nEdges Time" units="m^{2}"
                      description="area of channel in subglacial hydrology system" />
                 <var name="channelDischarge" type="real" dimensions="nEdges Time" units="m^{3} s^{-1}"
