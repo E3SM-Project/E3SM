@@ -22,18 +22,20 @@ namespace scream {
 
 ekat::ParameterList create_test_params ()
 {
+  using strvec_t = std::vector<std::string>;
+
   // Create a parameter list for inputs
   ekat::ParameterList params ("Atmosphere Processes");
 
   params.set<std::string>("schedule_type","Sequential");
-  params.set<std::string>("atm_procs_list","(Foo,BarBaz)");
+  params.set<strvec_t>("atm_procs_list",{"Foo","BarBaz"});
 
   auto& p0 = params.sublist("Foo");
   p0.set<std::string>("Type", "Foo");
   p0.set<std::string>("Grid Name", "Point Grid");
 
   auto& p1 = params.sublist("BarBaz");
-  p1.set<std::string>("atm_procs_list","(Bar,Baz)");
+  p1.set<strvec_t>("atm_procs_list",{"Bar","Baz"});
   p1.set<std::string>("Type", "Group");
   p1.set<std::string>("schedule_type","Sequential");
 
@@ -57,13 +59,7 @@ create_gm (const ekat::Comm& comm) {
   const int num_local_cols = 13;
   const int num_global_cols = num_local_cols*comm.size();
 
-  ekat::ParameterList gm_params;
-  gm_params.set<int>("number_of_global_columns", num_global_cols);
-  gm_params.set<int>("number_of_local_elements", num_local_elems);
-  gm_params.set<int>("number_of_vertical_levels", nlevs);
-  gm_params.set<int>("number_of_gauss_points", np);
-
-  auto gm = create_mesh_free_grids_manager(comm,gm_params);
+  auto gm = create_mesh_free_grids_manager(comm,num_local_elems,np,nlevs,num_global_cols);
   gm->build_grids();
 
   return gm;
@@ -354,59 +350,31 @@ TEST_CASE("process_factory", "") {
   factory.register_product("grouP",&create_atmosphere_process<AtmosphereProcessGroup>);
   factory.register_product("DiagIdentity",&create_atmosphere_process<DiagIdentity>);
 
+  // Load ad parameter list
+  std::string fname = "atm_process_tests_named_procs.yaml";
+  ekat::ParameterList params ("Atmosphere Processes");
+  parse_yaml_file(fname,params);
+
   // Create the processes
-  SECTION ("parse_list") {
-    // Load ad parameter list
-    std::string fname = "atm_process_tests_parse_list.yaml";
-    ekat::ParameterList params ("Atmosphere Processes");
-    REQUIRE_NOTHROW ( parse_yaml_file(fname,params) );
+  std::shared_ptr<AtmosphereProcess> atm_process (factory.create("group",comm,params));
 
-    std::shared_ptr<AtmosphereProcess> atm_process (factory.create("group",comm,params));
+  // CHECKS
+  auto group = std::dynamic_pointer_cast<AtmosphereProcessGroup>(atm_process);
 
-    // CHECKS
-    auto group = std::dynamic_pointer_cast<AtmosphereProcessGroup>(atm_process);
+  // 1) Must be a group
+  REQUIRE (static_cast<bool>(group));
 
-    // 1) Must be a group
-    REQUIRE (static_cast<bool>(group));
+  // 2) Must store 2 processes: a Physics and a Group
+  REQUIRE (group->get_num_processes()==2);
+  REQUIRE (group->get_process(0)->type()==AtmosphereProcessType::Dynamics);
+  REQUIRE (group->get_process(1)->type()==AtmosphereProcessType::Group);
 
-    // 2) Must store 2 processes: a Physics and a Group
-    REQUIRE (group->get_num_processes()==2);
-    REQUIRE (group->get_process(0)->type()==AtmosphereProcessType::Dynamics);
-    REQUIRE (group->get_process(1)->type()==AtmosphereProcessType::Group);
-
-    // 3) The group must store two physics
-    auto group_2 = std::dynamic_pointer_cast<const AtmosphereProcessGroup>(group->get_process(1));
-    REQUIRE (static_cast<bool>(group_2));
-    REQUIRE (group_2->get_num_processes()==2);
-    REQUIRE (group_2->get_process(0)->type()==AtmosphereProcessType::Physics);
-    REQUIRE (group_2->get_process(1)->type()==AtmosphereProcessType::Physics);
-  }
-
-  SECTION ("named_procs") {
-    // Load ad parameter list
-    std::string fname = "atm_process_tests_named_procs.yaml";
-    ekat::ParameterList params ("Atmosphere Processes");
-    REQUIRE_NOTHROW ( parse_yaml_file(fname,params) );
-    std::shared_ptr<AtmosphereProcess> atm_process (factory.create("group",comm,params));
-
-    // CHECKS
-    auto group = std::dynamic_pointer_cast<AtmosphereProcessGroup>(atm_process);
-
-    // 1) Must be a group
-    REQUIRE (static_cast<bool>(group));
-
-    // 2) Must store 2 processes: a Physics and a Group
-    REQUIRE (group->get_num_processes()==2);
-    REQUIRE (group->get_process(0)->type()==AtmosphereProcessType::Dynamics);
-    REQUIRE (group->get_process(1)->type()==AtmosphereProcessType::Group);
-
-    // 3) The group must store two physics
-    auto group_2 = std::dynamic_pointer_cast<const AtmosphereProcessGroup>(group->get_process(1));
-    REQUIRE (static_cast<bool>(group_2));
-    REQUIRE (group_2->get_num_processes()==2);
-    REQUIRE (group_2->get_process(0)->type()==AtmosphereProcessType::Physics);
-    REQUIRE (group_2->get_process(1)->type()==AtmosphereProcessType::Physics);
-  }
+  // 3) The group must store two physics
+  auto group_2 = std::dynamic_pointer_cast<const AtmosphereProcessGroup>(group->get_process(1));
+  REQUIRE (static_cast<bool>(group_2));
+  REQUIRE (group_2->get_num_processes()==2);
+  REQUIRE (group_2->get_process(0)->type()==AtmosphereProcessType::Physics);
+  REQUIRE (group_2->get_process(1)->type()==AtmosphereProcessType::Physics);
 }
 
 TEST_CASE("atm_proc_dag", "") {
@@ -473,11 +441,12 @@ TEST_CASE("atm_proc_dag", "") {
 
   SECTION ("broken") {
 
+    using strvec_t = std::vector<std::string>;
     auto params = create_test_params();
     auto p1 = params.sublist("BarBaz");
 
     // Make sure there's a missing piece (whatever Baz computes);
-    p1.set<std::string>("atm_procs_list","(Bar)");
+    p1.set<strvec_t>("atm_procs_list",{"Bar"});
     std::shared_ptr<AtmosphereProcess> broken_atm_group (factory.create("group",comm,params));
     broken_atm_group->set_grids(gm);
 
@@ -546,7 +515,7 @@ TEST_CASE("field_checks", "") {
         if (not allow_failure && (check_pre || check_post)) {
           REQUIRE_THROWS (foo->run(1));
         } else {
-          REQUIRE_NOTHROW (foo->run(1));
+          foo->run(1);
         }
       }
     }

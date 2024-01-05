@@ -9,6 +9,7 @@
 #include "share/field/field.hpp"
 #include "share/field/field_manager.hpp"
 
+#include "share/util/scream_universal_constants.hpp"
 #include "share/util/scream_setup_random_test.hpp"
 #include "share/util/scream_time_stamp.hpp"
 #include "share/scream_types.hpp"
@@ -32,6 +33,7 @@ void add (const Field& f, const double v) {
   for (int i=0; i<nscalars; ++i) {
     data[i] += v;
   }
+  f.sync_to_dev();
 }
 
 int get_dt (const std::string& freq_units) {
@@ -61,13 +63,11 @@ util::TimeStamp get_t0 () {
 std::shared_ptr<const GridsManager>
 get_gm (const ekat::Comm& comm)
 {
-  const int nlcols = 3;
+  // For 2+ ranks tests, this will check IO works correctly
+  // even if one rank owns 0 dofs
+  const int ngcols = std::max(comm.size()-1,1);
   const int nlevs = 4;
-  const int ngcols = nlcols*comm.size();
-  ekat::ParameterList gm_params;
-  gm_params.set("number_of_global_columns",ngcols);
-  gm_params.set("number_of_vertical_levels",nlevs);
-  auto gm = create_mesh_free_grids_manager(comm,gm_params);
+  auto gm = create_mesh_free_grids_manager(comm,0,0,nlevs,ngcols);
   gm->build_grids();
   return gm;
 }
@@ -105,17 +105,17 @@ get_fm (const std::shared_ptr<const AbstractGrid>& grid,
   };
 
   auto fm = std::make_shared<FieldManager>(grid);
-  fm->registration_begins();
-  fm->registration_ends();
   
   const auto units = ekat::units::Units::nondimensional();
+  int count=0;
   for (const auto& fl : layouts) {
-    FID fid("f_"+std::to_string(fl.size()),fl,units,grid->name());
+    FID fid("f_"+std::to_string(count),fl,units,grid->name());
     Field f(fid);
     f.allocate_view();
     randomize (f,engine,my_pdf);
     f.get_header().get_tracking().update_time_stamp(t0);
     fm->add_field(f);
+    ++count;
   }
 
   return fm;
@@ -246,6 +246,13 @@ void read (const std::string& avg_type, const std::string& freq_units,
         REQUIRE (views_are_equal(f,f0));
       }
     }
+  }
+
+  // Check that the fill value gets appropriately set for each variable
+  Real fill_out;
+  for (const auto& fn: fnames) {
+    scorpio::get_variable_metadata(filename,fn,"_FillValue",fill_out);
+    REQUIRE(fill_out==constants::DefaultFillValue<float>().value);
   }
 }
 

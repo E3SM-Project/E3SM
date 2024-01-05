@@ -30,21 +30,21 @@ public:
 
   // Constructor
   MassAndEnergyColumnConservationCheck (const std::shared_ptr<const AbstractGrid>& grid,
-                                        const Real                                 mass_error_tolerance,
-                                        const Real                                 energy_error_tolerance,
-                                        const std::shared_ptr<const Field>&        pseudo_density_ptr,
-                                        const std::shared_ptr<const Field>&        ps_ptr,
-                                        const std::shared_ptr<const Field>&        phis_ptr,
-                                        const std::shared_ptr<const Field>&        horiz_winds_ptr,
-                                        const std::shared_ptr<const Field>&        T_mid_ptr,
-                                        const std::shared_ptr<const Field>&        qv_ptr,
-                                        const std::shared_ptr<const Field>&        qc_ptr,
-                                        const std::shared_ptr<const Field>&        qr_ptr,
-                                        const std::shared_ptr<const Field>&        qi_ptr,
-                                        const std::shared_ptr<const Field>&        vapor_flux_ptr,
-                                        const std::shared_ptr<const Field>&        water_flux_ptr,
-                                        const std::shared_ptr<const Field>&        ice_flux_ptr,
-                                        const std::shared_ptr<const Field>&        heat_flux_ptr);
+                                        const Real    mass_error_tolerance,
+                                        const Real    energy_error_tolerance,
+                                        const Field&  pseudo_density_ptr,
+                                        const Field&  ps_ptr,
+                                        const Field&  phis_ptr,
+                                        const Field&  horiz_winds_ptr,
+                                        const Field&  T_mid_ptr,
+                                        const Field&  qv_ptr,
+                                        const Field&  qc_ptr,
+                                        const Field&  qr_ptr,
+                                        const Field&  qi_ptr,
+                                        const Field&  vapor_flux_ptr,
+                                        const Field&  water_flux_ptr,
+                                        const Field&  ice_flux_ptr,
+                                        const Field&  heat_flux_ptr);
 
   // The name of the property check
   std::string name () const override { return "Mass and energy column conservation check"; }
@@ -111,8 +111,8 @@ public:
 
 protected:
 
-  std::shared_ptr<const AbstractGrid>                 m_grid;
-  std::map<std::string, std::shared_ptr<const Field>> m_fields;
+  std::shared_ptr<const AbstractGrid> m_grid;
+  std::map<std::string, Field>  m_fields;
 
   int m_num_cols;
   int m_num_levs;

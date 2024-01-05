@@ -2,7 +2,8 @@ from utils import expect
 from git_utils import get_git_toplevel_dir
 
 from collections import OrderedDict
-import pathlib, re, os
+import re
+from pathlib import Path
 
 #
 # Global hardcoded data
@@ -11,67 +12,67 @@ import pathlib, re, os
 # Templates: maps piece name to generic file text
 FILE_TEMPLATES = {
     "cxx_bfb_unit_impl": lambda phys, sub, gen_code:
-"""#include "catch2/catch.hpp"
+f"""#include "catch2/catch.hpp"
 
 #include "share/scream_types.hpp"
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
-#include "physics/{physics}/{physics}_functions.hpp"
-#include "physics/{physics}/{physics}_functions_f90.hpp"
+#include "physics/{phys}/{phys}_functions.hpp"
+#include "physics/{phys}/{phys}_functions_f90.hpp"
 
-#include "{physics}_unit_tests_common.hpp"
+#include "{phys}_unit_tests_common.hpp"
 
 namespace scream {{
-namespace {physics} {{
+namespace {phys} {{
 namespace unit_test {{
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::{test_data_struct} {{
+struct UnitWrap::UnitTest<D>::{get_data_test_struct_name(sub)} {{
 
 {gen_code}
 
 }};
 
 }} // namespace unit_test
-}} // namespace {physics}
+}} // namespace {phys}
 }} // namespace scream
 
 namespace {{
 
-TEST_CASE("{sub}_bfb", "[{physics}]")
+TEST_CASE("{sub}_bfb", "[{phys}]")
 {{
-  using TestStruct = scream::{physics}::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::{test_data_struct};
+  using TestStruct = scream::{phys}::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::{get_data_test_struct_name(sub)};
 
   TestStruct::run_bfb();
 }}
 
 }} // empty namespace
-""".format(physics=phys, sub=sub, test_data_struct=get_data_test_struct_name(sub), gen_code=gen_code),
+""",
 
 ###############################################################################
 
     "cxx_func_impl": lambda phys, sub, gen_code:
-"""#ifndef {phys_upper}_{sub_upper}_IMPL_HPP
-#define {phys_upper}_{sub_upper}_IMPL_HPP
+f"""#ifndef {phys.upper()}_{sub.upper()}_IMPL_HPP
+#define {phys.upper()}_{sub.upper()}_IMPL_HPP
 
-#include "{physics}_functions.hpp" // for ETI only but harmless for GPU
+#include "{phys}_functions.hpp" // for ETI only but harmless for GPU
 
 namespace scream {{
-namespace {physics} {{
+namespace {phys} {{
 
 /*
- * Implementation of {physics} {sub}. Clients should NOT
- * #include this file, but include {physics}_functions.hpp instead.
+ * Implementation of {phys} {sub}. Clients should NOT
+ * #include this file, but include {phys}_functions.hpp instead.
  */
 
 template<typename S, typename D>
 {gen_code}
 
-}} // namespace {physics}
+}} // namespace {phys}
 }} // namespace scream
 
 #endif
-""".format(physics=phys, sub=sub, gen_code=gen_code, phys_upper=phys.upper(), sub_upper=sub.upper()),
+""",
 
 ###############################################################################
 
@@ -83,16 +84,16 @@ template<typename S, typename D>
 FILEPATH, FILECREATE, INSERT_REGEX, ID_SELF_BEGIN_REGEX, ID_SELF_END_REGEX, DESC = range(6)
 PIECES = OrderedDict([
     ("f90_c2f_bind", (
-        lambda phys, sub, gb: "{}_iso_c.f90".format(phys),
+        lambda phys, sub, gb: f"{phys}_iso_c.f90",
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "f90_c2f_bind"),
-        lambda phys, sub, gb: re.compile(r"^\s*end\s+module\s{}_iso_c".format(phys)), # put at end of module
+        lambda phys, sub, gb: re.compile(fr"^\s*end\s+module\s{phys}_iso_c"), # put at end of module
         lambda phys, sub, gb: get_subroutine_begin_regex(sub + "_c"), # sub_c begin
         lambda phys, sub, gb: get_subroutine_end_regex(sub + "_c"),    # sub_c end
         lambda *x           : "The c to f90 fortran subroutine(<name>_c)"
     )),
 
     ("f90_f2c_bind"  , (
-        lambda phys, sub, gb: "{}_iso_f.f90".format(phys),
+        lambda phys, sub, gb: f"{phys}_iso_f.f90",
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "f90_f2c_bind"),
         lambda phys, sub, gb: re.compile(r"^\s*end\s+interface"), # put at end of interface
         lambda phys, sub, gb: get_subroutine_begin_regex(sub + "_f"), # sub_f begin
@@ -101,7 +102,7 @@ PIECES = OrderedDict([
     )),
 
     ("cxx_c2f_bind_decl"  , (
-        lambda phys, sub, gb: "{}_functions_f90.cpp".format(phys),
+        lambda phys, sub, gb: f"{phys}_functions_f90.cpp",
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_c2f_bind_decl"),
         lambda phys, sub, gb: get_cxx_close_block_regex(comment='extern "C" : end _c decls'), # reqs special comment
         lambda phys, sub, gb: get_cxx_function_begin_regex(sub + "_c"), # cxx_c decl
@@ -110,7 +111,7 @@ PIECES = OrderedDict([
     )),
 
     ("cxx_c2f_glue_decl"  , (
-        lambda phys, sub, gb: "{}_functions_f90.hpp".format(phys),
+        lambda phys, sub, gb: f"{phys}_functions_f90.hpp",
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_c2f_glue_decl"),
         lambda phys, sub, gb: re.compile(r'^\s*extern\s+"C"'), # put before _f decls
         lambda phys, sub, gb: get_cxx_function_begin_regex(sub), # cxx(data) decl
@@ -119,7 +120,7 @@ PIECES = OrderedDict([
     )),
 
     ("cxx_c2f_glue_impl" , (
-        lambda phys, sub, gb: "{}_functions_f90.cpp".format(phys),
+        lambda phys, sub, gb: f"{phys}_functions_f90.cpp",
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_c2f_glue_impl"),
         lambda phys, sub, gb: re.compile(r"^\s*// end _c impls"), # reqs special comment
         lambda phys, sub, gb: get_cxx_function_begin_regex(sub), # cxx(data)
@@ -128,7 +129,7 @@ PIECES = OrderedDict([
     )),
 
     ("cxx_c2f_data"  , (
-        lambda phys, sub, gb: "{}_functions_f90.hpp".format(phys),
+        lambda phys, sub, gb: f"{phys}_functions_f90.hpp",
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_c2f_data"),
         lambda phys, sub, gb: re.compile(r"^\s*// Glue functions to call fortran"),  # reqs special comment
         lambda phys, sub, gb: get_cxx_struct_begin_regex(get_data_struct_name(sub)), # struct Sub
@@ -137,7 +138,7 @@ PIECES = OrderedDict([
     )),
 
     ("cxx_f2c_bind_decl"  , (
-        lambda phys, sub, gb: "{}_functions_f90.hpp".format(phys),
+        lambda phys, sub, gb: f"{phys}_functions_f90.hpp",
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_f2c_bind_decl"),
         lambda phys, sub, gb: get_cxx_close_block_regex(comment="end _f function decls"), # reqs special comment
         lambda phys, sub, gb: get_cxx_function_begin_regex(sub + "_f"), # cxx_f decl
@@ -146,7 +147,7 @@ PIECES = OrderedDict([
     )),
 
     ("cxx_f2c_bind_impl"  , (
-        lambda phys, sub, gb: "{}_functions_f90.cpp".format(phys),
+        lambda phys, sub, gb: f"{phys}_functions_f90.cpp",
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_f2c_bind_impl"),
         lambda phys, sub, gb: get_namespace_close_regex(phys),          # insert at end of namespace
         lambda phys, sub, gb: get_cxx_function_begin_regex(sub + "_f"),      # cxx_f
@@ -155,7 +156,7 @@ PIECES = OrderedDict([
     )),
 
     ("cxx_func_decl", (
-        lambda phys, sub, gb: "{}_functions.hpp".format(phys),
+        lambda phys, sub, gb: f"{phys}_functions.hpp",
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_func_decl"),
         lambda phys, sub, gb: get_cxx_close_block_regex(semicolon=True, comment="struct Functions"), # end of struct, reqs special comment
         lambda phys, sub, gb: get_cxx_function_begin_regex(sub, static=True), # cxx decl
@@ -164,16 +165,16 @@ PIECES = OrderedDict([
     )),
 
     ("cxx_incl_impl", (
-        lambda phys, sub, gb: "{}_functions.hpp".format(phys),
+        lambda phys, sub, gb: f"{phys}_functions.hpp",
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_incl_impl"),
-        lambda phys, sub, gb: re.compile(r"^\s*#\s*endif\s+//\s*KOKKOS_ENABLE_CUDA"), # insert at end of impl includes, reqs special comment
+        lambda phys, sub, gb: re.compile(r"^\s*#\s*endif\s+//\s*GPU"), # insert at end of impl includes, reqs special comment
         lambda phys, sub, gb: re.compile(r'^\s*#\s*include\s+"{}"'.format(get_piece_data(phys, sub, "cxx_func_impl", FILEPATH, gb))),
         lambda phys, sub, gb: re.compile(r".*"),
         lambda *x           : "The include of *impl.hpp file at bottom of main hpp"
     )),
 
     ("cxx_func_impl", (
-        lambda phys, sub, gb: "{}_{}_impl.hpp".format(phys, sub),
+        lambda phys, sub, gb: f"impl/{phys}_{sub}_impl.hpp",
         lambda phys, sub, gb: create_template(phys, sub, gb, "cxx_func_impl"),
         lambda phys, sub, gb: get_namespace_close_regex(phys),   # insert at end of namespace
         lambda phys, sub, gb: get_cxx_function_begin_regex(sub, template="Functions<S,D>"), # cxx begin
@@ -182,7 +183,7 @@ PIECES = OrderedDict([
     )),
 
     ("cxx_bfb_unit_decl", (
-        lambda phys, sub, gb: "tests/{}_unit_tests_common.hpp".format(phys),
+        lambda phys, sub, gb: f"tests/{phys}_unit_tests_common.hpp",
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_bfb_unit_decl"),
         lambda phys, sub, gb: get_cxx_close_block_regex(semicolon=True), # insert at end of test struct
         lambda phys, sub, gb: get_cxx_struct_begin_regex(get_data_test_struct_name(sub)), # struct decl
@@ -191,7 +192,7 @@ PIECES = OrderedDict([
     )),
 
     ("cxx_bfb_unit_impl", (
-        lambda phys, sub, gb: "tests/{}_{}_tests.cpp".format(phys, sub),
+        lambda phys, sub, gb: f"tests/{phys}_{sub}_tests.cpp",
         lambda phys, sub, gb: create_template(phys, sub, gb, "cxx_bfb_unit_impl"),
         lambda phys, sub, gb: get_cxx_close_block_regex(semicolon=True, at_line_start=True), # insert of end of struct
         lambda phys, sub, gb: get_cxx_function_begin_regex("run_bfb", static=True),  # run_bfb
@@ -200,7 +201,7 @@ PIECES = OrderedDict([
     )),
 
     ("cxx_eti", (
-        lambda phys, sub, gb: "{}_{}.cpp".format(phys, sub),
+        lambda phys, sub, gb: f"eti/{phys}_{sub}.cpp",
         lambda phys, sub, gb: create_template(phys, sub, gb, "cxx_eti"),
         lambda phys, sub, gb: re.compile(".*"), # insert at top of file
         lambda phys, sub, gb: re.compile(".*"), # start at top of file
@@ -211,8 +212,8 @@ PIECES = OrderedDict([
     ("cmake_impl_eti", (
         lambda phys, sub, gb: "CMakeLists.txt",
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cmake_impl_eti"),
-        lambda phys, sub, gb: re.compile(r".*[)]\s*#\s*{} ETI SRCS".format(phys.upper())), # insert at end of ETI src list, reqs special comment
-        lambda phys, sub, gb: re.compile(r".*{}".format(get_piece_data(phys, sub, "cxx_eti", FILEPATH, gb))),
+        lambda phys, sub, gb: re.compile(fr".*[)]\s*#\s*{phys.upper()} ETI SRCS"), # insert at end of ETI src list, reqs special comment
+        lambda phys, sub, gb: re.compile(fr".*{get_piece_data(phys, sub, 'cxx_eti', FILEPATH, gb)}"),
         lambda phys, sub, gb: re.compile(".*"),
         lambda *x           : "Make cmake aware of the ETI file if not cuda build"
     )),
@@ -220,8 +221,8 @@ PIECES = OrderedDict([
     ("cmake_unit_test", (
         lambda phys, sub, gb: "tests/CMakeLists.txt",
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cmake_unit_test"),
-        lambda phys, sub, gb: re.compile(r".*[)]\s*#\s*{}_TESTS_SRCS".format(phys.upper())), # insert at end of test src list, reqs special comment
-        lambda phys, sub, gb: re.compile(r".*{}".format(os.path.basename(get_piece_data(phys, sub, "cxx_bfb_unit_impl", FILEPATH, gb)))),
+        lambda phys, sub, gb: re.compile(fr".*[)]\s*#\s*{phys.upper()}_TESTS_SRCS"), # insert at end of test src list, reqs special comment
+        lambda phys, sub, gb: re.compile(fr".*{Path(get_piece_data(phys, sub, 'cxx_bfb_unit_impl', FILEPATH, gb)).name}"),
         lambda phys, sub, gb: re.compile(".*"),
         lambda *x           : "Make cmake aware of the unit test"
     )),
@@ -230,17 +231,22 @@ PIECES = OrderedDict([
 
 # physics map. maps the name of a physics packages containing the original fortran subroutines to:
 #   (path-to-origin, path-to-cxx-src)
-ORIGIN_FILE, CXX_ROOT, INIT_CODE = range(3)
+ORIGIN_FILES, CXX_ROOT, INIT_CODE = range(3)
 PHYSICS = {
     "p3"   : (
-        "components/eam/src/physics/cam/micro_p3.F90",
+        ("components/eam/src/physics/cam/micro_p3.F90",),
         "components/eamxx/src/physics/p3",
         "p3_init();"
     ),
     "shoc" : (
-        "components/eam/src/physics/cam/shoc.F90",
+        ("components/eam/src/physics/cam/shoc.F90",),
         "components/eamxx/src/physics/shoc",
-        "shoc_init(REPLACE_ME, true);"
+        "shoc_init(d.nlev, true);"
+    ),
+    "dp" : (
+        ("components/eam/src/control/apply_iop_forcing.F90", "components/eam/src/dynamics/se/se_iop_intr_mod.F90", "components/eam/src/control/iop_data_mod.F90", "components/eam/src/control/history_iop.F90"),
+        "components/eamxx/src/physics/dp",
+        "dp_init(d.plev, true);"
     ),
 }
 
@@ -316,7 +322,7 @@ def get_subroutine_begin_regex(name):
     >>> bool(get_subroutine_begin_regex("fake_sub").match("subroutine fake_sub"))
     False
     """
-    subroutine_begin_regex_str = r"^\s*subroutine\s+{}\s*[(]".format(name)
+    subroutine_begin_regex_str = fr"^\s*subroutine\s+{name}\s*[(]"
     return re.compile(subroutine_begin_regex_str)
 
 ###############################################################################
@@ -338,7 +344,7 @@ def get_function_begin_regex(name):
     >>> bool(get_function_begin_regex("fake_sub").match("end function fake_sub"))
     False
     """
-    function_begin_regex_str = r"^\s*((pure\s+)?function)\s+{}\s*[(].*result\s*[(]\s*([^) ]+)".format(name)
+    function_begin_regex_str = fr"^\s*((pure\s+)?function)\s+{name}\s*[(].*result\s*[(]\s*([^) ]+)"
     return re.compile(function_begin_regex_str)
 
 ###############################################################################
@@ -358,7 +364,7 @@ def get_subroutine_end_regex(name):
     >>> bool(get_subroutine_end_regex("fake_sub").match("end function fake_sub_2"))
     False
     """
-    subroutine_end_regex_str = r"^\s*end\s+(subroutine|function)\s+{}\s*$".format(name)
+    subroutine_end_regex_str = fr"^\s*end\s+(subroutine|function)\s+{name}\s*$"
     return re.compile(subroutine_end_regex_str)
 
 ###############################################################################
@@ -383,8 +389,8 @@ def get_cxx_function_begin_regex(name, static=False, template=None):
     True
     """
     static_regex_str = r"static\s+" if static else ""
-    template_regex_str = r"{}::".format(template) if template else ""
-    function_begin_regex_str = r"^\s*{}void\s+{}{}\s*[(]".format(static_regex_str, template_regex_str, name)
+    template_regex_str = fr"{template}::" if template else ""
+    function_begin_regex_str = fr"^\s*{static_regex_str}void\s+{template_regex_str}{name}\s*[(]"
     return re.compile(function_begin_regex_str)
 
 ###############################################################################
@@ -420,8 +426,8 @@ def get_cxx_close_block_regex(semicolon=False, comment=None, at_line_start=False
     """
     semicolon_regex_str = r"\s*;" if semicolon else ""
     line_start_regex_str = "" if at_line_start else r"\s*"
-    comment_regex_str   = r"\s*//\s*{}".format(comment) if comment else ""
-    close_block_regex_str = re.compile(r"^{}}}{}{}\s*$".format(line_start_regex_str, semicolon_regex_str, comment_regex_str))
+    comment_regex_str   = fr"\s*//\s*{comment}" if comment else ""
+    close_block_regex_str = re.compile(fr"^{line_start_regex_str}}}{semicolon_regex_str}{comment_regex_str}\s*$")
     return re.compile(close_block_regex_str)
 
 ###############################################################################
@@ -433,7 +439,7 @@ def get_namespace_close_regex(namespace):
     >>> bool(get_namespace_close_regex("foo").match(" } // namespace foo_bar"))
     False
     """
-    return get_cxx_close_block_regex(comment=r"namespace\s+{}".format(namespace))
+    return get_cxx_close_block_regex(comment=fr"namespace\s+{namespace}")
 
 ###############################################################################
 def get_cxx_struct_begin_regex(struct):
@@ -446,7 +452,7 @@ def get_cxx_struct_begin_regex(struct):
     >>> bool(get_cxx_struct_begin_regex("Foo").match("struct FooBar"))
     False
     """
-    struct_regex_str = r"^\s*struct\s+{}([\W]|$)".format(struct)
+    struct_regex_str = fr"^\s*struct\s+{struct}([\W]|$)"
     return re.compile(struct_regex_str)
 
 ###############################################################################
@@ -469,7 +475,7 @@ def get_data_test_struct_name(sub):
     >>> get_data_test_struct_name("update_prognostics_implicit")
     'TestUpdatePrognosticsImplicit'
     """
-    return "Test{}".format(get_data_struct_name(sub)[:-4])
+    return f"Test{get_data_struct_name(sub)[:-4]}"
 
 ###############################################################################
 def get_supported_pieces():
@@ -495,8 +501,8 @@ def get_physics_data(physics_name, physics_data):
 def expect_exists(physics, sub, gb, piece):
 ###############################################################################
     filepath = gb.get_path_for_piece_file(physics, sub, piece)
-    expect(filepath.exists(), "For generating {}'s {} for phyiscs {}, expected file {} to already exist".\
-           format(sub, piece, physics, filepath))
+    expect(filepath.exists(),
+           f"For generating {sub}'s {piece} for phyiscs {physics}, expected file {filepath} to already exist")
     return False # File was not created
 
 ###############################################################################
@@ -507,7 +513,7 @@ def create_template(physics, sub, gb, piece, force=False, force_arg_data=None):
 
     >>> gb = GenBoiler(["linear_interp"], ["cxx_func_impl"], dry_run=True)
     >>> create_template("shoc", "linear_interp", gb, "cxx_func_impl", force=True, force_arg_data=UT_ARG_DATA) #doctest: +ELLIPSIS
-    Would create file .../components/eamxx/src/physics/shoc/shoc_linear_interp_impl.hpp with contents:
+    Would create file .../components/eamxx/src/physics/shoc/impl/shoc_linear_interp_impl.hpp with contents:
     #ifndef SHOC_LINEAR_INTERP_IMPL_HPP
     #define SHOC_LINEAR_INTERP_IMPL_HPP
     <BLANKLINE>
@@ -539,12 +545,12 @@ def create_template(physics, sub, gb, piece, force=False, force_arg_data=None):
     filepath = gb.get_path_for_piece_file(physics, sub, piece)
     if not filepath.exists() or force:
         expect(piece in FILE_TEMPLATES,
-               "{} does not exist and there is no template for generating files for piece {}".format(filepath, piece))
+               f"{filepath} does not exist and there is no template for generating files for piece {piece}")
 
-        gen_code = getattr(gb, "gen_{}".format(piece))(physics, sub, force_arg_data=force_arg_data)
+        gen_code = getattr(gb, f"gen_{piece}")(physics, sub, force_arg_data=force_arg_data)
         contents = FILE_TEMPLATES[piece](physics, sub, gen_code)
         if gb.dry_run():
-            print("Would create file {} with contents:\n{}".format(filepath, contents))
+            print(f"Would create file {filepath} with contents:\n{contents}")
         else:
             with filepath.open("w", encoding="utf-8") as fd:
                 fd.write(contents)
@@ -662,7 +668,7 @@ def split_top_commas(line):
         if balanced:
             top_splits.append(raw_split)
         else:
-            top_splits[-1] += ",{}".format(raw_split)
+            top_splits[-1] += f",{raw_split}"
 
         balanced = top_splits[-1].count("(") == top_splits[-1].count(")")
 
@@ -689,7 +695,7 @@ def get_arg_order(line):
         first_paren_contents = ""
         for c in line:
             if c == "(":
-                expect(not first_paren, "Bad line, multiple opening parens: {}".format(line))
+                expect(not first_paren, f"Bad line, multiple opening parens: {line}")
                 first_paren = True
             elif c == ")":
                 break
@@ -733,20 +739,31 @@ def parse_f90_args(line):
     [('x1', 'real', 'in', ('ncol', 'km1')), ('y1', 'real', 'in', ('ncol', 'km1'))]
     >>> parse_f90_args('real(rtype), intent(in) :: x1(ncol,km1,ntracers)')
     [('x1', 'real', 'in', ('ncol', 'km1', 'ntracers'))]
+    >>> parse_f90_args('type(element_t), intent(inout) :: elem(:)')
+    [('elem', 'type::element_t', 'inout', (':',))]
+    >>> parse_f90_args('character*(max_path_len), intent(out), optional ::  iopfile_out')
+    [('iopfile_out', 'type::string', 'out', None)]
     """
-    expect(line.count("::") == 1, "Expected line format 'type-info :: names' for: {}".format(line))
+    expect(line.count("::") == 1, f"Expected line format 'type-info :: names' for: {line}")
     metadata_str, names_str = line.split("::")
     names_dims = split_top_commas(names_str)
     metadata   = split_top_commas(metadata_str)
 
-    argtype = metadata[0].split("(")[0].strip()
+    argtoken = metadata[0]
+    argtype = argtoken.split("(")[0].strip()
+    if argtype == "type":
+        expect("(" in argtoken, f"Undefined type for {argtoken}")
+        argtype += ("::" + argtoken.split("(")[1].strip().rstrip(")"))
+    elif argtype == "character*":
+        argtype = "type::string"
+
     intent, dims = None, None
     for metadatum in metadata:
         if metadatum.startswith("intent"):
-            expect(intent is None, "Multiple intents in line: {}".format(line))
+            expect(intent is None, f"Multiple intents in line: {line}")
             intent = metadatum.split("(")[-1].rstrip(")").strip()
         elif metadatum.startswith("dimension"):
-            expect(dims is None, "Multiple dimensions in line: {}".format(line))
+            expect(dims is None, f"Multiple dimensions in line: {line}")
             dims_raw = metadatum.split("(")[-1].rstrip(")").strip()
             dims = tuple(item.replace(" ", "") for item in dims_raw.split(","))
 
@@ -756,7 +773,7 @@ def parse_f90_args(line):
             name, dims_raw = name_dim.split("(")
             dims_raw = dims_raw.rstrip(")").strip()
             dims_check = tuple(item.replace(" ", "") for item in dims_raw.split(","))
-            expect(dims is None or dims_check == dims, "Inconsistent dimensions in line: {}".format(line))
+            expect(dims is None or dims_check == dims, f"Inconsistent dimensions in line: {line}")
             dims = dims_check
             names.append(name.strip())
         else:
@@ -833,12 +850,41 @@ def parse_origin(contents, subs):
     ...
     ...   return foo
     ...  end function impli_srf_stress_term
+    ...
+    ...  subroutine advance_iop_forcing(scm_dt, ps_in, &             ! In
+    ...                    u_in, v_in, t_in, q_in, t_phys_frc,&    ! In
+    ...                    u_update, v_update, t_update, q_update) ! Out
+    ...
+    ...    ! Input arguments
+    ...    real(r8), intent(in) :: ps_in             ! surface pressure [Pa]
+    ...    real(r8), intent(in) :: u_in(plev)        ! zonal wind [m/s]
+    ...    real(r8), intent(in) :: v_in(plev)        ! meridional wind [m/s]
+    ...    real(r8), intent(in) :: t_in(plev)        ! temperature [K]
+    ...    real(r8), intent(in) :: q_in(plev,pcnst)  ! q tracer array [units vary]
+    ...    real(r8), intent(in) :: t_phys_frc(plev)  ! temperature forcing from physics [K/s]
+    ...    real(r8), intent(in) :: scm_dt            ! model time step [s]
+    ...
+    ...    ! Output arguments
+    ...    real(r8), intent(out) :: t_update(plev)      ! updated temperature [K]
+    ...    real(r8), intent(out) :: q_update(plev,pcnst)! updated q tracer array [units vary]
+    ...    real(r8), intent(out) :: u_update(plev)      ! updated zonal wind [m/s]
+    ...    real(r8), intent(out) :: v_update(plev)      ! updated meridional wind [m/s]
+    ...
+    ...  end subroutine advance_iop_forcing
+    ...
+    ...  subroutine iop_setinitial(elem)
+    ...    type(element_t), intent(inout) :: elem(:)
+    ...  end subroutine iop_setinitial
     ... '''
     >>> print("\n".join([str(item) for item in sorted(parse_origin(teststr, ["p3_get_tables", "p3_init_b"]).items())]))
     ('p3_get_tables', [('mu_r_user', 'real', 'out', ('150',)), ('revap_user', 'real', 'out', ('300', '10')), ('tracerd', 'real', 'out', ('300', '10', '42')), ('vn_user', 'real', 'out', ('300', '10')), ('vm_user', 'real', 'out', ('300', '10'))])
     ('p3_init_b', [])
     >>> print("\n".join([str(item) for item in parse_origin(teststr, ["impli_srf_stress_term"]).items()]))
     ('impli_srf_stress_term', [('shcol', 'integer', 'in', None), ('rho_zi_sfc', 'real', 'in', ('shcol',)), ('uw_sfc', 'real', 'in', ('shcol',)), ('vw_sfc', 'real', 'in', ('shcol',)), ('u_wind_sfc', 'real', 'in', ('shcol',)), ('v_wind_sfc', 'real', 'in', ('shcol',)), ('ksrf', 'real', 'out', ('shcol',))])
+    >>> print("\n".join([str(item) for item in parse_origin(teststr, ["advance_iop_forcing"]).items()]))
+    ('advance_iop_forcing', [('plev', 'integer', 'in', None), ('pcnst', 'integer', 'in', None), ('scm_dt', 'real', 'in', None), ('ps_in', 'real', 'in', None), ('u_in', 'real', 'in', ('plev',)), ('v_in', 'real', 'in', ('plev',)), ('t_in', 'real', 'in', ('plev',)), ('q_in', 'real', 'in', ('plev', 'pcnst')), ('t_phys_frc', 'real', 'in', ('plev',)), ('u_update', 'real', 'out', ('plev',)), ('v_update', 'real', 'out', ('plev',)), ('t_update', 'real', 'out', ('plev',)), ('q_update', 'real', 'out', ('plev', 'pcnst'))])
+    >>> print("\n".join([str(item) for item in parse_origin(teststr, ["iop_setinitial"]).items()]))
+    ('iop_setinitial', [('elem', 'type::element_t', 'inout', (':',))])
     """
     begin_sub_regexes  = [get_subroutine_begin_regex(sub) for sub in subs]
     begin_func_regexes = [get_function_begin_regex(sub)   for sub in subs]
@@ -856,11 +902,11 @@ def parse_origin(contents, subs):
             begin_sub_match = begin_sub_regex.match(line)
             begin_func_match = begin_func_regex.match(line)
             if begin_sub_match is not None:
-                expect(active_sub is None, "subroutine {} was still active when {} began".format(active_sub, sub))
+                expect(active_sub is None, f"subroutine {active_sub} was still active when {sub} began")
                 active_sub = sub
                 arg_order = get_arg_order(line)
             elif begin_func_match is not None:
-                expect(active_sub is None, "subroutine {} was still active when {} began".format(active_sub, sub))
+                expect(active_sub is None, f"subroutine {active_sub} was still active when {sub} began")
                 active_sub = sub
                 arg_order = get_arg_order(line)
                 result_name = begin_func_match.groups()[-1]
@@ -870,7 +916,7 @@ def parse_origin(contents, subs):
             if decl_match is not None:
                 arg_decls.extend(parse_f90_args(line))
             elif result_name:
-                result_decl_regex = re.compile(r".+::\s*{}([^\w]|$)".format(result_name))
+                result_decl_regex = re.compile(fr".+::\s*{result_name}([^\w]|$)")
                 result_decl_match = result_decl_regex.match(line)
                 if result_decl_match is not None:
                     line = line.replace("::", " , intent(out) ::")
@@ -879,9 +925,9 @@ def parse_origin(contents, subs):
             end_regex = get_subroutine_end_regex(active_sub)
             end_match = end_regex.match(line)
             if end_match is not None:
-                expect(active_sub not in db, "Found multiple matches for {}".format(active_sub))
+                expect(active_sub not in db, f"Found multiple matches for {active_sub}")
                 expect(len(arg_order) == len(arg_decls),
-                       "Number of decls:\n{}\nDid not match arg list: {}".format(arg_decls, arg_order))
+                       f"Number of decls:\n{arg_decls}\nDid not match arg list: {arg_order}")
 
                 # we need our decls to be ordered based on arg list order
                 ordered_decls = []
@@ -893,9 +939,25 @@ def parse_origin(contents, subs):
                             found = True
                             break
 
-                    expect(found, "Could not find decl for arg {} in\n{}".format(arg, arg_decls))
+                    expect(found, f"Could not find decl for arg {arg} in\n{arg_decls}")
 
-                db[active_sub] = ordered_decls
+                # Dim resolution. Arrays with global dims must have the
+                # dim as an input in the converted code.
+                global_ints_to_insert = []
+                arg_names = set()
+                for arg_datum in ordered_decls:
+                    arg_name = arg_datum[ARG_NAME]
+                    arg_names.add(arg_name)
+
+                for arg_datum in ordered_decls:
+                    arg_dims = arg_datum[ARG_DIMS]
+                    if arg_dims is not None:
+                        for arg_dim in arg_dims:
+                            if not arg_dim.isdigit() and arg_dim not in arg_names and arg_dim != ":":
+                                global_ints_to_insert.append((arg_dim, "integer", "in", None))
+                                arg_names.add(arg_dim)
+
+                db[active_sub] = global_ints_to_insert + ordered_decls
                 active_sub = None
                 result_name = None
                 arg_decls = []
@@ -921,17 +983,38 @@ def gen_arg_f90_decl(argtype, intent, dims, names):
     'integer(kind=c_int) , intent(inout) :: barg'
     >>> gen_arg_f90_decl("integer", "out", None, ["barg"])
     'integer(kind=c_int) , intent(out) :: barg'
+    >>> gen_arg_f90_decl('type::element_t', 'inout', (':',), ["foo"])
+    'type(c_ptr) , intent(inout), dimension(:) :: foo'
     """
-    expect(argtype in C_TYPE_MAP, "Unrecognized argtype for C_TYPE_MAP: {}".format(argtype))
-    c_type = C_TYPE_MAP[argtype]
     value  = ", value" if dims is None and intent == "in" else ""
-    intent_s = ", intent({})".format(intent)
-    dimension_s = ", dimension({})".format(", ".join(dims)) if dims is not None else ""
+    intent_s = f", intent({intent})"
+    dimension_s = f", dimension({', '.join(dims)})" if dims is not None else ""
     names_s = ", ".join(names)
-    return "{argtype}(kind={c_type}) {value}{intent}{dimension} :: {names}".\
-        format(argtype=argtype, c_type=c_type, value=value, intent=intent_s, dimension=dimension_s, names=names_s)
+
+    if is_custom_type(argtype):
+        return f"type(c_ptr) {intent_s}{dimension_s} :: {names_s}"
+    else:
+        expect(argtype in C_TYPE_MAP, f"Unrecognized argtype for C_TYPE_MAP: {argtype}")
+        c_type = C_TYPE_MAP[argtype]
+        return f"{argtype}(kind={c_type}) {value}{intent_s}{dimension_s} :: {names_s}"
+
+###############################################################################
+def is_custom_type(arg_type):
+###############################################################################
+    return arg_type.startswith("type::")
 
 CXX_TYPE_MAP = {"real" : "Real", "integer" : "Int", "logical" : "bool"}
+###############################################################################
+def get_cxx_scalar_type(arg_type):
+###############################################################################
+    if is_custom_type(arg_type):
+        arg_cxx_type = arg_type.split("::")[-1]
+    else:
+        expect(arg_type in CXX_TYPE_MAP, f"Unrecognized argtype for CXX_TYPE_MAP: {arg_type}")
+        arg_cxx_type = CXX_TYPE_MAP[arg_type]
+
+    return arg_cxx_type
+
 ###############################################################################
 def get_cxx_type(arg_datum):
 ###############################################################################
@@ -952,12 +1035,13 @@ def get_cxx_type(arg_datum):
     'Real*'
     >>> get_cxx_type(("foo", "integer", "inout", None))
     'Int*'
+    >>> get_cxx_type(('elem', 'type::element_t', 'inout', (':',)))
+    'element_t*'
     """
     is_ptr = arg_datum[ARG_DIMS] is not None or arg_datum[ARG_INTENT] != "in"
     arg_type = arg_datum[ARG_TYPE]
-    expect(arg_type in CXX_TYPE_MAP, "Unrecognized argtype for CXX_TYPE_MAP: {}".format(arg_type))
-    arg_cxx_type = CXX_TYPE_MAP[arg_type]
-    return "{}{}".format(arg_cxx_type, "*" if is_ptr else "")
+    arg_cxx_type = get_cxx_scalar_type(arg_type)
+    return f"{arg_cxx_type}{'*' if is_ptr else ''}"
 
 KOKKOS_TYPE_MAP = {"real" : "Spack", "integer" : "Int", "logical" : "bool"}
 ###############################################################################
@@ -983,14 +1067,22 @@ def get_kokkos_type(arg_datum):
     'Spack&'
     >>> get_kokkos_type(("foo", "integer", "inout", None))
     'Int&'
+    >>> get_kokkos_type(('elem', 'type::element_t', 'inout', (':',)))
+    'const uview_1d<element_t>&'
     """
     is_const  = arg_datum[ARG_INTENT] == "in"
     is_view   = arg_datum[ARG_DIMS] is not None
-    base_type = "{}{}".format("const " if is_const else "", KOKKOS_TYPE_MAP[arg_datum[ARG_TYPE]])
+    arg_type  = arg_datum[ARG_TYPE]
+    if is_custom_type(arg_type):
+        kokkos_type = arg_type.split("::")[-1]
+    else:
+        kokkos_type = KOKKOS_TYPE_MAP[arg_type]
+
+    base_type = f"{'const ' if is_const else ''}{kokkos_type}"
 
     # We assume 1d even if the f90 array is 2d since we assume c++ will spawn a kernel
     # over one of the dimensions
-    return "const uview_1d<{}>&".format(base_type) if is_view else "{}&".format(base_type)
+    return f"const uview_1d<{base_type}>&" if is_view else f"{base_type}&"
 
 ###############################################################################
 def gen_arg_cxx_decls(arg_data, kokkos=False):
@@ -1006,7 +1098,7 @@ def gen_arg_cxx_decls(arg_data, kokkos=False):
     arg_names    = [item[ARG_NAME] for item in arg_data]
     get_type     = get_kokkos_type if kokkos else get_cxx_type
     arg_types    = [get_type(item) for item in arg_data]
-    arg_sig_list = ["{} {}".format(arg_type, arg_name) for arg_name, arg_type in zip(arg_names, arg_types)]
+    arg_sig_list = [f"{arg_type} {arg_name}" for arg_name, arg_type in zip(arg_names, arg_types)]
     return arg_sig_list
 
 ###############################################################################
@@ -1049,7 +1141,7 @@ def split_by_intent(arg_data):
         elif intent == "out":
             outputs.append(name)
         else:
-            expect(False, "Unhandled intent: {}".format(intent))
+            expect(False, f"Unhandled intent: {intent}")
 
     return inputs, inouts, outputs
 
@@ -1070,8 +1162,10 @@ def split_by_type(arg_data):
             ints.append(name)
         elif argtype == "logical":
             logicals.append(name)
+        elif is_custom_type(argtype):
+            pass
         else:
-            expect(False, "Unhandled argtype: {}".format(argtype))
+            expect(False, f"Unhandled argtype: {argtype}")
 
     return reals, ints, logicals
 
@@ -1088,7 +1182,7 @@ def gen_cxx_data_args(physics, arg_data):
     args_needs_ptr = [item[ARG_DIMS] is None and item[ARG_INTENT] != "in" for item in arg_data]
     arg_names      = [item[ARG_NAME] for item in arg_data]
     arg_dim_call   = [item[ARG_NAME] in all_dims for item in arg_data]
-    args = ["{}d.{}".format("&" if need_ptr else "", arg_name)
+    args = [f"{'&' if need_ptr else ''}d.{arg_name}"
             for arg_name, need_ptr, dim_call in zip(arg_names, args_needs_ptr, arg_dim_call)]
     return args
 
@@ -1163,12 +1257,12 @@ def gen_struct_members(arg_data):
     result = []
     for intent, comment in intent_order:
         if intent in metadata:
-            result.append("// {}".format(comment))
+            result.append(f"// {comment}")
             type_map = metadata[intent]
             for type_info, names in type_map.items():
                 type_name, is_ptr = type_info
-                decl_str = CXX_TYPE_MAP[type_name]
-                decl_str += " {};".format(", ".join(["{}{}".format("*" if is_ptr else "", name) for name in names]))
+                decl_str = get_cxx_scalar_type(type_name)
+                decl_str += f" {', '.join(['{}{}'.format('*' if is_ptr else '', name) for name in names])};"
                 result.append(decl_str)
 
             result.append("")
@@ -1176,7 +1270,7 @@ def gen_struct_members(arg_data):
     return result
 
 ###############################################################################
-def group_data(arg_data, filter_out_intent=None):
+def group_data(arg_data, filter_out_intent=None, filter_scalar_custom_types=False):
 ###############################################################################
     r"""
     Given data, return ([fst_dims], [snd_dims], [trd_dims], [all-dims], [scalars], {dims->[real_data]}, {dims->[int_data]}, {dims->[bool_data]})
@@ -1209,7 +1303,7 @@ def group_data(arg_data, filter_out_intent=None):
     for name, argtype, _, dims in arg_data:
         if dims is not None:
             expect(len(dims) >= 1 and len(dims) <= 3,
-                   "Only 1d-3d data is supported, {} has too many dims: {}".format(name, len(dims)))
+                   f"Only 1d-3d data is supported, {name} has too many dims: {len(dims)}")
 
             if dims[0] not in fst_dims:
                 fst_dims.append(dims[0])
@@ -1226,10 +1320,11 @@ def group_data(arg_data, filter_out_intent=None):
     for name, argtype, intent, dims in arg_data:
         if filter_out_intent is None or intent != filter_out_intent:
             if dims is None:
-                if name not in all_dims:
-                    scalars.append( (name, CXX_TYPE_MAP[argtype]))
-                else:
-                    expect(argtype == "integer", "Expected dimension {} to be of type integer".format(name))
+                if not (is_custom_type(argtype) and filter_scalar_custom_types):
+                    if name not in all_dims:
+                        scalars.append( (name, get_cxx_scalar_type(argtype)))
+                    else:
+                        expect(argtype == "integer", f"Expected dimension {name} to be of type integer")
 
             elif argtype == "integer":
                 int_data.setdefault(dims, []).append(name)
@@ -1237,7 +1332,7 @@ def group_data(arg_data, filter_out_intent=None):
             elif argtype == "real":
                 real_data.setdefault(dims, []).append(name)
 
-            else:
+            elif argtype == "logical":
                 bool_data.setdefault(dims, []).append(name)
 
     return fst_dims, snd_dims, trd_dims, all_dims, scalars, real_data, int_data, bool_data
@@ -1254,7 +1349,7 @@ def gen_struct_api(physics, struct_name, arg_data):
     <BLANKLINE>
     PTD_STD_DEF(DataSubName, 8, shcol, nlev, nlevi, ntracers, gag, bab1, bab2, val);
     """
-    _, _, _, all_dims, scalars, real_data, int_data, bool_data = group_data(arg_data)
+    _, _, _, all_dims, scalars, real_data, int_data, bool_data = group_data(arg_data, filter_scalar_custom_types=True)
 
     result = []
     dim_args = [(item, "Int") for item in all_dims if item is not None]
@@ -1269,17 +1364,17 @@ def gen_struct_api(physics, struct_name, arg_data):
     bool_vec = []
     for data, data_vec in zip([real_data, int_data, bool_data], [real_vec, int_vec, bool_vec]):
         for dims, items in data.items():
-            dim_cxx_vec.append("{{ {} }}".format(", ".join(["{}_".format(item) for item in dims])))
-            data_vec.append("{{ {} }}".format(", ".join(["&{}".format(item) for item in items])))
+            dim_cxx_vec.append(f"{{ {', '.join(['{}_'.format(item) for item in dims])} }}")
+            data_vec.append(f"{{ {', '.join(['&{}'.format(item) for item in items])} }}")
 
-    parent_call = "  PhysicsTestData({{{}}}, {{{}}}".format(", ".join(dim_cxx_vec), ", ".join(real_vec))
+    parent_call = f"  PhysicsTestData({{{', '.join(dim_cxx_vec)}}}, {{{', '.join(real_vec)}}}"
     if int_vec or bool_vec:
-        parent_call += ", {{{}}}".format(", ".join(int_vec))
+        parent_call += f", {{{', '.join(int_vec)}}}"
     if bool_vec:
-        parent_call += ", {{{}}}".format(", ".join(bool_vec))
+        parent_call += f", {{{', '.join(bool_vec)}}}"
     parent_call += ")"
 
-    parent_call += ", {}".format(", ".join(["{0}({0}_)".format(name) for name, _ in cons_args]))
+    parent_call += f", {', '.join(['{0}({0}_)'.format(name) for name, _ in cons_args])}"
 
     parent_call += " {}"
     result.append(parent_call)
@@ -1332,8 +1427,7 @@ def check_existing_piece(lines, begin_regex, end_regex):
 
         if begin_match:
             expect(begin_idx is None,
-                   "Found multiple begin matches for pattern '{}' before end pattern '{}' was found".\
-                   format(begin_regex.pattern, end_regex.pattern))
+                   f"Found multiple begin matches for pattern '{begin_regex.pattern}' before end pattern '{end_regex.pattern}' was found")
 
             begin_idx = idx
 
@@ -1343,8 +1437,7 @@ def check_existing_piece(lines, begin_regex, end_regex):
 
     if begin_idx is not None:
         expect(end_idx is not None,
-               "Found no ending match for begin pattern '{}' starting on line {} and searching end pattern '{}'".\
-               format(begin_regex.pattern, begin_idx, end_regex.pattern))
+               "Found no ending match for begin pattern '{begin_regex.pattern}' starting on line {begin_idx} and searching end pattern '{end_regex.pattern}'")
 
     return None if begin_idx is None else (begin_idx, end_idx+1)
 
@@ -1372,11 +1465,11 @@ class GenBoiler(object):
         expect(target_repo is not None, "Must either run from a valid repo or provide a --target-repo")
 
         normalized_source_repo = get_git_toplevel_dir(repo=source_repo)
-        expect(normalized_source_repo is not None, "source repo {} is not a valid repo".format(source_repo))
+        expect(normalized_source_repo is not None, f"source repo {source_repo} is not a valid repo")
         source_repo = normalized_source_repo
 
         normalized_target_repo = get_git_toplevel_dir(repo=target_repo)
-        expect(normalized_target_repo is not None, "target repo {} is not a valid repo".format(target_repo))
+        expect(normalized_target_repo is not None, f"target repo {target_repo} is not a valid repo")
         target_repo = normalized_target_repo
 
         # configuration
@@ -1385,8 +1478,8 @@ class GenBoiler(object):
         self._physics     = physics
         self._overwrite   = overwrite
         self._kernel      = kernel
-        self._source_repo = pathlib.Path(source_repo).resolve()
-        self._target_repo = pathlib.Path(target_repo).resolve()
+        self._source_repo = Path(source_repo).resolve()
+        self._target_repo = Path(target_repo).resolve()
         self._dry_run     = dry_run
         self._verbose     = verbose
 
@@ -1403,28 +1496,30 @@ class GenBoiler(object):
     ###########################################################################
     def _get_db(self, phys):
     ###########################################################################
-        if phys in self._db:
-            return self._db[phys]
-        else:
-            origin_file = self._source_repo / get_physics_data(phys, ORIGIN_FILE)
-            expect(origin_file.exists(), "Missing origin file for physics {}: {}".format(phys, origin_file))
-            db = parse_origin(origin_file.open(encoding="utf-8").read(), self._subs)
-            self._db[phys] = db
-            if self._verbose:
-                print("For physics {}, found:")
-                for sub in self._subs:
-                    if sub in db:
-                        print("  For subroutine {}, found args:")
-                        for name, argtype, intent, dims in db[sub]:
-                            print("    name:{} type:{} intent:{} dims:({})".\
-                                  format(name, argtype, intent, ",".join(dims) if dims else "scalar"))
-            return db
+        if phys not in self._db:
+            origin_files = get_physics_data(phys, ORIGIN_FILES)
+            self._db[phys] = {}
+            for origin_file in origin_files:
+                origin_file = self._source_repo / origin_file
+                expect(origin_file.exists(), f"Missing origin file for physics {phys}: {origin_file}")
+                db = parse_origin(origin_file.open(encoding="utf-8").read(), self._subs)
+                self._db[phys].update(db)
+                if self._verbose:
+                    print("For physics {}, found:")
+                    for sub in self._subs:
+                        if sub in db:
+                            print("  For subroutine {}, found args:")
+                            for name, argtype, intent, dims in db[sub]:
+                                print("    name:{} type:{} intent:{} dims:({})".\
+                                      format(name, argtype, intent, ",".join(dims) if dims else "scalar"))
+
+        return self._db[phys]
 
     ###########################################################################
     def _get_arg_data(self, phys, sub):
     ###########################################################################
         phys_db = self._get_db(phys)
-        expect(sub in phys_db, "No data for subroutine {} in physics {}".format(sub, phys))
+        expect(sub in phys_db, f"No data for subroutine {sub} in physics {phys}")
         return phys_db[sub]
 
     ###########################################################################
@@ -1435,7 +1530,7 @@ class GenBoiler(object):
     ###############################################################################
     def get_path_for_piece_file(self, physics, sub, piece):
     ###############################################################################
-        root_dir = pathlib.Path(get_physics_data(physics, CXX_ROOT))
+        root_dir = Path(get_physics_data(physics, CXX_ROOT))
         filepath = self._target_repo / root_dir / get_piece_data(physics, sub, piece, FILEPATH, self)
         return filepath
 
@@ -1529,7 +1624,7 @@ class GenBoiler(object):
         """
         arg_data = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
         arg_decls = gen_arg_cxx_decls(arg_data)
-        result = "void {sub}_c({arg_sig});\n".format(sub=sub, arg_sig=", ".join(arg_decls))
+        result = f"void {sub}_c({', '.join(arg_decls)});\n"
         return result
 
     ###########################################################################
@@ -1541,7 +1636,7 @@ class GenBoiler(object):
         void fake_sub(FakeSubData& d);
         """
         struct_name      = get_data_struct_name(sub)
-        result = "void {sub}({struct_name}& d);".format(sub=sub, struct_name=struct_name)
+        result = f"void {sub}({struct_name}& d);"
         return result
 
     ###########################################################################
@@ -1567,16 +1662,15 @@ class GenBoiler(object):
         transpose_code_2 = "\n  d.transpose<ekat::TransposeDirection::f2c>();" if need_transpose else ""
         data_struct      = get_data_struct_name(sub)
         init_code        = get_physics_data(phys, INIT_CODE)
-        init_code        = init_code.replace("REPLACE_ME", "d.nlev")
 
         result = \
-"""void {sub}({data_struct}& d)
+f"""void {sub}({data_struct}& d)
 {{
   {init_code}{transpose_code_1}
   {sub}_c({arg_data_args});{transpose_code_2}
 }}
 
-""".format(sub=sub, data_struct=data_struct, init_code=init_code, transpose_code_1=transpose_code_1, transpose_code_2=transpose_code_2, arg_data_args=arg_data_args)
+"""
         return result
 
     ###########################################################################
@@ -1617,11 +1711,11 @@ class GenBoiler(object):
         api              = "\n  " + "\n  ".join(gen_struct_api(phys, struct_name, arg_data) if any_arrays else "")
 
         result = \
-"""struct {struct_name}{inheritance} {{
+f"""struct {struct_name}{inheritance} {{
   {struct_members}{api}
 }};
 
-""".format(struct_name=struct_name, inheritance=inheritance, struct_members=struct_members, api=api)
+"""
         return result
 
     ###########################################################################
@@ -1635,7 +1729,7 @@ class GenBoiler(object):
         arg_data  = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
         arg_decls = gen_arg_cxx_decls(arg_data)
 
-        return "void {sub}_f({arg_sig});".format(sub=sub, arg_sig=", ".join(arg_decls))
+        return f"void {sub}_f({', '.join(arg_decls)});"
 
     ###########################################################################
     def gen_cxx_f2c_bind_impl(self, phys, sub, force_arg_data=None):
@@ -1748,21 +1842,21 @@ class GenBoiler(object):
             # make necessary view types
             for output_group, prefix_char, typename in zip([oreals, oints, obools], prefix_list, type_list):
                 if output_group:
-                    impl += "  using {}view_1d = typename PF::view_1d<{}>;\n".format(prefix_char, typename)
+                    impl += f"  using {prefix_char}view_1d = typename PF::view_1d<{typename}>;\n"
 
             impl += "\n"
 
             # make output views for host and device
             for output_group, prefix_char in zip([oreals, oints, obools], prefix_list):
                 if output_group:
-                    impl += '  {0}view_1d {0}t_d("{0}t_d", {1});\n'.format(prefix_char, len(output_group))
-                    impl += "  const auto {0}t_h = Kokkos::create_mirror_view({0}t_d);\n".format(prefix_char)
+                    impl += f'  {prefix_char}view_1d {prefix_char}t_d("{prefix_char}t_d", {len(output_group)});\n'
+                    impl += f"  const auto {prefix_char}t_h = Kokkos::create_mirror_view({prefix_char}t_d);\n"
                     impl += "\n"
 
             # inout data must be derefenced before the kernel
             for io_group, typename in zip([ioreals, ioints, iobools], type_list):
                 if io_group:
-                    impl += "  {} {};\n".format(typename, ", ".join(["local_{0}(*{0})".format(item) for item in io_group]))
+                    impl += f"  {typename} {', '.join(['local_{0}(*{0})'.format(item) for item in io_group])};\n"
 
             # start a kernel
             impl += "  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {\n"
@@ -1772,17 +1866,17 @@ class GenBoiler(object):
             # not be packed (like dt)
             for output_group, typename in zip([list(ireals) + list(ooreals), oints, obools], ktype_list):
                 if output_group:
-                    impl += "    {} ".format(typename)
+                    impl += f"    {typename} "
                     temp_cons = []
                     for item in output_group:
                         if item in inouts:
-                            temp_cons.append("{0}_(local_{0})".format(item))
+                            temp_cons.append(f"{item}_(local_{item})")
                         elif item in outputs:
-                            temp_cons.append("{0}_()".format(item))
+                            temp_cons.append(f"{item}_()")
                         else:
-                            temp_cons.append("{0}_({0})".format(item))
+                            temp_cons.append(f"{item}_({item})")
 
-                    impl += "{};\n".format(", ".join(temp_cons))
+                    impl += f"{', '.join(temp_cons)};\n"
 
             # Make cxx call
             kernel_arg_names = []
@@ -1792,15 +1886,15 @@ class GenBoiler(object):
                 else:
                     kernel_arg_names.append(arg_name + "_")
 
-            impl += "    PF::{}({});\n".format(sub, ", ".join(kernel_arg_names))
+            impl += f"    PF::{sub}({', '.join(kernel_arg_names)});\n"
 
             # Load output data into views
             for output_group, prefix_char in zip([oreals, oints, obools], prefix_list):
                 for idx, item in enumerate(output_group):
                     if output_group == oreals:
-                        impl += "    {}t_d({}) = {}_[0];\n".format(prefix_char, idx, item)
+                        impl += f"    {prefix_char}t_d({idx}) = {item}_[0];\n"
                     else:
-                        impl += "    {}t_d({}) = {}_;\n".format(prefix_char, idx, item)
+                        impl += f"    {prefix_char}t_d({idx}) = {item}_;\n"
 
             # finish kernel
             impl += "  });\n"
@@ -1808,21 +1902,21 @@ class GenBoiler(object):
             # copy outputs back to host
             for output_group, prefix_char in zip([oreals, oints, obools], prefix_list):
                 if output_group:
-                    impl += "  Kokkos::deep_copy({0}t_h, {0}t_d);\n".format(prefix_char)
+                    impl += f"  Kokkos::deep_copy({prefix_char}t_h, {prefix_char}t_d);\n"
 
             # copy from views into pointer args
             for output_group, prefix_char in zip([oreals, oints, obools], prefix_list):
                 for idx, item in enumerate(output_group):
-                    impl += "  *{} = {}t_h({});\n".format(item, prefix_char, idx)
+                    impl += f"  *{item} = {prefix_char}t_h({idx});\n"
 
             impl += "#endif\n"
 
         result = \
-"""{decl}
+f"""{decl}
 {{
 {impl}
 }}
-""".format(decl=decl, impl=impl)
+"""
         return result
 
     ###########################################################################
@@ -1837,7 +1931,7 @@ class GenBoiler(object):
         arg_data = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
         arg_decls = gen_arg_cxx_decls(arg_data, kokkos=True)
 
-        return "  KOKKOS_FUNCTION\n  static void {sub}({arg_sig});".format(sub=sub, arg_sig=", ".join(arg_decls))
+        return f"  KOKKOS_FUNCTION\n  static void {sub}({', '.join(arg_decls)});"
 
     ###########################################################################
     def gen_cxx_incl_impl(self, phys, sub, force_arg_data=None):
@@ -1845,10 +1939,10 @@ class GenBoiler(object):
         """
         >>> gb = GenBoiler([])
         >>> print(gb.gen_cxx_incl_impl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA))
-        # include "shoc_fake_sub_impl.hpp"
+        # include "impl/shoc_fake_sub_impl.hpp"
         """
         impl_path = get_piece_data(phys, sub, "cxx_func_impl", FILEPATH, self)
-        return '# include "{}"'.format(impl_path)
+        return f'# include "{impl_path}"'
 
     ###########################################################################
     def gen_cxx_func_impl(self, phys, sub, force_arg_data=None):
@@ -1868,11 +1962,11 @@ class GenBoiler(object):
 
         # I don't think any intelligent guess at an impl is possible here
         result = \
-"""{decl}
+f"""{decl}
 {{
   // TODO
   // Note, argument types may need tweaking. Generator is not always able to tell what needs to be packed
-}}""".format(decl=decl)
+}}"""
         return result
 
     ###########################################################################
@@ -1884,7 +1978,7 @@ class GenBoiler(object):
             struct TestFakeSub;
         """
         test_struct = get_data_test_struct_name(sub)
-        return "    struct {};".format(test_struct)
+        return f"    struct {test_struct};"
 
     ###########################################################################
     def gen_cxx_bfb_unit_impl(self, phys, sub, force_arg_data=None):
@@ -1894,6 +1988,8 @@ class GenBoiler(object):
         >>> print(gb.gen_cxx_bfb_unit_impl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA))
           static void run_bfb()
           {
+            auto engine = setup_random_test();
+        <BLANKLINE>
             FakeSubData f90_data[] = {
               // TODO
             };
@@ -1903,7 +1999,7 @@ class GenBoiler(object):
             // Generate random input data
             // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
             for (auto& d : f90_data) {
-              d.randomize();
+              d.randomize(engine);
             }
         <BLANKLINE>
             // Create copies of data for use by cxx. Needs to happen before fortran calls so that
@@ -1942,12 +2038,15 @@ class GenBoiler(object):
                   REQUIRE(d_f90.total(d_f90.baz) == d_cxx.total(d_cxx.ball2));
                   REQUIRE(d_f90.ball2[k] == d_cxx.ball2[k]);
                 }
+        <BLANKLINE>
               }
             }
           } // run_bfb
         >>> print(gb.gen_cxx_bfb_unit_impl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA_ALL_SCALAR))
           static void run_bfb()
           {
+            auto engine = setup_random_test();
+        <BLANKLINE>
             FakeSubData f90_data[max_pack_size] = {
               // TODO
             };
@@ -1957,7 +2056,7 @@ class GenBoiler(object):
             // Generate random input data
             // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
             for (auto& d : f90_data) {
-              d.randomize();
+              d.randomize(engine);
             }
         <BLANKLINE>
             // Create copies of data for use by cxx and sync it to device. Needs to happen before fortran calls so that
@@ -2036,13 +2135,13 @@ class GenBoiler(object):
     // Generate random input data
     // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
     for (auto& d : f90_data) {
-      d.randomize();
+      d.randomize(engine);
     }"""
 
         _, _, _, _, scalars, real_data, int_data, bool_data = group_data(arg_data, filter_out_intent="in")
         check_scalars, check_arrays = "", ""
         for scalar in scalars:
-            check_scalars += "        REQUIRE(d_f90.{name} == d_cxx.{name});\n".format(name=scalar[0])
+            check_scalars += f"        REQUIRE(d_f90.{scalar[0]} == d_cxx.{scalar[0]});\n"
 
         if has_array:
             c2f_transpose_code = "" if not need_transpose else \
@@ -2061,17 +2160,19 @@ class GenBoiler(object):
                         all_data[k] = v
 
             for _, data in all_data.items():
-                check_arrays += "        for (Int k = 0; k < d_f90.total(d_f90.{}); ++k) {{\n".format(data[0])
+                check_arrays += f"        for (Int k = 0; k < d_f90.total(d_f90.{data[0]}); ++k) {{\n"
                 for datum in data:
-                    check_arrays += "          REQUIRE(d_f90.total(d_f90.{orig}) == d_cxx.total(d_cxx.{name}));\n".format(orig=data[0], name=datum)
-                    check_arrays += "          REQUIRE(d_f90.{name}[k] == d_cxx.{name}[k]);\n".format(name=datum)
+                    check_arrays += f"          REQUIRE(d_f90.total(d_f90.{data[0]}) == d_cxx.total(d_cxx.{datum}));\n"
+                    check_arrays += f"          REQUIRE(d_f90.{datum}[k] == d_cxx.{datum}[k]);\n"
 
-                check_arrays += "        }"
+                check_arrays += "        }\n"
 
         if has_array:
             result = \
 """  static void run_bfb()
   {{
+    auto engine = setup_random_test();
+
     {data_struct} f90_data[] = {{
       // TODO
     }};
@@ -2136,12 +2237,12 @@ class GenBoiler(object):
             spack_output_init = ""
             if ooreals:
                 spack_output_init = \
-"""// Init outputs
-      Spack {};
-""".format(", ".join(["{}(0)".format(ooreal) for ooreal in ooreals]))
+f"""// Init outputs
+      Spack {', '.join(['{}(0)'.format(ooreal) for ooreal in ooreals])};
+"""
 
             scalars = group_data(arg_data)[4]
-            func_call = "Functions::{}({});".format(sub, ", ".join([(scalar if scalar in reals else "cxx_device(0).{}".format(scalar)) for scalar, _ in scalars]))
+            func_call = f"Functions::{sub}({', '.join([(scalar if scalar in reals else 'cxx_device(0).{}'.format(scalar)) for scalar, _ in scalars])});"
 
             spack_output_to_dview = ""
             if oreals:
@@ -2155,6 +2256,8 @@ class GenBoiler(object):
             result = \
 """  static void run_bfb()
   {{
+    auto engine = setup_random_test();
+
     {data_struct} f90_data[max_pack_size] = {{
       // TODO
     }};
@@ -2211,7 +2314,7 @@ class GenBoiler(object):
         """
         >>> gb = GenBoiler([])
         >>> print(gb.gen_cxx_eti("shoc", "fake_sub", force_arg_data=UT_ARG_DATA))
-        #include "shoc_fake_sub_impl.hpp"
+        #include "impl/shoc_fake_sub_impl.hpp"
         <BLANKLINE>
         namespace scream {
         namespace shoc {
@@ -2230,7 +2333,7 @@ class GenBoiler(object):
         include_file = get_piece_data(phys, sub, "cxx_func_impl", FILEPATH, self)
 
         result = \
-"""#include "{include_file}"
+f"""#include "{include_file}"
 
 namespace scream {{
 namespace {phys} {{
@@ -2244,7 +2347,7 @@ template struct Functions<Real,DefaultDevice>;
 
 }} // namespace {phys}
 }} // namespace scream
-""".format(sub=sub, include_file=include_file, phys=phys)
+"""
 
         return result
 
@@ -2254,10 +2357,10 @@ template struct Functions<Real,DefaultDevice>;
         """
         >>> gb = GenBoiler([])
         >>> print(gb.gen_cmake_impl_eti("shoc", "fake_sub", force_arg_data=UT_ARG_DATA))
-            shoc_fake_sub.cpp
+            eti/shoc_fake_sub.cpp
         """
         eti_src = get_piece_data(phys, sub, "cxx_eti", FILEPATH, self)
-        return "    {}".format(eti_src)
+        return f"    {eti_src}"
 
     ###########################################################################
     def gen_cmake_unit_test(self, phys, sub, force_arg_data=None):
@@ -2267,8 +2370,8 @@ template struct Functions<Real,DefaultDevice>;
         >>> print(gb.gen_cmake_unit_test("shoc", "fake_sub", force_arg_data=UT_ARG_DATA))
             shoc_fake_sub_tests.cpp
         """
-        test_src = os.path.basename(get_piece_data(phys, sub, "cxx_bfb_unit_impl", FILEPATH, self))
-        return "    {}".format(test_src)
+        test_src = Path(get_piece_data(phys, sub, "cxx_bfb_unit_impl", FILEPATH, self)).name
+        return f"    {test_src}"
 
     #
     # Main methods
@@ -2353,7 +2456,7 @@ template struct Functions<Real,DefaultDevice>;
         """
         if force_arg_data is None: # don't want unit tests printing this
             print("===============================================================================")
-            print("Trying to generate piece {} for subroutine {} for physics {}\n".format(piece, sub, phys))
+            print(f"Trying to generate piece {piece} for subroutine {sub} for physics {phys}\n")
 
         base_filepath, was_filegen, insert_regex, self_begin_regex, self_end_regex, _ \
             = [item(phys, sub, self) for item in PIECES[piece]]
@@ -2366,13 +2469,13 @@ template struct Functions<Real,DefaultDevice>;
         else:
             orig_lines = force_file_lines if force_file_lines else filepath.open(encoding="utf-8").read().splitlines()
             needs_rewrite = False
-            gen_lines  = getattr(self, "gen_{}".format(piece))(phys, sub, force_arg_data=force_arg_data).splitlines()
+            gen_lines  = getattr(self, f"gen_{piece}")(phys, sub, force_arg_data=force_arg_data).splitlines()
 
             # Check to see if piece already exists
             try:
                 existing_piece_line_range = check_existing_piece(orig_lines, self_begin_regex, self_end_regex)
             except SystemExit as e:
-                expect(False, "Problem parsing file {} for existing piece {}: {}".format(filepath, piece, e))
+                expect(False, f"Problem parsing file {filepath} for existing piece {piece}: {e}")
 
             if existing_piece_line_range is not None:
                 # Replace existing
@@ -2414,8 +2517,7 @@ template struct Functions<Real,DefaultDevice>;
                     try:
                         self.gen_piece(phys, sub, piece)
                     except SystemExit as e:
-                        print("Warning: failed to generate subroutine {} piece {} for physics {}, error: {}".\
-                              format(sub, piece, phys, e))
+                        print(f"Warning: failed to generate subroutine {sub} piece {piece} for physics {phys}, error: {e}")
                         all_success = False
 
         return all_success

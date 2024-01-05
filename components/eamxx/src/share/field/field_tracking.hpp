@@ -60,6 +60,7 @@ public:
   // NOTE: if the field has 'children' (see FamilyTracking), their ts will be updated too.
   //       However, if the field has a 'parent' (see FamilyTracking), the parent's ts will not be updated.
   void update_time_stamp (const TimeStamp& ts);
+  void invalidate_time_stamp ();
 
   // Set/get accumulation interval start
   void set_accum_start_time (const TimeStamp& ts);

@@ -213,7 +213,7 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
    ! doiopupdate set to true if model time step > next available IOP 
 
    if (use_iop .and. masterproc) then
-     if (is_first_step()) then 
+     if (is_first_step() .or. is_first_restart_step()) then
        call setiopupdate_init()
      else
        call setiopupdate

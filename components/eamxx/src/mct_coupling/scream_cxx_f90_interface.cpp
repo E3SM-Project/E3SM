@@ -12,6 +12,7 @@
 #include "mct_coupling/ScreamContext.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/scream_session.hpp"
+#include "share/scream_config.hpp"
 #include "share/scream_types.hpp"
 
 #include "ekat/ekat_parse_yaml_file.hpp"
@@ -51,7 +52,8 @@ void fpe_guard_wrapper (const Lambda& f) {
   // Execute wrapped function
   try {
     f();
-  } catch (...) {
+  } catch (std::exception &e) {
+    fprintf(stderr, "%s\n", e.what());
     auto& c = ScreamContext::singleton();
     c.clean_up();
     throw;
@@ -85,7 +87,8 @@ void scream_create_atm_instance (const MPI_Fint f_comm, const int atm_id,
                                  const int run_start_ymd,
                                  const int run_start_tod,
                                  const int case_start_ymd,
-                                 const int case_start_tod)
+                                 const int case_start_tod,
+                                 const char* calendar_name)
 {
   using namespace scream;
   using namespace scream::control;
@@ -101,6 +104,17 @@ void scream_create_atm_instance (const MPI_Fint f_comm, const int atm_id,
 
     // Initialize the scream session.
     scream::initialize_scream_session(atm_comm.am_i_root());
+
+    std::string cal = calendar_name;
+    if (cal=="NO_LEAP") {
+      scream::set_use_leap_year (false);
+    } else if (cal=="GREGORIAN") {
+      scream::set_use_leap_year (true);
+    } else {
+      EKAT_ERROR_MSG ("Error! Invalid/unsupported calendar name.\n"
+          "   - input name : " + cal + "\n"
+          "   - valid names: NO_LEAP, GREGORIAN\n");
+    }
 
     // Create a parameter list for inputs
     ekat::ParameterList scream_params("Scream Parameters");
@@ -188,10 +202,9 @@ void scream_setup_surface_coupling (const char*& import_field_names, int*& impor
   });
 }
 
-void scream_init_atm (const int run_start_ymd,
-                      const int run_start_tod,
-                      const int case_start_ymd,
-                      const int case_start_tod)
+void scream_init_atm (const char* caseid,
+                      const char* hostname,
+                      const char* username)
 {
   using namespace scream;
   using namespace scream::control;
@@ -199,6 +212,9 @@ void scream_init_atm (const int run_start_ymd,
   fpe_guard_wrapper([&](){
     // Get the ad, then complete initialization
     auto& ad = get_ad_nonconst();
+
+    // Set provenance info in the driver (will be added to the output files)
+    ad.set_provenance_data (caseid,hostname,username);
 
     // Init all fields, atm processes, and output streams
     ad.initialize_fields ();

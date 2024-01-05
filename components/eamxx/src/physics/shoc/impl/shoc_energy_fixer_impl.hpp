@@ -2,8 +2,12 @@
 #define SHOC_ENERGY_FIXER_IMPL_HPP
 
 #include "shoc_functions.hpp" // for ETI only but harmless for GPU
+#include "share/util/scream_common_physics_functions.hpp"
 
 namespace scream {
+
+using PF           = scream::PhysicsFunctions<DefaultDevice>;
+
 namespace shoc {
 
 /*
@@ -65,8 +69,10 @@ void Functions<S,D>::shoc_energy_fixer(
   const auto s_rho_zi = ekat::scalarize(rho_zi);
   const auto s_pint   = ekat::scalarize(pint);
 
+  const auto exner_int = PF::exner_function(s_pint(nlevi-1));
+
   // Compute the total energy before and after SHOC call
-  const Scalar shf = wthl_sfc*cp*s_rho_zi(nlevi-1);
+  const Scalar shf = wthl_sfc*cp*s_rho_zi(nlevi-1)*exner_int;
   const Scalar lhf = wqw_sfc*s_rho_zi(nlevi-1);
   te_a = se_a + ke_a + (lcond+lice)*wv_a + lice*wl_a;
   te_b = se_b + ke_b + (lcond+lice)*wv_b + lice*wl_b;

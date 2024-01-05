@@ -180,6 +180,8 @@ int run(int argc, char** argv) {
     // TODO: provide as inputs consistent with how aerosol is treated?
     const auto nswgpts = scream::rrtmgp::k_dist_sw.get_ngpt();
     const auto nlwgpts = scream::rrtmgp::k_dist_lw.get_ngpt();
+    auto cld_tau_sw_bnd = real3d("cld_tau_sw_bnd", ncol, nlay, nswbands);
+    auto cld_tau_lw_bnd = real3d("cld_tau_lw_bnd", ncol, nlay, nlwbands);
     auto cld_tau_sw = real3d("cld_tau_sw", ncol, nlay, nswgpts);
     auto cld_tau_lw = real3d("cld_tau_lw", ncol, nlay, nlwgpts);
 
@@ -192,6 +194,7 @@ int run(int argc, char** argv) {
             sfc_alb_dir, sfc_alb_dif, mu0,
             lwp, iwp, rel, rei, cld,
             aer_tau_sw, aer_ssa_sw, aer_asm_sw, aer_tau_lw,
+            cld_tau_sw_bnd, cld_tau_lw_bnd,  // outputs
             cld_tau_sw, cld_tau_lw,  // outputs
             sw_flux_up, sw_flux_dn, sw_flux_dir,
             lw_flux_up, lw_flux_dn,
@@ -260,6 +263,8 @@ int run(int argc, char** argv) {
     aer_tau_lw.deallocate();
     cld_tau_sw.deallocate();
     cld_tau_lw.deallocate();
+    cld_tau_sw_bnd.deallocate();
+    cld_tau_lw_bnd.deallocate();
     yakl::finalize();
 
     return nerr != 0 ? 1 : 0;

@@ -28,6 +28,32 @@ AbstractGrid (const std::string& name,
 
   // This grid name is also an alias
   m_aliases.push_back(m_name);
+
+  // Ensure each grid object gets a different id
+  static int counter = 0;
+  m_unique_grid_id = counter;
+  ++counter;
+}
+
+AbstractGrid::
+AbstractGrid (const std::string& name,
+              const GridType type,
+              const int num_local_dofs,
+              const int num_global_dofs,
+              const int num_vertical_lev,
+              const ekat::Comm& comm)
+ : AbstractGrid(name,type,num_local_dofs,num_vertical_lev,comm)
+{
+  m_num_global_dofs = num_global_dofs;
+#ifndef NDEBUG
+  int max_nldofs = m_num_local_dofs;
+  m_comm.all_reduce(&max_nldofs,1,MPI_MAX);
+  EKAT_REQUIRE_MSG (max_nldofs<=m_num_global_dofs,
+      "Error! The number of global dof is smaller than the local number of dofs on some ranks.\n"
+      " - grid name: " + name + "\n"
+      " - num global dofs: " + std::to_string(m_num_global_dofs) + "\n"
+      " - max num local dofs: " + std::to_string(max_nldofs) + "\n");
+#endif
 }
 
 void AbstractGrid::add_alias (const std::string& alias)

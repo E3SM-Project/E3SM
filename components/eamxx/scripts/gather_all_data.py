@@ -98,6 +98,7 @@ class GatherAllData(object):
         if self._local:
             run_cmd_no_fail(cmd, arg_stdout=None, arg_stderr=None, verbose=True, dry_run=self._dry_run, exc_type=RuntimeError)
         else:
+            output = "" # Making pylint happy
             try:
                 ssh_cmd = "ssh -o StrictHostKeyChecking=no {} '{}'".format(machine, cmd)
                 output = run_cmd_no_fail(ssh_cmd, dry_run=self._dry_run, exc_type=RuntimeError, combine_output=True)

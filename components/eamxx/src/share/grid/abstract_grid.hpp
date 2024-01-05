@@ -52,6 +52,13 @@ public:
                 const int num_vertical_lev,
                 const ekat::Comm& comm);
 
+  AbstractGrid (const std::string& name,
+                const GridType type,
+                const int num_local_dofs,
+                const int num_global_dofs,
+                const int num_vertical_lev,
+                const ekat::Comm& comm);
+
   virtual ~AbstractGrid () = default;
 
   // Grid description utilities
@@ -154,6 +161,8 @@ public:
   // NOTE: we'd need setter/getter for this, so we might as well make it public
   std::string m_short_name = "";
 
+  int get_unique_grid_id () const { return m_unique_grid_id; }
+
 protected:
 
   void copy_data (const AbstractGrid& src, const bool shallow = true);
@@ -167,6 +176,8 @@ private:
   // The grid name and type
   GridType     m_type;
   std::string  m_name;
+
+  int m_unique_grid_id;
 
   std::vector<std::string> m_aliases;
 

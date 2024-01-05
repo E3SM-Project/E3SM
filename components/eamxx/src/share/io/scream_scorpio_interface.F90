@@ -60,14 +60,18 @@ module scream_scorpio_interface
   public :: &
             lookup_pio_atm_file,         & ! Checks if a pio file is present
             eam_pio_closefile,           & ! Close a specfic pio file.
-            eam_pio_enddef,              & ! Register variables and dimensions with PIO files
+            eam_pio_enddef,              & ! Ends define mode phase, enters data mode phase
+            eam_pio_redef,               & ! Pause data mode phase, re-enter define mode phase
             eam_init_pio_subsystem,      & ! Gather pio specific data from the component coupler
             is_eam_pio_subsystem_inited, & ! Query whether the pio subsystem is inited already
             eam_pio_finalize,            & ! Run any final PIO commands
             register_file,               & ! Creates/opens a pio input/output file
             register_variable,           & ! Register a variable with a particular pio output file
-            set_variable_metadata,       & ! Sets a variable metadata (always char data)
-            get_variable,                & ! Register a variable with a particular pio output file
+            set_variable_metadata_char,  & ! Sets a variable metadata (char data)
+            set_variable_metadata_float, & ! Sets a variable metadata (float data)
+            set_variable_metadata_double,& ! Sets a variable metadata (double data)
+            get_variable_metadata_float, & ! Gets a variable metadata (float data)
+            get_variable_metadata_double,& ! Gets a variable metadata (double data)
             register_dimension,          & ! Register a dimension with a particular pio output file
             set_decomp,                  & ! Set the pio decomposition for all variables in file.
             set_dof,                     & ! Set the pio dof decomposition for specific variable in file.
@@ -76,7 +80,7 @@ module scream_scorpio_interface
             eam_update_time,             & ! Update the timestamp (i.e. time variable) for a given pio netCDF file
             read_time_at_index             ! Returns the time stamp for a specific time index
 
-  private :: errorHandle, get_coord
+  private :: errorHandle, get_coord, is_read, is_write, is_append
 
   ! Universal PIO variables for the module
   integer               :: atm_mpicom
@@ -91,17 +95,18 @@ module scream_scorpio_interface
   integer,parameter :: max_chars = 256
   integer,parameter :: max_hvarname_len = 64
   integer,parameter :: max_hvar_dimlen  = 5
-  integer,parameter :: file_purpose_not_set  = 0
-  integer,parameter :: file_purpose_in  = 1
-  integer,parameter :: file_purpose_out = 2
+  integer,parameter :: file_purpose_not_set  = 0  ! Not set (to catch uninited stuff errors)
+  integer,parameter :: file_purpose_in  = 1       ! Read
+  integer,parameter :: file_purpose_app = 2       ! Write (append if file exists)
+  integer,parameter :: file_purpose_out = 4       ! Write (replace if file exists)
 
   type, public :: hist_coord_t
     character(len=max_hcoordname_len) :: name = ''  ! coordinate name
-    integer                  :: dimsize = 0         ! size of dimension
     integer                  :: dimid               ! Unique PIO Id for this dimension
     character(len=max_chars) :: long_name = ''      ! 'long_name' attribute
     character(len=max_chars) :: units = ''          ! 'units' attribute
     logical                  :: is_partitioned      ! whether the dimension is partitioned across ranks
+    logical                  :: is_time_dim         ! whether the dimension is the time (unlimited) dim
   end type hist_coord_t
 
   type, public :: hist_var_t
@@ -113,7 +118,7 @@ module scream_scorpio_interface
     integer          :: dtype                 ! data type used to pass data to read/write routines
     integer          :: nc_dtype              ! data type used in the netcdf files
     integer          :: numdims               ! Number of dimensions in out field
-    type(io_desc_t), pointer  :: iodesc       ! PIO decomp associated with this variable
+    type(io_desc_t), pointer  :: iodesc => NULL()     ! PIO decomp associated with this variable
     type(iodesc_list_t), pointer  :: iodesc_list ! PIO decomp list with metadata about PIO decomp
     integer(kind=pio_offset_kind), allocatable :: compdof(:)        ! Global locations in output array for this process
     integer, allocatable :: dimid(:)          ! array of PIO dimension id's for this variable
@@ -222,7 +227,6 @@ contains
     ! It could happen that we are running a test, with an input file opening the
     ! same file that an output stream just wrote. In this case, the def phase ended
     ! during the output setup.
-    ! 
     if (.not. current_atm_file%is_enddef) then
       ! Gather the pio decomposition for all variables in this file, and assign them pointers.
       call set_decomp(trim(filename))
@@ -234,6 +238,35 @@ contains
 
   end subroutine eam_pio_enddef
 !=====================================================================!
+  ! Mandatory call to finish the variable and dimension definition phase
+  ! of a new PIO file.  Once this routine is called it is not possible
+  ! to add new dimensions or variables to the file.
+  subroutine eam_pio_redef(filename)
+    use pio_nf, only: pio_redef
+
+    character(len=*), intent(in) :: filename
+
+    type(pio_atm_file_t), pointer :: current_atm_file
+    integer                       :: ierr
+    logical                       :: found
+
+    call lookup_pio_atm_file(filename,current_atm_file,found)
+    if (.not.found) then
+      call errorHandle("PIO ERROR: error running redef on file "//trim(filename)//".\n PIO file not found or not open.",-999)
+    endif
+
+    ! It could happen that we are running a test, with an input file opening the
+    ! same file that an output stream just wrote. In this case, the def phase ended
+    ! during the output setup.
+    if (current_atm_file%is_enddef) then
+      ! Re-open define phase
+      ierr = PIO_redef(current_atm_file%pioFileDesc)
+      call errorHandle("PIO ERROR: issue arose with PIO_redef for file"//trim(current_atm_file%filename),ierr)
+      current_atm_file%is_enddef = .false.
+    endif
+
+  end subroutine eam_pio_redef
+!=====================================================================!
   ! Register a dimension with a specific pio output file.  Mandatory inputs
   ! include:
   ! filename:  Name of file to add the dimension to.
@@ -244,6 +277,8 @@ contains
   ! length:    The dimension length (must be >=0).  Choosing 0 marks the
   !            dimensions as having "unlimited" length which is used for
   !            dimensions such as time.
+  ! NOTE: if the file is in Read or Append mode, we are supposed to have already checked
+  !       that the specs match the ones in the file during the C++ wrapper functions
   subroutine register_dimension(filename,shortname,longname,length,is_partitioned)
     use pio_types, only: pio_unlimited
     use pio_nf,    only: PIO_def_dim
@@ -282,6 +317,7 @@ contains
       prev => curr
       curr => prev%next
     end do
+
     ! If the dim was not found, create it
     if (.not. dim_found) then
       allocate(prev%next)
@@ -292,156 +328,22 @@ contains
       ! Register this dimension
       hist_coord%name           = trim(shortname)
       hist_coord%long_name      = trim(longname)
-      hist_coord%dimsize        = length
       hist_coord%is_partitioned = is_partitioned
+      hist_coord%is_time_dim    = length .eq. 0
 
-      if (length.eq.0) then
-        ierr = PIO_def_dim(pio_atm_file%pioFileDesc, trim(shortname), pio_unlimited , hist_coord%dimid)
-        time_dimid = hist_coord%dimid
-      else
-        ierr = PIO_def_dim(pio_atm_file%pioFileDesc, trim(shortname), length , hist_coord%dimid)
-      end if
-      call errorHandle("PIO ERROR: could not define dimension "//trim(shortname)//" on file: "//trim(filename),ierr)
-    else
-      ! The dim was already registered by another input/output instance. Check that everything matches
-      hist_coord => curr%coord
-      if (trim(hist_coord%name) .ne. trim(shortname) .or. &
-          trim(hist_coord%long_name) .ne. trim(longname) .or. &
-          hist_coord%dimsize .ne. length) then
-        call errorHandle("PIO ERROR: dimension "//trim(shortname)//" was already defined on file "//trim(filename)//", but with a different length",ierr)
-
+      if (is_write(pio_atm_file%purpose)) then
+        if (length.eq.0) then
+          ierr = PIO_def_dim(pio_atm_file%pioFileDesc, trim(shortname), pio_unlimited , hist_coord%dimid)
+          time_dimid = hist_coord%dimid
+        else
+          ierr = PIO_def_dim(pio_atm_file%pioFileDesc, trim(shortname), length , hist_coord%dimid)
+        end if
+        call errorHandle("PIO ERROR: could not define dimension "//trim(shortname)//" on file: "//trim(filename),ierr)
       endif
     endif
   end subroutine register_dimension
 !=====================================================================!
-  ! Register a variable with a specific pio input file. Mandatory inputs
-  ! include:
-  ! filename:       The name of the netCDF file this variable will be
-  !                 registered with.
-  ! shortname:      A shortname descriptor (tag) for this variable.  This will be
-  !                 used to label the variable in the netCDF file as well.
-  ! longname:       A longer character string describing the variable.
-  ! numdims:        The number of dimensions associated with this variable,
-  !                 including time (if applicable).
-  ! var_dimensions: An array of character strings with the dimension shortnames
-  !                 for each dimension used by this variable.  Should have
-  !                 'numdims' entries.
-  ! dtype:          The data type for this variable using the proper netCDF
-  !                 integer tag.
-  ! pio_decomp_tag: A string that describes this particular dimension
-  !                 arrangement which will be used to create a unique PIO
-  !                 decomposition for reading this variable.  It is ok to reuse
-  !                 the pio_decomp_tag for variables that have the same
-  !                 dimensionality.  See get_decomp for more details.
-  subroutine get_variable(filename,shortname,longname,numdims,var_dimensions,dtype,pio_decomp_tag)
-    use pio_nf, only: PIO_inq_vartype
-    character(len=*), intent(in) :: filename         ! Name of the file to register this variable with
-    character(len=*), intent(in) :: shortname,longname       ! short and long names for the variable.  Short: variable name in file, Long: more descriptive name
-    integer, intent(in)          :: numdims                  ! Number of dimensions for this variable, including time dimension
-    character(len=*), intent(in) :: var_dimensions(numdims)  ! String array with shortname descriptors for each dimension of variable.
-    integer, intent(in)          :: dtype                    ! datatype for this variable, REAL, DOUBLE, INTEGER, etc.
-    character(len=*), intent(in) :: pio_decomp_tag           ! Unique tag for this variables decomposition type, to be used to determine if the io-decomp already exists.
-
-    ! Local variables
-    type(pio_atm_file_t),pointer :: pio_atm_file
-    type(hist_var_t), pointer    :: hist_var
-    integer                      :: dim_ii
-    integer                      :: ierr
-    logical                      :: found,var_found
-
-    type(hist_var_list_t), pointer :: curr, prev
-
-    var_found = .false.
-
-    ! Find the pointer for this file
-    call lookup_pio_atm_file(trim(filename),pio_atm_file,found)
-    if (.not.found ) then
-      call errorHandle("PIO ERROR: error registering variable "//trim(shortname)//" in file "//trim(filename)//".\n PIO file not found or not open.",-999)
-    endif
-
-    ! Get a new variable pointer in var_list
-    if (len_trim(shortname)>max_hvarname_len) call errorHandle("PIO Error: variable shortname "//trim(shortname)//" is too long, consider increasing max_hvarname_len or changing the variable shortname",-999)
-    curr => pio_atm_file%var_list_top
-
-    do while (associated(curr))
-      if (associated(curr%var)) then
-        if (trim(curr%var%name)==trim(shortname) .and. curr%var%is_set) then
-          var_found = .true.
-          exit
-        endif
-      endif
-      prev => curr
-      curr => prev%next
-    end do
-
-    if (.not. var_found) then
-      allocate(prev%next)
-      curr => prev%next
-      allocate(curr%var)
-      hist_var => curr%var
-      ! Populate meta-data associated with this variable
-      hist_var%name      = trim(shortname)
-      hist_var%long_name = trim(longname)
-      hist_var%numdims   = numdims
-      hist_var%dtype     = dtype
-      hist_var%pio_decomp_tag = trim(pio_decomp_tag)
-      ! Determine the dimension id's saved in the netCDF file and associated with
-      ! this variable, check if variable has a time dimension
-      hist_var%has_t_dim = .false.
-      hist_var%is_partitioned = .false.
-      allocate(hist_var%dimid(numdims),hist_var%dimlen(numdims))
-      do dim_ii = 1,numdims
-        ierr = pio_inq_dimid(pio_atm_file%pioFileDesc,trim(var_dimensions(dim_ii)),hist_var%dimid(dim_ii))
-        call errorHandle("EAM_PIO ERROR: Unable to find dimension id for "//trim(var_dimensions(dim_ii)),ierr)
-        ierr = pio_inq_dimlen(pio_atm_file%pioFileDesc,hist_var%dimid(dim_ii),hist_var%dimlen(dim_ii))
-        call errorHandle("EAM_PIO ERROR: Unable to determine length for dimension "//trim(var_dimensions(dim_ii)),ierr)
-        if (hist_var%dimlen(dim_ii).eq.0) hist_var%has_t_dim = .true.
-      end do
-
-      ! Register Variable with PIO
-      ! check to see if variable already is defined with file (for use with input)
-      ierr = PIO_inq_varid(pio_atm_file%pioFileDesc,trim(shortname),hist_var%piovar)
-      call errorHandle("PIO ERROR: could not find variable "//trim(shortname)//" in file "//trim(filename),ierr)
-
-      ! Not really needed, but just in case, store var data type in the nc file
-      ierr = PIO_inq_vartype(pio_atm_file%pioFileDesc,hist_var%piovar,hist_var%nc_dtype)
-      call errorHandle("EAM PIO ERROR: Unable to retrieve dtype for variable "//shortname,ierr)
-
-      ! Set that the new variable has been set
-      hist_var%is_set = .true.
-    else
-      ! The var was already registered by another input/output instance. Check that everything matches
-      hist_var => curr%var
-      if ( trim(hist_var%long_name) .ne. trim(longname) ) then
-        ! Different long name
-        call errorHandle("PIO Error: variable "//trim(shortname)//", already registered with different longname, in file: "//trim(filename),-999)
-      elseif (hist_var%dtype .ne. dtype) then
-        ! Different data type
-        call errorHandle("PIO Error: variable "//trim(shortname)//", already registered with different dtype, in file: "//trim(filename),-999)
-      elseif (pio_atm_file%purpose .eq. file_purpose_out .and. & ! Out files must match the decomp tag
-              (hist_var%numdims .ne. numdims .or. &
-               trim(hist_var%pio_decomp_tag) .ne. trim(pio_decomp_tag))) then
-        ! Different decomp tag in output file
-        call errorHandle("PIO Error: variable "//trim(shortname)//", already registered with different decomp tag, in file: "//trim(filename),-999)
-      elseif (hist_var%numdims .ne. numdims .and. &
-              hist_var%numdims .ne. (numdims+1)) then
-        ! Invalid dimlen
-        call errorHandle("PIO Error: variable "//trim(shortname)//", already registered with different dimlen, in file: "//trim(filename),-999)
-      elseif (pio_atm_file%purpose .eq. file_purpose_in .and. &
-              hist_var%numdims .eq. numdims .and. &
-              trim(hist_var%pio_decomp_tag) .ne. trim(pio_decomp_tag)) then
-        ! Same dimlen, but different decomp tag in input file
-        call errorHandle("PIO Error: variable "//trim(shortname)//", already registered with different decomp tag, in file: "//trim(filename),-999)
-      elseif (pio_atm_file%purpose .eq. file_purpose_in .and. & ! In files *may* use a decomp tag
-             (hist_var%numdims .eq. (numdims+1) .and. &           ! without "-time" at the end
-              trim(hist_var%pio_decomp_tag) .ne. trim(pio_decomp_tag)//"-time")) then
-        ! Different dimlen, but different decomp tag even if attaching "-time" in input file
-        call errorHandle("PIO Error: variable "//trim(shortname)//", already registered with different decomp tag, in file: "//trim(filename),-999)
-      endif
-    endif
-  end subroutine get_variable
-!=====================================================================!
-  ! Register a variable with a specific pio output file. Mandatory inputs
+  ! Register a variable with a specific pio input/output file. Mandatory inputs
   ! include:
   ! pio_atm_filename: The name of the netCDF file this variable will be
   !                   registered with.
@@ -460,19 +362,21 @@ contains
   !                 decomposition for reading this variable.  It is ok to reuse
   !                 the pio_decomp_tag for variables that have the same
   !                 dimensionality.  See get_decomp for more details.
+  ! NOTE: if the file is in Read or Append mode, we are supposed to have already checked
+  !       that the specs match the ones in the file during the C++ wrapper functions
   subroutine register_variable(filename,shortname,longname,units, &
                                numdims,var_dimensions,            &
                                dtype,nc_dtype,pio_decomp_tag)
     use pio_nf, only: PIO_def_var
 
-    character(len=*), intent(in) :: filename         ! Name of the file to register this variable with
-    character(len=*), intent(in) :: shortname,longname       ! short and long names for the variable.  Short: variable name in file, Long: more descriptive name
-    character(len=*), intent(in) :: units                    ! units for variable
-    integer, intent(in)          :: numdims                  ! Number of dimensions for this variable, including time dimension
-    character(len=*), intent(in) :: var_dimensions(numdims)  ! String array with shortname descriptors for each dimension of variable.
-    integer, intent(in)          :: dtype                    ! datatype for arrays that will be passed to read/write routines
-    integer, intent(in)          :: nc_dtype                 ! datatype for this variable in nc files
-    character(len=*), intent(in) :: pio_decomp_tag           ! Unique tag for this variables decomposition type, to be used to determine if the io-decomp already exists.
+    character(len=256), intent(in)  :: filename                 ! Name of the file to register this variable with
+    character(len=256), intent(in)  :: shortname,longname       ! short and long names for the variable.  Short: variable name in file, Long: more descriptive name
+    character(len=256), intent(in)  :: units                    ! units for variable
+    integer, intent(in)             :: numdims                  ! Number of dimensions for this variable, including time dimension
+    character(len=256), intent(in)  :: var_dimensions(numdims)  ! String array with shortname descriptors for each dimension of variable.
+    character(len=256), intent(in)  :: pio_decomp_tag           ! Unique tag for this variables decomposition type, to be used to determine if the io-decomp already exists.
+    integer, intent(in)             :: dtype                    ! datatype for arrays that will be passed to read/write routines
+    integer, intent(in)             :: nc_dtype                 ! datatype for this variable in nc files (unused if file mode is Read)
 
     ! Local variables
     type(pio_atm_file_t),pointer :: pio_atm_file
@@ -480,11 +384,10 @@ contains
     integer                      :: dim_ii
     logical                      :: found,var_found
     integer                      :: ierr
-    character(len=256)           :: dimlen_str
     type(hist_coord_t), pointer  :: hist_coord
 
     type(hist_var_list_t), pointer :: curr, prev
-    
+
     var_found = .false.
 
     ! Find the pointer for this file
@@ -496,98 +399,262 @@ contains
     ! Get a new variable pointer in var_list
     if (len_trim(shortname)>max_hvarname_len) call errorHandle("PIO Error: variable shortname "//trim(shortname)//" is too long, consider increasing max_hvarname_len or changing the variable shortname",-999)
     curr => pio_atm_file%var_list_top
-
-    do while (associated(curr))
+    do while ( associated(curr) )
       if (associated(curr%var)) then
         if (trim(curr%var%name)==trim(shortname) .and. curr%var%is_set) then
-          var_found = .true.
           exit
-        endif
+        end if
       end if
       prev => curr
       curr => prev%next
     end do
+    
+    allocate(prev%next)
+    curr => prev%next
+    allocate(curr%var)
+    hist_var => curr%var
+    ! Populate meta-data associated with this variable
+    hist_var%name      = trim(shortname)
+    hist_var%long_name = trim(longname)
 
-    ! If the var was not found, allocate the new var
-    if (.not. var_found) then
-      allocate(prev%next)
-      curr => prev%next
-      allocate(curr%var)
-      hist_var => curr%var
-      ! Populate meta-data associated with this variable
-      hist_var%name      = trim(shortname)
-      hist_var%long_name = trim(longname)
-      hist_var%units = trim(units)
-      hist_var%numdims   = numdims
-      hist_var%dtype     = dtype
-      hist_var%nc_dtype  = nc_dtype
-      hist_var%pio_decomp_tag = trim(pio_decomp_tag)
-      ! Determine the dimension id's saved in the netCDF file and associated with
-      ! this variable, check if variable has a time dimension
-      hist_var%has_t_dim = .false.
-      hist_var%is_partitioned = .false.
-      allocate(hist_var%dimid(numdims),hist_var%dimlen(numdims))
-      do dim_ii = 1,numdims
-        ierr = pio_inq_dimid(pio_atm_file%pioFileDesc,trim(var_dimensions(dim_ii)),hist_var%dimid(dim_ii))
-        call errorHandle("EAM_PIO ERROR: Unable to find dimension id for "//trim(var_dimensions(dim_ii)),ierr)
-        ierr = pio_inq_dimlen(pio_atm_file%pioFileDesc,hist_var%dimid(dim_ii),hist_var%dimlen(dim_ii))
-        call errorHandle("EAM_PIO ERROR: Unable to determine length for dimension "//trim(var_dimensions(dim_ii)),ierr)
-        if (hist_var%dimlen(dim_ii).eq.0) hist_var%has_t_dim = .true.
-        call convert_int_2_str(hist_var%dimlen(dim_ii),dimlen_str)
-        hist_var%pio_decomp_tag = hist_var%pio_decomp_tag//"_"//trim(dimlen_str)
+    hist_var%units     = trim(units)
+    hist_var%numdims   = numdims
+    hist_var%dtype     = dtype
+    hist_var%nc_dtype  = nc_dtype
+    hist_var%pio_decomp_tag = trim(pio_decomp_tag)
+    ! Determine the dimension id's saved in the netCDF file and associated with
+    ! this variable, check if variable has a time dimension
+    hist_var%has_t_dim = .false.
+    hist_var%is_partitioned = .false.
+    allocate(hist_var%dimid(numdims),hist_var%dimlen(numdims))
+    do dim_ii = 1,numdims
+      ierr = pio_inq_dimid(pio_atm_file%pioFileDesc,trim(var_dimensions(dim_ii)),hist_var%dimid(dim_ii))
+      call errorHandle("EAM_PIO ERROR: Unable to find dimension id for "//trim(var_dimensions(dim_ii)),ierr)
+      ierr = pio_inq_dimlen(pio_atm_file%pioFileDesc,hist_var%dimid(dim_ii),hist_var%dimlen(dim_ii))
+      call errorHandle("EAM_PIO ERROR: Unable to determine length for dimension "//trim(var_dimensions(dim_ii)),ierr)
 
-        call get_coord (filename,var_dimensions(dim_ii),hist_coord)
-        if (hist_coord%is_partitioned) then
-          hist_var%is_partitioned = .true.
-        endif
-      end do
+      call get_coord (filename,var_dimensions(dim_ii),hist_coord)
+      if (hist_coord%is_partitioned) then
+        hist_var%is_partitioned = .true.
+      endif
+      if (hist_coord%is_time_dim) then
+        hist_var%has_t_dim = .true.
+      endif
+    end do
 
+    if (is_write(pio_atm_file%purpose)) then
       ierr = PIO_def_var(pio_atm_file%pioFileDesc, trim(shortname), hist_var%nc_dtype, hist_var%dimid(:numdims), hist_var%piovar)
       call errorHandle("PIO ERROR: could not define variable "//trim(shortname),ierr)
-
-      !PMC
       ierr=PIO_put_att(pio_atm_file%pioFileDesc, hist_var%piovar, 'units', hist_var%units )
       ierr=PIO_put_att(pio_atm_file%pioFileDesc, hist_var%piovar, 'long_name', hist_var%long_name )
-
-      ! Set that new variable has been created
-      hist_var%is_set = .true.
     else
-      ! The var was already registered by another input/output instance. Check that everything matches
-      hist_var => curr%var
-      if ( trim(hist_var%long_name) .ne. trim(longname) ) then
-        ! Different long name
-        call errorHandle("PIO Error: variable "//trim(shortname)//", already registered with different longname, in file: "//trim(filename),-999)
-     elseif ( trim(hist_var%units) .ne. trim(units) ) then
-        ! Different units
-        call errorHandle("PIO Error: variable "//trim(shortname)//", already registered with different units, in file: "//trim(filename),-999)
-      elseif (hist_var%nc_dtype .ne. nc_dtype .or. hist_var%dtype .ne. dtype) then
-        ! Different data type
-        call errorHandle("PIO Error: variable "//trim(shortname)//", already registered with different dtype, in file: "//trim(filename),-999)
-      elseif (pio_atm_file%purpose .eq. file_purpose_out .and. & ! Out files must match the decomp tag
-              (hist_var%numdims .ne. numdims .or. &
-               trim(hist_var%pio_decomp_tag) .ne. trim(pio_decomp_tag))) then
-        ! Different decomp tag in output file
-        call errorHandle("PIO Error: variable "//trim(shortname)//", already registered with different decomp tag, in file: "//trim(filename),-999)
-      elseif (hist_var%numdims .ne. numdims .and. &
-              hist_var%numdims .ne. (numdims+1)) then
-        ! Invalid dimlen
-        call errorHandle("PIO Error: variable "//trim(shortname)//", already registered with different dimlen, in file: "//trim(filename),-999)
-      elseif (pio_atm_file%purpose .eq. file_purpose_in .and. &
-              hist_var%numdims .eq. numdims .and. &
-              trim(hist_var%pio_decomp_tag) .ne. trim(pio_decomp_tag)) then
-        ! Same dimlen, but different decomp tag in input file
-        call errorHandle("PIO Error: variable "//trim(shortname)//", already registered with different decomp tag, in file: "//trim(filename),-999)
-      elseif (pio_atm_file%purpose .eq. file_purpose_in .and. & ! In files *may* use a decomp tag
-             (hist_var%numdims .eq. (numdims+1) .and. &           ! without "-time" at the end
-              trim(hist_var%pio_decomp_tag) .ne. trim(pio_decomp_tag)//"-time")) then
-        ! Different dimlen, but different decomp tag even if attaching "-time" in input file
-        call errorHandle("PIO Error: variable "//trim(shortname)//", already registered with different decomp tag, in file: "//trim(filename),-999)
-      endif
+      ierr = PIO_inq_varid(pio_atm_file%pioFileDesc,trim(shortname),hist_var%piovar)
+      call errorHandle("PIO ERROR: could not retrieve id for variable "//trim(shortname)//" from file "//trim(filename),ierr)
     endif
+
+    ! Set that new variable has been created
+    hist_var%is_set = .true.
 
   end subroutine register_variable
 !=====================================================================!
-  subroutine set_variable_metadata(filename, varname, metaname, metaval)
+  subroutine set_variable_metadata_float(filename, varname, metaname, metaval)
+    use pionfatt_mod, only: PIO_put_att => put_att
+
+    character(len=256), intent(in) :: filename
+    character(len=256), intent(in) :: varname
+    character(len=256), intent(in) :: metaname
+    real(kind=c_float), intent(in) :: metaval
+
+    ! Local variables
+    type(pio_atm_file_t),pointer :: pio_file
+    type(hist_var_t),    pointer :: var
+    integer                      :: ierr
+    logical                      :: found
+
+    type(hist_var_list_t), pointer :: curr
+
+    ! Find the pointer for this file
+    call lookup_pio_atm_file(trim(filename),pio_file,found)
+    if (.not.found ) then
+      call errorHandle("PIO ERROR: error setting metadata for variable "//trim(varname)//" in file "//trim(filename)//".\n PIO file not found or not open.",-999)
+    endif
+
+    ! Find the variable in the file
+    curr => pio_file%var_list_top
+
+    found = .false.
+    do while (associated(curr))
+      if (associated(curr%var)) then
+        if (trim(curr%var%name)==trim(varname) .and. curr%var%is_set) then
+          found = .true.
+          var => curr%var
+          exit
+        endif
+      endif
+      curr => curr%next
+    end do
+    if (.not.found ) then
+      call errorHandle("PIO ERROR: error setting metadata for variable "//trim(varname)//" in file "//trim(filename)//".\n Variable not found.",-999)
+    endif
+
+    ierr = PIO_put_att(pio_file%pioFileDesc, var%piovar, metaname, metaval)
+    if (ierr .ne. 0) then
+      call errorHandle("Error setting attribute '" // trim(metaname) &
+                       // "' on variable '" // trim(varname) &
+                       // "' in pio file " // trim(filename) // ".", -999)
+    endif
+
+  end subroutine set_variable_metadata_float
+!=====================================================================!
+  subroutine set_variable_metadata_double(filename, varname, metaname, metaval)
+    use pionfatt_mod, only: PIO_put_att => put_att
+
+    character(len=256), intent(in) :: filename
+    character(len=256), intent(in) :: varname
+    character(len=256), intent(in) :: metaname
+    real(kind=c_double), intent(in) :: metaval
+
+    ! Local variables
+    type(pio_atm_file_t),pointer :: pio_file
+    type(hist_var_t),    pointer :: var
+    integer                      :: ierr
+    logical                      :: found
+
+    type(hist_var_list_t), pointer :: curr
+
+    ! Find the pointer for this file
+    call lookup_pio_atm_file(trim(filename),pio_file,found)
+    if (.not.found ) then
+      call errorHandle("PIO ERROR: error setting metadata for variable "//trim(varname)//" in file "//trim(filename)//".\n PIO file not found or not open.",-999)
+    endif
+
+    ! Find the variable in the file
+    curr => pio_file%var_list_top
+
+    found = .false.
+    do while (associated(curr))
+      if (associated(curr%var)) then
+        if (trim(curr%var%name)==trim(varname) .and. curr%var%is_set) then
+          found = .true.
+          var => curr%var
+          exit
+        endif
+      endif
+      curr => curr%next
+    end do
+    if (.not.found ) then
+      call errorHandle("PIO ERROR: error setting metadata for variable "//trim(varname)//" in file "//trim(filename)//".\n Variable not found.",-999)
+    endif
+
+    ierr = PIO_put_att(pio_file%pioFileDesc, var%piovar, metaname, metaval)
+    if (ierr .ne. 0) then
+      call errorHandle("Error setting attribute '" // trim(metaname) &
+                       // "' on variable '" // trim(varname) &
+                       // "' in pio file " // trim(filename) // ".", -999)
+    endif
+
+  end subroutine set_variable_metadata_double
+!=====================================================================!
+  function get_variable_metadata_float(filename, varname, metaname) result(metaval)
+    use pionfatt_mod, only: PIO_get_att => get_att
+
+    character(len=256), intent(in) :: filename
+    character(len=256), intent(in) :: varname
+    character(len=256), intent(in) :: metaname
+    real(kind=c_float)             :: metaval
+    
+
+    ! Local variables
+    type(pio_atm_file_t),pointer :: pio_file
+    type(hist_var_t),    pointer :: var
+    integer                      :: ierr
+    logical                      :: found
+
+    type(hist_var_list_t), pointer :: curr
+
+    ! Find the pointer for this file
+    call lookup_pio_atm_file(trim(filename),pio_file,found)
+    if (.not.found ) then
+      call errorHandle("PIO ERROR: error setting metadata for variable "//trim(varname)//" in file "//trim(filename)//".\n PIO file not found or not open.",-999)
+    endif
+
+    ! Find the variable in the file
+    curr => pio_file%var_list_top
+
+    found = .false.
+    do while (associated(curr))
+      if (associated(curr%var)) then
+        if (trim(curr%var%name)==trim(varname) .and. curr%var%is_set) then
+          found = .true.
+          var => curr%var
+          exit
+        endif
+      endif
+      curr => curr%next
+    end do
+    if (.not.found ) then
+      call errorHandle("PIO ERROR: error setting metadata for variable "//trim(varname)//" in file "//trim(filename)//".\n Variable not found.",-999)
+    endif
+
+    ierr = PIO_get_att(pio_file%pioFileDesc, var%piovar, metaname, metaval)
+    if (ierr .ne. 0) then
+      call errorHandle("Error getting attribute '" // trim(metaname) &
+                       // "' on variable '" // trim(varname) &
+                       // "' in pio file " // trim(filename) // ".", -999)
+    endif
+
+  end function get_variable_metadata_float
+!=====================================================================!
+  function get_variable_metadata_double(filename, varname, metaname) result(metaval)
+    use pionfatt_mod, only: PIO_get_att => get_att
+
+    character(len=256), intent(in) :: filename
+    character(len=256), intent(in) :: varname
+    character(len=256), intent(in) :: metaname
+    real(kind=c_double)            :: metaval
+
+    ! Local variables
+    type(pio_atm_file_t),pointer :: pio_file
+    type(hist_var_t),    pointer :: var
+    integer                      :: ierr
+    logical                      :: found
+
+    type(hist_var_list_t), pointer :: curr
+
+    ! Find the pointer for this file
+    call lookup_pio_atm_file(trim(filename),pio_file,found)
+    if (.not.found ) then
+      call errorHandle("PIO ERROR: error setting metadata for variable "//trim(varname)//" in file "//trim(filename)//".\n PIO file not found or not open.",-999)
+    endif
+
+    ! Find the variable in the file
+    curr => pio_file%var_list_top
+
+    found = .false.
+    do while (associated(curr))
+      if (associated(curr%var)) then
+        if (trim(curr%var%name)==trim(varname) .and. curr%var%is_set) then
+          found = .true.
+          var => curr%var
+          exit
+        endif
+      endif
+      curr => curr%next
+    end do
+    if (.not.found ) then
+      call errorHandle("PIO ERROR: error setting metadata for variable "//trim(varname)//" in file "//trim(filename)//".\n Variable not found.",-999)
+    endif
+
+    ierr = PIO_get_att(pio_file%pioFileDesc, var%piovar, metaname, metaval)
+    if (ierr .ne. 0) then
+      call errorHandle("Error getting attribute '" // trim(metaname) &
+                       // "' on variable '" // trim(varname) &
+                       // "' in pio file " // trim(filename) // ".", -999)
+    endif
+
+  end function get_variable_metadata_double
+!=====================================================================!
+  subroutine set_variable_metadata_char(filename, varname, metaname, metaval)
     use pionfatt_mod, only: PIO_put_att => put_att
 
     character(len=256), intent(in) :: filename
@@ -634,7 +701,7 @@ contains
                        // "' in pio file " // trim(filename) // ".", -999)
     endif
 
-  end subroutine set_variable_metadata
+  end subroutine set_variable_metadata_char
 !=====================================================================!
   ! Update the time dimension for a specific PIO file.  This is needed when
   ! reading or writing multiple time levels.  Unlimited dimensions are treated
@@ -660,7 +727,7 @@ contains
     if (time>=0) ierr = pio_put_var(pio_atm_file%pioFileDesc,var%piovar,(/ pio_atm_file%numRecs /), (/ 1 /), (/ time /))
   end subroutine eam_update_time
 !=====================================================================!
-  ! Assign institutions to header metadata for a specific pio output file. 
+  ! Assign institutions to header metadata for a specific pio output file.
   subroutine eam_pio_createHeader(File)
 
     type(file_desc_t), intent(in) :: File             ! Pio file Handle
@@ -669,7 +736,7 @@ contains
     ! We are able to have EAMxx directly set most attributes in the HEADER
     ! except the list of institutions which appears to have a string that is too
     ! long to accomodate using `set_str_attribute` as it is currently defined.
-    ! So we keep the setting of institutions here.  
+    ! So we keep the setting of institutions here.
     ! TODO: revise the set_str_attribute code to allow the
     ! scream_output_manager.cpp to handle institutions too.
     ! NOTE: The use of //char(10)// causes each institution to be written on it's own line, makes it easier to read.
@@ -733,7 +800,7 @@ contains
     pio_file_list_back   => null()
     pio_file_list_front => null()
 
-    ! Init the iodecomp 
+    ! Init the iodecomp
     iodesc_list_top => null()
 
   end subroutine eam_init_pio_subsystem
@@ -776,13 +843,17 @@ contains
     integer                          :: retval           ! PIO error return value
     integer                          :: mode             ! Mode for how to handle the new file
 
-    if (pio_file%purpose .eq. file_purpose_in) then
+    if (is_read(pio_file%purpose)) then
       mode = pio_nowrite
     else
       mode = pio_write
     endif
     retval = pio_openfile(pio_subsystem,pio_file%pioFileDesc,pio_iotype,fname,mode)
     call errorHandle("PIO ERROR: unable to open file: "//trim(fname),retval)
+
+    if (is_append(pio_file%purpose)) then
+      pio_file%is_enddef = .true.
+    endif
 
   end subroutine eam_pio_openfile
 !=====================================================================!
@@ -801,9 +872,10 @@ contains
 
     ! Find the pointer for this file
     call lookup_pio_atm_file(trim(fname),pio_atm_file,found,pio_file_list_ptr)
+
     if (found) then
       if (pio_atm_file%num_customers .eq. 1) then
-        if (pio_atm_file%purpose .eq. file_purpose_out) then
+        if ( is_write(pio_atm_file%purpose) ) then
           call PIO_syncfile(pio_atm_file%pioFileDesc)
         endif
         call PIO_closefile(pio_atm_file%pioFileDesc)
@@ -815,12 +887,14 @@ contains
         do while (associated(curr_var_list))
           var => curr_var_list%var  ! The actual variable pointer
           if (associated(var)) then
-            ! Remove this variable as a customer of the associated iodesc
-            var%iodesc_list%num_customers = var%iodesc_list%num_customers - 1
-            ! Dellocate select memory from this variable.  Note we can't just
-            ! deallocate the whole var structure because this would also
-            ! deallocate the iodesc_list.
-            call deallocate_hist_var_t(var)
+            if (associated(var%iodesc_list)) then
+              ! Remove this variable as a customer of the associated iodesc
+              var%iodesc_list%num_customers = var%iodesc_list%num_customers - 1
+              ! Dellocate select memory from this variable.  Note we can't just
+              ! deallocate the whole var structure because this would also
+              ! deallocate the iodesc_list.
+              call deallocate_hist_var_t(var)
+            end if ! associated(var%iodesc_list)
           end if ! associated(var)
           curr_var_list => curr_var_list%next  ! Move on to the next variable
         end do ! associated(curr_var_list)
@@ -858,12 +932,12 @@ contains
 
   end subroutine eam_pio_closefile
 !=====================================================================!
-  ! Helper function to debug list of decomps 
+  ! Helper function to debug list of decomps
   subroutine print_decomp()
     type(iodesc_list_t),   pointer :: iodesc_ptr
 
     integer :: total
-    integer :: cnt 
+    integer :: cnt
     logical :: assoc
 
     if (associated(iodesc_list_top)) then
@@ -896,7 +970,7 @@ contains
   subroutine deallocate_hist_var_t(var)
 
     type(hist_var_t), pointer        :: var
-    
+
     deallocate(var%compdof)
     deallocate(var%dimid)
     deallocate(var%dimlen)
@@ -1019,7 +1093,7 @@ contains
     integer, intent(in)       :: dtype            ! Datatype associated with the output
     integer, intent(in)       :: dimension_len(:) ! Array of the dimension lengths for this decomp
     integer(kind=pio_offset_kind), intent(in) :: compdof(:)       ! The degrees of freedom this rank is responsible for
-    type(iodesc_list_t), pointer :: iodesc_list   ! The pio decomposition list that holds this iodesc 
+    type(iodesc_list_t), pointer :: iodesc_list   ! The pio decomposition list that holds this iodesc
 
     logical                     :: found            ! Whether a decomp has been found among the previously defined decompositions
     type(iodesc_list_t),pointer :: curr, prev       ! Used to toggle through the recursive list of decompositions
@@ -1068,6 +1142,7 @@ contains
         call pio_initdecomp(pio_subsystem, dtype, dimension_len, compdof, curr%iodesc, rearr=pio_rearranger)
         curr%iodesc_set = .true.
       end if
+      curr%num_customers = 0
     end if
     iodesc_list => curr
 
@@ -1135,18 +1210,23 @@ contains
 
     curr => current_atm_file%var_list_top
     do while (associated(curr))
+      ! Skip already deallocated vars, and vars for which decomp was already set
+      ! NOTE: fortran does not mandate/prohibit logical op short circuit, so do the
+      !       two following if statements separately
       if (associated(curr%var)) then
-        hist_var => curr%var
-        if (.not.associated(hist_var)) call errorHandle("PIO ERROR: unable to set decomp for file, var: "//trim(current_atm_file%filename)//", "//trim(hist_var%name)//". Set DOF.",999)
-        ! Assign decomp
-        if (hist_var%has_t_dim) then
-          loc_len = max(1,hist_var%numdims-1)
-          call get_decomp(hist_var%pio_decomp_tag,hist_var%dtype,hist_var%dimlen(:loc_len),hist_var%compdof,hist_var%iodesc_list)
-        else
-          call get_decomp(hist_var%pio_decomp_tag,hist_var%dtype,hist_var%dimlen,hist_var%compdof,hist_var%iodesc_list)
-        end if
-        hist_var%iodesc => hist_var%iodesc_list%iodesc
-        hist_var%iodesc_list%num_customers = hist_var%iodesc_list%num_customers + 1  ! Add this variable as a customer of this pio decomposition
+        if (.not. associated(curr%var%iodesc)) then
+          hist_var => curr%var
+          if (.not.associated(hist_var)) call errorHandle("PIO ERROR: unable to set decomp for file, var: "//trim(current_atm_file%filename)//", "//trim(hist_var%name)//". Set DOF.",999)
+          ! Assign decomp
+          if (hist_var%has_t_dim) then
+            loc_len = max(1,hist_var%numdims-1)
+            call get_decomp(hist_var%pio_decomp_tag,hist_var%dtype,hist_var%dimlen(:loc_len),hist_var%compdof,hist_var%iodesc_list)
+          else
+            call get_decomp(hist_var%pio_decomp_tag,hist_var%dtype,hist_var%dimlen,hist_var%compdof,hist_var%iodesc_list)
+          end if
+          hist_var%iodesc => hist_var%iodesc_list%iodesc
+          hist_var%iodesc_list%num_customers = hist_var%iodesc_list%num_customers + 1  ! Add this variable as a customer of this pio decomposition
+        endif
       end if
       curr => curr%next
     end do
@@ -1216,23 +1296,25 @@ contains
 
     integer                        :: ierr, time_id
 
-    ! Sanity check
-    if (purpose .ne. file_purpose_in .and. purpose .ne. file_purpose_out) then
-      call errorHandle("PIO Error: unrecognized file purpose for file '"//filename//"'.",-999)
+    ! Sanity checks
+    if ( .not. (is_read(purpose) .or. is_write(purpose) .or. is_append(purpose)) ) then
+      call errorHandle("PIO Error: unrecognized open mode requested for file '"//filename//"'.",-999)
+    endif
+    if ( is_read(purpose) .and. is_write(purpose) ) then
+      call errorHandle("PIO Error: both READ and WRITE mode requested for file '"//filename//"'.",-999)
+    endif
+    if ( is_read(purpose) .and. is_append(purpose) ) then
+      call errorHandle("PIO Error: APPEND mode requested along with READ mode for file '"//filename//"'.",-999)
     endif
 
     ! If the file already exists, return that file
     call lookup_pio_atm_file(trim(filename),pio_file,found)
     if (found) then
-      if (purpose .ne. file_purpose_in .or. &
-          pio_file%purpose .ne. file_purpose_in ) then
+      if (is_write(purpose) .or. is_write(pio_file%purpose) ) then
         ! We only allow multiple customers of the file if they all use it in read mode.
         call errorHandle("PIO Error: file '"//trim(filename)//"' was already open for writing.",-999)
-      else
-        pio_file%purpose = purpose
-        call eam_pio_openfile(pio_file,trim(pio_file%filename))
-        pio_file%num_customers = pio_file%num_customers + 1
       endif
+      pio_file%num_customers = pio_file%num_customers + 1
     else
       allocate(new_list_item)
       allocate(new_list_item%pio_file)
@@ -1243,12 +1325,9 @@ contains
       pio_file%numRecs = 0
       pio_file%num_customers = 1
       pio_file%purpose = purpose
-      if (purpose == file_purpose_out) then  ! Will be used for output.  Set numrecs to zero and create the new file.
-        call eam_pio_createfile(pio_file%pioFileDesc,trim(pio_file%filename))
-        call eam_pio_createHeader(pio_file%pioFileDesc)
-      elseif (purpose == file_purpose_in) then ! Will be used for input, just open it
+      if (is_read(purpose) .or. is_append(purpose)) then
+        ! Either read or append to existing file. Either way, file must exist on disk
         call eam_pio_openfile(pio_file,trim(pio_file%filename))
-        pio_file%is_enddef = .true. ! Files open in read mode are in data mode already
         ! Update the numRecs to match the number of recs in this file.
         ierr = pio_inq_dimid(pio_file%pioFileDesc,"time",time_id)
         if (ierr.ne.0) then
@@ -1259,6 +1338,10 @@ contains
           ierr = pio_inq_dimlen(pio_file%pioFileDesc,time_id,pio_file%numRecs)
           call errorHandle("EAM_PIO ERROR: Unable to determine length for dimension time in file "//trim(pio_file%filename),ierr)
         end if
+      elseif (is_write(purpose)) then
+        ! New output file
+        call eam_pio_createfile(pio_file%pioFileDesc,trim(pio_file%filename))
+        call eam_pio_createHeader(pio_file%pioFileDesc)
       else
         call errorHandle("PIO Error: get_pio_atm_file with filename = "//trim(filename)//", purpose (int) assigned to this lookup is not valid" ,-999)
       end if
@@ -1290,7 +1373,7 @@ contains
     integer, intent(in), optional  :: time_index
     real(c_double)                 :: val
     real(c_double)                 :: val_buf(1)
-    
+
     type(pio_atm_file_t), pointer :: pio_atm_file
     logical                       :: found
     integer                       :: dim_id, time_len, ierr
@@ -1531,7 +1614,7 @@ contains
       ! Otherwise default to the last time_index in the file
       call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(pio_atm_file%numRecs,kind=pio_offset_kind))
     end if
-    
+
     ! We don't want the extent along the 'time' dimension
     var_size = SIZE(var%compdof)
 
@@ -1567,7 +1650,7 @@ contains
       ! Otherwise default to the last time_index in the file
       call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(pio_atm_file%numRecs,kind=pio_offset_kind))
     end if
-    
+
     ! We don't want the extent along the 'time' dimension
     var_size = SIZE(var%compdof)
 
@@ -1603,7 +1686,7 @@ contains
       ! Otherwise default to the last time_index in the file
       call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(pio_atm_file%numRecs,kind=pio_offset_kind))
     end if
-    
+
     ! We don't want the extent along the 'time' dimension
     var_size = SIZE(var%compdof)
 
@@ -1643,12 +1726,12 @@ contains
     elseif (abs(int_in)<1e9) then
       fmt_str = trim(fmt_str)//"I9)"
     endif
-    
+
     if (int_in < 0) then
       write(str_out,fmt_str) "n", int_in
     else
       write(str_out,fmt_str) int_in
-    end if 
+    end if
 
   end subroutine convert_int_2_str
 
@@ -1686,5 +1769,21 @@ contains
 
     hist_coord => curr%coord
   end subroutine get_coord
+
+  function is_read (purpose)
+    integer, intent(in) :: purpose
+    logical :: is_read
+    is_read = iand(purpose,file_purpose_in) .ne. 0
+  end function is_read
+  function is_write (purpose)
+    integer, intent(in) :: purpose
+    logical :: is_write
+    is_write = iand(purpose,file_purpose_out) .ne. 0
+  end function is_write
+  function is_append (purpose)
+    integer, intent(in) :: purpose
+    logical :: is_append
+    is_append = iand(purpose,file_purpose_app) .ne. 0
+  end function is_append
 !=====================================================================!
 end module scream_scorpio_interface
