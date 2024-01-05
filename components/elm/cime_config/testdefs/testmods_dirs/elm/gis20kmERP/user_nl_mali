@@ -1,0 +1,8 @@
+config_velocity_solver = 'FO'
+config_thickness_advection = 'fo'
+config_thermal_solver = 'none'
+config_pio_num_iotasks = 47
+config_pio_stride = 64
+config_calving = 'none'
+config_restore_calving_front = .true.
+config_dt = '0000-00-01_00:00:00'
