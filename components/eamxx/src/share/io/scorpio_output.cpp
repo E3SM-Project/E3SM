@@ -1268,8 +1268,21 @@ AtmosphereOutput::create_diagnostic (const std::string& diag_field_name) {
     if (tokens[1].find_first_of("0123456789.")==0) {
       auto units_start = tokens[1].find_first_not_of("0123456789.");
       auto units = tokens[1].substr(units_start);
+      if (units.find("_above_") != std::string::npos) {
+        // The field is at a height above a specific reference.
+        // Currently we only support FieldAtHeight above "sealevel" or "surface"
+	auto subtokens = ekat::split(units,"_above_");
+	params.set("surface_reference",subtokens[1]);
+	units = subtokens[0];
+        params.set("vertical_location", subtokens[0]);
+      }
       if (units=="m") {
         diag_name = "FieldAtHeight";
+	if (!params.isParameter("surface_reference")) {
+          // Set default reference location to sealevel and warn user.
+          params.set<std::string>("surface_reference","sealevel");
+          m_atm_logger->warn("[EAMxx::scorpio_output] Warning, output variable " + diag_field_name + " does not have a surface reference.  Setting to default 'above sealevel'.\n");
+	}
       } else if (units=="mb" or units=="Pa" or units=="hPa") {
         diag_name = "FieldAtPressureLevel";
         diag_avg_cnt_name = "_" + tokens[1]; // Set avg_cnt tracking for this specific slice

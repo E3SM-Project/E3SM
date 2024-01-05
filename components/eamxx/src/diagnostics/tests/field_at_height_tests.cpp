@@ -39,6 +39,8 @@ TEST_CASE("field_at_height")
   FieldIdentifier v_int_fid ("v_int",FieldLayout({COL,CMP,ILEV},{ncols,ndims,nlevs+1}),m,grid->name());
   FieldIdentifier z_mid_fid ("z_mid",FieldLayout({COL,     LEV},{ncols,      nlevs  }),m,grid->name());
   FieldIdentifier z_int_fid ("z_int",FieldLayout({COL,    ILEV},{ncols,      nlevs+1}),m,grid->name());
+  FieldIdentifier geo_mid_fid ("geopotential_mid",FieldLayout({COL,     LEV},{ncols,      nlevs  }),m,grid->name());
+  FieldIdentifier geo_int_fid ("geopotential_int",FieldLayout({COL,    ILEV},{ncols,      nlevs+1}),m,grid->name());
 
   Field s_mid (s_mid_fid);
   Field s_int (s_int_fid);
@@ -46,6 +48,8 @@ TEST_CASE("field_at_height")
   Field v_int (v_int_fid);
   Field z_mid (z_mid_fid);
   Field z_int (z_int_fid);
+  Field geo_mid (geo_mid_fid);
+  Field geo_int (geo_int_fid);
 
   s_mid.allocate_view();
   s_int.allocate_view();
@@ -53,6 +57,8 @@ TEST_CASE("field_at_height")
   v_int.allocate_view();
   z_mid.allocate_view();
   z_int.allocate_view();
+  geo_mid.allocate_view();
+  geo_int.allocate_view();
 
   s_mid.get_header().get_tracking().update_time_stamp(t0);
   s_int.get_header().get_tracking().update_time_stamp(t0);
@@ -60,6 +66,8 @@ TEST_CASE("field_at_height")
   v_int.get_header().get_tracking().update_time_stamp(t0);
   z_mid.get_header().get_tracking().update_time_stamp(t0);
   z_int.get_header().get_tracking().update_time_stamp(t0);
+  geo_mid.get_header().get_tracking().update_time_stamp(t0);
+  geo_int.get_header().get_tracking().update_time_stamp(t0);
 
   auto print = [&](const std::string& msg) {
     if (comm.am_i_root()) {
@@ -75,10 +83,11 @@ TEST_CASE("field_at_height")
 
   // Lambda to create and run a diag, and return output
   auto run_diag = [&](const Field& f, const Field& z,
-                      const std::string& loc) {
+                      const std::string& loc, const std::string& surf_ref) {
     util::TimeStamp t0 ({2022,1,1},{0,0,0});
     auto& factory = AtmosphereDiagnosticFactory::instance();
     ekat::ParameterList pl;
+    pl.set<std::string>("surface_reference",surf_ref);
     pl.set("vertical_location",loc);
     pl.set("field_name",f.name());
     pl.set("grid_name",grid->name());
@@ -99,6 +108,17 @@ TEST_CASE("field_at_height")
     for (int i=0; i<dims[0]; ++i) {
       for (int j=0; j<dims[1]; ++j) {
         v(i,j) = nlevs-j;
+      }
+    };
+    f.sync_to_dev();
+  }
+  // Create geo(i,j)=nlevs-j + i, which makes testing easier
+  for (auto f : {geo_mid, geo_int}) {
+    auto v = f.get_view<Real**,Host>();
+    const auto& dims = f.get_header().get_identifier().get_layout().dims();
+    for (int i=0; i<dims[0]; ++i) {
+      for (int j=0; j<dims[1]; ++j) {
+        v(i,j) = nlevs-j+i;
       }
     };
     f.sync_to_dev();
@@ -128,14 +148,14 @@ TEST_CASE("field_at_height")
     print(" -> Testing with z_tgt coinciding with a z level\n");
     {
       print("    -> scalar midpoint field...............\n");
-      auto d = run_diag (s_mid,z_mid,loc);
+      auto d = run_diag (s_mid,z_mid,loc,"sealevel");
       auto tgt = s_mid.subfield(1,static_cast<int>(lev_tgt));
       REQUIRE (views_are_equal(d,tgt,&comm));
       print("    -> scalar midpoint field............... OK!\n");
     }
     {
       print("    -> scalar interface field...............\n");
-      auto d = run_diag (s_int,z_int,loc);
+      auto d = run_diag (s_int,z_int,loc,"sealevel");
       // z_mid = nlevs+1-ilev, so the tgt slice is nlevs+1-z_tgt
       auto tgt = s_int.subfield(1,static_cast<int>(lev_tgt));
       REQUIRE (views_are_equal(d,tgt,&comm));
@@ -143,7 +163,7 @@ TEST_CASE("field_at_height")
     }
     {
       print("    -> vector midpoint field...............\n");
-      auto d = run_diag (v_mid,z_mid,loc);
+      auto d = run_diag (v_mid,z_mid,loc,"sealevel");
       // We can't subview over 3rd index and keep layout right,
       // so do all cols separately
       for (int i=0; i<ncols; ++i) {
@@ -156,7 +176,7 @@ TEST_CASE("field_at_height")
     }
     {
       print("    -> vector interface field...............\n");
-      auto d = run_diag (v_int,z_int,loc);
+      auto d = run_diag (v_int,z_int,loc,"sealevel");
       // We can't subview over 3rd index and keep layout right,
       // so do all cols separately
       for (int i=0; i<ncols; ++i) {
@@ -178,7 +198,7 @@ TEST_CASE("field_at_height")
     print(" -> Testing with z_tgt between levels\n");
     {
       print("    -> scalar midpoint field...............\n");
-      auto d = run_diag (s_mid,z_mid,loc);
+      auto d = run_diag (s_mid,z_mid,loc,"sealevel");
       auto tgt = s_mid.subfield(1,zp1).clone();
       tgt.update(s_mid.subfield(1,zm1),0.5,0.5);
       REQUIRE (views_are_equal(d,tgt,&comm));
@@ -186,7 +206,7 @@ TEST_CASE("field_at_height")
     }
     {
       print("    -> scalar interface field...............\n");
-      auto d = run_diag (s_int,z_int,loc);
+      auto d = run_diag (s_int,z_int,loc,"sealevel");
       auto tgt = s_int.subfield(1,zp1).clone();
       tgt.update(s_int.subfield(1,zm1),0.5,0.5);
       REQUIRE (views_are_equal(d,tgt,&comm));
@@ -194,7 +214,7 @@ TEST_CASE("field_at_height")
     }
     {
       print("    -> vector midpoint field...............\n");
-      auto d = run_diag (v_mid,z_mid,loc);
+      auto d = run_diag (v_mid,z_mid,loc,"sealevel");
       // We can't subview over 3rd index and keep layout right,
       // so do all cols separately
       for (int i=0; i<ncols; ++i) {
@@ -208,7 +228,7 @@ TEST_CASE("field_at_height")
     }
     {
       print("    -> vector interface field...............\n");
-      auto d = run_diag (v_int,z_int,loc);
+      auto d = run_diag (v_int,z_int,loc,"sealevel");
       // We can't subview over 3rd index and keep layout right,
       // so do all cols separately
       for (int i=0; i<ncols; ++i) {
