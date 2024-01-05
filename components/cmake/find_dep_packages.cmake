@@ -41,5 +41,11 @@ endif()
 find_package(PIO REQUIRED)
 find_package(MCT REQUIRED)
 find_package(CsmShare REQUIRED)
+
+# Hack for unsupported blas vendors
+if (DEFINED ENV{BLAS_LIBRARIES})
+  set(BLAS_LIBRARIES $ENV{BLAS_LIBRARIES} CACHE PATH "")
+endif()
+
 find_package(BLAS REQUIRED)
 find_package(LAPACK REQUIRED)

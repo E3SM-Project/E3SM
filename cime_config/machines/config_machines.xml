@@ -1270,7 +1270,6 @@
         <command name="load">cray-hdf5-parallel/1.12.2.1</command>
         <command name="load">cray-netcdf-hdf5parallel/4.9.0.1</command>
         <command name="load">cray-parallel-netcdf/1.12.3.1</command>
-        <command name="load">openblas/0.3.17</command>
         <command name="unload">darshan-runtime</command>
       </modules>
     </module_system>
@@ -1288,6 +1287,7 @@
       <env name="MPICH_OFI_CXI_COUNTER_REPORT">2</env>
       <env name="MPICH_CXX">$SHELL{which hipcc}</env>
       <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env>
+      <env name="BLAS_LIBRARIES">$ENV{CRAY_LIBSCI_PREFIX_DIR}/lib/libsci_cray.a</env> <!-- CMake does not currently support Cray as a blas vendor -->
     </environment_variables>
 
     <environment_variables SMP_PRESENT="TRUE">
