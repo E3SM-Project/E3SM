@@ -256,17 +256,12 @@ macro(build_model COMP_CLASS COMP_NAME)
       set_target_properties(${TARGET_NAME} PROPERTIES LINKER_LANGUAGE Fortran)
 
       # A bit hacky, some platforms need help with the fortran linker
-      if (COMPILER STREQUAL "intel" OR COMPILER STREQUAL "oneapi-ifx")
+      if (COMPILER STREQUAL "intel")
         string(APPEND CMAKE_EXE_LINKER_FLAGS " -cxxlib")
       endif()
 
     else()
       set_target_properties(${TARGET_NAME} PROPERTIES LINKER_LANGUAGE CXX)
-
-      if (COMPILER STREQUAL "oneapi-ifxgpu")
-        string(APPEND CMAKE_EXE_LINKER_FLAGS " -Wl,-\-defsym,main=MAIN_\_ -lifcore -\-intel -fsycl -lsycl -Xsycl-target-backend \"-device 12.60.7\" ")
-      endif()
-
     endif()
 
   else()
