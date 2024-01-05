@@ -4,6 +4,10 @@ list(APPEND NOOPT_FILES
   elm/src/data_types/VegetationDataType.F90
   elm/src/biogeochem/CNNitrogenFluxType.F90
   elm/src/biogeochem/CNCarbonFluxType.F90
+  elm/src/external_models/emi/src/emi/ExternalModelInterfaceMod.F90
+  elm/src/external_models/emi/src/em/vsfm/ExternalModelVSFMMod.F90
+  elm/src/main/pftvarcon.F90
+  eam/src/dynamics/se/inidat.F90
 )
 
 # Files added below to mitigate excessive compilation times
