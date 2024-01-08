@@ -60,7 +60,8 @@ TEST_CASE("forcing", "forcing") {
   // Init everything through singleton, which is what happens in normal runs
   auto& c = Context::singleton();
   auto& p = c.create<SimulationParams>();
-
+  p.dt_remap_factor = 1;
+ 
   auto& hv = c.create<HybridVCoord>();
   hv.random_init(seed);
 
