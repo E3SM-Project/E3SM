@@ -130,7 +130,10 @@ CONTAINS
                      iMOAB_SetIntTagStorage, iMOAB_SetDoubleTagStorage, &
                      iMOAB_ResolveSharedEntities, iMOAB_CreateVertices, &
                      iMOAB_GetMeshInfo, iMOAB_UpdateMeshInfo, &
-                     iMOAB_ComputeCommGraph
+                     iMOAB_ComputeCommGraph, &
+                     iMOAB_SendElementTag, iMOAB_ReceiveElementTag, &
+                     iMOAB_FreeSenderBuffers
+
 #endif
     implicit none
 
@@ -286,40 +289,35 @@ CONTAINS
    ! now get the local number of entities
    ierr  = iMOAB_GetMeshInfo ( mpoid, nvert, nvise, nbl, nsurf, nvisBC );
 
-   ncells = nvise(3)
-   allocate(data(ncells))
-   data(:) = 0.0
+   ! ncells = nvise(3)
+   ! allocate(data(ncells))
+   ! data(:) = 0.0
 
    ! element dense double tags
    tagtype = 1  ! dense, double tag
    numco = 1
    ent_type = 1 ! now set the tag on elements
 
-   tagname='area'//C_NULL_CHAR
+   tagname='area:aream:frac:mask'//C_NULL_CHAR
    ierr = iMOAB_DefineTagStorage( mpoid, tagname, tagtype, numco, tagindex )
    if (ierr > 0 )  &
-      call errorout(ierr, 'Error: fail to create area tag ')
-   ierr = iMOAB_GetDoubleTagStorage ( mpoid, tagname, ncells, ent_type, data)
-   if (ierr > 0 )  &
-      call errorout(ierr, 'Error: fail to get area tag ')
+      call errorout(ierr, 'Error: fail to create area:aream:frac:mask tag ')
 
-   tagname='aream'//C_NULL_CHAR
-   ierr = iMOAB_DefineTagStorage( mpoid, tagname, tagtype, numco, tagindex )
-   if (ierr > 0 )  &
-      call errorout(ierr, 'Error: fail to create aream tag ')
-   ierr = iMOAB_SetDoubleTagStorage ( mpoid, tagname, ncells, ent_type, data)
-   if (ierr > 0 )  &
-      call errorout(ierr, 'Error: fail to set aream tag ')
+   ! data(:) = 1
+   ! ! tagtype = 1  ! dense, integer tag
+   ! tagname='mask'//C_NULL_CHAR
+   ! ierr = iMOAB_DefineTagStorage( mpoid, tagname, tagtype, numco, tagindex )
+   ! if (ierr > 0 )  &
+   !    call errorout(ierr, 'Error: fail to create mask tag ')
 
-   data(:) = 1
-   ! tagtype = 1  ! dense, integer tag
-   tagname='mask'//C_NULL_CHAR
-   ierr = iMOAB_DefineTagStorage( mpoid, tagname, tagtype, numco, tagindex )
-   if (ierr > 0 )  &
-      call errorout(ierr, 'Error: fail to create mask tag ')
-   ierr = iMOAB_SetDoubleTagStorage ( mpoid, tagname, ncells, ent_type, data)
-   if (ierr > 0 )  &
-      call errorout(ierr, 'Error: fail to set mask tag ')
+   ! data(:) = 1
+   ! ! tagtype = 1  ! dense, integer tag
+   ! tagname='frac'//C_NULL_CHAR
+   ! ierr = iMOAB_DefineTagStorage( mpoid, tagname, tagtype, numco, tagindex )
+   ! if (ierr > 0 )  &
+   !    call errorout(ierr, 'Error: fail to create frac tag ')
+
+   ! deallocate(data)
 
 #endif
 
@@ -407,13 +405,6 @@ CONTAINS
     kmask = mct_aVect_indexRA(ggrid%data,'mask')
     imask(:) = nint(ggrid%data%rAttr(kmask,:))
 
-    kfrac = mct_aVect_indexRA(ggrid%data,'frac')
-
-    ksomask = mct_aVect_indexRA(o2x,'So_omask', perrwith='quiet')
-    if (ksomask /= 0) then
-       o2x%rAttr(ksomask, :) = ggrid%data%rAttr(kfrac,:)
-    end if
-
     index_lon = mct_aVect_indexRA(ggrid%data,'lon')
     xc(:) = ggrid%data%rAttr(index_lon,:)
 
@@ -467,12 +458,42 @@ CONTAINS
    if (ierr .ne. 0)  &
       call shr_sys_abort('Error: fail to update mesh info ')
 
-   ierr = iMOAB_DefineTagStorage( mdpoid, "area:aream:mask:frac"//C_NULL_CHAR, &
+   allocate(data(lsize))
+   ierr = iMOAB_DefineTagStorage( mdpoid, "area:aream:frac:mask"//C_NULL_CHAR, &
                                      1, & ! tagtype
                                      1, & ! number of components
                                      tagindex )
    if (ierr > 0 )  &
-      call errorout(ierr, 'Error: fail to create tag: area:aream:mask:frac' )
+      call errorout(ierr, 'Error: fail to create tag: area:aream:frac:mask' )
+
+   data(:) = ggrid%data%rAttr(mct_aVect_indexRA(ggrid%data,'area'),:)
+   tagname='area'//C_NULL_CHAR
+   ierr = iMOAB_SetDoubleTagStorage ( mdpoid, tagname, lsize, ent_type, data)
+   if (ierr > 0 )  &
+      call errorout(ierr, 'Error: fail to get area tag ')
+
+   data(:) = ggrid%data%rAttr(mct_aVect_indexRA(ggrid%data,'aream'),:)
+   tagname='aream'//C_NULL_CHAR
+   ierr = iMOAB_SetDoubleTagStorage ( mdpoid, tagname, lsize, ent_type, data)
+   if (ierr > 0 )  &
+      call errorout(ierr, 'Error: fail to set aream tag ')
+
+   data(:) = ggrid%data%rAttr(kmask,:)
+   ! tagtype = 1  ! dense, integer tag
+   tagname='mask'//C_NULL_CHAR
+   ierr = iMOAB_SetDoubleTagStorage ( mdpoid, tagname, lsize, ent_type, data)
+   if (ierr > 0 )  &
+      call errorout(ierr, 'Error: fail to set mask tag ')
+
+   data(:) = ggrid%data%rAttr(kfrac,:)
+   ! tagtype = 1  ! dense, integer tag
+   tagname='frac'//C_NULL_CHAR
+   ierr = iMOAB_SetDoubleTagStorage ( mdpoid, tagname, lsize, ent_type, data)
+   if (ierr > 0 )  &
+      call errorout(ierr, 'Error: fail to set frac tag ')
+
+   deallocate(data)
+
 
    ierr = iMOAB_DefineTagStorage( mdpoid, trim(seq_flds_x2o_fields)//C_NULL_CHAR, &
                                      1, & ! tagtype
@@ -510,6 +531,55 @@ CONTAINS
       call shr_sys_abort('Error: fail to update mesh info ')
 
    deallocate(moab_vert_coords)
+
+   ! basically, use the initial partitioning
+   ! if (mdpoid .ge. 0) then !  send
+   ierr = iMOAB_SendElementTag(mdpoid, &
+            'area:aream:frac:mask'//C_NULL_CHAR, &
+            mpicom, compid)
+   if (ierr .ne. 0) then
+      call shr_sys_abort(subname//' cannot send element tag')
+   endif
+
+   ! if ( mpoid .ge. 0 ) then !  we are on receiving end
+   ierr = iMOAB_ReceiveElementTag(mpoid, &
+            'area:aream:frac:mask'//C_NULL_CHAR, &
+            mpicom, compid*2)
+   if (ierr .ne. 0) then
+      call shr_sys_abort(subname//' cannot receive element tag')
+   endif
+
+!     ! we can now free the sender buffers
+   ! if (mdpoid .ge. 0) then
+   ierr = iMOAB_FreeSenderBuffers(mdpoid, compid)
+   if (ierr .ne. 0) then
+      call shr_sys_abort(subname//' cannot free sender buffers')
+   endif
+
+
+   ! tagname='area'//C_NULL_CHAR
+   ! ierr = iMOAB_GetDoubleTagStorage ( mpoid, tagname, ncells, ent_type, data)
+   ! if (ierr > 0 )  &
+   !    call errorout(ierr, 'Error: fail to get area tag ')
+
+   ! tagname='aream'//C_NULL_CHAR
+   ! ierr = iMOAB_SetDoubleTagStorage ( mpoid, tagname, ncells, ent_type, data)
+   ! if (ierr > 0 )  &
+   !    call errorout(ierr, 'Error: fail to set aream tag ')
+
+   ! data(:) = 1
+   ! ! tagtype = 1  ! dense, integer tag
+   ! tagname='mask'//C_NULL_CHAR
+   ! ierr = iMOAB_SetDoubleTagStorage ( mpoid, tagname, ncells, ent_type, data)
+   ! if (ierr > 0 )  &
+   !    call errorout(ierr, 'Error: fail to set mask tag ')
+
+   ! data(:) = 1
+   ! ! tagtype = 1  ! dense, integer tag
+   ! tagname='frac'//C_NULL_CHAR
+   ! ierr = iMOAB_SetDoubleTagStorage ( mpoid, tagname, ncells, ent_type, data)
+   ! if (ierr > 0 )  &
+   !    call errorout(ierr, 'Error: fail to set frac tag ')
 
 #endif
     !----------------------------------------------------------------------------
@@ -601,7 +671,7 @@ CONTAINS
   !===============================================================================
 
   subroutine moab_init_tag(tagname, avx, ent_type, &
-                           index, dataarr, globalIds)
+                           index, dataarr)
 
     ! !DESCRIPTION:  run method for docn model
     use iMOAB, only: iMOAB_SetDoubleTagStorage, &
@@ -613,7 +683,6 @@ CONTAINS
     type(mct_aVect), intent(in) :: avx
     integer, intent(in) :: index, ent_type
     real(R8), intent(inout) :: dataarr(:)
-    integer, intent(in) :: globalIds(:) ! used for setting values associated with ids
 
    lsize = mct_avect_lsize(avx)
    !write(*,* ) "Setting data for tag: ", tagname, " with size = ", lsize
@@ -622,11 +691,6 @@ CONTAINS
                                              dataarr )
    if (ierr > 0 )  &
       call errorout(ierr, 'Error: fail to set tag values for ' // tagname )
-
-   ! ierr = iMOAB_SetDoubleTagStorageWithGid ( mpoid, tagname, lsize, ent_type, &
-   !                                           dataarr, globalIds)
-   ! if (ierr > 0 )  &
-   !    call errorout(ierr, 'Error: fail to set tag values (gid) for ' // tagname )
 
   end subroutine moab_init_tag
 
@@ -686,9 +750,8 @@ CONTAINS
     integer :: ierr     ! error code
     integer :: kgg
     character*100  tagname
-    integer tagtype, numco, ncells, ent_type, tagindex
+    integer ent_type, tagindex
     real(R8), allocatable, target :: data(:)
-    integer ,    allocatable :: GlobalIds(:) ! used for setting values associated with ids
 #endif
 
     character(*), parameter :: F00   = "('(docn_comp_run) ',8a)"
@@ -922,75 +985,66 @@ CONTAINS
 #ifdef HAVE_MOAB
 
    allocate(data(lsize))
-   allocate(GlobalIds(lsize))
    data(:) = 0.0
 
-   kgg = mct_aVect_indexIA(ggrid%data ,"GlobGridNum")
-   GlobalIds = ggrid%data%iAttr(kgg,:)
-
    ! element dense double tags
-   ent_type = 1 ! now set the tag on elements
-
-   ! element dense double tags
-   tagtype = 1  ! dense, double tag
-   numco = 1
    ent_type = 1 ! now set the tag on elements
 
    call moab_init_tag( 'So_t'//C_NULL_CHAR, o2x, &
-                        ent_type, kt, data, globalIds)
+                        ent_type, kt, data)
 
    call moab_init_tag( 'So_s'//C_NULL_CHAR, o2x, &
-                        ent_type, ks, data, globalIds)
+                        ent_type, ks, data)
 
    call moab_init_tag( 'So_u'//C_NULL_CHAR, o2x, &
-                        ent_type, ku, data, globalIds)
+                        ent_type, ku, data)
 
    call moab_init_tag( 'So_v'//C_NULL_CHAR, o2x, &
-                        ent_type, kv, data, globalIds)
+                        ent_type, kv, data)
 
    call moab_init_tag( 'So_dhdx'//C_NULL_CHAR, o2x, &
-                        ent_type, kdhdx, data, globalIds)
+                        ent_type, kdhdx, data)
 
    call moab_init_tag( 'So_dhdy'//C_NULL_CHAR, o2x, &
-                        ent_type, kdhdy, data, globalIds)
+                        ent_type, kdhdy, data)
+
+   call moab_init_tag( 'Fioo_q'//C_NULL_CHAR, o2x, &
+                        ent_type, kq, data)
 
    if (kswp /= 0) then
       call moab_init_tag( 'So_fswpen'//C_NULL_CHAR, o2x, &
-                           ent_type, kswp, data, globalIds)
+                           ent_type, kswp, data)
    endif
 
-   call moab_init_tag( 'Fioo_q'//C_NULL_CHAR, o2x, &
-                        ent_type, kq, data, globalIds)
-
    call moab_init_tag( 'Foxx_swnet'//C_NULL_CHAR, x2o, &
-                        ent_type, kswnet, data, globalIds)
+                        ent_type, kswnet, data)
 
    call moab_init_tag( 'Foxx_lwup'//C_NULL_CHAR, x2o, &
-                        ent_type, klwup, data, globalIds)
+                        ent_type, klwup, data)
 
    call moab_init_tag( 'Foxx_sen'//C_NULL_CHAR, x2o, &
-                        ent_type, ksen, data, globalIds)
+                        ent_type, ksen, data)
 
    call moab_init_tag( 'Foxx_lat'//C_NULL_CHAR, x2o, &
-                        ent_type, klat, data, globalIds)
+                        ent_type, klat, data)
 
    call moab_init_tag( 'Foxx_rofi'//C_NULL_CHAR, x2o, &
-                        ent_type, krofi, data, globalIds)
+                        ent_type, krofi, data)
 
    call moab_init_tag( 'Faxa_lwdn'//C_NULL_CHAR, x2o, &
-                        ent_type, klwdn, data, globalIds)
+                        ent_type, klwdn, data)
 
    call moab_init_tag( 'Faxa_snow'//C_NULL_CHAR, x2o, &
-                        ent_type, ksnow, data, globalIds)
+                        ent_type, ksnow, data)
 
    call moab_init_tag( 'Fioi_melth'//C_NULL_CHAR, x2o, &
-                        ent_type, kmelth, data, globalIds)
+                        ent_type, kmelth, data)
 
    call moab_init_tag( 'strm_h'//C_NULL_CHAR, avstrm, &
-                        ent_type, kh, data, globalIds)
+                        ent_type, kh, data)
 
    call moab_init_tag( 'strm_qbot'//C_NULL_CHAR, avstrm, &
-                        ent_type, kqbot, data, globalIds)
+                        ent_type, kqbot, data)
 
    ! basically, use the initial partitioning
    ! if (mdpoid .ge. 0) then !  send
