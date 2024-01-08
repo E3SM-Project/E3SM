@@ -20,7 +20,7 @@ module RtmMod
                                frivinp_rtm, finidat_rtm, nrevsn_rtm,rstraflag,ngeom,nlayers,rinittemp, &
                                nsrContinue, nsrBranch, nsrStartup, nsrest, &
                                inst_index, inst_suffix, inst_name, wrmflag, inundflag, &
-                               smat_option, decomp_option, barrier_timers, heatflag, sediflag, do_all_budget, &
+                               smat_option, decomp_option, barrier_timers, heatflag, sediflag, do_budget, &
                                isgrid2d, data_bgc_fluxes_to_ocean_flag, use_lnd_rof_two_way, use_ocn_rof_two_way
   use RtmFileUtils    , only : getfil, getavu, relavu
   use RtmTimeManager  , only : timemgr_init, get_nstep, get_curr_date, advance_timestep
@@ -273,7 +273,7 @@ contains
          rtmhist_fincl1,  rtmhist_fincl2, rtmhist_fincl3, &
          rtmhist_fexcl1,  rtmhist_fexcl2, rtmhist_fexcl3, &
          rtmhist_avgflag_pertape, decomp_option, wrmflag,rstraflag,ngeom,nlayers,rinittemp, &
-         inundflag, smat_option, delt_mosart, barrier_timers, do_all_budget, &
+         inundflag, smat_option, delt_mosart, barrier_timers, do_budget, &
          RoutingMethod, DLevelH2R, DLevelR, sediflag, heatflag, data_bgc_fluxes_to_ocean_flag
 
     namelist /inund_inparm / opt_inund, &
@@ -294,7 +294,7 @@ contains
     inundflag   = .false.
     sediflag    = .false.
     heatflag    = .false.
-    do_all_budget = .false.
+    do_budget = 0
     barrier_timers = .false.
     finidat_rtm = ' '
     nrevsn_rtm  = ' '
@@ -386,7 +386,7 @@ contains
     call mpi_bcast (wrmflag,        1, MPI_LOGICAL, 0, mpicom_rof, ier)
     call mpi_bcast (sediflag,       1, MPI_LOGICAL, 0, mpicom_rof, ier)
     call mpi_bcast (heatflag,       1, MPI_LOGICAL, 0, mpicom_rof, ier)
-    call mpi_bcast (do_all_budget,  1, MPI_LOGICAL, 0, mpicom_rof, ier)
+    call mpi_bcast (do_budget,  1, MPI_INTEGER, 0, mpicom_rof, ier)
     call mpi_bcast (rstraflag,      1, MPI_LOGICAL, 0, mpicom_rof, ier)
     call mpi_bcast (rinittemp,      1, MPI_REAL8, 0, mpicom_rof, ier)
     call mpi_bcast (ngeom,          1, MPI_INTEGER, 0, mpicom_rof, ier)
@@ -476,7 +476,7 @@ contains
        write(iulog,*) '   wrmflag               = ',wrmflag
        write(iulog,*) '   inundflag             = ',inundflag
        write(iulog,*) '   sediflag              = ',sediflag
-       write(iulog,*) '   do_all_budget         = ',do_all_budget
+       write(iulog,*) '   do_budget             = ',do_budget
        write(iulog,*) '   use_lnd_rof_two_way   = ',use_lnd_rof_two_way
        write(iulog,*) '   heatflag              = ',heatflag
        write(iulog,*) '   barrier_timers        = ',barrier_timers
@@ -2580,8 +2580,10 @@ contains
        call get_curr_date(yr, mon, day, tod)
        ymd = yr*10000 + mon*100 + day
        if (tod == 0 .and. masterproc) then
+         if (do_budget == 3) then
           write(iulog,*) ' '
           write(iulog,'(2a,i4,a,i10,i6)') trim(subname),' subcycling=',ns,': model date=',ymd,tod
+         endif
        endif
      
        !if (inundflag .and. wrmflag .eq. 0) then !use Luo's scheme when inundation is on and WM is off (keep it for now - tz)
@@ -2842,9 +2844,14 @@ contains
     !-----------------------------------
 
     budget_write = .false.
-    if (do_all_budget) budget_write = .true.
-    if (day == 1 .and. mon == 1) budget_write = .true.
-    if (tod == 0) budget_write = .true.
+
+    if (do_budget == 1) then
+      if (day == 1 .and. tod == 0) budget_write = .true. 
+    elseif (do_budget == 2) then
+     if (tod == 0) budget_write = .true.
+    elseif (do_budget == 3) then
+     budget_write = .true.
+    endif
 
     if (budget_check) then
        call t_startf('mosartr_budget')
@@ -3060,8 +3067,9 @@ contains
        
        ! write budget
        if (masterproc) then
+         write(iulog,'(2a,i10,i6)') trim(subname),' MOSART current time step: ',ymd,tod
          if (budget_write) then
-          write(iulog,'(2a,i10,i6)') trim(subname),' MOSART BUDGET diagnostics (million m3) for ',ymd,tod
+          write(iulog,'(2a,i10,i6)') trim(subname),' MOSART BUDGET diagnostics (million m3)'
          end if
           if (sediflag) then
             nt_print = nt_nsan
@@ -3103,7 +3111,7 @@ contains
              write(iulog,'(2a,i4,f22.6  )') trim(subname),'   dvolume dstor = ',nt,budget_global(bv_dstor_f,nt)-budget_global(bv_dstor_i,nt)
              write(iulog,'(2a,i4,f22.6  )') trim(subname),' * dvolume total = ',nt,budget_volume   !(Global volume change during a coupling period. --Inund.)
             endif
-            if (do_all_budget) then           
+            if (do_budget == 3) then           
              if (inundflag .and. Tctl%OPT_inund .eq. 1 .and. nt .eq. 1) then                                                                 
                 write(iulog,'(2a,i4,f22.6,a)') trim(subname),' x dvolume check = ',nt,budget_volume - &
                                                                              (budget_global(bv_wh_f,nt)-budget_global(bv_wh_i,nt) + &
@@ -3148,7 +3156,7 @@ contains
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   input main channel bank erosion = ',nt,budget_global(br_erexch,nt)
             write(iulog,'(2a,i4,f22.6  )') trim(subname),' * input total   = ',nt,budget_input
            endif
-           if (do_all_budget) then
+           if (do_budget == 3) then
             write(iulog,'(2a,i4,f22.6,a)') trim(subname),' x input check   = ',nt,budget_input - &
                                                                              (budget_global(br_qsur,nt)+budget_global(br_qsub,nt)+ &
                                                                               budget_global(br_qgwl,nt)+budget_global(br_qdto,nt)+ &
@@ -3166,7 +3174,7 @@ contains
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   output supply = ',nt,budget_global(bv_dsupp_f,nt)-budget_global(bv_dsupp_i,nt)
             write(iulog,'(2a,i4,f22.6  )') trim(subname),' * output total  = ',nt,budget_output
            endif
-           if (do_all_budget) then
+           if (do_budget == 3) then
             write(iulog,'(2a,i4,f22.6,a)') trim(subname),' x output check  = ',nt,budget_output - &
                                                                              (budget_global(br_ocnout,nt) + budget_global(br_direct,nt) + &
                                                                               budget_global(br_flood,nt) + &
@@ -3183,7 +3191,7 @@ contains
 
              write(iulog,'(2a,i4,f22.6  )') trim(subname),' * other total   = ',nt,budget_other
            endif
-           if (do_all_budget) then
+           if (do_budget == 3) then
              write(iulog,'(2a,i4,f22.6,a)') trim(subname),' x other check   = ',nt,budget_other - &
                                                                             (budget_global(br_erolpn,nt) - budget_global(br_erolcn,nt) + &
                                                                              budget_global(br_erorpn,nt) - budget_global(br_erorcn,nt)), &
@@ -3192,7 +3200,7 @@ contains
            if (budget_write) then
              write(iulog,'(2a)') trim(subname),'----------------'
            endif
-           if (do_all_budget) then
+           if (do_budget == 3) then
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   sum dvolume   = ',nt,budget_volume     !(Global volume change during a coupling period. --Inund.)
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   sum input     = ',nt,budget_input
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   sum output    = ',nt,budget_output
@@ -3201,7 +3209,7 @@ contains
            if (budget_write) then
             write(iulog,'(2a,i4,f22.6,a)') trim(subname),' * sum budget ** = ',nt,budget_total,' (should be zero, dv-in+out-oth)'
            endif
-           if (do_all_budget) then
+           if (do_budget == 3) then
             ! accum budget is just dv-i+o and should show that over time, the other terms go to zero (lag yes, reg land no)
             write(iulog,'(2a)') trim(subname),'----------------'
             write(iulog,'(2a,i4,f22.6,a)') trim(subname),' x accum budget  = ',nt,budget_global(bv_naccum,nt),' (should tend to zero over run, dv-in+out)'          ! (Average water balance error of all coupling periods up to now. --Inund.)
@@ -3222,11 +3230,11 @@ contains
             write(iulog,'(2a,i4,f22.6  )') trim(subname),' x erlateral     = ',nt,budget_global(br_erlat,nt)       !(Total volume of lateral inflow amounts of all main channels. --Inund.)
             write(iulog,'(2a)') trim(subname),'----------------'
            endif
-           if (budget_write) then
-             if ((budget_total) > 1.0e-6) then
+           
+            if ((budget_total) > 1.0e-6) then
                write(iulog,'(2a,i4)') trim(subname),' ***** BUDGET WARNING error gt 1. m3 for nt = ',nt
-             endif
-           endif
+            endif
+           
             if (nt .eq. nt_nliq) then
                call MOSART_WaterBudget_Extraction(budget_global, budget_terms_total, bv_volt_i, bv_volt_f, &
                  bv_wt_i, bv_wt_f, bv_wr_i, bv_wr_f, bv_wh_i, bv_wh_f, bv_dstor_i, bv_dstor_f, bv_fp_i, bv_fp_f, br_supply,&
