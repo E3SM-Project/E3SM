@@ -72,6 +72,7 @@ struct Functions
   using KT = KokkosTypes<Device>;
 
   using C = scream::physics::Constants<Scalar>;
+  using CP3 = scream::physics::P3_Constants<Scalar>;
 
   template <typename S>
   using view_1d = typename KT::template view_1d<S>;
