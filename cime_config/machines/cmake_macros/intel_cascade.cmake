@@ -1,7 +1,7 @@
 string(APPEND CONFIG_ARGS " --enable-filesystem-hints=lustre")
 string(APPEND CPPDEFS " -DLINUX")
 if (DEBUG)
-  string(APPEND FFLAGS " -check all -ftrapuv")
+  string(APPEND FFLAGS " -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv")
 endif()
 set(NETCDF_PATH "$ENV{NETCDF_HOME}")
 set(PIO_FILESYSTEM_HINTS "lustre")

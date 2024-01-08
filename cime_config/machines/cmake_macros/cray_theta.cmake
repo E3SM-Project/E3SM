@@ -1,5 +1,7 @@
 if (NOT DEBUG)
   string(APPEND CFLAGS " -O1")
+endif()
+if (NOT DEBUG)
   string(APPEND FFLAGS " -O1")
 endif()
 if (COMP_NAME STREQUAL eam)
