@@ -43,9 +43,7 @@ find_package(MCT REQUIRED)
 find_package(CsmShare REQUIRED)
 
 # Hack for unsupported blas vendors
-if (DEFINED ENV{BLAS_LIBRARIES})
-  set(BLAS_LIBRARIES $ENV{BLAS_LIBRARIES} CACHE PATH "")
+if (NOT DEFINED ENV{SKIP_BLAS})
+  find_package(BLAS REQUIRED)
+  find_package(LAPACK REQUIRED)
 endif()
-
-find_package(BLAS REQUIRED)
-find_package(LAPACK REQUIRED)

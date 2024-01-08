@@ -1287,7 +1287,7 @@
       <env name="MPICH_OFI_CXI_COUNTER_REPORT">2</env>
       <env name="MPICH_CXX">$SHELL{which hipcc}</env>
       <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env>
-      <env name="BLAS_LIBRARIES">$ENV{CRAY_LIBSCI_PREFIX_DIR}/lib/libsci_cray.a</env> <!-- CMake does not currently support Cray as a blas vendor -->
+      <env name="SKIP_BLAS">True</env>
     </environment_variables>
 
     <environment_variables SMP_PRESENT="TRUE">
