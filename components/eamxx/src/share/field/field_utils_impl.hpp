@@ -250,7 +250,6 @@ void perturb (const Field& f,
 
       // Loop through levels. For each that satisfy the level_mask,
       // apply a random perturbation to f.
-      //auto f_col = f.subfield(0, icol);
       for (auto ilev=0; ilev<fl.dims().back(); ++ilev) {
         if (level_mask(ilev)) {
           randomize(perturb_f, engine, pdf);
