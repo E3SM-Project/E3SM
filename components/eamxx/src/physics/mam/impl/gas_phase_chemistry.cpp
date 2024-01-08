@@ -26,8 +26,14 @@ void gas_phase_chemistry(Real zm, Real zi, Real phis, Real temp, Real pmid, Real
 
   constexpr int itermax = mam4::gas_chemistry::itermax;
   constexpr int clscnt4 = mam4::gas_chemistry::clscnt4;
-  const auto permute_4 = mam4::gas_chemistry::permute_4;
-  const auto clsmap_4 = mam4::gas_chemistry::clsmap_4;
+
+  // NOTE: vvv these arrays were copied from mam4xx/gas_chem_mechanism.hpp vvv
+  constexpr int permute_4[gas_pcnst] = {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
+                                        10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+                                        20, 21, 22, 23, 24, 25, 26, 27, 28, 29};
+  constexpr int clsmap_4[gas_pcnst] = {1,  2,  3,  4,  5,  6,  7,  8,  9,  10,
+                                       11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+                                       21, 22, 23, 24, 25, 26, 27, 28, 29, 30};
 
   // These indices for species are fixed by the chemical mechanism
   // std::string solsym[] = {"O3", "H2O2", "H2SO4", "SO2", "DMS", "SOAG",
