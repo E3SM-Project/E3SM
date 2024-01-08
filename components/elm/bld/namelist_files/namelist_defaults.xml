@@ -232,6 +232,8 @@ lnd/clm2/surfdata_map/surfdata_ne0np4_northamericax4v1.pg2_simyr1850_c210112_wit
 <fsurdat hgrid="ne0np4_northamericax4v1.pg2"   sim_year="2010" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne0np4_northamericax4v1.pg2_simyr2010_c210112.nc</fsurdat>
 
+<fsurdat hgrid="ne0np4-saomai-128x8.pg2"   sim_year="2010" use_crop=".false." >/global/cfs/cdirs/m2637/jsgoodni/surfdata_Saomai2006ne128x8pg2_simyr2006_c240105.nc</fsurdat>
+
 <!-- ne0np4_arcticx4v1.pg2 -->
 <finidat hgrid="ne0np4_arcticx4v1.pg2"  mask="oARRM60to10">lnd/clm2/initdata/arcticx4v1pg2_oARRM60to10.ICRUELM.spinup-from-interp.elm.r.0051-01-01-00000.nc</finidat>
 <finidat hgrid="ne0np4_arcticx4v1.pg2"  mask="ARRM10to60E2r1" sim_year="1950">lnd/clm2/initdata/20221017.ICRUELM-1950.arcticx4v1pg2_ARRM10to60E2r1.anvil.elm.r.0051-01-01-00000.nc</finidat>

@@ -1003,6 +1003,16 @@
       <mask>EC30to60E2r2</mask>
     </model_grid>
 
+    <model_grid alias="ne0np4-saomai-128x8_EC30to60E2r2" compset="(DOCN|EAM.+ELM.+MPASO)">
+      <grid name="atm">ne0np4-saomai-128x8.pg2</grid>
+      <grid name="lnd">ne0np4-saomai-128x8.pg2</grid>
+      <grid name="ocnice">EC30to60E2r2</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>EC30to60E2r2</mask>
+    </model_grid>
+
     <model_grid alias="arcticx4v1pg2_r0125_oARRM60to10">
       <grid name="atm">ne0np4_arcticx4v1.pg2</grid>
       <grid name="lnd">r0125</grid>
@@ -2943,16 +2953,12 @@
       <desc>1-deg with 1/4-deg over North America (version 1):</desc>
     </domain>
 
-    <domain name="ne0np4_northamericax4v1.pg2">
-      <nx>57816</nx>
+    <domain name="ne0np4-saomai-128x8.pg2">
+      <nx>862272</nx>
       <ny>1</ny>
-      <file grid="atm|lnd" mask="oRRS15to5">$DIN_LOC_ROOT/share/domains/domain.lnd.northamericax4v1pg2_oRRS15to5.200401.nc</file>
-      <file grid="ice|ocn" mask="oRRS15to5">$DIN_LOC_ROOT/share/domains/domain.ocn.northamericax4v1pg2_oRRS15to5.200401.nc</file>
-      <file grid="atm|lnd" mask="WC14to60E2r3">$DIN_LOC_ROOT/share/domains/domain.lnd.northamericax4v1pg2_WC14to60E2r3.200929.nc</file>
-      <file grid="ice|ocn" mask="WC14to60E2r3">$DIN_LOC_ROOT/share/domains/domain.ocn.northamericax4v1pg2_WC14to60E2r3.200929.nc</file>
-      <file grid="atm|lnd" mask="EC30to60E2r2">$DIN_LOC_ROOT/share/domains/domain.lnd.northamericax4v1pg2_EC30to60E2r2.220428.nc</file>
-      <file grid="ice|ocn" mask="EC30to60E2r2">$DIN_LOC_ROOT/share/domains/domain.ocn.northamericax4v1pg2_EC30to60E2r2.220428.nc</file>
-      <desc>1-deg with 1/4-deg over North America (version 1) pg2:</desc>
+      <file grid="atm|lnd" mask="EC30to60E2r2">/global/cfs/cdirs/m2637/jsgoodni/domain.lnd.Saomai_2006_ne128x8_lon130E_lat25N_ocean.QU.240km.240107.nc</file>
+      <file grid="ice|ocn" mask="EC30to60E2r2">/global/cfs/cdirs/m2637/jsgoodni/domain.ocn.Saomai_2006_ne128x8_lon130E_lat25N_ocean.QU.240km.240107.nc</file>
+      <desc>0.25-deg with 8x over Beijing w/ pg2:</desc>
     </domain>
 
     <domain name="ne0np4_arcticx4v1.pg2">
