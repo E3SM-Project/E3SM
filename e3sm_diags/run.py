@@ -165,16 +165,16 @@ class Run:
         """
         run_params = []
 
-        if self.is_cfg_file_arg_set:
-            cfg_params = self._get_custom_params_from_cfg_file()
-        else:
-            run_type = parameters[0].run_type
-            cfg_params = self._get_default_params_from_cfg_file(run_type)
-
         if len(self.sets_to_run) == 0:
             self.sets_to_run = DEFAULT_SETS
 
         for set_name in self.sets_to_run:
+            if self.is_cfg_file_arg_set:
+                cfg_params = self._get_custom_params_from_cfg_file()
+            else:
+                run_type = parameters[0].run_type
+                cfg_params = self._get_default_params_from_cfg_file(run_type)
+
             param = self._get_instance_of_param_class(
                 SET_TO_PARAMETERS[set_name], parameters
             )
@@ -186,14 +186,9 @@ class Run:
             self._remove_attrs_with_default_values(param)
             param.sets = [set_name]
 
-            # # FIXME: Make a deep copy of cfg_params because there is some
-            # buggy code in this method that changes parameter attributes in
-            # place, which affects downstream operations. The original
-            # cfg_params needs to be perserved for each iteration of this
-            # for loop.
             params = self.parser.get_parameters(
                 orig_parameters=param,
-                other_parameters=copy.deepcopy(cfg_params),
+                other_parameters=cfg_params,
                 cmd_default_vars=False,
                 argparse_vals_only=False,
             )
