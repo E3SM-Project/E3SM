@@ -525,7 +525,7 @@
   </grid>
   <grid name="a%ne30np4.pg2_l%r05_oi%null_r%r05_g%mpas.gis20km_w%null_z%null_m%EC30to60E2r2">
     <mach name="any">
-      <pes compset="2000_DATM%QIA_ELM%SP_SICE_SOCN_MOSART_MALI_SWAV_SIAC_SESP" pesize="any">
+      <pes compset="any" pesize="any">
         <comment>GIS 20km (low-res) testing config</comment>
         <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
