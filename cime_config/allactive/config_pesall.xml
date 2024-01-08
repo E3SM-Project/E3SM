@@ -2452,8 +2452,8 @@
     </mach>
   </grid>
   <grid name="a%ne30np4.pg2_l%r05_oi%EC30to60E2r2_r%r05_g%mpas.gis1to10kmR2_w%null_z%null_m%EC30to60E2r2">
-    <mach name="pm-cpu|alvarez">
-      <pes compset="1850_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_MALI%STATIC_SWAV_SIAC_SESP" pesize="M">
+    <mach name="chrysalis|pm-cpu|alvarez">
+      <pes compset="1850_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_MALI_SWAV" pesize="M">
         <comment>GIS 1-to-10km (high-res) baseline config</comment>
         <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>

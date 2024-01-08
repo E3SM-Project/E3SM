@@ -393,7 +393,7 @@
 
 <compset>
   <alias>BGWCYCL1850</alias>
-  <lname>1850_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_MALI%STATIC_SWAV</lname>
+  <lname>1850_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_MALI_SWAV</lname>
 </compset>
 
 <!-- EAMXX fully coupled compset -->
