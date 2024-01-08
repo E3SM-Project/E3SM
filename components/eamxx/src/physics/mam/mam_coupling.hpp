@@ -231,7 +231,7 @@ const char* cld_aero_mmr_field_name(const int mode, const int species) {
     if (aero_id != mam4::AeroId::None) {
       concat_3_strings(aero_species_name(static_cast<int>(aero_id)),
                        "_c", aero_mode_name(mode),
-                       int_aero_mmr_names(mode, species));
+                       cld_aero_mmr_names(mode, species));
     }
   }
   return const_cast<const char*>(cld_aero_mmr_names(mode, species));
