@@ -1,7 +1,7 @@
 ./xmlchange STOP_OPTION=ndays
-./xmlchange STOP_N=1
+./xmlchange STOP_N=3
 ./xmlchange REST_OPTION=ndays
-./xmlchange REST_N=1
+./xmlchange REST_N=3
 ./xmlchange NCPL_BASE_PERIOD=year
 ./xmlchange ATM_NCPL=17520
 ./xmlchange LND_NCPL=17520
