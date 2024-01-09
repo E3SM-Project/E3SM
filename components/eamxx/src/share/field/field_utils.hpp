@@ -80,25 +80,30 @@ void perturb (const Field& f,
   using namespace ShortFieldTagsNames;
   const auto& fl = f.get_header().get_identifier().get_layout();
 
-  // Field we are perturbing should have a level midpoint dimension,
+  // Field we are perturbing should have a level dimension,
   // and it is required to be the last dimension
-  EKAT_REQUIRE_MSG(fl.has_tag(LEV),
+  EKAT_REQUIRE_MSG(fl.rank()>0 &&
+                   (fl.tags().back() == LEV || fl.tags().back() == ILEV),
                    "Error! Trying to perturb field \""+f.name()+"\", but field "
-                   "has no LEV dimension.\n");
-  EKAT_REQUIRE_MSG(fl.tags().back() == LEV,
-                   "Error! Trying to perturb field \""+f.name()+"\", but field "
-	                 "does not have LEV as last dimension.\n");
+	                 "does not have LEV or ILEV as last dimension.\n"
+                   "  - field name: " + f.name() + "\n"
+                   "  - field layout: " + to_string(fl) + "\n");
 
   if (fl.has_tag(COL)) {
     // If field has a column dimension, it should be the first dimension
     EKAT_REQUIRE_MSG(fl.tag(0) == COL,
                      "Error! Trying to perturb field \""+f.name()+"\", but field "
-	                   "does not have COL as first dimension.\n");
+	                   "does not have COL as first dimension.\n"
+                     "  - field name: " + f.name() + "\n"
+                     "  - field layout: " + to_string(fl) + "\n");
 
     const auto& dof_gids_fl = dof_gids.get_header().get_identifier().get_layout();
     EKAT_REQUIRE_MSG(dof_gids_fl.dim(0) == fl.dim(COL),
                      "Error! Field of DoF GIDs should have the same size as "
-                     "perturbed field's column dimension.\n");
+                     "perturbed field's column dimension.\n"
+                     "  - dof_gids dim: " + std::to_string(dof_gids_fl.dim(0)) + "\n"
+                     "  - field name: " + f.name() + "\n"
+                     "  - field layout: " + to_string(fl) + "\n");
     EKAT_REQUIRE_MSG(dof_gids.data_type() == DataType::IntType,
                      "Error! DoF GIDs field must have \"int\" as data type.\n");
   }
