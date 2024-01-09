@@ -233,7 +233,6 @@ void perturb (const Field& f,
     // RNG seed to be the same on every column so that a column will
     // have the same value no matter where it exists in an MPI rank's
     // set of local columns.
-    dof_gids.sync_to_host();
     const auto gids = dof_gids.get_view<const int*, Host>();
 
     // Create a field to store perturbation values with layout
