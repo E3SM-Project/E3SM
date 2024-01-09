@@ -16,6 +16,7 @@ string(APPEND CMAKE_Fortran_FLAGS   " -traceback -convert big_endian -assume byt
 string(APPEND CPPDEFS " -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL -DHAVE_SLASHPROC -DHIDE_MPI")
 string(APPEND CMAKE_Fortran_FORMAT_FIXED_FLAG " -fixed -132")
 string(APPEND CMAKE_Fortran_FORMAT_FREE_FLAG " -free")
+set(E3SM_LINK_WITH_FORTRAN "TRUE")
 set(HAS_F2008_CONTIGUOUS "TRUE")
 set(MPIFC "mpifort")
 set(MPICC "mpicc")
