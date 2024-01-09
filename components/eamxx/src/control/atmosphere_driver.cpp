@@ -1441,10 +1441,13 @@ initialize_constant_field(const FieldIdentifier& fid,
   // The user provided a constant value for this field. Simply use that.
   const auto& layout = f.get_header().get_identifier().get_layout();
 
-  // For vector fields, we expect something like "fname: [val0,...,valN],
-  // where the field dim is N+1. For scalars, "fname: val". So check the
-  // field layout first, so we know what to get from the parameter list.
-  if (layout.is_vector_layout()) {
+  // For vector fields, we allow either single value init or vector value init.
+  // That is, both these are ok
+  //   fname: val
+  //   fname: [val1,...,valN]
+  // In the first case, all entries of the field are inited to val, while in the latter,
+  // each component is inited to the corresponding entry of the array.
+  if (layout.is_vector_layout() and ic_pl.isType<std::vector<double>>(name)) {
     const auto idim = layout.get_vector_dim();
     const auto vec_dim = layout.dim(idim);
     const auto& values = ic_pl.get<std::vector<double>>(name);
