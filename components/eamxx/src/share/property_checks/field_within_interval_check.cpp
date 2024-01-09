@@ -285,7 +285,6 @@ PropertyCheck::ResultAndMsg FieldWithinIntervalCheck::check_impl () const
   if (has_additional_col_info and res_and_msg.result==CheckResult::Fail) {
     msg << "    - additional data (w/ local column index):\n";
     for (auto& f : additional_data_fields()) {
-      f.sync_to_host();
       msg << "\n";
       print_field_hyperslab(f, {COL}, {min_col_lid}, msg);
     }
@@ -308,7 +307,6 @@ PropertyCheck::ResultAndMsg FieldWithinIntervalCheck::check_impl () const
   if (has_additional_col_info and res_and_msg.result==CheckResult::Fail) {
     msg << "    - additional data (w/ local column index):\n";
     for (auto& f : additional_data_fields()) {
-      f.sync_to_host();
       msg << "\n";
       print_field_hyperslab(f, {COL}, {max_col_lid}, msg);
     }
