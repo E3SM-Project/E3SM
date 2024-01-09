@@ -458,28 +458,37 @@ void AtmosphereProcess::run_property_check (const prop_check_ptr&       property
 
 void AtmosphereProcess::run_precondition_checks () const {
   m_atm_logger->debug("[" + this->name() + "] run_precondition_checks...");
+  start_timer(m_timer_prefix + this->name() + "::run-precondition-checks");
   // Run all pre-condition property checks
   for (const auto& it : m_precondition_checks) {
     run_property_check(it.second, it.first,
                        PropertyCheckCategory::Precondition);
   }
+  stop_timer(m_timer_prefix + this->name() + "::run-precondition-checks");
+  m_atm_logger->debug("[" + this->name() + "] run_precondition_checks...done!");
 }
 
 void AtmosphereProcess::run_postcondition_checks () const {
   m_atm_logger->debug("[" + this->name() + "] run_postcondition_checks...");
+  start_timer(m_timer_prefix + this->name() + "::run-postcondition-checks");
   // Run all post-condition property checks
   for (const auto& it : m_postcondition_checks) {
     run_property_check(it.second, it.first,
                        PropertyCheckCategory::Postcondition);
   }
+  stop_timer(m_timer_prefix + this->name() + "::run-postcondition-checks");
+  m_atm_logger->debug("[" + this->name() + "] run_postcondition_checks...done!");
 }
 
 void AtmosphereProcess::run_column_conservation_check () const {
   m_atm_logger->debug("[" + this->name() + "] run_column_conservation_check...");
+  start_timer(m_timer_prefix + this->name() + "::run-column-conservation-checks");
   // Conservation check is run as a postcondition check
   run_property_check(m_column_conservation_check.second,
                      m_column_conservation_check.first,
                      PropertyCheckCategory::Postcondition);
+  stop_timer(m_timer_prefix + this->name() + "::run-column-conservation-checks");
+  m_atm_logger->debug("[" + this->name() + "] run_column-conservation_checks...done!");
 }
 
 void AtmosphereProcess::init_step_tendencies () {
