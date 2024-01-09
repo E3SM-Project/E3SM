@@ -129,22 +129,12 @@ struct Constants
 template <typename Scalar>
 struct P3_Constants
 {
+  public:
+  static Scalar p3_autoconversion_factor;
 
-private:
-   static Scalar p3_autoconversion_factor;
-
-public:
-static void set_p3_defaults(){
-  set_p3_autoconversion_factor(1350.0);
-};
-
-static Scalar get_p3_autoconversion_factor(){
-  return p3_autoconversion_factor;
-}
-
-static void set_p3_autoconversion_factor(Scalar inp){
-  p3_autoconversion_factor = inp;
-}
+  void set_p3_defaults(){
+    p3_autoconversion_factor = 1350.0;
+  };
 
 }; // p3 constants
 

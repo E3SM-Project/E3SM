@@ -3,7 +3,7 @@
 
 #include "p3_functions.hpp" // for ETI only but harmless for GPU
 #include "p3_subgrid_variance_scaling_impl.hpp"
-//#include "physics/share/physics_constants.hpp"
+#include "physics/share/physics_constants.hpp"
 
 namespace scream {
 namespace p3 {
@@ -14,13 +14,15 @@ void Functions<S,D>
 ::cloud_water_autoconversion(
   const Spack& rho, const Spack& qc_incld, const Spack& nc_incld,
   const Spack& inv_qc_relvar, Spack& qc2qr_autoconv_tend, Spack& nc2nr_autoconv_tend, Spack& ncautr,
+const physics::P3_Constants<S> & bbb,
   const Smask& context)
 {
 
   // Khroutdinov and Kogan (2000)
   const auto qc_not_small = qc_incld >= 1e-8 && context;
   constexpr Scalar CONS3 = C::CONS3;
-  Scalar p3_autoconversion_factor = CP3::get_p3_autoconversion_factor();
+  //Scalar p3_autoconversion_factor = CP3::get_p3_autoconversion_factor();
+  Scalar p3_autoconversion_factor = bbb.p3_autoconversion_factor;
 
   if(qc_not_small.any()){
     Spack sgs_var_coef;

@@ -13,8 +13,6 @@
 namespace scream
 {
 
-using CP3 = physics::P3_Constants<Real>; 
-
 // =========================================================================================
 P3Microphysics::P3Microphysics (const ekat::Comm& comm, const ekat::ParameterList& params)
   : AtmosphereProcess(comm, params)
@@ -209,7 +207,7 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
 
   //1350 will be from nl...
   //what is the
-  CP3::set_p3_autoconversion_factor(m_params.get<double>("p3_autoconversion_factor"));
+  CP3::p3_autoconversion_factor = m_params.get<double>("p3_autoconversion_factor");
 
   // Set property checks for fields in this process
   add_invariant_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),m_grid,100.0,500.0,false);

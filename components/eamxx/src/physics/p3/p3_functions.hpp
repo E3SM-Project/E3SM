@@ -665,7 +665,8 @@ struct Functions
   static void cloud_water_autoconversion(const Spack& rho,  const Spack& qc_incld,
     const Spack& nc_incld, const Spack& inv_qc_relvar,
     Spack& qc2qr_autoconv_tend, Spack& nc2nr_autoconv_tend, Spack& ncautr,
-    const Smask& context = Smask(true) );
+    const physics::P3_Constants<ScalarT> & ccc,
+    const Smask& context = Smask(true));
 
   // Computes rain self collection process rate
   KOKKOS_FUNCTION
@@ -1090,7 +1091,8 @@ struct Functions
     const uview_1d<Spack>& pratot,
     const uview_1d<Spack>& prctot,
     bool& is_hydromet_present,
-    const Int& nk);
+    const Int& nk,
+    const physics::P3_Constants<ScalarT> &ccc);
 
 #ifdef SCREAM_SMALL_KERNELS
   static void p3_main_part2_disp(
