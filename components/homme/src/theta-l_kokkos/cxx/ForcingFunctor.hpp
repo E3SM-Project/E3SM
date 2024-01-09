@@ -152,7 +152,7 @@ public:
     constexpr int int_size = NP*NP*NUM_LEV_P*VECTOR_SIZE;
 
     // 3 persistent midlayers, 2 non-persistent midlayer, and 1 non-persistent interface
-    return mid_size*(nelems*4+nslots) + (m_hydrostatic ? int_size*nslots : 0);
+    return mid_size*(nelems*4+nslots) + int_size*nslots;
   }
 
   void init_buffers (const FunctorsBuffersManager& fbm) {
