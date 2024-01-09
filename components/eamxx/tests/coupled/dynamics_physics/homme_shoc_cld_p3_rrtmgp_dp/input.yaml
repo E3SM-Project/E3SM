@@ -25,6 +25,10 @@ initial_conditions:
   perturbed_fields: [T_mid]
   perturbation_limit: 0.001
   perturbation_minimum_pressure: 900.0 # in millibar
+  aero_g_sw: 0.0
+  aero_ssa_sw: 0.0
+  aero_tau_sw: 0.0
+  aero_tau_lw: 0.0
 
 atmosphere_processes:
   atm_procs_list: [sc_import,homme,physics]
@@ -36,13 +40,10 @@ atmosphere_processes:
     schedule_type: Sequential
     Type: Group
     mac_aero_mic:
-      atm_procs_list: [shoc,CldFraction,spa,p3]
+      atm_procs_list: [shoc,CldFraction,p3]
       Type: Group
       schedule_type: Sequential
       number_of_subcycles: ${MAC_MIC_SUBCYCLES}
-      spa:
-        spa_remap_file: ${SCREAM_DATA_DIR}/maps/map_ne4np4_to_ne2np4_mono.nc
-        spa_data_file: ${SCREAM_DATA_DIR}/init/spa_file_unified_and_complete_ne2np4L72_20231222.nc
       p3:
         max_total_ni: 740.0e3
       shoc:

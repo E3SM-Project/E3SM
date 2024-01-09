@@ -1,6 +1,6 @@
 include (ScreamUtils)
 
-set (TEST_BASE_NAME homme_shoc_cld_spa_p3_rrtmgp_dp)
+set (TEST_BASE_NAME homme_shoc_cld_p3_rrtmgp_dp)
 set (FIXTURES_BASE_NAME ${TEST_BASE_NAME}_generate_output_nc_files)
 
 # Get or create the dynamics lib
@@ -9,9 +9,9 @@ CreateDynamicsLib("theta-l_kokkos"  4   128   10)
 
 # Create the test
 set (TEST_LABELS "dynamics;driver;shoc;cld;p3;rrtmgp;physics;dp")
-CreateUnitTest(homme_shoc_cld_spa_p3_rrtmgp_dp "homme_shoc_cld_spa_p3_rrtmgp_dp.cpp"
+CreateUnitTest(homme_shoc_cld_p3_rrtmgp_dp "homme_shoc_cld_p3_rrtmgp_dp.cpp"
   LABELS ${TEST_LABELS}
-  LIBS cld_fraction shoc spa p3 scream_rrtmgp ${dynLibName} scream_control diagnostics
+  LIBS cld_fraction shoc p3 scream_rrtmgp ${dynLibName} scream_control diagnostics
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
   FIXTURES_SETUP_INDIVIDUAL ${FIXTURES_BASE_NAME}
 )
@@ -70,8 +70,6 @@ configure_file(${SCREAM_SRC_DIR}/dynamics/homme/tests/theta-dp.nl
 
 # Ensure test input files are present in the data dir
 set (TEST_INPUT_FILES
-  scream/init/spa_init_ne2np4.nc
-  scream/init/spa_file_unified_and_complete_ne2np4L72_20231222.nc
   scream/init/${EAMxx_tests_IC_FILE_128lev}
   cam/topo/${EAMxx_tests_TOPO_FILE}
   cam/scam/iop/DYCOMSrf01_iopfile_4scam.nc
@@ -87,6 +85,6 @@ CompareNCFilesFamilyMpi (
   TEST_BASE_NAME ${TEST_BASE_NAME}
   FILE_META_NAME ${TEST_BASE_NAME}_output.INSTANT.nsteps_x${NUM_STEPS}.npMPIRANKS.${RUN_T0}.nc
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
-  LABELS dynamics physics shoc cld p3 rrtmgp spa dp
+  LABELS dynamics physics shoc cld p3 rrtmgp dp
   META_FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_npMPIRANKS_omp1
 )
