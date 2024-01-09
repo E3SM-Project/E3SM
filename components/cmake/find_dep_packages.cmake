@@ -41,5 +41,9 @@ endif()
 find_package(PIO REQUIRED)
 find_package(MCT REQUIRED)
 find_package(CsmShare REQUIRED)
-find_package(BLAS REQUIRED)
-find_package(LAPACK REQUIRED)
+
+# Hack for unsupported blas vendors
+if (NOT DEFINED ENV{SKIP_BLAS})
+  find_package(BLAS REQUIRED)
+  find_package(LAPACK REQUIRED)
+endif()

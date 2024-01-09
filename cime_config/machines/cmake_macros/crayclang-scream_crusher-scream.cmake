@@ -8,6 +8,5 @@ if (COMP_NAME STREQUAL elm)
   string(APPEND CMAKE_Fortran_FLAGS " -hfp0")
 endif()
 string(APPEND CMAKE_Fortran_FLAGS " -hipa0 -hzero")
-string(APPEND CMAKE_Fortran_FLAGS " -em -ef")
 
 set(PIO_FILESYSTEM_HINTS "gpfs")

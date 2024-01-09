@@ -1269,11 +1269,11 @@
         <command name="load">cmake/3.21.3</command>
         <command name="load">cray-hdf5-parallel/1.12.2.1</command>
         <command name="load">cray-netcdf-hdf5parallel/4.9.0.1</command>
-	<command name="load">cray-parallel-netcdf/1.12.3.1</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.1</command>
         <command name="unload">darshan-runtime</command>
       </modules>
     </module_system>
-    
+
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
@@ -1281,11 +1281,13 @@
     <environment_variables>
       <env name="NETCDF_PATH">$ENV{NETCDF_DIR}</env>
       <env name="PNETCDF_PATH">$ENV{PNETCDF_DIR}</env>
+      <env name="HDF5_ROOT"/> <!-- frontier cmake cannot find_package(HDF5) for some reason, so disable it -->
       <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
       <env name="MPICH_OFI_CXI_COUNTER_REPORT">2</env>
+      <env name="MPICH_CXX">$SHELL{which hipcc}</env>
       <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env>
-
+      <env name="SKIP_BLAS">True</env> <!-- find_package(blas) doesn't work well with Cray LibSci-->
     </environment_variables>
 
     <environment_variables SMP_PRESENT="TRUE">
