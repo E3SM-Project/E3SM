@@ -3015,7 +3015,7 @@
         </modules>
         <modules compiler="!gnu">
           <command name="unload">gcc</command>
-          <command name="load">oneapi/eng-compiler/2023.05.15.007</command>
+          <command name="load">oneapi/eng-compiler/2023.10.15.002</command>
         </modules>
         <modules compiler="gnu">
            <command name="unload">spack cmake</command>
