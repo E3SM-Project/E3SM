@@ -230,11 +230,12 @@ PropertyCheck::ResultAndMsg FieldWithinIntervalCheck::check_impl () const
     res_and_msg.msg  = "Check passed.\n";
     res_and_msg.msg += "  - check name:" + this->name() + "\n";
     res_and_msg.msg += "  - field id: " + f.get_header().get_identifier().get_id_string() + "\n";
-  } else {
-    res_and_msg.msg  = "Check failed.\n";
-    res_and_msg.msg += "  - check name: " + this->name() + "\n";
-    res_and_msg.msg += "  - field id: " + f.get_header().get_identifier().get_id_string() + "\n";
+    return res_and_msg;
   }
+
+  res_and_msg.msg  = "Check failed.\n";
+  res_and_msg.msg += "  - check name: " + this->name() + "\n";
+  res_and_msg.msg += "  - field id: " + f.get_header().get_identifier().get_id_string() + "\n";
 
   auto idx_min = unflatten_idx(layout.dims(),minmaxloc.min_loc);
   auto idx_max = unflatten_idx(layout.dims(),minmaxloc.max_loc);
@@ -281,7 +282,7 @@ PropertyCheck::ResultAndMsg FieldWithinIntervalCheck::check_impl () const
       msg << "    - lat/lon: (" << lat[min_col_lid] << ", " << lon[min_col_lid] << ")\n";
     }
   }
-  if (has_additional_col_info) {
+  if (has_additional_col_info and res_and_msg.result==CheckResult::Fail) {
     msg << "    - additional data (w/ local column index):\n";
     for (auto& f : additional_data_fields()) {
       f.sync_to_host();
@@ -304,7 +305,7 @@ PropertyCheck::ResultAndMsg FieldWithinIntervalCheck::check_impl () const
       msg << "    - lat/lon: (" << lat[max_col_lid] << ", " << lon[max_col_lid] << ")\n";
     }
   }
-  if (has_additional_col_info) {
+  if (has_additional_col_info and res_and_msg.result==CheckResult::Fail) {
     msg << "    - additional data (w/ local column index):\n";
     for (auto& f : additional_data_fields()) {
       f.sync_to_host();
