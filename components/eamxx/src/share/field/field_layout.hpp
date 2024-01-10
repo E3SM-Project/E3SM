@@ -63,8 +63,6 @@ public:
   // Constructor(s)
   FieldLayout () = delete;
   FieldLayout (const FieldLayout&) = default;
-  FieldLayout (const std::initializer_list<FieldTag>& tags);
-  FieldLayout (const std::vector<FieldTag>& tags);
   FieldLayout (const std::vector<FieldTag>& tags,
                const std::vector<int>& dims);
 
@@ -72,7 +70,7 @@ public:
   FieldLayout& operator= (const FieldLayout&) = default;
 
   // Create invalid layout
-  static FieldLayout invalid () { return FieldLayout({}); }
+  static FieldLayout invalid () { return FieldLayout({FieldTag::Invalid},{0}); }
 
   // ----- Getters ----- //
 

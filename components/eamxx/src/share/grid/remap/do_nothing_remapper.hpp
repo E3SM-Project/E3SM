@@ -42,7 +42,7 @@ public:
         " - input layout: " + to_string(tgt));
 
     auto type = get_layout_type(tgt.tags());
-    FieldLayout src = {{}};
+    auto src = FieldLayout::invalid();
     switch (type) {
       case LayoutType::Scalar2D:
         src = this->m_src_grid->get_2d_scalar_layout();
@@ -70,7 +70,7 @@ public:
         " - input layout: " + to_string(src));
 
     auto type = get_layout_type(src.tags());
-    FieldLayout tgt = {{}};
+    auto tgt = FieldLayout::invalid();
     switch (type) {
       case LayoutType::Scalar2D:
         tgt = this->m_tgt_grid->get_2d_scalar_layout();

@@ -5,18 +5,6 @@
 namespace scream
 {
 
-FieldLayout::FieldLayout (const std::initializer_list<FieldTag>& tags)
- : FieldLayout(std::vector<FieldTag>(tags))
-{
-  // Nothing to do here
-}
-
-FieldLayout::FieldLayout (const std::vector<FieldTag>& tags)
- : FieldLayout(tags,std::vector<int>(tags.size(),-1))
-{
-  // Nothing to do here
-}
-
 FieldLayout::FieldLayout (const std::vector<FieldTag>& tags,
                           const std::vector<int>& dims)
  : m_rank(tags.size())

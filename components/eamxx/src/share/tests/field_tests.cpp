@@ -358,7 +358,7 @@ TEST_CASE("field", "") {
 
   SECTION ("rank0_field") {
     // Create 0d field
-    FieldIdentifier fid0("f_0d", FieldLayout({}), Units::nondimensional(), "dummy_grid");
+    FieldIdentifier fid0("f_0d", FieldLayout({},{}), Units::nondimensional(), "dummy_grid");
     Field f0(fid0);
     f0.allocate_view();
 
