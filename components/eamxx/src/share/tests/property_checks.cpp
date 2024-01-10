@@ -163,20 +163,10 @@ TEST_CASE("property_checks", "") {
       "    - value: 0\n"
       "    - indices (w/ global column index): (0,1,2)\n"
       "    - lat/lon: (0, 0)\n"
-      "    - additional data (w/ local column index):\n\n"
-      "     data<ncol>(2)\n\n"
-      "  data(0)\n"
-      "    1, \n\n"
-      "    END OF ADDITIONAL DATA\n\n"
       "  - maximum:\n"
       "    - value: 2\n"
       "    - indices (w/ global column index): (1,2,3)\n"
-      "    - lat/lon: (1, -1)\n"
-      "    - additional data (w/ local column index):\n\n"
-      "     data<ncol>(2)\n\n"
-      "  data(1)\n"
-      "    1, \n\n"
-      "    END OF ADDITIONAL DATA\n";
+      "    - lat/lon: (1, -1)\n";
 
     REQUIRE(res_and_msg.msg == expected_msg);
 
