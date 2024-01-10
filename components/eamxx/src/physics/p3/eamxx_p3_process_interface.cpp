@@ -206,8 +206,11 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   // Gather runtime options
   runtime_options.max_total_ni = m_params.get<double>("max_total_ni");
 
-  CP3::set_p3_defaults();
-  CP3::p3_autoconversion_factor = m_params.get<double>("p3_autoconversion_factor");
+//  CP3::set_p3_defaults();
+//  CP3::p3_autoconversion_factor = m_params.get<double>("p3_autoconversion_factor");
+  m_p3constants.p3_autoconversion_factor = m_params.get<double>("p3_autoconversion_factor");
+
+//std::cout << "AAAAAAAAAAAAAANG "<<CP3::p3_autoconversion_factor <<"\n";
 
   // Set property checks for fields in this process
   add_invariant_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),m_grid,100.0,500.0,false);

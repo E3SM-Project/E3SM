@@ -1274,7 +1274,8 @@ struct Functions
     const P3LookupTables& lookup_tables,
     const WorkspaceManager& workspace_mgr,
     Int nj, // number of columns
-    Int nk); // number of vertical cells per column
+    Int nk, // number of vertical cells per column
+    physics::P3_Constants<ScalarT> & loc_p3constants);
 
   static Int p3_main_internal(
     const P3Runtime& runtime_options,
@@ -1286,7 +1287,8 @@ struct Functions
     const P3LookupTables& lookup_tables,
     const WorkspaceManager& workspace_mgr,
     Int nj, // number of columns
-    Int nk); // number of vertical cells per column
+    Int nk, // number of vertical cells per column
+    physics::P3_Constants<ScalarT> & loc_p3constants);
 
 #ifdef SCREAM_SMALL_KERNELS
   static Int p3_main_internal_disp(
@@ -1299,7 +1301,8 @@ struct Functions
     const P3LookupTables& lookup_tables,
     const WorkspaceManager& workspace_mgr,
     Int nj, // number of columns
-    Int nk); // number of vertical cells per column
+    Int nk, // number of vertical cells per column
+    physics::P3_Constants<ScalarT> & loc_p3constants);
 #endif
 
   KOKKOS_FUNCTION

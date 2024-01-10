@@ -109,11 +109,12 @@ Int Functions<Real,DefaultDevice>
   const P3LookupTables& lookup_tables,
   const WorkspaceManager& workspace_mgr,
   Int nj,
-  Int nk)
+  Int nk,
+  physics::P3_Constants<Real> & loc_p3constants)
 {
   using ExeSpace = typename KT::ExeSpace;
 
-  physics::P3_Constants<Real> loc_p3constants;
+  //physics::P3_Constants<Real> loc_p3constants;
 
   view_2d<Spack> latent_heat_sublim("latent_heat_sublim", nj, nk), latent_heat_vapor("latent_heat_vapor", nj, nk), latent_heat_fusion("latent_heat_fusion", nj, nk);
 

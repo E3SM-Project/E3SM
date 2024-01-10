@@ -84,7 +84,8 @@ Int Functions<S,D>
   const P3LookupTables& lookup_tables,
   const WorkspaceManager& workspace_mgr,
   Int nj,
-  Int nk)
+  Int nk,
+  physics::P3_Constants<S> & loc_p3constants)
 {
   using ExeSpace = typename KT::ExeSpace;
 
@@ -108,7 +109,7 @@ Int Functions<S,D>
   // we do not want to measure init stuff
   auto start = std::chrono::steady_clock::now();
 
-  physics::P3_Constants<S> loc_p3constants;
+  //physics::P3_Constants<S> loc_p3constants = loc_p3;
 
   // p3_main loop
   Kokkos::parallel_for(
@@ -346,7 +347,8 @@ Int Functions<S,D>
   const P3LookupTables& lookup_tables,
   const WorkspaceManager& workspace_mgr,
   Int nj,
-  Int nk)
+  Int nk,
+  physics::P3_Constants<S> & loc_p3constants)
 {
 #ifndef SCREAM_SMALL_KERNELS
   return p3_main_internal(runtime_options,
@@ -357,7 +359,7 @@ Int Functions<S,D>
                          history_only,
                          lookup_tables,
                          workspace_mgr,
-                         nj, nk);
+                         nj, nk, loc_p3constants);
 #else 
   return p3_main_internal_disp(runtime_options,
                                prognostic_state,
@@ -367,7 +369,7 @@ Int Functions<S,D>
                                history_only,
                                lookup_tables,
                                workspace_mgr,
-                               nj, nk);
+                               nj, nk, loc_p3constants);
 #endif
 }
 } // namespace p3
