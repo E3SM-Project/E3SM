@@ -628,6 +628,7 @@ endif
 
 ifeq "$(USE_SHTNS)" "true"
 	override CPPFLAGS += -DUSE_SHTNS
+endif
 
 ifneq "$(MOAB_PATH)" ""
        CPPINCLUDES +=  -DHAVE_MOAB -I$(MOAB_PATH)/include
