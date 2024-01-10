@@ -30,7 +30,6 @@ Fields:
       - aero_ssa_sw
       - aero_tau_lw
       - aero_tau_sw
-      - nccn
       # P3
       - bm
       - nc
