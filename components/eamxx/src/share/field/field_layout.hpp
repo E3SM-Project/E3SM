@@ -70,7 +70,7 @@ public:
   FieldLayout& operator= (const FieldLayout&) = default;
 
   // Create invalid layout
-  static FieldLayout invalid () { return FieldLayout({}); }
+  static FieldLayout invalid () { return FieldLayout({FieldTag::Invalid},{0}); }
 
   // ----- Getters ----- //
 
