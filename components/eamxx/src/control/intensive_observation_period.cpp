@@ -200,7 +200,7 @@ initialize_iop_file(const util::TimeStamp& run_t0,
   // Check if the following variables exist in the iop file
 
   // Scalar data
-  FieldLayout fl_scalar({}); // Zero dim fields used for iop file scalars
+  FieldLayout fl_scalar({},{}); // Zero dim fields used for iop file scalars
   setup_iop_field({"Ps"},          fl_scalar);
   setup_iop_field({"Tg"},          fl_scalar);
   setup_iop_field({"lhflx", "lh"}, fl_scalar);

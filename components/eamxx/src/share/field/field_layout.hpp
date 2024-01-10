@@ -63,8 +63,6 @@ public:
   // Constructor(s)
   FieldLayout () = delete;
   FieldLayout (const FieldLayout&) = default;
-  FieldLayout (const std::initializer_list<FieldTag>& tags);
-  FieldLayout (const std::vector<FieldTag>& tags);
   FieldLayout (const std::vector<FieldTag>& tags,
                const std::vector<int>& dims);
 
