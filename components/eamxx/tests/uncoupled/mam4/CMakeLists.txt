@@ -1,5 +1,8 @@
 include (ScreamUtils)
 
+# This test needs to be reworked for microphysics -- currently it's still using
+# input for nucleation.
+
 # Create the test
 CreateADUnitTest(mam4_microphysics_standalone
   LABELS mam4 physics

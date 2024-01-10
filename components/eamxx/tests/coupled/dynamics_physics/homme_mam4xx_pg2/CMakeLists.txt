@@ -1,5 +1,8 @@
 include (ScreamUtils)
 
+# This test needs to be reworked for microphysics -- currently it's still using
+# input for nucleation.
+
 set (TEST_BASE_NAME homme_mam4xx_pg2)
 set (FIXTURES_BASE_NAME ${TEST_BASE_NAME}_generate_output_nc_files)
 
