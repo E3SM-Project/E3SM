@@ -35,6 +35,7 @@ void Functions<Real,DefaultDevice>
 {       
   using ExeSpace = typename KT::ExeSpace;
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(nj, nk_pack);
+
   Kokkos::parallel_for("p3_main_init",
          policy, KOKKOS_LAMBDA(const MemberType& team) {
         
@@ -111,6 +112,8 @@ Int Functions<Real,DefaultDevice>
   Int nk)
 {
   using ExeSpace = typename KT::ExeSpace;
+
+  physics::P3_Constants<Real> loc_p3constants;
 
   view_2d<Spack> latent_heat_sublim("latent_heat_sublim", nj, nk), latent_heat_vapor("latent_heat_vapor", nj, nk), latent_heat_fusion("latent_heat_fusion", nj, nk);
 
@@ -247,7 +250,7 @@ Int Functions<Real,DefaultDevice>
       nr_incld, ni_incld, bm_incld, mu_c, nu, lamc, cdist, cdist1, cdistr,
       mu_r, lamr, logn0r, qv2qi_depos_tend, precip_total_tend, nevapr, qr_evap_tend,
       vap_liq_exchange, vap_ice_exchange, liq_ice_exchange,
-      pratot, prctot, nucleationPossible, hydrometeorsPresent);
+      pratot, prctot, nucleationPossible, hydrometeorsPresent, loc_p3constants);
 
   //NOTE: At this point, it is possible to have negative (but small) nc, nr, ni.  This is not
   //      a problem; those values get clipped to zero in the sedimentation section (if necessary).

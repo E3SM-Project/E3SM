@@ -3,6 +3,7 @@
 #include "share/property_checks/field_lower_bound_check.hpp"
 // Needed for p3_init, the only F90 code still used.
 #include "physics/p3/p3_functions.hpp"
+#include "physics/share/physics_constants.hpp"
 #include "physics/p3/p3_f90.hpp"
 
 #include "ekat/ekat_assert.hpp"
@@ -205,8 +206,7 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   // Gather runtime options
   runtime_options.max_total_ni = m_params.get<double>("max_total_ni");
 
-  //1350 will be from nl...
-  //what is the
+  CP3::set_p3_defaults();
   CP3::p3_autoconversion_factor = m_params.get<double>("p3_autoconversion_factor");
 
   // Set property checks for fields in this process

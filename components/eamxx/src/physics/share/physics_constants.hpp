@@ -132,12 +132,15 @@ struct P3_Constants
   public:
   static Scalar p3_autoconversion_factor;
 
-  void set_p3_defaults(){
-    p3_autoconversion_factor = 1350.0;
+  static void set_p3_defaults(){
+    //set it to 1000 for debugging, otherwise 1350.0
+    p3_autoconversion_factor = 1000.0;
   };
 
 }; // p3 constants
 
+template<typename Scalar>
+Scalar P3_Constants<Scalar>::p3_autoconversion_factor = 1000.0;
 
 // Gases
 // Define the molecular weight for each gas, which can then be

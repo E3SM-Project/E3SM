@@ -108,7 +108,7 @@ Int Functions<S,D>
   // we do not want to measure init stuff
   auto start = std::chrono::steady_clock::now();
 
-  physics::P3_Constants<S> aaa2;
+  physics::P3_Constants<S> loc_p3constants;
 
   // p3_main loop
   Kokkos::parallel_for(
@@ -256,7 +256,7 @@ Int Functions<S,D>
       nr_incld, ni_incld, bm_incld, mu_c, nu, lamc, cdist, cdist1, cdistr,
       mu_r, lamr, logn0r, oqv2qi_depos_tend, precip_total_tend, nevapr, qr_evap_tend,
       ovap_liq_exchange, ovap_ice_exchange, oliq_ice_exchange,
-      pratot, prctot, hydrometeorsPresent, nk, aaa2);
+      pratot, prctot, hydrometeorsPresent, nk, loc_p3constants);
 
     //NOTE: At this point, it is possible to have negative (but small) nc, nr, ni.  This is not
     //      a problem; those values get clipped to zero in the sedimentation section (if necessary).
