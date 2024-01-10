@@ -670,8 +670,12 @@ this mask will have smb calculated over the entire global land surface
 
 
 <!-- Phosphorus deposition streams namelist defaults -->
+<stream_year_first_pdep use_cn=".true."   sim_year="2010" >2000</stream_year_first_pdep>
+<stream_year_last_pdep  use_cn=".true."   sim_year="2010" >2000</stream_year_last_pdep>
 <stream_year_first_pdep use_cn=".true."   sim_year="2000" >2000</stream_year_first_pdep>
 <stream_year_last_pdep  use_cn=".true."   sim_year="2000" >2000</stream_year_last_pdep>
+<stream_year_first_pdep use_cn=".true."   sim_year="1950" >2000</stream_year_first_pdep>
+<stream_year_last_pdep  use_cn=".true."   sim_year="1950" >2000</stream_year_last_pdep>
 <stream_year_first_pdep use_cn=".true."   sim_year="1850" >2000</stream_year_first_pdep>
 <stream_year_last_pdep  use_cn=".true."   sim_year="1850" >2000</stream_year_last_pdep>
 <stream_year_first_pdep use_cn=".true."   sim_year="1000" >2000</stream_year_first_pdep>
