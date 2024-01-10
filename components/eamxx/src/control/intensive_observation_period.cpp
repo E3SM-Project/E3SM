@@ -133,7 +133,6 @@ IntensiveObservationPeriod(const ekat::Comm& comm,
   if (not m_params.isParameter("iop_nudge_tq_low"))     m_params.set<Real>("iop_nudge_tq_low",     1050);
   if (not m_params.isParameter("iop_nudge_tq_high"))    m_params.set<Real>("iop_nudge_tq_high",    0);
   if (not m_params.isParameter("iop_nudge_tscale"))     m_params.set<Real>("iop_nudge_tscale",     10800);
-  if (not m_params.isParameter("iop_perturb_high"))     m_params.set<Real>("iop_perturb_high",     1050);
   if (not m_params.isParameter("zero_non_iop_tracers")) m_params.set<bool>("zero_non_iop_tracers", false);
 
   // Use IOP file to initialize parameters
@@ -290,7 +289,7 @@ initialize_iop_file(const util::TimeStamp& run_t0,
   iop_file_pressure.allocate_view();
   auto data = iop_file_pressure.get_view<Real*, Host>().data();
   read_variable_from_file(iop_file, "lev", "real", {"lev"}, -1, data);
-  // Convert to pressure to milibar (file gives pressure in Pa)
+  // Convert to pressure to millibar (file gives pressure in Pa)
   for (int ilev=0; ilev<file_levs; ++ilev) data[ilev] /= 100;
   iop_file_pressure.sync_to_dev();
   m_helper_fields.insert({"iop_file_pressure", iop_file_pressure});
@@ -566,7 +565,7 @@ read_iop_file_data (const util::TimeStamp& current_ts)
 
     EKAT_REQUIRE_MSG(adjusted_file_levs > 1,
                      "Error! Pressures in iop file "+iop_file+" is are inccorrectly set. "
-                     "Surface pressure \"Ps\" (converted to milibar) should be greater "
+                     "Surface pressure \"Ps\" (converted to millibar) should be greater "
                      "than at least the 1st entry in midpoint pressures \"lev\".\n");
 
     // Compute model pressure levels

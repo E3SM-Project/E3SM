@@ -2,6 +2,8 @@
 #include "control/atmosphere_surface_coupling_importer.hpp"
 #include "control/atmosphere_surface_coupling_exporter.hpp"
 
+#include "physics/share/physics_constants.hpp"
+
 #include "share/atm_process/atmosphere_process_group.hpp"
 #include "share/atm_process/atmosphere_process_dag.hpp"
 #include "share/field/field_utils.hpp"
@@ -29,6 +31,7 @@
 #endif
 
 #include <fstream>
+#include <random>
 
 namespace scream {
 
@@ -1001,7 +1004,6 @@ void AtmosphereDriver::set_initial_conditions ()
       if (ic_pl.isType<double>(fname) or ic_pl.isType<std::vector<double>>(fname)) {
         // Initial condition is a constant
         initialize_constant_field(fid, ic_pl);
-        fields_inited[grid_name].push_back(fname);
 
         // Note: f is const, so we can't modify the tracking. So get the same field from the fm
         auto f_nonconst = m_field_mgrs.at(grid_name)->get_field(fid.name());
@@ -1009,11 +1011,11 @@ void AtmosphereDriver::set_initial_conditions ()
       } else if (ic_pl.isType<std::string>(fname)) {
         // Initial condition is a string
         ic_fields_to_copy.push_back(fid);
-        fields_inited[grid_name].push_back(fname);
       } else {
         EKAT_ERROR_MSG ("ERROR: invalid assignment for variable " + fname + ", only scalar "
                         "double or string, or vector double arguments are allowed");
       }
+      fields_inited[grid_name].push_back(fname);
     } else if (fname == "phis" or fname == "sgh30") {
       // Both phis and sgh30 need to be loaded from the topography file
       auto& this_grid_topo_file_fnames = topography_file_fields_names[grid_name];
@@ -1032,6 +1034,7 @@ void AtmosphereDriver::set_initial_conditions ()
           EKAT_ERROR_MSG ("Error! Requesting phis on an unknown grid: " + grid_name + ".\n");
         }
         this_grid_topo_eamxx_fnames.push_back(fname);
+	fields_inited[grid_name].push_back(fname);
       } else if (fname == "sgh30") {
         // The eamxx field "sgh30" is called "SGH30" in the
         // topography file and is only available on the PG2 grid.
@@ -1040,6 +1043,7 @@ void AtmosphereDriver::set_initial_conditions ()
                         " topo file only has sgh30 for Physics PG2.\n");
         topography_file_fields_names[grid_name].push_back("SGH30");
         topography_eamxx_fields_names[grid_name].push_back(fname);
+	fields_inited[grid_name].push_back(fname);
       }
     } else if (not (fvphyshack and grid_name == "Physics PG2")) {
       // The IC file is written for the GLL grid, so we only load
@@ -1051,6 +1055,7 @@ void AtmosphereDriver::set_initial_conditions ()
         // If this field is the parent of other subfields, we only read from file the subfields.
         if (not ekat::contains(this_grid_ic_fnames,fname)) {
           this_grid_ic_fnames.push_back(fname);
+	  fields_inited[grid_name].push_back(fname);
         }
       } else if (fvphyshack and grid_name == "Physics GLL") {
         // [CGLL ICs in pg2] I tried doing something like this in
@@ -1064,10 +1069,10 @@ void AtmosphereDriver::set_initial_conditions ()
           const auto& fname = fid.name();
           if (ic_pl.isParameter(fname) and ic_pl.isType<double>(fname)) {
             initialize_constant_field(fid, ic_pl);
-            fields_inited[grid_name].push_back(fname);
           } else {
             this_grid_ic_fnames.push_back(fname);
           }
+	  fields_inited[grid_name].push_back(fname);
         }
       }
     }
@@ -1274,6 +1279,73 @@ void AtmosphereDriver::set_initial_conditions ()
       const auto& fm = m_field_mgrs.at("Physics GLL");
       m_intensive_observation_period->set_fields_from_iop_data(fm);
     }
+  }
+
+  // Compute IC perturbations of GLL fields (if requested)
+  using vos = std::vector<std::string>;
+  const auto perturbed_fields = ic_pl.get<vos>("perturbed_fields", {});
+  const auto num_perturb_fields = perturbed_fields.size();
+  if (num_perturb_fields > 0) {
+    m_atm_logger->info("    [EAMxx] Adding random perturbation to ICs ...");
+
+    EKAT_REQUIRE_MSG(m_field_mgrs.count("Physics GLL") > 0,
+                     "Error! Random perturbation can only be applied to fields on "
+                     "the GLL grid, but no Physics GLL FieldManager was defined.\n");
+    const auto& fm = m_field_mgrs.at("Physics GLL");
+
+    // Setup RNG. There are two relevant params: generate_perturbation_random_seed and
+    // perturbation_random_seed. We have 3 cases:
+    //   1. Parameter generate_perturbation_random_seed is set true, assert perturbation_random_seed
+    //      is not given and generate a random seed using std::rand() to get an integer random value.
+    //   2. Parameter perturbation_random_seed is given, use this value for the seed.
+    //   3. Parameter perturbation_random_seed is not given and generate_perturbation_random_seed is
+    //      not given, use 0 as the random seed.
+    // Case 3 is considered the default (using seed=0).
+    int seed;
+    if (ic_pl.get<bool>("generate_perturbation_random_seed", false)) {
+      EKAT_REQUIRE_MSG(not ic_pl.isParameter("perturbation_random_seed"),
+                       "Error! Param generate_perturbation_random_seed=true, and "
+                       "a perturbation_random_seed is given. Only one of these can "
+                       "be defined for a simulation.\n");
+      std::srand(std::time(nullptr));
+      seed = std::rand();
+    } else {
+      seed = ic_pl.get<int>("perturbation_random_seed", 0);
+    }
+    m_atm_logger->info("      For IC perturbation, random seed: "+std::to_string(seed));
+    std::mt19937_64 engine(seed);
+
+    // Get perturbation limit. Defines a range [1-perturbation_limit, 1+perturbation_limit]
+    // for which the perturbation value will be randomly generated from. Create a uniform
+    // distribution for this range.
+    const auto perturbation_limit = ic_pl.get<Real>("perturbation_limit", 0.001);
+    std::uniform_real_distribution<Real> pdf(1-perturbation_limit, 1+perturbation_limit);
+
+    // Define a level mask using reference pressure and the perturbation_minimum_pressure parameter.
+    // This mask dictates which levels we apply a perturbation.
+    const auto gll_grid = m_grids_manager->get_grid("Physics GLL");
+    const auto hyam_h = gll_grid->get_geometry_data("hyam").get_view<const Real*, Host>();
+    const auto hybm_h = gll_grid->get_geometry_data("hybm").get_view<const Real*, Host>();
+    constexpr auto ps0 = physics::Constants<Real>::P0;
+    const auto min_pressure = ic_pl.get<Real>("perturbation_minimum_pressure", 1050.0);
+    auto pressure_mask = [&] (const int ilev) {
+      const auto pref = (hyam_h(ilev)*ps0 + hybm_h(ilev)*ps0)/100; // Reference pressure ps0 is in Pa, convert to millibar
+      return pref > min_pressure;
+    };
+
+    // Loop through fields and apply perturbation.
+    for (size_t f=0; f<perturbed_fields.size(); ++f) {
+      const auto fname = perturbed_fields[f];
+      EKAT_REQUIRE_MSG(ekat::contains(fields_inited[fm->get_grid()->name()], fname),
+                       "Error! Attempting to apply perturbation to field not in initial_conditions.\n"
+                       "  - Field: "+fname+"\n"
+                       "  - Grid:  "+fm->get_grid()->name()+"\n");
+
+      auto field = fm->get_field(fname);
+      perturb(field, engine, pdf, seed, pressure_mask, fm->get_grid()->get_dofs_gids());
+    }
+
+    m_atm_logger->info("    [EAMxx] Adding random perturbation to ICs ... done!");
   }
 
   m_atm_logger->info("  [EAMxx] set_initial_conditions ... done!");

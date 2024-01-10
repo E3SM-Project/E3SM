@@ -22,6 +22,9 @@ initial_conditions:
   surf_sens_flux: 0.0
   precip_liq_surf_mass: 0.0
   precip_ice_surf_mass: 0.0
+  perturbed_fields: [T_mid]
+  perturbation_limit: 0.001
+  perturbation_minimum_pressure: 900.0 # in millibar
 
 atmosphere_processes:
   atm_procs_list: [sc_import,homme,physics]

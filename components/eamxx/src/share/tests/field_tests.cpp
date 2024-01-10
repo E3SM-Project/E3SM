@@ -851,6 +851,17 @@ TEST_CASE ("update") {
     f3.update(f_real,2,0);
     REQUIRE (views_are_equal(f3,f2));
   }
+
+  SECTION ("scale") {
+    Field f1 = f_real.clone();
+    Field f2 = f_real.clone();
+
+    // x=2, x*y = 2*y
+    f1.deep_copy(2.0);
+    f1.scale(f2);
+    f2.scale(2.0);
+    REQUIRE (views_are_equal(f1, f2));
+  }
 }
 
 } // anonymous namespace
