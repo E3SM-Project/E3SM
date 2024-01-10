@@ -250,7 +250,9 @@ macro(build_model COMP_CLASS COMP_NAME)
     endforeach()
 
     # Make sure we link blas/lapack
-    target_link_libraries(${TARGET_NAME} BLAS::BLAS LAPACK::LAPACK)
+    if (NOT DEFINED ENV{SKIP_BLAS})
+      target_link_libraries(${TARGET_NAME} BLAS::BLAS LAPACK::LAPACK)
+    endif()
 
     if (E3SM_LINK_WITH_FORTRAN)
       set_target_properties(${TARGET_NAME} PROPERTIES LINKER_LANGUAGE Fortran)
