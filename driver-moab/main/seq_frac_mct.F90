@@ -662,6 +662,16 @@ contains
           ko = mct_aVect_indexRa(fractions_o,"ofrac",perrWith=subName)
           kf = mct_aVect_indexRA(dom_o%data ,"frac" ,perrWith=subName)
           fractions_o%rAttr(ko,:) = dom_o%data%rAttr(kf,:)
+          ! so the frac var from dom is copied into ofrac field
+          !  frac is on ocean mesh, ofrac is on ocean mesh too; 
+          tagname = 'frac'//C_NULL_CHAR
+          ent_type = 1! cells
+          allocate(tagValues(local_size_mb_ocn) )
+          ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, local_size_mb_ocn , ent_type, tagValues)
+          tagname = 'ofrac'//C_NULL_CHAR
+          ierr = iMOAB_SetDoubleTagStorage ( mboxid, tagname, local_size_mb_ocn , ent_type, tagValues)
+          ierr = iMOAB_SetDoubleTagStorage ( mbofxid, tagname, local_size_mb_ocn , ent_type, tagValues)
+          deallocate(tagValues)
           mapper_o2a => prep_atm_get_mapper_Fo2a()
           call seq_map_map(mapper_o2a, fractions_o, fractions_a, fldlist='ofrac',norm=.false.)
        endif
