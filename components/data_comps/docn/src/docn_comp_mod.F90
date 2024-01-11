@@ -277,7 +277,7 @@ CONTAINS
    endif
    ! "PARALLEL=READ_PART;PARTITION_METHOD=RCBZOLTAN;"
    ierr = iMOAB_LoadMesh(mpoid, trim(SDOCN%domainFile)//C_NULL_CHAR, &
-            "PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;", 0)
+            "PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;NO_CULLING", 0)
    if ( ierr /= 0 ) then
       write(logunit,*) 'Failed to load ocean domain mesh'
    endif
