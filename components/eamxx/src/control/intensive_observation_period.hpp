@@ -177,9 +177,7 @@ private:
   };
 
   void initialize_iop_file(const util::TimeStamp& run_t0,
-                           int model_nlevs,
-                           const Field& hyam,
-                           const Field& hybm);
+                           int model_nlevs);
 
   ekat::Comm m_comm;
   ekat::ParameterList m_params;
