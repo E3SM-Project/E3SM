@@ -290,7 +290,7 @@ void HommeDynamics::fv_phys_rrtmgp_active_gases_remap () {
       const auto time_idx = c.get<Homme::TimeLevel>().n0;
       for (const auto& e : trace_gases_workaround.get_active_gases()) {
         const auto& f_dgll = m_helper_fields.at(e);
-        const auto& f_phys = get_field_out(e, pgn);
+        auto& f_phys = get_field_out(e, pgn);
         const auto& v_dgll = f_dgll.get_view<const Real****>();
         const auto& v_phys = f_phys.get_view<Real**>();
         assert(v_dgll.extent_int(0) == nelem and
@@ -302,6 +302,8 @@ void HommeDynamics::fv_phys_rrtmgp_active_gases_remap () {
           v_phys.data(), nelem, npg, 1, v_phys.extent_int(1));
         gfr.remap_tracer_dyn_to_fv_phys(time_idx, 1, in_dgll, out_phys);
         Kokkos::fence();
+
+        f_phys.get_header().get_tracking().update_time_stamp(timestamp());
       }
     }
   }
