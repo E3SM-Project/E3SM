@@ -135,6 +135,8 @@ class Decomp {
    // Since these are used frequently, we make them public to reduce the
    // number of retrievals required.
 
+   std::string MeshFileName; ///< The name of the file with mesh info
+
    // Sizes and global IDs
    // Note that all sizes are actual counts (1-based) so that loop extents
    // should always use the 0:NCellsXX-1 form.
@@ -226,7 +228,7 @@ class Decomp {
           I4 NParts,               ///< [in] num of partitions for new decomp
           PartMethod Method,       ///< [in] method for partitioning
           I4 InHaloWidth,          ///< [in] width of halo in new decomp
-          const std::string &MeshFileName ///< [in] name of file with mesh info
+          const std::string &MeshFileName_ ///< [in] name of file with mesh info
    );
 
    /// Destructor - deallocates all memory and deletes a Decomp.
