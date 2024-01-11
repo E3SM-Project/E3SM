@@ -59,7 +59,8 @@ NCellsGlobal = OMEGA::IOGetDimLength(FileID, "nCells");
 std::cout << "Global nCells: " << NCellsGlobal << std::endl;
 
 //Create parallel IO decomposition
-I4 CellDecomp;
+I4 CellDecompI4;
+I4 CellDecompR8;
 I4 NDims = 1;
 std::vector<I4> CellDims{MeshDecomp->NCellsGlobal};
 std::vector<I4> CellID(NCellsOwned);
@@ -69,7 +70,9 @@ for (int Cell = 0; Cell < NCellsOwned; ++Cell) {
   //std::cout << CellID[Cell] << std::endl;  
 }
 
-Err = OMEGA::IOCreateDecomp(CellDecomp, OMEGA::IOTypeI4, NDims, CellDims,
+Err = OMEGA::IOCreateDecomp(CellDecompI4, OMEGA::IOTypeI4, NDims, CellDims,
+                            NCellsOwned, CellID, Rearr);
+Err = OMEGA::IOCreateDecomp(CellDecompR8, OMEGA::IOTypeR8, NDims, CellDims,
                             NCellsOwned, CellID, Rearr);
 if (Err != 0)
    LOG_CRITICAL("HorzMesh: error creating cell IO decomposition");
@@ -79,7 +82,7 @@ if (Err != 0)
 ArrayHost1DI4 indexToCellID("indexToCellID", NCellsOwned);
 std::vector<I4> indexToCellIDTmp(NCellsOwned);
 Err = OMEGA::IOReadArray(&indexToCellIDTmp[0], NCellsOwned, "indexToCellID",
-                         FileID, CellDecomp);
+                         FileID, CellDecompI4);
 if (Err != 0)
    LOG_CRITICAL("Decomp: error reading xCell");
 
@@ -93,16 +96,39 @@ for (int Cell = 0; Cell < NCellsOwned; ++Cell) {
 XCellH = ArrayHost1DR8("xCell", NCellsOwned);
 std::vector<R8> XCellTmp(NCellsOwned);
 Err = OMEGA::IOReadArray(&XCellTmp[0], NCellsOwned, "xCell",
-                         FileID, CellDecomp);
+                         FileID, CellDecompR8);
 if (Err != 0)
-   LOG_CRITICAL("Decomp: error reading xCell");
+   LOG_CRITICAL("HorzMesh: error reading xCell");
 
 for (int Cell = 0; Cell < NCellsOwned; ++Cell) {
    XCellH(Cell) = XCellTmp[Cell];
-   std::cout << XCellH(Cell) << std::endl;
 }
 
+
+YCellH = ArrayHost1DR8("yCell", NCellsOwned);
+std::vector<R8> YCellTmp(NCellsOwned);
+Err = OMEGA::IOReadArray(&YCellTmp[0], NCellsOwned, "yCell",
+                         FileID, CellDecompR8);
+if (Err != 0)
+   LOG_CRITICAL("HorzMesh: error reading yCell");
+
+for (int Cell = 0; Cell < NCellsOwned; ++Cell) {
+   YCellH(Cell) = YCellTmp[Cell];
 }
+
+
+ZCellH = ArrayHost1DR8("zCell", NCellsOwned);
+std::vector<R8> ZCellTmp(NCellsOwned);
+Err = OMEGA::IOReadArray(&ZCellTmp[0], NCellsOwned, "zCell",
+                         FileID, CellDecompR8);
+if (Err != 0)
+   LOG_CRITICAL("HorzMesh: error reading zCell");
+
+for (int Cell = 0; Cell < NCellsOwned; ++Cell) {
+   ZCellH(Cell) = ZCellTmp[Cell];
+}
+
+} // End Constructor
 
 HorzMesh::~HorzMesh() {
 
