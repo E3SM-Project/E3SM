@@ -121,7 +121,7 @@ contains
 
       call mpas_pool_get_config(liConfigs, 'config_uplift_method', config_uplift_method)
       if (trim(config_uplift_method)=='sealevelmodel') then
-         ! initialize the 1D sea-level model
+         ! initialize the 1D sea-level model if fresh start
          call slmodel_init(domain, err)
       endif
 
@@ -362,6 +362,7 @@ contains
    subroutine slmodel_init(domain, err)
 
 #ifdef USE_SEALEVELMODEL
+      use mpas_timekeeping
       use sl_model_mod                    !< this is part of the SLM code
       use sl_io_mod                       !< this is part of the SLM code
       use user_specs_mod, only: nglv      !< this is part of the SLM code
@@ -386,16 +387,21 @@ contains
       !-----------------------------------------------------------------
 
 #ifdef USE_SEALEVELMODEL
+      logical, pointer :: config_do_restart
+      integer, pointer :: config_slm_timestep_restart
       character (len=StrKIND), pointer :: config_slm_coupling_interval
+      character (len=StrKIND), pointer :: xtime, simulationStartTime
       type (mpas_pool_type), pointer :: meshPool     !< mesh information
       type (mpas_pool_type), pointer :: geometryPool
+      type (MPAS_Time_Type) :: currTime !< current time as time type
       real (kind=RKIND), dimension(:), pointer :: thickness, bedTopography
       real (kind=RKIND), dimension(:), allocatable :: meshMask
       real (kind=RKIND), dimension(nglv,2*nglv) :: ismIceload, ismBedtopo, ismMask
       real (kind=RKIND), dimension(nglv*2*nglv) :: thicknessSLgrid1D
       real (kind=RKIND), dimension(nglv*2*nglv) :: bedtopoSLgrid1D
       real (kind=RKIND), dimension(nglv*2*nglv) :: maskSLgrid1D
-      integer :: slm_coupling_interval
+      integer :: slm_coupling_interval, slmRestartYear, slmTimeStep_restart
+      integer :: currYear, simulationStartYear
       integer :: err_tmp
       integer :: unit_num_slm  ! SLM variable
       integer :: itersl, dtime ! SLM variable
@@ -431,11 +437,15 @@ contains
 
       ! Gather nCellsOwned
       call MPI_GATHER( nCellsOwned, 1, MPI_INTEGER, nCellsPerProc, 1, MPI_INTEGER, &
-                       0, domain % dminfo % comm, err_tmp)
+      0, domain % dminfo % comm, err_tmp)
       err = ior(err, err_tmp)
 
-      ! Set Displacement variable for GATHERV command
       if (curProc.eq.0) then
+         ! First, set SLM unit number to the MALI output log file unit
+         unit_num_slm = domain % logInfo % outputLog % unitNum
+         call sl_set_unit_num(unit_num_slm)
+
+         ! Set Displacement variable for GATHERV command
          nCellsGlobal = sum(nCellsPerProc)
          allocate(indexToCellIDGathered(nCellsGlobal))
          nCellsDisplacement(1) = 0
@@ -451,89 +461,124 @@ contains
 
       ! Gather indexToCellID
       call MPI_GATHERV( indexToCellID, nCellsOwned, MPI_INTEGER, indexToCellIDGathered, &
-              nCellsPerProc, nCellsDisplacement, MPI_INTEGER, 0, domain % dminfo % comm, err_tmp)
+      nCellsPerProc, nCellsDisplacement, MPI_INTEGER, 0, domain % dminfo % comm, err_tmp)
       err = ior(err, err_tmp)
 
-      call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
-      call mpas_pool_get_array(geometryPool, 'thickness', thickness)
-      call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
-      call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
-
-      if (curProc.eq.0) then
-         allocate(globalArrayThickness(nCellsGlobal), gatheredArrayThickness(nCellsGlobal))
-         allocate(globalArrayBedTopography(nCellsGlobal), gatheredArrayBedTopography(nCellsGlobal))
-         allocate(meshMask(nCellsGlobal))
-         ismIceload(:,:) = 0.0
-         ismBedtopo(:,:) = 0.0
-         ismMask(:,:) = 0.0
-         bedtopoSLgrid1D(:) = 0.0
-         thicknessSLgrid1D(:) = 0.0
-         maskSLgrid1D(:) = 0.0
-      else
-         ! Intel requires these be allocated even though they are not meaningful on the non-destination procs
-         allocate(globalArrayThickness(1), gatheredArrayThickness(1))
-         allocate(globalArrayBedTopography(1), gatheredArrayBedTopography(1))
-         allocate(meshMask(1))
-      endif
-
-      ! Gather only the nCellsOwned from thickness and bedtopo (does not include Halos)
-      call MPI_GATHERV((thickness*real(li_mask_is_grounded_ice_int(cellMask),RKIND)), &
-             nCellsOwned, MPI_DOUBLE, gatheredArrayThickness, nCellsPerProc, &
-             nCellsDisplacement, MPI_DOUBLE, 0, domain % dminfo % comm, err_tmp)
-      err = ior(err, err_tmp)
-      call MPI_GATHERV(bedTopography, nCellsOwned, MPI_DOUBLE, gatheredArrayBedTopography, nCellsPerProc, &
-                       nCellsDisplacement, MPI_DOUBLE, 0, domain % dminfo % comm, err_tmp)
-      err = ior(err, err_tmp)
-
-      if (curProc.eq.0) then
-
-         ! First, check consistency in coupling interval set up in MALI and SLM
-         err = 0
-         call mpas_pool_get_config(liConfigs, 'config_slm_coupling_interval', config_slm_coupling_interval)
+      ! check if the run is a restart or not
+      call mpas_pool_get_config(liConfigs, 'config_do_restart', config_do_restart)
+      if (config_do_restart) then
+         ! find the right slmTimeStep
+         call mpas_pool_get_config(liConfigs,'config_slm_coupling_interval', config_slm_coupling_interval)
          read(config_slm_coupling_interval(1:4),*) slm_coupling_interval
-         call sl_drive_readnl(itersl, dtime, starttime) !SLM subroutine
-         if (slm_coupling_interval .NE. dtime) then
-            call mpas_log_write("The coupling interval in MALI and SLM settings are inconsistent", &
-                 MPAS_LOG_ERR)
+         call mpas_pool_get_config(liConfigs,'config_slm_timestep_restart', config_slm_timestep_restart)
+         slmTimeStep = config_slm_timestep_restart
+
+         ! check if the timestep is setup properly
+         ! get the simulation start time
+         call mpas_pool_get_array(meshPool, 'simulationStartTime', simulationStartTime)
+         read(simulationStartTime(1:4),*) simulationStartYear
+
+         ! get the current (restart) time
+         call mpas_pool_get_array(meshPool, 'xtime', xtime)
+         read(xtime(1:4),*) currYear
+
+         ! take the difference and divide by the coupling interval
+         slmTimeStep_restart = ( currYear - simulationStartYear ) / slm_coupling_interval
+
+         ! if the result is not equal to the defined slmTimeStep, raise an error.
+         if (slmTimeStep /= slmTimeStep_restart) then
+            slmRestartYear = ( slmTimeStep * slm_coupling_interval ) + simulationStartYear
+            call mpas_log_write("Restart year from SLM restart timestep and MALI restart time &
+                 are inconsistent", MPAS_LOG_ERR)
+            call mpas_log_write("Problem: Restart year based on `config_slm_timestep_restart` &
+                 is $i, but MALI restart year is set to $i.", &
+                 intArgs=(/slmRestartYear, currYear/))
             err = ior(err,1)
+         else
+            call mpas_log_write("Calling the SLM. SLM timestep $i", intArgs=(/slmTimeStep/))
+            call slmodel_solve(slmTimeStep, domain)
          endif
-         ! Rearrange data into CellID order
-         do iCell = 1,nCellsGlobal
-            globalArrayThickness(indexToCellIDGathered(iCell)) = gatheredArrayThickness(iCell)
-            globalArrayBedTopography(indexToCellIDGathered(iCell)) = gatheredArrayBedTopography(iCell)
-            meshMask(indexToCellIDGathered(iCell)) = 1
-         enddo
 
-         ! interpolate thickness, bedTopograpy, mesh mask to the Gaussian grid
-         call interpolate(toColValues, toRowValues, toSvalues, globalArrayThickness, thicknessSLgrid1D)
-         call interpolate(toColValues, toRowValues, toSvalues, globalArrayBedTopography, bedtopoSLgrid1D)
-         call interpolate(toColValues, toRowValues, toSvalues, meshMask, maskSLgrid1D)
+      else
 
-         ! reformat the interpolated data
-         ismIceload = reshape(thicknessSLgrid1D, [nglv,2*nglv])
-         ismBedtopo = reshape(bedtopoSLgrid1D, [nglv,2*nglv])
-         ismMask = reshape(maskSLgrid1D, [nglv,2*nglv])
+         call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
+         call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+         call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
+         call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 
-         ! initialize coupling time step number. initial time is 0
-         slmTimeStep = 0
+         if (curProc.eq.0) then
+            allocate(globalArrayThickness(nCellsGlobal), gatheredArrayThickness(nCellsGlobal))
+            allocate(globalArrayBedTopography(nCellsGlobal), gatheredArrayBedTopography(nCellsGlobal))
+            allocate(meshMask(nCellsGlobal))
+            ismIceload(:,:) = 0.0
+            ismBedtopo(:,:) = 0.0
+            ismMask(:,:) = 0.0
+            bedtopoSLgrid1D(:) = 0.0
+            thicknessSLgrid1D(:) = 0.0
+            maskSLgrid1D(:) = 0.0
+         else
+            ! Intel requires these be allocated even though they are not meaningful on the non-destination procs
+            allocate(globalArrayThickness(1), gatheredArrayThickness(1))
+            allocate(globalArrayBedTopography(1), gatheredArrayBedTopography(1))
+            allocate(meshMask(1))
+         endif
 
-         ! set SLM unit number to the MALI output log file unit
-         unit_num_slm = domain % logInfo % outputLog % unitNum
+         ! Gather only the nCellsOwned from thickness and bedtopo (does not include Halos)
+         call MPI_GATHERV((thickness*real(li_mask_is_grounded_ice_int(cellMask),RKIND)), &
+                nCellsOwned, MPI_DOUBLE, gatheredArrayThickness, nCellsPerProc, &
+                nCellsDisplacement, MPI_DOUBLE, 0, domain % dminfo % comm, err_tmp)
+         err = ior(err, err_tmp)
+         call MPI_GATHERV(bedTopography, nCellsOwned, MPI_DOUBLE, gatheredArrayBedTopography, nCellsPerProc, &
+                          nCellsDisplacement, MPI_DOUBLE, 0, domain % dminfo % comm, err_tmp)
+         err = ior(err, err_tmp)
 
-         ! series of calling SLM routines
-         call sl_set_unit_num(unit_num_slm)
-         call sl_call_readnl
-         call sl_solver_checkpoint(itersl, dtime)
-         call sl_timewindow(slmTimeStep)
-         call sl_solver_init(itersl, starttime, ismIceload, ismBedtopo, ismMask)
-         call sl_deallocate_array
+         if (curProc.eq.0) then
 
-      endif
-      deallocate(globalArrayThickness)
-      deallocate(gatheredArrayThickness)
-      deallocate(globalArrayBedTopography)
-      deallocate(gatheredArrayBedTopography)
-      deallocate(meshMask)
+            ! First, check consistency in coupling interval set up in MALI and SLM
+            err = 0
+            call mpas_pool_get_config(liConfigs, 'config_slm_coupling_interval', config_slm_coupling_interval)
+            read(config_slm_coupling_interval(1:4),*) slm_coupling_interval
+            call sl_drive_readnl(itersl, dtime, starttime) !SLM subroutine
+            if (slm_coupling_interval .NE. dtime) then
+               call mpas_log_write("The coupling interval in MALI and SLM settings are inconsistent", &
+                    MPAS_LOG_ERR)
+               err = ior(err,1)
+            endif
+            ! Rearrange data into CellID order
+            do iCell = 1,nCellsGlobal
+               globalArrayThickness(indexToCellIDGathered(iCell)) = gatheredArrayThickness(iCell)
+               globalArrayBedTopography(indexToCellIDGathered(iCell)) = gatheredArrayBedTopography(iCell)
+               meshMask(indexToCellIDGathered(iCell)) = 1
+            enddo
+
+            ! interpolate thickness, bedTopograpy, mesh mask to the Gaussian grid
+            call interpolate(toColValues, toRowValues, toSvalues, globalArrayThickness, thicknessSLgrid1D)
+            call interpolate(toColValues, toRowValues, toSvalues, globalArrayBedTopography, bedtopoSLgrid1D)
+            call interpolate(toColValues, toRowValues, toSvalues, meshMask, maskSLgrid1D)
+
+            ! reformat the interpolated data
+            ismIceload = reshape(thicknessSLgrid1D, [nglv,2*nglv])
+            ismBedtopo = reshape(bedtopoSLgrid1D, [nglv,2*nglv])
+            ismMask = reshape(maskSLgrid1D, [nglv,2*nglv])
+
+            ! initialize coupling time step number. initial time is 0
+            slmTimeStep = 0
+
+            ! series of calling SLM routines
+            call sl_call_readnl
+            call sl_solver_checkpoint(itersl, dtime)
+            call sl_timewindow(slmTimeStep)
+            call sl_solver_init(itersl, starttime, ismIceload, ismBedtopo, ismMask)
+            call sl_deallocate_array
+
+         endif
+         deallocate(globalArrayThickness)
+         deallocate(gatheredArrayThickness)
+         deallocate(globalArrayBedTopography)
+         deallocate(gatheredArrayBedTopography)
+         deallocate(meshMask)
+
+      endif ! endif restart or not
 
 # else
       call mpas_log_write("The sea-level model needs to be included in the compilation with 'SLM=true'", &
