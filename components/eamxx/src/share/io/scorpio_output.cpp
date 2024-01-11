@@ -848,7 +848,7 @@ void AtmosphereOutput::register_views()
 /* ---------------------------------------------------------- */
 void AtmosphereOutput::set_avg_cnt_tracking(const std::string& name, const std::string& avg_cnt_suffix, const FieldLayout& layout)
 {
-  // Make sure this field "name" hasn't already been regsitered with avg_cnt tracking.
+  // Make sure this field "name" hasn't already been registered with avg_cnt tracking.
   // Note, we check this because some diagnostics need to have their own tracking which
   // is created at the 'create_diagnostics' function.
   if (m_field_to_avg_cnt_map.count(name)>0) {

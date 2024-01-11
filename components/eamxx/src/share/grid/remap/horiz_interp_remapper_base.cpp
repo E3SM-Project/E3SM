@@ -78,7 +78,7 @@ create_src_layout (const FieldLayout& tgt_layout) const
       src = m_src_grid->get_3d_vector_layout(midpoints,vec_tag,vec_dim);
       break;
     default:
-      EKAT_ERROR_MSG ("Layout not supported by HorizInterpRemapperBase: " + e2str(lt) + "\n");
+      EKAT_ERROR_MSG ("Target layout not supported by HorizInterpRemapperBase: " + e2str(lt) + "\n");
   }
   return src;
 }
@@ -113,7 +113,7 @@ create_tgt_layout (const FieldLayout& src_layout) const
       tgt = m_tgt_grid->get_3d_vector_layout(midpoints,vec_tag,vec_dim);
       break;
     default:
-      EKAT_ERROR_MSG ("Layout not supported by HorizInterpRemapperBase: " + e2str(lt) + "\n");
+      EKAT_ERROR_MSG ("Source layout not supported by HorizInterpRemapperBase: " + e2str(lt) + "\n");
   }
   return tgt;
 }
@@ -205,9 +205,9 @@ get_my_triplets (const std::string& map_file) const
   scorpio::set_dof(map_file,"S"  ,nlweights,dofs_offsets.data());
   scorpio::set_decomp(map_file);
 
-  // Figure out if we are readint the right map, that is:
+  // Figure out if we are reading the right map, that is:
   //  - n_a or n_b matches the fine grid ncols
-  //  - the map "direction" (fine->coarse or coarse->fine) mathces m_type
+  //  - the map "direction" (fine->coarse or coarse->fine) matches m_type
   const int n_a = scorpio::get_dimlen(map_file,"n_a");
   const int n_b = scorpio::get_dimlen(map_file,"n_b");
   const int ncols_fine = m_fine_grid->get_num_global_dofs();
