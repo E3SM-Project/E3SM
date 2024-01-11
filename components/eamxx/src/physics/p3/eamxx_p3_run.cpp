@@ -4,7 +4,6 @@ namespace scream {
 
 void P3Microphysics::run_impl (const double dt)
 {
-  std::cout << "22222begin CCCCCCCCCCCCCCCCCCCCCCCc are we in run_impl \n" << std::flush;
   // Set the dt for p3 postprocessing
   p3_postproc.m_dt = dt;
 
@@ -28,10 +27,6 @@ void P3Microphysics::run_impl (const double dt)
   get_field_out("micro_liq_ice_exchange").deep_copy(0.0);
   get_field_out("micro_vap_liq_exchange").deep_copy(0.0);
   get_field_out("micro_vap_ice_exchange").deep_copy(0.0);
-
-
-  std::cout << "CCCCCCCCCCCCCCCCCCCCCCCc are we in run_impl \n" << std::flush;
-
 
   P3F::p3_main(runtime_options, prog_state, diag_inputs, diag_outputs, infrastructure,
                history_only, lookup_tables, workspace_mgr, m_num_cols, m_num_levs, m_p3constants);

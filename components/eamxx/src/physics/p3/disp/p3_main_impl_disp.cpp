@@ -114,8 +114,6 @@ Int Functions<Real,DefaultDevice>
 {
   using ExeSpace = typename KT::ExeSpace;
 
-  //physics::P3_Constants<Real> loc_p3constants;
-
   view_2d<Spack> latent_heat_sublim("latent_heat_sublim", nj, nk), latent_heat_vapor("latent_heat_vapor", nj, nk), latent_heat_fusion("latent_heat_fusion", nj, nk);
 
   get_latent_heat(nj, nk, latent_heat_vapor, latent_heat_sublim, latent_heat_fusion);

@@ -206,11 +206,13 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   // Gather runtime options
   runtime_options.max_total_ni = m_params.get<double>("max_total_ni");
 
-//  CP3::set_p3_defaults();
-//  CP3::p3_autoconversion_factor = m_params.get<double>("p3_autoconversion_factor");
+  m_p3constants.set_p3_defaults();
+
+  //does this work when the value is not in the nl?
   m_p3constants.p3_autoconversion_factor = m_params.get<double>("p3_autoconversion_factor");
 
-std::cout << "AAAAAAAAAAAAAANG "<<m_p3constants.p3_autoconversion_factor <<"\n";
+//temp to check   
+std::cout << "AAAAAAAAAAAAAANG "<<m_p3constants.p3_autoconversion_factor <<"\n" << std::flush;
 
   // Set property checks for fields in this process
   add_invariant_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),m_grid,100.0,500.0,false);
@@ -232,12 +234,10 @@ std::cout << "AAAAAAAAAAAAAANG "<<m_p3constants.p3_autoconversion_factor <<"\n";
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("eff_radius_qi"),m_grid,0.0,5.0e3,false);
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("eff_radius_qr"),m_grid,0.0,5.0e3,false);
 
-std::cout << "before p3_init 22222222AAAAAAAAAAAAAANG "<<m_p3constants.p3_autoconversion_factor <<"\n";
   // Initialize p3
   p3::p3_init(/* write_tables = */ false,
               this->get_comm().am_i_root());
 
-std::cout << "22222222AAAAAAAAAAAAAANG "<<m_p3constants.p3_autoconversion_factor <<"\n";
   // Initialize all of the structures that are passed to p3_main in run_impl.
   // Note: Some variables in the structures are not stored in the field manager.  For these
   //       variables a local view is constructed.
@@ -352,7 +352,6 @@ std::cout << "22222222AAAAAAAAAAAAAANG "<<m_p3constants.p3_autoconversion_factor
   // Setup WSM for internal local variables
   const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nk_pack);
   workspace_mgr.setup(m_buffer.wsm_data, nk_pack_p1, 52, policy);
-std::cout << "3333333333333AAAAAAAAAAAAAANG "<<m_p3constants.p3_autoconversion_factor <<"\n";
 }
 
 // =========================================================================================

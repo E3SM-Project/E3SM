@@ -137,11 +137,7 @@ struct P3_Constants
     p3_autoconversion_factor = 1000.0;
   };
 
-}; // p3 constants
-
-//template<typename Scalar>
-//Scalar P3_Constants<Scalar>::p3_autoconversion_factor = 1000.0;
-
+}; // P3_Constants
 
 // Gases
 // Define the molecular weight for each gas, which can then be

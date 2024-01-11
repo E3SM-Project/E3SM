@@ -206,28 +206,21 @@ void scream_init_atm (const char* caseid,
                       const char* hostname,
                       const char* username)
 {
-	std::cout << "        vvvvvvvvvvvvv scream init begin \n" << std::flush;
   using namespace scream;
   using namespace scream::control;
 
   fpe_guard_wrapper([&](){
     // Get the ad, then complete initialization
     auto& ad = get_ad_nonconst();
-	std::cout << "        222vvvvvvvvvvvvv scream init begin \n" << std::flush;
 
     // Set provenance info in the driver (will be added to the output files)
     ad.set_provenance_data (caseid,hostname,username);
-	std::cout << "        333vvvvvvvvvvvvv scream init begin \n" << std::flush;
 
     // Init all fields, atm processes, and output streams
     ad.initialize_fields ();
-	std::cout << "        444vvvvvvvvvvvvv scream init begin \n" << std::flush;
     ad.initialize_atm_procs ();
-	std::cout << "        555vvvvvvvvvvvvv scream init begin \n" << std::flush;
     ad.initialize_output_managers ();
-	std::cout << "        666vvvvvvvvvvvvv scream init begin \n" << std::flush;
   });
-	std::cout << "        777vvvvvvvvvvvvv scream init begin \n" << std::flush;
 }
 
 /*===============================================================================================*/
