@@ -15,15 +15,10 @@ time_stepping:
 initial_conditions:
   Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
-  get_topo_from_file: true
   surf_evap: 0.0
   surf_sens_flux: 0.0
   precip_liq_surf_mass: 0.0
   precip_ice_surf_mass: 0.0
-  aero_g_sw: 0.0
-  aero_ssa_sw: 0.0
-  aero_tau_sw: 0.0
-  aero_tau_lw: 0.0
 
 atmosphere_processes:
   atm_procs_list: [homme,physics]

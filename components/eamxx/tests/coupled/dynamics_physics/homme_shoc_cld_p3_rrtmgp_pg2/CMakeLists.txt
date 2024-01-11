@@ -81,6 +81,6 @@ CompareNCFilesFamilyMpi (
   TEST_BASE_NAME ${TEST_BASE_NAME}
   FILE_META_NAME ${TEST_BASE_NAME}_output.INSTANT.nsteps_x${NUM_STEPS}.npMPIRANKS.${RUN_T0}.nc
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
-  LABELS dynamics physics tms shoc cld p3 rrtmgp spa pg2
+  LABELS dynamics physics tms shoc cld p3 rrtmgp pg2
   META_FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_npMPIRANKS_omp1
 )

@@ -15,6 +15,9 @@ initial_conditions:
   surf_sens_flux: 0.0
   precip_liq_surf_mass: 0.0
   precip_ice_surf_mass: 0.0
+  surf_lw_flux_up: 400.0
+  eddy_diff_mom: 0.02
+  sgs_buoy_flux: -0.001
   tke: 0.0
   qm: 0.0
   bm: 0.0
@@ -23,10 +26,6 @@ initial_conditions:
   sfc_alb_dif_vis: 0.0
   sfc_alb_dif_nir: 0.0
   landfrac: 0.5
-  aero_g_sw: 0.0
-  aero_ssa_sw: 0.0
-  aero_tau_sw: 0.0
-  aero_tau_lw: 0.0
 
 atmosphere_processes:
   atm_procs_list: [homme,physics]
@@ -65,6 +64,7 @@ atmosphere_processes:
       rrtmgp_coefficients_file_lw: ${SCREAM_DATA_DIR}/init/rrtmgp-data-lw-g128-210809.nc
       rrtmgp_cloud_optics_file_sw: ${SCREAM_DATA_DIR}/init/rrtmgp-cloud-optics-coeffs-sw.nc
       rrtmgp_cloud_optics_file_lw: ${SCREAM_DATA_DIR}/init/rrtmgp-cloud-optics-coeffs-lw.nc
+      do_aerosol_rad: false
 
 grids_manager:
   Type: Homme
