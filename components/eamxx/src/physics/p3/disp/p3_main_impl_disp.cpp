@@ -110,7 +110,7 @@ Int Functions<Real,DefaultDevice>
   const WorkspaceManager& workspace_mgr,
   Int nj,
   Int nk,
-  physics::P3_Constants<Real> & loc_p3constants)
+  const physics::P3_Constants<Real> & loc_p3constants)
 {
   using ExeSpace = typename KT::ExeSpace;
 

@@ -85,8 +85,11 @@ Int Functions<S,D>
   const WorkspaceManager& workspace_mgr,
   Int nj,
   Int nk,
-  physics::P3_Constants<S> & loc_p3constants)
+  const physics::P3_Constants<S> & loc_p3constants)
 {
+
+	std::cout << "ARE WE HERE???? \n";
+
   using ExeSpace = typename KT::ExeSpace;
 
   view_2d<Spack> latent_heat_sublim("latent_heat_sublim", nj, nk), latent_heat_vapor("latent_heat_vapor", nj, nk), latent_heat_fusion("latent_heat_fusion", nj, nk);
@@ -110,6 +113,8 @@ Int Functions<S,D>
   auto start = std::chrono::steady_clock::now();
 
   //physics::P3_Constants<S> loc_p3constants = loc_p3;
+
+  std::cout << "before MAIN || " << loc_p3constants.p3_autoconversion_factor << "\n";
 
   // p3_main loop
   Kokkos::parallel_for(
@@ -348,8 +353,11 @@ Int Functions<S,D>
   const WorkspaceManager& workspace_mgr,
   Int nj,
   Int nk,
-  physics::P3_Constants<S> & loc_p3constants)
+  const physics::P3_Constants<S> & loc_p3constants)
 {
+
+	std::cout << "BBBBBBBBBBBBB are we in p3_main ? \n";
+
 #ifndef SCREAM_SMALL_KERNELS
   return p3_main_internal(runtime_options,
                          prognostic_state,

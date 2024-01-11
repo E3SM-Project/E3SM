@@ -24,6 +24,8 @@ void Functions<S,D>
 
   Scalar p3_autoconversion_factor = loc_p3constants.p3_autoconversion_factor;
 
+//printf("  hey inside  AAAAAAAAAAAAAAAA %13.6f \n", p3_autoconversion_factor);
+
   if(qc_not_small.any()){
     Spack sgs_var_coef;
     // sgs_var_coef = subgrid_variance_scaling(inv_qc_relvar, sp(2.47) );
