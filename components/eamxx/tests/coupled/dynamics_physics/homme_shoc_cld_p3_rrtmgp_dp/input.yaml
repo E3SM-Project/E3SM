@@ -25,10 +25,9 @@ initial_conditions:
   perturbed_fields: [T_mid]
   perturbation_limit: 0.001
   perturbation_minimum_pressure: 900.0 # in millibar
-  aero_g_sw: 0.0
-  aero_ssa_sw: 0.0
-  aero_tau_sw: 0.0
-  aero_tau_lw: 0.0
+  surf_lw_flux_up: 400.0
+  eddy_diff_mom: 0.02
+  sgs_buoy_flux: -0.001
 
 atmosphere_processes:
   atm_procs_list: [sc_import,homme,physics]
@@ -68,6 +67,7 @@ atmosphere_processes:
       rrtmgp_coefficients_file_lw: ${SCREAM_DATA_DIR}/init/rrtmgp-data-lw-g128-210809.nc
       rrtmgp_cloud_optics_file_sw: ${SCREAM_DATA_DIR}/init/rrtmgp-cloud-optics-coeffs-sw.nc
       rrtmgp_cloud_optics_file_lw: ${SCREAM_DATA_DIR}/init/rrtmgp-cloud-optics-coeffs-lw.nc
+      do_aerosol_rad: false
 
 grids_manager:
   Type: Homme
