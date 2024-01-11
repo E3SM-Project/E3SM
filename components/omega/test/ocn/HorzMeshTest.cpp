@@ -50,6 +50,16 @@ int initHorzMeshTest() {
    return Err;
 }
 
+OMEGA::R8 distance(OMEGA::R8 x, OMEGA::R8 y, OMEGA::R8 z) {
+   
+   OMEGA::R8 dist;
+
+   dist = sqrt(x*x + y*y + z*z);
+
+   return dist;
+
+}
+
 //------------------------------------------------------------------------------
 // The test driver for Decomp. This tests the decomposition of a sample
 // horizontal domain and verifies the mesh is decomposed correctly.
@@ -95,9 +105,21 @@ int main(int argc, char *argv[]) {
               DefDecomp->NCellsGlobal);
    }
 
-   //for (int Cell = 0; Cell < LocCells; Cell++) {
-   //   std::cout << sqrt(Mesh.XCellH(Cell)*Mesh.XCellH(Cell) + Mesh.YCellH(Cell)*Mesh.YCellH(Cell) + Mesh.ZCellH(Cell)*Mesh.ZCellH(Cell)) << std::endl;
-   //}
+   OMEGA::R8 sphere_radius = distance(Mesh.XCellH(0), Mesh.YCellH(0), Mesh.ZCellH(0));
+   OMEGA::R8 tol = 1e-6;
+   OMEGA::R8 dist;
+   OMEGA::I4 count = 0;
+   for (int Cell = 0; Cell < LocCells; Cell++) {
+       dist = distance(Mesh.XCellH(Cell), Mesh.YCellH(Cell), Mesh.ZCellH(Cell));
+       if ( abs(sphere_radius - dist) > tol)
+          count++;
+   }
+
+   if (count > 0) {
+     LOG_INFO("HorzMeshTest: Cell sphere radius test FAIL");
+   } else {
+     LOG_INFO("HorzMeshTest: Cell sphere radius test PASS");
+   }
 
 
    // Test that device arrays are identical

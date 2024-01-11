@@ -45,18 +45,12 @@ VerticesOnEdgeH = MeshDecomp->VerticesOnEdgeH;
 CellsOnVertexH = MeshDecomp->CellsOnVertexH;
 EdgesOnVertexH = MeshDecomp->EdgesOnVertexH;
 
-//std::cout << "Done with Decomp associations" << std::endl;
-
 // Open the mesh file for reading (assume IO has already been initialized)
 I4 FileID;
 I4 Err;
 Err = OMEGA::IOFileOpen(FileID, MeshFileName, IOModeRead);
 if (Err != 0)
    LOG_CRITICAL("HorzMesh: error opening mesh file");
-
-I4 NCellsGlobal;
-NCellsGlobal = OMEGA::IOGetDimLength(FileID, "nCells");
-std::cout << "Global nCells: " << NCellsGlobal << std::endl;
 
 //Create parallel IO decomposition
 I4 CellDecompI4;
@@ -67,7 +61,6 @@ std::vector<I4> CellID(NCellsOwned);
 IORearranger Rearr = IORearrBox;
 for (int Cell = 0; Cell < NCellsOwned; ++Cell) {
   CellID[Cell] = MeshDecomp->CellIDH(Cell) - 1;
-  //std::cout << CellID[Cell] << std::endl;  
 }
 
 Err = OMEGA::IOCreateDecomp(CellDecompI4, OMEGA::IOTypeI4, NDims, CellDims,
