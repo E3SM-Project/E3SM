@@ -1264,7 +1264,7 @@ AtmosphereOutput::create_diagnostic (const std::string& diag_field_name) {
     // Conventions on notation (N=any integer):
     // FieldAtLevel        : var_at_lev_N, var_at_model_top, var_at_model_bot
     // FieldAtPressureLevel: var_at_Nx, with x=mb,Pa,hPa
-    // FieldAtHeight       : var_at_Nm
+    // FieldAtHeight       : var_at_Nm_above_Y (Y=sealevel or surface)
     if (tokens[1].find_first_of("0123456789.")==0) {
       auto units_start = tokens[1].find_first_not_of("0123456789.");
       auto units = tokens[1].substr(units_start);
@@ -1274,15 +1274,13 @@ AtmosphereOutput::create_diagnostic (const std::string& diag_field_name) {
 	auto subtokens = ekat::split(units,"_above_");
 	params.set("surface_reference",subtokens[1]);
 	units = subtokens[0];
-        params.set("vertical_location", subtokens[0]);
+	// Need to reset the vertical location to strip the "_above_" part of the string.
+        params.set("vertical_location", tokens[1].substr(0,units_start)+subtokens[0]);
       }
       if (units=="m") {
         diag_name = "FieldAtHeight";
-	if (!params.isParameter("surface_reference")) {
-          // Set default reference location to sealevel and warn user.
-          params.set<std::string>("surface_reference","sealevel");
-          m_atm_logger->warn("[EAMxx::scorpio_output] Warning, output variable " + diag_field_name + " does not have a surface reference.  Setting to default 'above sealevel'.\n");
-	}
+	EKAT_REQUIRE_MSG(params.isParameter("surface_reference"),"Error! Output field request for " + diag_field_name + "is missing a surface reference."
+			"  Please add either '_above_sealevel' or '_above_surface' to the field name");
       } else if (units=="mb" or units=="Pa" or units=="hPa") {
         diag_name = "FieldAtPressureLevel";
         diag_avg_cnt_name = "_" + tokens[1]; // Set avg_cnt tracking for this specific slice

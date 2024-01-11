@@ -42,8 +42,9 @@ FieldAtHeight (const ekat::Comm& comm, const ekat::ParameterList& params)
   EKAT_REQUIRE_MSG(surf_ref == "sealevel" or surf_ref == "surface",
       "Error! Invalid surface reference for FieldAtHeight.\n"
       " -        field name: " + m_field_name + "\n"
-      " - surface reference: " + surf_ref + "\n");
-  m_surf_ref = (surf_ref == "sealevel") ? "z" : "geopotential";
+      " - surface reference: " + surf_ref + "\n"
+      " -     valid options: sealevel, surface\n");
+  m_z_name = (surf_ref == "sealevel") ? "z" : "geopotential";
   const auto& location = m_params.get<std::string>("vertical_location");
   auto chars_start = location.find_first_not_of("0123456789.");
   EKAT_REQUIRE_MSG (chars_start!=0 && chars_start!=std::string::npos,
@@ -68,8 +69,8 @@ set_grids (const std::shared_ptr<const GridsManager> grids_manager)
   add_field<Required>(m_field_name,gname);
 
   // We don't know yet which one we need
-  add_field<Required>(m_surf_ref+"_mid",gname);
-  add_field<Required>(m_surf_ref+"_int",gname);
+  add_field<Required>(m_z_name+"_mid",gname);
+  add_field<Required>(m_z_name+"_int",gname);
 }
 
 void FieldAtHeight::
@@ -96,7 +97,7 @@ initialize_impl (const RunType /*run_type*/)
       " - field layout: " + to_string(layout) + "\n");
 
   // Figure out the z value
-  m_z_name = tag==LEV ? m_surf_ref+"_mid" : m_surf_ref+"_int";
+  m_z_suffix = tag==LEV ? "_mid" : "_int";
 
   // All good, create the diag output
   FieldIdentifier d_fid (m_diag_name,layout.strip_dim(tag),fid.get_units(),fid.get_grid_name());
@@ -117,7 +118,7 @@ initialize_impl (const RunType /*run_type*/)
 // =========================================================================================
 void FieldAtHeight::compute_diagnostic_impl()
 {
-  const auto z_view = get_field_in(m_z_name).get_view<const Real**>();
+  const auto z_view = get_field_in(m_z_name + m_z_suffix).get_view<const Real**>();
   const Field& f = get_field_in(m_field_name);
   const auto& fl = f.get_header().get_identifier().get_layout();
 
