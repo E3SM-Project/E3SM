@@ -848,31 +848,41 @@ void AtmosphereOutput::register_views()
 /* ---------------------------------------------------------- */
 void AtmosphereOutput::set_avg_cnt_tracking(const std::string& name, const std::string& avg_cnt_suffix, const FieldLayout& layout)
 {
-    // Make sure this field "name" hasn't already been regsitered with avg_cnt tracking.
-    // Note, we check this because some diagnostics need to have their own tracking which
-    // is created at the 'create_diagnostics' function.
-    if (m_field_to_avg_cnt_map.count(name)>0) {
-      return;
+  // Make sure this field "name" hasn't already been regsitered with avg_cnt tracking.
+  // Note, we check this because some diagnostics need to have their own tracking which
+  // is created at the 'create_diagnostics' function.
+  if (m_field_to_avg_cnt_map.count(name)>0) {
+    return;
+  }
+
+  // If the field is not an output field, do not register the avg count. This can happen
+  // if a diag depends on another diag. In this case, the inner diag is never outputed,
+  // so we don't want to create an avg count for its layout, since it may contain dims
+  // that are not in the list of registered dims (the dims of the output vars).
+  // See issue https://github.com/E3SM-Project/scream/issues/2663
+  if (not ekat::contains(m_fields_names,name)) {
+    return;
+  }
+
+  // Now create and store a dev view to track the averaging count for this layout (if we are tracking)
+  // We don't need to track average counts for files that are not tracking the time dim
+  const auto size = layout.size();
+  const auto tags = layout.tags();
+  if (m_add_time_dim && m_track_avg_cnt) {
+    std::string avg_cnt_name = "avg_count" + avg_cnt_suffix;
+    for (int ii=0; ii<layout.rank(); ++ii) {
+      auto tag_name = m_io_grid->get_dim_name(layout.tag(ii));
+      avg_cnt_name += "_" + tag_name;
     }
-    // Now create and store a dev view to track the averaging count for this layout (if we are tracking)
-    // We don't need to track average counts for files that are not tracking the time dim
-    const auto size = layout.size();
-    const auto tags = layout.tags();
-    if (m_add_time_dim && m_track_avg_cnt) {
-      std::string avg_cnt_name = "avg_count" + avg_cnt_suffix;
-      for (int ii=0; ii<layout.rank(); ++ii) {
-        auto tag_name = m_io_grid->get_dim_name(layout.tag(ii));
-        avg_cnt_name += "_" + tag_name;
-      }
-      if (std::find(m_avg_cnt_names.begin(),m_avg_cnt_names.end(),avg_cnt_name)==m_avg_cnt_names.end()) {
-        m_avg_cnt_names.push_back(avg_cnt_name);
-      }
-      m_field_to_avg_cnt_map.emplace(name,avg_cnt_name);
-      m_dev_views_1d.emplace(avg_cnt_name,view_1d_dev("",size));  // Note, emplace will only add a new key if one isn't already there
-      m_local_tmp_avg_cnt_views_1d.emplace(avg_cnt_name,view_1d_dev("",size));  // Note, emplace will only add a new key if one isn't already there
-      m_host_views_1d.emplace(avg_cnt_name,Kokkos::create_mirror(m_dev_views_1d[avg_cnt_name]));
-      m_layouts.emplace(avg_cnt_name,layout);
+    if (std::find(m_avg_cnt_names.begin(),m_avg_cnt_names.end(),avg_cnt_name)==m_avg_cnt_names.end()) {
+      m_avg_cnt_names.push_back(avg_cnt_name);
     }
+    m_field_to_avg_cnt_map.emplace(name,avg_cnt_name);
+    m_dev_views_1d.emplace(avg_cnt_name,view_1d_dev("",size));  // Note, emplace will only add a new key if one isn't already there
+    m_local_tmp_avg_cnt_views_1d.emplace(avg_cnt_name,view_1d_dev("",size));  // Note, emplace will only add a new key if one isn't already there
+    m_host_views_1d.emplace(avg_cnt_name,Kokkos::create_mirror(m_dev_views_1d[avg_cnt_name]));
+    m_layouts.emplace(avg_cnt_name,layout);
+  }
 }
 /* ---------------------------------------------------------- */
 void AtmosphereOutput::
@@ -1282,7 +1292,7 @@ AtmosphereOutput::create_diagnostic (const std::string& diag_field_name) {
         diag_name = "FieldAtHeight";
       } else if (units=="mb" or units=="Pa" or units=="hPa") {
         diag_name = "FieldAtPressureLevel";
-	diag_avg_cnt_name = "_" + tokens[1]; // Set avg_cnt tracking for this specific slice
+        diag_avg_cnt_name = "_" + tokens[1]; // Set avg_cnt tracking for this specific slice
         m_track_avg_cnt = true; // If we have pressure slices we need to be tracking the average count.
       } else {
         EKAT_ERROR_MSG ("Error! Invalid units x for 'field_at_Nx' diagnostic.\n");
