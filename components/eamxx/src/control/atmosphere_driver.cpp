@@ -1566,6 +1566,10 @@ initialize (const ekat::Comm& atm_comm,
 
   initialize_atm_procs ();
 
+  // Do this before init-ing the output managers,
+  // so the fields are valid if outputing at t=0
+  reset_accumulated_fields();
+
   initialize_output_managers ();
 }
 
@@ -1581,20 +1585,11 @@ void AtmosphereDriver::run (const int dt) {
     "  model start-of-step time = " + m_current_ts.get_date_string() + " " + m_current_ts.get_time_string() + "\n");
 
   // Reset accum fields to 0
-  constexpr Real zero = 0;
-  for (auto fm_it : m_field_mgrs) {
-    const auto& fm = fm_it.second;
-    if (not fm->has_group("ACCUMULATED")) {
-      continue;
-    }
-
-    auto accum_group = fm->get_field_group("ACCUMULATED");
-    for (auto f_it : accum_group.m_fields) {
-      auto& track = f_it.second->get_header().get_tracking();
-      f_it.second->deep_copy(zero);
-      track.set_accum_start_time(m_current_ts);
-    }
-  }
+  // Note: at the 1st timestep this is redundant, since we did it at init,
+  //       to ensure t=0 INSTANT output was correct. However, it's not a
+  //       very expensive operation, so it's not worth the effort of the
+  //       nano-opt of removing the call for the 1st timestep.
+  reset_accumulated_fields();
 
   // The class AtmosphereProcessGroup will take care of dispatching arguments to
   // the individual processes, which will be called in the correct order.
