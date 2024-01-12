@@ -35,7 +35,7 @@ else ()
 
   # EAMxx *requires* MPI, so simply look for it, then link against it
   find_package(MPI REQUIRED COMPONENTS C)
-  target_link_libraries (yakl MPI::MPI_C)
+  target_link_libraries (yakl_fortran_interface MPI::MPI_C)
   EkatDisableAllWarning(yakl)
 
   # For debug builds, set -DYAKL_DEBUG
@@ -77,7 +77,7 @@ yakl_process_target(rrtmgp)
 # NOTE: cannot use 'PUBLIC' in target_link_libraries,
 #       since yakl_process_target already used it
 #       with the "plain" signature
-target_link_libraries(rrtmgp yakl)
+target_link_libraries(rrtmgp yakl_fortran_interface)
 target_include_directories(rrtmgp PUBLIC
     ${SCREAM_BASE_DIR}/../../externals/YAKL
     ${EAM_RRTMGP_DIR}/external/cpp

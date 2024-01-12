@@ -10,7 +10,7 @@ add_executable(cpp3d ../dmdf.F90 ../cpp_driver.F90
                ../../../ecppvars.F90
                ../../../openacc_utils.F90
                ${CPP_SRC})
-target_link_libraries(cpp3d yakl ${NCFLAGS})
+target_link_libraries(cpp3d yakl_fortran_interface ${NCFLAGS})
 set_property(TARGET cpp3d APPEND PROPERTY COMPILE_FLAGS ${DEFS3D} )
 set_property(TARGET cpp3d PROPERTY LINK_FLAGS "-Wl,--defsym,main=MAIN__  -lifcore")
 set_property(TARGET cpp3d PROPERTY LINKER_LANGUAGE CXX)
