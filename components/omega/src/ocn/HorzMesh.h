@@ -29,6 +29,8 @@ class HorzMesh {
 
     void readCoordinates();
 
+    void readBottomDepth();
+
     //int readMesh();
 
     //int transferToDevice();

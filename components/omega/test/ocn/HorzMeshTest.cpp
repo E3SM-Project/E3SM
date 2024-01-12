@@ -233,6 +233,25 @@ int main(int argc, char *argv[]) {
      LOG_INFO("HorzMeshTest: Vertex sphere radius test PASS");
    }
 
+   // Test bounds of bathymetry
+   OMEGA::R8 MaxBathy = -1e10;
+   OMEGA::R8 MinBathy = 1e10;
+   for (int Cell = 0; Cell < LocCells; Cell++) {
+      if (Mesh.BottomDepthH(Cell) < MinBathy) {
+         MinBathy = Mesh.BottomDepthH(Cell);
+      }
+      if (Mesh.BottomDepthH(Cell) > MaxBathy) {
+         MaxBathy = Mesh.BottomDepthH(Cell);
+      }
+   }
+
+   if ((MinBathy > 0) && (MaxBathy < 11000.0)) {
+      LOG_INFO("HorzMeshTest: Bathy min/max test PASS");
+   } else {
+      LOG_INFO("HorzMeshTest: Bathy min/max test FAIL");
+   }
+
+
    // Test that device arrays are identical
 
    // MPI_Status status;

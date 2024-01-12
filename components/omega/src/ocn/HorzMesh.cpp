@@ -94,8 +94,11 @@ HorzMesh::HorzMesh(Decomp *MeshDecomp){
                                NVerticesOwned, VertexID, Rearr);
    if (Err != 0)
       LOG_CRITICAL("HorzMesh: error creating vertex IO decomposition");
-   
+
+   // Read mesh coordinates   
    readCoordinates();
+
+   readBottomDepth();
 
 
 } // end constructor
@@ -291,6 +294,25 @@ void HorzMesh::readCoordinates() {
    }
 
 } // end readCoordinates
+
+void HorzMesh::readBottomDepth() {
+
+   I4 Err;
+
+   BottomDepthH = ArrayHost1DR8("bottomDepth", NCellsOwned);
+   std::vector<R8> BottomDepthTmp(NCellsOwned);
+   Err = OMEGA::IOReadArray(&BottomDepthTmp[0], NCellsOwned, "bottomDepth",
+                            MeshFileID, CellDecompR8);
+   if (Err != 0)
+      LOG_CRITICAL("HorzMesh: error reading bottomDepth");
+   
+   for (int Cell = 0; Cell < NCellsOwned; ++Cell) {
+      BottomDepthH(Cell) = BottomDepthTmp[Cell];
+   }
+   
+} // end readDepth
+
+
 
 } // end namespace OMEGA
 
