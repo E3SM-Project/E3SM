@@ -203,7 +203,7 @@ be lost if SCREAM_HACK_XML is not enabled.
         ${DIN_LOC_ROOT}/atm/scream/tables/vn_table_vals.dat8,
         ${DIN_LOC_ROOT}/atm/scream/tables/vm_table_vals.dat8
       </tables>
-      <p3_autoconversion_factor type="real" doc="P3 autoconversion factor">1350.0</p3_autoconversion_factor>
+      <p3_pre_autoconversion_factor type="real" doc="P3 pre_autoconversion_factor">1350.0</p3_pre_autoconversion_factor>
     </p3>
 
     <!-- SHOC macrophysics -->
