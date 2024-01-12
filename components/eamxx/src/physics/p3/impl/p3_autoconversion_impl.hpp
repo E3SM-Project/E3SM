@@ -14,7 +14,7 @@ void Functions<S,D>
 ::cloud_water_autoconversion(
   const Spack& rho, const Spack& qc_incld, const Spack& nc_incld,
   const Spack& inv_qc_relvar, Spack& qc2qr_autoconv_tend, Spack& nc2nr_autoconv_tend, Spack& ncautr,
-  const physics::P3_Constants<S> & loc_p3constants,
+  const physics::P3_Constants<S> & p3constants,
   const Smask& context)
 {
 
@@ -22,7 +22,7 @@ void Functions<S,D>
   const auto qc_not_small = qc_incld >= 1e-8 && context;
   constexpr Scalar CONS3 = C::CONS3;
 
-  Scalar p3_autoconversion_factor = loc_p3constants.p3_autoconversion_factor;
+  const Scalar p3_pre_autoconversion_factor = p3constants.p3_pre_autoconversion_factor;
 
 //printf("  hey inside  AAAAAAAAAAAAAAAA %13.6f \n", p3_autoconversion_factor);
 
@@ -32,7 +32,7 @@ void Functions<S,D>
     sgs_var_coef = 1;
 
     qc2qr_autoconv_tend.set(qc_not_small,
-              sgs_var_coef*p3_autoconversion_factor*pow(qc_incld,sp(2.47))*pow(nc_incld*sp(1.e-6)*rho,sp(-1.79)));
+              sgs_var_coef*p3_pre_autoconversion_factor*pow(qc_incld,sp(2.47))*pow(nc_incld*sp(1.e-6)*rho,sp(-1.79)));
     // note: ncautr is change in Nr; nc2nr_autoconv_tend is change in Nc
     ncautr.set(qc_not_small, qc2qr_autoconv_tend*CONS3);
     nc2nr_autoconv_tend.set(qc_not_small, qc2qr_autoconv_tend*nc_incld/qc_incld);

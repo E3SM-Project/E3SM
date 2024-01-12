@@ -95,7 +95,7 @@ void Functions<S,D>
   const uview_1d<Spack>& pratot,
   const uview_1d<Spack>& prctot,
   bool& hydrometeorsPresent, const Int& nk,
-  const physics::P3_Constants<S> & loc_p3constants )
+  const physics::P3_Constants<S> & p3constants )
 {
   constexpr Scalar qsmall       = C::QSMALL;
   constexpr Scalar nsmall       = C::NSMALL;
@@ -350,7 +350,7 @@ void Functions<S,D>
     // NOTE: cloud_water_autoconversion must be called before droplet_self_collection
     cloud_water_autoconversion(
       rho(k), qc_incld(k), nc_incld(k), inv_qc_relvar(k),
-      qc2qr_autoconv_tend, nc2nr_autoconv_tend, ncautr, loc_p3constants, not_skip_all);
+      qc2qr_autoconv_tend, nc2nr_autoconv_tend, ncautr, p3constants, not_skip_all);
 
     // self-collection of droplets
     droplet_self_collection(

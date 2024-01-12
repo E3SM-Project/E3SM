@@ -84,7 +84,7 @@ Int Functions<S,D>
   const WorkspaceManager& workspace_mgr,
   Int nj,
   Int nk,
-  const physics::P3_Constants<S> & loc_p3constants)
+  const physics::P3_Constants<S> & p3constants)
 {
   using ExeSpace = typename KT::ExeSpace;
 
@@ -254,7 +254,7 @@ Int Functions<S,D>
       nr_incld, ni_incld, bm_incld, mu_c, nu, lamc, cdist, cdist1, cdistr,
       mu_r, lamr, logn0r, oqv2qi_depos_tend, precip_total_tend, nevapr, qr_evap_tend,
       ovap_liq_exchange, ovap_ice_exchange, oliq_ice_exchange,
-      pratot, prctot, hydrometeorsPresent, nk, loc_p3constants);
+      pratot, prctot, hydrometeorsPresent, nk, p3constants);
 
     //NOTE: At this point, it is possible to have negative (but small) nc, nr, ni.  This is not
     //      a problem; those values get clipped to zero in the sedimentation section (if necessary).
@@ -345,7 +345,7 @@ Int Functions<S,D>
   const WorkspaceManager& workspace_mgr,
   Int nj,
   Int nk,
-  const physics::P3_Constants<S> & loc_p3constants)
+  const physics::P3_Constants<S> & p3constants)
 {
 #ifndef SCREAM_SMALL_KERNELS
   return p3_main_internal(runtime_options,
@@ -356,7 +356,7 @@ Int Functions<S,D>
                          history_only,
                          lookup_tables,
                          workspace_mgr,
-                         nj, nk, loc_p3constants);
+                         nj, nk, p3constants);
 #else 
   return p3_main_internal_disp(runtime_options,
                                prognostic_state,
@@ -366,7 +366,7 @@ Int Functions<S,D>
                                history_only,
                                lookup_tables,
                                workspace_mgr,
-                               nj, nk, loc_p3constants);
+                               nj, nk, p3constants);
 #endif
 }
 } // namespace p3

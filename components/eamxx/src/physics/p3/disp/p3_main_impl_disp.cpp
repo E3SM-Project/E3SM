@@ -110,7 +110,7 @@ Int Functions<Real,DefaultDevice>
   const WorkspaceManager& workspace_mgr,
   Int nj,
   Int nk,
-  const physics::P3_Constants<Real> & loc_p3constants)
+  const physics::P3_Constants<Real> & p3constants)
 {
   using ExeSpace = typename KT::ExeSpace;
 
@@ -249,7 +249,7 @@ Int Functions<Real,DefaultDevice>
       nr_incld, ni_incld, bm_incld, mu_c, nu, lamc, cdist, cdist1, cdistr,
       mu_r, lamr, logn0r, qv2qi_depos_tend, precip_total_tend, nevapr, qr_evap_tend,
       vap_liq_exchange, vap_ice_exchange, liq_ice_exchange,
-      pratot, prctot, nucleationPossible, hydrometeorsPresent, loc_p3constants);
+      pratot, prctot, nucleationPossible, hydrometeorsPresent, p3constants);
 
   //NOTE: At this point, it is possible to have negative (but small) nc, nr, ni.  This is not
   //      a problem; those values get clipped to zero in the sedimentation section (if necessary).

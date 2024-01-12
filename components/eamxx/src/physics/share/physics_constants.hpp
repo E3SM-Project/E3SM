@@ -5,6 +5,7 @@
 
 #include "ekat/util/ekat_string_utils.hpp"
 #include "ekat/ekat_scalar_traits.hpp"
+#include "ekat/logging/ekat_logger.hpp"
 
 #include <vector>
 
@@ -130,11 +131,19 @@ template <typename Scalar>
 struct P3_Constants
 {
   public:
-  Scalar p3_autoconversion_factor;
+  Scalar p3_pre_autoconversion_factor = 1350.0;
 
-  void set_p3_defaults(){
-    //set it to 1000 for debugging, otherwise 1350.0
-    p3_autoconversion_factor = 1000.0;
+  void set_p3_from_namelist(ekat::ParameterList &params){
+    std::string nname = "p3_pre_autoconversion_factor";
+    if(params.isParameter(nname))
+       p3_pre_autoconversion_factor = params.get<double>(nname);
+  };
+
+  void print_p3constants(std::shared_ptr<ekat::logger::LoggerBase> logger){
+      logger->info("P3 Constants:");
+      std::string nname = "p3_pre_autoconversion_factor";
+      logger->info(std::string("P3   ") + nname + std::string(" = ") + std::to_string(p3_pre_autoconversion_factor));
+      logger->info(" ");
   };
 
 }; // P3_Constants
