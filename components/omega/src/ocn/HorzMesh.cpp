@@ -13,9 +13,13 @@
 
 namespace OMEGA {
 
+//------------------------------------------------------------------------------
+// Construct a new local mesh given a decomposition
+
 HorzMesh::HorzMesh(Decomp *MeshDecomp){
 
 MeshFileName = MeshDecomp->MeshFileName;
+
 
 // Retrieve mesh cell/edge/vertex totals from Decomp
 NCellsOwned = MeshDecomp->NCellsOwned;
@@ -33,6 +37,7 @@ NVerticesAll = MeshDecomp->NVerticesAll;
 NVerticesSize = MeshDecomp->NVerticesSize;
 VertexDegree = MeshDecomp->VertexDegree;
 
+
 // Retrieve connectivity arrays from Decomp
 CellsOnCellH = MeshDecomp->CellsOnCellH;
 EdgesOnCellH = MeshDecomp->EdgesOnCellH;
@@ -45,6 +50,7 @@ VerticesOnEdgeH = MeshDecomp->VerticesOnEdgeH;
 CellsOnVertexH = MeshDecomp->CellsOnVertexH;
 EdgesOnVertexH = MeshDecomp->EdgesOnVertexH;
 
+
 // Open the mesh file for reading (assume IO has already been initialized)
 I4 FileID;
 I4 Err;
@@ -52,40 +58,48 @@ Err = OMEGA::IOFileOpen(FileID, MeshFileName, IOModeRead);
 if (Err != 0)
    LOG_CRITICAL("HorzMesh: error opening mesh file");
 
+
 //Create parallel IO decomposition
-I4 CellDecompI4;
-I4 CellDecompR8;
 I4 NDims = 1;
+IORearranger Rearr = IORearrBox;
+
+I4 CellDecompR8;
 std::vector<I4> CellDims{MeshDecomp->NCellsGlobal};
 std::vector<I4> CellID(NCellsOwned);
-IORearranger Rearr = IORearrBox;
 for (int Cell = 0; Cell < NCellsOwned; ++Cell) {
   CellID[Cell] = MeshDecomp->CellIDH(Cell) - 1;
 }
 
-Err = OMEGA::IOCreateDecomp(CellDecompI4, OMEGA::IOTypeI4, NDims, CellDims,
-                            NCellsOwned, CellID, Rearr);
 Err = OMEGA::IOCreateDecomp(CellDecompR8, OMEGA::IOTypeR8, NDims, CellDims,
                             NCellsOwned, CellID, Rearr);
 if (Err != 0)
    LOG_CRITICAL("HorzMesh: error creating cell IO decomposition");
 
-
-// Read additional mesh variables
-ArrayHost1DI4 indexToCellID("indexToCellID", NCellsOwned);
-std::vector<I4> indexToCellIDTmp(NCellsOwned);
-Err = OMEGA::IOReadArray(&indexToCellIDTmp[0], NCellsOwned, "indexToCellID",
-                         FileID, CellDecompI4);
-if (Err != 0)
-   LOG_CRITICAL("Decomp: error reading xCell");
-
-for (int Cell = 0; Cell < NCellsOwned; ++Cell) {
-   indexToCellID(Cell) = indexToCellIDTmp[Cell];
-   if ( indexToCellID(Cell)-1 != CellID[Cell] )
-      LOG_CRITICAL("Global index read incorrectly");
+I4 EdgeDecompR8;
+std::vector<I4> EdgeDims{MeshDecomp->NEdgesGlobal};
+std::vector<I4> EdgeID(NEdgesOwned);
+for (int Edge = 0; Edge < NEdgesOwned; ++Edge) {
+  EdgeID[Edge] = MeshDecomp->EdgeIDH(Edge) - 1;
 }
 
-// Read additional mesh variables
+Err = OMEGA::IOCreateDecomp(EdgeDecompR8, OMEGA::IOTypeR8, NDims, EdgeDims,
+                            NEdgesOwned, EdgeID, Rearr);
+if (Err != 0)
+   LOG_CRITICAL("HorzMesh: error creating edge IO decomposition");
+
+I4 VertexDecompR8;
+std::vector<I4> VertexDims{MeshDecomp->NVerticesGlobal};
+std::vector<I4> VertexID(NVerticesOwned);
+for (int Vertex = 0; Vertex < NVerticesOwned; ++Vertex) {
+  VertexID[Vertex] = MeshDecomp->VertexIDH(Vertex) - 1;
+}
+
+Err = OMEGA::IOCreateDecomp(VertexDecompR8, OMEGA::IOTypeR8, NDims, VertexDims,
+                            NVerticesOwned, VertexID, Rearr);
+if (Err != 0)
+   LOG_CRITICAL("HorzMesh: error creating vertex IO decomposition");
+
+// Read mesh cell coordinates
 XCellH = ArrayHost1DR8("xCell", NCellsOwned);
 std::vector<R8> XCellTmp(NCellsOwned);
 Err = OMEGA::IOReadArray(&XCellTmp[0], NCellsOwned, "xCell",
@@ -121,13 +135,158 @@ for (int Cell = 0; Cell < NCellsOwned; ++Cell) {
    ZCellH(Cell) = ZCellTmp[Cell];
 }
 
-} // End Constructor
+
+LonCellH = ArrayHost1DR8("lonCell", NCellsOwned);
+std::vector<R8> LonCellTmp(NCellsOwned);
+Err = OMEGA::IOReadArray(&LonCellTmp[0], NCellsOwned, "lonCell",
+                         FileID, CellDecompR8);
+if (Err != 0)
+   LOG_CRITICAL("HorzMesh: error reading lonCell");
+
+for (int Cell = 0; Cell < NCellsOwned; ++Cell) {
+   LonCellH(Cell) = LonCellTmp[Cell];
+}
+
+
+LatCellH = ArrayHost1DR8("latCell", NCellsOwned);
+std::vector<R8> LatCellTmp(NCellsOwned);
+Err = OMEGA::IOReadArray(&LatCellTmp[0], NCellsOwned, "latCell",
+                         FileID, CellDecompR8);
+if (Err != 0)
+   LOG_CRITICAL("HorzMesh: error reading latCell");
+
+for (int Cell = 0; Cell < NCellsOwned; ++Cell) {
+   LatCellH(Cell) = LatCellTmp[Cell];
+}
+
+// Read mesh edge coordinates
+XEdgeH = ArrayHost1DR8("xEdge", NEdgesOwned);
+std::vector<R8> XEdgeTmp(NEdgesOwned);
+Err = OMEGA::IOReadArray(&XEdgeTmp[0], NEdgesOwned, "xEdge",
+                         FileID, EdgeDecompR8);
+if (Err != 0)
+   LOG_CRITICAL("HorzMesh: error reading xEdge");
+
+for (int Edge = 0; Edge < NEdgesOwned; ++Edge) {
+   XEdgeH(Edge) = XEdgeTmp[Edge];
+}
+
+
+YEdgeH = ArrayHost1DR8("yEdge", NEdgesOwned);
+std::vector<R8> YEdgeTmp(NEdgesOwned);
+Err = OMEGA::IOReadArray(&YEdgeTmp[0], NEdgesOwned, "yEdge",
+                         FileID, EdgeDecompR8);
+if (Err != 0)
+   LOG_CRITICAL("HorzMesh: error reading yEdge");
+
+for (int Edge = 0; Edge < NEdgesOwned; ++Edge) {
+   YEdgeH(Edge) = YEdgeTmp[Edge];
+}
+
+
+ZEdgeH = ArrayHost1DR8("zEdge", NEdgesOwned);
+std::vector<R8> ZEdgeTmp(NEdgesOwned);
+Err = OMEGA::IOReadArray(&ZEdgeTmp[0], NEdgesOwned, "zEdge",
+                         FileID, EdgeDecompR8);
+if (Err != 0)
+   LOG_CRITICAL("HorzMesh: error reading zEdge");
+
+for (int Edge = 0; Edge < NEdgesOwned; ++Edge) {
+   ZEdgeH(Edge) = ZEdgeTmp[Edge];
+}
+
+
+LonEdgeH = ArrayHost1DR8("lonEdge", NEdgesOwned);
+std::vector<R8> LonEdgeTmp(NEdgesOwned);
+Err = OMEGA::IOReadArray(&LonEdgeTmp[0], NEdgesOwned, "lonEdge",
+                         FileID, EdgeDecompR8);
+if (Err != 0)
+   LOG_CRITICAL("HorzMesh: error reading lonEdge");
+
+for (int Edge = 0; Edge < NEdgesOwned; ++Edge) {
+   LonEdgeH(Edge) = LonEdgeTmp[Edge];
+}
+
+
+LatEdgeH = ArrayHost1DR8("latEdge", NEdgesOwned);
+std::vector<R8> LatEdgeTmp(NEdgesOwned);
+Err = OMEGA::IOReadArray(&LatEdgeTmp[0], NEdgesOwned, "latEdge",
+                         FileID, EdgeDecompR8);
+if (Err != 0)
+   LOG_CRITICAL("HorzMesh: error reading latEdge");
+
+for (int Edge = 0; Edge < NEdgesOwned; ++Edge) {
+   LatEdgeH(Edge) = LatEdgeTmp[Edge];
+}
+
+// Read mesh vertex coordinates
+XVertexH = ArrayHost1DR8("xVertex", NVerticesOwned);
+std::vector<R8> XVertexTmp(NVerticesOwned);
+Err = OMEGA::IOReadArray(&XVertexTmp[0], NVerticesOwned, "xVertex",
+                         FileID, VertexDecompR8);
+if (Err != 0)
+   LOG_CRITICAL("HorzMesh: error reading xVertex");
+
+for (int Vertex = 0; Vertex < NVerticesOwned; ++Vertex) {
+   XVertexH(Vertex) = XVertexTmp[Vertex];
+}
+
+
+YVertexH = ArrayHost1DR8("yVertex", NVerticesOwned);
+std::vector<R8> YVertexTmp(NVerticesOwned);
+Err = OMEGA::IOReadArray(&YVertexTmp[0], NVerticesOwned, "yVertex",
+                         FileID, VertexDecompR8);
+if (Err != 0)
+   LOG_CRITICAL("HorzMesh: error reading yVertex");
+
+for (int Vertex = 0; Vertex < NVerticesOwned; ++Vertex) {
+   YVertexH(Vertex) = YVertexTmp[Vertex];
+}
+
+
+ZVertexH = ArrayHost1DR8("zVertex", NVerticesOwned);
+std::vector<R8> ZVertexTmp(NVerticesOwned);
+Err = OMEGA::IOReadArray(&ZVertexTmp[0], NVerticesOwned, "zVertex",
+                         FileID, VertexDecompR8);
+if (Err != 0)
+   LOG_CRITICAL("HorzMesh: error reading zVertex");
+
+for (int Vertex = 0; Vertex < NVerticesOwned; ++Vertex) {
+   ZVertexH(Vertex) = ZVertexTmp[Vertex];
+}
+
+
+LonVertexH = ArrayHost1DR8("lonVertex", NVerticesOwned);
+std::vector<R8> LonVertexTmp(NVerticesOwned);
+Err = OMEGA::IOReadArray(&LonVertexTmp[0], NVerticesOwned, "lonVertex",
+                         FileID, VertexDecompR8);
+if (Err != 0)
+   LOG_CRITICAL("HorzMesh: error reading lonVertex");
+
+for (int Vertex = 0; Vertex < NVerticesOwned; ++Vertex) {
+   LonVertexH(Vertex) = LonVertexTmp[Vertex];
+}
+
+
+LatVertexH = ArrayHost1DR8("latVertex", NVerticesOwned);
+std::vector<R8> LatVertexTmp(NVerticesOwned);
+Err = OMEGA::IOReadArray(&LatVertexTmp[0], NVerticesOwned, "latVertex",
+                         FileID, VertexDecompR8);
+if (Err != 0)
+   LOG_CRITICAL("HorzMesh: error reading latVertex");
+
+for (int Vertex = 0; Vertex < NVerticesOwned; ++Vertex) {
+   LatVertexH(Vertex) = LatVertexTmp[Vertex];
+}
+
+
+} // end constructor
 
 HorzMesh::~HorzMesh() {
 
    // TODO: add deletes for all arrays and remove from AllDecomps map
 
-} 
+} // end deconstructor
 
 
 } // end namespace OMEGA

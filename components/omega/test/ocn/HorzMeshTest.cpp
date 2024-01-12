@@ -60,6 +60,32 @@ OMEGA::R8 distance(OMEGA::R8 x, OMEGA::R8 y, OMEGA::R8 z) {
 
 }
 
+OMEGA::R8 computeLon(OMEGA::R8 x, OMEGA::R8 y, OMEGA::R8 z) {
+
+   OMEGA::R8 lon;
+   lon = atan2(y,x);
+
+   OMEGA::R8 pi;
+   pi = 4.0*atan(1.0);
+
+   if (lon < 0.0) {
+     lon = 2.0*pi + lon;
+   }
+
+   return lon;
+}
+
+OMEGA::R8 computeLat(OMEGA::R8 x, OMEGA::R8 y, OMEGA::R8 z) {
+
+   OMEGA::R8 dist;
+   dist = distance(x, y, z);
+   
+   OMEGA::R8 lat;
+   lat = asin(z/dist);
+
+   return lat;
+}
+
 //------------------------------------------------------------------------------
 // The test driver for Decomp. This tests the decomposition of a sample
 // horizontal domain and verifies the mesh is decomposed correctly.
@@ -69,6 +95,8 @@ int main(int argc, char *argv[]) {
    // Initialize the global MPI environment
    MPI_Init(&argc, &argv);
    yakl::init();
+
+   OMEGA::R8 tol = 1e-6;
 
    // Call initialization routine to create the default decomposition
    int Err = initHorzMeshTest();
@@ -91,7 +119,10 @@ int main(int argc, char *argv[]) {
       return -1;
    }
 
+   // Initialize mesh
    OMEGA::HorzMesh Mesh(DefDecomp);
+
+   // Test sum of local mesh cells
    OMEGA::I4 SumCells;
    OMEGA::I4 LocCells;
    LocCells = Mesh.NCellsOwned;
@@ -105,8 +136,8 @@ int main(int argc, char *argv[]) {
               DefDecomp->NCellsGlobal);
    }
 
+   // Test that cell centers are on sphere
    OMEGA::R8 sphere_radius = distance(Mesh.XCellH(0), Mesh.YCellH(0), Mesh.ZCellH(0));
-   OMEGA::R8 tol = 1e-6;
    OMEGA::R8 dist;
    OMEGA::I4 count = 0;
    for (int Cell = 0; Cell < LocCells; Cell++) {
@@ -121,6 +152,86 @@ int main(int argc, char *argv[]) {
      LOG_INFO("HorzMeshTest: Cell sphere radius test PASS");
    }
 
+   // Test lon/lat coordinates
+   OMEGA::R8 lon;
+   OMEGA::R8 lat;
+   count = 0;
+   for (int Cell = 0; Cell < LocCells; Cell++) {
+
+      lon = computeLon(Mesh.XCellH(Cell), Mesh.YCellH(Cell), Mesh.ZCellH(Cell));
+      lat = computeLat(Mesh.XCellH(Cell), Mesh.YCellH(Cell), Mesh.ZCellH(Cell));
+
+      if (abs(lon - Mesh.LonCellH(Cell)) > tol)
+         count++;
+
+      if (abs(lat - Mesh.LatCellH(Cell)) > tol)
+         count++ ;
+
+   }
+
+   if (count > 0) {
+     LOG_INFO("HorzMeshTest: Cell lon/lat test FAIL");
+   } else {
+     LOG_INFO("HorzMeshTest: Cell lon/lat test PASS");
+   }
+
+   // Test sum of local mesh edges 
+   OMEGA::I4 SumEdges;
+   OMEGA::I4 LocEdges;
+   LocEdges = Mesh.NEdgesOwned;
+   Err = MPI_Allreduce(&LocEdges, &SumEdges, 1, MPI_INT32_T, MPI_SUM, Comm);
+
+
+   if (SumEdges == DefDecomp->NEdgesGlobal){
+     LOG_INFO("HorzMeshTest: Sum edge ID test PASS");
+   } else {
+      LOG_INFO("HorzMeshTest: Sum edge ID test FAIL {} {}", SumEdges,
+              DefDecomp->NEdgesGlobal);
+   }
+
+   // Test that edge coordinates are on sphere
+   sphere_radius = distance(Mesh.XEdgeH(0), Mesh.YEdgeH(0), Mesh.ZEdgeH(0));
+   count = 0;
+   for (int Edge = 0; Edge < LocEdges; Edge++) {
+       dist = distance(Mesh.XEdgeH(Edge), Mesh.YEdgeH(Edge), Mesh.ZEdgeH(Edge));
+       if ( abs(sphere_radius - dist) > tol)
+          count++;
+   }
+
+   if (count > 0) {
+     LOG_INFO("HorzMeshTest: Edge sphere radius test FAIL");
+   } else {
+     LOG_INFO("HorzMeshTest: Edge sphere radius test PASS");
+   }
+
+   // Test sum of local mesh vertices 
+   OMEGA::I4 SumVertices;
+   OMEGA::I4 LocVertices;
+   LocVertices = Mesh.NVerticesOwned;
+   Err = MPI_Allreduce(&LocVertices, &SumVertices, 1, MPI_INT32_T, MPI_SUM, Comm);
+
+
+   if (SumVertices == DefDecomp->NVerticesGlobal){
+     LOG_INFO("HorzMeshTest: Sum vertex ID test PASS");
+   } else {
+      LOG_INFO("HorzMeshTest: Sum vertex ID test FAIL {} {}", SumVertices,
+              DefDecomp->NVerticesGlobal);
+   }
+
+   // Test that cell centers are on sphere
+   sphere_radius = distance(Mesh.XVertexH(0), Mesh.YVertexH(0), Mesh.ZVertexH(0));
+   count = 0;
+   for (int Vertex = 0; Vertex < LocVertices; Vertex++) {
+       dist = distance(Mesh.XVertexH(Vertex), Mesh.YVertexH(Vertex), Mesh.ZVertexH(Vertex));
+       if ( abs(sphere_radius - dist) > tol)
+          count++;
+   }
+
+   if (count > 0) {
+     LOG_INFO("HorzMeshTest: Vertex sphere radius test FAIL");
+   } else {
+     LOG_INFO("HorzMeshTest: Vertex sphere radius test PASS");
+   }
 
    // Test that device arrays are identical
 
