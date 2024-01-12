@@ -100,6 +100,8 @@ HorzMesh::HorzMesh(Decomp *MeshDecomp){
 
    readBottomDepth();
 
+   readMeasurements();
+
 
 } // end constructor
 
@@ -311,6 +313,45 @@ void HorzMesh::readBottomDepth() {
    }
    
 } // end readDepth
+
+void HorzMesh::readMeasurements() {
+
+   I4 Err;
+
+   AreaCellH = ArrayHost1DR8("areaCell", NCellsOwned);
+   std::vector<R8> AreaCellTmp(NCellsOwned);
+   Err = OMEGA::IOReadArray(&AreaCellTmp[0], NCellsOwned, "areaCell",
+                            MeshFileID, CellDecompR8);
+   if (Err != 0)
+      LOG_CRITICAL("HorzMesh: error reading areaCell");
+   
+   for (int Cell = 0; Cell < NCellsOwned; ++Cell) {
+      AreaCellH(Cell) = AreaCellTmp[Cell];
+   }
+
+   AreaTriangleH = ArrayHost1DR8("areaTriangle", NVerticesOwned);
+   std::vector<R8> AreaTriangleTmp(NVerticesOwned);
+   Err = OMEGA::IOReadArray(&AreaTriangleTmp[0], NVerticesOwned, "areaTriangle",
+                            MeshFileID, VertexDecompR8);
+   if (Err != 0)
+      LOG_CRITICAL("HorzMesh: error reading areaTriangle");
+   
+   for (int Vertex = 0; Vertex < NVerticesOwned; ++Vertex) {
+      AreaTriangleH(Vertex) = AreaTriangleTmp[Vertex];
+   }
+
+   //DvEdge = ArrayHost1DR8("dvEdge", NEdgesOwned);
+   //std::vector<R8> DvEdgeTmp(NEdgesOwned);
+   //Err = OMEGA::IOReadArray(&DvEdgeTmp[0], NEdgesOwned, "dvEdge",
+   //                         MeshFileID, EdgeDecompR8);
+   //if (Err != 0)
+   //   LOG_CRITICAL("HorzMesh: error reading dvEdge");
+   //
+   //for (int Vertex = 0; Vertex < NVerticesOwned; ++Vertex) {
+   //   AreaTriangleH(Cell) = AreaTriangleTmp[Cell];
+   //}
+
+} // end readMeasurements
 
 
 

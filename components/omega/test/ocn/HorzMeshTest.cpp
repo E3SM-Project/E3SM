@@ -171,6 +171,7 @@ int main(int argc, char *argv[]) {
 
    if (count > 0) {
      LOG_INFO("HorzMeshTest: Cell lon/lat test FAIL");
+     return -1;
    } else {
      LOG_INFO("HorzMeshTest: Cell lon/lat test PASS");
    }
@@ -187,6 +188,7 @@ int main(int argc, char *argv[]) {
    } else {
       LOG_INFO("HorzMeshTest: Sum edge ID test FAIL {} {}", SumEdges,
               DefDecomp->NEdgesGlobal);
+      return -1;
    }
 
    // Test that edge coordinates are on sphere
@@ -200,6 +202,7 @@ int main(int argc, char *argv[]) {
 
    if (count > 0) {
      LOG_INFO("HorzMeshTest: Edge sphere radius test FAIL");
+     return -1;
    } else {
      LOG_INFO("HorzMeshTest: Edge sphere radius test PASS");
    }
@@ -216,6 +219,7 @@ int main(int argc, char *argv[]) {
    } else {
       LOG_INFO("HorzMeshTest: Sum vertex ID test FAIL {} {}", SumVertices,
               DefDecomp->NVerticesGlobal);
+      return -1;
    }
 
    // Test that cell centers are on sphere
@@ -229,6 +233,7 @@ int main(int argc, char *argv[]) {
 
    if (count > 0) {
      LOG_INFO("HorzMeshTest: Vertex sphere radius test FAIL");
+     return -1;
    } else {
      LOG_INFO("HorzMeshTest: Vertex sphere radius test PASS");
    }
@@ -249,8 +254,38 @@ int main(int argc, char *argv[]) {
       LOG_INFO("HorzMeshTest: Bathy min/max test PASS");
    } else {
       LOG_INFO("HorzMeshTest: Bathy min/max test FAIL");
+      return -1;
    }
 
+   // Test areas
+   OMEGA::R8 LocSumArea = 0;
+   OMEGA::R8 SumCellArea;
+   for (int Cell = 0; Cell < LocCells; Cell++) {
+      LocSumArea += Mesh.AreaCellH(Cell);
+   }
+   Err = MPI_Allreduce(&LocSumArea, &SumCellArea, 1, MPI_DOUBLE, MPI_SUM, Comm);
+
+   OMEGA::R8 OceanArea = 3.61e14;
+   if (abs(SumCellArea - OceanArea)/OceanArea < 0.05) { 
+      LOG_INFO("HorzMeshTest: Cell area test PASS {}");
+   } else {
+      LOG_INFO("HorzMeshTest: Cell area test FAIL {}");
+      return -1;
+   }
+
+   LocSumArea = 0;
+   OMEGA::R8 SumTriangleArea;
+   for (int Vertex = 0; Vertex < LocVertices; Vertex++) {
+      LocSumArea += Mesh.AreaTriangleH(Vertex);
+   }
+   Err = MPI_Allreduce(&LocSumArea, &SumTriangleArea, 1, MPI_DOUBLE, MPI_SUM, Comm);
+
+   if (abs(SumTriangleArea - OceanArea)/OceanArea < 0.05) { 
+      LOG_INFO("HorzMeshTest: Triangle area test PASS {}");
+   } else {
+      LOG_INFO("HorzMeshTest: Triangle area test FAIL {}");
+      return -1;
+   }
 
    // Test that device arrays are identical
 

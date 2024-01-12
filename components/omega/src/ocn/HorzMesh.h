@@ -31,6 +31,8 @@ class HorzMesh {
 
     void readBottomDepth();
 
+    void readMeasurements();
+
     //int readMesh();
 
     //int transferToDevice();
@@ -134,11 +136,11 @@ class HorzMesh {
    Array1DR8 DvEdge;                 ///< Length of each edge, computed as the distance between verticesOnEdge (m)
    ArrayHost1DR8 DvEdgeH;            ///< Length of each edge, computed as the distance between verticesOnEdge (m)
 
-   Array1DR8 DcEdge;                 ///< Length of each edge, computed as the distance between verticesOnEdge (m)
-   ArrayHost1DR8 DcEdgeH;            ///< Length of each edge, computed as the distance between verticesOnEdge (m)
+   Array1DR8 DcEdge;                 ///< Length of each edge, computed as the distance between CellsOnEdge (m)
+   ArrayHost1DR8 DcEdgeH;            ///< Length of each edge, computed as the distance between CellsOnEdge (m)
 
-   Array1DR8 AngleEdge;              ///< Angle the edge normal makes with local eastward direction )radians)
-   ArrayHost1DR8 AngleEdgeH;         ///< Angle the edge normal makes with local eastward direction )radians)
+   Array1DR8 AngleEdge;              ///< Angle the edge normal makes with local eastward direction (radians)
+   ArrayHost1DR8 AngleEdgeH;         ///< Angle the edge normal makes with local eastward direction (radians)
 
    ArrayHost1DR8 MeshDensityH;       ///< Value of density function used to generate a particular mesh at cell centers
 
