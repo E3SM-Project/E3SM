@@ -27,11 +27,17 @@ class HorzMesh {
 
  private:
 
- int readMesh();
+    void readCoordinates();
 
- int transferToDevice();
+    //int readMesh();
 
- int computeMesh();
+    //int transferToDevice();
+
+    //int computeMesh();
+
+    I4 CellDecompR8;
+    I4 EdgeDecompR8;
+    I4 VertexDecompR8;
 
  public:
    // Variables
@@ -39,6 +45,7 @@ class HorzMesh {
    // number of retrievals required.
 
    std::string MeshFileName;
+   int MeshFileID;
 
    // Sizes and global IDs
    // Note that all sizes are actual counts (1-based) so that loop extents
