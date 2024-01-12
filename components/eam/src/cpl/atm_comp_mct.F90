@@ -317,7 +317,7 @@ CONTAINS
        ! we'll try to register stuff in cldera, and if cldera is not inited,
        ! all registration calls will return immediately
        call t_startf('cldera_init')
-       call cldera_init(mpicom_atm,start_ymd,start_tod,curr_ymd,curr_tod,stop_ymd,stop_tod)
+       call cldera_init("eam",mpicom_atm,start_ymd,start_tod,curr_ymd,curr_tod,stop_ymd,stop_tod)
        call cldera_set_log_unit (iulog)
        call cldera_set_masterproc (masterproc)
        call t_stopf('cldera_init')
