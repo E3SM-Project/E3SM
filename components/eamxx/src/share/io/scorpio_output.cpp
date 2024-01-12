@@ -1279,7 +1279,7 @@ AtmosphereOutput::create_diagnostic (const std::string& diag_field_name) {
       }
       if (units=="m") {
         diag_name = "FieldAtHeight";
-	EKAT_REQUIRE_MSG(params.isParameter("surface_reference"),"Error! Output field request for " + diag_field_name + "is missing a surface reference."
+	EKAT_REQUIRE_MSG(params.isParameter("surface_reference"),"Error! Output field request for " + diag_field_name + " is missing a surface reference."
 			"  Please add either '_above_sealevel' or '_above_surface' to the field name");
       } else if (units=="mb" or units=="Pa" or units=="hPa") {
         diag_name = "FieldAtPressureLevel";
