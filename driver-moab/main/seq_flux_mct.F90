@@ -1818,19 +1818,14 @@ contains
      real(r8) , pointer :: local_xao_mct(:,:) ! atm-ocn fluxes, transpose, mct local sizes
      integer  appId ! moab app id
      integer i,j
-     integer nloc, listSize, kgg
-
-     type(mct_ggrid), pointer    :: dom
+     integer nloc, listSize
 
      ! moab
      integer                  :: tagtype, numco,  tagindex, ent_type, ierr, arrSize
      character(CXX)           :: tagname
-     integer ,    allocatable :: GlobalIdsLocal(:) ! used for setting values associated with ids
      character*100 outfile, wopts, lnum
-     
 
      character(*),parameter   :: subName =   '(seq_flux_atmocn_moab) '
-
 
      if (comp%oneletterid == 'a' ) then
         appId = mbaxid ! atm on coupler
@@ -1844,12 +1839,6 @@ contains
      ! transpose into moab double array, then set with global id 
      nloc = mct_avect_lsize(xao)
      listSize = mct_aVect_nRAttr(xao)
-     dom => component_get_dom_cx(comp)
-     kgg = mct_aVect_indexIA(dom%data ,"GlobGridNum" ,perrWith=subName)
-
-     allocate(GlobalIdsLocal(nloc))
-     GlobalIdsLocal = dom%data%iAttr(kgg,:)
-
 
      do j = 1, listSize
        local_xao_mct(:, j) = xao%rAttr(j, :)
@@ -1858,12 +1847,12 @@ contains
      tagname = trim(seq_flds_xao_fields)//C_NULL_CHAR
      arrSize = nloc * listSize
      ent_type = 1 ! cells
-     ierr = iMOAB_SetDoubleTagStorageWithGid ( appId, tagname, arrSize , ent_type, local_xao_mct, GlobalIdsLocal )
+     ! global ids are retrieved by albedo first call; it is a local module variable 
+     ierr = iMOAB_SetDoubleTagStorageWithGid ( appId, tagname, arrSize , ent_type, local_xao_mct, GlobalIds )
      if (ierr .ne. 0) then
        write(logunit,*) subname,' error in setting atm-ocn fluxes  '
        call shr_sys_abort(subname//' ERROR in setting atm-ocn fluxes')
      endif
-     deallocate(GlobalIdsLocal)
 
 #ifdef MOABDEBUG
         ! debug out file
