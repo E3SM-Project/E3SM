@@ -215,7 +215,6 @@ protected:
   // Local views of each field to be used for "averaging" output and writing to file.
   std::map<std::string,view_1d_host>    m_host_views_1d;
   std::map<std::string,view_1d_dev>     m_dev_views_1d;
-  std::map<std::string,view_1d_dev>     m_local_tmp_avg_cnt_views_1d;
   std::map<std::string,view_1d_dev>     m_avg_coeff_views_1d;
 
   bool m_add_time_dim;
