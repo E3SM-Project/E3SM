@@ -1379,105 +1379,98 @@ AtmosphereOutput::create_diagnostic (const std::string& diag_field_name) {
 // Helper function to mark filled points in a specific layout
 void AtmosphereOutput::
 update_avg_cnt_view(const Field& field, view_1d_dev& dev_view) {
-  // If the dev_view_1d is aliasing the field device view (must be Instant output),
-  // then there's no point in copying from the field's view to dev_view
   const auto& name   = field.name();
   const auto& layout = m_layouts.at(name);
   const auto& dims   = layout.dims();
-  const auto  rank   = layout.rank();
         auto  data   = dev_view.data();
-  const bool is_diagnostic = (m_diagnostics.find(name) != m_diagnostics.end());
-  const bool is_aliasing_field_view =
-      m_avg_type==OutputAvgType::Instant &&
-      field.get_header().get_alloc_properties().get_padding()==0 &&
-      field.get_header().get_parent().expired() &&
-      not is_diagnostic;
   const auto fill_value = m_fill_value;
-  if (not is_aliasing_field_view) {
-    KT::RangePolicy policy(0,layout.size());
-    const auto extents = layout.extents();
-    switch (rank) {
-      case 1:
-      {
-        // For rank-1 views, we use strided layout, since it helps us
-        // handling a few more scenarios
-        auto src_view_1d = field.get_strided_view<const Real*,Device>();
-        auto tgt_view_1d = view_Nd_dev<1>(data,dims[0]);
-        Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int i) {
-          if (src_view_1d(i)==fill_value) {
-            tgt_view_1d(i) = 0.0;
-          }
-        });
-        break;
-      }
-      case 2:
-      {
-        auto src_view_2d = field.get_view<const Real**,Device>();
-        auto tgt_view_2d = view_Nd_dev<2>(data,dims[0],dims[1]);
-        Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
-          int i,j;
-          unflatten_idx(idx,extents,i,j);
-          if (src_view_2d(i,j)==fill_value) {
-            tgt_view_2d(i,j) = 0.0;
-          }
-        });
-        break;
-      }
-      case 3:
-      {
-        auto src_view_3d = field.get_view<const Real***,Device>();
-        auto tgt_view_3d = view_Nd_dev<3>(data,dims[0],dims[1],dims[2]);
-        Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
-          int i,j,k;
-          unflatten_idx(idx,extents,i,j,k);
-          if (src_view_3d(i,j,k)==fill_value) {
-            tgt_view_3d(i,j,k) = 0.0;
-          }
-        });
-        break;
-      }
-      case 4:
-      {
-        auto src_view_4d = field.get_view<const Real****,Device>();
-        auto tgt_view_4d = view_Nd_dev<4>(data,dims[0],dims[1],dims[2],dims[3]);
-        Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
-          int i,j,k,l;
-          unflatten_idx(idx,extents,i,j,k,l);
-          if (src_view_4d(i,j,k,l)==fill_value) {
-            tgt_view_4d(i,j,k,l) = 0.0;
-          }
-        });
-        break;
-      }
-      case 5:
-      {
-        auto src_view_5d = field.get_view<const Real*****,Device>();
-        auto tgt_view_5d = view_Nd_dev<5>(data,dims[0],dims[1],dims[2],dims[3],dims[4]);
-        Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
-          int i,j,k,l,m;
-          unflatten_idx(idx,extents,i,j,k,l,m);
-          if (src_view_5d(i,j,k,l,m)==fill_value) {
-            tgt_view_5d(i,j,k,l,m) = 0.0;
-          }
-        });
-        break;
-      }
-      case 6:
-      {
-        auto src_view_6d = field.get_view<const Real******,Device>();
-        auto tgt_view_6d = view_Nd_dev<6>(data,dims[0],dims[1],dims[2],dims[3],dims[4],dims[5]);
-        Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
-          int i,j,k,l,m,n;
-          unflatten_idx(idx,extents,i,j,k,l,m,n);
-          if (src_view_6d(i,j,k,l,m,n)==fill_value) {
-            tgt_view_6d(i,j,k,l,m,n) = 0.0;
-          }
-        });
-        break;
-      }
-      default:
-        EKAT_ERROR_MSG ("Error! Field rank (" + std::to_string(rank) + ") not supported by AtmosphereOutput.\n");
+
+  KT::RangePolicy policy(0,layout.size());
+  const auto extents = layout.extents();
+  switch (layout.rank()) {
+    case 1:
+    {
+      // For rank-1 views, we use strided layout, since it helps us
+      // handling a few more scenarios
+      auto src_view_1d = field.get_strided_view<const Real*,Device>();
+      auto tgt_view_1d = view_Nd_dev<1>(data,dims[0]);
+      Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int i) {
+        if (src_view_1d(i)==fill_value) {
+          tgt_view_1d(i) = 0;
+        }
+      });
+      break;
     }
+    case 2:
+    {
+      auto src_view_2d = field.get_view<const Real**,Device>();
+      auto tgt_view_2d = view_Nd_dev<2>(data,dims[0],dims[1]);
+      Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
+        int i,j;
+        unflatten_idx(idx,extents,i,j);
+        if (src_view_2d(i,j)==fill_value) {
+          tgt_view_2d(i,j) = 0;
+        }
+      });
+      break;
+    }
+    case 3:
+    {
+      auto src_view_3d = field.get_view<const Real***,Device>();
+      auto tgt_view_3d = view_Nd_dev<3>(data,dims[0],dims[1],dims[2]);
+      Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
+        int i,j,k;
+        unflatten_idx(idx,extents,i,j,k);
+        if (src_view_3d(i,j,k)==fill_value) {
+          tgt_view_3d(i,j,k) = 0;
+        }
+      });
+      break;
+    }
+    case 4:
+    {
+      auto src_view_4d = field.get_view<const Real****,Device>();
+      auto tgt_view_4d = view_Nd_dev<4>(data,dims[0],dims[1],dims[2],dims[3]);
+      Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
+        int i,j,k,l;
+        unflatten_idx(idx,extents,i,j,k,l);
+        if (src_view_4d(i,j,k,l)==fill_value) {
+          tgt_view_4d(i,j,k,l) = 0;
+        }
+      });
+      break;
+    }
+    case 5:
+    {
+      auto src_view_5d = field.get_view<const Real*****,Device>();
+      auto tgt_view_5d = view_Nd_dev<5>(data,dims[0],dims[1],dims[2],dims[3],dims[4]);
+      Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
+        int i,j,k,l,m;
+        unflatten_idx(idx,extents,i,j,k,l,m);
+        if (src_view_5d(i,j,k,l,m)==fill_value) {
+          tgt_view_5d(i,j,k,l,m) = 0;
+        }
+      });
+      break;
+    }
+    case 6:
+    {
+      auto src_view_6d = field.get_view<const Real******,Device>();
+      auto tgt_view_6d = view_Nd_dev<6>(data,dims[0],dims[1],dims[2],dims[3],dims[4],dims[5]);
+      Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
+        int i,j,k,l,m,n;
+        unflatten_idx(idx,extents,i,j,k,l,m,n);
+        if (src_view_6d(i,j,k,l,m,n)==fill_value) {
+          tgt_view_6d(i,j,k,l,m,n) = 0;
+        }
+      });
+      break;
+    }
+    default:
+      EKAT_ERROR_MSG (
+            "Error! Field rank not not supported by AtmosphereOutput.\n"
+          "  - field name:   " + field.name() + "\n"
+          "  - field layout: " + to_string(layout) + "\n");
   }
 }
 
