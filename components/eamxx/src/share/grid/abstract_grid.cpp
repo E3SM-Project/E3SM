@@ -147,16 +147,17 @@ is_valid_layout (const FieldLayout& layout) const
   using namespace ShortFieldTagsNames;
 
   const auto lt = get_layout_type(layout.tags());
+  if (lt==LayoutType::Scalar0D or lt==LayoutType::Vector0D) {
+    // 0d layouts are compatible with any grid
+    // Let's return true early to avoid segfautls below
+    return true;
+  }
   const bool midpoints = layout.tags().back()==LEV;
   const bool is_vec = layout.is_vector_layout();
   const int vec_dim = is_vec ? layout.dims()[layout.get_vector_dim()] : 0;
   const auto vec_tag = is_vec ? layout.get_vector_tag() : INV;
 
   switch (lt) {
-    case LayoutType::Scalar0D: [[fallthrough]];
-    case LayoutType::Vector0D:
-      // 0d layouts are compatible with any grid
-      return true;
     case LayoutType::Scalar1D: [[fallthrough]];
     case LayoutType::Vector1D:
       // 1d layouts need the right number of levels
