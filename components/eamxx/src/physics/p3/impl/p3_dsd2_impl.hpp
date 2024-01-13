@@ -77,6 +77,7 @@ void Functions<S,D>::
 get_rain_dsd2 (
   const Spack& qr, Spack& nr, Spack& mu_r,
   Spack& lamr, Spack& cdistr, Spack& logn0r, 
+  const physics::P3_Constants<S> & p3constants,
   const Smask& context)
 {
   constexpr auto nsmall = C::NSMALL;
@@ -89,8 +90,9 @@ get_rain_dsd2 (
 
   const auto qr_gt_small = qr >= qsmall && context;
 
+  const Scalar mu_r_const = p3constants.p3_mu_r_constant;
+
   if (qr_gt_small.any()) {
-    constexpr Scalar mu_r_const = C::mu_r_const;
     // use lookup table to get mu
     // mu-lambda relationship is from Cao et al. (2008), eq. (7)
 

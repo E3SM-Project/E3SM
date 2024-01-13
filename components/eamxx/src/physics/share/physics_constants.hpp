@@ -77,7 +77,6 @@ struct Constants
   static constexpr Scalar INV_CP        = 1.0/CP;
   //  static constexpr Scalar Tol           = ekat::is_single_precision<Real>::value ? 2e-5 : 1e-14;
   static constexpr Scalar macheps = std::numeric_limits<Real>::epsilon();
-  static constexpr Scalar mu_r_const    = 1.0;
   static constexpr Scalar dt_left_tol   = 1.e-4;
   static constexpr Scalar bcn           = 2.;
   static constexpr Scalar rho_rimeMin   = 50.;
@@ -132,19 +131,28 @@ struct P3_Constants
 {
   public:
   Scalar p3_pre_autoconversion_factor = 1350.0;
+  Scalar p3_mu_r_constant = 1.0;
 
   void set_p3_from_namelist(ekat::ParameterList &params){
     std::string nname = "p3_pre_autoconversion_factor";
     if(params.isParameter(nname))
        p3_pre_autoconversion_factor = params.get<double>(nname);
+    nname = "p3_mu_r_constant";
+    if(params.isParameter(nname))
+       p3_mu_r_constant = params.get<double>(nname);
+
   };
 
   void print_p3constants(std::shared_ptr<ekat::logger::LoggerBase> logger){
       logger->info("P3 Constants:");
       std::string nname = "p3_pre_autoconversion_factor";
       logger->info(std::string("P3   ") + nname + std::string(" = ") + std::to_string(p3_pre_autoconversion_factor));
+      nname = "p3_mu_r_constant";
+      logger->info(std::string("P3   ") + nname + std::string(" = ") + std::to_string(p3_mu_r_constant));
       logger->info(" ");
   };
+
+  //one can implement a check here too, for acceptable ranges
 
 }; // P3_Constants
 

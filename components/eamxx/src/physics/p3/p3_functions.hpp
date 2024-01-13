@@ -461,7 +461,8 @@ struct Functions
     const uview_1d<Spack>& precip_liq_flux,
     const uview_1d<Spack>& qr_tend,
     const uview_1d<Spack>& nr_tend,
-    Scalar& precip_liq_surf);
+    Scalar& precip_liq_surf,
+    const physics::P3_Constants<ScalarT> & p3constants);
 
 #ifdef SCREAM_SMALL_KERNELS
   static void rain_sedimentation_disp(
@@ -484,7 +485,8 @@ struct Functions
     const uview_2d<Spack>& nr_tend,
     const uview_1d<Scalar>& precip_liq_surf,
     const uview_1d<bool>& is_nucleat_possible,
-    const uview_1d<bool>& is_hydromet_present);
+    const uview_1d<bool>& is_hydromet_present,
+    const physics::P3_Constants<ScalarT> & p3constants);
 #endif
 
   // TODO: comment
@@ -622,6 +624,7 @@ struct Functions
   static void get_rain_dsd2 (
     const Spack& qr, Spack& nr, Spack& mu_r,
     Spack& lamr, Spack& cdistr, Spack& logn0r,
+    const physics::P3_Constants<ScalarT> & p3constants,
     const Smask& context = Smask(true) );
 
   // Calculates rime density
@@ -693,6 +696,7 @@ struct Functions
     const view_2d_table& vn_table_vals, const view_2d_table& vm_table_vals,
     const Spack& qr_incld, const Spack& rhofacr,
     Spack& nr_incld, Spack& mu_r, Spack& lamr, Spack& V_qr, Spack& V_nr,
+    const physics::P3_Constants<ScalarT> & p3constants,
     const Smask& context = Smask(true));
 
   //---------------------------------------------------------------------------------
@@ -1216,7 +1220,8 @@ struct Functions
     const uview_1d<Spack>& rho_qi,
     const uview_1d<Spack>& diag_equiv_reflectivity,
     const uview_1d<Spack>& diag_eff_radius_qc,
-    const uview_1d<Spack>& diag_eff_radius_qr);
+    const uview_1d<Spack>& diag_eff_radius_qr,
+    const physics::P3_Constants<ScalarT> & p3constants);
 
 #ifdef SCREAM_SMALL_KERNELS
   static void p3_main_part3_disp(
@@ -1260,7 +1265,8 @@ struct Functions
     const uview_2d<Spack>& diag_eff_radius_qc,
     const uview_2d<Spack>& diag_eff_radius_qr,
     const uview_1d<bool>& is_nucleat_possible,
-    const uview_1d<bool>& is_hydromet_present);
+    const uview_1d<bool>& is_hydromet_present,
+    const physics::P3_Constants<ScalarT> & p3constants);
 #endif
 
   // Return microseconds elapsed

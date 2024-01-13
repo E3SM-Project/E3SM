@@ -275,7 +275,7 @@ Int Functions<Real,DefaultDevice>
       rho, inv_rho, rhofacr, cld_frac_r, inv_dz, qr_incld, workspace_mgr,
       lookup_tables.vn_table_vals, lookup_tables.vm_table_vals, nj, nk, ktop, kbot, kdir, infrastructure.dt, inv_dt, qr,
       nr, nr_incld, mu_r, lamr, precip_liq_flux, qtend_ignore, ntend_ignore,
-      diagnostic_outputs.precip_liq_surf, nucleationPossible, hydrometeorsPresent);
+      diagnostic_outputs.precip_liq_surf, nucleationPossible, hydrometeorsPresent, p3constants);
 
   // Ice sedimentation:  (adaptive substepping)
   ice_sedimentation_disp(
@@ -298,7 +298,8 @@ Int Functions<Real,DefaultDevice>
       rho, inv_rho, rhofaci, qv, th, qc, nc, qr, nr, qi, ni,
       qm, bm, latent_heat_vapor, latent_heat_sublim, mu_c, nu, lamc, mu_r, lamr,
       vap_liq_exchange, ze_rain, ze_ice, diag_vm_qi, diag_eff_radius_qi, diag_diam_qi,
-      rho_qi, diag_equiv_reflectivity, diag_eff_radius_qc, diag_eff_radius_qr, nucleationPossible, hydrometeorsPresent);
+      rho_qi, diag_equiv_reflectivity, diag_eff_radius_qc, diag_eff_radius_qr, nucleationPossible, hydrometeorsPresent,
+      p3constants);
 
   //
   // merge ice categories with similar properties
