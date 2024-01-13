@@ -1117,14 +1117,12 @@ void AtmosphereOutput::set_degrees_of_freedom(const std::string& filename)
     const auto& fid  = field.get_header().get_identifier();
     auto var_dof = get_var_dof_offsets(fid.get_layout());
     set_dof(filename,name,var_dof.size(),var_dof.data());
-    m_dofs.emplace(std::make_pair(name,var_dof.size()));
   }
   // Cycle through the average count fields and set degrees of freedom
   for (auto const& name : m_avg_cnt_names) {
     const auto layout = m_layouts.at(name);
     auto var_dof = get_var_dof_offsets(layout);
     set_dof(filename,name,var_dof.size(),var_dof.data());
-    m_dofs.emplace(std::make_pair(name,var_dof.size()));
   }
 
   /* TODO:

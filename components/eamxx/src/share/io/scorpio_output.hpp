@@ -199,7 +199,6 @@ protected:
   std::vector<std::string>                              m_avg_cnt_names;
   std::map<std::string,std::string>                     m_field_to_avg_cnt_map;
   std::map<std::string,FieldLayout>                     m_layouts;
-  std::map<std::string,int>                             m_dofs;
   std::map<std::string,std::pair<int,bool>>             m_dims;
   std::map<std::string,std::shared_ptr<atm_diag_type>>  m_diagnostics;
   std::map<std::string,std::vector<std::string>>        m_diag_depends_on_diags;
@@ -215,7 +214,6 @@ protected:
   // Local views of each field to be used for "averaging" output and writing to file.
   std::map<std::string,view_1d_host>    m_host_views_1d;
   std::map<std::string,view_1d_dev>     m_dev_views_1d;
-  std::map<std::string,view_1d_dev>     m_avg_coeff_views_1d;
 
   bool m_add_time_dim;
   bool m_track_avg_cnt = false;
