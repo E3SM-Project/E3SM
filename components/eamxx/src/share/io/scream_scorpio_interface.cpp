@@ -338,11 +338,20 @@ void register_variable(const std::string &filename, const std::string& shortname
           " - pio error: " + std::to_string(err) + "\n");
     }
 
-
-    if (mode==Read && (dims_from_file[0]=="time" && var_dimensions[0]!="time")) {
-      // For Read operations, we may not consider "time" as a field dimension, so if the
-      // input file has "time", simply disregard it in this check.
-      dims_from_file.erase(dims_from_file.begin());
+    // Here, let's only try to access var_dimensions[0] when we know for sure
+    // that var_dimensions is actually dimensioned (i.e., .size()>0)
+    if (var_dimensions.size()>0) {
+      if (mode==Read && (dims_from_file[0]=="time" && var_dimensions[0]!="time")) {
+        // For Read operations, we may not consider "time" as a field dimension, so if the
+        // input file has "time", simply disregard it in this check.
+        dims_from_file.erase(dims_from_file.begin());
+      }
+    } else {
+      if (mode==Read && (dims_from_file[0]=="time")) {
+        // For Read operations, we may not consider "time" as a field dimension, so if the
+        // input file has "time", simply disregard it in this check.
+        dims_from_file.erase(dims_from_file.begin());
+      }      
     }
     std::reverse(dims_from_file.begin(),dims_from_file.end());
     EKAT_REQUIRE_MSG(var_dimensions==dims_from_file,
