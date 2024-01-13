@@ -429,28 +429,22 @@ run (const std::string& filename,
     // way. If we need to handle a case where only a subset of output variables are expected to
     // be masked/filled then the recommendation is to request those variables in a separate output
     // stream.
-    // We cycle through all fields and mark points that are filled/masked in the local views.  First
-    // initialize them to 1 representing unfilled.
-    for (const auto& name : m_avg_cnt_names) {
-      auto& dev_view = m_local_tmp_avg_cnt_views_1d.at(name);
-      Kokkos::deep_copy(dev_view,1.0);
-    }
-    // Now we cycle through all the fields
+    // We cycle through all fields and we
+    //  1. Find the avg_cnt view for this field.
+    //  2. If we already processed the avg_cnt view, go to next field, and start from 1 again.
+    //  3. Add 1 to all entries of avg_cnt where field!=fill_value
+    std::set<std::string> avg_updated;
     for (const auto& name : m_fields_names) {
-      auto field    = get_field(name,"io");
-      auto lookup   = m_field_to_avg_cnt_map.at(name);
-      auto dev_view = m_local_tmp_avg_cnt_views_1d.at(lookup);
-      update_avg_cnt_view(field,dev_view);
-    }
-    // Finally, we update the overall avg_cnt_views
-    for (const auto& name : m_avg_cnt_names) {
-      auto track_view = m_dev_views_1d.at(name);
-      auto local_view = m_local_tmp_avg_cnt_views_1d.at(name);
-      const auto layout = m_layouts.at(name);
-      KT::RangePolicy policy(0,layout.size());
-      Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int i) {
-        track_view(i) += local_view(i);
-      });
+      auto avg_cnt_name = m_field_to_avg_cnt_map.at(name);
+      if (avg_updated.count(avg_cnt_name)==1) {
+        // We updated this avg_cnt by checking another field
+        continue;
+      }
+      auto field = get_field(name,"io");
+      update_avg_cnt_view(field,m_dev_views_1d.at(avg_cnt_name));
+
+      // Make sure we don't double update this avg cnt
+      avg_updated.insert(avg_cnt_name);
     }
   }
 
@@ -1395,8 +1389,8 @@ update_avg_cnt_view(const Field& field, view_1d_dev& dev_view) {
       auto src_view_1d = field.get_strided_view<const Real*,Device>();
       auto tgt_view_1d = view_Nd_dev<1>(data,dims[0]);
       Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int i) {
-        if (src_view_1d(i)==fill_value) {
-          tgt_view_1d(i) = 0;
+        if (src_view_1d(i)!=fill_value) {
+          tgt_view_1d(i) += 1;
         }
       });
       break;
@@ -1408,8 +1402,8 @@ update_avg_cnt_view(const Field& field, view_1d_dev& dev_view) {
       Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
         int i,j;
         unflatten_idx(idx,extents,i,j);
-        if (src_view_2d(i,j)==fill_value) {
-          tgt_view_2d(i,j) = 0;
+        if (src_view_2d(i,j)!=fill_value) {
+          tgt_view_2d(i,j) += 1;
         }
       });
       break;
@@ -1421,8 +1415,8 @@ update_avg_cnt_view(const Field& field, view_1d_dev& dev_view) {
       Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
         int i,j,k;
         unflatten_idx(idx,extents,i,j,k);
-        if (src_view_3d(i,j,k)==fill_value) {
-          tgt_view_3d(i,j,k) = 0;
+        if (src_view_3d(i,j,k)!=fill_value) {
+          tgt_view_3d(i,j,k) += 1;
         }
       });
       break;
@@ -1434,8 +1428,8 @@ update_avg_cnt_view(const Field& field, view_1d_dev& dev_view) {
       Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
         int i,j,k,l;
         unflatten_idx(idx,extents,i,j,k,l);
-        if (src_view_4d(i,j,k,l)==fill_value) {
-          tgt_view_4d(i,j,k,l) = 0;
+        if (src_view_4d(i,j,k,l)!=fill_value) {
+          tgt_view_4d(i,j,k,l) += 1;
         }
       });
       break;
@@ -1447,8 +1441,8 @@ update_avg_cnt_view(const Field& field, view_1d_dev& dev_view) {
       Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
         int i,j,k,l,m;
         unflatten_idx(idx,extents,i,j,k,l,m);
-        if (src_view_5d(i,j,k,l,m)==fill_value) {
-          tgt_view_5d(i,j,k,l,m) = 0;
+        if (src_view_5d(i,j,k,l,m)!=fill_value) {
+          tgt_view_5d(i,j,k,l,m) += 1;
         }
       });
       break;
@@ -1460,8 +1454,8 @@ update_avg_cnt_view(const Field& field, view_1d_dev& dev_view) {
       Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
         int i,j,k,l,m,n;
         unflatten_idx(idx,extents,i,j,k,l,m,n);
-        if (src_view_6d(i,j,k,l,m,n)==fill_value) {
-          tgt_view_6d(i,j,k,l,m,n) = 0;
+        if (src_view_6d(i,j,k,l,m,n)!=fill_value) {
+          tgt_view_6d(i,j,k,l,m,n) += 1;
         }
       });
       break;
