@@ -118,7 +118,7 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
     EKAT_REQUIRE_MSG(m_use_weights == false,
                      "Error! Nudging::set_grids - it seems that the user intends to use both nuding "
                      << "from coarse data as well as weighted nudging simultaneously. This is not supported. " 
-                     << "If the user wants to use both at their risk, the user should edit the source code "
+                     << "If the user wants to use both at their own risk, the user should edit the source code "
                      << "by deleting this error message.");
     // If we get here, we are good to go!
     m_refine_remap = true;
