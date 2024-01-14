@@ -65,7 +65,8 @@ void Functions<S,D>
   const uview_1d<Spack>& ni_incld,
   const uview_1d<Spack>& bm_incld,
   bool& nucleationPossible,
-  bool& hydrometeorsPresent)
+  bool& hydrometeorsPresent,
+  const physics::P3_Constants<S> & p3constants)
 {
   // Get access to saturation functions
   using physics = scream::physics::Functions<Scalar, Device>;
@@ -79,6 +80,8 @@ void Functions<S,D>
   constexpr Scalar T_zerodegc   = C::T_zerodegc;
   constexpr Scalar qsmall       = C::QSMALL;
   constexpr Scalar inv_cp       = C::INV_CP;
+
+  const Scalar p3_spa_to_nc = p3constants.p3_spa_to_nc;
 
   nucleationPossible = false;
   hydrometeorsPresent = false;
@@ -131,7 +134,7 @@ void Functions<S,D>
       // prescribe that value
 
       if (do_prescribed_CCN) {
-         nc(k).set(not_drymass, max(nc(k), nccn_prescribed(k)/inv_cld_frac_l(k)));
+         nc(k).set(not_drymass, max(nc(k), p3_spa_to_nc*nccn_prescribed(k)/inv_cld_frac_l(k)));
       } else if (predictNc) {
          nc(k).set(not_drymass, max(nc(k) + nc_nuceat_tend(k) * dt, 0.0));
       } else {

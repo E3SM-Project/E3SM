@@ -95,7 +95,7 @@ void Functions<S,D>
   const uview_1d<Spack>& pratot,
   const uview_1d<Spack>& prctot,
   bool& hydrometeorsPresent, const Int& nk,
-  const physics::P3_Constants<S> & p3constants )
+  const physics::P3_Constants<S> & p3constants)
 {
   constexpr Scalar qsmall       = C::QSMALL;
   constexpr Scalar nsmall       = C::NSMALL;

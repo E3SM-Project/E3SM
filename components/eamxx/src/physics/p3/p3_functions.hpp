@@ -964,7 +964,8 @@ struct Functions
     const uview_1d<Spack>& ni_incld,
     const uview_1d<Spack>& bm_incld,
     bool& is_nucleat_possible,
-    bool& is_hydromet_present);
+    bool& is_hydromet_present,
+    const physics::P3_Constants<ScalarT> & p3constants);
 
 #ifdef SCREAM_SMALL_KERNELS
   static void p3_main_part1_disp(
@@ -1014,7 +1015,8 @@ struct Functions
     const uview_2d<Spack>& ni_incld,
     const uview_2d<Spack>& bm_incld,
     const uview_1d<bool>& is_nucleat_possible,
-    const uview_1d<bool>& is_hydromet_present);
+    const uview_1d<bool>& is_hydromet_present,
+    const physics::P3_Constants<ScalarT> & p3constants);
 #endif
 
   KOKKOS_FUNCTION

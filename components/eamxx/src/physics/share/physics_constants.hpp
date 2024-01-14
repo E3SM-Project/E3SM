@@ -131,7 +131,8 @@ struct P3_Constants
 {
   public:
   Scalar p3_pre_autoconversion_factor = 1350.0;
-  Scalar p3_mu_r_constant = 1.0;
+  Scalar p3_mu_r_constant             = 1.0;
+  Scalar p3_spa_to_nc                 = 1.0;
 
   void set_p3_from_namelist(ekat::ParameterList &params){
     std::string nname = "p3_pre_autoconversion_factor";
@@ -140,6 +141,9 @@ struct P3_Constants
     nname = "p3_mu_r_constant";
     if(params.isParameter(nname))
        p3_mu_r_constant = params.get<double>(nname);
+    nname = "p3_spa_to_nc";
+    if(params.isParameter(nname))
+       p3_spa_to_nc = params.get<double>(nname);
 
   };
 
@@ -149,6 +153,8 @@ struct P3_Constants
       logger->info(std::string("P3   ") + nname + std::string(" = ") + std::to_string(p3_pre_autoconversion_factor));
       nname = "p3_mu_r_constant";
       logger->info(std::string("P3   ") + nname + std::string(" = ") + std::to_string(p3_mu_r_constant));
+      nname = "p3_spa_to_nc";
+      logger->info(std::string("P3   ") + nname + std::string(" = ") + std::to_string(p3_spa_to_nc));
       logger->info(" ");
   };
 

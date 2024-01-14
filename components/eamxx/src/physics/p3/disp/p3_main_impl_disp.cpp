@@ -233,7 +233,7 @@ Int Functions<Real,DefaultDevice>
       T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr,
       rhofaci, acn, qv, th, qc, nc, qr, nr, qi, ni, qm,
       bm, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld, nr_incld,
-      ni_incld, bm_incld, nucleationPossible, hydrometeorsPresent);
+      ni_incld, bm_incld, nucleationPossible, hydrometeorsPresent, p3constants);
 
   // ------------------------------------------------------------------------------------------
   // main k-loop (for processes):
