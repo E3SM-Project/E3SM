@@ -126,24 +126,6 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
       "Error! Unsupported averaging type '" + avg_type + "'.\n"
       "       Valid options: Instant, Max, Min, Average. Case insensitive.\n");
 
-  // Avg count only makes sense for non-instant output,
-  // and only if time dim is present (i.e., don't do it for geo_data streams)
-  if (m_avg_type!=OutputAvgType::Instant and m_add_time_dim) {
-    if (params.isParameter("fill_value")) {
-      m_fill_value = static_cast<float>(params.get<double>("fill_value"));
-      // If the fill_value is specified there is a good chance the user expects the average count to track filling.
-      m_track_avg_cnt = true;
-    }
-    if (params.isParameter("track_fill")) {
-      // Note, we do this after checking for fill_value to give users that opportunity to turn off fill tracking, even
-      // if they specify a specific fill value.
-      m_track_avg_cnt = params.get<bool>("track_fill");
-    }
-    if (params.isParameter("fill_threshold")) {
-      m_avg_coeff_threshold = params.get<Real>("fill_threshold");
-    }
-  }
-
   // Set all internal field managers to the simulation field manager to start with.  If
   // vertical remapping, horizontal remapping or both are used then those remapper will
   // set things accordingly.
@@ -206,6 +188,23 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
   // Register any diagnostics needed by this output stream
   set_diagnostics();
 
+  // Avg count only makes sense if we have
+  //  - non-instant output
+  //  - we have one between:
+  //    - vertically remapped output
+  //    - field_at_XhPa diagnostic
+  // We already set m_track_avg_cnt to true if field_at_XhPa is found in set_diagnostics.
+  // Hence, here we only check if vert remap is active
+  if (use_vertical_remap_from_file) {
+    m_track_avg_cnt = true;
+  }
+  if (params.isParameter("fill_value")) {
+    m_fill_value = static_cast<float>(params.get<double>("fill_value"));
+  }
+  if (params.isParameter("fill_threshold")) {
+    m_avg_coeff_threshold = params.get<Real>("fill_threshold");
+  }
+
   // Helper lambda, to copy io string attributes. This will be used if any
   // remapper is created, to ensure atts set by atm_procs are not lost
   auto transfer_io_str_atts = [&] (const Field& src, Field& tgt) {
@@ -220,10 +219,6 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
 
   // Setup remappers - if needed
   if (use_vertical_remap_from_file) {
-    // When vertically remapping there is a chance that filled values will be present,
-    // so be sure to track these if the avg type is not INSTANT
-    m_track_avg_cnt = m_add_time_dim and m_avg_type!=OutputAvgType::Instant;
-
     // We build a remapper, to remap fields from the fm grid to the io grid
     auto vert_remap_file   = params.get<std::string>("vertical_remap_file");
     auto f_lev = get_field("p_mid","sim");
@@ -978,6 +973,10 @@ register_variables(const std::string& filename,
         set_variable_metadata(filename, name, "_FillValue",fill_value);
       } else {
         float fill_value = m_fill_value;
+        std::cout << "setting fill value:\n"
+                  << "  filename: " << filename << "\n"
+                  << "  varname : " << name << "\n"
+                  << "  fill val: " << fill_value << "\n";
         set_variable_metadata(filename, name, "_FillValue",fill_value);
       }
 
@@ -1274,7 +1273,7 @@ AtmosphereOutput::create_diagnostic (const std::string& diag_field_name) {
 
         // If we have pressure slices we need to be tracking the average count,
         // if m_avg_type is not Instant
-        m_track_avg_cnt = m_add_time_dim and m_avg_type!=OutputAvgType::Instant;
+        m_track_avg_cnt = m_avg_type!=OutputAvgType::Instant;
       } else {
         EKAT_ERROR_MSG ("Error! Invalid units x for 'field_at_Nx' diagnostic.\n");
       }

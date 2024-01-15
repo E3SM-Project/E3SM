@@ -133,7 +133,6 @@ void write (const std::string& avg_type, const std::string& freq_units,
   om_pl.set("Field Names",fnames);
   om_pl.set("Averaging Type", avg_type);
   om_pl.set<double>("fill_value",FillValue);
-  om_pl.set<bool>("track_fill",true);
   om_pl.set<Real>("fill_threshold",fill_threshold);
   auto& ctrl_pl = om_pl.sublist("output_control");
   ctrl_pl.set("frequency_units",freq_units);
