@@ -289,7 +289,7 @@ Int Functions<S,D>
       rho, inv_rho, rhofaci, ocld_frac_i, inv_dz, team, workspace, nk, ktop, kbot,
       kdir, infrastructure.dt, inv_dt, oqi, qi_incld, oni, ni_incld,
       oqm, qm_incld, obm, bm_incld, qtend_ignore, ntend_ignore,
-      lookup_tables.ice_table_vals, diagnostic_outputs.precip_ice_surf(i));
+      lookup_tables.ice_table_vals, diagnostic_outputs.precip_ice_surf(i), p3constants);
 
     // homogeneous freezing of cloud and rain
     homogeneous_freezing(

@@ -282,7 +282,7 @@ Int Functions<Real,DefaultDevice>
       rho, inv_rho, rhofaci, cld_frac_i, inv_dz, workspace_mgr, nj, nk, ktop, kbot,
       kdir, infrastructure.dt, inv_dt, qi, qi_incld, ni, ni_incld,
       qm, qm_incld, bm, bm_incld, qtend_ignore, ntend_ignore,
-      lookup_tables.ice_table_vals, diagnostic_outputs.precip_ice_surf, nucleationPossible, hydrometeorsPresent);
+      lookup_tables.ice_table_vals, diagnostic_outputs.precip_ice_surf, nucleationPossible, hydrometeorsPresent, p3constants);
 
   // homogeneous freezing f cloud and rain
   homogeneous_freezing_disp(

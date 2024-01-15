@@ -228,7 +228,7 @@ void Functions<S,D>
         ni_incld(k).set(qi_gt_small, max(ni_incld(k), nsmall));
         nr_incld(k).set(qi_gt_small, max(nr_incld(k), nsmall));
 
-        const auto rhop = calc_bulk_rho_rime(qi_incld(k), qm_incld(k), bm_incld(k), qi_gt_small);
+        const auto rhop = calc_bulk_rho_rime(qi_incld(k), qm_incld(k), bm_incld(k), p3constants, qi_gt_small);
         qm(k).set(qi_gt_small, qm_incld(k)*cld_frac_i(k) );
         bm(k).set(qi_gt_small, bm_incld(k)*cld_frac_i(k) );
 
@@ -269,12 +269,12 @@ void Functions<S,D>
       // collection of droplets
       ice_cldliq_collection(
         rho(k), T_atm(k), rhofaci(k), table_val_qc2qi_collect, qi_incld(k), qc_incld(k), ni_incld(k), nc_incld(k),
-        qc2qi_collect_tend, nc_collect_tend, qc2qr_ice_shed_tend, ncshdc, not_skip_micro);
+        qc2qi_collect_tend, nc_collect_tend, qc2qr_ice_shed_tend, ncshdc, p3constants, not_skip_micro);
 
       // collection of rain
       ice_rain_collection(
         rho(k), T_atm(k), rhofaci(k), logn0r(k), table_val_nr_collect, table_val_qr2qi_collect, qi_incld(k), ni_incld(k), qr_incld(k),
-        qr2qi_collect_tend, nr_collect_tend, not_skip_micro);
+        qr2qi_collect_tend, nr_collect_tend, p3constants, not_skip_micro);
 
       // collection between ice categories
 
@@ -310,12 +310,12 @@ void Functions<S,D>
       // contact and immersion freezing droplets
       cldliq_immersion_freezing(
         T_atm(k), lamc(k), mu_c(k), cdist1(k), qc_incld(k), inv_qc_relvar(k),
-        qc2qi_hetero_freeze_tend, nc2ni_immers_freeze_tend, not_skip_micro);
+        qc2qi_hetero_freeze_tend, nc2ni_immers_freeze_tend, p3constants, not_skip_micro);
 
       // for future: get rid of log statements below for rain freezing
       rain_immersion_freezing(
         T_atm(k), lamr(k), mu_r(k), cdistr(k), qr_incld(k),
-        qr2qi_immers_freeze_tend, nr2ni_immers_freeze_tend, not_skip_micro);
+        qr2qi_immers_freeze_tend, nr2ni_immers_freeze_tend, p3constants, not_skip_micro);
 
       //  rime splintering (Hallet-Mossop 1974)
       // PMC comment: Morrison and Milbrandt 2015 part 1 and 2016 part 3 both say

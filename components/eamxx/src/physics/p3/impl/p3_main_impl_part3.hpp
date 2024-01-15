@@ -143,7 +143,7 @@ void Functions<S,D>
       auto qm_incld = qm(k)/cld_frac_i(k);
       auto bm_incld = bm(k)/cld_frac_i(k);
 
-      const auto rhop = calc_bulk_rho_rime(qi_incld, qm_incld, bm_incld, qi_gt_small);
+      const auto rhop = calc_bulk_rho_rime(qi_incld, qm_incld, bm_incld, p3constants, qi_gt_small);
       qm(k).set(qi_gt_small, qm_incld*cld_frac_i(k) );
       bm(k).set(qi_gt_small, bm_incld*cld_frac_i(k) );
 

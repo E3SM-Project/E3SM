@@ -53,7 +53,6 @@ struct Constants
   static constexpr Scalar SXTH          = 1.0/6.0;
   static constexpr Scalar PIOV3         = Pi*THIRD;
   static constexpr Scalar PIOV6         = Pi*SXTH;
-  static constexpr Scalar AIMM          = 0.65;
   static constexpr Scalar BIMM          = 2.0;
   static constexpr Scalar CONS1         = PIOV6*RHOW;
   static constexpr Scalar CONS2         = 4.*PIOV3*RHOW;
@@ -79,10 +78,6 @@ struct Constants
   static constexpr Scalar macheps = std::numeric_limits<Real>::epsilon();
   static constexpr Scalar dt_left_tol   = 1.e-4;
   static constexpr Scalar bcn           = 2.;
-  static constexpr Scalar rho_rimeMin   = 50.;
-  static constexpr Scalar rho_rimeMax   = 900.;
-  static constexpr Scalar eci           = 0.5;
-  static constexpr Scalar eri           = 1.0;
   static constexpr Scalar dropmass      = 5.2e-7;
   static constexpr Scalar NCCNST        = 200.0e+6;
   static constexpr Scalar incloud_limit = 5.1e-3;
@@ -134,6 +129,11 @@ struct P3_Constants
   Scalar p3_mu_r_constant             = 1.0;
   Scalar p3_spa_to_nc                 = 1.0;
   Scalar p3_k_accretion               = 67.0;
+  Scalar p3_eci                       = 0.5;
+  Scalar p3_eri                       = 1.0;
+  Scalar p3_rho_rime_min              = 50.0;
+  Scalar p3_rho_rime_max              = 900.0;
+  Scalar p3_a_imm                     = 0.65;
 
   void set_p3_from_namelist(ekat::ParameterList &params){
 
@@ -153,16 +153,58 @@ struct P3_Constants
     if(params.isParameter(nname))
        p3_k_accretion = params.get<double>(nname);
 
+    nname = "p3_eci";
+    if(params.isParameter(nname))
+       p3_eci = params.get<double>(nname);
+
+    nname = "p3_eri";
+    if(params.isParameter(nname))
+       p3_eri = params.get<double>(nname);
+
+    nname = "p3_rho_rime_min";
+    if(params.isParameter(nname))
+       p3_rho_rime_min = params.get<double>(nname);
+
+    nname = "p3_rho_rime_max";
+    if(params.isParameter(nname))
+       p3_rho_rime_max = params.get<double>(nname);
+
+    nname = "p3_a_imm";
+    if(params.isParameter(nname))
+       p3_a_imm = params.get<double>(nname);
+
   };
 
   void print_p3constants(std::shared_ptr<ekat::logger::LoggerBase> logger){
       logger->info("P3 Constants:");
+
       std::string nname = "p3_pre_autoconversion_factor";
       logger->info(std::string("P3   ") + nname + std::string(" = ") + std::to_string(p3_pre_autoconversion_factor));
+
       nname = "p3_mu_r_constant";
       logger->info(std::string("P3   ") + nname + std::string(" = ") + std::to_string(p3_mu_r_constant));
+
       nname = "p3_spa_to_nc";
       logger->info(std::string("P3   ") + nname + std::string(" = ") + std::to_string(p3_spa_to_nc));
+
+      nname = "p3_k_accretion";
+      logger->info(std::string("P3   ") + nname + std::string(" = ") + std::to_string(p3_k_accretion));
+
+      nname = "p3_eci";
+      logger->info(std::string("P3   ") + nname + std::string(" = ") + std::to_string(p3_eci));
+
+      nname = "p3_eri";
+      logger->info(std::string("P3   ") + nname + std::string(" = ") + std::to_string(p3_eri));
+
+      nname = "p3_rho_rime_min";
+      logger->info(std::string("P3   ") + nname + std::string(" = ") + std::to_string(p3_rho_rime_min));
+
+      nname = "p3_rho_rime_max";
+      logger->info(std::string("P3   ") + nname + std::string(" = ") + std::to_string(p3_rho_rime_max));
+
+      nname = "p3_a_imm";
+      logger->info(std::string("P3   ") + nname + std::string(" = ") + std::to_string(p3_a_imm));
+
       logger->info(" ");
   };
 
