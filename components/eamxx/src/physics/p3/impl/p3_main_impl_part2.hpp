@@ -360,7 +360,7 @@ void Functions<S,D>
     // accretion of cloud by rain
     cloud_rain_accretion(
       rho(k), inv_rho(k), qc_incld(k), nc_incld(k), qr_incld(k), inv_qc_relvar(k),
-      qc2qr_accret_tend, nc_accret_tend, not_skip_all);
+      qc2qr_accret_tend, nc_accret_tend, p3constants, not_skip_all);
 
     // self-collection and breakup of rain
     // (breakup following modified Verlinde and Cotton scheme)

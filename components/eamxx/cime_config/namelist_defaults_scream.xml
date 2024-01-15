@@ -206,6 +206,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <p3_pre_autoconversion_factor type="real" doc="P3 pre_autoconversion_factor">1350.0</p3_pre_autoconversion_factor>
       <p3_mu_r_constant type="real" doc="P3 mu_r_constant">1.0</p3_mu_r_constant>
       <p3_spa_to_nc type="real" doc="P3 spa_to_nc">1.0</p3_spa_to_nc>
+      <p3_k_accretion type="real" doc="P3 k_accretion">67.0</p3_k_accretion>
     </p3>
 
     <!-- SHOC macrophysics -->

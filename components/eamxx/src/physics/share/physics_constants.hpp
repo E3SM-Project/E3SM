@@ -133,17 +133,25 @@ struct P3_Constants
   Scalar p3_pre_autoconversion_factor = 1350.0;
   Scalar p3_mu_r_constant             = 1.0;
   Scalar p3_spa_to_nc                 = 1.0;
+  Scalar p3_k_accretion               = 67.0;
 
   void set_p3_from_namelist(ekat::ParameterList &params){
+
     std::string nname = "p3_pre_autoconversion_factor";
     if(params.isParameter(nname))
        p3_pre_autoconversion_factor = params.get<double>(nname);
+
     nname = "p3_mu_r_constant";
     if(params.isParameter(nname))
        p3_mu_r_constant = params.get<double>(nname);
+
     nname = "p3_spa_to_nc";
     if(params.isParameter(nname))
        p3_spa_to_nc = params.get<double>(nname);
+
+    nname = "p3_k_accretion";
+    if(params.isParameter(nname))
+       p3_k_accretion = params.get<double>(nname);
 
   };
 

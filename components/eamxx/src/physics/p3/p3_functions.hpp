@@ -661,6 +661,7 @@ struct Functions
   static void cloud_rain_accretion(const Spack& rho, const Spack& inv_rho,
     const Spack& qc_incld, const Spack& nc_incld, const Spack& qr_incld, const Spack& inv_qc_relvar,
     Spack& qc2qr_accret_tend, Spack& nc_accret_tend,
+    const physics::P3_Constants<ScalarT> & p3constants,
     const Smask& context = Smask(true) );
 
   // Computes cloud water autoconversion process rate
