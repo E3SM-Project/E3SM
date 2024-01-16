@@ -1170,6 +1170,18 @@ contains
           endif
 
        end do
+#ifdef HAVE_MOAB 
+       ! just to mark it; we know that l2x_am should be 0, and we should init everything to 0 just because it will affect
+       l2x_am = 0! 
+       ! allocate(l2x_am (lsize, nlflds))
+       tagname = trim(seq_flds_l2x_fields)//C_NULL_CHAR
+       arrsize = lsize * nlflds
+       ent_type = 1 ! always atm on coupler is cells
+       ierr = iMOAB_SetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, l2x_am)
+       if (ierr .ne. 0) then
+           call shr_sys_abort(subname//' error in setting l2x_am array in init ')
+       endif
+#endif
     endif
 
     ! Zero attribute vector
@@ -1387,7 +1399,7 @@ contains
     arrsize = naflds * lsize
     ierr = iMOAB_SetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, x2a_am)
     if (ierr .ne. 0) then
-      call shr_sys_abort(subname//' error in setting x2o_om array ')
+      call shr_sys_abort(subname//' error in setting x2a_am array in atm merging ')
     endif
 #ifdef MOABCOMP
   !compare_mct_av_moab_tag(comp, attrVect, field, imoabApp, tag_name, ent_type, difference)
