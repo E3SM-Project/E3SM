@@ -43,6 +43,10 @@
 
 <fsurdat hgrid="r05">lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr1850_c200609_with_TOP.nc</fsurdat>
 
+<!-- Hack to override files for ne1024 for SCREAM, even though the sim years do not match up -->
+<fsurdat hgrid="ne1024np4.pg2">lnd/clm2/surfdata_map/surfdata_ne1024pg2_simyr2010_c211021.nc</fsurdat>
+<flanduse_timeseries hgrid="ne1024np4.pg2">lnd/clm2/surfdata_map/landuse.timeseries_ne1024pg2_historical_simyr1990-2014_c240109.nc</flanduse_timeseries>
+
 <check_finidat_year_consistency>.false.</check_finidat_year_consistency>
 <check_dynpft_consistency>.false.</check_dynpft_consistency>
 
