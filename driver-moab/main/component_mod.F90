@@ -33,13 +33,6 @@ module component_mod
   use ESMF
   use seq_flds_mod, only: nan_check_component_fields
 
-#ifdef HAVE_MOAB
-!   character(1024)         :: domain_file        ! file containing domain info (set my input)
-  use seq_comm_mct,     only: mpoid  ! iMOAB pid for ocean mesh on component pes
-  use seq_comm_mct,     only: mboxid ! iMOAB id for MPAS ocean migrated mesh to coupler pes
-
-  use iso_c_binding
-#endif
   implicit none
 
 #include <mpif.h>
@@ -476,6 +469,9 @@ contains
                        iMOAB_SetDoubleTagStorageWithGid, iMOAB_WriteMesh
 
     use iso_c_binding
+    !   character(1024)         :: domain_file        ! file containing domain info (set my input)
+    use seq_comm_mct,     only: mboxid ! iMOAB id for MPAS ocean migrated mesh to coupler pes
+    use seq_comm_mct,     only: mbaxid ! iMOAB id for atm migrated mesh to coupler pes
 #endif
     !
     ! Arguments
@@ -503,7 +499,7 @@ contains
 #ifdef HAVE_MOAB
     integer                 :: tagtype, nloc, ent_type, tagindex, ierr
     character*100  tagname
-    real(R8), allocatable, target :: data(:)
+    real(R8), allocatable, target :: data1(:)
     integer ,    allocatable :: gids(:) ! used for setting values associated with ids
 #endif
     !---------------------------------------------------------------
@@ -532,43 +528,21 @@ contains
           dom_s%data%rAttr(km,:) = dom_s%data%rAttr(ka,:)
 
 #ifdef HAVE_MOAB
-
          tagtype = 1 ! dense, double
-         ent_type = 1  ! element dense double tags
+         tagname='aream'//C_NULL_CHAR
          nloc = mct_avect_lsize(dom_s%data)
-         allocate(data(nloc))
+         allocate(data1(nloc))
+         data1 = dom_s%data%rAttr(ka,:)
+         ent_type = 1  ! element dense double tags
          allocate(gids(nloc))
          gids = dom_s%data%iAttr(mct_aVect_indexIA(dom_s%data,"GlobGridNum"),:)
-         data = dom_s%data%rAttr(ka,:)
-         ! now set data on the coupler side
-         tagname='area'//C_NULL_CHAR
-         ierr = iMOAB_DefineTagStorage( mboxid, tagname, tagtype, 1, tagindex )
-         if (ierr > 0 ) then
-            print *, 'Error: fail to create aream tag with code = ', ierr
-            call exit (1)
-         endif
-         ierr = iMOAB_SetDoubleTagStorageWithGid ( mboxid, tagname, nloc, ent_type, &
-                                                   data, gids)
-         if (ierr > 0 ) then
-            print *, 'Error: fail to set aream tag with code = ', ierr
-            call exit (1)
-         endif
-         tagname='aream'//C_NULL_CHAR
-         ierr = iMOAB_DefineTagStorage( mboxid, tagname, tagtype, 1, tagindex )
-         if (ierr > 0 ) then
-            print *, 'Error: fail to create aream tag with code = ', ierr
-            call exit (1)
-         endif
-         ierr = iMOAB_SetDoubleTagStorageWithGid ( mboxid, tagname, nloc, ent_type, &
-                                                   data, gids)
-         if (ierr > 0 ) then
-            print *, 'Error: fail to set aream tag with code = ', ierr
-            call exit (1)
-         endif
+         ! ! now set data on the coupler side too
+         ierr = iMOAB_SetDoubleTagStorageWithGid ( mbaxid, tagname, nloc, ent_type, &
+                                                    data1, gids)
+         ! project now aream on ocean (from atm)
+         call seq_map_map(mapper_Fa2o, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream')
 
 #ifdef MOABDEBUG
-         !      debug test
-         !      write out the mesh file to disk
          ierr = iMOAB_WriteMesh(mboxid, trim('recMeshOcnWithArea.h5m'//C_NULL_CHAR), &
                                  trim(';PARALLEL=WRITE_PART'//C_NULL_CHAR))
          if (ierr .ne. 0) then
@@ -579,7 +553,7 @@ contains
 
 #endif
 
-          call seq_map_map(mapper_Fa2o, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream')
+          
        else
           gsmap_s => component_get_gsmap_cx(ocn(1)) ! gsmap_ox
           gsmap_d => component_get_gsmap_cx(atm(1)) ! gsmap_ax
