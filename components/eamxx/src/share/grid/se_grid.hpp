@@ -59,6 +59,10 @@ protected:
   int       m_num_global_elem;
   int       m_num_gp;
 
+  // The max/min elem GID across all ranks. Mutable, to allow for lazy calculation
+  mutable gid_type  m_global_min_elem_gid =  std::numeric_limits<gid_type>::max();
+  mutable gid_type  m_global_max_elem_gid = -std::numeric_limits<gid_type>::max();
+
   // The dofs gids for a CG version of this grid
   Field m_cg_dofs_gids;
 };

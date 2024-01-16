@@ -1,6 +1,7 @@
 #include "share/grid/se_grid.hpp"
+#include "share/field/field_utils.hpp"
 
-#include "ekat/kokkos//ekat_subview_utils.hpp"
+#include <ekat/kokkos/ekat_subview_utils.hpp>
 
 namespace scream {
 
@@ -29,6 +30,9 @@ SEGrid (const std::string& grid_name,
   const auto units = ekat::units::Units::nondimensional();
   m_cg_dofs_gids = Field(FieldIdentifier("cg_gids",FieldLayout({CMP},{get_num_local_dofs()}),units,this->name(),DataType::IntType));
   m_cg_dofs_gids.allocate_view();
+
+  m_partitioned_dim_gids = Field(FieldIdentifier("el_gids",FieldLayout({EL},{m_num_local_elem}),units,this->name(),DataType::IntType));
+  m_partitioned_dim_gids.allocate_view();
 }
 
 FieldLayout
