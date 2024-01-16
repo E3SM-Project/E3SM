@@ -279,7 +279,6 @@ contains
     atm2lnd_vars%forc_hgt_grc(g) = 30.0_R8
    end do 
 
-   !!!!
    !------------------------------------Fire data -------------------------------------------------------
    !get weights for interpolation
    !$acc parallel loop independent gang vector default(present) 

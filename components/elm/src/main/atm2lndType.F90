@@ -42,7 +42,7 @@ module atm2lndType
   end type
 
   type, public :: atm2lnd_type
-#ifdef CPL_BYPASS
+      !!#ifdef CPL_BYPASS
       integer, pointer  :: loaded_bypassdata                   => null()
       real(r8), pointer :: add_offsets                     (:) => null()  !offsets for compressed met drivers
       real(r8), pointer :: scale_factors                   (:) => null()  !scale factors for compressed met drivers
@@ -70,7 +70,7 @@ module atm2lndType
       real(r8), pointer ::  aerodata                 (:,:,:,:) => null()
       real(r8), pointer :: forc_hdm                      (:)   => null()
       real(r8), pointer :: forc_lnfm                     (:)   => null()
-#endif
+      !!#endif
      ! atm->lnd not downscaled
      real(r8), pointer :: forc_u_grc                    (:)   => null() ! atm wind speed, east direction (m/s)
      real(r8), pointer :: forc_v_grc                    (:)   => null() ! atm wind speed, north direction (m/s)

@@ -273,19 +273,13 @@
         <command name="load">cray-libsci/23.02.1.1</command>
       </modules>
 
-      <modules compiler="nvidia.*">
-	<command name="load">PrgEnv-nvidia</command>
-	<command name="load">nvidia/21.9</command>
-      </modules>
-
       <modules compiler="gnugpu">
 	<command name="load">cudatoolkit</command>
 	<command name="load">craype-accel-nvidia80</command>
       </modules>
 
       <modules compiler="nvidiagpu">
-	<command name="load">cudatoolkit</command>
-	<command name="load">craype-accel-nvidia80</command>
+        <command name="load">cray-libsci/23.02.1.1</command>
       </modules>
 
       <modules compiler="gnu">
@@ -295,7 +289,8 @@
       <modules compiler="nvidia">
         <command name="load">PrgEnv-nvidia</command>
         <command name="load">nvidia/22.7</command>
-        <command name="load">cray-libsci/23.02.1.1</command>
+        <command name="load">cudatoolkit/11.7</command>
+        <command name="load">craype-accel-nvidia80</command>
       </modules>
 
       <modules>

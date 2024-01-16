@@ -8,7 +8,7 @@ module elm_driver
    ! parallelized by looping over clumps on each process using shared memory OpenMP.
    !
    ! !USES:
-   use write_filterMod, only: write_filter 
+   !!use write_filterMod, only: write_filter 
    use shr_kind_mod           , only : r8 => shr_kind_r8
    use shr_sys_mod            , only : shr_sys_flush
    use shr_log_mod            , only : errMsg => shr_log_errMsg
@@ -278,19 +278,13 @@ module elm_driver
       use dynpftFileMod, only : dynpft_interp
       use dynHarvestMod, only : dynHarvest_interp
       use dyncropFileMod      , only : dyncrop_init, dyncrop_interp
-      use writeMod , only : write_vars 
+      !!use writeMod , only : write_vars 
       use histFileMod, only : ntapes  
       use dynSubgridAdjustmentsMod, only : dyn_col_cs_Adjustments,dyn_col_ns_Adjustments,dyn_col_ps_Adjustments
-      use verificationMod
       use ForcingUpdateMod , only : update_forcings_cplbypass
       use elm_instMod , only : cpl_bypass_input   
       use elm_varpar , only : ndecomp_pools 
       use UrbanParamsType, only : urban_hac_int 
-      #ifdef _OPENACC 
-      #define gpuflag 1
-      #else
-      #define gpuflag 0
-      #endif
 
       !
       ! !ARGUMENTS:
@@ -647,7 +641,7 @@ module elm_driver
       !$acc   year_curr,mon_curr,day_curr,secs_curr,&
       !$acc   year_prev,mon_prev,day_prev,secs_prev, dayspyr_mod,jday_mod)
       
-     write(iulog,*) "update_forcings cplbypass : " 
+     !write(iulog,*) "update_forcings cplbypass : " 
      !call update_forcings_cplbypass(bounds_proc, atm2lnd_vars, cpl_bypass_input, &
      !       dtime_mod, thiscalday_mod,secs_curr, year_curr, mon_curr, nstep_mod) 
       if (do_budgets) call WaterBudget_Reset()

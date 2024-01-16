@@ -39,7 +39,6 @@ module SoilTemperatureMod
   use TemperatureType   , only : temperature_type
   use WaterfluxType     , only : waterflux_type
   use elm_instMod , only : waterflux_vars, waterstate_vars, temperature_vars
-  use verificationMod 
   
    #ifdef _OPENACC 
      #define gpuflag 1 
@@ -462,7 +461,6 @@ contains
       !
       ! Solve temperature for non-lake + non-urban columns
       !
-      ! call update_vars_SoilTemperature(gpuflag, "BeforeSolve") 
       update_temperature = .true.
       select case(thermal_model)
       case (default_thermal_model)
@@ -857,11 +855,6 @@ contains
     call t_stop_lnd(event)
     
     !$acc exit data delete(rvector(:,:), bmatrix(:,:,:) )
-     !if(urban_column) then 
-     !  call update_vars_SoilTemperature(gpuflag, "SolveUrban") 
-     !else 
-     !  call update_vars_SoilTemperature(gpuflag, "SolveNonUrban") 
-     !end if  
 
   end associate
 

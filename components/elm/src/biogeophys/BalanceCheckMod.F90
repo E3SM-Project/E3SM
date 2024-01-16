@@ -26,7 +26,6 @@ module BalanceCheckMod
   use ColumnDataType     , only : col_ef, col_ws, col_wf
   use VegetationType     , only : veg_pp
   use VegetationDataType , only : veg_ef, veg_ws
-  use verificationMod 
   use timeinfoMod
   !
   ! !PUBLIC TYPES:

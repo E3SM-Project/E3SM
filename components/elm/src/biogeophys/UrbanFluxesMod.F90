@@ -93,7 +93,7 @@ contains
     integer  :: num_copyc                                ! iteration num_urbanc
     integer  :: num_copyc_old                            ! previous iteration num_copyc
 
-    real(r8) :: canyontop_wind(1:num_urbanl)              ! wind at canyon top (m/s) 
+    real(r8) :: canyontop_wind(1:num_urbanl)              ! wind at canyon top (m/s)
     real(r8) :: canyon_u_wind(1:num_urbanl)               ! u-component of wind speed inside canyon (m/s)
     real(r8) :: canyon_wind(1:num_urbanl)                 ! net wind speed inside canyon (m/s)
     real(r8) :: canyon_resistance(1:num_urbanl)           ! resistance to heat and moisture transfer from canyon road/walls to canyon air (s/m)
@@ -201,27 +201,28 @@ contains
     integer :: lnd_to_urban_filter(bounds%begl:bounds%endl) !
     integer :: col_to_urban_filter(bounds%begc:bounds%endc)
     logical :: converged_landunits(bounds%begl:bounds%endl)
-    integer :: begl, endl, begc,endc 
+    integer :: begl, endl, begc,endc
+    integer :: erridx1, erridx2
     real(r8) :: sum_denom, sum_numer
     !-----------------------------------------------------------------------
 
-    associate(                                                                & 
-         snl                 =>   col_pp%snl                                   , & ! Input:  [integer  (:)   ]  number of snow layers                              
-         ctype               =>   col_pp%itype                                 , & ! Input:  [integer  (:)   ]  column type                                        
-         z_0_town            =>   lun_pp%z_0_town                              , & ! Input:  [real(r8) (:)   ]  momentum roughness length of urban landunit (m)   
-         z_d_town            =>   lun_pp%z_d_town                              , & ! Input:  [real(r8) (:)   ]  displacement height of urban landunit (m)         
-         ht_roof             =>   lun_pp%ht_roof                               , & ! Input:  [real(r8) (:)   ]  height of urban roof (m)                          
-         wtlunit_roof        =>   lun_pp%wtlunit_roof                          , & ! Input:  [real(r8) (:)   ]  weight of roof with respect to landunit           
-         canyon_hwr          =>   lun_pp%canyon_hwr                            , & ! Input:  [real(r8) (:)   ]  ratio of building height to street width          
-         wtroad_perv         =>   lun_pp%wtroad_perv                           , & ! Input:  [real(r8) (:)   ]  weight of pervious road wrt total road            
+    associate(                                                                &
+         snl                 =>   col_pp%snl                                   , & ! Input:  [integer  (:)   ]  number of snow layers
+         ctype               =>   col_pp%itype                                 , & ! Input:  [integer  (:)   ]  column type
+         z_0_town            =>   lun_pp%z_0_town                              , & ! Input:  [real(r8) (:)   ]  momentum roughness length of urban landunit (m)
+         z_d_town            =>   lun_pp%z_d_town                              , & ! Input:  [real(r8) (:)   ]  displacement height of urban landunit (m)
+         ht_roof             =>   lun_pp%ht_roof                               , & ! Input:  [real(r8) (:)   ]  height of urban roof (m)
+         wtlunit_roof        =>   lun_pp%wtlunit_roof                          , & ! Input:  [real(r8) (:)   ]  weight of roof with respect to landunit
+         canyon_hwr          =>   lun_pp%canyon_hwr                            , & ! Input:  [real(r8) (:)   ]  ratio of building height to street width
+         wtroad_perv         =>   lun_pp%wtroad_perv                           , & ! Input:  [real(r8) (:)   ]  weight of pervious road wrt total road
 
-         forc_t              =>   top_as%tbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (K)                       
-         forc_th             =>   top_as%thbot                              , & ! Input:  [real(r8) (:)   ]  atmospheric potential temperature (K)             
-         forc_rho            =>   top_as%rhobot                             , & ! Input:  [real(r8) (:)   ]  air density (kg/m**3)                                 
-         forc_q              =>   top_as%qbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric specific humidity (kg/kg)             
-         forc_pbot           =>   top_as%pbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                         
-         forc_u              =>   top_as%ubot                               , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in east direction (m/s)    
-         forc_v              =>   top_as%vbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in north direction (m/s)   
+         forc_t              =>   top_as%tbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (K)
+         forc_th             =>   top_as%thbot                              , & ! Input:  [real(r8) (:)   ]  atmospheric potential temperature (K)
+         forc_rho            =>   top_as%rhobot                             , & ! Input:  [real(r8) (:)   ]  air density (kg/m**3)
+         forc_q              =>   top_as%qbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric specific humidity (kg/kg)
+         forc_pbot           =>   top_as%pbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)
+         forc_u              =>   top_as%ubot                               , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in east direction (m/s)
+         forc_v              =>   top_as%vbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in north direction (m/s)
          wsresp              =>   top_as%wsresp                             , & ! Input:  [real(r8) (:)   ]  response of wind to surface stress (m/s/Pa)
          tau_est             =>   top_as%tau_est                            , & ! Input:  [real(r8) (:)   ]  approximate atmosphere change to zonal wind (m/s)
          ugust               =>   top_as%ugust                              , & ! Input:  [real(r8) (:)   ]  gustiness from atmosphere (m/s)
@@ -283,7 +284,7 @@ contains
          qflx_evap_veg       =>   veg_wf%qflx_evap_veg        , & ! Output: [real(r8) (:)   ]  vegetation evaporation (mm H2O/s) (+ = to atm)
          qflx_evap_tot       =>   veg_wf%qflx_evap_tot         & ! Output: [real(r8) (:)   ]  qflx_evap_soi + qflx_evap_can + qflx_tran_veg
 
-        
+
          )
     !$acc enter data create(&
     !$acc canyontop_wind(:), &
@@ -368,13 +369,13 @@ contains
     !$acc fwet_roof, &
     !$acc fwet_road_imperv)
 
-         
-       begl =   bounds%begl 
+
+       begl =   bounds%begl
        endl =   bounds%endl
        begc =   bounds%begc
-       endc =   bounds%endc 
+       endc =   bounds%endc
        ! Define fields that appear on the restart file for non-urban landunits
-       !$acc parallel loop independent gang vector default(present) 
+       !$acc parallel loop independent gang vector default(present)
        do fl = 1,num_nourbanl
          l = filter_nourbanl(fl)
          taf(l) = spval
@@ -391,10 +392,12 @@ contains
       secs = secs_curr
       lnd_to_urban_filter(:) = -9999
       ! Compute canyontop wind using Masson (2000)
-      !$acc parallel loop independent gang vector default(present) 
+      erridx1 = -9999
+      erridx2 = -9999
+      !$acc parallel loop independent gang vector default(present) copy(erridx1,erridx2)
       do fl = 1, num_urbanl
          l = filter_urbanl(fl)
-         lnd_to_urban_filter(l) = fl 
+         lnd_to_urban_filter(l) = fl
          g = lun_pp%gridcell(l)
          t = lun_pp%topounit(l)
 
@@ -404,20 +407,11 @@ contains
          ! Error checks
 
          if (ht_roof(l) - z_d_town(l) <= z_0_town(l)) then
-            write (iulog,*) 'aerodynamic parameter error in UrbanFluxes'
-            write (iulog,*) 'h_r - z_d <= z_0'
-            write (iulog,*) 'ht_roof, z_d_town, z_0_town: ', ht_roof(l), z_d_town(l), &
-                 z_0_town(l)
-            write (iulog,*) 'elm model is stopping'
-            call endrun(decomp_index=l, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
+            erridx1 = l
+
          end if
          if (forc_hgt_u_patch(lun_pp%pfti(l)) - z_d_town(l) <= z_0_town(l)) then
-            write (iulog,*) 'aerodynamic parameter error in UrbanFluxes'
-            write (iulog,*) 'h_u - z_d <= z_0'
-            write (iulog,*) 'forc_hgt_u_patch, z_d_town, z_0_town: ', forc_hgt_u_patch(lun_pp%pfti(l)), z_d_town(l), &
-                 z_0_town(l)
-            write (iulog,*) 'elm model is stopping'
-            call endrun(decomp_index=l, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
+            erridx2 = l
          end if
          ! Initialize winds for iteration.
          if (implicit_stress) then
@@ -432,6 +426,27 @@ contains
          tau_diff(fl) = 1.e100_r8
 
       end do
+
+      if(erridx1 > 0) then
+         l = erridx1
+         write (iulog,*) 'aerodynamic parameter error in UrbanFluxes'
+         write (iulog,*) 'h_r - z_d <= z_0'
+         write (iulog,*) 'ht_roof, z_d_town, z_0_town: ', ht_roof(l), z_d_town(l), &
+              z_0_town(l)
+         write (iulog,*) 'elm model is stopping'
+
+         call endrun(decomp_index=l, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
+      end if
+
+      if(erridx2 > 0) then
+         l = erridx2
+         write (iulog,*) 'aerodynamic parameter error in UrbanFluxes'
+         write (iulog,*) 'h_u - z_d <= z_0'
+         write (iulog,*) 'forc_hgt_u_patch, z_d_town, z_0_town: ', forc_hgt_u_patch(lun_pp%pfti(l)), z_d_town(l), &
+             z_0_town(l)
+         write (iulog,*) 'elm model is stopping'
+         call endrun(decomp_index=l, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
+      end if
 
       ! Compute fluxes - Follows elm approach for bare soils (Oleson et al 2004)
 
@@ -474,7 +489,7 @@ contains
          wtuq_shadewall_unscl(fl)   = 0._r8
       end do
 
-      
+
 
       ! Start stability iteration
       num_copyl = num_urbanl
@@ -519,6 +534,7 @@ contains
             rawu(fl) = 1._r8/(temp2(fl)*ustar(fl))
 
             ! Calculate magnitude of stress and update wind speed.
+            #ifndef _OPENACC
             if (implicit_stress) then
                tau(fl) = forc_rho(t)*wind_speed_adj(fl)/ramu(fl)
                call shr_flux_update_stress(wind_speed0(l), wsresp(t), tau_est(t), &
@@ -526,6 +542,7 @@ contains
                     wind_speed_adj(l))
                ur(fl) = max(1.0_r8, wind_speed_adj(fl) + ugust(t))
             end if
+            #endif
 
             ! Canyon top wind
             ! If the wind does not change in this loop (explicit stress), then
@@ -535,7 +552,7 @@ contains
                     log( (ht_roof(l)-z_d_town(l)) / z_0_town(l) ) / &
                     log( (forc_hgt_u_patch(lun_pp%pfti(l))-z_d_town(l)) / z_0_town(l) )
 
-               ! U component of canyon wind 
+               ! U component of canyon wind
 
                if (canyon_hwr(l) < 0.5_r8) then  ! isolated roughness flow
                   canyon_u_wind(fl) = canyontop_wind(fl) * exp( -0.5_r8*canyon_hwr(l)* &
@@ -593,7 +610,7 @@ contains
             c = filter_urbanc(fc)
             l = col_pp%landunit(c)
             fl = lnd_to_urban_filter(l)
-            col_to_urban_filter(c) = fc 
+            col_to_urban_filter(c) = fc
             if(converged_landunits(l)) cycle
 
             if (ctype(c) == icol_roof) then
@@ -751,38 +768,38 @@ contains
          end do
         ! !$acc parallel loop independent gang worker default(present) private(sum_denom,sum_numer)
         ! do fl = 1, num_urbanl
-        !    sum_denom = 0._r8 
-        !    sum_numer = 0._r8 
-        !    l = filter_urbanl(fl) 
-        !    if(converged_landunits(l)) cycle 
+        !    sum_denom = 0._r8
+        !    sum_numer = 0._r8
+        !    l = filter_urbanl(fl)
+        !    if(converged_landunits(l)) cycle
         !    !$acc loop vector reduction(+:sum_denom,sum_numer)
-        !    do c = lun_pp%coli(l), lun_pp%colf(l) 
-        !       if(col_pp%active(c)) then 
+        !    do c = lun_pp%coli(l), lun_pp%colf(l)
+        !       if(col_pp%active(c)) then
         !          fc = col_to_urban_filter(c)
         !          sum_denom = sum_denom + wtus(fc)
         !          sum_numer = sum_numer + t_grnd(c)*wtus(fc)
-        !       end if 
-        !    end do 
+        !       end if
+        !    end do
         !    taf_denom_test(fl) = taf_denom_test(fl) + sum_denom
-        !    taf_numer(fl) = taf_numer(fl) + sum_numer  
-        ! end do 
-         
+        !    taf_numer(fl) = taf_numer(fl) + sum_numer
+        ! end do
+
          ! !$acc parallel loop independent gang worker default(present) private(sum_denom,sum_numer)
          ! do fl = 1, num_urbanl
-         !    sum_denom = 0._r8 
-         !    sum_numer = 0._r8 
-         !    l = filter_urbanl(fl) 
+         !    sum_denom = 0._r8
+         !    sum_numer = 0._r8
+         !    l = filter_urbanl(fl)
          !    !$acc loop vector reduction(+:sum_denom,sum_numer)
-         !    do c = lun_pp%coli(l), lun_pp%colf(l) 
-         !       if(col_pp%active(c)) then 
+         !    do c = lun_pp%coli(l), lun_pp%colf(l)
+         !       if(col_pp%active(c)) then
          !          fc = col_to_urban_filter(c)
          !          sum_denom = sum_denom + wtuq(fc)
          !          sum_numer = sum_numer + qg(c)*wtuq(fc)
-         !       end if 
-         !    end do 
+         !       end if
+         !    end do
          !    qaf_denom(fl) = qaf_denom(fl) + sum_denom
-         !    qaf_numer(fl) = qaf_numer(fl) + sum_numer 
-         ! end do 
+         !    qaf_numer(fl) = qaf_numer(fl) + sum_numer
+         ! end do
 
          ! Calculate new urban canopy air temperature and specific humidity
 
@@ -860,7 +877,7 @@ contains
                   num_copyl = num_copyl + 1
                   ! filter_copyl(num_copyl) = l
                else
-                  converged_landunits(l) = .true. 
+                  converged_landunits(l) = .true.
                end if
             end do
             if (num_copyl == 0) then
@@ -1043,19 +1060,20 @@ contains
          end if
       end if
 
-      found = .false.
-      !$acc parallel loop independent gang vector default(present)
+      erridx1 = -9999
+      !$acc parallel loop independent gang vector default(present) copy(erridx1)
       do fl = 1, num_urbanl
          l = filter_urbanl(fl)
          ! 4.e-9 kg/m**2/s = 0.01 W/m**2
          if (abs(qflx_err(fl)) > 4.e-9_r8) then
-            found = .true.
-            indexl = l
-            exit
+            ! found = .true.
+            erridx1 = l
+            ! exit
          end if
       end do
 
-      if ( found ) then
+      if ( erridx1 > 0 ) then
+         indexl = erridx1
          write(iulog,*)'WARNING:  Total water vapor flux does not equal sum of scaled water vapor fluxes for urban columns ',&
               ' nstep = ',nstep,' indexl= ',indexl,' qflx_err= ',qflx_err(indexl)
          if (abs(qflx_err(indexl)) > 4.e-9_r8) then
@@ -1111,7 +1129,7 @@ contains
 
       ! No roots for urban except for pervious road
 
-      !$acc parallel loop independent gang vector default(present) collapse(2) 
+      !$acc parallel loop independent gang vector default(present) collapse(2)
       do j = 1, nlevgrnd
          do f = 1, num_urbanp
             p = filter_urbanp(f)
