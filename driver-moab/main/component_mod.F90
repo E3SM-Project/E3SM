@@ -539,6 +539,10 @@ contains
          ! ! now set data on the coupler side too
          ierr = iMOAB_SetDoubleTagStorageWithGid ( mbaxid, tagname, nloc, ent_type, &
                                                     data1, gids)
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in setting the aream tag on atm '
+            call shr_sys_abort(subname//' ERROR in setting aream tag on atm ')
+         endif
          ! project now aream on ocean (from atm)
          call seq_map_map(mapper_Fa2o, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream')
 
