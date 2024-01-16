@@ -973,10 +973,6 @@ register_variables(const std::string& filename,
         set_variable_metadata(filename, name, "_FillValue",fill_value);
       } else {
         float fill_value = m_fill_value;
-        std::cout << "setting fill value:\n"
-                  << "  filename: " << filename << "\n"
-                  << "  varname : " << name << "\n"
-                  << "  fill val: " << fill_value << "\n";
         set_variable_metadata(filename, name, "_FillValue",fill_value);
       }
 
