@@ -195,6 +195,12 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
   //    - field_at_XhPa diagnostic
   // We already set m_track_avg_cnt to true if field_at_XhPa is found in set_diagnostics.
   // Hence, here we only check if vert remap is active
+
+  if (params.isParameter("track_avg_cnt")) {
+    // This is to be used for unit testing only, so that we can test avg cnt even
+    // if there is no vert remap and no field_at_XhPa diagnostic in the stream
+    m_track_avg_cnt = params.get<bool>("track_avg_cnt");
+  }
   if (use_vertical_remap_from_file) {
     m_track_avg_cnt = true;
   }
