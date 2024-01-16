@@ -43,8 +43,8 @@ public:
   }
 
   // Retrieve list of the CG grid dofs. Const version returns a read-only field
-  Field get_cg_dofs_gids ();
-  Field get_cg_dofs_gids () const;
+  Field get_cg_dofs_gids ()       { return m_cg_dofs_gids;             }
+  Field get_cg_dofs_gids () const { return m_cg_dofs_gids.get_const(); }
 
   std::shared_ptr<AbstractGrid> clone (const std::string& clone_name,
                                        const bool shallow) const override;

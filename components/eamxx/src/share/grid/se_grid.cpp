@@ -127,20 +127,6 @@ SEGrid::get_3d_tensor_layout (const bool midpoints,
   return fl.rename_dims(m_special_tag_names);
 }
 
-Field SEGrid::get_cg_dofs_gids ()
-{
-  EKAT_REQUIRE_MSG (m_cg_dofs_gids.is_allocated(),
-      "Error! CG dofs have not been created yet.\n");
-  return m_cg_dofs_gids;
-}
-
-Field SEGrid::get_cg_dofs_gids () const
-{
-  EKAT_REQUIRE_MSG (m_cg_dofs_gids.is_allocated(),
-      "Error! CG dofs have not been created yet.\n");
-  return m_cg_dofs_gids.get_const();
-}
-
 std::shared_ptr<AbstractGrid> SEGrid::clone (const std::string& clone_name, const bool shallow) const
 {
   auto grid = std::make_shared<SEGrid>(clone_name,m_num_local_elem,m_num_gp,get_num_vertical_levels(),get_comm());
