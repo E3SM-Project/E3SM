@@ -43,6 +43,8 @@ list(APPEND RAW_SOURCES
   core_landice/shared/mpas_li_constants.F
   core_landice/shared/mpas_li_mask.F
   core_landice/shared/mpas_li_setup.F
+  core_landice/shared/mpas_li_mesh.F
+  core_landice/shared/mpas_li_config.F
 )
 
 # analysis members
@@ -60,6 +62,8 @@ list(APPEND RAW_SOURCES
   core_landice/mode_forward/mpas_li_time_integration_fe_rk.F
   core_landice/mode_forward/mpas_li_diagnostic_vars.F
   core_landice/mode_forward/mpas_li_advection.F
+  core_landice/mode_forward/mpas_li_advection_fct_shared.F
+  core_landice/mode_forward/mpas_li_advection_fct.F
   core_landice/mode_forward/mpas_li_calving.F
   core_landice/mode_forward/mpas_li_statistics.F
   core_landice/mode_forward/mpas_li_velocity.F
