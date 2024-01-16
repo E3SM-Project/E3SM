@@ -12,7 +12,7 @@ target_include_directories(
     PRIVATE
     ${OMEGA_SOURCE_DIR}/src/base
     ${OMEGA_SOURCE_DIR}/src/infra
-    ${PARMETIS_ROOT}/include
+    ${Parmetis_INCLUDE_DIRS}
 )
 
 # add compiler options
@@ -29,7 +29,11 @@ target_link_options(
     ${OMEGA_LINK_OPTIONS}
 )
 
-target_link_libraries(${OMEGA_LIB_NAME} spdlog yakl pioc metis)
+target_link_libraries(${OMEGA_LIB_NAME} spdlog yakl pioc parmetis metis)
+
+if(GKlib_FOUND)
+    target_link_libraries(${OMEGA_LIB_NAME} gklib)
+endif()
 
 # build Omega executable
 if(OMEGA_BUILD_EXECUTABLE)

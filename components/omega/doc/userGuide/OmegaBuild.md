@@ -31,16 +31,19 @@ to specify which system you intend to use. The values of `OMEGA_CIME_COMPILER`
 and `OMEGA_CIME_MACHINE` are defined in
 "${E3SM}/cime\_config/machines/config\_machines.xml".
 OMEGA requires some external libraries. Many of these are built automatically
-from the E3SM distribution. However, the METIS and ParMETIS libraries must
-be built separately and the path must be supplied during the cmake invocation
-as shown below. If a METIS_ROOT is not supplied, it is assumed that both METIS
-and ParMETIS are installed in the same PARMETIS_ROOT location.
+from the E3SM distribution. However, the METIS, ParMETIS, and, optionally,
+GKlib libraries must be built separately and the path must be supplied during
+the cmake invocation as shown below. If a `OMEGA_METIS_ROOT` is not supplied,
+it is assumed that both METIS and ParMETIS are installed in the same
+`OMEGA_PARMETIS_ROOT` location. If a `OMEGA_GKLIB_ROOT` is not supplied, it is
+assumed that both GKLIB and METIS are installed in the same `OMEGA_METIS_ROOT`
+location. All three libraries should be static libraries.
 
 ```sh
 >> cmake \
   -DOMEGA_CIME_COMPILER=nvidiagpu \
   -DOMEGA_CIME_MACHINE=pm-gpu \
-  -DPARMETIS_ROOT=/path/to/parmetis \
+  -DOMEGA_PARMETIS_ROOT=/path/to/parmetis \
   ${E3SM_HOME}/components/omega
 ```
 

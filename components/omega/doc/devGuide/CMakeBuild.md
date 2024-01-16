@@ -55,6 +55,9 @@ OMEGA_CXX_FLAGS: a list for C++ compiler flags
 OMEGA_LINK_OPTIONS: a list for linker flags
 OMEGA_BUILD_EXECUTABLE: Enable building the Omega executable
 OMEGA_BUILD_TEST: Enable building Omega tests
+OMEGA_PARMETIS_ROOT: Parmetis installtion directory
+OMEGA_METIS_ROOT: Metis installtion directory
+OMEGA_GKLIB_ROOT: GKlib installtion directory
 ```
 
 E3SM-specific variables

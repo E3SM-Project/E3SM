@@ -316,6 +316,10 @@ macro(update_variables)
 
   endif()
 
+  # Include the findParmetis script
+  list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}")
+  find_package(Parmetis REQUIRED)
+
 #  # prints generates all cmake variables
 #  get_cmake_property(_variableNames VARIABLES)
 #  list (SORT _variableNames)
