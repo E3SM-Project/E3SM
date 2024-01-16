@@ -544,8 +544,10 @@ contains
             call shr_sys_abort(subname//' ERROR in setting aream tag on atm ')
          endif
          ! project now aream on ocean (from atm)
+#endif
          call seq_map_map(mapper_Fa2o, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream')
 
+#ifdef HAVE_MOAB
 #ifdef MOABDEBUG
          ierr = iMOAB_WriteMesh(mboxid, trim('recMeshOcnWithArea.h5m'//C_NULL_CHAR), &
                                  trim(';PARALLEL=WRITE_PART'//C_NULL_CHAR))
@@ -554,7 +556,6 @@ contains
             call shr_sys_abort(subname//' ERROR in writing ocean mesh coupler ')
          endif
 #endif
-
 #endif
 
           
