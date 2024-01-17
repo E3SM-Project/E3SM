@@ -308,7 +308,9 @@ contains
                              / cp_decomp_pools_new(c,j,cascade_receiver_pool(k)) )
 
                      else   ! 100% respiration
-                        pmpf_decomp_cascade(c,j,k) = - p_decomp_cpool_loss(c,j,k) / cp_decomp_pools(c,j,cascade_donor_pool(k))
+                        if(decomp_ppools_vr(c,j,cascade_donor_pool(k)) > 0._r8) then
+                          pmpf_decomp_cascade(c,j,k) = - p_decomp_cpool_loss(c,j,k) / cp_decomp_pools(c,j,cascade_donor_pool(k))
+                       end if
                      endif
 
                   else   ! CWD -> litter
@@ -414,7 +416,12 @@ contains
          do j = 1,nlevdecomp
             do fc = 1,num_soilc
                c = filter_soilc(fc)
-
+               decomp_cascade_hr_vr(c,j,k) = 0._r8
+               decomp_cascade_ctransfer_vr(c,j,k) = 0._r8
+               decomp_cascade_ptransfer_vr(c,j,k) = 0._r8
+               decomp_cascade_ntransfer_vr(c,j,k) = 0._r8 
+               decomp_cascade_sminn_flux_vr(c,j,k) = 0._r8
+               decomp_cascade_sminp_flux_vr(c,j,k) = 0._r8
                if (decomp_cpools_vr(c,j,cascade_donor_pool(k)) > 0._r8) then
                   if ( pmnf_decomp_cascade(c,j,k) > 0._r8 .and. pmpf_decomp_cascade(c,j,k) > 0._r8 ) then    ! N and P co-limitation
                      p_decomp_cpool_loss(c,j,k) = p_decomp_cpool_loss(c,j,k) * min( fpi_vr(c,j),fpi_p_vr(c,j) )
@@ -552,18 +559,6 @@ contains
             end do
          end do
       end if
-
-      ! vertically integrate net and gross mineralization fluxes for diagnostic output
-      ! moved to SoilLittDecompAlloc2
-!      do j = 1,nlevdecomp
-!         do fc = 1,num_soilc
-!            c = filter_soilc(fc)
-!            net_nmin(c) = net_nmin(c) + net_nmin_vr(c,j) * dzsoi_decomp(j)
-!            gross_nmin(c) = gross_nmin(c) + gross_nmin_vr(c,j) * dzsoi_decomp(j)
-!            net_pmin(c) = net_pmin(c) + net_pmin_vr(c,j) * dzsoi_decomp(j)
-!            gross_pmin(c) = gross_pmin(c) + gross_pmin_vr(c,j) * dzsoi_decomp(j)
-!         end do
-!      end do
 
     end associate
 
@@ -821,7 +816,6 @@ contains
   !  if not properly set.
   !
   !USES:
-    !$acc routine seq
     use elm_varctl   , only: carbon_only, carbonnitrogen_only
     use elm_varpar   , only: nlevdecomp, ndecomp_cascade_transitions
    !
@@ -863,13 +857,11 @@ contains
       call veg_ps%SetValues(num_patch=num_soilp,  filter_patch=filter_soilp,  value_patch=0._r8)
       call col_ps%SetValues(num_column=num_soilc, filter_column=filter_soilc, value_column=0._r8)
 
-      call veg_pf%setvalues( num_patch=num_soilp,  filter_patch=filter_soilp,  value_patch=0._r8)
-      call col_pf%setvalues( num_column=num_soilc, filter_column=filter_soilc, value_column=0._r8)
+      call veg_pf%SetValues( num_patch=num_soilp,  filter_patch=filter_soilp,  value_patch=0._r8)
+      call col_pf%SetValues( num_column=num_soilc, filter_column=filter_soilc, value_column=0._r8)
    end if
 
   end associate
   end subroutine CNvariables_nan4pf
-
-  !-------------------------------------------------------------------------------------------------
 
 end module SoilLittDecompMod

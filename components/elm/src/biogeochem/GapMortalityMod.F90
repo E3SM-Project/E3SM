@@ -141,6 +141,8 @@ contains
          !------------------------------------------------------
 
          ! displayed pools
+           veg_cf%m_leafc_to_litter(p)     = 0._r8 
+           veg_cf%m_livestemc_to_litter(p) = 0._r8 
          if(ivt(p) < npcropmin .or. (ivt(p) >= npcropmin .and. croplive(p))) then
            veg_cf%m_leafc_to_litter(p)               = veg_cs%leafc(p)               * m
            veg_cf%m_livestemc_to_litter(p)           = veg_cs%livestemc(p)           * m
@@ -178,6 +180,8 @@ contains
          !------------------------------------------------------
 
          ! displayed pools
+         veg_nf%m_leafn_to_litter(p) = 0._r8 
+         veg_nf%m_livestemn_to_litter(p) = 0._r8 
          if(ivt(p) < npcropmin .or. (ivt(p) >= npcropmin .and. croplive(p))) then
            veg_nf%m_leafn_to_litter(p)               = veg_ns%leafn(p)               * m
            veg_nf%m_livestemn_to_litter(p)           = veg_ns%livestemn(p)           * m
@@ -186,6 +190,7 @@ contains
          veg_nf%m_deadstemn_to_litter(p)           = veg_ns%deadstemn(p)           * m
          veg_nf%m_livecrootn_to_litter(p)          = veg_ns%livecrootn(p)          * m
          veg_nf%m_deadcrootn_to_litter(p)          = veg_ns%deadcrootn(p)          * m
+         veg_nf%m_retransn_to_litter(p) = 0._r8
          if (ivt(p) < npcropmin) then
             veg_nf%m_retransn_to_litter(p) = veg_ns%retransn(p) * m
          end if
@@ -219,6 +224,8 @@ contains
          !------------------------------------------------------
 
          ! displayed pools
+         veg_pf%m_leafp_to_litter(p)     = 0._r8 
+         veg_pf%m_livestemp_to_litter(p) = 0._r8 
          if(ivt(p) < npcropmin .or. (ivt(p) >= npcropmin .and. croplive(p))) then
            veg_pf%m_leafp_to_litter(p)               = veg_ps%leafp(p)               * m
            veg_pf%m_livestemp_to_litter(p)           = veg_ps%livestemp(p)           * m
@@ -227,6 +234,8 @@ contains
          veg_pf%m_deadstemp_to_litter(p)           = veg_ps%deadstemp(p)           * m
          veg_pf%m_livecrootp_to_litter(p)          = veg_ps%livecrootp(p)          * m
          veg_pf%m_deadcrootp_to_litter(p)          = veg_ps%deadcrootp(p)          * m
+         
+         veg_pf%m_retransp_to_litter(p)            = 0._r8 
          if (ivt(p) < npcropmin) then
             veg_pf%m_retransp_to_litter(p) = veg_ps%retransp(p) * m
          end if
