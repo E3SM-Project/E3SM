@@ -874,13 +874,6 @@
 <p3_embryonic_rain_size clubb_sgs="1" microphys="p3"> 0.000025D0  </p3_embryonic_rain_size>
 <do_Cooper_inP3         clubb_sgs="1" microphys="p3"> .false. </do_Cooper_inP3>
 
-<!-- P3 specific namelist variables (for SCREAM version of P3) -->
-<micro_p3_lookup_dir   shoc_sgs="1" microphys="p3"> atm/scream/tables </micro_p3_lookup_dir>
-<micro_p3_tableversion shoc_sgs="1" microphys="p3"> 4.1.1  </micro_p3_tableversion>
-<micro_tend_output     shoc_sgs="1" microphys="p3"> .true.  </micro_tend_output>
-<p3_qc_autoCon_Expon   shoc_sgs="1" microphys="p3"> 2.47   </p3_qc_autoCon_Expon>
-<p3_qc_accret_Expon    shoc_sgs="1" microphys="p3"> 1.15   </p3_qc_accret_Expon>
-
 
 <!-- special defaults for MMF, which now sets all other physics scheme options to "off" -->
 <micro_mincdnc        use_MMF="1">  -999.       </micro_mincdnc>

@@ -3673,16 +3673,6 @@ add_default($nl, 'use_MMF');
 add_default($nl, 'use_ECPP');
 # P3
 if ($cfg->get('microphys') =~ /^p3/) {
-   if ($shoc_sgs  =~ /$TRUE/io) {
-      add_default($nl, 'micro_p3_lookup_dir');
-      add_default($nl, 'micro_p3_tableversion');
-      add_default($nl, 'micro_aerosolactivation');
-      add_default($nl, 'micro_subgrid_cloud');
-      add_default($nl, 'micro_tend_output');
-      add_default($nl, 'p3_qc_autoCon_Expon');
-      add_default($nl, 'p3_qc_accret_Expon');
-      add_default($nl, 'do_prescribed_CCN'); 
-   }
    if ($clubb_sgs  =~ /$TRUE/io) {
       add_default($nl, 'micro_p3_lookup_dir');
       add_default($nl, 'micro_p3_tableversion');

@@ -1703,12 +1703,8 @@ $cfg_ref->set('cppdefs', $usr_cppdefs);
  
 my $is_scream_config = 0;
 if ($microphys_pkg =~ /^p3/) {
-   if ($shoc_sgs) {
-      $is_scream_config = 1;
-      print "The case uses SCREAM config and SCREAM's version of P3 codes in Fortran 90.\n";
-   } else {
-      print "The case use EAM's version of P3 codes in Fortran 90.\n";
-   }
+
+    print "The case use EAM's version of P3 codes in Fortran 90.\n";
 }
 
 if ($usr_cppdefs and $print>=2) { print "Default and user CPP definitions: \'$usr_cppdefs\'$eol";}
