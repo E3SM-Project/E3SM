@@ -257,6 +257,8 @@ mam_coupling::read_water_refindex(table_name_water, grid_,
 }
 
 }
+
+}
 void MAMOptics::run_impl(const double dt) {
 
   constexpr Real zero =0.0;
