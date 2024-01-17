@@ -67,7 +67,7 @@
 <!-- WCYCL1850NS uses no spun-up ICs for mpaso and mpassi. It is only being used for nigthly tests on small grids such as ne11_oQU480-->
 <compset>
   <alias>WCYCL1850NS</alias>
-  <lname>1850_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+  <lname>1850_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
 <compset>
