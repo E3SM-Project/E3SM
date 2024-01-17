@@ -33,6 +33,10 @@ class HorzMesh {
 
     void readMeasurements();
 
+    void readWeights();
+
+    void readCoriolis();
+
     //int readMesh();
 
     //int transferToDevice();

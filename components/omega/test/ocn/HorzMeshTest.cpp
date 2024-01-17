@@ -60,6 +60,18 @@ OMEGA::R8 distance(OMEGA::R8 x, OMEGA::R8 y, OMEGA::R8 z) {
 
 }
 
+OMEGA::R8 sphereDistance(OMEGA::R8 lon1, OMEGA::R8 lat1, OMEGA::R8 lon2, OMEGA::R8 lat2) {
+
+   OMEGA::R8 arg;
+
+   //arg = sqrt( pow(sin(0.5*(lat2-lat1)), 2) + (pow(cos(0.5*(lat2+lat1)), 2) - pow(sin(0.5*(lat2-lat1)), 2))*pow(sin(0.5*(lon2-lon1)), 2));
+
+   arg = sqrt( pow(sin(0.5*(lat1-lat2)),2) +
+                    cos(lat2)*cos(lat1)*pow(sin(0.5*(lon1-lon2)),2));
+   return 2.0*asin(arg);
+
+}
+
 OMEGA::R8 computeLon(OMEGA::R8 x, OMEGA::R8 y, OMEGA::R8 z) {
 
    OMEGA::R8 lon;
@@ -97,6 +109,7 @@ int main(int argc, char *argv[]) {
    yakl::init();
 
    OMEGA::R8 tol = 1e-6;
+   OMEGA::R8 pi = 4.0*atan(1.0);
 
    // Call initialization routine to create the default decomposition
    int Err = initHorzMeshTest();
@@ -257,7 +270,7 @@ int main(int argc, char *argv[]) {
       return -1;
    }
 
-   // Test areas
+   // Test cell areas
    OMEGA::R8 LocSumArea = 0;
    OMEGA::R8 SumCellArea;
    for (int Cell = 0; Cell < LocCells; Cell++) {
@@ -267,12 +280,13 @@ int main(int argc, char *argv[]) {
 
    OMEGA::R8 OceanArea = 3.61e14;
    if (abs(SumCellArea - OceanArea)/OceanArea < 0.05) { 
-      LOG_INFO("HorzMeshTest: Cell area test PASS {}");
+      LOG_INFO("HorzMeshTest: Cell area test PASS");
    } else {
-      LOG_INFO("HorzMeshTest: Cell area test FAIL {}");
+      LOG_INFO("HorzMeshTest: Cell area test FAIL");
       return -1;
    }
 
+   // Test triangle areas
    LocSumArea = 0;
    OMEGA::R8 SumTriangleArea;
    for (int Vertex = 0; Vertex < LocVertices; Vertex++) {
@@ -281,9 +295,59 @@ int main(int argc, char *argv[]) {
    Err = MPI_Allreduce(&LocSumArea, &SumTriangleArea, 1, MPI_DOUBLE, MPI_SUM, Comm);
 
    if (abs(SumTriangleArea - OceanArea)/OceanArea < 0.05) { 
-      LOG_INFO("HorzMeshTest: Triangle area test PASS {}");
+      LOG_INFO("HorzMeshTest: Triangle area test PASS");
    } else {
-      LOG_INFO("HorzMeshTest: Triangle area test FAIL {}");
+      LOG_INFO("HorzMeshTest: Triangle area test FAIL");
+      return -1;
+   }
+
+   // Test dcEdge
+   count = 0;
+   for (int Edge = 0; Edge < LocEdges; Edge++) {
+      int Cell1 = Mesh.CellsOnEdgeH(Edge,0);
+      int Cell2 = Mesh.CellsOnEdgeH(Edge,1);
+
+      if ((Cell1<DefDecomp->NCellsAll) && (Cell2<DefDecomp->NCellsAll)) {
+
+         OMEGA::R8 dc = sphere_radius*sphereDistance(Mesh.LonCellH(Cell1), Mesh.LatCellH(Cell1),
+                                                     Mesh.LonCellH(Cell2), Mesh.LatCellH(Cell2)); 
+
+         if (abs((dc - Mesh.DcEdgeH(Edge))/Mesh.DcEdgeH(Edge)) > tol) {
+            count++;
+         }
+      }
+
+   }
+
+   if ( count == 0 ) {
+      LOG_INFO("HorzMeshTest: dcEdge test PASS");
+   } else {
+      LOG_INFO("HorzMeshTest: dcEdge test FAIL");
+      return -1;
+   }
+   
+   // Test dvEdge
+   count = 0;
+   for (int Edge = 0; Edge < LocEdges; Edge++) {
+      int Vertex1 = Mesh.VerticesOnEdgeH(Edge,0);
+      int Vertex2 = Mesh.VerticesOnEdgeH(Edge,1);
+
+      if ((Vertex1<DefDecomp->NVerticesAll) && (Vertex2<DefDecomp->NVerticesAll)) {
+
+         OMEGA::R8 dv = sphere_radius*sphereDistance(Mesh.LonVertexH(Vertex1), Mesh.LatVertexH(Vertex1),
+                                                     Mesh.LonVertexH(Vertex2), Mesh.LatVertexH(Vertex2)); 
+
+         if (abs((dv - Mesh.DvEdgeH(Edge))/Mesh.DvEdgeH(Edge)) > tol) {
+            count++;
+         }
+      }
+
+   }
+
+   if ( count == 0 ) {
+      LOG_INFO("HorzMeshTest: dvEdge test PASS");
+   } else {
+      LOG_INFO("HorzMeshTest: dvEdge test FAIL");
       return -1;
    }
 
