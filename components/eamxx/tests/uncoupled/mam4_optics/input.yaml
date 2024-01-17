@@ -4,9 +4,9 @@ driver_options:
   atmosphere_dag_verbosity_level: 5
 
 time_stepping:
-  time_step: ${ATM_TIME_STEP}
-  run_t0: ${RUN_T0}  # YYYY-MM-DD-XXXXX
-  number_of_steps: ${NUM_STEPS}
+  time_step: 1
+  run_t0: 2021-10-12-45000  # YYYY-MM-DD-XXXXX
+  number_of_steps: 24
 
 atmosphere_processes:
   atm_procs_list: [mam4_optics]
@@ -23,13 +23,9 @@ grids_manager:
 
 initial_conditions:
   # The name of the file containing the initial conditions for this test.
-  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
-  aero_g_sw: 0.0 # 0.65e-10 is from namelist, but this is what gets to nucleation
-  pbl_height: 1100.0
-  T_mid: 273.0
-  p_mid: 1.e5
-
+  #Filename: /ascldap/users/odiazib/Documents/Oscar/CODE/eagles-project/scream/scream-input/atm/scream/init/screami_unit_tests_ne2np4L72_20220822.nc
+  Filename: ${SCREAM_DATA_DIR}/init/scream_aerosol_optics_unit_tests_ne2np4L72_20220822.nc}
 # The parameters for I/O control
 Scorpio:
-  output_yaml_files: ["mam4_optics_output.yaml"]
+  output_yaml_files: ["output.yaml"]
 ...

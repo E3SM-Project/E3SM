@@ -3,8 +3,13 @@
 filename_prefix: mam4_optics_standalone_output
 Averaging Type: Instant
 Field Names:
-  - T_mid
-  - p_mid
+  - aero_g_sw
+  - aero_ssa_sw
+  - aero_tau_sw
+  - aero_tau_lw
+  - aero_tau_forward
+  - state_q
+  - qqcw
 output_control:
   Frequency: 1
   frequency_units: nsteps

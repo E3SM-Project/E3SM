@@ -30,6 +30,7 @@ void MAMOptics::set_grids(const std::shared_ptr<const GridsManager> grids_manage
   using namespace ekat::units;
   constexpr int nvars = mam4::ndrop::nvars;
 
+
   grid_ = grids_manager->get_grid("Physics");
   const auto& grid_name = grid_->name();
 
@@ -63,7 +64,7 @@ void MAMOptics::set_grids(const std::shared_ptr<const GridsManager> grids_manage
   add_field<Required>("pseudo_density_dry", scalar3d_layout_mid, Pa, grid_name);
   // FIXME: dimenstion of state_q
   add_field<Updated>("state_q", scalar_state_q_layout, kg/kg, grid_name);
-  add_field<Updated>("qqcw", scalar_state_q_layout, nondim, grid_name);
+  add_field<Updated>("qqcw", scalar_state_q_layout, kg/kg, grid_name);
   add_field<Required>("cldn", scalar3d_layout_mid, nondim, grid_name); // could fraction
 
   // shortwave aerosol scattering asymmetry parameter [-]
@@ -85,41 +86,6 @@ void MAMOptics::set_grids(const std::shared_ptr<const GridsManager> grids_manage
   constexpr int ps = Pack::n;
   // FieldLayout scalar3d_layout_mid { {COL, LEV}, {ncol_, nlev_} };
   add_field<Computed>("nccn", scalar3d_layout_mid, 1/kg, grid_name, ps);
-
-add_field<Computed>("extinct",   scalar3d_layout_mid, 1/m, grid_name);
-add_field<Computed>("absorb",   scalar3d_layout_mid, 1/m, grid_name);
-//Aerosol optical depth 850 nm
-FieldLayout scalar2d_layout_mid{ {COL}, {ncol_} };
-add_field<Computed>("aodnir", scalar2d_layout_mid, nondim, grid_name);
-add_field<Computed>("aoduv",  scalar2d_layout_mid, nondim, grid_name);
-
-constexpr int ntot_amode = mam4::AeroConfig::num_modes();
-//FIXME: I add NMODES to field_tag
-FieldLayout scalar3d_layout_nmodes{ {COL, NMODES}, {ncol_, ntot_amode} };
-
-add_field<Computed>("dustaodmode",  scalar3d_layout_nmodes, nondim, grid_name);
-add_field<Computed>("aodmode",  scalar3d_layout_nmodes, nondim, grid_name);
-add_field<Computed>("burdenmode",  scalar3d_layout_nmodes, nondim, grid_name);
-
-add_field<Computed>("aodabsbc",  scalar2d_layout_mid, nondim, grid_name);
-add_field<Computed>("aodvis",  scalar2d_layout_mid, nondim, grid_name);
-add_field<Computed>("aodall",  scalar2d_layout_mid, nondim, grid_name);
-add_field<Computed>("ssavis",  scalar2d_layout_mid, nondim, grid_name);
-add_field<Computed>("aodabs",  scalar2d_layout_mid, nondim, grid_name);
-add_field<Computed>("burdendust",  scalar2d_layout_mid, nondim, grid_name);
-add_field<Computed>("burdenso4",  scalar2d_layout_mid, nondim, grid_name);
-add_field<Computed>("burdenbc",  scalar2d_layout_mid, nondim, grid_name);
-add_field<Computed>("burdenpom",  scalar2d_layout_mid, nondim, grid_name);
-add_field<Computed>("burdensoa",  scalar2d_layout_mid, nondim, grid_name);
-add_field<Computed>("burdenseasalt",  scalar2d_layout_mid, nondim, grid_name);
-add_field<Computed>("burdenmom",  scalar2d_layout_mid, nondim, grid_name);
-add_field<Computed>("momaod",  scalar2d_layout_mid, nondim, grid_name);
-add_field<Computed>("dustaod",  scalar2d_layout_mid, nondim, grid_name);
-add_field<Computed>("so4aod",  scalar2d_layout_mid, nondim, grid_name);
-add_field<Computed>("pomaod",  scalar2d_layout_mid, nondim, grid_name);
-add_field<Computed>("soaaod",  scalar2d_layout_mid, nondim, grid_name);
-add_field<Computed>("bcaod",  scalar2d_layout_mid, nondim, grid_name);
-add_field<Computed>("seasaltaod",  scalar2d_layout_mid, nondim, grid_name);
 
 }
 
@@ -182,14 +148,14 @@ void MAMOptics::initialize_impl(const RunType run_type) {
                                      rrtmg_params,
                                      layouts,
                                      host_views );
-
+  std::string mam_aerosol_optics_path="mam_aerosol_optics/";
   //FIXME: this name need to be pass in the input file.
   std::vector<std::string> name_table_modes=
   {
-  "mam4_mode1_rrtmg_aeronetdust_c141106.nc",
-  "mam4_mode2_rrtmg_c130628.nc",
-  "mam4_mode3_rrtmg_aeronetdust_c141106.nc",
-  "mam4_mode4_rrtmg_c130628.nc"
+  mam_aerosol_optics_path+"mam4_mode1_rrtmg_aeronetdust_c141106.nc",
+  mam_aerosol_optics_path+"mam4_mode2_rrtmg_c130628.nc",
+  mam_aerosol_optics_path+"mam4_mode3_rrtmg_aeronetdust_c141106.nc",
+  mam_aerosol_optics_path+"mam4_mode4_rrtmg_c130628.nc"
   };
 
   for (int imode = 0; imode < ntot_amode; imode++)
@@ -205,7 +171,7 @@ void MAMOptics::initialize_impl(const RunType run_type) {
 
 
 // FIXME: we need to get this name from the yaml file.
-std::string table_name_water = "water_refindex_rrtmg_c080910.nc";
+std::string table_name_water = mam_aerosol_optics_path+"water_refindex_rrtmg_c080910.nc";
 // it will syn data to device.
 mam_coupling::read_water_refindex(table_name_water, grid_,
                                   aerosol_optics_device_data_.crefwlw,
@@ -231,13 +197,13 @@ mam_coupling::read_water_refindex(table_name_water, grid_,
   mom:m-organic: /compyfs/inputdata/atm/cam/physprops/poly_rrtmg_c130816.nc */
   std::vector<std::string> name_table_aerosols=
   {
-  "ocphi_rrtmg_c100508.nc", // soa:s-organic
-  "dust_aeronet_rrtmg_c141106.nc",//dst:dust:
-  "ssam_rrtmg_c100508.nc", // ncl:seasalt
-  "sulfate_rrtmg_c080918.nc", // so4:sulfate
-  "ocpho_rrtmg_c130709.nc", // pom:p-organic
-  "bcpho_rrtmg_c100508.nc", // bc :black-c
-  "poly_rrtmg_c130816.nc" // mom:m-organic
+  mam_aerosol_optics_path+"ocphi_rrtmg_c100508.nc", // soa:s-organic
+  mam_aerosol_optics_path+"dust_aeronet_rrtmg_c141106.nc",//dst:dust:
+  mam_aerosol_optics_path+"ssam_rrtmg_c100508.nc", // ncl:seasalt
+  mam_aerosol_optics_path+"sulfate_rrtmg_c080918.nc", // so4:sulfate
+  mam_aerosol_optics_path+"ocpho_rrtmg_c130709.nc", // pom:p-organic
+  mam_aerosol_optics_path+"bcpho_rrtmg_c100508.nc", // bc :black-c
+  mam_aerosol_optics_path+"poly_rrtmg_c130816.nc" // mom:m-organic
   };
 
   //FIXME: make a function that return a index given the species name
@@ -288,33 +254,6 @@ mam_coupling::read_water_refindex(table_name_water, grid_,
   // reshape specrefndxsw_host and copy it to device
   mam4::modal_aer_opt::set_device_specrefindex(aerosol_optics_device_data_.specrefindex_sw, "short_wave", specrefndxsw_host);
   mam4::modal_aer_opt::set_device_specrefindex(aerosol_optics_device_data_.specrefindex_lw, "long_wave", specrefndxlw_host);
-}
-
-#if 0
-{
-  constexpr int coef_number = mam4::modal_aer_opt::coef_number;
-    constexpr int refindex_real = mam4::modal_aer_opt::refindex_real;
-  constexpr int refindex_im = mam4::modal_aer_opt::refindex_im;
-auto host_1d = view_1d_host(refindex_real_lw_host.data(), refindex_real_lw_host.size());
-scorpio::register_file(tables_filename_mode4,scorpio::Read);
-std::string var_name = "refindex_real_lw";
-std::vector<std::string> vec_of_dims;
-vec_of_dims.push_back("lw_band");
-vec_of_dims.push_back("refindex_real");
-scorpio::register_dimension(tables_filename_mode4, vec_of_dims[0], vec_of_dims[0], nlwbands, 0);
-scorpio::register_dimension(tables_filename_mode4, vec_of_dims[1], vec_of_dims[1], refindex_real, 0);
-std::reverse(vec_of_dims.begin(),vec_of_dims.end());
-const auto& fp_precision = "real";
-std::string io_decomp_tag ="dt=real,grid-idx=0,layout=lw_band16-refindex_real7";
-scorpio::register_variable(tables_filename_mode4, var_name, var_name,
-                              vec_of_dims, fp_precision, io_decomp_tag);
-std::vector<scorpio::offset_t> var_dof(host_1d.size());
-std::iota(var_dof.begin(),var_dof.end(),0);
-scorpio::set_dof(tables_filename_mode4,var_name,var_dof.size(),var_dof.data());
-scorpio::set_decomp(tables_filename_mode4);
-scorpio::grid_read_data_array(tables_filename_mode4,var_name,-1000,host_1d.data(), host_1d.size());
-scorpio::eam_pio_closefile(tables_filename_mode4);}
-#endif
 }
 
 }
