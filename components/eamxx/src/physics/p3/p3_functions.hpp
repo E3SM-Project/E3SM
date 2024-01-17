@@ -679,6 +679,7 @@ struct Functions
   // Computes rain self collection process rate
   KOKKOS_FUNCTION
   static void rain_self_collection(const Spack& rho, const Spack& qr_incld, const Spack& nr_incld, Spack& nr_selfcollect_tend,
+		                   const physics::P3_Constants<ScalarT> & p3constants,
                                    const Smask& context = Smask(true) );
 
   // Impose maximum ice number
@@ -834,6 +835,7 @@ struct Functions
                              const Spack& qv_supersat_i, const Scalar& inv_dt,
                              const bool& do_predict_nc, const bool& do_prescribed_CCN,
                              Spack& qv2qi_nucleat_tend, Spack& ni_nucleat_tend,
+                             const physics::P3_Constants<ScalarT> & p3constants,
                              const Smask& context = Smask(true));
 
   KOKKOS_FUNCTION

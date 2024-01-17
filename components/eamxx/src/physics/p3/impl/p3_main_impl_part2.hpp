@@ -344,7 +344,7 @@ void Functions<S,D>
     // deposition/condensation-freezing nucleation
     ice_nucleation(
       T_atm(k), inv_rho(k), ni(k), ni_activated(k), qv_supersat_i(k), inv_dt, predictNc, do_prescribed_CCN,
-      qv2qi_nucleat_tend, ni_nucleat_tend, not_skip_all);
+      qv2qi_nucleat_tend, ni_nucleat_tend, p3constants, not_skip_all);
 
     // cloud water autoconversion
     // NOTE: cloud_water_autoconversion must be called before droplet_self_collection
@@ -366,7 +366,7 @@ void Functions<S,D>
     // (breakup following modified Verlinde and Cotton scheme)
     rain_self_collection(
       rho(k), qr_incld(k), nr_incld(k),
-      nr_selfcollect_tend, not_skip_all);
+      nr_selfcollect_tend, p3constants, not_skip_all);
 
     // Here we map the microphysics tendency rates back to CELL-AVERAGE quantities for updating
     // cell-average quantities.

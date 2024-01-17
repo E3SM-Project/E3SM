@@ -104,6 +104,9 @@ void Functions<S,D>
   const auto sqi = scalarize(qi);
   constexpr Scalar qsmall = C::QSMALL;
   constexpr Scalar nsmall = C::NSMALL;
+
+  const Scalar p3_ice_sed_knob = p3constants.p3_ice_sed_knob;
+
   bool log_qxpresent;
   const Int k_qxtop = find_top(team, sqi, qsmall, kbot, ktop, kdir, log_qxpresent);
 
@@ -160,8 +163,8 @@ void Functions<S,D>
           ni_incld(pk).set(qi_gt_small, max(ni_incld(pk), table_val_ni_lammin * ni_incld(pk)));
           ni(pk).set(qi_gt_small, ni_incld(pk) * cld_frac_i(pk));
 
-          V_qit(pk).set(qi_gt_small, table_val_qi_fallspd * rhofaci(pk)); // mass-weighted   fall speed (with density factor)
-          V_nit(pk).set(qi_gt_small, table_val_ni_fallspd * rhofaci(pk)); // number-weighted fall speed (with density factor)
+          V_qit(pk).set(qi_gt_small, p3_ice_sed_knob * table_val_qi_fallspd * rhofaci(pk)); // mass-weighted   fall speed (with density factor)
+          V_nit(pk).set(qi_gt_small, p3_ice_sed_knob * table_val_ni_fallspd * rhofaci(pk)); // number-weighted fall speed (with density factor)
         }
         const auto Co_max_local = max(qi_gt_small, 0,
                                       V_qit(pk) * dt_left * inv_dz(pk));

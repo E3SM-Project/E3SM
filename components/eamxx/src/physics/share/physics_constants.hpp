@@ -125,7 +125,7 @@ template <typename Scalar>
 struct P3_Constants
 {
   public:
-  Scalar p3_pre_autoconversion_factor = 1350.0;
+  Scalar p3_autoconversion_prefactor = 1350.0;
   Scalar p3_mu_r_constant             = 1.0;
   Scalar p3_spa_to_nc                 = 1.0;
   Scalar p3_k_accretion               = 67.0;
@@ -134,12 +134,15 @@ struct P3_Constants
   Scalar p3_rho_rime_min              = 50.0;
   Scalar p3_rho_rime_max              = 900.0;
   Scalar p3_a_imm                     = 0.65;
+  Scalar p3_dep_nucleation_exponent   = 0.304;
+  Scalar p3_ice_sed_knob              = 1.0;
+  Scalar p3_d_breakup_cutoff          = 0.00028;
 
   void set_p3_from_namelist(ekat::ParameterList &params){
 
-    std::string nname = "p3_pre_autoconversion_factor";
+    std::string nname = "p3_autoconversion_prefactor";
     if(params.isParameter(nname))
-       p3_pre_autoconversion_factor = params.get<double>(nname);
+       p3_autoconversion_prefactor = params.get<double>(nname);
 
     nname = "p3_mu_r_constant";
     if(params.isParameter(nname))
@@ -173,13 +176,25 @@ struct P3_Constants
     if(params.isParameter(nname))
        p3_a_imm = params.get<double>(nname);
 
+    nname = "p3_dep_nucleation_exponent";
+    if(params.isParameter(nname))
+       p3_dep_nucleation_exponent = params.get<double>(nname);
+
+    nname = "p3_ice_sed_knob";
+    if(params.isParameter(nname))
+       p3_ice_sed_knob = params.get<double>(nname);
+
+    nname = "p3_d_breakup_cutoff";
+    if(params.isParameter(nname))
+       p3_d_breakup_cutoff = params.get<double>(nname);
+
   };
 
   void print_p3constants(std::shared_ptr<ekat::logger::LoggerBase> logger){
       logger->info("P3 Constants:");
 
-      std::string nname = "p3_pre_autoconversion_factor";
-      logger->info(std::string("P3   ") + nname + std::string(" = ") + std::to_string(p3_pre_autoconversion_factor));
+      std::string nname = "p3_autoconversion_prefactor";
+      logger->info(std::string("P3   ") + nname + std::string(" = ") + std::to_string(p3_autoconversion_prefactor));
 
       nname = "p3_mu_r_constant";
       logger->info(std::string("P3   ") + nname + std::string(" = ") + std::to_string(p3_mu_r_constant));
@@ -204,6 +219,15 @@ struct P3_Constants
 
       nname = "p3_a_imm";
       logger->info(std::string("P3   ") + nname + std::string(" = ") + std::to_string(p3_a_imm));
+
+      nname = "p3_dep_nucleation_exponent";
+      logger->info(std::string("P3   ") + nname + std::string(" = ") + std::to_string(p3_dep_nucleation_exponent));
+
+      nname = "p3_ice_sed_knob";
+      logger->info(std::string("P3   ") + nname + std::string(" = ") + std::to_string(p3_ice_sed_knob));
+
+      nname = "p3_d_breakup_cutoff";
+      logger->info(std::string("P3   ") + nname + std::string(" = ") + std::to_string(p3_d_breakup_cutoff));
 
       logger->info(" ");
   };
