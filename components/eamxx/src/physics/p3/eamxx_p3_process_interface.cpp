@@ -206,10 +206,10 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   // Gather runtime options
   runtime_options.max_total_ni = m_params.get<double>("max_total_ni");
 
-  //////////// setting P3 constants in a struct
+  // setting P3 constants in a struct
   m_p3constants.set_p3_from_namelist(m_params);
   m_p3constants.print_p3constants(m_atm_logger);
-  //////////// done setting P3 constants
+  // done setting P3 constants
 
   // Set property checks for fields in this process
   add_invariant_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),m_grid,100.0,500.0,false);
