@@ -62,9 +62,7 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 
   // 1. Create SPAHorizInterp remapper
   auto spa_data_file = m_params.get<std::string>("spa_data_file");
-  auto spa_map_file  = m_params.isParameter("spa_remap_file")
-                     ? m_params.get<std::string>("spa_remap_file")
-                     : "";
+  auto spa_map_file  = m_params.get<std::string>("spa_remap_file","");
   SPAHorizInterp = SPAFunc::create_horiz_remapper (m_grid,spa_data_file,spa_map_file);
 
   // Grab a sw and lw field from the horiz interp, and check sw/lw dim against what we hardcoded in this class
