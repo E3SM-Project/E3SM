@@ -820,6 +820,7 @@
 <microp_scheme microphys="mg1">  MG</microp_scheme>
 <microp_scheme microphys="mg1.5">MG</microp_scheme>
 <microp_scheme microphys="mg2">  MG</microp_scheme>
+<microp_scheme microphys="p3">   P3</microp_scheme>
 <microp_scheme use_MMF="1">     off</microp_scheme>
 
 <micro_mg_version     microphys="mg1">    1          </micro_mg_version>
