@@ -68,7 +68,7 @@ module micro_p3
        lookup_table_1a_dum1_c, rho_h2o, &
        do_Cooper_inP3
 
-   use wv_sat_scream, only:qv_sat
+   use wv_sat_scream, only:qv_sat_dry
 
   ! Bit-for-bit math functions.
 #ifdef SCREAM_CONFIG_IS_CMAKE
@@ -477,8 +477,8 @@ end function bfb_expm1
        !can be made consistent with E3SM definition of latent heat
        rho(k)     = dpres(k)/dz(k)/g  ! pres(k)/(rd*t(k))
        inv_rho(k) = 1._rtype/rho(k)
-       qv_sat_l(k)     = qv_sat(t_atm(k),pres(k),0)
-       qv_sat_i(k)     = qv_sat(t_atm(k),pres(k),1)
+       qv_sat_l(k)     = qv_sat_dry(t_atm(k),pres(k),0)
+       qv_sat_i(k)     = qv_sat_dry(t_atm(k),pres(k),1)
 
        qv_supersat_i(k)    = qv(k)/qv_sat_i(k)-1._rtype
 
@@ -2425,7 +2425,7 @@ table_val_qi2qr_melting,table_val_qi2qr_vent_melt,latent_heat_vapor,latent_heat_
    real(rtype) :: qsat0
 
    if (qi_incld .ge.qsmall .and. t_atm.gt.T_zerodegc) then
-      qsat0 = qv_sat( T_zerodegc,pres,0 )
+      qsat0 = qv_sat_dry( T_zerodegc,pres,0 )
 
       qi2qr_melt_tend = ((table_val_qi2qr_melting+table_val_qi2qr_vent_melt*bfb_cbrt(sc)*bfb_sqrt(rhofaci*rho/mu))*((t_atm-   &
       T_zerodegc)*kap-rho*latent_heat_vapor*dv*(qsat0-qv))*2._rtype*pi/latent_heat_fusion)*ni_incld
@@ -2475,7 +2475,7 @@ qv,qc_incld,qi_incld,ni_incld,qr_incld,    &
    real(rtype) :: qsat0, dum, dum1
 
    if (qi_incld.ge.qsmall .and. qc_incld+qr_incld.ge.1.e-6_rtype .and. t_atm.lt.T_zerodegc) then
-      qsat0=qv_sat( T_zerodegc,pres,0 )
+      qsat0=qv_sat_dry( T_zerodegc,pres,0 )
 
       qwgrth = ((table_val_qi2qr_melting + table_val_qi2qr_vent_melt*bfb_cbrt(sc)*bfb_sqrt(rhofaci*rho/mu))*       &
       2._rtype*pi*(rho*latent_heat_vapor*dv*(qsat0-qv)-(t_atm-T_zerodegc)*           &
@@ -3095,7 +3095,7 @@ subroutine prevent_ice_overdepletion(pres,t_atm,qv,latent_heat_vapor,latent_heat
    qtmp_all = qv - (qidep + qinuc + qinuc_cnt)*dt + (qi2qv_sublim_tend + qr2qv_evap_tend)*dt 
    ttmp_all = t_atm + ((qidep-qi2qv_sublim_tend+qinuc+qinuc_cnt)*latent_heat_sublim*inv_cp + (-qr2qv_evap_tend*latent_heat_vapor*inv_cp))*dt
 
-   qv_sat_l = qv_sat(ttmp_all,pres,0)
+   qv_sat_l = qv_sat_dry(ttmp_all,pres,0)
 
    ! If water vapor mass exceeds ice saturation value, we limit only source terms (e.g., sublimation, rain evp) 
    if(qtmp_all > qv_sat_l)then
@@ -3103,13 +3103,13 @@ subroutine prevent_ice_overdepletion(pres,t_atm,qv,latent_heat_vapor,latent_heat
       ! ... First, rain evaporation is limited to the sub-saturation defined by the water vapor sink terms (deposition, ice nucleation)
       q_sink = qv - (qidep + qinuc + qinuc_cnt)*dt
       t_sink = t_atm + ((qidep+qinuc+qinuc_cnt)*latent_heat_sublim*inv_cp)*dt
-      dumqv_sat_l = qv_sat(t_sink,pres,0)
+      dumqv_sat_l = qv_sat_dry(t_sink,pres,0)
       qv_source_evp = qr2qv_evap_tend + qi2qv_sublim_tend
       qrevp_satadj = (q_sink-dumqv_sat_l)/(1._rtype + bfb_square(latent_heat_vapor)*dumqv_sat_l/(cp*rv* bfb_square(t_sink) ))*inv_dt
       qr2qv_evap_tend    = qr2qv_evap_tend*min(1._rtype,max(0._rtype,-qrevp_satadj)/max(qv_source_evp, 1.e-20_rtype))
 
       ! ... Next, ice-sublimation is limited in the same way but with sublim LH 
-      dumqv_sat_i = qv_sat(t_sink,pres,1)
+      dumqv_sat_i = qv_sat_dry(t_sink,pres,1)
       qi2qv_sublim_satadj = (q_sink-dumqv_sat_i)/(1._rtype + bfb_square(latent_heat_sublim)*dumqv_sat_i/(cp*rv* bfb_square(t_sink) ))*inv_dt
       qi2qv_sublim_tend  = qi2qv_sublim_tend*min(1._rtype,max(0._rtype,-qi2qv_sublim_satadj)/max(qv_source_evp, 1.e-20_rtype))
    
