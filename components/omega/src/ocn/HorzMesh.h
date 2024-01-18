@@ -46,6 +46,8 @@ class HorzMesh {
     I4 CellDecompR8;
     I4 EdgeDecompR8;
     I4 VertexDecompR8;
+    I4 OnEdgeDecompR8;
+    I4 OnVertexDecompR8;
 
  public:
    // Variables
@@ -68,6 +70,7 @@ class HorzMesh {
    I4 NEdgesSize;     ///< Array length (incl padding, bndy) for edge dim
    I4 MaxCellsOnEdge; ///< Max number of cells sharing an edge
    I4 MaxEdges;       ///< Max number of edges around a cell
+   I4 MaxEdges2;      ///< Max number of edges around a cell x2
 
    I4 NVerticesOwned;  ///< Number of vertices owned by this task
    I4 NVerticesAll;    ///< Total number (owned+halo) of local vertices

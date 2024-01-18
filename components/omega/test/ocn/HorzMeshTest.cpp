@@ -310,6 +310,23 @@ int main(int argc, char *argv[]) {
       return -1;
    }
 
+   // Test kite areas
+   LocSumArea = 0;
+   OMEGA::R8 SumKiteArea;
+   for (int Vertex = 0; Vertex < LocVertices; Vertex++) {
+      for (int i = 0; i < Mesh.VertexDegree; i++) {
+         LocSumArea += Mesh.KiteAreasOnVertexH(Vertex, i);
+      }
+   }
+   Err = MPI_Allreduce(&LocSumArea, &SumKiteArea, 1, MPI_DOUBLE, MPI_SUM, Comm);
+
+   if (abs(SumKiteArea - OceanArea)/OceanArea < 0.05) { 
+      LOG_INFO("HorzMeshTest: Kite area test PASS");
+   } else {
+      LOG_INFO("HorzMeshTest: Kite area test FAIL");
+      return -1;
+   }
+
    // Test dcEdge
    count = 0;
    for (int Edge = 0; Edge < LocEdges; Edge++) {
@@ -325,7 +342,6 @@ int main(int argc, char *argv[]) {
             count++;
          }
       }
-
    }
 
    if ( count == 0 ) {
@@ -357,6 +373,21 @@ int main(int argc, char *argv[]) {
       LOG_INFO("HorzMeshTest: dvEdge test PASS");
    } else {
       LOG_INFO("HorzMeshTest: dvEdge test FAIL");
+      return -1;
+   }
+
+   // Test angleEdge
+   count = 0;
+   for (int Edge = 0; Edge < LocEdges; Edge++) {
+      if (abs(Mesh.AngleEdgeH(Edge)) > pi) {
+         count++;
+      }
+   }
+
+   if (count == 0) {
+      LOG_INFO("HorzMeshTest: angleEdge test PASS");
+   } else {
+      LOG_INFO("HorzMeshTest: angleEdge test FAIL");
       return -1;
    }
 
@@ -410,6 +441,23 @@ int main(int argc, char *argv[]) {
       LOG_INFO("HorzMeshTest: fEdge test PASS");
    } else {
       LOG_INFO("HorzMeshTest: fEdge test FAIL");
+      return -1;
+   }
+
+   // Test weightsOnEdge
+   count = 0;
+   for (int Edge = 0; Edge < LocEdges; Edge++) {
+      for (int i = 0; i < Mesh.MaxEdges2; i++) {
+         if (abs(Mesh.WeightsOnEdgeH(Edge, i)) > 1.0) {
+           count++;
+         }
+      }
+   }
+
+   if ( count == 0 ) {
+      LOG_INFO("HorzMeshTest: weightsOnEdge test PASS");
+   } else {
+      LOG_INFO("HorzMeshTest: weightsOnEdge test FAIL");
       return -1;
    }
 
