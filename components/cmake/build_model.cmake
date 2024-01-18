@@ -37,6 +37,10 @@ macro(build_model COMP_CLASS COMP_NAME)
     foreach(ITEM IN LISTS COMP_CLASSES)
       list(APPEND INCLDIR "${EXEROOT}/cmake-bld/cmake/${ITEM}")
     endforeach()
+    if (USE_MOAB)
+      list(APPEND INCLDIR ${MOAB_INCLUDE_DIRS} )
+    endif()
+
   endif()
 
   #-------------------------------------------------------------------------------
