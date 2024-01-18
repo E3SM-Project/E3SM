@@ -40,7 +40,6 @@ field_valid_data_types ()
 class FieldIdentifier {
 public:
   using layout_type     = FieldLayout;
-  using layout_ptr_type = std::shared_ptr<const layout_type>;
   using ci_string       = ekat::CaseInsensitiveString;
   using Units           = ekat::units::Units;
 
@@ -66,8 +65,7 @@ public:
 
   // Name and layout informations
   const std::string&      name           () const { return m_name;      }
-  const layout_type&      get_layout     () const { return *m_layout;   }
-  const layout_ptr_type&  get_layout_ptr () const { return m_layout;    }
+  const layout_type&      get_layout     () const { return m_layout;   }
   const Units&            get_units      () const { return m_units;     }
   const std::string&      get_grid_name  () const { return m_grid_name; }
   DataType                data_type      () const { return m_data_type; }
@@ -80,10 +78,6 @@ public:
 
   // ----- Setters ----- //
 
-  // Note: as soon as the layout is set, it cannot be changed.
-  void set_layout (const layout_type& layout);
-  void set_layout (const layout_ptr_type& layout);
-
   // We reimplement the equality operator for identifiers comparison (needed for some std container)
   friend bool operator== (const FieldIdentifier&, const FieldIdentifier&);
   friend bool operator<  (const FieldIdentifier&, const FieldIdentifier&);
@@ -94,13 +88,13 @@ protected:
 
   ci_string       m_name;
 
-  layout_ptr_type m_layout;
+  layout_type     m_layout;
 
   Units           m_units;
 
   ci_string       m_grid_name;
 
-  DataType   m_data_type;
+  DataType        m_data_type;
 
   // The identifier string is a conveniet way to display the information of
   // the identifier, so that it can be easily read.

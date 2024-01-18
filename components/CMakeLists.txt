@@ -87,9 +87,11 @@ if (COMP_INTERFACE STREQUAL "moab")
   set(CPPDEFS "${CPPDEFS} -DHAVE_MOAB")
 endif()
 
-if(USE_CUDA)
+if (USE_CUDA)
+  set(CMAKE_CUDA_COMPILER_FORCED True)
   enable_language(CUDA)
-elseif(USE_HIP)
+elseif (USE_HIP)
+  set(CMAKE_HIP_COMPILER_FORCED True)
   enable_language(HIP)
 endif()
 

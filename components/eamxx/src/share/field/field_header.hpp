@@ -72,11 +72,15 @@ public:
   const std::shared_ptr<tracking_type>& get_tracking_ptr () const { return m_tracking; }
 
   // Get the allocation properties
-  const FieldAllocProp& get_alloc_properties () const { return m_alloc_prop; }
-        FieldAllocProp& get_alloc_properties ()       { return m_alloc_prop; }
+  const FieldAllocProp& get_alloc_properties () const { return *m_alloc_prop; }
+        FieldAllocProp& get_alloc_properties ()       { return *m_alloc_prop; }
 
   // Get the extra data
-  const extra_data_type& get_extra_data () const { return m_extra_data; }
+  template<typename T>
+  const T& get_extra_data (const std::string& key) const;
+  template<typename T>
+        T& get_extra_data (const std::string& key);
+  bool  has_extra_data (const std::string& key) const;
 
   std::shared_ptr<FieldHeader> alias (const std::string& name) const;
 
@@ -88,18 +92,66 @@ protected:
                           std::shared_ptr<FieldHeader>,
                           const int, const int, const bool);
 
+  // NOTE: the identifier *cannot* be a shared_ptr, b/c we
+  //       don't foresee sharing an identifier between two
+  //       field header instances.
+
   // Static information about the field: name, rank, tags
-  identifier_type                 m_identifier;
+  identifier_type                   m_identifier;
 
   // Tracking of the field
-  std::shared_ptr<tracking_type>  m_tracking;
+  std::shared_ptr<tracking_type>    m_tracking;
 
   // Allocation properties
-  FieldAllocProp                  m_alloc_prop;
+  std::shared_ptr<FieldAllocProp>   m_alloc_prop;
 
   // Extra data associated with this field
-  extra_data_type                 m_extra_data;
+  std::shared_ptr<extra_data_type>  m_extra_data;
 };
+
+template<typename T>
+inline const T& FieldHeader::
+get_extra_data (const std::string& key) const
+{
+  EKAT_REQUIRE_MSG (has_extra_data(key),
+      "Error! Extra data not found in field header.\n"
+      "  - field name: " + m_identifier.name() + "\n"
+      "  - extra data: " + key + "\n");
+  auto a = m_extra_data->at(key);
+  EKAT_REQUIRE_MSG ( a.isType<T>(),
+      "Error! Attempting to access extra data using the wrong type.\n"
+      "  - field name    : " + m_identifier.name() + "\n"
+      "  - extra data    : " + key + "\n"
+      "  - actual type   : " + std::string(a.content().type().name()) + "\n"
+      "  - requested type: " + std::string(typeid(T).name()) + ".\n");
+
+  return ekat::any_cast<T>(a);
+}
+
+template<typename T>
+inline T& FieldHeader::
+get_extra_data (const std::string& key)
+{
+  EKAT_REQUIRE_MSG (has_extra_data(key),
+      "Error! Extra data not found in field header.\n"
+      "  - field name: " + m_identifier.name() + "\n"
+      "  - extra data: " + key + "\n");
+  auto a = m_extra_data->at(key);
+  EKAT_REQUIRE_MSG ( a.isType<T>(),
+      "Error! Attempting to access extra data using the wrong type.\n"
+      "  - field name    : " + m_identifier.name() + "\n"
+      "  - extra data    : " + key + "\n"
+      "  - actual type   : " + std::string(a.content().type().name()) + "\n"
+      "  - requested type: " + std::string(typeid(T).name()) + ".\n");
+
+  return ekat::any_cast<T>(a);
+}
+
+inline bool FieldHeader::
+has_extra_data (const std::string& key) const
+{
+  return m_extra_data->find(key)!=m_extra_data->end();
+}
 
 // Use this free function to exploit features of enable_from_this
 template<typename... Args>

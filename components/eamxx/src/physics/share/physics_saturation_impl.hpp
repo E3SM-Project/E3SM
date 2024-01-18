@@ -127,11 +127,11 @@ Functions<S,D>::polysvp1(const Spack& t, const bool ice, const Smask& range_mask
 template <typename S, typename D>
 KOKKOS_FUNCTION
 typename Functions<S,D>::Spack
-Functions<S,D>::qv_sat(const Spack& t_atm, const Spack& p_atm, const bool ice, const Smask& range_mask, const SaturationFcn func_idx, const char* caller)
+Functions<S,D>::qv_sat_dry(const Spack& t_atm, const Spack& p_atm_dry, const bool ice, const Smask& range_mask, const SaturationFcn func_idx, const char* caller)
 {
   /*Arguments:
     ----------
-  t_atm: temperature; p_atm: pressure; ice: logical for ice
+  t_atm: temperature; p_atm_dry: dry pressure; ice: logical for ice
 
   range_mask: is a mask which masks out padded values in the packs, which are uninitialized
   func_idx is an optional argument to decide which scheme is to be called for saturation vapor pressure
@@ -149,12 +149,37 @@ Functions<S,D>::qv_sat(const Spack& t_atm, const Spack& p_atm, const bool ice, c
       e_pres = MurphyKoop_svp(t_atm, ice, range_mask, caller);
       break;
     default:
-      EKAT_KERNEL_ERROR_MSG("Error! Invalid func_idx supplied to qv_sat.");
+      EKAT_KERNEL_ERROR_MSG("Error! Invalid func_idx supplied to qv_sat_dry.");
     }
 
   static constexpr  auto ep_2 = C::ep_2;
-  return ep_2 * e_pres / max(p_atm-e_pres, sp(1.e-3));
+  return ep_2 * e_pres / max(p_atm_dry, sp(1.e-3));
 }
+
+template <typename S, typename D>
+KOKKOS_FUNCTION
+typename Functions<S,D>::Spack
+Functions<S,D>::qv_sat_wet(const Spack& t_atm, const Spack& p_atm_dry, const bool ice, const Smask& range_mask,
+                           const Spack& dp_wet, const Spack& dp_dry, const SaturationFcn func_idx, const char* caller)
+{
+  /*Arguments (the same as in qv_sat_dry plus dp wet and dp dry):
+    ----------
+  t_atm: temperature; p_atm_dry: dry pressure; ice: logical for ice
+
+  range_mask: is a mask which masks out padded values in the packs, which are uninitialized
+  func_idx is an optional argument to decide which scheme is to be called for saturation vapor pressure
+  Currently default is set to "MurphyKoop_svp"
+  func_idx = Polysvp1 (=0) --> polysvp1 (Flatau et al. 1992)
+  func_idx = MurphyKoop (=1) --> MurphyKoop_svp (Murphy, D. M., and T. Koop 2005)
+  dp_wet: pseudo_density
+  dp_dry: pseudo_density_dry */
+
+  Spack qsatdry = qv_sat_dry(t_atm, p_atm_dry, ice, range_mask, func_idx, caller);
+
+  return qsatdry * dp_dry / dp_wet;
+}
+
+
 
 } // namespace physics
 } // namespace scream

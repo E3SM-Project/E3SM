@@ -4,14 +4,14 @@ driver_options:
   atmosphere_dag_verbosity_level: 5
 
 time_stepping:
-  time_step: 300
+  time_step: 30
   number_of_steps: 1
-  run_t0: ${RUN_T0}  # YYYY-MM-DD-XXXXX
-  case_t0: ${CASE_T0}  # YYYY-MM-DD-XXXXX
+  run_t0: 2023-01-01-00000  # YYYY-MM-DD-XXXXX
+  case_t0: 2023-01-01-00000  # YYYY-MM-DD-XXXXX
 
 initial_conditions:
   Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
-  topography_filename: ${TOPO_DATA_DIR}/USGS-gtopo30_ne4np4pg2_16x_converted.c20200527.nc
+  topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
   Restart Run: false
   surf_evap: 0.0
   surf_sens_flux: 0.0
@@ -23,21 +23,35 @@ initial_conditions:
   aero_tau_lw: 0.0
 
 atmosphere_processes:
-  atm_procs_list: (homme,physics)
+  atm_procs_list: [homme,physics]
   schedule_type: Sequential
   homme:
     Moisture: moist
   physics:
-    atm_procs_list: (mac_aero_mic,rrtmgp)
+    atm_procs_list: [mac_aero_mic,rrtmgp]
     Type: Group
     schedule_type: Sequential
     mac_aero_mic:
-      atm_procs_list: (shoc,CldFraction,p3)
+      atm_procs_list: [shoc,CldFraction,p3]
       Type: Group
       schedule_type: Sequential
-      number_of_subcycles: ${MAC_MIC_SUBCYCLES}
+      number_of_subcycles: 1
       p3:
+        max_total_ni: 740.0e3
         do_prescribed_ccn: false
+      shoc:
+        lambda_low: 0.001
+        lambda_high: 0.04
+        lambda_slope: 2.65
+        lambda_thresh: 0.02
+        thl2tune: 1.0
+        qw2tune: 1.0
+        qwthl2tune: 1.0
+        w2tune: 1.0
+        length_fac: 0.5
+        c_diag_3rd_mom: 7.0
+        Ckh: 0.1
+        Ckm: 0.1
     rrtmgp:
       active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
       do_aerosol_rad: false
@@ -57,7 +71,7 @@ Scorpio:
   model_restart:
     filename_prefix: model_restart
     output_control:
-      Frequency:       1
-      frequency_units: nsteps
+      Frequency:       30
+      frequency_units: nsecs
   output_yaml_files: ["model_restart_output.yaml"]
 ...

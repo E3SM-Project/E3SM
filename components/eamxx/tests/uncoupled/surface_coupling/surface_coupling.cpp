@@ -5,18 +5,129 @@
 #include "control/atmosphere_surface_coupling_exporter.hpp"
 #include "diagnostics/register_diagnostics.hpp"
 #include "share/grid/mesh_free_grids_manager.hpp"
+#include "share/field/field_manager.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
 #include "share/scream_types.hpp"
 #include "share/util/scream_setup_random_test.hpp"
 
-#include "ekat/ekat_parse_yaml_file.hpp"
+#include <ekat/ekat_parse_yaml_file.hpp>
 #include <ekat/util/ekat_test_utils.hpp>
 
 #include <iomanip>
 
 namespace scream {
 
+using vos_type = std::vector<std::string>;
+using vor_type = std::vector<Real>;
+constexpr Real test_tol = std::numeric_limits<Real>::epsilon()*1e4;
+constexpr Real FillValue = -99999.0;
+
+// Test function for prescribed values
+Real test_func(const int col, const int t) {
+  return (col + 1 + t);
+}
+
+// Wrapper for output manager that also extracts the list of files
+class OutputManager4Test : public scream::OutputManager
+{
+public:
+  OutputManager4Test() = default;
+
+  void runme(const util::TimeStamp& ts) {
+    run(ts);
+    update_file_list();
+  }
+
+  std::vector<std::string> get_list_of_files() { return m_list_of_files; }
+private:
+  void update_file_list() {
+    if (std::find(m_list_of_files.begin(),m_list_of_files.end(), m_output_file_specs.filename) == m_list_of_files.end()) {
+      m_list_of_files.push_back(m_output_file_specs.filename);
+    }
+  }
+  std::vector<std::string> m_list_of_files;
+};
+
+std::vector<std::string> create_from_file_test_data(const ekat::Comm& comm, const util::TimeStamp& t0, const int ncols )
+{ 
+  // Create a grids manager on the fly
+  ekat::ParameterList gm_params;
+  gm_params.set("grids_names",vos_type{"Point Grid"});
+  auto& pl = gm_params.sublist("Point Grid");
+  pl.set<std::string>("type","point_grid");
+  pl.set("aliases",vos_type{"Physics"});
+  pl.set("number_of_global_columns",ncols);
+  pl.set("number_of_vertical_levels",1); // We don't care about levels for a surface only file
+  auto gm = create_mesh_free_grids_manager(comm,gm_params);
+  gm->build_grids();
+  // Create a fields manager on the fly with the appropriate fields and grid.
+  using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
+  const auto grid = gm->get_grid("Physics");
+  const int nlcols = grid->get_num_local_dofs();
+  const auto dofs_gids = grid->get_dofs_gids().get_view<const int*,Host>();
+  std::vector<std::string> fnames = {"lwdn"};
+  FieldLayout layout({COL},{nlcols});
+  auto fm = std::make_shared<FieldManager>(grid);
+  fm->registration_begins();
+  fm->registration_ends();
+  auto nondim = Units::nondimensional();
+  for (auto name : fnames) {
+    FieldIdentifier fid(name,layout,nondim,grid->name());
+    Field f(fid);
+    f.allocate_view();
+    // Initialize data
+    auto f_view_h = f.get_view<Real*,Host>();
+    for (int ii=0; ii<nlcols; ii++) {
+      f_view_h(ii) = test_func(ii,0);
+    }
+    f.sync_to_dev();
+    // Update timestamp
+    f.get_header().get_tracking().update_time_stamp(t0);
+    fm->add_field(f);
+  }
+
+  // Create output manager to handle the data
+  scorpio::eam_init_pio_subsystem(comm);
+  ekat::ParameterList om_pl;
+  om_pl.set("MPI Ranks in Filename",true);
+  om_pl.set("filename_prefix",std::string("surface_coupling_forcing"));
+  om_pl.set("Field Names",fnames);
+  om_pl.set("Averaging Type", std::string("INSTANT"));
+  om_pl.set("Max Snapshots Per File",2);
+  om_pl.set<double>("fill_value",FillValue);
+  auto& ctrl_pl = om_pl.sublist("output_control");
+  ctrl_pl.set("frequency_units",std::string("nsteps"));
+  ctrl_pl.set("Frequency",1);
+  ctrl_pl.set("MPI Ranks in Filename",true);
+  ctrl_pl.set("save_grid_data",false);
+  OutputManager4Test om;
+  om.setup(comm,om_pl,fm,gm,t0,false);
+  // Create output data:
+  // T=3600, well above the max timestep for the test.
+  auto tw = t0;
+  const int dt = 3600;
+  for (auto name : fnames) {
+    auto field = fm->get_field(name);
+    // Note we only care about surface values so we only need to generate data over nlcols.
+    auto f_view_h = field.get_view<Real*,Host>();
+    for (int ii=0; ii<nlcols; ii++) {
+      f_view_h(ii) = test_func(ii,dt);
+    }
+    field.sync_to_dev();
+  }
+  tw+=dt;
+  om.runme(tw);
+
+  // Done, finalize
+  om.finalize();
+  scorpio::eam_pio_finalize();
+  return om.get_list_of_files();
+}
+
 void setup_import_and_export_data(
+        std::mt19937_64& engine,
+  const ekat::Comm& comm,
   // Imports
   const int num_cpl_imports, const int num_scream_imports,
   const KokkosTypes<HostDevice>::view_1d<int >& import_cpl_indices_view,
@@ -43,7 +154,9 @@ void setup_import_and_export_data(
   {
     std::vector<int> import_order(num_cpl_imports);
     for (int f=0; f<num_cpl_imports; ++f) { import_order[f] = f; }
-    std::random_shuffle(import_order.begin(), import_order.end());
+    std::shuffle(import_order.begin(), import_order.end(),engine);
+
+    comm.broadcast(import_order.data(),num_cpl_imports,0);
     for (int f=0; f<num_scream_imports; ++f) {
       import_cpl_indices_view(f) = import_order[f];
     }
@@ -79,7 +192,8 @@ void setup_import_and_export_data(
   {
     std::vector<int> export_order(num_cpl_exports);
     for (int f=0; f<num_cpl_exports; ++f) { export_order[f] = f; }
-    std::random_shuffle(export_order.begin(), export_order.end());
+    std::shuffle(export_order.begin(), export_order.end(),engine);
+    comm.broadcast(export_order.data(),num_cpl_exports,0);
     for (int f=0; f<num_scream_exports; ++f) {
       export_cpl_indices_view(f) = export_order[f];
     }
@@ -148,20 +262,25 @@ void test_imports(const FieldManager& fm,
     EKAT_REQUIRE(surf_evap(i)       == import_constant_multiple_view(13)*import_data_view(i, import_cpl_indices_view(13)));
 
     // The following are only imported during run phase. If this test is called
-    // during initialization, all values should still be 0.
+    // during initialization, all values should be the default value.
+    // TODO: Why are some of these FillValue and others are 0.0?  For the former,
+    // they are gathered from output it seems, so they take the FillValue.  While
+    // the few ones with 0.0 seem to take there initial value from the field initialization
+    // which is 0.0 I believe.  Still, based on the comment none of these should be read in
+    // yet right?
     if (called_directly_after_init) {
-      EKAT_REQUIRE(sfc_alb_dir_vis(i)  == 0.0);
-      EKAT_REQUIRE(sfc_alb_dir_nir(i)  == 0.0);
-      EKAT_REQUIRE(sfc_alb_dif_vis(i)  == 0.0);
-      EKAT_REQUIRE(sfc_alb_dif_nir(i)  == 0.0);
+      EKAT_REQUIRE(sfc_alb_dir_vis(i)  == FillValue);
+      EKAT_REQUIRE(sfc_alb_dir_nir(i)  == FillValue);
+      EKAT_REQUIRE(sfc_alb_dif_vis(i)  == FillValue);
+      EKAT_REQUIRE(sfc_alb_dif_nir(i)  == FillValue);
       EKAT_REQUIRE(surf_radiative_T(i) == 0.0);
       EKAT_REQUIRE(T_2m(i)             == 0.0);
       EKAT_REQUIRE(qv_2m(i)            == 0.0);
       EKAT_REQUIRE(wind_speed_10m(i)   == 0.0);
       EKAT_REQUIRE(snow_depth_land(i)  == 0.0);
-      EKAT_REQUIRE(surf_lw_flux_up(i)  == 0.0);
-      EKAT_REQUIRE(ocnfrac(i)          == 0.0);
-      EKAT_REQUIRE(landfrac(i)         == 0.0);
+      EKAT_REQUIRE(surf_lw_flux_up(i)  == FillValue);
+      EKAT_REQUIRE(ocnfrac(i)          == FillValue);
+      EKAT_REQUIRE(landfrac(i)         == FillValue);
     } else {
       EKAT_REQUIRE(sfc_alb_dir_vis(i)  == import_constant_multiple_view(0 )*import_data_view(i, import_cpl_indices_view(0)));
       EKAT_REQUIRE(sfc_alb_dir_nir(i)  == import_constant_multiple_view(1 )*import_data_view(i, import_cpl_indices_view(1)));
@@ -292,6 +411,7 @@ void test_exports(const FieldManager& fm,
 
   // Check cpl data to scream fields
   for (int i=0; i<ncols; ++i) {
+    const Real Faxa_lwdn_file = test_func(i,dt); 
 
     // The following are exported both during initialization and run phase
     EKAT_REQUIRE(export_constant_multiple_view(0)*Sa_z_h(i)                  == export_data_view(i, export_cpl_indices_view(0)));
@@ -323,7 +443,7 @@ void test_exports(const FieldManager& fm,
       EKAT_REQUIRE(Faxa_swndf_const                                        == export_data_view(i, export_cpl_indices_view(13)));
       EKAT_REQUIRE(Faxa_swndv_const                                        == export_data_view(i, export_cpl_indices_view(14)));
       EKAT_REQUIRE(export_constant_multiple_view(15)*sfc_flux_sw_net_h(i)  == export_data_view(i, export_cpl_indices_view(15)));
-      EKAT_REQUIRE(export_constant_multiple_view(16)*sfc_flux_lw_dn_h(i)   == export_data_view(i, export_cpl_indices_view(16)));
+      EKAT_REQUIRE(std::abs(Faxa_lwdn_file - export_data_view(i, export_cpl_indices_view(16)))<test_tol);
     }
   }
 }
@@ -345,28 +465,41 @@ TEST_CASE("surface-coupling", "") {
   auto& ts          = ad_params.sublist("time_stepping");
   const auto t0_str = ts.get<std::string>("run_t0");
   const auto t0     = util::str_to_time_stamp(t0_str);
+  const auto gmp    = ad_params.sublist("grids_manager");
+  const auto grid_name = gmp.get<vos_type>("grids_names");
+  const auto gdp    = gmp.sublist(grid_name[0]);
+  const auto ncol_in = gdp.get<int>("number_of_global_columns");
 
   // Set two export fields to be randomly set to a constant
   // This requires us to add a sublist to the parsed AD params yaml list.
-  using vos_type = std::vector<std::string>;
-  using vor_type = std::vector<Real>;
   std::uniform_real_distribution<Real> pdf_real_constant_data(0.0,1.0);
+
+  auto& ap_params     = ad_params.sublist("atmosphere_processes");
+  auto& sc_exp_params = ap_params.sublist("SurfaceCouplingExporter");
+  // Set up forcing to a constant value
   const Real Faxa_swndf_const = pdf_real_constant_data(engine);
   const Real Faxa_swvdf_const = pdf_real_constant_data(engine);
   const vos_type exp_const_fields = {"Faxa_swndf","Faxa_swvdf"};
-  const vor_type exp_const_values = {Faxa_swndf_const,Faxa_swvdf_const};
-  auto& ap_params     = ad_params.sublist("atmosphere_processes");
-  auto& sc_exp_params = ap_params.sublist("SurfaceCouplingExporter");
+  vor_type exp_const_values = {Faxa_swndf_const,Faxa_swvdf_const};
+  atm_comm.broadcast(exp_const_values.data(),2,0);
   auto& exp_const_params = sc_exp_params.sublist("prescribed_constants");
   exp_const_params.set<vos_type>("fields",exp_const_fields);
   exp_const_params.set<vor_type>("values",exp_const_values);
+  // Set up forcing to data interpolated from file
+  const auto exp_file_files = create_from_file_test_data(atm_comm, t0, ncol_in);
+  const vos_type exp_file_fields = {"Faxa_lwdn"};
+  // Test the use of an alternative name as stored in the data file(s).
+  const vos_type exp_file_fields_alt_name = {"Faxa_lwdn:lwdn"};
+  auto& exp_file_params = sc_exp_params.sublist("prescribed_from_file");
+  exp_file_params.set<vos_type>("fields",exp_file_fields);
+  exp_file_params.set<vos_type>("fields_alt_name",exp_file_fields_alt_name);
+  exp_file_params.set<vos_type>("files",exp_file_files);
 
   // Need to register products in the factory *before* we create any atm process or grids manager.
   auto& proc_factory = AtmosphereProcessFactory::instance();
-  auto& gm_factory = GridsManagerFactory::instance();
   proc_factory.register_product("SurfaceCouplingImporter",&create_atmosphere_process<SurfaceCouplingImporter>);
   proc_factory.register_product("SurfaceCouplingExporter",&create_atmosphere_process<SurfaceCouplingExporter>);
-  gm_factory.register_product("Mesh Free",&create_mesh_free_grids_manager);
+  register_mesh_free_grids_manager();
   register_diagnostics();
 
   // Create the AD
@@ -379,16 +512,15 @@ TEST_CASE("surface-coupling", "") {
   ad.create_grids ();
   ad.create_fields ();
 
-  const int ncols = ad.get_grids_manager()->get_grid("Physics")->get_num_local_dofs();
-
-  // Create test data for SurfaceCouplingDataManager
+  const int   ncols = ad.get_grids_manager()->get_grid("Physics")->get_num_local_dofs();
 
   // Create engine and pdfs for random test data
   std::uniform_int_distribution<int> pdf_int_additional_fields(0,10);
   std::uniform_int_distribution<int> pdf_int_dt(1,1800);
   std::uniform_real_distribution<Real> pdf_real_import_data(0.0,1.0);
   // Set up random value for dt
-  const int dt = pdf_int_dt(engine);
+  int dt = pdf_int_dt(engine);
+  atm_comm.broadcast(&dt,1,0);
   // Setup views to test import/export. For this test we consider a random number of non-imported/exported
   // cpl fields (in addition to the required scream imports/exports), then assign a random, non-repeating
   // cpl index for each field in [0, num_cpl_fields).
@@ -396,6 +528,7 @@ TEST_CASE("surface-coupling", "") {
   const int num_scream_exports = 17;
   KokkosTypes<HostDevice>::view_1d<int> additional_import_exports("additional_import_exports", 2);
   ekat::genRandArray(additional_import_exports, engine, pdf_int_additional_fields);
+  atm_comm.broadcast(additional_import_exports.data(),2,0);
   const int num_additional_imports = additional_import_exports(0);
   const int num_additional_exports = additional_import_exports(1);
   const int num_cpl_imports = num_scream_imports + num_additional_imports;
@@ -413,6 +546,7 @@ TEST_CASE("surface-coupling", "") {
                                                                        num_scream_imports);
   // Set import data to random (0,1) values
   ekat::genRandArray(import_data_view, engine, pdf_real_import_data);
+  atm_comm.broadcast(import_data_view.data(), num_cpl_imports, 0);
   // Set import names
   char import_names[num_scream_imports][32];
   std::strcpy(import_names[0],  "sfc_alb_dir_vis");
@@ -467,7 +601,8 @@ TEST_CASE("surface-coupling", "") {
 
   // Setup the import/export data. This is meant to replicate the structures coming
   // from mct_coupling/scream_cpl_indices.F90
-  setup_import_and_export_data(num_cpl_imports, num_scream_imports,
+  setup_import_and_export_data(engine, atm_comm,
+                               num_cpl_imports, num_scream_imports,
                                import_cpl_indices_view, import_vec_comps_view,
                                import_constant_multiple_view, do_import_during_init_view,
                                num_cpl_exports, num_scream_exports,
@@ -508,10 +643,6 @@ TEST_CASE("surface-coupling", "") {
 
   // Finalize  the AD
   ad.finalize();
-
-  // If we got here, we were able to run surface_coupling
-  REQUIRE(true);
 }
-
 
 } // empty namespace

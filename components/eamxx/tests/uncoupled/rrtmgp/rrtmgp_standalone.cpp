@@ -2,11 +2,8 @@
 
 #include "control/atmosphere_driver.hpp"
 #include "diagnostics/register_diagnostics.hpp"
-
-#include "physics/rrtmgp/atmosphere_radiation.hpp"
-
+#include "physics/register_physics.hpp"
 #include "share/grid/mesh_free_grids_manager.hpp"
-#include "share/atm_process/atmosphere_process.hpp"
 #include "share/field/field_utils.hpp"
 
 #include "ekat/ekat_parse_yaml_file.hpp"
@@ -38,10 +35,8 @@ TEST_CASE("rrtmgp-stand-alone", "") {
   EKAT_ASSERT_MSG (dt>0, "Error! Time step must be positive.\n");
 
   // Need to register products in the factory *before* we create any atm process or grids manager.
-  auto& proc_factory = AtmosphereProcessFactory::instance();
-  auto& gm_factory = GridsManagerFactory::instance();
-  proc_factory.register_product("rrtmgp",&create_atmosphere_process<RRTMGPRadiation>);
-  gm_factory.register_product("Mesh Free",&create_mesh_free_grids_manager);
+  register_physics();
+  register_mesh_free_grids_manager();
   register_diagnostics();
 
   // Create the driver
@@ -98,17 +93,10 @@ TEST_CASE("rrtmgp-stand-alone", "") {
     } else if (i == 3) {
         REQUIRE(!views_are_equal(sw_flux_up_old, sw_flux_up));
     }
-
   }
 
-  // TODO: get the field repo from the driver, and go get (one of)
-  //       the output(s) of SHOC, to check its numerical value (if possible)
-
-  // Finalize 
+  // Finalize
   ad.finalize();
-
-  // If we got here, we were able to run shoc
-  REQUIRE(true);
 }
 
 } // empty namespace

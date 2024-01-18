@@ -141,13 +141,13 @@ struct ShocEnergyTotalFixerData : public ShocTestGridDataBase {
   // Inputs
   Int shcol, nlev, nlevi, nadv;
   Real dtime;
-  Real *se_b, *ke_b, *wv_b, *wl_b, *se_a, *ke_a, *wv_a, *wl_a, *wthl_sfc, *wqw_sfc, *rho_zt;
+  Real *se_b, *ke_b, *wv_b, *wl_b, *se_a, *ke_a, *wv_a, *wl_a, *wthl_sfc, *wqw_sfc, *rho_zt, *pint;
 
   // Outputs
   Real *te_a, *te_b;
 
   ShocEnergyTotalFixerData(Int shcol_, Int nlev_, Int nlevi_, Real dtime_, Int nadv_) :
-    ShocTestGridDataBase({{ shcol_, nlev_ }, { shcol_, nlevi_ }, { shcol_ }}, {{ &zt_grid, &rho_zt }, { &zi_grid }, { &se_b, &ke_b, &wv_b, &wl_b, &se_a, &ke_a, &wv_a, &wl_a, &wthl_sfc, &wqw_sfc, &te_a, &te_b }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_), nadv(nadv_), dtime(dtime_) {}
+    ShocTestGridDataBase({{ shcol_, nlev_ }, { shcol_, nlevi_ }, { shcol_ }}, {{ &zt_grid, &rho_zt }, { &zi_grid, &pint }, { &se_b, &ke_b, &wv_b, &wl_b, &se_a, &ke_a, &wv_a, &wl_a, &wthl_sfc, &wqw_sfc, &te_a, &te_b }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_), nadv(nadv_), dtime(dtime_) {}
 
   PTD_STD_DEF(ShocEnergyTotalFixerData, 5, shcol, nlev, nlevi, dtime, nadv);
 };
@@ -314,7 +314,7 @@ struct ShocTkeData : public ShocTestGridDataBase {
   // Inputs
   Int shcol, nlev, nlevi;
   Real dtime;
-  Real *wthv_sec, *shoc_mix, *dz_zi, *dz_zt, *pres, *u_wind, *v_wind, *brunt, *obklen, *pblh;
+  Real *wthv_sec, *shoc_mix, *dz_zi, *dz_zt, *pres, *tabs, *u_wind, *v_wind, *brunt, *pblh;
 
   // Inputs/Outputs
   Real *tke, *tk, *tkh;
@@ -323,7 +323,11 @@ struct ShocTkeData : public ShocTestGridDataBase {
   Real *isotropy;
 
   ShocTkeData(Int shcol_, Int nlev_, Int nlevi_, Real dtime_) :
-    ShocTestGridDataBase({{ shcol_, nlev_ }, { shcol_, nlevi_ }, { shcol_ }}, {{ &wthv_sec, &shoc_mix, &dz_zt, &pres, &u_wind, &v_wind, &brunt, &zt_grid, &tke, &tk, &tkh, &isotropy }, { &dz_zi, &zi_grid }, { &obklen, &pblh }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_), dtime(dtime_) {}
+    ShocTestGridDataBase({{ shcol_, nlev_ }, { shcol_, nlevi_ }, { shcol_ }},
+                         {{ &wthv_sec, &shoc_mix, &dz_zt, &pres, &tabs, &u_wind, &v_wind, &brunt, &zt_grid, &tke, &tk, &tkh, &isotropy },
+                          { &dz_zi, &zi_grid },
+                          { &pblh }}),
+                        shcol(shcol_), nlev(nlev_), nlevi(nlevi_), dtime(dtime_) {}
 
   PTD_STD_DEF(ShocTkeData, 4, shcol, nlev, nlevi, dtime);
 };
@@ -377,13 +381,13 @@ struct AdvSgsTkeData : public PhysicsTestData {
 struct EddyDiffusivitiesData : public PhysicsTestData {
   // Inputs
   Int shcol, nlev;
-  Real *obklen, *pblh, *zt_grid, *shoc_mix, *sterm_zt, *isotropy, *tke;
+  Real *pblh, *zt_grid, *tabs, *shoc_mix, *sterm_zt, *isotropy, *tke;
 
   // Outputs
   Real *tkh, *tk;
 
   EddyDiffusivitiesData(Int shcol_, Int nlev_) :
-    PhysicsTestData({{ shcol_ }, { shcol_, nlev_ }}, {{ &obklen, &pblh }, { &zt_grid, &shoc_mix, &sterm_zt, &isotropy, &tke, &tkh, &tk }}), shcol(shcol_), nlev(nlev_) {}
+    PhysicsTestData({{ shcol_ }, { shcol_, nlev_ }}, {{ &pblh }, { &zt_grid, &tabs, &shoc_mix, &sterm_zt, &isotropy, &tke, &tkh, &tk }}), shcol(shcol_), nlev(nlev_) {}
 
   PTD_STD_DEF(EddyDiffusivitiesData, 2, shcol, nlev);
 };
@@ -1051,6 +1055,20 @@ struct PblintdData : public PhysicsTestData {
   PTD_STD_DEF(PblintdData, 4, shcol, nlev, nlevi, npbl);
 };
 
+struct ComputeShocTempData : public PhysicsTestData {
+  // Inputs
+  Int shcol, nlev;
+  Real *thetal, *ql, *inv_exner;
+
+  // Outputs
+  Real *tabs;
+
+  ComputeShocTempData(Int shcol_, Int nlev_) :
+    PhysicsTestData({{ shcol_, nlev_ }}, {{ &thetal, &ql, &inv_exner, &tabs}}), shcol(shcol_), nlev(nlev_) {}
+
+  PTD_STD_DEF(ComputeShocTempData, 2, shcol, nlev);
+};
+
 // Glue functions to call fortran from from C++ with the Data struct
 
 void shoc_grid                                      (ShocGridData& d);
@@ -1119,6 +1137,7 @@ void vd_shoc_decomp_and_solve                       (VdShocDecompandSolveData& d
 void pblintd_surf_temp(PblintdSurfTempData& d);
 void pblintd_check_pblh(PblintdCheckPblhData& d);
 void pblintd(PblintdData& d);
+void compute_shoc_temperature(ComputeShocTempData& d);
 extern "C" { // _f function decls
 
 void calc_shoc_varorcovar_f(Int shcol, Int nlev, Int nlevi, Real tunefac,
@@ -1219,11 +1238,12 @@ void pblintd_check_pblh_f(Int shcol, Int nlev, Int nlevi, Int npbl, Real* z, Rea
 
 void pblintd_f(Int shcol, Int nlev, Int nlevi, Int npbl, Real* z, Real* zi, Real* thl, Real* ql, Real* q, Real* u, Real* v, Real* ustar, Real* obklen, Real* kbfs, Real* cldn, Real* pblh);
 void shoc_grid_f(Int shcol, Int nlev, Int nlevi, Real* zt_grid, Real* zi_grid, Real* pdel, Real* dz_zt, Real* dz_zi, Real* rho_zt);
-void eddy_diffusivities_f(Int nlev, Int shcol, Real* obklen, Real* pblh, Real* zt_grid, Real* shoc_mix, Real* sterm_zt, Real* isotropy,
+void eddy_diffusivities_f(Int nlev, Int shcol, Real* pblh, Real* zt_grid, Real* tabs, Real* shoc_mix, Real* sterm_zt, Real* isotropy,
                           Real* tke, Real* tkh, Real* tk);
 void shoc_tke_f(Int shcol, Int nlev, Int nlevi, Real dtime, Real* wthv_sec, Real* shoc_mix, Real* dz_zi, Real* dz_zt, Real* pres,
                 Real* u_wind, Real* v_wind, Real* brunt, Real* obklen, Real* zt_grid, Real* zi_grid, Real* pblh, Real* tke,
                 Real* tk, Real* tkh, Real* isotropy);
+void compute_shoc_temperature_f(Int shcol, Int nlev, Real* thetal, Real* ql, Real* inv_exner, Real* tabs);
 } // end _f function decls
 
 }  // namespace shoc

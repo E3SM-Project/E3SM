@@ -1,6 +1,7 @@
 #include "atmosphere_surface_coupling_importer.hpp"
 
 #include "share/property_checks/field_within_interval_check.hpp"
+#include "physics/share/physics_constants.hpp"
 
 #include "ekat/ekat_assert.hpp"
 #include "ekat/util/ekat_units.hpp"
@@ -24,7 +25,7 @@ void SurfaceCouplingImporter::set_grids(const std::shared_ptr<const GridsManager
   const auto& grid_name = m_grid->name();
 
   m_num_cols = m_grid->get_num_local_dofs();      // Number of columns on this rank
- 
+
   // The units of mixing ratio Q are technically non-dimensional.
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
   auto Qunit = kg/kg;
@@ -130,7 +131,7 @@ void SurfaceCouplingImporter::initialize_impl (const RunType /* run_type */)
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("sfc_alb_dif_vis"),m_grid,0.0,1.0,true);
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("sfc_alb_dif_nir"),m_grid,0.0,1.0,true);
 
-  // Perform initial import (if any are marked for import during initialization) 
+  // Perform initial import (if any are marked for import during initialization)
   if (any_initial_imports) do_import(true);
 }
 // =========================================================================================
@@ -168,6 +169,70 @@ void SurfaceCouplingImporter::do_import(const bool called_during_initialization)
       info.data[offset] = cpl_imports_view_d(icol,info.cpl_indx)*info.constant_multiple;
     }
   });
+
+  // If IOP is defined, potentially overwrite imports with data from IOP file
+  if (m_intensive_observation_period) {
+    overwrite_iop_imports(called_during_initialization);
+  }
+}
+// =========================================================================================
+void SurfaceCouplingImporter::overwrite_iop_imports (const bool called_during_initialization)
+{
+  using policy_type = KokkosTypes<DefaultDevice>::RangePolicy;
+  using C = physics::Constants<Real>;
+
+  const auto& iop = m_intensive_observation_period;
+
+  const auto has_lhflx = iop->has_iop_field("lhflx");
+  const auto has_shflx = iop->has_iop_field("shflx");
+  const auto has_Tg    = iop->has_iop_field("Tg");
+
+  static constexpr Real latvap = C::LatVap;
+  static constexpr Real stebol = C::stebol;
+
+  const auto& col_info_h = m_column_info_h;
+  const auto& col_info_d = m_column_info_d;
+
+  for (int ifield=0; ifield<m_num_scream_imports; ++ifield) {
+    const std::string fname = m_import_field_names[ifield];
+    const auto& info_h = col_info_h(ifield);
+
+    // If we are in initialization and field should not be imported, skip
+    if (called_during_initialization && not info_h.transfer_during_initialization) {
+      continue;
+    }
+
+    // Store IOP surf data into col_val
+    Real col_val(std::nan(""));
+    if (fname == "surf_evap" && has_lhflx) {
+      const auto f = iop->get_iop_field("lhflx");
+      f.sync_to_host();
+      col_val = f.get_view<Real, Host>()()/latvap;
+    } else if (fname == "surf_sens_flux" && has_shflx) {
+      const auto f = iop->get_iop_field("shflx");
+      f.sync_to_host();
+      col_val = f.get_view<Real, Host>()();
+    } else if (fname == "surf_radiative_T" && has_Tg) {
+      const auto f = iop->get_iop_field("Tg");
+      f.sync_to_host();
+      col_val = f.get_view<Real, Host>()();
+    } else if (fname == "surf_lw_flux_up" && has_Tg) {
+      const auto f = iop->get_iop_field("Tg");
+      f.sync_to_host();
+      col_val = stebol*std::pow(f.get_view<Real, Host>()(), 4);
+    } else {
+      // If import field doesn't satisify above, skip
+      continue;
+    }
+
+    // Overwrite iop imports with col_val for each column
+    auto policy = policy_type(0, m_num_cols);
+    Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const int& icol) {
+      const auto& info_d = col_info_d(ifield);
+      const auto offset = icol*info_d.col_stride + info_d.col_offset;
+      info_d.data[offset] = col_val;
+    });
+  }
 }
 // =========================================================================================
 void SurfaceCouplingImporter::finalize_impl()
