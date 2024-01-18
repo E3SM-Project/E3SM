@@ -87,7 +87,7 @@ target_link_options(
   ${OMEGA_LINK_OPTIONS}
 )
 
-target_link_libraries(${_TestBroadcastName} ${OMEGA_LIB_NAME} yakl)
+target_link_libraries(${_TestBroadcastName} ${OMEGA_LIB_NAME} spdlog yakl)
 
 add_test(
   NAME BROADCAST_TEST
@@ -117,7 +117,7 @@ target_link_options(
   ${OMEGA_LINK_OPTIONS}
 )
 
-target_link_libraries(${_TestLoggingName} ${OMEGA_LIB_NAME} yakl)
+target_link_libraries(${_TestLoggingName} ${OMEGA_LIB_NAME} spdlog yakl)
 
 add_test(NAME LOGGING_TEST COMMAND ./${_TestLoggingName})
 
@@ -127,7 +127,6 @@ add_test(NAME LOGGING_TEST COMMAND ./${_TestLoggingName})
 
 set(_TestDecompName testDecomp.exe)
 
-# Add broadcast test
 add_executable(${_TestDecompName} base/DecompTest.cpp)
 
 target_include_directories(
@@ -150,7 +149,7 @@ target_link_options(
   ${OMEGA_LINK_OPTIONS}
 )
 
-target_link_libraries(${_TestDecompName} ${OMEGA_LIB_NAME} yakl parmetis metis)
+target_link_libraries(${_TestDecompName} ${OMEGA_LIB_NAME} spdlog yakl parmetis metis pioc)
 
 if(GKlib_FOUND)
   target_link_libraries(${_TestDecompName} gklib)
@@ -159,6 +158,46 @@ endif()
 add_test(
   NAME DECOMP_TEST
   COMMAND ${MPI_EXEC} -n 8 -- ./${_TestDecompName}
+)
+
+
+#############
+# IO test
+#############
+
+set(_TestIOName testIO.exe)
+
+add_executable(${_TestIOName} base/IOTest.cpp)
+
+target_include_directories(
+   ${_TestIOName}
+  PRIVATE
+  ${OMEGA_SOURCE_DIR}/src/base
+  ${OMEGA_SOURCE_DIR}/src/infra
+  ${Parmetis_INCLUDE_DIRS}
+)
+
+target_compile_options(
+   ${_TestIOName}
+  PRIVATE
+  ${OMEGA_CXX_FLAGS}
+)
+
+target_link_options(
+   ${_TestIOName}
+  PRIVATE
+  ${OMEGA_LINK_OPTIONS}
+)
+
+target_link_libraries(${_TestIOName}     ${OMEGA_LIB_NAME} spdlog yakl parmetis metis pioc)
+
+if(GKlib_FOUND)
+   target_link_libraries(${_TestIOName} gklib)
+endif()
+
+add_test(
+  NAME IO_TEST
+  COMMAND ${MPI_EXEC} -n 8 -- ./${_TestIOName}
 )
 
 
@@ -195,6 +234,7 @@ set_tests_properties(
   MACHINE_ENV_TEST
   BROADCAST_TEST
   LOGGING_TEST
+  IO_TEST
   YAKL_TEST
   PROPERTIES FAIL_REGULAR_EXPRESSION "FAIL"
 )

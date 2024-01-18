@@ -36,7 +36,7 @@ int initDecompTest() {
    MPI_Comm DefComm       = DefEnv->getComm();
 
    // Initialize the IO system
-   Err = OMEGA::IOInit(DefComm);
+   Err = OMEGA::IO::init(DefComm);
    if (Err != 0)
       LOG_ERROR("DecompTest: error initializing parallel IO");
 

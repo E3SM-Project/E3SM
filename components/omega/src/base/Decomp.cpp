@@ -133,19 +133,19 @@ int readMesh(const int MeshFileID, // file ID for open mesh file
 
    // Read in mesh size information - these are dimension lengths in
    // the input mesh file
-   NCellsGlobal = OMEGA::IOGetDimLength(MeshFileID, "nCells");
+   NCellsGlobal = IO::getDimLength(MeshFileID, "nCells");
    if (NCellsGlobal <= 0)
       LOG_CRITICAL("Decomp: error reading nCells");
-   NEdgesGlobal = OMEGA::IOGetDimLength(MeshFileID, "nEdges");
+   NEdgesGlobal = IO::getDimLength(MeshFileID, "nEdges");
    if (NEdgesGlobal <= 0)
       LOG_CRITICAL("Decomp: error reading NEdges");
-   NVerticesGlobal = OMEGA::IOGetDimLength(MeshFileID, "nVertices");
+   NVerticesGlobal = IO::getDimLength(MeshFileID, "nVertices");
    if (NVerticesGlobal <= 0)
       LOG_CRITICAL("Decomp: error reading NVertices");
-   MaxEdges = OMEGA::IOGetDimLength(MeshFileID, "maxEdges");
+   MaxEdges = IO::getDimLength(MeshFileID, "maxEdges");
    if (MaxEdges <= 0)
       LOG_CRITICAL("Decomp: error reading MaxEdges");
-   VertexDegree = OMEGA::IOGetDimLength(MeshFileID, "vertexDegree");
+   VertexDegree = IO::getDimLength(MeshFileID, "vertexDegree");
    if (VertexDegree <= 0)
       LOG_CRITICAL("Decomp: error reading VertexDegree");
    MaxCellsOnEdge    = 2;            // currently always 2
@@ -221,26 +221,25 @@ int readMesh(const int MeshFileID, // file ID for open mesh file
    }    // end loop NVerticesLocal
 
    // Create the parallel IO decompositions
-   IORearranger Rearr = IORearrBox;
+   IO::Rearranger Rearr = IO::RearrBox;
    I4 OnCellDecomp;
    I4 OnEdgeDecomp;
    I4 OnEdgeDecomp2;
    I4 OnVertexDecomp;
-   Err = OMEGA::IOCreateDecomp(OnCellDecomp, OMEGA::IOTypeI4, NDims, OnCellDims,
-                               OnCellSize, OnCellOffset, Rearr);
+   Err = IO::createDecomp(OnCellDecomp, IO::IOTypeI4, NDims, OnCellDims,
+                          OnCellSize, OnCellOffset, Rearr);
    if (Err != 0)
       LOG_CRITICAL("Decomp: error creating OnCell IO decomposition");
-   Err = OMEGA::IOCreateDecomp(OnEdgeDecomp, OMEGA::IOTypeI4, NDims, OnEdgeDims,
-                               OnEdgeSize, OnEdgeOffset, Rearr);
+   Err = IO::createDecomp(OnEdgeDecomp, IO::IOTypeI4, NDims, OnEdgeDims,
+                          OnEdgeSize, OnEdgeOffset, Rearr);
    if (Err != 0)
       LOG_CRITICAL("Decomp: error creating OnEdge IO decomposition");
-   Err = OMEGA::IOCreateDecomp(OnEdgeDecomp2, OMEGA::IOTypeI4, NDims,
-                               OnEdgeDims2, OnEdgeSize2, OnEdgeOffset2, Rearr);
+   Err = IO::createDecomp(OnEdgeDecomp2, IO::IOTypeI4, NDims, OnEdgeDims2,
+                          OnEdgeSize2, OnEdgeOffset2, Rearr);
    if (Err != 0)
       LOG_CRITICAL("Decomp: error creating OnEdg2 IO decomposition");
-   Err =
-       OMEGA::IOCreateDecomp(OnVertexDecomp, OMEGA::IOTypeI4, NDims,
-                             OnVertexDims, OnVertexSize, OnVertexOffset, Rearr);
+   Err = IO::createDecomp(OnVertexDecomp, IO::IOTypeI4, NDims, OnVertexDims,
+                          OnVertexSize, OnVertexOffset, Rearr);
    if (Err != 0)
       LOG_CRITICAL("Decomp: error creating Vertex IO decomposition");
 
@@ -254,50 +253,65 @@ int readMesh(const int MeshFileID, // file ID for open mesh file
    CellsOnVertexInit.resize(OnVertexSize);
    EdgesOnVertexInit.resize(OnVertexSize);
 
-   Err = OMEGA::IOReadArray(&CellsOnCellInit[0], OnCellSize, "cellsOnCell",
-                            MeshFileID, OnCellDecomp);
+   int CellsOnCellID;
+   Err = IO::readArray(&CellsOnCellInit[0], OnCellSize, "cellsOnCell",
+                       MeshFileID, OnCellDecomp, CellsOnCellID);
    if (Err != 0)
       LOG_CRITICAL("Decomp: error reading CellsOnCell");
-   Err = OMEGA::IOReadArray(&EdgesOnCellInit[0], OnCellSize, "edgesOnCell",
-                            MeshFileID, OnCellDecomp);
+
+   int EdgesOnCellID;
+   Err = IO::readArray(&EdgesOnCellInit[0], OnCellSize, "edgesOnCell",
+                       MeshFileID, OnCellDecomp, EdgesOnCellID);
    if (Err != 0)
       LOG_CRITICAL("Decomp: error reading EdgesOnCell");
-   Err = OMEGA::IOReadArray(&VerticesOnCellInit[0], OnCellSize,
-                            "verticesOnCell", MeshFileID, OnCellDecomp);
+
+   int VerticesOnCellID;
+   Err = IO::readArray(&VerticesOnCellInit[0], OnCellSize, "verticesOnCell",
+                       MeshFileID, OnCellDecomp, VerticesOnCellID);
    if (Err != 0)
       LOG_CRITICAL("Decomp: error reading VerticesOnCell");
-   Err = OMEGA::IOReadArray(&CellsOnEdgeInit[0], OnEdgeSize, "cellsOnEdge",
-                            MeshFileID, OnEdgeDecomp);
+
+   int CellsOnEdgeID;
+   Err = IO::readArray(&CellsOnEdgeInit[0], OnEdgeSize, "cellsOnEdge",
+                       MeshFileID, OnEdgeDecomp, CellsOnEdgeID);
    if (Err != 0)
       LOG_CRITICAL("Decomp: error reading CellsOnEdge");
-   Err = OMEGA::IOReadArray(&EdgesOnEdgeInit[0], OnEdgeSize2, "edgesOnEdge",
-                            MeshFileID, OnEdgeDecomp2);
+
+   int EdgesOnEdgeID;
+   Err = IO::readArray(&EdgesOnEdgeInit[0], OnEdgeSize2, "edgesOnEdge",
+                       MeshFileID, OnEdgeDecomp2, EdgesOnEdgeID);
    if (Err != 0)
       LOG_CRITICAL("Decomp: error reading EdgesOnEdge");
-   Err = OMEGA::IOReadArray(&VerticesOnEdgeInit[0], OnEdgeSize,
-                            "verticesOnEdge", MeshFileID, OnEdgeDecomp);
+
+   int VerticesOnEdgeID;
+   Err = IO::readArray(&VerticesOnEdgeInit[0], OnEdgeSize, "verticesOnEdge",
+                       MeshFileID, OnEdgeDecomp, VerticesOnEdgeID);
    if (Err != 0)
       LOG_CRITICAL("Decomp: error reading VerticesOnEdge");
-   Err = OMEGA::IOReadArray(&CellsOnVertexInit[0], OnVertexSize,
-                            "cellsOnVertex", MeshFileID, OnVertexDecomp);
+
+   int CellsOnVertexID;
+   Err = IO::readArray(&CellsOnVertexInit[0], OnVertexSize, "cellsOnVertex",
+                       MeshFileID, OnVertexDecomp, CellsOnVertexID);
    if (Err != 0)
       LOG_CRITICAL("Decomp: error reading CellsOnVertex");
-   Err = OMEGA::IOReadArray(&EdgesOnVertexInit[0], OnVertexSize,
-                            "edgesOnVertex", MeshFileID, OnVertexDecomp);
+
+   int EdgesOnVertexID;
+   Err = IO::readArray(&EdgesOnVertexInit[0], OnVertexSize, "edgesOnVertex",
+                       MeshFileID, OnVertexDecomp, EdgesOnVertexID);
    if (Err != 0)
       LOG_CRITICAL("Decomp: error reading EdgesOnVertex");
 
    // Initial decompositions are no longer needed so remove them now
-   Err = OMEGA::IODestroyDecomp(OnCellDecomp);
+   Err = IO::destroyDecomp(OnCellDecomp);
    if (Err != 0)
       LOG_ERROR("Decomp: error destroying OnCell decomposition");
-   Err = OMEGA::IODestroyDecomp(OnEdgeDecomp);
+   Err = IO::destroyDecomp(OnEdgeDecomp);
    if (Err != 0)
       LOG_ERROR("Decomp: error destroying OnEdge decomposition");
-   Err = OMEGA::IODestroyDecomp(OnEdgeDecomp2);
+   Err = IO::destroyDecomp(OnEdgeDecomp2);
    if (Err != 0)
       LOG_ERROR("Decomp: error destroying OnEdge2 decomposition");
-   Err = OMEGA::IODestroyDecomp(OnVertexDecomp);
+   Err = IO::destroyDecomp(OnVertexDecomp);
    if (Err != 0)
       LOG_ERROR("Decomp: error destroying OnVertex decomposition");
 
@@ -361,7 +375,7 @@ Decomp::Decomp(
 
    // Open the mesh file for reading (assume IO has already been initialized)
    int FileID;
-   Err = OMEGA::IOFileOpen(FileID, MeshFileName, IOModeRead);
+   Err = IO::openFile(FileID, MeshFileName, IO::ModeRead);
    if (Err != 0)
       LOG_CRITICAL("Decomp: error opening mesh file");
 
@@ -385,7 +399,7 @@ Decomp::Decomp(
       LOG_CRITICAL("Decomp: Error reading mesh connectivity");
 
    // Close file
-   Err = IOFileClose(FileID);
+   Err = IO::closeFile(FileID);
 
    // Use the mesh adjacency information to create a partition of cells
    switch (Method) { // branch depending on method chosen
