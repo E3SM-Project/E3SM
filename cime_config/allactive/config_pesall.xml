@@ -2338,17 +2338,16 @@
     </mach>
     <mach name="pm-gpu|muller-gpu">
       <pes compset="any" pesize="any">
+        <comment>pm-gpu conus 2 nodes, 4x1 except 16 threads in LND</comment>
         <MAX_MPITASKS_PER_NODE>4</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
         <ntasks>
-          <ntasks_atm>-4</ntasks_atm>
-          <ntasks_lnd>-4</ntasks_lnd>
-          <ntasks_rof>-4</ntasks_rof>
-          <ntasks_ice>-4</ntasks_ice>
-          <ntasks_ocn>-4</ntasks_ocn>
-          <ntasks_glc>-4</ntasks_glc>
-          <ntasks_wav>-4</ntasks_wav>
-          <ntasks_cpl>-4</ntasks_cpl>
+          <ntasks_atm>-2</ntasks_atm>
+          <ntasks_lnd>-2</ntasks_lnd>
+          <ntasks_rof>-2</ntasks_rof>
+          <ntasks_ice>-2</ntasks_ice>
+          <ntasks_ocn>-2</ntasks_ocn>
+          <ntasks_cpl>-2</ntasks_cpl>
         </ntasks>
         <nthrds>
           <nthrds_atm>1</nthrds_atm>

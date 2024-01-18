@@ -1062,7 +1062,7 @@
         </ntasks>
       </pes>
     </mach>
-    <mach name="summit|ascent">
+    <mach name="summit|ascent|pm-gpu|muller-gpu">
       <pes compset=".*EAM.+ELM.+MPASSI.+DOCN.+MOSART.+" pesize="M">
         <comment>--res conusx4v1_r05_oECv3 --compset F2010 </comment>
         <ntasks>

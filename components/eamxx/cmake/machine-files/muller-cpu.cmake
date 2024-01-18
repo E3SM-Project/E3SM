@@ -1,21 +1,21 @@
 include(${CMAKE_CURRENT_LIST_DIR}/common.cmake)
 common_setup()
 
-# Load knl arch and openmp backend for kokkos
-include (${EKAT_MACH_FILES_PATH}/kokkos/intel-knl.cmake)
-
 if ("${PROJECT_NAME}" STREQUAL "E3SM")
   if (BUILD_THREADED)
     include (${EKAT_MACH_FILES_PATH}/kokkos/openmp.cmake)
+    #message(STATUS, "muller-cpu openmp BUILD_THREADED=${BUILD_THREADED}")
   else()
     include (${EKAT_MACH_FILES_PATH}/kokkos/serial.cmake)
+    #message(STATUS, "muller-cpu serial BUILD_THREADED=${BUILD_THREADED}")
   endif()
 else()
   include (${EKAT_MACH_FILES_PATH}/kokkos/openmp.cmake)
 endif()
 
-include (${EKAT_MACH_FILES_PATH}/mpi/srun.cmake)
+set(CMAKE_CXX_FLAGS "-DTHRUST_IGNORE_CUB_VERSION_CHECK" CACHE STRING "" FORCE)
 
+#message(STATUS "muller-cpu CMAKE_CXX_COMPILER_ID=${CMAKE_CXX_COMPILER_ID} CMAKE_Fortran_COMPILER_VERSION=${CMAKE_Fortran_COMPILER_VERSION}")
 if ("${PROJECT_NAME}" STREQUAL "E3SM")
   if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     if (CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER_EQUAL 10)
@@ -25,7 +25,3 @@ if ("${PROJECT_NAME}" STREQUAL "E3SM")
 else()
   set(CMAKE_Fortran_FLAGS "-fallow-argument-mismatch"  CACHE STRING "" FORCE) # only works with gnu v10 and above
 endif()
-
-# Fixes some openmpi link problems we observed on cori. This hack is
-# not necessary if CRAYPE_LINK_TYPE=dynamic is in the environment.
-set(SCREAM_CORI_HACK True CACHE BOOL "")

@@ -786,7 +786,7 @@ def _get_batch_job_id_for_syslog(case):
     """
     mach = case.get_value("MACH")
     try:
-        if mach in ["anvil", "chrysalis", "compy", "cori-haswell", "cori-knl", "pm-cpu", "pm-gpu", "alvarez","frontier","crusher"]:
+        if mach in ["anvil", "chrysalis", "compy", "pm-cpu", "pm-gpu", "muller-cpu", "muller-gpu", "alvarez","frontier","frontier-scream-gpu","crusher"]:
             # Note: Besides, SLURM_JOB_ID, equivalent SLURM_JOBID is also present on some systems (Frontier).
             return os.environ["SLURM_JOB_ID"]
         elif mach in ["theta"]:
