@@ -31,7 +31,7 @@ module cloud_diagnostics
    integer :: dei_idx, mu_idx, lambda_idx, iciwp_idx, iclwp_idx, cld_idx  ! index into pbuf for cloud fields
    integer :: ixcldice, ixcldliq, rei_idx, rel_idx
 
-   logical :: do_cld_diag, mg_clouds, rk_clouds
+   logical :: do_cld_diag, p3_clouds, mg_clouds, rk_clouds
    integer :: conv_water_in_rad
    
    integer :: cicewp_idx = -1
@@ -53,11 +53,9 @@ contains
     use phys_control,  only: phys_getopts
     use physics_buffer,only: pbuf_add_field, dtype_r8, dtype_i4
 
-    character(len=16) :: rad_pkg, microp_pgk
+    character(len=16) :: rad_pkg, microp_pgk, macrop_pkg
 
-    call phys_getopts(radiation_scheme_out=rad_pkg,microp_scheme_out=microp_pgk)
-
-    call phys_getopts(radiation_scheme_out=rad_pkg,microp_scheme_out=microp_pkg, macrop_scheme_out=macrop_pkg)
+    call phys_getopts(radiation_scheme_out=rad_pkg,microp_scheme_out=microp_pgk, macrop_scheme_out=macrop_pkg)
     rk_clouds = microp_pkg == 'RK'
     mg_clouds = microp_pkg == 'MG'
     p3_clouds = microp_pkg == 'P3'
@@ -136,7 +134,7 @@ contains
     call cnst_get_ind('CLDICE', ixcldice)
     call cnst_get_ind('CLDLIQ', ixcldliq)
 
-    do_cld_diag = rk_clouds .or. mg_clouds
+    do_cld_diag = rk_clouds .or. mg_clouds .or. p3_clouds
 
     if (.not.do_cld_diag) return
     
@@ -145,7 +143,7 @@ contains
     if (rk_clouds) then 
        wpunits = 'gram/m2'
        sampling_seq='rad_lwsw'
-    else if (mg_clouds) then 
+    else if (mg_clouds .or. p3_clouds) then 
        wpunits = 'kg/m2'
        sampling_seq=''
     endif
@@ -291,7 +289,7 @@ subroutine cloud_diagnostics_calc(state,  pbuf)
     itim_old = pbuf_old_tim_idx()
     call pbuf_get_field(pbuf, cld_idx, cld, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
 
-    if(mg_clouds)then
+    if(mg_clouds .or. p3_clouds)then
 
        call pbuf_get_field(pbuf, iclwp_idx, iclwp )
        call pbuf_get_field(pbuf, iciwp_idx, iciwp )
@@ -348,7 +346,7 @@ subroutine cloud_diagnostics_calc(state,  pbuf)
     endif
 
 ! Compute liquid and ice water paths
-    if(mg_clouds) then
+    if(mg_clouds .or. p3_clouds) then
 
        ! ----------------------------------------------------------- !
        ! Adjust in-cloud water values to take account of convective  !
@@ -454,7 +452,7 @@ subroutine cloud_diagnostics_calc(state,  pbuf)
        call outfld('EFFCLD'  ,effcld , pcols,lchnk)
        call outfld('EMISCLD' ,cldemis, pcols,lchnk)
 
-    else if (mg_clouds) then
+    else if (mg_clouds .or. p3_clouds) then
 
        ! --------------------------------------------- !
        ! General outfield calls for microphysics       !

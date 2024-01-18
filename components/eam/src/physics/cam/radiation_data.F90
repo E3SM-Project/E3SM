@@ -75,6 +75,7 @@ module radiation_data
 
   ! MG or P3 microphys check
   logical, public :: mg_microphys
+  logical, public :: p3_microphys
 
 contains
 
@@ -138,6 +139,7 @@ contains
    
     call phys_getopts(microp_scheme_out=microp_scheme)
     mg_microphys =  (trim(microp_scheme) == 'MG')
+    p3_microphys =  (trim(microp_scheme) == 'P3')
 
     cld_ifld    = pbuf_get_index('CLD')
     concld_ifld = pbuf_get_index('CONCLD')
