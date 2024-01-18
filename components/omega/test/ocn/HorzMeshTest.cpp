@@ -64,8 +64,6 @@ OMEGA::R8 sphereDistance(OMEGA::R8 lon1, OMEGA::R8 lat1, OMEGA::R8 lon2, OMEGA::
 
    OMEGA::R8 arg;
 
-   //arg = sqrt( pow(sin(0.5*(lat2-lat1)), 2) + (pow(cos(0.5*(lat2+lat1)), 2) - pow(sin(0.5*(lat2-lat1)), 2))*pow(sin(0.5*(lon2-lon1)), 2));
-
    arg = sqrt( pow(sin(0.5*(lat1-lat2)),2) +
                     cos(lat2)*cos(lat1)*pow(sin(0.5*(lon1-lon2)),2));
    return 2.0*asin(arg);
@@ -96,6 +94,17 @@ OMEGA::R8 computeLat(OMEGA::R8 x, OMEGA::R8 y, OMEGA::R8 z) {
    lat = asin(z/dist);
 
    return lat;
+}
+
+OMEGA::R8 coriolis(OMEGA::R8 lat) {
+
+   OMEGA::R8 f;
+   OMEGA::R8 omega = 7.29212e-5;
+
+   f = 2.0*omega*sin(lat);
+
+   return f;
+
 }
 
 //------------------------------------------------------------------------------
@@ -348,6 +357,59 @@ int main(int argc, char *argv[]) {
       LOG_INFO("HorzMeshTest: dvEdge test PASS");
    } else {
       LOG_INFO("HorzMeshTest: dvEdge test FAIL");
+      return -1;
+   }
+
+   // Test fCell
+   count = 0;
+   for (int Cell = 0; Cell < LocCells; Cell++) {
+      OMEGA::R8 f = coriolis(Mesh.LatCellH(Cell));
+
+      if (abs(f-Mesh.FCellH(Cell)) > tol) {
+         count++;
+      }
+   }
+
+   if ( count == 0 ) {
+      LOG_INFO("HorzMeshTest: fCell test PASS");
+   } else {
+      LOG_INFO("HorzMeshTest: fCell test FAIL");
+      return -1;
+   }
+
+   // Test fVertex
+   count = 0;
+   for (int Vertex = 0; Vertex < LocVertices; Vertex++) {
+      
+      OMEGA::R8 f = coriolis(Mesh.LatVertexH(Vertex));
+
+      if (abs(f-Mesh.FVertexH(Vertex)) > tol) {
+         count++;
+      }
+
+   }
+
+   if ( count == 0 ) {
+      LOG_INFO("HorzMeshTest: fVertex test PASS");
+   } else {
+      LOG_INFO("HorzMeshTest: fVertex test FAIL");
+      return -1;
+   }
+
+   // Test fEdge
+   count = 0;
+   for (int Edge = 0; Edge < LocEdges; Edge++) {
+      OMEGA::R8 f = coriolis(Mesh.LatEdgeH(Edge));
+
+      if (abs(f-Mesh.FEdgeH(Edge)) > tol) {
+         count++;
+      }
+   }
+
+   if ( count == 0 ) {
+      LOG_INFO("HorzMeshTest: fEdge test PASS");
+   } else {
+      LOG_INFO("HorzMeshTest: fEdge test FAIL");
       return -1;
    }
 

@@ -272,38 +272,25 @@ void HorzMesh::readWeights() {
 
 void HorzMesh::readCoriolis() {
 
-   //FCellH = ArrayHost1DR8("fCell", NCellsAll);
-   //std::vector<R8> FCellTmp(NCellsAll);
-   //Err = OMEGA::IOReadArray(&FCellTmp[0], NCellsAll, "fCell",
-   //                         MeshFileID, CellDecompR8);
-   //if (Err != 0)
-   //   LOG_CRITICAL("HorzMesh: error reading fCell");
-   //
-   //for (int Cell = 0; Cell < NCellsAll; ++Cell) {
-   //   FCellH(Cell) = FCellTmp[Cell];
-   //}
+   int Err;
 
-   //FVertexH = ArrayHost1DR8("fVertex", NVerticesAll);
-   //std::vector<R8> FVertexTmp(NVerticesAll);
-   //Err = OMEGA::IOReadArray(&FVertexTmp[0], NVerticesAll, "fVertex",
-   //                         MeshFileID, VertexDecompR8);
-   //if (Err != 0)
-   //   LOG_CRITICAL("HorzMesh: error reading fVertex");
-   //
-   //for (int Vertex = 0; Vertex < NVerticesAll; ++Vertex) {
-   //   FVertexH(Vertex) = FVertexTmp[Vertex];
-   //}
+   FCellH = ArrayHost1DR8("fCell", NCellsAll);
+   Err = OMEGA::IOReadArray(FCellH.data(), NCellsAll, "fCell",
+                            MeshFileID, CellDecompR8);
+   if (Err != 0)
+      LOG_CRITICAL("HorzMesh: error reading fCell");
+   
+   FVertexH = ArrayHost1DR8("fVertex", NVerticesAll);
+   Err = OMEGA::IOReadArray(FVertexH.data(), NVerticesAll, "fVertex",
+                            MeshFileID, VertexDecompR8);
+   if (Err != 0)
+      LOG_CRITICAL("HorzMesh: error reading fVertex");
 
-   //FEdgeH = ArrayHost1DR8("fEdge", NEdgesAll);
-   //std::vector<R8> FEdgeTmp(NEdgesAll);
-   //Err = OMEGA::IOReadArray(&FEdgeTmp[0], NEdgesAll, "fEdge",
-   //                         MeshFileID, EdgeDecompR8);
-   //if (Err != 0)
-   //   LOG_CRITICAL("HorzMesh: error reading fEdge");
-   //
-   //for (int Edge = 0; Edge < NEdgesAll; ++Edge) {
-   //   FEdgeH(Edge) = FEdgeTmp[Edge];
-   //}
+   FEdgeH = ArrayHost1DR8("fEdge", NEdgesAll);
+   Err = OMEGA::IOReadArray(FEdgeH.data(), NEdgesAll, "fEdge",
+                            MeshFileID, EdgeDecompR8);
+   if (Err != 0)
+      LOG_CRITICAL("HorzMesh: error reading fEdge");
 
 } // end readCoriolis
 
