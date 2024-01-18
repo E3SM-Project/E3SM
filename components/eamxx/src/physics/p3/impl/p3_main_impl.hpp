@@ -234,7 +234,7 @@ Int Functions<S,D>
       T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr,
       rhofaci, acn, oqv, oth, oqc, onc, oqr, onr, oqi, oni, oqm,
       obm, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld, nr_incld,
-      ni_incld, bm_incld, nucleationPossible, hydrometeorsPresent);
+      ni_incld, bm_incld, nucleationPossible, hydrometeorsPresent, p3constants);
 
     // There might not be any work to do for this team
     if (!(nucleationPossible || hydrometeorsPresent)) {
@@ -282,7 +282,7 @@ Int Functions<S,D>
       rho, inv_rho, rhofacr, ocld_frac_r, inv_dz, qr_incld, team, workspace,
       lookup_tables.vn_table_vals, lookup_tables.vm_table_vals, nk, ktop, kbot, kdir, infrastructure.dt, inv_dt, oqr,
       onr, nr_incld, mu_r, lamr, oprecip_liq_flux, qtend_ignore, ntend_ignore,
-      diagnostic_outputs.precip_liq_surf(i));
+      diagnostic_outputs.precip_liq_surf(i), p3constants);
 
     // Ice sedimentation:  (adaptive substepping)
     ice_sedimentation(
@@ -305,7 +305,7 @@ Int Functions<S,D>
       rho, inv_rho, rhofaci, oqv, oth, oqc, onc, oqr, onr, oqi, oni,
       oqm, obm, olatent_heat_vapor, olatent_heat_sublim, mu_c, nu, lamc, mu_r, lamr,
       ovap_liq_exchange, ze_rain, ze_ice, diag_vm_qi, odiag_eff_radius_qi, diag_diam_qi,
-      orho_qi, diag_equiv_reflectivity, odiag_eff_radius_qc, odiag_eff_radius_qr);
+      orho_qi, diag_equiv_reflectivity, odiag_eff_radius_qc, odiag_eff_radius_qr, p3constants);
 
     //
     // merge ice categories with similar properties
