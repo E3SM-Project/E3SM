@@ -44,7 +44,8 @@ _TESTS = {
             "SMS.MOS_USRDAT.RMOSGPCC.mosart-unstructure",
             "SMS.r05_r05.IELM.elm-topounit",
             "ERS.ELM_USRDAT.I1850ELM.elm-usrdat",
-            "ERS.r05_r05.IELM.elm-V2_ELM_MOSART_features"
+            "ERS.r05_r05.IELM.elm-V2_ELM_MOSART_features",
+            "SMS_Ln2.hcru_hcru.ICB1850CNRDCTCBC.elm-ameriflux_cplbypass"
             )
         },
 

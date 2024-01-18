@@ -1,0 +1,10 @@
+./xmlchange PIO_VERSION=2
+./xmlchange MOSART_MODE=NULL
+./xmlchange ELM_BLDNML_OPTS=" -bgc bgc -nutrient cn  -nutrient_comp_pathway rd  -soil_decomp ctc  -bgc_spinup on"
+./xmlchange ATM_DOMAIN_PATH=/inputdata/share/domains/domain.clm
+./xmlchange LND_DOMAIN_PATH=/inputdata/share/domains/domain.clm
+./xmlchange ATM_DOMAIN_FILE=domain_42_FLUXNETSITES_simyr1850_c170912.nc
+./xmlchange LND_DOMAIN_FILE=domain_42_FLUXNETSITES_simyr1850_c170912.nc
+./xmlchange -id RUN_STARTDATE -val 0001-01-01
+./xmlchange NTASKS=1
+./xmlchange NTHRDS=1

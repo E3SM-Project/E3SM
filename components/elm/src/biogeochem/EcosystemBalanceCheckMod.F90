@@ -293,7 +293,8 @@ contains
             write(iulog,*)'Latdeg,Londeg         = ',grc_pp%latdeg(col_pp%gridcell(c)),grc_pp%londeg(col_pp%gridcell(c))
             write(iulog,*)'input                 = ',col_cinputs(c)*dt
             write(iulog,*)'output                = ',col_coutputs(c)*dt
-            write(iulog,*)'er                    = ',er(c)*dt,col_cf%hr(c)*dt
+            write(iulog,*)'er                    = ',er(c)*dt
+            write(iulog,*)'hr                    = ',col_cf%hr(c)*dt
             write(iulog,*)'fire                  = ',col_fire_closs(c)*dt
             write(iulog,*)'hrv_to_atm            = ',col_hrv_xsmrpool_to_atm(c)*dt
             write(iulog,*)'leach                 = ',som_c_leached(c)*dt

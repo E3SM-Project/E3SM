@@ -825,6 +825,50 @@
     <!--    <GMAKE>make</GMAKE> <- this doesn't actually work! -->
   </machine>
 
+  <machine MACH="docker">
+     <!-- customize these fields as appropriate for your system (max tasks) and
+          desired layout (change '${HOME}/projects' to your
+          prefered location). -->
+     <DESC>Containerized E3SM-ELM</DESC>
+     <NODENAME_REGEX>docker</NODENAME_REGEX>
+     <OS>LINUX</OS>
+     <COMPILERS>gnu,nvidia,nvidiagpu</COMPILERS>
+     <MPILIBS>openmpi,mpi-serial</MPILIBS>
+     <PROJECT>docker_runs</PROJECT>
+     <CIME_OUTPUT_ROOT>/output</CIME_OUTPUT_ROOT>
+     <DIN_LOC_ROOT>/inputdata</DIN_LOC_ROOT>
+     <DIN_LOC_ROOT_CLMFORC>/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
+     <BASELINE_ROOT>/baselines</BASELINE_ROOT>
+     <CCSM_CPRNC>/tools/cprnc</CCSM_CPRNC>
+     <GMAKE>make</GMAKE>
+     <!-- May want to modify this. Will require users to have 4 CPUs avail-->
+     <GMAKE_J>4</GMAKE_J>
+     <BATCH_SYSTEM>none</BATCH_SYSTEM>
+     <SUPPORTED_BY>sserbin at bnl dot gov</SUPPORTED_BY>
+     <!-- May want to modify this. Will require users to have 4 CPUs avail-->
+     <MAX_TASKS_PER_NODE>4</MAX_TASKS_PER_NODE>
+     <MAX_MPITASKS_PER_NODE>1</MAX_MPITASKS_PER_NODE>
+     <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
+     <!-- Do we really want to force serial here? -->
+     <mpirun mpilib="mpi-serial">
+             <executable></executable>
+     </mpirun>
+     <mpirun mpilib="default">
+             <executable>mpirun</executable>
+             <arguments>
+                   <arg name="num_tasks"> -np $TOTALPES</arg>
+                   <arg name="tasks_per_node"> -npernode $MAX_TASKS_PER_NODE --allow-run-as-root </arg>
+             </arguments>
+     </mpirun>
+     <module_system type="none"/>
+     <environment_variables>
+       <env name="HDF5_HOME">/usr/local/hdf5</env>
+       <env name="NETCDF_PATH">/usr/local/netcdf</env>
+       <env name="NETCDF_C_PATH">/usr/local/netcdf</env>
+       <env name="NETCDF_FORTRAN_PATH">/usr/local/netcdf</env>
+   </environment_variables>
+  </machine>
   <machine MACH="linux-generic">
     <DESC>Linux workstation or laptop</DESC>
     <NODENAME_REGEX>none</NODENAME_REGEX>

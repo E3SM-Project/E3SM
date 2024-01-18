@@ -1,0 +1,17 @@
+&clm_inparm
+ hist_mfilt = 1
+ hist_nhtfrq = -2
+ hist_empty_htapes = .true.
+ hist_dov2xy = .true.
+ finidat = ''
+ fsurdat = '$DIN_LOC_ROOT/lnd/clm2/surfdata_map/surfdata_42_FLUXNETSITES_simyr1850_c170912.nc'
+ paramfile = '$DIN_LOC_ROOT/lnd/clm2/paramdata/clm_params_amflx_cplbypass.nc'
+ fsoilordercon = '$DIN_LOC_ROOT/lnd/clm2/paramdata/CNP_parameters_amflx_cplbypass.nc'
+ stream_fldfilename_ndep = '$DIN_LOC_ROOT/lnd/clm2/ndepdata/fndep_clm_rcp4.5_simyr1849-2106_1.9x2.5_c100428.nc'
+ nyears_ad_carbon_only = 25
+ spinup_mortality_factor = 10
+ metdata_type = 'gswp3'
+ use_lch4 = .false. 
+ metdata_bypass = '$DIN_LOC_ROOT/atm/datm7/atm_forcing.datm7.GSWP3.0.5d.v2.c180716_42FLUXNETSITES/cpl_bypass_full'
+ co2_file = '$DIN_LOC_ROOT/atm/datm7/CO2/fco2_datm_rcp4.5_1765-2500_c130312.nc'
+ aero_file = '$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero/aerosoldep_rcp4.5_monthly_1849-2104_1.9x2.5_c100402.nc'
