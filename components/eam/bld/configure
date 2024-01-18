@@ -926,7 +926,7 @@ if ($co2_cycle and $print>=2) { print "co2_cycle option: ON$eol"; }
 # Micro-physics package
 
 # The default for the current physics package is:
-my $microphys_pkg = 'mg1';
+my $microphys_pkg = 'p3';
 
 #Set the default microphysics package for CLUBB to mg2
 if (defined $opts{'clubb_sgs'}) {

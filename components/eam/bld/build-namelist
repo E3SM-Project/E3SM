@@ -3694,8 +3694,6 @@ if ($cfg->get('microphys') =~ /^p3/) {
 
 
 
-#RRTMGP
-add_default($nl, 'do_spa_optics');
 
 # MMF Variance Transport
 add_default($nl, 'use_MMF_VT');
