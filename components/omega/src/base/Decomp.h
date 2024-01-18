@@ -232,6 +232,13 @@ class Decomp {
    /// Destructor - deallocates all memory and deletes a Decomp.
    ~Decomp();
 
+   /// Erase - removes a defined decomposition
+   static void erase(std::string InName ///< [in] name of decomp to remove
+   );
+
+   /// Clear - removes all defined decompositions to clean up
+   static void clear();
+
    // Retrieval functions
 
    /// Retrieves a pointer the default decomposition. The preference is

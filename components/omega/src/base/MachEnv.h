@@ -118,6 +118,9 @@ class MachEnv {
    removeEnv(const std::string Name ///< [in] name of environment to remove
    );
 
+   /// Removes all MachEnvs to clean up
+   static void removeAll();
+
    // Retrieval functions
 
    /// Retrieve the default environment

@@ -59,7 +59,9 @@ Because the new environments are subsets of the default environment, one
 additional function `OMEGA::MachEnv::isMember()` is provided so that
 non-member tasks can be excluded from calculations. The retrieval functions
 call from non-member tasks will return invalid values. Finally, there is
-a `removeEnv` function that can delete any defined environment.
+a `removeEnv(Name)` function that can delete any individual defined
+environment by name and a `removeAll()` function that cleans up by
+removing all defined environments.
 
 As a class that is basically a container for the environment parameters,
 the implementation is a simple class with several scalar data members and

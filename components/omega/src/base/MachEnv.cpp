@@ -402,6 +402,15 @@ void MachEnv::removeEnv(const std::string Name // [in] name of env to remove
 
 } // end removeEnv
 
+//------------------------------------------------------------------------------
+// Remove all environments
+
+void MachEnv::removeAll() {
+
+   AllEnvs.clear(); // removes all environments by removing them from map
+
+} // end removeAll
+
 // Retrieval functions
 //------------------------------------------------------------------------------
 // Get default environment

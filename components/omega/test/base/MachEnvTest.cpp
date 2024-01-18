@@ -449,11 +449,9 @@ int main(int argc, char *argv[]) {
    }
 #endif
 
-   // finalize environments
+   // finalize and clean up environments (test both removal functions)
    OMEGA::MachEnv::removeEnv("Contig");
-   OMEGA::MachEnv::removeEnv("Contig2");
-   OMEGA::MachEnv::removeEnv("Stride");
-   OMEGA::MachEnv::removeEnv("Subset");
+   OMEGA::MachEnv::removeAll();
 
    // MPI_Status status;
    MPI_Finalize();

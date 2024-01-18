@@ -630,30 +630,30 @@ Decomp::Decomp(
 
    // Create device copies of all arrays
 
-   // NCellsHalo = NCellsHaloH.createDeviceCopy();
-   // CellID     = CellIDH.createDeviceCopy();
-   // CellLoc    = CellLocH.createDeviceCopy();
+   NCellsHalo = NCellsHaloH.createDeviceCopy();
+   CellID     = CellIDH.createDeviceCopy();
+   CellLoc    = CellLocH.createDeviceCopy();
 
-   // NEdgesHalo = NEdgesHaloH.createDeviceCopy();
-   // EdgeID     = EdgeIDH.createDeviceCopy();
-   // EdgeLoc    = EdgeLocH.createDeviceCopy();
+   NEdgesHalo = NEdgesHaloH.createDeviceCopy();
+   EdgeID     = EdgeIDH.createDeviceCopy();
+   EdgeLoc    = EdgeLocH.createDeviceCopy();
 
-   // NVerticesHalo = NVerticesHaloH.createDeviceCopy();
-   // VertexID      = VertexIDH.createDeviceCopy();
-   // VertexLoc     = VertexLocH.createDeviceCopy();
+   NVerticesHalo = NVerticesHaloH.createDeviceCopy();
+   VertexID      = VertexIDH.createDeviceCopy();
+   VertexLoc     = VertexLocH.createDeviceCopy();
 
-   // CellsOnCell    = CellsOnCellH.createDeviceCopy();
-   // EdgesOnCell    = EdgesOnCellH.createDeviceCopy();
-   // VerticesOnCell = VerticesOnCellH.createDeviceCopy();
-   // NEdgesOnCell    = NEdgesOnCellH.createDeviceCopy();
+   CellsOnCell    = CellsOnCellH.createDeviceCopy();
+   EdgesOnCell    = EdgesOnCellH.createDeviceCopy();
+   VerticesOnCell = VerticesOnCellH.createDeviceCopy();
+   NEdgesOnCell   = NEdgesOnCellH.createDeviceCopy();
 
-   // CellsOnEdge     = CellsOnEdgeH.createDeviceCopy();
-   // EdgesOnEdge     = EdgesOnEdgeH.createDeviceCopy();
-   // VerticesOnEdge  = VerticesOnEdgeH.createDeviceCopy();
-   // NEdgesOnEdge    = NEdgesOnEdgeH.createDeviceCopy();
+   CellsOnEdge    = CellsOnEdgeH.createDeviceCopy();
+   EdgesOnEdge    = EdgesOnEdgeH.createDeviceCopy();
+   VerticesOnEdge = VerticesOnEdgeH.createDeviceCopy();
+   NEdgesOnEdge   = NEdgesOnEdgeH.createDeviceCopy();
 
-   // CellsOnVertex = CellsOnVertexH.createDeviceCopy();
-   // EdgesOnVertex = EdgesOnVertexH.createDeviceCopy();
+   CellsOnVertex = CellsOnVertexH.createDeviceCopy();
+   EdgesOnVertex = EdgesOnVertexH.createDeviceCopy();
 
    // Assign this as the default decomposition
    AllDecomps.emplace(Name, *this);
@@ -666,9 +666,30 @@ Decomp::Decomp(
 
 Decomp::~Decomp() {
 
-   // TODO: add deletes for all arrays and remove from AllDecomps map
+   // No operations needed, YAKL arrays removed when no longer in scope
 
-} // end removeEnv
+} // end decomp destructor
+
+//------------------------------------------------------------------------------
+// Removes a decomposition from list and destroys it
+
+void Decomp::erase(std::string InName // [in] name of decomp to remove
+) {
+
+   AllDecomps.erase(InName); // removes the decomp from the list (map) and in
+                             // the process, calls the destructor
+
+} // end decomp erase
+
+//------------------------------------------------------------------------------
+// Removes all decompositions to clean up before exit
+
+void Decomp::clear() {
+
+   AllDecomps.clear(); // removes all decomps from the list (map) and in
+                       // the process, calls the destructors for each
+
+} // end decomp clear
 
 // Retrieval functions
 //------------------------------------------------------------------------------

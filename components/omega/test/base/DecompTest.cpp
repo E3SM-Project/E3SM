@@ -130,9 +130,10 @@ int main(int argc, char *argv[]) {
                RefSumVertices);
    }
 
-   // Test that device arrays are identical
+   // Clean up
+   OMEGA::Decomp::clear();
+   OMEGA::MachEnv::removeAll();
 
-   // MPI_Status status;
    if (Err == 0)
       LOG_INFO("DecompTest: Successful completion");
    yakl::finalize();
