@@ -47,6 +47,13 @@ module convect_deep
    integer     ::  prec_dp_idx     = 0
    integer     ::  snow_dp_idx     = 0
 
+   integer     ::  dp_cldliq_idx   = 0
+   integer     ::  dp_cldice_idx   = 0
+   integer     ::  dp_flxprc_idx   = 0
+   integer     ::  dp_flxsnw_idx   = 0
+   
+   integer     ::  dp_frac_idx     = 0
+   
    integer     ::  ttend_dp_idx        = 0
 
    integer     ::  lambdadpcu_idx   = 0
