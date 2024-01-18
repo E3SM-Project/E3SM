@@ -36,7 +36,7 @@ HorzMesh::HorzMesh(Decomp *MeshDecomp){
    NVerticesAll = MeshDecomp->NVerticesAll;
    NVerticesSize = MeshDecomp->NVerticesSize;
    VertexDegree = MeshDecomp->VertexDegree;
-   
+Read the mesh areas, lenths, and angles   
    
    // Retrieve connectivity arrays from Decomp
    CellsOnCellH = MeshDecomp->CellsOnCellH;
@@ -56,9 +56,41 @@ HorzMesh::HorzMesh(Decomp *MeshDecomp){
    Err = OMEGA::IOFileOpen(MeshFileID, MeshFileName, IOModeRead);
    if (Err != 0)
       LOG_CRITICAL("HorzMesh: error opening mesh file");
-   
-   
+
+   initParallelIO(MeshDecomp);
+
+   // Read x/y/z and lon/lat coordinates for cells, edges, and vertices   
+   readCoordinates();
+
+   // Read the cell-centered bottom depth
+   readBottomDepth();
+
+   // Read the mesh areas, lenths, and angles
+   readMeasurements();
+
+   // Read the edge mesh weights
+   readWeights();
+
+   // Read the Coriolis parameter at the cells, edges, and vertices
+   readCoriolis();
+
+
+} // end constructor
+
+//------------------------------------------------------------------------------
+// Destroys a local mesh and deallocates all arrays 
+HorzMesh::~HorzMesh() {
+
+   // TODO: add deletes for all arrays and remove from AllDecomps map
+
+} // end deconstructor
+
+//------------------------------------------------------------------------------
+// Initialize the parllel IO decompositions for the mesh variables 
+void HorzMesh::initParallelIO(Decomp *MeshDecomp) {
+
    //Create parallel IO decomposition
+   I4 Err;
    I4 NDims = 1;
    IORearranger Rearr = IORearrBox;
    
@@ -105,8 +137,11 @@ HorzMesh::HorzMesh(Decomp *MeshDecomp){
          OnEdgeOffset2[Edge * MaxEdges2 + i] = EdgeID[Edge] * MaxEdges2 + i;
       }
    }
+
    Err = OMEGA::IOCreateDecomp(OnEdgeDecompR8, OMEGA::IOTypeR8, NDims,
                                OnEdgeDims2, OnEdgeSize2, OnEdgeOffset2, Rearr);
+   if (Err != 0)
+      LOG_CRITICAL("HorzMesh: error creating OnEdge IO decomposition");
 
    std::vector<I4> OnVertexDims{MeshDecomp->NVerticesGlobal, VertexDegree};
    I4 OnVertexSize = NVerticesAll * VertexDegree;
@@ -116,37 +151,16 @@ HorzMesh::HorzMesh(Decomp *MeshDecomp){
          OnVertexOffset[Vertex * VertexDegree + i] = VertexID[Vertex] * VertexDegree + i;
       }
    }
+
    Err = OMEGA::IOCreateDecomp(OnVertexDecompR8, OMEGA::IOTypeR8, NDims,
                                OnVertexDims, OnVertexSize, OnVertexOffset, Rearr);
+   if (Err != 0)
+      LOG_CRITICAL("HorzMesh: error creating OnVertex IO decomposition");
 
+} // end initParallelIO
 
-
-
-
-   // Read x/y/z and lon/lat coordinates for cells, edges, and vertices   
-   readCoordinates();
-
-   // Read the cell-centered bottom depth
-   readBottomDepth();
-
-   // Read the mesh areas, lenths, and angles
-   readMeasurements();
-
-   // Read the edge mesh weights
-   readWeights();
-
-   // Red the Coriolis parameter at the cells, edges, and vertices
-   readCoriolis();
-
-
-} // end constructor
-
-HorzMesh::~HorzMesh() {
-
-   // TODO: add deletes for all arrays and remove from AllDecomps map
-
-} // end deconstructor
-
+//------------------------------------------------------------------------------
+// Read x/y/z and lon/lat coordinates for cells, edges, and vertices 
 void HorzMesh::readCoordinates() {
 
    I4 Err;
@@ -250,6 +264,8 @@ void HorzMesh::readCoordinates() {
 
 } // end readCoordinates
 
+//------------------------------------------------------------------------------
+// Read the cell-centered bottom depth 
 void HorzMesh::readBottomDepth() {
 
    I4 Err;
@@ -262,6 +278,8 @@ void HorzMesh::readBottomDepth() {
    
 } // end readDepth
 
+//------------------------------------------------------------------------------
+// Read the mesh areas, lenths, and angles
 void HorzMesh::readMeasurements() {
 
    I4 Err;
@@ -302,7 +320,6 @@ void HorzMesh::readMeasurements() {
    if (Err != 0)
       LOG_CRITICAL("HorzMesh: error reading meshDensity");
 
-   // double kiteAreasOnVertex(nVertices, vertexDegree)
    KiteAreasOnVertexH = ArrayHost2DR8("kiteAreasOnVertex", NVerticesAll, VertexDegree);
    Err = OMEGA::IOReadArray(KiteAreasOnVertexH.data(), NVerticesAll * VertexDegree, "kiteAreasOnVertex",
                             MeshFileID, OnVertexDecompR8);
@@ -311,11 +328,12 @@ void HorzMesh::readMeasurements() {
 
 } // end readMeasurements
 
+//------------------------------------------------------------------------------
+// Read the edge mesh weights
 void HorzMesh::readWeights() {
 
    I4 Err;
 
-   // double weightsOnEdge(nEdges, maxEdges2) ;
    WeightsOnEdgeH = ArrayHost2DR8("weightsOnEdge", NEdgesAll, MaxEdges2);
    Err = OMEGA::IOReadArray(WeightsOnEdgeH.data(), NEdgesAll * MaxEdges2, "weightsOnEdge",
                             MeshFileID, OnEdgeDecompR8);
@@ -324,6 +342,8 @@ void HorzMesh::readWeights() {
 
 } // end readWeights
 
+//------------------------------------------------------------------------------
+// Read the Coriolis parameter at the cells, edges, and vertices
 void HorzMesh::readCoriolis() {
 
    int Err;

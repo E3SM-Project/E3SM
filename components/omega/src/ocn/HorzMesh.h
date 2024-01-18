@@ -27,6 +27,8 @@ class HorzMesh {
 
  private:
 
+    void initParallelIO(Decomp *MeshDecomp);
+
     void readCoordinates();
 
     void readBottomDepth();
@@ -36,8 +38,6 @@ class HorzMesh {
     void readWeights();
 
     void readCoriolis();
-
-    //int readMesh();
 
     //int transferToDevice();
 
