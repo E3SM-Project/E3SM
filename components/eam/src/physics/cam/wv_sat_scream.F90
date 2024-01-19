@@ -22,7 +22,7 @@ module wv_sat_scream
   implicit none
   private
 
-  public:: qv_sat_dry, qv_sat_wet, MurphyKoop_svp
+  public:: qv_sat_dry, qv_sat_wet, qv_sat, MurphyKoop_svp
 
 contains
 
@@ -54,6 +54,33 @@ contains
     return
 
   end function qv_sat_dry
+
+  !===========================================================================================
+  real(rtype) function qv_sat(t_atm,p_atm,i_wrt)
+
+    !------------------------------------------------------------------------------------
+    ! Legacy for backwards compatibility with eam. Prefer the dry/wet versions going forward.
+    ! eamxx will use the dry/wet versions.
+    !------------------------------------------------------------------------------------
+
+    use micro_p3_utils, only: ep_2
+    implicit none
+
+    !Calling parameters:
+    real(rtype), intent(in)    :: t_atm      !temperature [K]
+    real(rtype), intent(in)    :: p_atm      !pressure    [Pa]
+    integer, intent(in) :: i_wrt  !index, 0 = w.r.t. liquid, 1 = w.r.t. ice
+
+    !Local variables:
+    real(rtype)            :: e_pres         !saturation vapor pressure [Pa]
+
+    !e_pres    = polysvp1(t_atm,i_wrt)
+    e_pres = MurphyKoop_svp(t_atm,i_wrt)
+    qv_sat = ep_2*e_pres/max(1.e-3_rtype,p_atm-e_pres)
+
+    return
+
+  end function qv_sat
 
   !===========================================================================================
 
