@@ -44,7 +44,6 @@ void MAMOptics::set_grids(const std::shared_ptr<const GridsManager> grids_manage
 
   // Define aerosol optics fields computed by this process.
   auto nondim = Units::nondimensional();
-  //FieldLayout scalar3d_swband_layout { {COL, LEV, SWBND}, {ncol_, nlev_, nswbands_} };
   FieldLayout scalar3d_swbandp_layout { {COL, SWBND, ILEV}, {ncol_, nswbands_, nlev_+1} };
   FieldLayout scalar3d_lwband_layout { {COL, LWBND, LEV}, {ncol_, nlwbands_, nlev_} };
   FieldLayout scalar3d_layout_int{ {COL, ILEV}, {ncol_, nlev_+1} };
@@ -164,6 +163,10 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   af_cmip6_sw_  = mam_coupling::view_3d ("af_cmip6_sw", ncol_, nlev_, nswbands_);
   ext_cmip6_sw_ = mam_coupling::view_3d ("ext_cmip6_sw", ncol_, nswbands_, nlev_);
   ext_cmip6_lw_ = mam_coupling::view_3d("ext_cmip6_lw_", ncol_, nlev_, nlwbands_);
+
+   // set up our preprocess/postprocess functors
+  preprocess_.initialize(ncol_, nlev_, wet_atm_, wet_aero_, dry_atm_, dry_aero_);
+  postprocess_.initialize(ncol_, nlev_, wet_atm_, wet_aero_, dry_atm_, dry_aero_);
 
   const int work_len = mam4::modal_aer_opt::get_work_len_aerosol_optics();
   work_ = mam_coupling::view_2d("work", ncol_, work_len);
