@@ -55,12 +55,12 @@
    This allows using a different mpirun command to launch unit tests
 
 -->
-<machine MACH="pm-cpu">
+ <machine MACH="pm-cpu">
   <DESC>Perlmutter CPU-only nodes at NERSC.  Phase2 only: Each node has 2 AMD EPYC 7713 64-Core (Milan) 512GB</DESC>
   <!--NODENAME_REGEX>$ENV{NERSC_HOST}:perlmutter</NODENAME_REGEX-->
   <NODENAME_REGEX>login</NODENAME_REGEX>
   <OS>Linux</OS>
-  <COMPILERS>gnu,intel</COMPILERS>
+  <COMPILERS>intel,gnu</COMPILERS>
   <MPILIBS>mpich</MPILIBS>
   <PROJECT>e3sm</PROJECT>
   <SAVE_TIMING_DIR>/global/cfs/cdirs/e3sm</SAVE_TIMING_DIR>
@@ -72,7 +72,7 @@
   <DIN_LOC_ROOT_CLMFORC>/global/cfs/cdirs/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
   <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
   <BASELINE_ROOT>/global/cfs/cdirs/e3sm/baselines/$COMPILER</BASELINE_ROOT>
-  <CCSM_CPRNC>/global/cfs/cdirs/e3sm/tools/cprnc.cori/cprnc</CCSM_CPRNC>
+  <CCSM_CPRNC>/global/cfs/cdirs/e3sm/tools/cprnc/cprnc</CCSM_CPRNC>
   <GMAKE_J>10</GMAKE_J>
   <TESTS>e3sm_developer</TESTS>
   <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
@@ -105,6 +105,8 @@
       <command name="unload">cray-hdf5-parallel</command>
       <command name="unload">cray-netcdf-hdf5parallel</command>
       <command name="unload">cray-parallel-netcdf</command>
+      <command name="unload">cray-netcdf</command>
+      <command name="unload">cray-hdf5</command>
       <command name="unload">PrgEnv-gnu</command>
       <command name="unload">PrgEnv-intel</command>
       <command name="unload">PrgEnv-nvidia</command>
@@ -112,7 +114,10 @@
       <command name="unload">PrgEnv-aocc</command>
       <command name="unload">intel</command>
       <command name="unload">intel-oneapi</command>
+      <command name="unload">nvidia</command>
+      <command name="unload">aocc</command>
       <command name="unload">cudatoolkit</command>
+      <command name="unload">climate-utils</command>
       <command name="unload">craype-accel-nvidia80</command>
       <command name="unload">craype-accel-host</command>
       <command name="unload">perftools-base</command>
@@ -139,7 +144,7 @@
 
     <modules compiler="amdclang">
       <command name="load">PrgEnv-aocc</command>
-      <command name="load">aocc/3.2.0</command>
+      <command name="load">aocc/4.0.0</command>
       <command name="load">cray-libsci/23.02.1.1</command>
     </modules>
 
