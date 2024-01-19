@@ -38,7 +38,7 @@ int initHorzMeshTest() {
    MPI_Comm DefComm       = DefEnv->getComm();
 
    // Initialize the IO system
-   Err = OMEGA::IOInit(DefComm);
+   Err = OMEGA::IO::init(DefComm);
    if (Err != 0)
       LOG_ERROR("HorzMeshTest: error initializing parallel IO");
 
@@ -60,7 +60,8 @@ OMEGA::R8 distance(OMEGA::R8 x, OMEGA::R8 y, OMEGA::R8 z) {
 
 }
 
-OMEGA::R8 sphereDistance(OMEGA::R8 lon1, OMEGA::R8 lat1, OMEGA::R8 lon2, OMEGA::R8 lat2) {
+OMEGA::R8 sphereDistance(OMEGA::R8 lon1, OMEGA::R8 lat1,
+                         OMEGA::R8 lon2, OMEGA::R8 lat2) {
 
    OMEGA::R8 arg;
 
@@ -145,6 +146,8 @@ int main(int argc, char *argv[]) {
    OMEGA::HorzMesh Mesh(DefDecomp);
 
    // Test sum of local mesh cells
+   // Get the global sum of all local cell counts
+   // Tests that the correct cell counts have been retrieved from the Decomp object
    OMEGA::I4 SumCells;
    OMEGA::I4 LocCells;
    LocCells = Mesh.NCellsOwned;
@@ -159,7 +162,11 @@ int main(int argc, char *argv[]) {
    }
 
    // Test that cell centers are on sphere
-   OMEGA::R8 sphere_radius = distance(Mesh.XCellH(0), Mesh.YCellH(0), Mesh.ZCellH(0));
+   // Check that all cell centers are a uniform distance from the origin 
+   // Tests that the Cartesian coordinates for cell centers have been read in correctly
+   OMEGA::R8 sphere_radius = distance(Mesh.XCellH(0),
+                                      Mesh.YCellH(0),
+                                      Mesh.ZCellH(0));
    OMEGA::R8 dist;
    OMEGA::I4 count = 0;
    for (int Cell = 0; Cell < LocCells; Cell++) {
@@ -170,11 +177,15 @@ int main(int argc, char *argv[]) {
 
    if (count > 0) {
      LOG_INFO("HorzMeshTest: Cell sphere radius test FAIL");
+     return -1;
    } else {
      LOG_INFO("HorzMeshTest: Cell sphere radius test PASS");
    }
 
-   // Test lon/lat coordinates
+   // Test lon/lat coordinates of cell centers
+   // Convert Cartesian coordinates to lon/lat and check these agree with the values
+   // that have been read in
+   // Tests that the lon/lat coordinates for cell centers have been read in correctly
    OMEGA::R8 lon;
    OMEGA::R8 lat;
    count = 0;
@@ -199,6 +210,8 @@ int main(int argc, char *argv[]) {
    }
 
    // Test sum of local mesh edges 
+   // Get the global sum of all local edge counts
+   // Tests that the correct edge counts have been retrieved from the Decomp object
    OMEGA::I4 SumEdges;
    OMEGA::I4 LocEdges;
    LocEdges = Mesh.NEdgesOwned;
@@ -214,6 +227,8 @@ int main(int argc, char *argv[]) {
    }
 
    // Test that edge coordinates are on sphere
+   // Check that all edge centers are a uniform distance from the origin 
+   // Tests that the Cartesian coordinates for edge centers have been read in correctly
    sphere_radius = distance(Mesh.XEdgeH(0), Mesh.YEdgeH(0), Mesh.ZEdgeH(0));
    count = 0;
    for (int Edge = 0; Edge < LocEdges; Edge++) {
@@ -229,7 +244,35 @@ int main(int argc, char *argv[]) {
      LOG_INFO("HorzMeshTest: Edge sphere radius test PASS");
    }
 
+   // Test lon/lat coordinates of edge centers
+   // Convert Cartesian coordinates to lon/lat and check these agree with the values
+   // that have been read in
+   // Tests that the lon/lat coordinates for edge centers have been read in correctly
+   count = 0;
+   for (int Edge = 0; Edge < LocEdges; Edge++) {
+
+      lon = computeLon(Mesh.XEdgeH(Edge), Mesh.YEdgeH(Edge), Mesh.ZEdgeH(Edge));
+      lat = computeLat(Mesh.XEdgeH(Edge), Mesh.YEdgeH(Edge), Mesh.ZEdgeH(Edge));
+
+      if (abs(lon - Mesh.LonEdgeH(Edge)) > tol)
+         count++;
+
+      if (abs(lat - Mesh.LatEdgeH(Edge)) > tol)
+         count++ ;
+
+   }
+
+   if (count > 0) {
+     LOG_INFO("HorzMeshTest: Edge lon/lat test FAIL");
+     return -1;
+   } else {
+     LOG_INFO("HorzMeshTest: Edge lon/lat test PASS");
+   }
+
+
    // Test sum of local mesh vertices 
+   // Get the global sum of all local vertex counts
+   // Tests that the correct vertex counts have been retrieved from the Decomp object
    OMEGA::I4 SumVertices;
    OMEGA::I4 LocVertices;
    LocVertices = Mesh.NVerticesOwned;
@@ -244,11 +287,15 @@ int main(int argc, char *argv[]) {
       return -1;
    }
 
-   // Test that cell centers are on sphere
+   // Test that vertex coordinates are on sphere
+   // Check that all vertices are a uniform distance from the origin 
+   // Tests that the Cartesian coordinates for vertices have been read in correctly
    sphere_radius = distance(Mesh.XVertexH(0), Mesh.YVertexH(0), Mesh.ZVertexH(0));
    count = 0;
    for (int Vertex = 0; Vertex < LocVertices; Vertex++) {
-       dist = distance(Mesh.XVertexH(Vertex), Mesh.YVertexH(Vertex), Mesh.ZVertexH(Vertex));
+       dist = distance(Mesh.XVertexH(Vertex),
+                       Mesh.YVertexH(Vertex),
+                       Mesh.ZVertexH(Vertex));
        if ( abs(sphere_radius - dist) > tol)
           count++;
    }
@@ -260,7 +307,39 @@ int main(int argc, char *argv[]) {
      LOG_INFO("HorzMeshTest: Vertex sphere radius test PASS");
    }
 
+   // Test lon/lat coordinates of vertices 
+   // Convert Cartesian coordinates to lon/lat and check these agree with the values
+   // that have been read in
+   // Tests that the lon/lat coordinates for vertices have been read in correctly
+   count = 0;
+   for (int Vertex = 0; Vertex < LocVertices; Vertex++) {
+
+      lon = computeLon(Mesh.XVertexH(Vertex),
+                       Mesh.YVertexH(Vertex),
+                       Mesh.ZVertexH(Vertex));
+      lat = computeLat(Mesh.XVertexH(Vertex),
+                       Mesh.YVertexH(Vertex),
+                       Mesh.ZVertexH(Vertex));
+
+      if (abs(lon - Mesh.LonVertexH(Vertex)) > tol)
+         count++;
+
+      if (abs(lat - Mesh.LatVertexH(Vertex)) > tol)
+         count++ ;
+
+   }
+
+   if (count > 0) {
+     LOG_INFO("HorzMeshTest: Vertex lon/lat test FAIL");
+     return -1;
+   } else {
+     LOG_INFO("HorzMeshTest: Vertex lon/lat test PASS");
+   }
+
    // Test bounds of bathymetry
+   // Find minimum and maximum values of the bottom depth 
+   // and compares to reasonable values
+   // Tests that the bottom depth has been read in correctly
    OMEGA::R8 MaxBathy = -1e10;
    OMEGA::R8 MinBathy = 1e10;
    for (int Cell = 0; Cell < LocCells; Cell++) {
@@ -280,6 +359,9 @@ int main(int argc, char *argv[]) {
    }
 
    // Test cell areas
+   // Find the global sum of all the local cell areas
+   // and compares to reasonable value for Earth's ocean area
+   // Tests that cell areas have been read in correctly
    OMEGA::R8 LocSumArea = 0;
    OMEGA::R8 SumCellArea;
    for (int Cell = 0; Cell < LocCells; Cell++) {
@@ -288,7 +370,7 @@ int main(int argc, char *argv[]) {
    Err = MPI_Allreduce(&LocSumArea, &SumCellArea, 1, MPI_DOUBLE, MPI_SUM, Comm);
 
    OMEGA::R8 OceanArea = 3.61e14;
-   if (abs(SumCellArea - OceanArea)/OceanArea < 0.05) { 
+   if (abs(SumCellArea - OceanArea) / OceanArea < 0.05) { 
       LOG_INFO("HorzMeshTest: Cell area test PASS");
    } else {
       LOG_INFO("HorzMeshTest: Cell area test FAIL");
@@ -296,6 +378,9 @@ int main(int argc, char *argv[]) {
    }
 
    // Test triangle areas
+   // Find the global sum of all the local triangle areas
+   // and compare to resonable value for the Earth's ocean area
+   // Tests that the triangle areas have been read in correctly
    LocSumArea = 0;
    OMEGA::R8 SumTriangleArea;
    for (int Vertex = 0; Vertex < LocVertices; Vertex++) {
@@ -303,7 +388,7 @@ int main(int argc, char *argv[]) {
    }
    Err = MPI_Allreduce(&LocSumArea, &SumTriangleArea, 1, MPI_DOUBLE, MPI_SUM, Comm);
 
-   if (abs(SumTriangleArea - OceanArea)/OceanArea < 0.05) { 
+   if (abs(SumTriangleArea - OceanArea) / OceanArea < 0.05) { 
       LOG_INFO("HorzMeshTest: Triangle area test PASS");
    } else {
       LOG_INFO("HorzMeshTest: Triangle area test FAIL");
@@ -311,6 +396,9 @@ int main(int argc, char *argv[]) {
    }
 
    // Test kite areas
+   // Find the local sum of all the local kite areas
+   // and compare to reasonable value for the Earth's ocean area
+   // Tests that the kite areas have been read in correctly
    LocSumArea = 0;
    OMEGA::R8 SumKiteArea;
    for (int Vertex = 0; Vertex < LocVertices; Vertex++) {
@@ -320,7 +408,7 @@ int main(int argc, char *argv[]) {
    }
    Err = MPI_Allreduce(&LocSumArea, &SumKiteArea, 1, MPI_DOUBLE, MPI_SUM, Comm);
 
-   if (abs(SumKiteArea - OceanArea)/OceanArea < 0.05) { 
+   if (abs(SumKiteArea - OceanArea) / OceanArea < 0.05) { 
       LOG_INFO("HorzMeshTest: Kite area test PASS");
    } else {
       LOG_INFO("HorzMeshTest: Kite area test FAIL");
@@ -328,6 +416,8 @@ int main(int argc, char *argv[]) {
    }
 
    // Test dcEdge
+   // Compute spherical distance between cell centers and compare to value that was read in
+   // Tests that the distances between cell centers have been read in correctly 
    count = 0;
    for (int Edge = 0; Edge < LocEdges; Edge++) {
       int Cell1 = Mesh.CellsOnEdgeH(Edge,0);
@@ -335,10 +425,11 @@ int main(int argc, char *argv[]) {
 
       if ((Cell1<DefDecomp->NCellsAll) && (Cell2<DefDecomp->NCellsAll)) {
 
-         OMEGA::R8 dc = sphere_radius*sphereDistance(Mesh.LonCellH(Cell1), Mesh.LatCellH(Cell1),
-                                                     Mesh.LonCellH(Cell2), Mesh.LatCellH(Cell2)); 
+         OMEGA::R8 dc = sphereDistance(Mesh.LonCellH(Cell1), Mesh.LatCellH(Cell1),
+                                       Mesh.LonCellH(Cell2), Mesh.LatCellH(Cell2)); 
+         dc = sphere_radius * dc;
 
-         if (abs((dc - Mesh.DcEdgeH(Edge))/Mesh.DcEdgeH(Edge)) > tol) {
+         if (abs((dc - Mesh.DcEdgeH(Edge)) / Mesh.DcEdgeH(Edge)) > tol) {
             count++;
          }
       }
@@ -352,6 +443,8 @@ int main(int argc, char *argv[]) {
    }
    
    // Test dvEdge
+   // Compute spherical distance between vertices on edges and compare to value that was read in
+   // Tests that the distances between vertices have been read in correctly 
    count = 0;
    for (int Edge = 0; Edge < LocEdges; Edge++) {
       int Vertex1 = Mesh.VerticesOnEdgeH(Edge,0);
@@ -359,10 +452,12 @@ int main(int argc, char *argv[]) {
 
       if ((Vertex1<DefDecomp->NVerticesAll) && (Vertex2<DefDecomp->NVerticesAll)) {
 
-         OMEGA::R8 dv = sphere_radius*sphereDistance(Mesh.LonVertexH(Vertex1), Mesh.LatVertexH(Vertex1),
-                                                     Mesh.LonVertexH(Vertex2), Mesh.LatVertexH(Vertex2)); 
+         OMEGA::R8 dv = sphereDistance(Mesh.LonVertexH(Vertex1), Mesh.LatVertexH(Vertex1),
+                                       Mesh.LonVertexH(Vertex2), Mesh.LatVertexH(Vertex2)); 
 
-         if (abs((dv - Mesh.DvEdgeH(Edge))/Mesh.DvEdgeH(Edge)) > tol) {
+         dv = sphere_radius * dv;
+
+         if (abs((dv - Mesh.DvEdgeH(Edge)) / Mesh.DvEdgeH(Edge)) > tol) {
             count++;
          }
       }
@@ -377,6 +472,8 @@ int main(int argc, char *argv[]) {
    }
 
    // Test angleEdge
+   // Check that the range of edge angles is between (-pi, pi)
+   // Tests that the edge angles have been read in correctly
    count = 0;
    for (int Edge = 0; Edge < LocEdges; Edge++) {
       if (abs(Mesh.AngleEdgeH(Edge)) > pi) {
@@ -392,6 +489,8 @@ int main(int argc, char *argv[]) {
    }
 
    // Test fCell
+   // Compute the Coriolis parameter for cell centers and compare with values that were read in
+   // Tests that the cell Coriolis values were read in correctly
    count = 0;
    for (int Cell = 0; Cell < LocCells; Cell++) {
       OMEGA::R8 f = coriolis(Mesh.LatCellH(Cell));
@@ -409,6 +508,8 @@ int main(int argc, char *argv[]) {
    }
 
    // Test fVertex
+   // Compute the Coriolis parameter for vertices and compare with values that were read in
+   // Tests that the vertex Coriolis values were read in correctly
    count = 0;
    for (int Vertex = 0; Vertex < LocVertices; Vertex++) {
       
@@ -428,6 +529,8 @@ int main(int argc, char *argv[]) {
    }
 
    // Test fEdge
+   // Compute the Coriolis parameter for edges and compare with values that were read in
+   // Tests that the edge Coriolis values were read in correctly
    count = 0;
    for (int Edge = 0; Edge < LocEdges; Edge++) {
       OMEGA::R8 f = coriolis(Mesh.LatEdgeH(Edge));
@@ -445,6 +548,8 @@ int main(int argc, char *argv[]) {
    }
 
    // Test weightsOnEdge
+   // Check the range of the edge weights
+   // Tests that the edge weights were read in correctly
    count = 0;
    for (int Edge = 0; Edge < LocEdges; Edge++) {
       for (int i = 0; i < Mesh.MaxEdges2; i++) {
@@ -462,6 +567,9 @@ int main(int argc, char *argv[]) {
    }
 
    // Test that device arrays are identical
+
+   OMEGA::Decomp::clear();
+   OMEGA::MachEnv::removeAll();
 
    // MPI_Status status;
    if (Err == 0)
