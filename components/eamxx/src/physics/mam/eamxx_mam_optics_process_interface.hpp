@@ -77,8 +77,10 @@ private_except_cuda:
 
   // atmospheric and aerosol state variables
   // mam_coupling::WetAtmosphere wet_atm_;
+    // atmospheric and aerosol state variables
+  mam_coupling::WetAtmosphere wet_atm_;
   mam_coupling::DryAtmosphere dry_atm_;
-  mam_coupling::AerosolState  wet_aero_;//,
+  mam_coupling::AerosolState  wet_aero_, dry_aero_;
 
   mam_coupling::view_3d ssa_cmip6_sw_, af_cmip6_sw_, ext_cmip6_sw_;
   //long wave extinction in the units of [1/km]
@@ -87,6 +89,8 @@ private_except_cuda:
   // physics grid for column information
   std::shared_ptr<const AbstractGrid> grid_;
   mam_coupling::view_2d work_;
+
+  mam_coupling::Buffer buffer_;
 }; // MAMOptics
 
 } // namespace scream

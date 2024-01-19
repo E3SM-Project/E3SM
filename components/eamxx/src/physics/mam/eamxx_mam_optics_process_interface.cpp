@@ -45,15 +45,12 @@ void MAMOptics::set_grids(const std::shared_ptr<const GridsManager> grids_manage
   // Define aerosol optics fields computed by this process.
   auto nondim = Units::nondimensional();
   //FieldLayout scalar3d_swband_layout { {COL, LEV, SWBND}, {ncol_, nlev_, nswbands_} };
-  FieldLayout scalar3d_swbandp_layout { {COL, ILEV, SWBND}, {ncol_, nlev_+1, nswbands_} };
-  FieldLayout scalar3d_lwband_layout { {COL, LEV, LWBND}, {ncol_, nlev_, nlwbands_} };
+  FieldLayout scalar3d_swbandp_layout { {COL, SWBND, ILEV}, {ncol_, nswbands_, nlev_+1} };
+  FieldLayout scalar3d_lwband_layout { {COL, LWBND, LEV}, {ncol_, nlwbands_, nlev_} };
   FieldLayout scalar3d_layout_int{ {COL, ILEV}, {ncol_, nlev_+1} };
 
   // layout for 3D (2d horiz X 1d vertical) variables
   FieldLayout scalar3d_layout_mid{ {COL, LEV}, {ncol_, nlev_} };
-  // FIXME: I switch the order of dimension.
-  FieldLayout scalar_state_q_layout{ {COL, LEV, NGAS}, {ncol_, nlev_,nvars} };
-
   add_field<Required>("T_mid", scalar3d_layout_mid, K, grid_name); // Temperature
   add_field<Required>("p_mid", scalar3d_layout_mid, Pa, grid_name); // total pressure
 
@@ -62,9 +59,7 @@ void MAMOptics::set_grids(const std::shared_ptr<const GridsManager> grids_manage
   add_field<Required>("p_int", scalar3d_layout_int, Pa, grid_name); // total pressure
   add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa, grid_name);
   add_field<Required>("pseudo_density_dry", scalar3d_layout_mid, Pa, grid_name);
-  // FIXME: dimenstion of state_q
-  add_field<Updated>("state_q", scalar_state_q_layout, kg/kg, grid_name);
-  add_field<Updated>("qqcw", scalar_state_q_layout, kg/kg, grid_name);
+
   add_field<Required>("cldn", scalar3d_layout_mid, nondim, grid_name); // could fraction
 
   // shortwave aerosol scattering asymmetry parameter [-]
@@ -91,31 +86,68 @@ void MAMOptics::set_grids(const std::shared_ptr<const GridsManager> grids_manage
 
 void MAMOptics::initialize_impl(const RunType run_type) {
 
+    // populate the wet and dry atmosphere states with views from fields and
+  // the buffer
+  wet_atm_.qv = get_field_in("qv").get_view<const Real**>();
+  wet_atm_.qc = get_field_out("qc").get_view<Real**>();
+  wet_atm_.nc = get_field_out("nc").get_view<Real**>();
+  wet_atm_.qi = get_field_in("qi").get_view<const Real**>();
+  wet_atm_.ni = get_field_in("ni").get_view<const Real**>();
+  // wet_atm_.omega = get_field_in("omega").get_view<const Real**>();
+
     // FIXME: we have nvars in several process.
   constexpr int ntot_amode = mam4::AeroConfig::num_modes();
 
   dry_atm_.T_mid     = get_field_in("T_mid").get_view<const Real**>();
   dry_atm_.p_mid     = get_field_in("p_mid").get_view<const Real**>();
-  // FIXME, there are two version of p_int in the nc file: p_dry_int and p_int
-  // change to const Real
-  p_int_     = get_field_in("p_int").get_view<const Real**>();
-
-  dry_atm_.cldfrac   = get_field_in("cldn").get_view<const Real**>();
-  // dry_atm_.pblh      = get_field_in("pbl_height").get_view<const Real*>();
-  // FIXME: use const Real; why are using buffer in microphysics
-  z_mid_     = get_field_in("z_mid").get_view<const Real**>();
-  z_iface_   = get_field_in("z_int").get_view<const Real**>();
-
-  p_del_     = get_field_in("pseudo_density").get_view<const Real**>();
-  // FIXME: In the nc file, there is also pseudo_density_dry
+  // dry_atm_.p_del     = get_field_in("pseudo_density").get_view<const Real**>();
+    // FIXME: In the nc file, there is also pseudo_density_dry
   dry_atm_.p_del     = get_field_in("pseudo_density_dry").get_view<const Real**>();
+  // FIXME: is this a duplicate?
+   p_del_     = get_field_in("pseudo_density").get_view<const Real**>();
+  dry_atm_.cldfrac   = get_field_in("cldfrac_tot").get_view<const Real**>(); // FIXME: tot or liq?
+  // FIXME: use this one instead
+  // dry_atm_.cldfrac   = get_field_in("cldn").get_view<const Real**>();
+  dry_atm_.pblh      = get_field_in("pbl_height").get_view<const Real*>();
+  dry_atm_.phis      = get_field_in("phis").get_view<const Real*>();
+  // dry_atm_.z_mid     = get_field_in("z_mid").get_view<const Real**>();
+  // dry_atm_.dz        = buffer_.dz;
+  // dry_atm_.z_iface   = get_field_in("z_int").get_view<const Real**>();
+  // dry_atm_.qv        = buffer_.qv_dry;
+  // dry_atm_.qc        = buffer_.qc_dry;
+  // dry_atm_.nc        = buffer_.nc_dry;
+  // dry_atm_.qi        = buffer_.qi_dry;
+  // dry_atm_.ni        = buffer_.ni_dry;
+  // dry_atm_.w_updraft = buffer_.w_updraft;
+  dry_atm_.z_surf = 0.0; // FIXME: for now
 
+  // FIXME: Here we are assuming constant aerosol between columns ?
+  // set wet/dry aerosol state data (interstitial aerosols only)
+  for (int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+    const char* int_nmr_field_name = mam_coupling::int_aero_nmr_field_name(m);
+    wet_aero_.int_aero_nmr[m] = get_field_out(int_nmr_field_name).get_view<Real**>();
+    dry_aero_.int_aero_nmr[m] = buffer_.dry_int_aero_nmr[m];
+    for (int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+      const char* int_mmr_field_name = mam_coupling::int_aero_mmr_field_name(m, a);
+      if (strlen(int_mmr_field_name) > 0) {
+        wet_aero_.int_aero_mmr[m][a] = get_field_out(int_mmr_field_name).get_view<Real**>();
+        dry_aero_.int_aero_mmr[m][a] = buffer_.dry_int_aero_mmr[m][a];
+      }
+    }
+  }
+
+  // set wet/dry aerosol-related gas state data
+  for (int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
+    const char* mmr_field_name = mam_coupling::gas_mmr_field_name(g);
+    wet_aero_.gas_mmr[g] = get_field_out(mmr_field_name).get_view<Real**>();
+    dry_aero_.gas_mmr[g] = buffer_.dry_gas_mmr[g];
+  }
 
   // FIXME: We need to get ssa_cmip6_sw_, af_cmip6_sw_, ext_cmip6_sw_, ext_cmip6_lw_ from a nc file.
   // aer_rad_props_sw inputs that are prescribed, i.e., we need a netcdf file.
   ssa_cmip6_sw_ = mam_coupling::view_3d ("ssa_cmip6_sw", ncol_, nlev_, nswbands_);
-  af_cmip6_sw_ = mam_coupling::view_3d ("af_cmip6_sw", ncol_, nlev_, nswbands_);
-  ext_cmip6_sw_= mam_coupling::view_3d ("ext_cmip6_sw", ncol_, nswbands_, nlev_);
+  af_cmip6_sw_  = mam_coupling::view_3d ("af_cmip6_sw", ncol_, nlev_, nswbands_);
+  ext_cmip6_sw_ = mam_coupling::view_3d ("ext_cmip6_sw", ncol_, nswbands_, nlev_);
   ext_cmip6_lw_ = mam_coupling::view_3d("ext_cmip6_lw_", ncol_, nlev_, nlwbands_);
 
   const int work_len = mam4::modal_aer_opt::get_work_len_aerosol_optics();
@@ -264,7 +296,6 @@ void MAMOptics::run_impl(const double dt) {
   constexpr Real zero =0.0;
 
   const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_);
-
   // const auto policy = haero::ThreadTeamPolicy(1u, 1);
   /// outputs
   auto aero_g_sw   = get_field_out("aero_g_sw").get_view<Real***>();
@@ -276,10 +307,6 @@ void MAMOptics::run_impl(const double dt) {
 
   // NOTE: we do not compute this variable in aersol_optics
   auto aero_nccn   = get_field_out("nccn").get_view<Real**>(); // FIXME: get rid of this
-
-  // they get modified in mam4xx
-  state_q_ = get_field_out("state_q").get_view<Real***>();
-  qqcw_ = get_field_out("qqcw").get_view<Real***>();
 
   const Real t = 0.0;
 
@@ -313,30 +340,33 @@ void MAMOptics::run_impl(const double dt) {
       auto zi= ekat::subview(z_iface_, icol);
       auto pdel = ekat::subview(p_del_, icol);
       auto pdeldry = ekat::subview(dry_atm_.p_del, icol);
-   auto state_q_icol = ekat::subview(state_q_, icol);
-   auto qqcw_icol = ekat::subview(qqcw_, icol);
 
-  auto ssa_cmip6_sw_icol = ekat::subview(ssa_cmip6_sw_, icol);
-  auto af_cmip6_sw_icol = ekat::subview(af_cmip6_sw_, icol);
-  auto ext_cmip6_sw_icol = ekat::subview(ext_cmip6_sw_, icol);
-  auto ext_cmip6_lw_icol = ekat::subview(ext_cmip6_lw_, icol);
+      //  auto state_q_icol = ekat::subview(state_q_, icol);
+      //  auto qqcw_icol = ekat::subview(qqcw_, icol);
 
-  // FIXME: check if this correct: Note that these variables have pver+1 levels
-  // tau_w =>  aero_ssa_sw  (pcols,0:pver,nswbands) ! aerosol single scattering albedo * tau
-   auto tau_w_icol = ekat::subview(aero_ssa_sw, icol);
-  // tau_w_g => "aero_g_sw" (pcols,0:pver,nswbands) ! aerosol assymetry parameter * tau * w
-  auto tau_w_g_icol = ekat::subview(aero_g_sw, icol);
-  // tau_w_f(pcols,0:pver,nswbands) => aero_tau_forward  ? ! aerosol forward scattered fraction * tau * w
-  auto tau_w_f_icol = ekat::subview(aero_tau_forward, icol);
-  // tau  => aero_tau_sw (?)   (pcols,0:pver,nswbands) ! aerosol extinction optical depth
-  auto tau_icol = ekat::subview(aero_tau_sw, icol);
+      auto ssa_cmip6_sw_icol = ekat::subview(ssa_cmip6_sw_, icol);
+      auto af_cmip6_sw_icol = ekat::subview(af_cmip6_sw_, icol);
+      auto ext_cmip6_sw_icol = ekat::subview(ext_cmip6_sw_, icol);
+      auto ext_cmip6_lw_icol = ekat::subview(ext_cmip6_lw_, icol);
 
-  // work
-  auto work_icol = ekat::subview(work_, icol);
+      // FIXME: check if this correct: Note that these variables have pver+1 levels
+      // tau_w =>  aero_ssa_sw  (pcols,0:pver,nswbands) ! aerosol single scattering albedo * tau
+      auto tau_w_icol = ekat::subview(aero_ssa_sw, icol);
+      // tau_w_g => "aero_g_sw" (pcols,0:pver,nswbands) ! aerosol assymetry parameter * tau * w
+      auto tau_w_g_icol = ekat::subview(aero_g_sw, icol);
+      // tau_w_f(pcols,0:pver,nswbands) => aero_tau_forward  ? ! aerosol forward scattered fraction * tau * w
+      auto tau_w_f_icol = ekat::subview(aero_tau_forward, icol);
+      // tau  => aero_tau_sw (?)   (pcols,0:pver,nswbands) ! aerosol extinction optical depth
+      auto tau_icol = ekat::subview(aero_tau_sw, icol);
+
+      auto work_icol = ekat::subview(work_, icol);
+
+       // fetch column-specific subviews into aerosol prognostics
+       mam4::Prognostics progs = mam_coupling::interstitial_aerosols_for_column(dry_aero_, icol);
 
     mam4::aer_rad_props::aer_rad_props_sw(team,  dt, zi, pmid,
     pint, temperature,
-    zm, state_q_icol, qqcw_icol,
+    zm, progs,
     pdel, pdeldry,
     cldn, ssa_cmip6_sw_icol,
     af_cmip6_sw_icol, ext_cmip6_sw_icol,
@@ -349,11 +379,10 @@ team.team_barrier();
 mam4::aer_rad_props::aer_rad_props_lw(team,
     dt, pmid, pint,
     temperature, zm, zi,
-    state_q_icol, qqcw_icol, pdel, pdeldry,
+    progs, pdel, pdeldry,
     cldn, ext_cmip6_lw_icol,
     aerosol_optics_device_data_,
     odap_aer_icol);
-
 
     });
 
