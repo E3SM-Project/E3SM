@@ -22,7 +22,11 @@ jobs:
         with:
           show-progress: false
           fetch-depth: 0 # Needed, or else gh-pages won't be fetched, and push rejected
-          submodules: false # speeds up clone and not building anything in submodules
+          # TODO: git rid of dependency on CIME
+          # TODO: another option to investigate is a sparse checkout. 
+          # In the scream repo, all other components do not need to be checked out. 
+          # And even in the upstream, we mainly need only components/xyz/docs (and a few more places).
+          submodules: true
       - name: Show action trigger
         run: echo "= The job was automatically triggered by a ${{github.event_name}} event on repo ${{github.event.repository.name}}."
       - name: Set up Python 3.10
