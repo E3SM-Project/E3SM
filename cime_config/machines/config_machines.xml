@@ -104,6 +104,8 @@
         <command name="unload">cray-hdf5-parallel</command>
         <command name="unload">cray-netcdf-hdf5parallel</command>
         <command name="unload">cray-parallel-netcdf</command>
+        <command name="unload">cray-netcdf</command>
+        <command name="unload">cray-hdf5</command>
         <command name="unload">PrgEnv-gnu</command>
         <command name="unload">PrgEnv-intel</command>
         <command name="unload">PrgEnv-nvidia</command>
@@ -111,7 +113,10 @@
         <command name="unload">PrgEnv-aocc</command>
         <command name="unload">intel</command>
         <command name="unload">intel-oneapi</command>
+        <command name="unload">nvidia</command>
+        <command name="unload">aocc</command>
         <command name="unload">cudatoolkit</command>
+        <command name="unload">climate-utils</command>
         <command name="unload">craype-accel-nvidia80</command>
         <command name="unload">craype-accel-host</command>
         <command name="unload">perftools-base</command>
@@ -138,7 +143,7 @@
 
       <modules compiler="amdclang">
         <command name="load">PrgEnv-aocc</command>
-        <command name="load">aocc/3.2.0</command>
+        <command name="load">aocc/4.0.0</command>
         <command name="load">cray-libsci/23.02.1.1</command>
       </modules>
 
@@ -168,6 +173,8 @@
       <env name="PERL5LIB">/global/cfs/cdirs/e3sm/perl/lib/perl5-only-switch</env>
       <env name="FI_CXI_RX_MATCH_MODE">software</env>
       <env name="MPICH_COLL_SYNC">MPI_Bcast</env>
+      <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
+      <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
     </environment_variables>
     <resource_limits>
       <resource name="RLIMIT_STACK">-1</resource>
@@ -227,11 +234,19 @@
         <command name="unload">cray-hdf5-parallel</command>
         <command name="unload">cray-netcdf-hdf5parallel</command>
         <command name="unload">cray-parallel-netcdf</command>
+        <command name="unload">cray-netcdf</command>
+        <command name="unload">cray-hdf5</command>
         <command name="unload">PrgEnv-gnu</command>
+        <command name="unload">PrgEnv-intel</command>
         <command name="unload">PrgEnv-nvidia</command>
         <command name="unload">PrgEnv-cray</command>
         <command name="unload">PrgEnv-aocc</command>
+        <command name="unload">intel</command>
+        <command name="unload">intel-oneapi</command>
+        <command name="unload">nvidia</command>
+        <command name="unload">aocc</command>
         <command name="unload">cudatoolkit</command>
+        <command name="unload">climate-utils</command>
         <command name="unload">craype-accel-nvidia80</command>
         <command name="unload">craype-accel-host</command>
         <command name="unload">perftools-base</command>
@@ -250,12 +265,12 @@
       </modules>
 
       <modules compiler="gnugpu">
-        <command name="load">cudatoolkit/11.5</command>
+        <command name="load">cudatoolkit/11.7</command>
         <command name="load">craype-accel-nvidia80</command>
       </modules>
 
       <modules compiler="nvidiagpu">
-        <command name="load">cudatoolkit/11.5</command>
+        <command name="load">cudatoolkit/11.7</command>
         <command name="load">craype-accel-nvidia80</command>
       </modules>
 
@@ -291,6 +306,8 @@
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
       <env name="PERL5LIB">/global/cfs/cdirs/e3sm/perl/lib/perl5-only-switch</env>
       <env name="MPICH_COLL_SYNC">MPI_Bcast</env>
+      <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
+      <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
     </environment_variables>
     <environment_variables compiler="gnugpu">
       <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
