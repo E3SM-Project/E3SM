@@ -32,6 +32,10 @@ jobs:
       - name: Install python deps
         run: python3 -m pip install mkdocs-material pymdown-extensions mkdocs-monorepo-plugin mdutils mkdocs-bibtex
       # build every time (PR or push to master)
+      - name: Generate EAMxx params docs
+        working-directory: components/eamxx/scripts
+        run: |
+          ./eamxx-params-docs-autogen
       - name: Build
         run: mkdocs build --strict --verbose
       # Only deploy to the main github page when there is a push to master
