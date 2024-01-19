@@ -54,6 +54,10 @@ protected_except_cuda:
   // grid
   void set_grids(const std::shared_ptr<const GridsManager> grids_manager) override;
 
+  // management of common atm process memory
+  size_t requested_buffer_size_in_bytes() const override;
+  void init_buffers(const ATMBufferManager &buffer_manager) override;
+
   // process behavior
   void initialize_impl(const RunType run_type) override;
   void run_impl(const double dt) override;

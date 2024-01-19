@@ -84,6 +84,21 @@ void MAMOptics::set_grids(const std::shared_ptr<const GridsManager> grids_manage
 
 }
 
+size_t MAMOptics::requested_buffer_size_in_bytes() const
+{
+  return mam_coupling::buffer_size(ncol_, nlev_);
+}
+
+void MAMOptics::init_buffers(const ATMBufferManager &buffer_manager) {
+  EKAT_REQUIRE_MSG(buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(),
+                   "Error! Insufficient buffer size.\n");
+
+  size_t used_mem = mam_coupling::init_buffer(buffer_manager, ncol_, nlev_, buffer_);
+  EKAT_REQUIRE_MSG(used_mem==requested_buffer_size_in_bytes(),
+                   "Error! Used memory != requested memory for MAMMOptics.");
+}
+
+
 void MAMOptics::initialize_impl(const RunType run_type) {
 
     // populate the wet and dry atmosphere states with views from fields and
