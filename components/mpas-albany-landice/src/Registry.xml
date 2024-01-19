@@ -460,6 +460,18 @@
 			    <nml_option name="config_ocean_data_extrap_ncells_extra" type="integer" default_value="10" units="unitless"
 							description="number of extra cells for over-extrapolation into grounded ice" possible_values="any non-negative value"
 				/>
+                <nml_option name="config_horiz_smoothing_loop" type="integer" default_value="1" units="unitless"
+                            description="number of loops through which horizontal smoothing is performed"
+                            possible_values="any non-negative value"
+                />
+                <nml_option name="config_weight_value_cell" type="real" default_value="0.9" units="unitless"
+                            description="weight used to smooth horizontal extrapolation of ocean data field. Value close to 1 implies more weight of the current cell value versus the averaged value of the neighbouring cells around the cell"
+                            possible_values="any real value between 0 and 1"
+                />
+                <nml_option name="config_number_horiz_smoothing_loop" type="integer" default_value="1" units="unitless"
+                            description="number of loops through which horizontal smoothing is performed"
+                            possible_values="any non-negative value"
+                />
 		</nml_record>
 
 	<nml_record name="physical_parameters" in_defaults="true">
@@ -1670,6 +1682,9 @@ is the value of that variable from the *previous* time level!
                 <var name="validOceanMask" type="integer" dimensions="nISMIP6OceanLayers nCells Time" units="none"
                      description="3D mask for indicating where ocean data is present (i.e., seed mask)"
                 />
+                <var name="validOceanMaskOrig" type="integer" dimensions="nISMIP6OceanLayers nCells Time" units="none"
+                     description="3D mask for indicating where original ocean data is present"
+                />
                 <var name="availOceanMask" type="integer" dimensions="nISMIP6OceanLayers nCells Time" units="none"
                      description="3D mask for indicating where ocean data can be flood-filled (i.e., grow mask)"
                 />
@@ -1682,10 +1697,10 @@ is the value of that variable from the *previous* time level!
                 <var name="seedOceanMaskHorizInit" type="integer" dimensions="nCells Time" units="none"
                      description="initial 2D seedMask before the over-extrapolation, for benchmark/debug purpose"
                 />
-                <var name="TFoceanOld" type="real" dimensions="nISMIP6OceanLayers nCells" units="deg. C"
+                <var name="TFoceanOld" type="real" dimensions="nISMIP6OceanLayers nCells Time" units="deg. C"
                      default_value="1.0"
                 />
-                <var name="TFocean" type="real" dimensions="nISMIP6OceanLayers nCells" units="deg. C"
+                <var name="TFocean" type="real" dimensions="nISMIP6OceanLayers nCells Time" units="deg. C"
                      default_value="0.0"
                 />
         </var_struct>
