@@ -1,6 +1,6 @@
 &clm_inparm
  hist_mfilt = 1
- hist_nhtfrq = -2
+ hist_nhtfrq = -1
  hist_empty_htapes = .true.
  hist_dov2xy = .true.
  finidat = ''

@@ -840,7 +840,7 @@
      <DIN_LOC_ROOT_CLMFORC>/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
      <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
      <BASELINE_ROOT>/baselines</BASELINE_ROOT>
-     <CCSM_CPRNC>/tools/cprnc</CCSM_CPRNC>
+     <CCSM_CPRNC></CCSM_CPRNC>
      <GMAKE>make</GMAKE>
      <!-- May want to modify this. Will require users to have 4 CPUs avail-->
      <GMAKE_J>4</GMAKE_J>
