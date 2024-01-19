@@ -31,7 +31,7 @@ module micro_p3_utils
     real(rtype), public, parameter :: piov6 = pi*sxth
 
     ! maximum total ice concentration (sum of all categories)
-    real(rtype), public, parameter :: max_total_ni = 740.e+3_rtype  ! (m)
+    real(rtype), public, parameter :: max_total_ni = 500.e+3_rtype  ! (m)
 
     ! droplet concentration (m-3)
     real(rtype), public, parameter :: nccnst = 200.e+6_rtype
