@@ -125,17 +125,17 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   dry_atm_.pblh      = get_field_in("pbl_height").get_view<const Real*>();
   dry_atm_.phis      = get_field_in("phis").get_view<const Real*>();
   // dry_atm_.z_mid     = get_field_in("z_mid").get_view<const Real**>();
-  // dry_atm_.dz        = buffer_.dz;
+  dry_atm_.dz        = buffer_.dz;
   // dry_atm_.z_iface   = get_field_in("z_int").get_view<const Real**>();
-  // dry_atm_.qv        = buffer_.qv_dry;
-  // dry_atm_.qc        = buffer_.qc_dry;
-  // dry_atm_.nc        = buffer_.nc_dry;
-  // dry_atm_.qi        = buffer_.qi_dry;
-  // dry_atm_.ni        = buffer_.ni_dry;
-  // dry_atm_.w_updraft = buffer_.w_updraft;
+  dry_atm_.qv        = buffer_.qv_dry;
+  dry_atm_.qc        = buffer_.qc_dry;
+  dry_atm_.nc        = buffer_.nc_dry;
+  dry_atm_.qi        = buffer_.qi_dry;
+  dry_atm_.ni        = buffer_.ni_dry;
+  dry_atm_.w_updraft = buffer_.w_updraft;
   dry_atm_.z_surf = 0.0; // FIXME: for now
 
-  // FIXME: Here we are assuming constant aerosol between columns ?
+  // FIXME: are we assuming constant aerosol between columns ?
   // set wet/dry aerosol state data (interstitial aerosols only)
   for (int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
     const char* int_nmr_field_name = mam_coupling::int_aero_nmr_field_name(m);
@@ -180,10 +180,9 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   using namespace ShortFieldTagsNames;
 
   using view_1d_host = typename KT::view_1d<Real>::HostMirror;
-  // Set up input structure to read data from file.
-  // using strvec_t = std::vector<std::string>;
+
     // Views in aerosol_optics_device_data_ are allocated in the following fuctions.
-  // Note: these function do not set values for aerosol_optics_device_data_.
+  // Note: these functions do not set values for aerosol_optics_device_data_.
   mam4::modal_aer_opt::set_complex_views_modal_aero(aerosol_optics_device_data_);
   mam4::modal_aer_opt::set_aerosol_optics_data_for_modal_aero_sw_views(aerosol_optics_device_data_);
   mam4::modal_aer_opt::set_aerosol_optics_data_for_modal_aero_lw_views(aerosol_optics_device_data_);
