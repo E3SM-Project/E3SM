@@ -877,6 +877,11 @@ def get_file_parameters(caseroot):
 
     result = []
     for item in raw_xml.findall('.//*[@type="file"]'):
+        # Certain configurations may not need a file (e.g., a remap
+        # file for SPA may not be needed if the model resolution
+        # matches the data file resolution
+        if item.text is None or item.text=="":
+            continue
         result.append(item.text.strip())
 
     for item in raw_xml.findall('.//*[@type="array(file)"]'):
