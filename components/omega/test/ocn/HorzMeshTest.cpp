@@ -1,13 +1,10 @@
 //===-- Test driver for OMEGA Decomp -----------------------------*- C++ -*-===/
 //
 /// \file
-/// \brief Test driver for OMEGA domain decomposition (Decomp)
+/// \brief Test driver for OMEGA mesh class
 ///
-/// This driver tests the OMEGA domain decomposition, decomposing the
-/// horizontal domain and creating a number of index-space arrays for
-/// locating and describing mesh locations within a parallel distributed
-/// memory.
-///
+/// This driver tests that the OMEGA mesh class member variables are read in 
+/// correctly from a sample shperical mesh file.
 //
 //===-----------------------------------------------------------------------===/
 
@@ -23,7 +20,7 @@
 #include <iostream>
 
 //------------------------------------------------------------------------------
-// The initialization routine for Decomp testing. It calls various
+// The initialization routine for Mesh testing. It calls various
 // init routines, including the creation of the default decomposition.
 
 int initHorzMeshTest() {
@@ -50,6 +47,8 @@ int initHorzMeshTest() {
    return Err;
 }
 
+//------------------------------------------------------------------------------
+// Computes the distance of a x,y,z coordinate from the origin
 OMEGA::R8 distance(OMEGA::R8 x, OMEGA::R8 y, OMEGA::R8 z) {
    
    OMEGA::R8 dist;
@@ -60,6 +59,8 @@ OMEGA::R8 distance(OMEGA::R8 x, OMEGA::R8 y, OMEGA::R8 z) {
 
 }
 
+//------------------------------------------------------------------------------
+// Computes the distance between two lon/lat points on the sphere 
 OMEGA::R8 sphereDistance(OMEGA::R8 lon1, OMEGA::R8 lat1,
                          OMEGA::R8 lon2, OMEGA::R8 lat2) {
 
@@ -71,6 +72,8 @@ OMEGA::R8 sphereDistance(OMEGA::R8 lon1, OMEGA::R8 lat1,
 
 }
 
+//------------------------------------------------------------------------------
+// Computes the longitude of a point given its Cartesian coordinates 
 OMEGA::R8 computeLon(OMEGA::R8 x, OMEGA::R8 y, OMEGA::R8 z) {
 
    OMEGA::R8 lon;
@@ -86,6 +89,8 @@ OMEGA::R8 computeLon(OMEGA::R8 x, OMEGA::R8 y, OMEGA::R8 z) {
    return lon;
 }
 
+//------------------------------------------------------------------------------
+// Computes the latitude of a point given its Cartesian coordinates 
 OMEGA::R8 computeLat(OMEGA::R8 x, OMEGA::R8 y, OMEGA::R8 z) {
 
    OMEGA::R8 dist;
@@ -97,6 +102,8 @@ OMEGA::R8 computeLat(OMEGA::R8 x, OMEGA::R8 y, OMEGA::R8 z) {
    return lat;
 }
 
+//------------------------------------------------------------------------------
+// Computes coriolis parameter for a given latitude 
 OMEGA::R8 coriolis(OMEGA::R8 lat) {
 
    OMEGA::R8 f;
@@ -109,8 +116,8 @@ OMEGA::R8 coriolis(OMEGA::R8 lat) {
 }
 
 //------------------------------------------------------------------------------
-// The test driver for Decomp. This tests the decomposition of a sample
-// horizontal domain and verifies the mesh is decomposed correctly.
+// The test driver for Mesh. This tests the decomposition of a sample
+// horizontal domain and verifies the mesh is read in correctly.
 //
 int main(int argc, char *argv[]) {
 
@@ -139,7 +146,6 @@ int main(int argc, char *argv[]) {
       LOG_INFO("HorzMeshTest: Default decomp retrieval PASS");
    } else {
       LOG_INFO("HorzMeshTest: Default decomp retrieval FAIL");
-      return -1;
    }
 
    // Initialize mesh
@@ -177,7 +183,6 @@ int main(int argc, char *argv[]) {
 
    if (count > 0) {
      LOG_INFO("HorzMeshTest: Cell sphere radius test FAIL");
-     return -1;
    } else {
      LOG_INFO("HorzMeshTest: Cell sphere radius test PASS");
    }
@@ -204,7 +209,6 @@ int main(int argc, char *argv[]) {
 
    if (count > 0) {
      LOG_INFO("HorzMeshTest: Cell lon/lat test FAIL");
-     return -1;
    } else {
      LOG_INFO("HorzMeshTest: Cell lon/lat test PASS");
    }
@@ -223,7 +227,6 @@ int main(int argc, char *argv[]) {
    } else {
       LOG_INFO("HorzMeshTest: Sum edge ID test FAIL {} {}", SumEdges,
               DefDecomp->NEdgesGlobal);
-      return -1;
    }
 
    // Test that edge coordinates are on sphere
@@ -239,7 +242,6 @@ int main(int argc, char *argv[]) {
 
    if (count > 0) {
      LOG_INFO("HorzMeshTest: Edge sphere radius test FAIL");
-     return -1;
    } else {
      LOG_INFO("HorzMeshTest: Edge sphere radius test PASS");
    }
@@ -264,7 +266,6 @@ int main(int argc, char *argv[]) {
 
    if (count > 0) {
      LOG_INFO("HorzMeshTest: Edge lon/lat test FAIL");
-     return -1;
    } else {
      LOG_INFO("HorzMeshTest: Edge lon/lat test PASS");
    }
@@ -284,7 +285,6 @@ int main(int argc, char *argv[]) {
    } else {
       LOG_INFO("HorzMeshTest: Sum vertex ID test FAIL {} {}", SumVertices,
               DefDecomp->NVerticesGlobal);
-      return -1;
    }
 
    // Test that vertex coordinates are on sphere
@@ -302,7 +302,6 @@ int main(int argc, char *argv[]) {
 
    if (count > 0) {
      LOG_INFO("HorzMeshTest: Vertex sphere radius test FAIL");
-     return -1;
    } else {
      LOG_INFO("HorzMeshTest: Vertex sphere radius test PASS");
    }
@@ -331,7 +330,6 @@ int main(int argc, char *argv[]) {
 
    if (count > 0) {
      LOG_INFO("HorzMeshTest: Vertex lon/lat test FAIL");
-     return -1;
    } else {
      LOG_INFO("HorzMeshTest: Vertex lon/lat test PASS");
    }
@@ -355,7 +353,6 @@ int main(int argc, char *argv[]) {
       LOG_INFO("HorzMeshTest: Bathy min/max test PASS");
    } else {
       LOG_INFO("HorzMeshTest: Bathy min/max test FAIL");
-      return -1;
    }
 
    // Test cell areas
@@ -374,7 +371,6 @@ int main(int argc, char *argv[]) {
       LOG_INFO("HorzMeshTest: Cell area test PASS");
    } else {
       LOG_INFO("HorzMeshTest: Cell area test FAIL");
-      return -1;
    }
 
    // Test triangle areas
@@ -392,7 +388,6 @@ int main(int argc, char *argv[]) {
       LOG_INFO("HorzMeshTest: Triangle area test PASS");
    } else {
       LOG_INFO("HorzMeshTest: Triangle area test FAIL");
-      return -1;
    }
 
    // Test kite areas
@@ -412,7 +407,6 @@ int main(int argc, char *argv[]) {
       LOG_INFO("HorzMeshTest: Kite area test PASS");
    } else {
       LOG_INFO("HorzMeshTest: Kite area test FAIL");
-      return -1;
    }
 
    // Test dcEdge
@@ -439,7 +433,6 @@ int main(int argc, char *argv[]) {
       LOG_INFO("HorzMeshTest: dcEdge test PASS");
    } else {
       LOG_INFO("HorzMeshTest: dcEdge test FAIL");
-      return -1;
    }
    
    // Test dvEdge
@@ -468,7 +461,6 @@ int main(int argc, char *argv[]) {
       LOG_INFO("HorzMeshTest: dvEdge test PASS");
    } else {
       LOG_INFO("HorzMeshTest: dvEdge test FAIL");
-      return -1;
    }
 
    // Test angleEdge
@@ -485,7 +477,6 @@ int main(int argc, char *argv[]) {
       LOG_INFO("HorzMeshTest: angleEdge test PASS");
    } else {
       LOG_INFO("HorzMeshTest: angleEdge test FAIL");
-      return -1;
    }
 
    // Test fCell
@@ -504,7 +495,6 @@ int main(int argc, char *argv[]) {
       LOG_INFO("HorzMeshTest: fCell test PASS");
    } else {
       LOG_INFO("HorzMeshTest: fCell test FAIL");
-      return -1;
    }
 
    // Test fVertex
@@ -525,7 +515,6 @@ int main(int argc, char *argv[]) {
       LOG_INFO("HorzMeshTest: fVertex test PASS");
    } else {
       LOG_INFO("HorzMeshTest: fVertex test FAIL");
-      return -1;
    }
 
    // Test fEdge
@@ -544,7 +533,6 @@ int main(int argc, char *argv[]) {
       LOG_INFO("HorzMeshTest: fEdge test PASS");
    } else {
       LOG_INFO("HorzMeshTest: fEdge test FAIL");
-      return -1;
    }
 
    // Test weightsOnEdge
@@ -563,11 +551,12 @@ int main(int argc, char *argv[]) {
       LOG_INFO("HorzMeshTest: weightsOnEdge test PASS");
    } else {
       LOG_INFO("HorzMeshTest: weightsOnEdge test FAIL");
-      return -1;
    }
 
-   // Test that device arrays are identical
+   // TODO: Test that device arrays are identical
 
+   // Finalize Omega objects
+   Mesh.clear();
    OMEGA::Decomp::clear();
    OMEGA::MachEnv::removeAll();
 

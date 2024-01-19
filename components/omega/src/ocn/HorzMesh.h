@@ -3,7 +3,7 @@
 //===-- base/HorzMesh.h - horizontal mesh --------------------*- C++ -*-===//
 //
 /// \file
-/// \brief Contains the data for an OMEGA horizontal sub-domain
+/// \brief Contains the mesh variables for an OMEGA horizontal sub-domain
 ///
 /// The HorzMesh class contains the data to represent a sub-domain of the 
 /// global horizontal mesh.  
@@ -39,7 +39,7 @@ class HorzMesh {
 
     void readCoriolis();
 
-    //int transferToDevice();
+    void copyToDevice();
 
     //int computeMesh();
 
@@ -180,6 +180,9 @@ class HorzMesh {
 
    /// Destructor - deallocates all memory and deletes a HorzMesh
    ~HorzMesh();
+
+   /// Deallocates arrays
+   void clear();
 
 }; // end class HorzMesh 
 

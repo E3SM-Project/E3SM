@@ -1,6 +1,11 @@
-//===-- base/HorzMesh.cpp - horizontal mesh  methods ----------*- C++ -*-===//
+//===-- base/HorzMesh.cpp - horizontal mesh methods -------------*- C++ -*-===//
 //
-//
+// The mesh (Mesh) class initializes a local mesh domain based on a given
+// domain decomposition. It retrives the mesh count and connectivity 
+// information from the Decomp object and reads in all other mesh variables
+// from the mesh file. It also manages the device copies of the mesh data.
+// It is meant to provide a container for passing mesh variables throughout 
+// the OMEGA tendency computation routines.
 //
 //===----------------------------------------------------------------------===//
 
@@ -75,6 +80,12 @@ HorzMesh::HorzMesh(Decomp *MeshDecomp){
    // Read the Coriolis parameter at the cells, edges, and vertices
    readCoriolis();
 
+   // Copy host data to device
+   copyToDevice();
+
+   // TODO: add ability to compute (rather than read in) 
+   // dependent mesh quantities
+
 
 } // end constructor
 
@@ -85,6 +96,32 @@ HorzMesh::~HorzMesh() {
    // TODO: add deletes for all arrays and remove from AllDecomps map
 
 } // end deconstructor
+
+//------------------------------------------------------------------------------
+// Deallocates arrays 
+void HorzMesh::clear() {
+
+   AreaCell.deallocate();
+   AreaTriangle.deallocate();
+   KiteAreasOnVertex.deallocate();
+   DvEdge.deallocate();
+   DcEdge.deallocate();
+   AngleEdge.deallocate();
+   WeightsOnEdge.deallocate();
+   FVertex.deallocate();
+   BottomDepth.deallocate();
+   CellsOnCell.deallocate();
+   EdgesOnCell.deallocate();
+   NEdgesOnCell.deallocate();
+   VerticesOnCell.deallocate();
+   CellsOnEdge.deallocate();
+   EdgesOnEdge.deallocate();
+   NEdgesOnEdge.deallocate();
+   VerticesOnEdge.deallocate();
+   CellsOnVertex.deallocate();
+   EdgesOnVertex.deallocate();
+
+} // end clear
 
 //------------------------------------------------------------------------------
 // Initialize the parallel IO decompositions for the mesh variables 
@@ -404,6 +441,32 @@ void HorzMesh::readCoriolis() {
       LOG_CRITICAL("HorzMesh: error reading fEdge");
 
 } // end readCoriolis
+
+//------------------------------------------------------------------------------
+// Perform copy to device for mesh variables 
+void HorzMesh::copyToDevice() {
+
+   AreaCell = AreaCellH.createDeviceCopy();
+   AreaTriangle = AreaTriangleH.createDeviceCopy();
+   KiteAreasOnVertex = KiteAreasOnVertexH.createDeviceCopy();
+   DvEdge = DvEdgeH.createDeviceCopy();
+   DcEdge = DcEdgeH.createDeviceCopy();
+   AngleEdge = AngleEdgeH.createDeviceCopy();
+   WeightsOnEdge = WeightsOnEdgeH.createDeviceCopy();
+   FVertex = FVertexH.createDeviceCopy();
+   BottomDepth = BottomDepthH.createDeviceCopy();
+   CellsOnCell = CellsOnCellH.createDeviceCopy();
+   EdgesOnCell = EdgesOnCellH.createDeviceCopy();
+   NEdgesOnCell = NEdgesOnCellH.createDeviceCopy();
+   VerticesOnCell = VerticesOnCellH.createDeviceCopy();
+   CellsOnEdge = CellsOnEdgeH.createDeviceCopy();
+   EdgesOnEdge = EdgesOnEdgeH.createDeviceCopy();
+   NEdgesOnEdge = NEdgesOnEdgeH.createDeviceCopy();
+   VerticesOnEdge = VerticesOnEdgeH.createDeviceCopy();
+   CellsOnVertex = CellsOnVertexH.createDeviceCopy();
+   EdgesOnVertex = EdgesOnVertexH.createDeviceCopy();
+
+} // end copyToDevice
 
 } // end namespace OMEGA
 
