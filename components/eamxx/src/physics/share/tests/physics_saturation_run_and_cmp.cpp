@@ -189,7 +189,7 @@ struct UnitWrap::UnitTest<D>::TestSaturation
     Scalar mix_ice_mkr;
     Scalar mix_liq_mkr;
 
-    //KOKKOS_INLINE_FUNCTION
+    KOKKOS_INLINE_FUNCTION
     OutputData& operator+=(const OutputData& rhs)
     {
       sat_ice_fp += rhs.sat_ice_fp;
