@@ -306,10 +306,11 @@
      <directives>
        <directive> --constraint=cpu</directive>
      </directives>
+     <!-- Note: walltime is not the max walltime, but the default - see NERSC docs for Q limits, https://docs.nersc.gov/jobs/policy/ -->
      <queues>
        <queue walltimemax="00:30:00" nodemin="1" nodemax="8" strict="true">debug</queue>
-       <queue walltimemax="00:35:00" nodemin="1" nodemax="4096" strict="true">preempt</queue>
-       <queue walltimemax="01:00:00" nodemin="1" nodemax="4096" default="true">regular</queue>
+       <queue walltimemax="00:35:00" nodemin="1" nodemax="3072" strict="true">preempt</queue>
+       <queue walltimemax="01:00:00" nodemin="1" nodemax="3072" default="true">regular</queue>
      </queues>
    </batch_system>
 
