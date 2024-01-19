@@ -41,9 +41,9 @@ void combine (const Real& new_val, Real& curr_val, const OutputAvgType avg_type)
 }
 // This one covers cases where a variable might be masked.
 KOKKOS_INLINE_FUNCTION
-void combine_and_fill (const Real& new_val, Real& curr_val, Real& avg_coeff, const OutputAvgType avg_type, const Real fill_value)
+void combine_and_fill (const Real& new_val, Real& curr_val, const OutputAvgType avg_type, const Real fill_value)
 {
-  const bool new_fill  = (avg_coeff == 0.0);
+  const bool new_fill  = new_val  == fill_value;
   const bool curr_fill = curr_val == fill_value;
   if (curr_fill && new_fill) {
     // Then the value is already set to be filled and the new value doesn't change things.
@@ -119,20 +119,6 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
 {
   using vos_t = std::vector<std::string>;
 
-  if (params.isParameter("fill_value")) {
-    m_fill_value = static_cast<float>(params.get<double>("fill_value"));
-    // If the fill_value is specified there is a good chance the user expects the average count to track filling.
-    m_track_avg_cnt = true;
-  }
-  if (params.isParameter("track_fill")) {
-    // Note, we do this after checking for fill_value to give users that opportunity to turn off fill tracking, even
-    // if they specify a specific fill value.
-    m_track_avg_cnt = params.get<bool>("track_fill");
-  }
-  if (params.isParameter("fill_threshold")) {
-    m_avg_coeff_threshold = params.get<Real>("fill_threshold");
-  }
-
   // Figure out what kind of averaging is requested
   auto avg_type = params.get<std::string>("Averaging Type");
   m_avg_type = str2avg(avg_type);
@@ -202,6 +188,29 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
   // Register any diagnostics needed by this output stream
   set_diagnostics();
 
+  // Avg count only makes sense if we have
+  //  - non-instant output
+  //  - we have one between:
+  //    - vertically remapped output
+  //    - field_at_XhPa diagnostic
+  // We already set m_track_avg_cnt to true if field_at_XhPa is found in set_diagnostics.
+  // Hence, here we only check if vert remap is active
+
+  if (params.isParameter("track_avg_cnt")) {
+    // This is to be used for unit testing only, so that we can test avg cnt even
+    // if there is no vert remap and no field_at_XhPa diagnostic in the stream
+    m_track_avg_cnt = params.get<bool>("track_avg_cnt");
+  }
+  if (use_vertical_remap_from_file) {
+    m_track_avg_cnt = true;
+  }
+  if (params.isParameter("fill_value")) {
+    m_fill_value = static_cast<float>(params.get<double>("fill_value"));
+  }
+  if (params.isParameter("fill_threshold")) {
+    m_avg_coeff_threshold = params.get<Real>("fill_threshold");
+  }
+
   // Helper lambda, to copy io string attributes. This will be used if any
   // remapper is created, to ensure atts set by atm_procs are not lost
   auto transfer_io_str_atts = [&] (const Field& src, Field& tgt) {
@@ -216,8 +225,6 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
 
   // Setup remappers - if needed
   if (use_vertical_remap_from_file) {
-    // When vertically remapping there is a chance that filled values will be present, so be sure to track these
-    m_track_avg_cnt = true;
     // We build a remapper, to remap fields from the fm grid to the io grid
     auto vert_remap_file   = params.get<std::string>("vertical_remap_file");
     auto f_lev = get_field("p_mid","sim");
@@ -418,37 +425,36 @@ run (const std::string& filename,
   // temporary views for each layout that are either 0 or 1 depending on if the
   // value is filled or unfilled.
   // We then use these values to update the overall average count views for that layout.
-  if (m_track_avg_cnt && m_add_time_dim) {
+  if (m_track_avg_cnt) {
     // Note, we assume that all fields that share a layout are also masked/filled in the same
-    // way.  If, we need to handle a case where only a subset of output variables are expected to
+    // way. If we need to handle a case where only a subset of output variables are expected to
     // be masked/filled then the recommendation is to request those variables in a separate output
     // stream.
-    // We cycle through all fields and mark points that are filled/masked in the local views.  First
-    // initialize them to 1 representing unfilled.
-    for (const auto& name : m_avg_cnt_names) {
-      auto& dev_view = m_local_tmp_avg_cnt_views_1d.at(name);
-      Kokkos::deep_copy(dev_view,1.0);
-    }
-    // Now we cycle through all the fields
+    // We cycle through all fields and we
+    //  1. Find the avg_cnt view for this field.
+    //  2. If we already processed the avg_cnt view, go to next field, and start from 1 again.
+    //  3. Add 1 to all entries of avg_cnt where field!=fill_value
+    std::set<std::string> avg_updated;
     for (const auto& name : m_fields_names) {
-      auto field    = get_field(name,"io");
-      auto lookup   = m_field_to_avg_cnt_map.at(name);
-      auto dev_view = m_local_tmp_avg_cnt_views_1d.at(lookup);
-      update_avg_cnt_view(field,dev_view);
-    }
-    // Finally, we update the overall avg_cnt_views
-    for (const auto& name : m_avg_cnt_names) {
-      auto track_view = m_dev_views_1d.at(name);
-      auto local_view = m_local_tmp_avg_cnt_views_1d.at(name);
-      const auto layout = m_layouts.at(name);
-      KT::RangePolicy policy(0,layout.size());
-      Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int i) {
-        track_view(i) += local_view(i);
-      });
+      auto avg_cnt_name = m_field_to_avg_cnt_map.at(name);
+      if (avg_updated.count(avg_cnt_name)==1) {
+        // We updated this avg_cnt by checking another field
+        continue;
+      }
+      auto field = get_field(name,"io");
+      update_avg_cnt_view(field,m_dev_views_1d.at(avg_cnt_name));
+
+      // Make sure we don't double update this avg cnt
+      avg_updated.insert(avg_cnt_name);
     }
   }
 
   // Take care of updating and possibly writing fields.
+  // These are needed inside kernels, so crate local copies
+  auto do_avg_cnt = m_track_avg_cnt;
+  auto avg_type = m_avg_type;
+  auto fill_value = m_fill_value;
+  auto avg_coeff_threshold = m_avg_coeff_threshold;
   for (auto const& name : m_fields_names) {
     // Get all the info for this field.
           auto  field = get_field(name,"io");
@@ -481,26 +487,6 @@ run (const std::string& filename,
     KT::RangePolicy policy(0,layout.size());
     const auto extents = layout.extents();
 
-    // Averaging count data
-    // If we are not tracking the average count then we don't need to build the
-    // views for the average count, so we leave them as essentially empty.
-    auto avg_cnt_dims = dims;
-    auto avg_cnt_data = data;
-    if (m_track_avg_cnt && m_add_time_dim) {
-      const auto lookup = m_field_to_avg_cnt_map.at(name);
-      avg_cnt_data = m_local_tmp_avg_cnt_views_1d.at(lookup).data();
-    } else {
-      for (auto& dim : avg_cnt_dims) {
-        dim = 1;
-      }
-      avg_cnt_data = nullptr;
-    }
-
-    auto avg_type = m_avg_type;
-    auto track_avg_cnt = m_track_avg_cnt;
-    auto add_time_dim = m_add_time_dim;
-    auto fill_value = m_fill_value;
-    auto avg_coeff_threshold = m_avg_coeff_threshold;
     // If the dev_view_1d is aliasing the field device view (must be Instant output),
     // then there's no point in copying from the field's view to dev_view
     if (not is_aliasing_field_view) {
@@ -511,12 +497,11 @@ run (const std::string& filename,
           // handling a few more scenarios
           auto new_view_1d = field.get_strided_view<const Real*,Device>();
           auto avg_view_1d = view_Nd_dev<1>(data,dims[0]);
-          auto avg_coeff_1d = view_Nd_dev<1>(avg_cnt_data,avg_cnt_dims[0]);
           Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int i) {
-            if (track_avg_cnt && add_time_dim) {
-              combine_and_fill(new_view_1d(i), avg_view_1d(i),avg_coeff_1d(i),avg_type,fill_value);
+            if (do_avg_cnt) {
+              combine_and_fill(new_view_1d(i),avg_view_1d(i),avg_type,fill_value);
             } else {
-              combine(new_view_1d(i), avg_view_1d(i),avg_type);
+              combine(new_view_1d(i),avg_view_1d(i),avg_type);
             }
           });
           break;
@@ -525,12 +510,11 @@ run (const std::string& filename,
         {
           auto new_view_2d = field.get_view<const Real**,Device>();
           auto avg_view_2d = view_Nd_dev<2>(data,dims[0],dims[1]);
-          auto avg_coeff_2d = view_Nd_dev<2>(avg_cnt_data,avg_cnt_dims[0],avg_cnt_dims[1]);
           Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
             int i,j;
             unflatten_idx(idx,extents,i,j);
-            if (track_avg_cnt && add_time_dim) {
-              combine_and_fill(new_view_2d(i,j), avg_view_2d(i,j),avg_coeff_2d(i,j),avg_type,fill_value);
+            if (do_avg_cnt) {
+              combine_and_fill(new_view_2d(i,j),avg_view_2d(i,j),avg_type,fill_value);
             } else {
               combine(new_view_2d(i,j), avg_view_2d(i,j),avg_type);
             }
@@ -541,12 +525,11 @@ run (const std::string& filename,
         {
           auto new_view_3d = field.get_view<const Real***,Device>();
           auto avg_view_3d = view_Nd_dev<3>(data,dims[0],dims[1],dims[2]);
-          auto avg_coeff_3d = view_Nd_dev<3>(avg_cnt_data,dims[0],avg_cnt_dims[1],avg_cnt_dims[2]);
           Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
             int i,j,k;
             unflatten_idx(idx,extents,i,j,k);
-            if (track_avg_cnt && add_time_dim) {
-              combine_and_fill(new_view_3d(i,j,k), avg_view_3d(i,j,k),avg_coeff_3d(i,j,k),avg_type,fill_value);
+            if (do_avg_cnt) {
+              combine_and_fill(new_view_3d(i,j,k),avg_view_3d(i,j,k),avg_type,fill_value);
             } else {
               combine(new_view_3d(i,j,k), avg_view_3d(i,j,k),avg_type);
             }
@@ -557,12 +540,11 @@ run (const std::string& filename,
         {
           auto new_view_4d = field.get_view<const Real****,Device>();
           auto avg_view_4d = view_Nd_dev<4>(data,dims[0],dims[1],dims[2],dims[3]);
-          auto avg_coeff_4d = view_Nd_dev<4>(avg_cnt_data,avg_cnt_dims[0],avg_cnt_dims[1],avg_cnt_dims[2],avg_cnt_dims[3]);
           Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
             int i,j,k,l;
             unflatten_idx(idx,extents,i,j,k,l);
-            if (track_avg_cnt && add_time_dim) {
-              combine_and_fill(new_view_4d(i,j,k,l), avg_view_4d(i,j,k,l),avg_coeff_4d(i,j,k,l),avg_type,fill_value);
+            if (do_avg_cnt) {
+              combine_and_fill(new_view_4d(i,j,k,l), avg_view_4d(i,j,k,l),avg_type,fill_value);
             } else {
               combine(new_view_4d(i,j,k,l), avg_view_4d(i,j,k,l),avg_type);
             }
@@ -573,12 +555,11 @@ run (const std::string& filename,
         {
           auto new_view_5d = field.get_view<const Real*****,Device>();
           auto avg_view_5d = view_Nd_dev<5>(data,dims[0],dims[1],dims[2],dims[3],dims[4]);
-          auto avg_coeff_5d = view_Nd_dev<5>(avg_cnt_data,avg_cnt_dims[0],avg_cnt_dims[1],avg_cnt_dims[2],avg_cnt_dims[3],avg_cnt_dims[4]);
           Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
             int i,j,k,l,m;
             unflatten_idx(idx,extents,i,j,k,l,m);
-            if (track_avg_cnt && add_time_dim) {
-              combine_and_fill(new_view_5d(i,j,k,l,m), avg_view_5d(i,j,k,l,m),avg_coeff_5d(i,j,k,l,m),avg_type,fill_value);
+            if (do_avg_cnt) {
+              combine_and_fill(new_view_5d(i,j,k,l,m), avg_view_5d(i,j,k,l,m),avg_type,fill_value);
             } else {
               combine(new_view_5d(i,j,k,l,m), avg_view_5d(i,j,k,l,m),avg_type);
             }
@@ -589,12 +570,11 @@ run (const std::string& filename,
         {
           auto new_view_6d = field.get_view<const Real******,Device>();
           auto avg_view_6d = view_Nd_dev<6>(data,dims[0],dims[1],dims[2],dims[3],dims[4],dims[5]);
-          auto avg_coeff_6d = view_Nd_dev<6>(avg_cnt_data,avg_cnt_dims[0],avg_cnt_dims[1],avg_cnt_dims[2],avg_cnt_dims[3],avg_cnt_dims[4],avg_cnt_dims[5]);
           Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
             int i,j,k,l,m,n;
             unflatten_idx(idx,extents,i,j,k,l,m,n);
-            if (track_avg_cnt && add_time_dim) {
-              combine_and_fill(new_view_6d(i,j,k,l,m,n), avg_view_6d(i,j,k,l,m,n), avg_coeff_6d(i,j,k,l,m,n),avg_type,fill_value);
+            if (do_avg_cnt) {
+              combine_and_fill(new_view_6d(i,j,k,l,m,n), avg_view_6d(i,j,k,l,m,n), avg_type,fill_value);
             } else {
               combine(new_view_6d(i,j,k,l,m,n), avg_view_6d(i,j,k,l,m,n),avg_type);
             }
@@ -608,7 +588,7 @@ run (const std::string& filename,
 
     if (is_write_step) {
       if (output_step and avg_type==OutputAvgType::Average) {
-        if (m_track_avg_cnt && m_add_time_dim) {
+        if (do_avg_cnt) {
           const auto avg_cnt_lookup = m_field_to_avg_cnt_map.at(name);
           const auto avg_cnt_view = m_dev_views_1d.at(avg_cnt_lookup);
           const auto avg_nsteps = avg_cnt_view.data();
@@ -837,9 +817,11 @@ void AtmosphereOutput::register_views()
       m_host_views_1d.emplace(name,Kokkos::create_mirror(m_dev_views_1d[name]));
     }
 
-    // Now create and store a dev view to track the averaging count for this layout (if we are tracking)
-    // We don't need to track average counts for files that are not tracking the time dim
-    set_avg_cnt_tracking(name,"",layout);
+    if (m_track_avg_cnt) {
+      // Now create and store a dev view to track the averaging count for this layout (if we are tracking)
+      // We don't need to track average counts for files that are not tracking the time dim
+      set_avg_cnt_tracking(name,"",layout);
+    }
   }
 
   // Initialize the local views
@@ -868,7 +850,7 @@ void AtmosphereOutput::set_avg_cnt_tracking(const std::string& name, const std::
   // We don't need to track average counts for files that are not tracking the time dim
   const auto size = layout.size();
   const auto tags = layout.tags();
-  if (m_add_time_dim && m_track_avg_cnt) {
+  if (m_track_avg_cnt) {
     std::string avg_cnt_name = "avg_count" + avg_cnt_suffix;
     for (int ii=0; ii<layout.rank(); ++ii) {
       auto tag_name = m_io_grid->get_dim_name(layout.tag(ii));
@@ -879,7 +861,6 @@ void AtmosphereOutput::set_avg_cnt_tracking(const std::string& name, const std::
     }
     m_field_to_avg_cnt_map.emplace(name,avg_cnt_name);
     m_dev_views_1d.emplace(avg_cnt_name,view_1d_dev("",size));  // Note, emplace will only add a new key if one isn't already there
-    m_local_tmp_avg_cnt_views_1d.emplace(avg_cnt_name,view_1d_dev("",size));  // Note, emplace will only add a new key if one isn't already there
     m_host_views_1d.emplace(avg_cnt_name,Kokkos::create_mirror(m_dev_views_1d[avg_cnt_name]));
     m_layouts.emplace(avg_cnt_name,layout);
   }
@@ -890,7 +871,7 @@ reset_dev_views()
 {
   // Reset the local device views depending on the averaging type
   // Init dev view with an "identity" for avg_type
-  const Real fill_for_average = (m_track_avg_cnt && m_add_time_dim) ? m_fill_value : 0.0;
+  const Real fill_for_average = m_track_avg_cnt ? m_fill_value : 0.0;
   for (auto const& name : m_fields_names) {
     switch (m_avg_type) {
       case OutputAvgType::Instant:
@@ -1019,7 +1000,7 @@ register_variables(const std::string& filename,
       }
 
       // If tracking average count variables then add the name of the tracking variable for this variable
-      if (m_track_avg_cnt && m_add_time_dim) {
+      if (m_track_avg_cnt) {
         const auto lookup = m_field_to_avg_cnt_map.at(name);
         set_variable_metadata(filename,name,"averaging_count_tracker",lookup);
       }
@@ -1033,7 +1014,7 @@ register_variables(const std::string& filename,
     }
   }
   // Now register the average count variables
-  if (m_track_avg_cnt && m_add_time_dim) {
+  if (m_track_avg_cnt) {
     for (const auto& name : m_avg_cnt_names) {
       const auto layout = m_layouts.at(name);
       auto io_decomp_tag = set_decomp_tag(layout);
@@ -1137,14 +1118,12 @@ void AtmosphereOutput::set_degrees_of_freedom(const std::string& filename)
     const auto& fid  = field.get_header().get_identifier();
     auto var_dof = get_var_dof_offsets(fid.get_layout());
     set_dof(filename,name,var_dof.size(),var_dof.data());
-    m_dofs.emplace(std::make_pair(name,var_dof.size()));
   }
   // Cycle through the average count fields and set degrees of freedom
   for (auto const& name : m_avg_cnt_names) {
     const auto layout = m_layouts.at(name);
     auto var_dof = get_var_dof_offsets(layout);
     set_dof(filename,name,var_dof.size(),var_dof.data());
-    m_dofs.emplace(std::make_pair(name,var_dof.size()));
   }
 
   /* TODO:
@@ -1293,7 +1272,10 @@ AtmosphereOutput::create_diagnostic (const std::string& diag_field_name) {
       } else if (units=="mb" or units=="Pa" or units=="hPa") {
         diag_name = "FieldAtPressureLevel";
         diag_avg_cnt_name = "_" + tokens[1]; // Set avg_cnt tracking for this specific slice
-        m_track_avg_cnt = true; // If we have pressure slices we need to be tracking the average count.
+
+        // If we have pressure slices we need to be tracking the average count,
+        // if m_avg_type is not Instant
+        m_track_avg_cnt = m_avg_type!=OutputAvgType::Instant;
       } else {
         EKAT_ERROR_MSG ("Error! Invalid units x for 'field_at_Nx' diagnostic.\n");
       }
@@ -1355,7 +1337,7 @@ AtmosphereOutput::create_diagnostic (const std::string& diag_field_name) {
   }
   diag->initialize(util::TimeStamp(),RunType::Initial);
   // If specified, set avg_cnt tracking for this diagnostic.
-  if (m_add_time_dim && m_track_avg_cnt) {
+  if (m_track_avg_cnt) {
     const auto diag_field = diag->get_diagnostic();
     const auto name       = diag_field.name();
     const auto layout     = diag_field.get_header().get_identifier().get_layout();
@@ -1368,105 +1350,98 @@ AtmosphereOutput::create_diagnostic (const std::string& diag_field_name) {
 // Helper function to mark filled points in a specific layout
 void AtmosphereOutput::
 update_avg_cnt_view(const Field& field, view_1d_dev& dev_view) {
-  // If the dev_view_1d is aliasing the field device view (must be Instant output),
-  // then there's no point in copying from the field's view to dev_view
   const auto& name   = field.name();
   const auto& layout = m_layouts.at(name);
   const auto& dims   = layout.dims();
-  const auto  rank   = layout.rank();
         auto  data   = dev_view.data();
-  const bool is_diagnostic = (m_diagnostics.find(name) != m_diagnostics.end());
-  const bool is_aliasing_field_view =
-      m_avg_type==OutputAvgType::Instant &&
-      field.get_header().get_alloc_properties().get_padding()==0 &&
-      field.get_header().get_parent().expired() &&
-      not is_diagnostic;
   const auto fill_value = m_fill_value;
-  if (not is_aliasing_field_view) {
-    KT::RangePolicy policy(0,layout.size());
-    const auto extents = layout.extents();
-    switch (rank) {
-      case 1:
-      {
-        // For rank-1 views, we use strided layout, since it helps us
-        // handling a few more scenarios
-        auto src_view_1d = field.get_strided_view<const Real*,Device>();
-        auto tgt_view_1d = view_Nd_dev<1>(data,dims[0]);
-        Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int i) {
-          if (src_view_1d(i)==fill_value) {
-            tgt_view_1d(i) = 0.0;
-          }
-        });
-        break;
-      }
-      case 2:
-      {
-        auto src_view_2d = field.get_view<const Real**,Device>();
-        auto tgt_view_2d = view_Nd_dev<2>(data,dims[0],dims[1]);
-        Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
-          int i,j;
-          unflatten_idx(idx,extents,i,j);
-          if (src_view_2d(i,j)==fill_value) {
-            tgt_view_2d(i,j) = 0.0;
-          }
-        });
-        break;
-      }
-      case 3:
-      {
-        auto src_view_3d = field.get_view<const Real***,Device>();
-        auto tgt_view_3d = view_Nd_dev<3>(data,dims[0],dims[1],dims[2]);
-        Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
-          int i,j,k;
-          unflatten_idx(idx,extents,i,j,k);
-          if (src_view_3d(i,j,k)==fill_value) {
-            tgt_view_3d(i,j,k) = 0.0;
-          }
-        });
-        break;
-      }
-      case 4:
-      {
-        auto src_view_4d = field.get_view<const Real****,Device>();
-        auto tgt_view_4d = view_Nd_dev<4>(data,dims[0],dims[1],dims[2],dims[3]);
-        Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
-          int i,j,k,l;
-          unflatten_idx(idx,extents,i,j,k,l);
-          if (src_view_4d(i,j,k,l)==fill_value) {
-            tgt_view_4d(i,j,k,l) = 0.0;
-          }
-        });
-        break;
-      }
-      case 5:
-      {
-        auto src_view_5d = field.get_view<const Real*****,Device>();
-        auto tgt_view_5d = view_Nd_dev<5>(data,dims[0],dims[1],dims[2],dims[3],dims[4]);
-        Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
-          int i,j,k,l,m;
-          unflatten_idx(idx,extents,i,j,k,l,m);
-          if (src_view_5d(i,j,k,l,m)==fill_value) {
-            tgt_view_5d(i,j,k,l,m) = 0.0;
-          }
-        });
-        break;
-      }
-      case 6:
-      {
-        auto src_view_6d = field.get_view<const Real******,Device>();
-        auto tgt_view_6d = view_Nd_dev<6>(data,dims[0],dims[1],dims[2],dims[3],dims[4],dims[5]);
-        Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
-          int i,j,k,l,m,n;
-          unflatten_idx(idx,extents,i,j,k,l,m,n);
-          if (src_view_6d(i,j,k,l,m,n)==fill_value) {
-            tgt_view_6d(i,j,k,l,m,n) = 0.0;
-          }
-        });
-        break;
-      }
-      default:
-        EKAT_ERROR_MSG ("Error! Field rank (" + std::to_string(rank) + ") not supported by AtmosphereOutput.\n");
+
+  KT::RangePolicy policy(0,layout.size());
+  const auto extents = layout.extents();
+  switch (layout.rank()) {
+    case 1:
+    {
+      // For rank-1 views, we use strided layout, since it helps us
+      // handling a few more scenarios
+      auto src_view_1d = field.get_strided_view<const Real*,Device>();
+      auto tgt_view_1d = view_Nd_dev<1>(data,dims[0]);
+      Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int i) {
+        if (src_view_1d(i)!=fill_value) {
+          tgt_view_1d(i) += 1;
+        }
+      });
+      break;
     }
+    case 2:
+    {
+      auto src_view_2d = field.get_view<const Real**,Device>();
+      auto tgt_view_2d = view_Nd_dev<2>(data,dims[0],dims[1]);
+      Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
+        int i,j;
+        unflatten_idx(idx,extents,i,j);
+        if (src_view_2d(i,j)!=fill_value) {
+          tgt_view_2d(i,j) += 1;
+        }
+      });
+      break;
+    }
+    case 3:
+    {
+      auto src_view_3d = field.get_view<const Real***,Device>();
+      auto tgt_view_3d = view_Nd_dev<3>(data,dims[0],dims[1],dims[2]);
+      Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
+        int i,j,k;
+        unflatten_idx(idx,extents,i,j,k);
+        if (src_view_3d(i,j,k)!=fill_value) {
+          tgt_view_3d(i,j,k) += 1;
+        }
+      });
+      break;
+    }
+    case 4:
+    {
+      auto src_view_4d = field.get_view<const Real****,Device>();
+      auto tgt_view_4d = view_Nd_dev<4>(data,dims[0],dims[1],dims[2],dims[3]);
+      Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
+        int i,j,k,l;
+        unflatten_idx(idx,extents,i,j,k,l);
+        if (src_view_4d(i,j,k,l)!=fill_value) {
+          tgt_view_4d(i,j,k,l) += 1;
+        }
+      });
+      break;
+    }
+    case 5:
+    {
+      auto src_view_5d = field.get_view<const Real*****,Device>();
+      auto tgt_view_5d = view_Nd_dev<5>(data,dims[0],dims[1],dims[2],dims[3],dims[4]);
+      Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
+        int i,j,k,l,m;
+        unflatten_idx(idx,extents,i,j,k,l,m);
+        if (src_view_5d(i,j,k,l,m)!=fill_value) {
+          tgt_view_5d(i,j,k,l,m) += 1;
+        }
+      });
+      break;
+    }
+    case 6:
+    {
+      auto src_view_6d = field.get_view<const Real******,Device>();
+      auto tgt_view_6d = view_Nd_dev<6>(data,dims[0],dims[1],dims[2],dims[3],dims[4],dims[5]);
+      Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
+        int i,j,k,l,m,n;
+        unflatten_idx(idx,extents,i,j,k,l,m,n);
+        if (src_view_6d(i,j,k,l,m,n)!=fill_value) {
+          tgt_view_6d(i,j,k,l,m,n) += 1;
+        }
+      });
+      break;
+    }
+    default:
+      EKAT_ERROR_MSG (
+            "Error! Field rank not not supported by AtmosphereOutput.\n"
+          "  - field name:   " + field.name() + "\n"
+          "  - field layout: " + to_string(layout) + "\n");
   }
 }
 
