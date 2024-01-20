@@ -208,6 +208,8 @@ module elm_driver
    use pftvarcon
    use decompMod , only : clumps, procinfo
    use ColumnWorkRoutinesMod 
+   use CarbonStateUpdate3Mod 
+   use ErosionMod, only : ErosionFluxes 
    !
    ! !PUBLIC TYPES:
    implicit none
@@ -1595,7 +1597,8 @@ module elm_driver
             !end if
             call CNLitterToColumn(proc_filter%num_soilc, proc_filter%soilc, cnstate_vars )
             call cpu_time(stopt) 
-            write(iulog,*) iam, "TIMING Summary ::",(stopt-startt)*1.E+3,"ms" 
+            write(iulog,*) iam, "TIMING Summary ::",(stopt-startt)*1.E+3,"ms"
+
             call cpu_time(startt) 
             call CarbonStateUpdate_Phase1_col(proc_filter%num_soilc, proc_filter%soilc, col_cs, col_cf, dtime_mod)
             call NitrogenStateUpdate_Phase1_col(proc_filter%num_soilc, proc_filter%soilc, cnstate_vars, dtime_mod)
@@ -1607,6 +1610,10 @@ module elm_driver
                call NitrogenStateUpdate_Phase1_pft(proc_filter%num_soilp,proc_filter%soilp, dtime_mod)
                call PhosphorusStateUpdate_Phase1_pft(proc_filter%num_soilp,proc_filter%soilp, dtime_mod) 
             end if
+            print *, "\nBefore SoilLittVertTransp\ndecomp_cpools_vr:" 
+            do j =1,5
+              print *, j,col_cs%decomp_cpools_vr(25,j,1)
+            end do  
             
             call cpu_time(startt)
             call SoilLittVertTransp( proc_filter%num_soilc, proc_filter%soilc, &
@@ -1614,6 +1621,10 @@ module elm_driver
             call cpu_time(stopt)
             write(iulog,*) iam, "TIMING SoilLittVertTransp: ",(stopt-startt)*1.E+3,"ms"
 
+            print *, "\nAfter SoilLittVertTransp\ndecomp_cpools_vr:" 
+            do j =1,5
+              print *, j,col_cs%decomp_cpools_vr(25,j,1)
+            end do  
             call cpu_time(startt) 
             call GapMortality( proc_filter%num_soilc, proc_filter%soilc, &
                    proc_filter%num_soilp, proc_filter%soilp,&
@@ -1621,6 +1632,10 @@ module elm_driver
             !--------------------------------------------
             ! Update2
             !--------------------------------------------
+            print *, "\nBefore StateUpdate2\ndecomp_cpools_vr:" 
+            do j =1,5
+              print *, j,col_cs%decomp_cpools_vr(25,j,1)
+            end do  
             call CarbonStateUpdate2( proc_filter%num_soilc, proc_filter%soilc, &
                      proc_filter%num_soilp, proc_filter%soilp, &
                      col_cs, veg_cs, col_cf, veg_cf)
@@ -1644,6 +1659,11 @@ module elm_driver
             call cpu_time(stopt) 
             write(iulog,*) "TIMING StateUpdate :: ",(stopt-startt)*1.E+3,"ms" 
             
+            print *, "\nAfter StateUpdate2\ndecomp_cpools_vr:" 
+            do j =1,5
+              print *, j,col_cs%decomp_cpools_vr(25,j,1)
+            end do  
+            
             call cpu_time(startt) 
             call FireArea( proc_filter%num_soilc, proc_filter%soilc, &
                     proc_filter%num_soilp, proc_filter%soilp, &
@@ -1655,6 +1675,58 @@ module elm_driver
 
             call cpu_time(stopt) 
             write(iulog,*) iam, "TIMING FireMod :: ",(stopt-startt)*1.E+3,"ms" 
+            
+            if ( use_erosion ) then
+                call ErosionFluxes(bounds_proc, proc_filter%num_soilc, proc_filter%soilc, soilstate_vars, sedflux_vars )
+            end if
+            !--------------------------------------------
+            ! Update3
+            !--------------------------------------------
+            if(.not.use_fates)then
+               ! if ( use_c13 ) then
+               ! call CarbonIsoFlux3(proc_filter%num_soilc, proc_filter%soilc,proc_filter%num_soilp, proc_filter%soilp, &
+               !      cnstate_vars, &
+               !      isotope=c13, isocol_cs=c13_col_cs, isoveg_cs=c13_veg_cs, isocol_cf=c13_col_cf, isoveg_cf=c13_veg_cf)
+               ! end if
+               ! if ( use_c14 ) then
+               !    call CarbonIsoFlux3(proc_filter%num_soilc, proc_filter%soilc,proc_filter%num_soilp, proc_filter%soilp, &
+               !         cnstate_vars , &
+               !         isotope=c14, isocol_cs=c14_col_cs, isoveg_cs=c14_veg_cs, isocol_cf=c14_col_cf, isoveg_cf=c14_veg_cf)
+               ! end if
+          
+                call CarbonStateUpdate3( proc_filter%num_soilc, proc_filter%soilc,proc_filter%num_soilp, proc_filter%soilp, &
+                     col_cs, veg_cs, col_cf, veg_cf, dtime_mod)
+          
+                if ( use_c13 ) then
+                   call CarbonStateUpdate3( proc_filter%num_soilc, proc_filter%soilc,proc_filter%num_soilp, proc_filter%soilp, &
+                        c13_col_cs, c13_veg_cs, c13_col_cf, c13_veg_cf, dtime_mod)
+                end if
+                if ( use_c14 ) then
+                   call CarbonStateUpdate3( proc_filter%num_soilc, proc_filter%soilc,proc_filter%num_soilp, proc_filter%soilp, &
+                        c14_col_cs, c14_veg_cs, c14_col_cf, c14_veg_cf, dtime_mod)
+                end if
+                if ( use_c14 ) then
+                   call C14Decay(proc_filter%num_soilc, proc_filter%soilc,proc_filter%num_soilp, proc_filter%soilp, &
+                        cnstate_vars )
+          
+                   call C14BombSpike(proc_filter%num_soilp, proc_filter%soilp, &
+                        cnstate_vars)
+                end if
+          
+                call veg_cf_summary_for_ch4(veg_cf,bounds_proc, proc_filter%num_soilp, proc_filter%soilp)
+                if( use_c13 ) then
+                   call col_cf_summary_for_ch4(c13_col_cf,bounds_proc,proc_filter%num_soilc, proc_filter%soilc)
+                   call veg_cf_summary_for_ch4(c13_veg_cf,bounds_proc,proc_filter%num_soilp, proc_filter%soilp)
+                endif
+                if( use_c14 ) then
+                   call col_cf_summary_for_ch4(c14_col_cf,bounds_proc,proc_filter%num_soilc, proc_filter%soilc)
+                   call veg_cf_summary_for_ch4(c14_veg_cf,bounds_proc,proc_filter%num_soilp, proc_filter%soilp)
+                endif
+          
+            end if !end of if not use_fates block
+          
+           call col_cf_summary_for_ch4(col_cf,bounds_proc, proc_filter%num_soilc, proc_filter%soilc)
+            
             !===========================================================================================
             ! elm_interface: 'EcosystemDynNoLeaching' is divided into 2 subroutines (1 & 2): END
             !===========================================================================================
@@ -1734,7 +1806,7 @@ module elm_driver
                   cnstate_vars )
                call cpu_time(stopt)
                write(iulog,*) iam,"TIMING EcosystemDynLeaching :: ",(stopt-startt)*1.E+3,"ms"
-            end if
+            end if 
             ! ============================================================================
             ! Update Vegetation
             ! ============================================================================
@@ -1787,7 +1859,7 @@ module elm_driver
                
                !call t_startf('cnbalchk')
                
-               call ColCBalanceCheck( &
+               call ColCBalanceCheck(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &
                col_cs, col_cf)
                
