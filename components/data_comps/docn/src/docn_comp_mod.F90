@@ -129,11 +129,7 @@ CONTAINS
                      iMOAB_DefineTagStorage, iMOAB_GetDoubleTagStorage, &
                      iMOAB_SetIntTagStorage, iMOAB_SetDoubleTagStorage, &
                      iMOAB_ResolveSharedEntities, iMOAB_CreateVertices, &
-                     iMOAB_GetMeshInfo, iMOAB_UpdateMeshInfo, &
-                     iMOAB_ComputeCommGraph, &
-                     iMOAB_SendElementTag, iMOAB_ReceiveElementTag, &
-                     iMOAB_FreeSenderBuffers
-
+                     iMOAB_GetMeshInfo, iMOAB_UpdateMeshInfo
 #endif
     implicit none
 
@@ -270,32 +266,6 @@ CONTAINS
     call shr_dmodel_rearrGGrid(SDOCN%grid, ggrid, gsmap, rearr, mpicom)
     call t_stopf('docn_initmctdom')
 
-#ifdef HAVE_MOAB
-   ! domain_file = trim(SDOCN%domainFile)//C_NULL_CHAR ! Load this MPAS mesh file
-   if (my_task == master_task) then
-     write(logunit,*) ' loading OCN domain mesh from disk '
-   endif
-   ! "PARALLEL=READ_PART;PARTITION_METHOD=RCBZOLTAN;"
-   ierr = iMOAB_LoadMesh(mpoid, trim(SDOCN%domainFile)//C_NULL_CHAR, &
-            "PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;NO_CULLING", 0)
-   if ( ierr /= 0 ) then
-      write(logunit,*) 'Failed to load ocean domain mesh'
-   endif
-
-   ierr = iMOAB_UpdateMeshInfo(mpoid)
-   call errorout(ierr, 'fail to update mesh info')
-
-   ! now define the fundamental domain tags
-   tagname='area:aream:frac:mask'//C_NULL_CHAR
-   ierr = iMOAB_DefineTagStorage( mpoid, tagname, &
-                                  1, & ! dense, double tag
-                                  1, & ! number of components
-                                  tagindex )
-   if (ierr > 0 )  &
-      call errorout(ierr, 'Error: fail to create area:aream:frac:mask tag ')
-
-#endif
-
     !----------------------------------------------------------------------------
     ! Initialize MCT attribute vectors
     !----------------------------------------------------------------------------
@@ -306,15 +276,6 @@ CONTAINS
 
     call mct_aVect_init(o2x, rList=seq_flds_o2x_fields, lsize=lsize)
     call mct_aVect_zero(o2x)
-
-#ifdef HAVE_MOAB
-   ierr = iMOAB_DefineTagStorage( mpoid, trim(seq_flds_o2x_fields)//C_NULL_CHAR, &
-                                     1, & ! dense, double tag
-                                     1, & ! number of components
-                                     tagindex )
-   if (ierr > 0 )  &
-      call errorout(ierr, 'Error: fail to create seq_flds_o2x_fields tags ')
-#endif
 
     kt    = mct_aVect_indexRA(o2x,'So_t')
     ks    = mct_aVect_indexRA(o2x,'So_s')
@@ -328,15 +289,6 @@ CONTAINS
     call mct_aVect_init(x2o, rList=seq_flds_x2o_fields, lsize=lsize)
     call mct_aVect_zero(x2o)
 
-#ifdef HAVE_MOAB
-   ierr = iMOAB_DefineTagStorage( mpoid, trim(seq_flds_x2o_fields)//C_NULL_CHAR, &
-                                     1, & ! dense, double tag
-                                     1, & ! number of components
-                                     tagindex )
-   if (ierr > 0 )  &
-      call errorout(ierr, 'Error: fail to create seq_flds_x2o_fields tags ')
-#endif
-
     kswnet = mct_aVect_indexRA(x2o,'Foxx_swnet')
     klwup  = mct_aVect_indexRA(x2o,'Foxx_lwup')
     ksen   = mct_aVect_indexRA(x2o,'Foxx_sen')
@@ -348,15 +300,6 @@ CONTAINS
 
     call mct_aVect_init(avstrm, rList=flds_strm, lsize=lsize)
     call mct_aVect_zero(avstrm)
-
-#ifdef HAVE_MOAB
-   ierr = iMOAB_DefineTagStorage( mpoid, trim(flds_strm)//C_NULL_CHAR, &
-                                     1, & ! dense, double tag
-                                     1, & ! number of components
-                                     tagindex )
-   if (ierr > 0 )  &
-      call errorout(ierr, 'Error: fail to create flds_strm tags ')
-#endif
 
     kh    = mct_aVect_indexRA(avstrm,'strm_h')
     kqbot = mct_aVect_indexRA(avstrm,'strm_qbot')
@@ -386,12 +329,6 @@ CONTAINS
     call t_stopf('docn_initmctavs')
 
 #ifdef HAVE_MOAB
-   ierr = iMOAB_RegisterApplication(trim("DOCN_DOM")//C_NULL_CHAR, mpicom, &
-                                     compid*2, mdpoid)
-   if (ierr .ne. 0) then
-      write(logunit,*) subname,' error in registering DOCN local component'
-      call shr_sys_abort(subname//' ERROR in registering DOCN component')
-   endif
 
    allocate(moab_vert_coords(lsize*3))
    do iv = 1, lsize
@@ -403,12 +340,12 @@ CONTAINS
    enddo
 
    ! create the vertices with coordinates from MCT domain
-   ierr = iMOAB_CreateVertices(mdpoid, lsize*3, 3, moab_vert_coords)
+   ierr = iMOAB_CreateVertices(mpoid, lsize*3, 3, moab_vert_coords)
    if (ierr .ne. 0)  &
       call shr_sys_abort('Error: fail to create MOAB vertices in land model')
 
    tagname='GLOBAL_ID'//C_NULL_CHAR
-   ierr = iMOAB_DefineTagStorage(mdpoid, tagname, &
+   ierr = iMOAB_DefineTagStorage(mpoid, tagname, &
                                  0, & ! dense, integer
                                  1, & ! number of components
                                  tagindex )
@@ -418,25 +355,25 @@ CONTAINS
    ! get list of global IDs for Dofs
    call mct_gsMap_orderedPoints(gsMap, my_task, idata)
 
-   ierr = iMOAB_SetIntTagStorage ( mdpoid, tagname, lsize, &
+   ierr = iMOAB_SetIntTagStorage ( mpoid, tagname, lsize, &
                                     0, & ! vertex type
                                     idata)
    if (ierr .ne. 0)  &
       call shr_sys_abort('Error: fail to set GLOBAL_ID tag ')
 
-   ierr = iMOAB_ResolveSharedEntities( mdpoid, lsize, idata );
+   ierr = iMOAB_ResolveSharedEntities( mpoid, lsize, idata );
    if (ierr .ne. 0)  &
       call shr_sys_abort('Error: fail to resolve shared entities')
 
    deallocate(moab_vert_coords)
    deallocate(idata)
 
-   ierr = iMOAB_UpdateMeshInfo( mdpoid )
+   ierr = iMOAB_UpdateMeshInfo( mpoid )
    if (ierr .ne. 0)  &
       call shr_sys_abort('Error: fail to update mesh info ')
 
    allocate(data(lsize))
-   ierr = iMOAB_DefineTagStorage( mdpoid, "area:aream:frac:mask"//C_NULL_CHAR, &
+   ierr = iMOAB_DefineTagStorage( mpoid, "area:aream:frac:mask"//C_NULL_CHAR, &
                                      1, & ! dense, double
                                      1, & ! number of components
                                      tagindex )
@@ -445,7 +382,7 @@ CONTAINS
 
    data(:) = ggrid%data%rAttr(mct_aVect_indexRA(ggrid%data,'area'),:)
    tagname='area'//C_NULL_CHAR
-   ierr = iMOAB_SetDoubleTagStorage ( mdpoid, tagname, lsize, &
+   ierr = iMOAB_SetDoubleTagStorage ( mpoid, tagname, lsize, &
                                       0, & ! set data on vertices
                                       data)
    if (ierr > 0 )  &
@@ -454,7 +391,7 @@ CONTAINS
    ! set the same data for aream (model area) as area
    ! data(:) = ggrid%data%rAttr(mct_aVect_indexRA(ggrid%data,'aream'),:)
    tagname='aream'//C_NULL_CHAR
-   ierr = iMOAB_SetDoubleTagStorage ( mdpoid, tagname, lsize, &
+   ierr = iMOAB_SetDoubleTagStorage ( mpoid, tagname, lsize, &
                                       0, & ! set data on vertices
                                       data)
    if (ierr > 0 )  &
@@ -462,7 +399,7 @@ CONTAINS
 
    data(:) = ggrid%data%rAttr(kmask,:)
    tagname='mask'//C_NULL_CHAR
-   ierr = iMOAB_SetDoubleTagStorage ( mdpoid, tagname, lsize, &
+   ierr = iMOAB_SetDoubleTagStorage ( mpoid, tagname, lsize, &
                                       0, & ! set data on vertices
                                       data)
    if (ierr > 0 )  &
@@ -470,7 +407,7 @@ CONTAINS
 
    data(:) = ggrid%data%rAttr(kfrac,:)
    tagname='frac'//C_NULL_CHAR
-   ierr = iMOAB_SetDoubleTagStorage ( mdpoid, tagname, lsize, &
+   ierr = iMOAB_SetDoubleTagStorage ( mpoid, tagname, lsize, &
                                       0, & ! set data on vertices
                                       data)
    if (ierr > 0 )  &
@@ -479,64 +416,26 @@ CONTAINS
    deallocate(data)
 
    ! define tags
-   ierr = iMOAB_DefineTagStorage( mdpoid, trim(seq_flds_x2o_fields)//C_NULL_CHAR, &
+   ierr = iMOAB_DefineTagStorage( mpoid, trim(seq_flds_x2o_fields)//C_NULL_CHAR, &
                                      1, & ! dense, double
                                      1, & ! number of components
                                      tagindex )
    if (ierr > 0 )  &
       call errorout(ierr, 'Error: fail to create seq_flds_x2o_fields tags ')
 
-   ierr = iMOAB_DefineTagStorage( mdpoid, trim(seq_flds_o2x_fields)//C_NULL_CHAR, &
+   ierr = iMOAB_DefineTagStorage( mpoid, trim(seq_flds_o2x_fields)//C_NULL_CHAR, &
                                      1, & ! dense, double
                                      1, & ! number of components
                                      tagindex )
    if (ierr > 0 )  &
       call errorout(ierr, 'Error: fail to create seq_flds_o2x_fields tags ')
 
-   ierr = iMOAB_DefineTagStorage( mdpoid, trim(flds_strm)//C_NULL_CHAR, &
+   ierr = iMOAB_DefineTagStorage( mpoid, trim(flds_strm)//C_NULL_CHAR, &
                                      1, & ! dense, double
                                      1, & ! number of components
                                      tagindex )
    if (ierr > 0 )  &
       call errorout(ierr, 'Error: fail to create flds_strm tags ')
-
-   ! now create a parallel communication graph so that we can transfer data
-   ! from MCT decomposition to MOAB-Zoltan decomposition
-   call MPI_Comm_group(mpicom, mpigrp, ierr)
-   if (ierr .ne. 0) then
-      write(logunit,*) subname,' error in getting MPI group: ', ierr
-      call shr_sys_abort('Error: failed to get MPI group ')
-   endif
-   ierr = iMOAB_ComputeCommGraph( mdpoid, mpoid, mpicom, mpigrp, mpigrp, &
-                                   2, & ! type1 - vertex (point cloud) data
-                                   3, & ! type2 - element data
-                                   compid*2, compid)
-   if (ierr .ne. 0)  &
-      call shr_sys_abort('Error: fail to update mesh info ')
-
-   ! basically, use the initial partitioning
-   ! if (mdpoid .ge. 0) then !  send
-   ierr = iMOAB_SendElementTag(mdpoid, &
-            'area:aream:frac:mask'//C_NULL_CHAR, &
-            mpicom, compid)
-   if (ierr .ne. 0) then
-      call shr_sys_abort(subname//' cannot send element tag')
-   endif
-
-   ! if ( mpoid .ge. 0 ) then !  we are on receiving end
-   ierr = iMOAB_ReceiveElementTag(mpoid, &
-            'area:aream:frac:mask'//C_NULL_CHAR, &
-            mpicom, compid*2)
-   if (ierr .ne. 0) then
-      call shr_sys_abort(subname//' cannot receive element tag')
-   endif
-
-!     ! we can now free the sender buffers
-   ! if (mdpoid .ge. 0) then
-   ierr = iMOAB_FreeSenderBuffers(mdpoid, compid)
-   if (ierr .ne. 0) then
-      call shr_sys_abort(subname//' cannot free sender buffers')
-   endif
 #endif
     !----------------------------------------------------------------------------
     ! Read restart
@@ -642,7 +541,7 @@ CONTAINS
    lsize = mct_avect_lsize(avx)
    !write(*,* ) "Setting data for tag: ", tagname, " with size = ", lsize
    dataarr(:) = avx%rAttr(index, :)
-   ierr = iMOAB_SetDoubleTagStorage ( mdpoid, tagname, lsize, &
+   ierr = iMOAB_SetDoubleTagStorage ( mpoid, tagname, lsize, &
                                        0, & ! data on vertices
                                        dataarr )
    if (ierr > 0 )  &
@@ -661,9 +560,7 @@ CONTAINS
 #ifdef HAVE_MOAB
     use iMOAB, only: iMOAB_GetMeshInfo, &
                      iMOAB_SetDoubleTagStorage, &
-                     iMOAB_WriteMesh, &
-                     iMOAB_SendElementTag, iMOAB_ReceiveElementTag, &
-                     iMOAB_FreeSenderBuffers
+                     iMOAB_WriteMesh
 #endif
 
     implicit none
@@ -708,6 +605,11 @@ CONTAINS
     character*100  tagname
     integer tagindex
     real(R8), allocatable, target :: data(:)
+#ifdef MOABDEBUG
+    integer  :: cur_docn_stepno
+    character*100 outfile, wopts, lnum
+#endif
+
 #endif
 
     character(*), parameter :: F00   = "('(docn_comp_run) ',8a)"
@@ -1003,41 +905,13 @@ CONTAINS
    call moab_init_tag( 'strm_qbot'//C_NULL_CHAR, avstrm, &
                         kqbot, data)
 
-   ! now let us use the communication graph to transfer data from
-   ! the MCT to MOAB decompositions
-   ierr = iMOAB_SendElementTag(mdpoid, &
-            'So_t:So_s:So_u:So_v:So_dhdx:So_dhdy:So_fswpen:Fioo_q'// &
-            ':Foxx_swnet:Foxx_lwup:Foxx_sen:Foxx_lat:Foxx_rofi:'// &
-            'Faxa_lwdn:Faxa_snow:Fioi_melth:strm_h:strm_qbot'//C_NULL_CHAR, &
-            mpicom, compid)
-   if (ierr .ne. 0) then
-      call shr_sys_abort(subname//' cannot send element tag')
-   endif
-
-   ierr = iMOAB_ReceiveElementTag(mpoid, &
-            'So_t:So_s:So_u:So_v:So_dhdx:So_dhdy:So_fswpen:Fioo_q'// &
-            ':Foxx_swnet:Foxx_lwup:Foxx_sen:Foxx_lat:Foxx_rofi:'// &
-            'Faxa_lwdn:Faxa_snow:Fioi_melth:strm_h:strm_qbot'//C_NULL_CHAR, &
-            mpicom, compid*2)
-   if (ierr .ne. 0) then
-      call shr_sys_abort(subname//' cannot receive element tag')
-   endif
-
-   ! we can now free the sender buffers
-   ierr = iMOAB_FreeSenderBuffers(mdpoid, compid)
-   if (ierr .ne. 0) then
-      call shr_sys_abort(subname//' cannot free sender buffers')
-   endif
 
 #ifdef MOABDEBUG
-    ! dump file out to verify
-    ierr = iMOAB_WriteMesh(mdpoid, 'docn_comp_run.h5m'//C_NULL_CHAR, &
-                           'PARALLEL=WRITE_PART'//C_NULL_CHAR)
-    if (ierr > 0 )  then
-       write(logunit,*) 'Failed to write ocean component state '
-    endif
-    ierr = iMOAB_WriteMesh(mpoid, 'docn_comp_run_gid.h5m'//C_NULL_CHAR, &
-                           'PARALLEL=WRITE_PART'//C_NULL_CHAR)
+    call seq_timemgr_EClockGetData( EClock, stepno=cur_docn_stepno )
+    write(lnum,"(I0.2)")cur_docn_stepno
+    outfile = 'docn_comp_run_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+    wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
+    ierr = iMOAB_WriteMesh(mpoid, outfile, wopts)
     if (ierr > 0 )  then
        write(logunit,*) 'Failed to write ocean component state '
     endif

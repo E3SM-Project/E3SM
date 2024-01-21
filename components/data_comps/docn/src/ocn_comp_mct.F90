@@ -172,6 +172,8 @@ CONTAINS
     write(logunit,*) subname,' error in registering atm ocn intx'
     call shr_sys_abort(subname//' ERROR in registering atm ocn intx')
   endif
+   ! send path of ocean domain file to MOAB coupler.
+  call seq_infodata_PutData( infodata, ocn_domain=SDOCN%domainFile)
 #endif
 
     call docn_comp_init(Eclock, x2o, o2x, &
