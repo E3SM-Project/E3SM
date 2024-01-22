@@ -178,7 +178,7 @@ module cime_comp_mod
   use component_mod,      only: component_init_areacor_moab
 #endif
   use component_mod,      only: component_exch, component_diag
-  use component_mod,      only: component_exch_moab
+  use cplcomp_exchange_mod,      only: component_exch_moab
 
 ! used to send from components to coupler instances
   ! use component_mod,      only: ocn_cpl_moab

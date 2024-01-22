@@ -56,7 +56,6 @@ module component_mod
   public :: component_final               ! mct and esmf versions
   public :: component_exch
   public :: component_diag
-  public :: component_exch_moab
 
   ! public :: ocn_cpl_moab
 
@@ -711,6 +710,7 @@ subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxe
    !
    ! Uses
    use seq_domain_mct, only : seq_domain_areafactinit
+   use cplcomp_exchange_mod, only:  component_exch_moab
    use ISO_C_BINDING, only : C_NULL_CHAR
    use shr_kind_mod      , only :  CXX => shr_kind_CXX
    use iMOAB, only: iMOAB_DefineTagStorage, iMOAB_GetDoubleTagStorage, &
@@ -1180,95 +1180,6 @@ subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxe
     endif
 
   end subroutine component_diag
-
-  ! can exchange data between mesh in component and mesh on coupler.  Either way.
-  ! used in first hop of 2-hop
-  subroutine component_exch_moab(comp, mbAPPid1, mbAppid2, direction, fields )
-
-   use iMOAB ,  only: iMOAB_SendElementTag, iMOAB_ReceiveElementTag, iMOAB_WriteMesh, iMOAB_FreeSenderBuffers
-   use seq_comm_mct, only :  num_moab_exports ! for debugging
-   use ISO_C_BINDING, only : C_NULL_CHAR
-   use shr_kind_mod      , only :  CXX => shr_kind_CXX
-   !---------------------------------------------------------------
-    ! Description
-    ! send tags (fields) from component to coupler or from coupler to component
-
-    type(component_type)     , intent(in)           :: comp
-    ! direction 0 is from component to coupler; 1 is from coupler to component
-    integer,                   intent(in)           :: mbAPPid1, mbAppid2, direction
-    character(CXX)           , intent(in)           :: fields
-
-    character(*), parameter :: subname = '(component_exch_moab)'
-    integer :: id_join, source_id, target_id, ierr
-    integer :: mpicom_join
-    character(CXX)              :: tagname
-    character*100 outfile, wopts, lnum, dir
-
-  ! how to get mpicomm for joint comp + coupler
-    id_join = comp%cplcompid
-    call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
-!
-    tagName = trim(fields)//C_NULL_CHAR
-
-    if (direction .eq. 0) then
-       source_id = comp%compid
-       target_id = comp%cplcompid
-    else ! direction eq 1
-       source_id = comp%cplcompid
-       target_id = comp%compid
-    endif
-    ! for atm, add 200 to component side, because we will involve always the point cloud
-    ! we are not supporting anymore the spectral case, at least for the time being
-    ! we need to fix fv-cgll projection first
-    if (comp%oneletterid == 'a' .and. direction .eq. 0 ) then
-       source_id = source_id + 200
-    endif
-    if (comp%oneletterid == 'a' .and. direction .eq. 1 ) then
-       target_id = target_id + 200
-    endif
-    if (mbAPPid1 .ge. 0) then !  send
-
-       ! basically, use the initial partitioning
-       ierr = iMOAB_SendElementTag(mbAPPid1, tagName, mpicom_join, target_id)
-       if (ierr .ne. 0) then
-          call shr_sys_abort(subname//' cannot send element tag')
-       endif
-
-    endif
-    if ( mbAPPid2 .ge. 0 ) then !  we are on receiving end
-       ierr = iMOAB_ReceiveElementTag(mbAPPid2, tagName, mpicom_join, source_id)
-       if (ierr .ne. 0) then
-          call shr_sys_abort(subname//' cannot receive element tag')
-       endif
-    endif
-
-!     ! we can now free the sender buffers
-    if (mbAPPid1 .ge. 0) then
-       ierr = iMOAB_FreeSenderBuffers(mbAPPid1, target_id)
-       if (ierr .ne. 0) then
-          call shr_sys_abort(subname//' cannot free sender buffers')
-       endif
-    endif
-
-#ifdef MOABDEBUG
-    if (mbAPPid2 .ge. 0 ) then !  we are on receiving pes, for sure
-      ! number_proj = number_proj+1 ! count the number of projections
-      write(lnum,"(I0.2)") num_moab_exports
-      if (direction .eq. 0 ) then
-         dir = 'c2x'
-      else
-         dir = 'x2c'
-      endif
-      outfile = comp%ntype//'_'//trim(dir)//'_'//trim(lnum)//'.h5m'//C_NULL_CHAR
-      wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
-      ierr = iMOAB_WriteMesh(mbAPPid2, trim(outfile), trim(wopts))
-      if (ierr .ne. 0) then
-          call shr_sys_abort(subname//' cannot write file '// outfile)
-       endif
-    endif
-#endif
-
-  end subroutine component_exch_moab
 
    subroutine factor_moab_comp(comp, type, seq_flds_fluxes)
       use ISO_C_BINDING, only : C_NULL_CHAR
