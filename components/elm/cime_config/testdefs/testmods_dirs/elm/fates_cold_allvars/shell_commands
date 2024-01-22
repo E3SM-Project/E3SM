@@ -2,3 +2,4 @@
 ./xmlchange BFBFLAG="TRUE"
 ./xmlchange ELM_FORCE_COLDSTART="on"
 ./xmlchange TEST_MEMLEAK_TOLERANCE=1.5
+./xmlchange NTHRDS=1
