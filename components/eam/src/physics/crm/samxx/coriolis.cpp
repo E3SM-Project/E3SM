@@ -13,6 +13,9 @@ void coriolis() {
   YAKL_SCOPE( vg0     , ::vg0);
   YAKL_SCOPE( ug0     , ::ug0);
   YAKL_SCOPE( ncrms   , ::ncrms);
+  YAKL_SCOPE( use_ESMT, :: use_ESMT );
+  YAKL_SCOPE( u_esmt  , :: u_esmt );
+  YAKL_SCOPE( v_esmt  , :: v_esmt );
 
   if (RUN3D) {
     // for (int k=0; k<nzm; k++) {
@@ -70,13 +73,17 @@ void coriolis() {
       #ifdef MMF_DO_CORIOLIS_W
         real u_av_on_w = 0.25*( u(k ,j+offy_u,i+offx_u,icrm) + u(k ,j+offy_u,ic+offx_u,icrm)
                                +u(kc,j+offy_u,i+offx_u,icrm) + u(kc,j+offy_u,ic+offx_u,icrm));
-        dwdt(na-1,kc,j,i,icrm)= dwdt(na-1,kc,j,i,icrm) + fcorzy(j,icrm)*u_av_on_w;
+        dwdt(na-1,kc,j,i,icrm) = dwdt(na-1,kc,j,i,icrm) + fcorzy(j,icrm)*u_av_on_w;
       #endif
       #ifdef MMF_DO_CORIOLIS_ESMT
-      if (use_ESMT) {
-        real w_av_on_s = 0.5*( w(kc,j+offy_w,i+offx_w,icrm) + w(k,j+offy_w,i+offx_w,icrm) );
-        u_esmt(k,j+offy_s,i+offx_s,icrm) = u_esmt(k,j+offy_s,i+offx_s,icrm) + - fcorzy(j,icrm)*w_av_on_s;
-      }
+        if (use_ESMT) {
+          real w_av_on_s = 0.5*( w(kc,j+offy_w,i+offx_w,icrm) + w(k,j+offy_w,i+offx_w,icrm) );
+          u_esmt(k,j+offy_s,i+offx_s,icrm) = u_esmt(k,j+offy_s,i+offx_s,icrm) - fcorzy(j,icrm)*w_av_on_s;
+        }
+      #endif
+      #ifdef MMF_DO_CORIOLIS_ESMT_W
+        real u_esmt_av_on_w = 0.5*( u_esmt(kb,j+offy_s,i+offx_s,icrm) + u_esmt(k,j+offy_s,i+offx_s,icrm) );
+        dwdt(na-1,kc,j,i,icrm) = dwdt(na-1,kc,j,i,icrm) + fcorzy(j,icrm)*u_esmt_av_on_w;
       #endif
     });
   }
