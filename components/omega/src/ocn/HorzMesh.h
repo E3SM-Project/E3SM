@@ -11,6 +11,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "DataTypes.h"
+#include "Decomp.h"
 #include "MachEnv.h"
 
 #include <string>
