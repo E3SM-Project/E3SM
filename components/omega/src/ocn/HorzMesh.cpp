@@ -1,10 +1,10 @@
 //===-- base/HorzMesh.cpp - horizontal mesh methods -------------*- C++ -*-===//
 //
 // The mesh (Mesh) class initializes a local mesh domain based on a given
-// domain decomposition. It retrives the mesh count and connectivity 
+// domain decomposition. It retrives the mesh count and connectivity
 // information from the Decomp object and reads in all other mesh variables
 // from the mesh file. It also manages the device copies of the mesh data.
-// It is meant to provide a container for passing mesh variables throughout 
+// It is meant to provide a container for passing mesh variables throughout
 // the OMEGA tendency computation routines.
 //
 //===----------------------------------------------------------------------===//
@@ -25,23 +25,23 @@ HorzMesh::HorzMesh(Decomp *MeshDecomp){
 
    // Retrieve mesh files name from Decomp
    MeshFileName = MeshDecomp->MeshFileName;
-   
+
    // Retrieve mesh cell/edge/vertex totals from Decomp
    NCellsOwned = MeshDecomp->NCellsOwned;
    NCellsAll = MeshDecomp->NCellsAll;
    NCellsSize = MeshDecomp->NCellsSize;
-   
+
    NEdgesOwned = MeshDecomp->NEdgesOwned;
    NEdgesAll = MeshDecomp->NEdgesAll;
    NEdgesSize = MeshDecomp->NEdgesSize;
    MaxCellsOnEdge = MeshDecomp->MaxCellsOnEdge;
    MaxEdges = MeshDecomp->MaxEdges;
-   
+
    NVerticesOwned = MeshDecomp->NVerticesOwned;
    NVerticesAll = MeshDecomp->NVerticesAll;
    NVerticesSize = MeshDecomp->NVerticesSize;
    VertexDegree = MeshDecomp->VertexDegree;
-   
+
    // Retrieve connectivity arrays from Decomp
    CellsOnCellH = MeshDecomp->CellsOnCellH;
    EdgesOnCellH = MeshDecomp->EdgesOnCellH;
@@ -53,8 +53,8 @@ HorzMesh::HorzMesh(Decomp *MeshDecomp){
    VerticesOnEdgeH = MeshDecomp->VerticesOnEdgeH;
    CellsOnVertexH = MeshDecomp->CellsOnVertexH;
    EdgesOnVertexH = MeshDecomp->EdgesOnVertexH;
-   
-   
+
+
    // Open the mesh file for reading (assume IO has already been initialized)
    I4 Err;
    Err = OMEGA::IO::openFile(MeshFileID, MeshFileName, IO::ModeRead);
@@ -65,7 +65,7 @@ HorzMesh::HorzMesh(Decomp *MeshDecomp){
    // Create the parallel IO decompositions required to read in mesh variables
    initParallelIO(MeshDecomp);
 
-   // Read x/y/z and lon/lat coordinates for cells, edges, and vertices   
+   // Read x/y/z and lon/lat coordinates for cells, edges, and vertices
    readCoordinates();
 
    // Read the cell-centered bottom depth
@@ -83,14 +83,14 @@ HorzMesh::HorzMesh(Decomp *MeshDecomp){
    // Copy host data to device
    copyToDevice();
 
-   // TODO: add ability to compute (rather than read in) 
+   // TODO: add ability to compute (rather than read in)
    // dependent mesh quantities
 
 
 } // end constructor
 
 //------------------------------------------------------------------------------
-// Destroys a local mesh and deallocates all arrays 
+// Destroys a local mesh and deallocates all arrays
 HorzMesh::~HorzMesh() {
 
    // TODO: add deletes for all arrays and remove from AllDecomps map
@@ -98,7 +98,7 @@ HorzMesh::~HorzMesh() {
 } // end deconstructor
 
 //------------------------------------------------------------------------------
-// Deallocates arrays 
+// Deallocates arrays
 void HorzMesh::clear() {
 
    AreaCell.deallocate();
@@ -124,44 +124,44 @@ void HorzMesh::clear() {
 } // end clear
 
 //------------------------------------------------------------------------------
-// Initialize the parallel IO decompositions for the mesh variables 
+// Initialize the parallel IO decompositions for the mesh variables
 void HorzMesh::initParallelIO(Decomp *MeshDecomp) {
 
    I4 Err;
    I4 NDims = 1;
    IO::Rearranger Rearr = IO::RearrBox;
-   
+
    // Create the IO decomp for arrays with (NCells) dimensions
    std::vector<I4> CellDims{MeshDecomp->NCellsGlobal};
    std::vector<I4> CellID(NCellsAll);
    for (int Cell = 0; Cell < NCellsAll; ++Cell) {
      CellID[Cell] = MeshDecomp->CellIDH(Cell) - 1;
    }
-   
+
    Err = IO::createDecomp(CellDecompR8, IO::IOTypeR8, NDims, CellDims,
                           NCellsAll, CellID, Rearr);
    if (Err != 0)
       LOG_CRITICAL("HorzMesh: error creating cell IO decomposition");
-   
+
    // Create the IO decomp for arrays with (NEdges) dimensions
    std::vector<I4> EdgeDims{MeshDecomp->NEdgesGlobal};
    std::vector<I4> EdgeID(NEdgesAll);
    for (int Edge = 0; Edge < NEdgesAll; ++Edge) {
      EdgeID[Edge] = MeshDecomp->EdgeIDH(Edge) - 1;
    }
-   
+
    Err = IO::createDecomp(EdgeDecompR8, IO::IOTypeR8, NDims, EdgeDims,
                           NEdgesAll, EdgeID, Rearr);
    if (Err != 0)
       LOG_CRITICAL("HorzMesh: error creating edge IO decomposition");
-   
+
    // Create the IO decomp for arrays with (NVertices) dimensions
    std::vector<I4> VertexDims{MeshDecomp->NVerticesGlobal};
    std::vector<I4> VertexID(NVerticesAll);
    for (int Vertex = 0; Vertex < NVerticesAll; ++Vertex) {
      VertexID[Vertex] = MeshDecomp->VertexIDH(Vertex) - 1;
    }
-   
+
    Err = IO::createDecomp(VertexDecompR8, IO::IOTypeR8, NDims, VertexDims,
                           NVerticesAll, VertexID, Rearr);
    if (Err != 0)
@@ -204,11 +204,11 @@ void HorzMesh::initParallelIO(Decomp *MeshDecomp) {
 } // end initParallelIO
 
 //------------------------------------------------------------------------------
-// Read x/y/z and lon/lat coordinates for cells, edges, and vertices 
+// Read x/y/z and lon/lat coordinates for cells, edges, and vertices
 void HorzMesh::readCoordinates() {
 
    I4 Err;
-   
+
    // Read mesh cell coordinates
    int XCellID;
    XCellH = ArrayHost1DR8("xCell", NCellsAll);
@@ -244,8 +244,8 @@ void HorzMesh::readCoordinates() {
                        MeshFileID, CellDecompR8, LatCellID);
    if (Err != 0)
       LOG_CRITICAL("HorzMesh: error reading latCell");
-   
-   
+
+
 
    // Read mesh edge coordinateID
    int XEdgeID;
@@ -283,7 +283,7 @@ void HorzMesh::readCoordinates() {
    if (Err != 0)
       LOG_CRITICAL("HorzMesh: error reading latEdge");
 
-   
+
    // Read mesh vertex coordinates
    int XVertexID;
    XVertexH = ArrayHost1DR8("xVertex", NVerticesAll);
@@ -323,7 +323,7 @@ void HorzMesh::readCoordinates() {
 } // end readCoordinates
 
 //------------------------------------------------------------------------------
-// Read the cell-centered bottom depth 
+// Read the cell-centered bottom depth
 void HorzMesh::readBottomDepth() {
 
    I4 Err;
@@ -334,11 +334,11 @@ void HorzMesh::readBottomDepth() {
                        MeshFileID, CellDecompR8, BottomDepthID);
    if (Err != 0)
       LOG_CRITICAL("HorzMesh: error reading bottomDepth");
-   
+
 } // end readDepth
 
 //------------------------------------------------------------------------------
-// Read the mesh areas (cell, triangle, and kite), 
+// Read the mesh areas (cell, triangle, and kite),
 // lengths (between centers and vertices), and edge angles
 void HorzMesh::readMeasurements() {
 
@@ -443,7 +443,7 @@ void HorzMesh::readCoriolis() {
 } // end readCoriolis
 
 //------------------------------------------------------------------------------
-// Perform copy to device for mesh variables 
+// Perform copy to device for mesh variables
 void HorzMesh::copyToDevice() {
 
    AreaCell = AreaCellH.createDeviceCopy();

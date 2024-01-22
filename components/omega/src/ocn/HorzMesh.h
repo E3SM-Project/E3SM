@@ -5,8 +5,8 @@
 /// \file
 /// \brief Contains the mesh variables for an OMEGA horizontal sub-domain
 ///
-/// The HorzMesh class contains the data to represent a sub-domain of the 
-/// global horizontal mesh.  
+/// The HorzMesh class contains the data to represent a sub-domain of the
+/// global horizontal mesh.
 //
 //===----------------------------------------------------------------------===//
 
@@ -21,7 +21,7 @@ namespace OMEGA {
 
 /// The HorzMesh class reads in the remaining mesh information that is
 /// not used to create the domain decomposition from mesh file.
-/// It handles computing any dependent mesh quantities and transfers 
+/// It handles computing any dependent mesh quantities and transfers
 /// the relevant information to the device
 class HorzMesh {
 
@@ -155,8 +155,8 @@ class HorzMesh {
 
    Array2DR8 WeightsOnEdge;      ///< Reconstruction weights associated with each of the edgesOnEdge
    ArrayHost2DR8 WeightsOnEdgeH; ///< Reconstruction weights associated with each of the edgesOnEdge
-  
-   // Coriolis 
+
+   // Coriolis
 
    Array1DR8 FEdge;   ///< Coriolis parameter at edges (radians s^-1)
    ArrayHost1DR8 FEdgeH;   ///< Coriolis parameter at edges (radians s^-1)
@@ -171,7 +171,7 @@ class HorzMesh {
 
    Array1DR8 BottomDepth;      ///< Depth of the bottom of the ocean (m)
    ArrayHost1DR8 BottomDepthH; ///< Depth of the bottom of the ocean (m)
-  
+
    // Methods
 
    /// Construct a new local mesh for a given decomposition
@@ -184,7 +184,7 @@ class HorzMesh {
    /// Deallocates arrays
    void clear();
 
-}; // end class HorzMesh 
+}; // end class HorzMesh
 
 } // end namespace OMEGA
 
