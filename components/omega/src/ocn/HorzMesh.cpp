@@ -9,9 +9,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "Decomp.h"
 #include "HorzMesh.h"
 #include "DataTypes.h"
+#include "Decomp.h"
 #include "IO.h"
 #include "Logging.h"
 #include "MachEnv.h"
@@ -21,46 +21,44 @@ namespace OMEGA {
 //------------------------------------------------------------------------------
 // Construct a new local mesh given a decomposition
 
-HorzMesh::HorzMesh(Decomp *MeshDecomp){
+HorzMesh::HorzMesh(Decomp *MeshDecomp) {
 
    // Retrieve mesh files name from Decomp
    MeshFileName = MeshDecomp->MeshFileName;
 
    // Retrieve mesh cell/edge/vertex totals from Decomp
    NCellsOwned = MeshDecomp->NCellsOwned;
-   NCellsAll = MeshDecomp->NCellsAll;
-   NCellsSize = MeshDecomp->NCellsSize;
+   NCellsAll   = MeshDecomp->NCellsAll;
+   NCellsSize  = MeshDecomp->NCellsSize;
 
-   NEdgesOwned = MeshDecomp->NEdgesOwned;
-   NEdgesAll = MeshDecomp->NEdgesAll;
-   NEdgesSize = MeshDecomp->NEdgesSize;
+   NEdgesOwned    = MeshDecomp->NEdgesOwned;
+   NEdgesAll      = MeshDecomp->NEdgesAll;
+   NEdgesSize     = MeshDecomp->NEdgesSize;
    MaxCellsOnEdge = MeshDecomp->MaxCellsOnEdge;
-   MaxEdges = MeshDecomp->MaxEdges;
+   MaxEdges       = MeshDecomp->MaxEdges;
 
    NVerticesOwned = MeshDecomp->NVerticesOwned;
-   NVerticesAll = MeshDecomp->NVerticesAll;
-   NVerticesSize = MeshDecomp->NVerticesSize;
-   VertexDegree = MeshDecomp->VertexDegree;
+   NVerticesAll   = MeshDecomp->NVerticesAll;
+   NVerticesSize  = MeshDecomp->NVerticesSize;
+   VertexDegree   = MeshDecomp->VertexDegree;
 
    // Retrieve connectivity arrays from Decomp
-   CellsOnCellH = MeshDecomp->CellsOnCellH;
-   EdgesOnCellH = MeshDecomp->EdgesOnCellH;
-   NEdgesOnCellH = MeshDecomp->NEdgesOnCellH;
+   CellsOnCellH    = MeshDecomp->CellsOnCellH;
+   EdgesOnCellH    = MeshDecomp->EdgesOnCellH;
+   NEdgesOnCellH   = MeshDecomp->NEdgesOnCellH;
    VerticesOnCellH = MeshDecomp->VerticesOnCellH;
-   CellsOnEdgeH = MeshDecomp->CellsOnEdgeH;
-   EdgesOnEdgeH = MeshDecomp->EdgesOnEdgeH;
-   NEdgesOnEdgeH = MeshDecomp->NEdgesOnEdgeH;
+   CellsOnEdgeH    = MeshDecomp->CellsOnEdgeH;
+   EdgesOnEdgeH    = MeshDecomp->EdgesOnEdgeH;
+   NEdgesOnEdgeH   = MeshDecomp->NEdgesOnEdgeH;
    VerticesOnEdgeH = MeshDecomp->VerticesOnEdgeH;
-   CellsOnVertexH = MeshDecomp->CellsOnVertexH;
-   EdgesOnVertexH = MeshDecomp->EdgesOnVertexH;
-
+   CellsOnVertexH  = MeshDecomp->CellsOnVertexH;
+   EdgesOnVertexH  = MeshDecomp->EdgesOnVertexH;
 
    // Open the mesh file for reading (assume IO has already been initialized)
    I4 Err;
    Err = OMEGA::IO::openFile(MeshFileID, MeshFileName, IO::ModeRead);
    if (Err != 0)
       LOG_CRITICAL("HorzMesh: error opening mesh file");
-
 
    // Create the parallel IO decompositions required to read in mesh variables
    initParallelIO(MeshDecomp);
@@ -85,7 +83,6 @@ HorzMesh::HorzMesh(Decomp *MeshDecomp){
 
    // TODO: add ability to compute (rather than read in)
    // dependent mesh quantities
-
 
 } // end constructor
 
@@ -128,14 +125,14 @@ void HorzMesh::clear() {
 void HorzMesh::initParallelIO(Decomp *MeshDecomp) {
 
    I4 Err;
-   I4 NDims = 1;
+   I4 NDims             = 1;
    IO::Rearranger Rearr = IO::RearrBox;
 
    // Create the IO decomp for arrays with (NCells) dimensions
    std::vector<I4> CellDims{MeshDecomp->NCellsGlobal};
    std::vector<I4> CellID(NCellsAll);
    for (int Cell = 0; Cell < NCellsAll; ++Cell) {
-     CellID[Cell] = MeshDecomp->CellIDH(Cell) - 1;
+      CellID[Cell] = MeshDecomp->CellIDH(Cell) - 1;
    }
 
    Err = IO::createDecomp(CellDecompR8, IO::IOTypeR8, NDims, CellDims,
@@ -147,7 +144,7 @@ void HorzMesh::initParallelIO(Decomp *MeshDecomp) {
    std::vector<I4> EdgeDims{MeshDecomp->NEdgesGlobal};
    std::vector<I4> EdgeID(NEdgesAll);
    for (int Edge = 0; Edge < NEdgesAll; ++Edge) {
-     EdgeID[Edge] = MeshDecomp->EdgeIDH(Edge) - 1;
+      EdgeID[Edge] = MeshDecomp->EdgeIDH(Edge) - 1;
    }
 
    Err = IO::createDecomp(EdgeDecompR8, IO::IOTypeR8, NDims, EdgeDims,
@@ -159,7 +156,7 @@ void HorzMesh::initParallelIO(Decomp *MeshDecomp) {
    std::vector<I4> VertexDims{MeshDecomp->NVerticesGlobal};
    std::vector<I4> VertexID(NVerticesAll);
    for (int Vertex = 0; Vertex < NVerticesAll; ++Vertex) {
-     VertexID[Vertex] = MeshDecomp->VertexIDH(Vertex) - 1;
+      VertexID[Vertex] = MeshDecomp->VertexIDH(Vertex) - 1;
    }
 
    Err = IO::createDecomp(VertexDecompR8, IO::IOTypeR8, NDims, VertexDims,
@@ -168,7 +165,7 @@ void HorzMesh::initParallelIO(Decomp *MeshDecomp) {
       LOG_CRITICAL("HorzMesh: error creating vertex IO decomposition");
 
    // Create the IO decomp for arrays with (NEdges, 2*MaxEdges) dimensions
-   NDims = 2;
+   NDims     = 2;
    MaxEdges2 = 2 * MaxEdges;
    std::vector<I4> OnEdgeDims2{MeshDecomp->NEdgesGlobal, MaxEdges2};
    I4 OnEdgeSize2 = NEdgesAll * MaxEdges2;
@@ -176,12 +173,13 @@ void HorzMesh::initParallelIO(Decomp *MeshDecomp) {
    for (int Edge = 0; Edge < NEdgesAll; Edge++) {
       for (int i = 0; i < MaxEdges2; i++) {
          I4 GlobalID = EdgeID[Edge] * MaxEdges2 + i;
+
          OnEdgeOffset2[Edge * MaxEdges2 + i] = GlobalID;
       }
    }
 
-   Err = IO::createDecomp(OnEdgeDecompR8, IO::IOTypeR8, NDims,
-                          OnEdgeDims2, OnEdgeSize2, OnEdgeOffset2, Rearr);
+   Err = IO::createDecomp(OnEdgeDecompR8, IO::IOTypeR8, NDims, OnEdgeDims2,
+                          OnEdgeSize2, OnEdgeOffset2, Rearr);
    if (Err != 0)
       LOG_CRITICAL("HorzMesh: error creating OnEdge IO decomposition");
 
@@ -196,8 +194,8 @@ void HorzMesh::initParallelIO(Decomp *MeshDecomp) {
       }
    }
 
-   Err = IO::createDecomp(OnVertexDecompR8, IO::IOTypeR8, NDims,
-                          OnVertexDims, OnVertexSize, OnVertexOffset, Rearr);
+   Err = IO::createDecomp(OnVertexDecompR8, IO::IOTypeR8, NDims, OnVertexDims,
+                          OnVertexSize, OnVertexOffset, Rearr);
    if (Err != 0)
       LOG_CRITICAL("HorzMesh: error creating OnVertex IO decomposition");
 
@@ -212,111 +210,108 @@ void HorzMesh::readCoordinates() {
    // Read mesh cell coordinates
    int XCellID;
    XCellH = ArrayHost1DR8("xCell", NCellsAll);
-   Err = IO::readArray(XCellH.data(), NCellsAll, "xCell",
-                       MeshFileID, CellDecompR8, XCellID);
+   Err    = IO::readArray(XCellH.data(), NCellsAll, "xCell", MeshFileID,
+                          CellDecompR8, XCellID);
    if (Err != 0)
       LOG_CRITICAL("HorzMesh: error reading xCell");
 
    int YCellID;
    YCellH = ArrayHost1DR8("yCell", NCellsAll);
-   Err = IO::readArray(YCellH.data(), NCellsAll, "yCell",
-                       MeshFileID, CellDecompR8, YCellID);
+   Err    = IO::readArray(YCellH.data(), NCellsAll, "yCell", MeshFileID,
+                          CellDecompR8, YCellID);
    if (Err != 0)
       LOG_CRITICAL("HorzMesh: error reading yCell");
 
    int ZCellID;
    ZCellH = ArrayHost1DR8("zCell", NCellsAll);
-   Err = IO::readArray(ZCellH.data(), NCellsAll, "zCell",
-                       MeshFileID, CellDecompR8, ZCellID);
+   Err    = IO::readArray(ZCellH.data(), NCellsAll, "zCell", MeshFileID,
+                          CellDecompR8, ZCellID);
    if (Err != 0)
       LOG_CRITICAL("HorzMesh: error reading zCell");
 
    int LonCellID;
    LonCellH = ArrayHost1DR8("lonCell", NCellsAll);
-   Err = IO::readArray(LonCellH.data(), NCellsAll, "lonCell",
-                       MeshFileID, CellDecompR8, LonCellID);
+   Err      = IO::readArray(LonCellH.data(), NCellsAll, "lonCell", MeshFileID,
+                            CellDecompR8, LonCellID);
    if (Err != 0)
       LOG_CRITICAL("HorzMesh: error reading lonCell");
 
    int LatCellID;
    LatCellH = ArrayHost1DR8("latCell", NCellsAll);
-   Err = IO::readArray(LatCellH.data(), NCellsAll, "latCell",
-                       MeshFileID, CellDecompR8, LatCellID);
+   Err      = IO::readArray(LatCellH.data(), NCellsAll, "latCell", MeshFileID,
+                            CellDecompR8, LatCellID);
    if (Err != 0)
       LOG_CRITICAL("HorzMesh: error reading latCell");
-
-
 
    // Read mesh edge coordinateID
    int XEdgeID;
    XEdgeH = ArrayHost1DR8("xEdge", NEdgesAll);
-   Err = IO::readArray(XEdgeH.data(), NEdgesAll, "xEdge",
-                       MeshFileID, EdgeDecompR8, XEdgeID);
+   Err    = IO::readArray(XEdgeH.data(), NEdgesAll, "xEdge", MeshFileID,
+                          EdgeDecompR8, XEdgeID);
    if (Err != 0)
       LOG_CRITICAL("HorzMesh: error reading xEdge");
 
    int YEdgeID;
    YEdgeH = ArrayHost1DR8("yEdge", NEdgesAll);
-   Err = IO::readArray(YEdgeH.data(), NEdgesAll, "yEdge",
-                       MeshFileID, EdgeDecompR8, YEdgeID);
+   Err    = IO::readArray(YEdgeH.data(), NEdgesAll, "yEdge", MeshFileID,
+                          EdgeDecompR8, YEdgeID);
    if (Err != 0)
       LOG_CRITICAL("HorzMesh: error reading yEdge");
 
    int ZEdgeID;
    ZEdgeH = ArrayHost1DR8("zEdge", NEdgesAll);
-   Err = IO::readArray(ZEdgeH.data(), NEdgesAll, "zEdge",
-                       MeshFileID, EdgeDecompR8, ZEdgeID);
+   Err    = IO::readArray(ZEdgeH.data(), NEdgesAll, "zEdge", MeshFileID,
+                          EdgeDecompR8, ZEdgeID);
    if (Err != 0)
       LOG_CRITICAL("HorzMesh: error reading zEdge");
 
    int LonEdgeID;
    LonEdgeH = ArrayHost1DR8("lonEdge", NEdgesAll);
-   Err = IO::readArray(LonEdgeH.data(), NEdgesAll, "lonEdge",
-                       MeshFileID, EdgeDecompR8, LonEdgeID);
+   Err      = IO::readArray(LonEdgeH.data(), NEdgesAll, "lonEdge", MeshFileID,
+                            EdgeDecompR8, LonEdgeID);
    if (Err != 0)
       LOG_CRITICAL("HorzMesh: error reading lonEdge");
 
    int LatEdgeID;
    LatEdgeH = ArrayHost1DR8("latEdge", NEdgesAll);
-   Err = IO::readArray(LatEdgeH.data(), NEdgesAll, "latEdge",
-                       MeshFileID, EdgeDecompR8, LatEdgeID);
+   Err      = IO::readArray(LatEdgeH.data(), NEdgesAll, "latEdge", MeshFileID,
+                            EdgeDecompR8, LatEdgeID);
    if (Err != 0)
       LOG_CRITICAL("HorzMesh: error reading latEdge");
-
 
    // Read mesh vertex coordinates
    int XVertexID;
    XVertexH = ArrayHost1DR8("xVertex", NVerticesAll);
-   Err = IO::readArray(XVertexH.data(), NVerticesAll, "xVertex",
-                       MeshFileID, VertexDecompR8, XVertexID);
+   Err = IO::readArray(XVertexH.data(), NVerticesAll, "xVertex", MeshFileID,
+                       VertexDecompR8, XVertexID);
    if (Err != 0)
       LOG_CRITICAL("HorzMesh: error reading xVertex");
 
    int YVertexID;
    YVertexH = ArrayHost1DR8("yVertex", NVerticesAll);
-   Err = IO::readArray(YVertexH.data(), NVerticesAll, "yVertex",
-                       MeshFileID, VertexDecompR8, YVertexID);
+   Err = IO::readArray(YVertexH.data(), NVerticesAll, "yVertex", MeshFileID,
+                       VertexDecompR8, YVertexID);
    if (Err != 0)
       LOG_CRITICAL("HorzMesh: error reading yVertex");
 
    int ZVertexID;
    ZVertexH = ArrayHost1DR8("zVertex", NVerticesAll);
-   Err = IO::readArray(ZVertexH.data(), NVerticesAll, "zVertex",
-                       MeshFileID, VertexDecompR8, ZVertexID);
+   Err = IO::readArray(ZVertexH.data(), NVerticesAll, "zVertex", MeshFileID,
+                       VertexDecompR8, ZVertexID);
    if (Err != 0)
       LOG_CRITICAL("HorzMesh: error reading zVertex");
 
    int LonVertexID;
    LonVertexH = ArrayHost1DR8("lonVertex", NVerticesAll);
-   Err = IO::readArray(LonVertexH.data(), NVerticesAll, "lonVertex",
-                       MeshFileID, VertexDecompR8, LonVertexID);
+   Err = IO::readArray(LonVertexH.data(), NVerticesAll, "lonVertex", MeshFileID,
+                       VertexDecompR8, LonVertexID);
    if (Err != 0)
       LOG_CRITICAL("HorzMesh: error reading lonVertex");
 
    int LatVertexID;
    LatVertexH = ArrayHost1DR8("latVertex", NVerticesAll);
-   Err = IO::readArray(LatVertexH.data(), NVerticesAll, "latVertex",
-                       MeshFileID, VertexDecompR8, LatVertexID);
+   Err = IO::readArray(LatVertexH.data(), NVerticesAll, "latVertex", MeshFileID,
+                       VertexDecompR8, LatVertexID);
    if (Err != 0)
       LOG_CRITICAL("HorzMesh: error reading latVertex");
 
@@ -330,8 +325,8 @@ void HorzMesh::readBottomDepth() {
 
    int BottomDepthID;
    BottomDepthH = ArrayHost1DR8("bottomDepth", NCellsAll);
-   Err = IO::readArray(BottomDepthH.data(), NCellsAll, "bottomDepth",
-                       MeshFileID, CellDecompR8, BottomDepthID);
+   Err          = IO::readArray(BottomDepthH.data(), NCellsAll, "bottomDepth",
+                                MeshFileID, CellDecompR8, BottomDepthID);
    if (Err != 0)
       LOG_CRITICAL("HorzMesh: error reading bottomDepth");
 
@@ -346,8 +341,8 @@ void HorzMesh::readMeasurements() {
 
    int AreaCellID;
    AreaCellH = ArrayHost1DR8("areaCell", NCellsAll);
-   Err = IO::readArray(AreaCellH.data(), NCellsAll, "areaCell",
-                       MeshFileID, CellDecompR8, AreaCellID);
+   Err = IO::readArray(AreaCellH.data(), NCellsAll, "areaCell", MeshFileID,
+                       CellDecompR8, AreaCellID);
    if (Err != 0)
       LOG_CRITICAL("HorzMesh: error reading areaCell");
 
@@ -360,38 +355,38 @@ void HorzMesh::readMeasurements() {
 
    int DvEdgeID;
    DvEdgeH = ArrayHost1DR8("dvEdge", NEdgesAll);
-   Err = IO::readArray(DvEdgeH.data(), NEdgesAll, "dvEdge",
-                       MeshFileID, EdgeDecompR8, DvEdgeID);
+   Err     = IO::readArray(DvEdgeH.data(), NEdgesAll, "dvEdge", MeshFileID,
+                           EdgeDecompR8, DvEdgeID);
    if (Err != 0)
       LOG_CRITICAL("HorzMesh: error reading dvEdge");
 
    int DcEdgeID;
    DcEdgeH = ArrayHost1DR8("dcEdge", NEdgesAll);
-   Err = IO::readArray(DcEdgeH.data(), NEdgesAll, "dcEdge",
-                       MeshFileID, EdgeDecompR8, DcEdgeID);
+   Err     = IO::readArray(DcEdgeH.data(), NEdgesAll, "dcEdge", MeshFileID,
+                           EdgeDecompR8, DcEdgeID);
    if (Err != 0)
       LOG_CRITICAL("HorzMesh: error reading dcEdge");
 
    int AngleEdgeID;
    AngleEdgeH = ArrayHost1DR8("angleEdge", NEdgesAll);
-   Err = IO::readArray(AngleEdgeH.data(), NEdgesAll, "angleEdge",
-                       MeshFileID, EdgeDecompR8, AngleEdgeID);
+   Err = IO::readArray(AngleEdgeH.data(), NEdgesAll, "angleEdge", MeshFileID,
+                       EdgeDecompR8, AngleEdgeID);
    if (Err != 0)
       LOG_CRITICAL("HorzMesh: error reading angleEdge");
 
    int MeshDensityID;
    MeshDensityH = ArrayHost1DR8("meshDensity", NCellsAll);
-   Err = IO::readArray(MeshDensityH.data(), NCellsAll, "meshDensity",
-                       MeshFileID, CellDecompR8, MeshDensityID);
+   Err          = IO::readArray(MeshDensityH.data(), NCellsAll, "meshDensity",
+                                MeshFileID, CellDecompR8, MeshDensityID);
    if (Err != 0)
       LOG_CRITICAL("HorzMesh: error reading meshDensity");
 
    int KiteAreasOnVertexID;
-   KiteAreasOnVertexH = ArrayHost2DR8("kiteAreasOnVertex",
-                                      NVerticesAll, VertexDegree);
+   KiteAreasOnVertexH =
+       ArrayHost2DR8("kiteAreasOnVertex", NVerticesAll, VertexDegree);
    Err = IO::readArray(KiteAreasOnVertexH.data(), NVerticesAll * VertexDegree,
-                       "kiteAreasOnVertex",
-                       MeshFileID, OnVertexDecompR8, KiteAreasOnVertexID);
+                       "kiteAreasOnVertex", MeshFileID, OnVertexDecompR8,
+                       KiteAreasOnVertexID);
    if (Err != 0)
       LOG_CRITICAL("HorzMesh: error reading kiteAreasOnVertex");
 
@@ -405,9 +400,9 @@ void HorzMesh::readWeights() {
 
    int WeightsOnEdgeID;
    WeightsOnEdgeH = ArrayHost2DR8("weightsOnEdge", NEdgesAll, MaxEdges2);
-   Err = IO::readArray(WeightsOnEdgeH.data(), NEdgesAll * MaxEdges2,
-                       "weightsOnEdge",
-                       MeshFileID, OnEdgeDecompR8, WeightsOnEdgeID);
+   Err            = IO::readArray(WeightsOnEdgeH.data(), NEdgesAll * MaxEdges2,
+                                  "weightsOnEdge", MeshFileID, OnEdgeDecompR8,
+                                  WeightsOnEdgeID);
    if (Err != 0)
       LOG_CRITICAL("HorzMesh: error reading weightsOnEdge");
 
@@ -421,22 +416,22 @@ void HorzMesh::readCoriolis() {
 
    int FCellID;
    FCellH = ArrayHost1DR8("fCell", NCellsAll);
-   Err = IO::readArray(FCellH.data(), NCellsAll, "fCell",
-                       MeshFileID, CellDecompR8, FCellID);
+   Err    = IO::readArray(FCellH.data(), NCellsAll, "fCell", MeshFileID,
+                          CellDecompR8, FCellID);
    if (Err != 0)
       LOG_CRITICAL("HorzMesh: error reading fCell");
 
    int FVertexID;
    FVertexH = ArrayHost1DR8("fVertex", NVerticesAll);
-   Err = IO::readArray(FVertexH.data(), NVerticesAll, "fVertex",
-                       MeshFileID, VertexDecompR8, FVertexID);
+   Err = IO::readArray(FVertexH.data(), NVerticesAll, "fVertex", MeshFileID,
+                       VertexDecompR8, FVertexID);
    if (Err != 0)
       LOG_CRITICAL("HorzMesh: error reading fVertex");
 
    int FEdgeID;
    FEdgeH = ArrayHost1DR8("fEdge", NEdgesAll);
-   Err = IO::readArray(FEdgeH.data(), NEdgesAll, "fEdge",
-                       MeshFileID, EdgeDecompR8, FEdgeID);
+   Err    = IO::readArray(FEdgeH.data(), NEdgesAll, "fEdge", MeshFileID,
+                          EdgeDecompR8, FEdgeID);
    if (Err != 0)
       LOG_CRITICAL("HorzMesh: error reading fEdge");
 
@@ -446,25 +441,25 @@ void HorzMesh::readCoriolis() {
 // Perform copy to device for mesh variables
 void HorzMesh::copyToDevice() {
 
-   AreaCell = AreaCellH.createDeviceCopy();
-   AreaTriangle = AreaTriangleH.createDeviceCopy();
+   AreaCell          = AreaCellH.createDeviceCopy();
+   AreaTriangle      = AreaTriangleH.createDeviceCopy();
    KiteAreasOnVertex = KiteAreasOnVertexH.createDeviceCopy();
-   DvEdge = DvEdgeH.createDeviceCopy();
-   DcEdge = DcEdgeH.createDeviceCopy();
-   AngleEdge = AngleEdgeH.createDeviceCopy();
-   WeightsOnEdge = WeightsOnEdgeH.createDeviceCopy();
-   FVertex = FVertexH.createDeviceCopy();
-   BottomDepth = BottomDepthH.createDeviceCopy();
-   CellsOnCell = CellsOnCellH.createDeviceCopy();
-   EdgesOnCell = EdgesOnCellH.createDeviceCopy();
-   NEdgesOnCell = NEdgesOnCellH.createDeviceCopy();
-   VerticesOnCell = VerticesOnCellH.createDeviceCopy();
-   CellsOnEdge = CellsOnEdgeH.createDeviceCopy();
-   EdgesOnEdge = EdgesOnEdgeH.createDeviceCopy();
-   NEdgesOnEdge = NEdgesOnEdgeH.createDeviceCopy();
-   VerticesOnEdge = VerticesOnEdgeH.createDeviceCopy();
-   CellsOnVertex = CellsOnVertexH.createDeviceCopy();
-   EdgesOnVertex = EdgesOnVertexH.createDeviceCopy();
+   DvEdge            = DvEdgeH.createDeviceCopy();
+   DcEdge            = DcEdgeH.createDeviceCopy();
+   AngleEdge         = AngleEdgeH.createDeviceCopy();
+   WeightsOnEdge     = WeightsOnEdgeH.createDeviceCopy();
+   FVertex           = FVertexH.createDeviceCopy();
+   BottomDepth       = BottomDepthH.createDeviceCopy();
+   CellsOnCell       = CellsOnCellH.createDeviceCopy();
+   EdgesOnCell       = EdgesOnCellH.createDeviceCopy();
+   NEdgesOnCell      = NEdgesOnCellH.createDeviceCopy();
+   VerticesOnCell    = VerticesOnCellH.createDeviceCopy();
+   CellsOnEdge       = CellsOnEdgeH.createDeviceCopy();
+   EdgesOnEdge       = EdgesOnEdgeH.createDeviceCopy();
+   NEdgesOnEdge      = NEdgesOnEdgeH.createDeviceCopy();
+   VerticesOnEdge    = VerticesOnEdgeH.createDeviceCopy();
+   CellsOnVertex     = CellsOnVertexH.createDeviceCopy();
+   EdgesOnVertex     = EdgesOnVertexH.createDeviceCopy();
 
 } // end copyToDevice
 
