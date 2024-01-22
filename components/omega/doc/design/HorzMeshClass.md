@@ -1,5 +1,5 @@
 (omega-design-horz-mesh)=
-# Mesh 
+# Horizontal Mesh 
 
 ## 1 Overview
 
