@@ -386,7 +386,7 @@ contains
     call mpi_bcast (wrmflag,        1, MPI_LOGICAL, 0, mpicom_rof, ier)
     call mpi_bcast (sediflag,       1, MPI_LOGICAL, 0, mpicom_rof, ier)
     call mpi_bcast (heatflag,       1, MPI_LOGICAL, 0, mpicom_rof, ier)
-    call mpi_bcast (do_budget,  1, MPI_INTEGER, 0, mpicom_rof, ier)
+    call mpi_bcast (do_budget,      1, MPI_INTEGER, 0, mpicom_rof, ier)
     call mpi_bcast (rstraflag,      1, MPI_LOGICAL, 0, mpicom_rof, ier)
     call mpi_bcast (rinittemp,      1, MPI_REAL8, 0, mpicom_rof, ier)
     call mpi_bcast (ngeom,          1, MPI_INTEGER, 0, mpicom_rof, ier)
@@ -2845,12 +2845,18 @@ contains
 
     budget_write = .false.
 
-    if (do_budget == 1) then
-      if (day == 1 .and. tod == 0) budget_write = .true. 
-    elseif (do_budget == 2) then
-     if (tod == 0) budget_write = .true.
-    elseif (do_budget == 3) then
-     budget_write = .true.
+    if (do_budget < 0 .or. do_budget > 3) then
+      call shr_sys_abort(subname//' Error: do_budget can only be 0, 1, 2, or 3.')
+    else
+      if (do_budget == 1 .and. day == 1 .and. tod == 0) then
+          budget_write = .true.
+      elseif (do_budget == 2 .and. tod == 0) then
+          budget_write = .true.
+      elseif (do_budget == 3) then
+          budget_write = .true.
+      else
+          budget_write = .false.
+      endif
     endif
 
     if (budget_check) then
