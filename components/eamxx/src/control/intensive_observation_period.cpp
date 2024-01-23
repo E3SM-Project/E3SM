@@ -191,6 +191,10 @@ initialize_iop_file(const util::TimeStamp& run_t0,
       EKAT_REQUIRE_MSG(field_rank <= 1,
                        "Error! Unexpected field rank "+std::to_string(field_rank)+" for iop file fields.\n");
       Field field(fid);
+      if (fl.has_tag(FieldTag::LevelMidPoint) or fl.has_tag(FieldTag::LevelInterface)) {
+        // Request packsize allocation for level layout
+        field.get_header().get_alloc_properties().request_allocation(Pack::n);
+      }
       field.allocate_view();
       m_iop_fields.insert({iop_varname, field});
     }
@@ -290,6 +294,7 @@ initialize_iop_file(const util::TimeStamp& run_t0,
                       ekat::units::Units::nondimensional(),
                       "");
   Field iop_file_pressure(fid);
+  iop_file_pressure.get_header().get_alloc_properties().request_allocation(Pack::n);
   iop_file_pressure.allocate_view();
   auto data = iop_file_pressure.get_view<Real*, Host>().data();
   read_variable_from_file(iop_file, "lev", "real", {"lev"}, -1, data);
@@ -304,6 +309,7 @@ initialize_iop_file(const util::TimeStamp& run_t0,
                                   fl_vector,
                                   ekat::units::Units::nondimensional(), "");
   Field model_pressure(model_pres_fid);
+  model_pressure.get_header().get_alloc_properties().request_allocation(Pack::n);
   model_pressure.allocate_view();
   m_helper_fields.insert({"model_pressure", model_pressure});
 
@@ -629,6 +635,7 @@ read_iop_file_data (const util::TimeStamp& current_ts)
                           ekat::units::Units::nondimensional(),
                           "");
       Field iop_file_field(fid);
+      iop_file_field.get_header().get_alloc_properties().request_allocation(Pack::n);
       iop_file_field.allocate_view();
 
       // Read data from iop file.
@@ -661,8 +668,8 @@ read_iop_file_data (const util::TimeStamp& current_ts)
       iop_file_field.sync_to_dev();
 
       // Vertically interpolate iop file data to iop fields.
-      // Note: ekat lininterp requires packs. Use 1d packs here.
-      // TODO: allow for nontrivial packsize.
+      // Note: ekat lininterp requires packs. Use 1d packs here
+      // to easily mask out levels which we do not want to interpolate.
       const auto iop_file_pres_v = iop_file_pressure.get_view<const Pack1d*>();
       const auto model_pres_v = model_pressure.get_view<const Pack1d*>();
       const auto iop_file_v = iop_file_field.get_view<const Pack1d*>();
