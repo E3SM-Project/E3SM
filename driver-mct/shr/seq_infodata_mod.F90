@@ -2921,7 +2921,8 @@ CONTAINS
     write(logunit,F0L) subname,'mct_usevector            = ', infodata%mct_usevector
 
     write(logunit,F0I) subname,'nlmaps_verbosity         = ', infodata%nlmaps_verbosity
-    write(logunit,F0I) subname,'nlmaps_exclude_fields    = ', infodata%nlmaps_exclude_fields
+
+    write(logunit,F0A) subname,'nlmaps_exclude_fields    = ', infodata%nlmaps_exclude_fields
 
     write(logunit,F0S) subname,'info_debug               = ', infodata%info_debug
     write(logunit,F0L) subname,'bfbflag                  = ', infodata%bfbflag
