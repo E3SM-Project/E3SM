@@ -36,11 +36,30 @@ HorizInterpRemapperBase (const grid_ptr_type& fine_grid,
   auto& remap_data_repo = HorizRemapDataRepo::instance();
   const auto& data = remap_data_repo.get_data(m_map_file,m_fine_grid,m_comm,m_type);
 
-  m_coarse_grid = data.coarse_grid;
-  m_ov_coarse_grid = data.ov_coarse_grid;
   m_row_offsets = data.row_offsets;
   m_col_lids = data.col_lids;
   m_weights = data.weights;
+
+  // The grids really only matter for the horiz part. We may have 2+ remappers with
+  // fine grids that only differ in terms of number of levs. Such remappers cannot
+  // store the same coarse grid. So we soft-clone the grid, and reset the number of levels
+  auto coarse_grid = data.coarse_grid->clone(data.coarse_grid->name(),true);
+  auto ov_coarse_grid = data.ov_coarse_grid->clone(data.ov_coarse_grid->name(),true);
+
+  // Reset num levs, and remove any geo data that depends on levs
+  using namespace ShortFieldTagsNames;
+  for (std::shared_ptr<AbstractGrid> grid : {coarse_grid,ov_coarse_grid}) {
+    grid->reset_num_vertical_lev(fine_grid->get_num_vertical_levels());
+    for (const auto& name : grid->get_geometry_data_names()) {
+      const auto& f = grid->get_geometry_data(name);
+      const auto& fl = f.get_header().get_identifier().get_layout();
+      if (fl.has_tag(LEV) or fl.has_tag(ILEV)) {
+        grid->delete_geometry_data(name);
+      }
+    }
+  }
+  m_coarse_grid = coarse_grid;
+  m_ov_coarse_grid = ov_coarse_grid;
 
   if (m_type==InterpType::Refine) {
     set_grids(m_coarse_grid,m_fine_grid);

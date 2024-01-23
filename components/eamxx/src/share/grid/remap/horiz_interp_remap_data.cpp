@@ -181,8 +181,6 @@ get_my_triplets (const std::string& map_file) const
 void HorizRemapData::
 create_coarse_grids (const std::vector<Triplet>& triplets)
 {
-  const int nlevs = fine_grid->get_num_vertical_levels();
-
   // Gather overlapped coarse grid gids (rows or cols, depending on type)
   std::map<gid_type,int> ov_gid2lid;
   bool pickRow = type==InterpType::Coarsen;
@@ -193,7 +191,7 @@ create_coarse_grids (const std::vector<Triplet>& triplets)
 
   // Use a temp and then assing, b/c grid_ptr_type is a pointer to const,
   // so you can't modify gids using that pointer
-  ov_coarse_grid = std::make_shared<PointGrid>("ov_coarse_grid",num_ov_gids,nlevs,comm);
+  ov_coarse_grid = std::make_shared<PointGrid>("ov_coarse_grid",num_ov_gids,0,comm);
   auto ov_coarse_gids_h = ov_coarse_grid->get_dofs_gids().get_view<gid_type*,Host>();
   for (const auto& it : ov_gid2lid) {
     ov_coarse_gids_h[it.second] = it.first;
@@ -207,7 +205,7 @@ create_coarse_grids (const std::vector<Triplet>& triplets)
   // Create the unique coarse grid
   auto coarse_gids = ov_coarse_grid->get_unique_gids();
   int num_gids = coarse_gids.size();
-  coarse_grid = std::make_shared<PointGrid>("coarse_grid",num_gids,nlevs,comm);
+  coarse_grid = std::make_shared<PointGrid>("coarse_grid",num_gids,0,comm);
   auto coarse_gids_h = coarse_grid->get_dofs_gids().get_view<gid_type*,Host>();
   std::copy(coarse_gids.begin(),coarse_gids.end(),coarse_gids_h.data());
   coarse_grid->get_dofs_gids().sync_to_dev();
