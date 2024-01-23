@@ -96,7 +96,7 @@ static void run_bfb_rain_vel()
 
     Spack mu_r(0), lamr(0), V_qr(0), V_nr(0);
     Functions::compute_rain_fall_velocity(
-      vn_table_vals, vm_table_vals, qr_incld, rhofacr, nr_incld, mu_r, lamr, V_qr, V_nr);
+      vn_table_vals, vm_table_vals, qr_incld, rhofacr, nr_incld, mu_r, lamr, V_qr, V_nr, physics::P3_Constants<Real>());
 
     // Copy results back into views
     for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {

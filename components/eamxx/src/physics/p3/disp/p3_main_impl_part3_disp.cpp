@@ -56,7 +56,8 @@ void Functions<Real,DefaultDevice>
   const uview_2d<Spack>& diag_eff_radius_qc,
   const uview_2d<Spack>& diag_eff_radius_qr,
   const uview_1d<bool>& nucleationPossible,
-  const uview_1d<bool>& hydrometeorsPresent)
+  const uview_1d<bool>& hydrometeorsPresent,
+  const physics::P3_Constants<Real> & p3constants)
 {
   using ExeSpace = typename KT::ExeSpace;
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(nj, nk_pack);
@@ -82,7 +83,7 @@ void Functions<Real,DefaultDevice>
       ekat::subview(mu_c, i), ekat::subview(nu, i), ekat::subview(lamc, i), ekat::subview(mu_r, i), ekat::subview(lamr, i),
       ekat::subview(vap_liq_exchange, i), ekat::subview(ze_rain, i), ekat::subview(ze_ice, i), ekat::subview(diag_vm_qi, i), ekat::subview(diag_eff_radius_qi, i), 
       ekat::subview(diag_diam_qi, i), ekat::subview(rho_qi, i), ekat::subview(diag_equiv_reflectivity, i), ekat::subview(diag_eff_radius_qc, i),
-      ekat::subview(diag_eff_radius_qr, i));
+      ekat::subview(diag_eff_radius_qr, i), p3constants);
 
   });
 }

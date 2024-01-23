@@ -1329,7 +1329,7 @@ void ice_sedimentation_f(
       nk, ktop, kbot, kdir, dt, inv_dt,
       qi_d, qi_incld_d, ni_d, ni_incld_d, qm_d, qm_incld_d, bm_d, bm_incld_d,
       qi_tend_d, ni_tend_d, ice_table_vals,
-      precip_ice_surf_k);
+      precip_ice_surf_k, physics::P3_Constants<Real>());
 
   }, my_precip_ice_surf);
   *precip_ice_surf += my_precip_ice_surf;
@@ -1402,7 +1402,7 @@ void rain_sedimentation_f(
       team, wsm.get_workspace(team), vn_table_vals, vm_table_vals,
       nk, ktop, kbot, kdir, dt, inv_dt,
       qr_d, nr_d, nr_incld_d, mu_r_d, lamr_d, precip_liq_flux_d, qr_tend_d, nr_tend_d,
-      precip_liq_surf_k);
+      precip_liq_surf_k, physics::P3_Constants<Real>());
 
   }, my_precip_liq_surf);
   *precip_liq_surf += my_precip_liq_surf;
@@ -1634,7 +1634,7 @@ void p3_main_part1_f(
       t_d, rho_d, inv_rho_d, qv_sat_l_d, qv_sat_i_d, qv_supersat_i_d, rhofacr_d, rhofaci_d,
       acn_d, qv_d, th_atm_d, qc_d, nc_d, qr_d, nr_d, qi_d, ni_d, qm_d, bm_d, qc_incld_d, qr_incld_d, qi_incld_d,
       qm_incld_d, nc_incld_d, nr_incld_d, ni_incld_d, bm_incld_d,
-      bools_d(0), bools_d(1));
+      bools_d(0), bools_d(1), physics::P3_Constants<Real>());
   });
 
   // Sync back to host
@@ -1784,7 +1784,7 @@ void p3_main_part2_f(
       qm_incld_d, nc_incld_d, nr_incld_d, ni_incld_d, bm_incld_d,
       mu_c_d, nu_d, lamc_d, cdist_d, cdist1_d, cdistr_d, mu_r_d, lamr_d,
       logn0r_d, qv2qi_depos_tend_d, precip_total_tend_d, nevapr_d, qr_evap_tend_d, vap_liq_exchange_d,
-      vap_ice_exchange_d, liq_ice_exchange_d, pratot_d, prctot_d, bools_d(0),nk);
+      vap_ice_exchange_d, liq_ice_exchange_d, pratot_d, prctot_d, bools_d(0),nk, physics::P3_Constants<Real>());
   });
 
   // Sync back to host. Skip intent in variables.
@@ -1902,7 +1902,7 @@ void p3_main_part3_f(
                        latent_heat_sublim_d, mu_c_d, nu_d, lamc_d, mu_r_d, lamr_d,
                        vap_liq_exchange_d, ze_rain_d, ze_ice_d,
                        diag_vm_qi_d, diag_eff_radius_qi_d, diag_diam_qi_d, rho_qi_d,
-                       diag_equiv_reflectivity_d, diag_eff_radius_qc_d, diag_eff_radius_qr_d);
+                       diag_equiv_reflectivity_d, diag_eff_radius_qc_d, diag_eff_radius_qr_d, physics::P3_Constants<Real>());
   });
 
   // Sync back to host
@@ -2073,7 +2073,7 @@ Int p3_main_f(
   ekat::WorkspaceManager<Spack, KT::Device> workspace_mgr(nk_pack, 52, policy);
 
   auto elapsed_microsec = P3F::p3_main(runtime_options, prog_state, diag_inputs, diag_outputs, infrastructure,
-                                       history_only, lookup_tables, workspace_mgr, nj, nk);
+                                       history_only, lookup_tables, workspace_mgr, nj, nk, physics::P3_Constants<Real>());
 
   Kokkos::parallel_for(nj, KOKKOS_LAMBDA(const Int& i) {
     precip_liq_surf_temp_d(0, i / Spack::n)[i % Spack::n] = precip_liq_surf_d(i);
