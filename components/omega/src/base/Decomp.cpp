@@ -372,7 +372,7 @@ Decomp::Decomp(
    // Open the mesh file for reading (assume IO has already been initialized)
    int FileID;
    MeshFileName = MeshFileName_;
-   Err = IO::openFile(FileID, MeshFileName, IO::ModeRead);
+   Err          = IO::openFile(FileID, MeshFileName, IO::ModeRead);
    if (Err != 0)
       LOG_CRITICAL("Decomp: error opening mesh file");
 
