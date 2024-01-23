@@ -53,9 +53,9 @@ contains
     use phys_control,  only: phys_getopts
     use physics_buffer,only: pbuf_add_field, dtype_r8, dtype_i4
 
-    character(len=16) :: rad_pkg, microp_pgk, macrop_pkg
+    character(len=16) :: rad_pkg, microp_pkg, macrop_pkg
 
-    call phys_getopts(radiation_scheme_out=rad_pkg,microp_scheme_out=microp_pgk, macrop_scheme_out=macrop_pkg)
+    call phys_getopts(radiation_scheme_out=rad_pkg,microp_scheme_out=microp_pkg, macrop_scheme_out=macrop_pkg)
     rk_clouds = microp_pkg == 'RK'
     mg_clouds = microp_pkg == 'MG'
     p3_clouds = microp_pkg == 'P3'

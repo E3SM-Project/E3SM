@@ -98,7 +98,7 @@ subroutine zm_conv_register
 !----------------------------------------
 
   use physics_buffer, only : pbuf_add_field, dtype_r8
-
+  
   implicit none
 
   integer idx
@@ -145,8 +145,6 @@ subroutine zm_conv_register
    end if
 
 ! Variables for dCAPE diagnosis and decomposition
-
-   call dcape_diags_register( pcols )
 
 end subroutine zm_conv_register
 

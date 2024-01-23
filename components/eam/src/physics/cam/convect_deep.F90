@@ -105,6 +105,21 @@ subroutine convect_deep_register
      call zm_conv_register
   end select
 
+  ! Add PBUF variables that are related to deep convection that 
+  !  are expected by the E3SM code, no matter which deep convection scheme
+  !  is used.
+
+  ! Flux of precipitation from deep convection (kg/m2/s)
+  call pbuf_add_field('DP_FLXPRC','global',dtype_r8,(/pcols,pverp/),dp_flxprc_idx) 
+  
+  ! Flux of snow from deep convection (kg/m2/s) 
+   call pbuf_add_field('DP_FLXSNW','global',dtype_r8,(/pcols,pverp/),dp_flxsnw_idx) 
+  
+  ! deep gbm cloud liquid water (kg/kg)
+  call pbuf_add_field('DP_CLDLIQ','global',dtype_r8,(/pcols,pver/), dp_cldliq_idx)  
+  
+  ! deep gbm cloud liquid water (kg/kg)    
+  call pbuf_add_field('DP_CLDICE','global',dtype_r8,(/pcols,pver/), dp_cldice_idx) 
   call pbuf_add_field('ICWMRDP',    'physpkg',dtype_r8,(/pcols,pver/),icwmrdp_idx)
   call pbuf_add_field('RPRDDP',     'physpkg',dtype_r8,(/pcols,pver/),rprddp_idx)
   call pbuf_add_field('NEVAPR_DPCU','physpkg',dtype_r8,(/pcols,pver/),nevapr_dpcu_idx)
@@ -125,8 +140,7 @@ end subroutine convect_deep_register
 !=========================================================================================
 
 
-
-subroutine convect_deep_init(pref_edge)
+subroutine convect_deep_init(pref_edge,pbuf2d)
 
 !----------------------------------------
 ! Purpose:  declare output fields, initialize variables needed by convection
@@ -138,7 +152,7 @@ subroutine convect_deep_init(pref_edge)
   use zm_conv_intr,  only: zm_conv_init
   use cam_abortutils,    only: endrun
   
-  use physics_buffer, only: physics_buffer_desc, pbuf_get_index
+  use physics_buffer, only: physics_buffer_desc, pbuf_get_index, pbuf_set_field
 
   implicit none
 
