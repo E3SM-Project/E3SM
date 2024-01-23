@@ -370,9 +370,10 @@ contains
                   rof_budg_stateG(s_whillslop_beg, ip), &
                   rof_budg_stateG(s_wres_beg    , ip), &
                   rof_budg_stateG(s_wflood_beg  , ip), &
-               - rof_budg_stateG(s_wother_beg  , ip), & ! print out negative value in the table for display only, actual calucation uses positive
+               - rof_budg_stateG(s_wother_beg  , ip), & ! print out negative value to reflect the actural calculation
                   rof_budg_stateG(s_w_beg       , ip)- &
-                  rof_budg_stateG(s_wother_beg  , ip)
+                  rof_budg_stateG(s_wother_beg  , ip)+ &
+                  rof_budg_stateG(s_wres_beg    , ip) ! s_w_beg doesn't include reservoir storage
             write(iulog,FS3) '         end', &
                   rof_budg_stateG(s_wchannel_end, ip), &
                   rof_budg_stateG(s_wsubnet_end, ip), &
@@ -381,7 +382,8 @@ contains
                   rof_budg_stateG(s_wflood_end  , ip), &
                - rof_budg_stateG(s_wother_end  , ip), & ! print out negative value in the table for display only, actual calucation uses positive
                   rof_budg_stateG(s_w_end       , ip)- &
-                  rof_budg_stateG(s_wother_end  , ip)
+                  rof_budg_stateG(s_wother_end  , ip)+ &
+                  rof_budg_stateG(s_wres_end    , ip) ! s_w_end doesn't include reservoir storage
             write(iulog,FS3)'*NET CHANGE*', &
                   (rof_budg_stateG(s_wchannel_end,ip) - rof_budg_stateG(s_wchannel_beg,ip)), &
                   (rof_budg_stateG(s_wsubnet_end,ip) - rof_budg_stateG(s_wsubnet_beg,ip)), &
@@ -389,8 +391,8 @@ contains
                   (rof_budg_stateG(s_wres_end    ,ip) - rof_budg_stateG(s_wres_beg    ,ip)), &
                   (rof_budg_stateG(s_wflood_end  ,ip) - rof_budg_stateG(s_wflood_beg  ,ip)), &
                 - (rof_budg_stateG(s_wother_end  ,ip) - rof_budg_stateG(s_wother_beg  ,ip)), &
-                  (rof_budg_stateG(s_w_end       ,ip) - rof_budg_stateG(s_wother_end  , ip)) - & 
-                  (rof_budg_stateG(s_w_beg       ,ip) - rof_budg_stateG(s_wother_beg  , ip))
+                  (rof_budg_stateG(s_w_end       ,ip) - rof_budg_stateG(s_wother_end  , ip) + rof_budg_stateG(s_wres_end , ip)) - & 
+                  (rof_budg_stateG(s_w_beg       ,ip) - rof_budg_stateG(s_wother_beg  , ip) + rof_budg_stateG(s_wres_beg , ip))
             write(iulog,'(110("-"),"|",20("-"))')
             write(iulog,FS2)'       *SUM*', &
                   (rof_budg_stateG(s_wchannel_end,ip) - rof_budg_stateG(s_wchannel_beg,ip)) + &
@@ -399,12 +401,8 @@ contains
                   (rof_budg_stateG(s_wres_end  ,ip) - rof_budg_stateG(s_wres_beg  ,ip)) + &
                   (rof_budg_stateG(s_wflood_end  ,ip) - rof_budg_stateG(s_wflood_beg  ,ip)) - &
                   (rof_budg_stateG(s_wother_end  ,ip) - rof_budg_stateG(s_wother_beg  ,ip)), &
-                  (rof_budg_stateG(s_wchannel_end,ip) - rof_budg_stateG(s_wchannel_beg,ip)) + &
-                  (rof_budg_stateG(s_wsubnet_end,ip) - rof_budg_stateG(s_wsubnet_beg,ip)) + &
-                  (rof_budg_stateG(s_whillslop_end,ip) - rof_budg_stateG(s_whillslop_beg,ip)) + &
-                  (rof_budg_stateG(s_wres_end  ,ip) - rof_budg_stateG(s_wres_beg  ,ip)) + &
-                  (rof_budg_stateG(s_wflood_end  ,ip) - rof_budg_stateG(s_wflood_beg  ,ip)) - &
-                  (rof_budg_stateG(s_wother_end  ,ip) - rof_budg_stateG(s_wother_beg  ,ip))
+                  (rof_budg_stateG(s_w_end       ,ip) - rof_budg_stateG(s_wother_end  , ip) + rof_budg_stateG(s_wres_end , ip)) - & 
+                  (rof_budg_stateG(s_w_beg       ,ip) - rof_budg_stateG(s_wother_beg  , ip) + rof_budg_stateG(s_wres_beg , ip))
             write(iulog,'(110("-"),"|",20("-"))')
          end if
       end if
