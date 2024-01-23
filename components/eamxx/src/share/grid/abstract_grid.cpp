@@ -501,6 +501,9 @@ void AbstractGrid::copy_data (const AbstractGrid& src, const bool shallow)
       m_geo_fields[name] = src.m_geo_fields.at(name).clone();
     }
   }
+
+  m_global_max_dof_gid = src.m_global_max_dof_gid;
+  m_global_min_dof_gid = src.m_global_min_dof_gid;
   m_is_unique = src.m_is_unique;
   m_is_unique_computed = src.m_is_unique_computed;
 }
