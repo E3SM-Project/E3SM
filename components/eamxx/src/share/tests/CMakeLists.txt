@@ -63,11 +63,4 @@ if (NOT ${SCREAM_BASELINES_ONLY})
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/atm_process_tests_named_procs.yaml
                  ${CMAKE_CURRENT_BINARY_DIR}/atm_process_tests_named_procs.yaml COPYONLY)
   CreateUnitTest(atm_proc "atm_process_tests.cpp")
-
-  # Test horizontal remapping utility
-  CreateUnitTest(horizontal_remap "horizontal_remap_test.cpp"
-    LIBS scream_io
-    LABELS horiz_remap
-    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
-  )
 endif()

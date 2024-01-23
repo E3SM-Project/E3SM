@@ -1,10 +1,10 @@
 %YAML 1.1
 ---
-filename_prefix: homme_shoc_cld_spa_p3_rrtmgp_dp_output
+filename_prefix: homme_shoc_cld_p3_rrtmgp_pg2_output
 Averaging Type: Instant
 Max Snapshots Per File: 1
 Fields:
-  Physics GLL:
+  Physics PG2:
     Field Names:
       # HOMME
       - ps
@@ -25,12 +25,6 @@ Fields:
       # CLD
       - cldfrac_ice
       - cldfrac_tot
-      # SPA
-      - aero_g_sw
-      - aero_ssa_sw
-      - aero_tau_lw
-      - aero_tau_sw
-      - nccn
       # P3
       - bm
       - nc
@@ -70,6 +64,15 @@ Fields:
       - rad_heating_pdel
       - sfc_flux_lw_dn
       - sfc_flux_sw_net
+      # AeroCOM in RRTMGP
+      - cdnc_at_cldtop
+      - cldfrac_tot_at_cldtop
+      - cldfrac_liq_at_cldtop
+      - cldfrac_ice_at_cldtop
+      - p_mid_at_cldtop
+      - T_mid_at_cldtop
+      - eff_radius_qc_at_cldtop
+      - eff_radius_qi_at_cldtop
       # Diagnostics
       - T_mid_at_lev_2
       - T_mid_at_model_top
@@ -82,8 +85,6 @@ Fields:
       - Exner
       - VirtualTemperature
       - z_int
-      - geopotential_int_at_lev_2
-      - z_mid_at_500mb
       - geopotential_mid
       - dz
       - DryStaticEnergy
@@ -100,10 +101,23 @@ Fields:
       - MeridionalVapFlux
       - PotentialTemperature_at_model_top
       - PotentialTemperature_at_500mb
+  # GLL output for homme states. These
+  # represent all current possible homme
+  # states available.
+  Dynamics:
+    Field Names:
+      - v_dyn
+      - vtheta_dp_dyn
+      - dp3d_dyn
+      - phi_int_dyn
+      - ps_dyn
+      - phis_dyn
+      - omega_dyn
+      - Qdp_dyn
+    IO Grid Name: Physics GLL
 
 output_control:
   Frequency: ${NUM_STEPS}
   frequency_units: nsteps
   MPI Ranks in Filename: true
 ...
-  

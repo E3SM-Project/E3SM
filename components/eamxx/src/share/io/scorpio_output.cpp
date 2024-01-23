@@ -830,7 +830,7 @@ void AtmosphereOutput::register_views()
 /* ---------------------------------------------------------- */
 void AtmosphereOutput::set_avg_cnt_tracking(const std::string& name, const std::string& avg_cnt_suffix, const FieldLayout& layout)
 {
-  // Make sure this field "name" hasn't already been regsitered with avg_cnt tracking.
+  // Make sure this field "name" hasn't already been registered with avg_cnt tracking.
   // Note, we check this because some diagnostics need to have their own tracking which
   // is created at the 'create_diagnostics' function.
   if (m_field_to_avg_cnt_map.count(name)>0) {
@@ -1028,6 +1028,15 @@ register_variables(const std::string& filename,
 std::vector<scorpio::offset_t>
 AtmosphereOutput::get_var_dof_offsets(const FieldLayout& layout)
 {
+  using namespace ShortFieldTagsNames;
+
+  // Precompute this *before* the early return, since it involves collectives.
+  // If one rank owns zero cols, and returns prematurely, the others will be left waiting.
+  AbstractGrid::gid_type min_gid;
+  if (layout.has_tag(COL) or layout.has_tag(EL)) {
+    min_gid = m_io_grid->get_global_min_dof_gid();
+  }
+
   // It may be that this MPI rank owns no chunk of the field
   if (layout.size()==0) {
     return {};
@@ -1052,17 +1061,13 @@ AtmosphereOutput::get_var_dof_offsets(const FieldLayout& layout)
   // NOTE: In the case of regional output this rank may have 0 columns to write, thus, var_dof
   //       should be empty, we check for this special case and return an empty var_dof.
   auto dofs_h = m_io_grid->get_dofs_gids().get_view<const AbstractGrid::gid_type*,Host>();
-  if (layout.has_tag(ShortFieldTagsNames::COL)) {
+  if (layout.has_tag(COL)) {
     const int num_cols = m_io_grid->get_num_local_dofs();
 
     // Note: col_size might be *larger* than the number of vertical levels, or even smaller.
     //       E.g., (ncols,2,nlevs), or (ncols,2) respectively.
     scorpio::offset_t col_size = layout.size() / num_cols;
 
-    // Precompute this *before* the loop, since it involves expensive collectives.
-    // Besides, the loop might have different length on different ranks, so
-    // computing it inside might cause deadlocks.
-    auto min_gid = m_io_grid->get_global_min_dof_gid();
     for (int icol=0; icol<num_cols; ++icol) {
       // Get chunk of var_dof to fill
       auto start = var_dof.begin()+icol*col_size;
@@ -1073,7 +1078,7 @@ AtmosphereOutput::get_var_dof_offsets(const FieldLayout& layout)
       auto offset = (gid-min_gid)*col_size;
       std::iota(start,end,offset);
     }
-  } else if (layout.has_tag(ShortFieldTagsNames::EL)) {
+  } else if (layout.has_tag(EL)) {
     auto layout2d = m_io_grid->get_2d_scalar_layout();
     const int num_my_elems = layout2d.dim(0);
     const int ngp = layout2d.dim(1);
@@ -1083,10 +1088,6 @@ AtmosphereOutput::get_var_dof_offsets(const FieldLayout& layout)
     //       E.g., (ncols,2,nlevs), or (ncols,2) respectively.
     scorpio::offset_t col_size = layout.size() / num_cols;
 
-    // Precompute this *before* the loop, since it involves expensive collectives.
-    // Besides, the loop might have different length on different ranks, so
-    // computing it inside might cause deadlocks.
-    auto min_gid = m_io_grid->get_global_min_dof_gid();
     for (int ie=0,icol=0; ie<num_my_elems; ++ie) {
       for (int igp=0; igp<ngp; ++igp) {
         for (int jgp=0; jgp<ngp; ++jgp,++icol) {
