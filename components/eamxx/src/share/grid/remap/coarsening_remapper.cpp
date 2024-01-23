@@ -909,6 +909,7 @@ recv_gids_from_pids (const std::map<int,std::vector<int>>& pid2gids_send) const
 void CoarseningRemapper::setup_mpi_data_structures ()
 {
   using namespace ShortFieldTagsNames;
+  using gid_type = AbstractGrid::gid_type;
 
   const auto mpi_comm  = m_comm.mpi_comm();
   const auto mpi_real  = ekat::get_mpi_type<Real>();
