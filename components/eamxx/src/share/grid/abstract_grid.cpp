@@ -258,6 +258,17 @@ AbstractGrid::create_geometry_data (const FieldIdentifier& fid)
 }
 
 void
+AbstractGrid::delete_geometry_data (const std::string& name)
+{
+  EKAT_REQUIRE_MSG (has_geometry_data(name),
+      "Error! Cannot delete geometry data, since it is does not exist.\n"
+      "  - grid name: " + this->name() + "\n"
+      "  - geo data name: " + name + "\n");
+
+  m_geo_fields.erase(name);
+}
+
+void
 AbstractGrid::set_geometry_data (const Field& f)
 {
   EKAT_REQUIRE_MSG (not has_geometry_data(f.name()),

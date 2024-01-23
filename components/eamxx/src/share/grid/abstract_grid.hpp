@@ -125,6 +125,7 @@ public:
 
   // Sets pre-existing field as geometry data.
   void set_geometry_data (const Field& f);
+  void delete_geometry_data (const std::string& name);
 
   bool has_geometry_data (const std::string& name) const {
     return m_geo_fields.find(name)!=m_geo_fields.end();
