@@ -1,3 +1,3 @@
 (omega-dev-horz-mesh)=
 
-## Horizontal Mesh 
+## Horizontal Mesh
