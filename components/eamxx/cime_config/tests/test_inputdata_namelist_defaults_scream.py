@@ -42,10 +42,10 @@ class testNamelistDefaultsScream(unittest.TestCase):
                     )
                     self.assertIsInstance(request_return, tuple)
                 except urllib.error.HTTPError:
+                    file_name = f"{os.environ['DIN_LOC_ROOT']}{self.my_files[i_file]}"
                     self.assertTrue(
                         False,
-                        msg=f"\nERROR! This file doesn't exist!\n{
-                            os.environ['DIN_LOC_ROOT']}{self.my_files[i_file]}"
+                        msg=f"\nERROR! This file doesn't exist!\n{file_name}"
                     )
 
     def test_expected_fail(self):
