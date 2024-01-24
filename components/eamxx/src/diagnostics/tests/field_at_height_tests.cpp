@@ -110,7 +110,7 @@ TEST_CASE("field_at_height")
     const auto& dims = f.get_header().get_identifier().get_layout().dims();
     for (int i=0; i<dims[0]; ++i) {
       for (int j=0; j<dims[1]; ++j) {
-        v(i,j) = dims[1]-j;
+        v(i,j) = dims[1]-j+i;
       }
     };
     f.sync_to_dev();
@@ -121,7 +121,7 @@ TEST_CASE("field_at_height")
     const auto& dims = f.get_header().get_identifier().get_layout().dims();
     for (int i=0; i<dims[0]; ++i) {
       for (int j=0; j<dims[1]; ++j) {
-        v(i,j) = dims[1]-j+i;
+        v(i,j) = dims[1]-j;
       }
     };
     f.sync_to_dev();
@@ -151,7 +151,7 @@ TEST_CASE("field_at_height")
     // Make sure that an unsupported reference height throws an error.
     print(" -> Testing throws error with unsupported reference height...\n");
     {
-      REQUIRE_THROWS(run_diag (s_mid,z_mid,loc,"foobar"));
+      REQUIRE_THROWS(run_diag (s_mid,geo_mid,loc,"foobar"));
     }
     print(" -> Testing throws error with unsupported reference height... OK\n");
 
@@ -159,41 +159,41 @@ TEST_CASE("field_at_height")
     print(" -> Testing with z_tgt coinciding with a z level\n");
     {
       print("    -> scalar midpoint field...............\n");
-      auto d = run_diag (s_mid,z_mid,loc,"sealevel");
-      auto tgt = get_ref_field(lev_tgt,s_mid,"sealevel");
+      auto d = run_diag (s_mid,geo_mid,loc,"surface");
+      auto tgt = get_ref_field(lev_tgt,s_mid,"surface");
       REQUIRE (views_are_equal(d,tgt,&comm));
       print("    -> scalar midpoint field............... OK!\n");
     }
     {
       print("    -> scalar interface field...............\n");
-      auto d = run_diag (s_int,z_int,loc,"sealevel");
-      // z_int = nlevs+1-ilev, so the tgt slice is nlevs+1-z_tgt
-      auto tgt = get_ref_field(lev_tgt+1,s_int,"sealevel");
+      auto d = run_diag (s_int,geo_int,loc,"surface");
+      // geo_int = nlevs+1-ilev, so the tgt slice is nlevs+1-z_tgt
+      auto tgt = get_ref_field(lev_tgt+1,s_int,"surface");
       REQUIRE (views_are_equal(d,tgt,&comm));
       print("    -> scalar interface field............... OK!\n");
     }
     {
       print("    -> vector midpoint field...............\n");
-      auto d = run_diag (v_mid,z_mid,loc,"sealevel");
+      auto d = run_diag (v_mid,geo_mid,loc,"surface");
       // We can't subview over 3rd index and keep layout right,
       // so do all cols separately
       for (int i=0; i<ncols; ++i) {
         auto fi = v_mid.subfield(0,i);
         auto di = d.subfield(0,i);
-        auto tgt = get_ref_field(lev_tgt,fi,"sealevel");
+        auto tgt = get_ref_field(lev_tgt,fi,"surface");
         REQUIRE (views_are_equal(di,tgt,&comm));
       }
       print("    -> vector midpoint field............... OK!\n");
     }
     {
       print("    -> vector interface field...............\n");
-      auto d = run_diag (v_int,z_int,loc,"sealevel");
+      auto d = run_diag (v_int,geo_int,loc,"surface");
       // We can't subview over 3rd index and keep layout right,
       // so do all cols separately
       for (int i=0; i<ncols; ++i) {
         auto fi = v_int.subfield(0,i);
         auto di = d.subfield(0,i);
-        auto tgt = get_ref_field(lev_tgt+1,fi,"sealevel");
+        auto tgt = get_ref_field(lev_tgt+1,fi,"surface");
         REQUIRE (views_are_equal(di,tgt,&comm));
       }
       print("    -> vector interface field............... OK!\n");
@@ -209,40 +209,40 @@ TEST_CASE("field_at_height")
     print(" -> Testing with z_tgt between levels\n");
     {
       print("    -> scalar midpoint field...............\n");
-      auto d = run_diag (s_mid,z_mid,loc,"sealevel");
-      auto tgt = get_ref_field(zm1,zp1,s_mid,"sealevel");
+      auto d = run_diag (s_mid,geo_mid,loc,"surface");
+      auto tgt = get_ref_field(zm1,zp1,s_mid,"surface");
       REQUIRE (views_are_equal(d,tgt,&comm));
       print("    -> scalar midpoint field............... OK!\n");
     }
     {
       print("    -> scalar interface field...............\n");
-      auto d = run_diag (s_int,z_int,loc,"sealevel");
-      auto tgt = get_ref_field(zm1+1,zp1+1,s_int,"sealevel");
+      auto d = run_diag (s_int,geo_int,loc,"surface");
+      auto tgt = get_ref_field(zm1+1,zp1+1,s_int,"surface");
       REQUIRE (views_are_equal(d,tgt,&comm));
       print("    -> scalar interface field............... OK!\n");
     }
     {
       print("    -> vector midpoint field...............\n");
-      auto d = run_diag (v_mid,z_mid,loc,"sealevel");
+      auto d = run_diag (v_mid,geo_mid,loc,"surface");
       // We can't subview over 3rd index and keep layout right,
       // so do all cols separately
       for (int i=0; i<ncols; ++i) {
         auto fi = v_mid.subfield(0,i);
         auto di = d.subfield(0,i);
-        auto tgt = get_ref_field(zm1,zp1,fi,"sealevel");
+        auto tgt = get_ref_field(zm1,zp1,fi,"surface");
         REQUIRE (views_are_equal(di,tgt,&comm));
       }
       print("    -> vector midpoint field............... OK!\n");
     }
     {
       print("    -> vector interface field...............\n");
-      auto d = run_diag (v_int,z_int,loc,"sealevel");
+      auto d = run_diag (v_int,geo_int,loc,"surface");
       // We can't subview over 3rd index and keep layout right,
       // so do all cols separately
       for (int i=0; i<ncols; ++i) {
         auto fi = v_int.subfield(0,i);
         auto di = d.subfield(0,i);
-        auto tgt = get_ref_field(zm1+1,zp1+1,fi,"sealevel");
+        auto tgt = get_ref_field(zm1+1,zp1+1,fi,"surface");
         REQUIRE (views_are_equal(di,tgt,&comm));
       }
       print("    -> vector interface field............... OK!\n");
@@ -254,7 +254,7 @@ TEST_CASE("field_at_height")
 Field get_ref_field(const int lev, const Field& src_data, const std::string& surf_ref)
 {
   // A single level implies this is a test where the height matches a single level.
-  if (surf_ref == "sealevel") {
+  if (surf_ref == "surface") {
     return src_data.subfield(1,static_cast<int>(lev));
   }
 }
@@ -262,7 +262,7 @@ Field get_ref_field(const int lev, const Field& src_data, const std::string& sur
 Field get_ref_field(const int levm, const int levp, const Field& src_data, const std::string& surf_ref)
 {
   // Two levels implies this is a test where the height is midway between two levels
-  if (surf_ref == "sealevel") {
+  if (surf_ref == "surface") {
     auto tgt = src_data.subfield(1,levp).clone();
     tgt.update(src_data.subfield(1,levm),0.5,0.5);
     return tgt;
