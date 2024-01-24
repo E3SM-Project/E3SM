@@ -37,7 +37,7 @@ class testNamelistDefaultsScream(unittest.TestCase):
         for i_file in range(len(self.my_files)):
             with self.subTest(i_file=i_file):
                 try:
-                    request_return = urllib.request.urlretrieve(
+                    request_return = urllib.request.urlopen(
                         f"{os.environ['DIN_LOC_ROOT']}{self.my_files[i_file]}"
                     )
                     self.assertIsInstance(request_return, tuple)
@@ -55,7 +55,7 @@ class testNamelistDefaultsScream(unittest.TestCase):
         """
         with self.assertRaises(urllib.error.HTTPError):
             some_phony_file = f"{self.my_files[5][:-5]}some_phony_file.nc"
-            urllib.request.urlretrieve(
+            urllib.request.urlopen(
                 f"{os.environ['DIN_LOC_ROOT']}{some_phony_file}"
             )
 
