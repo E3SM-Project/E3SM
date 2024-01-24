@@ -5,6 +5,8 @@ on:
     branches: [ master ]
   pull_request:
     branches: [ master ]
+  schedule:
+    - cron: '00 00 * * *'
 
   workflow_dispatch:
 
@@ -26,3 +28,46 @@ jobs:
         working-directory: components/eamxx/cime_config/
         run: |
           python3 -m unittest tests/test_inputdata_namelist_defaults_scream.py -v
+
+  notify-scream-defaults:
+    name: Notify failed build
+    needs: scream-defaults
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create issue
+        run: |
+          if [[ $CLOSE_PREVIOUS == true ]]; then
+            previous_issue_number=$(gh issue list \
+              --label "$LABELS" \
+              --json number \
+              --jq '.[0].number')
+            if [[ -n $previous_issue_number ]]; then
+              gh issue close "$previous_issue_number"
+              gh issue unpin "$previous_issue_number"
+            fi
+          fi
+          new_issue_url=$(gh issue create \
+            --title "$TITLE" \
+            --assignee "$ASSIGNEES" \
+            --label "$LABELS" \
+            --body "$BODY")
+          if [[ $PINNED == true ]]; then
+            gh issue pin "$new_issue_url"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TITLE: Inputdata server file missing
+          ASSIGNEES: mahf708,bartgol
+          LABELS: bug
+          BODY: |
+
+            [Workflow](${{ github.sha }}) failed! There's likely a missing file specified in the configs!
+
+            For more information, please see:
+              - Workflow URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+              - Workflow SHA: ${{ github.sha }}
+    
+          PINNED: false
+          CLOSE_PREVIOUS: false
