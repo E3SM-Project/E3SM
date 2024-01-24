@@ -36,6 +36,7 @@ HorizInterpRemapperBase (const grid_ptr_type& fine_grid,
   if (data.num_customers==0) {
     data.build(m_map_file,m_fine_grid,m_comm,m_type);
   }
+  ++data.num_customers;
 
   m_row_offsets = data.row_offsets;
   m_col_lids = data.col_lids;
