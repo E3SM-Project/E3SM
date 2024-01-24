@@ -21,7 +21,6 @@ Real aer_func(const int t, const int bnd, const int klev, const int ncols, const
 TEST_CASE("spa_read_data","spa")
 {
   using SPAFunc = spa::SPAFunctions<Real, DefaultDevice>;
-  using gid_type = SPAFunc::gid_type;
 
   constexpr Real tol  = std::numeric_limits<Real>::epsilon()*1000;
 
