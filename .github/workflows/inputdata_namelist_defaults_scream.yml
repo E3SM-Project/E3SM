@@ -1,0 +1,29 @@
+name: inputdata
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+  workflow_dispatch:
+
+jobs:
+  scream-defaults:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+        with:
+          show-progress: false
+          submodules: false
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4.7.0
+        with:
+          python-version: "3.11"
+      - name: Run unit tests
+        working-directory: components/eamxx/cime_config/
+        run: |
+          python3 -m unittest tests/test_inputdata_namelist_defaults_scream.py -vvv
+
