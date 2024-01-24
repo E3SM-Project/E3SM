@@ -1,4 +1,4 @@
-#include "horiz_interp_remap_data.hpp"
+#include "horiz_interp_remapper_data.hpp"
 
 #include "share/grid/point_grid.hpp"
 #include "share/grid/grid_import_export.hpp"
@@ -8,9 +8,9 @@
 
 namespace scream {
 
-// --------------- HorizRemapData ---------------- //
+// --------------- HorizRemapperData ---------------- //
 
-void HorizRemapData::
+void HorizRemapperData::
 build (const std::string& map_file,
        const std::shared_ptr<const AbstractGrid>& fine_grid_in,
        const ekat::Comm& comm_in,
@@ -30,7 +30,7 @@ build (const std::string& map_file,
   create_crs_matrix_structures (my_triplets);
 }
 
-auto HorizRemapData::
+auto HorizRemapperData::
 get_my_triplets (const std::string& map_file) const
  -> std::vector<Triplet>
 {
@@ -178,7 +178,7 @@ get_my_triplets (const std::string& map_file) const
   return my_triplets;
 }
 
-void HorizRemapData::
+void HorizRemapperData::
 create_coarse_grids (const std::vector<Triplet>& triplets)
 {
   // Gather overlapped coarse grid gids (rows or cols, depending on type)
@@ -211,7 +211,7 @@ create_coarse_grids (const std::vector<Triplet>& triplets)
   coarse_grid->get_dofs_gids().sync_to_dev();
 }
 
-void HorizRemapData::
+void HorizRemapperData::
 create_crs_matrix_structures (std::vector<Triplet>& triplets)
 {
   // Get row/col data depending on interp type
@@ -269,9 +269,9 @@ create_crs_matrix_structures (std::vector<Triplet>& triplets)
 }
 
 
-// ------------- HorizRemapDataRepo -------------- //
+// ------------- HorizRemapperDataRepo -------------- //
 
-const HorizRemapData& HorizRemapDataRepo::
+const HorizRemapperData& HorizRemapperDataRepo::
 get_data (const std::string& map_file,
           const std::shared_ptr<const AbstractGrid>& fine_grid,
           const ekat::Comm& comm,
@@ -286,7 +286,7 @@ get_data (const std::string& map_file,
   return data;
 }
 
-void HorizRemapDataRepo::
+void HorizRemapperDataRepo::
 release_data (const std::string& map_file)
 {
   auto it = data_repo.find(map_file);

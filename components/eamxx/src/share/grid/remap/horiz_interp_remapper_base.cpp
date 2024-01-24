@@ -1,6 +1,6 @@
 #include "horiz_interp_remapper_base.hpp"
 
-#include "share/grid/remap/horiz_interp_remap_data.hpp"
+#include "share/grid/remap/horiz_interp_remapper_data.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/grid/grid_import_export.hpp"
 #include "share/io/scorpio_input.hpp"
@@ -33,8 +33,7 @@ HorizInterpRemapperBase (const grid_ptr_type& fine_grid,
   m_bwd_allowed = false;
 
   // Get the remap data (if not already present, it will be built)
-  auto& remap_data_repo = HorizRemapDataRepo::instance();
-  const auto& data = remap_data_repo.get_data(m_map_file,m_fine_grid,m_comm,m_type);
+  const auto& data = remapper_data_repo.get_data(m_map_file,m_fine_grid,m_comm,m_type);
 
   m_row_offsets = data.row_offsets;
   m_col_lids = data.col_lids;
@@ -71,7 +70,7 @@ HorizInterpRemapperBase (const grid_ptr_type& fine_grid,
 HorizInterpRemapperBase::
 ~HorizInterpRemapperBase ()
 {
-  HorizRemapDataRepo::instance().release_data(m_map_file);
+  HorizRemapperDataRepo::instance().release_data(m_map_file);
 }
 
 FieldLayout HorizInterpRemapperBase::

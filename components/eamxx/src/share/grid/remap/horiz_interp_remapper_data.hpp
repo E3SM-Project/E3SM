@@ -19,7 +19,7 @@ enum class InterpType {
 
 // A small struct to hold horiz remap data, which can
 // be shared across multiple horiz remappers
-struct HorizRemapData {
+struct HorizRemapperData {
   using KT = KokkosTypes<DefaultDevice>;
   template<typename T>
   using view_1d = typename KT::template view_1d<T>;
@@ -68,14 +68,14 @@ private:
 };
 
 // A singleton struct, which will hold the horiz remappers data
-struct HorizRemapDataRepo {
-  static HorizRemapDataRepo& instance () {
-    static HorizRemapDataRepo hrdr;
+struct HorizRemapperDataRepo {
+  static HorizRemapperDataRepo& instance () {
+    static HorizRemapperDataRepo hrdr;
     return hrdr;
   }
 
   // If data for this map file is NOT present, proceed to build it
-  const HorizRemapData&
+  const HorizRemapperData&
   get_data (const std::string& map_file,
             const std::shared_ptr<const AbstractGrid>& fine_grid,
             const ekat::Comm& comm,
@@ -83,10 +83,10 @@ struct HorizRemapDataRepo {
 
   void release_data (const std::string& map_file);
 private:
-  HorizRemapDataRepo () = default;
+  HorizRemapperDataRepo () = default;
 
   std::map<AbstractRemapper*,std::string> customer_to_data;
-  std::map<std::string,HorizRemapData>    data_repo;
+  std::map<std::string,HorizRemapperData>    data_repo;
 };
 
 } // namespace scream

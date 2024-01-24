@@ -2,7 +2,7 @@
 #define SCREAM_HORIZ_INTERP_REMAPPER_BASE_HPP
 
 #include "share/grid/remap/abstract_remapper.hpp"
-#include "share/grid/remap/horiz_interp_remap_data.hpp"
+#include "share/grid/remap/horiz_interp_remapper_data.hpp"
 
 namespace scream
 {
