@@ -753,6 +753,15 @@ contains
     if ( ierrmb /= 0 ) then
        call mpas_log_write('cannot set tags for MOAB x2i fields to zero' // trim(seq_flds_x2i_fields), MPAS_LOG_ERR)
     endif
+
+    ! add domain tags
+    tagname=trim(seq_flds_dom_fields)//C_NULL_CHAR
+    tagtype = 1
+    ierrmb = iMOAB_DefineTagStorage(MPSIID, tagname, tagtype, numco,  tagindex )
+    if ( ierrmb /= 0 ) then
+       call mpas_log_write('Fail to set define dom fields ',  MPAS_LOG_ERR)
+    endif
+
 #endif
     
 
