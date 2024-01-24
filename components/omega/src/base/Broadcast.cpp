@@ -92,11 +92,21 @@ int Broadcast(bool &Value, const int RankBcast) {
 //------------------------------------------------------------------------------
 // Broadcast std::string Value
 int Broadcast(std::string &Value, const MachEnv *InEnv, const int RankBcast) {
-   int RetVal, Root;
+   int RetVal, Root, StrSize;
+   MPI_Comm Comm = InEnv->getComm();
+   int MyTask    = InEnv->getMyTask();
 
-   Root   = (RankBcast < 0) ? InEnv->getMasterTask() : RankBcast;
-   RetVal = MPI_Bcast((void *)Value.c_str(), Value.size(), MPI_CHAR, Root,
-                      InEnv->getComm());
+   Root = (RankBcast < 0) ? InEnv->getMasterTask() : RankBcast;
+   // For strings, we must ensure the destination has the correct size
+   if (MyTask == Root)
+      StrSize = Value.length();
+   RetVal = MPI_Bcast(&StrSize, 1, MPI_INT, Root, Comm);
+   if (MyTask != Root)
+      Value.resize(StrSize);
+
+   // Now broadcast the string
+   RetVal =
+       MPI_Bcast((void *)Value.c_str(), Value.size(), MPI_CHAR, Root, Comm);
 
    return RetVal;
 } // end Broadcast

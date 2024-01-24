@@ -6,6 +6,12 @@ add_subdirectory(
   ${CMAKE_CURRENT_BINARY_DIR}/ekat/extern/spdlog
 )
 
+# Add the yaml-cpp library
+add_subdirectory(
+  ${E3SM_EXTERNALS_ROOT}/ekat/extern/yaml-cpp
+  ${CMAKE_CURRENT_BINARY_DIR}/ekat/extern/yaml-cpp
+)
+
 # Add the YAKL library
 add_subdirectory(
   ${E3SM_EXTERNALS_ROOT}/YAKL

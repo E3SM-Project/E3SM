@@ -16,6 +16,14 @@ target_include_directories(
 )
 
 # add compiler options
+target_include_directories(
+    ${OMEGA_LIB_NAME}
+    PRIVATE
+    ${OMEGA_SOURCE_DIR}/src/base
+    ${OMEGA_SOURCE_DIR}/src/infra
+    ${OMEGA_SOURCE_DIR}/src/ocn
+)
+
 target_compile_options(
     ${OMEGA_LIB_NAME}
     PRIVATE
@@ -29,7 +37,7 @@ target_link_options(
     ${OMEGA_LINK_OPTIONS}
 )
 
-target_link_libraries(${OMEGA_LIB_NAME} spdlog yakl pioc parmetis metis)
+target_link_libraries(${OMEGA_LIB_NAME} spdlog yakl pioc yaml-cpp parmetis metis)
 
 if(GKlib_FOUND)
     target_link_libraries(${OMEGA_LIB_NAME} gklib)

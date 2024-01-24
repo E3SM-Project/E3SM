@@ -202,6 +202,42 @@ add_test(
 
 
 ##################
+# Config test
+##################
+
+set(_TestConfigName testConfig.exe)
+
+# Add broadcast test
+add_executable(${_TestConfigName} infra/ConfigTest.cpp)
+
+target_include_directories(
+  ${_TestConfigName}
+  PRIVATE
+  ${OMEGA_SOURCE_DIR}/src/base
+  ${OMEGA_SOURCE_DIR}/src/infra
+)
+
+target_compile_options(
+  ${_TestConfigName}
+  PRIVATE
+  ${OMEGA_CXX_FLAGS}
+)
+
+target_link_options(
+  ${_TestConfigName}
+  PRIVATE
+  ${OMEGA_LINK_OPTIONS}
+)
+
+target_link_libraries(${_TestConfigName} ${OMEGA_LIB_NAME} yaml-cpp)
+
+add_test(
+  NAME CONFIG_TEST
+  COMMAND ${MPI_EXEC} -n 8 -- ./${_TestConfigName}
+)
+
+
+##################
 # YAKL test
 ##################
 
@@ -234,6 +270,7 @@ set_tests_properties(
   MACHINE_ENV_TEST
   BROADCAST_TEST
   LOGGING_TEST
+  CONFIG_TEST
   DECOMP_TEST
   IO_TEST
   YAKL_TEST
