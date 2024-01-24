@@ -26,10 +26,6 @@
 #include <set>
 #include <string>
 #include <vector>
-// temporary for debugging
-#include <fstream>
-#include <iostream>
-#include <sstream>
 
 namespace OMEGA {
 
@@ -182,7 +178,7 @@ int readMesh(const int MeshFileID, // file ID for open mesh file
    I4 OnCellSize = NCellsChunk * MaxEdges;
    I4 NDims      = 2;
    std::vector<I4> OnCellDims{NCellsGlobal, MaxEdges};
-   std::vector<I4> OnCellOffset(OnCellSize, 0);
+   std::vector<I4> OnCellOffset(OnCellSize, -1);
    for (int Cell = 0; Cell < NCellsLocal; ++Cell) {
       I4 CellGlob = MyTask * NCellsChunk + Cell;
       for (int Edge = 0; Edge < MaxEdges; ++Edge) {
@@ -198,9 +194,9 @@ int readMesh(const int MeshFileID, // file ID for open mesh file
    std::vector<I4> OnEdgeDims{NEdgesGlobal, MaxCellsOnEdge};
    std::vector<I4> OnEdgeDims2{NEdgesGlobal, MaxEdgesOnEdge};
    std::vector<I4> OnVertexDims{NVerticesGlobal, VertexDegree};
-   std::vector<I4> OnEdgeOffset(OnEdgeSize, 0);
-   std::vector<I4> OnEdgeOffset2(OnEdgeSize2, 0);
-   std::vector<I4> OnVertexOffset(OnVertexSize, 0);
+   std::vector<I4> OnEdgeOffset(OnEdgeSize, -1);
+   std::vector<I4> OnEdgeOffset2(OnEdgeSize2, -1);
+   std::vector<I4> OnVertexOffset(OnVertexSize, -1);
    for (int Edge = 0; Edge < NEdgesLocal; ++Edge) {
       I4 EdgeGlob = MyTask * NEdgesChunk + Edge;
       for (int Cell = 0; Cell < MaxCellsOnEdge; ++Cell) {
