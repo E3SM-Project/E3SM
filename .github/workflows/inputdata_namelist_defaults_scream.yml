@@ -12,7 +12,8 @@ on:
 jobs:
   scream-defaults:
     runs-on: ubuntu-latest
-
+    outputs:
+      event_name: ${{ github.event_name }}
     steps:
       - name: Check out the repository
         uses: actions/checkout@v4
@@ -31,7 +32,7 @@ jobs:
   notify-scream-defaults:
     name: Notify if failure
     needs: scream-defaults
-    if: failure() && ${{ github.event_name != 'pull_request' }}
+    if: failure() && needs.scream-defaults.outputs.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Create issue
