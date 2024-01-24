@@ -364,6 +364,8 @@ void HorizInterpRemapperBase::clean_up ()
   m_num_bound_fields = 0;
 }
 
+std::map<std::string,HorizRemapperData> HorizInterpRemapperBase::s_remapper_data;
+
 // ETI, so derived classes can call this method
 template
 void HorizInterpRemapperBase::
