@@ -30,7 +30,6 @@ jobs:
           python -m unittest tests/eamxx_default_files.py -v
 
   notify-scream-defaults:
-    name: Notify if failure
     needs: scream-defaults
     if: failure() && needs.scream-defaults.outputs.event_name == 'pull_request'
     runs-on: ubuntu-latest
