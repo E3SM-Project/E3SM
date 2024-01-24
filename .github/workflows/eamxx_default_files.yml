@@ -27,7 +27,7 @@ jobs:
       - name: Run unit tests
         working-directory: components/eamxx/cime_config/
         run: |
-          python3 -m unittest tests/test_inputdata_namelist_defaults_scream.py -v
+          python -m unittest tests/eamxx_default_files.py -v
 
   notify-scream-defaults:
     name: Notify if failure

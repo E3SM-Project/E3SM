@@ -14,27 +14,41 @@ class testNamelistDefaultsScream(unittest.TestCase):
         Set up the environment for the test by setting the DIN_LOC_ROOT
         environment variable. Parse the 'namelist_defaults_scream.xml' 
         file and extract the files of interest based on the DIN_LOC_ROOT
-        variable. Assign the extracted files to the 'my_files' attribute
-        of the test instance.
+        variable or the array(file) type. Assign the extracted files
+        to the 'my_files' attribute of the test instance.
         """
+
         os.environ["DIN_LOC_ROOT"] = "https://web.lcrc.anl.gov/public/e3sm/inputdata/"
 
         scream_defaults_path = pathlib.Path(__file__)
         tree = ET.parse(f"{scream_defaults_path.parent.parent}/namelist_defaults_scream.xml")
         root = tree.getroot()
 
-        file_of_interest = [
+        files_of_interest = [
             child.text for child in root.findall(".//")
             if child.text and child.text.startswith("${DIN_LOC_ROOT}")
         ]
 
-        self.my_files = [file.replace("${DIN_LOC_ROOT}/", "")
-                         for file in file_of_interest]
+        more_files_of_interest = [
+            child.text for child in root.findall(".//")
+            if child.text and "type" in child.attrib.keys() and child.attrib["type"]=="array(file)"
+        ]
 
-    def test_retrieve_files(self):
+        files_of_interest.extend(
+            text.strip() for text_list in more_files_of_interest for text in text_list.split(",")
+            if text.strip().startswith("${DIN_LOC_ROOT}")
+        )
+
+        self.my_files = [
+            file.replace("${DIN_LOC_ROOT}/", "")
+            for file in files_of_interest
+        ]
+
+    def test_opening_files(self):
         """
-        Function to test the retrieval of files. 
+        Test the opening of files from the inputdata server.
         """
+
         for i_file in range(len(self.my_files)):
             with self.subTest(i_file=i_file):
                 try:
@@ -51,9 +65,9 @@ class testNamelistDefaultsScream(unittest.TestCase):
 
     def test_expected_fail(self):
         """
-        A test case to verify the expected failure when encountering
-        an HTTP error using urllib.
+        Test an expected failure by manipulating the file name.
         """
+
         with self.assertRaises(urllib.error.HTTPError):
             some_phony_file = f"{self.my_files[5][:-5]}some_phony_file.nc"
             urllib.request.urlopen(
