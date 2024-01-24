@@ -35,11 +35,18 @@ class testNamelistDefaultsScream(unittest.TestCase):
         Function to test the retrieval of files. 
         """
         for i_file in range(len(self.my_files)):
-            with self.subTest(i=i_file):
-                request_return = urllib.request.urlretrieve(
-                    f"{os.environ['DIN_LOC_ROOT']}{self.my_files[i_file]}"
-                )
-                self.assertIsInstance(request_return, tuple)
+            with self.subTest(i_file=i_file):
+                try:
+                    request_return = urllib.request.urlretrieve(
+                        f"{os.environ['DIN_LOC_ROOT']}{self.my_files[i_file]}"
+                    )
+                    self.assertIsInstance(request_return, tuple)
+                except urllib.error.HTTPError:
+                    self.assertTrue(
+                        False,
+                        msg=f"\nERROR! This file doesn't exist!\n{
+                            os.environ['DIN_LOC_ROOT']}{self.my_files[i_file]}"
+                    )
 
     def test_expected_fail(self):
         """
