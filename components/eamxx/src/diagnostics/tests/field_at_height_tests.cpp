@@ -145,6 +145,14 @@ TEST_CASE("field_at_height")
     // z[ilev] = nlevs-ilev, so the tgt slice is nlevs-z_tgt
     lev_tgt = nlevs-z_tgt;
 
+    // Make sure that an unsupported reference height throws an error.
+    print(" -> Testing throws error with unsupported reference height...\n");
+    {
+      REQUIRE_THROWS(run_diag (s_mid,z_mid,loc,"foobar"));
+    }
+    print(" -> Testing throws error with unsupported reference height... OK\n");
+
+
     print(" -> Testing with z_tgt coinciding with a z level\n");
     {
       print("    -> scalar midpoint field...............\n");
