@@ -149,7 +149,7 @@ private_except_cuda:
 
 
   // state variable
-  mam_coupling::view_3d state_q_,  qqcw_;// odap_aer_,
+  // mam_coupling::view_3d state_q_,  qqcw_;// odap_aer_,
 
   // number of horizontal columns and vertical levels
   int ncol_, nlev_;
@@ -158,7 +158,7 @@ private_except_cuda:
   int nswbands_, nlwbands_;
 
   // FIXME: move these values to mam_coupling
-  mam_coupling::const_view_2d z_mid_, z_iface_, p_int_, p_del_;
+  mam_coupling::const_view_2d p_int_, p_del_;//z_mid_, z_iface_,  ;
 
   // MAM4 aerosol particle size description
   mam4::AeroConfig aero_config_;

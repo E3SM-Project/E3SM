@@ -30,9 +30,15 @@ void MAMOptics::set_grids(const std::shared_ptr<const GridsManager> grids_manage
   using namespace ekat::units;
   constexpr int nvars = mam4::ndrop::nvars;
 
-
   grid_ = grids_manager->get_grid("Physics");
   const auto& grid_name = grid_->name();
+  auto q_unit = kg/kg; // mass mixing ratios [kg stuff / kg air]
+  q_unit.set_string("kg/kg");
+  auto n_unit = 1/kg;  // number mixing ratios [# / kg air]
+  n_unit.set_string("#/kg");
+  // Units nondim(0,0,0,0,0,0,0);
+  const auto m2 = m*m;
+  const auto s2 = s*s;
 
   ncol_ = grid_->get_num_local_dofs();      // number of columns on this rank
   nlev_ = grid_->get_num_vertical_levels(); // number of levels per column
@@ -48,18 +54,34 @@ void MAMOptics::set_grids(const std::shared_ptr<const GridsManager> grids_manage
   FieldLayout scalar3d_lwband_layout { {COL, LWBND, LEV}, {ncol_, nlwbands_, nlev_} };
   FieldLayout scalar3d_layout_int{ {COL, ILEV}, {ncol_, nlev_+1} };
 
+  // layout for 2D (1d horiz X 1d vertical) variable
+  FieldLayout scalar2d_layout_col{ {COL}, {ncol_} };
+
   // layout for 3D (2d horiz X 1d vertical) variables
   FieldLayout scalar3d_layout_mid{ {COL, LEV}, {ncol_, nlev_} };
+  add_field<Required>("omega", scalar3d_layout_mid, Pa/s, grid_name); // vertical pressure velocity
   add_field<Required>("T_mid", scalar3d_layout_mid, K, grid_name); // Temperature
   add_field<Required>("p_mid", scalar3d_layout_mid, Pa, grid_name); // total pressure
 
-  add_field<Required>("z_int", scalar3d_layout_int, m, grid_name); // vertical position at interface
-  add_field<Required>("z_mid", scalar3d_layout_mid, m, grid_name); // vertical position pressure
+  // add_field<Required>("z_int", scalar3d_layout_int, m, grid_name); // vertical position at interface
+  // add_field<Required>("z_mid", scalar3d_layout_mid, m, grid_name); // vertical position pressure
   add_field<Required>("p_int", scalar3d_layout_int, Pa, grid_name); // total pressure
   add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa, grid_name);
   add_field<Required>("pseudo_density_dry", scalar3d_layout_mid, Pa, grid_name);
 
-  add_field<Required>("cldn", scalar3d_layout_mid, nondim, grid_name); // could fraction
+  add_field<Required>("qv", scalar3d_layout_mid, q_unit, grid_name, "tracers"); // specific humidity
+  add_field<Required>("qi", scalar3d_layout_mid, q_unit, grid_name, "tracers"); // ice wet mixing ratio
+  add_field<Required>("ni", scalar3d_layout_mid, n_unit, grid_name, "tracers"); // ice number mixing ratio
+
+   // droplet activation can alter cloud liquid and number mixing ratios
+  add_field<Updated>("qc", scalar3d_layout_mid, q_unit, grid_name, "tracers"); // cloud liquid wet mixing ratio
+  add_field<Updated>("nc", scalar3d_layout_mid, n_unit, grid_name, "tracers"); // cloud liquid wet number mixing ratio
+
+  add_field<Required>("phis",           scalar2d_layout_col, m2/s2, grid_name);
+  add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid_name); // cloud fraction
+  add_field<Required>("pbl_height", scalar2d_layout_col, m, grid_name); // planetary boundary layer height
+
+  // add_field<Required>("cldn", scalar3d_layout_mid, nondim, grid_name); // could fraction
 
   // shortwave aerosol scattering asymmetry parameter [-]
   add_field<Computed>("aero_g_sw",   scalar3d_swbandp_layout, nondim, grid_name);
@@ -81,6 +103,41 @@ void MAMOptics::set_grids(const std::shared_ptr<const GridsManager> grids_manage
   // FieldLayout scalar3d_layout_mid { {COL, LEV}, {ncol_, nlev_} };
   add_field<Computed>("nccn", scalar3d_layout_mid, 1/kg, grid_name, ps);
 
+  // (interstitial) aerosol tracers of interest: mass (q) and number (n) mixing ratios
+  for (int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+    const char* int_nmr_field_name = mam_coupling::int_aero_nmr_field_name(m);
+    // printf("%s \n", int_nmr_field_name);
+
+    add_field<Updated>(int_nmr_field_name, scalar3d_layout_mid, n_unit, grid_name, "tracers");
+    for (int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+      const char* int_mmr_field_name = mam_coupling::int_aero_mmr_field_name(m, a);
+
+      if (strlen(int_mmr_field_name) > 0) {
+        add_field<Updated>(int_mmr_field_name, scalar3d_layout_mid, q_unit, grid_name, "tracers");
+      }
+    }
+  }
+// (cloud) aerosol tracers of interest: mass (q) and number (n) mixing ratios
+ for (int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+    const char* cld_nmr_field_name = mam_coupling::cld_aero_nmr_field_name(m);
+    // printf("%s \n", int_nmr_field_name);
+
+    add_field<Updated>(cld_nmr_field_name, scalar3d_layout_mid, n_unit, grid_name, "tracers");
+    for (int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+      const char* cld_mmr_field_name = mam_coupling::cld_aero_mmr_field_name(m, a);
+
+      if (strlen(cld_mmr_field_name) > 0) {
+        add_field<Updated>(cld_mmr_field_name, scalar3d_layout_mid, q_unit, grid_name, "tracers");
+      }
+    }
+  }
+
+  // aerosol-related gases: mass mixing ratios
+  for (int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
+    const char* gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
+    add_field<Updated>(gas_mmr_field_name, scalar3d_layout_mid, q_unit, grid_name, "tracers");
+  }
+
 }
 
 size_t MAMOptics::requested_buffer_size_in_bytes() const
@@ -89,6 +146,7 @@ size_t MAMOptics::requested_buffer_size_in_bytes() const
 }
 
 void MAMOptics::init_buffers(const ATMBufferManager &buffer_manager) {
+
   EKAT_REQUIRE_MSG(buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(),
                    "Error! Insufficient buffer size.\n");
 
@@ -107,13 +165,14 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   wet_atm_.nc = get_field_out("nc").get_view<Real**>();
   wet_atm_.qi = get_field_in("qi").get_view<const Real**>();
   wet_atm_.ni = get_field_in("ni").get_view<const Real**>();
-  // wet_atm_.omega = get_field_in("omega").get_view<const Real**>();
+  wet_atm_.omega = get_field_in("omega").get_view<const Real**>();
 
     // FIXME: we have nvars in several process.
   constexpr int ntot_amode = mam4::AeroConfig::num_modes();
 
   dry_atm_.T_mid     = get_field_in("T_mid").get_view<const Real**>();
   dry_atm_.p_mid     = get_field_in("p_mid").get_view<const Real**>();
+  p_int_     = get_field_in("p_int").get_view<const Real**>();
   // dry_atm_.p_del     = get_field_in("pseudo_density").get_view<const Real**>();
     // FIXME: In the nc file, there is also pseudo_density_dry
   dry_atm_.p_del     = get_field_in("pseudo_density_dry").get_view<const Real**>();
@@ -123,10 +182,12 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   // FIXME: use this one instead
   // dry_atm_.cldfrac   = get_field_in("cldn").get_view<const Real**>();
   dry_atm_.pblh      = get_field_in("pbl_height").get_view<const Real*>();
+  // FIXME:
+  //  dry_atm_.phis      =  mam_coupling::view_1d("phis", ncol_);
   dry_atm_.phis      = get_field_in("phis").get_view<const Real*>();
-  // dry_atm_.z_mid     = get_field_in("z_mid").get_view<const Real**>();
+  dry_atm_.z_mid     = buffer_.z_mid;
   dry_atm_.dz        = buffer_.dz;
-  // dry_atm_.z_iface   = get_field_in("z_int").get_view<const Real**>();
+  dry_atm_.z_iface   = buffer_.z_iface;
   dry_atm_.qv        = buffer_.qv_dry;
   dry_atm_.qc        = buffer_.qc_dry;
   dry_atm_.nc        = buffer_.nc_dry;
@@ -146,6 +207,20 @@ void MAMOptics::initialize_impl(const RunType run_type) {
       if (strlen(int_mmr_field_name) > 0) {
         wet_aero_.int_aero_mmr[m][a] = get_field_out(int_mmr_field_name).get_view<Real**>();
         dry_aero_.int_aero_mmr[m][a] = buffer_.dry_int_aero_mmr[m][a];
+      }
+    }
+  }
+
+  // set wet/dry aerosol state data (cloud aerosols only)
+  for (int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+    const char* cld_nmr_field_name = mam_coupling::cld_aero_nmr_field_name(m);
+    wet_aero_.cld_aero_nmr[m] = get_field_out(cld_nmr_field_name).get_view<Real**>();
+    dry_aero_.cld_aero_nmr[m] = buffer_.dry_cld_aero_nmr[m];
+    for (int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+      const char* cld_mmr_field_name = mam_coupling::cld_aero_mmr_field_name(m, a);
+      if (strlen(cld_mmr_field_name) > 0) {
+        wet_aero_.cld_aero_mmr[m][a] = get_field_out(cld_mmr_field_name).get_view<Real**>();
+        dry_aero_.cld_aero_mmr[m][a] = buffer_.dry_cld_aero_mmr[m][a];
       }
     }
   }
@@ -313,7 +388,12 @@ void MAMOptics::run_impl(const double dt) {
   constexpr Real zero =0.0;
 
   const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_);
+  const auto scan_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
   // const auto policy = haero::ThreadTeamPolicy(1u, 1);
+
+  // preprocess input -- needs a scan for the calculation of atm height
+  Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
+  Kokkos::fence();
   /// outputs
   auto aero_g_sw   = get_field_out("aero_g_sw").get_view<Real***>();
   auto aero_ssa_sw = get_field_out("aero_ssa_sw").get_view<Real***>();
@@ -351,10 +431,10 @@ void MAMOptics::run_impl(const double dt) {
 
       // FIXME: interface pressure [Pa]
       auto pint =  ekat::subview(p_int_, icol);
-      auto zm =  ekat::subview(z_mid_, icol);
+      auto zm =  ekat::subview(dry_atm_.z_mid, icol);
       // FIXME: dry mass pressure interval [Pa]
       // FIXME:
-      auto zi= ekat::subview(z_iface_, icol);
+      auto zi= ekat::subview(dry_atm_.z_iface, icol);
       auto pdel = ekat::subview(p_del_, icol);
       auto pdeldry = ekat::subview(dry_atm_.p_del, icol);
 
@@ -379,7 +459,8 @@ void MAMOptics::run_impl(const double dt) {
       auto work_icol = ekat::subview(work_, icol);
 
        // fetch column-specific subviews into aerosol prognostics
-       mam4::Prognostics progs = mam_coupling::interstitial_aerosols_for_column(dry_aero_, icol);
+      // mam4::Prognostics progs = mam_coupling::interstitial_aerosols_for_column(dry_aero_, icol);
+       mam4::Prognostics progs = mam_coupling::aerosols_for_column(dry_aero_, icol);
 
     mam4::aer_rad_props::aer_rad_props_sw(team,  dt, zi, pmid,
     pint, temperature,
@@ -404,6 +485,10 @@ mam4::aer_rad_props::aer_rad_props_lw(team,
     });
 
   }
+
+  // postprocess output
+  Kokkos::parallel_for("postprocess", policy, postprocess_);
+  Kokkos::fence();
   printf("Done  with aerosol_optics \n");
 }
 
