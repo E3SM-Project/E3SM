@@ -1447,13 +1447,7 @@ contains
        call seq_timemgr_ESMFCodeCheck(rc, msg=subname//"Error from wav ESMF_ClockAdvance")
     endif
 
-!    if (ESMF_AlarmIsRinging(SyncClock%EAlarm(seq_timemgr_nclock_drv, &
-!           seq_timemgr_nalarm_iacrun))) then
-!       call ESMF_ClockAdvance(SyncClock%ECP(seq_timemgr_nclock_iac)%EClock, &
-!                                 rc=rc )
-!       call seq_timemgr_ESMFCodeCheck(rc, &
-!               msg=subname//"Error from iac ESMF_ClockAdvance")
-!    endif 
+    ! iac clock is advance by the iac component
 
     if (ESMF_AlarmIsRinging(SyncClock%EAlarm(seq_timemgr_nclock_drv,seq_timemgr_nalarm_esprun))) then
        call ESMF_ClockAdvance(SyncClock%ECP(seq_timemgr_nclock_esp)%EClock, rc=rc )

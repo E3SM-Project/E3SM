@@ -1941,12 +1941,6 @@ contains
        call shr_sys_abort(subname//' ERROR: samegrid_oi is false')
     endif
 
-    ! if iac is present then lnd and atm must be on same grid
-    !if (iac_present .and. .not.(samegrid_al)) then
-    !   call shr_sys_abort(subname//' ERROR: if iac present must also have '// &
-    !      'lnd and atm on the same grid')
-    !endif
-
     !----------------------------------------------------------
     !| Check instances of prognostic components
     !----------------------------------------------------------

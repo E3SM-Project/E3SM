@@ -578,8 +578,7 @@ contains
        endif
     endif
 
-    ! currently lnd and atm must be present and on the same grid
-    !    if iac is present
+    ! currently lnd and atm must be present if iac is present
     ! this is based on the atm because iac domain is defined
     !    in relation to the atmosphere, not the land
     if (atm_present .and. iac_present) then
