@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import os
+import http
 import pathlib
 import unittest
 import urllib.request
@@ -40,7 +41,7 @@ class testNamelistDefaultsScream(unittest.TestCase):
                     request_return = urllib.request.urlopen(
                         f"{os.environ['DIN_LOC_ROOT']}{self.my_files[i_file]}"
                     )
-                    self.assertIsInstance(request_return, tuple)
+                    self.assertIsInstance(request_return, http.client.HTTPResponse)
                 except urllib.error.HTTPError:
                     file_name = f"{os.environ['DIN_LOC_ROOT']}{self.my_files[i_file]}"
                     self.assertTrue(
