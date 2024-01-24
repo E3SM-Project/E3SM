@@ -450,7 +450,7 @@ inline size_t init_buffer(const ATMBufferManager &buffer_manager,
     &buffer.dry_gas_mmr[5]
   };
   for (int i = 0; i < Buffer::num_2d_scratch; ++i) {
-    view_2d_mid_ptrs[Buffer::num_2d_mid+i] = &buffer.scratch[i];
+    view_2d_mid_ptrs[Buffer::num_2d_mid+i-Buffer::num_2d_scratch] = &buffer.scratch[i];
   }
 
   for (int i = 0; i < Buffer::num_2d_mid; ++i) {
