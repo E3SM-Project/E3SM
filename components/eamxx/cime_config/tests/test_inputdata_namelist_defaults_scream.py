@@ -17,7 +17,7 @@ class testNamelistDefaultsScream(unittest.TestCase):
         """
         os.environ["DIN_LOC_ROOT"] = "https://web.lcrc.anl.gov/public/e3sm/inputdata/"
 
-        tree = ET.parse('namelist_defaults_scream.xml')
+        tree = ET.parse('../namelist_defaults_scream.xml')
         root = tree.getroot()
 
         file_of_interest = [
