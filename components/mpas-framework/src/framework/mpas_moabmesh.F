@@ -187,6 +187,11 @@ module mpas_moabmesh
        enddo
 
        tagname='area'//C_NULL_CHAR
+       tagtype = 1  ! dense, real
+       numco = 1
+       ierr = iMOAB_DefineTagStorage(pid, tagname, tagtype, numco,  tagindex )
+       call errorout(ierr, 'fail to define area tag')
+
        ierr = iMOAB_SetDoubleTagStorage ( pid, tagname, nCellsSolve , ent_type, data)
        if (ierr > 0 )  &
           call errorout(ierr,'Error: fail to set area tag ')
