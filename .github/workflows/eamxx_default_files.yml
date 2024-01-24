@@ -62,7 +62,7 @@ jobs:
           LABELS: bug
           BODY: |
 
-            [Workflow](${{ github.sha }}) failed! There's likely a missing file specified in the configs!
+            Workflow failed! There's likely a missing file specified in the configs!
 
             For more information, please see:
               - Workflow URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
