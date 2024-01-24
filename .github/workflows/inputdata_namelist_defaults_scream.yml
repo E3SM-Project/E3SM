@@ -7,7 +7,6 @@ on:
     branches: [ master ]
   schedule:
     - cron: '00 00 * * *'
-
   workflow_dispatch:
 
 jobs:
@@ -30,9 +29,9 @@ jobs:
           python3 -m unittest tests/test_inputdata_namelist_defaults_scream.py -v
 
   notify-scream-defaults:
-    name: Notify failed build
+    name: Notify if failure
     needs: scream-defaults
-    if: failure()
+    if: failure() && ${{ github.event_name != 'pull_request' }}
     runs-on: ubuntu-latest
     steps:
       - name: Create issue
