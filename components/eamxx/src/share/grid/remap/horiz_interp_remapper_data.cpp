@@ -268,36 +268,4 @@ create_crs_matrix_structures (std::vector<Triplet>& triplets)
   Kokkos::deep_copy(row_offsets,row_offsets_h);
 }
 
-
-// ------------- HorizRemapperDataRepo -------------- //
-
-const HorizRemapperData& HorizRemapperDataRepo::
-get_data (const std::string& map_file,
-          const std::shared_ptr<const AbstractGrid>& fine_grid,
-          const ekat::Comm& comm,
-          const InterpType type)
-{
-  auto& data = data_repo[map_file];
-  if (data.num_customers==0) {
-    data.build(map_file,fine_grid,comm,type);
-  }
-  ++data.num_customers;
-
-  return data;
-}
-
-void HorizRemapperDataRepo::
-release_data (const std::string& map_file)
-{
-  auto it = data_repo.find(map_file);
-  EKAT_REQUIRE_MSG (it!=data_repo.end(),
-      "Error! Data for this map file was not found.\n"
-      "  - map file: " + map_file + "\n");
-
-  --it->second.num_customers;
-  if (it->second.num_customers==0) {
-    data_repo.erase(it);
-  }
-}
-
 } // namespace scream

@@ -1,6 +1,5 @@
 #include "horiz_interp_remapper_base.hpp"
 
-#include "share/grid/remap/horiz_interp_remapper_data.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/grid/grid_import_export.hpp"
 #include "share/io/scorpio_input.hpp"
@@ -33,7 +32,10 @@ HorizInterpRemapperBase (const grid_ptr_type& fine_grid,
   m_bwd_allowed = false;
 
   // Get the remap data (if not already present, it will be built)
-  const auto& data = remapper_data_repo.get_data(m_map_file,m_fine_grid,m_comm,m_type);
+  auto& data = s_remapper_data[m_map_file];
+  if (data.num_customers==0) {
+    data.build(m_map_file,m_fine_grid,m_comm,m_type);
+  }
 
   m_row_offsets = data.row_offsets;
   m_col_lids = data.col_lids;
@@ -70,7 +72,19 @@ HorizInterpRemapperBase (const grid_ptr_type& fine_grid,
 HorizInterpRemapperBase::
 ~HorizInterpRemapperBase ()
 {
-  HorizRemapperDataRepo::instance().release_data(m_map_file);
+  auto it = s_remapper_data.find(m_map_file);
+  if (it==s_remapper_data.end()) {
+    // This would be very suspicious. But since the error is "benign",
+    // and since we want to avoid throwing inside a destructor, just issue a warning.
+    std::cerr << "WARNING! Remapper data for this map file was already deleted!\n"
+                 " - map file: " << m_map_file << "\n";
+    return;
+  }
+
+  --it->second.num_customers;
+  if (it->second.num_customers==0) {
+    s_remapper_data.erase(it);
+  }
 }
 
 FieldLayout HorizInterpRemapperBase::

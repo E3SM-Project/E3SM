@@ -113,6 +113,8 @@ public:
   InterpType      m_type;
 
   ekat::Comm      m_comm;
+
+  static std::map<std::string,HorizRemapData> s_remapper_data;
 };
 
 } // namespace scream

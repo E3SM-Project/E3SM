@@ -67,28 +67,6 @@ private:
   void create_crs_matrix_structures (std::vector<Triplet>& triplets);
 };
 
-// A singleton struct, which will hold the horiz remappers data
-struct HorizRemapperDataRepo {
-  static HorizRemapperDataRepo& instance () {
-    static HorizRemapperDataRepo hrdr;
-    return hrdr;
-  }
-
-  // If data for this map file is NOT present, proceed to build it
-  const HorizRemapperData&
-  get_data (const std::string& map_file,
-            const std::shared_ptr<const AbstractGrid>& fine_grid,
-            const ekat::Comm& comm,
-            const InterpType type);
-
-  void release_data (const std::string& map_file);
-private:
-  HorizRemapperDataRepo () = default;
-
-  std::map<AbstractRemapper*,std::string> customer_to_data;
-  std::map<std::string,HorizRemapperData>    data_repo;
-};
-
 } // namespace scream
 
 #endif // EAMXX_HORIZ_INTERP_REMAP_DATA_HPP
