@@ -1,5 +1,5 @@
-#ifndef EAMXX_ggWATER_PATH_DIAGNOSTIC_HPP
-#define EAMXX_ggWATER_PATH_DIAGNOSTIC_HPP
+#ifndef EAMXX_WATER_PATH_DIAGNOSTIC_HPP
+#define EAMXX_WATER_PATH_DIAGNOSTIC_HPP
 
 #include "share/atm_process/atmosphere_diagnostic.hpp"
 
@@ -15,9 +15,6 @@ class WaterPathDiagnostic : public AtmosphereDiagnostic
 public:
   // Constructors
   WaterPathDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params);
-
-  // Set type to diagnostic
-  AtmosphereProcessType type () const { return AtmosphereProcessType::Diagnostic; }
 
   // The name of the diagnostic
   std::string name () const;
@@ -42,4 +39,4 @@ protected:
 
 } //namespace scream
 
-#endif // EAMXX_ggWATER_PATH_DIAGNOSTIC_HPP
+#endif // EAMXX_WATER_PATH_DIAGNOSTIC_HPP
