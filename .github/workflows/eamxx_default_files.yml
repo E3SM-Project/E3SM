@@ -31,7 +31,7 @@ jobs:
 
   notify-scream-defaults:
     needs: scream-defaults
-    if: failure() && needs.scream-defaults.outputs.event_name != 'pull_request'
+    if: ${{ failure() && needs.scream-defaults.outputs.event_name != 'pull_request' }}
     runs-on: ubuntu-latest
     steps:
       - name: Create issue
