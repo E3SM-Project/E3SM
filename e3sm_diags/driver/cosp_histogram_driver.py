@@ -121,8 +121,8 @@ def run_diag(parameter: CoreParameter) -> CoreParameter:
                 )
                 utils.general.save_ncfiles(
                     parameter.current_set,
-                    mv1_domain,
-                    mv2_domain,
+                    mv1_domain_mean,
+                    mv2_domain_mean,
                     diff,
                     parameter,
                 )
