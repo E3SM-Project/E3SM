@@ -41,33 +41,33 @@
 
 <compset>
   <alias>WCYCL1850</alias>
-  <lname>1850SOI_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+  <lname>1850SOI_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
 <compset>
   <alias>WCYCL1850_chemUCI-Linozv3</alias>
-  <lname>1850SOI_EAM%CHEMUCI-LINOZV3_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+  <lname>1850SOI_EAM%CHEMUCI-LINOZV3_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
 <compset>
   <alias>WCYCL1850_chemUCI-Linozv3-mam5</alias>
-  <lname>1850SOI_EAM%CHEMUCI-LINOZV3-MAM5_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+  <lname>1850SOI_EAM%CHEMUCI-LINOZV3-MAM5_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
 <compset>
   <alias>WCYCL1850-1pctCO2</alias>
-  <lname>1850SOI_EAM%CMIP6-1pctCO2_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+  <lname>1850SOI_EAM%CMIP6-1pctCO2_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
 <compset>
   <alias>WCYCL1850-4xCO2</alias>
-  <lname>1850SOI_EAM%CMIP6-4xCO2_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+  <lname>1850SOI_EAM%CMIP6-4xCO2_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
 <!-- WCYCL1850NS uses no spun-up ICs for mpaso and mpassi. It is only being used for nigthly tests on small grids such as ne11_oQU480-->
 <compset>
   <alias>WCYCL1850NS</alias>
-  <lname>1850_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+  <lname>1850_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
 <compset>
@@ -77,7 +77,7 @@
 
 <compset>
   <alias>WCYCL20TR</alias>
-  <lname>20TRSOI_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+  <lname>20TRSOI_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
 <!-- ************************************************ -->
@@ -108,7 +108,7 @@
 
 <compset>
   <alias>WCYCL20TR_chemUCI-Linozv3-mam5</alias>
-  <lname>20TRSOI_EAM%CHEMUCI-LINOZV3-MAM5_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+  <lname>20TRSOI_EAM%CHEMUCI-LINOZV3-MAM5_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
 <compset>

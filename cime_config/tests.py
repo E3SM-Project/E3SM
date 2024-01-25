@@ -214,8 +214,8 @@ _TESTS = {
     #atmopheric tests to mimic low res production runs
     "e3sm_atm_prod" : {
         "tests" : (
-            "SMS_Ln5.ne30pg2_r05_oECv3.F2010.eam-wcprod_F2010",
-            "SMS.ne30pg2_r05_oECv3.F20TR.eam-wcprod_F20TR",
+            "SMS_Ln5.ne30pg2_r05_IcoswISC30E3r5.F2010.eam-wcprod_F2010",
+            "SMS.ne30pg2_r05_IcoswISC30E3r5.F20TR.eam-wcprod_F20TR",
             )
         },
 
@@ -349,10 +349,10 @@ _TESTS = {
     "e3sm_prod" : {
         "inherit" : "e3sm_atm_prod",
         "tests"   : (
-            "SMS_Ld1.ne30pg2_r05_EC30to60E2r2.WCYCL1850.allactive-wcprod_1850_r05",
-            "SMS_Ld1.ne30pg2_EC30to60E2r2.WCYCL1850-1pctCO2.allactive-wcprod_1850_1pctCO2",
-            "SMS_Ld1.ne30pg2_EC30to60E2r2.WCYCL1850-4xCO2.allactive-wcprod_1850_4xCO2",
-            "SMS_Ld1.ne30pg2_EC30to60E2r2.WCYCL1850.allactive-wcprod_1850",
+            "SMS_Ld1.ne30pg2_r05_IcoswISC30E3r5.WCYCL1850.allactive-wcprod_1850_r05",
+            "SMS_Ld1.ne30pg2_r05_IcoswISC30E3r5.WCYCL1850-1pctCO2.allactive-wcprod_1850_1pctCO2",
+            "SMS_Ld1.ne30pg2_r05_IcoswISC30E3r5.WCYCL1850-4xCO2.allactive-wcprod_1850_4xCO2",
+            "SMS_Ld1.ne30pg2_r05_IcoswISC30E3r5.WCYCL1850.allactive-wcprod_1850",
             "SMS_Ld1.ne30pg2_EC30to60E2r2.WCYCLSSP370.allactive-wcprodssp",
             "SMS_Ld1.ne30pg2_EC30to60E2r2.WCYCLSSP585.allactive-wcprodssp",
             "SMS_PS.northamericax4v1pg2_WC14to60E2r3.WCYCL1850.allactive-wcprodrrm_1850",

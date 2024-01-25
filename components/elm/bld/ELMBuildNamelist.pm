@@ -2313,7 +2313,7 @@ sub setup_logic_create_crop_landunit {
   my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
 
   add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'create_crop_landunit', 
-     'use_crop'=>$nl_flags->{'use_crop'}, 'hgrid'=>$nl_flags->{'res'}, 'use_cn'=>$nl_flags->{'use_cn'});
+     'use_crop'=>$nl_flags->{'use_crop'}, 'hgrid'=>$nl_flags->{'res'}, 'use_cn'=>$nl_flags->{'use_cn'}, 'use_top_solar_rad'=>$nl->get_value('use_top_solar_rad'));
 }
 
 #-------------------------------------------------------------------------------
