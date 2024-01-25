@@ -29,6 +29,7 @@ userGuide/Broadcast
 userGuide/Logging
 userGuide/Decomp
 userGuide/IO
+userGuide/Halo
 ```
 
 ```{toctree}
@@ -48,6 +49,7 @@ devGuide/CMakeBuild
 devGuide/Logging
 devGuide/Decomp
 devGuide/IO
+devGuide/Halo
 ```
 
 ```{toctree}
