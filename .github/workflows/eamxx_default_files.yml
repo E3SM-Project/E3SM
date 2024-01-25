@@ -59,7 +59,7 @@ jobs:
           GH_REPO: ${{ github.repository }}
           TITLE: Inputdata server file missing
           ASSIGNEES: mahf708,bartgol
-          LABELS: "bug", "input file", "notify-file-gh-action"
+          LABELS: bug,input file,notify-file-gh-action
           BODY: |
 
             Workflow failed! There's likely a missing file specified in the configs!
