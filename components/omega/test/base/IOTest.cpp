@@ -80,9 +80,9 @@ int main(int argc, char *argv[]) {
    }
 
    // Create YAKL arrays of each type and at various mesh locations
-   OMEGA::I4 NCellsAll       = DefDecomp->NCellsAll;
-   OMEGA::I4 NEdgesAll       = DefDecomp->NEdgesAll;
-   OMEGA::I4 NVerticesAll    = DefDecomp->NVerticesAll;
+   OMEGA::I4 NCellsSize      = DefDecomp->NCellsSize;
+   OMEGA::I4 NEdgesSize      = DefDecomp->NEdgesSize;
+   OMEGA::I4 NVerticesSize   = DefDecomp->NVerticesSize;
    OMEGA::I4 NCellsOwned     = DefDecomp->NCellsOwned;
    OMEGA::I4 NEdgesOwned     = DefDecomp->NEdgesOwned;
    OMEGA::I4 NVerticesOwned  = DefDecomp->NVerticesOwned;
@@ -91,63 +91,63 @@ int main(int argc, char *argv[]) {
    OMEGA::I4 NVerticesGlobal = DefDecomp->NVerticesGlobal;
    OMEGA::I4 NVertLevels     = 128;
 
-   OMEGA::ArrayHost2DI4 RefI4Cell("RefI4Cell", NCellsAll, NVertLevels);
-   OMEGA::ArrayHost2DI8 RefI8Cell("RefI8Cell", NCellsAll, NVertLevels);
-   OMEGA::ArrayHost2DR4 RefR4Cell("RefR4Cell", NCellsAll, NVertLevels);
-   OMEGA::ArrayHost2DR8 RefR8Cell("RefR8Cell", NCellsAll, NVertLevels);
+   OMEGA::ArrayHost2DI4 RefI4Cell("RefI4Cell", NCellsSize, NVertLevels);
+   OMEGA::ArrayHost2DI8 RefI8Cell("RefI8Cell", NCellsSize, NVertLevels);
+   OMEGA::ArrayHost2DR4 RefR4Cell("RefR4Cell", NCellsSize, NVertLevels);
+   OMEGA::ArrayHost2DR8 RefR8Cell("RefR8Cell", NCellsSize, NVertLevels);
 
-   OMEGA::ArrayHost2DI4 RefI4Edge("RefI4Edge", NEdgesAll, NVertLevels);
-   OMEGA::ArrayHost2DI8 RefI8Edge("RefI8Edge", NEdgesAll, NVertLevels);
-   OMEGA::ArrayHost2DR4 RefR4Edge("RefR4Edge", NEdgesAll, NVertLevels);
-   OMEGA::ArrayHost2DR8 RefR8Edge("RefR8Edge", NEdgesAll, NVertLevels);
+   OMEGA::ArrayHost2DI4 RefI4Edge("RefI4Edge", NEdgesSize, NVertLevels);
+   OMEGA::ArrayHost2DI8 RefI8Edge("RefI8Edge", NEdgesSize, NVertLevels);
+   OMEGA::ArrayHost2DR4 RefR4Edge("RefR4Edge", NEdgesSize, NVertLevels);
+   OMEGA::ArrayHost2DR8 RefR8Edge("RefR8Edge", NEdgesSize, NVertLevels);
 
-   OMEGA::ArrayHost2DI4 RefI4Vrtx("RefI4Vrtx", NVerticesAll, NVertLevels);
-   OMEGA::ArrayHost2DI8 RefI8Vrtx("RefI8Vrtx", NVerticesAll, NVertLevels);
-   OMEGA::ArrayHost2DR4 RefR4Vrtx("RefR4Vrtx", NVerticesAll, NVertLevels);
-   OMEGA::ArrayHost2DR8 RefR8Vrtx("RefR8Vrtx", NVerticesAll, NVertLevels);
+   OMEGA::ArrayHost2DI4 RefI4Vrtx("RefI4Vrtx", NVerticesSize, NVertLevels);
+   OMEGA::ArrayHost2DI8 RefI8Vrtx("RefI8Vrtx", NVerticesSize, NVertLevels);
+   OMEGA::ArrayHost2DR4 RefR4Vrtx("RefR4Vrtx", NVerticesSize, NVertLevels);
+   OMEGA::ArrayHost2DR8 RefR8Vrtx("RefR8Vrtx", NVerticesSize, NVertLevels);
 
-   OMEGA::ArrayHost1DI4 CellIDH   = DefDecomp->CellIDH;
-   OMEGA::ArrayHost1DI4 EdgeIDH   = DefDecomp->EdgeIDH;
-   OMEGA::ArrayHost1DI4 VertexIDH = DefDecomp->VertexIDH;
+   OMEGA::ArrayHost1DI4 CellIDH = DefDecomp->CellIDH;
+   OMEGA::ArrayHost1DI4 EdgeIDH = DefDecomp->EdgeIDH;
+   OMEGA::ArrayHost1DI4 VrtxIDH = DefDecomp->VertexIDH;
 
    // Offset arrays - initialize to -1, corresponding to entries
-   // that should not be written
-   std::vector<int> OffsetCell(NCellsAll * NVertLevels, -1);
-   std::vector<int> OffsetEdge(NEdgesAll * NVertLevels, -1);
-   std::vector<int> OffsetVertex(NVerticesAll * NVertLevels, -1);
-   int Add = 0;
-   for (int Cell; Cell = 0; Cell < NCellsOwned) {
-      for (int k; k = 0; k < NVertLevels) {
-         RefI4Cell(Cell, k) = CellIDH(Cell) * k;
-         RefI8Cell(Cell, k) = CellIDH(Cell) * k * 1000000000;
-         RefR4Cell(Cell, k) = CellIDH(Cell) * k * 123.45;
-         RefR8Cell(Cell, k) = CellIDH(Cell) * k * 1.23456789;
-         OffsetCell[Add]    = (CellIDH(Cell) - 1) * NVertLevels + k;
-         Add++;
+   // that should not be written;
+   std::vector<int> OffsetCell(NCellsSize * NVertLevels, -1);
+   std::vector<int> OffsetEdge(NEdgesSize * NVertLevels, -1);
+   std::vector<int> OffsetVrtx(NVerticesSize * NVertLevels, -1);
+   for (int Cell = 0; Cell < NCellsOwned; ++Cell) {
+      int GlobalCellAdd = CellIDH(Cell) - 1; // 0-based offset
+      for (int k = 0; k < NVertLevels; ++k) {
+         RefI4Cell(Cell, k)    = GlobalCellAdd * k;
+         RefI8Cell(Cell, k)    = GlobalCellAdd * k * 1000000000;
+         RefR4Cell(Cell, k)    = GlobalCellAdd * k * 123.45;
+         RefR8Cell(Cell, k)    = GlobalCellAdd * k * 1.23456789;
+         int VectorAdd         = Cell * NVertLevels + k;
+         OffsetCell[VectorAdd] = GlobalCellAdd * NVertLevels + k;
       }
    }
 
-   Add = 0;
-   for (int Edge; Edge = 0; Edge < NEdgesOwned) {
-      for (int k; k = 0; k < NVertLevels) {
-         RefI4Edge(Edge, k) = EdgeIDH(Edge) * k;
-         RefI8Edge(Edge, k) = EdgeIDH(Edge) * k * 1000000000;
-         RefR4Edge(Edge, k) = EdgeIDH(Edge) * k * 123.45;
-         RefR8Edge(Edge, k) = EdgeIDH(Edge) * k * 1.23456789;
-         OffsetEdge[Add]    = (EdgeIDH(Edge) - 1) * NVertLevels + k;
-         Add++;
+   for (int Edge = 0; Edge < NEdgesOwned; ++Edge) {
+      int GlobalEdgeAdd = EdgeIDH(Edge) - 1;
+      for (int k = 0; k < NVertLevels; ++k) {
+         RefI4Edge(Edge, k)    = GlobalEdgeAdd * k;
+         RefI8Edge(Edge, k)    = GlobalEdgeAdd * k * 1000000000;
+         RefR4Edge(Edge, k)    = GlobalEdgeAdd * k * 123.45;
+         RefR8Edge(Edge, k)    = GlobalEdgeAdd * k * 1.23456789;
+         int VectorAdd         = Edge * NVertLevels + k;
+         OffsetEdge[VectorAdd] = GlobalEdgeAdd * NVertLevels + k;
       }
    }
 
-   Add = 0;
-   for (int Vertex; Vertex = 0; Vertex < NVerticesOwned) {
-      for (int k; k = 0; k < NVertLevels) {
-         RefI4Vrtx(Vertex, k) = VertexIDH(Vertex) * k;
-         RefI8Vrtx(Vertex, k) = VertexIDH(Vertex) * k * 1000000000;
-         RefR4Vrtx(Vertex, k) = VertexIDH(Vertex) * k * 123.45;
-         RefR8Vrtx(Vertex, k) = VertexIDH(Vertex) * k * 1.23456789;
-         OffsetVertex[Add]    = (VertexIDH(Vertex) - 1) * NVertLevels + k;
-         Add++;
+   for (int Vrtx = 0; Vrtx < NVerticesOwned; ++Vrtx) {
+      int GlobalVrtxAdd = VrtxIDH(Vrtx) - 1;
+      for (int k = 0; k < NVertLevels; ++k) {
+         RefI4Vrtx(Vrtx, k)    = GlobalVrtxAdd * k;
+         RefI8Vrtx(Vrtx, k)    = GlobalVrtxAdd * k * 1000000000;
+         RefR4Vrtx(Vrtx, k)    = GlobalVrtxAdd * k * 123.45;
+         RefR8Vrtx(Vrtx, k)    = GlobalVrtxAdd * k * 1.23456789;
+         int VectorAdd         = Vrtx * NVertLevels + k;
+         OffsetVrtx[VectorAdd] = GlobalVrtxAdd * NVertLevels + k;
       }
    }
 
@@ -165,70 +165,73 @@ int main(int argc, char *argv[]) {
    int DecompVrtxI8;
    int DecompVrtxR4;
    int DecompVrtxR8;
-   std::vector<int> CellDims{NCellsAll, NVertLevels};
-   std::vector<int> EdgeDims{NEdgesAll, NVertLevels};
-   std::vector<int> VertexDims{NVerticesAll, NVertLevels};
+   std::vector<int> CellDims{NCellsGlobal, NVertLevels};
+   std::vector<int> EdgeDims{NEdgesGlobal, NVertLevels};
+   std::vector<int> VrtxDims{NVerticesGlobal, NVertLevels};
+   int CellArraySize = NCellsSize * NVertLevels;
+   int EdgeArraySize = NEdgesSize * NVertLevels;
+   int VrtxArraySize = NVerticesSize * NVertLevels;
 
    Err = OMEGA::IO::createDecomp(DecompCellI4, OMEGA::IO::IOTypeI4, 2, CellDims,
-                                 NCellsAll * NVertLevels, OffsetCell,
+                                 CellArraySize, OffsetCell,
                                  OMEGA::IO::DefaultRearr);
    if (Err != 0)
       LOG_ERROR("IOTest: error creating cell decomp I4 FAIL");
    Err = OMEGA::IO::createDecomp(DecompCellI8, OMEGA::IO::IOTypeI8, 2, CellDims,
-                                 NCellsAll * NVertLevels, OffsetCell,
+                                 CellArraySize, OffsetCell,
                                  OMEGA::IO::DefaultRearr);
    if (Err != 0)
       LOG_ERROR("IOTest: error creating cell decomp I8 FAIL");
    Err = OMEGA::IO::createDecomp(DecompCellR4, OMEGA::IO::IOTypeR4, 2, CellDims,
-                                 NCellsAll * NVertLevels, OffsetCell,
+                                 CellArraySize, OffsetCell,
                                  OMEGA::IO::DefaultRearr);
    if (Err != 0)
       LOG_ERROR("IOTest: error creating cell decomp R4 FAIL");
    Err = OMEGA::IO::createDecomp(DecompCellR8, OMEGA::IO::IOTypeR8, 2, CellDims,
-                                 NCellsAll * NVertLevels, OffsetCell,
+                                 CellArraySize, OffsetCell,
                                  OMEGA::IO::DefaultRearr);
    if (Err != 0)
       LOG_ERROR("IOTest: error creating cell decomp R8 FAIL");
 
    Err = OMEGA::IO::createDecomp(DecompEdgeI4, OMEGA::IO::IOTypeI4, 2, EdgeDims,
-                                 NEdgesAll * NVertLevels, OffsetEdge,
+                                 EdgeArraySize, OffsetEdge,
                                  OMEGA::IO::DefaultRearr);
    if (Err != 0)
       LOG_ERROR("IOTest: error creating edge decomp I4 FAIL");
    Err = OMEGA::IO::createDecomp(DecompEdgeI8, OMEGA::IO::IOTypeI8, 2, EdgeDims,
-                                 NEdgesAll * NVertLevels, OffsetEdge,
+                                 EdgeArraySize, OffsetEdge,
                                  OMEGA::IO::DefaultRearr);
    if (Err != 0)
       LOG_ERROR("IOTest: error creating edge decomp I8 FAIL");
    Err = OMEGA::IO::createDecomp(DecompEdgeR4, OMEGA::IO::IOTypeR4, 2, EdgeDims,
-                                 NEdgesAll * NVertLevels, OffsetEdge,
+                                 EdgeArraySize, OffsetEdge,
                                  OMEGA::IO::DefaultRearr);
    if (Err != 0)
       LOG_ERROR("IOTest: error creating edge decomp R4 FAIL");
    Err = OMEGA::IO::createDecomp(DecompEdgeR8, OMEGA::IO::IOTypeR8, 2, EdgeDims,
-                                 NEdgesAll * NVertLevels, OffsetEdge,
+                                 EdgeArraySize, OffsetEdge,
                                  OMEGA::IO::DefaultRearr);
    if (Err != 0)
       LOG_ERROR("IOTest: error creating edge decomp R8 FAIL");
 
-   Err = OMEGA::IO::createDecomp(DecompVrtxI4, OMEGA::IO::IOTypeI4, 2,
-                                 VertexDims, NVerticesAll * NVertLevels,
-                                 OffsetVertex, OMEGA::IO::DefaultRearr);
+   Err = OMEGA::IO::createDecomp(DecompVrtxI4, OMEGA::IO::IOTypeI4, 2, VrtxDims,
+                                 VrtxArraySize, OffsetVrtx,
+                                 OMEGA::IO::DefaultRearr);
    if (Err != 0)
       LOG_ERROR("IOTest: error creating vertex decomp I4 FAIL");
-   Err = OMEGA::IO::createDecomp(DecompVrtxI8, OMEGA::IO::IOTypeI8, 2,
-                                 VertexDims, NVerticesAll * NVertLevels,
-                                 OffsetVertex, OMEGA::IO::DefaultRearr);
+   Err = OMEGA::IO::createDecomp(DecompVrtxI8, OMEGA::IO::IOTypeI8, 2, VrtxDims,
+                                 VrtxArraySize, OffsetVrtx,
+                                 OMEGA::IO::DefaultRearr);
    if (Err != 0)
       LOG_ERROR("IOTest: error creating vertex decomp I8 FAIL");
-   Err = OMEGA::IO::createDecomp(DecompVrtxR4, OMEGA::IO::IOTypeR4, 2,
-                                 VertexDims, NVerticesAll * NVertLevels,
-                                 OffsetVertex, OMEGA::IO::DefaultRearr);
+   Err = OMEGA::IO::createDecomp(DecompVrtxR4, OMEGA::IO::IOTypeR4, 2, VrtxDims,
+                                 VrtxArraySize, OffsetVrtx,
+                                 OMEGA::IO::DefaultRearr);
    if (Err != 0)
       LOG_ERROR("IOTest: error creating vertex decomp R4 FAIL");
-   Err = OMEGA::IO::createDecomp(DecompVrtxR8, OMEGA::IO::IOTypeR8, 2,
-                                 VertexDims, NVerticesAll * NVertLevels,
-                                 OffsetVertex, OMEGA::IO::DefaultRearr);
+   Err = OMEGA::IO::createDecomp(DecompVrtxR8, OMEGA::IO::IOTypeR8, 2, VrtxDims,
+                                 VrtxArraySize, OffsetVrtx,
+                                 OMEGA::IO::DefaultRearr);
    if (Err != 0)
       LOG_ERROR("IOTest: error creating vertex decomp R8 FAIL");
 
@@ -395,53 +398,53 @@ int main(int argc, char *argv[]) {
    OMEGA::R4 FillR4 = -1.234e30;
    OMEGA::R8 FillR8 = -1.23456789e30;
 
-   Err = OMEGA::IO::writeArray(RefI4Cell.data(), NCellsAll * NVertLevels,
+   Err = OMEGA::IO::writeArray(RefI4Cell.data(), NCellsSize * NVertLevels,
                                &FillI4, OutFileID, DecompCellI4, VarIDCellI4);
    if (Err != 0)
       LOG_ERROR("IOTest: error writing I4 array on cells FAIL");
-   Err = OMEGA::IO::writeArray(RefI8Cell.data(), NCellsAll * NVertLevels,
+   Err = OMEGA::IO::writeArray(RefI8Cell.data(), NCellsSize * NVertLevels,
                                &FillI8, OutFileID, DecompCellI8, VarIDCellI8);
    if (Err != 0)
       LOG_ERROR("IOTest: error writing I8 array on cells FAIL");
-   Err = OMEGA::IO::writeArray(RefR4Cell.data(), NCellsAll * NVertLevels,
+   Err = OMEGA::IO::writeArray(RefR4Cell.data(), NCellsSize * NVertLevels,
                                &FillR4, OutFileID, DecompCellR4, VarIDCellR4);
    if (Err != 0)
       LOG_ERROR("IOTest: error writing R4 array on cells FAIL");
-   Err = OMEGA::IO::writeArray(RefR8Cell.data(), NCellsAll * NVertLevels,
+   Err = OMEGA::IO::writeArray(RefR8Cell.data(), NCellsSize * NVertLevels,
                                &FillR8, OutFileID, DecompCellR8, VarIDCellR8);
    if (Err != 0)
       LOG_ERROR("IOTest: error writing R8 array on cells FAIL");
 
-   Err = OMEGA::IO::writeArray(RefI4Edge.data(), NEdgesAll * NVertLevels,
+   Err = OMEGA::IO::writeArray(RefI4Edge.data(), NEdgesSize * NVertLevels,
                                &FillI4, OutFileID, DecompEdgeI4, VarIDEdgeI4);
    if (Err != 0)
       LOG_ERROR("IOTest: error writing I4 array on Edges FAIL");
-   Err = OMEGA::IO::writeArray(RefI8Edge.data(), NEdgesAll * NVertLevels,
+   Err = OMEGA::IO::writeArray(RefI8Edge.data(), NEdgesSize * NVertLevels,
                                &FillI8, OutFileID, DecompEdgeI8, VarIDEdgeI8);
    if (Err != 0)
       LOG_ERROR("IOTest: error writing I8 array on Edges FAIL");
-   Err = OMEGA::IO::writeArray(RefR4Edge.data(), NEdgesAll * NVertLevels,
+   Err = OMEGA::IO::writeArray(RefR4Edge.data(), NEdgesSize * NVertLevels,
                                &FillR4, OutFileID, DecompEdgeR4, VarIDEdgeR4);
    if (Err != 0)
       LOG_ERROR("IOTest: error writing R4 array on Edges FAIL");
-   Err = OMEGA::IO::writeArray(RefR8Edge.data(), NEdgesAll * NVertLevels,
+   Err = OMEGA::IO::writeArray(RefR8Edge.data(), NEdgesSize * NVertLevels,
                                &FillR8, OutFileID, DecompEdgeR8, VarIDEdgeR8);
    if (Err != 0)
       LOG_ERROR("IOTest: error writing R8 array on Edges FAIL");
 
-   Err = OMEGA::IO::writeArray(RefI4Vrtx.data(), NVerticesAll * NVertLevels,
+   Err = OMEGA::IO::writeArray(RefI4Vrtx.data(), NVerticesSize * NVertLevels,
                                &FillI4, OutFileID, DecompVrtxI4, VarIDVrtxI4);
    if (Err != 0)
       LOG_ERROR("IOTest: error writing I4 array on vertices FAIL");
-   Err = OMEGA::IO::writeArray(RefI8Vrtx.data(), NVerticesAll * NVertLevels,
+   Err = OMEGA::IO::writeArray(RefI8Vrtx.data(), NVerticesSize * NVertLevels,
                                &FillI8, OutFileID, DecompVrtxI8, VarIDVrtxI8);
    if (Err != 0)
       LOG_ERROR("IOTest: error writing I8 array on vertices FAIL");
-   Err = OMEGA::IO::writeArray(RefR4Vrtx.data(), NVerticesAll * NVertLevels,
+   Err = OMEGA::IO::writeArray(RefR4Vrtx.data(), NVerticesSize * NVertLevels,
                                &FillR4, OutFileID, DecompVrtxR4, VarIDVrtxR4);
    if (Err != 0)
       LOG_ERROR("IOTest: error writing R4 array on vertices FAIL");
-   Err = OMEGA::IO::writeArray(RefR8Vrtx.data(), NVerticesAll * NVertLevels,
+   Err = OMEGA::IO::writeArray(RefR8Vrtx.data(), NVerticesSize * NVertLevels,
                                &FillR8, OutFileID, DecompVrtxR8, VarIDVrtxR8);
    if (Err != 0)
       LOG_ERROR("IOTest: error writing R8 array on vertices FAIL");
@@ -544,68 +547,68 @@ int main(int argc, char *argv[]) {
    }
 
    // Read arrays
-   OMEGA::ArrayHost2DI4 NewI4Cell("NewI4Cell", NCellsAll, NVertLevels);
-   OMEGA::ArrayHost2DI8 NewI8Cell("NewI8Cell", NCellsAll, NVertLevels);
-   OMEGA::ArrayHost2DR4 NewR4Cell("NewR4Cell", NCellsAll, NVertLevels);
-   OMEGA::ArrayHost2DR8 NewR8Cell("NewR8Cell", NCellsAll, NVertLevels);
+   OMEGA::ArrayHost2DI4 NewI4Cell("NewI4Cell", NCellsSize, NVertLevels);
+   OMEGA::ArrayHost2DI8 NewI8Cell("NewI8Cell", NCellsSize, NVertLevels);
+   OMEGA::ArrayHost2DR4 NewR4Cell("NewR4Cell", NCellsSize, NVertLevels);
+   OMEGA::ArrayHost2DR8 NewR8Cell("NewR8Cell", NCellsSize, NVertLevels);
 
-   OMEGA::ArrayHost2DI4 NewI4Edge("NewI4Edge", NEdgesAll, NVertLevels);
-   OMEGA::ArrayHost2DI8 NewI8Edge("NewI8Edge", NEdgesAll, NVertLevels);
-   OMEGA::ArrayHost2DR4 NewR4Edge("NewR4Edge", NEdgesAll, NVertLevels);
-   OMEGA::ArrayHost2DR8 NewR8Edge("NewR8Edge", NEdgesAll, NVertLevels);
+   OMEGA::ArrayHost2DI4 NewI4Edge("NewI4Edge", NEdgesSize, NVertLevels);
+   OMEGA::ArrayHost2DI8 NewI8Edge("NewI8Edge", NEdgesSize, NVertLevels);
+   OMEGA::ArrayHost2DR4 NewR4Edge("NewR4Edge", NEdgesSize, NVertLevels);
+   OMEGA::ArrayHost2DR8 NewR8Edge("NewR8Edge", NEdgesSize, NVertLevels);
 
-   OMEGA::ArrayHost2DI4 NewI4Vrtx("NewI4Vrtx", NVerticesAll, NVertLevels);
-   OMEGA::ArrayHost2DI8 NewI8Vrtx("NewI8Vrtx", NVerticesAll, NVertLevels);
-   OMEGA::ArrayHost2DR4 NewR4Vrtx("NewR4Vrtx", NVerticesAll, NVertLevels);
-   OMEGA::ArrayHost2DR8 NewR8Vrtx("NewR8Vrtx", NVerticesAll, NVertLevels);
+   OMEGA::ArrayHost2DI4 NewI4Vrtx("NewI4Vrtx", NVerticesSize, NVertLevels);
+   OMEGA::ArrayHost2DI8 NewI8Vrtx("NewI8Vrtx", NVerticesSize, NVertLevels);
+   OMEGA::ArrayHost2DR4 NewR4Vrtx("NewR4Vrtx", NVerticesSize, NVertLevels);
+   OMEGA::ArrayHost2DR8 NewR8Vrtx("NewR8Vrtx", NVerticesSize, NVertLevels);
 
-   Err = OMEGA::IO::readArray(NewI4Cell.data(), NCellsAll * NVertLevels,
+   Err = OMEGA::IO::readArray(NewI4Cell.data(), NCellsSize * NVertLevels,
                               "CellI4", InFileID, DecompCellI4, VarIDCellI4);
    if (Err != 0)
       LOG_ERROR("IOTest: error writing I4 array on cells FAIL");
-   Err = OMEGA::IO::readArray(NewI8Cell.data(), NCellsAll * NVertLevels,
+   Err = OMEGA::IO::readArray(NewI8Cell.data(), NCellsSize * NVertLevels,
                               "CellI8", InFileID, DecompCellI8, VarIDCellI8);
    if (Err != 0)
       LOG_ERROR("IOTest: error writing I8 array on cells FAIL");
-   Err = OMEGA::IO::readArray(NewR4Cell.data(), NCellsAll * NVertLevels,
+   Err = OMEGA::IO::readArray(NewR4Cell.data(), NCellsSize * NVertLevels,
                               "CellR4", InFileID, DecompCellR4, VarIDCellR4);
    if (Err != 0)
       LOG_ERROR("IOTest: error writing R4 array on cells FAIL");
-   Err = OMEGA::IO::readArray(NewR8Cell.data(), NCellsAll * NVertLevels,
+   Err = OMEGA::IO::readArray(NewR8Cell.data(), NCellsSize * NVertLevels,
                               "CellR8", InFileID, DecompCellR8, VarIDCellR8);
    if (Err != 0)
       LOG_ERROR("IOTest: error writing R8 array on cells FAIL");
 
-   Err = OMEGA::IO::readArray(NewI4Edge.data(), NEdgesAll * NVertLevels,
+   Err = OMEGA::IO::readArray(NewI4Edge.data(), NEdgesSize * NVertLevels,
                               "EdgeI4", InFileID, DecompEdgeI4, VarIDEdgeI4);
    if (Err != 0)
       LOG_ERROR("IOTest: error writing I4 array on Edges FAIL");
-   Err = OMEGA::IO::readArray(NewI8Edge.data(), NEdgesAll * NVertLevels,
+   Err = OMEGA::IO::readArray(NewI8Edge.data(), NEdgesSize * NVertLevels,
                               "EdgeI8", InFileID, DecompEdgeI8, VarIDEdgeI8);
    if (Err != 0)
       LOG_ERROR("IOTest: error writing I8 array on Edges FAIL");
-   Err = OMEGA::IO::readArray(NewR4Edge.data(), NEdgesAll * NVertLevels,
+   Err = OMEGA::IO::readArray(NewR4Edge.data(), NEdgesSize * NVertLevels,
                               "EdgeR4", InFileID, DecompEdgeR4, VarIDEdgeR4);
    if (Err != 0)
       LOG_ERROR("IOTest: error writing R4 array on Edges FAIL");
-   Err = OMEGA::IO::readArray(NewR8Edge.data(), NEdgesAll * NVertLevels,
+   Err = OMEGA::IO::readArray(NewR8Edge.data(), NEdgesSize * NVertLevels,
                               "EdgeR8", InFileID, DecompEdgeR8, VarIDEdgeR8);
    if (Err != 0)
       LOG_ERROR("IOTest: error writing R8 array on Edges FAIL");
 
-   Err = OMEGA::IO::readArray(NewI4Vrtx.data(), NVerticesAll * NVertLevels,
+   Err = OMEGA::IO::readArray(NewI4Vrtx.data(), NVerticesSize * NVertLevels,
                               "VrtxI4", InFileID, DecompVrtxI4, VarIDVrtxI4);
    if (Err != 0)
       LOG_ERROR("IOTest: error writing I4 array on vertices FAIL");
-   Err = OMEGA::IO::readArray(NewI8Vrtx.data(), NVerticesAll * NVertLevels,
+   Err = OMEGA::IO::readArray(NewI8Vrtx.data(), NVerticesSize * NVertLevels,
                               "VrtxI8", InFileID, DecompVrtxI8, VarIDVrtxI8);
    if (Err != 0)
       LOG_ERROR("IOTest: error writing I8 array on vertices FAIL");
-   Err = OMEGA::IO::readArray(NewR4Vrtx.data(), NVerticesAll * NVertLevels,
+   Err = OMEGA::IO::readArray(NewR4Vrtx.data(), NVerticesSize * NVertLevels,
                               "VrtxR4", InFileID, DecompVrtxR4, VarIDVrtxR4);
    if (Err != 0)
       LOG_ERROR("IOTest: error writing R4 array on vertices FAIL");
-   Err = OMEGA::IO::readArray(NewR8Vrtx.data(), NVerticesAll * NVertLevels,
+   Err = OMEGA::IO::readArray(NewR8Vrtx.data(), NVerticesSize * NVertLevels,
                               "VrtxR8", InFileID, DecompVrtxR8, VarIDVrtxR8);
    if (Err != 0)
       LOG_ERROR("IOTest: error writing R8 array on vertices FAIL");
@@ -618,8 +621,8 @@ int main(int argc, char *argv[]) {
    int Err2 = 0;
    int Err3 = 0;
    int Err4 = 0;
-   for (int Cell; Cell = 0; Cell < NCellsOwned) {
-      for (int k; k = 0; k < NVertLevels) {
+   for (int Cell = 0; Cell < NCellsOwned; ++Cell) {
+      for (int k = 0; k < NVertLevels; ++k) {
          if (NewI4Cell(Cell, k) != RefI4Cell(Cell, k))
             Err1++;
          if (NewI8Cell(Cell, k) != RefI8Cell(Cell, k))
@@ -655,8 +658,8 @@ int main(int argc, char *argv[]) {
    Err2 = 0;
    Err3 = 0;
    Err4 = 0;
-   for (int Edge; Edge = 0; Edge < NEdgesOwned) {
-      for (int k; k = 0; k < NVertLevels) {
+   for (int Edge = 0; Edge < NEdgesOwned; ++Edge) {
+      for (int k = 0; k < NVertLevels; ++k) {
          if (NewI4Edge(Edge, k) != RefI4Edge(Edge, k))
             Err1++;
          if (NewI8Edge(Edge, k) != RefI8Edge(Edge, k))
@@ -692,8 +695,8 @@ int main(int argc, char *argv[]) {
    Err2 = 0;
    Err3 = 0;
    Err4 = 0;
-   for (int Vrtx; Vrtx = 0; Vrtx < NVerticesOwned) {
-      for (int k; k = 0; k < NVertLevels) {
+   for (int Vrtx = 0; Vrtx < NVerticesOwned; ++Vrtx) {
+      for (int k = 0; k < NVertLevels; ++k) {
          if (NewI4Vrtx(Vrtx, k) != RefI4Vrtx(Vrtx, k))
             Err1++;
          if (NewI8Vrtx(Vrtx, k) != RefI8Vrtx(Vrtx, k))
@@ -820,6 +823,8 @@ int main(int argc, char *argv[]) {
       LOG_ERROR("IOTest: error destroying decomp Vrtx R8 FAIL");
 
    // Exit environments
+   OMEGA::Decomp::clear();
+   OMEGA::MachEnv::removeAll();
    if (Err == 0)
       LOG_INFO("IOTest: Successful completion");
    yakl::finalize();
