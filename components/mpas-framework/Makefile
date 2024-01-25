@@ -1113,7 +1113,7 @@ ifeq "$(USE_GPUAWARE)" "true"
    @echo $(GPUAWARE_MESSAGE)
 endif
 ifeq "$(USE_MOAB)" "true"
-   @echo $(MOAB_MESSAGE)
+	@echo $(MOAB_MESSAGE)
 endif
 	@echo "*******************************************************************************"
 clean:
