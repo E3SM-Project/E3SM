@@ -40,8 +40,16 @@ jobs:
           --label "$LABELS" \
           --json number \
           --jq '.[0].number')
-          gh issue edit "$previous_issue_number" \
-            --body "$BODY"
+          if [[ -n $previous_issue_number ]]; then
+            gh issue edit "$previous_issue_number" \
+              --body "$BODY"
+          else
+            gh issue create \
+              --title "$TITLE" \
+              --assignee "$ASSIGNEES" \
+              --label "$LABELS" \
+              --body "$BODY"
+          fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
