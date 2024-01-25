@@ -23,11 +23,12 @@ public:
   mam4::Hetfrz hetfrz_;
 
   // views for single- and multi-column data
-  using view_1d       = typename KT::template view_1d<Real>;
-  using const_view_2d = typename KT::template view_2d<const Real>;
-  using view_2d       = typename KT::template view_2d<Real>;
-  using view_3d       = typename KT::template view_3d<Real>;
-  using const_view_3d = typename KT::template view_3d<const Real>;
+  using view_1d       = scream::mam_coupling::view_1d; 
+  using view_2d       = scream::mam_coupling::view_2d; 
+  using view_3d       = scream::mam_coupling::view_3d; 
+  using const_view_1d = scream::mam_coupling::const_view_1d;
+  using const_view_2d = scream::mam_coupling::const_view_2d;
+  using const_view_3d = scream::mam_coupling::const_view_3d;
 
   template <typename Scalar, typename MemoryTraits = Kokkos::MemoryManaged>
   using view_4d = KT::view<Scalar****,MemoryTraits>;
@@ -45,48 +46,15 @@ private:
   // turbulent kinetic energy  [m^2/s^2]
   view_2d tke_;
 
-  const_view_2d qv_dry_;
-  const_view_2d cldfrac_;
-  const_view_2d w_updraft_;
-
   view_2d aitken_dry_dia_;
-  view_2d qc_coarse_bc_;
-  view_2d qc_coarse_dst_;
-  view_2d qc_coarse_mom_;
-  view_2d qc_coarse_nacl_;
-  view_2d qc_coarse_pom_;
-  view_2d qc_coarse_soa_;
 
-  view_2d qc_accum_bc_;
-  view_2d qc_accum_dst_;
-  view_2d qc_accum_mom_;
-  view_2d qc_accum_nacl_;
-  view_2d qc_accum_pom_;
-  view_2d qc_accum_so4_;
-  view_2d qc_accum_soa_;
+  view_2d cld_aero_mmr_[mam_coupling::num_aero_modes()][mam_coupling::num_aero_species()];
+  mam_coupling::AerosolState aerosol_state_;
 
-  view_2d qi_accum_dst_;
-  view_2d qi_accum_so4_;
-  view_2d qi_accum_mom_;
-  view_2d qi_accum_bc_;
-  view_2d qi_accum_pom_;
-  view_2d qi_accum_soa_;
+  mam_coupling::WetAtmosphere wet_atmosphere_;
 
-  view_2d qi_coarse_dst_;
-  view_2d qi_coarse_nacl_;
-  view_2d qi_coarse_so4_;
-  view_2d qi_coarse_mom_;
-  view_2d qi_coarse_bc_;
-  view_2d qi_coarse_pom_;
-  view_2d qi_coarse_soa_;
+  mam_coupling::DryAtmosphere dry_atmosphere_;
 
-  view_2d qi_pcarbon_bc_;
-  view_2d qi_pcarbon_mom_;
-  view_2d qi_pcarbon_pom_;
-  view_2d nc_accum_;
-  view_2d ni_accum_;
-  view_2d ni_coarse_;
-  view_2d ni_aitken_;
   const_view_3d dgnum_;
   view_2d nihf_;
   view_2d niim_;
@@ -95,20 +63,17 @@ private:
   view_2d naai_hom_;
   view_2d naai_;
   const_view_2d liqcldf_;
-  const_view_2d qc_;
-  const_view_2d qi_;  
-  const_view_2d nc_;  
   const_view_2d kvh_;  
-  view_2d cldo_;
 
-  view_2d zm_;
-  view_3d state_q_;
-  view_2d ncldwtr_;
+  const_view_2d zm_;
+  const_view_3d state_q_;
+  const_view_2d ncldwtr_;
 
-  view_2d lcldn_;
-  view_2d lcldo_;
+  view_2d cloud_frac_new_;
+  view_2d cloud_frac_old_;
   view_2d qcld_;
   view_2d tendnd_;
+  // ptend_q_ is just ptend_q_output_ reformatted.
   view_2d ptend_q_[mam4::ndrop::nvar_ptend_q];
   view_3d ptend_q_output_;
   view_3d factnum_;
@@ -123,8 +88,11 @@ private:
   view_2d coltend_[mam4::ndrop::ncnst_tot];
   view_3d coltend_cw_outp_;
   view_2d coltend_cw_[mam4::ndrop::ncnst_tot];
+
+  // raercol_cw_ and raercol_ are work arrays for dropmixnuc, allocated on the stack.
   view_2d raercol_cw_[mam4::ndrop::pver][2];
   view_2d raercol_[mam4::ndrop::pver][2];
+
   view_3d nact_;
   view_3d mact_;
   view_2d dropmixnuc_scratch_mem_[15];
@@ -133,6 +101,8 @@ private:
   view_2d activation_fraction_accum_idx_;
   view_2d activation_fraction_coarse_idx_;
 
+  // These are the output tendencies from heterogeneous freezing that need to be
+  // added correctly to the cloud-micorphysics scheme.
   view_2d hetfrz_immersion_nucleation_tend_;
   view_2d hetfrz_contact_nucleation_tend_;
   view_2d hetfrz_depostion_nucleation_tend_;
@@ -143,6 +113,12 @@ private:
   // Top level for troposphere cloud physics
   // FIXME: This should be read in to make user selectable.
   const int top_lev_ = 6;
+
+  // local atmospheric state column variables
+  const_view_2d p_int_; // Total pressure [Pa] at interfaces
+  const_view_2d pdel_;  // pressure thickess of layer [Pa]
+  view_2d rpdel_; // Inverse of pdel_
+  const_view_2d w_sec_; // Vertical velocity variance
 
 public:
   // Constructor
@@ -165,38 +141,19 @@ public:
   // number of horizontal columns and vertical levels
   int ncol_, nlev_;
 
-  // number of aerosol modes
-  int num_aero_modes_;
-  
-
   // Atmosphere processes often have a pre-processing step that constructs
   // required variables from the set of fields stored in the field manager.
   // This functor implements this step, which is called during run_impl.
   struct Preprocess {
     Preprocess() = default;
-
-
-    //const_view_2d pdel_;    // hydrostatic "pressure thickness" at grid
-                            // interfaces [Pa]
-    
     // assigns local variables
-    void set_variables(const const_view_2d&     pdel) {
-      //p1del_ = pdel;
+    void set_variables(const const_view_2d &pdel) {
     } // set_variables
   }; // MAMAci::Preprocess
 
 
   // pre- and postprocessing scratch pads
   Preprocess preprocess_;
-
-  // local atmospheric state column variables
-  const_view_2d omega_; // Vertical pressure velocity [Pa/s] at midpoints
-  const_view_2d p_mid_; // Total pressure [Pa] at midpoints
-  const_view_2d p_int_; // Total pressure [Pa] at interfaces
-  const_view_2d T_mid_; // Temperature[K] at midpoints
-  const_view_2d pdel_;  // pressure thickess of layer [Pa]
-  view_2d rpdel_; // Inverse of pdel_
-  const_view_2d w_sec_; // Vertical velocity variance
 
   // physics grid for column information
   std::shared_ptr<const AbstractGrid> grid_;
