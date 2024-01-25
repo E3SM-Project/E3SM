@@ -41,7 +41,7 @@ jobs:
           --json number \
           --jq '.[0].number')
           if [[ -n $previous_issue_number ]]; then
-            gh issue edit "$previous_issue_number" \
+            gh issue comment "$previous_issue_number" \
               --body "$BODY"
           else
             gh issue create \
@@ -57,7 +57,6 @@ jobs:
           ASSIGNEES: mahf708,bartgol
           LABELS: bug,input file,notify-file-gh-action
           BODY: |
-            Workflow failed! There's likely a missing file specified in the configs!
-            For more information, please see:
-              - Workflow URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            Workflow failed! There's likely a missing file specified in the configs! For more information, please see:
+              - Workflow URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }} (number ${{ github.run_number }}, attempt ${{ github.run_attempt }})
               - Workflow SHA: ${{ github.sha }}
