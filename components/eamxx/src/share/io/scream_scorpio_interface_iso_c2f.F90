@@ -76,15 +76,16 @@ contains
     endif
   end function is_file_open_c2f
 !=====================================================================!
-  subroutine register_file_c2f(filename_in,purpose) bind(c)
+  subroutine register_file_c2f(filename_in,purpose,iotype) bind(c)
     use scream_scorpio_interface, only : register_file
     type(c_ptr), intent(in)         :: filename_in
     integer(kind=c_int), intent(in) :: purpose
+    integer(kind=c_int), intent(in) :: iotype
 
     character(len=256)      :: filename
 
     call convert_c_string(filename_in,filename)
-    call register_file(trim(filename),purpose)
+    call register_file(trim(filename),purpose,iotype)
 
   end subroutine register_file_c2f
 !=====================================================================!

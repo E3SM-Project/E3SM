@@ -122,7 +122,7 @@ void write_map_file (const std::string& filename, const int ngdofs_src) {
   // Existing dofs are "copied", added dofs are averaged from neighbors
   const int nnz = ngdofs_src + 2*(ngdofs_src-1);
 
-  scorpio::register_file(filename, scorpio::FileMode::Write);
+  scorpio::register_file(filename, scorpio::FileMode::Write,0);
 
   scorpio::register_dimension(filename, "n_a", "n_a", ngdofs_src, false);
   scorpio::register_dimension(filename, "n_b", "n_b", ngdofs_tgt, false);

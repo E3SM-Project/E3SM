@@ -235,7 +235,7 @@ void create_remap_file(const std::string& filename, const int ngdofs_tgt)
   const int ngdofs_src = ngdofs_tgt + 1;
   const int nnz = 2*ngdofs_tgt;
 
-  scorpio::register_file(filename, scorpio::FileMode::Write);
+  scorpio::register_file(filename, scorpio::FileMode::Write,0);
 
   scorpio::register_dimension(filename,"n_a", "n_a", ngdofs_src, true);
   scorpio::register_dimension(filename,"n_b", "n_b", ngdofs_tgt, true);

@@ -15,7 +15,7 @@ using scream::Int;
 extern "C" {
 
 // Fortran routines to be called from C++
-  void register_file_c2f(const char*&& filename, const int& mode);
+  void register_file_c2f(const char*&& filename, const int& mode, const int& iotype);
   int get_file_mode_c2f(const char*&& filename);
   void set_decomp_c2f(const char*&& filename);
   void set_dof_c2f(const char*&& filename,const char*&& varname,const Int dof_len,const std::int64_t *x_dof);
@@ -94,8 +94,8 @@ void eam_pio_finalize() {
   eam_pio_finalize_c2f();
 }
 /* ----------------------------------------------------------------- */
-void register_file(const std::string& filename, const FileMode mode) {
-  register_file_c2f(filename.c_str(),mode);
+void register_file(const std::string& filename, const FileMode mode, const int iotype) {
+  register_file_c2f(filename.c_str(),mode,iotype);
 }
 /* ----------------------------------------------------------------- */
 void eam_pio_closefile(const std::string& filename) {
@@ -118,7 +118,7 @@ int get_dimlen(const std::string& filename, const std::string& dimname)
 
   bool was_open = is_file_open_c2f(filename.c_str(),-1);
   if (not was_open) {
-    register_file(filename,Read);
+    register_file(filename,Read,0);
   }
 
   ncid = get_file_ncid_c2f (filename.c_str());
@@ -154,7 +154,7 @@ bool has_dim (const std::string& filename, const std::string& dimname)
 
   bool was_open = is_file_open_c2f(filename.c_str(),-1);
   if (not was_open) {
-    register_file(filename,Read);
+    register_file(filename,Read,0);
   }
 
   ncid = get_file_ncid_c2f (filename.c_str());
@@ -181,7 +181,7 @@ bool has_variable (const std::string& filename, const std::string& varname)
 
   bool was_open = is_file_open_c2f(filename.c_str(),-1);
   if (not was_open) {
-    register_file(filename,Read);
+    register_file(filename,Read,0);
   }
 
   ncid = get_file_ncid_c2f (filename.c_str());
@@ -212,7 +212,7 @@ bool has_attribute (const std::string& filename, const std::string& varname, con
 
   bool was_open = is_file_open_c2f(filename.c_str(),-1);
   if (not was_open) {
-    register_file(filename,Read);
+    register_file(filename,Read,0);
   }
 
   // Get file id
@@ -513,7 +513,7 @@ ekat::any get_any_attribute (const std::string& filename, const std::string& att
 }
 /* ----------------------------------------------------------------- */
 ekat::any get_any_attribute (const std::string& filename, const std::string& var_name, const std::string& att_name) {
-  register_file(filename,Read);
+  register_file(filename,Read,0);
   auto ncid = get_file_ncid_c2f (filename.c_str());
   EKAT_REQUIRE_MSG (ncid>=0,
       "[get_any_attribute] Error! Could not retrieve file ncid.\n"

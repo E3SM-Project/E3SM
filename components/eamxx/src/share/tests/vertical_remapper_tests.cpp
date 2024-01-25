@@ -97,7 +97,7 @@ Real data_func(const int col, const int vec, const Real pres) {
 void create_remap_file(const std::string& filename, const int nlevs, const std::vector<std::int64_t>& dofs_p, const std::vector<Real>& p_tgt) 
 {
 
-  scorpio::register_file(filename, scorpio::FileMode::Write);
+  scorpio::register_file(filename, scorpio::FileMode::Write,0);
 
   scorpio::register_dimension(filename,"lev","lev",nlevs, false);
 

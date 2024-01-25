@@ -45,7 +45,8 @@ module scream_scorpio_interface
   !------------
   use pio_types,    only: iosystem_desc_t, file_desc_t, var_desc_t, io_desc_t, &
                           pio_noerr, pio_global, &
-                          PIO_int, PIO_real, PIO_double, PIO_float=>PIO_real
+                          PIO_int, PIO_real, PIO_double, PIO_float=>PIO_real,&
+                          pio_iotype_netcdf, pio_iotype_pnetcdf, pio_iotype_adios
   use pio_kinds,    only: PIO_OFFSET_KIND
 
   use mpi, only: mpi_abort, mpi_comm_size, mpi_comm_rank
@@ -79,7 +80,7 @@ module scream_scorpio_interface
             eam_update_time,             & ! Update the timestamp (i.e. time variable) for a given pio netCDF file
             read_time_at_index             ! Returns the time stamp for a specific time index
 
-  private :: errorHandle, get_coord, is_read, is_write, is_append
+  private :: errorHandle, get_coord, is_read, is_write, is_append, scream_iotype_to_pio_iotype
 
   ! Universal PIO variables for the module
   integer               :: atm_mpicom
@@ -193,10 +194,11 @@ contains
 !=====================================================================!
   ! Register a PIO file to be used for input/output operations.
   ! If file is already open, ensures file_purpose matches the current one
-  subroutine register_file(filename,file_purpose)
+  subroutine register_file(filename,file_purpose,iotype)
 
     character(len=*), intent(in) :: filename
     integer, intent(in)          :: file_purpose
+    integer, intent(in)          :: iotype
 
     type(pio_atm_file_t), pointer :: pio_file
 
@@ -204,7 +206,7 @@ contains
       call errorHandle("PIO ERROR: local pio_subsystem pointer has not been established yet.",-999)
     endif
 
-    call get_pio_atm_file(filename,pio_file,file_purpose)
+    call get_pio_atm_file(filename,pio_file,file_purpose,iotype)
   end subroutine register_file
 !=====================================================================!
   ! Mandatory call to finish the variable and dimension definition phase
@@ -868,25 +870,45 @@ contains
     is_it = LOGICAL(associated(pio_subsystem),kind=c_bool)
   end function is_eam_pio_subsystem_inited
 !=====================================================================!
+  function scream_iotype_to_pio_iotype(siotype) result(piotype)
+    integer, intent(in) :: siotype
+    integer :: piotype
+
+    if(siotype == 0) then
+      piotype = pio_iotype
+    else if(siotype == 1) then
+      piotype = pio_iotype_netcdf
+    else if(siotype == 2) then
+      piotype = pio_iotype_pnetcdf
+    else if(siotype == 3) then
+      piotype = pio_iotype_adios
+    else
+      piotype = pio_iotype
+    end if
+  end function scream_iotype_to_pio_iotype
+!=====================================================================!
   ! Create a pio netCDF file with the appropriate name.
-  subroutine eam_pio_createfile(File,fname)
+  subroutine eam_pio_createfile(File,fname,iotype)
     use pio, only: pio_createfile
     use pio_types,  only: pio_clobber
 
     type(file_desc_t), intent(inout) :: File             ! Pio file Handle
     character(len=*),  intent(in)    :: fname            ! Pio file name
+    integer, intent(in)              :: iotype
     !--
     integer                          :: retval           ! PIO error return value
     integer                          :: mode             ! Mode for how to handle the new file
+    integer                           :: piotype
 
     mode = ior(pio_mode,pio_clobber) ! Set to CLOBBER for now, TODO: fix to allow for optional mode type like in CAM
-    retval = pio_createfile(pio_subsystem,File,pio_iotype,fname,mode)
+    piotype = scream_iotype_to_pio_iotype(iotype)
+    retval = pio_createfile(pio_subsystem,File,piotype,fname,mode)
     call errorHandle("PIO ERROR: unable to create file: "//trim(fname),retval)
 
   end subroutine eam_pio_createfile
 !=====================================================================!
   ! Open an already existing netCDF file.
-  subroutine eam_pio_openfile(pio_file,fname)
+  subroutine eam_pio_openfile(pio_file,fname,iotype)
     use pio, only: pio_openfile
     use pio_types,  only: pio_write, pio_nowrite
 
@@ -895,13 +917,17 @@ contains
     !--
     integer                          :: retval           ! PIO error return value
     integer                          :: mode             ! Mode for how to handle the new file
+    integer, intent(in)              :: iotype
+
+    integer                           :: piotype
 
     if (is_read(pio_file%purpose)) then
       mode = pio_nowrite
     else
       mode = pio_write
     endif
-    retval = pio_openfile(pio_subsystem,pio_file%pioFileDesc,pio_iotype,fname,mode)
+    piotype = scream_iotype_to_pio_iotype(iotype)
+    retval = pio_openfile(pio_subsystem,pio_file%pioFileDesc,piotype,fname,mode)
     call errorHandle("PIO ERROR: unable to open file: "//trim(fname),retval)
 
     if (is_append(pio_file%purpose)) then
@@ -1361,12 +1387,13 @@ contains
   end subroutine lookup_pio_atm_file
 !=====================================================================!
   ! Create a new pio file pointer based on filename.
-  subroutine get_pio_atm_file(filename,pio_file,purpose)
+  subroutine get_pio_atm_file(filename,pio_file,purpose,iotype)
     use pio, only: PIO_inq_dimid, PIO_inq_dimlen
 
     character(len=*),intent(in)   :: filename     ! Name of file to be found
     type(pio_atm_file_t), pointer :: pio_file     ! Pointer to pio_atm_output structure associated with this filename
     integer,intent(in)            :: purpose      ! Purpose for this file lookup, 0 = find already existing, 1 = create new as output, 2 = open new as input
+    integer,intent(in)            :: iotype
 
     logical                        :: found
     type(pio_file_list_t), pointer :: new_list_item
@@ -1404,7 +1431,7 @@ contains
       pio_file%purpose = purpose
       if (is_read(purpose) .or. is_append(purpose)) then
         ! Either read or append to existing file. Either way, file must exist on disk
-        call eam_pio_openfile(pio_file,trim(pio_file%filename))
+        call eam_pio_openfile(pio_file,trim(pio_file%filename),iotype)
         ! Update the numRecs to match the number of recs in this file.
         ierr = pio_inq_dimid(pio_file%pioFileDesc,"time",time_id)
         if (ierr.ne.0) then
@@ -1417,7 +1444,7 @@ contains
         end if
       elseif (is_write(purpose)) then
         ! New output file
-        call eam_pio_createfile(pio_file%pioFileDesc,trim(pio_file%filename))
+        call eam_pio_createfile(pio_file%pioFileDesc,trim(pio_file%filename),iotype)
         call eam_pio_createHeader(pio_file%pioFileDesc)
       else
         call errorHandle("PIO Error: get_pio_atm_file with filename = "//trim(filename)//", purpose (int) assigned to this lookup is not valid" ,-999)

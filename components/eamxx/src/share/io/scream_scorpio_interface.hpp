@@ -33,7 +33,7 @@ namespace scorpio {
   void eam_pio_closefile(const std::string& filename);
   void eam_flush_file(const std::string& filename);
   /* Register a new file to be used for input/output with the scorpio module */
-  void register_file(const std::string& filename, const FileMode mode);
+  void register_file(const std::string& filename, const FileMode mode, int iotype);
   /* Sets the IO decompostion for all variables in a particular filename.  Required after all variables have been registered.  Called once per file. */
   int get_dimlen(const std::string& filename, const std::string& dimname);
   bool has_dim(const std::string& filename, const std::string& dimname);

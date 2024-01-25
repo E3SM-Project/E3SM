@@ -273,7 +273,7 @@ void TimeInterpolation::set_file_data_triplets(const vos_type& list_of_files) {
     if (ii==0) {
       ts_ref = ts_file_start;
     }
-    scorpio::register_file(filename,scorpio::Read);
+    scorpio::register_file(filename,scorpio::Read,0);
     const int ntime = scorpio::get_dimlen(filename,"time");
     for (int tt=0; tt<ntime; tt++) {
       auto time_snap = scorpio::read_time_at_index_c2f(filename.c_str(),tt+1);

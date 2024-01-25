@@ -78,7 +78,7 @@ create_horiz_remapper (
 {
   using namespace ShortFieldTagsNames;
 
-  scorpio::register_file(spa_data_file,scorpio::Read);
+  scorpio::register_file(spa_data_file,scorpio::Read,0);
   const int nlevs_data = scorpio::get_dimlen(spa_data_file,"lev");
   const int ncols_data = scorpio::get_dimlen(spa_data_file,"ncol");
   const int nswbands   = scorpio::get_dimlen(spa_data_file,"swband");
