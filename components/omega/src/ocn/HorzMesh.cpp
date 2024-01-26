@@ -444,40 +444,42 @@ void HorzMesh::readCoriolis() {
 } // end readCoriolis
 
 //------------------------------------------------------------------------------
-// Compute the sign of edge contributions to a cell/vertex for each ecge 
+// Compute the sign of edge contributions to a cell/vertex for each edge
 void HorzMesh::computeEdgeSign() {
 
    EdgeSignOnCell = Array2DR8("EdgeSignOnCell", NCellsAll, MaxEdges);
-   yakl::c::parallel_for(yakl::c::SimpleBounds<1>(NCellsAll), YAKL_LAMBDA(int Cell) {
-      for (int i = 0; i < NEdgesOnCell(Cell); i++) {
-         int Edge = EdgesOnCell(Cell, i);
+   yakl::c::parallel_for(
+       yakl::c::SimpleBounds<1>(NCellsAll), YAKL_LAMBDA(int Cell) {
+          for (int i = 0; i < NEdgesOnCell(Cell); i++) {
+             int Edge = EdgesOnCell(Cell, i);
 
-         // Vector points from cell 0 to cell 1
-         if (Cell == CellsOnEdge(Edge, 0)) {
-            EdgeSignOnCell(Cell, i) = -1.0;
-         } else {
-            EdgeSignOnCell(Cell, i) = 1.0;
-         }
-      }
-   });   
+             // Vector points from cell 0 to cell 1
+             if (Cell == CellsOnEdge(Edge, 0)) {
+                EdgeSignOnCell(Cell, i) = -1.0;
+             } else {
+                EdgeSignOnCell(Cell, i) = 1.0;
+             }
+          }
+       });
    EdgeSignOnCellH = EdgeSignOnCell.createHostCopy();
 
    EdgeSignOnVertex = Array2DR8("EdgeSignOnVertex", NVerticesAll, VertexDegree);
-   yakl::c::parallel_for(yakl::c::SimpleBounds<1>(NVerticesAll), YAKL_LAMBDA(int Vertex) {
-      for (int i = 0; i < VertexDegree; i++) {
-         int Edge = EdgesOnVertex(Vertex, i);
+   yakl::c::parallel_for(
+       yakl::c::SimpleBounds<1>(NVerticesAll), YAKL_LAMBDA(int Vertex) {
+          for (int i = 0; i < VertexDegree; i++) {
+             int Edge = EdgesOnVertex(Vertex, i);
 
-         // Vector points from vertex 0 to vertex 1
-         if (Vertex == VerticesOnEdge(Edge, 0)) {
-            EdgeSignOnVertex(Vertex, i) = -1.0;
-         } else {
-            EdgeSignOnVertex(Vertex, i) = 1.0;
-         }
-      }
-   });
+             // Vector points from vertex 0 to vertex 1
+             if (Vertex == VerticesOnEdge(Edge, 0)) {
+                EdgeSignOnVertex(Vertex, i) = -1.0;
+             } else {
+                EdgeSignOnVertex(Vertex, i) = 1.0;
+             }
+          }
+       });
    EdgeSignOnVertexH = EdgeSignOnVertex.createHostCopy();
 
-} //end computeEdgeSign
+} // end computeEdgeSign
 
 //------------------------------------------------------------------------------
 // Perform copy to device for mesh variables

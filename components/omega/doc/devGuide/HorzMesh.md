@@ -17,13 +17,9 @@ and reads in the remaining subdomain mesh information.  Finally, any mesh
 information needed on the device to a device YAKL array from the host.  These
 tasks are orgainzed into several private methods.  The variable names for host
 arrays hare appended with in `H`, array variable names not ending in `H` are
-device arrays.  The copy from host to device array is performed via: 
+device arrays.  The copy from host to device array is performed via:
 ```c++
 AreaCell = AreaCellH.createDeviceCopy();
 ```
 The device arrays are deallocated by the `HorzMesh::clear()` method, which is
 necessary before calling `yakl::finalize`.
-
-
-
-

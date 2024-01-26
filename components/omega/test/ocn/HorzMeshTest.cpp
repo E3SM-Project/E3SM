@@ -568,7 +568,7 @@ int main(int argc, char *argv[]) {
          }
       }
       if (abs(Mesh.EdgeSignOnCellH(Cell0, iEdge0) + 1.0) > tol) {
-        count++;
+         count++;
       }
 
       int Cell1 = Mesh.CellsOnEdgeH(Edge, 1);
@@ -581,7 +581,7 @@ int main(int argc, char *argv[]) {
             }
          }
          if (abs(Mesh.EdgeSignOnCellH(Cell1, iEdge1) - 1.0) > tol) {
-           count++;
+            count++;
          }
       }
    }
