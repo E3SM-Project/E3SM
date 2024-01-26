@@ -8,8 +8,6 @@ Field Names:
   - aero_tau_sw
   - aero_tau_lw
   - aero_tau_forward
-  - state_q
-  - qqcw
 output_control:
   Frequency: 1
   frequency_units: nsteps

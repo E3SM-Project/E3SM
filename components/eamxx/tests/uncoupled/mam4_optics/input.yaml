@@ -22,66 +22,8 @@ grids_manager:
     number_of_vertical_levels:  72
 
 initial_conditions:
-  # The name of the file containing the initial conditions for this test.
-  #Filename: /ascldap/users/odiazib/Documents/Oscar/CODE/eagles-project/scream/scream-input/atm/scream/init/screami_unit_tests_ne2np4L72_20220822.nc
-  Filename: /ascldap/users/odiazib/Documents/Oscar/CODE/eagles-project/scream_jeff_branch/../scream/scream-input/atm/scream/init/scream_aerosol_optics_unit_tests_ne2np4L72_20220822.nc
+  Filename: /ascldap/users/odiazib/Documents/Oscar/CODE/eagles-project/scream/scream-input/atm/scream/init/scream_unit_tests_aerosol_optics_ne2np4L72_20220822.nc
   qv: 0.0018908932854425809
-  num_a1: 1.0
-  num_a2: 1.0
-  num_a3: 1.0
-  num_a4: 1.0
-  soa_a1: 1.0
-  so4_a1: 1.0
-  pom_a1: 1.0
-  bc_a1: 1.0
-  nacl_a1: 1.0
-  dst_a1: 1.0
-  mom_a1: 1.0
-  soa_a2: 1.0
-  so4_a2: 1.0
-  nacl_a2: 1.0
-  mom_a2: 1.0
-  soa_a3: 1.0
-  so4_a3: 1.0
-  pom_a3: 1.0
-  bc_a3: 1.0
-  nacl_a3: 1.0
-  dst_a3: 1.0
-  mom_a3: 1.0
-  pom_a4: 1.0
-  bc_a4: 1.0
-  mom_a4: 1.0
-  num_c1: 1.0
-  num_c2: 1.0
-  num_c3: 1.0
-  num_c4: 1.0
-  soa_c1: 1.0
-  so4_c1: 1.0
-  pom_c1: 1.0
-  bc_c1: 1.0
-  nacl_c1: 1.0
-  dst_c1: 1.0
-  mom_c1: 1.0
-  soa_c2: 1.0
-  so4_c2: 1.0
-  nacl_c2: 1.0
-  mom_c2: 1.0
-  soa_c3: 1.0
-  so4_c3: 1.0
-  pom_c3: 1.0
-  bc_c3: 1.0
-  nacl_c3: 1.0
-  dst_c3: 1.0
-  mom_c3: 1.0
-  pom_c4: 1.0
-  bc_c4: 1.0
-  mom_c4: 1.0
-  aero_gas_mmr_o3: 1.0
-  aero_gas_mmr_h2o2: 1.0
-  aero_gas_mmr_h2so4: 1.0
-  aero_gas_mmr_so2: 1.0
-  aero_gas_mmr_dms: 1.0
-  aero_gas_mmr_soag: 1.0
   pbl_height : 1.0
   phis : 1.0
 Scorpio:

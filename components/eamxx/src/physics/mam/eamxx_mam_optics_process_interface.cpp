@@ -438,9 +438,6 @@ void MAMOptics::run_impl(const double dt) {
       auto pdel = ekat::subview(p_del_, icol);
       auto pdeldry = ekat::subview(dry_atm_.p_del, icol);
 
-      //  auto state_q_icol = ekat::subview(state_q_, icol);
-      //  auto qqcw_icol = ekat::subview(qqcw_, icol);
-
       auto ssa_cmip6_sw_icol = ekat::subview(ssa_cmip6_sw_, icol);
       auto af_cmip6_sw_icol = ekat::subview(af_cmip6_sw_, icol);
       auto ext_cmip6_sw_icol = ekat::subview(ext_cmip6_sw_, icol);
@@ -481,7 +478,6 @@ mam4::aer_rad_props::aer_rad_props_lw(team,
     cldn, ext_cmip6_lw_icol,
     aerosol_optics_device_data_,
     odap_aer_icol);
-
     });
 
   }
@@ -490,6 +486,14 @@ mam4::aer_rad_props::aer_rad_props_lw(team,
   Kokkos::parallel_for("postprocess", policy, postprocess_);
   Kokkos::fence();
   printf("Done  with aerosol_optics \n");
+
+  // Kokkos::deep_copy(aero_g_sw, 0.5);
+  // Kokkos::deep_copy(aero_ssa_sw, 0.7);
+  // Kokkos::deep_copy(aero_tau_sw, 0.0);
+  // Kokkos::deep_copy(aero_tau_lw, 0.0);
+  // Kokkos::deep_copy(aero_tau_forward, 0.0);
+  // Kokkos::deep_copy(aero_nccn, 50.0);
+
 }
 
 void MAMOptics::finalize_impl()
