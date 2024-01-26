@@ -554,6 +554,80 @@ int main(int argc, char *argv[]) {
       LOG_INFO("HorzMeshTest: weightsOnEdge test FAIL");
    }
 
+   // Test edgeSignOnCell
+   // Check that the sign corresponds with convention
+   // Tests that the edge sign values were calculated correctly
+   count = 0;
+   for (int Edge = 0; Edge < LocEdges; Edge++) {
+      int Cell0 = Mesh.CellsOnEdgeH(Edge, 0);
+      int iEdge0;
+      for (int i = 0; i < Mesh.NEdgesOnCellH(Cell0); i++) {
+         if (Mesh.EdgesOnCellH(Cell0, i) == Edge) {
+            iEdge0 = i;
+            break;
+         }
+      }
+      if (abs(Mesh.EdgeSignOnCellH(Cell0, iEdge0) + 1.0) > tol) {
+        count++;
+      }
+
+      int Cell1 = Mesh.CellsOnEdgeH(Edge, 1);
+      if (Cell1 < DefDecomp->NCellsAll) {
+         int iEdge1;
+         for (int i = 0; i < Mesh.NEdgesOnCellH(Cell1); i++) {
+            if (Mesh.EdgesOnCellH(Cell1, i) == Edge) {
+               iEdge1 = i;
+               break;
+            }
+         }
+         if (abs(Mesh.EdgeSignOnCellH(Cell1, iEdge1) - 1.0) > tol) {
+           count++;
+         }
+      }
+   }
+
+   if (count == 0) {
+      LOG_INFO("HorzMeshTest: edgeSignOnCell test PASS");
+   } else {
+      LOG_INFO("HorzMeshTest: edgeSignOnCell test FAIL");
+   }
+
+   // Test edgeSignOnVertex
+   // Check that the sign corresponds with convention
+   // Tests that the edge sign vlues were calculated correctly
+   count = 0;
+   for (int Edge = 0; Edge < LocEdges; Edge++) {
+      int Vertex0 = Mesh.VerticesOnEdgeH(Edge, 0);
+      int iEdge0;
+      for (int i = 0; i < Mesh.VertexDegree; i++) {
+         if (Mesh.EdgesOnVertexH(Vertex0, i) == Edge) {
+            iEdge0 = i;
+            break;
+         }
+      }
+      if (abs(Mesh.EdgeSignOnVertexH(Vertex0, iEdge0) + 1.0) > tol) {
+         count++;
+      }
+
+      int Vertex1 = Mesh.VerticesOnEdgeH(Edge, 1);
+      int iEdge1;
+      for (int i = 0; i < Mesh.VertexDegree; i++) {
+         if (Mesh.EdgesOnVertexH(Vertex1, i) == Edge) {
+            iEdge1 = i;
+            break;
+         }
+      }
+      if (abs(Mesh.EdgeSignOnVertex(Vertex1, iEdge1) - 1.0) > tol) {
+         count++;
+      }
+   }
+
+   if (count == 0) {
+      LOG_INFO("HorzMeshTest: edgeSignOnVertex test PASS");
+   } else {
+      LOG_INFO("HorzMeshTest: edgeSignOnVertex test FAIL");
+   }
+
    // TODO: Test that device arrays are identical
 
    // Finalize Omega objects

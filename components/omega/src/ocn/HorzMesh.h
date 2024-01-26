@@ -39,6 +39,8 @@ class HorzMesh {
 
    void readCoriolis();
 
+   void computeEdgeSign();
+
    void copyToDevice();
 
    // int computeMesh();
@@ -183,6 +185,14 @@ class HorzMesh {
 
    Array1DR8 BottomDepth;      ///< Depth of the bottom of the ocean (m)
    ArrayHost1DR8 BottomDepthH; ///< Depth of the bottom of the ocean (m)
+
+   // Edge sign
+
+   Array2DR8 EdgeSignOnCell;      ///< Sign of vector connecting cells
+   ArrayHost2DR8 EdgeSignOnCellH; ///< Sign of vector connecting cells
+
+   Array2DR8 EdgeSignOnVertex;      ///< Sign of vector connecting vertices
+   ArrayHost2DR8 EdgeSignOnVertexH; ///< Sign of vector connecting vertices
 
    // Methods
 
