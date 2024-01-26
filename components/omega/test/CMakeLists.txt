@@ -205,7 +205,7 @@ target_include_directories(
   ${OMEGA_SOURCE_DIR}/src/base
   ${OMEGA_SOURCE_DIR}/src/infra
   ${OMEGA_SOURCE_DIR}/src/ocn
-  ${PARMETIS_ROOT}/include
+  ${Parmetis_INCLUDE_DIRS}
 )
 
 target_compile_options(
@@ -333,6 +333,7 @@ set_tests_properties(
   CONFIG_TEST
   DECOMP_TEST
   HALO_TEST
+  HORZMESH_TEST
   IO_TEST
   YAKL_TEST
   PROPERTIES FAIL_REGULAR_EXPRESSION "FAIL"
