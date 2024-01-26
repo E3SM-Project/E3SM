@@ -23,4 +23,4 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/output.yaml
 
 # Ensure test input files are present in the data dir
 # FIXME: do I need a set a EAMxx_tests_IC_FILE_72lev ? for my nc file?
-GetInputFile(scream/init/scream_aerosol_optics_unit_tests_ne2np4L72_20220822.nc)
+GetInputFile(scream/init/scream_unit_tests_aerosol_optics_ne2np4L72_20220822.nc)

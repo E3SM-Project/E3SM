@@ -422,16 +422,13 @@ void MAMOptics::run_impl(const double dt) {
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const ThreadTeam& team) {
       const Int icol = team.league_rank(); // column index
       auto odap_aer_icol = ekat::subview(aero_tau_lw, icol);
+      const auto atm = mam_coupling::atmosphere_for_column(dry_atm_, icol);
 
       // FIXME: Get rid of this
       // auto nccn = ekat::subview(aero_nccn, icol);
-      auto pmid =  ekat::subview(dry_atm_.p_mid, icol);
-      auto temperature =  ekat::subview(dry_atm_.T_mid, icol);
-      auto cldn = ekat::subview(dry_atm_.cldfrac, icol);
 
       // FIXME: interface pressure [Pa]
       auto pint =  ekat::subview(p_int_, icol);
-      auto zm =  ekat::subview(dry_atm_.z_mid, icol);
       // FIXME: dry mass pressure interval [Pa]
       // FIXME:
       auto zi= ekat::subview(dry_atm_.z_iface, icol);
@@ -459,11 +456,10 @@ void MAMOptics::run_impl(const double dt) {
       // mam4::Prognostics progs = mam_coupling::interstitial_aerosols_for_column(dry_aero_, icol);
        mam4::Prognostics progs = mam_coupling::aerosols_for_column(dry_aero_, icol);
 
-    mam4::aer_rad_props::aer_rad_props_sw(team,  dt, zi, pmid,
-    pint, temperature,
-    zm, progs,
+    mam4::aer_rad_props::aer_rad_props_sw(team,  dt, progs, atm, zi,
+    pint,
     pdel, pdeldry,
-    cldn, ssa_cmip6_sw_icol,
+    ssa_cmip6_sw_icol,
     af_cmip6_sw_icol, ext_cmip6_sw_icol,
     tau_icol, tau_w_icol, tau_w_g_icol,
     tau_w_f_icol,
@@ -471,11 +467,11 @@ void MAMOptics::run_impl(const double dt) {
 
 team.team_barrier();
 
-mam4::aer_rad_props::aer_rad_props_lw(team,
-    dt, pmid, pint,
-    temperature, zm, zi,
-    progs, pdel, pdeldry,
-    cldn, ext_cmip6_lw_icol,
+mam4::aer_rad_props::aer_rad_props_lw(team, dt,
+    progs, atm,  pint,
+    zi,
+    pdel, pdeldry,
+    ext_cmip6_lw_icol,
     aerosol_optics_device_data_,
     odap_aer_icol);
     });

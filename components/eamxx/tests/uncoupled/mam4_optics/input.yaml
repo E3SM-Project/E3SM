@@ -22,8 +22,7 @@ grids_manager:
     number_of_vertical_levels:  72
 
 initial_conditions:
-  Filename: /ascldap/users/odiazib/Documents/Oscar/CODE/eagles-project/scream/scream-input/atm/scream/init/scream_unit_tests_aerosol_optics_ne2np4L72_20220822.nc
-  qv: 0.0018908932854425809
+  Filename: ${SCREAM_DATA_DIR}/init/scream_unit_tests_aerosol_optics_ne2np4L72_20220822.nc
   pbl_height : 1.0
   phis : 1.0
 Scorpio:
