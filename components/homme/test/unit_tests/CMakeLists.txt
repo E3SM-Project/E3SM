@@ -22,7 +22,7 @@ macro(cxx_unit_test target_name target_f90_srcs target_cxx_srcs include_dirs con
   cxx_unit_test_add_test(${target_name}_test ${target_name} ${NUM_CPUS})
 
   TARGET_LINK_LIBRARIES(${target_name} timing ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
-  target_link_libraries(${target_name} kokkos)
+  target_link_libraries(${target_name} Kokkos::kokkos)
   IF (HOMME_USE_MKL)
     TARGET_COMPILE_OPTIONS (${target_name} PUBLIC -mkl)
     TARGET_LINK_LIBRARIES (${target_name} -mkl)

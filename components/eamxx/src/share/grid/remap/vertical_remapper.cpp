@@ -54,46 +54,31 @@ VerticalRemapper (const grid_ptr_type& src_grid,
   // as the source field, but will have a different number of 
   // vertical levels.
   scorpio::register_file(map_file,scorpio::FileMode::Read);
-  m_num_remap_levs = scorpio::get_dimlen(map_file,"nlevs");
-  scorpio::eam_pio_closefile(map_file);
+  m_num_remap_levs = scorpio::get_dimlen(map_file,"lev");
 
-  auto tgt_grid_gids = src_grid->get_unique_gids();
-  const int ngids = tgt_grid_gids.size();
-  auto tgt_grid = std::make_shared<PointGrid>("vertical_remap_tgt_grid",ngids,m_num_remap_levs,m_comm);
-  auto tgt_grid_gids_h = tgt_grid->get_dofs_gids().get_view<gid_t*,Host>();
-  std::memcpy(tgt_grid_gids_h.data(),tgt_grid_gids.data(),ngids*sizeof(gid_t));
-  tgt_grid->get_dofs_gids().sync_to_dev();
+  auto tgt_grid = src_grid->clone("vertical_remap_tgt_grid",true);
+  tgt_grid->reset_num_vertical_lev(m_num_remap_levs);
   this->set_grids(src_grid,tgt_grid);
 
-  // Replicate the src grid geo data in the tgt grid.
-  const auto& src_geo_data_names = src_grid->get_geometry_data_names();
-  for (const auto& name : src_geo_data_names) {
-    const auto& src_data = src_grid->get_geometry_data(name);
-    const auto& src_data_fid = src_data.get_header().get_identifier();
-    const auto& layout = src_data_fid.get_layout();
-    // We only add geo data that is horizontal in nature,  vertical geo data won't be added because the vertical structure
-    // has a rigid definition already.
-    if (layout.tags().back()!=LEV && layout.tags().back()!=ILEV) {
-      // Simply copy it in the tgt grid, but we still need to assign the new grid name.
-      FieldIdentifier tgt_data_fid(src_data_fid.name(),src_data_fid.get_layout(),src_data_fid.get_units(),m_tgt_grid->name());
-      auto tgt_data = tgt_grid->create_geometry_data(tgt_data_fid);
-      tgt_data.deep_copy(src_data);
-    } 
-  }
-
-
   // Set the LEV and ILEV vertical profiles for interpolation from
-  register_vertical_source_field(lev_prof,"mid");
-  register_vertical_source_field(ilev_prof,"int");
+  register_vertical_source_field(lev_prof);
+  register_vertical_source_field(ilev_prof);
 
   // Gather the pressure level data for vertical remapping
   set_pressure_levels(map_file);
+
+  scorpio::eam_pio_closefile(map_file);
 }
 
 FieldLayout VerticalRemapper::
 create_src_layout (const FieldLayout& tgt_layout) const
 {
   using namespace ShortFieldTagsNames;
+
+  EKAT_REQUIRE_MSG (is_valid_tgt_layout(tgt_layout),
+      "[VerticalRemapper] Error! Input target layout is not valid for this remapper.\n"
+      " - input layout: " + to_string(tgt_layout));
+
   const auto lt = get_layout_type(tgt_layout.tags());
   auto src = FieldLayout::invalid();
   const bool midpoints = tgt_layout.has_tag(LEV);
@@ -120,6 +105,11 @@ FieldLayout VerticalRemapper::
 create_tgt_layout (const FieldLayout& src_layout) const
 {
   using namespace ShortFieldTagsNames;
+
+  EKAT_REQUIRE_MSG (is_valid_src_layout(src_layout),
+      "[VerticalRemapper] Error! Input source layout is not valid for this remapper.\n"
+      " - input layout: " + to_string(src_layout));
+
   const auto lt = get_layout_type(src_layout.tags());
   auto tgt = FieldLayout::invalid();
   const bool midpoints = true; //src_layout.has_tag(LEV);
@@ -144,8 +134,13 @@ create_tgt_layout (const FieldLayout& src_layout) const
 }
 
 void VerticalRemapper::
-set_pressure_levels(const std::string& map_file) {
-  scorpio::register_file(map_file,scorpio::FileMode::Read);
+set_pressure_levels(const std::string& map_file)
+{
+  // Ensure each map file gets a different decomp name
+  static std::map<std::string,int> file2idx;
+  if (file2idx.find(map_file)==file2idx.end()) {
+    file2idx[map_file] = file2idx.size();
+  }
 
   using namespace ShortFieldTagsNames;
   std::vector<FieldTag> tags = {LEV};
@@ -156,47 +151,39 @@ set_pressure_levels(const std::string& map_file) {
   m_remap_pres.get_header().get_alloc_properties().request_allocation(mPack::n);
   m_remap_pres.allocate_view();
 
-  auto remap_pres_scal = m_remap_pres.get_view<Real*>();
+  auto remap_pres_scal = m_remap_pres.get_view<Real*,Host>();
 
   std::vector<scorpio::offset_t> dofs_offsets(m_num_remap_levs);
   std::iota(dofs_offsets.begin(),dofs_offsets.end(),0);
-  const std::string idx_decomp_tag = "vertical_remapper::" + std::to_string(m_num_remap_levs);
-  scorpio::get_variable(map_file, "p_levs", "p_levs", {"nlevs"}, "real", idx_decomp_tag);
+  const std::string decomp_tag = "VR::spl,nlev=" + std::to_string(m_num_remap_levs) + ",file-idx=" + std::to_string(file2idx[map_file]);
+  scorpio::register_variable(map_file, "p_levs", "p_levs", {"lev"}, "real", decomp_tag);
   scorpio::set_dof(map_file,"p_levs",m_num_remap_levs,dofs_offsets.data());
   scorpio::set_decomp(map_file);
   scorpio::grid_read_data_array(map_file,"p_levs",-1,remap_pres_scal.data(),remap_pres_scal.size());
-  scorpio::eam_pio_closefile(map_file);
 
+  m_remap_pres.sync_to_dev();
 }
 
 void VerticalRemapper::
-register_vertical_source_field(const Field& src, const std::string& mode)
+register_vertical_source_field(const Field& src)
 {
   using namespace ShortFieldTagsNames;
-  EKAT_REQUIRE_MSG(mode=="mid" || mode=="int","Error: VerticalRemapper::register_vertical_source_field,"
-    "mode arg must be 'mid' or 'int'\n");
 
-  auto src_fid = src.get_header().get_identifier();
-  if (mode=="mid") {
-    auto layout = src_fid.get_layout();
-    auto name   = src_fid.name();
-    EKAT_REQUIRE_MSG(ekat::contains(std::vector<FieldTag>{LEV},layout.tags().back()),
-      "Error::VerticalRemapper::register_vertical_source_field,\n"
-      "mode = 'mid' expects a layour ending with LEV tag.\n"
-      " - field name  : " + name + "\n"
+  EKAT_REQUIRE_MSG(src.is_allocated(),
+      "Error! Vertical level source field is not yet allocated.\n"
+      " - field name: " + src.name() + "\n");
+
+  const auto& layout = src.get_header().get_identifier().get_layout();
+  const auto vert_tag = layout.tags().back();
+  EKAT_REQUIRE_MSG (vert_tag==LEV or vert_tag==ILEV,
+      "Error! Input vertical level field does not have a vertical level tag at the end.\n"
+      " - field name: " + src.name() + "\n"
       " - field layout: " + to_string(layout) + "\n");
-    EKAT_REQUIRE_MSG(src.is_allocated(), "Error! LEV source field is not yet allocated.\n");
+
+  if (vert_tag==LEV) {
     m_src_mid = src;
     m_mid_set = true; 
-   } else {  // mode=="int"
-    auto layout = src_fid.get_layout();
-    auto name   = src_fid.name();
-    EKAT_REQUIRE_MSG(ekat::contains(std::vector<FieldTag>{ILEV},layout.tags().back()),
-      "Error::VerticalRemapper::register_vertical_source_field,\n"
-      "mode = 'int' expects a layour ending with ILEV tag.\n"
-      " - field name  : " + name + "\n"
-      " - field layout: " + to_string(layout) + "\n");
-    EKAT_REQUIRE_MSG(src.is_allocated(), "Error! ILEV source field is not yet allocated.\n");
+   } else {
     m_src_int = src;
     m_int_set = true; 
   }
@@ -281,10 +268,11 @@ do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
       Field           mask_tgt_fld (mask_tgt_fid);
       mask_tgt_fld.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
       mask_tgt_fld.allocate_view();
-      auto tgt_extra = tgt.get_header().get_extra_data();
-      EKAT_REQUIRE_MSG(!tgt_extra.count("mask_data"),"ERROR VerticalRemapper::do_bind_field " + src.name() + " already has mask_data assigned!");
+      EKAT_REQUIRE_MSG(not tgt.get_header().has_extra_data("mask_data"),
+          "ERROR VerticalRemapper::do_bind_field " + src.name() + " already has mask_data assigned!");
       f_tgt.get_header().set_extra_data("mask_data",mask_tgt_fld);
-      EKAT_REQUIRE_MSG(!tgt_extra.count("mask_value"),"ERROR VerticalRemapper::do_bind_field " + src.name() + " already has mask_data assigned!");
+      EKAT_REQUIRE_MSG(not tgt.get_header().has_extra_data("mask_value"),
+          "ERROR VerticalRemapper::do_bind_field " + src.name() + " already has mask_data assigned!");
       f_tgt.get_header().set_extra_data("mask_value",m_mask_val);
       m_src_masks.push_back(mask_src_fld);
       m_tgt_masks.push_back(mask_tgt_fld);
@@ -293,19 +281,19 @@ do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
     // If a field does not have LEV or ILEV it may still have mask tracking assigned from somewhere else.
     // In those cases we want to copy that mask tracking to the target field.
     // Note, we still make a new field to ensure it is defined on the target grid.
-    const auto src_extra = src.get_header().get_extra_data();
-    if (src_extra.count("mask_data")) {
-      auto f_src_mask = ekat::any_cast<Field>(src_extra.at("mask_data"));
+    if (src.get_header().has_extra_data("mask_data")) {
+      auto f_src_mask = src.get_header().get_extra_data<Field>("mask_data");
       FieldIdentifier mask_tgt_fid (f_src_mask.name(), f_src_mask.get_header().get_identifier().get_layout(), nondim, m_tgt_grid->name() );
       Field           mask_tgt_fld (mask_tgt_fid);
       mask_tgt_fld.allocate_view();
       mask_tgt_fld.deep_copy(f_src_mask);
 
       auto& f_tgt    = m_tgt_fields[ifield];
-      auto tgt_extra = tgt.get_header().get_extra_data();
-      EKAT_REQUIRE_MSG(!tgt_extra.count("mask_data"),"ERROR VerticalRemapper::do_bind_field " + src.name() + " already has mask_data assigned!");
+      EKAT_REQUIRE_MSG(not tgt.get_header().has_extra_data("mask_data"),
+          "ERROR VerticalRemapper::do_bind_field " + src.name() + " already has mask_data assigned!");
       f_tgt.get_header().set_extra_data("mask_data",mask_tgt_fld);
-      EKAT_REQUIRE_MSG(!tgt_extra.count("mask_value"),"ERROR VerticalRemapper::do_bind_field " + src.name() + " already has mask_data assigned!");
+      EKAT_REQUIRE_MSG(not tgt.get_header().has_extra_data("mask_value"),
+          "ERROR VerticalRemapper::do_bind_field " + src.name() + " already has mask_data assigned!");
       f_tgt.get_header().set_extra_data("mask_value",m_mask_val);
     }
   }
@@ -349,11 +337,9 @@ void VerticalRemapper::do_remap_fwd ()
       // There is nothing to do, this field cannot be vertically interpolated,
       // so just copy it over.  Note, if this field has its own mask data make
       // sure that is copied too.
-      auto f_tgt_extra = f_tgt.get_header().get_extra_data();
-      if (f_tgt_extra.count("mask_data")) {
-        auto f_src_extra = f_src.get_header().get_extra_data();
-        auto f_tgt_mask = ekat::any_cast<Field>(f_tgt_extra.at("mask_data"));
-        auto f_src_mask = ekat::any_cast<Field>(f_src_extra.at("mask_data"));
+      if (f_tgt.get_header().has_extra_data("mask_data")) {
+        auto f_tgt_mask = f_tgt.get_header().get_extra_data<Field>("mask_data");
+        auto f_src_mask = f_src.get_header().get_extra_data<Field>("mask_data");
         f_tgt_mask.deep_copy(f_src_mask);
       }
       f_tgt.deep_copy(f_src);

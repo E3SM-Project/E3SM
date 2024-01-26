@@ -1,17 +1,18 @@
 include (ScreamUtils)
 
+set (TEST_BASE_NAME homme_standalone)
+set (FIXTURES_BASE_NAME ${TEST_BASE_NAME}_generate_output_nc_files)
+
 # Get or create the dynamics lib
 #                 HOMME_TARGET   NP PLEV QSIZE_D
 CreateDynamicsLib("theta-l_kokkos"  4   72   10)
 
 # Create the test
-set (TEST_LABELS "dynamics;driver")
-set (NEED_LIBS ${dynLibName} scream_control scream_share diagnostics)
-
-CreateUnitTest(homme_standalone "homme_standalone.cpp" "${NEED_LIBS}"
-  LABELS ${TEST_LABELS}
+CreateADUnitTest(${TEST_BASE_NAME}
+  LABELS dynamics
+  LIBS ${dynLibName}
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
-  PROPERTIES FIXTURES_SETUP homme_generate_output_nc_files
+  FIXTURES_SETUP_INDIVIDUAL ${FIXTURES_BASE_NAME}
 )
 
 # Set AD configurable options
@@ -21,8 +22,8 @@ set (RUN_T0 2021-10-12-45000)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/input.yaml)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/homme_standalone_output.yaml
-               ${CMAKE_CURRENT_BINARY_DIR}/homme_standalone_output.yaml)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/output.yaml
+               ${CMAKE_CURRENT_BINARY_DIR}/output.yaml)
 
 # Set homme's test options, so that we can configure the namelist correctly
 
@@ -35,11 +36,14 @@ set (HOMME_TEST_TIME_STEP 300)
 set (HOMME_THETA_FORM 1)
 set (HOMME_TTYPE 5)
 set (HOMME_SE_FTYPE 0)
+set (HOMME_TEST_TRANSPORT_ALG 0)
+set (HOMME_TEST_CUBED_SPHERE_MAP 0)
 
 # Hyperviscosity settings
 set (HOMME_TEST_HVSCALING 0)
 set (HOMME_TEST_HVS 1)
 set (HOMME_TEST_HVS_TOM 0)
+set (HOMME_TEST_HVS_Q 1)
 
 set (HOMME_TEST_NU 7e15)
 set (HOMME_TEST_NUDIV 1e15)
@@ -59,26 +63,17 @@ configure_file(${SCREAM_BASE_DIR}/src/dynamics/homme/tests/theta.nl
 
 # Ensure test input files are present in the data dir
 GetInputFile(scream/init/${EAMxx_tests_IC_FILE_72lev})
-GetInputFile(cam/topo/USGS-gtopo30_ne4np4pg2_16x_converted.c20200527.nc)
+GetInputFile(cam/topo/${EAMxx_tests_TOPO_FILE})
 
-## Finally compare all MPI rank output files against the single rank output as a baseline, using CPRNC
-## Only if running with 2+ ranks configurations
-# This test requires CPRNC
-if (TEST_RANK_END GREATER TEST_RANK_START)
-  include (BuildCprnc)
-  BuildCprnc()
-  set (BASE_TEST_NAME "homme")
-  math (EXPR CMP_RANK_START ${TEST_RANK_START}+1)
-  foreach (MPI_RANKS RANGE ${CMP_RANK_START} ${TEST_RANK_END})
+# Compare output files produced by npX tests, to ensure they are bfb
+include (CompareNCFiles)
 
-    set (SRC_FILE "${BASE_TEST_NAME}_standalone_output.INSTANT.nsteps_x${NUM_STEPS}.np${MPI_RANKS}.${RUN_T0}.nc")
-    set (TGT_FILE "${BASE_TEST_NAME}_standalone_output.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_START}.${RUN_T0}.nc")
-    set (TEST_NAME "${BASE_TEST_NAME}_np${TEST_RANK_START}_vs_np${MPI_RANKS}_bfb")
-    add_test (NAME ${TEST_NAME}
-              COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}
-              WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-    set_tests_properties(${TEST_NAME} PROPERTIES LABELS "${TEST_LABELS}"
-              RESOURCE_LOCK ${BASE_TEST_NAME}
-              FIXTURES_REQUIRED homme_generate_output_nc_files)
-  endforeach()
-endif()
+CreateRange(MpiRanks ${TEST_RANK_START} ${TEST_RANK_END})
+
+CompareNCFilesFamilyMpi (
+  TEST_BASE_NAME ${TEST_BASE_NAME}
+  FILE_META_NAME ${TEST_BASE_NAME}_output.INSTANT.nsteps_x${NUM_STEPS}.npMPIRANKS.${RUN_T0}.nc
+  MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
+  LABELS dynamics
+  META_FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_npMPIRANKS_omp1
+)

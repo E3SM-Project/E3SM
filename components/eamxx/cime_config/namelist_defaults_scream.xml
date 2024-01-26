@@ -35,7 +35,7 @@ be lost if SCREAM_HACK_XML is not enabled.
   -->
   <selectors>
     <selector name="hgrid" case_env="ATM_GRID"/>
-    <selector name="dyn" case_env="ATM_DYN_TARGET"/>
+    <selector name="dyn" case_env="CAM_TARGET"/>
     <selector name="nlev" case_env="SCREAM_CMAKE_OPTIONS" regex=".*SCREAM_NUM_VERTICAL_LEV ([0-9]+).*"/>
   </selectors>
 
@@ -141,41 +141,51 @@ be lost if SCREAM_HACK_XML is not enabled.
       so it must be of the form (a,b,...).
       NOTE: *CANNOT* be changed.
     -->
-    <!-- <atm_procs_list>(sc_import,homme,((shoc,cldFraction,spa,p3),rrtmgp,sc_export))</atm_procs_list> -->
-    <atm_procs_list locked="true">(sc_import,homme,physics,sc_export)</atm_procs_list>
+    <atm_procs_list type="array(string)">sc_import,homme,physics,sc_export</atm_procs_list>
 
     <!-- Basic options for each atm process -->
     <atm_proc_base>
-      <number_of_subcycles constraints="gt 0">1</number_of_subcycles>
+      <number_of_subcycles constraints="gt 0" doc="how many times to subcycle this atm process">1</number_of_subcycles>
       <enable_precondition_checks type="logical">true</enable_precondition_checks>
       <enable_postcondition_checks type="logical">true</enable_postcondition_checks>
       <repair_log_level type="string" valid_values="trace,debug,info,warn">trace</repair_log_level>
-      <compute_tendencies type="array(string)">NONE</compute_tendencies>
+      <!-- Run internal checks on code correctness.
+           <= 0: off; >= 1: global hashes over state -->
+      <internal_diagnostics_level type="integer">0</internal_diagnostics_level>
+      <compute_tendencies
+        type="array(string)"
+        doc="list of computed fields for which this process will back out tendencies"
+        />
     </atm_proc_base>
 
     <!-- Basic options for each atm process group -->
     <atm_proc_group inherit="atm_proc_base">
-      <atm_procs_list>ERROR_NO_ATM_PROCS</atm_procs_list>
+      <atm_procs_list type="array(string)" doc="List of atm processes in this atm process group"/>
       <Type>Group</Type>
-      <schedule_type>Sequential</schedule_type>
+      <schedule_type valid_values="Sequential">Sequential</schedule_type>
     </atm_proc_group>
 
     <!-- Surface coupling (import and export) -->
     <sc_import inherit="atm_proc_base"/>
     <sc_export inherit="atm_proc_base">
       <prescribed_constants>
-        <fields type="array(string)">NONE</fields>
-        <values type="array(real)">0</values>
+        <fields type="array(string)"/>
+        <values type="array(real)"/>
       </prescribed_constants>
+      <prescribed_from_file>
+        <fields type="array(string)"/>
+        <files type="array(string)"/>
+        <!-- Optional argument if fields have a different name in the source data files -->
+        <fields_alt_name type="array(string)"/>
+      </prescribed_from_file>
     </sc_export>
 
     <!-- Homme dynamics -->
     <homme inherit="atm_proc_base">
-      <Grid>Dynamics</Grid>
       <Moisture>moist</Moisture>
       <!-- Frequency in physics steps to output a global hash over the dycore's
-           in fields. <= 0 disables hashing. -->
-      <BfbHash>0</BfbHash>
+           in-fields. <= 0 disables hashing. -->
+      <BfbHash type="integer">18</BfbHash>
     </homme>
 
     <!-- P3 microphysics -->
@@ -185,6 +195,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <do_predict_nc>true</do_predict_nc>
       <do_predict_nc COMPSET=".*SCREAM.*noAero">false</do_predict_nc>
       <enable_column_conservation_checks>false</enable_column_conservation_checks>
+      <max_total_ni type="real" doc="maximum total ice concentration (sum of all categories)" constraints="gt 0">740.0e3</max_total_ni>
       <tables type="array(file)">
         ${DIN_LOC_ROOT}/atm/scream/tables/p3_lookup_table_1.dat-v4.1.1,
         ${DIN_LOC_ROOT}/atm/scream/tables/mu_r_table_vals.dat8,
@@ -197,10 +208,69 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- SHOC macrophysics -->
     <shoc inherit="atm_proc_base">
       <enable_column_conservation_checks>false</enable_column_conservation_checks>
+      <check_flux_state_consistency>false</check_flux_state_consistency>
+      <lambda_low type="real" doc="minimum value of stability correction.">0.001</lambda_low>
+      <lambda_high type="real" doc="maximum value of stability correction.">0.04</lambda_high>
+      <lambda_slope type="real" doc="slope of change from lambda_low to lambda_high.">2.65</lambda_slope>
+      <lambda_thresh type="real" doc="stability threshold for which to apply more stability correction.">0.02</lambda_thresh>
+      <thl2tune type="real" doc="Temperature variance tuning factor">1.0</thl2tune>
+      <qw2tune type="real" doc="Moisture variance tuning factor">1.0</qw2tune>
+      <qwthl2tune type="real" doc="Temperature moisture covariance">1.0</qwthl2tune>
+      <w2tune type="real" doc="Vertical velocity variance">1.0</w2tune>
+      <length_fac type="real" doc="Length scale factor">0.5</length_fac>
+      <c_diag_3rd_mom type="real" doc="Third moment vertical velocity damping factor">7.0</c_diag_3rd_mom>
+      <Ckh type="real" doc="Eddy diffusivity coefficient for heat">0.1</Ckh>
+      <Ckm type="real" doc="Eddy diffusivity coefficient for momentum">0.1</Ckm>
     </shoc>
 
     <!-- CLD fraction -->
     <cldFraction inherit="atm_proc_base"/>
+
+    <!-- nudging -->
+    <nudging inherit="atm_proc_base">
+      <nudging_filename type="array(string)"/>
+      <nudging_fields type="array(string)" doc="List of fields to be nudged.  Note, syntax of 'A:B' represents nudging field A with data from field B in files, syntax of 'A' assumes that nudging file has the same variables name as EAMxx"/>
+      <nudging_timescale type="integer" doc="Timescale to apply nudging tendencies, 0: full replacement, >0: actual timescale">0</nudging_timescale>
+      <use_nudging_weights type="logical" doc="Flag for nudging weights option">false</use_nudging_weights>
+      <nudging_weights_file type="string" doc="weights that relax the nudging fields update"/>
+      <source_pressure_type type="string" 
+	                    valid_values="TIME_DEPENDENT_3D_PROFILE,STATIC_1D_VERTICAL_PROFILE"
+			    doc="Flag for how source pressure levels are handled in the nudging dataset.
+    TIME_DEPENDENT_3D_PROFILE: The dataset contains a time-varying pressure profile, variable name 'p_mid' with dimensions (time,ncol,nlev).
+    STATIC_1D_VERTICAL_PROFILE: The dataset uses a fixed in time single pressure profile, variable name 'p_lev' with dimension (nlev).">TIME_DEPENDENT_3D_PROFILE</source_pressure_type>
+      <source_pressure_file type="string" doc="If STATIC_1D_VERTICAL_PROFILE, this is an optional arg to point to a file with the source pressure levels defined.  
+    Default is to look for p_levs in the first nudging_filename file"/>
+      <nudging_refine_remap_mapfile
+        type="string"
+        doc="Refine-remapping mapfile from the source nudging dataset to the physics grid"
+      >
+        "no-file-given"
+      </nudging_refine_remap_mapfile>
+      <nudging_refine_remap_vert_cutoff
+        type="real"
+        doc="A vertical cutoff to go with refine-remap logic (in units of p_mid) where the nudging is turned off above it (closer to the surface)"
+      >
+        0.0
+      </nudging_refine_remap_vert_cutoff>
+    </nudging>
+
+    <!-- ML correction -->
+    <mlcorrection inherit="atm_proc_base">
+      <ML_model_path_tq type="string" doc="Path to pre-trained ML model for temperature and specific humidity"/>
+      <ML_model_path_uv type="string" doc="Path to pre-trained ML model for wind fields"/>
+      <ML_model_path_sfc_fluxes type="string" doc="Path to pre-trained ML model for surface fluxes"/>
+      <ML_output_fields type="array(string)" doc="ML correction output variables, the following variables are supported: T_mid,qv,u,v"/>
+      <ML_correction_unit_test type="logical">false</ML_correction_unit_test>
+    </mlcorrection>
+
+    <!-- For internal testing only -->
+    <testOnly inherit="atm_proc_base">
+      <my_param type="array(integer)">1,2</my_param>
+      <my_param nlev="1" append="base">3,4</my_param>
+      <my_param nlev="1" append="last">5,6</my_param>
+      <my_param nlev="2" append="last">3,4</my_param>
+      <my_param nlev="2" append="base">5,6</my_param>
+    </testOnly>
 
     <!-- Simple Prescribed Aerosols (SPA) -->
     <spa inherit="atm_proc_base">
@@ -229,7 +299,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <!-- Radiatively active gases; surface values set to F2010 settings taken from EAM  -->
       <!-- Note that h2o concentrations are just taken from qv, o3 is prescribed for now, -->
       <!-- o2 is hard-coded as a constant, CFCs are ignored                               -->
-      <active_gases>h2o, co2, o3, n2o, co, ch4, o2, n2</active_gases>
+      <active_gases type="array(string)">h2o, co2, o3, n2o, co, ch4, o2, n2</active_gases>
       <ch4vmr      > 1807.851e-9  </ch4vmr>
       <co2vmr      > 388.717e-6   </co2vmr>
       <n2ovmr      > 323.141e-9   </n2ovmr>
@@ -258,25 +328,49 @@ be lost if SCREAM_HACK_XML is not enabled.
       <rad_frequency hgrid="ne512np4">3</rad_frequency>
       <rad_frequency hgrid="ne1024np4">3</rad_frequency>
       <rad_frequency hgrid="ne0np4_conus_x4v1_lowcon">4</rad_frequency>
-      <do_aerosol_rad>true</do_aerosol_rad>
+      <do_aerosol_rad type="logical" doc="Flag to turn on/off considering aerosols in radiation calculations">true</do_aerosol_rad>
       <do_aerosol_rad COMPSET=".*SCREAM.*noAero">false</do_aerosol_rad>
-      <enable_column_conservation_checks>false</enable_column_conservation_checks>
+      <enable_column_conservation_checks type="logical">false</enable_column_conservation_checks>
+      <extra_clnclrsky_diag
+        type="logical"
+        doc="Flag to turn on/off an extra clean-clear-sky (with neither clouds nor aerosols) radiation call"
+      >
+        false
+      </extra_clnclrsky_diag>
+      <extra_clnsky_diag
+        type="logical"
+        doc="Flag to turn on/off an extra clean-sky (with no aerosols) radiation call"
+      >
+        false
+      </extra_clnsky_diag>
     </rrtmgp>
 
     <mac_aero_mic inherit="atm_proc_group">
-      <atm_procs_list>(shoc,cldFraction,spa,p3)</atm_procs_list>
-      <atm_procs_list COMPSET=".*SCREAM.*noAero">(shoc,cldFraction,p3)</atm_procs_list>
+      <atm_procs_list>shoc,cldFraction,spa,p3</atm_procs_list>
+      <atm_procs_list hgrid=".*pg2">tms,shoc,cldFraction,spa,p3</atm_procs_list> <!-- TMS only available for PG2 -->
+      <atm_procs_list COMPSET=".*SCREAM.*noAero">shoc,cldFraction,p3</atm_procs_list>
+      <atm_procs_list COMPSET=".*SCREAM.*noAero" hgrid=".*pg2">tms,shoc,cldFraction,p3</atm_procs_list> <!-- TMS only available for PG2 -->
       <number_of_subcycles hgrid="ne4np4">24</number_of_subcycles>
-      <number_of_subcycles hgrid="ne30np4">6</number_of_subcycles>
-      <number_of_subcycles hgrid="ne120np4">3</number_of_subcycles>
-      <number_of_subcycles hgrid="ne256np4">3</number_of_subcycles>
-      <number_of_subcycles hgrid="ne512np4">1</number_of_subcycles>
+      <number_of_subcycles hgrid="ne30np4">12</number_of_subcycles>
+      <number_of_subcycles hgrid="ne120np4">6</number_of_subcycles>
+      <number_of_subcycles hgrid="ne256np4">6</number_of_subcycles>
+      <number_of_subcycles hgrid="ne512np4">2</number_of_subcycles>
       <number_of_subcycles hgrid="ne1024np4">1</number_of_subcycles>
       <number_of_subcycles hgrid="ne0np4_conus_x4v1_lowcon">5</number_of_subcycles>
     </mac_aero_mic>
 
+    <cosp inherit="atm_proc_base">
+      <cosp_subcolumns>10</cosp_subcolumns>
+      <!-- Frequency at which to call COSP; positive values interpreted as number of steps, negative as number of hours -->
+      <cosp_frequency>1</cosp_frequency>
+      <cosp_frequency_units valid_values="steps,hours">hours</cosp_frequency_units>
+    </cosp>
+
+    <!-- Turbulent Mountain Stress -->
+    <tms inherit="atm_proc_base"/>
+
     <physics inherit="atm_proc_group">
-      <atm_procs_list>(mac_aero_mic,rrtmgp)</atm_procs_list>
+      <atm_procs_list>mac_aero_mic,rrtmgp</atm_procs_list>
     </physics>
   </atmosphere_processes_defaults>
 
@@ -311,14 +405,14 @@ be lost if SCREAM_HACK_XML is not enabled.
 
     <!-- List of default topography files on specific grids -->
     <topography_filename type="file">UNSET</topography_filename>
-    <!-- Rough topography available for ne30, ne256, and ne1024 -->
+    <!-- Rough topography available for ne30, ne120, ne256, ne512, and ne1024 -->
     <topography_filename hgrid="ne30np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne30np4pg2_x6t-SGH.c20210614.nc</topography_filename>
+    <topography_filename hgrid="ne120np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne120np4pg2_x6t_20230404.nc</topography_filename>
     <topography_filename hgrid="ne256np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne256np4pg2_x6t-SGH.c20210614.nc</topography_filename>
+    <topography_filename hgrid="ne512np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne512np4pg2_x6t_20230404.nc</topography_filename>
     <topography_filename hgrid="ne1024np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne1024np4pg2_x6t-SGH.c20210614.nc</topography_filename>
-    <!-- Currently no rough topography for ne4, ne120, or ne512. Use smooth topography file -->
+    <!-- Currently no rough topography for ne4. Use smooth topography file -->
     <topography_filename hgrid="ne4np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne4np4pg2_16x_converted.c20200527.nc</topography_filename>
-    <topography_filename hgrid="ne120np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne120np4pg2_16xdel2.nc</topography_filename>
-    <topography_filename hgrid="ne512np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne512np4pg2_16xconsistentSGH_20190212_converted.nc</topography_filename>
     <!-- Special case with non x6t or 16x topography file -->
     <topography_filename hgrid="ne0np4_conus_x4v1_lowcon">${DIN_LOC_ROOT}/atm/cam/topo/USGS_conusx4v1pg2_12x_consistentSGH_20200609.nc</topography_filename>
     <!-- For aquaplanet run, unset the topography_filename and set phis=0 -->
@@ -351,7 +445,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <sfc_alb_dif_nir   >0.0</sfc_alb_dif_nir>
     <surf_sens_flux    >0.0</surf_sens_flux>
     <surf_lw_flux_up   >0.0</surf_lw_flux_up>
-    <surf_mom_flux     >0.0,0.0</surf_mom_flux>
+    <surf_mom_flux     type="array(real)">0.0,0.0</surf_mom_flux>
     <!-- default ne1024 initial condition files do not have these, so init to zero here -->
     <!-- TODO: delete this once we can tell the AD that some fields can be inited by procs -->
     <qc hgrid="ne256np4|ne1024np4">0.0</qc>
@@ -366,7 +460,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <output_yaml_files type="array(string)">${SRCROOT}/components/eamxx/data/scream_default_output.yaml</output_yaml_files>
     <model_restart>
       <filename_prefix>./${CASE}.scream</filename_prefix>
-      <output_control>
+      <output_control locked="true">
         <Frequency>${REST_N}</Frequency>
         <frequency_units>${REST_OPTION}</frequency_units>
       </output_control>
@@ -376,12 +470,17 @@ be lost if SCREAM_HACK_XML is not enabled.
   <!-- driver_options options for scream -->
   <driver_options>
     <atmosphere_dag_verbosity_level>0</atmosphere_dag_verbosity_level>
-    <atm_log_level valid_values="trace,debug,info,warn,error">info</atm_log_level>
+    <atm_log_level type="string"
+                   valid_values="trace,debug,info,warn,error"
+                   doc="Verbosity level for the atm logger">
+      info
+    </atm_log_level>
     <output_to_screen type="logical">false</output_to_screen>
     <mass_column_conservation_error_tolerance>1e-10</mass_column_conservation_error_tolerance>
     <energy_column_conservation_error_tolerance>1e-14</energy_column_conservation_error_tolerance>
     <column_conservation_checks_fail_handling_type>Warning</column_conservation_checks_fail_handling_type>
     <check_all_computed_fields_for_nans type="logical">true</check_all_computed_fields_for_nans >
+    <property_check_data_fields type="array(string)" doc="list of additional data fields to output in property checks (only for physics grid)">phis,landfrac</property_check_data_fields>
   </driver_options>
 
   <!-- E3SM Simulation Settings -->
@@ -452,6 +551,9 @@ be lost if SCREAM_HACK_XML is not enabled.
     <vert_remap_q_alg>10</vert_remap_q_alg>
     <transport_alg>0</transport_alg>
     <vtheta_thresh>100.0</vtheta_thresh>
+    <!-- Run internal checks on code correctness.
+         <= 0: off; >= 1: global hashes over state -->
+    <internal_diagnostics_level type="integer">0</internal_diagnostics_level>
     <!-- pg2 settings -->
     <cubed_sphere_map hgrid=".*pg2">2</cubed_sphere_map>
     <!-- SL transport settings. SL defaults to on for pg2 configs. -->

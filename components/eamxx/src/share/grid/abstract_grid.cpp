@@ -2,6 +2,8 @@
 
 #include "share/field/field_utils.hpp"
 
+#include <ekat/ekat_assert.hpp>
+
 #include <algorithm>
 #include <cstring>
 #include <string>
@@ -28,6 +30,32 @@ AbstractGrid (const std::string& name,
 
   // This grid name is also an alias
   m_aliases.push_back(m_name);
+
+  // Ensure each grid object gets a different id
+  static int counter = 0;
+  m_unique_grid_id = counter;
+  ++counter;
+}
+
+AbstractGrid::
+AbstractGrid (const std::string& name,
+              const GridType type,
+              const int num_local_dofs,
+              const int num_global_dofs,
+              const int num_vertical_lev,
+              const ekat::Comm& comm)
+ : AbstractGrid(name,type,num_local_dofs,num_vertical_lev,comm)
+{
+  m_num_global_dofs = num_global_dofs;
+#ifndef NDEBUG
+  int max_nldofs = m_num_local_dofs;
+  m_comm.all_reduce(&max_nldofs,1,MPI_MAX);
+  EKAT_REQUIRE_MSG (max_nldofs<=m_num_global_dofs,
+      "Error! The number of global dof is smaller than the local number of dofs on some ranks.\n"
+      " - grid name: " + name + "\n"
+      " - num global dofs: " + std::to_string(m_num_global_dofs) + "\n"
+      " - max num local dofs: " + std::to_string(max_nldofs) + "\n");
+#endif
 }
 
 void AbstractGrid::add_alias (const std::string& alias)
@@ -47,63 +75,106 @@ get_vertical_layout (const bool midpoints) const
 }
 
 bool AbstractGrid::is_unique () const {
-  // Get a copy of gids on host. CAREFUL: do not use the stored dofs,
-  // since we need to sort dofs in order to call unique, and we don't
-  // want to alter the order of gids in this grid.
-  auto dofs = m_dofs_gids.clone();
-  auto dofs_h = dofs.get_view<gid_type*,Host>();
+  auto compute_is_unique = [&]() {
+    // Get a copy of gids on host. CAREFUL: do not use the stored dofs,
+    // since we need to sort dofs in order to call unique, and we don't
+    // want to alter the order of gids in this grid.
+    auto dofs = m_dofs_gids.clone();
+    auto dofs_h = dofs.get_view<gid_type*,Host>();
 
-  std::sort(dofs_h.data(),dofs_h.data()+m_num_local_dofs);
-  auto unique_end = std::unique(dofs_h.data(),dofs_h.data()+m_num_local_dofs);
+    std::sort(dofs_h.data(),dofs_h.data()+m_num_local_dofs);
+    auto unique_end = std::unique(dofs_h.data(),dofs_h.data()+m_num_local_dofs);
 
-  int locally_unique = unique_end==(dofs_h.data()+m_num_local_dofs);
-  int unique;
-  m_comm.all_reduce(&locally_unique,&unique,1,MPI_PROD);
-  if (unique==0) {
-    return false;
-  }
-
-  // Each rank has unique gids locally. Now it's time to verify if they are also globally unique.
-  int max_dofs;
-  m_comm.all_reduce(&m_num_local_dofs,&max_dofs,1,MPI_MAX);
-  std::vector<gid_type> gids(max_dofs,-1);
-  int unique_gids = 1;
-
-  for (int pid=0; pid<m_comm.size(); ++pid) {
-    // Rank pid broadcasts its gids, everyone else checks if there are duplicates
-    if (pid==m_comm.rank()) {
-      auto start = dofs_h.data();
-      auto end   = start + m_num_local_dofs;
-      std::copy(start,end,gids.data());
+    int locally_unique = unique_end==(dofs_h.data()+m_num_local_dofs);
+    int unique;
+    m_comm.all_reduce(&locally_unique,&unique,1,MPI_PROD);
+    if (unique==0) {
+      return false;
     }
 
-    int ndofs = m_num_local_dofs;
-    m_comm.broadcast(&ndofs,1,pid);
-    m_comm.broadcast(gids.data(),ndofs,pid);
+    // Each rank has unique gids locally. Now it's time to verify if they are also globally unique.
+    int max_dofs;
+    m_comm.all_reduce(&m_num_local_dofs,&max_dofs,1,MPI_MAX);
+    std::vector<gid_type> gids(max_dofs,-1);
+    int unique_gids = 1;
 
-    int my_unique_gids = 1;
-    if (pid!=m_comm.rank()) {
-      // Checking two sorted arrays of length m and n for elements in common is O(m+n) ops.
-      int i=0, j=0;
-      while (i<m_num_local_dofs && j<ndofs && my_unique_gids==1) {
-        if (dofs_h[i]<gids[j]) {
-          ++i;
-        } else if (dofs_h[i]>gids[j]) {
-          ++j;
-        } else {
-          // Found a match. We can stop here
-          my_unique_gids = 0;
-          break;
+    for (int pid=0; pid<m_comm.size(); ++pid) {
+      // Rank pid broadcasts its gids, everyone else checks if there are duplicates
+      if (pid==m_comm.rank()) {
+        auto start = dofs_h.data();
+        auto end   = start + m_num_local_dofs;
+        std::copy(start,end,gids.data());
+      }
+
+      int ndofs = m_num_local_dofs;
+      m_comm.broadcast(&ndofs,1,pid);
+      m_comm.broadcast(gids.data(),ndofs,pid);
+
+      int my_unique_gids = 1;
+      if (pid!=m_comm.rank()) {
+        // Checking two sorted arrays of length m and n for elements in common is O(m+n) ops.
+        int i=0, j=0;
+        while (i<m_num_local_dofs && j<ndofs && my_unique_gids==1) {
+          if (dofs_h[i]<gids[j]) {
+            ++i;
+          } else if (dofs_h[i]>gids[j]) {
+            ++j;
+          } else {
+            // Found a match. We can stop here
+            my_unique_gids = 0;
+            break;
+          }
         }
       }
+      m_comm.all_reduce(&my_unique_gids,&unique_gids,1,MPI_PROD);
+      if (unique_gids==0) {
+        break;
+      }
     }
-    m_comm.all_reduce(&my_unique_gids,&unique_gids,1,MPI_PROD);
-    if (unique_gids==0) {
-      break;
-    }
-  }
+    return unique_gids==1;
+  };
 
-  return unique_gids;
+  if (not m_is_unique_computed) {
+    m_is_unique = compute_is_unique();
+    m_is_unique_computed = true;
+  }
+  return m_is_unique;
+}
+
+bool AbstractGrid::
+is_valid_layout (const FieldLayout& layout) const
+{
+  using namespace ShortFieldTagsNames;
+
+  const auto lt = get_layout_type(layout.tags());
+  if (lt==LayoutType::Scalar0D or lt==LayoutType::Vector0D) {
+    // 0d layouts are compatible with any grid
+    // Let's return true early to avoid segfautls below
+    return true;
+  }
+  const bool midpoints = layout.tags().back()==LEV;
+  const bool is_vec = layout.is_vector_layout();
+  const int vec_dim = is_vec ? layout.dims()[layout.get_vector_dim()] : 0;
+  const auto vec_tag = is_vec ? layout.get_vector_tag() : INV;
+
+  switch (lt) {
+    case LayoutType::Scalar1D: [[fallthrough]];
+    case LayoutType::Vector1D:
+      // 1d layouts need the right number of levels
+      return layout.dims().back() == m_num_vert_levs or
+             layout.dims().back() == (m_num_vert_levs+1);
+    case LayoutType::Scalar2D:
+      return layout==get_2d_scalar_layout();
+    case LayoutType::Vector2D:
+      return layout==get_2d_vector_layout(vec_tag,vec_dim);
+    case LayoutType::Scalar3D:
+      return layout==get_3d_scalar_layout(midpoints);
+    case LayoutType::Vector3D:
+      return layout==get_3d_vector_layout(midpoints,vec_tag,vec_dim);
+    default:
+      // Anything else is probably no
+      return false;
+  }
 }
 
 auto AbstractGrid::
@@ -196,8 +267,19 @@ AbstractGrid::get_geometry_data_names () const
 void AbstractGrid::reset_num_vertical_lev (const int num_vertical_lev) {
   m_num_vert_levs = num_vertical_lev;
 
-  // TODO: when the PR storing geo data as Field goes in, you should
-  //       invalidate all geo data whose FieldLayout contains LEV/ILEV
+  using namespace ShortFieldTagsNames;
+
+  // Loop over geo data. If they have the LEV or ILEV tag, they are
+  // no longer valid, so we must erase them.
+  for (auto it=m_geo_fields.cbegin(); it!=m_geo_fields.cend(); ) {
+    const auto& fl = it->second.get_header().get_identifier().get_layout();
+    const auto has_lev = fl.has_tag(LEV) or fl.has_tag(ILEV);
+    if (has_lev) {
+      it = m_geo_fields.erase(it);
+    } else {
+      ++it;
+    }
+  }
 }
 
 std::vector<AbstractGrid::gid_type>
@@ -303,6 +385,73 @@ get_owners (const gid_view_h& gids) const
   return result;
 }
 
+void AbstractGrid::
+get_remote_pids_and_lids (const gid_view_h& gids,
+                          std::vector<int>& pids,
+                          std::vector<int>& lids) const
+{
+  const auto& comm = get_comm();
+  int num_gids_in = gids.size();
+
+  pids.resize(num_gids_in,-1);
+  lids.resize(num_gids_in,-1);
+
+  int num_found = 0;
+
+  // We may have repeated gids. In that case, we want to update
+  // the pids/lids arrays at all indices corresponding to the same gid
+  std::map<gid_type,std::vector<int>> gid2idx;
+  for (int i=0; i<num_gids_in; ++i) {
+    gid2idx[gids[i]].push_back(i);
+  }
+  int num_unique_gids = gid2idx.size();
+
+  // Let each rank bcast its owned gids, so that other procs can
+  // check against their input list
+  // Note: we can't use a view of const, since the view ptr needs to be passed
+  //       to MPI bcast routines, which expect pointer to nonconst. It's an
+  //       innocuous issue though, since only the send rank will use the ptr
+  //       from the view, and it's not writing in it.
+  auto my_gids_h = m_dofs_gids.get_view<gid_type*,Host>();
+  gid_type* data;
+  std::vector<gid_type> pid_gids;
+  for (int pid=0; pid<comm.size(); ++pid) {
+    // Bcast gids count for this pid
+    int num_gids_pid = my_gids_h.size();
+    comm.broadcast(&num_gids_pid,1,pid);
+
+    // Bcast gids
+    if (pid==comm.rank()) {
+      data = my_gids_h.data();
+    } else {
+      pid_gids.resize(num_gids_pid);
+      data = pid_gids.data();
+    }
+    comm.broadcast(data,num_gids_pid,pid);
+
+    // Checks if any of the input pids is in this list
+    for (int i=0; i<num_gids_pid; ++i) {
+      auto it = gid2idx.find(data[i]);
+      if (it!=gid2idx.end()) {
+        for (auto idx : it->second) {
+          EKAT_REQUIRE_MSG (pids[idx]==-1,
+              "Error! Found a GID with multiple owners.\n"
+              "  - owner 1: " + std::to_string(pids[idx]) + "\n"
+              "  - owner 2: " + std::to_string(pid) + "\n");
+          pids[idx] = pid;
+          lids[idx] = i;
+        }
+        ++num_found;
+      }
+    }
+  }
+  EKAT_REQUIRE_MSG (num_found==num_unique_gids,
+      "Error! Could not locate the owner of one of the input GIDs.\n"
+      "  - rank: " + std::to_string(comm.rank()) + "\n"
+      "  - num found: " + std::to_string(num_found) + "\n"
+      "  - num unique gids in: " + std::to_string(num_unique_gids) + "\n");
+}
+
 void AbstractGrid::create_dof_fields (const int scalar2d_layout_rank)
 {
   using namespace ShortFieldTagsNames;
@@ -318,6 +467,17 @@ void AbstractGrid::create_dof_fields (const int scalar2d_layout_rank)
 
   m_dofs_gids.allocate_view();
   m_lid_to_idx.allocate_view();
+}
+
+auto AbstractGrid::get_gid2lid_map () const
+ -> std::map<gid_type,int>
+{
+  std::map<gid_type,int> m;
+  auto gids_h = get_dofs_gids().get_view<const gid_type*,Host>();
+  for (int i=0; i<get_num_local_dofs(); ++i) {
+    m[gids_h[i]] = i;
+  }
+  return m;
 }
 
 void AbstractGrid::copy_data (const AbstractGrid& src, const bool shallow)
@@ -341,6 +501,8 @@ void AbstractGrid::copy_data (const AbstractGrid& src, const bool shallow)
       m_geo_fields[name] = src.m_geo_fields.at(name).clone();
     }
   }
+  m_is_unique = src.m_is_unique;
+  m_is_unique_computed = src.m_is_unique_computed;
 }
 
 } // namespace scream

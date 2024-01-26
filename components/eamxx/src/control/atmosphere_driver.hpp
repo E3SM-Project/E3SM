@@ -2,6 +2,7 @@
 #define SCREAM_ATMOSPHERE_DRIVER_HPP
 
 #include "control/surface_coupling_utils.hpp"
+#include "control/intensive_observation_period.hpp"
 #include "share/field/field_manager.hpp"
 #include "share/grid/grids_manager.hpp"
 #include "share/util/scream_time_stamp.hpp"
@@ -70,6 +71,9 @@ public:
   // Set AD params
   void init_scorpio (const int atm_id = 0);
 
+  // Setup IntensiveObservationPeriod
+  void setup_intensive_observation_period ();
+
   // Create atm processes, without initializing them
   void create_atm_processes ();
 
@@ -91,11 +95,23 @@ public:
   void setup_surface_coupling_processes() const;
 
   // Zero out precipitation flux
-  void reset_accummulated_fields();
+  void reset_accumulated_fields();
 
   // Create and add mass and energy conservation checks
   // and pass to m_atm_process_group.
   void setup_column_conservation_checks ();
+
+  // If TMS process exists, creates link to SHOC for applying
+  // tms' surface drag coefficient.
+  void setup_shoc_tms_links();
+
+  // Add column data to all pre/postcondition property checks
+  // for use in output.
+  void add_additional_column_data_to_property_checks ();
+
+  void set_provenance_data (std::string caseid = "",
+                            std::string hostname = "",
+                            std::string username = "");
 
   // Load initial conditions for atm inputs
   void initialize_fields ();
@@ -136,7 +152,6 @@ public:
   // NOTE: if already finalized, this is a no-op
   void finalize ();
 
-  field_mgr_ptr get_ref_grid_field_mgr () const;
   field_mgr_ptr get_field_mgr (const std::string& grid_name) const;
 
   // Get atmosphere time stamp
@@ -191,6 +206,8 @@ protected:
   std::shared_ptr<ATMBufferManager>         m_memory_buffer;
   std::shared_ptr<SCDataManager>            m_surface_coupling_import_data_manager;
   std::shared_ptr<SCDataManager>            m_surface_coupling_export_data_manager;
+
+  std::shared_ptr<IntensiveObservationPeriod> m_intensive_observation_period;
 
   // This is the time stamp at the beginning of the time step.
   util::TimeStamp                           m_current_ts;

@@ -8,6 +8,7 @@ include(ScreamUtils)
 
 # RRTMGP++ requires YAKL
 
+string(TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_ci)
 if (TARGET yakl)
   # Other E3SM components are building YAKL...
   message ("It appears some other part of E3SM is building YAKL.\n"
@@ -39,16 +40,18 @@ else ()
   EkatDisableAllWarning(yakl)
 
   # For debug builds, set -DYAKL_DEBUG
-  string(TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_ci)
   if (CMAKE_BUILD_TYPE_ci STREQUAL "debug")
     target_compile_definitions(yakl PUBLIC YAKL_DEBUG)
   endif()
 endif()
 
-# Whether we built yakl or it was already built, we still need to ensure
-# debug builds have --fmad=false in it. The EKAT util automatically sets
-# the flag for debug builds
-SetCudaFlags(yakl CUDA_LANG)
+# See eamxx/src/dynamics/homme/CMakeLists.txt for an explanation of this
+# workaround.
+if ((SCREAM_MACHINE STREQUAL "ascent" OR SCREAM_MACHINE STREQUAL "pm-gpu") AND CMAKE_BUILD_TYPE_ci STREQUAL "debug")
+  SetCudaFlags(yakl CUDA_LANG FLAGS -UNDEBUG)
+else()
+  SetCudaFlags(yakl CUDA_LANG)
+endif()
 
 ##################################
 #           RRTMGP               #
@@ -71,6 +74,7 @@ set(EXTERNAL_SRC
   ${EAM_RRTMGP_DIR}/external/cpp/extensions/fluxes_byband/mo_fluxes_byband_kernels.cpp
 )
 add_library(rrtmgp ${EXTERNAL_SRC})
+target_compile_definitions(rrtmgp PUBLIC EAMXX_HAS_RRTMGP)
 EkatDisableAllWarning(rrtmgp)
 yakl_process_target(rrtmgp)
 
@@ -133,7 +137,7 @@ target_include_directories(scream_rrtmgp_yakl SYSTEM PUBLIC
 ##################################
 
 set(SCREAM_RRTMGP_SOURCES
-  atmosphere_radiation.cpp
+  eamxx_rrtmgp_process_interface.cpp
   shr_orb_mod_c2f.F90
 )
 

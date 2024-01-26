@@ -88,12 +88,17 @@ if [ $skip_testing -eq 0 ]; then
       fi
   fi
 
+  SA_FAILURES_DETAILS=""
   # Run scream stand-alone tests (SA)
   if [ $test_SA -eq 1 ]; then
-    ./scripts/gather-all-data "./scripts/test-all-scream ${TAS_ARGS}" -l -m $SCREAM_MACHINE
+    this_output=$(./scripts/gather-all-data "./scripts/test-all-scream ${TAS_ARGS}" -l -m $SCREAM_MACHINE)
     if [[ $? != 0 ]]; then
       fails=$fails+1;
       sa_fail=1
+      if [[ $is_at_run == 1 ]]; then
+        errors=$(echo "$this_output" | grep -m1 -A 100000 'Build type ')
+        SA_FAILURES_DETAILS+="$errors"
+      fi
     fi
 
     # Add memcheck and coverage tests for nightlies on specific machines
@@ -116,7 +121,7 @@ if [ $skip_testing -eq 0 ]; then
       fi
 
       if [[ "$SCREAM_MACHINE" == "weaver" ]]; then
-        ./scripts/gather-all-data "./scripts/test-all-scream -t cmc -t csr -t csi -t css ${TAS_ARGS}" -l -m $SCREAM_MACHINE
+        ./scripts/gather-all-data "./scripts/test-all-scream -t csm -t csr -t csi -t css ${TAS_ARGS}" -l -m $SCREAM_MACHINE
         if [[ $? != 0 ]]; then
           fails=$fails+1;
           memcheck_fail=1
@@ -190,10 +195,14 @@ if [ $skip_testing -eq 0 ]; then
 
       if [[ $test_v1 == 1 ]]; then
         # AT runs should be fast. => run only low resolution
-        ../../cime/scripts/create_test e3sm_scream_v1_lowres --compiler=gnu9 -c -b master --wait
+        this_output=$(../../cime/scripts/create_test e3sm_scream_v1_at --compiler=gnu9 -c -b master --wait)
         if [[ $? != 0 ]]; then
           fails=$fails+1;
           v1_fail=1
+          if [[ $is_at_run == 1 ]]; then
+            errors=$(echo "$this_output" | grep -m1 -A 100000 'Waiting for tests to finish')
+            V1_FAILURES_DETAILS+="$errors"
+          fi
         fi
       else
           echo "SCREAM v1 tests were skipped, since the Github label 'AT: Skip v1 Testing' was found.\n"
@@ -209,9 +218,11 @@ if [ $skip_testing -eq 0 ]; then
     echo "FAILS DETECTED:"
     if [[ $sa_fail == 1 ]]; then
       echo "  SCREAM STANDALONE TESTING FAILED!"
+      echo "$SA_FAILURES_DETAILS"
     fi
     if [[ $v1_fail == 1 ]]; then
       echo "  SCREAM V1 TESTING FAILED!"
+      echo "$V1_FAILURES_DETAILS"
     fi
     if [[ $v0_fail == 1 ]]; then
       echo "  SCREAM V0 TESTING FAILED!"

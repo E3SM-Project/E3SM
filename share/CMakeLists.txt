@@ -29,31 +29,11 @@ function(set_compilers_e3sm)
   set(CMAKE_CXX_COMPILER     ${CMAKE_CXX_COMPILER}     CACHE STRING "The CXX compiler")
   set(CMAKE_C_COMPILER       ${CMAKE_C_COMPILER}       CACHE STRING "The C   compiler")
   set(CMAKE_Fortran_COMPILER ${CMAKE_Fortran_COMPILER} CACHE STRING "The Fortran compiler")
-
-  # USE_CUDA or USE_HIP is set through Macros.cmake
-  # For instance: cime_config/machines/cmake_macros/gnugpu_summit.cmake
-  # If it exists, then set parent's scope to true; otherwise to false
-  # At this point, we use either CUDA or HIP.
-  # Revisit as needed for future systems.
-  if (USE_CUDA)
-    set(USE_CUDA TRUE PARENT_SCOPE)
-  elseif (USE_HIP)
-    set(USE_HIP TRUE PARENT_SCOPE)
-  else()
-    set(USE_CUDA FALSE PARENT_SCOPE)
-    set(USE_HIP FALSE PARENT_SCOPE)
-  endif()
 endfunction()
 
 set_compilers_e3sm()
 
 project(CSM_SHARE C CXX Fortran)
-
-if(USE_CUDA)
-  enable_language(CUDA)
-elseif(USE_HIP)
-  enable_language(HIP)
-endif()
 
 # Any changes to SourceMods will require us to reconfigure
 file(GLOB COMPONENT_SOURCE_MOD_DIRS "${CASEROOT}/SourceMods/src.*")

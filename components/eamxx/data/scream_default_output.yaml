@@ -35,8 +35,10 @@ Fields:
       - qr
       - eff_radius_qc
       - eff_radius_qi
+      - eff_radius_qr
       - precip_ice_surf_mass
       - precip_liq_surf_mass
+      - rainfrac
       # SHOC + P3
       - qc
       - qv
@@ -59,6 +61,13 @@ Fields:
       - surf_sens_flux
       # Diagnostics
       - PotentialTemperature
+  # GLL output for homme states.
+  Dynamics:
+    Field Names:
+      - ps_dyn
+      - dp3d_dyn
+      - omega_dyn
+    IO Grid Name: Physics GLL
 output_control:
 # WARNING: ERS/ERP tets will override this with STOP_N/STOP_OPTION
   Frequency: ${HIST_N}

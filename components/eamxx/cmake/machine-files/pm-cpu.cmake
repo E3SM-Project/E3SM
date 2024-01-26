@@ -1,17 +1,8 @@
 include(${CMAKE_CURRENT_LIST_DIR}/common.cmake)
 common_setup()
 
-if ("${PROJECT_NAME}" STREQUAL "E3SM")
-  if (BUILD_THREADED)
-    include (${EKAT_MACH_FILES_PATH}/kokkos/openmp.cmake)
-    #message(STATUS, "pm-cpu openmp BUILD_THREADED=${BUILD_THREADED}")
-  else()
-    include (${EKAT_MACH_FILES_PATH}/kokkos/serial.cmake)
-    #message(STATUS, "pm-cpu serial BUILD_THREADED=${BUILD_THREADED}")
-  endif()
-else()
-  include (${EKAT_MACH_FILES_PATH}/kokkos/openmp.cmake)
-endif()
+include (${EKAT_MACH_FILES_PATH}/kokkos/amd-zen3.cmake)
+include (${EKAT_MACH_FILES_PATH}/kokkos/openmp.cmake)
 
 set(CMAKE_CXX_FLAGS "-DTHRUST_IGNORE_CUB_VERSION_CHECK" CACHE STRING "" FORCE)
 

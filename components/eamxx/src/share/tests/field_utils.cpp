@@ -22,6 +22,7 @@ TEST_CASE("utils") {
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
   using kt = KokkosTypes<DefaultDevice>;
+  using kt_host = KokkosTypes<HostDevice>;
 
   using P8 = ekat::Pack<Real,8>;
 
@@ -170,6 +171,103 @@ TEST_CASE("utils") {
 
     REQUIRE(field_min<Real>(f1)==lmin);
     REQUIRE(field_min<Real>(f1,&comm)==gmin);
+  }
+
+  SECTION ("perturb") {
+    using namespace ShortFieldTagsNames;
+    using RPDF = std::uniform_real_distribution<Real>;
+    using IPDF = std::uniform_int_distribution<int>;
+    auto engine = setup_random_test ();
+
+    const int ncols = 6;
+    const int ncmps = 2;
+    const int nlevs = IPDF(3,9)(engine); // between 3-9 levels
+
+    // Create 1d, 2d, 3d fields with a level dimension, and set all to 1
+    FieldIdentifier fid1 ("f_1d",   FieldLayout({LEV},           {nlevs}),               Units::nondimensional(), "");
+    FieldIdentifier fid2a("f_2d_a", FieldLayout({CMP, LEV},      {ncmps, nlevs}),        Units::nondimensional(), "");
+    FieldIdentifier fid2b("f_2d_b", FieldLayout({COL, LEV},      {ncols, nlevs}),        Units::nondimensional(), "");
+    FieldIdentifier fid3 ("f_3d",   FieldLayout({COL, CMP, LEV}, {ncols, ncmps, nlevs}), Units::nondimensional(), "");
+    Field f1(fid1), f2a(fid2a), f2b(fid2b), f3(fid3);
+    f1.allocate_view(), f2a.allocate_view(), f2b.allocate_view(), f3.allocate_view();
+    f1.deep_copy(1), f2a.deep_copy(1), f2b.deep_copy(1), f3.deep_copy(1);
+
+    // We need GIDs for fields with COL component. This test is not over
+    // multiple ranks, so just set as [0, ncols-1].
+    Field gids(FieldIdentifier("gids", FieldLayout({COL}, {ncols}), Units::nondimensional(), "", DataType::IntType));
+    gids.allocate_view();
+    auto gids_data = gids.get_internal_view_data<int,Host>();
+    std::iota(gids_data, gids_data+ncols, 0);
+    gids.sync_to_dev();
+
+    // Create masks s.t. only last 3 levels are perturbed. For variety,
+    // 1d and 2d fields will use lambda mask and 3 field will use a view.
+    auto mask_lambda = [&nlevs] (const int& i0) {
+      return i0 >= nlevs-3;
+    };
+    kt_host::view_1d<bool> mask_view("mask_view", nlevs);
+    Kokkos::deep_copy(mask_view, false);
+    for (int ilev=0; ilev<nlevs; ++ilev) {
+      if (ilev >= nlevs-3) mask_view(ilev) = true;
+    }
+
+    // Compute random perturbation between [2, 3]
+    RPDF pdf(2, 3);
+    int base_seed = 0;
+    perturb(f1,  engine, pdf, base_seed, mask_lambda);
+    perturb(f2a, engine, pdf, base_seed, mask_lambda);
+    perturb(f2b, engine, pdf, base_seed, mask_lambda, gids);
+    perturb(f3,  engine, pdf, base_seed, mask_view,   gids);
+
+    // Sync to host for checks
+    f1.sync_to_host(), f2a.sync_to_host(), f2b.sync_to_host(), f3.sync_to_host();
+    const auto v1  = f1.get_view <Real*,   Host>();
+    const auto v2a = f2a.get_view<Real**,  Host>();
+    const auto v2b = f2b.get_view<Real**,  Host>();
+    const auto v3  = f3.get_view <Real***, Host>();
+
+    // Check that all field values are 1 for all but last 3 levels and between [2,3] otherwise.
+    auto check_level = [&] (const int ilev, const Real val) {
+      if (ilev < nlevs-3) REQUIRE(val == 1);
+      else REQUIRE((2 <= val && val <= 3));
+    };
+    for (int icol=0; icol<ncols; ++icol) {
+      for (int icmp=0; icmp<ncmps; ++icmp) {
+        for (int ilev=0; ilev<nlevs; ++ilev) {
+          if (icol==0 && icmp==0) check_level(ilev, v1(ilev));
+          if (icol==0) check_level(ilev, v2a(icmp,ilev));
+          if (icmp==0) check_level(ilev, v2b(icol,ilev));
+          check_level(ilev, v3(icol,icmp,ilev));
+    }}}
+
+    // Check that using a different seed gives different values
+    auto f1_alt = f1.clone(); f1_alt.deep_copy(1.0);
+    auto f3_alt = f3.clone(); f3_alt.deep_copy(1.0);
+    int base_seed_alt = 100;
+    perturb(f1_alt, engine, pdf, base_seed_alt, mask_lambda);
+    perturb(f3_alt, engine, pdf, base_seed_alt, mask_lambda, gids);
+    f1_alt.sync_to_host(), f3_alt.sync_to_host();
+
+    const auto v1_alt = f1_alt.get_view<Real*,   Host>();
+    const auto v3_alt = f3_alt.get_view<Real***, Host>();
+
+    auto check_diff = [&] (const int ilev, const Real val1, const Real val2) {
+      if (ilev < nlevs-3) REQUIRE(val1==val2);
+      else                REQUIRE(val1!=val2);
+    };
+    for (int icol=0; icol<ncols; ++icol) {
+      for (int icmp=0; icmp<ncmps; ++icmp) {
+        for (int ilev=0; ilev<nlevs; ++ilev) {
+          if (icol==0 && icmp==0) check_diff(ilev, v1(ilev), v1_alt(ilev));
+          check_diff(ilev, v3(icol,icmp,ilev), v3_alt(icol,icmp,ilev));
+    }}}
+
+    // Finally check that the original seed gives same result
+    f1_alt.deep_copy(1.0), f3_alt.deep_copy(1.0);
+    perturb(f1_alt, engine, pdf, base_seed, mask_lambda);
+    perturb(f3_alt, engine, pdf, base_seed, mask_lambda, gids);
+    REQUIRE(views_are_equal(f1, f1_alt));
+    REQUIRE(views_are_equal(f3, f3_alt));
   }
 
   SECTION ("wrong_st") {

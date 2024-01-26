@@ -1,0 +1,31 @@
+&ctl_nl
+cubed_sphere_map        = ${HOMME_TEST_CUBED_SPHERE_MAP}
+disable_diagnostics     = .false.
+dt_remap_factor         = ${HOMME_TEST_REMAP_FACTOR}
+dt_tracer_factor        = ${HOMME_TEST_TRACERS_FACTOR}
+hypervis_order          = 2
+hypervis_scaling        = ${HOMME_TEST_HVSCALING}
+hypervis_subcycle       = ${HOMME_TEST_HVS}
+hypervis_subcycle_tom   = ${HOMME_TEST_HVS_TOM}
+hypervis_subcycle_q     = ${HOMME_TEST_HVS_Q}
+mesh_file               = "none"
+nu                      = ${HOMME_TEST_NU}
+nu_top                  = ${HOMME_TEST_NUTOP}
+se_ftype                = ${HOMME_SE_FTYPE}
+se_geometry             = "plane"
+se_limiter_option       = ${HOMME_TEST_LIM}
+se_ne_x                 = ${HOMME_TEST_NE_X}
+se_ne_y                 = ${HOMME_TEST_NE_Y}
+se_lx                   = ${HOMME_TEST_LX}
+se_ly                   = ${HOMME_TEST_LY}
+se_nsplit               = -1
+se_partmethod           = 4
+se_topology             = "plane"
+se_tstep                = ${HOMME_TEST_TIME_STEP}
+statefreq               = 9999
+theta_advect_form       = ${HOMME_THETA_FORM}
+theta_hydrostatic_mode  = ${HOMME_THETA_HY_MODE}
+transport_alg           = ${HOMME_TEST_TRANSPORT_ALG}
+tstep_type              = ${HOMME_TTYPE}
+vert_remap_q_alg        = 10
+/

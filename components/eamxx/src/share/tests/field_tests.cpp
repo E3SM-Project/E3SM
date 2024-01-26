@@ -17,21 +17,6 @@
 
 namespace {
 
-TEST_CASE("field_layout") {
-  using namespace scream;
-  using namespace ShortFieldTagsNames;
-
-  FieldLayout l({EL,GP,GP});
-
-  // Should not be able to set a dimensions vector of wrong rank
-  REQUIRE_THROWS(l.set_dimensions({1,2}));
-
-  l.set_dimensions({1,2,3});
-
-  // Should not be able to reset the dimensions once they are set
-  REQUIRE_THROWS(l.set_dimensions({1,2,3}));
-}
-
 TEST_CASE("field_identifier", "") {
   using namespace scream;
   using namespace ekat::units;
@@ -69,7 +54,7 @@ TEST_CASE("field_tracking", "") {
   FieldTracking track;
   util::TimeStamp time1(2021,10,12,17,8,10);
   util::TimeStamp time2(2021,10,12,17,8,20);
-  REQUIRE_NOTHROW (track.update_time_stamp(time2));
+  track.update_time_stamp(time2);
 
   // Cannot rewind time (yet)
   REQUIRE_THROWS  (track.update_time_stamp(time1));
@@ -114,7 +99,7 @@ TEST_CASE("field", "") {
     // Should not be able to reshape to this data type...
     REQUIRE_THROWS(f1.get_view<P16**>());
     // But this should work
-    REQUIRE_NOTHROW(f1.get_view<P8**>());
+    f1.get_view<P8**>();
 
     // Using packs (of allowable size) of different pack sizes
     // should lead to views with different extents.
@@ -162,6 +147,26 @@ TEST_CASE("field", "") {
     REQUIRE(views_are_equal(f1,f2));
   }
 
+  SECTION ("construct_from_view") {
+    // Crate f1 with some padding, to stress test the feature
+    Field f1 (fid);
+    auto& fap1 = f1.get_header().get_alloc_properties();
+    fap1.request_allocation(16);
+    f1.allocate_view();
+    f1.deep_copy(1.0);
+
+    // Get f1 view, and wrap it in another field
+    auto view = f1.get_view<Real**>();
+    Field f2 (fid,view);
+
+    // Check the two are the same
+    REQUIRE (views_are_equal(f1,f2));
+
+    // Modify one field, and check again
+    randomize(f2,engine,pdf);
+    REQUIRE (views_are_equal(f1,f2));
+  }
+
   SECTION ("clone") {
     Field f1 (fid);
     auto& fap1 = f1.get_header().get_alloc_properties();
@@ -182,6 +187,26 @@ TEST_CASE("field", "") {
     REQUIRE (field_min<Real>(f2)==0.0);
     REQUIRE (field_max<Real>(f1)==3.0);
     REQUIRE (field_min<Real>(f1)==3.0);
+  }
+
+  SECTION ("alias") {
+    Field f1 (fid);
+    f1.allocate_view();
+
+    Field f2 = f1.alias("the_alias");
+
+    REQUIRE(f2.is_allocated());
+    REQUIRE(&f1.get_header().get_tracking()==&f2.get_header().get_tracking());
+    REQUIRE(&f1.get_header().get_alloc_properties()==&f2.get_header().get_alloc_properties());
+    REQUIRE(f1.get_header().get_identifier().get_layout()==f2.get_header().get_identifier().get_layout());
+    REQUIRE(f1.get_internal_view_data<Real>()==f2.get_internal_view_data<Real>());
+
+    // Identifiers are separate objects though
+    REQUIRE(&f1.get_header().get_identifier()!=&f2.get_header().get_identifier());
+
+    // Check extra data is also shared
+    f1.get_header().set_extra_data("foo",1);
+    REQUIRE (f2.get_header().has_extra_data("foo"));
   }
 
   SECTION ("deep_copy") {
@@ -328,6 +353,39 @@ TEST_CASE("field", "") {
       for (int j=0; j<dims[1]; ++j) {
         REQUIRE (v2dh(i,j) == v2d_hm(i,j) );
       }
+    }
+  }
+
+  SECTION ("rank0_field") {
+    // Create 0d field
+    FieldIdentifier fid0("f_0d", FieldLayout({},{}), Units::nondimensional(), "dummy_grid");
+    Field f0(fid0);
+    f0.allocate_view();
+
+    // Create 1d field
+    FieldIdentifier fid1("f_1d", FieldLayout({COL}, {5}), Units::nondimensional(), "dummy_grid");
+    Field f1(fid1);
+    f1.allocate_view();
+
+    // Randomize 1d field
+    randomize(f1,engine,pdf);
+
+    auto v0 = f0.get_view<Real, Host>();
+    auto v1 = f1.get_view<Real*, Host>();
+
+    // Deep copy subfield of 1d field -> 0d field and check result
+    for (size_t i=0; i<v1.extent(0); ++i) {
+      f0.deep_copy<Host>(f1.subfield(0, i));
+      REQUIRE(v0() == v1(i));
+    }
+
+    // Randomize 0d field
+    randomize(f0,engine,pdf);
+
+    // Deep copy 0d field -> subfield of 1d field and check result
+    for (size_t i=0; i<v1.extent(0); ++i) {
+      f1.subfield(0, i).deep_copy<Host>(f0);
+      REQUIRE(v1(i) == v0());
     }
   }
 }
@@ -578,9 +636,9 @@ TEST_CASE("tracers_bundle", "") {
   int idx_v, idx_c, idx_r;
 
   // The idx must be stored
-  REQUIRE_NOTHROW (idx_v = group.m_info->m_subview_idx.at("qv"));
-  REQUIRE_NOTHROW (idx_c = group.m_info->m_subview_idx.at("qc"));
-  REQUIRE_NOTHROW (idx_r = group.m_info->m_subview_idx.at("qr"));
+  idx_v = group.m_info->m_subview_idx.at("qv");
+  idx_c = group.m_info->m_subview_idx.at("qc");
+  idx_r = group.m_info->m_subview_idx.at("qr");
 
   // All idx must be in [0,2] and must be different
   REQUIRE ((idx_v>=0 && idx_v<3 &&
@@ -793,7 +851,17 @@ TEST_CASE ("update") {
     f3.update(f_real,2,0);
     REQUIRE (views_are_equal(f3,f2));
   }
-}
 
+  SECTION ("scale") {
+    Field f1 = f_real.clone();
+    Field f2 = f_real.clone();
+
+    // x=2, x*y = 2*y
+    f1.deep_copy(2.0);
+    f1.scale(f2);
+    f2.scale(2.0);
+    REQUIRE (views_are_equal(f1, f2));
+  }
+}
 
 } // anonymous namespace

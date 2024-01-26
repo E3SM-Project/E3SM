@@ -70,7 +70,7 @@ def test_cmake_cache_contents(test_obj, build_name, cache_var, expected_value):
     test_obj.assertTrue(cache_file.is_file(), "Missing cache file {}".format(cache_file)) # pylint: disable=no-member
 
     grep_output = run_cmd_assert_result(test_obj, "grep ^{} CMakeCache.txt".format(cache_var), from_dir=cache_file.parent)
-    value = grep_output.split("=")[-1]
+    value = grep_output.split("=", maxsplit=1)[-1]
     test_obj.assertEqual(expected_value.upper(), value.upper(),
                          msg="For CMake cache variable {}, expected value '{}', got '{}'".format(cache_var, expected_value, value))
 
@@ -173,7 +173,7 @@ class TestBaseOuter: # Hides the TestBase class from test scanner
 
         def test_pylint(self):
             ensure_pylint()
-            run_cmd_assert_result(self, "python3 -m pylint --disable C --disable R {}".format(self._source_file), from_dir=TEST_DIR)
+            run_cmd_assert_result(self, "python3 -m pylint --disable C --disable R {}".format(self._source_file), from_dir=TEST_DIR, verbose=True)
 
         def test_gen_baseline(self):
             if self._generate:
@@ -349,11 +349,12 @@ class TestTestAllScream(TestBaseOuter.TestBase):
             cmd = self.get_cmd("./test-all-scream -m $machine {}".format(options),
                                 self._machine, dry_run=False)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
-            builddir = "cuda_mem_check" if is_cuda_machine(self._machine) else "valgrind"
+            builddir = "compute_sanitizer_memcheck" if is_cuda_machine(self._machine) else "valgrind"
             test_cmake_cache_contents(self, builddir, "CMAKE_BUILD_TYPE", "Debug")
             test_cmake_cache_contents(self, builddir, "SCREAM_TEST_SIZE", "SHORT")
             if is_cuda_machine(self._machine):
-                test_cmake_cache_contents(self, builddir, "EKAT_ENABLE_CUDA_MEMCHECK", "TRUE")
+                test_cmake_cache_contents(self, builddir, "EKAT_ENABLE_COMPUTE_SANITIZER", "TRUE")
+                test_cmake_cache_contents(self, builddir, "EKAT_COMPUTE_SANITIZER_OPTIONS", "--tool=memcheck")
             else:
                 test_cmake_cache_contents(self, builddir, "EKAT_ENABLE_VALGRIND", "TRUE")
         else:

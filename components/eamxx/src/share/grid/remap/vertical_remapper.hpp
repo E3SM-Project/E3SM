@@ -70,7 +70,7 @@ public:
 
 protected:
 
-  void register_vertical_source_field(const Field& src, const std::string& mode);
+  void register_vertical_source_field(const Field& src);
 
   const identifier_type& do_get_src_field_id (const int ifield) const override {
     return m_src_fields[ifield].get_header().get_identifier();
@@ -110,7 +110,7 @@ public:
 protected:
 
   using KT = KokkosTypes<DefaultDevice>;
-  using gid_t = AbstractGrid::gid_type;
+  using gid_type = AbstractGrid::gid_type;
 
   template<int N>
   using RPack = ekat::Pack<Real,N>;

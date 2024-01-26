@@ -34,8 +34,8 @@ bool views_are_equal(const Field& f1, const Field& f2, const ekat::Comm* comm)
   switch (l1.rank()) {
     case 1:
       {
-        auto v1 = f1.template get_view<ST*,Host>();
-        auto v2 = f2.template get_view<ST*,Host>();
+        auto v1 = f1.template get_strided_view<ST*,Host>();
+        auto v2 = f2.template get_strided_view<ST*,Host>();
         for (int i=0; i<dims[0]; ++i) {
           if (v1(i) != v2(i)) {
             same_locally = false;
@@ -137,6 +137,12 @@ void randomize (const Field& f, Engine& engine, PDF&& pdf)
 {
   const auto& fl = f.get_header().get_identifier().get_layout();
   switch (fl.rank()) {
+    case 0:
+      {
+        auto v = f.template get_view<ST,Host>();
+        v() = pdf(engine);
+      }
+      break;
     case 1:
       {
         auto v = f.template get_view<ST*,Host>();
@@ -208,6 +214,71 @@ void randomize (const Field& f, Engine& engine, PDF&& pdf)
   f.sync_to_dev();
 }
 
+template<typename ST, typename Engine, typename PDF, typename MaskType>
+void perturb (const Field& f,
+              Engine& engine,
+              PDF&& pdf,
+              const unsigned int base_seed,
+              const MaskType& level_mask,
+              const Field& dof_gids)
+{
+  const auto& fl = f.get_header().get_identifier().get_layout();
+
+  // Check to see if field has a column dimension
+  using namespace ShortFieldTagsNames;
+  const bool has_column_dim = fl.has_tag(COL);
+
+  if (has_column_dim) {
+    // Because Column is the partitioned dimension, we must reset the
+    // RNG seed to be the same on every column so that a column will
+    // have the same value no matter where it exists in an MPI rank's
+    // set of local columns.
+    const auto gids = dof_gids.get_view<const int*, Host>();
+
+    // Create a field to store perturbation values with layout
+    // the same as f, but stripped of column and level dimension.
+    auto perturb_fl = fl.strip_dim(COL).strip_dim(LEV);
+    FieldIdentifier perturb_fid("perturb_field", perturb_fl, ekat::units::Units::nondimensional(), "");
+    Field perturb_f(perturb_fid);
+    perturb_f.allocate_view();
+
+    // Loop through columns as reset RNG seed based on GID of column
+    for (auto icol=0; icol<fl.dims().front(); ++icol) {
+      const auto new_seed = base_seed+gids(icol);
+      engine.seed(new_seed);
+
+      // Loop through levels. For each that satisfy the level_mask,
+      // apply a random perturbation to f.
+      for (auto ilev=0; ilev<fl.dims().back(); ++ilev) {
+        if (level_mask(ilev)) {
+          randomize(perturb_f, engine, pdf);
+          f.subfield(0, icol).subfield(f.rank()-2, ilev).scale(perturb_f);
+        }
+      }
+    }
+  } else {
+    // If no Column tag exists, this field is not partitioned.
+    // Set engine to base_seed to ensure computation is reproducible.
+    engine.seed(base_seed);
+
+    // Create a field to store perturbation values with layout
+    // the same as f, but stripped of level dimension.
+    auto perturb_fl = fl.strip_dim(LEV);
+    FieldIdentifier perturb_fid("perturb_field", perturb_fl, ekat::units::Units::nondimensional(), "");
+    Field perturb_f(perturb_fid);
+    perturb_f.allocate_view();
+
+    // Loop through levels. For each that satisfy the level_mask,
+    // apply a random perturbation to f.
+    for (auto ilev=0; ilev<fl.dims().back(); ++ilev) {
+      if (level_mask(ilev)) {
+        randomize(perturb_f, engine, pdf);
+        f.subfield(f.rank()-1, ilev).scale(perturb_f);
+      }
+    }
+  }
+}
+
 template<typename ST>
 ST frobenius_norm(const Field& f, const ekat::Comm* comm)
 {
@@ -223,7 +294,7 @@ ST frobenius_norm(const Field& f, const ekat::Comm* comm)
   switch (fl.rank()) {
     case 1:
       {
-        auto v = f.template get_view<ST*,Host>();
+        auto v = f.template get_view<const ST*,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           y = std::pow(v(i),2) - c;
           temp = norm + y;
@@ -234,7 +305,7 @@ ST frobenius_norm(const Field& f, const ekat::Comm* comm)
       break;
     case 2:
       {
-        auto v = f.template get_view<ST**,Host>();
+        auto v = f.template get_view<const ST**,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           for (int j=0; j<fl.dim(1); ++j) {
             y = std::pow(v(i,j),2) - c;
@@ -246,7 +317,7 @@ ST frobenius_norm(const Field& f, const ekat::Comm* comm)
       break;
     case 3:
       {
-        auto v = f.template get_view<ST***,Host>();
+        auto v = f.template get_view<const ST***,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           for (int j=0; j<fl.dim(1); ++j) {
             for (int k=0; k<fl.dim(2); ++k) {
@@ -259,7 +330,7 @@ ST frobenius_norm(const Field& f, const ekat::Comm* comm)
       break;
     case 4:
       {
-        auto v = f.template get_view<ST****,Host>();
+        auto v = f.template get_view<const ST****,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           for (int j=0; j<fl.dim(1); ++j) {
             for (int k=0; k<fl.dim(2); ++k) {
@@ -273,7 +344,7 @@ ST frobenius_norm(const Field& f, const ekat::Comm* comm)
       break;
     case 5:
       {
-        auto v = f.template get_view<ST*****,Host>();
+        auto v = f.template get_view<const ST*****,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           for (int j=0; j<fl.dim(1); ++j) {
             for (int k=0; k<fl.dim(2); ++k) {
@@ -288,7 +359,7 @@ ST frobenius_norm(const Field& f, const ekat::Comm* comm)
       break;
     case 6:
       {
-        auto v = f.template get_view<ST******,Host>();
+        auto v = f.template get_view<const ST******,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           for (int j=0; j<fl.dim(1); ++j) {
             for (int k=0; k<fl.dim(2); ++k) {
@@ -330,7 +401,7 @@ ST field_sum(const Field& f, const ekat::Comm* comm)
   switch (fl.rank()) {
     case 1:
       {
-        auto v = f.template get_view<ST*,Host>();
+        auto v = f.template get_view<const ST*,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           y = v(i) - c;
           temp = sum + y;
@@ -341,7 +412,7 @@ ST field_sum(const Field& f, const ekat::Comm* comm)
       break;
     case 2:
       {
-        auto v = f.template get_view<ST**,Host>();
+        auto v = f.template get_view<const ST**,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           for (int j=0; j<fl.dim(1); ++j) {
             y = v(i,j) - c;
@@ -353,7 +424,7 @@ ST field_sum(const Field& f, const ekat::Comm* comm)
       break;
     case 3:
       {
-        auto v = f.template get_view<ST***,Host>();
+        auto v = f.template get_view<const ST***,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           for (int j=0; j<fl.dim(1); ++j) {
             for (int k=0; k<fl.dim(2); ++k) {
@@ -366,7 +437,7 @@ ST field_sum(const Field& f, const ekat::Comm* comm)
       break;
     case 4:
       {
-        auto v = f.template get_view<ST****,Host>();
+        auto v = f.template get_view<const ST****,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           for (int j=0; j<fl.dim(1); ++j) {
             for (int k=0; k<fl.dim(2); ++k) {
@@ -380,7 +451,7 @@ ST field_sum(const Field& f, const ekat::Comm* comm)
       break;
     case 5:
       {
-        auto v = f.template get_view<ST*****,Host>();
+        auto v = f.template get_view<const ST*****,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           for (int j=0; j<fl.dim(1); ++j) {
             for (int k=0; k<fl.dim(2); ++k) {
@@ -395,7 +466,7 @@ ST field_sum(const Field& f, const ekat::Comm* comm)
       break;
     case 6:
       {
-        auto v = f.template get_view<ST******,Host>();
+        auto v = f.template get_view<const ST******,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           for (int j=0; j<fl.dim(1); ++j) {
             for (int k=0; k<fl.dim(2); ++k) {
@@ -434,7 +505,7 @@ ST field_max(const Field& f, const ekat::Comm* comm)
   switch (fl.rank()) {
     case 1:
       {
-        auto v = f.template get_view<ST*,Host>();
+        auto v = f.template get_view<const ST*,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           max = std::max(max,v(i));
         }
@@ -442,7 +513,7 @@ ST field_max(const Field& f, const ekat::Comm* comm)
       break;
     case 2:
       {
-        auto v = f.template get_view<ST**,Host>();
+        auto v = f.template get_view<const ST**,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           for (int j=0; j<fl.dim(1); ++j) {
             max = std::max(max,v(i,j));
@@ -451,7 +522,7 @@ ST field_max(const Field& f, const ekat::Comm* comm)
       break;
     case 3:
       {
-        auto v = f.template get_view<ST***,Host>();
+        auto v = f.template get_view<const ST***,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           for (int j=0; j<fl.dim(1); ++j) {
             for (int k=0; k<fl.dim(2); ++k) {
@@ -461,7 +532,7 @@ ST field_max(const Field& f, const ekat::Comm* comm)
       break;
     case 4:
       {
-        auto v = f.template get_view<ST****,Host>();
+        auto v = f.template get_view<const ST****,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           for (int j=0; j<fl.dim(1); ++j) {
             for (int k=0; k<fl.dim(2); ++k) {
@@ -472,7 +543,7 @@ ST field_max(const Field& f, const ekat::Comm* comm)
       break;
     case 5:
       {
-        auto v = f.template get_view<ST*****,Host>();
+        auto v = f.template get_view<const ST*****,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           for (int j=0; j<fl.dim(1); ++j) {
             for (int k=0; k<fl.dim(2); ++k) {
@@ -484,7 +555,7 @@ ST field_max(const Field& f, const ekat::Comm* comm)
       break;
     case 6:
       {
-        auto v = f.template get_view<ST******,Host>();
+        auto v = f.template get_view<const ST******,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           for (int j=0; j<fl.dim(1); ++j) {
             for (int k=0; k<fl.dim(2); ++k) {
@@ -520,7 +591,7 @@ ST field_min(const Field& f, const ekat::Comm* comm)
   switch (fl.rank()) {
     case 1:
       {
-        auto v = f.template get_view<ST*,Host>();
+        auto v = f.template get_view<const ST*,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           min = std::min(min,v(i));
         }
@@ -528,7 +599,7 @@ ST field_min(const Field& f, const ekat::Comm* comm)
       break;
     case 2:
       {
-        auto v = f.template get_view<ST**,Host>();
+        auto v = f.template get_view<const ST**,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           for (int j=0; j<fl.dim(1); ++j) {
             min = std::min(min,v(i,j));
@@ -537,7 +608,7 @@ ST field_min(const Field& f, const ekat::Comm* comm)
       break;
     case 3:
       {
-        auto v = f.template get_view<ST***,Host>();
+        auto v = f.template get_view<const ST***,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           for (int j=0; j<fl.dim(1); ++j) {
             for (int k=0; k<fl.dim(2); ++k) {
@@ -547,7 +618,7 @@ ST field_min(const Field& f, const ekat::Comm* comm)
       break;
     case 4:
       {
-        auto v = f.template get_view<ST****,Host>();
+        auto v = f.template get_view<const ST****,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           for (int j=0; j<fl.dim(1); ++j) {
             for (int k=0; k<fl.dim(2); ++k) {
@@ -558,7 +629,7 @@ ST field_min(const Field& f, const ekat::Comm* comm)
       break;
     case 5:
       {
-        auto v = f.template get_view<ST*****,Host>();
+        auto v = f.template get_view<const ST*****,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           for (int j=0; j<fl.dim(1); ++j) {
             for (int k=0; k<fl.dim(2); ++k) {
@@ -570,7 +641,7 @@ ST field_min(const Field& f, const ekat::Comm* comm)
       break;
     case 6:
       {
-        auto v = f.template get_view<ST******,Host>();
+        auto v = f.template get_view<const ST******,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           for (int j=0; j<fl.dim(1); ++j) {
             for (int k=0; k<fl.dim(2); ++k) {
@@ -604,12 +675,6 @@ void print_field_hyperslab (const Field& f,
 {
   // General idea: call f.subfield with the proper index, and recurse
   // until all indices are exausted, then print the field that is left.
-  // HOWEVER. In order to keep LayoutRight in Kokkos, we can only subview
-  //   - along 1st dimension
-  //   - along 2nd dimension if rank>2
-  // So if the input field is 2d and the index to subview at is along
-  // the 2nd dim, we must stop recursion, and print the field manually
-  // extracting the last slice.
   //
   // We keep all the tags/indices we slice away, since we need them at
   // the end of recursion when we print the info of the field location.
@@ -691,7 +756,7 @@ void print_field_hyperslab (const Field& f,
       {
         dims_str[dims_left[0]] = ":";
         out << "  " << f.name() << "(" << ekat::join(dims_str,",") << ")";
-        auto v = f.get_view<const T*,Host>();
+        auto v = f.get_strided_view<const T*,Host>();
         for (int i=0; i<layout.dim(0); ++i) {
           if (i%max_per_line==0) {
             out << "\n    ";
@@ -787,47 +852,8 @@ void print_field_hyperslab (const Field& f,
         "  - loc tags    : <" + ekat::join(tags,",") + ">\n"
         "  - loc indices : (" + ekat::join(indices,",") + ")\n");
 
-    // It's always safe to take subview along 1st dim. For 2nd dim, we can
-    // only do it if the rank is 3+
-    if (idim==0 || layout.rank()>2) {
-      // Slice field, and recurse.
-      auto sub_f = f.subfield(idim,idx);
-      return print_field_hyperslab<T>(sub_f,tags,indices,out,orig_rank,curr_idx+1);
-    } else {
-      // It must be that we have one last slicing to do,
-      // along the 2nd dimension of a rank2 field.
-      EKAT_REQUIRE_MSG (curr_idx==(tags.size()-1) && layout.rank()==2,
-          "Error! Unexpected inputs in print_field_hyperslab.\n"
-          "  - field name : " + f.name() + "\n"
-          "  - field layout: " + to_string(layout) + "\n"
-          "  - curr tag   : " + e2str(tag) + "\n"
-          "  - loc tags   : <" + ekat::join(tags,",") + ">\n"
-          "  - loc indices: (" + ekat::join(indices,",") +")\n");
-
-      const auto& orig_layout = get_orig_header()->get_identifier().get_layout();
-      const auto dims_left = get_dims_left(orig_layout);
-      auto dims_str = get_dims_str(orig_layout);
-
-      // Although the view we extract still has rank2, get_dims_[str|left] only
-      // use the original layout and the loc tags/indices, so it already filled
-      // all the dims string corresponding to the input loc tags/indices.
-      // The only dim left is the current 1st dim of the field.
-      // In other words, even though we have a rank2 field, we should have ended
-      // with a rank 1 field (if Kokkos had allowed us to take the subview)
-      dims_str[dims_left[0]] = ":";
-
-      out << "     " << f.name() << to_string(orig_layout) << "\n\n";
-      f.sync_to_host();
-      auto v = f.get_view<const T**,Host>();
-      out << "  " << f.name() << "(" << ekat::join(dims_str,",") << ")";
-      for (int i=0; i<layout.dim(0); ++i) {
-        if (i%max_per_line==0) {
-          out << "\n    ";
-        }
-        out << v(i,idx) << ", ";
-      }
-      out << "\n";
-    }
+    auto sub_f = f.subfield(idim,idx);
+    return print_field_hyperslab<T>(sub_f,tags,indices,out,orig_rank,curr_idx+1);
   }
 }
 

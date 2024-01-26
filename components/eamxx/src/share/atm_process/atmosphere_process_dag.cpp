@@ -31,6 +31,11 @@ create_dag(const group_type& atm_procs)
   end_ts.id = m_nodes.size()-1;
   m_unmet_deps[end_ts.id].clear();
 
+  // Now all nodes are created, we need to create edges, by checking
+  // which is the first node (if any) that computes any of the input
+  // fields of each node
+  add_edges ();
+
   // Next, check if some unmet deps are simply coming from previous time step.
   for (auto& it : m_unmet_deps) {
     int id = it.first;
@@ -165,7 +170,8 @@ void AtmProcDAG::write_dag (const std::string& fname, const int verbosity) const
   std::ofstream ofile;
   ofile.open (fname.c_str());
 
-  ofile << "strict digraph G {\n";
+  ofile << "strict digraph G {\n"
+        << "rankdir=\"LR\"";
 
   for (const auto& n : m_nodes) {
     const auto& unmet = m_unmet_deps.at(n.id);
@@ -345,7 +351,6 @@ add_nodes (const group_type& atm_procs)
 
   EKAT_REQUIRE_MSG (sequential, "Error! Parallel splitting dag not yet supported.\n");
 
-  int id = m_nodes.size();
   for (int i=0; i<num_procs; ++i) {
     const auto proc = atm_procs.get_process(i);
     const bool is_group = (proc->type()==AtmosphereProcessType::Group);
@@ -360,25 +365,18 @@ add_nodes (const group_type& atm_procs)
     } else {
       // Create a node for the process
       // Node& node = m_nodes[proc->name()];
+      int id = m_nodes.size();
       m_nodes.push_back(Node());
       Node& node = m_nodes.back();;
       node.id = id;
       node.name = proc->name();
-      m_unmet_deps[id].clear();
+      m_unmet_deps[id].clear(); // Ensures an entry for this id is in the map
 
       // Input fields
       for (const auto& f : proc->get_fields_in()) {
         const auto& fid = f.get_header().get_identifier();
         const int fid_id = add_fid(fid);
         node.required.insert(fid_id);
-        auto it = m_fid_to_last_provider.find(fid_id);
-        if (it==m_fid_to_last_provider.end()) {
-          m_unmet_deps[id].insert(fid_id);
-        } else {
-          // Establish parent-child relationship
-          Node& parent = m_nodes[it->second];
-          parent.children.push_back(node.id);
-        }
       }
 
       // Output fields
@@ -404,30 +402,6 @@ add_nodes (const group_type& atm_procs)
           const auto& gr_fid = group.m_bundle->get_header().get_identifier();
           const int gr_fid_id = add_fid(gr_fid);
           node.gr_required.insert(gr_fid_id);
-          auto it = m_fid_to_last_provider.find(gr_fid_id);
-          if (it==m_fid_to_last_provider.end()) {
-            // It might still be ok, as long as there is a provider for all the fields in the group
-            bool all_members_have_providers = true;
-            for (auto it_f : group.m_fields) {
-              const auto& fid = it_f.second->get_header().get_identifier();
-              const int fid_id = add_fid(fid);
-              auto it_p = m_fid_to_last_provider.find(fid_id);
-              if (it_p==m_fid_to_last_provider.end()) {
-                m_unmet_deps[id].insert(fid_id);
-                all_members_have_providers = false;
-              } else {
-                Node& parent = m_nodes[it_p->second];
-                parent.children.push_back(node.id);
-              }
-            }
-            if (!all_members_have_providers) {
-              m_unmet_deps[id].insert(gr_fid_id);
-            }
-          } else {
-            // Establish parent-child relationship
-            Node& parent = m_nodes[it->second];
-            parent.children.push_back(node.id);
-          }
           m_gr_fid_to_group.emplace(gr_fid,group);
         }
       }
@@ -459,7 +433,76 @@ add_nodes (const group_type& atm_procs)
           }
         }
       }
-      ++id;
+    }
+  }
+}
+
+void AtmProcDAG::add_edges () {
+  for (auto& node : m_nodes) {
+    // First individual input fields. Add this node as a children
+    // of any *previous* node that computes them. If none provides
+    // them, add to the unmet deps list
+    for (auto id : node.required) {
+      auto it = m_fid_to_last_provider.find(id);
+      // Note: check that last provider id is SMALLER than this node id
+      if (it!=m_fid_to_last_provider.end() and it->second<node.id) {
+        auto parent_id = it->second;
+        m_nodes[parent_id].children.push_back(node.id);
+      } else {
+        m_unmet_deps[node.id].insert(id);
+      }
+    }
+    // Then process groups, looking at both the bundled field and individual fields.
+    // NOTE: we don't know if the group as a whole is the last to be updated
+    //       OR if each group member is updated after the last "group-update".
+    //       So get the id of the last node that updates each field and the group,
+    //       and use the most recent one
+    for (auto id : node.gr_required) {
+      const auto& gr_fid = m_fids[id];
+      const auto& group = m_gr_fid_to_group.at(gr_fid);
+      const int   size  = group.m_info->size();
+
+      int last_group_update_id = -1;
+      std::vector<int> last_members_update_id(size,-1);
+
+      // First check when the group as a whole was last updated
+      auto it = m_fid_to_last_provider.find(id);
+      // Note: check that last provider id is SMALLER than this node id
+      if (it!=m_fid_to_last_provider.end() and it->second<node.id) {
+        last_group_update_id = it->second;
+      }
+      // Then check when each group member was last updated
+      int i=0;
+      for (auto f_it : group.m_fields) {
+        const auto& fid = f_it.second->get_header().get_identifier();
+        auto fid_id = std::find(m_fids.begin(),m_fids.end(),fid) - m_fids.begin();
+        it = m_fid_to_last_provider.find(fid_id);
+        // Note: check that last provider id is SMALLER than this node id
+        if (it!=m_fid_to_last_provider.end() and it->second<node.id) {
+          last_members_update_id[i] = it->second;
+        }
+        ++i;
+      }
+
+      auto min = *std::min_element(last_members_update_id.begin(),last_members_update_id.end());
+      if (min==-1 && last_group_update_id==-1) {
+        // Nobody computed the group as a whole and some member was not computed
+        m_unmet_deps[node.id].insert(id);
+      } else if (min>last_group_update_id) {
+        // All members are updated after the group
+        for (auto fid_id : last_members_update_id) {
+          m_nodes[fid_id].children.push_back(node.id);
+        }
+      } else {
+        // Add the group provider as a parent, but also the provider of each
+        // field which is updated after the group
+        m_nodes[id].children.push_back(node.id);
+        for (auto fid_id : last_members_update_id) {
+          if (fid_id>last_group_update_id) {
+            m_nodes[fid_id].children.push_back(node.id);
+          }
+        }
+      }
     }
   }
 }

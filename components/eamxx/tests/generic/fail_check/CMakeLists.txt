@@ -4,23 +4,34 @@ include(ScreamUtils)
 # NOTE: we don't need any libs for this test, but scream's CreateUnitTest
 # has libs as a required arg. So use the raw EkatCreateUnitTest
 
-# Ensure that a non-satisfied REQUIRE clause does, in fact, make the test fail
-EkatCreateUnitTestFromExec (fail "fail.cpp" PROPERTIES WILL_FAIL TRUE LABELS "fail")
+# This serves as a base case for the following fail checks, since it verifies that
+#  - a REQUIRE clause that fails makes the test fail
+#  - Our Create unit test logic does work for  catching failures
+CreateUnitTest (fail "fail.cpp"
+  PROPERTIES WILL_FAIL TRUE
+  LABELS "fail")
 
 if (Kokkos_ENABLE_DEBUG_BOUNDS_CHECK)
   # Ensure that Kokkos OOB are caught
-  EkatCreateUnitTest (kokkos_fail "kokkos_fail.cpp" PROPERTIES WILL_FAIL TRUE LABELS "fail")
+  CreateUnitTest (kokkos_fail "kokkos_fail.cpp"
+    PROPERTIES WILL_FAIL TRUE
+    LABELS "fail")
 endif()
 
 if (EKAT_ENABLE_VALGRIND)
   # Ensure that valgrind errors are caught
-  EkatCreateUnitTest (valg_fail "valg_fail.cpp" PROPERTIES WILL_FAIL TRUE LABELS "fail")
+  EkatCreateUnitTest (valg_fail "valg_fail.cpp"
+    PROPERTIES WILL_FAIL TRUE
+    LABELS "fail")
 endif()
 
 # Ensure that FPE *do* throw when we expect them to
-CreateUnitTestExec (scream_fpe_check "fpe_check.cpp" "scream_share")
+CreateUnitTestExec (scream_fpe_check "fpe_check.cpp")
 if (SCREAM_FPE)
-  CreateUnitTestFromExec (scream_fpe_check scream_fpe_check PROPERTIES WILL_FAIL TRUE LABELS "check")
+  CreateUnitTestFromExec (scream_fpe_check scream_fpe_check
+    PROPERTIES WILL_FAIL TRUE
+    LABELS "check")
 else()
-  CreateUnitTestFromExec (scream_fpe_check scream_fpe_check LABELS "check")
+  CreateUnitTestFromExec (scream_fpe_check scream_fpe_check
+    LABELS "check")
 endif()
