@@ -7,7 +7,7 @@
 #include "share/grid/grids_manager.hpp"
 #include "share/io/scorpio_input.hpp"
 #include "share/io/scream_scorpio_interface.hpp"
-
+#include "mam_coupling.hpp"
 // NOTE: I will add functions for aerosol_optics here, I will move this code
 // later to mam_coupling.hpp
 namespace scream::mam_coupling {
