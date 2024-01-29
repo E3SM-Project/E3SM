@@ -1,7 +1,7 @@
 //===-- base/HorzMesh.cpp - horizontal mesh methods -------------*- C++ -*-===//
 //
 // The mesh (Mesh) class initializes a local mesh domain based on a given
-// domain decomposition. It retrives the mesh count and connectivity
+// domain decomposition. It retrieves the mesh count and connectivity
 // information from the Decomp object and reads in all other mesh variables
 // from the mesh file. It also manages the device copies of the mesh data.
 // It is meant to provide a container for passing mesh variables throughout
@@ -17,11 +17,31 @@
 #include "MachEnv.h"
 
 namespace OMEGA {
+//------------------------------------------------------------------------------
+// Initialize the mesh 
+
+int HorzMesh::init() { 
+
+   int Err = 0; // default successful return code
+
+   // Retrieve the default decomposition
+   Decomp *DefDecomp = Decomp::getDefault();
+
+   // Create the default mesh 
+   HorzMesh DefHorzMesh("Default", DefDecomp);
+
+   // Retrieve this mesh and set pointer to DefaultHorzMesh
+   HorzMesh::DefaultHorzMesh = HorzMesh::get("Default");
+
+   return Err;
+}
 
 //------------------------------------------------------------------------------
 // Construct a new local mesh given a decomposition
 
-HorzMesh::HorzMesh(Decomp *MeshDecomp) {
+HorzMesh::HorzMesh(const std::string & Name, //< [in] Name for new mesh
+                   Decomp *MeshDecomp        //< [in] Decomp for the new mesh
+) {
 
    // Retrieve mesh files name from Decomp
    MeshFileName = MeshDecomp->MeshFileName;
@@ -80,7 +100,7 @@ HorzMesh::HorzMesh(Decomp *MeshDecomp) {
    // Read the cell-centered bottom depth
    readBottomDepth();
 
-   // Read the mesh areas, lenths, and angles
+   // Read the mesh areas, lengths, and angles
    readMeasurements();
 
    // Read the edge mesh weights
@@ -95,9 +115,13 @@ HorzMesh::HorzMesh(Decomp *MeshDecomp) {
    // TODO: add ability to compute (rather than read in)
    // dependent mesh quantities
 
+   // Compute EdgeSignOnCells and EdgeSignOnVertex
    computeEdgeSign();
 
-} // end constructor
+   // Associate this instance with a name 
+   AllHorzMeshes.emplace(Name, *this);
+
+} // end horizontal mesh constructor
 
 //------------------------------------------------------------------------------
 // Destroys a local mesh and deallocates all arrays
@@ -207,6 +231,11 @@ void HorzMesh::initParallelIO(Decomp *MeshDecomp) {
       LOG_CRITICAL("HorzMesh: error creating OnVertex IO decomposition");
 
 } // end initParallelIO
+
+
+//------------------------------------------------------------------------------
+// Destroy parallel decompositions
+ 
 
 //------------------------------------------------------------------------------
 // Read x/y/z and lon/lat coordinates for cells, edges, and vertices
@@ -497,6 +526,30 @@ void HorzMesh::copyToDevice() {
    BottomDepth       = BottomDepthH.createDeviceCopy();
 
 } // end copyToDevice
+
+//------------------------------------------------------------------------------
+// Get default mesh
+HorzMesh *HorzMesh::getDefault() { return HorzMesh::DefaultHorzMesh; }
+ 
+//------------------------------------------------------------------------------
+// Get mesh by name
+HorzMesh *HorzMesh::get(const std::string Name ///< [in] Name of mesh
+) {
+
+   // look for an instance of this name
+   auto it = AllHorzMeshes.find(Name);
+
+   // if found, return the mesh pointer
+   if (it != AllHorzMeshes.end()) {
+      return &(it->second);
+
+   // otherwise print error and return null pointer
+   } else {
+      LOG_ERROR("HorzMesh::get: Attempt to retrieve non-existent mesh:");
+      LOG_ERROR("{} has not been defined or has been removed", Name);
+      return nullptr;
+   }
+} // end get mesh
 
 } // end namespace OMEGA
 

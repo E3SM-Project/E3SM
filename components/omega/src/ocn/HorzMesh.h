@@ -50,6 +50,10 @@ class HorzMesh {
    I4 OnEdgeDecompR8;
    I4 OnVertexDecompR8;
 
+   static HorzMesh *DefaultHorzMesh;
+
+   static std::map<std::string, HorzMesh> AllHorzMeshes;
+
  public:
    // Variables
    // Since these are used frequently, we make them public to reduce the
@@ -112,7 +116,7 @@ class HorzMesh {
 
    // Coordinates
 
-   ArrayHost1DR8 XCellH;   ///< X Coordinates of cell cetners (m)
+   ArrayHost1DR8 XCellH;   ///< X Coordinates of cell centers (m)
    ArrayHost1DR8 YCellH;   ///< Y Coordinates of cell centers (m)
    ArrayHost1DR8 ZCellH;   ///< Z Coordinates of cell centers (m)
    ArrayHost1DR8 LonCellH; ///< Longitude location of cell centers (radians)
@@ -127,7 +131,7 @@ class HorzMesh {
    ArrayHost1DR8 XVertexH;   ///< X Coordinate of vertices (m)
    ArrayHost1DR8 YVertexH;   ///< Y Coordinate of vertices (m)
    ArrayHost1DR8 ZVertexH;   ///< Z Coordinate of vertices (m)
-   ArrayHost1DR8 LonVertexH; ///< Longitude location of verticies (radians)
+   ArrayHost1DR8 LonVertexH; ///< Longitude location of vertices (radians)
    ArrayHost1DR8 LatVertexH; ///< Latitude location of vertices (radians)
 
    // Mesh measurements
@@ -196,8 +200,12 @@ class HorzMesh {
 
    // Methods
 
+   /// Initialize Omega local mesh 
+   static int init();
+
    /// Construct a new local mesh for a given decomposition
-   HorzMesh(Decomp *Decomp ///< [in] Decomposition for mesh
+   HorzMesh(const std::string &Name, ///< [in] Name for mesh
+            Decomp *Decomp           ///< [in] Decomposition for mesh
    );
 
    /// Destructor - deallocates all memory and deletes a HorzMesh
@@ -205,6 +213,10 @@ class HorzMesh {
 
    /// Deallocates arrays
    void clear();
+
+   static HorzMesh *getDefault();
+
+   static HorzMesh *get(std::string name);
 
 }; // end class HorzMesh
 

@@ -43,6 +43,11 @@ int initHorzMeshTest() {
    if (Err != 0)
       LOG_ERROR("HorzMeshTest: error initializing default decomposition");
 
+   // Initialize the default mesh
+   Err = OMEGA::HorzMesh::init();
+   if (Err !=0)
+      LOG_ERROR("HorzMeshTest: error initializing default mesh");
+
    return Err;
 }
 
@@ -145,7 +150,7 @@ int main(int argc, char *argv[]) {
    }
 
    // Initialize mesh
-   OMEGA::HorzMesh Mesh(DefDecomp);
+   OMEGA::HorzMesh Mesh = *OMEGA::HorzMesh::getDefault();
 
    // Test sum of local mesh cells
    // Get the global sum of all local cell counts
