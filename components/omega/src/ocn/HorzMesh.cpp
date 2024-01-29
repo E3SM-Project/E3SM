@@ -17,17 +17,18 @@
 #include "MachEnv.h"
 
 namespace OMEGA {
-//------------------------------------------------------------------------------
-// Initialize the mesh 
 
-int HorzMesh::init() { 
+//------------------------------------------------------------------------------
+// Initialize the mesh
+
+int HorzMesh::init() {
 
    int Err = 0; // default successful return code
 
    // Retrieve the default decomposition
    Decomp *DefDecomp = Decomp::getDefault();
 
-   // Create the default mesh 
+   // Create the default mesh
    HorzMesh DefHorzMesh("Default", DefDecomp);
 
    // Retrieve this mesh and set pointer to DefaultHorzMesh
@@ -39,8 +40,8 @@ int HorzMesh::init() {
 //------------------------------------------------------------------------------
 // Construct a new local mesh given a decomposition
 
-HorzMesh::HorzMesh(const std::string & Name, //< [in] Name for new mesh
-                   Decomp *MeshDecomp        //< [in] Decomp for the new mesh
+HorzMesh::HorzMesh(const std::string &Name, //< [in] Name for new mesh
+                   Decomp *MeshDecomp       //< [in] Decomp for the new mesh
 ) {
 
    // Retrieve mesh files name from Decomp
@@ -109,6 +110,9 @@ HorzMesh::HorzMesh(const std::string & Name, //< [in] Name for new mesh
    // Read the Coriolis parameter at the cells, edges, and vertices
    readCoriolis();
 
+   // Destroy the parallel IO decompositions
+   finalizeParallelIO();   
+
    // Copy host data to device
    copyToDevice();
 
@@ -118,7 +122,7 @@ HorzMesh::HorzMesh(const std::string & Name, //< [in] Name for new mesh
    // Compute EdgeSignOnCells and EdgeSignOnVertex
    computeEdgeSign();
 
-   // Associate this instance with a name 
+   // Associate this instance with a name
    AllHorzMeshes.emplace(Name, *this);
 
 } // end horizontal mesh constructor
@@ -235,7 +239,37 @@ void HorzMesh::initParallelIO(Decomp *MeshDecomp) {
 
 //------------------------------------------------------------------------------
 // Destroy parallel decompositions
- 
+void finalizeParallelIO () {
+
+   int Err = 0; // default return code
+
+   // Destroy the IO decomp for arrays with (NCells) dimensions
+   Err = IO::destroyDecomp(CellDecompR8);
+   if (Err != 0)
+      LOG_CRITICAL("HorzMesh: error destroying cell IO decomposition");
+
+   // Destroy the IO decomp for arrays with (NEdges) dimensions
+   Err = IO::dstroyDecomp(EdgeDecompR8); 
+   if (Err != 0)
+      LOG_CRITICAL("HorzMesh: error destroying edge IO decomposition");
+
+   // Destroy the IO decomp for arrays with (NVertices) dimensions
+   Err = IO::dstroyDecomp(VertexDecompR8); 
+   if (Err != 0)
+      LOG_CRITICAL("HorzMesh: error destroying vertex IO decomposition");
+
+   // Destroy the IO decomp for arrays with (NEdges, 2*MaxEdges) dimensions
+   Err = IO::dstroyDecomp(OnEdgeDecompR8); 
+   if (Err != 0)
+      LOG_CRITICAL("HorzMesh: error destroying OnEdge IO decomposition");
+
+   // Destroy the IO decomp for arrays with (NVertices, VertexDegree) dimensions
+   Err = IO::dstroyDecomp(OnVertexDecompR8); 
+   if (Err != 0)
+      LOG_CRITICAL("HorzMesh: error destroying OnVertex IO decomposition");
+
+} // end finalizeParallelIO
+
 
 //------------------------------------------------------------------------------
 // Read x/y/z and lon/lat coordinates for cells, edges, and vertices
@@ -530,7 +564,7 @@ void HorzMesh::copyToDevice() {
 //------------------------------------------------------------------------------
 // Get default mesh
 HorzMesh *HorzMesh::getDefault() { return HorzMesh::DefaultHorzMesh; }
- 
+
 //------------------------------------------------------------------------------
 // Get mesh by name
 HorzMesh *HorzMesh::get(const std::string Name ///< [in] Name of mesh

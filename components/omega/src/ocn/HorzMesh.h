@@ -29,6 +29,8 @@ class HorzMesh {
  private:
    void initParallelIO(Decomp *MeshDecomp);
 
+   void finalizeParallelIO();
+
    void readCoordinates();
 
    void readBottomDepth();
