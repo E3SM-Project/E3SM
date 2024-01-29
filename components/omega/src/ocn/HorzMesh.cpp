@@ -54,6 +54,17 @@ HorzMesh::HorzMesh(Decomp *MeshDecomp) {
    CellsOnVertexH  = MeshDecomp->CellsOnVertexH;
    EdgesOnVertexH  = MeshDecomp->EdgesOnVertexH;
 
+   CellsOnCell    = MeshDecomp->CellsOnCell;
+   EdgesOnCell    = MeshDecomp->EdgesOnCell;
+   NEdgesOnCell   = MeshDecomp->NEdgesOnCell;
+   VerticesOnCell = MeshDecomp->VerticesOnCell;
+   CellsOnEdge    = MeshDecomp->CellsOnEdge;
+   EdgesOnEdge    = MeshDecomp->EdgesOnEdge;
+   NEdgesOnEdge   = MeshDecomp->NEdgesOnEdge;
+   VerticesOnEdge = MeshDecomp->VerticesOnEdge;
+   CellsOnVertex  = MeshDecomp->CellsOnVertex;
+   EdgesOnVertex  = MeshDecomp->EdgesOnVertex;
+
    // Open the mesh file for reading (assume IO has already been initialized)
    I4 Err;
    Err = OMEGA::IO::openFile(MeshFileID, MeshFileName, IO::ModeRead);
@@ -109,16 +120,6 @@ void HorzMesh::clear() {
    WeightsOnEdge.deallocate();
    FVertex.deallocate();
    BottomDepth.deallocate();
-   CellsOnCell.deallocate();
-   EdgesOnCell.deallocate();
-   NEdgesOnCell.deallocate();
-   VerticesOnCell.deallocate();
-   CellsOnEdge.deallocate();
-   EdgesOnEdge.deallocate();
-   NEdgesOnEdge.deallocate();
-   VerticesOnEdge.deallocate();
-   CellsOnVertex.deallocate();
-   EdgesOnVertex.deallocate();
    EdgeSignOnCell.deallocate();
    EdgeSignOnCellH.deallocate();
    EdgeSignOnVertex.deallocate();
@@ -489,20 +490,11 @@ void HorzMesh::copyToDevice() {
    AreaTriangle      = AreaTriangleH.createDeviceCopy();
    KiteAreasOnVertex = KiteAreasOnVertexH.createDeviceCopy();
    DcEdge            = DcEdgeH.createDeviceCopy();
+   DvEdge            = DvEdgeH.createDeviceCopy();
    AngleEdge         = AngleEdgeH.createDeviceCopy();
    WeightsOnEdge     = WeightsOnEdgeH.createDeviceCopy();
    FVertex           = FVertexH.createDeviceCopy();
    BottomDepth       = BottomDepthH.createDeviceCopy();
-   CellsOnCell       = CellsOnCellH.createDeviceCopy();
-   EdgesOnCell       = EdgesOnCellH.createDeviceCopy();
-   NEdgesOnCell      = NEdgesOnCellH.createDeviceCopy();
-   VerticesOnCell    = VerticesOnCellH.createDeviceCopy();
-   CellsOnEdge       = CellsOnEdgeH.createDeviceCopy();
-   EdgesOnEdge       = EdgesOnEdgeH.createDeviceCopy();
-   NEdgesOnEdge      = NEdgesOnEdgeH.createDeviceCopy();
-   VerticesOnEdge    = VerticesOnEdgeH.createDeviceCopy();
-   CellsOnVertex     = CellsOnVertexH.createDeviceCopy();
-   EdgesOnVertex     = EdgesOnVertexH.createDeviceCopy();
 
 } // end copyToDevice
 
