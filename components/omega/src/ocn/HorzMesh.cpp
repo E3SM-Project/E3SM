@@ -111,7 +111,7 @@ HorzMesh::HorzMesh(const std::string &Name, //< [in] Name for new mesh
    readCoriolis();
 
    // Destroy the parallel IO decompositions
-   finalizeParallelIO();   
+   finalizeParallelIO();
 
    // Copy host data to device
    copyToDevice();
@@ -236,10 +236,9 @@ void HorzMesh::initParallelIO(Decomp *MeshDecomp) {
 
 } // end initParallelIO
 
-
 //------------------------------------------------------------------------------
 // Destroy parallel decompositions
-void finalizeParallelIO () {
+void finalizeParallelIO() {
 
    int Err = 0; // default return code
 
@@ -249,27 +248,26 @@ void finalizeParallelIO () {
       LOG_CRITICAL("HorzMesh: error destroying cell IO decomposition");
 
    // Destroy the IO decomp for arrays with (NEdges) dimensions
-   Err = IO::dstroyDecomp(EdgeDecompR8); 
+   Err = IO::dstroyDecomp(EdgeDecompR8);
    if (Err != 0)
       LOG_CRITICAL("HorzMesh: error destroying edge IO decomposition");
 
    // Destroy the IO decomp for arrays with (NVertices) dimensions
-   Err = IO::dstroyDecomp(VertexDecompR8); 
+   Err = IO::dstroyDecomp(VertexDecompR8);
    if (Err != 0)
       LOG_CRITICAL("HorzMesh: error destroying vertex IO decomposition");
 
    // Destroy the IO decomp for arrays with (NEdges, 2*MaxEdges) dimensions
-   Err = IO::dstroyDecomp(OnEdgeDecompR8); 
+   Err = IO::dstroyDecomp(OnEdgeDecompR8);
    if (Err != 0)
       LOG_CRITICAL("HorzMesh: error destroying OnEdge IO decomposition");
 
    // Destroy the IO decomp for arrays with (NVertices, VertexDegree) dimensions
-   Err = IO::dstroyDecomp(OnVertexDecompR8); 
+   Err = IO::dstroyDecomp(OnVertexDecompR8);
    if (Err != 0)
       LOG_CRITICAL("HorzMesh: error destroying OnVertex IO decomposition");
 
 } // end finalizeParallelIO
-
 
 //------------------------------------------------------------------------------
 // Read x/y/z and lon/lat coordinates for cells, edges, and vertices
@@ -577,7 +575,7 @@ HorzMesh *HorzMesh::get(const std::string Name ///< [in] Name of mesh
    if (it != AllHorzMeshes.end()) {
       return &(it->second);
 
-   // otherwise print error and return null pointer
+      // otherwise print error and return null pointer
    } else {
       LOG_ERROR("HorzMesh::get: Attempt to retrieve non-existent mesh:");
       LOG_ERROR("{} has not been defined or has been removed", Name);

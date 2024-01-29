@@ -202,7 +202,7 @@ class HorzMesh {
 
    // Methods
 
-   /// Initialize Omega local mesh 
+   /// Initialize Omega local mesh
    static int init();
 
    /// Construct a new local mesh for a given decomposition

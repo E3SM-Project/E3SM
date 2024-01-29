@@ -45,7 +45,7 @@ int initHorzMeshTest() {
 
    // Initialize the default mesh
    Err = OMEGA::HorzMesh::init();
-   if (Err !=0)
+   if (Err != 0)
       LOG_ERROR("HorzMeshTest: error initializing default mesh");
 
    return Err;
