@@ -132,6 +132,16 @@ contains
 
   end subroutine eam_pio_closefile_c2f
 !=====================================================================!
+  subroutine eam_pio_flush_file_c2f(filename_in) bind(c)
+    use scream_scorpio_interface, only : eam_pio_flush_file
+    type(c_ptr), intent(in) :: filename_in
+    character(len=256)      :: filename
+
+    call convert_c_string(filename_in,filename)
+    call eam_pio_flush_file(trim(filename))
+
+  end subroutine eam_pio_flush_file_c2f
+!=====================================================================!
   subroutine pio_update_time_c2f(filename_in,time) bind(c)
     use scream_scorpio_interface, only : eam_update_time
     type(c_ptr), intent(in) :: filename_in

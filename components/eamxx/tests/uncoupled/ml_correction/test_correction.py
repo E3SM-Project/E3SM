@@ -8,7 +8,17 @@ from scream_run.steppers.machine_learning import (
 )
 
 
-def sample_ML_prediction(nz: int, input_data: np.ndarray):
+def get_ML_model(model_path):
+    if model_path == "NONE":
+        return None
+    config = MachineLearningConfig(models=[model_path])
+    model = open_model(config)
+    return model
+
+
+def sample_ML_prediction(
+    nz: int, input_data: np.ndarray, ML_model_tq: str, ML_model_uv: str
+):
     """
     This function is used to generate a sample ML prediction for the given input data.
     We use a constant output predictor to generate the prediction.
@@ -30,7 +40,7 @@ def sample_ML_prediction(nz: int, input_data: np.ndarray):
     return output["qv"].values
 
 
-def modify_view(data, Ncol, Nlev):
+def modify_view(data, Ncol, Nlev, model_tq, model_uv):
     data = np.reshape(data, (-1, Nlev))
-    prediction = sample_ML_prediction(Nlev, data[1, :])
+    prediction = sample_ML_prediction(Nlev, data[1, :], model_tq, model_uv)
     data[1, :] = prediction

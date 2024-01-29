@@ -38,9 +38,10 @@ module controlMod
   use CanopyHydrologyMod      , only: CanopyHydrology_readnl
   use SurfaceAlbedoType        , only: albice, lake_melt_icealb
   use UrbanParamsType         , only: urban_hac, urban_traffic
-  use FrictionVelocityMod     , only: implicit_stress, atm_gustiness
+  use FrictionVelocityMod     , only: implicit_stress, atm_gustiness, force_land_gustiness
   use elm_varcon              , only: h2osno_max
-  use elm_varctl              , only: use_dynroot
+  use elm_varctl              , only: use_dynroot, use_fan, fan_mode, fan_to_bgc_veg
+  use FanMod                  , only: nh4_ads_coef
   use AllocationMod         , only: nu_com_phosphatase,nu_com_nfix
   use elm_varctl              , only: nu_com, use_var_soil_thick
   use elm_varctl              , only: use_lake_wat_storage
@@ -234,7 +235,7 @@ contains
 
     ! Stress options
     namelist /elm_inparm/ &
-         implicit_stress, atm_gustiness
+         implicit_stress, atm_gustiness, force_land_gustiness
 
     ! vertical soil mixing variables
     namelist /elm_inparm/  &
@@ -259,6 +260,7 @@ contains
           use_fates_nocomp,                             &
           use_fates_sp,                                 &
           fates_parteh_mode,                            &
+          fates_seeddisp_cadence,                       &
           use_fates_tree_damage
 
     namelist /elm_inparm / use_betr
@@ -319,6 +321,12 @@ contains
 		 
     namelist /elm_inparm/ &
          snow_shape, snicar_atm_type, use_dust_snow_internal_mixing 
+    
+    namelist /elm_inparm/ & 
+         use_modified_infil
+
+    namelist /elm_inparm/ &
+         use_fan, fan_mode, fan_to_bgc_veg, nh4_ads_coef
 
     ! ----------------------------------------------------------------------
     ! Default values
@@ -487,6 +495,17 @@ contains
             errMsg(__FILE__, __LINE__))
        end if
 
+       if (.not. use_fan) then
+          if (fan_mode /= 'none') then
+             call endrun(msg=' ERROR: fan mode requires FAN model active.'//&
+               errMsg(__FILE__, __LINE__))
+          end if
+          if (fan_to_bgc_veg) then
+             call endrun(msg=' ERROR: fan_to_bgc_veg requires FAN model active.'//&
+               errMsg(__FILE__, __LINE__))
+          end if
+       end if
+
        if (use_lch4 .and. use_vertsoilc) then 
           anoxia = .true.
        else
@@ -647,6 +666,17 @@ contains
        endif
     endif
 
+    ! Fan settings
+    if (fan_mode /= 'none'           .and. &
+        fan_mode /= 'fan_offline'    .and. &
+        fan_mode /= 'fan_soil'       .and. &
+        fan_mode /= 'fan_atm'        .and. &
+        fan_mode /= 'fan_full' ) then
+       write(iulog,*)'fan_mode = ',trim(fan_mode), ' is not supported'
+       call endrun(msg=' ERROR:: choices are none fan_offline, fan_soil, fan_atm, or fan_full ' // &
+            errMsg(__FILE__, __LINE__))
+    endif
+
     if (masterproc) then
        write(iulog,*) 'Successfully initialized run control settings'
        write(iulog,*)
@@ -700,6 +730,10 @@ contains
     call mpi_bcast (use_vancouver, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_mexicocity, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_noio, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (use_fan, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (fan_mode, len(fan_mode), MPI_CHARACTER, 0, mpicom, ier)
+    call mpi_bcast (fan_to_bgc_veg, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (nh4_ads_coef, 1, MPI_REAL8, 0, mpicom, ier)
 
     ! initial file variables
     call mpi_bcast (nrevsn, len(nrevsn), MPI_CHARACTER, 0, mpicom, ier)
@@ -778,6 +812,7 @@ contains
     call mpi_bcast (fates_inventory_ctrl_filename, len(fates_inventory_ctrl_filename), &
           MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (fates_parteh_mode, 1, MPI_INTEGER, 0, mpicom, ier)
+    call mpi_bcast (fates_seeddisp_cadence, 1, MPI_INTEGER, 0, mpicom, ier)
     call mpi_bcast (use_fates_tree_damage, 1, MPI_LOGICAL, 0, mpicom, ier)
 
     call mpi_bcast (use_betr, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -827,6 +862,7 @@ contains
     call mpi_bcast (urban_traffic , 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (implicit_stress, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (atm_gustiness, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (force_land_gustiness, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (nsegspc, 1, MPI_INTEGER, 0, mpicom, ier)
     call mpi_bcast (subgridflag , 1, MPI_INTEGER, 0, mpicom, ier)
     call mpi_bcast (wrtdia, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -940,6 +976,9 @@ contains
     call mpi_bcast (use_dust_snow_internal_mixing, 1, MPI_LOGICAL, 0, mpicom, ier)
 	
     call mpi_bcast (mpi_sync_nstep_freq, 1, MPI_INTEGER, 0, mpicom, ier)
+    
+    ! use modified infiltration scheme in surface water storage
+    call mpi_bcast (use_modified_infil, 1, MPI_LOGICAL, 0, mpicom, ier)
 
   end subroutine control_spmd
 
@@ -1135,6 +1174,7 @@ contains
     write(iulog,*) '   urban traffic flux   = ', urban_traffic
     write(iulog,*) '   implicit_stress   = ', implicit_stress
     write(iulog,*) '   atm_gustiness   = ', atm_gustiness
+    write(iulog,*) '   force_land_gustiness   = ', force_land_gustiness
     write(iulog,*) '   more vertical layers = ', more_vertlayers
     
     write(iulog,*) '   Sub-grid topographic effects on solar radiation   = ', use_top_solar_rad  ! TOP solar radiation parameterization
@@ -1184,6 +1224,8 @@ contains
        write(iulog, *) '    use_fates_nocomp = ', use_fates_nocomp
        write(iulog, *) '    use_fates_sp = ', use_fates_sp
        write(iulog, *) '    fates_inventory_ctrl_filename = ',fates_inventory_ctrl_filename
+       write(iulog, *) '    fates_seeddisp_cadence = ', fates_seeddisp_cadence
+       write(iulog, *) '    fates_seeddisp_cadence: 0, 1, 2, 3 => off, daily, monthly, or yearly dispersal'
     end if
 
     ! VSFM
@@ -1199,6 +1241,17 @@ contains
     write(iulog,*) '    use_lnd_rof_two_way    = ', use_lnd_rof_two_way
     write(iulog,*) '    lnd_rof_coupling_nstep = ', lnd_rof_coupling_nstep
     write(iulog,*) '    mpi_sync_nstep_freq    = ', mpi_sync_nstep_freq
+    
+    write(iulog,*) '    use_modified_infil = ', use_modified_infil
+    
+
+   ! FAN
+    write(iulog,*) '    use_fan                = ', use_fan
+    if (use_fan) then
+       write(iulog,*) ' fan_mode = ', fan_mode
+       write(iulog,*) ' nh4_ads_coef = ', nh4_ads_coef
+       write(iulog,*) ' fan_to_bgc_veg = ', fan_to_bgc_veg
+    end if
 
   end subroutine control_print
 

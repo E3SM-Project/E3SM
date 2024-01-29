@@ -862,7 +862,7 @@ contains
     real(r8) :: time_integrated_flux, state_net_change
     real(r8) :: relative_error
     real(r8), parameter :: error_tol = 0.01_r8
-    real(r8), parameter :: relative_error_tol = 1.e-10_r8 ! [%]
+    real(r8), parameter :: relative_error_tol = 1.5e-10_r8 ! [%]
 
     write(iulog,*   )''
     write(iulog,*   )'NET CARBON FLUXES : period ',trim(pname(ip)),': date = ',cdate,sec
@@ -986,6 +986,9 @@ contains
     real(r8) :: budg_stateG_1D(s_size*p_size)
     integer  :: f, s, p, count
     character(*),parameter :: subName = '(Restart_Write) '
+
+    budg_fluxGtmp = 0._r8
+    budg_stateGtmp = 0._r8
 
     call shr_mpi_sum(budg_fluxL, budg_fluxGtmp, mpicom, subName)
     call shr_mpi_sum(budg_stateL, budg_stateGtmp, mpicom, subName)

@@ -58,6 +58,7 @@ module ocn_surface_land_ice_fluxes
              ocn_surface_land_ice_fluxes_vel, &
              ocn_surface_land_ice_fluxes_thick, &
              ocn_surface_land_ice_fluxes_build_arrays, &
+             ocn_surface_land_ice_fluxes_accumulate_fluxes, &
              ocn_surface_land_ice_fluxes_init
 
    !--------------------------------------------------------------------
@@ -422,7 +423,7 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_surface_land_ice_fluxes_build_arrays(meshPool, &
-      forcingPool, scratchPool, statePool, dt, err) !{{{
+      forcingPool, scratchPool, statePool, err) !{{{
 
       !-----------------------------------------------------------------
       !
@@ -432,7 +433,6 @@ contains
 
       type (mpas_pool_type), intent(in) :: &
          meshPool        !< Input: mesh information
-      real(kind=RKIND), intent(in) :: dt ! the time step over which to accumulate fluxes
 
       !-----------------------------------------------------------------
       !
@@ -467,10 +467,6 @@ contains
                                                   landIceSurfaceTemperature, &
                                                   landIceFreshwaterFlux, &
                                                   landIceHeatFlux, heatFluxToLandIce
-      real (kind=RKIND), dimension(:), pointer :: accumulatedLandIceMassOld, &
-                                                  accumulatedLandIceMassNew, &
-                                                  accumulatedLandIceHeatOld, &
-                                                  accumulatedLandIceHeatNew
 
       integer, dimension(:), pointer :: landIceFloatingMask
 
@@ -518,10 +514,6 @@ contains
                                  indexISPtr)
       indexIT = indexITPtr
       indexIS = indexISPtr
-      call mpas_pool_get_array(statePool, 'accumulatedLandIceMass', accumulatedLandIceMassNew, 2)
-      call mpas_pool_get_array(statePool, 'accumulatedLandIceMass', accumulatedLandIceMassOld, 1)
-      call mpas_pool_get_array(statePool, 'accumulatedLandIceHeat', accumulatedLandIceHeatNew, 2)
-      call mpas_pool_get_array(statePool, 'accumulatedLandIceHeat', accumulatedLandIceHeatOld, 1)
 
       if (useHollandJenkinsAdvDiff) then
          call mpas_pool_get_array(forcingPool, 'landIceSurfaceTemperature', landIceSurfaceTemperature)
@@ -666,17 +658,99 @@ contains
                     freezeIceHeatFlux)
       end if
 
-      ! accumulate land-ice mass and heat
-      do iCell = 1, nCells
-        accumulatedLandIceMassNew(iCell) = accumulatedLandIceMassOld(iCell) - dt*landIceFreshwaterFlux(iCell)
-        accumulatedLandIceHeatNew(iCell) = accumulatedLandIceHeatOld(iCell) + dt*heatFluxToLandIce(iCell)
-      end do
-
       call mpas_timer_stop("land_ice_build_arrays")
 
    !--------------------------------------------------------------------
 
    end subroutine ocn_surface_land_ice_fluxes_build_arrays!}}}
+
+
+!***********************************************************************
+!
+!  routine ocn_surface_land_ice_fluxes_accumulate_fluxes
+!
+!> \brief Accumulate total land-ice mass and heat fluxes
+!> \author Xylar Asay-Davis
+!> \date   09/02/2023
+!> \details
+!>  This routine accumulates land-ice mass and heat fluxes into variables
+!>  used to keep track of the total mass and energy budgets.
+!-----------------------------------------------------------------------
+
+   subroutine ocn_surface_land_ice_fluxes_accumulate_fluxes(meshPool, &
+      forcingPool, statePool, dt, err) !{{{
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      type (mpas_pool_type), intent(in) :: &
+         meshPool        !< Input: mesh information
+      real(kind=RKIND), intent(in) :: dt ! the time step over which to accumulate fluxes
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+      type (mpas_pool_type), intent(inout) :: &
+         forcingPool, & !< Input: Forcing information
+         statePool      !< Input: state field information
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(out) :: err !< Output: Error flag
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      integer :: iCell, nCells
+      integer, dimension(:), pointer :: nCellsArray
+
+      real (kind=RKIND), dimension(:), pointer :: landIceFreshwaterFlux, &
+                                                  heatFluxToLandIce
+      real (kind=RKIND), dimension(:), pointer :: accumulatedLandIceMassOld, &
+                                                  accumulatedLandIceMassNew, &
+                                                  accumulatedLandIceHeatOld, &
+                                                  accumulatedLandIceHeatNew
+
+      err = 0
+
+      call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
+      nCells = nCellsArray( size(nCellsArray) )
+
+      if (landIceStandaloneOn .or. landIceDataOn) then
+        call mpas_pool_get_array(statePool, 'accumulatedLandIceMass', accumulatedLandIceMassNew, 2)
+        call mpas_pool_get_array(statePool, 'accumulatedLandIceMass', accumulatedLandIceMassOld, 1)
+        call mpas_pool_get_array(forcingPool, 'landIceFreshwaterFlux', landIceFreshwaterFlux)
+        ! accumulate land-ice mass
+        do iCell = 1, nCells
+          accumulatedLandIceMassNew(iCell) = accumulatedLandIceMassOld(iCell) - dt*landIceFreshwaterFlux(iCell)
+        end do
+      end if
+
+      if (landIceStandaloneOn) then
+        call mpas_pool_get_array(forcingPool, 'heatFluxToLandIce', heatFluxToLandIce)
+        call mpas_pool_get_array(statePool, 'accumulatedLandIceHeat', accumulatedLandIceHeatNew, 2)
+        call mpas_pool_get_array(statePool, 'accumulatedLandIceHeat', accumulatedLandIceHeatOld, 1)
+        ! accumulate land-ice heat
+        do iCell = 1, nCells
+          accumulatedLandIceHeatNew(iCell) = accumulatedLandIceHeatOld(iCell) + dt*heatFluxToLandIce(iCell)
+        end do
+      end if
+
+   !--------------------------------------------------------------------
+
+   end subroutine ocn_surface_land_ice_fluxes_accumulate_fluxes!}}}
 
 !***********************************************************************
 !

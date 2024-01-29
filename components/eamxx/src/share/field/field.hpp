@@ -95,6 +95,10 @@ public:
   // Constructor(s)
   Field () = default;
   explicit Field (const identifier_type& id);
+  template<typename ViewT,
+           typename = typename std::enable_if<Kokkos::is_view<ViewT>::value>::type>
+  Field (const identifier_type& id,
+         const ViewT& view_d);
   Field (const Field& src) = default;
   ~Field () = default;
 
@@ -126,7 +130,7 @@ public:
 
   // Like the method above, but only for rank-1 fields, returning a view with LayoutStride.
   // This is safer to use for fields that could be a subfield of another one, since a
-  // rank-1 view that is the subview of a 2d one along the 2nd index cannot have 
+  // rank-1 view that is the subview of a 2d one along the 2nd index cannot have
   // LayoutRight, and must have LayoutStride instead.
   template<typename DT, HostOrDevice HD = Device>
   get_strided_view_type<DT,HD>
@@ -175,12 +179,12 @@ public:
   // view.data ptr.
   template<typename ST, HostOrDevice HD = Device>
   ST* get_internal_view_data_unsafe () const {
-    // Check that the scalar type is correct                                                                                                   
+    // Check that the scalar type is correct
     using nonconst_ST = typename std::remove_const<ST>::type;
     EKAT_REQUIRE_MSG ((field_valid_data_types().at<nonconst_ST>()==m_header->get_identifier().data_type()
                        or std::is_same<nonconst_ST,char>::value),
           "Error! Attempt to access raw field pointere with the wrong scalar type.\n");
-    
+
     return reinterpret_cast<ST*>(get_view_impl<HD>().data());
   }
 
@@ -211,6 +215,10 @@ public:
   // Special case of update with alpha=0
   template<HostOrDevice HD = Device, typename ST = void>
   void scale (const ST beta);
+
+  // Scale a field y as y=y*x where x is also a field
+  template<HostOrDevice HD = Device>
+  void scale (const Field& x);
 
   // Returns a subview of this field, slicing at entry k along dimension idim
   // NOTES:

@@ -565,6 +565,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
            test_case      == "planar_nonhydro_mtn_wave"           .or. &
            test_case      == "planar_schar_mtn_wave"            .or. &
            test_case      == "planar_rising_bubble"             .or. &
+           test_case      == "planar_rising_bubble_pg2"         .or. &
            test_case      == "planar_density_current"             .or. &
            test_case      == "planar_baroclinic_instab"             .or. &
            test_case      == "planar_moist_rising_bubble"            .or. &

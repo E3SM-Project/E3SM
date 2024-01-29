@@ -82,6 +82,9 @@ public:
   // Whether this grid contains unique dof GIDs
   bool is_unique () const;
 
+  // Check if the input layout is compatible with this grid
+  bool is_valid_layout (const FieldLayout& layout) const;
+
   // When running with multiple ranks, fields are partitioned across ranks along this FieldTag
   virtual FieldTag get_partitioned_dim_tag () const = 0;
 
@@ -206,6 +209,10 @@ private:
   // The max/min dof GID across all ranks. Mutable, to allow for lazy calculation
   mutable gid_type  m_global_min_dof_gid =  std::numeric_limits<gid_type>::max();
   mutable gid_type  m_global_max_dof_gid = -std::numeric_limits<gid_type>::max();
+
+  // The fcn is_unique is expensive, so we lazy init this at the first call.
+  mutable bool m_is_unique;
+  mutable bool m_is_unique_computed = false;
 
   // The map lid->idx
   Field     m_lid_to_idx;

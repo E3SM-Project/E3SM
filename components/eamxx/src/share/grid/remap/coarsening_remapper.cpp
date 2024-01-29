@@ -15,45 +15,48 @@ namespace scream
 CoarseningRemapper::
 CoarseningRemapper (const grid_ptr_type& src_grid,
                     const std::string& map_file,
-                    const bool track_mask)
+                    const bool track_mask,
+                    const bool populate_tgt_grid_geo_data)
  : HorizInterpRemapperBase (src_grid,map_file,InterpType::Coarsen)
  , m_track_mask (track_mask)
 {
   using namespace ShortFieldTagsNames;
 
-  // Replicate the src grid geo data in the tgt grid. We use this remapper to do
-  // the remapping (if needed), and clean it up afterwards.
-  const auto& src_geo_data_names = src_grid->get_geometry_data_names();
-  registration_begins();
-  for (const auto& name : src_geo_data_names) {
-    const auto& src_data = src_grid->get_geometry_data(name);
-    const auto& src_data_fid = src_data.get_header().get_identifier();
-    const auto& layout = src_data_fid.get_layout();
-    if (layout.tags()[0]!=COL) {
-      // Not a field to be coarsened (perhaps a vertical coordinate field).
-      // Simply copy it in the tgt grid, but we still need to assign the new grid name.
-      FieldIdentifier tgt_data_fid(src_data_fid.name(),src_data_fid.get_layout(),src_data_fid.get_units(),m_tgt_grid->name());
-      auto tgt_data = m_coarse_grid->create_geometry_data(tgt_data_fid);
-      tgt_data.deep_copy(src_data);
-    } else {
-      // This field needs to be remapped
-      auto tgt_data_fid = create_tgt_fid(src_data_fid);
-      auto tgt_data = m_coarse_grid->create_geometry_data(tgt_data_fid);
-      register_field(src_data,tgt_data);
+  if (populate_tgt_grid_geo_data) {
+    // Replicate the src grid geo data in the tgt grid. We use this remapper to do
+    // the remapping (if needed), and clean it up afterwards.
+    const auto& src_geo_data_names = src_grid->get_geometry_data_names();
+    registration_begins();
+    for (const auto& name : src_geo_data_names) {
+      const auto& src_data = src_grid->get_geometry_data(name);
+      const auto& src_data_fid = src_data.get_header().get_identifier();
+      const auto& layout = src_data_fid.get_layout();
+      if (layout.tags()[0]!=COL) {
+        // Not a field to be coarsened (perhaps a vertical coordinate field).
+        // Simply copy it in the tgt grid, but we still need to assign the new grid name.
+        FieldIdentifier tgt_data_fid(src_data_fid.name(),src_data_fid.get_layout(),src_data_fid.get_units(),m_tgt_grid->name());
+        auto tgt_data = m_coarse_grid->create_geometry_data(tgt_data_fid);
+        tgt_data.deep_copy(src_data);
+      } else {
+        // This field needs to be remapped
+        auto tgt_data_fid = create_tgt_fid(src_data_fid);
+        auto tgt_data = m_coarse_grid->create_geometry_data(tgt_data_fid);
+        register_field(src_data,tgt_data);
+      }
     }
-  }
-  registration_ends();
-  if (get_num_fields()>0) {
-    remap(true);
+    registration_ends();
+    if (get_num_fields()>0) {
+      remap(true);
 
-    // The remap phase only alters the fields on device.
-    // We need to sync them to host as well
-    for (int i=0; i<get_num_fields(); ++i) {
-      auto tgt_data = get_tgt_field(i);
-      tgt_data.sync_to_host();
+      // The remap phase only alters the fields on device.
+      // We need to sync them to host as well
+      for (int i=0; i<get_num_fields(); ++i) {
+        auto tgt_data = get_tgt_field(i);
+        tgt_data.sync_to_host();
+      }
     }
+    clean_up();
   }
-  clean_up();
 }
 
 CoarseningRemapper::

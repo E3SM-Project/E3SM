@@ -156,11 +156,15 @@ macro(createTestExec execName execType macroNP macroNC
   ENDIF ()
 
   IF (HOMME_USE_KOKKOS)
+<<<<<<< HEAD
   if("${E3SM_KOKKOS_PATH}" STREQUAL "")
     target_link_libraries(${execName} kokkos)
   else()
     link_to_kokkos(${execName})
   endif()
+=======
+    target_link_libraries(${execName} Kokkos::kokkos)
+>>>>>>> origin/master
   ENDIF ()
 
   # Move the module files out of the way so the parallel build
@@ -264,7 +268,7 @@ macro(createExecLib libName execType libSrcs inclDirs macroNP
   TARGET_LINK_LIBRARIES(${libName} timing ${COMPOSE_LIBRARY} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
 
   IF (HOMME_USE_KOKKOS)
-    TARGET_LINK_LIBRARIES(${libName} kokkos)
+    TARGET_LINK_LIBRARIES(${libName} Kokkos::kokkos)
   ENDIF ()
 
   IF (HOMME_USE_MKL)

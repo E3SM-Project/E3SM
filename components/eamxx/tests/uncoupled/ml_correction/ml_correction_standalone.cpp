@@ -1,23 +1,23 @@
+#include <catch2/catch.hpp>
+
+#include "control/atmosphere_driver.hpp"
+#include "physics/register_physics.hpp"
+#include "share/grid/mesh_free_grids_manager.hpp"
+
+#include <ekat/ekat_parse_yaml_file.hpp>
+
 #include <pybind11/embed.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 
-#include <catch2/catch.hpp>
 #include <iomanip>
-
-#include "control/atmosphere_driver.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "ekat/ekat_parse_yaml_file.hpp"
-#include "physics/ml_correction/eamxx_ml_correction_process_interface.hpp"
-#include "share/atm_process/atmosphere_process.hpp"
-#include "share/grid/mesh_free_grids_manager.hpp"
-#include "share/scream_session.hpp"
 
 namespace scream {
 TEST_CASE("ml_correction-stand-alone", "") {
   using namespace scream;
   using namespace scream::control;
   namespace py      = pybind11;
+
   std::string fname = "input.yaml";
   ekat::ParameterList ad_params("Atmosphere Driver");
   parse_yaml_file(fname, ad_params);
@@ -27,16 +27,16 @@ TEST_CASE("ml_correction-stand-alone", "") {
   const auto  nsteps = ts.get<int>("number_of_steps");
   const auto  t0_str = ts.get<std::string>("run_t0");
   const auto  t0     = util::str_to_time_stamp(t0_str);
+  const auto  ml     = ad_params.sublist("atmosphere_processes").sublist("MLCorrection");
+  const auto  ML_model_tq_path = ml.get<std::string>("ML_model_path_tq");
+  const auto  ML_model_uv_path = ml.get<std::string>("ML_model_path_uv");
 
   EKAT_ASSERT_MSG(dt > 0, "Error! Time step must be positive.\n");
 
   ekat::Comm atm_comm(MPI_COMM_WORLD);
 
-  auto &proc_factory = AtmosphereProcessFactory::instance();
-  auto &gm_factory   = GridsManagerFactory::instance();
-  proc_factory.register_product("MLCorrection",
-                                &create_atmosphere_process<MLCorrection>);
-  gm_factory.register_product("Mesh Free", &create_mesh_free_grids_manager);
+  register_physics();
+  register_mesh_free_grids_manager();
 
   AtmosphereDriver ad;
 
@@ -68,14 +68,17 @@ TEST_CASE("ml_correction-stand-alone", "") {
   py::module sys = pybind11::module::import("sys");
   sys.attr("path").attr("insert")(1, CUSTOM_SYS_PATH);
   auto py_correction = py::module::import("test_correction");
-  py::object ob1     = py_correction.attr("modify_view")(
+  py::object ML_model_tq = py_correction.attr("get_ML_model")(ML_model_tq_path);
+  py::object ML_model_uv = py_correction.attr("get_ML_model")(ML_model_uv_path);  
+  py::object ob1  = py_correction.attr("modify_view")(
       py::array_t<Real, py::array::c_style | py::array::forcecast>(
           num_cols * num_levs, qv.data(), py::str{}),
-      num_cols, num_levs);
+      num_cols, num_levs, ML_model_tq, ML_model_uv);
   py::gil_scoped_release no_gil;
   ekat::enable_fpes(fpe_mask);
   REQUIRE(qv(1, 10) == reference);   // This is the one that is modified
   REQUIRE(qv(0, 10) != reference);  // This one should be unchanged
   ad.finalize();
 }
+
 }  // namespace scream

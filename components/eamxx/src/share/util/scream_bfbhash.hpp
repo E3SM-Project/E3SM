@@ -1,3 +1,6 @@
+#ifndef SCREAM_BFBHASH_HPP
+#define SCREAM_BFBHASH_HPP
+
 #include <cstdint>
 
 #include <ekat/kokkos/ekat_kokkos_types.hpp>
@@ -49,3 +52,5 @@ int all_reduce_HashType(MPI_Comm comm, const HashType* sendbuf, HashType* rcvbuf
 
 } // namespace bfbhash
 } // namespace scream
+
+#endif

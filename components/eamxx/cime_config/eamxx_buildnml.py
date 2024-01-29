@@ -15,7 +15,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__f
 
 # SCREAM imports
 from eamxx_buildnml_impl import get_valid_selectors, get_child, refine_type, \
-        resolve_all_inheritances, gen_atm_proc_group, check_all_values
+        resolve_all_inheritances, gen_atm_proc_group, check_all_values, find_node
 from atm_manip import apply_atm_procs_list_changes_from_buffer, apply_non_atm_procs_list_changes_from_buffer
 
 from utils import ensure_yaml # pylint: disable=no-name-in-module
@@ -44,7 +44,7 @@ CIME_VAR_RE = re.compile(r'[$][{](\w+)[}]')
 #    Examples:
 #      - constraints="ge 0; lt 4" means the value V must satisfy V>=0 && V<4.
 #      - constraints="mod 2 eq 0" means the value V must be a multiple of 2.
-METADATA_ATTRIBS = ("type", "valid_values", "locked", "constraints", "inherit", "doc")
+METADATA_ATTRIBS = ("type", "valid_values", "locked", "constraints", "inherit", "doc", "append")
 
 ###############################################################################
 def do_cime_vars(entry, case, refine=False, extra=None):
@@ -103,6 +103,107 @@ def do_cime_vars(entry, case, refine=False, extra=None):
             entry = refine_type(entry)
 
     return entry
+
+###############################################################################
+def perform_consistency_checks(case, xml):
+###############################################################################
+    """
+    There may be separate parts of the xml that must satisfy some consistency
+    Here, we run any such check, so we can catch errors before submit time
+
+    >>> from eamxx_buildnml_impl import MockCase
+    >>> xml_str = '''
+    ... <params>
+    ...   <rrtmgp>
+    ...     <rad_frequency type="integer">3</rad_frequency>
+    ...   </rrtmgp>
+    ... </params>
+    ... '''
+    >>> import xml.etree.ElementTree as ET
+    >>> xml = ET.fromstring(xml_str)
+    >>> case = MockCase({'ATM_NCPL':'24', 'REST_N':24, 'REST_OPTION':'nsteps'})
+    >>> perform_consistency_checks(case,xml)
+    >>> case = MockCase({'ATM_NCPL':'24', 'REST_N':2, 'REST_OPTION':'nsteps'})
+    >>> perform_consistency_checks(case,xml)
+    Traceback (most recent call last):
+    CIME.utils.CIMEError: ERROR: rrtmgp::rad_frequency incompatible with restart frequency.
+     Please, ensure restart happens on a step when rad is ON
+    >>> case = MockCase({'ATM_NCPL':'24', 'REST_N':10800, 'REST_OPTION':'nseconds'})
+    >>> perform_consistency_checks(case,xml)
+    >>> case = MockCase({'ATM_NCPL':'24', 'REST_N':7200, 'REST_OPTION':'nseconds'})
+    >>> perform_consistency_checks(case,xml)
+    Traceback (most recent call last):
+    CIME.utils.CIMEError: ERROR: rrtmgp::rad_frequency incompatible with restart frequency.
+     Please, ensure restart happens on a step when rad is ON
+      rest_tstep: 7200
+      rad_testep: 10800.0
+    >>> case = MockCase({'ATM_NCPL':'24', 'REST_N':180, 'REST_OPTION':'nminutes'})
+    >>> perform_consistency_checks(case,xml)
+    >>> case = MockCase({'ATM_NCPL':'24', 'REST_N':120, 'REST_OPTION':'nminutes'})
+    >>> perform_consistency_checks(case,xml)
+    Traceback (most recent call last):
+    CIME.utils.CIMEError: ERROR: rrtmgp::rad_frequency incompatible with restart frequency.
+     Please, ensure restart happens on a step when rad is ON
+      rest_tstep: 7200
+      rad_testep: 10800.0
+    >>> case = MockCase({'ATM_NCPL':'24', 'REST_N':6, 'REST_OPTION':'nhours'})
+    >>> perform_consistency_checks(case,xml)
+    >>> case = MockCase({'ATM_NCPL':'24', 'REST_N':8, 'REST_OPTION':'nhours'})
+    >>> perform_consistency_checks(case,xml)
+    Traceback (most recent call last):
+    CIME.utils.CIMEError: ERROR: rrtmgp::rad_frequency incompatible with restart frequency.
+     Please, ensure restart happens on a step when rad is ON
+      rest_tstep: 28800
+      rad_testep: 10800.0
+    >>> case = MockCase({'ATM_NCPL':'12', 'REST_N':2, 'REST_OPTION':'ndays'})
+    >>> perform_consistency_checks(case,xml)
+    >>> case = MockCase({'ATM_NCPL':'10', 'REST_N':2, 'REST_OPTION':'ndays'})
+    >>> perform_consistency_checks(case,xml)
+    Traceback (most recent call last):
+    CIME.utils.CIMEError: ERROR: rrtmgp::rad_frequency incompatible with restart frequency.
+     Please, ensure restart happens on a step when rad is ON
+     For daily (or less frequent) restart, rad_frequency must divide ATM_NCPL
+    """
+
+    # RRTMGP can be supercycled. Restarts cannot fall in the middle
+    # of a rad superstep
+    rrtmgp = find_node(xml,"rrtmgp")
+    rest_opt = case.get_value("REST_OPTION")
+    if rrtmgp is not None and rest_opt is not None and rest_opt not in ["never","none"]:
+        rest_n = int(case.get_value("REST_N"))
+        rad_freq = int(find_node(rrtmgp,"rad_frequency").text)
+        atm_ncpl = int(case.get_value("ATM_NCPL"))
+        atm_tstep = 86400 / atm_ncpl
+        rad_tstep = atm_tstep * rad_freq
+
+
+        if rad_freq==1:
+            pass
+        elif rest_opt in ["nsteps", "nstep"]:
+            expect (rest_n % rad_freq == 0,
+                    "rrtmgp::rad_frequency incompatible with restart frequency.\n"
+                    " Please, ensure restart happens on a step when rad is ON")
+        elif rest_opt in ["nseconds", "nsecond", "nminutes", "nminute", "nhours", "nhour"]:
+            if rest_opt in ["nseconds", "nsecond"]:
+                factor = 1
+            elif rest_opt in ["nminutes", "nminute"]:
+                factor = 60
+            else:
+                factor = 3600
+
+            rest_tstep = factor*rest_n
+            expect (rest_tstep % rad_tstep == 0,
+                    "rrtmgp::rad_frequency incompatible with restart frequency.\n"
+                    " Please, ensure restart happens on a step when rad is ON\n"
+                    f"  rest_tstep: {rest_tstep}\n"
+                    f"  rad_testep: {rad_tstep}")
+
+        else:
+            # for "very infrequent" restarts, we request rad_freq to divide atm_ncpl
+            expect (atm_ncpl % rad_freq ==0,
+                    "rrtmgp::rad_frequency incompatible with restart frequency.\n"
+                    " Please, ensure restart happens on a step when rad is ON\n"
+                    " For daily (or less frequent) restart, rad_frequency must divide ATM_NCPL")
 
 ###############################################################################
 def ordered_dump(data, item, Dumper=yaml.SafeDumper, **kwds):
@@ -245,6 +346,8 @@ def evaluate_selectors(element, case, ez_selectors):
 
     selected_child = {} # elem_name -> evaluated XML element
     children_to_remove = []
+    child_base_value = {} # map elme name to values to be appended to if append=="base"
+    child_type  = {} # map elme name to its type (since only first entry may have type specified)
     for child in element:
         # Note: in our system, an XML element is either a "node" (has children)
         # or a "leaf" (has a value).
@@ -255,15 +358,36 @@ def evaluate_selectors(element, case, ez_selectors):
             child_name = child.tag
             child.text = None if child.text is None else child.text.strip(' \n')
             child_val = child.text
-
             selectors = child.attrib
+
+            if child_name not in child_type:
+                child_type[child_name] = selectors["type"] if "type" in selectors.keys() else "unset"
+
+            is_array = child_type[child_name].startswith("array")
+            expect (is_array or "append" not in selectors.keys(),
+                    "The 'append' metadata attribute is only supported for entries of array type\n"
+                    f" param name: {child_name}\n"
+                    f" param type: {child_type[child_name]}")
+
+            append = selectors["append"] if "append" in selectors.keys() else "no"
+            expect (append in ["no","base","last"],
+                    "Unrecognized value for 'append' attribute\n" +
+                    f"  param name  : {child_name}\n" +
+                    f"  append value: {append}\n" +
+                     "  valid values: base, last\n")
             if selectors:
                 all_match = True
+                had_case_selectors = False
                 for k, v in selectors.items():
                     # Metadata attributes are used only when it's time to generate the input files
                     if k in METADATA_ATTRIBS:
+                        if k=="type" and child_name in selected_child.keys():
+                            if "type" in selected_child[child_name].attrib:
+                                expect (v==selected_child[child_name].attrib["type"],
+                                        f"The 'type' attribute of {child_name} is not consistent across different selectors")
                         continue
 
+                    had_case_selectors = True
                     val_re = re.compile(v)
 
                     if k in ez_selectors:
@@ -289,7 +413,6 @@ def evaluate_selectors(element, case, ez_selectors):
                         expect(val is not None,
                                "Bad selector '{0}' for child '{1}'. '{0}' is not a valid case value or easy selector".format(k, child_name))
 
-
                     if val is None or val_re.match(val) is None:
                         all_match = False
                         children_to_remove.append(child)
@@ -298,10 +421,18 @@ def evaluate_selectors(element, case, ez_selectors):
                 if all_match:
                     if child_name in selected_child.keys():
                         orig_child = selected_child[child_name]
-                        orig_child.text = child.text
+                        if append=="base":
+                            orig_child.text = child_base_value[child_name] + "," + child.text
+                        elif append=="last":
+                            orig_child.text = orig_child.text + "," + child.text
+                        else:
+                            orig_child.text = child.text
                         children_to_remove.append(child)
 
                     else:
+                        # If all selectors were the METADATA_ATTRIB ones, then this is the "base" value
+                        if not had_case_selectors:
+                            child_base_value[child_name] = child.text
                         selected_child[child_name] = child
                         # Make a copy of selectors.keys(), since selectors=child.attrib,
                         # and we might delete an entry, causing the error
@@ -310,6 +441,7 @@ def evaluate_selectors(element, case, ez_selectors):
             else:
                 expect(child_name not in selected_child,
                        "child '{}' element without selectors occurred after other parameter elements for this parameter".format(child_name))
+                child_base_value[child_name] = child.text
                 selected_child[child_name] = child
                 child.text = do_cime_vars(child_val, case)
 
@@ -504,6 +636,8 @@ def _create_raw_xml_file_impl(case, xml):
     # 8. Apply all changes in the SCREAM_ATMCHANGE_BUFFER that do not alter
     #    which atm processes are used
     apply_non_atm_procs_list_changes_from_buffer (case,xml)
+
+    perform_consistency_checks (case, xml)
 
     return xml
 
@@ -743,6 +877,11 @@ def get_file_parameters(caseroot):
 
     result = []
     for item in raw_xml.findall('.//*[@type="file"]'):
+        # Certain configurations may not need a file (e.g., a remap
+        # file for SPA may not be needed if the model resolution
+        # matches the data file resolution
+        if item.text is None or item.text=="":
+            continue
         result.append(item.text.strip())
 
     for item in raw_xml.findall('.//*[@type="array(file)"]'):

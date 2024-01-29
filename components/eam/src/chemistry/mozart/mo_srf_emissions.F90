@@ -37,7 +37,7 @@ module mo_srf_emissions
   logical :: has_emis(gas_pcnst)
   type(emission), allocatable :: emissions(:)
   integer                     :: n_emis_species 
-  integer :: c10h16_ndx, isop_ndx
+  integer :: c10h16_ndx, isop_ndx, dms_ndx
 
 contains
 
@@ -201,6 +201,7 @@ contains
 
     c10h16_ndx = get_spc_ndx('C10H16')
     isop_ndx = get_spc_ndx('ISOP')
+    dms_ndx = get_spc_ndx('DMS')
 
   end subroutine srf_emissions_inti
 
@@ -231,7 +232,7 @@ contains
   end subroutine set_srf_emissions_time
 
   ! adds surf flux specified in file to sflx
-  subroutine set_srf_emissions( lchnk, ncol, sflx )
+  subroutine set_srf_emissions( lchnk, ncol, dms_emis_scale, sflx )
     !--------------------------------------------------------
     !	... form the surface fluxes for this latitude slice
     !--------------------------------------------------------
@@ -248,6 +249,7 @@ contains
     !--------------------------------------------------------
     integer,  intent(in)  :: ncol                  ! columns in chunk
     integer,  intent(in)  :: lchnk                 ! chunk index
+    real(r8), intent(in)  :: dms_emis_scale        ! scaling dms emissions
     real(r8), intent(out) :: sflx(:,:) ! surface emissions ( kg/m^2/s )
 
     !--------------------------------------------------------
@@ -298,6 +300,10 @@ contains
        do isec = 1,emissions(m)%nsectors
           flux(:ncol) = flux(:ncol) + emissions(m)%fields(isec)%data(:ncol,1,lchnk)
        enddo
+
+       if ( n == dms_ndx ) then
+          flux(:ncol) = dms_emis_scale * flux(:ncol)
+       endif
 
        units = to_lower(trim(emissions(m)%fields(1)%units(:GLC(emissions(m)%fields(1)%units))))
        

@@ -74,7 +74,8 @@ public:
                    const std::map<std::string,FieldLayout>&  layouts);
   AtmosphereInput (const std::string& filename,
                    const std::shared_ptr<const grid_type>& grid,
-                   const std::vector<Field>& fields);
+                   const std::vector<Field>& fields,
+                   const bool skip_grid_checks = false);
 
   ~AtmosphereInput ();
 

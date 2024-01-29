@@ -93,7 +93,7 @@ foreach (P3_LIB IN LISTS P3_LIBS)
     Fortran_MODULE_DIRECTORY ${P3_LIB}/modules
   )
   target_include_directories(${P3_LIB} PUBLIC
-    ${CMAKE_CURRENT_BINARY_DIR}/modules
+    ${CMAKE_CURRENT_BINARY_DIR}/${P3_LIB}/modules
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/impl
     ${SCREAM_BASE_DIR}/../eam/src/physics/cam

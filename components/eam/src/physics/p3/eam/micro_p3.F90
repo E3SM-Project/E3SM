@@ -72,8 +72,8 @@ module micro_p3
 
   ! Bit-for-bit math functions.
 #ifdef SCREAM_CONFIG_IS_CMAKE
-  use physics_share_f2c, only: cxx_pow, cxx_sqrt, cxx_cbrt, cxx_gamma, cxx_log, &
-                                 cxx_log10, cxx_exp, cxx_expm1, cxx_tanh
+  use physics_share_f2c, only: scream_pow, scream_sqrt, scream_cbrt, scream_gamma, scream_log, &
+                               scream_log10, scream_exp, scream_expm1, scream_tanh
 #endif
 
   implicit none
@@ -1604,7 +1604,7 @@ end function bfb_expm1
        call ice_sedimentation(kts,kte,ktop,kbot,kdir,    &
          rho(i,:),inv_rho(i,:),rhofaci(i,:),cld_frac_i(i,:),inv_dz(i,:),dt,inv_dt, &
          qi(i,:),qi_incld(i,:),ni(i,:),qm(i,:),qm_incld(i,:),bm(i,:),bm_incld(i,:),ni_incld(i,:), &
-         precip_ice_surf(i),sflx(i,:),p3_tend_out(i,:,40),p3_tend_out(i,:,41))
+         precip_ice_surf(i),precip_ice_flux(i,:),sflx(i,:),p3_tend_out(i,:,40),p3_tend_out(i,:,41))
 
 
        !*** Add tendencies for the next processes ***  
@@ -3898,6 +3898,7 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
    type(realptr), dimension(num_arrays) :: vs, fluxes, qnr
 
    real(rtype) :: dt_left
+   real(rtype) :: dt_sub
    real(rtype) :: prt_accum
    real(rtype) :: Co_max
    real(rtype) :: nu
@@ -3946,7 +3947,7 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
             Co_max = 0._rtype
             V_qc = 0._rtype
             V_nc = 0._rtype
-
+            dt_sub = 0._rtype
             kloop_sedi_c2: do k = k_qxtop,k_qxbot,-kdir
 
                qc_notsmall_c2: if (qc_incld(k)>qsmall) then
@@ -3969,10 +3970,9 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
             enddo kloop_sedi_c2
 
             call generalized_sedimentation(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, dt_left, &
-                 prt_accum, inv_dz, inv_rho, rho, num_arrays, vs, fluxes, qnr)
-
+                 prt_accum, inv_dz, inv_rho, rho, num_arrays, vs, fluxes, qnr, dt_sub)
             do k = k_qxbot,k_qxtop,kdir
-                  cflx(k+1) = cflx(k+1) + flux_qx(k)
+                  cflx(k+1) = cflx(k+1) + flux_qx(k)*dt_sub
             enddo
                  
             !Update _incld values with end-of-step cell-ave values
@@ -4006,10 +4006,9 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
             enddo kloop_sedi_c1
 
             call generalized_sedimentation(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, dt_left, &
-                 prt_accum, inv_dz, inv_rho, rho, 1, vs, fluxes, qnr)
-
+                 prt_accum, inv_dz, inv_rho, rho, 1, vs, fluxes, qnr, dt_sub)
             do k = k_qxbot,k_qxtop,kdir
-                  cflx(k+1) = cflx(k+1) + flux_qx(k)
+                  cflx(k+1) = cflx(k+1) + flux_qx(k)*dt_sub
             enddo
 
             !Update _incld values with end-of-step cell-ave values
@@ -4021,7 +4020,7 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
          enddo substep_sedi_c1
 
       endif two_moment
-
+      cflx(:) = cflx(:)*inv_dt
       precip_liq_surf = precip_liq_surf + prt_accum*inv_rho_h2o*inv_dt
 
    endif qc_present
@@ -4067,6 +4066,7 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,                           
    type(realptr), dimension(num_arrays) :: vs, fluxes, qnr
 
    real(rtype) :: dt_left
+   real(rtype) :: dt_sub
    real(rtype) :: prt_accum
    real(rtype) :: Co_max
    real(rtype), dimension(kts:kte), target :: V_qr
@@ -4111,6 +4111,7 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,                           
          Co_max = 0._rtype
          V_qr = 0._rtype
          V_nr = 0._rtype
+         dt_sub = 0._rtype
 
          kloop_sedi_r1: do k = k_qxtop,k_qxbot,-kdir
 
@@ -4132,12 +4133,12 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,                           
          enddo kloop_sedi_r1
 
          call generalized_sedimentation(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, dt_left, &
-              prt_accum, inv_dz, inv_rho, rho, num_arrays, vs, fluxes, qnr)
+              prt_accum, inv_dz, inv_rho, rho, num_arrays, vs, fluxes, qnr, dt_sub)
 
          !-- AaronDonahue, precip_liq_flux output
          do k = k_qxbot,k_qxtop,kdir
-            precip_liq_flux(k+1) = precip_liq_flux(k+1) + flux_qx(k) ! AaronDonahue
-            rflx(k+1) = rflx(k+1) + flux_qx(k)
+            precip_liq_flux(k+1) = precip_liq_flux(k+1) + flux_qx(k)*dt_sub ! AaronDonahue
+            rflx(k+1) = rflx(k+1) + flux_qx(k)*dt_sub
          enddo
 
          !Update _incld values with end-of-step cell-ave values
@@ -4147,7 +4148,8 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,                           
          nr_incld(:) = nr(:)/cld_frac_r(:)
 
       enddo substep_sedi_r
-
+      precip_liq_flux(:) = precip_liq_flux(:)*inv_dt
+      rflx(:) = rflx(:)*inv_dt
       precip_liq_surf = precip_liq_surf + prt_accum*inv_rho_h2o*inv_dt
 
    endif qr_present
@@ -4199,7 +4201,7 @@ end subroutine compute_rain_fall_velocity
 
 subroutine ice_sedimentation(kts,kte,ktop,kbot,kdir,    &
    rho,inv_rho,rhofaci,cld_frac_i,inv_dz,dt,inv_dt,  &
-   qi,qi_incld,ni,qm,qm_incld,bm,bm_incld,ni_incld,precip_ice_surf,sflx,qi_tend,ni_tend)
+   qi,qi_incld,ni,qm,qm_incld,bm,bm_incld,ni_incld,precip_ice_surf,precip_ice_flux,sflx,qi_tend,ni_tend)
 
    implicit none
    integer, intent(in) :: kts, kte
@@ -4223,10 +4225,12 @@ subroutine ice_sedimentation(kts,kte,ktop,kbot,kdir,    &
    real(rtype), intent(inout), dimension(kts:kte) :: bm_incld
 
    real(rtype), intent(inout) :: precip_ice_surf
+   real(rtype), intent(inout), dimension(kts:kte+1) :: precip_ice_flux
    real(rtype), intent(inout), dimension(kts:kte+1) :: sflx
    real(rtype), intent(inout), dimension(kts:kte) :: qi_tend
    real(rtype), intent(inout), dimension(kts:kte) :: ni_tend
 
+   real(rtype) :: dt_sub
    logical(btype) :: log_qxpresent
    integer :: k
    integer :: k_qxtop, k_qxbot
@@ -4294,6 +4298,7 @@ subroutine ice_sedimentation(kts,kte,ktop,kbot,kdir,    &
          Co_max = 0._rtype
          V_qit = 0._rtype
          V_nit = 0._rtype
+         dt_sub = 0._rtype
 
          kloop_sedi_i1: do k = k_qxtop,k_qxbot,-kdir
 
@@ -4333,11 +4338,11 @@ subroutine ice_sedimentation(kts,kte,ktop,kbot,kdir,    &
          enddo kloop_sedi_i1
 
          call generalized_sedimentation(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, &
-              dt_left, prt_accum, inv_dz, inv_rho, rho, num_arrays, vs, fluxes, qnr)
-
+              dt_left, prt_accum, inv_dz, inv_rho, rho, num_arrays, vs, fluxes, qnr, dt_sub)
 
          do k = k_qxbot,k_qxtop,kdir
-               sflx(k+1) = sflx(k+1) + flux_qit(k)
+            precip_ice_flux(k+1) = precip_ice_flux(k+1) + flux_qit(k)*dt_sub ! shanyp
+            sflx(k+1) = sflx(k+1) + flux_qit(k)*dt_sub
          enddo     
 
          !update _incld variables
@@ -4349,7 +4354,8 @@ subroutine ice_sedimentation(kts,kte,ktop,kbot,kdir,    &
          bm_incld(:) = bm(:)/cld_frac_i(:)
 
       enddo substep_sedi_i
-
+      precip_ice_flux(:)=precip_ice_flux(:)*inv_dt
+      sflx(:)=sflx(:)*inv_dt
       precip_ice_surf = precip_ice_surf + prt_accum*inv_rho_h2o*inv_dt
 
    endif qi_present
@@ -4360,7 +4366,7 @@ subroutine ice_sedimentation(kts,kte,ktop,kbot,kdir,    &
 end subroutine ice_sedimentation
 
 subroutine generalized_sedimentation(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, dt_left, &
-     prt_accum, inv_dz, inv_rho, rho, num_arrays, vs, fluxes, qnx)
+     prt_accum, inv_dz, inv_rho, rho, num_arrays, vs, fluxes, qnx, dt_sub)
 
    implicit none
 
@@ -4375,7 +4381,7 @@ subroutine generalized_sedimentation(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_
    type(realptr), intent(in), dimension(num_arrays), target :: vs, fluxes, qnx
 
    integer :: tmpint1, k_temp, i
-   real(rtype) :: dt_sub
+   real(rtype),intent(inout) :: dt_sub
 
    !-- compute dt_sub
    tmpint1 = int(Co_max+1._rtype)    !number of substeps remaining if dt_sub were constant

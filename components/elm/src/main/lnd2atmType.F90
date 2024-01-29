@@ -9,9 +9,11 @@ module lnd2atmType
   use shr_infnan_mod, only : nan => shr_infnan_nan, assignment(=)
   use shr_log_mod   , only : errMsg => shr_log_errMsg
   use shr_megan_mod , only : shr_megan_mechcomps_n
+  use shr_fan_mod   , only : shr_fan_to_atm
+  use abortutils    , only : endrun
   use elm_varpar    , only : numrad, ndst, nlevsno, nlevgrnd !ndst = number of dust bins.
   use elm_varcon    , only : rair, grav, cpair, hfus, tfrz, spval
-  use elm_varctl    , only : iulog, use_c13, use_cn, use_lch4
+  use elm_varctl    , only : iulog, use_c13, use_cn, use_lch4, use_fan
   use seq_drydep_mod, only : n_drydep, drydep_method, DD_XLND
   use decompMod     , only : bounds_type
   !
@@ -30,6 +32,7 @@ module lnd2atmType
      real(r8), pointer :: t_ref2m_grc        (:)   => null() ! 2m surface air temperature (Kelvin)
      real(r8), pointer :: q_ref2m_grc        (:)   => null() ! 2m surface specific humidity (kg/kg)
      real(r8), pointer :: u_ref10m_grc       (:)   => null() ! 10m surface wind speed (m/sec)
+     real(r8), pointer :: u_ref10m_with_gusts_grc(:)=> null()! 10m surface wind speed with gusts included (m/sec)
      real(r8), pointer :: h2osno_grc         (:)   => null() ! snow water (mm H2O)
      real(r8), pointer :: h2osoi_vol_grc     (:,:) => null() ! volumetric soil water (0~watsat, m3/m3, nlevgrnd) (for dust model)
      real(r8), pointer :: albd_grc           (:,:) => null() ! (numrad) surface albedo (direct)
@@ -49,6 +52,7 @@ module lnd2atmType
      real(r8), pointer :: ddvel_grc          (:,:) => null() ! dry deposition velocities
      real(r8), pointer :: flxvoc_grc         (:,:) => null() ! VOC flux (size bins)
      real(r8), pointer :: flux_ch4_grc       (:)   => null() ! net CH4 flux (kg C/m**2/s) [+ to atm]
+     real(r8), pointer :: flux_nh3_grc       (:)   => null() ! gross NH3 emission (gN/m2/s) [+ to atm]
      ! lnd->rof
      real(r8), pointer :: qflx_rofliq_grc      (:) => null() ! rof liq forcing
      real(r8), pointer :: qflx_rofliq_qsur_grc (:) => null() ! rof liq -- surface runoff component
@@ -118,6 +122,7 @@ contains
     allocate(this%t_ref2m_grc          (begg:endg))            ; this%t_ref2m_grc          (:) =ival
     allocate(this%q_ref2m_grc          (begg:endg))            ; this%q_ref2m_grc          (:) =ival
     allocate(this%u_ref10m_grc         (begg:endg))            ; this%u_ref10m_grc         (:) =ival
+    allocate(this%u_ref10m_with_gusts_grc(begg:endg))          ; this%u_ref10m_with_gusts_grc(:)=ival
     allocate(this%h2osno_grc           (begg:endg))            ; this%h2osno_grc           (:) =ival
     allocate(this%h2osoi_vol_grc       (begg:endg,1:nlevgrnd)) ; this%h2osoi_vol_grc     (:,:) =ival
     allocate(this%albd_grc             (begg:endg,1:numrad))   ; this%albd_grc           (:,:) =ival
@@ -167,6 +172,13 @@ contains
     allocate(this%qflx_rofmud_grc      (begg:endg)); this%qflx_rofmud_grc      (:) =ival
     allocate(this%qflx_h2orof_drain_grc(begg:endg)); this%qflx_h2orof_drain_grc(:) = ival
 
+    if (shr_fan_to_atm) then
+       if (.not. use_fan) then
+          call endrun(msg="ERROR fan_to_atm is on but use_fan is off")
+       end if
+       allocate(this%flux_nh3_grc       (begg:endg))            ; this%flux_nh3_grc         (:) =ival
+    end if
+
   end subroutine InitAllocate
 
   !-----------------------------------------------------------------------
@@ -210,6 +222,13 @@ contains
        call hist_addfld1d (fname='NEM', units='gC/m2/s', &
             avgflag='A', long_name='Gridcell net adjustment to NEE passed to atm. for methane production', &
             ptr_lnd=this%nem_grc)
+    end if
+
+    if (shr_fan_to_atm) then
+       this%flux_nh3_grc(begg:endg) = 0.0_r8
+       call hist_addfld1d (fname='NH3_TO_COUPLER', units='gN/m2/s', &
+            avgflag='A', long_name='Gridcell gross NH3 emission passed to coupler', &
+            ptr_lnd=this%flux_nh3_grc)
     end if
 
   end subroutine InitHistory

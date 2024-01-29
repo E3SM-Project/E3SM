@@ -55,6 +55,7 @@ void prim_run_f90 (const int nsplit_iteration);
 void prim_finalize_f90 ();
 
 // Grids specs
+bool is_planar_geometry_f90 ();
 int get_nlev_f90 ();
 int get_np_f90 ();
 int get_num_local_columns_f90 (const int pgN);
@@ -69,6 +70,7 @@ void get_phys_grid_data_f90 (const int& pg_type,
                              AbstractGrid::gid_type* const& gids,
                              double* const& lat, double* const& lon, double* const& area);
 int get_homme_nsplit_f90 (const int& atm_dt);
+double get_dx_short_f90 (const int elem_idx);
 
 // Parmaters getters/setters
 int get_homme_int_param_f90(const char** name);

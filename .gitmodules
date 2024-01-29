@@ -70,9 +70,16 @@
 	path = components/ww3/src/WW3
 	url = git@github.com:E3SM-Project/WW3.git
 	branch = e3sm
+[submodule "components/eam/src/physics/crm/pam/external"]
+	path = components/eam/src/physics/crm/pam/external
+	url = git@github.com:E3SM-Project/PAM.git
+[submodule "components/mpas-seaice/src/icepack"]
+	path = components/mpas-seaice/src/icepack
+	url = git@github.com:E3SM-Project/Icepack.git
 [submodule "externals/haero"]
 	path = externals/haero
 	url = git@github.com:eagles-project/haero.git
 [submodule "externals/mam4xx"]
 	path = externals/mam4xx
 	url = git@github.com:eagles-project/mam4xx.git
+

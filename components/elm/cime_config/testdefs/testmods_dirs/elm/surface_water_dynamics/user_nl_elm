@@ -1,0 +1,2 @@
+fsurdat = '$DIN_LOC_ROOT/lnd/clm2/surfdata_map/surfdata_nldas2_simyr2000_c181207_surfacewater.nc'
+use_modified_infil = .true.

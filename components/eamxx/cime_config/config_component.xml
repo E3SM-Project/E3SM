@@ -13,7 +13,7 @@
     <desc>Name of atmospheric component</desc>
   </entry>
 
-  <entry id="ATM_DYN_TARGET">
+  <entry id="CAM_TARGET">
     <type>char</type>
     <valid_values>theta-l_kokkos</valid_values>
     <default_value>theta-l_kokkos</default_value>

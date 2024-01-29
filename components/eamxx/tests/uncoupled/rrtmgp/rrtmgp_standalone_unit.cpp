@@ -7,22 +7,22 @@
 #include "physics/rrtmgp/rrtmgp_test_utils.hpp"
 #include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
 #include "physics/rrtmgp/eamxx_rrtmgp_process_interface.hpp"
-#include "mo_gas_concentrations.h"
-#include "mo_garand_atmos_io.h"
-#include "YAKL.h"
-
+#include "physics/register_physics.hpp"
 #include "physics/share/physics_constants.hpp"
 
 // scream share headers
-#include "diagnostics/register_diagnostics.hpp"
-#include "share/atm_process/atmosphere_process.hpp"
 #include "share/grid/mesh_free_grids_manager.hpp"
 #include "share/util/scream_common_physics_functions.hpp"
 
 // EKAT headers
-#include "ekat/ekat_parse_yaml_file.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
-#include "ekat/util/ekat_test_utils.hpp"
+#include <ekat/ekat_parse_yaml_file.hpp>
+#include <ekat/kokkos/ekat_kokkos_utils.hpp>
+#include <ekat/util/ekat_test_utils.hpp>
+
+// RRTMGP and YAKL
+#include <mo_gas_concentrations.h>
+#include <mo_garand_atmos_io.h>
+#include <YAKL.h>
 
 // System headers
 #include <iostream>
@@ -73,11 +73,8 @@ namespace scream {
         ekat::Comm atm_comm (MPI_COMM_WORLD);
 
         // Need to register products in the factory *before* we create any atm process or grids manager.
-        auto& proc_factory = AtmosphereProcessFactory::instance();
-        auto& gm_factory = GridsManagerFactory::instance();
-        proc_factory.register_product("RRTMGP",&create_atmosphere_process<RRTMGPRadiation>);
-        gm_factory.register_product("Mesh Free",&create_mesh_free_grids_manager);
-        register_diagnostics();
+        register_physics ();
+        register_mesh_free_grids_manager();
 
         // Create the driver
         AtmosphereDriver ad;
@@ -418,8 +415,5 @@ namespace scream {
         // RRTMGPRadiation::finalize_impl after RRTMGP has had the
         // opportunity to deallocate all it's arrays.
         ad.finalize();
-
-        // If we got this far, we were able to run the code through the AD
-        REQUIRE(true);
     }
 }

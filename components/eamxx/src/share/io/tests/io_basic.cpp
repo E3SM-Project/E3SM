@@ -157,6 +157,11 @@ void write (const std::string& avg_type, const std::string& freq_units,
 
   // Create Output manager
   OutputManager om;
+
+  // Attempt to use invalid fp precision string
+  om_pl.set("Floating Point Precision",std::string("triple"));
+  REQUIRE_THROWS (om.setup(comm,om_pl,fm,gm,t0,t0,false));
+  om_pl.set("Floating Point Precision",std::string("single"));
   om.setup(comm,om_pl,fm,gm,t0,t0,false);
 
   // Time loop: ensure we always hit 3 output steps

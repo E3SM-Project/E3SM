@@ -4,18 +4,21 @@ import sys, os, logging, argparse
 cimeroot = os.getenv("CIMEROOT")
 sys.path.append(os.path.join(cimeroot, "CIME", "Tools"))
 
-import glob, re
+import glob, re, shutil
 from standard_script_setup import *
 from CIME import utils
 from CIME.utils import expect, run_bld_cmd_ensure_logging, safe_copy
 from CIME.build import get_standard_makefile_args
 from CIME.case import Case
 
+sys.path.append(os.path.dirname(__file__))
+from buildlib_util import extract_from_macros
+
 logger = logging.getLogger(__name__)
 
-
+###############################################################################
 def parse_command_line(args, description):
-    ###############################################################################
+###############################################################################
     parser = argparse.ArgumentParser(
         usage="""\n{0} [--debug]
 OR
@@ -50,29 +53,30 @@ OR
 
 ###############################################################################
 def buildlib(bldroot, installpath, case):
-    ###############################################################################
-    cime_model = case.get_value("MODEL")
-    caseroot = case.get_value("CASEROOT")
-    exeroot = case.get_value("EXEROOT")
+###############################################################################
+    caseroot    = case.get_value("CASEROOT")
+    exeroot     = case.get_value("EXEROOT")
     pio_version = case.get_value("PIO_VERSION")
-    srcroot = case.get_value("SRCROOT")
-    scorpio_src_root_dir = None
-    if cime_model == "e3sm":
-        scorpio_src_root_dir = os.path.join(srcroot, "externals")
-        # Scorpio classic is derived from PIO1
-        scorpio_classic_dir = "scorpio_classic"
-        # Scorpio is derived from PIO2
-        scorpio_dir = "scorpio"
-        scorpio_classic_src_dir = os.path.join(
-            scorpio_src_root_dir, scorpio_classic_dir
-        )
-        scorpio_src_dir = os.path.join(scorpio_src_root_dir, scorpio_dir)
-        if (
-            not os.path.isdir(scorpio_src_root_dir)
-            or not os.path.isdir(scorpio_classic_src_dir)
-            or not os.path.isdir(scorpio_src_dir)
-        ):
-            scorpio_src_root_dir = None
+    srcroot     = case.get_value("SRCROOT")
+    debug       = case.get_value("DEBUG")
+    mpilib      = case.get_value("MPILIB")
+    gmake       = case.get_value("GMAKE")
+    gmake_j     = case.get_value("GMAKE_J")
+
+    scorpio_src_root_dir = os.path.join(srcroot, "externals")
+    # Scorpio classic is derived from PIO1
+    scorpio_classic_dir = "scorpio_classic"
+    # Scorpio is derived from PIO2
+    scorpio_dir = "scorpio"
+    scorpio_classic_src_dir = os.path.join(scorpio_src_root_dir, scorpio_classic_dir)
+    scorpio_new_src_dir = os.path.join(scorpio_src_root_dir, scorpio_dir)
+    scorpio_src_dir = scorpio_classic_src_dir if pio_version == 1 else scorpio_new_src_dir
+    expect(os.path.isdir(scorpio_src_dir), "Missing scorpio dir " + scorpio_src_dir)
+
+    # find_package(ADIOS2) appears to work better with ADIOS2_DIR than
+    # ADIOS2_ROOT. This is a workaround
+    if "ADIOS2_ROOT" in os.environ:
+        os.environ["ADIOS2_DIR"] = os.environ["ADIOS2_ROOT"]
 
     # If variable PIO_VERSION_MAJOR is defined in the environment then
     # we assume that PIO is installed on the system
@@ -81,80 +85,108 @@ def buildlib(bldroot, installpath, case):
     # also defined in the environment.  In this case we
     # will use the installed pio and not build it here.
     installed_pio_version = os.environ.get("PIO_VERSION_MAJOR")
-    logger.info(
-        "pio_version_major = {} pio_version = {}".format(
-            installed_pio_version, pio_version
-        )
-    )
+    logger.info(f"pio_version_major = {installed_pio_version} pio_version = {pio_version}")
     if installed_pio_version is not None and int(installed_pio_version) == pio_version:
         logger.info("Using installed PIO library")
         _set_pio_valid_values(case, os.environ.get("PIO_TYPENAME_VALID_VALUES"))
         return
 
     pio_model = "pio{}".format(pio_version)
-    pio_dir = os.path.join(bldroot, pio_model)
-    if not os.path.isdir(pio_dir):
-        os.makedirs(pio_dir)
-    casetools = case.get_value("CASETOOLS")
-    if scorpio_src_root_dir:
-        # Use old genf90 until "short" type is supported
-        cmake_opts = (
-            '"-D GENF90_PATH='
-            + os.path.join(scorpio_src_root_dir, scorpio_dir, "src/genf90")
-            + '" '
-        )
-    elif pio_version == 1:
-        cmake_opts = '"-D GENF90_PATH=$CIMEROOT/CIME/non_py/externals/genf90 "'
+    pio_bld_dir = os.path.join(bldroot, pio_model)
+    if not os.path.isdir(pio_bld_dir):
+        os.makedirs(pio_bld_dir)
+
+    # Compute cmake args
+    # Use old genf90 until "short" type is supported
+    cmake_opts = "-Wno-dev "
+    if pio_version == 1:
+        cmake_opts += f"-DGENF90_PATH={scorpio_src_dir}/pio/bin "
     else:
-        cmake_opts = '"-D GENF90_PATH=' + srcroot + '/libraries/parallelio/scripts/ "'
+        cmake_opts += f"-DGENF90_PATH={scorpio_src_dir}/src/genf90 "
 
-    stdargs = get_standard_makefile_args(case, shared_lib=True)
+    if "ADIOS2_ROOT" in os.environ:
+        cmake_opts += "-DWITH_ADIOS2:BOOL=ON "
+    if debug:
+        cmake_opts += "-DPIO_ENABLE_LOGGING=ON "
+    # Case changes for NetCDF/NETCDF forces us to do this. For other packages
+    # what's already in the env should work
+    if "NETCDF_PATH" in os.environ:
+        cmake_opts += f"-DNetCDF_PATH:PATH={os.environ['NETCDF_PATH']} "
+    if "NETCDF_C_PATH" in os.environ:
+        cmake_opts += f"-DNetCDF_C_PATH:PATH={os.environ['NETCDF_C_PATH']} "
+    if "NETCDF_FORTRAN_PATH" in os.environ:
+        cmake_opts += f"-DNetCDF_Fortran_PATH:PATH={os.environ['NETCDF_FORTRAN_PATH']} "
 
-    gmake_vars = (
-        "CASEROOT={caseroot} COMP_NAME={pio_model} "
-        "USER_CMAKE_OPTS={cmake_opts} "
-        "PIO_LIBDIR={pio_dir} CASETOOLS={casetools} "
-        "USER_CPPDEFS=-DTIMING".format(
-            caseroot=caseroot,
-            pio_model=pio_model,
-            cmake_opts=cmake_opts,
-            pio_dir=pio_dir,
-            casetools=casetools,
-        )
-    )
+    if "PNETCDF_PATH" in os.environ and mpilib != "mpi-serial":
+        cmake_opts += f"-DPnetCDF_PATH:PATH={os.environ['PNETCDF_PATH']} "
+    else:
+        cmake_opts += "-DWITH_PNETCDF:LOGICAL=FALSE -DPIO_USE_MPIIO:LOGICAL=FALSE "
 
-    if scorpio_src_root_dir is not None:
-        gmake_vars += (
-            " IO_LIB_SRCROOT={scorpio_src_root_dir} "
-            " IO_LIB_v1_SRCDIR={scorpio_classic_dir} "
-            " IO_LIB_v2_SRCDIR={scorpio_dir} ".format(
-                scorpio_src_root_dir=scorpio_src_root_dir,
-                scorpio_classic_dir=scorpio_classic_dir,
-                scorpio_dir=scorpio_dir,
-            )
-        )
+    # scorpio needs a little help finding hdf5. The FindHDF5 in scopio uses the
+    # env var "HDF5" instead of "HDF5_ROOT". If HDF5_ROOT is not set, but we have
+    # h5dump in our path, we can use that info to set up HDF5. For now, we will
+    # assume only HDF5_ROOT is what matters.
+    which_h5dump = shutil.which('h5dump')
+    if "HDF5_ROOT" in os.environ:
+        os.environ["HDF5"] = os.environ["HDF5_ROOT"]
+    # elif which_h5dump is not None:
+    #     os.environ["HDF5"] = os.path.dirname(os.path.dirname(which_h5dump))
 
-    gmake_opts = (
-        "{pio_dir}/Makefile -C {pio_dir} "
-        " {gmake_vars} {stdargs} -f {casetools}/Makefile".format(
-            pio_dir=pio_dir, gmake_vars=gmake_vars, casetools=casetools, stdargs=stdargs
-        )
-    )
+    # Before E3SM upgrades scorpio submodule to 1.5.0 or higher, keep WITH_HDF5
+    # CMake option OFF by default.
+    # if "HDF5_ROOT" in os.environ:
+    #    cmake_opts += "-DWITH_HDF5:BOOL=ON "
 
-    gmake_cmd = case.get_value("GMAKE")
+    # Same deal with libz and szip
+    if "ZLIB_ROOT" in os.environ:
+        os.environ["LIBZ"] = os.environ["ZLIB_ROOT"] # LIBZ/ZLIB
+    if "SZIP_ROOT" in os.environ:
+        os.environ["SZIP"] = os.environ["SZIP_ROOT"]
+
+    if mpilib == "mpi-serial":
+        cmake_opts += f"-DPIO_USE_MPISERIAL=TRUE -DMPISERIAL_PATH={installpath} "
+
+    cmake_opts += "-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON "
+    cmake_opts += f"-DGPTL_PATH:STRING={installpath} "
+    cmake_opts += "-DPIO_ENABLE_TESTS:BOOL=OFF -DPIO_USE_MALLOC:BOOL=ON "
+    cmake_opts += f"-DUSER_CMAKE_MODULE_PATH:LIST={cimeroot}/CIME/non_py/src/CMake "
+
+    # Scorpio cmake system is not 100% compatible with the e3sm macros, so we have
+    # to pull out the items we need from the macros
+    sfc, scc, scxx, mfc, mcc, mcxx, fflags, cflags, cxxflags, cppdefs, ldflags, spio_cmake_opts, pio_hints = \
+        extract_from_macros(case, "spio", extra_vars=("SPIO_CMAKE_OPTS", "PIO_FILESYSTEM_HINTS"))
+
+    cppdefs += " -DTIMING"
+
+    # Setting GPTL_PATH is currently insufficient scorpio to find gptl headers?
+    incl_flag = f" -I{installpath}/include"
+
+    if mpilib == "mpi-serial":
+        fc  = sfc
+        cc  = scc
+        cxx = scxx
+    else:
+        fc  = mfc
+        cc  = mcc
+        cxx = mcxx
+
+    cmake_opts += f"-DCMAKE_Fortran_FLAGS:STRING='{fflags} {incl_flag} {cppdefs}' "
+    cmake_opts += f"-DCMAKE_C_FLAGS:STRING='{cflags} {incl_flag} {cppdefs}' "
+    cmake_opts += f"-DCMAKE_CXX_FLAGS:STRING='{cxxflags} {incl_flag} {cppdefs}' "
+    if spio_cmake_opts:
+        cmake_opts += spio_cmake_opts + " "
+
+    if pio_hints:
+        cmake_opts += f"-DPIO_FILESYSTEM_HINTS:STRING='$(PIO_FILESYSTEM_HINTS)' "
 
     # This runs the pio cmake command from the cime case Makefile
     logger.info("Configuring SCORPIO")
-    cmd = "{} {}".format(gmake_cmd, gmake_opts)
-    run_bld_cmd_ensure_logging(cmd, logger, from_dir=pio_dir)
+    cmd = f"FC={fc} CC={cc} CXX={cxx} LDFLAGS='{ldflags}' cmake {cmake_opts} {scorpio_src_dir}"
+    run_bld_cmd_ensure_logging(cmd, logger, from_dir=pio_bld_dir)
 
     # This runs the pio make command from the cmake generated Makefile
     logger.info("Building SCORPIO")
-    run_bld_cmd_ensure_logging(
-        "{} -j {}".format(gmake_cmd, case.get_value("GMAKE_J")),
-        logger,
-        from_dir=pio_dir,
-    )
+    run_bld_cmd_ensure_logging(f"{gmake} -j {gmake_j}", logger, from_dir=pio_bld_dir)
 
     if pio_version == 1:
         expect_string = "D_NETCDF;"
@@ -167,12 +199,14 @@ def buildlib(bldroot, installpath, case):
         netcdf4_string = "NetCDF_C_HAS_PARALLEL:BOOL=TRUE"
 
     adios_string = "WITH_ADIOS2:BOOL=ON"
+    hdf5_string = "WITH_HDF5:BOOL=ON"
     expect_string_found = False
     pnetcdf_found = False
     netcdf4_parallel_found = False
     adios_found = False
+    hdf5_found = False
 
-    cache_file = open(os.path.join(pio_dir,"CMakeCache.txt"), "r")
+    cache_file = open(os.path.join(pio_bld_dir,"CMakeCache.txt"), "r")
     for line in cache_file:
         if re.search(expect_string, line):
             expect_string_found = True
@@ -182,26 +216,30 @@ def buildlib(bldroot, installpath, case):
             netcdf4_parallel_found = True
         if re.search(adios_string, line):
             adios_found = True
+        if re.search(hdf5_string, line):
+            hdf5_found = True
 
     if pio_version == 1:
         installed_lib = os.path.join(installpath, "lib", "libpio.a")
         installed_lib_time = 0
         if os.path.isfile(installed_lib):
             installed_lib_time = os.path.getmtime(installed_lib)
-        newlib = os.path.join(pio_dir, "pio", "libpio.a")
+        newlib = os.path.join(pio_bld_dir, "pio", "libpio.a")
         newlib_time = os.path.getmtime(newlib)
         if newlib_time > installed_lib_time:
             logger.info("Installing pio version 1")
             safe_copy(newlib, installed_lib)
             for glob_to_copy in ("*.h", "*.mod"):
-                for item in glob.glob(os.path.join(pio_dir, "pio", glob_to_copy)):
+                for item in glob.glob(os.path.join(pio_bld_dir, "pio", glob_to_copy)):
                     safe_copy(item, "{}/include".format(installpath))
     else:
         globs_to_copy = [
             os.path.join("src", "clib", "libpioc.*"),
             os.path.join("src", "flib", "libpiof.*"),
+            os.path.join("src", "flib_legacy", "libpiof.*"),
             os.path.join("src", "clib", "*.h"),
             os.path.join("src", "flib", "*.mod"),
+            os.path.join("src", "flib_legacy", "*.mod"),
         ]
         # ADIOS requires an ADIOS to NetCDF conversion library/exe
         if adios_found:
@@ -209,7 +247,7 @@ def buildlib(bldroot, installpath, case):
             globs_to_copy.append(os.path.join("tools","adios2pio-nm","adios2pio-nm.exe"))
         for glob_to_copy in globs_to_copy:
             installed_file_time = 0
-            for item in glob.glob(os.path.join(pio_dir, glob_to_copy)):
+            for item in glob.glob(os.path.join(pio_bld_dir, glob_to_copy)):
                 if item.endswith(".a") or item.endswith(".so"):
                     installdir = "lib"
                 else:
@@ -236,6 +274,8 @@ def buildlib(bldroot, installpath, case):
         valid_values += ",netcdf4p,netcdf4c"
     if adios_found:
         valid_values += ",adios"
+    if hdf5_found:
+        valid_values += ",hdf5"
 
     _set_pio_valid_values(case, valid_values)
 

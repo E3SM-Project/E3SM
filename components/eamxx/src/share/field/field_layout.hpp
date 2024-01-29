@@ -16,6 +16,10 @@ namespace scream
 // The type of the layout, that is, the kind of field it represent.
 enum class LayoutType {
   Invalid,
+  Scalar0D,
+  Vector0D,
+  Scalar1D,
+  Vector1D,
   Scalar2D,
   Vector2D,
   Tensor2D,
@@ -27,6 +31,10 @@ enum class LayoutType {
 inline std::string e2str (const LayoutType lt) {
   std::string name;
   switch (lt) {
+    case LayoutType::Scalar0D: name = "Scalar0D"; break;
+    case LayoutType::Vector0D: name = "Vector0D"; break;
+    case LayoutType::Scalar1D: name = "Scalar1D"; break;
+    case LayoutType::Vector1D: name = "Vector1D"; break;
     case LayoutType::Scalar2D: name = "Scalar2D"; break;
     case LayoutType::Vector2D: name = "Vector2D"; break;
     case LayoutType::Tensor2D: name = "Tensor2D"; break;
@@ -55,8 +63,6 @@ public:
   // Constructor(s)
   FieldLayout () = delete;
   FieldLayout (const FieldLayout&) = default;
-  FieldLayout (const std::initializer_list<FieldTag>& tags);
-  FieldLayout (const std::vector<FieldTag>& tags);
   FieldLayout (const std::vector<FieldTag>& tags,
                const std::vector<int>& dims);
 
@@ -64,7 +70,7 @@ public:
   FieldLayout& operator= (const FieldLayout&) = default;
 
   // Create invalid layout
-  static FieldLayout invalid () { return FieldLayout({}); }
+  static FieldLayout invalid () { return FieldLayout({FieldTag::Invalid},{0}); }
 
   // ----- Getters ----- //
 
@@ -92,15 +98,14 @@ public:
   // If this is the layout of a vector field, get the idx of the vector dimension
   // Note: throws if is_vector_layout()==false.
   int get_vector_dim () const;
+  FieldTag get_vector_tag () const;
 
   FieldLayout strip_dim (const FieldTag tag) const;
   FieldLayout strip_dim (const int idim) const;
 
   // ----- Setters ----- //
 
-  // Note: as soon as a dimension is set, it cannot be changed.
   void set_dimension  (const int idim, const int dimension);
-  void set_dimensions (const std::vector<int>& dims);
 
 protected:
 

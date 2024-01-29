@@ -209,7 +209,15 @@ Default: Defined in namelist_defaults.xml
 	category="calving" group="calving">
 Selection of the method for calving ice (as defined below). 'von_Mises_stress' and 'eigencalving' options can be used in combination with damage threshold calving (see descrption of config_damage_calving_method for details).
 
-Valid values: 'none', 'floating', 'topographic_threshold', 'thickness_threshold', 'mask', 'eigencalving', 'specified_calving_velocity', 'von_Mises_stress', 'damagecalving', 'ismip6_retreat'
+Valid values: 'none', 'floating', 'topographic_threshold', 'thickness_threshold', 'eigencalving', 'specified_calving_velocity', 'von_Mises_stress', 'damagecalving', 'ismip6_retreat'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_apply_calving_mask" type="logical"
+	category="calving" group="calving">
+Whether the field 'calvingMask' gets used to force calving.  This is independent of choice of 'config_calving'; the application of 'calvingMask' can be applied in conjunction with a physical calving law or with no calving law enabled.  The calving mask gets applied after a physical calving law, if one is selected.
+
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -217,7 +225,7 @@ Default: Defined in namelist_defaults.xml
 	category="calving" group="calving">
 Not yet supported. Determine whether to use MPAS or Albany calculation for flowParamA used in von Mises stress calving
 
-Valid values: '.true.', '.false.'
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -287,7 +295,15 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_restore_calving_front" type="logical"
 	category="calving" group="calving">
-If true, then restore the calving front to its initial position.  If ice grows beyond the initial extent, it is removed.  If ice shrinks to an extent behind the initial extent, those locations are filled with thin ice (defined as 1/10th the value of config_dynamic_thickness).  Note that this violates conservation of mass and energy.
+If true, then restore the calving front to its initial position.  If ice grows beyond the initial extent, it is removed.  If ice shrinks to an extent behind the initial extent, behavior is determined by config_restore_calving_front_prevent_retreat.  If that option is true, then those locations are filled with thin ice (defined as 1/10th the value of config_dynamic_thickness).  Note that this violates conservation of mass and energy.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_restore_calving_front_prevent_retreat" type="logical"
+	category="calving" group="calving">
+If true, then the config_restore_calving_front option will fill locations where ice shelves have retreated with a thin layer of ice.  This option should be used in E3SM when the ice shelf extent seen by the E3SM coupler cannot change.  If false, the config_restore_calving_front option will do nothing when ice shelves retreat.  For either value of this option, the config_restore_calving_front option will prevent ice-shelf advance.  True is likely the desired value for standalone runs where no advance is desired.  Default value is true for backwards compatibility.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
@@ -699,6 +715,14 @@ Valid values: 'none', 'uniform', 'ismip6'
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_use_3d_thermal_forcing_for_face_melt" type="logical"
+	category="iceshelf_melt" group="iceshelf_melt">
+If true, use ismip6shelfMelt_3dThermalForcing and associated variables to calculate ocean-bottom thermal forcing for use with the config_front_mass_bal_grounded = 'ismip6' melt paramterization.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_beta_ocean_thermal_forcing" type="real"
 	category="iceshelf_melt" group="iceshelf_melt">
 Exponent of the ocean thermal forcing in ISMIP6 grounded ice front melting parameterization
@@ -857,6 +881,14 @@ Valid values: Any positive real value.  Note that values greater than 1.0 are al
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_adaptive_timestep_faceMeltingCFL_fraction" type="real"
+	category="time_integration" group="time_integration">
+A multiplier on the minimum allowable time step calculated from the face-melting CFL condition. This should be conservative given the calving CFL calculation is lagged
+
+Valid values: Any positive real value.  Note that values greater than 1.0 are allowed and may be desired.  This is because the face-melting CFL is an approximate calculation.  A value between 0.75 and 1.0, possibly as large as 1.25, was found to maintain converged accuracy for the analogous calving CFL fraction, so it is recommended to use values in this range. If values much greater than 1.0 are used, it is recommended to set config_distribute_unablatedVolumeDynCell to true.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_adaptive_timestep_include_DCFL" type="logical"
 	category="time_integration" group="time_integration">
 Option of whether to include the diffusive CFL condition in the determination of the maximum allowable timestep. The diffusive CFL condition at any location is estimated based on the local ice flux and surface slope.
@@ -868,6 +900,14 @@ Default: Defined in namelist_defaults.xml
 <entry id="config_adaptive_timestep_include_calving" type="logical"
 	category="time_integration" group="time_integration">
 Option of whether to include the calving CFL condition in the determination of the maximum allowable timestep. This only is applied if config_calving is set to a method that uses a calvingVelocity.  Note that this is an approximate CFL condition and is lagged a timestep.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_adaptive_timestep_include_face_melting" type="logical"
+	category="time_integration" group="time_integration">
+Option of whether to include the face-melting CFL condition in the determination of the maximum allowable timestep. This only is applied if config_front_mass_bal_grounded is not set to 'none'.  Note that this is an approximate CFL condition and is lagged a timestep.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml

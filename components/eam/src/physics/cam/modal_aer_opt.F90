@@ -370,7 +370,7 @@ subroutine modal_aer_opt_init()
        cam_chempkg_is('linoz_mam4_resus_mom').or. &
        cam_chempkg_is('linoz_mam4_resus_mom_soag').or. &
        cam_chempkg_is('superfast_mam4_resus_mom_soag').or. &
-       cam_chempkg_is('superfast_mam5_resus_mom_soag')) then 
+       cam_chempkg_is('chemuci_linozv3_mam5_vbs')) then 
      call addfld ('AODDUST4',horiz_only,    'A','  ','Aerosol optical depth 550 nm model 4 from dust', flag_xyfill=.true.)
      call addfld ('AODMODE4',horiz_only,    'A','  ','Aerosol optical depth 550 nm mode 4', flag_xyfill=.true.)
      call addfld ('BURDEN4',horiz_only,    'A','kg/m2','Aerosol burden mode 4', flag_xyfill=.true.)
@@ -382,7 +382,7 @@ subroutine modal_aer_opt_init()
      end if
   end if
 
-   if(cam_chempkg_is('superfast_mam5_resus_mom_soag')) then 
+   if(cam_chempkg_is('chemuci_linozv3_mam5_vbs')) then 
         call addfld ('AODDUST5',horiz_only,    'A','  ','Aerosol optical depth 550 nm model 5 from dust', flag_xyfill=.true.)
         call addfld ('AODMODE5',horiz_only,    'A','  ','Aerosol optical depth 550 nm mode 5', flag_xyfill=.true.)
         call addfld ('BURDEN5',horiz_only,    'A','kg/m2','Aerosol burden mode 5', flag_xyfill=.true.)
@@ -1017,8 +1017,6 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
                   aodvis(i)    = aodvis(i) + dopaer(i)
                   if ((k .le. trop_level(i)) .and. (is_output_interactive_volc)) then ! in stratosphere
                       saodvis(i)    = saodvis(i) + dopaer(i)
-                  else   
-                      saodvis(i)    = saodvis(i) + 0.0_r8    
                   endif    
                   aodall(i)    = aodall(i) + dopaer(i)
                   aodabs(i)    = aodabs(i) + pabs(i)*mass(i,k)

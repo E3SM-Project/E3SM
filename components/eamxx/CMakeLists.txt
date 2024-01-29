@@ -24,12 +24,13 @@ endif()
 set (EKAT_CMAKE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../externals/ekat/cmake)
 list(APPEND CMAKE_MODULE_PATH
      ${CMAKE_CURRENT_SOURCE_DIR}/cmake
+     ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/modules
      ${EKAT_CMAKE_PATH}
      ${EKAT_CMAKE_PATH}/tpls
 )
 if (SCREAM_CIME_BUILD)
   list(APPEND CMAKE_MODULE_PATH
-       ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cime)
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cime)
 endif ()
 
 if (Kokkos_ENABLE_CUDA)
@@ -279,6 +280,7 @@ endif()
 
 set (SCREAM_DATA_DIR ${SCREAM_INPUT_ROOT}/atm/scream CACHE PATH "" FORCE)
 set (TOPO_DATA_DIR ${SCREAM_INPUT_ROOT}/atm/cam/topo CACHE PATH "" FORCE)
+set (IOP_DATA_DIR ${SCREAM_INPUT_ROOT}/atm/cam/scam/iop CACHE PATH "" FORCE)
 
 #
 # Handle test level
@@ -512,8 +514,6 @@ if (NOT DEFINED ENV{SCREAM_FAKE_ONLY})
 
   if (NOT SCREAM_LIB_ONLY)
     add_subdirectory(tests)
-    include(BuildCprnc)
-    BuildCprnc()
   endif()
 
   # Generate scream_config.h and scream_config.f

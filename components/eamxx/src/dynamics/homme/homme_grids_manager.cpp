@@ -3,6 +3,8 @@
 #include "dynamics/homme/physics_dynamics_remapper.hpp"
 #include "dynamics/homme/homme_dynamics_helpers.hpp"
 
+#include "share/util/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp"
+
 #ifndef NDEBUG
 #include "share/property_checks/field_nan_check.hpp"
 #include "share/property_checks/field_lower_bound_check.hpp"
@@ -197,6 +199,10 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance) {
     return;
   }
 
+  if (type=="PG2") {
+    fvphyshack = true;
+  }
+
   // Get the grid pg_type
   const int pg_code = m_pg_codes.at(type).at(rebalance);
 
@@ -262,6 +268,14 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance) {
       auto f_d = get_grid("Dynamics")->get_geometry_data(f.name());
       f.deep_copy(f_d);
     }
+  }
+
+  if (is_planar_geometry_f90()) {
+    // If running with IOP, store grid length size
+    FieldLayout scalar0d({},{});
+    auto dx_short_f = phys_grid->create_geometry_data("dx_short",scalar0d,rad);
+    dx_short_f.get_view<Real,Host>()() = get_dx_short_f90(0);
+    dx_short_f.sync_to_dev();
   }
 
   phys_grid->m_short_name = type;

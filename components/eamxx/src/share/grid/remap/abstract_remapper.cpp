@@ -13,8 +13,8 @@ AbstractRemapper (const grid_ptr_type& src_grid,
 void AbstractRemapper::
 registration_begins () {
   EKAT_REQUIRE_MSG(m_state==RepoState::Clean,
-                       "Error! Cannot start registration on a non-clean repo.\n"
-                       "       Did you call 'registration_begins' already?\n");
+      "Error! Cannot start registration on a non-clean repo.\n"
+      "       Did you call 'registration_begins' already?\n");
 
   do_registration_begins();
 
@@ -24,19 +24,27 @@ registration_begins () {
 void AbstractRemapper::
 register_field (const identifier_type& src, const identifier_type& tgt) {
   EKAT_REQUIRE_MSG(m_state!=RepoState::Clean,
-                       "Error! Cannot register fields in the remapper at this time.\n"
-                       "       Did you forget to call 'registration_begins' ?");
+      "Error! Cannot register fields in the remapper at this time.\n"
+      "       Did you forget to call 'registration_begins' ?");
   EKAT_REQUIRE_MSG(m_state!=RepoState::Closed,
-                       "Error! Cannot register fields in the remapper at this time.\n"
-                       "       Did you accidentally call 'registration_ends' already?");
+      "Error! Cannot register fields in the remapper at this time.\n"
+      "       Did you accidentally call 'registration_ends' already?");
 
-  EKAT_REQUIRE_MSG(src.get_grid_name()==m_src_grid->name(),
-                       "Error! Source field stores the wrong grid.\n");
-  EKAT_REQUIRE_MSG(tgt.get_grid_name()==m_tgt_grid->name(),
-                       "Error! Target field stores the wrong grid.\n");
+  EKAT_REQUIRE_MSG(is_valid_src_layout(src.get_layout()),
+      "Error! Source field has an invalid layout.\n"
+      " - field name  : " + src.name() + "\n"
+      " - field layout: " + to_string(src.get_layout()) + "\n");
+  EKAT_REQUIRE_MSG(is_valid_tgt_layout(tgt.get_layout()),
+      "Error! Source field has an invalid layout.\n"
+      " - field name  : " + tgt.name() + "\n"
+      " - field layout: " + to_string(tgt.get_layout()) + "\n");
 
   EKAT_REQUIRE_MSG(compatible_layouts(src.get_layout(),tgt.get_layout()),
-                     "Error! Source and target layouts are not compatible.\n");
+      "Error! Source and target layouts are not compatible.\n"
+      " - src name: " + src.name() + "\n"
+      " - tgt name: " + tgt.name() + "\n"
+      " - src layout: " + to_string(src.get_layout()) + "\n"
+      " - tgt layout: " + to_string(tgt.get_layout()) + "\n");
 
   do_register_field (src,tgt);
 
@@ -52,10 +60,38 @@ register_field (const field_type& src, const field_type& tgt) {
 }
 
 void AbstractRemapper::
+register_field_from_src (const field_type& src) {
+  const auto& src_fid = src.get_header().get_identifier();
+  const auto& tgt_fid = create_tgt_fid(src_fid);
+
+  Field tgt(tgt_fid);
+  const auto& src_ap = src.get_header().get_alloc_properties();
+        auto& tgt_ap = tgt.get_header().get_alloc_properties();
+  tgt_ap.request_allocation(src_ap.get_largest_pack_size());
+  tgt.allocate_view();
+
+  register_field(src,tgt);
+}
+
+void AbstractRemapper::
+register_field_from_tgt (const field_type& tgt) {
+  const auto& tgt_fid = tgt.get_header().get_identifier();
+  const auto& src_fid = create_src_fid(tgt_fid);
+
+  Field src(src_fid);
+  const auto& tgt_ap = tgt.get_header().get_alloc_properties();
+        auto& src_ap = src.get_header().get_alloc_properties();
+  src_ap.request_allocation(tgt_ap.get_largest_pack_size());
+  src.allocate_view();
+
+  register_field(src,tgt);
+}
+
+void AbstractRemapper::
 bind_field (const field_type& src, const field_type& tgt) {
   EKAT_REQUIRE_MSG(m_state!=RepoState::Clean,
-                     "Error! Cannot bind fields in the remapper at this time.\n"
-                     "       Did you forget to call 'registration_begins' ?");
+      "Error! Cannot bind fields in the remapper at this time.\n"
+      "       Did you forget to call 'registration_begins' ?");
 
   const auto& src_fid = src.get_header().get_identifier();
   const auto& tgt_fid = tgt.get_header().get_identifier();
@@ -63,16 +99,16 @@ bind_field (const field_type& src, const field_type& tgt) {
   // Try to locate the pair of fields
   const int ifield = find_field(src_fid, tgt_fid);
   EKAT_REQUIRE_MSG(ifield>=0,
-                     "Error! The src/tgt field pair\n"
-                     "         " + src_fid.get_id_string() + "\n"
-                     "         " + tgt_fid.get_id_string() + "\n"
-                     "       was not registered. Please, register fields before binding them.\n");
+      "Error! The src/tgt field pair\n"
+      "         " + src_fid.get_id_string() + "\n"
+      "         " + tgt_fid.get_id_string() + "\n"
+      "       was not registered. Please, register fields before binding them.\n");
 
   EKAT_REQUIRE_MSG(src.is_allocated(), "Error! Source field is not yet allocated.\n");
   EKAT_REQUIRE_MSG(tgt.is_allocated(), "Error! Target field is not yet allocated.\n");
 
   EKAT_REQUIRE_MSG(!m_fields_are_bound[ifield],
-                     "Error! Field " + src_fid.get_id_string() + " already bound.\n");
+      "Error! Field " + src_fid.get_id_string() + " already bound.\n");
 
   do_bind_field(ifield,src,tgt);
 
@@ -91,8 +127,8 @@ bind_field (const field_type& src, const field_type& tgt) {
 void AbstractRemapper::
 registration_ends () {
   EKAT_REQUIRE_MSG(m_state!=RepoState::Closed,
-                       "Error! Cannot call registration_ends at this time.\n"
-                       "       Did you accidentally call 'registration_ends' already?");
+      "Error! Cannot call registration_ends at this time.\n"
+      "       Did you accidentally call 'registration_ends' already?");
 
   m_num_fields = m_num_registered_fields;
 
@@ -103,25 +139,25 @@ registration_ends () {
 
 void AbstractRemapper::remap (const bool forward) {
   EKAT_REQUIRE_MSG(m_state!=RepoState::Open,
-                     "Error! Cannot perform remapping at this time.\n"
-                     "       Did you forget to call 'registration_ends'?\n");
+      "Error! Cannot perform remapping at this time.\n"
+      "       Did you forget to call 'registration_ends'?\n");
 
   EKAT_REQUIRE_MSG(m_num_bound_fields==m_num_fields,
-                     "Error! Not all fields have been set in the remapper.\n"
-                     "       In particular, field " +
+      "Error! Not all fields have been set in the remapper.\n"
+      "       In particular, field " +
                      std::to_string(std::distance(m_fields_are_bound.begin(),std::find(m_fields_are_bound.begin(),m_fields_are_bound.end(),false))) +
-                     " has not been bound.\n");
+      " has not been bound.\n");
 
   if (m_state!=RepoState::Clean) {
     if (forward) {
       EKAT_REQUIRE_MSG (m_fwd_allowed,
-                       "Error! Forward remap is not allowed by this remapper.\n"
-                       "       This means that some fields on the target grid are read-only.\n");
+          "Error! Forward remap is not allowed by this remapper.\n"
+          "       This means that some fields on the target grid are read-only.\n");
       do_remap_fwd ();
     } else {
       EKAT_REQUIRE_MSG (m_bwd_allowed,
-                       "Error! Backward remap is not allowed by this remapper.\n"
-                       "       This means that some fields on the source grid are read-only.\n");
+          "Error! Backward remap is not allowed by this remapper.\n"
+          "       This means that some fields on the source grid are read-only.\n");
       do_remap_bwd ();
     }
   }

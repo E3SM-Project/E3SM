@@ -13,6 +13,7 @@
 #include "share/grid/point_grid.hpp"
 #include "share/util/scream_vertical_interpolation.hpp"
 #include "share/util/scream_time_stamp.hpp"
+#include "share/grid/remap/abstract_remapper.hpp"
 
 #include <string>
 
@@ -65,6 +66,9 @@ public:
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
 
+  // Internal function to apply nudging at specific timescale with weights
+  void apply_weighted_tendency(Field& base, const Field& next, const Field& weights, const Real dt);
+
   // Structure for storing local variables initialized using the ATMBufferManager
   struct Buffer {
     // 2D view
@@ -81,6 +85,13 @@ protected:
 
   void run_impl        (const double dt);
 
+  /* Nudge from coarse data */
+  // See more details later in this file
+  // Must add this here to make it public for CUDA
+  // (refining) remapper vertically-weighted tendency application
+  void apply_vert_cutoff_tendency(Field &base, const Field &next,
+                                  const Field &p_mid, const Real cutoff,
+                                  const Real dt);
 protected:
 
   Field get_field_out_wrap(const std::string& field_name);
@@ -97,7 +108,7 @@ protected:
   void init_buffers(const ATMBufferManager &buffer_manager);
 
   // Creates an helper field, not to be shared with the AD's FieldManager
-  void create_helper_field (const std::string& name,
+  Field create_helper_field (const std::string& name,
                             const FieldLayout& layout,
                             const std::string& grid_name,
                             const int ps=0);
@@ -107,7 +118,7 @@ protected:
   // Retrieve a helper field
   Field get_helper_field (const std::string& name) const { return m_helper_fields.at(name); }
   // Internal function to apply nudging at specific timescale
-  void apply_tendency(Field& base, const Field& next, const int dt);
+  void apply_tendency(Field& base, const Field& next, const Real dt);
 
   std::shared_ptr<const AbstractGrid>   m_grid;
   // Keep track of field dimensions and the iteration count
@@ -115,8 +126,12 @@ protected:
   int m_num_levs;
   int m_num_src_levs;
   int m_timescale;
+  bool m_use_weights;
   std::vector<std::string> m_datafiles;
   std::string              m_static_vertical_pressure_file;
+  // add nudging weights for regional nudging update
+  std::string              m_weights_file;
+
   SourcePresType m_src_pres_type;
   
 
@@ -124,6 +139,16 @@ protected:
   std::map<std::string,Field> m_helper_fields;
 
   std::vector<std::string> m_fields_nudge;
+
+  /* Nudge from coarse data */
+  // if true, remap coarse data to fine grid
+  bool m_refine_remap;
+  // file containing coarse data mapping
+  std::string m_refine_remap_file;
+  // (refining) remapper object
+  std::shared_ptr<scream::AbstractRemapper> m_refine_remapper;
+  // (refining) remapper vertical cutoff
+  Real m_refine_remap_vert_cutoff;
 
   util::TimeInterpolation m_time_interp;
 

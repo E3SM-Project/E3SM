@@ -62,6 +62,22 @@ module ocn_gm
 
 contains
 
+   function safe_slope(num, den) result(slope)
+
+      real(kind=RKIND), intent(in) :: num, den
+      real(kind=RKIND) :: slope
+
+      ! compute isopycnal slopes safely wrt. finite precision
+      ! small slope assumption, so don't want |s| > 1
+
+      if (abs(den) > abs(num)) then
+         slope = num / den
+      else
+         slope = sign(1.0_RKIND, den * num)
+      end if
+
+   end function
+
 !***********************************************************************
 !
 !  routine ocn_GM_compute_Bolus_velocity
@@ -214,7 +230,6 @@ contains
 
       !$omp do schedule(runtime)
       do iCell = 1, nCells
-         RediKappaScaling(:, iCell) = 1.0_RKIND
          RediKappaSfcTaper(:, iCell) = 1.0_RKIND
       end do
       !$omp end do
@@ -228,30 +243,6 @@ contains
          allocate(dTdzTop(nVertLevels + 1))
          allocate(dSdzTop(nVertLevels + 1))
          allocate(k33Norm(nVertLevels + 1))
-
-         if ( config_Redi_N2_based_taper_enable ) then
-
-            !$omp parallel
-            !$omp do schedule(runtime) private(maxLocation, k, BruntVaisalaFreqTopEdge, maxN)
-            do iCell = 1, nCells
-               k = min(maxLevelCell(iCell) - 1, max(minLevelCell(iCell), indMLD(iCell)))
-               maxN = max(BruntVaisalaFreqTop(k, iCell), 0.0_RKIND)
-               do while (BruntVaisalaFreqTop(k + 1, iCell) > maxN .and. k < maxLevelCell(iCell) - 1)
-                 k = k + 1
-                 maxN = max(maxN,max(BruntVaisalaFreqTop(k, iCell), 0.0_RKIND))
-               enddo
-
-               maxLocation = k
-               do k = maxLocation, maxLevelCell(iCell)
-                  BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTop(k, iCell), 0.0_RKIND)
-                  RediKappaScaling(k, iCell) = min(max(config_Redi_N2_based_taper_min,                  &
-                                                       BruntVaisalaFreqTopEdge/(maxN + 1.0E-10_RKIND)), &
-                                                       1.0_RKIND)
-               end do
-            end do
-            !$omp end do
-            !$omp end parallel
-         end if
 
          if (config_Redi_use_surface_taper) then
             !$omp parallel
@@ -318,17 +309,17 @@ contains
                          *dcEdgeInv
                   drhoDx = drhoDT*dTdx + drhoDS*dSdx
 
+
+                  sfcTaperUp = drhoDT*dTdzTop(k) + drhoDS*dSdzTop(k)
+                  sfcTaperDown = drhoDT*dTdzTop(k+1) + drhoDS*dSdzTop(k+1)
+
                   ! Always compute *Up on the top cell and *Down on the bottom
                   ! cell, even though they are never used. This avoids an if
                   ! statement or separate computation for top and bottom.
                   slopeTriadUp(k, iCellSelf, iEdge) = &
-                     -drhoDx/ &
-                     (drhoDT*dTdzTop(k) &
-                      + drhoDS*dSdzTop(k) + 1E-15_RKIND)
+                     safe_slope( -drhoDx, sfcTaperUp )
                   slopeTriadDown(k, iCellSelf, iEdge) = &
-                     -drhoDx/ &
-                     (drhoDT*dTdzTop(k + 1) &
-                      + drhoDS*dSdzTop(k + 1) + 1E-15_RKIND)
+                      safe_slope( -drhoDx, sfcTaperDown )
 
                   ! set taper of slope ('F' function from Danabasoglu and McWilliams 95)
                   if (abs(slopeTriadDown(k, iCellSelf, iEdge)) > 0.6_RKIND*config_redi_maximum_slope) then
@@ -363,30 +354,32 @@ contains
                   sfcTaperUp = 1.0_RKIND + sfcTaperFactor*(sfcTaper - 1.0_RKIND)
                   sfcTaperDown = 1.0_RKIND + sfcTaperFactor*(sfcTaper - 1.0_RKIND)
 
+!                  ! Griffies 1998 eqn 34
+                  if (k > minLevelCell(iCell)) then
+                     k33(k, iCell) = k33(k, iCell) +  &
+                                     slopeTaperUp*sfcTaperUp*areaEdge*dzTop(k)*slopeTriadUp(k, iCellSelf, iEdge)**2
+                     k33Norm(k) = k33Norm(k) + areaEdge*dzTop(k)
+                  end if
+
+!                  !Taper Redi by tapering the slopes
+                  k33(k + 1, iCell) = k33(k + 1, iCell) +  &
+                                      slopeTaperDown*sfcTaperDown*areaEdge*dzTop(k + 1)*slopeTriadDown(k, iCellSelf, iEdge)**2
+                  k33Norm(k + 1) = k33Norm(k + 1) + areaEdge*dzTop(k + 1)
+
+                  limiterUp(k,iCellSelf,iEdge) = slopeTaperUp*sfcTaperUp
+                  limiterDown(k,iCellSelf,iEdge) = slopeTaperDown*sfcTaperDown
+
                   slopeTriadUp(k, iCellSelf, iEdge) = &
                      slopeTaperUp*sfcTaperUp*slopeTriadUp(k, iCellSelf, iEdge)
                   slopeTriadDown(k, iCellSelf, iEdge) = &
                      slopeTaperDown*sfcTaperDown*slopeTriadDown(k, iCellSelf, iEdge)
 
-                  ! Griffies 1998 eqn 34
-                  if (k > minLevelCell(iCell)) then
-                     k33(k, iCell) = k33(k, iCell) +  &
-                                     areaEdge*dzTop(k)*slopeTriadUp(k, iCellSelf, iEdge)**2
-                     k33Norm(k) = k33Norm(k) + areaEdge*dzTop(k)
-                  end if
-
-                  !Taper Redi by tapering the slopes
-                  k33(k + 1, iCell) = k33(k + 1, iCell) +  &
-                                      areaEdge*dzTop(k + 1)*slopeTriadDown(k, iCellSelf, iEdge)**2
-                  k33Norm(k + 1) = k33Norm(k + 1) + areaEdge*dzTop(k + 1)
-
-
                end do ! maxLevelEdgeTop(iEdge)
             end do ! nEdgesOnCell(iCell)
 
-            ! Normalize k33
+!            ! Normalize k33
             do k = minLevelCell(iCell)+1, maxLevelCell(iCell)
-               k33(k, iCell) = k33(k, iCell)/k33Norm(k)*RediKappaScaling(k, iCell)
+               k33(k, iCell) = k33(k, iCell)/k33Norm(k)
             end do
             k33(1:minLevelCell(iCell), iCell) = 0.0_RKIND
             k33(maxLevelCell(iCell) + 1, iCell) = 0.0_RKIND
@@ -904,7 +897,7 @@ contains
       real(kind=RKIND), dimension(:), pointer :: dcEdge
 
       integer :: iEdge
-      integer, pointer :: nEdges
+      integer, pointer :: nCells, nEdges
       integer, pointer :: nVertLevels
       real(kind=RKIND), pointer :: sphere_radius
       real(kind=RKIND), dimension(:), pointer   :: latEdge, fEdge
@@ -918,10 +911,12 @@ contains
       do while (associated(block))
          call mpas_pool_get_subpool(block%structs, 'mesh', meshPool)
          call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+         call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
          call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
          call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
          call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
          call mpas_pool_get_array(meshPool, 'fEdge', fEdge)
+
          if (config_Redi_use_slope_taper) then
             slopeTaperFactor = 1.0_RKIND
          else

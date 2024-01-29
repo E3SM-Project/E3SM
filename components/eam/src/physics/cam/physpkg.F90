@@ -53,6 +53,10 @@ module physpkg
   use mo_chm_diags, only : aer_species
   use mo_gas_phase_chemdr, only : gas_ac_name, gas_ac_name_2D
 
+  use check_energy,    only: nstep_ignore_diagn1, nstep_ignore_diagn2, &
+                             check_energy_gmean, check_energy_gmean_additional_diagn, &
+                             print_additional_diagn
+
   implicit none
   private
 
@@ -721,7 +725,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
 
     use physics_buffer,     only: physics_buffer_desc, pbuf_initialize, pbuf_get_index
     use physics_buffer,     only: pbuf_get_chunk
-    use time_manager,       only: is_first_step
+    use time_manager,       only: get_nstep, is_first_step, is_first_restart_step
     use physconst,          only: rair, cpair, gravit, stebol, tmelt, &
                                   latvap, latice, rh2o, rhoh2o, pstd, zvir, &
                                   karman, rhodair, physconst_init 
@@ -828,7 +832,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     ! the physics decomposition
     call diag_init()
 
-    call check_energy_init()
+    call check_energy_init(phys_state)
 
     call tracers_init()
 
@@ -1013,6 +1017,12 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
    !BSINGH -  addfld and adddefault calls for perturb growth testing    
     if(pergro_test_active)call add_fld_default_calls()
 
+    if(is_first_step().or.is_first_restart_step())then
+      nstep_ignore_diagn1 = get_nstep()
+      nstep_ignore_diagn2 = nstep_ignore_diagn1 + 1
+    endif
+
+
 end subroutine phys_init
 
   !
@@ -1028,7 +1038,6 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out, phy
     !-----------------------------------------------------------------------
     use time_manager,   only: get_nstep
     use cam_diagnostics,only: diag_allocate, diag_physvar_ic
-    use check_energy,   only: check_energy_gmean
 
     use physics_buffer,         only: physics_buffer_desc, pbuf_get_chunk, pbuf_allocate
 #if (defined E3SM_SCM_REPLAY )
@@ -1073,8 +1082,14 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out, phy
     real(r8)    :: chunk_cost                    ! measured cost per chunk
     type(physics_buffer_desc), pointer :: phys_buffer_chunk(:)
 
+    logical     :: print_additional_diagn_local
+
     call t_startf ('physpkg_st1')
     nstep = get_nstep()
+
+    print_additional_diagn_local = .true.
+    if(nstep == nstep_ignore_diagn1 .or. nstep == nstep_ignore_diagn2) print_additional_diagn_local = .false.
+    if(.not. print_additional_diagn) print_additional_diagn_local = .false.
 
 #if ( defined OFFLINE_DYN )
     !
@@ -1171,7 +1186,14 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out, phy
 #ifdef TRACER_CHECK
        call gmean_mass ('between DRY', phys_state)
 #endif
-    end if
+
+       if( print_additional_diagn_local ) then
+          call t_startf ('chk_en_gmean_additional')
+          call check_energy_gmean_additional_diagn(phys_state, pbuf2d, ztodt, nstep)
+          call t_stopf ('chk_en_gmean_additional')
+       endif
+
+    end if !not adiabatic or ideal
 
 end subroutine phys_run1
 
@@ -1545,7 +1567,7 @@ subroutine tphysac (ztodt,   cam_in,  &
     use ionosphere,         only: ionos_intr ! WACCM-X ionosphere
     use tracers,            only: tracers_timestep_tend
     use aoa_tracers,        only: aoa_tracers_timestep_tend
-    use physconst,          only: rhoh2o, latvap,latice, rga
+    use physconst,          only: rhoh2o, latvap,latice, rga, gravit
     use aero_model,         only: aero_model_drydep
     use check_energy,       only: check_energy_chng, check_water, & 
                                   check_prect, check_qflx , &
@@ -1643,6 +1665,8 @@ subroutine tphysac (ztodt,   cam_in,  &
     logical :: l_gw_drag
     logical :: l_ac_energy_chk
 
+    real(r8) :: cc,mm,qq,pp,adjust
+
     ! Numerical schemes for process coupling
     integer :: cflx_cpl_opt  ! When to apply surface tracer fluxes  (not including water vapor).
                              ! The default for aerosols is to do this 
@@ -1724,21 +1748,30 @@ end if ! l_tracer_aero
     nstep = get_nstep()
     call check_tracers_init(state, tracerint)
 
+    if(print_additional_diagn) then
+       !save TE before physstep
+       call check_energy_chng(state, tend, "assign_te_before_physstep", nstep, ztodt, zero, zero, zero, zero)
+       call additional_diagn_before_step_part1(state, cam_in)
+    endif
+
 !!== KZ_WCON
 
+    !just output
     call check_qflx(state, tend, "PHYAC01", nstep, ztodt, cam_in%cflx(:,1))
 
     if(.not.use_qqflx_fixer) then 
-
        ! Check if latent heat flux exceeds the total moisture content of the
        ! lowest model layer, thereby creating negative moisture.
-
        call qneg4('TPHYSAC '       ,lchnk               ,ncol  ,ztodt ,               &
             state%q(1,pver,1),state%rpdel(1,pver) ,cam_in%shf ,         &
             cam_in%lhf , cam_in%cflx )
-
     end if 
 
+    if(print_additional_diagn) then
+       call additional_diagn_before_step_part2(state, cam_in)
+    endif
+
+    !just output
     call check_qflx(state, tend, "PHYAC02", nstep, ztodt, cam_in%cflx(:,1))
 
 !!== KZ_WCON
@@ -2017,6 +2050,101 @@ end if ! l_ac_energy_chk
 
 end subroutine tphysac
 
+
+
+subroutine additional_diagn_before_step_part1(state, cam_in)
+
+    type(physics_state), intent(inout) :: state
+    type(cam_in_t), intent(in)         :: cam_in
+
+    integer ncol                               ! number of atmospheric columns
+
+    ncol  = state%ncol
+
+    !this assumes a very recent call to check_energy
+    state%te_before_physstep(:ncol)=state%te_cur(:ncol)
+    !save water mass here
+    state%tw_before(:ncol) = state%tw_cur(:ncol)
+
+    !save values as received from the coupler, before limiters on cflx
+    state%cflx_raw(:ncol)  = cam_in%cflx(:ncol,1)
+    state%shf_raw(:ncol) = cam_in%shf(:ncol)
+
+end subroutine additional_diagn_before_step_part1
+
+
+
+subroutine additional_diagn_before_step_part2(state, cam_in)
+
+    type(physics_state), intent(inout) :: state
+    type(cam_in_t), intent(in)         :: cam_in
+
+    integer ncol                               ! number of atmospheric columns
+
+    ncol  = state%ncol
+
+    !save diffs after limiters on cflx
+    state%cflx_diff(:ncol) = state%cflx_raw(:ncol) - cam_in%cflx(:ncol,1)
+    state%shf_diff(:ncol)  = state%shf_raw(:ncol)  - cam_in%shf(:ncol)
+
+end subroutine additional_diagn_before_step_part2
+
+
+
+subroutine additional_diagn_after_step(state, cam_in, cam_out, fsns, fsnt, flns, flnt, ztodt)
+
+    type(physics_state), intent(inout) :: state
+    type(cam_in_t), intent(in)         :: cam_in
+    type(cam_out_t), intent(in)        :: cam_out
+
+    real(r8), intent(in) :: fsns(pcols)                   ! Surface solar absorbed flux
+    real(r8), intent(in) :: fsnt(pcols)                   ! Net column abs solar flux at model top
+    real(r8), intent(in) :: flns(pcols)                   ! Srf longwave cooling (up-down) flux
+    real(r8), intent(in) :: flnt(pcols)                   ! Net outgoing lw flux at model top
+
+    real(r8), intent(in) :: ztodt 
+
+    integer ncol                               ! number of atmospheric columns
+
+    ncol  = state%ncol
+
+    !if including effects from qneg4
+    !state%deltaw_flux(:ncol) = state%cflx_raw(:ncol)
+    !if excluding qneg4 from diagnostics
+    state%deltaw_flux(:ncol) = cam_in%cflx(:ncol,1)
+
+    state%deltaw_flux(:ncol) = state%deltaw_flux(:ncol) - &
+    1000.0*(cam_out%precc(:ncol)+cam_out%precl(:ncol))
+
+    state%deltaw_flux(:ncol) = state%deltaw_flux(:ncol) * ztodt
+    state%deltaw_step(:ncol) = state%tw_cur(:ncol) - state%tw_before(:ncol)
+
+    !!!! compute net energy budget here
+    !!!! expected TE2 - TE1 = restom - ressurf
+    !    for TE2-TE1 we will use te_cur - te_before_physstep
+    !    for restom - ressurf we will use fluxes to/from atm following AMWG energy scripts
+
+    state%delta_te(1:ncol)=state%te_cur(1:ncol)-state%te_before_physstep(:ncol)
+
+    !if including effects from qneg4
+    !state%rr(1:ncol) = state%shf_raw(1:ncol)
+    !if excluding qneg4 from diagnostisc -- do it consistently with cflx_raw
+    state%rr(1:ncol) = cam_in%shf(1:ncol)
+
+    state%rr(1:ncol) = state%rr(1:ncol)                    &
+      + ( fsnt(1:ncol) - flnt(1:ncol) )                    &
+      - ( fsns(1:ncol) - flns(1:ncol)                      &
+      -        (latvap+latice)*cam_in%cflx(:ncol,1)        &
+      + 1000.0* latice        *( cam_out%precc(1:ncol)+cam_out%precl(1:ncol) - cam_out%precsc(1:ncol) - cam_out%precsl(1:ncol) ) )
+
+    ! deltaw_flux and deltaw_step are in kg/m2
+    ! delta_te is in J/m2
+    ! rr is in J/m2/sec = W/m2
+
+end subroutine additional_diagn_after_step
+
+
+
 subroutine tphysbc (ztodt,               &
        fsns,    fsnt,    flns,    flnt,    state,   &
        tend,    pbuf,    diag,    fsds,             &
@@ -2278,6 +2406,8 @@ subroutine tphysbc (ztodt,               &
     zero = 0._r8
     zero_tracers(:,:) = 0._r8
     zero_sc(:) = 0._r8
+    flx_cnd(:) = 0._r8
+    flx_heat(:) = 0._r8
 
     lchnk = state%lchnk
     ncol  = state%ncol
@@ -2971,6 +3101,10 @@ end if ! l_rad
     call t_stopf('diag_export')
 
     call check_tracers_fini(tracerint)
+
+    if(print_additional_diagn) then
+       call additional_diagn_after_step(state, cam_in, cam_out, fsns, fsnt, flns, flnt, ztodt)
+    endif
 
     call cnd_diag_checkpoint( diag, 'PBCEND', state, pbuf, cam_in, cam_out )
 
