@@ -225,7 +225,6 @@ contains
       !$acc routine seq
     use elm_varcon     , only : rgas, tfrz
     use elm_varctl     , only : carbon_only
-    use pftvarcon      , only : nbrdlf_dcd_tmp_shrub, nsoybean, nsoybeanirrig, npcropmin
     use pftvarcon      , only : vcmax_np1, vcmax_np2, vcmax_np3, vcmax_np4, jmax_np1, jmax_np2, jmax_np3
     !
     ! !ARGUMENTS:
@@ -1594,7 +1593,6 @@ contains
     use elm_varctl        , only : carbon_only
     !use elm_varctl        , only : lnc_opt, reduce_dayl_factor, vcmax_opt
     use elm_varpar        , only : nlevsoi
-    use pftvarcon         , only : nbrdlf_dcd_tmp_shrub, npcropmin
     use pftvarcon         , only : vcmax_np1, vcmax_np2, vcmax_np3, vcmax_np4, jmax_np1, jmax_np2, jmax_np3
     use ColumnType        , only : col_pp
 

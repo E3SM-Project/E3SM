@@ -8,7 +8,7 @@ module PhosphorusStateUpdate1Mod
   use elm_varpar             , only : nlevdecomp, ndecomp_pools, ndecomp_cascade_transitions
   use elm_varpar             , only : crop_prog, i_met_lit, i_cel_lit, i_lig_lit, i_cwd
   use elm_varctl             , only : iulog
-  use pftvarcon              , only : npcropmin, nc3crop
+  use pftvarcon              , only : crop, generic_crop, percrop
   use soilorder_varcon       , only : smax,ks_sorption
   use VegetationPropertiesType         , only : veg_vp
   use CNDecompCascadeConType , only : decomp_cascade_con
@@ -255,7 +255,8 @@ contains
                   veg_ps%deadcrootp_xfer(p) = veg_ps%deadcrootp_xfer(p) - veg_pf%deadcrootp_xfer_to_deadcrootp(p)*dt
               end if
 
-              if (ivt(p) >= npcropmin) then ! skip 2 generic crops
+              if ( (crop(ivt(p)) >= 1 .or. percrop(ivt(p)) >= 1) .and. &
+                   generic_crop(ivt(p)) == 0 ) then ! skip 2 generic crops
                   ! lines here for consistency; the transfer terms are zero
                   veg_ps%livestemp(p)       = veg_ps%livestemp(p)      + veg_pf%livestemp_xfer_to_livestemp(p)*dt
                   veg_ps%livestemp_xfer(p)  = veg_ps%livestemp_xfer(p) - veg_pf%livestemp_xfer_to_livestemp(p)*dt
@@ -280,7 +281,8 @@ contains
                   veg_ps%livecrootp(p) = veg_ps%livecrootp(p) - veg_pf%livecrootp_to_retransp(p)*dt
                   veg_ps%retransp(p)   = veg_ps%retransp(p)   + veg_pf%livecrootp_to_retransp(p)*dt
               end if
-              if (ivt(p) >= npcropmin) then ! Beth adds retrans from froot
+              if ( (crop(ivt(p)) >= 1 .or. percrop(ivt(p)) >= 1) .and. &
+                   generic_crop(ivt(p)) == 0 ) then ! Beth adds retrans from froot
                   veg_ps%frootp(p)     = veg_ps%frootp(p)     - veg_pf%frootp_to_retransp(p)*dt
                   veg_ps%retransp(p)   = veg_ps%retransp(p)   + veg_pf%frootp_to_retransp(p)*dt
                   veg_ps%livestemp(p)  = veg_ps%livestemp(p)  - veg_pf%livestemp_to_litter(p)*dt
@@ -331,7 +333,8 @@ contains
                   veg_ps%deadcrootp_storage(p) = veg_ps%deadcrootp_storage(p) + veg_pf%ppool_to_deadcrootp_storage(p)*dt
               end if
 
-              if (ivt(p) >= npcropmin) then ! skip 2 generic crops
+              if ( (crop(ivt(p)) >= 1 .or. percrop(ivt(p)) >= 1) .and. &
+                   generic_crop(ivt(p)) == 0 ) then ! skip 2 generic crops
                   veg_ps%ppool(p)              = veg_ps%ppool(p)              - veg_pf%ppool_to_livestemp(p)*dt
                   veg_ps%livestemp(p)          = veg_ps%livestemp(p)          + veg_pf%ppool_to_livestemp(p)*dt
                   veg_ps%ppool(p)              = veg_ps%ppool(p)              - veg_pf%ppool_to_livestemp_storage(p)*dt
@@ -359,7 +362,8 @@ contains
                   veg_ps%deadcrootp_xfer(p)    = veg_ps%deadcrootp_xfer(p)    + veg_pf%deadcrootp_storage_to_xfer(p)*dt
               end if
 
-              if (ivt(p) >= npcropmin) then ! skip 2 generic crops
+              if ( (crop(ivt(p)) >= 1 .or. percrop(ivt(p)) >= 1) .and. &
+                   generic_crop(ivt(p)) == 0 ) then ! skip 2 generic crops
                   ! lines here for consistency; the transfer terms are zero
                   veg_ps%livestemp_storage(p)  = veg_ps%livestemp_storage(p) - veg_pf%livestemp_storage_to_xfer(p)*dt
                   veg_ps%livestemp_xfer(p)     = veg_ps%livestemp_xfer(p)    + veg_pf%livestemp_storage_to_xfer(p)*dt

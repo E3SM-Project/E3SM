@@ -37,8 +37,8 @@ contains
     ! vegetation structure (LAI, SAI, height)
     !
     ! !USES:
-    use pftvarcon        , only : noveg, nc3crop, nc3irrig, nbrdlf_evr_shrub, nbrdlf_dcd_brl_shrub
-    use pftvarcon        , only : ncorn, ncornirrig, npcropmin, ztopmx, laimx
+    use pftvarcon        , only : noveg, woody, generic_crop, crop, percrop
+    use pftvarcon        , only : ncorn, ncornirrig, ztopmx, laimx
     use pftvarcon        , only : nmiscanthus, nmiscanthusirrig, nswitchgrass, nswitchgrassirrig
     use elm_time_manager , only : get_rad_step_size
     use elm_varctl       , only : spinup_state, spinup_mortality_factor
@@ -148,7 +148,7 @@ contains
             ! alpha are set by PFT, and alpha is scaled to CLM time step by multiplying by
             ! dt and dividing by dtsmonth (seconds in average 30 day month)
             ! tsai_min scaled by 0.5 to match MODIS satellite derived values
-            if (ivt(p) == nc3crop .or. ivt(p) == nc3irrig) then ! generic crops
+            if (generic_crop(ivt(p)) == 1) then ! generic crops
 
                tsai_alpha = 1.0_r8-1.0_r8*dt/dtsmonth
                tsai_min = 0.1_r8
@@ -164,7 +164,7 @@ contains
                ! trees and shrubs
 
                ! if shrubs have a squat taper
-               if (ivt(p) >= nbrdlf_evr_shrub .and. ivt(p) <= nbrdlf_dcd_brl_shrub) then
+               if (woody(ivt(p)) == 2.0_r8) then
                   taper = 10._r8
                   ! otherwise have a tall taper
                else
@@ -194,7 +194,8 @@ contains
 
                hbot(p) = max(0._r8, min(3._r8, htop(p)-1._r8))
 
-            else if (ivt(p) >= npcropmin) then ! prognostic crops
+            else if ( generic_crop(ivt(p)) <1 .and. &
+                     (crop(ivt(p)) >= 1 .or. percrop(ivt(p)) >= 1) ) then ! prognostic crops
 
                if (tlai(p) >= laimx(ivt(p))) peaklai(p) = 1 ! used in CNAllocation
 
@@ -248,7 +249,7 @@ contains
          ! adjust lai and sai for burying by snow.
          ! snow burial fraction for short vegetation (e.g. grasses) as in
          ! Wang and Zeng, 2007.
-         if (ivt(p) > noveg .and. ivt(p) <= nbrdlf_dcd_brl_shrub ) then
+         if (woody(ivt(p)) >= 1.0_r8 ) then
             ol = min( max(snow_depth(c)-hbot(p), 0._r8), htop(p)-hbot(p))
             fb = 1._r8 - ol / max(1.e-06_r8, htop(p)-hbot(p))
          else

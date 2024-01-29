@@ -564,7 +564,7 @@ contains
 
     ! USES
       !$acc routine seq
-    use pftvarcon       , only: nbrdlf_evr_trp_tree, nbrdlf_dcd_trp_tree
+    use pftvarcon       , only: woody, needleleaf, climatezone
     use soilorder_varcon, only: r_mort_soilorder
 
     !
@@ -586,7 +586,10 @@ contains
        do fp = 1,num_soilp
           p = filter_soilp(fp)
           c = veg_pp%column(p)
-               if( veg_pp%itype(p) == nbrdlf_evr_trp_tree .or. veg_pp%itype(p) == nbrdlf_dcd_trp_tree )then
+               ! broadleaf tropical trees
+               if( woody(veg_pp%itype(p)) == 1.0_r8 .and. &
+                   needleleaf(veg_pp%itype(p)) == 0 .and. &
+                   climatezone(veg_pp%itype(p)) == 1 )then
                    r_mort_cal(p) = r_mort_soilorder( isoilorder(c) )
                else
                    r_mort_cal(p) = 0.02_r8                 ! Default mortality rate

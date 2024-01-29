@@ -20,7 +20,7 @@ module surfrdUtilsMod
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: check_sums_equal_1_3d  ! Confirm that sum(arr(n,t,:)) == 1 for all n
   public :: check_sums_equal_1_2d  ! Confirm that sum(arr(n,:)) == 1 for all n
-  public :: convert_cft_to_pft  ! Conversion of crop CFT to natural veg PFT:w
+  public :: convert_cft_to_pft  ! Conversion of crop CFT to natural veg PFT
   public :: collapse_crop_types ! Collapse unused crop types into types used in this run
   public :: collapse_crop_var   ! Collapse crop variables according to cft weights determined in previous "collapse" subroutines
   public :: convert_pft_to_cft  ! Conversion of crops from natural veg to CFT
@@ -124,20 +124,21 @@ contains
     ! !USES:
     use elm_varsur      , only : wt_lunit, wt_nat_patch
     use elm_varpar      , only : cft_size, surfpft_size
-    use pftvarcon       , only : nc3crop
+    use elm_varpar      , only : natpft_size
     use landunit_varcon , only : istsoil, istcrop
     use topounit_varcon , only : max_topounits
     ! !ARGUMENTS:
     implicit none
     integer          , intent(in)    :: begg, endg
-    integer          , intent(in)    :: cftsize          ! CFT size
+    integer          , intent(in)    :: cftsize          ! CFT size  ! this could be wrong if by input
     real(r8)         , intent(inout) :: wt_cft(begg:,:,:)  ! CFT weights
     !
     ! !LOCAL VARIABLES:
     integer :: g, t    ! index
 !-----------------------------------------------------------------------
-    SHR_ASSERT_ALL((ubound(wt_cft      ) == (/endg,max_topounits, cftsize          /)), errMsg(__FILE__, __LINE__))
-    SHR_ASSERT_ALL((ubound(wt_nat_patch) == (/endg,max_topounits, nc3crop+cftsize-1/)), errMsg(__FILE__, __LINE__))
+    ! note (01-29-2024 by fmyuan@ornl.gov, cftsize --> elm_varpar:cft_size)
+    SHR_ASSERT_ALL((ubound(wt_cft      ) == (/endg,max_topounits, cft_size          /)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(wt_nat_patch) == (/endg,max_topounits, natpft_size+cft_size/)), errMsg(__FILE__, __LINE__))
 
     do g = begg, endg
       do t = 1, max_topounits
@@ -145,12 +146,12 @@ contains
           ! Move CFT over to PFT and do weighted average of the crop and soil parts
           wt_nat_patch(g,t,:)        = wt_nat_patch(g,t,:) * wt_lunit(g,t,istsoil)
           wt_cft(g,t,:)              = wt_cft(g,t,:) * wt_lunit(g,t,istcrop)
-          wt_nat_patch(g,t,nc3crop:) = wt_cft(g,t,:)                                 ! Add crop CFT's to end of natural veg PFT's
-          wt_lunit(g,t,istsoil)      = (wt_lunit(g,t,istsoil) + wt_lunit(g,t,istcrop)) ! Add crop landunit to soil landunit
+          wt_nat_patch(g,t,natpft_size:) = wt_cft(g,t,:)                                ! Add crop CFT's to end of natural veg PFT's
+          wt_lunit(g,t,istsoil)      = (wt_lunit(g,t,istsoil) + wt_lunit(g,t,istcrop))  ! Add crop landunit to soil landunit
           wt_nat_patch(g,t,:)        =  wt_nat_patch(g,t,:) / wt_lunit(g,t,istsoil)
-          wt_lunit(g,t,istcrop)      = 0.0_r8                                      ! Zero out crop CFT's
+          wt_lunit(g,t,istcrop)      = 0.0_r8                                           ! Zero out crop CFT's
        else
-          wt_nat_patch(g,t,nc3crop:) = 0.0_r8                                      ! Make sure generic crops are zeroed out
+          wt_nat_patch(g,t,natpft_size:) = 0.0_r8                                       ! Make sure generic crops are zeroed out
        end if
      end do
     end do
@@ -171,7 +172,6 @@ contains
    use elm_varsur      , only : wt_lunit, wt_nat_patch, wt_cft
    use elm_varpar      , only : cft_size, surfpft_size
    use elm_varpar      , only : cft_size, cft_lb, cft_ub, surfpft_lb, surfpft_ub
-   use pftvarcon       , only : nc3crop
    use landunit_varcon , only : istsoil, istcrop
    use topounit_varcon , only : max_topounits
    ! !ARGUMENTS:
@@ -309,8 +309,8 @@ contains
     ! !USES:
     use elm_varctl , only : irrigate
     use elm_varpar , only : cft_lb, cft_ub, cft_size
-    use pftvarcon  , only : nc3crop, nc3irrig, npcropmax, mergetoelmpft
     use pftvarcon  , only: is_pft_known_to_model
+    use pftvarcon  , only : npcropmax, mergetoelmpft, npcropmin
     use topounit_varcon      , only : max_topounits   ! TKT
     use GridcellType   , only : grc_pp                ! TKT
     !
@@ -369,10 +369,12 @@ contains
           !                  stride 2
           ! where stride 2 means "every other"
 
-          do t = 1,max_topounits
-             wt_cft(g,t, nc3crop:npcropmax-1:2) = &
-               wt_cft(g,t, nc3crop:npcropmax-1:2) + wt_cft(g,t, nc3irrig:npcropmax:2)     ! TKT
-             wt_cft(g,t, nc3irrig:npcropmax:2)  = 0._r8   
+          do t = grc_pp%topi(g), grc_pp%topf(g)    ! TKT
+             t2 = t - grc_pp%topi(g) + 1
+          
+             wt_cft(g,t2, cft_lb:cft_ub-1:2) = &
+               wt_cft(g,t2, cft_lb:cft_ub-1:2) + wt_cft(g,t2, cft_lb+1:cft_ub:2)     ! TKT
+             wt_cft(g,t2, cft_lb+1:cft_ub:2)  = 0._r8
           end do                                                                            ! TKT
        end do
 
