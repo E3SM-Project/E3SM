@@ -897,6 +897,7 @@
       <env name="GPU_BIND_ARGS">--gpu-bind=closest</env>
       <env name="PNETCDF_HINTS">romio_cb_read=disable</env>
       <env name="MPICH_GPU_SUPPORT_ENABLED">0</env>
+      <env name="MPICH_CXX">$SHELL{which hipcc}</env>
     </environment_variables>
     <environment_variables compiler=".*gpu.*" DEBUG="TRUE">
       <env name="AMD_LOG_LEVEL">10</env>
