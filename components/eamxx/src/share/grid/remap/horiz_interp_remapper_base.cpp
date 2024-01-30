@@ -329,6 +329,10 @@ create_coarse_grids (const std::vector<Triplet>& triplets)
   for (const auto& it : ov_gid2lid) {
     ov_coarse_gids_h[it.second] = it.first;
   }
+  auto beg = ov_coarse_gids_h.data();
+  auto end = beg+ov_coarse_gids_h.size();
+  std::sort(beg,end);
+
   ov_coarse_grid->get_dofs_gids().sync_to_dev();
   m_ov_coarse_grid = ov_coarse_grid;
 
