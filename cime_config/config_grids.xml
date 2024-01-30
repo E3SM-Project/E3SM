@@ -1023,6 +1023,26 @@
       <mask>ARRM10to60E2r1</mask>
     </model_grid>
 
+    <model_grid alias="atlanticx4v1pg2_r05_EC30to60E2r2">
+      <grid name="atm">ne32x8_ATL</grid>
+      <grid name="lnd">r05</grid>
+      <grid name="ocnice">EC30to60E2r2</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>EC30to60E2r2</mask>
+    </model_grid>
+
+    <model_grid alias="atlanticx4v1pg2_r05_EC30to60E2r2_wQU225EC30to60E2r2">
+      <grid name="atm">ne32x8_ATL</grid>
+      <grid name="lnd">r05</grid>
+      <grid name="ocnice">EC30to60E2r2</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">wQU225EC30to60E2r2</grid>
+      <mask>EC30to60E2r2</mask>
+    </model_grid>
+
     <model_grid alias="svalbardx8v1_svalbardx8v1" compset="(DOCN|XOCN|SOCN|AQP1)">
       <grid name="atm">ne0np4_svalbard_x8v1_lowcon</grid>
       <grid name="lnd">ne0np4_svalbard_x8v1_lowcon</grid>
@@ -2822,6 +2842,13 @@
       <desc>1-deg with 1/4-deg over Arctic (version 1) pg2:</desc>
     </domain>
 
+    <domain name="ne32x8_ATL">
+      <nx>89388</nx>
+      <ny>1</ny>
+      <file grid="atm|lnd" mask="EC30to60E2r2">$DIN_LOC_ROOT/share/domains/domain.lnd.ne32x8_ATL_EC30to60E2r2.240125.nc</file>
+      <file grid="ice|ocn" mask="EC30to60E2r2">$DIN_LOC_ROOT/share/domains/domain.ocn.ne32x8_ATL_EC30to60E2r2.240125.nc</file>
+      <desc>RRM Atlantic (version 1) pg2:</desc>
+    </domain>
 
     <domain name="ne0np4_antarcticax4v1">
       <nx>109883</nx>
@@ -3601,6 +3628,19 @@
     <gridmap atm_grid="ne0np4_arcticx4v1.pg2" rof_grid="r05">
       <map name="ATM2ROF_FMAPNAME">cpl/gridmaps/arcticx4v1pg2/map_arcticx4v1pg2_to_r05_mono.20210706.nc</map>
       <map name="ATM2ROF_SMAPNAME">cpl/gridmaps/arcticx4v1pg2/map_arcticx4v1pg2_to_r05_mono.20210706.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="ne32x8_ATL" ocn_grid="EC30to60E2r2">
+      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/ne32x8_ATL/map_ne32x8_ATL_to_EC30to60E2r2_traave.20240125.nc</map>
+      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/ne32x8_ATL/map_ne32x8_ATL_to_EC30to60E2r2_trbilin.20240125.nc</map>
+      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/ne32x8_ATL/map_ne32x8_ATL_to_EC30to60E2r2_trbilin.20240125.nc</map>
+      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/EC30to60E2r2/map_EC30to60E2r2_to_ne32x8_ATL_traave.20240125.nc</map>
+      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/EC30to60E2r2/map_EC30to60E2r2_to_ne32x8_ATL_traave.20240125.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="ne32x8_ATL" rof_grid="r05">
+      <map name="ATM2ROF_FMAPNAME">cpl/gridmaps/ne32x8_ATL/map_ne32x8_ATL_to_r05_traave.20240125.nc</map>
+      <map name="ATM2ROF_SMAPNAME">cpl/gridmaps/ne32x8_ATL/map_ne32x8_ATL_to_r05_traave.20240125.nc</map>
     </gridmap>
 
     <gridmap atm_grid="ne0np4_antarcticax4v1" lnd_grid="r0125">
