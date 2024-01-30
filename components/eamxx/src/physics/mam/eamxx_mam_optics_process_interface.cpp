@@ -77,27 +77,30 @@ void MAMOptics::run_impl(const double dt) {
 
   auto aero_nccn   = get_field_out("nccn").get_view<Real**>(); // FIXME: get rid of this
 
-  // Compute optical properties on all local columns.
-  // (Strictly speaking, we don't need this parallel_for here yet, but we leave
-  //  it in anticipation of column-specific aerosol optics to come.)
-  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const ThreadTeam& team) {
-    const Int icol = team.league_rank(); // column index
-
-    auto g_sw = ekat::subview(aero_g_sw, icol);
-    auto ssa_sw = ekat::subview(aero_ssa_sw, icol);
-    auto tau_sw = ekat::subview(aero_tau_sw, icol);
-    auto tau_lw = ekat::subview(aero_tau_lw, icol);
-
+  if (true) { // remove when ready to do actual calculations
     // populate these fields with reasonable representative values
-    Kokkos::deep_copy(g_sw, 0.5);
-    Kokkos::deep_copy(ssa_sw, 0.7);
-    Kokkos::deep_copy(tau_sw, 0.0);
-    Kokkos::deep_copy(tau_lw, 0.0);
+    Kokkos::deep_copy(aero_g_sw, 0.5);
+    Kokkos::deep_copy(aero_ssa_sw, 0.7);
+    Kokkos::deep_copy(aero_tau_sw, 0.0);
+    Kokkos::deep_copy(aero_tau_lw, 0.0);
+    Kokkos::deep_copy(aero_nccn, 50.0);
+  } else {
 
-    // FIXME: Get rid of this
-    auto nccn = ekat::subview(aero_nccn, icol);
-    Kokkos::deep_copy(nccn, 50.0);
-  });
+    // Compute optical properties on all local columns.
+    // (Strictly speaking, we don't need this parallel_for here yet, but we leave
+    //  it in anticipation of column-specific aerosol optics to come.)
+    Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const ThreadTeam& team) {
+      const Int icol = team.league_rank(); // column index
+
+      auto g_sw = ekat::subview(aero_g_sw, icol);
+      auto ssa_sw = ekat::subview(aero_ssa_sw, icol);
+      auto tau_sw = ekat::subview(aero_tau_sw, icol);
+      auto tau_lw = ekat::subview(aero_tau_lw, icol);
+
+      // FIXME: Get rid of this
+      auto nccn = ekat::subview(aero_nccn, icol);
+    });
+  }
 }
 
 void MAMOptics::finalize_impl()
