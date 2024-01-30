@@ -497,7 +497,7 @@ lnd/clm2/surfdata_map/surfdata_conusx4v1_simyr2000_c160503.nc</fsurdat>
  use_crop=".false."  >lnd/clm2/surfdata_map/surfdata.pftdyn_ne16np4_hist_simyr1850-2005_c160803.nc</flanduse_timeseries>
 <flanduse_timeseries hgrid="ne11np4" sim_year_range="1850-2000"
  use_crop=".false."  >lnd/clm2/surfdata_map/surfdata.pftdyn_ne11np4_hist_simyr1850-2005_c160803.nc</flanduse_timeseries>
-<flanduse_timeseries hgrid="ne1024np4.pg2" sim_year_range="1990-2014"
+<flanduse_timeseries hgrid="ne1024np4.pg2"
  use_crop=".false."  >lnd/clm2/surfdata_map/landuse.timeseries_ne1024pg2_historical_simyr1990-2014_c240109.nc</flanduse_timeseries>
 
 <flanduse_timeseries hgrid="r0125" sim_year_range="1850-2000"
