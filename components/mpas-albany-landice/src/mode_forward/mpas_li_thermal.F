@@ -70,7 +70,7 @@ module li_thermal
    ! Note: kelvin_to_celsius = 273.15 (perhaps it should be called celsius_to_kelvin?)
 
    real (kind=RKIND), parameter ::   &
-        maxtempThreshold =  100._RKIND + kelvin_to_celsius,   &
+        maxtempThreshold =  0.1_RKIND + kelvin_to_celsius,   &
         mintempThreshold = -100._RKIND + kelvin_to_celsius
 
 !***********************************************************************
