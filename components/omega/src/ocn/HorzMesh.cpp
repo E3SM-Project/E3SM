@@ -19,7 +19,7 @@
 namespace OMEGA {
 
 //------------------------------------------------------------------------------
-// Initialize the mesh
+// Initialize the mesh. Assumes that Decomp has already been initialized.
 
 int HorzMesh::init() {
 
@@ -131,27 +131,25 @@ HorzMesh::HorzMesh(const std::string &Name, //< [in] Name for new mesh
 // Destroys a local mesh and deallocates all arrays
 HorzMesh::~HorzMesh() {
 
-   // TODO: add deletes for all arrays and remove from AllDecomps map
+   // No operations needed, YAKL arrays removed when no longer in scope
 
 } // end deconstructor
 
 //------------------------------------------------------------------------------
-// Deallocates arrays
+// Removes a mesh from list by name
+void HorzMesh::erase(std::string InName // [in] name of mesh to remove
+) {
+
+   AllHorzMeshes.erase(InName); // remove the mesh from the list and in
+                                // the process, calls the destructor
+
+} // end mesh erase
+//------------------------------------------------------------------------------
+// Removes all meshes to clean up before exit 
 void HorzMesh::clear() {
 
-   AreaCell.deallocate();
-   AreaTriangle.deallocate();
-   KiteAreasOnVertex.deallocate();
-   DvEdge.deallocate();
-   DcEdge.deallocate();
-   AngleEdge.deallocate();
-   WeightsOnEdge.deallocate();
-   FVertex.deallocate();
-   BottomDepth.deallocate();
-   EdgeSignOnCell.deallocate();
-   EdgeSignOnCellH.deallocate();
-   EdgeSignOnVertex.deallocate();
-   EdgeSignOnVertexH.deallocate();
+   AllHorzMeshes.clear(); // removes all meshes from the list and in
+                          // the porcess, calls the destructors for each
 
 } // end clear
 
