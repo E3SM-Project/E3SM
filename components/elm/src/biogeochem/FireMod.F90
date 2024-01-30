@@ -735,8 +735,6 @@ contains
         is_cwd                              =>    decomp_cascade_con%is_cwd            , & ! Input:  [logical  (:)     ]  TRUE => pool is a cwd pool
         is_litter                           =>    decomp_cascade_con%is_litter         , & ! Input:  [logical  (:)     ]  TRUE => pool is a litter pool
 
-        !woody                               =>    veg_vp%woody                                            , & ! Input:  [real(r8) (:)     ]  woody lifeform (1=woody, 0=not woody)
-
         cropf_col                           =>    cnstate_vars%cropf_col               , & ! Input:  [real(r8) (:)     ]  cropland fraction in veg column
         croot_prof                          =>    cnstate_vars%croot_prof_patch        , & ! Input:  [real(r8) (:,:)   ]  (1/m) profile of coarse roots
         stem_prof                           =>    cnstate_vars%stem_prof_patch         , & ! Input:  [real(r8) (:,:)   ]  (1/m) profile of stems
