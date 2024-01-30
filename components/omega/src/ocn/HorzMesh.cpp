@@ -145,7 +145,7 @@ void HorzMesh::erase(std::string InName // [in] name of mesh to remove
 
 } // end mesh erase
 //------------------------------------------------------------------------------
-// Removes all meshes to clean up before exit 
+// Removes all meshes to clean up before exit
 void HorzMesh::clear() {
 
    AllHorzMeshes.clear(); // removes all meshes from the list and in

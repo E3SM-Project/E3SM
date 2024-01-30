@@ -40,7 +40,7 @@ yakl::c::parallel_for(yakl::c::Bounds<2>(HMesh->NCellsOwned,HMesh->MaxEdges),
       Var(Cell) = Var(Cell) + Flux(Cell,Edge);
   }
 }
-``` 
+```
 
 For member variables that are host arrays, variable names are appended with an
 `H`.  Array variable names not ending in `H` are device arrays.  The copy from
