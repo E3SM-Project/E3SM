@@ -792,8 +792,9 @@ module li_thermal
       call mpas_pool_get_array(meshPool, 'deltat', deltat)
 
       if (deltat <= 0.0_RKIND) then
+         err = ior(err, 1)
          call mpas_log_write('li_thermal_solver was called with invalid deltat = $r', MPAS_LOG_ERR, realArgs=(/deltat/))
-         call mpas_log_write("An error has occurred in li_thermal. Aborting...", MPAS_LOG_CRIT)
+         return
       endif
 
 
@@ -1305,25 +1306,25 @@ module li_thermal
                mintemp = minval(temperature(:,iCell))
 
                if (maxtemp > maxtempThreshold) then
-                  call mpas_log_write('maxtemp > maxtempThreshold: indexToCellID=$i, maxtemp = $r', intArgs=(/indexToCellID(iCell)/), &
+                  err = ior(err, 1)
+                  call mpas_log_write('maxtemp > maxtempThreshold: indexToCellID=$i, maxtemp = $r', MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell)/), &
                      realArgs=(/maxtemp/))
-                  call mpas_log_write('thickness = $r', realArgs=(/thickness(iCell)/))
-                  call mpas_log_write('temperature:')
+                  call mpas_log_write('    thickness = $r', MPAS_LOG_ERR, realArgs=(/thickness(iCell)/))
+                  call mpas_log_write('    temperature:', MPAS_LOG_ERR)
                   do k = 1, nVertLevels
-                     call mpas_log_write('$i $r', intArgs=(/k/), realArgs=(/temperature(k,iCell)/))
+                     call mpas_log_write('    $i $r', MPAS_LOG_ERR, intArgs=(/k/), realArgs=(/temperature(k,iCell)/))
                   enddo
-                  call mpas_log_write("An error has occurred in li_thermal. Aborting...", MPAS_LOG_CRIT)
                endif
 
                if (mintemp < mintempThreshold) then
-                  call mpas_log_write('mintemp < mintempThreshold: indexToCellID=$i, mintemp = $r', intArgs=(/indexToCellID(iCell)/), &
+                  err = ior(err, 1)
+                  call mpas_log_write('mintemp < mintempThreshold: indexToCellID=$i, mintemp = $r', MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell)/), &
                      realArgs=(/mintemp/))
-                  call mpas_log_write('thickness = $r', realArgs=(/thickness(iCell)/))
-                  call mpas_log_write('temperature:')
+                  call mpas_log_write('    thickness = $r', MPAS_LOG_ERR, realArgs=(/thickness(iCell)/))
+                  call mpas_log_write('    temperature:', MPAS_LOG_ERR)
                   do k = 1, nVertLevels
-                     call mpas_log_write('$i $r', intArgs=(/k/), realArgs=(/temperature(k,iCell)/))
+                     call mpas_log_write('    $i $r', MPAS_LOG_ERR, intArgs=(/k/), realArgs=(/temperature(k,iCell)/))
                   enddo
-                  call mpas_log_write("An error has occurred in li_thermal. Aborting...", MPAS_LOG_CRIT)
                endif
 
             enddo   ! iCell
