@@ -1069,13 +1069,6 @@ contains
                             von_karman_sq / &
                             (log(1.0_RKIND + &
                                  (zMidEdge/bottom_roughness)))**2))
-           ! For some reason we can use k-1 even when N=Nsurf
-           kineticEnergyTopOfEdge = 0.5_RKIND * (kineticEnergyCell(k,cell1) + kineticEnergyCell(k,cell2) + &
-                                                 kineticEnergyCell(k-1,cell1) + kineticEnergyCell(k-1,cell2))
-           vertViscTopOfEdge(k,iEdge) = max(vertViscTopOfEdge(k,iEdge), &
-                                            sqrt(CdTemp(k) * kineticEnergyTopOfEdge) * &
-                                            von_karman * (zMidEdge + bottom_roughness) &
-                                           )
          enddo
 
          ! one active layer
@@ -1084,7 +1077,14 @@ contains
                 / (1.0_RKIND + dt*CdTemp(N) &
                    * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeDrag(N,iEdge) )
          else
-
+           do k = Nsurf+1, N
+              kineticEnergyTopOfEdge = 0.5_RKIND * (kineticEnergyCell(k,cell1) + kineticEnergyCell(k,cell2) + &
+                                                    kineticEnergyCell(k-1,cell1) + kineticEnergyCell(k-1,cell2))
+              vertViscTopOfEdge(k,iEdge) = max(vertViscTopOfEdge(k,iEdge), &
+                                               sqrt(CdTemp(k) * kineticEnergyTopOfEdge) * &
+                                               von_karman * (zMidEdge + bottom_roughness) &
+                                              )
+           enddo
            ! tridiagonal matrix algorithm
            C(Nsurf)     = -2.0_RKIND*dt*vertViscTopOfEdge(Nsurf+1,iEdge) &
                       / (layerThickEdgeMean(Nsurf,iEdge) + layerThickEdgeMean(Nsurf+1,iEdge)) &

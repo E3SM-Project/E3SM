@@ -10,29 +10,45 @@ time_stepping:
 
 initial_conditions:
   Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
-  topography_filename: ${TOPO_DATA_DIR}/USGS-gtopo30_ne4np4pg2_16x_converted.c20200527.nc
+  topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
   surf_evap: 0.0
   surf_sens_flux: 0.0
   precip_liq_surf_mass: 0.0
   precip_ice_surf_mass: 0.0
 
 atmosphere_processes:
-  atm_procs_list: (homme,physics)
+  atm_procs_list: [homme,physics]
   schedule_type: Sequential
   homme:
     Moisture: moist
   physics:
-    atm_procs_list: (mac_aero_mic,rrtmgp)
+    atm_procs_list: [mac_aero_mic,rrtmgp]
     schedule_type: Sequential
     Type: Group
     mac_aero_mic:
-      atm_procs_list: (shoc,CldFraction,spa,p3)
+      atm_procs_list: [shoc,CldFraction,spa,p3]
       Type: Group
       schedule_type: Sequential
       number_of_subcycles: ${MAC_MIC_SUBCYCLES}
       spa:
         spa_remap_file: ${SCREAM_DATA_DIR}/maps/map_ne4np4_to_ne2np4_mono.nc
         spa_data_file: ${SCREAM_DATA_DIR}/init/spa_file_unified_and_complete_ne4_20220428.nc
+      p3:
+        max_total_ni: 740.0e3
+      shoc:
+        check_flux_state_consistency: true
+        lambda_low: 0.001
+        lambda_high: 0.04
+        lambda_slope: 2.65
+        lambda_thresh: 0.02
+        thl2tune: 1.0
+        qw2tune: 1.0
+        qwthl2tune: 1.0
+        w2tune: 1.0
+        length_fac: 0.5
+        c_diag_3rd_mom: 7.0
+        Ckh: 0.1
+        Ckm: 0.1
     rrtmgp:
       column_chunk_size: 123
       active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
@@ -49,5 +65,5 @@ grids_manager:
 
 # The parameters for I/O control
 Scorpio:
-  output_yaml_files: ["homme_shoc_cld_spa_p3_rrtmgp_output.yaml","homme_shoc_cld_spa_p3_rrtmgp_diagnostics.yaml"]
+  output_yaml_files: ["output.yaml"]
 ...

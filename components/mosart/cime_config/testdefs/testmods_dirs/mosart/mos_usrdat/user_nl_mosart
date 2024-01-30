@@ -1,2 +1,3 @@
 frivinp_rtm = '$DIN_LOC_ROOT/rof/mosart/MOSART_global_half_20180721a.nc'
+frivinp_mesh = '$DIN_LOC_ROOT/share/meshes/rof/SCRIPgrid_0.5x0.5_nomask_c110308.nc'
 

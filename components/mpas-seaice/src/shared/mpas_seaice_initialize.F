@@ -89,6 +89,9 @@ contains
 
     call mpas_log_write("seaice_init: Initialize sea-ice model")
 
+    ! check configs
+    call seaice_check_configs_coupled(domain)
+
     call mpas_pool_get_config(domain % configs, "config_column_physics_type", config_column_physics_type)
 
     ! set column constants
@@ -172,7 +175,7 @@ contains
     call seaice_set_special_boundaries_tracers(domain)
 
     ! check constants
-    call seaice_check_constants
+    call seaice_check_constants_coupled
 
   end subroutine seaice_init!}}}
 
@@ -2878,11 +2881,9 @@ contains
 
   end subroutine init_test_ice_shelf_mask
 
-!-----------------------------------------------------------------------
-
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  seaice_check_constants
+!  seaice_check_constants_coupled
 !
 !> \brief
 !> \author Elizabeth Hunke, LANL
@@ -2892,7 +2893,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine seaice_check_constants
+  subroutine seaice_check_constants_coupled
 
     use seaice_constants, only: &
          seaiceIceSnowEmissivity
@@ -2900,11 +2901,333 @@ contains
 #ifdef CCSMCOUPLED
     if (seaiceIceSnowEmissivity /= 1._RKIND) then
       call mpas_log_write(&
-           'seaice_check_constants: seaiceIceSnowEmissivity out of bounds', &
+           'seaice_check_constants_coupled: seaiceIceSnowEmissivity out of bounds', &
            messageType=MPAS_LOG_CRIT)
     endif
 #endif
 
-  end subroutine seaice_check_constants
+  end subroutine seaice_check_constants_coupled
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  seaice_check_configs_coupled
+!
+!> \brief
+!> \author Elizabeth Hunke, LANL
+!> \date 3 November 2023
+!> \details
+!> Checks critical configuration settings for coupled simulations.
+!> Aborts if they would cause conservation or other errors.
+!> Warns for some non-critical, non-default settings.
+!> Config consistency checks are in subroutine check_column_package_configs
+!
+!-----------------------------------------------------------------------
+
+  subroutine seaice_check_configs_coupled(domain)
+
+    type(domain_type), intent(inout) :: &
+         domain
+
+    ! abort
+    character(len=strKIND), pointer :: &
+         config_frazil_coupling_type, &
+         config_thermodynamics_type, &
+         config_sea_freezing_temperature_type, &
+         config_itd_conversion_type
+
+    logical, pointer :: &
+         config_use_column_shortwave, &
+         config_use_column_vertical_thermodynamics, &
+         config_use_column_ridging, &
+         config_use_form_drag, &
+         config_use_ocean_mixed_layer, &
+         config_calc_surface_stresses, &
+         config_calc_surface_temperature, &
+         config_include_pond_freshwater_feedback, &
+         config_update_ocean_fluxes
+
+    ! write warnings
+    character(len=strKIND), pointer :: &
+         config_column_physics_type, &
+         config_shortwave_type, &
+         config_snow_redistribution_scheme, &
+         config_category_bounds_type, &
+         config_ridging_participation_function, &
+         config_ridging_redistribution_function, &
+         config_ocean_heat_transfer_type, &
+         config_salt_flux_coupling_type, &       ! only available in icepack
+         config_ocean_surface_type               ! only used in ice_comp_mct.F
+
+    logical, pointer :: &
+         config_use_column_physics, &
+         config_use_column_itd_thermodynamics, & ! must be false for F case
+         config_use_prescribed_ice, &
+         config_use_snicar_ad, &
+         config_use_shortwave_redistribution, &  ! only available in icepack
+         config_use_column_snow_tracers, &
+         config_use_snow_liquid_ponds, &
+         config_use_high_frequency_coupling, &
+         config_limit_air_temperatures, &        ! only used for CORE forcing
+         config_use_congelation_basal_melt, &    ! deprecate with colpkg
+         config_use_lateral_melt, &              ! deprecate with colpkg
+         config_use_latent_processes             ! deprecate with colpkg
+
+#ifdef CCSMCOUPLED
+    ! abort
+    call MPAS_pool_get_config(domain % configs, "config_category_bounds_type", config_category_bounds_type)
+    call MPAS_pool_get_config(domain % configs, "config_frazil_coupling_type", config_frazil_coupling_type)
+    call MPAS_pool_get_config(domain % configs, "config_thermodynamics_type", config_thermodynamics_type)
+    call MPAS_pool_get_config(domain % configs, "config_sea_freezing_temperature_type", config_sea_freezing_temperature_type)
+    call MPAS_pool_get_config(domain % configs, "config_itd_conversion_type", config_itd_conversion_type)
+    call MPAS_pool_get_config(domain % configs, "config_use_column_shortwave", config_use_column_shortwave)
+    call MPAS_pool_get_config(domain % configs, "config_use_column_vertical_thermodynamics", &
+                                                 config_use_column_vertical_thermodynamics)
+    call MPAS_pool_get_config(domain % configs, "config_use_column_ridging", config_use_column_ridging)
+    call MPAS_pool_get_config(domain % configs, "config_use_form_drag", config_use_form_drag)
+    call MPAS_pool_get_config(domain % configs, "config_use_ocean_mixed_layer", config_use_ocean_mixed_layer)
+    call MPAS_pool_get_config(domain % configs, "config_calc_surface_stresses", config_calc_surface_stresses)
+    call MPAS_pool_get_config(domain % configs, "config_calc_surface_temperature", config_calc_surface_temperature)
+    call MPAS_pool_get_config(domain % configs, "config_include_pond_freshwater_feedback", config_include_pond_freshwater_feedback)
+    call MPAS_pool_get_config(domain % configs, "config_update_ocean_fluxes", config_update_ocean_fluxes)
+
+    if (trim(config_category_bounds_type) == "single category") then
+      call mpas_log_write(&
+           'seaice_check_configs_coupled: config_category_bounds_type must not be single category', &
+           messageType=MPAS_LOG_CRIT)
+    endif
+
+    if (trim(config_frazil_coupling_type) /= "external") then
+      call mpas_log_write(&
+           'seaice_check_configs_coupled: config_frazil_coupling_type must be external', &
+           messageType=MPAS_LOG_CRIT)
+    endif
+
+    if (trim(config_thermodynamics_type) /= "mushy") then
+      call mpas_log_write(&
+           'seaice_check_configs_coupled: config_thermodynamics_type must be mushy', &
+           messageType=MPAS_LOG_CRIT)
+    endif
+
+    if (trim(config_sea_freezing_temperature_type) /= "mushy") then
+      call mpas_log_write(&
+           'seaice_check_configs_coupled: config_sea_freezing_temperature_type must be mushy', &
+           messageType=MPAS_LOG_CRIT)
+    endif
+
+    if (trim(config_itd_conversion_type) /= "linear remap") then
+      call mpas_log_write(&
+           'seaice_check_configs_coupled: config_itd_conversion_type must be linear remap', &
+           messageType=MPAS_LOG_CRIT)
+    endif
+
+    if (.not. config_use_column_shortwave) then
+      call mpas_log_write(&
+           'seaice_check_configs_coupled: config_use_column_shortwave must be true', &
+           messageType=MPAS_LOG_CRIT)
+    endif
+
+    if (.not. config_use_column_vertical_thermodynamics) then
+      call mpas_log_write(&
+           'seaice_check_configs_coupled: config_use_column_vertical_thermodynamics must be true', &
+           messageType=MPAS_LOG_CRIT)
+    endif
+
+    if (.not. config_use_column_ridging) then
+      call mpas_log_write(&
+           'seaice_check_configs_coupled: config_use_column_ridging must be true', &
+           messageType=MPAS_LOG_CRIT)
+    endif
+
+    if (config_use_form_drag) then
+      call mpas_log_write(&
+           'seaice_check_configs_coupled: config_use_form_drag = true is not supported', &
+           messageType=MPAS_LOG_CRIT)
+    endif
+
+    if (config_use_ocean_mixed_layer) then
+      call mpas_log_write(&
+           'seaice_check_configs_coupled: config_use_ocean_mixed_layer must be false in coupled runs', &
+           messageType=MPAS_LOG_CRIT)
+    endif
+
+    if (.not. config_calc_surface_stresses) then
+      call mpas_log_write(&
+           'seaice_check_configs_coupled: config_calc_surface_stresses must be true', &
+           messageType=MPAS_LOG_CRIT)
+    endif
+
+    if (.not. config_calc_surface_temperature) then
+      call mpas_log_write(&
+           'seaice_check_configs_coupled: config_calc_surface_temperature must be true', &
+           messageType=MPAS_LOG_CRIT)
+    endif
+
+    if (config_include_pond_freshwater_feedback) then
+      call mpas_log_write(&
+           'seaice_check_configs_coupled: config_include_pond_freshwater_feedback must be false', &
+           messageType=MPAS_LOG_CRIT)
+    endif
+
+    if (.not. config_update_ocean_fluxes) then
+      call mpas_log_write(&
+           'seaice_check_configs_coupled: config_update_ocean_fluxes must be true', &
+           messageType=MPAS_LOG_CRIT)
+    endif
+
+    ! write warnings
+    call MPAS_pool_get_config(domain % configs, "config_column_physics_type", config_column_physics_type)
+    call MPAS_pool_get_config(domain % configs, "config_shortwave_type", config_shortwave_type)
+    call MPAS_pool_get_config(domain % configs, "config_snow_redistribution_scheme", config_snow_redistribution_scheme)
+    call MPAS_pool_get_config(domain % configs, "config_category_bounds_type", config_category_bounds_type)
+    call MPAS_pool_get_config(domain % configs, "config_ridging_participation_function", config_ridging_participation_function)
+    call MPAS_pool_get_config(domain % configs, "config_ridging_redistribution_function", config_ridging_redistribution_function)
+    call MPAS_pool_get_config(domain % configs, "config_ocean_heat_transfer_type", config_ocean_heat_transfer_type)
+    call MPAS_pool_get_config(domain % configs, "config_salt_flux_coupling_type", config_salt_flux_coupling_type)
+    call MPAS_pool_get_config(domain % configs, "config_ocean_surface_type", config_ocean_surface_type)
+
+    call MPAS_pool_get_config(domain % configs, "config_use_column_physics", config_use_column_physics)
+    call MPAS_pool_get_config(domain % configs, "config_use_column_itd_thermodynamics", config_use_column_itd_thermodynamics)
+    call MPAS_pool_get_config(domain % configs, "config_use_prescribed_ice", config_use_prescribed_ice)
+    call MPAS_pool_get_config(domain % configs, "config_use_column_snow_tracers", config_use_column_snow_tracers)
+    call MPAS_pool_get_config(domain % configs, "config_use_snow_liquid_ponds", config_use_snow_liquid_ponds)
+    call MPAS_pool_get_config(domain % configs, "config_use_snicar_ad", config_use_snicar_ad)
+    call MPAS_pool_get_config(domain % configs, "config_use_shortwave_redistribution", config_use_shortwave_redistribution)
+    call MPAS_pool_get_config(domain % configs, "config_use_high_frequency_coupling", config_use_high_frequency_coupling)
+    call MPAS_pool_get_config(domain % configs, "config_limit_air_temperatures", config_limit_air_temperatures)
+    call MPAS_pool_get_config(domain % configs, "config_use_latent_processes", config_use_latent_processes)             ! colpkg
+    call MPAS_pool_get_config(domain % configs, "config_use_lateral_melt", config_use_lateral_melt)                     ! colpkg
+    call MPAS_pool_get_config(domain % configs, "config_use_congelation_basal_melt", config_use_congelation_basal_melt) ! colpkg
+
+    if (trim(config_column_physics_type) /= "icepack") then
+      call mpas_log_write(&
+           'seaice_check_configs_coupled: config_column_physics_type /= icepack', &
+           messageType=MPAS_LOG_WARN)
+    endif
+
+    if (trim(config_shortwave_type) /= "dEdd") then
+      call mpas_log_write(&
+           'seaice_check_configs_coupled: config_shortwave_type /= dEdd', &
+           messageType=MPAS_LOG_WARN)
+    endif
+
+    if (trim(config_snow_redistribution_scheme) /= "ITDrdg") then
+      call mpas_log_write(&
+           'seaice_check_configs_coupled: config_snow_redistribution_scheme /= ITDrdg', &
+           messageType=MPAS_LOG_WARN)
+    endif
+
+    if (trim(config_category_bounds_type) /= "original") then
+      call mpas_log_write(&
+           'seaice_check_configs_coupled: config_category_bounds_type /= original', &
+           messageType=MPAS_LOG_WARN)
+    endif
+
+    if (trim(config_ridging_participation_function) /= "exponential") then
+      call mpas_log_write(&
+           'seaice_check_configs_coupled: config_ridging_participation_function /= exponential', &
+           messageType=MPAS_LOG_WARN)
+    endif
+
+    if (trim(config_ridging_redistribution_function) /= "exponential") then
+      call mpas_log_write(&
+           'seaice_check_configs_coupled: config_ridging_redistribution_function /= exponential', &
+           messageType=MPAS_LOG_WARN)
+    endif
+
+    if (trim(config_ocean_heat_transfer_type) /= "constant") then
+      call mpas_log_write(&
+           'seaice_check_configs_coupled: config_ocean_heat_transfer_type /= constant', &
+           messageType=MPAS_LOG_WARN)
+    endif
+
+    if (trim(config_salt_flux_coupling_type) /= "constant") then
+      call mpas_log_write(&
+           'seaice_check_configs_coupled: config_salt_flux_coupling_type /= constant', &
+           messageType=MPAS_LOG_WARN)
+    endif
+
+    if (trim(config_ocean_surface_type) /= "free") then
+      call mpas_log_write(&
+           'seaice_check_configs_coupled: config_ocean_surface_type /= free', &
+           messageType=MPAS_LOG_WARN)
+    endif
+
+    if (.not. config_use_column_physics) then
+      call mpas_log_write(&
+           'seaice_check_configs_coupled: config_use_column_physics = false', &
+           messageType=MPAS_LOG_WARN)
+    endif
+
+    if (.not. config_use_column_itd_thermodynamics) then
+      call mpas_log_write(&
+           'seaice_check_configs_coupled: config_use_column_itd_thermodynamics = false', &
+           messageType=MPAS_LOG_WARN)
+    endif
+
+    if (config_use_prescribed_ice) then
+      call mpas_log_write(&
+           'seaice_check_configs_coupled: config_use_prescribed_ice = true', &
+           messageType=MPAS_LOG_WARN)
+    endif
+
+    if (.not. config_use_column_snow_tracers) then
+      call mpas_log_write(&
+           'seaice_check_configs_coupled: config_use_column_snow_tracers = false', &
+           messageType=MPAS_LOG_WARN)
+    endif
+
+    if (.not. config_use_snow_liquid_ponds) then
+      call mpas_log_write(&
+           'seaice_check_configs_coupled: config_use_snow_liquid_ponds = false', &
+           messageType=MPAS_LOG_WARN)
+    endif
+
+    if (.not. config_use_snicar_ad) then
+      call mpas_log_write(&
+           'seaice_check_configs_coupled: config_use_snicar_ad = false', &
+           messageType=MPAS_LOG_WARN)
+    endif
+
+    if (config_use_shortwave_redistribution) then
+      call mpas_log_write(&
+           'seaice_check_configs_coupled: config_use_shortwave_redistribution = true', &
+           messageType=MPAS_LOG_WARN)
+    endif
+
+    if (.not. config_use_high_frequency_coupling) then
+      call mpas_log_write(&
+           'seaice_check_configs_coupled: config_use_high_frequency_coupling = false', &
+           messageType=MPAS_LOG_WARN)
+    endif
+
+    if (config_limit_air_temperatures) then
+      call mpas_log_write(&
+           'seaice_check_configs_coupled: config_limit_air_temperatures = true', &
+           messageType=MPAS_LOG_WARN)
+    endif
+
+    if (trim(config_column_physics_type) == 'icepack' .and. .not. config_use_latent_processes) then ! colpkg
+      call mpas_log_write(&
+           'seaice_check_configs_coupled: config_use_latent_processes is not available in icepack', &
+           messageType=MPAS_LOG_WARN)
+    endif
+
+    if (trim(config_column_physics_type) == 'icepack' .and. .not. config_use_lateral_melt) then ! colpkg
+      call mpas_log_write(&
+           'seaice_check_configs_coupled: config_use_lateral_melt is not available in icepack', &
+           messageType=MPAS_LOG_WARN)
+    endif
+
+    if (trim(config_column_physics_type) == 'icepack' .and. .not. config_use_congelation_basal_melt) then ! colpkg
+      call mpas_log_write(&
+           'seaice_check_configs_coupled: config_use_congelation_basal_melt is not available in icepack', &
+           messageType=MPAS_LOG_WARN)
+    endif
+
+#endif
+
+  end subroutine seaice_check_configs_coupled
+
+!-----------------------------------------------------------------------
 
 end module seaice_initialize

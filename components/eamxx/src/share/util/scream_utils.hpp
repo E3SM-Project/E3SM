@@ -24,6 +24,15 @@ enum MemoryUnits {
   GiB
 };
 
+template<typename VT>
+typename VT::HostMirror
+cmvdc (const VT& v)
+{
+  auto vh = Kokkos::create_mirror_view(v);
+  Kokkos::deep_copy(vh,v);
+  return vh;
+}
+
 // Gets current memory (RAM) usage by current process.
 long long get_mem_usage (const MemoryUnits u);
 
@@ -328,6 +337,14 @@ Int compare (const std::string& label, const Scalar* a,
   }
 
   return nerr1 + nerr2;
+}
+
+inline void
+check_mpi_call (int err, const std::string& context) {
+  EKAT_REQUIRE_MSG (err==MPI_SUCCESS,
+      "Error! MPI operation encountered an error.\n"
+      "  - err code: " + std::to_string(err) + "\n"
+      "  - context: " + context + "\n");
 }
 
 } // namespace scream

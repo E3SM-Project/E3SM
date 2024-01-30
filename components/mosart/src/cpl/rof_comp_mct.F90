@@ -7,7 +7,7 @@ module rof_comp_mct
 ! in MCT (Model Coupling Toolkit) format and converting it to use by MOSART
 
   use seq_flds_mod
-  use shr_kind_mod     , only : r8 => shr_kind_r8, SHR_KIND_CL
+  use shr_kind_mod     , only : r8 => shr_kind_r8, SHR_KIND_CL, CXX => SHR_KIND_CXX
   use shr_file_mod     , only : shr_file_setLogUnit, shr_file_setLogLevel, &
                                 shr_file_getLogUnit, shr_file_getLogLevel, &
                                 shr_file_getUnit, shr_file_setIO
@@ -64,6 +64,13 @@ module rof_comp_mct
 
   use mct_mod
   use ESMF
+#ifdef HAVE_MOAB
+  use seq_comm_mct,     only : mrofid ! id of moab rof app
+  use seq_comm_mct,     only : seq_comm_compare_mb_mct ! for debugging
+  use seq_comm_mct,      only: num_moab_exports
+  use iso_c_binding
+  use iMOAB, only: iMOAB_DefineTagStorage, iMOAB_SetDoubleTagStorage
+#endif
 !
 ! PUBLIC MEMBER FUNCTIONS:
   implicit none
@@ -83,6 +90,14 @@ module rof_comp_mct
   private :: rof_domain_mct           ! Set the river runoff model domain information
   private :: rof_export_mct           ! Export the river runoff model data to the CESM coupler
 !
+#ifdef HAVE_MOAB
+  private :: init_moab_rof   ! create moab mesh (cloud of points)
+  private :: rof_export_moab          ! Export the river runoff model data to the MOAB coupler
+  private :: rof_import_moab          ! import the river runoff model data from the MOAB coupler
+  integer , private :: mblsize, totalmbls, totalmbls_r
+  real (r8) , allocatable, private :: r2x_rm(:,:)  !  moab fields, similar to r2x_r transpose ! used in export to coupler
+  real (r8) , allocatable, private :: x2r_rm(:,:)  !  moab fields, similar to x2r_r transpose ! used in import from coupler
+#endif
 ! PRIVATE DATA MEMBERS:
 
 ! REVISION HISTORY:
@@ -101,6 +116,10 @@ contains
     ! back from (i.e. albedos, surface temperature and snow cover over land).
     !
     ! !ARGUMENTS:
+#ifdef HAVE_MOAB
+    integer :: nsend ! number of fields in seq_flds_r2x_fields
+    integer :: nrecv ! number of fields in seq_flds_x2r_fields
+#endif
     type(ESMF_Clock),           intent(inout) :: EClock     ! Input synchronization clock
     type(seq_cdata),            intent(inout) :: cdata_r    ! Input runoff-model driver data
     type(mct_aVect) ,           intent(inout) :: x2r_r      ! River import state
@@ -137,10 +156,17 @@ contains
     character(len=SHR_KIND_CL) :: hostname           ! hostname of machine running on
     character(len=SHR_KIND_CL) :: version            ! Model version
     character(len=SHR_KIND_CL) :: username           ! user running the model
+    character(len=SHR_KIND_CL) :: rtm_mesh           ! mesh file path
     character(len=8)           :: c_inst_index       ! instance number
     character(len=8)           :: c_npes             ! number of pes
     character(len=32), parameter :: sub = 'rof_init_mct'
     character(len=*),  parameter :: format = "('("//trim(sub)//") :',A)"
+
+#ifdef HAVE_MOAB
+    integer :: ierr, tagtype, numco,  tagindex 
+    character(CXX) ::  tagname ! for fields 
+    integer ::  ent_type
+#endif
     !---------------------------------------------------------------------------
 
     ! Obtain cdata_r (initalized in ccsm_comp_mod.F90 in the call to 
@@ -255,7 +281,7 @@ contains
     use_ocn_rof_two_way = ocn_rof_two_way
 
     ! Read namelist, grid and surface data
-    call Rtmini(rtm_active=rof_prognostic,flood_active=flood_present)
+    call Rtmini(rtm_active=rof_prognostic,flood_active=flood_present,rtm_mesh=rtm_mesh)
 
     if (rof_prognostic) then
        ! Initialize memory for input state
@@ -279,6 +305,51 @@ contains
        
        ! Create mct river runoff export state
        call rof_export_mct( r2x_r )
+
+#ifdef HAVE_MOAB
+       call init_moab_rof(mpicom_rof, ROFID)
+
+    ! initialize moab tag fields array
+       mblsize = lsize
+       nsend = mct_avect_nRattr(r2x_r)
+       totalmbls = mblsize * nsend ! size of the double array
+       allocate (r2x_rm(lsize, nsend) )
+      ! define tags according to the seq_flds_r2x_fields 
+       tagtype = 1  ! dense, double
+       numco = 1 !  one value per cell / entity
+       tagname = trim(seq_flds_r2x_fields)//C_NULL_CHAR
+       ierr = iMOAB_DefineTagStorage(mrofid, tagname, tagtype, numco,  tagindex )
+       if ( ierr == 1 ) then
+           call shr_sys_abort( sub//' ERROR: cannot define tags fro seq_flds_r2x_fields in moab' )
+       end if
+       ! set those fields to 0 in moab
+       r2x_rm = 0._r8
+       ent_type = 0 ! rof is point cloud on this side
+       ierr = iMOAB_SetDoubleTagStorage ( mrofid, tagname, totalmbls , ent_type, r2x_rm(1,1))
+       if (ierr > 0 )  &
+          call shr_sys_abort( sub//' Error: fail to set to 0 seq_flds_x2r_fields ')
+       ! allocate now the import from coupler array
+       nrecv = mct_avect_nRattr(x2r_r)
+       totalmbls_r = mblsize * nrecv ! size of the double array
+       allocate (x2r_rm(lsize, nrecv) )
+      ! define tags according to the seq_flds_x2r_fields 
+       tagtype = 1  ! dense, double
+       numco = 1 !  one value per cell / entity
+       tagname = trim(seq_flds_x2r_fields)//C_NULL_CHAR
+       ierr = iMOAB_DefineTagStorage(mrofid, tagname, tagtype, numco,  tagindex )
+       if ( ierr == 1 ) then
+           call shr_sys_abort( sub//' ERROR: cannot define tags for seq_flds_x2r_fields in moab' )
+       end if
+       ! set those fields to 0 in moab
+       x2r_rm = 0._r8
+       ierr = iMOAB_SetDoubleTagStorage ( mrofid, tagname, totalmbls_r , ent_type, x2r_rm(1,1))
+       if (ierr > 0 )  &
+          call shr_sys_abort( sub//' Error: fail to set to 0 seq_flds_x2r_fields ')
+  ! also load initial data to moab tags, fill with some initial data
+       call rof_export_moab(EClock)
+
+!  endif HAVE_MOAB
+#endif
     else
        call seq_infodata_PutData(infodata, rofice_present=.false.)
     end if
@@ -287,6 +358,10 @@ contains
     call seq_infodata_PutData( infodata, rof_present=rof_prognostic, rof_nx = rtmlon, rof_ny = rtmlat, &
          rof_prognostic=rof_prognostic, rofocn_prognostic=use_ocn_rof_two_way)
     call seq_infodata_PutData( infodata, flood_present=flood_present)
+#ifdef HAVE_MOAB
+    ! send path of river mesh to MOAB coupler.
+    call seq_infodata_PutData( infodata, rof_mesh=rtm_mesh)
+#endif
 
     ! Reset shr logging to original values
     call shr_file_setLogUnit (shrlogunit)
@@ -337,6 +412,14 @@ contains
     character(len=32), parameter    :: sub = "rof_run_mct"
     !-------------------------------------------------------
 
+#ifdef MOABCOMP
+    real(r8)                 :: difference
+    type(mct_list) :: temp_list
+    integer :: size_list, index_list, ent_type
+    type(mct_string)    :: mctOStr  !
+    character(CXX) ::tagname, mct_field, modelStr
+#endif 
+
 #if (defined _MEMTRACE)
     if(masterproc) then
        lbnum=1
@@ -358,6 +441,28 @@ contains
     call t_startf ('lc_rof_import')
     call rof_import_mct( x2r_r)
     call t_stopf ('lc_rof_import')
+#ifdef HAVE_MOAB
+
+#ifdef MOABCOMP
+    ! loop over all fields in seq_flds_x2r_fields
+    call mct_list_init(temp_list ,seq_flds_x2r_fields)
+    size_list=mct_list_nitem (temp_list)
+    ent_type = 0 ! entity type is vertex for phys atm
+    if (masterproc) print *, num_moab_exports, trim(seq_flds_x2r_fields), ' rof import check'
+    modelStr='rof run'
+    do index_list = 1, size_list
+      call mct_list_get(mctOStr,index_list,temp_list)
+      mct_field = mct_string_toChar(mctOStr)
+      tagname= trim(mct_field)//C_NULL_CHAR
+      call seq_comm_compare_mb_mct(modelStr, mpicom_rof, x2r_r, mct_field,  mrofid, tagname, ent_type, difference)
+    enddo
+    call mct_list_clean(temp_list)
+
+#endif
+
+    call rof_import_moab(EClock )
+#endif
+    
 
     ! Run mosart (input is *runin, output is rtmCTL%runoff)
     ! First advance mosart time step
@@ -369,6 +474,10 @@ contains
     ! Map roff data to MCT datatype (input is rtmCTL%runoff, output is r2x_r)
     call t_startf ('lc_rof_export')
     call rof_export_mct( r2x_r )
+#ifdef HAVE_MOAB
+    ! Map roff data to MOAB datatype ; load fields/tags in MOAB from rtmCTL%runoff 
+    call rof_export_moab(EClock)
+#endif
     call t_stopf ('lc_rof_export')
 
     ! Check that internal clock is in sync with master clock
@@ -413,6 +522,10 @@ contains
     !-----------------------------------------------------
 
    ! fill this in
+#ifdef HAVE_MOAB
+    ! deallocate moab fields array
+      deallocate (r2x_rm)
+#endif
   end subroutine rof_final_mct
 
 !===============================================================================
@@ -827,5 +940,389 @@ contains
     endif
 
   end subroutine rof_export_mct
+
+#ifdef HAVE_MOAB
+  subroutine init_moab_rof(mpicom_rof, ROFID)
+    ! use rtmCTL that has all we need
+    use seq_comm_mct,      only: mrofid  ! id of moab rof app
+    use shr_const_mod, only: SHR_CONST_PI
+    use iMOAB,  only       : iMOAB_RegisterApplication, iMOAB_CreateVertices, iMOAB_WriteMesh, &
+    iMOAB_SetIntTagStorage, &
+    iMOAB_ResolveSharedEntities, iMOAB_CreateElements, iMOAB_MergeVertices, iMOAB_UpdateMeshInfo
+
+    integer, intent(in) :: mpicom_rof
+    integer, intent(in) :: ROFID ! passed along
+
+    integer,allocatable :: gindex(:)  ! Number the local grid points; used for global ID
+    integer lsz !  keep local size
+    integer gsize ! global size, that we do not need, actually
+    integer n, ni
+    ! local variables to fill in data
+    integer, dimension(:), allocatable :: vgids
+    real(r8), dimension(:), allocatable :: coords
+    !  retrieve everything we need from rtmCTL
+    ! number of vertices is the size of local rof gsmap ?
+    real(r8), dimension(:), allocatable :: moab_vert_coords  ! temporary
+    real(r8)   :: latv, lonv
+    integer   dims, i, iv, ilat, ilon, igdx, ierr, tagindex
+    integer tagtype, numco, ent_type, mbtype, block_ID
+    character*100 outfile, wopts, localmeshfile, tagname
+    real(r8) :: re = SHR_CONST_REARTH*0.001_r8 ! radius of earth (km)
+    character*32  appname
+    character(len=32), parameter :: sub = 'init_moab_rof'
+    character(len=*),  parameter :: format = "('("//trim(sub)//") :',A)"
+
+    appname="ROFMB"//C_NULL_CHAR ! only if rof_prognostic
+    ! first rof instance, should be
+    ierr = iMOAB_RegisterApplication(appname, mpicom_rof, ROFID, mrofid)
+       if (ierr > 0 )  &
+          call shr_sys_abort( sub//' Error: cannot register moab app')
+       if(masterproc) then
+          write(iulog,*) " "
+          write(iulog,*) "register MOAB ROF app:", trim(appname), "  mrofid=", mrofid, " ROFID=", ROFID
+          write(iulog,*) " "
+       endif
+
+    dims  =3 ! store as 3d mesh
+
+    ! number the local grid
+    lsz = rtmCTL%lnumr
+
+    allocate(vgids(lsz)) ! use it for global ids, for elements in full mesh or vertices in point cloud
+    allocate(coords(lsz)) ! use it for area, lats lons
+
+    do n = 1, lsz
+       vgids(n) = rtmCTL%gindex(rtmCTL%begr+n-1)  ! local to global !
+    end do
+    gsize = rtmCTL%numr ! size of the total grid
+    ! old point cloud mesh
+    allocate(moab_vert_coords(lsz*dims))
+    do i = 1, lsz
+      n = rtmCTL%begr+i-1
+      lonv = rtmCTL%lonc(n) *SHR_CONST_PI/180.
+      latv = rtmCTL%latc(n) *SHR_CONST_PI/180.
+      moab_vert_coords(3*i-2)=COS(latv)*COS(lonv)
+      moab_vert_coords(3*i-1)=COS(latv)*SIN(lonv)
+      moab_vert_coords(3*i  )=SIN(latv)
+    enddo
+    ierr = iMOAB_CreateVertices(mrofid, lsz*3, dims, moab_vert_coords)
+    if (ierr > 0 )  &
+      call shr_sys_abort( sub//' Error: fail to create MOAB vertices in runoff model')
+
+    tagtype = 0  ! dense, integer
+    numco = 1
+    tagname='GLOBAL_ID'//C_NULL_CHAR
+    ierr = iMOAB_DefineTagStorage(mrofid, tagname, tagtype, numco,  tagindex )
+    if (ierr > 0 )  &
+      call shr_sys_abort( sub//' Error: fail to retrieve GLOBAL_ID tag ')
+
+    ent_type = 0 ! vertex type
+    ierr = iMOAB_SetIntTagStorage ( mrofid, tagname, lsz , ent_type, vgids)
+    if (ierr > 0 )  &
+      call shr_sys_abort( sub//' Error: fail to set GLOBAL_ID tag ')
+
+    ierr = iMOAB_ResolveSharedEntities( mrofid, lsz, vgids );
+    if (ierr > 0 )  &
+      call shr_sys_abort( sub//' Error: fail to resolve shared entities')
+
+    !there are no shared entities, but we will set a special partition tag, in order to see the
+    ! partitions ; it will be visible with a Pseudocolor plot in VisIt init_moab_rof
+    tagname='partition'//C_NULL_CHAR
+    ierr = iMOAB_DefineTagStorage(mrofid, tagname, tagtype, numco,  tagindex )
+    if (ierr > 0 )  &
+      call shr_sys_abort( sub//' Error: fail to create new partition tag ')
+
+    vgids = iam
+    ierr = iMOAB_SetIntTagStorage ( mrofid, tagname, lsz , ent_type, vgids)
+    if (ierr > 0 )  &
+      call shr_sys_abort( sub//' Error: fail to set partition tag ')
+
+  ! set domain tags
+    tagtype = 1 ! dense, double;
+
+    tagname=trim(seq_flds_dom_fields)//C_NULL_CHAR
+    ierr = iMOAB_DefineTagStorage(mrofid, tagname, tagtype, numco,  tagindex )
+    if (ierr > 0 )  &
+      call shr_sys_abort( sub//' Error: fail to create domain tags ')
+
+    do n = 1, lsz
+       coords(n) = rtmCTL%mask(rtmCTL%begr+n-1)  ! local to global !
+    end do
+
+    tagname='mask'//C_NULL_CHAR
+    ierr = iMOAB_SetDoubleTagStorage ( mrofid, tagname, lsz , ent_type, coords)
+    if (ierr > 0 )  &
+      call shr_sys_abort( sub//' Error: fail to set mask tag ')
+
+    ni = 0
+    do n = rtmCTL%begr,rtmCTL%endr
+       ni = ni + 1
+       coords(ni) = rtmCTL%area(n)*1.0e-6_r8/(re*re)
+    end do
+
+    tagname='area'//C_NULL_CHAR
+
+    ierr = iMOAB_SetDoubleTagStorage ( mrofid, tagname, lsz , ent_type, coords)
+    if (ierr > 0 )  &
+      call shr_sys_abort(sub//' Error: fail to set area tag ')
+
+    tagname='aream'//C_NULL_CHAR
+
+   !  ierr = iMOAB_SetDoubleTagStorage ( mrofid, tagname, lsz , ent_type, coords)
+   !  if (ierr > 0 )  &
+   !    call shr_sys_abort(sub//' Error: fail to set aream tag ')
+
+    ierr = iMOAB_UpdateMeshInfo ( mrofid )
+    if (ierr > 0 )  &
+      call shr_sys_abort(sub//' Error: fail to update mesh info ')
+    deallocate(moab_vert_coords)
+    deallocate(vgids)
+    deallocate(coords)
+#ifdef MOABDEBUG
+    !     write out the mesh file to disk, in parallel
+    outfile = 'wholeRof.h5m'//C_NULL_CHAR
+    wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
+    ierr = iMOAB_WriteMesh(mrofid, outfile, wopts)
+    if (ierr > 0 )  &
+      call shr_sys_abort( sub//' Error: fail to write the moab runoff mesh file')
+#endif
+  end subroutine init_moab_rof
+
+
+subroutine rof_export_moab(EClock)
+ ! copy 
+     !---------------------------------------------------------------------------
+    ! DESCRIPTION:
+    ! Send the runoff model export state to the coupler
+    ! convert from m3/s to kg/m2s
+    !
+    ! ARGUMENTS:
+   use seq_comm_mct,      only: mrofid  ! id of moab rof app
+
+   use iMOAB,  only       :  iMOAB_WriteMesh
+   implicit none
+   !
+   type(ESMF_Clock) , intent(inout) :: EClock    ! Input synchronization clock from driver
+   ! LOCAL VARIABLES
+   integer :: ni, n, nt, nliq, nfrz, lsz, ierr, ent_type
+   logical,save :: first_time = .true.
+   character(len=32), parameter :: sub = 'rof_export_moab'
+
+   character*100 outfile, wopts, localmeshfile, lnum
+   character(CXX) :: tagname
+   integer :: cur_rof_stepno
+   !---------------------------------------------------------------------------
+   nliq = 0
+    nfrz = 0
+    do nt = 1,nt_rtm
+       if (trim(rtm_tracers(nt)) == 'LIQ') then
+          nliq = nt
+       endif
+       if (trim(rtm_tracers(nt)) == 'ICE') then
+          nfrz = nt
+       endif
+    enddo
+    if (nliq == 0 .or. nfrz == 0) then
+       write(iulog,*) trim(sub),': ERROR in rtm_tracers LIQ ICE ',nliq,nfrz,rtm_tracers
+       call shr_sys_abort()
+    endif
+
+    r2x_rm = 0._r8
+
+    if (first_time) then
+       if (masterproc) then
+       if ( ice_runoff )then
+          write(iulog,*)'Snow capping will flow out in frozen river runoff'
+       else
+          write(iulog,*)'Snow capping will flow out in liquid river runoff'
+       endif
+       endif
+       first_time = .false.
+    end if
+
+    ni = 0
+    if ( ice_runoff )then
+       ! separate liquid and ice runoff
+       do n = rtmCTL%begr,rtmCTL%endr
+          ni = ni + 1
+          r2x_rm(ni,index_r2x_Forr_rofl) =  rtmCTL%direct(n,nliq) / (rtmCTL%area(n)*0.001_r8)
+          r2x_rm(ni,index_r2x_Forr_rofi) =  rtmCTL%direct(n,nfrz) / (rtmCTL%area(n)*0.001_r8)
+          if (rtmCTL%mask(n) >= 2) then
+             ! liquid and ice runoff are treated separately - this is what goes to the ocean
+             r2x_rm(ni,index_r2x_Forr_rofl) = r2x_rm(ni,index_r2x_Forr_rofl) + &
+                rtmCTL%runoff(n,nliq) / (rtmCTL%area(n)*0.001_r8)
+             r2x_rm(ni,index_r2x_Forr_rofi) = r2x_rm(ni,index_r2x_Forr_rofi) + &
+                rtmCTL%runoff(n,nfrz) / (rtmCTL%area(n)*0.001_r8)
+             if (ni > rtmCTL%lnumr) then
+                write(iulog,*) sub, ' : ERROR runoff count',n,ni
+                call shr_sys_abort( sub//' : ERROR runoff > expected' )
+             endif
+          endif
+       end do
+    else
+       ! liquid and ice runoff added to liquid runoff, ice runoff is zero
+       do n = rtmCTL%begr,rtmCTL%endr
+          ni = ni + 1
+          r2x_rm(ni,index_r2x_Forr_rofl) =  &
+             (rtmCTL%direct(n,nfrz)+rtmCTL%direct(n,nliq)) / (rtmCTL%area(n)*0.001_r8)
+          if (rtmCTL%mask(n) >= 2) then
+             r2x_rm(ni,index_r2x_Forr_rofl) = r2x_rm(ni,index_r2x_Forr_rofl) + &
+                (rtmCTL%runoff(n,nfrz)+rtmCTL%runoff(n,nliq)) / (rtmCTL%area(n)*0.001_r8)
+             if (ni > rtmCTL%lnumr) then
+                write(iulog,*) sub, ' : ERROR runoff count',n,ni
+                call shr_sys_abort( sub//' : ERROR runoff > expected' )
+             endif
+          endif
+       end do
+    end if
+
+    ! Flooding back to land, sign convention is positive in land->rof direction
+    ! so if water is sent from rof to land, the flux must be negative.
+    ni = 0
+    do n = rtmCTL%begr, rtmCTL%endr
+       ni = ni + 1
+       r2x_rm(ni,index_r2x_Flrr_flood)   = -rtmCTL%flood(n) / (rtmCTL%area(n)*0.001_r8)
+       r2x_rm(ni,index_r2x_Flrr_volr)    = (Trunoff%wr(n,nliq) + Trunoff%wt(n,nliq)) / rtmCTL%area(n)
+       r2x_rm(ni,index_r2x_Flrr_volrmch) = Trunoff%wr(n,nliq) / rtmCTL%area(n)
+       r2x_rm(ni,index_r2x_Flrr_supply)  = 0._r8
+       r2x_rm(ni,index_r2x_Flrr_deficit)  = 0._r8
+       if (wrmflag) then
+          r2x_rm(ni,index_r2x_Flrr_supply)  = StorWater%Supply(n) / (rtmCTL%area(n)*0.001_r8)   !converted to mm/s
+          r2x_rm(ni,index_r2x_Flrr_deficit)  = (abs(rtmCTL%qdem(n,nliq)) - abs(StorWater%Supply(n))) / (rtmCTL%area(n)*0.001_r8)   !send deficit back to ELM
+       endif
+    end do
+
+   tagname=trim(seq_flds_r2x_fields)//C_NULL_CHAR
+   ent_type = 0 ! vertices
+   ierr = iMOAB_SetDoubleTagStorage ( mrofid, tagname, totalmbls , ent_type, r2x_rm(1,1) )
+   if (ierr > 0 )  &
+      call shr_sys_abort( sub//' Error: fail to set moab '// trim(seq_flds_r2x_fields) )
+   call seq_timemgr_EClockGetData( EClock, stepno=cur_rof_stepno )
+#ifdef MOABDEBUG
+      write(lnum,"(I0.2)")cur_rof_stepno
+      outfile = 'wholeRof_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+      wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
+      ierr = iMOAB_WriteMesh(mrofid, outfile, wopts)
+      if (ierr > 0 )  &
+        call shr_sys_abort( sub//' fail to write the runoff mesh file with data')
+#endif
+
+! end copy
+end subroutine rof_export_moab
+
+!====================================================================================
+ 
+  subroutine rof_import_moab( EClock )
+
+    use iMOAB, only : iMOAB_GetDoubleTagStorage, iMOAB_WriteMesh
+    !---------------------------------------------------------------------------
+    ! DESCRIPTION:
+    ! Obtain the runoff input from the moab coupler
+    ! convert from kg/m2s to m3/s
+    !
+    ! ARGUMENTS:
+    implicit none
+    type(ESMF_Clock) , intent(inout) :: EClock    ! Input synchronization clock from driver
+     
+    !
+    ! LOCAL VARIABLES
+    integer :: n2, n, nt, begr, endr, nliq, nfrz
+    real(R8) :: tmp1, tmp2
+    real(R8) :: shum
+    character(CXX) ::  tagname ! 
+    integer  :: ent_type, ierr
+    integer :: cur_rof_stepno
+
+    character(len=32), parameter :: sub = 'rof_import_moab'
+    !---------------------------------------------------------------------------
+#ifdef MOABDEBUG
+    character*100 outfile, wopts, lnum
+#endif
+
+    call seq_timemgr_EClockGetData( EClock, stepno=cur_rof_stepno )
+#ifdef MOABDEBUG
+    write(lnum,"(I0.2)")cur_rof_stepno
+    outfile = 'RofImp_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+    wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
+    ierr = iMOAB_WriteMesh(mrofid, outfile, wopts)
+    if (ierr > 0 )  then
+       call shr_sys_abort(sub//'Error: fail to write rof state')
+    endif
+#endif   
+
+    ! populate the array x2r_rm with data from MOAB tags
+    tagname=trim(seq_flds_x2r_fields)//C_NULL_CHAR
+    ent_type = 0 ! vertices, point cloud
+    ierr = iMOAB_GetDoubleTagStorage ( mrofid, tagname, totalmbls_r , ent_type, x2r_rm(1,1) )
+    if ( ierr > 0) then
+      call shr_sys_abort(sub//'Error: fail to get  seq_flds_a2x_fields for atm physgrid moab mesh')
+    endif
+
+    ! Note that ***runin are fluxes
+    nliq = 0
+    nfrz = 0
+    do nt = 1,nt_rtm
+       if (trim(rtm_tracers(nt)) == 'LIQ') then
+          nliq = nt
+       endif
+       if (trim(rtm_tracers(nt)) == 'ICE') then
+          nfrz = nt
+       endif
+    enddo
+    if (nliq == 0 .or. nfrz == 0) then
+       write(iulog,*) trim(sub),': ERROR in rtm_tracers LIQ ICE ',nliq,nfrz,rtm_tracers
+       call shr_sys_abort()
+    endif
+
+  ! %rAttr( -> m(n2,    ,n2) -> )
+    begr = rtmCTL%begr
+    endr = rtmCTL%endr
+    do n = begr,endr
+       n2 = n - begr + 1
+
+       rtmCTL%qsur(n,nliq) = x2r_rm(n2,index_x2r_Flrl_rofsur) * (rtmCTL%area(n)*0.001_r8)
+       rtmCTL%qsub(n,nliq) = x2r_rm(n2,index_x2r_Flrl_rofsub) * (rtmCTL%area(n)*0.001_r8)
+       rtmCTL%qgwl(n,nliq) = x2r_rm(n2,index_x2r_Flrl_rofgwl) * (rtmCTL%area(n)*0.001_r8)
+       if (index_x2r_Flrl_rofdto > 0) then
+          rtmCTL%qdto(n,nliq) = x2r_rm(n2,index_x2r_Flrl_rofdto) * (rtmCTL%area(n)*0.001_r8)
+       else
+          rtmCTL%qdto(n,nliq) = 0.0_r8
+       endif
+       if (wrmflag) then
+          rtmCTL%qdem(n,nliq) = x2r_rm(n2,index_x2r_Flrl_demand) / TUnit%domainfrac(n) * (rtmCTL%area(n)*0.001_r8)
+       else
+          rtmCTL%qdem(n,nliq) = 0.0_r8
+       endif
+       rtmCTL%qsur(n,nfrz) = x2r_rm(n2,index_x2r_Flrl_rofi) * (rtmCTL%area(n)*0.001_r8)
+       rtmCTL%qsub(n,nfrz) = 0.0_r8
+       rtmCTL%qgwl(n,nfrz) = 0.0_r8
+       rtmCTL%qdto(n,nfrz) = 0.0_r8
+       rtmCTL%qdem(n,nfrz) = 0.0_r8
+
+       if(heatflag) then
+          rtmCTL%Tqsur(n) = x2r_rm(n2,index_x2r_Flrl_Tqsur)
+          rtmCTL%Tqsub(n) = x2r_rm(n2,index_x2r_Flrl_Tqsub)
+          THeat%Tqsur(n) = rtmCTL%Tqsur(n)
+          THeat%Tqsub(n) = rtmCTL%Tqsub(n)
+       
+          THeat%forc_t(n) = x2r_rm(n2,index_x2r_Sa_tbot)
+          THeat%forc_pbot(n) = x2r_rm(n2,index_x2r_Sa_pbot)
+          tmp1 = x2r_rm(n2,index_x2r_Sa_u   )
+          tmp2 = x2r_rm(n2,index_x2r_Sa_v   )
+          THeat%forc_wind(n) = sqrt(tmp1*tmp1 + tmp2*tmp2)
+          THeat%forc_lwrad(n)= x2r_rm(n2,index_x2r_Faxa_lwdn )
+          THeat%forc_solar(n)= x2r_rm(n2,index_x2r_Faxa_swvdr) + x2r_rm(n2,index_x2r_Faxa_swvdf) + &
+                               x2r_rm(n2,index_x2r_Faxa_swndr) + x2r_rm(n2,index_x2r_Faxa_swndf)
+          shum = x2r_rm(n2,index_x2r_Sa_shum)
+          THeat%forc_vp(n)   = shum * THeat%forc_pbot(n)  / (0.622_r8 + 0.378_r8 * shum)
+          THeat%coszen(n)    = x2r_rm(n2,index_x2r_coszen_str)
+       end if
+    enddo
+
+  end subroutine rof_import_moab
+
+
+! end #ifdef HAVE_MOAB
+#endif 
 
 end module rof_comp_mct

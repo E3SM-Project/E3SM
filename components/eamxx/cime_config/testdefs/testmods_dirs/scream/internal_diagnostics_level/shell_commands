@@ -1,0 +1,2 @@
+$CIMEROOT/../components/eamxx/scripts/atmchange --all internal_diagnostics_level=1 atmosphere_processes::internal_diagnostics_level=0 -b
+./xmlchange POSTRUN_SCRIPT="$CIMEROOT/../components/eamxx/tests/postrun/check_hashes_ers.py"

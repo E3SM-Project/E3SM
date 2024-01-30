@@ -3,6 +3,8 @@
 #include "dynamics/homme/physics_dynamics_remapper.hpp"
 #include "dynamics/homme/homme_dynamics_helpers.hpp"
 
+#include "share/util/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp"
+
 #ifndef NDEBUG
 #include "share/property_checks/field_nan_check.hpp"
 #include "share/property_checks/field_lower_bound_check.hpp"
@@ -137,7 +139,7 @@ void HommeGridsManager::build_dynamics_grid () {
     return;
   }
 
-  using gid_t = AbstractGrid::gid_type;
+  using gid_type = AbstractGrid::gid_type;
 
   // Get dimensions and create "empty" grid
   const int nlelem = get_num_local_elems_f90();
@@ -156,8 +158,8 @@ void HommeGridsManager::build_dynamics_grid () {
   auto lat     = dyn_grid->create_geometry_data("lat",layout2d,rad);
   auto lon     = dyn_grid->create_geometry_data("lon",layout2d,rad);
 
-  auto dg_dofs_h = dg_dofs.get_view<gid_t*,Host>();
-  auto cg_dofs_h = cg_dofs.get_view<gid_t*,Host>();
+  auto dg_dofs_h = dg_dofs.get_view<gid_type*,Host>();
+  auto cg_dofs_h = cg_dofs.get_view<gid_type*,Host>();
   auto elgpgp_h  = elgpgp.get_view<int**,Host>();
   auto lat_h     = lat.get_view<Real***,Host>();
   auto lon_h     = lon.get_view<Real***,Host>();
@@ -197,6 +199,10 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance) {
     return;
   }
 
+  if (type=="PG2") {
+    fvphyshack = true;
+  }
+
   // Get the grid pg_type
   const int pg_code = m_pg_codes.at(type).at(rebalance);
 
@@ -217,9 +223,9 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance) {
   auto lon  = phys_grid->create_geometry_data("lon",layout2d,rad);
   auto area = phys_grid->create_geometry_data("area",layout2d,rad*rad);
 
-  using gid_t = AbstractGrid::gid_type;
+  using gid_type = AbstractGrid::gid_type;
 
-  auto dofs_h = dofs.get_view<gid_t*,Host>();
+  auto dofs_h = dofs.get_view<gid_type*,Host>();
   auto lat_h  = lat.get_view<Real*,Host>();
   auto lon_h  = lon.get_view<Real*,Host>();
   auto area_h = area.get_view<Real*,Host>();
@@ -262,6 +268,14 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance) {
       auto f_d = get_grid("Dynamics")->get_geometry_data(f.name());
       f.deep_copy(f_d);
     }
+  }
+
+  if (is_planar_geometry_f90()) {
+    // If running with IOP, store grid length size
+    FieldLayout scalar0d({},{});
+    auto dx_short_f = phys_grid->create_geometry_data("dx_short",scalar0d,rad);
+    dx_short_f.get_view<Real,Host>()() = get_dx_short_f90(0);
+    dx_short_f.sync_to_dev();
   }
 
   phys_grid->m_short_name = type;

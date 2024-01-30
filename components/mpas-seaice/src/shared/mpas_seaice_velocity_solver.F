@@ -20,7 +20,7 @@ module seaice_velocity_solver
   use mpas_dmpar
   use mpas_timer
   use mpas_log, only: mpas_log_write, mpas_log_info
-  use ice_constants_colpkg, only: puny
+  use seaice_constants, only: seaicePuny
 
   implicit none
 
@@ -62,9 +62,12 @@ module seaice_velocity_solver
   ! velocity solver constants
   real(kind=RKIND), parameter, private :: &
        sinOceanTurningAngle = 0.0_RKIND, & ! northern hemisphere
-       cosOceanTurningAngle = 1.0_RKIND, & ! northern hemisphere
-       seaiceAreaMinimum = puny, &
-       seaiceMassMinimum = 10.0_RKIND*puny
+       cosOceanTurningAngle = 1.0_RKIND    ! northern hemisphere
+
+  ! velocity solver constants initialized in seaice_init_velocity_solver
+  real(kind=RKIND), private :: &
+       seaiceAreaMinimum, &
+       seaiceMassMinimum
 
 contains
 
@@ -133,6 +136,10 @@ contains
 
     integer :: &
          ierr
+
+    ! set up min area and mass for velocity solver
+    seaiceAreaMinimum = seaicePuny
+    seaiceMassMinimum = 10.0_RKIND*seaicePuny
 
     ! set up the dynamically locked cell mask
     call dynamically_locked_cell_mask(domain)

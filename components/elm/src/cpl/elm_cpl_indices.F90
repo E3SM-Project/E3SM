@@ -62,6 +62,7 @@ module elm_cpl_indices
   integer, public ::index_l2x_Fall_flxdst3    ! dust flux size bin 3    
   integer, public ::index_l2x_Fall_flxdst4    ! dust flux size bin 4
   integer, public ::index_l2x_Fall_flxvoc     ! MEGAN fluxes  
+  integer, public ::index_l2x_Fall_flxnh3     ! FAN flux
 
   ! In the following, index 0 is bare land, other indices are glc elevation classes
   integer, public ::index_l2x_Sl_tsrf(0:glc_nec_max)   = 0 ! glc MEC temperature
@@ -148,6 +149,7 @@ contains
     use mct_mod        , only: mct_aVect_clean, mct_avect_nRattr
     use seq_drydep_mod , only: drydep_fields_token, lnd_drydep
     use shr_megan_mod  , only: shr_megan_fields_token, shr_megan_mechcomps_n
+    use shr_fan_mod    , only: shr_fan_fields_token, shr_fan_to_atm
     use elm_varctl     , only: use_voc
     !
     ! !ARGUMENTS:
@@ -237,6 +239,13 @@ contains
     else
        index_l2x_Fall_flxvoc = 0
     endif
+ 
+    ! FAN fluxes
+    if (shr_fan_to_atm) then
+       index_l2x_Fall_flxnh3 = mct_avect_indexra(l2x,trim(shr_fan_fields_token))
+    else
+       index_l2x_Fall_flxnh3 = 0
+    end if
 
     !-------------------------------------------------------------
     ! drv -> clm

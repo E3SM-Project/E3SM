@@ -2777,7 +2777,7 @@ CONTAINS
     !EOP
 
     !----- local -----
-    integer                     :: ind
+    integer                     :: ind, i
     character(len=*), parameter :: subname = '(seq_infodata_print) '
     character(len=*), parameter ::  F0A = "(2A,A)"
     character(len=*), parameter ::  F0L = "(2A,L3)"
@@ -2921,7 +2921,13 @@ CONTAINS
     write(logunit,F0L) subname,'mct_usevector            = ', infodata%mct_usevector
 
     write(logunit,F0I) subname,'nlmaps_verbosity         = ', infodata%nlmaps_verbosity
-    write(logunit,F0I) subname,'nlmaps_exclude_fields    = ', infodata%nlmaps_exclude_fields
+
+    write(logunit,'(2A)',advance='no') subname,'nlmaps_exclude_fields    = '
+    do i = 1, size(infodata%nlmaps_exclude_fields)
+       if (len(trim(infodata%nlmaps_exclude_fields(i))) == 0) cycle
+       write(logunit,'(3A)',advance='no') ' ', trim(infodata%nlmaps_exclude_fields(i))
+    end do
+    write(logunit,'(A)') ''
 
     write(logunit,F0S) subname,'info_debug               = ', infodata%info_debug
     write(logunit,F0L) subname,'bfbflag                  = ', infodata%bfbflag

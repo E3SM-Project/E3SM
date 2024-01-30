@@ -7,18 +7,22 @@ time_stepping:
   run_t0: ${RUN_T0}  # YYYY-MM-DD-XXXXX
 
 atmosphere_processes:
-  atm_procs_list: (SurfaceCouplingImporter,SurfaceCouplingExporter)
+  atm_procs_list: [SurfaceCouplingImporter,SurfaceCouplingExporter]
   schedule_type: Sequential
 
 grids_manager:
   Type: Mesh Free
-  number_of_global_columns:   218
-  number_of_vertical_levels:  72  # Will want to change to 128 when a valid unit test is available.
+  grids_names: [Physics GLL]
+  Physics GLL:
+    type: point_grid
+    aliases: [Physics]
+    number_of_global_columns:   218
+    number_of_vertical_levels:  72
 
 initial_conditions:
   # The name of the file containing the initial conditions for this test.
   Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
-  topography_filename: ${TOPO_DATA_DIR}/USGS-gtopo30_ne4np4pg2_16x_converted.c20200527.nc
+  topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
   # Some fields needed for the exports (not in ic file)
   precip_ice_surf_mass: 1.0
   precip_liq_surf_mass: 2.0
@@ -33,5 +37,5 @@ initial_conditions:
 
 # The parameters for I/O control
 Scorpio:
-  output_yaml_files: ["surface_coupling_output.yaml"]
+  output_yaml_files: ["output.yaml"]
 ...

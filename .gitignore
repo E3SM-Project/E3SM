@@ -29,3 +29,8 @@ site
 
 # Ignore emacs backup files
 *~
+
+# Ignore mkdocs site-generated files in eamxx
+components/eamxx/site/*
+# Ignore auto-generated eamxx_params.md file
+components/eamxx/docs/common/eamxx_params.md

@@ -87,6 +87,7 @@
       <value compset="2010(?:SOI)?_EAM%CMIP6-HR_ELM">2010_CMIP6HR_control</value>
       <!-- Use cases for SCREAM compsets -->
       <value compset="2010(?:SOI)?_.*SCREAM"                    >2010_defscream_control</value>
+      <value compset="2010(?:SOI)?_.*EAMXX"                    >2010_defscream_control</value>
       <value compset="2010(?:SOI)?_EAM.*SCREAM-[LH]R-DYAMOND2" >2010_dy2scream_control</value>
       <value compset="2000(?:SOI)?_EAM.*SCREAM"                 >2000_control</value>
       <!-- superfast chemistry compsets (use CMIP6 land configuration)-->
@@ -127,6 +128,8 @@
       <value compset="_ELM%[^_]*CNPRDCTCBC" >-bgc bgc -nutrient cnp -nutrient_comp_pathway rd  -soil_decomp ctc -methane </value>
       <value compset="_ELM%[^_]*CNECACTCBC" >-bgc bgc -nutrient cn  -nutrient_comp_pathway eca -soil_decomp ctc -methane </value>
       <value compset="_ELM%[^_]*CNPECACTCBC">-bgc bgc -nutrient cnp -nutrient_comp_pathway eca -soil_decomp ctc -methane </value>
+      <value compset="_ELM%[^_]*CNPRDCTCBCTOP">-bgc bgc -nutrient cnp -nutrient_comp_pathway rd  -soil_decomp ctc -methane -solar_rad_scheme top</value>
+
 
       <value compset="_ELM%[^_]*CNECACNTBC" >-bgc bgc -nutrient cn  -nutrient_comp_pathway eca -soil_decomp century -methane </value>
       <value compset="_ELM%[^_]*CNPECACNTBC">-bgc bgc -nutrient cnp -nutrient_comp_pathway eca -soil_decomp century -methane </value>

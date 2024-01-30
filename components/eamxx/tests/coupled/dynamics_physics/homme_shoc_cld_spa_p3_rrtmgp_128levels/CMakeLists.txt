@@ -1,16 +1,18 @@
 include (ScreamUtils)
 
+set (TEST_BASE_NAME homme_shoc_cld_spa_p3_rrtmgp_128levels)
+set (FIXTURES_BASE_NAME ${TEST_BASE_NAME}_generate_output_nc_files)
+
 # Get or create the dynamics lib
 #                 HOMME_TARGET   NP PLEV QSIZE_D
 CreateDynamicsLib("theta-l_kokkos"  4   128   10)
 
 # Create the test
-set (TEST_LABELS "dynamics;driver;shoc;cld;p3;rrtmgp;physics")
-set (NEED_LIBS cld_fraction shoc nudging spa p3 scream_rrtmgp ${dynLibName} scream_control scream_share physics_share diagnostics)
-CreateUnitTest(homme_shoc_cld_spa_p3_rrtmgp_128levels "homme_shoc_cld_spa_p3_rrtmgp_128levels.cpp" "${NEED_LIBS}"
-  LABELS ${TEST_LABELS}
+CreateADUnitTest(${TEST_BASE_NAME}
+  LABELS dynamics shoc cld p3 rrtmgp physics spa
+  LIBS cld_fraction shoc nudging spa p3 scream_rrtmgp ${dynLibName}
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
-  PROPERTIES FIXTURES_SETUP homme_shoc_cld_spa_p3_rrtmgp_128levels_generate_output_nc_files
+  FIXTURES_SETUP_INDIVIDUAL ${FIXTURES_BASE_NAME}
 )
 
 # Set AD configurable options
@@ -25,8 +27,8 @@ math (EXPR MAC_MIC_SUBCYCLES "(${ATM_TIME_STEP} + ${SHOC_MAX_DT} - 1) / ${SHOC_M
 ## Copy (and configure) yaml files needed by tests
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
              ${CMAKE_CURRENT_BINARY_DIR}/input.yaml)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/homme_shoc_cld_spa_p3_rrtmgp_128levels_output.yaml
-               ${CMAKE_CURRENT_BINARY_DIR}/homme_shoc_cld_spa_p3_rrtmgp_128levels_output.yaml)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/output.yaml
+               ${CMAKE_CURRENT_BINARY_DIR}/output.yaml)
 
 # Set homme's test options, so that we can configure the namelist correctly
 # Discretization/algorithm settings
@@ -38,11 +40,14 @@ set (HOMME_TEST_TIME_STEP 300)
 set (HOMME_THETA_FORM 1)
 set (HOMME_TTYPE 5)
 set (HOMME_SE_FTYPE 0)
+set (HOMME_TEST_TRANSPORT_ALG 0)
+set (HOMME_TEST_CUBED_SPHERE_MAP 0)
 
 # Hyperviscosity settings
 set (HOMME_TEST_HVSCALING 0)
 set (HOMME_TEST_HVS 1)
 set (HOMME_TEST_HVS_TOM 0)
+set (HOMME_TEST_HVS_Q 1)
 
 set (HOMME_TEST_NU 7e15)
 set (HOMME_TEST_NUDIV 1e15)
@@ -64,46 +69,32 @@ configure_file(${SCREAM_SRC_DIR}/dynamics/homme/tests/theta.nl
 set (TEST_INPUT_FILES
   scream/init/spa_file_unified_and_complete_ne4_20220428.nc
   scream/init/${EAMxx_tests_IC_FILE_128lev}
-  cam/topo/USGS-gtopo30_ne4np4pg2_16x_converted.c20200527.nc
+  cam/topo/${EAMxx_tests_TOPO_FILE}
 )
 foreach (file IN ITEMS ${TEST_INPUT_FILES})
   GetInputFile(${file})
 endforeach()
 
+# Compare output files produced by npX tests, to ensure they are bfb
+include (CompareNCFiles)
 
-## Finally compare all MPI rank output files against the single rank output as a baseline, using CPRNC
-## Only if running with 2+ ranks configurations
-# This test requires CPRNC
-if (TEST_RANK_END GREATER TEST_RANK_START)
-  include (BuildCprnc)
-  BuildCprnc()
-
-  set (BASE_TEST_NAME "homme_shoc_cld_spa_p3_rrtmgp_128levels")
-  math (EXPR CMP_RANK_START ${TEST_RANK_START}+1)
-  foreach (MPI_RANKS RANGE ${CMP_RANK_START} ${TEST_RANK_END})
-
-    set (SRC_FILE "${BASE_TEST_NAME}_output.INSTANT.nsteps_x1.np${MPI_RANKS}.${RUN_T0}.nc")
-    set (TGT_FILE "${BASE_TEST_NAME}_output.INSTANT.nsteps_x1.np${TEST_RANK_START}.${RUN_T0}.nc")
-    set (TEST_NAME "${BASE_TEST_NAME}_np${TEST_RANK_START}_vs_np${MPI_RANKS}_bfb")
-    add_test (NAME ${TEST_NAME}
-              COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}
-              WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-    set_tests_properties(${TEST_NAME} PROPERTIES LABELS "${TEST_LABELS}"
-              RESOURCE_LOCK ${BASE_TEST_NAME}
-              FIXTURES_REQUIRED homme_shoc_cld_spa_p3_rrtmgp_128levels_generate_output_nc_files)
-  endforeach()
-endif()
+CompareNCFilesFamilyMpi (
+  TEST_BASE_NAME ${TEST_BASE_NAME}
+  FILE_META_NAME ${TEST_BASE_NAME}_output.INSTANT.nsteps_x1.npMPIRANKS.${RUN_T0}.nc
+  MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
+  LABELS dynamics physics shoc cld p3 rrtmgp spa
+  META_FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_npMPIRANKS_omp1
+)
 
 # Check tendency calculation
 foreach (NRANKS RANGE ${TEST_RANK_START} ${TEST_RANK_END})
-  set (BASE_TEST_NAME "homme_shoc_cld_spa_p3_rrtmgp_128levels")
   set (script ${SCREAM_BASE_DIR}/scripts/check-tendencies)
-  set (fname ${BASE_TEST_NAME}_output.INSTANT.nsteps_x1.np${NRANKS}.${RUN_T0}.nc)
-  set (tname ${BASE_TEST_NAME}_tend_check_np${NRANKS})
+  set (fname ${TEST_BASE_NAME}_output.INSTANT.nsteps_x1.np${NRANKS}.${RUN_T0}.nc)
+  set (tname ${TEST_BASE_NAME}_tend_check_np${NRANKS})
   add_test (NAME ${tname}
     COMMAND ${script} -f ${fname} -v qv T_mid -t EAMxx_qv_tend EAMxx_T_mid_tend
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
   set_tests_properties (${tname} PROPERTIES
-    FIXTURES_REQUIRED homme_shoc_cld_spa_p3_rrtmgp_128levels_generate_output_nc_files
-    LABELS "${TEST_LABELS}")
+      LABELS "dynamics;shoc;cld;p3;rrtmgp;physics"
+      FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_np${NRANKS}_omp1)
 endforeach()

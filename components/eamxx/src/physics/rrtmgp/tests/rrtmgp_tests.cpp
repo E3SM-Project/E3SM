@@ -142,11 +142,21 @@ int run(int argc, char** argv) {
     real2d sw_flux_dir("sw_flux_dir", ncol, nlay+1);
     real2d lw_flux_up ("lw_flux_up" , ncol, nlay+1);
     real2d lw_flux_dn ("lw_flux_dn" , ncol, nlay+1);
+    real2d sw_clnclrsky_flux_up ("sw_clnclrsky_flux_up" , ncol, nlay+1);
+    real2d sw_clnclrsky_flux_dn ("sw_clnclrsky_flux_dn" , ncol, nlay+1);
+    real2d sw_clnclrsky_flux_dir("sw_clnclrsky_flux_dir", ncol, nlay+1);
     real2d sw_clrsky_flux_up ("sw_clrsky_flux_up" , ncol, nlay+1);
     real2d sw_clrsky_flux_dn ("sw_clrsky_flux_dn" , ncol, nlay+1);
     real2d sw_clrsky_flux_dir("sw_clrsky_flux_dir", ncol, nlay+1);
+    real2d sw_clnsky_flux_up ("sw_clnsky_flux_up" , ncol, nlay+1);
+    real2d sw_clnsky_flux_dn ("sw_clnsky_flux_dn" , ncol, nlay+1);
+    real2d sw_clnsky_flux_dir("sw_clnsky_flux_dir", ncol, nlay+1);
+    real2d lw_clnclrsky_flux_up ("lw_clnclrsky_flux_up" , ncol, nlay+1);
+    real2d lw_clnclrsky_flux_dn ("lw_clnclrsky_flux_dn" , ncol, nlay+1);
     real2d lw_clrsky_flux_up ("lw_clrsky_flux_up" , ncol, nlay+1);
     real2d lw_clrsky_flux_dn ("lw_clrsky_flux_dn" , ncol, nlay+1);
+    real2d lw_clnsky_flux_up ("lw_clnsky_flux_up" , ncol, nlay+1);
+    real2d lw_clnsky_flux_dn ("lw_clnsky_flux_dn" , ncol, nlay+1);
     real3d sw_bnd_flux_up ("sw_bnd_flux_up" , ncol, nlay+1, nswbands);
     real3d sw_bnd_flux_dn ("sw_bnd_flux_dn" , ncol, nlay+1, nswbands);
     real3d sw_bnd_flux_dir("sw_bnd_flux_dir", ncol, nlay+1, nswbands);
@@ -180,6 +190,8 @@ int run(int argc, char** argv) {
     // TODO: provide as inputs consistent with how aerosol is treated?
     const auto nswgpts = scream::rrtmgp::k_dist_sw.get_ngpt();
     const auto nlwgpts = scream::rrtmgp::k_dist_lw.get_ngpt();
+    auto cld_tau_sw_bnd = real3d("cld_tau_sw_bnd", ncol, nlay, nswbands);
+    auto cld_tau_lw_bnd = real3d("cld_tau_lw_bnd", ncol, nlay, nlwbands);
     auto cld_tau_sw = real3d("cld_tau_sw", ncol, nlay, nswgpts);
     auto cld_tau_lw = real3d("cld_tau_lw", ncol, nlay, nlwgpts);
 
@@ -192,13 +204,21 @@ int run(int argc, char** argv) {
             sfc_alb_dir, sfc_alb_dif, mu0,
             lwp, iwp, rel, rei, cld,
             aer_tau_sw, aer_ssa_sw, aer_asm_sw, aer_tau_lw,
+            cld_tau_sw_bnd, cld_tau_lw_bnd,  // outputs
             cld_tau_sw, cld_tau_lw,  // outputs
             sw_flux_up, sw_flux_dn, sw_flux_dir,
             lw_flux_up, lw_flux_dn,
+            sw_clnclrsky_flux_up, sw_clnclrsky_flux_dn, sw_clnclrsky_flux_dir,
             sw_clrsky_flux_up, sw_clrsky_flux_dn, sw_clrsky_flux_dir,
+            sw_clnsky_flux_up, sw_clnsky_flux_dn, sw_clnsky_flux_dir,
+            lw_clnclrsky_flux_up, lw_clnclrsky_flux_dn,
             lw_clrsky_flux_up, lw_clrsky_flux_dn,
+            lw_clnsky_flux_up, lw_clnsky_flux_dn,
             sw_bnd_flux_up, sw_bnd_flux_dn, sw_bnd_flux_dir,
-            lw_bnd_flux_up, lw_bnd_flux_dn, tsi_scaling, logger);
+            lw_bnd_flux_up, lw_bnd_flux_dn, tsi_scaling, logger,
+            true, true // extra_clnclrsky_diag, extra_clnsky_diag
+            // set them both to true because we are testing them below
+          );
 
     // Check values against baseline
     logger->info("Check values...\n");
@@ -214,6 +234,19 @@ int run(int argc, char** argv) {
     if (!rrtmgpTest::all_close(lw_flux_up_ref , lw_flux_up , 0.001)) nerr++;
     if (!rrtmgpTest::all_close(lw_flux_dn_ref , lw_flux_dn , 0.001)) nerr++;
 
+    // Because the aerosol optical properties are all set to zero, these fluxes must be equal
+    if (!rrtmgpTest::all_close(sw_flux_up , sw_clnsky_flux_up , 0.0000000001)) nerr++;
+    if (!rrtmgpTest::all_close(sw_clrsky_flux_up , sw_clnclrsky_flux_up , 0.0000000001)) nerr++;
+    if (!rrtmgpTest::all_close(sw_flux_dn , sw_clnsky_flux_dn , 0.0000000001)) nerr++;
+    if (!rrtmgpTest::all_close(sw_clrsky_flux_dn , sw_clnclrsky_flux_dn , 0.0000000001)) nerr++;
+    if (!rrtmgpTest::all_close(sw_flux_dir , sw_clnsky_flux_dir , 0.0000000001)) nerr++;
+    if (!rrtmgpTest::all_close(sw_clrsky_flux_dir , sw_clnclrsky_flux_dir , 0.0000000001)) nerr++;
+    if (!rrtmgpTest::all_close(lw_flux_up , lw_clnsky_flux_up , 0.0000000001)) nerr++;
+    if (!rrtmgpTest::all_close(lw_clrsky_flux_up , lw_clnclrsky_flux_up , 0.0000000001)) nerr++;
+    if (!rrtmgpTest::all_close(lw_flux_dn , lw_clnsky_flux_dn , 0.0000000001)) nerr++;
+    if (!rrtmgpTest::all_close(lw_clrsky_flux_dn , lw_clnclrsky_flux_dn , 0.0000000001)) nerr++;
+
+
     logger->info("Cleaning up...\n");
     // Clean up or else YAKL will throw errors
     scream::rrtmgp::rrtmgp_finalize();
@@ -227,11 +260,21 @@ int run(int argc, char** argv) {
     sw_flux_dir.deallocate();
     lw_flux_up.deallocate();
     lw_flux_dn.deallocate();
+    sw_clnclrsky_flux_up.deallocate();
+    sw_clnclrsky_flux_dn.deallocate();
+    sw_clnclrsky_flux_dir.deallocate();
     sw_clrsky_flux_up.deallocate();
     sw_clrsky_flux_dn.deallocate();
     sw_clrsky_flux_dir.deallocate();
+    sw_clnsky_flux_up.deallocate();
+    sw_clnsky_flux_dn.deallocate();
+    sw_clnsky_flux_dir.deallocate();
+    lw_clnclrsky_flux_up.deallocate();
+    lw_clnclrsky_flux_dn.deallocate();
     lw_clrsky_flux_up.deallocate();
     lw_clrsky_flux_dn.deallocate();
+    lw_clnsky_flux_up.deallocate();
+    lw_clnsky_flux_dn.deallocate();
     sw_bnd_flux_up.deallocate();
     sw_bnd_flux_dn.deallocate();
     sw_bnd_flux_dir.deallocate();
@@ -260,6 +303,8 @@ int run(int argc, char** argv) {
     aer_tau_lw.deallocate();
     cld_tau_sw.deallocate();
     cld_tau_lw.deallocate();
+    cld_tau_sw_bnd.deallocate();
+    cld_tau_lw_bnd.deallocate();
     yakl::finalize();
 
     return nerr != 0 ? 1 : 0;

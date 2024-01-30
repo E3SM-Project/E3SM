@@ -1,19 +1,8 @@
 include(${CMAKE_CURRENT_LIST_DIR}/common.cmake)
 common_setup()
 
-#message(STATUS "gcp PROJECT_NAME=${PROJECT_NAME} USE_CUDA=${USE_CUDA} KOKKOS_ENABLE_CUDA=${KOKKOS_ENABLE_CUDA}")
 # use default backend?
-
-if ("${PROJECT_NAME}" STREQUAL "E3SM")
-  if (SMP_PRESENT)
-    include (${EKAT_MACH_FILES_PATH}/kokkos/openmp.cmake)
-  else()
-    include (${EKAT_MACH_FILES_PATH}/kokkos/serial.cmake)
-  endif()
-else()
-  include (${EKAT_MACH_FILES_PATH}/kokkos/openmp.cmake)
-endif()
-
+include (${EKAT_MACH_FILES_PATH}/kokkos/openmp.cmake)
 include (${EKAT_MACH_FILES_PATH}/mpi/srun.cmake)
 
 set(CMAKE_CXX_FLAGS "-DTHRUST_IGNORE_CUB_VERSION_CHECK" CACHE STRING "" FORCE)

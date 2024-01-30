@@ -108,11 +108,21 @@ int main (int argc, char** argv) {
     real2d sw_flux_dn_dir("sw_flux_dn_dir", ncol, nlay+1);
     real2d lw_flux_up ("lw_flux_up" , ncol, nlay+1);
     real2d lw_flux_dn ("lw_flux_dn" , ncol, nlay+1);
+    real2d sw_clnclrsky_flux_up ("sw_clnclrsky_flux_up" , ncol, nlay+1);
+    real2d sw_clnclrsky_flux_dn ("sw_clnclrsky_flux_dn" , ncol, nlay+1);
+    real2d sw_clnclrsky_flux_dn_dir("sw_clnclrsky_flux_dn_dir", ncol, nlay+1);
     real2d sw_clrsky_flux_up ("sw_clrsky_flux_up" , ncol, nlay+1);
     real2d sw_clrsky_flux_dn ("sw_clrsky_flux_dn" , ncol, nlay+1);
     real2d sw_clrsky_flux_dn_dir("sw_clrsky_flux_dn_dir", ncol, nlay+1);
+    real2d sw_clnsky_flux_up ("sw_clnsky_flux_up" , ncol, nlay+1);
+    real2d sw_clnsky_flux_dn ("sw_clnsky_flux_dn" , ncol, nlay+1);
+    real2d sw_clnsky_flux_dn_dir("sw_clnsky_flux_dn_dir", ncol, nlay+1);
+    real2d lw_clnclrsky_flux_up ("lw_clnclrsky_flux_up" , ncol, nlay+1);
+    real2d lw_clnclrsky_flux_dn ("lw_clnclrsky_flux_dn" , ncol, nlay+1);
     real2d lw_clrsky_flux_up ("lw_clrsky_flux_up" , ncol, nlay+1);
     real2d lw_clrsky_flux_dn ("lw_clrsky_flux_dn" , ncol, nlay+1);
+    real2d lw_clnsky_flux_up ("lw_clnsky_flux_up" , ncol, nlay+1);
+    real2d lw_clnsky_flux_dn ("lw_clnsky_flux_dn" , ncol, nlay+1);
     real3d sw_bnd_flux_up ("sw_bnd_flux_up" , ncol, nlay+1, nswbands);
     real3d sw_bnd_flux_dn ("sw_bnd_flux_dn" , ncol, nlay+1, nswbands);
     real3d sw_bnd_flux_dir("sw_bnd_flux_dir", ncol, nlay+1, nswbands);
@@ -146,6 +156,8 @@ int main (int argc, char** argv) {
     // TODO: provide as inputs consistent with how aerosol is treated?
     const auto nswgpts = scream::rrtmgp::k_dist_sw.get_ngpt();
     const auto nlwgpts = scream::rrtmgp::k_dist_lw.get_ngpt();
+    auto cld_tau_sw_bnd = real3d("cld_tau_sw_bnd", ncol, nlay, nswbands);
+    auto cld_tau_lw_bnd = real3d("cld_tau_lw_bnd", ncol, nlay, nlwbands);
     auto cld_tau_sw = real3d("cld_tau_sw", ncol, nlay, nswgpts);
     auto cld_tau_lw = real3d("cld_tau_lw", ncol, nlay, nlwgpts);
 
@@ -160,11 +172,16 @@ int main (int argc, char** argv) {
         sfc_alb_dir, sfc_alb_dif, mu0,
         lwp, iwp, rel, rei, cld,
         aer_tau_sw, aer_ssa_sw, aer_asm_sw, aer_tau_lw,
+        cld_tau_sw_bnd, cld_tau_lw_bnd,
         cld_tau_sw, cld_tau_lw,  // outputs
         sw_flux_up, sw_flux_dn, sw_flux_dn_dir,
         lw_flux_up, lw_flux_dn,
+        sw_clnclrsky_flux_up, sw_clnclrsky_flux_dn, sw_clnclrsky_flux_dn_dir,
         sw_clrsky_flux_up, sw_clrsky_flux_dn, sw_clrsky_flux_dn_dir,
+        sw_clnsky_flux_up, sw_clnsky_flux_dn, sw_clnsky_flux_dn_dir,
+        lw_clnclrsky_flux_up, lw_clnclrsky_flux_dn,
         lw_clrsky_flux_up, lw_clrsky_flux_dn,
+        lw_clnsky_flux_up, lw_clnsky_flux_dn,
         sw_bnd_flux_up, sw_bnd_flux_dn, sw_bnd_flux_dir,
         lw_bnd_flux_up, lw_bnd_flux_dn, tsi_scaling,
         logger
@@ -204,6 +221,8 @@ int main (int argc, char** argv) {
     aer_tau_lw.deallocate();
     cld_tau_sw.deallocate();
     cld_tau_lw.deallocate();
+    cld_tau_sw_bnd.deallocate();
+    cld_tau_lw_bnd.deallocate();
     sw_flux_up_ref.deallocate();
     sw_flux_dn_ref.deallocate();
     sw_flux_dn_dir_ref.deallocate();
@@ -214,11 +233,21 @@ int main (int argc, char** argv) {
     sw_flux_dn_dir.deallocate();
     lw_flux_up.deallocate();
     lw_flux_dn.deallocate();
+    sw_clnclrsky_flux_up.deallocate();
+    sw_clnclrsky_flux_dn.deallocate();
+    sw_clnclrsky_flux_dn_dir.deallocate();
     sw_clrsky_flux_up.deallocate();
     sw_clrsky_flux_dn.deallocate();
     sw_clrsky_flux_dn_dir.deallocate();
+    sw_clnsky_flux_up.deallocate();
+    sw_clnsky_flux_dn.deallocate();
+    sw_clnsky_flux_dn_dir.deallocate();
+    lw_clnclrsky_flux_up.deallocate();
+    lw_clnclrsky_flux_dn.deallocate();
     lw_clrsky_flux_up.deallocate();
     lw_clrsky_flux_dn.deallocate();
+    lw_clnsky_flux_up.deallocate();
+    lw_clnsky_flux_dn.deallocate();
     sw_bnd_flux_up.deallocate();
     sw_bnd_flux_dn.deallocate();
     sw_bnd_flux_dir.deallocate();

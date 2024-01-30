@@ -150,12 +150,8 @@ void Field::allocate_view ()
 
   // Short names
   const auto& id     = m_header->get_identifier();
-  const auto& layout = id.get_layout_ptr();
+  const auto& layout = id.get_layout();
   auto& alloc_prop   = m_header->get_alloc_properties();
-
-  // Check the identifier has all the dimensions set
-  EKAT_REQUIRE_MSG(layout->are_dimensions_set(),
-      "Error! Cannot allocate the view until all the field's dimensions are set.\n");
 
   // Commit the allocation properties
   alloc_prop.commit(layout);

@@ -225,7 +225,16 @@ Full pathname of master restart file for a branch run. (only used if RUN_TYPE=br
        input_pathname="abs" 
        group="mosart_inparm" 
        valid_values="" >
-Full pathname of input datafile for MOSART.
+Full pathname of input river routing file for MOSART.
+</entry>
+
+<entry id="frivinp_mesh"
+       type="char*256"
+       category="mosart"
+       input_pathname="abs"
+       group="mosart_inparm"
+       valid_values="" >
+Full pathname of input mesh file for MOSART.
 </entry>
 
 <entry id="rtmhist_fexcl1" 

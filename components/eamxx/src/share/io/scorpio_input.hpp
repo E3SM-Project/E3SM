@@ -7,6 +7,7 @@
 #include "share/grid/grids_manager.hpp"
 
 #include "ekat/ekat_parameter_list.hpp"
+#include "ekat/logging/ekat_logger.hpp"
 
 /*  The AtmosphereInput class handles all input streams to SCREAM.
  *  It is important to note that there does not exist an InputManager,
@@ -75,7 +76,7 @@ public:
                    const std::shared_ptr<const grid_type>& grid,
                    const std::vector<Field>& fields);
 
-  virtual ~AtmosphereInput () = default;
+  ~AtmosphereInput ();
 
   // --- Methods --- //
   // Initialize the class for reading into FieldManager-owned fields.
@@ -103,10 +104,20 @@ public:
   // Cleans up the class
   void finalize();
 
+  // Getters
+  std::string get_filename() { return m_filename; } // Simple getter to query the filename for this stream.
+
+  // Expose the ability to set field manager for cases like time_interpolation where we swap fields
+  // between field managers to avoid deep_copy.
+  void set_field_manager (const std::shared_ptr<const fm_type>& field_mgr);
+
+  // Option to add a logger
+  void set_logger(const std::shared_ptr<ekat::logger::LoggerBase>& atm_logger) {
+      m_atm_logger = atm_logger;
+  }
 protected:
 
   void set_grid (const std::shared_ptr<const AbstractGrid>& grid);
-  void set_field_manager (const std::shared_ptr<const fm_type>& field_mgr);
   void set_views (const std::map<std::string,view_1d_host>& host_views_1d,
                   const std::map<std::string,FieldLayout>&  layouts);
   void init_scorpio_structures ();
@@ -132,6 +143,9 @@ protected:
 
   bool m_inited_with_fields        = false;
   bool m_inited_with_views         = false;
+
+  // The logger to be used throughout the ATM to log message
+  std::shared_ptr<ekat::logger::LoggerBase> m_atm_logger;
 }; // Class AtmosphereInput
 
 } //namespace scream

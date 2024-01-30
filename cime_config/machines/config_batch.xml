@@ -371,6 +371,7 @@
       <directive> --job-name={{ job_id }}</directive>
       <directive> --nodes=1</directive>
       <directive> --ntasks={{ total_tasks }}</directive>
+      <directive> --cpus-per-task={{ thread_count }}</directive>
       <directive> --output={{ job_id }}.%j </directive>
     </directives>
   </batch_system>
@@ -550,6 +551,15 @@
       </queues>
     </batch_system>
 
+    <batch_system MACH="aurora" type="pbspro">
+      <batch_submit>/lus/gecko/projects/CSC249ADSE15_CNDA/tools/qsub/throttle</batch_submit>
+      <queues>
+        <queue walltimemax="00:59:00" jobmin="1" jobmax="2560" default="true">EarlyAppAccess</queue>
+        <queue walltimemax="00:59:00" jobmin="1" jobmax="10624">workq-route</queue>
+        <queue walltimemax="00:59:00" jobmin="1" jobmax="10624">workq</queue>
+      </queues>
+    </batch_system>
+    
     <batch_system MACH="cascade" type="slurm">
       <directives>
 	<directive>--output=slurm.out</directive>
@@ -697,6 +707,13 @@
      </queues>
    </batch_system>
 
+   <batch_system MACH="lassen" type="lsf" >
+     <queues>
+       <queue walltimemax="02:00" nodemin="1" nodemax="18" strict="true" default="true">pdebug</queue>
+       <queue walltimemax="02:00" nodemin="1" nodemax="256" default="false">pbatch</queue>
+     </queues>
+   </batch_system>
+
    <batch_system MACH="ascent" type="lsf" >
      <batch_submit>/gpfs/wolf/cli115/world-shared/e3sm/tools/bsub/throttle</batch_submit>
      <directives>
@@ -731,6 +748,15 @@
        <queue strict="true" nodemin="1" nodemax="8" walltimemax="01:00:00" default="true">batch</queue>
        <queue strict="true" nodemin="9" nodemax="64" walltimemax="01:00:00">batch</queue>
        <queue strict="true" nodemin="65" nodemax="160" walltimemax="01:00:00">batch</queue>
+     </queues>
+   </batch_system>
+
+   <batch_system MACH="frontier-scream-gpu" type="slurm">
+	   <batch_submit>/lustre/orion/cli115/world-shared/e3sm/tools/sbatch/throttle</batch_submit>
+     <queues>
+       <queue strict="true" nodemin="1" nodemax="91" walltimemax="2:00:00" default="true">batch</queue>
+       <queue strict="true" nodemin="92" nodemax="183" walltimemax="6:00:00">batch</queue>
+       <queue strict="true" nodemin="184" nodemax="9408" walltimemax="12:00:00">batch</queue>
      </queues>
    </batch_system>
 

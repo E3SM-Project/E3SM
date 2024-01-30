@@ -1,7 +1,8 @@
 ! fsurdat used is not the same file for the reference historical run (as recorded in elm.r's global attribute)
 
  CHECK_FINIDAT_FSURDAT_CONSISTENCY       = .false.
- finidat = "$DIN_LOC_ROOT/e3sm_init/V2.SSP370_SSP585.ne30pg2_EC30to60E2r2/v2.LR.historical_0101/2015-01-01-00000/v2.LR.historical_0101.elm.r.noNaN.2015-01-01-00000.nc"
+! Finidat to be updated, The one below not compatible with v3 lnd config (with TOP and BGC mode, new grid)
+! finidat = "$DIN_LOC_ROOT/e3sm_init/V2.SSP370_SSP585.ne30pg2_EC30to60E2r2/v2.LR.historical_0101/2015-01-01-00000/v2.LR.historical_0101.elm.r.noNaN.2015-01-01-00000.nc"
  hist_dov2xy = .true.,.true.
  hist_fincl2 = 'H2OSNO', 'FSNO', 'QRUNOFF', 'QSNOMELT', 'FSNO_EFF', 'SNORDSL', 'SNOW', 'FSDS', 'FSR', 'FLDS', 'FIRE', 'FIRA'
  hist_mfilt = 1,365

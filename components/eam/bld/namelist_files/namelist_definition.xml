@@ -3403,27 +3403,15 @@ Coefficient for eddy diffusivity of momentum.
 Default: set by build-namelist
 </entry>
 
-<entry id="shoc_Ckh_s_min" type="real" category="pblrad"
+<entry id="shoc_Ckh_s" type="real" category="pblrad"
        group="shocpbl_diff_nl" valid_values="" >
-Minimum allowable value for coefficient for eddy diffusivity for heat for stable boundary layers.
+Coefficient for eddy diffusivity for heat for stable boundary layers.
 Default: set by build-namelist
 </entry>
 
-<entry id="shoc_Ckh_s_max" type="real" category="pblrad"
+<entry id="shoc_Ckm_s" type="real" category="pblrad"
        group="shocpbl_diff_nl" valid_values="" >
-Maximum allowable value for coefficient for eddy diffusivity for heat for stable boundary layers.
-Default: set by build-namelist
-</entry>
-
-<entry id="shoc_Ckm_s_min" type="real" category="pblrad"
-       group="shocpbl_diff_nl" valid_values="" >
-Minimum allowable value for coefficient for eddy diffusivity for momentum for stable boundary layers.
-Default: set by build-namelist
-</entry>
-
-<entry id="shoc_Ckm_s_max" type="real" category="pblrad"
-       group="shocpbl_diff_nl" valid_values="" >
-Maximum allowable value for coefficient for eddy diffusivity for momentum for stable boundary layers.
+Coefficient for eddy diffusivity for momentum for stable boundary layers.
 Default: set by build-namelist
 </entry>
 
@@ -4663,6 +4651,12 @@ Default: FALSE
 <entry id="iop_dosubsidence" type="logical" category="scam"
        group="cam_inparm" valid_values="">
 Compute LS vertical transport using omega prescribed from IOP file.
+Default: FALSE
+</entry>
+
+<entry id="iop_coriolis" type="logical" category="scam"
+       group="cam_inparm" valid_values="">
+Use geostropic winds specified in IOP file to apply coriolis force.
 Default: FALSE
 </entry>
 

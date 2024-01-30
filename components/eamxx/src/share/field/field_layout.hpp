@@ -16,6 +16,10 @@ namespace scream
 // The type of the layout, that is, the kind of field it represent.
 enum class LayoutType {
   Invalid,
+  Scalar0D,
+  Vector0D,
+  Scalar1D,
+  Vector1D,
   Scalar2D,
   Vector2D,
   Tensor2D,
@@ -27,6 +31,10 @@ enum class LayoutType {
 inline std::string e2str (const LayoutType lt) {
   std::string name;
   switch (lt) {
+    case LayoutType::Scalar0D: name = "Scalar0D"; break;
+    case LayoutType::Vector0D: name = "Vector0D"; break;
+    case LayoutType::Scalar1D: name = "Scalar1D"; break;
+    case LayoutType::Vector1D: name = "Vector1D"; break;
     case LayoutType::Scalar2D: name = "Scalar2D"; break;
     case LayoutType::Vector2D: name = "Vector2D"; break;
     case LayoutType::Tensor2D: name = "Tensor2D"; break;
@@ -55,8 +63,6 @@ public:
   // Constructor(s)
   FieldLayout () = delete;
   FieldLayout (const FieldLayout&) = default;
-  FieldLayout (const std::initializer_list<FieldTag>& tags);
-  FieldLayout (const std::vector<FieldTag>& tags);
   FieldLayout (const std::vector<FieldTag>& tags,
                const std::vector<int>& dims);
 
@@ -64,7 +70,7 @@ public:
   FieldLayout& operator= (const FieldLayout&) = default;
 
   // Create invalid layout
-  static FieldLayout invalid () { return FieldLayout({}); }
+  static FieldLayout invalid () { return FieldLayout({FieldTag::Invalid},{0}); }
 
   // ----- Getters ----- //
 
@@ -84,7 +90,6 @@ public:
 
   long long  size () const;
 
-  bool is_dimension_set  (const int idim) const;
   bool are_dimensions_set () const;
 
   // Check if this layout is that of a vector field
@@ -93,15 +98,14 @@ public:
   // If this is the layout of a vector field, get the idx of the vector dimension
   // Note: throws if is_vector_layout()==false.
   int get_vector_dim () const;
+  FieldTag get_vector_tag () const;
 
   FieldLayout strip_dim (const FieldTag tag) const;
   FieldLayout strip_dim (const int idim) const;
 
   // ----- Setters ----- //
 
-  // Note: as soon as a dimension is set, it cannot be changed.
   void set_dimension  (const int idim, const int dimension);
-  void set_dimensions (const std::vector<int>& dims);
 
 protected:
 
@@ -137,8 +141,9 @@ inline int FieldLayout::dim (const int idim) const {
 }
 
 inline long long FieldLayout::size () const {
-  ekat::error::runtime_check(are_dimensions_set(), "Error! Field dimensions not yet set.\n",-1);
-  long long prod = m_rank>0 ? 1 : 0;
+  EKAT_REQUIRE_MSG(are_dimensions_set(),
+      "Error! Field dimensions not yet set.\n");
+  long long prod = 1;
   for (int idim=0; idim<m_rank; ++idim) {
     prod *= m_dims[idim];
   }
@@ -156,11 +161,6 @@ inline bool FieldLayout::has_tags (const std::vector<FieldTag>& tags) const {
     b &= has_tag(t);
   }
   return b;
-}
-
-inline bool FieldLayout::is_dimension_set (const int idim) const {
-  ekat::error::runtime_check(idim>=0 && idim<m_rank, "Error! Index out of bounds.", -1);
-  return m_dims[idim]>=0;
 }
 
 inline bool FieldLayout::are_dimensions_set () const {

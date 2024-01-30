@@ -630,6 +630,13 @@ ifeq "$(USE_SHTNS)" "true"
 	override CPPFLAGS += -DUSE_SHTNS
 endif
 
+ifneq "$(MOAB_PATH)" ""
+       CPPINCLUDES +=  -DHAVE_MOAB -I$(MOAB_PATH)/include
+       FCINCLUDES += -DHAVE_MOAB -I$(MOAB_PATH)/include
+       include $(MOAB_PATH)/lib/moab.make
+       LIBS +=  ${MOAB_LIBS_LINK} -lstdc++
+endif
+
 RM = rm -f
 CPP = cpp -P -traditional
 RANLIB = ranlib
@@ -775,6 +782,12 @@ ifeq "$(USE_PIO2)" "true"
 else # USE_PIO2 IF
 	PIO_MESSAGE="Using the PIO 1.x library."
 endif # USE_PIO2 IF
+
+ifneq "$(MOAB_PATH)" ""
+       MOAB_MESSAGE="Using MOAB library"
+else # 
+       MOAB_MESSAGE="Not using MOAB library"
+endif 
 
 ifdef TIMER_LIB
 ifeq "$(TIMER_LIB)" "tau"
@@ -1098,6 +1111,9 @@ ifeq "$(USE_CUBLAS)" "true"
 endif
 ifeq "$(USE_GPUAWARE)" "true"
    @echo $(GPUAWARE_MESSAGE)
+endif
+ifeq "$(USE_MOAB)" "true"
+   @echo $(MOAB_MESSAGE)
 endif
 	@echo "*******************************************************************************"
 clean:

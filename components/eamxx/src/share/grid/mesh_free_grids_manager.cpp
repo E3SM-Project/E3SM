@@ -20,6 +20,7 @@ MeshFreeGridsManager (const ekat::Comm& comm, const ekat::ParameterList& p)
  : m_params (p)
  , m_comm   (comm)
 {
+  // Nothing else to do here
 }
 
 MeshFreeGridsManager::remapper_ptr_type
@@ -33,82 +34,100 @@ do_create_remapper (const grid_ptr_type from_grid,
 void MeshFreeGridsManager::
 build_grids ()
 {
-  auto has_positive_int = [&](const std::string& n) -> bool {
-    return m_params.isParameter(n) && (m_params.get<int>(n)>0);
-  };
-  const bool build_pt = has_positive_int("number_of_global_columns");
-  const bool build_se = has_positive_int("number_of_local_elements") &&
-                        has_positive_int("number_of_gauss_points");
+  const auto& names = m_params.get<std::vector<std::string>>("grids_names");
+  for (const auto& gname : names) {
+    auto& params = m_params.sublist(gname);
+    const auto& type = params.get<std::string>("type");
+    if (type=="se_grid") {
+      build_se_grid (gname,params);
+    } else if (type=="point_grid") {
+      build_point_grid (gname,params);
+    } else {
+      EKAT_ERROR_MSG (
+          "[MeshFreeGridsManager::build_grids] Unrecognized grid type.\n"
+          " - grid name: " + gname + "\n"
+          " - grid type: " + type + "\n"
+          " - valid types: se_grid, point_grid\n");
+    }
+    const auto& aliases = params.get<std::vector<std::string>>("aliases",{});
+    for (const auto& n : aliases) {
+      this->alias_grid(gname, n);
+    }
+  }
+}
 
-  const int num_vertical_levels = m_params.get<int>("number_of_vertical_levels");
+void MeshFreeGridsManager::
+build_se_grid (const std::string& name, ekat::ParameterList& params)
+{
+  // Build a set of completely disconnected spectral elements.
+  const int num_local_elems  = params.get<int>("number_of_local_elements");
+  const int num_gp           = params.get<int>("number_of_gauss_points");
+  const int num_vertical_levels = params.get<int>("number_of_vertical_levels");
 
-  if (build_se) {
-    // Build a set of completely disconnected spectral elements.
-    const int num_local_elems  = m_params.get<int>("number_of_local_elements");
-    const int num_gp           = m_params.get<int>("number_of_gauss_points");
+  // Create the grid
+  std::shared_ptr<SEGrid> se_grid;
+  se_grid = std::make_shared<SEGrid>(name,num_local_elems,num_gp,num_vertical_levels,m_comm);
+  se_grid->setSelfPointer(se_grid);
 
-    // Create the grid
-    std::shared_ptr<SEGrid> se_grid;
-    se_grid = std::make_shared<SEGrid>("SE Grid",num_local_elems,num_gp,num_vertical_levels,m_comm);
-    se_grid->setSelfPointer(se_grid);
+  // Set up the degrees of freedom.
+  auto dof_gids = se_grid->get_dofs_gids();
+  auto lid2idx  = se_grid->get_lid_to_idx_map();
 
-    // Set up the degrees of freedom.
-    auto dof_gids = se_grid->get_dofs_gids();
-    auto lid2idx  = se_grid->get_lid_to_idx_map();
+  auto host_dofs    = dof_gids.template get_view<AbstractGrid::gid_type*,Host>();
+  auto host_lid2idx = lid2idx.template get_view<int**,Host>();
 
-    auto host_dofs    = dof_gids.template get_view<AbstractGrid::gid_type*,Host>();
-    auto host_lid2idx = lid2idx.template get_view<int**,Host>();
+  // Count unique local dofs. On all elems except the very last one (on rank N),
+  // we have num_gp*(num_gp-1) unique dofs;
+  int num_local_dofs = num_local_elems*num_gp*num_gp;
+  int offset = num_local_dofs*m_comm.rank();
 
-    // Count unique local dofs. On all elems except the very last one (on rank N),
-    // we have num_gp*(num_gp-1) unique dofs;
-    int num_local_dofs = num_local_elems*num_gp*num_gp;
-    int offset = num_local_dofs*m_comm.rank();
-
-    for (int ie = 0; ie < num_local_elems; ++ie) {
-      for (int igp = 0; igp < num_gp; ++igp) {
-        for (int jgp = 0; jgp < num_gp; ++jgp) {
-          int idof = ie*num_gp*num_gp + igp*num_gp + jgp;
-          int gid = offset + idof;
-          host_dofs(idof) = gid;
-          host_lid2idx(idof, 0) = ie;
-          host_lid2idx(idof, 1) = igp;
-          host_lid2idx(idof, 2) = jgp;
-        }
+  for (int ie = 0; ie < num_local_elems; ++ie) {
+    for (int igp = 0; igp < num_gp; ++igp) {
+      for (int jgp = 0; jgp < num_gp; ++jgp) {
+        int idof = ie*num_gp*num_gp + igp*num_gp + jgp;
+        int gid = offset + idof;
+        host_dofs(idof) = gid;
+        host_lid2idx(idof, 0) = ie;
+        host_lid2idx(idof, 1) = igp;
+        host_lid2idx(idof, 2) = jgp;
       }
     }
-
-    // Sync to device
-    dof_gids.sync_to_dev();
-    lid2idx.sync_to_dev();
-
-    se_grid->m_short_name = "se";
-    add_geo_data(se_grid);
-
-    add_grid(se_grid);
   }
-  if (build_pt) {
-    const int num_global_cols  = m_params.get<int>("number_of_global_columns");
-    auto pt_grid = create_point_grid("Point Grid",num_global_cols,num_vertical_levels,m_comm);
 
-    const auto units = ekat::units::Units::nondimensional();
+  // Sync to device
+  dof_gids.sync_to_dev();
+  lid2idx.sync_to_dev();
 
-    auto area = pt_grid->create_geometry_data("area", pt_grid->get_2d_scalar_layout(), units);
+  se_grid->m_short_name = "se";
+  add_geo_data(se_grid);
 
-    // Estimate cell area for a uniform grid by taking the surface area
-    // of the earth divided by the number of columns.  Note we do this in
-    // units of radians-squared.
-    using PC             = scream::physics::Constants<Real>;
-    const Real pi        = PC::Pi;
-    const Real cell_area = 4.0*pi/num_global_cols;
-    area.deep_copy(cell_area);
-    area.sync_to_host();
+  add_grid(se_grid);
+}
 
-    add_geo_data(pt_grid);
-    pt_grid->m_short_name = "pt";
+void MeshFreeGridsManager::
+build_point_grid (const std::string& name, ekat::ParameterList& params)
+{
+  const int num_global_cols = params.get<int>("number_of_global_columns");
+  const int num_vertical_levels = params.get<int>("number_of_vertical_levels");
+  auto pt_grid = create_point_grid(name,num_global_cols,num_vertical_levels,m_comm);
 
-    add_grid(pt_grid);
-    this->alias_grid("Point Grid", "Physics");
-  }
+  const auto units = ekat::units::Units::nondimensional();
+
+  auto area = pt_grid->create_geometry_data("area", pt_grid->get_2d_scalar_layout(), units);
+
+  // Estimate cell area for a uniform grid by taking the surface area
+  // of the earth divided by the number of columns.  Note we do this in
+  // units of radians-squared.
+  using PC             = scream::physics::Constants<Real>;
+  const Real pi        = PC::Pi;
+  const Real cell_area = 4.0*pi/num_global_cols;
+  area.deep_copy(cell_area);
+  area.sync_to_host();
+
+  add_geo_data(pt_grid);
+  pt_grid->m_short_name = "pt";
+
+  add_grid(pt_grid);
 }
 
 void MeshFreeGridsManager::
@@ -254,10 +273,23 @@ create_mesh_free_grids_manager (const ekat::Comm& comm, const int num_local_elem
                                 const int num_global_cols)
 {
   ekat::ParameterList gm_params;
-  gm_params.set("number_of_global_columns",num_global_cols);
-  gm_params.set("number_of_local_elements",num_local_elems);
-  gm_params.set("number_of_gauss_points",num_gp);
-  gm_params.set("number_of_vertical_levels",num_vertical_levels);
+  std::vector<std::string> grids_names;
+  if (num_local_elems>=2) {
+    grids_names.push_back("SE Grid");
+    auto& pl = gm_params.sublist("SE Grid");
+    pl.set("type",std::string("se_grid"));
+    pl.set("number_of_local_elements",num_local_elems);
+    pl.set("number_of_gauss_points",num_gp);
+    pl.set("number_of_vertical_levels",num_vertical_levels);
+  }
+  if (num_global_cols>0) {
+    grids_names.push_back("Point Grid");
+    auto& pl = gm_params.sublist("Point Grid");
+    pl.set("type",std::string("point_grid"));
+    pl.set("number_of_global_columns",num_global_cols);
+    pl.set("number_of_vertical_levels",num_vertical_levels);
+  }
+  gm_params.set("grids_names",grids_names);
   auto gm = create_mesh_free_grids_manager(comm,gm_params);
   return gm;
 }

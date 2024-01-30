@@ -3,49 +3,71 @@ if (NOT ${SCREAM_BASELINES_ONLY})
   include(ScreamUtils)
 
   # Test vertical interpolation
-  CreateUnitTest(vertical_interp "vertical_interp_tests.cpp" scream_share)
+  CreateUnitTest(vertical_interp "vertical_interp_tests.cpp")
 
   # Test utils
-  CreateUnitTest(utils "utils_tests.cpp" scream_share)
+  CreateUnitTest(utils "utils_tests.cpp")
 
   # Test column ops
-  CreateUnitTest(column_ops "column_ops.cpp" scream_share)
+  CreateUnitTest(column_ops "column_ops.cpp")
 
   # Test fields
-  CreateUnitTest(field "field_tests.cpp" scream_share)
+  CreateUnitTest(field "field_tests.cpp")
 
   # Test field utils
-  CreateUnitTest(field_utils "field_utils.cpp" scream_share
+  CreateUnitTest(field_utils "field_utils.cpp"
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
 
   # Test property checks
-  CreateUnitTest(property_checks "property_checks.cpp" scream_share)
+  CreateUnitTest(property_checks "property_checks.cpp")
 
   # Test grids
-  CreateUnitTest(grid "grid_tests.cpp" scream_share
+  CreateUnitTest(grid "grid_tests.cpp"
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
+
+  # Test grid import-export
+  CreateUnitTest(grid_imp_exp "grid_import_export_tests.cpp"
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
 
   # Test coarsening remap
-  CreateUnitTest(coarsening_remapper "coarsening_remapper_tests.cpp" "scream_share;scream_io"
+  CreateUnitTest(coarsening_remapper "coarsening_remapper_tests.cpp"
+    LIBS scream_io
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
 
-  # Test coarsening remap
-  CreateUnitTest(vertical_remapper "vertical_remapper_tests.cpp" "scream_share;scream_io"
+  if (EAMXX_ENABLE_EXPERIMENTAL_CODE)
+    # Test refining remap (RMA version)
+    CreateUnitTest(refining_remapper_rma "refining_remapper_rma_tests.cpp"
+      LIBS scream_io
+      MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
+  endif()
+
+  # Test refining remap (P2P version)
+  CreateUnitTest(refining_remapper_p2p "refining_remapper_p2p_tests.cpp"
+    LIBS scream_io
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
+
+  # Test vertical remap
+  CreateUnitTest(vertical_remapper "vertical_remapper_tests.cpp"
+    LIBS scream_io
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
+
+  # Test vertical remap
+  CreateUnitTest(time_interpolation "eamxx_time_interpolation_tests.cpp"
+    LIBS scream_io
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
 
   # Test common physics functions
-  CreateUnitTest(common_physics "common_physics_functions_tests.cpp" scream_share)
+  CreateUnitTest(common_physics "common_physics_functions_tests.cpp")
 
   # Test atmosphere processes
-  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/atm_process_tests_parse_list.yaml
-                 ${CMAKE_CURRENT_BINARY_DIR}/atm_process_tests_parse_list.yaml COPYONLY)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/atm_process_tests_named_procs.yaml
                  ${CMAKE_CURRENT_BINARY_DIR}/atm_process_tests_named_procs.yaml COPYONLY)
-  CreateUnitTest(atm_proc "atm_process_tests.cpp" scream_share)
+  CreateUnitTest(atm_proc "atm_process_tests.cpp")
 
   # Test horizontal remapping utility
-  CreateUnitTest(horizontal_remap "horizontal_remap_test.cpp" "scream_share;scream_io"
-    LABELS "horiz_remap"
+  CreateUnitTest(horizontal_remap "horizontal_remap_test.cpp"
+    LIBS scream_io
+    LABELS horiz_remap
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
   )
 endif()
