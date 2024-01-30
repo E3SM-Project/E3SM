@@ -18,7 +18,7 @@
 
 namespace OMEGA {
 
-//create the static class members
+// create the static class members
 HorzMesh *HorzMesh::DefaultHorzMesh = nullptr;
 std::map<std::string, HorzMesh> HorzMesh::AllHorzMeshes;
 

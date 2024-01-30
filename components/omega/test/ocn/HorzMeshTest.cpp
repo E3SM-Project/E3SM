@@ -149,8 +149,7 @@ int main(int argc, char *argv[]) {
       LOG_INFO("HorzMeshTest: Default decomp retrieval FAIL");
    }
 
-   // Initialize mesh
-   //OMEGA::HorzMesh Mesh = *OMEGA::HorzMesh::getDefault();
+   // Retrieve default mesh
    OMEGA::HorzMesh *Mesh = OMEGA::HorzMesh::getDefault();
 
    // Test sum of local mesh cells
@@ -178,7 +177,8 @@ int main(int argc, char *argv[]) {
    OMEGA::R8 dist;
    OMEGA::I4 count = 0;
    for (int Cell = 0; Cell < LocCells; Cell++) {
-      dist = distance(Mesh->XCellH(Cell), Mesh->YCellH(Cell), Mesh->ZCellH(Cell));
+      dist =
+          distance(Mesh->XCellH(Cell), Mesh->YCellH(Cell), Mesh->ZCellH(Cell));
       if (abs(sphere_radius - dist) > tol)
          count++;
    }
@@ -199,8 +199,10 @@ int main(int argc, char *argv[]) {
    count = 0;
    for (int Cell = 0; Cell < LocCells; Cell++) {
 
-      lon = computeLon(Mesh->XCellH(Cell), Mesh->YCellH(Cell), Mesh->ZCellH(Cell));
-      lat = computeLat(Mesh->XCellH(Cell), Mesh->YCellH(Cell), Mesh->ZCellH(Cell));
+      lon = computeLon(Mesh->XCellH(Cell), Mesh->YCellH(Cell),
+                       Mesh->ZCellH(Cell));
+      lat = computeLat(Mesh->XCellH(Cell), Mesh->YCellH(Cell),
+                       Mesh->ZCellH(Cell));
 
       if (abs(lon - Mesh->LonCellH(Cell)) > tol)
          count++;
@@ -237,7 +239,8 @@ int main(int argc, char *argv[]) {
    sphere_radius = distance(Mesh->XEdgeH(0), Mesh->YEdgeH(0), Mesh->ZEdgeH(0));
    count         = 0;
    for (int Edge = 0; Edge < LocEdges; Edge++) {
-      dist = distance(Mesh->XEdgeH(Edge), Mesh->YEdgeH(Edge), Mesh->ZEdgeH(Edge));
+      dist =
+          distance(Mesh->XEdgeH(Edge), Mesh->YEdgeH(Edge), Mesh->ZEdgeH(Edge));
       if (abs(sphere_radius - dist) > tol)
          count++;
    }
@@ -256,8 +259,10 @@ int main(int argc, char *argv[]) {
    count = 0;
    for (int Edge = 0; Edge < LocEdges; Edge++) {
 
-      lon = computeLon(Mesh->XEdgeH(Edge), Mesh->YEdgeH(Edge), Mesh->ZEdgeH(Edge));
-      lat = computeLat(Mesh->XEdgeH(Edge), Mesh->YEdgeH(Edge), Mesh->ZEdgeH(Edge));
+      lon = computeLon(Mesh->XEdgeH(Edge), Mesh->YEdgeH(Edge),
+                       Mesh->ZEdgeH(Edge));
+      lat = computeLat(Mesh->XEdgeH(Edge), Mesh->YEdgeH(Edge),
+                       Mesh->ZEdgeH(Edge));
 
       if (abs(lon - Mesh->LonEdgeH(Edge)) > tol)
          count++;
@@ -450,9 +455,9 @@ int main(int argc, char *argv[]) {
       if ((Vertex1 < DefDecomp->NVerticesAll) &&
           (Vertex2 < DefDecomp->NVerticesAll)) {
 
-         OMEGA::R8 dv =
-             sphereDistance(Mesh->LonVertexH(Vertex1), Mesh->LatVertexH(Vertex1),
-                            Mesh->LonVertexH(Vertex2), Mesh->LatVertexH(Vertex2));
+         OMEGA::R8 dv = sphereDistance(
+             Mesh->LonVertexH(Vertex1), Mesh->LatVertexH(Vertex1),
+             Mesh->LonVertexH(Vertex2), Mesh->LatVertexH(Vertex2));
 
          dv = sphere_radius * dv;
 
