@@ -216,6 +216,9 @@ class HorzMesh {
    /// Deallocates arrays
    void clear();
 
+   /// Remove mesh by name
+   void erase(std::string InName);
+
    static HorzMesh *getDefault();
 
    static HorzMesh *get(std::string name);

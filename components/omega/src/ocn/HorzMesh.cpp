@@ -18,6 +18,10 @@
 
 namespace OMEGA {
 
+//create the static class members
+HorzMesh *HorzMesh::DefaultHorzMesh = nullptr;
+std::map<std::string, HorzMesh> HorzMesh::AllHorzMeshes;
+
 //------------------------------------------------------------------------------
 // Initialize the mesh. Assumes that Decomp has already been initialized.
 
@@ -236,7 +240,7 @@ void HorzMesh::initParallelIO(Decomp *MeshDecomp) {
 
 //------------------------------------------------------------------------------
 // Destroy parallel decompositions
-void finalizeParallelIO() {
+void HorzMesh::finalizeParallelIO() {
 
    int Err = 0; // default return code
 
@@ -246,22 +250,22 @@ void finalizeParallelIO() {
       LOG_CRITICAL("HorzMesh: error destroying cell IO decomposition");
 
    // Destroy the IO decomp for arrays with (NEdges) dimensions
-   Err = IO::dstroyDecomp(EdgeDecompR8);
+   Err = IO::destroyDecomp(EdgeDecompR8);
    if (Err != 0)
       LOG_CRITICAL("HorzMesh: error destroying edge IO decomposition");
 
    // Destroy the IO decomp for arrays with (NVertices) dimensions
-   Err = IO::dstroyDecomp(VertexDecompR8);
+   Err = IO::destroyDecomp(VertexDecompR8);
    if (Err != 0)
       LOG_CRITICAL("HorzMesh: error destroying vertex IO decomposition");
 
    // Destroy the IO decomp for arrays with (NEdges, 2*MaxEdges) dimensions
-   Err = IO::dstroyDecomp(OnEdgeDecompR8);
+   Err = IO::destroyDecomp(OnEdgeDecompR8);
    if (Err != 0)
       LOG_CRITICAL("HorzMesh: error destroying OnEdge IO decomposition");
 
    // Destroy the IO decomp for arrays with (NVertices, VertexDegree) dimensions
-   Err = IO::dstroyDecomp(OnVertexDecompR8);
+   Err = IO::destroyDecomp(OnVertexDecompR8);
    if (Err != 0)
       LOG_CRITICAL("HorzMesh: error destroying OnVertex IO decomposition");
 

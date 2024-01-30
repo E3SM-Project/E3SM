@@ -117,7 +117,7 @@ OMEGA::R8 coriolis(OMEGA::R8 lat) {
 }
 
 //------------------------------------------------------------------------------
-// The test driver for Mesh. This tests the decomposition of a sample
+// The test driver for Mesh-> This tests the decomposition of a sample
 // horizontal domain and verifies the mesh is read in correctly.
 //
 int main(int argc, char *argv[]) {
@@ -150,7 +150,8 @@ int main(int argc, char *argv[]) {
    }
 
    // Initialize mesh
-   OMEGA::HorzMesh Mesh = *OMEGA::HorzMesh::getDefault();
+   //OMEGA::HorzMesh Mesh = *OMEGA::HorzMesh::getDefault();
+   OMEGA::HorzMesh *Mesh = OMEGA::HorzMesh::getDefault();
 
    // Test sum of local mesh cells
    // Get the global sum of all local cell counts
@@ -158,7 +159,7 @@ int main(int argc, char *argv[]) {
    // object
    OMEGA::I4 SumCells;
    OMEGA::I4 LocCells;
-   LocCells = Mesh.NCellsOwned;
+   LocCells = Mesh->NCellsOwned;
    Err = MPI_Allreduce(&LocCells, &SumCells, 1, MPI_INT32_T, MPI_SUM, Comm);
 
    if (SumCells == DefDecomp->NCellsGlobal) {
@@ -173,11 +174,11 @@ int main(int argc, char *argv[]) {
    // Tests that the Cartesian coordinates for cell centers have been read in
    // corectly
    OMEGA::R8 sphere_radius =
-       distance(Mesh.XCellH(0), Mesh.YCellH(0), Mesh.ZCellH(0));
+       distance(Mesh->XCellH(0), Mesh->YCellH(0), Mesh->ZCellH(0));
    OMEGA::R8 dist;
    OMEGA::I4 count = 0;
    for (int Cell = 0; Cell < LocCells; Cell++) {
-      dist = distance(Mesh.XCellH(Cell), Mesh.YCellH(Cell), Mesh.ZCellH(Cell));
+      dist = distance(Mesh->XCellH(Cell), Mesh->YCellH(Cell), Mesh->ZCellH(Cell));
       if (abs(sphere_radius - dist) > tol)
          count++;
    }
@@ -198,12 +199,12 @@ int main(int argc, char *argv[]) {
    count = 0;
    for (int Cell = 0; Cell < LocCells; Cell++) {
 
-      lon = computeLon(Mesh.XCellH(Cell), Mesh.YCellH(Cell), Mesh.ZCellH(Cell));
-      lat = computeLat(Mesh.XCellH(Cell), Mesh.YCellH(Cell), Mesh.ZCellH(Cell));
+      lon = computeLon(Mesh->XCellH(Cell), Mesh->YCellH(Cell), Mesh->ZCellH(Cell));
+      lat = computeLat(Mesh->XCellH(Cell), Mesh->YCellH(Cell), Mesh->ZCellH(Cell));
 
-      if (abs(lon - Mesh.LonCellH(Cell)) > tol)
+      if (abs(lon - Mesh->LonCellH(Cell)) > tol)
          count++;
-      if (abs(lat - Mesh.LatCellH(Cell)) > tol)
+      if (abs(lat - Mesh->LatCellH(Cell)) > tol)
          count++;
    }
 
@@ -219,7 +220,7 @@ int main(int argc, char *argv[]) {
    // object
    OMEGA::I4 SumEdges;
    OMEGA::I4 LocEdges;
-   LocEdges = Mesh.NEdgesOwned;
+   LocEdges = Mesh->NEdgesOwned;
    Err = MPI_Allreduce(&LocEdges, &SumEdges, 1, MPI_INT32_T, MPI_SUM, Comm);
 
    if (SumEdges == DefDecomp->NEdgesGlobal) {
@@ -233,10 +234,10 @@ int main(int argc, char *argv[]) {
    // Check that all edge centers are a uniform distance from the origin
    // Tests that the Cartesian coordinates for edge centers have been read in
    // correctly
-   sphere_radius = distance(Mesh.XEdgeH(0), Mesh.YEdgeH(0), Mesh.ZEdgeH(0));
+   sphere_radius = distance(Mesh->XEdgeH(0), Mesh->YEdgeH(0), Mesh->ZEdgeH(0));
    count         = 0;
    for (int Edge = 0; Edge < LocEdges; Edge++) {
-      dist = distance(Mesh.XEdgeH(Edge), Mesh.YEdgeH(Edge), Mesh.ZEdgeH(Edge));
+      dist = distance(Mesh->XEdgeH(Edge), Mesh->YEdgeH(Edge), Mesh->ZEdgeH(Edge));
       if (abs(sphere_radius - dist) > tol)
          count++;
    }
@@ -255,12 +256,12 @@ int main(int argc, char *argv[]) {
    count = 0;
    for (int Edge = 0; Edge < LocEdges; Edge++) {
 
-      lon = computeLon(Mesh.XEdgeH(Edge), Mesh.YEdgeH(Edge), Mesh.ZEdgeH(Edge));
-      lat = computeLat(Mesh.XEdgeH(Edge), Mesh.YEdgeH(Edge), Mesh.ZEdgeH(Edge));
+      lon = computeLon(Mesh->XEdgeH(Edge), Mesh->YEdgeH(Edge), Mesh->ZEdgeH(Edge));
+      lat = computeLat(Mesh->XEdgeH(Edge), Mesh->YEdgeH(Edge), Mesh->ZEdgeH(Edge));
 
-      if (abs(lon - Mesh.LonEdgeH(Edge)) > tol)
+      if (abs(lon - Mesh->LonEdgeH(Edge)) > tol)
          count++;
-      if (abs(lat - Mesh.LatEdgeH(Edge)) > tol)
+      if (abs(lat - Mesh->LatEdgeH(Edge)) > tol)
          count++;
    }
 
@@ -276,7 +277,7 @@ int main(int argc, char *argv[]) {
    // object
    OMEGA::I4 SumVertices;
    OMEGA::I4 LocVertices;
-   LocVertices = Mesh.NVerticesOwned;
+   LocVertices = Mesh->NVerticesOwned;
    Err =
        MPI_Allreduce(&LocVertices, &SumVertices, 1, MPI_INT32_T, MPI_SUM, Comm);
 
@@ -292,11 +293,11 @@ int main(int argc, char *argv[]) {
    // Tests that the Cartesian coordinates for vertices have been read in
    // correctly
    sphere_radius =
-       distance(Mesh.XVertexH(0), Mesh.YVertexH(0), Mesh.ZVertexH(0));
+       distance(Mesh->XVertexH(0), Mesh->YVertexH(0), Mesh->ZVertexH(0));
    count = 0;
    for (int Vertex = 0; Vertex < LocVertices; Vertex++) {
-      dist = distance(Mesh.XVertexH(Vertex), Mesh.YVertexH(Vertex),
-                      Mesh.ZVertexH(Vertex));
+      dist = distance(Mesh->XVertexH(Vertex), Mesh->YVertexH(Vertex),
+                      Mesh->ZVertexH(Vertex));
       if (abs(sphere_radius - dist) > tol)
          count++;
    }
@@ -315,15 +316,15 @@ int main(int argc, char *argv[]) {
    count = 0;
    for (int Vertex = 0; Vertex < LocVertices; Vertex++) {
 
-      lon = computeLon(Mesh.XVertexH(Vertex), Mesh.YVertexH(Vertex),
-                       Mesh.ZVertexH(Vertex));
-      lat = computeLat(Mesh.XVertexH(Vertex), Mesh.YVertexH(Vertex),
-                       Mesh.ZVertexH(Vertex));
+      lon = computeLon(Mesh->XVertexH(Vertex), Mesh->YVertexH(Vertex),
+                       Mesh->ZVertexH(Vertex));
+      lat = computeLat(Mesh->XVertexH(Vertex), Mesh->YVertexH(Vertex),
+                       Mesh->ZVertexH(Vertex));
 
-      if (abs(lon - Mesh.LonVertexH(Vertex)) > tol)
+      if (abs(lon - Mesh->LonVertexH(Vertex)) > tol)
          count++;
 
-      if (abs(lat - Mesh.LatVertexH(Vertex)) > tol)
+      if (abs(lat - Mesh->LatVertexH(Vertex)) > tol)
          count++;
    }
 
@@ -340,11 +341,11 @@ int main(int argc, char *argv[]) {
    OMEGA::R8 MaxBathy = -1e10;
    OMEGA::R8 MinBathy = 1e10;
    for (int Cell = 0; Cell < LocCells; Cell++) {
-      if (Mesh.BottomDepthH(Cell) < MinBathy) {
-         MinBathy = Mesh.BottomDepthH(Cell);
+      if (Mesh->BottomDepthH(Cell) < MinBathy) {
+         MinBathy = Mesh->BottomDepthH(Cell);
       }
-      if (Mesh.BottomDepthH(Cell) > MaxBathy) {
-         MaxBathy = Mesh.BottomDepthH(Cell);
+      if (Mesh->BottomDepthH(Cell) > MaxBathy) {
+         MaxBathy = Mesh->BottomDepthH(Cell);
       }
    }
 
@@ -361,7 +362,7 @@ int main(int argc, char *argv[]) {
    OMEGA::R8 LocSumArea = 0;
    OMEGA::R8 SumCellArea;
    for (int Cell = 0; Cell < LocCells; Cell++) {
-      LocSumArea += Mesh.AreaCellH(Cell);
+      LocSumArea += Mesh->AreaCellH(Cell);
    }
    Err = MPI_Allreduce(&LocSumArea, &SumCellArea, 1, MPI_DOUBLE, MPI_SUM, Comm);
 
@@ -379,7 +380,7 @@ int main(int argc, char *argv[]) {
    LocSumArea = 0;
    OMEGA::R8 SumTriangleArea;
    for (int Vertex = 0; Vertex < LocVertices; Vertex++) {
-      LocSumArea += Mesh.AreaTriangleH(Vertex);
+      LocSumArea += Mesh->AreaTriangleH(Vertex);
    }
    Err = MPI_Allreduce(&LocSumArea, &SumTriangleArea, 1, MPI_DOUBLE, MPI_SUM,
                        Comm);
@@ -397,8 +398,8 @@ int main(int argc, char *argv[]) {
    LocSumArea = 0;
    OMEGA::R8 SumKiteArea;
    for (int Vertex = 0; Vertex < LocVertices; Vertex++) {
-      for (int i = 0; i < Mesh.VertexDegree; i++) {
-         LocSumArea += Mesh.KiteAreasOnVertexH(Vertex, i);
+      for (int i = 0; i < Mesh->VertexDegree; i++) {
+         LocSumArea += Mesh->KiteAreasOnVertexH(Vertex, i);
       }
    }
    Err = MPI_Allreduce(&LocSumArea, &SumKiteArea, 1, MPI_DOUBLE, MPI_SUM, Comm);
@@ -415,17 +416,17 @@ int main(int argc, char *argv[]) {
    // Tests that the distances between cell centers have been read in correctly
    count = 0;
    for (int Edge = 0; Edge < LocEdges; Edge++) {
-      int Cell1 = Mesh.CellsOnEdgeH(Edge, 0);
-      int Cell2 = Mesh.CellsOnEdgeH(Edge, 1);
+      int Cell1 = Mesh->CellsOnEdgeH(Edge, 0);
+      int Cell2 = Mesh->CellsOnEdgeH(Edge, 1);
 
       if ((Cell1 < DefDecomp->NCellsAll) && (Cell2 < DefDecomp->NCellsAll)) {
 
          OMEGA::R8 dc =
-             sphereDistance(Mesh.LonCellH(Cell1), Mesh.LatCellH(Cell1),
-                            Mesh.LonCellH(Cell2), Mesh.LatCellH(Cell2));
+             sphereDistance(Mesh->LonCellH(Cell1), Mesh->LatCellH(Cell1),
+                            Mesh->LonCellH(Cell2), Mesh->LatCellH(Cell2));
          dc = sphere_radius * dc;
 
-         if (abs((dc - Mesh.DcEdgeH(Edge)) / Mesh.DcEdgeH(Edge)) > tol) {
+         if (abs((dc - Mesh->DcEdgeH(Edge)) / Mesh->DcEdgeH(Edge)) > tol) {
             count++;
          }
       }
@@ -443,19 +444,19 @@ int main(int argc, char *argv[]) {
    // Tests that the distances between vertices have been read in correctly
    count = 0;
    for (int Edge = 0; Edge < LocEdges; Edge++) {
-      int Vertex1 = Mesh.VerticesOnEdgeH(Edge, 0);
-      int Vertex2 = Mesh.VerticesOnEdgeH(Edge, 1);
+      int Vertex1 = Mesh->VerticesOnEdgeH(Edge, 0);
+      int Vertex2 = Mesh->VerticesOnEdgeH(Edge, 1);
 
       if ((Vertex1 < DefDecomp->NVerticesAll) &&
           (Vertex2 < DefDecomp->NVerticesAll)) {
 
          OMEGA::R8 dv =
-             sphereDistance(Mesh.LonVertexH(Vertex1), Mesh.LatVertexH(Vertex1),
-                            Mesh.LonVertexH(Vertex2), Mesh.LatVertexH(Vertex2));
+             sphereDistance(Mesh->LonVertexH(Vertex1), Mesh->LatVertexH(Vertex1),
+                            Mesh->LonVertexH(Vertex2), Mesh->LatVertexH(Vertex2));
 
          dv = sphere_radius * dv;
 
-         if (abs((dv - Mesh.DvEdgeH(Edge)) / Mesh.DvEdgeH(Edge)) > tol) {
+         if (abs((dv - Mesh->DvEdgeH(Edge)) / Mesh->DvEdgeH(Edge)) > tol) {
             count++;
          }
       }
@@ -472,7 +473,7 @@ int main(int argc, char *argv[]) {
    // Tests that the edge angles have been read in correctly
    count = 0;
    for (int Edge = 0; Edge < LocEdges; Edge++) {
-      if (abs(Mesh.AngleEdgeH(Edge)) > pi) {
+      if (abs(Mesh->AngleEdgeH(Edge)) > pi) {
          count++;
       }
    }
@@ -489,9 +490,9 @@ int main(int argc, char *argv[]) {
    // Tests that the cell Coriolis values were read in correctly
    count = 0;
    for (int Cell = 0; Cell < LocCells; Cell++) {
-      OMEGA::R8 f = coriolis(Mesh.LatCellH(Cell));
+      OMEGA::R8 f = coriolis(Mesh->LatCellH(Cell));
 
-      if (abs(f - Mesh.FCellH(Cell)) > tol) {
+      if (abs(f - Mesh->FCellH(Cell)) > tol) {
          count++;
       }
    }
@@ -509,9 +510,9 @@ int main(int argc, char *argv[]) {
    count = 0;
    for (int Vertex = 0; Vertex < LocVertices; Vertex++) {
 
-      OMEGA::R8 f = coriolis(Mesh.LatVertexH(Vertex));
+      OMEGA::R8 f = coriolis(Mesh->LatVertexH(Vertex));
 
-      if (abs(f - Mesh.FVertexH(Vertex)) > tol) {
+      if (abs(f - Mesh->FVertexH(Vertex)) > tol) {
          count++;
       }
    }
@@ -528,9 +529,9 @@ int main(int argc, char *argv[]) {
    // Tests that the edge Coriolis values were read in correctly
    count = 0;
    for (int Edge = 0; Edge < LocEdges; Edge++) {
-      OMEGA::R8 f = coriolis(Mesh.LatEdgeH(Edge));
+      OMEGA::R8 f = coriolis(Mesh->LatEdgeH(Edge));
 
-      if (abs(f - Mesh.FEdgeH(Edge)) > tol) {
+      if (abs(f - Mesh->FEdgeH(Edge)) > tol) {
          count++;
       }
    }
@@ -546,8 +547,8 @@ int main(int argc, char *argv[]) {
    // Tests that the edge weights were read in correctly
    count = 0;
    for (int Edge = 0; Edge < LocEdges; Edge++) {
-      for (int i = 0; i < Mesh.MaxEdges2; i++) {
-         if (abs(Mesh.WeightsOnEdgeH(Edge, i)) > 1.0) {
+      for (int i = 0; i < Mesh->MaxEdges2; i++) {
+         if (abs(Mesh->WeightsOnEdgeH(Edge, i)) > 1.0) {
             count++;
          }
       }
@@ -564,28 +565,28 @@ int main(int argc, char *argv[]) {
    // Tests that the edge sign values were calculated correctly
    count = 0;
    for (int Edge = 0; Edge < LocEdges; Edge++) {
-      int Cell0 = Mesh.CellsOnEdgeH(Edge, 0);
+      int Cell0 = Mesh->CellsOnEdgeH(Edge, 0);
       int iEdge0;
-      for (int i = 0; i < Mesh.NEdgesOnCellH(Cell0); i++) {
-         if (Mesh.EdgesOnCellH(Cell0, i) == Edge) {
+      for (int i = 0; i < Mesh->NEdgesOnCellH(Cell0); i++) {
+         if (Mesh->EdgesOnCellH(Cell0, i) == Edge) {
             iEdge0 = i;
             break;
          }
       }
-      if (abs(Mesh.EdgeSignOnCellH(Cell0, iEdge0) + 1.0) > tol) {
+      if (abs(Mesh->EdgeSignOnCellH(Cell0, iEdge0) + 1.0) > tol) {
          count++;
       }
 
-      int Cell1 = Mesh.CellsOnEdgeH(Edge, 1);
+      int Cell1 = Mesh->CellsOnEdgeH(Edge, 1);
       if (Cell1 < DefDecomp->NCellsAll) {
          int iEdge1;
-         for (int i = 0; i < Mesh.NEdgesOnCellH(Cell1); i++) {
-            if (Mesh.EdgesOnCellH(Cell1, i) == Edge) {
+         for (int i = 0; i < Mesh->NEdgesOnCellH(Cell1); i++) {
+            if (Mesh->EdgesOnCellH(Cell1, i) == Edge) {
                iEdge1 = i;
                break;
             }
          }
-         if (abs(Mesh.EdgeSignOnCellH(Cell1, iEdge1) - 1.0) > tol) {
+         if (abs(Mesh->EdgeSignOnCellH(Cell1, iEdge1) - 1.0) > tol) {
             count++;
          }
       }
@@ -602,27 +603,27 @@ int main(int argc, char *argv[]) {
    // Tests that the edge sign vlues were calculated correctly
    count = 0;
    for (int Edge = 0; Edge < LocEdges; Edge++) {
-      int Vertex0 = Mesh.VerticesOnEdgeH(Edge, 0);
+      int Vertex0 = Mesh->VerticesOnEdgeH(Edge, 0);
       int iEdge0;
-      for (int i = 0; i < Mesh.VertexDegree; i++) {
-         if (Mesh.EdgesOnVertexH(Vertex0, i) == Edge) {
+      for (int i = 0; i < Mesh->VertexDegree; i++) {
+         if (Mesh->EdgesOnVertexH(Vertex0, i) == Edge) {
             iEdge0 = i;
             break;
          }
       }
-      if (abs(Mesh.EdgeSignOnVertexH(Vertex0, iEdge0) + 1.0) > tol) {
+      if (abs(Mesh->EdgeSignOnVertexH(Vertex0, iEdge0) + 1.0) > tol) {
          count++;
       }
 
-      int Vertex1 = Mesh.VerticesOnEdgeH(Edge, 1);
+      int Vertex1 = Mesh->VerticesOnEdgeH(Edge, 1);
       int iEdge1;
-      for (int i = 0; i < Mesh.VertexDegree; i++) {
-         if (Mesh.EdgesOnVertexH(Vertex1, i) == Edge) {
+      for (int i = 0; i < Mesh->VertexDegree; i++) {
+         if (Mesh->EdgesOnVertexH(Vertex1, i) == Edge) {
             iEdge1 = i;
             break;
          }
       }
-      if (abs(Mesh.EdgeSignOnVertex(Vertex1, iEdge1) - 1.0) > tol) {
+      if (abs(Mesh->EdgeSignOnVertex(Vertex1, iEdge1) - 1.0) > tol) {
          count++;
       }
    }
@@ -636,7 +637,7 @@ int main(int argc, char *argv[]) {
    // TODO: Test that device arrays are identical
 
    // Finalize Omega objects
-   Mesh.clear();
+   Mesh->clear();
    OMEGA::Decomp::clear();
    OMEGA::MachEnv::removeAll();
 
