@@ -127,12 +127,12 @@ yakl_process_target(scream_rrtmgp_yakl)
 # NOTE: cannot use 'PUBLIC' in target_link_libraries,
 #       since yakl_process_target already used it
 #       with the "plain" signature
-find_library(NETCDF_C netcdf HINTS ${NetCDF_C_PATH}/lib)
+find_library(NETCDF_C netcdf HINTS $ENV{NETCDF_C_PATH}/lib)
 target_link_libraries(scream_rrtmgp_yakl ${NETCDF_C} rrtmgp scream_share)
 target_include_directories(scream_rrtmgp_yakl PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(scream_rrtmgp_yakl SYSTEM PUBLIC
-    ${NetCDF_C_PATH}/include
+	${NETCDF_C_PATH}/include
     ${EAM_RRTMGP_DIR}/external)
 
 ##################################

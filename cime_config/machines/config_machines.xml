@@ -3503,19 +3503,18 @@
           <command name="purge"></command>
           <command name="use">/soft/modulefiles</command>
           <command name="use">/soft/restricted/CNDA/updates/modulefiles</command>
-          <command name="load">spack-pe-gcc cmake</command>
+	  <command name="load">spack-pe-gcc/0.4-rc1 cmake/3.26.4-gcc-testing</command>
         </modules>
         <modules compiler="!gnu">
-          <command name="load">oneapi/eng-compiler/2023.05.15.007</command>
+          <command name="load">oneapi/release/2023.12.15.001</command>
         </modules>
         <modules compiler="gnu">
            <command name="unload">spack-pe-gcc cmake</command>
-           <command name="load">gcc/10.3.0</command>
+           <command name="load">gcc/11.2.0</command>
         </modules>
         <modules>
-          <command name="load">cray-pals</command>
+          <command name="load">cray-pals/1.3.3</command>
           <command name="load">libfabric/1.15.2.0</command>
-          <command name="load">cray-libpals/1.3.2</command>
         </modules>
      </module_system>
      <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
