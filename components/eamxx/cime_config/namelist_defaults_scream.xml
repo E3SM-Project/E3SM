@@ -119,9 +119,8 @@ be lost if SCREAM_HACK_XML is not enabled.
            for the atmosphere processes section(s).
 
        11) The attribute 'locked="true"' is to be used for entries that cannot be changed
-           via atmchange (see scripts/atmchange). For instance, the overall list of atm procs cannot be changed,
-           since it would require to re-parse the defaults, to re-generate the correct
-           defaults for the (possibly) new atm procs.
+           via atmchange (see scripts/atmchange). If an element is locked, then all children
+           will be locked as well.
 
        12) The attribute 'constraints' allows to specify constraints on values. Valid constraints
            are lt, le, ne, gt, ge, and mod. Except the latter (which has slightly different syntax,

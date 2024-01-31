@@ -207,7 +207,7 @@ def modify_ap_list(xml_root, group, ap_list_str, append_this):
                     error_msg=f"Unrecognized atm proc name '{ap}'. To declare a new group, prepend and append '_' to the name.")
             group = gen_atm_proc_group("", ap_defaults)
             group.tag = ap
-            
+
             ap_defaults.append(group)
 
     # Update the 'atm_procs_list' in this node
@@ -216,6 +216,25 @@ def modify_ap_list(xml_root, group, ap_list_str, append_this):
     else:
         curr_apl.text = ','.join(ap_list)
     return True
+
+###############################################################################
+def is_locked_impl(node):
+###############################################################################
+    return "locked" in node.attrib.keys() and str(node.attrib["locked"]).upper() == "TRUE"
+
+###############################################################################
+def is_locked(xml_root, node):
+###############################################################################
+    if is_locked_impl(node):
+        return True
+    else:
+        parent_map = create_parent_map(xml_root)
+        parents = get_parents(node, parent_map)
+        for parent in parents:
+            if is_locked_impl(parent):
+                return True
+
+    return False
 
 ###############################################################################
 def apply_change(xml_root, node, new_value, append_this):
@@ -231,6 +250,7 @@ def apply_change(xml_root, node, new_value, append_this):
 
     if append_this:
 
+        expect (not is_locked(xml_root, node), f"Cannot change {node.tag}, it is locked")
         expect ("type" in node.attrib.keys(),
                 f"Error! Missing type information for {node.tag}")
         type_ = node.attrib["type"]
@@ -246,6 +266,7 @@ def apply_change(xml_root, node, new_value, append_this):
         any_change = True
 
     elif node.text != new_value:
+        expect (not is_locked(xml_root, node), f"Cannot change {node.tag}, it is locked")
         check_value(node,new_value)
         node.text = new_value
         any_change = True
@@ -283,16 +304,37 @@ def atm_config_chg_impl(xml_root, change, all_matches=False):
     """
     >>> xml = '''
     ... <root>
-    ...     <a type="array(int)">1,2,3</a>
-    ...     <b type="array(int)">1</b>
-    ...     <c type="int">1</c>
-    ...     <d type="string">one</d>
-    ...     <e type="array(string)">one</e>
-    ...     <prop1>one</prop1>
-    ...     <sub>
-    ...         <prop1>two</prop1>
-    ...         <prop2 type="integer" valid_values="1,2">2</prop2>
-    ...     </sub>
+    ...   <a type="array(int)">1,2,3</a>
+    ...   <b type="array(int)">1</b>
+    ...   <c type="int">1</c>
+    ...   <d type="string">one</d>
+    ...   <e type="array(string)">one</e>
+    ...   <prop1>one</prop1>
+    ...   <sub>
+    ...     <prop1>two</prop1>
+    ...     <prop2 type="integer" valid_values="1,2">2</prop2>
+    ...   </sub>
+    ...   <sub2 locked="true">
+    ...     <subsub2>
+    ...       <subsubsub2>
+    ...         <lprop2>hi</lprop2>
+    ...       </subsubsub2>
+    ...     </subsub2>
+    ...   </sub2>
+    ...   <sub3>
+    ...     <subsub3>
+    ...       <subsubsub3 locked="true">
+    ...         <lprop3>hi</lprop3>
+    ...       </subsubsub3>
+    ...     </subsub3>
+    ...   </sub3>
+    ...   <sub4>
+    ...     <subsub4>
+    ...       <subsubsub4>
+    ...         <lprop4 locked="true">hi</lprop4>
+    ...       </subsubsub4>
+    ...     </subsub4>
+    ...   </sub4>
     ... </root>
     ... '''
     >>> import xml.etree.ElementTree as ET
@@ -350,6 +392,16 @@ def atm_config_chg_impl(xml_root, change, all_matches=False):
     True
     >>> get_xml_nodes(tree,'e')[0].text
     'one, two'
+    >>> ################ Test locked ##################
+    >>> atm_config_chg_impl(tree, 'lprop2=yo')
+    Traceback (most recent call last):
+    SystemExit: ERROR: Cannot change lprop2, it is locked
+    >>> atm_config_chg_impl(tree, 'lprop3=yo')
+    Traceback (most recent call last):
+    SystemExit: ERROR: Cannot change lprop3, it is locked
+    >>> atm_config_chg_impl(tree, 'lprop4=yo')
+    Traceback (most recent call last):
+    SystemExit: ERROR: Cannot change lprop4, it is locked
     """
     node_name, new_value, append_this = parse_change(change)
     matches = get_xml_nodes(xml_root, node_name)
