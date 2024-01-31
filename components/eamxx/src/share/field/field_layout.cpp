@@ -166,17 +166,17 @@ LayoutType get_layout_type (const std::vector<FieldTag>& field_tags) {
     std::vector<FieldTag> lev_tags = {LEV,ILEV};
     return ekat::contains(lev_tags,t);
   };
-  auto is_vec_tag = [](const FieldTag t) {
-    std::vector<FieldTag> vec_tags = {CMP,NGAS,SWBND,LWBND,SWGPT,ISCCPTAU,ISCCPPRS};
-    return ekat::contains(vec_tags,t);
+  auto is_cmp_tag = [](const FieldTag t) {
+    std::vector<FieldTag> cmp_tags = {CMP,NGAS,SWBND,LWBND,SWGPT,ISCCPTAU,ISCCPPRS};
+    return ekat::contains(cmp_tags,t);
   };
   switch (size) {
     case 0:
       result = LayoutType::Scalar2D;
       break;
     case 1:
-      // The only tag left should be a vec tag, 'TL', or a lev tag
-      if (is_vec_tag(tags[0]) or tags[0]==TL) {
+      // The only tag left should be a cmp tag or a lev tag
+      if (is_cmp_tag(tags[0])) {
         result = LayoutType::Vector2D;
       } else if (is_lev_tag(tags[0])) {
         result = LayoutType::Scalar3D;
@@ -184,18 +184,20 @@ LayoutType get_layout_type (const std::vector<FieldTag>& field_tags) {
       break;
     case 2:
       // Possible supported scenarios:
-      //  1) <CMP|TL,LEV|ILEV>
-      //  2) <TL,CMP>
-      if ( (is_vec_tag(tags[0]) or tags[0]==TL) and is_lev_tag(tags[1]) ) {
+      //  1) <CMP,LEV|ILEV>
+      //  3) <CMP1,CMP2>
+      // where CMP,CMP1,CMP2 are any tag in cmp_tags
+      if ( is_cmp_tag(tags[0]) and is_lev_tag(tags[1]) ) {
         result = LayoutType::Vector3D;
-      } else if (tags[0]==TL && is_vec_tag(tags[1]) ) {
+      } else if (is_cmp_tag(tags[0]) and is_cmp_tag(tags[1])) {
         result = LayoutType::Tensor2D;
       }
       break;
     case 3:
       // The only supported scenario is:
-      //  1) <TL,  CMP, LEV|ILEV>
-      if ( tags[0]==TL && is_vec_tag(tags[1]) && is_lev_tag(tags[2]) ) {
+      //  1) <CMP1, CMP2, LEV|ILEV>
+      // where CMP1,CMP2 are any tag in cmp_tags
+      if (is_cmp_tag(tags[0]) and is_cmp_tag(tags[1]) and is_lev_tag(tags[2])) {
         result = LayoutType::Tensor3D;
       }
   }
