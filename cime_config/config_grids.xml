@@ -3638,6 +3638,13 @@
       <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/EC30to60E2r2/map_EC30to60E2r2_to_ne32x8_ATL_traave.20240125.nc</map>
     </gridmap>
 
+    <gridmap atm_grid="ne32x8_ATL" lnd_grid="r05">
+      <map name="ATM2LND_FMAPNAME">cpl/gridmaps/ne32x8_ATL/map_ne32x8_ATL_to_r05_traave.20240125.nc</map>
+      <map name="ATM2LND_SMAPNAME">cpl/gridmaps/ne32x8_ATL/map_ne32x8_ATL_to_r05_trbilin.20240125.nc</map>
+      <map name="LND2ATM_FMAPNAME">cpl/gridmaps/r05/map_r05_to_ne32x8_ATL_traave.20240125.nc</map>
+      <map name="LND2ATM_SMAPNAME">cpl/gridmaps/r05/map_r05_to_ne32x8_ATL_traave.20240125.nc</map>
+    </gridmap>
+
     <gridmap atm_grid="ne32x8_ATL" rof_grid="r05">
       <map name="ATM2ROF_FMAPNAME">cpl/gridmaps/ne32x8_ATL/map_ne32x8_ATL_to_r05_traave.20240125.nc</map>
       <map name="ATM2ROF_SMAPNAME">cpl/gridmaps/ne32x8_ATL/map_ne32x8_ATL_to_r05_traave.20240125.nc</map>
