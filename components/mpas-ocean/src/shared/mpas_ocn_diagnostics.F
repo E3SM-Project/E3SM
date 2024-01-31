@@ -3612,9 +3612,12 @@ contains
       do iCell = 1, nCellsAll
          ! the friction velocity is the square root of the top drag + variance of tidal velocity
          ! (computed regardless of land-ice coverage)
+
          landIceFrictionVelocity(iCell) = sqrt(landIceTopDragCoeff * &
-                                   (2.0_RKIND * kineticEnergyCell(minLevelCell(iCell),iCell) &
-                                   + config_land_ice_flux_rms_tidal_velocity**2))
+                                   ((2.0_RKIND * kineticEnergyCell(minLevelCell(iCell),iCell))**2 &
+                                   + config_land_ice_flux_tidal_Jourdain_alpha**2 * &
+                                   (config_land_ice_flux_tidal_Jourdain_A0 * landIceTidalFrictionVelocity(iCell) + &
+                                   config_land_ice_flux_tidal_Jourdain_U0)**2))
       end do
 #ifndef MPAS_OPENACC
       !$omp end do
