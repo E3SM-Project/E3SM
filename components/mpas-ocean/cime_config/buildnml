@@ -331,6 +331,7 @@ def buildnml(case, caseroot, compname):
         restoring_file = 'sss.PHC2_monthlyClimatology.ECwISC30to60E2r1_nomask.201221.nc'
         analysis_mask_file = 'ECwISC30to60E2r1_mocBasinsAndTransects20210623.nc'
         ic_date = '230220'
+        u_tidal_rms_file = 'ECwISC30to60E2r1_velocityTidalRMS_CATS2008.nc'
         ic_prefix = 'ocean.ECwISC30to60E2r1'
         if ocn_ic_mode == 'spunup':
             ic_date = '230220'
