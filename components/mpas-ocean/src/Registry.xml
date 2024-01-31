@@ -2212,7 +2212,7 @@
 			<var_array name="landIceInterfaceTracers"/>
 			<var_array name="landIceBoundaryLayerTracers"/>
 			<var name="landIceFrictionVelocity"/>
-			<var name="landIceTidalFrictionVelocity"/>
+			<var name="velocityTidalRMS"/>
 			<var name="topDragMagnitude"/>
 			<var name="landIceFreshwaterFlux"/>
 			<var name="landIceHeatFlux"/>
@@ -3255,8 +3255,8 @@
 			description="The friction velocity $u_*$ under land ice"
 			packages="landIceFluxesPKG"
 		/>
-		<var name="landIceTidalFrictionVelocity" type="real" dimensions="nCells" units="m s^-1"
-			description="The tidal velocity that contributes to friction velocity $u_*$ under land ice"
+		<var name="velocityTidalRMS" type="real" dimensions="nCells" units="m s^-1"
+			description="Root mean square tidal velocity from tidal model for drag and melt parametrizations"
 			packages="landIceFluxesPKG"
 		/>
 		<var name="topDrag" type="real" dimensions="nEdges Time" units="N m^-2"

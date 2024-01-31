@@ -3616,7 +3616,7 @@ contains
          landIceFrictionVelocity(iCell) = sqrt(landIceTopDragCoeff * &
                                    ((2.0_RKIND * kineticEnergyCell(minLevelCell(iCell),iCell))**2 &
                                    + config_land_ice_flux_tidal_Jourdain_alpha**2 * &
-                                   (config_land_ice_flux_tidal_Jourdain_A0 * landIceTidalFrictionVelocity(iCell) + &
+                                   (config_land_ice_flux_tidal_Jourdain_A0 * velocityTidalRMS(iCell) + &
                                    config_land_ice_flux_tidal_Jourdain_U0)**2))
       end do
 #ifndef MPAS_OPENACC
