@@ -3255,7 +3255,7 @@
 			description="The friction velocity $u_*$ under land ice"
 			packages="landIceFluxesPKG"
 		/>
-		<var name="landIceTidalFrictionVelocity" type="real" dimensions="nCells Time" units="m s^-1"
+		<var name="landIceTidalFrictionVelocity" type="real" dimensions="nCells" units="m s^-1"
 			description="The tidal velocity that contributes to friction velocity $u_*$ under land ice"
 			packages="landIceFluxesPKG"
 		/>
