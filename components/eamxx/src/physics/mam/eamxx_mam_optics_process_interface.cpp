@@ -10,7 +10,11 @@
 namespace scream {
 
 MAMOptics::MAMOptics(const ekat::Comm &comm, const ekat::ParameterList &params)
-    : AtmosphereProcess(comm, params), aero_config_() {}
+    : AtmosphereProcess(comm, params), aero_config_() {
+        EKAT_REQUIRE_MSG(m_params.isParameter("path_to_tables"),
+      "ERROR: path_to_tbales is missing from mam_optics parameter list.");
+
+    }
 
 AtmosphereProcessType MAMOptics::type() const {
   return AtmosphereProcessType::Physics;
@@ -304,7 +308,9 @@ void MAMOptics::initialize_impl(const RunType run_type) {
 
     mam_coupling::set_parameters_table(aerosol_optics_host_data, rrtmg_params,
                                        layouts, host_views);
-    std::string mam_aerosol_optics_path = "mam_aerosol_optics/";
+
+    std::string mam_aerosol_optics_path =  m_params.get<std::string>("path_to_tables");
+
     // FIXME: this name need to be pass in the input file.
     std::vector<std::string> name_table_modes = {
         mam_aerosol_optics_path + "mam4_mode1_rrtmg_aeronetdust_c141106.nc",
