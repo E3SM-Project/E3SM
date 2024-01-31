@@ -7847,7 +7847,7 @@ contains
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
     ! locals
     integer :: fc
-    integer :: c
+    integer :: c, j, k
 
     if(.not.use_fates) return
 
@@ -7863,6 +7863,15 @@ contains
        this%hrv_xsmrpool_to_atm(c) = 0._r8
 
     end do
+    
+    do k = 1, ndecomp_pools
+      do j = 1, nlevdecomp_full
+        do fc = 1,num_soilc
+           c = filter_soilc(fc)
+           this%m_decomp_cpools_to_fire_vr(c,j,k) = 0._r8
+        end do
+       end do
+     end do
 
 
   end subroutine col_cf_zero_forfates_veg
