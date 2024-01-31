@@ -73,16 +73,16 @@ module MOSART_Budgets_mod
   character(len=8),parameter :: pname(p_size) = &
        (/'    inst','   daily',' monthly','  annual','all_time' /)
 
-  real(r8), public :: rof_budg_fluxG  (f_size, p_size) ! global flux sum (volume/time)
-  real(r8), public :: rof_budg_other  (o_size, p_size) ! global "other" term (volume)
-  real(r8), public :: rof_budg_stateG (s_size, p_size) ! global state sum (volume)
-  real(r8), public :: rof_budg_fluxN  (f_size, p_size) ! counter, valid only on root pe
+  real(r8), public :: rof_budg_fluxG  (f_size, p_size) = 0.0_r8 ! global flux sum (volume/time)
+  real(r8), public :: rof_budg_other  (o_size, p_size) = 0.0_r8 ! global "other" term (volume)
+  real(r8), public :: rof_budg_stateG (s_size, p_size) = 0.0_r8 ! global state sum (volume)
+  real(r8), public :: rof_budg_fluxN  (f_size, p_size) = 0.0_r8 ! counter, valid only on root pe
 
   real(r8) :: rof_budg_other_rest (o_size,p_size) = 0.0_r8 ! "other" term from restart file
 
-  real(r8), target, public :: rof_budg_fluxG_1D (f_size*p_size)
-  real(r8), target, public :: rof_budg_stateG_1D(s_size*p_size)
-  real(r8), target, public :: rof_budg_fluxN_1D (f_size*p_size)
+  real(r8), target, public :: rof_budg_fluxG_1D (f_size*p_size) = 0.0_r8
+  real(r8), target, public :: rof_budg_stateG_1D(s_size*p_size) = 0.0_r8
+  real(r8), target, public :: rof_budg_fluxN_1D (f_size*p_size) = 0.0_r8
 
   !----- formats -----
   character(*),parameter :: FA0= "('    ',12x,(3x,a10,2x),' | ',(3x,a10,2x))"
