@@ -231,6 +231,7 @@ void register_dimension(const std::string &filename, const std::string& shortnam
     EKAT_REQUIRE_MSG (err==PIO_NOERR,
         "Error! Something went wrong querying for the unlimited dimension id.\n"
         " - filename: " + filename + "\n"
+        " - dimension : " + shortname + "\n"
         " - pio error: " + std::to_string(err) + "\n");
     if (length==0) {
       EKAT_REQUIRE_MSG ( unlimid==dimid,
@@ -292,7 +293,8 @@ void register_variable(const std::string &filename, const std::string& shortname
   if (mode==Write) {
     EKAT_REQUIRE_MSG ( units!="" and nc_dtype!="",
         "Error! Missing valid units and/or nc_dtype arguments for file open in Write mode.\n"
-          " - filename: " + filename + "\n");
+        " - filename: " + filename + "\n"
+        " - varname : " + shortname + "\n");
   } else {
     EKAT_REQUIRE_MSG ( has_var,
         "Error! Variable not found in file open in " + mode_str + " mode.\n"
@@ -357,6 +359,7 @@ void register_variable(const std::string &filename, const std::string& shortname
     EKAT_REQUIRE_MSG(var_dimensions==dims_from_file,
         "Error! Input variable dimensions do not match the ones from the file.\n"
         " - filename  : " + filename + "\n"
+        " - varname   : " + shortname + "\n"
         " - input dims: (" + ekat::join(var_dimensions,",") + ")\n"
         " - file dims : (" + ekat::join(dims_from_file,",") + ")\n");
 
