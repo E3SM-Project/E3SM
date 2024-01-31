@@ -2841,15 +2841,21 @@ module li_thermal
                ! to the form as Eqn (66) in Aschwanden and others (2012) "An
                ! enthalpy formulation for glaciers and ice sheets". An extra
                ! term (1-w) would be more accurate.
-                basalWaterThickness(iCell) = basalWaterThickness(iCell) - deltat*groundedBasalMassBal(iCell)
-                ! TZ: allow basalWaterThickness freely accumulate here. Change it to something else for difference cases
-                if (basalWaterThickness(iCell) < 0.0_RKIND) then
-                    basalWaterThickness(iCell) = 0.0_RKIND
-                endif
             else   ! temperature solver
                groundedBasalMassBal(iCell) = -netBasalFlux / (latent_heat_ice * rhoi)   ! m/s
             endif
 
+            ! Update basal water thickness based on melting or freezing (same for enthalpy or temperature)
+            if (groundedBasalMassBal(iCell) > 0.0) then
+               ! for freezing conditions (+SMB), limit positive BMB to the available basal water
+               groundedBasalMassBal(iCell) = min(groundedBasalMassBal(iCell), basalWaterThickness(iCell) / deltat)
+            endif
+            basalWaterThickness(iCell) = basalWaterThickness(iCell) - deltat*groundedBasalMassBal(iCell)
+
+            ! negative water thickness should not occur, but if round off leads to it, set back to zero
+            if (basalWaterThickness(iCell) < 0.0_RKIND) then
+               basalWaterThickness(iCell) = 0.0_RKIND
+            endif
 
          endif   ! ice is present and grounded
 
