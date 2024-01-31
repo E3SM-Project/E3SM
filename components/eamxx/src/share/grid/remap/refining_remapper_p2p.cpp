@@ -242,6 +242,35 @@ void RefiningRemapperP2P::pack_and_send ()
         Kokkos::parallel_for(policy,pack);
         break;
       }
+      case 4:
+      {
+        const auto v = f.get_view<const Real****>();
+        const int dim1 = fl.dim(1);
+        const int dim2 = fl.dim(2);
+        const int dim3 = fl.dim(3);
+        const int f_col_size = dim1*dim2*dim3;
+        auto policy = ESU::get_default_team_policy(num_exports,dim1*dim2*dim3);
+        auto pack = KOKKOS_LAMBDA(const TeamMember& team) {
+          const int iexp = team.league_rank();
+          const int icol = export_lids(iexp);
+          const int pid  = export_pids(iexp);
+          auto pid_offset = pids_send_offsets(pid);
+          auto pos_within_pid = iexp - pid_offset;
+          auto offset = pid_offset*total_col_size
+                      + ncols_send(pid)*f_col_sizes_scan_sum
+                      + pos_within_pid*f_col_size;
+          auto col_pack = [&](const int& idx) {
+            const int j = (idx / dim3) / dim2;
+            const int k = (idx / dim3) % dim2;
+            const int l =  idx % dim3;
+            send_buf(offset+idx) = v(icol,j,k,l);
+          };
+          auto tvr = Kokkos::TeamVectorRange(team,f_col_size);
+          Kokkos::parallel_for(tvr,col_pack);
+        };
+        Kokkos::parallel_for(policy,pack);
+        break;
+      }
       default:
         EKAT_ERROR_MSG ("Unexpected field rank in RefiningRemapperP2P::pack.\n"
             "  - MPI rank  : " + std::to_string(m_comm.rank()) + "\n"
@@ -350,6 +379,35 @@ void RefiningRemapperP2P::recv_and_unpack ()
             const int j = idx / dim2;
             const int k = idx % dim2;
             v(icol,j,k) = recv_buf(offset+idx);
+          };
+          auto tvr = Kokkos::TeamVectorRange(team,f_col_size);
+          Kokkos::parallel_for(tvr,col_unpack);
+        };
+        Kokkos::parallel_for(policy,unpack);
+        break;
+      }
+      case 4:
+      {
+        auto v = f.get_view<Real****>();
+        const int dim1 = fl.dim(1);
+        const int dim2 = fl.dim(2);
+        const int dim3 = fl.dim(3);
+        const int f_col_size = dim1*dim2*dim3;
+        auto policy = ESU::get_default_team_policy(num_imports,dim1*dim2*dim3);
+        auto unpack = KOKKOS_LAMBDA (const TeamMember& team) {
+          const int idx  = team.league_rank();
+          const int pid  = import_pids(idx);
+          const int icol = import_lids(idx);
+          const auto pid_offset = pids_recv_offsets(pid);
+          const auto pos_within_pid = idx - pid_offset;
+          auto offset = pid_offset*total_col_size
+                      + ncols_recv(pid)*f_col_sizes_scan_sum
+                      + pos_within_pid*f_col_size;
+          auto col_unpack = [&](const int& idx) {
+            const int j = (idx / dim3) / dim2;
+            const int k = (idx / dim3) % dim2;
+            const int l =  idx % dim3;
+            v(icol,j,k,l) = recv_buf(offset+idx);
           };
           auto tvr = Kokkos::TeamVectorRange(team,f_col_size);
           Kokkos::parallel_for(tvr,col_unpack);

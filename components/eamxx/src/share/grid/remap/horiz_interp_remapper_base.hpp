@@ -44,6 +44,9 @@ public:
 
 protected:
 
+  FieldLayout create_layout (const FieldLayout& fl_in,
+                             const grid_ptr_type& grid) const;
+
   const identifier_type& do_get_src_field_id (const int ifield) const override {
     return m_src_fields[ifield].get_header().get_identifier();
   }
