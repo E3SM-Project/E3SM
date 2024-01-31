@@ -8,6 +8,22 @@ namespace scream
 
 namespace
 {
+KOKKOS_INLINE_FUNCTION
+void copy_scream_array_to_mam4xx(
+    const haero::ThreadTeam &team,
+    MAMAci::view_2d mam4xx_view[], 
+    MAMAci::const_view_3d scream_view,
+    const int icol,
+    const int nlev,
+    const int num_views) 
+{
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, 0u, nlev), KOKKOS_LAMBDA(int kk) { 
+    for (int i=0; i<num_views; ++i) {
+      mam4xx_view[i](icol,kk) = scream_view(icol, kk, i);
+    }
+  });
+}
+
 void copy_scream_array_to_mam4xx(
     haero::ThreadTeamPolicy team_policy,
     MAMAci::view_2d mam4xx_view[], 
@@ -17,11 +33,33 @@ void copy_scream_array_to_mam4xx(
 {
   Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
     const int icol = team.league_rank();
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, 0u, nlev), KOKKOS_LAMBDA(int kk) { 
-      for (int i=0; i<num_views; ++i) {
-        mam4xx_view[i](icol,kk) = scream_view(icol, kk, i);
-      }
-    });
+    copy_scream_array_to_mam4xx(team, mam4xx_view, scream_view, icol, nlev, num_views);
+  });
+}
+
+KOKKOS_INLINE_FUNCTION
+void compute_w0_and_rho(
+    const haero::ThreadTeam &team,
+    MAMAci::view_2d w0, 
+    MAMAci::view_2d rho, 
+    MAMAci::const_view_2d omega,
+    MAMAci::const_view_2d T_mid,
+    MAMAci::const_view_2d p_mid,
+    const int icol,
+    const int top_lev,
+    const int nlev) 
+{
+  //Get physical constants
+  using C  = physics::Constants<Real>;
+  static constexpr auto gravit = C::gravit; // Gravity [m/s2]
+  static constexpr auto rair   = C::Rair;   // Gas constant for dry air [J/(kg*K) or J/Kg/K]
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, 0u, top_lev), KOKKOS_LAMBDA(int kk) { 
+    w0(icol,kk) = 0;
+    rho(icol, kk) = -999.0;
+  });
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, top_lev, nlev), KOKKOS_LAMBDA(int kk) { 
+    rho(icol,kk) = p_mid(icol,kk)/(rair*T_mid(icol,kk));
+    w0(icol,kk) = -1.0*omega(icol,kk)/(rho(icol,kk)*gravit);
   });
 }
 void compute_w0_and_rho(
@@ -35,21 +73,28 @@ void compute_w0_and_rho(
 {
   //Get physical constants
   using C  = physics::Constants<Real>;
-  static constexpr auto gravit = C::gravit; // Gravity [m/s2]
-  static constexpr auto rair   = C::Rair;   // Gas constant for dry air [J/(kg*K) or J/Kg/K]
   MAMAci::const_view_2d omega = wet_atmosphere.omega;
   MAMAci::const_view_2d T_mid = dry_atmosphere.T_mid;
   MAMAci::const_view_2d p_mid = dry_atmosphere.p_mid;
   Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
     const int icol = team.league_rank();
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, 0u, top_lev), KOKKOS_LAMBDA(int kk) { 
-      w0(icol,kk) = 0;
-      rho(icol, kk) = -999.0;
-    });
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, top_lev, nlev), KOKKOS_LAMBDA(int kk) { 
-      rho(icol,kk) = p_mid(icol,kk)/(rair*T_mid(icol,kk));
-      w0(icol,kk) = -1.0*omega(icol,kk)/(rho(icol,kk)*gravit);
-    });
+    compute_w0_and_rho( team, w0, rho, omega, T_mid, p_mid, icol, top_lev, nlev);
+  });
+}
+
+KOKKOS_INLINE_FUNCTION
+void compute_tke_using_w_sec(
+    const haero::ThreadTeam &team,
+    MAMAci::view_2d tke, 
+    MAMAci::const_view_2d w_sec,
+    const int icol,
+    const int nlev) 
+{
+  // FIXME Is this the correct boundary condition for tke at the surface?
+  // TKE seems to be at interfaces but w_sec is at cell centers so this
+  // descrepensy needs to be worked out.
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, 0u, nlev+1), KOKKOS_LAMBDA(int kk) { 
+    tke(icol,kk) = (3.0/2.0)*w_sec(icol,kk);
   });
 }
 void compute_tke_using_w_sec(
@@ -60,12 +105,33 @@ void compute_tke_using_w_sec(
 {
   Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
     const int icol = team.league_rank();
-    // FIXME Is this the correct boundary condition for tke at the surface?
-    // TKE seems to be at interfaces but w_sec is at cell centers so this
-    // descrepensy needs to be worked out.
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, 0u, nlev+1), KOKKOS_LAMBDA(int kk) { 
-      tke(icol,kk) = (3.0/2.0)*w_sec(icol,kk);
-    });
+    compute_tke_using_w_sec(team, tke, w_sec, icol, nlev);
+  });
+}
+KOKKOS_INLINE_FUNCTION
+void compute_subgrid_scale_velocities(
+    const haero::ThreadTeam &team,
+    MAMAci::view_2d wsub, 
+    MAMAci::view_2d wsubice, 
+    MAMAci::view_2d wsig, 
+    MAMAci::const_view_2d tke,
+    const Real wsubmin,
+    const int icol,
+    const int top_lev,
+    const int nlev) 
+{
+  // More refined computation of sub-grid vertical velocity
+  // Set to be zero at the surface by initialization.
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, 0u, top_lev), KOKKOS_LAMBDA(int kk) { 
+    wsub(icol,kk)  = wsubmin;
+    wsubice(icol,kk) = 0.001;
+    wsig(icol,kk)  = 0.001;
+  });
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, top_lev, nlev), KOKKOS_LAMBDA(int kk) { 
+    wsub(icol,kk)  = haero::sqrt(0.5*(tke(icol,kk) + tke(icol,kk+1))*(2.0/3.0));
+    wsig(icol,kk)  = mam4::utils::min_max_bound(0.001, 10.0, wsub(icol,kk));
+    wsubice(icol,kk) = mam4::utils::min_max_bound(0.2, 10.0, wsub(icol,kk));
+    wsub(icol,kk)  = haero::max(wsubmin, wsub(icol,kk));
   });
 }
 void compute_subgrid_scale_velocities(
@@ -78,21 +144,9 @@ void compute_subgrid_scale_velocities(
     const int top_lev,
     const int nlev) 
 {
-  // More refined computation of sub-grid vertical velocity
-  // Set to be zero at the surface by initialization.
   Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
     const int icol = team.league_rank();
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, 0u, top_lev), KOKKOS_LAMBDA(int kk) { 
-      wsub(icol,kk)  = wsubmin;
-      wsubice(icol,kk) = 0.001;
-      wsig(icol,kk)  = 0.001;
-    });
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, top_lev, nlev), KOKKOS_LAMBDA(int kk) { 
-      wsub(icol,kk)  = haero::sqrt(0.5*(tke(icol,kk) + tke(icol,kk+1))*(2.0/3.0));
-      wsig(icol,kk)  = mam4::utils::min_max_bound(0.001, 10.0, wsub(icol,kk));
-      wsubice(icol,kk) = mam4::utils::min_max_bound(0.2, 10.0, wsub(icol,kk));
-      wsub(icol,kk)  = haero::max(wsubmin, wsub(icol,kk));
-    });
+    compute_subgrid_scale_velocities(team, wsub, wsubice, wsig, tke, wsubmin, icol, top_lev, nlev);
   });
 }
 
@@ -147,6 +201,19 @@ Real subgrid_mean_updraft(const Real w0, const Real wsig)
   }
   return ww;
 }
+KOKKOS_INLINE_FUNCTION
+void compute_subgrid_mean_updraft_velocities(
+    const haero::ThreadTeam &team, 
+    MAMAci::view_2d w2, 
+    MAMAci::const_view_2d w0,
+    MAMAci::const_view_2d wsig,
+    const int icol,
+    const int nlev) 
+{
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, 0u, nlev), KOKKOS_LAMBDA(int kk) { 
+    w2(icol,kk) = subgrid_mean_updraft(w0(icol,kk), wsig(icol,kk));
+  });
+}
 void compute_subgrid_mean_updraft_velocities(
     haero::ThreadTeamPolicy team_policy,
     MAMAci::view_2d w2, 
@@ -156,9 +223,20 @@ void compute_subgrid_mean_updraft_velocities(
 {
   Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
     const int icol = team.league_rank();
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, 0u, nlev), KOKKOS_LAMBDA(int kk) { 
-      w2(icol,kk) = subgrid_mean_updraft(w0(icol,kk), wsig(icol,kk));
-    });
+    compute_subgrid_mean_updraft_velocities(team, w2, w0, wsig, icol, nlev);
+  });
+}
+KOKKOS_INLINE_FUNCTION
+void compute_aitken_dry_diameter(
+    const haero::ThreadTeam &team,
+    MAMAci::view_2d aitken_dry_dia, 
+    MAMAci::const_view_3d dgnum,
+    const int icol,
+    const int top_lev) 
+{
+  const int aitken_idx = static_cast<int>(mam4::ModeIndex::Aitken);
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, 0u, top_lev), KOKKOS_LAMBDA(int kk) { 
+    aitken_dry_dia(icol,kk)  = dgnum(icol, kk, aitken_idx);
   });
 }
 void compute_aitken_dry_diameter(
@@ -169,10 +247,7 @@ void compute_aitken_dry_diameter(
 {
   Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
     const int icol = team.league_rank();
-    const int aitken_idx = static_cast<int>(mam4::ModeIndex::Aitken);
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, 0u, top_lev), KOKKOS_LAMBDA(int kk) { 
-      aitken_dry_dia(icol,kk)  = dgnum(icol, kk, aitken_idx);
-    });
+    compute_aitken_dry_diameter(team, aitken_dry_dia, dgnum, icol, top_lev);
   });
 }
 
@@ -252,12 +327,15 @@ void compute_nucleate_ice_tendencies(
     nucleate_ice.compute_tendencies(aero_config, team, t, dt, atmos, surf, progs, diags, tends);
   });
 }
+KOKKOS_INLINE_FUNCTION
 void store_liquid_cloud_fraction(
-    haero::ThreadTeamPolicy team_policy,
+    const haero::ThreadTeam &team,
     MAMAci::view_2d cloud_frac_new, 
     MAMAci::view_2d cloud_frac_old, 
-    mam_coupling::WetAtmosphere &wet_atmosphere,
+    MAMAci::const_view_2d qc,
+    MAMAci::const_view_2d qi,
     MAMAci::const_view_2d liqcldf,
+    const int icol,
     const int top_lev) 
 {
   //-------------------------------------------------------------
@@ -270,21 +348,43 @@ void store_liquid_cloud_fraction(
   // a note of it and use the new cloud fraction for the 
   // old cloud fraction.
   //-------------------------------------------------------------
+  static constexpr auto qsmall = 1e-18; //cut-off for cloud amount (ice or liquid)
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, 0u, top_lev), KOKKOS_LAMBDA(int kk) { 
+    const Real qcld = qc(icol,kk) + qi(icol,kk);
+    if (qcld > qsmall) {
+      cloud_frac_new(icol,kk)=liqcldf(icol,kk);
+      cloud_frac_old(icol,kk)=liqcldf(icol,kk); // FIXME should be liqcldf_old
+    } else {
+      cloud_frac_new(icol,kk)=0;
+      cloud_frac_old(icol,kk)=0;
+    }
+  });
+}
+void store_liquid_cloud_fraction(
+    haero::ThreadTeamPolicy team_policy,
+    MAMAci::view_2d cloud_frac_new, 
+    MAMAci::view_2d cloud_frac_old, 
+    mam_coupling::WetAtmosphere &wet_atmosphere,
+    MAMAci::const_view_2d liqcldf,
+    const int top_lev) 
+{
   MAMAci::const_view_2d qc = wet_atmosphere.qc;
   MAMAci::const_view_2d qi = wet_atmosphere.qi;
   Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
     const int icol = team.league_rank();
-    static constexpr auto qsmall = 1e-18; //cut-off for cloud amount (ice or liquid)
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, 0u, top_lev), KOKKOS_LAMBDA(int kk) { 
-      const Real qcld = qc(icol,kk) + qi(icol,kk);
-      if (qcld > qsmall) {
-        cloud_frac_new(icol,kk)=liqcldf(icol,kk);
-        cloud_frac_old(icol,kk)=liqcldf(icol,kk); // FIXME should be liqcldf_old
-      } else {
-        cloud_frac_new(icol,kk)=0;
-        cloud_frac_old(icol,kk)=0;
-      }
-    });
+    store_liquid_cloud_fraction(team, cloud_frac_new, cloud_frac_old, qc, qi, liqcldf, icol, top_lev);
+  });
+}
+KOKKOS_INLINE_FUNCTION
+void compute_recipical_pseudo_density(
+    const haero::ThreadTeam &team,
+    MAMAci::view_2d rpdel, 
+    MAMAci::const_view_2d pdel,
+    const int icol,
+    const int nlev) 
+{
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, 0u, nlev), KOKKOS_LAMBDA(int kk) { 
+    rpdel(icol,kk) = 1/pdel(icol,kk);
   });
 }
 void compute_recipical_pseudo_density(
@@ -295,9 +395,7 @@ void compute_recipical_pseudo_density(
 {
   Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) { 
     const int icol = team.league_rank();
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, 0u, nlev), KOKKOS_LAMBDA(int kk) { 
-      rpdel(icol,kk) = 1/pdel(icol,kk);
-    });
+    compute_recipical_pseudo_density(team, rpdel,  pdel, icol, nlev);
   });
 }
 
@@ -468,6 +566,21 @@ void call_function_dropmixnuc(
      ekat::subview(qqcwtend,  icol) );
   });
 }
+KOKKOS_INLINE_FUNCTION
+void copy_mam4xx_array_to_scream(
+  const haero::ThreadTeam &team,
+  MAMAci::view_3d scream,
+  MAMAci::view_2d mam4xx[],
+  const int icol,
+  const int len,
+  const int nlev)
+{
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, 0u, nlev), KOKKOS_LAMBDA(int kk) { 
+    for (int i=0; i<len; ++i) {
+       scream(icol, kk, i) = mam4xx[i](icol,kk);
+    }
+  });
+}
 void copy_mam4xx_array_to_scream(
   haero::ThreadTeamPolicy team_policy,
   MAMAci::view_3d scream,
@@ -477,11 +590,7 @@ void copy_mam4xx_array_to_scream(
 {
   Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
     const int icol = team.league_rank();
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, 0u, nlev), KOKKOS_LAMBDA(int kk) { 
-      for (int i=0; i<len; ++i) {
-         scream(icol, kk, i) = mam4xx[i](icol,kk);
-      }
-    });
+    copy_mam4xx_array_to_scream(team, scream, mam4xx, icol, len, nlev);
   });
 }
 
@@ -654,12 +763,16 @@ void MAMAci::set_grids(const std::shared_ptr<const GridsManager> grids_manager) 
   FieldLayout scalar3d_layout_mid{ {COL, LEV}, {ncol_, nlev_} }; // mid points
   FieldLayout scalar3d_layout_int { {COL,ILEV}, {ncol_, nlev_+1} }; //interfaces
 
-  using namespace ekat::units;
+  ekat::units::Units kg =  ekat::units::kg;
+  ekat::units::Units Pa =  ekat::units::Pa;
+  ekat::units::Units s  =  ekat::units::s;
+  ekat::units::Units m  =  ekat::units::m;
+  ekat::units::Units K  =  ekat::units::K;
   auto q_unit = kg/kg; // units of mass mixing ratios of tracers
   q_unit.set_string("kg/kg");
   auto n_unit = 1/kg; // units of number mixing ratios of tracers
   n_unit.set_string("#/kg");
-  auto nondim = Units::nondimensional();
+  auto nondim = ekat::units::Units::nondimensional();
   // atmospheric quantities
   add_field<Required>("qc",             scalar3d_layout_mid, q_unit, grid_name, "tracers"); // cloud liquid mass mixing ratio [kg/kg]
   add_field<Required>("qi",             scalar3d_layout_mid, q_unit, grid_name, "tracers"); // cloud ice mass mixing ratio [kg/kg]
@@ -711,25 +824,25 @@ void MAMAci::set_grids(const std::shared_ptr<const GridsManager> grids_manager) 
   //MUST FIXME: The aerosols has a wet mixing ratio, we should convert that to dry
 
   // interstitial and cloudborne aerosol tracers of interest: mass (q) and number (n) mixing ratios
-  for (int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+  for (int mode = 0; mode < mam_coupling::num_aero_modes(); ++mode) {
     //interstitial aerosol tracers of interest: number (n) mixing ratios
-    const char* int_nmr_field_name = mam_coupling::int_aero_nmr_field_name(m);
+    const char* int_nmr_field_name = mam_coupling::int_aero_nmr_field_name(mode);
     add_field<Updated>(int_nmr_field_name, scalar3d_layout_mid, n_unit, grid_name, "tracers");
 
     //cloudborne aerosol tracers of interest: number (n) mixing ratios
     //NOTE: DO NOT add cld borne aerosols to the "tracer" group as these are NOT advected
-    const char* cld_nmr_field_name = mam_coupling::cld_aero_nmr_field_name(m);
+    const char* cld_nmr_field_name = mam_coupling::cld_aero_nmr_field_name(mode);
     add_field<Updated>(cld_nmr_field_name, scalar3d_layout_mid, n_unit, grid_name); 
 
     for (int a = 0; a < mam_coupling::num_aero_species(); ++a) {
       // (interstitial) aerosol tracers of interest: mass (q) mixing ratios
-      const char* int_mmr_field_name = mam_coupling::int_aero_mmr_field_name(m, a);
+      const char* int_mmr_field_name = mam_coupling::int_aero_mmr_field_name(mode, a);
       if (strlen(int_mmr_field_name) > 0) 
         add_field<Updated>(int_mmr_field_name, scalar3d_layout_mid, q_unit, grid_name, "tracers");
       
       // (cloudborne) aerosol tracers of interest: mass (q) mixing ratios
       //NOTE: DO NOT add cld borne aerosols to the "tracer" group as these are NOT advected
-      const char* cld_mmr_field_name = mam_coupling::cld_aero_mmr_field_name(m, a);
+      const char* cld_mmr_field_name = mam_coupling::cld_aero_mmr_field_name(mode, a);
       if (strlen(cld_mmr_field_name) > 0) 
         add_field<Updated>(cld_mmr_field_name, scalar3d_layout_mid, q_unit, grid_name);
     }
