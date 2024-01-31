@@ -49,8 +49,8 @@
 <config_dt ocn_grid="SOwISC12to60E2r4">'00:10:00'</config_dt>
 <config_dt ocn_grid="ECwISC30to60E2r1">'00:30:00'</config_dt>
 <config_dt ocn_grid="IcoswISC30E3r5">'00:30:00'</config_dt>
-<config_dt ocn_grid="FRISwISC08to60E3r1">'00:07:30'</config_dt>
-<config_dt ocn_grid="FRISwISC04to60E3r1">'00:03:45'</config_dt>
+<config_dt ocn_grid="FRISwISC08to60E3r1">'00:08:00'</config_dt>
+<config_dt ocn_grid="FRISwISC04to60E3r1">'00:04:00'</config_dt>
 <config_dt ocn_grid="FRISwISC02to60E3r1">'00:02:00'</config_dt>
 <config_dt ocn_grid="FRISwISC01to60E3r1">'00:01:00'</config_dt>
 <config_time_integrator>'split_explicit_ab2'</config_time_integrator>

@@ -25,10 +25,10 @@
 <config_dt ice_grid="SOwISC12to60E2r4">1800.0</config_dt>
 <config_dt ice_grid="ECwISC30to60E2r1">1800.0</config_dt>
 <config_dt ice_grid="IcoswISC30E3r5">1800.0</config_dt>
-<config_dt ice_grid="FRISwISC08to60E3r1">1800.0</config_dt>
-<config_dt ice_grid="FRISwISC04to60E3r1">1800.0</config_dt>
-<config_dt ice_grid="FRISwISC02to60E3r1">1800.0</config_dt>
-<config_dt ice_grid="FRISwISC01to60E3r1">1800.0</config_dt>
+<config_dt ice_grid="FRISwISC08to60E3r1">480.0</config_dt>
+<config_dt ice_grid="FRISwISC04to60E3r1">240.0</config_dt>
+<config_dt ice_grid="FRISwISC02to60E3r1">120.0</config_dt>
+<config_dt ice_grid="FRISwISC01to60E3r1">60.0</config_dt>
 <config_calendar_type>'noleap'</config_calendar_type>
 <config_start_time>'2000-01-01_00:00:00'</config_start_time>
 <config_stop_time>'none'</config_stop_time>
