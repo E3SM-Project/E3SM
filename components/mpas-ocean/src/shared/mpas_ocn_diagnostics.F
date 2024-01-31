@@ -3614,7 +3614,7 @@ contains
          ! (computed regardless of land-ice coverage)
 
          landIceFrictionVelocity(iCell) = sqrt(landIceTopDragCoeff * &
-                                   ((2.0_RKIND * kineticEnergyCell(minLevelCell(iCell),iCell))**2 &
+                                   (2.0_RKIND * kineticEnergyCell(minLevelCell(iCell),iCell) &
                                    + config_land_ice_flux_tidal_Jourdain_alpha**2 * &
                                    (config_land_ice_flux_tidal_Jourdain_A0 * velocityTidalRMS(iCell) + &
                                    config_land_ice_flux_tidal_Jourdain_U0)**2))

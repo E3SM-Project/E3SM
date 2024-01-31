@@ -1027,7 +1027,7 @@
 					description="alpha from parameterization of tidal velocity by Jourdain et al., 2019 - Equation 9, alpha = 0.777"
 					possible_values="Any non-negative real number"
 		/>
-		<nml_option name="config_land_ice_flux_tidal_Jourdain_A0" type="real" default_value="1"
+		<nml_option name="config_land_ice_flux_tidal_Jourdain_A0" type="real" default_value="0"
 					description="A0 from parameterization of tidal velocity by Jourdain et al., 2019 - Equation 9, A0 = 0.656"
 					possible_values="Any non-negative real number"
 		/>
