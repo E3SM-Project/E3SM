@@ -131,6 +131,7 @@ def buildnml(case, caseroot, compname):
         decomp_date = '230422'
         decomp_prefix = 'partitions/mpas-o.graph.info.'
         ic_date = '230220'
+        u_tidal_rms_file = 'oQU240wLI_velocityTidalRMS_CATS2008.nc'
         ic_prefix = 'ocean.QU.240wLI'
         if ocn_ic_mode == 'spunup':
             logger.warning("WARNING: The specified compset is requesting ocean ICs spunup from a G-case")
