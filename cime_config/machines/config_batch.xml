@@ -561,6 +561,7 @@
     </batch_system>
     
     <batch_system MACH="polaris" type="pbspro">
+      <batch_submit>/eagle/E3SM_RRM/tools/qsub/throttle</batch_submit>
       <directives>
         <directive> -l filesystems=home:grand:eagle </directive>
       </directives>

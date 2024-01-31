@@ -3180,24 +3180,21 @@
       <modules>
         <command name="purge"/>
         <command name="load">cmake/3.23.2</command>
-        <command name="unload">PrgEnv-nvhpc nvhpc craype-accel-nvidia80</command>
+        <command name="load">craype-x86-rome</command>
       </modules>
-      <modules compiler="gnu">
+      <modules compiler="gnu.*">
         <command name="load">PrgEnv-gnu/8.3.3</command>
-        <command name="swap">gcc/12.2.0 gcc/11.2.0</command>
       </modules>
       <modules compiler="gnugpu">
-        <command name="load">PrgEnv-gnu/8.3.3</command>
         <command name="swap">gcc/12.2.0 gcc/11.2.0</command>
         <command name="load">cudatoolkit-standalone/11.4.4</command>
       </modules>
-      <modules compiler="nvidia">
-        <command name="load">PrgEnv-nvidia/8.3.3</command>
-        <command name="load">craype-accel-host</command>
+      <modules compiler="nvidia.*">
+        <command name="load">PrgEnv-nvhpc/8.3.3</command>
       </modules>
       <modules compiler="nvidiagpu">
-        <command name="load">PrgEnv-nvidia/8.3.3</command>
-        <!--command name="load">cudatoolkit-standalone/11.4.4</command-->
+        <command name="load">cudatoolkit-standalone/11.4.4</command>
+        <command name="load">craype-accel-nvidia80</command>
       </modules>
       <modules>
         <command name="load">craype-network-ofi</command>
@@ -3216,9 +3213,13 @@
     </environment_variables>
     <environment_variables compiler=".*gpu">
       <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
+      <env name="CRAY_ACCEL_TARGET">nvidia80</env>
       <env name="CUDA_VISIBLE_DEVICE">1</env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE">
+    <environment_variables compiler="gnu.*">
+      <env name="LD_PRELOAD">/opt/cray/pe/gcc/11.2.0/snos/lib64/libstdc++.so</env>
+    </environment_variables>
+    <environment_variables BUILD_THREADED="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
