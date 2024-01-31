@@ -71,7 +71,7 @@
 
   <compset>
       <alias>F20TR-SCREAMv1</alias> <!-- SCREAMv1 AMIP -->
-      <lname>20TR_SCREAM_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+      <lname>20TR_SCREAM_ELM%SPBC_CICE%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
   </compset>
 
   <entries>
