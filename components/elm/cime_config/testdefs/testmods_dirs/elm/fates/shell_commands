@@ -1,3 +1,7 @@
 #!/bin/bash
 if [ `./xmlquery --value MACH` == bebop ]; then ./xmlchange --id LND_PIO_TYPENAME --val netcdf; fi
 ./xmlchange NTHRDS=1
+# increase memory leak tolerance to 15% for FATES tests on perlmutter/alvarez
+if [[ `./xmlquery --value MACH` =~ ^pm-(cpu|gpu)$ ]]; then ./xmlchange TEST_MEMLEAK_TOLERANCE=0.20; fi
+if [[ `./xmlquery --value MACH` =~ ^alvarez$ ]]; then ./xmlchange TEST_MEMLEAK_TOLERANCE=0.15; fi
+if [[ `./xmlquery --value MACH` =~ ^crusher$ ]]; then ./xmlchange TEST_MEMLEAK_TOLERANCE=0.2; fi

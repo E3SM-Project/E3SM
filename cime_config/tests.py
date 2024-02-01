@@ -70,7 +70,6 @@ _TESTS = {
             "ERS_D.f19_g16.I1850GSWCNPRDCTCBC.elm-ctc_f19_g16_I1850GSWCNPRDCTCBC",
             "ERS_D.f09_f09.IELM.elm-solar_rad",
             "ERS_D.f09_f09.IELM.elm-koch_snowflake",
-            "SMS_Ld20_D.f45_f45.IELMFATES.elm-fates_rd"
             )
         },
 
@@ -78,14 +77,12 @@ _TESTS = {
     "e3sm_land_developer" : {
         "share" : True,
         "time"  : "0:45:00",
-        "inherit" : ("e3sm_mosart_developer", "e3sm_mosart_exenoshare", "e3sm_land_exeshare", "e3sm_land_exenoshare", "e3sm_land_debug"),
+        "inherit" : ("e3sm_mosart_developer", "e3sm_mosart_exenoshare", "e3sm_land_exeshare", "e3sm_land_exenoshare", "e3sm_land_debug", "fates_elm_developer"),
         "tests" : (
             "ERS.f19_f19.I1850ELMCN",
             "ERS.f19_f19.I20TRELMCN",
             "SMS_Ld1.hcru_hcru.I1850CRUELMCN",
             "SMS_Ly2_P1x1.1x1_smallvilleIA.IELMCNCROP.elm-force_netcdf_pio",
-            "SMS_Ld20.f45_f45.IELMFATES.elm-fates_eca",
-            "SMS_Ld30.f45_f45.IELMFATES.elm-fates_satphen",
             "ERS.f19_g16.I1850ELM.elm-betr",
             "ERS.f19_g16.I1850ELM.elm-vst",
             "ERS.f09_g16.I1850ELMCN.elm-bgcinterface",
@@ -380,11 +377,53 @@ _TESTS = {
             )
         },
 
-    "fates" : {
+    #fates debug tests included in e3sm land developer test runs
+    "fates_elm_debug" : {
         "tests" : (
-            "ERS_Ld9.1x1_brazil.IELMFATES",
-            "ERS_D_Ld9.1x1_brazil.IELMFATES",
-            "SMS_D_Lm6.1x1_brazil.IELMFATES",
+            "SMS_D_Ld20.f45_f45.IELMFATES.elm-fates_rd",
+            "ERS_D_Ld15.f45_g37.IELMFATES.elm-fates_cold_treedamage",
+            )
+        },
+
+    #fates non-debug tests included in e3sm land developer test runs
+    "fates_elm_developer" : {
+        "inherit" : ("fates_elm_debug"),
+        "tests" : (
+            "ERP_Ld15.ne4pg2_ne4pg2.IELMFATES.elm-fates_cold_allvars",
+            "ERS_Ld30.f45_f45.IELMFATES.elm-fates_satphen",
+            "ERS_Ld30.f45_g37.IELMFATES.elm-fates_cold_sizeagemort",
+            "SMS_Ld20.f45_f45.IELMFATES.elm-fates_eca",
+            "SMS_Ld5_PS.f19_g16.IELMFATES.elm-fates_cold",
+            )
+        },
+
+    #fates long duration tests runs
+    "fates_long_tests" : {
+        "time"    : "00:40:00",
+        "tests"   : (
+            "SMS_D_Lm6.f45_g37.IELMFATES.elm-fates_cold",
+            "ERS_D_Lm13.ne4pg2_ne4pg2.IELMFATES.elm-fates_long",
+            "ERS_Lm25.ne4pg2_ne4pg2.IELMFATES.elm-fates_cold_nocomp",
+            )
+        },
+
+    #fates testmod coverage
+    "fates" : {
+        "inherit" : ("fates_long_tests", "fates_elm_developer"),
+        "tests" : (
+            "ERP_Ld3.f09_g16.IELMFATES.elm-fates_cold",
+            "ERP_D_Ld3.f19_g16.IELMFATES.elm-fates_cold",
+            "ERS_D_Ld3_PS.f09_g16.IELMFATES.elm-fates_cold",
+            "ERS_D_Ld5.f45_g37.IELMFATES.elm-fates_cold",
+            "ERS_Ld30.f45_g37.IELMFATES.elm-fates_satphen",
+            "ERS_Ld30.f45_g37.IELMFATES.elm-fates_cold_fixedbiogeo",
+            "ERS_Ld30.f45_g37.IELMFATES.elm-fates_cold_nocomp",
+            "ERS_Ld30.f45_g37.IELMFATES.elm-fates_cold_nocomp_fixedbiogeo",
+            "ERS_Ld60.f45_g37.IELMFATES.elm-fates",
+            "ERS_Ld60.f45_g37.IELMFATES.elm-fates_cold_logging",
+            "ERS_Ld60.f45_g37.IELMFATES.elm-fates_cold_nofire",
+            "ERS_Ld60.f45_g37.IELMFATES.elm-fates_cold_st3",
+            "ERS_Ld60.f45_g37.IELMFATES.elm-fates_cold_pphys",
             )
         },
 
