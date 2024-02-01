@@ -624,7 +624,7 @@ contains
       ! set time steps
       dt = dtime_mod
       kyr = year_curr; kmo = mon_curr; kda = day_curr; mcsec = secs_curr;
-
+      !nstep = nstep_mod 
       err_found = .false.
 
       if(.not.use_fates)then
@@ -964,7 +964,7 @@ contains
 
          grc_errcb(g) = (grc_cinputs(g) - grc_coutputs(g))*dt - (end_totc(g) - beg_totc(g))
 
-         if (grc_errcb(g) > error_tol .and. nstep > 1) then
+         if (abs(grc_errcb(g)) > error_tol .and. nstep > 1) then
             write(iulog,*)'grid cbalance error = ', grc_errcb(g), g
             write(iulog,*)'Latdeg,Londeg       = ', grc_pp%latdeg(g), grc_pp%londeg(g)
             write(iulog,*)'input               = ', grc_cinputs(g)*dt
@@ -973,6 +973,11 @@ contains
             write(iulog,*)'fire                = ', grc_fire_closs(g)*dt
             write(iulog,*)'hrv_to_atm          = ', grc_hrv_xsmrpool_to_atm(g)*dt
             write(iulog,*)'leach               = ', grc_som_c_leached(g)*dt
+            write(iulog,*)'prod1c_loss         = ', grc_prod1c_loss(g)*dt
+            write(iulog,*)'prod10c_loss        = ', grc_prod10c_loss(g)*dt
+            write(iulog,*)'prod100c_loss       = ', grc_prod100c_loss(g)*dt
+            write(iulog,*)'som_c_leached       = ', grc_som_c_leached(g)*dt
+            write(iulog,*)'dwt_conv_cflux      = ', grc_dwt_conv_cflux(g)*dt
 
             if (ero_ccycle) then
                write(iulog,*)'erosion             = ',grc_som_c_yield(g)*dt
