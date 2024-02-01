@@ -25,7 +25,6 @@ std::string MAMOptics::name() const { return "mam4_optics"; }
 void MAMOptics::set_grids(
     const std::shared_ptr<const GridsManager> grids_manager) {
   using namespace ekat::units;
-  constexpr int nvars = mam4::ndrop::nvars;
 
   grid_                 = grids_manager->get_grid("Physics");
   const auto &grid_name = grid_->name();
@@ -420,7 +419,7 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   }
 }
 void MAMOptics::run_impl(const double dt) {
-  constexpr Real zero = 0.0;
+  // constexpr Real zero = 0.0;
 
   const auto policy =
       ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_);
@@ -432,19 +431,17 @@ void MAMOptics::run_impl(const double dt) {
   Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
   Kokkos::fence();
   /// outputs
-  auto aero_g_sw   = get_field_out("aero_g_sw").get_view<Real ***>();
-  auto aero_ssa_sw = get_field_out("aero_ssa_sw").get_view<Real ***>();
-  auto aero_tau_sw = get_field_out("aero_tau_sw").get_view<Real ***>();
-  auto aero_tau_lw = get_field_out("aero_tau_lw").get_view<Real ***>();
+  const auto aero_g_sw   = get_field_out("aero_g_sw").get_view<Real ***>();
+  const auto aero_ssa_sw = get_field_out("aero_ssa_sw").get_view<Real ***>();
+  const auto aero_tau_sw = get_field_out("aero_tau_sw").get_view<Real ***>();
+  const auto aero_tau_lw = get_field_out("aero_tau_lw").get_view<Real ***>();
 
-  auto aero_tau_forward =
+  const auto aero_tau_forward =
       get_field_out("aero_tau_forward").get_view<Real ***>();
 
   // NOTE: we do not compute this variable in aersol_optics
   auto aero_nccn =
       get_field_out("nccn").get_view<Real **>();  // FIXME: get rid of this
-
-  const Real t = 0.0;
 
   if(false) {  // remove when ready to do actual calculations
     // populate these fields with reasonable representative values
@@ -458,27 +455,40 @@ void MAMOptics::run_impl(const double dt) {
     // (Strictly speaking, we don't need this parallel_for here yet, but we
     // leave
     //  it in anticipation of column-specific aerosol optics to come.)
+
+    // NOTE! we need a const mam_coupling::DryAtmosphere dry_atm for gpu access.
+    // We cannot use member of this class inside of the parallel_for
+    const mam_coupling::DryAtmosphere& dry_atm = dry_atm_;
+    const auto& p_int = p_int_;
+    const auto& p_del = p_del_;
+    const auto& ssa_cmip6_sw= ssa_cmip6_sw_;
+    const auto& af_cmip6_sw = af_cmip6_sw_;
+    const auto& ext_cmip6_sw = ext_cmip6_sw_;
+    const auto& ext_cmip6_lw = ext_cmip6_lw_;
+    const auto& work=work_;
+    const auto& dry_aero= dry_aero_;
+    const auto& aerosol_optics_device_data=aerosol_optics_device_data_;
     Kokkos::parallel_for(
         policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
           const Int icol     = team.league_rank();  // column index
           auto odap_aer_icol = ekat::subview(aero_tau_lw, icol);
-          const auto atm = mam_coupling::atmosphere_for_column(dry_atm_, icol);
+          const auto atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
 
           // FIXME: Get rid of this
           // auto nccn = ekat::subview(aero_nccn, icol);
 
           // FIXME: interface pressure [Pa]
-          auto pint = ekat::subview(p_int_, icol);
+          auto pint = ekat::subview(p_int, icol);
           // FIXME: dry mass pressure interval [Pa]
           // FIXME:
-          auto zi      = ekat::subview(dry_atm_.z_iface, icol);
-          auto pdel    = ekat::subview(p_del_, icol);
-          auto pdeldry = ekat::subview(dry_atm_.p_del, icol);
+          auto zi      = ekat::subview(dry_atm.z_iface, icol);
+          auto pdel    = ekat::subview(p_del, icol);
+          auto pdeldry = ekat::subview(dry_atm.p_del, icol);
 
-          auto ssa_cmip6_sw_icol = ekat::subview(ssa_cmip6_sw_, icol);
-          auto af_cmip6_sw_icol  = ekat::subview(af_cmip6_sw_, icol);
-          auto ext_cmip6_sw_icol = ekat::subview(ext_cmip6_sw_, icol);
-          auto ext_cmip6_lw_icol = ekat::subview(ext_cmip6_lw_, icol);
+          auto ssa_cmip6_sw_icol = ekat::subview(ssa_cmip6_sw, icol);
+          auto af_cmip6_sw_icol  = ekat::subview(af_cmip6_sw, icol);
+          auto ext_cmip6_sw_icol = ekat::subview(ext_cmip6_sw, icol);
+          auto ext_cmip6_lw_icol = ekat::subview(ext_cmip6_lw, icol);
 
           // FIXME: check if this correct: Note that these variables have pver+1
           // levels tau_w =>  aero_ssa_sw  (pcols,0:pver,nswbands) ! aerosol
@@ -494,25 +504,25 @@ void MAMOptics::run_impl(const double dt) {
           // extinction optical depth
           auto tau_icol = ekat::subview(aero_tau_sw, icol);
 
-          auto work_icol = ekat::subview(work_, icol);
+          auto work_icol = ekat::subview(work, icol);
 
           // fetch column-specific subviews into aerosol prognostics
           // mam4::Prognostics progs =
           // mam_coupling::interstitial_aerosols_for_column(dry_aero_, icol);
           mam4::Prognostics progs =
-              mam_coupling::aerosols_for_column(dry_aero_, icol);
+              mam_coupling::aerosols_for_column(dry_aero, icol);
 
           mam4::aer_rad_props::aer_rad_props_sw(
               team, dt, progs, atm, zi, pint, pdel, pdeldry, ssa_cmip6_sw_icol,
               af_cmip6_sw_icol, ext_cmip6_sw_icol, tau_icol, tau_w_icol,
-              tau_w_g_icol, tau_w_f_icol, aerosol_optics_device_data_,
+              tau_w_g_icol, tau_w_f_icol, aerosol_optics_device_data,
               work_icol);
 
           team.team_barrier();
 
           mam4::aer_rad_props::aer_rad_props_lw(
               team, dt, progs, atm, pint, zi, pdel, pdeldry, ext_cmip6_lw_icol,
-              aerosol_optics_device_data_, odap_aer_icol);
+              aerosol_optics_device_data, odap_aer_icol);
         });
   }
 
