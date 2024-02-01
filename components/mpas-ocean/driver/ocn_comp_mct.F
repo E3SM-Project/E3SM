@@ -682,7 +682,13 @@ contains
       write(ocnLogUnit,*) 'Fail to set MOAB fields '
    endif
    
-   
+   ! add domain tags
+   tagname=trim(seq_flds_dom_fields)//C_NULL_CHAR
+   tagtype = 1
+   ierr = iMOAB_DefineTagStorage(MPOID, tagname, tagtype, numco,  tagindex )
+   if ( ierr /= 0 ) then
+      write(ocnLogUnit,*) 'Fail to set define dom fields '
+   endif
    ent_type = 1 ! cells
       
 
