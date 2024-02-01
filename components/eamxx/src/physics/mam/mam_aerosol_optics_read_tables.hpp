@@ -153,6 +153,11 @@ inline void read_rrtmg_table(
   constexpr int refindex_im   = mam4::modal_aer_opt::refindex_im;
   constexpr int coef_number   = mam4::modal_aer_opt::coef_number;
 
+  using view_3d_host = typename KT::view_3d<Real>::HostMirror;
+
+  // temp views:
+  view_3d_host temp_lw_3d_host("temp_absplw_host", coef_number,refindex_real,refindex_im);
+
   params.set("Filename", table_filename);
   AtmosphereInput rrtmg(params, grid, host_views_1d, layouts);
   // // -1000 forces the interface to read a dataset that does not have time as
@@ -186,30 +191,65 @@ inline void read_rrtmg_table(
   // netcfd : (lw_band, mode, refindex_im, refindex_real, coef_number)
   // mam4xx : (mode, lw_band, coef_number, refindex_real, refindex_im )
   // e3sm : (ntot_amode,coef_number,refindex_real,refindex_im,nlwbands)
-  // FIXME: it maybe not work in gpus.
-  for(int d5 = 0; d5 < nlwbands; ++d5) {
-    for(int d2 = 0; d2 < coef_number; d2++)
+  // for(int d5 = 0; d5 < nlwbands; ++d5) {
+  //   for(int d2 = 0; d2 < coef_number; d2++)
+  //     for(int d3 = 0; d3 < refindex_real; d3++)
+  //       for(int d4 = 0; d4 < refindex_im; d4++)
+  //         aerosol_optics_device_data.absplw[d1][d5](d2, d3, d4) =
+  //             aerosol_optics_host_data.absplw_host(d5, 0, d4, d3, d2);
+  // }  // d5
+
+for(int d5 = 0; d5 < nlwbands; ++d5) {
+ // reshape data:
+ for(int d2 = 0; d2 < coef_number; d2++)
       for(int d3 = 0; d3 < refindex_real; d3++)
         for(int d4 = 0; d4 < refindex_im; d4++)
-          aerosol_optics_device_data.absplw[d1][d5](d2, d3, d4) =
-              aerosol_optics_host_data.absplw_host(d5, 0, d4, d3, d2);
-  }  // d5
+        temp_lw_3d_host(d2, d3, d4)=aerosol_optics_host_data.absplw_host(d5, 0, d4, d3, d2);
 
+ // syn data to device
+ Kokkos::deep_copy(aerosol_optics_device_data.absplw[d1][d5],temp_lw_3d_host);
+ } // d5
   // asmpsw, abspsw, extpsw
   // netcfd : (sw_band, mode, refindex_im, refindex_real, coef_number)
   // mam4xx : (mode, sw_band, coef_number, refindex_real, refindex_im )
 
-  for(int d5 = 0; d5 < nswbands; ++d5)
+  for(int d5 = 0; d5 < nswbands; ++d5){
+    // reshape data
     for(int d2 = 0; d2 < coef_number; d2++)
       for(int d3 = 0; d3 < refindex_real; d3++)
-        for(int d4 = 0; d4 < refindex_im; d4++) {
-          aerosol_optics_device_data.asmpsw[d1][d5](d2, d3, d4) =
-              aerosol_optics_host_data.asmpsw_host(d5, 0, d4, d3, d2);
-          aerosol_optics_device_data.abspsw[d1][d5](d2, d3, d4) =
-              aerosol_optics_host_data.abspsw_host(d5, 0, d4, d3, d2);
-          aerosol_optics_device_data.extpsw[d1][d5](d2, d3, d4) =
-              aerosol_optics_host_data.extpsw_host(d5, 0, d4, d3, d2);
-        }  // d5
+        for(int d4 = 0; d4 < refindex_im; d4++)
+        temp_lw_3d_host(d2, d3, d4)=aerosol_optics_host_data.asmpsw_host(d5, 0, d4, d3, d2);
+    //syn data to device
+    Kokkos::deep_copy(aerosol_optics_device_data.asmpsw[d1][d5],temp_lw_3d_host);
+   // reshape data
+    for(int d2 = 0; d2 < coef_number; d2++)
+      for(int d3 = 0; d3 < refindex_real; d3++)
+        for(int d4 = 0; d4 < refindex_im; d4++)
+         temp_lw_3d_host(d2, d3, d4)= aerosol_optics_host_data.abspsw_host(d5, 0, d4, d3, d2);
+    //syn data to device
+    Kokkos::deep_copy(aerosol_optics_device_data.abspsw[d1][d5],temp_lw_3d_host);
+      // reshape data
+    for(int d2 = 0; d2 < coef_number; d2++)
+      for(int d3 = 0; d3 < refindex_real; d3++)
+        for(int d4 = 0; d4 < refindex_im; d4++)
+          temp_lw_3d_host(d2, d3, d4) = aerosol_optics_host_data.extpsw_host(d5, 0, d4, d3, d2);
+    //syn data to device
+    Kokkos::deep_copy(aerosol_optics_device_data.extpsw[d1][d5],temp_lw_3d_host);
+
+  }// d5
+
+  // for(int d5 = 0; d5 < nswbands; ++d5)
+  //   for(int d2 = 0; d2 < coef_number; d2++)
+  //     for(int d3 = 0; d3 < refindex_real; d3++)
+  //       for(int d4 = 0; d4 < refindex_im; d4++) {
+  //         aerosol_optics_device_data.asmpsw[d1][d5](d2, d3, d4) =
+  //             aerosol_optics_host_data.asmpsw_host(d5, 0, d4, d3, d2);
+  //         aerosol_optics_device_data.abspsw[d1][d5](d2, d3, d4) =
+  //             aerosol_optics_host_data.abspsw_host(d5, 0, d4, d3, d2);
+  //         aerosol_optics_device_data.extpsw[d1][d5](d2, d3, d4) =
+  //             aerosol_optics_host_data.extpsw_host(d5, 0, d4, d3, d2);
+  //       }  // d5
+
 }
 
 inline void read_water_refindex(const std::string &table_filename,
