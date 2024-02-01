@@ -111,7 +111,7 @@ protected:
   Field create_helper_field (const std::string& name,
                             const FieldLayout& layout,
                             const std::string& grid_name,
-                            const int ps=0);
+                            const int ps = 1);
 
   // Query if a local field exists
   bool has_helper_field (const std::string& name) const { return m_helper_fields.find(name)!=m_helper_fields.end(); }
@@ -146,7 +146,7 @@ protected:
   // file containing coarse data mapping
   std::string m_refine_remap_file;
   // (refining) remapper object
-  std::shared_ptr<scream::AbstractRemapper> m_refine_remapper;
+  std::shared_ptr<scream::AbstractRemapper> m_horiz_remapper;
   // (refining) remapper vertical cutoff
   Real m_refine_remap_vert_cutoff;
 

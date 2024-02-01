@@ -224,127 +224,102 @@ void Nudging::apply_vert_cutoff_tendency(Field &base, const Field &next,
 void Nudging::initialize_impl (const RunType /* run_type */)
 {
   using namespace ShortFieldTagsNames;
-  // Set up pointers for grids
-  // external grid: from source data
-  std::shared_ptr<scream::AbstractGrid> grid_ext;
-  // temporary grid: after vertical interpolation
-  std::shared_ptr<scream::AbstractGrid> grid_tmp;
-  // internal grid: after horizontal interpolation
-  std::shared_ptr<scream::AbstractGrid> grid_int;
 
-  // Initialize the refining remapper stuff at the outset,
-  // because we need to know the grid information;
-  // for now, we are doing the horizontal interpolation last,
-  // so we use the m_grid (model physics) as the target grid
-  grid_int = m_grid->clone(m_grid->name(), true);
+  // The first thing we do is time interpolation.
+  // The second thing we do is horiz interpolation. The reason for doing horizontal
+  // before vertical is to get a better target pressure during vinterp. On a finer horiz
+  // mesh, we can more accurately capture a vert interp that is out of the p_mid bounds.
+
+  // The "intermediate" grid, is the grid after horiz remap, and before vert remap
+  auto grid_tmp = m_grid->clone("after_horiz_before_vert",true);
+  grid_tmp->reset_num_vertical_lev(m_num_src_levs);
+
   if (m_refine_remap) {
     // P2P remapper
-    m_refine_remapper =
-        std::make_shared<RefiningRemapperP2P>(grid_int, m_refine_remap_file);
-    // Get grid from remapper, and clone it
-    auto grid_ext_const = m_refine_remapper->get_src_grid();
-    grid_ext = grid_ext_const->clone(grid_ext_const->name(), true);
-    // Finally, grid_ext may have different levels
-    grid_ext->reset_num_vertical_lev(m_num_src_levs);
+    m_horiz_remapper = std::make_shared<RefiningRemapperP2P>(grid_tmp, m_refine_remap_file);
   } else {
-    // We set up a DoNothingRemapper, which will do nothing
-    m_refine_remapper = std::make_shared<DoNothingRemapper>(grid_int, grid_int);
-    // We clone physics grid, but maybe we have different levels
-    grid_ext = m_grid->clone(m_grid->name(), true);
-    grid_ext->reset_num_vertical_lev(m_num_src_levs);
+    // We set up an IdentityRemapper, specifying that tgt is an alias
+    // of src, so that the remap method will do nothing
+    auto r = std::make_shared<IdentityRemapper>(grid_tmp);
+    r->set_aliasing(IdentityRemapper::TgtAliasSrc);
+    m_horiz_remapper = r;
   }
-  // The temporary grid is the external grid, but with
-  // the same number of levels as the internal (physics) grid
-  grid_tmp = grid_ext->clone(grid_ext->name(), true);
-  grid_tmp->reset_num_vertical_lev(m_num_levs);
 
-  // Declare the layouts for the helper fields (int: internal)
-  FieldLayout scalar2d_layout_mid { {LEV}, {m_num_levs} };
-  FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols, m_num_levs} };
+  // Now that we have the remapper, we can grab the grid where the input data lives
+  auto grid_ext = m_horiz_remapper->get_src_grid();
 
-  // Get the number of external cols on current rank
-  auto m_num_cols_ext = grid_ext->get_num_local_dofs();
-  // Declare the layouts for the helper fields (tmp: temporary))
-  FieldLayout scalar2d_layout_mid_tmp { {LEV}, {m_num_levs}};
-  FieldLayout scalar3d_layout_mid_tmp { {COL,LEV}, {m_num_cols_ext, m_num_levs} };
-  // Declare the layouts for the helper fields (ext: external)
-  FieldLayout scalar2d_layout_mid_ext { {LEV}, {m_num_src_levs}};
-  FieldLayout scalar3d_layout_mid_ext { {COL,LEV}, {m_num_cols_ext, m_num_src_levs} };
-
-  // Initialize the time interpolator
+  // Initialize the time interpolator and horiz remapper
   m_time_interp = util::TimeInterpolation(grid_ext, m_datafiles);
 
-  constexpr int ps = SCREAM_PACK_SIZE;
-  // To be extra careful, this should be the ext_grid
-  const auto& grid_ext_name = grid_ext->name();
-  if (m_src_pres_type == TIME_DEPENDENT_3D_PROFILE) {
-    auto pmid_ext = create_helper_field("p_mid_ext", scalar3d_layout_mid_ext, grid_ext_name, ps);
-    m_time_interp.add_field(pmid_ext.alias("p_mid"),true);
-  } else if (m_src_pres_type == STATIC_1D_VERTICAL_PROFILE) {
-    // Load p_levs from source data file
-    ekat::ParameterList in_params;
-    in_params.set("Filename",m_static_vertical_pressure_file);
-    in_params.set("Skip_Grid_Checks",true);  // We need to skip grid checks because multiple ranks may want the same column of source data.
-    std::map<std::string,view_1d_host<Real>> host_views;
-    std::map<std::string,FieldLayout>  layouts;
-    auto pmid_ext = create_helper_field("p_mid_ext", scalar2d_layout_mid_ext, grid_ext_name, ps);
-    auto pmid_ext_v = pmid_ext.get_view<Real*,Host>();
-    in_params.set<std::vector<std::string>>("Field Names",{"p_levs"});
-    host_views["p_levs"] = pmid_ext_v;
-    layouts.emplace("p_levs",scalar2d_layout_mid_ext);
-    AtmosphereInput src_input(in_params,grid_ext,host_views,layouts);
-    src_input.read_variables(-1);
-    src_input.finalize();
-    pmid_ext.sync_to_dev();
-  }
-
-  // Open the registration!
-  m_refine_remapper->registration_begins();
-
-  // To create helper fields for later; we do both tmp and ext...
+  // NOTE: we are ASSUMING all fields are 3d and scalar!
+  const auto layout_ext = grid_ext->get_3d_scalar_layout(true);
+  const auto layout_tmp = grid_tmp->get_3d_scalar_layout(true);
+  const auto layout_atm = m_grid->get_3d_scalar_layout(true);
+  m_horiz_remapper->registration_begins();
   for (auto name : m_fields_nudge) {
     std::string name_ext = name + "_ext";
     std::string name_tmp = name + "_tmp";
-    // Helper fields that will temporarily store the target state, which can then
-    // be used to back out a nudging tendency
-    auto grid_int_name = grid_int->name();
-    auto grid_ext_name = grid_ext->name();
-    auto grid_tmp_name = grid_tmp->name();
-    auto field  = get_field_out_wrap(name);
-    auto layout = field.get_header().get_identifier().get_layout();
-    auto field_ext = create_helper_field(name_ext, scalar3d_layout_mid_ext, grid_ext_name, ps);
-    auto field_tmp = create_helper_field(name_tmp, scalar3d_layout_mid_tmp, grid_tmp_name, ps);
-    Field field_int;
+
+    // First copy of the field: what's read from file, and time-interpolated.
+    auto field_ext = create_helper_field(name_ext, layout_ext, grid_ext->name());
+
+    // Second copy of the field: after horiz interp (alias "ext" if no remap)
+    Field field_tmp;
     if (m_refine_remap) {
-      field_int = create_helper_field(name, scalar3d_layout_mid, grid_int_name, ps);
+      field_tmp = create_helper_field(name_tmp, layout_tmp, grid_tmp->name());
     } else {
-      field_int             = field_tmp.alias(name);
-      m_helper_fields[name] = field_int;
+      field_tmp = field_ext.alias(name_tmp);
+      m_helper_fields[name_tmp] = field_tmp;
     }
 
-    // Register the fields with the remapper
-    m_refine_remapper->register_field(field_tmp, field_int);
-    // Add the fields to the time interpolator
+    // Add the field to the time interpolator
     m_time_interp.add_field(field_ext.alias(name), true);
-  }
-  m_time_interp.initialize_data_from_files();
 
-  // Close the registration!
-  m_refine_remapper->registration_ends();
+    // Register the fields with the remapper
+    m_horiz_remapper->register_field(field_ext, field_tmp);
+
+    if (m_timescale<=0) {
+      // Third copy of the field: after vert interpolation.
+      // We cannot store directly in get_field_out(name),
+      // since we need to back out tendencies
+      create_helper_field(name, layout_atm, m_grid->name());
+    } else {
+      // We do not need to back out any tendency; the input data is used
+      // to directly replace the atm state
+      m_helper_fields[name] = get_field_out_wrap(name);
+    }
+  }
+
+  if (m_src_pres_type == TIME_DEPENDENT_3D_PROFILE) {
+    // If the pressure profile is 3d and time-dep, we need to interpolate (in time/horiz)
+    auto pmid_ext = create_helper_field("p_mid_ext", layout_ext, grid_ext->name());
+    m_time_interp.add_field(pmid_ext.alias("p_mid"),true);
+    Field pmid_tmp;
+    if (m_refine_remap) {
+      pmid_tmp = create_helper_field("p_mid_tmp", layout_tmp, grid_tmp->name());
+    } else {
+      pmid_tmp = pmid_ext.alias("p_mid_tmp");
+      m_helper_fields["p_mid_tmp"] = pmid_tmp;
+    }
+    m_horiz_remapper->register_field(pmid_ext,pmid_tmp);
+  } else if (m_src_pres_type == STATIC_1D_VERTICAL_PROFILE) {
+    // For static 1D profile, we can read p_mid now
+    auto pmid_ext = create_helper_field("p_mid_ext", grid_ext->get_vertical_layout(true), grid_ext->name());
+    AtmosphereInput src_input(m_static_vertical_pressure_file,grid_ext,{pmid_ext},true);
+    src_input.read_variables(-1);
+  }
+
+  // Close the registration
+  m_time_interp.initialize_data_from_files();
+  m_horiz_remapper->registration_ends();
 
   // load nudging weights from file
   // NOTE: the regional nudging use the same grid as the run, no need to
   // do the interpolation.
-  if (m_use_weights)
-  {
-    auto grid_name = m_grid->name();
-    auto nudging_weights = create_helper_field("nudging_weights", scalar3d_layout_mid, grid_name, ps);
-    std::vector<Field> fields;
-    fields.push_back(nudging_weights);
-    AtmosphereInput src_weights_input(m_weights_file, m_grid, fields);
+  if (m_use_weights) {
+    auto nudging_weights = create_helper_field("nudging_weights", layout_atm, m_grid->name());
+    AtmosphereInput src_weights_input(m_weights_file, m_grid, {nudging_weights},true);
     src_weights_input.read_variables();
-    src_weights_input.finalize();
-    nudging_weights.sync_to_dev();
   }
 }
 
@@ -352,6 +327,7 @@ void Nudging::initialize_impl (const RunType /* run_type */)
 void Nudging::run_impl (const double dt)
 {
   using namespace scream::vinterp;
+  using RangePolicy = typename KokkosTypes<DefaultDevice>::RangePolicy;
 
   // Have to add dt because first time iteration is at 0 seconds where you will
   // not have any data from the field. The timestamp is only iterated at the
@@ -361,161 +337,106 @@ void Nudging::run_impl (const double dt)
   // Perform time interpolation
   m_time_interp.perform_time_interpolation(ts);
 
-  // Process data and nudge the atmosphere state
+  // Horiz remapper (and also vert remapping) do not handle well data that contains "masked"
+  // values (sometimes also called "filled" values). Since masked values can only happen
+  // near the surface, we can parse fields, and perform some work if we find f(surf)==fillValue.
+  // NOTE: we need to do a tol check, since time interpolation may not return fillValue,
+  //       even if both f(t_beg)/f(t_end) are equal to fillValue (due to rounding).
+  // NOTE: if f(t_beg)==fillValue!=f(t_end), or viceversa, the time-interpolated value can
+  //       substantially differ from fillValue. Here, we assume it didn't happen.
+  auto correct_masked_values = [&](const Field f) {
+    const auto fl = f.get_header().get_identifier().get_layout();
+    const auto v  = f.get_view<Real**>();
+
+    Real var_fill_value = constants::DefaultFillValue<Real>().value;
+    // Query the helper field for the fill value, if not present use default
+    if (f.get_header().has_extra_data("mask_value")) {
+      var_fill_value = f.get_header().get_extra_data<float>("mask_value");
+    }
+
+    const int ncols = fl.dim(0);
+    const int nlevs = fl.dim(1);
+    const auto thresh = var_fill_value*0.0001;
+    auto lambda = KOKKOS_LAMBDA(const int icol) {
+      int first_good = nlevs;
+      int last_good = -1;
+      for (int k=0; k<nlevs; ++k) {
+        if (abs(v(icol,k)-var_fill_value)>thresh) {
+          // This entry is substantially different from var_fill_value, so it's good
+          first_good = Kokkos::min(first_good,k);
+          last_good  = Kokkos::max(last_good,k);
+        }
+      }
+      EKAT_KERNEL_ASSERT_MSG (first_good<nlevs and last_good>=0,
+          "[Nudging] Error! Could not locate a non-masked entry in a column.\n");
+
+      // Fix near TOM
+      for (int k=0; k<first_good; ++k) {
+        v(icol,k) = v(icol,first_good);
+      }
+      // Fix near surf
+      for (int k=last_good+1; k<nlevs; ++k) {
+        v(icol,k) = v(icol,last_good);
+      }
+    };
+
+    Kokkos::parallel_for(RangePolicy(0,ncols),lambda);
+  };
+
+  // Correct before horiz remap
+  for (const auto& name: m_fields_nudge) {
+    const auto f  = get_helper_field(name+"_ext");
+    correct_masked_values(f);
+  }
+
+  // Perform horizontal remap (if needed)
+  m_horiz_remapper->remap(true);
+
+  // Perform vertical remap
+  // TODO: upgrade VerticalRemapper to accept tgt pmid/pint fields, rather than reading them from file.
+  //       Then, setup remapper at init time, and simply call vert_remapper->remap(true);
   const auto& p_mid_v = get_field_in("p_mid").get_view<const mPack**>();
-  view_Nd<mPack,2> p_mid_ext_p;
-  view_Nd<mPack,1> p_mid_ext_1d;
+  view_Nd<mPack,2> p_mid_tmp_3d;
+  view_Nd<mPack,1> p_mid_tmp_1d;
   if (m_src_pres_type == TIME_DEPENDENT_3D_PROFILE) {
-    p_mid_ext_p = get_helper_field("p_mid_ext").get_view<mPack**>();
+    p_mid_tmp_3d = get_helper_field("p_mid_tmp").get_view<mPack**>();
   } else if (m_src_pres_type == STATIC_1D_VERTICAL_PROFILE) {
-    p_mid_ext_1d   = get_helper_field("p_mid_ext").get_view<mPack*>();
+    p_mid_tmp_1d   = get_helper_field("p_mid_tmp").get_view<mPack*>();
   }
 
   for (auto name : m_fields_nudge) {
-    auto atm_state_field = get_field_out_wrap(name);      // int horiz, int vert
-    auto int_state_field = get_helper_field(name);        // int horiz, int vert
-    auto ext_state_field = get_helper_field(name+"_ext"); // ext horiz, ext vert
-    auto tmp_state_field = get_helper_field(name+"_tmp"); // ext horiz, int vert
-    auto ext_state_view  = ext_state_field.get_view<mPack**>();
-    auto tmp_state_view  = tmp_state_field.get_view<mPack**>();
-    auto atm_state_view  = atm_state_field.get_view<mPack**>();  // TODO: Right now assume whatever field is defined on COLxLEV
+    auto int_state_field = get_field_out_wrap(name);      // fully remapped
+    auto tmp_state_field = get_helper_field(name+"_tmp"); // intermediate: horiz remapped, not yet vert remapped
     auto int_state_view  = int_state_field.get_view<mPack**>();
-    auto int_mask_view = m_buffer.int_mask_view;
-    // Masked values in the source data can lead to strange behavior in the vertical interpolation.
-    // We pre-process the data and map any masked values (sometimes called "filled" values) to the
-    // nearest un-masked value.
-    // Here we are updating the ext_state_view, which is the time interpolated values taken from the nudging
-    // data.
-    Real var_fill_value = constants::DefaultFillValue<Real>().value;
-    // Query the helper field for the fill value, if not present use default
-    if (ext_state_field.get_header().has_extra_data("mask_value")) {
-      var_fill_value = ext_state_field.get_header().get_extra_data<float>("mask_value");
-    }
-    const int num_cols           = ext_state_view.extent(0);
-    const int num_vert_packs     = ext_state_view.extent(1);
-    const int num_src_levs       = m_num_src_levs;
-    const auto policy = ESU::get_default_team_policy(num_cols, num_vert_packs);
-    Kokkos::parallel_for("correct_for_masked_values", policy,
-       	       KOKKOS_LAMBDA(MemberType const& team) {
-      const int icol = team.league_rank();
-      auto ext_state_view_1d = ekat::subview(ext_state_view,icol);
-      Real fill_value;
-      int  fill_idx = -1;
-      // Scan top to surf and backfill all values near TOM that are masked.
-      for (int kk=0; kk<num_src_levs; ++kk) {
-        const auto ipack = kk / mPack::n;
-	const auto iidx  = kk % mPack::n;
-        // Check if this index is masked
-	if (ext_state_view_1d(ipack)[iidx]!=var_fill_value) {
-	  fill_value = ext_state_view_1d(ipack)[iidx];
-	  fill_idx = kk;
-	  for (int jj=0; jj<kk; ++jj) {
-            const auto jpack = jj / mPack::n;
-	    const auto jidx  = jj % mPack::n;
-	    ext_state_view_1d(jpack)[jidx] = fill_value;
-	  }
-	  break;
-	}
-      }
-      // Now fill the rest, the fill_idx should be non-negative.  If it isn't that means
-      // we have a column that is fully masked 
-      for (int kk=fill_idx+1; kk<num_src_levs; ++kk) {
-        const auto ipack = kk / mPack::n;
-	const auto iidx  = kk % mPack::n;
-        // Check if this index is masked
-	if (!(ext_state_view_1d(ipack)[iidx]==var_fill_value)) {
-	  fill_value = ext_state_view_1d(ipack)[iidx];
-	} else {
-	  ext_state_view_1d(ipack)[iidx] = fill_value;
-	}
-      }
-    });
+    auto tmp_state_view  = tmp_state_field.get_view<const mPack**>();
 
+    auto int_mask_view = m_buffer.int_mask_view;
     // Vertical Interpolation onto atmosphere state pressure levels
     // Note that we are going from ext to tmp here
     if (m_src_pres_type == TIME_DEPENDENT_3D_PROFILE) {
-      perform_vertical_interpolation<Real,1,2>(p_mid_ext_p,
+      perform_vertical_interpolation<Real,1,2>(p_mid_tmp_3d,
                                                p_mid_v,
-                                               ext_state_view,
                                                tmp_state_view,
+                                               int_state_view,
                                                int_mask_view,
                                                m_num_src_levs,
                                                m_num_levs);
     } else if (m_src_pres_type == STATIC_1D_VERTICAL_PROFILE) {
-      perform_vertical_interpolation<Real,1,2>(p_mid_ext_1d,
+      perform_vertical_interpolation<Real,1,2>(p_mid_tmp_1d,
                                                p_mid_v,
-                                               ext_state_view,
                                                tmp_state_view,
+                                               int_state_view,
                                                int_mask_view,
                                                m_num_src_levs,
                                                m_num_levs);
     }
 
-    // Check that none of the nudging targets are masked, if they are, set value to
-    // nearest unmasked value above.
-    // NOTE: We use an algorithm whichs scans from TOM to the surface.
-    //       If TOM is masked we keep scanning until we hit an unmasked value,
-    //       we then set all masked values above to the unmasked value.
-    //       We continue scanning towards the surface until we hit an unmasked value, we
-    //       then assign that masked value the most recent unmasked value, until we hit the
-    //       surface.
-    // Here we change the int_state_view which represents the vertically interpolated fields onto
-    // the simulation grid.
-    const int num_levs = m_num_levs;
-    Kokkos::parallel_for("correct_for_masked_values", policy,
-       	       KOKKOS_LAMBDA(MemberType const& team) {
-      const int icol = team.league_rank();
-      auto int_mask_view_1d  = ekat::subview(int_mask_view,icol);
-      auto tmp_state_view_1d = ekat::subview(tmp_state_view,icol);
-      Real fill_value;
-      int  fill_idx = -1;
-      // Scan top to surf and backfill all values near TOM that are masked.
-      for (int kk=0; kk<num_levs; ++kk) {
-        const auto ipack = kk / mPack::n;
-	const auto iidx  = kk % mPack::n;
-        // Check if this index is masked
-	if (!int_mask_view_1d(ipack)[iidx]) {
-	  fill_value = tmp_state_view_1d(ipack)[iidx];
-	  fill_idx = kk;
-	  for (int jj=0; jj<fill_idx; ++jj) {
-            const auto jpack = jj / mPack::n;
-	    const auto jidx  = jj % mPack::n;
-	    tmp_state_view_1d(jpack)[jidx] = fill_value;
-	  }
-	  break;
-	}
-      }
-      // Now fill the rest, the fill_idx should be non-negative.  If it isn't that means
-      // we have a column that is fully masked
-      for (int kk=fill_idx+1; kk<num_levs; ++kk) {
-        const auto ipack = kk / mPack::n;
-	const auto iidx  = kk % mPack::n;
-        // Check if this index is masked
-	if (!int_mask_view_1d(ipack)[iidx]) {
-	  fill_value = tmp_state_view_1d(ipack)[iidx];
-	} else {
-	  tmp_state_view_1d(ipack)[iidx] = fill_value;
-	}
-      }
-    });
+    // Again, correct masked values
+    correct_masked_values(int_state_field);
 
-  }
-
-  // Refine-remap onto target atmosphere state horiz grid (int);
-  // note that if the nudging data comes from the same grid as the model,
-  // this remap step is a no-op; otherwise, we refine-remap from tmp to int
-  m_refine_remapper->remap(true);
-
-  for (auto name : m_fields_nudge) {
-    auto atm_state_field = get_field_out_wrap(name);      // int horiz, int vert
-    auto int_state_field = get_helper_field(name);        // int horiz, int vert
-    auto atm_state_view  = atm_state_field.get_view<mPack**>();  // TODO: Right now assume whatever field is defined on COLxLEV
-    auto int_state_view  = int_state_field.get_view<mPack**>();
-    // Apply the nudging tendencies to the ATM state
-    if (m_timescale <= 0) {
-      // We do direct replacement
-      Kokkos::deep_copy(atm_state_view,int_state_view);
-    } else {
+    // FINALLY, apply nudging
+    if (m_timescale > 0) {
+      auto atm_state_field = get_field_out_wrap(name);
       // Back out a tendency and apply it.
       if (m_use_weights) {
         // get nudging weights field
@@ -538,6 +459,7 @@ void Nudging::run_impl (const double dt)
       }
     }
   }
+  m_atm_logger->info("Running nudging...done!");
 }
 
 // =========================================================================================
@@ -552,16 +474,13 @@ Field Nudging::create_helper_field (const std::string& name,
                                              const int ps)
 {
   using namespace ekat::units;
+
   // For helper fields we don't bother w/ units, so we set them to non-dimensional
   FieldIdentifier id(name,layout,Units::nondimensional(),grid_name);
 
   // Create the field. Init with NaN's, so we spot instances of uninited memory usage
   Field f(id);
-  if (ps>=0) {
-    f.get_header().get_alloc_properties().request_allocation(ps);
-  } else {
-    f.get_header().get_alloc_properties().request_allocation();
-  }
+  f.get_header().get_alloc_properties().request_allocation(ps);
   f.allocate_view();
   f.deep_copy(ekat::ScalarTraits<Real>::invalid());
 
