@@ -27,7 +27,7 @@ module ocn_forcing
    use mpas_dmpar
    use ocn_constants
    use ocn_diagnostics_variables
-   use ocn_config !IV comment
+   use ocn_config
 
    implicit none
    private

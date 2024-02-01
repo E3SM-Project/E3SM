@@ -41,7 +41,7 @@
 
   <entry id="MPASO_SGR">
         <type>char</type>
-        <valid_values>none,data,coupled</valid_values>
+        <valid_values>none,data</valid_values>
         <default_value>none</default_value>
         <values>
            <value compset="MPASO_">none</value>

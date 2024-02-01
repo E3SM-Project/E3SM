@@ -1216,7 +1216,7 @@ Default: Defined in namelist_defaults.xml
 	category="forcing" group="forcing">
 Option to choose sgr temperature
 
-Valid values: 'sgr','current', 'prescribed'.
+Valid values: 'sgr', 'prescribed'.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1224,7 +1224,7 @@ Default: Defined in namelist_defaults.xml
 	category="forcing" group="forcing">
 Option to choose sgr salinity
 
-Valid values: 'sgr','current', 'prescribed'.
+Valid values: 'sgr', 'prescribed'.
 Default: Defined in namelist_defaults.xml
 </entry>
 

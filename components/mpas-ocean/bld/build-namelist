@@ -56,7 +56,7 @@ OPTIONS
                            Options are: none, data, internal, coupled
      -ocn_sgr              variable for defining how the ocn model will handle subglacial
                            runoff
-                           Options are: none, data, coupled
+                           Options are: none, data
      -decomp_prefix        decomp_prefix variable
      -date_stamp           date_stamp variable
      -cfg_grid             Directory containing MPASO configuration scripts.
