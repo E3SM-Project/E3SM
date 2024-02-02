@@ -686,6 +686,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     use seasalt_model,      only: init_ocean_data, has_mam_mom
     use aerodep_flx,        only: aerodep_flx_init
     use aircraft_emit,      only: aircraft_emit_init
+    use iac_coupled_fields, only: iac_coupled_fields_init
     use prescribed_volcaero,only: prescribed_volcaero_init
     use cloud_fraction,     only: cldfrc_init
     use cldfrc2m,           only: cldfrc2m_init
@@ -823,6 +824,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     call prescribed_aero_init()
     call aerodep_flx_init()
     call aircraft_emit_init(phys_state,pbuf2d)
+    call iac_coupled_fields_init(phys_state, pbuf2d)
     !when is_cmip6_volc is true ,cmip6 style volcanic file is read
     !Initialized to .false. here but it gets its values from prescribed_volcaero_init
     is_cmip6_volc = .false. 
