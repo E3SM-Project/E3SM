@@ -527,7 +527,8 @@ void HorzMesh::computeEdgeSign() {
        });
    EdgeSignOnCellH = EdgeSignOnCell.createHostCopy();
 
-   EdgeSignOnVertex = Array2DR8("EdgeSignOnVertex", NVerticesSize, VertexDegree);
+   EdgeSignOnVertex =
+       Array2DR8("EdgeSignOnVertex", NVerticesSize, VertexDegree);
    yakl::c::parallel_for(
        yakl::c::SimpleBounds<1>(NVerticesAll), YAKL_LAMBDA(int Vertex) {
           for (int i = 0; i < VertexDegree; i++) {

@@ -8,10 +8,10 @@
 //
 //===-----------------------------------------------------------------------===/
 
-#include "Halo.h"
 #include "HorzMesh.h"
 #include "DataTypes.h"
 #include "Decomp.h"
+#include "Halo.h"
 #include "IO.h"
 #include "Logging.h"
 #include "MachEnv.h"
@@ -697,7 +697,8 @@ int main(int argc, char *argv[]) {
    // Tests that halo values are read in correctly
    OMEGA::ArrayHost1DR8 XVertexTest("XVertexTest", Mesh->NVerticesSize);
    Mesh->XVertexH.deep_copy_to(XVertexTest);
-   for (int Vertex = Mesh->NVerticesOwned; Vertex < Mesh->NVerticesAll; Vertex++) {
+   for (int Vertex = Mesh->NVerticesOwned; Vertex < Mesh->NVerticesAll;
+        Vertex++) {
       XVertexTest(Vertex) = 0.0;
    }
    MyHalo.exchangeFullArrayHalo(XVertexTest, OMEGA::OnVertex);
