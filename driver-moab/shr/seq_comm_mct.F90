@@ -1599,6 +1599,7 @@ contains
      values  = mct_values - values
 
      difference = dot_product(values, values)
+     differenceg = 0. ! initialize to 0 the total sum
      call shr_mpi_sum(difference,differenceg,mpicom,subname)
      difference = sqrt(differenceg)
      call shr_mpi_commrank( mpicom, rank2 )
