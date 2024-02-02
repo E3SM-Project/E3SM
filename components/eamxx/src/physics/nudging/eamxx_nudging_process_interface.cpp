@@ -88,17 +88,17 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   /* Check for consistency between nudging files, map file, and remapper */
 
   // Number of columns globally
-  auto m_num_cols_global = m_grid->get_num_global_dofs(); 
+  auto num_cols_global = m_grid->get_num_global_dofs(); 
 
   // Get the information from the first nudging data file
   int num_cols_src = scorpio::get_dimlen(m_datafiles[0],"ncol");
 
-  if (num_cols_src != m_num_cols_global) {
+  if (num_cols_src != num_cols_global) {
     // If differing cols, check if remap file is provided
     EKAT_REQUIRE_MSG(m_refine_remap_file != "no-file-given",
                      "Error! Nudging::set_grids - the number of columns in the nudging data file "
                      << std::to_string(num_cols_src) << " does not match the number of columns in the "
-                     << "model grid " << std::to_string(m_num_cols_global) << ".  Please check the "
+                     << "model grid " << std::to_string(num_cols_global) << ".  Please check the "
                      << "nudging data file and/or the model grid.");
     // If remap file is provided, check if it is consistent with the nudging data file
     // First get the data from the mapfile
@@ -110,9 +110,9 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
                      << std::to_string(num_cols_src) << " does not match the number of columns in the "
                      << "mapfile " << std::to_string(num_cols_remap_a) << ".  Please check the "
                      << "nudging data file and/or the mapfile.");
-    EKAT_REQUIRE_MSG(num_cols_remap_b == m_num_cols_global,
+    EKAT_REQUIRE_MSG(num_cols_remap_b == num_cols_global,
                      "Error! Nudging::set_grids - the number of columns in the model grid "
-                     << std::to_string(m_num_cols_global) << " does not match the number of columns in the "
+                     << std::to_string(num_cols_global) << " does not match the number of columns in the "
                      << "mapfile " << std::to_string(num_cols_remap_b) << ".  Please check the "
                      << "model grid and/or the mapfile.");
     EKAT_REQUIRE_MSG(m_use_weights == false,
@@ -126,18 +126,19 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
     // If the number of columns is the same, we don't need to do any remapping,
     // but print a warning if the user provided a mapfile
     if (m_refine_remap_file != "no-file-given") {
-      std::cout << "Warning! Nudging::set_grids - the number of columns in the nudging data file "
-                << std::to_string(num_cols_src) << " matches the number of columns in the "
-                << "model grid " << std::to_string(m_num_cols_global) << ".  The mapfile "
-                << m_refine_remap_file << " will NOT be used.  Please check the "
-                << "nudging data file and/or the model grid." << std::endl;
+      m_atm_logger->warn(
+           "[Nudging::set_grids] Warning! Map file provided, but it is not needed.\n"
+           "  - num cols in nudging data file: " + std::to_string(num_cols_src) + "\n"
+           "  - num cols in model grid       : " + std::to_string(num_cols_global) + "\n"
+           " Please, make sure the nudging data file and/or model grid are correct.\n"
+           " The map file is only needed if the above two numbers differ.");
     }
     // If the user gives us the vertical cutoff, warn them
     if (m_refine_remap_vert_cutoff > 0.0) {
-      std::cout << "Warning! Nudging::set_grids - the vertical cutoff "
-                << std::to_string(m_refine_remap_vert_cutoff)
-                << " is larger than zero, but we are not remapping.  Please "
-                   "check your settings." << std::endl;
+      m_atm_logger->warn(
+          "[Nudging::set_grids] Warning! Non-zero vertical cutoff provided, but it is not needed\n"
+          " - vertical cutoff: " + std::to_string(m_refine_remap_vert_cutoff) + "\n"
+          " Please, check your settings. This parameter is only needed if we are remapping.");
     }
     // Set m_refine_remap to false
     m_refine_remap = false;
@@ -227,8 +228,10 @@ void Nudging::initialize_impl (const RunType /* run_type */)
 
   // The first thing we do is time interpolation.
   // The second thing we do is horiz interpolation. The reason for doing horizontal
-  // before vertical is to get a better target pressure during vinterp. On a finer horiz
-  // mesh, we can more accurately capture a vert interp that is out of the p_mid bounds.
+  // before vertical is that we do not have a coarse p_mid (which would be needed
+  // as tgt pressure during vert remap). To get it, we'd have to "remap back" p_mid,
+  // but that seems overly complicated. For horiz remap we do not need anything
+  // on the target grid.
 
   // The "intermediate" grid, is the grid after horiz remap, and before vert remap
   auto grid_tmp = m_grid->clone("after_horiz_before_vert",true);
@@ -290,6 +293,11 @@ void Nudging::initialize_impl (const RunType /* run_type */)
     }
   }
 
+  // A helper field, where we copy each field after horiz remap, padding it
+  // at top/bot, to allow vert lin interp to extrapolate outside the bounds of p_mid
+  FieldLayout layout_padded ({COL,LEV},{m_num_cols,m_num_src_levs+2});
+  create_helper_field("padded_field",layout_padded,"");
+
   if (m_src_pres_type == TIME_DEPENDENT_3D_PROFILE) {
     // If the pressure profile is 3d and time-dep, we need to interpolate (in time/horiz)
     auto pmid_ext = create_helper_field("p_mid_ext", layout_ext, grid_ext->name());
@@ -302,11 +310,14 @@ void Nudging::initialize_impl (const RunType /* run_type */)
       m_helper_fields["p_mid_tmp"] = pmid_tmp;
     }
     m_horiz_remapper->register_field(pmid_ext,pmid_tmp);
+    create_helper_field("padded_p_mid_tmp",layout_padded,"");
   } else if (m_src_pres_type == STATIC_1D_VERTICAL_PROFILE) {
     // For static 1D profile, we can read p_mid now
     auto pmid_ext = create_helper_field("p_mid_ext", grid_ext->get_vertical_layout(true), grid_ext->name());
     AtmosphereInput src_input(m_static_vertical_pressure_file,grid_ext,{pmid_ext},true);
     src_input.read_variables(-1);
+    FieldLayout pmid1d_padded_layout({COL},{m_num_src_levs+2});
+    create_helper_field("padded_p_mid_tmp",pmid1d_padded_layout,"");
   }
 
   // Close the registration
@@ -326,8 +337,13 @@ void Nudging::initialize_impl (const RunType /* run_type */)
 // =========================================================================================
 void Nudging::run_impl (const double dt)
 {
-  using namespace scream::vinterp;
-  using RangePolicy = typename KokkosTypes<DefaultDevice>::RangePolicy;
+  using KT            = KokkosTypes<DefaultDevice>;
+  using RangePolicy   = typename KT::RangePolicy;
+  using MemberType    = typename KT::MemberType;
+  using ESU           = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
+  using PackT         = ekat::Pack<Real,1>;
+  using view_1d       = KT::view_1d<PackT>;
+  using view_2d       = KT::view_2d<PackT>;
 
   // Have to add dt because first time iteration is at 0 seconds where you will
   // not have any data from the field. The timestamp is only iterated at the
@@ -361,13 +377,13 @@ void Nudging::run_impl (const double dt)
       int first_good = nlevs;
       int last_good = -1;
       for (int k=0; k<nlevs; ++k) {
-        if (abs(v(icol,k)-var_fill_value)>thresh) {
+        if (std::abs(v(icol,k)-var_fill_value)>thresh) {
           // This entry is substantially different from var_fill_value, so it's good
-          first_good = Kokkos::min(first_good,k);
-          last_good  = Kokkos::max(last_good,k);
+          first_good = std::min(first_good,k);
+          last_good  = std::max(last_good,k);
         }
       }
-      EKAT_KERNEL_ASSERT_MSG (first_good<nlevs and last_good>=0,
+      EKAT_KERNEL_REQUIRE_MSG (first_good<nlevs and last_good>=0,
           "[Nudging] Error! Could not locate a non-masked entry in a column.\n");
 
       // Fix near TOM
@@ -392,52 +408,105 @@ void Nudging::run_impl (const double dt)
   // Perform horizontal remap (if needed)
   m_horiz_remapper->remap(true);
 
-  // Perform vertical remap
-  // TODO: upgrade VerticalRemapper to accept tgt pmid/pint fields, rather than reading them from file.
-  //       Then, setup remapper at init time, and simply call vert_remapper->remap(true);
-  const auto& p_mid_v = get_field_in("p_mid").get_view<const mPack**>();
-  view_Nd<mPack,2> p_mid_tmp_3d;
-  view_Nd<mPack,1> p_mid_tmp_1d;
+  // Copy remapper tgt fields into padded views, to allow extrapolation at top/bot,
+  // then call remapping routines
+
+  const int ncols = m_num_cols;
+  const int nlevs_src = m_num_src_levs;
+  auto copy_and_pad = [&](const Field from, const Field to) {
+    auto from_view = from.get_view<const Real**>();
+    auto to_view = to.get_view<Real**>();
+    auto fl = from.get_header().get_identifier().get_layout();
+
+    auto copy_3d = KOKKOS_LAMBDA (const MemberType& team) {
+      int icol = team.league_rank();
+
+      auto copy_col = [&](const int k) {
+        to_view(icol,k+1) = from_view(icol,k);
+      };
+      Kokkos::parallel_for(Kokkos::TeamVectorRange(team,nlevs_src),copy_col);
+
+      // Set the first/last entries of data, so that linear interp
+      // can extrapolate if the p_tgt is outside the p_src bounds
+      Kokkos::single(Kokkos::PerTeam(team),[&]{
+        to_view(icol,0) = 0; // Does this make sense for *every field*?
+        to_view(icol,nlevs_src+1) = from_view(icol,nlevs_src);
+      });
+    };
+
+    auto policy = ESU::get_default_team_policy(ncols,nlevs_src);
+    Kokkos::parallel_for("", policy, copy_3d);
+  };
+
+  // First, copy/pad p_mid, and extract the right copy (1d vs 3d)
+  copy_and_pad (get_helper_field("p_mid_tmp"),get_helper_field("padded_p_mid_tmp"));
+  const auto& p_mid_v = get_field_in("p_mid").get_view<const PackT**>();
+  view_2d p_mid_tmp_3d;
+  view_1d p_mid_tmp_1d;
+  bool src_pmid_3d;
   if (m_src_pres_type == TIME_DEPENDENT_3D_PROFILE) {
-    p_mid_tmp_3d = get_helper_field("p_mid_tmp").get_view<mPack**>();
-  } else if (m_src_pres_type == STATIC_1D_VERTICAL_PROFILE) {
-    p_mid_tmp_1d   = get_helper_field("p_mid_tmp").get_view<mPack*>();
+    p_mid_tmp_3d = get_helper_field("padded_p_mid_tmp").get_view<PackT**>();
+    src_pmid_3d = true;
+  } else {
+    p_mid_tmp_1d = get_helper_field("padded_p_mid_tmp").get_view<PackT*>();
+    src_pmid_3d = false;
   }
 
-  for (auto name : m_fields_nudge) {
-    auto int_state_field = get_field_out_wrap(name);      // fully remapped
-    auto tmp_state_field = get_helper_field(name+"_tmp"); // intermediate: horiz remapped, not yet vert remapped
-    auto int_state_view  = int_state_field.get_view<mPack**>();
-    auto tmp_state_view  = tmp_state_field.get_view<const mPack**>();
+  // Setup the linear interpolation object
+  using LI = ekat::LinInterp<Real,1>;
+  const int nlevs_tgt = m_num_levs;
+  LI vert_interp(ncols,nlevs_src,nlevs_tgt);
+  const auto policy_vinterp = ESU::get_default_team_policy(ncols, nlevs_tgt);
+  auto p_tgt = get_field_in("p_mid").get_view<const PackT**>();
+  Kokkos::parallel_for("nudging_vert_interp_setup_loop", policy_vinterp,
+    KOKKOS_LAMBDA(const MemberType& team) {
 
-    auto int_mask_view = m_buffer.int_mask_view;
-    // Vertical Interpolation onto atmosphere state pressure levels
-    // Note that we are going from ext to tmp here
-    if (m_src_pres_type == TIME_DEPENDENT_3D_PROFILE) {
-      perform_vertical_interpolation<Real,1,2>(p_mid_tmp_3d,
-                                               p_mid_v,
-                                               tmp_state_view,
-                                               int_state_view,
-                                               int_mask_view,
-                                               m_num_src_levs,
-                                               m_num_levs);
-    } else if (m_src_pres_type == STATIC_1D_VERTICAL_PROFILE) {
-      perform_vertical_interpolation<Real,1,2>(p_mid_tmp_1d,
-                                               p_mid_v,
-                                               tmp_state_view,
-                                               int_state_view,
-                                               int_mask_view,
-                                               m_num_src_levs,
-                                               m_num_levs);
+    const int icol = team.league_rank();
+
+    // Setup
+    if (src_pmid_3d) {
+      vert_interp.setup(team, ekat::subview(p_mid_tmp_3d,icol),
+                              ekat::subview(p_tgt,icol));
+    } else {
+      vert_interp.setup(team, p_mid_tmp_1d,
+                              ekat::subview(p_tgt,icol));
     }
+  });
+  Kokkos::fence();
 
-    // Again, correct masked values
-    correct_masked_values(int_state_field);
+  // Then loop over fields, and do copy_and_pad + vremap
+  auto padded_field = get_helper_field("padded_field");
+  for (const auto& name : m_fields_nudge) {
+    copy_and_pad(get_helper_field(name+"_tmp"),padded_field);
 
-    // FINALLY, apply nudging
+    auto field_after_vinterp = get_helper_field(name);
+    auto view_in  = padded_field.get_view<const PackT**>();
+    auto view_out = field_after_vinterp.get_view<PackT**>();
+    // Now use the interpolation object in || over all variables.
+    auto vinterp = KOKKOS_LAMBDA(const MemberType& team) {
+      const int icol = team.league_rank();
+
+      view_1d x1;
+      if (src_pmid_3d) {
+        x1 = ekat::subview(p_mid_tmp_3d,icol);
+      } else {
+        x1 = p_mid_tmp_1d;
+      }
+      auto x2 = ekat::subview(p_tgt,icol);
+
+      auto y1 = ekat::subview(view_in, icol);
+      auto y2 = ekat::subview(view_out,icol);
+
+      vert_interp.lin_interp(team, x1, x2, y1, y2, icol);
+    };
+    Kokkos::parallel_for("nudging_vert_interp_loop", policy_vinterp, vinterp);
+    Kokkos::fence();
+
+    // If timescale==0, the call get_helper_field(name) returns the same
+    // fields as get_field_out_wrap(name) they are alias, so nothing to do.
+    // If timescale>0, then we need to back out a tendency.
     if (m_timescale > 0) {
       auto atm_state_field = get_field_out_wrap(name);
-      // Back out a tendency and apply it.
       if (m_use_weights) {
         // get nudging weights field
         // NOTES: do we really need the vertical interpolation for nudging weights? Since we are going to 
@@ -446,16 +515,16 @@ void Nudging::run_impl (const double dt)
         //
         auto nudging_weights_field = get_helper_field("nudging_weights");
         // appply the nudging tendencies to the ATM states
-        apply_weighted_tendency(atm_state_field, int_state_field, nudging_weights_field, dt);
+        apply_weighted_tendency(atm_state_field, field_after_vinterp, nudging_weights_field, dt);
       } else if (m_refine_remap_vert_cutoff > 0.0) {
         // If we have a cutoff, we apply the tendency with p_mid cutoff
         // First, get p_mid the field in the atm (i.e., int) state
         auto p_mid_field = get_field_in("p_mid");
         // Then, call the tendency with a Heaviside-like cutoff
-        apply_vert_cutoff_tendency(atm_state_field, int_state_field,
+        apply_vert_cutoff_tendency(atm_state_field, field_after_vinterp,
                                    p_mid_field, m_refine_remap_vert_cutoff, dt);
       } else {
-        apply_tendency(atm_state_field, int_state_field, dt);
+        apply_tendency(atm_state_field, field_after_vinterp, dt);
       }
     }
   }
@@ -488,23 +557,6 @@ Field Nudging::create_helper_field (const std::string& name,
   return m_helper_fields[name];
 }
 
-// =========================================================================================
-size_t Nudging::requested_buffer_size_in_bytes() const {
-  return m_buffer.num_2d_midpoint_mask_views*m_num_cols*m_num_levs*sizeof(mMask);
-}
-
-// =========================================================================================
-void Nudging::init_buffers(const ATMBufferManager& buffer_manager) {
-  EKAT_REQUIRE_MSG(buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(),
-                   "Error, Nudging::init_buffers! Buffers size not sufficient.\n");
-  mMask* mem = reinterpret_cast<mMask*>(buffer_manager.get_memory());
-
-  m_buffer.int_mask_view = decltype(m_buffer.int_mask_view)(mem,m_num_cols,m_num_levs);
-  mem += m_buffer.int_mask_view.size();
-
-  size_t used_mem = (reinterpret_cast<Real*>(mem) - buffer_manager.get_memory())*sizeof(Real);
-  EKAT_REQUIRE_MSG(used_mem==requested_buffer_size_in_bytes(), "Error: Nudging::init_buffers! Used memory != requested memory.");
-}
 // =========================================================================================
 Field Nudging::get_field_out_wrap(const std::string& field_name) {
   if (field_name == "U" or field_name == "V") {
