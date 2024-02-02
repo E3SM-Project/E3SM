@@ -375,7 +375,7 @@ void Nudging::run_impl (const double dt)
 
     const int ncols = fl.dim(0);
     const int nlevs = fl.dim(1);
-    const auto thresh = var_fill_value*0.0001;
+    const auto thresh = std::abs(var_fill_value)*0.0001;
     auto lambda = KOKKOS_LAMBDA(const int icol) {
       int first_good = nlevs;
       int last_good = -1;
