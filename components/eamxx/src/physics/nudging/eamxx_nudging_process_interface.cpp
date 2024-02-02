@@ -281,7 +281,7 @@ void Nudging::initialize_impl (const RunType /* run_type */)
     // Register the fields with the remapper
     m_horiz_remapper->register_field(field_ext, field_tmp);
 
-    if (m_timescale<=0) {
+    if (m_timescale>0) {
       // Third copy of the field: after vert interpolation.
       // We cannot store directly in get_field_out(name),
       // since we need to back out tendencies
@@ -353,9 +353,12 @@ void Nudging::run_impl (const double dt)
   // Perform time interpolation
   m_time_interp.perform_time_interpolation(ts);
 
-  // Horiz remapper (and also vert remapping) do not handle well data that contains "masked"
-  // values (sometimes also called "filled" values). Since masked values can only happen
-  // near the surface, we can parse fields, and perform some work if we find f(surf)==fillValue.
+  // If the input data contains "masked" values (sometimes also called "filled" values),
+  // the horiz remapping would smear them around. To prevent that, we need to "cure"
+  // these values. Masked values can only happen at top/bot of the model (with top
+  // being not common), and they must be a contiguous set of entries. So to cure them,
+  // we simply set all bot/top masked entries equal to the first non-masked value
+  // from the bot/top respectively. This corresponds to a constant extrapolation.
   // NOTE: we need to do a tol check, since time interpolation may not return fillValue,
   //       even if both f(t_beg)/f(t_end) are equal to fillValue (due to rounding).
   // NOTE: if f(t_beg)==fillValue!=f(t_end), or viceversa, the time-interpolated value can
