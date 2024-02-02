@@ -92,14 +92,21 @@ public:
 
   bool are_dimensions_set () const;
 
-  // Check if this layout is that of a vector field
+  // Check if this layout is that of a vector/tensor field
   bool is_vector_layout () const;
+  bool is_tensor_layout () const;
 
   // If this is the layout of a vector field, get the idx of the vector dimension
   // Note: throws if is_vector_layout()==false.
   int get_vector_dim () const;
   FieldTag get_vector_tag () const;
 
+  // If this is the layout of a tensor field, get the idx of the tensor dimensions
+  // Note: throws if is_tensor_layout()==false.
+  std::vector<int> get_tensor_dims () const;
+  std::vector<FieldTag> get_tensor_tags () const;
+
+  // Returns a copy of this layout with a given dimension stripped
   FieldLayout strip_dim (const FieldTag tag) const;
   FieldLayout strip_dim (const int idim) const;
 

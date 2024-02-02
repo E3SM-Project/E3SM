@@ -58,29 +58,7 @@ create_src_layout (const FieldLayout& tgt_layout) const
       "[HorizInterpRemapperBase] Error! Input target layout is not valid for this remapper.\n"
       " - input layout: " + to_string(tgt_layout));
 
-  using namespace ShortFieldTagsNames;
-  const auto lt = get_layout_type(tgt_layout.tags());
-  const bool midpoints = tgt_layout.has_tag(LEV);
-  const auto vec_tag = tgt_layout.is_vector_layout() ? tgt_layout.get_vector_tag() : INV;
-  const int vec_dim  = tgt_layout.is_vector_layout() ? tgt_layout.dim(vec_tag) : -1;
-  auto src = FieldLayout::invalid();
-  switch (lt) {
-    case LayoutType::Scalar2D:
-      src = m_src_grid->get_2d_scalar_layout();
-      break;
-    case LayoutType::Vector2D:
-      src = m_src_grid->get_2d_vector_layout(vec_tag,vec_dim);
-      break;
-    case LayoutType::Scalar3D:
-      src = m_src_grid->get_3d_scalar_layout(midpoints);
-      break;
-    case LayoutType::Vector3D:
-      src = m_src_grid->get_3d_vector_layout(midpoints,vec_tag,vec_dim);
-      break;
-    default:
-      EKAT_ERROR_MSG ("Target layout not supported by HorizInterpRemapperBase: " + e2str(lt) + "\n");
-  }
-  return src;
+  return create_layout (tgt_layout, m_src_grid);
 }
 
 FieldLayout HorizInterpRemapperBase::
@@ -93,29 +71,55 @@ create_tgt_layout (const FieldLayout& src_layout) const
       "[HorizInterpRemapperBase] Error! Input source layout is not valid for this remapper.\n"
       " - input layout: " + to_string(src_layout));
 
+  return create_layout (src_layout, m_tgt_grid);
+}
+
+FieldLayout HorizInterpRemapperBase::
+create_layout (const FieldLayout& fl_in,
+               const grid_ptr_type& grid) const
+{
   using namespace ShortFieldTagsNames;
-  const auto lt = get_layout_type(src_layout.tags());
-  auto tgt = FieldLayout::invalid();
-  const bool midpoints = src_layout.has_tag(LEV);
-  const auto vec_tag = src_layout.is_vector_layout() ? src_layout.get_vector_tag() : INV;
-  const int vec_dim  = src_layout.is_vector_layout() ? src_layout.dim(vec_tag) : -1;
-  switch (lt) {
-    case LayoutType::Scalar2D:
-      tgt = m_tgt_grid->get_2d_scalar_layout();
-      break;
-    case LayoutType::Vector2D:
-      tgt = m_tgt_grid->get_2d_vector_layout(vec_tag,vec_dim);
-      break;
+  const auto type = get_layout_type(fl_in.tags());
+        auto fl_out = FieldLayout::invalid();
+  const bool midpoints = fl_in.has_tag(LEV);
+  const bool is3d = fl_in.has_tag(LEV) or fl_in.has_tag(ILEV);
+  switch (type) {
+    case LayoutType::Scalar2D: [[ fallthrough ]];
     case LayoutType::Scalar3D:
-      tgt = m_tgt_grid->get_3d_scalar_layout(midpoints);
+      fl_out = is3d
+             ? grid->get_3d_scalar_layout(midpoints)
+             : grid->get_2d_scalar_layout();
       break;
+    case LayoutType::Vector2D: [[ fallthrough ]];
     case LayoutType::Vector3D:
-      tgt = m_tgt_grid->get_3d_vector_layout(midpoints,vec_tag,vec_dim);
+    {
+      auto vtag = fl_in.get_vector_tag();
+      auto vdim = fl_in.dim(vtag);
+      fl_out = is3d
+             ? grid->get_3d_vector_layout(midpoints,vtag,vdim)
+             : grid->get_2d_vector_layout(vtag,vdim);
       break;
+    }
+
+    case LayoutType::Tensor2D: [[ fallthrough ]];
+    case LayoutType::Tensor3D:
+    {
+      auto ttags = fl_in.get_tensor_tags();
+      std::vector<int> tdims;
+      for (auto idx : fl_in.get_tensor_dims()) {
+        tdims.push_back(fl_in.dim(idx));
+      }
+      fl_out = is3d
+             ? grid->get_3d_tensor_layout(midpoints,ttags,tdims)
+             : grid->get_2d_tensor_layout(ttags,tdims);
+      break;
+    }
+
     default:
-      EKAT_ERROR_MSG ("Source layout not supported by HorizInterpRemapperBase: " + e2str(lt) + "\n");
+      EKAT_ERROR_MSG ("Layout not supported by HorizInterpRemapperBase:\n"
+                      " - layout: " + to_string(fl_in) + "\n");
   }
-  return tgt;
+  return fl_out;
 }
 
 void HorizInterpRemapperBase::do_registration_ends ()
@@ -508,6 +512,33 @@ local_mat_vec (const Field& x, const Field& y) const
           y_view(row,j,k) = weights(beg)*x_view(col_lids(beg),j,k);
           for (int icol=beg+1; icol<end; ++icol) {
             y_view(row,j,k) += weights(icol)*x_view(col_lids(icol),j,k);
+          }
+        });
+      });
+      break;
+    }
+    case 4:
+    {
+      auto x_view = x.get_view<const Pack****>();
+      auto y_view = y.get_view<      Pack****>();
+      const int dim1 = src_layout.dim(1);
+      const int dim2 = src_layout.dim(2);
+      const int dim3 = PackInfo::num_packs(src_layout.dim(3));
+      auto policy = ESU::get_default_team_policy(nrows,dim1*dim2*dim3);
+      Kokkos::parallel_for(policy,
+                           KOKKOS_LAMBDA(const MemberType& team) {
+        const auto row = team.league_rank();
+
+        const auto beg = row_offsets(row);
+        const auto end = row_offsets(row+1);
+        Kokkos::parallel_for(Kokkos::TeamVectorRange(team,dim1*dim2*dim3),
+                            [&](const int idx){
+          const int j = (idx / dim3) / dim2;
+          const int k = (idx / dim3) % dim2;
+          const int l =  idx % dim3;
+          y_view(row,j,k,l) = weights(beg)*x_view(col_lids(beg),j,k,l);
+          for (int icol=beg+1; icol<end; ++icol) {
+            y_view(row,j,k,l) += weights(icol)*x_view(col_lids(icol),j,k,l);
           }
         });
       });
