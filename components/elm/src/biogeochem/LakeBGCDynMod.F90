@@ -347,11 +347,7 @@ contains
             ! surface and sediment diffusive fluxes 
             dzb = 0.5_r8 * (dz_lake(c,nlevlak) + dz(c,1))
             do k = 1, nsolulak
-               if (k<=ngaslak) then
-                  df_surf(c,k) = kg(c,k) * (conc_old(c,1,k) - conc_eq(c,k))
-               else
-                  df_surf(c,k) = kg(c,k) * min(conc_old(c,1,k)-conc_eq(c,k),0._r8)
-               end if
+               df_surf(c,k) = kg(c,k) * (conc_old(c,1,k) - conc_eq(c,k))
                df_sed(c,k) = dx(c,nlevlak) / dzb * (conc_old(c,nlevlak+1,k)/ &
                      soilpor(c,1) - conc_old(c,nlevlak,k))
             end do
