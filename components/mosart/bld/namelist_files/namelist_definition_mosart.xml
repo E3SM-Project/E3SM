@@ -110,6 +110,14 @@ Default: .false.
 If .true., heat model will be turned on.
 </entry>
 
+<entry id="do_budget" 
+       type="integer" 
+       category="mosart"
+       group="mosart_inparm">
+Default: 0
+Level of budget output, 0 is minimal, 1 is every month, 2 is everyday, 3 is every timestep with additional terms.
+</entry>
+
 <entry id="data_bgc_fluxes_to_ocean_flag" 
        type="logical" 
        category="mosart"
