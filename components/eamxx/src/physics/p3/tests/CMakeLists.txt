@@ -40,9 +40,9 @@ set(P3_TESTS_SRCS
     ) # P3_TESTS_SRCS
 
 if (SCREAM_DEBUG AND NOT SCREAM_TEST_SIZE STREQUAL "SHORT")
-  set (FORCE_RUN_DIFF_FAILS TRUE)
+  set (FORCE_RUN_DIFF_FAILS "WILL_FAIL")
 else ()
-  set (FORCE_RUN_DIFF_FAILS FALSE)
+  set (FORCE_RUN_DIFF_FAILS "")
 endif()
 
 # NOTE: tests inside this if statement won't be built in a baselines-only build
@@ -58,9 +58,9 @@ if (NOT SCREAM_BASELINES_ONLY)
       COMPILER_CXX_DEFS SCREAM_FORCE_RUN_DIFF
       THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
       LABELS "p3;physics;fail"
-      PROPERTIES WILL_FAIL ${FORCE_RUN_DIFF_FAILS})
+      ${FORCE_RUN_DIFF_FAILS})
 
-  if (NOT SCREAM_SMALL_KERNELS) 
+  if (NOT SCREAM_SMALL_KERNELS)
      CreateUnitTest(p3_sk_tests "${P3_TESTS_SRCS}"
         LIBS p3_sk
         THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
@@ -72,7 +72,7 @@ if (NOT SCREAM_BASELINES_ONLY)
         COMPILER_CXX_DEFS SCREAM_FORCE_RUN_DIFF
         THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
         LABELS "p3_sk;physics;fail"
-        PROPERTIES WILL_FAIL ${FORCE_RUN_DIFF_FAILS})
+        ${FORCE_RUN_DIFF_FAILS})
   endif()
 endif()
 
@@ -101,7 +101,7 @@ if (SCREAM_ENABLE_BASELINE_TESTS)
       EXE_ARGS "${BASELINE_FILE_ARG}"
       LABELS "p3;physics;fail"
       EXCLUDE_MAIN_CPP
-      PROPERTIES WILL_FAIL ${FORCE_RUN_DIFF_FAILS})
+      ${FORCE_RUN_DIFF_FAILS})
 
   #
   # Use fake tests to generate shell commands to generate baselines
