@@ -4385,6 +4385,11 @@
       <map name="ROF2LND_FMAPNAME">lnd/clm2/mappingdata/maps/ne240np4/map_0.1x0.1_nomask_to_ne240np4_nomask_aave_da_c120706.nc</map>
     </gridmap>
 
+    <gridmap lnd_grid="ne256np4.pg2" rof_grid="r0125">
+      <map name="LND2ROF_FMAPNAME">cpl/gridmaps/ne256pg2/map_ne256pg2_to_r0125_mono.200212.nc</map>
+      <map name="ROF2LND_FMAPNAME">cpl/gridmaps/ne256pg2/map_r0125_to_ne256pg2_mono.200212.nc</map>
+    </gridmap>
+
     <gridmap lnd_grid="ne1024np4.pg2" rof_grid="r0125">
       <map name="LND2ROF_FMAPNAME">cpl/gridmaps/ne1024pg2/map_ne1024pg2_to_r0125_mono.200212.nc</map>
       <map name="ROF2LND_FMAPNAME">cpl/gridmaps/ne1024pg2/map_r0125_to_ne1024pg2_mono.200212.nc</map>
