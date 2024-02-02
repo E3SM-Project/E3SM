@@ -294,6 +294,8 @@ lnd/clm2/surfdata_map/surfdata_ne30pg2_simyr2010_c210402_with_TOP.nc</fsurdat>
 lnd/clm2/surfdata_map/surfdata_ne120np4_simyr2010_c20181023.nc</fsurdat>
 <fsurdat hgrid="ne120np4.pg2" sim_year="2010" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne120pg2_simyr2010_c230119.nc</fsurdat>
+<fsurdat hgrid="ne256np4.pg2" sim_year="1850" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne256pg2_simyr1850_c240131.nc</fsurdat>
 <fsurdat hgrid="ne256np4.pg2" sim_year="2010" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne256pg2_simyr2010_c230207.nc</fsurdat>
 <fsurdat hgrid="ne1024np4.pg2"   sim_year="2010" use_crop=".false." >
@@ -499,6 +501,8 @@ lnd/clm2/surfdata_map/surfdata_conusx4v1_simyr2000_c160503.nc</fsurdat>
  use_crop=".false."  >lnd/clm2/surfdata_map/surfdata.pftdyn_ne11np4_hist_simyr1850-2005_c160803.nc</flanduse_timeseries>
 <flanduse_timeseries hgrid="ne1024np4.pg2"
  use_crop=".false."  >lnd/clm2/surfdata_map/landuse.timeseries_ne1024pg2_historical_simyr1990-2014_c240109.nc</flanduse_timeseries>
+<flanduse_timeseries hgrid="ne256np4.pg2"
+ use_crop=".false."  >lnd/clm2/surfdata_map/landuse.timeseries_ne256pg2_hist_simyr1850-2015_c240131.nc</flanduse_timeseries>
 
 <flanduse_timeseries hgrid="r0125" sim_year_range="1850-2000"
  use_crop=".false." >lnd/clm2/surfdata_map/landuse.timeseries_0.125x0.125_hist_simyr1850-2015_c191004.nc</flanduse_timeseries>
