@@ -2826,7 +2826,7 @@
     </domain>
 
     <domain name="FRISwISC08to60E3r1">
-      <nx>718054</nx>
+      <nx>605169</nx>
       <ny>1</ny>
       <file grid="ice|ocn">$DIN_LOC_ROOT/share/domains/domain.ocn.FRISwISC08to60E3r1.230926.nc</file>
       <desc>FRISwISC08to60E3r1 is a MPAS ice/ocean grid with enhanced resolution of 12km in the Southern Ocean around Antarctica and 4 km beneath the Filchner-Ronne Ice Shelf. The high resolution regions smoothly transition to the background resolution of the standard low resolution 60to30km grid:</desc>
@@ -2840,14 +2840,14 @@
     </domain>
 
     <domain name="FRISwISC02to60E3r1">
-      <nx>718054</nx>
+      <nx>1055045</nx>
       <ny>1</ny>
       <file grid="ice|ocn">$DIN_LOC_ROOT/share/domains/domain.ocn.FRISwISC02to60E3r1.230926.nc</file>
       <desc>FRISwISC02to60E3r1 is a MPAS ice/ocean grid with enhanced resolution of 12km in the Southern Ocean around Antarctica and 4 km beneath the Filchner-Ronne Ice Shelf. The high resolution regions smoothly transition to the background resolution of the standard low resolution 60to30km grid:</desc>
     </domain>
 
     <domain name="FRISwISC01to60E3r1">
-      <nx>718054</nx>
+      <nx>2162616</nx>
       <ny>1</ny>
       <file grid="ice|ocn">$DIN_LOC_ROOT/share/domains/domain.ocn.FRISwISC01to60E3r1.231005.nc</file>
       <desc>FRISwISC01to60E3r1 is a MPAS ice/ocean grid with enhanced resolution of 12km in the Southern Ocean around Antarctica and 4 km beneath the Filchner-Ronne Ice Shelf. The high resolution regions smoothly transition to the background resolution of the standard low resolution 60to30km grid:</desc>
