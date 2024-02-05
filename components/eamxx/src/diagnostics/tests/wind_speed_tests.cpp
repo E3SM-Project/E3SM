@@ -81,7 +81,7 @@ TEST_CASE("wind_speed")
     diag->get_diagnostic().sync_to_host();
 
     auto uv_h = uv.get_view<const Real***,Host>();
-    auto ws_h = diag->get_diagnostic().get_view<const Real**>();
+    auto ws_h = diag->get_diagnostic().get_view<const Real**,Host>();
 
     for (int icol=0; icol<grid->get_num_local_dofs(); ++icol) {
       for (int ilev=0; ilev<nlevs; ++ilev) {
