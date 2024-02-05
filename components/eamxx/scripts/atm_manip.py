@@ -170,7 +170,7 @@ def modify_ap_list(xml_root, group, ap_list_str, append_this):
     'p1,p2,p1'
     >>> modify_ap_list(tree,node,"p1,p3",False)
     Traceback (most recent call last):
-    ValueError: ERROR: Unrecognized atm proc name 'p3'. To declare a new group, prepend and append '_' to the name.
+    SystemExit: ERROR: Unrecognized atm proc name 'p3'. To declare a new group, prepend and append '_' to the name.
     >>> modify_ap_list(tree,node,"p1,_my_group_",False)
     True
     >>> get_child(node,"atm_procs_list").text
@@ -203,8 +203,8 @@ def modify_ap_list(xml_root, group, ap_list_str, append_this):
         new_aps = [n for n in add_aps if find_node(ap_defaults,n) is None]
 
         for ap in new_aps:
-            expect (ap[0]=="_" and ap[-1]=="_" and len(ap)>2, exc_type=ValueError,
-                    error_msg=f"Unrecognized atm proc name '{ap}'. To declare a new group, prepend and append '_' to the name.")
+            expect (ap[0]=="_" and ap[-1]=="_" and len(ap)>2,
+                    f"Unrecognized atm proc name '{ap}'. To declare a new group, prepend and append '_' to the name.")
             group = gen_atm_proc_group("", ap_defaults)
             group.tag = ap
 
@@ -348,7 +348,8 @@ def atm_config_chg_impl(xml_root, change, all_matches=False):
     >>> ################ INVALID TYPE #######################
     >>> atm_config_chg_impl(tree,'prop2=two')
     Traceback (most recent call last):
-    ValueError: Could not refine 'two' as type 'integer'
+    CIME.utils.CIMEError: ERROR: Could not refine 'two' as type 'integer':
+    could not convert string to float: 'two'
     >>> ################ INVALID VALUE #######################
     >>> atm_config_chg_impl(tree,'prop2=3')
     Traceback (most recent call last):
