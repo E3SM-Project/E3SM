@@ -416,7 +416,7 @@ void Nudging::run_impl (const double dt)
 
   const int ncols = m_num_cols;
   const int nlevs_src = m_num_src_levs;
-  auto copy_and_pad = [&](const Field from, const Field to) {
+  auto copy_and_pad = [&](const Field from, const Field to, const bool is_pmid) {
     auto from_view = from.get_view<const Real**>();
     auto to_view = to.get_view<Real**>();
     auto fl = from.get_header().get_identifier().get_layout();
@@ -433,7 +433,17 @@ void Nudging::run_impl (const double dt)
       // can extrapolate if the p_tgt is outside the p_src bounds
       Kokkos::single(Kokkos::PerTeam(team),[&]{
         to_view(icol,0) = 0; // Does this make sense for *every field*?
-        to_view(icol,nlevs_src+1) = from_view(icol,nlevs_src);
+        if (is_pmid) {
+          // For pmid, we put a very large value, so that any p_mid_tgt
+          // that is larger than input p_mid bnds will end up in the
+          // last interval.
+          to_view(icol,nlevs_src+1) = 1e7;
+        } else {
+          // For data, we set last entry equal to second-to-last.
+          // This will cause constant extrapolation outside of
+          // the input p_mid bounds
+          to_view(icol,nlevs_src+1) = from_view(icol,nlevs_src-1);
+        }
       });
     };
 
@@ -442,7 +452,7 @@ void Nudging::run_impl (const double dt)
   };
 
   // First, copy/pad p_mid, and extract the right copy (1d vs 3d)
-  copy_and_pad (get_helper_field("p_mid_tmp"),get_helper_field("padded_p_mid_tmp"));
+  copy_and_pad (get_helper_field("p_mid_tmp"),get_helper_field("padded_p_mid_tmp"),true);
   const auto& p_mid_v = get_field_in("p_mid").get_view<const PackT**>();
   view_2d p_mid_tmp_3d;
   view_1d p_mid_tmp_1d;
@@ -458,7 +468,7 @@ void Nudging::run_impl (const double dt)
   // Setup the linear interpolation object
   using LI = ekat::LinInterp<Real,1>;
   const int nlevs_tgt = m_num_levs;
-  LI vert_interp(ncols,nlevs_src,nlevs_tgt);
+  LI vert_interp(ncols,nlevs_src+2,nlevs_tgt);
   const auto policy_vinterp = ESU::get_default_team_policy(ncols, nlevs_tgt);
   auto p_tgt = get_field_in("p_mid").get_view<const PackT**>();
   Kokkos::parallel_for("nudging_vert_interp_setup_loop", policy_vinterp,
@@ -480,7 +490,7 @@ void Nudging::run_impl (const double dt)
   // Then loop over fields, and do copy_and_pad + vremap
   auto padded_field = get_helper_field("padded_field");
   for (const auto& name : m_fields_nudge) {
-    copy_and_pad(get_helper_field(name+"_tmp"),padded_field);
+    copy_and_pad(get_helper_field(name+"_tmp"),padded_field,false);
 
     auto field_after_vinterp = get_helper_field(name);
     auto view_in  = padded_field.get_view<const PackT**>();
