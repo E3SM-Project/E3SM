@@ -16,7 +16,13 @@ specific R4 or R8 forms unless the specific form is required
 (eg converting to single precision before output or if a particular
 algorithm is known to require double precision). This allows us to
 easily convert all reals to single precision to explore performance or
-accuracy in single precision mode.
+accuracy in single precision mode. In some cases creating literal values
+of type Real is necessary to avoid unwanted promotions. For that purpose
+a user-defined literal `_Real` is provided. As an example, we can compute
+the inverse area of a cell using only the Real type as follows:
+```c++
+    Real InvAreaCell = 1._Real / AreaCell(ICell);
+```
 
 ## Arrays and YAKL
 
