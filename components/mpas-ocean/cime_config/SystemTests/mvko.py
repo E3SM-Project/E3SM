@@ -32,6 +32,8 @@ NINST = 30
 
 PERT_FILE_TEMPLATE = "mpaso_oQ240_perturbed_inic_{ens:04d}.nc"
 
+INIT_FILE_NAME = "20231204.GMPAS-NYF.T62_oQU240.v3beta.mpaso.rst.0401-01-01_00000.nc"
+
 # No output is on by default for mpas-ocean
 OCN_TEST_VARS = [
     "daysSinceStartOfSim",
@@ -124,6 +126,8 @@ def modify_stream(
 
 
 class MVKO(SystemTestsCommon):
+    """MVK-Ocean SystemTest class."""
+
     def __init__(self, case):
         """
         initialize an object interface to the MVKO test
@@ -146,58 +150,60 @@ class MVKO(SystemTestsCommon):
             self._case.set_value("COMPARE_BASELINE", False)
 
     def build_phase(self, sharedlib_only=False, model_only=False):
+        """
+        Create instance namelists, stream files, and initial conditions.
+        """
         # Only want this to happen once. It will impact the sharedlib build
         # so it has to happen there.
         caseroot = self._case.get_value("CASEROOT")
         if not model_only:
             logging.warning("Starting to build multi-instance exe")
             for comp in self._case.get_values("COMP_CLASSES"):
-                self._case.set_value("NTHRDS_{}".format(comp), 1)
+                self._case.set_value(f"NTHRDS_{comp}", 1)
 
-                ntasks = self._case.get_value("NTASKS_{}".format(comp))
+                ntasks = self._case.get_value(f"NTASKS_{comp}")
 
-                self._case.set_value("NTASKS_{}".format(comp), ntasks * NINST)
+                self._case.set_value(f"NTASKS_{comp}", ntasks * NINST)
                 if comp != "CPL":
-                    self._case.set_value("NINST_{}".format(comp), NINST)
+                    self._case.set_value(f"NINST_{comp}", NINST)
 
             self._case.flush()
 
             case_setup(self._case, test_mode=False, reset=True)
         rundir = self._case.get_value("RUNDIR")
 
-        in_data_root = self._case.get_value("DIN_LOC_ROOT")
         init_file_path = os.path.join(
-            in_data_root,
+            self._case.get_value("DIN_LOC_ROOT"),
             "ocn/mpas-o/oQU240/inic/gmpas-nyf",
-            "20220404.GMPAS-NYF.T62_oQU240.inic.mpaso.rst.0050-01-01_00000.nc",
+            INIT_FILE_NAME,
         )
+        # Write yearly averages to custom output file
+        tss_climatology_config = [
+            "config_am_timeseriesstatsclimatology_enable = .true.\n",
+            "config_am_timeseriesstatsclimatology_backward_output_offset = '00-03-00_00:00:00'\n",
+            "config_am_timeseriesstatsclimatology_compute_interval = '00-00-00_01:00:00'\n",
+            "config_am_timeseriesstatsclimatology_compute_on_startup = .false.\n",
+            "config_am_timeseriesstatsclimatology_duration_intervals = '01-00-00_00:00'\n",
+            "config_am_timeseriesstatsclimatology_operation = 'avg'\n",
+            "config_am_timeseriesstatsclimatology_output_stream = 'timeSeriesStatsClimatologyOutput'\n",
+            "config_am_timeseriesstatsclimatology_reference_times = '00-01-01_00:00:00'\n",
+            "config_am_timeseriesstatsclimatology_repeat_intervals = '01-00-00_00:00:00'\n",
+            "config_am_timeseriesstatsclimatology_reset_intervals = '0001-00-00_00:00:00'\n",
+            "config_am_timeseriesstatsclimatology_restart_stream = 'timeSeriesStatsClimatologyRestart'\n",
+            "config_am_timeseriesstatsclimatology_write_on_startup = .false.\n",
+        ]
+
         for iinst in range(1, NINST + 1):
             pert_file_name = PERT_FILE_TEMPLATE.format(ens=iinst)
             pert_file = os.path.join(rundir, pert_file_name)
             if not os.path.exists(rundir):
-                logging.warning(f"CREATE {rundir}")
+                logging.warning("CREATE %s", rundir)
                 os.mkdir(rundir)
             perturb_init(init_file_path, field_name="temperature", outfile=pert_file)
 
-            # Write yearly averages to custom output file
-            tss_climatology_config = [
-                "config_am_timeseriesstatsclimatology_enable = .true.\n",
-                "config_am_timeseriesstatsclimatology_backward_output_offset = '00-03-00_00:00:00'\n",
-                "config_am_timeseriesstatsclimatology_compute_interval = '00-00-00_01:00:00'\n",
-                "config_am_timeseriesstatsclimatology_compute_on_startup = .false.\n",
-                "config_am_timeseriesstatsclimatology_duration_intervals = '01-00-00_00:00'\n",
-                "config_am_timeseriesstatsclimatology_operation = 'avg'\n",
-                "config_am_timeseriesstatsclimatology_output_stream = 'timeSeriesStatsClimatologyOutput'\n",
-                "config_am_timeseriesstatsclimatology_reference_times = '00-01-01_00:00:00'\n",
-                "config_am_timeseriesstatsclimatology_repeat_intervals = '01-00-00_00:00:00'\n",
-                "config_am_timeseriesstatsclimatology_reset_intervals = '0001-00-00_00:00:00'\n",
-                "config_am_timeseriesstatsclimatology_restart_stream = 'timeSeriesStatsClimatologyRestart'\n",
-                "config_am_timeseriesstatsclimatology_write_on_startup = .false.\n",
-            ]
-
             # Set up ocean namelist to specify climatology output and reduce other output
             with open(
-                "user_nl_{}_{:04d}".format(self.ocn_component, iinst), "w"
+                f"user_nl_{self.ocn_component}_{iinst:04d}", "w", encoding="utf-8"
             ) as nl_ocn_file:
 
                 for _config in tss_climatology_config:
@@ -222,7 +228,9 @@ class MVKO(SystemTestsCommon):
 
             # Set up sea ice namelist to reduce output
             with open(
-                "user_nl_{}_{:04d}".format(self.ice_component, iinst), "w"
+                f"user_nl_{self.ice_component}_{iinst:04d}",
+                "w",
+                encoding="utf-8",
             ) as nl_ice_file:
                 for _config in tss_climatology_config:
                     nl_ice_file.write(_config)
@@ -236,13 +244,13 @@ class MVKO(SystemTestsCommon):
                     caseroot,
                     "SourceMods",
                     "src.mpaso",
-                    "streams.ocean_{:04d}".format(iinst),
+                    f"streams.ocean_{iinst:04d}",
                 )
                 ice_stream_file = os.path.join(
                     caseroot,
                     "SourceMods",
                     "src.mpassi",
-                    "streams.seaice_{:04d}".format(iinst),
+                    f"streams.seaice_{iinst:04d}",
                 )
                 # buildnamelist creates the streams file for each instance, copy this to the
                 # SourceMods directory to make changes to the correct version
@@ -257,13 +265,14 @@ class MVKO(SystemTestsCommon):
         self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
 
     def run_phase(self):
+        """Run the model."""
         self.run_indv()
 
     def _generate_baseline(self):
         """
         generate a new baseline case based on the current test
         """
-        super(MVKO, self)._generate_baseline()
+        super()._generate_baseline()
 
         with CIME.utils.SharedArea():
             basegen_dir = os.path.join(
@@ -281,7 +290,7 @@ class MVKO(SystemTestsCommon):
                 rundir,
                 ref_case=ref_case,
             )
-            logger.debug("MVKO additional baseline files: {}".format(hists))
+            logger.debug("MVKO additional baseline files: %s", hists)
             hists = [os.path.join(rundir, hist) for hist in hists]
             for hist in hists:
                 basename = hist[hist.rfind(self.ocn_component) :]
@@ -313,7 +322,7 @@ class MVKO(SystemTestsCommon):
                 self._case.get_value("BASECMP_CASE"),
             )
 
-            test_name = "{}".format(case_name.split(".")[-1])
+            test_name = str(case_name.split(".")[-1])
             evv_config = {
                 test_name: {
                     "module": os.path.join(evv_lib_dir, "extensions", "kso.py"),
@@ -331,20 +340,22 @@ class MVKO(SystemTestsCommon):
             }
 
             json_file = os.path.join(run_dir, ".".join([case_name, "json"]))
-            with open(json_file, "w") as config_file:
+            with open(json_file, "w", encoding="utf-8") as config_file:
                 json.dump(evv_config, config_file, indent=4)
 
             evv_out_dir = os.path.join(run_dir, ".".join([case_name, "evv"]))
             evv(["-e", json_file, "-o", evv_out_dir])
 
-            with open(os.path.join(evv_out_dir, "index.json")) as evv_f:
+            with open(
+                os.path.join(evv_out_dir, "index.json"), encoding="utf-8"
+            ) as evv_f:
                 evv_status = json.load(evv_f)
 
             comments = ""
             for evv_ele in evv_status["Page"]["elements"]:
                 if "Table" in evv_ele:
                     comments = "; ".join(
-                        "{}: {}".format(key, val[0])
+                        f"{key}: {val[0]}"
                         for key, val in evv_ele["Table"]["data"].items()
                     )
                     if evv_ele["Table"]["data"]["Test status"][0].lower() == "pass":
@@ -367,28 +378,20 @@ class MVKO(SystemTestsCommon):
                         preserve_mode=False,
                     )
                 if urlroot is None:
-                    urlroot = "[{}_URL]".format(mach_name.capitalize())
-                viewing = "{}/evv/{}/index.html".format(urlroot, case_name)
+                    urlroot = f"[{mach_name.capitalize()}_URL]"
+                viewing = f"{urlroot}/evv/{case_name}/index.html"
             else:
                 viewing = (
-                    "{}\n"
+                    f"{evv_out_dir}\n"
                     "    EVV viewing instructions can be found at: "
                     "        https://github.com/E3SM-Project/E3SM/blob/master/cime/scripts/"
                     "climate_reproducibility/README.md#test-passfail-and-extended-output"
-                    "".format(evv_out_dir)
                 )
-
             comments = (
-                "{} {} for test '{}'.\n"
-                "    {}\n"
+                f"{CIME.test_status.BASELINE_PHASE} {status} for test '{test_name}'.\n"
+                f"    {comments}\n"
                 "    EVV results can be viewed at:\n"
-                "        {}".format(
-                    CIME.test_status.BASELINE_PHASE,
-                    status,
-                    test_name,
-                    comments,
-                    viewing,
-                )
+                f"        {viewing}"
             )
 
             CIME.utils.append_testlog(comments, self._orig_caseroot)
