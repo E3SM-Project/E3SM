@@ -302,7 +302,6 @@ add_default($nl, 'config_land_ice_flux_cp_ice');
 add_default($nl, 'config_land_ice_flux_rho_ice');
 add_default($nl, 'config_land_ice_flux_explicit_topDragCoeff');
 add_default($nl, 'config_land_ice_flux_ISOMIP_gammaT');
-add_default($nl, 'config_land_ice_flux_rms_tidal_velocity');
 add_default($nl, 'config_land_ice_flux_jenkins_heat_transfer_coefficient');
 add_default($nl, 'config_land_ice_flux_jenkins_salt_transfer_coefficient');
 add_default($nl, 'config_land_ice_flux_tidal_Jourdain_alpha');

@@ -1590,14 +1590,6 @@ Valid values: Any positive real number
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_land_ice_flux_rms_tidal_velocity" type="real"
-	category="land_ice_fluxes" group="land_ice_fluxes">
-Parameterization of tidal velocity used in computing the sub-ice-shelf friction velocity
-
-Valid values: Any non-negative real number
-Default: Defined in namelist_defaults.xml
-</entry>
-
 <entry id="config_land_ice_flux_jenkins_heat_transfer_coefficient" type="real"
 	category="land_ice_fluxes" group="land_ice_fluxes">
 constant nondimensional heat transfer coefficient across the ice-ocean boundary layer
