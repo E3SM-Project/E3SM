@@ -1,4 +1,4 @@
-#
+ #
 # This is the interface between E3SM's new CMake-based build system and MPAS.
 #
 # The following CMake variables are expected to be defined:
@@ -35,7 +35,14 @@ set(FILE_OFFSET "-DOFFSET64BIT")
 if (CPPDEFS)
   separate_arguments(CPPDEFS UNIX_COMMAND "${CPPDEFS}")
 endif()
-list(APPEND CPPDEFS "-DMPAS_NO_LOG_REDIRECT" "-DUSE_PIO2" "-DHAVE_ADIOS" "-DMPAS_NO_ESMF_INIT" "-DMPAS_ESM_SHR_CONST" "-DMPAS_PERF_MOD_TIMERS" "${MODEL_FORMULATION}" "${FILE_OFFSET}" "${ZOLTAN_DEFINE}" "-D_MPI" "-DMPAS_NAMELIST_SUFFIX=${NAMELIST_SUFFIX}" "-DMPAS_EXE_NAME=${EXE_NAME}")
+list(APPEND CPPDEFS "-DMPAS_NO_LOG_REDIRECT" "-DMPAS_NO_ESMF_INIT" "-DMPAS_ESM_SHR_CONST" "-DMPAS_PERF_MOD_TIMERS" "${MODEL_FORMULATION}" "${FILE_OFFSET}" "${ZOLTAN_DEFINE}" "-D_MPI" "-DMPAS_NAMELIST_SUFFIX=${NAMELIST_SUFFIX}" "-DMPAS_EXE_NAME=${EXE_NAME}")
+if (PIO_VERSION STREQUAL "2")
+  list(APPEND CPPDEFS "-DUSE_PIO2")
+  if (TARGET adios2::adios2)
+    list(APPEND CPPDEFS "-DHAVE_ADIOS")
+  endif()
+endif()
+
 if (DEBUG)
   list(APPEND CPPDEFS "-DMPAS_DEBUG")
 endif()
@@ -62,6 +69,12 @@ add_subdirectory(tools)
 
 set(COMMON_RAW_SOURCES external/ezxml/ezxml.c)
 include(${CMAKE_CURRENT_SOURCE_DIR}/framework/framework.cmake)
+if (COMP_INTERFACE STREQUAL "moab")
+  list(APPEND COMMON_RAW_SOURCES framework/mpas_moabmesh.F)
+  include(${MOAB_PATH}/lib/cmake/MOAB/MOABConfig.cmake)
+  list(APPEND INCLUDES "${MOAB_PATH}/include")
+  list(APPEND CPPDEFS "-DHAVE_MOAB")
+endif()
 include(${CMAKE_CURRENT_SOURCE_DIR}/operators/operators.cmake)
 
 add_library(common)

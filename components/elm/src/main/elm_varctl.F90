@@ -366,6 +366,15 @@ module elm_varctl
   logical, public :: use_lake_wat_storage = .false.
   logical, public :: use_top_solar_rad   = .false.  ! TOP : sub-grid topographic effect on surface solar radiation
 
+  !----------------------------------------------------------
+  ! Fan controls (use_fan)
+  !----------------------------------------------------------
+  logical, public :: use_fan             = .false.
+  character(len=32), public :: fan_mode  = 'none'
+  logical, public :: fan_nh3_to_atm      = .false.
+  logical, public :: fan_to_bgc_crop     = .false.
+  logical, public :: fan_to_bgc_veg      = .false.
+ 
 
   !----------------------------------------------------------
   ! VSFM switches

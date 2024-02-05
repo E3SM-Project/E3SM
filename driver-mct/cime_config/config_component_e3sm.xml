@@ -432,6 +432,7 @@
       <value compset="_SLND.*SOCN.*_MALI">1</value>
       <value compset="_DATM.*_SLND.*MPASO.*_MALI">$ATM_NCPL</value>
       <value compset="_EAM.*_ELM.*MPASO">48</value>
+      <value compset="_EAMXX.*_ELM.*MPASO">$ATM_NCPL</value>
       <value compset="_EAM.*_ELM.*MPASO" grid="a%ne4np4">$ATM_NCPL</value>
       <value compset="_EAM.*_ELM.*MPASO" grid="a%ne11np4">12</value>
       <value compset="_EAM.*_ELM.*MPASO" grid="a%ne120np4">96</value>

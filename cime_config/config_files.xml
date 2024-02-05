@@ -128,6 +128,7 @@
       <value component="satm"                        >$SRCROOT/components/stub_comps/satm</value>
       <value component="xatm"                        >$SRCROOT/components/xcpl_comps/xatm</value>
       <value component="eam"                         >$SRCROOT/components/eam/</value>
+      <value component="eamxx"                       >$SRCROOT/components/eamxx/</value>
       <value component="scream"                      >$SRCROOT/components/eamxx/</value>
     </values>
     <group>case_comps</group>

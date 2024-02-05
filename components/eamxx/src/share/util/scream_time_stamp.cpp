@@ -26,21 +26,18 @@ int days_in_month (const int yy, const int mm) {
 }
 
 bool is_leap_year (const int yy) {
-#ifdef SCREAM_HAS_LEAP_YEAR
-  if (yy%4==0) {
-    // Year is divisible by 4 (minimum requirement)
-    if (yy%100 != 0) {
-      // Not a centennial year => leap.
-      return true;
-    } else if ((yy/100)%4==0) {
-      // Centennial year, AND first 2 digids divisible by 4 => leap
-      return true;
+  if (use_leap_year()) {
+    if (yy%4==0) {
+      // Year is divisible by 4 (minimum requirement)
+      if (yy%100 != 0) {
+        // Not a centennial year => leap.
+        return true;
+      } else if ((yy/100)%4==0) {
+        // Centennial year, AND first 2 digids divisible by 4 => leap
+        return true;
+      }
     }
   }
-#else
-  (void)yy;
-#endif
-  // Either leap year not enabled, or not a leap year at all
   return false;
 }
 
@@ -148,7 +145,7 @@ TimeStamp& TimeStamp::operator+=(const double seconds) {
   // Sanity checks
   // Note: (x-int(x)) only works for x small enough that can be stored in an int,
   //       but that should be the case here, for use cases in EAMxx.
-  EKAT_REQUIRE_MSG (seconds>0, "Error! Time must move forward.\n");
+  EKAT_REQUIRE_MSG (seconds>=0, "Error! Cannot rewind time.\n");
   EKAT_REQUIRE_MSG ((seconds-round(seconds))<std::numeric_limits<double>::epsilon()*10,
       "Error! Cannot update TimeStamp with non-integral number of seconds " << seconds << "\n");
 
@@ -200,6 +197,10 @@ TimeStamp& TimeStamp::operator+=(const double seconds) {
   }
 
   return *this;
+}
+
+TimeStamp TimeStamp::clone (const int num_steps) {
+  return TimeStamp (get_date(),get_time(),num_steps>=0 ? num_steps : m_num_steps);
 }
 
 bool operator== (const TimeStamp& ts1, const TimeStamp& ts2) {

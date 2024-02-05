@@ -15,12 +15,19 @@ module surfrdMod
   use elm_varctl      , only : iulog, scmlat, scmlon, single_column, firrig_data
   use elm_varctl      , only : create_glacier_mec_landunit
   use surfrdUtilsMod  , only : check_sums_equal_1_2d, check_sums_equal_1_3d
+  use surfrdUtilsMod  , only : collapse_crop_types, collapse_crop_var
   use ncdio_pio       , only : file_desc_t, var_desc_t, ncd_pio_openfile, ncd_pio_closefile
   use ncdio_pio       , only : ncd_io, check_var, ncd_inqfdims, check_dim, ncd_inqdid, ncd_inqdlen
   use pio
-  use spmdMod       
+
+#ifdef HAVE_MOAB
+  use mct_mod         , only : mct_gsMap
+  use decompMod       , only : get_elmlevel_gsmap
+  ! use spmdMod         , only : iam  ! rank on the land communicator
+#endif
+  use spmdMod                         
   use topounit_varcon , only : max_topounits, has_topounit  
-  
+
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -108,7 +115,7 @@ contains
 
     if (isgrid2d) then
        allocate(idata2d(ni,nj))
-       idata2d(:,:) = 1	
+       idata2d(:,:) = 1
        call ncd_io(ncid=ncid, varname='LANDMASK', data=idata2d, flag='read', readvar=readvar)
        if (.not. readvar) then
           call ncd_io(ncid=ncid, varname='mask', data=idata2d, flag='read', readvar=readvar)
@@ -116,7 +123,7 @@ contains
        if (readvar) then
           do j = 1,nj
           do i = 1,ni
-             n = (j-1)*ni + i	
+             n = (j-1)*ni + i
              mask(n) = idata2d(i,j)
           enddo
           enddo
@@ -177,6 +184,11 @@ contains
 
     ! pflotran:beg-----------------------------
     integer :: j, np, nv
+#ifdef HAVE_MOAB
+    type(mct_gsMap),  pointer :: gsMap
+    integer :: i, iv , iseg, ig, local ! ni, nj, nv, nseg, global ig
+
+#endif
 
     ! pflotran:end-----------------------------
     character(len=32) :: subname = 'surfrd_get_grid'     ! subroutine name
@@ -246,6 +258,59 @@ contains
 
        end if
        ! pflotran:end-----------------------------------------------
+
+#ifdef HAVE_MOAB
+       ! read xv and yv for MOAB to learn mesh verticies
+       if (ldomain%nv>=3 ) then
+          call get_elmlevel_gsmap (grlnd, gsMap)
+          allocate(rdata3d(nv,ni,nj))  ! transpose from c, as this is fortran
+          vname = 'xv'
+          ! this should be improved in a distributed read, that does not use full grid ni * nj * nv 720*360*4*8 ~ 8Mb
+          call ncd_io(ncid=ncid, varname=trim(vname), data=rdata3d, flag='read', readvar=readvar)
+          if (.not. readvar) call endrun( msg=trim(subname)//' ERROR: xv  NOT on file'//errMsg(__FILE__, __LINE__))
+          ! fill up the ldomain%mblonv(begg:endg, 1:nv) array
+          local = begg
+          do iseg = 1, gsMap%ngseg
+             if (gsMap%pe_loc(iseg) .eq. iam) then
+                do ig = gsMap%start(iseg), gsMap%start(iseg) + gsMap%length(iseg) - 1
+                   j = (ig-1)/ni + 1
+                   i = ig - ni*(j-1)
+                   do iv = 1, nv
+                      if (local .le. endg) then
+                         ldomain%mblonv(local, iv ) = rdata3d(iv, i, j)
+                      else
+                         write (iulog, *), 'OVERFLOW', iseg, gsMap%pe_loc(iseg), gsMap%start(iseg), gsMap%length(iseg), local
+                      endif
+                   enddo
+                   local = local + 1
+                enddo
+             endif
+          enddo
+          ! repeat for mblatv
+          vname = 'yv'
+          call ncd_io(ncid=ncid, varname=trim(vname), data=rdata3d, flag='read', readvar=readvar)
+          if (.not. readvar) call endrun( msg=trim(subname)//' ERROR: yv  NOT on file'//errMsg(__FILE__, __LINE__))
+          ! fill up the ldomain%lonv(begg:endg, 1:nv) array
+          local = begg
+          do iseg = 1, gsMap%ngseg
+             if (gsMap%pe_loc(iseg) .eq. iam) then
+                do ig = gsMap%start(iseg), gsMap%start(iseg) + gsMap%length(iseg) - 1
+                   j = (ig-1)/ni + 1
+                   i = ig - ni*(j-1)
+                   do iv = 1, nv
+                       if (local .le. endg) then
+                          ldomain%mblatv(local, iv ) = rdata3d(iv, i, j)
+                       endif
+                   enddo
+                   local = local + 1
+                enddo
+             endif
+          enddo
+          ! deallocate what is not needed anymore (for half degree land model, ~8Mb)
+          deallocate(rdata3d)
+
+       end if
+#endif
     else
        call ncd_io(ncid=ncid, varname= 'AREA', flag='read', data=ldomain%area, &
             dim1name=grlnd, readvar=readvar)
@@ -903,13 +968,13 @@ contains
   end subroutine surfrd_special
 
 !-----------------------------------------------------------------------
-  subroutine surfrd_cftformat( ncid, begg, endg, wt_cft, cftsize, surfpft_size )
+  subroutine surfrd_cftformat( ncid, begg, endg, wt_cft, fert_cft, fert_p_cft, cftsize, surfpft_size )
     !
     ! !DESCRIPTION:
     !     Handle generic crop types for file format where they are on their own
     !     crop landunit and read in as Crop Function Types.
     ! !USES:
-    use elm_varsur      , only : fert_cft, wt_nat_patch
+    use elm_varsur      , only : wt_nat_patch
     use elm_varpar      , only : cft_size, cft_lb, surfpft_lb
     use topounit_varcon,  only : max_topounits
     ! !ARGUMENTS:
@@ -919,6 +984,8 @@ contains
     integer          , intent(in)    :: cftsize      ! CFT size
     real(r8), pointer, intent(inout) :: wt_cft(:,:,:)  ! CFT weights
     integer          , intent(in)    :: surfpft_size  ! natural PFT size
+    real(r8), pointer, intent(inout) :: fert_cft(:,:,:)   ! Fertilizer
+    real(r8), pointer, intent(inout) :: fert_p_cft(:,:,:) ! Fertilizer
     !
     ! !LOCAL VARIABLES:
     logical  :: readvar                        ! is variable on dataset
@@ -928,6 +995,12 @@ contains
     SHR_ASSERT_ALL((lbound(wt_cft) == (/begg,1, cft_lb/)), errMsg(__FILE__, __LINE__))
     SHR_ASSERT_ALL((ubound(wt_cft, dim=1) == (/endg/)), errMsg(__FILE__, __LINE__))
     SHR_ASSERT_ALL((ubound(wt_cft, dim=3) >= (/cftsize+1-cft_lb/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((lbound(fert_cft) == (/begg,1, cft_lb/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(fert_cft, dim=1) == (/endg/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(fert_cft, dim=3) >= (/cftsize+1-cft_lb/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((lbound(fert_p_cft) == (/begg,1, cft_lb/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(fert_p_cft, dim=1) == (/endg/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(fert_p_cft, dim=3) >= (/cftsize+1-cft_lb/)), errMsg(__FILE__, __LINE__))
     SHR_ASSERT_ALL((ubound(wt_nat_patch) >= (/endg,max_topounits,surfpft_size-1+surfpft_lb/)), errMsg(__FILE__, __LINE__))
 
     call check_dim(ncid, 'cft', cftsize)
@@ -938,15 +1011,27 @@ contains
     if (.not. readvar) call endrun( msg=' ERROR: PCT_CFT NOT on surfdata file'//errMsg(__FILE__, __LINE__)) 
 
     if ( cft_size > 0 )then
-       call ncd_io(ncid=ncid, varname='CONST_FERTNITRO_CFT', flag='read', data=fert_cft, &
+       call ncd_io(ncid=ncid, varname='NFERT', flag='read', data=fert_cft, &
                dim1name=grlnd, readvar=readvar)
        if (.not. readvar) then
           if ( masterproc ) &
-                write(iulog,*) ' WARNING: CONST_FERTNITRO_CFT NOT on surfdata file zero out'
+                write(iulog,*) ' WARNING: NFERT NOT on surfdata file zero out'
           fert_cft = 0.0_r8
        end if
     else
        fert_cft = 0.0_r8
+    end if
+
+    if ( cft_size > 0 )then
+       call ncd_io(ncid=ncid, varname='PFERT', flag='read', data=fert_p_cft, &
+               dim1name=grlnd, readvar=readvar)
+       if (.not. readvar) then
+          if ( masterproc ) &
+                write(iulog,*) ' WARNING: PFERT NOT on surfdata file zero out'
+          fert_p_cft = 0.0_r8
+       end if
+    else
+       fert_p_cft = 0.0_r8
     end if
 
     allocate( array2D(begg:endg,1:max_topounits, 1:surfpft_size) )
@@ -965,7 +1050,7 @@ contains
     !     Handle generic crop types for file format where they are part of the
     !     natural vegetation landunit.
     ! !USES:
-    use elm_varsur      , only : fert_cft, wt_nat_patch, wt_cft
+    use elm_varsur      , only : fert_cft, fert_p_cft, wt_nat_patch, wt_cft
     use elm_varpar      , only : surfpft_size, cft_size, surfpft_lb, surfpft_ub
     use elm_varpar      , only : cft_lb, cft_ub
     use elm_varctl      , only : create_crop_landunit
@@ -990,11 +1075,9 @@ contains
     else
        call check_dim(ncid, 'natpft', surfpft_size + cft_size)
     endif
-    ! If cft_size == 0, then we expect to be running with a surface dataset
-    ! that does
-    ! NOT have a PCT_CFT array (or CONST_FERTNITRO_CFT array), and thus does not have a 'cft' dimension.
-    ! Make sure
-    ! that's the case.
+    ! If cft_size == 0, then we expect to be running with a surface dataset that does
+    ! NOT have a PCT_CFT array (or NFERT array), and thus does not have a 'cft' dimension.
+    ! Make sure that's the case.
     call ncd_inqdid(ncid, 'cft', dimid, cft_dim_exists)
     if (cft_dim_exists) then
        call endrun( msg= ' ERROR: unexpectedly found cft dimension on dataset when cft_size=0'// &
@@ -1002,15 +1085,25 @@ contains
                ' must also have a separate crop landunit, and vice versa)'//&
                errMsg(__FILE__, __LINE__))
     end if
-    call ncd_io(ncid=ncid, varname='CONST_FERTNITRO_CFT', flag='read', data=fert_cft, &
+    call ncd_io(ncid=ncid, varname='NFERT', flag='read', data=fert_cft, &
             dim1name=grlnd, readvar=readvar)
     if (readvar) then
-       call endrun( msg= ' ERROR: unexpectedly found CONST_FERTNITRO_CFT on dataset when cft_size=0'// &
+       call endrun( msg= ' ERROR: unexpectedly found NFERT on dataset when cft_size=0'// &
                ' (if the surface dataset has a separate crop landunit, then the code'// &
                ' must also have a separate crop landunit, and vice versa)'//&
                errMsg(__FILE__, __LINE__))
     end if
     fert_cft = 0.0_r8
+
+   call ncd_io(ncid=ncid, varname='PFERT', flag='read', data=fert_p_cft, &
+            dim1name=grlnd, readvar=readvar)
+    if (readvar) then
+       call endrun( msg= ' ERROR: unexpectedly found PFERT on dataset when cft_size=0'// &
+               ' (if the surface dataset has a separate crop landunit, then the code'// &
+               ' must also have a separate crop landunit, and vice versa)'//&
+               errMsg(__FILE__, __LINE__))
+    end if
+    fert_p_cft = 0.0_r8
 
     if (.not. create_crop_landunit) then
        call ncd_io(ncid=ncid, varname='PCT_NAT_PFT', flag='read', data=wt_nat_patch, &
@@ -1040,11 +1133,15 @@ contains
     use elm_varctl      , only : irrigate
     use elm_varpar      , only : surfpft_lb, surfpft_ub, surfpft_size, cft_lb, cft_ub, cft_size
     use elm_varpar      , only : crop_prog
-    use elm_varsur      , only : wt_lunit, wt_nat_patch, wt_cft, fert_cft
+    use elm_varsur      , only : wt_lunit, wt_nat_patch, wt_cft, fert_cft, fert_p_cft
     use landunit_varcon , only : istsoil, istcrop
     use pftvarcon       , only : nc3crop, nc3irrig, npcropmin
     use pftvarcon       , only : ncorn, ncornirrig, nsoybean, nsoybeanirrig
     use pftvarcon       , only : nscereal, nscerealirrig, nwcereal, nwcerealirrig
+    use pftvarcon       , only : ncassava, ncotton, nfoddergrass, noilpalm, nograins, nrapeseed 
+    use pftvarcon       , only : nrice, nrtubers, nsugarcane, nmiscanthus, nswitchgrass, nwillow, npoplar
+    use pftvarcon       , only : ncassavairrig, ncottonirrig, nfoddergrassirrig, noilpalmirrig, nograinsirrig, nrapeseedirrig
+    use pftvarcon       , only : nriceirrig, nrtubersirrig, nsugarcaneirrig, nmiscanthusirrig, nswitchgrassirrig, nwillowirrig, npoplarirrig
     use surfrdUtilsMod  , only : convert_cft_to_pft, convert_pft_to_cft
     !
     ! !ARGUMENTS:
@@ -1062,6 +1159,8 @@ contains
     logical  :: cft_dim_exists                 ! does the dimension 'cft' exist on the dataset?
     real(r8),pointer :: arrayl(:,:)              ! local array
     real(r8),pointer :: array2D(:,:,:)                 ! local 2D array
+    real(r8),pointer :: arrayNF(:,:,:)
+    real(r8),pointer :: arrayPF(:,:,:)
     character(len=32) :: subname = 'surfrd_veg_all'  ! subroutine name
 !-----------------------------------------------------------------------
 
@@ -1088,7 +1187,13 @@ contains
     if ( cft_dim_exists .and. create_crop_landunit ) then
 
        ! Format where CFT's is read in a seperate landunit
-       call surfrd_cftformat( ncid, begg, endg, wt_cft, cft_size, surfpft_size )
+       allocate(arrayNF(begg:endg, max_topounits, cft_lb:cft_size-1+cft_lb))
+       allocate(arrayPF(begg:endg, max_topounits, cft_lb:cft_size-1+cft_lb))
+       call surfrd_cftformat( ncid, begg, endg, wt_cft, arrayNF, arrayPF, cft_size, surfpft_size )
+       fert_cft(begg:, 1:, cft_lb:)   = arrayNF(begg:,1:, cft_lb:cft_ub)
+       fert_p_cft(begg:, 1:, cft_lb:) = arrayPF(begg:,1:, cft_lb:cft_ub)
+       deallocate(arrayNF)
+       deallocate(arrayPF)
 
     else if ( (.not. cft_dim_exists) .and. (.not. create_crop_landunit) )then
 
@@ -1104,6 +1209,7 @@ contains
           call surfrd_fates_nocropmod( ncid, begg, endg )
           ! Set the weighting on the crop patches to zero
           fert_cft(begg:endg,:,cft_lb:cft_ub) = 0.0_r8  ! cft_lb:cft_ub has a size of zero anyway...
+          fert_p_cft(begg:endg,:,cft_lb:cft_ub) = 0.0_r8
           wt_cft(begg:endg,:,cft_lb:cft_ub)   = 0.0_r8  ! cft_lb:cft_ub has a size of zero anyway...
        else
           call endrun( msg=' ERROR: New format surface datasets require create_crop_landunit TRUE'//errMsg(__FILE__, __LINE__))
@@ -1167,11 +1273,53 @@ contains
             wt_cft(nl,t,nwcerealirrig) = 0._r8
             wt_cft(nl,t,nsoybean)      = wt_cft(nl,t,nsoybean) + wt_cft(nl,t,nsoybeanirrig)
             wt_cft(nl,t,nsoybeanirrig) = 0._r8
+            wt_cft(nl,t,ncassava)      = wt_cft(nl,t,ncassava) + wt_cft(nl,t,ncassavairrig)
+            wt_cft(nl,t,ncassavairrig) = 0._r8
+            wt_cft(nl,t,ncotton)       = wt_cft(nl,t,ncotton)  + wt_cft(nl,t,ncottonirrig)
+            wt_cft(nl,t,ncottonirrig)  = 0._r8
+            wt_cft(nl,t,nfoddergrass)  = wt_cft(nl,t,nfoddergrass) + wt_cft(nl,t,nfoddergrassirrig)
+            wt_cft(nl,t,nfoddergrassirrig) = 0._r8
+            wt_cft(nl,t,noilpalm)      = wt_cft(nl,t,noilpalm) + wt_cft(nl,t,noilpalmirrig)
+            wt_cft(nl,t,noilpalmirrig) = 0._r8
+            wt_cft(nl,t,nograins)      = wt_cft(nl,t,nograins) + wt_cft(nl,t,nograinsirrig)
+            wt_cft(nl,t,nograinsirrig) = 0._r8
+            wt_cft(nl,t,nrapeseed)       = wt_cft(nl,t,nrapeseed)  + wt_cft(nl,t,nrapeseedirrig)
+            wt_cft(nl,t,nrapeseedirrig)  = 0._r8
+            wt_cft(nl,t,nrice)           = wt_cft(nl,t,nrice)  + wt_cft(nl,t,nriceirrig)
+            wt_cft(nl,t,nriceirrig)      = 0._r8
+            wt_cft(nl,t,nrtubers)        = wt_cft(nl,t,nrtubers) + wt_cft(nl,t,nrtubersirrig)
+            wt_cft(nl,t,nrtubersirrig)   = 0._r8
+            wt_cft(nl,t,nsugarcane)      = wt_cft(nl,t,nsugarcane) + wt_cft(nl,t,nsugarcaneirrig)
+            wt_cft(nl,t,nsugarcaneirrig) = 0._r8
+            wt_cft(nl,t,nmiscanthus)     = wt_cft(nl,t,nmiscanthus) + wt_cft(nl,t,nmiscanthusirrig)
+            wt_cft(nl,t,nmiscanthusirrig) = 0._r8
+            wt_cft(nl,t,nswitchgrass)     = wt_cft(nl,t,nswitchgrass)  + wt_cft(nl,t,nswitchgrassirrig)
+            wt_cft(nl,t,nswitchgrassirrig) = 0._r8
+            wt_cft(nl,t,npoplar)         = wt_cft(nl,t,npoplar) + wt_cft(nl,t,npoplar)
+            wt_cft(nl,t,npoplarirrig)    = 0._r8
+            wt_cft(nl,t,nwillow)         = wt_cft(nl,t,nwillow) + wt_cft(nl,t,nwillowirrig)
+            wt_cft(nl,t,nwillowirrig)    = 0._r8
+
           end do
        end do
 
-       !call check_sums_equal_1_3d(wt_cft, begg, 'wt_cft', subname,ntpu)
        call check_sums_equal_1_3d(wt_cft, begg, 'wt_cft', subname)
+    end if
+    if (crop_prog) then
+       ! Call collapse_crop_types: allows need to maintain only 50-pft input data
+       ! For use_crop = .false. collapsing 50->16 pfts or 16->16 or some new
+       !    configuration
+       ! For use_crop = .true. most likely collapsing 78 to the list of crops for
+       !    which the CLM includes parameterizations
+       ! The call collapse_crop_types also appears in subroutine dyncrop_interp
+       call collapse_crop_types(wt_cft(begg:endg,:,:), fert_cft(begg:endg,:,:), fert_p_cft(begg:endg,:,:), begg, endg, verbose=.true.)
+
+       ! Collapse crop variables as needed
+       ! The call to collapse_crop_var also appears in subroutine dyncrop_interp
+       ! - fert_cft TODO Is this call redundant because it simply sets the crop
+       !                 variable to 0 where is_pft_known_to_model = .false.?
+       call collapse_crop_var(fert_cft(begg:endg,:,:), begg, endg)
+       call collapse_crop_var(fert_p_cft(begg:endg,:,:), begg, endg)
     end if
 
   end subroutine surfrd_veg_all

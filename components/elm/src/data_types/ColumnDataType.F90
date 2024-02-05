@@ -21,18 +21,19 @@ module ColumnDataType
   use elm_varcon      , only : watmin, bdsno, zsoi, zisoi, dzsoi_decomp
   use elm_varcon      , only : c13ratio, c14ratio, secspday
   use elm_varctl      , only : use_fates, use_fates_planthydro, create_glacier_mec_landunit
-  use elm_varctl      , only : use_hydrstress
+  use elm_varctl      , only : use_hydrstress, use_crop
   use elm_varctl      , only : bound_h2osoi, use_cn, iulog, use_vertsoilc, spinup_state
   use elm_varctl      , only : ero_ccycle
   use elm_varctl      , only : use_elm_interface, use_pflotran, pf_cmode
   use elm_varctl      , only : hist_wrtch4diag, use_century_decomp
   use elm_varctl      , only : get_carbontag, override_bgc_restart_mismatch_dump
   use elm_varctl      , only : pf_hmode, nu_com
+  use elm_varctl      , only : use_fan
   use ch4varcon       , only : allowlakeprod
   use pftvarcon       , only : VMAX_MINSURF_P_vr, KM_MINSURF_P_vr, pinit_beta1, pinit_beta2
   use soilorder_varcon, only : smax, ks_sorption
   use elm_time_manager, only : is_restart, get_nstep
-  use elm_time_manager, only : is_first_step, get_step_size
+  use elm_time_manager, only : is_first_step, get_step_size, is_first_restart_step
   use landunit_varcon , only : istice, istwet, istsoil, istdlak, istcrop, istice_mec
   use column_varcon   , only : icol_road_perv, icol_road_imperv, icol_roof, icol_sunwall, icol_shadewall
   use histFileMod     , only : hist_addfld1d, hist_addfld2d, no_snow_normal
@@ -46,6 +47,7 @@ module ColumnDataType
   use CNDecompCascadeConType , only : decomp_cascade_con
   use ColumnType      , only : col_pp
   use LandunitType    , only : lun_pp
+  use timeInfoMod , only : nstep_mod 
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -140,6 +142,7 @@ module ColumnDataType
     real(r8), pointer :: snow_persistence   (:)   => null() ! length of time that ground has had non-zero snow thickness (sec)
     real(r8), pointer :: snw_rds_top        (:)   => null() ! snow grain radius (top layer)  (m^-6, microns)
     logical , pointer :: do_capsnow         (:)   => null() ! true => do snow capping
+    real(r8), pointer :: h2osoi_tend_tsl_col(:)   => null() ! col moisture tendency due to vertical movement at topmost layer (m3/m3/s) 
     ! Area fractions
     real(r8), pointer :: frac_sno           (:)   => null() ! fraction of ground covered by snow (0 to 1)
     real(r8), pointer :: frac_sno_eff       (:)   => null() ! fraction of ground covered by snow (0 to 1)
@@ -270,6 +273,29 @@ module ColumnDataType
     real(r8), pointer :: prod100n                 (:)     => null() ! (gN/m2) wood product N pool, 100-year lifespan
     real(r8), pointer :: totprodn                 (:)     => null() ! (gN/m2) total wood product N
     real(r8), pointer :: dyn_nbal_adjustments     (:)     => null() ! (gN/m2) adjustments to each column made in this timestep via dynamic column area adjustments
+    real(r8), pointer :: tan_g1                   (:)     => null() ! (gN/m2) total ammoniacal N in FAN pool G1
+    real(r8), pointer :: tan_g2                   (:)     => null() ! (gN/m2) total ammoniacal N in FAN pool G2
+    real(r8), pointer :: tan_g3                   (:)     => null() ! (gN/m2) total ammoniacal N in FAN pool G2
+    real(r8), pointer :: tan_s0                   (:)     => null() ! (gN/m2) total ammoniacal N in FAN pool S0
+    real(r8), pointer :: tan_s1                   (:)     => null() ! (gN/m2) total ammoniacal N in FAN pool S1
+    real(r8), pointer :: tan_s2                   (:)     => null() ! (gN/m2) total ammoniacal N in FAN pool S2
+    real(r8), pointer :: tan_s3                   (:)     => null() ! (gN/m2) total ammoniacal N in FAN pool S3
+    real(r8), pointer :: tan_f1                   (:)     => null() ! (gN/m2) total ammoniacal N in FAN pool F1
+    real(r8), pointer :: tan_f2                   (:)     => null() ! (gN/m2) total ammoniacal N in FAN pool F2
+    real(r8), pointer :: tan_f3                   (:)     => null() ! (gN/m2) total ammoniacal N in FAN pool F3
+    real(r8), pointer :: tan_f4                   (:)     => null() ! (gN/m2) total ammoniacal N in FAN pool F4
+    real(r8), pointer :: fert_u1                  (:)     => null() ! (gN/m2) total urea N in FAN pool U1
+    real(r8), pointer :: fert_u2                  (:)     => null() ! (gN/m2) total urea N in FAN pool U2
+    real(r8), pointer :: manure_u_grz             (:)     => null() ! (gN/m2) unavailable organic N, grazing
+    real(r8), pointer :: manure_a_grz             (:)     => null() ! (gN/m2) available organic N, grazing
+    real(r8), pointer :: manure_r_grz             (:)     => null() ! (gN/m2) resistant organic N, grazing
+    real(r8), pointer :: manure_u_app             (:)     => null() ! (gN/m2) unavailable organic N, application
+    real(r8), pointer :: manure_a_app             (:)     => null() ! (gN/m2) available organic N, application
+    real(r8), pointer :: manure_r_app             (:)     => null() ! (gN/m2) resistant organic N, application
+    real(r8), pointer :: manure_n_stored          (:)     => null() ! (gN/m2) manure N in storage
+    real(r8), pointer :: manure_tan_stored        (:)     => null() ! (gN/m2) manure TAN in storage
+    real(r8), pointer :: fan_grz_fract            (:)     => null() ! unitless fraction of animals grazing
+    real(r8), pointer :: fan_totn                 (:)     => null() ! (gN/m2) total N in FAN pools
     real(r8), pointer :: totpftn_beg              (:)     => null()
     real(r8), pointer :: totpftn_end              (:)     => null()
     real(r8), pointer :: cwdn_beg                 (:)     => null()
@@ -836,10 +862,37 @@ module ColumnDataType
     real(r8), pointer :: plant_to_cwd_nflux                    (:)     => null() ! for the purpose of mass balance check
     ! C4MIP output variable
        real(r8), pointer :: plant_n_to_cwdn                      (:)     => null() ! sum of gap, fire, dynamic land use, and harvest mort
+    ! FAN
+    real(r8), pointer :: manure_tan_appl                       (:)     => null() ! Manure TAN applied on soil (gN/m2/s)
+    real(r8), pointer :: manure_n_appl                         (:)     => null() ! Manure N (TAN+organic) applied on soil (gN/m2/s)
+    real(r8), pointer :: manure_n_grz                          (:)     => null() ! Manure N from grazing animals (gN/m2/s)
+    real(r8), pointer :: manure_n_mix                          (:)     => null() ! Manure N from produced in mixed systems (gN/m2/s)
+    real(r8), pointer :: manure_n_barns                        (:)     => null() ! Manure N produced in animal housings (gN/m2/s)
+    real(r8), pointer :: fert_n_appl                           (:)     => null() ! Fertilizer N  applied on soil (gN/m2/s)
+    real(r8), pointer :: otherfert_n_appl                      (:)     => null() ! Non-urea fertilizer N  applied on soil (gN/m2/s)
+    real(r8), pointer :: manure_n_transf                       (:)     => null() ! Manure N removed from the crop column (into the natural veg. co
+    real(r8), pointer :: nh3_barns                             (:)     => null() ! NH3 emission from animal housings (gN/m2/s)
+    real(r8), pointer :: nh3_stores                            (:)     => null() ! NH3 emission from manure storage, (gN/m2/s)
+    real(r8), pointer :: nh3_grz                               (:)     => null() ! NH3 emission from manure on pastures, (gN/m2/s)
+    real(r8), pointer :: nh3_manure_app                        (:)     => null() ! NH3 emission from manure applied on crops and grasslands, (gN/m
+    real(r8), pointer :: nh3_fert                              (:)     => null() ! NH3 emission from fertilizers applied on crops and grasslands, 
+    real(r8), pointer :: nh3_otherfert                         (:)     => null() ! NH3 emission from non-urea fertilizers applied on crops and gra
+    real(r8), pointer :: nh3_total                             (:)     => null() ! Total NH3 emission from agriculture
+    real(r8), pointer :: manure_no3_to_soil                    (:)     => null() ! Nitrification flux from manure (gN/m2/s)
+    real(r8), pointer :: fert_no3_to_soil                      (:)     => null() ! Nitrification flux from fertilizer (gN/m2/s)
+    real(r8), pointer :: manure_nh4_to_soil                    (:)     => null() ! NH4 flux to soil mineral N pools from manure (gN/m2/s)
+    real(r8), pointer :: fert_nh4_to_soil                      (:)     => null() ! NH4 flux to soil mineral N pools from fertilizer (gN/m2/s)
+    real(r8), pointer :: manure_nh4_runoff                     (:)     => null() ! NH4 runoff flux from manure, (gN/m2/s)
+    real(r8), pointer :: fert_nh4_runoff                       (:)     => null() ! NH4 runoff flux from fertilizer, (gN/m2/s)
+    real(r8), pointer :: fan_totnout                           (:)     => null() ! Total input N into FAN pools, gN/m2/s
+    real(r8), pointer :: fan_totnin                            (:)     => null() ! Total output N from FAN pools, gN/m2/s
+    real(r8), pointer :: manure_n_to_sminn                     (:)     => null() ! Manure N from FAN pools to soil mineral pools, gN/m2/s
+    real(r8), pointer :: synthfert_n_to_sminn                  (:)     => null() ! Fertilizer N from FAN pools to soil mineral pools, gN/m2/s
+    real(r8), pointer :: manure_n_total                        (:)     => null() ! Total manure N produced, gN/m2/s 
 
   contains
     procedure, public :: Init       => col_nf_init
-     procedure, public :: Restart    => col_nf_restart
+    procedure, public :: Restart    => col_nf_restart
     procedure, public :: SetValues  => col_nf_setvalues
     procedure, public :: ZeroForFates => col_nf_zero_forfates_veg
     procedure, public :: ZeroDWT    => col_nf_zerodwt
@@ -1360,6 +1413,9 @@ contains
     allocate(this%snow_depth         (begc:endc))                     ; this%snow_depth         (:)   = spval
     allocate(this%snowdp             (begc:endc))                     ; this%snowdp             (:)   = spval
     allocate(this%snow_persistence   (begc:endc))                     ; this%snow_persistence   (:)   = spval
+    if (use_fan) then
+       allocate(this%h2osoi_tend_tsl_col(begc:endc))                  ; this%h2osoi_tend_tsl_col(:)   = spval
+    end if
     allocate(this%snw_rds_top        (begc:endc))                     ; this%snw_rds_top        (:)   = spval
     allocate(this%do_capsnow         (begc:endc))
     allocate(this%frac_sno           (begc:endc))                     ; this%frac_sno           (:)   = spval
@@ -1498,6 +1554,15 @@ contains
               ptr_col=this%snow_persistence, l2g_scale_type='natveg')
     end if
 
+    if (use_fan) then
+       this%h2osoi_tend_tsl_col(begc:endc) = spval
+       call hist_addfld1d ( &
+         fname='SOILWATERTEND_TSL',  units='kg/m2/s', &
+         avgflag='A', long_name='Tendency of soil water in the topmost soil layer', &
+         ptr_col=this%h2osoi_tend_tsl_col, l2g_scale_type='veg', &
+         default='inactive')
+    end if
+ 
     this%frac_sno(begc:endc) = spval
     call hist_addfld1d (fname='FSNO',  units='1',  &
          avgflag='A', long_name='fraction of ground covered by snow', &
@@ -3191,6 +3256,31 @@ contains
     allocate(this%prod100n              (begc:endc))                     ; this%prod100n              (:)   = spval
     allocate(this%totprodn              (begc:endc))                     ; this%totprodn              (:)   = spval
     allocate(this%dyn_nbal_adjustments  (begc:endc))                     ; this%dyn_nbal_adjustments  (:)   = spval
+    if (use_fan) then
+       allocate(this%tan_g1                (begc:endc))                     ; this%tan_g1                (:)   = spval
+       allocate(this%tan_g2                (begc:endc))                     ; this%tan_g2                (:)   = spval
+       allocate(this%tan_g3                (begc:endc))                     ; this%tan_g3                (:)   = spval
+       allocate(this%tan_s0                (begc:endc))                     ; this%tan_s0                (:)   = spval
+       allocate(this%tan_s1                (begc:endc))                     ; this%tan_s1                (:)   = spval
+       allocate(this%tan_s2                (begc:endc))                     ; this%tan_s2                (:)   = spval
+       allocate(this%tan_s3                (begc:endc))                     ; this%tan_s3                (:)   = spval
+       allocate(this%tan_f1                (begc:endc))                     ; this%tan_f1                (:)   = spval
+       allocate(this%tan_f2                (begc:endc))                     ; this%tan_f2                (:)   = spval
+       allocate(this%tan_f3                (begc:endc))                     ; this%tan_f3                (:)   = spval
+       allocate(this%tan_f4                (begc:endc))                     ; this%tan_f4                (:)   = spval 
+       allocate(this%fert_u1               (begc:endc))                     ; this%fert_u1               (:)   = spval 
+       allocate(this%fert_u2               (begc:endc))                     ; this%fert_u2               (:)   = spval 
+       allocate(this%manure_u_grz          (begc:endc))                     ; this%manure_u_grz          (:)   = spval 
+       allocate(this%manure_a_grz          (begc:endc))                     ; this%manure_a_grz          (:)   = spval 
+       allocate(this%manure_r_grz          (begc:endc))                     ; this%manure_r_grz          (:)   = spval 
+       allocate(this%manure_u_app          (begc:endc))                     ; this%manure_u_app          (:)   = spval 
+       allocate(this%manure_a_app          (begc:endc))                     ; this%manure_a_app          (:)   = spval 
+       allocate(this%manure_r_app          (begc:endc))                     ; this%manure_r_app          (:)   = spval 
+       allocate(this%manure_n_stored       (begc:endc))                     ; this%manure_n_stored       (:)   = spval 
+       allocate(this%manure_tan_stored     (begc:endc))                     ; this%manure_tan_stored     (:)   = spval 
+       allocate(this%fan_grz_fract         (begc:endc))                     ; this%fan_grz_fract         (:)   = spval 
+    end if
+    allocate(this%fan_totn              (begc:endc))                     ; this%fan_totn              (:)   = spval
     allocate(this%totpftn_beg           (begc:endc))                     ; this%totpftn_beg           (:)   = spval
     allocate(this%totpftn_end           (begc:endc))                     ; this%totpftn_end           (:)   = spval
     allocate(this%cwdn_beg              (begc:endc))                     ; this%cwdn_beg              (:)   = spval
@@ -3373,6 +3463,124 @@ contains
           avgflag='A', long_name='total wood product N', &
            ptr_col=this%totprodn, default='inactive')
 
+    if (use_fan) then
+       this%tan_g1(begc:endc) = spval
+       call hist_addfld1d (fname='TAN_G1', units='gN/m^2', &
+            avgflag='A', long_name='Total ammoniacal nitrogen in FAN pool G1', &
+            ptr_col=this%tan_g1, default='inactive')
+
+       this%tan_g2(begc:endc) = spval
+       call hist_addfld1d (fname='TAN_G2', units='gN/m^2', &
+            avgflag='A', long_name='Total ammoniacal nitrogen in FAN pool G2', &
+            ptr_col=this%tan_g2, default='inactive')
+
+       this%tan_g3(begc:endc) = spval
+       call hist_addfld1d (fname='TAN_G3', units='gN/m^2', &
+            avgflag='A', long_name='Total ammoniacal nitrogen in FAN pool G3', &
+            ptr_col=this%tan_g3, default='inactive')
+
+       this%tan_f1(begc:endc) = spval
+       call hist_addfld1d (fname='TAN_F1', units='gN/m^2', &
+            avgflag='A', long_name='Total ammoniacal nitrogen in FAN pool F1', &
+            ptr_col=this%tan_f1, default='inactive')
+
+       this%tan_f2(begc:endc) = spval
+       call hist_addfld1d (fname='TAN_F2', units='gN/m^2', &
+            avgflag='A', long_name='Total ammoniacal nitrogen in FAN pool F2', &
+            ptr_col=this%tan_f2, default='inactive')
+
+       this%tan_f3(begc:endc) = spval
+       call hist_addfld1d (fname='TAN_F3', units='gN/m^2', &
+            avgflag='A', long_name='Total ammoniacal nitrogen in FAN pool F3', &
+            ptr_col=this%tan_f3, default='inactive')
+
+       this%tan_f4(begc:endc) = spval
+       call hist_addfld1d (fname='TAN_F4', units='gN/m^2', &
+            avgflag='A', long_name='Total ammoniacal nitrogen in FAN pool F4', &
+            ptr_col=this%tan_f4, default='inactive')
+
+       this%fert_u1(begc:endc) = spval
+       call hist_addfld1d (fname='FERT_U1', units='gN/m^2', &
+            avgflag='A', long_name='Total ammoniacal nitrogen in FAN pool U1', &
+            ptr_col=this%fert_u1, default='inactive')
+
+       this%fert_u2(begc:endc) = spval
+       call hist_addfld1d (fname='FERT_U2', units='gN/m^2', &
+            avgflag='A', long_name='Total ammoniacal nitrogen in FAN pool U2', &
+            ptr_col=this%fert_u2, default='inactive')
+
+       this%tan_s0(begc:endc) = spval
+       call hist_addfld1d (fname='TAN_S0', units='gN/m^2', &
+            avgflag='A', long_name='Total ammoniacal nitrogen in FAN pool S0', &
+            ptr_col=this%tan_s0, default='inactive')
+
+       this%tan_s1(begc:endc) = spval
+       call hist_addfld1d (fname='TAN_S1', units='gN/m^2', &
+            avgflag='A', long_name='Total ammoniacal nitrogen in FAN pool S1', &
+            ptr_col=this%tan_s1, default='inactive')
+
+       this%tan_s2(begc:endc) = spval
+       call hist_addfld1d (fname='TAN_S2', units='gN/m^2', &
+            avgflag='A', long_name='Total ammoniacal nitrogen in FAN pool S2', &
+            ptr_col=this%tan_s2, default='inactive')
+
+       this%tan_s3(begc:endc) = spval
+       call hist_addfld1d (fname='TAN_S3', units='gN/m^2', &
+            avgflag='A', long_name='Total ammoniacal nitrogen in FAN pool S3', &
+            ptr_col=this%tan_s3, default='inactive')
+
+       this%manure_u_grz(begc:endc) = spval
+       call hist_addfld1d (fname='MAN_U_GRZ', units='gN/m^2', &
+            avgflag='A', long_name='Unavailable manure nitrogen, grazing', &
+            ptr_col=this%manure_u_grz, default='inactive')
+
+       this%manure_a_grz(begc:endc) = spval
+       call hist_addfld1d (fname='MAN_A_GRZ', units='gN/m^2', &
+            avgflag='A', long_name='Available manure nitrogen, grazing', &
+            ptr_col=this%manure_a_grz, default='inactive')
+
+       this%manure_r_grz(begc:endc) = spval
+       call hist_addfld1d (fname='MAN_R_GRZ', units='gN/m^2', &
+            avgflag='A', long_name='Resistant manure nitrogen, grazing', &
+            ptr_col=this%manure_r_grz, default='inactive')
+
+       this%manure_u_grz(begc:endc) = spval
+       call hist_addfld1d (fname='MAN_U_APP', units='gN/m^2', &
+            avgflag='A', long_name='Unavailable manure nitrogen, application', &
+            ptr_col=this%manure_u_app, default='inactive')
+
+       this%manure_a_app(begc:endc) = spval
+       call hist_addfld1d (fname='MAN_A_APP', units='gN/m^2', &
+            avgflag='A', long_name='Available manure nitrogen, application', &
+            ptr_col=this%manure_a_app, default='inactive')
+
+       this%manure_r_app(begc:endc) = spval
+       call hist_addfld1d (fname='MAN_R_APP', units='gN/m^2', &
+            avgflag='A', long_name='Resistant manure nitrogen, application', &
+            ptr_col=this%manure_r_app, default='inactive')
+
+       this%manure_n_stored(begc:endc) = spval
+       call hist_addfld1d (fname='MAN_N_STORED', units='gN/m^2', &
+            avgflag='A', long_name='Manure nitrogen in storage', &
+            ptr_col=this%manure_n_stored, default='inactive')
+
+       this%manure_tan_stored(begc:endc) = spval
+       call hist_addfld1d (fname='MAN_TAN_STORED', units='gN/m^2', &
+            avgflag='A', long_name='Manure ammoniacal nitrogen in storage', &
+            ptr_col=this%manure_tan_stored, default='inactive')
+
+       this%fan_grz_fract(begc:endc) = spval
+       call hist_addfld1d (fname='FAN_GRZ_FRACT', units='', &
+            avgflag='A', long_name='Fraction of animals grazing', &
+            ptr_col=this%fan_grz_fract, default='inactive')
+
+   end if
+
+   this%fan_totn(begc:endc) = spval
+   call hist_addfld1d (fname='FAN_TOTN', units='gN/m2', &
+      avgflag='A', long_name='FAN total N', &
+      ptr_col=this%fan_totn, default='inactive')
+
     !-----------------------------------------------------------------------
     ! set cold-start initial values for select members of col_ns
     !-----------------------------------------------------------------------
@@ -3434,6 +3642,35 @@ contains
           this%totprodn(c)      = 0._r8
           this%cropseedn_deficit(c) = 0._r8
        end if
+
+       if ( use_fan ) then
+          this%tan_g1(c) = 0.0_r8
+          this%tan_g2(c) = 0.0_r8
+          this%tan_g3(c) = 0.0_r8
+          this%tan_s0(c) = 0.0_r8
+          this%tan_s1(c) = 0.0_r8
+          this%tan_s2(c) = 0.0_r8
+          this%tan_s3(c) = 0.0_r8
+          this%tan_f1(c) = 0.0_r8
+          this%tan_f2(c) = 0.0_r8
+          this%tan_f3(c) = 0.0_r8
+          this%tan_f4(c) = 0.0_r8
+          this%fert_u2(c) = 0.0_r8
+          this%fert_u1(c) = 0.0_r8
+
+          this%manure_u_grz(c) = 0.0_r8
+          this%manure_a_grz(c) = 0.0_r8
+          this%manure_r_grz(c) = 0.0_r8
+
+          this%manure_u_app(c) = 0.0_r8
+          this%manure_a_app(c) = 0.0_r8
+          this%manure_r_app(c) = 0.0_r8
+
+          this%manure_tan_stored(c) = 0.0_r8
+          this%fan_grz_fract(c) = 0.0_r8
+          this%manure_n_stored(c) = 0.0_r8
+       end if
+       this%fan_totn(c) = 0.0_r8
     end do
 
     ! now loop through special filters and explicitly set the variables that
@@ -3637,6 +3874,100 @@ contains
          dim1name='column', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%prod1n)
 
+    if (use_fan) then
+       call restartvar(ncid=ncid, flag=flag, varname='tan_g1', xtype=ncd_double, &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%tan_g1)
+
+       call restartvar(ncid=ncid, flag=flag, varname='tan_g2', xtype=ncd_double, &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%tan_g2)
+
+       call restartvar(ncid=ncid, flag=flag, varname='tan_g3', xtype=ncd_double, &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%tan_g3)
+
+       call restartvar(ncid=ncid, flag=flag, varname='tan_s0', xtype=ncd_double, &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%tan_s0)
+
+       call restartvar(ncid=ncid, flag=flag, varname='tan_s1', xtype=ncd_double, &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%tan_s1)
+
+       call restartvar(ncid=ncid, flag=flag, varname='tan_s2', xtype=ncd_double, &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%tan_s2)
+
+       call restartvar(ncid=ncid, flag=flag, varname='tan_s3', xtype=ncd_double, &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%tan_s3)
+
+       call restartvar(ncid=ncid, flag=flag, varname='tan_f1', xtype=ncd_double, &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%tan_f1)
+
+       call restartvar(ncid=ncid, flag=flag, varname='tan_f2', xtype=ncd_double, &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%tan_f2)
+
+       call restartvar(ncid=ncid, flag=flag, varname='tan_f3', xtype=ncd_double, &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%tan_f3)
+
+       call restartvar(ncid=ncid, flag=flag, varname='tan_f4', xtype=ncd_double, &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%tan_f4)
+
+       call restartvar(ncid=ncid, flag=flag, varname='fert_u1', xtype=ncd_double, &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%fert_u1)
+
+       call restartvar(ncid=ncid, flag=flag, varname='fert_u2', xtype=ncd_double, &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%fert_u2)
+
+       call restartvar(ncid=ncid, flag=flag, varname='manure_u_grz', xtype=ncd_double, &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%manure_u_grz)
+
+       call restartvar(ncid=ncid, flag=flag, varname='manure_a_grz', xtype=ncd_double, &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%manure_a_grz)
+
+       call restartvar(ncid=ncid, flag=flag, varname='manure_r_grz', xtype=ncd_double, &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%manure_r_grz)
+
+       call restartvar(ncid=ncid, flag=flag, varname='manure_u_app', xtype=ncd_double, &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%manure_u_app)
+
+       call restartvar(ncid=ncid, flag=flag, varname='manure_a_app', xtype=ncd_double, &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%manure_a_app)
+
+       call restartvar(ncid=ncid, flag=flag, varname='manure_r_app', xtype=ncd_double, &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%manure_r_app)
+
+       call restartvar(ncid=ncid, flag=flag, varname='manure_tan_stored', xtype=ncd_double, &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%manure_tan_stored)
+
+       call restartvar(ncid=ncid, flag=flag, varname='manure_n_stored', xtype=ncd_double, &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%manure_n_stored)
+
+       call restartvar(ncid=ncid, flag=flag, varname='fan_grz_fract', xtype=ncd_double, &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%fan_grz_fract)
+
+    end if
+    call restartvar(ncid=ncid, flag=flag, varname='fan_totn', xtype=ncd_double, &
+         dim1name='column', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%fan_totn)
+
     ! decomp_cascade_state - the purpose of this is to check to make sure the bgc used
     ! matches what the restart file was generated with.
     ! add info about the SOM decomposition cascade
@@ -3776,6 +4107,29 @@ contains
        this%totcoln(i)     = value_column
        this%totsomn_1m(i)  = value_column
        this%totlitn_1m(i)  = value_column
+       if (use_fan) then
+          this%tan_g1(i)   = value_column
+          this%tan_g2(i)   = value_column
+          this%tan_g3(i)   = value_column
+          this%tan_s0(i)   = value_column
+          this%tan_s1(i)   = value_column
+          this%tan_s2(i)   = value_column
+          this%tan_s3(i)   = value_column
+          this%tan_f1(i)   = value_column
+          this%tan_f2(i)   = value_column
+          this%tan_f3(i)   = value_column
+          this%tan_f4(i)   = value_column
+          this%fert_u1(i)  = value_column
+          this%fert_u2(i)  = value_column
+          this%manure_u_grz(i) = value_column
+          this%manure_a_grz(i) = value_column
+          this%manure_r_grz(i) = value_column
+          this%manure_u_app(i) = value_column
+          this%manure_a_app(i) = value_column
+          this%manure_r_app(i) = value_column
+       end if
+       this%fan_totn(i)    = value_column
+
     end do
 
     do j = 1,nlevdecomp_full
@@ -4046,7 +4400,8 @@ contains
             this%totprodn(c) + &
             this%ntrunc(c)+ &
             this%plant_n_buffer(c) + &
-            this%cropseedn_deficit(c)
+            this%cropseedn_deficit(c) + &
+            this%fan_totn(c)
 
        this%totabgn (c) =  &
             this%totpftn(c) + &
@@ -6878,14 +7233,12 @@ contains
        do j = 1,nlev
           do fc = 1,num_soilc
              c = filter_soilc(fc)
-
-                this%decomp_cascade_ctransfer(c,k) = &
+             this%decomp_cascade_ctransfer(c,k) = &
                      this%decomp_cascade_ctransfer(c,k) + &
                      this%decomp_cascade_ctransfer_vr(c,j,k) * dzsoi_decomp(j)
              end do
           end do
        end do
-
 
        ! total heterotrophic respiration (HR)
        do fc = 1,num_soilc
@@ -6894,7 +7247,6 @@ contains
                this%lithr(c) + &
                this%somhr(c)
        end do
-
 
     elseif (is_active_betr_bgc) then
 
@@ -7314,7 +7666,7 @@ contains
     ! Set column-level carbon fluxes
     !
     ! !ARGUMENTS:
-    class (column_carbon_flux) :: this
+    class(column_carbon_flux) :: this
     integer , intent(in) :: num_column
     integer , intent(in) :: filter_column(:)
     real(r8), intent(in) :: value_column
@@ -7322,7 +7674,6 @@ contains
     ! !LOCAL VARIABLES:
     integer :: fi,i,j,k,l     ! loop index
     !------------------------------------------------------------------------
-
     do j = 1, nlevdecomp_full
        do fi = 1,num_column
           i = filter_column(fi)
@@ -7349,49 +7700,51 @@ contains
           this%hr_vr(i,j)                         = value_column
        end do
     end do
-
-    do k = 1, ndecomp_pools
-       do j = 1, nlevdecomp_full
-          do fi = 1,num_column
-             i = filter_column(fi)
-             this%m_decomp_cpools_to_fire_vr(i,j,k) = value_column
-             this%decomp_cpools_transport_tendency(i,j,k) = value_column
-             this%decomp_cpools_yield_vr(i,j,k) = value_column
-          end do
-       end do
-    end do
-
     do l = 1, ndecomp_cascade_transitions
        do fi = 1,num_column
           i = filter_column(fi)
-          this%decomp_cascade_hr(i,l) = value_column
           this%decomp_cascade_ctransfer(i,l) = value_column
        end do
     end do
-
-    do l = 1, ndecomp_cascade_transitions
+    do j = 1, nlevdecomp_full
+       do fi = 1,num_column
+          i = filter_column(fi)
+          this%f_co2_soil_vr(i,j) = value_column
+       end do
+    end do
+    
+    do k = 1, ndecomp_pools
        do j = 1, nlevdecomp_full
           do fi = 1,num_column
              i = filter_column(fi)
-             this%decomp_cascade_hr_vr(i,j,l) = value_column
-             this%decomp_cascade_ctransfer_vr(i,j,l) = value_column
-             this%decomp_k(i,j,l) = value_column
+             this%decomp_cpools_sourcesink(i,j,k) = value_column
           end do
        end do
     end do
+    ! pflotran
+    if(nstep_mod == 0 .or. is_first_restart_step()) then 
+      do k = 1, ndecomp_pools
+         do j = 1, nlevdecomp_full
+            do fi = 1,num_column
+               i = filter_column(fi)
+               this%externalc_to_decomp_cpools(i,j,k) = value_column
+            end do
+         end do
+      end do
+      do fi = 1,num_column
+         i = filter_column(fi)
+         this%f_co2_soil(i) = value_column
+         this%externalc_to_decomp_delta(i) = value_column
+      end do
+    end if 
 
     do k = 1, ndecomp_pools
        do fi = 1,num_column
           i = filter_column(fi)
-          this%decomp_cpools_leached(i,k) = value_column
-          this%decomp_cpools_erode(i,k) = value_column
-          this%decomp_cpools_deposit(i,k) = value_column
-          this%decomp_cpools_yield(i,k) = value_column
+          this%decomp_cpools_yield(i,k) = value_column !if ero_ccycle
           this%m_decomp_cpools_to_fire(i,k) = value_column
-          this%bgc_cpool_ext_inputs_vr(i,:, k) = value_column
-          this%bgc_cpool_ext_loss_vr(i,:, k) = value_column
        end do
-    end do
+    end do 
 
     do fi = 1,num_column
        i = filter_column(fi)
@@ -7399,32 +7752,18 @@ contains
        this%hrv_deadstemc_to_prod10c(i)  = value_column
        this%hrv_deadstemc_to_prod100c(i) = value_column
        this%hrv_cropc_to_prod1c(i)       = value_column
-       this%somc_fire(i)                 = value_column
        this%prod1c_loss(i)               = value_column
        this%prod10c_loss(i)              = value_column
        this%prod100c_loss(i)             = value_column
-       this%product_closs(i)             = value_column
-       this%somhr(i)                     = value_column
-       this%lithr(i)                     = value_column
+       this%somhr(i)                     = value_column ! REVISIT
+       this%lithr(i)                     = value_column ! REVISIT
        this%hr(i)                        = value_column
-       this%sr(i)                        = value_column
-       this%er(i)                        = value_column
-       this%litfire(i)                   = value_column
-       this%somfire(i)                   = value_column
-       this%totfire(i)                   = value_column
-       this%nep(i)                       = value_column
-       this%nbp(i)                       = value_column
-       this%nee(i)                       = value_column
        this%cinputs(i)                   = value_column
        this%coutputs(i)                  = value_column
-       this%fire_closs(i)                = value_column
        this%cwdc_hr(i)                   = value_column
-       this%cwdc_loss(i)                 = value_column
        this%litterc_loss(i)              = value_column
-       this%som_c_leached(i)             = value_column
-       this%somc_erode(i)                = value_column
-       this%somc_deposit(i)              = value_column
-       this%somc_yield(i)                = value_column
+       
+       this%nee(i)                       = value_column
 
        ! Zero p2c column fluxes
        this%rr(i)                    = value_column
@@ -7437,44 +7776,43 @@ contains
        this%wood_harvestc(i)         = value_column
        this%hrv_xsmrpool_to_atm(i)   = value_column
     end do
-
-    do k = 1, ndecomp_pools
-       do j = 1, nlevdecomp_full
-          do fi = 1,num_column
-             i = filter_column(fi)
-             this%decomp_cpools_sourcesink(i,j,k) = value_column
-          end do
-       end do
-    end do
-
-    ! pflotran
-    do k = 1, ndecomp_pools
-       do j = 1, nlevdecomp_full
-          do fi = 1,num_column
-             i = filter_column(fi)
-             ! only initializing in the first time-step
-             if ( this%externalc_to_decomp_cpools(i,j,k) == spval ) then
-                this%externalc_to_decomp_cpools(i,j,k) = value_column
-             end if
-          end do
-       end do
-    end do
-
-    do fi = 1,num_column
-       i = filter_column(fi)
-       this%f_co2_soil(i) = value_column
-       ! only initializing in the first time-step
-       if ( this%externalc_to_decomp_delta(i) == spval ) then
-          this%externalc_to_decomp_delta(i) = value_column
-       end if
-    end do
-
-    do j = 1, nlevdecomp_full
-       do fi = 1,num_column
-          i = filter_column(fi)
-          this%f_co2_soil_vr(i,j) = value_column
-       end do
-    end do
+  
+    if(use_crop) then 
+      do fi = 1,num_column
+         i = filter_column(fi)
+         this%somc_fire(i)                 = value_column
+         this%product_closs(i)             = value_column
+         this%sr(i)                        = value_column
+         this%er(i)                        = value_column
+         this%litfire(i)                   = value_column
+         this%somfire(i)                   = value_column
+         this%totfire(i)                   = value_column
+         this%nep(i)                       = value_column
+         this%nbp(i)                       = value_column
+         this%fire_closs(i)                = value_column
+         this%cwdc_loss(i)                 = value_column
+         this%som_c_leached(i)             = value_column
+         this%somc_erode(i)                = value_column
+         this%somc_deposit(i)              = value_column
+         this%somc_yield(i)                = value_column
+      enddo 
+    end if 
+      do k = 1, ndecomp_pools
+         do fi = 1,num_column
+            i = filter_column(fi)
+            this%decomp_cpools_leached(i,k) = value_column
+            this%decomp_cpools_erode(i,k) = value_column
+            this%decomp_cpools_deposit(i,k) = value_column
+          end do 
+      end do 
+      do k = 1, ndecomp_pools
+         do j = 1, nlevdecomp_full
+            do fi = 1,num_column
+               i = filter_column(fi)
+               this%decomp_cpools_transport_tendency(i,j,k) = value_column
+            end do
+         end do
+      end do
 
   end subroutine col_cf_setvalues
 
@@ -7959,6 +8297,35 @@ contains
     allocate(this%externaln_to_decomp_npools      (begc:endc,1:nlevdecomp_full, 1:ndecomp_pools             )) ; this%externaln_to_decomp_npools       (:,:,:) = spval
     allocate(this%pmnf_decomp_cascade             (begc:endc,1:nlevdecomp,1:ndecomp_cascade_transitions     )) ; this%pmnf_decomp_cascade              (:,:,:) = spval
 
+    if (use_fan) then
+       allocate(this%manure_tan_appl                 (begc:endc)) ; this%manure_tan_appl               (:)   = spval
+       allocate(this%manure_n_appl                   (begc:endc)) ; this%manure_n_appl                 (:)   = spval
+       allocate(this%manure_n_grz                    (begc:endc)) ; this%manure_n_grz                  (:)   = spval
+       allocate(this%manure_n_mix                    (begc:endc)) ; this%manure_n_mix                  (:)   = spval
+       allocate(this%manure_n_barns                  (begc:endc)) ; this%manure_n_barns                (:)   = spval
+       allocate(this%fert_n_appl                     (begc:endc)) ; this%fert_n_appl                   (:)   = spval
+       allocate(this%otherfert_n_appl                (begc:endc)) ; this%otherfert_n_appl              (:)   = spval
+       allocate(this%manure_n_transf                 (begc:endc)) ; this%manure_n_transf               (:)   = spval
+       allocate(this%nh3_barns                       (begc:endc)) ; this%nh3_barns                     (:)   = spval
+       allocate(this%nh3_stores                      (begc:endc)) ; this%nh3_stores                    (:)   = spval
+       allocate(this%nh3_grz                         (begc:endc)) ; this%nh3_grz                       (:)   = spval
+       allocate(this%nh3_manure_app                  (begc:endc)) ; this%nh3_manure_app                (:)   = spval
+       allocate(this%nh3_fert                        (begc:endc)) ; this%nh3_fert                      (:)   = spval
+       allocate(this%nh3_otherfert                   (begc:endc)) ; this%nh3_otherfert                 (:)   = spval
+       allocate(this%nh3_total                       (begc:endc)) ; this%nh3_total                     (:)   = spval
+       allocate(this%manure_no3_to_soil              (begc:endc)) ; this%manure_no3_to_soil            (:)   = spval
+       allocate(this%fert_no3_to_soil                (begc:endc)) ; this%fert_no3_to_soil              (:)   = spval
+       allocate(this%manure_nh4_to_soil              (begc:endc)) ; this%manure_nh4_to_soil            (:)   = spval
+       allocate(this%fert_nh4_to_soil                (begc:endc)) ; this%fert_nh4_to_soil              (:)   = spval
+       allocate(this%manure_nh4_runoff               (begc:endc)) ; this%manure_nh4_runoff             (:)   = spval
+       allocate(this%fert_nh4_runoff                 (begc:endc)) ; this%fert_nh4_runoff               (:)   = spval
+       allocate(this%manure_n_to_sminn               (begc:endc)) ; this%manure_n_to_sminn             (:)   = spval
+       allocate(this%synthfert_n_to_sminn            (begc:endc)) ; this%synthfert_n_to_sminn          (:)   = spval
+       allocate(this%manure_n_total                  (begc:endc)) ; this%manure_n_total                (:)   = spval
+       allocate(this%fan_totnin                      (begc:endc)) ; this%fan_totnin                    (:)   = spval
+       allocate(this%fan_totnout                     (begc:endc)) ; this%fan_totnout                   (:)   = spval
+    end if
+ 
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of col_nf
     !-----------------------------------------------------------------------
@@ -8648,6 +9015,138 @@ contains
             ptr_col=this%plant_ndemand_vr, default='inactive')
     end if ! if (use_pflotran.and.pf_cmode)
 
+    if (use_fan) then
+       this%manure_tan_appl(begc:endc) = spval
+       call hist_addfld1d( fname='MAN_TAN_APP', units='gN/m^2/s', &
+            avgflag='A', long_name='Manure TAN applied on soil', &
+            ptr_col=this%manure_tan_appl, default='inactive')
+
+       this%manure_n_appl(begc:endc) = spval
+       call hist_addfld1d( fname='MAN_N_APP', units='gN/m^2/s', &
+            avgflag='A', long_name='Manure N applied on soil', &
+            ptr_col=this%manure_n_appl, default='inactive')
+
+       this%manure_n_grz(begc:endc) = spval
+       call hist_addfld1d( fname='MAN_N_GRZ', units='gN/m^2/s', &
+            avgflag='A', long_name='Manure N from grazing animals', &
+            ptr_col=this%manure_n_grz, default='inactive')
+
+       this%manure_n_mix(begc:endc) = spval
+       call hist_addfld1d( fname='MAN_N_MIX', units='gN/m^2/s', &
+            avgflag='A', long_name='Manure N in produced mixed systems', &
+            ptr_col=this%manure_n_mix, default='inactive')
+
+       this%manure_n_barns(begc:endc) = spval
+        call hist_addfld1d( fname='MAN_N_BARNS', units='gN/m^2/s', &
+             avgflag='A', long_name='Manure N in produced barns', &
+             ptr_col=this%manure_n_barns, default='inactive')
+
+       this%fert_n_appl(begc:endc) = spval
+       call hist_addfld1d( fname='FERT_N_APP', units='gN/m^2/s', &
+            avgflag='A', long_name='Fertilizer N applied on soil', &
+            ptr_col=this%fert_n_appl, default='inactive')
+
+       this%otherfert_n_appl(begc:endc) = spval
+       call hist_addfld1d( fname='OTHERFERT_N_APP', units='gN/m^2/s', &
+            avgflag='A', long_name='Non-urea fertilizer N applied on soil', &
+            ptr_col=this%otherfert_n_appl, default='inactive')
+
+       this%manure_n_transf(begc:endc) = spval
+       call hist_addfld1d( fname='MAN_N_TRANSF', units='gN/m^2/s', &
+            avgflag='A', long_name='Manure N moved from crop to natural column', &
+            ptr_col=this%manure_n_transf, default='inactive')
+
+       this%nh3_barns(begc:endc) = spval
+       call hist_addfld1d( fname='NH3_BARNS', units='gN/m^2/s', &
+            avgflag='A', long_name='NH3 emitted from animal housings', &
+            ptr_col=this%nh3_barns, default='inactive')
+
+       this%nh3_stores(begc:endc) = spval
+       call hist_addfld1d( fname='NH3_STORES', units='gN/m^2/s', &
+            avgflag='A', long_name='NH3 emitted from stored manure', &
+            ptr_col=this%nh3_stores, default='inactive')
+
+       this%nh3_grz(begc:endc) = spval
+       call hist_addfld1d( fname='NH3_GRZ', units='gN/m^2/s', &
+            avgflag='A', long_name='NH3 emitted from manure on pastures', &
+            ptr_col=this%nh3_grz, default='inactive')
+
+       this%nh3_manure_app(begc:endc) = spval
+       call hist_addfld1d( fname='NH3_MAN_APP', units='gN/m^2/s', &
+            avgflag='A', long_name='NH3 emitted from manure applied on crops and grasslands', &
+            ptr_col=this%nh3_manure_app, default='inactive')
+
+       this%nh3_fert(begc:endc) = spval
+       call hist_addfld1d( fname='NH3_FERT', units='gN/m^2/s', &
+            avgflag='A', long_name='NH3 emitted from fertilizer applied on crops', &
+            ptr_col=this%nh3_fert, default='inactive')
+
+       this%nh3_otherfert(begc:endc) = spval
+       call hist_addfld1d( fname='NH3_OTHERFERT', units='gN/m^2/s', &
+            avgflag='A', long_name='NH3 emitted from fertilizers other than urea', &
+            ptr_col=this%nh3_otherfert, default='inactive')
+
+       this%nh3_total(begc:endc) = spval
+       call hist_addfld1d( fname='NH3_TOTAL', units='gN/m^2/s', &
+            avgflag='A', long_name='Total NH3 emitted from fertilizers and manure', &
+            ptr_col=this%nh3_total, default='inactive')
+
+       this%manure_no3_to_soil(begc:endc) = spval
+       call hist_addfld1d( fname='MANURE_NO3_PROD', units='gN/m^2/s', &
+            avgflag='A', long_name='Manure nitrification flux', &
+            ptr_col=this%manure_no3_to_soil, default='inactive')
+
+       this%fert_no3_to_soil(begc:endc) = spval
+       call hist_addfld1d( fname='FERT_NO3_PROD', units='gN/m^2/s', &
+            avgflag='A', long_name='Fertilizer nitrification flux', &
+            ptr_col=this%fert_no3_to_soil, default='inactive')
+
+       this%fert_nh4_to_soil(begc:endc) = spval
+       call hist_addfld1d( fname='FERT_NH4_TO_SOIL', units='gN/m^2/s', &
+            avgflag='A', long_name='Flux of NH4 to soil mineral pools, fertilizer', &
+            ptr_col=this%fert_nh4_to_soil, default='inactive')
+
+       this%manure_nh4_to_soil(begc:endc) = spval
+       call hist_addfld1d( fname='MANURE_NH3_TO_SOIL', units='gN/m^2/s', &
+            avgflag='A', long_name='Flux of NH4 to soil mineral pools, manure', &
+            ptr_col=this%manure_nh4_to_soil, default='inactive')
+
+       this%manure_nh4_runoff(begc:endc) = spval
+       call hist_addfld1d( fname='MANURE_RUNOFF', units='gN/m^2/s', &
+            avgflag='A', long_name='NH4 in surface runoff, manure', &
+            ptr_col=this%manure_nh4_runoff, default='inactive')
+
+       this%fert_nh4_runoff(begc:endc) = spval
+       call hist_addfld1d( fname='FERT_RUNOFF', units='gN/m^2/s', &
+            avgflag='A', long_name='NH4 in surface runoff, fertilizer', &
+            ptr_col=this%fert_nh4_runoff, default='inactive')
+
+       this%synthfert_n_to_sminn(begc:endc) = spval
+       call hist_addfld1d( fname='SYNTHFERT_N_TO_SMINN', units='gN/m^2/s', &
+            avgflag='A', long_name='Fertilizer NH4, NO3 and urea-N from FAN to soil mineral pools', &
+            ptr_col=this%synthfert_n_to_sminn, default='inactive')
+
+       this%manure_n_to_sminn(begc:endc) = spval
+       call hist_addfld1d( fname='MANURE_N_TO_SMINN', units='gN/m^2/s', &
+            avgflag='A', long_name='Manure NH4 and NO3 from FAN to soil mineral pools', &
+            ptr_col=this%manure_n_to_sminn, default='inactive')
+
+       this%manure_n_total(begc:endc) = spval
+       call hist_addfld1d( fname='MANURE_N_TOTAL', units='gN/m^2/s', &
+            avgflag='A', long_name='Total manure N produced', &
+            ptr_col=this%manure_n_total, default='inactive')
+
+       this%fan_totnin(begc:endc) = spval
+       call hist_addfld1d(fname='FAN_TOTNIN', units='gN/m^2/s', &
+            avgflag='A', long_name='Total N input into FAN', &
+            ptr_col=this%fan_totnin, default='inactive')
+
+       this%fan_totnout(begc:endc) = spval
+       call hist_addfld1d(fname='FAN_TOTNOUT', units='gN/m^2/s', &
+            avgflag='A', long_name='Total N output from FAN', &
+            ptr_col=this%fan_totnout, default='inactive')
+    end if
+
     !-----------------------------------------------------------------------
     ! set cold-start initial values for select members of col_nf
     !-----------------------------------------------------------------------
@@ -8782,7 +9281,7 @@ contains
     ! Set column-level nitrogen fluxes
     !
     ! !ARGUMENTS:
-    class (column_nitrogen_flux) :: this
+    class(column_nitrogen_flux) :: this
     integer , intent(in)         :: num_column
     integer , intent(in)         :: filter_column(:)
     real(r8), intent(in)         :: value_column
@@ -8817,58 +9316,27 @@ contains
           this%harvest_n_to_litr_lig_n(i,j)          = value_column
           this%harvest_n_to_cwdn(i,j)                = value_column
 
-          this%f_nit_vr(i,j)                      = value_column
-          this%f_denit_vr(i,j)                    = value_column
-          this%smin_no3_leached_vr(i,j)           = value_column
-          this%smin_no3_runoff_vr(i,j)            = value_column
-          this%n2_n2o_ratio_denit_vr(i,j)         = value_column
-          this%pot_f_nit_vr(i,j)                  = value_column
-          this%pot_f_denit_vr(i,j)                = value_column
-          this%actual_immob_no3_vr(i,j)           = value_column
-          this%actual_immob_nh4_vr(i,j)           = value_column
-          this%smin_no3_to_plant_vr(i,j)          = value_column
-          this%smin_nh4_to_plant_vr(i,j)          = value_column
-          this%f_n2o_denit_vr(i,j)                = value_column
-          this%f_n2o_nit_vr(i,j)                  = value_column
-
-          this%smin_no3_massdens_vr(i,j)          = value_column
-          this%k_nitr_t_vr(i,j)                   = value_column
-          this%k_nitr_ph_vr(i,j)                  = value_column
-          this%k_nitr_h2o_vr(i,j)                 = value_column
-          this%k_nitr_vr(i,j)                     = value_column
-          this%wfps_vr(i,j)                       = value_column
-          this%fmax_denit_carbonsubstrate_vr(i,j) = value_column
-          this%fmax_denit_nitrate_vr(i,j)         = value_column
-          this%f_denit_base_vr(i,j)               = value_column
-
-          this%diffus(i,j)                        = value_column
-          this%ratio_k1(i,j)                      = value_column
-          this%ratio_no3_co2(i,j)                 = value_column
-          this%soil_co2_prod(i,j)                 = value_column
-          this%fr_WFPS(i,j)                       = value_column
-          this%soil_bulkdensity(i,j)              = value_column
-
-          this%r_psi(i,j)                         = value_column
-          this%anaerobic_frac(i,j)                = value_column
-
-          ! pflotran
-          this%plant_ndemand_vr(i,j)              = value_column
-          this%f_ngas_decomp_vr(i,j)              = value_column
-          this%f_ngas_nitri_vr(i,j)               = value_column
-          this%f_ngas_denit_vr(i,j)               = value_column
-          this%f_n2o_soil_vr(i,j)                 = value_column
-          this%f_n2_soil_vr(i,j)                  = value_column
-
-          this%potential_immob_vr(i,j)               = value_column
-          this%actual_immob_vr(i,j)                  = value_column
-          this%sminn_to_plant_vr(i,j)                = value_column
-          this%supplement_to_sminn_vr(i,j)           = value_column
-          this%gross_nmin_vr(i,j)                    = value_column
           this%net_nmin_vr(i,j)                      = value_column
-          this%sminn_nh4_input_vr(i,j)               = value_column
-          this%sminn_no3_input_vr(i,j)               = value_column
+          this%sminn_nh4_input_vr(i,j)               = value_column !not used anywhere?
+          this%sminn_no3_input_vr(i,j)               = value_column !not used anywhere?
        end do
     end do
+
+    if( use_pflotran .and. pf_cmode) then 
+
+      do j = 1, nlevdecomp_full
+         do fi = 1,num_column
+            i = filter_column(fi)
+            ! pflotran
+            this%plant_ndemand_vr(i,j)              = value_column !use_elm_interface.and.use_pflotran .and. pf_cmode
+            this%f_ngas_decomp_vr(i,j)              = value_column ! ""
+            this%f_ngas_nitri_vr(i,j)               = value_column ! "" 
+            this%f_ngas_denit_vr(i,j)               = value_column
+            this%f_n2o_soil_vr(i,j)                 = value_column
+            this%f_n2_soil_vr(i,j)                  = value_column
+         end do 
+       end do 
+     end if 
 
     do fi = 1,num_column
        i = filter_column(fi)
@@ -8878,6 +9346,13 @@ contains
        this%nfix_to_ecosysn(i)           = value_column
        this%fert_to_sminn(i)             = value_column
        this%soyfixn_to_sminn(i)          = value_column
+       this%supplement_to_sminn(i)       = value_column
+       this%denit(i)                     = value_column
+       this%smin_nh4_to_plant(i)      = value_column
+       this%smin_no3_to_plant(i)      = value_column
+       this%fire_nloss(i)                = value_column
+       this%som_n_leached(i)             = value_column
+       
        this%hrv_deadstemn_to_prod10n(i)  = value_column
        this%hrv_deadstemn_to_prod100n(i) = value_column
        this%hrv_cropn_to_prod1n(i)       = value_column
@@ -8888,10 +9363,8 @@ contains
        this%potential_immob(i)           = value_column
        this%actual_immob(i)              = value_column
        this%sminn_to_plant(i)            = value_column
-       this%supplement_to_sminn(i)       = value_column
        this%gross_nmin(i)                = value_column
        this%net_nmin(i)                  = value_column
-       this%denit(i)                     = value_column
 
        this%f_nit(i)                  = value_column
        this%pot_f_nit(i)              = value_column
@@ -8908,67 +9381,68 @@ contains
        this%f_n2o_soil(i)            = value_column
        this%f_n2_soil(i)             = value_column
 
-       this%smin_nh4_to_plant(i)      = value_column
-       this%smin_no3_to_plant(i)      = value_column
 
        this%ninputs(i)                   = value_column
        this%noutputs(i)                  = value_column
-       this%fire_nloss(i)                = value_column
-       this%som_n_leached(i)             = value_column
        this%sminn_input(i)               = value_column
        this%sminn_nh4_input(i)           = value_column
        this%sminn_no3_input(i)           = value_column
-       this%somn_erode(i)                = value_column
-       this%somn_deposit(i)              = value_column
-       this%somn_yield(i)                = value_column
        ! Zero p2c column fluxes
        this%fire_nloss(i) = value_column
        this%wood_harvestn(i) = value_column
 
        ! bgc-interface
        this%plant_ndemand(i) = value_column
-    end do
 
+       if ( use_fan ) then
+          this%manure_tan_appl(i)    = value_column
+          this%manure_n_appl(i)      = value_column
+          this%manure_n_grz(i)       = value_column
+          this%manure_n_mix(i)       = value_column
+          this%manure_n_barns(i)     = value_column
+          this%fert_n_appl(i)        = value_column
+          this%otherfert_n_appl(i)   = value_column
+          this%manure_n_transf(i)    = value_column
+          this%nh3_barns(i)          = value_column
+          this%nh3_stores(i)         = value_column
+          this%nh3_grz(i)            = value_column
+          this%nh3_manure_app(i)     = value_column
+          this%nh3_fert(i)           = value_column
+          this%nh3_otherfert(i)      = value_column
+          this%nh3_total(i)          = value_column
+          this%manure_no3_to_soil(i) = value_column
+          this%fert_no3_to_soil(i)   = value_column
+          this%manure_nh4_to_soil(i) = value_column
+          this%fert_nh4_to_soil(i)   = value_column
+          this%fert_nh4_to_soil(i)   = value_column
+          this%manure_nh4_runoff(i)  = value_column
+          this%fert_nh4_runoff(i)    = value_column
+          this%manure_n_to_sminn(i)  = value_column
+          this%manure_n_total(i)     = value_column
+          this%synthfert_n_to_sminn(i) = value_column
+          this%fan_totnin(i)         = value_column
+          this%fan_totnout(i)        = value_column
+       end if
+
+    end do
     do k = 1, ndecomp_pools
        do fi = 1,num_column
           i = filter_column(fi)
-          this%decomp_npools_leached(i,k) = value_column
-          this%decomp_npools_erode(i,k) = value_column
-          this%decomp_npools_deposit(i,k) = value_column
-          this%decomp_npools_yield(i,k) = value_column
+          this%decomp_npools_yield(i,k) = value_column !ero_ccyle
           this%m_decomp_npools_to_fire(i,k) = value_column
-          this%bgc_npool_ext_inputs_vr(i,:,k) = value_column
-          this%bgc_npool_ext_loss_vr(i,:,k) = value_column
-          this%bgc_npool_inputs(i,k) = value_column
+          !NOTE: when are these used?
+          !this%bgc_npool_ext_inputs_vr(i,:,k) = value_column
+          !this%bgc_npool_ext_loss_vr(i,:,k) = value_column
+          !this%bgc_npool_inputs(i,k) = value_column
        end do
     end do
 
-    do k = 1, ndecomp_pools
-       do j = 1, nlevdecomp_full
-          do fi = 1,num_column
-             i = filter_column(fi)
-             this%m_decomp_npools_to_fire_vr(i,j,k) = value_column
-             this%decomp_npools_transport_tendency(i,j,k) = value_column
-             this%decomp_npools_yield_vr(i,j,k) = value_column
-          end do
-       end do
-    end do
 
        do l = 1, ndecomp_cascade_transitions
           do fi = 1,num_column
              i = filter_column(fi)
              this%decomp_cascade_ntransfer(i,l) = value_column
              this%decomp_cascade_sminn_flux(i,l) = value_column
-          end do
-       end do
-
-       do l = 1, ndecomp_cascade_transitions
-          do j = 1, nlevdecomp_full
-             do fi = 1,num_column
-                i = filter_column(fi)
-                this%decomp_cascade_ntransfer_vr(i,j,l) = value_column
-                this%decomp_cascade_sminn_flux_vr(i,j,l) = value_column
-             end do
           end do
        end do
 
@@ -8983,39 +9457,51 @@ contains
 
     ! pflotran
     !------------------------------------------------------------------------
+    if(nstep_mod == 0 .or. is_first_restart_step()) then 
+      do k = 1, ndecomp_pools
+         do j = 1, nlevdecomp_full
+            do fi = 1,num_column
+               i = filter_column(fi)
+               this%m_decomp_npools_to_fire_vr(i,j,k) = value_column
+               ! only initializing in the first time-step
+               this%externaln_to_decomp_npools(i,j,k) = value_column
+            end do
+         end do
+      end do
+
     do k = 1, ndecomp_pools
        do j = 1, nlevdecomp_full
           do fi = 1,num_column
              i = filter_column(fi)
-             ! only initializing in the first time-step
-             if ( this%externaln_to_decomp_npools(i,j,k) == spval ) then
-                this%externaln_to_decomp_npools(i,j,k) = value_column
-             end if
+             this%decomp_npools_transport_tendency(i,j,k) = value_column
           end do
        end do
     end do
+      do j = 1, nlevdecomp_full
+         do fi = 1,num_column
+            i = filter_column(fi)
+            ! only initializing in the first time-step
+            this%no3_net_transport_vr(i,j) = value_column
+            this%nh4_net_transport_vr(i,j) = value_column
+         end do
+      end do
+    
+      do fi = 1,num_column
+         i = filter_column(fi)
+         ! only initializing in the first time-step
+         this%externaln_to_decomp_delta(i) = value_column
+      end do
+   end if
 
-    do j = 1, nlevdecomp_full
+   if(use_crop) then 
+     do j = 1, nlevdecomp_full
        do fi = 1,num_column
-          i = filter_column(fi)
-          ! only initializing in the first time-step
-          if ( this%no3_net_transport_vr(i,j) == spval ) then
-             this%no3_net_transport_vr(i,j) = value_column
-          end if
-          if ( this%nh4_net_transport_vr(i,j) == spval ) then
-             this%nh4_net_transport_vr(i,j) = value_column
-          end if
+         i = filter_column(fi)
+         this%f_nit_vr(i,j)      = value_column
+         this%f_denit_vr(i,j)    = value_column
        end do
-    end do
-
-    do fi = 1,num_column
-       i = filter_column(fi)
-       ! only initializing in the first time-step
-       if ( this%externaln_to_decomp_delta(i) == spval ) then
-          this%externaln_to_decomp_delta(i) = value_column
-       end if
-    end do
-
+      end do 
+    end if  
   end subroutine col_nf_setvalues
 
   !-----------------------------------------------------------------------
@@ -9077,6 +9563,7 @@ contains
        this%fire_nloss_p2c(c) = 0._r8
        this%wood_harvestn(c)  = 0._r8
     end do
+
 
 
   end subroutine col_nf_zero_forfates_veg
@@ -9176,7 +9663,6 @@ contains
        end do
 
     end if
-
     ! vertically integrate column-level fire N losses
     do k = 1, ndecomp_pools
        do j = 1, nlev
@@ -10348,7 +10834,6 @@ contains
     !
     ! !DESCRIPTION:
     ! Set phosphorus flux variables
-    !$acc routine seq
     ! !ARGUMENTS:
     class (column_phosphorus_flux) :: this
     integer , intent(in) :: num_column
@@ -10410,6 +10895,7 @@ contains
           this%plant_pdemand_vr(i,j)                 = value_column
           this%adsorb_to_labilep_vr(i,j)             = value_column
           this%desorb_to_solutionp_vr(i,j)           = value_column
+          
        end do
     end do
 
@@ -10465,7 +10951,6 @@ contains
        ! bgc-interface
        this%plant_pdemand(i)             = value_column
 
-       this%fire_ploss(i)                = value_column
        this%wood_harvestp(i)             = value_column
 
        this%adsorb_to_labilep(i)         = value_column
@@ -10484,32 +10969,11 @@ contains
        end do
     end do
 
-    do k = 1, ndecomp_pools
-       do j = 1, nlevdecomp_full
-          do fi = 1,num_column
-             i = filter_column(fi)
-             this%m_decomp_ppools_to_fire_vr(i,j,k) = value_column
-             this%decomp_ppools_transport_tendency(i,j,k) = value_column
-             this%decomp_ppools_yield_vr(i,j,k) = value_column
-          end do
-       end do
-    end do
-
     do l = 1, ndecomp_cascade_transitions
        do fi = 1,num_column
           i = filter_column(fi)
           this%decomp_cascade_ptransfer(i,l) = value_column
           this%decomp_cascade_sminp_flux(i,l) = value_column
-       end do
-    end do
-
-    do l = 1, ndecomp_cascade_transitions
-       do j = 1, nlevdecomp_full
-          do fi = 1,num_column
-             i = filter_column(fi)
-             this%decomp_cascade_ptransfer_vr(i,j,l) = value_column
-             this%decomp_cascade_sminp_flux_vr(i,j,l) = value_column
-          end do
        end do
     end do
 
@@ -10522,40 +10986,42 @@ contains
           end do
        end do
     end do
+      
+   do k = 1, ndecomp_pools
+      do j = 1, nlevdecomp_full
+         do fi = 1,num_column
+            i = filter_column(fi)
+            this%m_decomp_ppools_to_fire_vr(i,j,k) = value_column
+            this%decomp_ppools_transport_tendency(i,j,k) = value_column
+            this%decomp_ppools_yield_vr(i,j,k) = value_column
+         end do
+      end do
+   end do
 
     ! pflotran
-    do k = 1, ndecomp_pools
-       do j = 1, nlevdecomp_full
-          do fi = 1,num_column
-             i = filter_column(fi)
-             ! only initializing in the first time-step
-             if ( this%externalp_to_decomp_ppools(i,j,k) == spval ) then
-                this%externalp_to_decomp_ppools(i,j,k) = value_column
-             end if
-          end do
-       end do
-    end do
+    if(nstep_mod == 0 .or. is_first_restart_step() ) then 
+      do k = 1, ndecomp_pools
+         do j = 1, nlevdecomp_full
+            do fi = 1,num_column
+               i = filter_column(fi)
+               this%externalp_to_decomp_ppools(i,j,k) = value_column
+            end do
+         end do
+      end do
 
     do j = 1, nlevdecomp_full
        do fi = 1,num_column
           i = filter_column(fi)
-          ! only initializing in the first time-step
-          if ( this%sminp_net_transport_vr(i,j) == spval ) then
-             this%sminp_net_transport_vr(i,j) = value_column
-          end if
+          this%sminp_net_transport_vr(i,j) = value_column
        end do
     end do
 
     do fi = 1,num_column
        i = filter_column(fi)
-       ! only initializing in the first time-step
-       if ( this%externalp_to_decomp_delta(i) == spval ) then
-          this%externalp_to_decomp_delta(i) = value_column
-       end if
-       if ( this%sminp_net_transport_delta(i) == spval ) then
-          this%sminp_net_transport_delta(i)   = value_column
-       end if
-    end do
+       this%externalp_to_decomp_delta(i) = value_column
+       this%sminp_net_transport_delta(i)   = value_column
+     end do
+  end if 
 
   end subroutine col_pf_setvalues
 
@@ -10736,6 +11202,7 @@ contains
     end if
 
     ! vertically integrate column-level fire P losses
+    if(.not. use_fates) then 
     do k = 1, ndecomp_pools
        do j = 1, nlevdecomp
           do fc = 1,num_soilc
@@ -10746,6 +11213,7 @@ contains
           end do
        end do
     end do
+    end if 
 
     ! vertically integrate column-level P erosion flux
     if (ero_ccycle) then

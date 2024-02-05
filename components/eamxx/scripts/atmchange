@@ -13,39 +13,71 @@ sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 
 from eamxx_buildnml_impl import check_value, is_array_type
-from atm_manip import get_xml_node, atm_config_chg_impl
+from eamxx_buildnml import create_raw_xml_file
+from atm_manip import atm_config_chg_impl, buffer_changes, reset_buffer, get_xml_nodes, parse_change
 from utils import run_cmd_no_fail, expect
 
+# Add path to cime
+_CIMEROOT = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..","..","..","cime")
+sys.path.append(os.path.join(_CIMEROOT, "CIME", "Tools"))
+from standard_script_setup import * # pylint: disable=wildcard-import
+from CIME.case import Case
+
 ###############################################################################
-def atm_config_chg(changes, no_buffer=False, reset=False):
+def recreate_raw_xml_file():
 ###############################################################################
-    expect(os.path.exists("namelist_scream.xml"),
-           "No pwd/namelist_scream.xml file is present. Please run from a case dir that has been set up")
+    caseroot = os.getcwd()
+    with Case(caseroot) as case:
+        create_raw_xml_file(case, caseroot)
+
+###############################################################################
+def atm_config_chg(changes, reset=False, all_matches=False, buffer_only=False):
+###############################################################################
+    if not buffer_only:
+        expect(os.path.exists("namelist_scream.xml"),
+               "No pwd/namelist_scream.xml file is present. Please run from a case dir that has been set up")
+    else:
+        expect(not reset, "Makes no sense for buffer_only and reset to both be on")
 
     if reset:
-        run_cmd_no_fail("./xmlchange SCREAM_ATMCHANGE_BUFFER=''")
-        print("All buffered atmchanges have been removed. A fresh namelist_scream.xml will be generated the next time buildnml (case.setup) is run.")
+        reset_buffer()
+        print("All buffered atmchanges have been removed.")
         hack_xml = run_cmd_no_fail("./xmlquery SCREAM_HACK_XML --value")
         if hack_xml == "TRUE":
             print("SCREAM_HACK_XML is on. Removing namelist_scream.xml to force regen")
             os.remove("namelist_scream.xml")
 
+        recreate_raw_xml_file()
         return True
     else:
         expect(changes, "Missing <param>=<val> args")
 
-    with open("namelist_scream.xml", "r") as fd:
-        tree = ET.parse(fd)
-        root = tree.getroot()
+    # Before applying/buffering changes, at the very least check the syntax
+    for c in changes:
+        # This will throw if the syntax is bad
+        _, _, _ = parse_change(c)
 
-    any_change = atm_config_chg_impl(root,changes)
+    # If buffer_only=True, we must assume there were changes (we can't check).
+    # Otherwise, we'll assume no changes, and if we find one, we'll adjust
+    any_change = buffer_only
+    if not buffer_only:
+        with open("namelist_scream.xml", "r") as fd:
+            tree = ET.parse(fd)
+            root = tree.getroot()
+
+        for change in changes:
+            this_changed = atm_config_chg_impl(root, change, all_matches)
+            any_change |= this_changed
+
 
     if any_change:
-        tree.write("namelist_scream.xml")
+        # NOTE: if a change is wrong (e.g., typo in param name), we are still buffering it.
+        #       We have no way of checking this, unfortunately. If you get an error that is
+        #       not just syntax, your best course of action is to run atmchange --reset.
+        buffer_changes(changes, all_matches=all_matches)
 
-    if not no_buffer:
-        changes_str = " ".join(changes).replace(",",r"\,")
-        run_cmd_no_fail(f"./xmlchange --append SCREAM_ATMCHANGE_BUFFER='{changes_str}'")
+        if not buffer_only:
+            recreate_raw_xml_file()
 
     return True
 
@@ -72,17 +104,24 @@ OR
     )
 
     parser.add_argument(
-        "--no-buffer",
+        "-a", "--all",
         default=False,
+        dest="all_matches",
         action="store_true",
-        help="Used by buildnml to replay buffered commands",
+        help="Apply change to all entries matching the name"
     )
-
     parser.add_argument(
-        "--reset",
+        "-r", "--reset",
         default=False,
         action="store_true",
         help="Forget all previous atmchanges",
+    )
+
+    parser.add_argument(
+        "-b", "--buffer-only",
+        default=False,
+        action="store_true",
+        help="Only buffer the changes, don't actually do them. Useful for testmod scripts where the case is not setup yet",
     )
 
     parser.add_argument("changes", nargs="*", help="Values to change")

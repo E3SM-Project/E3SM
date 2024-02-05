@@ -27,7 +27,7 @@ module component_mod
   use seq_map_mod
   use t_drv_timers_mod
   use component_type_mod
-  use seq_cdata_mod,    only : seq_cdata
+  use seq_cdata_mod,    only : seq_cdata, seq_cdata_init
   use mct_mod   ! mct_ wrappers for mct lib
   use perf_mod
   use ESMF
@@ -48,10 +48,16 @@ module component_mod
   public :: component_init_cx
   public :: component_init_aream
   public :: component_init_areacor
+#ifdef HAVE_MOAB
+  public :: component_init_areacor_moab
+#endif
   public :: component_run                 ! mct and esmf versions
   public :: component_final               ! mct and esmf versions
   public :: component_exch
   public :: component_diag
+  public :: component_exch_moab
+
+  ! public :: ocn_cpl_moab
 
 
   !--------------------------------------------------------------------------
@@ -91,8 +97,9 @@ contains
     character(len=3)         , intent(in)            :: ntype
     !
     ! Local Variables
+    logical :: flag
+    integer :: ierr
     integer  :: eci       ! index
-    character(len=cl), allocatable :: comp_resume(:) ! Set if comp needs post-DA process
     character(*), parameter :: subname = '(component_init_pre)'
     !---------------------------------------------------------------
 
@@ -104,7 +111,6 @@ contains
     iamin_CPLID = seq_comm_iamin(CPLID)
 
     ! Initialize component type variables
-    allocate(comp_resume(size(comp)))
     do eci = 1,size(comp)
 
        comp(eci)%compid       = compid(eci)
@@ -117,13 +123,22 @@ contains
        call seq_comm_getinfo(comp(eci)%compid      , iamroot=comp(eci)%iamroot_compid)
        call seq_comm_getinfo(comp(eci)%compid      , nthreads=comp(eci)%nthreads_compid)
 
+       ! a processor may have more then one component
        comp(eci)%iamin_compid       =  seq_comm_iamin (comp(eci)%compid)
        comp(eci)%iamin_cplcompid    =  seq_comm_iamin (comp(eci)%cplcompid)
        comp(eci)%iamin_cplallcompid =  seq_comm_iamin (comp(eci)%cplallcompid)
        comp(eci)%suffix             =  seq_comm_suffix(comp(eci)%compid)
        comp(eci)%name               =  seq_comm_name  (comp(eci)%compid)
        comp(eci)%ntype              =  ntype(1:3)
-       comp(eci)%oneletterid        =  ntype(1:1)
+
+       select case(ntype)
+       case ('atm','cpl','ocn','wav','glc','ice','rof','lnd','esp')
+          comp(eci)%oneletterid =  ntype(1:1)
+       case ('iac')
+          comp(eci)%oneletterid = 'z'
+       case default
+          call shr_sys_abort(subname//': ntype, "'//ntype//'" not recognized"')
+       end select
 
        if (eci == 1) then
           allocate(comp(1)%dom_cx)
@@ -137,61 +152,47 @@ contains
        allocate(comp(eci)%dom_cc)
        allocate(comp(eci)%gsmap_cc)
        allocate(comp(eci)%cdata_cc)
-       comp(eci)%cdata_cc%name     = 'cdata_'//ntype(1:1)//ntype(1:1)
-       comp(eci)%cdata_cc%ID       =  comp(eci)%compid
-       comp(eci)%cdata_cc%mpicom   =  comp(eci)%mpicom_compid
-       comp(eci)%cdata_cc%dom      => comp(eci)%dom_cc
-       comp(eci)%cdata_cc%gsmap    => comp(eci)%gsmap_cc
-       comp(eci)%cdata_cc%infodata => infodata
+       ! copy things like name, ID, mpicom, dom and GsMap pointers to cdata struct
+       call seq_cdata_init(comp(eci)%cdata_cc, comp(eci)%compid,              &
+            'cdata_'//ntype(1:1)//ntype(1:1), comp(eci)%dom_cc,               &
+            comp(eci)%gsmap_cc, infodata, seq_timemgr_data_assimilation_active(ntype(1:3)))
 
-       ! Does this component need to do post-data assimilation processing?
-       if (seq_timemgr_data_assimilation_active(ntype(1:3))) then
-          comp_resume(:) = 'TRUE'
-       else
-          comp_resume(:) = ''
-       end if
-
-       ! Determine initial value of comp_present in infodata - to do - add this to component
+       ! Determine initial value of comp_present in infodata and set it in
+       ! comp%present
+       !
+!workaround some weird bug in pgi compiler.
 #ifdef CPRPGI
        if (comp(1)%oneletterid == 'a') then
           call seq_infodata_getData(infodata, atm_present=comp(eci)%present)
-          call seq_infodata_PutData(infodata, atm_resume=comp_resume)
        end if
        if (comp(1)%oneletterid == 'l') then
           call seq_infodata_getData(infodata, lnd_present=comp(eci)%present)
-          call seq_infodata_PutData(infodata, lnd_resume=comp_resume)
        end if
        if (comp(1)%oneletterid == 'i') then
           call seq_infodata_getData(infodata, ice_present=comp(eci)%present)
-          call seq_infodata_PutData(infodata, ice_resume=comp_resume)
        end if
        if (comp(1)%oneletterid == 'o') then
           call seq_infodata_getData(infodata, ocn_present=comp(eci)%present)
-          call seq_infodata_PutData(infodata, ocn_resume=comp_resume)
        end if
        if (comp(1)%oneletterid == 'r') then
           call seq_infodata_getData(infodata, rof_present=comp(eci)%present)
-          call seq_infodata_PutData(infodata, rof_resume=comp_resume)
        end if
        if (comp(1)%oneletterid == 'g') then
           call seq_infodata_getData(infodata, glc_present=comp(eci)%present)
-          call seq_infodata_PutData(infodata, glc_resume=comp_resume)
        end if
        if (comp(1)%oneletterid == 'w') then
           call seq_infodata_getData(infodata, wav_present=comp(eci)%present)
-          call seq_infodata_PutData(infodata, wav_resume=comp_resume)
        end if
        if (comp(1)%oneletterid == 'e') then
           call seq_infodata_getData(infodata, esp_present=comp(eci)%present)
        end if
+       if (comp(1)%oneletterid == 'z') then
+          call seq_infodata_getData(infodata, iac_present=comp(eci)%present)
+       end if
 #else
        call seq_infodata_getData(comp(1)%oneletterid, infodata, comp_present=comp(eci)%present)
-
-       ! Does this component need to do post-data assimilation processing?
-       call seq_infodata_PutData(comp(1)%oneletterid, infodata, comp_resume=comp_resume)
 #endif
     end do
-    deallocate(comp_resume)
 
   end subroutine component_init_pre
 
@@ -230,7 +231,7 @@ contains
     character(*), parameter :: F00 = "('"//subname//" : ', 4A )"
     !---------------------------------------------------------------
 
-    ! **** Initialize component - this initializes  x2c_cc and c2x_cc ***
+    ! **** Initialize component - this initializes pointers to x2c_cc and c2x_cc ***
     ! the following will call the appropriate comp_init_mct routine
 
     call t_set_prefixf(comp(1)%oneletterid//"_i:")
@@ -259,10 +260,16 @@ contains
           if (drv_threading) call seq_comm_setnthreads(comp(eci)%nthreads_compid)
           call shr_sys_flush(logunit)
 
+          ! only done in second phase of atm init
+          ! multiple by area ratio
           if (present(seq_flds_x2c_fluxes)) then
              call mct_avect_vecmult(comp(eci)%x2c_cc, comp(eci)%drv2mdl, seq_flds_x2c_fluxes, mask_spval=.true.)
+#ifdef HAVE_MOAB
+             call factor_moab_comp(comp(eci), 'drv2mdl', seq_flds_x2c_fluxes)
+#endif
           end if
 
+          ! call the component's specific init phase
           call t_startf('comp_init')
           call comp_init( EClock, comp(eci)%cdata_cc, comp(eci)%x2c_cc, comp(eci)%c2x_cc, &
                NLFilename=NLFilename )
@@ -273,8 +280,12 @@ contains
              call t_drvstopf ('check_fields')
           end If
 
+          ! only done in second phase of atm init
           if (present(seq_flds_c2x_fluxes)) then
              call mct_avect_vecmult(comp(eci)%c2x_cc, comp(eci)%mdl2drv, seq_flds_c2x_fluxes, mask_spval=.true.)
+#ifdef HAVE_MOAB
+             call factor_moab_comp(comp(eci), 'mdl2drv', seq_flds_c2x_fluxes)
+#endif
           end if
 
           if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
@@ -298,6 +309,7 @@ contains
        if (comp(1)%oneletterid == 'g') call seq_infodata_getData(infodata, glc_present=comp(eci)%present)
        if (comp(1)%oneletterid == 'w') call seq_infodata_getData(infodata, wav_present=comp(eci)%present)
        if (comp(1)%oneletterid == 'e') call seq_infodata_getData(infodata, esp_present=comp(eci)%present)
+       if (comp(1)%oneletterid == 'z') call seq_infodata_getData(infodata, iac_present=comp(eci)%present)
 #else
        call seq_infodata_getData(comp(1)%oneletterid, infodata, comp_present=comp(eci)%present)
 #endif
@@ -345,6 +357,7 @@ contains
     ! Local Variables
     integer         :: eci
     integer         :: rc        ! return code
+    integer         :: mpi_tag
     type(mct_gGrid) :: dom_tmp   ! temporary
     character(*), parameter :: subname = '(component_init_cx)'
     character(*), parameter :: F0I = "('"//subname//" : ', A, 2i8 )"
@@ -375,7 +388,7 @@ contains
                    call shr_sys_flush(logunit)
                 end if
                 call seq_mctext_gsmapInit(comp(1))
-                call cplcomp_moab_Init(comp(1))
+                call cplcomp_moab_Init(infodata,comp(1))
              endif
 
              ! Create mapper_Cc2x and mapper_Cx2c
@@ -404,7 +417,14 @@ contains
                    call shr_sys_flush(logunit)
                 end if
                 call seq_mctext_gGridInit(comp(1))
-                call seq_map_map_exchange(comp(1), flow='c2x', dom_flag=.true., msgtag=comp(1)%cplcompid*10000+1*10+1)
+
+                if (size(comp) > 1) then
+                    mpi_tag = comp(eci)%cplcompid*100+eci*10+1
+                else
+                    mpi_tag = comp(eci)%cplcompid*10000+eci*10+1
+                end if
+                call seq_map_map_exchange(comp(1), flow='c2x', dom_flag=.true., msgtag=mpi_tag)
+
              else if (eci > 1) then
                 if (iamroot_CPLID) then
                    write(logunit,F0I) 'comparing comp domain ensemble number ',eci
@@ -498,10 +518,13 @@ contains
           dom_s   => component_get_dom_cx(ocn(1))   ! dom_ox
           dom_d   => component_get_dom_cx(atm(1))   ! dom_ax
 
+          call t_startf('CPL:seq_map_readdata-ocn2atm')
           call seq_map_readdata('seq_maps.rc','ocn2atm_fmapname:', mpicom_CPLID, CPLID, &
                gsmap_s=gsmap_s, av_s=dom_s%data, avfld_s='aream', filefld_s='area_a', &
                gsmap_d=gsmap_d, av_d=dom_d%data, avfld_d='aream', filefld_d='area_b', &
                string='ocn2atm aream initialization')
+          call t_stopf('CPL:seq_map_readdata-ocn2atm')
+
        endif
     end if
 
@@ -517,13 +540,18 @@ contains
           gsmap_s => component_get_gsmap_cx(rof(1)) ! gsmap_rx
           dom_s   => component_get_dom_cx(rof(1))   ! dom_rx
 
+          call t_startf('CPL:seq_map_readdata-rof2ocn_liq')
           call seq_map_readdata('seq_maps.rc', 'rof2ocn_liq_rmapname:',mpicom_CPLID, CPLID, &
                gsmap_s=gsmap_s, av_s=dom_s%data, avfld_s='aream', filefld_s='area_a', &
                string='rof2ocn liq aream initialization')
+          call t_stopf('CPL:seq_map_readdata-rof2ocn_liq')
 
+          call t_startf('CPL:seq_map_readdata-rof2ocn_ice')
           call seq_map_readdata('seq_maps.rc', 'rof2ocn_ice_rmapname:',mpicom_CPLID, CPLID, &
                gsmap_s=gsmap_s, av_s=dom_s%data, avfld_s='aream', filefld_s='area_a', &
                string='rof2ocn ice aream initialization')
+          call t_stopf('CPL:seq_map_readdata-rof2ocn_ice')
+
        endif
     end if
 
@@ -537,9 +565,12 @@ contains
           gsmap_d => component_get_gsmap_cx(lnd(1)) ! gsmap_lx
           dom_d   => component_get_dom_cx(lnd(1))   ! dom_lx
 
+          call t_startf('CPL:seq_map_readdata-atm2lnd')
           call seq_map_readdata('seq_maps.rc','atm2lnd_fmapname:',mpicom_CPLID, CPLID, &
                gsmap_d=gsmap_d, av_d=dom_d%data, avfld_d='aream', filefld_d='area_b', &
                string='atm2lnd aream initialization')
+          call t_stopf('CPL:seq_map_readdata-atm2lnd')
+
        endif
     end if
 
@@ -553,9 +584,12 @@ contains
           gsmap_d => component_get_gsmap_cx(glc(1)) ! gsmap_gx
           dom_d   => component_get_dom_cx(glc(1))   ! dom_gx
 
+          call t_startf('CPL:seq_map_readdata-lnd2glc')
           call seq_map_readdata('seq_maps.rc','lnd2glc_fmapname:',mpicom_CPLID, CPLID, &
                gsmap_d=gsmap_d, av_d=dom_d%data, avfld_d='aream', filefld_d='area_b', &
                string='lnd2glc aream initialization')
+          call t_stopf('CPL:seq_map_readdata-lnd2glc')
+
        endif
     endif
 
@@ -577,6 +611,7 @@ contains
     !
     ! Local Variables
     integer :: eci, num_inst
+    integer :: mpi_tag
     character(*), parameter :: subname = '(component_init_areacor)'
     !---------------------------------------------------------------
 
@@ -587,8 +622,13 @@ contains
        if (comp(eci)%iamin_cplcompid) then
 
           ! Map component domain from coupler to component processes
-          call seq_map_map(comp(eci)%mapper_Cx2c, comp(eci)%dom_cx%data, &
-               comp(eci)%dom_cc%data, msgtag=comp(eci)%cplcompid*10000+eci*10+5)
+          ! to send aream to components.
+          if ( num_inst > 1) then
+             mpi_tag = comp(eci)%cplcompid*100+eci*10+5
+          else
+             mpi_tag = comp(eci)%cplcompid*10000+eci*10+5
+          end if
+          call seq_map_map(comp(eci)%mapper_Cx2c, comp(eci)%dom_cx%data, comp(eci)%dom_cc%data, msgtag=mpi_tag)
 
           ! For only component pes
           if (comp(eci)%iamin_compid) then
@@ -606,14 +646,146 @@ contains
           endif
 
           ! Map corrected initial component AVs from component to coupler pes
-          call seq_map_map(comp(eci)%mapper_cc2x, comp(eci)%c2x_cc, &
-               comp(eci)%c2x_cx, msgtag=comp(eci)%cplcompid*10000+eci*10+7)
+          if (num_inst > 1) then
+              mpi_tag = comp(eci)%cplcompid*100+eci*10+7
+          else
+              mpi_tag = comp(eci)%cplcompid*10000+eci*10+7
+          end if
+          call seq_map_map(comp(eci)%mapper_cc2x, comp(eci)%c2x_cc, comp(eci)%c2x_cx, msgtag=mpi_tag)
 
        endif
     enddo
 
   end subroutine component_init_areacor
 
+subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxes, seq_flds_c2x_fields)
+  !---------------------------------------------------------------
+   ! COMPONENT PES and CPL/COMPONENT (for exchange only)
+   !
+   ! Uses
+   use seq_domain_mct, only : seq_domain_areafactinit
+   use ISO_C_BINDING, only : C_NULL_CHAR
+   use shr_kind_mod      , only :  CXX => shr_kind_CXX
+   use iMOAB, only: iMOAB_DefineTagStorage, iMOAB_GetDoubleTagStorage, &
+      iMOAB_SetDoubleTagStorage
+   !
+   ! Arguments
+   type(component_type) , intent(inout) :: comp(:)
+   integer              , intent(in)    :: mbccid  ! comp side
+   integer              , intent(in)    :: mbcxid  ! coupler side
+   ! point cloud or FV type, to use vertices or cells for setting/getting the area tags and corrections
+   character(len=*)     , intent(in)    :: seq_flds_c2x_fluxes, seq_flds_c2x_fields
+   !
+   ! Local Variables
+   integer :: eci, num_inst
+   integer :: mpi_tag
+   character(*), parameter :: subname = '(component_init_areacor_moab)'
+   character(CXX)          :: tagname
+   integer                 :: tagtype, numco,  tagindex, lsize, i, j, arrsize, ierr, nfields
+   real (kind=r8) , allocatable :: areas (:,:), factors(:,:), vals(:,:) ! 2 tags values, area, aream, 
+   real (kind=r8)  :: rarea, raream, rmask, fact
+   integer     nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
+   type(mct_list) :: temp_list  ! used to count number of fields
+   !---------------------------------------------------------------
+
+   if (comp(1)%iamin_cplcompid) then
+      tagname='aream'//C_NULL_CHAR
+      ! bring on the comp side the aream from maps 
+      ! (it is either computed by mapping routine or read from mapping files)
+      call component_exch_moab(comp(1), mbcxid, mbccid, 1, tagname)
+
+      ! For only component pes
+      if (comp(1)%iamin_compid) then
+             ! Allocate and initialize area correction factors on component processes
+         ! get areas, first allocate memory  
+         lsize = comp(1)%mblsize
+         allocate(areas (lsize, 3)) ! lsize is along grid; read mask too
+         allocate(factors (lsize, 2))
+         ! get areas
+         tagname='area:aream:mask'//C_NULL_CHAR
+         arrsize = 3 * lsize
+         ierr = iMOAB_GetDoubleTagStorage ( mbccid, tagname, arrsize , comp(1)%mbGridType, areas )
+         if (ierr .ne. 0) then
+           call shr_sys_abort(subname//' cannot get areas  ')
+         endif
+         ! now compute the factors
+         do i=1,lsize
+            rmask = areas(i,3)
+
+            rarea  = areas(i, 1)
+            raream = areas(i, 2)
+            if ( abs(rmask) >= 1.0e-06) then
+               if (rarea * raream /= 0.0_R8) then
+                  factors(i,1) = rarea/raream
+                  factors(i,2)= 1.0_R8/factors(i,1) 
+               else
+                  write(logunit,*) trim(subname),' ERROR area,aream= ', &
+                        rarea,raream,' in ',i,lsize
+                  call shr_sys_flush(logunit)
+                  call shr_sys_abort()
+               endif
+            endif
+         enddo
+         ! set factors as tags
+         ! define the tags mdl2drv and drv2mdl on component sides, and compute them based on area and aream
+         tagname = 'mdl2drv:drv2mdl'//C_NULL_CHAR
+         tagtype = 1
+         numco = 1
+         ierr = iMOAB_DefineTagStorage(mbccid, tagname, tagtype, numco,  tagindex )
+         if (ierr .ne. 0) then
+           call shr_sys_abort(subname//' cannot define correction tags')
+         endif
+         arrsize = 2 * lsize
+         ierr = iMOAB_SetDoubleTagStorage( mbccid, tagname, arrsize , comp(1)%mbGridType, factors)
+         if (ierr .ne. 0) then
+           call shr_sys_abort(subname//' cannot set correction area factors  ')
+         endif
+
+          ! Area correct component initialization output fields
+          ! need to multiply fluxes (correct them) with mdl2drv (factors(i,1))
+          ! so get all fluxes (tags) multiply with factor(i,1), according to mask
+
+         call mct_list_init(temp_list, seq_flds_c2x_fluxes)
+         nfields=mct_list_nitem (temp_list)
+         call mct_list_clean(temp_list)
+            
+
+         allocate(vals(lsize, nfields))
+         tagname = trim(seq_flds_c2x_fluxes)//C_NULL_CHAR
+         arrsize = lsize * nfields
+         ierr = iMOAB_GetDoubleTagStorage( mbccid, tagname, arrsize , comp(1)%mbGridType, vals)
+         if (ierr .ne. 0) then
+           call shr_sys_abort(subname//' cannot get flux values  ')
+         endif
+         ! multiply them with the factors(i,1)
+         do i=1,lsize
+            rmask = areas(i,3)
+            if ( abs(rmask) >= 1.0e-06) then
+               fact = factors(i,1) ! mdl2drv tag
+               do j=1,nfields
+                  vals(i,j) = fact*vals(i,j)
+               enddo
+            endif
+         enddo
+         ierr = iMOAB_SetDoubleTagStorage( mbccid, tagname, arrsize , comp(1)%mbGridType, vals)
+         if (ierr .ne. 0) then
+            call shr_sys_abort(subname//' cannot set new flux values  ')
+         endif
+            
+         !    call mct_avect_vecmult(comp(eci)%c2x_cc, comp(eci)%mdl2drv, seq_flds_c2x_fluxes, mask_spval=.true.)
+         ! send to coupler corrected values
+
+         ! call seq_map_map(comp(eci)%mapper_cc2x, comp(eci)%c2x_cc, comp(eci)%c2x_cx, msgtag=mpi_tag)
+         deallocate(factors)
+         deallocate(areas)
+         deallocate(vals)
+
+      endif
+       ! send data to coupler exchange ? everything, not only fluxes ? 
+      call component_exch_moab(comp(1), mbccid, mbcxid, 0, seq_flds_c2x_fields)
+   endif
+
+  end subroutine component_init_areacor_moab
   !===============================================================================
 
   subroutine component_run(Eclock, comp, comp_run, infodata,  &
@@ -699,6 +871,7 @@ contains
        if (comp(1)%oneletterid == 'g') call seq_infodata_putData(infodata, glc_phase=phase)
        if (comp(1)%oneletterid == 'w') call seq_infodata_putData(infodata, wav_phase=phase)
        if (comp(1)%oneletterid == 'e') call seq_infodata_putData(infodata, esp_phase=phase)
+       if (comp(1)%oneletterid == 'z') call seq_infodata_putData(infodata, iac_phase=phase)
 #else
        call seq_infodata_putData(comp(1)%oneletterid, infodata, comp_phase=phase)
 #endif
@@ -724,6 +897,9 @@ contains
 
              if (comp_prognostic .and. firstloop .and. present(seq_flds_x2c_fluxes)) then
                 call mct_avect_vecmult(comp(eci)%x2c_cc, comp(eci)%drv2mdl, seq_flds_x2c_fluxes, mask_spval=.true.)
+#ifdef HAVE_MOAB
+               call factor_moab_comp(comp(eci), 'drv2mdl', seq_flds_x2c_fluxes)
+#endif
              end if
 
              call t_set_prefixf(comp(1)%oneletterid//":")
@@ -737,6 +913,9 @@ contains
 
              if ((phase == 1) .and. present(seq_flds_c2x_fluxes)) then
                 call mct_avect_vecmult(comp(eci)%c2x_cc, comp(eci)%mdl2drv, seq_flds_c2x_fluxes, mask_spval=.true.)
+#ifdef HAVE_MOAB
+               call factor_moab_comp(comp(eci), 'mdl2drv', seq_flds_c2x_fluxes)
+#endif
              endif
 
              if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
@@ -841,6 +1020,7 @@ contains
     ! Local Variables
     integer :: eci
     integer :: ierr
+    integer :: mpi_tag
     character(*), parameter :: subname = '(component_exch)'
     !---------------------------------------------------------------
 
@@ -865,11 +1045,19 @@ contains
           end if
 
           if (flow == 'x2c') then ! coupler to component
-             call seq_map_map(comp(eci)%mapper_Cx2c, comp(eci)%x2c_cx, comp(eci)%x2c_cc, &
-                  msgtag=comp(eci)%cplcompid*10000+eci*10+2)
+             if ( size(comp) > 1) then
+                mpi_tag = comp(eci)%cplcompid*100+eci*10+2
+             else
+                mpi_tag = comp(eci)%cplcompid*10000+eci*10+2
+             end if
+             call seq_map_map(comp(eci)%mapper_Cx2c, comp(eci)%x2c_cx, comp(eci)%x2c_cc, msgtag=mpi_tag)
           else if (flow == 'c2x') then ! component to coupler
-             call seq_map_map(comp(eci)%mapper_Cc2x, comp(eci)%c2x_cc, comp(eci)%c2x_cx, &
-                  msgtag=comp(eci)%cplcompid*10000+eci*10+4)
+             if ( size(comp) > 1) then
+                mpi_tag = comp(eci)%cplcompid*100+eci*10+4
+             else
+                mpi_tag = comp(eci)%cplcompid*10000+eci*10+4
+             end if
+             call seq_map_map(comp(eci)%mapper_Cc2x, comp(eci)%c2x_cc, comp(eci)%c2x_cx, msgtag=mpi_tag)
           end if
 
           if (present(timer_map_exch)) then
@@ -946,4 +1134,145 @@ contains
 
   end subroutine component_diag
 
+  ! can exchange data between mesh in component and mesh on coupler.  Either way.
+  ! used in first hop of 2-hop
+  subroutine component_exch_moab(comp, mbAPPid1, mbAppid2, direction, fields )
+
+   use iMOAB ,  only: iMOAB_SendElementTag, iMOAB_ReceiveElementTag, iMOAB_WriteMesh, iMOAB_FreeSenderBuffers
+   use seq_comm_mct, only :  num_moab_exports ! for debugging 
+   use ISO_C_BINDING, only : C_NULL_CHAR
+   use shr_kind_mod      , only :  CXX => shr_kind_CXX
+   !---------------------------------------------------------------
+    ! Description
+    ! send tags (fields) from component to coupler or from coupler to component
+
+    type(component_type)     , intent(in)           :: comp
+    ! direction 0 is from component to coupler; 1 is from coupler to component
+    integer,                   intent(in)           :: mbAPPid1, mbAppid2, direction
+    character(CXX)           , intent(in)           :: fields
+
+    character(*), parameter :: subname = '(component_exch_moab)'
+    integer :: id_join, source_id, target_id, ierr
+    integer :: mpicom_join
+    character(CXX)              :: tagname
+    character*100 outfile, wopts, lnum, dir
+
+  ! how to get mpicomm for joint comp + coupler
+    id_join = comp%cplcompid
+    call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
+!    
+    tagName = trim(fields)//C_NULL_CHAR
+
+    if (direction .eq. 0) then  
+       source_id = comp%compid
+       target_id = comp%cplcompid
+    else ! direction eq 1
+       source_id = comp%cplcompid
+       target_id = comp%compid
+    endif
+    ! for atm, add 200 to component side, because we will involve always the point cloud 
+    ! we are not supporting anymore the spectral case, at least for the time being 
+    ! we need to fix fv-cgll projection first 
+    if (comp%oneletterid == 'a' .and. direction .eq. 0 ) then
+       source_id = source_id + 200
+    endif
+    if (comp%oneletterid == 'a' .and. direction .eq. 1 ) then
+       target_id = target_id + 200
+    endif
+    if (mbAPPid1 .ge. 0) then !  send 
+
+       ! basically, use the initial partitioning
+       ierr = iMOAB_SendElementTag(mbAPPid1, tagName, mpicom_join, target_id)
+       if (ierr .ne. 0) then
+          call shr_sys_abort(subname//' cannot send element tag')
+       endif
+
+    endif
+    if ( mbAPPid2 .ge. 0 ) then !  we are on receiving end
+       ierr = iMOAB_ReceiveElementTag(mbAPPid2, tagName, mpicom_join, source_id)
+       if (ierr .ne. 0) then
+          call shr_sys_abort(subname//' cannot receive element tag')
+       endif
+    endif
+
+!     ! we can now free the sender buffers
+    if (mbAPPid1 .ge. 0) then
+       ierr = iMOAB_FreeSenderBuffers(mbAPPid1, target_id)
+       if (ierr .ne. 0) then
+          call shr_sys_abort(subname//' cannot free sender buffers')
+       endif
+    endif
+
+#ifdef MOABDEBUG
+    if (mbAPPid2 .ge. 0 ) then !  we are on receiving pes, for sure
+      ! number_proj = number_proj+1 ! count the number of projections
+      write(lnum,"(I0.2)") num_moab_exports
+      if (direction .eq. 0 ) then
+         dir = 'c2x'
+      else
+         dir = 'x2c'
+      endif
+      outfile = comp%ntype//'_'//trim(dir)//'_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+      wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+      ierr = iMOAB_WriteMesh(mbAPPid2, trim(outfile), trim(wopts))
+      if (ierr .ne. 0) then
+          call shr_sys_abort(subname//' cannot write file '// outfile)
+       endif
+    endif
+#endif
+
+  end subroutine component_exch_moab
+
+   subroutine factor_moab_comp(comp, type, seq_flds_fluxes)
+      use ISO_C_BINDING, only : C_NULL_CHAR
+      use shr_kind_mod      , only :  CXX => shr_kind_CXX
+      use iMOAB  , only:  iMOAB_GetDoubleTagStorage, iMOAB_SetDoubleTagStorage
+
+      type(component_type)     , intent(inout) :: comp
+      character(len=*)        , intent(in)               :: type
+      character(len=*)        , intent(in) :: seq_flds_fluxes
+
+      character(CXX)  :: tagname 
+      type(mct_list) :: temp_list  ! used to count number of fields
+      integer        :: nfields, arrsize, ierr, i, j
+      real (kind=r8) , allocatable ::  vals(:,:) ! tags values to be multiplied
+      real (kind=r8) , allocatable ::  factors(:)  
+      character(*), parameter :: subname = '(factor_moab_comp)'
+
+
+      call mct_list_init(temp_list, seq_flds_fluxes)
+      nfields=mct_list_nitem (temp_list)
+      call mct_list_clean(temp_list)
+
+      allocate(vals(comp%mblsize, nfields))
+      allocate(factors(comp%mblsize))
+      ! get factors
+      tagname = trim(type)//C_NULL_CHAR
+      arrsize = comp%mblsize
+      ierr = iMOAB_GetDoubleTagStorage( comp%mbApCCid, tagname, arrsize , comp%mbGridType, factors)
+      if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' cannot get factors ' //trim(type))
+      endif
+      ! get vals, multiply, then reset them again
+      tagname = trim(seq_flds_fluxes)//C_NULL_CHAR
+      arrsize = comp%mblsize * nfields
+      ierr = iMOAB_GetDoubleTagStorage( comp%mbApCCid, tagname, arrsize , comp%mbGridType, vals)
+      if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' cannot get fluxes  ' //trim(type))
+      endif
+      do i=1,comp%mblsize
+         do j=1,nfields
+            vals(i,j) = factors(i) * vals(i,j)
+         enddo
+      enddo
+
+      ierr = iMOAB_SetDoubleTagStorage( comp%mbApCCid, tagname, arrsize , comp%mbGridType, vals)
+      if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' cannot set fluxes back ' //trim(type))
+      endif
+
+      deallocate(vals)
+      deallocate(factors)
+
+   end subroutine factor_moab_comp
 end module component_mod

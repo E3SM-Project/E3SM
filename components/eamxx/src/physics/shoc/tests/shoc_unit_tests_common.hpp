@@ -119,6 +119,7 @@ struct UnitWrap {
     struct TestPblintdSurfTemp;
     struct TestPblintdCheckPblh;
     struct TestPblintd;
+    struct TestComputeShocTemp;
   };
 
 };

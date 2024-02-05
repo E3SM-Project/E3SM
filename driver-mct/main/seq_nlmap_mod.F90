@@ -118,7 +118,8 @@ module seq_nlmap_mod
   !
   !-----------------------------------------------------------------------------
   
-  use shr_kind_mod     , only: R8 => SHR_KIND_R8, IN => SHR_KIND_IN, I8 => SHR_KIND_I8
+  use shr_kind_mod     , only: R8 => SHR_KIND_R8, IN => SHR_KIND_IN, I8 => SHR_KIND_I8, &
+                               SHR_KIND_CS
   use shr_kind_mod     , only: CX => SHR_KIND_CX
   use shr_sys_mod
   use shr_const_mod
@@ -128,6 +129,7 @@ module seq_nlmap_mod
   use seq_map_type_mod
   use shr_reprosum_mod , only: shr_reprosum_calc
   use shr_infnan_mod   , only: shr_infnan_isnan, shr_infnan_isinf
+  use seq_infodata_mod , only: nlmaps_exclude_max_number, nlmaps_exclude_nchar
   use perf_mod
 
   implicit none
@@ -139,14 +141,37 @@ module seq_nlmap_mod
   public :: seq_nlmap_check_matrices
   public :: seq_nlmap_avNormArr
 
+  ! Measure and print information about nonlinearly mapped fields. 0 means no
+  ! analysis is done or printed. >= 1 triggers analysis written to cpl.log.
   integer :: nlmaps_verbosity
+  ! List of fields that are to be excluded from the set that are nonlinearly
+  ! mapped. For these excluded fields, the low-order linear map is used,
+  ! instead.
+  character(nlmaps_exclude_nchar) :: nlmaps_exclude_fields(nlmaps_exclude_max_number)
+  integer :: nlmaps_exclude_n_fields, nlmaps_exclude_max_nchar
 
 contains
 
-  subroutine seq_nlmap_setopts(nlmaps_verbosity_in)
+  subroutine seq_nlmap_setopts(nlmaps_verbosity_in, nlmaps_exclude_fields_in)
     integer, optional, intent(in) :: nlmaps_verbosity_in
+    character(nlmaps_exclude_nchar), optional, intent(in) :: nlmaps_exclude_fields_in(nlmaps_exclude_max_number)
+
+    integer :: i, n
 
     if (present(nlmaps_verbosity_in)) nlmaps_verbosity = nlmaps_verbosity_in
+
+    nlmaps_exclude_n_fields = 0
+    nlmaps_exclude_max_nchar = 0
+    if (present(nlmaps_exclude_fields_in)) then
+       do i = 1, nlmaps_exclude_max_number
+          n = len(trim(nlmaps_exclude_fields_in(i)))
+          if (n > 0) then
+             nlmaps_exclude_n_fields = nlmaps_exclude_n_fields + 1
+             nlmaps_exclude_fields(nlmaps_exclude_n_fields) = nlmaps_exclude_fields_in(i)
+             nlmaps_exclude_max_nchar = max(nlmaps_exclude_max_nchar, n)
+          end if
+       end do
+    end if
   end subroutine seq_nlmap_setopts
 
   subroutine seq_nlmap_check_matrices(m)
@@ -274,15 +299,19 @@ contains
     character(len=*),parameter :: ffld = 'norm8wt'
     character(len=*), parameter :: afldname  = 'aream'
     character(len=128) :: msg
-    logical :: amroot, verbose
+    logical :: amroot, verbose, found
     integer(IN) :: mpicom, ierr, k, natt, nsum, nfld, kArea, lidata(2), gidata(2), i, n
     real(r8) :: tmp, area, lo, hi, y
     real(r8), allocatable, dimension(:) :: lmins, gmins, lmaxs, gmaxs, glbl_masses, gwts
     real(r8), allocatable, dimension(:,:) :: dof_masses, caas_wgt, oglims, lcl_lo, lcl_hi
+    type(mct_string) :: mstring
+    character(CL) :: fldname
 
     ! BFB speedups to do:
     ! * Combine matvecs into one routine that shares the X->X' comm.
     ! * Combine the min/max reductions using a custom reduce.
+    ! * Cleaner handling of the excludes list would remove computation and
+    !   communication for vectors in the list.
 
     call t_startf('seq_nlmap_avNormArr')
 
@@ -443,8 +472,8 @@ contains
           end do
        end if
 
-       ! Adjust high-order solution and set avp_o. The adjustment consists of a
-       ! clip, if needed, and adding or removing mass up to the capacity.
+       ! Adjust high-order solution. The adjustment consists of a clip, if
+       ! needed, and adding or removing mass up to the capacity.
        do k = 1,natt
           if (gwts(k) > 0) then
              tmp = gwts(2*natt+k)
@@ -457,7 +486,7 @@ contains
                       hi = hi*avp_o%rAttr(natt+1,j)
                    end if
                    y = max(lo, min(hi, nl_avp_o%rAttr(k,j)))
-                   avp_o%rAttr(k,j) = y + ((hi - y)/tmp)*gwts(k)
+                   nl_avp_o%rAttr(k,j) = y + ((hi - y)/tmp)*gwts(k)
                 end do
              end if
           else if (gwts(k) < 0) then
@@ -471,21 +500,41 @@ contains
                       hi = hi*avp_o%rAttr(natt+1,j)
                    end if
                    y = max(lo, min(hi, nl_avp_o%rAttr(k,j)))
-                   avp_o%rAttr(k,j) = y + ((y - lo)/tmp)*gwts(k)
+                   nl_avp_o%rAttr(k,j) = y + ((y - lo)/tmp)*gwts(k)
                 end do
              end if
           end if
        end do
        deallocate(gwts, lcl_lo, lcl_hi)
-       call mct_aVect_clean(nl_avp_o)
 
        ! Clip for numerics, just against the global extrema.
        do j = 1,lsize_o
           do k = 1,natt
              if (avp_o%rAttr(k,j) == 0) cycle ! 0-mask
-             avp_o%rAttr(k,j) = max(gmins(k), min(gmaxs(k), avp_o%rAttr(k,j)))
+             nl_avp_o%rAttr(k,j) = max(gmins(k), min(gmaxs(k), nl_avp_o%rAttr(k,j)))
           end do
        end do
+
+       ! Set avp_o.
+       do k = 1,natt
+          call mct_aVect_getRList(mstring, k, avp_i)
+          fldname = mct_string_toChar(mstring)
+          call mct_string_clean(mstring)
+          found = .false.
+          do j = 1, nlmaps_exclude_n_fields
+             if ( trim(fldname                 (1:nlmaps_exclude_max_nchar)) == &
+                  trim(nlmaps_exclude_fields(j)(1:nlmaps_exclude_max_nchar))) then
+                found = .true.
+                exit
+             end if
+          end do
+          if (found) cycle
+          do j = 1,lsize_o
+             avp_o%rAttr(k,j) = nl_avp_o%rAttr(k,j)
+          end do
+       end do
+
+       call mct_aVect_clean(nl_avp_o)
 
        if (verbose) then
           ! Final diagnostics.

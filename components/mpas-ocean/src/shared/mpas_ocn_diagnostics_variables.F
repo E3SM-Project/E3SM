@@ -201,6 +201,9 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:), pointer :: SIvec_w0,SIvec_w1 ,SIvec_wh0,SIvec_wh1,SIvec_y0
    real (kind=RKIND), dimension(:), pointer :: SIvec_z0,SIvec_z1 ,SIvec_zh0,SIvec_zh1
 
+   ! Split-explicit AB2 Array Pointers
+   real (kind=RKIND), dimension(:,:), pointer :: normalVelocityTendOld, CoriolisTermOld
+
    !--------------------------------------------------------------------
    !
    ! Public member functions
@@ -670,6 +673,11 @@ contains
          call mpas_pool_get_array(diagnosticsPool, 'SIvec_zh1', SIvec_zh1)
       end if
 
+      if (trim(config_time_integrator) == 'split_explicit_ab2') then
+         call mpas_pool_get_array(diagnosticsPool, 'normalVelocityTendOld', normalVelocityTendOld)
+         call mpas_pool_get_array(diagnosticsPool, 'CoriolisTermOld', CoriolisTermOld)
+      end if
+
       ! Copy diagnostic variables to accelerator
       if ( trim(config_land_ice_flux_mode) /= 'off' ) then
          !$acc enter data create(                                 &
@@ -854,6 +862,10 @@ contains
          !$acc                   SIvec_zh1,             &
          !$acc                   barotropicCoriolisTerm &
          !$acc                   )
+      end if
+      if ( trim(config_time_integrator) == 'split_explicit_ab2' ) then
+         !$acc enter data create(normalVelocityTendOld, &
+         !$acc                   CoriolisTermOld)
       end if
 
       !$acc enter data create(                                         &
@@ -1097,6 +1109,10 @@ contains
          !$acc                   SIvec_zh1,             &
          !$acc                   barotropicCoriolisTerm &
          !$acc                   )
+      end if
+      if ( trim(config_time_integrator) == 'split_explicit_ab2' ) then
+         !$acc exit data delete(normalVelocityTendOld, &
+         !$acc                  CoriolisTermOld)
       end if
 
       !$acc exit data delete(                                          &

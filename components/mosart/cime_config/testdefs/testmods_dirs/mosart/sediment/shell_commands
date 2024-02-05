@@ -6,9 +6,9 @@ input_data_dir=`./xmlquery DIN_LOC_ROOT --value`
 ./xmlchange DLND_MODE=CLMNLDAS
 ./xmlchange DLND_CPLHIST_CASE=NLDAS
 
-./xmlchange -file env_run.xml -id DLND_CPLHIST_YR_END -val 1979
-./xmlchange -file env_run.xml -id DLND_CPLHIST_YR_START -val 1979
-./xmlchange -file env_run.xml -id DLND_CPLHIST_YR_ALIGN -val 1
+./xmlchange DLND_CPLHIST_YR_END=1979
+./xmlchange DLND_CPLHIST_YR_START=1979
+./xmlchange DLND_CPLHIST_YR_ALIGN=1
 
 cat >> user_dlnd.streams.txt.clm.nldas << EOF
 <?xml version="1.0"?>

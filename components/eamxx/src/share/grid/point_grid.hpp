@@ -32,6 +32,12 @@ public:
              const int num_vertical_levels,
              const ekat::Comm& comm);
 
+  PointGrid (const std::string& grid_name,
+             const int num_my_cols,
+             const int num_global_cols,
+             const int num_vertical_levels,
+             const ekat::Comm& comm);
+
 
   virtual ~PointGrid () = default;
 

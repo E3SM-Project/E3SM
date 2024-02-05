@@ -24,7 +24,7 @@
 <config_dt ice_grid="WCAtl12to45E2r4">1800.0</config_dt>
 <config_dt ice_grid="SOwISC12to60E2r4">1800.0</config_dt>
 <config_dt ice_grid="ECwISC30to60E2r1">1800.0</config_dt>
-<config_dt ice_grid="ECwISC30to60E3r2">1800.0</config_dt>
+<config_dt ice_grid="IcoswISC30E3r5">1800.0</config_dt>
 <config_calendar_type>'noleap'</config_calendar_type>
 <config_start_time>'2000-01-01_00:00:00'</config_start_time>
 <config_stop_time>'none'</config_stop_time>
@@ -76,7 +76,7 @@
 <config_initial_latitude_north ice_grid="SOwISC12to60E2r4">85.0</config_initial_latitude_north>
 <config_initial_latitude_north ice_grid="ECwISC30to60E2r1">75.0</config_initial_latitude_north>
 <!-- To do: 70.0 for WC but 75.0 for Cryo -->
-<config_initial_latitude_north ice_grid="ECwISC30to60E3r2">70.0</config_initial_latitude_north>
+<config_initial_latitude_north ice_grid="IcoswISC30E3r5">70.0</config_initial_latitude_north>
 <config_initial_latitude_north ice_grid="ARRM10to60E2r1">75.0</config_initial_latitude_north>
 <config_initial_latitude_north ice_grid="oRRS30to10v3wLI">85.0</config_initial_latitude_north>
 <config_initial_latitude_north ice_grid="oRRS18to6v3">85.0</config_initial_latitude_north>
@@ -86,7 +86,7 @@
 <config_initial_latitude_south ice_grid="SOwISC12to60E2r4">-85.0</config_initial_latitude_south>
 <config_initial_latitude_south ice_grid="ECwISC30to60E2r1">-75.0</config_initial_latitude_south>
 <!-- To do: -60.0 for WC but -75.0 for Cryo -->
-<config_initial_latitude_south ice_grid="ECwISC30to60E3r2">-60.0</config_initial_latitude_south>
+<config_initial_latitude_south ice_grid="IcoswISC30E3r5">-60.0</config_initial_latitude_south>
 <config_initial_latitude_south ice_grid="ARRM10to60E2r1">-85.0</config_initial_latitude_south>
 <config_initial_latitude_south ice_grid="oRRS30to10v3wLI">-85.0</config_initial_latitude_south>
 <config_initial_latitude_south ice_grid="oRRS18to6v3">-85.0</config_initial_latitude_south>
@@ -147,7 +147,7 @@
 <config_dynamics_subcycle_number ice_grid="WCAtl12to45E2r4">1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="SOwISC12to60E2r4">1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="ECwISC30to60E2r1">1</config_dynamics_subcycle_number>
-<config_dynamics_subcycle_number ice_grid="ECwISC30to60E3r2">1</config_dynamics_subcycle_number>
+<config_dynamics_subcycle_number ice_grid="IcoswISC30E3r5">1</config_dynamics_subcycle_number>
 <config_rotate_cartesian_grid>true</config_rotate_cartesian_grid>
 <config_include_metric_terms>true</config_include_metric_terms>
 <config_elastic_subcycle_number>120</config_elastic_subcycle_number>
@@ -186,8 +186,8 @@
 <config_use_column_snow_tracers>true</config_use_column_snow_tracers>
 
 <!-- column_tracers -->
-<config_use_ice_age>true</config_use_ice_age>
-<config_use_first_year_ice>true</config_use_first_year_ice>
+<config_use_ice_age>false</config_use_ice_age>
+<config_use_first_year_ice>false</config_use_first_year_ice>
 <config_use_level_ice>true</config_use_level_ice>
 <config_use_cesm_meltponds>false</config_use_cesm_meltponds>
 <config_use_level_meltponds>true</config_use_level_meltponds>
@@ -426,7 +426,6 @@
 <config_ocean_heat_transfer_type>'constant'</config_ocean_heat_transfer_type>
 <config_sea_freezing_temperature_type>'mushy'</config_sea_freezing_temperature_type>
 <config_ocean_surface_type>'free'</config_ocean_surface_type>
-<config_couple_biogeochemistry_fields>false</config_couple_biogeochemistry_fields>
 <config_use_data_icebergs>false</config_use_data_icebergs>
 <config_salt_flux_coupling_type>'constant'</config_salt_flux_coupling_type>
 <config_ice_ocean_drag_coefficient>0.00536</config_ice_ocean_drag_coefficient>

@@ -33,6 +33,12 @@ function(build_eamxx)
     else()
       include(${SCREAM_MACH_FILE_ROOT}/${MACH}.cmake)
     endif()
+
+    # The machine files may enable kokkos stuff we don't want
+    if (NOT compile_threaded)
+      set(Kokkos_ENABLE_OPENMP FALSE)
+    endif()
+
     add_subdirectory("eamxx")
   endif()
 

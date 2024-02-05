@@ -248,7 +248,8 @@ ifeq ($(UNAMES),Linux)
   endif
   CPPDEF += -DLINUX -DFORTRANUNDERSCORE
   CFLAGS := $(CPPDEF)
-  LDFLAGS := $(shell \$(LIB_NETCDF)/../../../bin/nf-config --flibs)
+#  LDFLAGS := $(shell \$(LIB_NETCDF)/../../../bin/nf-config --flibs)
+  LDFLAGS := $(shell nf-config --flibs)
   FFLAGS =
 
   ifeq ($(FCTYP),pgf90)

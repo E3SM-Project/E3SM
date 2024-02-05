@@ -81,7 +81,7 @@ namespace simple_netcdf {
                 std::vector<int> dimSizes(ndims);
                 size_t dimsize;
                 for (int i = 0; i < ndims; i++) {
-                    handle_error(nc_inq_dimlen(ncid, dimids[i], &dimsize), __FILE__, __LINE__); 
+                    handle_error(nc_inq_dimlen(ncid, dimids[i], &dimsize), __FILE__, __LINE__);
                     dimSizes[i] = dimsize;
                 }
 
@@ -95,7 +95,7 @@ namespace simple_netcdf {
 
                 // Read variable data
                 if (myMem == memDevice) {
-                    auto arrHost = arr.createHostCopy();
+                    auto arrHost = arr.createHostObject();
                     if (std::is_same<T,bool>::value) {
                         // Create boolean array from integer arrays
                         Array<int,rank,memHost,myStyle> tmp("tmp",dimSizes);
@@ -222,7 +222,7 @@ namespace simple_netcdf {
                 handle_error(nc_put_var(ncid, varid, arr), __FILE__, __LINE__);
             }
 
-            template <class T, int rank, int myMem, int myStyle> 
+            template <class T, int rank, int myMem, int myStyle>
             void write(Array<T,rank,myMem,myStyle> const &arr, std::string varName, std::vector<std::string> dimNames) {
 
                 // Make sure length of dimension names is equal to rank of array

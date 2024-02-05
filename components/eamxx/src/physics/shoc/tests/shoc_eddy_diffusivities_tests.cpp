@@ -38,13 +38,13 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff {
     //  be loaded up with a different test.
 
     // FIRST TEST
-    // Boundary layer regime test.  Input that have identical values
-    //  except for the Monin Obukhov length, in this case will be positive
-    //  and negative.  Test to make sure that the resulting diffusivites
-    //  are DIFFERENT
+    // Boundary layer regime test.  Input surface temperature with a value that is clearly
+    //  "running away" (i.e. a very low value).  This test verifies that the diffusivities
+    //  returned are different given that all other conditions are the same.  This is to very
+    //  that SHOC can repair a runaway surface temperature.
 
-    // Monin Obukov length [m]
-    static constexpr Real obklen_reg[shcol] = {-1, 1};
+    // Surface temperature [K]
+    static constexpr Real tabs[shcol] = {100, 250};
     // PBL depth [m]
     static constexpr Real pblh = 1000;
     // zt_grid [m]
@@ -69,7 +69,7 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff {
     for(Int s = 0; s < shcol; ++s) {
       // Column only input
       SDS.pblh[s] = pblh;
-      SDS.obklen[s] = obklen_reg[s];
+      SDS.tabs[s] = tabs[s];
       for(Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
 
@@ -112,13 +112,13 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff {
     }
 
     // SECOND TEST
-    // Stable boundary layer test.  Given Obukhov length,
+    // Runaway stable boundary layer test.  Given Obukhov length,
     //   verify that each regime behaves as expected when the relevant
     //   inputs are modified.  Column with larger mixing length and
     //   shear term should produce larger diffusivity values.
 
-    // Monin Obukov length [m]
-    static constexpr Real obklen_stab[shcol] = {1, 1};
+    // Surface temperature [K]
+    static constexpr Real tabs_stab[shcol] = {100, 100};
     // SHOC Mixing length [m]
     static constexpr Real shoc_mix_stab[shcol] = {100, 150};
     // Shear term [s-2]
@@ -139,7 +139,7 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff {
     // Fill in test data on zt_grid.
     for(Int s = 0; s < shcol; ++s) {
       // Column only input
-      SDS.obklen[s] = obklen_stab[s];
+      SDS.tabs[s] = tabs_stab[s];
       for(Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
 
@@ -152,8 +152,8 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff {
 
     // Check that the inputs make sense
     for(Int s = 0; s < shcol; ++s) {
-      // Make sure we are testing stable boundary layer
-      REQUIRE(SDS.obklen[s] > 0);
+      // Make sure we are testing a runaway stable boundary layer
+      REQUIRE(SDS.tabs[s] < 180);
       for (Int n = 0; n < nlev; ++n){
         const auto offset = n + s * nlev;
         // Should be greater than zero
@@ -183,12 +183,12 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff {
     }
 
     // THIRD TEST
-    // Unstable boundary layer test.  Given Obukhov length,
+    // Default boundary layer test.
     //   verify that each regime behaves as expected when the relevant
-    //   inputs are modified.
+    //   inputs are modified for the default definitions of diffusivities.
 
-    // Monin Obukov length [m]
-    static constexpr Real obklen_ustab[shcol] = {-1, -1};
+    // Surface temperature [K]
+    static constexpr Real tabs_ustab[shcol] = {300, 300};
     // SHOC Mixing length [m]
     static constexpr Real shoc_mix_ustab = 500;
     // Shear term [s-2]
@@ -209,7 +209,7 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff {
     // Fill in test data on zt_grid.
     for(Int s = 0; s < shcol; ++s) {
       // Column only input
-      SDS.obklen[s] = obklen_ustab[s];
+      SDS.tabs[s] = tabs_ustab[s];
       for(Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
 
@@ -222,8 +222,8 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff {
 
     // Check that the inputs make sense
     for(Int s = 0; s < shcol; ++s) {
-      // Make sure we are testing unstable boundary layer
-      REQUIRE(SDS.obklen[s] < 0);
+      // Make sure we are testing default boundary layer diffusivities
+      REQUIRE(SDS.tabs[s] > 220);
       for (Int n = 0; n < nlev; ++n){
         const auto offset = n + s * nlev;
         // Should be greater than zero
@@ -252,6 +252,7 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff {
       }
     }
   }
+
 
   static void run_bfb()
   {
@@ -290,7 +291,7 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff {
     // Get data from cxx
     for (auto& d : cxx_data) {
       d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-      eddy_diffusivities_f(d.nlev, d.shcol, d.obklen, d.pblh, d.zt_grid, d.shoc_mix, d.sterm_zt, d.isotropy, d.tke, d.tkh, d.tk);
+      eddy_diffusivities_f(d.nlev, d.shcol, d.pblh, d.zt_grid, d.tabs, d.shoc_mix, d.sterm_zt, d.isotropy, d.tke, d.tkh, d.tk);
       d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
     }
 

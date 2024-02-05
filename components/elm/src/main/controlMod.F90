@@ -40,7 +40,8 @@ module controlMod
   use UrbanParamsType         , only: urban_hac, urban_traffic
   use FrictionVelocityMod     , only: implicit_stress, atm_gustiness, force_land_gustiness
   use elm_varcon              , only: h2osno_max
-  use elm_varctl              , only: use_dynroot
+  use elm_varctl              , only: use_dynroot, use_fan, fan_mode, fan_to_bgc_veg
+  use FanMod                  , only: nh4_ads_coef
   use AllocationMod         , only: nu_com_phosphatase,nu_com_nfix
   use elm_varctl              , only: nu_com, use_var_soil_thick
   use elm_varctl              , only: use_lake_wat_storage
@@ -324,6 +325,9 @@ contains
     namelist /elm_inparm/ & 
          use_modified_infil
 
+    namelist /elm_inparm/ &
+         use_fan, fan_mode, fan_to_bgc_veg, nh4_ads_coef
+
     ! ----------------------------------------------------------------------
     ! Default values
     ! ----------------------------------------------------------------------
@@ -491,6 +495,17 @@ contains
             errMsg(__FILE__, __LINE__))
        end if
 
+       if (.not. use_fan) then
+          if (fan_mode /= 'none') then
+             call endrun(msg=' ERROR: fan mode requires FAN model active.'//&
+               errMsg(__FILE__, __LINE__))
+          end if
+          if (fan_to_bgc_veg) then
+             call endrun(msg=' ERROR: fan_to_bgc_veg requires FAN model active.'//&
+               errMsg(__FILE__, __LINE__))
+          end if
+       end if
+
        if (use_lch4 .and. use_vertsoilc) then 
           anoxia = .true.
        else
@@ -651,6 +666,17 @@ contains
        endif
     endif
 
+    ! Fan settings
+    if (fan_mode /= 'none'           .and. &
+        fan_mode /= 'fan_offline'    .and. &
+        fan_mode /= 'fan_soil'       .and. &
+        fan_mode /= 'fan_atm'        .and. &
+        fan_mode /= 'fan_full' ) then
+       write(iulog,*)'fan_mode = ',trim(fan_mode), ' is not supported'
+       call endrun(msg=' ERROR:: choices are none fan_offline, fan_soil, fan_atm, or fan_full ' // &
+            errMsg(__FILE__, __LINE__))
+    endif
+
     if (masterproc) then
        write(iulog,*) 'Successfully initialized run control settings'
        write(iulog,*)
@@ -704,6 +730,10 @@ contains
     call mpi_bcast (use_vancouver, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_mexicocity, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_noio, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (use_fan, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (fan_mode, len(fan_mode), MPI_CHARACTER, 0, mpicom, ier)
+    call mpi_bcast (fan_to_bgc_veg, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (nh4_ads_coef, 1, MPI_REAL8, 0, mpicom, ier)
 
     ! initial file variables
     call mpi_bcast (nrevsn, len(nrevsn), MPI_CHARACTER, 0, mpicom, ier)
@@ -1214,6 +1244,15 @@ contains
     
     write(iulog,*) '    use_modified_infil = ', use_modified_infil
     
+
+   ! FAN
+    write(iulog,*) '    use_fan                = ', use_fan
+    if (use_fan) then
+       write(iulog,*) ' fan_mode = ', fan_mode
+       write(iulog,*) ' nh4_ads_coef = ', nh4_ads_coef
+       write(iulog,*) ' fan_to_bgc_veg = ', fan_to_bgc_veg
+    end if
+
   end subroutine control_print
 
 end module controlMod

@@ -616,8 +616,12 @@ contains
 
 
           ! Now interpolate from vertices to cell centers
-          call li_interpolate_vertex_to_cell_2d(meshPool, dissipationVertexField % array, heatDissipation)
-          heatDissipation = heatDissipation / (config_ice_density * cp_ice)
+          if (albanyVelocityError == 0) then
+             ! the dissipationVertexField can have garbage if the solver didn't converge,
+             ! so keep previous timestep's field if nonconvergence
+             call li_interpolate_vertex_to_cell_2d(meshPool, dissipationVertexField % array, heatDissipation)
+             heatDissipation = heatDissipation / (config_ice_density * cp_ice)
+          endif
           call mpas_deallocate_scratch_field(dissipationVertexField, .true.)
 
           call li_interpolate_vertex_to_cell_1d(meshPool, drivingStressVert, drivingStress)

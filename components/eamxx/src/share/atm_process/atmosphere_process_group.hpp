@@ -59,6 +59,13 @@ public:
     return m_atm_processes.at(i);
   }
 
+  // Returns atmosphere process if contained in this group, error out if not
+  std::shared_ptr<atm_proc_type> get_process_nonconst (const std::string& name) const;
+
+  // returns true if this group contains the process (either directly or within
+  // a nested group), false if not
+  bool has_process(const std::string& name) const;
+
   ScheduleType get_schedule_type () const { return m_group_schedule_type; }
 
   // Computes total number of bytes needed for local variables
@@ -94,6 +101,9 @@ public:
   // If checks fail, we print all input and output fields of that process
   // (that are on the same grid) at the location of the fail.
   void add_postcondition_nan_checks () const;
+
+  // Add additional data fields to all property checks in the group
+  void add_additional_data_fields_to_property_checks (const Field& data_field);
 
 protected:
 

@@ -9,9 +9,10 @@ module lnd2atmMod
   use shr_log_mod            , only : errMsg => shr_log_errMsg
   use abortutils             , only : endrun
   use shr_megan_mod        , only : shr_megan_mechcomps_n
+  use shr_fan_mod          , only : shr_fan_to_atm
   use elm_varpar           , only : numrad, ndst, nlevgrnd, nlevsno, nlevsoi !ndst = number of dust bins.
   use elm_varcon           , only : rair, grav, cpair, hfus, tfrz, spval
-  use elm_varctl           , only : iulog, use_c13, use_cn, use_lch4, use_voc, use_fates, use_atm_downscaling_to_topunit
+  use elm_varctl           , only : iulog, use_c13, use_cn, use_lch4, use_voc, use_fates, use_atm_downscaling_to_topunit, use_fan
   use elm_varctl           , only : use_lnd_rof_two_way
   use tracer_varcon        , only : is_active_betr_bgc
   use seq_drydep_mod   , only : n_drydep, drydep_method, DD_XLND
@@ -30,7 +31,7 @@ module lnd2atmMod
   use GridcellType         , only : grc_pp
   use TopounitDataType     , only : top_es, top_af                 ! To calculate t_rad at topounit level needed in downscaling
   use GridcellDataType     , only : grc_ef, grc_ws, grc_wf
-  use ColumnDataType       , only : col_ws, col_wf, col_cf, col_es
+  use ColumnDataType       , only : col_ws, col_wf, col_cf, col_es, col_nf
   use VegetationDataType   , only : veg_es, veg_ef, veg_ws, veg_wf
   use SoilHydrologyType    , only : soilhydrology_type 
   use SedFluxType          , only : sedflux_type
@@ -235,7 +236,8 @@ contains
       coszen_col       => surfalb_vars%coszen_col , &
       coszen_str       => lnd2atm_vars%coszen_str , &
       qflx_h2orof_drain     => col_wf%qflx_h2orof_drain , &
-      qflx_h2orof_drain_grc => lnd2atm_vars%qflx_h2orof_drain_grc &
+      qflx_h2orof_drain_grc => lnd2atm_vars%qflx_h2orof_drain_grc, &
+      nh3_total        => col_nf%nh3_total &
       )
     !----------------------------------------------------
     ! lnd -> atm
@@ -364,6 +366,14 @@ contains
             ch4_surf_flux_tot_col(bounds%begc:bounds%endc) , &
             flux_ch4_grc         (bounds%begg:bounds%endg) , &
             c2l_scale_type= unity, l2g_scale_type=unity )
+    end if
+
+    ! nh3 flux
+    if (shr_fan_to_atm) then
+       call c2g(bounds,     &
+            nh3_total (bounds%begc:bounds%endc), &
+            lnd2atm_vars%flux_nh3_grc  (bounds%begg:bounds%endg), &
+            c2l_scale_type= unity, l2g_scale_type=unity)
     end if
 
     !----------------------------------------------------

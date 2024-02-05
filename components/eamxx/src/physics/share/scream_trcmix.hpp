@@ -16,8 +16,10 @@ using trcmix_view1d = typename ekat::KokkosTypes<DefaultDevice>::template view_1
 template<typename Scalar>
 using trcmix_view2d = typename ekat::KokkosTypes<DefaultDevice>::template view_2d<Scalar>;
 
+// NOTE: nlevs be smaller than pmid/q extent, in case one/both of them are padded
 void trcmix(
   const std::string& name,      // constituent name
+  const int nlevs,              // number of physical levels
   trcmix_view1d<const Real> const& clat,  // latitude for columns in degrees
   trcmix_view2d<const Real> const& pmid,  // model pressures
   trcmix_view2d<Real>            & q,     // constituent mass mixing ratio (output)
