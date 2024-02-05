@@ -1930,10 +1930,11 @@ module li_subglacial_hydro
             iEdge = edgesOnCell(iEdgeOnCell, iCell)
             ! add on advective & diffusive fluxes
             divergenceChannel(iCell) = divergenceChannel(iCell) - channelDischarge(iEdge) * edgeSignOnCell(iEdgeOnCell, iCell)
-            channelAreaChangeCell(iCell) = channelChangeRate(iEdge) * dcEdge(iEdge) * 0.5_RKIND
+            channelAreaChangeCell(iCell) = channelChangeRate(iEdge) * dcEdge(iEdge) * 0.5_RKIND + channelAreaChangeCell(iCell)
                ! < only half of channel is in this cell
-            channelMeltInputCell(iCell) = 0.5_RKIND * (channelMelt(iEdge) - channelPressureFreeze(iEdge)) * dcEdge(iEdge) / rho_water
+            channelMeltInputCell(iCell) = 0.5_RKIND * (channelMelt(iEdge) - channelPressureFreeze(iEdge)) * dcEdge(iEdge) / rho_water + channelMeltInputCell(iCell)
          end do ! edges
+
       end do ! cells
       divergenceChannel(1:nCellsSolve) = divergenceChannel(1:nCellsSolve) / areaCell(1:nCellsSolve)
       channelAreaChangeCell(1:nCellsSolve) = channelAreaChangeCell(1:nCellsSolve) / areaCell(1:nCellsSolve)
