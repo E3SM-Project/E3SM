@@ -65,7 +65,6 @@ private:
   const_view_2d liqcldf_;
   const_view_2d kvh_;  
 
-  const_view_2d zm_;
   const_view_3d state_q_;
   const_view_2d ncldwtr_;
 

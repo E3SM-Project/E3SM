@@ -11,29 +11,33 @@ namespace
 KOKKOS_INLINE_FUNCTION
 void copy_scream_array_to_mam4xx(
     const haero::ThreadTeam &team,
-    MAMAci::view_2d mam4xx_view[], 
+    const MAMAci::view_2d mam4xx_view, 
     MAMAci::const_view_3d scream_view,
     const int icol,
     const int nlev,
-    const int num_views) 
+    const int view_num) 
 {
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team, 0u, nlev), KOKKOS_LAMBDA(int kk) { 
-    for (int i=0; i<num_views; ++i) {
-      mam4xx_view[i](icol,kk) = scream_view(icol, kk, i);
-    }
+      mam4xx_view(icol,kk) = scream_view(icol, kk, view_num);
   });
 }
 
 void copy_scream_array_to_mam4xx(
     haero::ThreadTeamPolicy team_policy,
-    MAMAci::view_2d mam4xx_view[], 
+    MAMAci::view_2d mam4xx_views[mam4::ndrop::ncnst_tot], 
     MAMAci::const_view_3d scream_view,
-    const int nlev,
-    const int num_views) 
+    const int nlev) 
 {
+  // Localize the input arrays.
+  MAMAci::view_2d mam4xx[mam4::ndrop::ncnst_tot];
+  for (int view_num=0; view_num<mam4::ndrop::ncnst_tot; ++view_num) 
+    mam4xx[view_num] = mam4xx_views[view_num];
   Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
     const int icol = team.league_rank();
-    copy_scream_array_to_mam4xx(team, mam4xx_view, scream_view, icol, nlev, num_views);
+    for (int view_num=0; view_num<mam4::ndrop::ncnst_tot; ++view_num) {
+      MAMAci::view_2d mam4xx_view = mam4xx[view_num];
+      copy_scream_array_to_mam4xx(team, mam4xx_view, scream_view, icol, nlev, view_num);
+    }
   });
 }
 
@@ -286,7 +290,7 @@ void compute_nucleate_ice_tendencies(
       ekat::subview(T_mid, icol),
       ekat::subview(p_mid, icol),
       ekat::subview(qv_dry, icol),
-      dummy, dummy, dummy, dummy, dummy, dummy,
+      dummy, dummy, dummy, dummy, dummy, dummy, dummy,
       ekat::subview(cldfrac, icol),
       ekat::subview(w_updraft, icol), pblh);
     // set surface state data
@@ -412,7 +416,6 @@ void call_function_dropmixnuc(
   MAMAci::const_view_2d p_int,
   MAMAci::const_view_2d pdel,
   MAMAci::view_2d rpdel,
-  MAMAci::const_view_2d zm,
   MAMAci::const_view_3d state_q,
   MAMAci::const_view_2d ncldwtr,
   MAMAci::const_view_2d kvh,
@@ -434,6 +437,46 @@ void call_function_dropmixnuc(
 {
   MAMAci::const_view_2d T_mid = dry_atmosphere.T_mid;
   MAMAci::const_view_2d p_mid = dry_atmosphere.p_mid;
+  MAMAci::const_view_2d zm = dry_atmosphere.z_mid;
+
+  MAMAci::view_2d eddy_diff = dropmixnuc_scratch_mem[0];
+  MAMAci::view_2d zn = dropmixnuc_scratch_mem[1];
+  MAMAci::view_2d csbot = dropmixnuc_scratch_mem[2];
+  MAMAci::view_2d zs = dropmixnuc_scratch_mem[3];
+  MAMAci::view_2d overlapp = dropmixnuc_scratch_mem[4];
+  MAMAci::view_2d overlapm = dropmixnuc_scratch_mem[5];
+  MAMAci::view_2d eddy_diff_kp = dropmixnuc_scratch_mem[6];
+  MAMAci::view_2d eddy_diff_km = dropmixnuc_scratch_mem[7];
+  MAMAci::view_2d qncld = dropmixnuc_scratch_mem[8];
+  MAMAci::view_2d srcn = dropmixnuc_scratch_mem[9];
+  MAMAci::view_2d source = dropmixnuc_scratch_mem[10];
+  MAMAci::view_2d dz = dropmixnuc_scratch_mem[11];
+  MAMAci::view_2d csbot_cscen = dropmixnuc_scratch_mem[12];
+  MAMAci::view_2d raertend = dropmixnuc_scratch_mem[13];
+  MAMAci::view_2d qqcwtend = dropmixnuc_scratch_mem[14];
+
+  MAMAci::view_2d loc_raercol_cw[mam4::ndrop::pver][2];
+  MAMAci::view_2d loc_raercol[mam4::ndrop::pver][2];
+  MAMAci::view_2d loc_qqcw[mam4::ndrop::ncnst_tot];
+  MAMAci::view_2d loc_ptend_q[mam4::ndrop::nvar_ptend_q];
+  MAMAci::view_2d loc_coltend[mam4::ndrop::ncnst_tot];
+  MAMAci::view_2d loc_coltend_cw[mam4::ndrop::ncnst_tot];
+
+  for (int i=0; i<mam4::ndrop::pver; ++i)
+    for (int j=0; j<2; ++j)
+      loc_raercol_cw[i][j] = raercol_cw[i][j];
+  for (int i=0; i<mam4::ndrop::pver; ++i)
+    for (int j=0; j<2; ++j)
+      loc_raercol[i][j] = raercol[i][j];
+  for (int i=0; i<mam4::ndrop::ncnst_tot; ++i)
+    loc_qqcw[i] = qqcw[i]; 
+  for (int i=0; i<mam4::ndrop::nvar_ptend_q; ++i)
+    loc_ptend_q[i] = ptend_q[i];
+  for (int i=0; i<mam4::ndrop::ncnst_tot; ++i)
+    loc_coltend[i] = coltend[i]; 
+  for (int i=0; i<mam4::ndrop::ncnst_tot; ++i)
+    loc_coltend_cw[i] = coltend_cw[i];
+
 
   Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
     const int icol = team.league_rank();    
@@ -455,7 +498,6 @@ void call_function_dropmixnuc(
         num2vol_ratio_min_nmodes[ntot_amode] = {},
         num2vol_ratio_max_nmodes[ntot_amode] = {};
     Real aten = 0;
-
     mam4::ndrop::get_e3sm_parameters(
         nspec_amode, lspectype_amode, lmassptr_amode, numptr_amode,
         specdens_amode, spechygro, mam_idx, mam_cnst_idx);
@@ -467,41 +509,26 @@ void call_function_dropmixnuc(
     mam4::ndrop::View1D raercol_view[mam4::ndrop::pver][2];
     for (int i=0; i<mam4::ndrop::pver; ++i) {
       for (int j=0; j<2; ++j) {
-        raercol_cw_view[i][j] = ekat::subview(raercol_cw[i][j], icol);
-        raercol_view[i][j] = ekat::subview(raercol[i][j], icol);
+        raercol_cw_view[i][j] = ekat::subview(loc_raercol_cw[i][j], icol);
+        raercol_view[i][j] = ekat::subview(loc_raercol[i][j], icol);
       }
     }
     mam4::ColumnView qqcw_view[mam4::ndrop::ncnst_tot];
     for (int i=0; i<mam4::ndrop::ncnst_tot; ++i) {
-      qqcw_view[i] = ekat::subview(qqcw[i], icol);
+      qqcw_view[i] = ekat::subview(loc_qqcw[i], icol);
     }
     mam4::ColumnView ptend_q_view[mam4::ndrop::nvar_ptend_q];
     for (int i=0; i<mam4::ndrop::nvar_ptend_q; ++i) {
-      ptend_q_view[i] = ekat::subview(ptend_q[i], icol);
+      ptend_q_view[i] = ekat::subview(loc_ptend_q[i], icol);
     }
     mam4::ColumnView 
       coltend_view[mam4::ndrop::ncnst_tot], 
       coltend_cw_view[mam4::ndrop::ncnst_tot];
     for (int i=0; i<mam4::ndrop::ncnst_tot; ++i) {
-      coltend_view[i] = ekat::subview(coltend[i], icol);
-      coltend_cw_view[i] = ekat::subview(coltend_cw[i], icol);
+      coltend_view[i] = ekat::subview(loc_coltend[i], icol);
+      coltend_cw_view[i] = ekat::subview(loc_coltend_cw[i], icol);
     }
 
-    MAMAci::view_2d eddy_diff = dropmixnuc_scratch_mem[0];
-    MAMAci::view_2d zn = dropmixnuc_scratch_mem[1];
-    MAMAci::view_2d csbot = dropmixnuc_scratch_mem[2];
-    MAMAci::view_2d zs = dropmixnuc_scratch_mem[3];
-    MAMAci::view_2d overlapp = dropmixnuc_scratch_mem[4];
-    MAMAci::view_2d overlapm = dropmixnuc_scratch_mem[5];
-    MAMAci::view_2d eddy_diff_kp = dropmixnuc_scratch_mem[6];
-    MAMAci::view_2d eddy_diff_km = dropmixnuc_scratch_mem[7];
-    MAMAci::view_2d qncld = dropmixnuc_scratch_mem[8];
-    MAMAci::view_2d srcn = dropmixnuc_scratch_mem[9];
-    MAMAci::view_2d source = dropmixnuc_scratch_mem[10];
-    MAMAci::view_2d dz = dropmixnuc_scratch_mem[11];
-    MAMAci::view_2d csbot_cscen = dropmixnuc_scratch_mem[12];
-    MAMAci::view_2d raertend = dropmixnuc_scratch_mem[13];
-    MAMAci::view_2d qqcwtend = dropmixnuc_scratch_mem[14];
 
     /*
     NOTE: "deltain" is the model time step. "state_q" is a combination of tracers
@@ -570,36 +597,41 @@ KOKKOS_INLINE_FUNCTION
 void copy_mam4xx_array_to_scream(
   const haero::ThreadTeam &team,
   MAMAci::view_3d scream,
-  MAMAci::view_2d mam4xx[],
+  MAMAci::view_2d mam4xx,
   const int icol,
-  const int len,
-  const int nlev)
+  const int nlev,
+  const int view_num)
 {
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team, 0u, nlev), KOKKOS_LAMBDA(int kk) { 
-    for (int i=0; i<len; ++i) {
-       scream(icol, kk, i) = mam4xx[i](icol,kk);
-    }
+    scream(icol, kk, view_num) = mam4xx(icol,kk);
   });
 }
+template<int len>
 void copy_mam4xx_array_to_scream(
   haero::ThreadTeamPolicy team_policy,
   MAMAci::view_3d scream,
-  MAMAci::view_2d mam4xx[],
-  const int len,
+  MAMAci::view_2d mam4xx[len],
   const int nlev)
 {
+  // Localize the input arrays.
+  MAMAci::view_2d mam4xx_loc[len];
+  for (int view_num=0; view_num < len; ++view_num) 
+    mam4xx_loc[view_num] = mam4xx[view_num];
   Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
     const int icol = team.league_rank();
-    copy_mam4xx_array_to_scream(team, scream, mam4xx, icol, len, nlev);
+    for (int view_num=0; view_num < len; ++view_num) {
+      MAMAci::view_2d mam4xx_view = mam4xx_loc[view_num];
+      copy_mam4xx_array_to_scream(team, scream, mam4xx_view, icol, nlev, view_num);
+    }
   });
 }
 
 void call_hetfrz_compute_tendencies(
   haero::ThreadTeamPolicy team_policy, 
-  mam4::Hetfrz &hetfrz,
-  mam_coupling::AerosolState &aerosol_state,
-  mam_coupling::WetAtmosphere &wet_atmosphere,
-  mam_coupling::DryAtmosphere &dry_atmosphere,
+  mam4::Hetfrz &hetfrz_,
+  mam_coupling::AerosolState &aerosol_state_,
+  mam_coupling::WetAtmosphere &wet_atmosphere_,
+  mam_coupling::DryAtmosphere &dry_atmosphere_,
   MAMAci::view_2d stratiform_cloud_fraction,
   MAMAci::view_2d activation_fraction_accum_idx,
   MAMAci::view_2d activation_fraction_coarse_idx,
@@ -608,15 +640,25 @@ void call_hetfrz_compute_tendencies(
   MAMAci::view_2d hetfrz_depostion_nucleation_tend,
   MAMAci::view_2d naai_hom,
   MAMAci::view_2d naai,
-  MAMAci::view_2d diagnostic_scratch[],
+  MAMAci::view_2d diagnostic_scratch_[],
   const int nlev)
 {
   using view_1d = typename KokkosTypes<DefaultDevice>::template view_1d<Real>;
   view_1d dummy("DummyView", nlev);
+
+  mam4::Hetfrz hetfrz = hetfrz_;
+  mam_coupling::AerosolState  aerosol_state =   aerosol_state_;
+  mam_coupling::WetAtmosphere wet_atmosphere =  wet_atmosphere_;
+  mam_coupling::DryAtmosphere dry_atmosphere =  dry_atmosphere_;
+  MAMAci::view_2d diagnostic_scratch[42];
+  for (int i=0; i<42; ++i) 
+    diagnostic_scratch[i] = diagnostic_scratch_[i];;
+
   MAMAci::const_view_2d qc = wet_atmosphere.qc;
   MAMAci::const_view_2d nc = wet_atmosphere.nc;
   MAMAci::const_view_2d T_mid = dry_atmosphere.T_mid;
   MAMAci::const_view_2d p_mid = dry_atmosphere.p_mid;
+
   Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
     const int icol = team.league_rank();
 
@@ -629,7 +671,7 @@ void call_hetfrz_compute_tendencies(
       dummy, 
       ekat::subview(qc, icol),
       ekat::subview(nc, icol),
-      dummy, dummy, dummy, dummy, dummy, dummy,
+      dummy, dummy, dummy, dummy, dummy, dummy, dummy,
       pblh);
     // set surface state data
     haero::Surface surf{};
@@ -865,7 +907,6 @@ void MAMAci::set_grids(const std::shared_ptr<const GridsManager> grids_manager) 
   add_field<Required>("strat_cld_frac",     scalar3d_layout_mid, nondim, grid_name); // Stratiform cloud fraction at midpoints
   add_field<Required>("liq_strat_cld_frac", scalar3d_layout_mid, nondim, grid_name); // Liquid stratiform cloud fraction  at midpoints
   add_field<Required>("kvh",                scalar3d_layout_int, m2/s, grid_name); // Eddy diffusivity for heat
-  add_field<Required>("zm",                 scalar3d_layout_int, m, grid_name); // Eddy diffusivity for heat
   
   // Layout for 4D (2d horiz X 1d vertical x number of modes) variables
   const int num_aero_modes = mam_coupling::num_aero_modes();
@@ -921,7 +962,6 @@ void MAMAci::initialize_impl(const RunType run_type) {
   coltend_cw_outp_ = get_field_out("coltend_cw").get_view<Real***>();
   liqcldf_ = get_field_in("liq_strat_cld_frac").get_view<const Real**>();
   kvh_ =  get_field_in("kvh").get_view<const Real**>();
-  zm_ =  get_field_in("zm").get_view<const Real**>();
 
   wet_atmosphere_.qc =  get_field_in("qc").get_view<const Real**>();
   wet_atmosphere_.nc =  get_field_in("nc").get_view<const Real**>();
@@ -1021,7 +1061,7 @@ void MAMAci::run_impl(const double dt) {
 
   haero::ThreadTeamPolicy team_policy(ncol_, Kokkos::AUTO);
 
-  copy_scream_array_to_mam4xx(team_policy, qqcw_, qqcw_input_, nlev_, mam4::ndrop::ncnst_tot);
+  copy_scream_array_to_mam4xx(team_policy, qqcw_, qqcw_input_, nlev_);
 
   // All the inputs are available to compute w0 and rho
   // Convert from omega to w (vertical velocity)
@@ -1068,14 +1108,14 @@ void MAMAci::run_impl(const double dt) {
 
   call_function_dropmixnuc(team_policy, dry_atmosphere_, dtmicro_,
       raercol_cw_, raercol_, qqcw_, ptend_q_, coltend_, coltend_cw_, 
-      p_int_, pdel_, rpdel_, zm_, state_q_, ncldwtr_, kvh_, qcld_, wsub_,
+      p_int_, pdel_, rpdel_, state_q_, ncldwtr_, kvh_, qcld_, wsub_,
       cloud_frac_new_, cloud_frac_old_,  tendnd_, factnum_, ndropcol_, ndropmix_,
       nsource_, wtke_, ccn_, nact_, mact_, dropmixnuc_scratch_mem_, nlev_);
   Kokkos::fence(); // wait for ptend_q_ to be computed.
 
-  copy_mam4xx_array_to_scream(team_policy, ptend_q_output_, ptend_q_, mam4::ndrop::nvar_ptend_q, nlev_);
-  copy_mam4xx_array_to_scream(team_policy, coltend_outp_, coltend_, mam4::ndrop::ncnst_tot, nlev_);
-  copy_mam4xx_array_to_scream(team_policy, coltend_cw_outp_, coltend_cw_, mam4::ndrop::ncnst_tot, nlev_);
+  copy_mam4xx_array_to_scream<mam4::ndrop::nvar_ptend_q>(team_policy, ptend_q_output_, ptend_q_, nlev_);
+  copy_mam4xx_array_to_scream<mam4::ndrop::ncnst_tot   >(team_policy, coltend_outp_, coltend_, nlev_);
+  copy_mam4xx_array_to_scream<mam4::ndrop::ncnst_tot   >(team_policy, coltend_cw_outp_, coltend_cw_, nlev_);
 
   call_hetfrz_compute_tendencies(team_policy, 
     hetfrz_, aerosol_state_, wet_atmosphere_, dry_atmosphere_,
