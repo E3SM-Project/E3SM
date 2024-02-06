@@ -10,7 +10,7 @@ add_executable(cpp2d ../dmdf.F90 ../cpp_driver.F90
                ../../../ecppvars.F90
                ../../../openacc_utils.F90
                ${CPP_SRC})
-target_link_libraries(cpp2d yakl ${NCFLAGS})
+target_link_libraries(cpp2d yakl_fortran_interface ${NCFLAGS})
 set_property(TARGET cpp2d APPEND PROPERTY COMPILE_FLAGS ${DEFS2D} )
 set_property(TARGET cpp2d PROPERTY LINK_FLAGS "-Wl,--defsym,main=MAIN__  -lifcore")
 set_property(TARGET cpp2d PROPERTY LINKER_LANGUAGE CXX)

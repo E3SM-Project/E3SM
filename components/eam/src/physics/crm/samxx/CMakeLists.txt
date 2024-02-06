@@ -14,7 +14,7 @@ if (${USE_CUDA})
   set_target_properties(samxx PROPERTIES LINKER_LANGUAGE CUDA CUDA_SEPARABLE_COMPILATION OFF CUDA_RESOLVE_DEVICE_SYMBOLS ON)
 endif()
 # samxx needs to link with the yakl library
-target_link_libraries(samxx yakl)
+target_link_libraries(samxx yakl_fortran_interface)
 target_compile_features(samxx PUBLIC cxx_std_14)
 
 # Set fortran compiler flags
