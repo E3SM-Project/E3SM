@@ -81,7 +81,7 @@ TEST_CASE("nudging_tests") {
 
     // Create fm. Init p_mid, since it's constant in this file
     auto fm = create_fm(grid_data);
-    update_field(fm->get_field("p_mid"),get_t0(),0);
+    compute_field(fm->get_field("p_mid"),get_t0(),comm,0);
 
     auto U = fm->get_field("U");
     SECTION ("same-time") {
@@ -102,7 +102,7 @@ TEST_CASE("nudging_tests") {
         nudging->run(dt_data);
 
         // Recompute original data
-        update_field(U_tgt,time,0);
+        compute_field(U_tgt,time,comm,0);
 
         // Since all values are integers, we should have no rounding
         CHECK (views_are_equal(U,U_tgt));
@@ -129,8 +129,8 @@ TEST_CASE("nudging_tests") {
       auto check_f = [&](const Field& f,
                          const util::TimeStamp& t_prev,
                          const util::TimeStamp& t_next) {
-        update_field(tmp1,t_prev,0);
-        update_field(tmp2,t_next,0);
+        compute_field(tmp1,t_prev,comm,0);
+        compute_field(tmp2,t_next,comm,0);
         tmp1.update(tmp2,0.5,0.5);
 
         // Since input data are integers, and the time-interp coeff is 0.5,
@@ -213,7 +213,7 @@ TEST_CASE("nudging_tests") {
       auto layout_data = grid_data->get_3d_scalar_layout(true);
       Field p_mid_data(FieldIdentifier("p_mid",layout_data,Pa,grid_data->name()));
       p_mid_data.allocate_view();
-      update_field(p_mid_data,get_t0(),0);
+      compute_field(p_mid_data,get_t0(),comm,0);
 
       manual_interp(p_mid_data,p_mid,true);
 
@@ -226,7 +226,7 @@ TEST_CASE("nudging_tests") {
 
         // Compute data on fine grid, by manually interpolating
         // (recall that nudging runs at t+dt)
-        update_field(tmp_data,time+dt_data,0);
+        compute_field(tmp_data,time+dt_data,comm,0);
         manual_interp(tmp_data,tmp_fine,true);
 
         CHECK (views_are_equal(tmp_fine,U));
@@ -253,7 +253,7 @@ TEST_CASE("nudging_tests") {
       auto layout_data = grid_data->get_3d_scalar_layout(true);
       Field p_mid_data(FieldIdentifier("p_mid",layout_data,Pa,grid_data->name()));
       p_mid_data.allocate_view();
-      update_field(p_mid_data,get_t0(),0);
+      compute_field(p_mid_data,get_t0(),comm,0);
 
       manual_interp(p_mid_data,p_mid,false);
 
@@ -266,7 +266,7 @@ TEST_CASE("nudging_tests") {
 
         // Compute data on fine grid, by manually interpolating
         // (recall that nudging runs at t+dt)
-        update_field(tmp_data,time+dt_data,0);
+        compute_field(tmp_data,time+dt_data,comm,0);
         manual_interp(tmp_data,tmp_fine,false);
 
         CHECK (views_are_equal(tmp_fine,U));
@@ -290,18 +290,78 @@ TEST_CASE("nudging_tests") {
     // such that coarse cols are copied, and the new cols are the avg of the
     // two coarse cols left and right.
 
+    auto create_global_f = [&] (const Field& f) {
+      const auto& fid = f.get_header().get_identifier();
+      int ncols = fid.get_layout().dim(0);
+      comm.all_reduce(&ncols,1,MPI_SUM);
+
+      FieldLayout glb_layout = fid.get_layout();
+      glb_layout.set_dimension(0,ncols);
+      FieldIdentifier glb_fid(fid.name(),glb_layout,fid.get_units(),fid.get_grid_name());
+      Field glb(glb_fid);
+      glb.allocate_view();
+      return glb;
+    };
+    auto gather_global_f = [&] (const Field& f) {
+      const auto& fid = f.get_header().get_identifier();
+      const int ncols = fid.get_layout().dim(0);
+      const int nlevs = fid.get_layout().dim(1);
+
+      auto glb = create_global_f(f);
+      f.sync_to_host();
+
+      int offset=0;
+      auto view_h = f.get_view<Real**,Host>();
+      auto glb_view_h = glb.get_view<Real**,Host>();
+      for (int rank=0; rank<comm.size(); ++rank) {
+        if (rank==comm.rank()) {
+          for (int i=0; i<ncols; ++i) {
+            auto col_h = ekat::subview(view_h,i);
+            auto glb_col_h = ekat::subview(glb_view_h,i+offset);
+            std::copy(col_h.data(),col_h.data()+nlevs,glb_col_h.data());
+          }
+        }
+        auto data = glb_view_h.data()+offset*nlevs;
+        int rank_size = view_h.size();
+        comm.broadcast(&rank_size,1,rank);
+        comm.broadcast(data,rank_size,rank);
+
+        int rank_ncols = ncols;
+        comm.broadcast(&rank_ncols,1,rank);
+        offset += rank_ncols;
+
+        glb.sync_to_dev();
+      }
+      glb.sync_to_dev();
+
+      return glb;
+    };
+
     auto manual_interp = [&](const Field& data, const Field& fine) {
-      auto fine_h = fine.get_view<Real**,Host>();
-      auto data_h = data.get_view<Real**,Host>();
-      for (int icol=0; icol<ncols_data; ++icol) {
+      auto glb_fine = create_global_f(fine);
+      auto glb_data = gather_global_f(data);
+      auto glb_fine_h = glb_fine.get_view<Real**,Host>();
+      auto glb_data_h = glb_data.get_view<Real**,Host>();
+      for (int icol=0; icol<ngcols_data; ++icol) {
         for (int ilev=0; ilev<nlevs_data; ++ilev) {
-          fine_h(icol,ilev) = data_h(icol,ilev);
-          if (icol<ncols_data-1) {
-            fine_h(ncols_data+icol,ilev) = (data_h(icol,ilev) + data_h(icol+1,ilev))/2;
+          glb_fine_h(icol,ilev) = glb_data_h(icol,ilev);
+          if (icol<ngcols_data-1) {
+            glb_fine_h(ngcols_data+icol,ilev) = (glb_data_h(icol,ilev) + glb_data_h(icol+1,ilev))/2;
           }
         }
       }
-      fine.sync_to_dev();
+
+      auto ncols_fine = grid_fine->get_num_local_dofs();
+      auto offset = ncols_fine;
+      comm.scan(&offset,1,MPI_SUM);
+      offset -= ncols_fine;
+
+      auto fine_h = fine.get_view<Real**,Host>();
+      for (int i=0; i<ncols_fine; ++i) {
+        for (int k=0; k<nlevs_data; ++k) {
+          fine_h(i,k) = glb_fine_h(offset+i,k);
+        }
+      }
     };
 
     ekat::ParameterList params;
@@ -323,7 +383,7 @@ TEST_CASE("nudging_tests") {
     auto layout_data = grid_data->get_3d_scalar_layout(true);
     Field p_mid_data(FieldIdentifier("p_mid",layout_data,Pa,grid_data->name()));
     p_mid_data.allocate_view();
-    update_field(p_mid_data,get_t0(),0);
+    compute_field(p_mid_data,get_t0(),comm,0);
 
     manual_interp(p_mid_data,p_mid);
 
@@ -336,7 +396,7 @@ TEST_CASE("nudging_tests") {
 
       // Compute data on fine grid, by manually interpolating
       // (recall that nudging runs at t+dt)
-      update_field(tmp_data,time+dt_data,0);
+      compute_field(tmp_data,time+dt_data,comm,0);
       manual_interp(tmp_data,tmp_fine);
 
       CHECK (views_are_equal(tmp_fine,U));
@@ -379,7 +439,7 @@ TEST_CASE("nudging_tests") {
     auto fm = create_fm(grid_data);
     auto U = fm->get_field("U");
     auto p_mid = fm->get_field("p_mid");
-    update_field(p_mid,get_t0(),0);
+    compute_field(p_mid,get_t0(),comm,0);
 
     // Create and init nudging process
     auto nudging = create_nudging(comm,params,fm,gm_data,get_t0());
@@ -392,7 +452,7 @@ TEST_CASE("nudging_tests") {
 
       // Compute data on fine grid, by manually interpolating
       // (recall that nudging runs at t+dt)
-      update_field(tmp,time+dt_data,0);
+      compute_field(tmp,time+dt_data,comm,0);
       manual_cure(tmp);
 
       CHECK (views_are_equal(tmp,U));

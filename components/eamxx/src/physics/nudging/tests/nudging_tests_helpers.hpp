@@ -68,14 +68,19 @@ create_fm (const std::shared_ptr<const AbstractGrid>& grid)
   return fm;
 }
 
-void update_field (Field f,
-                   const util::TimeStamp& time,
-                   const int num_masked_levs = 0)
+void compute_field (Field f,
+                    const util::TimeStamp& time,
+                    const ekat::Comm& comm,
+                    const int num_masked_levs = 0)
 {
   const auto& fl = f.get_header().get_identifier().get_layout();
 
   const int ncols = fl.dim(0);
   const int nlevs = fl.dim(1);
+
+  int offset = ncols;
+  comm.scan(&offset,1,MPI_SUM);
+  offset -= ncols;
 
   const int step = time.get_num_steps();
   const int lev_beg = num_masked_levs;
@@ -88,7 +93,7 @@ void update_field (Field f,
         f_h(icol,ilev) = fill_val;
       }
       for (int ilev=lev_beg;ilev<lev_end;++ilev) {
-        f_h(icol,ilev) = step + icol*nlevs + ilev + 1;
+        f_h(icol,ilev) = step + (offset+icol)*nlevs + ilev + 1;
       }
       for (int ilev=lev_end; ilev<nlevs; ++ilev) {
         f_h(icol,ilev) = fill_val;
@@ -101,8 +106,8 @@ void update_field (Field f,
         f_h(icol,0,ilev) = f_h(icol,1,ilev) = fill_val;
       }
       for (int ilev=lev_beg;ilev<lev_end;++ilev) {
-        f_h(icol,0,ilev) = step + icol*2*nlevs + ilev + 1;
-        f_h(icol,1,ilev) = step + icol*2*nlevs + ilev + 1;
+        f_h(icol,0,ilev) = step + (offset+icol)*2*nlevs + ilev + 1;
+        f_h(icol,1,ilev) = step + (offset+icol)*2*nlevs + ilev + 1;
       }
       for (int ilev=lev_end; ilev<nlevs; ++ilev) {
         f_h(icol,0,ilev) = f_h(icol,1,ilev) = fill_val;
@@ -113,17 +118,18 @@ void update_field (Field f,
   f.get_header().get_tracking().update_time_stamp(time);
 }
 
-void update_fields (const std::shared_ptr<FieldManager>& fm,
-                    const util::TimeStamp& time,
-                    const int num_masked_levs = 0,
-                    const bool update_p_mid = true)
+void compute_fields (const std::shared_ptr<FieldManager>& fm,
+                     const util::TimeStamp& time,
+                     const ekat::Comm& comm,
+                     const int num_masked_levs = 0,
+                     const bool update_p_mid = true)
 {
   if (update_p_mid) {
     // Don't mask pressure
-    update_field(fm->get_field("p_mid"),time,0);
+    compute_field(fm->get_field("p_mid"),time,comm,0);
   }
-  update_field(fm->get_field("U"),time,num_masked_levs);
-  update_field(fm->get_field("V"),time,num_masked_levs);
+  compute_field(fm->get_field("U"),time,comm,num_masked_levs);
+  compute_field(fm->get_field("V"),time,comm,num_masked_levs);
 
   // Not sure if we need it, since we don't handle horiz_winds directly, I think
   fm->get_field("horiz_winds").get_header().get_tracking().update_time_stamp(time);
