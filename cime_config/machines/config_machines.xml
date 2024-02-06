@@ -1461,7 +1461,7 @@
       <env name="SKIP_BLAS">True</env> <!-- find_package(blas) doesn't work well with Cray LibSci-->
     </environment_variables>
 
-    <environment_variables SMP_PRESENT="TRUE">
+    <environment_variables BUILD_THREADED="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
@@ -2954,10 +2954,10 @@
     </module_system>
     <RUNDIR>/p/gpfs1/$USER/e3sm_scratch/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-    <environment_variables SMP_PRESENT="FALSE">
+    <environment_variables BUILD_THREADED="FALSE">
       <env name="JSRUN_THREAD_VARS"> </env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE">
+    <environment_variables BUILD_THREADED="TRUE">
       <env name="JSRUN_THREAD_VARS">-E OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS} -E OMP_PROC_BIND=spread -E OMP_PLACES=threads -E OMP_STACKSIZE=256M</env>
     </environment_variables>
     <environment_variables compiler="gnugpu">
