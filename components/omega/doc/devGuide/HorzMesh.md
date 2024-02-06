@@ -14,10 +14,12 @@ The constructor replicates the subdomain mesh cell/edge/vertex counts and
 connectivity information from Decomp so this information can be passed among the
 computational routines, alongside the other local mesh information.  It then
 creates several parallel I/O decompositions and reads in the remaining subdomain
-mesh information.  Finally, any mesh information needed on the device to a
-device YAKL array from the host.  These tasks are organized into several private
-methods. Eventually, dependent mesh variables will be computed from the minimum
-set of required mesh information.
+mesh information.  Finally, any mesh information needed on the device is copied
+from the host to a device YAKL array. Arrays such as the coordinate variables,
+which are not involved in tendency calculations, are not transferred to the
+device. These tasks are organized into several private methods. Eventually,
+dependent mesh variables will be computed from the minimum set of required mesh
+information.
 
 After initialization, the default mesh object can be retrieved via:
 ```
