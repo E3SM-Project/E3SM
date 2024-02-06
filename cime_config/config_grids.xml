@@ -2862,6 +2862,12 @@
       <desc>r0125 is 1/8 degree river routing grid:</desc>
     </domain>
 
+    <domain name="r025">
+      <nx>1440</nx>
+      <ny>720</ny>
+      <file grid="atm|lnd" mask="IcoswISC30E3r5">$DIN_LOC_ROOT/share/domains/domain.lnd.r025_IcoswISC30E3r5.240129.nc</file>
+    </domain>
+
     <domain name="mp120v1">
       <nx>28993</nx>
       <ny>1</ny>
