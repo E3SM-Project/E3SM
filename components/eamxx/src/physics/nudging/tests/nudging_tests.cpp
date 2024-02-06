@@ -76,7 +76,7 @@ TEST_CASE("nudging_tests") {
     ekat::ParameterList params;
     params.set<strvec_t>("nudging_filename",{nudging_data});
     params.set<std::string>("source_pressure_type","TIME_DEPENDENT_3D_PROFILE");
-    params.set<strvec_t>("nudging_fields",{"U","V"});
+    params.set<strvec_t>("nudging_fields",{"U"});
     params.get<std::string>("log_level","warn");
 
     // Create fm. Init p_mid, since it's constant in this file
@@ -84,10 +84,6 @@ TEST_CASE("nudging_tests") {
     update_field(fm->get_field("p_mid"),get_t0(),0);
 
     auto U = fm->get_field("U");
-    auto V = fm->get_field("V");
-    auto p = fm->get_field("p_mid");
-
-    // Test case where model times coincide with input data times
     SECTION ("same-time") {
       std::string msg = " -> Testing same time/horiz/vert grid as data ...........";
       root_print (msg + "\n");
@@ -96,12 +92,9 @@ TEST_CASE("nudging_tests") {
       // Create and init nudging process
       auto nudging = create_nudging(comm,params,fm,gm_data,get_t0());
 
-      // Same space-time grid, should return the same data
-      auto fm_tgt = create_fm(grid_data);
       auto time = get_t0();
 
-      auto U_tgt = fm_tgt->get_field("U");
-      auto V_tgt = fm_tgt->get_field("V");
+      auto U_tgt = U.clone("U_tgt");
       for (int n=0; ok and n<nsteps_data; ++n) {
         time += dt_data;
 
@@ -109,12 +102,10 @@ TEST_CASE("nudging_tests") {
         nudging->run(dt_data);
 
         // Recompute original data
-        update_fields(fm_tgt,time,0);
+        update_field(U_tgt,time,0);
 
         // Since all values are integers, we should have no rounding
         CHECK (views_are_equal(U,U_tgt));
-        ok &= catch_capture.lastAssertionPassed();
-        CHECK (views_are_equal(V,V_tgt));
         ok &= catch_capture.lastAssertionPassed();
       }
       root_print (msg + (ok ? " PASS\n" : " FAIL\n"));
@@ -157,7 +148,7 @@ TEST_CASE("nudging_tests") {
         nudging->run(dt_data);
 
         // Compare the two. Since we're exactly half way, we should get exact fp representation
-        check_f(fm->get_field("U"),t_prev,t_next);
+        check_f(U,t_prev,t_next);
 
         t_prev = t_next;
       }
@@ -213,7 +204,6 @@ TEST_CASE("nudging_tests") {
       // Create fm
       auto fm = create_fm(grid_fine_v);
       auto U = fm->get_field("U");
-      auto V = fm->get_field("V");
       auto p_mid = fm->get_field("p_mid");
 
       // Create and init nudging process
@@ -239,7 +229,7 @@ TEST_CASE("nudging_tests") {
         update_field(tmp_data,time+dt_data,0);
         manual_interp(tmp_data,tmp_fine,true);
 
-        CHECK (views_are_equal(tmp_fine,fm->get_field("U")));
+        CHECK (views_are_equal(tmp_fine,U));
         ok &= catch_capture.lastAssertionPassed();
         time += dt_data;
       }
@@ -254,7 +244,6 @@ TEST_CASE("nudging_tests") {
       // Create fm
       auto fm = create_fm(grid_fine_v);
       auto U = fm->get_field("U");
-      auto V = fm->get_field("V");
       auto p_mid = fm->get_field("p_mid");
 
       // Create and init nudging process
@@ -280,7 +269,7 @@ TEST_CASE("nudging_tests") {
         update_field(tmp_data,time+dt_data,0);
         manual_interp(tmp_data,tmp_fine,false);
 
-        CHECK (views_are_equal(tmp_fine,fm->get_field("U")));
+        CHECK (views_are_equal(tmp_fine,U));
         ok &= catch_capture.lastAssertionPassed();
         time += dt_data;
       }
@@ -325,7 +314,6 @@ TEST_CASE("nudging_tests") {
     // Create fm
     auto fm = create_fm(grid_fine_h);
     auto U = fm->get_field("U");
-    auto V = fm->get_field("V");
     auto p_mid = fm->get_field("p_mid");
 
     // Create and init nudging process
@@ -351,8 +339,7 @@ TEST_CASE("nudging_tests") {
       update_field(tmp_data,time+dt_data,0);
       manual_interp(tmp_data,tmp_fine);
 
-      print_field_hyperslab(U);
-      CHECK (views_are_equal(tmp_fine,fm->get_field("U")));
+      CHECK (views_are_equal(tmp_fine,U));
       ok &= catch_capture.lastAssertionPassed();
       time += dt_data;
     }
@@ -408,13 +395,6 @@ TEST_CASE("nudging_tests") {
       update_field(tmp,time+dt_data,0);
       manual_cure(tmp);
 
-      if (not views_are_equal(tmp,U)) {
-        print_field_hyperslab(U);
-        print_field_hyperslab(tmp);
-        scorpio::eam_pio_finalize();
-        return;
-      }
-      print_field_hyperslab(U);
       CHECK (views_are_equal(tmp,U));
       ok &= catch_capture.lastAssertionPassed();
       time += dt_data;

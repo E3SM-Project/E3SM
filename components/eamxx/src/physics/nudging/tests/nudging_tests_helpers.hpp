@@ -52,16 +52,12 @@ create_fm (const std::shared_ptr<const AbstractGrid>& grid)
   auto vector3d = grid->get_3d_vector_layout(true,CMP,2);
 
   FieldIdentifier fid1("p_mid",scalar3d,Pa,gn);
-  FieldIdentifier fid2("T_mid",scalar3d,K,gn);
-  FieldIdentifier fid3("qv",   scalar3d,kg/kg,gn);
-  FieldIdentifier fid4("horiz_winds",vector3d,m/s,gn);
+  FieldIdentifier fid2("horiz_winds",vector3d,m/s,gn);
 
   // Register fields with fm
   fm->registration_begins();
   fm->register_field(FR(fid1));
   fm->register_field(FR(fid2));
-  fm->register_field(FR(fid3));
-  fm->register_field(FR(fid4));
   fm->registration_ends();
 
   auto U = fm->get_field("horiz_winds").subfield("U",1,0);
@@ -126,8 +122,6 @@ void update_fields (const std::shared_ptr<FieldManager>& fm,
     // Don't mask pressure
     update_field(fm->get_field("p_mid"),time,0);
   }
-  update_field(fm->get_field("T_mid"),time,num_masked_levs);
-  update_field(fm->get_field("qv"),time,num_masked_levs);
   update_field(fm->get_field("U"),time,num_masked_levs);
   update_field(fm->get_field("V"),time,num_masked_levs);
 
@@ -150,7 +144,7 @@ create_om (const std::string& filename_prefix,
   params.set<std::string>("Averaging Type","INSTANT");
   params.set<std::string>("filename_prefix",filename_prefix);
   params.set<std::string>("Floating Point Precision","real");
-  params.set("Field Names",strvec_t{"p_mid","T_mid","qv","U","V"});
+  params.set("Field Names",strvec_t{"p_mid","U","V"});
   params.set("fill_value",fill_val);
 
   auto& ctrl_pl = params.sublist("output_control");
