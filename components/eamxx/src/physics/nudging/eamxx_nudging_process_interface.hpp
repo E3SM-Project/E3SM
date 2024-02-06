@@ -47,7 +47,7 @@ public:
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
 
   // Internal function to apply nudging at specific timescale with weights
-  void apply_weighted_tendency(Field& base, const Field& next, const Field& weights, const Real dt);
+  void apply_weighted_tendency(Field& base, const Field& next, const Field& weights, const Real dt) const;
 
 #ifndef KOKKOS_ENABLE_CUDA
   // Cuda requires methods enclosing __device__ lambda's to be public
@@ -61,8 +61,7 @@ protected:
   // Must add this here to make it public for CUDA
   // (refining) remapper vertically-weighted tendency application
   void apply_vert_cutoff_tendency(Field &base, const Field &next,
-                                  const Field &p_mid, const Real cutoff,
-                                  const Real dt);
+                                  const Field &p_mid, const Real dt) const;
 protected:
 
   Field get_field_out_wrap(const std::string& field_name);
@@ -82,7 +81,7 @@ protected:
   // Retrieve a helper field
   Field get_helper_field (const std::string& name) const { return m_helper_fields.at(name); }
   // Internal function to apply nudging at specific timescale
-  void apply_tendency(Field& base, const Field& next, const Real dt);
+  void apply_tendency(Field& base, const Field& next, const Real dt) const;
 
   std::shared_ptr<const AbstractGrid>   m_grid;
   // Keep track of field dimensions and the iteration count

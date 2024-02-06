@@ -12,6 +12,10 @@ Nudging::Nudging (const ekat::Comm& comm, const ekat::ParameterList& params)
 {
   m_datafiles  = m_params.get<std::vector<std::string>>("nudging_filename");
   m_timescale = m_params.get<int>("nudging_timescale",0);
+  EKAT_REQUIRE_MSG(m_timescale>0,
+      "[Nudging] Error! Value of nudging_timescale must be positive.\n"
+      "  - input value: " + std::to_string(m_timescale) + "\n");
+
   m_fields_nudge = m_params.get<std::vector<std::string>>("nudging_fields");
   m_use_weights   = m_params.get<bool>("use_nudging_weights",false);
   // If we are doing horizontal refine-remapping, we need to get the mapfile from user
@@ -145,81 +149,57 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   }
 }
 // =========================================================================================
-void Nudging::apply_tendency(Field& base, const Field& next, const Real dt)
+void Nudging::apply_tendency(Field& state, const Field& nudge, const Real dt) const
 {
   // Calculate the weight to apply the tendency
-  const Real dtend = dt/Real(m_timescale);
-  EKAT_REQUIRE_MSG(dtend>=0,"Error! Nudging::apply_tendency - timescale tendency of " << std::to_string(dt) 
-		  << " / " << std::to_string(m_timescale) << " = " << std::to_string(dtend) 
-		  << " is invalid.  Please check the timescale and/or dt");
-  // Now apply the tendency.
-  Field tend = base.clone();
-  // Use update internal to set tendency, will be (1.0*next - 1.0*base), note tend=base at this point.
-  tend.update(next,Real(1.0),Real(-1.0));
-  base.update(tend,dtend,Real(1.0));
+  const Real dtend = dt / m_timescale;
+
+  // The update formulat is state = state + dtend*(nudge - state),
+  // which can be rewritten as state = (1-dtend)*state + dtend*nudge
+  state.update(nudge,dtend,1-dtend);
 }
 // =========================================================================================
-void Nudging::apply_weighted_tendency(Field& base, const Field& next, const Field& weights, const Real dt)
+void Nudging::apply_weighted_tendency(Field& state, const Field& nudge, const Field& weights, const Real dt) const
 {
   // Calculate the weight to apply the tendency
-  const Real dtend = dt/Real(m_timescale);
-  EKAT_REQUIRE_MSG(dtend>=0,"Error! Nudging::apply_tendency - timescale tendency of " << std::to_string(dt)
-                  << " / " << std::to_string(m_timescale) << " = " << std::to_string(dtend)
-                  << " is invalid.  Please check the timescale and/or dt");
-  // Now apply the tendency.
-  Field tend = base.clone();
+  const Real dtend = dt / m_timescale;
 
-  // Use update internal to set tendency, will be (weights*next - weights*base), note tend=base at this point.
-  auto base_view = base.get_view<const Real**>();
-  auto tend_view = tend.get_view<      Real**>();
-  auto next_view = next.get_view<      Real**>();
-  auto w_view    = weights.get_view<   Real**>();
+  auto state_view = state.get_view<Real**>();
+  auto nudge_view = nudge.get_view<Real**>();
+  auto w_view     = weights.get_view<Real**>();
 
-  const int num_cols       = base_view.extent(0);
-  const int num_vert_packs = base_view.extent(1);
-  Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0}, {num_cols, num_vert_packs}), KOKKOS_LAMBDA(int i, int j) {
-    tend_view(i,j) = next_view(i,j)*w_view(i,j) - base_view(i,j)*w_view(i,j);
-  });
-  base.update(tend, dtend, Real(1.0));
+  // The update formulat is state = state + dtend*(weights*nudge - weights*state)
+  auto policy = Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0}, {m_num_cols, m_num_levs});
+  auto update = KOKKOS_LAMBDA(const int& i, const int& j) {
+    state_view(i,j) += dtend * w_view(i,j) * (nudge_view(i,j) - state_view(i,j));
+  };
+  Kokkos::parallel_for(policy,update);
 }
 // =========================================================================================
-void Nudging::apply_vert_cutoff_tendency(Field &base, const Field &next,
-                                         const Field &p_mid, const Real cutoff,
-                                         const Real dt) {
+void Nudging::apply_vert_cutoff_tendency(Field &state, const Field &nudge,
+                                         const Field &p_mid, const Real dt) const
+{
   // Calculate the weight to apply the tendency
-  const Real dtend = dt / Real(m_timescale);
-  EKAT_REQUIRE_MSG(dtend >= 0,
-                   "Error! Nudging::apply_tendency - timescale tendency of "
-                       << std::to_string(dt) << " / "
-                       << std::to_string(m_timescale) << " = "
-                       << std::to_string(dtend)
-                       << " is invalid.  Please check the timescale and/or dt");
-  // Now apply the tendency.
-  Field tend = base.clone();
+  const Real dtend = dt / m_timescale;
 
-  // Use update internal to set tendency, will be (weights*next - weights*base),
-  // note tend=base at this point.
-  auto base_view = base.get_view<const Real **>();
-  auto tend_view = tend.get_view<Real **>();
-  auto next_view = next.get_view<Real **>();
-  auto pmid_view = p_mid.get_view<Real **>();
+  // Local, for GPU's sake
+  const auto cutoff = m_refine_remap_vert_cutoff;
 
-  const int num_cols       = base_view.extent(0);
-  const int num_vert_packs = base_view.extent(1);
-  Kokkos::parallel_for(
-      Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0},
-                                             {num_cols, num_vert_packs}),
-      KOKKOS_LAMBDA(int i, int j) {
-        // If the pressure is above the cutoff, then we are closer to the surface
-        if (pmid_view(i, j) > cutoff) {
-          // Don't apply the tendency closer to the surface
-          tend_view(i, j) = 0.0;
-        } else {
-          // Apply the tendency farther up from the surface
-          tend_view(i, j) = next_view(i, j) - base_view(i, j);
-        }
-      });
-  base.update(tend, dtend, Real(1.0));
+  auto state_view = state.get_view<Real**>();
+  auto nudge_view = nudge.get_view<Real**>();
+  auto pmid_view  = p_mid.get_view<Real**>();
+
+  // The update formula is state = state + dtend*(nudge - state)*Chi(pmid>cutoff)
+  // where Chi is the indicator function (=1 where pmid>cutoff, 0 elsewhere)
+  auto policy = Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0}, {m_num_cols, m_num_levs});
+  auto update = KOKKOS_LAMBDA(const int& i, const int& j) {
+    // We don't want to apply the nudging too close to the surface.
+    // If the pressure is below the cutoff, then we're far enough from the surface.
+    if (pmid_view(i,j) < cutoff) {
+      state_view(i,j) += dtend*(nudge_view(i,j) - state_view(i,j));
+    }
+  };
+  Kokkos::parallel_for(policy,update);
 }
 // =============================================================================================================
 void Nudging::initialize_impl (const RunType /* run_type */)
@@ -535,7 +515,7 @@ void Nudging::run_impl (const double dt)
         auto p_mid_field = get_field_in("p_mid");
         // Then, call the tendency with a Heaviside-like cutoff
         apply_vert_cutoff_tendency(atm_state_field, field_after_vinterp,
-                                   p_mid_field, m_refine_remap_vert_cutoff, dt);
+                                   p_mid_field, dt);
       } else {
         apply_tendency(atm_state_field, field_after_vinterp, dt);
       }
