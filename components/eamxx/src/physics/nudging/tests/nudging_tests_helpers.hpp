@@ -8,10 +8,12 @@
 namespace scream
 {
 
-constexpr int ngcols_data = 12;
-constexpr int nlevs_data  = 20;
-constexpr int nsteps_data = 5;
-constexpr int dt_data     = 100;
+constexpr int ngcols_data  = 12;
+constexpr int nlevs_data   = 20;
+constexpr int nsteps_data  = 5;
+constexpr int dt_data      = 100;
+constexpr int nlevs_filled = 2;
+constexpr double fill_val  = 1e30;
 
 util::TimeStamp get_t0 () {
   return  util::TimeStamp ({2000,1,1},{12,0,0});
@@ -72,8 +74,7 @@ create_fm (const std::shared_ptr<const AbstractGrid>& grid)
 
 void update_field (Field f,
                    const util::TimeStamp& time,
-                   const int num_masked_levs = 0,
-                   const Real mask_val = 1e30)
+                   const int num_masked_levs = 0)
 {
   const auto& fl = f.get_header().get_identifier().get_layout();
 
@@ -88,27 +89,27 @@ void update_field (Field f,
     const auto f_h = f.get_view<Real**, Host>();
     for (int icol=0;icol<ncols;++icol) {
       for (int ilev=0; ilev<lev_beg; ++ilev) {
-        f_h(icol,ilev) = mask_val;
+        f_h(icol,ilev) = fill_val;
       }
       for (int ilev=lev_beg;ilev<lev_end;++ilev) {
         f_h(icol,ilev) = step + icol*nlevs + ilev + 1;
       }
       for (int ilev=lev_end; ilev<nlevs; ++ilev) {
-        f_h(icol,ilev) = mask_val;
+        f_h(icol,ilev) = fill_val;
       }
     }
   } else {
     const auto f_h = f.get_view<Real***, Host>();
     for (int icol=0;icol<ncols;++icol) {
       for (int ilev=0; ilev<lev_beg; ++ilev) {
-        f_h(icol,0,ilev) = f_h(icol,1,ilev) = mask_val;
+        f_h(icol,0,ilev) = f_h(icol,1,ilev) = fill_val;
       }
       for (int ilev=lev_beg;ilev<lev_end;++ilev) {
         f_h(icol,0,ilev) = step + icol*2*nlevs + ilev + 1;
         f_h(icol,1,ilev) = step + icol*2*nlevs + ilev + 1;
       }
       for (int ilev=lev_end; ilev<nlevs; ++ilev) {
-        f_h(icol,0,ilev) = f_h(icol,1,ilev) = mask_val;
+        f_h(icol,0,ilev) = f_h(icol,1,ilev) = fill_val;
       }
     }
   }
@@ -119,16 +120,16 @@ void update_field (Field f,
 void update_fields (const std::shared_ptr<FieldManager>& fm,
                     const util::TimeStamp& time,
                     const int num_masked_levs = 0,
-                    const Real mask_val = 1e30,
                     const bool update_p_mid = true)
 {
   if (update_p_mid) {
-    update_field(fm->get_field("p_mid"),time,num_masked_levs,mask_val);
+    // Don't mask pressure
+    update_field(fm->get_field("p_mid"),time,0);
   }
-  update_field(fm->get_field("T_mid"),time,num_masked_levs,mask_val);
-  update_field(fm->get_field("qv"),time,num_masked_levs,mask_val);
-  update_field(fm->get_field("U"),time,num_masked_levs,mask_val);
-  update_field(fm->get_field("V"),time,num_masked_levs,mask_val);
+  update_field(fm->get_field("T_mid"),time,num_masked_levs);
+  update_field(fm->get_field("qv"),time,num_masked_levs);
+  update_field(fm->get_field("U"),time,num_masked_levs);
+  update_field(fm->get_field("V"),time,num_masked_levs);
 
   // Not sure if we need it, since we don't handle horiz_winds directly, I think
   fm->get_field("horiz_winds").get_header().get_tracking().update_time_stamp(time);
@@ -150,6 +151,7 @@ create_om (const std::string& filename_prefix,
   params.set<std::string>("filename_prefix",filename_prefix);
   params.set<std::string>("Floating Point Precision","real");
   params.set("Field Names",strvec_t{"p_mid","T_mid","qv","U","V"});
+  params.set("fill_value",fill_val);
 
   auto& ctrl_pl = params.sublist("output_control");
   ctrl_pl.set<std::string>("frequency_units","nsteps");

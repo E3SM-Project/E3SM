@@ -14,7 +14,7 @@ TEST_CASE("create_map_file")
   const int ngdofs_tgt = 2*ngdofs_src-1;
 
   std::string filename = "map_ncol" + std::to_string(ngdofs_src)
-                       + "_to_"     + std::to_string(ngdofs_src) + ".nc";
+                       + "_to_"     + std::to_string(ngdofs_tgt) + ".nc";
 
   // Existing dofs are "copied", added dofs are averaged from neighbors
   const int nnz = ngdofs_src + 2*(ngdofs_src-1);
