@@ -46,12 +46,16 @@ TEST_CASE("nudging_tests") {
   // Init scorpio
   scorpio::eam_init_pio_subsystem(comm);
 
-  const std::string nudging_data        = "nudging_data.INSTANT.nsteps_x1." + get_t0().to_string() + ".nc";
-  const std::string nudging_data_filled = "nudging_data_filled.INSTANT.nsteps_x1." + get_t0().to_string() + ".nc";
-
   // A refined grid, with one extra node in between each of the coarse ones
   const int ngcols_fine = 2*ngcols_data - 1;
   const int nlevs_fine  = 2*nlevs_data -1;
+
+  // Files names
+  auto postfix = ".INSTANT.nsteps_x1." + get_t0().to_string() + ".nc";
+  auto nudging_data        = "nudging_data" + postfix;
+  auto nudging_data_filled = "nudging_data_filled" + postfix;
+  auto map_file = "map_ncol" + std::to_string(ngcols_data)
+                + "_to_"     + std::to_string(ngcols_fine) + ".nc";
 
   // For grids managers, depending on whether ncols/nlevs match the (coarse)
   // values used to generate the data or are finer
@@ -282,6 +286,140 @@ TEST_CASE("nudging_tests") {
       }
       root_print (msg + (ok ? " PASS\n" : " FAIL\n"));
     }
+  }
+
+  SECTION ("horiz-remap") {
+    std::string msg = " -> Testing different horiz grids .......................";
+    root_print (msg + "\n");
+    bool ok = true;
+
+    const auto Pa = ekat::units::Pa;
+
+    // Helper lambda, to compute f on the "fine" horiz grid from f on the data
+    // Recall that the fine grid is a 1d grid, with all coarse grid cols and
+    // a new col in between each two coarse grids. The mapping weights are
+    // such that coarse cols are copied, and the new cols are the avg of the
+    // two coarse cols left and right.
+
+    auto manual_interp = [&](const Field& data, const Field& fine) {
+      auto fine_h = fine.get_view<Real**,Host>();
+      auto data_h = data.get_view<Real**,Host>();
+      for (int icol=0; icol<ncols_data; ++icol) {
+        for (int ilev=0; ilev<nlevs_data; ++ilev) {
+          fine_h(icol,ilev) = data_h(icol,ilev);
+          if (icol<ncols_data-1) {
+            fine_h(ncols_data+icol,ilev) = (data_h(icol,ilev) + data_h(icol+1,ilev))/2;
+          }
+        }
+      }
+      fine.sync_to_dev();
+    };
+
+    ekat::ParameterList params;
+    params.set<strvec_t>("nudging_filename",{nudging_data});
+    params.set<std::string>("source_pressure_type","TIME_DEPENDENT_3D_PROFILE");
+    params.set<std::string>("nudging_refine_remap_mapfile",map_file);
+    params.set<strvec_t>("nudging_fields",{"U"});
+    params.get<std::string>("log_level","warn");
+
+    // Create fm
+    auto fm = create_fm(grid_fine_h);
+    auto U = fm->get_field("U");
+    auto V = fm->get_field("V");
+    auto p_mid = fm->get_field("p_mid");
+
+    // Create and init nudging process
+    auto nudging = create_nudging(comm,params,fm,gm_fine_h,get_t0());
+
+    // Compute pmid on data grid
+    auto layout_data = grid_data->get_3d_scalar_layout(true);
+    Field p_mid_data(FieldIdentifier("p_mid",layout_data,Pa,grid_data->name()));
+    p_mid_data.allocate_view();
+    update_field(p_mid_data,get_t0(),0);
+
+    manual_interp(p_mid_data,p_mid);
+
+    auto time = get_t0();
+    Field tmp_data = p_mid_data.clone("tmp data");
+    Field tmp_fine = p_mid.clone("tmp fine");
+    for (int n=0; ok and n<nsteps_data; ++n) {
+      // Run nudging
+      nudging->run(dt_data);
+
+      // Compute data on fine grid, by manually interpolating
+      // (recall that nudging runs at t+dt)
+      update_field(tmp_data,time+dt_data,0);
+      manual_interp(tmp_data,tmp_fine);
+
+      print_field_hyperslab(U);
+      CHECK (views_are_equal(tmp_fine,fm->get_field("U")));
+      ok &= catch_capture.lastAssertionPassed();
+      time += dt_data;
+    }
+    root_print (msg + (ok ? " PASS\n" : " FAIL\n"));
+  }
+
+  SECTION ("filled-data") {
+    std::string msg = " -> Testing data with top/bot levels filled .............";
+    root_print (msg + "\n");
+    bool ok = true;
+
+    // Helper lambda, to manually cure filled levels
+    auto manual_cure = [&](const Field& f) {
+      auto f_h = f.get_view<Real**,Host>();
+      auto ncols = f.get_header().get_identifier().get_layout().dim(0);
+      auto nlevs = f.get_header().get_identifier().get_layout().dim(1);
+      auto first_good = nlevs_filled;
+      auto last_good  = nlevs - nlevs_filled - 1;
+      for (int icol=0; icol<ncols; ++icol) {
+        for (int ilev=0; ilev<nlevs_filled; ++ilev) {
+          f_h(icol,ilev) = f_h(icol,first_good);
+        }
+        for (int ilev=last_good+1; ilev<nlevs; ++ilev) {
+          f_h(icol,ilev) = f_h(icol,last_good);
+        }
+      }
+      f.sync_to_dev();
+    };
+
+    ekat::ParameterList params;
+    params.set<strvec_t>("nudging_filename",{nudging_data_filled});
+    params.set<std::string>("source_pressure_type","TIME_DEPENDENT_3D_PROFILE");
+    params.set<strvec_t>("nudging_fields",{"U"});
+    params.get<std::string>("log_level","warn");
+
+    // Create fm. Init p_mid, since it's constant in this file
+    auto fm = create_fm(grid_data);
+    auto U = fm->get_field("U");
+    auto p_mid = fm->get_field("p_mid");
+    update_field(p_mid,get_t0(),0);
+
+    // Create and init nudging process
+    auto nudging = create_nudging(comm,params,fm,gm_data,get_t0());
+
+    auto time = get_t0();
+    Field tmp = p_mid.clone("tmp");
+    for (int n=0; ok and n<nsteps_data; ++n) {
+      // Run nudging
+      nudging->run(dt_data);
+
+      // Compute data on fine grid, by manually interpolating
+      // (recall that nudging runs at t+dt)
+      update_field(tmp,time+dt_data,0);
+      manual_cure(tmp);
+
+      if (not views_are_equal(tmp,U)) {
+        print_field_hyperslab(U);
+        print_field_hyperslab(tmp);
+        scorpio::eam_pio_finalize();
+        return;
+      }
+      print_field_hyperslab(U);
+      CHECK (views_are_equal(tmp,U));
+      ok &= catch_capture.lastAssertionPassed();
+      time += dt_data;
+    }
+    root_print (msg + (ok ? " PASS\n" : " FAIL\n"));
   }
 
   // Clean up scorpio
