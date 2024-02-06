@@ -1,0 +1,627 @@
+\section{Simplified Higher-Order Closure (SHOC)}
+
+\subsection{Introduction}
+
+Simplified Higher Order Closure \citep[SHOC;][]{Bogenschutz_Krueger13} is a parameterization of subgrid-scale (SGS) clouds and turbulence.  It is formulated to parameterize SGS shallow cumulus, stratiform cloud, and boundary layer turbulence in models that can either resolve deep convection or has an existing deep convection parameterization.  SHOC is an assumed-PDF based parameterization and uses a double Gaussian PDF to diagnose cloud fraction, cloud water, and higher-order turbulence moments.  SHOC is only a liquid cloud parameterization, thus it is assumed that any model SHOC is implemented in can treat the ice cloud phase. 
+
+Table~\ref{table:prognostic} describes the SHOC prognostic variables and their nomenclature to be used throughout this document.  
+
+\begin{table}[b]
+\caption{Prognostic Variables in SHOC}
+\centering
+\begin{tabular}{c c c}
+\hline\hline
+variable & description & units \\
+\hline
+$\theta_{l}$ & Liquid water potential temperature & K \\
+$q_{t}$ & Total water mixing ratio (vapor + cloud liquid) & kg/kg \\
+$e$ & Turbulent kinetic energy & m$^2$/s$^2$ \\
+$u$ & Zonal wind component & m/s \\
+$v$ & Meridional wind component & m/s \\
+$c$ & Tracer constituent & varies \\
+\hline
+\end{tabular}
+\label{table:prognostic}
+\end{table}
+
+The liquid water potential temperature, $\theta_{l}$, is defined as:
+%
+\begin{equation}
+  \theta_{l} \approx \theta - \frac{L_{v}}{c_{pd}}q_{l}
+  \label{thetal}
+\end{equation}
+%
+where $\theta$ is potential temperature, $L_{v}$ is the latent heat of vaporization, $c_{pd}$ the specific heat of dry air at constant pressure, $q_{l}$ the liquid water mixing ratio.  The turbulent kinetic energy ($\overline{e}$) is defined as
+%
+\begin{equation}
+  \overline{e} = 0.5(\overline{u^{'2}}+\overline{v^{'2}}+\overline{w^{'2}}) , 
+  \label{tke}
+\end{equation}  
+%
+where $\overline{u^{'2}}$, $\overline{v^{'2}}$, and $\overline{w^{'2}}$ represent the SGS zonal, meridional, and vertical wind variances, respectively.  
+
+In the SHOC parameterization, all prognostic variables are defined vertically at the mid-point of the grid box.  
+
+Table~\ref{table:diagnostic} describes key diagnostic variables used throughout the SHOC parameterization, and their respective locations on the vertical grid.  Note that many diagnostic variables are defined at the interfaces of the grid box.  This is because many diagnostic variables are the result of centered vertical differences of the prognostic variables.  
+
+\begin{table}[ht]
+\caption{Key Diagnostic Variables in SHOC.  M in the location column indicates that the variable is located vertically in the mid-point of the grid box, while I indicates that the variable is located at the grid interfaces.}
+\centering
+\begin{tabular}{c c c c}
+\hline\hline
+variable & description & units & location \\
+\hline
+$L$ & Turbulent Length Scale & m & M \\
+$\overline{\theta_{l}^{'2}}$ & Temperature variance & K$^2$ & I \\
+$\overline{q_{t}^{'2}}$ & Moisture variance & kg$^2$/kg$^2$ & I \\
+$\overline{w^{'2}}$ & Vertical velocity variance & m$^2$/s$^2$ & M \\
+$\overline{w^{'}\theta_{l}^{'}}$ & Vertical temperature flux & K m/s & I \\
+$\overline{w^{'}q_{t}^{'}}$ & Vertical moisture flux & m/s kg/kg & I \\
+$\overline{q_{t}^{'}\theta_{l}^{'}}$ & Temperature and moisture covariance & K kg/kg & I \\
+$\overline{w^{'3}}$ & Third moment of vertical velocity &  m$^3$/s$^3$ & I \\
+$\overline{w^{'}\theta_{v}^{'}}$ & Buoyancy flux & K m/s & M \\
+$K_{m}$ & Eddy diffusivity for momentum & m$^2$/s & M \\
+$K_{h}$ & Eddy diffusivity for heat & m$^2$/s & M \\
+\hline
+\end{tabular}
+\label{table:diagnostic}
+\end{table}  
+
+The code for SHOC breaks down each process into a separate subroutine.  Briefly, the order of operations of SHOC is described below.  Each process is then expanded upon with its own section.
+
+SHOC order of operations:
+\begin{enumerate}
+  \item \textbf{Diagnose Turbulence Length Scale} (section~\ref{turb_scale}): The length scale represents the size of unresolved large eddies in a column.  This is needed to close the TKE equation and to diagnose several second order moments.
+  \item \textbf{Solve the Turbulence Kinetic Energy Equation} (section~\ref{tke_equation}): Advance the TKE equation (due to shear production, buoyant production, and dissipation processes) one time step.  Note that advection of TKE is performed by the host model, while turbulent transport of TKE is done by SHOC turbulence diffusion.    
+  \item \textbf{Perform Turbulence Diffusion} (section~\ref{turb_diffusion}): Using eddy coefficients derived from TKE, advance $\overline{u}$, $\overline{v}$, $\overline{\theta_{l}}$, $\overline{q_{t}}$ , $\overline{e}$, and any tracers ($\overline{c}$) one time step using an implicit diffusion solver.  
+  \item \textbf{Diagnose the Second Order Moments} (section~\ref{diag_second}): Diagnose $\overline{q_{t}^{'2}}$, $\overline{\theta_{l}^{'2}}$, $\overline{q_{t}^{'}\theta_{l}^{'}}$, $\overline{w^{'2}}$, $\overline{w^{'}\theta_{l}^{'}}$, and $\overline{w^{'}q_{t}^{'}}$.  These are the second order moments needed to close the assumed PDF.
+  \item \textbf{Diagnose the Third Order Moment} (section~\ref{diag_third}):  Diagnose the third moment of vertical velocity ($\overline{w^{'3}}$), needed to parameterize vertical velocity skewness in the assumed PDF
+  \item \textbf{Compute Assumed PDF} (section~\ref{assumed_pdf}): Use the Assumed PDF to compute SGS cloud water, cloud fraction, and the buoyancy flux ($\overline{w^{'}\theta_{v}^{'}}$).
+\end{enumerate}
+
+In SHOC the order of operations is chosen deliberately so that the prognostic variables are updated first and the clouds are diagnosed last.  This is to prevent supersaturation from occurring when SHOC is complete, to avoid any potential conflicts with a microphysics scheme which may be called in the host model. 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%% TURBULENCE LENGTH SCALE
+\subsection{Turbulence Length Scale}
+\label{turb_scale}
+
+The empirical formulation is based on the finding that the turbulent length scale is highly correlated with the distance from the wall, strength of the turbulence, boundary layer depth, and local thermal stability (Bogenschutz et al. 2010).  Within the turbulent boundary layer, the length scale definition is set equal to an asymptotic shape, similar to that of \cite{Blackadar_62}.  However it is weighted more strongly by the strength of the turbulence.  This reflects the behavior that as the grid size increases, the SGS TKE increases and so does the mixing length.  The effects of thermal stability are also included to reduce the length scale where the local stability is large.  
+
+The formulation in (\ref{thelength}) is empirically determined from LES data and essentially represents a geometric average between the strength of the SGS TKE (as suggested by Texieria et al. 2004) and an asymptote length scale, with a contribution due to stability effects.  The geometric average assures that in close proximity to the surface, the length scale will be small.  
+%
+\begin{equation}
+  L=\sqrt[]{8\left[\frac{1}{\tau\sqrt[]{e}kz}+\frac{1}{\tau\sqrt[]{e}L_{\infty}}+0.01\delta\frac{N^{2}}{\overline{e}}\right]^{-1}}
+  \label{thelength}
+\end{equation}
+
+Above, $k$ is the von Karman constant.  $L_{\infty}$ is the asymptotic value of the length scale as defined in Blackadar (1962) as
+%
+ \begin{equation}
+  L_{\infty}=0.1\frac{\int_{0}^{\infty}\overline{e}^{1/2}z dz}{\int_{0}^{\infty} \overline{e}^{1/2} dz}. 
+  \end{equation}
+ %
+   In equation~\ref{thelength} $\delta$ is defined as:
+\[
+\delta = \left\{ 
+\begin{array}{l l}
+  1 & \quad \text{if} \quad N^{2} > 0 \\
+  0 & \quad \text{if} \quad N^{2} \le 0 \\
+\end{array} \right.
+\]     
+%
+where $N^{2}$ is the moist Brunt Vaisala Frequency.  In SHOC $N^{2}$ is defined as:
+%
+\begin{equation}
+  N^{2} = \frac{g}{\overline{\theta_{v}}}\frac{\partial{\overline{\theta_{v}}}}{\partial{z}}
+  \label{brunt}
+\end{equation}
+%
+where $\theta_{v}$ is the virtual potential temperature defined as:
+%
+\begin{equation}
+  \theta_{v}=\theta(1 + 0.61q_{v} - q_{l}) , 
+  \label{thetav}
+\end{equation}
+%
+where $q_{v}$ is the water vapor mixing ratio. 
+%
+Finally, $\tau$ in equation~\ref{thelength} represents the eddy turnover timescale and is defined as
+%
+\begin{equation}
+  \tau = \frac{D_{b}}{w_{*}},
+  \label{conv_scale}
+\end{equation} 
+
+where $D_{b}$ is the boundary layer depth and is computed according to that of Holtslag and Boville (1993).  $w_{*}$ represents the convective velocity scale, integrated from the surface to the height of the boundary layer depth, and is defined as:
+%
+\begin{equation}
+  w_{*}^{3}=2.5\frac{g}{\overline{\theta_{v}}} \int_{0}^{z_{D_{b}}} \overline{w^{'}\theta_{v}^{'}} dz .   
+  \label{wstar_pbl}
+\end{equation}
+
+In the event that $w_{*}^{3} < 0$, which is indicative of a stable boundary layer, then $\tau$ is set to a default value of 100 s.  
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%% TURBULENT KINETIC ENERGY
+\subsection{Turbulent Kinetic Energy Equation}
+\label{tke_equation}
+
+In SHOC, the turbulent kinetic energy (TKE) equation to be solved is given by:
+%
+\begin{equation}
+  \frac{\partial{\overline{e}}}{\partial{t}}=\underbrace{-\overline{u_{j}}\frac{\partial{\overline{e}}}{\partial{x_{j}}}}_\text{advection}+\underbrace{\frac{g}{\overline{\theta_{v}}}\left(\overline{w^{'}\theta_{v}^{'}}\right)}_\text{buoyant production}-\underbrace{P_{s}}_\text{shear production}-\underbrace{\frac{\partial{\overline{w^{'}e}}}{\partial{z}}}_\text{turbulent transport}-\underbrace{C_{ee}\frac{\overline{e}^{3/2}}{L}}_\text{dissipation} .  
+  \label{sgstke}
+\end{equation}
+
+The first term on the RHS of equation~\ref{sgstke} is advection, which is performed by the host model (i.e. SCREAM dynamics) and not SHOC.  
+
+The second term is the buoyant production of TKE.  The buoyancy flux term ($\overline{w^{'}\theta_{v}^{'}}$) is closed by integrating over the assumed PDF (see section~\ref{assumed_pdf}) using equation~\ref{buoyancy}.  Thus, $\overline{w^{'}\theta_{v}^{'}}$ from the previous SHOC time step is used to close this term.  
+
+The shear production term is computed according to \cite{bretherton2009_moist}:
+%
+\begin{equation}
+  -P_{s}= -\overline{w^{'}u^{'}}\frac{\partial{\overline{u}}}{\partial{z}}-\overline{w^{'}v^{'}}\frac{\partial{\overline{v}}}{\partial{z}} = K_{M}S^{2} , 
+  \label{shearprod}
+\end{equation}
+%
+where
+\begin{equation}
+  S^{2} = \left(\frac{\partial{\overline{u}}}{\partial{z}}\right)^2+\left(\frac{\partial{\overline{v}}}{\partial{z}}\right)^2 . 
+  \label{tke_Sterm}
+\end{equation}
+%
+Since $\overline{u}$ and $\overline{v}$ are located vertically in the mid-points, $S^{2}$ is computed on the interface grid, then interpolated onto the mid-point grid.  After the shear production term is calculated on the interface grid, it is interpolated to the mid-point grid to be consistent with the location of $\overline{e}$. 
+
+The boundary surface value of $K_{M}S^{2}$ is set to zero as the boundary fluxes for TKE are applied in the diffusion solver.  
+
+The fourth term on the RHS of equation~\ref{sgstke} represents the turbulent transport of TKE.  This term is computed in the turbulent diffusion (section~\ref{turb_diffusion}) of SHOC.  
+
+The last term on the RHS of equation~\ref{sgstke} represents the turbulent dissipation of TKE.  Here $C_{ee}$ is a turbulent constant, which is defined in \cite{Deardorff_80} as $C_{ee}=C_{e1}+C_{e2}$, where $C_{e1} = C_{e}/0.133$ and $C_{e1} = C_{e}/0.357$ and $C_{e}=C_{k}^{3}/C_{s}^{4}$.  Finally, $C_{k} = 0.1$ and $C_{s} = 0.15$.  
+
+\subsubsection{Eddy Diffusivities}
+
+\paragraph{Default Formulation}
+
+After TKE is updated due to buoyant production, shear production, and dissipation processes, the eddy diffusivity parameters for heat and momentum, to be used in turbulence diffusion, are respectively defined in the TKE module as:
+\begin{equation}
+  K_{H}=C_{Kh} \tau_{v} \overline{e}
+  \label{diffusivity_heat}
+\end{equation}
+%
+\begin{equation}
+  K_{M}=C_{Km} \tau_{v} \overline{e}
+  \label{diffusivity_momentum}
+\end{equation}
+%
+where $C_{Kh}$ and $C_{Km}$ are tunable constants.  $C_{Kh}$ and $C_{Km}$ could be tuned independently, but as a starting point we set them equal to 0.1.  In equations~\ref{diffusivity_heat} and~\ref{diffusivity_momentum} $\tau_{v}$ represents a damped return to isotropic timescale where $\tau=2\overline{e}/\epsilon$ and
+%
+\begin{equation}
+  \tau_{v}=\tau\left[1+\lambda_{0}N^{2}\tau^{2}\right]^{-1}
+  \label{tauv}
+\end{equation}
+% 
+where $\lambda_{0}=0$ if $N^{2} < 0$ and $\epsilon$ is the turbulence dissipation rate (last term of equation~\ref{sgstke}).  If $N^{2} > 0$ then $\lambda_{0}$ is set as a ramp function in terms of the integrated column stability in the lower troposphere ($N_{\infty}^{2}$): 
+%
+\begin{equation}
+  \lambda_{0} = \lambda_{min} + \lambda_{slope}*(\frac{N_{\infty}^{2}}{g} - N_{low}), 
+  \label{lambda0}
+\end{equation}
+% 
+%
+\begin{equation}
+  N_{\infty}^{2} = \int_{1000 hPa}^{800 hPa} N^{2} dz . 
+  \label{int_N}
+\end{equation}
+%
+
+Where $\lambda_{min} = 0.001$, $\lambda_{slope}$ = 0.35, and $N_{low}$ = 0.037.  Here, $\lambda_{slope}$ is an adjustable parameter.  $\lambda_{0}$ has a minimum threshold of 0.001 and a maximum threshold of 0.04.   
+
+\paragraph{Stable Boundary Layer}
+
+For the case of a moderate to very stable boundary layer, the formulation of the eddy diffusivities are revised to promote sufficient mixing, as they are based primarily on turbulence shear production, and prevent runaway cooling.  We use the dimensionless Obukov length, $z/L$ to determine when to trigger the stable boundary layer eddy diffusivities, where $z$ is the height of the lowest mid-point grid height and L the Monin-Obukhov length defined as
+%
+\begin{equation}
+  L=-\frac{u_{*}^{3}\overline{\theta_{v}}}{kg\left(\overline{w^{'}\theta^{'}_{v}}\right)_{s}}. 
+  \label{monin}
+\end{equation}
+%
+The stable boundary layer formulation for the eddy diffusivities triggers when $z/L$ is greater than 100, which signifies a moderately or very stable boundary layer.  These stable boundary layer diffusivities are applied for the PBL depth within this column and are defined as:
+%
+\begin{equation}
+  K_{H}=C_{Khs} L^{2} S
+  \label{stable_diffusivity_heat}
+\end{equation}
+%
+and
+%
+\begin{equation}
+  K_{M}=C_{Kms} L^{2} S , 
+  \label{stable_diffusivity_momentum}
+\end{equation}
+%
+where $C_{Khs}$ and $C_{Kms}$ are the stable boundary eddy coefficients for heat and momentum, respectively.  By default these values are set to 1. 
+ 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%% TURBULENCE DIFFUSION
+\subsection{Turbulence Diffusion}
+\label{turb_diffusion}
+
+The prognostic variables for SHOC (table~\ref{table:prognostic}) are updated due to turbulence diffusion via:
+%
+\begin{equation}
+  \frac{\partial{\overline{\chi}}}{\partial{t}}= - \frac{\partial{\overline{w^{'}\chi^{'}}}}{\partial{z}} . 
+  \label{turb_gov}
+\end{equation}
+%
+Where $\chi$ represents any of SHOC's prognostic variables ($\theta_{l}$, $q_{t}$, $u$, $v$, $e$, or $c$).  SHOC uses downgradient diffusion to represent the vertical flux of turbulence using:
+%
+\begin{equation}
+  \overline{w^{'}\chi^{'}} = -K_{\chi}\frac{\partial{\chi}}{\partial{z}}, 
+  \label{vert_diffusion}
+\end{equation}
+%
+where $K_{\chi}$ represents either $K_{H}$ or $K_{M}$.   
+
+To preserve numerical stability equations~\ref{turb_gov} and~\ref{vert_diffusion} are solved using an implicit backward Euler scheme for the diffusion of $\theta_{l}$, $q_{t}$, $u$, $v$, $e$, or $c$.  Given an input state $\chi^{*}$ and diffusivity profile:
+%
+\begin{equation}
+  \frac{\chi(t+\Delta{t}) - \chi^{*}}{\Delta{t}} = \frac{\partial}{\partial{z}}\left(K_{\chi}(z)\frac{\partial}{\partial{z}}\chi(t+\Delta{t})\right) . 
+  \label{euler_step}
+\end{equation}
+%
+In SHOC the surface fluxes for heat, moisture, TKE, and tracers are explicitly deposited into the lowest model layer and then implicit diffusion is performed.  For TKE the bottom surface flux is defined as 
+\begin{equation}
+  u_{*}^{3} = max(\sqrt((\overline{u^{'}w^{'}}_{sfc}+\overline{v^{'}w^{'}}_{sfc})^{0.5}),0.01) . 
+  \label{ustar_tke}
+\end{equation}
+
+However, the method of explicit surface fluxes results in a numerically unstable solution for momentum since such explicit adding can flip the direction of the lowest model layer wind ($\overline{u}_{s}^{*}$, $\overline{v}_{s}^{*}$), especially when the lowest model layer is thin.    Thus, the surface momentum fluxes ($\tau_{x}^{*}$ = $\overline{u^{'}w^{'}}_{s}$,$\tau_{y}^{*}$ = $\overline{v^{'}w^{'}}_{s}$) in SHOC are added in an implicit way.  This is done by computing the total momentum surface stress and applying this as a boundary condition in equation~\ref{euler_step}: 
+%
+\begin{equation}
+  k_{tot} = max[\sqrt((\tau_{x}^{*})^{2}+(\tau_{y}^{*})^{2}) /max(\sqrt((\overline{u}_{s}^{*})^{2}+(\overline{u}_{s}^{*})^{2}),1),10^{-4}] . 
+  \label{k_tot}
+\end{equation}
+%
+The procedure for the solution of the implicit equation~\ref{euler_step} follows that of \cite{Richtmyer_Morton67} pages 198-200.  
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%% SECOND ORDER MOMENTS
+\subsection{Diagnosis of Second Order Moments}
+\label{diag_second}
+
+In order to close the assumed PDF (section~\ref{assumed_pdf}) we need to diagnose several second order moments.  Namely, we need to determine, $\overline{w^{'}\theta_{l}^{'}}$, $\overline{w^{'}q_{t}^{'}}$, $\overline{q_{w}^{'}\theta_{l}^{'}}$, $\overline{q_{t}^{'2}}$, $\overline{\theta_{l}^{'2}}$, and $\overline{q_{w}^{'}\theta_{l}^{'}}$. 
+
+The expression we use to determine $\overline{w^{'}\theta_{l}^{'}}$ and $\overline{w^{'}q_{t}^{'}}$ is based on downgradient diffusion as:
+%
+\begin{equation}
+ \begin{split}
+    \overline{w^{'}C^{'}}=-K_{H}\frac{\partial{\overline{C}}}{\partial{z}} \\
+  \end{split}
+  \label{downgradient4}
+\end{equation}
+%   
+where $C$ is interchanged for $\theta_{l}$ and $q_{t}$.  
+
+For the scalar variances and covariances, SHOC diagnoses these terms as:
+%
+\begin{equation}
+  \overline{q_{t}^{'2}}=C_{q_{t}}S_{m}\left(\frac{\partial{\overline{q_{t}}}}{\partial{z}}\right)^{2}
+  \label{bogen_qw2}
+\end{equation}
+%  
+\begin{equation}
+  \overline{\theta_{l}^{'2}}=C_{\theta_{l}}S_{m}\left(\frac{\partial{\overline{\theta_{l}}}}{\partial{z}}\right)^{2}
+  \label{bogen_thl2}
+\end{equation}
+%  
+\begin{equation}
+  \overline{q_{t}^{'}\theta_{l}^{'}}=C_{q_{t}\theta_{l}}S_{m}\frac{\partial{\overline{q_{t}}}}{\partial{z}}\frac{\partial{\overline{\theta_{l}}}}{\partial{z}} , 
+  \label{bogen_qwhl2}
+\end{equation}
+%  
+where $S_{m}=\tau_{v} K_{H}$.  $C_{q_{t}}$, $C_{\theta_{l}}$, and $C_{q_{t}\theta_{l}}$ are tunable coefficients to adjust the strength of diagnosed variances and covariances.  Default setting for these coefficients are $C_{q_{t}}$, $C_{\theta_{l}}$, and $C_{q_{t}\theta_{l}}= 1.0$.
+
+Note that $\overline{w^{'}\theta_{l}^{'}}$, $\overline{w^{'}q_{t}^{'}}$, $\overline{q_{w}^{'}\theta_{l}^{'}}$, $\overline{q_{t}^{'2}}$, $\overline{\theta_{l}^{'2}}$, and $\overline{q_{t}^{'}\theta_{l}^{'}}$ are all computed on the interface grid.  Thus, before the computation of these terms $K_{H}$ and $\tau_{v}$ are linearly interpolated to the interface grid.   
+
+The expression for $\overline{w^{'2}}$ is:
+%
+\begin{equation}
+  \overline{w^{'2}}=\frac{2}{3}\overline{e}
+  \label{w2_param_2}
+\end{equation}
+%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%% THIRD MOMENT OF VERTICAL VELOCITY
+\subsection{Third Moment of Vertical Velocity}
+\label{diag_third}
+
+The final term needed to close the assumed PDF is the third order moment of vertical velocity ($\overline{w^{'3}}$), which is parameterized following that of \citep{Canuto_et01}. \cite{Canuto_et01} provides expressions for several third-order moments, but we are only interested in $\overline{w^{'3}}$.  
+
+The expressions provided by \cite{Canuto_et01} were originally derived for the dry convective boundary layer and we simply replace potential temperature with liquid water potential temperature ($\overline{\theta_{l}}$) to make the expressions valid in moist convection. The original dynamic equations for the third order moment can be found in \cite{Canuto_92} and these equations entail fourth-order moments that can be written as
+%
+\begin{equation}
+  \overline{a^{'}b^{'}c^{'}d^{'}}=\left(\overline{a^{'}b^{'}}\hspace{0.1cm}\overline{c^{'}d^{'}}+\overline{a^{'}c^{'}}\hspace{0.1cm}\overline{b^{'}d^{'}}+\overline{a^{'}d^{'}}\hspace{0.1cm}\overline{b^{'}c^{'}}\right)F . 
+  \label{fourth}
+\end{equation}
+%
+If function $F$ is taken to be unity then the above expression reduces to the quasi-normal approximation.  This was done in \cite{Canuto_et94} but the results of some of their third-order moments were not satisfactory when compared to LES data.   
+
+The expression for $\overline{w^{'3}}$ is as follows:
+%
+\begin{equation}
+\overline{w^{'3}}=\left(\Omega_{1}-1.2X_{1}-\frac{3}{2}f_{5}\right)\left(c-1.2X_{0}+\Omega_{0}\right)^{-1},
+  \label{w3_z}
+\end{equation}
+%
+with the functions $X$ and $\Omega_{0}$ defined as
+%
+\begin{equation}
+  \label{Xomega_func}
+  \begin{split}
+    X_{0}=\gamma_{2}\tilde{N}^{2}\left(1-\gamma_{3}\tilde{N}^{2}\right)\left[1-\left(\gamma_{1}+\gamma_{3}\right)\tilde{N}^{2}\right]^{-1}\\
+    X_{1}=\left[\gamma_{0}f_{0}+\gamma_{1}f_{1}+\gamma_{2}\left(1-\gamma_{3}\tilde{N}^{2}\right)f_{2}\right]\left[1-\left(\gamma_{1}+\gamma_{3}\right)\tilde{N}^{2}\right]^{-1}\\
+    \Omega_{0}=\omega_{0}X_{0}+\omega_{1}Y_{0}\\
+    \Omega_{1}=\omega_{o}X_{1}+\omega_{1}Y_{1}+\omega_{2}.
+  \end{split}
+\end{equation}
+%
+The $\omega$ function's are given by
+%
+\begin{equation}
+  \label{omegas}
+  \begin{split}
+  \omega_{0}=\gamma_{4}\left(1-\gamma_{5}\tilde{N}^{2}\right)^{-1}\\
+  \omega_{1}=\left(2c\right)^{-1}\omega_{0}\\
+  \omega_{2}=\omega_{1}f_{3}+\frac{5}{4}\omega_{0}f_{4}.
+  \end{split}
+\end{equation}
+%
+The $\gamma$'s are constants which depend on the adjustable parameter $c$.  Canuto et al. (2001) and previous work found that $c=7$, although small variations are allowed.  The $\gamma$ constants are given by:
+%
+\begin{equation}
+  \label{gammas}
+  \begin{split}
+  \gamma_{0}=0.52c^{-2}\left(c-2\right)^{-1}\\
+  \gamma_{1}=0.87c^{-2}\\
+  \gamma_{2}=0.5c^{-1}\\
+  \gamma_{3}=0.60c^{-1}\left(c-2\right)^{-1}\\
+  \gamma_{4}=2.4\left(3c+5\right)^{-1}\\
+  \gamma_{5}=0.6c^{-1}\left(3c+5\right)^{-1}.
+  \end{split}
+\end{equation}
+%
+Finally, the functions are introduced which incorporate the second-order moments of $\overline{w^{'2}}$, $\overline{w^{'}\theta_{l}^{'}}$, $\overline{\theta_{l}^{'}}$, and $\overline{e}$.  These are defined as follows:
+%
+\begin{equation}
+  \label{f_functions}
+  \begin{split}
+  f_{0}=\left(g\alpha\right)^{3}\tau_{v}^{4}\overline{w^{'}\theta_{l}^{'}}\frac{\partial{\overline{\theta_{l}^{'2}}}}{\partial{z}}\\
+  f_{1}=\left(g\alpha\right)^{2}\tau_{v}^{3}\left(\overline{w^{'}\theta_{l}^{'}}\frac{\partial{\overline{w^{'}\theta_{l}^{'}}}}{\partial{z}}+\frac{1}{2}\overline{w^{'2}}\frac{\partial{\overline{\theta_{l}^{'}}}}{\partial{z}}\right)\\
+  f_{2}=g\alpha\tau_{v}^{2}\overline{w^{'}\theta_{l}^{'}}\frac{\partial{\overline{w^{'2}}}}{\partial{z}}+2g\alpha\tau_{v}^{2}\overline{w^{'2}}\frac{\partial{\overline{w^{'}\theta_{l}^{'}}}}{\partial{z}}\\
+  f_{3}=g\alpha\tau_{v}^{2}\left(\overline{w^{'2}}\frac{\partial{\overline{w^{'}\theta_{l}^{'}}}}{\partial{z}}+\overline{w^{'}\theta_{l}^{'}}\frac{\partial{\overline{e}}}{\partial{z}}\right)\\
+  f_{4}=\tau_{v}\overline{w^{'2}}\left(\frac{\partial{\overline{w^{'2}}}}{\partial{z}}+\frac{\partial{\overline{e}}}{\partial{z}}\right)\\
+  f_{5}=\tau_{v}\overline{w^{'2}}\frac{\partial{\overline{w^{'2}}}}{\partial{z}}.
+  \end{split}
+\end{equation}
+%
+All of the above $f$ functions have the dimensions of velocity cubed.  In addition, we define $\tilde{N}^{2}=\tau_{v}^{2}N^{2}$.
+
+Once $\overline{w^{'3}}$ is determined we perform clipping to ensure that this calculation does not produce unrealistically large values.  $\mid\overline{w^{'3}}\mid$ is constrained by $ w3_{clip} \sqrt{2.0 \overline{w^{'2}}} $.  Where $w3_{clip}$ is an adjustable parameter with a default value of 1.2.   
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%% ASSUMED PDF
+\subsection{Assumed PDF}
+\label{assumed_pdf}
+%
+Here details of the Analytic Double Gaussian (ADG) 1 PDF (as referred to in \cite{Larson_et02}, which is the PDF used in SHOC, are presented.  The input moments for this PDF are $\overline{\theta_{l}}$, $\overline{q_{t}}$, $\overline{w^{'2}}$, $\overline{w^{'}\theta_{l}^{'}}$, $\overline{w^{'}q_{t}^{'}}$, $\overline{q_{w}^{'}\theta_{l}^{'}}$, $\overline{q_{t}^{'2}}$, $\overline{\theta_{l}^{'2}}$, $\overline{q_{w}^{'}\theta_{l}^{'}}$, and $\overline{w^{'3}}$.  Note that at the beginning of this module $\overline{w^{'}\theta_{l}^{'}}$, $\overline{w^{'}q_{t}^{'}}$, $\overline{q_{w}^{'}\theta_{l}^{'}}$, $\overline{q_{t}^{'2}}$, $\overline{\theta_{l}^{'2}}$, $\overline{w^{'3}}$ are interpolated to the mid-point grid.  
+
+This PDF, as the name suggests, is based on the double Gaussian form as
+%
+\begin{equation}
+  P_{adg1}(w^{'},\theta_{l}^{'},q_{t}^{'})=aG_{1}(w^{'},\theta_{l}^{'},q_{t}^{'})+(1-a)G_{2}(w^{'},\theta_{l}^{'},q_{t}^{'}).
+  \label{adg1}
+\end{equation}
+%
+Here $G_{1}$ and $G_{2}$ are the individual Gaussians and the parameters for the ADG 1 can be found analytically.  To do this, some assumptions have to be made.  The first assumption is that the subplume variations in $w$ are uncorrelated with those in $q_{t}$ and $\theta_{l}$.  Letting $i$ = 1 or 2, the individual Gaussians in equation~\ref{adg1} are then given by
+%
+\begin{equation}
+  \label{ind_gaus}
+  \begin{split}
+    G_{i}(w^{'},\theta_{l}^{'},q_{t}^{'})=\frac{1}{(2\pi)^{3/2}\sigma_{wi}\sigma_{q_{t}i}\sigma_{\theta_{l}i}(1-r_{q_{t}\theta_{l}i}^{2})^{1/2}}\exp\left[-\frac{1}{2}\left(\frac{w^{'}-(w_{i}-\overline{w})}{\sigma_{wi}}\right)^{2}\right] \\
+    \times \exp\left(-\frac{1}{2(1-r_{q_{t}\theta_{l}i}^{2})}\left\{\left[\frac{q_{t}^{'}-(q_{ti}-\overline{q_{t}})}{\sigma_{q_{t}i}}\right]^{2}+\left[\frac{\theta_{l}^{'}-(\theta_{li}-\overline{\theta_{l}})}{\sigma_{\theta_{l}i}}\right]^{2} \right. \right. \\
+    -\left.\left.2r_{q_{t}\theta_{l}i}\left[\frac{q_{t}^{'}-(q_{ti}-\overline{q_{t}})}{\sigma_{q_{t}i}}\right]\left[\frac{\theta_{l}^{'}-(\theta_{li}-\overline{\theta_{l}})}{\sigma_{\theta_{l}i}}\right]\right\}\right).
+  \end{split}
+\end{equation}
+%
+Now we must define the PDF parameters.  The PDF parameters are based on the equations of \cite{Lewellen_Yoh93} and are found by integrating over the 12 relevant input moments over the double Gaussian PDF.  Four of these equations are (the rest are analogous):
+%
+\begin{eqnarray}
+%  \begin{split}
+    \overline{w} &=& aw_{1}+(1-a)w_{2}  \label{mom_equations} \\
+    \overline{w^{'2}} &=& a[(w_{1}-\overline{w})^{2}+\sigma_{w1}^{2}]+(1-a)[(w_{2}-\overline{w})^{2}+\sigma_{w2}^{2}] \nonumber \\
+    \overline{w^{'3}} &=& a[(w_{1}-\overline{w})^{3}+3(w_{1}-\overline{w})\sigma_{w1}^{2}]+(1-a)[(w_{2}-\overline{w})^{3}+3(w_{2}-\overline{w})\sigma_{w2}^{2}] \nonumber \\
+    \overline{w^{'}q_{t}^{'}} &=& a[(w_{1}-\overline{w})(q_{t1}-\overline{q_{t}})+r_{wq_{t}1}\sigma_{w1}\sigma_{q_{t1}}]+(1-a)[(w_{2}-\overline{w})(q_{t2}-\overline{q_{t}})+r_{wq_{t}2}\sigma_{w2}\sigma_{q_{t2}}]. \nonumber
+%  \end{split}
+\end{eqnarray}
+%
+with the relative amplitude of the Gaussian $a$ is defined as
+%
+\begin{equation}
+  a=\frac{1}{2}\left\{1-Sk_{w}\left[\frac{1}{4(1-\tilde{\sigma}_{w}^{2})^{3}+Sk_{w}^{2}}\right]^{1/2}\right\}.
+  \label{adg_a}
+\end{equation}
+%
+This is obtained by assuming that the standard deviations of the two Gaussians are equal in $w$ and integrating over the PDF.  Here $Sk_{w}\equiv \overline{w^{'3}}/(\overline{w^{'2}}^{3/2})$, represents the skewness of vertical velocity.  In the case of $\overline{w^{'2}}$=0 it is assumed that the PDF reduces to a single delta function.  The parameters for $w_{1}$ and $w_{2}$ are given by:
+%
+\begin{equation}
+  \tilde{w}_{1}\equiv\frac{w_{1}-\overline{w}}{\sqrt[]{\overline{w^{'2}}}}=\left(\frac{1-a}{a}\right)^{1/2}(1-\tilde{\sigma}_{w}^{2})^{1/2}
+  \label{tildew_1}
+\end{equation}
+%
+and
+%
+\begin{equation}
+  \tilde{w}_{2}\equiv\frac{w_{2}-\overline{w}}{\sqrt[]{\overline{w^{'2}}}}=\left(\frac{a}{1-a}\right)^{1/2}(1-\tilde{\sigma}_{w}^{2})^{1/2} . 
+  \label{tildew_2}
+\end{equation}
+%
+To avoid numerical instabilities in the model a threshold for $a$ must be defined as 0.01 $\le$ $a$ $\le$ 0.99.  We also have the definitions of $\tilde{\sigma}_{w}\equiv\sigma_{w1}/ \sqrt[]{\overline{w^{'2}}} = \sigma_{w2}/\sqrt[]{\overline{w^{'2}}}$ and $\tilde{\sigma}_{w}^{2}=0.4$.  
+
+Now to define terms for $\theta_{l1}$ and $\theta_{l2}$ we get:
+%
+\begin{equation}
+  \tilde{\theta}_{l1}\equiv\frac{\theta_{l1}-\overline{\theta_{l}}}{\sqrt[]{\overline{\theta_{l}^{'2}}}}=-\frac{\overline{w^{'}\theta_{l}^{'}}/(\sqrt[]{\overline{w^{'2}}}\sqrt[]{\overline{\theta_{l}^{'2}}})}{\tilde{w}_{2}}
+  \label{tildethl_1}
+\end{equation}
+%
+and
+%
+\begin{equation}
+  \tilde{\theta}_{l2}\equiv\frac{\theta_{l2}-\overline{\theta_{l}}}{\sqrt[]{\overline{\theta_{l}^{'2}}}}=-\frac{\overline{w^{'}\theta_{l}^{'}}/(\sqrt[]{\overline{w^{'2}}}\sqrt[]{\overline{\theta_{l}^{'2}}})}{\tilde{w}_{1}} .  
+  \label{tildethl_2}
+\end{equation}
+%
+Should there be no variability in $\theta_{l}$ then the means of the Gaussians are set equal so that $\theta_{l1}$ = $\theta_{l2}$ = $\overline{\theta_{l}}$ and the widths of the Gaussians in the $\theta_{l}$ direction are set to zero.  
+
+Unlike vertical velocity, the widths in the $\theta_{l}$ direction are allowed to differ.  These are found by integrating over the PDF and defined as:
+%
+\begin{equation}
+  \frac{\sigma_{\theta_{l}1}^{2}}{\overline{\theta_{l}^{'2}}}=\frac{3\tilde{\theta}_{l2}[1-a\tilde{\theta}_{l1}^{2}-(1-a)\tilde{\theta}_{l2}^{2}]-[Sk_{\theta_{l}}-a\tilde{\theta}_{l1}^{3}-(1-a)\tilde{\theta}_{l2}^{3}]}{3a(\tilde{\theta}_{l2}-\tilde{\theta}_{l1})}
+  \label{sig_thl1}
+\end{equation}
+%
+and
+%
+\begin{equation}
+    \frac{\sigma_{\theta_{l}2}^{2}}{\overline{\theta_{l}^{'2}}}=\frac{3\tilde{\theta}_{l1}[1-a\tilde{\theta}_{l1}^{2}-(1-a)\tilde{\theta}_{l2}^{2}]-[Sk_{\theta_{l}}-a\tilde{\theta}_{l1}^{3}-(1-a)\tilde{\theta}_{l2}^{3}]}{3(1-a)(\tilde{\theta}_{l2}-\tilde{\theta}_{l1})}.
+  \label{sig_thl2}
+\end{equation}
+%
+To prevent unrealistic solutions the following condition is set
+%
+\begin{equation}
+  0 \le \frac{\sigma_{\theta_{l}1,2}^{2}}{\overline{\theta_{l}^{'2}}} \le 100.
+  \label{cond}
+\end{equation}
+%  
+Analogous equations are used to find $\tilde{q}_{t1,2}$ and $\sigma_{qt1,2}^{2}$.  
+
+The equations above make clear that SHOC is dependent on the skewness of $\theta_{l}$ and $q_{t}$.  For the ADG 1 PDF, neither $\overline{\theta_{l}^{'3}}$ and $\overline{q_{t}^{'3}}$ are input moments, therefore diagnostic assumptions must be made.  $Sk_{\theta_{l}}$ is simply set to zero for the ADG 1 PDF as it is found that this value prevents numerical instabilities from being introduced.  To represent skewness in cumulus layers the following conditions are set for $Sk_{q_{t}}$:  When $|\tilde{q}_{t2}-\tilde{q}_{t1}| >$ 0.4 we set $Sk_{q_{t}}$ = 1.2$Sk_{w}$.  When $|\tilde{q}_{t2}-\tilde{q}_{t1}| \le$ 0.2 we set $Sk_{q_{t}}$ = 0.  Between these two extremes $Sk_{q_{t}}$ is linearly interpolated.    
+
+The within-plume correlations are computed by setting $r_{q_{t}\theta_{l}1}$ = $r_{q_{t}\theta_{l}2}$ and integrating over the PDF to obtain an equation for $\overline{q_{t}^{'}\theta_{l}^{'}}$ and hence: 
+%
+\begin{equation}
+  r_{q_{t}\theta_{l}1,2}=\frac{\overline{q_{t}^{'}\theta_{l}^{'}}-a(q_{t1}-\overline{q_{t}})(\theta_{l1}-\overline{\theta_{l}})-(1-a)(q_{t2}-\overline{q_{t}})(\theta_{l2}-\overline{\theta_{l}})}{a\sigma_{q_{t}1}\sigma_{\theta_{l}1}+(1-a)\sigma_{q_{t}2}\sigma_{\theta_{l2}}}
+ \label{corr_eq}
+\end{equation}
+% 
+with the condition that
+%
+\begin{equation}
+-1 \le  r_{q_{t}\theta_{l}1,2} \le 1
+\end{equation}
+%
+because correlations must lie between -1 and 1.  
+
+Now that we have defined the PDF parameters, we can now diagnose SGS cloud and turbulence terms.  Cloud fraction, liquid water content, and liquid water flux are all given by:
+%
+\begin{eqnarray}
+  C &=& a(C)_{1}+(1-a)(C)_{2} \label{turb_terms}\\
+  \overline{q_{l}} &=& a(\overline{q_{l}})_{1}+(1-a)(\overline{q_{l}})_{2} \nonumber \\
+  \overline{w^{'}q_{l}^{'}} &=& a[(w_{1}-\overline{w})(\overline{q_{l}})+(\overline{w^{'}q_{l}^{'}})_{1}]+(1-a)[(w_{2}-\overline{w})(\overline{q_{l}})_{2}+(\overline{w^{'}q_{l}^{'}})_{2}] . \nonumber
+\end{eqnarray}
+%
+In addition, the buoyancy flux can be closed using the expression:
+%
+\begin{equation}
+  \overline{w^{'}\theta_{v}^{'}}=\overline{w^{'}\theta_{l}^{'}}+\frac{1-\epsilon_{o}}{\epsilon_{o}}\theta_{o}\overline{w^{'}q_{t}^{'}}+\left[\frac{L_{v}}{c_{p}}\left(\frac{p_{o}}{p}\right)^{R_{d}/c_{p}}-\frac{1}{\epsilon_{o}}\theta_{o}\right]\overline{w^{'}q_{l}^{'}}
+  \label{buoyancy}
+\end{equation}
+%
+The individual cloud fraction $C$ and mean specific liquid water content $\overline{q_{l}}$ are calculated by linearizing the variability in $\theta_{l}$ and $q_{t}$ (with analogous expressions for the Gaussian 1 and 2 for equations~\ref{cld_fracadg} though~\ref{wql_s}): 
+%
+\begin{equation}
+ C=\frac{1}{2}\left[1+\operatorname{erf}\left(\frac{s}{\sqrt[]{2}\sigma_{s}}\right)\right]
+  \label{cld_fracadg}
+\end{equation}
+% 
+and
+% 
+\begin{equation}
+  \overline{q_{l}}=sC+\frac{\sigma_{s}}{\sqrt[]{2\pi}}\exp\left[-\frac{1}{2}\left(\frac{s}{\sigma_{s}}\right)^{2}\right].
+  \label{ql_adg}
+\end{equation}
+%
+Here $\operatorname{erf}$ is the error function and $\sigma_{s}$ is the standard deviation of $s$, which is equal to the liquid water content when $s$ is greater than zero, but can also be negative and is conserved under condensation.  These two terms are defined as \citep{Lewellen_Yoh93}:
+%
+\begin{equation}
+  \begin{split}
+    s=q_{t}-q_{s}(T_{l},p)\frac{(1+\beta q_{t})}{[1+\beta q_{s}(T_{l},p)]}\\
+  \sigma_{s}^{2}=c_{\theta_{l}}^{2}\sigma_{\theta_{l}}^{2}+c_{q_{t}}^{2}\sigma_{q_{t}}^{2}-2c_{\theta_{l}}\sigma_{\theta_{l}}c_{q_{t}}\sigma_{q_{t}}r_{q_{t}\theta_{l}}
+  \end{split}
+  \label{sterms}
+\end{equation}
+%
+where $q_{s}$ is the saturation mixing ratio with respect to either water or ice or a hybrid of the two depending on the temperature, and $\beta$ is defined as:
+%
+\begin{equation}
+  \beta=\beta(T_{l})=\frac{R_{d}}{R_{v}}\left(\frac{L_{v}}{R_{d}T_{l}}\right)\left(\frac{L_{v}}{c_{p}T_{l}}\right).
+  \label{beta_equation}
+\end{equation}
+%
+Also defined are the following terms:
+%
+\begin{equation}
+  c_{q_{t}}=\frac{1}{1+\beta (T_{l})q_{s}(\overline{T_{l}},p)}\\
+  \label{cqt_term}
+\end{equation}
+%
+and
+%
+\begin{equation}  
+  c_{\theta_{l}}=\frac{1+ \beta (\overline{T_{l}})\overline{q_{t}}}{[1+\beta (\overline{T_{l}})q_{s}(\overline{T_{l}},p)]^{2}}\frac{c_{p}}{L_{v}}\beta (\overline{T_{l}}) q_{s}(\overline{T_{l}},p)\left(\frac{p}{p_{o}}\right)^{R_{d}/C_{p}}
+  \label{cthl_term}
+\end{equation}
+%
+Finally, the flux of liquid water is given by:
+%
+\begin{equation}
+  \overline{w^{'}q_{l}^{'}}=C\overline{w^{'}s^{'}}
+  \label{wql_equation}
+\end{equation}
+%
+where
+%
+\begin{equation}
+  \overline{w^{'}s^{'}}=c_{q_{t}}\sigma_{w}\sigma_{q_{t}}r_{wq_{t}}-c_{\theta_{l}}\sigma_{w}\sigma_{\theta_{l}}r_{w\theta_{l}} .
+  \label{wql_s}
+\end{equation}
+% 
+In the above expressions $q_{s}$ is defined as:
+%
+\begin{equation}
+  q_s (T_{l},P) = \frac{R_{d}}{R_{v}}\frac{e_{s}(T_{l})}{p-[1-(R_{d}/R_{v})]e_{s}(T_{l})}.
+  \label{qs_equation}
+\end{equation}
+%
+Here $q_{s}$ is the saturation specific humidity, $e_{s}$ is the saturation vapor pressure over liquid, $p$ is pressure, $c_{p}$ is the specific heat at constant pressure, and $R_{d}$ and $R_{v}$ are the gas constants for dry air and water vapor.  In addition, we define $T_{l}$ as the liquid water temperature:
+%
+\begin{equation}
+  T_{l} = T - \frac{L_{v}}{c_{p}}q_{l}
+  \label{T_liq}
+\end{equation}
+% 
+where $T$ is temperature.  In SHOC, $e_{s}$ is computed based on \cite{Flatau_et92}.  
+
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%% IMPLICIT DIFFUSION NUMERICS
