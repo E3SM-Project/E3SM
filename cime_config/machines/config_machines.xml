@@ -3211,6 +3211,8 @@
     <environment_variables>
       <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
       <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
+      <env name="MPICH_GPU_SUPPORT_ENABLED">0</env>
+      <env name="CRAY_ACCEL_TARGET">host</env>
       <env name="GPU_TILE_COMPACT"> </env>
     </environment_variables>
     <environment_variables compiler=".*gpu">
