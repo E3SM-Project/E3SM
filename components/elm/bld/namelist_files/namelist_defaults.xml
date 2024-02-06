@@ -434,6 +434,8 @@ lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr1850_c211019.nc</fsurdat>
 lnd/clm2/surfdata_map/surfdata_0.125x0.125_simyr1850_c190730.nc</fsurdat>
 <fsurdat hgrid="r0125"        sim_year="1950" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_0.125x0.125_simyr1950_c210924.nc</fsurdat>
+<fsurdat hgrid="r025"    sim_year="1850" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_0.25x0.25_simyr1850_c240125_TOP.nc</fsurdat>
 
 <fsurdat hgrid="ne0np4_conus_x4v1_lowcon" sim_year="1850" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_conusx4v1_simyr1850_c160503.nc</fsurdat>

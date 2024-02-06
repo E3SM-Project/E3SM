@@ -711,6 +711,16 @@
       <mask>oRRS18to6v3</mask>
     </model_grid>
 
+    <model_grid alias="r025_IcoswISC30E3r5" compset="(DATM.+ELM)">
+      <grid name="atm">r025</grid>
+      <grid name="lnd">r025</grid>
+      <grid name="ocnice">IcoswISC30E3r5</grid>
+      <grid name="rof">null</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>IcoswISC30E3r5</mask>
+    </model_grid>
+
     <!--  spectral element grids -->
 
     <model_grid alias="ne4_oQU480">
