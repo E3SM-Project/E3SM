@@ -183,17 +183,42 @@ target_compile_options(
   ${OMEGA_CXX_FLAGS}
 )
 
-target_link_options(
-  ${_TestHaloName}
-  PRIVATE
-  ${OMEGA_LINK_OPTIONS}
-)
-
 target_link_libraries(${_TestHaloName} ${OMEGA_LIB_NAME} spdlog yakl parmetis metis pioc)
 
 add_test(
   NAME HALO_TEST
   COMMAND ${MPI_EXEC} -n 8 -- ./${_TestHaloName}
+)
+
+################
+# HorzMesh test
+################
+
+set(_TestHorzMeshName testHorzMesh.exe)
+
+# Add broadcast test
+add_executable(${_TestHorzMeshName} ocn/HorzMeshTest.cpp)
+
+target_include_directories(
+  ${_TestHorzMeshName}
+  PRIVATE
+  ${OMEGA_SOURCE_DIR}/src/base
+  ${OMEGA_SOURCE_DIR}/src/infra
+  ${OMEGA_SOURCE_DIR}/src/ocn
+  ${Parmetis_INCLUDE_DIRS}
+)
+
+target_compile_options(
+  ${_TestHorzMeshName}
+  PRIVATE
+  ${OMEGA_LINK_OPTIONS}
+)
+
+target_link_libraries(${_TestHorzMeshName} ${OMEGA_LIB_NAME} spdlog yakl parmetis metis pioc)
+
+add_test(
+  NAME HORZMESH_TEST
+  COMMAND ${MPI_EXEC} -n 8 -- ./${_TestHorzMeshName}
 )
 
 #############
@@ -308,6 +333,7 @@ set_tests_properties(
   CONFIG_TEST
   DECOMP_TEST
   HALO_TEST
+  HORZMESH_TEST
   IO_TEST
   YAKL_TEST
   PROPERTIES FAIL_REGULAR_EXPRESSION "FAIL"

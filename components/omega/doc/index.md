@@ -30,6 +30,7 @@ userGuide/Logging
 userGuide/Decomp
 userGuide/IO
 userGuide/Halo
+userGuide/HorzMesh
 ```
 
 ```{toctree}
@@ -50,6 +51,7 @@ devGuide/Logging
 devGuide/Decomp
 devGuide/IO
 devGuide/Halo
+devGuide/HorzMesh
 ```
 
 ```{toctree}

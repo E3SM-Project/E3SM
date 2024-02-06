@@ -352,12 +352,12 @@ int Decomp::init() {
 // NPart partitions of the mesh.
 
 Decomp::Decomp(
-    const std::string &Name,        //< [in] Name for new decomposition
-    const MachEnv *InEnv,           //< [in] MachEnv for the new partition
-    I4 NParts,                      //< [in] num of partitions for new decomp
-    PartMethod Method,              //< [in] method for partitioning
-    I4 InHaloWidth,                 //< [in] width of halo in new decomp
-    const std::string &MeshFileName //< [in] name of file with mesh info
+    const std::string &Name,         //< [in] Name for new decomposition
+    const MachEnv *InEnv,            //< [in] MachEnv for the new partition
+    I4 NParts,                       //< [in] num of partitions for new decomp
+    PartMethod Method,               //< [in] method for partitioning
+    I4 InHaloWidth,                  //< [in] width of halo in new decomp
+    const std::string &MeshFileName_ //< [in] name of file with mesh info
 ) {
 
    int Err = 0; // internal error code
@@ -371,7 +371,8 @@ Decomp::Decomp(
 
    // Open the mesh file for reading (assume IO has already been initialized)
    int FileID;
-   Err = IO::openFile(FileID, MeshFileName, IO::ModeRead);
+   MeshFileName = MeshFileName_;
+   Err          = IO::openFile(FileID, MeshFileName, IO::ModeRead);
    if (Err != 0)
       LOG_CRITICAL("Decomp: error opening mesh file");
 

@@ -1,5 +1,5 @@
 (omega-design-horz-mesh)=
-# Horizontal Mesh 
+# Horizontal Mesh
 
 ## 1 Overview
 
@@ -13,7 +13,7 @@ The OMEGA mesh information should be compatible with the [MPAS Mesh Specificatio
 
 ### 2.2 Requirement: Functionality is needed to read the mesh on the host and transfer relevant data to the device for computation
 
-Not all mesh information is required in computing the tendency terms on the device, e.g. lonCell, latCell, etc. 
+Not all mesh information is required in computing the tendency terms on the device, e.g. lonCell, latCell, etc.
 However, other arrays will need to be allocated and copied to the device for use in tendency computation.
 The mesh class will explicitly include host and device YAKL arrays for each variable.
 A class method will be included to copy the relevant mesh information to the device.
@@ -26,13 +26,13 @@ Although the existing MPAS Mesh spec uses a one-based mesh numbering, zero-based
 
 The mesh class will reference the partitioned connectivity arrays created by the Decomp class.
 
-### 2.5 Requirement: Mesh variables will be associated with metadata to describe data 
+### 2.5 Requirement: Mesh variables will be associated with metadata to describe data
 
 Following the Metadata and IO designs, the YAKL arrays for the mesh variables will be associated with information about the represented values.
 
 ### 2.6 Requirement: I/O to obtain mesh data
 
-The Mesh class will have a method to read in the mesh information not obtained by the Decomp class. 
+The Mesh class will have a method to read in the mesh information not obtained by the Decomp class.
 
 ### 2.7 Desired: Ability to support multiple independent mesh objects
 
@@ -42,13 +42,13 @@ Additionally, this flexibility can be used to support separate domain decomposit
 ### 2.8 Desired: OMEGA can read in a reduced number of mesh variables and compute the remaining array information online.
 
 Many of the mesh variables are not independent, e.g.  areaCell, weightsOnEdge, etc., and can be computed from a reduced set of mesh variables.
-This functionality could be used to reduce mesh/restart file size for high resolution meshes.  
+This functionality could be used to reduce mesh/restart file size for high resolution meshes.
 Building in this flexibility would allow for all mesh-related calculations to be available within the code base instead of spreading them amongst various utility programs in MPAS-Tools.
 This will improve the ability to maintain and unit test the mesh calculations in MPAS-Tools.
 The functions used to compute the dependent mesh information can also be used to verify any mesh information that is provided in the mesh input stream.
 
 As standard practice, all necessary internally computed mesh information will be output in a single file for post-processing purposes.
-A checksumming strategy will be implemented to avoid situations where simulation data and mesh information are mismatched during post processing. 
+A checksumming strategy will be implemented to avoid situations where simulation data and mesh information are mismatched during post processing.
 
 Where appropriate, some additional derived quantities (e.g. reciprocals) will also be included to improve the performance of device-side calculations.
 
@@ -78,7 +78,7 @@ public:
   Array1DR8 AreaCell;
   ArrayHost1DR8 AreaCellH;
 
-  Array2DI4 CellsOnCell; 
+  Array2DI4 CellsOnCell;
   ArrayHost2DI4 CellsOnCellH;
 
 }
@@ -106,7 +106,7 @@ A destructor will be available to release memory.
 #### 4.2.2 Read
 The mesh class requires a method to read in all other available mesh information that has been provided in the mesh file, but has not been initialized by the decomposition. This will be a private method called by the constructor.
 
-#### 4.2.3 Compute 
+#### 4.2.3 Compute
 The compute method will be a private method called by the constructor. It will be resonsible for calculating any dependent mesh information that is not provided in the mesh input file.
 
 #### 4.2.4 Device copy creation
@@ -123,6 +123,6 @@ The metadata associated with each mesh variable will be registred within the I/O
 
 ## 5 Verification and Testing
 
-### 5.1 Test mesh compute routines 
+### 5.1 Test mesh compute routines
 
 The sample domain used for the Decomp test will be used to test obtaining the correct local values and the mesh computation routines.
