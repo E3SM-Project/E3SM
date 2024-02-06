@@ -28,6 +28,11 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
     const auto& src_geo_data_names = src_grid->get_geometry_data_names();
     registration_begins();
     for (const auto& name : src_geo_data_names) {
+      // Since different remappers may share the same data (if the map file is the same)
+      // the coarse grid may already have the geo data.
+      if (m_coarse_grid->has_geometry_data(name)) {
+        continue;
+      }
       const auto& src_data = src_grid->get_geometry_data(name);
       const auto& src_data_fid = src_data.get_header().get_identifier();
       const auto& layout = src_data_fid.get_layout();
@@ -909,6 +914,7 @@ recv_gids_from_pids (const std::map<int,std::vector<int>>& pid2gids_send) const
 void CoarseningRemapper::setup_mpi_data_structures ()
 {
   using namespace ShortFieldTagsNames;
+  using gid_type = AbstractGrid::gid_type;
 
   const auto mpi_comm  = m_comm.mpi_comm();
   const auto mpi_real  = ekat::get_mpi_type<Real>();
