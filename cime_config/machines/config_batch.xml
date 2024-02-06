@@ -459,19 +459,19 @@
     </queues>
   </batch_system>
 
-  <batch_system MACH="pm-cpu" type="nersc_slurm">
+  <batch_system MACH="muller-cpu" type="nersc_slurm">
     <directives>
       <directive> --constraint=cpu</directive>
     </directives>
     <queues>
       <!-- Note: walltime is not the max walltime, but the default - see NERSC docs for Q limits, https://docs.nersc.gov/jobs/policy/ -->
-      <queue walltimemax="00:30:00" nodemax="4096" default="true">regular</queue>
-      <queue walltimemax="00:30:00" nodemax="4096" strict="true">preempt</queue>
+      <queue walltimemax="00:30:00" nodemax="16" default="true">regular</queue>
+      <queue walltimemax="00:30:00" nodemax="16" strict="true">preempt</queue>
       <queue walltimemax="00:30:00" nodemax="8" strict="true">debug</queue>
     </queues>
   </batch_system>
 
-  <batch_system MACH="muller" type="nersc_slurm">
+  <batch_system MACH="muller-gpu" type="nersc_slurm">
     <directives>
       <directive> --constraint=gpu</directive>
     </directives>
@@ -497,10 +497,22 @@
     <queues>
       <queue walltimemax="00:45:00" nodemax="64" default="true">regular</queue>
       <queue walltimemax="00:45:00" nodemax="64" strict="true">preempt</queue>
-      <queue walltimemax="00:15:00" nodemax="8" strict="true">debug</queue>
+      <queue walltimemax="00:15:00" nodemax="4" strict="true">debug</queue>
     </queues>
   </batch_system>
 
+  <batch_system MACH="pm-cpu" type="nersc_slurm">
+    <directives>
+      <directive> --constraint=cpu</directive>
+    </directives>
+    <queues>
+      <!-- Note: walltime is not the max walltime, but the default - see NERSC docs for Q limits, https://docs.nersc.gov/jobs/policy/ -->
+      <queue walltimemax="00:30:00" nodemax="4096" default="true">regular</queue>
+      <queue walltimemax="00:30:00" nodemax="4096" strict="true">preempt</queue>
+      <queue walltimemax="00:30:00" nodemax="8" strict="true">debug</queue>
+    </queues>
+  </batch_system>
+  
   <batch_system MACH="alvarez" type="nersc_slurm">
     <directives>
       <directive> --constraint=cpu</directive>
