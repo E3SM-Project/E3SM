@@ -2310,23 +2310,23 @@ contains
        if (inundflag .and. Tctl%OPT_inund .eq. 1 ) then
          do nr = rtmCTL%begr, rtmCTL%endr
 
-           !if ( TUnit%mask( nr ) .gt. 0 ) then      ! 0--Ocean; 1--Land; 2--Basin outlet.
            if ( rtmCTL%mask(nr) .eq. 1 .or. rtmCTL%mask(nr) .eq. 3 ) then   ! 1--Land; 3--Basin outlet (downstream is ocean).
              budget_terms(bv_fp_i, 1) = budget_terms(bv_fp_i, 1) + TRunoff%wf_ini( nr )
              !budget_terms(bv_fp_i, 1) = budget_terms(bv_fp_i, 1) + rtmCTL%inundwf(nr)        ! 17-6-7
-           endif
 
-           ! land river two way coupling, update floodplain inundation volume with drainage from lnd
-           if (use_lnd_rof_two_way) then
-             TRunoff%wf_ini(nr) = TRunoff%wf_ini(nr) - rtmCTL%inundinf(nr) * coupling_period
-
-             if ( TRunoff%wf_ini(nr) < 0._r8 ) then
-               TRunoff%wr(nr, 1) = TRunoff%wr(nr, 1) + TRunoff%wf_ini(nr)
-               TRunoff%wf_ini(nr) = 0._r8
-               TRunoff%yr(nr, 1) = TRunoff%wr(nr, 1) / TUnit%rlen(nr) / TUnit%rwidth(nr)
+             ! land river two way coupling, update floodplain inundation volume with drainage from lnd
+             if (use_lnd_rof_two_way) then
+               TRunoff%wf_ini(nr) = TRunoff%wf_ini(nr) - rtmCTL%inundinf(nr) * coupling_period
+           
+               if ( TRunoff%wf_ini(nr) < 0._r8 ) then
+                 TRunoff%wr(nr, 1) = TRunoff%wr(nr, 1) + TRunoff%wf_ini(nr)
+                 TRunoff%wf_ini(nr) = 0._r8
+                 TRunoff%yr(nr, 1) = TRunoff%wr(nr, 1) / TUnit%rlen(nr) / TUnit%rwidth(nr)
+               endif
              endif
-           endif
 
+           endif
+           
          end do
        end if
 
