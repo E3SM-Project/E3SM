@@ -124,5 +124,5 @@ initial_conditions:
   dgnum: 1e-3
 # The parameters for I/O control
 Scorpio:
-  output_yaml_files: ["mam4_aci_output.yaml"]
+  output_yaml_files: ["output.yaml"]
 ...
