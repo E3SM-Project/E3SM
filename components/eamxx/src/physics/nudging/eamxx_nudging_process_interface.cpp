@@ -16,9 +16,6 @@ Nudging::Nudging (const ekat::Comm& comm, const ekat::ParameterList& params)
 {
   m_datafiles  = m_params.get<std::vector<std::string>>("nudging_filename");
   m_timescale = m_params.get<int>("nudging_timescale",0);
-  EKAT_REQUIRE_MSG(m_timescale>0,
-      "[Nudging] Error! Value of nudging_timescale must be positive.\n"
-      "  - input value: " + std::to_string(m_timescale) + "\n");
 
   m_fields_nudge = m_params.get<std::vector<std::string>>("nudging_fields");
   m_use_weights   = m_params.get<bool>("use_nudging_weights",false);
