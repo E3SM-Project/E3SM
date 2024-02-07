@@ -2641,6 +2641,11 @@
     <environment_variables compiler="gnu" mpilib="openmpi">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /lcrc/soft/climate/moab/chrysalis/gnu; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
+    <environment_variables compiler="gnu">
+      <env name="Albany_ROOT">$SHELL{if [ -z "$Albany_ROOT" ]; then echo /lcrc/group/e3sm/ac.jwatkins/LandIce/AlbanyBuilds/build-gcc-sfad12-e3sm/install; else echo "$Albany_ROOT"; fi}</env>
+      <env name="Trilinos_ROOT">$SHELL{if [ -z "$Trilinos_ROOT" ]; then echo /lcrc/group/e3sm/ac.jwatkins/LandIce/TrilinosBuilds/build-gcc-e3sm/install; else echo "$Trilinos_ROOT"; fi}</env>
+      <env name="Kokkos_ROOT">$SHELL{if [ -z "$Kokkos_ROOT" ]; then echo /lcrc/group/e3sm/ac.jwatkins/LandIce/TrilinosBuilds/build-gcc-e3sm/install; else echo "$Kokkos_ROOT"; fi}</env>
+    </environment_variables>
   </machine>
 
   <machine MACH="blues">
