@@ -43,8 +43,6 @@ enum class FieldTag {
   IsccpPrs,
   num_modes,
   //
-  lw_band,
-  sw_band,
   nrefindex_real,
   nrefindex_im,
   ncoef_number,
@@ -75,8 +73,6 @@ namespace ShortFieldTagsNames {
   constexpr auto ISCCPPRS = FieldTag::IsccpPrs;
   constexpr auto NMODES = FieldTag::num_modes;
   //
-  constexpr auto LWBAND = FieldTag::lw_band;
-  constexpr auto SWBAND = FieldTag::sw_band;
   constexpr auto NREFINDEX_REAL = FieldTag::nrefindex_real;
   constexpr auto NREFINDEX_IM = FieldTag::nrefindex_im;
 
@@ -136,12 +132,6 @@ inline std::string e2str (const FieldTag ft) {
       break;
     case FieldTag::num_modes:
       name = "num_modes";
-      break;
-    case FieldTag::lw_band:
-      name = "lw_band";
-      break;
-    case FieldTag::sw_band:
-      name = "sw_band";
       break;
     case FieldTag::nrefindex_real:
       name = "refindex_real";

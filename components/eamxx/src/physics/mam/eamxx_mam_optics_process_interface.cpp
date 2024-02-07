@@ -331,10 +331,10 @@ void MAMOptics::initialize_impl(const RunType run_type) {
 
     // FIXME: this name need to be pass in the input file.
     std::vector<std::string> name_table_modes = {
-        mam_aerosol_optics_path + "mam4_mode1_rrtmg_aeronetdust_c141106.nc",
-        mam_aerosol_optics_path + "mam4_mode2_rrtmg_c130628.nc",
-        mam_aerosol_optics_path + "mam4_mode3_rrtmg_aeronetdust_c141106.nc",
-        mam_aerosol_optics_path + "mam4_mode4_rrtmg_c130628.nc"};
+        mam_aerosol_optics_path + "mam4_mode1_rrtmg_aeronetdust_c20240206.nc",
+        mam_aerosol_optics_path + "mam4_mode2_rrtmg_c20240206.nc",
+        mam_aerosol_optics_path + "mam4_mode3_rrtmg_aeronetdust_c20240206.nc",
+        mam_aerosol_optics_path + "mam4_mode4_rrtmg_c20240206.nc"};
 
     for(int imode = 0; imode < ntot_amode; imode++) {
       mam_coupling::read_rrtmg_table(name_table_modes[imode],
@@ -346,7 +346,7 @@ void MAMOptics::initialize_impl(const RunType run_type) {
 
     // FIXME: we need to get this name from the yaml file.
     std::string table_name_water =
-        mam_aerosol_optics_path + "water_refindex_rrtmg_c080910.nc";
+        mam_aerosol_optics_path + "water_refindex_rrtmg_c20240206.nc";
     // it will syn data to device.
     mam_coupling::read_water_refindex(table_name_water, grid_,
                                       aerosol_optics_device_data_.crefwlw,
@@ -374,14 +374,14 @@ void MAMOptics::initialize_impl(const RunType run_type) {
       mom:m-organic: /compyfs/inputdata/atm/cam/physprops/poly_rrtmg_c130816.nc
     */
       std::vector<std::string> name_table_aerosols = {
-          mam_aerosol_optics_path + "ocphi_rrtmg_c100508.nc",  // soa:s-organic
+          mam_aerosol_optics_path + "ocphi_rrtmg_c20240206.nc",  // soa:s-organic
           mam_aerosol_optics_path +
-              "dust_aeronet_rrtmg_c141106.nc",                   // dst:dust:
-          mam_aerosol_optics_path + "ssam_rrtmg_c100508.nc",     // ncl:seasalt
-          mam_aerosol_optics_path + "sulfate_rrtmg_c080918.nc",  // so4:sulfate
-          mam_aerosol_optics_path + "ocpho_rrtmg_c130709.nc",  // pom:p-organic
-          mam_aerosol_optics_path + "bcpho_rrtmg_c100508.nc",  // bc :black-c
-          mam_aerosol_optics_path + "poly_rrtmg_c130816.nc"    // mom:m-organic
+              "dust_aeronet_rrtmg_c20240206.nc",                   // dst:dust:
+          mam_aerosol_optics_path + "ssam_rrtmg_c20240206.nc",     // ncl:seasalt
+          mam_aerosol_optics_path + "sulfate_rrtmg_c20240206.nc",  // so4:sulfate
+          mam_aerosol_optics_path + "ocpho_rrtmg_c20240206.nc",  // pom:p-organic
+          mam_aerosol_optics_path + "bcpho_rrtmg_c20240206.nc",  // bc :black-c
+          mam_aerosol_optics_path + "poly_rrtmg_c20240206.nc"    // mom:m-organic
       };
 
       // FIXME: make a function that return a index given the species name

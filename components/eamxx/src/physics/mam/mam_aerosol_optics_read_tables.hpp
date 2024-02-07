@@ -78,23 +78,23 @@ inline void set_parameters_table(
   aerosol_optics_host_data.extpsw_host           = extpsw_host;
   aerosol_optics_host_data.abspsw_host           = abspsw_host;
 
-  FieldLayout scalar_refindex_real_lw_layout{{LWBAND, NREFINDEX_REAL},
+  FieldLayout scalar_refindex_real_lw_layout{{LWBND, NREFINDEX_REAL},
                                              {nlwbands, refindex_real}};
 
-  FieldLayout scalar_refindex_im_lw_layout{{LWBAND, NREFINDEX_IM},
+  FieldLayout scalar_refindex_im_lw_layout{{LWBND, NREFINDEX_IM},
                                            {nlwbands, refindex_im}};
-  FieldLayout scalar_refindex_real_sw_layout{{SWBAND, NREFINDEX_REAL},
+  FieldLayout scalar_refindex_real_sw_layout{{SWBND, NREFINDEX_REAL},
                                              {nswbands, refindex_real}};
 
-  FieldLayout scalar_refindex_im_sw_layout{{SWBAND, NREFINDEX_IM},
+  FieldLayout scalar_refindex_im_sw_layout{{SWBND, NREFINDEX_IM},
                                            {nswbands, refindex_im}};
 
   FieldLayout scalar_absplw_layout{
-      {LWBAND, MODE, NREFINDEX_IM, NREFINDEX_REAL, NCOEF_NUMBER},
+      {LWBND, MODE, NREFINDEX_IM, NREFINDEX_REAL, NCOEF_NUMBER},
       {nlwbands, 1, refindex_im, refindex_real, coef_number}};
   // use also for extpsw, abspsw
   FieldLayout scalar_asmpsw_layout{
-      {SWBAND, MODE, NREFINDEX_IM, NREFINDEX_REAL, NCOEF_NUMBER},
+      {SWBND, MODE, NREFINDEX_IM, NREFINDEX_REAL, NCOEF_NUMBER},
       {nswbands, 1, refindex_im, refindex_real, coef_number}};
 
   rrtmg_params.set<strvec_t>("Field Names",
@@ -290,8 +290,8 @@ inline void read_water_refindex(const std::string &table_filename,
 
   // defines layouts
   std::map<std::string, FieldLayout> layouts_water;
-  FieldLayout scalar_refindex_water_sw_layout{{SWBAND}, {nswbands}};
-  FieldLayout scalar_refindex_water_lw_layout{{LWBAND}, {nlwbands}};
+  FieldLayout scalar_refindex_water_sw_layout{{SWBND}, {nswbands}};
+  FieldLayout scalar_refindex_water_lw_layout{{LWBND}, {nlwbands}};
 
   layouts_water.emplace("refindex_im_water_sw",
                         scalar_refindex_water_sw_layout);
@@ -350,8 +350,8 @@ inline void set_refindex(std::string surname, ekat::ParameterList &params,
   host_views[refindex_real_lw] = view_1d_host(refindex_real_lw, nlwbands);
   host_views[refindex_im_lw]   = view_1d_host(refindex_im_lw, nlwbands);
 
-  FieldLayout scalar_refindex_sw_layout{{SWBAND}, {nswbands}};
-  FieldLayout scalar_refindex_lw_layout{{LWBAND}, {nlwbands}};
+  FieldLayout scalar_refindex_sw_layout{{SWBND}, {nswbands}};
+  FieldLayout scalar_refindex_lw_layout{{LWBND}, {nlwbands}};
 
   layouts.emplace(refindex_real_sw, scalar_refindex_sw_layout);
   layouts.emplace(refindex_im_sw, scalar_refindex_sw_layout);
