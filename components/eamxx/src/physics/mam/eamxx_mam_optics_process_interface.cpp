@@ -461,6 +461,7 @@ void MAMOptics::run_impl(const double dt) {
   const auto aero_tau_sw_eamx = get_field_out("aero_tau_sw").get_view<Real ***>();
 
 
+
   const auto aero_tau_forward =
       get_field_out("aero_tau_forward").get_view<Real ***>();
 
@@ -555,16 +556,21 @@ void MAMOptics::run_impl(const double dt) {
   }
 
   // postprocess output
+  Kokkos::fence();
   Kokkos::parallel_for("postprocess", policy, postprocess_);
   Kokkos::fence();
-  printf("Done  with aerosol_optics \n");
-
-  // Kokkos::deep_copy(aero_g_sw, 0.5);
-  // Kokkos::deep_copy(aero_ssa_sw, 0.7);
-  // Kokkos::deep_copy(aero_tau_sw, 0.0);
-  // Kokkos::deep_copy(aero_tau_lw, 0.0);
-  // Kokkos::deep_copy(aero_tau_forward, 0.0);
-  // Kokkos::deep_copy(aero_nccn, 50.0);
+  // FIXME: mam4 uses a diffent layout for aero_g_sw,aero_ssa_sw,aero_tau_sw than rrtmgp
+  // mam4 layout: (ncols, nswlands, nlevs +1  )
+  // rrtmgp in emaxx: (ncols, nswlands, nlevs)
+  // Here, we copy data from kk=1 in mam4xx
+   Kokkos::parallel_for("copying data from mam4xx to eamxx",
+  Kokkos::MDRangePolicy< Kokkos::Rank<3> > ({0,0,0}, {ncol_, nswbands_, nlev_}),
+   KOKKOS_LAMBDA (const int icol, const int iswband, const int kk) {
+     aero_g_sw_eamx(icol, iswband, kk ) = aero_g_sw(icol, iswband, kk+1);
+     aero_ssa_sw_eamx(icol, iswband, kk ) = aero_ssa_sw(icol, iswband, kk+1);
+     aero_tau_sw_eamx(icol, iswband, kk )  =  aero_tau_sw(icol, iswband, kk+1);
+     });
+     Kokkos::fence();
 }
 
 void MAMOptics::finalize_impl() {}
