@@ -90,7 +90,7 @@ class MAMOptics final : public scream::AtmosphereProcess {
         const Kokkos::TeamPolicy<KT::ExeSpace>::member_type &team) const {
       const int i = team.league_rank();  // column index
 
-      compute_vertical_layer_heights(team, dry_atm_, i);
+      compute_vertical_layer_heights(team, dry_atm_, wet_atm_, i);
       team.team_barrier();  // allows kernels below to use layer heights
       compute_updraft_velocities(team, wet_atm_, dry_atm_, i);
       compute_dry_mixing_ratios(team, wet_atm_, dry_atm_, i);
@@ -157,7 +157,7 @@ class MAMOptics final : public scream::AtmosphereProcess {
   int nswbands_, nlwbands_;
 
   // FIXME: move these values to mam_coupling
-  mam_coupling::const_view_2d p_int_, p_del_;  // z_mid_, z_iface_,  ;
+  mam_coupling::const_view_2d p_int_, p_del_;  //, z_int_ z_mid_, z_iface_,  ;
 
   // MAM4 aerosol particle size description
   mam4::AeroConfig aero_config_;

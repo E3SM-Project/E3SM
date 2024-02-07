@@ -48,6 +48,10 @@ void MAMOptics::set_grids(
   auto nondim = Units::nondimensional();
   FieldLayout scalar3d_swbandp_layout{{COL, SWBND, ILEV},
                                       {ncol_, nswbands_, nlev_ + 1}};
+
+  FieldLayout scalar3d_swbandp_layout2{{COL, SWBND, LEV},
+                                      {ncol_, nswbands_, nlev_}};
+
   FieldLayout scalar3d_lwband_layout{{COL, LWBND, LEV},
                                      {ncol_, nlwbands_, nlev_}};
   FieldLayout scalar3d_layout_int{{COL, ILEV}, {ncol_, nlev_ + 1}};
@@ -95,13 +99,25 @@ void MAMOptics::set_grids(
   // could fraction
 
   // shortwave aerosol scattering asymmetry parameter [-]
-  add_field<Computed>("aero_g_sw", scalar3d_swbandp_layout, nondim, grid_name);
+  add_field<Computed>("aero_g_sw_mam4", scalar3d_swbandp_layout, nondim, grid_name);
   // shortwave aerosol single-scattering albedo [-]
-  add_field<Computed>("aero_ssa_sw", scalar3d_swbandp_layout, nondim,
+  add_field<Computed>("aero_ssa_sw_mam4", scalar3d_swbandp_layout, nondim,
                       grid_name);
   // shortwave aerosol optical depth [-]
-  add_field<Computed>("aero_tau_sw", scalar3d_swbandp_layout, nondim,
+  add_field<Computed>("aero_tau_sw_mam4", scalar3d_swbandp_layout, nondim,
                       grid_name);
+
+
+  //
+   // shortwave aerosol scattering asymmetry parameter [-]
+  add_field<Computed>("aero_g_sw", scalar3d_swbandp_layout2, nondim, grid_name);
+  // shortwave aerosol single-scattering albedo [-]
+  add_field<Computed>("aero_ssa_sw", scalar3d_swbandp_layout2, nondim,
+                      grid_name);
+  // shortwave aerosol optical depth [-]
+  add_field<Computed>("aero_tau_sw", scalar3d_swbandp_layout2, nondim,
+                      grid_name);
+
   // longwave aerosol optical depth [-]
   add_field<Computed>("aero_tau_lw", scalar3d_lwband_layout, nondim, grid_name);
   // // aerosol extinction optical depth
@@ -206,6 +222,9 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   // FIXME:
   //  dry_atm_.phis      =  mam_coupling::view_1d("phis", ncol_);
   dry_atm_.phis      = get_field_in("phis").get_view<const Real *>();
+
+  // z_int_ = get_field_in("z_int").get_view<const Real **>();
+
   dry_atm_.z_mid     = buffer_.z_mid;
   dry_atm_.dz        = buffer_.dz;
   dry_atm_.z_iface   = buffer_.z_iface;
@@ -431,10 +450,16 @@ void MAMOptics::run_impl(const double dt) {
   Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
   Kokkos::fence();
   /// outputs
-  const auto aero_g_sw   = get_field_out("aero_g_sw").get_view<Real ***>();
-  const auto aero_ssa_sw = get_field_out("aero_ssa_sw").get_view<Real ***>();
-  const auto aero_tau_sw = get_field_out("aero_tau_sw").get_view<Real ***>();
+  const auto aero_g_sw   = get_field_out("aero_g_sw_mam4").get_view<Real ***>();
+  const auto aero_ssa_sw = get_field_out("aero_ssa_sw_mam4").get_view<Real ***>();
+  const auto aero_tau_sw = get_field_out("aero_tau_sw_mam4").get_view<Real ***>();
+
   const auto aero_tau_lw = get_field_out("aero_tau_lw").get_view<Real ***>();
+
+  const auto aero_g_sw_eamx   = get_field_out("aero_g_sw").get_view<Real ***>();
+  const auto aero_ssa_sw_eamx = get_field_out("aero_ssa_sw").get_view<Real ***>();
+  const auto aero_tau_sw_eamx = get_field_out("aero_tau_sw").get_view<Real ***>();
+
 
   const auto aero_tau_forward =
       get_field_out("aero_tau_forward").get_view<Real ***>();
@@ -451,6 +476,7 @@ void MAMOptics::run_impl(const double dt) {
     // Kokkos::deep_copy(aero_tau_lw, 0.0);
     // Kokkos::deep_copy(aero_nccn, 50.0);
   } else {
+
     // Compute optical properties on all local columns.
     // (Strictly speaking, we don't need this parallel_for here yet, but we
     // leave
@@ -468,6 +494,7 @@ void MAMOptics::run_impl(const double dt) {
     const auto& work=work_;
     const auto& dry_aero= dry_aero_;
     const auto& aerosol_optics_device_data=aerosol_optics_device_data_;
+    // const auto& z_int =z_iface;
     Kokkos::parallel_for(
         policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
           const Int icol     = team.league_rank();  // column index
@@ -519,11 +546,12 @@ void MAMOptics::run_impl(const double dt) {
               work_icol);
 
           team.team_barrier();
-
           mam4::aer_rad_props::aer_rad_props_lw(
               team, dt, progs, atm, pint, zi, pdel, pdeldry, ext_cmip6_lw_icol,
               aerosol_optics_device_data, odap_aer_icol);
+
         });
+
   }
 
   // postprocess output
