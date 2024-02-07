@@ -44,6 +44,26 @@ class testNamelistDefaultsScream(unittest.TestCase):
             for file in files_of_interest
         ]
 
+        self.my_lines = []
+        with open(
+            f"{scream_defaults_path.parent.parent}/namelist_defaults_scream.xml",
+            "r"
+        ) as the_file:
+            for a_line in the_file:
+                self.my_lines.append(a_line)
+
+    def test_ascii_lines(self):
+        """
+        Test that all lines are ASCII
+        """
+
+        for i_line, a_line in enumerate(self.my_lines):
+            with self.subTest(i_line=i_line):
+                self.assertTrue(
+                    a_line.isascii(),
+                    msg=f"\nERROR! This line is not ASCII!\n{a_line}"
+                )
+
     def test_opening_files(self):
         """
         Test the opening of files from the inputdata server.
