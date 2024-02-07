@@ -1678,9 +1678,6 @@ contains
     if (time_index .gt. 0) then
       ! The user has set a valid time index to read from
       call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(time_index,kind=pio_offset_kind))
-    else if (time_index == -999) then
-            ! The user wants to read data set with time variable
-      call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(-1,kind=pio_offset_kind))
     else
       ! Otherwise default to the last time_index in the file
       call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(pio_atm_file%numRecs,kind=pio_offset_kind))
