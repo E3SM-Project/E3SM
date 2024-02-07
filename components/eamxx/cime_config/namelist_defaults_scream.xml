@@ -203,7 +203,7 @@ be lost if SCREAM_HACK_XML is not enabled.
         ${DIN_LOC_ROOT}/atm/scream/tables/vm_table_vals.dat8
       </tables>
       <p3_autoconversion_prefactor type="real" doc="P3 autoconversion_prefactor (scale factor in autoconversion)">1350.0</p3_autoconversion_prefactor>
-      <p3_mu_r_constant type="real" doc="P3 mu_r_constant (rain “shape parameter” in gamma drop-size distribution)">1.0</p3_mu_r_constant>
+      <p3_mu_r_constant type="real" doc="P3 mu_r_constant (rain shape parameter in gamma drop-size distribution)">1.0</p3_mu_r_constant>
       <p3_spa_to_nc type="real" doc="P3 spa_to_nc (scaling factor for turning CCN into nc in SPA)">1.0</p3_spa_to_nc>
       <p3_k_accretion type="real" doc="P3 k_accretion (scaling factor on accretion)">67.0</p3_k_accretion>
       <p3_eci type="real" doc="P3 eci (liquid/ice collision/collection coefficient)">0.5</p3_eci>
