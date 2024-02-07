@@ -294,8 +294,13 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   } else if (m_src_pres_type == STATIC_1D_VERTICAL_PROFILE) {
     // For static 1D profile, we can read p_mid now
     auto pmid_ext = create_helper_field("p_mid_ext", grid_ext->get_vertical_layout(true), grid_ext->name());
-    AtmosphereInput src_input(m_static_vertical_pressure_file,grid_ext,{pmid_ext},true);
+    AtmosphereInput src_input(m_static_vertical_pressure_file,grid_ext,{pmid_ext.alias("p_levs")},true);
     src_input.read_variables(-1);
+
+    // For static 1d profile, p_mid_tmp is an alias of p_mid_ext
+    m_helper_fields["p_mid_tmp"] = pmid_ext.alias("p_mid_tmp");
+
+    // The padded p_mid is also 1d
     FieldLayout pmid1d_padded_layout({COL},{m_num_src_levs+2});
     create_helper_field("padded_p_mid_tmp",pmid1d_padded_layout,"");
   }
@@ -432,7 +437,24 @@ void Nudging::run_impl (const double dt)
   };
 
   // First, copy/pad p_mid, and extract the right copy (1d vs 3d)
-  copy_and_pad (get_helper_field("p_mid_tmp"),get_helper_field("padded_p_mid_tmp"),true);
+  if (m_src_pres_type==TIME_DEPENDENT_3D_PROFILE) {
+    copy_and_pad (get_helper_field("p_mid_tmp"),get_helper_field("padded_p_mid_tmp"),true);
+  } else {
+    // pmid is a 1d view. Just pad by hand
+    auto from = get_helper_field("p_mid_tmp");
+    auto to   = get_helper_field("padded_p_mid_tmp");
+    auto from_v = from.get_view<const Real*>();
+    auto to_v   = to.get_view<Real*>();
+    auto lambda = KOKKOS_LAMBDA(const int& lev) {
+      to_v(lev+1) = from_v(lev);
+      if (lev==0) {
+        to_v(0) = 0;
+      } else if (lev==nlevs_src-1) {
+        to_v(lev+2) = to_v(lev+1);
+      }
+    };
+    Kokkos::parallel_for(RangePolicy(0,nlevs_src),lambda);
+  }
   const auto& p_mid_v = get_field_in("p_mid").get_view<const PackT**>();
   view_2d p_mid_tmp_3d;
   view_1d p_mid_tmp_1d;
