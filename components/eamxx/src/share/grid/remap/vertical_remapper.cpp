@@ -67,6 +67,8 @@ VerticalRemapper (const grid_ptr_type& src_grid,
   // Gather the pressure level data for vertical remapping
   set_pressure_levels(map_file);
 
+  // Add tgt pressure levels to the tgt grid
+  tgt_grid->set_geometry_data(m_remap_pres);
   scorpio::eam_pio_closefile(map_file);
 }
 
@@ -146,7 +148,7 @@ set_pressure_levels(const std::string& map_file)
   std::vector<FieldTag> tags = {LEV};
   std::vector<int>      dims = {m_num_remap_levs};
   FieldLayout layout(tags,dims);
-  FieldIdentifier fid("p_remap",layout,ekat::units::Pa,m_tgt_grid->name());
+  FieldIdentifier fid("p_levs",layout,ekat::units::Pa,m_tgt_grid->name());
   m_remap_pres = Field(fid);
   m_remap_pres.get_header().get_alloc_properties().request_allocation(mPack::n);
   m_remap_pres.allocate_view();
