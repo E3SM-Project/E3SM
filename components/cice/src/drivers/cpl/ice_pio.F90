@@ -118,14 +118,10 @@ contains
          if (File%fh<0) then
             ! filename not open
             inquire(file=trim(filename),exist=exists)
-            if (my_task == master_task) then
-               call broadcast_scalar(exists, master_task) 
-            end if
             if (exists) then
                if (lclobber) then
                   nmode = pio_clobber
                   if (lcdf64) nmode = ior(nmode,PIO_64BIT_OFFSET)
-write(nu_diag,*) subname,' file ',trim(filename),' does exist and nmode is', nmode
                   status = pio_createfile(ice_pio_subsystem, File, pio_iotype, trim(filename), nmode)
                   if (my_task == master_task) then
                      write(nu_diag,*) subname,' create file ',trim(filename)
@@ -139,7 +135,6 @@ write(nu_diag,*) subname,' file ',trim(filename),' does exist and nmode is', nmo
             else
                nmode = pio_noclobber
                if (lcdf64) nmode = ior(nmode,PIO_64BIT_OFFSET)
-write(nu_diag,*) subname,' file ',trim(filename),' does not exist and nmode is ', nmode
                status = pio_createfile(ice_pio_subsystem, File, pio_iotype, trim(filename), nmode)
                if (my_task == master_task) then
                   write(nu_diag,*) subname,' create file ',trim(filename)
