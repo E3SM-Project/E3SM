@@ -45,13 +45,13 @@ protected:
 
   void run_impl (const double dt) override;
 
-protected:
-
-  Field get_field_out_wrap(const std::string& field_name);
-
   // Internal function to apply nudging at specific timescale
   // NOTE: this method will handle weighted and cutoff cases as well
   void apply_tendency (Field &state, const Field &nudge, const Real dt) const;
+
+protected:
+
+  Field get_field_out_wrap(const std::string& field_name);
 
   // The two other main overrides for the subcomponent
   void initialize_impl (const RunType run_type) override;
