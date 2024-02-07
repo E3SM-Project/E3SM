@@ -1,5 +1,5 @@
-#ifndef OMEGA_OPERATORS_H
-#define OMEGA_OPERATORS_H
+#ifndef OMEGA_HORZOPERATORS_H
+#define OMEGA_HORZOPERATORS_H
 
 #include "DataTypes.h"
 #include "HorzMesh.h"
