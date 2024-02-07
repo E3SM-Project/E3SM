@@ -1244,13 +1244,8 @@
         </rootpe>
       </pes>
     </mach>
-<<<<<<< HEAD
     <mach name="pm-cpu|muller-cpu|alvarez">
-      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="any">
-=======
-    <mach name="pm-cpu|alvarez">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC" pesize="any">
->>>>>>> d12e918a46 (Add stub glc to compset lines in config pes file)
         <comment> -compset A_WCYCL* -res ne30pg2_oECv3 with MPASO on 7 nodes, 128x1 </comment>
         <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
         <ntasks>
@@ -2155,13 +2150,8 @@
         </rootpe>
       </pes>
     </mach>
-<<<<<<< HEAD
     <mach name="pm-cpu|muller-cpu|alvarez">
-      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="any">
-=======
-    <mach name="pm-cpu|alvarez">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC" pesize="any">
->>>>>>> d12e918a46 (Add stub glc to compset lines in config pes file)
         <comment> 8 nodes, 128x1</comment>
         <ntasks>
           <ntasks_atm>640</ntasks_atm>
