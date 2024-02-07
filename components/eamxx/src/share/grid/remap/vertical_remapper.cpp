@@ -100,9 +100,12 @@ create_layout (const FieldLayout& fl_in,
 {
   using namespace ShortFieldTagsNames;
 
+  // NOTE: for the vert remapper, it doesn't really make sense to distinguish
+  //       between midpoints and interfaces: we're simply asking for a quantity
+  //       at a given set of pressure levels. So we choose to have fl_out
+  //       to *always* have LEV as vertical tag.
   const auto lt = get_layout_type(fl_in.tags());
-  auto tgt = FieldLayout::invalid();
-  const bool midpoints = fl_in.has_tag(LEV);
+  auto fl_out = FieldLayout::invalid();
   switch (lt) {
     case LayoutType::Scalar0D: [[ fallthrough ]];
     case LayoutType::Vector0D: [[ fallthrough ]];
@@ -110,27 +113,29 @@ create_layout (const FieldLayout& fl_in,
     case LayoutType::Vector2D: [[ fallthrough ]];
     case LayoutType::Tensor2D:
       // These layouts do not have vertical dim tags, so no change
-      tgt = fl_in;
+      fl_out = fl_in;
       break;
     case LayoutType::Scalar1D:
-      tgt = grid_out->get_vertical_layout(midpoints);
+      fl_out = grid_out->get_vertical_layout(true);
       break;
     case LayoutType::Scalar3D:
-      tgt = grid_out->get_3d_scalar_layout(midpoints);
+      fl_out = grid_out->get_3d_scalar_layout(true);
       break;
     case LayoutType::Vector3D:
     {
       const auto vec_tag = fl_in.get_vector_tag();
       const auto vec_dim = fl_in.dim(vec_tag);
-      tgt = grid_out->get_3d_vector_layout(midpoints,vec_tag,vec_dim);
+      fl_out = grid_out->get_3d_vector_layout(true,vec_tag,vec_dim);
       break;
     }
     default:
       // NOTE: this also include Tensor3D. We don't really have any atm proc
       //       that needs to handle a tensor3d quantity, so no need to add it
-      EKAT_ERROR_MSG ("Layout not supported by VerticalRemapper: " + e2str(lt) + "\n");
+      EKAT_ERROR_MSG (
+          "Layout not supported by VerticalRemapper.\n"
+          " - input layout: " + to_string(fl_in) + "\n");
   }
-  return tgt;
+  return fl_out;
 }
 
 void VerticalRemapper::
