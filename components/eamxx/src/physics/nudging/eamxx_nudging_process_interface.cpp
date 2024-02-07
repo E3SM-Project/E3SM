@@ -1,7 +1,11 @@
 #include "eamxx_nudging_process_interface.hpp"
+
 #include "share/util/scream_universal_constants.hpp"
 #include "share/grid/remap/refining_remapper_p2p.hpp"
 #include "share/grid/remap/do_nothing_remapper.hpp"
+
+#include <ekat/util/ekat_lin_interp.hpp>
+#include <ekat/kokkos/ekat_kokkos_utils.hpp>
 
 namespace scream
 {
@@ -154,50 +158,33 @@ void Nudging::apply_tendency(Field& state, const Field& nudge, const Real dt) co
   // Calculate the weight to apply the tendency
   const Real dtend = dt / m_timescale;
 
-  // The update formulat is state = state + dtend*(nudge - state),
-  // which can be rewritten as state = (1-dtend)*state + dtend*nudge
-  state.update(nudge,dtend,1-dtend);
-}
-// =========================================================================================
-void Nudging::apply_weighted_tendency(Field& state, const Field& nudge, const Field& weights, const Real dt) const
-{
-  // Calculate the weight to apply the tendency
-  const Real dtend = dt / m_timescale;
+  using cview_2d = decltype(state.get_view<const Real**>());
 
   auto state_view = state.get_view<Real**>();
   auto nudge_view = nudge.get_view<Real**>();
-  auto w_view     = weights.get_view<Real**>();
+  cview_2d w_view, pmid_view;
 
-  // The update formulat is state = state + dtend*(weights*nudge - weights*state)
+  if (m_use_weights) {
+    auto weights = get_helper_field("nudging_weights");
+    w_view = weights.get_view<const Real**>();
+  }
+  if (m_refine_remap_vert_cutoff>0) {
+    pmid_view = get_field_in("p_mid").get_view<const Real**>();
+  }
+
+  auto use_weights = m_use_weights;
+  auto cutoff = m_refine_remap_vert_cutoff;
   auto policy = Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0}, {m_num_cols, m_num_levs});
   auto update = KOKKOS_LAMBDA(const int& i, const int& j) {
-    state_view(i,j) += dtend * w_view(i,j) * (nudge_view(i,j) - state_view(i,j));
-  };
-  Kokkos::parallel_for(policy,update);
-}
-// =========================================================================================
-void Nudging::apply_vert_cutoff_tendency(Field &state, const Field &nudge,
-                                         const Field &p_mid, const Real dt) const
-{
-  // Calculate the weight to apply the tendency
-  const Real dtend = dt / m_timescale;
-
-  // Local, for GPU's sake
-  const auto cutoff = m_refine_remap_vert_cutoff;
-
-  auto state_view = state.get_view<Real**>();
-  auto nudge_view = nudge.get_view<Real**>();
-  auto pmid_view  = p_mid.get_view<Real**>();
-
-  // The update formula is state = state + dtend*(nudge - state)*Chi(pmid>cutoff)
-  // where Chi is the indicator function (=1 where pmid>cutoff, 0 elsewhere)
-  auto policy = Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0}, {m_num_cols, m_num_levs});
-  auto update = KOKKOS_LAMBDA(const int& i, const int& j) {
-    // We don't want to apply the nudging too close to the surface.
-    // If the pressure is below the cutoff, then we're far enough from the surface.
-    if (pmid_view(i,j) < cutoff) {
-      state_view(i,j) += dtend*(nudge_view(i,j) - state_view(i,j));
+    if (cutoff>0 and pmid_view(i,j)>=cutoff) {
+      return;
     }
+
+    auto tend = nudge_view(i,j) - state_view(i,j);
+    if (use_weights) {
+      tend *= w_view(i,j);
+    }
+    state_view(i,j) += dtend * tend;
   };
   Kokkos::parallel_for(policy,update);
 }
@@ -522,25 +509,7 @@ void Nudging::run_impl (const double dt)
     // If timescale>0, then we need to back out a tendency.
     if (m_timescale > 0) {
       auto atm_state_field = get_field_out_wrap(name);
-      if (m_use_weights) {
-        // get nudging weights field
-        // NOTES: do we really need the vertical interpolation for nudging weights? Since we are going to 
-        //        use the same grids as the case by providing the nudging weights file.
-        //        I would not apply the vertical interpolation here, but it depends...
-        //
-        auto nudging_weights_field = get_helper_field("nudging_weights");
-        // appply the nudging tendencies to the ATM states
-        apply_weighted_tendency(atm_state_field, field_after_vinterp, nudging_weights_field, dt);
-      } else if (m_refine_remap_vert_cutoff > 0.0) {
-        // If we have a cutoff, we apply the tendency with p_mid cutoff
-        // First, get p_mid the field in the atm (i.e., int) state
-        auto p_mid_field = get_field_in("p_mid");
-        // Then, call the tendency with a Heaviside-like cutoff
-        apply_vert_cutoff_tendency(atm_state_field, field_after_vinterp,
-                                   p_mid_field, dt);
-      } else {
-        apply_tendency(atm_state_field, field_after_vinterp, dt);
-      }
+      apply_tendency(atm_state_field,field_after_vinterp,dt);
     }
   }
   m_atm_logger->info("Running nudging...done!");

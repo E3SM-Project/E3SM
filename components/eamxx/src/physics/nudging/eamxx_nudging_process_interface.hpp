@@ -1,20 +1,12 @@
 #ifndef SCREAM_NUDGING_HPP
 #define SCREAM_NUDGING_HPP
 
-#include "share/util/eamxx_time_interpolation.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
-#include "ekat/ekat_parameter_list.hpp"
-#include "ekat/util/ekat_lin_interp.hpp"
-#include "share/io/scream_output_manager.hpp"
-#include "share/io/scorpio_output.hpp"
-#include "share/io/scorpio_input.hpp"
-#include "share/io/scream_scorpio_interface.hpp"
-#include "share/grid/mesh_free_grids_manager.hpp"
-#include "share/grid/point_grid.hpp"
-#include "share/util/scream_vertical_interpolation.hpp"
-#include "share/util/scream_time_stamp.hpp"
+
+#include "share/util/eamxx_time_interpolation.hpp"
 #include "share/grid/remap/abstract_remapper.hpp"
 
+#include <ekat/ekat_parameter_list.hpp>
 #include <string>
 
 namespace scream
@@ -29,46 +21,41 @@ public:
   // enum to track how the source pressure levels are defined
   enum SourcePresType {
     // DEFAULT - source data should include time/spatially varying p_mid with dimensions (time, col, lev)
-    TIME_DEPENDENT_3D_PROFILE  = 0,
+    TIME_DEPENDENT_3D_PROFILE,
     // source data includes p_levs which is a static set of levels in both space and time, with dimensions (lev),
-    STATIC_1D_VERTICAL_PROFILE = 1
+    STATIC_1D_VERTICAL_PROFILE
   };
 
   // Constructors
   Nudging (const ekat::Comm& comm, const ekat::ParameterList& params);
 
   // The type of subcomponent
-  AtmosphereProcessType type () const { return AtmosphereProcessType::Physics; }
+  AtmosphereProcessType type () const override { return AtmosphereProcessType::Physics; }
 
   // The name of the subcomponent
-  std::string name () const { return "Nudging"; }
+  std::string name () const override { return "Nudging"; }
 
   // Set the grid
-  void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
-
-  // Internal function to apply nudging at specific timescale with weights
-  void apply_weighted_tendency(Field& base, const Field& next, const Field& weights, const Real dt) const;
+  void set_grids (const std::shared_ptr<const GridsManager> grids_manager) override;
 
 #ifndef KOKKOS_ENABLE_CUDA
   // Cuda requires methods enclosing __device__ lambda's to be public
 protected:
 #endif
 
-  void run_impl        (const double dt);
+  void run_impl (const double dt) override;
 
-  /* Nudge from coarse data */
-  // See more details later in this file
-  // Must add this here to make it public for CUDA
-  // (refining) remapper vertically-weighted tendency application
-  void apply_vert_cutoff_tendency(Field &base, const Field &next,
-                                  const Field &p_mid, const Real dt) const;
 protected:
 
   Field get_field_out_wrap(const std::string& field_name);
 
+  // Internal function to apply nudging at specific timescale
+  // NOTE: this method will handle weighted and cutoff cases as well
+  void apply_tendency (Field &state, const Field &nudge, const Real dt) const;
+
   // The two other main overrides for the subcomponent
-  void initialize_impl (const RunType run_type);
-  void finalize_impl   ();
+  void initialize_impl (const RunType run_type) override;
+  void finalize_impl   () override;
 
   // Creates an helper field, not to be shared with the AD's FieldManager
   Field create_helper_field (const std::string& name,
@@ -76,12 +63,8 @@ protected:
                             const std::string& grid_name,
                             const int ps = 1);
 
-  // Query if a local field exists
-  bool has_helper_field (const std::string& name) const { return m_helper_fields.find(name)!=m_helper_fields.end(); }
   // Retrieve a helper field
   Field get_helper_field (const std::string& name) const { return m_helper_fields.at(name); }
-  // Internal function to apply nudging at specific timescale
-  void apply_tendency(Field& base, const Field& next, const Real dt) const;
 
   std::shared_ptr<const AbstractGrid>   m_grid;
   // Keep track of field dimensions and the iteration count
@@ -97,7 +80,6 @@ protected:
 
   SourcePresType m_src_pres_type;
   
-  // Some helper fields.
   std::map<std::string,Field> m_helper_fields;
 
   std::vector<std::string> m_fields_nudge;
