@@ -27,6 +27,9 @@
 		<var name="kineticEnergyAtSurface" type="real" dimensions="nCells Time" units="m^2 s^-2"
 			description="kinetic energy at surface"
 		/>
+		<var name="relativeVorticityAtSurface" type="real" dimensions="nCells Time" units="s^-1"
+			description="relative vorticity at cell centers at surface"
+		/>
 		<var name="vertGMvelocitySFC" type="real" dimensions="nCells Time" units="m s^-1"
 			description="vertical velocity due to GM parameterization"
 		/>
@@ -304,12 +307,12 @@
 			<stream name="mesh"/>
 			<var name="xtime"/>
 			<var name="kineticEnergyAtSurface"/>
+			<var name="relativeVorticityAtSurface"/>
 			<var_array name="activeTracersAtSurface"/>
 			<var name="ssh"/>
 			<var name="kineticEnergyAt250m"/>
 			<var name="relativeVorticityAt250m"/>
 			<var name="divergenceAt250m"/>
-			<var name="relativeVorticityAt250m"/>
 			<var name="barotropicSpeed"/>
 			<var name="columnIntegratedSpeed"/>
 			<var name="relativeVorticityVertexAt250m"/>
