@@ -70,6 +70,9 @@ public:
 
 protected:
 
+  FieldLayout create_layout (const FieldLayout& fl_in,
+                             const grid_ptr_type& grid_out) const;
+
   void register_vertical_source_field(const Field& src);
 
   const identifier_type& do_get_src_field_id (const int ifield) const override {
