@@ -710,7 +710,7 @@
 					description="Selects the vertical location where subglacial runoff is fluxed."
 					possible_values="'top','uniform', 'bottom'"
 		/>
-		<nml_option name="config_use_sgr_opt_kpp" type="integer" default_value="0" units="non-dimensional"
+		<nml_option name="config_use_sgr_opt_kpp" type="integer" default_value="1" units="non-dimensional"
 					description="option to use or not subglacial runoff (sgr) in kpp calculation"
 					possible_values="0 - don't use, 1 - use"
 		/>
