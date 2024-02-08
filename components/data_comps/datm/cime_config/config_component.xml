@@ -15,6 +15,7 @@
     <desc option="WISOQIA">QIAN with water isotopes</desc>
     <desc option="CRU"> CRUNCEP data set </desc>
     <desc option="CRUv7"> CLM CRU NCEP v7 data set </desc>
+    <desc option="CRUJRA"> CRUJRA data set </desc>
     <desc option="GSWP3v1"> GSWP3v1 data set </desc>
     <desc option="ERA5"> Fifth generation ECMWF reanalysis </desc>
     <desc option="ERA5_6HR"> Fifth generation ECMWF reanalysis,6 hourly data </desc>
@@ -65,6 +66,7 @@ data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
       <value compset="%JRA-RYF8485">CORE_RYF8485_JRA</value>
       <value compset="%JRA-RYF9091">CORE_RYF9091_JRA</value>
       <value compset="%JRA-RYF0304">CORE_RYF0304_JRA</value>
+      <value compset="%CRUJRA">CRUJRA</value>
       <value compset="%QIA">CLM_QIAN</value>
       <value compset="%WISOQIA">CLM_QIAN_WISO</value>
       <value compset="%CRU">CLMCRUNCEP</value>
