@@ -510,7 +510,6 @@ void Nudging::run_impl (const double dt)
       apply_tendency(atm_state_field,field_after_vinterp,dt);
     }
   }
-  m_atm_logger->info("Running nudging...done!");
 }
 
 // =========================================================================================
