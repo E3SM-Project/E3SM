@@ -17,7 +17,7 @@ CreateUnitTest(homme_shoc_cld_p3_rrtmgp_dp "homme_shoc_cld_p3_rrtmgp_dp.cpp"
 )
 
 # Set AD configurable options
-set (ATM_TIME_STEP 50)
+set (ATM_TIME_STEP 100)
 SetVarDependingOnTestSize(NUM_STEPS 2 4 48)  # 1h 2h 24h
 set (RUN_T0 1999-07-10-00000)
 
