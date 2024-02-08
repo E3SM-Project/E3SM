@@ -78,8 +78,9 @@ def _record_git_provenance(srcroot, exeroot, lid):
 
     # Git config
     config_src = os.path.join(gitroot, "config")
-    config_prov = os.path.join(exeroot, "GIT_CONFIG.{}".format(lid))
-    utils.safe_copy(config_src, config_prov, preserve_meta=False)
+    if os.path.exists(config_src):
+        config_prov = os.path.join(exeroot, "GIT_CONFIG.{}".format(lid))
+        utils.safe_copy(config_src, config_prov, preserve_meta=False)
 
 
 def _find_git_root(srcroot):
