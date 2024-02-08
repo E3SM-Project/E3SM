@@ -2421,8 +2421,8 @@
       <value stream="ERA5_6HR.msdrswrf">coszen</value>
       <value stream="ERA5_6HR.msdfswrf">coszen</value>
       <value stream="ERA5_6HR.mcpr">upper</value>
-      <value stream="ERA5_6HR.mlspr">upper</value>
-      <value stream="ERA5_6HR.msdwlwrf">upper</value>
+      <value stream="ERA5_6HR.mlspr">linear</value>
+      <value stream="ERA5_6HR.msdwlwrf">linear</value>
       <value stream="CLMNLDAS2.Solar">coszen</value>
       <value stream="CLMNLDAS2.Precip">nearest</value>
       <value stream="BC.CRUNCEP.GPCP.Precip">nearest</value>
