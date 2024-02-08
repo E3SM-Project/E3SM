@@ -69,7 +69,7 @@ def run_all_sets():
 
     param.results_dir = f"{machine_paths['html_path']}/v2_9_0_all_sets"
     param.multiprocessing = True
-    param.num_workers = 5
+    param.num_workers = 24
 
     # Set specific parameters for new sets
     enso_param = EnsoDiagsParameter()

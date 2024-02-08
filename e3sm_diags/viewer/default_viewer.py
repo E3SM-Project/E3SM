@@ -38,7 +38,25 @@ SET_TO_NAME = {
 # These 'seasons' can be months as well, if a user
 # wants that:
 #     SEASONS = ['01', '02', ..., '12']
-SEASONS = ["ANN", "DJF", "MAM", "JJA", "SON"]
+SEASONS = [
+    "ANN",
+    "DJF",
+    "MAM",
+    "JJA",
+    "SON",
+    "01",
+    "02",
+    "03",
+    "04",
+    "05",
+    "06",
+    "07",
+    "08",
+    "09",
+    "10",
+    "11",
+    "12",
+]
 
 
 def create_viewer(root_dir, parameters):
