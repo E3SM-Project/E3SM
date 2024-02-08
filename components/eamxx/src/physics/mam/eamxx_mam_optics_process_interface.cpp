@@ -11,10 +11,10 @@ namespace scream {
 
 MAMOptics::MAMOptics(const ekat::Comm &comm, const ekat::ParameterList &params)
     : AtmosphereProcess(comm, params), aero_config_() {
-        EKAT_REQUIRE_MSG(m_params.isParameter("path_to_tables"),
+  EKAT_REQUIRE_MSG(
+      m_params.isParameter("path_to_tables"),
       "ERROR: path_to_tbales is missing from mam_optics parameter list.");
-
-    }
+}
 
 AtmosphereProcessType MAMOptics::type() const {
   return AtmosphereProcessType::Physics;
@@ -32,7 +32,6 @@ void MAMOptics::set_grids(
   q_unit.set_string("kg/kg");
   auto n_unit = 1 / kg;  // number mixing ratios [# / kg air]
   n_unit.set_string("#/kg");
-  // Units nondim(0,0,0,0,0,0,0);
   const auto m2 = m * m;
   const auto s2 = s * s;
 
@@ -50,7 +49,7 @@ void MAMOptics::set_grids(
                                       {ncol_, nswbands_, nlev_ + 1}};
 
   FieldLayout scalar3d_swbandp_layout2{{COL, SWBND, LEV},
-                                      {ncol_, nswbands_, nlev_}};
+                                       {ncol_, nswbands_, nlev_}};
 
   FieldLayout scalar3d_lwband_layout{{COL, LWBND, LEV},
                                      {ncol_, nlwbands_, nlev_}};
@@ -68,9 +67,6 @@ void MAMOptics::set_grids(
   add_field<Required>("p_mid", scalar3d_layout_mid, Pa,
                       grid_name);  // total pressure
 
-  // add_field<Required>("z_int", scalar3d_layout_int, m, grid_name); //
-  // vertical position at interface add_field<Required>("z_mid",
-  // scalar3d_layout_mid, m, grid_name); // vertical position pressure
   add_field<Required>("p_int", scalar3d_layout_int, Pa,
                       grid_name);  // total pressure
   add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa, grid_name);
@@ -95,11 +91,9 @@ void MAMOptics::set_grids(
   add_field<Required>("pbl_height", scalar2d_layout_col, m,
                       grid_name);  // planetary boundary layer height
 
-  // add_field<Required>("cldn", scalar3d_layout_mid, nondim, grid_name); //
-  // could fraction
-
   // shortwave aerosol scattering asymmetry parameter [-]
-  add_field<Computed>("aero_g_sw_mam4", scalar3d_swbandp_layout, nondim, grid_name);
+  add_field<Computed>("aero_g_sw_mam4", scalar3d_swbandp_layout, nondim,
+                      grid_name);
   // shortwave aerosol single-scattering albedo [-]
   add_field<Computed>("aero_ssa_sw_mam4", scalar3d_swbandp_layout, nondim,
                       grid_name);
@@ -107,9 +101,8 @@ void MAMOptics::set_grids(
   add_field<Computed>("aero_tau_sw_mam4", scalar3d_swbandp_layout, nondim,
                       grid_name);
 
-
   //
-   // shortwave aerosol scattering asymmetry parameter [-]
+  // shortwave aerosol scattering asymmetry parameter [-]
   add_field<Computed>("aero_g_sw", scalar3d_swbandp_layout2, nondim, grid_name);
   // shortwave aerosol single-scattering albedo [-]
   add_field<Computed>("aero_ssa_sw", scalar3d_swbandp_layout2, nondim,
@@ -123,15 +116,6 @@ void MAMOptics::set_grids(
   // // aerosol extinction optical depth
   add_field<Computed>("aero_tau_forward", scalar3d_swbandp_layout, nondim,
                       grid_name);
-
-  // FIXME: this field doesn't belong here, but this is a convenient place to
-  // FIXME: put it for now.
-  // number mixing ratio for CCN
-  using Spack      = ekat::Pack<Real, SCREAM_SMALL_PACK_SIZE>;
-  using Pack       = ekat::Pack<Real, Spack::n>;
-  constexpr int ps = Pack::n;
-  // FieldLayout scalar3d_layout_mid { {COL, LEV}, {ncol_, nlev_} };
-  add_field<Computed>("nccn", scalar3d_layout_mid, 1 / kg, grid_name, ps);
 
   // (interstitial) aerosol tracers of interest: mass (q) and number (n) mixing
   // ratios
@@ -208,22 +192,12 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   dry_atm_.T_mid = get_field_in("T_mid").get_view<const Real **>();
   dry_atm_.p_mid = get_field_in("p_mid").get_view<const Real **>();
   p_int_         = get_field_in("p_int").get_view<const Real **>();
-  // dry_atm_.p_del     = get_field_in("pseudo_density").get_view<const
-  // Real**>();
-  // FIXME: In the nc file, there is also pseudo_density_dry
   dry_atm_.p_del = get_field_in("pseudo_density_dry").get_view<const Real **>();
-  // FIXME: is this a duplicate?
-  p_del_           = get_field_in("pseudo_density").get_view<const Real **>();
+  p_del_         = get_field_in("pseudo_density").get_view<const Real **>();
   dry_atm_.cldfrac = get_field_in("cldfrac_tot")
                          .get_view<const Real **>();  // FIXME: tot or liq?
-  // FIXME: use this one instead
-  // dry_atm_.cldfrac   = get_field_in("cldn").get_view<const Real**>();
   dry_atm_.pblh = get_field_in("pbl_height").get_view<const Real *>();
-  // FIXME:
-  //  dry_atm_.phis      =  mam_coupling::view_1d("phis", ncol_);
-  dry_atm_.phis      = get_field_in("phis").get_view<const Real *>();
-
-  // z_int_ = get_field_in("z_int").get_view<const Real **>();
+  dry_atm_.phis = get_field_in("phis").get_view<const Real *>();
 
   dry_atm_.z_mid     = buffer_.z_mid;
   dry_atm_.dz        = buffer_.dz;
@@ -236,7 +210,6 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   dry_atm_.w_updraft = buffer_.w_updraft;
   dry_atm_.z_surf    = 0.0;  // FIXME: for now
 
-  // FIXME: are we assuming constant aerosol between columns ?
   // set wet/dry aerosol state data (interstitial aerosols only)
   for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
     const char *int_nmr_field_name = mam_coupling::int_aero_nmr_field_name(m);
@@ -308,8 +281,6 @@ void MAMOptics::initialize_impl(const RunType run_type) {
 
     using view_1d_host = typename KT::view_1d<Real>::HostMirror;
 
-    // Views in aerosol_optics_device_data_ are allocated in the following
-    // fuctions.
     // Note: these functions do not set values for aerosol_optics_device_data_.
     mam4::modal_aer_opt::set_complex_views_modal_aero(
         aerosol_optics_device_data_);
@@ -327,9 +298,10 @@ void MAMOptics::initialize_impl(const RunType run_type) {
     mam_coupling::set_parameters_table(aerosol_optics_host_data, rrtmg_params,
                                        layouts, host_views);
 
-    std::string mam_aerosol_optics_path =  m_params.get<std::string>("path_to_tables");
+    std::string mam_aerosol_optics_path =
+        m_params.get<std::string>("path_to_tables");
 
-    // FIXME: this name need to be pass in the input file.
+    // FIXME: this names need to be pass in the input file.
     std::vector<std::string> name_table_modes = {
         mam_aerosol_optics_path + "mam4_mode1_rrtmg_aeronetdust_c20240206.nc",
         mam_aerosol_optics_path + "mam4_mode2_rrtmg_c20240206.nc",
@@ -374,14 +346,17 @@ void MAMOptics::initialize_impl(const RunType run_type) {
       mom:m-organic: /compyfs/inputdata/atm/cam/physprops/poly_rrtmg_c130816.nc
     */
       std::vector<std::string> name_table_aerosols = {
-          mam_aerosol_optics_path + "ocphi_rrtmg_c20240206.nc",  // soa:s-organic
           mam_aerosol_optics_path +
-              "dust_aeronet_rrtmg_c20240206.nc",                   // dst:dust:
-          mam_aerosol_optics_path + "ssam_rrtmg_c20240206.nc",     // ncl:seasalt
-          mam_aerosol_optics_path + "sulfate_rrtmg_c20240206.nc",  // so4:sulfate
-          mam_aerosol_optics_path + "ocpho_rrtmg_c20240206.nc",  // pom:p-organic
+              "ocphi_rrtmg_c20240206.nc",  // soa:s-organic
+          mam_aerosol_optics_path +
+              "dust_aeronet_rrtmg_c20240206.nc",                // dst:dust:
+          mam_aerosol_optics_path + "ssam_rrtmg_c20240206.nc",  // ncl:seasalt
+          mam_aerosol_optics_path +
+              "sulfate_rrtmg_c20240206.nc",  // so4:sulfate
+          mam_aerosol_optics_path +
+              "ocpho_rrtmg_c20240206.nc",  // pom:p-organic
           mam_aerosol_optics_path + "bcpho_rrtmg_c20240206.nc",  // bc :black-c
-          mam_aerosol_optics_path + "poly_rrtmg_c20240206.nc"    // mom:m-organic
+          mam_aerosol_optics_path + "poly_rrtmg_c20240206.nc"  // mom:m-organic
       };
 
       // FIXME: make a function that return a index given the species name
@@ -438,139 +413,122 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   }
 }
 void MAMOptics::run_impl(const double dt) {
-  // constexpr Real zero = 0.0;
-
   const auto policy =
       ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_);
   const auto scan_policy = ekat::ExeSpaceUtils<
       KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
-  // const auto policy = haero::ThreadTeamPolicy(1u, 1);
 
   // preprocess input -- needs a scan for the calculation of atm height
   Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
   Kokkos::fence();
   /// outputs
-  const auto aero_g_sw   = get_field_out("aero_g_sw_mam4").get_view<Real ***>();
-  const auto aero_ssa_sw = get_field_out("aero_ssa_sw_mam4").get_view<Real ***>();
-  const auto aero_tau_sw = get_field_out("aero_tau_sw_mam4").get_view<Real ***>();
+  const auto aero_g_sw = get_field_out("aero_g_sw_mam4").get_view<Real ***>();
+  const auto aero_ssa_sw =
+      get_field_out("aero_ssa_sw_mam4").get_view<Real ***>();
+  const auto aero_tau_sw =
+      get_field_out("aero_tau_sw_mam4").get_view<Real ***>();
 
   const auto aero_tau_lw = get_field_out("aero_tau_lw").get_view<Real ***>();
 
-  const auto aero_g_sw_eamx   = get_field_out("aero_g_sw").get_view<Real ***>();
-  const auto aero_ssa_sw_eamx = get_field_out("aero_ssa_sw").get_view<Real ***>();
-  const auto aero_tau_sw_eamx = get_field_out("aero_tau_sw").get_view<Real ***>();
-
-
+  const auto aero_g_sw_eamx = get_field_out("aero_g_sw").get_view<Real ***>();
+  const auto aero_ssa_sw_eamx =
+      get_field_out("aero_ssa_sw").get_view<Real ***>();
+  const auto aero_tau_sw_eamx =
+      get_field_out("aero_tau_sw").get_view<Real ***>();
 
   const auto aero_tau_forward =
       get_field_out("aero_tau_forward").get_view<Real ***>();
 
-  // NOTE: we do not compute this variable in aersol_optics
-  auto aero_nccn =
-      get_field_out("nccn").get_view<Real **>();  // FIXME: get rid of this
+  // Compute optical properties on all local columns.
+  // (Strictly speaking, we don't need this parallel_for here yet, but we
+  // leave
+  //  it in anticipation of column-specific aerosol optics to come.)
 
-  if(false) {  // remove when ready to do actual calculations
-    // populate these fields with reasonable representative values
-    // Kokkos::deep_copy(aero_g_sw, 0.5);
-    // Kokkos::deep_copy(aero_ssa_sw, 0.7);
-    // Kokkos::deep_copy(aero_tau_sw, 0.0);
-    // Kokkos::deep_copy(aero_tau_lw, 0.0);
-    // Kokkos::deep_copy(aero_nccn, 50.0);
-  } else {
+  // NOTE! we need a const mam_coupling::DryAtmosphere dry_atm for gpu access.
+  // We cannot use member of this class inside of the parallel_for
+  const mam_coupling::DryAtmosphere &dry_atm = dry_atm_;
+  const auto &p_int                          = p_int_;
+  const auto &p_del                          = p_del_;
+  const auto &ssa_cmip6_sw                   = ssa_cmip6_sw_;
+  const auto &af_cmip6_sw                    = af_cmip6_sw_;
+  const auto &ext_cmip6_sw                   = ext_cmip6_sw_;
+  const auto &ext_cmip6_lw                   = ext_cmip6_lw_;
+  const auto &work                           = work_;
+  const auto &dry_aero                       = dry_aero_;
+  const auto &aerosol_optics_device_data     = aerosol_optics_device_data_;
+  // const auto& z_int =z_iface;
+  Kokkos::parallel_for(
+      policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
+        const Int icol     = team.league_rank();  // column index
+        auto odap_aer_icol = ekat::subview(aero_tau_lw, icol);
+        const auto atm     = mam_coupling::atmosphere_for_column(dry_atm, icol);
 
-    // Compute optical properties on all local columns.
-    // (Strictly speaking, we don't need this parallel_for here yet, but we
-    // leave
-    //  it in anticipation of column-specific aerosol optics to come.)
+        // FIXME: Get rid of this
+        // auto nccn = ekat::subview(aero_nccn, icol);
 
-    // NOTE! we need a const mam_coupling::DryAtmosphere dry_atm for gpu access.
-    // We cannot use member of this class inside of the parallel_for
-    const mam_coupling::DryAtmosphere& dry_atm = dry_atm_;
-    const auto& p_int = p_int_;
-    const auto& p_del = p_del_;
-    const auto& ssa_cmip6_sw= ssa_cmip6_sw_;
-    const auto& af_cmip6_sw = af_cmip6_sw_;
-    const auto& ext_cmip6_sw = ext_cmip6_sw_;
-    const auto& ext_cmip6_lw = ext_cmip6_lw_;
-    const auto& work=work_;
-    const auto& dry_aero= dry_aero_;
-    const auto& aerosol_optics_device_data=aerosol_optics_device_data_;
-    // const auto& z_int =z_iface;
-    Kokkos::parallel_for(
-        policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
-          const Int icol     = team.league_rank();  // column index
-          auto odap_aer_icol = ekat::subview(aero_tau_lw, icol);
-          const auto atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
+        // FIXME: interface pressure [Pa]
+        auto pint = ekat::subview(p_int, icol);
+        // FIXME: dry mass pressure interval [Pa]
+        // FIXME:
+        auto zi      = ekat::subview(dry_atm.z_iface, icol);
+        auto pdel    = ekat::subview(p_del, icol);
+        auto pdeldry = ekat::subview(dry_atm.p_del, icol);
 
-          // FIXME: Get rid of this
-          // auto nccn = ekat::subview(aero_nccn, icol);
+        auto ssa_cmip6_sw_icol = ekat::subview(ssa_cmip6_sw, icol);
+        auto af_cmip6_sw_icol  = ekat::subview(af_cmip6_sw, icol);
+        auto ext_cmip6_sw_icol = ekat::subview(ext_cmip6_sw, icol);
+        auto ext_cmip6_lw_icol = ekat::subview(ext_cmip6_lw, icol);
 
-          // FIXME: interface pressure [Pa]
-          auto pint = ekat::subview(p_int, icol);
-          // FIXME: dry mass pressure interval [Pa]
-          // FIXME:
-          auto zi      = ekat::subview(dry_atm.z_iface, icol);
-          auto pdel    = ekat::subview(p_del, icol);
-          auto pdeldry = ekat::subview(dry_atm.p_del, icol);
+        // FIXME: check if this correct: Note that these variables have pver+1
+        // levels tau_w =>  aero_ssa_sw  (pcols,0:pver,nswbands) ! aerosol
+        // single scattering albedo * tau
+        auto tau_w_icol = ekat::subview(aero_ssa_sw, icol);
+        // tau_w_g => "aero_g_sw" (pcols,0:pver,nswbands) ! aerosol assymetry
+        // parameter * tau * w
+        auto tau_w_g_icol = ekat::subview(aero_g_sw, icol);
+        // tau_w_f(pcols,0:pver,nswbands) => aero_tau_forward  ? ! aerosol
+        // forward scattered fraction * tau * w
+        auto tau_w_f_icol = ekat::subview(aero_tau_forward, icol);
+        // tau  => aero_tau_sw (?)   (pcols,0:pver,nswbands) ! aerosol
+        // extinction optical depth
+        auto tau_icol = ekat::subview(aero_tau_sw, icol);
 
-          auto ssa_cmip6_sw_icol = ekat::subview(ssa_cmip6_sw, icol);
-          auto af_cmip6_sw_icol  = ekat::subview(af_cmip6_sw, icol);
-          auto ext_cmip6_sw_icol = ekat::subview(ext_cmip6_sw, icol);
-          auto ext_cmip6_lw_icol = ekat::subview(ext_cmip6_lw, icol);
+        auto work_icol = ekat::subview(work, icol);
 
-          // FIXME: check if this correct: Note that these variables have pver+1
-          // levels tau_w =>  aero_ssa_sw  (pcols,0:pver,nswbands) ! aerosol
-          // single scattering albedo * tau
-          auto tau_w_icol = ekat::subview(aero_ssa_sw, icol);
-          // tau_w_g => "aero_g_sw" (pcols,0:pver,nswbands) ! aerosol assymetry
-          // parameter * tau * w
-          auto tau_w_g_icol = ekat::subview(aero_g_sw, icol);
-          // tau_w_f(pcols,0:pver,nswbands) => aero_tau_forward  ? ! aerosol
-          // forward scattered fraction * tau * w
-          auto tau_w_f_icol = ekat::subview(aero_tau_forward, icol);
-          // tau  => aero_tau_sw (?)   (pcols,0:pver,nswbands) ! aerosol
-          // extinction optical depth
-          auto tau_icol = ekat::subview(aero_tau_sw, icol);
+        // fetch column-specific subviews into aerosol prognostics
+        mam4::Prognostics progs =
+            mam_coupling::aerosols_for_column(dry_aero, icol);
 
-          auto work_icol = ekat::subview(work, icol);
+        mam4::aer_rad_props::aer_rad_props_sw(
+            team, dt, progs, atm, zi, pint, pdel, pdeldry, ssa_cmip6_sw_icol,
+            af_cmip6_sw_icol, ext_cmip6_sw_icol, tau_icol, tau_w_icol,
+            tau_w_g_icol, tau_w_f_icol, aerosol_optics_device_data, work_icol);
 
-          // fetch column-specific subviews into aerosol prognostics
-          // mam4::Prognostics progs =
-          // mam_coupling::interstitial_aerosols_for_column(dry_aero_, icol);
-          mam4::Prognostics progs =
-              mam_coupling::aerosols_for_column(dry_aero, icol);
-
-          mam4::aer_rad_props::aer_rad_props_sw(
-              team, dt, progs, atm, zi, pint, pdel, pdeldry, ssa_cmip6_sw_icol,
-              af_cmip6_sw_icol, ext_cmip6_sw_icol, tau_icol, tau_w_icol,
-              tau_w_g_icol, tau_w_f_icol, aerosol_optics_device_data,
-              work_icol);
-
-          team.team_barrier();
-          mam4::aer_rad_props::aer_rad_props_lw(
-              team, dt, progs, atm, pint, zi, pdel, pdeldry, ext_cmip6_lw_icol,
-              aerosol_optics_device_data, odap_aer_icol);
-
-        });
-
-  }
-
-  // postprocess output
+        team.team_barrier();
+        mam4::aer_rad_props::aer_rad_props_lw(
+            team, dt, progs, atm, pint, zi, pdel, pdeldry, ext_cmip6_lw_icol,
+            aerosol_optics_device_data, odap_aer_icol);
+      });
   Kokkos::fence();
+  // postprocess output
+
   Kokkos::parallel_for("postprocess", policy, postprocess_);
   Kokkos::fence();
-  // FIXME: mam4 uses a diffent layout for aero_g_sw,aero_ssa_sw,aero_tau_sw than rrtmgp
-  // mam4 layout: (ncols, nswlands, nlevs +1  )
-  // rrtmgp in emaxx: (ncols, nswlands, nlevs)
-  // Here, we copy data from kk=1 in mam4xx
-   Kokkos::parallel_for("copying data from mam4xx to eamxx",
-  Kokkos::MDRangePolicy< Kokkos::Rank<3> > ({0,0,0}, {ncol_, nswbands_, nlev_}),
-   KOKKOS_LAMBDA (const int icol, const int iswband, const int kk) {
-     aero_g_sw_eamx(icol, iswband, kk ) = aero_g_sw(icol, iswband, kk+1);
-     aero_ssa_sw_eamx(icol, iswband, kk ) = aero_ssa_sw(icol, iswband, kk+1);
-     aero_tau_sw_eamx(icol, iswband, kk )  =  aero_tau_sw(icol, iswband, kk+1);
-     });
-     Kokkos::fence();
+  // FIXME: mam4 uses a diffent layout for aero_g_sw,aero_ssa_sw,aero_tau_sw
+  // than rrtmgp mam4 layout: (ncols, nswlands, nlevs +1  ) rrtmgp in emaxx:
+  // (ncols, nswlands, nlevs) Here, we copy data from kk=1 in mam4xx
+  Kokkos::parallel_for(
+      "copying data from mam4xx to eamxx",
+      Kokkos::MDRangePolicy<Kokkos::Rank<3> >({0, 0, 0},
+                                              {ncol_, nswbands_, nlev_}),
+      KOKKOS_LAMBDA(const int icol, const int iswband, const int kk) {
+        aero_g_sw_eamx(icol, iswband, kk) = aero_g_sw(icol, iswband, kk + 1);
+        aero_ssa_sw_eamx(icol, iswband, kk) =
+            aero_ssa_sw(icol, iswband, kk + 1);
+        aero_tau_sw_eamx(icol, iswband, kk) =
+            aero_tau_sw(icol, iswband, kk + 1);
+      });
+  Kokkos::fence();
 }
 
 void MAMOptics::finalize_impl() {}

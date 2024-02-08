@@ -157,13 +157,12 @@ class MAMOptics final : public scream::AtmosphereProcess {
   int nswbands_, nlwbands_;
 
   // FIXME: move these values to mam_coupling
-  mam_coupling::const_view_2d p_int_, p_del_;  //, z_int_ z_mid_, z_iface_,  ;
+  mam_coupling::const_view_2d p_int_, p_del_;
 
   // MAM4 aerosol particle size description
   mam4::AeroConfig aero_config_;
 
   // atmospheric and aerosol state variables
-  // mam_coupling::WetAtmosphere wet_atm_;
   // atmospheric and aerosol state variables
   mam_coupling::WetAtmosphere wet_atm_;
   mam_coupling::DryAtmosphere dry_atm_;
