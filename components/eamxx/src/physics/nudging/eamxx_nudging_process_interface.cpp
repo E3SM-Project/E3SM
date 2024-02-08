@@ -5,6 +5,7 @@
 #include "share/grid/remap/do_nothing_remapper.hpp"
 
 #include <ekat/util/ekat_lin_interp.hpp>
+#include <ekat/util/ekat_math_utils.hpp>
 #include <ekat/kokkos/ekat_kokkos_utils.hpp>
 
 namespace scream
@@ -351,8 +352,8 @@ void Nudging::run_impl (const double dt)
       for (int k=0; k<nlevs; ++k) {
         if (std::abs(v(icol,k)-var_fill_value)>thresh) {
           // This entry is substantially different from var_fill_value, so it's good
-          first_good = std::min(first_good,k);
-          last_good  = std::max(last_good,k);
+          first_good = ekat::impl::min(first_good,k);
+          last_good  = ekat::impl::max(last_good,k);
         }
       }
       EKAT_KERNEL_REQUIRE_MSG (first_good<nlevs and last_good>=0,
