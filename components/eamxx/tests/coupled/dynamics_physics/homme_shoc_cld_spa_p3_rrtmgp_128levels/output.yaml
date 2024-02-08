@@ -68,6 +68,15 @@ Fields:
       - sfc_flux_sw_net
       - EAMxx_T_mid_tend
       - EAMxx_qv_tend
+      # Sliced Output
+      - T_mid_at_2m_above_surface
+      - T_mid_at_1000m_above_sealevel
+      - T_mid_at_500hPa
+      - T_mid_at_50000Pa
+      - T_mid_at_500mb
+      - T_mid_at_model_top
+      - T_mid_at_model_bot
+      - T_mid_at_lev_10
  
 output_control:
   Frequency: 1
