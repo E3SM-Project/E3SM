@@ -252,7 +252,7 @@ contains
          ! Initialize Monin-Obukhov length and wind speed
 
          call MoninObukIni(ur(p), thv(c), dthv, zldis(p), z0mg_patch(p), um(p), obu(p))
-
+         num_iter(p) = 0
       end do
 
       ! Perform stability iteration
@@ -322,6 +322,7 @@ contains
             fn = 0
             do f = 1, fnold
                p = filterp(f)
+               num_iter(p) = iter
                if (.not. (abs(tau_diff(p)) < dtaumin)) then
                   fn = fn + 1
                   filterp(fn) = p

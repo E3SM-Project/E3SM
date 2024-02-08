@@ -379,6 +379,7 @@ contains
          z0hv                 => frictionvel_vars%z0hv_patch               , & ! Output: [real(r8) (:)   ]  roughness length over vegetation, sensible heat [m]
          z0qv                 => frictionvel_vars%z0qv_patch               , & ! Output: [real(r8) (:)   ]  roughness length over vegetation, latent heat [m]
          rb1                  => frictionvel_vars%rb1_patch                , & ! Output: [real(r8) (:)   ]  boundary layer resistance (s/m)
+         num_iter             => frictionvel_vars%num_iter_patch           , & ! Output: number of iterations required
 
          t_h2osfc             => col_es%t_h2osfc             , & ! Input:  [real(r8) (:)   ]  surface water temperature
          t_soisno             => col_es%t_soisno             , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)
@@ -749,7 +750,8 @@ contains
          ! Initialize Monin-Obukhov length and wind speed
 
          call MoninObukIni(ur(p), thv(c), dthv(p), zldis(p), z0mv(p), um(p), obu(p))
-
+         num_iter(p) = 0
+         
       end do
 
       ! Set counter for leaf temperature iteration (itlef)
@@ -1157,6 +1159,7 @@ contains
                dele(p) = abs(efe(p)-efeb(p))
                efeb(p) = efe(p)
                det(p)  = max(del(p),del2(p))
+               num_iter(p) = itlef
             end do
             fnold = fn
             fn = 0

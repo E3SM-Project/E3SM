@@ -649,13 +649,14 @@ contains
 
                  ! lamda is not used currently with fates, fates also does not
                  ! scale by the cn_ and cp_scalars
+                 ! Also, we do not currently allow phosphatase released P
+                 ! to go directly to the plants in FATES. This implies as an alpha of 0.
                  ! lamda_ptase = alm_fates%fates(ci)%bc_pconst%eca_lambda_ptase(pft)
 
                  ptase_tmp = alm_fates%fates(ci)%bc_pconst%eca_vmax_ptase(pft) *  &
                       fr_frac/dzsoi_decomp(j) / ( alm_fates%fates(ci)%bc_pconst%eca_km_ptase(pft) + 1._r8)
 
-                 biochem_pmin_to_plant_vr_patch(p,j) = ptase_tmp * alm_fates%fates(ci)%bc_pconst%eca_alpha_ptase(pft)
-                 biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j) + ptase_tmp * (1._r8 - alm_fates%fates(ci)%bc_pconst%eca_alpha_ptase(pft))
+                 biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j) + ptase_tmp !*(1._r8 - alm_fates%fates(ci)%bc_pconst%eca_alpha_ptase(pft))
                  biochem_pmin_to_ecosysp_vr_col_pot(c,j) = biochem_pmin_to_ecosysp_vr_col_pot(c,j) + ptase_tmp
 
               end do
