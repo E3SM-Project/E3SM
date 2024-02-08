@@ -141,14 +141,14 @@ void MAMOptics::set_grids(
     // printf("%s \n", int_nmr_field_name);
 
     add_field<Updated>(cld_nmr_field_name, scalar3d_layout_mid, n_unit,
-                       grid_name, "tracers");
+                       grid_name);
     for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
       const char *cld_mmr_field_name =
           mam_coupling::cld_aero_mmr_field_name(m, a);
 
       if(strlen(cld_mmr_field_name) > 0) {
         add_field<Updated>(cld_mmr_field_name, scalar3d_layout_mid, q_unit,
-                           grid_name, "tracers");
+                           grid_name);
       }
     }
   }

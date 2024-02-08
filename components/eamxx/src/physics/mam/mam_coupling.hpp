@@ -106,12 +106,12 @@ const char* aero_species_name(const int species_id) {
 KOKKOS_INLINE_FUNCTION
 const char* gas_species_name(const int gas_id) {
   static const char *species_names[num_aero_gases()] = {
-    "o3",
-    "h2o2",
-    "h2so4",
-    "so2",
-    "dms",
-    "soag"
+    "O3",
+    "H2O2",
+    "H2SO4",
+    "SO2",
+    "DMS",
+    "SOAG"
   };
   return species_names[gas_id];
 }
@@ -249,7 +249,7 @@ const char* cld_aero_mmr_field_name(const int mode, const int species) {
 KOKKOS_INLINE_FUNCTION
 const char* gas_mmr_field_name(const int gas) {
   if (!gas_mmr_names(gas)[0]) {
-    concat_2_strings("aero_gas_mmr_", gas_species_name(gas), gas_mmr_names(gas));
+    concat_2_strings("", gas_species_name(gas), gas_mmr_names(gas));
   }
   return const_cast<const char*>(gas_mmr_names(gas));
 }
