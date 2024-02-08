@@ -21,7 +21,7 @@ if (compile_threaded)
 endif()
 string(APPEND CMAKE_CXX_FLAGS_DEBUG " -O0 -g")
 string(APPEND CMAKE_CXX_FLAGS_RELEASE " -O2")
-string(APPEND CMAKE_CXX_FLAGS " -fp-model=precise") # and manually add precise
+string(APPEND CMAKE_CXX_FLAGS "-mcmodel=medium -dynamic -fp-model=precise") # and manually add precise
 #message(STATUS "ndk CXXFLAGS=${CXXFLAGS}")
 
 string(APPEND CMAKE_Fortran_FLAGS " -fp-model=consistent -fimf-use-svml")
