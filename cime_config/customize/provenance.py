@@ -151,10 +151,10 @@ def _run_git_cmd_recursively(cmd, srcroot, output):
     Runs the git command in srcroot then runs it on each submodule.
     Then output from both commands is written to the output file.
     """
-    rc1, output1, err1 = utils.run_cmd("git {}".format(cmd), from_dir=srcroot)
+    rc1, output1, err1 = utils.run_cmd("GIT_PAGER=cat git {}".format(cmd), from_dir=srcroot)
 
     rc2, output2, err2 = utils.run_cmd(
-        'git submodule foreach --recursive "git {}; echo"'.format(cmd), from_dir=srcroot
+        'GIT_PAGER=cat git submodule foreach --recursive "git {}; echo"'.format(cmd), from_dir=srcroot
     )
 
     with open(output, "w") as fd:
