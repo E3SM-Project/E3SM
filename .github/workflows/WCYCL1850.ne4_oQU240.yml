@@ -1,0 +1,38 @@
+name: WCYCL1850.ne4_oQU240
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+ 
+  workflow_dispatch:
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+    container: 
+      image: ghcr.io/mahf708/e3sm-imgs@sha256:bb0facbb01b6221931e8702d7ad1427bc31a4bf0551cca3ee4561706ada39519
+
+    steps:
+      - 
+        name: Checkout
+        uses: actions/checkout@v4
+        with:
+          show-progress: false
+          submodules: recursive
+      - 
+        name: CIME
+        working-directory: cime/scripts
+        run: |
+          mkdir -p $HOME/projects/e3sm/cesm-inputdata
+          ./create_newcase --case "${COM}.${RES}.${MAC}" --compset ${COM} --res ${RES} --machine ${MAC}
+          cd "${COM}.${RES}.${MAC}"
+          ./case.setup
+          ./case.build -v
+        env:
+          MAC: "singularity"
+          COM: "WCYCL1850"
+          RES: "ne4_oQU240"
