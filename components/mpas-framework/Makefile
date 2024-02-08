@@ -462,8 +462,8 @@ cray-cray:
 	"CFLAGS_DEBUG = -O0 -g" \
 	"CXXFLAGS_DEBUG = -O0 -g" \
 	"LDFLAGS_DEBUG = -O0 -g -Ktrap=divz,fp,inv,ovf" \
-	"FFLAGS_OMP = -h omp" \
-	"CFLAGS_OMP = -h omp" \
+	"FFLAGS_OMP = -homp -fopenmp" \
+	"CFLAGS_OMP = -homp -fopenmp" \
 	"PICFLAG = -f pic" \
 	"BUILD_TARGET = $(@)" \
 	"CORE = $(CORE)" \
