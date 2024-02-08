@@ -14,7 +14,7 @@ jobs:
 
     runs-on: ubuntu-latest
     container: 
-      image: ghcr.io/mahf708/e3sm-imgs@sha256:bb0facbb01b6221931e8702d7ad1427bc31a4bf0551cca3ee4561706ada39519
+      image: ghcr.io/mahf708/e3sm-imgs@sha256:b6e052750b960d3445c524640e7cbc151c4378aefc4a156261af49f900cc54b6
 
     steps:
       - 
