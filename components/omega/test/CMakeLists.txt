@@ -260,7 +260,6 @@ add_test(
   COMMAND ${MPI_EXEC} -n 8 -- ./${_TestIOName}
 )
 
-
 ##################
 # Config test
 ##################
@@ -296,6 +295,31 @@ add_test(
   COMMAND ${MPI_EXEC} -n 8 -- ./${_TestConfigName}
 )
 
+##################
+# Metadata test
+##################
+
+set(_TestMetadataName testMetadata.exe)
+
+add_executable(${_TestMetadataName} infra/MetadataTest.cpp)
+
+target_compile_options(
+  ${_TestMetadataName}
+  PRIVATE
+  "-I${OMEGA_SOURCE_DIR}/src/base"
+  "-I${OMEGA_SOURCE_DIR}/src/infra"
+  ${OMEGA_CXX_FLAGS}
+)
+
+target_link_options(
+  ${_TestMetadataName}
+  PRIVATE
+  ${OMEGA_LINK_OPTIONS}
+)
+
+target_link_libraries(${_TestMetadataName} ${OMEGA_LIB_NAME} yakl)
+
+add_test(NAME METADATA_TEST COMMAND ./${_TestMetadataName})
 
 ##################
 # YAKL test
@@ -320,7 +344,6 @@ endif()
 
 add_test(NAME YAKL_TEST COMMAND ./${_TestYaklName})
 
-
 ##################
 # test properties
 ##################
@@ -335,6 +358,11 @@ set_tests_properties(
   HALO_TEST
   HORZMESH_TEST
   IO_TEST
+  METADATA_TEST
+  PROPERTIES FAIL_REGULAR_EXPRESSION "FAIL" PASS_REGULAR_EXPRESSION "PASS"
+)
+
+set_tests_properties(
   YAKL_TEST
-  PROPERTIES FAIL_REGULAR_EXPRESSION "FAIL"
+  PROPERTIES FAIL_REGULAR_EXPRESSION "ERROR"
 )

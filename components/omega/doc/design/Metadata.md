@@ -109,32 +109,48 @@ definition.
 #### 4.1.2 Class/structs/data types
 
 The metadata class holds the collection of metadata associated
-with a variable or general category (code, sim, file).
+with a variable or the general category (code, sim, file) that we call a field.
 This class implemented as a map (name, value pairs) using `std::any`
 to accommodate all supported types. It also stores all the
-defined metadata in a static vector so the metadata can be
+defined metadata in a static map so the metadata can be
 retrieved from anywhere.
 
 ```c++
-   class Metadata {
-   private:
+   class MetaData {
+     protected:
+       /// metadata stored in map
+       std::map<std::string, std::any> MetaMap;
 
-      /// metadata stored in map
-      std::map<std::string, std::any> metaMap;
+       /// Store and maintain all defined metadata in this map
+       static std::map<std::string, std::shared_ptr<MetaData>> AllFields;
 
-      /// for arrays or vectors, the rank of the array
-      int nDims;
-
-      /// for arrays or vectors, the dimensions
-      std::vector<std::shared_ptr<MetaDim>> dimensions;
-
-      /// Store and maintain all defined metadata in this vector
-      static std::vector<std::shared_ptr<Metadata>> defFields;
-
-
-   public:
+     public:
       // [Methods described below]
    };
+```
+
+While the Metadata class provides a generic solution for storing/retrieving
+metadata, we also provide specific solutions for important variable types.
+ArrayMetaData is a class inherited from the Metadata class that helps users
+input the required metadata for array-type variables.
+
+```c++
+    class ArrayMetaData : public MetaData {
+
+        public:
+
+        static std::shared_ptr<MetaData>
+        create(const std::string Name,        /// Name of var
+               const std::string Description, /// long Name or description
+               const std::string Units,       /// units
+               const std::string StdName,     /// CF standard Name
+               const std::any ValidMin,       /// min valid field value
+               const std::any ValidMax,       /// max valid field value
+               const std::any FillValue,      /// scalar used for undefined entries
+               const int NDims,               /// number of dimensions
+               const std::vector<std::shared_ptr<MetaDim>> Dimensions // dim pointers
+        );
+    };
 ```
 
 Another class is needed to describe dimensions for arrays
@@ -146,11 +162,11 @@ static vector.
    class MetaDim{
 
       private:
-         /// name, length pair for the dimension
-         std::map<std::string,I4> dimension;
+         /// The length of the dimension. Use 0 for unlimited length.
+         I4 Length;
 
          /// Store and maintain all defined dimensions
-         static std::vector<std::shared_ptr<MetaDim>> allDims;
+         static std::map<std::string, std::shared_ptr<MetaDim>> AllDims;
 
       public:
          [methods described below]
@@ -159,20 +175,16 @@ static vector.
 Finally, to support common groups of metadata, we define a simple
 class to define a list of variable names that are members of a
 group. Like the classes above, we store and manage the group
-definitions in a static vector of defined groups.
+definitions in a static map of defined groups.
 
 ```c++
    class MetaGroup{
-
       private:
-         /// name of group
-         std::string groupName;
-
-         /// list of fields in group
-         std::vector<std::string> fieldList;
+         /// map of fields in group
+         std::map<std::string, std::shared_ptr<MetaData>> Fields;
 
          /// Store and maintain all defined groups
-         static std::vector<std::shared_ptr<MetaGroup>> allGroups;
+         static std::map<std::string, std::shared_ptr<MetaGroup>> AllGroups;
 
       public:
          [methods described below]
@@ -181,29 +193,51 @@ definitions in a static vector of defined groups.
 
 ### 4.2 Methods
 
-#### 4.2.1 Metadata creation
+#### 4.2.1 Metadata container creation
 
-There will be two methods for creating metadata. Because we
-are managing all instances of metadata within the class, these
+There will be two methods for creating generic metadata container and
+one method for creating array-type metadata container. Because we
+are managing all instances of metadata container within the class, these
 are static functions rather than constructors. Also note in
 the comments below that empty or zero values can be provided
 in cases where input arguments don't make sense.
 
 ```c++
-    /// Create an empty instance by name, primarily for global
-    /// metadata not assigned to a variable/field. An error
-    /// code is returned that is non-zero if metadata of the same
-    /// name already exists
-    int Metadata::create(const std::string name /// [in] name to assign
-                         );
+   class MetaData {
+      ...
+      public:
 
-    /// Create metadata for a variable/field using all
+        /// Create an empty metadata container instance by name, primarily
+        /// for global metadata not assigned to a variable/field. Returns a
+        /// shared_ptr object. An exception is thrown if metadata of the same
+        /// name already exists.
+        static std::shared_ptr<MetaData>
+        create(
+            const std::string Name /// [in] Name to assign
+        );
+
+        /// Create an instance by name and pairs of key-value.
+        /// Returns a shared_ptr object. An exception is thrown if metadata
+        /// of the same name already exists.
+        static std::shared_ptr<MetaData>
+        create(
+            const std::string Name,
+            const std::initializer_list<std::pair<std::string, std::any>>& MetaPairs);
+   }
+```
+
+```c++
+   class ArrayMetaData : public MetaData {
+   ...
+   public
+    /// Create an metadata container instance for a variable using all
     /// required metadata. Note that if input parameters don't exist
     /// (eg stdName) or don't make sense (eg min/max or fill) for a
     /// given field, empty or 0 entries can be provided. Similarly
     /// for scalars, nDims can be 0 and an emtpy MetaDim vector can be
     /// supplied.
-    int Metadata::create
+    static std::shared_ptr<MetaData>
+    create
          (const std::string name,        /// name of var
           const std::string description, /// long name or description
           const std::string units,       /// units
@@ -214,41 +248,40 @@ in cases where input arguments don't make sense.
           const int         nDims,       /// number of dimensions
           const std::vector<std::shared_ptr<MetaDims>> // dim pointers
           );
+   }
 ```
 
-A destructor will be provided to free metadata and remove from the
+A destructor will be provided to free metadata container and remove from the
 defined list, though we anticipate most metadata will need to be
 persistent through a given simulation.
 
+In additiion, there will be a method to retrieve a metadata container, and
+another method to check if a metadata container exists by name.
+
 #### 4.2.2 Add/remove metadata
 
-An interface for adding new metadata to a previously defined Metadata
-instance will be provided. This can be used to add global metadata to
+An interface for adding new metadata to a previously defined metadata
+container instance will be provided. This can be used to add global metadata to
 the code, simulation, file metadata, but also for variables if additional
 metadata is desired.
 
 ```c++
-   int Metadata::Add(const std::string varName, /// name of field to add data to
-                     const std::string name,    /// name of new metadata to add
-                     const std::any    value    /// value of new metadata to add
-                     );
+    int addEntry(const std::string MetaName,   /// Name of new metadata to add
+           const std::any Value          /// Value of new metadata to add
+    );
 ```
 
-where varName is the name of the already defined variable, and
-the other arguments are the usual name/value pair for the metadata
+where MetaName and Value are the usual name/value pair for the metadata
 to be added. The value is a `std::any` type to support all types within
 within the metadata map. This function will return 0 if successful and an error
-if either the varName has not been defined or if a metadata pair with
-that name already exists.
+if a metadata pair with that name already exists.
 
 For symmetry, we will supply a remove function, though the
 use case is likely rare.
 
 ```c++
-   int Metadata::Remove(
-            const std::string varName, /// name of field
-            const std::string name.    /// name of metadata to remove
-            );
+    int removeEntry(const std::string MetaName /// Name of metadata to remove
+    );
 ```
 
 #### 4.2.3 Retrieve metadata
@@ -257,13 +290,15 @@ The most common use case will be retrieving metadata. For a single
 metadata entry, there will be an explicit get function:
 
 ```c++
-   myValue = Metadata::Get(varName, name);
+    int getEntry(const std::string MetaName,   /// Name of metadata to get
+           I4 &Value                     /// I4 Value of metadata
+    );
 ```
 
-where varName is the field defined (or generic name for global
-metadata) and name is the name associated with the metadata
-to be retrieved. The internal `std::any` representation of the
-value will be cast into the type expected.
+where MetaName is the name associated with the metadata
+to be retrieved. Value argument is passed by reference so that
+metadata value can be returned using the argument. This function is
+overloaded with Omega data types.
 
 During I/O stages, we will need a capability for retrieving
 all metadata for a defined field or global category. We will
@@ -273,14 +308,16 @@ be used to extract all of the metadata for a given type. For
 example, to retrieve all metadata from a defined field:
 
 ```c++
-   std::map<std::string, std::any> *varMeta = MetadataGetAll(varName);
-   std::string metaName;
-   std::any    metaVal;
+   auto MyVar = MetaData::create("MyVar");
+   MyVar->addEntry("Name", 1);
+   std::map<std::string, std::any> *VarMeta = MyVar->getAllEntries();
+   std::string MetaName;
+   std::any    MetaVal;
 
    // use std::map functionality to loop through all metadata
-   for (auto it=varMeta.begin(); it != varMeta.end(), ++it){
-      metaName = it->first;  // retrieve name part of meta pair
-      metaVal  = it->second; // retrieve value part of meta pair
+   for (const auto &Pair : *VarMeta) {
+      MetaName = Pair.first;  // retrieve name part of meta pair
+      MetaVal  = Pair.second; // retrieve value part of meta pair
 
       // do whatever needed with metadata
       // metaVal can be cast into the appropriate type using
@@ -292,21 +329,22 @@ example, to retrieve all metadata from a defined field:
 
 For the dimension class, there will be a create function that will
 both construct the instance and add it to the list of defined
-dimensions. It will return an integer error code that is non-zero
-if the dimension is already defined.
+dimensions. It will return a `shared_ptr` to the instance. An exception
+will be thrown if the dimension is already defined.
 
 ```c++
-   int MetaDim::create(std::string name, // name of dimension
-                       I4 length         // length of dimension
-                       );
+    static std::shared_ptr<MetaDim>
+    create(const std::string Name,     /// name of dimension
+              const I4 Length         /// length of dimension
+    );
 ```
 
-A delete function will be supplied as well.
+A destroy function will be supplied as well.
 ```c++
-   int MetaDim::delete(std::string name // name of dimension
+   int MetaDim::destroy(std::string name // name of dimension
                        );
 ```
-We use create/delete functions rather than constructors so
+We use create/destroy functions rather than constructors so
 that the class can store and manage all instances.
 
 #### 4.2.5 Retrieve dim length
@@ -315,28 +353,40 @@ The only other function for a dimension will be a retrieval for
 the dimension length:
 
 ```c++
-   I4 myLength = MetaDim::getLength("name");
+   int retcode = MetaDim::getLength(I4 &MyLength);
 ```
 
 #### 4.2.6 Existence inquiry
 
+#### 4.2.6.1 Existence inquiry for metadata container and metadim container
+
 For both metadata and dimensions, a function will be provided
-to inquire whether metadata or dimensions with a given name
-have already been defined:
+to inquire whether the containers of metadata or dimensions
+with a given name have already been defined:
 
 ```c++
-   bool Metadata::isDefined(const std::string name);
-   bool MetaDim::isDefined (const std::string name);
+   bool Metadata::has(const std::string Name);
+   bool MetaDim::has (const std::string Name);
+```
+
+#### 4.2.6.2 Existence inquiry for metadata
+
+For metadata, a function will be provided to inquire whether metadata
+with a given name have already been defined:
+
+```c++
+   bool Metadata::hasEntry(const std::string Name);
 ```
 
 #### 4.2.7 Metadata groups
 
 Common groups of fields can be defined as metadata groups (MetaGroup).
-We supply create/delete functions for defining a group of a given
+We supply create/destroy functions for defining a group of a given
 name. Group names should start with GRP so that when groups are
 included as contents in input config files, we can distinguish
 a group from a field. Create will create an empty group to which
-field names can be added. The functions will return an error code.
+field names can be added. The functions will return a `shared_ptr` to
+the MetaGroup instance.
 Note that in the case of groups, if a group of the same name
 already exists, no error is returned - the create does nothing.
 This is to support cases where multiple modules may be adding their
@@ -346,7 +396,7 @@ in an arbitrary order.
 ```c++
    int MetaGroup::create(std::string name /// name of group
                          );
-   int MetaGroup::delete(std::string name /// name of group
+   int MetaGroup::destroy(std::string name /// name of group
                          );
 ```
 
@@ -355,9 +405,9 @@ function is provided though use cases are rare. As in create,
 if a field has already been added, the add function will do nothing.
 
 ```c++
-   int MetaGroup::add(std::string name /// name of field to add
+   int MetaGroup::addField(std::string name /// name of field to add
                       );
-   int MetaGroup::remove(std::string name /// name of field to remove
+   int MetaGroup::removeField(std::string name /// name of field to remove
                          );
 ```
 
@@ -365,8 +415,9 @@ Finally, we will need to be able to extract the names of all
 fields that have been added to a group:
 
 ```c++
-   std::vector<std::string> fieldList =
-       MetaGroup::get(std::string groupName);
+   auto MyGroup = MetaGroup::get(< group name >);
+   std::map<std::string, std::shared_ptr<MetaData>> * FieldMap =
+        MyGroup->getAllFields();
 ```
 ## 5 Verification and Testing
 

@@ -38,6 +38,7 @@ if (NOT DEFINED PROJECT_NAME)
          )
 
   set(CMAKE_CXX_STANDARD 17) # used in E3SM
+  set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
   # update variables for standalone build
   setup_standalone_build()
