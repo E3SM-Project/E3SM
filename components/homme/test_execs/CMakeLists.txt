@@ -143,7 +143,9 @@ ADD_CUSTOM_TARGET(check
                   COMMAND ${CMAKE_CTEST_COMMAND} "--output-on-failure")
 
 # Force cprnc to be built when make check is run
+if(NOT BUILD_HOMME_WITHOUT_PIOLIBRARY)
 ADD_DEPENDENCIES(check cprnc)
+endif()
 
 # Create a target for making the reference data
 ADD_CUSTOM_TARGET(baseline
