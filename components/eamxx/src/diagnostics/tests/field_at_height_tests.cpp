@@ -22,7 +22,7 @@ TEST_CASE("field_at_height")
   // Get an MPI comm group for test
   ekat::Comm comm(MPI_COMM_WORLD);
 
-  constexpr int nruns = 10;
+  constexpr int nruns = 100;
 
   util::TimeStamp t0 ({2022,1,1},{0,0,0});
 
@@ -99,9 +99,8 @@ TEST_CASE("field_at_height")
   using RPDF = std::uniform_real_distribution<Real>;
 
   IPDF pdf_fields (0,1000);
-  RPDF pdf_m  (0,10);
+  RPDF pdf_m  (1,10);
   RPDF pdf_y0 (0,5);
-  IPDF pdf_levs (1,nlevs-1);
 
   // Lambda to create and run a diag, and return output
   auto run_diag = [&](const Field& f, const Field& z,
@@ -133,22 +132,28 @@ TEST_CASE("field_at_height")
   //
   // To simplify the surface contribution we set the surface height to equal
   // the local column index.
-  const float z_top = 10.0;
+  const int z_top = 1000;
+  const Real surf_slope = z_top/10.0/ncols;
   const auto& zint_v   = z_int.get_view<Real**,Host>();
   const auto& zmid_v   = z_mid.get_view<Real**,Host>();
   const auto& zsurf_v  = z_surf.get_view<Real*,Host>();
   const auto& geoint_v = geo_int.get_view<Real**,Host>();
   const auto& geomid_v = geo_mid.get_view<Real**,Host>();
+  int         min_col_thickness = z_top;
+  int         max_surf = 0;
   for (int ii=0; ii<ncols; ++ii) {
-    zsurf_v(ii) = ii;
-    const float dz = (z_top - zsurf_v(ii))/nlevs;
+    zsurf_v(ii) = ii*surf_slope;
+    max_surf = zsurf_v(ii) > max_surf ? zsurf_v(ii) : max_surf;
+    const Real col_thickness = z_top - zsurf_v(ii);
+    min_col_thickness = min_col_thickness < col_thickness ? col_thickness : min_col_thickness;
+    const Real dz = (z_top - zsurf_v(ii))/nlevs;
     zint_v(ii,0) = z_top;
     geoint_v(ii,0) = z_top - zsurf_v(ii); // Note, the distance above surface needs to consider the surface height.
     for (int jj=0; jj<nlevs; ++jj) {
       zint_v(ii,jj+1)   = zint_v(ii,jj)-dz;
       zmid_v(ii,jj)     = 0.5*(zint_v(ii,jj) + zint_v(ii,jj+1));
-      geoint_v(ii,jj+1) = zint_v(ii,jj+1)-zsurf_v(ii); 
-      geomid_v(ii,jj)   = zmid_v(ii,jj)  -zsurf_v(ii);
+      geoint_v(ii,jj+1) = zint_v(ii,jj+1)- zsurf_v(ii); 
+      geomid_v(ii,jj)   = zmid_v(ii,jj)  - zsurf_v(ii);
     }
   }
   z_mid.sync_to_dev();
@@ -156,6 +161,10 @@ TEST_CASE("field_at_height")
   z_surf.sync_to_dev();
   geo_int.sync_to_dev();
   geo_mid.sync_to_dev();
+  // Set the PDF for target height in the test to always be within the shortest column.
+  // This ensures that we don't havea target z that extrapolates everywhere.
+  // We test this case individually.
+  IPDF pdf_levs (max_surf,min_col_thickness);
   // Sanity check that the geo and z vertical structures are in fact different,
   // so we know we are testing above_surface and above_sealevel as different cases.
   REQUIRE(! views_are_equal(z_int,geo_int));
@@ -175,6 +184,7 @@ TEST_CASE("field_at_height")
     printf(" -> Testing for a reference height above %s...\n",surf_ref.c_str());
     const auto mid_src = surf_ref == "sealevel" ? z_mid : geo_mid;
     const auto int_src = surf_ref == "sealevel" ? z_int : geo_int;
+    const int  max_surf_4test = surf_ref == "sealevel" ? max_surf : 0;
     for (int irun=0; irun<nruns; ++irun) {
 
       // Randomize fields using f_z_src function defined above:
@@ -186,7 +196,7 @@ TEST_CASE("field_at_height")
       f_z_src(inter, slope, int_src, v_int);
 
       // Set target z-slice for testing to a random value.
-      z_tgt = pdf_levs(engine);
+      z_tgt = pdf_levs(engine)+max_surf_4test;
       loc = std::to_string(z_tgt) + "m";
       printf("  -> test at height of %s.............\n",loc.c_str());
       {
@@ -219,12 +229,32 @@ TEST_CASE("field_at_height")
       }
       {
         print("    -> Forced fail, give incorrect location...............\n");
-        std::string loc_err = std::to_string(z_tgt+1) + "m";
-        auto d = run_diag(s_mid,mid_src,loc_err,surf_ref);
-        f_z_tgt(inter,slope,z_tgt,mid_src,s_tgt);
+        const int z_tgt_adj = (z_tgt+max_surf_4test)/2;
+        std::string loc_err = std::to_string(z_tgt_adj) + "m";
+        auto d = run_diag(s_int,int_src,loc_err,surf_ref);
+        f_z_tgt(inter,slope,z_tgt,int_src,s_tgt);
         REQUIRE (!views_are_approx_equal(d,s_tgt,tol,false));
         print("    -> Forced fail, give incorrect location............... OK!\n");
       }
+    }
+    {
+      print("    -> Forced extrapolation ...............\n");
+      auto slope = pdf_m(engine); 
+      auto inter = pdf_y0(engine);
+      f_z_src(inter, slope, int_src, s_int);
+      print("    ->                      at top...............\n");
+      z_tgt = 2*z_top;
+      std::string loc = std::to_string(z_tgt) + "m";
+      auto dtop = run_diag(s_int,int_src,loc,surf_ref);
+      f_z_tgt(inter,slope,z_tgt,int_src,s_tgt);
+      REQUIRE (views_are_approx_equal(dtop,s_tgt,tol));
+      print("    ->                      at bot...............\n");
+      z_tgt = 0;
+      loc = std::to_string(z_tgt) + "m";
+      auto dbot = run_diag(s_int,int_src,loc,surf_ref);
+      f_z_tgt(inter,slope,z_tgt,int_src,s_tgt);
+      REQUIRE (views_are_approx_equal(dbot,s_tgt,tol));
+      print("    -> Forced extrapolation............... OK!\n");
     }
     printf(" -> Testing for a reference height above %s... OK!\n",surf_ref.c_str());
   }
