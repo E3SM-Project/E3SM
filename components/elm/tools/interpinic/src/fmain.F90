@@ -14,7 +14,7 @@ program fmain
   character(len= 256) :: arg
   integer :: n                   !index 
   integer :: nargs               !number of arguments  
-  integer, external :: iargc     !number of arguments function
+  integer  :: iargc     !number of arguments function
   character(len=256) :: finidati !input initial dataset to read
   character(len=256) :: finidato !output initial dataset to create
   character(len=256) :: cmdline  !input command line
