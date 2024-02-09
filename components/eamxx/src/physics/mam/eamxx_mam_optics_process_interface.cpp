@@ -117,6 +117,8 @@ void MAMOptics::set_grids(
   add_field<Computed>("aero_tau_forward", scalar3d_swbandp_layout, nondim,
                       grid_name);
 
+  add_field<Computed>("aodvis", scalar2d_layout_col, nondim, grid_name);
+
   // (interstitial) aerosol tracers of interest: mass (q) and number (n) mixing
   // ratios
   for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
@@ -439,6 +441,8 @@ void MAMOptics::run_impl(const double dt) {
   const auto aero_tau_forward =
       get_field_out("aero_tau_forward").get_view<Real ***>();
 
+  const auto aodvis = get_field_out("aodvis").get_view<Real *>();
+
   // Compute optical properties on all local columns.
   // (Strictly speaking, we don't need this parallel_for here yet, but we
   // leave
@@ -502,7 +506,7 @@ void MAMOptics::run_impl(const double dt) {
         mam4::aer_rad_props::aer_rad_props_sw(
             team, dt, progs, atm, zi, pint, pdel, pdeldry, ssa_cmip6_sw_icol,
             af_cmip6_sw_icol, ext_cmip6_sw_icol, tau_icol, tau_w_icol,
-            tau_w_g_icol, tau_w_f_icol, aerosol_optics_device_data, work_icol);
+            tau_w_g_icol, tau_w_f_icol, aerosol_optics_device_data, aodvis(icol), work_icol);
 
         team.team_barrier();
         mam4::aer_rad_props::aer_rad_props_lw(
