@@ -22,7 +22,11 @@ module mpaso_cpl_indices
   integer :: index_o2x_Faoo_fco2_ocn
   integer :: index_o2x_Faoo_fdms_ocn
   integer :: index_o2x_So_ssh
-
+  integer :: index_o2x_Foxo_ismw
+  integer :: index_o2x_Foxo_rrofl
+  integer :: index_o2x_Foxo_rrofi
+  integer :: index_o2x_Foxo_ismh
+  integer :: index_o2x_Foxo_rrofih
 
   ! ocn -> drv for calculation of ocean-ice sheet interactions
 
@@ -187,6 +191,13 @@ contains
     index_o2x_Faoo_fco2_ocn = mct_avect_indexra(o2x,'Faoo_fco2_ocn',perrWith='quiet')
     index_o2x_Faoo_fdms_ocn = mct_avect_indexra(o2x,'Faoo_fdms_ocn',perrWith='quiet')
     index_o2x_So_ssh        = mct_avect_indexra(o2x,'So_ssh')
+
+    index_o2x_Foxo_ismw     = mct_avect_indexra(o2x,'Foxo_ismw')
+    index_o2x_Foxo_rrofl    = mct_avect_indexra(o2x,'Foxo_rrofl')
+    index_o2x_Foxo_rrofi    = mct_avect_indexra(o2x,'Foxo_rrofi')
+
+    index_o2x_Foxo_ismh     = mct_avect_indexra(o2x,'Foxo_ismh')
+    index_o2x_Foxo_rrofih   = mct_avect_indexra(o2x,'Foxo_rrofih')
 
     index_o2x_So_blt        = mct_avect_indexra(o2x,'So_blt')
     index_o2x_So_bls        = mct_avect_indexra(o2x,'So_bls')
