@@ -127,7 +127,7 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <!-- ================================================================== -->
 <!-- FATES default parameter file                                       -->
 <!-- ================================================================== -->
-<fates_paramfile >lnd/clm2/paramdata/fates_params_api25.5.0_12pft_c230710.nc</fates_paramfile>
+<fates_paramfile >lnd/clm2/paramdata/fates_params_api.32.0.0_12pft_c231215.nc</fates_paramfile>
 
 <!-- soil order related parameters (relative to {csmdata}) -->
 <fsoilordercon             >lnd/clm2/paramdata/CNP_parameters_c131108.nc</fsoilordercon>
@@ -566,9 +566,8 @@ lnd/clm2/surfdata_map/surfdata_conusx4v1_simyr2000_c160503.nc</fsurdat>
  use_crop=".false." >lnd/clm2/surfdata_map/surfdata.pftdyn_ne30np4_rcp2.6_simyr1850-2100_c130524.nc</flanduse_timeseries>
 
 <!-- Land Use Harmonization unified data sets for dynamic FATES land use change -->
-
-<fluh_timeseries hgrid="4x5" sim_year_range="1850-2015" use_cn=".false."
- use_crop=".false." >lnd/clm2/luh/LUH2_states_transitions_management.timeseries_4x5_hist_simyr1850-2015_c230415.nc</fluh_timeseries>
+<fluh_timeseries hgrid="4x5" sim_year_range="1850-2015" use_fates=".true."
+ >lnd/clm2/surfdata_map/fates-sci.1.68.3_api.31.0.0_tools.1.0.1/LUH2_states_transitions_management.timeseries_4x5_hist_simyr1850-2015_c231101.nc</fluh_timeseries>
 
 
 <!-- GLC mask datasets (relative to {csmdata}) -->
