@@ -285,8 +285,6 @@ public:
     m_iop = iop;
   }
 
-  const iop_ptr& get_intensive_observation_perdiod() { return m_iop; }
-
 protected:
 
   // Sends a message to the atm log
@@ -586,6 +584,8 @@ private:
 
   // Controls global hashing output for debugging non-BFBness.
   int m_internal_diagnostics_level;
+
+protected:
 
   // IOP object
   iop_ptr m_iop;
