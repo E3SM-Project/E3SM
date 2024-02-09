@@ -3503,6 +3503,7 @@
           <command name="purge"></command>
           <command name="use">/soft/modulefiles</command>
           <command name="use">/soft/restricted/CNDA/updates/modulefiles</command>
+	  <command name="load">cray-python/3.9.13.1</command>
 	  <command name="load">spack-pe-gcc/0.4-rc1 cmake/3.26.4-gcc-testing</command>
         </modules>
         <modules compiler="!gnu">
@@ -3523,8 +3524,8 @@
         <env name="NETCDF_C_PATH">/lus/gecko/projects/CSC249ADSE15_CNDA/software/netcdf-c/4.9.2/oneapi.eng.2023.05.15.007</env>
         <env name="NETCDF_FORTRAN_PATH">/lus/gecko/projects/CSC249ADSE15_CNDA/software/netcdf-fortran/4.6.1/oneapi.eng.2023.05.15.007</env>
         <env name="PNETCDF_PATH">/lus/gecko/projects/CSC249ADSE15_CNDA/software/pnetcdf/1.12.3/oneapi.eng.2023.05.15.007</env>
-        <env name="LD_LIBRARY_PATH">/lus/gecko/projects/CSC249ADSE15_CNDA/software/pnetcdf/1.12.3/oneapi.eng.2023.05.15.007/lib:/lus/gecko/projects/CSC249ADSE15_CNDA/software/netcdf-fortran/4.6.1/oneapi.eng.2023.05.15.007/lib:/lus/gecko/projects/CSC249ADSE15_CNDA/software/netcdf-c/4.9.2/oneapi.eng.2023.05.15.007/lib:$ENV{LD_LIBRARY_PATH}</env>
-        <env name="PATH">/lus/gecko/projects/CSC249ADSE15_CNDA/software/pnetcdf/1.12.3/oneapi.eng.2023.05.15.007/bin:/lus/gecko/projects/CSC249ADSE15_CNDA/software/netcdf-fortran/4.6.1/oneapi.eng.2023.05.15.007/bin:/lus/gecko/projects/CSC249ADSE15_CNDA/software/netcdf-c/4.9.2/oneapi.eng.2023.05.15.007/bin:$ENV{PATH}</env>
+        <env name="LD_LIBRARY_PATH">/opt/cray/pe/gcc-libs:/opt/cray/pe/python/3.9.13.1/lib:/lus/gecko/projects/CSC249ADSE15_CNDA/software/pnetcdf/1.12.3/oneapi.eng.2023.05.15.007/lib:/lus/gecko/projects/CSC249ADSE15_CNDA/software/netcdf-fortran/4.6.1/oneapi.eng.2023.05.15.007/lib:/lus/gecko/projects/CSC249ADSE15_CNDA/software/netcdf-c/4.9.2/oneapi.eng.2023.05.15.007/lib:$ENV{LD_LIBRARY_PATH}</env>
+        <env name="PATH">/opt/cray/pe/python/3.9.13.1/bin:/lus/gecko/projects/CSC249ADSE15_CNDA/software/pnetcdf/1.12.3/oneapi.eng.2023.05.15.007/bin:/lus/gecko/projects/CSC249ADSE15_CNDA/software/netcdf-fortran/4.6.1/oneapi.eng.2023.05.15.007/bin:/lus/gecko/projects/CSC249ADSE15_CNDA/software/netcdf-c/4.9.2/oneapi.eng.2023.05.15.007/bin:$ENV{PATH}</env>
         <env name="RANKS_BIND">list:0-7,104-111:8-15,112-119:16-23,120-127:24-31,128-135:32-39,136-143:40-47,144-151:52-59,156-163:60-67,164-171:68-75,172-179:76-83,180-187:84-91,188-195:92-99,196-203</env>
      </environment_variables>
      <environment_variables DEBUG="TRUE">
@@ -3532,7 +3533,7 @@
      </environment_variables>
      <environment_variables compiler="oneapi-ifxgpu">
         <env name="ONEAPI_DEVICE_SELECTOR">level_zero:gpu</env>
-        <env name="ONEAPI_MPICH_GPU">NO_GPU</env>
+	<!--<env name="ONEAPI_MPICH_GPU">NO_GPU</env>-->
         <env name="MPIR_CVAR_ENABLE_GPU">0</env>
         <env name="romio_cb_read">disable</env>
         <env name="romio_cb_write">disable</env>

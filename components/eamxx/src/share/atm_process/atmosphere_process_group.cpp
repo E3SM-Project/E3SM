@@ -365,7 +365,17 @@ void AtmosphereProcessGroup::add_additional_data_fields_to_property_checks (cons
 }
 
 void AtmosphereProcessGroup::initialize_impl (const RunType run_type) {
+
+	int mmm = 0;
+
   for (auto& atm_proc : m_atm_processes) {
+
+	  mmm++;
+	  std::cout << "process is "<< mmm << "\n" << std::flush;
+	  std::cout << "process name is "<< atm_proc->name() << "\n"<< std::flush;
+
+	  m_atm_logger->flush();
+
     atm_proc->initialize(timestamp(),run_type);
 #ifdef SCREAM_HAS_MEMORY_USAGE
     long long my_mem_usage = get_mem_usage(MB);

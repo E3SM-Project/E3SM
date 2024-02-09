@@ -35,8 +35,8 @@ module atm_comp_mct
   integer                :: mpicom_atm          ! mpi communicator
   integer(IN)            :: my_task             ! my task in mpi communicator mpicom
   integer                :: inst_index          ! number of current instance (ie. 1)
-  character(len=16)      :: inst_name           ! fullname of current instance (ie. "lnd_0001")
-  character(len=16)      :: inst_suffix = ""    ! char string associated with instance (ie. "_0001" or "")
+  character(len=16)      :: inst_name           ! fullname of current instance (ie. "lnd_0001')
+  character(len=16)      :: inst_suffix = ""    ! char string associated with instance (ie. "_0001" or "')
   integer(IN)            :: ATM_ID              ! mct comp id
   integer(IN),parameter  :: master_task=0       ! task number of master task
 
@@ -97,6 +97,8 @@ CONTAINS
 
     !-------------------------------------------------------------------------------
 
+print *,'OG a 1'
+
     ! Grab some data from the cdata structure (coming from the coupler)
     call seq_cdata_setptrs(cdata, &
          id=ATM_ID, &
@@ -104,38 +106,51 @@ CONTAINS
          gsMap=gsmap_atm, &
          dom=dom_atm, &
          infodata=infodata)
+print *, 'OG a 2'
     call seq_infodata_getData(infodata, atm_phase=phase, start_type=run_type, &
                               username=username, case_name=caseid, hostname=hostname)
-    call seq_infodata_PutData(infodata, atm_aero=.true.)
+print *, 'OG a 3'
+            call seq_infodata_PutData(infodata, atm_aero=.true.)
+print *, 'OG a 4'
     call seq_infodata_PutData(infodata, atm_prognostic=.true.)
 
+print *, 'OG a 5'
     if (phase > 1) RETURN
 
+print *, 'OG a 6'
     ! Determine instance information
     inst_name   = seq_comm_name(ATM_ID)
     inst_index  = seq_comm_inst(ATM_ID)
     inst_suffix = seq_comm_suffix(ATM_ID)
 
+print *, 'OG a 7'
     ! Determine communicator group
     call mpi_comm_rank(mpicom_atm, my_task, ierr)
 
+print *, 'OG a 8'
     !----------------------------------------------------------------------------
     ! Init atm.log
     !----------------------------------------------------------------------------
-
+print *, 'OG a 9'
     if (my_task == master_task) then
+print *, 'OG a 10'
       atm_log_unit = shr_file_getUnit()
       call shr_file_setIO ('atm_modelio.nml'//trim(inst_suffix),atm_log_unit)
       inquire(unit=atm_log_unit,name=atm_log_fname)
     endif
 
+print *, 'OG a 11'
     call mpi_bcast(atm_log_unit,1,MPI_INTEGER,master_task,mpicom_atm,mpi_ierr)
+print *, 'OG a 12'
     if (ierr /= 0) then
+print *, 'OG a 13'
       print *,'[eamxx] ERROR broadcasting atm.log unit'
       call mpi_abort(mpicom_atm,ierr,mpi_ierr)
     end if
 
+print *, 'OG a 14'
     call mpi_bcast(atm_log_fname,256,MPI_CHARACTER,master_task,mpicom_atm,ierr)
+print *, 'OG a 15'
     if (ierr /= 0) then
       print *,'[eamxx] ERROR broadcasting atm.log file name'
       call mpi_abort(mpicom_atm,ierr,mpi_ierr)
@@ -146,29 +161,40 @@ CONTAINS
     !----------------------------------------------------------------------------
 
     ! Init the AD
+print *, 'OG a 16'
     call seq_timemgr_EClockGetData(EClock, calendar=calendar, &
                                    curr_ymd=cur_ymd, curr_tod=cur_tod, &
                                    start_ymd=case_start_ymd, start_tod=case_start_tod)
+print *, 'OG a 17'
     call string_f2c(yaml_fname,yaml_fname_c)
+print *, 'OG a 18'
     call string_f2c(calendar,calendar_c)
+print *, 'OG a 19'
     call string_f2c(trim(atm_log_fname),atm_log_fname_c)
+print *, 'OG a 20'
     call scream_create_atm_instance (mpicom_atm, ATM_ID, yaml_fname_c, atm_log_fname_c, &
                           INT(cur_ymd,kind=C_INT),  INT(cur_tod,kind=C_INT), &
                           INT(case_start_ymd,kind=C_INT), INT(case_start_tod,kind=C_INT), &
                           calendar_c)
 
 
+print *, 'OG a 21'
     ! Init MCT gsMap
     call atm_Set_gsMap_mct (mpicom_atm, ATM_ID, gsMap_atm)
+print *, 'OG a 22'
     lsize = mct_gsMap_lsize(gsMap_atm, mpicom_atm)
 
+print *, 'OG a 23'
     ! Init MCT domain structure
     call atm_domain_mct (lsize, gsMap_atm, dom_atm)
 
+print *, 'OG a 24'
     ! Init import/export mct attribute vectors
     call mct_aVect_init(x2a, rList=seq_flds_x2a_fields, lsize=lsize)
+print *, 'OG a 25'
     call mct_aVect_init(a2x, rList=seq_flds_a2x_fields, lsize=lsize)
 
+print *, 'OG a 26'
     ! Complete AD initialization based on run type
     if (trim(run_type) == trim(seq_infodata_start_type_start)) then
       restarted_run = .false.
@@ -179,8 +205,10 @@ CONTAINS
       call mpi_abort(mpicom_atm,ierr,mpi_ierr)
     endif
 
+print *, 'OG a 27'
     ! Init surface coupling stuff in the AD
     call scream_set_cpl_indices (x2a, a2x)
+print *, 'OG a 28'
 
     call scream_setup_surface_coupling (c_loc(import_field_names), c_loc(import_cpl_indices), &
                                         c_loc(x2a%rAttr), c_loc(import_vector_components), &
@@ -191,11 +219,13 @@ CONTAINS
                                         c_loc(export_constant_multiple), c_loc(do_export_during_init), &
                                         num_cpl_exports, num_scream_exports, export_field_size)
 
+print *, 'OG a 29'
     call string_f2c(trim(caseid),caseid_c)
     call string_f2c(trim(username),username_c)
     call string_f2c(trim(hostname),hostname_c)
     call scream_init_atm (caseid_c,hostname_c,username_c)
 
+print *, 'OG a 30'
   end subroutine atm_init_mct
 
   !===============================================================================

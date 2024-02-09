@@ -209,25 +209,40 @@ setup_intensive_observation_period ()
 
 void AtmosphereDriver::create_atm_processes()
 {
+
+	std::cout << "OG cinit 1 \n" << std::flush;
+
   m_atm_logger->info("[EAMxx] create_atm_processes  ...");
+	std::cout << "OG cinit 2 \n" << std::flush;
   start_timer("EAMxx::init");
+	std::cout << "OG cinit 3 \n" << std::flush;
   start_timer("EAMxx::create_atm_processes");
+	std::cout << "OG cinit 4 \n" << std::flush;
 
   // At this point, must have comm and params set.
   check_ad_status(s_comm_set | s_params_set);
+	std::cout << "OG cinit 5 \n" << std::flush;
 
   // Create the group of processes. This will recursively create the processes
   // tree, storing also the information regarding parallel execution (if needed).
   // See AtmosphereProcessGroup class documentation for more details.
   auto& atm_proc_params = m_atm_params.sublist("atmosphere_processes");
+	std::cout << "OG cinit 6 \n" << std::flush;
   atm_proc_params.rename("EAMxx");
+	std::cout << "OG cinit 7 \n" << std::flush;
   atm_proc_params.set("Logger",m_atm_logger);
+	std::cout << "OG cinit 8 \n" << std::flush;
   m_atm_process_group = std::make_shared<AtmosphereProcessGroup>(m_atm_comm,atm_proc_params);
+	std::cout << "OG cinit 9 \n" << std::flush;
 
   m_ad_status |= s_procs_created;
+	std::cout << "OG cinit 10 \n" << std::flush;
   stop_timer("EAMxx::create_atm_processes");
+	std::cout << "OG cinit 11 \n" << std::flush;
   stop_timer("EAMxx::init");
+	std::cout << "OG cinit 12 \n" << std::flush;
   m_atm_logger->info("[EAMxx] create_atm_processes  ... done!");
+	std::cout << "OG cinit 13 \n" << std::flush;
 }
 
 void AtmosphereDriver::create_grids()
@@ -1492,15 +1507,25 @@ initialize_constant_field(const FieldIdentifier& fid,
 
 void AtmosphereDriver::initialize_atm_procs ()
 {
+	std::cout << "OG init 1 \n" << std::flush;
   m_atm_logger->info("[EAMxx] initialize_atm_procs ...");
   start_timer("EAMxx::init");
   start_timer("EAMxx::initialize_atm_procs");
+	std::cout << "OG init 2 \n" << std::flush;
 
   // Initialize memory buffer for all atm processes
+	std::cout << "OG hhhinit 3 \n" << std::flush;
   m_memory_buffer = std::make_shared<ATMBufferManager>();
+	std::cout << "OG init 4 \n" << std::flush;
+
+
+
   m_memory_buffer->request_bytes(m_atm_process_group->requested_buffer_size_in_bytes());
+	std::cout << "OG init 5 \n" << std::flush;
   m_memory_buffer->allocate();
+	std::cout << "OG init 6 \n" << std::flush;
   m_atm_process_group->init_buffers(*m_memory_buffer);
+	std::cout << "OG init 7 \n" << std::flush;
 
   const bool restarted_run = m_case_t0 < m_run_t0;
 
@@ -1509,19 +1534,24 @@ void AtmosphereDriver::initialize_atm_procs ()
     setup_surface_coupling_processes();
   }
 
+	std::cout << "OG init 8 \n" << std::flush;
   // Initialize the processes
   m_atm_process_group->initialize(m_current_ts, restarted_run ? RunType::Restarted : RunType::Initial);
+	std::cout << "OG init 9 \n" << std::flush;
 
   // Create and add energy and mass conservation check to appropriate atm procs
   setup_column_conservation_checks();
+	std::cout << "OG init 10 \n" << std::flush;
 
   // If user requests it, we set up NaN checks for all computed fields after each atm proc run
   if (m_atm_params.sublist("driver_options").get("check_all_computed_fields_for_nans",true)) {
     m_atm_process_group->add_postcondition_nan_checks();
   }
 
+	std::cout << "OG init 11 \n" << std::flush;
   // Add additional column data fields to pre/postcondition checks (if they exist)
   add_additional_column_data_to_property_checks();
+	std::cout << "OG init 12 \n" << std::flush;
 
   if (fvphyshack) {
     // [CGLL ICs in pg2] See related notes in atmosphere_dynamics.cpp.
@@ -1530,12 +1560,14 @@ void AtmosphereDriver::initialize_atm_procs ()
     m_field_mgrs.erase(gn);
   }
 
+	std::cout << "OG init 13 \n" << std::flush;
   m_ad_status |= s_procs_inited;
 
   stop_timer("EAMxx::initialize_atm_procs");
   stop_timer("EAMxx::init");
   m_atm_logger->info("[EAMxx] initialize_atm_procs ... done!");
 
+	std::cout << "OG init 14 \n" << std::flush;
   report_res_dep_memory_footprint ();
 }
 
