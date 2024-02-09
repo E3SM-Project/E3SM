@@ -667,7 +667,6 @@
       <directive> --gpu-bind=map_gpu:0,1,2,3</directive>
     </directives>
     <directives compiler="nvidiagpu">
-      <directive> --gpus-per-task=1</directive>
       <directive> --gpu-bind=none</directive>
     </directives>
     <directives compiler="gnu">
@@ -677,7 +676,7 @@
       <directive> -G 0</directive>
     </directives>
     <queues>
-      <queue walltimemax="16:00:00" nodemax="96" default="true">standard</queue>
+      <queue walltimemax="16:00:00" nodemax="96" default="true">gpu</queue>
     </queues>
    </batch_system>
 

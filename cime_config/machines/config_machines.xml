@@ -4317,7 +4317,7 @@ AMD EPYC 7713 64-Core (Milan) (256GB) and 4 nvidia A100'</DESC>
       <modules compiler="nvidiagpu">
         <command name="load">cudatoolkit/22.7_11.7</command>
         <command name="load">craype-accel-nvidia80</command>
-        <command name="load">gcc-mixed/12.2.0</command>
+        <command name="load">gcc-mixed/11.2.0</command>
       </modules>
 
       <modules compiler="gnu">
@@ -4357,6 +4357,7 @@ AMD EPYC 7713 64-Core (Milan) (256GB) and 4 nvidia A100'</DESC>
       <env name="MPICH_COLL_SYNC">MPI_Bcast</env>
       <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
       <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
+	  <env name="PKG_CONFIG_PATH">/usr/projects/e3sm/cudatoolkit:$ENV{PKG_CONFIG_PATH}</env>
     </environment_variables>
     <resource_limits>
       <resource name="RLIMIT_STACK">-1</resource>
