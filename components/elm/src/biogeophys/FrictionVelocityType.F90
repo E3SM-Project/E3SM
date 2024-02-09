@@ -41,7 +41,7 @@ module FrictionVelocityType
      real(r8), pointer :: z0mg_col         (:)   ! col roughness length over ground, momentum  [m]
      real(r8), pointer :: z0hg_col         (:)   ! col roughness length over ground, sensible heat [m]
      real(r8), pointer :: z0qg_col         (:)   ! col roughness length over ground, latent heat [m]
-     integer,  pointer :: num_iter_patch   (:)   ! number of iterations performed to find a solution
+     real(r8), pointer :: num_iter_patch   (:)   ! number of iterations performed to find a solution
                                                  ! to the land-energy flux balance in CanopyFluxes()
      
    contains
@@ -104,7 +104,7 @@ contains
     allocate(this%z0mv_patch       (begp:endp)) ; this%z0mv_patch       (:)   = spval
     allocate(this%z0hv_patch       (begp:endp)) ; this%z0hv_patch       (:)   = spval
     allocate(this%z0qv_patch       (begp:endp)) ; this%z0qv_patch       (:)   = spval
-    allocate(this%num_iter_patch   (begp:endp)) ; this%num_iter_patch   (:)   = huge(1)
+    allocate(this%num_iter_patch   (begp:endp)) ; this%num_iter_patch   (:)   = spval
     allocate(this%z0mg_col         (begc:endc)) ; this%z0mg_col         (:)   = spval
     allocate(this%z0qg_col         (begc:endc)) ; this%z0qg_col         (:)   = spval
     allocate(this%z0hg_col         (begc:endc)) ; this%z0hg_col         (:)   = spval
@@ -212,7 +212,7 @@ contains
             ptr_patch=this%z0qv_patch, default='inactive')
     end if
 
-    this%num_iter_patch(begp:endp) = huge(1)
+    this%num_iter_patch(begp:endp) = spval
     call hist_addfld1d(fname='ITER_LND_EBAL_AVG', units='count', &
          avgflag='A', long_name='average number of iterations performed in land-energy balance', &
          ptr_patch=this%num_iter_patch, default = 'inactive')

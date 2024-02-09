@@ -750,7 +750,7 @@ contains
          ! Initialize Monin-Obukhov length and wind speed
 
          call MoninObukIni(ur(p), thv(c), dthv(p), zldis(p), z0mv(p), um(p), obu(p))
-         num_iter(p) = 0
+         num_iter(p) = 0._r8
          
       end do
 
@@ -1159,7 +1159,7 @@ contains
                dele(p) = abs(efe(p)-efeb(p))
                efeb(p) = efe(p)
                det(p)  = max(del(p),del2(p))
-               num_iter(p) = itlef
+               num_iter(p) = real(itlef,r8)
             end do
             fnold = fn
             fn = 0
