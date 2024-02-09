@@ -210,9 +210,9 @@ contains
          GlobalLoopCount = 0
          do while (newMaskCountGlobal > 0)
             newMaskCountGlobal = 0
-           GlobalLoopCount = GlobalLoopCount + 1
+            GlobalLoopCount = GlobalLoopCount + 1
             ! call the horizontal extrapolation routine
-            call horizontal_extrapolation(domain, availOceanMask, validOceanMaskOrig, validOceanMask, TFocean, err_tmp)
+            call horizontal_extrapolation(domain, availOceanMask, validOceanMask, validOceanMaskOrig, TFocean, err_tmp)
             err = ior(err, err_tmp)
             ! call the vertical extrapolation routine
             call vertical_extrapolation(domain, availOceanMask, validOceanMask, newMaskCountGlobal, TFocean, err_tmp)
@@ -252,7 +252,7 @@ contains
 
 !-----------------------------------------------------------------------
 
-   subroutine horizontal_extrapolation(domain, availOceanMask, validOceanMaskOrig, validOceanMask, TFocean, err)
+   subroutine horizontal_extrapolation(domain, availOceanMask, validOceanMask, validOceanMaskOrig, TFocean, err)
 
       !-----------------------------------------------------------------
       ! input variables
@@ -276,18 +276,19 @@ contains
       !-----------------------------------------------------------------
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: scratchPool, geometryPool, meshPool, extrapOceanDataPool
-      real (kind=RKIND) :: layerTop, TFsum, areaSum
+      real (kind=RKIND) :: layerTop, TFsum, areaSum, weightCellLocal
       real (kind=RKIND), pointer :: weightCell
       integer, dimension(:,:), allocatable :: validOceanMaskOld
       real (kind=RKIND), dimension(:), pointer :: ismip6shelfMelt_zOcean
       real (kind=RKIND), dimension(:,:), pointer :: ismip6shelfMelt_3dThermalForcing
       real (kind=RKIND), dimension(:,:), pointer :: TFoceanOld
       real (kind=RKIND), dimension(:), pointer :: thickness, bedTopography, areaCell
-      integer, pointer :: nCells, nCellsSolve, nISMIP6OceanLayers, nCellsExtra, nMaxLoopSmoothing
+      integer, pointer :: nCells, nCellsSolve, nISMIP6OceanLayers, nCellsExtra
       integer, dimension(:), pointer :: cellMask, nEdgesOnCell
       integer, dimension(:,:), pointer :: cellsOnCell
       integer :: iCell, jCell, iLayer, iNeighbor, iter
-      integer :: localLoopCount, nValidNeighb, newValidCount, newMaskCountLocalAccum, newMaskCountGlobal
+      integer :: localLoopCount
+      integer :: nValidNeighb, newValidCount, newMaskCountLocalAccum, newMaskCountGlobal
 
       err = 0
 
@@ -295,7 +296,6 @@ contains
       block => domain % blocklist
       call mpas_pool_get_config(liConfigs, 'config_ocean_data_extrap_ncells_extra', nCellsExtra)
       call mpas_pool_get_config(liConfigs,'config_weight_value_cell', weightCell)
-      call mpas_pool_get_config(liConfigs,'config_number_horiz_smoothing_loop', nMaxLoopSmoothing)
       call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
       call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
       call mpas_pool_get_subpool(block % structs, 'extrapOceanData', extrapOceanDataPool)
@@ -319,32 +319,44 @@ contains
       ! initialize the local loop and count for validOceanMask
       localLoopCount = 0
       newMaskCountGlobal = 1
+      call mpas_log_write('Weight given to the cell with valid data from extrapolation: $r', realArgs=(/weightCell/))
       do while ( newMaskCountGlobal > 0 )
          localLoopCount = localLoopCount + 1
          newMaskCountLocalAccum = 0
          do iCell = 1, nCellsSolve
             do iLayer = 1, nISMIP6OceanLayers
-               if ( (availOceanMask(iLayer,iCell) == 1) .and. (validOceanMaskOld(iLayer,iCell) == 0) ) then
+               if ( (availOceanMask(iLayer,iCell) == 1) .and. (validOceanMaskOrig(iLayer,iCell) == 0) ) then
                   TFsum = 0.0
                   areaSum = 0.0
                   newValidCount = 0
+                  nValidNeighb = 0
                   do iNeighbor = 1, nEdgesOnCell(iCell)
                      jCell = cellsOnCell(iNeighbor, iCell)
                      if ( validOceanMaskOld(iLayer,jCell) == 1 ) then
-                        validOceanMask(iLayer,iCell) = 1
-                        newValidCount = 1
                         TFsum = TFsum + (TFoceanOld(iLayer,jCell) * areaCell(jCell))
                         areaSum = areaSum + areaCell(jCell)
+                        nValidNeighb = nValidNeighb + 1
                      endif
                   enddo
+                  if ( validOceanMaskOld(iLayer,iCell) == 0 .and. nValidNeighb > 0 ) then
+                     ! if current cell is not valid, set its weight to zero
+                     weightCellLocal = 0
+                     validOceanMask(iLayer,iCell) = 1
+                     newValidCount = 1
+                  else
+                     weightCellLocal = weightCell
+                  endif
+                  ! perform area-weighted averaging of the thermal forcing field
+                  if ( nValidNeighb == 0 ) then
+                     TFocean(iLayer,iCell) = TFoceanOld(iLayer,iCell)
+                  else
+                     TFocean(iLayer,iCell) = ( weightCellLocal * TFoceanOld(iLayer,iCell) * areaCell(iCell) + &
+                                              & ((1 - weightCellLocal) * (TFsum / nValidNeighb)) ) / &
+                                              & ( weightCellLocal * areaCell(iCell) + &
+                                              & (1 - weightCellLocal) * (areaSum / nValidNeighb) )
+                  endif
                   ! Accumulate cells added locally until we do the next global reduce
                   newMaskCountLocalAccum = newMaskCountLocalAccum + newValidCount
-                  ! perform averaging of the thermal forcing field
-                  if ( areaSum == 0.0 ) then
-                     TFocean(iLayer,iCell) = 0.0
-                  else
-                     TFocean(iLayer,iCell) = TFsum / areaSum ! HH: we might want to do this regardless.. i.e. move this out of the if loop
-                  endif
                endif
             enddo
          enddo
@@ -363,50 +375,6 @@ contains
          call mpas_log_write('Horizontal extrap: Added total $i new cells to validOceanMask', intArgs=(/newMaskCountGlobal/))
       enddo
       call mpas_log_write('Horizontal extrapolation done after $i loops', intArgs=(/localLoopCount/))
-
-      ! Now, smooth the field using a weight
-      localLoopCount = 1
-      do while ( localLoopCount <= nMaxLoopSmoothing )
-         call mpas_log_write('Smoothing the horizontally extrapolated field: loop number $i', &
-                              & intArgs=(/localLoopCount/))
-         call mpas_log_write('Weight of iCell is $r', &
-                              & realArgs=(/weightCell/))
-         localLoopCount = localLoopCount + 1
-         do iCell = 1, nCellsSolve
-            do iLayer = 1, nISMIP6OceanLayers
-               ! revisit only the cells with an extrapolated value (don't change cells with original ocean data)
-               if ( (validOceanMask(iLayer,iCell) == 1) .and. (validOceanMaskOrig(iLayer,iCell) == 0) ) then
-                  TFsum = 0.0
-                  areaSum = 0.0
-                  nValidNeighb = 0
-                  do iNeighbor = 1, nEdgesOnCell(iCell)
-                     jCell = cellsOnCell(iNeighbor, iCell)
-                     if ( validOceanMask(iLayer,jCell) == 1 ) then
-                        nValidNeighb = nValidNeighb + 1
-                        TFsum = TFsum + (TFoceanOld(iLayer,jCell) * areaCell(jCell))
-                        areaSum = areaSum + areaCell(jCell)
-                     endif
-                  enddo
-                  if ( nValidNeighb == 0 ) then
-                     TFocean(iLayer,iCell) = TFoceanOld(iLayer,iCell)
-                  else
-                     ! perform weighted average
-                     TFocean(iLayer,iCell) = ( weightCell * TFoceanOld(iLayer,iCell) * areaCell(iCell) + &
-                                              & ((1 - weightCell) * (TFsum / nValidNeighb)) ) / &
-                                              & ( weightCell * areaCell(iCell) + &
-                                              & (1 - weightCell) * (areaSum / nValidNeighb) )
-                  endif
-               endif
-            enddo
-         enddo
-         ! update halo for validOceanMask and ocean data
-         call mpas_timer_start("halo updates")
-         call mpas_dmpar_field_halo_exch(domain, 'TFocean')
-         call mpas_timer_stop("halo updates")
-
-         TFoceanOld(:,:) = TFocean(:,:)
-
-      enddo
       deallocate(validOceanMaskOld)
 
 
