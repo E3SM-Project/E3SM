@@ -223,7 +223,6 @@
       <value datm_mode="CLM1PT">CLM1PT.$ATM_GRID</value>
       <value datm_mode="CLMCRUNCEP$">CLMCRUNCEP.Solar,CLMCRUNCEP.Precip,CLMCRUNCEP.TPQW</value>
       <value datm_mode="CLMCRUNCEPv7">CLMCRUNCEPv7.Solar,CLMCRUNCEPv7.Precip,CLMCRUNCEPv7.TPQW</value>
-      <value datm_mode="CRUJRA">CRUJRA.Solar,CRUJRA.Precip,CRUJRA.TPQW</value>
       <value datm_mode="CLMGSWP3v1">CLMGSWP3v1.Solar,CLMGSWP3v1.Precip,CLMGSWP3v1.TPQW</value>
       <value datm_mode="ELMERA5">ELMERA5.msdrswrf,ELMERA5.msdfswrf,ELMERA5.mcpr,ELMERA5.mlspr,ELMERA5.t2m,ELMERA5.sp,ELMERA5.d2m,ELMERA5.w10,ELMERA5.msdwlwrf</value>
       <value datm_mode="ERA5_6HR">ERA5_6HR.msdrswrf,ERA5_6HR.msdfswrf,ERA5_6HR.mcpr,ERA5_6HR.mlspr,ERA5_6HR.t2m,ERA5_6HR.sp,ERA5_6HR.d2m,ERA5_6HR.w10,ERA5_6HR.msdwlwrf</value>
@@ -257,7 +256,6 @@
       <value stream="CPLHISTForcing">null</value>
       <value stream="CLM_QIAN">$DIN_LOC_ROOT/atm/datm7</value>
       <value stream="CLMCRUNCEPv7">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.v7.c160715</value>
-      <value stream="CRUJRA">$DIN_LOC_ROOT_CLMFORC/atm_forcing.CRUJRA</value>
       <value stream="CLMCRUNCEP">$DIN_LOC_ROOT/share/domains/domain.clm</value>
       <value stream="CLMGSWP3v1">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516</value>
       <value stream="ELMERA5">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.ERA.0.25d.v5.c180614</value>
@@ -327,7 +325,6 @@
       <value stream="CLM_QIAN\.">domain.T62.050609.nc</value>
       <value stream="CLM_QIAN_WISO">domain.T62.050609.nc</value>
       <value stream="CLMCRUNCEPv7">domain.lnd.360x720_cruncep.130305.nc</value>
-      <value stream="CRUJRA">domain.crujra.0.5x0.5.c200728.nc</value>
       <value stream="CLMCRUNCEP">domain.lnd.360x720.130305.nc</value>
       <value stream="CLMGSWP3v1">domain.lnd.360x720_gswp3.0v1.c170606.nc</value>
       <value stream="CLMGSWP3">domain.lnd.360x720_gswp3.0v1.c170606.nc</value>
@@ -500,9 +497,6 @@
       <value stream="CLMCRUNCEPv7.Solar">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.v7.c160715/Solar6Hrly</value>
       <value stream="CLMCRUNCEPv7.Precip">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.v7.c160715/Precip6Hrly</value>
       <value stream="CLMCRUNCEPv7.TPQW">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.v7.c160715/TPHWL6Hrly</value>
-      <value stream="CRUJRA.Solar">$DIN_LOC_ROOT_CLMFORC/atm_forcing.CRUJRA/Solar6Hrly</value>
-      <value stream="CRUJRA.Precip">$DIN_LOC_ROOT_CLMFORC/atm_forcing.CRUJRA/Precip6Hrly</value>
-      <value stream="CRUJRA.TPQW">$DIN_LOC_ROOT_CLMFORC/atm_forcing.CRUJRA/TPHWL6Hrly</value>
       <value stream="CLMGSWP3v1.Solar">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516/Solar</value>
       <value stream="CLMGSWP3v1.Precip">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516/Precip</value>
       <value stream="CLMGSWP3v1.TPQW">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516/TPHWL</value>
@@ -602,9 +596,6 @@
       <value  stream="CLMCRUNCEPv7.Solar">clmforc.cruncep.V7.c2016.0.5d.Solr.%ym.nc</value>
       <value  stream="CLMCRUNCEPv7.Precip">clmforc.cruncep.V7.c2016.0.5d.Prec.%ym.nc</value>
       <value  stream="CLMCRUNCEPv7.TPQW">clmforc.cruncep.V7.c2016.0.5d.TPQWL.%ym.nc</value>
-      <value  stream="CRUJRA.Solar">clmforc.CRUJRA.0.5d.Solr.%ym.nc</value>
-      <value  stream="CRUJRA.Precip">clmforc.CRUJRA.0.5d.Prec.%ym.nc</value>
-      <value  stream="CRUJRA.TPQW">clmforc.CRUJRA.0.5d.TPQWL.%ym.nc</value>
       <value  stream="CLMGSWP3v1.Solar">clmforc.GSWP3.c2011.0.5x0.5.Solr.%ym.nc</value>
       <value  stream="CLMGSWP3v1.Precip">clmforc.GSWP3.c2011.0.5x0.5.Prec.%ym.nc</value>
       <value  stream="CLMGSWP3v1.TPQW">clmforc.GSWP3.c2011.0.5x0.5.TPQWL.%ym.nc</value>
@@ -1583,18 +1574,6 @@
         QBOT     shum
         PSRF     pbot
       </value>
-      <value  stream="CRUJRA.Solar">
-        FSDS swdn
-      </value>
-      <value  stream="CRUJRA.Precip">
-        PRECTmms precn
-      </value>
-      <value  stream="CRUJRA.TPQW">
-        TBOT     tbot
-        WIND     wind
-        QBOT     shum
-        PSRF     pbot
-      </value>
       <value  stream="CLMGSWP3v1.Solar">
         FSDS swdn
       </value>
@@ -1936,7 +1915,6 @@
       <value stream="ERA5_6HR">$DATM_CLMNCEP_YR_ALIGN</value>
       <value stream="CLMMOSARTTEST">$DATM_CLMNCEP_YR_ALIGN</value>
       <value stream="CLMNLDAS2">$DATM_CLMNCEP_YR_ALIGN</value>
-      <value stream="CRUJRA">$DATM_CLMNCEP_YR_ALIGN</value>
       <value stream="CORE2_NYF">1</value>
       <value stream="CORE2_IAF.CORE2.ArcFactor">1</value>
       <value stream="CORE2_IAF">1</value>
@@ -1989,7 +1967,6 @@
       <value stream="ERA5_6HR">$DATM_CLMNCEP_YR_START</value>
       <value stream="CLMMOSARTTEST">$DATM_CLMNCEP_YR_START</value>
       <value stream="CLMNLDAS2">$DATM_CLMNCEP_YR_START</value>
-      <value stream="CRUJRA">$DATM_CLMNCEP_YR_START</value>
       <value stream="CORE2_NYF">1</value>
       <value stream="CORE2_IAF.NCEP.DENS.SOFS">2010</value>
       <value stream="CORE2_IAF.NCEP.PSLV.SOFS">2010</value>
@@ -2063,7 +2040,6 @@
       <value stream="ERA5_6HR">$DATM_CLMNCEP_YR_END  </value>
       <value stream="CLMMOSARTTEST">$DATM_CLMNCEP_YR_END  </value>
       <value stream="CLMNLDAS2">$DATM_CLMNCEP_YR_END  </value>
-      <value stream="CRUJRA">$DATM_CLMNCEP_YR_END  </value>
       <value stream="CORE2_NYF">1</value>
       <value stream="CORE2_IAF.NCEP.DENS.SOFS">2011</value>
       <value stream="CORE2_IAF.NCEP.PSLV.SOFS">2011</value>
@@ -2161,7 +2137,7 @@
     <type>char</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
-    <valid_values>CLMNCEP,COPYALL,CORE2_NYF,CORE2_IAF,CORE_IAF_JRA,IAF_JRA_1p5,CORE_RYF_JRA,CRUJRA,NULL</valid_values>
+    <valid_values>CLMNCEP,COPYALL,CORE2_NYF,CORE2_IAF,CORE_IAF_JRA,IAF_JRA_1p5,CORE_RYF_JRA,NULL</valid_values>
     <desc>
       general method that operates on the data.  this is generally
       implemented in the data models but is set in the strdata method for
@@ -2222,7 +2198,6 @@
       <value datm_mode="CPLHIST">COPYALL</value>
       <value datm_mode="CFSv2">COPYALL</value>
       <value datm_mode="CFSR">COPYALL</value>
-      <value datm_mode="CRUJRA">CRUJRA</value>
     </values>
   </entry>
 
@@ -2409,8 +2384,6 @@
       <value stream="CLMCRUNCEP.Precip">nearest</value>
       <value stream="CLMCRUNCEPv7.Solar">coszen</value>
       <value stream="CLMCRUNCEPv7.Precip">nearest</value>
-      <value stream="CRUJRA.Solar">coszen</value>
-      <value stream="CRUJRA.Precip">nearest</value>
       <value stream="CLMGSWP3v1.Solar">coszen</value>
       <value stream="CLMGSWP3v1.Precip">nearest</value>
       <value stream="ELMERA5.msdrswrf">coszen</value>
