@@ -658,7 +658,7 @@
       <directive> --partition=gpu</directive>
     </directives>
     <directives compiler="gnugpu">
-      <directive> --gpus-per-task=1</directive>
+      <directive> --gpu-bind=none</directive>
     </directives>
     <directives COMPSET="!.*MMF.*" compiler="gnugpu">
       <directive> --gpu-bind=none</directive>
