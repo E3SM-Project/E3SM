@@ -212,11 +212,15 @@ contains
             newMaskCountGlobal = 0
             GlobalLoopCount = GlobalLoopCount + 1
             ! call the horizontal extrapolation routine
+            call mpas_timer_start("horizontal scheme")
             call horizontal_extrapolation(domain, availOceanMask, validOceanMask, validOceanMaskOrig, TFocean, err_tmp)
             err = ior(err, err_tmp)
+            call mpas_timer_stop("horizontal scheme")
             ! call the vertical extrapolation routine
+            call mpas_timer_start("vertical scheme")
             call vertical_extrapolation(domain, availOceanMask, validOceanMask, newMaskCountGlobal, TFocean, err_tmp)
             err = ior(err, err_tmp)
+            call mpas_timer_stop("vertical scheme")
          enddo
       else
          ! do nothing
