@@ -100,7 +100,7 @@ _TESTS = {
     "e3sm_atm_developer" : {
         "inherit" : ("eam_theta_pg2"),
         "tests"   : (
-            "ERP_Ln18.ne4pg2_oQU480.F2010",
+            "ERP_Ln3.ne4pg2_oQU480.F2010",
             "SMS_Ln9.ne4pg2_oQU480.F2010.eam-outfrq9s",
             "SMS.ne4pg2_oQU480.F2010.eam-cosplite",
             "SMS_R_Ld5.ne4pg2_ne4pg2.FSCM-ARM97.eam-scm",
@@ -124,8 +124,8 @@ _TESTS = {
         "tests"   : (
             "SMS_D_Ln5.ne4pg2_oQU480.F2010",
             "SMS_D_Ln5.ne4pg2_oQU480.F2010.eam-condidiag_dcape",
-            "ERP_Ln18.ne4pg2_oQU480.F2010.eam-condidiag_dcape",
-            "ERP_Ln18.ne4pg2_oQU480.F2010.eam-condidiag_rhi",
+            "ERP_Ld3.ne4pg2_oQU480.F2010.eam-condidiag_dcape",
+            "ERP_Ld3.ne4pg2_oQU480.F2010.eam-condidiag_rhi",
             )
         },
 
@@ -197,8 +197,8 @@ _TESTS = {
 	    "SMS_D_Ln5.ne45pg2_ne45pg2.FAQP",
             "SMS_D_Ln5.ne4pg2_oQU480.F2010.eam-implicit_stress",
             "ERS_Ld5.ne30pg2_r05_IcoswISC30E3r5.F2010.eam-implicit_stress",
-            "ERP_Ln18.ne4pg2_oQU480.F2010.eam-condidiag_dcape",
-            "ERP_Ln18.ne4pg2_oQU480.F2010.eam-condidiag_rhi",
+            "ERP_Ld3.ne4pg2_oQU480.F2010.eam-condidiag_dcape",
+            "ERP_Ld3.ne4pg2_oQU480.F2010.eam-condidiag_rhi",
             )
         },
 
