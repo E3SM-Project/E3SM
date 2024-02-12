@@ -5,6 +5,7 @@
 #include "share/io/scorpio_input.hpp"
 #include "share/field/field_tag.hpp"
 #include "share/field/field_identifier.hpp"
+#include "share/util/scream_universal_constants.hpp"
 
 #include "ekat/util/ekat_units.hpp"
 #include <ekat/kokkos/ekat_kokkos_utils.hpp>
@@ -20,7 +21,7 @@ VerticalRemapper (const grid_ptr_type& src_grid,
                   const std::string& map_file,
                   const Field& lev_prof,
                   const Field& ilev_prof)
-  : VerticalRemapper(src_grid,map_file,lev_prof,ilev_prof,std::numeric_limits<float>::max()/10.0)
+  : VerticalRemapper(src_grid,map_file,lev_prof,ilev_prof,constants::DefaultFillValue<float>::value)
 {
   // Nothing to do here
 }
