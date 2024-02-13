@@ -1698,7 +1698,7 @@ contains
     ! Read/Write column water state information to/from restart file.
     !
     ! !USES:
-    use elm_varctl, only : use_lake_wat_storage
+    use elm_varctl, only : use_lake_wat_storage, do_budgets
     !
     ! !ARGUMENTS:
     class(column_water_state) :: this
@@ -1722,6 +1722,13 @@ contains
     if (flag=='read' .and. .not. readvar) then
        this%h2osfc(bounds%begc:bounds%endc) = 0.0_r8
     end if
+
+    if(do_budgets) then 
+       call restartvar(ncid=ncid, flag=flag, varname='ENDWB', xtype=ncd_double,  &
+         dim1name='column', &
+         long_name='water balance at end of timestep', units='kg/m2', &
+         interpinic_flag='interp', readvar=readvar, data=this%endwb)
+    end if 
 
     call restartvar(ncid=ncid, flag=flag, varname='H2OSOI_LIQ', xtype=ncd_double,  &
          dim1name='column', dim2name='levtot', switchdim=.true., &
