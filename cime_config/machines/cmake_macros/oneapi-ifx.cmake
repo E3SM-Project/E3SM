@@ -23,4 +23,6 @@ set(MPICXX "mpicxx")
 set(SCC "icx")
 set(SCXX "icpx")
 set(SFC "ifx")
-set(E3SM_LINK_WITH_FORTRAN "TRUE")
+
+
+#set(E3SM_LINK_WITH_FORTRAN "TRUE")
