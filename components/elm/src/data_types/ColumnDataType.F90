@@ -7755,6 +7755,9 @@ contains
        this%prod1c_loss(i)               = value_column
        this%prod10c_loss(i)              = value_column
        this%prod100c_loss(i)             = value_column
+       this%er(i)                        = value_column
+       this%som_c_leached(i)             = value_column
+       this%somc_yield(i)                = value_column
        this%somhr(i)                     = value_column ! REVISIT
        this%lithr(i)                     = value_column ! REVISIT
        this%hr(i)                        = value_column
