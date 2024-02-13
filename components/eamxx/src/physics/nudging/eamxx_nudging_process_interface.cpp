@@ -3,6 +3,7 @@
 #include "share/util/scream_universal_constants.hpp"
 #include "share/grid/remap/refining_remapper_p2p.hpp"
 #include "share/grid/remap/do_nothing_remapper.hpp"
+#include "share/util/scream_utils.hpp"
 
 #include <ekat/util/ekat_lin_interp.hpp>
 #include <ekat/util/ekat_math_utils.hpp>
@@ -15,7 +16,7 @@ namespace scream
 Nudging::Nudging (const ekat::Comm& comm, const ekat::ParameterList& params)
   : AtmosphereProcess(comm, params)
 {
-  m_datafiles  = m_params.get<std::vector<std::string>>("nudging_filename");
+  m_datafiles  = filename_glob(m_params.get<std::vector<std::string>>("nudging_filename"));
   m_timescale = m_params.get<int>("nudging_timescale",0);
 
   m_fields_nudge = m_params.get<std::vector<std::string>>("nudging_fields");
