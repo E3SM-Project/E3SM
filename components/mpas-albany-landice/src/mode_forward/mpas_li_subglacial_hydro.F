@@ -900,7 +900,7 @@ module li_subglacial_hydro
       ! Calculate hydropotentialBaseVertex if needed
       call mpas_pool_get_array(hydroPool, 'hydropotentialBaseVertex', hydropotentialBaseVertex)
          ! < this array could be protected by logic if desired
-      ! caluculate hydropotentialVertex if needed
+      ! calculate hydropotentialVertex if needed
       call mpas_pool_get_array(hydroPool, 'hydropotentialVertex', hydropotentialVertex)
          ! < this array could be protected by logic if desired
       select case (trim(config_SGH_tangent_slope_calculation))
