@@ -1,5 +1,5 @@
 se_ftype=2
-cubed_sphere_map=0
+cubed_sphere_map=2
 theta_hydrostatic_mode=.false.
 tstep_type=7
 transport_alg=0
