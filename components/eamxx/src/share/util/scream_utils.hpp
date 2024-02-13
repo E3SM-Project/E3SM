@@ -12,6 +12,8 @@
 #include <algorithm>
 #include <map>
 
+#include <iostream>
+
 namespace scream {
 
 enum MemoryUnits {
