@@ -7,45 +7,53 @@ code, you will need your own
 [conda](https://conda.io/projects/conda/en/latest/index.html) environment with
 the necessary packages.
 
-(omega-dev-install-mambaforge)=
+(omega-dev-install-miniforge3)=
 
-## Installing Mambaforge
+## Installing Miniforge3
 
 If you have not already done so, you will install
-[Mambaforge](https://github.com/conda-forge/miniforge#mambaforge), preferably
-somewhere in your home directory but possibly somewhere in your scratch space.
-In what follows, we assume you have Mambaforge installed in
-`${HOME}/mambaforge`.
+[Miniforge3](https://github.com/conda-forge/miniforge#miniforge3):
+```bash
+curl -L -O "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh"
+bash Miniforge3-$(uname)-$(uname -m).sh
+```
+If you have the space to do so, we recommend installing Miniforge3 somewhere in
+our home directory.  Typically, this file system will be faster than on a
+scratch space spaces.  Also, a conda environment will be rendered useless if
+its contents get purged.  However, conda environments each require several GB
+of space, which may quickly use up your disk quota so you will need to weigh
+these trade-offs for yourself.
 
-You may wish to skip the step in the Mambaforge installation where it
-wants to modify your `.bashrc`.  If you allow it to, it will add
-activation of the `mamba` and `conda` commands and the `base` conda
-environment, and this may not be something you want.
+In what follows, we assume you have Miniforge3 installed in
+`${HOME}/miniforge3`.
 
-If you opt not to allow Mambforge to update your `.bashrc`, it may be helpful
+You may wish to skip the step in the Miniforge3 installation where it
+wants to modify your `.bashrc`.  If you allow it to, it will add activation of
+the `conda` command and the `base` conda environment, and this may not be
+something you want.
+
+If you opt not to allow Miniforge3 to update your `.bashrc`, it may be helpful
 to add an alias like the following to your `.bashrc`:
 
 ```bash
-alias mamba_base='
-source ${HOME}/mambaforge/etc/profile.d/conda.sh
-source ${HOME}/mambaforge/etc/profile.d/mamba.sh
-mamba activate'
+alias conda_base='
+source ${HOME}/miniforge3/etc/profile.d/conda.sh
+conda activate'
 ```
 
-Anytime you need `conda` and `mamba` commands, you can first run `mamba_base`
-to get them.
+Anytime you need `conda` command, you can first run `conda_base`to get it.
 
 
 (omega-dev-create-conda-env)=
 
 ## Creating the Conda Environment
 
-With Mambaforge installed and the `conda` and `mamba` commands activated,
-you can create the OMEGA development environment, starting from the root
-of an OMEGA branch, with:
+With Miniforge3 installed and the `conda` command available, you can create the
+Omega development environment, starting from the root
+of an Omega branch, with:
 
 ```bash
 cd components/omega/
-mamba create -n omega_dev --file dev-conda.txt
+conda create -n omega_dev --file dev-conda.txt
 conda activate omega_dev
 ```
