@@ -1,4 +1,4 @@
-name: test
+name: gh
 
 on:
   pull_request:
@@ -8,26 +8,19 @@ on:
 
 jobs:
 
-  run:
+  ci:
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        res: ["ne4pg2_oQU480"]
-        com: ["F2010"]
-        typ: 
-          - "SMS"   # 0h20m
-          - "SMS_D" # 0h30m
-          - "REP"   # 0h30m
-          - "ERS"   # 1h00m
-          - "ERP"   # 1h15m
-          - "ERR"   # 1h00m
-          - "PET"   # 0h35m
-          - "PEM"   # 0h45m
-          - "SEQ"   # 3h10m
-          - "ERI"   # Exception from case_test: [Errno 2] No such file or directory:
-          - "ERT"   # Exception from case_test: ERROR: No variable AVG_HIST_N found in case
-          - "PEA"   # ERROR: BUILD FAIL: build e3sm failed
-    runs-on: ubuntu-latest
+        test: 
+          - "SMS_D_P4.ne4pg2_oQU480.F2010.singularity_gnu"
+          - "SMS_P4.ne4pg2_oQU480.F2010.singularity_gnu"
+          - "REP_P4.ne4pg2_oQU480.F2010.singularity_gnu"
+          - "ERS_P4.ne4pg2_oQU480.F2010.singularity_gnu"
+          - "ERP_P4.ne4pg2_oQU480.F2010.singularity_gnu"
+          - "PET_P4.ne4pg2_oQU480.F2010.singularity_gnu"
+          - "PEM_P4.ne4pg2_oQU480.F2010.singularity_gnu"
     container: 
       image: ghcr.io/mahf708/e3sm-imgs:v0.0.6
 
@@ -41,24 +34,18 @@ jobs:
       - 
         name: CIME
         working-directory: cime/scripts
-        # the following combos currently fail, so let's mark them nbd: true --> ci remains green despite fail
-        # typ: "ERI" # Exception from case_test: [Errno 2] No such file or directory: (no file in archive)
-        # typ: "ERT" # Exception from case_test: ERROR: No variable AVG_HIST_N found in case (before run)
-        # typ: "PEA" # ERROR: BUILD FAIL: build e3sm failed (MPI-related, self)
-        continue-on-error: ${{ matrix.typ == 'ERI' || matrix.typ == 'ERT' || matrix.typ == 'PEA' }}
-        # Note we force _P3 in the create_test call for now
         run: |
           mkdir -p $HOME/projects/e3sm/cesm-inputdata/atm/cam/physprops/
           wget https://web.lcrc.anl.gov/public/e3sm/inputdata/atm/cam/physprops/p3_lookup_table_1.dat-v4.1.2
           mv p3_lookup_table_1.dat-v4.1.2 $HOME/projects/e3sm/cesm-inputdata/atm/cam/physprops/
           export USER=test
-          ./create_test ${{ matrix.typ }}_P3.${{ matrix.res }}.${{ matrix.com }} --machine singularity --wait --debug
+          ./create_test ${{ matrix.test }} --wait --debug
       - 
         name: Artifacts
         uses: actions/upload-artifact@v4
         if: ${{ always() }}
         with:
-          name: ${{ matrix.typ }}_P3.${{ matrix.res }}.${{ matrix.com }}
+          name: ${{ matrix.test }}
           # Wildcard pattern to upload logs (can add more if desired)
           path: |
             ~/projects/e3sm/scratch/**/*log.*
