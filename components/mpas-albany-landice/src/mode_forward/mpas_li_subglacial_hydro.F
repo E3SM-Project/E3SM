@@ -465,6 +465,8 @@ module li_subglacial_hydro
          call mpas_timer_start("halo updates")
          call mpas_dmpar_field_halo_exch(domain, 'channelChangeRate')
          call mpas_dmpar_field_halo_exch(domain, 'channelDischarge')
+         call mpas_dmpar_field_halo_exch(domain, 'channelMelt')
+         call mpas_dmpar_field_halo_exch(domain, 'channelPressureFreeze')
          call mpas_timer_stop("halo updates")
       endif
 
