@@ -572,6 +572,18 @@
       </queues>
     </batch_system>
     
+    <batch_system MACH="polaris" type="pbspro">
+      <batch_submit>/grand/E3SMinput/soft/qsub/throttle</batch_submit>
+      <directives>
+        <directive> -l filesystems=home:grand:eagle </directive>
+      </directives>
+      <queues>
+        <queue walltimemax="00:30:00" nodemin="1"  nodemax="2"   strict="true" default="true">debug</queue>
+        <queue walltimemax="00:30:00" nodemin="3"  nodemax="9"   strict="true">debug-scaling</queue>
+        <queue walltimemax="01:00:00" nodemin="10" nodemax="496" strict="true">prod</queue>
+      </queues>
+    </batch_system>
+
     <batch_system MACH="cascade" type="slurm">
       <directives>
 	<directive>--output=slurm.out</directive>

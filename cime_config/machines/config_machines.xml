@@ -3304,6 +3304,101 @@
     </resource_limits>
   </machine>
 
+  <machine MACH="polaris">
+    <DESC>ALCF Polaris 560 nodes, 2.8 GHz AMD EPYC Milan 7543P 32c CPU, 4 NVIDIA A100 GPUs</DESC>
+    <NODENAME_REGEX>polaris-*</NODENAME_REGEX>
+    <OS>Linux</OS>
+    <COMPILERS>gnu,gnugpu,nvidia,nvidiagpu</COMPILERS>
+    <MPILIBS>mpich</MPILIBS>
+    <PROJECT>E3SM_RRM</PROJECT>
+    <CHARGE_ACCOUNT>E3SM_RRM</CHARGE_ACCOUNT>
+    <SAVE_TIMING_DIR>/grand/E3SMinput/performance_archive</SAVE_TIMING_DIR>
+    <SAVE_TIMING_DIR_PROJECTS>SCREAM_Calib,E3SM_RRM</SAVE_TIMING_DIR_PROJECTS>
+    <CIME_OUTPUT_ROOT>/eagle/$PROJECT/$USER/scratch</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/grand/E3SMinput/data</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/grand/E3SMinput/data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/grand/E3SMinput/baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/grand/E3SMinput/soft/cprnc/cprnc</CCSM_CPRNC>
+    <GMAKE_J>4</GMAKE_J>
+    <TESTS>e3sm_developer</TESTS>
+    <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
+    <BATCH_SYSTEM>pbspro</BATCH_SYSTEM>
+    <SUPPORTED_BY>e3sm</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>4</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="gnu">32</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="nvidia">32</MAX_MPITASKS_PER_NODE>
+    <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+    <mpirun mpilib="default">
+       <executable>mpiexec</executable>
+       <arguments>
+          <arg name="total_num_tasks">-np {{ total_tasks }} --label</arg>
+          <arg name="ranks_per_node">-ppn {{ tasks_per_node }}</arg>
+          <arg name="ranks_bind">--cpu-bind depth -envall</arg>
+          <arg name="threads_per_rank">-d $ENV{OMP_NUM_THREADS}</arg>
+          <arg name="gpu_maps">$ENV{GPU_TILE_COMPACT}</arg>
+       </arguments>
+    </mpirun>
+    <module_system type="module" allow_error="true">
+      <init_path lang="python">/usr/share/lmod/8.3.1/init/python</init_path>
+      <init_path lang="sh">/usr/share/lmod/8.3.1/init/sh</init_path>
+      <init_path lang="csh">/usr/share/lmod/8.3.1/init/csh</init_path>
+      <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <modules>
+        <command name="purge"/>
+        <command name="load">cmake/3.23.2</command>
+        <command name="load">craype-x86-rome</command>
+      </modules>
+      <modules compiler="gnu.*">
+        <command name="load">PrgEnv-gnu/8.3.3</command>
+      </modules>
+      <modules compiler="gnugpu">
+        <command name="swap">gcc/12.2.0 gcc/11.2.0</command>
+        <command name="load">cudatoolkit-standalone/11.4.4</command>
+      </modules>
+      <modules compiler="nvidia.*">
+        <command name="load">PrgEnv-nvhpc/8.3.3</command>
+      </modules>
+      <modules compiler="nvidiagpu">
+        <command name="load">cudatoolkit-standalone/11.4.4</command>
+        <command name="load">craype-accel-nvidia80</command>
+      </modules>
+      <modules>
+        <command name="load">craype-network-ofi</command>
+        <command name="load">libfabric/1.15.2.0</command>
+        <command name="load">cray-libsci/23.02.1.1</command>
+        <command name="load">cray-hdf5-parallel/1.12.2.3</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.9.0.3</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.3</command>
+      </modules>
+    </module_system>
+    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+    <environment_variables>
+      <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
+      <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
+      <env name="MPICH_GPU_SUPPORT_ENABLED">0</env>
+      <env name="CRAY_ACCEL_TARGET">host</env>
+      <env name="GPU_TILE_COMPACT"> </env>
+    </environment_variables>
+    <environment_variables compiler=".*gpu">
+      <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
+      <env name="CRAY_ACCEL_TARGET">nvidia80</env>
+      <env name="GPU_TILE_COMPACT">/grand/E3SMinput/soft/qsub/set_affinity_gpu_polaris.sh</env>
+    </environment_variables>
+    <environment_variables compiler="gnu.*">
+      <env name="LD_PRELOAD">/opt/cray/pe/gcc/11.2.0/snos/lib64/libstdc++.so</env>
+    </environment_variables>
+    <environment_variables BUILD_THREADED="TRUE">
+      <env name="OMP_STACKSIZE">128M</env>
+      <env name="OMP_PROC_BIND">spread</env>
+      <env name="OMP_PLACES">threads</env>
+    </environment_variables>
+  </machine>
+
   <machine MACH="sunspot">
     <DESC>ANL Sunspot Test and Development System (TDS), batch system is pbspro</DESC>
     <NODENAME_REGEX>uan-.*</NODENAME_REGEX>
