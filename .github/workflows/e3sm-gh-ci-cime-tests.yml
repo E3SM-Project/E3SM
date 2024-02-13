@@ -50,4 +50,4 @@ jobs:
             ~/projects/e3sm/scratch/${{ matrix.test }}*/TestStatus.log
             ~/projects/e3sm/scratch/${{ matrix.test }}*/bld/*.bldlog.*
             ~/projects/e3sm/scratch/${{ matrix.test }}*/run/*.log.*
-            ~/projects/e3sm/scratch/${{ matrix.test }}*/cprnc.out
+            ~/projects/e3sm/scratch/${{ matrix.test }}*/run/cprnc.out
