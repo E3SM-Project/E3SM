@@ -29,6 +29,8 @@ int main(int argc, char *argv[]) {
    OMEGA::R4 MyR4     = 3.0;
    OMEGA::R8 MyR8     = 4.0000000000001;
    OMEGA::Real MyReal = 5.000001;
+   using OMEGA::operator""_Real;
+   auto MyRealLiteral = 1._Real;
    int SizeTmp        = 0;
 
    // Check expected size (in bytes) for data types
@@ -68,6 +70,12 @@ int main(int argc, char *argv[]) {
    else
       std::cout << "Size of Real is 8: FAIL " << SizeTmp << std::endl;
 #endif
+
+   SizeTmp = sizeof(MyRealLiteral);
+   if (SizeTmp == sizeof(OMEGA::Real))
+      std::cout << "Size of Real literal: PASS" << std::endl;
+   else
+      std::cout << "Size of Real literal: FAIL " << SizeTmp << std::endl;
 
    // Test creation of device arrays and copying to/from host
    // by initializing on the device, copying to host and comparing with

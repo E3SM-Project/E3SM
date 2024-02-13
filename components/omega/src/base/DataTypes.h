@@ -34,6 +34,9 @@ using Real = float;
 using Real = double;
 #endif
 
+// user-defined literal for generic reals
+YAKL_INLINE constexpr Real operator""_Real(long double x) { return x; }
+
 // Aliases for YAKL arrays - by default, all arrays are on the device and
 // use C-ordering.
 /// Aliases for YAKL device arrays of various dimensions and types
