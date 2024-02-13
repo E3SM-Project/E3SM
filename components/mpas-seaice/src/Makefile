@@ -1,9 +1,9 @@
 .SUFFIXES: .F .o
-.PHONY: model_forward analysis_members shared
+.PHONY: column_package icepack model_forward analysis_members shared
 
 all: core_seaice
 
-core_seaice: column_package shared analysis_members model_forward
+core_seaice: icepack column_package shared analysis_members model_forward
 	ar -ru libdycore.a `find . -type f -name "*.o"`
 
 gen_includes:
@@ -24,18 +24,22 @@ post_build:
 column_package:
 	(cd column; $(MAKE))
 
-shared: column_package
+icepack:
+	$(MAKE) -f ../../Makefile.icepack --directory=icepack/columnphysics
+
+shared: column_package icepack
 	(cd shared; $(MAKE))
 
-analysis_members: column_package shared
+analysis_members: column_package icepack shared
 	(cd analysis_members; $(MAKE))
 
-model_forward: column_package shared analysis_members
+model_forward: column_package icepack shared analysis_members
 	(cd model_forward; $(MAKE))
 
 clean:
 	$(RM) *.o *.mod *.f90 libdycore.a
 	(cd column; $(MAKE) clean)
+	$(MAKE) -f ../../Makefile.icepack --directory=icepack/columnphysics clean
 	(cd shared; $(MAKE) clean)
 	(cd analysis_members; $(MAKE) clean)
 	(cd model_forward; $(MAKE) clean)

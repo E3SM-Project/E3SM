@@ -283,6 +283,19 @@ def buildnml(case, caseroot, compname):
         if ocn_ismf == 'data':
             data_ismf_file = 'prescribed_ismf_adusumilli2020.ECwISC30to60E2r1.230429.nc'
 
+    elif ocn_grid == 'IcoswISC30E3r5':
+        decomp_date = '20231120'
+        decomp_prefix = 'partitions/mpas-o.graph.info.'
+        restoring_file = 'sss.PHC2_monthlyClimatology.IcoswISC30E3r5.20231120.nc'
+        analysis_mask_file = 'IcoswISC30E3r5_mocBasinsAndTransects20210623.nc'
+        ic_date = '20231120'
+        ic_prefix = 'mpaso.IcoswISC30E3r5'
+        if ocn_ic_mode == 'spunup':
+            ic_date = '20231121'
+            ic_prefix = 'mpaso.IcoswISC30E3r5.rstFromG-chrysalis'
+        if ocn_ismf == 'data':
+            data_ismf_file = 'prescribed_ismf_adusumilli2020.IcoswISC30E3r5.20231120.nc'
+
     #--------------------------------------------------------------------
     # Set OCN_FORCING = datm_forced_restoring if restoring file is available
     #--------------------------------------------------------------------
@@ -1165,29 +1178,13 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="dThreshMLD"/>')
             lines.append('    <var name="normalVelocity"/>')
             lines.append('    <var name="vertVelocityTop"/>')
-            lines.append('    <var name="zMid"/>')
             lines.append('    <var name="atmosphericPressure"/>')
             lines.append('    <var name="normalMLEvelocity"/>')
             lines.append('    <var name="vertMLEBolusVelocityTop"/>')
-            lines.append('    <var name="velocityZonalTimesTemperature_MLE"/>')
-            lines.append('    <var name="velocityMeridionalTimesTemperature_MLE"/>')
-            lines.append('    <var name="velocityZonalTimesSalinity_MLE"/>')
-            lines.append('    <var name="velocityMeridionalTimesSalinity_MLE"/>')
             if not ocn_grid.startswith("oRRS1"):
                 lines.append('    <var name="normalGMBolusVelocity"/>')
                 lines.append('    <var name="vertGMBolusVelocityTop"/>')
-                lines.append('    <var name="GMBolusVelocityZonal"/>')
-                lines.append('    <var name="GMBolusVelocityMeridional"/>')
                 lines.append('    <var name="cGMphaseSpeed"/>')
-                lines.append('    <var name="velocityZonalTimesTemperature_GM"/>')
-                lines.append('    <var name="velocityMeridionalTimesTemperature_GM"/>')
-                lines.append('    <var name="normalGMBolusVelocityTimesTemperature"/>')
-                lines.append('    <var name="normalGMBolusVelocitySquared"/>')
-                lines.append('    <var name="velocityZonalTimesSalinity_GM"/>')
-                lines.append('    <var name="velocityMeridionalTimesSalinity_GM"/>')
-                lines.append('    <var name="normalGMBolusVelocityTimesSalinity"/>')
-                lines.append('    <var name="gmKappaScaling"/>')
-                lines.append('    <var name="gmBolusKappa"/>')
                 lines.append('    <var name="mocStreamvalLatAndDepthGM"/>')
                 lines.append('    <var name="mocStreamvalLatAndDepthRegionGM"/>')
 
@@ -1209,7 +1206,6 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="iceRunoffFlux"/>')
             lines.append('    <var name="rainFlux"/>')
             lines.append('    <var name="snowFlux"/>')
-            lines.append('    <var name="vertNonLocalFlux"/>')
             lines.append('    <var name="bottomLayerShortwaveTemperatureFlux"/>')
             lines.append('    <var_array name="activeTracersTend"/>')
             lines.append('    <var name="salinitySurfaceRestoringTendency"/>')
@@ -1228,7 +1224,6 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="CFLNumberGlobal"/>')
             lines.append('    <var name="vertDiffTopOfCell"/>')
             lines.append('    <var name="vertViscTopOfCell"/>')
-            lines.append('    <var name="bulkRichardsonNumber"/>')
             lines.append('    <var name="boundaryLayerDepth"/>')
             lines.append('    <var name="columnIntegratedSpeed"/>')
             lines.append('    <var name="landIceFreshwaterFlux"/>')
@@ -1242,7 +1237,6 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="binBoundaryMocStreamfunction"/>')
             lines.append('    <var name="surfaceBuoyancyForcing"/>')
             lines.append('    <var name="tendLayerThickness"/>')
-            lines.append('    <var name="boundaryLayerDepthSmooth"/>')
             lines.append('    <var name="pressureAdjustedSSH"/>')
             lines.append('    <var name="SSHSquared"/>')
             lines.append('    <var name="velocityZonalSquared"/>')

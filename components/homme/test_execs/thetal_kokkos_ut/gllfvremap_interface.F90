@@ -11,7 +11,7 @@ contains
        is_sphere) bind(c)
     use iso_c_binding, only: c_double
     use hybvcoord_mod, only: set_layer_locations
-    use thetal_test_interface, only: init_f90
+    use thetal_test_interface, only: init_f90, init_planar_f90
     use theta_f2c_mod, only: init_elements_c
     use edge_mod_base, only: initEdgeBuffer, edge_g, initEdgeSBuffer
     use prim_advection_base, only: edgeAdvQminmax
@@ -28,13 +28,15 @@ contains
 
     integer :: edgesz
 
-    if (.not. is_sphere) print *, "NOT IMPL'ED YET"
-
     qsize = qsize_in
     use_moisture = .true.
     theta_hydrostatic_mode = .false.
 
-    call init_f90(ne, hyai, hybi, hyam, hybm, dvv, mp, ps0)
+    if (is_sphere) then
+       call init_f90(ne, hyai, hybi, hyam, hybm, dvv, mp, ps0)
+    else
+       call init_planar_f90(ne+1, ne, hyai, hybi, hyam, hybm, dvv, mp, ps0)
+    end if
     call init_elements_c(nelemd)
 
     edgesz = max((qsize+3)*nlev+2,6*nlev+1)

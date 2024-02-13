@@ -70,7 +70,6 @@ _TESTS = {
             "ERS_D.f19_g16.I1850GSWCNPRDCTCBC.elm-ctc_f19_g16_I1850GSWCNPRDCTCBC",
             "ERS_D.f09_f09.IELM.elm-solar_rad",
             "ERS_D.f09_f09.IELM.elm-koch_snowflake",
-            "SMS_Ld20_D.f45_f45.IELMFATES.elm-fates_rd"
             )
         },
 
@@ -78,23 +77,23 @@ _TESTS = {
     "e3sm_land_developer" : {
         "share" : True,
         "time"  : "0:45:00",
-        "inherit" : ("e3sm_mosart_developer", "e3sm_mosart_exenoshare", "e3sm_land_exeshare", "e3sm_land_exenoshare", "e3sm_land_debug"),
+        "inherit" : ("e3sm_mosart_developer", "e3sm_mosart_exenoshare", "e3sm_land_exeshare", "e3sm_land_exenoshare", "e3sm_land_debug", "fates_elm_developer"),
         "tests" : (
             "ERS.f19_f19.I1850ELMCN",
             "ERS.f19_f19.I20TRELMCN",
             "SMS_Ld1.hcru_hcru.I1850CRUELMCN",
             "SMS_Ly2_P1x1.1x1_smallvilleIA.IELMCNCROP.elm-force_netcdf_pio",
-            "SMS_Ld20.f45_f45.IELMFATES.elm-fates_eca",
-            "SMS_Ld30.f45_f45.IELMFATES.elm-fates_satphen",
             "ERS.f19_g16.I1850ELM.elm-betr",
             "ERS.f19_g16.I1850ELM.elm-vst",
             "ERS.f09_g16.I1850ELMCN.elm-bgcinterface",
             "SMS.r05_r05.I1850ELMCN.elm-qian_1948",
             "SMS_Ly2_P1x1.1x1_smallvilleIA.IELMCNCROP.elm-per_crop",
+            "SMS_Ly2_P1x1.1x1_smallvilleIA.IELMCNCROP.elm-fan",
             "SMS.r05_r05.IELM.elm-topounit",
             "ERS.ELM_USRDAT.I1850ELM.elm-usrdat",
             "ERS.f09_f09.IELM.elm-lnd_rof_2way",
-            "ERS.r05_r05.IELM.elm-V2_ELM_MOSART_features"
+            "ERS.r05_r05.IELM.elm-V2_ELM_MOSART_features",
+            "ERS.ELM_USRDAT.IELM.elm-surface_water_dynamics"
             )
         },
 
@@ -129,7 +128,7 @@ _TESTS = {
             "ERP_Ln18.ne4_oQU240.F2010.eam-condidiag_rhi",
             )
         },
-    
+
     "e3sm_zm_developer" : {
         "tests"   : (
             "ERP.ne4pg2_oQU480.F2010.eam-zm_enhancements",
@@ -212,8 +211,8 @@ _TESTS = {
     #atmopheric tests to mimic low res production runs
     "e3sm_atm_prod" : {
         "tests" : (
-            "SMS_Ln5.ne30pg2_r05_oECv3.F2010.eam-wcprod_F2010",
-            "SMS.ne30pg2_r05_oECv3.F20TR.eam-wcprod_F20TR",
+            "SMS_Ln5.ne30pg2_r05_IcoswISC30E3r5.F2010.eam-wcprod_F2010",
+            "SMS.ne30pg2_r05_IcoswISC30E3r5.F20TR.eam-wcprod_F20TR",
             )
         },
 
@@ -221,7 +220,7 @@ _TESTS = {
     "e3sm_atm_nbfb" : {
         "tests" : (
             "PGN_P1x1.ne4_oQU240.F2010",
-            "TSC.ne4_oQU240.F2010",
+            "TSC_PS.ne4_oQU240.F2010",
             "MVK_PS.ne4_oQU240.F2010",
             )
         },
@@ -288,12 +287,12 @@ _TESTS = {
         "inherit" : ("e3sm_developer", "e3sm_atm_integration", "e3sm_mmf_integration"),
         "time"    : "03:00:00",
         "tests"   : (
-            "ERS.ne11_oQU240.WCYCL1850NS",
+            "ERS.ne4pg2_oQU480.WCYCL1850NS",
             "SMS_D_Ld1.ne30pg2_EC30to60E2r2.WCYCL1850.allactive-wcprod",
             "SMS_D_Ld1.ne30pg2_EC30to60E2r2.WCYCLSSP370.allactive-wcprodssp",
             "ERS_Ld3.ne4_oQU240.F2010",
             #"ERT_Ld31.ne16_g37.B1850C5",#add this line back in with the new correct compset
-            "NCK.ne11_oQU240.WCYCL1850NS",
+            "NCK.ne4pg2_oQU480.WCYCL1850NS",
             "PET.f19_g16.X.allactive-mach-pet",
             "PET.f45_g37_rx1.A.allactive-mach-pet",
             "PET_Ln9_PS.ne30pg2_EC30to60E2r2.WCYCL1850.allactive-mach-pet",
@@ -313,7 +312,7 @@ _TESTS = {
     "e3sm_extra_coverage" : {
         "inherit" : ("e3sm_atm_extra_coverage", "e3sm_ocnice_extra_coverage"),
         "tests"   : (
-            "SMS_D_Ln3.TL319_EC30to60E2r2_wQU225EC30to60E2r2.GMPAS-JRA-WW3",
+            "SMS_D_Ln3.TL319_EC30to60E2r2_wQU225EC30to60E2r2.GMPAS-JRA1p5-WW3.ww3-jra_1958",
             )
         },
 
@@ -339,6 +338,7 @@ _TESTS = {
             "ERP_Ln9.ne4pg2_oQU480.WCYCL20TRNS-MMF1.allactive-mmf_fixed_subcycle",
             "ERS_Ln9.ne4pg2_ne4pg2.FRCE-MMF1.eam-cosp_nhtfrq9",
             "SMS_Ln5.ne4_ne4.FSCM-ARM97-MMF1",
+            "SMS_Ln3.ne4pg2_ne4pg2.F2010-MMF2",
             )
         },
 
@@ -346,10 +346,10 @@ _TESTS = {
     "e3sm_prod" : {
         "inherit" : "e3sm_atm_prod",
         "tests"   : (
-            "SMS_Ld1.ne30pg2_r05_EC30to60E2r2.WCYCL1850.allactive-wcprod_1850_r05",
-            "SMS_Ld1.ne30pg2_EC30to60E2r2.WCYCL1850-1pctCO2.allactive-wcprod_1850_1pctCO2",
-            "SMS_Ld1.ne30pg2_EC30to60E2r2.WCYCL1850-4xCO2.allactive-wcprod_1850_4xCO2",
-            "SMS_Ld1.ne30pg2_EC30to60E2r2.WCYCL1850.allactive-wcprod_1850",
+            "SMS_Ld1.ne30pg2_r05_IcoswISC30E3r5.WCYCL1850.allactive-wcprod_1850_r05",
+            "SMS_Ld1.ne30pg2_r05_IcoswISC30E3r5.WCYCL1850-1pctCO2.allactive-wcprod_1850_1pctCO2",
+            "SMS_Ld1.ne30pg2_r05_IcoswISC30E3r5.WCYCL1850-4xCO2.allactive-wcprod_1850_4xCO2",
+            "SMS_Ld1.ne30pg2_r05_IcoswISC30E3r5.WCYCL1850.allactive-wcprod_1850",
             "SMS_Ld1.ne30pg2_EC30to60E2r2.WCYCLSSP370.allactive-wcprodssp",
             "SMS_Ld1.ne30pg2_EC30to60E2r2.WCYCLSSP585.allactive-wcprodssp",
             "SMS_PS.northamericax4v1pg2_WC14to60E2r3.WCYCL1850.allactive-wcprodrrm_1850",
@@ -377,20 +377,62 @@ _TESTS = {
             )
         },
 
-    "fates" : {
+    #fates debug tests included in e3sm land developer test runs
+    "fates_elm_debug" : {
         "tests" : (
-            "ERS_Ld9.1x1_brazil.IELMFATES",
-            "ERS_D_Ld9.1x1_brazil.IELMFATES",
-            "SMS_D_Lm6.1x1_brazil.IELMFATES",
+            "SMS_D_Ld20.f45_f45.IELMFATES.elm-fates_rd",
+            "ERS_D_Ld15.f45_g37.IELMFATES.elm-fates_cold_treedamage",
+            )
+        },
+
+    #fates non-debug tests included in e3sm land developer test runs
+    "fates_elm_developer" : {
+        "inherit" : ("fates_elm_debug"),
+        "tests" : (
+            "ERP_Ld15.ne4pg2_ne4pg2.IELMFATES.elm-fates_cold_allvars",
+            "ERS_Ld30.f45_f45.IELMFATES.elm-fates_satphen",
+            "ERS_Ld30.f45_g37.IELMFATES.elm-fates_cold_sizeagemort",
+            "SMS_Ld20.f45_f45.IELMFATES.elm-fates_eca",
+            "SMS_Ld5_PS.f19_g16.IELMFATES.elm-fates_cold",
+            )
+        },
+
+    #fates long duration tests runs
+    "fates_long_tests" : {
+        "time"    : "00:40:00",
+        "tests"   : (
+            "SMS_D_Lm6.f45_g37.IELMFATES.elm-fates_cold",
+            "ERS_D_Lm13.ne4pg2_ne4pg2.IELMFATES.elm-fates_long",
+            "ERS_Lm25.ne4pg2_ne4pg2.IELMFATES.elm-fates_cold_nocomp",
+            )
+        },
+
+    #fates testmod coverage
+    "fates" : {
+        "inherit" : ("fates_long_tests", "fates_elm_developer"),
+        "tests" : (
+            "ERP_Ld3.f09_g16.IELMFATES.elm-fates_cold",
+            "ERP_D_Ld3.f19_g16.IELMFATES.elm-fates_cold",
+            "ERS_D_Ld3_PS.f09_g16.IELMFATES.elm-fates_cold",
+            "ERS_D_Ld5.f45_g37.IELMFATES.elm-fates_cold",
+            "ERS_Ld30.f45_g37.IELMFATES.elm-fates_satphen",
+            "ERS_Ld30.f45_g37.IELMFATES.elm-fates_cold_fixedbiogeo",
+            "ERS_Ld30.f45_g37.IELMFATES.elm-fates_cold_nocomp",
+            "ERS_Ld30.f45_g37.IELMFATES.elm-fates_cold_nocomp_fixedbiogeo",
+            "ERS_Ld60.f45_g37.IELMFATES.elm-fates",
+            "ERS_Ld60.f45_g37.IELMFATES.elm-fates_cold_logging",
+            "ERS_Ld60.f45_g37.IELMFATES.elm-fates_cold_nofire",
+            "ERS_Ld60.f45_g37.IELMFATES.elm-fates_cold_st3",
+            "ERS_Ld60.f45_g37.IELMFATES.elm-fates_cold_pphys",
             )
         },
 
     #e3sm v3atm related tests for development
     "e3sm_v3atm_integration" : {
         "tests" : (
-            "ERP_Ld3.ne4pg2_oQU480.F2010-P3",
-            "ERS_Ld3.ne4pg2_oQU480.F20TR-P3",
-            "SMS_Ld1.ne30pg2_EC30to60E2r2.WCYCL1850-P3.allactive-wcprod",
+            "ERP_Ld3.ne4pg2_oQU480.F2010",
+            "ERS_Ld3.ne4pg2_oQU480.F20TR",
+            "SMS_Ld1.ne30pg2_EC30to60E2r2.WCYCL1850.allactive-wcprod",
             )
         },
 
@@ -559,7 +601,7 @@ _TESTS = {
             "SMS_D.ne4pg2_ne4pg2.F2010-SCREAM-LR",
             "ERP.ne4pg2_ne4pg2.F2010-SCREAM-HR.eam-double_memleak_tol",
             "ERP.ne4pg2_ne4pg2.F2010-SCREAM-LR.eam-double_memleak_tol",
-            "ERP_R_Ln10.ne4_ne4.FDPSCREAM-ARM97",
+            "ERS_R_Ln10.ne4_ne4.FDPSCREAM-ARM97",
             )
     },
 
@@ -576,15 +618,23 @@ _TESTS = {
             "ERS_Ln9.ne4_ne4.F2000-SCREAMv1-AQP1",
             "SMS_D_Ln9.ne4_ne4.F2010-SCREAMv1-noAero",
             "ERP_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1",
-            "ERS_D_Ln21.ne4pg2_ne4pg2.F2010-SCREAMv1.scream-rad_frequency_2",
+            "ERS_D_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.scream-rad_frequency_2",
             )
+    },
+
+    # Tests run on exclusively on mappy for scream AT testing. These tests
+    # should be fast, so we limit it to low res and add some thread tests
+    # specifically for mappy.
+    "e3sm_scream_v1_at" : {
+        "inherit" : ("e3sm_scream_v1_lowres"),
+        "tests"   : ("PET_Ln9_P32x2.ne4pg2_ne4pg2.F2010-SCREAMv1")
     },
 
     "e3sm_scream_v1_medres" : {
         "time"  : "02:00:00",
         "tests" : (
             #  "SMS_D_Ln2.ne30_ne30.F2000-SCREAMv1-AQP1", # Uncomment once IC file for ne30 is ready
-            "ERS_Ln22.ne30_ne30.F2010-SCREAMv1",
+            "ERS_Ln22.ne30_ne30.F2010-SCREAMv1.scream-internal_diagnostics_level",
             "PEM_Ln90.ne30pg2_ne30pg2.F2010-SCREAMv1",
             "ERS_Ln90.ne30pg2_ne30pg2.F2010-SCREAMv1.scream-small_kernels",
             "ERP_Ln22.conusx4v1pg2_r05_oECv3.F2010-SCREAMv1-noAero.scream-bfbhash",

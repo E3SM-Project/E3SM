@@ -371,6 +371,7 @@
       <directive> --job-name={{ job_id }}</directive>
       <directive> --nodes=1</directive>
       <directive> --ntasks={{ total_tasks }}</directive>
+      <directive> --cpus-per-task={{ thread_count }}</directive>
       <directive> --output={{ job_id }}.%j </directive>
     </directives>
   </batch_system>
@@ -458,6 +459,48 @@
     </queues>
   </batch_system>
 
+  <batch_system MACH="muller-cpu" type="nersc_slurm">
+    <directives>
+      <directive> --constraint=cpu</directive>
+    </directives>
+    <queues>
+      <!-- Note: walltime is not the max walltime, but the default - see NERSC docs for Q limits, https://docs.nersc.gov/jobs/policy/ -->
+      <queue walltimemax="00:30:00" nodemax="16" default="true">regular</queue>
+      <queue walltimemax="00:30:00" nodemax="16" strict="true">preempt</queue>
+      <queue walltimemax="00:30:00" nodemax="8" strict="true">debug</queue>
+    </queues>
+  </batch_system>
+
+  <batch_system MACH="muller-gpu" type="nersc_slurm">
+    <directives>
+      <directive> --constraint=gpu</directive>
+    </directives>
+    <directives compiler="gnugpu">
+      <directive> --gpus-per-task=1</directive>
+    </directives>
+    <directives COMPSET="!.*MMF.*" compiler="gnugpu">
+      <directive> --gpu-bind=none</directive>
+    </directives>
+    <directives COMPSET=".*MMF.*" compiler="gnugpu">
+      <directive> --gpu-bind=map_gpu:0,1,2,3</directive>
+    </directives>
+    <directives compiler="nvidiagpu">
+      <directive> --gpus-per-task=1</directive>
+      <directive> --gpu-bind=none</directive>
+    </directives>
+    <directives compiler="gnu">
+      <directive> -G 0</directive>
+    </directives>
+    <directives compiler="nvidia">
+      <directive> -G 0</directive>
+    </directives>
+    <queues>
+      <queue walltimemax="00:45:00" nodemax="64" default="true">regular</queue>
+      <queue walltimemax="00:45:00" nodemax="64" strict="true">preempt</queue>
+      <queue walltimemax="00:15:00" nodemax="4" strict="true">debug</queue>
+    </queues>
+  </batch_system>
+
   <batch_system MACH="pm-cpu" type="nersc_slurm">
     <directives>
       <directive> --constraint=cpu</directive>
@@ -469,7 +512,7 @@
       <queue walltimemax="00:30:00" nodemax="8" strict="true">debug</queue>
     </queues>
   </batch_system>
-
+  
   <batch_system MACH="alvarez" type="nersc_slurm">
     <directives>
       <directive> --constraint=cpu</directive>
@@ -517,6 +560,27 @@
       <queues>
         <queue walltimemax="00:30:00" jobmin="1" jobmax="128" default="true">workq</queue>
         <queue walltimemax="00:30:00" jobmin="1" jobmax="128">diag</queue>
+      </queues>
+    </batch_system>
+
+    <batch_system MACH="aurora" type="pbspro">
+      <batch_submit>/lus/gecko/projects/CSC249ADSE15_CNDA/tools/qsub/throttle</batch_submit>
+      <queues>
+        <queue walltimemax="00:59:00" jobmin="1" jobmax="2560" default="true">EarlyAppAccess</queue>
+        <queue walltimemax="00:59:00" jobmin="1" jobmax="10624">workq-route</queue>
+        <queue walltimemax="00:59:00" jobmin="1" jobmax="10624">workq</queue>
+      </queues>
+    </batch_system>
+    
+    <batch_system MACH="polaris" type="pbspro">
+      <batch_submit>/grand/E3SMinput/soft/qsub/throttle</batch_submit>
+      <directives>
+        <directive> -l filesystems=home:grand:eagle </directive>
+      </directives>
+      <queues>
+        <queue walltimemax="00:30:00" nodemin="1"  nodemax="2"   strict="true" default="true">debug</queue>
+        <queue walltimemax="00:30:00" nodemin="3"  nodemax="9"   strict="true">debug-scaling</queue>
+        <queue walltimemax="01:00:00" nodemin="10" nodemax="496" strict="true">prod</queue>
       </queues>
     </batch_system>
 
@@ -667,6 +731,13 @@
      </queues>
    </batch_system>
 
+   <batch_system MACH="lassen" type="lsf" >
+     <queues>
+       <queue walltimemax="02:00" nodemin="1" nodemax="18" strict="true" default="true">pdebug</queue>
+       <queue walltimemax="02:00" nodemin="1" nodemax="256" default="false">pbatch</queue>
+     </queues>
+   </batch_system>
+
    <batch_system MACH="ascent" type="lsf" >
      <batch_submit>/gpfs/wolf/cli115/world-shared/e3sm/tools/bsub/throttle</batch_submit>
      <directives>
@@ -701,6 +772,15 @@
        <queue strict="true" nodemin="1" nodemax="8" walltimemax="01:00:00" default="true">batch</queue>
        <queue strict="true" nodemin="9" nodemax="64" walltimemax="01:00:00">batch</queue>
        <queue strict="true" nodemin="65" nodemax="160" walltimemax="01:00:00">batch</queue>
+     </queues>
+   </batch_system>
+
+   <batch_system MACH="frontier-scream-gpu" type="slurm">
+	   <batch_submit>/lustre/orion/cli115/world-shared/e3sm/tools/sbatch/throttle</batch_submit>
+     <queues>
+       <queue strict="true" nodemin="1" nodemax="91" walltimemax="2:00:00" default="true">batch</queue>
+       <queue strict="true" nodemin="92" nodemax="183" walltimemax="6:00:00">batch</queue>
+       <queue strict="true" nodemin="184" nodemax="9408" walltimemax="12:00:00">batch</queue>
      </queues>
    </batch_system>
 

@@ -1,0 +1,38 @@
+%YAML 1.1
+---
+driver_options:
+  atmosphere_dag_verbosity_level: 5
+
+time_stepping:
+  time_step: ${ATM_TIME_STEP}
+  run_t0: ${RUN_T0}  # YYYY-MM-DD-XXXXX
+  number_of_steps: ${NUM_STEPS}
+
+atmosphere_processes:
+  atm_procs_list: [mam4_micro]
+  mam4_micro:
+    compute_tendencies: [q_aitken_so4, n_aitken, q_h2so4]
+
+grids_manager:
+  Type: Mesh Free
+  grids_names: [Physics]
+  Physics:
+    type: point_grid
+    number_of_global_columns:   218
+    number_of_vertical_levels:  72
+
+initial_conditions:
+  # The name of the file containing the initial conditions for this test.
+  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
+  q_aitken_so4: 0.0
+  n_aitken: 0.0
+  q_h2so4: 1.9186478479542893e-011 # 0.65e-10 is from namelist, but this is what gets to nucleation
+  pbl_height: 1100.0
+  T_mid: 273.0
+  p_mid: 1.e5
+  qv: 0.0018908932854425809 # computed from relative humidity = 0.5 using Hardy formulae
+
+# The parameters for I/O control
+Scorpio:
+  output_yaml_files: ["output.yaml"]
+...

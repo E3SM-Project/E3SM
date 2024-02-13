@@ -9,15 +9,19 @@ time_stepping:
   number_of_steps: ${NUM_STEPS}
 
 atmosphere_processes:
-  atm_procs_list: (p3)
+  atm_procs_list: [p3]
   p3:
+    max_total_ni: 740.0e3
     compute_tendencies: [T_mid,qc]
     do_prescribed_ccn: false
 
 grids_manager:
   Type: Mesh Free
-  number_of_global_columns:   218
-  number_of_vertical_levels:  72  # Will want to change to 128 when a valid unit test is available.
+  grids_names: [Physics]
+  Physics:
+    type: point_grid
+    number_of_global_columns:   218
+    number_of_vertical_levels:  72
 
 initial_conditions:
   # The name of the file containing the initial conditions for this test.
@@ -27,5 +31,5 @@ initial_conditions:
 
 # The parameters for I/O control
 Scorpio:
-  output_yaml_files: ["p3_standalone_output.yaml"]
+  output_yaml_files: ["output.yaml"]
 ...

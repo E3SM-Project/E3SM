@@ -1,0 +1,275 @@
+#! /usr/bin/env python3
+
+"""
+Convert E3SM cmake macros to use cmake names for things
+"""
+
+import argparse, sys, re, pathlib
+
+NAME_MAP_TYPE_SENSITIVE = {
+    "CFLAGS"    : "CMAKE_C_FLAGS",
+    "FFLAGS"    : "CMAKE_Fortran_FLAGS",
+    "CXXFLAGS"  : "CMAKE_CXX_FLAGS",
+    "CPPDEFS"   : "CPPDEFS",  # CMake doesn't use variables to store CPP defs
+    "CUDA_FLAGS": "CMAKE_CUDA_FLAGS",
+    "HIP_FLAGS" : "CMAKE_HIP_FLAGS",
+    "LDFLAGS"   : "CMAKE_EXE_LINKER_FLAGS",
+    "SLIBS"     : "CMAKE_EXE_LINKER_FLAGS",
+}
+
+NAME_MAP = {
+    "FFLAGS_NOOPT" : "CMAKE_Fortran_FLAGS_DEBUG"
+}
+
+# Regexes for parsing our cmake macros
+SET_RE    = re.compile(r'^\s*set[(](\w+)\s+"([^"]*)"[)]\s*$')
+APPEND_RE = re.compile(r'^\s*string[(]APPEND\s+(\w+)\s+"([^"]+)"[)]\s*$')
+IF_RE     = re.compile(r'^\s*if\s*[(]([^)]+)[)]\s*$')
+ELSEIF_RE = re.compile(r'^\s*elseif\s*[(]([^)]+)[)]\s*$')
+ELSE_RE   = re.compile(r'^\s*else\s*[(]\s*[)]\s*$')
+ENDIF_RE  = re.compile(r'^\s*endif')
+DEBUG_RE  = re.compile(r'^\s*DEBUG\s*$')
+NDEBUG_RE = re.compile(r'^\s*NOT\s+DEBUG\s*$')
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n{0} <MACRO_FILES>
+OR
+{0} --help
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Convert all macros \033[0m
+    > {0} $repo/cime_config/machines/cmake_macros/*.cmake
+""".format(pathlib.Path(args[0]).name),
+        description=description,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+
+    parser.add_argument("macro_files", nargs="+", help="The name of the package")
+
+    return parser.parse_args(args[1:])
+
+###############################################################################
+def get_conditional_type(conditional):
+###############################################################################
+    if "DEBUG" in conditional:
+        debug_m  = DEBUG_RE.match(conditional)
+        ndebug_m = NDEBUG_RE.match(conditional)
+        if debug_m:
+            return "DEBUG"
+        elif ndebug_m:
+            return "NDEBUG"
+        else:
+            assert False, f"Conditional '{conditional}' appeared to be related to DEBUG but did not match anything"
+    else:
+        return None
+
+###############################################################################
+class ParseStateStruct(object):
+###############################################################################
+
+    ###########################################################################
+    def __init__(self):
+    ###########################################################################
+        self._active_conditionals = [] # Stack of active conditional statements
+        self._current_build_type = "GLOBAL"
+
+    ###########################################################################
+    def push_conditional(self, condition):
+    ###########################################################################
+        self._active_conditionals.append(condition)
+        cond_type = get_conditional_type(condition)
+        if cond_type == "DEBUG":
+            self._current_build_type = "DEBUG"
+        elif cond_type == "NDEBUG":
+            self._current_build_type = "RELEASE"
+
+    ###########################################################################
+    def pop_conditional(self):
+    ###########################################################################
+        orig_conditional = self._active_conditionals.pop()
+        cond_type = get_conditional_type(orig_conditional)
+        if cond_type == "DEBUG" or cond_type == "NDEBUG":
+            self._current_build_type = "GLOBAL"
+
+        return orig_conditional
+
+    ###########################################################################
+    def current_build_type(self):
+    ###########################################################################
+        return self._current_build_type
+
+WARNED_VARS = set()
+###############################################################################
+def convert_set_append(line, var, val, state, is_append=False):
+###############################################################################
+    curr_build_type = state.current_build_type()
+    global WARNED_VARS
+    if curr_build_type == "GLOBAL":
+        if var in NAME_MAP_TYPE_SENSITIVE:
+            return line.replace(var, NAME_MAP_TYPE_SENSITIVE[var])
+        elif var in NAME_MAP:
+            return line.replace(var, NAME_MAP[var])
+        else:
+            if var not in WARNED_VARS:
+                WARNED_VARS.add(var)
+                print(f"Warning: var {var} in line '{line}' is being left alone")
+
+            return line
+
+    else:
+        if var in NAME_MAP_TYPE_SENSITIVE:
+            return line.replace(var, NAME_MAP_TYPE_SENSITIVE[var] + f"_{curr_build_type}").replace("  ", "", 1)
+        else:
+            assert False, f"Non build-type sensitive var '{var}' within build-type conditional"
+
+###############################################################################
+def convert_if(line, conditional, state):
+###############################################################################
+    state.push_conditional(conditional)
+
+    cond_type = get_conditional_type(conditional)
+    if cond_type == "DEBUG" or cond_type == "NDEBUG":
+        return None
+    else:
+        return line
+
+###############################################################################
+def convert_elseif(line, conditional, state):
+###############################################################################
+    orig_conditional = state.pop_conditional()
+    state.push_conditional(conditional)
+
+    cond_type      = get_conditional_type(conditional)
+    orig_cond_type = get_conditional_type(orig_conditional)
+    if orig_cond_type == "DEBUG" or orig_cond_type == "NDEBUG":
+        assert (cond_type == "DEBUG" or cond_type == "NDEBUG"), "Mismatch conditional type"
+        return None
+    else:
+        return line
+
+###############################################################################
+def convert_else(line, state):
+###############################################################################
+    orig_conditional = state.pop_conditional()
+    conditional = orig_conditional.replace("NOT ", "", 1) if orig_conditional.strip().startswith("NOT ") else "NOT " + orig_conditional
+    state.push_conditional(conditional)
+
+    cond_type = get_conditional_type(conditional)
+    if cond_type == "DEBUG" or cond_type == "NDEBUG":
+        return None
+    else:
+        return line
+
+###############################################################################
+def convert_endif(line, state):
+###############################################################################
+    orig_conditional = state.pop_conditional()
+
+    cond_type = get_conditional_type(orig_conditional)
+    if cond_type == "DEBUG" or cond_type == "NDEBUG":
+        return None
+    else:
+        return line
+
+###############################################################################
+def convert_line(line, state):
+###############################################################################
+    if line.strip() == "":
+        return line
+    elif line.strip().startswith("#"):
+        return line
+    else:
+        stripped_no_comment = line[0:line.find("#")].strip() if "#" in line else line.strip()
+        set_m    = SET_RE.match(stripped_no_comment)
+        append_m = APPEND_RE.match(stripped_no_comment)
+        if_m     = IF_RE.match(stripped_no_comment)
+        elseif_m = ELSEIF_RE.match(stripped_no_comment)
+        else_m   = ELSE_RE.match(stripped_no_comment)
+        endif_m  = ENDIF_RE.match(stripped_no_comment)
+
+        if set_m:
+            var, val = set_m.groups()
+            return convert_set_append(line, var, val, state)
+        elif append_m:
+            var, val = append_m.groups()
+            return convert_set_append(line, var, val, state, is_append=True)
+        elif if_m:
+            conditional = if_m.groups()[0]
+            return convert_if(line, conditional, state)
+        elif elseif_m:
+            conditional = elseif_m.groups()[0]
+            return convert_elseif(line, conditional, state)
+        elif else_m:
+            return convert_else(line, state)
+        elif endif_m:
+            return convert_endif(line, state)
+        else:
+            assert False, f"No regexes matched, stipped line is '{stripped_no_comment}'"
+
+    return None
+
+###############################################################################
+def cmakeify_macro(text, macro_file):
+###############################################################################
+    r"""
+    >>> test_1 = '''
+    ... if (DEBUG)
+    ...   string(APPEND CFLAGS " -g")
+    ... else()
+    ...   string(APPEND CFLAGS " -O")
+    ... endif()
+    ... '''
+    >>> print("\n".join(cmakeify_macro(test_1, "test1")))
+    <BLANKLINE>
+    string(APPEND CMAKE_C_FLAGS_DEBUG " -g")
+    string(APPEND CMAKE_C_FLAGS_RELEASE " -O")
+    """
+    new_lines = []
+
+    # State we need to maintain while parsing input
+    state = ParseStateStruct()
+
+    for line in text.splitlines():
+        try:
+            new_line = convert_line(line, state)
+            if new_line is not None:
+                new_lines.append(new_line + "\n")
+
+        except AssertionError as e:
+            raise SystemExit(f"Error parsing line: {line} in {macro_file}\n{str(e)}")
+
+    return new_lines
+
+###############################################################################
+def cmakeify_macros(macro_files):
+###############################################################################
+    skips = ["Macros.cmake", "post_process.cmake"]
+    for macro_file in macro_files:
+        macro_file_p = pathlib.Path(macro_file)
+        if macro_file_p.name in skips:
+            continue
+
+        assert macro_file_p.exists(), f"Macro file {macro_file} doesn't exist"
+
+        with macro_file_p.open("r", encoding="utf-8") as fd:
+            new_lines = cmakeify_macro(fd.read(), macro_file)
+
+        with macro_file_p.open("w", encoding="utf-8") as fd:
+            fd.writelines(new_lines)
+
+    return True
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    success = cmakeify_macros(**vars(parse_command_line(sys.argv, description)))
+
+    sys.exit(0 if success else 1)
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)

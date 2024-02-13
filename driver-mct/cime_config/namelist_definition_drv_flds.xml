@@ -145,4 +145,14 @@
     </desc>
   </entry>
 
+  <!-- ========================================================================================  -->
+  <!-- FAN fields                                                                              -->
+  <!-- ========================================================================================  -->
+  <entry id="fan_nh3_to_atm">
+    <type>logical</type>
+    <category>fan</category>
+    <group>fan_inparm</group>
+    <desc> Switch on/off the coupling of NH3 emissions from FAN/CLM to CAM </desc>
+  </entry>
+
 </entry_id>

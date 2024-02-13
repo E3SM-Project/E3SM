@@ -32,6 +32,8 @@ protected:
 
   void add_nodes (const group_type& atm_procs);
 
+  void add_edges ();
+
   // Add fid to list of fields in the dag, and return its position.
   // If already stored, simply return its position
   int add_fid (const FieldIdentifier& fid);

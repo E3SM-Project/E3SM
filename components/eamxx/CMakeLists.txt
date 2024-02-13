@@ -12,6 +12,10 @@ if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.12.0")
   cmake_policy(SET CMP0074 NEW)
 endif()
 
+set (EAMXX_VERSION_MAJOR 1)
+set (EAMXX_VERSION_MINOR 0)
+set (EAMXX_VERSION_PATCH 0)
+
 if ($ENV{SCREAM_FORCE_CONFIG_FAIL})
   message(FATAL_ERROR "Failed, as instructed by environment")
 endif()
@@ -20,12 +24,13 @@ endif()
 set (EKAT_CMAKE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../externals/ekat/cmake)
 list(APPEND CMAKE_MODULE_PATH
      ${CMAKE_CURRENT_SOURCE_DIR}/cmake
+     ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/modules
      ${EKAT_CMAKE_PATH}
-     ${EKAT_CMAKE_PATH}/pkg_build
+     ${EKAT_CMAKE_PATH}/tpls
 )
 if (SCREAM_CIME_BUILD)
   list(APPEND CMAKE_MODULE_PATH
-       ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cime)
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cime)
 endif ()
 
 if (Kokkos_ENABLE_CUDA)
@@ -51,12 +56,8 @@ endif()
 # to be on. For now, simply ensure Kokkos Serial is enabled
 option (Kokkos_ENABLE_SERIAL "" ON)
 
-# MAM support requires C++17 -- hopefully SCREAM itself will get there soon
-if (SCREAM_ENABLE_MAM)
-  set(CMAKE_CXX_STANDARD 17)
-else()
-  set(CMAKE_CXX_STANDARD 14)
-endif()
+# We want to use C++17 in EAMxx
+set(CMAKE_CXX_STANDARD 17)
 
 if (NOT SCREAM_CIME_BUILD)
   project(SCREAM CXX C Fortran)
@@ -66,17 +67,18 @@ if (NOT SCREAM_CIME_BUILD)
     list(REMOVE_ITEM CMAKE_CXX_IMPLICIT_LINK_LIBRARIES "ifport")
   endif()
 
-  # Print the sha of the last commit (useful to double check which version was tested on CDash)
-  execute_process (COMMAND git rev-parse HEAD
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    OUTPUT_VARIABLE LAST_GIT_COMMIT_SHA
-    OUTPUT_STRIP_TRAILING_WHITESPACE)
-  set(LAST_GIT_COMMIT_SHA ${LAST_GIT_COMMIT_SHA} CACHE STRING "The sha of the last git commit.")
-  message(STATUS "The sha of the last commit is ${LAST_GIT_COMMIT_SHA}")
 else()
   # Ensure our languages are all enabled
   enable_language(C CXX Fortran)
 endif()
+
+# Print the sha of the last commit (useful to double check which version was tested on CDash)
+execute_process (COMMAND git rev-parse HEAD
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+  OUTPUT_VARIABLE LAST_GIT_COMMIT_SHA
+  OUTPUT_STRIP_TRAILING_WHITESPACE)
+set(EAMXX_GIT_VERSION ${LAST_GIT_COMMIT_SHA} CACHE STRING "The sha of the last git commit.")
+message(STATUS "The sha of the last commit is ${EAMXX_GIT_VERSION}")
 
 set(SCREAM_DOUBLE_PRECISION TRUE CACHE BOOL "Set to double precision (default True)")
 
@@ -216,10 +218,8 @@ if (NOT SCREAM_SMALL_KERNELS)
   set(EKAT_DISABLE_WORKSPACE_SHARING TRUE CACHE STRING "")
 endif()
 
-### The following test only runs on quartz or docker container
-if (NOT DEFINED RUN_ML_CORRECTION_TEST)
-  set(RUN_ML_CORRECTION_TEST FALSE)
-endif()
+# For now, only used in share/grid/remap/refining_remapper_rma.*pp
+option (EAMXX_ENABLE_EXPERIMENTAL_CODE "Compile one-sided MPI for refining remappers" OFF)
 
 # Handle input root
 if (SCREAM_MACHINE AND NOT SCREAM_INPUT_ROOT)
@@ -272,6 +272,7 @@ endif()
 
 set (SCREAM_DATA_DIR ${SCREAM_INPUT_ROOT}/atm/scream CACHE PATH "" FORCE)
 set (TOPO_DATA_DIR ${SCREAM_INPUT_ROOT}/atm/cam/topo CACHE PATH "" FORCE)
+set (IOP_DATA_DIR ${SCREAM_INPUT_ROOT}/atm/cam/scam/iop CACHE PATH "" FORCE)
 
 #
 # Handle test level
@@ -472,6 +473,7 @@ if (SCREAM_CIME_BUILD AND SCREAM_DYN_TARGET STREQUAL "theta-l_kokkos")
   set (DEFAULT_SCREAM_DYNAMICS_DYCORE "Homme")
 endif()
 
+option (SCREAM_ENABLE_ML_CORRECTION "Whether to enable ML correction parametrization" OFF)
 set(SCREAM_DYNAMICS_DYCORE ${DEFAULT_SCREAM_DYNAMICS_DYCORE} CACHE STRING
   "The name of the dycore to be used for dynamics. If NONE, then any code/test requiring dynamics is disabled.")
 
@@ -503,8 +505,6 @@ if (NOT DEFINED ENV{SCREAM_FAKE_ONLY})
 
   if (NOT SCREAM_LIB_ONLY)
     add_subdirectory(tests)
-    include(BuildCprnc)
-    BuildCprnc()
   endif()
 
   # Generate scream_config.h and scream_config.f

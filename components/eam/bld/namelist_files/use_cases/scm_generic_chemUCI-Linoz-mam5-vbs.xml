@@ -3,8 +3,6 @@
 
 <namelist_defaults>
 
-<ncdata             >atm/cam/inic/homme/eam_i_chemUCI_Linozv3_ne4np4_L72_c20220926.nc</ncdata>
-
 <!-- SCM is configured with ne4 grid, but we want settings for an ne30 simulation -->
 <se_tstep dyn_target="theta-l" hgrid="ne4np4"  >   1800      </se_tstep>
 <dt_remap_factor dyn_target="theta-l" hgrid="ne4np4" > 1 </dt_remap_factor>

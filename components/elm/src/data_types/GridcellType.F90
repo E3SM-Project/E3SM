@@ -125,7 +125,7 @@ contains
     allocate(this%MaxElevation (begg:endg)) ; this%MaxElevation (:) = spval
 
     allocate(this%landunit_indices(1:max_lunit, begg:endg)); this%landunit_indices(:,:) = ispval
-   
+
    ! allocate(this%topounit_indices (begg:endg,1:max_topounits)) ; this%topounit_indices (:,:) = ispval
 
   end subroutine grc_pp_init

@@ -1,55 +1,25 @@
 macro (CreateCsmShareTarget)
-  if (TARGET csm_share)
-    message (FATAL_ERROR "Error! The target csm_share already exists!")
-  endif()
-
   if (SCREAM_CIME_BUILD)
-    # Some sanity checks
-    if (NOT DEFINED INSTALL_SHAREDPATH)
-      message (FATAL_ERROR "Error! The cmake variable 'INSTALL_SHAREDPATH' is not defined.")
-    endif ()
-    if (NOT DEFINED COMP_INTERFACE)
-      message (FATAL_ERROR "Error! The cmake variable 'COMP_INTERFACE' is not defined.")
-    endif ()
-    if (NOT DEFINED NINST_VALUE)
-      message (FATAL_ERROR "Error! The cmake variable 'NINST_VALUE' is not defined.")
-    endif ()
+    find_package(CsmShare REQUIRED)
 
-    # If we didn't already parse this script, create imported target
-    if (NOT TARGET csm_share)
-
-      # Build the name of the path where libcsm_share should be located
-      if (USE_ESMF_LIB)
-        set(ESMFDIR "esmf")
-      else()
-        set(ESMFDIR "noesmf")
-      endif()
-      set(CSM_SHARE "${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/${NINST_VALUE}/csm_share")
-
-      # Look for libcsm_share in the complex path we built above
-      find_library(CSM_SHARE_LIB csm_share REQUIRED PATHS ${CSM_SHARE})
-
-      # Create the interface library, and set target properties
-      add_library (csm_share INTERFACE)
-      target_link_libraries (csm_share INTERFACE ${CSM_SHARE_LIB})
-      target_include_directories(csm_share INTERFACE ${CSM_SHARE})
-
-      # Link against piof
-      target_link_libraries(csm_share INTERFACE piof)
-    endif ()
   else()
     # Build csm_share library manually
+    if (TARGET csm_share)
+      message (FATAL_ERROR "Error! The target csm_share already exists!")
+    endif()
 
     # Set variables needed for processing genf90 templates
     set(CIMEROOT ${SCREAM_BASE_DIR}/../../cime)
     list(APPEND CMAKE_MODULE_PATH ${CIMEROOT}/CIME/non_py/src/CMake)
-    set(GENF90 ${CIMEROOT}/CIME/non_py/externals/genf90/genf90.pl)
+    # Setting GENF90_PATH here will prevent cprnc from trying to redefine the genf90 target
+    set(GENF90_PATH ${CIMEROOT}/CIME/non_py/externals/genf90)
+    set(GENF90 ${GENF90_PATH}/genf90.pl)
     set(ENABLE_GENF90 True)
     include(genf90_utils)
     include(Sourcelist_utils)
 
     # GENF90_SOURCE lists source files we will need to run through the genf90 perl script
-    set (GENF90_SOURCE 
+    set (GENF90_SOURCE
         ${SCREAM_BASE_DIR}/../../share/util/shr_infnan_mod.F90.in
         ${SCREAM_BASE_DIR}/../../share/util/shr_assert_mod.F90.in
     )

@@ -1713,11 +1713,27 @@
     <group>seq_infodata_inparm</group>
     <desc>
       Measure and print information about nonlinearly mapped fields. 0 means no
-      analysis is done or printed. >= 1 triggers analysis written to cpl.log.
+      analysis is done or printed. >= 1 triggers analysis written to
+      cpl.log. Modify user_nl_cpl to edit this.
       default: 0
     </desc>
     <values>
       <value>0</value>
+    </values>
+  </entry>
+
+  <entry id="nlmaps_exclude_fields">
+    <type>char(20)</type>
+    <category>nlmaps</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      List of fields that are to be excluded from the set that are nonlinearly
+      mapped. For these excluded fields, the low-order linear map is used,
+      instead. Modify user_nl_cpl to edit this.
+      default: 'Faxa_rainc', 'Faxa_rainl', 'Faxa_snowc', 'Faxa_snowl'
+    </desc>
+    <values>
+      <value>'Faxa_rainc', 'Faxa_rainl', 'Faxa_snowc', 'Faxa_snowl'</value>
     </values>
   </entry>
 

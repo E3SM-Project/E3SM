@@ -9,10 +9,13 @@ time_stepping:
   number_of_steps: ${NUM_STEPS}
 
 atmosphere_processes:
-  atm_procs_list: (zm)
+  atm_procs_list: [zm]
 
 grids_manager:
   Type: Mesh Free
-  number_of_global_columns:   32
-  number_of_vertical_levels: 128
+  grids_names: [Physics]
+  Physics:
+    type: point_grid
+    number_of_global_columns:   32
+    number_of_vertical_levels:  128
 ...

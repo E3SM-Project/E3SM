@@ -200,9 +200,9 @@
 					description="Length of model time-step."
 					possible_values="Any time stamp in 'YYYY-MM-DD_hh:mm:ss' format. Items can be removed from the left if they are unused."
 		/>
-		<nml_option name="config_time_integrator" type="character" default_value="split_explicit"
+		<nml_option name="config_time_integrator" type="character" default_value="split_explicit_ab2"
 					description="Time integration method."
-					possible_values="'split_explicit', 'RK4', 'unsplit_explicit', 'split_implicit', 'LTS'"
+					possible_values="'split_explicit', 'RK4', 'unsplit_explicit', 'split_implicit', 'LTS', 'split_explicit_ab2'"
 		/>
 		<nml_option name="config_number_of_time_levels" type="integer" default_value="2"
 					description="The number of time levels in the time-stepping scheme. This is used for array allocation."
@@ -314,17 +314,17 @@
 					description="If true, Redi slope is tapered near sfc based on Large et al 1997"
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_Redi_N2_based_taper_enable" type="logical" default_value=".true."
-					description="If true apply the N2 limiting of Danabasoglu and Marshall 2007"
-					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_Redi_N2_based_taper_min" type="real" default_value="0.1"
-					description="minimum taper value for the N2 limiting of Danabasoglu and Marshall 2007"
-					possible_values="greater than zero and less than 1"
-		/>
-		<nml_option name="config_Redi_N2_based_taper_limit_term1" type="logical" default_value=".true."
+		<nml_option name="config_Redi_limit_term1" type="logical" default_value=".true."
 					description="If true, the N2 limiting is applied to the horizontal diffusion term"
 					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_Redi_use_quasi_monotone_limiter" type="logical" default_value=".true."
+					description="If true, fluxes are reduced to prevent tracers from violating monotonicity. Cross-term fluxes are scaled toward zero to prevent tracers from under/overshooting the min/max values in adjacent cells and layers"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_Redi_quasi_monotone_safety_factor" type="real" default_value="0.9"
+					description="A safety factor applied to flux scaling when monotonicity is violated. Smaller values scale fluxes toward zero more aggressively."
+					possible_values="A value between 0 and 1"
 		/>
 		<nml_option name="config_Redi_min_layers_diag_terms" type="integer" default_value="6"
 					description="Redi diagonal terms (2 and 3) are turned off from layer 1 through config_Redi_min_layers_diag_terms-1, and on from config_Redi_min_layers_diag_terms to nVertLevels. The Redi diagonal terms are not guaranteed to produce bounded tracer fields, and in practice produce growing temperatures in a few columns with fewer than 5 vertical cells. Redi is meant for isopycnal mixing in the deep ocean, so not applying Redi diagonal terms in very shallow regions is an acceptable solution."
@@ -755,10 +755,6 @@
 		/>
 	</nml_record>
 	<nml_record name="coupling" mode="init;forward">
-		<nml_option name="config_ssh_grad_relax_timescale" type="real" default_value="0.0" units="seconds"
-					description="Timescale for relaxation of the ssh gradient for coupling. A value of 0.0 (default) removes any relaxation and gives instantaneous response."
-					possible_values="Any positive real number."
-		/>
 		<nml_option name="config_remove_AIS_coupler_runoff" type="logical" default_value=".false."
 					description="If true, solid and liquid runoff from the Antarctic Ice Sheet (below 60S latitude) coming from the coupled is zeroed in the coupler import routines.  To be used with data iceberg fluxes coming from the sea ice model."
 					possible_values=".true. or .false."
@@ -797,7 +793,7 @@
 		/>
 		<nml_option name="config_tidal_forcing_model" type="character" default_value="off"
 					description="Selects the mode in which tidal forcing is computed."
-					possible_values="'off','monochromatic'"
+					possible_values="'off','monochromatic','linear'"
 		/>
 		<nml_option name="config_tidal_forcing_monochromatic_amp" type="real" default_value="2.0" units="m"
 					description="Value of amplitude of monochromatic tide."
@@ -814,6 +810,18 @@
 		<nml_option name="config_tidal_forcing_monochromatic_baseline" type="real" default_value="0.0" units="days"
 					description="Value of baseline monochromatic tide, e.g., sea level rise."
 					possible_values="Any positive real number."
+		/>
+		<nml_option name="config_tidal_forcing_linear_baseline" type="real" default_value="0.0" units="days"
+					description="Value of baseline linear tide, e.g., sea level rise."
+					possible_values="Any positive real number."
+		/>
+		<nml_option name="config_tidal_forcing_linear_min" type="real" default_value="-1.0" units="days"
+					description="Value of minimum tide."
+					possible_values="Any real number."
+		/>
+		<nml_option name="config_tidal_forcing_linear_rate" type="real" default_value="-8.0" units="days"
+					description="Value of tide rate of change in m per day."
+					possible_values="Any real number."
 		/>
 	</nml_record>
 	<nml_record name="self_attraction_loading" mode="init;forward">
@@ -1278,7 +1286,7 @@
 	</nml_record>
 	<nml_record name="split_timestep_share" mode="forward">
 		<nml_option name="config_n_ts_iter" type="integer" default_value="2"
-					description="number of large iterations over stages 1-3"
+					description="number of large iterations over stages 1-3; For the split_explicit_ab2 time integrator, this value only affects the first time step when it is not a restart run. For restart runs, this value has no effect on the split_explicit_ab2 time integrator."
 					possible_values="any positive integer, but typically 1, 2, or 3"
 		/>
 		<nml_option name="config_n_bcl_iter_beg" type="integer" default_value="1"
@@ -1311,11 +1319,11 @@
 					description="Barotropic subcycles proceed from $t$ to $t+n\Delta t$, where $n$ is this configuration option."
 					possible_values="Any positive integer, but typically 1 or 2"
 		/>
-		<nml_option name="config_btr_gam1_velWt1" type="real" default_value="0.5"
+		<nml_option name="config_btr_gam1_velWt1" type="real" default_value="0.5333"
 					description="Weighting of velocity in the SSH predictor step in stage 2. When zero, previous subcycle time is used; when one, new subcycle time is used."
 					possible_values="between 0 and 1"
 		/>
-		<nml_option name="config_btr_gam2_SSHWt1" type="real" default_value="1.0"
+		<nml_option name="config_btr_gam2_SSHWt1" type="real" default_value="0.5333"
 					description="Weighting of SSH in the velocity corrector step in stage 2. When zero, previous subcycle time is used; when one, new subcycle time is used."
 					possible_values="between 0 and 1"
 		/>
@@ -1590,6 +1598,7 @@
 		<package name="variableShortwave" description="This package includes variables required to compute spatially variable shortwave extinction coefficients"/>
 
 		<package name="splitTimeIntegrator" description="This package includes variables required for either the split or unsplit explicit time integrators."/>
+		<package name="splitAB2TimeIntegrator" description="This package includes variables required for the split explicit AB2 time integrators."/>
 		<package name="semiImplicitTimePKG" description="This package includes variables required for split-implicit time integrators."/>
 		<package name="thicknessFilter" description="This package includes variables required for frequency filtered thickness."/>
 		<package name="windStressBulkPKG" description="This package includes varibles required for bulk wind stress forcing."/>
@@ -1914,6 +1923,8 @@
 			<var name="landIceFloatingFraction"/>
 			<var name="seaIcePressure"/>
 			<var name="atmosphericPressure"/>
+			<var name="normalVelocityTendOld" packages="splitAB2TimeIntegrator" />
+			<var name="CoriolisTermOld" packages="splitAB2TimeIntegrator" />
 			<var_array name="tracersSurfaceValue"/>
 			<var_array name="surfaceVelocity"/>
 			<var_array name="SSHGradient"/>
@@ -1927,8 +1938,7 @@
 			<var name="accumulatedLandIceHeat"/>
 			<var name="accumulatedLandIceFrazilMass"/>
 			<var name="frazilSurfacePressure"/>
-			<var name="filteredSSHGradientZonal"/>
-			<var name="filteredSSHGradientMeridional"/>
+			<var_array name="avgSSHGradient"/>
 			<var name="forcingGroupNames"/>
 			<var name="forcingGroupRestartTimes"/>
             <var name="gotmVertViscTopOfCell"/>
@@ -2285,11 +2295,11 @@
 		<!-- FIELDS FOR LAND ICE STORAGE -->
 		<var name="accumulatedLandIceMass" type="real" dimensions="nCells Time" units="kg m^-2"
 			description="Mass per unit area of land ice produced at land ice-ocean interface. Only computed in 'standalone' mode where land-ice fluxes are computed in MPAS-O."
-			packages="landIceFluxesPKG"
+			packages="landIceFluxesPKG;dataLandIceFluxesPKG"
 		/>
 		<var name="accumulatedLandIceHeat" type="real" dimensions="nCells Time" units="J m^-2"
 			description="Heat per unit area stored in land ice produced at land ice-ocean interface. Only computed in 'standalone' mode where land-ice fluxes are computed in MPAS-O."
-			packages="landIceFluxesPKG"
+			packages="landIceFluxesPKG;dataLandIceFluxesPKG"
 		/>
 		<var name="accumulatedLandIceFrazilMass" type="real" dimensions="nCells Time" units="kg m^-2"
 			description="Mass per unit area of frazil ice produced under land ice.  Only computed when not coupled to a dynamic land-ice model."
@@ -3008,10 +3018,6 @@
 			description="spatially and depth varying GM kappa.  The scaling is based on the Brunt Vaisala Frequency relative to a maximum value below the mixed layer, follows from Danabasoglu and Marshall 2007.  If config_GM_closure is not set to N2_dependent the scaling value is set to 1 everywhere."
 			packages="gm"
 		/>
-		<var name="RediKappaScaling" type="real" dimensions="nVertLevelsP1 nCells Time" units="1"
-			description="Scaling coefficient for GM kappa. Varies from 0 to 1.  The scaling is based on the Brunt Vaisala Frequency relative to a maximum value below the mixed layer, follows from Danabasoglu and Marshall 2007.  If config_Redi_N2_based_taper_enable = .false. the scaling is set to 1 everywhere."
-			packages="gm"
-		/>
 		<var name="RediKappaSfcTaper" type="real" dimensions="nVertLevelsP1 nCells Time" units="1"
 			description="Scaling coefficient for Redi kappa. Varies from 0 to 1."
 			packages="gm"
@@ -3148,6 +3154,14 @@
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="slopeTriadDown" type="real" dimensions="nVertLevels TWO nEdges Time" units="non-dimensional" default_value="0.0"
+			 description="Magnitude of slope of isopycnal surface, using triad through this cell and edge, angled up. Uses expansion of equation of state."
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="limiterUp" type="real" dimensions="nVertLevels TWO nEdges Time" units="non-dimensional" default_value="0.0"
+			 description="Magnitude of slope of isopycnal surface, using triad through this cell and edge, angled up. Uses expansion of equation of state."
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="limiterDown" type="real" dimensions="nVertLevels TWO nEdges Time" units="non-dimensional" default_value="0.0"
 			 description="Magnitude of slope of isopycnal surface, using triad through this cell and edge, angled up. Uses expansion of equation of state."
 			 packages="forwardMode;analysisMode"
 		/>
@@ -3398,6 +3412,15 @@
 		<var name="ssh_sal_grad" type="real" dimensions="nEdges Time" units=""
 			description="gradient of sea surface height perturbation from self-attraction and loading"
 			packages="tidalPotentialForcingPKG"
+		/>
+		<!-- FIELD split_explicit AB2 time stepping -->
+		<var name="normalVelocityTendOld" type="real" dimensions="nVertLevels nEdges Time" units="m s^-2"
+                        description="time tendency of normal component of velocity at the previous time step used in the split-explicit AB2 time stepping"
+			packages="splitAB2TimeIntegrator"
+		/>
+		<var name="CoriolisTermOld" type="real" dimensions="nVertLevels nEdges Time" units="m s^-2"
+                        description="Coriolis term at the previous time step used in the split-explicit AB2 time stepping"
+			packages="splitAB2TimeIntegrator"
 		/>
 	</var_struct>
 	<var_struct name="shortwave" time_levs="1">
@@ -3663,14 +3686,6 @@
 				 description="Time averaged meridional gradient of SSH"
 			/>
 		</var_array>
-		<var name="filteredSSHGradientZonal" type="real" dimensions="nCells Time" units="1"
-			description="Time filtered zonal gradient of SSH"
-			packages="forwardMode;analysisMode"
-		/>
-		<var name="filteredSSHGradientMeridional" type="real" dimensions="nCells Time" units="1"
-			description="Time filtered meridional gradient of SSH"
-			packages="forwardMode;analysisMode"
-		/>
 		<var name="avgTotalFreshWaterTemperatureFlux" type="real" dimensions="nCells Time" units="C m s^-1"
 			 description="Sum of heat fluxes associated with water fluxes cell centers sent to coupler. Positive into the ocean."
 		/>
@@ -3854,11 +3869,11 @@
 		/>
 		<var name="sshSubcycleCurWithTides" type="real" dimensions="nCells Time" units="m"
 			description="SSH - tidal potential in split explicit "
-			packages="tidalPotentialForcingPKG"
+			packages="tidalPotentialForcingPKG;tidalForcing"
 		/>
 		<var name="sshSubcycleNewWithTides" type="real" dimensions="nCells Time" units="m"
 			description="SSH - tidal potential in split explicit "
-			packages="tidalPotentialForcingPKG"
+			packages="tidalPotentialForcingPKG;tidalForcing"
 		/>
 		<var name="coastalSmoothingFactor" type="real" dimensions="nCells" units="1"
 			 description="Multiplication factors to smooth ssh at coastlines for SAL caculation"

@@ -41,7 +41,7 @@ void Functions<S,D>::prevent_liq_supersaturation(const Spack& pres, const Spack&
 				  - qr2qv_evap_tend*latent_heat_vapor*inv_cp )*dt);
 
   //qv we would have at end of step if we were saturated with respect to liquid
-  const auto qsl = physics::qv_sat(T_endstep,pres,false,has_sources,physics::MurphyKoop,"p3::prevent_liq_supersaturation"); //"false" means NOT sat w/ respect to ice
+  const auto qsl = physics::qv_sat_dry(T_endstep,pres,false,has_sources,physics::MurphyKoop,"p3::prevent_liq_supersaturation"); //"false" means NOT sat w/ respect to ice
 
   //The balance we seek is:
   // qv-qv_sinks*dt+qv_sources*frac*dt=qsl+dqsl_dT*(T correction due to conservation)

@@ -55,6 +55,9 @@ public:
   // This method checks that time shifts forward (i.e. that seconds is positive)
   TimeStamp& operator+= (const double seconds);
 
+  // Clones the stamps and sets num steps to given value. If -1, clones num steps too
+  TimeStamp clone (const int num_steps);
+
 protected:
 
   std::vector<int> m_date;  // [year, month, day]

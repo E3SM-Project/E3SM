@@ -204,7 +204,7 @@ Default: Defined in namelist_defaults.xml
 	category="time_integration" group="time_integration">
 Time integration method.
 
-Valid values: 'split_explicit', 'RK4', 'unsplit_explicit', 'split_implicit', 'LTS'
+Valid values: 'split_explicit', 'RK4', 'unsplit_explicit', 'split_implicit', 'LTS', 'split_explicit_ab2'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -423,27 +423,27 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_Redi_N2_based_taper_enable" type="logical"
-	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
-If true apply the N2 limiting of Danabasoglu and Marshall 2007
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_Redi_N2_based_taper_min" type="real"
-	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
-minimum taper value for the N2 limiting of Danabasoglu and Marshall 2007
-
-Valid values: greater than zero and less than 1
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_Redi_N2_based_taper_limit_term1" type="logical"
+<entry id="config_Redi_limit_term1" type="logical"
 	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
 If true, the N2 limiting is applied to the horizontal diffusion term
 
 Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Redi_use_quasi_monotone_limiter" type="logical"
+	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
+If true, fluxes are reduced to prevent tracers from violating monotonicity. Cross-term fluxes are scaled toward zero to prevent tracers from under/overshooting the min/max values in adjacent cells and layers
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Redi_quasi_monotone_safety_factor" type="real"
+	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
+A safety factor applied to flux scaling when monotonicity is violated. Smaller values scale fluxes toward zero more aggressively.
+
+Valid values: A value between 0 and 1
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1174,14 +1174,6 @@ Default: Defined in namelist_defaults.xml
 
 
 <!-- coupling -->
-
-<entry id="config_ssh_grad_relax_timescale" type="real"
-	category="coupling" group="coupling">
-Timescale for relaxation of the ssh gradient for coupling. A value of 0.0 (default) removes any relaxation and gives instantaneous response.
-
-Valid values: Any positive real number.
-Default: Defined in namelist_defaults.xml
-</entry>
 
 <entry id="config_remove_AIS_coupler_runoff" type="logical"
 	category="coupling" group="coupling">

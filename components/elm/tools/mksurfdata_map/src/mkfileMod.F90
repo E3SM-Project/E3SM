@@ -293,6 +293,10 @@ contains
     call check_ret(nf_put_att_text(ncid, NF_GLOBAL, &
          'map_erosion_file', len_trim(str), trim(str)), subname)
 
+    str = get_filename(map_ffert)
+    call check_ret(nf_put_att_text(ncid, NF_GLOBAL, &
+         'map_fertilizer_file', len_trim(str), trim(str)), subname)
+
     ! ----------------------------------------------------------------------
     ! Define variables
     ! ----------------------------------------------------------------------

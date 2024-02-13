@@ -52,6 +52,22 @@ set_fields (const std::list<Field>& fields,
   }
 }
 
+void PropertyCheck::
+set_additional_data_field (const Field& data_field)
+{
+  EKAT_REQUIRE_MSG(data_field.get_header().get_identifier().get_layout().has_tag(FieldTag::Column),
+                   "Error! Additional data field \""+data_field.name()+"\" for property check \""
+                   +name()+"\" must be defined on columns.\n");
+
+  // Only add field if it currently does not exist in additional fields list.
+  const bool found_field_in_list = std::find(m_additional_data_fields.begin(),
+                                             m_additional_data_fields.end(),
+                                             data_field) != m_additional_data_fields.end();
+  if (not found_field_in_list) {
+    m_additional_data_fields.push_back(data_field);
+  }
+}
+
 // If a check fails, attempt to repair things. Default is to throw.
 void PropertyCheck::repair () const {
   EKAT_REQUIRE_MSG (can_repair(),

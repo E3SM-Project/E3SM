@@ -13,6 +13,7 @@ void Functions<S,D>
   const MemberType& team,
   const Int& nlev,
   const Int& nlevi,
+  const Scalar& c_diag_3rd_mom,
   const uview_1d<const Spack>& w_sec,
   const uview_1d<const Spack>& thl_sec,
   const uview_1d<const Spack>& wthl_sec,
@@ -44,7 +45,6 @@ void Functions<S,D>
 
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
     // Constants
-    const auto c_diag_3rd_mom = scream::shoc::Constants<Scalar>::c_diag_3rd_mom;
     const Scalar a0 = (sp(0.52)*(1/(c_diag_3rd_mom*c_diag_3rd_mom)))/(c_diag_3rd_mom-2);
     const Scalar a1 = sp(0.87)/(c_diag_3rd_mom*c_diag_3rd_mom);
     const Scalar a2 = sp(0.5)/c_diag_3rd_mom;

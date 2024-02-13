@@ -431,8 +431,13 @@ void SPAFunctions<S,D>
   spa_data_in_params.set("Filename",spa_data_file_name);
   spa_data_in_params.set("Skip_Grid_Checks",true);  // We need to skip grid checks because multiple ranks may want the same column of source data.
   
+  // Retrieve number of cols on spa_data_file.
+  scorpio::register_file(spa_data_file_name,scorpio::Read);
+  int num_global_cols = scorpio::get_dimlen(spa_data_file_name,"ncol");
+  scorpio::eam_pio_closefile(spa_data_file_name);
+
   // Construct the grid needed for input:
-  auto grid = std::make_shared<PointGrid>("grid",num_local_cols,source_data_nlevs,comm);
+  auto grid = std::make_shared<PointGrid>("grid",num_local_cols,num_global_cols,source_data_nlevs,comm);
   Kokkos::deep_copy(grid->get_dofs_gids().template get_view<gid_type*>(),unique_src_dofs);
   grid->get_dofs_gids().sync_to_host();
 

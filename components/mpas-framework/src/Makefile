@@ -23,7 +23,7 @@ build_tools: externals
 	(cd tools; $(MAKE) CPPFLAGS="$(CPPFLAGS)" CC="$(SCC)" CFLAGS="$(CFLAGS)")
 
 frame: $(AUTOCLEAN_DEPS) externals
-	( cd framework; $(MAKE) CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" all ) 
+	( cd framework; $(MAKE) CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" FCINCLUDES="$(FCINCLUDES)" MOAB_PATH=$(MOAB_PATH) all ) 
 	ln -sf framework/libframework.a libframework.a
 
 ops: $(AUTOCLEAN_DEPS) externals frame

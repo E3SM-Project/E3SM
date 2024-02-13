@@ -3,8 +3,8 @@
 
 #include "share/atm_process/atmosphere_process.hpp"
 
-#ifdef SCREAM_HAS_HOMME
-#include "homme/atmosphere_dynamics.hpp"
+#ifdef EAMXX_HAS_HOMME
+#include "homme/eamxx_homme_process_interface.hpp"
 #include "homme/homme_grids_manager.hpp"
 #endif
 
@@ -14,7 +14,7 @@ inline void register_dynamics () {
   auto& proc_factory = AtmosphereProcessFactory::instance();
   auto& gm_factory   = GridsManagerFactory::instance();
 
-#ifdef SCREAM_HAS_HOMME
+#ifdef EAMXX_HAS_HOMME
   proc_factory.register_product("Homme",&create_atmosphere_process<HommeDynamics>);
 
   gm_factory.register_product("Homme",&create_homme_grids_manager);

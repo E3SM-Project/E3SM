@@ -36,6 +36,7 @@ module ocn_forward_mode
 
    use ocn_time_integration
    use ocn_time_integration_split
+   use ocn_time_integration_split_ab2
    use ocn_time_integration_si
    use ocn_tendency
    use ocn_diagnostics
@@ -77,7 +78,7 @@ module ocn_forward_mode
    use ocn_tracer_surface_restoring
    use ocn_gm
    use ocn_submesoscale_eddies
-   use ocn_stokes_drift 
+   use ocn_stokes_drift
    use ocn_manufactured_solution
 
    use ocn_high_freq_thickness_hmix_del2
@@ -701,8 +702,10 @@ module ocn_forward_mode
            call ocn_forcing_build_fraction_absorbed_array(meshPool, statePool, forcingPool, ierr, 1)
            call mpas_timer_start("land_ice_build_arrays")
            call ocn_surface_land_ice_fluxes_build_arrays(meshPool, &
-                                                         forcingPool, scratchPool, statePool, dt, err)
+                                                         forcingPool, scratchPool, statePool, err)
            call mpas_timer_stop("land_ice_build_arrays")
+           call ocn_surface_land_ice_fluxes_accumulate_fluxes(meshPool, forcingPool, &
+                                                              statePool, dt, err)
 
            call ocn_frazil_forcing_build_arrays(domain, meshPool, forcingPool, statePool, err)
            call ocn_tidal_forcing_build_array(domain, meshPool, forcingPool, statePool, err)
@@ -858,7 +861,8 @@ module ocn_forward_mode
       ! destroy the ocean mesh structure
       call ocn_meshDestroy(ierr)
 
-      if ( config_time_integrator == 'split_explicit') then
+      if ( config_time_integrator == 'split_explicit' .or. &
+           config_time_integrator == 'split_explicit_ab2'      ) then
          call mpas_dmpar_exch_group_destroy_reusable_buffers(domain, 'subcycleFields')
       else if ( config_time_integrator == 'split_implicit') then
          call ocn_time_integrator_si_variable_destroy()

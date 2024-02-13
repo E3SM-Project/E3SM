@@ -1,8 +1,7 @@
 %YAML 1.1
 ---
 filename_prefix: model_output
-Averaging Type: Instant
-Max Snapshots Per File: 1
+Averaging Type: average
 Fields:
   Physics GLL:
     Field Names:
@@ -37,11 +36,14 @@ Fields:
       - qv_prev_micro_step
       - eff_radius_qc
       - eff_radius_qi
+      - eff_radius_qr
       - micro_liq_ice_exchange
       - micro_vap_ice_exchange
       - micro_vap_liq_exchange
       - precip_ice_surf_mass
       - precip_liq_surf_mass
+      - precip_liq_surf_mass_flux
+      - rainfrac
       # SHOC + HOMME
       - horiz_winds
       # SHOC + P3
@@ -62,6 +64,15 @@ Fields:
       - rad_heating_pdel
       - sfc_flux_lw_dn
       - sfc_flux_sw_net
+      - ShortwaveCloudForcing
+      - LongwaveCloudForcing
+      - LiqWaterPath
+      - IceWaterPath
+      - RainWaterPath
+      - RimeWaterPath
+      - VapWaterPath
+      - ZonalVapFlux
+      - MeridionalVapFlux
   Dynamics:
     Field Names:
       - Qdp_dyn
@@ -70,8 +81,8 @@ Fields:
       - dp3d_dyn
 output_control:
   MPI Ranks in Filename: true
-  Frequency: 2
-  frequency_units: nsteps
+  Frequency: 1
+  frequency_units: nmins
 Checkpoint Control:
   MPI Ranks in Filename: true
 ...

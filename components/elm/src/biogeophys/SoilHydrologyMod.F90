@@ -9,6 +9,7 @@ module SoilHydrologyMod
   use decompMod         , only : bounds_type
   use elm_varctl        , only : iulog, use_vichydro
   use elm_varctl        , only : use_lnd_rof_two_way, lnd_rof_coupling_nstep
+  use elm_varctl        , only : use_modified_infil
   use elm_varcon        , only : e_ice, denh2o, denice, rpi
   use EnergyFluxType    , only : energyflux_type
   use SoilHydrologyType , only : soilhydrology_type
@@ -111,6 +112,7 @@ contains
          b_infil          =>    soilhydrology_vars%b_infil_col      , & ! Input:  [real(r8) (:)   ]  VIC b infiltration parameter
          moist            =>    soilhydrology_vars%moist_col        , & ! Input:  [real(r8) (:,:) ]  soil moisture in each VIC layers (liq, mm)
          hkdepth          =>    soilhydrology_vars%hkdepth_col      , & ! Input:  [real(r8) (:)   ]  decay factor (m)
+         fover            =>    soilhydrology_vars%fover            , & ! Input:  [real(r8) (:)   ]  decay factor for saturation fraction (m)
          origflag         =>    soilhydrology_vars%origflag         , & ! Input:  logical
          fcov             =>    soilhydrology_vars%fcov_col         , & ! Output: [real(r8) (:)   ]  fractional impermeable area
          fsat             =>    soilhydrology_vars%fsat_col         , & ! Output: [real(r8) (:)   ]  fractional area with water table at surface
@@ -146,7 +148,8 @@ contains
 
       do fc = 1, num_hydrologyc
          c = filter_hydrologyc(fc)
-         fff(c) = 0.5_r8
+         g = col_pp%gridcell(c)
+         fff(c) = fover(g)
          if (zengdecker_2009_with_var_soil_thick) then
             nlevbed = nlev2bed(c)
             fff(c) = 0.5_r8 * col_pp%zi(c,nlevsoi) / min(col_pp%zi(c,nlevbed), col_pp%zi(c,nlevsoi))
@@ -261,7 +264,7 @@ contains
      use shr_const_mod    , only : shr_const_pi
      use elm_varpar       , only : nlayer, nlayert
      use elm_varpar       , only : nlevsoi, nlevgrnd
-     use elm_varcon       , only : denh2o, denice, roverg, wimp, pc, mu, tfrz
+     use elm_varcon       , only : denh2o, denice, roverg, wimp, mu, tfrz
      use elm_varcon       , only : pondmx, watmin
      use column_varcon    , only : icol_roof, icol_road_imperv, icol_sunwall, icol_shadewall, icol_road_perv
      use landunit_varcon  , only : istsoil, istcrop
@@ -317,6 +320,7 @@ contains
      real(r8) :: top_ice(bounds%begc:bounds%endc)           ! temporary, ice len in top VIC layers
      real(r8) :: top_icefrac                                ! temporary, ice fraction in top VIC layers
      real(r8) :: h2osoi_left_vol1                           ! temporary, available volume in the first soil layer
+     real(r8) :: pc                                         ! temporary, threhold for surface water storage to outflow
      !-----------------------------------------------------------------------
 
      associate(                                                    &
@@ -329,6 +333,7 @@ contains
           t_soisno             =>    col_es%t_soisno             , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)
 
           frac_h2osfc          =>    col_ws%frac_h2osfc          , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by surface water (0 to 1)
+          frac_h2osfc_act      =>    col_ws%frac_h2osfc_act      , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by surface water (0 to 1) without adjustment from snow fraction
           frac_sno             =>    col_ws%frac_sno_eff         , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)
           h2osoi_ice           =>    col_ws%h2osoi_ice           , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)
           h2osoi_liq           =>    col_ws%h2osoi_liq           , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)
@@ -370,6 +375,7 @@ contains
           ice                  =>    soilhydrology_vars%ice_col              , & ! Input:  [real(r8) (:,:) ]  ice len in each VIC layers(ice, mm)
           i_0                  =>    soilhydrology_vars%i_0_col              , & ! Input:  [real(r8) (:)   ]  column average soil moisture in top VIC layers (mm)
           h2osfcflag           =>    soilhydrology_vars%h2osfcflag           , & ! Input:  logical
+          pc_grid              =>    soilhydrology_vars%pc                   , & ! Input:  [real(r8) (:)   ]  threshold for outflow from surface water storage
           icefrac              =>    soilhydrology_vars%icefrac_col            & ! Output: [real(r8) (:,:) ]  fraction of ice
               )
 
@@ -387,8 +393,10 @@ contains
        end do
 
        do fc = 1, num_hydrologyc
-          c = filter_hydrologyc(fc)
-          g = cgridcell(c)
+          c  = filter_hydrologyc(fc)
+          g  = cgridcell(c)
+          pc = pc_grid(g)
+          
           ! partition moisture fluxes between soil and h2osfc
           if (lun_pp%itype(col_pp%landunit(c)) == istsoil .or. lun_pp%itype(col_pp%landunit(c))==istcrop) then
 
@@ -455,9 +463,24 @@ contains
                 rsurf_vic = min(qflx_in_soil(c), rsurf_vic)
                 qinmax = (1._r8 - fsat(c)) * 10._r8**(-e_ice*top_icefrac)*(qflx_in_soil(c) - rsurf_vic)
              else
-                qinmax=(1._r8 - fsat(c)) * minval(10._r8**(-e_ice*(icefrac(c,1:3)))*hksat(c,1:3))
+                if ( use_modified_infil ) then
+                  qinmax=minval(10._r8**(-e_ice*(icefrac(c,1:3)))*hksat(c,1:3))
+                else
+                  qinmax=(1._r8 - fsat(c)) * minval(10._r8**(-e_ice*(icefrac(c,1:3)))*hksat(c,1:3))
+                end if
              end if
-
+             
+             if ( use_modified_infil ) then
+                ! Assume frac_h2osfc occurs on fsat
+                if ( frac_h2osfc(c) >= fsat(c) ) then
+                   qflx_infl_excess(c) = max(0._r8,qflx_in_soil(c) -  (1.0_r8 - frac_h2osfc(c))*qinmax)
+                else
+                   qflx_infl_excess(c) = max(0._r8,qflx_in_soil(c) -  (1.0_r8 - fsat(c))*qinmax)
+                end if
+             else
+                qflx_infl_excess(c) = max(0._r8,qflx_in_soil(c) -  (1.0_r8 - frac_h2osfc(c))*qinmax)
+             end if
+             
              if (use_lnd_rof_two_way) then
                 qflx_infl_excess(c) = max(0._r8,qflx_in_soil(c) -  (1.0_r8 - frac_h2osfc(c) - frac_h2orof(c))*qinmax)
              else
@@ -472,10 +495,22 @@ contains
              !5. surface runoff from h2osfc
              if (h2osfcflag==1) then
                 ! calculate runoff from h2osfc  -------------------------------------
-                if (frac_h2osfc(c) <= pc) then
-                   frac_infclust=0.0_r8
+                if (use_modified_infil) then
+                  if (frac_h2osfc_act(c) <= pc .and. frac_h2osfc(c) <= pc) then 
+                     frac_infclust=0.0_r8
+                  else
+                      if (frac_h2osfc(c) <= pc) then
+                        frac_infclust=(frac_h2osfc_act(c)-pc)**mu
+                      else
+                        frac_infclust=(frac_h2osfc(c)-pc)**mu
+                      endif
+                  endif
                 else
-                   frac_infclust=(frac_h2osfc(c)-pc)**mu
+                  if (frac_h2osfc(c) <= pc) then
+                    frac_infclust=0.0_r8
+                  else
+                    frac_infclust=(frac_h2osfc(c)-pc)**mu
+                  endif
                 endif
              endif
 
@@ -514,7 +549,17 @@ contains
                 h2osfc(c) = 0.0
                 qflx_h2osfc_drain(c)= 0._r8
              else
-                qflx_h2osfc_drain(c)=min(frac_h2osfc(c)*qinmax,h2osfc(c)/dtime)
+                if ( use_modified_infil ) then
+                   ! Assume frac_h2osfc occurs on top of fsat
+                   if (frac_h2osfc(c) <= fsat(c)) then
+                     qflx_h2osfc_drain(c)=0._r8
+                   else
+                     qflx_h2osfc_drain(c)=min((frac_h2osfc(c)-fsat(c))*qinmax,h2osfc(c)/dtime)
+                   endif
+                else
+                   ! Original scheme
+                   qflx_h2osfc_drain(c)=min(frac_h2osfc(c)*qinmax,h2osfc(c)/dtime)
+                end if
              endif
 
              if(h2osfcflag==0) then

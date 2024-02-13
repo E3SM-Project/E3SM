@@ -44,6 +44,10 @@
 			definition="namelist:config_nCategories"
 			description="The number of ice thickness categories."
 		/>
+		<dim name="nFloeCategories"
+			definition="namelist:config_nFloeCategories"
+			description="The number of floe size categories."
+		/>
 		<dim name="nIceLayers"
 			definition="namelist:config_nIceLayers"
 			description="The number of ice layers in the vertical direction."
@@ -434,6 +438,10 @@
 			description="The number of ice thickness categories to use."
 			possible_values="Any positive integer."
 		/>
+		<nml_option name="config_nFloeCategories" type="integer" default_value="1" units="unitless"
+			description="The number of floe size categories to use."
+			possible_values="Any positive integer."
+		/>
 		<nml_option name="config_nIceLayers" type="integer" default_value="7" units="unitless"
 			description="The number of ice layers in the vertical direction to use."
 			possible_values="Any positive integer."
@@ -453,7 +461,7 @@
 			possible_values="'restart', 'uniform', 'circle', 'square', 'uniform_interior' or 'uniform_1D'"
 		/>
 		<nml_option name="config_initial_ice_area" type="real" default_value="1.0" units="unitless"
-			description="Sea ice concentration at initialization."
+			description="Sea ice fraction at initialization."
 			possible_values="A real number between 0.0 and 1.0 inclusive."
 		/>
 		<nml_option name="config_initial_ice_volume" type="real" default_value="1.0" units="m"
@@ -506,7 +514,7 @@
 			description="If true calculate input forcing fields."
 			possible_values="true or .false"
 		/>
-		<nml_option name="config_use_column_package" type="logical" default_value="true" units="unitless"
+		<nml_option name="config_use_column_physics" type="logical" default_value="true" units="unitless"
 			description="If true perform calculations from the column physics package."
 			possible_values="true or .false"
 		/>
@@ -526,15 +534,15 @@
 		/>
 		<nml_option name="config_forcing_start_time" type="character" default_value="2000-01-01_00:00:00" units="unitless"
 			description="Forcing time to use at the simulation start time"
-			possible_values="'YYYY-MM-DD_HH:MM:SS"
+			possible_values="'YYYY-MM-DD_HH:MM:SS'"
 		/>
 		<nml_option name="config_forcing_cycle_start" type="character" default_value="2000-01-01_00:00:00" units="unitless"
 			description="Start time for the forcing cycle."
-			possible_values="'YYYY-MM-DD_HH:MM:SS"
+			possible_values="'YYYY-MM-DD_HH:MM:SS'"
 		/>
 		<nml_option name="config_forcing_cycle_duration" type="character" default_value="2-00-00_00:00:00" units="unitless"
 			description="Duration of the forcing cycle."
-			possible_values="'YYYY-MM-DD_HH:MM:SS"
+			possible_values="'YYYY-MM-DD_HH:MM:SS'"
 		/>
 		<nml_option name="config_forcing_precipitation_units" type="character" default_value="mm_per_sec" units="unitless"
 			description="Forcing input precipitation units."
@@ -549,8 +557,12 @@
 			possible_values="'ISPOL'"
 		/>
 		<nml_option name="config_update_ocean_fluxes" type="logical" default_value="false" units="unitless"
-			description=""
+			description="Include frazil ice fluxes in ocean flux fields."
 			possible_values="true or false"
+		/>
+		<nml_option name="config_frazil_coupling_type" type="character" default_value="external" units="unitless"
+			description="Type of frazil ice coupling."
+			possible_values="'external', 'internal', 'fresh_ice_correction'"
 		/>
 		<nml_option name="config_include_pond_freshwater_feedback" type="logical" default_value="false" units="unitless"
 			description="Reduce the ocean fresh water flux by the pond fresh water flux for coupling."
@@ -691,6 +703,10 @@
 
 	<!-- column physics -->
 	<nml_record name="column_package" in_defaults="true">
+		<nml_option name="config_column_physics_type" type="character" default_value="icepack" units="unitless"
+			description="Set column physics library."
+			possible_values="'icepack' and 'column_package'"
+		/>
 		<nml_option name="config_use_column_shortwave" type="logical" default_value="true" units="unitless"
 			description="Run the shortwave radiation column physics calculation."
 			possible_values="true or false"
@@ -718,12 +734,12 @@
 	</nml_record>
 
 	<nml_record name="column_tracers" in_defaults="true">
-		<nml_option name="config_use_ice_age" type="logical" default_value="true" units="unitless"
+		<nml_option name="config_use_ice_age" type="logical" default_value="false" units="unitless"
 			description="If true use the ice age tracer."
 			possible_values="true or false"
 			icepack_name="tr_iage"
 		/>
-		<nml_option name="config_use_first_year_ice" type="logical" default_value="true" units="unitless"
+		<nml_option name="config_use_first_year_ice" type="logical" default_value="false" units="unitless"
 			description="If true use the first year ice tracer."
 			possible_values="true or false"
 			icepack_name="tr_FY"
@@ -766,6 +782,11 @@
 		<nml_option name="config_use_special_boundaries_tracers" type="logical" default_value="false" units="unitless"
 			description="Modify tracers in given boundary cells."
 			possible_values="true or false"
+		/>
+		<nml_option name="config_use_floe_size_distribution" type="logical" default_value="false" units="unitless"
+			description="Use floe size distribution. Requires Icepack column package."
+			possible_values="true or false"
+			icepack_name="tr_fsd"
 		/>
 	</nml_record>
 
@@ -1562,12 +1583,27 @@
 			possible_values=""
 			icepack_name="kalg"
 		/>
+		<nml_option name="config_use_shortwave_redistribution" type="logical" default_value="false" units="none"
+			description="Redistribute shortwave from layers near the melting temperature to the surface."
+			possible_values="true or false"
+			icepack_name="sw_redist"
+		/>
+		<nml_option name="config_shortwave_redistribution_fraction" type="real" default_value="0.9" units="none"
+			description="Fraction of shortwave moved from a layer near the melting temperature to the surface."
+			possible_values="fraction between 0 and 1"
+			icepack_name="sw_frac"
+		/>
+		<nml_option name="config_shortwave_redistribution_threshold" type="real" default_value="0.02" units="C"
+			description="Temperature threshold for moving shortwave to the surface."
+			possible_values=""
+			icepack_name="sw_dtemp"
+		/>
 	</nml_record>
 
 	<nml_record name="snow" in_defaults="true">
 		<nml_option name="config_snow_redistribution_scheme" type="character" default_value="none" units="none"
 			description="Use a snow redistribution scheme"
-			possible_values="'30percent (30% rule, precip only)','30percentsw (30% rulewith shortwave)','ITDsd (Lecomte PhD, 2014)','ITDrdg (like ITDsd but use level/ridged ice)','default or none (none)'"
+			possible_values="'bulk', 'ITDrdg', 'none'"
 			icepack_name="snwredist"
 		/>
 		<nml_option name="config_fallen_snow_radius" type="real" default_value="54.4" units="um"
@@ -1600,10 +1636,20 @@
 			possible_values="positive real"
 			icepack_name="drhosdwind"
 		/>
+		<nml_option name="config_snow_redistribution_factor" type="real" default_value="0.3" units="none"
+			description="snow loss factor for wind redistribution"
+			possible_values="positive real less than or equal to 1"
+			icepack_name="snwlvlfac"
+		/>
 		<nml_option name="config_max_dry_snow_radius" type="real" default_value="2800.0" units="um"
 			description="maximum dry metamorphism snow grain radius"
 			possible_values="positive real"
 			icepack_name="rsnw_tmax"
+		/>
+		<nml_option name="config_snow_thermal_conductivity" type="real" default_value="0.3" units="W/m/deg"
+			description="thermal conductivity of snow"
+			possible_values="positive real"
+			icepack_name="ksno"
 		/>
 	</nml_record>
 
@@ -1618,8 +1664,8 @@
 			possible_values="'cesm' or 'hlid'"
 			icepack_name="frzpnd"
 		/>
-		<nml_option name="config_pond_flushing_timescale" type="real" default_value="1.0e-3" units=""
-			description="Alter e-folding time scale for flushing.?????"
+		<nml_option name="config_pond_flushing_factor" type="real" default_value="1.0e-3" units=""
+			description="Alters e-folding time scale for flushing with BL99 thermodynamics."
 			possible_values=""
 			icepack_name="dpscale"
 		/>
@@ -1653,7 +1699,7 @@
 	<nml_record name="thermodynamics" in_defaults="true">
 		<nml_option name="config_thermodynamics_type" type="character" default_value="mushy" units="unitless"
 			description="Vertical themodynamics type."
-			possible_values="'zero layer', 'BL99', or 'mushy'"
+			possible_values="'BL99', or 'mushy'"
 			icepack_name="ktherm"
 		/>
 		<nml_option name="config_heat_conductivity_type" type="character" default_value="bubbly" units="unitless"
@@ -1686,6 +1732,11 @@
 			possible_values="Any real number between 0 and 1."
 			icepack_name="phi_c_slow_mode"
 		/>
+		<nml_option name="config_macro_drainage_timescale" type="real" default_value="10." units="days"
+			description="Timescale for macroscopic drainage."
+			possible_values="Any positive real number."
+			icepack_name="tscale_pnd_drain"
+		/>
 		<nml_option name="config_congelation_ice_porosity" type="real" default_value="0.85" units="unitless"
 			description="Liquid fraction of congelation ice."
 			possible_values="Any real number between 0 and 1."
@@ -1705,6 +1756,19 @@
 			icepack_name="kcatbound"
 		/>
 	</nml_record>
+	
+	<nml_record name="floesize" in_defaults="true">
+		<nml_option name="config_floeshape" type="real" default_value="0.66" units="unitless"
+			description="Floe shape constant (noncircularity)."
+			possible_values="Any real number between 0 and pi/4."
+			icepack_name="floeshape"
+		/>
+		<nml_option name="config_floediam" type="real" default_value="300.0" units="m"
+			description="Effective floe diameter for lateral melt in m."
+			possible_values="Any real number."
+			icepack_name="floediam"
+		/>
+	</nml_record>
 
 	<nml_record name="ridging" in_defaults="true">
 		<nml_option name="config_ice_strength_formulation" type="character" default_value="Rothrock75" units="unitless"
@@ -1722,7 +1786,7 @@
 			possible_values="'Hibler80' or 'exponential'"
 			icepack_name="krdg_redist"
 		/>
-		<nml_option name="config_ridiging_efolding_scale" type="real" default_value="3.0" units="m^0.5"
+		<nml_option name="config_ridging_efolding_scale" type="real" default_value="3.0" units="m^0.5"
 			description="E-folding scale of ridged ice (krdg_redist = 1)"
 			possible_values=""
 			icepack_name="mu_rdg"
@@ -1735,9 +1799,9 @@
 	</nml_record>
 
 	<nml_record name="atmosphere" in_defaults="true">
-		<nml_option name="config_atmos_boundary_method" type="character" default_value="ccsm3" units="unitless"
+		<nml_option name="config_atmos_boundary_method" type="character" default_value="similarity" units="unitless"
 			description="Atmosphere boundary method."
-			possible_values="'ccsm3' or 'constant'"
+			possible_values="'similarity' or 'constant' or 'mixed'"
 			icepack_name="atmbndy"
 		/>
 		<nml_option name="config_calc_surface_stresses" type="logical" default_value="true" units="unitless"
@@ -1796,13 +1860,18 @@
 			description="Type of coupled ocean surface: (MPAS-O:'free'), (SOM:'non-free')"
 			possible_values="'free' or 'non-free'"
 		/>
-		<nml_option name="config_couple_biogeochemistry_fields" type="logical" default_value="false" units="unitless"
-			description=""
-			possible_values="true or false"
-		/>
 		<nml_option name="config_use_data_icebergs" type="logical" default_value="false" units="unitless"
 			description="Use data iceberg meltwater forcing"
 			possible_values="true or false"
+		/>
+		<nml_option name="config_salt_flux_coupling_type" type="character" default_value="constant" units="unitless"
+			description="Type of salt flux to ocean method"
+			possible_values="'constant' or 'prognostic'"
+		/>
+		<nml_option name="config_ice_ocean_drag_coefficient" type="real" default_value="0.00536" units=""
+			description="Neutral ice-ocean drag coefficient"
+			possible_values=""
+			icepack_name="dragio"
 		/>
 	</nml_record>
 
@@ -2588,13 +2657,13 @@
 		<package name="pkgColumnBiogeochemistry" description=""/>
 
 		<!-- column tracer packages -->
-		<package name="pkgColumnTracerIceAge" description=""/>
-		<package name="pkgColumnTracerFirstYearIce" description=""/>
-		<package name="pkgColumnTracerLevelIce" description=""/>
-		<package name="pkgColumnTracerPonds" description=""/>
-		<package name="pkgColumnTracerLidThickness" description=""/>
-		<package name="pkgColumnTracerAerosols" description=""/>
-		<package name="pkgColumnTracerEffectiveSnowDensity" description="Computes effective snow density based on liquid and ice snow content and snow compaction"/>
+		<package name="pkgColumnTracerIceAge" description="Chronological age tracer"/>
+		<package name="pkgColumnTracerFirstYearIce" description="Fraction of grid cell area covered by first-year ice"/>
+		<package name="pkgColumnTracerLevelIce" description="Undeformed sea ice area and volume tracers"/>
+		<package name="pkgColumnTracerPonds" description="Pond area and volume tracers"/>
+		<package name="pkgColumnTracerLidThickness" description="Refrozen pond thickness tracer"/>
+		<package name="pkgColumnTracerAerosols" description="Evolves aerosol tracers in ice and snow"/>
+		<package name="pkgColumnTracerEffectiveSnowDensity" description="Computes effective snow density based on snow compaction"/>
 		<package name="pkgColumnTracerSnowGrainRadius" description="Evolves snow grain radius for radiative transfer based on dry and wet metamorphism"/>
 		<package name="pkgTracerBrine" description=""/>
 		<package name="pkgTracerMobileFraction" description=""/>
@@ -2656,13 +2725,13 @@
 		     type="real"
 		     dimensions="ONE nCategories nCells Time"
 		     units="m"
-		     description="Ice volume per unit area of sea ice per ice thickness category"
+		     description="Ice volume per unit grid cell area, per ice thickness category"
 		/>
 		<var name="snowVolumeCategory"
 		     type="real"
 		     dimensions="ONE nCategories nCells Time"
 		     units="m"
-		     description="Ice volume per unit area of sea ice per ice thickness category"
+		     description="Snow volume per unit grid cell area, per ice thickness category"
 		/>
 		<var name="surfaceTemperature"
 		     type="real"
@@ -2674,82 +2743,96 @@
 		     type="real"
 		     dimensions="nIceLayers nCategories nCells Time"
 		     units="J m-3"
+		     description="Total heat content per unit volume of ice in layer of ice thickness category"
 		/>
 		<var name="iceSalinity"
 		     type="real"
 		     dimensions="nIceLayers nCategories nCells Time"
 		     units="1e-3"
+		     description="Salt content per unit volume of ice in layer of ice thickness category"
 		/>
 		<var name="snowEnthalpy"
 		     type="real"
 		     dimensions="nSnowLayers nCategories nCells Time"
 		     units="J m-3"
+		     description="Heat content per unit volume of snow in snow layer on ice thickness category"
 		/>
 		<var name="snowIceMass"
 		     type="real"
 		     dimensions="nSnowLayers nCategories nCells Time"
 		     units="kg m-3"
-		     packages="pkgColumnTracerEffectiveSnowDensity"
+		     packages="pkgColumnTracerSnowGrainRadius"
+		     description="Mass of crystalline ice per unit snow layer volume, per ice thickness category"
 		/>
 		<var name="snowLiquidMass"
 		     type="real"
 		     dimensions="nSnowLayers nCategories nCells Time"
 		     units="kg m-3"
-		     packages="pkgColumnTracerEffectiveSnowDensity"
+		     packages="pkgColumnTracerSnowGrainRadius"
+		     description="Mass of liquid water per unit snow layer volume, per ice thickness category"
 		/>
 		<var name="snowGrainRadius"
 		     type="real"
 		     dimensions="nSnowLayers nCategories nCells Time"
 		     units="um"
 		     packages="pkgColumnTracerSnowGrainRadius"
+		     description="Snow grain radius in snow layer, per ice thickness category"
 		/>
 		<var name="snowDensity"
 		     type="real"
 		     dimensions="nSnowLayers nCategories nCells Time"
 		     units="kg m-3"
 		     packages="pkgColumnTracerEffectiveSnowDensity"
+		     description="Density of snow due to compaction by wind"
 		/>
 		<var name="iceAge"
 		     type="real"
 		     dimensions="ONE nCategories nCells Time"
 		     units="s"
 		     packages="pkgColumnTracerIceAge"
+                     description="Chronological age tracer, per ice thickness category"
 		/>
 		<var name="firstYearIceArea"
 		     type="real"
 		     dimensions="ONE nCategories nCells Time"
 		     units="1"
 		     packages="pkgColumnTracerFirstYearIce"
+                     description="Area tracer for first-year ice, per ice thickness category"
 		/>
 		<var name="levelIceArea"
 		     type="real"
 		     dimensions="ONE nCategories nCells Time"
 		     units="1"
 		     packages="pkgColumnTracerLevelIce"
+                     description="Undeformed fraction of sea ice area, per ice thickness category"
 		/>
 		<var name="levelIceVolume"
 		     type="real"
 		     dimensions="ONE nCategories nCells Time"
-		     units="m"
+		     units="1"
 		     packages="pkgColumnTracerLevelIce"
+                     description="Undeformed fraction of sea ice volume, per ice thickness category"
 		/>
 		<var name="pondArea"
 		     type="real"
 		     dimensions="ONE nCategories nCells Time"
 		     units="1"
 		     packages="pkgColumnTracerPonds"
+                     description="Fraction of sea ice area covered in ponds, per ice thickness category"
 		/>
 		<var name="pondDepth"
 		     type="real"
 		     dimensions="ONE nCategories nCells Time"
 		     units="m"
 		     packages="pkgColumnTracerPonds"
+                     description="Depth of ponds, per ice thickness category"
 		/>
 		<var name="pondLidThickness"
 		     type="real"
 		     dimensions="ONE nCategories nCells Time"
 		     units="m"
 		     packages="pkgColumnTracerLidThickness"
+                     description="Thickness of refrozen pond water, per ice thickness category"
 		/>
 		<var name="snowScatteringAerosol"
 		     type="real"
@@ -3100,62 +3183,65 @@
 		     type="real"
 		     dimensions="nCells Time"
 		     units="m"
-		     description="Ice volume per unit area of sea ice"
+		     description="Ice volume per unit area of grid cell"
 		/>
 		<var name="snowVolumeCell"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="m"
-		     description="Snow volume per unit area of sea ice"
+		     description="Snow volume per unit area of grid cell"
 		/>
 		<var name="surfaceTemperatureCell"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="C"
 		     standard_name="sea_ice_surface_temperature"
-		     description="Surface temperature of ice/snow"
+		     description="Average surface temperature over ice/snow"
 		/>
 		<var name="iceEnthalpyCell"
 		     type="real"
 		     dimensions="nIceLayers nCells Time"
 		     units="J m-3"
+		     description="Heat content per unit volume of ice in ice layer"
 		/>
 		<var name="iceSalinityCell"
 		     type="real"
 		     dimensions="nIceLayers nCells Time"
 		     units="1e-3"
+		     description="Salt content per unit volume of ice in ice layer"
 		/>
 		<var name="snowEnthalpyCell"
 		     type="real"
 		     dimensions="nSnowLayers nCells Time"
 		     units="J m-3"
+		     description="Heat content per unit volume of snow in snow layer"
 		/>
 		<var name="snowIceMassCell"
 		     type="real"
 		     dimensions="nSnowLayers nCells Time"
 		     units="kg m-3"
-		     description="Mass of ice in snow layer"
-		     packages="pkgColumnTracerEffectiveSnowDensity"
+		     description="Mass of ice per unit snow layer volume"
+		     packages="pkgColumnTracerSnowGrainRadius"
 		/>
 		<var name="snowLiquidMassCell"
 		     type="real"
 		     dimensions="nSnowLayers nCells Time"
 		     units="kg m-3"
-		     description="Mass of liquid in snow layer"
-		     packages="pkgColumnTracerEffectiveSnowDensity"
+		     description="Mass of liquid water per unit snow layer volume"
+		     packages="pkgColumnTracerSnowGrainRadius"
 		/>
 		<var name="snowGrainRadiusCell"
 		     type="real"
 		     dimensions="nSnowLayers nCells Time"
 		     units="um"
-		     description="Effective snow grain radius"
+		     description="Average effective snow grain radius over snow layer"
 		     packages="pkgColumnTracerSnowGrainRadius"
 		/>
 		<var name="snowDensityCell"
 		     type="real"
 		     dimensions="nSnowLayers nCells Time"
 		     units="kg m-3"
-		     description="Prognostic snow density"
+		     description="Average prognostic snow density over snow layer"
 		     packages="pkgColumnTracerEffectiveSnowDensity"
 		/>
 		<var name="iceAgeCell"
@@ -3163,42 +3249,49 @@
 		     dimensions="nCells Time"
 		     units="s"
 		     standard_name="age_of_sea_ice"
+                     description="Average chronological age of sea ice"
 		     packages="pkgColumnTracerIceAge"
 		/>
 		<var name="firstYearIceAreaCell"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="1"
+                     description="First-year area fraction of sea ice"
 		     packages="pkgColumnTracerFirstYearIce"
 		/>
 		<var name="levelIceAreaCell"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="1"
+                     description="Undeformed fraction of sea ice area"
 		     packages="pkgColumnTracerLevelIce"
 		/>
 		<var name="levelIceVolumeCell"
 		     type="real"
 		     dimensions="nCells Time"
-		     units="m"
+		     units="1"
+                     description="Undeformed fraction of sea ice volume"
 		     packages="pkgColumnTracerLevelIce"
 		/>
 		<var name="pondAreaCell"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="1"
+                     description="Fraction of sea ice area covered in ponds"
 		     packages="pkgColumnTracerPonds"
 		/>
 		<var name="pondDepthCell"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="m"
+                     description="Average depth of ponds over sea ice"
 		     packages="pkgColumnTracerPonds"
 		/>
 		<var name="pondLidThicknessCell"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="m"
+                     description="Average thickness of refrozen pond water over ponds"
 		     packages="pkgColumnTracerLidThickness"
 		/>
 		<var name="snowScatteringAerosolCell"
@@ -3572,31 +3665,37 @@
 		     type="real"
 		     dimensions="nCells Time"
 		     units="1"
+		     description="Initial fraction of grid cell covered in sea ice"
 		/>
 		<var name="iceAreaCategoryInitial"
 		     type="real"
 		     dimensions="nCategories nCells Time"
 		     units="1"
+		     description="Initial fraction of grid cell covered in sea ice per ice thickness category"
 		/>
 		<var name="iceVolumeCategoryInitial"
 		     type="real"
 		     dimensions="nCategories nCells Time"
 		     units="m"
+		     description="Initial ice volume per unit grid cell area per ice thickness category"
 		/>
 		<var name="iceThicknessCategoryInitial"
 		     type="real"
 		     dimensions="nCategories nCells Time"
 		     units="m"
+		     description="Initial thickness of ice thickness category"
 		/>
 		<var name="snowVolumeCategoryInitial"
 		     type="real"
 		     dimensions="nCategories nCells Time"
 		     units="m"
+		     description="Snow volume per unit grid cell area per ice thickness category"
 		/>
 		<var name="openWaterArea"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="1"
+		     description="Fraction of grid cell without ice"
 		/>
 		<var name="iceAreaVertex"
 		     type="real"
@@ -3607,6 +3706,7 @@
 		     type="real"
 		     dimensions="nCells Time"
 		     units="kg m-2"
+		     description="Mass per unit grid cell area"
 		/>
 		<var name="totalMassVertex"
 		     type="real"
@@ -3684,12 +3784,14 @@
 		     dimensions="nCells Time"
 		     units="K"
 		     default_value="253.0"
+                     description="2m air temperature"
 		/>
 		<var name="airSpecificHumidity"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="1"
 		     default_value="0.0006"
+                     description="2m air humidity"
 		/>
 		<var name="airDensity"
 		     type="real"
@@ -3722,6 +3824,7 @@
 		     dimensions="nCells Time"
 		     units="W m-2"
 		     default_value="180.0"
+                     description="Downwelling longwave radiation"
 		/>
 		<var name="rainfallRate"
 		     type="real"
@@ -3738,12 +3841,14 @@
 		     dimensions="nCells Time"
 		     units="m s-1"
 		     default_value="5.0"
+                     description="Surface u-wind at cell center in native model direction"
 		/>
 		<var name="vAirVelocity"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="m s-1"
 		     default_value="5.0"
+                     description="Surface v-wind at cell center in native model direction"
 		/>
 		<var name="atmosReferenceSpeed10m"
 		     type="real"
@@ -3785,6 +3890,7 @@
 		     type="real"
 		     dimensions="nCells Time"
 		     units="W m-2"
+                     description="Downwelling shortwave radiation"
 		/>
 		<var name="cloudFraction"
 		     type="real"
@@ -3837,14 +3943,21 @@
 		     type="real"
 		     dimensions="nCells Time"
 		     units="C"
+                     description="Sea surface temperature"
 		/>
 		<var name="seaSurfaceSalinity"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="1e-3"
 		     default_value="34.0"
+                     description="Sea surface salinity"
 		/>
 		<var name="seaFreezingTemperature"
+		     type="real"
+		     dimensions="nCells Time"
+		     units="C"
+		/>
+		<var name="bottomTemperature"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="C"
@@ -3853,6 +3966,7 @@
 		     type="real"
 		     dimensions="nCells Time"
 		     units="W m-2"
+                     description="Ocean freezing/melting potential"
 		/>
 		<var name="frazilMassAdjust"
 		     type="real"
@@ -4001,6 +4115,7 @@
 		     type="real"
 		     dimensions="nCells Time"
 		     units="N m-1"
+                     description="Ice pressure"
 		/>
 		<var name="stressDivergenceU"
 		     type="real"
@@ -4096,11 +4211,13 @@
 		     type="real"
 		     dimensions="nCells Time"
 		     units="percent day-1"
+                     description="Ice divergence"
 		/>
 		<var name="shear"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="percent day-1"
+                     description="Ice shear"
 		/>
 		<var name="dynamicallyLockedCellsMask"
 		     type="integer"
@@ -4260,12 +4377,14 @@
 		     dimensions="maxEdges nCells Time"
 		     units="N m-1"
 		     name_in_code="principalStress1"
+                     description="First component of principal stress (variational formulation)"
 		/>
 		<var name="principalStress2Var"
 		     type="real"
 		     dimensions="maxEdges nCells Time"
 		     units="N m-1"
 		     name_in_code="principalStress2"
+                     description="Second component of principal stress (variational formulation)"
 		/>
 		<var name="replacementPressureVar"
 		     type="real"
@@ -4307,74 +4426,89 @@
 		     type="real"
 		     dimensions="nCells Time"
 		     units="s-1"
+		     description="Normalized energy dissipation due to convergence"
 		/>
 		<var name="ridgeShear"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="s-1"
+		     description="Normalized energy dissipation due to shear"
 		/>
 		<var name="areaLossRidge"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="s-1"
+		     description="Rate of fractional area loss by ridging"
 		/>
 		<var name="areaGainRidge"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="s-1"
+		     description="Rate of fractional area gain by new ridges"
 		/>
 		<var name="iceVolumeRidged"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="m s-1"
+		     description="Rate of ice volume ridged per unit ice area"
 		/>
 		<var name="openingRateRidge"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="s-1"
+		     description="Rate of opening due to divergence/shear"
 		/>
 		<var name="ridgeParticipationFunction"
 		     type="real"
 		     dimensions="nCategories nCells Time"
+		     description="Fraction of total area lost by ice thickness category due to ridging/closing"
 		/>
 		<var name="ratioRidgeThicknessToIce"
 		     type="real"
 		     dimensions="nCategories nCells Time"
+		     description="Ratio of mean ridge thickness to thickness of ridging ice in ice thickness category"
 		/>
 		<var name="fractionNewRidgeArea"
 		     type="real"
 		     dimensions="nCategories nCells Time"
 		     units="1"
+		     description="Fraction of new ridged area going to ice thickness category"
 		/>
 		<var name="fractionNewRidgeVolume"
 		     type="real"
 		     dimensions="nCategories nCells Time"
 		     units="1"
+		     description="Fraction of new ridged volume going to ice thickness category"
 		/>
 		<var name="areaLossRidgeCategory"
 		     type="real"
 		     dimensions="nCategories nCells Time"
 		     units="s-1"
+		     description="Rate of area loss by ridging ice, per ice thickness category"
 		/>
 		<var name="areaGainRidgeCategory"
 		     type="real"
 		     dimensions="nCategories nCells Time"
 		     units="s-1"
+		     description="Rate of area gain by new ridges, per ice thickness category"
 		/>
 		<var name="iceVolumeRidgedCategory"
 		     type="real"
 		     dimensions="nCategories nCells Time"
 		     units="m s-1"
+		     description="Rate of ice volume ridged per unit ice area, per ice thickness category"
 		/>
 		<var name="raftingIceArea"
 		     type="real"
 		     dimensions="nCategories nCells Time"
 		     units="1"
+		     description="Rafted ice area fraction, per ice thickness category"
 		/>
 		<var name="raftingIceVolume"
 		     type="real"
 		     dimensions="nCategories nCells Time"
 		     units="m"
+		     description="Rafted ice area volume per unit ice area, per ice thickness category"
 		/>
 	</var_struct>
 
@@ -4385,10 +4519,21 @@
 		     dimensions="nCells Time"
 		     units="1"
 		/>
+		<var name="lateralIceMeltRate"
+		     type="real"
+		     dimensions="nCells Time"
+		     units="m s-1"
+		/>
+		<var name="lateralHeatFlux"
+		     type="real"
+		     dimensions="nCells Time"
+		     units="W m-2"
+		/>
 		<var name="surfaceIceMelt"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="m s-1"
+                     description="Surface ice melt"
 		/>
 		<var name="surfaceIceMeltCategory"
 		     type="real"
@@ -4399,6 +4544,7 @@
 		     type="real"
 		     dimensions="nCells Time"
 		     units="m s-1"
+                     description="Basal ice melt"
 		/>
 		<var name="basalIceMeltCategory"
 		     type="real"
@@ -4409,11 +4555,13 @@
 		     type="real"
 		     dimensions="nCells Time"
 		     units="m s-1"
+                     description="Lateral ice melt"
 		/>
 		<var name="snowMelt"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="m s-1"
+                     description="Snow melt"
 		/>
 		<var name="snowMeltCategory"
 		     type="real"
@@ -4424,6 +4572,7 @@
 		     type="real"
 		     dimensions="nCells Time"
 		     units="m s-1"
+                     description="Congelation ice growth"
 		/>
 		<var name="congelationCategory"
 		     type="real"
@@ -4434,6 +4583,7 @@
 		     type="real"
 		     dimensions="nCells Time"
 		     units="m s-1"
+                     description="Snow-ice formation"
 		/>
 		<var name="snowiceFormationCategory"
 		     type="real"
@@ -4450,10 +4600,16 @@
 		     dimensions="nCategories nCells Time"
 		     units="m s-1"
 		/>
+		<var name="snowThicknessChangeCell"
+		     type="real"
+		     dimensions="nCells Time"
+		     units="m s-1"
+		/>
 		<var name="frazilFormation"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="m s-1"
+                     description="Frazil ice formation"
 		/>
 		<var name="frazilGrowthDiagnostic"
 		     type="real"
@@ -4514,6 +4670,16 @@
 		     dimensions="nCells Time"
 		     units="kg m-2 s-1"
 		/>
+		<var name="evaporativeWaterFluxSnow"
+		     type="real"
+		     dimensions="nCells Time"
+		     units="kg m-2 s-1"
+		/>
+		<var name="evaporativeWaterFluxIce"
+		     type="real"
+		     dimensions="nCells Time"
+		     units="kg m-2 s-1"
+		/>
 	</var_struct>
 
 	<!-- fluxes with the ocean -->
@@ -4522,45 +4688,63 @@
 		     type="real"
 		     dimensions="nCells Time"
 		     units="kg m-2 s-1"
+                     description="Freshwater flux to ocean from ice column"
 		/>
 		<var name="oceanSaltFlux"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="kg m-2 s-1"
+                     description="Salt flux to ocean from ice column"
 		/>
 		<var name="oceanHeatFlux"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="W m-2"
+                     description="Heat flux to ocean from ice column"
 		/>
 		<var name="oceanShortwaveFlux"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="W m-2"
+                     description="Shortwave flux to ocean from ice column"
 		/>
 		<var name="oceanFreshWaterFluxArea"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="kg m-2 s-1"
+                     description="Freshwater flux to ocean weighted by ice area fraction"
 		/>
 		<var name="oceanSaltFluxArea"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="kg m-2 s-1"
+                     description="Salt flux to ocean weighted by ice area fraction"
 		/>
 		<var name="oceanHeatFluxArea"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="W m-2"
+                     description="Heat flux to ocean weighted by ice area fraction"
 		/>
 		<var name="oceanShortwaveFluxArea"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="W m-2"
+                     description="Shortwave flux to ocean weighted by ice area fraction"
 		/>
 		<var name="oceanHeatFluxIceBottom"
 		     type="real"
 		     dimensions="nCells Time"
+		     units="W m-2"
+		/>
+		<var name="bottomConductiveFlux"
+		     type="real"
+		     dimensions="nCells Time"
+		     units="W m-2"
+		/>
+		<var name="bottomConductiveFluxCategory"
+		     type="real"
+		     dimensions="nCategories nCells Time"
 		     units="W m-2"
 		/>
 	</var_struct>
@@ -4667,65 +4851,79 @@
 		     type="real"
 		     dimensions="nCategories nCells Time"
 		     units="1"
+                     description="Visible direct albedo over ice thickness category"
 		/>
 		<var name="albedoVisibleDiffuseCategory"
 		     type="real"
 		     dimensions="nCategories nCells Time"
 		     units="1"
+                     description="Visible diffuse albedo over ice thickness category"
 		/>
 		<var name="albedoIRDirectCategory"
 		     type="real"
 		     dimensions="nCategories nCells Time"
 		     units="1"
+                     description="Near IR direct albedo over ice thickness category"
 		/>
 		<var name="albedoIRDiffuseCategory"
 		     type="real"
 		     dimensions="nCategories nCells Time"
 		     units="1"
+                     description="Near IR diffuse albedo over ice thickness category"
 		/>
 		<var name="albedoVisibleDirectCell"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="1"
+                     description="Visible direct albedo weighted by ice area"
 		/>
 		<var name="albedoVisibleDiffuseCell"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="1"
+                     description="Visible diffuse albedo weighted by ice area"
 		/>
 		<var name="albedoIRDirectCell"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="1"
+                     description="Near IR direct albedo weighted by ice area"
 		/>
 		<var name="albedoIRDiffuseCell"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="1"
+                     description="Near IR diffuse albedo weighted by ice area"
 		/>
 		<var name="albedoVisibleDirectArea"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="1"
+                     description="Visible direct albedo weighted by ice area"
 		/>
 		<var name="albedoVisibleDiffuseArea"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="1"
+                     description="Visible diffuse albedo weighted by ice area"
 		/>
 		<var name="albedoIRDirectArea"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="1"
+                     description="Near IR direct albedo weighted by ice area"
 		/>
 		<var name="albedoIRDiffuseArea"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="1"
+                     description="Near IR diffuse albedo weighted by ice area"
 		/>
 		<var name="shortwaveScalingFactor"
 		     type="real"
 		     dimensions="nCells Time"
+                     units="1"
+                     description="Shortwave scaling factor"
 		/>
 		<var name="surfaceShortwaveFlux"
 		     type="real"
@@ -4738,6 +4936,26 @@
 		     units="W m-2"
 		/>
 		<var name="penetratingShortwaveFlux"
+		     type="real"
+		     dimensions="nCategories nCells Time"
+		     units="W m-2"
+		/>
+		<var name="penetratingShortwaveFluxVisibleDirect"
+		     type="real"
+		     dimensions="nCategories nCells Time"
+		     units="W m-2"
+		/>
+		<var name="penetratingShortwaveFluxVisibleDiffuse"
+		     type="real"
+		     dimensions="nCategories nCells Time"
+		     units="W m-2"
+		/>
+		<var name="penetratingShortwaveFluxIRDirect"
+		     type="real"
+		     dimensions="nCategories nCells Time"
+		     units="W m-2"
+		/>
+		<var name="penetratingShortwaveFluxIRDiffuse"
 		     type="real"
 		     dimensions="nCategories nCells Time"
 		     units="W m-2"
@@ -4766,46 +4984,55 @@
 		     type="real"
 		     dimensions="nCategories nCells Time"
 		     units="1"
+                     description="Bare ice albedo per category"
 		/>
 		<var name="snowAlbedoCategory"
 		     type="real"
 		     dimensions="nCategories nCells Time"
 		     units="1"
+                     description="Snow albedo per category"
 		/>
 		<var name="pondAlbedoCategory"
 		     type="real"
 		     dimensions="nCategories nCells Time"
 		     units="1"
+                     description="Pond albedo per category"
 		/>
 		<var name="bareIceAlbedoCell"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="1"
+                     description="Cell-averaged bare ice albedo"
 		/>
 		<var name="snowAlbedoCell"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="1"
+                     description="Cell-averaged snow albedo"
 		/>
 		<var name="pondAlbedoCell"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="1"
+                     description="Cell-averaged pond albedo"
 		/>
 		<var name="effectivePondAreaCategory"
 		     type="real"
 		     dimensions="nCategories nCells Time"
 		     units="1"
+                     description="radiation-effective pond area fraction of ice thickness category"
 		/>
 		<var name="effectivePondAreaCell"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="1"
+                     description="radiation-effective pond area fraction of grid cell"
 		/>
 		<var name="snowFractionCategory"
 		     type="real"
 		     dimensions="nCategories nCells Time"
 		     units="1"
+                     description="snow fraction on each category used for radiation"
 		/>
 	</var_struct>
 
@@ -4922,21 +5149,24 @@
 		     type="real"
 		     dimensions="nCells Time"
 		     units="kg m-3"
+                     description="Snow density based on ice and liquid water content"
 		/>
 		<var name="snowDensityViaCompaction"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="kg m-3"
+                     description="Snow density based on wind compaction"
 		/>
 		<var name="snowLossToLeads"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="kg m-2 s-1"
+                     description="Rate of snow loss to leads per unit grid cell area"
 		/>
 		<var name="snowMeltMassCell"
 		     type="real"
 		     dimensions="nCells Time"
-		     units="kg m-2 dt-1"
+		     units="kg m-2"
 		/>
 		<var name="snowMeltMassCategory"
 		     type="real"
@@ -5474,33 +5704,46 @@
 		     dimensions="nCells Time"
 		     units="day"
 		/>
+		<var name="snowIceInterfaceTemperature"
+		     type="real"
+		     dimensions="nCells Time"
+		     units="C"
+		/>
 		<var name="iceAreaTendencyTransport"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="s-1"
+                     description="Time derivative of ice area due to transport"
 		/>
 		<var name="iceVolumeTendencyTransport"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="m s-1"
+                     description="Time derivative of ice volume due to transport"
 		/>
 		<var name="iceAgeTendencyTransport"
 		     type="real"
 		     dimensions="nCells Time"
+                     units="s s-1"
+                     description="Time derivative of ice age due to transport"
 		/>
 		<var name="iceAreaTendencyThermodynamics"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="s-1"
+                     description="Time derivative of ice area due to thermodynamics"
 		/>
 		<var name="iceVolumeTendencyThermodynamics"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="m s-1"
+                     description="Time derivative of ice volume due to thermodynamics"
 		/>
 		<var name="iceAgeTendencyThermodynamics"
 		     type="real"
 		     dimensions="nCells Time"
+                     units="s s-1"
+                     description="Time derivative of ice age due to thermodynamics"
 		/>
 		<var name="freezingMeltingPotentialInitial"
 		     type="real"

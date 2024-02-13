@@ -11,68 +11,53 @@ if (COMP_NAME STREQUAL gptl)
 endif()
 
 if (compile_threaded)
-  string(APPEND FFLAGS   " -fopenmp")
-  string(APPEND CFLAGS   " -fopenmp")
-  string(APPEND CXXFLAGS " -fopenmp")
-  string(APPEND LDFLAGS  " -fopenmp")
+  string(APPEND CMAKE_Fortran_FLAGS   " -fopenmp")
+  string(APPEND CMAKE_C_FLAGS   " -fopenmp")
+  string(APPEND CMAKE_CXX_FLAGS " -fopenmp")
+  string(APPEND CMAKE_EXE_LINKER_FLAGS  " -fopenmp")
 endif()
-if (DEBUG)
-  string(APPEND CFLAGS   " -O0 -g")
-  string(APPEND FFLAGS   " -O0 -g")
-  string(APPEND CXXFLAGS " -O0 -g")
-  string(APPEND CPPDEFS " -DYAKL_DEBUG")
-endif()
+string(APPEND CMAKE_C_FLAGS_DEBUG   " -O0 -g")
+string(APPEND CMAKE_Fortran_FLAGS_DEBUG   " -O0 -g")
+string(APPEND CMAKE_CXX_FLAGS_DEBUG " -O0 -g")
+string(APPEND CPPDEFS_DEBUG " -DYAKL_DEBUG")
 string(APPEND CPPDEFS " -DFORTRANUNDERSCORE -DNO_R16 -DCPRCRAY")
-string(APPEND FC_AUTO_R8 " -s real64")
-string(APPEND FFLAGS " -f free  -em")
+string(APPEND CMAKE_Fortran_FLAGS " -f free  -em")
 if (NOT compile_threaded)
   # -M1077 flag used to suppress message about OpenMP directives
   # that are ignored for non-threaded builds. (-h omp inactive)
   # Details: `explain ftn-1077`
-  string(APPEND FFLAGS " -M1077")
+  string(APPEND CMAKE_Fortran_FLAGS " -M1077")
 endif()
-string(APPEND FFLAGS_NOOPT " -O0")
 set(HAS_F2008_CONTIGUOUS "TRUE")
 
 # -Wl,--allow-shlib-undefined was added to address rocm 5.4.3 Fortran linker issue:
 # /opt/rocm-5.4.3/lib/libhsa-runtime64.so.1: undefined reference to `std::condition_variable::wait(std::unique_lock<std::mutex>&)@GLIBCXX_3.4.30'
 # AMD started building with GCC 12.2.0, which brings in a GLIBCXX symbol that isn't in CCE's default GCC toolchain.
-string(APPEND LDFLAGS " -Wl,--allow-multiple-definition -Wl,--allow-shlib-undefined")
-
-set(SUPPORTS_CXX "TRUE")
-set(CXX_LINKER "FORTRAN")
+string(APPEND CMAKE_EXE_LINKER_FLAGS " -Wl,--allow-multiple-definition -Wl,--allow-shlib-undefined")
 
 # Switch to O3 for better performance
 # Using O2 to ensure passing tests
-if (NOT DEBUG)
-  string(APPEND CFLAGS   " -O2")
-  string(APPEND CXXFLAGS " -O2")
-  string(APPEND FFLAGS   " -O2")
-endif()
+string(APPEND CMAKE_C_FLAGS_RELEASE   " -O2")
+string(APPEND CMAKE_CXX_FLAGS_RELEASE " -O2")
+string(APPEND CMAKE_Fortran_FLAGS_RELEASE   " -O2")
 
 if (COMP_NAME STREQUAL elm)
   # See Land NaNs in conditionals: https://github.com/E3SM-Project/E3SM/issues/4996
-  string(APPEND FFLAGS " -hfp0")
+  string(APPEND CMAKE_Fortran_FLAGS " -hfp0")
 endif()
 # -em -ef generates modulename.mod (lowercase files) to support
 # Scorpio installs
 # Disable ipa and zero initialization are for other NaN isues:
 # https://github.com/E3SM-Project/E3SM/pull/5208
-string(APPEND FFLAGS " -hipa0 -hzero -em -ef -hnoacc")
+string(APPEND CMAKE_Fortran_FLAGS " -hipa0 -hzero -em -ef -hnoacc")
 
-set(NETCDF_PATH "$ENV{NETCDF_DIR}")
-set(PNETCDF_PATH "$ENV{PNETCDF_DIR}")
-string(APPEND CMAKE_OPTS " -DPIO_ENABLE_TOOLS:BOOL=OFF")
-string(APPEND CXX_LIBS " -lstdc++")
+string(APPEND SPIO_CMAKE_OPTS " -DPIO_ENABLE_TOOLS:BOOL=OFF")
 
-string(APPEND CXXFLAGS " -I$ENV{MPICH_DIR}/include --offload-arch=gfx90a")
-string(APPEND SLIBS    " -L$ENV{MPICH_DIR}/lib -lmpi -L$ENV{CRAY_MPICH_ROOTDIR}/gtl/lib -lmpi_gtl_hsa")
-string(APPEND SLIBS " -L$ENV{ROCM_PATH}/lib -lamdhip64")
-if (NOT MPILIB STREQUAL mpi-serial)
-  string(APPEND SLIBS " -L$ENV{ADIOS2_DIR}/lib64 -ladios2_c_mpi -ladios2_c -ladios2_core_mpi -ladios2_core -ladios2_evpath -ladios2_ffs -ladios2_dill -ladios2_atl -ladios2_enet")
-endif()
+string(APPEND CMAKE_CXX_FLAGS " -I$ENV{MPICH_DIR}/include --offload-arch=gfx90a")
+string(APPEND CMAKE_EXE_LINKER_FLAGS    " -L$ENV{MPICH_DIR}/lib -lmpi -L$ENV{CRAY_MPICH_ROOTDIR}/gtl/lib -lmpi_gtl_hsa")
+string(APPEND CMAKE_EXE_LINKER_FLAGS " -L$ENV{ROCM_PATH}/lib -lamdhip64")
 
 string(APPEND KOKKOS_OPTIONS " -DKokkos_ENABLE_HIP=On -DKokkos_ARCH_ZEN3=On -DKokkos_ARCH_VEGA90A=On")
 
 set(USE_HIP "TRUE")
-string(APPEND HIP_FLAGS "${CXXFLAGS} -munsafe-fp-atomics -x hip")
+string(APPEND CMAKE_HIP_FLAGS "${CXXFLAGS} -munsafe-fp-atomics -x hip")

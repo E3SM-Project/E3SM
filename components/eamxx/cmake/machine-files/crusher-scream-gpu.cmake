@@ -2,7 +2,6 @@ include(${CMAKE_CURRENT_LIST_DIR}/common.cmake)
 common_setup()
 
 #serial is needed, but maybe it is always on?
-#include (${EKAT_MACH_FILES_PATH}/kokkos/serial.cmake)
 include (${EKAT_MACH_FILES_PATH}/kokkos/mi250.cmake)
 include (${EKAT_MACH_FILES_PATH}/kokkos/hip.cmake)
 include (${EKAT_MACH_FILES_PATH}/mpi/srun.cmake)

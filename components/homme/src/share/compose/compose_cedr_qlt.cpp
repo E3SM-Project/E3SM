@@ -321,7 +321,7 @@ void QLT<ES>::runimpl () {
           // value to the l2r Qm_prev's sum; otherwise, copy the l2r Qm value to
           // the r2l one.
           const Int os = (problem_type & ProblemType::conserve ?
-                          md_.get_problem_type_l2r_bulk_size(problem_type) - 1 :
+                          Super::MetaData::get_problem_type_l2r_bulk_size(problem_type) - 1 :
                           (problem_type & ProblemType::nonnegative ? 0 : 1));
           bd_.r2l_data(n->offset*r2lndps + r2lbdi) =
             bd_.l2r_data(n->offset*l2rndps + l2rbdi + os);

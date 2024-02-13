@@ -28,33 +28,41 @@
 
 <dtime dyn="sld"                   >3600</dtime>
 
-<!-- Initial conditions -->
-<ncdata          hgrid="64x128"   nlev="72"             ic_ymd="101" >atm/cam/inic/gaus/cami_0000-01-01_64x128_L72_c031210.nc</ncdata>
-<ncdata dyn="se" hgrid="ne4np4"   nlev="128"            ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_ne4np4_L128_20200205.nc</ncdata>
-<ncdata dyn="se" hgrid="ne4np4"   nlev="72"             ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_ne4np4_L72_c160909.nc</ncdata>
-<ncdata dyn="se" hgrid="ne4np4"   nlev="30"             ic_ymd="101" >atm/cam/inic/homme/cami_mam3_0000-01-01_ne4np4_L30_c161102.nc</ncdata>
-<ncdata dyn="se" hgrid="ne11np4"  nlev="72"             ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_ne11np4_L72_c160622.nc</ncdata>
-<ncdata dyn="se" hgrid="ne11np4"  nlev="30"             ic_ymd="101" >atm/cam/inic/homme/cami-mam3_0000-01-01_ne11np4_L30_c160824.nc</ncdata>
-<ncdata dyn="se" hgrid="ne16np4"  nlev="26"             ic_ymd="101" >atm/cam/inic/homme/cami_0000-01-01_ne16np4_L26_c120525.nc</ncdata>
-<ncdata dyn="se" hgrid="ne16np4"  nlev="30"             ic_ymd="101" >atm/cam/inic/homme/cami-mam3_0000-01-ne16np4_L30_c090306.nc</ncdata>
-<ncdata dyn="se" hgrid="ne16np4"  nlev="72"             ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_ne16np4_L72_c160614.nc</ncdata>
-<ncdata dyn="se" hgrid="ne30np4"  nlev="26"             ic_ymd="101" >atm/cam/inic/homme/cami_0000-01-01_ne30np4_L26_c100108.nc</ncdata>
-<ncdata dyn="se" hgrid="ne30np4"  nlev="26"             ic_ymd="901" >atm/cam/inic/homme/cami_0000-09-01_ne30np4_L26_c040422.nc</ncdata>
-<ncdata dyn="se" hgrid="ne30np4"  nlev="30"             ic_ymd="101" >atm/cam/inic/homme/cami-mam3_0000-01-01_ne30np4_L30_c130424.nc</ncdata>
-<ncdata dyn="se" hgrid="ne30np4"  nlev="72"             ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_ne30np4_L72_c160214.nc</ncdata>
-<ncdata dyn="se" hgrid="ne30np4"  nlev="128"            ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_ne30np4_SCREAM_L128_c160214.nc</ncdata>
-<ncdata dyn="se" hgrid="ne45np4"  nlev="72"             ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_ne45np4_L72_c20200611.nc</ncdata>
-<ncdata dyn="se" hgrid="ne60np4"  nlev="30"             ic_ymd="101" >atm/cam/inic/homme/cami-mam3_0000-01-ne60np4_L30_c090306.nc</ncdata>
-<ncdata dyn="se" hgrid="ne120np4" nlev="26"             ic_ymd="901" >atm/cam/inic/homme/cami_0000-09-01_ne120np4_L26_c061106.nc</ncdata>
-<ncdata dyn="se" hgrid="ne120np4" nlev="26"             ic_ymd="101" >atm/cam/inic/homme/cami_0000-01-01_ne120np4_L26_c110304.nc</ncdata>
-<ncdata dyn="se" hgrid="ne120np4" nlev="30"             ic_ymd="101" >atm/cam/inic/homme/cami-mam3_0000-01-ne120np4_L30_c110928.nc</ncdata>
-<ncdata dyn="se" hgrid="ne120np4" nlev="72"             ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_0000-01-ne120np4_L72_c160318.nc</ncdata>
-<ncdata dyn="se" hgrid="ne240np4" nlev="26"             ic_ymd="101" >atm/cam/inic/homme/cami_1850-01-01_ne240np4_L26_c110314.nc</ncdata>
-<ncdata dyn="se" hgrid="ne240np4" nlev="26"             ic_ymd="901" >atm/cam/inic/homme/cami_0000-09-01_ne240np4_L26_c061106.nc</ncdata>
+<!-- Old initial conditions files for CESM/CAM -->
+<ncdata          hgrid="64x128"   nlev="72" ic_ymd="101" >atm/cam/inic/gaus/cami_0000-01-01_64x128_L72_c031210.nc</ncdata>
+<ncdata dyn="se" hgrid="ne4np4"   nlev="30" ic_ymd="101" >atm/cam/inic/homme/cami_mam3_0000-01-01_ne4np4_L30_c161102.nc</ncdata>
+<ncdata dyn="se" hgrid="ne11np4"  nlev="30" ic_ymd="101" >atm/cam/inic/homme/cami-mam3_0000-01-01_ne11np4_L30_c160824.nc</ncdata>
+<ncdata dyn="se" hgrid="ne16np4"  nlev="26" ic_ymd="101" >atm/cam/inic/homme/cami_0000-01-01_ne16np4_L26_c120525.nc</ncdata>
+<ncdata dyn="se" hgrid="ne16np4"  nlev="30" ic_ymd="101" >atm/cam/inic/homme/cami-mam3_0000-01-ne16np4_L30_c090306.nc</ncdata>
+<ncdata dyn="se" hgrid="ne30np4"  nlev="26" ic_ymd="101" >atm/cam/inic/homme/cami_0000-01-01_ne30np4_L26_c100108.nc</ncdata>
+<ncdata dyn="se" hgrid="ne30np4"  nlev="26" ic_ymd="901" >atm/cam/inic/homme/cami_0000-09-01_ne30np4_L26_c040422.nc</ncdata>
+<ncdata dyn="se" hgrid="ne30np4"  nlev="30" ic_ymd="101" >atm/cam/inic/homme/cami-mam3_0000-01-01_ne30np4_L30_c130424.nc</ncdata>
+<ncdata dyn="se" hgrid="ne60np4"  nlev="30" ic_ymd="101" >atm/cam/inic/homme/cami-mam3_0000-01-ne60np4_L30_c090306.nc</ncdata>
+<ncdata dyn="se" hgrid="ne120np4" nlev="26" ic_ymd="901" >atm/cam/inic/homme/cami_0000-09-01_ne120np4_L26_c061106.nc</ncdata>
+<ncdata dyn="se" hgrid="ne120np4" nlev="26" ic_ymd="101" >atm/cam/inic/homme/cami_0000-01-01_ne120np4_L26_c110304.nc</ncdata>
+<ncdata dyn="se" hgrid="ne120np4" nlev="30" ic_ymd="101" >atm/cam/inic/homme/cami-mam3_0000-01-ne120np4_L30_c110928.nc</ncdata>
+<ncdata dyn="se" hgrid="ne240np4" nlev="26" ic_ymd="101" >atm/cam/inic/homme/cami_1850-01-01_ne240np4_L26_c110314.nc</ncdata>
+<ncdata dyn="se" hgrid="ne240np4" nlev="26" ic_ymd="901" >atm/cam/inic/homme/cami_0000-09-01_ne240np4_L26_c061106.nc</ncdata>
+<ncdata dyn="se" hgrid="ne240np4" nlev="30"              >atm/cam/inic/homme/cami-mam3_0000-01-ne240np4_L30_c111004.nc</ncdata>
+<ncdata dyn="se" hgrid="ne240np4" nlev="72"              >atm/cam/inic/homme/cami_mam4_Linoz_0001-01-ne240np4_L72_c170910.nc</ncdata>
 
-<!-- Spun-up F-case initial conditions do not exist for these grids -->
+<!-- E3SM v2/v1 Atmosphere Initial conditions -->
+<ncdata dyn="se" hgrid="ne4np4"   nlev="128" ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_ne4np4_L128_20200205.nc</ncdata>
+<ncdata dyn="se" hgrid="ne4np4"   nlev="72"  ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_ne4np4_L72_c160909.nc</ncdata>
+<ncdata dyn="se" hgrid="ne11np4"  nlev="72"  ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_ne11np4_L72_c160622.nc</ncdata>
+<ncdata dyn="se" hgrid="ne16np4"  nlev="72"  ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_ne16np4_L72_c160614.nc</ncdata>
+<ncdata dyn="se" hgrid="ne30np4"  nlev="72"  ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_ne30np4_L72_c160214.nc</ncdata>
+<ncdata dyn="se" hgrid="ne30np4"  nlev="128" ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_ne30np4_SCREAM_L128_c160214.nc</ncdata>
+<ncdata dyn="se" hgrid="ne45np4"  nlev="72"  ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_ne45np4_L72_c20200611.nc</ncdata>
+<ncdata dyn="se" hgrid="ne120np4" nlev="72"  ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_0000-01-ne120np4_L72_c160318.nc</ncdata>
+<ncdata dyn="se" hgrid="ne120np4" nlev="80"  ic_ymd="101" >atm/cam/inic/homme/eami_mam4_Linoz_ne120np4_L80_c20231010.nc</ncdata>
+
+<!-- E3SMv3 Atmosphere Initial conditions -->
+<ncdata dyn="se" hgrid="ne4np4"   nlev="80"  ic_ymd="101" >atm/cam/inic/homme/eami_mam4_Linoz_ne4np4_L80_c20231010.nc</ncdata>
+<ncdata dyn="se" hgrid="ne30np4"  nlev="80"  ic_ymd="101" >atm/cam/inic/homme/eami_mam4_Linoz_ne30np4_L80_c20231010.nc</ncdata>
 
 <!-- Initial conditions for DYAMOND1 (2016-08-01) and DYAMOND2 (2020-01-20) hindcast campaign -->
+<!-- Spun-up F-case initial conditions do not exist for these grids -->
 <ncdata hgrid="ne1024np4" nlev="128" ic_ymd="20160801">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne1024np4_topoadj_L128_v20191116.nc</ncdata>
 <ncdata hgrid="ne1024np4" nlev="72"  ic_ymd="20160801">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne1024np4_topoadj_L72.nc           </ncdata>
 <ncdata hgrid="ne1024np4" nlev="128" ic_ymd="20200120">atm/cam/inic/homme/ifs_oper_T1279_2020012000_mod_subset_to_e3sm_ne1024np4_topoadj_L128.nc          </ncdata>
@@ -67,9 +75,7 @@
 <ncdata hgrid="ne4np4"    nlev="128" ic_ymd="20160801">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne4np4_topoadj_L128_c20200313.nc   </ncdata>
 <ncdata hgrid="ne4np4"    nlev="72"  ic_ymd="20160801">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne4np4_topoadj_L72_c20200313.nc    </ncdata>
 
-<!-- L60 files - primarily added for new MMF default (2021) -->
-<!-- These were initially created from L72 files or regridded from similar grid. --> 
-<!-- The resulting IC was used for a 10-day run to produce the final IC file. -->
+<!-- L60 files for MMF (2021) created from L72 files or regridded from similar grid - spun up for 10 days --> 
 <ncdata dyn="se" hgrid="ne4np4"   nlev="60"                         ic_ymd="101" >atm/cam/inic/homme/eam_i_mam3_Linoz_ne4np4_L60_c20210917.nc</ncdata>
 <ncdata dyn="se" hgrid="ne30np4"  nlev="60"                         ic_ymd="101" >atm/cam/inic/homme/eam_i_mam3_Linoz_ne30np4_L60_c20210917.nc</ncdata>
 <ncdata dyn="se" hgrid="ne45np4"  nlev="60"                         ic_ymd="101" >atm/cam/inic/homme/eam_i_mam3_Linoz_ne45np4_L60_c20210917.nc</ncdata>
@@ -95,42 +101,28 @@
 <ncdata dyn="se" hgrid="ne4np4"   nlev="72"  aquaplanet="1" rce="1" ic_ymd="101" >atm/cam/inic/homme/cami_rcemip_ne4np4_L72_c190919.nc</ncdata>
 <ncdata dyn="se" hgrid="ne30np4"  nlev="72"  aquaplanet="1" rce="1" ic_ymd="101" >atm/cam/inic/homme/cami_rcemip_ne30np4_L72_c190919.nc</ncdata>
 
-<ncdata dyn="se" hgrid="ne240np4" nlev="30"              >atm/cam/inic/homme/cami-mam3_0000-01-ne240np4_L30_c111004.nc</ncdata>
-<ncdata dyn="se" hgrid="ne240np4" nlev="72"              >atm/cam/inic/homme/cami_mam4_Linoz_0001-01-ne240np4_L72_c170910.nc</ncdata>
 
-<ncdata dyn="se" hgrid="ne30np4x8arm"  nlev="30"                     >atm/cam/inic/homme/cami-mam3_0000-01-01_arm30x8_L30_c130424.nc</ncdata>
-<ncdata dyn="se" hgrid="ne30np4x8arm"  nlev="26" ocn="aquaplanet"    >atm/cam/inic/homme/cami_0003-01-01_arm30x8_L26_ape_c000000.nc</ncdata>
 
-<ncdata dyn="se" hgrid="ne0np4_arm_x8v3_lowcon"  nlev="30"                     >atm/cam/inic/homme/cami-mam3_0000-01-01_arm_x8v3_lowcon_np4_L30_c000000.nc</ncdata>
-<ncdata dyn="se" hgrid="ne0np4_arm_x8v3_lowcon"  nlev="26" ocn="aquaplanet"    >atm/cam/inic/homme/cami_0003-01-01_arm_x8v3_lowcon_np4_L26_ape_c000000.nc</ncdata>
+<!-- ******************************************* -->
+<!-- Regionally Refined Initial Conditions (RRM) -->
+<!-- ******************************************* -->
 
-<!--Initial file from interpic utility:  ncdata dyn="se" hgrid="ne0np4_conus_x4v1_lowcon"  nlev="30"                     >atm/cam/inic/homme/cami-mam3_0000-01-01_conusx4v1np4_L30_c100618.nc</ncdata-->
-<!-- New file from 1 month spin-up, the renamed $CASE.cam.i* file. -->
-<ncdata dyn="se" hgrid="ne0np4_conus_x4v1_lowcon"  nlev="72"                     >atm/cam/inic/homme/cami_0002-01-01-00000_conusx4v1np4_L72_c160719.nc</ncdata>
-<ncdata dyn="se" hgrid="ne0np4_conus_x4v1_lowcon"  nlev="30"                     >atm/cam/inic/homme/cami-mam3_0000-01-01_conusx4v1np4_L30_c141106.nc</ncdata>
-<ncdata dyn="se" hgrid="ne0np4_conus_x4v1_lowcon"  nlev="30" ocn="aquaplanet"    >atm/cam/inic/homme/cami_0003-01-01_conusx4v1np4_L30_ape_c000000.nc</ncdata>
-
-<!-- Worked, and used to generate the inic below for northamerica:  ncdata dyn="se" hgrid="ne0np4_northamericax4v1" nlev="72"    >/global/cscratch1/sd/wlin/northamericax4v1/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_northamericax4v1_topoadj_L72.nc</ncdata-->
-<ncdata dyn="se" hgrid="ne0np4_northamericax4v1" nlev="72"    >atm/cam/inic/homme/cami_0001-01-01_northamericax4v1_c190709.nc</ncdata>
-
-<ncdata dyn="se" hgrid="ne0np4_antarcticax4v1" nlev="72"    >atm/cam/inic/homme/cami_mam3_Linoz_0000-01-antarcticax4v1_L72_topoadj_c20200507.nc</ncdata>
-
-<ncdata dyn="se" hgrid="ne0np4_arcticx4v1" nlev="72"    >atm/cam/inic/homme/eam_i_mam4_Linoz_0011-01-arcticx4v1np4_L72_c20220127.nc</ncdata>
-<!--Initial file from interpic utility:  ncdata dyn="se" hgrid="ne0np4_svalbard_x8v1_lowcon"  nlev="30"                     >atm/cam/inic/homme/cami-mam3_0000-01-01_svalbardx8v1np4_L30_c100618.nc</ncdata-->
-<!-- New file from 1 month spin-up, the renamed $CASE.cam.i* file. -->
-<ncdata dyn="se" hgrid="ne0np4_svalbard_x8v1_lowcon"  nlev="30"                     >atm/cam/inic/homme/cami-mam3_0000-01-01_svalbardx8v1np4_L30_c141107.nc</ncdata>
-<ncdata dyn="se" hgrid="ne0np4_svalbard_x8v1_lowcon"  nlev="30" ocn="aquaplanet"    >atm/cam/inic/homme/cami_0003-01-01_svalbardx8v1np4_L30_ape_c000000.nc</ncdata>
-
-<!--Initial file from interpic utility:  ncdata dyn="se" hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  nlev="30"                     >atm/cam/inic/homme/cami-mam3_0000-01-01_sooberingoax4x8v1np4_L30_c100618.nc</ncdata-->
-<!-- New file from 1 month spin-up, the renamed $CASE.cam.i* file. -->
-<ncdata dyn="se" hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  nlev="30"                     >atm/cam/inic/homme/cami-mam3_0000-01-01_sooberingoax4x8v1np4_L30_c141110.nc</ncdata>
-<ncdata dyn="se" hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  nlev="30" ocn="aquaplanet"    >atm/cam/inic/homme/cami_0003-01-01_sooberingoax4x8v1np4_L30_ape_c000000.nc</ncdata>
-
-<ncdata dyn="se" hgrid="ne0np4_twpx4v1" nlev="72" >atm/cam/inic/homme/cami-mam3_0002-01-01-twpx4v1_L72_c170723.nc</ncdata>
-<!-- Initial condition file for ENA RRM grid from 1 year spin-up -->
-<!-- (starting from initial file interpolated using interpic) -->
-<ncdata dyn="se" hgrid="ne0np4_enax4v1" nlev="72">atm/cam/inic/homme/cami_0002-01-01_enax4v1_L72_c170706.nc</ncdata>
-
+<ncdata dyn="se" hgrid="ne30np4x8arm"                     nlev="30"                 >atm/cam/inic/homme/cami-mam3_0000-01-01_arm30x8_L30_c130424.nc</ncdata>
+<ncdata dyn="se" hgrid="ne30np4x8arm"                     nlev="26" ocn="aquaplanet">atm/cam/inic/homme/cami_0003-01-01_arm30x8_L26_ape_c000000.nc</ncdata>
+<ncdata dyn="se" hgrid="ne0np4_arm_x8v3_lowcon"           nlev="30"                 >atm/cam/inic/homme/cami-mam3_0000-01-01_arm_x8v3_lowcon_np4_L30_c000000.nc</ncdata>
+<ncdata dyn="se" hgrid="ne0np4_arm_x8v3_lowcon"           nlev="26" ocn="aquaplanet">atm/cam/inic/homme/cami_0003-01-01_arm_x8v3_lowcon_np4_L26_ape_c000000.nc</ncdata>
+<ncdata dyn="se" hgrid="ne0np4_conus_x4v1_lowcon"         nlev="72"                 >atm/cam/inic/homme/cami_0002-01-01-00000_conusx4v1np4_L72_c160719.nc</ncdata>
+<ncdata dyn="se" hgrid="ne0np4_conus_x4v1_lowcon"         nlev="30"                 >atm/cam/inic/homme/cami-mam3_0000-01-01_conusx4v1np4_L30_c141106.nc</ncdata>
+<ncdata dyn="se" hgrid="ne0np4_conus_x4v1_lowcon"         nlev="30" ocn="aquaplanet">atm/cam/inic/homme/cami_0003-01-01_conusx4v1np4_L30_ape_c000000.nc</ncdata>
+<ncdata dyn="se" hgrid="ne0np4_northamericax4v1"          nlev="72"                 >atm/cam/inic/homme/cami_0001-01-01_northamericax4v1_c190709.nc</ncdata>
+<ncdata dyn="se" hgrid="ne0np4_antarcticax4v1"            nlev="72"                 >atm/cam/inic/homme/cami_mam3_Linoz_0000-01-antarcticax4v1_L72_topoadj_c20200507.nc</ncdata>
+<ncdata dyn="se" hgrid="ne0np4_arcticx4v1"                nlev="72"                 >atm/cam/inic/homme/eam_i_mam4_Linoz_0011-01-arcticx4v1np4_L72_c20220127.nc</ncdata>
+<ncdata dyn="se" hgrid="ne0np4_svalbard_x8v1_lowcon"      nlev="30"                 >atm/cam/inic/homme/cami-mam3_0000-01-01_svalbardx8v1np4_L30_c141107.nc</ncdata>
+<ncdata dyn="se" hgrid="ne0np4_svalbard_x8v1_lowcon"      nlev="30" ocn="aquaplanet">atm/cam/inic/homme/cami_0003-01-01_svalbardx8v1np4_L30_ape_c000000.nc</ncdata>
+<ncdata dyn="se" hgrid="ne0np4_sooberingoa_x4x8v1_lowcon" nlev="30"                 >atm/cam/inic/homme/cami-mam3_0000-01-01_sooberingoax4x8v1np4_L30_c141110.nc</ncdata>
+<ncdata dyn="se" hgrid="ne0np4_sooberingoa_x4x8v1_lowcon" nlev="30" ocn="aquaplanet">atm/cam/inic/homme/cami_0003-01-01_sooberingoax4x8v1np4_L30_ape_c000000.nc</ncdata>
+<ncdata dyn="se" hgrid="ne0np4_twpx4v1"                   nlev="72"                 >atm/cam/inic/homme/cami-mam3_0002-01-01-twpx4v1_L72_c170723.nc</ncdata>
+<ncdata dyn="se" hgrid="ne0np4_enax4v1"                   nlev="72"                 >atm/cam/inic/homme/cami_0002-01-01_enax4v1_L72_c170706.nc</ncdata>
 
 <!-- Topography -->
 <bnd_topo hgrid="64x128"  >atm/cam/topo/USGS-gtopo30_64x128_c050520.nc</bnd_topo>
@@ -141,13 +133,13 @@
 <bnd_topo hgrid="ne16np4"  npg="0">atm/cam/topo/USGS-gtopo30_ne16np4_16xconsistentSGH.c20160612.nc</bnd_topo>
 <bnd_topo hgrid="ne16np4"  npg="2">atm/cam/topo/USGS-gtopo30_ne16np4pg2_16xdel2_20200527.nc</bnd_topo>
 <bnd_topo hgrid="ne30np4"  npg="0">atm/cam/topo/USGS-gtopo30_ne30np4_16xdel2-PFC-consistentSGH.nc</bnd_topo>
-<bnd_topo hgrid="ne30np4"  npg="2">atm/cam/topo/USGS-gtopo30_ne30np4pg2_16xdel2.c20200108.nc</bnd_topo>
+<bnd_topo hgrid="ne30np4"  npg="2">atm/cam/topo/USGS-gtopo30_ne30np4pg2_x6t-SGH.c20210614.nc</bnd_topo>
 <bnd_topo hgrid="ne30np4"  npg="3">atm/cam/topo/USGS-gtopo30_ne30np4pg3_16xdel2.c20200504.nc</bnd_topo>
 <bnd_topo hgrid="ne30np4"  npg="4">atm/cam/topo/USGS-gtopo30_ne30np4pg4_16xdel2.c20200504.nc</bnd_topo>
 <bnd_topo hgrid="ne45np4"  npg="2">atm/cam/topo/USGS-gtopo30_ne45np4pg2_16xdel2.c20200615.nc</bnd_topo>
 <bnd_topo hgrid="ne60np4"  npg="0">atm/cam/topo/USGS-gtopo30_ne60np4_16xconsistentSGH.c20140517.nc</bnd_topo>
 <bnd_topo hgrid="ne120np4" npg="0">atm/cam/topo/USGS-gtopo30_ne120np4_16xdel2-PFC-consistentSGH.nc</bnd_topo>
-<bnd_topo hgrid="ne120np4" npg="2">atm/cam/topo/USGS-gtopo30_ne120np4pg2_16xdel2.nc</bnd_topo>
+<bnd_topo hgrid="ne120np4" npg="2">atm/cam/topo/USGS-gtopo30_ne120np4pg2_x6t_20230404.nc</bnd_topo>
 <bnd_topo hgrid="ne240np4" npg="0">atm/cam/topo/USGS-gtopo30_ne240np4_16xconsistentSGH.c20130724.nc</bnd_topo>
 <bnd_topo hgrid="ne512np4"  npg="0">atm/cam/topo/USGS-gtopo30_ne512np4_16xconsistentSGH_20190212.nc</bnd_topo>
 <bnd_topo hgrid="ne1024np4" npg="0">atm/cam/topo/USGS-gtopo30_ne1024np4_16xconsistentSGH_20190528.nc</bnd_topo>
@@ -243,6 +235,7 @@
 <mam_so4  rad="rrtmg">atm/cam/physprops/sulfate_rrtmg_c080918.nc</mam_so4>
 <mam_pom  rad="rrtmg" mam="3mode">atm/cam/physprops/ocpho_rrtmg_c101112.nc</mam_pom>
 <mam_pom  rad="rrtmg">atm/cam/physprops/ocpho_rrtmg_c130709.nc</mam_pom>
+<mam_pom  rad="rrtmg" clubb_sgs="1" microphys="p3">atm/cam/physprops/ocpho_rrtmg_c130709_kPOM0.04.nc</mam_pom>
 <mam_soa  rad="rrtmg">atm/cam/physprops/ocphi_rrtmg_c100508.nc</mam_soa>
 <mam_bc   rad="rrtmg">atm/cam/physprops/bcpho_rrtmg_c100508.nc</mam_bc>
 <mam_dst  rad="rrtmg">atm/cam/physprops/dust_aeronet_rrtmg_c141106.nc</mam_dst>
@@ -253,6 +246,7 @@
 <mam_so4  rad="rrtmgp">atm/cam/physprops/sulfate_rrtmg_c080918.nc</mam_so4>
 <mam_pom  rad="rrtmgp" mam="3mode">atm/cam/physprops/ocpho_rrtmg_c101112.nc</mam_pom>
 <mam_pom  rad="rrtmgp">atm/cam/physprops/ocpho_rrtmg_c130709.nc</mam_pom>
+<mam_pom  rad="rrtmgp" clubb_sgs="1" microphys="p3">atm/cam/physprops/ocpho_rrtmg_c130709_kPOM0.04.nc</mam_pom>
 <mam_soa  rad="rrtmgp">atm/cam/physprops/ocphi_rrtmg_c100508.nc</mam_soa>
 <mam_bc   rad="rrtmgp">atm/cam/physprops/bcpho_rrtmg_c100508.nc</mam_bc>
 <mam_dst  rad="rrtmgp">atm/cam/physprops/dust_aeronet_rrtmg_c141106.nc</mam_dst>
@@ -835,10 +829,8 @@
 <shoc_lambda_thresh          > 0.02D0 </shoc_lambda_thresh>
 <shoc_Ckh                    > 0.1D0 </shoc_Ckh>
 <shoc_Ckm                    > 0.1D0 </shoc_Ckm>
-<shoc_Ckh_s_min              > 0.1D0 </shoc_Ckh_s_min>
-<shoc_Ckm_s_min              > 0.1D0 </shoc_Ckm_s_min>
-<shoc_Ckh_s_max              > 0.1D0 </shoc_Ckh_s_max>
-<shoc_Ckm_s_max              > 0.1D0 </shoc_Ckm_s_max>
+<shoc_Ckh_s                  > 0.1D0 </shoc_Ckh_s>
+<shoc_Ckm_s                  > 0.1D0 </shoc_Ckm_s>
 
 <!-- CLUBB options -->
 <clubb_rainevap_turb                              > .false. </clubb_rainevap_turb>
@@ -869,6 +861,7 @@
 <!-- MMF -->
 <MMF_microphysics_scheme MMF_microphysics_scheme="sam1mom">sam1mom</MMF_microphysics_scheme>
 <MMF_microphysics_scheme MMF_microphysics_scheme="m2005">m2005</MMF_microphysics_scheme>
+<MMF_microphysics_scheme MMF_microphysics_scheme="p3">p3</MMF_microphysics_scheme>
 <use_MMF                      > .false.</use_MMF>
 <use_MMF    use_MMF="1"       > .true. </use_MMF>
 <use_ECPP                     > .false.</use_ECPP>
@@ -1139,19 +1132,22 @@
 <!-- Linearization of boundary layer winds -->
 <linearize_pbl_winds>.false.</linearize_pbl_winds>
 
-<!-- Export gustiness value -->
-<export_gustiness>.false.</export_gustiness>
-
 <!-- MMF CRM mean state acceleration -->
-<use_crm_accel    use_MMF="0">.false.</use_crm_accel>
-<crm_accel_uv     use_MMF="0">.false.</crm_accel_uv>
-<crm_accel_factor use_MMF="0">0</crm_accel_factor>
-<use_crm_accel    use_MMF="1" MMF_microphysics_scheme="sam1mom">.true.</use_crm_accel>
-<crm_accel_uv     use_MMF="1" MMF_microphysics_scheme="sam1mom">.true.</crm_accel_uv>
-<!-- Disable MMF MSA for 2-mom microphyics -->
-<use_crm_accel    use_MMF="1" MMF_microphysics_scheme="m2005">.false.</use_crm_accel>
-<crm_accel_uv     use_MMF="1" MMF_microphysics_scheme="m2005">.false.</crm_accel_uv>
-<crm_accel_factor use_MMF="1">2</crm_accel_factor>
+<use_crm_accel    >.false.</use_crm_accel>
+<crm_accel_uv     >.false.</crm_accel_uv>
+<crm_accel_factor >0</crm_accel_factor>
+<crm_accel_factor use_MMF="1" crm="sam"  >2</crm_accel_factor>
+<use_crm_accel    use_MMF="1" crm="sam"  >.true.</use_crm_accel>
+<crm_accel_uv     use_MMF="1" crm="sam"  >.true.</crm_accel_uv>
+<crm_accel_factor use_MMF="1" crm="samxx">2</crm_accel_factor>
+<use_crm_accel    use_MMF="1" crm="samxx">.true.</use_crm_accel>
+<crm_accel_uv     use_MMF="1" crm="samxx">.true.</crm_accel_uv>
+<crm_accel_factor use_MMF="1" crm="pam" pam_dycor="spam" >2</crm_accel_factor>
+<use_crm_accel    use_MMF="1" crm="pam" pam_dycor="spam" >.true.</use_crm_accel>
+<crm_accel_uv     use_MMF="1" crm="pam" pam_dycor="spam" >.true.</crm_accel_uv>
+<crm_accel_factor use_MMF="1" crm="pam" pam_dycor="awfl" >0</crm_accel_factor>
+<use_crm_accel    use_MMF="1" crm="pam" pam_dycor="awfl" >.false.</use_crm_accel>
+<crm_accel_uv     use_MMF="1" crm="pam" pam_dycor="awfl" >.false.</crm_accel_uv>
 
 <!-- Cloud fraction -->
 <cldfrc_freeze_dry             >.true.</cldfrc_freeze_dry>
@@ -1321,17 +1317,44 @@
 <history_gaschmbudget>         .false.  </history_gaschmbudget>
 <history_gaschmbudget_2D>      .false.  </history_gaschmbudget_2D>
 <history_gaschmbudget_2D_levels>   .false.  </history_gaschmbudget_2D_levels>
-<gaschmbudget_2D_L1_s>         1        </gaschmbudget_2D_L1_s>
-<gaschmbudget_2D_L1_e>         26       </gaschmbudget_2D_L1_e>
-<gaschmbudget_2D_L2_s>         27       </gaschmbudget_2D_L2_s>
-<gaschmbudget_2D_L2_e>         38       </gaschmbudget_2D_L2_e>
-<gaschmbudget_2D_L3_s>         39       </gaschmbudget_2D_L3_s>
-<gaschmbudget_2D_L3_e>         58       </gaschmbudget_2D_L3_e>
-<gaschmbudget_2D_L4_s>         59       </gaschmbudget_2D_L4_s>
-<gaschmbudget_2D_L4_e>         72       </gaschmbudget_2D_L4_e>
 <history_UCIgaschmbudget_2D>      .false.  </history_UCIgaschmbudget_2D>
 <history_UCIgaschmbudget_2D_levels>   .false.  </history_UCIgaschmbudget_2D_levels>
 <history_chemdyg_summary>      .false.  </history_chemdyg_summary>
+
+<!-- chemdyg vertical block diagnostics -->
+<gaschmbudget_2D_L1_s>         1        </gaschmbudget_2D_L1_s>
+<gaschmbudget_2D_L1_e nlev="72">         26       </gaschmbudget_2D_L1_e>
+<gaschmbudget_2D_L2_s nlev="72">         27       </gaschmbudget_2D_L2_s>
+<gaschmbudget_2D_L2_e nlev="72">         38       </gaschmbudget_2D_L2_e>
+<gaschmbudget_2D_L3_s nlev="72">         39       </gaschmbudget_2D_L3_s>
+<gaschmbudget_2D_L3_e nlev="72">         58       </gaschmbudget_2D_L3_e>
+<gaschmbudget_2D_L4_s nlev="72">         59       </gaschmbudget_2D_L4_s>
+<gaschmbudget_2D_L4_e nlev="72">         72       </gaschmbudget_2D_L4_e>
+
+<gaschmbudget_2D_L1_e nlev="80">         34       </gaschmbudget_2D_L1_e>
+<gaschmbudget_2D_L2_s nlev="80">         35       </gaschmbudget_2D_L2_s>
+<gaschmbudget_2D_L2_e nlev="80">         46       </gaschmbudget_2D_L2_e>
+<gaschmbudget_2D_L3_s nlev="80">         47       </gaschmbudget_2D_L3_s>
+<gaschmbudget_2D_L3_e nlev="80">         66       </gaschmbudget_2D_L3_e>
+<gaschmbudget_2D_L4_s nlev="80">         67       </gaschmbudget_2D_L4_s>
+<gaschmbudget_2D_L4_e nlev="80">         80       </gaschmbudget_2D_L4_e>
+
+<UCIgaschmbudget_2D_L1_s>         1        </UCIgaschmbudget_2D_L1_s>
+<UCIgaschmbudget_2D_L1_e nlev="72">         26       </UCIgaschmbudget_2D_L1_e>
+<UCIgaschmbudget_2D_L2_s nlev="72">         27       </UCIgaschmbudget_2D_L2_s>
+<UCIgaschmbudget_2D_L2_e nlev="72">         38       </UCIgaschmbudget_2D_L2_e>
+<UCIgaschmbudget_2D_L3_s nlev="72">         39       </UCIgaschmbudget_2D_L3_s>
+<UCIgaschmbudget_2D_L3_e nlev="72">         58       </UCIgaschmbudget_2D_L3_e>
+<UCIgaschmbudget_2D_L4_s nlev="72">         59       </UCIgaschmbudget_2D_L4_s>
+<UCIgaschmbudget_2D_L4_e nlev="72">         72       </UCIgaschmbudget_2D_L4_e>
+
+<UCIgaschmbudget_2D_L1_e nlev="80">         34       </UCIgaschmbudget_2D_L1_e>
+<UCIgaschmbudget_2D_L2_s nlev="80">         35       </UCIgaschmbudget_2D_L2_s>
+<UCIgaschmbudget_2D_L2_e nlev="80">         46       </UCIgaschmbudget_2D_L2_e>
+<UCIgaschmbudget_2D_L3_s nlev="80">         47       </UCIgaschmbudget_2D_L3_s>
+<UCIgaschmbudget_2D_L3_e nlev="80">         66       </UCIgaschmbudget_2D_L3_e>
+<UCIgaschmbudget_2D_L4_s nlev="80">         67       </UCIgaschmbudget_2D_L4_s>
+<UCIgaschmbudget_2D_L4_e nlev="80">         80       </UCIgaschmbudget_2D_L4_e>
 
 <!-- BSINGH - ndrop.F90 "repeated g1 equation" bug fix flag -->
 <fix_g1_err_ndrop>             .false.  </fix_g1_err_ndrop>
@@ -1510,7 +1533,6 @@
 
 <dt_tracer_factor    use_MMF="1" dyn_target="theta-l" hgrid="ne30np4"> 4 </dt_tracer_factor>
 <hypervis_subcycle_q use_MMF="1" dyn_target="theta-l" hgrid="ne30np4"> 4 </hypervis_subcycle_q>
-
 
 <!-- ================================================================== -->
 <!-- 
@@ -1802,7 +1824,7 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <use_hetfrz_classnuc               >.false.</use_hetfrz_classnuc>
 <hist_hetfrz_classnuc              >.false.</hist_hetfrz_classnuc>
 <use_hetfrz_classnuc phys="default">.true.</use_hetfrz_classnuc>
-<use_hetfrz_classnuc MMF_microphysics_scheme="sam1mom">.false.</use_hetfrz_classnuc>
+<use_hetfrz_classnuc use_MMF="1">.false.</use_hetfrz_classnuc>
 <use_preexisting_ice               >.false.</use_preexisting_ice>
 <micro_mg_dcs_tdep phys="default">.true.</micro_mg_dcs_tdep>
 <microp_aero_wsub_scheme               >1</microp_aero_wsub_scheme>
@@ -1855,20 +1877,24 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 
 <clubb_ipdf_call_placement phys="default"> 2         </clubb_ipdf_call_placement>
 <cld_sed phys="default" microphys="mg2"> 1.0D0      </cld_sed>
-<effgw_beres phys="default"> 0.35       </effgw_beres>
-<gw_convect_hcf               > 10.0       </gw_convect_hcf>
+<effgw_beres           phys="default" > 0.35  </effgw_beres>
+<gw_convect_hcf        phys="default" > 10.0  </gw_convect_hcf>
+<hdepth_scaling_factor phys="default" > 0.50  </hdepth_scaling_factor>
+<hdepth_scaling_factor phys="default" use_MMF="1" >  1.0  </hdepth_scaling_factor>
 <effgw_oro phys="default"> 0.375      </effgw_oro>
 <use_gw_energy_fix phys="default"> .true.      </use_gw_energy_fix>
 <clubb_C14 phys="default"> 2.5D0      </clubb_C14>
 <clubb_tk1 phys="default"> 268.15D0   </clubb_tk1>
-<dust_emis_fact phys="default"> 12.8D0     </dust_emis_fact>
-<linoz_psc_T               > 198.0      </linoz_psc_T>
+<dust_emis_fact phys="default"> 13.8D0     </dust_emis_fact>
+<linoz_psc_T               > 198.0D0    </linoz_psc_T>
+<lght_no_prd_factor        > 5.0D0    </lght_no_prd_factor>
 <micro_mincdnc phys="default" microphys="mg2"> 10.D6      </micro_mincdnc>
 <nucleate_ice_subgrid phys="default" clubb_sgs="1" microphys="p3" >1.35D0</nucleate_ice_subgrid>
 <sscav_tuning phys="default" microphys="p3">.false.</sscav_tuning>
 <p3_mincdnc phys="default" microphys="p3"> 20.D6      </p3_mincdnc>
 <p3_wbf_coeff phys="default" clubb_sgs="1" microphys="p3"> 1.0      </p3_wbf_coeff>
-<p3_nc_autocon_expon  phys="default" clubb_sgs="1" microphys="p3">  -1.20D0   </p3_nc_autocon_expon>
+<p3_nc_autocon_expon  phys="default" clubb_sgs="1" microphys="p3">  -1.10D0   </p3_nc_autocon_expon>
+<n_so4_monolayers_pcage  phys="default" clubb_sgs="1" microphys="p3">  3.0D0   </n_so4_monolayers_pcage>
 <clubb_C1 phys="default"> 2.4        </clubb_C1>
 <clubb_C11 phys="default"> 0.70       </clubb_C11>
 <clubb_C11b phys="default"> 0.20       </clubb_C11b>
@@ -1892,7 +1918,7 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <seasalt_emis_scale phys="default" chem="linoz_mam4_resus_mom_soag"> 0.6D0      </seasalt_emis_scale>
 <seasalt_emis_scale phys="default" chem="superfast_mam4_resus_mom_soag"> 0.6D0  </seasalt_emis_scale>
 <seasalt_emis_scale phys="default" chem="chemuci_linozv3_mam5_vbs"> 0.55D0 </seasalt_emis_scale>
-<dms_emis_scale phys="default"> 1.0D0 </dms_emis_scale>
+<dms_emis_scale phys="default"> 2.0D0 </dms_emis_scale>
 <zmconv_trigdcape_ull phys="default"> .true.     </zmconv_trigdcape_ull>
 <zmconv_c0_lnd phys="default" clubb_sgs="1" microphys="p3"> 0.0020D0   </zmconv_c0_lnd>
 <zmconv_c0_ocn phys="default" clubb_sgs="1" microphys="p3"> 0.0020D0   </zmconv_c0_ocn>
@@ -1913,5 +1939,9 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <cosp_ncolumns phys="default"> 10 </cosp_ncolumns>
 <cflx_cpl_opt phys="default"> 2 </cflx_cpl_opt>
 <tropopause_E90_thrd phys="default"> 80.0e-9 </tropopause_E90_thrd>
+
+<!-- set following parameters to go with rough topography -->
+<pgrad_correction phys="default"> 1 </pgrad_correction>
+<hv_ref_profiles phys="default"> 6 </hv_ref_profiles>
 
 </namelist_defaults>

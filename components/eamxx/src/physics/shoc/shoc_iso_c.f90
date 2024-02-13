@@ -24,7 +24,7 @@ contains
   end subroutine append_precision
 
   subroutine shoc_init_c(nlev, gravit, rair, rh2o, cpair, &
-                         zvir, latvap, latice, karman) bind(c)
+                         zvir, latvap, latice, karman, p0) bind(c)
     use shoc, only: shoc_init, npbl
 
     integer(kind=c_int), value, intent(in) :: nlev ! number of levels
@@ -37,20 +37,21 @@ contains
     real(kind=c_real), value, intent(in)  :: latvap ! latent heat of vaporization
     real(kind=c_real), value, intent(in)  :: latice ! latent heat of fusion
     real(kind=c_real), value, intent(in)  :: karman ! Von Karman's constant
+    real(kind=c_real), value, intent(in)  :: p0     ! Reference pressure
 
     real(kind=c_real) :: pref_mid(nlev) ! unused values
 
     pref_mid = 0
     call shoc_init(nlev, gravit, rair, rh2o, cpair, &
-                   zvir, latvap, latice, karman, &
+                   zvir, latvap, latice, karman, p0, &
                    pref_mid, nlev, 1)
     npbl = nlev ! set pbl layer explicitly so we don't need pref_mid.
   end subroutine shoc_init_c
 
   ! shoc_init for shoc_main_bfb testing
   subroutine shoc_init_for_main_bfb_c(nlev, gravit, rair, rh2o, cpair, &
-                                      zvir, latvap, latice, karman,pref_mid,&
-                                      nbot_shoc, ntop_shoc) bind(c)
+                                      zvir, latvap, latice, karman, p0, &
+                                      pref_mid, nbot_shoc, ntop_shoc) bind(c)
     use shoc, only: shoc_init
 
     integer(kind=c_int), value, intent(in) :: nlev ! number of levels
@@ -65,10 +66,11 @@ contains
     real(kind=c_real), value, intent(in)  :: latvap ! latent heat of vaporization
     real(kind=c_real), value, intent(in)  :: latice ! latent heat of fusion
     real(kind=c_real), value, intent(in)  :: karman ! Von Karman's constant
+    real(kind=c_real), value, intent(in)  :: p0     ! Reference pressure
 
     real(kind=c_real), intent(in), dimension(nlev) :: pref_mid ! reference pressures at midpoints
     call shoc_init(nlev, gravit, rair, rh2o, cpair, &
-                   zvir, latvap, latice, karman, &
+                   zvir, latvap, latice, karman, p0, &
                    pref_mid, nbot_shoc, ntop_shoc)
   end subroutine shoc_init_for_main_bfb_c
 
@@ -292,7 +294,7 @@ contains
   end subroutine check_tke_c
 
   subroutine shoc_tke_c(shcol, nlev, nlevi, dtime, wthv_sec, shoc_mix, dz_zi, &
-                        dz_zt, pres, u_wind, v_wind, brunt, obklen, zt_grid, &
+                        dz_zt, pres, tabs, u_wind, v_wind, brunt, zt_grid, &
                         zi_grid, pblh, tke, tk, tkh, isotropy) bind(C)
     use shoc, only: shoc_tke
 
@@ -305,10 +307,10 @@ contains
     real(kind=c_real), intent(in) :: dz_zi(shcol,nlevi)
     real(kind=c_real), intent(in) :: dz_zt(shcol,nlev)
     real(kind=c_real), intent(in) :: pres(shcol,nlev)
+    real(kind=c_real), intent(in) :: tabs(shcol,nlev)
     real(kind=c_real), intent(in) :: u_wind(shcol,nlev)
     real(kind=c_real), intent(in) :: v_wind(shcol,nlev)
     real(kind=c_real), intent(in) :: brunt(shcol,nlev)
-    real(kind=c_real), intent(in) :: obklen(shcol)
     real(kind=c_real), intent(in) :: zt_grid(shcol,nlev)
     real(kind=c_real), intent(in) :: zi_grid(shcol,nlevi)
     real(kind=c_real), intent(in) :: pblh(shcol)
@@ -319,7 +321,7 @@ contains
     real(kind=c_real), intent(out) :: isotropy(shcol,nlev)
 
     call shoc_tke(shcol, nlev, nlevi, dtime, wthv_sec, shoc_mix, dz_zi, &
-         dz_zt, pres, u_wind, v_wind, brunt, obklen, zt_grid, &
+         dz_zt, pres, tabs, u_wind, v_wind, brunt, zt_grid, &
          zi_grid, pblh, tke, tk, tkh, isotropy)
 
   end subroutine shoc_tke_c
@@ -392,15 +394,15 @@ contains
 
   end subroutine adv_sgs_tke_c
 
-  subroutine eddy_diffusivities_c(nlev, shcol, obklen, pblh, zt_grid, &
+  subroutine eddy_diffusivities_c(nlev, shcol, pblh, zt_grid, tabs, &
                           shoc_mix, sterm_zt, isotropy, tke, tkh, tk) bind (C)
     use shoc, only: eddy_diffusivities
 
     integer(kind=c_int), intent(in), value :: nlev
     integer(kind=c_int), intent(in), value :: shcol
-    real(kind=c_real), intent(in) :: obklen(shcol)
     real(kind=c_real), intent(in) :: pblh(shcol)
     real(kind=c_real), intent(in) :: zt_grid(shcol,nlev)
+    real(kind=c_real), intent(in) :: tabs(shcol,nlev)
     real(kind=c_real), intent(in) :: shoc_mix(shcol,nlev)
     real(kind=c_real), intent(in) :: sterm_zt(shcol,nlev)
     real(kind=c_real), intent(in) :: isotropy(shcol,nlev)
@@ -409,7 +411,7 @@ contains
     real(kind=c_real), intent(out) :: tkh(shcol,nlev)
     real(kind=c_real), intent(out) :: tk(shcol,nlev)
 
-    call eddy_diffusivities(nlev, shcol, obklen, pblh, zt_grid, &
+    call eddy_diffusivities(nlev, shcol, pblh, zt_grid, tabs, &
                         shoc_mix, sterm_zt, isotropy, tke, tkh, tk)
 
   end subroutine eddy_diffusivities_c
@@ -501,7 +503,7 @@ contains
                                 zt_grid,zi_grid,&
                                 se_b,ke_b,wv_b,wl_b,&
                                 se_a,ke_a,wv_a,wl_a,&
-                                wthl_sfc,wqw_sfc,rho_zt,&
+                                wthl_sfc,wqw_sfc,rho_zt,pint,&
                                 te_a,te_b) bind (C)
     use shoc, only: shoc_energy_total_fixer
 
@@ -524,6 +526,7 @@ contains
     real(kind=c_real), intent(in) :: zt_grid(shcol,nlev)
     real(kind=c_real), intent(in) :: zi_grid(shcol,nlevi)
     real(kind=c_real), intent(in) :: rho_zt(shcol,nlev)
+    real(kind=c_real), intent(in) :: pint(shcol,nlevi)
 
     real(kind=c_real), intent(out) :: te_a(shcol)
     real(kind=c_real), intent(out) :: te_b(shcol)
@@ -532,7 +535,7 @@ contains
                                  zt_grid,zi_grid,&
                                  se_b,ke_b,wv_b,wl_b,&
                                  se_a,ke_a,wv_a,wl_a,&
-                                 wthl_sfc,wqw_sfc,rho_zt,&
+                                 wthl_sfc,wqw_sfc,rho_zt,pint,&
                                  te_a,te_b)
 
   end subroutine shoc_energy_total_fixer_c
@@ -1263,8 +1266,8 @@ contains
 
     call diag_second_moments_lbycond(shcol, wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, ustar2, wstar, wthl_sec, wqw_sec, uw_sec, vw_sec, wtke_sec, thl_sec, qw_sec, qwthl_sec)
   end subroutine diag_second_moments_lbycond_c
-  
-  subroutine diag_second_moments_c(shcol, nlev, nlevi, thetal, qw, u_wind, v_wind, tke, isotropy, tkh, tk, dz_zi, zt_grid, zi_grid, shoc_mix, thl_sec, qw_sec, & 
+
+  subroutine diag_second_moments_c(shcol, nlev, nlevi, thetal, qw, u_wind, v_wind, tke, isotropy, tkh, tk, dz_zi, zt_grid, zi_grid, shoc_mix, thl_sec, qw_sec, &
                                    wthl_sec, wqw_sec, qwthl_sec, uw_sec, vw_sec, wtke_sec, w_sec) bind(C)
     use shoc, only : diag_second_moments
 
@@ -1278,7 +1281,7 @@ contains
                              qw_sec, wthl_sec, wqw_sec, qwthl_sec, uw_sec, vw_sec, wtke_sec, w_sec)
 
   end subroutine diag_second_moments_c
-  
+
   subroutine diag_second_shoc_moments_c(shcol, nlev, nlevi, thetal, qw, u_wind, v_wind, tke, isotropy, tkh, tk, dz_zi, zt_grid, &
                                         zi_grid, shoc_mix, wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, thl_sec, qw_sec, wthl_sec, wqw_sec, &
                                         qwthl_sec, uw_sec, vw_sec, wtke_sec, w_sec) bind(C)
@@ -1379,7 +1382,7 @@ contains
     real(kind=c_real) , intent(inout), dimension(shcol) :: pblh
     logical(kind=c_bool) , intent(inout), dimension(shcol) :: check
     real(kind=c_real) , intent(inout), dimension(shcol, nlev) :: rino
-    
+
     ! setup npbl
     npbl = nlev
     call pblintd_surf_temp(shcol, nlev, nlevi, z, ustar, obklen, kbfs, thv, tlv, pblh, check, rino)
@@ -1412,5 +1415,15 @@ contains
     npbl = npbl_in
     call pblintd(shcol, nlev, nlevi, z, zi, thl, ql, q, u, v, ustar, obklen, kbfs, cldn, pblh)
   end subroutine pblintd_c
+
+  subroutine compute_shoc_temperature_c(shcol, nlev, thetal, ql, inv_exner, tabs) bind(C)
+    use shoc, only : compute_shoc_temperature
+
+    integer(kind=c_int) , value, intent(in) :: shcol, nlev
+    real(kind=c_real) , intent(in), dimension(shcol, nlev) :: thetal, ql, inv_exner
+    real(kind=c_real) , intent(out), dimension(shcol, nlev) :: tabs
+
+    call compute_shoc_temperature(shcol, nlev, thetal, ql, inv_exner, tabs)
+  end subroutine compute_shoc_temperature_c
 end module shoc_iso_c
 

@@ -1,4 +1,0 @@
-
-# shr_reprosum_mod.F90 is built in csm_share with gmake 
-shr_reprosum_mod.o: shr_reprosum_mod.F90
-	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -qnosmp $<

@@ -165,6 +165,8 @@ subroutine iop_broadcast()
   call mpibcast(have_q,1,mpilog,0,mpicom)
   call mpibcast(have_u,1,mpilog,0,mpicom)
   call mpibcast(have_v,1,mpilog,0,mpicom)
+  call mpibcast(have_uls,1,mpilog,0,mpicom)
+  call mpibcast(have_vls,1,mpilog,0,mpicom)
   call mpibcast(have_omega,1,mpilog,0,mpicom)
   call mpibcast(have_cldliq,1,mpilog,0,mpicom)
   call mpibcast(have_divt,1,mpilog,0,mpicom)
@@ -182,6 +184,8 @@ subroutine iop_broadcast()
   call mpibcast(qobs,plev,mpir8,0,mpicom)
   call mpibcast(uobs,plev,mpir8,0,mpicom)
   call mpibcast(vobs,plev,mpir8,0,mpicom)
+  call mpibcast(uls,plev,mpir8,0,mpicom)
+  call mpibcast(vls,plev,mpir8,0,mpicom)
   call mpibcast(cldliqobs,plev,mpir8,0,mpicom)
   call mpibcast(wfld,plev,mpir8,0,mpicom) 
   
@@ -189,6 +193,7 @@ subroutine iop_broadcast()
   call mpibcast(divq,plev,mpir8,0,mpicom)
   call mpibcast(divt3d,plev,mpir8,0,mpicom)
   call mpibcast(divq3d,plev,mpir8,0,mpicom)
+  call mpibcast(scmlat,1,mpir8,0,mpicom)
   
 #endif
 
@@ -418,6 +423,10 @@ subroutine apply_iop_forcing(elem,hvcoord,hybrid,tl,n,t_before_advance,nets,nete
       call outfld('QDIFF',qdiff_dyn,plon,begchunk)
     endif
 
+    if (iop_coriolis) then
+      call iop_apply_coriolis(elem,t1,nelemd_todo,np_todo,dt)
+    endif
+
     call outfld('TOBS',tobs,plon,begchunk)
     call outfld('QOBS',qobs,plon,begchunk)
     call outfld('DIVQ',divq,plon,begchunk)
@@ -472,6 +481,7 @@ subroutine iop_domain_relaxation(elem,hvcoord,hybrid,t1,dp,nelemd_todo,np_todo,d
   real (kind=real_kind), dimension(nlev) :: domain_q, domain_t, domain_u, domain_v, rtau
   real (kind=real_kind), dimension(nlev) :: relax_t, relax_q, relax_u, relax_v, iop_pres
   real (kind=real_kind), dimension(np,np,nlev) :: temperature, Rstar, pnh, exner, dp
+  real (kind=real_kind) :: uref, vref
   integer :: ie, i, j, k
 
   ! Compute pressure for IOP observations
@@ -522,9 +532,18 @@ subroutine iop_domain_relaxation(elem,hvcoord,hybrid,t1,dp,nelemd_todo,np_todo,d
     rtau(k) = iop_nudge_tscale
     rtau(k) = max(dt,rtau(k))
 
+    ! If LS/geostropic winds are available then nudge to those
+    if (have_uls .and. have_vls) then
+      uref = uls(k)
+      vref = vls(k)
+    else
+      uref = uobs(k)
+      vref = vobs(k)
+    endif
+
     ! Compute relaxation for winds
-    relax_u(k) = -(domain_u(k) - uobs(k))/rtau(k)
-    relax_v(k) = -(domain_v(k) - vobs(k))/rtau(k)
+    relax_u(k) = -(domain_u(k) - uref)/rtau(k)
+    relax_v(k) = -(domain_v(k) - vref)/rtau(k)
 
     ! Restrict nudging of T and Q to certain levels if requested by user
     ! pmidm1 variable is in unitis of [Pa], while iop_nudge_tq_low/high
@@ -584,7 +603,51 @@ subroutine iop_domain_relaxation(elem,hvcoord,hybrid,t1,dp,nelemd_todo,np_todo,d
 
 end subroutine iop_domain_relaxation
 
-!=========================================================================
+subroutine iop_apply_coriolis(elem,t1,nelemd_todo,np_todo,dt)
+
+  ! Subroutine to provide coriolis forcing to u and v winds, using geostrophic
+  !  winds specified in IOP forcing file.
+
+  use kinds, only : real_kind
+  use iop_data_mod
+  use dimensions_mod, only : np, np, nlev, npsq, nelem
+  use parallel_mod, only: global_shared_buf, global_shared_sum
+  use global_norms_mod, only: wrap_repro_sum
+  use hybvcoord_mod, only : hvcoord_t
+  use hybrid_mod, only : hybrid_t
+  use element_mod, only : element_t
+  use physical_constants, only : Cp, Rgas, DD_PI
+  use shr_const_mod, only: shr_const_omega
+
+  ! Input/Output variables
+  type (element_t)     , intent(inout), target :: elem(:)
+  integer, intent(in) :: nelemd_todo, np_todo, t1
+  real (kind=real_kind), intent(in):: dt
+
+  ! local variables
+  integer :: i,j,k, ie
+
+  real(kind=real_kind) :: fcor, u_cor, v_cor
+
+  ! compute coriolis force
+  fcor = 2._real_kind*shr_const_omega*sin(scmlat*DD_PI/180._real_kind)
+
+  do ie=1,nelemd_todo
+    do j=1,np_todo
+      do i=1,np_todo
+        do k=1,nlev
+
+          u_cor = fcor * (elem(ie)%state%v(i,j,2,k,t1) - vls(k))
+          v_cor = fcor * (elem(ie)%state%v(i,j,1,k,t1) - uls(k))
+
+          elem(ie)%state%v(i,j,1,k,t1) = elem(ie)%state%v(i,j,1,k,t1) + u_cor * dt
+          elem(ie)%state%v(i,j,2,k,t1) = elem(ie)%state%v(i,j,2,k,t1) - v_cor * dt
+        enddo
+      enddo
+    enddo
+  enddo
+
+end subroutine iop_apply_coriolis
 
 #ifdef MODEL_THETA_L
 subroutine crm_resolved_turb(elem,hvcoord,hybrid,t1,&

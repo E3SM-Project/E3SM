@@ -10,10 +10,10 @@ time_stepping:
 
 initial_conditions:
   Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
-  topography_filename: ${TOPO_DATA_DIR}/USGS-gtopo30_ne4np4pg2_16x_converted.c20200527.nc
+  topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
 
 atmosphere_processes:
-  atm_procs_list: (Dynamics)
+  atm_procs_list: [Dynamics]
   Dynamics:
     Type: Homme
     Moisture: moist
@@ -26,5 +26,5 @@ grids_manager:
 
 # The parameters for I/O control
 Scorpio:
-  output_yaml_files: ["homme_standalone_output.yaml"]
+  output_yaml_files: ["output.yaml"]
 ...

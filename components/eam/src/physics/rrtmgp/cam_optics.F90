@@ -450,7 +450,11 @@ contains
       use physics_types, only: physics_state
       use physics_buffer, only: physics_buffer_desc
       use aer_rad_props, only: aer_rad_props_sw
-      use radconstants, only: nswbands
+      use radconstants, only: nswbands, idx_sw_diag
+#if defined(MMF_SAMXX) || defined(MMF_PAM)
+      use prescribed_macv2, only: do_macv2sp
+#endif
+      use cam_history, only: outfld
       integer, intent(in) :: icall
       real(r8), intent(in):: dt
       type(physics_state), intent(in) :: state
@@ -469,12 +473,23 @@ contains
       !
       ! NOTE: dimension ordering is different than for cloud optics!
       real(r8), dimension(pcols,0:pver,nswbands) :: tau, tau_w, tau_w_g, tau_w_f
+      ! NOTE: MACv2 array only has pver levels, so initialize differently
+      real(r8), dimension(pcols,1:pver,nswbands) :: mac_tau, mac_tau_w, &
+           mac_tau_w_g, mac_tau_w_f
+      real(r8) :: itau
+      real(r8) :: itauw(2)
+      real(r8) :: itaug(2)
 
       integer :: ncol
       integer :: icol, ilay
+      integer :: isw              ! additional loop indices
 
       ! Everyone needs a name
       character(len=*), parameter :: subroutine_name = 'set_aerosol_optics_sw'
+
+#if !defined(MMF_SAMXX) && !defined(MMF_PAM)
+      logical :: do_macv2sp = .false.
+#endif
 
       ncol = state%ncol
 
@@ -486,6 +501,59 @@ contains
       call aer_rad_props_sw(icall, dt, state, pbuf, &
            count(night_indices > 0), night_indices, is_cmip6_volc, &
            tau, tau_w, tau_w_g, tau_w_f, clear_rh=clear_rh)
+
+      ! Combine MACv2-SP aerosol optical properties with natural aerosols
+      ! note that AEROD_v is already written to history file in aer_rad_props_sw
+      ! so the MACv2SP effect is not included
+               
+      if ( (icall == 0) .AND. (do_macv2sp) ) then
+         mac_tau     = 0._r8
+         mac_tau_w   = 0._r8
+         mac_tau_w_g = 0._r8
+         mac_tau_w_f = 0._r8
+
+         call outfld('NAT_TAU',     tau(    :,1:pver,idx_sw_diag), pcols, state%lchnk)
+         call outfld('NAT_TAU_W',   tau_w(  :,1:pver,idx_sw_diag), pcols, state%lchnk)
+         call outfld('NAT_TAU_W_G', tau_w_g(:,1:pver,idx_sw_diag), pcols, state%lchnk)
+         call outfld('NAT_TAU_W_F', tau_w_f(:,1:pver,idx_sw_diag), pcols, state%lchnk)
+         
+         call set_macv2_aerosol_optics(state, pbuf, mac_tau, &
+              mac_tau_w, mac_tau_w_g, mac_tau_w_f)
+
+         call outfld('MAC_TAU',     mac_tau(    :,1:pver,idx_sw_diag), pcols, state%lchnk)
+         call outfld('MAC_TAU_W',   mac_tau_w(  :,1:pver,idx_sw_diag), pcols, state%lchnk)
+         call outfld('MAC_TAU_W_G', mac_tau_w_g(:,1:pver,idx_sw_diag), pcols, state%lchnk)
+         call outfld('MAC_TAU_W_F', mac_tau_w_f(:,1:pver,idx_sw_diag), pcols, state%lchnk)
+
+         do isw = 1, nswbands
+            do ilay = 1, pver
+               do icol = 1, ncol
+                  ! A quick reference for how to combine optical properties
+                  ! t = tau; w = SSA; g = asymmetry parameter
+                  ! t = t1 + t2
+                  ! w = (w1*t1 + w2*t2) / (t1 + t2)
+                  ! g = (g1*w1*t1 + g2*w2*t2) / (w1*t1 + w2*t2)
+                  !
+                  ! So if tau_w_g = (g1*w1*t1 + g2*tw*t2)
+                  !       tau_w   = (w1*t1 + w2*t2)
+                  !       tau     = (t1 + t2)
+                  ! Then, g = tau_w_g / tau_w, w = tau_w / tau, and t = tau, as desired
+                  tau_w_f(icol,ilay,isw) = tau_w_f(icol,ilay,isw) + mac_tau_w_f(icol,ilay,isw)
+                  tau_w_g(icol,ilay,isw) = tau_w_g(icol,ilay,isw) + mac_tau_w_g(icol,ilay,isw)
+                  tau_w(  icol,ilay,isw) = tau_w(  icol,ilay,isw) + mac_tau_w(  icol,ilay,isw)
+                  tau(    icol,ilay,isw) = tau(    icol,ilay,isw) + mac_tau(    icol,ilay,isw)
+                                                
+               end do
+            end do
+         end do
+                                                             
+         !these 3 variables has pver+1 levels
+         call outfld('AER_TAU',     tau(    :,1:pver,idx_sw_diag), pcols, state%lchnk)
+         call outfld('AER_TAU_W',   tau_w(  :,1:pver,idx_sw_diag), pcols, state%lchnk)
+         call outfld('AER_TAU_W_G', tau_w_g(:,1:pver,idx_sw_diag), pcols, state%lchnk)
+         call outfld('AER_TAU_W_F', tau_w_f(:,1:pver,idx_sw_diag), pcols, state%lchnk)
+
+      end if
 
       ! Extract quantities from products
       do icol = 1,ncol
@@ -535,6 +603,99 @@ contains
       call aer_rad_props_lw(is_cmip6_volc, icall, dt, state, pbuf, tau)
 
    end subroutine set_aerosol_optics_lw
+
+   !----------------------------------------------------------------------------
+
+   subroutine set_macv2_aerosol_optics(state, pbuf, &
+                                       tau, tau_w, tau_w_g, tau_w_f)
+
+      use ppgrid,           only: pcols, pver
+      use physics_types,    only: physics_state
+      use physics_buffer,   only: physics_buffer_desc
+      use aer_rad_props,    only: aer_rad_props_sw
+      use radconstants,     only: nswbands, wavenum_sw_lower, wavenum_sw_upper
+#if defined(MMF_SAMXX) || defined(MMF_PAM)
+      use prescribed_macv2, only: do_macv2sp, sp_aop_profile, swbandnum
+#endif
+      use time_manager,     only: get_curr_date, get_curr_calday
+      use physconst,        only: gravit
+      use cam_history,      only: addfld, outfld
+      use phys_grid,        only: get_rlat_all_p, get_rlon_all_p
+      
+      type(physics_state), intent(in)         :: state
+      type(physics_buffer_desc), pointer      :: pbuf(:)
+      real(r8), intent(out), dimension(:,:,:) :: tau, tau_w, tau_w_g, tau_w_f
+
+      ! add variables for MACv2-SP
+      integer  :: yr, mon, day     ! year, month, and day components of date
+      integer  :: ncsec            ! current time of day [seconds]
+      real(r8) :: calday           ! current calendar day
+      real(r8) :: clat(pcols)      ! current latitudes(radians)
+      real(r8) :: clon(pcols)      ! current longitudes(radians)
+      integer  :: isw              ! additional loop indices
+      real(r8) :: lambda           !SW wavelengh input to MACV2
+      real(r8) :: year_fr
+      real(r8) :: aod_prof(pcols,pver,nswbands)  ! profile of aerosol optical depth
+      real(r8) :: ssa_prof(pcols,pver,nswbands)  ! profile of single scattering albedo
+      real(r8) :: asy_prof(pcols,pver,nswbands)  ! profile of asymmetry parameter
+      integer  :: ncol
+      integer  :: icol, ilay
+
+      ! Subroutine name for error messages
+      character(len=*), parameter :: subroutine_name = 'set_macv2_aerosol_optics'
+
+#if !defined(MMF_SAMXX) && !defined(MMF_PAM)
+      logical :: do_macv2sp = .false.
+      character(len=5) :: swbandnum(nswbands) =(/'_sw01','_sw02','_sw03','_sw04','_sw05','_sw06','_sw07','_sw08','_sw09','_sw10','_sw11','_sw12','_sw13','_sw14'/)
+#endif
+
+      if ( .not. do_macv2sp ) return
+
+      ! calculate MACv2-SP aerosol direct effects 
+      ! get year fraction for MACv2-SP's prescribed annual cycle and year-to-year variability
+
+      ncol    = state%ncol
+
+      call get_curr_date(yr, mon, day, ncsec)
+      calday  = get_curr_calday()
+      year_fr = yr + calday/365.0_r8
+
+      call get_rlat_all_p(state%lchnk, ncol, clat(1:ncol))
+      call get_rlon_all_p(state%lchnk, ncol, clon(1:ncol))
+
+      do isw = 1, nswbands
+               
+      !get the bin-center wavelength from the wave number bin  (in the units of nm)
+      !this is an input to the sp_aop_profile subroutine of MACv2-SP
+         lambda = 10.0_r8**7*( wavenum_sw_lower(isw)**(-1) + wavenum_sw_upper(isw)**(-1) )/2.0_r8 
+
+#if defined(MMF_SAMXX) || defined(MMF_PAM)
+         call sp_aop_profile (ncol, lambda, state%phis/gravit, clon, clat, year_fr, state%zm, &
+              aod_prof(:,:,isw), ssa_prof(:,:,isw), asy_prof(:,:,isw), state%lchnk, isw)
+#endif
+      ! state%phis/gravit for orography in [m]
+
+      ! output diagnostic variables for MACv2-SP, only for the mid-visible wavelength
+         call outfld('MACv2_aod'//swbandnum(isw),  aod_prof(:,:,isw),  pcols, state%lchnk)
+         call outfld('MACv2_ssa'//swbandnum(isw),  ssa_prof(:,:,isw),  pcols, state%lchnk)
+         call outfld('MACv2_asy'//swbandnum(isw),  asy_prof(:,:,isw),  pcols, state%lchnk)
+
+      ! prepare arrays to be combined with EAM's aerosol optical parameters 
+         ! e.g, single-scattering albedo multiplied by optical depth
+         do icol = 1, ncol
+            do ilay = 1, pver
+               tau(    icol, ilay, isw) = aod_prof(icol, ilay, isw)
+               tau_w(  icol, ilay, isw) = aod_prof(icol, ilay, isw) * ssa_prof(icol, ilay, isw)
+               tau_w_g(icol, ilay, isw) = tau_w(   icol, ilay, isw) * asy_prof(icol, ilay, isw)
+               tau_w_f(icol, ilay, isw) = tau_w_g( icol, ilay, isw) * asy_prof(icol, ilay, isw)
+            end do
+         end do
+         
+      end do ! isw = 1, nswbands
+
+      
+
+   end subroutine set_macv2_aerosol_optics
 
    !----------------------------------------------------------------------------
    !----------------------------------------------------------------------------
