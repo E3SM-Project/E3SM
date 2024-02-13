@@ -20,6 +20,6 @@ In other words, the following options are needed:
 ```shell
 ./atmchange atm_procs_list=(sc_import,nudging,homme,physics,sc_export)
 ./atmchange nudging_fields=U,V
-./atmchange nudging_filename=/path/to/nudging_data_ne4pg2_L72.nc
+./atmchange nudging_filenames_patterns=/path/to/nudging_data_ne4pg2_L72.nc
 ./atmchange nudging_refine_remap_mapfile=/another/path/to/mapping_file_ne4pg2_to_ne120pg2.nc
 ```

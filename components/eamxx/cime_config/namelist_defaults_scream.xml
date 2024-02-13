@@ -239,7 +239,7 @@ be lost if SCREAM_HACK_XML is not enabled.
 
     <!-- nudging -->
     <nudging inherit="atm_proc_base">
-      <nudging_filename type="array(string)"/>
+      <nudging_filenames_patterns type="array(string)"/>
       <nudging_fields type="array(string)" doc="List of fields to be nudged.  Note, syntax of 'A:B' represents nudging field A with data from field B in files, syntax of 'A' assumes that nudging file has the same variables name as EAMxx"/>
       <nudging_timescale type="integer" doc="Timescale to apply nudging tendencies, 0: full replacement, >0: actual timescale">0</nudging_timescale>
       <use_nudging_weights type="logical" doc="Flag for nudging weights option">false</use_nudging_weights>
@@ -250,7 +250,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     TIME_DEPENDENT_3D_PROFILE: The dataset contains a time-varying pressure profile, variable name 'p_mid' with dimensions (time,ncol,nlev).
     STATIC_1D_VERTICAL_PROFILE: The dataset uses a fixed in time single pressure profile, variable name 'p_lev' with dimension (nlev).">TIME_DEPENDENT_3D_PROFILE</source_pressure_type>
       <source_pressure_file type="string" doc="If STATIC_1D_VERTICAL_PROFILE, this is an optional arg to point to a file with the source pressure levels defined.  
-    Default is to look for p_levs in the first nudging_filename file"/>
+    Default is to look for p_levs in the first nudging_filenames_patterns file"/>
       <nudging_refine_remap_mapfile
         type="string"
         doc="Refine-remapping mapfile from the source nudging dataset to the physics grid"

@@ -16,7 +16,7 @@ namespace scream
 Nudging::Nudging (const ekat::Comm& comm, const ekat::ParameterList& params)
   : AtmosphereProcess(comm, params)
 {
-  m_datafiles  = filename_glob(m_params.get<std::vector<std::string>>("nudging_filename"));
+  m_datafiles  = filename_glob(m_params.get<std::vector<std::string>>("nudging_filenames_patterns"));
   m_timescale = m_params.get<int>("nudging_timescale",0);
 
   m_fields_nudge = m_params.get<std::vector<std::string>>("nudging_fields");

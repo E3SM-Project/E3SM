@@ -14,7 +14,7 @@ atmosphere_processes:
   p3:
     max_total_ni: 720.0e3
   nudging:
-    nudging_filename: [shoc_p3_source_data_${POSTFIX}.INSTANT.nsteps_x${NUM_STEPS}.${RUN_T0}.nc]
+    nudging_filenames_patterns: [shoc_p3_source_data_${POSTFIX}.INSTANT.nsteps_x${NUM_STEPS}.${RUN_T0}.nc]
     nudging_fields: ["T_mid", "qv"]
     nudging_timescale: 1000
     use_nudging_weights: true
