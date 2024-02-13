@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-filename_prefix: homme_shoc_cld_p3_rrtmgp_dp_output
+filename_prefix: homme_shoc_cld_spa_p3_rrtmgp_dp_output
 Averaging Type: Instant
 Max Snapshots Per File: 1
 Fields:
@@ -25,6 +25,12 @@ Fields:
       # CLD
       - cldfrac_ice
       - cldfrac_tot
+      # SPA
+      - aero_g_sw
+      - aero_ssa_sw
+      - aero_tau_lw
+      - aero_tau_sw
+      - nccn
       # P3
       - bm
       - nc

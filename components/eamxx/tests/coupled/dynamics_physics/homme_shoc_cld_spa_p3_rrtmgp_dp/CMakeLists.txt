@@ -1,6 +1,6 @@
 include (ScreamUtils)
 
-set (TEST_BASE_NAME homme_shoc_cld_p3_rrtmgp_dp)
+set (TEST_BASE_NAME homme_shoc_cld_spa_p3_rrtmgp_dp)
 set (FIXTURES_BASE_NAME ${TEST_BASE_NAME}_generate_output_nc_files)
 
 # Get or create the dynamics lib
@@ -8,10 +8,10 @@ set (FIXTURES_BASE_NAME ${TEST_BASE_NAME}_generate_output_nc_files)
 CreateDynamicsLib("theta-l_kokkos"  4   128   10)
 
 # Create the test
-set (TEST_LABELS "dynamics;driver;shoc;cld;p3;rrtmgp;physics;dp")
-CreateUnitTest(homme_shoc_cld_p3_rrtmgp_dp "homme_shoc_cld_p3_rrtmgp_dp.cpp"
+set (TEST_LABELS "dynamics;driver;shoc;cld;spa;p3;rrtmgp;physics;dp")
+CreateUnitTest(homme_shoc_cld_spa_p3_rrtmgp_dp "homme_shoc_cld_spa_p3_rrtmgp_dp.cpp"
   LABELS ${TEST_LABELS}
-  LIBS cld_fraction shoc p3 scream_rrtmgp ${dynLibName} scream_control diagnostics
+  LIBS cld_fraction shoc spa p3 scream_rrtmgp ${dynLibName} scream_control diagnostics
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
   FIXTURES_SETUP_INDIVIDUAL ${FIXTURES_BASE_NAME}
 )
@@ -85,6 +85,6 @@ CompareNCFilesFamilyMpi (
   TEST_BASE_NAME ${TEST_BASE_NAME}
   FILE_META_NAME ${TEST_BASE_NAME}_output.INSTANT.nsteps_x${NUM_STEPS}.npMPIRANKS.${RUN_T0}.nc
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
-  LABELS dynamics physics shoc cld p3 rrtmgp dp
+  LABELS dynamics physics shoc cld spa p3 rrtmgp dp
   META_FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_npMPIRANKS_omp1
 )
