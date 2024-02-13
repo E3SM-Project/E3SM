@@ -57,3 +57,16 @@ CreateUnitTestFromExec (shoc_p3_nudged_remapped shoc_p3_nudging
       EXE_ARGS "--use-colour no --ekat-test-params ifile=input_nudging_remapped.yaml"
       FIXTURES_REQUIRED shoc_p3_source_data)
 
+# Run a test with nudging using data in hybrid coordinate and use glob pattern:
+set (NUM_STEPS  5)
+set (ATM_TIME_STEP 300)
+set (POSTFIX nudged_hybrid_glob)
+set (VERT_TYPE TIME_DEPENDENT_3D_HYBRID)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input_nudging_glob.yaml
+               ${CMAKE_CURRENT_BINARY_DIR}/input_nudging_hybrid_glob.yaml)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/output.yaml
+               ${CMAKE_CURRENT_BINARY_DIR}/output_nudged_hybrid_glob.yaml)
+CreateUnitTestFromExec (shoc_p3_nudged_hybrid_glob shoc_p3_nudging
+      EXE_ARGS "--use-colour no --ekat-test-params ifile=input_nudging_hybrid_glob.yaml"
+      FIXTURES_REQUIRED shoc_p3_source_data)
+

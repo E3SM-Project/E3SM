@@ -1,0 +1,60 @@
+%YAML 1.1
+---
+driver_options:
+  atmosphere_dag_verbosity_level: 5
+
+time_stepping:
+  time_step: ${ATM_TIME_STEP}
+  run_t0: ${RUN_T0}  # YYYY-MM-DD-XXXXX
+  number_of_steps: ${NUM_STEPS}
+
+atmosphere_processes:
+  schedule_type: Sequential
+  atm_procs_list: [shoc,p3,nudging]
+  p3:
+    max_total_ni: 720.0e3
+  nudging:
+    nudging_filenames_patterns: [./shoc_p3_source_data_nudged.INSTANT.nsteps_x*.nc]
+    nudging_fields: ["T_mid", "qv"]
+    nudging_timescale: 1000
+    use_nudging_weights: true
+    nudging_weights_file: nudging_weights_L128.nc      
+    source_pressure_type: ${VERT_TYPE}
+    source_pressure_file: vertical_remap.nc ## Only used in the case of STATIC_1D_VERTICAL_PROFILE
+  shoc:
+    lambda_low: 0.001
+    lambda_high: 0.04
+    lambda_slope: 2.65
+    lambda_thresh: 0.02
+    thl2tune: 1.0
+    qw2tune: 1.0
+    qwthl2tune: 1.0
+    w2tune: 1.0
+    length_fac: 0.5
+    c_diag_3rd_mom: 7.0
+    Ckh: 0.1
+    Ckm: 0.1
+
+grids_manager:
+  Type: Mesh Free
+  geo_data_source: IC_FILE
+  grids_names: [Physics GLL]
+  Physics GLL:
+    aliases: [Physics]
+    type: point_grid
+    number_of_global_columns:   218
+    number_of_vertical_levels:  128
+
+initial_conditions:
+  # The name of the file containing the initial conditions for this test.
+  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_128lev}
+  topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
+  surf_evap: 0.0
+  surf_sens_flux: 0.0
+  precip_ice_surf_mass: 0.0
+  precip_liq_surf_mass: 0.0
+
+# The parameters for I/O control
+Scorpio:
+  output_yaml_files: [output_${POSTFIX}.yaml]
+...
