@@ -14,13 +14,13 @@ jobs:
       fail-fast: false
       matrix:
         test: 
-          - "SMS_D_P4.ne4pg2_oQU480.F2010.singularity_gnu"
-          - "SMS_P4.ne4pg2_oQU480.F2010.singularity_gnu"
-          - "REP_P4.ne4pg2_oQU480.F2010.singularity_gnu"
-          - "ERS_P4.ne4pg2_oQU480.F2010.singularity_gnu"
-          - "ERP_P4.ne4pg2_oQU480.F2010.singularity_gnu"
-          - "PET_P4.ne4pg2_oQU480.F2010.singularity_gnu"
-          - "PEM_P4.ne4pg2_oQU480.F2010.singularity_gnu"
+          - SMS_D_P4.ne4pg2_oQU480.F2010.singularity_gnu
+          - SMS_P4.ne4pg2_oQU480.F2010.singularity_gnu
+          - REP_P4.ne4pg2_oQU480.F2010.singularity_gnu
+          - ERS_P4.ne4pg2_oQU480.F2010.singularity_gnu
+          - ERP_P4.ne4pg2_oQU480.F2010.singularity_gnu
+          - PET_P4.ne4pg2_oQU480.F2010.singularity_gnu
+          - PEM_P4.ne4pg2_oQU480.F2010.singularity_gnu
     container: 
       image: ghcr.io/mahf708/e3sm-imgs:v0.0.6
 
@@ -46,6 +46,8 @@ jobs:
         if: ${{ always() }}
         with:
           name: ${{ matrix.test }}
-          # Wildcard pattern to upload logs (can add more if desired)
           path: |
-            ~/projects/e3sm/scratch/**/*log.*
+            ~/projects/e3sm/scratch/${{ matrix.test }}*/TestStatus.log
+            ~/projects/e3sm/scratch/${{ matrix.test }}*/bld/*.bldlog.*
+            ~/projects/e3sm/scratch/${{ matrix.test }}*/run/*.log.*
+            ~/projects/e3sm/scratch/${{ matrix.test }}*/cprnc.out
