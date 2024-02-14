@@ -57,6 +57,7 @@ _TESTS = {
             "ERS_Ld20.f45_f45.IELMFATES.elm-fates",
             "ERS.hcru_hcru.I20TRGSWCNPRDCTCBC.elm-erosion",
             "ERS.f09_g16.IELMBC.elm-simple_decomp",
+            "ERS.hcru_hcru.IELM.elm-multi_inst",
             )
         },
 
