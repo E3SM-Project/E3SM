@@ -197,8 +197,14 @@ apply_iop_forcing(const Real dt)
 
   // Sanity checks since we will be switching between ekat::Pack
   // and Homme::Scalar view types
-  EKAT_ASSERT(NLEV  == ekat::npack<Pack>(total_levels));
-  EKAT_ASSERT(NLEVI == ekat::npack<Pack>(total_levels+1));
+  EKAT_ASSERT_MSG(NLEV  == ekat::npack<Pack>(total_levels),
+    "Error! Dimension for vectorized Homme levels does not match level dimension "
+    "of the packed views used here. Check that Pack typedef is using a pack size "
+    "consistent with Homme's vector size.\n");
+  EKAT_ASSERT_MSG(NLEVI == ekat::npack<Pack>(total_levels+1),
+    "Error! Dimension for vectorized Homme levels does not match level dimension "
+    "of the packed views used here. Check that Pack typedef is using a pack size "
+    "consistent with Homme's vector size.\n");
 
   // Hybrid coord values
   const auto ps0 = hvcoord.ps0;
