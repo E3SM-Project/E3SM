@@ -1,6 +1,7 @@
 #ifndef SPA_FUNCTIONS_HPP
 #define SPA_FUNCTIONS_HPP
 
+#include "control/intensive_observation_period.hpp"
 #include "share/grid/abstract_grid.hpp"
 #include "share/grid/remap/abstract_remapper.hpp"
 #include "share/io/scorpio_input.hpp"
@@ -28,6 +29,8 @@ struct SPAFunctions
   using MemberType = typename KT::MemberType;
 
   using gid_type = AbstractGrid::gid_type;
+
+  using iop_ptr_type = std::shared_ptr<control::IntensiveObservationPeriod>;
 
   template <typename S>
   using view_1d = typename KT::template view_1d<S>;
@@ -124,6 +127,33 @@ struct SPAFunctions
     SPAData         data;         // All spa fields
   }; // SPAInput
 
+  struct IOPReader {
+    IOPReader (iop_ptr_type& iop_,
+               const std::string file_name_,
+               const std::vector<Field>& io_fields_,
+               const std::shared_ptr<const AbstractGrid>& io_grid_)
+      : iop(iop_), file_name(file_name_)
+    {
+      field_mgr = std::make_shared<FieldManager>(io_grid_);
+      for (auto& f : io_fields_) {
+        field_mgr->add_field(f);
+        field_names.push_back(f.name());
+      }
+
+      // Set IO info for this grid and file in IOP object
+      iop->setup_io_info(file_name, io_grid_);
+    }
+
+    void read_variables(const int time_index) {
+      iop->read_fields_from_file_for_iop(file_name, field_names, util::TimeStamp(), field_mgr, time_index);
+    }
+
+    iop_ptr_type iop;
+    std::string file_name;
+    std::vector<std::string> field_names;
+    std::shared_ptr<FieldManager> field_mgr;
+  };
+
   // The output is really just SPAData, but for clarity it might
   // help to see a SPAOutput along a SPAInput in functions signatures
   using SPAOutput = SPAData;
@@ -135,10 +165,17 @@ struct SPAFunctions
   create_horiz_remapper (
       const std::shared_ptr<const AbstractGrid>& model_grid,
       const std::string& spa_data_file,
-      const std::string& map_file);
+      const std::string& map_file,
+      const bool use_iop = false);
 
   static std::shared_ptr<AtmosphereInput>
   create_spa_data_reader (
+      const std::shared_ptr<AbstractRemapper>& horiz_remapper,
+      const std::string& spa_data_file);
+
+  static std::shared_ptr<IOPReader>
+  create_spa_data_reader (
+      iop_ptr_type& iop,
       const std::shared_ptr<AbstractRemapper>& horiz_remapper,
       const std::string& spa_data_file);
 
@@ -151,14 +188,16 @@ struct SPAFunctions
     const SPAInput&   data_tmp,         // Temporary
     const SPAOutput&  data_out);
 
+  template<typename DataReader>
   static void update_spa_data_from_file(
-          AtmosphereInput&  spa_data_reader,
+          DataReader&       spa_data_reader,
     const int               time_index,
           AbstractRemapper& spa_horiz_interp,
           SPAInput&         spa_data);
 
+  template<typename DataReader>
   static void update_spa_timestate(
-          AtmosphereInput&  spa_data_reader,
+          DataReader&  spa_data_reader,
     const util::TimeStamp&  ts,
           AbstractRemapper& spa_horiz_interp,
           SPATimeState&     time_state,

@@ -21,7 +21,7 @@
  *
  * SPA or Simple Prescribed Aerosols provides a way to prescribe
  * aerosols for an atmospheric simulation using pre-computed data.
- * 
+ *
  * The data is typically provided at a frequency of monthly, and
  * does not necessarily have to be on the same horizontal or vertical
  * domain as the atmospheric simulation.
@@ -61,7 +61,7 @@
  * temporally interpolated in the last step and the set of hybrid coordinates (hyam and hybm)
  * that are used in EAM to construct the physics pressure profiles.
  * The SPA data is then projected onto the simulation pressure profile (pmid)
- * using EKAT linear interpolation. 
+ * using EKAT linear interpolation.
 -----------------------------------------------------------------*/
 
 namespace scream {
@@ -73,7 +73,8 @@ SPAFunctions<S,D>::
 create_horiz_remapper (
     const std::shared_ptr<const AbstractGrid>& model_grid,
     const std::string& spa_data_file,
-    const std::string& map_file)
+    const std::string& map_file,
+    const bool use_iop)
 {
   using namespace ShortFieldTagsNames;
 
@@ -91,12 +92,14 @@ create_horiz_remapper (
 
   const int ncols_model = model_grid->get_num_global_dofs();
   std::shared_ptr<AbstractRemapper> remapper;
-  EKAT_REQUIRE_MSG (ncols_data<=ncols_model,
-      "Error! We do not allow to coarsen spa data to fit the model. We only allow\n"
-      "       spa data to be at the same or coarser resolution as the model.\n");
-  if (ncols_data==ncols_model) {
+  if (ncols_data==ncols_model
+      or
+      use_iop /*IOP class defines it's own remapper for file data*/) {
     remapper = std::make_shared<IdentityRemapper>(horiz_interp_tgt_grid,IdentityRemapper::SrcAliasTgt);
   } else {
+    EKAT_REQUIRE_MSG (ncols_data<=ncols_model,
+      "Error! We do not allow to coarsen spa data to fit the model. We only allow\n"
+      "       spa data to be at the same or coarser resolution as the model.\n");
     // We must have a valid map file
     EKAT_REQUIRE_MSG (map_file!="",
         "ERROR: Spa data is on a different grid than the model one,\n"
@@ -155,6 +158,22 @@ create_spa_data_reader (
   return std::make_shared<AtmosphereInput>(spa_data_file,io_grid,io_fields,true);
 }
 
+template <typename S, typename D>
+std::shared_ptr<typename SPAFunctions<S,D>::IOPReader>
+SPAFunctions<S,D>::
+create_spa_data_reader (
+    iop_ptr_type& iop,
+    const std::shared_ptr<AbstractRemapper>& horiz_remapper,
+    const std::string& spa_data_file)
+{
+  std::vector<Field> io_fields;
+  for (int i=0; i<horiz_remapper->get_num_fields(); ++i) {
+    io_fields.push_back(horiz_remapper->get_src_field(i));
+  }
+  const auto io_grid = horiz_remapper->get_src_grid();
+  return std::make_shared<IOPReader>(iop, spa_data_file, io_fields, io_grid);
+}
+
 /*-----------------------------------------------------------------*/
 // The main SPA routine which handles projecting SPA data onto the
 // horizontal columns and vertical pressure profiles of the atmospheric
@@ -170,9 +189,9 @@ create_spa_data_reader (
 //     set of SPA data projected onto the pressure profile of the current atmosphere
 //     state.  This is the data that will be passed to other processes.
 //   ncols_tgt, nlevs_tgt: The number of columns and levels in the simulation grid.
-//     (not to be confused with the number of columns and levels used for the SPA data, 
+//     (not to be confused with the number of columns and levels used for the SPA data,
 //      which can be different.)
-//   nswbands, nlwbands: The number of shortwave (sw) and longwave (lw) aerosol bands 
+//   nswbands, nlwbands: The number of shortwave (sw) and longwave (lw) aerosol bands
 //     for the data that will be passed to radiation.
 template <typename S, typename D>
 void SPAFunctions<S,D>
@@ -402,7 +421,7 @@ perform_vertical_interpolation(
  * lhs of the hybrid coordinate system to ensure that the lhs of the
  * source pressure levels is 0.0 and the rhs is big enough to be larger than
  * the highest pressure in the target pressure levels.
- * 
+ *
  * The padding sets the lhs in a vertical column of data to 0.0.
  * This has the effect of ramping the top-of-model target data down to 0.0
  * when the top target pressure level is smaller than the top source pressure,
@@ -425,12 +444,13 @@ perform_vertical_interpolation(
  * pressure profile that is constructed in spa_main is
  * a) the current length, and
  * b) ensures that whatever the target pressure profile is, it's within the
- *    the range of the source data.                                        
+ *    the range of the source data.
  */
 template<typename S, typename D>
+template<typename DataReader>
 void SPAFunctions<S,D>
 ::update_spa_data_from_file(
-          AtmosphereInput&  spa_data_reader,
+          DataReader&       spa_data_reader,
     const int               time_index, // zero-based
           AbstractRemapper& spa_horiz_interp,
           SPAInput&         spa_input)
@@ -526,12 +546,13 @@ void SPAFunctions<S,D>
 
 /*-----------------------------------------------------------------*/
 template<typename S, typename D>
+template<typename DataReader>
 void SPAFunctions<S,D>
 ::update_spa_timestate(
-        AtmosphereInput&  spa_data_reader,
+        DataReader&  spa_data_reader,
   const util::TimeStamp&  ts,
         AbstractRemapper& spa_horiz_interp,
-        SPATimeState&     time_state, 
+        SPATimeState&     time_state,
         SPAInput&         spa_beg,
         SPAInput&         spa_end)
 {
@@ -549,7 +570,7 @@ void SPAFunctions<S,D>
     std::swap(spa_beg,spa_end);
 
     // Update the SPA forcing data for this month and next month
-    // Start by copying next months data to this months data structure.  
+    // Start by copying next months data to this months data structure.
     // NOTE: If the timestep is bigger than monthly this could cause the wrong values
     //       to be assigned.  A timestep greater than a month is very unlikely so we
     //       will proceed.
@@ -563,12 +584,12 @@ template<typename S,typename D>
 KOKKOS_INLINE_FUNCTION
 auto SPAFunctions<S,D>::
 get_var_column (const SPAData& data, const int icol, const int ivar)
-  -> view_1d<Spack> 
+  -> view_1d<Spack>
 {
   if (ivar==0) {
     return ekat::subview(data.CCN3,icol);
   } else {
-    // NOTE: if we ever get 2+ long-wave vars, you will have to do 
+    // NOTE: if we ever get 2+ long-wave vars, you will have to do
     //       something like
     //    if (jvar<num_sw_vars) {..} else { // compute lw var index }
     int jvar   = (ivar-1) / data.nswbands;
@@ -576,9 +597,9 @@ get_var_column (const SPAData& data, const int icol, const int ivar)
     int lwband = (ivar-1) - 3*data.nswbands;
     switch (jvar) {
       case 0: return ekat::subview(data.AER_G_SW,icol,swband);
-      case 1: return ekat::subview(data.AER_SSA_SW,icol,swband); 
-      case 2: return ekat::subview(data.AER_TAU_SW,icol,swband); 
-      default: return ekat::subview(data.AER_TAU_LW,icol,lwband); 
+      case 1: return ekat::subview(data.AER_SSA_SW,icol,swband);
+      case 2: return ekat::subview(data.AER_TAU_SW,icol,swband);
+      default: return ekat::subview(data.AER_TAU_LW,icol,lwband);
 
     }
   }
