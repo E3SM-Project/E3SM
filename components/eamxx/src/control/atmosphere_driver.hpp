@@ -207,7 +207,7 @@ protected:
   std::shared_ptr<SCDataManager>            m_surface_coupling_import_data_manager;
   std::shared_ptr<SCDataManager>            m_surface_coupling_export_data_manager;
 
-  std::shared_ptr<IntensiveObservationPeriod> m_intensive_observation_period;
+  std::shared_ptr<IntensiveObservationPeriod> m_iop;
 
   // This is the time stamp at the beginning of the time step.
   util::TimeStamp                           m_current_ts;

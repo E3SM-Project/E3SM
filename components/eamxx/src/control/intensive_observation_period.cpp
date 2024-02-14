@@ -191,6 +191,10 @@ initialize_iop_file(const util::TimeStamp& run_t0,
       EKAT_REQUIRE_MSG(field_rank <= 1,
                        "Error! Unexpected field rank "+std::to_string(field_rank)+" for iop file fields.\n");
       Field field(fid);
+      if (fl.has_tag(FieldTag::LevelMidPoint) or fl.has_tag(FieldTag::LevelInterface)) {
+        // Request packsize allocation for level layout
+        field.get_header().get_alloc_properties().request_allocation(Pack::n);
+      }
       field.allocate_view();
       m_iop_fields.insert({iop_varname, field});
     }
@@ -230,13 +234,17 @@ initialize_iop_file(const util::TimeStamp& run_t0,
   setup_iop_field({"Q2"},       fl_vector);
   setup_iop_field({"omega"},    fl_vector, "Ptend");
 
-  // Make sure Ps, T, and q are defined in the iop file
+  // Require Ps, T, q, divT, divq are all defined in the iop file
   EKAT_REQUIRE_MSG(has_iop_field("Ps"),
-                   "Error! Using IOP file requires variable \"Ps\".\n");
+                   "Error! IOP file required to contain variable \"Ps\".\n");
   EKAT_REQUIRE_MSG(has_iop_field("T"),
-                   "Error! Using IOP file requires variable \"T\".\n");
+                   "Error! IOP file required to contain variable \"T\".\n");
   EKAT_REQUIRE_MSG(has_iop_field("q"),
-                   "Error! Using IOP file requires variable \"q\".\n");
+                   "Error! IOP file required to contain variable \"q\".\n");
+  EKAT_REQUIRE_MSG(has_iop_field("divT"),
+                   "Error! IOP file required to contain variable \"divT\".\n");
+  EKAT_REQUIRE_MSG(has_iop_field("divq"),
+                   "Error! IOP file required to contain variable \"divq\".\n");
 
   // Initialize time information
   int bdate;
@@ -286,6 +294,7 @@ initialize_iop_file(const util::TimeStamp& run_t0,
                       ekat::units::Units::nondimensional(),
                       "");
   Field iop_file_pressure(fid);
+  iop_file_pressure.get_header().get_alloc_properties().request_allocation(Pack::n);
   iop_file_pressure.allocate_view();
   auto data = iop_file_pressure.get_view<Real*, Host>().data();
   read_variable_from_file(iop_file, "lev", "real", {"lev"}, -1, data);
@@ -300,6 +309,7 @@ initialize_iop_file(const util::TimeStamp& run_t0,
                                   fl_vector,
                                   ekat::units::Units::nondimensional(), "");
   Field model_pressure(model_pres_fid);
+  model_pressure.get_header().get_alloc_properties().request_allocation(Pack::n);
   model_pressure.allocate_view();
   m_helper_fields.insert({"model_pressure", model_pressure});
 
@@ -625,6 +635,7 @@ read_iop_file_data (const util::TimeStamp& current_ts)
                           ekat::units::Units::nondimensional(),
                           "");
       Field iop_file_field(fid);
+      iop_file_field.get_header().get_alloc_properties().request_allocation(Pack::n);
       iop_file_field.allocate_view();
 
       // Read data from iop file.
@@ -657,8 +668,8 @@ read_iop_file_data (const util::TimeStamp& current_ts)
       iop_file_field.sync_to_dev();
 
       // Vertically interpolate iop file data to iop fields.
-      // Note: ekat lininterp requires packs. Use 1d packs here.
-      // TODO: allow for nontrivial packsize.
+      // Note: ekat lininterp requires packs. Use 1d packs here
+      // to easily mask out levels which we do not want to interpolate.
       const auto iop_file_pres_v = iop_file_pressure.get_view<const Pack1d*>();
       const auto model_pres_v = model_pressure.get_view<const Pack1d*>();
       const auto iop_file_v = iop_file_field.get_view<const Pack1d*>();
@@ -700,6 +711,45 @@ read_iop_file_data (const util::TimeStamp& current_ts)
       }
     }
   }
+
+  // If we have the vertical component of T/Q forcing, define 3d forcing.
+  if (has_iop_field("vertdivT")) {
+    const auto fl = get_iop_field("divT").get_header().get_identifier().get_layout();
+    FieldIdentifier fid("divT3d", fl, ekat::units::Units::nondimensional(), "");
+    Field field(fid);
+    field.allocate_view();
+
+    const auto divT_v = get_iop_field("divT").get_view<const Real*>();
+    const auto vertdivT_v = get_iop_field("vertdivT").get_view<const Real*>();
+    auto divT3d_v = field.get_view<Real*>();
+    Kokkos::parallel_for(fl.dim(0), KOKKOS_LAMBDA (const int ilev) {
+      divT3d_v(ilev) = divT_v(ilev) + vertdivT_v(ilev);
+    });
+
+    m_iop_fields.insert({"divT3d", field});
+  }
+  if (has_iop_field("vertdivq")) {
+    const auto fl = get_iop_field("divq").get_header().get_identifier().get_layout();
+    FieldIdentifier fid("divq3d", fl, ekat::units::Units::nondimensional(), "");
+    Field field(fid);
+    field.allocate_view();
+
+    const auto divq_v = get_iop_field("divq").get_view<const Real*>();
+    const auto vertdivq_v = get_iop_field("vertdivq").get_view<const Real*>();
+    auto divq3d_v = field.get_view<Real*>();
+    Kokkos::parallel_for(fl.dim(0), KOKKOS_LAMBDA (const int ilev) {
+      divq3d_v(ilev) = divq_v(ilev) + vertdivq_v(ilev);
+    });
+
+    m_iop_fields.insert({"divq3d", field});
+  }
+
+  // Enforce that 3D forcing is all-or-nothing.
+  const bool both = (has_iop_field("divT3d") and has_iop_field("divq3d"));
+  const bool neither = (not (has_iop_field("divT3d") or has_iop_field("divq3d")));
+  EKAT_REQUIRE_MSG(both or neither,
+                   "Error! Either T and q both have 3d forcing, or neither have 3d forcing.\n");
+  m_params.set<bool>("use_3d_forcing", both);
 
   // Now that data is loaded, reset the index of the currently loaded data.
   m_time_info.time_idx_of_current_data = iop_file_time_idx;

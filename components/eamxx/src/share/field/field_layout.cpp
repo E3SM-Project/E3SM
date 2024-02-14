@@ -22,6 +22,11 @@ bool FieldLayout::is_vector_layout () const {
   return lt==LayoutType::Vector2D || lt==LayoutType::Vector3D;
 }
 
+bool FieldLayout::is_tensor_layout () const {
+  const auto lt = get_layout_type (m_tags);
+  return lt==LayoutType::Tensor2D || lt==LayoutType::Tensor3D;
+}
+
 int FieldLayout::get_vector_dim () const {
   EKAT_REQUIRE_MSG (is_vector_layout(),
       "Error! 'get_vector_dim' available only for vector layouts.\n"
@@ -40,6 +45,38 @@ int FieldLayout::get_vector_dim () const {
 
 FieldTag FieldLayout::get_vector_tag () const {
   return m_tags[get_vector_dim()];
+}
+
+std::vector<int> FieldLayout::get_tensor_dims () const {
+  EKAT_REQUIRE_MSG (is_tensor_layout(),
+      "Error! 'get_tensor_dims' available only for tensor layouts.\n"
+      "       Current layout: " + to_string(*this) + "\n"
+      "       Layout type   : " + e2str(get_layout_type(m_tags)) + "\n");
+
+  using namespace ShortFieldTagsNames;
+  std::vector<FieldTag> cmp_tags = {CMP,NGAS,SWBND,LWBND,SWGPT,ISCCPTAU,ISCCPPRS};
+
+  std::vector<int> idx;
+  auto it = m_tags.begin();
+  do {
+    it = std::find_first_of (it,m_tags.cend(),cmp_tags.cbegin(),cmp_tags.cend());
+    if (it!=m_tags.end()) {
+      idx.push_back(std::distance(m_tags.begin(),it));
+      ++it;
+    }
+  } while (it!=m_tags.end());
+
+  EKAT_REQUIRE_MSG (idx.size()==2,
+    "Error! Could not find a two tensor tags in the layout.\n"
+    " - layout: " + to_string(*this) + "\n"
+    " - detected tags indices: " + ekat::join(idx,",") + "\n");
+
+  return idx;
+}
+
+std::vector<FieldTag> FieldLayout::get_tensor_tags () const {
+  auto idx = get_tensor_dims();
+  return {m_tags[idx[0]], m_tags[idx[1]]};
 }
 
 FieldLayout FieldLayout::strip_dim (const FieldTag tag) const {
@@ -95,6 +132,9 @@ LayoutType get_layout_type (const std::vector<FieldTag>& field_tags) {
   // Start from undefined/invalid
   LayoutType result = LayoutType::Invalid;
 
+  // We don't care about TimeLevel
+  erase (tags,TL);
+
   if (n_element==1 && ngp==2 && n_column==0) {
     // A Dynamics layout
 
@@ -126,17 +166,17 @@ LayoutType get_layout_type (const std::vector<FieldTag>& field_tags) {
     std::vector<FieldTag> lev_tags = {LEV,ILEV};
     return ekat::contains(lev_tags,t);
   };
-  auto is_vec_tag = [](const FieldTag t) {
-    std::vector<FieldTag> vec_tags = {CMP,NGAS,SWBND,LWBND,SWGPT,ISCCPTAU,ISCCPPRS};
-    return ekat::contains(vec_tags,t);
+  auto is_cmp_tag = [](const FieldTag t) {
+    std::vector<FieldTag> cmp_tags = {CMP,NGAS,SWBND,LWBND,SWGPT,ISCCPTAU,ISCCPPRS};
+    return ekat::contains(cmp_tags,t);
   };
   switch (size) {
     case 0:
       result = LayoutType::Scalar2D;
       break;
     case 1:
-      // The only tag left should be a vec tag, 'TL', or a lev tag
-      if (is_vec_tag(tags[0]) or tags[0]==TL) {
+      // The only tag left should be a cmp tag or a lev tag
+      if (is_cmp_tag(tags[0])) {
         result = LayoutType::Vector2D;
       } else if (is_lev_tag(tags[0])) {
         result = LayoutType::Scalar3D;
@@ -144,18 +184,20 @@ LayoutType get_layout_type (const std::vector<FieldTag>& field_tags) {
       break;
     case 2:
       // Possible supported scenarios:
-      //  1) <CMP|TL,LEV|ILEV>
-      //  2) <TL,CMP>
-      if ( (is_vec_tag(tags[0]) or tags[0]==TL) and is_lev_tag(tags[1]) ) {
+      //  1) <CMP,LEV|ILEV>
+      //  3) <CMP1,CMP2>
+      // where CMP,CMP1,CMP2 are any tag in cmp_tags
+      if ( is_cmp_tag(tags[0]) and is_lev_tag(tags[1]) ) {
         result = LayoutType::Vector3D;
-      } else if (tags[0]==TL && is_vec_tag(tags[1]) ) {
+      } else if (is_cmp_tag(tags[0]) and is_cmp_tag(tags[1])) {
         result = LayoutType::Tensor2D;
       }
       break;
     case 3:
       // The only supported scenario is:
-      //  1) <TL,  CMP, LEV|ILEV>
-      if ( tags[0]==TL && is_vec_tag(tags[1]) && is_lev_tag(tags[2]) ) {
+      //  1) <CMP1, CMP2, LEV|ILEV>
+      // where CMP1,CMP2 are any tag in cmp_tags
+      if (is_cmp_tag(tags[0]) and is_cmp_tag(tags[1]) and is_lev_tag(tags[2])) {
         result = LayoutType::Tensor3D;
       }
   }

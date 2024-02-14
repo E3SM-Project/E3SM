@@ -105,6 +105,13 @@ public:
   // Add additional data fields to all property checks in the group
   void add_additional_data_fields_to_property_checks (const Field& data_field);
 
+  // Loop through all proceeses in group and set IOP object
+  void set_intensive_observation_period(const iop_ptr& iop) {
+    for (auto& atm_proc : m_atm_processes) {
+      atm_proc->set_intensive_observation_period(iop);
+    }
+  }
+
 protected:
 
   // Adds fid to the list of required/computed fields of the group (as a whole).

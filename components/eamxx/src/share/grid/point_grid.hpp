@@ -45,8 +45,13 @@ public:
   // E.g., for a 2d structured grid, this could be a set of 2 indices.
   FieldLayout get_2d_scalar_layout () const override;
   FieldLayout get_2d_vector_layout (const FieldTag vector_tag, const int vector_dim) const override;
+  FieldLayout get_2d_tensor_layout (const std::vector<FieldTag>& cmp_tags,
+                                    const std::vector<int>& cmp_dims) const override;
   FieldLayout get_3d_scalar_layout (const bool midpoints) const override;
   FieldLayout get_3d_vector_layout (const bool midpoints, const FieldTag vector_tag, const int vector_dim) const override;
+  FieldLayout get_3d_tensor_layout (const bool midpoints,
+                                    const std::vector<FieldTag>& cmp_tags,
+                                    const std::vector<int>& cmp_dims) const override;
 
   FieldTag get_partitioned_dim_tag () const override {
     return FieldTag::Column;

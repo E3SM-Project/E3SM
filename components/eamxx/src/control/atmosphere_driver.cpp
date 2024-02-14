@@ -173,8 +173,8 @@ setup_intensive_observation_period ()
   check_ad_status(s_comm_set | s_params_set | s_ts_inited | s_grids_created);
 
   // Check to make sure iop is not already initialized
-  EKAT_REQUIRE_MSG(not m_intensive_observation_period, "Error! setup_intensive_observation_period() is "
-                                                       "called, but IOP already set up.\n");
+  EKAT_REQUIRE_MSG(not m_iop, "Error! setup_intensive_observation_period() is "
+                              "called, but IOP already set up.\n");
 
   // This function should only be called if we are enabling IOP
   const bool enable_iop =
@@ -195,16 +195,18 @@ setup_intensive_observation_period ()
   const auto hyam = phys_grid->get_geometry_data("hyam");
   const auto hybm = phys_grid->get_geometry_data("hybm");
 
-  m_intensive_observation_period =
-    std::make_shared<IntensiveObservationPeriod>(m_atm_comm,
-                                                 iop_params,
-                                                 m_run_t0,
-                                                 nlevs,
-                                                 hyam,
-                                                 hybm);
+  m_iop = std::make_shared<IntensiveObservationPeriod>(m_atm_comm,
+                                                       iop_params,
+                                                       m_run_t0,
+                                                       nlevs,
+                                                       hyam,
+                                                       hybm);
 
   auto dx_short_f = phys_grid->get_geometry_data("dx_short");
-  m_intensive_observation_period->set_grid_spacing(dx_short_f.get_view<const Real,Host>()());
+  m_iop->set_grid_spacing(dx_short_f.get_view<const Real,Host>()());
+
+  // Set IOP object in atm processes
+  m_atm_process_group->set_intensive_observation_period(m_iop);
 }
 
 void AtmosphereDriver::create_atm_processes()
@@ -338,10 +340,6 @@ void AtmosphereDriver::setup_surface_coupling_processes () const
 
       std::shared_ptr<SurfaceCouplingImporter> importer = std::dynamic_pointer_cast<SurfaceCouplingImporter>(atm_proc);
       importer->setup_surface_coupling_data(*m_surface_coupling_import_data_manager);
-
-      if (m_intensive_observation_period) {
-        importer->set_intensive_observation_period(m_intensive_observation_period);
-      }
     }
     if (atm_proc->type() == AtmosphereProcessType::SurfaceCouplingExporter) {
       exporter_found = true;
@@ -1129,7 +1127,7 @@ void AtmosphereDriver::set_initial_conditions ()
     }
   }
 
-  if (m_intensive_observation_period) {
+  if (m_iop) {
     // For runs with IOP, call to setup io grids and lat
     // lon information needed for reading from file
     for (const auto& it : m_field_mgrs) {
@@ -1140,7 +1138,7 @@ void AtmosphereDriver::set_initial_conditions ()
                                 ic_pl.get<std::string>("Filename")
                                 :
                                 ic_pl.get<std::string>("topography_filename");
-        m_intensive_observation_period->setup_io_info(file_name, it.second->get_grid());
+        m_iop->setup_io_info(file_name, it.second->get_grid());
       }
     }
   }
@@ -1152,15 +1150,15 @@ void AtmosphereDriver::set_initial_conditions ()
     m_atm_logger->info("    [EAMxx] IC filename: " + file_name);
     for (const auto& it : m_field_mgrs) {
       const auto& grid_name = it.first;
-      if (not m_intensive_observation_period) {
+      if (not m_iop) {
         read_fields_from_file (ic_fields_names[grid_name],it.second->get_grid(),file_name,m_current_ts);
       } else {
         // For IOP enabled, we load from file and copy data from the closest
         // lat/lon column to every other column
-        m_intensive_observation_period->read_fields_from_file_for_iop(file_name,
-                                                                      ic_fields_names[grid_name],
-                                                                      m_current_ts,
-                                                                      it.second);
+        m_iop->read_fields_from_file_for_iop(file_name,
+                                             ic_fields_names[grid_name],
+                                             m_current_ts,
+                                             it.second);
       }
     }
   }
@@ -1227,7 +1225,7 @@ void AtmosphereDriver::set_initial_conditions ()
     m_atm_logger->info("        filename: " + file_name);
     for (const auto& it : m_field_mgrs) {
       const auto& grid_name = it.first;
-      if (not m_intensive_observation_period) {
+      if (not m_iop) {
         // Topography files always use "ncol_d" for the GLL grid value of ncol.
         // To ensure we read in the correct value, we must change the name for that dimension
         auto io_grid = it.second->get_grid();
@@ -1243,11 +1241,11 @@ void AtmosphereDriver::set_initial_conditions ()
       } else {
         // For IOP enabled, we load from file and copy data from the closest
         // lat/lon column to every other column
-        m_intensive_observation_period->read_fields_from_file_for_iop(file_name,
-                                                                      topography_file_fields_names[grid_name],
-                                                                      topography_eamxx_fields_names[grid_name],
-                                                                      m_current_ts,
-                                                                      it.second);
+        m_iop->read_fields_from_file_for_iop(file_name,
+                                             topography_file_fields_names[grid_name],
+                                             topography_eamxx_fields_names[grid_name],
+                                             m_current_ts,
+                                             it.second);
       }
     }
     // Store in provenance list, for later usage in output file metadata
@@ -1268,16 +1266,16 @@ void AtmosphereDriver::set_initial_conditions ()
     m_atm_params.sublist("provenance").set<std::string>("topography_file","NONE");
   }
 
-  if (m_intensive_observation_period) {
+  if (m_iop) {
     // Load IOP data file data for initial time stamp
-    m_intensive_observation_period->read_iop_file_data(m_current_ts);
+    m_iop->read_iop_file_data(m_current_ts);
 
     // Now that ICs are processed, set appropriate fields using IOP file data.
     // Since ICs are loaded on GLL grid, we set those fields only and dynamics
     // will take care of the rest (for PG2 case).
     if (m_field_mgrs.count("Physics GLL") > 0) {
       const auto& fm = m_field_mgrs.at("Physics GLL");
-      m_intensive_observation_period->set_fields_from_iop_data(fm);
+      m_iop->set_fields_from_iop_data(fm);
     }
   }
 

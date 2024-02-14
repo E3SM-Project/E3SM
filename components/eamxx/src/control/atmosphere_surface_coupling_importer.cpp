@@ -171,7 +171,7 @@ void SurfaceCouplingImporter::do_import(const bool called_during_initialization)
   });
 
   // If IOP is defined, potentially overwrite imports with data from IOP file
-  if (m_intensive_observation_period) {
+  if (m_iop) {
     overwrite_iop_imports(called_during_initialization);
   }
 }
@@ -181,11 +181,9 @@ void SurfaceCouplingImporter::overwrite_iop_imports (const bool called_during_in
   using policy_type = KokkosTypes<DefaultDevice>::RangePolicy;
   using C = physics::Constants<Real>;
 
-  const auto& iop = m_intensive_observation_period;
-
-  const auto has_lhflx = iop->has_iop_field("lhflx");
-  const auto has_shflx = iop->has_iop_field("shflx");
-  const auto has_Tg    = iop->has_iop_field("Tg");
+  const auto has_lhflx = m_iop->has_iop_field("lhflx");
+  const auto has_shflx = m_iop->has_iop_field("shflx");
+  const auto has_Tg    = m_iop->has_iop_field("Tg");
 
   static constexpr Real latvap = C::LatVap;
   static constexpr Real stebol = C::stebol;
@@ -205,19 +203,19 @@ void SurfaceCouplingImporter::overwrite_iop_imports (const bool called_during_in
     // Store IOP surf data into col_val
     Real col_val(std::nan(""));
     if (fname == "surf_evap" && has_lhflx) {
-      const auto f = iop->get_iop_field("lhflx");
+      const auto f = m_iop->get_iop_field("lhflx");
       f.sync_to_host();
       col_val = f.get_view<Real, Host>()()/latvap;
     } else if (fname == "surf_sens_flux" && has_shflx) {
-      const auto f = iop->get_iop_field("shflx");
+      const auto f = m_iop->get_iop_field("shflx");
       f.sync_to_host();
       col_val = f.get_view<Real, Host>()();
     } else if (fname == "surf_radiative_T" && has_Tg) {
-      const auto f = iop->get_iop_field("Tg");
+      const auto f = m_iop->get_iop_field("Tg");
       f.sync_to_host();
       col_val = f.get_view<Real, Host>()();
     } else if (fname == "surf_lw_flux_up" && has_Tg) {
-      const auto f = iop->get_iop_field("Tg");
+      const auto f = m_iop->get_iop_field("Tg");
       f.sync_to_host();
       col_val = stebol*std::pow(f.get_view<Real, Host>()(), 4);
     } else {

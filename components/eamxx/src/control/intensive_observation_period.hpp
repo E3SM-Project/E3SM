@@ -26,6 +26,8 @@ class IntensiveObservationPeriod
 
   using KT = ekat::KokkosTypes<DefaultDevice>;
   using ESU = ekat::ExeSpaceUtils<KT::ExeSpace>;
+  using Pack = ekat::Pack<Real, SCREAM_PACK_SIZE>;
+  using Pack1d = ekat::Pack<Real, 1>;
 
   template<typename ScalarT>
   using view_1d = KT::template view_1d<ScalarT>;
@@ -35,7 +37,6 @@ class IntensiveObservationPeriod
   using view_3d = KT::template view_3d<ScalarT>;
   template<typename ScalarT>
   using view_1d_host = typename view_1d<ScalarT>::HostMirror;
-  using Pack1d = ekat::Pack<Real, 1>;
 
 public:
 

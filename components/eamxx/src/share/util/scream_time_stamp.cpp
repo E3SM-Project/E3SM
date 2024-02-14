@@ -161,30 +161,32 @@ TimeStamp& TimeStamp::operator+=(const double seconds) {
   auto& yy = m_date[0];
 
   ++m_num_steps;
-  sec += seconds;
+
+  constexpr auto spd = constants::seconds_per_day;
+  auto add_days = std::floor(seconds / spd);
+  auto add_secs = seconds - add_days*spd;
+
+  sec += add_secs;
+  dd  += add_days;
 
   // Carry over
   int carry;
   carry = sec / 60;
-  if (carry==0) {
-    return *this;
-  }
+  if (carry!=0) {
+    sec = sec % 60;
+    min += carry;
+    carry = min / 60;
+    if (carry!=0) {
+      min = min % 60;
+      hour += carry;
+      carry = hour / 24;
 
-  sec = sec % 60;
-  min += carry;
-  carry = min / 60;
-  if (carry==0) {
-    return *this;
+      if (carry!=0) {
+        hour = hour % 24;
+        dd += carry;
+      }
+    }
   }
-  min = min % 60;
-  hour += carry;
-  carry = hour / 24;
-
-  if (carry==0) {
-    return *this;
-  }
-  hour = hour % 24;
-  dd += carry;
 
   while (dd>days_in_month(yy,mm)) {
     dd -= days_in_month(yy,mm);

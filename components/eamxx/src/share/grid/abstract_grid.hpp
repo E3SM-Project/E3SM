@@ -74,8 +74,13 @@ public:
   FieldLayout get_vertical_layout (const bool midpoints) const;
   virtual FieldLayout get_2d_scalar_layout () const = 0;
   virtual FieldLayout get_2d_vector_layout (const FieldTag vector_tag, const int vector_dim) const = 0;
+  virtual FieldLayout get_2d_tensor_layout (const std::vector<FieldTag>& cmp_tags,
+                                            const std::vector<int>& cmp_dims) const = 0;
   virtual FieldLayout get_3d_scalar_layout (const bool midpoints) const = 0;
   virtual FieldLayout get_3d_vector_layout (const bool midpoints, const FieldTag vector_tag, const int vector_dim) const = 0;
+  virtual FieldLayout get_3d_tensor_layout (const bool midpoints,
+                                            const std::vector<FieldTag>& cmp_tags,
+                                            const std::vector<int>& cmp_dims) const = 0;
 
   int get_num_vertical_levels () const { return m_num_vert_levs; }
 
@@ -120,6 +125,7 @@ public:
 
   // Sets pre-existing field as geometry data.
   void set_geometry_data (const Field& f);
+  void delete_geometry_data (const std::string& name);
 
   bool has_geometry_data (const std::string& name) const {
     return m_geo_fields.find(name)!=m_geo_fields.end();

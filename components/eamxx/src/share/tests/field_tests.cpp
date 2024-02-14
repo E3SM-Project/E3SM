@@ -17,6 +17,52 @@
 
 namespace {
 
+TEST_CASE("field_layout", "") {
+  using namespace scream;
+  using namespace ShortFieldTagsNames;
+
+  using TVec = std::vector<FieldTag>;
+  using IVec = std::vector<int>;
+
+  FieldLayout fl1 ({COL},{1});
+  FieldLayout fl2 ({COL,CMP},{1,1});
+  FieldLayout fl3 ({COL,SWBND,LWBND},{1,1,1});
+  FieldLayout fl4 ({COL,LEV},{1,1});
+  FieldLayout fl5 ({COL,CMP,LEV},{1,1,1});
+  FieldLayout fl6 ({COL,ISCCPTAU,ISCCPPRS,ILEV},{1,1,1,1});
+
+  REQUIRE (get_layout_type(fl1.tags())==LayoutType::Scalar2D);
+  REQUIRE (get_layout_type(fl2.tags())==LayoutType::Vector2D);
+  REQUIRE (get_layout_type(fl3.tags())==LayoutType::Tensor2D);
+  REQUIRE (get_layout_type(fl4.tags())==LayoutType::Scalar3D);
+  REQUIRE (get_layout_type(fl5.tags())==LayoutType::Vector3D);
+  REQUIRE (get_layout_type(fl6.tags())==LayoutType::Tensor3D);
+
+  REQUIRE (not fl1.is_vector_layout());
+  REQUIRE (    fl2.is_vector_layout());
+  REQUIRE (not fl3.is_vector_layout());
+  REQUIRE (not fl4.is_vector_layout());
+  REQUIRE (    fl5.is_vector_layout());
+  REQUIRE (not fl6.is_vector_layout());
+
+  REQUIRE (not fl1.is_tensor_layout());
+  REQUIRE (not fl2.is_tensor_layout());
+  REQUIRE (    fl3.is_tensor_layout());
+  REQUIRE (not fl4.is_tensor_layout());
+  REQUIRE (not fl5.is_tensor_layout());
+  REQUIRE (    fl6.is_tensor_layout());
+
+  REQUIRE (fl2.get_vector_tag()==CMP);
+  REQUIRE (fl5.get_vector_tag()==CMP);
+  REQUIRE (fl2.get_vector_dim()==1);
+  REQUIRE (fl5.get_vector_dim()==1);
+
+  REQUIRE (fl3.get_tensor_tags()==TVec{SWBND,LWBND});
+  REQUIRE (fl6.get_tensor_tags()==TVec{ISCCPTAU,ISCCPPRS});
+  REQUIRE (fl3.get_tensor_dims()==IVec{1,2});
+  REQUIRE (fl6.get_tensor_dims()==IVec{1,2});
+}
+
 TEST_CASE("field_identifier", "") {
   using namespace scream;
   using namespace ekat::units;
