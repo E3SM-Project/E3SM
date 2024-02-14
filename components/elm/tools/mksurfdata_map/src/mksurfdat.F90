@@ -554,7 +554,7 @@ program mksurfdat
     write(ndiag,*) 'VIC parameters from:         ',trim(mksrf_fvic)
     write(ndiag,*) 'CH4 parameters from:         ',trim(mksrf_fch4)
     write(ndiag,*) 'Soil phosphorus from:        ',trim(mksrf_fphosphorus)
-    write(ndiag,*) 'Fertilizer from:             ',trim(mksrf_ffert)
+    !write(ndiag,*) 'Fertilizer from:             ',trim(mksrf_ffert)
     write(ndiag,*)' mapping for pft              ',trim(map_fpft)
     write(ndiag,*)' mapping for lake water       ',trim(map_flakwat)
     write(ndiag,*)' mapping for wetland          ',trim(map_fwetlnd)
@@ -763,8 +763,8 @@ program mksurfdat
          ero_c1_o=ero_c1, ero_c2_o=ero_c2, ero_c3_o=ero_c3, tillage_o=tillage, &
          litho_o=litho)
 
-    call mkfert(ldomain, mapfname=map_ffert, datfname=mksrf_ffert, ndiag=ndiag, &
-         nfert_o=nfert, pfert_o=pfert)
+    !call mkfert(ldomain, mapfname=map_ffert, datfname=mksrf_ffert, ndiag=ndiag, &
+    !     nfert_o=nfert, pfert_o=pfert)
 
     do n = 1,ns_o
 
