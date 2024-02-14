@@ -640,7 +640,7 @@ std::shared_ptr<FieldManager> get_test_fm(std::shared_ptr<const AbstractGrid> gr
   auto f_Vi = fm->get_field(fid_Vi);
 
   // Set some string to be written to file as attribute to the variables
-  for (const std::string& fname : {"Y_flat","Y_mid","Y_int","V_mid","V_int"}) {
+  for (const std::string fname : {"Y_flat","Y_mid","Y_int","V_mid","V_int"}) {
     auto& f = fm->get_field(fname);
     auto& str_atts = f.get_header().get_extra_data<stratts_t>("io: string attributes");
     str_atts["test"] = fname;
