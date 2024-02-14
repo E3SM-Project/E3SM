@@ -656,6 +656,7 @@ contains
                  ptase_tmp = alm_fates%fates(ci)%bc_pconst%eca_vmax_ptase(pft) *  &
                       fr_frac/dzsoi_decomp(j) / ( alm_fates%fates(ci)%bc_pconst%eca_km_ptase(pft) + 1._r8)
 
+                 biochem_pmin_to_plant_vr_patch(p,j) = 0._r8
                  biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j) + ptase_tmp !*(1._r8 - alm_fates%fates(ci)%bc_pconst%eca_alpha_ptase(pft))
                  biochem_pmin_to_ecosysp_vr_col_pot(c,j) = biochem_pmin_to_ecosysp_vr_col_pot(c,j) + ptase_tmp
 
