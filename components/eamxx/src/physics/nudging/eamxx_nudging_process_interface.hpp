@@ -23,9 +23,7 @@ public:
     // DEFAULT - source data should include time/spatially varying p_mid with dimensions (time, col, lev)
     TIME_DEPENDENT_3D_PROFILE,
     // source data includes p_levs which is a static set of levels in both space and time, with dimensions (lev),
-    STATIC_1D_VERTICAL_PROFILE,
-    // hybrid data includes hyai(ilev),hybi(ilev),hyam(lev),hybm(lev),ilev(ilev),lev(lev),P0,PS(time, ncol)
-    TIME_DEPENDENT_3D_HYBRID
+    STATIC_1D_VERTICAL_PROFILE
   };
 
   // Constructors
@@ -75,6 +73,7 @@ protected:
   int m_num_src_levs;
   int m_timescale;
   bool m_use_weights;
+  bool m_skip_vert_interpolation;
   std::vector<std::string> m_datafiles;
   std::string              m_static_vertical_pressure_file;
   // add nudging weights for regional nudging update

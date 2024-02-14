@@ -21,6 +21,7 @@ Nudging::Nudging (const ekat::Comm& comm, const ekat::ParameterList& params)
 
   m_fields_nudge = m_params.get<std::vector<std::string>>("nudging_fields");
   m_use_weights   = m_params.get<bool>("use_nudging_weights",false);
+  m_skip_vert_interpolation   = m_params.get<bool>("skip_vert_interpolation",false);
   // If we are doing horizontal refine-remapping, we need to get the mapfile from user
   m_refine_remap_file = m_params.get<std::string>(
       "nudging_refine_remap_mapfile", "no-file-given");
@@ -33,17 +34,16 @@ Nudging::Nudging (const ekat::Comm& comm, const ekat::ParameterList& params)
     m_src_pres_type = STATIC_1D_VERTICAL_PROFILE;
     // Check for a designated source pressure file, default to first nudging data source if not given.
     m_static_vertical_pressure_file = m_params.get<std::string>("source_pressure_file",m_datafiles[0]);
-  } else if (src_pres_type=="TIME_DEPENDENT_3D_HYBRID") {
-    m_src_pres_type = TIME_DEPENDENT_3D_HYBRID;
-    int first_file_levs = scorpio::get_dimlen(m_datafiles[0],"lev");
-    for (const auto& file : m_datafiles) {
-        int current_file_levs = scorpio::get_dimlen(file,"lev");
-        EKAT_REQUIRE_MSG(current_file_levs == first_file_levs,
-                         "Error! Inconsistent 'lev' dimension found in nudging data files.");
-    }
+    EKAT_REQUIRE_MSG(m_skip_vert_interpolation == false,
+                   "Error! It makes no sense to not interpolate if src press is uniform and constant ");
   } else {
-    EKAT_ERROR_MSG("ERROR! Nudging::parameter_list - unsupported source_pressure_type provided.  "
-                   "Current options are [TIME_DEPENDENT_3D_PROFILE,STATIC_1D_VERTICAL_PROFILE,TIME_DEPENDENT_3D_HYBRID].  Please check");
+    EKAT_ERROR_MSG("ERROR! Nudging::parameter_list - unsupported source_pressure_type provided.  Current options are [TIME_DEPENDENT_3D_PROFILE,STATIC_1D_VERTICAL_PROFILE].  Please check");
+  }
+  int first_file_levs = scorpio::get_dimlen(m_datafiles[0],"lev");
+  for (const auto& file : m_datafiles) {
+      int current_file_levs = scorpio::get_dimlen(file,"lev");
+      EKAT_REQUIRE_MSG(current_file_levs == first_file_levs,
+                       "Error! Inconsistent 'lev' dimension found in nudging data files.");
   }
   // use nudging weights
   if (m_use_weights) 
@@ -95,16 +95,15 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   /* ----------------------- WARNING --------------------------------*/
 
   //Now need to read in the file
-  if (m_src_pres_type == TIME_DEPENDENT_3D_PROFILE || m_src_pres_type == TIME_DEPENDENT_3D_HYBRID) {
+  if (m_src_pres_type == TIME_DEPENDENT_3D_PROFILE) {
     m_num_src_levs = scorpio::get_dimlen(m_datafiles[0],"lev");
-    // HYBRID needs the same vertical grid as model for now to bypass vert_interp
-    if (m_src_pres_type == TIME_DEPENDENT_3D_HYBRID) {
-      EKAT_REQUIRE_MSG(m_num_src_levs == m_num_levs,
-                     "Error! TIME_DEPENDENT_3D_HYBRID requires the vertical level to be "
-                     << " the same as model vertical level ");
-    }
   } else {
     m_num_src_levs = scorpio::get_dimlen(m_static_vertical_pressure_file,"lev");
+  }
+  if (m_skip_vert_interpolation) {
+    EKAT_REQUIRE_MSG(m_num_src_levs == m_num_levs,
+                   "Error! skip_vert_interpolation requires the vertical level to be "
+                   << " the same as model vertical level ");
   }
 
   /* Check for consistency between nudging files, map file, and remapper */
@@ -397,8 +396,8 @@ void Nudging::run_impl (const double dt)
   // Perform horizontal remap (if needed)
   m_horiz_remapper->remap(true);
 
-  // bypass copy_and_pad and vert_interp for hybrid coordinate:
-  if (m_src_pres_type == TIME_DEPENDENT_3D_HYBRID) {
+  // bypass copy_and_pad and vert_interp for skip_vert_interpolation:
+  if (m_skip_vert_interpolation) {
     for (const auto& name : m_fields_nudge) {
       auto tmp_state_field = get_helper_field(name+"_tmp");
 

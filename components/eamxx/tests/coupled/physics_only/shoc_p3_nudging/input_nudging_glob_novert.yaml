@@ -18,7 +18,8 @@ atmosphere_processes:
     nudging_fields: ["T_mid", "qv"]
     nudging_timescale: 1000
     use_nudging_weights: true
-    nudging_weights_file: nudging_weights_L128.nc      
+    nudging_weights_file: nudging_weights_L128.nc
+    skip_vert_interpolation: true
     source_pressure_type: ${VERT_TYPE}
     source_pressure_file: vertical_remap.nc ## Only used in the case of STATIC_1D_VERTICAL_PROFILE
   shoc:
