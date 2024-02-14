@@ -278,7 +278,7 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   FieldLayout layout_padded ({COL,LEV},{m_num_cols,m_num_src_levs+2});
   create_helper_field("padded_field",layout_padded,"");
 
-  if (m_src_pres_type == TIME_DEPENDENT_3D_PROFILE) {
+  if (m_src_pres_type == TIME_DEPENDENT_3D_PROFILE && !m_skip_vert_interpolation) {
     // If the pressure profile is 3d and time-dep, we need to interpolate (in time/horiz)
     auto pmid_ext = create_helper_field("p_mid_ext", layout_ext, grid_ext->name());
     m_time_interp.add_field(pmid_ext.alias("p_mid"),true);
