@@ -103,11 +103,11 @@ _TESTS = {
             "ERP_Ln3.ne4pg2_oQU480.F2010",
             "SMS_Ln9.ne4pg2_oQU480.F2010.eam-outfrq9s",
             "SMS.ne4pg2_oQU480.F2010.eam-cosplite",
-            "SMS_R_Ld5.ne4pg2_ne4pg2.FSCM-ARM97.eam-scm",
+            "SMS_R_Ld5.ne4_ne4.FSCM-ARM97.eam-scm",
             "SMS_D_Ln5.ne4pg2_oQU480.F2010",
             "SMS_Ln5.ne4pg2_oQU480.F2010",
             "ERS_D.ne4pg2_oQU480.F2010.eam-hommexx",
-            "SMS_Ln9_P24x1.ne4pg2_ne4pg2.FDPSCREAM-ARM97",
+            "SMS_Ln9_P24x1.ne4_ne4.FDPSCREAM-ARM97",
             )
         },
 
