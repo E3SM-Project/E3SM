@@ -24,7 +24,7 @@
 #include "p3_f90.hpp"
 
 #include "pam_debug.h"
-bool constexpr enable_check_state = false;
+bool constexpr enable_check_state = true;
 
 extern "C" void pam_driver() {
   //------------------------------------------------------------------------------------------------
@@ -50,12 +50,6 @@ extern "C" void pam_driver() {
   //------------------------------------------------------------------------------------------------
   // set various coupler options
   coupler.set_option<real>("gcm_physics_dt",gcm_dt);
-  #ifdef MMF_PAM_DPP
-  // this is leftover from debugging, but it might still be useful for testing values of crm_per_phys
-  coupler.set_option<int>("crm_per_phys",MMF_PAM_DPP);
-  #else
-  coupler.set_option<int>("crm_per_phys",2);               // # of PAM-C dynamics steps per physics
-  #endif
   coupler.set_option<int>("sponge_num_layers",crm_nz*0.3); // depth of sponge layer
   coupler.set_option<real>("sponge_time_scale",60);        // minimum damping timescale at top
   coupler.set_option<bool>("crm_acceleration_ceaseflag",false);
@@ -143,6 +137,9 @@ extern "C" void pam_driver() {
     dycore.declare_current_profile_as_hydrostatic(coupler,/*use_gcm_data=*/true);
   #endif
 
+  #ifdef MMF_DISABLE_DENSITY_RECALL
+    do_density_save_recall = false;
+  #endif
   //------------------------------------------------------------------------------------------------
   //------------------------------------------------------------------------------------------------
   //------------------------------------------------------------------------------------------------
@@ -168,8 +165,9 @@ extern "C" void pam_driver() {
 
     // run a PAM time step
     coupler.run_module( "apply_gcm_forcing_tendencies" , modules::apply_gcm_forcing_tendencies );
-    coupler.run_module( "radiation"                    , [&] (pam::PamCoupler &coupler) {rad   .timeStep(coupler);} );
     if (enable_check_state) { pam_debug_check_state(coupler, 2, nstep); }
+    coupler.run_module( "radiation"                    , [&] (pam::PamCoupler &coupler) {rad   .timeStep(coupler);} );
+    if (enable_check_state) { pam_debug_check_state(coupler, 3, nstep); }
 
     // Dynamics
     if (enable_physics_tend_stats) { pam_statistics_save_state(coupler); }
@@ -177,13 +175,13 @@ extern "C" void pam_driver() {
     coupler.run_module( "dycore", [&] (pam::PamCoupler &coupler) {dycore.timeStep(coupler);} );
     if (do_density_save_recall)    { pam_state_recall_dry_density(coupler); }
     if (enable_physics_tend_stats) { pam_statistics_aggregate_tendency(coupler,"dycor"); }
-    if (enable_check_state)        { pam_debug_check_state(coupler, 3, nstep); }
+    if (enable_check_state)        { pam_debug_check_state(coupler, 4, nstep); }
 
     // Sponge layer damping
     if (enable_physics_tend_stats) { pam_statistics_save_state(coupler); }
     coupler.run_module( "sponge_layer", modules::sponge_layer );
     if (enable_physics_tend_stats) { pam_statistics_aggregate_tendency(coupler,"sponge"); }
-    if (enable_check_state)        { pam_debug_check_state(coupler, 4, nstep); }
+    // if (enable_check_state)        { pam_debug_check_state(coupler, 4, nstep); }
 
     // Apply hyperdiffusion to account for lack of horizontal mixing in SHOC
     pam_hyperdiffusion(coupler);
