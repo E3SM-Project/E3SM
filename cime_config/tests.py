@@ -305,7 +305,6 @@ _TESTS = {
             "SMS_D_Ld1.ne30pg2_r05_EC30to60E2r2.WCYCL1850",
             "SMS_Ln5.ne30pg2_ne30pg2.F2010-SCREAM-LR-DYAMOND2",
             "ERS_Ld3.ne30pg2_r05_EC30to60E2r2.WCYCL1850.allactive-nlmaps",
-            "SMS_D_Ld1.ne30pg2_r05_IcoswISC30E3r5.CRYO1850",
             "SMS_D_Ld1.ne30pg2_r05_IcoswISC30E3r5.CRYO1850-DISMF",
             )
         },
@@ -355,6 +354,7 @@ _TESTS = {
             "SMS_Ld1.ne30pg2_EC30to60E2r2.WCYCLSSP370.allactive-wcprodssp",
             "SMS_Ld1.ne30pg2_EC30to60E2r2.WCYCLSSP585.allactive-wcprodssp",
             "SMS_PS.northamericax4v1pg2_WC14to60E2r3.WCYCL1850.allactive-wcprodrrm_1850",
+            "SMS_D_Ld1.ne30pg2_r05_IcoswISC30E3r5.CRYO1850",
             )
         },
 
