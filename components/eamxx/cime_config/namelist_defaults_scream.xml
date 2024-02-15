@@ -415,7 +415,7 @@ be lost if SCREAM_HACK_XML is not enabled.
   <!-- List of nc files for loading inputs on specified grids -->
   <initial_conditions>
     <Filename type="file">UNSET</Filename>
-    <Filename hgrid="ne4np4">/global/cfs/cdirs/m3525/meng/ic_scream/screami_mam_ne4np4L72_c20240208.nc</Filename>
+    <Filename hgrid="ne4np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne4np4L72_20220823.nc</Filename>
     <Filename hgrid="ne30np4" nlev="72">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L72_20220823.nc</Filename>
     <Filename hgrid="ne30np4" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L128_20221004.nc</Filename>
     <Filename hgrid="ne120np4" nlev="72">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L72_20220823.nc</Filename>
