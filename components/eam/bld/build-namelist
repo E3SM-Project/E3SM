@@ -3885,6 +3885,9 @@ if ($cfg->get('use_MMF')) {
 
     # MMF CRM domain orientation
     add_default($nl, 'MMF_orientation_angle');
+
+    # PAM dynamics sub-stepping parameter
+    add_default($nl, 'MMF_PAM_dyn_per_phys');
 }
 
 add_default($nl, 'do_aerocom_ind3');

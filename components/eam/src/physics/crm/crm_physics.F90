@@ -620,6 +620,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
    logical        :: use_MMF_VT_tmp                ! flag for MMF variance transport (for Fortran CRM)
    logical        :: use_MMF_ESMT_tmp              ! flag for MMF scalar momentum transport (for Fortran CRM)
    integer        :: MMF_VT_wn_max                 ! wavenumber cutoff for filtered variance transport
+   
+   integer        :: MMF_PAM_dyn_per_phys          ! PAM CRM dynamics steps per CRM physics steps
 
    real(r8) :: tmp_e_sat                           ! temporary saturation vapor pressure
    real(r8) :: tmp_q_sat                           ! temporary saturation specific humidity
@@ -731,6 +733,9 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
    call phys_getopts(crm_accel_uv_out     = crm_accel_uv_tmp)
    use_crm_accel = use_crm_accel_tmp
    crm_accel_uv = crm_accel_uv_tmp
+
+   ! PAM namelist options
+   call phys_getopts(MMF_PAM_dyn_per_phys_out = MMF_PAM_dyn_per_phys)
 
    nstep = get_nstep()
    itim = pbuf_old_tim_idx() ! "Old" pbuf time index (what does all this mean?)
@@ -1458,6 +1463,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
       call pam_set_option('crm_accel_factor', crm_accel_factor )
 
       call pam_set_option('enable_physics_tend_stats', .false. )
+
+      call pam_set_option('crm_dyn_per_phys', MMF_PAM_dyn_per_phys )
 
       call pam_set_option('is_first_step', (nstep<=1) )
       call pam_set_option('is_restart', (nsrest>0) )
