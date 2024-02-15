@@ -299,8 +299,7 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   }
 
   // FIXME: We need to get ssa_cmip6_sw_, af_cmip6_sw_, ext_cmip6_sw_,
-  // ext_cmip6_lw_ from a nc file. aer_rad_props_sw inputs that are prescribed,
-  // i.e., we need a netcdf file.
+  // ext_cmip6_lw_ from a nc file. aer_rad_props_sw inputs that are prescribed.
   ssa_cmip6_sw_ =
       mam_coupling::view_3d("ssa_cmip6_sw", ncol_, nlev_, nswbands_);
   af_cmip6_sw_ = mam_coupling::view_3d("af_cmip6_sw", ncol_, nlev_, nswbands_);
@@ -416,13 +415,11 @@ void MAMOptics::initialize_impl(const RunType run_type) {
         mam4_pom_physical_properties_file, mam4_bc_physical_properties_file,
         mam4_mom_physical_properties_file};
 
-      // FIXME: make a function that return a index given the species name
       // specname_amode(ntot_aspectype) = (/ 'sulfate (0)   ',
       //  'ammonium (1) ', 'nitrate (2)   ', &
       //  'p-organic (3) ', 's-organic (4) ', 'black-c (5)  ', &
       //  'seasalt (6)  ', 'dust  (7)    ', &
       //  'm-organic (8)' /)
-      // FIXME: move this info to a conf file
       std::vector<int> species_ids = {
           4,  // soa:s-organic
           7,  // dst:dust:
@@ -453,7 +450,7 @@ void MAMOptics::initialize_impl(const RunType run_type) {
 
         // copy data to device
         int species_id =
-            species_ids[ispec];  // FIXME: I need the species index for soa
+            species_ids[ispec];
         mam_coupling::set_refindex_aerosol(
             species_id, host_views_aero,
             specrefndxsw_host,  // complex refractive index for water visible
