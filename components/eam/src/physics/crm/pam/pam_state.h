@@ -261,6 +261,7 @@ inline void pam_state_save_dry_density( pam::PamCoupler &coupler ) {
 inline void pam_state_recall_dry_density( pam::PamCoupler &coupler ) {
   using yakl::c::parallel_for;
   using yakl::c::SimpleBounds;
+  using yakl::atomicAdd;
   auto &dm_device = coupler.get_data_manager_device_readwrite();
   auto nens       = coupler.get_option<int>("ncrms");
   auto nz         = coupler.get_option<int>("crm_nz");
@@ -269,11 +270,29 @@ inline void pam_state_recall_dry_density( pam::PamCoupler &coupler ) {
   auto crm_rho_d  = dm_device.get<real,4>("density_dry");
   auto tmp_rho_d  = dm_device.get<real,4>("density_dry_save");
   //------------------------------------------------------------------------------------------------
-  parallel_for( "Recall CRM dry density",
-                SimpleBounds<4>(nz,ny,nx,nens),
-                YAKL_LAMBDA (int k_crm, int j, int i, int iens) {
-    crm_rho_d(k_crm,j,i,iens) = tmp_rho_d(k_crm,j,i,iens);
-  });
+  #ifdef MMF_ALT_DENSITY_RECALL
+    // initialize horizontal mean of previous CRM dry density
+    real2d old_hmean_rho_d("old_hmean_rho_d"   ,nz,nens);
+    real2d new_hmean_rho_d("new_hmean_rho_d"   ,nz,nens);
+    parallel_for(SimpleBounds<2>(nz,nens), YAKL_LAMBDA (int k, int iens) {
+      old_hmean_rho_d(k,iens) = 0;
+      new_hmean_rho_d(k,iens) = 0;
+    });
+    real r_nx_ny  = 1._fp/(nx*ny);  // precompute reciprocal to avoid costly divisions
+    // calculate horizontal mean of previous CRM dry density
+    parallel_for(SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
+      atomicAdd( old_hmean_rho_d(k,iens), tmp_rho_d(k,j,i,iens) * r_nx_ny );
+      atomicAdd( new_hmean_rho_d(k,iens), crm_rho_d(k,j,i,iens) * r_nx_ny );
+    });
+    // replace horizontal mean dry density with prevoius value
+    parallel_for(SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
+      crm_rho_d(k,j,i,iens) = crm_rho_d(k,j,i,iens) - new_hmean_rho_d(k,iens) + old_hmean_rho_d(k,iens);
+    });
+  #else
+    parallel_for( "Recall CRM dry density",SimpleBounds<4>(nz,ny,nx,nens),YAKL_LAMBDA (int k_crm, int j, int i, int iens) {
+      crm_rho_d(k_crm,j,i,iens) = tmp_rho_d(k_crm,j,i,iens);
+    });
+  #endif
   //------------------------------------------------------------------------------------------------
 }
 
