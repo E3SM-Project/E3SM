@@ -42,7 +42,7 @@
 		<dim name="nISMIP6OceanLayers" units="unitless"
 		     description="The number of layers in the ISMIP6 ocean temperature dataset."
 		/>
-		<dim name="maxTracersAdvect" definition="2" units="unitless"
+		<dim name="maxTracersAdvect" definition="4" units="unitless"
 		     description="The maximum number of tracers to be advected."
 		/>
 		<dim name="nRegions" definition="1" units="unitless"
@@ -110,12 +110,20 @@
 	<nml_record name="advection" in_defaults="true">
 		<nml_option name="config_thickness_advection" type="character" default_value="fo" units="unitless"
 		            description="Selection of the method for advecting thickness ('fo' = first-order upwinding)."
-		            possible_values="'fo', 'none'"
+		            possible_values="'fo', 'fct', 'none'"
 		/>
 		<nml_option name="config_tracer_advection" type="character" default_value="none" units="unitless"
 		            description="Selection of the method for advecting tracers."
-		            possible_values="'fo', 'none'"
-                />
+		            possible_values="'fo', 'fct', 'none'"
+		/>
+		<nml_option name="config_horiz_tracer_adv_order" type="integer" default_value="3" units="unitless"
+			    description="Order of polynomial used for tracer reconstruction at cell edges"
+			    possible_values="2, 3 and 4"
+		/>
+		<nml_option name="config_advection_coef_3rd_order" type="real" default_value="0.25" units="unitless"
+					description="Reconstruction of 3rd-order reconstruction to blend with 4th-order reconstuction. Equivalent to beta in Skamarock and Gassmann (2011) eq. 7. 0 is fully 4th order, 1 is fully 3rd order."
+					possible_values="any real between 0 and 1"
+		/>
 		<nml_option name="config_restore_thickness_after_advection" type="logical" default_value=".false." units="unitless"
 			    description="If true, reset thickness to values at previous timestep after advection occurs. This is used for spinning up tracer fields such as damage.  When this is true, geometry changes from surface and basal mass balance (grounded or floating) and facemelting are not retained, but changes from calving are."
 			    possible_values=".true. or .false."
@@ -283,6 +291,10 @@
                 <nml_option name="config_distribute_unablatedVolumeDynCell" type="logical" default_value=".false." units="unitless"
                         description="If true, then distribute unablatedVolumeDynCell among dynamic neighbors when converting ablation velocity to ablation thickness. This should only be used as a clean-up measure, while limiting the timestep based on ablation velocity should be used as the primary method of getting accurate ablation thickness from ablation velocity.  If you choose to set config_adaptive_timestep_calvingCFL_fraction much larger than 1.0 (which is not recommended), setting this option to true usually results in more accurate calving behavior. "
                         possible_values=".true. or .false."
+                />
+                <nml_option name="config_update_velocity_before_calving" type="logical" default_value=".false." units="unitless"
+                            description="If true, add an additional velocity solve between advection and calving. If false, use velocity field from beginning of time step to calculate calving rate. For certain calving laws, like damage threshold calving, it is not necessary to update the velocity before calving, while for von Mises stress and eigencalving, it is more accurate to have an updated velocity state before solving for calvingThickness."
+                            possible_values=".true. or .false."
                 />
 	</nml_record>
 
@@ -477,8 +489,16 @@
 		            possible_values="Any time interval of the format 'YYYY-MM-DD_HH:MM:SS', but limited by CFL condition."
 		/>
 		<nml_option name="config_time_integration" type="character" default_value="forward_euler" units="unitless"
-		            description="Time integration method (currently, only forward Euler is supported)."
-		            possible_values="'forward_euler'"
+		            description="Time integration method."
+		            possible_values="'forward_euler' or 'runge_kutta'"
+		/>
+                <nml_option name="config_rk_order" type="integer" default_value="2" units="unitless"
+                            description="Order of Runge-Kutta time integration to use. A value of 1 would be equivalent to forward euler, but will cause an error to avoid unnecessary redundancy. Values of 2 and 3 indicate strong-stability preserving RK2 and RK3. There is currently no support for classical RK2 or RK4 methods."
+                            possible_values="2 or 3"
+                />
+		<nml_option name="config_rk3_stages" type="integer" default_value="3" units="stages"
+                        description="Number of stages for strong stability preserving RK3 time integration. If set to 3, this involves 3 velocity solves and a maximum CFL fraction of 1. If set to 4, this involves 4 velocity solves, but the maximum CFL fraction is 2."
+                        possible_values="3 or 4"
 		/>
 		<nml_option name="config_adaptive_timestep" type="logical" default_value=".false." units="unitless"
 			description="Determines if the time step should be adjusted based on the CFL condition or should be steady in time. If true, the config_dt_* options are ignored."
@@ -533,11 +553,11 @@
 		description="Path to the filename for restart timestamps to be read and written from."
 		possible_values="Path to a file."
 		/>
-		<nml_option name="config_start_time" type="character" default_value="0000-01-01_00:00:00" units="unitless"
+		<nml_option name="config_start_time" type="character" default_value="0001-01-01_00:00:00" units="unitless"
 		            description="Timestamp describing the initial time of the simulation.  If it is set to 'file', the initial time is read from the filename specified by config_restart_timestamp_name (defaults to 'restart_timestamp')."
 		            possible_values="'YYYY-MM-DD_HH:MM:SS' (items in the format string may be dropped from the left if not needed, and the components on either side of the underscore may be replaced with a single integer representing the rightmost unit)"
 		/>
-		<nml_option name="config_stop_time" type="character" default_value="0000-01-01_00:00:00" units="unitless"
+		<nml_option name="config_stop_time" type="character" default_value="0001-01-01_00:00:00" units="unitless"
 		            description="Timestamp describing the final time of the simulation. If it is set to 'none' the final time is determined from config_start_time and config_run_duration.  If config_run_duration is also specified, it takes precedence over config_stop_time.  Set config_stop_time to be equal to config_start_time (and config_run_duration to 'none') to perform a diagnostic solve only."
 		            possible_values="'YYYY-MM-DD_HH:MM:SS' or 'none' (items in the format string may be dropped from the left if not needed, and the components on either side of the underscore may be replaced with a single integer representing the rightmost unit)"
 		/>
@@ -637,6 +657,10 @@
 		<nml_option name="config_print_velocity_cleanup_details" type="logical" default_value=".false." units="unitless"
 		            description="After velocity is calculated there are a few checks for appropriate values in certain geometric configurations.  Setting this option to .true. will cause detailed information about those adjustments to be printed."
 		            possible_values=".true. or .false."
+		/>
+		<nml_option name="config_check_tracer_monotonicity" type="logical" default_value=".false."
+                            description="Check tracer monotonicity at the end of the monotonic advection routine and write warnings to log file if not monotonic."
+                            possible_values=".true. or .false."
 		/>
 	</nml_record>
 
@@ -741,6 +765,7 @@
                         <var name="uReconstructX" packages="higherOrderVelocity"/>
 			<var name="uReconstructY" packages="higherOrderVelocity"/>
                         <var name="basalFrictionFlux"/>
+                        <var name="passiveTracer2d"/>
 			<var name="damage"/>
 			<var name="calvingVelocityData"/>
 			<var name="basalMeltInput" packages="hydro"/>
@@ -850,6 +875,7 @@
 			<var name="waterPressure" packages="hydro"/>
                         <var name="channelArea" packages="hydro"/>  <!-- this is only needed if running with channels - could be package-controlled -->
 			<var name="waterFluxMask" packages="hydro"/>
+                        <var name="passiveTracer2d"/>
 			<var name="damage"/>
 			<var name="calvingVelocityData"/>
 			<var name="damageMax"/>
@@ -1207,8 +1233,11 @@ is the value of that variable from the *previous* time level!
                 <var name="floatingBasalMassBalApplied" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
                      description="Applied basal mass balance on floating regions"
                 />
-                <var name="calvingMask" type="integer" dimensions="nCells Time" units="m" time_levs="1"
+                <var name="calvingMask" type="integer" dimensions="nCells Time" units="" time_levs="1"
                         description="mask of grid cells that should be calved.  0=no calving, 1=should be calved"
+                />
+                <var name="openOceanMask" type="integer" dimensions="nCells Time" units="" time_levs="1"
+                        description="mask of open ocean cells, including floating non-dynamic cells.  Used to eliminate holes in ice shelf from calving"
                 />
                 <var name="calvingFrontMask" type="integer" dimensions="nCells Time" units="none" time_levs="1"
                         description="mask of the calving front position on cells"
@@ -1269,6 +1298,9 @@ is the value of that variable from the *previous* time level!
                 />
                 <var name="calvingVelocityData" type="real" dimensions="nCells Time" units="m s^{-1}" time_levs="1"
                      description="rate of calving front retreat due to calving, represented as a velocity normal to the calving front (in the x-y plane), given by the input netCDF file."
+                />
+                <var name="passiveTracer2d" type="real" dimensions="nCells Time" units="none" time_levs="1"
+                     description="passive tracer used to verify advection routines"
                 />
                 <var name="damage" type="real" dimensions="nCells Time" units="none" time_levs="1"
                      description="Damage is parameterized as the local ice thickness divided by the fracture depth, such that unfractured ice has damage=0 and ice fractured through its full thickness has damage=1"
@@ -1413,6 +1445,9 @@ is the value of that variable from the *previous* time level!
                 <var name="layerNormalVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
                      description="horizonal velocity, normal component to an edge, layer midpoint"
                 />
+		<var name="layerThicknessEdgeFlux" type="real" dimensions="nVertLevels nEdges Time" units="m^2 s^{-1}"
+                     description="layer-normal thickness flux on edges"
+		/>
                 <var name="normalVelocityInitial" type="real" dimensions="nVertInterfaces nEdges Time" units="m s^{-1}"
                      description="horizonal velocity, normal component to an edge, computed at initialization"
                 />

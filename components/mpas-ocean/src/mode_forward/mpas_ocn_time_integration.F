@@ -34,6 +34,7 @@ module ocn_time_integration
    use ocn_time_integration_split
    use ocn_time_integration_si
    use ocn_time_integration_lts
+   use ocn_time_integration_split_ab2
 
 
    implicit none
@@ -65,12 +66,13 @@ module ocn_time_integration
     integer :: timeIntegratorChoice
 
     integer, parameter :: &
-       timeIntUnknown         = 0, &! unknown or undefined
-       timeIntSplitExplicit   = 1, &! split-explicit
-       timeIntUnsplitExplicit = 2, &! unsplit-explicit
-       timeIntSemiImplicit    = 3, &! Semi-implicit
-       timeIntRK4             = 4, &! 4th-order Runge-Kutta
-       timeIntLTS             = 5   ! local time-stepping
+       timeIntUnknown          = 0, &! unknown or undefined
+       timeIntSplitExplicit    = 1, &! split-explicit
+       timeIntUnsplitExplicit  = 2, &! unsplit-explicit
+       timeIntSemiImplicit     = 3, &! Semi-implicit
+       timeIntRK4              = 4, &! 4th-order Runge-Kutta
+       timeIntLTS              = 5, &! local time-stepping
+       timeIntSplitExplicitAB2 = 6   ! split-explicit AB2 baroclinic
 
 !***********************************************************************
 
@@ -134,6 +136,8 @@ module ocn_time_integration
          call ocn_time_integrator_rk4(domain, dt)
       case (timeIntLTS)
          call ocn_time_integrator_lts(domain, dt)
+      case (timeIntSplitExplicitAB2)
+         call ocn_time_integrator_split_ab2(domain, dt)
       end select
 
       ! compute time since start of simulation, in days
@@ -229,6 +233,10 @@ module ocn_time_integration
          timeIntegratorChoice = timeIntLTS
          call ocn_time_integration_lts_init(domain)
 
+      case ('split_explicit_ab2')
+         timeIntegratorChoice = timeIntSplitExplicitAB2
+         call ocn_time_integration_split_ab2_init(domain)
+
       case default
 
          err = 1
@@ -237,7 +245,8 @@ module ocn_time_integration
             'Incorrect choice for config_time_integrator:' // &
              trim(config_time_integrator) // &
              '   choices are: RK4, split_explicit, ' // &
-                 'unsplit_explicit, split_implicit, LTS', MPAS_LOG_ERR)
+                 'unsplit_explicit, split_implicit, LTS, ' // &
+                 'split_explicit_ab2', MPAS_LOG_ERR)
 
       end select
 

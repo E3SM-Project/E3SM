@@ -72,8 +72,8 @@ module micro_p3
 
   ! Bit-for-bit math functions.
 #ifdef SCREAM_CONFIG_IS_CMAKE
-  use physics_share_f2c, only: cxx_pow, cxx_sqrt, cxx_cbrt, cxx_gamma, cxx_log, &
-                                 cxx_log10, cxx_exp, cxx_expm1, cxx_tanh
+  use physics_share_f2c, only: scream_pow, scream_sqrt, scream_cbrt, scream_gamma, scream_log, &
+                               scream_log10, scream_exp, scream_expm1, scream_tanh
 #endif
 
   implicit none

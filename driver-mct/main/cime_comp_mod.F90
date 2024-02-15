@@ -118,6 +118,7 @@ module cime_comp_mod
   use seq_infodata_mod, only: seq_infodata_init, seq_infodata_exchange
   use seq_infodata_mod, only: seq_infodata_type, seq_infodata_orb_variable_year
   use seq_infodata_mod, only: seq_infodata_print, seq_infodata_init2
+  use seq_infodata_mod, only: nlmaps_exclude_max_number, nlmaps_exclude_nchar
 
   ! domain related routines
   use seq_domain_mct, only : seq_domain_check
@@ -1026,6 +1027,7 @@ contains
     integer(i8) :: end_count          ! end time
     integer(i8) :: irtc_rate          ! factor to convert time to seconds
     integer :: nlmaps_verbosity
+    character(nlmaps_exclude_nchar) :: nlmaps_exclude_fields(nlmaps_exclude_max_number)
 
     !----------------------------------------------------------
     !| Timer initialization (has to be after mpi init)
@@ -1176,7 +1178,8 @@ contains
          reprosum_diffmax=reprosum_diffmax         , &
          reprosum_recompute=reprosum_recompute     , &
          max_cplstep_time=max_cplstep_time         , &
-         nlmaps_verbosity=nlmaps_verbosity)
+         nlmaps_verbosity=nlmaps_verbosity         , &
+         nlmaps_exclude_fields=nlmaps_exclude_fields)
 
     ! above - cpl_decomp is set to pass the cpl_decomp value to seq_mctext_decomp
     ! (via a use statement)
@@ -1189,7 +1192,8 @@ contains
          repro_sum_rel_diff_max_in = reprosum_diffmax, &
          repro_sum_recompute_in    = reprosum_recompute)
 
-    call seq_nlmap_setopts(nlmaps_verbosity_in = nlmaps_verbosity)
+    call seq_nlmap_setopts(nlmaps_verbosity_in = nlmaps_verbosity, &
+         nlmaps_exclude_fields_in = nlmaps_exclude_fields)
 
     ! Check cpl_seq_option
 

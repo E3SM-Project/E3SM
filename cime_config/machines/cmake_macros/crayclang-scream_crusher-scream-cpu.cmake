@@ -1,12 +1,11 @@
 if (compile_threaded)
-  string(APPEND CFLAGS " -fopenmp")
-  string(APPEND FFLAGS " -fopenmp")
-  string(APPEND CXXFLAGS " -fopenmp")
-  string(APPEND LDFLAGS " -fopenmp")
+  string(APPEND CMAKE_C_FLAGS " -fopenmp")
+  string(APPEND CMAKE_Fortran_FLAGS " -fopenmp")
+  string(APPEND CMAKE_CXX_FLAGS " -fopenmp")
+  string(APPEND CMAKE_EXE_LINKER_FLAGS " -fopenmp")
 endif()
 
 set(PIO_FILESYSTEM_HINTS "gpfs")
-string(APPEND CXX_LIBS " -lstdc++")
 
 string(APPEND CPPDEFS " -DCPRCRAY")
 

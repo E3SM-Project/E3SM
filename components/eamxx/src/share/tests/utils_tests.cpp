@@ -5,6 +5,7 @@
 #include "share/util/scream_utils.hpp"
 #include "share/util/scream_time_stamp.hpp"
 #include "share/util/scream_setup_random_test.hpp"
+#include "share/scream_config.hpp"
 
 TEST_CASE("contiguous_superset") {
   using namespace scream;
@@ -153,9 +154,11 @@ TEST_CASE ("time_stamp") {
     ts3 += 1;
     ts4 += 1;
 #ifdef SCREAM_HAS_LEAP_YEAR
+    REQUIRE (use_leap_year());
     REQUIRE (ts2.get_month()==2);
     REQUIRE (ts3.get_month()==2);
 #else
+    REQUIRE (not use_leap_year());
     REQUIRE (ts2.get_month()==3);
     REQUIRE (ts3.get_month()==3);
 #endif

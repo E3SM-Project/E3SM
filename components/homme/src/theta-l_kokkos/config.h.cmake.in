@@ -63,12 +63,14 @@
 /* temporary flag to compare f90-cxx until we settle on either cxx or f90 implementation */
 #cmakedefine XX_NONBFB_COMING
 
-/* Identifies whether this is a cuda/hip build */
-#cmakedefine HOMMEXX_ENABLE_GPU
-
 /* When doing BFB testing, we occasionally must use modified code. */
 /* Use this flag to protect such code. */
 #cmakedefine HOMMEXX_BFB_TESTING
+
+/* Whether this is a build for CUDA/HIP (used for f90-vs-cxx bfb math functions */
+/* impl). This symbol is visible in the F90 code, unlike HOMMEXX_ENABLE_GPU */
+/* defined in Hommexx_config.h. */
+#cmakedefine HOMMEXX_ENABLE_GPU_F90
 
 /* Detect whether this is a kokkos target */
 #cmakedefine01 KOKKOS_TARGET

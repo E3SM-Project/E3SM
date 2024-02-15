@@ -14,7 +14,7 @@ module elm_driver
   use elm_varpar             , only : nlevtrc_soil, nlevsoi
   use elm_varctl             , only : wrtdia, iulog, create_glacier_mec_landunit, use_fates, use_betr, use_extrasnowlayers
   use elm_varctl             , only : use_cn, use_lch4, use_voc, use_noio, use_c13, use_c14
-  use elm_varctl             , only : use_erosion, use_fates_sp
+  use elm_varctl             , only : use_erosion, use_fates_sp, use_fan
   use elm_varctl             , only : mpi_sync_nstep_freq
   use elm_time_manager       , only : get_step_size, get_curr_date, get_ref_date, get_nstep, is_beg_curr_day, get_curr_time_string
   use elm_time_manager       , only : get_curr_calday, get_days_per_year
@@ -152,6 +152,7 @@ module elm_driver
   use VegetationDataType     , only : veg_cs, c13_veg_cs, c14_veg_cs
   use VegetationDataType     , only : veg_ns, veg_nf
   use VegetationDataType     , only : veg_ps, veg_pf
+  use FanStreamMod           , only : fanstream_interp
 
   !----------------------------------------------------------------------------
   ! bgc interface & pflotran:
@@ -201,8 +202,10 @@ contains
     ! the calling tree is given in the description of this module.
     !
     ! !USES:
-     use elm_varctl           , only : fates_spitfire_mode
-     use FATESFireFactoryMod  , only : scalar_lightning
+     use elm_varctl            , only : fates_spitfire_mode
+     use elm_varctl            , only : fates_seeddisp_cadence
+     use FATESFireFactoryMod   , only : scalar_lightning
+     use FatesInterfaceTypesMod, only : fates_dispersal_cadence_none
      
     ! !ARGUMENTS:
     implicit none
@@ -652,6 +655,10 @@ contains
 
 #endif
 
+    if (use_fan) then
+       call fanstream_interp(bounds_proc, atm2lnd_vars)
+    end if
+
     ! ============================================================================
     ! Initialize variables from previous time step, downscale atm forcings, and
     ! Determine canopy interception and precipitation onto ground surface.
@@ -1009,7 +1016,7 @@ contains
                  canopystate_vars, soilstate_vars, temperature_vars, crop_vars, &
                  photosyns_vars, soilhydrology_vars, energyflux_vars,&
                  PlantMicKinetics_vars,                                         &
-                 phosphorusflux_vars, phosphorusstate_vars)
+                 phosphorusflux_vars, phosphorusstate_vars, frictionvel_vars)
 
            call AnnualUpdate(bounds_clump,            &
                   filter(nc)%num_soilc, filter(nc)%soilc, &
@@ -1035,10 +1042,11 @@ contains
              call EcosystemDynNoLeaching1(bounds_clump,         &
                        filter(nc)%num_soilc, filter(nc)%soilc,  &
                        filter(nc)%num_soilp, filter(nc)%soilp,  &
+                       filter(nc)%num_pcropp, filter(nc)%pcropp, &
                        cnstate_vars,            &
                        atm2lnd_vars,            &
                        canopystate_vars, soilstate_vars, crop_vars,   &
-                       ch4_vars, photosyns_vars )
+                       ch4_vars, photosyns_vars, frictionvel_vars )
 
              !--------------------------------------------------------------------------------
              if (use_elm_interface) then
@@ -1116,7 +1124,7 @@ contains
                    cnstate_vars,  atm2lnd_vars,          &
                    canopystate_vars, soilstate_vars, crop_vars, ch4_vars, &
                    photosyns_vars, soilhydrology_vars, energyflux_vars,   &
-                   sedflux_vars)
+                   sedflux_vars, solarabs_vars)
 
              !===========================================================================================
              ! clm_interface: 'EcosystemDynNoLeaching' is divided into 2 subroutines (1 & 2): END
@@ -1387,6 +1395,11 @@ contains
     end do
     !$OMP END PARALLEL DO
 
+    ! Pass fates seed dispersal information to all nodes
+    if (use_fates) then
+       if (fates_seeddisp_cadence /= fates_dispersal_cadence_none) call alm_fates%WrapGlobalSeedDispersal()
+    end if
+    
     ! ============================================================================
     ! Determine gridcell averaged properties to send to atm
     ! ============================================================================

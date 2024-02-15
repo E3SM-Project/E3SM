@@ -228,7 +228,7 @@ contains
       !$omp do schedule(runtime) &
       !$omp private(fluxRediZTop, invAreaCell, i, iEdge, cell1, cell2, iCellSelf, r_tmp, coef, k, &
       !$omp         kappaRediEdgeVal, iTr, tracer_turb_flux, flux, flux_term2, flux_term3, &
-      !$omp         dTracerDx, use_Redi_diag_terms, kUp, kDn)
+      !$omp         dTracerDx, use_Redi_diag_terms, jCell, kUp, kDn)
       do iCell = 1, nCells
          if (maxLevelCell(iCell) .ge. config_Redi_min_layers_diag_terms) then
             use_Redi_diag_terms = .true.

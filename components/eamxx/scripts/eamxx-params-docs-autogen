@@ -1,0 +1,142 @@
+#!/usr/bin/env python3
+
+"""
+This script parses the file `cime_config/namelist_defaults_scream.xml'
+and generates the markdown file `docs/common/eamxx_params.md`,
+containing all the runtime parameters that can be configured via calls
+to `atmchange` (in the case folder). For each parameter, we also report
+a doc string and its type, as well as, if present, constraints and valid values.
+"""
+
+import argparse, sys, os, pathlib
+
+from utils import _ensure_pylib_impl
+
+_ensure_pylib_impl("mdutils")
+
+import xml.etree.ElementTree as ET
+from mdutils.mdutils import MdUtils
+from mdutils import Html
+
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "cime_config"))
+from eamxx_buildnml_impl import resolve_all_inheritances, get_valid_selectors
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""{0}
+""".format(pathlib.Path(args[0]).name),
+        description=description,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+
+    return parser.parse_args(args[1:])
+
+###########################################################################
+def add_param(docs,scope,item):
+###########################################################################
+    # Locked parameters are not to be configured at runtime, so don't even bother
+    # E.g, a locked param is something we need to get in the input file, like
+    # the restart write frequency, but we don't want the user to modify it
+    # via atmchange
+    if "locked" in item.attrib.keys():
+        return
+    docs.new_line(f"* {scope}{item.tag}:")
+
+    pdoc = item.attrib['doc'] if 'doc' in item.attrib.keys() else "**MISSING**"
+    docs.new_line(f"    - description: {pdoc}")
+
+    ptype = item.attrib['type'] if 'type' in item.attrib.keys() else "**MISSING**"
+    docs.new_line(f"    - type: {ptype}")
+
+    pvalid = item.attrib['valid_values'] if 'valid_values' in item.attrib.keys() else None
+    if pvalid is not None:
+        docs.new_line(f"    - valid values: {pvalid}")
+    pconstr = item.attrib['constraints'] if 'constraints' in item.attrib.keys() else None
+    if pconstr is not None:
+        docs.new_line(f"    - constraints: {pconstr}")
+
+###########################################################################
+def add_children(docs,xml,scope=""):
+###########################################################################
+    done = []
+    # Locked parameters are not to be configured at runtime, so don't even bother
+    # E.g, a locked param is something we need to get in the input file, like
+    # the restart write frequency, but we don't want the user to modify it
+    # via atmchange
+    if "locked" in xml.attrib.keys():
+        return
+    for item in xml:
+        # The same entry may appear multiple times in the XML defaults file,
+        # each time with different selectors. We don't want to generate the
+        # same documentation twice.
+        if item.tag in done:
+            continue
+        done.append(item.tag)
+        if len(item)>0:
+            add_children (docs,item,f"{scope}{xml.tag}::")
+        else:
+            add_param(docs,f"{scope}{xml.tag}::",item)
+    docs.new_line()
+
+###########################################################################
+def generate_params_docs():
+###########################################################################
+
+    eamxx = pathlib.Path(__file__).parent.parent.resolve()
+    xml_defaults_file = eamxx / "cime_config" / "namelist_defaults_scream.xml"
+    output_file = eamxx / "docs" / "common" / "eamxx_params.md"
+
+    print("Generating eamxx params documentation...")
+    print(f"  output file: {output_file}")
+
+    with open(xml_defaults_file, "r") as fd:
+        tree = ET.parse(fd)
+        xml_defaults = tree.getroot()
+
+    selectors = get_valid_selectors(xml_defaults)
+    resolve_all_inheritances(xml_defaults)
+
+    docs = MdUtils(file_name=str(output_file),title='EAMxx runtime configurable parameters')
+    with open (output_file, "w") as fd:
+        docs.new_header(level=1,title='Atmosphere Processes Parameters')
+        aps = xml_defaults.find('atmosphere_processes_defaults')
+        for ap in aps:
+            if ap.tag.startswith('atm_proc'):
+                continue
+            docs.new_header(level=2,title=ap.tag)
+            add_children(docs,ap)
+                
+        ic = xml_defaults.find('initial_conditions')
+        docs.new_header(level=1,title="Initial Conditions Parameters")
+        add_children(docs,ic)
+
+        ad = xml_defaults.find('driver_options')
+        docs.new_header(level=1,title='Atmosphere Driver Parameters')
+        add_children(docs,ad)
+
+        scorpio = xml_defaults.find('Scorpio')
+        docs.new_header(level=1,title='Scorpio Parameters')
+        add_children(docs,scorpio)
+
+        homme = xml_defaults.find('ctl_nl')
+        docs.new_header(level=1,title='Homme namelist')
+        add_children(docs,homme)
+    docs.create_md_file()
+
+    print("Generating eamxx params documentation ... SUCCESS!")
+    return True
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+
+    success = generate_params_docs(**vars(parse_command_line(sys.argv, description)))
+
+    sys.exit(0 if success else 1)
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)

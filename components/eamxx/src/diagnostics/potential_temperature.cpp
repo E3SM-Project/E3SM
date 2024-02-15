@@ -54,9 +54,6 @@ void PotentialTemperatureDiagnostic::compute_diagnostic_impl()
       theta(icol,jpack) = PF::calculate_theta_from_T(T_mid(icol,jpack),p_mid(icol,jpack));
   });
   Kokkos::fence();
-
-  const auto ts = get_field_in("T_mid").get_header().get_tracking().get_time_stamp();
-  m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
 }
 // =========================================================================================
 

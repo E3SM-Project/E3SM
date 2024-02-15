@@ -17,6 +17,7 @@ my @groups = qw(seaice_model
                 meltponds
                 thermodynamics
                 itd
+                floesize
                 ridging
                 atmosphere
                 ocean

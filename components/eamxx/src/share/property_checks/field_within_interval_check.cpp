@@ -1,5 +1,6 @@
 #include "share/property_checks/field_within_interval_check.hpp"
 #include "share/util/scream_array_utils.hpp"
+#include "share/field/field_utils.hpp"
 
 #include <ekat/util/ekat_math_utils.hpp>
 
@@ -229,11 +230,12 @@ PropertyCheck::ResultAndMsg FieldWithinIntervalCheck::check_impl () const
     res_and_msg.msg  = "Check passed.\n";
     res_and_msg.msg += "  - check name:" + this->name() + "\n";
     res_and_msg.msg += "  - field id: " + f.get_header().get_identifier().get_id_string() + "\n";
-  } else {
-    res_and_msg.msg  = "Check failed.\n";
-    res_and_msg.msg += "  - check name: " + this->name() + "\n";
-    res_and_msg.msg += "  - field id: " + f.get_header().get_identifier().get_id_string() + "\n";
+    return res_and_msg;
   }
+
+  res_and_msg.msg  = "Check failed.\n";
+  res_and_msg.msg += "  - check name: " + this->name() + "\n";
+  res_and_msg.msg += "  - field id: " + f.get_header().get_identifier().get_id_string() + "\n";
 
   auto idx_min = unflatten_idx(layout.dims(),minmaxloc.min_loc);
   auto idx_max = unflatten_idx(layout.dims(),minmaxloc.max_loc);
@@ -248,11 +250,12 @@ PropertyCheck::ResultAndMsg FieldWithinIntervalCheck::check_impl () const
 
   using namespace ShortFieldTagsNames;
 
-  int min_col_lid, max_col_lid;
-  bool has_latlon;
+  int min_col_lid = -1, max_col_lid = -1;
+  bool has_latlon = false;
   bool has_col_info = m_grid and layout.tag(0)==COL;
-  const Real* lat;
-  const Real* lon;
+  bool has_additional_col_info = not additional_data_fields().empty();
+  const Real* lat = nullptr;
+  const Real* lon = nullptr;
 
   if (has_col_info) {
     // We are storing grid info, and the field is over columns. Get col id and coords.
@@ -270,7 +273,7 @@ PropertyCheck::ResultAndMsg FieldWithinIntervalCheck::check_impl () const
   msg << "    - value: " << minmaxloc.min_val << "\n";
   if (has_col_info) {
     auto gids = m_grid->get_dofs_gids().get_view<const AbstractGrid::gid_type*,Host>();
-    msg << "    - entry: (" << gids(min_col_lid);
+    msg << "    - indices (w/ global column index): (" << gids(min_col_lid);
     for (size_t i=1; i<idx_min.size(); ++i) {
       msg << "," << idx_min[i];
     }
@@ -279,12 +282,20 @@ PropertyCheck::ResultAndMsg FieldWithinIntervalCheck::check_impl () const
       msg << "    - lat/lon: (" << lat[min_col_lid] << ", " << lon[min_col_lid] << ")\n";
     }
   }
+  if (has_additional_col_info and res_and_msg.result==CheckResult::Fail) {
+    msg << "    - additional data (w/ local column index):\n";
+    for (auto& f : additional_data_fields()) {
+      msg << "\n";
+      print_field_hyperslab(f, {COL}, {min_col_lid}, msg);
+    }
+    msg << "\n    END OF ADDITIONAL DATA\n\n";
+  }
 
   msg << "  - maximum:\n";
   msg << "    - value: " << minmaxloc.max_val << "\n";
   if (has_col_info) {
     auto gids = m_grid->get_dofs_gids().get_view<const AbstractGrid::gid_type*,Host>();
-    msg << "    - entry: (" << gids(max_col_lid);
+    msg << "    - indices (w/ global column index): (" << gids(max_col_lid);
     for (size_t i=1; i<idx_max.size(); ++i) {
       msg << "," << idx_max[i];
     }
@@ -292,6 +303,14 @@ PropertyCheck::ResultAndMsg FieldWithinIntervalCheck::check_impl () const
     if (has_latlon) {
       msg << "    - lat/lon: (" << lat[max_col_lid] << ", " << lon[max_col_lid] << ")\n";
     }
+  }
+  if (has_additional_col_info and res_and_msg.result==CheckResult::Fail) {
+    msg << "    - additional data (w/ local column index):\n";
+    for (auto& f : additional_data_fields()) {
+      msg << "\n";
+      print_field_hyperslab(f, {COL}, {max_col_lid}, msg);
+    }
+    msg << "\n    END OF ADDITIONAL DATA\n";
   }
 
   res_and_msg.msg += msg.str();

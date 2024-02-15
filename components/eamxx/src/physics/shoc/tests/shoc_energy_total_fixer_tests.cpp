@@ -55,6 +55,8 @@ struct UnitWrap::UnitTest<D>::TestShocTotEnergyFixer {
     static constexpr Real wthl_sfc = 0.5;
     // Define surface total water flux [kg/kg m/s]
     static constexpr Real wqw_sfc = 0.01;
+    //  Pressure at interface [Pa]
+    static constexpr Real pint[nlevi] = {50000, 60000, 70000, 80000, 90000, 100000};
 
     // Initialize data structure for bridging to F90
     ShocEnergyTotalFixerData SDS(shcol, nlev, nlevi, dtime, nadv);
@@ -93,6 +95,7 @@ struct UnitWrap::UnitTest<D>::TestShocTotEnergyFixer {
         const auto offset = n + s * nlevi;
 
         SDS.zi_grid[offset] = zi_grid[n];
+        SDS.pint[offset] = pint[n];
       }
     }
 

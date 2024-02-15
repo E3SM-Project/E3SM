@@ -14,8 +14,8 @@
 
       use ice_kinds_mod
       use ice_constants_colpkg, only: c0, c1, c2, p01, p1, p5, puny, &
-          rhoi, rhos, hs_min, cp_ice, cp_ocn, depressT, Lfresh, ksno, kice
-      use ice_colpkg_shared, only: conduct, calc_Tsfc, solve_zsal
+          rhoi, rhos, hs_min, cp_ice, cp_ocn, depressT, Lfresh, kice
+      use ice_colpkg_shared, only: conduct, calc_Tsfc, solve_zsal, ksno
       use ice_therm_shared, only: ferrmax, l_brine, hfrazilmin
       use ice_warnings, only: add_warning
 

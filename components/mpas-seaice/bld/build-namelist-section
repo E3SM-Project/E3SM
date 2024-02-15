@@ -68,6 +68,7 @@ add_default($nl, 'config_do_restart_snow_grain_radius');
 ##############################
 
 add_default($nl, 'config_nCategories');
+add_default($nl, 'config_nFloeCategories');
 add_default($nl, 'config_nIceLayers');
 add_default($nl, 'config_nSnowLayers');
 
@@ -95,7 +96,7 @@ add_default($nl, 'config_use_dynamics');
 add_default($nl, 'config_use_velocity_solver');
 add_default($nl, 'config_use_advection');
 add_default($nl, 'config_use_forcing');
-add_default($nl, 'config_use_column_package');
+add_default($nl, 'config_use_column_physics');
 add_default($nl, 'config_use_prescribed_ice');
 add_default($nl, 'config_use_prescribed_ice_forcing');
 
@@ -111,6 +112,7 @@ add_default($nl, 'config_forcing_precipitation_units');
 add_default($nl, 'config_forcing_sst_type');
 add_default($nl, 'config_forcing_bgc_type');
 add_default($nl, 'config_update_ocean_fluxes');
+add_default($nl, 'config_frazil_coupling_type');
 add_default($nl, 'config_include_pond_freshwater_feedback');
 
 ###########################
@@ -163,6 +165,7 @@ add_default($nl, 'config_recover_tracer_means_check');
 # Namelist group: column_package #
 ##################################
 
+add_default($nl, 'config_column_physics_type');
 add_default($nl, 'config_use_column_shortwave');
 add_default($nl, 'config_use_column_vertical_thermodynamics');
 add_default($nl, 'config_use_column_biogeochemistry');
@@ -184,6 +187,7 @@ add_default($nl, 'config_use_aerosols');
 add_default($nl, 'config_use_effective_snow_density');
 add_default($nl, 'config_use_snow_grain_radius');
 add_default($nl, 'config_use_special_boundaries_tracers');
+add_default($nl, 'config_use_floe_size_distribution');
 
 ###################################
 # Namelist group: biogeochemistry #
@@ -352,6 +356,9 @@ add_default($nl, 'config_snow_shortwave_tuning_parameter');
 add_default($nl, 'config_temp_change_snow_grain_radius_change');
 add_default($nl, 'config_max_melting_snow_grain_radius');
 add_default($nl, 'config_algae_absorption_coefficient');
+add_default($nl, 'config_use_shortwave_redistribution');
+add_default($nl, 'config_shortwave_redistribution_fraction');
+add_default($nl, 'config_shortwave_redistribution_threshold');
 
 ########################
 # Namelist group: snow #
@@ -364,7 +371,9 @@ add_default($nl, 'config_new_snow_density');
 add_default($nl, 'config_max_snow_density');
 add_default($nl, 'config_minimum_wind_compaction');
 add_default($nl, 'config_wind_compaction_factor');
+add_default($nl, 'config_snow_redistribution_factor');
 add_default($nl, 'config_max_dry_snow_radius');
+add_default($nl, 'config_snow_thermal_conductivity');
 
 #############################
 # Namelist group: meltponds #
@@ -372,7 +381,7 @@ add_default($nl, 'config_max_dry_snow_radius');
 
 add_default($nl, 'config_snow_to_ice_transition_depth');
 add_default($nl, 'config_pond_refreezing_type');
-add_default($nl, 'config_pond_flushing_timescale');
+add_default($nl, 'config_pond_flushing_factor');
 add_default($nl, 'config_min_meltwater_retained_fraction');
 add_default($nl, 'config_max_meltwater_retained_fraction');
 add_default($nl, 'config_pond_depth_to_fraction_ratio');
@@ -390,6 +399,7 @@ add_default($nl, 'config_rapid_model_critical_Ra');
 add_default($nl, 'config_rapid_mode_aspect_ratio');
 add_default($nl, 'config_slow_mode_drainage_strength');
 add_default($nl, 'config_slow_mode_critical_porosity');
+add_default($nl, 'config_macro_drainage_timescale');
 add_default($nl, 'config_congelation_ice_porosity');
 
 #######################
@@ -399,6 +409,13 @@ add_default($nl, 'config_congelation_ice_porosity');
 add_default($nl, 'config_itd_conversion_type');
 add_default($nl, 'config_category_bounds_type');
 
+############################
+# Namelist group: floesize #
+############################
+
+add_default($nl, 'config_floeshape');
+add_default($nl, 'config_floediam');
+
 ###########################
 # Namelist group: ridging #
 ###########################
@@ -406,7 +423,7 @@ add_default($nl, 'config_category_bounds_type');
 add_default($nl, 'config_ice_strength_formulation');
 add_default($nl, 'config_ridging_participation_function');
 add_default($nl, 'config_ridging_redistribution_function');
-add_default($nl, 'config_ridiging_efolding_scale');
+add_default($nl, 'config_ridging_efolding_scale');
 add_default($nl, 'config_ratio_ridging_work_to_PE');
 
 ##############################
@@ -430,8 +447,9 @@ add_default($nl, 'config_min_friction_velocity');
 add_default($nl, 'config_ocean_heat_transfer_type');
 add_default($nl, 'config_sea_freezing_temperature_type');
 add_default($nl, 'config_ocean_surface_type');
-add_default($nl, 'config_couple_biogeochemistry_fields');
 add_default($nl, 'config_use_data_icebergs');
+add_default($nl, 'config_salt_flux_coupling_type');
+add_default($nl, 'config_ice_ocean_drag_coefficient');
 
 ###############################
 # Namelist group: diagnostics #

@@ -20,44 +20,20 @@ function(set_compilers_e3sm)
   # Grab CXX compiler from CIME
   include(${CASEROOT}/Macros.cmake)
 
-  if (MPILIB STREQUAL "mpi-serial")
-    set(CC ${SCC})
-    set(FC ${SFC})
-    set(CXX ${SCXX})
+  if (DEBUG)
+    set(CMAKE_BUILD_TYPE "DEBUG" CACHE STRING "build type, inferred from ${DEBUG}")
   else()
-    set(CC ${MPICC})
-    set(FC ${MPIFC})
-    set(CXX ${MPICXX})
+    set(CMAKE_BUILD_TYPE "RELEASE" CACHE STRING "build type, inferred from ${DEBUG}")
   endif()
 
-  set(CMAKE_CXX_COMPILER     ${CXX} CACHE STRING "The CXX compiler")
-  set(CMAKE_C_COMPILER       ${CC}  CACHE STRING "The C   compiler")
-  set(CMAKE_Fortran_COMPILER ${FC}  CACHE STRING "The Fortran compiler")
-
-  # USE_CUDA or USE_HIP is set through Macros.cmake
-  # For instance: cime_config/machines/cmake_macros/gnugpu_summit.cmake
-  # If it exists, then set parent's scope to true; otherwise to false
-  # At this point, we use either CUDA or HIP.
-  # Revisit as needed for future systems.
-  if (USE_CUDA)
-    set(USE_CUDA TRUE PARENT_SCOPE)
-  elseif (USE_HIP)
-    set(USE_HIP TRUE PARENT_SCOPE)
-  else()
-    set(USE_CUDA FALSE PARENT_SCOPE)
-    set(USE_HIP FALSE PARENT_SCOPE)
-  endif()
+  set(CMAKE_CXX_COMPILER     ${CMAKE_CXX_COMPILER}     CACHE STRING "The CXX compiler")
+  set(CMAKE_C_COMPILER       ${CMAKE_C_COMPILER}       CACHE STRING "The C   compiler")
+  set(CMAKE_Fortran_COMPILER ${CMAKE_Fortran_COMPILER} CACHE STRING "The Fortran compiler")
 endfunction()
 
 set_compilers_e3sm()
 
 project(CSM_SHARE C CXX Fortran)
-
-if(USE_CUDA)
-  enable_language(CUDA)
-elseif(USE_HIP)
-  enable_language(HIP)
-endif()
 
 # Any changes to SourceMods will require us to reconfigure
 file(GLOB COMPONENT_SOURCE_MOD_DIRS "${CASEROOT}/SourceMods/src.*")
@@ -80,20 +56,16 @@ include(${SRCROOT}/components/cmake/build_model.cmake)
 list(APPEND CMAKE_MODULE_PATH ${SRCROOT}/components/cmake/modules)
 list(APPEND CMAKE_MODULE_PATH ${CIMEROOT}/CIME/non_py/src/CMake)
 
+if (COMP_INTERFACE STREQUAL "moab")
+  set(USE_MOAB True)
+  set(CPPDEFS "${CPPDEFS} -DHAVE_MOAB")
+endif()
+
+if (USE_MOAB)
+  find_package(MOAB REQUIRED)
+endif()
+
 set(CMAKE_VERBOSE_MAKEFILE TRUE)
-
-# We do want CMAKE_BUILD_TYPE to be set, but we do NOT want CMake to
-# decide what optimization flags to append, based on build type,
-# for components who rely on CIME for build flags, so make all the following empty.
-# JGF: I think we can remove this once proper CMake names are being used in the
-# macros.
-set (CMAKE_C_FLAGS_RELEASE "")
-set (CMAKE_CXX_FLAGS_RELEASE "")
-set (CMAKE_Fortran_FLAGS_RELEASE "")
-
-set (CMAKE_C_FLAGS_DEBUG "")
-set (CMAKE_CXX_FLAGS_DEBUG "")
-set (CMAKE_Fortran_FLAGS_DEBUG "")
 
 set(BUILDCONF ${CASEROOT}/Buildconf)
 

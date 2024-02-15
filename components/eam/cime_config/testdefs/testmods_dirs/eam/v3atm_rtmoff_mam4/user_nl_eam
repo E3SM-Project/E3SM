@@ -7,14 +7,6 @@
  history_gaschmbudget_2D_levels = .false.
  history_UCIgaschmbudget_2D = .false.
  history_UCIgaschmbudget_2D_levels = .false.
- gaschmbudget_2D_L1_s =  1
- gaschmbudget_2D_L1_e = 26
- gaschmbudget_2D_L2_s = 27
- gaschmbudget_2D_L2_e = 38
- gaschmbudget_2D_L3_s = 39
- gaschmbudget_2D_L3_e = 58
- gaschmbudget_2D_L4_s = 59
- gaschmbudget_2D_L4_e = 72
 ! history_aero_optics    = .true.
 ! history_aerosol        = .true.
 ! history_amwg           = .true.

@@ -4,7 +4,7 @@ set(SHOC_SRCS
   shoc_iso_c.f90
   shoc_iso_f.f90
   ${SCREAM_BASE_DIR}/../eam/src/physics/cam/shoc.F90
-  atmosphere_macrophysics.cpp
+  eamxx_shoc_process_interface.cpp
 )
 
 if (NOT SCREAM_LIB_ONLY)
@@ -16,7 +16,7 @@ endif()
 
 set(SHOC_HEADERS
   shoc.hpp
-  atmosphere_macrophysics.hpp
+  eamxx_shoc_process_interface.hpp
   shoc_constants.hpp
 )
 
@@ -35,6 +35,7 @@ if (NOT EAMXX_ENABLE_GPU)
     eti/shoc_compute_l_inf_shoc_length.cpp
     eti/shoc_compute_shoc_mix_shoc_length.cpp
     eti/shoc_compute_shoc_vapor.cpp
+    eti/shoc_compute_shoc_temperature.cpp
     eti/shoc_compute_shr_prod.cpp
     eti/shoc_compute_tmpi.cpp
     eti/shoc_diag_obklen.cpp
@@ -74,6 +75,7 @@ set(SHOC_SK_SRCS
     disp/shoc_check_tke_disp.cpp
     disp/shoc_grid_disp.cpp
     disp/shoc_compute_shoc_vapor_disp.cpp
+    disp/shoc_compute_shoc_temperature_disp.cpp
     disp/shoc_diag_obklen_disp.cpp
     disp/shoc_pblintd_disp.cpp
     disp/shoc_length_disp.cpp
@@ -113,13 +115,13 @@ else()
     list(APPEND SHOC_LIBS "shoc_sk")
   endif()
 endif()
+target_compile_definitions(shoc PUBLIC EAMXX_HAS_SHOC)
 
 foreach (SHOC_LIB IN LISTS SHOC_LIBS)
   set_target_properties(${SHOC_LIB} PROPERTIES
     Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${SHOC_LIB}_modules
   )
   target_include_directories(${SHOC_LIB} PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/../share
     ${CMAKE_CURRENT_BINARY_DIR}/${SHOC_LIB}_modules
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/impl

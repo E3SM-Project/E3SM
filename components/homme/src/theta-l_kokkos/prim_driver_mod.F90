@@ -137,6 +137,7 @@ contains
     use iso_c_binding, only : c_ptr, c_loc
     use element_mod,   only : element_t
     use theta_f2c_mod, only : init_elements_2d_c
+    use control_mod,   only : geometry
     use coordinate_systems_mod, only : change_coordinates, cartesian3D_t
     !
     ! Input(s)
@@ -159,6 +160,7 @@ contains
     real (kind=real_kind) :: sphere_cart_vec(3,np,np), sphere_latlon_vec(2,np,np)
 
     integer :: ie, i, j
+    logical :: is_sphere
 
     elem_D_ptr            = c_loc(elem_D)
     elem_Dinv_ptr         = c_loc(elem_Dinv)
@@ -169,6 +171,8 @@ contains
     elem_metinv_ptr       = c_loc(elem_metinv)
     elem_tensorvisc_ptr   = c_loc(elem_tensorvisc)
     elem_vec_sph2cart_ptr = c_loc(elem_vec_sph2cart)
+
+    is_sphere = trim(geometry) /= 'plane'
 
     do ie=1,nelemd
       elem_D            = elem(ie)%D
@@ -182,10 +186,16 @@ contains
       elem_vec_sph2cart = elem(ie)%vec_sphere2cart
       do j = 1,np
          do i = 1,np
-            sphere_cart = change_coordinates(elem(ie)%spherep(i,j))
-            sphere_cart_vec(1,i,j) = sphere_cart%x
-            sphere_cart_vec(2,i,j) = sphere_cart%y
-            sphere_cart_vec(3,i,j) = sphere_cart%z
+            if (is_sphere) then
+               sphere_cart = change_coordinates(elem(ie)%spherep(i,j))
+               sphere_cart_vec(1,i,j) = sphere_cart%x
+               sphere_cart_vec(2,i,j) = sphere_cart%y
+               sphere_cart_vec(3,i,j) = sphere_cart%z
+            else
+               sphere_cart_vec(1,i,j) = elem(ie)%spherep(i,j)%lon
+               sphere_cart_vec(2,i,j) = elem(ie)%spherep(i,j)%lat
+               sphere_cart_vec(3,i,j) = 0
+            end if
             sphere_latlon_vec(1,i,j) = elem(ie)%spherep(i,j)%lat
             sphere_latlon_vec(2,i,j) = elem(ie)%spherep(i,j)%lon
          end do

@@ -131,7 +131,7 @@ OPTIONS
                         clubb_single_prec (Run CLUBB in single precision)
      -co2_cycle         This option is meant to be used with the -ccsm_seq option.  It modifies the
                         EAM configuration by increasing the number of advected constituents by 4.
-     -comp_intf         Specify the component interfaces [mct | esmf] (default: mct).
+     -comp_intf         Specify the component interfaces [mct | esmf | moab] (default: mct).
      -cppdefs <string>  A string of user specified CPP defines.  Appended to
                         Makefile defaults.  E.g. -cppdefs '-DVAR1 -DVAR2'
      -dyn <name>        Build EAM with specified dynamical core [eul | sld | fv | se].
@@ -2318,10 +2318,6 @@ if ($cosp) {
     unless (-d $bld_dir or mkdirp($bld_dir)) {
         die "** Could not create the cosp build directory: $bld_dir\n";
     }
-
-    # Create the COSP Makefile from a template and copy it into the cosp bld directory
-    write_cosp_makefile("$cfgdir/../src/physics/cosp2/Makefile.cospinline.in", "$cosp_libdir/Makefile");
-    if ($print) { print "creating $cosp_libdir/Makefile\n"; }
 }
 
 

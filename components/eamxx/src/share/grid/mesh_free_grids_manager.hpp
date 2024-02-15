@@ -31,6 +31,11 @@ public:
 
 protected:
 
+  void build_se_grid (const std::string& name,
+                      ekat::ParameterList& params);
+  void build_point_grid (const std::string& name,
+                         ekat::ParameterList& params);
+
   void add_geo_data (const nonconstgrid_ptr_type& grid) const;
 
   std::string get_reference_grid_name () const {
@@ -55,6 +60,7 @@ create_mesh_free_grids_manager (const ekat::Comm& comm, const ekat::ParameterLis
   return std::make_shared<MeshFreeGridsManager>(comm,p);
 }
 
+// Shortcut creator function, for the sake of unit tests
 std::shared_ptr<GridsManager>
 create_mesh_free_grids_manager (const ekat::Comm& comm, const int num_local_elems,
                                 const int num_gp, const int num_vertical_levels,

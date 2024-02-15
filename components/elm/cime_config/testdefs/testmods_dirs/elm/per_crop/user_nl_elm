@@ -1,2 +1,2 @@
-fsurdat = '$DIN_LOC_ROOT/lnd/clm2/surfdata_map/surfdata_1x1_smallvilleIA_mp50_simyr2000_miscanthus_c200606.nc'
+fsurdat = '$DIN_LOC_ROOT/lnd/clm2/surfdata_map/surfdata_1x1_smallvilleIA_mp50_simyr2000_miscanthus_c230905.nc'
 do_budgets = .false.

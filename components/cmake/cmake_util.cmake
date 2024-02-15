@@ -12,7 +12,7 @@ function(gather_sources FILEPATH_DIRS_ARG CIMEROOT_ARG)
   set(GEN_F90_SOURCES_RESULT)
 
   foreach(DIRSEARCH ${FILEPATH_DIRS_ARG})
-    file(GLOB MATCHES RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE_PATH}" "${DIRSEARCH}/*.[Ffc]" "${DIRSEARCH}/*.[Ff]90" "${DIRSEARCH}/*.cpp" "${DIRSEARCH}/*.F90.in")
+    file(GLOB MATCHES RELATIVE "${PROJECT_SOURCE_DIR}" "${DIRSEARCH}/*.[Ffc]" "${DIRSEARCH}/*.[Ff]90" "${DIRSEARCH}/*.cpp" "${DIRSEARCH}/*.F90.in")
     if (MATCHES)
       foreach (MATCH IN LISTS MATCHES)
         get_filename_component(BASENAME ${MATCH} NAME)
@@ -43,46 +43,46 @@ function(gather_sources FILEPATH_DIRS_ARG CIMEROOT_ARG)
 
 endfunction()
 
+function(e3sm_get_source_property FILE_ARG PROPERTY_NAME)
+  if (FILE_ARG MATCHES "${CMAKE_BINARY_DIR}/.*") # is generated
+    set(REAL_FILE ${FILE_ARG})
+  else()
+    set(REAL_FILE "${PROJECT_SOURCE_DIR}/${FILE_ARG}")
+  endif()
+  get_property(RESULT SOURCE ${REAL_FILE} PROPERTY ${PROPERTY_NAME})
+
+  # Return data to parent
+  set(PROPERTY_RESULT ${RESULT} PARENT_SCOPE)
+endfunction()
+
+function(e3sm_set_source_property FILE_ARG PROPERTY_NAME PROPERTY_VALUE IS_APPEND)
+  if (FILE_ARG MATCHES "${CMAKE_BINARY_DIR}/.*") # is generated
+    set(REAL_FILE ${FILE_ARG})
+  else()
+    if (NOT EXISTS ${PROJECT_SOURCE_DIR}/${FILE_ARG})
+      message(FATAL_ERROR "Trying to set property on non-existent source: ${FILE_ARG}, looked for ${PROJECT_SOURCE_DIR}/${FILE_ARG}")
+    endif()
+    set(REAL_FILE "${PROJECT_SOURCE_DIR}/${FILE_ARG}")
+  endif()
+  if (IS_APPEND)
+    set_property(SOURCE ${REAL_FILE} APPEND_STRING PROPERTY ${PROPERTY_NAME} "${PROPERTY_VALUE}")
+  else()
+    set_property(SOURCE ${REAL_FILE}               PROPERTY ${PROPERTY_NAME} "${PROPERTY_VALUE}")
+  endif()
+endfunction()
+
 # Add compile flags for a file. Expects a filepath relative to E3SM/components if it
 # is not a generated file.
 function(e3sm_add_flags FILE_ARG FLAGS_ARG)
-  if (FILE_ARG MATCHES "${CMAKE_BINARY_DIR}/.*") # is generated
-    set(REAL_FILE ${FILE_ARG})
-  else()
-    if (NOT EXISTS ${PROJECT_SOURCE_DIR}/${FILE_ARG})
-      message(FATAL_ERROR "Trying to set flags on non-existent source: ${FILE_ARG}, looked for ${PROJECT_SOURCE_DIR}/${FILE_ARG}")
-    endif()
-    set(REAL_FILE "${SOURCE_PATH}/${FILE_ARG}")
-  endif()
-  set_property(SOURCE ${REAL_FILE} APPEND_STRING PROPERTY COMPILE_FLAGS " ${FLAGS_ARG} ")
+  e3sm_set_source_property(${FILE_ARG} COMPILE_FLAGS " ${FLAGS_ARG}" TRUE)
 endfunction()
 
-# Remove compile flags for a file. Expects a filepath relative to E3SM/components if it
-# is not a generated file.
-function(e3sm_remove_flags FILE_ARG FLAGS_ARG)
-  if (FILE_ARG MATCHES "${CMAKE_BINARY_DIR}/.*") # is generated
-    set(REAL_FILE ${FILE_ARG})
-  else()
-    if (NOT EXISTS ${PROJECT_SOURCE_DIR}/${FILE_ARG})
-      message(FATAL_ERROR "Trying to set flags on non-existent source: ${FILE_ARG}")
-    endif()
-    set(REAL_FILE "${SOURCE_PATH}/${FILE_ARG}")
+function(e3sm_deoptimize_file FILE_ARG)
+  e3sm_get_source_property(${FILE_ARG} LANGUAGE)
+  # Adding all DEBUG flags may be overkill
+  #e3sm_add_flags(${FILE_ARG} "${CMAKE_${PROPERTY_RESULT}_FLAGS_DEBUG}")
+  e3sm_add_flags(${FILE_ARG} "-O0")
+  if (COMPILER STREQUAL "nvidia")
+    e3sm_add_flags(${FILE_ARG} "-Mnofma")
   endif()
-
-  get_property(ITEM_FLAGS SOURCE ${REAL_FILE} PROPERTY COMPILE_FLAGS)
-  string(REPLACE "${FLAGS_ARG}" "" ITEM_FLAGS "${ITEM_FLAGS}")
-  set_property(SOURCE ${REAL_FILE} PROPERTY COMPILE_FLAGS "${ITEM_FLAGS}")
-endfunction()
-
-function(e3sm_deoptimize_file FILE_ARG FFLAGS_NOOPT)
-  if (CMAKE_Fortran_COMPILER_ID STREQUAL "PGI" OR CMAKE_Fortran_COMPILER_ID STREQUAL "NVHPC")
-    # PGI does not support bulk-disabling of optimization by appending -O0,
-    # we have to remove the optimization flags first
-
-    # Until we know which particular flags are related to optimization, we have to guess.
-    e3sm_remove_flags(${FILE_ARG} "-O1")
-    e3sm_remove_flags(${FILE_ARG} "-O2")
-    e3sm_remove_flags(${FILE_ARG} "-O3")
-  endif()
-  e3sm_add_flags(${FILE_ARG} "${FFLAGS_NOOPT}")
 endfunction()

@@ -35,7 +35,7 @@ void Functions<S,D>
 
   if (has_melt_qi.any()) {
     //    Note that qsat0 should be with respect to liquid. Confirmed F90 code did this.
-    const auto qsat0 = physics::qv_sat(Spack(Tmelt), pres, false, context, physics::MurphyKoop, "p3::ice_melting"); //"false" here means NOT saturation w/ respect to ice.
+    const auto qsat0 = physics::qv_sat_dry(Spack(Tmelt), pres, false, context, physics::MurphyKoop, "p3::ice_melting"); //"false" here means NOT saturation w/ respect to ice.
 
     qi2qr_melt_tend.set(has_melt_qi, ( (table_val_qi2qr_melting+table_val_qi2qr_vent_melt*cbrt(sc)*sqrt(rhofaci*rho/mu))
 			     *((T_atm-Tmelt)*kap-rho*latent_heat_vapor*dv*(qsat0-qv))

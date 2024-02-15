@@ -24,8 +24,8 @@ def extract_from_macros(case, comp_name, extra_vars=()):
     """
     standard_vars = ["SFC", "SCC", "SCXX",
                      "MPIFC", "MPICC", "MPICXX",
-                     "FFLAGS", "CFLAGS", "CXXFLAGS",
-                     "CPPDEFS", "LDFLAGS"]
+                     "CMAKE_Fortran_FLAGS", "CMAKE_C_FLAGS", "CMAKE_CXX_FLAGS",
+                     "CPPDEFS", "CMAKE_EXE_LINKER_FLAGS"]
     all_vars = standard_vars + list(extra_vars)
 
     make_args = get_standard_makefile_args(case, shared_lib=True)

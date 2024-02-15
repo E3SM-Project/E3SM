@@ -78,8 +78,9 @@ def _record_git_provenance(srcroot, exeroot, lid):
 
     # Git config
     config_src = os.path.join(gitroot, "config")
-    config_prov = os.path.join(exeroot, "GIT_CONFIG.{}".format(lid))
-    utils.safe_copy(config_src, config_prov, preserve_meta=False)
+    if os.path.exists(config_src):
+        config_prov = os.path.join(exeroot, "GIT_CONFIG.{}".format(lid))
+        utils.safe_copy(config_src, config_prov, preserve_meta=False)
 
 
 def _find_git_root(srcroot):
@@ -786,7 +787,7 @@ def _get_batch_job_id_for_syslog(case):
     """
     mach = case.get_value("MACH")
     try:
-        if mach in ["anvil", "chrysalis", "compy", "cori-haswell", "cori-knl", "pm-cpu", "pm-gpu", "alvarez","frontier","crusher"]:
+        if mach in ["anvil", "chrysalis", "compy", "pm-cpu", "pm-gpu", "muller-cpu", "muller-gpu", "alvarez","frontier","frontier-scream-gpu","crusher"]:
             # Note: Besides, SLURM_JOB_ID, equivalent SLURM_JOBID is also present on some systems (Frontier).
             return os.environ["SLURM_JOB_ID"]
         elif mach in ["theta"]:

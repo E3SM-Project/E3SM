@@ -16,7 +16,6 @@
 #   string(APPEND CPPDEFS " -DYAKL_DEBUG")
 # endif()
 # string(APPEND CPPDEFS " -DFORTRANUNDERSCORE -DNO_R16 -DCPRCRAY")
-# string(APPEND FC_AUTO_R8 " -s real64")
 # string(APPEND FFLAGS " -f free  -em")
 # if (NOT compile_threaded)
 #   # -M1077 flag used to suppress message about OpenMP directives
@@ -27,8 +26,6 @@
 # string(APPEND FFLAGS_NOOPT " -O0")
 # set(HAS_F2008_CONTIGUOUS "TRUE")
 # string(APPEND LDFLAGS " -Wl,--allow-multiple-definition")
-# set(SUPPORTS_CXX "TRUE")
-# set(CXX_LINKER "FORTRAN")
 # set(MPICC "cc")
 # set(MPICXX "hipcc")
 # set(MPIFC "ftn")

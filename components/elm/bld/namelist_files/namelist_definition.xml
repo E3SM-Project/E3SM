@@ -314,6 +314,17 @@ Allowed values are:
 Switch deciding which nutrient model to use in FATES.
 </entry>
 
+<entry id="fates_seeddisp_cadence" type="integer" category="physics"
+       group="elm_inparm" valid_values="0,1,2,3">
+Switch defining the cadence at which seeds are dispersed across
+gridcells.  Setting the switch value to zero turns off dispersal.
+Setting the switch to 1, 2, or 3 sets the dispersal cadence to
+daily, monthly or yearly.  The daily cadence is primarily
+recommended for test and debug only. Note that turning this
+feature on will result in more memory usage.
+(Only relevant if FATES is being used).
+</entry>
+
 <entry id="use_fates_fixed_biogeog" type="logical" category="physics"
         group="elm_inparm" valid_values="" value=".false.">
 Toggle to turn on FATES fixed biogeography mode (only relevant if FATES is being used).
@@ -594,6 +605,15 @@ If TRUE, use implicit method to calculate stresses output to atmosphere.
 If TRUE, use an extra gustiness supplied by the atmosphere in addition to mean wind.
 </entry>
 
+<entry id="force_land_gustiness" type="logical" category="elm_physics"
+       group="elm_inparm" valid_values="">
+If TRUE, use the land's gustiness parameterization to add gustiness to the mean
+wind regardless of whether the atmosphere supplies its own gustiness (despite
+the risk of "double-counting" some convection in the boundary layer). If FALSE,
+the land's gustiness parameterization will be used only if atm_gustiness is also
+false.
+</entry>
+
 <!-- TOP solar radiation parameterization                        -->
 <entry id="use_top_solar_rad" type="logical" category="elm_physics"
        group="elm_inparm" valid_values="" value=".false.">
@@ -698,6 +718,25 @@ Max number of plant functional types in naturally vegetated landunit.
 <entry id="use_dynroot" type="logical" category="physics"
        group="elm_inparm" valid_values="" value=".false.">
 Toggle to turn on the dynamic root model.
+</entry>
+
+<!-- ========================================================================================  -->
+<!-- Namelist options for FAN model                                                   -->
+<!-- ========================================================================================  -->
+
+<entry id="use_fan" type="logical" category="physics"
+       group="elm_inparm" valid_values="" value=".false.">
+Toggle to turn on the Flow of Agricultural Nitrogen (FAN) model.
+Default configuration has no connection to soil or atmosphere.
+</entry>
+
+<entry id="fan_mode" type="char*32" category="physics"
+       group="elm_inparm" valid_values="fan_offline,fan_soil,fan_atm,fan_full">
+Optional flag to turn on the fan mode coupling atm/soil.
+    fan_offline = use only fan for calculating emissions (no coupling)
+    fan_soil    = fan coupled to soil bgc
+    fan_atm     = fan coupled to atmosphere
+    fan_full    = fan coupled to both soil bgc and atmosphere
 </entry>
 
 <!--                                                   -->
@@ -1119,6 +1158,61 @@ Mapping method from Phosphorus deposition input file to the model resolution
 
 
 <!-- ========================================================================================  -->
+<!-- fan streams Namelist (only used when bgc=cn/cndv and use_fan=.true.)                 -->
+<!-- ========================================================================================  -->
+
+<entry id="stream_year_first_fan" type="integer" category="datasets"
+       group="fan_nml" valid_values="" >
+First year to loop over for FAN Nitrogen (manure) Deposition data
+</entry>
+
+<entry id="stream_year_last_fan" type="integer" category="datasets"
+       group="fan_nml" valid_values="" >
+Last year to loop over for FAN Nitrogen (manure) Deposition data
+</entry>
+
+<entry id="model_year_align_fan" type="integer" category="datasets"
+       group="fan_nml" valid_values="" >
+Simulation year that aligns with stream_year_first_fan value
+</entry>
+
+<entry id="stream_fldfilename_fan" type="char*256" category="datasets"
+       input_pathname="abs" group="fan_nml" valid_values="" >
+Filename of input stream data for FAN Nitrogen (manure) Deposition
+</entry>
+
+<entry id="fanmapalgo" type="char*256" category="datasets"
+       group="fan_nml" valid_values="bilinear,nn,nnoni,nnonj,spval,copy" >
+Mapping method from FAN Nitrogen (manure) deposition input file to the model resolution
+    bilinear = bilinear interpolation
+    nn       = nearest neighbor
+    nnoni    = nearest neighbor on the "i" (longitude) axis
+    nnonj    = nearest neighbor on the "j" (latitude) axis
+    spval    = set to special value
+    copy     = copy using the same indices
+</entry>
+
+<entry id="fan_to_bgc_crop" type="logical" category="physics"
+       group="fan_nml" valid_values="" >
+Toggle to connect the FAN N pools to soil biogeochemistry for CROP VEGETATION columns
+</entry>
+
+<entry id="fan_to_bgc_veg" type="logical" category="physics"
+       group="fan_nml" valid_values="" >
+Toggle to connect the FAN N pools to soil biogeochemistry for NATIVE VEGETATION columns
+</entry>
+
+<entry id="fract_spread_grass" type="real" category="physics"
+       group="fan_nml" valid_values="" >
+Fraction of manure N produced in crop columns but spread on native vegetation columns (grasslands)
+</entry>
+
+<entry id="nh4_ads_coef" type="real" category="physics"
+       group="fan_nml" valid_values="">
+Adsorption coefficient for ammonium in FAN. Must be >= 0, 0 means no adsorption.
+</entry>
+
+<!-- ========================================================================================  -->
 <!-- lai_streams streams Namelist (when phys = CLM4_5)                              -->
 <!-- ========================================================================================  -->
 
@@ -1310,7 +1404,7 @@ Representative concentration pathway for future scenarios [radiative forcing at 
 
 <entry id="mask" type="char*20" category="default_settings"
        group="default_settings"
-       valid_values="USGS,gx3v7,gx1v6,navy,test,tx0.1v2,tx1v1,T62,TL319,cruncep,oEC60to30v3,oEC60to30v3wLI,ECwISC30to60E1r2,EC30to60E2r2,WC14to60E2r3,WCAtl12to45E2r4,SOwISC12to60E2r4,ECwISC30to60E2r1,oRRS18to6,oRRS18to6v3,oRRS15to5,oARRM60to10,oARRM60to6,ARRM10to60E2r1,oQU480,oQU240,oQU240wLI,oQU120,oRRS30to10v3,oRRS30to10v3wLI,360x720cru,NLDASww3a,NLDAS,tx0.1v2,ICOS10,ECwISC30to60E3r2">
+       valid_values="USGS,gx3v7,gx1v6,navy,test,tx0.1v2,tx1v1,T62,TL319,cruncep,oEC60to30v3,oEC60to30v3wLI,ECwISC30to60E1r2,EC30to60E2r2,WC14to60E2r3,WCAtl12to45E2r4,SOwISC12to60E2r4,ECwISC30to60E2r1,oRRS18to6,oRRS18to6v3,oRRS15to5,oARRM60to10,oARRM60to6,ARRM10to60E2r1,oQU480,oQU240,oQU240wLI,oQU120,oRRS30to10v3,oRRS30to10v3wLI,360x720cru,NLDASww3a,NLDAS,tx0.1v2,ICOS10,IcoswISC30E3r5">
 Land mask description
 </entry>
 
@@ -1991,6 +2085,15 @@ Toggle to turn on the soil erosion model.
 <entry id="ero_ccycle" type="logical" category="physics"
        group="elm_inparm" valid_values="" value=".false.">
 Toggle to turn on the soil erosion and OM pools feedback.
+</entry>
+
+<!-- ========================================================================================  -->
+<!-- Namelist options for using modifed infiltration scheme in h2osfc                          -->
+<!-- ========================================================================================  -->
+
+<entry id="use_modified_infil" type="logical" category="clm_physics"
+       group="elm_inparm" valid_values="" value=".false.">
+Toggle to use modifed infiltration scheme in h2osfc     .
 </entry>
 
 <!-- ========================================================================================  -->

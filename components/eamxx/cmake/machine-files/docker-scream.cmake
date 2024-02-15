@@ -8,7 +8,7 @@ set(BLAS_LIBRARIES /opt/conda/lib/libblas.so CACHE STRING "")
 set(LAPACK_LIBRARIES /opt/conda/lib/liblapack.so CACHE STRING "")
 set(SCREAM_INPUT_ROOT "/storage/inputdata/" CACHE STRING "")
 set(PYBIND11_PYTHON_VERSION 3.9 CACHE STRING "")
-set(RUN_ML_CORRECTION_TEST TRUE CACHE BOOL "")
+option (SCREAM_ENABLE_ML_CORRECTION "Whether to enable ML correction parametrization" ON)
 
 if ("${PROJECT_NAME}" STREQUAL "E3SM")
   if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")

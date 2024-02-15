@@ -138,7 +138,7 @@ PropertyCheck::ResultAndMsg FieldNaNCheck::check_impl() const {
       col_lid = indices[0];
       auto gids = m_grid->get_dofs_gids().get_view<const AbstractGrid::gid_type*,Host>();
 
-      res_and_msg.msg += "  - entry (" + std::to_string(gids(col_lid));;
+      res_and_msg.msg += "  - indices (w/ global column index): (" + std::to_string(gids(col_lid));
       for (size_t i=1; i<indices.size(); ++i) {
         res_and_msg.msg += "," + std::to_string(indices[i]);
       }
@@ -149,7 +149,20 @@ PropertyCheck::ResultAndMsg FieldNaNCheck::check_impl() const {
         auto lon = m_grid->get_geometry_data("lon").get_internal_view_data<const Real,Host>();
         res_and_msg.msg += "  - lat/lon: (" + std::to_string(lat[col_lid]) + ", " + std::to_string(lon[col_lid]) + ")\n";
       }
+      bool has_additional_col_info = not additional_data_fields().empty();
+      if (has_additional_col_info) {
+        std::stringstream msg;
+        msg << "  - additional data (w/ local column index):\n";
+        for (auto& f : additional_data_fields()) {
+          f.sync_to_host();
+          msg << "\n";
+          print_field_hyperslab(f, {COL}, {col_lid}, msg);
+        }
+        msg << "\n  END OF ADDITIONAL DATA\n";
+        res_and_msg.msg += msg.str();
+      }
     }
+
   } else {
     res_and_msg.msg = "FieldNaNCheck passed.\n";
   }

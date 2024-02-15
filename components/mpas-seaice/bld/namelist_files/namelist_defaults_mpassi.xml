@@ -24,7 +24,7 @@
 <config_dt ice_grid="WCAtl12to45E2r4">1800.0</config_dt>
 <config_dt ice_grid="SOwISC12to60E2r4">1800.0</config_dt>
 <config_dt ice_grid="ECwISC30to60E2r1">1800.0</config_dt>
-<config_dt ice_grid="ECwISC30to60E3r2">1800.0</config_dt>
+<config_dt ice_grid="IcoswISC30E3r5">1800.0</config_dt>
 <config_calendar_type>'noleap'</config_calendar_type>
 <config_start_time>'2000-01-01_00:00:00'</config_start_time>
 <config_stop_time>'none'</config_stop_time>
@@ -60,6 +60,7 @@
 
 <!-- dimensions -->
 <config_nCategories>5</config_nCategories>
+<config_nFloeCategories>1</config_nFloeCategories>
 <config_nIceLayers>7</config_nIceLayers>
 <config_nSnowLayers>5</config_nSnowLayers>
 
@@ -75,7 +76,7 @@
 <config_initial_latitude_north ice_grid="SOwISC12to60E2r4">85.0</config_initial_latitude_north>
 <config_initial_latitude_north ice_grid="ECwISC30to60E2r1">75.0</config_initial_latitude_north>
 <!-- To do: 70.0 for WC but 75.0 for Cryo -->
-<config_initial_latitude_north ice_grid="ECwISC30to60E3r2">70.0</config_initial_latitude_north>
+<config_initial_latitude_north ice_grid="IcoswISC30E3r5">70.0</config_initial_latitude_north>
 <config_initial_latitude_north ice_grid="ARRM10to60E2r1">75.0</config_initial_latitude_north>
 <config_initial_latitude_north ice_grid="oRRS30to10v3wLI">85.0</config_initial_latitude_north>
 <config_initial_latitude_north ice_grid="oRRS18to6v3">85.0</config_initial_latitude_north>
@@ -85,7 +86,7 @@
 <config_initial_latitude_south ice_grid="SOwISC12to60E2r4">-85.0</config_initial_latitude_south>
 <config_initial_latitude_south ice_grid="ECwISC30to60E2r1">-75.0</config_initial_latitude_south>
 <!-- To do: -60.0 for WC but -75.0 for Cryo -->
-<config_initial_latitude_south ice_grid="ECwISC30to60E3r2">-60.0</config_initial_latitude_south>
+<config_initial_latitude_south ice_grid="IcoswISC30E3r5">-60.0</config_initial_latitude_south>
 <config_initial_latitude_south ice_grid="ARRM10to60E2r1">-85.0</config_initial_latitude_south>
 <config_initial_latitude_south ice_grid="oRRS30to10v3wLI">-85.0</config_initial_latitude_south>
 <config_initial_latitude_south ice_grid="oRRS18to6v3">-85.0</config_initial_latitude_south>
@@ -101,7 +102,7 @@
 <config_use_velocity_solver>true</config_use_velocity_solver>
 <config_use_advection>true</config_use_advection>
 <config_use_forcing>false</config_use_forcing>
-<config_use_column_package>true</config_use_column_package>
+<config_use_column_physics>true</config_use_column_physics>
 <config_use_prescribed_ice>false</config_use_prescribed_ice>
 <config_use_prescribed_ice prognostic_mode="prescribed">true</config_use_prescribed_ice>
 <config_use_prescribed_ice_forcing>false</config_use_prescribed_ice_forcing>
@@ -115,6 +116,7 @@
 <config_forcing_sst_type>'ncar'</config_forcing_sst_type>
 <config_forcing_bgc_type>'ISPOL'</config_forcing_bgc_type>
 <config_update_ocean_fluxes>true</config_update_ocean_fluxes>
+<config_frazil_coupling_type>'external'</config_frazil_coupling_type>
 <config_include_pond_freshwater_feedback>false</config_include_pond_freshwater_feedback>
 
 <!-- testing -->
@@ -145,7 +147,7 @@
 <config_dynamics_subcycle_number ice_grid="WCAtl12to45E2r4">1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="SOwISC12to60E2r4">1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="ECwISC30to60E2r1">1</config_dynamics_subcycle_number>
-<config_dynamics_subcycle_number ice_grid="ECwISC30to60E3r2">1</config_dynamics_subcycle_number>
+<config_dynamics_subcycle_number ice_grid="IcoswISC30E3r5">1</config_dynamics_subcycle_number>
 <config_rotate_cartesian_grid>true</config_rotate_cartesian_grid>
 <config_include_metric_terms>true</config_include_metric_terms>
 <config_elastic_subcycle_number>120</config_elastic_subcycle_number>
@@ -174,6 +176,7 @@
 <config_recover_tracer_means_check>false</config_recover_tracer_means_check>
 
 <!-- column_package -->
+<config_column_physics_type>'icepack'</config_column_physics_type>
 <config_use_column_shortwave>true</config_use_column_shortwave>
 <config_use_column_vertical_thermodynamics>true</config_use_column_vertical_thermodynamics>
 <config_use_column_biogeochemistry>false</config_use_column_biogeochemistry>
@@ -183,8 +186,8 @@
 <config_use_column_snow_tracers>true</config_use_column_snow_tracers>
 
 <!-- column_tracers -->
-<config_use_ice_age>true</config_use_ice_age>
-<config_use_first_year_ice>true</config_use_first_year_ice>
+<config_use_ice_age>false</config_use_ice_age>
+<config_use_first_year_ice>false</config_use_first_year_ice>
 <config_use_level_ice>true</config_use_level_ice>
 <config_use_cesm_meltponds>false</config_use_cesm_meltponds>
 <config_use_level_meltponds>true</config_use_level_meltponds>
@@ -193,6 +196,7 @@
 <config_use_effective_snow_density>true</config_use_effective_snow_density>
 <config_use_snow_grain_radius>true</config_use_snow_grain_radius>
 <config_use_special_boundaries_tracers>false</config_use_special_boundaries_tracers>
+<config_use_floe_size_distribution>false</config_use_floe_size_distribution>
 
 <!-- biogeochemistry -->
 <config_use_brine>false</config_use_brine>
@@ -355,6 +359,9 @@
 <config_temp_change_snow_grain_radius_change>1.5</config_temp_change_snow_grain_radius_change>
 <config_max_melting_snow_grain_radius>1500.0</config_max_melting_snow_grain_radius>
 <config_algae_absorption_coefficient>0.6</config_algae_absorption_coefficient>
+<config_use_shortwave_redistribution>false</config_use_shortwave_redistribution>
+<config_shortwave_redistribution_fraction>0.9</config_shortwave_redistribution_fraction>
+<config_shortwave_redistribution_threshold>0.02</config_shortwave_redistribution_threshold>
 
 <!-- snow -->
 <config_snow_redistribution_scheme>'ITDrdg'</config_snow_redistribution_scheme>
@@ -364,12 +371,14 @@
 <config_max_snow_density>450.0</config_max_snow_density>
 <config_minimum_wind_compaction>10.0</config_minimum_wind_compaction>
 <config_wind_compaction_factor>27.3</config_wind_compaction_factor>
+<config_snow_redistribution_factor>0.3</config_snow_redistribution_factor>
 <config_max_dry_snow_radius>2800.0</config_max_dry_snow_radius>
+<config_snow_thermal_conductivity>0.3</config_snow_thermal_conductivity>
 
 <!-- meltponds -->
 <config_snow_to_ice_transition_depth>0.0</config_snow_to_ice_transition_depth>
 <config_pond_refreezing_type>'hlid'</config_pond_refreezing_type>
-<config_pond_flushing_timescale>1.0e-3</config_pond_flushing_timescale>
+<config_pond_flushing_factor>1.0e-3</config_pond_flushing_factor>
 <config_min_meltwater_retained_fraction>0.15</config_min_meltwater_retained_fraction>
 <config_max_meltwater_retained_fraction>1.0</config_max_meltwater_retained_fraction>
 <config_pond_depth_to_fraction_ratio>0.8</config_pond_depth_to_fraction_ratio>
@@ -384,26 +393,31 @@
 <config_rapid_mode_aspect_ratio>1.0</config_rapid_mode_aspect_ratio>
 <config_slow_mode_drainage_strength>-5.0e-8</config_slow_mode_drainage_strength>
 <config_slow_mode_critical_porosity>0.05</config_slow_mode_critical_porosity>
+<config_macro_drainage_timescale>10.</config_macro_drainage_timescale>
 <config_congelation_ice_porosity>0.85</config_congelation_ice_porosity>
 
 <!-- itd -->
 <config_itd_conversion_type>'linear remap'</config_itd_conversion_type>
 <config_category_bounds_type>'original'</config_category_bounds_type>
 
+<!-- floesize -->
+<config_floeshape>0.66</config_floeshape>
+<config_floediam>300.0</config_floediam>
+
 <!-- ridging -->
 <config_ice_strength_formulation>'Rothrock75'</config_ice_strength_formulation>
 <config_ridging_participation_function>'exponential'</config_ridging_participation_function>
 <config_ridging_redistribution_function>'exponential'</config_ridging_redistribution_function>
-<config_ridiging_efolding_scale>3.0</config_ridiging_efolding_scale>
+<config_ridging_efolding_scale>3.0</config_ridging_efolding_scale>
 <config_ratio_ridging_work_to_PE>17.0</config_ratio_ridging_work_to_PE>
 
 <!-- atmosphere -->
-<config_atmos_boundary_method>'ccsm3'</config_atmos_boundary_method>
+<config_atmos_boundary_method>'similarity'</config_atmos_boundary_method>
 <config_calc_surface_stresses>true</config_calc_surface_stresses>
 <config_calc_surface_temperature>true</config_calc_surface_temperature>
 <config_use_form_drag>false</config_use_form_drag>
 <config_use_high_frequency_coupling>true</config_use_high_frequency_coupling>
-<config_boundary_layer_iteration_number>10</config_boundary_layer_iteration_number>
+<config_boundary_layer_iteration_number>5</config_boundary_layer_iteration_number>
 
 <!-- ocean -->
 <config_use_ocean_mixed_layer>false</config_use_ocean_mixed_layer>
@@ -412,8 +426,9 @@
 <config_ocean_heat_transfer_type>'constant'</config_ocean_heat_transfer_type>
 <config_sea_freezing_temperature_type>'mushy'</config_sea_freezing_temperature_type>
 <config_ocean_surface_type>'free'</config_ocean_surface_type>
-<config_couple_biogeochemistry_fields>false</config_couple_biogeochemistry_fields>
 <config_use_data_icebergs>false</config_use_data_icebergs>
+<config_salt_flux_coupling_type>'constant'</config_salt_flux_coupling_type>
+<config_ice_ocean_drag_coefficient>0.00536</config_ice_ocean_drag_coefficient>
 
 <!-- diagnostics -->
 <config_check_state>false</config_check_state>

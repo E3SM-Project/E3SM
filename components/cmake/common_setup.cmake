@@ -15,14 +15,6 @@ else()
   set(ESMFDIR "noesmf")
 endif()
 
-# Determine whether any C++ code will be included in the build;
-# currently, C++ code is included if and only if we're linking to the
-# trilinos library or the Albany library.
-set(USE_CXX FALSE)
-if (USE_TRILINOS OR USE_ALBANY OR USE_KOKKOS)
-  set(USE_CXX TRUE)
-endif()
-
 if (NOT MOD_SUFFIX)
   set(MOD_SUFFIX "mod")
 endif()
@@ -56,11 +48,6 @@ else()
     set(USE_YAKL FALSE)
 endif()
 
-# If YAKL is being used, then we need to enable USE_CXX
-if (${USE_YAKL})
-  set(USE_CXX TRUE)
-endif()
-
 #===============================================================================
 # set CPP options (must use this before any flags or cflags settings)
 #===============================================================================
@@ -90,13 +77,11 @@ endif()
 
 if (PIO_VERSION STREQUAL "1")
   set(CPPDEFS "${CPPDEFS} -DPIO1")
-else()
-  set(USE_CXX TRUE)
 endif()
-
-if (USE_CXX AND NOT SUPPORTS_CXX)
-  message(FATAL_ERROR "Fatal attempt to include C++ code on a compiler/machine combo that has not been set up to support C++")
-endif()
+# The code below is what we actually want but it's currently broken.
+# Once fixes are in place, uncomment the line below and remove the 3
+# lines above.
+# set(CPPDEFS "${CPPDEFS} -DPIO${PIO_VERSION}")
 
 # Not clear how to escape commas for libraries with their own configure
 # script, and they don't need this defined anyway, so leave this out of
@@ -133,70 +118,12 @@ if (USER_INCLDIR)
 endif()
 
 #===============================================================================
-# Set compilers
-#===============================================================================
-
-if (MPILIB STREQUAL "mpi-serial")
-  set(CC ${SCC})
-  set(FC ${SFC})
-  set(CXX ${SCXX})
-  set(MPIFC ${SFC})
-  set(MPICC ${SCC})
-  set(MPICXX ${SCXX})
-else()
-  set(CC ${MPICC})
-  set(FC ${MPIFC})
-  set(CXX ${MPICXX})
-endif()
-
-#===============================================================================
 # Set include paths (needed after override for any model specific builds below)
 #===============================================================================
 list(APPEND INCLDIR "${INSTALL_SHAREDPATH}/include" "${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/${NINST_VALUE}/include")
-
-if (NOT GLC_DIR)
-  set(GLC_DIR "${EXEROOT}/glc")
-endif()
-
-if (NOT CISM_LIBDIR)
-  set(CISM_LIBDIR "${GLC_DIR}/lib")
-endif()
-
-if (NOT GLCROOT)
-  # Backwards compatibility
-  set(GLCROOT "${CIMEROOT}/../components/cism")
-endif()
-
-list(APPEND INCLDIR "${INSTALL_SHAREDPATH}/include")
 
 string(FIND "${CAM_CONFIG_OPTS}" "-cosp" HAS_COSP)
 if (NOT HAS_COSP EQUAL -1)
   # The following is for the COSP simulator code:
   set(USE_COSP TRUE)
 endif()
-
-# Add libraries and flags that we need on the link line when C++ code is included
-if (USE_CXX)
-  if (CXX_LIBS)
-    set(SLIBS "${SLIBS} ${CXX_LIBS}")
-  endif()
-
-  if (CXX_LDFLAGS)
-    set(LDFLAGS "${LDFLAGS} ${CXX_LDFLAGS}")
-  endif()
-endif()
-
-# Decide whether to use a C++ or Fortran linker, based on whether we
-# are using any C++ code and the compiler-dependent CXX_LINKER variable
-if (USE_CXX AND CXX_LINKER STREQUAL "CXX")
-  set(LD "CXX")
-else()
-  set(LD "Fortran")
-  # Remove arch flag if it exists, it break fortran linking
-  string(REGEX REPLACE "-arch[^ ]+" "" LDFLAGS "${LDFLAGS}")
-endif()
-
-#------------------------------------------------------------------------------
-# Set key cmake vars
-#------------------------------------------------------------------------------
-set(CMAKE_EXE_LINKER_FLAGS "${LDFLAGS}" PARENT_SCOPE)

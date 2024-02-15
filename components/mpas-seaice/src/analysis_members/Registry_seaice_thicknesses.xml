@@ -25,15 +25,15 @@
 	</packages>
 	<var_struct name="thicknessesAM" time_levs="1" packages="thicknessesAMPKG">
 		<var name="iceThicknessCell" type="real" dimensions="nCells Time" units="m"
-			description="Ice aggregate thickness"
+			description="Average thickness of sea ice"
 		/>
 		<var name="snowThicknessCell" type="real" dimensions="nCells Time" units="m"
-			description="Snow aggregate thickness"
+			description="Average depth of snow over sea ice"
 		/>
 		<var name="iceThicknessCategory" type="real" dimensions="nCategories nCells Time" units="m"
-			description="Ice category thickness"
+			description="Sea ice thickness per category"
 		/>
 		<var name="snowThicknessCategory" type="real" dimensions="nCategories nCells Time" units="m"
-			description="Snow category thickness"
+			description="Snow depth over ice thickness category"
 		/>
 	</var_struct>

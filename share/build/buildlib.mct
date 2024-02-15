@@ -85,7 +85,7 @@ def buildlib(bldroot, installpath, case):
     #
 
     fc, cc, _, mfc, mcc, _, fflags, cflags, _, cppdefs, ldflags, ffree, config_args = \
-        extract_from_macros(case, "mct", extra_vars=("FREEFLAGS", "CONFIG_ARGS"))
+        extract_from_macros(case, "mct", extra_vars=("CMAKE_Fortran_FORMAT_FREE_FLAG", "CONFIG_ARGS"))
 
     fflags += f" {ffree} -I{installpath}/include"
     cflags += f" -I{installpath}/include"

@@ -1,1 +1,0 @@
-set(CXX_LINKER "CXX")

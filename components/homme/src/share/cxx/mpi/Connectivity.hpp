@@ -156,7 +156,7 @@ private:
   ExecViewManaged<int*>::HostMirror h_ucon_ptr;
   ExecViewManaged<int*>             d_ucon_dir_ptr;
   ExecViewManaged<int*>::HostMirror h_ucon_dir_ptr;
-  // Helper used to accumulated connections during add_connection phase. Emptied
+  // Helper used to accumulate connections during add_connection phase. Emptied
   // in finalize. l_ is local; r_ is remote.
   struct UConInfo {
     int l_lid, l_gid, r_lid, r_gid, r_pid;

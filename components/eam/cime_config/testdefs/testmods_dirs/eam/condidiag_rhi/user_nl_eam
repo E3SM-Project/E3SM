@@ -3,7 +3,7 @@
 !  - condition 2: all grid columns and time steps
 
  metric_name       = 'RHI',      'RHI',
- metric_nver       =  72,         72
+ metric_nver       =  -1,         -1
  metric_cmpr_type  =  1,          1
  metric_threshold  =  125,        -1
  cnd_eval_chkpt    =  'CLDMAC01', 'CLDMAC01'
@@ -18,7 +18,7 @@
                'CLDMAC06','CLDMIC06'
 
  qoi_name = 'RHI', 'Q', 'QSATI'
- qoi_nver =  72,    72,  72
+ qoi_nver =  -1,    -1,  -1
 
  l_output_state = .true.
  l_output_incrm = .true.

@@ -3,8 +3,11 @@
 <?xml-stylesheet type="text/xsl" href="definitions_variables" ?>
 
 <!DOCTYPE phys_defaults [
-  <!ENTITY eam_phys_defaults "-nlev 72 -clubb_sgs -microphys p3">
-  <!ENTITY eam_chem_defaults "-chem chemuci_linozv3_mam5_vbs -rain_evap_to_coarse_aero -vbs">
+  <!ENTITY eamv2_phys_defaults "-nlev 72 -clubb_sgs -microphys mg2">
+  <!ENTITY eamv2_chem_defaults "-chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero">
+  <!ENTITY eamv3_phys_defaults "-nlev 80 -clubb_sgs -microphys p3">
+  <!ENTITY eamv3_chem_defaults "-chem chemuci_linozv3_mam5_vbs -rain_evap_to_coarse_aero -vbs">
+  <!ENTITY scream_phys_defaults "-shoc_sgs -microphys p3 -chem spa -rad rrtmgp">
 ]>
 
 <definitions_variables>
@@ -45,26 +48,25 @@
     <valid_values></valid_values>
     <default_value></default_value>
     <values modifier='additive'>
-      <value compset=""                >-mach $MACH</value>
-      <value compset="_EAM"            >-phys default</value>
-      <value compset="^((?!SSP).)*_EAM%CMIP6_" >&eam_phys_defaults; &eam_chem_defaults;</value>
-      <value compset="_EAM%CMIP6-1pctCO2" >&eam_phys_defaults; &eam_chem_defaults;</value>
-      <value compset="_EAM%CMIP6-4xCO2"   >&eam_phys_defaults; &eam_chem_defaults;</value>
-      <value compset="SSP.*_EAM%CMIP6_"   >&eam_phys_defaults; -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero</value>
-      <value compset="_EAM%AR5sf"      >&eam_phys_defaults; -chem superfast_mam4_resus_mom_soag -rain_evap_to_coarse_aero</value>
-      <value compset="_EAM%CHEMUCI-LINOZV2"  >-clubb_sgs -microphys mg2 -chem superfast_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72 -usr_mech_infile $SRCROOT/components/eam/chem_proc/inputs/pp_chemUCI_mam4_resus_mom_soag_tag.in</value>
-      <value compset="_EAM%CHEMUCI-LINOZV3"  >-clubb_sgs -microphys mg2 -chem superfast_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72 -usr_mech_infile $SRCROOT/components/eam/chem_proc/inputs/pp_chemUCI_linozv3_mam4_resus_mom_soag_tag.in</value>
-      <value compset="_EAM%CHEMUCI-LINOZV3-MAM5"  >-clubb_sgs -microphys mg2 -chem chemuci_linozv3_mam5_vbs -rain_evap_to_coarse_aero -nlev 72 -usr_mech_infile $SRCROOT/components/eam/chem_proc/inputs/pp_chemUCI_linozv3_mam5_resus_mom_soag_tag_cnst_no3_oh.in</value>
-      <value compset="_ELM%[^_]*BC"    >-bc_dep_to_snow_updates</value>
-      <value compset="_EAM.*_BGC%*"    >-co2_cycle</value>
-      <value compset="_EAM%CMIP6-P3_"  >&eam_chem_defaults; -nlev 72 -clubb_sgs -microphys p3</value>
+
+      <value compset=""                        >-mach $MACH</value>
+      <value compset="_EAM"                    >-phys default</value>
+      <value compset="_EAM%CMIP6-1pctCO2"      >&eamv3_phys_defaults; &eamv3_chem_defaults;</value>
+      <value compset="_EAM%CMIP6-4xCO2"        >&eamv3_phys_defaults; &eamv3_chem_defaults;</value>
+      <value compset="^((?!SSP).)*_EAM%CMIP6_" >&eamv3_phys_defaults; &eamv3_chem_defaults;</value>
+      <value compset="SSP.*_EAM%CMIP6_"        >&eamv3_phys_defaults; &eamv2_chem_defaults;</value>
+      <value compset="_ELM%[^_]*BC"            >-bc_dep_to_snow_updates</value>
+      <value compset="_EAM.*_BGC%*"            >-co2_cycle</value>
+
+      <!-- Temporarily override the default v3 vertical grid (L80) and use L72 to maintain RRM test coverage -->
+      <value grid="a%ne0">-nlev 72</value>
 
       <!-- Single column model (SCM) -->
-      <value compset="_EAM%SCM_"       >&eam_phys_defaults; &eam_chem_defaults; -scam</value>
+      <value compset="_EAM%SCM_"       >&eamv3_phys_defaults; &eamv3_chem_defaults; -scam</value>
 
       <!-- idealized configurations -->
-      <value compset="_EAM%AQP_"       >-nlev 72 -clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -aquaplanet</value>
-      <value compset="_EAM%RCE_"       >&eam_phys_defaults; -chem none -aquaplanet -rce -rad rrtmgp</value>
+      <value compset="_EAM%AQP_"       >&eamv2_phys_defaults; &eamv2_chem_defaults; -aquaplanet</value>
+      <value compset="_EAM%RCE_"       >&eamv2_phys_defaults; -chem none -aquaplanet -rce -rad rrtmgp</value>
       <value compset="_EAM%IDEAL"      >-phys ideal</value>
       <value compset="_EAM%ADIAB"      >-phys adiabatic</value>
 
@@ -84,12 +86,12 @@
       <value compset="_EAM%SCM-MMF.*"  >-scam</value>
 
       <!-- SCREAM configurations -->
-      <value compset="_EAM%SCREAM-LR">-phys default -shoc_sgs -microphys p3 -chem spa -nlev 72 -rad rrtmgp -bc_dep_to_snow_updates -cppdefs '-DSCREAM'</value>
-      <value compset="_EAM%SCREAM-HR">-phys default -shoc_sgs -microphys p3 -chem spa -nlev 128 -rad rrtmgp -bc_dep_to_snow_updates -cppdefs '-DSCREAM'</value>
+      <value compset="_EAM%SCREAM-LR"    >&scream_phys_defaults; -nlev 72  -bc_dep_to_snow_updates -cppdefs '-DSCREAM'</value>
+      <value compset="_EAM%SCREAM-HR"    >&scream_phys_defaults; -nlev 128 -bc_dep_to_snow_updates -cppdefs '-DSCREAM'</value>
       <value compset="_EAM%SCREAM.*-AQUA">-aquaplanet</value>
-
       <!-- Doubly Periodic SCREAM -->
-      <value compset="ARM97_EAM%DPSCREAM">-phys default -scam -dpcrm_mode -nlev 72 -shoc_sgs -microphys p3 -rad rrtmgp -chem spa -cppdefs '-DSCREAM'</value>
+      <value compset="ARM97_EAM%DPSCREAM">&scream_phys_defaults; -scam -dpcrm_mode -nlev 72 -cppdefs '-DSCREAM'</value>
+      
     </values>
     <group>build_component_cam</group>
     <file>env_build.xml</file>

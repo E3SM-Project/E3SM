@@ -456,6 +456,8 @@ if ($MALI_DYNAMIC eq 'TRUE') {
 } else {
     add_default($nl, 'config_tracer_advection', 'val'=>"none");
 }
+add_default($nl, 'config_horiz_tracer_adv_order');
+add_default($nl, 'config_advection_coef_3rd_order');
 add_default($nl, 'config_restore_thickness_after_advection');
 add_default($nl, 'config_zero_sfcMassBalApplied_over_bare_land');
 
@@ -509,6 +511,7 @@ add_default($nl, 'config_damagecalvingParameter');
 add_default($nl, 'config_ismip6_retreat_k');
 add_default($nl, 'config_calving_error_threshold');
 add_default($nl, 'config_distribute_unablatedVolumeDynCell');
+add_default($nl, 'config_update_velocity_before_calving');
 
 ##################################
 # Namelist group: thermal_solver #
@@ -574,6 +577,8 @@ add_default($nl, 'config_dynamic_thickness');
 
 add_default($nl, 'config_dt');
 add_default($nl, 'config_time_integration');
+add_default($nl, 'config_rk_order');
+add_default($nl, 'config_rk3_stages');
 add_default($nl, 'config_adaptive_timestep');
 add_default($nl, 'config_min_adaptive_timestep');
 add_default($nl, 'config_max_adaptive_timestep');
@@ -635,6 +640,7 @@ add_default($nl, 'config_print_calving_info');
 add_default($nl, 'config_print_thermal_info');
 add_default($nl, 'config_always_compute_fem_grid');
 add_default($nl, 'config_print_velocity_cleanup_details');
+add_default($nl, 'config_check_tracer_monotonicity');
 
 ####################################
 # Namelist group: subglacial_hydro #

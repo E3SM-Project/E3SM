@@ -30,25 +30,15 @@ function(set_compilers_e3sm)
   # Grab CXX compiler from CIME
   include(${CASEROOT}/Macros.cmake)
 
-  if (MPILIB STREQUAL "mpi-serial")
-    set(CC ${SCC})
-    set(FC ${SFC})
-    set(CXX ${SCXX})
-  else()
-    set(CC ${MPICC})
-    set(FC ${MPIFC})
-    set(CXX ${MPICXX})
-  endif()
-
-  set(CMAKE_CXX_COMPILER     ${CXX} CACHE STRING "The CXX compiler")
-  set(CMAKE_C_COMPILER       ${CC}  CACHE STRING "The C   compiler")
-  set(CMAKE_Fortran_COMPILER ${FC}  CACHE STRING "The Fortran compiler")
-
   if (DEBUG)
     set(E3SM_DEFAULT_BUILD_TYPE "DEBUG" CACHE STRING "Default build type, inferred from ${DEBUG}")
   else()
     set(E3SM_DEFAULT_BUILD_TYPE "RELEASE" CACHE STRING "Default build type, inferred from ${DEBUG}")
   endif()
+
+  set(CMAKE_CXX_COMPILER     ${CMAKE_CXX_COMPILER}     CACHE STRING "The CXX compiler")
+  set(CMAKE_C_COMPILER       ${CMAKE_C_COMPILER}       CACHE STRING "The C   compiler")
+  set(CMAKE_Fortran_COMPILER ${CMAKE_Fortran_COMPILER} CACHE STRING "The Fortran compiler")
 
   # USE_CUDA or USE_HIP is set through Macros.cmake
   # For instance: cime_config/machines/cmake_macros/gnugpu_summit.cmake
@@ -92,9 +82,16 @@ endif()
 
 project(E3SM C CXX Fortran)
 
-if(USE_CUDA)
+if (COMP_INTERFACE STREQUAL "moab")
+  set(USE_MOAB True)
+  set(CPPDEFS "${CPPDEFS} -DHAVE_MOAB")
+endif()
+
+if (USE_CUDA)
+  set(CMAKE_CUDA_COMPILER_FORCED True)
   enable_language(CUDA)
-elseif(USE_HIP)
+elseif (USE_HIP)
+  set(CMAKE_HIP_COMPILER_FORCED True)
   enable_language(HIP)
 endif()
 
@@ -126,19 +123,6 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/find_dep_packages.cmake)
 
 # Scream manages its own flags
 build_eamxx()
-
-# We do want CMAKE_BUILD_TYPE to be set, but we do NOT want CMake to
-# decide what optimization flags to append, based on build type,
-# for components who rely on CIME for build flags, so make all the following empty.
-# JGF: I think we can remove this once proper CMake names are being used in the
-# macros.
-set (CMAKE_C_FLAGS_RELEASE "")
-set (CMAKE_CXX_FLAGS_RELEASE "")
-set (CMAKE_Fortran_FLAGS_RELEASE "")
-
-set (CMAKE_C_FLAGS_DEBUG "")
-set (CMAKE_CXX_FLAGS_DEBUG "")
-set (CMAKE_Fortran_FLAGS_DEBUG "")
 
 set(BUILDCONF ${CASEROOT}/Buildconf)
 

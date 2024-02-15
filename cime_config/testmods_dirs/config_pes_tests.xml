@@ -69,6 +69,31 @@
           <nthrds_wav>2</nthrds_wav>
         </nthrds>
       </pes>
+      <pes compset="any" pesize="S">
+        <comment>tests+chrysalis: any compset on ne4 grid, 1x32x2 NODESxMPIxOMP</comment>
+        <MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
+        <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
+        <ntasks>
+          <ntasks_atm>32</ntasks_atm>
+          <ntasks_ice>32</ntasks_ice>
+          <ntasks_cpl>32</ntasks_cpl>
+          <ntasks_lnd>32</ntasks_lnd>
+          <ntasks_rof>32</ntasks_rof>
+          <ntasks_ocn>32</ntasks_ocn>
+          <ntasks_glc>32</ntasks_glc>
+          <ntasks_wav>32</ntasks_wav>
+        </ntasks>
+        <nthrds>
+          <nthrds_atm>2</nthrds_atm>
+          <nthrds_ice>2</nthrds_ice>
+          <nthrds_cpl>2</nthrds_cpl>
+          <nthrds_lnd>2</nthrds_lnd>
+          <nthrds_rof>2</nthrds_rof>
+          <nthrds_ocn>2</nthrds_ocn>
+          <nthrds_glc>2</nthrds_glc>
+          <nthrds_wav>2</nthrds_wav>
+        </nthrds>
+      </pes>
     </mach>
     <mach name="anvil">
       <pes compset="any" pesize="any">

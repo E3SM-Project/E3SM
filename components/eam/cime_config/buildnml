@@ -61,6 +61,11 @@ def buildnml(case, caseroot, compname):
 
     if not os.path.isdir(eamconf_dir): os.mkdir(eamconf_dir)
 
+    # Coupler and surface components now required to accept gustiness when EAM
+    # is used as the atmosphere model, unless SCREAM physics is used.
+    if not (atm_gustiness or "-DSCREAM" in cam_config_opts):
+        sys.exit("\n *** STOP: EAM requires ATM_SUPPLIES_GUSTINESS=TRUE. ***\n")
+
     #--------------------------------------------------------------------
     # Invoke eam configure - output will go in $CASEBUILD/eamconf
     #--------------------------------------------------------------------
@@ -92,6 +97,7 @@ def buildnml(case, caseroot, compname):
         comp = ""
         if comp_interface == "mct":  comp = "mct"
         if comp_interface == "esmf": comp = "esmf"
+        if comp_interface == "moab": comp = "moab"
 
         cam_lib_dirs = "-cosp_libdir {}/atm/obj/cosp".format(exeroot) if "cosp" in cam_config_opts else ""
 
@@ -191,7 +197,6 @@ def buildnml(case, caseroot, compname):
         if cam_branch_file: infile_text += " cam_branch_file = {} \n".format(cam_branch_file)
         if debug:           infile_text += " state_debug_checks = .true. \n"
         if linearize_pbl_winds: infile_text += " linearize_pbl_winds = .true. \n"
-        if atm_gustiness: infile_text += " export_gustiness = .true. \n"
 
         create_namelist_infile(case,
                                "{}/user_nl_eam{}".format(caseroot, inst_string),

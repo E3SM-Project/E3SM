@@ -5,6 +5,7 @@ driver_options:
   mass_column_conservation_error_tolerance: 1e-3
   energy_column_conservation_error_tolerance: 1e-4
   column_conservation_checks_fail_handling_type: Warning
+  property_check_data_fields: [phis]
 
 time_stepping:
   time_step: ${ATM_TIME_STEP}
@@ -13,7 +14,7 @@ time_stepping:
 
 initial_conditions:
   Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
-  topography_filename: ${TOPO_DATA_DIR}/USGS-gtopo30_ne4np4pg2_16x_converted.c20200527.nc
+  topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
   get_topo_from_file: true
   surf_evap: 0.0
   surf_sens_flux: 0.0
@@ -25,24 +26,37 @@ initial_conditions:
   aero_tau_lw: 0.0
 
 atmosphere_processes:
-  atm_procs_list: (homme,physics)
+  atm_procs_list: [homme,physics]
   schedule_type: Sequential
   homme:
     Moisture: moist
   physics:
-    atm_procs_list: (mac_mic,rrtmgp)
+    atm_procs_list: [mac_mic,rrtmgp]
     schedule_type: Sequential
     Type: Group
     mac_mic:
-      atm_procs_list: (shoc,CldFraction,p3)
+      atm_procs_list: [shoc,CldFraction,p3]
       schedule_type: Sequential
       Type: Group
       number_of_subcycles: ${MAC_MIC_SUBCYCLES}
       p3:
         do_prescribed_ccn: false
         enable_column_conservation_checks: true
+        max_total_ni: 740.0e3
       shoc:
         enable_column_conservation_checks: true
+        lambda_low: 0.001
+        lambda_high: 0.04
+        lambda_slope: 2.65
+        lambda_thresh: 0.02
+        thl2tune: 1.0
+        qw2tune: 1.0
+        qwthl2tune: 1.0
+        w2tune: 1.0
+        length_fac: 0.5
+        c_diag_3rd_mom: 7.0
+        Ckh: 0.1
+        Ckm: 0.1
     rrtmgp:
       column_chunk_size: 123
       active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
@@ -61,5 +75,5 @@ grids_manager:
 
 # The parameters for I/O control
 Scorpio:
-  output_yaml_files: ["homme_shoc_cld_p3_rrtmgp_output.yaml"]
+  output_yaml_files: ["output.yaml"]
 ...

@@ -152,12 +152,7 @@ get_test_fm(const std::shared_ptr<const AbstractGrid>& grid,
 std::shared_ptr<GridsManager>
 get_test_gm(const ekat::Comm& io_comm, const int num_my_elems, const int np, const int num_levs)
 {
-  ekat::ParameterList gm_params;
-  gm_params.set("number_of_local_elements",num_my_elems);
-  gm_params.set("number_of_gauss_points",np);
-  gm_params.set("number_of_vertical_levels",num_levs);
-
-  auto gm = create_mesh_free_grids_manager(io_comm,gm_params);
+  auto gm = create_mesh_free_grids_manager(io_comm,num_my_elems,np,num_levs,0);
   gm->build_grids();
 
   return gm;

@@ -88,6 +88,9 @@ module gw_drag
   ! Convective heating rate conversion factor, default is 20.0_r8
   real(r8) :: gw_convect_hcf = 20.0_r8
 
+  ! Scaling factor for the heating depth
+  real(r8) :: hdepth_scaling_factor = 1
+
   ! Whether or not to enforce an upper boundary condition of tau = 0.
   ! (Like many variables, this is only here to hold the value between
   ! the readnl phase and the init phase of the CAM physics; only gw_common
@@ -137,7 +140,8 @@ subroutine gw_drag_readnl(nlfile)
   real(r8) :: gw_dc = unset_r8
 
   namelist /gw_drag_nl/ pgwv, gw_dc, tau_0_ubc, effgw_beres, effgw_cm, &
-      effgw_oro, fcrit2, frontgfc, gw_drag_file, taubgnd, gw_convect_hcf
+      effgw_oro, fcrit2, frontgfc, gw_drag_file, taubgnd, gw_convect_hcf, &
+      hdepth_scaling_factor
   !----------------------------------------------------------------------
 
   if (masterproc) then
@@ -167,6 +171,7 @@ subroutine gw_drag_readnl(nlfile)
   call mpibcast(taubgnd,     1, mpir8,  0, mpicom)
   call mpibcast(gw_drag_file, len(gw_drag_file), mpichar, 0, mpicom)
   call mpibcast(gw_convect_hcf, 1, mpir8,  0, mpicom)
+  call mpibcast(hdepth_scaling_factor, 1, mpir8,  0, mpicom)
 #endif
 
   dc = gw_dc
@@ -760,7 +765,7 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
         ! Determine wave sources for Beres04 scheme
         call gw_beres_src(ncol, pgwv, state1%lat(:ncol), u, v, ttend_dp, &
              zm, src_level, tend_level, tau, ubm, ubi, xv, yv, c, &
-             hdepth, maxq0, gw_convect_hcf)
+             hdepth, maxq0, gw_convect_hcf, hdepth_scaling_factor)
 
         do_latitude_taper = .false.
 

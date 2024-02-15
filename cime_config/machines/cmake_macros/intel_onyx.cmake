@@ -1,5 +1,3 @@
-string(APPEND FFLAGS " -fimf-use-svml")
-if (NOT DEBUG)
-  string(APPEND FFLAGS " -qno-opt-dynamic-align")
-endif()
-string(APPEND SLIBS " -lpthread")
+string(APPEND CMAKE_Fortran_FLAGS " -fimf-use-svml")
+string(APPEND CMAKE_Fortran_FLAGS_RELEASE " -qno-opt-dynamic-align")
+string(APPEND CMAKE_EXE_LINKER_FLAGS " -lpthread")

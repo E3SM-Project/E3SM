@@ -1,6 +1,4 @@
 string(APPEND CONFIG_ARGS " --enable-filesystem-hints=lustre")
 string(APPEND CPPDEFS " -DLINUX")
-if (DEBUG)
-  string(APPEND FFLAGS " -check all -ftrapuv")
-endif()
+string(APPEND CMAKE_Fortran_FLAGS_DEBUG " -check all -ftrapuv")
 set(PIO_FILESYSTEM_HINTS "lustre")

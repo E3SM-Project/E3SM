@@ -9,7 +9,7 @@ module CNNitrogenStateType
   use elm_varpar             , only : nlevdecomp_full, nlevdecomp, crop_prog
   use elm_varcon             , only : spval, ispval, dzsoi_decomp, zisoi
   use landunit_varcon        , only : istcrop, istsoil 
-  use elm_varctl             , only : use_vertsoilc, use_century_decomp
+  use elm_varctl             , only : use_vertsoilc, use_century_decomp, use_fan
   use elm_varctl             , only : iulog, override_bgc_restart_mismatch_dump, spinup_state
   use decompMod              , only : bounds_type
   use pftvarcon              , only : npcropmin, nstor
@@ -189,6 +189,34 @@ module CNNitrogenStateType
     
      real(r8), pointer :: plmr_ptlai_z                              (:,:)
      real(r8), pointer :: plmr_pleafn_z                             (:,:)
+
+     !FAN
+     real(r8), pointer :: tan_g1_col(:)                        ! col (gN/m2) total ammoniacal N in FAN pool G1
+     real(r8), pointer :: tan_g2_col(:)                        ! col (gN/m2) total ammoniacal N in FAN pool G2 
+     real(r8), pointer :: tan_g3_col(:)                        ! col (gN/m2) total ammoniacal N in FAN pool G2      
+     real(r8), pointer :: tan_s0_col(:)                        ! col (gN/m2) total ammoniacal N in FAN pool S0
+     real(r8), pointer :: tan_s1_col(:)                        ! col (gN/m2) total ammoniacal N in FAN pool S1
+     real(r8), pointer :: tan_s2_col(:)                        ! col (gN/m2) total ammoniacal N in FAN pool S2 
+     real(r8), pointer :: tan_s3_col(:)                        ! col (gN/m2) total ammoniacal N in FAN pool S3 
+     real(r8), pointer :: tan_f1_col(:)                        ! col (gN/m2) total ammoniacal N in FAN pool F1
+     real(r8), pointer :: tan_f2_col(:)                        ! col (gN/m2) total ammoniacal N in FAN pool F2
+     real(r8), pointer :: tan_f3_col(:)                        ! col (gN/m2) total ammoniacal N in FAN pool F3
+     real(r8), pointer :: tan_f4_col(:)                        ! col (gN/m2) total ammoniacal N in FAN pool F4
+     
+     real(r8), pointer :: fert_u1_col(:)                       ! col (gN/m2) total urea N in FAN pool U1
+     real(r8), pointer :: fert_u2_col(:)                       ! col (gN/m2) total urea N in FAN pool U2
+     
+     real(r8), pointer :: manure_u_grz_col(:)                  ! col (gN/m2) unavailable organic N, grazing
+     real(r8), pointer :: manure_a_grz_col(:)                  ! col (gN/m2) available organic N, grazing
+     real(r8), pointer :: manure_r_grz_col(:)                  ! col (gN/m2) resistant organic N, grazing
+
+     real(r8), pointer :: manure_u_app_col(:)                  ! col (gN/m2) unavailable organic N, application
+     real(r8), pointer :: manure_a_app_col(:)                  ! col (gN/m2) available organic N, application
+     real(r8), pointer :: manure_r_app_col(:)                  ! col (gN/m2) resistant organic N, application
+
+     real(r8), pointer :: manure_n_stored_col(:)               ! col (gN/m2) manure N in storage
+     real(r8), pointer :: manure_tan_stored_col(:)             ! col (gN/m2) manure TAN in storage
+     real(r8), pointer :: fan_grz_fract_col(:)                 ! col unitless fraction of animals grazing
 
    contains
 
@@ -387,6 +415,34 @@ contains
     allocate(this%smin_nh4sorb_col         (begc:endc))                   ; this%smin_nh4sorb_col         (:)   = nan
 
     allocate(this%plant_nbuffer_col(begc:endc));this%plant_nbuffer_col(:) = nan
+
+    if (use_fan) then
+       allocate(this%tan_g1_col(begc:endc))  ; this%tan_g1_col(:) = nan
+       allocate(this%tan_g2_col(begc:endc))  ; this%tan_g2_col(:) = nan
+       allocate(this%tan_g3_col(begc:endc))  ; this%tan_g3_col(:) = nan
+       allocate(this%tan_s0_col(begc:endc))  ; this%tan_s0_col(:) = nan
+       allocate(this%tan_s1_col(begc:endc))  ; this%tan_s1_col(:) = nan
+       allocate(this%tan_s2_col(begc:endc))  ; this%tan_s2_col(:) = nan
+       allocate(this%tan_s3_col(begc:endc))  ; this%tan_s3_col(:) = nan
+       allocate(this%tan_f1_col(begc:endc))  ; this%tan_f1_col(:) = nan
+       allocate(this%tan_f2_col(begc:endc))  ; this%tan_f2_col(:) = nan
+       allocate(this%tan_f3_col(begc:endc))  ; this%tan_f3_col(:) = nan
+       allocate(this%tan_f4_col(begc:endc))  ; this%tan_f4_col(:) = nan
+       allocate(this%fert_u1_col(begc:endc)) ; this%fert_u1_col(:) = nan
+       allocate(this%fert_u2_col(begc:endc)) ; this%fert_u2_col(:) = nan
+
+       allocate(this%manure_u_grz_col(begc:endc)) ; this%manure_u_grz_col(:) = nan
+       allocate(this%manure_a_grz_col(begc:endc)) ; this%manure_a_grz_col(:) = nan
+       allocate(this%manure_r_grz_col(begc:endc)) ; this%manure_r_grz_col(:) = nan
+
+       allocate(this%manure_u_app_col(begc:endc)) ; this%manure_u_app_col(:) = nan
+       allocate(this%manure_a_app_col(begc:endc)) ; this%manure_a_app_col(:) = nan
+       allocate(this%manure_r_app_col(begc:endc)) ; this%manure_r_app_col(:) = nan
+
+       allocate(this%manure_n_stored_col(begc:endc))   ; this%manure_n_stored_col(:) = nan
+       allocate(this%manure_tan_stored_col(begc:endc)) ; this%manure_tan_stored_col(:) = nan
+       allocate(this%fan_grz_fract_col(begc:endc))     ; this%fan_grz_fract_col(:) = nan
+    end if
 
   end subroutine InitAllocate
 
@@ -633,6 +689,36 @@ contains
           this%prod100n_col(c)      = 0._r8
           this%totprodn_col(c)      = 0._r8
        end if
+
+       if ( use_fan ) then
+          this%tan_g1_col(c) = 0.0_r8
+          this%tan_g2_col(c) = 0.0_r8
+          this%tan_g3_col(c) = 0.0_r8
+          this%tan_s0_col(c) = 0.0_r8
+          this%tan_s1_col(c) = 0.0_r8
+          this%tan_s2_col(c) = 0.0_r8
+          this%tan_s3_col(c) = 0.0_r8
+          this%tan_f1_col(c) = 0.0_r8
+          this%tan_f2_col(c) = 0.0_r8
+          this%tan_f3_col(c) = 0.0_r8
+          this%tan_f4_col(c) = 0.0_r8
+          this%fert_u2_col(c) = 0.0_r8
+          this%fert_u1_col(c) = 0.0_r8
+          
+          this%manure_u_grz_col(c) = 0.0_r8
+          this%manure_a_grz_col(c) = 0.0_r8
+          this%manure_r_grz_col(c) = 0.0_r8
+          
+          this%manure_u_app_col(c) = 0.0_r8
+          this%manure_a_app_col(c) = 0.0_r8
+          this%manure_r_app_col(c) = 0.0_r8
+          
+          this%manure_tan_stored_col(c) = 0.0_r8
+          this%fan_grz_fract_col(c) = 0.0_r8
+          this%manure_n_stored_col(c) = 0.0_r8
+          
+       end if
+
     end do
 
     ! now loop through special filters and explicitly set the variables that

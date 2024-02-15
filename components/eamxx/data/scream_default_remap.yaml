@@ -35,8 +35,10 @@ Fields:
       - qr
       - eff_radius_qc
       - eff_radius_qi
+      - eff_radius_qr
       - precip_ice_surf_mass
       - precip_liq_surf_mass
+      - rainfrac
       # SHOC + P3
       - qc
       - qv

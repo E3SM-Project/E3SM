@@ -22,6 +22,23 @@ PointGrid (const std::string& grid_name,
   lid2idx.sync_to_dev();
 }
 
+PointGrid::
+PointGrid (const std::string& grid_name,
+           const int          num_my_cols,
+           const int          num_global_cols,
+           const int          num_vertical_levels,
+           const ekat::Comm&  comm)
+ : AbstractGrid(grid_name,GridType::Point,num_my_cols,num_global_cols,num_vertical_levels,comm)
+{
+  create_dof_fields (get_2d_scalar_layout().rank());
+
+  // The lid->idx map is the identity map.
+  auto lid2idx = get_lid_to_idx_map();
+  auto h_lid_to_idx = lid2idx.get_view<int**,Host>();
+  std::iota(h_lid_to_idx.data(),h_lid_to_idx.data()+get_num_local_dofs(),0);
+  lid2idx.sync_to_dev();
+}
+
 FieldLayout
 PointGrid::get_2d_scalar_layout () const
 {
