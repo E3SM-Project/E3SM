@@ -80,5 +80,6 @@ TEST_CASE("create_vert_remap_and_weights","create_vert_remap_and_weights")
 {
   create_vert_remap();
   create_nudging_weights_ncfile(1, 218, 72, "nudging_weights.nc");
+  create_nudging_weights_ncfile(1, 218, 128, "nudging_weights_L128.nc");
 }
 } // end namespace

@@ -14,11 +14,12 @@ atmosphere_processes:
   p3:
     max_total_ni: 720.0e3
   nudging:
-    nudging_filenames_patterns: [shoc_p3_source_data_${POSTFIX}.INSTANT.nsteps_x${NUM_STEPS}.${RUN_T0}.nc]
+    nudging_filenames_patterns: [./shoc_p3_source_data_nudged.INSTANT.nsteps_x*.nc]
     nudging_fields: ["T_mid", "qv"]
     nudging_timescale: 1000
     use_nudging_weights: true
-    nudging_weights_file: nudging_weights.nc      
+    nudging_weights_file: nudging_weights_L128.nc
+    skip_vert_interpolation: true
     source_pressure_type: ${VERT_TYPE}
     source_pressure_file: vertical_remap.nc ## Only used in the case of STATIC_1D_VERTICAL_PROFILE
   shoc:
@@ -43,11 +44,11 @@ grids_manager:
     aliases: [Physics]
     type: point_grid
     number_of_global_columns:   218
-    number_of_vertical_levels:  72
+    number_of_vertical_levels:  128
 
 initial_conditions:
   # The name of the file containing the initial conditions for this test.
-  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
+  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_128lev}
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
   surf_evap: 0.0
   surf_sens_flux: 0.0

@@ -3,6 +3,7 @@
 #include "share/util/scream_universal_constants.hpp"
 #include "share/grid/remap/refining_remapper_p2p.hpp"
 #include "share/grid/remap/do_nothing_remapper.hpp"
+#include "share/util/scream_utils.hpp"
 
 #include <ekat/util/ekat_lin_interp.hpp>
 #include <ekat/util/ekat_math_utils.hpp>
@@ -15,11 +16,12 @@ namespace scream
 Nudging::Nudging (const ekat::Comm& comm, const ekat::ParameterList& params)
   : AtmosphereProcess(comm, params)
 {
-  m_datafiles  = m_params.get<std::vector<std::string>>("nudging_filename");
+  m_datafiles  = filename_glob(m_params.get<std::vector<std::string>>("nudging_filenames_patterns"));
   m_timescale = m_params.get<int>("nudging_timescale",0);
 
   m_fields_nudge = m_params.get<std::vector<std::string>>("nudging_fields");
   m_use_weights   = m_params.get<bool>("use_nudging_weights",false);
+  m_skip_vert_interpolation   = m_params.get<bool>("skip_vert_interpolation",false);
   // If we are doing horizontal refine-remapping, we need to get the mapfile from user
   m_refine_remap_file = m_params.get<std::string>(
       "nudging_refine_remap_mapfile", "no-file-given");
@@ -32,8 +34,16 @@ Nudging::Nudging (const ekat::Comm& comm, const ekat::ParameterList& params)
     m_src_pres_type = STATIC_1D_VERTICAL_PROFILE;
     // Check for a designated source pressure file, default to first nudging data source if not given.
     m_static_vertical_pressure_file = m_params.get<std::string>("source_pressure_file",m_datafiles[0]);
+    EKAT_REQUIRE_MSG(m_skip_vert_interpolation == false,
+                   "Error! It makes no sense to not interpolate if src press is uniform and constant ");
   } else {
     EKAT_ERROR_MSG("ERROR! Nudging::parameter_list - unsupported source_pressure_type provided.  Current options are [TIME_DEPENDENT_3D_PROFILE,STATIC_1D_VERTICAL_PROFILE].  Please check");
+  }
+  int first_file_levs = scorpio::get_dimlen(m_datafiles[0],"lev");
+  for (const auto& file : m_datafiles) {
+      int current_file_levs = scorpio::get_dimlen(file,"lev");
+      EKAT_REQUIRE_MSG(current_file_levs == first_file_levs,
+                       "Error! Inconsistent 'lev' dimension found in nudging data files.");
   }
   // use nudging weights
   if (m_use_weights) 
@@ -89,6 +99,11 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
     m_num_src_levs = scorpio::get_dimlen(m_datafiles[0],"lev");
   } else {
     m_num_src_levs = scorpio::get_dimlen(m_static_vertical_pressure_file,"lev");
+  }
+  if (m_skip_vert_interpolation) {
+    EKAT_REQUIRE_MSG(m_num_src_levs == m_num_levs,
+                   "Error! skip_vert_interpolation requires the vertical level to be "
+                   << " the same as model vertical level ");
   }
 
   /* Check for consistency between nudging files, map file, and remapper */
@@ -263,7 +278,7 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   FieldLayout layout_padded ({COL,LEV},{m_num_cols,m_num_src_levs+2});
   create_helper_field("padded_field",layout_padded,"");
 
-  if (m_src_pres_type == TIME_DEPENDENT_3D_PROFILE) {
+  if (m_src_pres_type == TIME_DEPENDENT_3D_PROFILE && !m_skip_vert_interpolation) {
     // If the pressure profile is 3d and time-dep, we need to interpolate (in time/horiz)
     auto pmid_ext = create_helper_field("p_mid_ext", layout_ext, grid_ext->name());
     m_time_interp.add_field(pmid_ext.alias("p_mid"),true);
@@ -380,6 +395,19 @@ void Nudging::run_impl (const double dt)
 
   // Perform horizontal remap (if needed)
   m_horiz_remapper->remap(true);
+
+  // bypass copy_and_pad and vert_interp for skip_vert_interpolation:
+  if (m_skip_vert_interpolation) {
+    for (const auto& name : m_fields_nudge) {
+      auto tmp_state_field = get_helper_field(name+"_tmp");
+
+      if (m_timescale > 0) {
+        auto atm_state_field = get_field_out_wrap(name);
+        apply_tendency(atm_state_field,tmp_state_field,dt);
+      }
+    }
+    return;
+  }
 
   // Copy remapper tgt fields into padded views, to allow extrapolation at top/bot,
   // then call remapping routines
