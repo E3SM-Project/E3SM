@@ -8,7 +8,8 @@ import subprocess
 import utils
 
 # Location of xml files
-input = '/home/zhang40/e3sm_diags_for_CMIP6/CMIP6_20211206/CMIP/*/*/amip/*/'
+input = '/home/zhang40/e3sm_diags_for_CMIP6/CMIP6_20240109_wE3SM/CMIP/*/*/amip/r1i1p1f1/'
+#input = '/home/zhang40/e3sm_diags_for_CMIP6/CMIP6_20240109/CMIP/*/*/historical/r1i1p1f1/'
 print(input)
 
 # Initialize jinja2 template engine

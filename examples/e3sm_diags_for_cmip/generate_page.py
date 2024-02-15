@@ -20,8 +20,9 @@ def table_elements(search):
        "RESTOM global ceres_ebaf_toa_v4.1",
        "FSNTOA global ceres_ebaf_toa_v4.1", "FLUT global ceres_ebaf_toa_v4.1",
        "SWCF global ceres_ebaf_toa_v4.1", "LWCF global ceres_ebaf_toa_v4.1",
-       "U-850mb global ERA-Interim", "U-200mb global ERA-Interim",
-       "Z3-500mb global ERA-Interim"
+       "U-850mb global ERA5", "U-200mb global ERA5",
+       "T-850mb global ERA5", "T-200mb global ERA5",
+       "Z3-500mb global ERA5"
     ]
     metrics = ["Unit", "RMSE", "Mean_Bias", "Correlation"]
     seasons = ["ANN", "DJF", "MAM", "JJA", "SON"]
@@ -34,9 +35,11 @@ def table_elements(search):
     "FLUT global ceres_ebaf_toa_v4.1":"TOA LW (vs CERES-EBAAF Ed4.1)",
     "SWCF global ceres_ebaf_toa_v4.1":"TOA SWCRE (vs CERES-EBAAF Ed4.1)",
     "LWCF global ceres_ebaf_toa_v4.1":"TOA LWCRE (vs CERES-EBAAF Ed4.1)",
-    "U-850mb global ERA-Interim":"u 850 hPa (vs ERA-Interim)",
-    "U-200mb global ERA-Interim":"u 200 hPa (vs ERA-Interim)",
-    "Z3-500mb global ERA-Interim":"Geo-Z 500 hPA (vs ERA-Interim)",
+    "U-850mb global ERA5":"u 850 hPa (vs ERA5)",
+    "U-200mb global ERA5":"u 200 hPa (vs ERA5)",
+    "T-850mb global ERA5":"t 850 hPa (vs ERA5)",
+    "T-200mb global ERA5":"t 200 hPa (vs ERA5)",
+    "Z3-500mb global ERA5":"Geo-Z 500 hPA (vs ERA5)",
     "Unit":"unit",
     "RMSE":"rmse",
     "Mean_Bias":"bias",
@@ -51,9 +54,11 @@ def table_elements(search):
     "FLUT global ceres_ebaf_toa_v4.1":"lat_lon/ceres-ebaf-toa-v41/flut-global-ceres_ebaf_toa_v41",
     "SWCF global ceres_ebaf_toa_v4.1":"lat_lon/ceres-ebaf-toa-v41/swcf-global-ceres_ebaf_toa_v41",
     "LWCF global ceres_ebaf_toa_v4.1":"lat_lon/ceres-ebaf-toa-v41/lwcf-global-ceres_ebaf_toa_v41",
-    "U-850mb global ERA-Interim":"lat_lon/era-interim/u-850mb-global-era-interim",
-    "U-200mb global ERA-Interim":"lat_lon/era-interim/u-200mb-global-era-interim",
-    "Z3-500mb global ERA-Interim":"lat_lon/era-interim/z3-500mb-global-era-interim",
+    "U-850mb global ERA5":"lat_lon/era5/u-850mb-global-era5",
+    "U-200mb global ERA5":"lat_lon/era5/u-200mb-global-era5",
+    "T-850mb global ERA5":"lat_lon/era5/t-850mb-global-era5",
+    "T-200mb global ERA5":"lat_lon/era5/t-200mb-global-era5",
+    "Z3-500mb global ERA5":"lat_lon/era5/z3-500mb-global-era5",
     }
 
     # Loop over all simulations to gather data
@@ -74,7 +79,8 @@ def table_elements(search):
         c['model'] = p[-3]
         c['institution'] = p[-4]
         #c['www'] = "/var/www/acme/acme-diags/zhang40/CMIP6/%s/%s/%s" \
-        c['www'] = "/var/www/acme/acme-diags/e3sm_diags_for_cmip/%s/%s/%s" \
+        #c['www'] = "/var/www/acme/acme-diags/e3sm_diags_for_cmip/%s/%s/%s" \
+        c['www'] = "/var/www/acme/acme-diags/zhang40/CMIP6_20240109_1985-2014/%s/%s/%s" \
                    % (c['model'],c['experiment'],c['realization'])
 
         print(c['www'])
@@ -173,14 +179,16 @@ c = {'fields':[], 'header':[], 'content':[] }
 
 # amip simulations
 #fields, header, content = table_elements('/var/www/acme/acme-diags/zhang40/CMIP6/*/amip/r1i1p1f1/')
-fields, header, content = table_elements('/var/www/acme/acme-diags/e3sm_diags_for_cmip/*/amip/*/')
+#fields, header, content = table_elements('/var/www/acme/acme-diags/e3sm_diags_for_cmip/*/amip/*/')
+fields, header, content = table_elements('/var/www/acme/acme-diags/zhang40/CMIP6_20240109_1985-2014/*/amip/*/')
 c['fields'].append(fields)
 c['header'].append(header)
 c['content'].append(content)
 
 # historical simulations
 #fields, header, content = table_elements('/var/www/acme/acme-diags/zhang40/CMIP6/*/historical/r1i1p1f1/')
-fields, header, content = table_elements('/var/www/acme/acme-diags/e3sm_diags_for_cmip/*/historical/*/')
+#fields, header, content = table_elements('/var/www/acme/acme-diags/e3sm_diags_for_cmip/*/historical/*/')
+fields, header, content = table_elements('/var/www/acme/acme-diags/zhang40/CMIP6_20240109_1985-2014/*/historical/*/')
 c['fields'].append(fields)
 c['header'].append(header)
 c['content'].append(content)
@@ -191,7 +199,7 @@ templateEnv = jinja2.Environment( loader=templateLoader )
 template = templateEnv.get_template( 'cmip6_template.html' )
 
 # Instantiate page
-path = os.path.join('index.html')
+path = os.path.join('/var/www/acme/acme-diags/zhang40/CMIP6_20240109_1985-2014','index.html')
 with open(path, 'w') as f:
     f.write(template.render( **c ))
 

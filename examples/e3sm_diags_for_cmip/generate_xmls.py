@@ -25,13 +25,15 @@ experiment = "amip"
 dry_run = False
 
 # Output directory for xml files
-destination = '/home/zhang40/e3sm_diags_for_CMIP6/CMIP6_20211206'
+destination = '/home/zhang40/e3sm_diags_for_CMIP6/CMIP6_20240111'
 
 # Input search paths
-paths = ('/p/css03/esgf_publish/CMIP6/CMIP', '/p/user_pub/work/CMIP6/CMIP')
+paths = ('/p/user_pub/work/CMIP6/CMIP','')  # for E3SM CMIP archive only
+#paths = ('/p/css03/esgf_publish/CMIP6/CMIP', '/p/user_pub/work/CMIP6/CMIP')
 
 # Search patterm
-patterns = ('*/*/%s/r*i1p1f1/Amon/' % (experiment),)
+patterns = ('*/*/%s/r1i1p1f1/Amon/' % (experiment),)
+#patterns = ('UCSB/*/%s/r*i*p*f*/Amon/' % (experiment),)
 
 # Output file to log included input netCDF files
 name = "%s_%s.log" % (experiment,date.today().strftime("%y%m%d"))
@@ -65,6 +67,7 @@ for simulation in simulations:
         versions = sorted(versions)
         mostRecent = versions[-1]
         # Now, extract first and last date
+        print('most recent version', mostRecent)
         files = sorted(os.listdir(mostRecent))
         # First time stamp
         first = files[0].split('_')[-1]
