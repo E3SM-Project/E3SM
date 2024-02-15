@@ -643,6 +643,14 @@ _TESTS = {
             )
     },
 
+    "e3sm_scream_mam4xx_v1_lowres" : {
+        "time"  : "01:00:00",
+        "tests" : (
+            "SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.scream-mam4xx-optics",
+        )
+    },
+
+
     "e3sm_gpuacc" : {
         "tests"    : (
                  "SMS_Ld1.T62_oEC60to30v3.CMPASO-NYF",
@@ -964,4 +972,3 @@ _TESTS = {
                      "e3sm_superbfb_atm", "e3sm_superbfb_wcycl"),
     },
 }
-
