@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-filename_prefix: homme_shoc_cld_p3_rrtmgp_output
+filename_prefix: homme_mam_optics
 Averaging Type: Instant
 Max Snapshots Per File: 1
 Fields:

@@ -10,7 +10,7 @@ CreateDynamicsLib("theta-l_kokkos"  4   72   70)
 # Create the test
 CreateADUnitTest(${TEST_BASE_NAME}
   LIBS cld_fraction ${dynLibName} shoc p3 mam
-  LABELS dynamics shoc cld p3 physics mam4_optics
+  LABELS dynamics physics mam4_optics
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
   FIXTURES_SETUP_INDIVIDUAL ${FIXTURES_BASE_NAME}
 )
@@ -85,6 +85,6 @@ CompareNCFilesFamilyMpi (
   TEST_BASE_NAME ${TEST_BASE_NAME}
   FILE_META_NAME ${TEST_BASE_NAME}_output.INSTANT.nsteps_x${NUM_STEPS}.npMPIRANKS.${RUN_T0}.nc
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
-  LABELS dynamics physics shoc cld p3 mam4_optics
+  LABELS dynamics physics mam4_optics
   META_FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_npMPIRANKS_omp1
 )
