@@ -12,8 +12,53 @@ namespace scream {
 MAMOptics::MAMOptics(const ekat::Comm &comm, const ekat::ParameterList &params)
     : AtmosphereProcess(comm, params), aero_config_() {
   EKAT_REQUIRE_MSG(
-      m_params.isParameter("path_to_tables"),
-      "ERROR: path_to_tbales is missing from mam_optics parameter list.");
+      m_params.isParameter("mam4_mode1_physical_properties_file"),
+      "ERROR: mam4_mode1_physical_properties_file is missing from mam_optics parameter list.");
+
+  EKAT_REQUIRE_MSG(
+      m_params.isParameter("mam4_mode2_physical_properties_file"),
+      "ERROR: mam4_mode2_physical_properties_file is missing from mam_optics parameter list.");
+
+  EKAT_REQUIRE_MSG(
+      m_params.isParameter("mam4_mode3_physical_properties_file"),
+      "ERROR: mam4_mode3_physical_properties_file is missing from mam_optics parameter list.");
+
+  EKAT_REQUIRE_MSG(
+      m_params.isParameter("mam4_mode4_physical_properties_file"),
+      "ERROR: mam4_mode4_physical_properties_file is missing from mam_optics parameter list.");
+
+  EKAT_REQUIRE_MSG(
+      m_params.isParameter("mam4_water_refindex_file"),
+      "ERROR: mam4_water_refindex_file is missing from mam_optics parameter list.");
+
+  EKAT_REQUIRE_MSG(
+      m_params.isParameter("mam4_soa_physical_properties_file"),
+      "ERROR: mam4_soa_physical_properties_file is missing from mam_optics parameter list.");
+
+  EKAT_REQUIRE_MSG(
+      m_params.isParameter("mam4_dust_physical_properties_file"),
+      "ERROR: mam4_dust_physical_properties_file is missing from mam_optics parameter list.");
+
+  EKAT_REQUIRE_MSG(
+      m_params.isParameter("mam4_nacl_physical_properties_file"),
+      "ERROR: mam4_nacl_physical_properties_file is missing from mam_optics parameter list.");
+
+  EKAT_REQUIRE_MSG(
+      m_params.isParameter("mam4_so4_physical_properties_file"),
+      "ERROR: mam4_so4_physical_properties_file is missing from mam_optics parameter list.");
+
+  EKAT_REQUIRE_MSG(
+      m_params.isParameter("mam4_pom_physical_properties_file"),
+      "ERROR: mam4_pom_physical_properties_file is missing from mam_optics parameter list.");
+
+  EKAT_REQUIRE_MSG(
+      m_params.isParameter("mam4_bc_physical_properties_file"),
+      "ERROR: mam4_bc_physical_properties_file is missing from mam_optics parameter list.");
+
+  EKAT_REQUIRE_MSG(
+      m_params.isParameter("mam4_mom_physical_properties_file"),
+      "ERROR: mam4_mom_physical_properties_file is missing from mam_optics parameter list.");
+
 }
 
 AtmosphereProcessType MAMOptics::type() const {
@@ -300,15 +345,22 @@ void MAMOptics::initialize_impl(const RunType run_type) {
     mam_coupling::set_parameters_table(aerosol_optics_host_data, rrtmg_params,
                                        layouts, host_views);
 
-    std::string mam_aerosol_optics_path =
-        m_params.get<std::string>("path_to_tables");
+    std::string mam4_mode1_physical_properties_file =
+      m_params.get<std::string>("mam4_mode1_physical_properties_file");
 
-    // FIXME: this names need to be pass in the input file.
+    std::string mam4_mode2_physical_properties_file =
+      m_params.get<std::string>("mam4_mode2_physical_properties_file");
+
+    std::string mam4_mode3_physical_properties_file =
+      m_params.get<std::string>("mam4_mode3_physical_properties_file");
+
+    std::string mam4_mode4_physical_properties_file =
+      m_params.get<std::string>("mam4_mode4_physical_properties_file");
+
+
     std::vector<std::string> name_table_modes = {
-        mam_aerosol_optics_path + "mam4_mode1_rrtmg_aeronetdust_c20240206.nc",
-        mam_aerosol_optics_path + "mam4_mode2_rrtmg_c20240206.nc",
-        mam_aerosol_optics_path + "mam4_mode3_rrtmg_aeronetdust_c20240206.nc",
-        mam_aerosol_optics_path + "mam4_mode4_rrtmg_c20240206.nc"};
+      mam4_mode1_physical_properties_file, mam4_mode2_physical_properties_file,
+      mam4_mode3_physical_properties_file, mam4_mode4_physical_properties_file};
 
     for(int imode = 0; imode < ntot_amode; imode++) {
       mam_coupling::read_rrtmg_table(name_table_modes[imode],
@@ -318,9 +370,9 @@ void MAMOptics::initialize_impl(const RunType run_type) {
                                      aerosol_optics_device_data_);
     }
 
-    // FIXME: we need to get this name from the yaml file.
     std::string table_name_water =
-        mam_aerosol_optics_path + "water_refindex_rrtmg_c20240206.nc";
+      m_params.get<std::string>("mam4_water_refindex_file");
+
     // it will syn data to device.
     mam_coupling::read_water_refindex(table_name_water, grid_,
                                       aerosol_optics_device_data_.crefwlw,
@@ -336,30 +388,33 @@ void MAMOptics::initialize_impl(const RunType run_type) {
       mam_coupling::set_refindex(surname_aero, params_aero, host_views_aero,
                                  layouts_aero);
 
-      // read data
-      /*
-      soa:s-organic: /compyfs/inputdata/atm/cam/physprops/ocphi_rrtmg_c100508.nc
-      dst:dust:
-      /compyfs/inputdata/atm/cam/physprops/dust_aeronet_rrtmg_c141106.nc
-      ncl:seasalt:   /compyfs/inputdata/atm/cam/physprops/ssam_rrtmg_c100508.nc
-      so4:sulfate: /compyfs/inputdata/atm/cam/physprops/sulfate_rrtmg_c080918.nc
-      pom:p-organic: /compyfs/inputdata/atm/cam/physprops/ocpho_rrtmg_c130709.nc
-      bc :black-c:   /compyfs/inputdata/atm/cam/physprops/bcpho_rrtmg_c100508.nc
-      mom:m-organic: /compyfs/inputdata/atm/cam/physprops/poly_rrtmg_c130816.nc
-    */
+      // read physical properties data for aerosol species
+      std::string mam4_soa_physical_properties_file =
+        m_params.get<std::string>("mam4_soa_physical_properties_file");
+
+      std::string mam4_dust_physical_properties_file =
+        m_params.get<std::string>("mam4_dust_physical_properties_file");
+
+      std::string mam4_nacl_physical_properties_file =
+        m_params.get<std::string>("mam4_nacl_physical_properties_file");
+
+      std::string mam4_so4_physical_properties_file =
+        m_params.get<std::string>("mam4_so4_physical_properties_file");
+
+      std::string mam4_pom_physical_properties_file =
+        m_params.get<std::string>("mam4_pom_physical_properties_file");
+
+      std::string mam4_bc_physical_properties_file =
+        m_params.get<std::string>("mam4_bc_physical_properties_file");
+
+      std::string mam4_mom_physical_properties_file =
+        m_params.get<std::string>("mam4_mom_physical_properties_file");
+
       std::vector<std::string> name_table_aerosols = {
-          mam_aerosol_optics_path +
-              "ocphi_rrtmg_c20240206.nc",  // soa:s-organic
-          mam_aerosol_optics_path +
-              "dust_aeronet_rrtmg_c20240206.nc",                // dst:dust:
-          mam_aerosol_optics_path + "ssam_rrtmg_c20240206.nc",  // ncl:seasalt
-          mam_aerosol_optics_path +
-              "sulfate_rrtmg_c20240206.nc",  // so4:sulfate
-          mam_aerosol_optics_path +
-              "ocpho_rrtmg_c20240206.nc",  // pom:p-organic
-          mam_aerosol_optics_path + "bcpho_rrtmg_c20240206.nc",  // bc :black-c
-          mam_aerosol_optics_path + "poly_rrtmg_c20240206.nc"  // mom:m-organic
-      };
+        mam4_soa_physical_properties_file, mam4_dust_physical_properties_file,
+        mam4_nacl_physical_properties_file, mam4_so4_physical_properties_file,
+        mam4_pom_physical_properties_file, mam4_bc_physical_properties_file,
+        mam4_mom_physical_properties_file};
 
       // FIXME: make a function that return a index given the species name
       // specname_amode(ntot_aspectype) = (/ 'sulfate (0)   ',
