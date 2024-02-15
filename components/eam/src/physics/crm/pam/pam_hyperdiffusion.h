@@ -25,7 +25,11 @@ inline void pam_hyperdiffusion( pam::PamCoupler &coupler ) {
   auto uvel = dm_device.get<real,4>("uvel"           );
   auto vvel = dm_device.get<real,4>("vvel"           );
   //------------------------------------------------------------------------------------------------
+  #ifdef MMF_PAM_HDT
+  real constexpr hd_timescale = MMF_PAM_HDT;  // damping time scale [sec]
+  #else
   real constexpr hd_timescale = 10.0;  // damping time scale [sec]
+  #endif
   //------------------------------------------------------------------------------------------------
   real4d hd_temp("hd_temp",nz,ny,nx,nens);
   real4d hd_rhod("hd_rhod",nz,ny,nx,nens);
