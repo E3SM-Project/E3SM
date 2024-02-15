@@ -202,10 +202,21 @@ contains
 
          ! save the initial validOceanMask
          validOceanMaskOrig(:,:) = validOceanMask(:,:)
+
+         ! initialize the TF field
+         TFocean(:,:) = ismip6shelfMelt_3dThermalForcing(:,:) * validOceanMask(:,:)
+         ! initialize the invalid data locations with fill value
+         do iCell = 1, nCellsSolve
+            do iLayer = 1, nISMIP6OceanLayers
+               if ( availOceanMask(iLayer,iCell) == 0 ) then
+                  TFocean(iLayer,iCell) = 1.0e36
+               endif
+            enddo
+         enddo
+
          ! flood-fill the valid ocean mask and TF field through
          ! horizontal and vertial extrapolation
          ! get initial 3D valid data based on the original ISMIP6 field
-         TFocean(:,:) = ismip6shelfMelt_3dThermalForcing(:,:) * validOceanMask(:,:)
          newMaskCountGlobal = 1
          GlobalLoopCount = 0
          do while (newMaskCountGlobal > 0)
@@ -337,7 +348,14 @@ contains
                   do iNeighbor = 1, nEdgesOnCell(iCell)
                      jCell = cellsOnCell(iNeighbor, iCell)
                      if ( validOceanMaskOld(iLayer,jCell) == 1 ) then
-                        TFsum = TFsum + (TFoceanOld(iLayer,jCell) * areaCell(jCell))
+                        if ( TFoceanOld(iLayer,jCell) > 1.0e6) then
+                           ! raise error if an invalid ocean data value is used
+                           call mpas_log_write("ocean data value used for extrapolation is invalid", &
+                                MPAS_LOG_ERR)
+                           err = ior(err,1)
+                        else
+                           TFsum = TFsum + (TFoceanOld(iLayer,jCell) * areaCell(jCell))
+                        endif
                         areaSum = areaSum + areaCell(jCell)
                         nValidNeighb = nValidNeighb + 1
                      endif
@@ -460,8 +478,15 @@ contains
          do iLayer = 2, nISMIP6OceanLayers
             if ( (availOceanMask(iLayer,iCell) == 1) .and. (validOceanMask(iLayer,iCell) == 0) ) then
               if ( validOceanMask(iLayer-1,iCell) == 1 ) then
+                 if ( TFocean(iLayer-1,iCell) > 1.0e6) then
+                    ! raise error if an invalid ocean data value is used
+                    call mpas_log_write("ocean data value used for extrapolation is invalid", &
+                         MPAS_LOG_ERR)
+                    err = ior(err,1)
+                 else
+                    TFocean(iLayer,iCell) = (TFocean(iLayer-1,iCell)) + (60 * 0.0008)
+                 endif
                  validOceanMask(iLayer,iCell) = 1
-                 TFocean(iLayer,iCell) = (TFocean(iLayer-1,iCell)) + (60 * 0.0008) !HH: need to correct for pressure melting point change
                  newMaskCountLocalAccum = newMaskCountLocalAccum + 1
               endif
             endif
