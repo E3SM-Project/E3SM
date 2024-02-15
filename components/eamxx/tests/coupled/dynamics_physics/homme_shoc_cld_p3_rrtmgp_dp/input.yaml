@@ -9,6 +9,7 @@ intensive_observation_period_options:
   iop_file: ${IOP_DATA_DIR}/DYCOMSrf01_iopfile_4scam.nc
   target_latitude: 31.5
   target_longitude: 238.5
+  iop_dosubsidence: true
 
 time_stepping:
   time_step: ${ATM_TIME_STEP}

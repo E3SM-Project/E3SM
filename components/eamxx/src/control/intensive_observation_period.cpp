@@ -135,16 +135,18 @@ IntensiveObservationPeriod(const ekat::Comm& comm,
   if (not m_params.isParameter("iop_nudge_tscale"))     m_params.set<Real>("iop_nudge_tscale",     10800);
   if (not m_params.isParameter("zero_non_iop_tracers")) m_params.set<bool>("zero_non_iop_tracers", false);
 
+  // Store hybrid coords in helper fields
+  m_helper_fields.insert({"hyam", hyam});
+  m_helper_fields.insert({"hybm", hybm});
+
   // Use IOP file to initialize parameters
   // and timestepping information
-  initialize_iop_file(run_t0, model_nlevs, hyam, hybm);
+  initialize_iop_file(run_t0, model_nlevs);
 }
 
 void IntensiveObservationPeriod::
 initialize_iop_file(const util::TimeStamp& run_t0,
-                    int model_nlevs,
-                    const Field& hyam,
-                    const Field& hybm)
+                    int model_nlevs)
 {
   EKAT_REQUIRE_MSG(m_params.isParameter("iop_file"),
                    "Error! Using IOP requires defining an iop_file parameter.\n");
@@ -312,10 +314,6 @@ initialize_iop_file(const util::TimeStamp& run_t0,
   model_pressure.get_header().get_alloc_properties().request_allocation(Pack::n);
   model_pressure.allocate_view();
   m_helper_fields.insert({"model_pressure", model_pressure});
-
-  // Store hyam and hybm in helper fields
-  m_helper_fields.insert({"hyam", hyam});
-  m_helper_fields.insert({"hybm", hybm});
 }
 
 void IntensiveObservationPeriod::
