@@ -632,11 +632,14 @@ void grid_write_data_array<double>(const std::string &filename, const std::strin
 void write_timestamp (const std::string& filename, const std::string& ts_name, const util::TimeStamp& ts)
 {
   set_attribute(filename,ts_name,ts.to_string());
+  set_attribute(filename,ts_name+"_nsteps",ts.get_num_steps());
 }
 /* ----------------------------------------------------------------- */
 util::TimeStamp read_timestamp (const std::string& filename, const std::string& ts_name)
 {
-  return util::str_to_time_stamp(get_attribute<std::string>(filename,ts_name));
+  auto ts = util::str_to_time_stamp(get_attribute<std::string>(filename,ts_name));
+  ts.set_num_steps(get_attribute<int>(filename,ts_name+"_nsteps"));
+  return ts;
 }
 /* ----------------------------------------------------------------- */
 } // namespace scorpio
