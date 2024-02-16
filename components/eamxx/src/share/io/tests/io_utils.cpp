@@ -1,6 +1,7 @@
 #include <catch2/catch.hpp>
 
 #include <share/io/scream_io_utils.hpp>
+#include <share/io/scream_io_control.hpp>
 #include <share/util/scream_time_stamp.hpp>
 
 #include <fstream>
