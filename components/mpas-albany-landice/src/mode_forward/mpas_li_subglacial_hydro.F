@@ -108,6 +108,7 @@ module li_subglacial_hydro
       integer, dimension(:), pointer :: cellMask
       real (kind=RKIND), pointer :: tillMax
       real (kind=RKIND), pointer :: rhoi, rhoo
+      logical, pointer :: config_do_restart
       real (kind=RKIND), pointer :: config_sea_level
       integer, pointer :: config_num_halos
       integer :: err_tmp
@@ -138,6 +139,7 @@ module li_subglacial_hydro
          err = ior(err, 1)
       endif
 
+      call mpas_pool_get_config(liConfigs, 'config_do_restart', config_do_restart)
       call mpas_pool_get_config(liConfigs, 'config_SGH_till_max', tillMax)
       call mpas_pool_get_config(liConfigs, 'config_ice_density', rhoi)
       call mpas_pool_get_config(liConfigs, 'config_ocean_density', rhoo)
@@ -152,9 +154,16 @@ module li_subglacial_hydro
 
          call mpas_pool_get_array(hydroPool, 'deltatSGH', deltatSGH)
 
-         ! Until init is done properly, make this tiny.  It will be updated at the end of the first subcycle.
-         ! TODO: Set time step appropriately on first subcycle of init
-         deltatSGH = 1.0e-4_RKIND ! in seconds
+         if (.not. config_do_restart) then
+            ! On cold start, set initial timestep to a small value.
+            ! On a restart we will use the value from the last subcycle of the previous
+            ! master timestep to make restarts BFB.
+            ! Note the value here is only used for the first update of thetill model;
+            ! the sheet and channel models calculate the adaptive timestep, but that is not
+            ! available for the till model as the code is currently organized.
+            ! TODO: Move till update until after adaptive timestep has been set
+            deltatSGH = 1.0e-4_RKIND ! in seconds
+         endif
 
          ! Mask needs to be initialized for pressure calcs to be correct
          call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)

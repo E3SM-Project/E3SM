@@ -869,7 +869,8 @@
                         <var name="groundedBasalMassBal" packages="hydro"/>  <!-- This is only needed if config_SGH_basal_melt='thermal', but adding it always-->
 			<var name="basalMeltInput" packages="hydro"/>  <!-- This is NOT needed if config_SGH_basal_melt='thermal', but adding it always-->
                         <var name="externalWaterInput" packages="hydro"/>
-                        <!-- SGH state variables: -->
+                        <!-- SGH variables: -->
+                        <var name="deltatSGH" packages="hydro"/>
 			<var name="waterThickness" packages="hydro"/>
 			<var name="tillWaterThickness" packages="hydro"/>
 			<var name="waterPressure" packages="hydro"/>
