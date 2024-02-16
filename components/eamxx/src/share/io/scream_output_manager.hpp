@@ -181,6 +181,9 @@ protected:
 
   // The logger to be used throughout the ATM to log message
   std::shared_ptr<ekat::logger::LoggerBase> m_atm_logger;
+
+  // If true, we save grid data in output file
+  bool m_save_grid_data;
 };
 
 } // namespace scream

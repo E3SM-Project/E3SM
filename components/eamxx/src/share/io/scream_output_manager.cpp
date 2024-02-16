@@ -55,7 +55,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   m_is_restarted_run = (case_t0<run_t0);
   m_is_model_restart_output = is_model_restart_output;
 
-  // Check for model restart output
+  // Read input parameters and setup internal data
   set_params(params,field_mgrs);
 
   // Output control
@@ -85,8 +85,6 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   // File specs
   constexpr auto large_int = 1000000;
   m_output_file_specs.max_snapshots_in_file  = m_params.get<int>("Max Snapshots Per File",large_int);
-  m_output_file_specs.filename_with_mpiranks = out_control_pl.get("MPI Ranks in Filename",false);
-  m_output_file_specs.save_grid_data         = out_control_pl.get("save_grid_data",!m_is_model_restart_output);
   m_output_file_specs.ftype = m_is_model_restart_output ? FileType::ModelRestart : FileType::ModelOutput;
 
   // Here, store if PG2 fields will be present in output streams.
@@ -140,7 +138,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
 
   // For normal output, setup the geometry data streams, which we used to write the
   // geo data in the output file when we create it.
-  if (m_output_file_specs.save_grid_data) {
+  if (m_save_grid_data) {
     std::map<std::string, std::shared_ptr<const AbstractGrid>> grids;
     for (const auto& it : m_output_streams) {
       grids[it->get_io_grid()->name()] = it->get_io_grid();
@@ -199,8 +197,6 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
       // File specs
       m_checkpoint_file_specs.max_snapshots_in_file = 1;
       m_checkpoint_file_specs.flush_frequency = 1;
-      m_checkpoint_file_specs.filename_with_mpiranks    = pl.get("MPI Ranks in Filename",false);
-      m_checkpoint_file_specs.save_grid_data = false;
       m_checkpoint_file_specs.ftype = FileType::HistoryRestart;
     }
   }
@@ -562,7 +558,7 @@ compute_filename (const IOControl& control,
   filename += "." + control.frequency_units+ "_x" + std::to_string(control.frequency);
 
   // Optionally, add number of mpi ranks (useful mostly in unit tests, to run multiple MPI configs in parallel)
-  if (file_specs.filename_with_mpiranks) {
+  if (m_params.get<bool>("MPI Ranks in Filename")) {
     filename += ".np" + std::to_string(m_io_comm.size());
   }
 
@@ -618,7 +614,9 @@ set_params (const ekat::ParameterList& params,
       fields_pl.sublist(it.first).set("Field Names",fnames);
     }
     m_filename_prefix = m_params.get<std::string>("filename_prefix");
-    // Match precision of Fields
+
+    // Hard code some parameters in case we access them later
+    m_params.set("MPI Ranks in Filename",false);
     m_params.set<std::string>("Floating Point Precision","real");
   } else {
     auto avg_type = m_params.get<std::string>("Averaging Type");
@@ -640,7 +638,13 @@ set_params (const ekat::ParameterList& params,
         "Error! Invalid/unsupported value for 'Floating Point Precision'.\n"
         "  - input value: " + prec + "\n"
         "  - supported values: float, single, double, real\n");
+
+    // Hard code to false if not set
+    if (not m_params.isParameter("MPI Ranks in Filename")) {
+      m_params.set("MPI Ranks in Filename",false);
   }
+  // File specs
+  m_save_grid_data = out_control_pl.get("save_grid_data",!m_is_model_restart_output);
 }
 /*===============================================================================================*/
 void OutputManager::
@@ -714,7 +718,7 @@ setup_file (      IOFileSpecs& filespecs,
 
   // If grid data is needed,  also register geo data fields. Skip if file is resumed,
   // since grid data was written in the previous run
-  if (filespecs.save_grid_data and not m_resume_output_file) {
+  if (m_save_grid_data and not filespecs.is_restart_file() and not m_resume_output_file) {
     for (auto& it : m_geo_data_streams) {
       it->setup_output_file(filename,fp_precision,mode);
     }
@@ -725,7 +729,7 @@ setup_file (      IOFileSpecs& filespecs,
   //       the dims/vars are already in the file (we don't allow adding dims/vars)
   eam_pio_enddef (filename);
 
-  if (filespecs.save_grid_data and not m_resume_output_file) {
+  if (m_save_grid_data and not filespecs.is_restart_file() and not m_resume_output_file) {
     // Immediately run the geo data streams
     for (const auto& it : m_geo_data_streams) {
       it->run(filename,true,false,0);
@@ -791,7 +795,7 @@ push_to_logger()
   m_atm_logger->info("            Averaging Type: " + e2str(m_avg_type));
   m_atm_logger->info("          Output Frequency: " + std::to_string(m_output_control.frequency) + " " + m_output_control.frequency_units);
   m_atm_logger->info("         Max snaps in file: " + std::to_string(m_output_file_specs.max_snapshots_in_file));  // TODO: add "not set" if the value is -1
-  m_atm_logger->info("      Includes Grid Data ?: " + bool_to_string(m_output_file_specs.save_grid_data));
+  m_atm_logger->info("      Includes Grid Data ?: " + bool_to_string(m_save_grid_data));
   // List each GRID - TODO
   // List all FIELDS - TODO
 }

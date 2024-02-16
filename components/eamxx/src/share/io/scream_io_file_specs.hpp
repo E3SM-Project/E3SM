@@ -28,13 +28,7 @@ struct IOFileSpecs {
   bool file_is_full () const { return num_snapshots_in_file>=max_snapshots_in_file; }
   bool file_needs_flush () const { return flush_frequency>0 and num_snapshots_in_file%flush_frequency==0; }
 
-  // Adding number of MPI ranks to the filenamea is useful in testing, since we can run
-  // multiple instances of the same test in parallel (with different number of ranks),
-  // without the risk of them overwriting each other output.
-  // For production runs, this is not desirable.
-  bool filename_with_mpiranks    = false;
 
-  bool save_grid_data            = true;
 
   // Whether it is a model output, model restart, or history restart file
   FileType ftype = FileType::Unset;
