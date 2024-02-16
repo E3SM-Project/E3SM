@@ -58,35 +58,6 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   // Read input parameters and setup internal data
   set_params(params,field_mgrs);
 
-  // Output control
-  EKAT_REQUIRE_MSG(m_params.isSublist("output_control"),
-      "Error! The output control YAML file for " + m_filename_prefix + " is missing the sublist 'output_control'");
-  auto& out_control_pl = m_params.sublist("output_control");
-  m_output_control.frequency_units = out_control_pl.get<std::string>("frequency_units");
-
-  // In case output is disabled, no point in doing anything else
-  if (m_output_control.frequency_units=="none" || m_output_control.frequency_units=="never") {
-    return;
-  }
-  m_output_control.frequency = out_control_pl.get<int>("Frequency");
-  EKAT_REQUIRE_MSG (m_output_control.frequency>0,
-      "Error! Invalid frequency (" + std::to_string(m_output_control.frequency) + ") in Output Control. Please, use positive number.\n");
-
-  // Determine which timestamp to use a reference for output frequency.  Two options:
-  // 	1. use_case_as_start_reference: TRUE  - implies we want to calculate frequency from the beginning of the whole simulation, even if this is a restarted run.
-  // 	2. use_case_as_start_reference: FALSE - implies we want to base the frequency of output on when this particular simulation started.
-  // Note, (2) is needed for restarts since the restart frequency in CIME assumes a reference of when this run began.
-  // NOTE: m_is_restarted_run and not m_is_model_restart_output, these timestamps will be corrected once we open the hist restart file
-  const bool use_case_as_ref = out_control_pl.get<bool>("use_case_as_start_reference",!m_is_model_restart_output);
-  const auto& start_ref = use_case_as_ref ? m_case_t0 : m_run_t0;
-  m_output_control.last_write_ts = start_ref;
-  m_output_control.compute_next_write_ts();
-
-  // File specs
-  constexpr auto large_int = 1000000;
-  m_output_file_specs.max_snapshots_in_file  = m_params.get<int>("Max Snapshots Per File",large_int);
-  m_output_file_specs.ftype = m_is_model_restart_output ? FileType::ModelRestart : FileType::ModelOutput;
-
   // Here, store if PG2 fields will be present in output streams.
   // Will be useful if multiple grids are defined (see below).
   bool pg2_grid_in_io_streams = false;
@@ -179,28 +150,6 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
     }
   }
 
-  if (m_params.isSublist("Checkpoint Control")) {
-    // Output control
-    // TODO: It would be great if there was an option where, if Checkpoint Control was not a sublist, we
-    //       could query the restart control information and just use that.
-    auto& pl = m_params.sublist("Checkpoint Control");
-    m_checkpoint_control.frequency_units           = pl.get<std::string>("frequency_units");
-
-    if (m_checkpoint_control.output_enabled()) {
-      m_checkpoint_control.frequency = pl.get<int>("Frequency");
-      EKAT_REQUIRE_MSG (m_output_control.frequency>0,
-          "Error! Invalid frequency (" + std::to_string(m_checkpoint_control.frequency) + ") in Checkpoint Control. Please, use positive number.\n");
-
-      m_checkpoint_control.last_write_ts = run_t0;
-      m_checkpoint_control.compute_next_write_ts();
-
-      // File specs
-      m_checkpoint_file_specs.max_snapshots_in_file = 1;
-      m_checkpoint_file_specs.flush_frequency = 1;
-      m_checkpoint_file_specs.ftype = FileType::HistoryRestart;
-    }
-  }
-
   // If this is model output (not model restart) we need to restart the output history.
   // For instant output, this just entails restarting timestamps and counters, while
   // for average output we also need to restore the accumulation state of the output fields
@@ -255,14 +204,26 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
           "Error! Cannot change avg type when performing history restart.\n"
           "  - old avg type: " << old_avg_type + "\n"
           "  - new avg type: " << e2str(m_avg_type) << "\n");
-      auto old_max_snaps = scorpio::get_attribute<int>(rhist_file,"max_snapshots_per_file");
-      EKAT_REQUIRE_MSG (old_max_snaps == m_output_file_specs.max_snapshots_in_file,
-          "Error! Cannot change max snapshots per file when performing history restart.\n"
-          "  - old max snaps: " << old_max_snaps << "\n"
-          "  - new max snaps: " << m_output_file_specs.max_snapshots_in_file << "\n"
-          "If you *really* want to change the file capacity, you need to force using a new file, setting\n"
+
+
+      auto old_storage_type = scorpio::get_attribute<std::string>(rhist_file,"file_max_storage_type");
+      EKAT_REQUIRE_MSG (old_storage_type == e2str(m_output_file_specs.storage.type),
+          "Error! Cannot change file storage type when performing history restart.\n"
+          "  - old file_max_storage_type: " << old_storage_type << "\n"
+          "  - new file_max_storage_type: " << e2str(m_output_file_specs.storage.type) << "\n"
+          "If you *really* want to change the file storage type, you need to force using a new file, setting\n"
           "  Restart:\n"
           "    force_new_file: true\n");
+      if (old_storage_type=="num_snapshot") {
+        auto old_max_snaps = scorpio::get_attribute<int>(rhist_file,"max_snapshots_per_file");
+        EKAT_REQUIRE_MSG (old_max_snaps == m_output_file_specs.storage.max_snapshots_in_file,
+            "Error! Cannot change max snapshots per file when performing history restart.\n"
+            "  - old max snaps: " << old_max_snaps << "\n"
+            "  - new max snaps: " << m_output_file_specs.storage.max_snapshots_in_file << "\n"
+            "If you *really* want to change the file capacity, you need to force using a new file, setting\n"
+            "  Restart:\n"
+            "    force_new_file: true\n");
+      }
       std::string fp_precision = m_params.get<std::string>("Floating Point Precision");
       auto old_fp_precision = scorpio::get_attribute<std::string>(rhist_file,"fp_precision");
       EKAT_REQUIRE_MSG (old_fp_precision == fp_precision,
@@ -275,25 +236,18 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
       const auto& last_output_filename = get_attribute<std::string>(rhist_file,"last_output_filename");
       m_resume_output_file = last_output_filename!="" and not restart_pl.get("force_new_file",false);
       if (m_resume_output_file) {
+
         scorpio::register_file(last_output_filename,scorpio::Read);
         int num_snaps = scorpio::get_dimlen(last_output_filename,"time");
-
-        // End of checks. Close the file.
         scorpio::eam_pio_closefile(last_output_filename);
 
-        // If last output was full, we can no longer try to resume the file
-        if (num_snaps<m_output_file_specs.max_snapshots_in_file) {
-          m_output_file_specs.filename = last_output_filename;
-          m_output_file_specs.is_open = true;
-
-          // The setup_file call will not register any new variable (the file is in Append mode,
-          // so all dims/vars must already be in the file). However, it will register decompositions,
-          // since those are a property of the run, not of the file.
-          setup_file(m_output_file_specs,m_output_control);
-        } else {
-          // We can't continue with this file
-          m_resume_output_file = false;
-        }
+        m_output_file_specs.filename = last_output_filename;
+        m_output_file_specs.is_open = true;
+        m_output_file_specs.storage.num_snapshots_in_file = num_snaps;
+        // The setup_file call will not register any new variable (the file is in Append mode,
+        // so all dims/vars must already be in the file). However, it will register decompositions,
+        // since those are a property of the run, not of the file.
+        setup_file(m_output_file_specs,m_output_control);
       }
     }
   }
@@ -372,6 +326,12 @@ void OutputManager::run(const util::TimeStamp& timestamp)
   // Create and setup output/checkpoint file(s), if necessary
   start_timer(timer_root+"::get_new_file");
   auto setup_output_file = [&](IOControl& control, IOFileSpecs& filespecs) {
+    // Check if the new snapshot fits, if not, close the file
+    if (not filespecs.storage.snapshot_fits(timestamp)) {
+      eam_pio_closefile(filespecs.filename);
+      filespecs.close();
+    }
+
     // Check if we need to open a new file
     if (not filespecs.is_open) {
       filespecs.filename = compute_filename (control,filespecs,timestamp);
@@ -474,7 +434,10 @@ void OutputManager::run(const util::TimeStamp& timestamp)
         set_attribute(filespecs.filename,"averaging_type",e2str(m_avg_type));
         set_attribute(filespecs.filename,"averaging_frequency_units",m_output_control.frequency_units);
         set_attribute(filespecs.filename,"averaging_frequency",m_output_control.frequency);
-        set_attribute(filespecs.filename,"max_snapshots_per_file",m_output_file_specs.max_snapshots_in_file);
+        set_attribute(filespecs.filename,"file_max_storage_type",e2str(m_output_file_specs.storage.type));
+        if (m_output_file_specs.storage.type==NumSnaps) {
+          set_attribute(filespecs.filename,"max_snapshots_per_file",m_output_file_specs.storage.max_snapshots_in_file);
+        }
         const auto& fp_precision = m_params.get<std::string>("Floating Point Precision");
         set_attribute(filespecs.filename,"fp_precision",fp_precision);
       }
@@ -487,18 +450,14 @@ void OutputManager::run(const util::TimeStamp& timestamp)
       }
 
       // We're adding one snapshot to the file
-      ++filespecs.num_snapshots_in_file;
+      filespecs.storage.update_storage(timestamp);
 
       if (m_time_bnds.size()>0) {
         scorpio::grid_write_data_array(filespecs.filename, "time_bnds", m_time_bnds.data(), 2);
       }
 
-      // Check if we need to close the output file
-      if (filespecs.file_is_full()) {
-        eam_pio_closefile(filespecs.filename);
-        filespecs.num_snapshots_in_file = 0;
-        filespecs.is_open = false;
-      } else if (filespecs.file_needs_flush()) {
+      // Check if we need to flush the output file
+      if (filespecs.file_needs_flush()) {
         eam_flush_file (filespecs.filename);
       }
     };
@@ -563,10 +522,19 @@ compute_filename (const IOControl& control,
   }
 
   // Always add a time stamp
-  if (m_avg_type==OutputAvgType::Instant || file_specs.ftype==FileType::HistoryRestart) {
-    filename += "." + timestamp.to_string();
-  } else {
-    filename += "." + control.last_write_ts.to_string();
+  auto ts = (m_avg_type==OutputAvgType::Instant || file_specs.ftype==FileType::HistoryRestart)
+          ? timestamp : control.last_write_ts;
+
+  switch (file_specs.storage.type) {
+    case NumSnaps:
+      filename += "." + ts.to_string();
+      break;
+    case Yearly:
+      filename += "." + std::to_string(ts.get_year());
+    case Monthly:
+      filename += "." + std::to_string(ts.get_year()) + "-" + std::to_string(ts.get_month());
+    default:
+      EKAT_ERROR_MSG ("Error! Unrecognized/unsupported file storage type.\n");
   }
 
   return filename + ".nc";
@@ -582,21 +550,10 @@ set_params (const ekat::ParameterList& params,
 
   if (m_is_model_restart_output) {
     // We build some restart parameters internally
-    auto avg_type = m_params.get<std::string>("Averaging Type","INSTANT");
-    m_avg_type = str2avg(avg_type);
-    EKAT_REQUIRE_MSG (m_avg_type==OutputAvgType::Instant,
-        "Error! For restart output, the averaging type must be 'Instant'.\n"
-        "   Note: you don't have to specify this parameter for restart output.\n");
-
-    m_output_file_specs.max_snapshots_in_file = m_params.get("Max Snapshots Per File",1);
-    EKAT_REQUIRE_MSG (m_output_file_specs.max_snapshots_in_file==1,
-        "Error! For restart output, max snapshots per file must be 1.\n"
-        "   Note: you don't have to specify this parameter for restart output.\n");
-
-    m_output_file_specs.flush_frequency = m_params.get("flush_frequency",1);
-    EKAT_REQUIRE_MSG (m_output_file_specs.flush_frequency==1,
-        "Error! For restart output, file flush frequency must be 1.\n"
-        "   Note: you don't have to specify this parameter for restart output.\n");
+    m_avg_type = OutputAvgType::Instant;
+    m_output_file_specs.storage.type = NumSnaps;
+    m_output_file_specs.storage.max_snapshots_in_file = 1;
+    m_output_file_specs.flush_frequency = 1;
 
     auto& fields_pl = m_params.sublist("Fields");
     for (const auto& it : field_mgrs) {
@@ -625,10 +582,21 @@ set_params (const ekat::ParameterList& params,
         "Error! Unsupported averaging type '" + avg_type + "'.\n"
         "       Valid options: Instant, Max, Min, Average. Case insensitive.\n");
 
-    constexpr auto large_int = 1000000;
-    m_output_file_specs.max_snapshots_in_file = m_params.get<int>("Max Snapshots Per File",large_int);
+    const auto& storage_type = m_params.get<std::string>("file_max_storage_type","num_snapshots");
+    auto& storage = m_output_file_specs.storage;
+    constexpr auto large_int = std::numeric_limits<int>::max();
+    if (storage_type=="num_snapshots") {
+      storage.type = NumSnaps;
+      storage.max_snapshots_in_file = m_params.get<int>("Max Snapshots Per File",large_int);
+    } else if (storage_type=="year") {
+      storage.type = Yearly;
+    } else if (storage_type=="month") {
+      storage.type = Monthly;
+    } else {
+      EKAT_ERROR_MSG ("Error! Unrecognized/unsupported file storage type.\n");
+    }
     m_filename_prefix = m_params.get<std::string>("filename_prefix");
-    m_output_file_specs.flush_frequency = m_params.get("flush_frequency",m_output_file_specs.max_snapshots_in_file);
+    m_output_file_specs.flush_frequency = m_params.get("flush_frequency",large_int);
 
     // Allow user to ask for higher precision for normal model output,
     // but default to single to save on storage
@@ -642,10 +610,59 @@ set_params (const ekat::ParameterList& params,
     // Hard code to false if not set
     if (not m_params.isParameter("MPI Ranks in Filename")) {
       m_params.set("MPI Ranks in Filename",false);
+    }
   }
+
+  // Output control
+  EKAT_REQUIRE_MSG(m_params.isSublist("output_control"),
+      "Error! The output control YAML file for " + m_filename_prefix + " is missing the sublist 'output_control'");
+  auto& out_control_pl = m_params.sublist("output_control");
+  m_output_control.frequency_units = out_control_pl.get<std::string>("frequency_units");
+
+  // In case output is disabled, no point in doing anything else
+  if (m_output_control.frequency_units=="none" || m_output_control.frequency_units=="never") {
+    return;
+  }
+  m_output_control.frequency = out_control_pl.get<int>("Frequency");
+  EKAT_REQUIRE_MSG (m_output_control.frequency>0,
+      "Error! Invalid frequency (" + std::to_string(m_output_control.frequency) + ") in Output Control. Please, use positive number.\n");
+
+  // Determine which timestamp to use a reference for output frequency.  Two options:
+  // 	1. use_case_as_start_reference: TRUE  - implies we want to calculate frequency from the beginning of the whole simulation, even if this is a restarted run.
+  // 	2. use_case_as_start_reference: FALSE - implies we want to base the frequency of output on when this particular simulation started.
+  // Note, (2) is needed for restarts since the restart frequency in CIME assumes a reference of when this run began.
+  // NOTE: m_is_restarted_run and not m_is_model_restart_output, these timestamps will be corrected once we open the hist restart file
+  const bool use_case_as_ref = out_control_pl.get<bool>("use_case_as_start_reference",!m_is_model_restart_output);
+  const auto& start_ref = use_case_as_ref ? m_case_t0 : m_run_t0;
+  m_output_control.last_write_ts = start_ref;
+  m_output_control.compute_next_write_ts();
+
   // File specs
   m_save_grid_data = out_control_pl.get("save_grid_data",!m_is_model_restart_output);
+  m_output_file_specs.ftype = m_is_model_restart_output ? FileType::ModelRestart : FileType::ModelOutput;
+
+  if (m_params.isSublist("Checkpoint Control")) {
+    auto& pl = m_params.sublist("Checkpoint Control");
+    m_checkpoint_control.frequency_units = pl.get<std::string>("frequency_units");
+
+    if (m_checkpoint_control.output_enabled()) {
+      m_checkpoint_control.frequency = pl.get<int>("Frequency");
+      EKAT_REQUIRE_MSG (m_output_control.frequency>0,
+          "Error! Invalid frequency (" + std::to_string(m_checkpoint_control.frequency) + ") in Checkpoint Control. Please, use positive number.\n");
+
+      m_checkpoint_control.last_write_ts = m_run_t0;
+      m_checkpoint_control.compute_next_write_ts();
+
+      // File specs
+      m_checkpoint_file_specs.storage.type = NumSnaps;
+      m_checkpoint_file_specs.storage.max_snapshots_in_file = 1;
+      m_checkpoint_file_specs.flush_frequency = 1;
+      m_checkpoint_file_specs.ftype = FileType::HistoryRestart;
+    }
+  }
+
 }
+
 /*===============================================================================================*/
 void OutputManager::
 setup_file (      IOFileSpecs& filespecs,
@@ -698,7 +715,10 @@ setup_file (      IOFileSpecs& filespecs,
     set_attribute(filename,"averaging_type",e2str(m_avg_type));
     set_attribute(filename,"averaging_frequency_units",m_output_control.frequency_units);
     set_attribute(filename,"averaging_frequency",m_output_control.frequency);
-    set_attribute(filename,"max_snapshots_per_file",m_output_file_specs.max_snapshots_in_file);
+    set_attribute(filespecs.filename,"file_max_storage_type",e2str(m_output_file_specs.storage.type));
+    if (m_output_file_specs.storage.type==NumSnaps) {
+      set_attribute(filename,"max_snapshots_per_file",m_output_file_specs.storage.max_snapshots_in_file);
+    }
     set_attribute(filename,"fp_precision",fp_precision);
     set_file_header(filespecs);
   }
@@ -794,7 +814,19 @@ push_to_logger()
   m_atm_logger->info("        Is Restarted Run ?: " + bool_to_string(m_is_restarted_run));
   m_atm_logger->info("            Averaging Type: " + e2str(m_avg_type));
   m_atm_logger->info("          Output Frequency: " + std::to_string(m_output_control.frequency) + " " + m_output_control.frequency_units);
-  m_atm_logger->info("         Max snaps in file: " + std::to_string(m_output_file_specs.max_snapshots_in_file));  // TODO: add "not set" if the value is -1
+  switch (m_output_file_specs.storage.type) {
+    case NumSnaps:
+      m_atm_logger->info("             File Capacity: " + std::to_string(m_output_file_specs.storage.max_snapshots_in_file) + " snapshots");  // TODO: add "not set" if the value is -1
+      break;
+    case Monthly:
+      m_atm_logger->info("             File Capacity: one month per file");
+      break;
+    case Yearly:
+      m_atm_logger->info("             File Capacity: one year per file");
+      break;
+    default:
+      EKAT_ERROR_MSG ("Error! Unrecognized/unsupported file storage type.\n");
+  }
   m_atm_logger->info("      Includes Grid Data ?: " + bool_to_string(m_save_grid_data));
   // List each GRID - TODO
   // List all FIELDS - TODO
