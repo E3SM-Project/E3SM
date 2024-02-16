@@ -544,19 +544,6 @@ module li_subglacial_hydro
 
 
       ! =============
-      ! Calculate pressure field
-      ! =============
-      block => domain % blocklist
-      do while (associated(block))
-
-         call calc_pressure(block, err_tmp)
-         err = ior(err, err_tmp)
-
-         block => block % next
-      end do
-
-
-      ! =============
       ! Update water layer thickness
       ! =============
       block => domain % blocklist
@@ -588,6 +575,33 @@ module li_subglacial_hydro
          waterThickness = max(0.0_RKIND, waterThickness)
          divergence = divergence * li_mask_is_grounded_ice_int(cellMask)  ! zero in non-grounded locations for more convenient viz
          waterThicknessTendency = (waterThickness - waterThicknessOld) / deltatSGH
+
+         block => block % next
+      end do
+
+      ! =============
+      ! Calculate pressure field
+      ! =============
+      ! Note: In Bueler and van Pelt, pressure is updated before waterThickness
+      ! (step vii on page 1625).  It does not matter which order they are calculated
+      ! because the update calculations are formulated on intermediate variables
+      ! such that neither depend directly on the other in the actual update.
+      ! However, calc_pressure also calculates the full hydropotential (including
+      ! the water thickness elevation head) which *is* a direct function of water thickness,
+      ! making the ordering of that calculation important.
+      ! Because the pressure variables calculated here are meant to be used on the
+      ! following timestep (forward Euler), the full hydropotential should be using
+      ! the updated waterThickness, not the old one.  To achieve that, calc_pressure
+      ! is called here, after waterThickness has been updated.
+      ! Note that the full hydropotential is only used by the channel model, so this
+      ! ordering choice is only needed to support channels.  Without it, runs with
+      ! channels would use an out of date waterThickness in the hydropotential and
+      ! do not restart correctly due to the order of operations mismatch.
+      block => domain % blocklist
+      do while (associated(block))
+
+         call calc_pressure(block, err_tmp)
+         err = ior(err, err_tmp)
 
          block => block % next
       end do
@@ -972,11 +986,11 @@ module li_subglacial_hydro
 
       ! calculate magnitude of gradient of Phi
       gradMagPhiEdge = sqrt(hydropotentialSlopeNormal**2 + hydropotentialSlopeTangent**2)
-      
+
       ! calculate magnitude of gradient of hydropotentialBase
       gradMagPhiBaseEdge = sqrt(hydropotentialBaseSlopeNormal**2 +&
       hydropotentialBaseSlopeTangent**2)
-      
+
       ! calculate effective conductivity on edges
       if (conduc_coeff_drowned > 0.0_RKIND) then
          ! Use a thickness weighted conductivity coeff. when water thickness exceeds bump height
