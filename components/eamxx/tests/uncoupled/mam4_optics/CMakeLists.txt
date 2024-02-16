@@ -22,5 +22,21 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/output.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/output.yaml)
 
 # Ensure test input files are present in the data dir
-# FIXME: do I need a set a EAMxx_tests_IC_FILE_72lev ? for my nc file?
-GetInputFile(scream/init/scream_unit_tests_aerosol_optics_ne2np4L72_20220822.nc)
+set (TEST_INPUT_FILES
+  scream/mam4xx/physprops/mam4_mode1_rrtmg_aeronetdust_c20240206.nc
+  scream/mam4xx/physprops/mam4_mode2_rrtmg_c20240206.nc
+  scream/mam4xx/physprops/mam4_mode3_rrtmg_aeronetdust_c20240206.nc
+  scream/mam4xx/physprops/mam4_mode4_rrtmg_c20240206.nc
+  scream/mam4xx/physprops/water_refindex_rrtmg_c20240206.nc
+  scream/mam4xx/physprops/ocphi_rrtmg_c20240206.nc
+  scream/mam4xx/physprops/dust_aeronet_rrtmg_c20240206.nc
+  scream/mam4xx/physprops/ssam_rrtmg_c20240206.nc
+  scream/mam4xx/physprops/sulfate_rrtmg_c20240206.nc
+  scream/mam4xx/physprops/ocpho_rrtmg_c20240206.nc
+  scream/mam4xx/physprops/bcpho_rrtmg_c20240206.nc
+  scream/mam4xx/physprops/poly_rrtmg_c20240206.nc
+  scream/init/scream_unit_tests_aerosol_optics_ne2np4L72_20220822.nc
+)
+foreach (file IN ITEMS ${TEST_INPUT_FILES})
+  GetInputFile(${file})
+endforeach()

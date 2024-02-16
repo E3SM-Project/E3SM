@@ -67,8 +67,18 @@ configure_file(${SCREAM_SRC_DIR}/dynamics/homme/tests/theta.nl
 
 # Ensure test input files are present in the data dir
 set (TEST_INPUT_FILES
-  # scream/init/spa_init_ne2np4.nc
-  # scream/init/spa_file_unified_and_complete_ne2np4L72_20231222.nc
+  scream/mam4xx/physprops/mam4_mode1_rrtmg_aeronetdust_c20240206.nc
+  scream/mam4xx/physprops/mam4_mode2_rrtmg_c20240206.nc
+  scream/mam4xx/physprops/mam4_mode3_rrtmg_aeronetdust_c20240206.nc
+  scream/mam4xx/physprops/mam4_mode4_rrtmg_c20240206.nc
+  scream/mam4xx/physprops/water_refindex_rrtmg_c20240206.nc
+  scream/mam4xx/physprops/ocphi_rrtmg_c20240206.nc
+  scream/mam4xx/physprops/dust_aeronet_rrtmg_c20240206.nc
+  scream/mam4xx/physprops/ssam_rrtmg_c20240206.nc
+  scream/mam4xx/physprops/sulfate_rrtmg_c20240206.nc
+  scream/mam4xx/physprops/ocpho_rrtmg_c20240206.nc
+  scream/mam4xx/physprops/bcpho_rrtmg_c20240206.nc
+  scream/mam4xx/physprops/poly_rrtmg_c20240206.nc
   scream/init/${EAMxx_tests_IC_FILE_72lev}
   cam/topo/${EAMxx_tests_TOPO_FILE}
 )
