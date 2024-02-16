@@ -1,0 +1,97 @@
+<streams>
+<immutable_stream name="input_init"
+                  type="input"
+                  filename_template="mesh.nc"
+                  input_interval="initial_only" />
+
+<immutable_stream name="atmospheric_forcing"
+                  type="input"
+                  filename_template="atmospheric_forcing.nc"
+                  filename_interval="none"
+                  packages="timeVaryingAtmosphericForcingPKG"
+                  input_interval="none" />
+
+<immutable_stream name="land_ice_forcing"
+                  type="input"
+                  filename_template="land_ice_forcing.nc"
+                  filename_interval="none"
+                  packages="timeVaryingLandIceForcingPKG"
+                  input_interval="none" />
+
+<stream name="output_init"
+        type="output"
+        filename_template="ocean.nc"
+        clobber_mode="truncate"
+        output_interval="0000-00-00_00:00:01" >
+
+	<stream name="input_init"/>
+	<var_struct name="tracers"/>
+	<var_struct name="ecosysAuxiliary"/>
+	<var name="refZMid"/>
+	<var name="normalVelocity"/>
+	<var name="layerThickness"/>
+	<var name="restingThickness"/>
+	<var name="boundaryLayerDepth"/>
+	<var name="refBottomDepth"/>
+	<var name="bottomDepth"/>
+	<var name="bottomDepthObserved"/>
+	<var name="minLevelCell"/>
+	<var name="maxLevelCell"/>
+	<var name="vertCoordMovementWeights"/>
+	<var name="edgeMask"/>
+	<var name="cullCell"/>
+	<var name="effectiveDensityInLandIce"/>
+	<var name="landIceMask"/>
+	<var name="landIcePressure"/>
+	<var name="landIceFraction"/>
+	<var name="landIceDraft"/>
+	<var name="landIceFloatingMask"/>
+	<var name="landIceFloatingFraction"/>
+	<var name="LTSRegion"/>
+</stream>
+
+<stream name="forcing_data_init"
+        type="output"
+        filename_template="init_mode_forcing_data.nc"
+        clobber_mode="truncate"
+        output_interval="0000-00-00_00:00:01" >
+
+	<var_struct name="forcing"/>
+	<var_struct name="tracersSurfaceRestoringFields"/>
+	<var_struct name="tracersInteriorRestoringFields"/>
+	<var_struct name="tracersExponentialDecayFields"/>
+	<var_struct name="tracersIdealAgeFields"/>
+	<var_struct name="tracersTTDFields"/>
+	<var_array name="activeTracersPistonVelocity" packages="activeTracersSurfaceRestoringPKG"/>
+	<var_array name="activeTracersSurfaceRestoringValue" packages="activeTracersSurfaceRestoringPKG"/>
+	<var_array name="activeTracersInteriorRestoringRate" packages="activeTracersInteriorRestoringPKG"/>
+	<var_array name="activeTracersInteriorRestoringValue" packages="activeTracersInteriorRestoringPKG"/>
+	<var_array name="debugTracersPistonVelocity" packages="debugTracersSurfaceRestoringPKG"/>
+	<var_array name="debugTracersSurfaceRestoringValue" packages="debugTracersSurfaceRestoringPKG"/>
+	<var name="surfaceStress"/>
+	<var name="seaIcePressure"/>
+	<var name="atmosphericPressure"/>
+	<var name="windStressZonal"/>
+	<var name="windStressMeridional"/>
+	<var name="landIceSurfaceTemperature"/>
+	<var name="latentHeatFlux"/>
+	<var name="sensibleHeatFlux"/>
+	<var name="shortWaveHeatFlux"/>
+	<var name="evaporationFlux"/>
+	<var name="rainFlux"/>
+	<var name="bottomDrag"/>
+</stream>
+
+<stream name="shortwave_forcing_data_init"
+        type="output"
+        filename_template="init_mode_shortwaveData.nc"
+        clobber_mode="truncate"
+        packages="variableShortwave"
+        output_interval="0000-00-00_00:00:01" >
+
+	<var name="chlorophyllData"/>
+	<var name="zenithAngle"/>
+	<var name="clearSkyRadiation"/>
+</stream>
+
+</streams>

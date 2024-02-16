@@ -1,0 +1,1502 @@
+&run_modes
+    config_ocean_run_mode = 'forward'
+/
+&time_management
+    config_do_restart = .false.
+    config_restart_timestamp_name = 'Restart_timestamp'
+    config_start_time = '0001-01-01_00:00:00'
+    config_stop_time = 'none'
+    config_run_duration = '0010_00:00:00'
+    config_calendar_type = 'noleap'
+    config_output_reference_time = '0001-01-01_00:00:00'
+/
+&io
+    config_write_output_on_startup = .true.
+    config_pio_num_iotasks = 0
+    config_pio_stride = 1
+/
+&decomposition
+    config_num_halos = 3
+    config_block_decomp_file_prefix = 'graph.info.part.'
+    config_number_of_blocks = 0
+    config_explicit_proc_decomp = .false.
+    config_proc_decomp_file_prefix = 'graph.info.part.'
+/
+&time_integration
+    config_dt = '00:05:00'
+    config_time_integrator = 'split_explicit_ab2'
+    config_number_of_time_levels = 2
+/
+&hmix
+    config_hmix_scaleWithMesh = .false.
+    config_maxMeshDensity = -1.0
+    config_hmix_use_ref_cell_width = .false.
+    config_hmix_ref_cell_width = 30.0e3
+    config_apvm_scale_factor = 0.0
+/
+&hmix_del2
+    config_use_mom_del2 = .false.
+    config_mom_del2 = 1.0e3
+    config_use_tracer_del2 = .false.
+    config_tracer_del2 = 10.0
+/
+&hmix_del4
+    config_use_mom_del4 = .false.
+    config_mom_del4 = 1.2e11
+    config_mom_del4_div_factor = 1.0
+    config_use_tracer_del4 = .false.
+    config_tracer_del4 = 0.0
+/
+&hmix_Leith
+    config_use_Leith_del2 = .false.
+    config_Leith_parameter = 1.0
+    config_Leith_dx = 15000.0
+    config_Leith_visc2_max = 2.5e3
+/
+&Redi_isopycnal_mixing
+    config_use_Redi = .false.
+    config_Redi_closure = 'constant'
+    config_Redi_constant_kappa = 600.0
+    config_Redi_maximum_slope = 0.3
+    config_Redi_use_slope_taper = .true.
+    config_Redi_use_surface_taper = .true.
+    config_Redi_limit_term1 = .true.
+    config_Redi_use_quasi_monotone_limiter = .true.
+    config_Redi_quasi_monotone_safety_factor = 0.9
+    config_Redi_min_layers_diag_terms = 6
+    config_Redi_horizontal_taper = 'ramp'
+    config_Redi_horizontal_ramp_min = 20e3
+    config_Redi_horizontal_ramp_max = 30e3
+/
+&submesoscale_eddy_parameterization
+    config_submesoscale_enable = .false.
+    config_submesoscale_tau = 172800
+    config_submesoscale_Ce = 0.06
+    config_submesoscale_Lfmin = 1000.0
+    config_submesoscale_ds_max = 100000.0
+/
+&GM_eddy_parameterization
+    config_use_GM = .false.
+    config_GM_closure = 'EdenGreatbatch'
+    config_GM_constant_kappa = 600.0
+    config_GM_constant_bclModeSpeed = 0.3
+    config_GM_minBclModeSpeed_method = 'constant'
+    config_GM_spatially_variable_min_kappa = 300.0
+    config_GM_spatially_variable_max_kappa = 1800.0
+    config_GM_spatially_variable_baroclinic_mode = 1.0
+    config_GM_Visbeck_alpha = 0.005
+    config_GM_Visbeck_max_depth = 1000.0
+    config_GM_EG_riMin = 200.0
+    config_GM_EG_kappa_factor = 3.0
+    config_GM_EG_Rossby_factor = 2.0
+    config_GM_EG_Rhines_factor = 0.3
+    config_GM_horizontal_taper = 'ramp'
+    config_GM_horizontal_ramp_min = 20e3
+    config_GM_horizontal_ramp_max = 30e3
+    config_GMRedi_Rossby_ramp_min = 0.5
+    config_GMRedi_Rossby_ramp_max = 3.0
+/
+&eddy_parameterization
+    config_eddyMLD_dens_threshold = 0.03
+    config_eddyMLD_reference_depth = 10
+    config_eddyMLD_reference_pressure = 1.0e5
+    config_eddyMLD_use_old = .true.
+/
+&cvmix
+    config_use_cvmix = .true.
+    config_cvmix_prandtl_number = 1.0
+    config_cvmix_background_scheme = 'constant'
+    config_cvmix_background_diffusion = 1.0e-5
+    config_cvmix_background_viscosity = 1.0e-4
+    config_cvmix_BryanLewis_bl1 = 8.0e-5
+    config_cvmix_BryanLewis_bl2 = 1.05E-4
+    config_cvmix_BryanLewis_transitionDepth = 2500
+    config_cvmix_BryanLewis_transitionWidth = 222.
+    config_use_cvmix_convection = .false.
+    config_cvmix_convective_diffusion = 1.0
+    config_cvmix_convective_viscosity = 1.0
+    config_cvmix_convective_basedOnBVF = .true.
+    config_cvmix_convective_triggerBVF = 0.0
+    config_use_cvmix_shear = .false.
+    config_cvmix_num_ri_smooth_loops = 2
+    config_cvmix_use_BLD_smoothing = .true.
+    config_cvmix_shear_mixing_scheme = 'PP'
+    config_cvmix_shear_PP_nu_zero = 0.005
+    config_cvmix_shear_PP_alpha = 5.0
+    config_cvmix_shear_PP_exp = 2.0
+    config_cvmix_shear_KPP_nu_zero = 0.005
+    config_cvmix_shear_KPP_Ri_zero = 0.7
+    config_cvmix_shear_KPP_exp = 3
+    config_use_cvmix_tidal_mixing = .false.
+    config_use_cvmix_double_diffusion = .false.
+    config_use_cvmix_kpp = .false.
+    config_use_cvmix_fixed_boundary_layer = .false.
+    config_cvmix_kpp_boundary_layer_depth = 30.0
+    config_cvmix_kpp_criticalBulkRichardsonNumber = 0.25
+    config_cvmix_kpp_matching = 'SimpleShapes'
+    config_cvmix_kpp_EkmanOBL = .false.
+    config_cvmix_kpp_MonObOBL = .false.
+    config_cvmix_kpp_interpolationOMLType = 'quadratic'
+    config_cvmix_kpp_surface_layer_extent = 0.1
+    config_cvmix_kpp_surface_layer_averaging = 5.0
+    configure_cvmix_kpp_minimum_OBL_under_sea_ice = 10.0
+    config_cvmix_kpp_stop_OBL_search = 100.0
+    config_cvmix_kpp_use_enhanced_diff = .true.
+    config_cvmix_kpp_nonlocal_with_implicit_mix = .false.
+    config_cvmix_kpp_use_theory_wave = .false.
+    config_cvmix_kpp_langmuir_mixing_opt = 'NONE'
+    config_cvmix_kpp_langmuir_entrainment_opt = 'NONE'
+    config_cvmix_kpp_use_active_wave = .false.
+/
+&wave_coupling
+    config_use_active_wave = .false.
+    config_n_stokes_drift_wavenumber_partitions = 6
+/
+&gotm
+    config_use_gotm = .false.
+    config_gotm_namelist_file = 'gotmturb.nml'
+    config_gotm_constant_surface_roughness_length = 0.02
+    config_gotm_constant_bottom_roughness_length = 0.0015
+    config_gotm_constant_bottom_drag_coeff = 1.e-3
+/
+&forcing
+    config_use_variable_drag = .false.
+    config_use_bulk_wind_stress = .false.
+    config_use_bulk_thickness_flux = .false.
+    config_flux_attenuation_coefficient = 0.001
+    config_flux_attenuation_coefficient_runoff = 0.001
+/
+&time_varying_forcing
+    config_use_time_varying_atmospheric_forcing = .false.
+    config_time_varying_atmospheric_forcing_type = 'WINDPRES'
+    config_time_varying_atmospheric_forcing_start_time = '0001-01-01_00:00:00'
+    config_time_varying_atmospheric_forcing_reference_time = '0001-01-01_00:00:00'
+    config_time_varying_atmospheric_forcing_cycle_start = '0001-01-01_00:00:00'
+    config_time_varying_atmospheric_forcing_cycle_duration = '2-00-00_00:00:00'
+    config_time_varying_atmospheric_forcing_interval = '01:00:00'
+    config_time_varying_atmospheric_forcing_ramp = 10.0
+    config_time_varying_atmospheric_forcing_ramp_delay = 0.0
+    config_use_time_varying_land_ice_forcing = .false.
+    config_time_varying_land_ice_forcing_start_time = '0001-01-01_00:00:00'
+    config_time_varying_land_ice_forcing_reference_time = '0001-01-01_00:00:00'
+    config_time_varying_land_ice_forcing_cycle_start = '0001-01-01_00:00:00'
+    config_time_varying_land_ice_forcing_cycle_duration = '2-00-00_00:00:00'
+    config_time_varying_land_ice_forcing_interval = '01:00:00'
+/
+&coupling
+    config_ssh_grad_relax_timescale = 0.0
+    config_remove_AIS_coupler_runoff = .false.
+/
+&shortwaveRadiation
+    config_sw_absorption_type = 'none'
+    config_jerlov_water_type = 3
+    config_surface_buoyancy_depth = 1
+    config_enable_shortwave_energy_fixer = .false.
+/
+&tidal_forcing
+    config_use_tidal_forcing = .false.
+    config_use_tidal_forcing_tau = 10000
+    config_tidal_forcing_type = 'off'
+    config_tidal_forcing_model = 'off'
+    config_tidal_forcing_monochromatic_amp = 2.0
+    config_tidal_forcing_monochromatic_period = 0.5
+    config_tidal_forcing_monochromatic_phaseLag = 0.0
+    config_tidal_forcing_monochromatic_baseline = 0.0
+/
+&self_attraction_loading
+    config_use_self_attraction_loading = .false.
+    config_self_attraction_loading_smoothing_width = 1.0
+    config_mpas_to_grid_weights_file = 'mpas_to_grid.nc'
+    config_grid_to_mpas_weights_file = 'grid_to_mpas.nc'
+    config_self_attraction_loading_compute_interval = '0000-00-00_00:30:00'
+    config_nLatitude = 128
+    config_nLongitude = 256
+    config_use_parallel_self_attraction_loading = .false.
+    config_parallel_self_attraction_loading_order = 10
+    config_parallel_self_attraction_loading_n_cells_per_block = 600
+    config_parallel_self_attraction_loading_bfb = .false.
+/
+&tidal_potential_forcing
+    config_use_tidal_potential_forcing = .false.
+    config_tidal_potential_reference_time = '0001-01-01_00:00:00'
+    config_use_tidal_potential_forcing_M2 = .true.
+    config_use_tidal_potential_forcing_S2 = .true.
+    config_use_tidal_potential_forcing_N2 = .true.
+    config_use_tidal_potential_forcing_K2 = .true.
+    config_use_tidal_potential_forcing_K1 = .true.
+    config_use_tidal_potential_forcing_O1 = .true.
+    config_use_tidal_potential_forcing_Q1 = .true.
+    config_use_tidal_potential_forcing_P1 = .true.
+    config_tidal_potential_ramp = 10.0
+    config_self_attraction_and_loading_beta = 0.09
+/
+&frazil_ice
+    config_use_frazil_ice_formation = .false.
+    config_frazil_in_open_ocean = .true.
+    config_frazil_under_land_ice = .true.
+    config_frazil_heat_of_fusion = 3.34e5
+    config_frazil_ice_density = 1000.0
+    config_frazil_fractional_thickness_limit = 0.1
+    config_specific_heat_sea_water = 3985.0
+    config_frazil_maximum_depth = 100.0
+    config_frazil_sea_ice_reference_salinity = 4.0
+    config_frazil_land_ice_reference_salinity = 0.0
+    config_frazil_maximum_freezing_temperature = 0.0
+    config_frazil_use_surface_pressure = .true.
+/
+&land_ice_fluxes
+    config_land_ice_flux_mode = 'off'
+    config_land_ice_flux_formulation = 'Jenkins'
+    config_land_ice_flux_useHollandJenkinsAdvDiff = .false.
+    config_land_ice_flux_attenuation_coefficient = 10.0
+    config_land_ice_flux_boundaryLayerThickness = 10.0
+    config_land_ice_flux_boundaryLayerNeighborWeight = 0.0
+    config_land_ice_flux_cp_ice = 2.009e3
+    config_land_ice_flux_rho_ice = 918
+    config_land_ice_flux_explicit_topDragCoeff = 2.5e-3
+    config_land_ice_flux_ISOMIP_gammaT = 1e-4
+    config_land_ice_flux_rms_tidal_velocity = 5e-2
+    config_land_ice_flux_jenkins_heat_transfer_coefficient = 0.011
+    config_land_ice_flux_jenkins_salt_transfer_coefficient = 3.1e-4
+/
+&advection
+    config_vert_advection_method = 'flux-form'
+    config_vert_remap_order = 3
+    config_vert_remap_interval = 0
+    config_vert_tracer_adv_flux_order = 3
+    config_horiz_tracer_adv_order = 3
+    config_coef_3rd_order = 0.25
+    config_flux_limiter = 'monotonic'
+    config_remap_limiter = 'monotonic'
+    config_thickness_flux_type = 'centered'
+/
+&bottom_drag
+    config_bottom_drag_mode = 'implicit'
+    config_implicit_bottom_drag_type = 'constant'
+    config_implicit_constant_bottom_drag_coeff = 1.0e-3
+    config_use_implicit_top_drag = .false.
+    config_implicit_top_drag_coeff = 1.0e-3
+    config_loglaw_bottom_roughness = 1.0e-3
+    config_loglaw_layer_depth_max = 10.0
+    config_loglaw_bottom_drag_min = 2.5e-3
+    config_loglaw_bottom_drag_max = 1.0e-1
+    config_explicit_bottom_drag_coeff = 1.0e-3
+    config_use_topographic_wave_drag = .false.
+    config_topographic_wave_drag_coeff = 5.0e-4
+    config_thickness_drag_type = 'centered'
+/
+&Rayleigh_damping
+    config_Rayleigh_damping_coeff = 1.0e-4
+    config_Rayleigh_damping_depth_variable = .false.
+    config_Rayleigh_bottom_friction = .false.
+    config_Rayleigh_bottom_damping_coeff = 1.0e-4
+/
+&vegetation_drag
+    config_use_vegetation_drag = .false.
+    config_vegetation_drag_coefficient = 1.09
+/
+&wetting_drying
+    config_use_wetting_drying = .false.
+    config_prevent_drying = .false.
+    config_drying_min_cell_height = 1.0e-3
+    config_zero_drying_velocity = .false.
+    config_zero_drying_velocity_ramp = .false.
+    config_zero_drying_velocity_ramp_hmin = 1e-3
+    config_zero_drying_velocity_ramp_hmax = 2e-3
+    config_verify_not_dry = .false.
+    config_drying_safety_height = 1.0e-10
+/
+&ocean_constants
+    config_density0 = 1026.0
+/
+&lts
+    config_dt_scaling_LTS = 1
+/
+&pressure_gradient
+    config_pressure_gradient_type = 'pressure_and_zmid'
+    config_common_level_weight = 0.5
+    config_zonal_ssh_grad = 0.0
+    config_meridional_ssh_grad = 0.0
+/
+&eos
+    config_eos_type = 'linear'
+    config_open_ocean_freezing_temperature_coeff_0 = 0.0
+    config_open_ocean_freezing_temperature_coeff_S = 0.0
+    config_open_ocean_freezing_temperature_coeff_p = 0.0
+    config_open_ocean_freezing_temperature_coeff_pS = 0.0
+    config_open_ocean_freezing_temperature_coeff_mushy_az1_liq = -18.48
+    config_land_ice_cavity_freezing_temperature_coeff_0 = 6.22e-2
+    config_land_ice_cavity_freezing_temperature_coeff_S = -5.63e-2
+    config_land_ice_cavity_freezing_temperature_coeff_p = -7.43e-8
+    config_land_ice_cavity_freezing_temperature_coeff_pS = -1.74e-10
+/
+&eos_linear
+    config_eos_linear_alpha = 0.2
+    config_eos_linear_beta = 0.8
+    config_eos_linear_Tref = 5.0
+    config_eos_linear_Sref = 35.0
+    config_eos_linear_densityref = 1000.0
+/
+&eos_wright
+    config_eos_wright_ref_pressure = 0.0
+/
+&split_timestep_share
+    config_n_ts_iter = 2
+    config_n_bcl_iter_beg = 1
+    config_n_bcl_iter_mid = 2
+    config_n_bcl_iter_end = 2
+/
+&split_explicit_ts
+    config_btr_dt = '0000_00:00:15'
+    config_n_btr_cor_iter = 2
+    config_vel_correction = .true.
+    config_btr_subcycle_loop_factor = 2
+    config_btr_gam1_velWt1 = 0.5333
+    config_btr_gam2_SSHWt1 = 0.5333
+    config_btr_gam3_velWt2 = 1.0
+    config_btr_solve_SSH2 = .false.
+/
+&split_implicit_ts
+    config_btr_si_preconditioner = 'ras'
+    config_btr_si_tolerance = 1.0e-9
+    config_n_btr_si_large_iter = 1
+    config_btr_si_partition_match_mode = .false.
+/
+&ALE_vertical_grid
+    config_vert_coord_movement = 'uniform_stretching'
+    config_ALE_thickness_proportionality = 'restingThickness_times_weights'
+    config_vert_taper_weight_depth_1 = 250.0
+    config_vert_taper_weight_depth_2 = 500.0
+    config_use_min_max_thickness = .false.
+    config_min_thickness = 1.0
+    config_max_thickness_factor = 6.0
+    config_dzdk_positive = .false.
+/
+&ALE_frequency_filtered_thickness
+    config_use_freq_filtered_thickness = .false.
+    config_thickness_filter_timescale = 5.0
+    config_use_highFreqThick_restore = .false.
+    config_highFreqThick_restore_time = 30.0
+    config_use_highFreqThick_del2 = .false.
+    config_highFreqThick_del2 = 100.0
+/
+&debug
+    config_check_zlevel_consistency = .false.
+    config_check_ssh_consistency = .true.
+    config_filter_btr_mode = .false.
+    config_prescribe_velocity = .false.
+    config_prescribe_thickness = .false.
+    config_include_KE_vertex = .false.
+    config_check_tracer_monotonicity = .false.
+    config_compute_active_tracer_budgets = .true.
+    config_disable_thick_all_tend = .false.
+    config_disable_thick_hadv = .false.
+    config_disable_thick_vadv = .false.
+    config_disable_thick_sflux = .false.
+    config_disable_vel_all_tend = .false.
+    config_disable_vel_hadv = .false.
+    config_disable_vel_coriolis = .false.
+    config_disable_vel_pgrad = .false.
+    config_disable_vel_hmix = .false.
+    config_disable_vel_surface_stress = .false.
+    config_disable_vel_topographic_wave_drag = .false.
+    config_disable_vel_explicit_bottom_drag = .false.
+    config_disable_vel_vmix = .false.
+    config_disable_vel_vadv = .false.
+    config_disable_tr_all_tend = .false.
+    config_disable_tr_adv = .false.
+    config_disable_tr_hmix = .false.
+    config_disable_tr_vmix = .false.
+    config_disable_tr_sflux = .false.
+    config_disable_tr_nonlocalflux = .false.
+    config_disable_redi_k33 = .false.
+    config_read_nearest_restart = .false.
+/
+&testing
+    config_conduct_tests = .false.
+    config_test_tensors = .false.
+    config_tensor_test_function = 'sph_uCosCos'
+/
+&transport_tests
+    config_transport_tests_vert_levels = 3
+    config_transport_tests_temperature = 15.0
+    config_transport_tests_salinity = 35.0
+    config_transport_tests_flow_id = 0
+/
+&init_mode_vert_levels
+    config_vert_levels = -1
+/
+&manufactured_solution
+    config_use_manufactured_solution = .false.
+    config_manufactured_solution_wavelength_x = 2000000.0
+    config_manufactured_solution_wavelength_y = 2000000.0
+    config_manufactured_solution_amplitude = 1
+/
+&tracer_forcing_activeTracers
+    config_use_activeTracers = .true.
+    config_use_activeTracers_surface_bulk_forcing = .false.
+    config_use_activeTracers_surface_restoring = .false.
+    config_use_activeTracers_interior_restoring = .false.
+    config_use_activeTracers_exponential_decay = .false.
+    config_use_activeTracers_idealAge_forcing = .false.
+    config_use_activeTracers_ttd_forcing = .false.
+    config_use_surface_salinity_monthly_restoring = .false.
+    config_surface_salinity_monthly_restoring_compute_interval = '0000-00-01_00:00:00'
+    config_salinity_restoring_constant_piston_velocity = 1.585e-5
+    config_salinity_restoring_max_difference = 100.0
+    config_salinity_restoring_under_sea_ice = .false.
+/
+&tracer_forcing_debugTracers
+    config_use_debugTracers = .false.
+    config_reset_debugTracers_near_surface = .false.
+    config_reset_debugTracers_top_nLayers = 20
+    config_use_debugTracers_surface_bulk_forcing = .false.
+    config_use_debugTracers_surface_restoring = .false.
+    config_use_debugTracers_interior_restoring = .false.
+    config_use_debugTracers_exponential_decay = .false.
+    config_use_debugTracers_idealAge_forcing = .false.
+    config_use_debugTracers_ttd_forcing = .false.
+/
+&tracer_forcing_ecosysTracers
+    config_use_ecosysTracers = .false.
+    config_ecosys_atm_co2_option = 'none'
+    config_ecosys_atm_alt_co2_option = 'none'
+    config_ecosys_atm_alt_co2_use_eco = .true.
+    config_ecosys_atm_co2_constant_value = 379.0
+    config_use_ecosysTracers_surface_bulk_forcing = .false.
+    config_use_ecosysTracers_surface_restoring = .false.
+    config_use_ecosysTracers_interior_restoring = .false.
+    config_use_ecosysTracers_exponential_decay = .false.
+    config_use_ecosysTracers_idealAge_forcing = .false.
+    config_use_ecosysTracers_ttd_forcing = .false.
+    config_use_ecosysTracers_surface_value = .false.
+    config_use_ecosysTracers_river_inputs_from_coupler = .false.
+    config_use_ecosysTracers_sea_ice_coupling = .false.
+    config_ecosysTracers_diagnostic_fields_level1 = .false.
+    config_ecosysTracers_diagnostic_fields_level2 = .false.
+    config_ecosysTracers_diagnostic_fields_level3 = .false.
+    config_ecosysTracers_diagnostic_fields_level4 = .false.
+    config_ecosysTracers_diagnostic_fields_level5 = .false.
+/
+&tracer_forcing_DMSTracers
+    config_use_DMSTracers = .false.
+    config_use_DMSTracers_surface_bulk_forcing = .false.
+    config_use_DMSTracers_surface_restoring = .false.
+    config_use_DMSTracers_interior_restoring = .false.
+    config_use_DMSTracers_exponential_decay = .false.
+    config_use_DMSTracers_idealAge_forcing = .false.
+    config_use_DMSTracers_ttd_forcing = .false.
+    config_use_DMSTracers_surface_value = .false.
+    config_use_DMSTracers_sea_ice_coupling = .false.
+/
+&tracer_forcing_MacroMoleculesTracers
+    config_use_MacroMoleculesTracers = .false.
+    config_use_MacroMoleculesTracers_surface_bulk_forcing = .false.
+    config_use_MacroMoleculesTracers_surface_restoring = .false.
+    config_use_MacroMoleculesTracers_interior_restoring = .false.
+    config_use_MacroMoleculesTracers_exponential_decay = .false.
+    config_use_MacroMoleculesTracers_idealAge_forcing = .false.
+    config_use_MacroMoleculesTracers_ttd_forcing = .false.
+    config_use_MacroMoleculesTracers_surface_value = .false.
+    config_use_MacroMoleculesTracers_sea_ice_coupling = .false.
+/
+&tracer_forcing_idealAgeTracers
+    config_use_idealAgeTracers = .false.
+    config_use_idealAgeTracers_surface_bulk_forcing = .false.
+    config_use_idealAgeTracers_surface_restoring = .false.
+    config_use_idealAgeTracers_interior_restoring = .false.
+    config_use_idealAgeTracers_exponential_decay = .false.
+    config_use_idealAgeTracers_idealAge_forcing = .true.
+    config_use_idealAgeTracers_ttd_forcing = .false.
+/
+&tracer_forcing_CFCTracers
+    config_use_CFCTracers = .false.
+    config_use_CFCTracers_surface_bulk_forcing = .false.
+    config_use_CFCTracers_surface_restoring = .false.
+    config_use_CFCTracers_interior_restoring = .false.
+    config_use_CFCTracers_exponential_decay = .false.
+    config_use_CFCTracers_idealAge_forcing = .false.
+    config_use_CFCTracers_ttd_forcing = .false.
+    config_use_CFC11 = .true.
+    config_use_CFC12 = .true.
+/
+&AM_globalStats
+    config_AM_globalStats_enable = .false.
+    config_AM_globalStats_compute_interval = 'output_interval'
+    config_AM_globalStats_compute_on_startup = .false.
+    config_AM_globalStats_write_on_startup = .false.
+    config_AM_globalStats_text_file = .false.
+    config_AM_globalStats_directory = 'analysis_members'
+    config_AM_globalStats_output_stream = 'globalStatsOutput'
+/
+&AM_surfaceAreaWeightedAverages
+    config_AM_surfaceAreaWeightedAverages_enable = .false.
+    config_AM_surfaceAreaWeightedAverages_compute_on_startup = .true.
+    config_AM_surfaceAreaWeightedAverages_write_on_startup = .true.
+    config_AM_surfaceAreaWeightedAverages_compute_interval = 'output_interval'
+    config_AM_surfaceAreaWeightedAverages_output_stream = 'surfaceAreaWeightedAveragesOutput'
+/
+&AM_waterMassCensus
+    config_AM_waterMassCensus_enable = .false.
+    config_AM_waterMassCensus_compute_interval = 'output_interval'
+    config_AM_waterMassCensus_output_stream = 'waterMassCensusOutput'
+    config_AM_waterMassCensus_compute_on_startup = .false.
+    config_AM_waterMassCensus_write_on_startup = .false.
+    config_AM_waterMassCensus_minTemperature = -2.0
+    config_AM_waterMassCensus_maxTemperature = 30.0
+    config_AM_waterMassCensus_minSalinity = 32.0
+    config_AM_waterMassCensus_maxSalinity = 37.0
+    config_AM_waterMassCensus_compute_predefined_regions = .true.
+    config_AM_waterMassCensus_region_group = ''
+/
+&AM_layerVolumeWeightedAverage
+    config_AM_layerVolumeWeightedAverage_enable = .false.
+    config_AM_layerVolumeWeightedAverage_compute_interval = 'output_interval'
+    config_AM_layerVolumeWeightedAverage_compute_on_startup = .false.
+    config_AM_layerVolumeWeightedAverage_write_on_startup = .false.
+    config_AM_layerVolumeWeightedAverage_output_stream = 'layerVolumeWeightedAverageOutput'
+/
+&AM_zonalMean
+    config_AM_zonalMean_enable = .false.
+    config_AM_zonalMean_compute_on_startup = .true.
+    config_AM_zonalMean_write_on_startup = .true.
+    config_AM_zonalMean_compute_interval = 'output_interval'
+    config_AM_zonalMean_output_stream = 'zonalMeanOutput'
+    config_AM_zonalMean_num_bins = 180
+    config_AM_zonalMean_min_bin = -1.0e34
+    config_AM_zonalMean_max_bin = -1.0e34
+/
+&AM_okuboWeiss
+    config_AM_okuboWeiss_enable = .false.
+    config_AM_okuboWeiss_compute_on_startup = .true.
+    config_AM_okuboWeiss_write_on_startup = .true.
+    config_AM_okuboWeiss_compute_interval = 'output_interval'
+    config_AM_okuboWeiss_output_stream = 'okuboWeissOutput'
+    config_AM_okuboWeiss_directory = 'analysis_members'
+    config_AM_okuboWeiss_threshold_value = -0.2
+    config_AM_okuboWeiss_normalization = 1e-10
+    config_AM_okuboWeiss_lambda2_normalization = 1e-10
+    config_AM_okuboWeiss_use_lat_lon_coords = .true.
+    config_AM_okuboWeiss_compute_eddy_census = .true.
+    config_AM_okuboWeiss_eddy_min_cells = 20
+/
+&AM_meridionalHeatTransport
+    config_AM_meridionalHeatTransport_enable = .false.
+    config_AM_meridionalHeatTransport_compute_interval = 'output_interval'
+    config_AM_meridionalHeatTransport_compute_on_startup = .true.
+    config_AM_meridionalHeatTransport_write_on_startup = .true.
+    config_AM_meridionalHeatTransport_output_stream = 'meridionalHeatTransportOutput'
+    config_AM_meridionalHeatTransport_num_bins = 180
+    config_AM_meridionalHeatTransport_min_bin = -1.0e34
+    config_AM_meridionalHeatTransport_max_bin = -1.0e34
+    config_AM_meridionalHeatTransport_region_group = ''
+/
+&AM_testComputeInterval
+    config_AM_testComputeInterval_enable = .false.
+    config_AM_testComputeInterval_compute_interval = '00-00-01_00:00:00'
+    config_AM_testComputeInterval_compute_on_startup = .true.
+    config_AM_testComputeInterval_write_on_startup = .true.
+    config_AM_testComputeInterval_output_stream = 'testComputeIntervalOutput'
+/
+&AM_highFrequencyOutput
+    config_AM_highFrequencyOutput_enable = .false.
+    config_AM_highFrequencyOutput_compute_interval = 'output_interval'
+    config_AM_highFrequencyOutput_output_stream = 'highFrequencyOutput'
+    config_AM_highFrequencyOutput_compute_on_startup = .true.
+    config_AM_highFrequencyOutput_write_on_startup = .true.
+/
+&AM_timeFilters
+    config_AM_timeFilters_enable = .false.
+    config_AM_timeFilters_compute_interval = 'dt'
+    config_AM_timeFilters_output_stream = 'timeFiltersOutput'
+    config_AM_timeFilters_restart_stream = 'timeFiltersRestart'
+    config_AM_timeFilters_compute_on_startup = .true.
+    config_AM_timeFilters_write_on_startup = .true.
+    config_AM_timeFilters_initialize_filters = .true.
+    config_AM_timeFilters_tau = '90_00:00:00'
+    config_AM_timeFilters_compute_cell_centered_values = .true.
+/
+&AM_lagrPartTrack
+    config_AM_lagrPartTrack_enable = .false.
+    config_AM_lagrPartTrack_compute_interval = 'dt'
+    config_AM_lagrPartTrack_compute_on_startup = .false.
+    config_AM_lagrPartTrack_output_stream = 'lagrPartTrackOutput'
+    config_AM_lagrPartTrack_restart_stream = 'lagrPartTrackRestart'
+    config_AM_lagrPartTrack_input_stream = 'lagrPartTrackInput'
+    config_AM_lagrPartTrack_write_on_startup = .true.
+    config_AM_lagrPartTrack_filter_number = 0
+    config_AM_lagrPartTrack_timeIntegration = 2
+    config_AM_lagrPartTrack_reset_criteria = 'none'
+    config_AM_lagrPartTrack_reset_global_timestamp = '0000_00:00:00'
+    config_AM_lagrPartTrack_region_stream = 'lagrPartTrackRegions'
+    config_AM_lagrPartTrack_reset_if_outside_region = .false.
+    config_AM_lagrPartTrack_reset_if_inside_region = .false.
+    config_AM_lagrPartTrack_sample_horizontal_interp = .true.
+    config_AM_lagrPartTrack_sample_temperature = .true.
+    config_AM_lagrPartTrack_sample_salinity = .true.
+    config_AM_lagrPartTrack_sample_DIC = .false.
+    config_AM_lagrPartTrack_sample_ALK = .false.
+    config_AM_lagrPartTrack_sample_PO4 = .false.
+    config_AM_lagrPartTrack_sample_NO3 = .false.
+    config_AM_lagrPartTrack_sample_SiO3 = .false.
+    config_AM_lagrPartTrack_sample_NH4 = .false.
+    config_AM_lagrPartTrack_sample_Fe = .false.
+    config_AM_lagrPartTrack_sample_O2 = .false.
+/
+&AM_eliassenPalm
+    config_AM_eliassenPalm_enable = .false.
+    config_AM_eliassenPalm_compute_interval = 'output_interval'
+    config_AM_eliassenPalm_output_stream = 'eliassenPalmOutput'
+    config_AM_eliassenPalm_restart_stream = 'eliassenPalmRestart'
+    config_AM_eliassenPalm_compute_on_startup = .true.
+    config_AM_eliassenPalm_write_on_startup = .true.
+    config_AM_eliassenPalm_debug = .false.
+    config_AM_eliassenPalm_nBuoyancyLayers = 45
+    config_AM_eliassenPalm_rhomin_buoycoor = 900
+    config_AM_eliassenPalm_rhomax_buoycoor = 1080
+/
+&AM_mixedLayerDepths
+    config_AM_mixedLayerDepths_enable = .false.
+    config_AM_mixedLayerDepths_compute_interval = 'output_interval'
+    config_AM_mixedLayerDepths_output_stream = 'mixedLayerDepthsOutput'
+    config_AM_mixedLayerDepths_write_on_startup = .true.
+    config_AM_mixedLayerDepths_compute_on_startup = .true.
+    config_AM_mixedLayerDepths_Tthreshold = .true.
+    config_AM_mixedLayerDepths_crit_temp_threshold = 0.2
+    config_AM_mixedLayerDepths_reference_pressure = 1.0E5
+    config_AM_mixedLayerDepths_Tgradient = .false.
+    config_AM_mixedLayerDepths_Dgradient = .false.
+    config_AM_mixedLayerDepths_temp_gradient_threshold = 5E-7
+    config_AM_mixedLayerDepths_den_gradient_threshold = 5E-8
+    config_AM_mixedLayerDepths_interp_method = 1
+/
+&AM_regionalStatsDaily
+    config_AM_regionalStatsDaily_enable = .false.
+    config_AM_regionalStatsDaily_compute_on_startup = .false.
+    config_AM_regionalStatsDaily_write_on_startup = .false.
+    config_AM_regionalStatsDaily_compute_interval = 'output_interval'
+    config_AM_regionalStatsDaily_output_stream = 'regionalStatsDailyOutput'
+    config_AM_regionalStatsDaily_restart_stream = 'regionalMasksInput'
+    config_AM_regionalStatsDaily_input_stream = 'regionalMasksInput'
+    config_AM_regionalStatsDaily_operation = 'avg'
+    config_AM_regionalStatsDaily_region_type = 'cell'
+    config_AM_regionalStatsDaily_region_group = 'all'
+    config_AM_regionalStatsDaily_1d_weighting_function = 'mul'
+    config_AM_regionalStatsDaily_2d_weighting_function = 'mul'
+    config_AM_regionalStatsDaily_1d_weighting_field = 'areaCell'
+    config_AM_regionalStatsDaily_2d_weighting_field = 'volumeCell'
+    config_AM_regionalStatsDaily_vertical_mask = 'cellMask'
+    config_AM_regionalStatsDaily_vertical_dimension = 'nVertLevels'
+/
+&AM_regionalStatsWeekly
+    config_AM_regionalStatsWeekly_enable = .false.
+    config_AM_regionalStatsWeekly_compute_on_startup = .false.
+    config_AM_regionalStatsWeekly_write_on_startup = .false.
+    config_AM_regionalStatsWeekly_compute_interval = 'output_interval'
+    config_AM_regionalStatsWeekly_output_stream = 'regionalStatsWeeklyOutput'
+    config_AM_regionalStatsWeekly_restart_stream = 'regionalMasksInput'
+    config_AM_regionalStatsWeekly_input_stream = 'regionalMasksInput'
+    config_AM_regionalStatsWeekly_operation = 'avg'
+    config_AM_regionalStatsWeekly_region_type = 'cell'
+    config_AM_regionalStatsWeekly_region_group = 'all'
+    config_AM_regionalStatsWeekly_1d_weighting_function = 'mul'
+    config_AM_regionalStatsWeekly_2d_weighting_function = 'mul'
+    config_AM_regionalStatsWeekly_1d_weighting_field = 'areaCell'
+    config_AM_regionalStatsWeekly_2d_weighting_field = 'volumeCell'
+    config_AM_regionalStatsWeekly_vertical_mask = 'cellMask'
+    config_AM_regionalStatsWeekly_vertical_dimension = 'nVertLevels'
+/
+&AM_regionalStatsMonthly
+    config_AM_regionalStatsMonthly_enable = .false.
+    config_AM_regionalStatsMonthly_compute_on_startup = .false.
+    config_AM_regionalStatsMonthly_write_on_startup = .false.
+    config_AM_regionalStatsMonthly_compute_interval = 'output_interval'
+    config_AM_regionalStatsMonthly_output_stream = 'regionalStatsMonthlyOutput'
+    config_AM_regionalStatsMonthly_restart_stream = 'regionalMasksInput'
+    config_AM_regionalStatsMonthly_input_stream = 'regionalMasksInput'
+    config_AM_regionalStatsMonthly_operation = 'avg'
+    config_AM_regionalStatsMonthly_region_type = 'cell'
+    config_AM_regionalStatsMonthly_region_group = 'all'
+    config_AM_regionalStatsMonthly_1d_weighting_function = 'mul'
+    config_AM_regionalStatsMonthly_2d_weighting_function = 'mul'
+    config_AM_regionalStatsMonthly_1d_weighting_field = 'areaCell'
+    config_AM_regionalStatsMonthly_2d_weighting_field = 'volumeCell'
+    config_AM_regionalStatsMonthly_vertical_mask = 'cellMask'
+    config_AM_regionalStatsMonthly_vertical_dimension = 'nVertLevels'
+/
+&AM_regionalStatsCustom
+    config_AM_regionalStatsCustom_enable = .false.
+    config_AM_regionalStatsCustom_compute_on_startup = .false.
+    config_AM_regionalStatsCustom_write_on_startup = .false.
+    config_AM_regionalStatsCustom_compute_interval = 'output_interval'
+    config_AM_regionalStatsCustom_output_stream = 'regionalStatsCustomOutput'
+    config_AM_regionalStatsCustom_restart_stream = 'regionalMasksInput'
+    config_AM_regionalStatsCustom_input_stream = 'regionalMasksInput'
+    config_AM_regionalStatsCustom_operation = 'avg'
+    config_AM_regionalStatsCustom_region_type = 'cell'
+    config_AM_regionalStatsCustom_region_group = 'all'
+    config_AM_regionalStatsCustom_1d_weighting_function = 'mul'
+    config_AM_regionalStatsCustom_2d_weighting_function = 'mul'
+    config_AM_regionalStatsCustom_1d_weighting_field = 'areaCell'
+    config_AM_regionalStatsCustom_2d_weighting_field = 'volumeCell'
+    config_AM_regionalStatsCustom_vertical_mask = 'cellMask'
+    config_AM_regionalStatsCustom_vertical_dimension = 'nVertLevels'
+/
+&AM_timeSeriesStatsDaily
+    config_AM_timeSeriesStatsDaily_enable = .false.
+    config_AM_timeSeriesStatsDaily_compute_on_startup = .false.
+    config_AM_timeSeriesStatsDaily_write_on_startup = .false.
+    config_AM_timeSeriesStatsDaily_compute_interval = '00-00-00_01:00:00'
+    config_AM_timeSeriesStatsDaily_output_stream = 'timeSeriesStatsDailyOutput'
+    config_AM_timeSeriesStatsDaily_restart_stream = 'timeSeriesStatsDailyRestart'
+    config_AM_timeSeriesStatsDaily_operation = 'avg'
+    config_AM_timeSeriesStatsDaily_reference_times = 'initial_time'
+    config_AM_timeSeriesStatsDaily_duration_intervals = 'repeat_interval'
+    config_AM_timeSeriesStatsDaily_repeat_intervals = 'reset_interval'
+    config_AM_timeSeriesStatsDaily_reset_intervals = '00-00-01_00:00:00'
+    config_AM_timeSeriesStatsDaily_backward_output_offset = '00-00-01_00:00:00'
+/
+&AM_timeSeriesStatsMonthly
+    config_AM_timeSeriesStatsMonthly_enable = .false.
+    config_AM_timeSeriesStatsMonthly_compute_on_startup = .false.
+    config_AM_timeSeriesStatsMonthly_write_on_startup = .false.
+    config_AM_timeSeriesStatsMonthly_compute_interval = '00-00-00_01:00:00'
+    config_AM_timeSeriesStatsMonthly_output_stream = 'timeSeriesStatsMonthlyOutput'
+    config_AM_timeSeriesStatsMonthly_restart_stream = 'timeSeriesStatsMonthlyRestart'
+    config_AM_timeSeriesStatsMonthly_operation = 'avg'
+    config_AM_timeSeriesStatsMonthly_reference_times = 'initial_time'
+    config_AM_timeSeriesStatsMonthly_duration_intervals = 'repeat_interval'
+    config_AM_timeSeriesStatsMonthly_repeat_intervals = 'reset_interval'
+    config_AM_timeSeriesStatsMonthly_reset_intervals = '00-01-00_00:00:00'
+    config_AM_timeSeriesStatsMonthly_backward_output_offset = '00-01-00_00:00:00'
+/
+&AM_timeSeriesStatsClimatology
+    config_AM_timeSeriesStatsClimatology_enable = .false.
+    config_AM_timeSeriesStatsClimatology_compute_on_startup = .false.
+    config_AM_timeSeriesStatsClimatology_write_on_startup = .false.
+    config_AM_timeSeriesStatsClimatology_compute_interval = '00-00-00_01:00:00'
+    config_AM_timeSeriesStatsClimatology_output_stream = 'timeSeriesStatsClimatologyOutput'
+    config_AM_timeSeriesStatsClimatology_restart_stream = 'timeSeriesStatsClimatologyRestart'
+    config_AM_timeSeriesStatsClimatology_operation = 'avg'
+    config_AM_timeSeriesStatsClimatology_reference_times = '00-03-01_00:00:00;00-06-01_00:00:00;00-09-01_00:00:00;00-12-01_00:00:00'
+    config_AM_timeSeriesStatsClimatology_duration_intervals = '00-03-00_00:00:00;00-03-00_00:00:00;00-03-00_00:00:00;00-03-00_00:00:00'
+    config_AM_timeSeriesStatsClimatology_repeat_intervals = '01-00-00_00:00:00;01-00-00_00:00:00;01-00-00_00:00:00;01-00-00_00:00:00'
+    config_AM_timeSeriesStatsClimatology_reset_intervals = '1000-00-00_00:00:00;1000-00-00_00:00:00;1000-00-00_00:00:00;1000-00-00_00:00:00'
+    config_AM_timeSeriesStatsClimatology_backward_output_offset = '00-03-00_00:00:00'
+/
+&AM_timeSeriesStatsMonthlyMax
+    config_AM_timeSeriesStatsMonthlyMax_enable = .false.
+    config_AM_timeSeriesStatsMonthlyMax_compute_on_startup = .false.
+    config_AM_timeSeriesStatsMonthlyMax_write_on_startup = .false.
+    config_AM_timeSeriesStatsMonthlyMax_compute_interval = '00-00-00_01:00:00'
+    config_AM_timeSeriesStatsMonthlyMax_output_stream = 'timeSeriesStatsMonthlyMaxOutput'
+    config_AM_timeSeriesStatsMonthlyMax_restart_stream = 'timeSeriesStatsMonthlyMaxRestart'
+    config_AM_timeSeriesStatsMonthlyMax_operation = 'max'
+    config_AM_timeSeriesStatsMonthlyMax_reference_times = 'initial_time'
+    config_AM_timeSeriesStatsMonthlyMax_duration_intervals = 'repeat_interval'
+    config_AM_timeSeriesStatsMonthlyMax_repeat_intervals = 'reset_interval'
+    config_AM_timeSeriesStatsMonthlyMax_reset_intervals = '00-01-00_00:00:00'
+    config_AM_timeSeriesStatsMonthlyMax_backward_output_offset = '00-01-00_00:00:00'
+/
+&AM_timeSeriesStatsMonthlyMin
+    config_AM_timeSeriesStatsMonthlyMin_enable = .false.
+    config_AM_timeSeriesStatsMonthlyMin_compute_on_startup = .false.
+    config_AM_timeSeriesStatsMonthlyMin_write_on_startup = .false.
+    config_AM_timeSeriesStatsMonthlyMin_compute_interval = '00-00-00_01:00:00'
+    config_AM_timeSeriesStatsMonthlyMin_output_stream = 'timeSeriesStatsMonthlyMinOutput'
+    config_AM_timeSeriesStatsMonthlyMin_restart_stream = 'timeSeriesStatsMonthlyMinRestart'
+    config_AM_timeSeriesStatsMonthlyMin_operation = 'min'
+    config_AM_timeSeriesStatsMonthlyMin_reference_times = 'initial_time'
+    config_AM_timeSeriesStatsMonthlyMin_duration_intervals = 'repeat_interval'
+    config_AM_timeSeriesStatsMonthlyMin_repeat_intervals = 'reset_interval'
+    config_AM_timeSeriesStatsMonthlyMin_reset_intervals = '00-01-00_00:00:00'
+    config_AM_timeSeriesStatsMonthlyMin_backward_output_offset = '00-01-00_00:00:00'
+/
+&AM_timeSeriesStatsCustom
+    config_AM_timeSeriesStatsCustom_enable = .false.
+    config_AM_timeSeriesStatsCustom_compute_on_startup = .false.
+    config_AM_timeSeriesStatsCustom_write_on_startup = .false.
+    config_AM_timeSeriesStatsCustom_compute_interval = '00-00-00_01:00:00'
+    config_AM_timeSeriesStatsCustom_output_stream = 'timeSeriesStatsCustomOutput'
+    config_AM_timeSeriesStatsCustom_restart_stream = 'timeSeriesStatsCustomRestart'
+    config_AM_timeSeriesStatsCustom_operation = 'avg'
+    config_AM_timeSeriesStatsCustom_reference_times = 'initial_time'
+    config_AM_timeSeriesStatsCustom_duration_intervals = 'repeat_interval'
+    config_AM_timeSeriesStatsCustom_repeat_intervals = 'reset_interval'
+    config_AM_timeSeriesStatsCustom_reset_intervals = '00-00-07_00:00:00'
+    config_AM_timeSeriesStatsCustom_backward_output_offset = '00-00-01_00:00:00'
+/
+&AM_pointwiseStats
+    config_AM_pointwiseStats_enable = .false.
+    config_AM_pointwiseStats_compute_interval = 'output_interval'
+    config_AM_pointwiseStats_output_stream = 'pointwiseStatsOutput'
+    config_AM_pointwiseStats_compute_on_startup = .true.
+    config_AM_pointwiseStats_write_on_startup = .true.
+/
+&AM_debugDiagnostics
+    config_AM_debugDiagnostics_enable = .false.
+    config_AM_debugDiagnostics_compute_interval = 'output_interval'
+    config_AM_debugDiagnostics_output_stream = 'debugDiagnosticsOutput'
+    config_AM_debugDiagnostics_compute_on_startup = .true.
+    config_AM_debugDiagnostics_write_on_startup = .true.
+    config_AM_debugDiagnostics_check_state = .false.
+/
+&AM_rpnCalculator
+    config_AM_rpnCalculator_enable = .false.
+    config_AM_rpnCalculator_compute_on_startup = .true.
+    config_AM_rpnCalculator_write_on_startup = .false.
+    config_AM_rpnCalculator_compute_interval = '0010-00-00_00:00:00'
+    config_AM_rpnCalculator_output_stream = 'none'
+    config_AM_rpnCalculator_variable_a = 'layerThickness'
+    config_AM_rpnCalculator_variable_b = 'areaCell'
+    config_AM_rpnCalculator_variable_c = 'none'
+    config_AM_rpnCalculator_variable_d = 'none'
+    config_AM_rpnCalculator_variable_e = 'none'
+    config_AM_rpnCalculator_variable_f = 'none'
+    config_AM_rpnCalculator_variable_g = 'none'
+    config_AM_rpnCalculator_variable_h = 'none'
+    config_AM_rpnCalculator_expression_1 = 'a b *'
+    config_AM_rpnCalculator_expression_2 = 'none'
+    config_AM_rpnCalculator_expression_3 = 'none'
+    config_AM_rpnCalculator_expression_4 = 'none'
+    config_AM_rpnCalculator_output_name_1 = 'volumeCell'
+    config_AM_rpnCalculator_output_name_2 = 'none'
+    config_AM_rpnCalculator_output_name_3 = 'none'
+    config_AM_rpnCalculator_output_name_4 = 'none'
+/
+&AM_transectTransport
+    config_AM_transectTransport_enable = .false.
+    config_AM_transectTransport_compute_interval = 'output_interval'
+    config_AM_transectTransport_output_stream = 'transectTransportOutput'
+    config_AM_transectTransport_compute_on_startup = .true.
+    config_AM_transectTransport_write_on_startup = .true.
+    config_AM_transectTransport_transect_group = 'all'
+/
+&AM_eddyProductVariables
+    config_AM_eddyProductVariables_enable = .false.
+    config_AM_eddyProductVariables_compute_interval = 'dt'
+    config_AM_eddyProductVariables_output_stream = 'eddyProductVariablesOutput'
+    config_AM_eddyProductVariables_compute_on_startup = .true.
+    config_AM_eddyProductVariables_write_on_startup = .false.
+/
+&AM_mocStreamfunction
+    config_AM_mocStreamfunction_enable = .false.
+    config_AM_mocStreamfunction_compute_interval = 'output_interval'
+    config_AM_mocStreamfunction_output_stream = 'mocStreamfunctionOutput'
+    config_AM_mocStreamfunction_compute_on_startup = .true.
+    config_AM_mocStreamfunction_write_on_startup = .true.
+    config_AM_mocStreamfunction_min_bin = -1.0e34
+    config_AM_mocStreamfunction_max_bin = -1.0e34
+    config_AM_mocStreamfunction_num_bins = 180
+    config_AM_mocStreamfunction_region_group = 'all'
+    config_AM_mocStreamfunction_transect_group = 'all'
+/
+&AM_oceanHeatContent
+    config_AM_oceanHeatContent_enable = .false.
+    config_AM_oceanHeatContent_compute_interval = 'output_interval'
+    config_AM_oceanHeatContent_output_stream = 'oceanHeatContentOutput'
+    config_AM_oceanHeatContent_compute_on_startup = .true.
+    config_AM_oceanHeatContent_write_on_startup = .true.
+/
+&AM_mixedLayerHeatBudget
+    config_AM_mixedLayerHeatBudget_enable = .false.
+    config_AM_mixedLayerHeatBudget_compute_interval = 'output_interval'
+    config_AM_mixedLayerHeatBudget_output_stream = 'mixedLayerHeatBudgetOutput'
+    config_AM_mixedLayerHeatBudget_compute_on_startup = .true.
+    config_AM_mixedLayerHeatBudget_write_on_startup = .true.
+/
+&AM_sedimentFluxIndex
+    config_AM_sedimentFluxIndex_enable = .false.
+    config_AM_sedimentFluxIndex_compute_on_startup = .true.
+    config_AM_sedimentFluxIndex_write_on_startup = .true.
+    config_AM_sedimentFluxIndex_compute_interval = 'output_interval'
+    config_AM_sedimentFluxIndex_output_stream = 'sedimentFluxIndexOutput'
+    config_AM_sedimentFluxIndex_directory = 'analysis_members'
+    config_AM_sedimentFluxIndex_use_lat_lon_coords = .true.
+/
+&AM_sedimentTransport
+    config_AM_sedimentTransport_enable = .false.
+    config_AM_sedimentTransport_compute_on_startup = .true.
+    config_AM_sedimentTransport_write_on_startup = .true.
+    config_AM_sedimentTransport_compute_interval = 'output_interval'
+    config_AM_sedimentTransport_output_stream = 'sedimentTransportOutput'
+    config_AM_sedimentTransport_directory = 'analysis_members'
+    config_AM_sedimentTransport_grain_size = 2.5e-4
+    config_AM_sedimentTransport_ws_formula = 'VanRijn1993'
+    config_AM_sedimentTransport_bedld_formula = 'Soulsby-Damgaard'
+    config_AM_sedimentTransport_SSC_ref_formula = 'Lee2004'
+    config_AM_sedimentTransport_drag_coefficient = 2.5e-3
+    config_AM_sedimentTransport_erate = 5.0e-4
+    config_AM_sedimentTransport_tau_ce = 0.1
+    config_AM_sedimentTransport_tau_cd = 0.1
+    config_AM_sedimentTransport_Manning_coef = 0.022
+    config_AM_sedimentTransport_grain_porosity = 0.5
+    config_AM_sedimentTransport_water_density = 1020
+    config_AM_sedimentTransport_grain_density = 2650
+    config_AM_sedimentTransport_alpha = 1e-2
+    config_AM_sedimentTransport_kinematic_viscosity = 1e-6
+    config_AM_sedimentTransport_vertical_diffusion_coefficient = 1e-2
+    config_AM_sedimentTransport_bedload = .true.
+    config_AM_sedimentTransport_suspended = .true.
+    config_AM_sedimentTransport_use_lat_lon_coords = .true.
+/
+&AM_harmonicAnalysis
+    config_AM_harmonicAnalysis_enable = .false.
+    config_AM_harmonicAnalysis_compute_interval = 'output_interval'
+    config_AM_harmonicAnalysis_start_delay = 20
+    config_AM_harmonicAnalysis_duration = 90
+    config_AM_harmonicAnalysis_output_stream = 'harmonicAnalysisOutput'
+    config_AM_harmonicAnalysis_restart_stream = 'harmonicAnalysisRestart'
+    config_AM_harmonicAnalysis_compute_on_startup = .false.
+    config_AM_harmonicAnalysis_write_on_startup = .false.
+    config_AM_harmonicAnalysis_use_M2 = .true.
+    config_AM_harmonicAnalysis_use_S2 = .true.
+    config_AM_harmonicAnalysis_use_N2 = .true.
+    config_AM_harmonicAnalysis_use_K2 = .true.
+    config_AM_harmonicAnalysis_use_K1 = .true.
+    config_AM_harmonicAnalysis_use_O1 = .true.
+    config_AM_harmonicAnalysis_use_Q1 = .true.
+    config_AM_harmonicAnalysis_use_P1 = .true.
+/
+&AM_conservationCheck
+    config_AM_conservationCheck_enable = .false.
+    config_AM_conservationCheck_compute_interval = 'dt'
+    config_AM_conservationCheck_output_stream = 'conservationCheckOutput'
+    config_AM_conservationCheck_compute_on_startup = .false.
+    config_AM_conservationCheck_write_on_startup = .false.
+    config_AM_conservationCheck_write_to_logfile = .true.
+    config_AM_conservationCheck_restart_stream = 'conservationCheckRestart'
+/
+&baroclinic_channel
+    config_baroclinic_channel_vert_levels = 20
+    config_baroclinic_channel_use_distances = .false.
+    config_baroclinic_channel_surface_temperature = 13.1
+    config_baroclinic_channel_bottom_temperature = 10.1
+    config_baroclinic_channel_temperature_difference = 1.2
+    config_baroclinic_channel_gradient_width_frac = 0.08
+    config_baroclinic_channel_gradient_width_dist = 40e3
+    config_baroclinic_channel_bottom_depth = 1000.0
+    config_baroclinic_channel_salinity = 35.0
+    config_baroclinic_channel_coriolis_parameter = -1.2e-4
+/
+&lock_exchange
+    config_lock_exchange_vert_levels = 20
+    config_lock_exchange_bottom_depth = 20.0
+    config_lock_exchange_cold_temperature = 5.0
+    config_lock_exchange_warm_temperature = 30.0
+    config_lock_exchange_direction = 'y'
+    config_lock_exchange_salinity = 35.0
+    config_lock_exchange_layer_type = 'z-level'
+    config_lock_exchange_isopycnal_min_thickness = 0.01
+/
+&internal_waves
+    config_internal_waves_vert_levels = 20
+    config_internal_waves_use_distances = false
+    config_internal_waves_surface_temperature = 20.1
+    config_internal_waves_bottom_temperature = 10.1
+    config_internal_waves_temperature_difference = 2.0
+    config_internal_waves_amplitude_width_frac = 0.33
+    config_internal_waves_amplitude_width_dist = 50e3
+    config_internal_waves_bottom_depth = 500.0
+    config_internal_waves_salinity = 35.0
+    config_internal_waves_layer_type = 'z-level'
+    config_internal_waves_isopycnal_displacement = 125.0
+/
+&overflow
+    config_overflow_vert_levels = 100
+    config_overflow_use_distances = false
+    config_overflow_bottom_depth = 2000.0
+    config_overflow_ridge_depth = 500.0
+    config_overflow_plug_temperature = 10.0
+    config_overflow_domain_temperature = 20.0
+    config_overflow_salinity = 35.0
+    config_overflow_plug_width_frac = 0.10
+    config_overflow_slope_center_frac = 0.20
+    config_overflow_slope_width_frac = 0.05
+    config_overflow_plug_width_dist = 20e3
+    config_overflow_slope_center_dist = 40e3
+    config_overflow_slope_width_dist = 7e3
+    config_overflow_layer_type = 'z-level'
+    config_overflow_isopycnal_min_thickness = 0.01
+/
+&dam_break
+    config_dam_break_vert_levels = 1
+    config_dam_break_eta0 = 0.6
+    config_dam_break_dc = 0.04
+    config_dam_break_R0 = 24.2
+    config_dam_break_Xl = 1.0
+    config_dam_break_Yl = 2.0
+    config_dam_break_Inlet = 0.4
+/
+&global_ocean
+    config_global_ocean_minimum_depth = 15
+    config_global_ocean_depth_file = 'vertical_grid.nc'
+    config_global_ocean_depth_dimname = 'nVertLevels'
+    config_global_ocean_depth_varname = 'refMidDepth'
+    config_global_ocean_depth_conversion_factor = 1.0
+    config_global_ocean_temperature_file = 'none'
+    config_global_ocean_salinity_file = 'none'
+    config_global_ocean_tracer_nlat_dimname = 'none'
+    config_global_ocean_tracer_nlon_dimname = 'none'
+    config_global_ocean_tracer_ndepth_dimname = 'none'
+    config_global_ocean_tracer_depth_conversion_factor = 1.0
+    config_global_ocean_tracer_vert_levels = -1
+    config_global_ocean_temperature_varname = 'none'
+    config_global_ocean_salinity_varname = 'none'
+    config_global_ocean_tracer_latlon_degrees = .true.
+    config_global_ocean_tracer_lat_varname = 'none'
+    config_global_ocean_tracer_lon_varname = 'none'
+    config_global_ocean_tracer_depth_varname = 'none'
+    config_global_ocean_tracer_method = 'bilinear_interpolation'
+    config_global_ocean_smooth_TS_iterations = 0
+    config_global_ocean_swData_file = 'none'
+    config_global_ocean_swData_nlat_dimname = 'none'
+    config_global_ocean_swData_nlon_dimname = 'none'
+    config_global_ocean_swData_lat_varname = 'none'
+    config_global_ocean_swData_lon_varname = 'none'
+    config_global_ocean_swData_latlon_degrees = .true.
+    config_global_ocean_swData_method = 'bilinear_interpolation'
+    config_global_ocean_chlorophyll_varname = 'none'
+    config_global_ocean_zenithAngle_varname = 'none'
+    config_global_ocean_clearSky_varname = 'none'
+    config_global_ocean_piston_velocity = 5.0e-5
+    config_global_ocean_interior_restore_rate = 1.0e-7
+    config_global_ocean_topography_source = 'latlon_file'
+    config_global_ocean_topography_file = 'none'
+    config_global_ocean_topography_nlat_dimname = 'none'
+    config_global_ocean_topography_nlon_dimname = 'none'
+    config_global_ocean_topography_latlon_degrees = .true.
+    config_global_ocean_topography_lat_varname = 'none'
+    config_global_ocean_topography_lon_varname = 'none'
+    config_global_ocean_topography_varname = 'none'
+    config_global_ocean_topography_has_ocean_frac = .false.
+    config_global_ocean_topography_ocean_frac_varname = 'none'
+    config_global_ocean_topography_method = 'bilinear_interpolation'
+    config_global_ocean_fill_bathymetry_holes = .true.
+    config_global_ocean_topography_smooth_iterations = 0
+    config_global_ocean_topography_smooth_weight = 0.9
+    config_global_ocean_deepen_critical_passages = .true.
+    config_global_ocean_depress_by_land_ice = .false.
+    config_global_ocean_land_ice_topo_file = 'none'
+    config_global_ocean_land_ice_topo_nlat_dimname = 'none'
+    config_global_ocean_land_ice_topo_nlon_dimname = 'none'
+    config_global_ocean_land_ice_topo_latlon_degrees = .true.
+    config_global_ocean_land_ice_topo_lat_varname = 'none'
+    config_global_ocean_land_ice_topo_lon_varname = 'none'
+    config_global_ocean_land_ice_topo_thickness_varname = 'none'
+    config_global_ocean_land_ice_topo_draft_varname = 'none'
+    config_global_ocean_land_ice_topo_ice_frac_varname = 'none'
+    config_global_ocean_land_ice_topo_grounded_frac_varname = 'none'
+    config_global_ocean_use_constant_land_ice_cavity_temperature = .false.
+    config_global_ocean_constant_land_ice_cavity_temperature = -1.8
+    config_global_ocean_cull_inland_seas = .true.
+    config_global_ocean_windstress_file = 'none'
+    config_global_ocean_windstress_nlat_dimname = 'none'
+    config_global_ocean_windstress_nlon_dimname = 'none'
+    config_global_ocean_windstress_latlon_degrees = .true.
+    config_global_ocean_windstress_lat_varname = 'none'
+    config_global_ocean_windstress_lon_varname = 'none'
+    config_global_ocean_windstress_zonal_varname = 'none'
+    config_global_ocean_windstress_meridional_varname = 'none'
+    config_global_ocean_windstress_method = 'bilinear_interpolation'
+    config_global_ocean_windstress_conversion_factor = 1
+    config_global_ocean_ecosys_file = 'unknown'
+    config_global_ocean_ecosys_forcing_file = 'unknown'
+    config_global_ocean_ecosys_nlat_dimname = 'none'
+    config_global_ocean_ecosys_nlon_dimname = 'none'
+    config_global_ocean_ecosys_ndepth_dimname = 'none'
+    config_global_ocean_ecosys_depth_conversion_factor = 1.0
+    config_global_ocean_ecosys_vert_levels = -1
+    config_global_ocean_ecosys_lat_varname = 'none'
+    config_global_ocean_ecosys_lon_varname = 'none'
+    config_global_ocean_ecosys_depth_varname = 'none'
+    config_global_ocean_ecosys_latlon_degrees = .true.
+    config_global_ocean_ecosys_method = 'bilinear_interpolation'
+    config_global_ocean_ecosys_forcing_time_dimname = 'none'
+    config_global_ocean_smooth_ecosys_iterations = 0
+/
+&cvmix_WSwSBF
+    config_cvmix_WSwSBF_vert_levels = 100
+    config_cvmix_WSwSBF_surface_temperature = 15.0
+    config_cvmix_WSwSBF_surface_salinity = 35.0
+    config_cvmix_WSwSBF_surface_restoring_temperature = 15.0
+    config_cvmix_WSwSBF_surface_restoring_salinity = 35.0
+    config_cvmix_WSwSBF_temperature_piston_velocity = 4.0e-6
+    config_cvmix_WSwSBF_salinity_piston_velocity = 4.0e-6
+    config_cvmix_WSwSBF_sensible_heat_flux = 0.0
+    config_cvmix_WSwSBF_latent_heat_flux = 0.0
+    config_cvmix_WSwSBF_shortwave_heat_flux = 0.0
+    config_cvmix_WSwSBF_rain_flux = 0.0
+    config_cvmix_WSwSBF_evaporation_flux = 0.0
+    config_cvmix_WSwSBF_interior_temperature_restoring_rate = 1.0e-6
+    config_cvmix_WSwSBF_interior_salinity_restoring_rate = 1.0e-6
+    config_cvmix_WSwSBF_temperature_gradient = 0.01
+    config_cvmix_WSwSBF_salinity_gradient = 0.0
+    config_cvmix_WSwSBF_temperature_gradient_mixed_layer = 0.0
+    config_cvmix_WSwSBF_salinity_gradient_mixed_layer = 0.0
+    config_cvmix_WSwSBF_mixed_layer_depth_temperature = 0.0
+    config_cvmix_WSwSBF_mixed_layer_depth_salinity = 0.0
+    config_cvmix_WSwSBF_mixed_layer_temperature_change = 0.0
+    config_cvmix_WSwSBF_mixed_layer_salinity_change = 0.0
+    config_cvmix_WSwSBF_vertical_grid = 'uniform'
+    config_cvmix_WSwSBF_bottom_depth = 400.0
+    config_cvmix_WSwSBF_max_windstress = 0.10
+    config_cvmix_WSwSBF_coriolis_parameter = 1.0e-4
+/
+&iso
+    config_iso_vert_levels = 100
+    config_iso_main_channel_depth = 4000.0
+    config_iso_north_wall_lat = -50
+    config_iso_south_wall_lat = -70
+    config_iso_ridge_flag = .true.
+    config_iso_ridge_center_lon = 180
+    config_iso_ridge_height = 2000.0
+    config_iso_ridge_width = 2000000
+    config_iso_plateau_flag = .true.
+    config_iso_plateau_center_lon = 300
+    config_iso_plateau_center_lat = -58
+    config_iso_plateau_height = 2000
+    config_iso_plateau_radius = 200000
+    config_iso_plateau_slope_width = 1000000
+    config_iso_shelf_flag = .true.
+    config_iso_shelf_depth = 500
+    config_iso_shelf_width = 120000
+    config_iso_cont_slope_flag = .true.
+    config_iso_max_cont_slope = 0.01
+    config_iso_embayment_flag = .true.
+    config_iso_embayment_center_lon = 60
+    config_iso_embayment_center_lat = -71
+    config_iso_embayment_radius = 500000
+    config_iso_embayment_depth = 2000
+    config_iso_depression_flag = .true.
+    config_iso_depression_center_lon = 60
+    config_iso_depression_south_lat = -72
+    config_iso_depression_north_lat = -65
+    config_iso_depression_width = 480000
+    config_iso_depression_depth = 800
+    config_iso_salinity = 35.0
+    config_iso_wind_stress_max = 0.01
+    config_iso_acc_wind = 0.2
+    config_iso_asf_wind = -0.05
+    config_iso_wind_trans = -65
+    config_iso_heat_flux_south = -5
+    config_iso_heat_flux_middle = 10
+    config_iso_heat_flux_north = -5
+    config_iso_heat_flux_lat_ss = -70
+    config_iso_heat_flux_lat_sm = -65
+    config_iso_heat_flux_lat_mn = -53
+    config_iso_region1_center_lon = 60
+    config_iso_region1_center_lat = -75
+    config_iso_region2_center_lon = 150
+    config_iso_region2_center_lat = -71
+    config_iso_region3_center_lon = 240
+    config_iso_region3_center_lat = -71
+    config_iso_region4_center_lon = 330
+    config_iso_region4_center_lat = -71
+    config_iso_heat_flux_region1_flag = false
+    config_iso_heat_flux_region1 = -5
+    config_iso_heat_flux_region1_radius = 300000
+    config_iso_heat_flux_region2_flag = false
+    config_iso_heat_flux_region2 = -5
+    config_iso_heat_flux_region2_radius = 240000
+    config_iso_surface_temperature_piston_velocity = 5.787e-5
+    config_iso_initial_temp_t1 = 3.5
+    config_iso_initial_temp_t2 = 4.0
+    config_iso_initial_temp_h0 = 1200
+    config_iso_initial_temp_h1 = 500
+    config_iso_initial_temp_mt = 0.000075
+    config_iso_initial_temp_latS = -75
+    config_iso_initial_temp_latN = -50
+    config_iso_temperature_sponge_t1 = 10
+    config_iso_temperature_sponge_h1 = 1000
+    config_iso_temperature_sponge_l1 = 120000
+    config_iso_temperature_sponge_tau1 = 10.0
+    config_iso_temperature_restore_region1_flag = .true.
+    config_iso_temperature_restore_t1 = -1
+    config_iso_temperature_restore_lcx1 = 600000
+    config_iso_temperature_restore_lcy1 = 600000
+    config_iso_temperature_restore_region2_flag = .true.
+    config_iso_temperature_restore_t2 = -1
+    config_iso_temperature_restore_lcx2 = 600000
+    config_iso_temperature_restore_lcy2 = 250000
+    config_iso_temperature_restore_region3_flag = .true.
+    config_iso_temperature_restore_t3 = -1
+    config_iso_temperature_restore_lcx3 = 600000
+    config_iso_temperature_restore_lcy3 = 250000
+    config_iso_temperature_restore_region4_flag = .true.
+    config_iso_temperature_restore_t4 = -1
+    config_iso_temperature_restore_lcx4 = 600000
+    config_iso_temperature_restore_lcy4 = 250000
+/
+&soma
+    config_soma_vert_levels = 100
+    config_soma_domain_width = 1.25e6
+    config_soma_center_latitude = 35.0
+    config_soma_center_longitude = 0.0
+    config_soma_phi = 0.1
+    config_soma_bottom_depth = 2500.0
+    config_soma_shelf_width = -0.4
+    config_soma_shelf_depth = 100.0
+    config_soma_ref_density = 1000.0
+    config_soma_density_difference = 4.0
+    config_soma_thermocline_depth = 300.0
+    config_soma_density_difference_linear = 0.05
+    config_soma_surface_temperature = 20.0
+    config_soma_surface_salinity = 33.0
+    config_soma_use_surface_temp_restoring = false
+    config_soma_surface_temp_restoring_at_center_latitude = 7.5
+    config_soma_surface_temp_restoring_latitude_gradient = 0.5
+    config_soma_restoring_temp_piston_vel = 1.0e-5
+/
+&ziso
+    config_ziso_vert_levels = 100
+    config_ziso_add_easterly_wind_stress_ASF = false
+    config_ziso_wind_transition_position = 800000.0
+    config_ziso_antarctic_shelf_front_width = 600000
+    config_ziso_wind_stress_shelf_front_max = -0.05
+    config_ziso_use_slopping_bathymetry = false
+    config_ziso_meridional_extent = 2.0e6
+    config_ziso_zonal_extent = 1.0e6
+    config_ziso_bottom_depth = 2500.0
+    config_ziso_shelf_depth = 500.0
+    config_ziso_slope_half_width = 1.0e5
+    config_ziso_slope_center_position = 5.0e5
+    config_ziso_reference_coriolis = -1e-4
+    config_ziso_coriolis_gradient = 1e-11
+    config_ziso_wind_stress_max = 0.2
+    config_ziso_mean_restoring_temp = 3.0
+    config_ziso_restoring_temp_dev_ta = 2.0
+    config_ziso_restoring_temp_dev_tb = 2.0
+    config_ziso_restoring_temp_tau = 30.0
+    config_ziso_restoring_temp_piston_vel = 1.93e-5
+    config_ziso_restoring_temp_ze = 1250.0
+    config_ziso_restoring_sponge_l = 8.0e4
+    config_ziso_initial_temp_t1 = 6.0
+    config_ziso_initial_temp_t2 = 3.6
+    config_ziso_initial_temp_h1 = 300.0
+    config_ziso_initial_temp_mt = 7.5e-5
+    config_ziso_frazil_enable = false
+    config_ziso_frazil_temperature_anomaly = -3.0
+/
+&sub_ice_shelf_2D
+    config_sub_ice_shelf_2D_vert_levels = 20
+    config_sub_ice_shelf_2D_bottom_depth = 2000.0
+    config_sub_ice_shelf_2D_cavity_thickness = 25.0
+    config_sub_ice_shelf_2D_slope_height = 500.0
+    config_sub_ice_shelf_2D_edge_width = 15.0e3
+    config_sub_ice_shelf_2D_y1 = 30.0e3
+    config_sub_ice_shelf_2D_y2 = 60.0e3
+    config_sub_ice_shelf_2D_temperature = 1.0
+    config_sub_ice_shelf_2D_surface_salinity = 34.5
+    config_sub_ice_shelf_2D_bottom_salinity = 34.7
+/
+&periodic_planar
+    config_periodic_planar_vert_levels = 100
+    config_periodic_planar_bottom_depth = 2500.0
+    config_periodic_planar_velocity_strength = 1.0
+/
+&ecosys_column
+    config_ecosys_column_vert_levels = 100
+    config_ecosys_column_vertical_grid = '100layerE3SMv1'
+    config_ecosys_column_TS_filename = 'unknown'
+    config_ecosys_column_ecosys_filename = 'unknown'
+    config_ecosys_column_bottom_depth = 6000.0
+/
+&sea_mount
+    config_sea_mount_vert_levels = 10
+    config_sea_mount_layer_type = 'sigma'
+    config_sea_mount_stratification_type = 'exponential'
+    config_sea_mount_density_coef_linear = 1024
+    config_sea_mount_density_coef_exp = 1028
+    config_sea_mount_density_gradient_linear = 0.1
+    config_sea_mount_density_gradient_exp = 3.0
+    config_sea_mount_density_depth_linear = 4500
+    config_sea_mount_density_depth_exp = 500
+    config_sea_mount_density_ref = 1028
+    config_sea_mount_density_Tref = 5.0
+    config_sea_mount_density_alpha = 0.2
+    config_sea_mount_bottom_depth = 5000.0
+    config_sea_mount_height = 4500.0
+    config_sea_mount_radius = 10.0e3
+    config_sea_mount_width = 40.0e3
+    config_sea_mount_salinity = 35.0
+    config_sea_mount_coriolis_parameter = -1.0e-4
+/
+&isomip
+    config_isomip_vert_levels = 30
+    config_isomip_vertical_level_distribution = 'constant'
+    config_isomip_bottom_depth = -900.0
+    config_isomip_temperature = -1.9
+    config_isomip_salinity = 34.4
+    config_isomip_restoring_temperature = -1.9
+    config_isomip_temperature_piston_velocity = 1.157e-5
+    config_isomip_restoring_salinity = 34.4
+    config_isomip_salinity_piston_velocity = 1.157e-5
+    config_isomip_coriolis_parameter = -1.4e-4
+    config_isomip_southern_boundary = 0.0
+    config_isomip_northern_boundary = 1000e3
+    config_isomip_western_boundary = 0.0
+    config_isomip_eastern_boundary = 500e3
+    config_isomip_y1 = 0.0
+    config_isomip_z1 = -700.0
+    config_isomip_ice_fraction1 = 1.0
+    config_isomip_y2 = 400e3
+    config_isomip_z2 = -200.0
+    config_isomip_ice_fraction2 = 1.0
+    config_isomip_y3 = 1000e3
+    config_isomip_z3 = -200.0
+    config_isomip_ice_fraction3 = 1.0
+/
+&isomip_plus
+    config_isomip_plus_vert_levels = 36
+    config_isomip_plus_vertical_level_distribution = 'constant'
+    config_isomip_plus_max_bottom_depth = -720.0
+    config_isomip_plus_minimum_levels = 3
+    config_isomip_plus_min_column_thickness = 10.0
+    config_isomip_plus_min_ocean_fraction = 0.5
+    config_isomip_plus_topography_file = 'input_geometry_processed.nc'
+    config_isomip_plus_init_top_temp = -1.9
+    config_isomip_plus_init_bot_temp = -1.9
+    config_isomip_plus_init_top_sal = 33.8
+    config_isomip_plus_init_bot_sal = 34.5
+    config_isomip_plus_restore_top_temp = -1.9
+    config_isomip_plus_restore_bot_temp = 1.0
+    config_isomip_plus_restore_top_sal = 33.8
+    config_isomip_plus_restore_bot_sal = 34.7
+    config_isomip_plus_restore_rate = 10.0
+    config_isomip_plus_restore_evap_rate = 200
+    config_isomip_plus_restore_xMin = 790.0e3
+    config_isomip_plus_restore_xMax = 800.0e3
+    config_isomip_plus_coriolis_parameter = -1.409e-4
+    config_isomip_plus_effective_density = 1026.
+/
+&hurricane
+    config_hurricane_vert_levels = 3
+    config_hurricane_min_depth = 10.0
+    config_hurricane_max_depth = 60.0
+    config_hurricane_gaussian_hump_amplitude = 1.0
+    config_hurricane_use_gaussian_hump = false
+    config_hurricane_gaussian_lon_center = 286.0
+    config_hurricane_gaussian_lat_center = 38.0
+    config_hurricane_gaussian_width = 1.0
+    config_hurricane_gaussian_amplitude = 1.0
+    config_hurricane_gaussian_slr_amp = 0.0
+    config_hurricane_land_z_limit = -2.0
+    config_hurricane_marsh_z_limit = 2.0
+    config_hurricane_land_drag = 0.1
+    config_hurricane_marsh_drag = 0.05
+    config_hurricane_channel_drag = 0.02
+    config_hurricane_sea_level_rise_adjustment = 0.00
+/
+&tidal_boundary
+    config_tidal_boundary_vert_levels = 100
+    config_tidal_boundary_min_vert_levels = 10
+    config_tidal_boundary_layer_type = 'zstar'
+    config_tidal_boundary_right_bottom_depth = 10.0
+    config_tidal_start_dry = false
+    config_tidal_boundary_use_distances = true
+    config_tidal_boundary_left_value = 0.0
+    config_tidal_boundary_right_value = 25.0e3
+    config_tidal_boundary_left_bottom_depth = 10.0
+    config_tidal_boundary_salinity = 35.0
+    config_tidal_boundary_domain_temperature = 20.0
+    config_tidal_boundary_plug_temperature = 20.0
+    config_tidal_boundary_plug_width_frac = 0.10
+    config_tidal_forcing_left_Cd_or_n = 1.0e-3
+    config_tidal_forcing_right_Cd_or_n = 1.0e-3
+    config_use_idealized_transect = false
+    config_idealized_transect_Lshore = 0.6
+    config_idealized_transect_Sshore = 0.001
+    config_idealized_transect_Lcoast = 0.3
+    config_idealized_transect_Scoast = 0.001
+    config_idealized_transect_Lmarsh = 0.1
+    config_idealized_transect_Smarsh = 0.0
+    config_idealized_transect_roughness = 0.025
+    config_idealized_transect_roughness_marsh = 0.075
+    config_idealized_vegetation_diameter = 0.05
+    config_idealized_vegetation_height = 0.2
+    config_idealized_vegetation_density = 1000
+/
+&cosine_bell
+    config_cosine_bell_temperature = 15.0
+    config_cosine_bell_salinity = 35.0
+    config_cosine_bell_lat_center = 0.0
+    config_cosine_bell_lon_center = 3.141592
+    config_cosine_bell_psi0 = 1.0
+    config_cosine_bell_radius = 2123666.667
+    config_cosine_bell_vel_pd = 24.0
+/
+&mixed_layer_eddy
+    config_mixed_layer_eddy_vert_levels = 60
+    config_mixed_layer_eddy_bottom_depth = 300.0
+    config_mixed_layer_eddy_mixed_layer_depth = 200.0
+    config_mixed_layer_eddy_base_temperature = 16.0
+    config_mixed_layer_eddy_temperature_stratification_mixed_layer = 1e-4
+    config_mixed_layer_eddy_temperature_stratification_interior = 1e-2
+    config_mixed_layer_eddy_temperature_horizontal_gradient = 2e-5
+    config_mixed_layer_eddy_temperature_front_width = 10e3
+    config_mixed_layer_eddy_temperature_perturbation_magnitude = 1e-5
+    config_mixed_layer_eddy_salinity = 35.0
+    config_mixed_layer_eddy_two_fronts = .false.
+    config_mixed_layer_eddy_restoring_width = 5e3
+    config_mixed_layer_eddy_restoring_tau = 5.0
+    config_mixed_layer_eddy_heat_flux = 0.0
+    config_mixed_layer_eddy_evaporation_flux = 0.0
+    config_mixed_layer_eddy_wind_stress_zonal = 0.0
+    config_mixed_layer_eddy_wind_stress_meridional = 0.0
+    config_mixed_layer_eddy_coriolis_parameter = 1.0e-4
+/
+&test_sht
+    config_test_sht_function_option = 1
+    config_test_sht_cosine_bell_lat_center = 0.0
+    config_test_sht_cosine_bell_lon_center = 3.141592
+    config_test_sht_cosine_bell_psi0 = 1.0
+    config_test_sht_cosine_bell_radius = 2123666.667
+    config_test_sht_function3_cell_width_equator = 30.0
+    config_test_sht_function3_cell_width_pole = 120.0
+    config_test_sht_function3_lat_transition_start = 1.0
+    config_test_sht_function3_lat_transition_width = 10.0
+    config_test_sht_n_iterations = 10
+/
+&parabolic_bowl
+    config_parabolic_bowl_vert_levels = 3
+    config_parabolic_bowl_Coriolis_parameter = 1.031e-4
+    config_parabolic_bowl_eta0 = 2.0
+    config_parabolic_bowl_b0 = 50.0
+    config_parabolic_bowl_omega = 1.4544e-4
+    config_parabolic_bowl_gravity = 9.81
+    config_parabolic_bowl_adjust_domain_center = true
+/
+&partial_cells
+    config_alter_ICs_for_pcs = .false.
+    config_pc_alteration_type = 'full_cell'
+    config_min_pc_fraction = 0.10
+/
+&init_setup
+    config_init_configuration = 'none'
+    config_expand_sphere = .false.
+    config_realistic_coriolis_parameter = .false.
+    config_write_cull_cell_mask = .true.
+    config_vertical_grid = 'uniform'
+/
+&CVTgenerator
+    config_1dCVTgenerator_stretch1 = 1.0770
+    config_1dCVTgenerator_stretch2 = 1.0275
+    config_1dCVTgenerator_dzSeed = 1.2
+/
+&init_vertical_grid
+    config_init_vertical_grid_type = 'z-star'
+/
+&constrain_Haney_number
+    config_rx1_outer_iter_count = 20
+    config_rx1_inner_iter_count = 10
+    config_rx1_init_inner_weight = 0.1
+    config_rx1_max = 5.0
+    config_rx1_horiz_smooth_weight = 1.0
+    config_rx1_vert_smooth_weight = 1.0
+    config_rx1_slope_weight = 1e-1
+    config_rx1_zstar_weight = 1.0
+    config_rx1_horiz_smooth_open_ocean_cells = 20
+    config_rx1_min_levels = 3
+    config_rx1_min_layer_thickness = 1.0
+/

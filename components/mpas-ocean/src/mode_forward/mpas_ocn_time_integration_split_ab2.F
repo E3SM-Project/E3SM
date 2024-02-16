@@ -2199,7 +2199,35 @@ module ocn_time_integration_split_ab2
                !$acc update device(layerThicknessTend)
 #endif
 
-               if ( nowTimeStamp == initialTimeStamp .or. (.not. config_do_restart) ) then
+#ifdef MPAS_OPENACC
+               !$acc parallel loop gang present (layerThicknessNew,   &
+               !$acc    minLevelCell, maxLevelCell,layerThicknessCur, &
+               !$acc    layerThicknessTend) &
+               !$acc    private(temp_h)
+#else
+            !$omp parallel
+            !$omp do schedule(runtime) private(k,temp_h)
+#endif
+            do iCell = 1, nCellsAll
+#ifdef MPAS_OPENACC
+            !$acc loop vector
+#endif
+            do k = minLevelCell(iCell), maxLevelCell(iCell)
+               ! this is h_{n+1}
+               temp_h = layerThicknessCur(k,iCell) + dt* &
+               layerThicknessTend(k,iCell)
+
+               ! this is h_{n+1/2}
+               layerThicknessNew(k,iCell) = 0.5* &
+               (layerThicknessCur(k,iCell) + temp_h)
+            end do
+            end do
+#ifndef MPAS_OPENACC
+            !$omp end do
+            !$omp end parallel
+#endif
+
+               if ( nowTimeStamp /= initialTimeStamp .or. config_do_restart ) then
 
                   ! Compute tracer tendency here to use updated 
                   !    layerThickEdgeFlux and normalTransportVelocity at {n+0.5}

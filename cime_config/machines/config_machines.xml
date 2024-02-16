@@ -59,17 +59,17 @@
   <machine MACH="miller">
     <DESC> ORNL AF cluster 800-node AMD Epyc 2-sockets 64-cores per node</DESC>
     <OS>CNL</OS>
-    <COMPILERS>gnu,cray,intel</COMPILERS>
+    <COMPILERS>gnu,crayclang,intel</COMPILERS>
     <MPILIBS>mpt</MPILIBS>
     <PROJECT>nwp501</PROJECT>
-    <SAVE_TIMING_DIR>/lustre/storm/nwp501/proj-shared/e3sm</SAVE_TIMING_DIR>
+    <SAVE_TIMING_DIR>/lustre/cyclone/nwp501/proj-shared/e3sm</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>e3sm,nwp501</SAVE_TIMING_DIR_PROJECTS>
-    <CIME_OUTPUT_ROOT>/lustre/storm/nwp501/proj-shared/e3sm/e3sm_scratch/</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/lustre/storm/nwp501/proj-shared/e3sm/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/lustre/storm/nwp501/proj-shared/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <CIME_OUTPUT_ROOT>/lustre/cyclone/nwp501/proj-shared/e3sm/e3sm_scratch/</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/lustre/cyclone/nwp501/proj-shared/e3sm/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/lustre/cyclone/nwp501/proj-shared/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/lustre/storm/nwp501/proj-shared/e3sm/baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/lustre/storm/nwp501/proj-shared/e3sm/tools/cprnc</CCSM_CPRNC>
+    <BASELINE_ROOT>/lustre/cyclone/nwp501/proj-shared/e3sm/baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/lustre/cyclone/nwp501/proj-shared/e3sm/tools/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
     <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
@@ -99,30 +99,41 @@
       <modules>
         <command name="unload">craype</command>
         <command name="unload">cray-mpich</command>
+        <command name="unload">cray-mpich-ucx</command>
         <command name="unload">cray-parallel-netcdf</command>
         <command name="unload">cray-hdf5-parallel</command>
         <command name="unload">cray-hdf5</command>
         <command name="unload">cray-netcdf</command>
         <command name="unload">cray-netcdf-hdf5parallel</command>
-        <command name="load">craype/2.7.15</command>
-      </modules>
-      <modules compiler="gnu">
         <command name="unload">PrgEnv-cray</command>
         <command name="unload">PrgEnv-gnu</command>
-        <command name="load">PrgEnv-gnu/8.3.3</command>
-        <command name="swap">gcc/12.1.0</command>
+        <command name="unload">darshan</command>
+        <command name="unload">perftools-base</command>
+        <command name="unload">perftools</command>
+        <command name="unload">craype-network-ofi</command>
+        <command name="unload">craype-network-ucx</command>
+        <command name="unload">craype-ucx</command>
       </modules>
-      <modules compiler="cray">
-        <command name="unload">PrgEnv-gnu</command>
-        <command name="load">gcc/9.3.0</command>
+      <modules compiler="gnu">
+        <command name="load">PrgEnv-gnu/8.3.3</command>
+        <command name="load">cray-libsci</command>
+        <command name="switch">gcc gcc/10.3.0</command>
+        <command name="switch">cray-mpich cray-mpich-ucx</command>
+        <command name="load">cray-ucx/2.7.0-1</command>
+        <command name="switch">craype-network-ofi craype-network-ucx</command>
+      </modules>
+      <modules compiler="crayclang">
         <command name="load">PrgEnv-cray/8.3.3</command>
-        <command name="rm">darshan</command>
+        <command name="load">cray-libsci</command>
+        <command name="switch">cce cce/14.0.0</command>
       </modules>
       <modules>
-        <command name="load">cray-mpich/8.1.16</command>
-        <command name="load">cray-hdf5-parallel/1.12.1.3</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.8.1.3</command>
-        <command name="load">cray-parallel-netcdf/1.12.2.3</command>
+        <command name="load">craype</command>
+        <command name="load">libfabric</command>
+        <command name="load">slurm</command>
+        <command name="load">cray-hdf5-parallel/1.12.2.3</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.9.0.3</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.3</command>
       </modules>
     </module_system>
 
@@ -132,9 +143,24 @@
     <MAX_GB_OLD_TEST_DATA>1000</MAX_GB_OLD_TEST_DATA>
     <environment_variables>
       <env name="PERL5LIB">/usr/lib/perl5/5.26.2</env>
-      <env name="NETCDF_C_PATH">/opt/cray/pe/netcdf-hdf5parallel/4.8.1.3/gnu/9.1/</env>
-      <env name="NETCDF_FORTRAN_PATH">/opt/cray/pe/netcdf-hdf5parallel/4.8.1.3/gnu/9.1/</env>
-      <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf_version))}</env>
+      <env name="CMAKE_ROOT">/lustre/storm/nwp501/proj-shared/shared/programs/cmake-3.18.2</env>
+      <env name="CMAKE_PREFIX_PATH">/lustre/storm/nwp501/proj-shared/shared/programs/cmake-3.18.2</env>
+      <env name="PATH">/lustre/storm/nwp501/proj-shared/shared/programs/cmake-3.18.2/bin:$ENV{PATH}</env>
+    </environment_variables>
+    <environment_variables compiler="gnu">
+      <env name="NETCDF_C_PATH">/opt/cray/pe/netcdf-hdf5parallel/4.9.0.3/gnu/9.1/</env>
+      <env name="NETCDF_FORTRAN_PATH">/opt/cray/pe/netcdf-hdf5parallel/4.9.0.3/gnu/9.1/</env>
+      <env name="PNETCDF_PATH">/opt/cray/pe/parallel-netcdf/1.12.3.3/gnu/9.1/</env>
+      <env name="HDF5_PATH">/opt/cray/pe/hdf5-parallel/1.12.2.3/gnu/9.1/</env>
+      <env name="LD_LIBRARY_PATH">/opt/cray/pe/hdf5-parallel/1.12.2.3/gnu/9.1/lib:/opt/cray/pe/netcdf-hdf5parallel/4.9.0.3/gnu/9.1/lib:/opt/cray/pe/parallel-netcdf/1.12.3.3/GNU/9.1/lib:$ENV{LD_LIBRARY_PATH}</env>
+      <env name="UCX_IB_RCACHE_MAX_REGIONS">262144</env>
+    </environment_variables>
+    <environment_variables compiler="crayclang">
+      <env name="PERL5LIB">/usr/lib/perl5/5.26.2</env>
+      <env name="NETCDF_C_PATH">/opt/cray/pe/netcdf-hdf5parallel/4.9.0.3/crayclang/14.0/</env>
+      <env name="NETCDF_FORTRAN_PATH">/opt/cray/pe/netcdf-hdf5parallel/4.9.0.3/crayclang/14.0/</env>
+      <env name="PNETCDF_PATH">/opt/cray/pe/parallel-netcdf/1.12.3.3/crayclang/14.0/</env>
+      <env name="HDF5_PATH">/opt/cray/pe/hdf5-parallel/1.12.2.3/crayclang/14.0/</env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
@@ -377,12 +403,12 @@
       </modules>
 
       <modules compiler="gnugpu">
-        <command name="load">cudatoolkit/11.7</command>
+        <command name="load">cudatoolkit/11.5</command>
         <command name="load">craype-accel-nvidia80</command>
       </modules>
 
       <modules compiler="nvidiagpu">
-        <command name="load">cudatoolkit/11.7</command>
+        <command name="load">cudatoolkit/11.5</command>
         <command name="load">craype-accel-nvidia80</command>
       </modules>
 
