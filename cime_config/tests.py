@@ -167,7 +167,7 @@ _TESTS = {
     "e3sm_atm_integration" : {
         "inherit" : ("eam_preqx", "eam_theta"),
         "tests" : (
-            "ERP_Ln9.ne4_ne4.FAQP",
+            "ERP_Ln9.ne4pg2_ne4pg2.FAQP",
             "SMS_Ld1.ne4pg2_ne4pg2.FAQP.eam-clubb_only",
             "ERP_Ln9.ne4pg2_ne4pg2.FRCE",
             "PET_Ln5.ne4pg2_oQU480.F2010.allactive-mach-pet",
@@ -181,7 +181,7 @@ _TESTS = {
             "ERS_Ld5.ne4pg2_oQU480.F2010.eam-rrtmgpxx",
             "REP_Ln5.ne4pg2_oQU480.F2010",
             "SMS_Ld9.ne4pg2_oQU480.F2010.eam-thetahy_sl_pg2_mass",
-            "ERP_Ld9.ne4_ne4.FIDEAL.allactive-pioroot1",
+            "ERP_Ld9.ne4pg2_ne4pg2.FIDEAL.allactive-pioroot1",
             )
         },
 
