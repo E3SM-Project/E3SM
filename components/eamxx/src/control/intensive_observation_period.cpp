@@ -186,6 +186,8 @@ initialize_iop_file(const util::TimeStamp& run_t0,
       if (scorpio::has_variable(iop_file, srf_varname)) {
         m_iop_field_surface_varnames.insert({iop_varname, srf_varname});
       }
+      // Store that the IOP variable is found in the IOP file
+      m_iop_field_type.insert({iop_varname, IOPFieldType::FromFile});
 
       // Allocate field for variable
       FieldIdentifier fid(iop_varname, fl, ekat::units::Units::nondimensional(), "");
@@ -247,6 +249,31 @@ initialize_iop_file(const util::TimeStamp& run_t0,
                    "Error! IOP file required to contain variable \"divT\".\n");
   EKAT_REQUIRE_MSG(has_iop_field("divq"),
                    "Error! IOP file required to contain variable \"divq\".\n");
+
+  // If we have the vertical component of T/Q forcing, define 3d forcing as a computed field.
+  if (has_iop_field("vertdivT")) {
+    FieldIdentifier fid("divT3d", fl_vector, ekat::units::Units::nondimensional(), "");
+    Field field(fid);
+    field.get_header().get_alloc_properties().request_allocation(Pack::n);
+    field.allocate_view();
+    m_iop_fields.insert({"divT3d", field});
+    m_iop_field_type.insert({"divT3d", IOPFieldType::Computed});
+  }
+  if (has_iop_field("vertdivq")) {
+    FieldIdentifier fid("divq3d", fl_vector, ekat::units::Units::nondimensional(), "");
+    Field field(fid);
+    field.get_header().get_alloc_properties().request_allocation(Pack::n);
+    field.allocate_view();
+    m_iop_fields.insert({"divq3d", field});
+    m_iop_field_type.insert({"divq3d", IOPFieldType::Computed});
+  }
+
+  // Enforce that 3D forcing is all-or-nothing.
+  const bool both = (has_iop_field("divT3d") and has_iop_field("divq3d"));
+  const bool neither = (not (has_iop_field("divT3d") or has_iop_field("divq3d")));
+  EKAT_REQUIRE_MSG(both or neither,
+    "Error! Either T and q both have 3d forcing, or neither have 3d forcing.\n");
+  m_params.set<bool>("use_3d_forcing", both);
 
   // Initialize time information
   int bdate;
@@ -511,27 +538,27 @@ read_fields_from_file_for_iop (const std::string& file_name,
 void IntensiveObservationPeriod::
 read_iop_file_data (const util::TimeStamp& current_ts)
 {
-  const auto iop_file = m_params.get<std::string>("iop_file");
+  // Query to see if we need to load data from IOP file.
+  // If we are still in the time interval as the previous
+  // read from iop file, there is no need to reload data.
   const auto iop_file_time_idx = m_time_info.get_iop_file_time_idx(current_ts);
-
-  // Sanity check
   EKAT_REQUIRE_MSG(iop_file_time_idx >= m_time_info.time_idx_of_current_data,
                    "Error! Attempting to read previous iop file data time index.\n");
-
-  // If we are still in the time interval as the previous read from iop file,
-  // there is no need to reload data. Return early
   if (iop_file_time_idx == m_time_info.time_idx_of_current_data) return;
 
+  const auto iop_file = m_params.get<std::string>("iop_file");
   const auto file_levs = scorpio::get_dimlen(iop_file, "lev");
   const auto iop_file_pressure = m_helper_fields["iop_file_pressure"];
   const auto model_pressure = m_helper_fields["model_pressure"];
   const auto surface_pressure = m_iop_fields["Ps"];
 
-  // Loop through iop fields, if rank 1 fields exist we need to
-  // gather information for vertically interpolating views
+  // Loop through iop fields, if any rank 1 fields are loaded from file,
+  // we need to gather information for vertical interpolation
   bool has_level_data = false;
   for (auto& it : m_iop_fields) {
-    if (it.second.rank() == 1) {
+    if (it.second.rank() == 1
+        and
+        m_iop_field_type.at(it.first)==IOPFieldType::FromFile) {
       has_level_data = true;
       break;
     }
@@ -615,6 +642,9 @@ read_iop_file_data (const util::TimeStamp& current_ts)
   for (auto& it : m_iop_fields) {
     auto fname = it.first;
     auto field = it.second;
+
+    // If this is a computed field, do not attempt to load from file
+    if (m_iop_field_type.at(fname)==IOPFieldType::Computed) continue;
 
     // File may use different varname than IOP class
     auto file_varname = (m_iop_file_varnames.count(fname) > 0) ? m_iop_file_varnames[fname] : fname;
@@ -711,44 +741,29 @@ read_iop_file_data (const util::TimeStamp& current_ts)
     }
   }
 
-  // If we have the vertical component of T/Q forcing, define 3d forcing.
-  if (has_iop_field("vertdivT")) {
-    const auto fl = get_iop_field("divT").get_header().get_identifier().get_layout();
-    FieldIdentifier fid("divT3d", fl, ekat::units::Units::nondimensional(), "");
-    Field field(fid);
-    field.allocate_view();
-
-    const auto divT_v = get_iop_field("divT").get_view<const Real*>();
-    const auto vertdivT_v = get_iop_field("vertdivT").get_view<const Real*>();
-    auto divT3d_v = field.get_view<Real*>();
-    Kokkos::parallel_for(fl.dim(0), KOKKOS_LAMBDA (const int ilev) {
-      divT3d_v(ilev) = divT_v(ilev) + vertdivT_v(ilev);
-    });
-
-    m_iop_fields.insert({"divT3d", field});
+  // Calculate 3d forcing (if applicable).
+  if (has_iop_field("divT3d")) {
+    if (m_iop_field_type.at("divT3d")==IOPFieldType::Computed) {
+      const auto divT = get_iop_field("divT").get_view<const Real*>();
+      const auto vertdivT = get_iop_field("vertdivT").get_view<const Real*>();
+      const auto divT3d = get_iop_field("divT3d").get_view<Real*>();
+      const auto nlevs = get_iop_field("divT3d").get_header().get_identifier().get_layout().dim(0);
+      Kokkos::parallel_for(nlevs, KOKKOS_LAMBDA (const int ilev) {
+        divT3d(ilev) = divT(ilev) + vertdivT(ilev);
+      });
+    }
   }
-  if (has_iop_field("vertdivq")) {
-    const auto fl = get_iop_field("divq").get_header().get_identifier().get_layout();
-    FieldIdentifier fid("divq3d", fl, ekat::units::Units::nondimensional(), "");
-    Field field(fid);
-    field.allocate_view();
-
-    const auto divq_v = get_iop_field("divq").get_view<const Real*>();
-    const auto vertdivq_v = get_iop_field("vertdivq").get_view<const Real*>();
-    auto divq3d_v = field.get_view<Real*>();
-    Kokkos::parallel_for(fl.dim(0), KOKKOS_LAMBDA (const int ilev) {
-      divq3d_v(ilev) = divq_v(ilev) + vertdivq_v(ilev);
-    });
-
-    m_iop_fields.insert({"divq3d", field});
+  if (has_iop_field("divq3d")) {
+    if (m_iop_field_type.at("divq3d")==IOPFieldType::Computed) {
+      const auto divq = get_iop_field("divq").get_view<const Real*>();
+      const auto vertdivq = get_iop_field("vertdivq").get_view<const Real*>();
+      const auto divq3d = get_iop_field("divq3d").get_view<Real*>();
+      const auto nlevs = get_iop_field("divq3d").get_header().get_identifier().get_layout().dim(0);
+      Kokkos::parallel_for(nlevs, KOKKOS_LAMBDA (const int ilev) {
+        divq3d(ilev) = divq(ilev) + vertdivq(ilev);
+      });
+    }
   }
-
-  // Enforce that 3D forcing is all-or-nothing.
-  const bool both = (has_iop_field("divT3d") and has_iop_field("divq3d"));
-  const bool neither = (not (has_iop_field("divT3d") or has_iop_field("divq3d")));
-  EKAT_REQUIRE_MSG(both or neither,
-                   "Error! Either T and q both have 3d forcing, or neither have 3d forcing.\n");
-  m_params.set<bool>("use_3d_forcing", both);
 
   // Now that data is loaded, reset the index of the currently loaded data.
   m_time_info.time_idx_of_current_data = iop_file_time_idx;
