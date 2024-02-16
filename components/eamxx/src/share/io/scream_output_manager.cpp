@@ -368,13 +368,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
   auto setup_output_file = [&](IOControl& control, IOFileSpecs& filespecs) {
     // Check if we need to open a new file
     if (not filespecs.is_open) {
-      // If this is normal output, with some sort of average, then the timestamp should be
-      // the one of the last write, since that's when the current avg window started.
-      // For Instant output (includes model restart output) and history restart, use the current timestamp
-      auto file_ts = m_avg_type==OutputAvgType::Instant or filespecs.hist_restart_file
-                   ? timestamp : control.timestamp_of_last_write;
-
-      filespecs.filename = compute_filename (control,filespecs,file_ts);
+      filespecs.filename = compute_filename (control,filespecs,timestamp);
       // Register all dims/vars, write geometry data (e.g. lat/lon/hyam/hybm)
       setup_file(filespecs,control);
     }
