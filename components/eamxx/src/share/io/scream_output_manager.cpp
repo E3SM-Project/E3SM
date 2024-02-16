@@ -233,9 +233,9 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
       }
 
       // If the type/freq of output needs restart data, we need to restart the streams
-      const bool output_every_step       = m_output_control.frequency_units=="nsteps" &&
-                                           m_output_control.frequency==1;
-      const bool has_checkpoint_data     = m_avg_type!=OutputAvgType::Instant && not output_every_step;
+      const bool output_every_step   = m_output_control.frequency_units=="nsteps" &&
+                                       m_output_control.frequency==1;
+      const bool has_checkpoint_data = m_avg_type!=OutputAvgType::Instant && not output_every_step;
       if (has_checkpoint_data && m_output_control.nsamples_since_last_write>0) {
         for (auto stream : m_output_streams) {
           stream->restart(rhist_file);
@@ -308,7 +308,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
     m_time_bnds.resize(2);
     m_time_bnds[0] = m_run_t0.days_from(m_case_t0);
   } else if (m_output_control.output_enabled() && m_run_t0==m_case_t0 && !m_is_model_restart_output) {
-    // Right now next_write_ts=m_run_t0+frequency. We must rest next_write_ts to run_t0 to trigger output
+    // In order to trigger a t0 write, we need to have next_write_ts matching run_t0
     m_output_control.next_write_ts = m_run_t0;
     this->run(m_run_t0);
   }
@@ -339,6 +339,11 @@ void OutputManager::run(const util::TimeStamp& timestamp)
   }
 
   using namespace scorpio;
+
+  // We did not have dt at init time. Now we can compute it based on timestamp and the ts of last write.
+  // NOTE: dt is only needed for frequency_units='nsteps'.
+  m_output_control.compute_dt(timestamp);
+  m_checkpoint_control.compute_dt(timestamp);
 
   std::string timer_root = m_is_model_restart_output ? "EAMxx::IO::restart" : "EAMxx::IO::standard";
   start_timer(timer_root);
@@ -450,6 +455,10 @@ void OutputManager::run(const util::TimeStamp& timestamp)
       if (m_atm_logger) {
         m_atm_logger->debug("[OutputManager]: writing globals...\n");
       }
+
+      // Since we wrote to file we need to reset the timestamps
+      control.update_write_timestamps();
+
       if (m_is_model_restart_output) {
         // Only write nsteps on model restart
         set_attribute(filespecs.filename,"nsteps",timestamp.get_num_steps());
@@ -457,6 +466,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
         if (filespecs.ftype==FileType::HistoryRestart) {
           // Update the date of last write and sample size
           scorpio::write_timestamp (filespecs.filename,"last_write",m_output_control.last_write_ts);
+          scorpio::set_attribute (filespecs.filename,"last_write_nsteps",m_output_control.last_write_ts.get_num_steps());
           scorpio::set_attribute (filespecs.filename,"last_output_filename",m_output_file_specs.filename);
           scorpio::set_attribute (filespecs.filename,"num_snapshots_since_last_write",m_output_control.nsamples_since_last_write);
         }
@@ -483,9 +493,6 @@ void OutputManager::run(const util::TimeStamp& timestamp)
       if (m_time_bnds.size()>0) {
         scorpio::grid_write_data_array(filespecs.filename, "time_bnds", m_time_bnds.data(), 2);
       }
-
-      // Since we wrote to file we need to reset the timestamps
-      control.update_write_timestamps();
 
       // Check if we need to close the output file
       if (filespecs.file_is_full()) {
