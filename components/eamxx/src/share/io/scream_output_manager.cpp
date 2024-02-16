@@ -70,7 +70,6 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   m_output_control.frequency_units = out_control_pl.get<std::string>("frequency_units");
   // In case output is disabled, no point in doing anything else
   if (m_output_control.frequency_units=="none" || m_output_control.frequency_units=="never") {
-    m_output_disabled = true;
     return;
   }
   m_output_control.frequency = out_control_pl.get<int>("Frequency");
@@ -329,7 +328,7 @@ add_global (const std::string& name, const ekat::any& global) {
 void OutputManager::run(const util::TimeStamp& timestamp)
 {
   // In case output is disabled, no point in doing anything else
-  if (m_output_disabled) {
+  if (not m_output_control.output_enabled()) {
     return;
   }
 
