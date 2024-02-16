@@ -48,7 +48,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <sections>ctl_nl</sections>
     </file>
     <file name="data/scream_input.yaml" format="yaml">
-      <sections>driver_options,atmosphere_processes,grids_manager,initial_conditions,Scorpio,e3sm_parameters</sections>
+      <sections>driver_options,intensive_observation_period_options,atmosphere_processes,grids_manager,initial_conditions,Scorpio,e3sm_parameters</sections>
     </file>
   </generated_files>
 
@@ -245,12 +245,12 @@ be lost if SCREAM_HACK_XML is not enabled.
       <use_nudging_weights type="logical" doc="Flag for nudging weights option">false</use_nudging_weights>
       <nudging_weights_file type="string" doc="weights that relax the nudging fields update"/>
       <skip_vert_interpolation type="logical" doc="Flag for skipping vertical interpolation">false</skip_vert_interpolation>
-      <source_pressure_type type="string" 
+      <source_pressure_type type="string"
 	                    valid_values="TIME_DEPENDENT_3D_PROFILE,STATIC_1D_VERTICAL_PROFILE"
 			    doc="Flag for how source pressure levels are handled in the nudging dataset.
     TIME_DEPENDENT_3D_PROFILE: The dataset contains a time-varying pressure profile, variable name 'p_mid' with dimensions (time,ncol,nlev).
     STATIC_1D_VERTICAL_PROFILE: The dataset uses a fixed in time single pressure profile, variable name 'p_lev' with dimension (nlev).">TIME_DEPENDENT_3D_PROFILE</source_pressure_type>
-      <source_pressure_file type="string" doc="If STATIC_1D_VERTICAL_PROFILE, this is an optional arg to point to a file with the source pressure levels defined.  
+      <source_pressure_file type="string" doc="If STATIC_1D_VERTICAL_PROFILE, this is an optional arg to point to a file with the source pressure levels defined.
     Default is to look for p_levs in the first nudging_filenames_patterns file"/>
       <nudging_refine_remap_mapfile
         type="string"
@@ -468,6 +468,11 @@ be lost if SCREAM_HACK_XML is not enabled.
     <nc hgrid="ne256np4|ne1024np4">0.0</nc>
     <ni hgrid="ne256np4|ne1024np4">0.0</ni>
     <o3_volume_mix_ratio hgrid="ne0np4_conus_x4v1_lowcon">0.0</o3_volume_mix_ratio>
+
+    <!-- Information about perturbed fields-->
+    <perturbed_fields type="array(string)"/>
+    <perturbation_limit type="real">0.001</perturbation_limit>
+    <perturbation_minimum_pressure type="real">900.0</perturbation_minimum_pressure>
   </initial_conditions>
 
   <!-- List of yaml files containing I/O output specs -->
@@ -496,12 +501,22 @@ be lost if SCREAM_HACK_XML is not enabled.
     <column_conservation_checks_fail_handling_type>Warning</column_conservation_checks_fail_handling_type>
     <check_all_computed_fields_for_nans type="logical">true</check_all_computed_fields_for_nans >
     <property_check_data_fields type="array(string)" doc="list of additional data fields to output in property checks (only for physics grid)">phis,landfrac</property_check_data_fields>
+    <enable_intensive_observation_period type="logical" doc="Enable intensive observation period. Currently the only use case is DP-EAMxx">false</enable_intensive_observation_period>
   </driver_options>
 
   <!-- E3SM Simulation Settings -->
   <e3sm_parameters>
     <e3sm_casename>${CASE}</e3sm_casename>
   </e3sm_parameters>
+
+  <intensive_observation_period_options>
+    <doubly_periodic_mode type="logical">true</doubly_periodic_mode>
+    <iop_file type="file">UNSET</iop_file>
+    <target_latitude type="real">-999</target_latitude>
+    <target_longitude type="real">-999</target_longitude>
+    <iop_dosubsidence type="logical">false</iop_dosubsidence>
+    <iop_srf_prop type="logical">false</iop_srf_prop>
+  </intensive_observation_period_options>
 
   <!-- Homme control namelist -->
   <ctl_nl>
@@ -548,10 +563,12 @@ be lost if SCREAM_HACK_XML is not enabled.
     <se_ne hgrid="ne0np4_conus_x4v1_lowcon">0</se_ne>
     <se_ne_x>0</se_ne_x>
     <se_ne_y>0</se_ne_y>
+    <se_lx>0</se_lx>
+    <se_ly>0</se_ly>
     <se_nsplit>-1</se_nsplit>
     <se_partmethod>4</se_partmethod>
     <se_topology>cube</se_topology>
-    <se_tstep>UNSET</se_tstep>
+    <se_tstep type="real">UNSET</se_tstep>
     <se_tstep hgrid="ne4np4" constraints="gt 0">600</se_tstep>
     <se_tstep hgrid="ne30np4" constraints="gt 0">300</se_tstep>
     <se_tstep hgrid="ne120np4" constraints="gt 0">75</se_tstep>
