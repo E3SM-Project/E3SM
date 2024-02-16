@@ -78,7 +78,7 @@ struct IOControl {
   }
 
   void compute_dt (const util::TimeStamp& ts) {
-    if (dt==0 and output_enabled()) {
+    if (dt==0 and frequency_units=="nsteps") {
       int nsteps = ts.get_num_steps() - last_write_ts.get_num_steps();
       if (nsteps>0) {
         dt = (ts-last_write_ts) / nsteps;
@@ -128,6 +128,12 @@ struct IOControl {
       } else {
         date[0] += frequency;
       }
+
+      // Fix day, in case we moved to a month/year where current days. E.g., if last_write
+      // was on Mar 31st, and units='nmonths', next write is on Apr 30th. HOWEVER, this
+      // means we will *always* write on the 30th of each month after then, since we have
+      // no memory of the fact that we were writing on the 31st before.
+      date[2] = std::min(date[2],util::days_in_month(date[0],date[1]));
       next_write_ts = util::TimeStamp(date,last_write_ts.get_time());
     } else {
       EKAT_ERROR_MSG ("Error! Unrecognized/unsupported frequency unit '" + frequency_units + "'\n");

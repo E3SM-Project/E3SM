@@ -341,12 +341,15 @@ void OutputManager::run(const util::TimeStamp& timestamp)
   using namespace scorpio;
 
   // We did not have dt at init time. Now we can compute it based on timestamp and the ts of last write.
-  // NOTE: dt is only needed for frequency_units='nsteps'.
+  // NOTE: dt is only needed for frequency_units='nsteps'. For other units, the function returns immediately
   m_output_control.compute_dt(timestamp);
-  m_checkpoint_control.compute_dt(timestamp);
+  if (m_checkpoint_control.output_enabled()) {
+    m_checkpoint_control.compute_dt(timestamp);
+  }
 
   std::string timer_root = m_is_model_restart_output ? "EAMxx::IO::restart" : "EAMxx::IO::standard";
   start_timer(timer_root);
+
   // Check if we need to open a new file
   ++m_output_control.nsamples_since_last_write;
   ++m_checkpoint_control.nsamples_since_last_write;

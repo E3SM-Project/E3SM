@@ -172,8 +172,8 @@ void write (const std::string& avg_type, const std::string& freq_units,
     t += dt;
 
     // Add 1 to all fields entries
-    for (const auto& n : fnames) {
-      auto f = fm->get_field(n);
+    for (const auto& name : fnames) {
+      auto f = fm->get_field(name);
       add(f,1.0);
     }
 
@@ -231,6 +231,7 @@ void read (const std::string& avg_type, const std::string& freq_units,
   // The last one comes from
   //   (a+1 + a+2 +..+a+freq)/freq =
   //   a + sum(i)/freq = a + (freq(freq+1)/2)/freq
+  //   = a + (freq+1)/2
   double delta = (freq+1)/2.0;
 
   for (int n=0; n<num_writes; ++n) {
@@ -304,7 +305,7 @@ TEST_CASE ("io_basic") {
     for (const auto& avg : avg_type) {
       print("   -> Averaging type: " + avg + " ", 40);
       write(avg,units,freq,seed,comm);
-      read(avg,units,freq,seed,comm);
+      read (avg,units,freq,seed,comm);
       print(" PASS\n");
     }
   }
