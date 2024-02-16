@@ -84,6 +84,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   m_output_file_specs.max_snapshots_in_file  = m_params.get<int>("Max Snapshots Per File",large_int);
   m_output_file_specs.filename_with_mpiranks = out_control_pl.get("MPI Ranks in Filename",false);
   m_output_file_specs.save_grid_data         = out_control_pl.get("save_grid_data",!m_is_model_restart_output);
+  m_output_file_specs.ftype = m_is_model_restart_output ? FileType::ModelRestart : FileType::ModelOutput;
 
   // Here, store if PG2 fields will be present in output streams.
   // Will be useful if multiple grids are defined (see below).
@@ -195,7 +196,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
       m_checkpoint_file_specs.flush_frequency = 1;
       m_checkpoint_file_specs.filename_with_mpiranks    = pl.get("MPI Ranks in Filename",false);
       m_checkpoint_file_specs.save_grid_data = false;
-      m_checkpoint_file_specs.hist_restart_file = true;
+      m_checkpoint_file_specs.ftype = FileType::HistoryRestart;
     }
   }
 
@@ -365,8 +366,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
 
   // Create and setup output/checkpoint file(s), if necessary
   start_timer(timer_root+"::get_new_file");
-  auto setup_output_file = [&](IOControl& control, IOFileSpecs& filespecs,
-                               bool add_to_rpointer, const std::string& file_type) {
+  auto setup_output_file = [&](IOControl& control, IOFileSpecs& filespecs) {
     // Check if we need to open a new file
     if (not filespecs.is_open) {
       // If this is normal output, with some sort of average, then the timestamp should be
@@ -383,7 +383,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
     // If we are going to write an output checkpoint file, or a model restart file,
     // we need to append to the filename ".rhist" or ".r" respectively, and add
     // the filename to the rpointer.atm file.
-    if (add_to_rpointer && m_io_comm.am_i_root()) {
+    if (m_io_comm.am_i_root() and filespecs.is_restart_file()) {
       std::ofstream rpointer;
       if (m_is_model_restart_output) {
         rpointer.open("rpointer.atm");  // Open rpointer and nuke its content
@@ -406,19 +406,19 @@ void OutputManager::run(const util::TimeStamp& timestamp)
     }
 
     if (m_atm_logger) {
-      m_atm_logger->info("[EAMxx::output_manager] - Writing " + file_type + ":");
+      m_atm_logger->info("[EAMxx::output_manager] - Writing " + e2str(filespecs.ftype) + ":");
       m_atm_logger->info("[EAMxx::output_manager]      FILE: " + filespecs.filename);
     }
   };
 
   if (is_output_step) {
-    setup_output_file(m_output_control,m_output_file_specs,m_is_model_restart_output,m_is_model_restart_output ? "model restart" : "model output");
+    setup_output_file(m_output_control,m_output_file_specs);
 
     // Update time (must be done _before_ writing fields)
     pio_update_time(m_output_file_specs.filename,timestamp.days_from(m_case_t0));
   }
   if (is_checkpoint_step) {
-    setup_output_file(m_checkpoint_control,m_checkpoint_file_specs,true,"history restart");
+    setup_output_file(m_checkpoint_control,m_checkpoint_file_specs);
 
     if (is_full_checkpoint_step) {
       // Update time (must be done _before_ writing fields)
@@ -459,7 +459,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
         // Only write nsteps on model restart
         set_attribute(filespecs.filename,"nsteps",timestamp.get_num_steps());
       } else {
-        if (filespecs.hist_restart_file) {
+        if (filespecs.ftype==FileType::HistoryRestart) {
           // Update the date of last write and sample size
           scorpio::write_timestamp (filespecs.filename,"last_write",m_output_control.timestamp_of_last_write);
           scorpio::set_attribute (filespecs.filename,"last_output_filename",m_output_file_specs.filename);
@@ -551,10 +551,7 @@ compute_filename (const IOControl& control,
                   const IOFileSpecs& file_specs,
                   const util::TimeStamp& timestamp) const
 {
-  std::string suffix =
-    file_specs.hist_restart_file ? ".rhist"
-                       : (m_is_model_restart_output ? ".r" : "");
-  auto filename = m_filename_prefix + suffix;
+  auto filename = m_filename_prefix + file_specs.suffix();
 
   // Always add avg type and frequency info
   filename += "." + e2str(m_avg_type);
@@ -566,7 +563,7 @@ compute_filename (const IOControl& control,
   }
 
   // Always add a time stamp
-  if (m_avg_type==OutputAvgType::Instant || file_specs.hist_restart_file) {
+  if (m_avg_type==OutputAvgType::Instant || file_specs.ftype==FileType::HistoryRestart) {
     filename += "." + timestamp.to_string();
   } else {
     filename += "." + control.timestamp_of_last_write.to_string();
@@ -766,13 +763,7 @@ void OutputManager::set_file_header(const IOFileSpecs& file_specs)
   set_attribute<std::string>(filename,"realm","atmos");
   set_attribute<std::string>(filename,"history",ts_str);
   set_attribute<std::string>(filename,"Conventions","CF-1.8");
-  if (m_is_model_restart_output) {
-    set_attribute<std::string>(filename,"product","model-restart");
-  } else if (file_specs.hist_restart_file) {
-    set_attribute<std::string>(filename,"product","history-restart");
-  } else {
-    set_attribute<std::string>(filename,"product","model-output");
-  }
+  set_attribute<std::string>(filename,"product",e2str(file_specs.ftype));
 }
 /*===============================================================================================*/
 void OutputManager::

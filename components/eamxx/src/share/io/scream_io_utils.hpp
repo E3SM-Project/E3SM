@@ -11,6 +11,23 @@
 namespace scream
 {
 
+enum class FileType {
+  ModelOutput,
+  ModelRestart,
+  HistoryRestart,
+  Unset
+};
+
+inline std::string e2str(const FileType avg) {
+  using FT = FileType;
+  switch (avg) {
+    case FT::ModelOutput:     return "model-output";
+    case FT::ModelRestart:    return "model-restart";
+    case FT::HistoryRestart:  return "history-restart";
+    default:                  return "UNSET";
+  }
+}
+
 enum class OutputAvgType {
   Instant,
   Max,
@@ -126,9 +143,21 @@ struct IOFileSpecs {
 
   bool save_grid_data            = true;
 
-  // Whether this struct refers to a history restart file
-  bool hist_restart_file         = false;
+  // Whether it is a model output, model restart, or history restart file
+  FileType ftype = FileType::Unset;
 
+  bool is_restart_file () const {
+    return ftype==FileType::ModelRestart or ftype==FileType::HistoryRestart;
+  }
+
+  std::string suffix () const {
+    if (ftype==FileType::HistoryRestart)
+      return ".rhist";
+    else if (ftype==FileType::ModelRestart)
+      return ".r";
+    else
+      return "";
+  }
 };
 
 std::string find_filename_in_rpointer (
