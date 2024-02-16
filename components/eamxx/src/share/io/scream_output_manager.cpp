@@ -62,12 +62,8 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   EKAT_REQUIRE_MSG(m_params.isSublist("output_control"),
       "Error! The output control YAML file for " + m_filename_prefix + " is missing the sublist 'output_control'");
   auto& out_control_pl = m_params.sublist("output_control");
-  // Determine which timestamp to use a reference for output frequency.  Two options:
-  // 	1. use_case_as_start_reference: TRUE  - implies we want to calculate frequency from the beginning of the whole simulation, even if this is a restarted run.
-  // 	2. use_case_as_start_reference: FALSE - implies we want to base the frequency of output on when this particular simulation started.
-  // Note, (2) is needed for restarts since the restart frequency in CIME assumes a reference of when this run began.
-  const bool start_ref = out_control_pl.get<bool>("use_case_as_start_reference",!m_is_model_restart_output);
   m_output_control.frequency_units = out_control_pl.get<std::string>("frequency_units");
+
   // In case output is disabled, no point in doing anything else
   if (m_output_control.frequency_units=="none" || m_output_control.frequency_units=="never") {
     return;
@@ -76,7 +72,15 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   EKAT_REQUIRE_MSG (m_output_control.frequency>0,
       "Error! Invalid frequency (" + std::to_string(m_output_control.frequency) + ") in Output Control. Please, use positive number.\n");
 
-  m_output_control.timestamp_of_last_write = start_ref ? m_case_t0 : m_run_t0;
+  // Determine which timestamp to use a reference for output frequency.  Two options:
+  // 	1. use_case_as_start_reference: TRUE  - implies we want to calculate frequency from the beginning of the whole simulation, even if this is a restarted run.
+  // 	2. use_case_as_start_reference: FALSE - implies we want to base the frequency of output on when this particular simulation started.
+  // Note, (2) is needed for restarts since the restart frequency in CIME assumes a reference of when this run began.
+  // NOTE: m_is_restarted_run and not m_is_model_restart_output, these timestamps will be corrected once we open the hist restart file
+  const bool use_case_as_ref = out_control_pl.get<bool>("use_case_as_start_reference",!m_is_model_restart_output);
+  const auto& start_ref = use_case_as_ref ? m_case_t0 : m_run_t0;
+  m_output_control.last_write_ts = start_ref;
+  m_output_control.compute_next_write_ts();
 
   // File specs
   constexpr auto large_int = 1000000;
@@ -185,10 +189,12 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
     m_checkpoint_control.frequency_units           = pl.get<std::string>("frequency_units");
 
     if (m_checkpoint_control.output_enabled()) {
-      m_checkpoint_control.timestamp_of_last_write   = run_t0;
       m_checkpoint_control.frequency = pl.get<int>("Frequency");
       EKAT_REQUIRE_MSG (m_output_control.frequency>0,
           "Error! Invalid frequency (" + std::to_string(m_checkpoint_control.frequency) + ") in Checkpoint Control. Please, use positive number.\n");
+
+      m_checkpoint_control.last_write_ts = run_t0;
+      m_checkpoint_control.compute_next_write_ts();
 
       // File specs
       m_checkpoint_file_specs.max_snapshots_in_file = 1;
@@ -199,37 +205,31 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
     }
   }
 
-  // If this is normal output (not the model restart output) and the output specs
-  // require it, we need to restart the output history.
-  // E.g., we might save 30-day avg value for field F, but due to job size
-  // break the run into three 10-day runs. We then need to save the state of
-  // our averaging in a "restart" file (e.g., the current avg).
+  // If this is model output (not model restart) we need to restart the output history.
+  // For instant output, this just entails restarting timestamps and counters, while
+  // for average output we also need to restore the accumulation state of the output fields
   // Note: the user might decide *not* to restart the output, so give the option
   //       of disabling the restart. Also, the user might want to change the
   //       filename_prefix, so allow to specify a different filename_prefix for the restart file.
-  if (m_is_restarted_run) {
+  if (m_is_restarted_run and not m_is_model_restart_output) {
     // Allow to skip history restart, or to specify a filename_prefix for the restart file
     // that is different from the filename_prefix of the current output.
     auto& restart_pl = m_params.sublist("Restart");
     bool perform_history_restart = restart_pl.get("Perform Restart",true);
     auto hist_restart_filename_prefix = restart_pl.get("filename_prefix",m_filename_prefix);
 
-    if (m_is_model_restart_output) {
-      // For model restart output, the restart time (which is the start time of this run) is precisely
-      // when the last write happened, so we can quickly init the output control.
-      m_output_control.timestamp_of_last_write = m_run_t0;
-      m_output_control.nsamples_since_last_write = 0;
-    } else if (perform_history_restart) {
+    if (perform_history_restart) {
       using namespace scorpio;
       auto rhist_file = find_filename_in_rpointer(hist_restart_filename_prefix,false,m_io_comm,m_run_t0);
 
       // From restart file, get the time of last write, as well as the current size of the avg sample
-      m_output_control.timestamp_of_last_write = read_timestamp(rhist_file,"last_write");
+      m_output_control.last_write_ts = read_timestamp(rhist_file,"last_write");
+      m_output_control.compute_next_write_ts();
       m_output_control.nsamples_since_last_write = get_attribute<int>(rhist_file,"num_snapshots_since_last_write");
 
       if (m_avg_type!=OutputAvgType::Instant) {
         m_time_bnds.resize(2);
-        m_time_bnds[0] = m_output_control.timestamp_of_last_write.days_from(m_case_t0);
+        m_time_bnds[0] = m_output_control.last_write_ts.days_from(m_case_t0);
       }
 
       // If the type/freq of output needs restart data, we need to restart the streams
@@ -308,6 +308,8 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
     m_time_bnds.resize(2);
     m_time_bnds[0] = m_run_t0.days_from(m_case_t0);
   } else if (m_output_control.output_enabled() && m_run_t0==m_case_t0 && !m_is_model_restart_output) {
+    // Right now next_write_ts=m_run_t0+frequency. We must rest next_write_ts to run_t0 to trigger output
+    m_output_control.next_write_ts = m_run_t0;
     this->run(m_run_t0);
   }
 
@@ -454,7 +456,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
       } else {
         if (filespecs.ftype==FileType::HistoryRestart) {
           // Update the date of last write and sample size
-          scorpio::write_timestamp (filespecs.filename,"last_write",m_output_control.timestamp_of_last_write);
+          scorpio::write_timestamp (filespecs.filename,"last_write",m_output_control.last_write_ts);
           scorpio::set_attribute (filespecs.filename,"last_output_filename",m_output_file_specs.filename);
           scorpio::set_attribute (filespecs.filename,"num_snapshots_since_last_write",m_output_control.nsamples_since_last_write);
         }
@@ -482,9 +484,8 @@ void OutputManager::run(const util::TimeStamp& timestamp)
         scorpio::grid_write_data_array(filespecs.filename, "time_bnds", m_time_bnds.data(), 2);
       }
 
-      // Since we wrote to file we need to reset the nsamples_since_last_write, the timestamp ...
-      control.nsamples_since_last_write = 0;
-      control.timestamp_of_last_write = timestamp;
+      // Since we wrote to file we need to reset the timestamps
+      control.update_write_timestamps();
 
       // Check if we need to close the output file
       if (filespecs.file_is_full()) {
@@ -498,7 +499,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
 
     start_timer(timer_root+"::update_snapshot_tally");
     // Important! Process output file first, and hist restart (if any) second.
-    // That's b/c write_global_data will update m_output_control.timestamp_of_last_write,
+    // That's b/c write_global_data will update m_output_control.last_write_ts,
     // which is later written as global data in the hist restart file
     if (is_output_step) {
       write_global_data(m_output_control,m_output_file_specs);
@@ -559,7 +560,7 @@ compute_filename (const IOControl& control,
   if (m_avg_type==OutputAvgType::Instant || file_specs.ftype==FileType::HistoryRestart) {
     filename += "." + timestamp.to_string();
   } else {
-    filename += "." + control.timestamp_of_last_write.to_string();
+    filename += "." + control.last_write_ts.to_string();
   }
 
   return filename + ".nc";
@@ -774,7 +775,7 @@ push_to_logger()
   m_atm_logger->info("           Filename prefix: " + m_filename_prefix);
   m_atm_logger->info("                    Run t0: " + m_run_t0.to_string());
   m_atm_logger->info("                   Case t0: " + m_case_t0.to_string());
-  m_atm_logger->info("              Reference t0: " + m_output_control.timestamp_of_last_write.to_string());
+  m_atm_logger->info("              Reference t0: " + m_output_control.last_write_ts.to_string());
   m_atm_logger->info("         Is Restart File ?: " + bool_to_string(m_is_model_restart_output));
   m_atm_logger->info("        Is Restarted Run ?: " + bool_to_string(m_is_restarted_run));
   m_atm_logger->info("            Averaging Type: " + e2str(m_avg_type));
