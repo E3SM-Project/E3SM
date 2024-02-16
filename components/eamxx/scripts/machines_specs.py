@@ -4,6 +4,8 @@ import os, sys, pathlib
 ensure_psutil()
 import psutil
 
+CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","cime")
+
 # MACHINE -> (env_setup,                      # list of shell commands to set up scream-approved env
 #             compilers,                      # list of compilers [CXX, F90, C]
 #             batch submit prefix,            # string shell commmand prefix
@@ -57,15 +59,19 @@ MACHINE_METADATA = {
                 ["mpicxx","mpifort","mpicc"],
                 "bsub -I -q batch -W 0:30 -P cli115 -nnodes 1",
                 "/gpfs/alpine/cli115/proj-shared/scream/master-baselines"),
-    "pm-gpu" : (["module load PrgEnv-gnu gcc/10.3.0 cudatoolkit craype-accel-nvidia80 cray-libsci craype cray-mpich cray-hdf5-parallel cray-netcdf-hdf5parallel cray-parallel-netcdf cmake evp-patch","module unload craype-accel-host perftools-base perftools darshan", "export NVCC_WRAPPER_DEFAULT_COMPILER=CC", "export NVCC_WRAPPER_DEFAULT_ARCH=sm_80"],
+    "pm-cpu" : ([f"eval $({CIMEROOT}/CIME/Tools/get_case_env -c SMS.ne4pg2_ne4pg2.F2010-SCREAMv1.pm-cpu_gnu)"],
+                ["CC","ftn","cc"],
+                "srun --time 00:30:00 --nodes=1 --constraint=cpu -q regular --account e3sm_g",
+                "/global/cfs/cdirs/e3sm/baselines/gnu/scream/pm-cpu"),
+    "pm-gpu" : ([f"eval $({CIMEROOT}/CIME/Tools/get_case_env -c SMS.ne4pg2_ne4pg2.F2010-SCREAMv1.pm-gpu_gnugpu)"],
                 ["CC","ftn","cc"],
                 "srun --time 00:30:00 --nodes=1 --constraint=gpu --exclusive -q regular --account e3sm_g",
-                ""),
+                "/global/cfs/cdirs/e3sm/baselines/gnugpu/scream/pm-gpu"),
     "compy"   : (["module purge", "module load cmake/3.19.6 gcc/8.1.0  mvapich2/2.3.1 python/3.7.3"],
                  ["mpicxx","mpifort","mpicc"],
                   "srun --time 02:00:00 --nodes=1 -p short --exclusive --account e3sm",
                   ""),
-    "chrysalis" : (["eval $(../../cime/CIME/Tools/get_case_env)", "export OMP_NUM_THREADS=1"],
+    "chrysalis" : ([f"eval $({CIMEROOT}/CIME/Tools/get_case_env)", "export OMP_NUM_THREADS=1"],
                   ["mpic++","mpif90","mpicc"],
                   "srun --mpi=pmi2 -l -N 1 --kill-on-bad-exit --cpu_bind=cores",
                   "/lcrc/group/e3sm/baselines/chrys/intel/scream"),
