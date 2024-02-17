@@ -327,7 +327,23 @@ void OutputManager::run(const util::TimeStamp& timestamp)
   start_timer(timer_root+"::get_new_file");
   auto setup_output_file = [&](IOControl& control, IOFileSpecs& filespecs) {
     // Check if the new snapshot fits, if not, close the file
-    if (not filespecs.storage.snapshot_fits(timestamp)) {
+    // NOTE: if output is average/max/min AND we save one file per month/year,
+    //       we don't want to check if *this* timestamp fits in the file, since
+    //       it may be in the next month/year even though most of the time averaging
+    //       window is in the right year. E.g., if the avg is over the whole month,
+    //       you would end up saving Jan average in the Feb file, since the end
+    //       of the window is Feb 1st 00:00:00. So instead, we use the *start*
+    //       of the avg window. If the avg is such that it spans 2 months (e.g.,
+    //       a 7-day avg), then where we put the avg is arbitrary, so our choice
+    //       is still fine.
+    util::TimeStamp snapshot_start;
+    if (m_avg_type==OutputAvgType::Instant or filespecs.storage.type==NumSnaps) {
+      snapshot_start = timestamp;
+    } else {
+      snapshot_start = m_case_t0;
+      snapshot_start += m_time_bnds[0];
+    }
+    if (not filespecs.storage.snapshot_fits(snapshot_start)) {
       eam_pio_closefile(filespecs.filename);
       filespecs.close();
     }
