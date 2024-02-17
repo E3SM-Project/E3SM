@@ -64,8 +64,8 @@ TEST_CASE("se_grid_io")
   params.set<int>("Max Snapshots Per File",1);
   params.set<strvec_t>("Field Names",{"field_1","field_2","field_3","field_packed"});
   params.set<std::string>("Floating Point Precision","real");
+  params.set("MPI Ranks in Filename",true);
   auto& ctl_pl = params.sublist("output_control");
-  ctl_pl.set("MPI Ranks in Filename",true);
   ctl_pl.set("Frequency",1);
   ctl_pl.set<std::string>("frequency_units","nsteps");
 

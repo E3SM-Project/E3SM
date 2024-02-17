@@ -669,14 +669,14 @@ std::shared_ptr<FieldManager> get_test_fm(std::shared_ptr<const AbstractGrid> gr
 ekat::ParameterList set_output_params(const std::string& name, const std::string& remap_filename, const int p_ref, const bool vert_remap, const bool horiz_remap)
 {
   using vos_type = std::vector<std::string>;
-  ekat::ParameterList output_yaml;
+  ekat::ParameterList params;
 
-  output_yaml.set<std::string>("filename_prefix",name);
-  output_yaml.set<std::string>("Averaging Type","Instant");
-  output_yaml.set<int>("Max Snapshots Per File",1);
-  output_yaml.set<std::string>("Floating Point Precision","real");
-  auto& oc = output_yaml.sublist("output_control");
-  oc.set<bool>("MPI Ranks in Filename",true);
+  params.set<std::string>("filename_prefix",name);
+  params.set<std::string>("Averaging Type","Instant");
+  params.set<int>("Max Snapshots Per File",1);
+  params.set<std::string>("Floating Point Precision","real");
+  params.set<bool>("MPI Ranks in Filename",true);
+  auto& oc = params.sublist("output_control");
   oc.set<int>("Frequency",1);
   oc.set<std::string>("frequency_units","nsteps");
 
@@ -689,16 +689,16 @@ ekat::ParameterList set_output_params(const std::string& name, const std::string
     fields_out.push_back("p_mid");
     fields_out.push_back("p_int");
   }
-  output_yaml.set<vos_type>("Field Names",fields_out);
+  params.set<vos_type>("Field Names",fields_out);
 
   if (vert_remap) {
-    output_yaml.set<std::string>("vertical_remap_file",remap_filename); // TODO, make this work for general np=?
+    params.set<std::string>("vertical_remap_file",remap_filename); // TODO, make this work for general np=?
   } 
   if (horiz_remap) {
-    output_yaml.set<std::string>("horiz_remap_file",remap_filename); // TODO, make this work for general np=?
+    params.set<std::string>("horiz_remap_file",remap_filename); // TODO, make this work for general np=?
   } 
  
-  return output_yaml; 
+  return params; 
 }
 /*==========================================================================================================*/
 ekat::ParameterList set_input_params(const std::string& name, ekat::Comm& comm, const std::string& tstamp, const int p_ref)

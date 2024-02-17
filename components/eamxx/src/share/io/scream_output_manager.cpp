@@ -607,9 +607,10 @@ set_params (const ekat::ParameterList& params,
         "  - input value: " + prec + "\n"
         "  - supported values: float, single, double, real\n");
 
-    // Hard code to false if not set
+    // If not set, hard code to false for CIME cases, and true for standalone,
+    // since standalone may be running multiple versions of the same test at once
     if (not m_params.isParameter("MPI Ranks in Filename")) {
-      m_params.set("MPI Ranks in Filename",false);
+      m_params.set("MPI Ranks in Filename",is_scream_standalone());
     }
   }
 

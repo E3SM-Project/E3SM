@@ -45,8 +45,8 @@ CreateUnitTestFromExec (shoc_p3_monolithic shoc_p3
 include (BuildCprnc)
 BuildCprnc()
 
-set (SRC_FILE "shoc_p3_monolithic.INSTANT.nsteps_x3.${RUN_T0}.nc")
-set (TGT_FILE "shoc_p3_subcycled.INSTANT.nsteps_x1.${RUN_T0}.nc")
+set (SRC_FILE "shoc_p3_monolithic.INSTANT.nsteps_x3.np1.${RUN_T0}.nc")
+set (TGT_FILE "shoc_p3_subcycled.INSTANT.nsteps_x1.np1.${RUN_T0}.nc")
 set (TEST_NAME check_subcycling)
 add_test (NAME ${TEST_NAME}
           COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}
@@ -57,7 +57,7 @@ set_tests_properties(${TEST_NAME} PROPERTIES
 
 # Check calculation of shoc tendencies when the parent group is subcycled
 set (script ${SCREAM_BASE_DIR}/scripts/check-tendencies)
-set (fname shoc_p3_tend_subcycled.INSTANT.nsteps_x1.${RUN_T0}.nc)
+set (fname shoc_p3_tend_subcycled.INSTANT.nsteps_x1.np1.${RUN_T0}.nc)
 add_test (NAME ${TEST_NAME}_tend_check
           COMMAND ${script} -f ${fname} -v tke -t shoc_tke_tend
           WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
