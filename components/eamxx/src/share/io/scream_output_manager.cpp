@@ -527,12 +527,11 @@ compute_filename (const IOControl& control,
 
   switch (file_specs.storage.type) {
     case NumSnaps:
-      filename += "." + ts.to_string();
-      break;
+      filename += "." + ts.to_string(); break;
     case Yearly:
-      filename += "." + std::to_string(ts.get_year());
+      filename += "." + std::to_string(ts.get_year()); break;
     case Monthly:
-      filename += "." + std::to_string(ts.get_year()) + "-" + std::to_string(ts.get_month());
+      filename += "." + std::to_string(ts.get_year()) + "-" + std::to_string(ts.get_month()); break;
     default:
       EKAT_ERROR_MSG ("Error! Unrecognized/unsupported file storage type.\n");
   }
@@ -588,9 +587,9 @@ set_params (const ekat::ParameterList& params,
     if (storage_type=="num_snapshots") {
       storage.type = NumSnaps;
       storage.max_snapshots_in_file = m_params.get<int>("Max Snapshots Per File",large_int);
-    } else if (storage_type=="year") {
+    } else if (storage_type=="one_year") {
       storage.type = Yearly;
-    } else if (storage_type=="month") {
+    } else if (storage_type=="one_month") {
       storage.type = Monthly;
     } else {
       EKAT_ERROR_MSG ("Error! Unrecognized/unsupported file storage type.\n");

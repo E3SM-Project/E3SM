@@ -17,6 +17,12 @@ CreateUnitTest(io_basic "io_basic.cpp"
   MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
 )
 
+## Test output where we write one file per month
+CreateUnitTest(io_monthly "io_monthly.cpp"
+  LIBS scream_io LABELS io
+  MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+)
+
 ## Test basic output (no packs, no diags, all avg types, all freq units)
 CreateUnitTest(io_filled "io_filled.cpp"
   LIBS scream_io LABELS io
