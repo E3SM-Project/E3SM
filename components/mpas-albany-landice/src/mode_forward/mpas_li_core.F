@@ -1025,6 +1025,10 @@ module li_core
       err = ior(err, err_tmp)
       call mpas_timer_stop("initialize velocity")
 
+      ! SIA and hydro need these weights initialized for some options
+      call li_init_barycentric_weights_vertex(block, err_tmp)
+      err = ior(err, err_tmp)
+
       ! Higher-order velo solvers needs vertex-to-cell interp routine initialized
       if ( (trim(config_velocity_solver) == 'L1L2') .or.    &
            (trim(config_velocity_solver) == 'FO') .or.      &

@@ -24,7 +24,7 @@
 		            description="Selection of the method for calculating the tangent component of slope at edges.
 'from_vertex_barycentric' interpolates scalar values from cell centers to vertices using the barycentric interpolation routine in operators (mpas_cells_to_points_using_baryweights) and then calculates the slope between vertices.  It works for obtuse triangles, but will not work correctly across the edges of periodic meshes.
 'from_vertex_barycentric_kiteareas' interpolates scalar values from cell centers to vertices using barycentric interpolation based on kiterea values and then calculates the slope between vertices.  It will work across the edges of periodic meshes, but will not work correctly for obtuse triangles.
-'from_normal_slope' uses the vector operator mpas_tangential_vector_1d to calculate the tangent slopes from the normal slopes on the edges of the adjacent cells.  It will work for any mesh configuration, but is the least accurate method."
+'from_normal_slope' uses the vector operator mpas_tangential_vector_1d to calculate the tangent slopes from the normal slopes on the edges of the adjacent cells.  It will work for any mesh configuration. 'from_normal_slope' uses a larger stencil, so may therefore produce a smoother 'gradMagPhiEdge' field. Detailed testing yielded nearly identical results between 'from_normal_slope' and 'from_vertex_barycentric' methods, but 'from_normal_slope' seemed to produce slightly more stable results at the grounding line."
 		            possible_values="'from_vertex_barycentric', 'from_vertex_barycentric_kiteareas', 'from_normal_slope'"
 		/>
 		<nml_option name="config_SGH_pressure_calc" type="character" default_value="cavity" units="unitless"
@@ -174,7 +174,9 @@
                      description="mask indicating how to handle fluxes on each edge: 0=calculate based on hydropotential gradient; 1=allow outflow based on hydropotential gradient, but no inflow (NOT YET IMPLEMENTED); 2=zero flux" />
                 <var name="hydroMarineMarginMask" type="integer" dimensions="nEdges Time" units="none"
                      description="mask indicating the marine boundary of the active subglacial hydrology domain" />
-                <var name="waterFluxAdvec" type="real" dimensions="nEdges Time" units="m{^2} s^{-1}"
+		<var name="hydroTerrestrialMarginMask" type="integer" dimensions="nEdges Time" units="none"
+	 	     description="mask indicating the terrestrial boundary of the active subglacial hydrology domain" />
+		<var name="waterFluxAdvec" type="real" dimensions="nEdges Time" units="m{^2} s^{-1}"
                      description="advective water flux in subglacial hydrology system" />
                 <var name="waterFluxDiffu" type="real" dimensions="nEdges Time" units="m{^2} s^{-1}"
                      description="diffusive water flux in subglacial hydrology system" />
@@ -196,14 +198,20 @@
                      description="hydropotential in subglacial hydrology system without water thickness contribution" />
                 <var name="hydropotentialBaseVertex" type="real" dimensions="nVertices Time" units="Pa"
                      description="hydropotential without water thickness contribution on vertices.  Only used for some choices of config_SGH_tangent_slope_calculation." />
+                <var name="hydropotentialVertex" type="real" dimensions="nVertices Time" units="Pa"
+                     description="hydropotential on vertices.  Only used for some choices of config_SGH_tangent_slope_calculation." />
                 <var name="hydropotentialBaseSlopeNormal" type="real" dimensions="nEdges Time" units="Pa m^{-1}"
                      description="normal component of gradient of hydropotentialBase" />
                 <var name="hydropotentialSlopeNormal" type="real" dimensions="nEdges Time" units="Pa m^{-1}"
                      description="normal component of gradient of hydropotential" />
                 <var name="hydropotentialBaseSlopeTangent" type="real" dimensions="nEdges Time" units="Pa m^{-1}"
                      description="tangent component of gradient of hydropotentialBase" />
-             <var name="gradMagPhiEdge" type="real" dimensions="nEdges Time" units="Pa m^{-1}"
+                <var name="hydropotentialSlopeTangent" type="real" dimensions="nEdges Time" units="Pa m^{-1}"
+                     description="tangent component of gradient of hydropotential" />
+                <var name="gradMagPhiBaseEdge" type="real" dimensions="nEdges Time" units="Pa m^{-1}"
                      description="magnitude of the gradient of hydropotentialBase, on Edges" />
+                <var name="gradMagPhiEdge" type="real" dimensions="nEdges Time" units="Pa m^{-1}"
+                     description="magnitude of the gradient of hydropotential, on Edges" />
                 <var name="waterPressureSlopeNormal" type="real" dimensions="nEdges Time" units="Pa m^{-1}"
                      description="normal component of gradient of waterPressure in subglacial hydrology system" />
                 <var name="divergence" type="real" dimensions="nCells Time" units="m s^{-1}"
@@ -251,6 +259,8 @@
                      description="divergence due to channel flow in subglacial hydrology system" />
                 <var name="channelAreaChangeCell" type="real" dimensions="nCells Time" units="m s^{-1}"
                      description="change in channel area within each cell, averaged over cell area" />
+                <var name="channelMeltInputCell" type="real" dimensions="nCells Time" units="m s^{-1}"
+                     description="rate of channel melt production within each cell, averaged over cell area" />
                 <var name="channelDiffusivity" type="real" dimensions="nEdges Time" units="m^{2} s^{-1}"
                      description="diffusivity in channel in subglacial hydrology system" />
 
