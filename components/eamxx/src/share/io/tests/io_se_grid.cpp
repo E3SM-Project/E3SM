@@ -39,6 +39,7 @@ ekat::ParameterList get_in_params(const ekat::Comm& comm,
 
 TEST_CASE("se_grid_io")
 {
+  using strvec_t = std::vector<std::string>;
   ekat::Comm io_comm(MPI_COMM_WORLD);
 
   int num_my_elems = 2;
@@ -58,8 +59,15 @@ TEST_CASE("se_grid_io")
 
   auto fm0 = get_test_fm(grid,t0,true);
   ekat::ParameterList params;
-  ekat::parse_yaml_file("io_test_se_grid.yaml",params);
+  params.set<std::string>("filename_prefix","io_se_grid");
+  params.set<std::string>("Averaging Type","Instant");
+  params.set<int>("Max Snapshots Per File",1);
+  params.set<strvec_t>("Field Names",{"field_1","field_2","field_3","field_packed"});
   params.set<std::string>("Floating Point Precision","real");
+  auto& ctl_pl = params.sublist("output_control");
+  ctl_pl.set("MPI Ranks in Filename",true);
+  ctl_pl.set("Frequency",1);
+  ctl_pl.set<std::string>("frequency_units","nsteps");
 
   OutputManager om;
   om.setup(io_comm,params,fm0,gm,t0,t0,false);
@@ -164,7 +172,7 @@ ekat::ParameterList get_in_params(const ekat::Comm& comm,
   using vos_type = std::vector<std::string>;
   ekat::ParameterList in_params("Input Parameters");
 
-  std::string filename = "io_test_se_grid.INSTANT.nsteps_x1.np"
+  std::string filename = "io_se_grid.INSTANT.nsteps_x1.np"
                        + std::to_string(comm.size())
                        + "." + t0.to_string() + ".nc";
 

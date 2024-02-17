@@ -36,8 +36,7 @@ CreateUnitTest(io_diags "io_diags.cpp"
 )
 
 # Test output on SE grid
-configure_file(io_test_se_grid.yaml io_test_se_grid.yaml)
-CreateUnitTest(io_test_se_grid "io_se_grid.cpp"
+CreateUnitTest(io_se_grid "io_se_grid.cpp"
   LIBS scream_io LABELS io
   MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
 )
