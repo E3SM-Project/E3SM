@@ -454,7 +454,7 @@ contains
 
                ! Area-weighted flotation fraction for grounded ice
                if (li_mask_is_grounded_ice(cellMask(iCell))) then
-                   blockSumFlotationFraction = blockSumFlotationFraction + ( waterPressure(iCell) / rhow / gravity / thickness(iCell) ) * areaCell(iCell)
+                   blockSumFlotationFraction = blockSumFlotationFraction + ( waterPressure(iCell) / rhoi / gravity / thickness(iCell) ) * areaCell(iCell)
                endif
             endif
 
