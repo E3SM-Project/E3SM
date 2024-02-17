@@ -243,6 +243,7 @@ TEST_CASE("io_remap_test","io_remap_test")
   om_source.setup(io_comm,source_remap_control,field_manager,gm,t0,t0,false);
   io_comm.barrier();
   om_source.run(t0);
+  om_source.finalize();
   print ("    -> source data ... done\n",io_comm);
 
   print ("    -> vertical remap ... \n",io_comm);
@@ -250,6 +251,7 @@ TEST_CASE("io_remap_test","io_remap_test")
   om_vert.setup(io_comm,vert_remap_control,field_manager,gm,t0,t0,false);
   io_comm.barrier();
   om_vert.run(t0);
+  om_vert.finalize();
   print ("    -> vertical remap ... done\n",io_comm);
 
   print ("    -> horizontal remap ... \n",io_comm);
@@ -257,6 +259,7 @@ TEST_CASE("io_remap_test","io_remap_test")
   om_horiz.setup(io_comm,horiz_remap_control,field_manager,gm,t0,t0,false);
   io_comm.barrier();
   om_horiz.run(t0);
+  om_horiz.finalize();
   print ("    -> horizontal remap ... done\n",io_comm);
 
   print ("    -> vertical-horizontal remap ... \n",io_comm);
@@ -264,6 +267,7 @@ TEST_CASE("io_remap_test","io_remap_test")
   om_vert_horiz.setup(io_comm,vert_horiz_remap_control,field_manager,gm,t0,t0,false);
   io_comm.barrier();
   om_vert_horiz.run(t0);
+  om_vert_horiz.finalize();
   print ("    -> vertical-horizontal remap ... done\n",io_comm);
   print (" -> Create output ... done\n",io_comm);
 
