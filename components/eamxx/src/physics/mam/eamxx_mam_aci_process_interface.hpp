@@ -15,8 +15,6 @@ namespace scream
 
 class MAMAci final : public scream::AtmosphereProcess {
 
-public:
-
   using KT = ekat::KokkosTypes<DefaultDevice>;
 
   mam4::NucleateIce nucleate_ice_;
@@ -33,10 +31,10 @@ public:
   template <typename Scalar, typename MemoryTraits = Kokkos::MemoryManaged>
   using view_4d = KT::view<Scalar****,MemoryTraits>;
 
+//FIXME:B: Should the following variables be public? They are like that in micriphysics and optics codes
   // FIXME the time step for microphysics [s] need to get from the input
   const Real dtmicro_ = .0001;
 
-private:
   // rho is air density [kg/m3]
   view_2d rho_;
 
@@ -49,7 +47,6 @@ private:
   view_2d aitken_dry_dia_;
 
   view_2d cld_aero_mmr_[mam_coupling::num_aero_modes()][mam_coupling::num_aero_species()];
-  mam_coupling::AerosolState aerosol_state_;
 
   mam_coupling::WetAtmosphere wet_atmosphere_;
 
@@ -129,6 +126,10 @@ public:
   // grid
   void set_grids(const std::shared_ptr<const GridsManager> grids_manager) override;
 
+  // management of common atm process memory
+  size_t requested_buffer_size_in_bytes() const override;
+  void init_buffers(const ATMBufferManager &buffer_manager) override;
+
   // process behavior
   void initialize_impl(const RunType run_type) override;
   void run_impl(const double dt) override;
@@ -145,14 +146,50 @@ public:
   // This functor implements this step, which is called during run_impl.
   struct Preprocess {
     Preprocess() = default;
-    // assigns local variables
-    void set_variables(const const_view_2d &pdel) {
-    } // set_variables
+    // on host: initializes preprocess functor with necessary state data
+    void initialize(const int ncol, const int nlev,
+                    const mam_coupling::WetAtmosphere& wet_atm,
+                    const mam_coupling::AerosolState& wet_aero,
+                    const mam_coupling::DryAtmosphere& dry_atm,
+                    const mam_coupling::AerosolState& dry_aero) {
+                      
+      ncol_pre_     = ncol;
+      nlev_pre_     = nlev;
+      wet_atm_pre_  = wet_atm;
+      wet_aero_pre_ = wet_aero;
+      dry_atm_pre_  = dry_atm;
+      dry_aero_pre_ = dry_aero;
+    }
+
+    KOKKOS_INLINE_FUNCTION
+    void operator()(
+        const Kokkos::TeamPolicy<KT::ExeSpace>::member_type &team) const {
+      const int i = team.league_rank();  // column index
+
+      compute_dry_mixing_ratios(team, wet_atm_pre_, dry_atm_pre_, i);
+      compute_dry_mixing_ratios(team, wet_atm_pre_, wet_aero_pre_, dry_aero_pre_, i);
+      team.team_barrier();
+    }  // operator()
+
+    // local variables for preprocess struct
+    // number of horizontal columns and vertical levels
+    int ncol_pre_, nlev_pre_;
+
+    // local atmospheric and aerosol state data
+    mam_coupling::WetAtmosphere wet_atm_pre_;
+    mam_coupling::DryAtmosphere dry_atm_pre_;
+    mam_coupling::AerosolState  wet_aero_pre_, dry_aero_pre_;
   }; // MAMAci::Preprocess
 
 
   // pre- and postprocessing scratch pads
   Preprocess preprocess_;
+
+  // aerosol state variables
+  mam_coupling::AerosolState  wet_aero_, dry_aero_;
+
+  // workspace manager for internal local variables
+  mam_coupling::Buffer buffer_;
 
   // physics grid for column information
   std::shared_ptr<const AbstractGrid> grid_;

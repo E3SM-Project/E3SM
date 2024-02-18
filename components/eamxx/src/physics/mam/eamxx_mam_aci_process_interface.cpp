@@ -629,7 +629,7 @@ void copy_mam4xx_array_to_scream(
 void call_hetfrz_compute_tendencies(
   haero::ThreadTeamPolicy team_policy, 
   mam4::Hetfrz &hetfrz_,
-  mam_coupling::AerosolState &aerosol_state_,
+  mam_coupling::AerosolState &dry_aero_,
   mam_coupling::WetAtmosphere &wet_atmosphere_,
   mam_coupling::DryAtmosphere &dry_atmosphere_,
   MAMAci::view_2d stratiform_cloud_fraction,
@@ -647,7 +647,7 @@ void call_hetfrz_compute_tendencies(
   view_1d dummy("DummyView", nlev);
 
   mam4::Hetfrz hetfrz = hetfrz_;
-  mam_coupling::AerosolState  aerosol_state =   aerosol_state_;
+  mam_coupling::AerosolState  aerosol_state =   dry_aero_;
   mam_coupling::WetAtmosphere wet_atmosphere =  wet_atmosphere_;
   mam_coupling::DryAtmosphere dry_atmosphere =  dry_atmosphere_;
   MAMAci::view_2d diagnostic_scratch[42];
@@ -816,9 +816,11 @@ void MAMAci::set_grids(const std::shared_ptr<const GridsManager> grids_manager) 
   n_unit.set_string("#/kg");
   auto nondim = ekat::units::Units::nondimensional();
   // atmospheric quantities
+  add_field<Required>("qv",             scalar3d_layout_mid, q_unit, grid_name, "tracers"); // specific humidity [kg/kg]
   add_field<Required>("qc",             scalar3d_layout_mid, q_unit, grid_name, "tracers"); // cloud liquid mass mixing ratio [kg/kg]
   add_field<Required>("qi",             scalar3d_layout_mid, q_unit, grid_name, "tracers"); // cloud ice mass mixing ratio [kg/kg]
   add_field<Required>("nc",             scalar3d_layout_mid, n_unit, grid_name, "tracers");// cloud liquid number mixing ratio [1/kg]
+  add_field<Required>("ni",             scalar3d_layout_mid, n_unit, grid_name, "tracers");// cloud ice number mixing ratio [1/kg]
   add_field<Required>("T_mid",          scalar3d_layout_mid, K,      grid_name); // Temperature[K] at midpoints
   add_field<Required>("omega",          scalar3d_layout_mid, Pa/s,   grid_name); // Vertical pressure velocity [Pa/s] at midpoints
   add_field<Required>("p_mid",          scalar3d_layout_mid, Pa,     grid_name); // Total pressure [Pa] at midpoints
@@ -932,6 +934,21 @@ void MAMAci::set_grids(const std::shared_ptr<const GridsManager> grids_manager) 
 
 }
 
+size_t MAMAci::requested_buffer_size_in_bytes() const
+{
+  return mam_coupling::buffer_size(ncol_, nlev_);
+}
+
+void MAMAci::init_buffers(const ATMBufferManager &buffer_manager) {
+  EKAT_REQUIRE_MSG(buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(),
+                   "Error! Insufficient buffer size.\n");
+
+  size_t used_mem = mam_coupling::init_buffer(buffer_manager, ncol_, nlev_, buffer_);
+  EKAT_REQUIRE_MSG(used_mem==requested_buffer_size_in_bytes(),
+                   "Error! Used memory != requested memory for MAMMicrophysics.");
+}
+
+
 void MAMAci::initialize_impl(const RunType run_type) {
   m_atm_logger->log(ekat::logger::LogLevel::info,"Calling ACI init");
 
@@ -963,15 +980,20 @@ void MAMAci::initialize_impl(const RunType run_type) {
   liqcldf_ = get_field_in("liq_strat_cld_frac").get_view<const Real**>();
   kvh_ =  get_field_in("kvh").get_view<const Real**>();
 
+  wet_atmosphere_.qv =  get_field_in("qv").get_view<const Real**>();
   wet_atmosphere_.qc =  get_field_in("qc").get_view<const Real**>();
   wet_atmosphere_.nc =  get_field_in("nc").get_view<const Real**>();
   wet_atmosphere_.qi =  get_field_in("qi").get_view<const Real**>();
+  wet_atmosphere_.ni =  get_field_in("ni").get_view<const Real**>();
   wet_atmosphere_.omega = get_field_in("omega").get_view<const Real**>();
 
   dry_atmosphere_.T_mid = get_field_in("T_mid").get_view<const Real**>();
   dry_atmosphere_.p_mid = get_field_in("p_mid").get_view<const Real**>();
-  dry_atmosphere_.qv = get_field_out("qv").get_view<Real**>();
-  dry_atmosphere_.z_mid =  get_field_out("z_mid").get_view<Real**>();
+  dry_atmosphere_.qv        = buffer_.qv_dry;
+  dry_atmosphere_.qc        = buffer_.qc_dry;
+  dry_atmosphere_.nc        = buffer_.nc_dry;
+  dry_atmosphere_.qi        = buffer_.qi_dry;
+  dry_atmosphere_.ni        = buffer_.ni_dry;
   dry_atmosphere_.cldfrac = get_field_in("cldfrac_tot").get_view<const Real**>();
   dry_atmosphere_.w_updraft = get_field_out("w_updraft").get_view<Real**>(); 
 
@@ -994,31 +1016,37 @@ void MAMAci::initialize_impl(const RunType run_type) {
     };
     //interstitial aerosol tracers of interest: number (n) mixing ratios
     const char* int_nmr_field_name = mam_coupling::int_aero_nmr_field_name(m);
-    aerosol_state_.int_aero_nmr[m] = get_field_out(int_nmr_field_name).get_view<Real**>();
+    wet_aero_.int_aero_nmr[m] = get_field_out(int_nmr_field_name).get_view<Real**>();
+    dry_aero_.int_aero_nmr[m] = buffer_.dry_int_aero_nmr[m];
 
     //cloudborne aerosol tracers of interest: number (n) mixing ratios
     const char* cld_nmr_field_name = mam_coupling::cld_aero_nmr_field_name(m);
-    aerosol_state_.cld_aero_nmr[m] = get_field_out(cld_nmr_field_name).get_view<Real**>();
+    wet_aero_.cld_aero_nmr[m] = get_field_out(cld_nmr_field_name).get_view<Real**>();
+    dry_aero_.cld_aero_nmr[m] = buffer_.dry_cld_aero_nmr[m];
 
     for (int a = 0; a < mam_coupling::num_aero_species(); ++a) {
       // (interstitial) aerosol tracers of interest: mass (q) mixing ratios
       const char* int_mmr_field_name = mam_coupling::int_aero_mmr_field_name(m, a);
       if (strlen(int_mmr_field_name) > 0) {
         const int index = prog_index(m, a);
-        aerosol_state_.int_aero_mmr[m][index] = get_field_out(int_mmr_field_name).get_view<Real**>();
+        wet_aero_.int_aero_mmr[m][a] = get_field_out(int_mmr_field_name).get_view<Real**>();
+        std::cout<<"BALLI:-----"<<m<<"  "<<a<<"  "<<index<<" "<<wet_aero_.int_aero_mmr[m][a](0,0)<<std::endl;
+        dry_aero_.int_aero_mmr[m][a] = buffer_.dry_int_aero_mmr[m][a];
       }
       
       // (cloudborne) aerosol tracers of interest: mass (q) mixing ratios
       const char* cld_mmr_field_name = mam_coupling::cld_aero_mmr_field_name(m, a);
       if (strlen(cld_mmr_field_name) > 0) {
         const int index = prog_index(m, a);
-        aerosol_state_.cld_aero_mmr[m][index] = get_field_out(cld_mmr_field_name).get_view<Real**>();
+        wet_aero_.cld_aero_mmr[m][a] = get_field_out(cld_mmr_field_name).get_view<Real**>();
+        dry_aero_.cld_aero_mmr[m][a] = buffer_.dry_cld_aero_mmr[m][a];
       }
     }
   }
   for (int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
     const char* gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
-    aerosol_state_.gas_mmr[g] = get_field_out(gas_mmr_field_name).get_view<Real**>();
+    wet_aero_.gas_mmr[g] = get_field_out(gas_mmr_field_name).get_view<Real**>();
+    dry_aero_.gas_mmr[g] = buffer_.dry_gas_mmr[g];
   }
 
   for (int i=0; i<mam4::ndrop::ncnst_tot; ++i) {
@@ -1054,10 +1082,20 @@ void MAMAci::initialize_impl(const RunType run_type) {
   // configure the heterogeneous freezing parameterization
   mam4::Hetfrz::Config hetfrz_config;
   hetfrz_.init(aero_config, hetfrz_config);
+
+  // set up our preprocess functor
+  preprocess_.initialize(ncol_, nlev_, wet_atmosphere_, wet_aero_, dry_atmosphere_, dry_aero_);
 }
 
 void MAMAci::run_impl(const double dt) {
   m_atm_logger->log(ekat::logger::LogLevel::info,"calling ACI run");
+
+  const auto scan_policy = ekat::ExeSpaceUtils<
+      KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
+
+  // preprocess input -- needs a scan for the calculation of atm height
+  Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
+  Kokkos::fence();
 
   haero::ThreadTeamPolicy team_policy(ncol_, Kokkos::AUTO);
 
@@ -1081,7 +1119,7 @@ void MAMAci::run_impl(const double dt) {
 
   compute_nucleate_ice_tendencies(nucleate_ice_, team_policy, 
     nihf_, niim_, nidep_, nimey_, naai_hom_, naai_, 
-    aerosol_state_, dry_atmosphere_, aitken_dry_dia_, nlev_);
+    dry_aero_, dry_atmosphere_, aitken_dry_dia_, nlev_);
 
   store_liquid_cloud_fraction(team_policy, cloud_frac_new_, cloud_frac_old_, wet_atmosphere_, liqcldf_, top_lev_);
 
@@ -1105,7 +1143,7 @@ void MAMAci::run_impl(const double dt) {
 
   compute_recipical_pseudo_density(team_policy, rpdel_, pdel_, nlev_);
   Kokkos::fence(); // wait for rpdel_ to be computed.
-
+#if 0
   call_function_dropmixnuc(team_policy, dry_atmosphere_, dtmicro_,
       raercol_cw_, raercol_, qqcw_, ptend_q_, coltend_, coltend_cw_, 
       p_int_, pdel_, rpdel_, state_q_, ncldwtr_, kvh_, qcld_, wsub_,
@@ -1118,7 +1156,7 @@ void MAMAci::run_impl(const double dt) {
   copy_mam4xx_array_to_scream<mam4::ndrop::ncnst_tot   >(team_policy, coltend_cw_outp_, coltend_cw_, nlev_);
 
   call_hetfrz_compute_tendencies(team_policy, 
-    hetfrz_, aerosol_state_, wet_atmosphere_, dry_atmosphere_,
+    hetfrz_, dry_aero_, wet_atmosphere_, dry_atmosphere_,
     stratiform_cloud_fraction_,
     activation_fraction_accum_idx_, activation_fraction_coarse_idx_,
     hetfrz_immersion_nucleation_tend_, hetfrz_contact_nucleation_tend_, hetfrz_depostion_nucleation_tend_,
@@ -1127,6 +1165,7 @@ void MAMAci::run_impl(const double dt) {
     nlev_);
 
   Kokkos::fence(); // wait before returning to calling function
+#endif
 }
 
 void MAMAci::finalize_impl(){
