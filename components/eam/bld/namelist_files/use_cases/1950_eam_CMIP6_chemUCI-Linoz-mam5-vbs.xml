@@ -32,7 +32,7 @@
 <ext_frc_cycle_yr     >1950</ext_frc_cycle_yr>
 <no2_ext_file         >atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_NO2_aircraft_vertical_1750-2015_1.9x2.5_c20170608.nc </no2_ext_file>
 <!--  Use 1850-2014 averaged volcanic SO2 emission for 1950 -->
-<so2_ext_file         >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_1850_2014_avg_so2_elev_strat_1950_c20230310.nc </so2_ext_file>
+<so2_ext_file         >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/so2_elev_strat_1950.nc</so2_ext_file>
 <soag0_ext_file       >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/emissions-cmip6_e3sm_SOAG0_elev_1850-2014_1.9x2.5_c20230201.nc </soag0_ext_file>
 <bc_a4_ext_file       >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_bc_a4_elev_1850-2014_c180205.nc </bc_a4_ext_file>
 <mam7_num_a1_ext_file >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a1_elev_1850-2014_c180205.nc </mam7_num_a1_ext_file>
