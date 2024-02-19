@@ -602,12 +602,11 @@ _TESTS = {
             )
     },
 
+    # Used to track performance
     "e3sm_scream_v1_hires" : {
-        "time"  : "03:00:00",
+        "time"  : "01:00:00",
         "tests" : (
-            "SMS_D_Ln12.ne120_r0125_oRRS18to6v3.F2010-SCREAMv1",
-            "SMS_Ln12.ne120_ne120.F2010-SCREAMv1",
-#            "SMS_Ln12.ne120_r0125_oRRS18to6v3.F2000-SCREAMv1-AQP1", add when aquap 120 inputs available
+            "SMS_Ln90.ne30pg2_ne30pg2.F2010-SCREAMv1.scream-perf_test"
             )
     },
 
