@@ -14,7 +14,9 @@ DOI: [10.11578/E3SM/dc.20230110.5](http://dx.doi.org/10.11578/E3SM/dc.20230110.5
 Please visit the [project website](https://e3sm.org) or our [Confluence site](https://acme-climate.atlassian.net/wiki/spaces/DOC/overview)
 for further details.
 
-For questions about the model, use [Github Discussions](https://github.com/E3SM-Project/E3SM/discussions)
+For questions about the model, use [Github Discussions](https://github.com/E3SM-Project/E3SM/discussions).
+
+See our Github-hosted documentation at [https://e3sm-project.github.io/E3SM/](https://e3sm-project.github.io/E3SM/).
 
 Table of Contents 
 --------------------------------------------------------------------------------
