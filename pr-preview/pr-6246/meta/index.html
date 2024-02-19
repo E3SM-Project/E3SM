@@ -1676,18 +1676,19 @@
 
 <span class="nt">nav</span><span class="p">:</span>
 <span class="w"> </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Introduction</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;index.md&#39;</span>
-<span class="w"> </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Users&#39;s Guide</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">user-guide/index.md</span>
-<span class="w"> </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Developers&#39;s Guide</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dev-guide/index.md</span>
-<span class="w"> </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Technical Guide</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tech-guide/index.md</span>
+<span class="w"> </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Users Guide</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;user-guide/index.md&#39;</span>
+<span class="w"> </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Developer Guide</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;dev-guide/index.md&#39;</span>
+<span class="w"> </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Technical Guide</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;tech-guide/index.md&#39;</span>
 </code></pre></div>
 <p>The "site_name" is the keyword used in the <code>E3SM/docs/index.md</code> file to reference all the model's documentation. (That file must be edited when adding a new model’s documentation.)</p>
 <p>All other files should be stored under <code>E3SM/components/&lt;model&gt;/docs</code></p>
 <p>The basic structure under "docs" is</p>
-<div class="highlight"><pre><span></span><code>index.md<span class="w"> </span>-<span class="w"> </span>top<span class="w"> </span>level<span class="w"> </span>introductory<span class="w"> </span>text<span class="w"> </span>and<span class="w"> </span>links<span class="w"> </span>to<span class="w"> </span>main<span class="w"> </span>sections
-dev-guide/<span class="w"> </span>-<span class="w"> </span>subdir<span class="w"> </span><span class="k">for</span><span class="w"> </span>development<span class="w"> </span>guide
-tech-guide/<span class="w"> </span>-<span class="w"> </span>subidr<span class="w"> </span><span class="k">for</span><span class="w"> </span>technical<span class="w"> </span>guide
-user-guide/<span class="w"> </span>-<span class="w"> </span>subdir<span class="w"> </span><span class="k">for</span><span class="w"> </span>user<span class="w"> </span>guide
-</code></pre></div>
+<ul>
+<li><code>index.md</code>: top level introductory text and links to main sections</li>
+<li><code>dev-guide/</code>: subdir for development guide</li>
+<li><code>tech-guide/</code>: subidr for technical guide</li>
+<li><code>user-guide/</code>: subdir for user guide</li>
+</ul>
 <p>Each of the sub-dirs should also have an <code>index.md</code> file to organize their content.</p>
 <h2 id="files-and-sections">Files and sections</h2>
 <p>A subsection of your documentation should be contained entirely in a single file. Short sections can be grouped in to one file.</p>
