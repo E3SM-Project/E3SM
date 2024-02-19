@@ -285,8 +285,10 @@ void ElementsState::randomize(const int seed,
   auto dp = m_dp3d;
   auto ps = m_ps_v;
   auto ps0 = hvcoord.ps0;
-  auto hybrid_am = hvcoord.hybrid_am; 
-  auto hybrid_bm = hvcoord.hybrid_bm; 
+  auto hyai = hvcoord.hybrid_ai_packed;
+  auto hybi = hvcoord.hybrid_bi_packed;
+  auto hyai_delta = hvcoord.hybrid_ai_delta;
+  auto hybi_delta = hvcoord.hybrid_bi_delta;
   const auto tu = m_tu;
   Kokkos::parallel_for(m_policy, KOKKOS_LAMBDA(const TeamMember& team) {
     KernelVariables kv(team, tu);
@@ -297,10 +299,13 @@ void ElementsState::randomize(const int seed,
                          [&](const int idx) {
       const int igp  = idx / NP;
       const int jgp  = idx % NP;
+      ColumnOps::compute_midpoint_delta(kv,hyai,hyai_delta);
+      ColumnOps::compute_midpoint_delta(kv,hybi,hybi_delta);
+      team.team_barrier();
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                            [&](const int ilev) {
-        dp(ie,tl,igp,jgp,ilev) = ps0*hybrid_am(ilev)
-                               + ps(ie,tl,igp,jgp)*hybrid_bm(ilev);
+        dp(ie,tl,igp,jgp,ilev) = ps0*hyai_delta(ilev)
+                               + ps(ie,tl,igp,jgp)*hybi_delta(ilev);
       });
     });
   });
