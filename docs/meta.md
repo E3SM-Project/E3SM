@@ -59,9 +59,9 @@ site_name: EAM
 
 nav:
  - Introduction: 'index.md'
- - Users's Guide: user-guide/index.md
- - Developers's Guide: dev-guide/index.md
- - Technical Guide: tech-guide/index.md
+ - Users Guide: 'user-guide/index.md'
+ - Developer Guide: 'dev-guide/index.md'
+ - Technical Guide: 'tech-guide/index.md'
 ```
 
 The "site_name" is the keyword used in the `E3SM/docs/index.md` file to reference all the model's documentation. (That file must be edited when adding a new model’s documentation.)
@@ -70,12 +70,10 @@ All other files should be stored under `E3SM/components/<model>/docs`
 
 The basic structure under "docs" is
 
-```shell
-index.md - top level introductory text and links to main sections
-dev-guide/ - subdir for development guide
-tech-guide/ - subidr for technical guide
-user-guide/ - subdir for user guide
-```
+- `index.md`: top level introductory text and links to main sections
+- `dev-guide/`: subdir for development guide
+- `tech-guide/`: subidr for technical guide
+- `user-guide/`: subdir for user guide
 
 Each of the sub-dirs should also have an `index.md` file to organize their content.
 
