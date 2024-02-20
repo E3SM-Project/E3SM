@@ -2666,6 +2666,64 @@ contains
        units    = 'deg'
        attname  = 'Sw_Dp'
        call metadata_set(attname, longname, stdname, units)
+    
+       call seq_flds_add(w2x_fluxes,'Faww_Tawx')
+       call seq_flds_add(x2o_fluxes,'Faww_Tawx')
+       longname = 'Zonal wave supported stress'
+       stdname  = 'Zonal_wave_supported_stress'
+       units    = 'N m-2'
+       attname  = 'Faww_Tawx'
+       call metadata_set(attname, longname, stdname, units)
+
+       call seq_flds_add(w2x_fluxes,'Faww_Tawy')
+       call seq_flds_add(x2o_fluxes,'Faww_Tawy')
+       longname = 'Meridional wave supported wind stress'
+       stdname  = 'Meridional_wave_supported_wind_stress'
+       units    = 'N m-2'
+       attname  = 'Faww_Tawy'
+       call metadata_set(attname, longname, stdname, units)
+
+       call seq_flds_add(w2x_fluxes,'Fwow_Twox')
+       call seq_flds_add(x2o_fluxes,'Fwow_Twox')
+       longname = 'Zonal wave to ocean wind stress'
+       stdname  = 'Zonal_wave_to_ocean_wind_stress'
+       units    = 'N m-2'
+       attname  = 'Fwow_Twox'
+       call metadata_set(attname, longname, stdname, units)
+
+       call seq_flds_add(w2x_fluxes,'Fwow_Twoy')
+       call seq_flds_add(x2o_fluxes,'Fwow_Twoy')
+       longname = 'Meridional wave to ocean wind stress'
+       stdname  = 'Meridional_wave_to_ocean_wind_stress'
+       units    = 'N m-2'
+       attname  = 'Fwow_Twoy'
+       call metadata_set(attname, longname, stdname, units)
+
+       call seq_flds_add(w2x_fluxes,'Faow_Tocx')
+       call seq_flds_add(x2o_fluxes,'Faow_Tocx')
+       longname = 'Zonal Net ocean wind stress by wave model'
+       stdname  = 'Zonal_net_ocean_wind_stress_wavemodel'
+       units    = 'N m-2'
+       attname  = 'Faow_Tocx'
+       call metadata_set(attname, longname, stdname, units)
+
+       call seq_flds_add(w2x_fluxes,'Faow_Tocy')
+       call seq_flds_add(x2o_fluxes,'Faow_Tocy')
+       longname = 'Meridional Net ocean wind stress by wave model'
+       stdname  = 'Meridional_net_ocean_wind_stress_wavemodel'
+       units    = 'N m-2'
+       attname  = 'Faow_Tocy'
+       call metadata_set(attname, longname, stdname, units)
+    endif
+
+    if (wav_ocn_coup == 'twoway') then
+       call seq_flds_add(w2x_states,'Sw_Charn')
+       call seq_flds_add(x2o_states,'Sw_Charn')
+       longname = 'Charnock coefficent based on sea state'
+       stdname  = 'Charnock_coefficent_based_on_sea_state'
+       units    = ''
+       attname  = 'Sw_Charn'
+       call metadata_set(attname, longname, stdname, units)
     endif
 
     !----------------------------
