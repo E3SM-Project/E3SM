@@ -36,6 +36,13 @@ module ww3_cpl_indices
   integer :: index_w2x_Sw_Hs
   integer :: index_w2x_Sw_Fp
   integer :: index_w2x_Sw_Dp
+  integer :: index_w2x_Sw_Charn    
+  integer :: index_w2x_Faww_Tawx     
+  integer :: index_w2x_Faww_Tawy
+  integer :: index_w2x_Fwow_Twox     
+  integer :: index_w2x_Fwow_Twoy
+  integer :: index_w2x_Faow_Tocx    
+  integer :: index_w2x_Faow_Tocy
 
 contains
 
@@ -67,7 +74,6 @@ contains
        index_w2x_Sw_Hs = mct_avect_indexra(w2x,'Sw_Hs') ! Significant wave height
        index_w2x_Sw_Fp = mct_avect_indexra(w2x,'Sw_Fp') ! Peak wave freqency  
        index_w2x_Sw_Dp = mct_avect_indexra(w2x,'Sw_Dp') ! Peak wave direction
-
        index_w2x_Sw_ustokes_wavenumber_1 = mct_avect_indexra(w2x,'Sw_ustokes_wavenumber_1') ! partitioned Stokes drift u 1
        index_w2x_Sw_vstokes_wavenumber_1 = mct_avect_indexra(w2x,'Sw_vstokes_wavenumber_1') ! partitioned Stokes drift v 1
        index_w2x_Sw_ustokes_wavenumber_2 = mct_avect_indexra(w2x,'Sw_ustokes_wavenumber_2') ! partitioned Stokes drift u 2
@@ -80,6 +86,13 @@ contains
        index_w2x_Sw_vstokes_wavenumber_5 = mct_avect_indexra(w2x,'Sw_vstokes_wavenumber_5') ! partitioned Stokes drift v 5
        index_w2x_Sw_ustokes_wavenumber_6 = mct_avect_indexra(w2x,'Sw_ustokes_wavenumber_6') ! partitioned Stokes drift u 6
        index_w2x_Sw_vstokes_wavenumber_6 = mct_avect_indexra(w2x,'Sw_vstokes_wavenumber_6') ! partitioned Stokes drift v 6
+       index_w2x_Sw_Charn     = mct_avect_indexra(w2x,'Sw_Charn') ! Charnock coeff accounting for the wave stress (Janssen 1989, 1991)
+       index_w2x_Faww_Tawx    = mct_avect_indexra(w2x,'Faww_Tawx')  ! Zonal Wave supported stress (Stress from atmosphere to waves)
+       index_w2x_Faww_Tawy    = mct_avect_indexra(w2x,'Faww_Tawy')  ! Meridional Wave supported stress (Stress from atmosphere to waves)
+       index_w2x_Fwow_Twox    = mct_avect_indexra(w2x,'Fwow_Twox')  ! Zonal Wave to ocean stress (Not total ocean momentum stress )
+       index_w2x_Fwow_Twoy    = mct_avect_indexra(w2x,'Fwow_Twoy')  ! MeridionalWave to ocean stress (Not total ocean momentum stress)
+       index_w2x_Faow_Tocx   = mct_avect_indexra(w2x,'Faow_Tocx')  ! Zonal Net ocean stress (total ocean momentum stress )
+       index_w2x_Faow_Tocy   = mct_avect_indexra(w2x,'Faow_Tocy')  !Meridional Net ocean stress (total ocean momentum stress)
     endif
     call mct_aVect_clean(x2w)
     call mct_aVect_clean(w2x)
