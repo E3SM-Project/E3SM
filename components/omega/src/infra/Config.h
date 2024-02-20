@@ -127,6 +127,42 @@ class Config {
            std::string &Value         ///< [out] value of the variable
    );
 
+   /// Retrieves a vector of 4-byte integer values from the Config by name
+   /// Returns a non-zero error code if the variable does not exist
+   int get(const std::string VarName, ///< [in] name of vector to get
+           std::vector<I4> &Values    ///< [out] vector of values to retrieve
+   );
+
+   /// Retrieves a vector of 8-byte integer values from the Config by name
+   /// Returns a non-zero error code if the variable does not exist
+   int get(const std::string VarName, ///< [in] name of vector to get
+           std::vector<I8> &Values    ///< [out] vector of values to retrieve
+   );
+
+   /// Retrieves a vector of 4-byte real values from the Config by name
+   /// Returns a non-zero error code if the variable does not exist
+   int get(const std::string VarName, ///< [in] name of vector to get
+           std::vector<R4> &Values    ///< [out] vector of values to retrieve
+   );
+
+   /// Retrieves a vector of 8-byte real values from the Config by name
+   /// Returns a non-zero error code if the variable does not exist
+   int get(const std::string VarName, ///< [in] name of vector to get
+           std::vector<R8> &Values    ///< [out] vector of values to retrieve
+   );
+
+   /// Retrieves a vector of logical/boolean values from the Config by name
+   /// Returns a non-zero error code if the variable does not exist
+   int get(const std::string VarName, ///< [in] name of vector to get
+           std::vector<bool> &Values  ///< [out] vector of values to retrieve
+   );
+
+   /// Retrieves a list of strings from the Config based on name
+   /// Returns a non-zero error code if the variable does not exist
+   int get(const std::string VarName,       ///< [in] name of list to get
+           std::vector<std::string> &Values ///< [out] list of strings
+   );
+
    // Set functions
    // -------------
 
@@ -164,6 +200,42 @@ class Config {
    /// Returns a non-zero error code if variable is not found.
    int set(const std::string VarName, ///< [in] name of variable to set
            const std::string Value    ///< [in] value of the variable
+   );
+
+   /// Resets the value of a vector in the config
+   /// Returns a non-zero error code if variable is not found.
+   int set(const std::string VarName, ///< [in] name of vector to set
+           std::vector<I4> Vector     ///< [in] vector to reset
+   );
+
+   /// Resets the value of a vector in the config
+   /// Returns a non-zero error code if variable is not found.
+   int set(const std::string VarName, ///< [in] name of vector to set
+           std::vector<I8> Vector     ///< [in] vector to reset
+   );
+
+   /// Resets the value of a vector in the config
+   /// Returns a non-zero error code if variable is not found.
+   int set(const std::string VarName, ///< [in] name of vector to set
+           std::vector<R4> Vector     ///< [in] vector to reset
+   );
+
+   /// Resets the value of a vector in the config
+   /// Returns a non-zero error code if variable is not found.
+   int set(const std::string VarName, ///< [in] name of vector to set
+           std::vector<R8> Vector     ///< [in] vector to reset
+   );
+
+   /// Resets the value of a vector in the config
+   /// Returns a non-zero error code if variable is not found.
+   int set(const std::string VarName, ///< [in] name of vector to set
+           std::vector<bool> Vector   ///< [in] vector to reset
+   );
+
+   /// Resets the value of a list in the config
+   /// Returns a non-zero error code if variable is not found.
+   int set(const std::string VarName,          ///< [in] name of list to set
+           const std::vector<std::string> List ///< [in] list to reset
    );
 
    // Add functions
@@ -208,6 +280,42 @@ class Config {
    /// Returns a non-zero error code if variable already exists
    int add(const std::string VarName, ///< [in] name of variable to add
            const std::string Value    ///< [in] value of the variable
+   );
+
+   /// Adds a new vector to a configuration
+   /// Returns a non-zero error code if variable already exists
+   int add(const std::string VarName,   ///< [in] name of vector to add
+           const std::vector<I4> Values ///< [in] vector to be added
+   );
+
+   /// Adds a new vector to a configuration
+   /// Returns a non-zero error code if variable already exists
+   int add(const std::string VarName,   ///< [in] name of vector to add
+           const std::vector<I8> Values ///< [in] vector to be added
+   );
+
+   /// Adds a new vector to a configuration
+   /// Returns a non-zero error code if variable already exists
+   int add(const std::string VarName,   ///< [in] name of vector to add
+           const std::vector<R4> Values ///< [in] vector to be added
+   );
+
+   /// Adds a new vector to a configuration
+   /// Returns a non-zero error code if variable already exists
+   int add(const std::string VarName,   ///< [in] name of vector to add
+           const std::vector<R8> Values ///< [in] vector to be added
+   );
+
+   /// Adds a new vector to a configuration
+   /// Returns a non-zero error code if variable already exists
+   int add(const std::string VarName,     ///< [in] name of vector to add
+           const std::vector<bool> Values ///< [in] vector to be added
+   );
+
+   /// Adds a new list to a configuration
+   /// Returns a non-zero error code if variable already exists
+   int add(const std::string VarName,            ///< [in] name of list to add
+           const std::vector<std::string> Values ///< [in] list to be added
    );
 
    // Remove function

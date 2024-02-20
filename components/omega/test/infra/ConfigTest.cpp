@@ -63,6 +63,18 @@ int main(int argc, char *argv[]) {
    //     VmixR4: 6.0
    //     VmixR8: 9.9876543210;
    //     VmixStr: "VmixString"
+   //   VectorI4: [1, 2, 3, 4, 5]
+   //   VectorI8: [123456789, 234567890, 345678901, 456789012, 567890123]
+   //   VectorR4: [1.2345, 2.3456, 3.4567, 4.5678, 5.6789]
+   //   VectorR8: [1.23456789, 2.34567890, 3.45678901, 4.56789012, 5.67890123]
+   //   VectorLog: [true, false, true, false, true]
+   //   StrList:
+   //     - first
+   //     - second
+   //     - third
+   //     - fourth
+   //     - fifth
+   //
 
    bool RefHmixOn             = true;
    OMEGA::I4 RefHmixI4        = 3;
@@ -82,6 +94,16 @@ int main(int argc, char *argv[]) {
    OMEGA::R4 RefVmixR4        = 6.0;
    OMEGA::R8 RefVmixR8        = 9.9876543210;
    std::string RefVmixStr     = "VmixString";
+   int VecSize                = 5;
+   std::vector<OMEGA::I4> RefVecI4{1, 2, 3, 4, 5};
+   std::vector<OMEGA::I8> RefVecI8{123456789, 234567890, 345678901, 456789012,
+                                   567890123};
+   std::vector<OMEGA::R4> RefVecR4{1.2345, 2.3456, 3.4567, 4.5678, 5.6789};
+   std::vector<OMEGA::R8> RefVecR8{1.23456789, 2.34567890, 3.45678901,
+                                   4.56789012, 5.67890123};
+   std::vector<bool> RefVecLog{true, false, true, false, true};
+   std::vector<std::string> RefList{"first", "second", "third", "fourth",
+                                    "fifth"};
 
    // Build up a reference configuration
    OMEGA::Config ConfigOmegaAll("omegaroot");
@@ -156,6 +178,30 @@ int main(int argc, char *argv[]) {
    Err = ConfigOmegaRef.add(ConfigVmixRef);
    if (Err != 0)
       LOG_INFO("Config test {}: adding sub-config FAIL", MyTask);
+
+   Err = ConfigOmegaRef.add("VectorI4", RefVecI4);
+   if (Err != 0)
+      LOG_INFO("Config test {}: adding I4 vector FAIL", MyTask);
+
+   Err = ConfigOmegaRef.add("VectorI8", RefVecI8);
+   if (Err != 0)
+      LOG_INFO("Config test {}: adding I8 vector FAIL", MyTask);
+
+   Err = ConfigOmegaRef.add("VectorR4", RefVecR4);
+   if (Err != 0)
+      LOG_INFO("Config test {}: adding R4 vector FAIL", MyTask);
+
+   Err = ConfigOmegaRef.add("VectorR8", RefVecR8);
+   if (Err != 0)
+      LOG_INFO("Config test {}: adding R8 vector FAIL", MyTask);
+
+   Err = ConfigOmegaRef.add("VectorLog", RefVecLog);
+   if (Err != 0)
+      LOG_INFO("Config test {}: adding bool vector FAIL", MyTask);
+
+   Err = ConfigOmegaRef.add("StrList", RefList);
+   if (Err != 0)
+      LOG_INFO("Config test {}: adding string list FAIL", MyTask);
 
    // create the full root node
    Err = ConfigOmegaAll.add(ConfigOmegaRef);
@@ -274,6 +320,79 @@ int main(int argc, char *argv[]) {
       LOG_INFO("ConfigTest {}: Add/Get of string vars - PASS", MyTask);
    } else {
       LOG_INFO("ConfigTest {}: Add/Get of string vars - FAIL", MyTask);
+   }
+
+   // Test vector retrievals
+   std::vector<OMEGA::I4> VecI4;
+   Err1    = ConfigOmegaRef.get("VectorI4", VecI4);
+   RefTest = true;
+   for (int i = 0; i < VecSize; ++i) {
+      RefTest = RefTest && (VecI4[i] == RefVecI4[i]);
+   }
+   if (Err1 == 0 && RefTest) {
+      LOG_INFO("ConfigTest {}: Add/Get of I4 vector - PASS", MyTask);
+   } else {
+      LOG_INFO("ConfigTest {}: Add/Get of I4 vector - FAIL", MyTask);
+   }
+
+   std::vector<OMEGA::I8> VecI8;
+   Err1    = ConfigOmegaRef.get("VectorI8", VecI8);
+   RefTest = true;
+   for (int i = 0; i < VecSize; ++i) {
+      RefTest = RefTest && (VecI8[i] == RefVecI8[i]);
+   }
+   if (Err1 == 0 && RefTest) {
+      LOG_INFO("ConfigTest {}: Add/Get of I8 vector - PASS", MyTask);
+   } else {
+      LOG_INFO("ConfigTest {}: Add/Get of I8 vector - FAIL", MyTask);
+   }
+
+   std::vector<OMEGA::R4> VecR4;
+   Err1    = ConfigOmegaRef.get("VectorR4", VecR4);
+   RefTest = true;
+   for (int i = 0; i < VecSize; ++i) {
+      RefTest = RefTest && (VecR4[i] == RefVecR4[i]);
+   }
+   if (Err1 == 0 && RefTest) {
+      LOG_INFO("ConfigTest {}: Add/Get of R4 vector - PASS", MyTask);
+   } else {
+      LOG_INFO("ConfigTest {}: Add/Get of R4 vector - FAIL", MyTask);
+   }
+
+   std::vector<OMEGA::R8> VecR8;
+   Err1    = ConfigOmegaRef.get("VectorR8", VecR8);
+   RefTest = true;
+   for (int i = 0; i < VecSize; ++i) {
+      RefTest = RefTest && (VecR8[i] == RefVecR8[i]);
+   }
+   if (Err1 == 0 && RefTest) {
+      LOG_INFO("ConfigTest {}: Add/Get of R8 vector - PASS", MyTask);
+   } else {
+      LOG_INFO("ConfigTest {}: Add/Get of R8 vector - FAIL", MyTask);
+   }
+
+   std::vector<bool> VecLog;
+   Err1    = ConfigOmegaRef.get("VectorLog", VecLog);
+   RefTest = true;
+   for (int i = 0; i < VecSize; ++i) {
+      RefTest = RefTest && (VecLog[i] == RefVecLog[i]);
+   }
+   if (Err1 == 0 && RefTest) {
+      LOG_INFO("ConfigTest {}: Add/Get of bool vector - PASS", MyTask);
+   } else {
+      LOG_INFO("ConfigTest {}: Add/Get of bool vector - FAIL", MyTask);
+   }
+
+   std::vector<std::string> NewList;
+   Err1    = ConfigOmegaRef.get("StrList", NewList);
+   RefTest = true;
+   for (int i = 0; i < VecSize; ++i) {
+      RefTest = RefTest && (NewList[i] == RefList[i]);
+   }
+   if (Err1 == 0 && RefTest) {
+      LOG_INFO("ConfigTest {}: Add/Get of string list - PASS", MyTask);
+   } else {
+      LOG_INFO("ConfigTest {}: Add/Get of string list - FAIL", MyTask);
    }
 
    // Test changing values using the set functions
@@ -430,6 +549,119 @@ int main(int argc, char *argv[]) {
    } else {
       LOG_INFO("ConfigTest {}: Set/Get of string vars - FAIL", MyTask);
    }
+
+   // Test setting of vectors by modifying one entry, setting and retrieving
+   RefVecI4[2]  = -1;
+   RefVecI8[2]  = -123456789;
+   RefVecR4[2]  = -1.2345;
+   RefVecR8[2]  = -1.23456789;
+   RefVecLog[2] = false;
+   RefList[2]   = "junk";
+
+   Err = ConfigOmegaRef.set("VectorI4", RefVecI4);
+   if (Err != 0)
+      LOG_INFO("Config test {}: setting I4 vector FAIL", MyTask);
+
+   Err = ConfigOmegaRef.set("VectorI8", RefVecI8);
+   if (Err != 0)
+      LOG_INFO("Config test {}: setting I8 vector FAIL", MyTask);
+
+   Err = ConfigOmegaRef.set("VectorR4", RefVecR4);
+   if (Err != 0)
+      LOG_INFO("Config test {}: setting R4 vector FAIL", MyTask);
+
+   Err = ConfigOmegaRef.set("VectorR8", RefVecR8);
+   if (Err != 0)
+      LOG_INFO("Config test {}: setting R8 vector FAIL", MyTask);
+
+   Err = ConfigOmegaRef.set("VectorLog", RefVecLog);
+   if (Err != 0)
+      LOG_INFO("Config test {}: setting bool vector FAIL", MyTask);
+
+   Err = ConfigOmegaRef.set("StrList", RefList);
+   if (Err != 0)
+      LOG_INFO("Config test {}: setting string list FAIL", MyTask);
+
+   // Test vector retrievals after set
+   Err1    = ConfigOmegaRef.get("VectorI4", VecI4);
+   RefTest = true;
+   for (int i = 0; i < VecSize; ++i) {
+      RefTest = RefTest && (VecI4[i] == RefVecI4[i]);
+   }
+   if (Err1 == 0 && RefTest) {
+      LOG_INFO("ConfigTest {}: Set/Get of I4 vector - PASS", MyTask);
+   } else {
+      LOG_INFO("ConfigTest {}: Set/Get of I4 vector - FAIL", MyTask);
+   }
+
+   Err1    = ConfigOmegaRef.get("VectorI8", VecI8);
+   RefTest = true;
+   for (int i = 0; i < VecSize; ++i) {
+      RefTest = RefTest && (VecI8[i] == RefVecI8[i]);
+   }
+   if (Err1 == 0 && RefTest) {
+      LOG_INFO("ConfigTest {}: Set/Get of I8 vector - PASS", MyTask);
+   } else {
+      LOG_INFO("ConfigTest {}: Set/Get of I8 vector - FAIL", MyTask);
+   }
+
+   Err1    = ConfigOmegaRef.get("VectorR4", VecR4);
+   RefTest = true;
+   for (int i = 0; i < VecSize; ++i) {
+      RefTest = RefTest && (VecR4[i] == RefVecR4[i]);
+   }
+   if (Err1 == 0 && RefTest) {
+      LOG_INFO("ConfigTest {}: Set/Get of R4 vector - PASS", MyTask);
+   } else {
+      LOG_INFO("ConfigTest {}: Set/Get of R4 vector - FAIL", MyTask);
+   }
+
+   Err1    = ConfigOmegaRef.get("VectorR8", VecR8);
+   RefTest = true;
+   for (int i = 0; i < VecSize; ++i) {
+      RefTest = RefTest && (VecR8[i] == RefVecR8[i]);
+   }
+   if (Err1 == 0 && RefTest) {
+      LOG_INFO("ConfigTest {}: Set/Get of R8 vector - PASS", MyTask);
+   } else {
+      LOG_INFO("ConfigTest {}: Set/Get of R8 vector - FAIL", MyTask);
+   }
+
+   Err1    = ConfigOmegaRef.get("VectorLog", VecLog);
+   RefTest = true;
+   for (int i = 0; i < VecSize; ++i) {
+      RefTest = RefTest && (VecLog[i] == RefVecLog[i]);
+   }
+   if (Err1 == 0 && RefTest) {
+      LOG_INFO("ConfigTest {}: Set/Get of bool vector - PASS", MyTask);
+   } else {
+      LOG_INFO("ConfigTest {}: Set/Get of bool vector - FAIL", MyTask);
+   }
+
+   Err1    = ConfigOmegaRef.get("StrList", NewList);
+   RefTest = true;
+   for (int i = 0; i < VecSize; ++i) {
+      RefTest = RefTest && (NewList[i] == RefList[i]);
+   }
+   if (Err1 == 0 && RefTest) {
+      LOG_INFO("ConfigTest {}: Set/Get of string list - PASS", MyTask);
+   } else {
+      LOG_INFO("ConfigTest {}: Set/Get of string list - FAIL", MyTask);
+   }
+
+   // Reset vectors back to original reference values
+   RefVecI4[2]  = 3;
+   RefVecI8[2]  = 345678901;
+   RefVecR4[2]  = 3.4567;
+   RefVecR8[2]  = 3.45678901;
+   RefVecLog[2] = true;
+   RefList[2]   = "third";
+   Err          = ConfigOmegaRef.set("VectorI4", RefVecI4);
+   Err          = ConfigOmegaRef.set("VectorI8", RefVecI8);
+   Err          = ConfigOmegaRef.set("VectorR4", RefVecR4);
+   Err          = ConfigOmegaRef.set("VectorR8", RefVecR8);
+   Err          = ConfigOmegaRef.set("VectorLog", RefVecLog);
+   Err          = ConfigOmegaRef.set("StrList", RefList);
 
    // Test add,set,get error modes
    OMEGA::Config ConfigJunk("junk");
@@ -612,6 +844,73 @@ int main(int argc, char *argv[]) {
       LOG_INFO("ConfigTest {}: retrieve string from full config PASS", MyTask);
    } else {
       LOG_INFO("ConfigTest {}: retrieve string from full config FAIL", MyTask);
+   }
+
+   // Vector retrievals
+   Err1    = ConfigOmega->get("VectorI4", VecI4);
+   RefTest = true;
+   for (int i = 0; i < VecSize; ++i) {
+      RefTest = RefTest && (VecI4[i] == RefVecI4[i]);
+   }
+   if (Err1 == 0 && RefTest) {
+      LOG_INFO("ConfigTest {}: Get I4 vector from full config - PASS", MyTask);
+   } else {
+      LOG_INFO("ConfigTest {}: Get I4 vector from full config - FAIL", MyTask);
+   }
+
+   Err1    = ConfigOmega->get("VectorI8", VecI8);
+   RefTest = true;
+   for (int i = 0; i < VecSize; ++i) {
+      RefTest = RefTest && (VecI8[i] == RefVecI8[i]);
+   }
+   if (Err1 == 0 && RefTest) {
+      LOG_INFO("ConfigTest {}: Get I8 vector from full config - PASS", MyTask);
+   } else {
+      LOG_INFO("ConfigTest {}: Get I8 vector from full config - FAIL", MyTask);
+   }
+
+   Err1    = ConfigOmega->get("VectorR4", VecR4);
+   RefTest = true;
+   for (int i = 0; i < VecSize; ++i) {
+      RefTest = RefTest && (VecR4[i] == RefVecR4[i]);
+   }
+   if (Err1 == 0 && RefTest) {
+      LOG_INFO("ConfigTest {}: Get R4 vector from full config - PASS", MyTask);
+   } else {
+      LOG_INFO("ConfigTest {}: Get R4 vector from full config - FAIL", MyTask);
+   }
+
+   Err1    = ConfigOmega->get("VectorR8", VecR8);
+   RefTest = true;
+   for (int i = 0; i < VecSize; ++i) {
+      RefTest = RefTest && (VecR8[i] == RefVecR8[i]);
+   }
+   if (Err1 == 0 && RefTest) {
+      LOG_INFO("ConfigTest {}: Get R8 vector from full config - PASS", MyTask);
+   } else {
+      LOG_INFO("ConfigTest {}: Get R8 vector from full config - FAIL", MyTask);
+   }
+
+   Err1    = ConfigOmega->get("VectorLog", VecLog);
+   RefTest = true;
+   for (int i = 0; i < VecSize; ++i) {
+      RefTest = RefTest && (VecLog[i] == RefVecLog[i]);
+   }
+   if (Err1 == 0 && RefTest) {
+      LOG_INFO("ConfigTest {}: Get bool vec from full config - PASS", MyTask);
+   } else {
+      LOG_INFO("ConfigTest {}: Get bool vec from full config - FAIL", MyTask);
+   }
+
+   Err1    = ConfigOmega->get("StrList", NewList);
+   RefTest = true;
+   for (int i = 0; i < VecSize; ++i) {
+      RefTest = RefTest && (NewList[i] == RefList[i]);
+   }
+   if (Err1 == 0 && RefTest) {
+      LOG_INFO("ConfigTest {}: Get string list full config - PASS", MyTask);
+   } else {
+      LOG_INFO("ConfigTest {}: Get string list full config - FAIL", MyTask);
    }
 
    // Test removals by removing both variables and sub-configs and

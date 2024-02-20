@@ -13,9 +13,13 @@ and must be a file named ``omega.yml`` in the same directory as the executable.
 However, Unix soft links can be used to point a link with that name to a
 specific configuration file stored elsewhere.
 In YAML format, most of the configuration variables are typically represented
-as key-value pairs called maps. However, lists of variables (eg contents of
-an IO stream) can be used and are called sequences. Each of these can be
-nested to build up the full configuration.
+as key-value pairs called maps, where the name and the value are separated
+by a colon. However, lists of variables (eg contents of an IO stream) can
+be used and are called sequences. Sequences can be in the form of a list
+with an entry on each line starting with a dash and space. They can also
+be formatted as a vector with a comma-delimited list within square brackets.
+Each of these can be nested to build up the full configuration with indentation
+used to separate the nests.
 Each map or sequence is called a node in YAML.  A typical omega configration
 file will start with the main omega map node with sub-maps associated with
 various modules in omega. For example, a file might look like this:
@@ -39,6 +43,8 @@ omega:
       HmixRefWidth: 30.0e3
 
    [more config options]
+
+   MyVector: [1, 2, 3, 4, 5]
 
    Streams:
 
