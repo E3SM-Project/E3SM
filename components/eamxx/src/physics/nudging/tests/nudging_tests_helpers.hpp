@@ -150,6 +150,7 @@ create_om (const std::string& filename_prefix,
   params.set<std::string>("Averaging Type","INSTANT");
   params.set<std::string>("filename_prefix",filename_prefix);
   params.set<std::string>("Floating Point Precision","real");
+  params.set("MPI Ranks in Filename", false);
   params.set("Field Names",strvec_t{"p_mid","U","V"});
   params.set("fill_value",fill_val);
 
