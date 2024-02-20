@@ -144,8 +144,8 @@ struct SPAFunctions
       iop->setup_io_info(file_name, io_grid_);
     }
 
-    void read_variables(const int time_index) {
-      iop->read_fields_from_file_for_iop(file_name, field_names, util::TimeStamp(), field_mgr, time_index);
+    void read_variables(const int time_index, const util::TimeStamp& ts) {
+      iop->read_fields_from_file_for_iop(file_name, field_names, ts, field_mgr, time_index);
     }
 
     iop_ptr_type iop;
@@ -188,21 +188,22 @@ struct SPAFunctions
     const SPAInput&   data_tmp,         // Temporary
     const SPAOutput&  data_out);
 
-  template<typename DataReader>
   static void update_spa_data_from_file(
-          DataReader&       spa_data_reader,
-    const int               time_index,
-          AbstractRemapper& spa_horiz_interp,
-          SPAInput&         spa_data);
+    std::shared_ptr<AtmosphereInput>& scorpio_reader,
+    std::shared_ptr<IOPReader>&       iop_reader,
+    const util::TimeStamp&            ts,
+    const int                         time_index, // zero-based
+    AbstractRemapper&                 spa_horiz_interp,
+    SPAInput&                         spa_input);
 
-  template<typename DataReader>
   static void update_spa_timestate(
-          DataReader&  spa_data_reader,
-    const util::TimeStamp&  ts,
-          AbstractRemapper& spa_horiz_interp,
-          SPATimeState&     time_state,
-          SPAInput&         spa_beg,
-          SPAInput&         spa_end);
+    std::shared_ptr<AtmosphereInput>& scorpio_reader,
+    std::shared_ptr<IOPReader>&       iop_reader,
+    const util::TimeStamp&            ts,
+    AbstractRemapper&                 spa_horiz_interp,
+    SPATimeState&                     time_state,
+    SPAInput&                         spa_beg,
+    SPAInput&                         spa_end);
 
   // The following three are called during spa_main
   static void perform_time_interpolation (

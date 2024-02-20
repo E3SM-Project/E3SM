@@ -447,13 +447,14 @@ perform_vertical_interpolation(
  *    the range of the source data.
  */
 template<typename S, typename D>
-template<typename DataReader>
 void SPAFunctions<S,D>
 ::update_spa_data_from_file(
-          DataReader&       spa_data_reader,
-    const int               time_index, // zero-based
-          AbstractRemapper& spa_horiz_interp,
-          SPAInput&         spa_input)
+    std::shared_ptr<AtmosphereInput>& scorpio_reader,
+    std::shared_ptr<IOPReader>&       iop_reader,
+    const util::TimeStamp&            ts,
+    const int                         time_index, // zero-based
+    AbstractRemapper&                 spa_horiz_interp,
+    SPAInput&                         spa_input)
 {
   using namespace ShortFieldTagsNames;
   using ESU = ekat::ExeSpaceUtils<typename DefaultDevice::execution_space>;
@@ -463,7 +464,11 @@ void SPAFunctions<S,D>
 
   // 1. Read from file
   start_timer("EAMxx::SPA::update_spa_data_from_file::read_data");
-  spa_data_reader.read_variables(time_index);
+  if (iop_reader) {
+    iop_reader->read_variables(time_index, ts);
+  } else {
+    scorpio_reader->read_variables(time_index);
+  }
   stop_timer("EAMxx::SPA::update_spa_data_from_file::read_data");
 
   // 2. Run the horiz remapper (it is a do-nothing op if spa data is on same grid as model)
@@ -546,15 +551,15 @@ void SPAFunctions<S,D>
 
 /*-----------------------------------------------------------------*/
 template<typename S, typename D>
-template<typename DataReader>
 void SPAFunctions<S,D>
 ::update_spa_timestate(
-        DataReader&  spa_data_reader,
-  const util::TimeStamp&  ts,
-        AbstractRemapper& spa_horiz_interp,
-        SPATimeState&     time_state,
-        SPAInput&         spa_beg,
-        SPAInput&         spa_end)
+    std::shared_ptr<AtmosphereInput>& scorpio_reader,
+    std::shared_ptr<IOPReader>&       iop_reader,
+    const util::TimeStamp&            ts,
+    AbstractRemapper&                 spa_horiz_interp,
+    SPATimeState&                     time_state,
+    SPAInput&                         spa_beg,
+    SPAInput&                         spa_end)
 {
   // Now we check if we have to update the data that changes monthly
   // NOTE:  This means that SPA assumes monthly data to update.  Not
@@ -575,7 +580,7 @@ void SPAFunctions<S,D>
     //       to be assigned.  A timestep greater than a month is very unlikely so we
     //       will proceed.
     int next_month = (time_state.current_month + 1) % 12;
-    update_spa_data_from_file(spa_data_reader,next_month,spa_horiz_interp,spa_end);
+    update_spa_data_from_file(scorpio_reader,iop_reader,ts,next_month,spa_horiz_interp,spa_end);
   }
 
 } // END updata_spa_timestate

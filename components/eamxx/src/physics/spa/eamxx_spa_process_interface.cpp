@@ -228,11 +228,7 @@ void SPA::initialize_impl (const RunType /* run_type */)
   // Note: At the first time step, the data will be moved into spa_beg,
   //       and spa_end will be reloaded from file with the new month.
   const int curr_month = timestamp().get_month()-1; // 0-based
-  if (m_iop) {
-    SPAFunc::update_spa_data_from_file(*SPAIOPDataReader,curr_month,*SPAHorizInterp,SPAData_end);
-  } else {
-    SPAFunc::update_spa_data_from_file(*SPADataReader,curr_month,*SPAHorizInterp,SPAData_end);
-  }
+  SPAFunc::update_spa_data_from_file(SPADataReader,SPAIOPDataReader,timestamp(),curr_month,*SPAHorizInterp,SPAData_end);
 
   // 6. Set property checks for fields in this process
   using Interval = FieldWithinIntervalCheck;
@@ -254,11 +250,7 @@ void SPA::run_impl (const double dt)
   /* Update the SPATimeState to reflect the current time, note the addition of dt */
   SPATimeState.t_now = ts.frac_of_year_in_days();
   /* Update time state and if the month has changed, update the data.*/
-  if (m_iop) {
-    SPAFunc::update_spa_timestate(*SPAIOPDataReader,ts,*SPAHorizInterp,SPATimeState,SPAData_start,SPAData_end);
-  } else {
-    SPAFunc::update_spa_timestate(*SPADataReader,ts,*SPAHorizInterp,SPATimeState,SPAData_start,SPAData_end);
-  }
+    SPAFunc::update_spa_timestate(SPADataReader,SPAIOPDataReader,ts,*SPAHorizInterp,SPATimeState,SPAData_start,SPAData_end);
 
   // Call the main SPA routine to get interpolated aerosol forcings.
   const auto& pmid_tgt = get_field_in("p_mid").get_view<const Spack**>();

@@ -81,8 +81,7 @@ public:
   //  - file_name: Name of the file used to load field data (IC or topo file)
   //  - field_names_nc: Field names used by the input file
   //  - field_names_eamxx: Field names used by eamxx
-  //  - initial_ts: Inital timestamp. If initial_ts.is_valid()==false, then no timestamp is
-  //                set for FM fields after storing data. Ex: passing util::TimeStamp().
+  //  - initial_ts: Inital timestamp.
   //  - field_mgr: Field manager containing fields that need data read from files
   //  - time_index: Time index of read. time_index=-1 will read the latest time in file.
   void read_fields_from_file_for_iop(const std::string& file_name,

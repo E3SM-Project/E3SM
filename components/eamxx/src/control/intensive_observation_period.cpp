@@ -503,10 +503,8 @@ read_fields_from_file_for_iop (const std::string& file_name,
     // Sync fields to device
     fm_field.sync_to_dev();
 
-    // Set the initial time stamp on FM fields (if a valid TimeStamp is given)
-    if (initial_ts.is_valid()) {
-      fm_field.get_header().get_tracking().update_time_stamp(initial_ts);
-    }
+    // Set the initial time stamp on FM fields
+    fm_field.get_header().get_tracking().update_time_stamp(initial_ts);
   }
 }
 
