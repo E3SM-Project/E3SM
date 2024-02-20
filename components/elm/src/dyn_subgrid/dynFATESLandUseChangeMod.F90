@@ -30,8 +30,18 @@ module dynFATESLandUseChangeMod
 
   ! Land use name arrays
   character(len=5), public, parameter  :: landuse_state_varnames(num_landuse_state_vars) = &
-                    [character(len=5)  :: 'primf','primn','secdf','secdn','pastr','range', &
-                                          'urban','c3ann','c4ann','c3per','c4per','c3nfx']
+                    [character(len=5)  :: 'primf', &  ! forested primary land
+                                          'primn', &  ! non-forested primary land
+                                          'secdf', &  ! potentially forested secondary land
+                                          'secdn', &  ! potentially non-forested secondary land
+                                          'pastr', &  ! managed pasture
+                                          'range', &  ! rangeland
+                                          'urban', &  ! urban land
+                                          'c3ann', &  ! C3 annual crops
+                                          'c4ann', &  ! C4 annual crops
+                                          'c3per', &  ! C3 perennial crops
+                                          'c4per', &  ! C4 perennial crops
+                                          'c3nfx']    ! C3 nitrogen-fixing crops
 
   character(len=14), public, parameter :: landuse_transition_varnames(num_landuse_transition_vars) = &
                     [character(len=14) :: 'primf_to_secdn','primf_to_pastr','primf_to_range','primf_to_urban', &
