@@ -583,7 +583,7 @@ mam4::Prognostics aerosols_for_column(const AerosolState& dry_aero,
 // Given a thread team and a dry atmosphere state, dispatches threads from the
 // team to compute vertical layer heights and interfaces for the column with
 // the given index.
-KOKKOS_INLINE_FUNCTION
+/*KOKKOS_INLINE_FUNCTION
 void compute_vertical_layer_heights(const Team& team,
                                     const DryAtmosphere& dry_atm,
                                     const int column_index) {
@@ -596,8 +596,31 @@ void compute_vertical_layer_heights(const Team& team,
   PF::calculate_z_int(team, mam4::nlev, dz, dry_atm.z_surf, z_iface);
   team.team_barrier(); // likely necessary to have z_iface up to date
   PF::calculate_z_mid(team, mam4::nlev, z_iface, z_mid);
-}
+}*/
 
+KOKKOS_INLINE_FUNCTION
+void compute_vertical_layer_heights(const Team& team,
+                                    const DryAtmosphere& dry_atm,
+                                    const int column_index) {
+  EKAT_KERNEL_ASSERT_MSG(column_index == team.league_rank(),
+    "Given column index does not correspond to given team!");
+
+  const auto dz = ekat::subview(dry_atm.dz, column_index);
+  const auto z_iface  = ekat::subview(dry_atm.z_iface, column_index);
+  const auto z_mid    = ekat::subview(dry_atm.z_mid, column_index); // worked fine
+  const auto pseudo_density = ekat::subview(dry_atm.p_del, column_index);
+  const auto p_mid = ekat::subview(dry_atm.p_mid, column_index);
+  const auto T_mid = ekat::subview(dry_atm.T_mid, column_index);
+  const auto qv = ekat::subview(dry_atm.qv, column_index);
+
+  PF::calculate_dz(team, pseudo_density, p_mid, T_mid, qv, // inputs
+            dz);//output
+  team.team_barrier();
+  PF::calculate_z_int(team, mam4::nlev, dz, dry_atm.z_surf, //inputs
+   z_iface); //output
+  team.team_barrier(); // likely necessary to have z_iface up to date
+  PF::calculate_z_mid(team, mam4::nlev, z_iface, z_mid);
+}
 
 // Given a thread team and wet and dry atmospheres, dispatches threads from the
 // team to compute the vertical updraft velocity for the column with the given

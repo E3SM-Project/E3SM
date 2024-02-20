@@ -833,7 +833,6 @@ void MAMAci::set_grids(const std::shared_ptr<const GridsManager> grids_manager) 
   add_field<Computed>("activation_fraction_accum", scalar3d_layout_mid, nondim, grid_name); // Layer thickness(pdel) [Pa] at midpoints
   add_field<Computed>("activation_fraction_coarse", scalar3d_layout_mid, nondim, grid_name); // Layer thickness(pdel) [Pa] at midpoints
 
-  add_field<Updated> ("z_mid",             scalar3d_layout_mid, m,      grid_name); // geopotential height of level (m)
   add_field<Required>("state_q",FieldLayout{ {COL, LEV, CMP}, {ncol_, nlev_, mam4::ndrop::nvars} } , q_unit, grid_name); // aerosol mmrs [kg/kg]
   add_field<Required>("ncldwtr", scalar3d_layout_mid, n_unit, grid_name); // initial droplet number mixing ratio [#/kg]
   //add_field<Required>("cldo", , unitless, grid_name); // cloud fraction on previous time step [fraction]
@@ -953,7 +952,7 @@ void MAMAci::initialize_impl(const RunType run_type) {
   m_atm_logger->log(ekat::logger::LogLevel::info,"Calling ACI init");
 
   // set atmosphere state data
-  pdel_ = get_field_in("pseudo_density").get_view<const Real**>();
+  
   p_int_ = get_field_in("p_int").get_view<const Real**>();
   w_sec_ = get_field_in("w_sec").get_view<const Real**>();
   state_q_ =  get_field_in("state_q").get_view<const Real***>();
@@ -989,11 +988,17 @@ void MAMAci::initialize_impl(const RunType run_type) {
 
   dry_atmosphere_.T_mid = get_field_in("T_mid").get_view<const Real**>();
   dry_atmosphere_.p_mid = get_field_in("p_mid").get_view<const Real**>();
+  dry_atmosphere_.p_del = get_field_in("pseudo_density").get_view<const Real**>();
   dry_atmosphere_.qv        = buffer_.qv_dry;
   dry_atmosphere_.qc        = buffer_.qc_dry;
   dry_atmosphere_.nc        = buffer_.nc_dry;
   dry_atmosphere_.qi        = buffer_.qi_dry;
   dry_atmosphere_.ni        = buffer_.ni_dry;
+
+  dry_atmosphere_.dz        = buffer_.dz;    // geometric thickness of layers (m)
+  dry_atmosphere_.z_iface   = buffer_.z_iface; // geopotential height above surface at interface levels (m)
+  dry_atmosphere_.z_mid     = buffer_.z_mid; // geopotential height above surface at mid levels (m)
+  
   dry_atmosphere_.cldfrac = get_field_in("cldfrac_tot").get_view<const Real**>();
   dry_atmosphere_.w_updraft = get_field_out("w_updraft").get_view<Real**>(); 
 
@@ -1141,12 +1146,12 @@ void MAMAci::run_impl(const double dt) {
   enddo
   */
 
-  compute_recipical_pseudo_density(team_policy, rpdel_, pdel_, nlev_);
+  compute_recipical_pseudo_density(team_policy, rpdel_, dry_atmosphere_.p_del, nlev_);
   Kokkos::fence(); // wait for rpdel_ to be computed.
 #if 0
   call_function_dropmixnuc(team_policy, dry_atmosphere_, dtmicro_,
       raercol_cw_, raercol_, qqcw_, ptend_q_, coltend_, coltend_cw_, 
-      p_int_, pdel_, rpdel_, state_q_, ncldwtr_, kvh_, qcld_, wsub_,
+      p_int_, dry_atmosphere_.p_del, rpdel_, state_q_, ncldwtr_, kvh_, qcld_, wsub_,
       cloud_frac_new_, cloud_frac_old_,  tendnd_, factnum_, ndropcol_, ndropmix_,
       nsource_, wtke_, ccn_, nact_, mact_, dropmixnuc_scratch_mem_, nlev_);
   Kokkos::fence(); // wait for ptend_q_ to be computed.

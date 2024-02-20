@@ -169,6 +169,9 @@ public:
       compute_dry_mixing_ratios(team, wet_atm_pre_, dry_atm_pre_, i);
       compute_dry_mixing_ratios(team, wet_atm_pre_, wet_aero_pre_, dry_aero_pre_, i);
       team.team_barrier();
+      //vertical heights has to be computed after computing dry mixing ratios for atmosphere
+      compute_vertical_layer_heights(team, dry_atm_pre_, i);
+
     }  // operator()
 
     // local variables for preprocess struct
