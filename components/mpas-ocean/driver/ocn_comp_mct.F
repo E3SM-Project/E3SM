@@ -2133,9 +2133,16 @@ contains
                                   landIceHeatFluxField, &
                                   landIceFractionField, &
                                   windSpeed10mField, &
-                                 significantWaveHeightField, &
+                                  significantWaveHeightField, &
                                   peakWaveFrequencyField, &
-                                  peakWaveDirectionField
+                                  peakWaveDirectionField, &
+                                  charnockSeaStateField, &
+                                  waveSupportedZonalWindStressField, &
+                                  waveSupportedMeridionalWindStressField, &
+                                  waveToOceanZonalWindStressField, &
+                                  waveToOceanMeridionalWindStressField, &
+                                  waveNetOceanZonalWindStressField, &
+                                  waveNetOceanMeridionalWindStressField
                                   !landIcePressureField
 
    type (field2DReal), pointer :: iceFluxPhytoCField, &
@@ -2187,7 +2194,14 @@ contains
                                                windSpeed10m, &
                                                significantWaveHeight, &
                                                peakWaveFrequency, &
-                                               peakWaveDirection
+                                               peakWaveDirection, &
+                                               charnockSeaState, &
+                                               waveSupportedZonalWindStress, &
+                                               waveSupportedMeridionalWindStress, &
+                                               waveToOceanZonalWindStress, &
+                                               waveToOceanMeridionalWindStress, &
+                                               waveNetOceanZonalWindStress, &
+                                               waveNetOceanMeridionalWindStress
                                                !landIcePressure
 
    real (kind=RKIND), dimension(:), pointer :: latCell
@@ -2286,6 +2300,13 @@ contains
       call mpas_pool_get_field(forcingPool, 'significantWaveHeight', significantWaveHeightField)
       call mpas_pool_get_field(forcingPool, 'peakWaveFrequency', peakWaveFrequencyField)
       call mpas_pool_get_field(forcingPool, 'peakWaveDirection', peakWaveDirectionField)
+      call mpas_pool_get_field(forcingPool, 'charnockSeaState', charnockSeaStateField)
+      call mpas_pool_get_field(forcingPool, 'waveSupportedZonalWindStress', waveSupportedZonalWindStressField)
+      call mpas_pool_get_field(forcingPool, 'waveSupportedMeridionalWindStress', waveSupportedMeridionalWindStressField)
+      call mpas_pool_get_field(forcingPool, 'waveToOceanZonalWindStress', waveToOceanZonalWindStressField)
+      call mpas_pool_get_field(forcingPool, 'waveToOceanMeridionalWindStress', waveToOceanMeridionalWindStressField)
+      call mpas_pool_get_field(forcingPool, 'waveNetOceanZonalWindStress', waveNetOceanZonalWindStressField)
+      call mpas_pool_get_field(forcingPool, 'waveNetOceanMeridionalWindStress', waveNetOceanMeridionalWindStressField)
 
       call mpas_pool_get_field(forcingPool, 'landIceFreshwaterFlux', landIceFreshwaterFluxField)
       call mpas_pool_get_field(forcingPool, 'landIceHeatFlux', landIceHeatFluxField)
@@ -2332,6 +2353,13 @@ contains
       significantWaveHeight => significantWaveHeightField % array
       peakWaveFrequency => peakWaveFrequencyField % array
       peakWaveDirection => peakWaveDirectionField % array
+      charnockSeaState => charnockSeaStateField % array
+      waveSupportedZonalWindStress => waveSupportedZonalWindStressField % array
+      waveSupportedMeridionalWindStress => waveSupportedMeridionalWindStressField % array
+      waveToOceanZonalWindStress => waveToOceanZonalWindStressField % array
+      waveToOceanMeridionalWindStress => waveToOceanMeridionalWindStressField % array
+      waveNetOceanZonalWindStress => waveNetOceanZonalWindStressField % array
+      waveNetOceanMeridionalWindStress => waveNetOceanMeridionalWindStressField % array
       !landIcePressure => landIcePressureField % array
 
       call mpas_pool_get_array(meshPool, 'latCell', latCell)
@@ -2542,6 +2570,27 @@ contains
            if ( peakWaveDirectionField % isActive ) then
               peakWaveDirection(i) = x2o_o % rAttr(index_x2o_Sw_Dp, n)
            end if
+           if ( charnockSeaStateField % isActive ) then
+              charnockSeaState(i) = x2o_o % rAttr(index_x2o_Sw_Charn, n)
+           end if
+           if ( waveSupportedZonalWindStressField  % isActive ) then
+              waveSupportedZonalWindStress(i) = x2o_o % rAttr(index_x2o_Faww_Tawx, n)
+           end if
+           if ( waveSupportedMeridionalWindStressField  % isActive ) then
+              waveSupportedMeridionalWindStress(i) = x2o_o % rAttr(index_x2o_Faww_Tawy, n)
+           end if
+           if ( waveToOceanZonalWindStressField  % isActive ) then
+              waveToOceanZonalWindStress(i) = x2o_o % rAttr(index_x2o_Fwow_Twox, n)
+           end if
+           if ( waveToOceanMeridionalWindStressField  % isActive ) then
+              waveToOceanMeridionalWindStress(i) = x2o_o % rAttr(index_x2o_Fwow_Twoy, n)
+           end if
+           if ( waveNetOceanZonalWindStressField  % isActive ) then
+              waveNetOceanZonalWindStress(i) = x2o_o % rAttr(index_x2o_Faow_Tocx, n)
+           end if
+           if ( waveNetOceanMeridionalWindStressField  % isActive ) then
+              waveNetOceanMeridionalWindStress(i) = x2o_o % rAttr(index_x2o_Faow_Tocy, n)
+           end if
         endif
 
         if (config_cvmix_kpp_use_theory_wave .or. config_eke_correction_enable) then
@@ -2720,6 +2769,13 @@ contains
    call mpas_pool_get_field(forcingPool, 'significantWaveHeight', significantWaveHeightField)
    call mpas_pool_get_field(forcingPool, 'peakWaveFrequency', peakWaveFrequencyField)
    call mpas_pool_get_field(forcingPool, 'peakWaveDirection', peakWaveDirectionField)
+   call mpas_pool_get_field(forcingPool, 'charnockSeaState', charnockSeaStateField)
+   call mpas_pool_get_field(forcingPool, 'waveSupportedZonalWindStress', waveSupportedZonalWindStressField)
+   call mpas_pool_get_field(forcingPool, 'waveSupportedMeridionalWindStress', waveSupportedMeridionalWindStressField)
+   call mpas_pool_get_field(forcingPool, 'waveToOceanZonalWindStress', waveToOceanZonalWindStressField)
+   call mpas_pool_get_field(forcingPool, 'waveToOceanMeridionalWindStress', waveToOceanMeridionalWindStressField)
+   call mpas_pool_get_field(forcingPool, 'waveNetOceanZonalWindStress', waveNetOceanZonalWindStressField)
+   call mpas_pool_get_field(forcingPool, 'waveNetOceanMeridionalWindStress', waveNetOceanMeridionalWindStressField)
 
    call mpas_pool_get_field(forcingPool, 'landIceFreshwaterFlux', landIceFreshwaterFluxField)
    call mpas_pool_get_field(forcingPool, 'landIceHeatFlux', landIceHeatFluxField)
@@ -2855,6 +2911,27 @@ contains
    end if
    if ( peakWaveDirectionField % isActive ) then
       call mpas_dmpar_exch_halo_field(peakWaveDirectionField)
+   end if
+   if ( charnockSeaStateField % isActive ) then
+      call mpas_dmpar_exch_halo_field(charnockSeaStateField)
+   end if
+   if ( waveSupportedZonalWindStressField % isActive ) then
+      call mpas_dmpar_exch_halo_field(waveSupportedZonalWindStressField)
+   end if
+   if ( waveSupportedMeridionalWindStressField % isActive ) then
+      call mpas_dmpar_exch_halo_field(waveSupportedMeridionalWindStressField)
+   end if
+   if ( waveToOceanZonalWindStressField % isActive ) then
+      call mpas_dmpar_exch_halo_field(waveToOceanZonalWindStressField)
+   end if
+   if ( waveToOceanMeridionalWindStressField % isActive ) then
+      call mpas_dmpar_exch_halo_field(waveToOceanMeridionalWindStressField)
+   end if
+   if ( waveNetOceanZonalWindStressField % isActive ) then
+      call mpas_dmpar_exch_halo_field(waveNetOceanZonalWindStressField)
+   end if
+   if ( waveNetOceanMeridionalWindStressField % isActive ) then
+      call mpas_dmpar_exch_halo_field(waveNetOceanMeridionalWindStressField)
    end if
 
    if ( landIceFreshwaterFluxField % isActive ) then
