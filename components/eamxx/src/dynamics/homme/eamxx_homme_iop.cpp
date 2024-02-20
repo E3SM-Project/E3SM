@@ -97,6 +97,8 @@ advance_iop_subsidence(const KT::MemberType& team,
     const auto at_top = range_pack==0;
     const auto at_bot = range_pack==nlevs-1;
     const auto at_mid = not at_top and not at_bot;
+    const bool any_at_top = at_top.any();
+    const bool any_at_bot = at_bot.any();
 
     // Get delta(k-1) packs. The range pack should not
     // contain index 0 (so that we don't attempt to access
@@ -115,10 +117,15 @@ advance_iop_subsidence(const KT::MemberType& team,
     // At the top and bottom of the model, set the end points for
     // delta_*_k and delta_*_km1 to be the first and last entries
     // of delta_*, respectively.
-    if (at_top.any() or at_bot.any()) {
-      delta_u_k.set(at_top, s_delta_u(0)); delta_u_km1.set(at_bot, s_delta_u(nlevs-2));
-      delta_v_k.set(at_top, s_delta_v(0)); delta_v_km1.set(at_bot, s_delta_v(nlevs-2));
-      delta_T_k.set(at_top, s_delta_T(0)); delta_T_km1.set(at_bot, s_delta_T(nlevs-2));
+    if (any_at_top) {
+      delta_u_k.set(at_top, s_delta_u(0));
+      delta_v_k.set(at_top, s_delta_v(0));
+      delta_T_k.set(at_top, s_delta_T(0));
+    }
+    if (any_at_bot) {
+      delta_u_km1.set(at_bot, s_delta_u(nlevs-2));
+      delta_v_km1.set(at_bot, s_delta_v(nlevs-2));
+      delta_T_km1.set(at_bot, s_delta_T(nlevs-2));
     }
 
     // Get omega_int(k+1) pack. The range pack should not
@@ -157,10 +164,8 @@ advance_iop_subsidence(const KT::MemberType& team,
     for (int iq=0; iq<n_q_tracers; ++iq) {
       auto s_delta_tracer = Kokkos::subview(s_delta_Q, iq, Kokkos::ALL());
       ekat::index_and_shift<-1>(s_delta_tracer, range_pack_for_m1_shift, delta_tracer_k, delta_tracer_km1);
-      if (at_top.any() or at_bot.any()) {
-        delta_tracer_k.set(at_top, s_delta_tracer(0));
-        delta_tracer_km1.set(at_bot, s_delta_tracer(nlevs-2));
-      }
+      if (any_at_top) delta_tracer_k.set(at_top, s_delta_tracer(0));
+      if (any_at_bot) delta_tracer_km1.set(at_bot, s_delta_tracer(nlevs-2));
 
       auto& Q_k = Q(iq, k);
       Q_k.set(at_top, Q_k - fac*omega_int_kp1*delta_tracer_k);
