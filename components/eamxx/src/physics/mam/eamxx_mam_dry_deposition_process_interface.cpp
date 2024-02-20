@@ -29,7 +29,7 @@ void MAMDryDep::set_grids(
   auto n_unit = 1 / kg;  // units of number mixing ratios of tracers
   n_unit.set_string("#/kg");
 
-  grid_                = grids_manager->get_grid("Physics");
+  grid_                 = grids_manager->get_grid("Physics");
   const auto &grid_name = grid_->name();
 
   ncol_ = grid_->get_num_local_dofs();       // Number of columns on this rank
@@ -49,8 +49,8 @@ void MAMDryDep::set_grids(
   // -------------------------------------------------------------------------------------------------------------------------
   // These variables are "required" or pure inputs for the process
   // -------------------------------------------------------------------------------------------------------------------------
-
-  
+  add_field<Required>("T_mid", scalar3d_layout_mid, K,
+                      grid_name);  // temperature [K]
 }
 
 // =========================================================================================
@@ -79,13 +79,10 @@ void MAMDryDep::init_buffers(const ATMBufferManager &buffer_manager) {
 void MAMDryDep::initialize_impl(const RunType run_type) {
   // Gather runtime options
   //(e.g.) runtime_options.lambda_low    = m_params.get<double>("lambda_low");
-
-  
 }
 
 // =========================================================================================
 void MAMDryDep::run_impl(const double dt) {
-  
   std::cout << "End of derydep run" << std::endl;
 }
 

@@ -1,13 +1,9 @@
 %YAML 1.1
 ---
-filename_prefix: mam4_nucleation_standalone_output
+filename_prefix: mam4_drydep_standalone_output
 Averaging Type: Instant
 Field Names:
   - T_mid
-  - p_mid
-  - q_aitken_so4
-  - n_aitken
-  - q_h2so4
 output_control:
   Frequency: 1
   frequency_units: nsteps

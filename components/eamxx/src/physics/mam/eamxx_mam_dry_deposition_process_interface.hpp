@@ -1,8 +1,6 @@
 #ifndef EAMXX_MAM_DRYDEP_HPP
 #define EAMXX_MAM_DRYDEP_HPP
 
-#include <ekat/ekat_parameter_list.hpp>
-
 // For declaring wetscav class derived from atm process class
 #include <share/atm_process/atmosphere_process.hpp>
 

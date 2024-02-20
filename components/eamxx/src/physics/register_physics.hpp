@@ -26,7 +26,7 @@
 #ifdef EAMXX_HAS_MAM
 #include "physics/mam/eamxx_mam_microphysics_process_interface.hpp"
 #include "physics/mam/eamxx_mam_optics_process_interface.hpp"
-#include "physics/mam/eamxx_mam_dry_deposition_interface.hpp"
+#include "physics/mam/eamxx_mam_dry_deposition_process_interface.hpp"
 #endif
 #ifdef EAMXX_HAS_COSP
 #include "physics/cosp/eamxx_cosp.hpp"
