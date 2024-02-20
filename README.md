@@ -16,6 +16,8 @@ for further details.
 
 For questions about the model, use [Github Discussions](https://github.com/E3SM-Project/E3SM/discussions).
 
+See our Github-hosted documentation at [https://e3sm-project.github.io/E3SM/](https://e3sm-project.github.io/E3SM/).
+
 Table of Contents 
 --------------------------------------------------------------------------------
 - [Quick Start](#quickstart)
