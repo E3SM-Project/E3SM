@@ -136,7 +136,8 @@
                           sig, nk, zb, dmin, &
                           usspf
       use w3wdatmd, only: time, w3ndat, w3setw, wlv, va, ust, ice 
-      use w3adatmd, only: ussp, w3naux, w3seta, sxx, sxy, syy, fliwnd, flcold, dw, cg, wn, hs, fp0, thp0
+      use w3adatmd, only: ussp, w3naux, w3seta, sxx, sxy, syy, fliwnd, flcold, dw, cg, wn, hs, fp0, thp0, &
+                          charn, tauwix, tauwiy, tauox, tauoy, tauocx, tauocy
       use w3idatmd, only: inflags1, inflags2,w3seti, w3ninp
       USE W3IDATMD, ONLY: TC0, CX0, CY0, TCN, CXN, CYN, ICEP1, ICEP5, TI1, TI5
       USE W3IDATMD, ONLY: TW0, WX0, WY0, DT0, TWN, WXN, WYN, DTN
@@ -174,7 +175,9 @@
                                     index_w2x_Sw_ustokes_wavenumber_4, index_w2x_Sw_vstokes_wavenumber_4, &
                                     index_w2x_Sw_ustokes_wavenumber_5, index_w2x_Sw_vstokes_wavenumber_5, &
                                     index_w2x_Sw_ustokes_wavenumber_6, index_w2x_Sw_vstokes_wavenumber_6, &
-                                    index_w2x_Sw_Hs, index_w2x_Sw_Fp, index_w2x_Sw_Dp
+                                    index_w2x_Sw_Hs, index_w2x_Sw_Fp, index_w2x_Sw_Dp, index_w2x_Sw_Charn, &
+                                    index_w2x_Faww_Tawx, index_w2x_Faww_Tawy, index_w2x_Fwow_Twox,        &
+                                    index_w2x_Fwow_Twoy, index_w2x_Faow_Tocx, index_w2x_Faow_Tocy
 
 
       use shr_sys_mod      , only : shr_sys_flush, shr_sys_abort
@@ -722,6 +725,7 @@ CONTAINS
       !  F  F  6    10   TAUICE     TWI   Wave to sea ice stress
       !  F  F  6    11   PHICE      FIC   Wave to sea ice energy flux
       !  F  F  6    12   USSP       USP   Partitioned surface Stokes drift
+      !  F  F  6    13   TAUOC[X,Y] TOC   Total momentum to the ocean
       !   -------------------------------------------------
       !        7                          Wave-bottom layer 
       !   -------------------------------------------------
@@ -1166,6 +1170,10 @@ CONTAINS
       do i = 1,usspf(2)
         call w3xyrtn(nseal,USSP(1:nseal,i),USSP(1:nseal,nk+i),AnglDL)
       enddo
+      ! rotate surface stress variables for momentum coupling 
+      call w3xyrtn(nseal, TAUWIX(1:nseal), TAUWIY(1:nseal), AnglDL)
+      call w3xyrtn(nseal, TAUOX(1:nseal), TAUOY(1:nseal), AnglDL)
+      call w3xyrtn(nseal, TAUOCX(1:nseal), TAUOCY(1:nseal), AnglDL)
 
       ! copy ww3 data to coupling datatype
       do jsea=1, nseal
@@ -1196,6 +1204,14 @@ CONTAINS
 
                 w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_6,jsea) = USSP(jsea,6)
                 w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_6,jsea) = USSP(jsea,nk+6)
+
+                w2x_w%rattr(index_w2x_Sw_Charn,jsea) = CHARN(jsea)
+                w2x_w%rattr(index_w2x_Faww_Tawx,jsea) = 1000*TAUWIX(jsea) !Conversion to N m^{-2} by multiplying by density of water (See eqn 2.99 WW3 Manual)
+                w2x_w%rattr(index_w2x_Faww_Tawy,jsea) = 1000*TAUWIY(jsea)
+                w2x_w%rattr(index_w2x_Fwow_Twox,jsea) = 1000*TAUOX(jsea)
+                w2x_w%rattr(index_w2x_Fwow_Twoy,jsea) = 1000*TAUOY(jsea)
+                w2x_w%rattr(index_w2x_Faow_Tocx,jsea) = TAUOCX(jsea)
+                w2x_w%rattr(index_w2x_Faow_Tocy,jsea) = TAUOCY(jsea)
              endif
           else
              if (wav_ocn_coup .eq. 'twoway') then
@@ -1220,6 +1236,14 @@ CONTAINS
 
                 w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_6,jsea) = 0.0
                 w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_6,jsea) = 0.0
+             
+                w2x_w%rattr(index_w2x_Sw_Charn,jsea) = 0.0
+                w2x_w%rattr(index_w2x_Faww_Tawx,jsea) = 0.0
+                w2x_w%rattr(index_w2x_Faww_Tawy,jsea) = 0.0
+                w2x_w%rattr(index_w2x_Fwow_Twox,jsea) = 0.0
+                w2x_w%rattr(index_w2x_Fwow_Twoy,jsea) = 0.0
+                w2x_w%rattr(index_w2x_Faow_Tocx,jsea) = 0.0
+                w2x_w%rattr(index_w2x_Faow_Tocy,jsea) = 0.0
           endif
         endif
       enddo
