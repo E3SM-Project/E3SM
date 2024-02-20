@@ -892,6 +892,19 @@ contains
 !         call mpas_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_INPUT, ierr=err_tmp)
 !         err = ior(err, err_tmp)
 
+         call mpas_stream_mgr_read(domain % streamManager, whence=MPAS_STREAM_LATEST_BEFORE, saveActualWhen = .true., ierr=err_tmp)
+         err = ior(err, err_tmp)
+         call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_INPUT, ierr=err_tmp)
+         err = ior(err, err_tmp)
+
+         ! call analysis driver compute, restart, write subroutines
+         ! (note: alarms and timers are handled by the analysis member code)
+         call li_analysis_compute(domain, err_tmp)
+         err = ior(err, err_tmp)
+         call li_analysis_restart(domain, err_tmp)
+         err = ior(err, err_tmp)
+         call li_analysis_write(domain, err_tmp)
+         err = ior(err, err_tmp)
 
          ! ===
          ! === Write Output and/or Restart, if needed
