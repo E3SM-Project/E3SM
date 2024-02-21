@@ -283,19 +283,6 @@ def buildnml(case, caseroot, compname):
         if ocn_ismf == 'data':
             data_ismf_file = 'prescribed_ismf_adusumilli2020.ECwISC30to60E2r1.230429.nc'
 
-    elif ocn_grid == 'ECwISC30to60E3r2':
-        decomp_date = '20230901'
-        decomp_prefix = 'partitions/mpas-o.graph.info.'
-        restoring_file = 'sss.PHC2_monthlyClimatology.ECwISC30to60E3r2.20230901.nc'
-        analysis_mask_file = 'ECwISC30to60E3r2_mocBasinsAndTransects20210623.nc'
-        ic_date = '20230901'
-        ic_prefix = 'mpaso.ECwISC30to60E3r2'
-        if ocn_ic_mode == 'spunup':
-            ic_date = '230914'
-            ic_prefix = 'mpaso.ECwISC30to60E3r2.rstFromG-chrysalis'
-        if ocn_ismf == 'data':
-            data_ismf_file = 'prescribed_ismf_adusumilli2020.ECwISC30to60E3r2.20230901.nc'
-
     elif ocn_grid == 'IcoswISC30E3r5':
         decomp_date = '20231120'
         decomp_prefix = 'partitions/mpas-o.graph.info.'

@@ -1,4 +1,4 @@
-site_name: The C++ E3SM Atmosphere Model (EAMxx)
+site_name: EAMxx
 
 nav:
   - 'Home': 'index.md'

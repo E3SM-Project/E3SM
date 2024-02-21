@@ -1387,7 +1387,7 @@ contains
            ! deficit for NO3 to meet allocation needs, is only added to the NH4 pool.
            ! Thus, the NH4 fluxes are increased, for itself and as a surrogate to meet the
            ! NO3 flux demands.
-           
+           supplement_to_sminn_vr(c,j) = 0._r8
            if (carbon_only .or. carbonphosphorus_only) then
               
               if ( fpi_no3_vr(j) + fpi_nh4_vr(j) < 1._r8 ) then

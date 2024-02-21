@@ -24,7 +24,7 @@ function(get_netcdf_libs ncpath nfpath)
 
   # Fall back to find_library
   if (NOT nclibs)
-    find_library(nclibs_temp netcdf REQUIRED PATHS ${ncpath}/lib ${ncpath}/lib64)
+    find_library(nclibs_temp netcdf REQUIRED HINTS ${ncpath}/lib ${ncpath}/lib64)
     set(nclibs ${nclibs_temp})
   endif()
 
@@ -34,7 +34,7 @@ function(get_netcdf_libs ncpath nfpath)
   endif()
 
   if (NOT nflibs)
-    find_library(nflibs_temp netcdff REQUIRED PATHS ${nfpath}/lib ${nfpath}/lib64)
+    find_library(nflibs_temp netcdff REQUIRED HINTS ${nfpath}/lib ${nfpath}/lib64)
     set(nflibs ${nflibs_temp})
   endif()
 
@@ -53,8 +53,8 @@ function(create_netcdf_target)
   # Pnetcdf is optional, and only if not running serial
   if (NOT MPILIB STREQUAL mpi-serial)
     if (PNETCDF_PATH)
-      find_library(pnetcdf_lib pnetcdf REQUIRED PATHS ${PNETCDF_PATH}/lib)
-      find_path (pnetcdf_incdir pnetcdf.h REQUIRED PATHS ${PNETCDF_PATH}/include)
+      find_library(pnetcdf_lib pnetcdf REQUIRED HINTS ${PNETCDF_PATH}/lib)
+      find_path (pnetcdf_incdir pnetcdf.h REQUIRED HINTS ${PNETCDF_PATH}/include)
     endif()
   endif()
 
@@ -71,8 +71,8 @@ function(create_netcdf_target)
     endif ()
 
     get_netcdf_libs(${NETCDF_C_PATH} ${NETCDF_FORTRAN_PATH})
-    find_path (netcdf_c_incdir netcdf.h REQUIRED PATHS ${NETCDF_C_PATH}/include)
-    find_path (netcdf_f_incdir netcdf.inc REQUIRED PATHS ${NETCDF_FORTRAN_PATH}/include)
+    find_path (netcdf_c_incdir netcdf.h REQUIRED HINTS ${NETCDF_C_PATH}/include)
+    find_path (netcdf_f_incdir netcdf.inc REQUIRED HINTS ${NETCDF_FORTRAN_PATH}/include)
 
   elseif (NETCDF_FORTRAN_PATH)
     message(FATAL_ERROR "NETCDF_FORTRAN_PATH specified without NETCDF_C_PATH")
@@ -84,8 +84,8 @@ function(create_netcdf_target)
     endif ()
 
     get_netcdf_libs(${NETCDF_PATH} ${NETCDF_PATH})
-    find_path(netcdf_c_incdir netcdf.h REQUIRED PATHS ${NETCDF_PATH}/include)
-    find_path(netcdf_f_incdir netcdf.inc REQUIRED PATHS ${NETCDF_PATH}/include)
+    find_path(netcdf_c_incdir netcdf.h REQUIRED HINTS ${NETCDF_PATH}/include)
+    find_path(netcdf_f_incdir netcdf.inc REQUIRED HINTS ${NETCDF_PATH}/include)
 
   else()
     message(FATAL_ERROR "NETCDF not found: Define NETCDF_PATH or NETCDF_C_PATH and NETCDF_FORTRAN_PATH in config_machines.xml or config_compilers.xml")

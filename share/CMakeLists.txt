@@ -56,6 +56,15 @@ include(${SRCROOT}/components/cmake/build_model.cmake)
 list(APPEND CMAKE_MODULE_PATH ${SRCROOT}/components/cmake/modules)
 list(APPEND CMAKE_MODULE_PATH ${CIMEROOT}/CIME/non_py/src/CMake)
 
+if (COMP_INTERFACE STREQUAL "moab")
+  set(USE_MOAB True)
+  set(CPPDEFS "${CPPDEFS} -DHAVE_MOAB")
+endif()
+
+if (USE_MOAB)
+  find_package(MOAB REQUIRED)
+endif()
+
 set(CMAKE_VERBOSE_MAKEFILE TRUE)
 
 set(BUILDCONF ${CASEROOT}/Buildconf)

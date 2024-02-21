@@ -2313,7 +2313,7 @@ sub setup_logic_create_crop_landunit {
   my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
 
   add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'create_crop_landunit', 
-     'use_crop'=>$nl_flags->{'use_crop'}, 'hgrid'=>$nl_flags->{'res'}, 'use_cn'=>$nl_flags->{'use_cn'});
+     'use_crop'=>$nl_flags->{'use_crop'}, 'hgrid'=>$nl_flags->{'res'}, 'use_cn'=>$nl_flags->{'use_cn'}, 'use_top_solar_rad'=>$nl->get_value('use_top_solar_rad'));
 }
 
 #-------------------------------------------------------------------------------
@@ -3001,11 +3001,13 @@ sub setup_logic_phosphorus_deposition {
 
 sub setup_logic_fan {
   my ($opts, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
-   
+
   # Flags to control FAN (Flow of Agricultural Nitrogen) nitrogen deposition (manure and fertilizer)
   #
       if ( $nl_flags->{'bgc_mode'} =~/cn|bgc/ ) { 
-          if( $opts->{'fan'} ) {
+	  my $var = "use_fan";
+	  my $val = $nl->get_value($var);
+          if( $val eq ".true." ) {
              add_default($opts, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fan',
                          'use_cn'=>$nl_flags->{'use_cn'} );
              $nl_flags->{'use_fan'} = $nl->get_value('use_fan');
@@ -3021,7 +3023,9 @@ sub setup_logic_fan {
             fatal_error('Cannot use_fan if use_crop is false');
           }   #
 
-          if( $opts->{'fan'} ) {
+	  my $var = "use_fan";
+	  my $val = $nl->get_value($var);
+          if( $val eq ".true." ) {
              add_default($opts, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, "fanmapalgo", 'phys'=>$nl_flags->{'phys'},
                       'use_cn'=>$nl_flags->{'use_cn'}, 'hgrid'=>$nl_flags->{'res'} );
              add_default($opts, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, "stream_year_first_fan", 'phys'=>$nl_flags->{'phys'},

@@ -717,7 +717,7 @@
       If TRUE, the component libraries are always built with OpenMP capability.</desc>
   </entry>
 
-  <entry id="SMP_PRESENT">
+  <entry id="BUILD_THREADED">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
@@ -751,15 +751,6 @@
     variable to TRUE will involve the inclusion of C++ code in the
     MALI executable. This is currently only supported for certain
     machines.</desc>
-  </entry>
-
-  <entry id="USE_MOAB">
-    <type>logical</type>
-    <valid_values>TRUE,FALSE</valid_values>
-    <default_value>FALSE</default_value>
-    <group>build_def</group>
-    <file>env_build.xml</file>
-    <desc>TRUE implies linking to the MOAB library</desc>
   </entry>
 
   <entry id="USE_TRILINOS">

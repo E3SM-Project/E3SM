@@ -864,10 +864,8 @@ contains
          !$acc                   )
       end if
       if ( trim(config_time_integrator) == 'split_explicit_ab2' ) then
-         !$acc enter data create(                       &
-         !$acc                   normalVelocityTendOld, &
-         !$acc                   CoriolisTermOld
-         !$acc                   )
+         !$acc enter data create(normalVelocityTendOld, &
+         !$acc                   CoriolisTermOld)
       end if
 
       !$acc enter data create(                                         &
@@ -1113,10 +1111,8 @@ contains
          !$acc                   )
       end if
       if ( trim(config_time_integrator) == 'split_explicit_ab2' ) then
-         !$acc exit data delete(                       &
-         !$acc                  normalVelocityTendOld, &
-         !$acc                  CoriolisTermOld
-         !$acc                  )
+         !$acc exit data delete(normalVelocityTendOld, &
+         !$acc                  CoriolisTermOld)
       end if
 
       !$acc exit data delete(                                          &

@@ -30,4 +30,5 @@
  hist_nhtfrq = 0,-24
  hist_avgflag_pertape = 'A','A'
  check_finidat_year_consistency = .false.
- finidat = '${DIN_LOC_ROOT}/lnd/clm2/initdata_map/clmi.WCYCL1850.northamericax4v1pg2_WC14to60E2r3.SMS_PS.c20230213.nc'
+! Finidat to be updated, The one below not compatible with v3 lnd config (with TOP and BGC mode, new grid)
+! finidat = '${DIN_LOC_ROOT}/lnd/clm2/initdata_map/clmi.WCYCL1850.northamericax4v1pg2_WC14to60E2r3.SMS_PS.c20230213.nc'

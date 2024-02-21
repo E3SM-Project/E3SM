@@ -21,6 +21,10 @@ on:
       - components/eamxx/docs/**
       - components/eamxx/cime_config/namelist_defaults_scream.xml
 
+  label:
+    types:
+      - created
+
   workflow_dispatch:
 
 concurrency:
@@ -30,12 +34,14 @@ concurrency:
 jobs:
 
   eamxx-docs:
+    if: ${{ github.event.repository.name == 'scream' }}
     runs-on: ubuntu-latest
 
     steps:
       - name: Check out the repository
         uses: actions/checkout@v4
         with:
+          persist-credentials: false
           show-progress: false
           # TODO: git rid of dependency on CIME
           # TODO: another option to investigate is a sparse checkout. 
@@ -48,7 +54,7 @@ jobs:
           echo "= The job was automatically triggered by a ${{github.event_name}} event."
 
       - name: Set up Python 3.10
-        uses: actions/setup-python@v4.7.0
+        uses: actions/setup-python@v5.0.0
         with:
           python-version: "3.10"
 

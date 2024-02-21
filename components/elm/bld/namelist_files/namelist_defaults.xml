@@ -426,6 +426,8 @@ lnd/clm2/surfdata_map/surfdata_ne4pg2_simyr1850_c210722_with_TOP.nc</fsurdat>
 lnd/clm2/surfdata_map/surfdata_ne240np4_simyr1850_c170821.nc</fsurdat>
 <fsurdat hgrid="r05"          sim_year="1850" use_crop=".false." use_cn=".false.">
 lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr1850_c200609_with_TOP.nc</fsurdat>
+<fsurdat hgrid="r05"          sim_year="1850" use_crop=".false." use_cn=".true." use_top_solar_rad=".true.">
+lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr1850_c200609_with_TOP.nc</fsurdat>
 <fsurdat hgrid="r05"          sim_year="1850" use_crop=".false." use_cn=".true.">
 lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr1850_c211019.nc</fsurdat>
 <fsurdat hgrid="r0125"        sim_year="1850" use_crop=".false." >
@@ -670,8 +672,12 @@ this mask will have smb calculated over the entire global land surface
 
 
 <!-- Phosphorus deposition streams namelist defaults -->
+<stream_year_first_pdep use_cn=".true."   sim_year="2010" >2000</stream_year_first_pdep>
+<stream_year_last_pdep  use_cn=".true."   sim_year="2010" >2000</stream_year_last_pdep>
 <stream_year_first_pdep use_cn=".true."   sim_year="2000" >2000</stream_year_first_pdep>
 <stream_year_last_pdep  use_cn=".true."   sim_year="2000" >2000</stream_year_last_pdep>
+<stream_year_first_pdep use_cn=".true."   sim_year="1950" >2000</stream_year_first_pdep>
+<stream_year_last_pdep  use_cn=".true."   sim_year="1950" >2000</stream_year_last_pdep>
 <stream_year_first_pdep use_cn=".true."   sim_year="1850" >2000</stream_year_first_pdep>
 <stream_year_last_pdep  use_cn=".true."   sim_year="1850" >2000</stream_year_last_pdep>
 <stream_year_first_pdep use_cn=".true."   sim_year="1000" >2000</stream_year_first_pdep>
@@ -901,6 +907,7 @@ this mask will have smb calculated over the entire global land surface
 <!-- Create crop on a separate land-unit -->
 <create_crop_landunit use_crop=".true."                  >.true.</create_crop_landunit>
 <create_crop_landunit use_crop=".false."                 >.false.</create_crop_landunit>
+<create_crop_landunit use_crop=".false." hgrid="r05" use_cn=".true." use_top_solar_rad=".true.">.false.</create_crop_landunit>
 <create_crop_landunit use_crop=".false." hgrid="r05" use_cn=".true." >.true.</create_crop_landunit>
 
 <!-- =========================================  -->

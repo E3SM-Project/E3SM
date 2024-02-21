@@ -11,7 +11,7 @@ module VegetationDataType
   use shr_log_mod     , only : errMsg => shr_log_errMsg
   use spmdMod         , only : masterproc
   use abortutils      , only : endrun
-  use elm_time_manager, only : is_restart, get_nstep
+  use elm_time_manager, only : is_restart, get_nstep, is_first_restart_step 
   use elm_varpar      , only : nlevsno, nlevgrnd, nlevlak, nlevurb, nlevcan, crop_prog
   use elm_varpar      , only : nlevdecomp, nlevdecomp_full
   use elm_varcon      , only : spval, ispval, sb
@@ -36,6 +36,8 @@ module VegetationDataType
   use ColumnDataType            , only : column_carbon_state, column_carbon_flux
   use ColumnDataType            , only : column_nitrogen_state, column_nitrogen_flux
   use ColumnDataType            , only : column_phosphorus_state, column_phosphorus_flux
+  use timeInfoMod , only : nstep_mod 
+  use dynSubgridControlMod, only : get_do_harvest 
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -3591,7 +3593,7 @@ module VegetationDataType
             this%totvegc(p) + &
             this%xsmrpool(p) + &
             this%ctrunc(p)
-
+       
        ! (WOODC) - wood C
        this%woodc(p) = &
             this%deadstemc(p)    + &
@@ -8291,28 +8293,30 @@ module VegetationDataType
             this%m_deadcrootc_storage_to_litter_fire(p) + &
             this%m_deadcrootc_xfer_to_litter_fire(p)    + &
             this%m_gresp_storage_to_litter_fire(p)      + &
-            this%m_gresp_xfer_to_litter_fire(p)         + &
-            this%hrv_leafc_to_litter(p)                 + &
-            this%hrv_leafc_storage_to_litter(p)         + &
-            this%hrv_leafc_xfer_to_litter(p)            + &
-            this%hrv_frootc_to_litter(p)                + &
-            this%hrv_frootc_storage_to_litter(p)        + &
-            this%hrv_frootc_xfer_to_litter(p)           + &
-            this%hrv_livestemc_to_litter(p)             + &
-            this%hrv_livestemc_storage_to_litter(p)     + &
-            this%hrv_livestemc_xfer_to_litter(p)        + &
-            this%hrv_deadstemc_storage_to_litter(p)     + &
-            this%hrv_deadstemc_xfer_to_litter(p)        + &
-            this%hrv_livecrootc_to_litter(p)            + &
-            this%hrv_livecrootc_storage_to_litter(p)    + &
-            this%hrv_livecrootc_xfer_to_litter(p)       + &
-            this%hrv_deadcrootc_to_litter(p)            + &
-            this%hrv_deadcrootc_storage_to_litter(p)    + &
-            this%hrv_deadcrootc_xfer_to_litter(p)       + &
-            this%hrv_gresp_storage_to_litter(p)         + &
-            this%hrv_gresp_xfer_to_litter(p)            + &
-            this%hrv_cpool_to_litter(p)
-
+            this%m_gresp_xfer_to_litter_fire(p)        
+            
+            this%litfall(p) = this%litfall(p) + &
+              this%hrv_leafc_to_litter(p)                 + &
+              this%hrv_leafc_storage_to_litter(p)         + &
+              this%hrv_leafc_xfer_to_litter(p)            + &
+              this%hrv_frootc_to_litter(p)                + &
+              this%hrv_frootc_storage_to_litter(p)        + &
+              this%hrv_frootc_xfer_to_litter(p)           + &
+              this%hrv_livestemc_to_litter(p)             + &
+              this%hrv_livestemc_storage_to_litter(p)     + &
+              this%hrv_livestemc_xfer_to_litter(p)        + &
+              this%hrv_deadstemc_storage_to_litter(p)     + &
+              this%hrv_deadstemc_xfer_to_litter(p)        + &
+              this%hrv_livecrootc_to_litter(p)            + &
+              this%hrv_livecrootc_storage_to_litter(p)    + &
+              this%hrv_livecrootc_xfer_to_litter(p)       + &
+              this%hrv_deadcrootc_to_litter(p)            + &
+              this%hrv_deadcrootc_storage_to_litter(p)    + &
+              this%hrv_deadcrootc_xfer_to_litter(p)       + &
+              this%hrv_gresp_storage_to_litter(p)         + &
+              this%hrv_gresp_xfer_to_litter(p)            + &
+              this%hrv_cpool_to_litter(p)
+       
        ! patch-level fire losses (VEGFIRE)
        this%vegfire(p) = 0._r8
 
@@ -8320,6 +8324,7 @@ module VegetationDataType
        this%wood_harvestc(p) = &
             this%hrv_deadstemc_to_prod10c(p) + &
             this%hrv_deadstemc_to_prod100c(p)
+       
        if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
           this%wood_harvestc(p) = &
                this%wood_harvestc(p) + &
@@ -8369,9 +8374,11 @@ module VegetationDataType
             this%m_frootc_to_litter(p)       + &
             this%m_frootc_to_fire(p)         + &
             this%m_frootc_to_litter_fire(p)  + &
-            this%hrv_frootc_to_litter(p)     + &
             this%frootc_to_litter(p)
-
+      ! if(use_crop) then 
+           this%frootc_loss(p) =  this%frootc_loss(p) + &
+                 this%hrv_frootc_to_litter(p)     
+      ! endif 
        ! (LEAFC_ALLOC) - leaf C allocation
        this%leafc_alloc(p) = &
             this%leafc_xfer_to_leafc(p)    + &
@@ -8382,8 +8389,10 @@ module VegetationDataType
             this%m_leafc_to_litter(p)      + &
             this%m_leafc_to_fire(p)        + &
             this%m_leafc_to_litter_fire(p) + &
-            this%hrv_leafc_to_litter(p)    + &
             this%leafc_to_litter(p)
+       
+       this%leafc_loss(p) =  this%leafc_loss(p) + &
+            this%hrv_leafc_to_litter(p)  
 
        if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
           this%leafc_loss(p) = &
@@ -8412,7 +8421,9 @@ module VegetationDataType
             this%m_livestemc_to_fire(p)              + &
             this%m_deadstemc_to_fire(p)              + &
             this%m_livecrootc_to_fire(p)             + &
-            this%m_deadcrootc_to_fire(p)             + &
+            this%m_deadcrootc_to_fire(p)             
+           
+        this%woodc_loss(p) = this%woodc_loss(p) + &
             this%hrv_livestemc_to_litter(p)          + &
             this%hrv_livestemc_storage_to_litter(p)  + &
             this%hrv_livestemc_xfer_to_litter(p)     + &
@@ -8601,101 +8612,6 @@ module VegetationDataType
        do fi = 1,num_patch
           i = filter_patch(fi)
 
-          this%m_leafc_to_litter(i)                   = value_patch
-          this%m_frootc_to_litter(i)                  = value_patch
-          this%m_leafc_storage_to_litter(i)           = value_patch
-          this%m_frootc_storage_to_litter(i)          = value_patch
-          this%m_livestemc_storage_to_litter(i)       = value_patch
-          this%m_deadstemc_storage_to_litter(i)       = value_patch
-          this%m_livecrootc_storage_to_litter(i)      = value_patch
-          this%m_deadcrootc_storage_to_litter(i)      = value_patch
-          this%m_leafc_xfer_to_litter(i)              = value_patch
-          this%m_frootc_xfer_to_litter(i)             = value_patch
-          this%m_livestemc_xfer_to_litter(i)          = value_patch
-          this%m_deadstemc_xfer_to_litter(i)          = value_patch
-          this%m_livecrootc_xfer_to_litter(i)         = value_patch
-          this%m_deadcrootc_xfer_to_litter(i)         = value_patch
-          this%m_livestemc_to_litter(i)               = value_patch
-          this%m_deadstemc_to_litter(i)               = value_patch
-          this%m_livecrootc_to_litter(i)              = value_patch
-          this%m_deadcrootc_to_litter(i)              = value_patch
-          this%m_gresp_storage_to_litter(i)           = value_patch
-          this%m_gresp_xfer_to_litter(i)              = value_patch
-          this%m_cpool_to_litter(i)                   = value_patch
-          this%hrv_leafc_to_litter(i)                 = value_patch
-          this%hrv_leafc_storage_to_litter(i)         = value_patch
-          this%hrv_leafc_xfer_to_litter(i)            = value_patch
-          this%hrv_frootc_to_litter(i)                = value_patch
-          this%hrv_frootc_storage_to_litter(i)        = value_patch
-          this%hrv_frootc_xfer_to_litter(i)           = value_patch
-          this%hrv_livestemc_to_litter(i)             = value_patch
-          this%hrv_livestemc_storage_to_litter(i)     = value_patch
-          this%hrv_livestemc_xfer_to_litter(i)        = value_patch
-          this%hrv_deadstemc_to_prod10c(i)            = value_patch
-          this%hrv_deadstemc_to_prod100c(i)           = value_patch
-          this%hrv_leafc_to_prod1c(i)                 = value_patch
-          this%hrv_livestemc_to_prod1c(i)             = value_patch
-          this%hrv_grainc_to_prod1c(i)                = value_patch
-          this%hrv_cropc_to_prod1c(i)                 = value_patch
-          this%hrv_deadstemc_storage_to_litter(i)     = value_patch
-          this%hrv_deadstemc_xfer_to_litter(i)        = value_patch
-          this%hrv_livecrootc_to_litter(i)            = value_patch
-          this%hrv_livecrootc_storage_to_litter(i)    = value_patch
-          this%hrv_livecrootc_xfer_to_litter(i)       = value_patch
-          this%hrv_deadcrootc_to_litter(i)            = value_patch
-          this%hrv_deadcrootc_storage_to_litter(i)    = value_patch
-          this%hrv_deadcrootc_xfer_to_litter(i)       = value_patch
-          this%hrv_gresp_storage_to_litter(i)         = value_patch
-          this%hrv_gresp_xfer_to_litter(i)            = value_patch
-          this%hrv_xsmrpool_to_atm(i)                 = value_patch
-          this%hrv_cpool_to_litter(i)                 = value_patch
-
-          this%m_leafc_to_fire(i)                     = value_patch
-          this%m_leafc_storage_to_fire(i)             = value_patch
-          this%m_leafc_xfer_to_fire(i)                = value_patch
-          this%m_livestemc_to_fire(i)                 = value_patch
-          this%m_livestemc_storage_to_fire(i)         = value_patch
-          this%m_livestemc_xfer_to_fire(i)            = value_patch
-          this%m_deadstemc_to_fire(i)                 = value_patch
-          this%m_deadstemc_storage_to_fire(i)         = value_patch
-          this%m_deadstemc_xfer_to_fire(i)            = value_patch
-          this%m_frootc_to_fire(i)                    = value_patch
-          this%m_frootc_storage_to_fire(i)            = value_patch
-          this%m_frootc_xfer_to_fire(i)               = value_patch
-          this%m_livecrootc_to_fire(i)                = value_patch
-          this%m_livecrootc_storage_to_fire(i)        = value_patch
-          this%m_livecrootc_xfer_to_fire(i)           = value_patch
-          this%m_deadcrootc_to_fire(i)                = value_patch
-          this%m_deadcrootc_storage_to_fire(i)        = value_patch
-          this%m_deadcrootc_xfer_to_fire(i)           = value_patch
-          this%m_gresp_storage_to_fire(i)             = value_patch
-          this%m_gresp_xfer_to_fire(i)                = value_patch
-          this%m_cpool_to_fire(i)                     = value_patch
-
-          this%m_leafc_to_litter_fire(i)              = value_patch
-          this%m_leafc_storage_to_litter_fire(i)      = value_patch
-          this%m_leafc_xfer_to_litter_fire(i)         = value_patch
-          this%m_livestemc_to_litter_fire(i)          = value_patch
-          this%m_livestemc_storage_to_litter_fire(i)  = value_patch
-          this%m_livestemc_xfer_to_litter_fire(i)     = value_patch
-          this%m_livestemc_to_deadstemc_fire(i)       = value_patch
-          this%m_deadstemc_to_litter_fire(i)          = value_patch
-          this%m_deadstemc_storage_to_litter_fire(i)  = value_patch
-          this%m_deadstemc_xfer_to_litter_fire(i)     = value_patch
-          this%m_frootc_to_litter_fire(i)             = value_patch
-          this%m_frootc_storage_to_litter_fire(i)     = value_patch
-          this%m_frootc_xfer_to_litter_fire(i)        = value_patch
-          this%m_livecrootc_to_litter_fire(i)         = value_patch
-          this%m_livecrootc_storage_to_litter_fire(i) = value_patch
-          this%m_livecrootc_xfer_to_litter_fire(i)    = value_patch
-          this%m_livecrootc_to_deadcrootc_fire(i)     = value_patch
-          this%m_deadcrootc_to_litter_fire(i)         = value_patch
-          this%m_deadcrootc_storage_to_litter_fire(i) = value_patch
-          this%m_deadcrootc_xfer_to_litter_fire(i)    = value_patch
-          this%m_gresp_storage_to_litter_fire(i)      = value_patch
-          this%m_gresp_xfer_to_litter_fire(i)         = value_patch
-          this%m_cpool_to_litter_fire(i)              = value_patch
-
           this%leafc_xfer_to_leafc(i)                 = value_patch
           this%frootc_xfer_to_frootc(i)               = value_patch
           this%livestemc_xfer_to_livestemc(i)         = value_patch
@@ -8736,12 +8652,7 @@ module VegetationDataType
           this%cpool_to_deadcrootc(i)                 = value_patch
           this%cpool_to_deadcrootc_storage(i)         = value_patch
           this%cpool_to_gresp_storage(i)              = value_patch
-          this%cpool_leaf_gr(i)                       = value_patch
-          this%cpool_leaf_storage_gr(i)               = value_patch
-          this%transfer_leaf_gr(i)                    = value_patch
-          this%cpool_froot_gr(i)                      = value_patch
-          this%cpool_froot_storage_gr(i)              = value_patch
-          this%transfer_froot_gr(i)                   = value_patch
+          
           this%cpool_livestem_gr(i)                   = value_patch
           this%cpool_livestem_storage_gr(i)           = value_patch
           this%transfer_livestem_gr(i)                = value_patch
@@ -8754,6 +8665,7 @@ module VegetationDataType
           this%cpool_deadcroot_gr(i)                  = value_patch
           this%cpool_deadcroot_storage_gr(i)          = value_patch
           this%transfer_deadcroot_gr(i)               = value_patch
+          
           this%leafc_storage_to_xfer(i)               = value_patch
           this%frootc_storage_to_xfer(i)              = value_patch
           this%livestemc_storage_to_xfer(i)           = value_patch
@@ -8775,7 +8687,7 @@ module VegetationDataType
           this%npp(i)                                 = value_patch
           this%agnpp(i)                               = value_patch
           this%bgnpp(i)                               = value_patch
-          this%agwdnpp(i)                               = value_patch
+          this%agwdnpp(i)                             = value_patch
           this%litfall(i)                             = value_patch
           this%vegfire(i)                             = value_patch
           this%wood_harvestc(i)                       = value_patch
@@ -8809,6 +8721,36 @@ module VegetationDataType
        end do
     end if
 
+    do fi = 1,num_patch
+       i = filter_patch(fi)
+       this%hrv_leafc_to_litter(i)                 = value_patch
+       this%hrv_leafc_storage_to_litter(i)         = value_patch
+       this%hrv_leafc_xfer_to_litter(i)            = value_patch
+       this%hrv_frootc_to_litter(i)                = value_patch
+       this%hrv_frootc_storage_to_litter(i)        = value_patch
+       this%hrv_frootc_xfer_to_litter(i)           = value_patch
+       this%hrv_livestemc_to_litter(i)             = value_patch
+       this%hrv_livestemc_storage_to_litter(i)     = value_patch
+       this%hrv_livestemc_xfer_to_litter(i)        = value_patch
+       this%hrv_deadstemc_to_prod10c(i)            = value_patch
+       this%hrv_deadstemc_to_prod100c(i)           = value_patch
+       this%hrv_leafc_to_prod1c(i)                 = value_patch
+       this%hrv_livestemc_to_prod1c(i)             = value_patch
+       this%hrv_grainc_to_prod1c(i)                = value_patch
+       this%hrv_cropc_to_prod1c(i)                 = value_patch
+       this%hrv_deadstemc_storage_to_litter(i)     = value_patch
+       this%hrv_deadstemc_xfer_to_litter(i)        = value_patch
+       this%hrv_livecrootc_to_litter(i)            = value_patch
+       this%hrv_livecrootc_storage_to_litter(i)    = value_patch
+       this%hrv_livecrootc_xfer_to_litter(i)       = value_patch
+       this%hrv_deadcrootc_to_litter(i)            = value_patch
+       this%hrv_deadcrootc_storage_to_litter(i)    = value_patch
+       this%hrv_deadcrootc_xfer_to_litter(i)       = value_patch
+       this%hrv_gresp_storage_to_litter(i)         = value_patch
+       this%hrv_gresp_xfer_to_litter(i)            = value_patch
+       this%hrv_xsmrpool_to_atm(i)                 = value_patch
+       this%hrv_cpool_to_litter(i)                 = value_patch
+    end do 
   end subroutine veg_cf_setvalues
 
   !------------------------------------------------------------------------
@@ -9652,26 +9594,6 @@ module VegetationDataType
     do fi = 1,num_patch
        i=filter_patch(fi)
 
-       this%m_leafn_to_litter(i)                   = value_patch
-       this%m_frootn_to_litter(i)                  = value_patch
-       this%m_leafn_storage_to_litter(i)           = value_patch
-       this%m_frootn_storage_to_litter(i)          = value_patch
-       this%m_livestemn_storage_to_litter(i)       = value_patch
-       this%m_deadstemn_storage_to_litter(i)       = value_patch
-       this%m_livecrootn_storage_to_litter(i)      = value_patch
-       this%m_deadcrootn_storage_to_litter(i)      = value_patch
-       this%m_leafn_xfer_to_litter(i)              = value_patch
-       this%m_frootn_xfer_to_litter(i)             = value_patch
-       this%m_livestemn_xfer_to_litter(i)          = value_patch
-       this%m_deadstemn_xfer_to_litter(i)          = value_patch
-       this%m_livecrootn_xfer_to_litter(i)         = value_patch
-       this%m_deadcrootn_xfer_to_litter(i)         = value_patch
-       this%m_livestemn_to_litter(i)               = value_patch
-       this%m_deadstemn_to_litter(i)               = value_patch
-       this%m_livecrootn_to_litter(i)              = value_patch
-       this%m_deadcrootn_to_litter(i)              = value_patch
-       this%m_retransn_to_litter(i)                = value_patch
-       this%m_npool_to_litter(i)                   = value_patch
        this%hrv_leafn_to_litter(i)                 = value_patch
        this%hrv_frootn_to_litter(i)                = value_patch
        this%hrv_leafn_storage_to_litter(i)         = value_patch
@@ -9699,49 +9621,6 @@ module VegetationDataType
        this%hrv_retransn_to_litter(i)              = value_patch
        this%hrv_npool_to_litter(i)                 = value_patch
 
-       this%m_leafn_to_fire(i)                     = value_patch
-       this%m_leafn_storage_to_fire(i)             = value_patch
-       this%m_leafn_xfer_to_fire(i)                = value_patch
-       this%m_livestemn_to_fire(i)                 = value_patch
-       this%m_livestemn_storage_to_fire(i)         = value_patch
-       this%m_livestemn_xfer_to_fire(i)            = value_patch
-       this%m_deadstemn_to_fire(i)                 = value_patch
-       this%m_deadstemn_storage_to_fire(i)         = value_patch
-       this%m_deadstemn_xfer_to_fire(i)            = value_patch
-       this%m_frootn_to_fire(i)                    = value_patch
-       this%m_frootn_storage_to_fire(i)            = value_patch
-       this%m_frootn_xfer_to_fire(i)               = value_patch
-       this%m_livecrootn_to_fire(i)                = value_patch
-       this%m_livecrootn_storage_to_fire(i)        = value_patch
-       this%m_livecrootn_xfer_to_fire(i)           = value_patch
-       this%m_deadcrootn_to_fire(i)                = value_patch
-       this%m_deadcrootn_storage_to_fire(i)        = value_patch
-       this%m_deadcrootn_xfer_to_fire(i)           = value_patch
-       this%m_retransn_to_fire(i)                  = value_patch
-       this%m_npool_to_fire(i)                     = value_patch
-
-       this%m_leafn_to_litter_fire(i)              = value_patch
-       this%m_leafn_storage_to_litter_fire(i)      = value_patch
-       this%m_leafn_xfer_to_litter_fire(i)         = value_patch
-       this%m_livestemn_to_litter_fire(i)          = value_patch
-       this%m_livestemn_storage_to_litter_fire(i)  = value_patch
-       this%m_livestemn_xfer_to_litter_fire(i)     = value_patch
-       this%m_livestemn_to_deadstemn_fire(i)       = value_patch
-       this%m_deadstemn_to_litter_fire(i)          = value_patch
-       this%m_deadstemn_storage_to_litter_fire(i)  = value_patch
-       this%m_deadstemn_xfer_to_litter_fire(i)     = value_patch
-       this%m_frootn_to_litter_fire(i)             = value_patch
-       this%m_frootn_storage_to_litter_fire(i)     = value_patch
-       this%m_frootn_xfer_to_litter_fire(i)        = value_patch
-       this%m_livecrootn_to_litter_fire(i)         = value_patch
-       this%m_livecrootn_storage_to_litter_fire(i) = value_patch
-       this%m_livecrootn_xfer_to_litter_fire(i)    = value_patch
-       this%m_livecrootn_to_deadcrootn_fire(i)     = value_patch
-       this%m_deadcrootn_to_litter_fire(i)         = value_patch
-       this%m_deadcrootn_storage_to_litter_fire(i) = value_patch
-       this%m_deadcrootn_xfer_to_litter_fire(i)    = value_patch
-       this%m_retransn_to_litter_fire(i)           = value_patch
-       this%m_npool_to_litter_fire(i)              = value_patch
 
        this%leafn_xfer_to_leafn(i)                 = value_patch
        this%frootn_xfer_to_frootn(i)               = value_patch
@@ -10780,26 +10659,6 @@ module VegetationDataType
     do fi = 1,num_patch
        i=filter_patch(fi)
 
-       this%m_leafp_to_litter(i)                   = value_patch
-       this%m_frootp_to_litter(i)                  = value_patch
-       this%m_leafp_storage_to_litter(i)           = value_patch
-       this%m_frootp_storage_to_litter(i)          = value_patch
-       this%m_livestemp_storage_to_litter(i)       = value_patch
-       this%m_deadstemp_storage_to_litter(i)       = value_patch
-       this%m_livecrootp_storage_to_litter(i)      = value_patch
-       this%m_deadcrootp_storage_to_litter(i)      = value_patch
-       this%m_leafp_xfer_to_litter(i)              = value_patch
-       this%m_frootp_xfer_to_litter(i)             = value_patch
-       this%m_livestemp_xfer_to_litter(i)          = value_patch
-       this%m_deadstemp_xfer_to_litter(i)          = value_patch
-       this%m_livecrootp_xfer_to_litter(i)         = value_patch
-       this%m_deadcrootp_xfer_to_litter(i)         = value_patch
-       this%m_livestemp_to_litter(i)               = value_patch
-       this%m_deadstemp_to_litter(i)               = value_patch
-       this%m_livecrootp_to_litter(i)              = value_patch
-       this%m_deadcrootp_to_litter(i)              = value_patch
-       this%m_retransp_to_litter(i)                = value_patch
-       this%m_ppool_to_litter(i)                   = value_patch
        this%hrv_leafp_to_litter(i)                 = value_patch
        this%hrv_frootp_to_litter(i)                = value_patch
        this%hrv_leafp_storage_to_litter(i)         = value_patch
@@ -10825,50 +10684,6 @@ module VegetationDataType
        this%hrv_deadcrootp_to_litter(i)            = value_patch
        this%hrv_retransp_to_litter(i)              = value_patch
        this%hrv_ppool_to_litter(i)                 = value_patch
-
-       this%m_leafp_to_fire(i)                     = value_patch
-       this%m_leafp_storage_to_fire(i)             = value_patch
-       this%m_leafp_xfer_to_fire(i)                = value_patch
-       this%m_livestemp_to_fire(i)                 = value_patch
-       this%m_livestemp_storage_to_fire(i)         = value_patch
-       this%m_livestemp_xfer_to_fire(i)            = value_patch
-       this%m_deadstemp_to_fire(i)                 = value_patch
-       this%m_deadstemp_storage_to_fire(i)         = value_patch
-       this%m_deadstemp_xfer_to_fire(i)            = value_patch
-       this%m_frootp_to_fire(i)                    = value_patch
-       this%m_frootp_storage_to_fire(i)            = value_patch
-       this%m_frootp_xfer_to_fire(i)               = value_patch
-       this%m_livecrootp_to_fire(i)                = value_patch
-       this%m_livecrootp_storage_to_fire(i)        = value_patch
-       this%m_livecrootp_xfer_to_fire(i)           = value_patch
-       this%m_deadcrootp_to_fire(i)                = value_patch
-       this%m_deadcrootp_storage_to_fire(i)        = value_patch
-       this%m_deadcrootp_xfer_to_fire(i)           = value_patch
-       this%m_retransp_to_fire(i)                  = value_patch
-       this%m_ppool_to_fire(i)                     = value_patch
-
-       this%m_leafp_to_litter_fire(i)              = value_patch
-       this%m_leafp_storage_to_litter_fire(i)      = value_patch
-       this%m_leafp_xfer_to_litter_fire(i)         = value_patch
-       this%m_livestemp_to_litter_fire(i)          = value_patch
-       this%m_livestemp_storage_to_litter_fire(i)  = value_patch
-       this%m_livestemp_xfer_to_litter_fire(i)     = value_patch
-       this%m_livestemp_to_deadstemp_fire(i)       = value_patch
-       this%m_deadstemp_to_litter_fire(i)          = value_patch
-       this%m_deadstemp_storage_to_litter_fire(i)  = value_patch
-       this%m_deadstemp_xfer_to_litter_fire(i)     = value_patch
-       this%m_frootp_to_litter_fire(i)             = value_patch
-       this%m_frootp_storage_to_litter_fire(i)     = value_patch
-       this%m_frootp_xfer_to_litter_fire(i)        = value_patch
-       this%m_livecrootp_to_litter_fire(i)         = value_patch
-       this%m_livecrootp_storage_to_litter_fire(i) = value_patch
-       this%m_livecrootp_xfer_to_litter_fire(i)    = value_patch
-       this%m_livecrootp_to_deadcrootp_fire(i)     = value_patch
-       this%m_deadcrootp_to_litter_fire(i)         = value_patch
-       this%m_deadcrootp_storage_to_litter_fire(i) = value_patch
-       this%m_deadcrootp_xfer_to_litter_fire(i)    = value_patch
-       this%m_retransp_to_litter_fire(i)           = value_patch
-       this%m_ppool_to_litter_fire(i)              = value_patch
 
        this%leafp_xfer_to_leafp(i)                 = value_patch
        this%frootp_xfer_to_frootp(i)               = value_patch
