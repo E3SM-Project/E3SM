@@ -606,7 +606,7 @@ _TESTS = {
     "e3sm_scream_v1_hires" : {
         "time"  : "01:00:00",
         "tests" : (
-            "SMS_Ln90.ne30pg2_ne30pg2.F2010-SCREAMv1.scream-perf_test"
+            "SMS_Ln300.ne30pg2_ne30pg2.F2010-SCREAMv1.scream-perf_test"
             )
     },
 
