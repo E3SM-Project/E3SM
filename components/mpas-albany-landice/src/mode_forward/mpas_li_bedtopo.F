@@ -115,6 +115,7 @@ contains
       !-----------------------------------------------------------------
 
       character (len=StrKIND), pointer :: config_uplift_method
+      integer :: err_tmp
 
       ! No init is needed.
       err = 0
@@ -122,7 +123,12 @@ contains
       call mpas_pool_get_config(liConfigs, 'config_uplift_method', config_uplift_method)
       if (trim(config_uplift_method)=='sealevelmodel') then
          ! initialize the 1D sea-level model if fresh start
-         call slmodel_init(domain, err)
+         call slmodel_init(domain, err_tmp)
+         err = ior(err, err_tmp)
+
+         if (err /= 0) then
+            call mpas_log_write('Error in li_bedtopo_init', MPAS_LOG_ERR)
+         endif
       endif
 
    !--------------------------------------------------------------------
@@ -445,7 +451,7 @@ contains
          call check_SLM_coupling_interval(dtime, domain % streamManager, err_tmp)
          err = ior(err, err_tmp)
          if (err /= 0) then
-            return
+            call mpas_log_write("Error occurred in check_SLM_coupling_interval.", MPAS_LOG_ERR)
          endif
 
          ! Set Displacement variable for GATHERV command
@@ -473,8 +479,10 @@ contains
 
          call find_slm_restart_timestep(meshPool, slmTimeStep, err_tmp)
          err = ior(err, err_tmp)
-         call mpas_log_write("Calling the SLM. SLM timestep $i", intArgs=(/slmTimeStep/))
-         call slmodel_solve(slmTimeStep, domain)
+         if (err == 0) then
+            call mpas_log_write("Calling the SLM. SLM timestep $i", intArgs=(/slmTimeStep/))
+            call slmodel_solve(slmTimeStep, domain)
+         endif
 
       else
 
@@ -532,11 +540,13 @@ contains
             slmTimeStep = 0
 
             ! series of calling SLM routines
-            call sl_call_readnl
-            call sl_solver_checkpoint(itersl, dtime)
-            call sl_timewindow(slmTimeStep)
-            call sl_solver_init(itersl, starttime, ismIceload, ismBedtopo, ismMask)
-            call sl_deallocate_array
+            if (err == 0) then
+               call sl_call_readnl
+               call sl_solver_checkpoint(itersl, dtime)
+               call sl_timewindow(slmTimeStep)
+               call sl_solver_init(itersl, starttime, ismIceload, ismBedtopo, ismMask)
+               call sl_deallocate_array
+            endif
 
          endif
          deallocate(globalArrayThickness)
@@ -995,12 +1005,14 @@ contains
       integer :: err_tmp
 
       err = 0
+      err_tmp = 0
 
       ! First, check consistency in coupling interval set up in MALI and SLM
       call mpas_pool_get_config(liConfigs, "config_slm_coupling_interval", config_slm_coupling_interval)
       if (config_slm_coupling_interval /= slm_dt1) then
-         call mpas_log_write("The coupling interval in MALI and SLM settings are inconsistent", MPAS_LOG_ERR)
-         err = ior(err,1)
+         call mpas_log_write("The coupling interval in MALI ($i) and SLM ($i) are inconsistent", MPAS_LOG_ERR, &
+                 intArgs=(/config_slm_coupling_interval, slm_dt1/))
+         err = ior(err, 1)
       endif
 
       ! Check that config_adaptive_timestep_force_interval divides evenly into config_slm_coupling_interval
@@ -1015,6 +1027,7 @@ contains
          call mpas_log_write("config_adaptive_timestep_force_interval currently not supported " // &
               "to have nonzero values for months, days, hours, minutes, or seconds when sea-level model " // &
               "is coupled.  config_adaptive_timestep_force_interval=" //trim(config_adaptive_timestep_force_interval), MPAS_LOG_ERR)
+         call mpas_log_write("  MM=$i, DD=$i, H=$i, M=$i, S=$i", intArgs=(/MM, DD, H, M, S/))
          ! Note: the actual requirement is that adapt dt force interval divides evenly into coupling interval
          ! but that is tricky to check, and wanting anything but even years for that option is a rare use case.
          err = ior(err, 1)
@@ -1030,7 +1043,8 @@ contains
       ! Now check that restart interval is an even multiple of coupling interval
       stream_cursor => streamManager % streams % head
       do while (associated(stream_cursor))
-         if ( trim(stream_cursor % name) == 'restart' .and. (stream_cursor % valid) ) then
+         if ( trim(stream_cursor % name) == 'restart' .and. (stream_cursor % active_stream) ) then
+            call mpas_log_write("Checking restart interval against SLM coulping interval")
             call MPAS_stream_mgr_get_property(streamManager, 'restart', MPAS_STREAM_PROPERTY_RECORD_INTV, &
                  restart_interval_str, ierr=err_tmp)
             err = ior(err, err_tmp)
@@ -1044,8 +1058,8 @@ contains
                call mpas_log_write("If Sea Level Model is active, restart output_interval cannot include " // &
                     "nonzero months, days, hours, minutes or seconds.  restart output_interval=" // &
                     trim(restart_interval_str), MPAS_LOG_ERR)
+               err = ior(err, 1)
             endif
-            err = ior(err, 1)
 
             if (mod(YYYY, config_slm_coupling_interval) /= 0) then
                call mpas_log_write("restart output_interval must be a multiple of config_slm_coupling_interval", MPAS_LOG_ERR)
@@ -1053,6 +1067,8 @@ contains
             endif
 
          endif
+
+         stream_cursor => stream_cursor % next
       enddo
 
    !--------------------------------------------------------------------

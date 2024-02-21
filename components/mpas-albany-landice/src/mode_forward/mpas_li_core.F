@@ -338,8 +338,8 @@ module li_core
       ! ===
       call li_velocity_external_write_albany_mesh(domain)
 
-      call mpas_dmpar_max_int(domain % dminfo, err, globalErr)  ! Find out if any blocks got an error
-      if (globalErr > 0) then
+      call mpas_dmpar_max_int(domain % dminfo, abs(err), globalErr)  ! Find out if any blocks got an error
+      if (globalErr /= 0) then
           call mpas_log_write("An error has occurred in li_core_init. Aborting...", MPAS_LOG_CRIT)
       endif
 
@@ -1111,7 +1111,8 @@ module li_core
       character (len=StrKIND), pointer :: config_dt  ! MPAS LI-specific config option
       character (len=StrKIND), pointer :: config_adaptive_timestep_force_interval  ! MPAS LI-specific config option
       character (len=StrKIND), pointer :: config_restart_timestamp_name
-      character (len=StrKIND), pointer :: config_uplift_method, config_slm_coupling_interval
+      character (len=StrKIND), pointer :: config_uplift_method
+      integer, pointer :: config_slm_coupling_interval
       character (len=StrKIND) :: restartTimeStamp !< string to be read from file
       integer, pointer :: config_year_digits
       integer :: err_tmp
@@ -1197,7 +1198,7 @@ module li_core
 
       ! Set up the coupling time interval if MALI is coupled to sea-level model
       if (trim(config_uplift_method) == "sealevelmodel") then
-         call mpas_set_timeInterval(slm_coupling_interval, timeString=config_slm_coupling_interval, ierr=err_tmp)
+         call mpas_set_timeInterval(slm_coupling_interval, YY=config_slm_coupling_interval, ierr=err_tmp)
          ierr = ior(ierr,err_tmp)
          call mpas_add_clock_alarm(core_clock, 'slmCouplingInterval', alarmTime=startTime, &
               alarmTimeInterval=slm_coupling_interval, ierr=err_tmp)
@@ -1210,7 +1211,7 @@ module li_core
       endif
 
       ! === error check
-      if (ierr > 0) then
+      if (ierr /= 0) then
           call mpas_log_write("An error has occurred in li_simulation_clock_init.", MPAS_LOG_ERR)
       endif
 
