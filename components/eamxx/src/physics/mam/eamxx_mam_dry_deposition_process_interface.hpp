@@ -15,8 +15,18 @@ namespace scream {
 // The process responsible for handling MAM4 dry deposition. The AD
 // stores exactly ONE instance of this class in its list of subcomponents.
 class MAMDryDep final : public scream::AtmosphereProcess {
+
+    using KT = ekat::KokkosTypes<DefaultDevice>;
+    
   // number of horizontal columns and vertical levels
   int ncol_, nlev_;
+
+  //Wet and dry states of atmosphere
+  mam_coupling::WetAtmosphere wet_atm_;
+  mam_coupling::DryAtmosphere dry_atm_;
+
+  // aerosol state variables
+  mam_coupling::AerosolState wet_aero_, dry_aero_;
 
   // buffer for sotring temporary variables
   mam_coupling::Buffer buffer_;
@@ -54,6 +64,51 @@ class MAMDryDep final : public scream::AtmosphereProcess {
 
   // Finalize
   void finalize_impl(){/*Do nothing*/};
+
+    // Atmosphere processes often have a pre-processing step that constructs
+  // required variables from the set of fields stored in the field manager.
+  // This functor implements this step, which is called during run_impl.
+  struct Preprocess {
+    Preprocess() = default;
+    // on host: initializes preprocess functor with necessary state data
+    void initialize(const int ncol, const int nlev,
+                    const mam_coupling::WetAtmosphere &wet_atm,
+                    const mam_coupling::AerosolState &wet_aero,
+                    const mam_coupling::DryAtmosphere &dry_atm,
+                    const mam_coupling::AerosolState &dry_aero) {
+      ncol_pre_     = ncol;
+      nlev_pre_     = nlev;
+      wet_atm_pre_  = wet_atm;
+      wet_aero_pre_ = wet_aero;
+      dry_atm_pre_  = dry_atm;
+      dry_aero_pre_ = dry_aero;
+    }
+
+    KOKKOS_INLINE_FUNCTION
+    void operator()(
+        const Kokkos::TeamPolicy<KT::ExeSpace>::member_type &team) const {
+      const int i = team.league_rank();  // column index
+
+      compute_dry_mixing_ratios(team, wet_atm_pre_, dry_atm_pre_, i);
+      compute_dry_mixing_ratios(team, wet_atm_pre_, wet_aero_pre_,
+                                dry_aero_pre_, i);
+      team.team_barrier();
+
+    }  // operator()
+
+    // local variables for preprocess struct
+    // number of horizontal columns and vertical levels
+    int ncol_pre_, nlev_pre_;
+
+    // local atmospheric and aerosol state data
+    mam_coupling::WetAtmosphere wet_atm_pre_;
+    mam_coupling::DryAtmosphere dry_atm_pre_;
+    mam_coupling::AerosolState wet_aero_pre_, dry_aero_pre_;
+  };  // MAMAci::Preprocess
+
+ private:
+  // pre- and postprocessing scratch pads
+  Preprocess preprocess_;
 
 };  // MAMDryDep
 

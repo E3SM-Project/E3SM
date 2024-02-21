@@ -74,6 +74,10 @@ void MAMDryDep::set_grids(
                      "tracers");  // cloud liquid wet number mixing ratio
   add_field<Required>("ni", scalar3d_layout_mid, n_unit, grid_name,
                       "tracers");  // ice number mixing ratio
+  add_field<Required>(
+      "omega", scalar3d_layout_mid, Pa / s,
+      grid_name);  // Vertical pressure velocity [Pa/s] at midpoints
+
   add_field<Required>("dgncur_awet", scalar4d_layout_mid, m, grid_name);
   add_field<Required>("wetdens", scalar4d_layout_mid, kg / m3, grid_name);
   add_field<Required>("obklen", scalar2d_layout, m, grid_name);
@@ -127,15 +131,6 @@ void MAMDryDep::set_grids(
     add_field<Updated>(gas_mmr_field_name, scalar3d_layout_mid, q_unit,
                        grid_name, "tracers");
   }
-
-  /*dgncur_awet, wetdens, obklen, surfric,
-     cam_in%landfrac, cam_in%icefrac, cam_in%ocnfrac, & cam_in%fv,
-     cam_in%ram1,*/
-
-  /*state%t, state%pmid, state%pint, state%pdel, &
-            state%q, dgncur_awet, wetdens, qqcw, obklen, surfric,
-     cam_in%landfrac, cam_in%icefrac, cam_in%ocnfrac, & cam_in%fv, cam_in%ram1,
-     ztodt, cam_out, ptend */
 }
 
 // =========================================================================================
@@ -164,10 +159,127 @@ void MAMDryDep::init_buffers(const ATMBufferManager &buffer_manager) {
 void MAMDryDep::initialize_impl(const RunType run_type) {
   // Gather runtime options
   //(e.g.) runtime_options.lambda_low    = m_params.get<double>("lambda_low");
+
+  wet_atm_.qv    = get_field_in("qv").get_view<const Real **>();
+  wet_atm_.qc    = get_field_in("qc").get_view<const Real **>();
+  wet_atm_.nc    = get_field_in("nc").get_view<const Real **>();
+  wet_atm_.qi    = get_field_in("qi").get_view<const Real **>();
+  wet_atm_.ni    = get_field_in("ni").get_view<const Real **>();
+  wet_atm_.omega = get_field_in("omega").get_view<const Real **>();
+
+  dry_atm_.T_mid = get_field_in("T_mid").get_view<const Real **>();
+  dry_atm_.p_mid = get_field_in("p_mid").get_view<const Real **>();
+  dry_atm_.p_del =
+      get_field_in("pseudo_density").get_view<const Real **>();
+  dry_atm_.qv = buffer_.qv_dry;
+  dry_atm_.qc = buffer_.qc_dry;
+  dry_atm_.nc = buffer_.nc_dry;
+  dry_atm_.qi = buffer_.qi_dry;
+  dry_atm_.ni = buffer_.ni_dry;
+
+  // interstitial and cloudborne aerosol tracers of interest: mass (q) and
+  // number (n) mixing ratios
+  for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+    // interstitial aerosol tracers of interest: number (n) mixing ratios
+    const char *int_nmr_field_name = mam_coupling::int_aero_nmr_field_name(m);
+    wet_aero_.int_aero_nmr[m] =
+        get_field_out(int_nmr_field_name).get_view<Real **>();
+    dry_aero_.int_aero_nmr[m] = buffer_.dry_int_aero_nmr[m];
+
+    // cloudborne aerosol tracers of interest: number (n) mixing ratios
+    const char *cld_nmr_field_name = mam_coupling::cld_aero_nmr_field_name(m);
+    wet_aero_.cld_aero_nmr[m] =
+        get_field_out(cld_nmr_field_name).get_view<Real **>();
+    dry_aero_.cld_aero_nmr[m] = buffer_.dry_cld_aero_nmr[m];
+
+    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+      // (interstitial) aerosol tracers of interest: mass (q) mixing ratios
+      const char *int_mmr_field_name =
+          mam_coupling::int_aero_mmr_field_name(m, a);
+      if(strlen(int_mmr_field_name) > 0) {
+        wet_aero_.int_aero_mmr[m][a] =
+            get_field_out(int_mmr_field_name).get_view<Real **>();
+        dry_aero_.int_aero_mmr[m][a] = buffer_.dry_int_aero_mmr[m][a];
+      }
+
+      // (cloudborne) aerosol tracers of interest: mass (q) mixing ratios
+      const char *cld_mmr_field_name =
+          mam_coupling::cld_aero_mmr_field_name(m, a);
+      if(strlen(cld_mmr_field_name) > 0) {
+        wet_aero_.cld_aero_mmr[m][a] =
+            get_field_out(cld_mmr_field_name).get_view<Real **>();
+        dry_aero_.cld_aero_mmr[m][a] = buffer_.dry_cld_aero_mmr[m][a];
+      }
+    }
+  }
+  for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
+    const char *gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
+    wet_aero_.gas_mmr[g] =
+        get_field_out(gas_mmr_field_name).get_view<Real **>();
+    dry_aero_.gas_mmr[g] = buffer_.dry_gas_mmr[g];
+  }
+
+  // set up our preprocess functor
+  preprocess_.initialize(ncol_, nlev_, wet_atm_, wet_aero_,
+                         dry_atm_, dry_aero_);
 }
 
 // =========================================================================================
 void MAMDryDep::run_impl(const double dt) {
+
+const auto scan_policy = ekat::ExeSpaceUtils<
+      KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
+
+  // preprocess input -- needs a scan for the calculation of atm height
+  Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
+  Kokkos::fence();
+
+
+
+  /* 
+  
+  Rough notes:
+  
+  tair == T_mid
+  pmid == p_mid
+  pint ==p_int
+  pdel == p_del
+
+  state_q: It can be obtained using dry_aero_ and dry_atm_, there is an example of this in the optics code
+  qqcw can also be obtained from wet_aero.There is an example in optics code
+  Feel free to improvise input variables by adding them to the input.yaml file.
+
+
+
+  Function to call in mam4xx/drydep.hpp:
+  void aero_model_drydep(
+    const ThreadTeam &team,
+    const Real fraction_landuse[DryDeposition::n_land_type] ,
+    const haero::ConstColumnView tair, const haero::ConstColumnView pmid,
+    const haero::ConstColumnView pint, const haero::ConstColumnView pdel,
+    const Diagnostics::ColumnTracerView state_q,
+    const ColumnView dgncur_awet[AeroConfig::num_modes()],
+    const ColumnView wetdens[AeroConfig::num_modes()],
+    const Kokkos::View<Real *> qqcw[aero_model::pcnst], const Real obklen,
+    const Real ustar, const Real landfrac, const Real icefrac,
+    const Real ocnfrac, const Real fricvelin, const Real ram1in,
+    const Diagnostics::ColumnTracerView ptend_q,
+    bool ptend_lq[aero_model::pcnst], const Real dt,
+    const ColumnView aerdepdrycw, const ColumnView aerdepdryis,
+
+    const ColumnView rho,
+    const Kokkos::View<Real *> vlc_dry[AeroConfig::num_modes()]
+                                      [DryDeposition::aerosol_categories],
+    const Kokkos::View<Real *> vlc_trb[AeroConfig::num_modes()]
+                                      [DryDeposition::aerosol_categories],
+    const Kokkos::View<Real *> vlc_grv[AeroConfig::num_modes()]
+                                      [DryDeposition::aerosol_categories],
+    const Kokkos::View<Real *> dqdt_tmp[aero_model::pcnst])
+  
+  */
+
+
+
   std::cout << "End of derydep run" << std::endl;
 
 
