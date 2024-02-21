@@ -1,7 +1,7 @@
 #ifndef EAMXX_MAM_DRYDEP_HPP
 #define EAMXX_MAM_DRYDEP_HPP
 
-// For declaring wetscav class derived from atm process class
+// For declaring dry deposition class derived from atm process class
 #include <share/atm_process/atmosphere_process.hpp>
 
 // For MAM4 aerosol configuration

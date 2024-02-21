@@ -29,6 +29,8 @@ void MAMDryDep::set_grids(
   auto n_unit = 1 / kg;  // units of number mixing ratios of tracers
   n_unit.set_string("#/kg");
 
+  auto m3 = m * m * m;  // meter cubed
+
   grid_                 = grids_manager->get_grid("Physics");
   const auto &grid_name = grid_->name();
 
@@ -41,16 +43,99 @@ void MAMDryDep::set_grids(
   // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level and
   // interfaces
   const FieldLayout scalar3d_layout_mid{{COL, LEV}, {ncol_, nlev_}};
+  const FieldLayout scalar3d_layout_int{{COL, ILEV}, {ncol_, nlev_ + 1}};
 
-  // Layout for 2D (2d horiz) variable defined at mid-level and
-  // interfaces
-  const FieldLayout scalar2d_layout_mid{{COL}, {ncol_}};
+  // Layout for 2D (2d horiz) variable 
+  const FieldLayout scalar2d_layout{{COL}, {ncol_}};
+  
+  // Layout for 4D (2d horiz X 1d vertical x number of modes) variables
+  const int num_aero_modes = mam_coupling::num_aero_modes();
+  FieldLayout scalar4d_layout_mid{
+      {COL, LEV, NMODES}, {ncol_, nlev_, num_aero_modes}};  // mid points
 
   // -------------------------------------------------------------------------------------------------------------------------
   // These variables are "required" or pure inputs for the process
   // -------------------------------------------------------------------------------------------------------------------------
   add_field<Required>("T_mid", scalar3d_layout_mid, K,
                       grid_name);  // temperature [K]
+  add_field<Required>("p_mid", scalar3d_layout_mid, Pa,
+                      grid_name);  // pressure at mid points in [Pa]
+  add_field<Required>("p_int", scalar3d_layout_int, Pa,
+                      grid_name);  // total pressure
+  add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa,
+                      grid_name);  // pseudo density in [Pa]
+  add_field<Required>("qv", scalar3d_layout_mid, q_unit, grid_name,
+                      "tracers");  // specific humidity
+  add_field<Required>("qc", scalar3d_layout_mid, q_unit, grid_name,
+                      "tracers");  // liquid cloud water [kg/kg] wet
+  add_field<Required>("qi", scalar3d_layout_mid, q_unit, grid_name,
+                      "tracers");  // ice cloud water [kg/kg] wet
+  add_field<Updated>("nc", scalar3d_layout_mid, n_unit, grid_name,
+                     "tracers");  // cloud liquid wet number mixing ratio
+  add_field<Required>("ni", scalar3d_layout_mid, n_unit, grid_name,
+                      "tracers");  // ice number mixing ratio
+  add_field<Required>("dgncur_awet", scalar4d_layout_mid, m, grid_name);
+  add_field<Required>("wetdens", scalar4d_layout_mid, kg / m3, grid_name);
+  add_field<Required>("obklen", scalar2d_layout, m, grid_name);
+  add_field<Required>("surfric", scalar2d_layout, m / s, grid_name);
+
+  auto nondim = ekat::units::Units::nondimensional();
+  add_field<Required>("landfrac", scalar2d_layout, nondim, grid_name);
+  add_field<Required>("icefrac", scalar2d_layout, nondim, grid_name);
+  add_field<Required>("ocnfrac", scalar2d_layout, nondim, grid_name);
+  add_field<Required>("fv", scalar2d_layout, m / s, grid_name);
+  add_field<Required>("ram1", scalar2d_layout, s / m, grid_name);
+
+  // (interstitial) aerosol tracers of interest: mass (q) and number (n) mixing
+  // ratios
+  for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+    const char *int_nmr_field_name = mam_coupling::int_aero_nmr_field_name(m);
+
+    add_field<Updated>(int_nmr_field_name, scalar3d_layout_mid, n_unit,
+                       grid_name, "tracers");
+    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+      const char *int_mmr_field_name =
+          mam_coupling::int_aero_mmr_field_name(m, a);
+
+      if(strlen(int_mmr_field_name) > 0) {
+        add_field<Updated>(int_mmr_field_name, scalar3d_layout_mid, q_unit,
+                           grid_name, "tracers");
+      }
+    }
+  }
+  // (cloud) aerosol tracers of interest: mass (q) and number (n) mixing ratios
+  for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+    const char *cld_nmr_field_name = mam_coupling::cld_aero_nmr_field_name(m);
+    // printf("%s \n", int_nmr_field_name);
+
+    add_field<Updated>(cld_nmr_field_name, scalar3d_layout_mid, n_unit,
+                       grid_name);
+    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+      const char *cld_mmr_field_name =
+          mam_coupling::cld_aero_mmr_field_name(m, a);
+
+      if(strlen(cld_mmr_field_name) > 0) {
+        add_field<Updated>(cld_mmr_field_name, scalar3d_layout_mid, q_unit,
+                           grid_name);
+      }
+    }
+  }
+
+  // aerosol-related gases: mass mixing ratios
+  for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
+    const char *gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
+    add_field<Updated>(gas_mmr_field_name, scalar3d_layout_mid, q_unit,
+                       grid_name, "tracers");
+  }
+
+  /*dgncur_awet, wetdens, obklen, surfric,
+     cam_in%landfrac, cam_in%icefrac, cam_in%ocnfrac, & cam_in%fv,
+     cam_in%ram1,*/
+
+  /*state%t, state%pmid, state%pint, state%pdel, &
+            state%q, dgncur_awet, wetdens, qqcw, obklen, surfric,
+     cam_in%landfrac, cam_in%icefrac, cam_in%ocnfrac, & cam_in%fv, cam_in%ram1,
+     ztodt, cam_out, ptend */
 }
 
 // =========================================================================================
@@ -84,6 +169,9 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
 // =========================================================================================
 void MAMDryDep::run_impl(const double dt) {
   std::cout << "End of derydep run" << std::endl;
+
+
+  
 }
 
 // =========================================================================================

@@ -21,8 +21,17 @@ grids_manager:
 
 initial_conditions:
   # The name of the file containing the initial conditions for this test.
-  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
+  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_MAM}
   T_mid: 273.0
+  dgncur_awet: 1e-5
+  wetdens: 1e-5
+  obklen: 1e-5
+  surfric: 1e-5
+  landfrac: 1.0
+  icefrac: 0.0
+  ocnfrac: 0.0
+  fv: 1e-5
+  ram1: 1e-5
 
 # The parameters for I/O control
 Scorpio:
