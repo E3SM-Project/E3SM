@@ -49,7 +49,15 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
                                const double& scale_factor, const double& laplacian_rigid_factor, const int& nsplit, const bool& pgrad_correction,
                                const double& dp3d_thresh, const double& vtheta_thresh, const int& internal_diagnostics_level)
 {
-  // Check that the simulation options are supported. This helps us in the future, since we
+
+if(theta_hydrostatic_mode){
+        std::cout << " HEEEEEEEEEEEtheta_hydrostatic_mode =TRUE \n";
+}else
+{
+        std::cout << " HEEEEEEEEEEEtheta_hydrostatic_mode =FALSE \n";
+}      
+
+	// Check that the simulation options are supported. This helps us in the future, since we
   // are currently 'assuming' some option have/not have certain values. As we support for more
   // options in the C++ build, we will remove some checks
   Errors::check_option("init_simulation_params_c","vert_remap_q_alg",remap_alg,{1,3,10});
@@ -115,7 +123,13 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   params.moisture                      = (moisture ? MoistDry::MOIST : MoistDry::DRY);
   params.use_cpstar                    = use_cpstar;
   params.transport_alg                 = transport_alg;
-  params.theta_hydrostatic_mode        = theta_hydrostatic_mode;
+
+if(theta_hydrostatic_mode){
+  params.theta_hydrostatic_mode        = true;
+}else{
+  params.theta_hydrostatic_mode        = false;
+}
+  //params.theta_hydrostatic_mode        = theta_hydrostatic_mode;
   params.dcmip16_mu                    = dcmip16_mu;
   params.nsplit                        = nsplit;
   params.scale_factor                  = scale_factor;

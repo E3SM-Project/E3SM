@@ -62,10 +62,7 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
 {
   GPTLstart("tl-sc prim_run_subcycle_c");
 
-	  std::cout << "OG--------------- In SUBCYCLE?\n";      
-
-	
-	  auto& context = Context::singleton();
+  auto& context = Context::singleton();
 
   // Get simulation params
   SimulationParams& params = context.get<SimulationParams>();
@@ -163,10 +160,7 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
     ////////////////////////////////////////////////////////////////////////
     update_q(tl.np1_qdp,tl.np1);
   } else { // independent_time_steps
-
-	  std::cout << "OG   --------------- In FLEXIBLE?\n";      
-
-	  prim_step_flexible(dt, compute_diagnostics);
+    prim_step_flexible(dt, compute_diagnostics);
   }
 
   if (compute_diagnostics) {

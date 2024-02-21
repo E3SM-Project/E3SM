@@ -65,6 +65,12 @@ using Hommexx_Serial = void;
 # define HOMMEXX_STATIC static
 #endif
 
+
+// a hack to have a cpu build without rebuilding kokkos
+//#define HOMMEXX_SERIAL_SPACE
+
+
+
 // Selecting the execution space. If no specific request, use Kokkos default
 // exec space
 #ifdef HOMMEXX_ENABLE_GPU

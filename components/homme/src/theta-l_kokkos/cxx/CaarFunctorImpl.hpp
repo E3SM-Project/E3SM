@@ -41,7 +41,7 @@ struct CaarFunctorImpl {
 
   struct Buffers {
     static constexpr int num_3d_scalar_mid_buf = 10;
-    static constexpr int num_3d_vector_mid_buf =  5;
+    static constexpr int num_3d_vector_mid_buf =  6; //<-- for vvdp variable
     static constexpr int num_3d_scalar_int_buf =  6;
     static constexpr int num_3d_vector_int_buf =  3;
 
@@ -76,6 +76,9 @@ struct CaarFunctorImpl {
     ExecViewUnmanaged<Scalar*    [NP][NP][NUM_LEV_P]>   phi_tens;
   };
 
+    ExecViewUnmanaged<Scalar* [2][NP][NP][NUM_LEV]  >   vvdp;
+    //ExecViewUnmanaged<Scalar* [2][NP][NP][NUM_LEV]  >   vv_tens;
+
   using deriv_type = ReferenceElement::deriv_type;
 
   RKStageData                 m_data;
@@ -106,6 +109,10 @@ struct CaarFunctorImpl {
   struct TagPreExchange {};
   struct TagPostExchange {};
 
+#ifdef TESTER_NOMPI
+  struct TagPreExchangeTest {};
+#endif
+
   // Policies
 #ifndef NDEBUG
   template<typename Tag>
@@ -116,6 +123,10 @@ struct CaarFunctorImpl {
 #endif
 
   TeamPolicyType<TagPreExchange>   m_policy_pre;
+
+#ifdef TESTER_NOMPI
+  TeamPolicyType<TagPreExchangeTest>   m_policy_pre_test;
+#endif
 
   Kokkos::RangePolicy<ExecSpace, TagPostExchange> m_policy_post;
 
@@ -138,6 +149,9 @@ struct CaarFunctorImpl {
       , m_deriv(ref_FE.get_deriv())
       , m_sphere_ops(sphere_ops)
       , m_policy_pre (Homme::get_default_team_policy<ExecSpace,TagPreExchange>(m_num_elems))
+#ifdef TESTER_NOMPI
+      , m_policy_pre_test (Homme::get_default_team_policy<ExecSpace,TagPreExchangeTest>(m_num_elems))
+#endif
       , m_policy_post (0,m_num_elems*NP*NP)
       , m_tu(m_policy_pre)
   {
@@ -155,6 +169,9 @@ struct CaarFunctorImpl {
       , m_theta_advection_form(params.theta_adv_form)
       , m_pgrad_correction(params.pgrad_correction)
       , m_policy_pre (Homme::get_default_team_policy<ExecSpace,TagPreExchange>(m_num_elems))
+#ifdef TESTER_NOMPI
+      , m_policy_pre_test (Homme::get_default_team_policy<ExecSpace,TagPreExchangeTest>(m_num_elems))
+#endif
       , m_policy_post (0,num_elems*NP*NP)
       , m_tu(m_policy_pre)
   {}
@@ -256,6 +273,10 @@ struct CaarFunctorImpl {
 
     m_buffers.vdp      = decltype(m_buffers.vdp     )(mem,nslots);
     mem += m_buffers.vdp.size();
+
+    vvdp      = decltype(vvdp     )(mem,nslots);
+    mem += vvdp.size();
+
     m_buffers.v_tens   = decltype(m_buffers.v_tens  )(mem,nslots);
     mem += m_buffers.v_tens.size();
 
@@ -349,6 +370,10 @@ struct CaarFunctorImpl {
     int nerr;
     Kokkos::parallel_reduce("caar loop pre-boundary exchange", m_policy_pre, *this, nerr);
     Kokkos::fence();
+#ifdef TESTER_NOMPI
+    Kokkos::parallel_for("caar loop pre-boundary test", m_policy_pre_test, *this);
+    Kokkos::fence();
+#endif
     GPTLstop("caar compute");
 
 #ifndef TESTER_NOMPI
@@ -373,13 +398,43 @@ struct CaarFunctorImpl {
     profiling_pause();
   }
 
+#ifdef TESTER_NOMPI
+  KOKKOS_INLINE_FUNCTION
+  void operator()(const TagPreExchangeTest&, const TeamMember& team) const {
+    KernelVariables kv(team, m_tu);
+    test_dp_tendency(kv);
+  }
+#endif
+
+
+#ifndef TESTER_NOMPI
+#define K1
+#define K2
+#define K2a
+#define K2b
+#define K3
+#define K3b
+#define K4
+#define K5
+#define K5a
+#define K6
+#define K7
+
+#else
+
 #define K1
 #undef K2
+#undef K2a
+#undef K2b
 #undef K3
+#undef K3b
 #undef K4
 #undef K5
+#undef K5a
 #undef K6
 #undef K7
+#endif
+
 
   KOKKOS_INLINE_FUNCTION
   void operator()(const TagPreExchange&, const TeamMember &team, int& nerr) const {
@@ -401,7 +456,7 @@ struct CaarFunctorImpl {
     if ( ! ok) nerr = 1;
 #endif
 
-#if 0
+#ifdef K2a
     if (m_rsplit==0 || !m_theta_hydrostatic_mode) {
       // ============ EPOCH 2.1 =========== //
       kv.team_barrier();
@@ -409,7 +464,7 @@ struct CaarFunctorImpl {
     }
 #endif
 
-#if 0    
+#ifdef K2b
     if (m_rsplit==0) {
       // ============= EPOCH 2.2 ============ //
       kv.team_barrier();
@@ -423,7 +478,7 @@ struct CaarFunctorImpl {
     compute_accumulated_quantities(kv);
 #endif
 
-#if 0
+#ifdef K3b
     // Compute update quantities
     if (!m_theta_hydrostatic_mode) {
       compute_w_and_phi_tens (kv);
@@ -441,7 +496,7 @@ struct CaarFunctorImpl {
     compute_v_tens (kv);
 #endif
 
-#if 0    
+#ifdef K5a
     // Update states
     if (!m_theta_hydrostatic_mode) {
       compute_w_and_phi_np1(kv);
@@ -532,24 +587,121 @@ struct CaarFunctorImpl {
       const int igp = idx / NP;
       const int jgp = idx % NP;
 
+//ORIGINAL = subviews + call to div
+//do not use vvdp in the !ORIGINAL version
+//because it makes caar_ut fail. udp field is probbaly used in other functors,
+//reverting to vvdp array will be easy if needed in c1_ut tests.
+
+#define ORIGINAL
+//#undef ORIGINAL
+
       auto u = Homme::subview(m_state.m_v,kv.ie,m_data.n0,0,igp,jgp);
       auto v = Homme::subview(m_state.m_v,kv.ie,m_data.n0,1,igp,jgp);
       auto dp3d = Homme::subview(m_state.m_dp3d,kv.ie,m_data.n0,igp,jgp);
       auto udp = Homme::subview(m_buffers.vdp,kv.team_idx,0,igp,jgp);
       auto vdp = Homme::subview(m_buffers.vdp,kv.team_idx,1,igp,jgp);
+
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team, NUM_LEV),
                            [&] (const int& ilev) {
         udp(ilev) = u(ilev)*dp3d(ilev);
         vdp(ilev) = v(ilev)*dp3d(ilev);
+
+        //version without subviews
+        //m_buffers.vdp(kv.team_idx,0,igp,jgp,ilev) = m_state.m_dp3d(kv.ie,m_data.n0,igp,jgp,ilev)*
+        //               m_state.m_v(kv.ie,m_data.n0,0,igp,jgp,ilev);
+        //m_buffers.vdp(kv.team_idx,1,igp,jgp,ilev) = m_state.m_dp3d(kv.ie,m_data.n0,igp,jgp,ilev)*
+        //               m_state.m_v(kv.ie,m_data.n0,1,igp,jgp,ilev);
+
+        //version with vvdp instead of udp
+        //vvdp(kv.team_idx,0,igp,jgp,ilev) = m_state.m_dp3d(kv.ie,m_data.n0,igp,jgp,ilev)*
+        //               m_state.m_v(kv.ie,m_data.n0,0,igp,jgp,ilev);
+        //vvdp(kv.team_idx,1,igp,jgp,ilev) = m_state.m_dp3d(kv.ie,m_data.n0,igp,jgp,ilev)*
+        //               m_state.m_v(kv.ie,m_data.n0,1,igp,jgp,ilev);
       });
     });
     kv.team_barrier();
 
     // Compute div(vdp)
+#ifdef ORIGINAL
     m_sphere_ops.divergence_sphere(kv,
         Homme::subview(m_buffers.vdp, kv.team_idx),
         Homme::subview(m_buffers.div_vdp, kv.team_idx));
+#else
+
+    const Real aa = 1.0, bb=0.0;
+
+    //example of calling _cm   
+    //m_sphere_ops.divergence_sphere_cm<CombineMode::Replace>(kv,
+    //    Homme::subview(vvdp, kv.team_idx),
+    //    Homme::subview(m_buffers.div_vdp, kv.team_idx),
+    //    aa, bb, NUM_LEV);
+
+//inlined version of divergence_sphere_cm    
+    const auto& D_inv = Homme::subview(m_sphere_ops.m_dinv, kv.ie);
+    const auto& metdet = Homme::subview(m_sphere_ops.m_metdet, kv.ie);
+    ExecViewUnmanaged<Scalar[2][NP][NP][NUM_LEV]> gv_buf(
+		  Homme::subview(m_sphere_ops.vector_buf_ml,kv.team_idx, 0).data());
+    constexpr int np_squared = NP * NP;
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, np_squared),
+                         [&](const int loop_idx) {
+      const int igp = loop_idx / NP;
+      const int jgp = loop_idx % NP;
+      Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team, NUM_LEV), [&] (const int& ilev) {
+        //const auto& v0 = vvdp(kv.team_idx,0, igp, jgp, ilev);
+        //const auto& v1 = vvdp(kv.team_idx,1, igp, jgp, ilev);
+
+        const auto& v0 = m_buffers.vdp(kv.team_idx,0, igp, jgp, ilev);
+        const auto& v1 = m_buffers.vdp(kv.team_idx,1, igp, jgp, ilev);
+
+        gv_buf(0,igp,jgp,ilev) = (D_inv(0,0,igp,jgp) * v0 + D_inv(1,0,igp,jgp) * v1) * metdet(igp,jgp);
+        gv_buf(1,igp,jgp,ilev) = (D_inv(0,1,igp,jgp) * v0 + D_inv(1,1,igp,jgp) * v1) * metdet(igp,jgp);
+      });
+    });
+    kv.team_barrier();
+    // j, l, i -> i, j, k
+    constexpr int div_iters = NP * NP;
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, div_iters),
+                         [&](const int loop_idx) {
+      const int igp = loop_idx / NP;
+      const int jgp = loop_idx % NP;
+      Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team, NUM_LEV), [&] (const int& ilev) {
+        Scalar dudx, dvdy;
+        for (int kgp = 0; kgp < NP; ++kgp) {
+          dudx += m_sphere_ops.dvv(jgp, kgp) * gv_buf(0, igp, kgp, ilev);
+          dvdy += m_sphere_ops.dvv(igp, kgp) * gv_buf(1, kgp, jgp, ilev);
+        }
+        combine<CombineMode::Replace>((dudx + dvdy) * (1.0 / metdet(igp, jgp) * m_sphere_ops.m_scale_factor_inv),
+                     m_buffers.div_vdp(kv.team_idx,igp, jgp, ilev), aa, bb);
+      });
+    });
+    kv.team_barrier();
+
+#endif
   }
+
+
+#ifdef TESTER_NOMPI
+// a kernel only for perf c1 test, to put div(vdp) into dp tendency
+// to print it on host for verification
+  KOKKOS_INLINE_FUNCTION
+  void test_dp_tendency(KernelVariables &kv) const {
+    // Compute vdp
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, NP * NP),
+                         [&](const int idx) {
+      const int igp = idx / NP;
+      const int jgp = idx % NP;
+
+      auto div_vdp = Homme::subview(m_buffers.div_vdp,kv.team_idx,igp,jgp);
+      auto dp_np1 = Homme::subview(m_state.m_dp3d,kv.ie,m_data.np1,igp,jgp);
+
+      Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
+                           [&](const int ilev) {
+          dp_np1(ilev)  += div_vdp(ilev);
+      });
+    });
+  }
+#endif
+
 
   KOKKOS_INLINE_FUNCTION
   bool compute_scan_quantities (KernelVariables &kv) const {
