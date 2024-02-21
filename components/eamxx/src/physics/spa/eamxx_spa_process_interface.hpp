@@ -68,7 +68,7 @@ protected:
   void init_buffers(const ATMBufferManager &buffer_manager);
 
   // Keep track of field dimensions and the iteration count
-  int m_num_cols; 
+  int m_num_cols;
   int m_num_levs;
   int m_num_src_levs;
   int m_nswbands = 14;
@@ -77,8 +77,10 @@ protected:
   // Struct which contains temporary variables used during spa_main
   Buffer m_buffer;
 
-  // IO structure to read in data (keep it around to avoid re-creating PIO decomps)
+  // IO structure to read in data for standard grids (keep it around to avoid re-creating PIO decomps)
   std::shared_ptr<AtmosphereInput>   SPADataReader;
+  // Similar to above, but stores info to read data for IOP grid
+  std::shared_ptr<SPAFunc::IOPReader>  SPAIOPDataReader;
 
   // Structures to store the data used for interpolation
   std::shared_ptr<AbstractRemapper>  SPAHorizInterp;
@@ -89,7 +91,7 @@ protected:
   SPAFunc::SPAOutput        SPAData_out;
 
   std::shared_ptr<const AbstractGrid>   m_grid;
-}; // class SPA 
+}; // class SPA
 
 } // namespace scream
 

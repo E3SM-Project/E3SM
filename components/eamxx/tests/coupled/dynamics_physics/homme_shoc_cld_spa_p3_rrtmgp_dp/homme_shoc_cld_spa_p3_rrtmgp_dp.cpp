@@ -56,7 +56,6 @@ TEST_CASE("scream_homme_physics", "scream_homme_physics") {
   ad.init_time_stamps (t0, t0);
   ad.create_atm_processes ();
   ad.create_grids ();
-  ad.setup_intensive_observation_period ();
   ad.create_fields ();
 
   // Setup surface coupler import to be NaNs for fields IOP should overwrite

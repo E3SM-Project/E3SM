@@ -408,7 +408,8 @@ read_fields_from_file_for_iop (const std::string& file_name,
                                const vos& field_names_nc,
                                const vos& field_names_eamxx,
                                const util::TimeStamp& initial_ts,
-                               const field_mgr_ptr field_mgr)
+                               const field_mgr_ptr field_mgr,
+                               const int time_index)
 {
   const auto dummy_units = ekat::units::Units::nondimensional();
 
@@ -464,7 +465,7 @@ read_fields_from_file_for_iop (const std::string& file_name,
 
   // Read data from file
   AtmosphereInput file_reader(file_name,io_grid,io_fields);
-  file_reader.read_variables();
+  file_reader.read_variables(time_index);
   file_reader.finalize();
 
   // For each field, broadcast data from closest lat/lon column to all processors

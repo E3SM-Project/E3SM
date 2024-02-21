@@ -169,8 +169,8 @@ init_time_stamps (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0)
 void AtmosphereDriver::
 setup_intensive_observation_period ()
 {
-  // At this point, must have comm, params, initialized timestamps, and grids created.
-  check_ad_status(s_comm_set | s_params_set | s_ts_inited | s_grids_created);
+  // At this point, must have comm, params, initialized timestamps created.
+  check_ad_status(s_comm_set | s_params_set | s_ts_inited);
 
   // Check to make sure iop is not already initialized
   EKAT_REQUIRE_MSG(not m_iop, "Error! setup_intensive_observation_period() is "
@@ -279,6 +279,14 @@ void AtmosphereDriver::create_grids()
   if(m_atm_process_group->has_process("tms") &&
      m_atm_process_group->has_process("shoc")) {
     setup_shoc_tms_links();
+  }
+
+  // IOP object needs the grids_manager to have been created, but is then needed in set_grids()
+  // implementation of some processes, so setup here.
+  const bool enable_iop =
+    m_atm_params.sublist("driver_options").get("enable_intensive_observation_period", false);
+  if (enable_iop) {
+    setup_intensive_observation_period ();
   }
 
   // Set the grids in the processes. Do this by passing the grids manager.
@@ -1554,12 +1562,6 @@ initialize (const ekat::Comm& atm_comm,
   create_atm_processes ();
 
   create_grids ();
-
-  const bool enable_iop =
-    m_atm_params.sublist("driver_options").get("enable_intensive_observation_period", false);
-  if (enable_iop) {
-    setup_intensive_observation_period ();
-  }
 
   create_fields ();
 
