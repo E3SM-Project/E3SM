@@ -94,27 +94,46 @@ advance_iop_subsidence(const KT::MemberType& team,
   // Compute updated temperature, horizontal winds, and tracers
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_packs), [&] (const int k) {
     auto range_pack = ekat::range<IntPack>(k*Pack::n);
-
-    // Get delta(k-1) packs. We need a range pack
-    // that does not contain 0 so that we do not
-    // attempt to access k=-1 index.
-    auto range_pack_m1 = range_pack;
-    range_pack_m1.set(range_pack_m1<1, 1);
-    Pack delta_u_k, delta_u_km1,
-          delta_v_k, delta_v_km1,
-          delta_T_k, delta_T_km1;
-    ekat::index_and_shift<-1>(s_delta_u, range_pack_m1, delta_u_k, delta_u_km1);
-    ekat::index_and_shift<-1>(s_delta_v, range_pack_m1, delta_v_k, delta_v_km1);
-    ekat::index_and_shift<-1>(s_delta_T, range_pack_m1, delta_T_k, delta_T_km1);
-
-    // Get omega_int(k+1) pack. We don't need a specialized
-    // range pack since omega_int contains nlevs+1 entries.
-    Pack omega_int_k, omega_int_kp1;
-    ekat::index_and_shift<1>(s_omega_int, range_pack, omega_int_k, omega_int_kp1);
-
     const auto at_top = range_pack==0;
     const auto at_bot = range_pack==nlevs-1;
     const auto at_mid = not at_top and not at_bot;
+    const bool any_at_top = at_top.any();
+    const bool any_at_bot = at_bot.any();
+
+    // Get delta(k-1) packs. The range pack should not
+    // contain index 0 (so that we don't attempt to access
+    // k=-1 index) or index > nlevs-2 (since delta_* views
+    // are size nlevs-1).
+    auto range_pack_for_m1_shift = range_pack;
+    range_pack_for_m1_shift.set(range_pack<1, 1);
+    range_pack_for_m1_shift.set(range_pack>nlevs-2, nlevs-2);
+    Pack delta_u_k, delta_u_km1,
+         delta_v_k, delta_v_km1,
+         delta_T_k, delta_T_km1;
+    ekat::index_and_shift<-1>(s_delta_u, range_pack_for_m1_shift, delta_u_k, delta_u_km1);
+    ekat::index_and_shift<-1>(s_delta_v, range_pack_for_m1_shift, delta_v_k, delta_v_km1);
+    ekat::index_and_shift<-1>(s_delta_T, range_pack_for_m1_shift, delta_T_k, delta_T_km1);
+
+    // At the top and bottom of the model, set the end points for
+    // delta_*_k and delta_*_km1 to be the first and last entries
+    // of delta_*, respectively.
+    if (any_at_top) {
+      delta_u_k.set(at_top, s_delta_u(0));
+      delta_v_k.set(at_top, s_delta_v(0));
+      delta_T_k.set(at_top, s_delta_T(0));
+    }
+    if (any_at_bot) {
+      delta_u_km1.set(at_bot, s_delta_u(nlevs-2));
+      delta_v_km1.set(at_bot, s_delta_v(nlevs-2));
+      delta_T_km1.set(at_bot, s_delta_T(nlevs-2));
+    }
+
+    // Get omega_int(k+1) pack. The range pack should not
+    // contain index > nlevs-1 (since omega_int is size nlevs+1).
+    auto range_pack_for_p1_shift = range_pack;
+    range_pack_for_p1_shift.set(range_pack>nlevs-1, nlevs-1);
+    Pack omega_int_k, omega_int_kp1;
+    ekat::index_and_shift<1>(s_omega_int, range_pack, omega_int_k, omega_int_kp1);
 
     const auto fac = (dt/2)/pdel(k);
 
@@ -144,7 +163,10 @@ advance_iop_subsidence(const KT::MemberType& team,
     Pack delta_tracer_k, delta_tracer_km1;
     for (int iq=0; iq<n_q_tracers; ++iq) {
       auto s_delta_tracer = Kokkos::subview(s_delta_Q, iq, Kokkos::ALL());
-      ekat::index_and_shift<-1>(s_delta_tracer, range_pack_m1, delta_tracer_k, delta_tracer_km1);
+      ekat::index_and_shift<-1>(s_delta_tracer, range_pack_for_m1_shift, delta_tracer_k, delta_tracer_km1);
+      if (any_at_top) delta_tracer_k.set(at_top, s_delta_tracer(0));
+      if (any_at_bot) delta_tracer_km1.set(at_bot, s_delta_tracer(nlevs-2));
+
       auto& Q_k = Q(iq, k);
       Q_k.set(at_top, Q_k - fac*omega_int_kp1*delta_tracer_k);
       Q_k.set(at_bot, Q_k - fac*omega_int_k*delta_tracer_km1);
