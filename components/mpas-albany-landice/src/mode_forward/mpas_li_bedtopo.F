@@ -448,7 +448,7 @@ contains
          call sl_drive_readnl(itersl, dtime, starttime) !SLM subroutine
 
          ! First, check consistency in coupling interval set up in MALI and SLM
-         call check_SLM_coupling_interval(dtime, domain % streamManager, err_tmp)
+         call check_SLM_coupling_interval(dtime, meshPool, domain % streamManager, err_tmp)
          err = ior(err, err_tmp)
          if (err /= 0) then
             call mpas_log_write("Error occurred in check_SLM_coupling_interval.", MPAS_LOG_ERR)
@@ -985,23 +985,27 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine check_SLM_coupling_interval(slm_dt1, streamManager, err)
+   subroutine check_SLM_coupling_interval(slm_dt1, meshPool, streamManager, err)
 
       use mpas_timekeeping
       use mpas_stream_manager
       use mpas_derived_types, only : MPAS_STREAM_PROPERTY_RECORD_INTV
 
       integer, intent (in) :: slm_dt1
+      type (mpas_pool_type), intent(in) :: meshPool  !< mesh information
       type (MPAS_streamManager_type), intent(inout) :: streamManager
       integer, intent(out) :: err
 
       ! local variables
       integer, pointer :: config_slm_coupling_interval
       character (len=StrKIND), pointer :: config_adaptive_timestep_force_interval
-      type (MPAS_Time_Type) :: force_interval, restart_interval
-      character(len=StrKIND) :: restart_interval_str
+      type (MPAS_TimeInterval_Type) :: coupling_interval, force_interval, restart_interval, zero_interval
+      type (MPAS_Time_Type) :: start_time
+      character (len=StrKIND), pointer :: simulationStartTime
       integer :: YYYY, MM, DD, H, M, S  ! time components
       type (MPAS_stream_list_type), pointer :: stream_cursor
+      integer (kind=I8KIND) :: n_intervals
+      type (MPAS_TimeInterval_type) :: remainder
       integer :: err_tmp
 
       err = 0
@@ -1015,28 +1019,26 @@ contains
          err = ior(err, 1)
       endif
 
+      ! define zero interval for comparing against below
+      call mpas_set_timeInterval(zero_interval, dt = 0.0_RKIND)
+      ! get start time as a reference time
+      call mpas_pool_get_array(meshPool, 'simulationStartTime', simulationStartTime)
+      call mpas_set_time(start_time, dateTimeString=simulationStartTime)
+      ! define SLM coupling interval as a timeInterval type
+      call mpas_set_timeInterval(coupling_interval, YY=config_slm_coupling_interval, MM=0, DD=0, H=0, M=0, S=0, ierr=err_tmp)
+      err = ior(err, err_tmp)
+
       ! Check that config_adaptive_timestep_force_interval divides evenly into config_slm_coupling_interval
       call mpas_pool_get_config(liConfigs, "config_adaptive_timestep_force_interval", config_adaptive_timestep_force_interval)
-      ! Note: Using mpas_set_time instead of mpas_set_time_interval, even though this is an interval
-      ! This is because mpas_get_time_interval requires a reference time, which is not relevant
-      ! to these checks, and mpas_get_time allows us to get the component pieces that we want to check.
-      call mpas_set_time(force_interval, dateTimeString=config_adaptive_timestep_force_interval, ierr=err_tmp)
+      call mpas_set_timeInterval(force_interval, timeString=config_adaptive_timestep_force_interval, ierr=err_tmp)
       err = ior(err, err_tmp)
-      call mpas_get_time(force_interval, YYYY=YYYY, MM=MM, DD=DD, H=H, M=M, S=S)
-      if ((MM /= 0) .or. (DD /= 0) .or. (H /= 0) .or. (M /= 0) .or. (S /= 0)) then
-         call mpas_log_write("config_adaptive_timestep_force_interval currently not supported " // &
-              "to have nonzero values for months, days, hours, minutes, or seconds when sea-level model " // &
-              "is coupled.  config_adaptive_timestep_force_interval=" //trim(config_adaptive_timestep_force_interval), MPAS_LOG_ERR)
-         call mpas_log_write("  MM=$i, DD=$i, H=$i, M=$i, S=$i", intArgs=(/MM, DD, H, M, S/))
-         ! Note: the actual requirement is that adapt dt force interval divides evenly into coupling interval
-         ! but that is tricky to check, and wanting anything but even years for that option is a rare use case.
-         err = ior(err, 1)
-      endif
-      ! Next check the number of years divides evenly into SLM coupling interval
-      if (mod(config_slm_coupling_interval, YYYY) /= 0) then
-         call mpas_log_write("config_adaptive_timestep_force_interval does not divide evenly into config_slm_coupling_interval" // &
-              "config_adaptive_timestep_force_interval=" // trim(config_adaptive_timestep_force_interval) // &
-              "; config_slm_coupling_interval=$i", MPAS_LOG_ERR, intArgs=(/config_slm_coupling_interval/))
+      call mpas_interval_division(start_time, coupling_interval, force_interval, n_intervals, remainder)
+      if (remainder .EQ. zero_interval) then
+         call mpas_log_write("config_adaptive_timestep_force_interval divides into config_slm_coupling_interval $i times " // &
+                 "with no remainder - check passes", intArgs=(/int(n_intervals)/))
+      else
+         call mpas_log_write("config_adaptive_timestep_force_interval divides into config_slm_coupling_interval $i times " // &
+                 "with nonzero remainder", MPAS_LOG_ERR, intArgs=(/int(n_intervals)/))
          err = ior(err, 1)
       endif
 
@@ -1045,27 +1047,16 @@ contains
       do while (associated(stream_cursor))
          if ( trim(stream_cursor % name) == 'restart' .and. (stream_cursor % active_stream) ) then
             call mpas_log_write("Checking restart interval against SLM coulping interval")
-            call MPAS_stream_mgr_get_property(streamManager, 'restart', MPAS_STREAM_PROPERTY_RECORD_INTV, &
-                 restart_interval_str, ierr=err_tmp)
+            restart_interval = MPAS_stream_mgr_get_stream_interval(streamManager, 'restart', MPAS_STREAM_OUTPUT, ierr=err_tmp)
             err = ior(err, err_tmp)
-
-            call mpas_log_write('restart interval is: ' //trim(restart_interval_str))
-
-            call mpas_set_time(restart_interval, dateTimeString=restart_interval_str, ierr=err_tmp)
-            err = ior(err, err_tmp)
-            call mpas_get_time(restart_interval, YYYY=YYYY, MM=MM, DD=DD, H=H, M=M, S=S)
-            if ((MM /= 0) .or. (DD /= 0) .or. (H /= 0) .or. (M /= 0) .or. (S /= 0)) then
-               call mpas_log_write("If Sea Level Model is active, restart output_interval cannot include " // &
-                    "nonzero months, days, hours, minutes or seconds.  restart output_interval=" // &
-                    trim(restart_interval_str), MPAS_LOG_ERR)
-               err = ior(err, 1)
+            call mpas_interval_division(start_time, restart_interval, coupling_interval, n_intervals, remainder)
+            if (remainder .EQ. zero_interval) then
+               call mpas_log_write("config_slm_coupling_interval divides into restart interval $i times " // &
+                 "with no remainder - check passes", intArgs=(/int(n_intervals)/))
+            else
+               call mpas_log_write("config_slm_coupling_interval divides into restart interval $i times " // &
+                 "with nonzero remainder", MPAS_LOG_ERR, intArgs=(/int(n_intervals)/))
             endif
-
-            if (mod(YYYY, config_slm_coupling_interval) /= 0) then
-               call mpas_log_write("restart output_interval must be a multiple of config_slm_coupling_interval", MPAS_LOG_ERR)
-               err = ior(err, 1)
-            endif
-
          endif
 
          stream_cursor => stream_cursor % next
