@@ -18,7 +18,7 @@ echo "Purging old builds: ${REMOVE_THESE}."
 # Now clean up the scratch area
 if [[ "$NODE_NAME" == "mappy" ]]; then
     # Ensure we have a newer python
-    source scripts/jenkins/${NODE_NAME}_setup
+    source $JENKINS_SCRIPT_DIR/${NODE_NAME}_setup
 
     $JENKINS_SCRIPT_DIR/scratch_cleanup.py
 fi
