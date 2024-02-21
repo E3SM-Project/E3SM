@@ -137,7 +137,7 @@ def buildnml(case, caseroot, compname):
             logger.warning("WARNING: The specified compset is requesting ocean ICs spunup from a G-case")
             logger.warning("         But no file available for this grid.")
         if ocn_tidal_mixing == 'true':
-            u_tidal_rms_file = 'oQU240wLI_velocityTidalRMS_CATS2008.nc'
+            u_tidal_rms_file = 'velocityTidalRMS_CATS2008.oQU240wLI.20240221.nc'
 
     elif ocn_grid == 'oQU120':
         decomp_date = '230424'
@@ -274,7 +274,7 @@ def buildnml(case, caseroot, compname):
         if ocn_ismf == 'data':
             data_ismf_file = 'prescribed_ismf_adusumilli2020.SOwISC12to60E2r4.230516.nc'
         if ocn_tidal_mixing == 'true':
-            u_tidal_rms_file = 'SOwISC12to60E2r4_velocityTidalRMS_CATS2008.nc'
+            u_tidal_rms_file = 'velocityTidalRMS_CATS2008.SOwISC12to60E2r4.20210114.nc'
 
     elif ocn_grid == 'FRISwISC08to60E3r1':
         decomp_date = '20230913'  # changed to date of partiotions in ../files_for_e3sm/assembled_files/inputdata/ocn/mpas-o/FRISwISC08to60E3r1/partitions
@@ -341,7 +341,7 @@ def buildnml(case, caseroot, compname):
         if ocn_ismf == 'data':
             data_ismf_file = 'prescribed_ismf_adusumilli2020.ECwISC30to60E2r1.230429.nc'
         if ocn_tidal_mixing == 'true':
-            u_tidal_rms_file = 'ECwISC30to60E2r1_velocityTidalRMS_CATS2008.nc'
+            u_tidal_rms_file = 'velocityTidalRMS_CATS2008.ECwISC30to60E2r1.20240221.nc'
 
     elif ocn_grid == 'IcoswISC30E3r5':
         decomp_date = '20231120'
@@ -360,7 +360,7 @@ def buildnml(case, caseroot, compname):
         if ocn_ismf == 'data':
             data_ismf_file = 'prescribed_ismf_paolo2023.IcoswISC30E3r5.20240227.nc'
         if ocn_tidal_mixing == 'true':
-            u_tidal_rms_file = 'IcoswISC30E3r5_velocityTidalRMS_CATS2008.nc'
+            u_tidal_rms_file = 'velocityTidalRMS_CATS2008.IcoswISC30E3r5.20231120.nc'
 
     #--------------------------------------------------------------------
     # Set OCN_FORCING = datm_forced_restoring if restoring file is available
