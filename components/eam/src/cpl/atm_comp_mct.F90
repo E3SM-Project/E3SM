@@ -317,7 +317,7 @@ CONTAINS
        ! we'll try to register stuff in cldera, and if cldera is not inited,
        ! all registration calls will return immediately
        call t_startf('cldera_init')
-       call cldera_init(mpicom_atm,start_ymd,start_tod,curr_ymd,curr_tod,stop_ymd,stop_tod)
+       call cldera_init("eam",mpicom_atm,start_ymd,start_tod,curr_ymd,curr_tod,stop_ymd,stop_tod)
        call cldera_set_log_unit (iulog)
        call cldera_set_masterproc (masterproc)
        call t_stopf('cldera_init')
@@ -478,6 +478,9 @@ CONTAINS
  !================================================================================
 
  subroutine atm_run_mct( EClock, cdata_a, x2a_a, a2x_a)
+#if defined(CLDERA_PROFILING)
+    use cldera_interface_mod, only: cldera_switch_context
+#endif
 
     !-----------------------------------------------------------------------
     use time_manager,    only: advance_timestep, get_curr_date, get_curr_calday, &
@@ -561,6 +564,10 @@ CONTAINS
     call t_startf ('CAM_import')
     call atm_import( x2a_a%rattr, cam_in )
     call t_stopf  ('CAM_import')
+
+#if defined(CLDERA_PROFILING)
+    call cldera_switch_context("eam")
+#endif
     
     ! Cycle over all time steps in the atm coupling interval
     
@@ -682,7 +689,7 @@ CONTAINS
 
   subroutine atm_final_mct( EClock, cdata_a, x2a_a, a2x_a)
 #if defined(CLDERA_PROFILING)
-    use cldera_interface_mod, only: cldera_clean_up
+    use cldera_interface_mod, only: cldera_clean_up, cldera_switch_context
 #endif
 
     type(ESMF_Clock)            ,intent(inout) :: EClock
@@ -696,6 +703,7 @@ CONTAINS
 
 #if defined(CLDERA_PROFILING)
     call t_startf('cldera_clean_up')
+    call cldera_switch_context("eam")
     call cldera_clean_up ()
     call t_stopf('cldera_clean_up')
 #endif
