@@ -145,13 +145,9 @@
 		            description="Selection of the method for bedrock uplift calculation."
 		            possible_values="'none', 'data', 'sealevelmodel'"
         />
-        <nml_option name="config_slm_coupling_interval" type="character" default_value="0002-00-00_00:00:00" units="time"
-            description="Time interval at which the sea-level model is called by MALI. The interval has to be an even multiple of the option 'config_adaptive_timestep_force_interval"
-            possible_values="Any time interval of the format 'YYYY-MM-DD_HH:MM:SS'"
-		/>
-	<nml_option name="config_slm_timestep_restart" type="integer" default_value="0" units="unitless"
-	    description="number of timesteps the sea-level model moved forward since the start of simulation."
-		possible_values="Any integer value calculated from dividing the difference between simulation start time and restart time by MALI-SLM coupling interval. This poses the restriction on the restart time to be a integer multiple of MALI-SLM coupling interval."
+        <nml_option name="config_slm_coupling_interval" type="integer" default_value="2" units="years"
+            description="Time interval at which the sea-level model is called by MALI. Only integer years are currently supported. The user must set 'dt1' in namelist.sealevel to match this value.  Note that the user needs to set config_adaptive_timestep_force_interval to divide evenly into config_slm_coupling_interval.  Also, restart file output_interval needs to be a multiple of config_slm_coupling_interval."
+            possible_values="Any positive integer"
 		/>
         <nml_option name="config_MALI_to_SLM_weights_file" type="character" default_value="mpas_to_grid.nc" units="unitless"
             description="File containing the interpolation weights for regridding from MPAS mesh to the Gaussian grid used by the Sea Level Model."
