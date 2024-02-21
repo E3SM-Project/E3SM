@@ -45,7 +45,8 @@ add_library(mam
   eamxx_mam_optics_process_interface.cpp
   eamxx_mam_dry_deposition_process_interface.cpp
   eamxx_mam_aci_process_interface.cpp
-  eamxx_mam_wetscav_process_interface.cpp)
+  eamxx_mam_wetscav_process_interface.cpp
+  eamxx_mam_srf_and_online_emissions_process_interface.cpp)
 target_compile_definitions(mam PUBLIC EAMXX_HAS_MAM)
 add_dependencies(mam mam4xx)
 target_include_directories(mam PUBLIC
