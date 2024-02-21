@@ -1,0 +1,14 @@
+%YAML 1.1
+---
+filename_prefix: cosp_standalone_output
+Averaging Type: Instant
+Fields:
+  Physics:
+    Field Names:
+      - isccp_cldtot
+
+output_control:
+  Frequency: 1
+  frequency_units: nsteps
+  MPI Ranks in Filename: true
+...

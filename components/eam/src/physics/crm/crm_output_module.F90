@@ -49,11 +49,16 @@ module crm_output_module
       ! do not need to be calculated here, and might make more sense to calculate at the
       ! crm_physics_tend level. For example, I think tendencies should be calculated in
       ! crm_physics_tend, from, for example, something like crm_output%uwind - crm_input%uwind.
+      real(crm_rknd), allocatable :: qv_mean(:,:)  ! mean cloud water
       real(crm_rknd), allocatable :: qc_mean(:,:)  ! mean cloud water
       real(crm_rknd), allocatable :: qi_mean(:,:)  ! mean cloud ice
       real(crm_rknd), allocatable :: qr_mean(:,:)  ! mean rain
       real(crm_rknd), allocatable :: qs_mean(:,:)  ! mean snow
       real(crm_rknd), allocatable :: qg_mean(:,:)  ! mean graupel
+      real(crm_rknd), allocatable :: qm_mean(:,:)  ! mean ice rime mass
+      real(crm_rknd), allocatable :: bm_mean(:,:)  ! mean ice rime volume
+      real(crm_rknd), allocatable :: rho_d_mean(:,:)  ! mean dry density
+      real(crm_rknd), allocatable :: rho_v_mean(:,:)  ! mean vapor density
 
       real(crm_rknd), allocatable :: nc_mean(:,:)  ! mean cloud water  (#/kg)
       real(crm_rknd), allocatable :: ni_mean(:,:)  ! mean cloud ice    (#/kg)
@@ -77,6 +82,11 @@ module crm_output_module
       real(crm_rknd), allocatable :: cld   (:,:)      ! cloud fraction
       real(crm_rknd), allocatable :: gicewp(:,:)      ! ice water path
       real(crm_rknd), allocatable :: gliqwp(:,:)      ! ice water path
+
+      real(crm_rknd), allocatable :: liq_ice_exchange(:,:) ! P3 liq-ice phase change tendency
+      real(crm_rknd), allocatable :: vap_liq_exchange(:,:) ! P3 vap-liq phase change tendency
+      real(crm_rknd), allocatable :: vap_ice_exchange(:,:) ! P3 vap-ice phase change tendency
+
       real(crm_rknd), allocatable :: mctot (:,:)      ! cloud mass flux
       real(crm_rknd), allocatable :: mcup  (:,:)      ! updraft cloud mass flux
       real(crm_rknd), allocatable :: mcdn  (:,:)      ! downdraft cloud mass flux
@@ -112,10 +122,39 @@ module crm_output_module
       real(crm_rknd), allocatable :: t_ls         (:,:)  ! tend of lwse  due to large-scale           [kg/kg/s] ???
       real(crm_rknd), allocatable :: prectend     (:)    ! column integrated tend in precip water+ice [kg/m2/s]
       real(crm_rknd), allocatable :: precstend    (:)    ! column integrated tend in precip ice       [kg/m2/s]
-      real(crm_rknd), allocatable :: taux     (:)    ! zonal CRM surface stress perturbation      [N/m2]
-      real(crm_rknd), allocatable :: tauy     (:)    ! merid CRM surface stress perturbation      [N/m2]
+      real(crm_rknd), allocatable :: taux         (:)    ! zonal CRM surface stress perturbation      [N/m2]
+      real(crm_rknd), allocatable :: tauy         (:)    ! merid CRM surface stress perturbation      [N/m2]
       real(crm_rknd), allocatable :: z0m          (:)    ! surface stress                             [N/m2]
       real(crm_rknd), allocatable :: subcycle_factor(:)    ! crm cpu efficiency
+
+      real(crm_rknd), allocatable :: dt_sgs       (:,:)  ! CRM temperature tendency from SGS   [K/s]
+      real(crm_rknd), allocatable :: dqv_sgs      (:,:)  ! CRM water vapor tendency from SGS   [kg/kg/s]
+      real(crm_rknd), allocatable :: dqc_sgs      (:,:)  ! CRM cloud water tendency from SGS   [kg/kg/s]
+      real(crm_rknd), allocatable :: dqi_sgs      (:,:)  ! CRM cloud ice tendency from SGS     [kg/kg/s]
+      real(crm_rknd), allocatable :: dqr_sgs      (:,:)  ! CRM liquid rain tendency from SGS   [kg/kg/s]
+
+      real(crm_rknd), allocatable :: dt_micro     (:,:)  ! CRM temperature tendency from micro [K/s]
+      real(crm_rknd), allocatable :: dqv_micro    (:,:)  ! CRM water vapor tendency from micro [kg/kg/s]
+      real(crm_rknd), allocatable :: dqc_micro    (:,:)  ! CRM cloud water tendency from micro [kg/kg/s]
+      real(crm_rknd), allocatable :: dqi_micro    (:,:)  ! CRM cloud ice tendency from micro   [kg/kg/s]
+      real(crm_rknd), allocatable :: dqr_micro    (:,:)  ! CRM liquid rain tendency from micro  [kg/kg/s]
+
+      real(crm_rknd), allocatable :: dt_dycor  (:,:)
+      real(crm_rknd), allocatable :: dqv_dycor (:,:)
+      real(crm_rknd), allocatable :: dqc_dycor (:,:)
+      real(crm_rknd), allocatable :: dqi_dycor (:,:)
+      real(crm_rknd), allocatable :: dqr_dycor (:,:)
+
+      real(crm_rknd), allocatable :: dt_sponge (:,:)
+      real(crm_rknd), allocatable :: dqv_sponge(:,:)
+      real(crm_rknd), allocatable :: dqc_sponge(:,:)
+      real(crm_rknd), allocatable :: dqi_sponge(:,:)
+      real(crm_rknd), allocatable :: dqr_sponge(:,:)
+
+      real(crm_rknd), allocatable :: rho_d_ls     (:,:)  ! large-scale forcing of dry density   [kg/m3/s]
+      real(crm_rknd), allocatable :: rho_v_ls     (:,:)  ! large-scale forcing of vapor density [kg/m3/s]
+      real(crm_rknd), allocatable :: rho_l_ls     (:,:)  ! large-scale forcing of vapor density [kg/m3/s]
+      real(crm_rknd), allocatable :: rho_i_ls     (:,:)  ! large-scale forcing of vapor density [kg/m3/s]
 
    end type crm_output_type
 
@@ -162,11 +201,16 @@ contains
       ! NOTE: this output had a bug in the previous implementation
       if (.not. allocated(output%cldtop)) allocate(output%cldtop(ncol,nlev))
 
+      if (.not. allocated(output%qv_mean)) allocate(output%qv_mean(ncol,nlev))
       if (.not. allocated(output%qc_mean)) allocate(output%qc_mean(ncol,nlev))
       if (.not. allocated(output%qi_mean)) allocate(output%qi_mean(ncol,nlev))
       if (.not. allocated(output%qr_mean)) allocate(output%qr_mean(ncol,nlev))
       if (.not. allocated(output%qs_mean)) allocate(output%qs_mean(ncol,nlev))
       if (.not. allocated(output%qg_mean)) allocate(output%qg_mean(ncol,nlev))
+      if (.not. allocated(output%qm_mean)) allocate(output%qm_mean(ncol,nlev))
+      if (.not. allocated(output%bm_mean)) allocate(output%bm_mean(ncol,nlev))
+      if (.not. allocated(output%rho_d_mean)) allocate(output%rho_d_mean(ncol,nlev))
+      if (.not. allocated(output%rho_v_mean)) allocate(output%rho_v_mean(ncol,nlev))
 
       call prefetch(output%qcl)
       call prefetch(output%qci)
@@ -193,11 +237,16 @@ contains
       call prefetch(output%precsc)
       call prefetch(output%precsl)
       call prefetch(output%cldtop)
+      call prefetch(output%qv_mean)
       call prefetch(output%qc_mean)
       call prefetch(output%qi_mean)
       call prefetch(output%qr_mean)
       call prefetch(output%qs_mean)
       call prefetch(output%qg_mean)
+      call prefetch(output%qm_mean)
+      call prefetch(output%bm_mean)
+      call prefetch(output%rho_d_mean)
+      call prefetch(output%rho_v_mean)
 
       if (.not. allocated(output%nc_mean)) allocate(output%nc_mean(ncol,nlev))
       if (.not. allocated(output%ni_mean)) allocate(output%ni_mean(ncol,nlev))
@@ -220,6 +269,11 @@ contains
       if (.not. allocated(output%cld   )) allocate(output%cld   (ncol,nlev))  ! cloud fraction
       if (.not. allocated(output%gicewp)) allocate(output%gicewp(ncol,nlev))  ! ice water path
       if (.not. allocated(output%gliqwp)) allocate(output%gliqwp(ncol,nlev))  ! ice water path
+
+      if (.not. allocated(output%liq_ice_exchange)) allocate(output%liq_ice_exchange(ncol,nlev)) ! P3 liq-ice phase change tendency
+      if (.not. allocated(output%vap_liq_exchange)) allocate(output%vap_liq_exchange(ncol,nlev)) ! P3 vap-liq phase change tendency
+      if (.not. allocated(output%vap_ice_exchange)) allocate(output%vap_ice_exchange(ncol,nlev)) ! P3 vap-ice phase change tendency
+      
       if (.not. allocated(output%mctot )) allocate(output%mctot (ncol,nlev))  ! cloud mass flux
       if (.not. allocated(output%mcup  )) allocate(output%mcup  (ncol,nlev))  ! updraft cloud mass flux
       if (.not. allocated(output%mcdn  )) allocate(output%mcdn  (ncol,nlev))  ! downdraft cloud mass flux
@@ -258,6 +312,35 @@ contains
       if (.not. allocated(output%z0m          )) allocate(output%z0m          (ncol))
       if (.not. allocated(output%subcycle_factor)) allocate(output%subcycle_factor(ncol))
 
+      if (.not. allocated(output%dt_sgs       )) allocate(output%dt_sgs       (ncol,nlev))
+      if (.not. allocated(output%dqv_sgs      )) allocate(output%dqv_sgs      (ncol,nlev))
+      if (.not. allocated(output%dqc_sgs      )) allocate(output%dqc_sgs      (ncol,nlev))
+      if (.not. allocated(output%dqi_sgs      )) allocate(output%dqi_sgs      (ncol,nlev))
+      if (.not. allocated(output%dqr_sgs      )) allocate(output%dqr_sgs      (ncol,nlev))
+
+      if (.not. allocated(output%dt_micro     )) allocate(output%dt_micro     (ncol,nlev))
+      if (.not. allocated(output%dqv_micro    )) allocate(output%dqv_micro    (ncol,nlev))
+      if (.not. allocated(output%dqc_micro    )) allocate(output%dqc_micro    (ncol,nlev))
+      if (.not. allocated(output%dqi_micro    )) allocate(output%dqi_micro    (ncol,nlev))
+      if (.not. allocated(output%dqr_micro    )) allocate(output%dqr_micro    (ncol,nlev))
+
+      if (.not. allocated(output%dt_dycor     )) allocate(output%dt_dycor     (ncol,nlev))
+      if (.not. allocated(output%dqv_dycor    )) allocate(output%dqv_dycor    (ncol,nlev))
+      if (.not. allocated(output%dqc_dycor    )) allocate(output%dqc_dycor    (ncol,nlev))
+      if (.not. allocated(output%dqi_dycor    )) allocate(output%dqi_dycor    (ncol,nlev))
+      if (.not. allocated(output%dqr_dycor    )) allocate(output%dqr_dycor    (ncol,nlev))
+
+      if (.not. allocated(output%dt_sponge    )) allocate(output%dt_sponge    (ncol,nlev))
+      if (.not. allocated(output%dqv_sponge   )) allocate(output%dqv_sponge   (ncol,nlev))
+      if (.not. allocated(output%dqc_sponge   )) allocate(output%dqc_sponge   (ncol,nlev))
+      if (.not. allocated(output%dqi_sponge   )) allocate(output%dqi_sponge   (ncol,nlev))
+      if (.not. allocated(output%dqr_sponge   )) allocate(output%dqr_sponge   (ncol,nlev))
+
+      if (.not. allocated(output%rho_d_ls     )) allocate(output%rho_d_ls     (ncol,nlev))
+      if (.not. allocated(output%rho_v_ls     )) allocate(output%rho_v_ls     (ncol,nlev))
+      if (.not. allocated(output%rho_l_ls     )) allocate(output%rho_l_ls     (ncol,nlev))
+      if (.not. allocated(output%rho_i_ls     )) allocate(output%rho_i_ls     (ncol,nlev))
+
       call prefetch(output%sltend  )
       call prefetch(output%qltend  )
       call prefetch(output%qcltend )
@@ -273,11 +356,17 @@ contains
       call prefetch(output%cld    )
       call prefetch(output%gicewp )
       call prefetch(output%gliqwp )
+      
+      call prefetch(output%liq_ice_exchange)
+      call prefetch(output%vap_liq_exchange)
+      call prefetch(output%vap_ice_exchange)
+
       call prefetch(output%mctot  )
       call prefetch(output%mcup   )
       call prefetch(output%mcdn   )
       call prefetch(output%mcuup  )
       call prefetch(output%mcudn  )
+
       call prefetch(output%mu_crm )
       call prefetch(output%md_crm )
       call prefetch(output%du_crm )
@@ -308,6 +397,29 @@ contains
       call prefetch(output%tauy          )
       call prefetch(output%z0m           )
       call prefetch(output%subcycle_factor )
+
+      call prefetch(output%dt_sgs)
+      call prefetch(output%dqv_sgs)
+      call prefetch(output%dqc_sgs)
+      call prefetch(output%dqi_sgs)
+      call prefetch(output%dt_micro)
+      call prefetch(output%dqv_micro)
+      call prefetch(output%dqc_micro)
+      call prefetch(output%dqi_micro)
+
+      call prefetch(output%dt_dycor  )
+      call prefetch(output%dqv_dycor )
+      call prefetch(output%dqc_dycor )
+      call prefetch(output%dqi_dycor )
+      call prefetch(output%dt_sponge )
+      call prefetch(output%dqv_sponge)
+      call prefetch(output%dqc_sponge)
+      call prefetch(output%dqi_sponge)
+
+      call prefetch(output%rho_d_ls)
+      call prefetch(output%rho_v_ls)
+      call prefetch(output%rho_l_ls)
+      call prefetch(output%rho_i_ls)
 
       ! Initialize 
       output%qcl = 0
@@ -341,11 +453,16 @@ contains
       output%precsc = 0
       output%precsl = 0
 
+      output%qv_mean = 0
       output%qc_mean = 0
       output%qi_mean = 0
       output%qr_mean = 0
       output%qs_mean = 0
       output%qg_mean = 0
+      output%qm_mean = 0
+      output%bm_mean = 0
+      output%rho_d_mean = 0
+      output%rho_v_mean = 0
 
       output%nc_mean = 0
       output%ni_mean = 0
@@ -368,6 +485,11 @@ contains
       output%cld    = 0
       output%gicewp = 0
       output%gliqwp = 0
+
+      output%liq_ice_exchange = 0
+      output%vap_liq_exchange = 0
+      output%vap_ice_exchange = 0
+
       output%mctot  = 0
       output%mcup   = 0
       output%mcdn   = 0
@@ -403,10 +525,33 @@ contains
       output%t_ls          = 0
       output%prectend      = 0
       output%precstend     = 0
-      output%taux      = 0
-      output%tauy      = 0
+      output%taux          = 0
+      output%tauy          = 0
       output%z0m           = 0
       output%subcycle_factor = 0
+
+      output%dt_sgs    = 0
+      output%dqv_sgs   = 0
+      output%dqc_sgs   = 0
+      output%dqi_sgs   = 0
+      output%dt_micro  = 0
+      output%dqv_micro = 0
+      output%dqc_micro = 0
+      output%dqi_micro = 0
+
+      output%dt_dycor   = 0
+      output%dqv_dycor  = 0
+      output%dqc_dycor  = 0
+      output%dqi_dycor  = 0
+      output%dt_sponge  = 0
+      output%dqv_sponge = 0
+      output%dqc_sponge = 0
+      output%dqi_sponge = 0
+
+      output%rho_d_ls = 0
+      output%rho_v_ls = 0
+      output%rho_l_ls = 0
+      output%rho_i_ls = 0
 
    end subroutine crm_output_initialize
    !------------------------------------------------------------------------------------------------
@@ -442,11 +587,16 @@ contains
       if (allocated(output%precsc)) deallocate(output%precsc)
       if (allocated(output%precsl)) deallocate(output%precsl)
 
+      if (allocated(output%qv_mean)) deallocate(output%qv_mean)
       if (allocated(output%qc_mean)) deallocate(output%qc_mean)
       if (allocated(output%qi_mean)) deallocate(output%qi_mean)
       if (allocated(output%qr_mean)) deallocate(output%qr_mean)
       if (allocated(output%qs_mean)) deallocate(output%qs_mean)
       if (allocated(output%qg_mean)) deallocate(output%qg_mean)
+      if (allocated(output%qm_mean)) deallocate(output%qm_mean)
+      if (allocated(output%bm_mean)) deallocate(output%bm_mean)
+      if (allocated(output%rho_d_mean)) deallocate(output%rho_d_mean)
+      if (allocated(output%rho_v_mean)) deallocate(output%rho_v_mean)
       
       if (allocated(output%nc_mean)) deallocate(output%nc_mean)
       if (allocated(output%ni_mean)) deallocate(output%ni_mean)
@@ -469,6 +619,11 @@ contains
       if (allocated(output%cld)) deallocate(output%cld)
       if (allocated(output%gicewp)) deallocate(output%gicewp)
       if (allocated(output%gliqwp)) deallocate(output%gliqwp)
+
+      if (allocated(output%liq_ice_exchange)) deallocate(output%liq_ice_exchange)
+      if (allocated(output%vap_liq_exchange)) deallocate(output%vap_liq_exchange)
+      if (allocated(output%vap_ice_exchange)) deallocate(output%vap_ice_exchange)
+
       if (allocated(output%mctot)) deallocate(output%mctot)
       if (allocated(output%mcup)) deallocate(output%mcup)
       if (allocated(output%mcdn)) deallocate(output%mcdn)
@@ -506,6 +661,29 @@ contains
       if (allocated(output%tauy)) deallocate(output%tauy)
       if (allocated(output%z0m)) deallocate(output%z0m)
       if (allocated(output%subcycle_factor)) deallocate(output%subcycle_factor)
+
+      if (allocated(output%dt_sgs   )) deallocate(output%dt_sgs)
+      if (allocated(output%dqv_sgs  )) deallocate(output%dqv_sgs)
+      if (allocated(output%dqc_sgs  )) deallocate(output%dqc_sgs)
+      if (allocated(output%dqi_sgs  )) deallocate(output%dqi_sgs)
+      if (allocated(output%dt_micro )) deallocate(output%dt_micro)
+      if (allocated(output%dqv_micro)) deallocate(output%dqv_micro)
+      if (allocated(output%dqc_micro)) deallocate(output%dqc_micro)
+      if (allocated(output%dqi_micro)) deallocate(output%dqi_micro)
+
+      if (allocated(output%dt_dycor  )) deallocate(output%dt_dycor  )
+      if (allocated(output%dqv_dycor )) deallocate(output%dqv_dycor )
+      if (allocated(output%dqc_dycor )) deallocate(output%dqc_dycor )
+      if (allocated(output%dqi_dycor )) deallocate(output%dqi_dycor )
+      if (allocated(output%dt_sponge )) deallocate(output%dt_sponge )
+      if (allocated(output%dqv_sponge)) deallocate(output%dqv_sponge)
+      if (allocated(output%dqc_sponge)) deallocate(output%dqc_sponge)
+      if (allocated(output%dqi_sponge)) deallocate(output%dqi_sponge)
+
+      if (allocated(output%rho_d_ls)) deallocate(output%rho_d_ls)
+      if (allocated(output%rho_v_ls)) deallocate(output%rho_v_ls)
+      if (allocated(output%rho_l_ls)) deallocate(output%rho_l_ls)
+      if (allocated(output%rho_i_ls)) deallocate(output%rho_i_ls)
 
    end subroutine crm_output_finalize
    !------------------------------------------------------------------------------------------------

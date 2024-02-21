@@ -13,6 +13,7 @@
   <entry id="DRV_THREADING">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
+	  
     <default_value>TRUE</default_value>
     <group>run_flags</group>
     <file>env_run.xml</file>
@@ -38,6 +39,30 @@
     <file>env_run.xml</file>
     <desc>Sets level of task-to-node mapping output for supported component models
     (0: no output; 1: compact; 2: verbose).</desc>
+  </entry>
+
+  <entry id="INFO_MPROF">
+    <type>integer</type>
+    <valid_values>0,1,2,3,4</valid_values>
+    <default_value>3</default_value>
+    <group>run_flags</group>
+    <file>env_run.xml</file>
+    <desc>Sets level of memory profile logging:
+      0: no output
+      1: log mem-usage from component ROOTPE tasks
+      2: log mem-usage from all tasks
+      3: aggregate logging to node-level mem-usage on ROOTPE nodes
+      4: aggregate logging to node-level mem-usage on all nodes
+      Aggregation requires INFO_TASKMAP_MODEL>0.
+    </desc>
+  </entry>
+
+  <entry id="INFO_MPROF_DT">
+    <type>integer</type>
+    <default_value>86400</default_value>
+    <group>run_flags</group>
+    <file>env_run.xml</file>
+    <desc>number of seconds between memory profiling logs</desc>
   </entry>
 
   <entry id="SAVE_TIMING">
@@ -125,7 +150,7 @@
     <valid_values>none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,nmonths,nmonth,nyears,nyear,date,ifdays0,end</valid_values>
     <default_value>never</default_value>
     <values match="last">
-      <value compset="_DATM.+_CLM">ndays</value>
+      <value compset="_DATM.+_ELM">ndays</value>
     </values>
     <group>run_begin_stop_restart</group>
     <file>env_run.xml</file>
@@ -150,10 +175,44 @@
   <entry id="TFREEZE_SALTWATER_OPTION">
     <type>char</type>
     <valid_values>minus1p8,linear_salt,mushy</valid_values>
-    <default_value>minus1p8</default_value>
+    <default_value>mushy</default_value>
     <group>run_physics</group>
     <file>env_run.xml</file>
     <desc>Freezing point calculation for salt water.</desc>
+  </entry>
+
+  <entry id="ATM_FLUX_INTEGRATION_METHOD">
+    <type>char</type>
+    <valid_values>explicit,implicit_stress</valid_values>
+    <default_value>explicit</default_value>
+    <group>run_flags</group>
+    <file>env_run.xml</file>
+    <desc>
+      Time integration method for calculation of fluxes to the atmosphere.
+
+      explicit: Fluxes are calculated using the atmosphere's lowest-level state
+          at the current time step.
+
+      implicit_stress: The atmosphere model exports a linearization of the
+          response of the boundary layer scheme to surface stress, and other
+          components use this linearization to solve for surface stress at the
+          next time step implicitly.
+    </desc>
+  </entry>
+
+  <entry id="ATM_SUPPLIES_GUSTINESS">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <values match="last">
+      <value compset="_EAM">TRUE</value>
+      <value compset="SCREAM">FALSE</value>
+    </values>
+    <group>run_flags</group>
+    <file>env_run.xml</file>
+    <desc>
+      Whether or not the atmosphere should supply an extra gustiness field.
+    </desc>
   </entry>
 
   <!-- ===================================================================== -->
@@ -199,7 +258,7 @@
     <valid_values>none,CO2A,CO2A_OI,CO2B,CO2C,CO2C_OI,CO2_DMSA</valid_values>
     <default_value>none</default_value>
     <values match="last">
-      <value compset="_CAM\d+"     >CO2A</value>
+      <value compset="_EAM"     >CO2A</value>
       <value compset="_DATM"    >none</value>
       <value compset="_BGC%BPRP">CO2C</value>
       <value compset="HIST.*_DATM%(QIA|CRU|GSW)">CO2A</value>
@@ -216,6 +275,7 @@
       <value compset="_MPASSI%BGC.*_MPASO%OIECO.*_BGC%BCRD" >CO2C_OI</value>
       <value compset="_MPASSI%BGC.*_MPASO%OIECO.*_BGC%BDRC" >CO2C_OI</value>
       <value compset="_MPASSI%BGC.*_MPASO%OIECO.*_BGC%BDRD" >CO2C_OI</value>
+      <value compset="_BGC%LNDATM">CO2B</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
@@ -271,9 +331,9 @@
       <value compset="_SLND.*SOCN.*_MALI">day</value>
       <value compset="_MPASO"       >day</value>
       <value compset="_DATM.*_SLND.*MPASO.*_MALI">day</value>
-      <value compset="_CAM.*_CLM.*MPASO">day</value>
-      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">day</value>
-      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne120np4">day</value>
+      <value compset="_EAM.*_ELM.*MPASO">day</value>
+      <value compset="_EAM.*_ELM.*MPASO" grid="a%ne11np4">day</value>
+      <value compset="_EAM.*_ELM.*MPASO" grid="a%ne120np4">day</value>
     </values>
     <desc>Base period associated with NCPL coupling frequency.
     This xml variable is only used to set the driver namelist variables,
@@ -286,20 +346,20 @@
     <values match="last">
       <value compset="_SATM">48</value>
       <value compset="_XATM">48</value>
-      <value compset="_CAM.*">48</value>
+      <value compset="_EAM.*">48</value>
       <value compset="_DATM">48</value>
-      <value compset="_CAM\d+%WCBC">144</value>
-      <value compset="_CAM\d+%WCMX">288</value>
-      <value compset="_CAM\d+%WCXI">288</value>
-      <value compset="_CAM%ADIAB">48</value>
-      <value compset="_CAM%IDEAL">48</value>
+      <value compset="_EAM\d+%WCBC">144</value>
+      <value compset="_EAM\d+%WCMX">288</value>
+      <value compset="_EAM\d+%WCXI">288</value>
+      <value compset="_EAM%ADIAB">48</value>
+      <value compset="_EAM%IDEAL">48</value>
       <value compset="_DATM%COPYALL_NPS">72</value>
-      <value compset="_DATM.*_CLM">48</value>
+      <value compset="_DATM.*_ELM">48</value>
       <value compset="_DATM.*_DICE.*_POP2">4</value>
       <value compset="_DATM.*_SLND.*_CICE.*_POP2">24</value>
       <value compset="_DATM.*_CICE.*_DOCN">24</value>
       <value compset="_DATM.*_DOCN%US20">24</value>
-      <value compset="_MPASO">1</value>
+      <value compset="_MPASO">48</value>
       <value compset="_DLND.*_MALI">1</value>
       <value compset="_SLND.*SOCN.*_MALI">1</value>
       <value compset="_DATM.*_SLND.*MPASO.*_MALI">24</value>
@@ -308,26 +368,35 @@
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oQU240wLI">12</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oQU120">24</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oEC60to30v3">48</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%ECwISC30to60E1r2">48</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%EC30to60E2r2">48</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%WC14to60E2r3">48</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oRRS30to10v3">96</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oRRS18to6v3">96</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oRRS15to5">96</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oARRM60to10">96</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oARRM60to6">96</value>
-      <value compset="_CAM.*_CLM.*MPASO">48</value>
-      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">12</value>
-      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne120np4">96</value>
-      <value compset="_CAM.*_CLM.*MPASO" grid="oi%oARRM60to10">96</value>
+      <value compset="_EAM.*_ELM.*MPASO">48</value>
+      <value compset="_EAM.*_ELM.*MPASO" grid="a%ne11np4">12</value>
+      <value compset="_EAM.*_ELM.*MPASO" grid="a%ne120np4">96</value>
+      <value compset="_EAM.*_ELM.*MPASO" grid="oi%oARRM60to10">96</value>
       <value compset=".+" grid="a%0.23x0.31">96</value>
       <value compset=".+" grid="a%ne4np4">12</value>
       <value compset=".+" grid="a%ne4np4.pg2">24</value>
+      <value compset="_SCREAM.*" grid="a%ne4np4">24</value>
       <value compset=".+" grid="a%ne11np4">12</value>
+      <value compset="_SCREAM.*" grid="a%ne11np4">24</value>
+      <value compset=".+" grid="a%ne45np4">72</value>
       <value compset=".+" grid="a%ne60np4">96</value>
       <value compset=".+" grid="a%ne120np4">96</value>
       <value compset=".+" grid="a%ne240np4">144</value>
+      <value compset=".+" grid="a%ne256np4">144</value>
+      <value compset=".+" grid="a%ne512np4">432</value>
+      <value compset=".+" grid="a%ne1024np4">864</value>
       <value compset=".+" grid="a%ne0np4_arm_x8v3" >144</value>
       <value compset=".+" grid="a%ne0np4_conus_x4v1" >96</value>
-      <value compset=".+" grid="a%ne0np4_northamericax4v1" >96</value>
-      <value compset=".+" grid="a%ne0np4_antarcticax4v1" >96</value>
+      <value compset=".+" grid="a%ne0np4_northamericax4v1" >48</value>
+      <value compset=".+" grid="a%ne0np4_antarcticax4v1" >48</value>
       <value compset=".+" grid="a%ne0np4_svalbard_x8v1" >144</value>
       <value compset=".+" grid="a%ne0np4_sooberingoa_x4x8v1" >144</value>
       <value compset=".+" grid="a%ne0np4_enax4v1" >96</value>
@@ -342,12 +411,10 @@
       <value compset="_DLND.*_CISM\d">1</value>
       <value compset="_DATM.*_DICE.*_POP2.*_WW3">4</value>
       <value compset="_DATM.*_DICE.*_POP2.*_DWAV">4</value>
-      <!-- a shorter timestep is needed for stability in MMF compsets -->
-      <!-- (i.e. super-parameterization, MMF, CRM) -->
-      <value compset="_CAM5%SP"       grid="a%ne4np4">96</value>
-      <value compset="_CAM5%SP.*ECPP" grid="a%ne4np4">72</value>
-      <value compset="_CAM5%MMF"      grid="a%ne4np4">96</value>
-      <value compset="_CAM5%MMF"      grid="a%ne4np4.pg2">72</value>
+      <!-- a shorter timestep is needed for stability in MMF  -->
+      <!-- Use for all "low res" grids (i.e. ne4, ne30, ne45) -->
+      <value compset="_EAM%.*MMF">72</value>
+      <value compset="_EAM%.*MMF" grid="a%ne120np4">96</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
@@ -364,11 +431,11 @@
       <value compset="_DLND.*_MALI">1</value>
       <value compset="_SLND.*SOCN.*_MALI">1</value>
       <value compset="_DATM.*_SLND.*MPASO.*_MALI">$ATM_NCPL</value>
-      <value compset="_CAM.*_CLM.*MPASO">48</value>
-      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne4np4">$ATM_NCPL</value>
-      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">12</value>
-      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne120np4">96</value>
-      <value compset="_CAM.*_CLM.*MPASO" grid="oi%oARRM60to10">96</value>
+      <value compset="_EAM.*_ELM.*MPASO">48</value>
+      <value compset="_EAM.*_ELM.*MPASO" grid="a%ne4np4">$ATM_NCPL</value>
+      <value compset="_EAM.*_ELM.*MPASO" grid="a%ne11np4">12</value>
+      <value compset="_EAM.*_ELM.*MPASO" grid="a%ne120np4">96</value>
+      <value compset="_EAM.*_ELM.*MPASO" grid="oi%oARRM60to10">96</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
@@ -385,7 +452,7 @@
       <value compset="_DLND.*_MALI">1</value>
       <value compset="_SLND.*SOCN.*_MALI">1</value>
       <value compset="_DATM.*_SLND.*MPASO.*_MALI">$ATM_NCPL</value>
-      <value compset="_CAM.*_CLM.*MPASO">$ATM_NCPL</value>
+      <value compset="_EAM.*_ELM.*MPASO">$ATM_NCPL</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
@@ -400,12 +467,12 @@
     <values match="last">
       <value compset="_POP2">1</value>
       <value compset="_POP2" grid="oi%tx0.1v2">4</value>
-      <value compset="_DATM.*_CLM4.*_SICE.*_SOCN">1</value>
+      <value compset="_DATM.*_ELM.*_SICE.*_SOCN">1</value>
       <value compset="_DATM.*_DLND.*_DICE.*_DOCN.*_SWAV">1</value>
       <value compset="_DATM.*_DLND.*_DICE.*_DOCN.*_DWAV">1</value>
       <value compset="_DATM%NYF.*_SLND.*_DICE.*_DOCN.*_SWAV">1</value>
       <value compset="_XATM.*_XLND.*_XICE.*_XOCN">1</value>
-      <value compset="_DATM.*_CLM4.*_SICE.*_SOCN">1</value>
+      <value compset="_DATM.*_ELM.*_SICE.*_SOCN">1</value>
       <value compset="_SATM.*_SLND.*_SICE.*_SOCN">1</value>
       <value compset="_DLND.*_CISM\d">1</value>
       <value compset="_DLND.*_MALI">1</value>
@@ -416,11 +483,15 @@
       <value compset="_MPASO" grid="oi%oQU240wLI">12</value>
       <value compset="_MPASO" grid="oi%oQU120">24</value>
       <value compset="_MPASO" grid="oi%oEC60to30v3">48</value>
+      <value compset="_MPASO" grid="oi%ECwISC30to60E1r2">48</value>
+      <value compset="_MPASO" grid="oi%EC30to60E2r2">48</value>
+      <value compset="_MPASO" grid="oi%WC14to60E2r3">48</value>
       <value compset="_MPASO" grid="oi%oRRS30to10v3">48</value>
       <value compset="_MPASO" grid="oi%oRRS18to6v3">48</value>
       <value compset="_MPASO" grid="oi%oRRS15to5">96</value>
       <value compset="_MPASO" grid="oi%oARRM60to10">48</value>
       <value compset="_MPASO" grid="oi%oARRM60to6">48</value>
+      <value compset="EAM%.*MMF1.*_MPASO" grid="oi%oQU480">$ATM_NCPL</value>
 
     </values>
     <group>run_coupling</group>
@@ -438,9 +509,9 @@
       <value compset="_DLND.*_MALI">1</value>
       <value compset="_SLND.*SOCN.*_MALI">1</value>
       <value compset="_DATM.*_SLND.*MPASO.*_MALI">1</value>
-      <value compset="_CAM.*_CLM.*MPASO">1</value>
-      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">1</value>
-      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne120np4">1</value>
+      <value compset="_EAM.*_ELM.*MPASO">1</value>
+      <value compset="_EAM.*_ELM.*MPASO" grid="a%ne11np4">1</value>
+      <value compset="_EAM.*_ELM.*MPASO" grid="a%ne120np4">1</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
@@ -483,10 +554,11 @@
       <value compset="_DLND.*_MALI">1</value>
       <value compset="_SLND.*SOCN.*_MALI">1</value>
       <value compset="_DATM.*_SLND.*MPASO.*_MALI">24</value>
-      <value compset="_CAM.*_CLM.*MPASO">8</value>
-      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne4np4">6</value>
-      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">4</value>
-      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne120np4">8</value>
+      <value compset="_EAM.*_ELM.*MPASO">8</value>
+      <value compset="_EAM.*_ELM.*MPASO" grid="a%ne4np4">6</value>
+      <value compset="_EAM.*_ELM.*MPASO" grid="a%ne11np4">4</value>
+      <value compset="_EAM.*_ELM.*MPASO" grid="a%ne120np4">8</value>
+      <value compset="20TR_" grid="a%ne4np4">$ATM_NCPL</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
@@ -602,9 +674,9 @@
     <default_value>FALSE</default_value>
     <values match="last">
       <value compset="DATM.*_POP\d"    >TRUE</value>
-      <value compset="CAM.*_POP\d"     >TRUE</value>
-      <value compset="CAM.*_MPASO"     >TRUE</value>
-      <value compset="CAM.*_DOCN%SOM">TRUE</value>
+      <value compset="EAM.*_POP\d"     >TRUE</value>
+      <value compset="EAM.*_MPASO"     >TRUE</value>
+      <value compset="EAM.*_DOCN%SOM">TRUE</value>
     </values>
     <group>run_budgets</group>
     <file>env_run.xml</file>
@@ -619,8 +691,6 @@
       <value compset="^1850"					>284.7</value>
       <value compset="^HIST.+BGC%BPRP"				>284.7</value>
       <value compset="^20TR.+BGC%BPRP"				>284.7</value>
-      <value compset="^HIST_CAM4%FCHM"				>0.000001</value>
-      <value compset="^20TR_CAM4%FCHM"				>0.000001</value>
       <value compset="^2000"					>367.0</value>
       <value compset="^1850.+DATM%NYF"				>379.000</value>
       <value compset="^1850.+DATM%NYF.*_POP2%ECO"		>284.7</value>
@@ -634,16 +704,16 @@
       <value compset="^RCP6.+DATM"				>367.0</value>
       <value compset="^RCP8.+DATM"				>367.0</value>
       <value compset="^2000.+XATM"				>379.000</value>
-      <value compset="^HIST.+CAM"				>0.000001</value>
-      <value compset="^20TR.+CAM"				>0.000001</value>
-      <value compset="^5505.+CAM"				>0.000001</value>
-      <value compset="^RCP2.+CAM"				>0.000001</value>
-      <value compset="^RCP4.+CAM"				>0.000001</value>
-      <value compset="^RCP6.+CAM"				>0.000001</value>
-      <value compset="^RCP8.+CAM"				>0.000001</value>
-      <value compset="^2013.+CAM"				>0.000001</value>
-      <value compset="^GEOS.+CAM"				>0.000001</value>
-      <value compset="^AMIP.+CAM"				>0.000001</value>
+      <value compset="^HIST.+EAM"				>0.000001</value>
+      <value compset="^20TR.+EAM"				>0.000001</value>
+      <value compset="^5505.+EAM"				>0.000001</value>
+      <value compset="^RCP2.+EAM"				>0.000001</value>
+      <value compset="^RCP4.+EAM"				>0.000001</value>
+      <value compset="^RCP6.+EAM"				>0.000001</value>
+      <value compset="^RCP8.+EAM"				>0.000001</value>
+      <value compset="^2013.+EAM"				>0.000001</value>
+      <value compset="^GEOS.+EAM"				>0.000001</value>
+      <value compset="^AMIP.+EAM"				>0.000001</value>
       <value compset="^AR95"					>368.9</value>
       <value compset="^AR97"					>368.9</value>
       <value compset="^2003"					>367.0</value>
@@ -658,31 +728,35 @@
       <value compset="^2000.+AV1C-H01B"				>368.865</value>
       <value compset="^2000.+AV1C-H01C"				>368.865</value>
       <value compset="^1850.+CMIP6"                             >284.317</value>
+      <value compset="^1850.+CMIP6.+4xCO2"			>1137.268</value>
+      <value compset="^1950"                                    >312.821</value>
       <value compset="^1950.+CMIP6"                             >312.821</value>
+      <value compset="^2010"                                    >388.717</value>
       <value compset="^2010.+CMIP6"                             >388.717</value>
       <value compset="^SSP585.+CMIP6"				>0.000001</value>
+      <value compset="^SSP370.+CMIP6"                           >0.000001</value>
       <value compset="^20TR.*BGC%BCRC"                          >284.317</value>
       <value compset="^20TR.*BGC%BCRD"                          >284.317</value>
       <value compset="^20TR.*BGC%BDRC"                          >284.317</value>
       <value compset="^20TR.*BGC%BDRD"                          >284.317</value>
       <value compset="^SSP585.*BGC%B"                           >284.317</value>  
-      <!-- Override values based on CAM (WACCM) chemistry -->
-      <value compset="CAM[45]%W"				>0.000001</value>
-      <value compset="CAM[45]%SSOA"				>0.000001</value>
+      <!-- Override values based on EAM (WACCM) chemistry -->
+      <value compset="EAM%W"				>0.000001</value>
+      <value compset="EAM%SSOA"				>0.000001</value>
       <!-- Mariana's fix to allow isotopes to get the proper CO2 value -->
-      <value compset="CAM[45]%WISOall"				>284.7</value>
-      <value compset="^2000.+CAM[45]%WCSC"			>368.9</value>
-      <value compset="^2000.+CAM[45]%MOZM"			>0.000001</value>
-      <value compset="^2000.+CAM[45]%MMOS"			>0.000001</value>
-      <value compset="^2000.+CAM[45]%TMOZ"			>0.000001</value>
-      <value compset="^2000.+CAM[45]%SMA3"			>0.000001</value>
-      <value compset="^2000.+CAM[45]%SMA7"			>0.000001</value>
-      <value compset="^2000.+CAM[45]%SSOA"			>0.000001</value>
+      <value compset="EAM%WISOall"				>284.7</value>
+      <value compset="^2000.+EAM%WCSC"			>368.9</value>
+      <value compset="^2000.+EAM%MOZM"			>0.000001</value>
+      <value compset="^2000.+EAM%MMOS"			>0.000001</value>
+      <value compset="^2000.+EAM%TMOZ"			>0.000001</value>
+      <value compset="^2000.+EAM%SMA3"			>0.000001</value>
+      <value compset="^2000.+EAM%SMA7"			>0.000001</value>
+      <value compset="^2000.+EAM%SSOA"			>0.000001</value>
       <value compset="^2000.+%RCE"              >348.0</value>
     </values>
     <group>run_co2</group>
     <file>env_run.xml</file>
-    <desc>This set the namelist values of CO2 ppmv for CAM and CLM. This variables is
+    <desc>This set the namelist values of CO2 ppmv for EAM and ELM. This variables is
       introduced to coordinate this value among multiple components.</desc>
   </entry>
 
@@ -714,7 +788,7 @@
     <group>run_glc</group>
     <file>env_run.xml</file>
     <desc>Glacier model number of elevation classes, 0 implies no glacier land unit in clm
-    Used by both CLM and CISM (even if CISM is not running, and only SGLC is used).</desc>
+    Used by both ELM and CISM (even if CISM is not running, and only SGLC is used).</desc>
   </entry>
 
   <entry id="GLC_TWO_WAY_COUPLING">
@@ -722,9 +796,8 @@
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
     <values match="last">
-      <value compset="_CLM45.+CISM\d">TRUE</value>
-      <value compset="_CLM45.*_MALI">TRUE</value>
-      <value compset="_CLM50.+CISM\d">TRUE</value>
+      <value compset="_ELM.+CISM\d">TRUE</value>
+      <value compset="_ELM.*_MALI">TRUE</value>
       <!-- Turn on two-way coupling for TG compsets - even though there are no
 	   feedbacks for a TG compset, this will give us additional diagnostics -->
       <value compset="_DLND.+CISM\d">TRUE</value>
@@ -733,7 +806,7 @@
     <file>env_run.xml</file>
     <desc>Whether the glacier component feeds back to the rest of the system
       This affects:
-      (1) Whether CLM updates its areas based on glacier areas sent from GLC
+      (1) Whether ELM updates its areas based on glacier areas sent from GLC
       (2) Whether GLC sends fluxes (e.g., calving fluxes) to the coupler
       Note that this is set to TRUE by default for TG compsets - even though there are
       no feedbacks for TG compsets, this enables extra coupler diagnostics for these
@@ -758,6 +831,18 @@
     <desc>2**n relative cost of machine (DO NOT EDIT)</desc>
   </entry>
 
+  <entry id="dust_emis_scheme">
+    <type>integer</type>
+    <valid_values>1,2</valid_values>
+    <default_value>1</default_value>
+    <values match="last">
+      <value compset=".+EAM%CMIP6"				>2</value>
+    </values>
+    <group>shr_dust_nl</group>
+    <file>env_run.xml</file>
+    <desc>Dust Emission Scheme</desc>
+  </entry>
+
   <description>
     <desc compset="BGC%BPRP">BGC CO2=prog, rad CO2=prog:</desc>
     <desc compset="BGC%BDRD">BGC CO2=diag, rad CO2=diag:</desc>
@@ -772,6 +857,7 @@
     <desc compset="20TR_">Historical 1850 to 2000 transient:</desc>
     <desc compset="AMIP_">AMIP for stand-alone cam:</desc>
     <desc compset="SSP585_">Future transient using CMIP6 SSP5_8.5 scenario:</desc>
+    <desc compset="SSP370_">Future transient using CMIP6 SSP3_7.0 scenario:</desc>
     <desc compset="C2R[68]_">CCMI REFC2 1950 to 2100 transient:</desc>
     <desc compset="C2R4_">CCMI REFC2 2004 to 2100 transient:</desc>
     <desc compset="4804_">1948 to 2004 transient:</desc>
@@ -786,24 +872,18 @@
     <desc compset="RCP4_">RCP4.5 future scenario:</desc>
     <desc compset="RCP2_">RCP2.6 future scenario:</desc>
     <desc compset="2013_">RCP4.5 based scenario from 2013 (control for WACCM/CARMA nuclear winter study):</desc>
-    <desc compset="9205_CAM">1992 to 2005 transient:</desc>
-    <desc compset="SDYN_CAM">prescribed meteorology: for stand-alone cam</desc>
-    <desc compset="AR95_CAM">ARM95 IOP: for stand-alone cam</desc>
-    <desc compset="AR97_CAM">ARM97 IOP: for stand-alone cam</desc>
-    <desc compset="HIST_CLM4[05]%CN">CLM transient land use:</desc>
-    <desc compset="20TR_CLM4[05]%CN">CLM transient land use:</desc>
+    <desc compset="9205_EAM">1992 to 2005 transient:</desc>
+    <desc compset="SDYN_EAM">prescribed meteorology: for stand-alone cam</desc>
+    <desc compset="AR95_EAM">ARM95 IOP: for stand-alone cam</desc>
+    <desc compset="AR97_EAM">ARM97 IOP: for stand-alone cam</desc>
+    <desc compset="HIST_ELM%CN">ELM transient land use:</desc>
+    <desc compset="20TR_ELM%CN">ELM transient land use:</desc>
     <desc compset="PIPD">
       pre-industrial (1850) to present day:
       -----------------------------WARNING ------------------------------------------------
       "PIPD" compsets use complete forcing data from observed sources
       up to the year 2005. Following this period they are a combination of observed sources
       (land-use, SST, sea ice, CO2, CH4, N2O) to present day and IPCC RCP4.5 scenario data.
-      -------------------------------------------------------------------------------------
-    </desc>
-    <desc compset="CAM4.*_BGC%B">
-      -----------------------------WARNING ------------------------------------------------
-      This compset is not spun-up! In later versions of the model, spun-up initial
-      conditions will be provided and this warning will be removed.
       -------------------------------------------------------------------------------------
     </desc>
   </description>

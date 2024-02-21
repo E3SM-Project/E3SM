@@ -68,15 +68,21 @@ namespace scream {
                 real2d &sfc_alb_dir, real2d &sfc_alb_dif, real1d &mu0,
                 real2d &lwp, real2d &iwp, real2d &rel, real2d &rei, real2d &cldfrac,
                 real3d &aer_tau_sw, real3d &aer_ssa_sw, real3d &aer_asm_sw, real3d &aer_tau_lw,
+                real3d &cld_tau_sw_bnd, real3d &cld_tau_lw_bnd,
                 real3d &cld_tau_sw_gpt, real3d &cld_tau_lw_gpt,
                 real2d &sw_flux_up, real2d &sw_flux_dn, real2d &sw_flux_dn_dir,
                 real2d &lw_flux_up, real2d &lw_flux_dn,
+                real2d &sw_clnclrsky_flux_up, real2d &sw_clnclrsky_flux_dn, real2d &sw_clnclrsky_flux_dn_dir,
                 real2d &sw_clrsky_flux_up, real2d &sw_clrsky_flux_dn, real2d &sw_clrsky_flux_dn_dir,
+                real2d &sw_clnsky_flux_up, real2d &sw_clnsky_flux_dn, real2d &sw_clnsky_flux_dn_dir,
+                real2d &lw_clnclrsky_flux_up, real2d &lw_clnclrsky_flux_dn,
                 real2d &lw_clrsky_flux_up, real2d &lw_clrsky_flux_dn,
+                real2d &lw_clnsky_flux_up, real2d &lw_clnsky_flux_dn,
                 real3d &sw_bnd_flux_up, real3d &sw_bnd_flux_dn, real3d &sw_bnd_flux_dn_dir,
                 real3d &lw_bnd_flux_up, real3d &lw_bnd_flux_dn,
                 const Real tsi_scaling,
-                const std::shared_ptr<spdlog::logger>& logger);
+                const std::shared_ptr<spdlog::logger>& logger,
+                const bool extra_clnclrsky_diag = false, const bool extra_clnsky_diag = false);
         /*
          * Perform any clean-up tasks
          */
@@ -90,8 +96,10 @@ namespace scream {
                 GasConcs &gas_concs,
                 real2d &sfc_alb_dir, real2d &sfc_alb_dif, real1d &mu0,
                 OpticalProps2str &aerosol, OpticalProps2str &clouds,
-                FluxesByband &fluxes, FluxesBroadband &clrsky_fluxes, const Real tsi_scaling,
-                const std::shared_ptr<spdlog::logger>& logger);
+                FluxesByband &fluxes, FluxesBroadband &clnclrsky_fluxes, FluxesBroadband &clrsky_fluxes, FluxesBroadband &clnsky_fluxes,
+                const Real tsi_scaling,
+                const std::shared_ptr<spdlog::logger>& logger,
+                const bool extra_clnclrsky_diag, const bool extra_clnsky_diag);
         /*
          * Longwave driver (called by rrtmgp_main)
          */
@@ -101,7 +109,8 @@ namespace scream {
                 real2d &p_lay, real2d &t_lay, real2d &p_lev, real2d &t_lev,
                 GasConcs &gas_concs,
                 OpticalProps1scl &aerosol, OpticalProps1scl &clouds,
-                FluxesByband &fluxes, FluxesBroadband &clrsky_fluxes);
+                FluxesByband &fluxes, FluxesBroadband &clnclrsky_fluxes, FluxesBroadband &clrsky_fluxes, FluxesBroadband &clnsky_fluxes,
+                const bool extra_clnclrsky_diag, const bool extra_clnsky_diag);
         /*
          * Return a subcolumn mask consistent with a specified overlap assumption
          */
@@ -112,6 +121,18 @@ namespace scream {
         void compute_cloud_area(
                 int ncol, int nlay, int ngpt, Real pmin, Real pmax,
                 const real2d& pmid, const real3d& cld_tau_gpt, real1d& cld_area);
+        /*
+         * Return select cloud-top diagnostics following AeroCOM recommendation
+         */
+        void compute_aerocom_cloudtop(
+            int ncol, int nlay, const real2d &tmid, const real2d &pmid,
+            const real2d &p_del, const real2d &z_del, const real2d &qc,
+            const real2d &qi, const real2d &rel, const real2d &rei,
+            const real2d &cldfrac_tot, const real2d &nc,
+            real1d &T_mid_at_cldtop, real1d &p_mid_at_cldtop,
+            real1d &cldfrac_ice_at_cldtop, real1d &cldfrac_liq_at_cldtop,
+            real1d &cldfrac_tot_at_cldtop, real1d &cdnc_at_cldtop,
+            real1d &eff_radius_qc_at_cldtop, real1d &eff_radius_qi_at_cldtop);
 
         /* 
          * Provide a function to convert cloud (water and ice) mixing ratios to layer mass per unit area
@@ -154,6 +175,9 @@ namespace scream {
             });
         }
 
+        int get_wavelength_index(OpticalProps &kdist, double wavelength);
+        int get_wavelength_index_sw(double wavelength);
+        int get_wavelength_index_lw(double wavelength);
 
     } // namespace rrtmgp
 }  // namespace scream

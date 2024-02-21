@@ -288,6 +288,14 @@ Valid values: Any positive integer.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_nFloeCategories" type="integer"
+	category="dimensions" group="dimensions">
+The number of floe size categories to use.
+
+Valid values: Any positive integer.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_nIceLayers" type="integer"
 	category="dimensions" group="dimensions">
 The number of ice layers in the vertical direction to use.
@@ -430,7 +438,7 @@ Valid values: true or .false
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_use_column_package" type="logical"
+<entry id="config_use_column_physics" type="logical"
 	category="use_sections" group="use_sections">
 If true perform calculations from the column physics package.
 
@@ -469,7 +477,7 @@ Default: Defined in namelist_defaults.xml
 	category="forcing" group="forcing">
 Forcing time to use at the simulation start time
 
-Valid values: 'YYYY-MM-DD_HH:MM:SS
+Valid values: 'YYYY-MM-DD_HH:MM:SS'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -477,7 +485,7 @@ Default: Defined in namelist_defaults.xml
 	category="forcing" group="forcing">
 Start time for the forcing cycle.
 
-Valid values: 'YYYY-MM-DD_HH:MM:SS
+Valid values: 'YYYY-MM-DD_HH:MM:SS'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -485,7 +493,7 @@ Default: Defined in namelist_defaults.xml
 	category="forcing" group="forcing">
 Duration of the forcing cycle.
 
-Valid values: 'YYYY-MM-DD_HH:MM:SS
+Valid values: 'YYYY-MM-DD_HH:MM:SS'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -515,9 +523,17 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_update_ocean_fluxes" type="logical"
 	category="forcing" group="forcing">
-
+Include frazil ice fluxes in ocean flux fields.
 
 Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_frazil_coupling_type" type="char*1024"
+	category="forcing" group="forcing">
+Type of frazil ice coupling.
+
+Valid values: 'external', 'internal', 'fresh_ice_correction'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -789,6 +805,14 @@ Default: Defined in namelist_defaults.xml
 
 <!-- column_package -->
 
+<entry id="config_column_physics_type" type="char*1024"
+	category="column_package" group="column_package">
+Set column physics library.
+
+Valid values: 'icepack' and 'column_package'
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_use_column_shortwave" type="logical"
 	category="column_package" group="column_package">
 Run the shortwave radiation column physics calculation.
@@ -915,6 +939,14 @@ Default: Defined in namelist_defaults.xml
 <entry id="config_use_special_boundaries_tracers" type="logical"
 	category="column_tracers" group="column_tracers">
 Modify tracers in given boundary cells.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_floe_size_distribution" type="logical"
+	category="column_tracers" group="column_tracers">
+Use floe size distribution. Requires Icepack column package.
 
 Valid values: true or false
 Default: Defined in namelist_defaults.xml
@@ -2190,6 +2222,30 @@ Valid values:
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_use_shortwave_redistribution" type="logical"
+	category="shortwave" group="shortwave">
+Redistribute shortwave from layers near the melting temperature to the surface.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_shortwave_redistribution_fraction" type="real"
+	category="shortwave" group="shortwave">
+Fraction of shortwave moved from a layer near the melting temperature to the surface.
+
+Valid values: fraction between 0 and 1
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_shortwave_redistribution_threshold" type="real"
+	category="shortwave" group="shortwave">
+Temperature threshold for moving shortwave to the surface.
+
+Valid values:
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- snow -->
 
@@ -2197,7 +2253,7 @@ Default: Defined in namelist_defaults.xml
 	category="snow" group="snow">
 Use a snow redistribution scheme
 
-Valid values: '30percent (30% rule, precip only)','30percentsw (30% rulewith shortwave)','ITDsd (Lecomte PhD, 2014)','ITDrdg (like ITDsd but use level/ridged ice)','default or none (none)'
+Valid values: 'bulk', 'ITDrdg', 'none'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2249,9 +2305,25 @@ Valid values: positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_snow_redistribution_factor" type="real"
+	category="snow" group="snow">
+snow loss factor for wind redistribution
+
+Valid values: positive real less than or equal to 1
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_max_dry_snow_radius" type="real"
 	category="snow" group="snow">
 maximum dry metamorphism snow grain radius
+
+Valid values: positive real
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_snow_thermal_conductivity" type="real"
+	category="snow" group="snow">
+thermal conductivity of snow
 
 Valid values: positive real
 Default: Defined in namelist_defaults.xml
@@ -2276,9 +2348,9 @@ Valid values: 'cesm' or 'hlid'
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_pond_flushing_timescale" type="real"
+<entry id="config_pond_flushing_factor" type="real"
 	category="meltponds" group="meltponds">
-Alter e-folding time scale for flushing.?????
+Alters e-folding time scale for flushing with BL99 thermodynamics.
 
 Valid values:
 Default: Defined in namelist_defaults.xml
@@ -2331,7 +2403,7 @@ Default: Defined in namelist_defaults.xml
 	category="thermodynamics" group="thermodynamics">
 Vertical themodynamics type.
 
-Valid values: 'zero layer', 'BL99', or 'mushy'
+Valid values: 'BL99', or 'mushy'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2383,6 +2455,14 @@ Valid values: Any real number between 0 and 1.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_macro_drainage_timescale" type="real"
+	category="thermodynamics" group="thermodynamics">
+Timescale for macroscopic drainage.
+
+Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_congelation_ice_porosity" type="real"
 	category="thermodynamics" group="thermodynamics">
 Liquid fraction of congelation ice.
@@ -2407,6 +2487,25 @@ Default: Defined in namelist_defaults.xml
 Type of ice thickness category bounds.
 
 Valid values: 'single category', 'original', 'new', 'WMO', or 'asymptotic'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- floesize -->
+
+<entry id="config_floeshape" type="real"
+	category="floesize" group="floesize">
+Floe shape constant (noncircularity).
+
+Valid values: Any real number between 0 and pi/4.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_floediam" type="real"
+	category="floesize" group="floesize">
+Effective floe diameter for lateral melt in m.
+
+Valid values: Any real number.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2437,7 +2536,7 @@ Valid values: 'Hibler80' or 'exponential'
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_ridiging_efolding_scale" type="real"
+<entry id="config_ridging_efolding_scale" type="real"
 	category="ridging" group="ridging">
 E-folding scale of ridged ice (krdg_redist = 1)
 
@@ -2460,7 +2559,7 @@ Default: Defined in namelist_defaults.xml
 	category="atmosphere" group="atmosphere">
 Atmosphere boundary method.
 
-Valid values: 'ccsm3' or 'constant'
+Valid values: 'similarity' or 'constant' or 'mixed'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2555,19 +2654,27 @@ Valid values: 'free' or 'non-free'
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_couple_biogeochemistry_fields" type="logical"
-	category="ocean" group="ocean">
-
-
-Valid values: true or false
-Default: Defined in namelist_defaults.xml
-</entry>
-
 <entry id="config_use_data_icebergs" type="logical"
 	category="ocean" group="ocean">
 Use data iceberg meltwater forcing
 
 Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_salt_flux_coupling_type" type="char*1024"
+	category="ocean" group="ocean">
+Type of salt flux to ocean method
+
+Valid values: 'constant' or 'prognostic'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ice_ocean_drag_coefficient" type="real"
+	category="ocean" group="ocean">
+Neutral ice-ocean drag coefficient
+
+Valid values:
 Default: Defined in namelist_defaults.xml
 </entry>
 

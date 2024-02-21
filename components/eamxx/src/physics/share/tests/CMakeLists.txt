@@ -1,10 +1,9 @@
 include(ScreamUtils)
 
-set(NEED_LIBS physics_share scream_share)
-
 # NOTE: tests inside this if statement won't be built in a baselines-only build
-if (NOT ${SCREAM_BASELINES_ONLY})
-  CreateUnitTest(physics_test_data physics_test_data_unit_tests.cpp "${NEED_LIBS}"
+if (NOT SCREAM_BASELINES_ONLY)
+  CreateUnitTest(physics_test_data physics_test_data_unit_tests.cpp
+    LIBS physics_share
     THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC})
 endif()
 
@@ -13,8 +12,8 @@ if (SCREAM_ENABLE_BASELINE_TESTS)
 
   # The comparison test. Expects baseline to exist. All thread configurations
   # will use the same baseline.
-  CreateUnitTest(
-    physics_saturation_run_and_cmp "physics_saturation_run_and_cmp.cpp" "${NEED_LIBS}"
+  CreateUnitTest(physics_saturation_run_and_cmp "physics_saturation_run_and_cmp.cpp"
+    LIBS physics_share
     EXE_ARGS "${BASELINE_FILE_ARG}"
     LABELS "physics")
 
@@ -37,5 +36,4 @@ if (SCREAM_ENABLE_BASELINE_TESTS)
     COMMAND ${CMAKE_COMMAND} -E env OMP_NUM_THREADS=${SCREAM_TEST_MAX_THREADS} ${PHYSICS_SATURATION_GEN_ARGS})
 
   add_dependencies(baseline physics_saturation_baseline)
-
 endif()

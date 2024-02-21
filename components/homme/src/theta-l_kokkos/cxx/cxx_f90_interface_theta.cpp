@@ -595,17 +595,19 @@ void init_boundary_exchanges_c ()
     bmm[MPI_EXCHANGE_MIN_MAX]->set_connectivity(connectivity);
   }
 
-  if (params.transport_alg == 0) {
-    // Euler BEs
-    auto& esf = c.get<EulerStepFunctor>();
-    esf.reset(params);
-    esf.init_boundary_exchanges();
-  } else {
+  if (params.qsize > 0) {
+    if (params.transport_alg == 0) {
+      // Euler BEs
+      auto& esf = c.get<EulerStepFunctor>();
+      esf.reset(params);
+      esf.init_boundary_exchanges();
+    } else {
 #ifdef HOMME_ENABLE_COMPOSE
-    auto& ct = c.get<ComposeTransport>();
-    ct.reset(params);
-    ct.init_boundary_exchanges();
+      auto& ct = c.get<ComposeTransport>();
+      ct.reset(params);
+      ct.init_boundary_exchanges();
 #endif
+    }
   }
 
   // RK stages BE's

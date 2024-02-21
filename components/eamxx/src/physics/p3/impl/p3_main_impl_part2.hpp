@@ -21,6 +21,7 @@ void Functions<S,D>
 ::p3_main_part2(
   const MemberType& team,
   const Int& nk_pack,
+  const Scalar& max_total_ni,
   const bool& predictNc,
   const bool& do_prescribed_CCN,
   const Scalar& dt,
@@ -98,7 +99,6 @@ void Functions<S,D>
   constexpr Scalar qsmall       = C::QSMALL;
   constexpr Scalar nsmall       = C::NSMALL;
   constexpr Scalar T_zerodegc   = C::T_zerodegc;
-  constexpr Scalar max_total_ni = C::max_total_ni;
   constexpr Scalar f1r          = C::f1r;
   constexpr Scalar f2r          = C::f2r;
   constexpr Scalar nmltratio    = C::nmltratio;

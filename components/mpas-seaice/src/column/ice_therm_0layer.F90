@@ -12,10 +12,10 @@
       module ice_therm_0layer
 
       use ice_kinds_mod
-      use ice_constants_colpkg, only: c0, c1, p5, puny, &
-          kseaice, ksno
+      use ice_constants_colpkg, only: c0, c1, p5, puny, kseaice
       use ice_therm_bl99, only: surface_fluxes
       use ice_warnings, only: add_warning
+      Use ice_colpkg_shared, only: ksno
 
       implicit none
 
@@ -125,7 +125,7 @@
 
       real (kind=dbl_kind) :: &
          heff        , & ! effective ice thickness (m)
-                         ! ( hice + hsno*kseaice/ksnow)
+                         ! ( hice + hsno*kseaice/ksno)
          kratio      , & ! ratio of ice and snow conductivies
          avg_Tsf         ! = 1. if Tsf averaged w/Tsf_start, else = 0.
 

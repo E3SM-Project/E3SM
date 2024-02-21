@@ -253,6 +253,16 @@ def buildnml(case, caseroot, compname):
             grid_date = '210414'
             grid_prefix = 'mpassi.ECwISC30to60E2r1.rstFromG-anvil'
 
+    elif ice_grid == 'IcoswISC30E3r5':
+        grid_date = '20231120'
+        grid_prefix = 'mpassi.IcoswISC30E3r5'
+        decomp_date = '20231120'
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
+        data_iceberg_file = 'Iceberg_Climatology_Merino.IcoswISC30E3r5.20231120.nc'
+        if ice_ic_mode == 'spunup':
+            grid_date = '20231121'
+            grid_prefix = 'mpassi.IcoswISC30E3r5.rstFromG-chrysalis'
+
     elif ice_grid == 'ICOS10':
         grid_date = '211015'
         grid_prefix = 'seaice.ICOS10'
@@ -791,12 +801,6 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="iceVolumeTendencyTransport"/>')
             lines.append('    <var name="iceAreaTendencyThermodynamics"/>')
             lines.append('    <var name="iceAreaTendencyTransport"/>')
-            lines.append('    <var name="iceAgeTendencyThermodynamics"/>')
-            lines.append('    <var name="iceAgeTendencyTransport"/>')
-            lines.append('    <var name="iceAgeCell"/>')
-            lines.append('    <var name="firstYearIceAreaCell"/>')
-            lines.append('    <var name="levelIceAreaCell"/>')
-            lines.append('    <var name="levelIceVolumeCell"/>')
             lines.append('    <var name="ridgedIceAreaAverage"/>')
             lines.append('    <var name="ridgedIceVolumeAverage"/>')
             lines.append('    <var name="bulkSalinity"/>')
@@ -891,7 +895,6 @@ def buildnml(case, caseroot, compname):
                 lines.append('    <var name="totalVerticalBiologyIce"/>')
                 lines.append('    <var name="brineFractionCell"/>')
                 lines.append('    <var name="netBrineHeight"/>')
-                lines.append('    <var name="firstYearIceAreaCell"/>')
                 lines.append('    <var name="levelIceAreaCell"/>')
                 lines.append('    <var name="pondAreaCell"/>')
                 lines.append('    <var name="surfaceIceMelt"/>')

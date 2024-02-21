@@ -2406,6 +2406,8 @@ subroutine tphysbc (ztodt,               &
     zero = 0._r8
     zero_tracers(:,:) = 0._r8
     zero_sc(:) = 0._r8
+    flx_cnd(:) = 0._r8
+    flx_heat(:) = 0._r8
 
     lchnk = state%lchnk
     ncol  = state%ncol
@@ -2865,8 +2867,8 @@ end if
                 call check_energy_chng(state, tend, "clubb_tend", nstep, ztodt, &
                      cam_in%cflx(:,1)/cld_macmic_num_steps, flx_cnd/cld_macmic_num_steps, &
                      det_ice/cld_macmic_num_steps, flx_heat/cld_macmic_num_steps)
-		     
-	
+
+
  
           endif
 

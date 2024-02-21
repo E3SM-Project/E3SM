@@ -19,13 +19,10 @@ set(O0MODELSRC
 
 if (NOT DEBUG)
   foreach(ITEM IN LISTS O1MODELSRC)
-    e3sm_remove_flags("${ITEM}" "-O2")
     e3sm_add_flags("${ITEM}" "-O1 -Mnovect")
   endforeach()
 
   foreach(ITEM IN LISTS O0MODELSRC)
-    e3sm_remove_flags("${ITEM}" "-O2")
-    e3sm_remove_flags("${ITEM}" "-O1")
     e3sm_add_flags("${ITEM}" "-O0 -Mnovect")
   endforeach()
 endif()
@@ -110,6 +107,7 @@ list(APPEND MPAS_ADD_ACC_FLAGS
   ${CMAKE_BINARY_DIR}/core_ocean/mode_forward/mpas_ocn_time_integration_rk4.f90
   ${CMAKE_BINARY_DIR}/core_ocean/mode_forward/mpas_ocn_time_integration_si.f90
   ${CMAKE_BINARY_DIR}/core_ocean/mode_forward/mpas_ocn_time_integration_split.f90
+  ${CMAKE_BINARY_DIR}/core_ocean/mode_forward/mpas_ocn_time_integration_split_ab2.f90
   ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_diagnostics.f90
   ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_effective_density_in_land_ice.f90
   ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_diagnostics_variables.f90

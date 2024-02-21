@@ -32,7 +32,7 @@
 
 <!-- CMIP6 DECK compsets -->
 
-<fsurdat>lnd/clm2/surfdata_map/surfdata_ne30np4.pg2_SSP5_RCP85_simyr2015_c220420.nc </fsurdat>
+<fsurdat>lnd/clm2/surfdata_map/surfdata_ne30np4.pg2_SSP5_RCP85_simyr2015_c220420_with_TOP.nc </fsurdat>
 <flanduse_timeseries>lnd/clm2/surfdata_map/landuse.timeseries_ne30pg2_SSP5_RCP85_simyr2015-2100_c220310.nc</flanduse_timeseries>
 
 <!-- Add following for hybrid run of SSP370 continuing from a historical simulation -->

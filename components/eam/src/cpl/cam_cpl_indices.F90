@@ -86,6 +86,7 @@ module cam_cpl_indices
   integer :: index_x2a_So_ssq          ! surface saturation specific humidity in ocean 
   integer :: index_x2a_Sl_ddvel        ! dry deposition velocities from land
   integer :: index_x2a_Sx_u10          ! 10m wind
+  integer :: index_x2a_Sx_u10withgusts ! 10m wind with gusts
 
 contains
 
@@ -122,6 +123,7 @@ contains
     index_x2a_Sf_lfrac      = mct_avect_indexra(x2a,'Sf_lfrac')
 
     index_x2a_Sx_u10        = mct_avect_indexra(x2a,'Sx_u10')
+    index_x2a_Sx_u10withgusts = mct_avect_indexra(x2a,'Sx_u10withgusts')
     index_x2a_Faxx_taux     = mct_avect_indexra(x2a,'Faxx_taux')
     index_x2a_Faxx_tauy     = mct_avect_indexra(x2a,'Faxx_tauy')
     index_x2a_Faxx_lat      = mct_avect_indexra(x2a,'Faxx_lat')

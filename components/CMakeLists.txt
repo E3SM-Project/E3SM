@@ -9,17 +9,11 @@
 #
 #===============================================================================
 
-# bmpersch
-# - Read modern cmake docs, use modern features
-# - Use find_package for trilinos and other TPLS
-
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.18)
 cmake_policy(SET CMP0057 NEW)
+cmake_policy(SET CMP0074 NEW)
+cmake_policy(SET CMP0079 NEW) # Remove once scorpio in a better state
 set(CMAKE_CXX_STANDARD 17)
-
-# Store caseroot in the cache, so that, if cmake re-runs,
-# we can still access ${CASEROOT}/Macros.cmake
-set (CASEROOT "" CACHE STRING "The case root directory.")
 
 # Turn on wrapper
 set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "python3 ${CASEROOT}/Tools/e3sm_compile_wrap.py ")
@@ -27,7 +21,7 @@ set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK    "python3 ${CASEROOT}/Tools/e3sm
 
 # We need to set the compilers *before* calling `project`.
 # The only way to get the compiler name, is to load Macros.cmake
-# However, we do *not* want to pollut the environment with other
+# However, we do *not* want to pollute the environment with other
 # vars coming from Macros.cmake, so we encapsulate its inclusion
 # in a new scope.
 # Additionally, we also set CMAKE_BUILD_TYPE=DEBUG if Macros.cmake
@@ -36,25 +30,15 @@ function(set_compilers_e3sm)
   # Grab CXX compiler from CIME
   include(${CASEROOT}/Macros.cmake)
 
-  if (MPILIB STREQUAL "mpi-serial")
-    set(CC ${SCC})
-    set(FC ${SFC})
-    set(CXX ${SCXX})
-  else()
-    set(CC ${MPICC})
-    set(FC ${MPIFC})
-    set(CXX ${MPICXX})
-  endif()
-
-  set(CMAKE_CXX_COMPILER     ${CXX} CACHE STRING "The CXX compiler")
-  set(CMAKE_C_COMPILER       ${CC}  CACHE STRING "The C   compiler")
-  set(CMAKE_Fortran_COMPILER ${FC}  CACHE STRING "The Fortran compiler")
-
   if (DEBUG)
     set(E3SM_DEFAULT_BUILD_TYPE "DEBUG" CACHE STRING "Default build type, inferred from ${DEBUG}")
   else()
     set(E3SM_DEFAULT_BUILD_TYPE "RELEASE" CACHE STRING "Default build type, inferred from ${DEBUG}")
   endif()
+
+  set(CMAKE_CXX_COMPILER     ${CMAKE_CXX_COMPILER}     CACHE STRING "The CXX compiler")
+  set(CMAKE_C_COMPILER       ${CMAKE_C_COMPILER}       CACHE STRING "The C   compiler")
+  set(CMAKE_Fortran_COMPILER ${CMAKE_Fortran_COMPILER} CACHE STRING "The Fortran compiler")
 
   # USE_CUDA or USE_HIP is set through Macros.cmake
   # For instance: cime_config/machines/cmake_macros/gnugpu_summit.cmake
@@ -98,11 +82,28 @@ endif()
 
 project(E3SM C CXX Fortran)
 
-if(USE_CUDA)
+if (COMP_INTERFACE STREQUAL "moab")
+  set(USE_MOAB True)
+  set(CPPDEFS "${CPPDEFS} -DHAVE_MOAB")
+endif()
+
+if (USE_CUDA)
+  set(CMAKE_CUDA_COMPILER_FORCED True)
   enable_language(CUDA)
-elseif(USE_HIP)
+elseif (USE_HIP)
+  set(CMAKE_HIP_COMPILER_FORCED True)
   enable_language(HIP)
 endif()
+
+# Any changes to SourceMods will require us to reconfigure
+file(GLOB COMPONENT_SOURCE_MOD_DIRS "${CASEROOT}/SourceMods/src.*")
+foreach(COMPONENT_SOURCE_MOD_DIR IN LISTS COMPONENT_SOURCE_MOD_DIRS)
+  set_property(
+    DIRECTORY
+    APPEND
+    PROPERTY CMAKE_CONFIGURE_DEPENDS
+    ${COMPONENT_SOURCE_MOD_DIR})
+endforeach()
 
 # Include function definitions
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_util.cmake)
@@ -117,23 +118,11 @@ list(APPEND CMAKE_MODULE_PATH ${CIMEROOT}/CIME/non_py/src/CMake)
 
 set(CMAKE_VERBOSE_MAKEFILE TRUE)
 
-if(USE_CUDA)
-  enable_language(CUDA)
-endif()
+# Find dependencies
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/find_dep_packages.cmake)
 
 # Scream manages its own flags
 build_eamxx()
-
-# We do want CMAKE_BUILD_TYPE to be set, but we do NOT want CMake to
-# decide what optimization flags to append, based on build type,
-# for components who rely on CIME for build flags, so make all the following empty.
-set (CMAKE_C_FLAGS_RELEASE "")
-set (CMAKE_CXX_FLAGS_RELEASE "")
-set (CMAKE_Fortran_FLAGS_RELEASE "")
-
-set (CMAKE_C_FLAGS_DEBUG "")
-set (CMAKE_CXX_FLAGS_DEBUG "")
-set (CMAKE_Fortran_FLAGS_DEBUG "")
 
 set(BUILDCONF ${CASEROOT}/Buildconf)
 
@@ -162,4 +151,5 @@ foreach(COMP_NAME IN LISTS COMP_NAMES)
   math(EXPR IDX "${IDX} + 1")
 endforeach()
 
+# Build the E3SM coupler and exe
 add_subdirectory(cmake/cpl)

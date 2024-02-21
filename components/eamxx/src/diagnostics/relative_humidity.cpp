@@ -5,22 +5,20 @@
 namespace scream
 {
 
-
-// =========================================================================================
-RelativeHumidityDiagnostic::RelativeHumidityDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params)
-  : AtmosphereDiagnostic(comm,params)
+RelativeHumidityDiagnostic::
+RelativeHumidityDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params)
+ : AtmosphereDiagnostic(comm,params)
 {
   // Nothing to do here
 }
 
-// =========================================================================================
 void RelativeHumidityDiagnostic::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 {
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
 
-
-  auto Q = kg/kg;
+  auto nondim = Units::nondimensional();
+  auto Q = nondim;
   Q.set_string("kg/kg");
 
   auto grid  = grids_manager->get_grid("Physics");
@@ -29,28 +27,32 @@ void RelativeHumidityDiagnostic::set_grids(const std::shared_ptr<const GridsMana
   m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column
 
   FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols,m_num_levs} };
-  constexpr int ps = Pack::n;
 
   // The fields required for this diagnostic to be computed
-  add_field<Required>("T_mid",          scalar3d_layout_mid, K,  grid_name, ps);
-  add_field<Required>("p_mid",          scalar3d_layout_mid, Pa, grid_name, ps);
-  add_field<Required>("qv",          scalar3d_layout_mid, Q,  grid_name, "tracers", ps);
-
+  add_field<Required>("T_mid",              scalar3d_layout_mid, K,  grid_name, SCREAM_PACK_SIZE);
+  add_field<Required>("p_dry_mid",          scalar3d_layout_mid, Pa, grid_name, SCREAM_PACK_SIZE);
+  add_field<Required>("qv",                 scalar3d_layout_mid, Q,  grid_name, SCREAM_PACK_SIZE);
+  add_field<Required>("pseudo_density",     scalar3d_layout_mid, Pa, grid_name, SCREAM_PACK_SIZE);
+  add_field<Required>("pseudo_density_dry", scalar3d_layout_mid, Pa, grid_name, SCREAM_PACK_SIZE);
 
   // Construct and allocate the diagnostic field
-  FieldIdentifier fid (name(), scalar3d_layout_mid, K, grid_name);
+  FieldIdentifier fid (name(), scalar3d_layout_mid, nondim, grid_name);
   m_diagnostic_output = Field(fid);
   auto& C_ap = m_diagnostic_output.get_header().get_alloc_properties();
-  C_ap.request_allocation(ps);
+  C_ap.request_allocation(SCREAM_PACK_SIZE);
   m_diagnostic_output.allocate_view();
 }
-// =========================================================================================
+
 void RelativeHumidityDiagnostic::compute_diagnostic_impl()
 {
+  using Pack          = ekat::Pack<Real,SCREAM_PACK_SIZE>;
+
   const auto npacks  = ekat::npack<Pack>(m_num_levs);
   auto theta     = m_diagnostic_output.get_view<Pack**>();
   auto T_mid     = get_field_in("T_mid").get_view<const Pack**>();
-  auto p_mid     = get_field_in("p_mid").get_view<const Pack**>();
+  auto p_dry_mid = get_field_in("p_dry_mid").get_view<const Pack**>();
+  auto dp_wet    = get_field_in("pseudo_density").get_view<const Pack**>();
+  auto dp_dry    = get_field_in("pseudo_density_dry").get_view<const Pack**>();
   auto qv_mid    = get_field_in("qv").get_view<const Pack**>();
   const auto& RH = m_diagnostic_output.get_view<Pack**>();
 
@@ -64,15 +66,12 @@ void RelativeHumidityDiagnostic::compute_diagnostic_impl()
       const int jpack = idx % npacks;
       const auto range_pack = ekat::range<Pack>(jpack*Pack::n);
       const auto range_mask = range_pack < num_levs;
-      auto qv_sat_l = physics::qv_sat(T_mid(icol,jpack), p_mid(icol,jpack), false, range_mask, physics::MurphyKoop, "RelativeHumidityDiagnostic::compute_diagnostic_impl");
+      auto qv_sat_l = physics::qv_sat_wet(T_mid(icol,jpack),  p_dry_mid(icol,jpack), false, range_mask, dp_wet(icol,jpack), dp_dry(icol,jpack),
+                                           physics::MurphyKoop, "RelativeHumidityDiagnostic::compute_diagnostic_impl");
       RH(icol,jpack) = qv_mid(icol,jpack)/qv_sat_l;
 
   });
   Kokkos::fence();
-
-  const auto ts = get_field_in("qv").get_header().get_tracking().get_time_stamp();
-  m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
 }
-// =========================================================================================
 
 } //namespace scream

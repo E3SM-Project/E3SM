@@ -56,6 +56,7 @@ module ocn_forcing
    ! Private module variables
    !
    !--------------------------------------------------------------------
+   logical :: surfaceThicknessFluxOn, surfaceTracerFluxOn
 
 !***********************************************************************
 
@@ -80,6 +81,16 @@ contains
       integer, intent(out) :: err !< Output: error flag
 
       err = 0
+
+      surfaceThicknessFluxOn = .true.
+      surfaceTracerFluxOn = .true.
+
+      if (config_disable_thick_sflux) then
+         surfaceThicknessFluxOn = .false.
+      end if
+      if (config_disable_tr_sflux) then
+         surfaceTracerFluxOn = .false.
+      end if
 
    end subroutine ocn_forcing_init!}}}
 
@@ -118,6 +129,8 @@ contains
         integer, dimension(:), pointer :: minLevelCell, maxLevelCell, nCellsArray
 
         err = 0
+
+        if (.not. surfaceThicknessFluxOn .and. .not. surfaceTracerFluxOn) return
 
         if (present(timeLevelIn)) then
            timeLevel = timeLevelIn

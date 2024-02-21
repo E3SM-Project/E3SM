@@ -1,0 +1,218 @@
+.SUFFIXES: .F90 .o
+
+OBJS =  icepack_aerosol.o \
+	icepack_age.o \
+	icepack_algae.o \
+	icepack_atmo.o \
+	icepack_brine.o \
+	icepack_firstyear.o \
+	icepack_flux.o \
+	icepack_fsd.o \
+	icepack_intfc.o \
+	icepack_isotope.o \
+	icepack_itd.o \
+	icepack_kinds.o \
+	icepack_mechred.o \
+	icepack_meltpond_lvl.o \
+	icepack_meltpond_topo.o \
+	icepack_mushy_physics.o \
+	icepack_ocean.o \
+	icepack_orbital.o \
+	icepack_parameters.o \
+	icepack_shortwave.o \
+        icepack_shortwave_data.o \
+	icepack_snow.o \
+	icepack_therm_bl99.o \
+	icepack_therm_itd.o \
+	icepack_therm_mushy.o \
+	icepack_therm_shared.o \
+	icepack_therm_vertical.o \
+	icepack_tracers.o \
+	icepack_warnings.o \
+	icepack_wavefracspec.o \
+	icepack_zbgc.o \
+	icepack_zbgc_shared.o
+
+
+all: $(OBJS)
+
+
+icepack_aerosol.o:icepack_kinds.o
+icepack_aerosol.o:icepack_parameters.o
+icepack_aerosol.o:icepack_tracers.o
+icepack_aerosol.o:icepack_warnings.o
+icepack_aerosol.o:icepack_zbgc_shared.o
+icepack_age.o:icepack_kinds.o
+icepack_age.o:icepack_warnings.o
+icepack_algae.o:icepack_aerosol.o
+icepack_algae.o:icepack_kinds.o
+icepack_algae.o:icepack_parameters.o
+icepack_algae.o:icepack_tracers.o
+icepack_algae.o:icepack_warnings.o
+icepack_algae.o:icepack_zbgc_shared.o
+icepack_atmo.o:icepack_kinds.o
+icepack_atmo.o:icepack_parameters.o
+icepack_atmo.o:icepack_tracers.o
+icepack_atmo.o:icepack_warnings.o
+icepack_brine.o:icepack_kinds.o
+icepack_brine.o:icepack_mushy_physics.o
+icepack_brine.o:icepack_parameters.o
+icepack_brine.o:icepack_therm_shared.o
+icepack_brine.o:icepack_tracers.o
+icepack_brine.o:icepack_warnings.o
+icepack_brine.o:icepack_zbgc_shared.o
+icepack_firstyear.o:icepack_kinds.o
+icepack_firstyear.o:icepack_parameters.o
+icepack_firstyear.o:icepack_warnings.o
+icepack_flux.o:icepack_kinds.o
+icepack_flux.o:icepack_parameters.o
+icepack_flux.o:icepack_tracers.o
+icepack_flux.o:icepack_warnings.o
+icepack_fsd.o:icepack_kinds.o
+icepack_fsd.o:icepack_parameters.o
+icepack_fsd.o:icepack_tracers.o
+icepack_fsd.o:icepack_warnings.o
+icepack_intfc.o:icepack_atmo.o
+icepack_intfc.o:icepack_brine.o
+icepack_intfc.o:icepack_fsd.o
+icepack_intfc.o:icepack_itd.o
+icepack_intfc.o:icepack_kinds.o
+icepack_intfc.o:icepack_mechred.o
+icepack_intfc.o:icepack_mushy_physics.o
+icepack_intfc.o:icepack_ocean.o
+icepack_intfc.o:icepack_orbital.o
+icepack_intfc.o:icepack_parameters.o
+icepack_intfc.o:icepack_shortwave.o
+icepack_intfc.o:icepack_shortwave_data.o
+icepack_intfc.o:icepack_snow.o
+icepack_intfc.o:icepack_therm_itd.o
+icepack_intfc.o:icepack_therm_shared.o
+icepack_intfc.o:icepack_therm_vertical.o
+icepack_intfc.o:icepack_tracers.o
+icepack_intfc.o:icepack_warnings.o
+icepack_intfc.o:icepack_wavefracspec.o
+icepack_intfc.o:icepack_zbgc.o
+icepack_isotope.o:icepack_kinds.o
+icepack_isotope.o:icepack_parameters.o
+icepack_isotope.o:icepack_tracers.o
+icepack_isotope.o:icepack_warnings.o
+icepack_itd.o:icepack_kinds.o
+icepack_itd.o:icepack_parameters.o
+icepack_itd.o:icepack_therm_shared.o
+icepack_itd.o:icepack_tracers.o
+icepack_itd.o:icepack_warnings.o
+icepack_itd.o:icepack_zbgc_shared.o
+icepack_mechred.o:icepack_itd.o
+icepack_mechred.o:icepack_kinds.o
+icepack_mechred.o:icepack_parameters.o
+icepack_mechred.o:icepack_tracers.o
+icepack_mechred.o:icepack_warnings.o
+icepack_meltpond_lvl.o:icepack_kinds.o
+icepack_meltpond_lvl.o:icepack_parameters.o
+icepack_meltpond_lvl.o:icepack_therm_shared.o
+icepack_meltpond_lvl.o:icepack_warnings.o
+icepack_meltpond_topo.o:icepack_kinds.o
+icepack_meltpond_topo.o:icepack_parameters.o
+icepack_meltpond_topo.o:icepack_therm_shared.o
+icepack_meltpond_topo.o:icepack_warnings.o
+icepack_mushy_physics.o:icepack_kinds.o
+icepack_mushy_physics.o:icepack_parameters.o
+icepack_mushy_physics.o:icepack_warnings.o
+icepack_ocean.o:icepack_kinds.o
+icepack_ocean.o:icepack_parameters.o
+icepack_ocean.o:icepack_warnings.o
+icepack_orbital.o:icepack_kinds.o
+icepack_orbital.o:icepack_parameters.o
+icepack_orbital.o:icepack_warnings.o
+icepack_parameters.o:icepack_kinds.o
+icepack_parameters.o:icepack_warnings.o
+icepack_shortwave.o:icepack_kinds.o
+icepack_shortwave.o:icepack_orbital.o
+icepack_shortwave.o:icepack_parameters.o
+icepack_shortwave.o:icepack_shortwave_data.o
+icepack_shortwave.o:icepack_tracers.o
+icepack_shortwave.o:icepack_warnings.o
+icepack_shortwave.o:icepack_zbgc_shared.o
+icepack_shortwave_data.o:icepack_kinds.o
+icepack_shortwave_data.o:icepack_warnings.o
+icepack_shortwave_data.o:icepack_parameters.o
+icepack_snow.o:icepack_kinds.o
+icepack_snow.o:icepack_parameters.o
+icepack_snow.o:icepack_therm_shared.o
+icepack_snow.o:icepack_warnings.o
+icepack_therm_bl99.o:icepack_kinds.o
+icepack_therm_bl99.o:icepack_parameters.o
+icepack_therm_bl99.o:icepack_therm_shared.o
+icepack_therm_bl99.o:icepack_warnings.o
+icepack_therm_itd.o:icepack_fsd.o
+icepack_therm_itd.o:icepack_isotope.o
+icepack_therm_itd.o:icepack_itd.o
+icepack_therm_itd.o:icepack_kinds.o
+icepack_therm_itd.o:icepack_mushy_physics.o
+icepack_therm_itd.o:icepack_parameters.o
+icepack_therm_itd.o:icepack_therm_shared.o
+icepack_therm_itd.o:icepack_tracers.o
+icepack_therm_itd.o:icepack_warnings.o
+icepack_therm_itd.o:icepack_zbgc.o
+icepack_therm_mushy.o:icepack_kinds.o
+icepack_therm_mushy.o:icepack_mushy_physics.o
+icepack_therm_mushy.o:icepack_parameters.o
+icepack_therm_mushy.o:icepack_therm_shared.o
+icepack_therm_mushy.o:icepack_tracers.o
+icepack_therm_mushy.o:icepack_warnings.o
+icepack_therm_shared.o:icepack_kinds.o
+icepack_therm_shared.o:icepack_mushy_physics.o
+icepack_therm_shared.o:icepack_parameters.o
+icepack_therm_shared.o:icepack_warnings.o
+icepack_therm_vertical.o:icepack_aerosol.o
+icepack_therm_vertical.o:icepack_age.o
+icepack_therm_vertical.o:icepack_atmo.o
+icepack_therm_vertical.o:icepack_firstyear.o
+icepack_therm_vertical.o:icepack_flux.o
+icepack_therm_vertical.o:icepack_isotope.o
+icepack_therm_vertical.o:icepack_kinds.o
+icepack_therm_vertical.o:icepack_meltpond_lvl.o
+icepack_therm_vertical.o:icepack_meltpond_topo.o
+icepack_therm_vertical.o:icepack_mushy_physics.o
+icepack_therm_vertical.o:icepack_parameters.o
+icepack_therm_vertical.o:icepack_snow.o
+icepack_therm_vertical.o:icepack_therm_bl99.o
+icepack_therm_vertical.o:icepack_therm_mushy.o
+icepack_therm_vertical.o:icepack_therm_shared.o
+icepack_therm_vertical.o:icepack_tracers.o
+icepack_therm_vertical.o:icepack_warnings.o
+icepack_tracers.o:icepack_kinds.o
+icepack_tracers.o:icepack_parameters.o
+icepack_tracers.o:icepack_warnings.o
+icepack_warnings.o:icepack_kinds.o
+icepack_wavefracspec.o:icepack_fsd.o
+icepack_wavefracspec.o:icepack_kinds.o
+icepack_wavefracspec.o:icepack_parameters.o
+icepack_wavefracspec.o:icepack_tracers.o
+icepack_wavefracspec.o:icepack_warnings.o
+icepack_zbgc.o:icepack_algae.o
+icepack_zbgc.o:icepack_brine.o
+icepack_zbgc.o:icepack_itd.o
+icepack_zbgc.o:icepack_kinds.o
+icepack_zbgc.o:icepack_parameters.o
+icepack_zbgc.o:icepack_therm_shared.o
+icepack_zbgc.o:icepack_tracers.o
+icepack_zbgc.o:icepack_warnings.o
+icepack_zbgc.o:icepack_zbgc_shared.o
+icepack_zbgc_shared.o:icepack_kinds.o
+icepack_zbgc_shared.o:icepack_parameters.o
+icepack_zbgc_shared.o:icepack_tracers.o
+icepack_zbgc_shared.o:icepack_warnings.o
+
+.F90.o:
+	$(RM) $@ $*.mod
+ifeq "$(GEN_F90)" "true"
+	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) $< > $*.f90
+
+	$(FC) $(FFLAGS) -c $*.f90 $(FCINCLUDES)
+else
+	$(FC) $(CPPFLAGS) $(FFLAGS) -c $*.F90 $(CPPINCLUDES) $(FCINCLUDES)
+endif
+
+clean:
+	$(RM) *.o *.mod

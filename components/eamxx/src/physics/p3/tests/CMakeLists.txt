@@ -1,6 +1,5 @@
 include(ScreamUtils)
 
-set(NEED_LIBS p3 physics_share scream_share)
 set(P3_TESTS_SRCS
     p3_tests.cpp
     p3_unit_tests.cpp
@@ -48,42 +47,61 @@ endif()
 
 # NOTE: tests inside this if statement won't be built in a baselines-only build
 if (NOT SCREAM_BASELINES_ONLY)
-  CreateUnitTest(p3_tests "${P3_TESTS_SRCS}" "${NEED_LIBS}"
-                 THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
-                 LABELS "p3;physics")
+  CreateUnitTest(p3_tests "${P3_TESTS_SRCS}"
+      LIBS p3
+      THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
+      LABELS "p3;physics")
 
   # Make sure that a diff in the two implementation triggers a failed test (in debug only)
-  CreateUnitTest (p3_tests_fail p3_rain_sed_unit_tests.cpp "${NEED_LIBS}"
-                 COMPILER_CXX_DEFS SCREAM_FORCE_RUN_DIFF
-                 THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
-                 PROPERTIES WILL_FAIL ${FORCE_RUN_DIFF_FAILS}
-                 LABELS "p3;physics;fail")
+  CreateUnitTest (p3_tests_fail p3_rain_sed_unit_tests.cpp
+      LIBS p3
+      COMPILER_CXX_DEFS SCREAM_FORCE_RUN_DIFF
+      THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
+      LABELS "p3;physics;fail"
+      PROPERTIES WILL_FAIL ${FORCE_RUN_DIFF_FAILS})
+
+  if (NOT SCREAM_SMALL_KERNELS) 
+     CreateUnitTest(p3_sk_tests "${P3_TESTS_SRCS}"
+        LIBS p3_sk
+        THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
+        LABELS "p3_sk;physics")
+
+  # Make sure that a diff in the two implementation triggers a failed test (in debug only)
+     CreateUnitTest (p3_sk_tests_fail p3_rain_sed_unit_tests.cpp
+        LIBS p3_sk
+        COMPILER_CXX_DEFS SCREAM_FORCE_RUN_DIFF
+        THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
+        LABELS "p3_sk;physics;fail"
+        PROPERTIES WILL_FAIL ${FORCE_RUN_DIFF_FAILS})
+  endif()
 endif()
 
 if (SCREAM_ENABLE_BASELINE_TESTS)
   set(BASELINE_FILE_ARG "-b ${SCREAM_TEST_DATA_DIR}/p3_run_and_cmp.baseline")
 
-  CreateUnitTestExec(p3_run_and_cmp "p3_run_and_cmp.cpp" "${NEED_LIBS}"
-                     EXCLUDE_MAIN_CPP)
+  CreateUnitTestExec(p3_run_and_cmp "p3_run_and_cmp.cpp"
+      LIBS p3
+      EXCLUDE_MAIN_CPP)
 
   CreateUnitTestFromExec(p3_run_and_cmp_cxx p3_run_and_cmp
-                 THREADS ${SCREAM_TEST_MAX_THREADS}
-                 EXE_ARGS "${BASELINE_FILE_ARG}"
-                 LABELS "p3;physics")
+      THREADS ${SCREAM_TEST_MAX_THREADS}
+      EXE_ARGS "${BASELINE_FILE_ARG}"
+      LABELS "p3;physics")
 
   CreateUnitTestFromExec(p3_run_and_cmp_f90 p3_run_and_cmp
-                 THREADS ${SCREAM_TEST_MAX_THREADS}
-                 EXE_ARGS "-f ${BASELINE_FILE_ARG}"
-                 LABELS "p3;physics")
+      THREADS ${SCREAM_TEST_MAX_THREADS}
+      EXE_ARGS "-f ${BASELINE_FILE_ARG}"
+      LABELS "p3;physics")
 
   # Make sure that a diff from baselines triggers a failed test (in debug only)
-  CreateUnitTest(p3_run_and_cmp_cxx_fail "p3_run_and_cmp.cpp" "${NEED_LIBS}"
-                 COMPILER_CXX_DEFS SCREAM_FORCE_RUN_DIFF
-                 THREADS ${SCREAM_TEST_MAX_THREADS}
-                 EXE_ARGS "${BASELINE_FILE_ARG}"
-                 PROPERTIES WILL_FAIL ${FORCE_RUN_DIFF_FAILS}
-                 EXCLUDE_MAIN_CPP
-                 LABELS "p3;physics;fail")
+  CreateUnitTest(p3_run_and_cmp_cxx_fail "p3_run_and_cmp.cpp"
+      LIBS p3
+      COMPILER_CXX_DEFS SCREAM_FORCE_RUN_DIFF
+      THREADS ${SCREAM_TEST_MAX_THREADS}
+      EXE_ARGS "${BASELINE_FILE_ARG}"
+      LABELS "p3;physics;fail"
+      EXCLUDE_MAIN_CPP
+      PROPERTIES WILL_FAIL ${FORCE_RUN_DIFF_FAILS})
 
   #
   # Use fake tests to generate shell commands to generate baselines

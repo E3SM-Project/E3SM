@@ -1,50 +1,62 @@
 # NOTE: tests inside this if statement won't be built in a baselines-only build
+
+function (createDiagTest test_name test_srcs)
+  CreateUnitTest(${test_name} "${test_srcs}"
+    LIBS diagnostics physics_share
+    LABELS diagnostics)
+endfunction ()
+
 if (NOT SCREAM_BASELINES_ONLY)
   include(ScreamUtils)
 
-  set( NEED_LIBS scream_share diagnostics physics_share )
-
   # Test extracting a single level of a field
-  CreateUnitTest(field_at_level "field_at_level_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
+  CreateDiagTest(field_at_level "field_at_level_tests.cpp")
 
   # Test interpolating a field onto a single pressure level
-  CreateUnitTest(field_at_pressure_level "field_at_pressure_level_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
+  CreateDiagTest(field_at_pressure_level "field_at_pressure_level_tests.cpp")
+  # Test interpolating a field at a specific height
+  CreateDiagTest(field_at_height "field_at_height_tests.cpp")
 
   # Test potential temperature diagnostic
-  CreateUnitTest(potential_temperature "potential_temperature_test.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
+  CreateDiagTest(potential_temperature "potential_temperature_test.cpp")
+
   # Test exner diagnostic
-  CreateUnitTest(exner_function "exner_test.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
+  CreateDiagTest(exner_function "exner_test.cpp")
+
   # Test virtual temperature
-  CreateUnitTest(virtual_temperature "virtual_temperature_test.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
+  CreateDiagTest(virtual_temperature "virtual_temperature_test.cpp")
+
   # Test atmosphere density
-  CreateUnitTest(atmosphere_density "atm_density_test.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
-  # Test vertical layer thickness (dz)
-  CreateUnitTest(vertical_layer_thickness "vertical_layer_thickness_test.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
-  # Test vertical layer interface (z_int)
-  CreateUnitTest(vertical_layer_interface "vertical_layer_interface_test.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
-  # Test vertical layer interface (z_mid)
-  CreateUnitTest(vertical_layer_midpoint "vertical_layer_midpoint_test.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
+  CreateDiagTest(atmosphere_density "atm_density_test.cpp")
+
+  # Test vertical layer (dz, z_int, z_mid)
+  CreateDiagTest(vertical_layer "vertical_layer_tests.cpp")
+
   # Test dry static energy
-  CreateUnitTest(dry_static_energy "dry_static_energy_test.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
+  CreateDiagTest(dry_static_energy "dry_static_energy_test.cpp")
+
   # Test sea level pressure
-  CreateUnitTest(sea_level_pressure "sea_level_pressure_test.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
+  CreateDiagTest(sea_level_pressure "sea_level_pressure_test.cpp")
+
   # Test total water path
-  CreateUnitTest(water_path "water_path_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
+  CreateDiagTest(water_path "water_path_tests.cpp")
+
   # Test shortwave cloud forcing
-  CreateUnitTest(shortwave_cloud_forcing "shortwave_cloud_forcing_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
+  CreateDiagTest(shortwave_cloud_forcing "shortwave_cloud_forcing_tests.cpp")
+
   # Test longwave cloud forcing
-  CreateUnitTest(longwave_cloud_forcing "longwave_cloud_forcing_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
+  CreateDiagTest(longwave_cloud_forcing "longwave_cloud_forcing_tests.cpp")
+
   # Test Relative Humidity
-  CreateUnitTest(relative_humidity "relative_humidity_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
-  # Test Zonal Vapor Flux
-  CreateUnitTest(zonal_vapor_flux "zonal_vapor_flux_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
-  # Test Meridional Vapor Flux
-  CreateUnitTest(meridional_vapor_flux "meridional_vapor_flux_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
-  # Test precipitation ice mass surface flux
-  CreateUnitTest(precip_ice_surf_mass_flux "precip_ice_surf_mass_flux_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
-  # Test precipitation liq mass surface flux
-  CreateUnitTest(precip_liq_surf_mass_flux "precip_liq_surf_mass_flux_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
-  # Test total precipitation mass surface flux
-  CreateUnitTest(precip_total_surf_mass_flux "precip_total_surf_mass_flux_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
+  CreateDiagTest(relative_humidity "relative_humidity_tests.cpp")
+
+  # Test Vapor Flux
+  CreateDiagTest(vapor_flux "vapor_flux_tests.cpp")
+
+  # Test precipitation mass surface flux
+  CreateDiagTest(precip_surf_mass_flux "precip_surf_mass_flux_tests.cpp")
+
+  # Test surface latent heat flux
+  CreateDiagTest(surface_upward_latent_heat_flux "surf_upward_latent_heat_flux_tests.cpp")
 
 endif()

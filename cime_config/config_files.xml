@@ -127,6 +127,7 @@
       <value component="satm"                        >$SRCROOT/components/stub_comps/satm</value>
       <value component="xatm"                        >$SRCROOT/components/xcpl_comps/xatm</value>
       <value component="eam"                         >$SRCROOT/components/eam/</value>
+      <value component="eamxx"                       >$SRCROOT/components/eamxx/</value>
       <value component="scream"                      >$SRCROOT/components/eamxx/</value>
     </values>
     <group>case_comps</group>
@@ -347,6 +348,7 @@
       <value component="scream"   >$COMP_ROOT_DIR_ATM/cime_config/testdefs/testmods_dirs</value>
       <value component="mpaso"    >$COMP_ROOT_DIR_OCN/cime_config/testdefs/testmods_dirs</value>
       <value component="mpassi"   >$COMP_ROOT_DIR_ICE/cime_config/testdefs/testmods_dirs</value>
+      <value component="ww3"      >$COMP_ROOT_DIR_WAV/cime_config/testdefs/testmods_dirs</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>
@@ -539,9 +541,9 @@
       <value lib="gptl">$SRCROOT/share/build/buildlib.gptl</value>
       <value lib="pio">$CIMEROOT/CIME/build_scripts/buildlib.pio</value>
       <value lib="spio">$SRCROOT/share/build/buildlib.spio</value>
-      <value lib="mct">$CIMEROOT/CIME/build_scripts/buildlib.mct</value>
+      <value lib="mct">$SRCROOT/share/build/buildlib.mct</value>
       <value lib="csm_share">$SRCROOT/share/build/buildlib.csm_share</value>
-      <value lib="mpi-serial">$CIMEROOT/CIME/build_scripts/buildlib.mpi-serial</value>
+      <value lib="mpi-serial">$SRCROOT/share/build/buildlib.mpi-serial</value>
       <value lib="cprnc">$CIMEROOT/CIME/build_scripts/buildlib.cprnc</value>
     </values>
     <group>case_last</group>

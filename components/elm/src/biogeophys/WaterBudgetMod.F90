@@ -598,6 +598,9 @@ contains
     integer  :: f, s, p, count
     character(*),parameter :: subName = '(WaterBudget_Restart_Write) '
 
+    budg_fluxGtmp = 0._r8
+    budg_stateGtmp = 0._r8
+
     call shr_mpi_sum(budg_fluxL, budg_fluxGtmp, mpicom, subName)
     call shr_mpi_sum(budg_stateL, budg_stateGtmp, mpicom, subName)
 

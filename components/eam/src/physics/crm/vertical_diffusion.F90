@@ -224,7 +224,7 @@ subroutine vertical_diffusion_init(pbuf2d)
   ! Get indices of cloud liquid and ice within the constituents array
   call cnst_get_ind( 'CLDLIQ', ixcldliq )
   call cnst_get_ind( 'CLDICE', ixcldice )
-  if( MMF_microphysics_scheme == 'm2005' ) then
+  if( MMF_microphysics_scheme == 'p3' ) then
       call cnst_get_ind( 'NUMLIQ', ixnumliq )
       call cnst_get_ind( 'NUMICE', ixnumice )
   endif

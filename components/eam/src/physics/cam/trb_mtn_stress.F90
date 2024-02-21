@@ -1,7 +1,16 @@
+! Include bit-for-bit math macros.
+#include "bfb_math.inc"
+
 module trb_mtn_stress
 
+  ! Bit-for-bit math functions.
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  use physics_share_f2c, only: scream_pow, scream_sqrt, scream_cbrt, scream_gamma, scream_log, &
+                               scream_log10, scream_exp, scream_erf
+#endif
+
   implicit none
-  private      
+  private
   save
 
   public init_tms                             ! Initialization
@@ -17,7 +26,7 @@ module trb_mtn_stress
   real(r8), parameter :: z0max  = 100._r8     ! Maximum value of z_0 for orography [ m ]
   real(r8), parameter :: dv2min = 0.01_r8     ! Minimum shear squared [ m2/s2 ]
   real(r8)            :: orocnst              ! Converts from standard deviation to height [ no unit ]
-  real(r8)            :: z0fac                ! Factor determining z_0 from orographic standard deviation [ no unit ] 
+  real(r8)            :: z0fac                ! Factor determining z_0 from orographic standard deviation [ no unit ]
   real(r8)            :: karman               ! von Karman constant
   real(r8)            :: gravit               ! Acceleration due to gravity
   real(r8)            :: rair                 ! Gas constant for dry air
@@ -49,7 +58,7 @@ contains
     karman   = karman_in
     gravit   = gravit_in
     rair     = rair_in
-    
+
   end subroutine init_tms
 
   !============================================================================ !
@@ -58,11 +67,11 @@ contains
 
   subroutine compute_tms( pcols    , pver    , ncol    ,                     &
                           u        , v       , t       , pmid    , exner   , &
-                          zm       , sgh     , ksrf    , taux    , tauy    , & 
+                          zm       , sgh     , ksrf    , taux    , tauy    , &
                           landfrac )
 
     !------------------------------------------------------------------------------ !
-    ! Turbulent mountain stress parameterization                                    !  
+    ! Turbulent mountain stress parameterization                                    !
     !                                                                               !
     ! Returns surface drag coefficient and stress associated with subgrid mountains !
     ! For points where the orographic variance is small ( including ocean ),        !
@@ -72,7 +81,7 @@ contains
     !------------------------------------------------------------------------------ !
 
     ! ---------------------- !
-    ! Input-Output Arguments ! 
+    ! Input-Output Arguments !
     ! ---------------------- !
 
     integer,  intent(in)  :: pcols                 ! Number of columns dimensioned
@@ -87,7 +96,7 @@ contains
     real(r8), intent(in)  :: zm(pcols,pver)        ! Layer mid-point height [ m ]
     real(r8), intent(in)  :: sgh(pcols)            ! Standard deviation of orography [ m ]
     real(r8), intent(in)  :: landfrac(pcols)       ! Land fraction [ fraction ]
-    
+
     real(r8), intent(out) :: ksrf(pcols)           ! Surface drag coefficient [ kg/s/m2 ]
     real(r8), intent(out) :: taux(pcols)           ! Surface zonal      wind stress [ N/m2 ]
     real(r8), intent(out) :: tauy(pcols)           ! Surface meridional wind stress [ N/m2 ]
@@ -98,7 +107,7 @@ contains
 
     integer  :: i                                  ! Loop index
     integer  :: kb, kt                             ! Bottom and top of source region
-    
+
     real(r8) :: horo                               ! Orographic height [ m ]
     real(r8) :: z0oro                              ! Orographic z0 for momentum [ m ]
     real(r8) :: dv2                                ! (delta v)**2 [ m2/s2 ]
@@ -111,7 +120,7 @@ contains
     ! ----------------------- !
     ! Main Computation Begins !
     ! ----------------------- !
-       
+
     do i = 1, ncol
 
      ! determine subgrid orgraphic height ( mean to peak )
@@ -134,19 +143,19 @@ contains
 
          ! Calculate neutral drag coefficient
 
-           cd = ( karman / log( ( zm(i,pver) + z0oro ) / z0oro) )**2
+           cd = bfb_square( karman / bfb_log( ( zm(i,pver) + z0oro ) / z0oro) )
 
          ! Calculate the Richardson number over the lowest 2 layers
 
            kt  = pver - 1
            kb  = pver
-           dv2 = max( ( u(i,kt) - u(i,kb) )**2 + ( v(i,kt) - v(i,kb) )**2, dv2min )
+           dv2 = max( bfb_square( u(i,kt) - u(i,kb) ) + bfb_square( v(i,kt) - v(i,kb) ), dv2min )
 
          ! Modification : Below computation of Ri is wrong. Note that 'Exner' function here is
          !                inverse exner function. Here, exner function is not multiplied in
          !                the denominator. Also, we should use moist Ri not dry Ri.
          !                Also, this approach using the two lowest model layers can be potentially
-         !                sensitive to the vertical resolution.  
+         !                sensitive to the vertical resolution.
          ! OK. I only modified the part associated with exner function.
 
            ri  = 2._r8 * gravit * ( t(i,kt) * exner(i,kt) - t(i,kb) * exner(i,kb) ) * ( zm(i,kt) - zm(i,kb) ) &
@@ -156,7 +165,7 @@ contains
          !                      / ( ( t(i,kt) + t(i,kb) ) * dv2 )
 
          ! Calculate the instability function and modify the neutral drag cofficient.
-         ! We should probably follow more elegant approach like Louis et al (1982) or Bretherton and Park (2009) 
+         ! We should probably follow more elegant approach like Louis et al (1982) or Bretherton and Park (2009)
          ! but for now we use very crude approach : just 1 for ri < 0, 0 for ri > 1, and linear ramping.
 
            stabfri = max( 0._r8, min( 1._r8, 1._r8 - ri ) )
@@ -164,8 +173,8 @@ contains
 
          ! Compute density, velocity magnitude and stress using bottom level properties
 
-           rho     = pmid(i,pver) / ( rair * t(i,pver) ) 
-           vmag    = sqrt( u(i,pver)**2 + v(i,pver)**2 )
+           rho     = pmid(i,pver) / ( rair * t(i,pver) )
+           vmag    = bfb_sqrt( bfb_square(u(i,pver)) + bfb_square(v(i,pver)) )
            ksrf(i) = rho * cd * vmag * landfrac(i)
            taux(i) = -ksrf(i) * u(i,pver)
            tauy(i) = -ksrf(i) * v(i,pver)
@@ -173,7 +182,7 @@ contains
        end if
 
     end do
-    
+
     return
   end subroutine compute_tms
 

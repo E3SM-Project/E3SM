@@ -4,6 +4,7 @@
 #include "YAKL.h"
 #include "physics/share/physics_constants.hpp"
 #include "physics/rrtmgp/shr_orb_mod_c2f.hpp"
+#include "physics/rrtmgp/mo_load_coefficients.h"
 
 // Names of input files we will need.
 std::string coefficients_file_sw = SCREAM_DATA_DIR "/init/rrtmgp-data-sw-g112-210809.nc";
@@ -618,4 +619,226 @@ TEST_CASE("rrtmgp_cloud_area") {
     cldtau.deallocate();
     cldtot.deallocate();
     yakl::finalize();
+}
+
+TEST_CASE("rrtmgp_aerocom_cloudtop") {
+  // Initialize YAKL
+  if(!yakl::isInitialized()) {
+    yakl::init();
+  }
+  // Create dummy data
+  const int ncol = 1;
+  const int nlay = 9;
+  // Set up input fields
+  auto tmid        = real2d("tmid", ncol, nlay);
+  auto pmid        = real2d("pmid", ncol, nlay);
+  auto p_del       = real2d("p_del", ncol, nlay);
+  auto z_del       = real2d("z_del", ncol, nlay);
+  auto qc          = real2d("qc", ncol, nlay);
+  auto qi          = real2d("qi", ncol, nlay);
+  auto rel         = real2d("rel", ncol, nlay);
+  auto rei         = real2d("rei", ncol, nlay);
+  auto cldfrac_tot = real2d("cldfrac_tot", ncol, nlay);
+  auto nc          = real2d("nc", ncol, nlay);
+  // Set up output fields
+  auto tmid_at_cldtop          = real1d("tmid_at_cldtop", ncol);
+  auto pmid_at_cldtop          = real1d("pmid_at_cldtop", ncol);
+  auto cldfrac_ice_at_cldtop   = real1d("cldfrac_ice_at_cldtop", ncol);
+  auto cldfrac_liq_at_cldtop   = real1d("cldfrac_liq_at_cldtop", ncol);
+  auto cldfrac_tot_at_cldtop   = real1d("cldfrac_tot_at_cldtop", ncol);
+  auto cdnc_at_cldtop          = real1d("cdnc_at_cldtop", ncol);
+  auto eff_radius_qc_at_cldtop = real1d("eff_radius_qc_at_cldtop", ncol);
+  auto eff_radius_qi_at_cldtop = real1d("eff_radius_qi_at_cldtop", ncol);
+
+  // Case 1: if no clouds, everything goes to zero
+  memset(tmid, 300.0);
+  memset(pmid, 100.0);
+  memset(p_del, 10.0);
+  memset(z_del, 100.0);
+  memset(qc, 1.0);
+  memset(qi, 1.0);
+  memset(cldfrac_tot, 0.0);
+  memset(nc, 5.0);
+  memset(rel, 10.0);
+  memset(rei, 10.0);
+  // Call the function
+  scream::rrtmgp::compute_aerocom_cloudtop(
+      ncol, nlay, tmid, pmid, p_del, z_del, qc, qi, rel, rei, cldfrac_tot, nc,
+      tmid_at_cldtop, pmid_at_cldtop, cldfrac_ice_at_cldtop,
+      cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop, cdnc_at_cldtop,
+      eff_radius_qc_at_cldtop, eff_radius_qi_at_cldtop);
+
+  // Check the results
+  REQUIRE(tmid_at_cldtop.createHostCopy()(1) == 0.0);
+  REQUIRE(pmid_at_cldtop.createHostCopy()(1) == 0.0);
+  REQUIRE(cldfrac_tot_at_cldtop.createHostCopy()(1) == 0.0);
+  REQUIRE(cldfrac_liq_at_cldtop.createHostCopy()(1) == 0.0);
+  REQUIRE(cldfrac_ice_at_cldtop.createHostCopy()(1) == 0.0);
+  REQUIRE(cdnc_at_cldtop.createHostCopy()(1) == 0.0);
+  REQUIRE(eff_radius_qc_at_cldtop.createHostCopy()(1) == 0.0);
+  REQUIRE(eff_radius_qi_at_cldtop.createHostCopy()(1) == 0.0);
+
+  // Case 2: if all clouds, everything goes to 1 * its value
+  memset(cldfrac_tot, 1.0);
+  scream::rrtmgp::compute_aerocom_cloudtop(
+      ncol, nlay, tmid, pmid, p_del, z_del, qc, qi, rel, rei, cldfrac_tot, nc,
+      tmid_at_cldtop, pmid_at_cldtop, cldfrac_ice_at_cldtop,
+      cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop, cdnc_at_cldtop,
+      eff_radius_qc_at_cldtop, eff_radius_qi_at_cldtop);
+
+  REQUIRE(tmid_at_cldtop.createHostCopy()(1) == 300.0);
+  REQUIRE(pmid_at_cldtop.createHostCopy()(1) == 100.0);
+  REQUIRE(cldfrac_tot_at_cldtop.createHostCopy()(1) == 1.0);
+  REQUIRE(cldfrac_liq_at_cldtop.createHostCopy()(1) == 0.5);
+  REQUIRE(cldfrac_ice_at_cldtop.createHostCopy()(1) == 0.5);
+  REQUIRE(cdnc_at_cldtop.createHostCopy()(1) > 0.0);
+  REQUIRE(eff_radius_qc_at_cldtop.createHostCopy()(1) > 0.0);
+  REQUIRE(eff_radius_qi_at_cldtop.createHostCopy()(1) > 0.0);
+
+  // Case 3: test max overlap (if contiguous cloudy layers, then max)
+  memset(cldfrac_tot, 0.0);
+  yakl::fortran::parallel_for(
+      1, YAKL_LAMBDA(int /* dummy */) {
+        cldfrac_tot(1, 2) = 0.5;
+        cldfrac_tot(1, 3) = 0.7;
+        cldfrac_tot(1, 4) = 0.3;
+        cldfrac_tot(1, 5) = 0.2;
+      });
+  scream::rrtmgp::compute_aerocom_cloudtop(
+      ncol, nlay, tmid, pmid, p_del, z_del, qc, qi, rel, rei, cldfrac_tot, nc,
+      tmid_at_cldtop, pmid_at_cldtop, cldfrac_ice_at_cldtop,
+      cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop, cdnc_at_cldtop,
+      eff_radius_qc_at_cldtop, eff_radius_qi_at_cldtop);
+
+  REQUIRE(cldfrac_tot_at_cldtop.createHostCopy()(1) == .7);
+
+  // Case 3xtra: test max overlap
+  // This case produces >0.7 due to slight enhancement in the presence of a
+  // local minimum (0.1 is the local minimum between 0.2 and 0.4)
+  yakl::fortran::parallel_for(
+      1, YAKL_LAMBDA(int /* dummy */) {
+        cldfrac_tot(1, 5) = 0.1;
+        cldfrac_tot(1, 6) = 0.4;
+        cldfrac_tot(1, 7) = 0.2;
+      });
+  scream::rrtmgp::compute_aerocom_cloudtop(
+      ncol, nlay, tmid, pmid, p_del, z_del, qc, qi, rel, rei, cldfrac_tot, nc,
+      tmid_at_cldtop, pmid_at_cldtop, cldfrac_ice_at_cldtop,
+      cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop, cdnc_at_cldtop,
+      eff_radius_qc_at_cldtop, eff_radius_qi_at_cldtop);
+
+  REQUIRE(cldfrac_tot_at_cldtop.createHostCopy()(1) > .7);
+
+  // Case 4: test random overlap (if non-contiguous cloudy layers, then
+  // random)
+  yakl::fortran::parallel_for(
+      1, YAKL_LAMBDA(int /* dummy */) {
+        cldfrac_tot(1, 5) = 0.0;
+        cldfrac_tot(1, 6) = 0.1;
+      });
+  scream::rrtmgp::compute_aerocom_cloudtop(
+      ncol, nlay, tmid, pmid, p_del, z_del, qc, qi, rel, rei, cldfrac_tot, nc,
+      tmid_at_cldtop, pmid_at_cldtop, cldfrac_ice_at_cldtop,
+      cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop, cdnc_at_cldtop,
+      eff_radius_qc_at_cldtop, eff_radius_qi_at_cldtop);
+
+  REQUIRE(cldfrac_tot_at_cldtop.createHostCopy()(1) >
+          .7);  // larger than the max
+
+  // Case 5a: test independence of ice and liquid fractions
+  yakl::fortran::parallel_for(
+      1, YAKL_LAMBDA(int /* dummy */) {
+        cldfrac_tot(1, 2) = 1.0;
+        cldfrac_tot(1, 7) = 1.0;
+        cldfrac_tot(1, 8) = 0.2;
+      });
+  memset(qc, 1.0);
+  memset(qi, 0.0);
+  scream::rrtmgp::compute_aerocom_cloudtop(
+      ncol, nlay, tmid, pmid, p_del, z_del, qc, qi, rel, rei, cldfrac_tot, nc,
+      tmid_at_cldtop, pmid_at_cldtop, cldfrac_ice_at_cldtop,
+      cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop, cdnc_at_cldtop,
+      eff_radius_qc_at_cldtop, eff_radius_qi_at_cldtop);
+
+  REQUIRE(cldfrac_tot_at_cldtop.createHostCopy()(1) == 1.0);
+  REQUIRE(cldfrac_liq_at_cldtop.createHostCopy()(1) == 1.0);
+  REQUIRE(cldfrac_ice_at_cldtop.createHostCopy()(1) == 0.0);
+
+  // Case 5b: test independence of ice and liquid fractions
+  yakl::fortran::parallel_for(
+      1, YAKL_LAMBDA(int /* dummy */) {
+        cldfrac_tot(1, 2) = 1.0;
+        cldfrac_tot(1, 7) = 1.0;
+        cldfrac_tot(1, 8) = 0.2;
+      });
+  memset(qc, 0.0);
+  memset(qi, 1.0);
+  scream::rrtmgp::compute_aerocom_cloudtop(
+      ncol, nlay, tmid, pmid, p_del, z_del, qc, qi, rel, rei, cldfrac_tot, nc,
+      tmid_at_cldtop, pmid_at_cldtop, cldfrac_ice_at_cldtop,
+      cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop, cdnc_at_cldtop,
+      eff_radius_qc_at_cldtop, eff_radius_qi_at_cldtop);
+
+  REQUIRE(cldfrac_tot_at_cldtop.createHostCopy()(1) == 1.0);
+  REQUIRE(cldfrac_liq_at_cldtop.createHostCopy()(1) == 0.0);
+  REQUIRE(cldfrac_ice_at_cldtop.createHostCopy()(1) == 1.0);
+
+  // Case 6: test independence of ice and liquid fractions
+  // There is NOT complete independence...
+  // Essentially, higher ice clouds mask lower liquid clouds
+  // This can be problematic if the ice clouds are thin...
+  // We will revisit and validate this assumption later
+  memset(cldfrac_tot, 0.0);
+  memset(qc, 0.0);
+  memset(qi, 0.0);
+  yakl::fortran::parallel_for(
+      1, YAKL_LAMBDA(int /* dummy */) {
+        cldfrac_tot(1, 2) = 0.5;  // ice
+        cldfrac_tot(1, 3) = 0.7;  // ice ------> max
+        cldfrac_tot(1, 4) = 0.3;  // ice
+        // note cldfrac_tot(1, 5) is 0
+        cldfrac_tot(1, 6) = 0.2;  // liq
+        cldfrac_tot(1, 7) = 0.5;  // liq ------> not max
+        cldfrac_tot(1, 8) = 0.1;  // liq
+        // note cldfrac_tot(1, 9) is 0
+        qi(1, 2) = 100;
+        qi(1, 3) = 200;
+        qi(1, 4) = 50;
+        // note qc(1, 5) is 0
+        // note qi(1, 5) is 0
+        qc(1, 6) = 20;
+        qc(1, 7) = 50;
+        qc(1, 8) = 10;
+      });
+  scream::rrtmgp::compute_aerocom_cloudtop(
+      ncol, nlay, tmid, pmid, p_del, z_del, qc, qi, rel, rei, cldfrac_tot, nc,
+      tmid_at_cldtop, pmid_at_cldtop, cldfrac_ice_at_cldtop,
+      cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop, cdnc_at_cldtop,
+      eff_radius_qc_at_cldtop, eff_radius_qi_at_cldtop);
+  REQUIRE(cldfrac_tot_at_cldtop.createHostCopy()(1) > 0.70);  // unaffected
+  REQUIRE(cldfrac_liq_at_cldtop.createHostCopy()(1) < 0.50);  // not max
+  REQUIRE(cldfrac_ice_at_cldtop.createHostCopy()(1) == 0.7);  // max
+
+  // cleanup
+  tmid.deallocate();
+  pmid.deallocate();
+  p_del.deallocate();
+  z_del.deallocate();
+  qc.deallocate();
+  qi.deallocate();
+  rel.deallocate();
+  rei.deallocate();
+  cldfrac_tot.deallocate();
+  nc.deallocate();
+
+  tmid_at_cldtop.deallocate();
+  pmid_at_cldtop.deallocate();
+  cldfrac_ice_at_cldtop.deallocate();
+  cldfrac_liq_at_cldtop.deallocate();
+  cldfrac_tot_at_cldtop.deallocate();
+  cdnc_at_cldtop.deallocate();
+  eff_radius_qc_at_cldtop.deallocate();
+  eff_radius_qi_at_cldtop.deallocate();
+
+  yakl::finalize();
 }

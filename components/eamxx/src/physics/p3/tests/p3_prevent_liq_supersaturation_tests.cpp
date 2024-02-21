@@ -52,7 +52,7 @@ struct UnitWrap::UnitTest<D>::TestPreventLiqSupersaturation {
     Spack qv_endstep=qv - qv_sinks*dt + qv_sources*dt;
     Spack T_endstep=t_atm + ( (qv_sinks-qi2qv_sublim_tend_tmp)*latent_heat_sublim*inv_cp
 			- qr2qv_evap_tend_tmp*latent_heat_vapor*inv_cp )*dt;
-    Spack qsl = physics::qv_sat(T_endstep,pres,false,context); //"false" means NOT sat w/ respect to ice
+    Spack qsl = physics::qv_sat_dry(T_endstep,pres,false,context); //"false" means NOT sat w/ respect to ice
     //just require index 0 since all entries are identical
 
     REQUIRE(        qv[0]<qsl[0]); //not a test of prevent_liq_supersat, just a sanity check that
@@ -69,7 +69,7 @@ struct UnitWrap::UnitTest<D>::TestPreventLiqSupersaturation {
     qv_endstep=qv - qv_sinks*dt + qv_sources*dt;
     T_endstep=t_atm + ( (qv_sinks-qi2qv_sublim_tend_tmp)*latent_heat_sublim*inv_cp
 			- qr2qv_evap_tend_tmp*latent_heat_vapor*inv_cp )*dt;
-    qsl = physics::qv_sat(T_endstep,pres,false,context); //"false" means NOT sat w/ respect to ice
+    qsl = physics::qv_sat_dry(T_endstep,pres,false,context); //"false" means NOT sat w/ respect to ice
     //just require index 0 since all entries are identical
 
     REQUIRE(qv_endstep[0]<=qsl[0]);

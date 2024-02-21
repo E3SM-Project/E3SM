@@ -5,24 +5,6 @@
 namespace scream
 {
 
-FieldLayout::FieldLayout (const std::initializer_list<FieldTag>& tags)
- : m_rank(tags.size())
- , m_tags(tags)
-{
-  m_dims.resize(m_rank,-1);
-  m_extents = decltype(m_extents)("",m_rank);
-  Kokkos::deep_copy(m_extents,-1);
-}
-
-FieldLayout::FieldLayout (const std::vector<FieldTag>& tags)
- : m_rank(tags.size())
- , m_tags(tags)
-{
-  m_dims.resize(m_rank,-1);
-  m_extents = decltype(m_extents)("",m_rank);
-  Kokkos::deep_copy(m_extents,-1);
-}
-
 FieldLayout::FieldLayout (const std::vector<FieldTag>& tags,
                           const std::vector<int>& dims)
  : m_rank(tags.size())
@@ -30,8 +12,9 @@ FieldLayout::FieldLayout (const std::vector<FieldTag>& tags,
 {
   m_dims.resize(m_rank,-1);
   m_extents = decltype(m_extents)("",m_rank);
-  Kokkos::deep_copy(m_extents,-1);
-  set_dimensions(dims);
+  for (int idim=0; idim<m_rank; ++idim) {
+    set_dimension(idim,dims[idim]);
+  }
 }
 
 bool FieldLayout::is_vector_layout () const {
@@ -45,13 +28,18 @@ int FieldLayout::get_vector_dim () const {
       "       Current layout: " + e2str(get_layout_type(m_tags)) + "\n");
 
   using namespace ShortFieldTagsNames;
-  int idim = -1;
-  if (has_tag(CMP)) {
-    idim = std::distance(m_tags.begin(),ekat::find(m_tags,CMP));
-  } else {
-    EKAT_ERROR_MSG ("Error! Unrecognized layout for a '" + e2str(get_layout_type(m_tags)) + "' quantity.\n");
-  }
-  return idim;
+  std::vector<FieldTag> vec_tags = {CMP,NGAS,SWBND,LWBND,SWGPT,ISCCPTAU,ISCCPPRS};
+  auto it = std::find_first_of (m_tags.cbegin(),m_tags.cend(),vec_tags.cbegin(),vec_tags.cend());
+
+  EKAT_REQUIRE_MSG (it!=m_tags.cend(),
+    "Error! Could not find a vector tag in the layout.\n"
+    " - layout: " + to_string(*this) + "\n");
+
+  return std::distance(m_tags.cbegin(),it);
+}
+
+FieldTag FieldLayout::get_vector_tag () const {
+  return m_tags[get_vector_dim()];
 }
 
 FieldLayout FieldLayout::strip_dim (const FieldTag tag) const {
@@ -69,6 +57,10 @@ FieldLayout FieldLayout::strip_dim (const FieldTag tag) const {
 }
 
 FieldLayout FieldLayout::strip_dim (const int idim) const {
+  EKAT_REQUIRE_MSG (idim>=0 and idim<m_rank,
+      "Error! Cannot strip dimension, because it is out of bounds.\n"
+      "  - input dim index: " + std::to_string(idim) + "\n"
+      "  - layout rank    : " + std::to_string(m_rank) + "\n");
   std::vector<FieldTag> t = tags();
   std::vector<int>      d = dims();
   t.erase(t.begin()+idim);
@@ -79,22 +71,12 @@ FieldLayout FieldLayout::strip_dim (const int idim) const {
 void FieldLayout::set_dimension (const int idim, const int dimension) {
   EKAT_REQUIRE_MSG(idim>=0 && idim<m_rank, "Error! Index out of bounds.");
   EKAT_REQUIRE_MSG(dimension>=0, "Error! Dimensions must be non-negative.");
-  EKAT_REQUIRE_MSG(m_dims[idim] == -1, "Error! You cannot reset field dimensions once set.\n");
   m_dims[idim] = dimension;
 
-  auto extents = Kokkos::create_mirror_view(m_extents);
-  Kokkos::deep_copy(extents,m_extents);
-  extents(idim) = dimension;
-  Kokkos::deep_copy(m_extents,extents);
-}
-
-void FieldLayout::set_dimensions (const std::vector<int>& dims) {
-  // Check, then set dims
-  EKAT_REQUIRE_MSG(dims.size()==static_cast<size_t>(m_rank),
-                     "Error! Input dimensions vector not properly sized.");
-  for (int idim=0; idim<m_rank; ++idim) {
-    set_dimension(idim,dims[idim]);
-  }
+  // Recompute device extents
+  auto extents_h = Kokkos::create_mirror_view(m_extents);
+  std::copy_n(m_dims.begin(),m_rank,extents_h.data());
+  Kokkos::deep_copy(m_extents,extents_h);
 }
 
 LayoutType get_layout_type (const std::vector<FieldTag>& field_tags) {
@@ -107,6 +89,8 @@ LayoutType get_layout_type (const std::vector<FieldTag>& field_tags) {
   const int n_element = count(tags,EL);
   const int n_column  = count(tags,COL);
   const int ngp       = count(tags,GP);
+  const int nvlevs    = count(tags,LEV) + count(tags,ILEV);
+  const int ncomps    = count(tags,CMP);
 
   // Start from undefined/invalid
   LayoutType result = LayoutType::Invalid;
@@ -123,6 +107,14 @@ LayoutType get_layout_type (const std::vector<FieldTag>& field_tags) {
 
     // Remove the column tag
     erase(tags,COL);
+  } else if (tags.size()==0) {
+    return LayoutType::Scalar0D;
+  } else if (tags.size()==1 and tags[0]==CMP) {
+    return LayoutType::Vector0D;
+  } else if (tags.size()==1 and nvlevs==1) {
+    return LayoutType::Scalar1D;
+  } else if (tags.size()==2 and ncomps==1 and nvlevs==1) {
+    return LayoutType::Vector1D;
   } else {
     // Not a supported layout.
     return result;
@@ -130,15 +122,23 @@ LayoutType get_layout_type (const std::vector<FieldTag>& field_tags) {
 
   // Get the size of what's left
   const auto size = tags.size();
+  auto is_lev_tag = [](const FieldTag t) {
+    std::vector<FieldTag> lev_tags = {LEV,ILEV};
+    return ekat::contains(lev_tags,t);
+  };
+  auto is_vec_tag = [](const FieldTag t) {
+    std::vector<FieldTag> vec_tags = {CMP,NGAS,SWBND,LWBND,SWGPT,ISCCPTAU,ISCCPPRS};
+    return ekat::contains(vec_tags,t);
+  };
   switch (size) {
     case 0:
       result = LayoutType::Scalar2D;
       break;
     case 1:
-      // The only tag left should be 'CMP', 'TL', or 'LEV'/'ILEV'
-      if (tags[0]==CMP || tags[0]==TL) {
+      // The only tag left should be a vec tag, 'TL', or a lev tag
+      if (is_vec_tag(tags[0]) or tags[0]==TL) {
         result = LayoutType::Vector2D;
-      } else if (tags[0]==LEV || tags[0]==ILEV) {
+      } else if (is_lev_tag(tags[0])) {
         result = LayoutType::Scalar3D;
       }
       break;
@@ -146,17 +146,16 @@ LayoutType get_layout_type (const std::vector<FieldTag>& field_tags) {
       // Possible supported scenarios:
       //  1) <CMP|TL,LEV|ILEV>
       //  2) <TL,CMP>
-      if ( (tags[1]==LEV || tags[1]==ILEV) && (tags[0]==CMP || tags[0]==TL)) {
+      if ( (is_vec_tag(tags[0]) or tags[0]==TL) and is_lev_tag(tags[1]) ) {
         result = LayoutType::Vector3D;
-      } else if (tags[0]==TL && tags[1]==CMP ) {
+      } else if (tags[0]==TL && is_vec_tag(tags[1]) ) {
         result = LayoutType::Tensor2D;
       }
       break;
     case 3:
       // The only supported scenario is:
       //  1) <TL,  CMP, LEV|ILEV>
-      if ( tags[0]==TL && tags[1]==CMP &&
-          (tags[2]==LEV || tags[2]==ILEV)) {
+      if ( tags[0]==TL && is_vec_tag(tags[1]) && is_lev_tag(tags[2]) ) {
         result = LayoutType::Tensor3D;
       }
   }

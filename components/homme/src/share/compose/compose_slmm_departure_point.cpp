@@ -25,7 +25,9 @@ void fill_normals (LocalMesh<ko::MachineTraits::HES>& m) {
 // Modify m.p so that the elements surrounding the target element have
 // continuous rather than periodic coordinate values.
 void make_continuous (const Plane& p, LocalMesh<ko::MachineTraits::HES>& m) {
-  slmm_assert(m.tgt_elem >= 0 && m.tgt_elem <= nslices(m.e));
+  slmm_assert(m.tgt_elem >= 0 && m.tgt_elem < nslices(m.e));
+  // The translations below assume each cell has its own four vertex point data.
+  slmm_assert(nslices(m.p) == 4*nslices(m.e));
   // Geometric center of cell.
   const auto getctr = [&] (const Int ie, Real ctr[3]) {
     const auto cell = slice(m.e, ie);

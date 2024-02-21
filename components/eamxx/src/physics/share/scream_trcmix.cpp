@@ -14,6 +14,7 @@ namespace physics {
 
 void trcmix(
   const std::string& name,
+  const int nlevs,
   trcmix_view1d<const Real> const& clat,  // latitude for columns in degrees
   trcmix_view2d<const Real> const& pmid,  // model pressures
   trcmix_view2d<Real>            & q,     // constituent mass mixing ratio (output)
@@ -24,14 +25,10 @@ void trcmix(
   using ExeSpace = KT::ExeSpace;
   using MemberType = KT::MemberType;
 
+  // Get ncol and check view bounds.
   const auto ncols = clat.extent(0);
-  const auto nlevs = pmid.extent(1);
-
-  //
-  // View bounds checking. pmid and q might be padded if simd vector size > 1
-  //
   EKAT_REQUIRE(pmid.extent(0) == ncols);
-  EKAT_REQUIRE(q.extent(0) == ncols && q.extent(1) == nlevs);
+  EKAT_REQUIRE(q.extent(0) == ncols);
 
   const auto mwn2o = C::get_gas_mol_weight("n2o");
   const auto mwch4 = C::get_gas_mol_weight("ch4");

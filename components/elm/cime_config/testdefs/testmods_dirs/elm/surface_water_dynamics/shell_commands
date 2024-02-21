@@ -1,0 +1,10 @@
+./xmlchange DATM_MODE=CLMMOSARTTEST
+
+./xmlchange LND_DOMAIN_FILE=domain.lnd.nldas2_0224x0464_c110415.nc
+./xmlchange ATM_DOMAIN_FILE=domain.lnd.nldas2_0224x0464_c110415.nc
+./xmlchange LND_DOMAIN_PATH="\$DIN_LOC_ROOT/share/domains/domain.clm"
+./xmlchange ATM_DOMAIN_PATH="\$DIN_LOC_ROOT/share/domains/domain.clm"
+
+./xmlchange -file env_run.xml -id DATM_CLMNCEP_YR_END -val 2000
+./xmlchange -file env_run.xml -id DATM_CLMNCEP_YR_START -val 2000
+./xmlchange -file env_run.xml -id DATM_CLMNCEP_YR_ALIGN -val 1

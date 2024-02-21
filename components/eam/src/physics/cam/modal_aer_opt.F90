@@ -1017,8 +1017,6 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
                   aodvis(i)    = aodvis(i) + dopaer(i)
                   if ((k .le. trop_level(i)) .and. (is_output_interactive_volc)) then ! in stratosphere
                       saodvis(i)    = saodvis(i) + dopaer(i)
-                  else   
-                      saodvis(i)    = saodvis(i) + 0.0_r8    
                   endif    
                   aodall(i)    = aodall(i) + dopaer(i)
                   aodabs(i)    = aodabs(i) + pabs(i)*mass(i,k)

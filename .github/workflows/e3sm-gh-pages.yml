@@ -1,0 +1,60 @@
+name: Build and deploy gh-pages branch with Mkdocs
+
+on:
+  # Runs every time master branch is updated
+  push:
+    branches: ["master"]
+  # Runs every time a PR is open against master
+  pull_request:
+    branches: ["master"]
+  workflow_dispatch:
+
+concurrency:
+  # Prevent 2+ copies of this workflow from running concurrently
+  group: e3sm-docs-action
+  
+jobs:
+  Build-and-Deploy-docs:
+    if: ${{ github.event.repository.name != 'scream' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          show-progress: false
+          fetch-depth: 0 # Needed, or else gh-pages won't be fetched, and push rejected
+          # TODO: git rid of dependency on CIME
+          # TODO: another option to investigate is a sparse checkout. 
+          # In the scream repo, all other components do not need to be checked out. 
+          # And even in the upstream, we mainly need only components/xyz/docs (and a few more places).
+          submodules: true
+      - name: Show action trigger
+        run: echo "= The job was automatically triggered by a ${{github.event_name}} event on repo ${{github.event.repository.name}}."
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5.0.0
+        with:
+          python-version: "3.10"
+      - name: Install python deps
+        run: python3 -m pip install mkdocs-material pymdown-extensions mkdocs-monorepo-plugin mdutils mkdocs-bibtex
+      # build every time (PR or push to master)
+      - name: Generate EAMxx params docs
+        working-directory: components/eamxx/scripts
+        run: |
+          ./eamxx-params-docs-autogen
+      - name: Build
+        run: mkdocs build --strict --verbose
+      # Only deploy to the main github page when there is a push to master
+      - if: ${{ github.event_name == 'push' }}
+        name: GitHub Pages action
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          # Do not remove existing pr-preview pages
+          clean-exclude: pr-preview
+          folder: ./site/
+      # If it's a PR from within the same repo, deploy to a preview page
+      # For security reasons, PRs from forks cannot write into gh-pages for now
+      - if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
+        name: Preview docs
+        uses: rossjrw/pr-preview-action@v1
+        with:
+          source-dir: ./site/

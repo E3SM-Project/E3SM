@@ -36,10 +36,18 @@ public:
   ~IdentityRemapper () = default;
 
   FieldLayout create_src_layout (const FieldLayout& tgt_layout) const override {
+    EKAT_REQUIRE_MSG (is_valid_tgt_layout(tgt_layout),
+        "[IdentityRemapper] Error! Input target layout is not valid for this remapper.\n"
+        " - input layout: " + to_string(tgt_layout));
+
     // Src and tgt grids are the same, so return the input
     return tgt_layout;
   }
   FieldLayout create_tgt_layout (const FieldLayout& src_layout) const override {
+    EKAT_REQUIRE_MSG (is_valid_src_layout(src_layout),
+        "[IdentityRemapper] Error! Input source layout is not valid for this remapper.\n"
+        " - input layout: " + to_string(src_layout));
+
     // Src and tgt grids are the same, so return the input
     return src_layout;
   }

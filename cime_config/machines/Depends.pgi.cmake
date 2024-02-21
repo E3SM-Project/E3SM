@@ -12,13 +12,10 @@ set(O0MODELSRC
 
 if (NOT DEBUG)
   foreach(ITEM IN LISTS O1MODELSRC)
-    e3sm_remove_flags("${ITEM}" "-O2")
     e3sm_add_flags("${ITEM}" "-O1 -Mnovect")
   endforeach()
 
   foreach(ITEM IN LISTS O0MODELSRC)
-    e3sm_remove_flags("${ITEM}" "-O2")
-    e3sm_remove_flags("${ITEM}" "-O1")
     e3sm_add_flags("${ITEM}" "-O0 -Mnovect")
   endforeach()
 endif()
