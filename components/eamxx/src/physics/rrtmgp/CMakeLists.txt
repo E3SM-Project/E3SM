@@ -36,12 +36,11 @@ else ()
 
   # EAMxx *requires* MPI, so simply look for it, then link against it
   find_package(MPI REQUIRED COMPONENTS C)
-  target_link_libraries (yakl MPI::MPI_C)
-  EkatDisableAllWarning(yakl)
+  target_link_libraries (yakl INTERFACE MPI::MPI_C)
 
   # For debug builds, set -DYAKL_DEBUG
   if (CMAKE_BUILD_TYPE_ci STREQUAL "debug")
-    target_compile_definitions(yakl PUBLIC YAKL_DEBUG)
+    target_compile_definitions(yakl INTERFACE YAKL_DEBUG)
   endif()
 endif()
 
