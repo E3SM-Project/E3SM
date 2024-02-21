@@ -1018,7 +1018,8 @@ contains
       ! First, check consistency in coupling interval set up in MALI and SLM
       call mpas_pool_get_config(liConfigs, "config_slm_coupling_interval", config_slm_coupling_interval)
       if (config_slm_coupling_interval == slm_dt1) then
-         call mpas_log_write("The coupling interval in MALI ($i yr) and SLM ($i yr) are consistent - check passes")
+         call mpas_log_write("The coupling interval in MALI ($i yr) and SLM ($i yr) are consistent - check passes", &
+                 intArgs=(/config_slm_coupling_interval, slm_dt1/))
       else
          call mpas_log_write("The coupling interval in MALI ($i yr) and SLM ($i yr) are inconsistent", MPAS_LOG_ERR, &
                  intArgs=(/config_slm_coupling_interval, slm_dt1/))
