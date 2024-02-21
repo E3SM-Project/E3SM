@@ -998,8 +998,9 @@ contains
 
       ! local variables
       integer, pointer :: config_slm_coupling_interval
-      character (len=StrKIND), pointer :: config_adaptive_timestep_force_interval
-      type (MPAS_TimeInterval_Type) :: coupling_interval, force_interval, restart_interval, zero_interval
+      logical, pointer :: config_adaptive_timestep
+      character (len=StrKIND), pointer :: config_adaptive_timestep_force_interval, config_dt
+      type (MPAS_TimeInterval_Type) :: coupling_interval, force_interval, dt_interval, restart_interval, zero_interval
       type (MPAS_Time_Type) :: start_time
       character (len=StrKIND), pointer :: simulationStartTime
       integer :: YYYY, MM, DD, H, M, S  ! time components
@@ -1011,10 +1012,15 @@ contains
       err = 0
       err_tmp = 0
 
+      call mpas_log_write("")
+      call mpas_log_write("-- Checking consistency of config_slm_coupling_interval and other settings --")
+
       ! First, check consistency in coupling interval set up in MALI and SLM
       call mpas_pool_get_config(liConfigs, "config_slm_coupling_interval", config_slm_coupling_interval)
-      if (config_slm_coupling_interval /= slm_dt1) then
-         call mpas_log_write("The coupling interval in MALI ($i) and SLM ($i) are inconsistent", MPAS_LOG_ERR, &
+      if (config_slm_coupling_interval == slm_dt1) then
+         call mpas_log_write("The coupling interval in MALI ($i yr) and SLM ($i yr) are consistent - check passes")
+      else
+         call mpas_log_write("The coupling interval in MALI ($i yr) and SLM ($i yr) are inconsistent", MPAS_LOG_ERR, &
                  intArgs=(/config_slm_coupling_interval, slm_dt1/))
          err = ior(err, 1)
       endif
@@ -1028,18 +1034,35 @@ contains
       call mpas_set_timeInterval(coupling_interval, YY=config_slm_coupling_interval, MM=0, DD=0, H=0, M=0, S=0, ierr=err_tmp)
       err = ior(err, err_tmp)
 
-      ! Check that config_adaptive_timestep_force_interval divides evenly into config_slm_coupling_interval
-      call mpas_pool_get_config(liConfigs, "config_adaptive_timestep_force_interval", config_adaptive_timestep_force_interval)
-      call mpas_set_timeInterval(force_interval, timeString=config_adaptive_timestep_force_interval, ierr=err_tmp)
-      err = ior(err, err_tmp)
-      call mpas_interval_division(start_time, coupling_interval, force_interval, n_intervals, remainder)
-      if (remainder .EQ. zero_interval) then
-         call mpas_log_write("config_adaptive_timestep_force_interval divides into config_slm_coupling_interval $i times " // &
+      call mpas_pool_get_config(liConfigs, "config_adaptive_timestep", config_adaptive_timestep)
+      if (config_adaptive_timestep) then
+         ! for adaptive dt, check that config_adaptive_timestep_force_interval divides evenly into config_slm_coupling_interval
+         call mpas_pool_get_config(liConfigs, "config_adaptive_timestep_force_interval", config_adaptive_timestep_force_interval)
+         call mpas_set_timeInterval(force_interval, timeString=config_adaptive_timestep_force_interval, ierr=err_tmp)
+         err = ior(err, err_tmp)
+         call mpas_interval_division(start_time, coupling_interval, force_interval, n_intervals, remainder)
+         if (remainder .EQ. zero_interval) then
+            call mpas_log_write("config_adaptive_timestep_force_interval divides into config_slm_coupling_interval $i times " // &
                  "with no remainder - check passes", intArgs=(/int(n_intervals)/))
-      else
-         call mpas_log_write("config_adaptive_timestep_force_interval divides into config_slm_coupling_interval $i times " // &
+         else
+            call mpas_log_write("config_adaptive_timestep_force_interval divides into config_slm_coupling_interval $i times " // &
                  "with nonzero remainder", MPAS_LOG_ERR, intArgs=(/int(n_intervals)/))
-         err = ior(err, 1)
+            err = ior(err, 1)
+         endif
+      else
+        ! For fixed dt, check that dt divides evenly into config_slm_coupling_interval
+         call mpas_pool_get_config(liConfigs, "config_dt", config_dt)
+         call mpas_set_timeInterval(dt_interval, timeString=config_dt, ierr=err_tmp)
+         err = ior(err, err_tmp)
+         call mpas_interval_division(start_time, coupling_interval, dt_interval, n_intervals, remainder)
+         if (remainder .EQ. zero_interval) then
+            call mpas_log_write("config_dt divides into config_slm_coupling_interval $i times " // &
+                 "with no remainder - check passes", intArgs=(/int(n_intervals)/))
+         else
+            call mpas_log_write("config_dt divides into config_slm_coupling_interval $i times " // &
+                 "with nonzero remainder", MPAS_LOG_ERR, intArgs=(/int(n_intervals)/))
+            err = ior(err, 1)
+         endif
       endif
 
       ! Now check that restart interval is an even multiple of coupling interval
@@ -1061,6 +1084,7 @@ contains
 
          stream_cursor => stream_cursor % next
       enddo
+      call mpas_log_write("")
 
    !--------------------------------------------------------------------
    end subroutine check_SLM_coupling_interval
