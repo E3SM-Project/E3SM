@@ -1116,17 +1116,20 @@ contains
       ! local vars
       integer, pointer :: config_slm_coupling_interval
       character (len=StrKIND), pointer :: xtime, simulationStartTime
-      character (len=StrKIND) :: elapsed_time_str
+      type (MPAS_TimeInterval_Type) :: coupling_interval, zero_interval
       type (MPAS_Time_Type) :: start_time, curr_time
-      type (MPAS_Time_Type) :: elapsed_time ! should be a time interval but not possible to get years that way
-      integer :: YYYY, MM, DD, H, M, S  ! time components
+      integer (kind=I8KIND) :: n_intervals
+      type (MPAS_TimeInterval_type) :: remainder
       integer :: err_tmp
 
       err = 0
-
-      slmTimeStep = -999  ! initialize to bad number
+      err_tmp = 0
 
       call mpas_pool_get_config(liConfigs, "config_slm_coupling_interval", config_slm_coupling_interval)
+      ! define SLM coupling interval as a timeInterval type
+      call mpas_set_timeInterval(coupling_interval, YY=config_slm_coupling_interval, MM=0, DD=0, H=0, M=0, S=0, ierr=err_tmp)
+      err = ior(err, err_tmp)
+
 
       call mpas_pool_get_array(meshPool, 'simulationStartTime', simulationStartTime)
       call mpas_pool_get_array(meshPool, 'xtime', xtime)
@@ -1134,30 +1137,20 @@ contains
       err = ior(err, err_tmp)
       call mpas_set_time(curr_time, dateTimeString=xtime, ierr=err_tmp)
       err = ior(err, err_tmp)
-      call mpas_get_timeInterval(curr_time - start_time, start_time, timeString=elapsed_time_str, ierr=err_tmp)
-      err = ior(err, err_tmp)
 
-      ! convert elapsed time string to its units. Using the intermediate string format because mpas_get_timeInterval doesn't return
-      ! years, and figuring out years from days depends on the calendar
-      call mpas_set_time(elapsed_time, dateTimeString=elapsed_time_str, ierr=err_tmp)
-      err = ior(err, err_tmp)
-      call mpas_get_time(elapsed_time, YYYY=YYYY, MM=MM, DD=DD, H=H, M=M, S=S)
-
-      ! make sure the elapsed time is an even year
-      if ((MM /= 0) .or. (DD /= 0) .or. (H /= 0) .or. (M /= 0) .or. (S /= 0)) then
-         call mpas_log_write("Elapsed time since simulationStartTime include nonzero months, days, hours, minutes, " // &
-                 "or seconds.", MPAS_LOG_ERR)
-         err = ior(err, 1)
-      endif
-
-      if (mod(YYYY, config_slm_coupling_interval) == 0) then
-         ! We can restart cleanly
-         slmTimeStep = YYYY / config_slm_coupling_interval
+      call mpas_interval_division(start_time, curr_time - start_time, coupling_interval, n_intervals, remainder)
+      call mpas_set_timeInterval(zero_interval, dt = 0.0_RKIND)
+      if (remainder .EQ. zero_interval) then
+         call mpas_log_write("SLM Restart check: config_slm_coupling_interval divides into elapsed time $i times " // &
+              "with no remainder - check passes", intArgs=(/int(n_intervals)/))
+         slmTimeStep = int(n_intervals)
       else
-         call mpas_log_write("Elapsed years since simulationStartTime is not evenly divisible by config_slm_coupling_interval." // &
-                 " Unable to restart Sea Level Model cleanly.", MPAS_LOG_ERR)
+         call mpas_log_write("SLM Restart check: config_slm_coupling_interval divides into elapsed time $i times " // &
+              "with nonzero remainder", MPAS_LOG_ERR, intArgs=(/int(n_intervals)/))
          err = ior(err, 1)
+         slmTimeStep = -999
       endif
+      call mpas_log_write("")
 
    !--------------------------------------------------------------------
    end subroutine find_slm_restart_timestep
