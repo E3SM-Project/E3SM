@@ -85,8 +85,6 @@ set (TEST_INPUT_FILES
 foreach (file IN ITEMS ${TEST_INPUT_FILES})
   GetInputFile(${file})
 endforeach()
-#GetInputFile(scream/init/${EAMxx_tests_IC_FILE_72lev})
-#GetInputFile(cam/topo/${EAMxx_tests_TOPO_FILE})
 
 # Compare output files produced by npX tests, to ensure they are bfb
 include (CompareNCFiles)

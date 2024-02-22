@@ -2,10 +2,6 @@
 ---
 driver_options:
   atmosphere_dag_verbosity_level: 5
-  mass_column_conservation_error_tolerance: 1e-3
-  energy_column_conservation_error_tolerance: 1e-4
-  column_conservation_checks_fail_handling_type: Warning
-  property_check_data_fields: [phis]
 
 time_stepping:
   time_step: ${ATM_TIME_STEP}
@@ -34,7 +30,6 @@ atmosphere_processes:
     Type: Group
     mac_mic:
       atm_procs_list: [mam4_optics]
-      schedule_type: Sequential
       Type: Group
       mam4_optics:
        mam4_mode1_physical_properties_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/mam4_mode1_rrtmg_aeronetdust_c20240206.nc

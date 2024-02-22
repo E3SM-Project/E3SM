@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-filename_prefix: homme_mam_optics
+filename_prefix: homme_mam_optics 
 Averaging Type: Instant
 Max Snapshots Per File: 1
 Fields:
@@ -15,20 +15,11 @@ Fields:
       - pseudo_density_dry
       - p_dry_int
       - p_dry_mid
-  # GLL output for homme states. These
-  # represent all current possible homme
-  # states available.
-  Dynamics:
-    Field Names:
-      - v_dyn
-      - vtheta_dp_dyn
-      - dp3d_dyn
-      - phi_int_dyn
-      - ps_dyn
-      - phis_dyn
-      - omega_dyn
-      - Qdp_dyn
-    IO Grid Name: Physics GLL
+      # mam_optics 
+      - aero_g_sw
+      - aero_ssa_sw
+      - aero_tau_lw
+      - aero_tau_sw
 
 output_control:
   Frequency: ${NUM_STEPS}
