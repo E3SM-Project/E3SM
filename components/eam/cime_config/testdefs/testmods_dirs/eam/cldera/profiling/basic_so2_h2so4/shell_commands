@@ -16,3 +16,4 @@ else
   CLDERA_PATH=${CLDERA_PATH}/release
 fi
 cp ${CLDERA_PATH}/share/cldera_profiling_config.yaml ${RUNDIR}/cldera_profiling_config.yaml
+cp ${CLDERA_PATH}/share/eam_profiling.yaml ${RUNDIR}/eam_profiling.yaml
