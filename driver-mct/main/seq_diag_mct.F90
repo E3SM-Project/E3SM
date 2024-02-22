@@ -317,8 +317,6 @@ module seq_diag_mct
 
   integer :: index_i2x_Fioi_melth
   integer :: index_i2x_Fioi_meltw
-  integer :: index_i2x_Fioi_bergh
-  integer :: index_i2x_Fioi_bergw
   integer :: index_i2x_Fioi_salt
   integer :: index_i2x_Faii_swnet
   integer :: index_i2x_Fioi_swpen
@@ -1346,6 +1344,7 @@ contains
     real(r8)                 :: ca_i,ca_o,ca_c  ! area of a grid cell
     logical,save             :: first_time    = .true.
     logical,save             :: flds_wiso_ocn = .false.
+    logical,save             :: flds_polar = .false.
 
     !----- formats -----
     character(*),parameter :: subName = '(seq_diag_ocn_mct) '
@@ -1379,11 +1378,14 @@ contains
           index_o2x_Fioo_frazil  = mct_aVect_indexRA(o2x_o,'Fioo_frazil')
           index_o2x_Fioo_q       = mct_aVect_indexRA(o2x_o,'Fioo_q')
           index_o2x_Faoo_h2otemp = mct_aVect_indexRA(o2x_o,'Faoo_h2otemp')
-          index_o2x_Foxo_ismw  = mct_aVect_indexRA(o2x_o,'Foxo_ismw',perrWith='quiet')
-          index_o2x_Foxo_rrofl = mct_aVect_indexRA(o2x_o,'Foxo_rrofl',perrWith='quiet')
-          index_o2x_Foxo_rrofi = mct_aVect_indexRA(o2x_o,'Foxo_rrofi',perrWith='quiet')
-          index_o2x_Foxo_ismh  = mct_aVect_indexRA(o2x_o,'Foxo_ismh',perrWith='quiet')
-          index_o2x_Foxo_rrofih  = mct_aVect_indexRA(o2x_o,'Foxo_rrofih',perrWith='quiet')
+          index_o2x_Foxo_ismw    = mct_aVect_indexRA(o2x_o,'Foxo_ismw',perrWith='quiet')
+          if ( index_o2x_Foxo_ismw /= 0 ) flds_polar = .true.
+          if ( flds_polar ) then
+             index_o2x_Foxo_rrofl   = mct_aVect_indexRA(o2x_o,'Foxo_rrofl',perrWith='quiet')
+             index_o2x_Foxo_rrofi   = mct_aVect_indexRA(o2x_o,'Foxo_rrofi',perrWith='quiet')
+             index_o2x_Foxo_ismh    = mct_aVect_indexRA(o2x_o,'Foxo_ismh',perrWith='quiet')
+             index_o2x_Foxo_rrofih  = mct_aVect_indexRA(o2x_o,'Foxo_rrofih',perrWith='quiet')
+          end if
        end if
 
        lSize = mct_avect_lSize(o2x_o)
@@ -1396,16 +1398,13 @@ contains
           nf = f_wfrz;  budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - (ca_o+ca_i)*max(0.0_r8,o2x_o%rAttr(index_o2x_Fioo_frazil,n))
           nf = f_hfrz;  budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*max(0.0_r8,o2x_o%rAttr(index_o2x_Fioo_q,n))
           nf = f_hh2ot; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*o2x_o%rAttr(index_o2x_Faoo_h2otemp,n)
-          nf = f_wpolar;budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_c*o2x_o%rAttr(index_o2x_Foxo_ismw,n)
-          nf = f_wpolar;budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - (ca_o+ca_i)*o2x_o%rAttr(index_o2x_Foxo_rrofl,n)
-          nf = f_wpolar;budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - (ca_o+ca_i)*o2x_o%rAttr(index_o2x_Foxo_rrofi,n)
-!          nf = f_wism;  budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_c*o2x_o%rAttr(index_o2x_Foxo_ismw,n)
-!          nf = f_wrrof; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - (ca_o+ca_i)*o2x_o%rAttr(index_o2x_Foxo_rrofl,n)
-!          nf = f_wriof; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - (ca_o+ca_i)*o2x_o%rAttr(index_o2x_Foxo_rrofi,n)
-          nf = f_hpolar;budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_c*o2x_o%rAttr(index_o2x_Foxo_ismh,n)
-          nf = f_hpolar;budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_c*o2x_o%rAttr(index_o2x_Foxo_rrofih,n)
-!          nf = f_hism;  budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_c*o2x_o%rAttr(index_o2x_Foxo_ismh,n)
-!          nf = f_hriof; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_c*o2x_o%rAttr(index_o2x_Foxo_rrofih,n)
+          if (flds_polar) then
+             nf = f_wpolar;budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_c*o2x_o%rAttr(index_o2x_Foxo_ismw,n)
+             nf = f_wpolar;budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - (ca_o+ca_i)*o2x_o%rAttr(index_o2x_Foxo_rrofl,n)
+             nf = f_wpolar;budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - (ca_o+ca_i)*o2x_o%rAttr(index_o2x_Foxo_rrofi,n)
+             nf = f_hpolar;budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_c*o2x_o%rAttr(index_o2x_Foxo_ismh,n)
+             nf = f_hpolar;budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_c*o2x_o%rAttr(index_o2x_Foxo_rrofih,n)
+          end if
        end do
     end if
 
@@ -1635,8 +1634,6 @@ contains
     if (present(do_i2x)) then
        index_i2x_Fioi_melth  = mct_aVect_indexRA(i2x_i,'Fioi_melth')
        index_i2x_Fioi_meltw  = mct_aVect_indexRA(i2x_i,'Fioi_meltw')
-!       index_i2x_Fioi_bergh  = mct_aVect_indexRA(i2x_i,'PFioi_bergh')
-!       index_i2x_Fioi_bergw  = mct_aVect_indexRA(i2x_i,'PFioi_bergw')
        index_i2x_Fioi_swpen  = mct_aVect_indexRA(i2x_i,'Fioi_swpen')
        index_i2x_Faii_swnet  = mct_aVect_indexRA(i2x_i,'Faii_swnet')
        index_i2x_Faii_lwup   = mct_aVect_indexRA(i2x_i,'Faii_lwup')
@@ -1672,9 +1669,7 @@ contains
           nf = f_hlwup ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_i*i2x_i%rAttr(index_i2x_Faii_lwup,n)
           nf = f_hlatv ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_i*i2x_i%rAttr(index_i2x_Faii_lat,n)
           nf = f_hsen  ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_i*i2x_i%rAttr(index_i2x_Faii_sen,n)
-!          nf = f_hberg ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - (ca_o+ca_i)*i2x_i%rAttr(index_i2x_Fioi_bergh,n)
           nf = f_wmelt ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_i*i2x_i%rAttr(index_i2x_Fioi_meltw,n)
-!          nf = f_wberg ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - (ca_o+ca_i)*i2x_i%rAttr(index_i2x_Fioi_bergw,n)
           nf = f_wevap ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_i*i2x_i%rAttr(index_i2x_Faii_evap,n)
 
           if ( flds_wiso_ice )then

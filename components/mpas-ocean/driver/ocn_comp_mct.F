@@ -689,7 +689,6 @@ contains
    if ( ierr /= 0 ) then
       write(ocnLogUnit,*) 'Fail to set define dom fields '
    endif
-
    ent_type = 1 ! cells
       
 
