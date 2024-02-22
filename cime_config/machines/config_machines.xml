@@ -1843,6 +1843,7 @@
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
       <env name="BLA_VENDOR">Generic</env>
+      <env name="GATOR_DISABLE">1</env>
     </environment_variables>
   </machine>
 
