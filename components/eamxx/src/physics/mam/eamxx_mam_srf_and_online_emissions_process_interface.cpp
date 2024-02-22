@@ -9,7 +9,8 @@ write in/outs for all variables clearly
 namespace scream {
 
 // =========================================================================================
-MAMSrfOnlineEmiss::MAMSrfOnlineEmiss(const ekat::Comm &comm, const ekat::ParameterList &params)
+MAMSrfOnlineEmiss::MAMSrfOnlineEmiss(const ekat::Comm &comm,
+                                     const ekat::ParameterList &params)
     : AtmosphereProcess(comm, params) {
   /* Anything that can be initialized without grid information can be
    * initialized here. Like universal constants, mam wetscav options.
@@ -19,7 +20,6 @@ MAMSrfOnlineEmiss::MAMSrfOnlineEmiss(const ekat::Comm &comm, const ekat::Paramet
 // =========================================================================================
 void MAMSrfOnlineEmiss::set_grids(
     const std::shared_ptr<const GridsManager> grids_manager) {
-  
   using namespace ekat::units;
 
   // The units of mixing ratio Q are technically non-dimensional.
@@ -42,16 +42,17 @@ void MAMSrfOnlineEmiss::set_grids(
   // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level and
   // interfaces
   const FieldLayout scalar3d_layout_mid{{COL, LEV}, {ncol_, nlev_}};
-  
-  // Layout for 2D (2d horiz) variable 
+  const FieldLayout scalar3d_layout_int{{COL, ILEV}, {ncol_, nlev_ + 1}};
+
+  // Layout for 2D (2d horiz) variable
   const FieldLayout scalar2d_layout{{COL}, {ncol_}};
-  
+
   // -------------------------------------------------------------------------------------------------------------------------
   // These variables are "required" or pure inputs for the process
   // -------------------------------------------------------------------------------------------------------------------------
   add_field<Required>("T_mid", scalar3d_layout_mid, K,
                       grid_name);  // temperature [K]
-  /*add_field<Required>("p_mid", scalar3d_layout_mid, Pa,
+  add_field<Required>("p_mid", scalar3d_layout_mid, Pa,
                       grid_name);  // pressure at mid points in [Pa]
   add_field<Required>("p_int", scalar3d_layout_int, Pa,
                       grid_name);  // total pressure
@@ -67,17 +68,9 @@ void MAMSrfOnlineEmiss::set_grids(
                      "tracers");  // cloud liquid wet number mixing ratio
   add_field<Required>("ni", scalar3d_layout_mid, n_unit, grid_name,
                       "tracers");  // ice number mixing ratio
-  add_field<Required>("dgncur_awet", scalar4d_layout_mid, m, grid_name);
-  add_field<Required>("wetdens", scalar4d_layout_mid, kg / m3, grid_name);
-  add_field<Required>("obklen", scalar2d_layout, m, grid_name);
-  add_field<Required>("surfric", scalar2d_layout, m / s, grid_name);
-
-  auto nondim = ekat::units::Units::nondimensional();
-  add_field<Required>("landfrac", scalar2d_layout, nondim, grid_name);
-  //add_field<Required>("icefrac", scalar2d_layout, nondim, grid_name);
-  //add_field<Required>("ocnfrac", scalar2d_layout, nondim, grid_name);
-  add_field<Required>("fv", scalar2d_layout, m / s, grid_name);
-  add_field<Required>("ram1", scalar2d_layout, s / m, grid_name);
+  add_field<Required>(
+      "omega", scalar3d_layout_mid, Pa / s,
+      grid_name);  // Vertical pressure velocity [Pa/s] at midpoints
 
   // (interstitial) aerosol tracers of interest: mass (q) and number (n) mixing
   // ratios
@@ -119,7 +112,7 @@ void MAMSrfOnlineEmiss::set_grids(
     const char *gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
     add_field<Updated>(gas_mmr_field_name, scalar3d_layout_mid, q_unit,
                        grid_name, "tracers");
-  }*/
+  }
 }
 
 // =========================================================================================
@@ -140,14 +133,77 @@ void MAMSrfOnlineEmiss::init_buffers(const ATMBufferManager &buffer_manager) {
 
   size_t used_mem =
       mam_coupling::init_buffer(buffer_manager, ncol_, nlev_, buffer_);
-  EKAT_REQUIRE_MSG(used_mem == requested_buffer_size_in_bytes(),
-                   "Error! Used memory != requested memory for MAMSrfOnlineEmiss.");
+  EKAT_REQUIRE_MSG(
+      used_mem == requested_buffer_size_in_bytes(),
+      "Error! Used memory != requested memory for MAMSrfOnlineEmiss.");
 }
 
 // =========================================================================================
 void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   // Gather runtime options
   //(e.g.) runtime_options.lambda_low    = m_params.get<double>("lambda_low");
+
+  wet_atm_.qv    = get_field_in("qv").get_view<const Real **>();
+  wet_atm_.qc    = get_field_in("qc").get_view<const Real **>();
+  wet_atm_.nc    = get_field_in("nc").get_view<const Real **>();
+  wet_atm_.qi    = get_field_in("qi").get_view<const Real **>();
+  wet_atm_.ni    = get_field_in("ni").get_view<const Real **>();
+  wet_atm_.omega = get_field_in("omega").get_view<const Real **>();
+
+  dry_atm_.T_mid = get_field_in("T_mid").get_view<const Real **>();
+  dry_atm_.p_mid = get_field_in("p_mid").get_view<const Real **>();
+  dry_atm_.p_del = get_field_in("pseudo_density").get_view<const Real **>();
+  dry_atm_.qv    = buffer_.qv_dry;
+  dry_atm_.qc    = buffer_.qc_dry;
+  dry_atm_.nc    = buffer_.nc_dry;
+  dry_atm_.qi    = buffer_.qi_dry;
+  dry_atm_.ni    = buffer_.ni_dry;
+
+  // interstitial and cloudborne aerosol tracers of interest: mass (q) and
+  // number (n) mixing ratios
+  for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+    // interstitial aerosol tracers of interest: number (n) mixing ratios
+    const char *int_nmr_field_name = mam_coupling::int_aero_nmr_field_name(m);
+    wet_aero_.int_aero_nmr[m] =
+        get_field_out(int_nmr_field_name).get_view<Real **>();
+    dry_aero_.int_aero_nmr[m] = buffer_.dry_int_aero_nmr[m];
+
+    // cloudborne aerosol tracers of interest: number (n) mixing ratios
+    const char *cld_nmr_field_name = mam_coupling::cld_aero_nmr_field_name(m);
+    wet_aero_.cld_aero_nmr[m] =
+        get_field_out(cld_nmr_field_name).get_view<Real **>();
+    dry_aero_.cld_aero_nmr[m] = buffer_.dry_cld_aero_nmr[m];
+
+    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+      // (interstitial) aerosol tracers of interest: mass (q) mixing ratios
+      const char *int_mmr_field_name =
+          mam_coupling::int_aero_mmr_field_name(m, a);
+      if(strlen(int_mmr_field_name) > 0) {
+        wet_aero_.int_aero_mmr[m][a] =
+            get_field_out(int_mmr_field_name).get_view<Real **>();
+        dry_aero_.int_aero_mmr[m][a] = buffer_.dry_int_aero_mmr[m][a];
+      }
+
+      // (cloudborne) aerosol tracers of interest: mass (q) mixing ratios
+      const char *cld_mmr_field_name =
+          mam_coupling::cld_aero_mmr_field_name(m, a);
+      if(strlen(cld_mmr_field_name) > 0) {
+        wet_aero_.cld_aero_mmr[m][a] =
+            get_field_out(cld_mmr_field_name).get_view<Real **>();
+        dry_aero_.cld_aero_mmr[m][a] = buffer_.dry_cld_aero_mmr[m][a];
+      }
+    }
+  }
+  for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
+    const char *gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
+    wet_aero_.gas_mmr[g] =
+        get_field_out(gas_mmr_field_name).get_view<Real **>();
+    dry_aero_.gas_mmr[g] = buffer_.dry_gas_mmr[g];
+  }
+
+  // set up our preprocess functor
+  preprocess_.initialize(ncol_, nlev_, wet_atm_, wet_aero_, dry_atm_,
+                         dry_aero_);
 }
 
 // =========================================================================================
