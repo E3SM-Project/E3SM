@@ -270,7 +270,7 @@ contains
       real (kind=RKIND), dimension(:), allocatable ::  blockSumRegionChannelGLMeltFlux
       real (kind=RKIND), dimension(:), allocatable ::  blockSumRegionChannelTerrestrialMeltFlux
       real (kind=RKIND), dimension(:), allocatable ::  blockSumRegionFlotationFraction
-      ! local variable needed calculating average floation fraction in a region
+      ! local variable needed calculating numerator of regionalAvgFlotationFraction
       real (kind=RKIND), dimension(:), allocatable:: regionalSumFlotationFraction
 
       ! local variables
@@ -833,6 +833,8 @@ contains
          deallocate(blockSumRegionChannelGLMeltFlux)
          deallocate(blockSumRegionChannelTerrestrialMeltFlux)
          deallocate(blockSumRegionFlotationFraction)
+         ! local variable needed for calculating numerator of regionalAvgFlotationFraction
+         deallocate(regionalSumFlotationFraction)
       endif 
 
    end subroutine li_compute_regional_stats
