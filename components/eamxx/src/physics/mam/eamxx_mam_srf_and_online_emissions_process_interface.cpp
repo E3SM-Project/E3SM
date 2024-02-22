@@ -208,7 +208,50 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
 
 // =========================================================================================
 void MAMSrfOnlineEmiss::run_impl(const double dt) {
-  std::cout << "End of derydep run" << std::endl;
+
+  const auto scan_policy = ekat::ExeSpaceUtils<
+      KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
+
+  // preprocess input -- needs a scan for the calculation of atm height
+  Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
+  Kokkos::fence();
+
+  /* Rough notes:
+
+  Here we should implement or port the chem_emissions subroutine in chemistry.F90. Basically call two 
+  subroutines, aero_model_emissions and set_srf_emissions.
+  
+  Here is the code:
+
+    ! initialize chemistry constituent surface fluxes to zero
+    do m = 2,pcnst
+       n = map2chm(m)
+       if (n>0) cam_in%cflx(:,m) = 0._r8 
+    enddo
+
+    ! aerosol emissions ...
+    call aero_model_emissions( state, & ! in
+                               cam_in ) ! out
+
+    ! prescribed emissions from file ...
+
+    !-----------------------------------------------------------------------      
+    !        ... Set surface emissions
+    !-----------------------------------------------------------------------      
+    call set_srf_emissions( lchnk, ncol, sflx(:,:) )
+
+    do m = 1,pcnst
+       n = map2chm(m)
+       if ( n /= h2o_ndx .and. n > 0 ) then
+          cam_in%cflx(:ncol,m) = cam_in%cflx(:ncol,m) + sflx(:ncol,n)
+          call outfld( sflxnam(m), cam_in%cflx(:ncol,m), ncol,lchnk )
+       endif
+    enddo
+
+  
+  */
+
+  std::cout << "End of surface emissions run" << std::endl;
 }
 
 // =========================================================================================
