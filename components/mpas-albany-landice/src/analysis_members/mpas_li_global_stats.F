@@ -440,7 +440,8 @@ contains
                                         basalMeltInput(iCell) * areaCell(iCell)
 
                ! External water input
-               blockSumExternalWaterInput = blockSumExternalWaterInput + externalWaterInput(iCell) * areaCell(iCell)
+               blockSumExternalWaterInput = blockSumExternalWaterInput + &
+                   real(li_mask_is_grounded_ice_int(cellMask(iCell)),RKIND) * externalWaterInput(iCell) * areaCell(iCell)
 
                ! Lake Volume
                if (waterThickness(iCell) > bedBumpMax) then
