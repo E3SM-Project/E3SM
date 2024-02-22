@@ -365,6 +365,7 @@ contains
          call mpas_pool_get_array(forcingPool, 'frazilLayerThicknessTendency', frazilLayerThicknessTendency)
          call mpas_pool_get_array(forcingPool, 'landIceFreshwaterFlux', landIceFreshwaterFlux)
          call mpas_pool_get_array(forcingPool, 'landIceFreshwaterFluxTotal', landIceFreshwaterFluxTotal)
+         call mpas_pool_get_array(forcingPool, 'frazilIceFreshwaterFlux', frazilIceFreshwaterFlux)
          call mpas_pool_get_array(forcingPool, 'landIceFloatingMask', landIceFloatingMask)
 
          call mpas_pool_get_array(tracersSurfaceFluxPool, 'activeTracersSurfaceFlux', activeTracersSurfaceFlux)
@@ -377,7 +378,6 @@ contains
          call mpas_pool_get_array(statePool, 'accumulatedLandIceMass', accumulatedLandIceMass, 1)
          call mpas_pool_get_array(statePool, 'accumulatedLandIceHeat', accumulatedLandIceHeat, 1)
          call mpas_pool_get_array(statePool, 'accumulatedLandIceFrazilMass', accumulatedLandIceFrazilMass, 1)
-         call mpas_pool_get_array(statePool, 'frazilIceFreshwaterFlux', frazilIceFreshwaterFlux, 1)
 
 
          allocate(areaEdge(1:nEdgesSolve))
@@ -1044,7 +1044,7 @@ contains
 
          ! frazilIceFreshwaterFlux
          variableIndex = variableIndex + 1
-         if (frazilIcePkgActive) then
+         if ( associated(frazilIceFreshwaterFlux) ) then
             call ocn_compute_field_area_weighted_local_stats_surface(dminfo, nCellsSolve, &
                          areaCell(1:nCellsSolve), &
                          frazilIceFreshwaterFlux(1:nCellsSolve), sums_tmp(variableIndex), &
