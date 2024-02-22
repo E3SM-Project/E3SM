@@ -25,7 +25,7 @@
     <group>build_component_clm</group>
     <file>env_build.xml</file>
     <desc>Provides option(s) for the ELM configure utility.
-      CLM_CONFIG_OPTS are normally set as compset variables (e.g., -bgc cn)
+      ELM_CONFIG_OPTS are normally set as compset variables (e.g., -bgc cn)
       and in general should not be modified for supported compsets.
       It is recommended that if you want to modify this value for your experiment,
       you should use your own user-defined component sets via using create_newcase
