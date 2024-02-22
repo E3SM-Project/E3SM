@@ -745,7 +745,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    if ( present(use_crm_accel_out       ) ) use_crm_accel_out        = use_crm_accel
    if ( present(crm_accel_factor_out    ) ) crm_accel_factor_out     = crm_accel_factor
    if ( present(crm_accel_uv_out        ) ) crm_accel_uv_out         = crm_accel_uv
-   if ( present(MMF_PAM_dyn_per_phys    ) ) MMF_PAM_dyn_per_phys_out = MMF_PAM_dyn_per_phys
+   if ( present(MMF_PAM_dyn_per_phys_out) ) MMF_PAM_dyn_per_phys_out = MMF_PAM_dyn_per_phys
 
    if ( present(use_subcol_microp_out   ) ) use_subcol_microp_out    = use_subcol_microp
    if ( present(macrop_scheme_out       ) ) macrop_scheme_out        = macrop_scheme
