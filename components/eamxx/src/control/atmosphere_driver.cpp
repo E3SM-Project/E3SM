@@ -697,9 +697,9 @@ void AtmosphereDriver::initialize_output_managers () {
   checkpoint_params.set("Frequency",-1);
   if (io_params.isSublist("model_restart")) {
     auto restart_pl = io_params.sublist("model_restart");
-    m_output_managers.emplace_back();
+    restart_pl.set<std::string>("Averaging Type","Instant");
     restart_pl.sublist("provenance") = m_atm_params.sublist("provenance");
-    auto& om = m_output_managers.back();
+    auto& om = m_output_managers.emplace_back();
     if (fvphyshack) {
       // Don't save CGLL fields from ICs to the restart file.
       std::map<std::string,field_mgr_ptr> fms;
