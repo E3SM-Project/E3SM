@@ -512,31 +512,37 @@ contains
 
                ! Subglacial Water Volume
                blockSumRegionSubglacialWaterVolume(iRegion) = blockSumRegionSubglacialWaterVolume(iRegion) + &
-                 waterThickness(iCell) * areaCell(iCell)
-
-               ! Basal melt input
-               blockSumRegionBasalMeltInput(iRegion) = blockSumRegionBasalMeltInput(iRegion) + &
-                 real(li_mask_is_grounded_ice_int(cellMask(iCell)),RKIND) * basalMeltInput(iCell) * areaCell(iCell)
+                 (real(regionCellMasks(iRegion,iCell),RKIND) * waterThickness(iCell) * areaCell(iCell))
+               
+               if (li_mask_is_grounded_ice(cellMask(iCell))) then
+                  ! Basal melt input
+                  blockSumRegionBasalMeltInput(iRegion) = blockSumRegionBasalMeltInput(iRegion) + &
+                    (real(regionCellMasks(iRegion,iCell),RKIND) * basalMeltInput(iCell) * areaCell(iCell))
+               endif
 
                ! External water input
                blockSumRegionExternalWaterInput(iRegion) = blockSumRegionExternalWaterInput(iRegion) + &
-                 externalWaterInput(iCell) * areaCell(iCell)
+                                                           (real(regionCellMasks(iRegion,iCell),RKIND) * &
+                                                            real(li_mask_is_grounded_ice_int(cellMask(iCell)),RKIND) * &
+                                                            externalWaterInput(iCell) * areaCell(iCell))
 
                ! Lake Volume
                if (waterThickness(iCell) > bedBumpMax) then
                   blockSumRegionLakeVolume(iRegion) = blockSumRegionLakeVolume(iRegion) + &
-                    (waterThickness(iCell) - bedBumpMax) * areaCell(iCell)
+                    (real(regionCellMasks(iRegion,iCell),RKIND) * (waterThickness(iCell) - bedBumpMax) * areaCell(iCell))
                endif
 
                ! Lake Area
                if (waterThickness(iCell) > bedBumpMax) then
-                   blockSumRegionLakeArea(iRegion) = blockSumRegionLakeArea(iRegion) + areaCell(iCell)
+                   blockSumRegionLakeArea(iRegion) = blockSumRegionLakeArea(iRegion) + &
+                    (real(regionCellMasks(iRegion,iCell),RKIND) * areaCell(iCell))
                endif
 
                ! Area-weighted flotation fraction for grounded ice
                if (li_mask_is_grounded_ice(cellMask(iCell))) then
                    blockSumRegionFlotationFraction(iRegion) = blockSumRegionFlotationFraction(iRegion) + &
-                     ( waterPressure(iCell) / rhoi / gravity / thickness(iCell) ) * areaCell(iCell)
+                     (real(regionCellMasks(iRegion,iCell),RKIND) * &
+                     ( waterPressure(iCell) / rhoi / gravity / thickness(iCell) ) * areaCell(iCell))
                endif
             endif
            end do ! end loop over regions
@@ -564,6 +570,12 @@ contains
                end do ! end loop over regions
             end if ! if GL
 
+            ! TO DO: Need to define our own condition on how to decide which region to put the edge quantities
+            ! TO DO: Make sure SGH terms are masked based on region (using regionEdgeMasks?) b/c calculations are 
+            !        currently unmasked and therefore global values 
+
+
+            ! assign the SGH stats this edge quantities to the region of the upwind cell
             if (config_SGH) then
                ! Channel Melt
                blockSumRegionChannelMelt(iRegion) = blockSumRegionChannelMelt(iRegion) + &
@@ -584,8 +596,7 @@ contains
                ! Meltwater discharge in channels across terrestrial margin
                blockSumRegionChannelTerrestrialMeltFlux(iRegion) = blockSumRegionChannelTerrestrialMeltFlux(iRegion) + &
                  abs( hydroTerrestrialMarginMask(iEdge) * channelDischarge(iEdge) * rho_water)
-           endif ! if SGH is on
-
+            endif ! if SGH is on
          end do ! end loop over edges
 
          block => block % next
