@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-filename_prefix: homme_mam_optics 
+filename_prefix: homme_mam_optics_output 
 Averaging Type: Instant
 Max Snapshots Per File: 1
 Fields:
