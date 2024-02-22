@@ -149,6 +149,18 @@
     </values>
   </entry>
 
+  <entry id="flds_polar" modify_via_xml="FLDS_POLAR">
+    <type>logical</type>
+    <category>seq_flds</category>
+    <group>seq_cplflds_inparm</group>
+    <desc>
+      If set to .true. Polar fields will be passed from the ocean to the coupler.
+    </desc>
+    <values>
+      <value>$FLDS_POLAR</value>
+    </values>
+  </entry>
+
   <entry id="atm_flux_method" modify_via_xml="ATM_FLUX_INTEGRATION_METHOD">
     <type>char</type>
     <category>seq_flds</category>
