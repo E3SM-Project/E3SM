@@ -2291,10 +2291,6 @@
 			 description="Salinity associated with accumulatedFrazilIceMass. Reset to zero at each coupling interval"
 			 packages="frazilIce"
 		/>
-		<var name="frazilIceFreshwaterFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
-			description="Flux of frazil ice mass through the ocean surface. Positive into ocean."
-			packages="frazilIce;landIceFluxesPKG;dataLandIceFluxesPKG"
-		/>
 
 		<!-- FIELDS FOR LAND ICE STORAGE -->
 		<var name="accumulatedLandIceMass" type="real" dimensions="nCells Time" units="kg m^-2"
@@ -3836,6 +3832,10 @@
 		<var name="frazilSurfacePressure" type="real" dimensions="nCells Time" units="Pa"
 			 description="surface pressure forcing due to weight of frazil ice"
 			 packages="frazilIce"
+		/>
+		<var name="frazilIceFreshwaterFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
+			description="Flux of frazil ice mass through the ocean surface. Positive into ocean."
+			packages="frazilIce"
 		/>
 
 		<!-- Fields for tidal potential forcing -->
