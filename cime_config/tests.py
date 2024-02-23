@@ -65,7 +65,7 @@ _TESTS = {
         "tests" : (
             "ERS_D.f19_f19.IELM.elm-ic_f19_f19_ielm",
             "ERS_D.f09_g16.I1850ELMCN",
-            "ERS_D.ne4pg2_oQU480.I20TRELM",
+            "ERS_D.ne4pg2_oQU480.I20TRELM.elm-disableDynpftCheck",
             "SMS_Ly2_P1x1_D.1x1_smallvilleIA.IELMCNCROP.elm-lulcc_sville",
             "ERS_D.f19_g16.I1850GSWCNPRDCTCBC.elm-ctc_f19_g16_I1850GSWCNPRDCTCBC",
             "ERS_D.f09_f09.IELM.elm-solar_rad",
