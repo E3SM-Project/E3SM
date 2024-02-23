@@ -610,7 +610,7 @@ contains
         enddo   ! do k=kBottom,minLevelCell,-1
 
         ! frazilIceFreshwaterFlux forms part of the landIceFreshwaterFluxTotal computed in surface land ice fluxes
-        frazilIceFreshwaterFlux(iCell) = (sumNewFrazilIceThickness * config_frazil_ice_density) / dt
+        frazilIceFreshwaterFlux(iCell) = - (sumNewFrazilIceThickness * config_frazil_ice_density) / dt
         ! accumulate frazil mass to column total
         ! note: the accumulatedFrazilIceMass (at both time levels) is reset to zero after being sent to the coupler
         accumulatedFrazilIceMassNew(iCell) = accumulatedFrazilIceMassOld(iCell) + sumNewFrazilIceThickness &

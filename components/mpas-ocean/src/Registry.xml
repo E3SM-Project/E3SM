@@ -3834,7 +3834,7 @@
 			 packages="frazilIce"
 		/>
 		<var name="frazilIceFreshwaterFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
-			description="Flux of frazil ice mass through the ocean surface. Positive into ocean."
+			description="Flux of frazil ice mass through the ocean surface. Negative is defined as mass leaving the ocean."
 			packages="frazilIce"
 		/>
 
