@@ -17,28 +17,6 @@ FieldLayout::FieldLayout (const std::vector<FieldTag>& tags,
   }
 }
 
-FieldLayout::
-FieldLayout (const FieldLayout& src)
- : FieldLayout(src.tags(),src.dims())
-{
-  // Nothing to do here
-}
-
-FieldLayout& FieldLayout::
-operator= (const FieldLayout& src)
-{
-  m_tags = src.m_tags;
-  m_rank = src.m_rank;
-
-  m_dims.resize(m_rank,-1);
-  m_extents = decltype(m_extents)("",m_rank);
-  for (int idim=0; idim<m_rank; ++idim) {
-    set_dimension(idim,src.m_dims[idim]);
-  }
-
-  return *this;
-}
-
 bool FieldLayout::is_vector_layout () const {
   const auto lt = get_layout_type (m_tags);
   return lt==LayoutType::Vector2D || lt==LayoutType::Vector3D;
@@ -125,6 +103,14 @@ FieldLayout FieldLayout::strip_dim (const int idim) const {
   t.erase(t.begin()+idim);
   d.erase(d.begin()+idim);
   return FieldLayout (t,d);
+}
+
+FieldLayout FieldLayout::clone_with_different_extent (const int idim, const int extent) const
+{
+  FieldLayout copy(m_tags,m_dims);
+  copy.set_dimension(idim,extent);
+
+  return *this;
 }
 
 void FieldLayout::set_dimension (const int idim, const int dimension) {

@@ -295,8 +295,7 @@ TEST_CASE("nudging_tests") {
       int ncols = fid.get_layout().dim(0);
       comm.all_reduce(&ncols,1,MPI_SUM);
 
-      FieldLayout glb_layout = fid.get_layout();
-      glb_layout.set_dimension(0,ncols);
+      FieldLayout glb_layout = fid.get_layout().clone_with_different_extent(0,ncols);
       FieldIdentifier glb_fid(fid.name(),glb_layout,fid.get_units(),fid.get_grid_name());
       Field glb(glb_fid);
       glb.allocate_view();

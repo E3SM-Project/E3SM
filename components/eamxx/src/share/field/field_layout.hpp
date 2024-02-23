@@ -54,11 +54,6 @@ inline std::string e2str (const LayoutType lt) {
  *  Note: the content of extents() is the same as the content of dims().
  *        The difference is that the former returns a device view, while
  *        the latter returns a std::vector.
- *  Note: we used to have copy ctor and op= defaulted. However, with
- *        extents being a view, that is dangerous. What we really want
- *        is a deep copy. We're not interested in sharing data with
- *        other instances, since a) it's a small amount of data and
- *        b) we usually don't modify layout dims after creation
  */
 
 class FieldLayout {
@@ -67,12 +62,12 @@ public:
 
   // Constructor(s)
   FieldLayout () = delete;
-  FieldLayout (const FieldLayout&);
+  FieldLayout (const FieldLayout&) = default;
   FieldLayout (const std::vector<FieldTag>& tags,
                const std::vector<int>& dims);
 
   // Assignment (defaulted)
-  FieldLayout& operator= (const FieldLayout&);
+  FieldLayout& operator= (const FieldLayout&) = default;
 
   // Create invalid layout
   static FieldLayout invalid () { return FieldLayout({FieldTag::Invalid},{0}); }
@@ -114,12 +109,13 @@ public:
   // Returns a copy of this layout with a given dimension stripped
   FieldLayout strip_dim (const FieldTag tag) const;
   FieldLayout strip_dim (const int idim) const;
-
-  // ----- Setters ----- //
-
-  void set_dimension  (const int idim, const int dimension);
+  FieldLayout clone_with_different_extent (const int idim, const int extent) const;
 
 protected:
+
+  // Only this class is allowed to change a layout. Customers can request
+  // a *slightly* different layout (via strip_dim or clone_with_different_extent)
+  void set_dimension  (const int idim, const int dimension);
 
   int                   m_rank;
   std::vector<FieldTag> m_tags;
