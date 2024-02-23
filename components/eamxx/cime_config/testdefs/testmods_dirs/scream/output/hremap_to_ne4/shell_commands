@@ -1,0 +1,15 @@
+# Look for all the eamxx_***_output.yaml files in the case folder and
+# sets horiz remap if atm grid is ne30pg2
+
+CASEROOT=$(./xmlquery --value CASEROOT)
+YAML_EDIT=$CIMEROOT/../components/eamxx/scripts/edit-output-stream
+ATM_GRID=$(./xmlquery --value ATM_GRID)
+
+if [[ $ATM_GRID = "ne30np4.pg2" ]];then
+  YAML_FILES=$(ls -1 | grep 'eamxx_.*_output.yaml')
+  for fname in ${YAML_FILES}; do
+    $YAML_EDIT -f $fname --horiz-remap-file \${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne4pg2_20231201.nc
+  done
+else
+  echo "Note: testmod 'hremap_to_ne4' only works for ne30pg2 atm grid"
+fi

@@ -1,0 +1,26 @@
+# This script generates a (single) yaml file for EAMxx output.
+# The output will be INSTANT, with only dyn state vars
+
+CASEROOT=$(./xmlquery --value CASEROOT)
+
+# Scripts location
+YAML_GEN=$CIMEROOT/../components/eamxx/scripts/edit-output-stream
+ATMCHANGE=$CIMEROOT/../components/eamxx/scripts/atmchange
+YAML_FILE=$CASEROOT/eamxx_dyn_output.yaml
+
+# List of output fields
+FIELDS='v_dyn vtheta_dp_dyn dp3d_dyn w_int_dyn phis_dyn phi_int_dyn ps_dyn omega_dyn Qdp_dyn'
+
+# Generate the file
+$YAML_GEN -g \
+ -f $YAML_FILE            \
+ --avg-type INSTANT       \
+ --freq STOP_N            \
+ --freq-units STOP_OPTION \
+ --prefix dyn_state       \
+ --grid Dynamics          \
+ --io-grid 'Physics GLL'  \
+ --fields ${FIELDS}
+
+# Add this output yaml file to the list of eamxx output streams
+$ATMCHANGE output_yaml_files+=$YAML_FILE -b
