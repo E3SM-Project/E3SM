@@ -110,7 +110,7 @@ FieldLayout FieldLayout::clone_with_different_extent (const int idim, const int 
   FieldLayout copy(m_tags,m_dims);
   copy.set_dimension(idim,extent);
 
-  return *this;
+  return copy;
 }
 
 void FieldLayout::set_dimension (const int idim, const int dimension) {
