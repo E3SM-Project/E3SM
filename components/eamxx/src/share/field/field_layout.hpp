@@ -54,6 +54,11 @@ inline std::string e2str (const LayoutType lt) {
  *  Note: the content of extents() is the same as the content of dims().
  *        The difference is that the former returns a device view, while
  *        the latter returns a std::vector.
+ *  Note: we used to have copy ctor and op= defaulted. However, with
+ *        extents being a view, that is dangerous. What we really want
+ *        is a deep copy. We're not interested in sharing data with
+ *        other instances, since a) it's a small amount of data and
+ *        b) we usually don't modify layout dims after creation
  */
 
 class FieldLayout {
@@ -62,12 +67,12 @@ public:
 
   // Constructor(s)
   FieldLayout () = delete;
-  FieldLayout (const FieldLayout&) = default;
+  FieldLayout (const FieldLayout&);
   FieldLayout (const std::vector<FieldTag>& tags,
                const std::vector<int>& dims);
 
   // Assignment (defaulted)
-  FieldLayout& operator= (const FieldLayout&) = default;
+  FieldLayout& operator= (const FieldLayout&);
 
   // Create invalid layout
   static FieldLayout invalid () { return FieldLayout({FieldTag::Invalid},{0}); }
