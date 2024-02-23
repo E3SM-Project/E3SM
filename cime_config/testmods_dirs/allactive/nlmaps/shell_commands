@@ -6,7 +6,6 @@ a2o=cpl/gridmaps/ne30pg2/map_ne30pg2_to_IcoswISC30E3r5_trfvnp2.20231121.nc
 ./xmlchange ATM2LND_FMAPNAME_NONLINEAR=$a2l
 ./xmlchange ATM2ROF_FMAPNAME_NONLINEAR=$a2l
 ./xmlchange ATM2OCN_FMAPNAME_NONLINEAR=$a2o
-./xmlchange ATM2ICE_FMAPNAME_NONLINEAR=$a2o
 
 # These surface->atm maps are not needed in v3, but we want to test the capability.
 l2a=cpl/gridmaps/ne30pg2/map_r05_to_ne30pg2_${alg}.230516.nc
