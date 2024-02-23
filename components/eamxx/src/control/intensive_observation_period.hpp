@@ -180,6 +180,11 @@ private:
     }
   };
 
+  enum IOPFieldType {
+    FromFile,
+    Computed
+  };
+
   void initialize_iop_file(const util::TimeStamp& run_t0,
                            int model_nlevs);
 
@@ -198,6 +203,7 @@ private:
 
   std::map<std::string, std::string> m_iop_file_varnames;
   std::map<std::string, std::string> m_iop_field_surface_varnames;
+  std::map<std::string, IOPFieldType> m_iop_field_type;
 }; // class IntensiveObservationPeriod
 
 } // namespace control

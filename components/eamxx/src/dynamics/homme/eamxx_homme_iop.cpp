@@ -257,6 +257,9 @@ apply_iop_forcing(const Real dt)
   elem_ops.init(hvcoord);
   const bool use_moisture = (params.moisture == Homme::MoistDry::MOIST);
 
+  // Load data from IOP files, if necessary
+  m_iop->read_iop_file_data(timestamp());
+
   // Define local IOP param values and views
   const auto iop_dosubsidence = m_iop->get_params().get<bool>("iop_dosubsidence");
   const auto use_3d_forcing = m_iop->get_params().get<bool>("use_3d_forcing");
