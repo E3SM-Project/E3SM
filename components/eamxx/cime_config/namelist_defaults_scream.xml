@@ -483,7 +483,7 @@ be lost if SCREAM_HACK_XML is not enabled.
 
   <!-- List of yaml files containing I/O output specs -->
   <Scorpio>
-    <output_yaml_files type="array(string)">${SRCROOT}/components/eamxx/data/scream_default_output.yaml</output_yaml_files>
+    <output_yaml_files type="array(string)"/>
     <model_restart>
       <filename_prefix>./${CASE}.scream</filename_prefix>
       <output_control locked="true">
