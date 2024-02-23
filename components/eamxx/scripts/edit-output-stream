@@ -41,6 +41,12 @@ OR
     )
 
     parser.add_argument(
+        "--prefix",
+        type=str,
+        help="The prefix of the output files",
+    )
+
+    parser.add_argument(
         "-g", "--generate",
         default=False,
         dest="generate",
@@ -65,6 +71,7 @@ OR
     parser.add_argument(
         "--avg-type",
         default=None,
+        type=str.lower,
         help="Set the averaging type",
         choices=['instant','average','max','min'],
     )
@@ -77,6 +84,7 @@ OR
 
     parser.add_argument(
         "--freq",
+        type=str.lower,
         default=None,
         help="Set the output frequency",
     )

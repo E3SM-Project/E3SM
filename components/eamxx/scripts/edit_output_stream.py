@@ -55,18 +55,21 @@ def generate_empty_yaml(filename,overwrite):
         yaml.dump(data,fd,Dumper=yaml.SafeDumper,explicit_start=True,explicit_end=True,version=(1,2))
 
 ###############################################################################
-def edit_output_stream_impl(filename,generate=False,overwrite=False,avg_type=None,freq_units=None,
-                            freq=None,grid=None,fields=[],reset=None,io_grid=None,
+def edit_output_stream_impl(filename,prefix=None,generate=False,overwrite=False,
+                            avg_type=None,freq_units=None,freq=None,
+                            grid=None,fields=[],reset=None,io_grid=None,
                             horiz_remap_file=None,vertical_remap_file=None):
 ###############################################################################
     """
     Apply the requested changes to the output stream yaml file
     >>> fname = '__test__.yaml'
     >>> # Create the file
-    >>> edit_output_stream_impl(fname,True)
+    >>> edit_output_stream_impl(fname,generate=True,prefix='foo')
     >>> # Set some basic options, and then check
     >>> edit_output_stream_impl(fname,avg_type='max',freq_units='ndays',freq=10)
     >>> data = yaml.load(open(fname,'r'),Loader=yaml.SafeLoader)
+    >>> data['filename_prefix']
+    'foo'
     >>> data['Averaging Type']
     'max'
     >>> data['output_control']['Frequency']
@@ -123,6 +126,8 @@ def edit_output_stream_impl(filename,generate=False,overwrite=False,avg_type=Non
         for s in reset:
             if s=="avg-type":
                 data["Averaging Type"] = "INVALID"
+            elif s=="preifx":
+                data["filename_prefix"] = "UNSET"
             elif s=="freq":
                 data["output_control"]["Frequency"] = -1
             elif s=="freq_units":
@@ -150,6 +155,9 @@ def edit_output_stream_impl(filename,generate=False,overwrite=False,avg_type=Non
                     # fields names, and field names is an empty list
                     if len(data["Fields"][grid])==1 and len(data["Fields"][grid]["Field Names"])==0:
                         del data["Fields"][grid]
+
+    if prefix is not None:
+        data["filename_prefix"] = prefix
 
     if avg_type is not None:
         data["Averaging Type"] = avg_type
