@@ -310,6 +310,23 @@ contains
     mr_lsgrpl(:npoints,:nlevels) = 0
     reff = 0  ! FIXME
 
+    ! In-cloud values are assumed. If ncolumns = 1, then convert in-cloud values to gridbox
+    if (ncolumns == 1) then
+       dtau_s = dtau_s * tca
+       dtau_c = dtau_c * cca
+       dem_s = dem_s * tca
+       dem_c = dem_c * cca
+       mr_lsliq = mr_lsliq * tca
+       mr_ccliq = mr_ccliq * cca
+       mr_lsice = mr_lsice * tca
+       mr_ccice = mr_ccice * cca
+       mr_lsrain = mr_lsrain * tca
+       mr_ccrain = mr_ccrain * cca
+       mr_lssnow = mr_lssnow * tca
+       mr_ccsnow = mr_ccsnow * cca
+       mr_lsgrpl = mr_lsgrpl * tca
+    end if
+
     start_idx = 1
     end_idx = npoints
     ! Translate arrays to derived types
