@@ -28,6 +28,12 @@ else ()
   endif()
 
   ####### SYCL here
+  if (SYCL_BUILD)
+    set(YAKL_ARCH "SYCL")
+    set(YAKL_SYCL_FLAGS "-DYAKL_ARCH_SYCL -\-intel -fsycl -fsycl-targets=spir64_gen -mlong-double-64 -Xsycl-target-backend \"-device 12.60.7\"")
+    string (REPLACE " " ";" YAKL_SYCL_FLAGS_LIST ${YAKL_SYCL_FLAGS})
+  endif()
+
 
 
   set (YAKL_SOURCE_DIR ${SCREAM_BASE_DIR}/../../externals/YAKL)
