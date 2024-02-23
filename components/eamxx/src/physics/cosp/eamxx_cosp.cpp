@@ -69,7 +69,7 @@ void Cosp::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   add_field<Required>("qv",               scalar3d_layout_mid, Q,      grid_name, "tracers");
   add_field<Required>("qc",               scalar3d_layout_mid, Q,      grid_name, "tracers");
   add_field<Required>("qi",               scalar3d_layout_mid, Q,      grid_name, "tracers");
-  add_field<Required>("cldfrac_tot_for_analysis", scalar3d_layout_mid, nondim, grid_name);
+  add_field<Required>("cldfrac_tot",      scalar3d_layout_mid, nondim, grid_name);
   // Optical properties, should be computed in radiation interface
   add_field<Required>("dtau067",     scalar3d_layout_mid, nondim, grid_name); // 0.67 micron optical depth
   add_field<Required>("dtau105",     scalar3d_layout_mid, nondim, grid_name); // 10.5 micron optical depth
@@ -140,7 +140,7 @@ void Cosp::run_impl (const double dt)
   get_field_in("T_mid").sync_to_host();
   get_field_in("p_mid").sync_to_host();
   get_field_in("p_int").sync_to_host();
-  get_field_in("cldfrac_tot_for_analysis").sync_to_host();
+  get_field_in("cldfrac_tot").sync_to_host();
   get_field_in("eff_radius_qc").sync_to_host();
   get_field_in("eff_radius_qi").sync_to_host();
   get_field_in("dtau067").sync_to_host();
@@ -154,7 +154,7 @@ void Cosp::run_impl (const double dt)
   auto T_mid   = get_field_in("T_mid").get_view<const Real**, Host>();
   auto p_mid   = get_field_in("p_mid").get_view<const Real**, Host>();
   auto p_int   = get_field_in("p_int").get_view<const Real**, Host>();
-  auto cldfrac = get_field_in("cldfrac_tot_for_analysis").get_view<const Real**, Host>();
+  auto cldfrac = get_field_in("cldfrac_tot").get_view<const Real**, Host>();
   auto reff_qc = get_field_in("eff_radius_qc").get_view<const Real**, Host>();
   auto reff_qi = get_field_in("eff_radius_qi").get_view<const Real**, Host>();
   auto dtau067 = get_field_in("dtau067").get_view<const Real**, Host>();
