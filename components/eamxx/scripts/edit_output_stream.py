@@ -155,10 +155,22 @@ def edit_output_stream_impl(filename,generate=False,overwrite=False,avg_type=Non
         data["Averaging Type"] = avg_type
 
     if freq is not None:
-        data["output_control"]["Frequency"] = freq
+        expect (freq.lstrip('-+').isnumeric() or (freq=='HIST_N' or freq=='STOP_N'),
+                f"Invalid value '{freq}' for --freq. Valid options are\n"
+                 " - an integer\n"
+                 " - STOP_N\n"
+                 " - HIST_N\n")
+        data["output_control"]["Frequency"] = int(freq) if freq.lstrip('-+').isnumeric() else f"${{{freq}}}"
 
     if freq_units is not None:
-        data["output_control"]["frequency_units"] = freq_units
+        explicit  = ['nsteps','nsecs','nmins','nhours','ndays','nmonths','nyears']
+        cime_vars = ['STOP_OPTION','HIST_OPTION']
+        expect (freq_units in explicit or freq_units in cime_vars,
+                f"Invalid value '{freq_units}' for --freq-units. Valid options are\n"
+                 " - explicit values: 'nsteps','nsecs','nmins','nhours','ndays','nmonths','nyears'\n"
+                 " - CIME variables : 'STOP_OPTION', 'HIST_OPTION'\n")
+                
+        data["output_control"]["frequency_units"] = freq_units if freq_units in explicit else f"${{{freq_units}}}"
 
     if horiz_remap_file is not None:
         data["horiz_remap_file"] = horiz_remap_file

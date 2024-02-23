@@ -73,14 +73,12 @@ OR
         "--freq-units",
         default=None,
         help="Set the output frequency units",
-        choices=['nsteps','nsecs','nmins','nhours','ndays','nmonths','nyears'],
     )
 
     parser.add_argument(
         "--freq",
         default=None,
         help="Set the output frequency",
-        type=int,
     )
 
     parser.add_argument(
