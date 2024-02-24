@@ -1080,6 +1080,7 @@ contains
             else
                call mpas_log_write("config_slm_coupling_interval divides into restart interval $i times " // &
                  "with nonzero remainder", MPAS_LOG_ERR, intArgs=(/int(n_intervals)/))
+               err = ior(err, 1)
             endif
          endif
 
