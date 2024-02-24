@@ -1125,6 +1125,7 @@ contains
       type (MPAS_Time_Type) :: start_time, curr_time
       integer (kind=I8KIND) :: n_intervals
       type (MPAS_TimeInterval_type) :: remainder
+      character (len=StrKIND) :: remainder_string
       integer :: err_tmp
 
       err = 0
@@ -1135,7 +1136,6 @@ contains
       call mpas_set_timeInterval(coupling_interval, YY=config_slm_coupling_interval, MM=0, DD=0, H=0, M=0, S=0, ierr=err_tmp)
       err = ior(err, err_tmp)
 
-
       call mpas_pool_get_array(meshPool, 'simulationStartTime', simulationStartTime)
       call mpas_pool_get_array(meshPool, 'xtime', xtime)
       call mpas_set_time(start_time, dateTimeString=simulationStartTime, ierr=err_tmp)
@@ -1145,8 +1145,12 @@ contains
 
       call mpas_interval_division(start_time, curr_time - start_time, coupling_interval, n_intervals, remainder)
       slmTimeStep = int(n_intervals)
-      call mpas_log_write("SLM Restart check: Using SLM time level $i because config_slm_coupling_interval divides into " // &
+      call mpas_get_timeInterval(remainder, start_time, timeString=remainder_string, ierr=err_tmp)
+      err = ior(err, err_tmp)
+      call mpas_log_write("SLM Restart: Using SLM time level $i because config_slm_coupling_interval divides into " // &
               "elapsed time that many times ", intArgs=(/int(slmTimeStep)/))
+      call mpas_log_write("  That calculation implies it has been " // trim(remainder_string) // " since last SLM coupling. " // &
+              "If that interval seems wrong, there may be an error in your configuration.")
       call mpas_log_write("")
 
    !--------------------------------------------------------------------
