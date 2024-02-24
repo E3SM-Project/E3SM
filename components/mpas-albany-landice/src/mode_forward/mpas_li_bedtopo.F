@@ -501,10 +501,13 @@ contains
 
          call find_slm_restart_timestep(meshPool, slmTimeStep, err_tmp)
          err = ior(err, err_tmp)
-         if (err == 0) then
-            call mpas_log_write("Calling the SLM. SLM timestep $i", intArgs=(/slmTimeStep/))
-            call slmodel_solve(slmTimeStep, domain)
-         endif
+
+         ! Note: no need to call slmodel_solve on init of a restart.
+         ! If this time level happens to be a coupling interval, SLM would have been solved already
+         ! in the previous run that generated the restart file.
+         ! While it would not hurt (other than unneeded execution time) to call SLM again if the
+         ! restart time level happens to be a coupling interval, if the restart time is in between
+         ! coupling intervals calling SLM here will make things out of sync.
 
       else
 
