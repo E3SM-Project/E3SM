@@ -407,6 +407,10 @@ contains
       integer :: itersl, dtime ! SLM variable
       real    :: starttime     ! SLM variable
       integer, dimension(:), pointer :: cellMask  ! integer bitmask for cells
+      integer, pointer :: config_slm_coupling_interval
+      type (MPAS_TimeInterval_type) :: slm_coupling_interval
+      character (len=StrKIND), pointer :: simulationStartTime
+      type (MPAS_Time_type) :: simulationStartTime_timeType
 
       ! MPI variables
       integer, dimension(:), pointer :: indexToCellID
@@ -415,12 +419,30 @@ contains
       err = 0
       err_tmp = 0
 
+
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
+
+      ! Set up the alarm for the coupling time interval
+      call mpas_pool_get_config(liConfigs, 'config_slm_coupling_interval', config_slm_coupling_interval)
+      call mpas_set_timeInterval(slm_coupling_interval, YY=config_slm_coupling_interval, ierr=err_tmp)
+      err = ior(err,err_tmp)
+      call mpas_pool_get_array(meshPool, 'simulationStartTime', simulationStartTime)
+      call mpas_set_time(simulationStartTime_timeType, dateTimeString=simulationStartTime, ierr=err_tmp)
+      err = ior(err,err_tmp)
+      call mpas_add_clock_alarm(domain%clock, 'slmCouplingInterval', alarmTime=simulationStartTime_timeType, &
+           alarmTimeInterval=slm_coupling_interval, ierr=err_tmp)
+      err = ior(err,err_tmp)
+      if (mpas_is_alarm_ringing(domain%clock, 'slmCouplingInterval', ierr=err_tmp)) then
+         err = ior(err, err_tmp)
+         call mpas_reset_clock_alarm(domain%clock, 'slmCouplingInterval', ierr=err_tmp)
+         err = ior(err, err_tmp)
+      endif
+
       ! initialize interpolation
       call interpolate_init(domain, err_tmp)
       err = ior(err, err_tmp)
 
       ! Set needed variables for using MPI
-      call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
       call mpas_pool_get_dimension(meshPool, 'nCells', nCellsAll)
       call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsOwned)
       call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
@@ -448,7 +470,7 @@ contains
          call sl_drive_readnl(itersl, dtime, starttime) !SLM subroutine
 
          ! First, check consistency in coupling interval set up in MALI and SLM
-         call check_SLM_coupling_interval(dtime, meshPool, domain % streamManager, err_tmp)
+         call check_SLM_coupling_interval(dtime, meshPool, err_tmp)
          err = ior(err, err_tmp)
          if (err /= 0) then
             call mpas_log_write("Error occurred in check_SLM_coupling_interval.", MPAS_LOG_ERR)
@@ -985,7 +1007,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine check_SLM_coupling_interval(slm_dt1, meshPool, streamManager, err)
+   subroutine check_SLM_coupling_interval(slm_dt1, meshPool, err)
 
       use mpas_timekeeping
       use mpas_stream_manager
@@ -993,18 +1015,16 @@ contains
 
       integer, intent (in) :: slm_dt1
       type (mpas_pool_type), intent(in) :: meshPool  !< mesh information
-      type (MPAS_streamManager_type), intent(inout) :: streamManager
       integer, intent(out) :: err
 
       ! local variables
       integer, pointer :: config_slm_coupling_interval
       logical, pointer :: config_adaptive_timestep
       character (len=StrKIND), pointer :: config_adaptive_timestep_force_interval, config_dt
-      type (MPAS_TimeInterval_Type) :: coupling_interval, force_interval, dt_interval, restart_interval, zero_interval
+      type (MPAS_TimeInterval_Type) :: coupling_interval, force_interval, dt_interval, zero_interval
       type (MPAS_Time_Type) :: start_time
       character (len=StrKIND), pointer :: simulationStartTime
       integer :: YYYY, MM, DD, H, M, S  ! time components
-      type (MPAS_stream_list_type), pointer :: stream_cursor
       integer (kind=I8KIND) :: n_intervals
       type (MPAS_TimeInterval_type) :: remainder
       integer :: err_tmp
@@ -1066,26 +1086,9 @@ contains
          endif
       endif
 
-      ! Now check that restart interval is an even multiple of coupling interval
-      stream_cursor => streamManager % streams % head
-      do while (associated(stream_cursor))
-         if ( trim(stream_cursor % name) == 'restart' .and. (stream_cursor % active_stream) ) then
-            call mpas_log_write("Checking restart interval against SLM coulping interval")
-            restart_interval = MPAS_stream_mgr_get_stream_interval(streamManager, 'restart', MPAS_STREAM_OUTPUT, ierr=err_tmp)
-            err = ior(err, err_tmp)
-            call mpas_interval_division(start_time, restart_interval, coupling_interval, n_intervals, remainder)
-            if (remainder .EQ. zero_interval) then
-               call mpas_log_write("config_slm_coupling_interval divides into restart interval $i times " // &
-                 "with no remainder - check passes", intArgs=(/int(n_intervals)/))
-            else
-               call mpas_log_write("config_slm_coupling_interval divides into restart interval $i times " // &
-                 "with nonzero remainder", MPAS_LOG_ERR, intArgs=(/int(n_intervals)/))
-               err = ior(err, 1)
-            endif
-         endif
+      ! No need to compare restart interval and coupling interval because restarts with SLM are supported for
+      ! any restart interval now
 
-         stream_cursor => stream_cursor % next
-      enddo
       call mpas_log_write("")
 
    !--------------------------------------------------------------------
@@ -1118,7 +1121,7 @@ contains
       ! local vars
       integer, pointer :: config_slm_coupling_interval
       character (len=StrKIND), pointer :: xtime, simulationStartTime
-      type (MPAS_TimeInterval_Type) :: coupling_interval, zero_interval
+      type (MPAS_TimeInterval_Type) :: coupling_interval
       type (MPAS_Time_Type) :: start_time, curr_time
       integer (kind=I8KIND) :: n_intervals
       type (MPAS_TimeInterval_type) :: remainder
@@ -1141,17 +1144,9 @@ contains
       err = ior(err, err_tmp)
 
       call mpas_interval_division(start_time, curr_time - start_time, coupling_interval, n_intervals, remainder)
-      call mpas_set_timeInterval(zero_interval, dt = 0.0_RKIND)
-      if (remainder .EQ. zero_interval) then
-         call mpas_log_write("SLM Restart check: config_slm_coupling_interval divides into elapsed time $i times " // &
-              "with no remainder - check passes", intArgs=(/int(n_intervals)/))
-         slmTimeStep = int(n_intervals)
-      else
-         call mpas_log_write("SLM Restart check: config_slm_coupling_interval divides into elapsed time $i times " // &
-              "with nonzero remainder", MPAS_LOG_ERR, intArgs=(/int(n_intervals)/))
-         err = ior(err, 1)
-         slmTimeStep = -999
-      endif
+      slmTimeStep = int(n_intervals)
+      call mpas_log_write("SLM Restart check: Using SLM time level $i because config_slm_coupling_interval divides into " // &
+              "elapsed time that many times ", intArgs=(/int(slmTimeStep)/))
       call mpas_log_write("")
 
    !--------------------------------------------------------------------
