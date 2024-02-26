@@ -2,9 +2,9 @@
 # change the avg type to average.
 
 CASEROOT=$(./xmlquery --value CASEROOT)
-YAML_EDIT=$CIMEROOT/../components/eamxx/scripts/edit-output-stream
+YAML_EDIT_SCRIPT=$CIMEROOT/../components/eamxx/scripts/edit-output-stream
 
 YAML_FILES=$(ls -1 | grep 'eamxx_.*_output.yaml')
 for fname in ${YAML_FILES}; do
-  $YAML_EDIT -f $fname --avg-type average
+  $YAML_EDIT_SCRIPT -f $fname --avg-type average
 done

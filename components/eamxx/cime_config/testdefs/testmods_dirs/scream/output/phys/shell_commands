@@ -4,7 +4,7 @@
 CASEROOT=$(./xmlquery --value CASEROOT)
 
 # Scripts location
-YAML_GEN=$CIMEROOT/../components/eamxx/scripts/edit-output-stream
+YAML_EDIT_SCRIPT=$CIMEROOT/../components/eamxx/scripts/edit-output-stream
 ATMCHANGE=$CIMEROOT/../components/eamxx/scripts/atmchange
 YAML_FILE=$CASEROOT/eamxx_phys_output.yaml
 
@@ -12,7 +12,7 @@ YAML_FILE=$CASEROOT/eamxx_phys_output.yaml
 FIELDS='horiz_winds T_mid tracers pseudo_density p_mid p_int'
 
 # Generate the file
-$YAML_GEN -g \
+$YAML_EDIT_SCRIPT -g \
  -f $YAML_FILE            \
  --avg-type INSTANT       \
  --freq STOP_N            \
