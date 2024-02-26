@@ -229,6 +229,8 @@
 <config_cvmix_prandtl_number>1.0</config_cvmix_prandtl_number>
 <config_cvmix_background_scheme>'constant'</config_cvmix_background_scheme>
 <config_cvmix_background_diffusion>0.0</config_cvmix_background_diffusion>
+<config_cvmix_background_diffusion_passive_enable>.false.</config_cvmix_background_diffusion_passive_enable>
+<config_cvmix_background_diffusion_passive>0.0</config_cvmix_background_diffusion_passive>
 <config_cvmix_background_viscosity>1.0e-4</config_cvmix_background_viscosity>
 <config_cvmix_BryanLewis_bl1>8.0e-5</config_cvmix_BryanLewis_bl1>
 <config_cvmix_BryanLewis_bl2>1.05E-4</config_cvmix_BryanLewis_bl2>
