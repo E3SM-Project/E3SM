@@ -293,6 +293,21 @@
         </ntasks>
       </pes>
     </mach>
+    <mach name="pm-cpu|muller-cpu">
+      <pes compset="any" pesize="any">
+        <comment>pm-cpu: any compset on ne4pg2 grid</comment>
+        <ntasks>
+          <ntasks_atm>96</ntasks_atm>
+          <ntasks_lnd>96</ntasks_lnd>
+          <ntasks_rof>96</ntasks_rof>
+          <ntasks_ice>96</ntasks_ice>
+          <ntasks_ocn>96</ntasks_ocn>
+          <ntasks_cpl>96</ntasks_cpl>
+          <ntasks_glc>1</ntasks_glc>
+          <ntasks_wav>1</ntasks_wav>
+        </ntasks>
+      </pes>
+    </mach>
   </grid>
   <grid name="a%ne4np4.pg3">
     <mach name="any">
@@ -774,7 +789,7 @@
   </grid>
   <grid name="a%ne30.+_oi%.*EC.*to">
     <mach name="gcp12">
-      <!--Pes setting: grid          is a%ne30np4_l%ne30np4_oi%oEC60to30v3_r%r05_g%null_w%null_z%null_m%oEC60to30v3 
+      <!--Pes setting: grid          is a%ne30np4_l%ne30np4_oi%oEC60to30v3_r%r05_g%null_w%null_z%null_m%oEC60to30v3
           Pes setting: compset       is 2010_EAM%CMIP6_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV_SIAC_SESP
                                or       a%ne30np4.pg2_l%r05_oi%EC30to60E2r2_r%null_g%null_w%null_z%null_m%EC30to60E2r2
                                         1850_EAM%CMIP6_ELM%CNPRDCTCBC_MPASSI%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP_BGC%LNDATM  -->
@@ -799,7 +814,7 @@
       </pes>
     </mach>
     <mach name="gcp10">
-      <!--Pes setting: grid          is a%ne30np4_l%ne30np4_oi%oEC60to30v3_r%r05_g%null_w%null_z%null_m%oEC60to30v3 
+      <!--Pes setting: grid          is a%ne30np4_l%ne30np4_oi%oEC60to30v3_r%r05_g%null_w%null_z%null_m%oEC60to30v3
           Pes setting: compset       is 2010_EAM%CMIP6_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV_SIAC_SESP
                                or       a%ne30np4.pg2_l%r05_oi%EC30to60E2r2_r%null_g%null_w%null_z%null_m%EC30to60E2r2
                                         1850_EAM%CMIP6_ELM%CNPRDCTCBC_MPASSI%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP_BGC%LNDATM  -->
@@ -836,6 +851,22 @@
           <ntasks_ice>512</ntasks_ice>
           <ntasks_ocn>512</ntasks_ocn>
           <ntasks_cpl>512</ntasks_cpl>
+        </ntasks>
+      </pes>
+    </mach>
+  </grid>
+  <grid name="a%ne30np4.pg2.+_oi%IcoswISC30E3r5.+">
+    <mach name="gcp12">
+      <!--2010_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV_SIAC_SESP-->
+      <pes compset=".*EAM.+ELM.+MPASSI.+DOCN.+MOSART.+" pesize="any">
+        <comment> gcp12 eam F compset  --res ne30pg2_IcoswISC30E3r5 on 4 nodes </comment>
+        <ntasks>
+          <ntasks_atm>-4</ntasks_atm>
+          <ntasks_cpl>-4</ntasks_cpl>
+          <ntasks_ocn>-4</ntasks_ocn>
+          <ntasks_ice>-4</ntasks_ice>
+          <ntasks_rof>-4</ntasks_rof>
+          <ntasks_lnd>-4</ntasks_lnd>
         </ntasks>
       </pes>
     </mach>
