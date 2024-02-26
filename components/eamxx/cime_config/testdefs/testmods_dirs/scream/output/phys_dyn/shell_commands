@@ -22,5 +22,15 @@ $YAML_EDIT_SCRIPT -g \
  --io-grid 'Physics GLL'  \
  --fields ${FIELDS}
 
+# Add also one field on phys grid, to trigger 2-grid in same stream
+$YAML_EDIT_SCRIPT -g \
+ -f $YAML_FILE            \
+ --avg-type INSTANT       \
+ --freq STOP_N            \
+ --freq-units STOP_OPTION \
+ --prefix dyn_state       \
+ --grid 'Physics GLL'     \
+ --fields T_mid horiz_winds
+
 # Add this output yaml file to the list of eamxx output streams
 $ATMCHANGE output_yaml_files+=$YAML_FILE -b
