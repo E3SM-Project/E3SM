@@ -135,12 +135,6 @@ double TimeStamp::frac_of_year_in_days () const {
   return doy;
 }
 
-void TimeStamp::set_num_steps (const int num_steps) {
-  EKAT_REQUIRE_MSG (m_num_steps==0,
-      "Error! Cannot reset m_num_steps once the count started.\n");
-  m_num_steps = num_steps;
-}
-
 TimeStamp& TimeStamp::operator+=(const double seconds) {
   // Sanity checks
   // Note: (x-int(x)) only works for x small enough that can be stored in an int,

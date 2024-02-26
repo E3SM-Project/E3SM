@@ -80,9 +80,7 @@ Fields:
       - vtheta_dp_dyn
       - dp3d_dyn
 output_control:
-  MPI Ranks in Filename: true
   Frequency: 1
   frequency_units: nmins
 Checkpoint Control:
-  MPI Ranks in Filename: true
 ...

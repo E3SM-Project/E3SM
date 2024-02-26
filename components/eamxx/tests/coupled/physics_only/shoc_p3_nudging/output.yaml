@@ -3,6 +3,7 @@
 filename_prefix: shoc_p3_${POSTFIX}_nudged
 Averaging Type: Instant
 Max Snapshots Per File: 2
+MPI Ranks in Filename: ${ADD_RANKS}
 Field Names:
   - p_mid
   - T_mid
@@ -35,5 +36,4 @@ Field Names:
 output_control:
   Frequency: ${NUM_STEPS}
   frequency_units: nsteps
-  MPI Ranks in Filename: false
 ...

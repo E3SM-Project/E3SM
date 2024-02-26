@@ -48,7 +48,7 @@ public:
 
   // Set the counter for the number of steps. Must be called while m_num_steps==0,
   // for safety reasons (do not alter num steps while the count started).
-  void set_num_steps (const int num_steps);
+  void set_num_steps (const int num_steps) { m_num_steps  = num_steps; }
 
   TimeStamp& operator= (const TimeStamp&) = default;
 

@@ -90,7 +90,6 @@ std::vector<std::string> create_from_file_test_data(const ekat::Comm& comm, cons
   // Create output manager to handle the data
   scorpio::eam_init_pio_subsystem(comm);
   ekat::ParameterList om_pl;
-  om_pl.set("MPI Ranks in Filename",true);
   om_pl.set("filename_prefix",std::string("surface_coupling_forcing"));
   om_pl.set("Field Names",fnames);
   om_pl.set("Averaging Type", std::string("INSTANT"));
@@ -99,7 +98,6 @@ std::vector<std::string> create_from_file_test_data(const ekat::Comm& comm, cons
   auto& ctrl_pl = om_pl.sublist("output_control");
   ctrl_pl.set("frequency_units",std::string("nsteps"));
   ctrl_pl.set("Frequency",1);
-  ctrl_pl.set("MPI Ranks in Filename",true);
   ctrl_pl.set("save_grid_data",false);
   OutputManager4Test om;
   om.setup(comm,om_pl,fm,gm,t0,false);

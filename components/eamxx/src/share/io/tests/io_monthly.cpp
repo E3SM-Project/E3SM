@@ -25,8 +25,6 @@
 
 namespace scream {
 
-constexpr int num_output_steps = 5;
-
 void add (const Field& f, const double v) {
   auto data = f.get_internal_view_data<Real,Host>();
   auto nscalars = f.get_header().get_alloc_properties().get_num_scalars();
@@ -36,28 +34,8 @@ void add (const Field& f, const double v) {
   f.sync_to_dev();
 }
 
-int get_dt (const std::string& freq_units) {
-  int dt;
-  if (freq_units=="nsteps") {
-    dt = 1;
-  } else if (freq_units=="nsecs") {
-    dt = 1;
-  } else if (freq_units=="nmins") {
-    dt = 60;
-  } else if (freq_units=="nhours") {
-    dt = 60*60;
-  } else if (freq_units=="ndays") {
-    dt = 60*60*24;
-  } else {
-    EKAT_ERROR_MSG ("Error! Unsupported freq_units\n"
-        " - freq_units: " + freq_units + "\n"
-        " - valid units: nsteps, nsecs, nmins, nhours, ndays\n");
-  }
-  return dt;
-}
-
 util::TimeStamp get_t0 () {
-  return util::TimeStamp({2023,2,17},{0,0,0});
+  return util::TimeStamp({2000,1,15},{0,0,0});
 }
 
 std::shared_ptr<const GridsManager>
@@ -108,13 +86,10 @@ get_fm (const std::shared_ptr<const AbstractGrid>& grid,
   
   const auto units = ekat::units::Units::nondimensional();
   int count=0;
-  using stratts_t = std::map<std::string,std::string>;
   for (const auto& fl : layouts) {
     FID fid("f_"+std::to_string(count),fl,units,grid->name());
     Field f(fid);
     f.allocate_view();
-    auto& str_atts = f.get_header().get_extra_data<stratts_t>("io: string attributes");
-    str_atts["test"] = f.name();
     randomize (f,engine,my_pdf);
     f.get_header().get_tracking().update_time_stamp(t0);
     fm->add_field(f);
@@ -125,8 +100,7 @@ get_fm (const std::shared_ptr<const AbstractGrid>& grid,
 }
 
 // Returns fields after initialization
-void write (const std::string& avg_type, const std::string& freq_units,
-            const int freq, const int seed, const ekat::Comm& comm)
+void write (const int seed, const ekat::Comm& comm)
 {
   // Create grid
   auto gm = get_gm(comm);
@@ -134,7 +108,7 @@ void write (const std::string& avg_type, const std::string& freq_units,
 
   // Time advance parameters
   auto t0 = get_t0();
-  const int dt = get_dt(freq_units);
+  const int dt = 86400*30; // 30 days
 
   // Create some fields
   auto fm = get_fm(grid,t0,seed);
@@ -146,25 +120,22 @@ void write (const std::string& avg_type, const std::string& freq_units,
   // Create output params
   ekat::ParameterList om_pl;
   om_pl.set("MPI Ranks in Filename",true);
-  om_pl.set("filename_prefix",std::string("io_basic"));
+  om_pl.set("filename_prefix",std::string("io_monthly"));
   om_pl.set("Field Names",fnames);
-  om_pl.set("Averaging Type", avg_type);
+  om_pl.set("Averaging Type", std::string("Instant"));
+  om_pl.set("file_max_storage_type",std::string("one_month"));
+  om_pl.set("Floating Point Precision",std::string("single"));
   auto& ctrl_pl = om_pl.sublist("output_control");
-  ctrl_pl.set("frequency_units",freq_units);
-  ctrl_pl.set("Frequency",freq);
+  ctrl_pl.set("frequency_units",std::string("nsteps"));
+  ctrl_pl.set("Frequency",1);
   ctrl_pl.set("save_grid_data",false);
 
   // Create Output manager
   OutputManager om;
-
-  // Attempt to use invalid fp precision string
-  om_pl.set("Floating Point Precision",std::string("triple"));
-  REQUIRE_THROWS (om.setup(comm,om_pl,fm,gm,t0,t0,false));
-  om_pl.set("Floating Point Precision",std::string("single"));
   om.setup(comm,om_pl,fm,gm,t0,t0,false);
 
-  // Time loop: ensure we always hit 3 output steps
-  const int nsteps = num_output_steps*freq;
+  // Time loop: do 11 steps, since we already did Jan output at t0
+  const int nsteps = 11;
   auto t = t0;
   for (int n=0; n<nsteps; ++n) {
     // Update time
@@ -173,7 +144,7 @@ void write (const std::string& avg_type, const std::string& freq_units,
     // Add 1 to all fields entries
     for (const auto& name : fnames) {
       auto f = fm->get_field(name);
-      add(f,1.0);
+      add(f,1);
     }
 
     // Run output manager
@@ -184,15 +155,11 @@ void write (const std::string& avg_type, const std::string& freq_units,
   om.finalize();
 }
 
-void read (const std::string& avg_type, const std::string& freq_units,
-           const int freq, const int seed, const ekat::Comm& comm)
+void read (const int seed, const ekat::Comm& comm)
 {
-  // Only INSTANT writes at t=0
-  bool instant = avg_type=="INSTANT";
-
   // Time quantities
   auto t0 = get_t0();
-  int num_writes = num_output_steps + (instant ? 1 : 0);
+  int dt = 86400*30;
 
   // Get gm
   auto gm = get_gm (comm);
@@ -207,106 +174,55 @@ void read (const std::string& avg_type, const std::string& freq_units,
     fnames.push_back(it.second->name());
   }
 
+  // Get filename from timestamp
+  std::string casename = "io_monthly";
+  auto get_filename = [&](const util::TimeStamp& t) {
+    std::string fname = casename
+                      + ".INSTANT.nsteps_x1"
+                      + ".np" + std::to_string(comm.size())
+                      + "." + std::to_string(t.get_year())
+                      + "-" + std::to_string(t.get_month())
+                      + ".nc";
+    return fname;
+  };
+
   // Create reader pl
   ekat::ParameterList reader_pl;
-  std::string casename = "io_basic";
-  auto filename = casename
-    + "." + avg_type
-    + "." + freq_units
-    + "_x" + std::to_string(freq)
-    + ".np" + std::to_string(comm.size())
-    + "." + t0.to_string()
-    + ".nc";
-  reader_pl.set("Filename",filename);
   reader_pl.set("Field Names",fnames);
-  AtmosphereInput reader(reader_pl,fm);
 
-  // We added 1.0 to the input fields for each timestep
-  // Hence, at output step N, we should get
-  //  avg=INSTANT: output = f(N) = f(0) + N*freq
-  //  avg=MAX:     output = f(N) = f(0) + N*freq
-  //  avg=MIN:     output = f(N*freq+dt)
-  //  avg=AVERAGE: output = f(0) + N*freq + (freq+1)/2
-  // The last one comes from
-  //   (a+1 + a+2 +..+a+freq)/freq =
-  //   a + sum(i)/freq = a + (freq(freq+1)/2)/freq
-  //   = a + (freq+1)/2
-  double delta = (freq+1)/2.0;
+  for (int n=0; n<12; ++n) {
+    auto t = t0 + n*dt;
+    auto filename = get_filename(t);
 
-  for (int n=0; n<num_writes; ++n) {
-    reader.read_variables(n);
+    // There should be just one time snapshot per file
+    REQUIRE(scorpio::get_dimlen(filename,"time")==1);
+
+    reader_pl.set("Filename",filename);
+    AtmosphereInput reader(reader_pl,fm);
+    reader.read_variables();
+
     for (const auto& fn : fnames) {
       auto f0 = fm0->get_field(fn).clone();
       auto f  = fm->get_field(fn);
-      if (avg_type=="MIN") {
-        // The 1st snap in the avg window (the smallest)
-        // is one past window_start=n*freq
-        add(f0,n*freq+1);
-        REQUIRE (views_are_equal(f,f0));
-      } else if (avg_type=="MAX") {
-        add(f0,(n+1)*freq);
-        REQUIRE (views_are_equal(f,f0));
-      } else if (avg_type=="INSTANT") {
-        add(f0,n*freq);
-        REQUIRE (views_are_equal(f,f0));
-      } else {
-        add(f0,n*freq+delta);
-        REQUIRE (views_are_equal(f,f0));
-      }
+      add(f0,n);
+      REQUIRE (views_are_equal(f,f0));
     }
-  }
-
-  // Check that the expected metadata was appropriately set for each variable
-  Real fill_out;
-  std::string att_test;
-  for (const auto& fn: fnames) {
-    scorpio::get_variable_metadata(filename,fn,"_FillValue",fill_out);
-    REQUIRE(fill_out==constants::DefaultFillValue<float>().value);
-
-    scorpio::get_variable_metadata(filename,fn,"test",att_test);
-    REQUIRE (att_test==fn);
   }
 }
 
-TEST_CASE ("io_basic") {
-  std::vector<std::string> freq_units = {
-    "nsteps",
-    "nsecs",
-    "nmins",
-    "nhours",
-    "ndays"
-  };
-  std::vector<std::string> avg_type = {
-    "INSTANT",
-    "MAX",
-    "MIN",
-    "AVERAGE"
-  };
-
+TEST_CASE ("io_monthly") {
   ekat::Comm comm(MPI_COMM_WORLD);
   scorpio::eam_init_pio_subsystem(comm);
 
   auto seed = get_random_test_seed(&comm);
 
-  const int freq = 5;
-  auto print = [&] (const std::string& s, int line_len = -1) {
-    if (comm.am_i_root()) {
-      if (line_len<0) {
-        std::cout << s;
-      } else {
-        std::cout << std::left << std::setw(line_len) << std::setfill('.') << s;
-      }
-    }
-  };
-
-  for (const auto& units : freq_units) {
-    print ("-> Output frequency: " + units + "\n");
-    for (const auto& avg : avg_type) {
-      print("   -> Averaging type: " + avg + " ", 40);
-      write(avg,units,freq,seed,comm);
-      read (avg,units,freq,seed,comm);
-      print(" PASS\n");
-    }
+  if (comm.am_i_root()) {
+    std::cout << "   -> Testing output with one file per month ...\n";
+  }
+  write(seed,comm);
+  read (seed,comm);
+  if (comm.am_i_root()) {
+    std::cout << "   -> Testing output with one file per month ... PASS\n";
   }
   scorpio::eam_pio_finalize();
 }

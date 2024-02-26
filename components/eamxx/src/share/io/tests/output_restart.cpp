@@ -79,14 +79,12 @@ TEST_CASE("output_restart","io")
   output_params.set<std::string>("Floating Point Precision","real");
   output_params.set<std::vector<std::string>>("Field Names",{"field_1", "field_2", "field_3", "field_4","field_5"});
   output_params.set<double>("fill_value",FillValue);
-  output_params.sublist("output_control").set<bool>("MPI Ranks in Filename","true");
+  output_params.set<bool>("MPI Ranks in Filename","true");
   output_params.sublist("output_control").set<std::string>("frequency_units","nsteps");
   output_params.sublist("output_control").set<int>("Frequency",10);
-  output_params.sublist("Checkpoint Control").set<bool>("MPI Ranks in Filename","true");
   output_params.sublist("Checkpoint Control").set<int>("Frequency",5);
   // This skips a test that only matters for AD runs
   output_params.sublist("Checkpoint Control").set<bool>("is_unit_testing","true");
-  output_params.sublist("Restart").set<bool>("MPI Ranks in Filename","true");
 
   // Creates and runs an OM from output_params and given inputs
   auto run = [&](std::shared_ptr<FieldManager> fm,
