@@ -820,7 +820,11 @@ void AtmosphereOutput::register_views()
     if (m_track_avg_cnt) {
       // Now create and store a dev view to track the averaging count for this layout (if we are tracking)
       // We don't need to track average counts for files that are not tracking the time dim
-      set_avg_cnt_tracking(name,"",layout);
+      std::string suffix = "";
+      if (m_field_to_avg_cnt_suffix.count(name)>0) {
+        suffix = m_field_to_avg_cnt_suffix.at(name);
+      }
+      set_avg_cnt_tracking(name,suffix,layout);
     }
   }
 
@@ -1353,7 +1357,7 @@ AtmosphereOutput::create_diagnostic (const std::string& diag_field_name) {
     const auto diag_field = diag->get_diagnostic();
     const auto name       = diag_field.name();
     const auto layout     = diag_field.get_header().get_identifier().get_layout();
-    set_avg_cnt_tracking(name,diag_avg_cnt_name,layout);
+    m_field_to_avg_cnt_suffix.emplace(name,diag_avg_cnt_name);
   }
 
   return diag;
