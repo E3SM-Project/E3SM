@@ -489,6 +489,36 @@
       <mask>WC14to60E2r3</mask>
     </model_grid>
 
+    <model_grid alias="TL319_r05_WC14to60E2r3" compset="(DATM|XATM|SATM)">
+      <grid name="atm">TL319</grid>
+      <grid name="lnd">r05</grid>
+      <grid name="ocnice">WC14to60E2r3</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>WC14to60E2r3</mask>
+    </model_grid>
+
+    <model_grid alias="TL319_r05_EC30to60E2r2" compset="(DATM|XATM|SATM)">
+      <grid name="atm">TL319</grid>
+      <grid name="lnd">r05</grid>
+      <grid name="ocnice">EC30to60E2r2</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>EC30to60E2r2</mask>
+    </model_grid>
+
+    <model_grid alias="TL319_r05_ARRM10to60E2r1" compset="(DATM|XATM|SATM)">
+      <grid name="atm">TL319</grid>
+      <grid name="lnd">r05</grid>
+      <grid name="ocnice">ARRM10to60E2r1</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>ARRM10to60E2r1</mask>
+    </model_grid>
+
     <model_grid alias="TL319_WCAtl12to45E2r4" compset="(DATM|XATM|SATM)">
       <grid name="atm">TL319</grid>
       <grid name="lnd">TL319</grid>
@@ -4108,6 +4138,13 @@
       <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/oRRS18to6v3/map_oRRS18to6v3_to_TL319_aave.220124.nc</map>
     </gridmap>
 
+    <gridmap atm_grid="TL319" lnd_grid="r05">
+       <map name="ATM2LND_FMAPNAME">cpl/gridmaps/TL319/map_TL319_to_r05_traave.20240212.nc</map>
+       <map name="ATM2LND_SMAPNAME">cpl/gridmaps/TL319/map_TL319_to_r05_trbilin.20240212.nc</map>
+       <map name="LND2ATM_FMAPNAME">cpl/gridmaps/TL319/map_r05_to_TL319_traave.20240212.nc</map>
+       <map name="LND2ATM_SMAPNAME">cpl/gridmaps/TL319/map_r05_to_TL319_traave.20240212.nc</map>
+    </gridmap>
+
     <gridmap atm_grid="T31" ocn_grid="gx3v7">
       <map name="ATM2OCN_FMAPNAME">cpl/cpl6/map_T31_to_gx3v7_aave_da_090903.nc</map>
       <map name="ATM2OCN_SMAPNAME">cpl/cpl6/map_T31_to_gx3v7_patch_090903.nc</map>
@@ -4220,6 +4257,11 @@
     <gridmap atm_grid="ne120np4" rof_grid="r0125">
       <map name="ATM2ROF_FMAPNAME">lnd/clm2/mappingdata/maps/ne120np4/map_ne120np4_to_0.125_nomask_aave.160613.nc</map>
       <map name="ATM2ROF_SMAPNAME">lnd/clm2/mappingdata/maps/ne120np4/map_ne120np4_to_0.125_nomask_aave.160613.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="TL319" rof_grid="r05">
+       <map name="ATM2ROF_FMAPNAME">cpl/gridmaps/TL319/map_TL319_to_r05_traave.20240212.nc</map>
+       <map name="ATM2ROF_SMAPNAME">cpl/gridmaps/TL319/map_TL319_to_r05_trbilin.20240212.nc</map>
     </gridmap>
 
     <!--  QL, 150525, wav to ocn, atm, ice mapping files  -->

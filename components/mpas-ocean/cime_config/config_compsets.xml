@@ -63,6 +63,66 @@
   </compset>
 
   <compset>
+    <alias>GMPAS-OECO-JRA</alias>
+    <lname>2000_DATM%JRA_SLND_MPASSI_MPASO%OECODATMFORCED_DROF%JRA_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>GMPAS-OECO-JRA1p4</alias>
+    <lname>2000_DATM%JRA-1p4-2018_SLND_MPASSI_MPASO%OECODATMFORCED_DROF%JRA-1p4-2018_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>GMPAS-OECO-JRA1p5</alias>
+    <lname>2000_DATM%JRA-1p5_SLND_MPASSI_MPASO%OECODATMFORCED_DROF%JRA-1p5_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>GMPAS-OIECO-JRA</alias>
+    <lname>2000_DATM%JRA_SLND_MPASSI%BGC_MPASO%OIECODATMFORCED_DROF%JRA_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>GMPAS-OIECO-JRA1p4</alias>
+    <lname>2000_DATM%JRA-1p4-2018_SLND_MPASSI%BGC_MPASO%OIECODATMFORCED_DROF%JRA-1p4-2018_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>GMPAS-OIECO-JRA1p5</alias>
+    <lname>2000_DATM%JRA-1p5_SLND_MPASSI%BGC_MPASO%OIECODATMFORCED_DROF%JRA-1p5_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>GPMPAS-OECO-JRA</alias>
+    <lname>2000_DATM%JRA_ELM%SPBC_MPASSI_MPASO%OECODATMFORCED_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>GPMPAS-OECO-JRA1p4</alias>
+    <lname>2000_DATM%JRA-1p4-2018_ELM%SPBC_MPASSI_MPASO%OECODATMFORCED_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>GPMPAS-OECO-JRA1p5</alias>
+    <lname>2000_DATM%JRA-1p5_ELM%SPBC_MPASSI_MPASO%OECODATMFORCED_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>GPMPAS-OIECO-JRA</alias>
+    <lname>2000_DATM%JRA_ELM%SPBC_MPASSI%BGC_MPASO%OIECODATMFORCED_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>GPMPAS-OIECO-JRA1p4</alias>
+    <lname>2000_DATM%JRA-1p4-2018_ELM%SPBC_MPASSI%BGC_MPASO%OIECODATMFORCED_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>GPMPAS-OIECO-JRA1p5</alias>
+    <lname>2000_DATM%JRA-1p5_ELM%SPBC_MPASSI%BGC_MPASO%OIECODATMFORCED_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>GMPAS-JRA1p5-DIB-PISMF</alias>
     <lname>2000_DATM%JRA-1p5_SLND_MPASSI%DIB_MPASO%IBPISMFDATMFORCED_DROF%JRA-1p5-AIS0ROF_SGLC_SWAV</lname>
   </compset>
