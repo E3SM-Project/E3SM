@@ -603,6 +603,9 @@ set_params (const ekat::ParameterList& params,
     if (storage_type=="num_snapshots") {
       storage.type = NumSnaps;
       storage.max_snapshots_in_file = m_params.get<int>("Max Snapshots Per File",large_int);
+      EKAT_REQUIRE_MSG (storage.max_snapshots_in_file>0,
+          "Error! Value for 'Max Snapshots Per File' should be positive.\n"
+          "       To request 'unlimited' storage, leave parameter unset.\n");
     } else if (storage_type=="one_year") {
       storage.type = Yearly;
     } else if (storage_type=="one_month") {
@@ -832,8 +835,11 @@ push_to_logger()
   m_atm_logger->info("          Output Frequency: " + std::to_string(m_output_control.frequency) + " " + m_output_control.frequency_units);
   switch (m_output_file_specs.storage.type) {
     case NumSnaps:
-      m_atm_logger->info("             File Capacity: " + std::to_string(m_output_file_specs.storage.max_snapshots_in_file) + " snapshots");  // TODO: add "not set" if the value is -1
+    {
+      auto ms = m_output_file_specs.storage.max_snapshots_in_file;
+      m_atm_logger->info("             File Capacity: " + (ms>0 ? std::to_string(ms) + "snapshots" : "UNLIMITED"));
       break;
+    }
     case Monthly:
       m_atm_logger->info("             File Capacity: one month per file");
       break;
