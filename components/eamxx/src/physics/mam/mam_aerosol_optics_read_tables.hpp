@@ -14,7 +14,7 @@ namespace scream::mam_coupling {
 
 using view_1d_host    = typename KT::view_1d<Real>::HostMirror;
 using view_2d_host    = typename KT::view_2d<Real>::HostMirror;
-using view_5d_host    = Kokkos::View<Real *****>::HostMirror;
+using view_5d_host    = typename KT::view_ND<Real,5>::HostMirror;
 using complex_view_1d = typename KT::view_1d<Kokkos::complex<Real>>;
 
 constexpr int nlwbands = mam4::modal_aer_opt::nlwbands;

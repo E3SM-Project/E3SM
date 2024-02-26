@@ -2,6 +2,7 @@
 ---
 filename_prefix: mam4_optics_standalone_output
 Averaging Type: Instant
+Max Snapshots Per File: 1
 Field Names:
   - aero_g_sw
   - aero_ssa_sw
@@ -9,7 +10,7 @@ Field Names:
   - aero_tau_lw
   - aero_tau_forward
 output_control:
-  Frequency: 1
+  Frequency: 2
   frequency_units: nsteps
   MPI Ranks in Filename: true
 ...
