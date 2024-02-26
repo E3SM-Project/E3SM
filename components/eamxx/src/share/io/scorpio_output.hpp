@@ -175,7 +175,7 @@ protected:
   create_diagnostic (const std::string& diag_name);
 
   // Tracking the averaging of any filled values:
-  void set_avg_cnt_tracking(const std::string& name, const std::string& avg_cnt_suffix, const FieldLayout& layout);
+  void set_avg_cnt_tracking(const std::string& name, const FieldLayout& layout);
 
   // --- Internal variables --- //
   ekat::Comm                          m_comm;
