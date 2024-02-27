@@ -109,12 +109,13 @@ public:
   // Returns a copy of this layout with a given dimension stripped
   FieldLayout strip_dim (const FieldTag tag) const;
   FieldLayout strip_dim (const int idim) const;
-
-  // ----- Setters ----- //
-
-  void set_dimension  (const int idim, const int dimension);
+  FieldLayout clone_with_different_extent (const int idim, const int extent) const;
 
 protected:
+
+  // Only this class is allowed to change a layout. Customers can request
+  // a *slightly* different layout (via strip_dim or clone_with_different_extent)
+  void set_dimension  (const int idim, const int dimension);
 
   int                   m_rank;
   std::vector<FieldTag> m_tags;

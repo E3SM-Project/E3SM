@@ -105,6 +105,14 @@ FieldLayout FieldLayout::strip_dim (const int idim) const {
   return FieldLayout (t,d);
 }
 
+FieldLayout FieldLayout::clone_with_different_extent (const int idim, const int extent) const
+{
+  FieldLayout copy(m_tags,m_dims);
+  copy.set_dimension(idim,extent);
+
+  return copy;
+}
+
 void FieldLayout::set_dimension (const int idim, const int dimension) {
   EKAT_REQUIRE_MSG(idim>=0 && idim<m_rank, "Error! Index out of bounds.");
   EKAT_REQUIRE_MSG(dimension>=0, "Error! Dimensions must be non-negative.");

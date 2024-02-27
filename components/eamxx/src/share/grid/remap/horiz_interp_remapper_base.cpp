@@ -214,8 +214,7 @@ void HorizInterpRemapperBase::create_ov_fields ()
   for (int i=0; i<m_num_fields; ++i) {
     const auto& f = m_type==InterpType::Refine ? m_tgt_fields[i] : m_src_fields[i];
     const auto& fid = f.get_header().get_identifier();
-    auto layout = fid.get_layout();
-    layout.set_dimension(0,num_ov_gids);
+    const auto layout = fid.get_layout().clone_with_different_extent(0,num_ov_gids);
     FieldIdentifier ov_fid (fid.name(),layout,fid.get_units(),ov_gn,dt);
 
     auto& ov_f = m_ov_fields.emplace_back(ov_fid);
