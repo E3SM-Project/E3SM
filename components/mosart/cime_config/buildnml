@@ -46,8 +46,8 @@ def buildnml(case, caseroot, compname):
     # Verify rof grid is supported
     #--------------------------------------------------------------------
 
-    rof_grid_supported = ("null", "r2", "r05", "r0125", "r01", "NLDAS", "ELM_USRDAT")
-    expect(rof_grid in rof_grid_supported, "ROF_GRID '{}' is not supported in mosart. Choose from: null, r2, r05, r0125, r01, NLDAS, ELM_USRDAT".format(rof_grid))
+    rof_grid_supported = ("null", "r2", "r05", "r025", "r0125", "r01", "NLDAS", "ELM_USRDAT")
+    expect(rof_grid in rof_grid_supported, "ROF_GRID '{}' is not supported in mosart. Choose from: null, r2, r05, r025, r0125, r01, NLDAS, ELM_USRDAT".format(rof_grid))
 
     #--------------------------------------------------------------------
     # Invoke mosart build-namelist - output will go in $CASEBUILD/mosartconf
