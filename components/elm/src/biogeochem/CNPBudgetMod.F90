@@ -376,7 +376,7 @@ contains
     !
     integer :: year, mon, day, sec
     integer :: ip
-    character(*),parameter :: subName = '(WaterBudget_Reset) '
+    character(*),parameter :: subName = '(Reset) '
 
     if (.not.present(mode)) then
        call get_curr_date(year, mon, day, sec)
@@ -470,7 +470,7 @@ contains
     type(file_desc_t), intent(inout) :: ncid   ! netcdf id
     character(len=*) , intent(in)    :: flag   ! 'read' or 'write'
     !
-    character(len=*),parameter :: subname = 'WaterBudget_Restart'
+    character(len=*),parameter :: subname = 'CNPBudget_Restart'
 
     select case (trim(flag))
     case ('define')
