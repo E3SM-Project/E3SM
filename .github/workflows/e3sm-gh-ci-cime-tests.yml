@@ -18,7 +18,7 @@ jobs:
           - SMS_P4.ne4pg2_oQU480.F2010.singularity_gnu
           - REP_P4.ne4pg2_oQU480.F2010.singularity_gnu
           - ERS_P4.ne4pg2_oQU480.F2010.singularity_gnu
-          - ERS_P4.ne4pg2_oQU480.F2010.singularity_gnu.wcprod_F2010
+          - ERS_P4.ne4pg2_oQU480.F2010.singularity_gnu.eam-wcprod_F2010
           - ERP_P4.ne4pg2_oQU480.F2010.singularity_gnu
           - PET_P4.ne4pg2_oQU480.F2010.singularity_gnu
           - PEM_P4.ne4pg2_oQU480.F2010.singularity_gnu
