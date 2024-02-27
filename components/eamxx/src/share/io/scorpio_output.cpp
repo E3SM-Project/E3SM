@@ -1277,13 +1277,18 @@ AtmosphereOutput::create_diagnostic (const std::string& diag_field_name) {
 	units = subtokens[0];
 	// Need to reset the vertical location to strip the "_above_" part of the string.
         params.set("vertical_location", tokens[1].substr(0,units_start)+subtokens[0]);
+	// If the slice is "above_sealevel" then we need to track the avg cnt uniquely.
+	// Note, "above_surface" is expected to never have masking and can thus use
+	// the typical 2d layout avg cnt.
+	if (subtokens[1]=="sealevel") {
+          diag_avg_cnt_name = "_" + tokens[1]; // Set avg_cnt tracking for this specific slice
+          // If we have 2D slices we need to be tracking the average count,
+          // if m_avg_type is not Instant
+          m_track_avg_cnt = m_track_avg_cnt || m_avg_type!=OutputAvgType::Instant;
+	}
       }
       if (units=="m") {
         diag_name = "FieldAtHeight";
-        diag_avg_cnt_name = "_" + tokens[1]; // Set avg_cnt tracking for this specific slice
-        // If we have 2D slices we need to be tracking the average count,
-        // if m_avg_type is not Instant
-        m_track_avg_cnt = m_track_avg_cnt || m_avg_type!=OutputAvgType::Instant;
 	EKAT_REQUIRE_MSG(params.isParameter("surface_reference"),"Error! Output field request for " + diag_field_name + " is missing a surface reference."
 			"  Please add either '_above_sealevel' or '_above_surface' to the field name");
       } else if (units=="mb" or units=="Pa" or units=="hPa") {
