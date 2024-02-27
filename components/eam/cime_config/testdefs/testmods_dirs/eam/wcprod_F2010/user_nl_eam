@@ -2,7 +2,7 @@
 empty_htapes = .true.
 
 avgflag_pertape = 'A','A','A','A','I','I'
-nhtfrq = 0,-24,-6,-3,-1,0
+nhtfrq = -24,-24,-6,-3,-1,0
 mfilt  = 1,30,120,240,720,1
 
 fincl1 = 'AODALL','AODBC','AODDUST','AODPOM','AODSO4','AODSOA','AODSS','AODVIS',
