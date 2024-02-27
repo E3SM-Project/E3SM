@@ -307,7 +307,7 @@ def buildnml(case, caseroot, compname):
             logger.warning("WARNING: The specified compset is requesting ocean ICs spunup from a G-case")
             logger.warning("         But no file available for this grid.")
         if ocn_ismf == 'data':
-            data_ismf_file = 'prescribed_ismf_adusumilli2020.RRSwISC6to18E3r4.20240105.nc'
+            data_ismf_file = 'prescribed_ismf_paolo2023.RRSwISC6to18E3r4.20240227.nc'
 
 
     #--------------------------------------------------------------------
