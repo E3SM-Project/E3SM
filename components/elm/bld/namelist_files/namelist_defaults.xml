@@ -410,7 +410,7 @@ lnd/clm2/surfdata_map/surfdata_ne30np4_simyr1850_c180306.nc</fsurdat>
 lnd/clm2/surfdata_map/surfdata_ne30pg2_simyr1850_c230417_with_TOP.nc</fsurdat>
 
 <fsurdat hgrid="ne30np4.pg2"   sim_year="1950" use_crop=".false." >
-lnd/clm2/surfdata_map/surfdata_ne30pg2_simyr1950_c210729.nc</fsurdat>
+lnd/clm2/surfdata_map/surfdata_ne30pg2_simyr1950_c210729_with_TOP.nc</fsurdat>
 
 <fsurdat hgrid="ne16np4"      sim_year="1850" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne16np4_simyr1850_c160108.nc</fsurdat>

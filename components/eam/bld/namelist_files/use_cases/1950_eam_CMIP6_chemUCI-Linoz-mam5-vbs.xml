@@ -1,4 +1,4 @@
------ modified based on 1850 version ---- combined with 1850 use_case for V2
+----- modified based on 1850 version ---- combined with 1950 use_case for V2
 
 <?xml version="1.0"?>
 <namelist_defaults>
@@ -11,20 +11,16 @@
 <!--ncdata dyn="se" hgrid="ne0np4_northamericax4v1" nlev="72" >atm/cam/inic/homme/cami_0001-01-01_northamericax4v1_c190709.nc</ncdata -->
 
 <!-- Solar constant from CMIP6 input4MIPS -->
-<solar_data_file>atm/cam/solar/Solar_1850control_input4MIPS_c20181106.nc</solar_data_file>
-<solar_data_ymd>18500101</solar_data_ymd>
+<solar_data_file>atm/cam/solar/Solar_1950control_input4MIPS_c20171208.nc</solar_data_file>
+<solar_data_ymd>19500101</solar_data_ymd>
 <solar_data_type>FIXED</solar_data_type>
 
-<!-- 1850 GHG values from CMIP6 input4MIPS -->
+<!-- 1950 GHG values from CMIP6 input4MIPS -->
 <!-- <co2vmr>284.317e-6</co2vmr> The CMIP6 concentration set by CCSM_CO2_PPMV in cime/src/drivers/mct/cime_config/config_component_acme.xml -->
-<ch4vmr>808.249e-9</ch4vmr>
-<n2ovmr>273.0211e-9</n2ovmr>
-<f11vmr>32.1102e-12</f11vmr>
-<f12vmr>0.0</f12vmr>
-
-<!-- 1pctCO2 increase from 1850 base level -->
-<bndtvghg     >atm/cam/ggas/GHG_CMIP6_1pctCO2_c20180216.nc </bndtvghg>
-<scenario_ghg >RAMPED</scenario_ghg>
+<ch4vmr>1163.821e-9</ch4vmr>
+<n2ovmr>289.739e-9</n2ovmr>
+<f11vmr>62.83147e-12</f11vmr>
+<f12vmr>6.382257e-12</f12vmr>
 
 <!-- For comprehensive history -->
 <history_amwg       >.true.</history_amwg>
@@ -33,10 +29,10 @@
 
 <!-- External forcing for BAM or MAM.  CMIP6 input4mips data -->
 <ext_frc_type         >CYCLICAL</ext_frc_type>
-<ext_frc_cycle_yr     >1850</ext_frc_cycle_yr>
+<ext_frc_cycle_yr     >1950</ext_frc_cycle_yr>
 <no2_ext_file         >atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_NO2_aircraft_vertical_1750-2015_1.9x2.5_c20170608.nc </no2_ext_file>
-<!--  Use 1850-2014 averaged volcanic SO2 emission for 1850 -->
-<so2_ext_file         >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_1850_2014_avg_so2_elev_strat_1850.nc </so2_ext_file>
+<!--  Use 1850-2014 averaged volcanic SO2 emission for 1950 -->
+<so2_ext_file         >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/so2_elev_strat_1950.nc</so2_ext_file>
 <soag0_ext_file       >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/emissions-cmip6_e3sm_SOAG0_elev_1850-2014_1.9x2.5_c20230201.nc </soag0_ext_file>
 <bc_a4_ext_file       >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_bc_a4_elev_1850-2014_c180205.nc </bc_a4_ext_file>
 <mam7_num_a1_ext_file >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a1_elev_1850-2014_c180205.nc </mam7_num_a1_ext_file>
@@ -48,7 +44,7 @@
 
 <!-- Surface emissions for chemUCI-Linoz, MAM5, VBS SOA.  CMIP6 input4mips data -->
 <srf_emis_type        >CYCLICAL</srf_emis_type>
-<srf_emis_cycle_yr    >1850</srf_emis_cycle_yr>
+<srf_emis_cycle_yr    >1950</srf_emis_cycle_yr>
 <c2h4_emis_file       >atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_C2H4_surface_1850-2014_1.9x2.5_c20210323.nc </c2h4_emis_file>
 <c2h6_emis_file       >atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_C2H6_surface_1850-2014_1.9x2.5_c20210323.nc </c2h6_emis_file>
 <c3h8_emis_file       >atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_C3H8_surface_1850-2014_1.9x2.5_c20210323.nc </c3h8_emis_file>
@@ -60,7 +56,7 @@
 <isop_vbs_emis_file   >atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_ISOP_surface_1850-2014_1.9x2.5_c20210323.nc </isop_vbs_emis_file>
 <c10h16_emis_file     >atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_MTERP_surface_1850-2014_1.9x2.5_c20230126.nc </c10h16_emis_file>
 <nox_emis_file        >atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_NO_surface_1850-2014_1.9x2.5_c20220425.nc </nox_emis_file>
-<dms_emis_file        >atm/cam/chem/trop_mozart_aero/emis/DMSflux.1850.1deg_latlon_conserv.POPmonthlyClimFromACES4BGC_c20160416.nc </dms_emis_file>
+<dms_emis_file        >atm/cam/chem/trop_mozart_aero/emis/DMSflux.1950.1deg_latlon_conserv.POPmonthlyClimFromACES4BGC_c20171210.nc </dms_emis_file>
 <soag0_emis_file     >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/emissions-cmip6_e3sm_SOAG0_surf_1850-2014_1.9x2.5_c20230201.nc </soag0_emis_file>
 <so2_emis_file        >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so2_surf_1850-2014_c180205.nc </so2_emis_file>
 <bc_a4_emis_file      >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_bc_a4_surf_1850-2014_c180205.nc </bc_a4_emis_file>
@@ -76,7 +72,7 @@
 
 <!-- <tracer_cnst_filelist>this_field_is_not_used</tracer_cnst_filelist> -->
 <tracer_cnst_type    >CYCLICAL</tracer_cnst_type>
-<tracer_cnst_cycle_yr>1849</tracer_cnst_cycle_yr>
+<tracer_cnst_cycle_yr>1955</tracer_cnst_cycle_yr>
 <tracer_cnst_file    >oxid_1.9x2.5_L26_1850-2015_c20181106.nc</tracer_cnst_file>
 <tracer_cnst_filelist>''</tracer_cnst_filelist>
 <tracer_cnst_datapath>atm/cam/chem/trop_mozart_aero/oxid</tracer_cnst_datapath>
@@ -114,9 +110,9 @@
 
 <!-- Stratospheric ozone (Linoz) updated using CMIP6 input4MIPS GHG concentrations -->
 <chlorine_loading_file      >atm/cam/chem/trop_mozart/ub/Linoz_Chlorine_Loading_CMIP6_0003-2017_c20171114.nc</chlorine_loading_file>
-<chlorine_loading_fixed_ymd >18500101</chlorine_loading_fixed_ymd>
+<chlorine_loading_fixed_ymd >19500101</chlorine_loading_fixed_ymd>
 <chlorine_loading_type      >FIXED</chlorine_loading_type>
-<linoz_data_cycle_yr        >1850</linoz_data_cycle_yr>
+<linoz_data_cycle_yr        >1950</linoz_data_cycle_yr>
 <linoz_data_file            >linv3_1849-2017_CMIP6_Hist_10deg_58km_c20230705.nc</linoz_data_file>
 <linoz_data_path            >atm/cam/chem/trop_mozart/ub</linoz_data_path>
 <linoz_data_type            >CYCLICAL</linoz_data_type>
@@ -131,10 +127,10 @@
 <fstrat_list         >''</fstrat_list>
 
 <!-- sim_year used for CLM datasets -->
-<sim_year>1850</sim_year>
+<sim_year>1950</sim_year>
 
 <!-- land datasets -->
-<!-- Set in components/clm/bld/namelist_files/use_cases/1850_CMIP6_control.xml -->
+<!-- Set in components/clm/bld/namelist_files/use_cases/1950_CMIP6_control.xml -->
 
 
 </namelist_defaults>

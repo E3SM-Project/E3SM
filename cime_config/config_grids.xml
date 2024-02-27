@@ -963,6 +963,16 @@
       <mask>oEC60to30v3</mask>
     </model_grid>
 
+    <model_grid alias="conusx4v1pg2_r05_IcoswISC30E3r5">
+      <grid name="atm">ne0np4_conus_x4v1_lowcon.pg2</grid>
+      <grid name="lnd">r05</grid>
+      <grid name="ocnice">IcoswISC30E3r5</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>IcoswISC30E3r5</mask>
+    </model_grid>
+
     <model_grid alias="northamericax4v1_r0125_oRRS15to5">
       <grid name="atm">ne0np4_northamericax4v1</grid>
       <grid name="lnd">r0125</grid>
@@ -2950,6 +2960,8 @@
       <ny>1</ny>
       <file grid="atm|lnd" mask="oEC60to30v3">$DIN_LOC_ROOT/share/domains/domain.lnd.conusx4v1pg2_oEC60to30v3.200518.nc</file>
       <file grid="ice|ocn" mask="oEC60to30v3">$DIN_LOC_ROOT/share/domains/domain.ocn.conusx4v1pg2_oEC60to30v3.200518.nc</file>
+      <file grid="atm|lnd" mask="IcoswISC30E3r5">$DIN_LOC_ROOT/share/domains/domain.lnd.conusx4v1pg2_IcoswISC30E3r5.240205.nc</file>
+      <file grid="ice|ocn" mask="IcoswISC30E3r5">$DIN_LOC_ROOT/share/domains/domain.ocn.conusx4v1pg2_IcoswISC30E3r5.240205.nc</file>
       <desc>1-deg with 1/4-deg over CONUS (version 1):</desc>
     </domain>
 
@@ -3283,6 +3295,8 @@
       <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_IcoswISC30E3r5-nomask_trbilin.20231121.nc</map>
       <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/IcoswISC30E3r5/map_IcoswISC30E3r5_to_ne30pg2_traave.20231121.nc</map>
       <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/IcoswISC30E3r5/map_IcoswISC30E3r5_to_ne30pg2_traave.20231121.nc</map>
+      <map name="ATM2ICE_FMAPNAME_NONLINEAR">cpl/gridmaps/ne30pg2/map_ne30pg2_to_IcoswISC30E3r5_trfvnp2.20231121.nc</map>
+      <map name="ATM2OCN_FMAPNAME_NONLINEAR">cpl/gridmaps/ne30pg2/map_ne30pg2_to_IcoswISC30E3r5_trfvnp2.20231121.nc</map>
     </gridmap>
 
     <gridmap atm_grid="ne30np4.pg3" ocn_grid="oEC60to30v3">
@@ -3340,6 +3354,7 @@
 
     <gridmap atm_grid="ne30np4.pg2" lnd_grid="r05">
       <map name="ATM2LND_FMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_r05_traave.20231130.nc</map>
+      <map name="ATM2LND_FMAPNAME_NONLINEAR">cpl/gridmaps/ne30pg2/map_ne30pg2_to_r05_trfvnp2.230516.nc</map>
       <map name="ATM2LND_SMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_r05_trbilin.20231130.nc</map>
       <map name="LND2ATM_FMAPNAME">cpl/gridmaps/ne30pg2/map_r05_to_ne30pg2_traave.20231130.nc</map>
       <map name="LND2ATM_SMAPNAME">cpl/gridmaps/ne30pg2/map_r05_to_ne30pg2_traave.20231130.nc</map>
@@ -3674,15 +3689,22 @@
       <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/oEC60to30v3/map_oEC60to30v3_to_conusx4v1pg2_mono.200514.nc</map>
       <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/oEC60to30v3/map_oEC60to30v3_to_conusx4v1pg2_mono.200514.nc</map>
     </gridmap>
+    <gridmap atm_grid="ne0np4_conus_x4v1_lowcon.pg2" ocn_grid="IcoswISC30E3r5">
+      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/conusx4v1pg2/map_conusx4v1pg2_to_IcoswISC30E3r5_traave.20240205.nc</map>
+      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/conusx4v1pg2/map_conusx4v1pg2_to_IcoswISC30E3r5_trbilin.20240205.nc</map>
+      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/conusx4v1pg2/map_conusx4v1pg2_to_IcoswISC30E3r5-nomask_trbilin.20240205.nc</map>
+      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/IcoswISC30E3r5/map_IcoswISC30E3r5_to_conusx4v1pg2_traave.20240205.nc</map>
+      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/IcoswISC30E3r5/map_IcoswISC30E3r5_to_conusx4v1pg2_traave.20240205.nc</map>
+    </gridmap>
     <gridmap atm_grid="ne0np4_conus_x4v1_lowcon.pg2" lnd_grid="r05">
-      <map name="ATM2LND_FMAPNAME">cpl/gridmaps/conusx4v1pg2/map_conusx4v1pg2_to_r05_mono.200514.nc</map>
-      <map name="ATM2LND_SMAPNAME">cpl/gridmaps/conusx4v1pg2/map_conusx4v1pg2_to_r05_bilin.200514.nc</map>
-      <map name="LND2ATM_FMAPNAME">cpl/gridmaps/conusx4v1pg2/map_r05_to_conusx4v1pg2_mono.200514.nc</map>
-      <map name="LND2ATM_SMAPNAME">cpl/gridmaps/conusx4v1pg2/map_r05_to_conusx4v1pg2_mono.200514.nc</map>
+      <map name="ATM2LND_FMAPNAME">cpl/gridmaps/conusx4v1pg2/map_conusx4v1pg2_to_r05_traave.20240205.nc</map>
+      <map name="ATM2LND_SMAPNAME">cpl/gridmaps/conusx4v1pg2/map_conusx4v1pg2_to_r05_trbilin.20240205.nc</map>
+      <map name="LND2ATM_FMAPNAME">cpl/gridmaps/conusx4v1pg2/map_r05_to_conusx4v1pg2_traave.20240205.nc</map>
+      <map name="LND2ATM_SMAPNAME">cpl/gridmaps/conusx4v1pg2/map_r05_to_conusx4v1pg2_traave.20240205.nc</map>
     </gridmap>
     <gridmap atm_grid="ne0np4_conus_x4v1_lowcon.pg2" rof_grid="r05">
-      <map name="ATM2ROF_FMAPNAME">cpl/gridmaps/conusx4v1pg2/map_conusx4v1pg2_to_r05_mono.200514.nc</map>
-      <map name="ATM2ROF_SMAPNAME">cpl/gridmaps/conusx4v1pg2/map_conusx4v1pg2_to_r05_bilin.200514.nc</map>
+      <map name="ATM2ROF_FMAPNAME">cpl/gridmaps/conusx4v1pg2/map_conusx4v1pg2_to_r05_traave.20240205.nc</map>
+      <map name="ATM2ROF_SMAPNAME">cpl/gridmaps/conusx4v1pg2/map_conusx4v1pg2_to_r05_trbilin.20240205.nc</map>
     </gridmap>
 
 
@@ -4184,7 +4206,8 @@
 
     <gridmap atm_grid="ne30np4.pg2" rof_grid="r05">
       <map name="ATM2ROF_FMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_r05_traave.20231130.nc</map>
-      <map name="ATM2ROF_SMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_r05_traave.20231130.nc</map>
+      <map name="ATM2ROF_FMAPNAME_NONLINEAR">cpl/gridmaps/ne30pg2/map_ne30pg2_to_r05_trfvnp2.230516.nc</map>
+      <map name="ATM2ROF_SMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_r05_trbilin.20231130.nc</map>
     </gridmap>
 
     <gridmap atm_grid="ne30np4.pg3" rof_grid="r05">
@@ -4454,6 +4477,10 @@
     </gridmap>
 
     <!--- ocean to river mapping files -->
+    <gridmap rof_grid="r05" ocn_grid="IcoswISC30E3r5">
+      <map name="OCN2ROF_SMAPNAME">cpl/gridmaps/IcoswISC30E3r5/map_IcoswISC30E3r5_to_r05_traave.20231121.nc</map>
+    </gridmap>
+
     <gridmap rof_grid="r05" ocn_grid="EC30to60E2r2">
       <map name="OCN2ROF_SMAPNAME">cpl/cpl6/map_EC30to60E2r2_to_r05_neareststod.220728.nc</map>
     </gridmap>

@@ -115,10 +115,10 @@
     </mach>
   </grid>
   <!-- allactive -->
-  <grid name="a%ne30np4.pg.+_oi%EC30to60E2r2">
+  <grid name="a%ne30np4.pg.+_oi%IcoswISC30E3r5">
     <mach name="chrysalis">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+_SESP$" pesize="any">
-        <comment>tests+chrysalis: -compset WCYCL* -res ne30pg*EC30to60E2r2 on 4 nodes pure-MPI, ~2.38 sypd </comment>
+        <comment>tests+chrysalis: -compset WCYCL* -res ne30pg*IcoswISC30E3r5 on 4 nodes pure-MPI </comment>
         <ntasks>
           <ntasks_atm>192</ntasks_atm>
           <ntasks_lnd>192</ntasks_lnd>
@@ -132,7 +132,7 @@
         </rootpe>
       </pes>
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+SGLC_SWAV_SIAC_SESP_BGC.*" pesize="any">
-        <comment>tests+chrysalis: --compset BGC* --res ne30pg2_r05_EC30to60E2r2 on 5 nodes pure-MPI, ~0.9 sypd </comment>
+        <comment>tests+chrysalis: --compset BGC* --res ne30pg2_r05_IcoswISC30E3r5 on 5 nodes pure-MPI </comment>
         <ntasks>
           <ntasks_atm>256</ntasks_atm>
           <ntasks_lnd>256</ntasks_lnd>
@@ -159,7 +159,7 @@
         </ntasks>
       </pes>
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SWAV.+_SESP$" pesize="any">
-        <comment>tests+anvil: --compset WCYCL* --res ne30pg2_EC30to60E2r2 on 16 nodes pure-MPI, ~2.7 sypd </comment>
+        <comment>tests+anvil: --compset WCYCL* --res ne30pg2_IcoswISC30E3r5 on 16 nodes pure-MPI </comment>
         <ntasks>
           <ntasks_atm>396</ntasks_atm>
           <ntasks_lnd>396</ntasks_lnd>
@@ -173,7 +173,7 @@
         </rootpe>
       </pes>
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+SGLC_SWAV_SIAC_SESP_BGC.*" pesize="any">
-        <comment>tests+anvil: --compset BGC* --res ne30pg2_r05_EC30to60E2r2 on 30 nodes pure-MPI, ~3 sypd </comment>
+        <comment>tests+anvil: --compset BGC* --res ne30pg2_r05_IcoswISC30E3r5 on 30 nodes pure-MPI </comment>
         <ntasks>
           <ntasks_atm>675</ntasks_atm>
           <ntasks_lnd>684</ntasks_lnd>
