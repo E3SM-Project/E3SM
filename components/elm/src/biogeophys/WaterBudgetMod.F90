@@ -563,7 +563,7 @@ contains
 
     call ncd_defvar(varname='budg_fluxG', xtype=ncd_double, &
          dim1name='budg_flux', &
-         long_name='budg_fluxG', units='mm', ncid=ncid)
+         long_name='budg_fluxG', units='kg/m2/s', ncid=ncid)
 
     call ncd_defvar(varname='budg_fluxN', xtype=ncd_double, &
          dim1name='budg_flux', &
@@ -571,7 +571,7 @@ contains
 
     call ncd_defvar(varname='budg_stateG', xtype=ncd_double, &
          dim1name='budg_state', &
-         long_name='budg_stateG', units='mm', ncid=ncid)
+         long_name='budg_stateG', units='kg/m2', ncid=ncid)
 
   end subroutine WaterBudget_Restart_Define
 

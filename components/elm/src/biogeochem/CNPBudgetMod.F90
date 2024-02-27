@@ -946,7 +946,8 @@ contains
 
     call ncd_defvar(varname=trim(name)//'_budg_fluxG', xtype=ncd_double, &
          dim1name=trim(name)//'_budg_flux', &
-         long_name=trim(name)//'_budg_fluxG', units='mm', ncid=ncid)
+         long_name=trim(name)//'_budg_fluxG', &
+         units='g'//trim(name)//'/m2/s', ncid=ncid)
 
     call ncd_defvar(varname=trim(name)//'_budg_fluxN', xtype=ncd_double, &
          dim1name=trim(name)//'_budg_flux', &
@@ -954,7 +955,8 @@ contains
 
     call ncd_defvar(varname=trim(name)//'_budg_stateG', xtype=ncd_double, &
          dim1name=trim(name)//'_budg_state', &
-         long_name=trim(name)//'_budg_stateG', units='-', ncid=ncid)
+         long_name=trim(name)//'_budg_stateG', &
+         units='g'//trim(name)//'/m2', ncid=ncid)
 
   end subroutine Restart_Define
 
