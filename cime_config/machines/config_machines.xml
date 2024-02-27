@@ -2643,11 +2643,11 @@
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>cbronze</PROJECT>
     <CIME_OUTPUT_ROOT>/p/lustre2/$USER/e3sm_scratch/ruby</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/usr/gdata/climdat/ccsm3data/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/usr/gdata/climdat/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DIN_LOC_ROOT>/usr/gdata/e3sm/ccsm3data/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/usr/gdata/e3sm/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/p/lustre2/$USER/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/p/lustre2/$USER/ccsm_baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/usr/gdata/climdat/tools/cprnc</CCSM_CPRNC>
+    <CCSM_CPRNC>/usr/gdata/e3sm/tools/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <BATCH_SYSTEM>lc_slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>donahue5 -at- llnl.gov</SUPPORTED_BY>
@@ -2695,11 +2695,11 @@
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>cbronze</PROJECT>
     <CIME_OUTPUT_ROOT>/p/lustre2/$USER/e3sm_scratch/quartz</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/usr/gdata/climdat/ccsm3data/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/usr/gdata/climdat/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DIN_LOC_ROOT>/usr/gdata/e3sm/ccsm3data/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/usr/gdata/e3sm/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/p/lustre2/$USER/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/p/lustre2/$USER/ccsm_baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/usr/gdata/climdat/tools/cprnc</CCSM_CPRNC>
+    <CCSM_CPRNC>/usr/gdata/e3sm/tools/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <BATCH_SYSTEM>lc_slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>donahue5 -at- llnl.gov</SUPPORTED_BY>
@@ -2727,7 +2727,7 @@
         <command name="load">intel-classic/2021.6.0-magic</command>
         <command name="load">mvapich2/2.3.7</command>
         <command name="load">cmake/3.19.2</command>
-        <command name="use --append">/usr/gdata/climdat/install/quartz/modulefiles</command>
+        <command name="use --append">/usr/gdata/e3sm/install/quartz/modulefiles</command>
         <command name="load">hdf5/1.12.2</command>
         <command name="load">netcdf-c/4.9.0</command>
         <command name="load">netcdf-fortran/4.6.0</command>
@@ -2738,7 +2738,7 @@
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <environment_variables compiler="intel">
-      <env name="NETCDF_PATH">/usr/gdata/climdat/install/quartz/netcdf-fortran/</env>
+      <env name="NETCDF_PATH">/usr/gdata/e3sm/install/quartz/netcdf-fortran/</env>
       <env name="PNETCDF_PATH">/usr/tce/packages/parallel-netcdf/parallel-netcdf-1.12.3-mvapich2-2.3.7-intel-classic-2021.6.0</env>
     </environment_variables>
   </machine>
