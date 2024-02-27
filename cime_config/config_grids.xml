@@ -681,6 +681,16 @@
       <mask>oEC60to30v3</mask>
     </model_grid>
 
+    <model_grid alias="r025_r025" compset="(DOCN|XOCN|SOCN|AQP1)">
+      <grid name="atm">r025</grid>
+      <grid name="lnd">r025</grid>
+      <grid name="ocnice">r025</grid>
+      <grid name="rof">r025</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>oEC60to30v3</mask>
+    </model_grid>
+
     <model_grid alias="r0125_r0125" compset="(DOCN|XOCN|SOCN|AQP1)">
       <grid name="atm">r0125</grid>
       <grid name="lnd">r0125</grid>

@@ -42,12 +42,14 @@ for the CLM data in the CESM distribution
 <!-- River Transport Model river routing file (relative to {csmdata}) -->
 
 <frivinp_rtm rof_grid="r0125" >rof/mosart/MOSART_global_8th_20180211c.nc</frivinp_rtm>
+<frivinp_rtm rof_grid="r025" >/lcrc/group/e3sm/ac.tian.zhou/dataset/MOSART_global_qd_20240212.v3.nc</frivinp_rtm>
 <frivinp_rtm rof_grid="r05" >rof/mosart/MOSART_global_half_20180721a.nc</frivinp_rtm>
 <frivinp_rtm rof_grid="r2" >rof/mosart/MOSART_Global_2deg_antarctica_flowing_to_north_c09162020.nc</frivinp_rtm>
 <frivinp_rtm rof_grid="NLDAS" >rof/mosart/MOSART_NLDAS_8th_20160426.nc</frivinp_rtm>
 
 <!-- River Transport Model mesh file (relative to DIN_LOC_ROOT) -->
 <frivinp_mesh rof_grid="r0125" >share/meshes/rof/MOSART_global_8th.scrip.20180211c.nc</frivinp_mesh>
+<frivinp_mesh rof_grid="r025" >/home/ac.tian.zhou/SCRIPgrid_0.25x0.25_nomask_c200309.nc</frivinp_mesh>
 <frivinp_mesh rof_grid="r05" >share/meshes/rof/SCRIPgrid_0.5x0.5_nomask_c110308.nc</frivinp_mesh>
 <frivinp_mesh rof_grid="r2" >share/meshes/rof/SCRIPgrid_2x2_nomask_c210211.nc</frivinp_mesh>
 
