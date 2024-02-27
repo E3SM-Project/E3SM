@@ -2444,14 +2444,14 @@
       <file grid="ice|ocn" mask="WCAtl12to45E2r4">$DIN_LOC_ROOT/share/domains/domain.ocn.TL319_WCAtl12to45E2r4.210318.nc</file>
       <file grid="atm|lnd" mask="SOwISC12to60E2r4">$DIN_LOC_ROOT/share/domains/domain.lnd.TL319_SOwISC12to60E2r4.210119.nc</file>
       <file grid="ice|ocn" mask="SOwISC12to60E2r4">$DIN_LOC_ROOT/share/domains/domain.ocn.TL319_SOwISC12to60E2r4.210119.nc</file>
-      <file grid="atm|lnd" mask="FRISwISC08to60E3r1">$DIN_LOC_ROOT/share/domains/domain.lnd.TL319_FRISwISC08to60E3r1.230926.nc</file>
-      <file grid="ice|ocn" mask="FRISwISC08to60E3r1">$DIN_LOC_ROOT/share/domains/domain.ocn.TL319_FRISwISC08to60E3r1.230926.nc</file>
-      <file grid="atm|lnd" mask="FRISwISC04to60E3r1">$DIN_LOC_ROOT/share/domains/domain.lnd.TL319_FRISwISC04to60E3r1.230912.nc</file>
-      <file grid="ice|ocn" mask="FRISwISC04to60E3r1">$DIN_LOC_ROOT/share/domains/domain.ocn.TL319_FRISwISC04to60E3r1.230912.nc</file>
-      <file grid="atm|lnd" mask="FRISwISC02to60E3r1">$DIN_LOC_ROOT/share/domains/domain.lnd.TL319_FRISwISC02to60E3r1.230926.nc</file>
-      <file grid="ice|ocn" mask="FRISwISC02to60E3r1">$DIN_LOC_ROOT/share/domains/domain.ocn.TL319_FRISwISC02to60E3r1.230926.nc</file>
-      <file grid="atm|lnd" mask="FRISwISC01to60E3r1">$DIN_LOC_ROOT/share/domains/domain.lnd.TL319_FRISwISC01to60E3r1.231005.nc</file>
-      <file grid="ice|ocn" mask="FRISwISC01to60E3r1">$DIN_LOC_ROOT/share/domains/domain.ocn.TL319_FRISwISC01to60E3r1.231005.nc</file>
+      <file grid="atm|lnd" mask="FRISwISC08to60E3r1">$DIN_LOC_ROOT/share/domains/domain.lnd.TL319_FRISwISC08to60E3r1.240214.nc</file>
+      <file grid="ice|ocn" mask="FRISwISC08to60E3r1">$DIN_LOC_ROOT/share/domains/domain.ocn.TL319_FRISwISC08to60E3r1.240214.nc</file>
+      <file grid="atm|lnd" mask="FRISwISC04to60E3r1">$DIN_LOC_ROOT/share/domains/domain.lnd.TL319_FRISwISC04to60E3r1.240214.nc</file>
+      <file grid="ice|ocn" mask="FRISwISC04to60E3r1">$DIN_LOC_ROOT/share/domains/domain.ocn.TL319_FRISwISC04to60E3r1.240214.nc</file>
+      <file grid="atm|lnd" mask="FRISwISC02to60E3r1">$DIN_LOC_ROOT/share/domains/domain.lnd.TL319_FRISwISC02to60E3r1.240214.nc</file>
+      <file grid="ice|ocn" mask="FRISwISC02to60E3r1">$DIN_LOC_ROOT/share/domains/domain.ocn.TL319_FRISwISC02to60E3r1.240214.nc</file>
+      <file grid="atm|lnd" mask="FRISwISC01to60E3r1">$DIN_LOC_ROOT/share/domains/domain.lnd.TL319_FRISwISC01to60E3r1.240216.nc</file>
+      <file grid="ice|ocn" mask="FRISwISC01to60E3r1">$DIN_LOC_ROOT/share/domains/domain.ocn.TL319_FRISwISC01to60E3r1.240216.nc</file>
       <file grid="atm|lnd" mask="ECwISC30to60E2r1">$DIN_LOC_ROOT/share/domains/domain.lnd.TL319_ECwISC30to60E2r1.201007.nc</file>
       <file grid="ice|ocn" mask="ECwISC30to60E2r1">$DIN_LOC_ROOT/share/domains/domain.ocn.TL319_ECwISC30to60E2r1.201007.nc</file>
       <file grid="atm|lnd" mask="IcoswISC30E3r5">$DIN_LOC_ROOT/share/domains/domain.lnd.TL319_IcoswISC30E3r5.231121.nc</file>
@@ -2828,28 +2828,28 @@
     <domain name="FRISwISC08to60E3r1">
       <nx>605169</nx>
       <ny>1</ny>
-      <file grid="ice|ocn">$DIN_LOC_ROOT/share/domains/domain.ocn.FRISwISC08to60E3r1.230926.nc</file>
+      <file grid="ice|ocn">$DIN_LOC_ROOT/share/domains/domain.ocn.FRISwISC08to60E3r1.240214.nc</file>
       <desc>FRISwISC08to60E3r1 is a MPAS ice/ocean grid with enhanced resolution of 12km in the Southern Ocean around Antarctica and 4 km beneath the Filchner-Ronne Ice Shelf. The high resolution regions smoothly transition to the background resolution of the standard low resolution 60to30km grid:</desc>
     </domain>
 
     <domain name="FRISwISC04to60E3r1">
       <nx>718054</nx>
       <ny>1</ny>
-      <file grid="ice|ocn">$DIN_LOC_ROOT/share/domains/domain.ocn.FRISwISC04to60E3r1.230912.nc</file>
+      <file grid="ice|ocn">$DIN_LOC_ROOT/share/domains/domain.ocn.FRISwISC04to60E3r1.240214.nc</file>
       <desc>FRISwISC04to60E3r1 is a MPAS ice/ocean grid with enhanced resolution of 12km in the Southern Ocean around Antarctica and 4 km beneath the Filchner-Ronne Ice Shelf. The high resolution regions smoothly transition to the background resolution of the standard low resolution 60to30km grid:</desc>
     </domain>
 
     <domain name="FRISwISC02to60E3r1">
       <nx>1055045</nx>
       <ny>1</ny>
-      <file grid="ice|ocn">$DIN_LOC_ROOT/share/domains/domain.ocn.FRISwISC02to60E3r1.230926.nc</file>
+      <file grid="ice|ocn">$DIN_LOC_ROOT/share/domains/domain.ocn.FRISwISC02to60E3r1.240214.nc</file>
       <desc>FRISwISC02to60E3r1 is a MPAS ice/ocean grid with enhanced resolution of 12km in the Southern Ocean around Antarctica and 4 km beneath the Filchner-Ronne Ice Shelf. The high resolution regions smoothly transition to the background resolution of the standard low resolution 60to30km grid:</desc>
     </domain>
 
     <domain name="FRISwISC01to60E3r1">
       <nx>2162616</nx>
       <ny>1</ny>
-      <file grid="ice|ocn">$DIN_LOC_ROOT/share/domains/domain.ocn.FRISwISC01to60E3r1.231005.nc</file>
+      <file grid="ice|ocn">$DIN_LOC_ROOT/share/domains/domain.ocn.FRISwISC01to60E3r1.240216.nc</file>
       <desc>FRISwISC01to60E3r1 is a MPAS ice/ocean grid with enhanced resolution of 12km in the Southern Ocean around Antarctica and 4 km beneath the Filchner-Ronne Ice Shelf. The high resolution regions smoothly transition to the background resolution of the standard low resolution 60to30km grid:</desc>
     </domain>
 
@@ -4161,35 +4161,35 @@
     </gridmap>
 
     <gridmap atm_grid="TL319" ocn_grid="FRISwISC08to60E3r1">
-      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/TL319/map_TL319_to_FRISwISC08to60E3r1_mono.230926.nc</map>
-      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/TL319/map_TL319_to_FRISwISC08to60E3r1-nomask_bilin.230926.nc</map>
-      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/TL319/map_TL319_to_FRISwISC08to60E3r1_patch.230926.nc</map>
-      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/FRISwISC08to60E3r1/map_FRISwISC08to60E3r1_to_TL319_mono.230926.nc</map>
-      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/FRISwISC08to60E3r1/map_FRISwISC08to60E3r1_to_TL319_mono.230926.nc</map>
+      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/TL319/map_TL319_to_FRISwISC08to60E3r1_traave.20240214.nc</map>
+      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/TL319/map_TL319_to_FRISwISC08to60E3r1-nomask_trbilin.20240214.nc</map>
+      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/TL319/map_TL319_to_FRISwISC08to60E3r1_esmfpatch.20240214.nc</map>
+      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/FRISwISC08to60E3r1/map_FRISwISC08to60E3r1_to_TL319_traave.20240214.nc</map>
+      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/FRISwISC08to60E3r1/map_FRISwISC08to60E3r1_to_TL319_traave.20240214.nc</map>
     </gridmap>
 
     <gridmap atm_grid="TL319" ocn_grid="FRISwISC04to60E3r1">
-      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/TL319/map_TL319_to_FRISwISC04to60E3r1_mono.230912.nc</map>
-      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/TL319/map_TL319_to_FRISwISC04to60E3r1-nomask_bilin.230912.nc</map>
-      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/TL319/map_TL319_to_FRISwISC04to60E3r1_patch.230912.nc</map>
-      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/FRISwISC04to60E3r1/map_FRISwISC04to60E3r1_to_TL319_mono.230912.nc</map>
-      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/FRISwISC04to60E3r1/map_FRISwISC04to60E3r1_to_TL319_mono.230912.nc</map>
+      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/TL319/map_TL319_to_FRISwISC04to60E3r1_traave.20240214.nc</map>
+      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/TL319/map_TL319_to_FRISwISC04to60E3r1-nomask_trbilin.20240214.nc</map>
+      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/TL319/map_TL319_to_FRISwISC04to60E3r1_esmfpatch.20240214.nc</map>
+      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/FRISwISC04to60E3r1/map_FRISwISC04to60E3r1_to_TL319_traave.20240214.nc</map>
+      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/FRISwISC04to60E3r1/map_FRISwISC04to60E3r1_to_TL319_traave.20240214.nc</map>
     </gridmap>
 
     <gridmap atm_grid="TL319" ocn_grid="FRISwISC02to60E3r1">
-      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/TL319/map_TL319_to_FRISwISC02to60E3r1_mono.230926.nc</map>
-      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/TL319/map_TL319_to_FRISwISC02to60E3r1-nomask_bilin.230926.nc</map>
-      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/TL319/map_TL319_to_FRISwISC02to60E3r1_patch.230926.nc</map>
-      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/FRISwISC02to60E3r1/map_FRISwISC02to60E3r1_to_TL319_mono.230926.nc</map>
-      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/FRISwISC02to60E3r1/map_FRISwISC02to60E3r1_to_TL319_mono.230926.nc</map>
+      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/TL319/map_TL319_to_FRISwISC02to60E3r1_traave.20240214.nc</map>
+      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/TL319/map_TL319_to_FRISwISC02to60E3r1-nomask_trbilin.20240214.nc</map>
+      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/TL319/map_TL319_to_FRISwISC02to60E3r1_esmfpatch.20240214.nc</map>
+      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/FRISwISC02to60E3r1/map_FRISwISC02to60E3r1_to_TL319_traave.20240214.nc</map>
+      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/FRISwISC02to60E3r1/map_FRISwISC02to60E3r1_to_TL319_traave.20240214.nc</map>
     </gridmap>
 
     <gridmap atm_grid="TL319" ocn_grid="FRISwISC01to60E3r1">
-      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/TL319/map_TL319_to_FRISwISC01to60E3r1_mono.231004.nc</map>
-      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/TL319/map_TL319_to_FRISwISC01to60E3r1-nomask_bilin.230927.nc</map>
-      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/TL319/map_TL319_to_FRISwISC01to60E3r1_patch.230927.nc</map>
-      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/FRISwISC01to60E3r1/map_FRISwISC01to60E3r1_to_TL319_mono.231004.nc</map>
-      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/FRISwISC01to60E3r1/map_FRISwISC01to60E3r1_to_TL319_mono.231004.nc</map>
+      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/TL319/map_TL319_to_FRISwISC01to60E3r1_traave.20240216.nc</map>
+      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/TL319/map_TL319_to_FRISwISC01to60E3r1-nomask_trbilin.20240216.nc</map>
+      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/TL319/map_TL319_to_FRISwISC01to60E3r1_esmfpatch.20240216.nc</map>
+      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/FRISwISC01to60E3r1/map_FRISwISC01to60E3r1_to_TL319_traave.20240216.nc</map>
+      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/FRISwISC01to60E3r1/map_FRISwISC01to60E3r1_to_TL319_traave.20240216.nc</map>
     </gridmap>
 
     <gridmap atm_grid="TL319" ocn_grid="ECwISC30to60E2r1">
@@ -4719,23 +4719,23 @@
     </gridmap>
 
     <gridmap ocn_grid="FRISwISC08to60E3r1" rof_grid="JRA025">
-      <map name="ROF2OCN_ICE_RMAPNAME">cpl/cpl6/map_JRA025_to_FRISwISC08to60E3r1_smoothed.r150e300.230926.nc</map>
-      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/cpl6/map_JRA025_to_FRISwISC08to60E3r1_smoothed.r150e300.230926.nc</map>
+      <map name="ROF2OCN_ICE_RMAPNAME">cpl/cpl6/map_JRA025_to_FRISwISC08to60E3r1_cstmnn.r150e300.20230926.nc</map>
+      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/cpl6/map_JRA025_to_FRISwISC08to60E3r1_cstmnn.r150e300.20230926.nc</map>
     </gridmap>
 
     <gridmap ocn_grid="FRISwISC04to60E3r1" rof_grid="JRA025">
-      <map name="ROF2OCN_ICE_RMAPNAME">cpl/cpl6/map_JRA025_to_FRISwISC04to60E3r1_smoothed.r150e300.230912.nc</map>
-      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/cpl6/map_JRA025_to_FRISwISC04to60E3r1_smoothed.r150e300.230912.nc</map>
+      <map name="ROF2OCN_ICE_RMAPNAME">cpl/cpl6/map_JRA025_to_FRISwISC04to60E3r1_cstmnn.r150e300.20230912.nc</map>
+      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/cpl6/map_JRA025_to_FRISwISC04to60E3r1_cstmnn.r150e300.20230912.nc</map>
     </gridmap>
 
     <gridmap ocn_grid="FRISwISC02to60E3r1" rof_grid="JRA025">
-      <map name="ROF2OCN_ICE_RMAPNAME">cpl/cpl6/map_JRA025_to_FRISwISC02to60E3r1_smoothed.r150e300.230926.nc</map>
-      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/cpl6/map_JRA025_to_FRISwISC02to60E3r1_smoothed.r150e300.230926.nc</map>
+      <map name="ROF2OCN_ICE_RMAPNAME">cpl/cpl6/map_JRA025_to_FRISwISC02to60E3r1_cstmnn.r150e300.20230926.nc</map>
+      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/cpl6/map_JRA025_to_FRISwISC02to60E3r1_cstmnn.r150e300.20230926.nc</map>
     </gridmap>
 
     <gridmap ocn_grid="FRISwISC01to60E3r1" rof_grid="JRA025">
-      <map name="ROF2OCN_ICE_RMAPNAME">cpl/cpl6/map_JRA025_to_FRISwISC01to60E3r1_smoothed.r150e300.230926.nc</map>
-      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/cpl6/map_JRA025_to_FRISwISC01to60E3r1_smoothed.r150e300.230926.nc</map>
+      <map name="ROF2OCN_ICE_RMAPNAME">cpl/cpl6/map_JRA025_to_FRISwISC01to60E3r1_cstmnn.r150e300.20230926.nc</map>
+      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/cpl6/map_JRA025_to_FRISwISC01to60E3r1_cstmnn.r150e300.20230926.nc</map>
     </gridmap>
 
     <gridmap ocn_grid="ECwISC30to60E2r1" rof_grid="JRA025">
