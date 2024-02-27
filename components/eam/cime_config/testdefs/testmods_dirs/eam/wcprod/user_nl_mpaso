@@ -1,4 +1,0 @@
-config_redi_min_layers_diag_terms = 0
-config_redi_quasi_monotone_safety_factor = 0.9
-config_redi_use_quasi_monotone_limiter = .true.
-config_time_integrator = 'split_explicit_ab2'

@@ -1,4 +1,3 @@
-cosp_lite = .true.
 
 empty_htapes = .true.
 
@@ -56,12 +55,3 @@ history_gaschmbudget_num = 6 !! no impact if  history_gaschmbudget_2D = .false.
 
 ! -- MAM5 settings ------------------    
 is_output_interactive_volc = .true.        
-
-!---new after v3alpha04
-! --- Retuned dust emission factor ---
-dust_emis_fact         =  13.8D0
-
-!--- rough topo
-bnd_topo = '\$DIN_LOC_ROOT/atm/cam/topo/USGS-gtopo30_ne30np4pg2_x6t-SGH.c20210614.nc'
-pgrad_correction = 1
-hv_ref_profiles = 6

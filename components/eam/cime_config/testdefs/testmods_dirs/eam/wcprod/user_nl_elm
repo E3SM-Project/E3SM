@@ -1,5 +1,4 @@
 hist_dov2xy = .true.,.true.
-
 hist_fexcl1 = 'AGWDNPP','ALTMAX_LASTYEAR','AVAIL_RETRANSP','AVAILC','BAF_CROP',
             'BAF_PEATF','BIOCHEM_PMIN_TO_PLANT','CH4_SURF_AERE_SAT','CH4_SURF_AERE_UNSAT','CH4_SURF_DIFF_SAT',
             'CH4_SURF_DIFF_UNSAT','CH4_SURF_EBUL_SAT','CH4_SURF_EBUL_UNSAT','CMASS_BALANCE_ERROR','cn_scalar',
@@ -39,13 +38,3 @@ hist_fincl2 = 'H2OSNO', 'FSNO', 'QRUNOFF', 'QSNOMELT', 'FSNO_EFF', 'SNORDSL', 'S
 hist_mfilt = 1,365
 hist_nhtfrq = 0,-24
 hist_avgflag_pertape = 'A','A'
-check_finidat_year_consistency = .false.
-check_dynpft_consistency = .false.
-create_crop_landunit = .false.
-
-! --- tri-grid with TOP setting ---
-fsurdat = '\${DIN_LOC_ROOT}/lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr1850_c200609_with_TOP.nc'
-use_top_solar_rad = .true.
-
-!--- land BGC spin-up initial conditions ---
-finidat = '/lcrc/group/e3sm2/ac.golaz/E3SMv3/20231209.v3.LR.piControl-spinup.chrysalis/init/20231130.v3b02-icos_trigrid_top_bgc.IcoswISC30E3r5.chrysalis.fnsp.elm.r.0251-01-01-00000.nc'

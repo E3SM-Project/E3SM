@@ -1,14 +1,3 @@
 #!/bin/bash
 
-./xmlchange --file env_run.xml --id ELM_BLDNML_OPTS  --val "-bgc bgc -nutrient cnp -nutrient_comp_pathway rd  -soil_decomp ctc -methane"
-
 ./xmlchange --append CAM_CONFIG_OPTS='-cosp'
-
-alg=trfvnp2
-
-# Atm -> srf maps
-a2l=cpl/gridmaps/ne30pg2/map_ne30pg2_to_r05_${alg}.230516.nc
-a2o=cpl/gridmaps/ne30pg2/map_ne30pg2_to_IcoswISC30E3r5_trfvnp2.20231121.nc
-./xmlchange ATM2LND_FMAPNAME_NONLINEAR=$a2l
-./xmlchange ATM2ROF_FMAPNAME_NONLINEAR=$a2l
-./xmlchange ATM2OCN_FMAPNAME_NONLINEAR=$a2o
