@@ -76,13 +76,20 @@ jobs:
           output: ' '
 
       - if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+        name: Cache pre-commit
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pre-commit/
+          key: ${{ runner.os }}-${{ matrix.python-version }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+
+      - if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
         # Run all pre-commit hooks on all the files.
         # Getting only staged files can be tricky in case a new PR is opened
         # since the action is run on a branch in detached head state
-        name: Install and Run Pre-commit
-        uses: pre-commit/action@v3.0.0
-        with:
-          extra_args: --files ${{ steps.file_changes.outputs.files}}
+        name: Run pre-commit
+        run: |
+          conda activate omega_dev
+          pre-commit run --show-diff-on-failure --files ${{ steps.file_changes.outputs.files}}
 
       - if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
         name: Build Sphinx Docs
