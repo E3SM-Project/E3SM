@@ -54,6 +54,14 @@ extern "C" void pam_driver() {
   coupler.set_option<real>("sponge_time_scale",60);        // minimum damping timescale at top
   coupler.set_option<bool>("crm_acceleration_ceaseflag",false);
   //------------------------------------------------------------------------------------------------
+  // coupler options for SPAM dycor
+  coupler.set_option<bool>("spam_couple_wind_exact_inverse",true);
+  coupler.set_option<bool>("spam_clip_negative_densities",true);
+  coupler.set_option<bool>("spam_clip_vertical_velocities",true);
+  coupler.set_option<bool>("spam_adjust_crm_per_phys_using_vert_cfl",true);
+  coupler.set_option<real>("spam_target_cfl",0.7);
+  coupler.set_option<real>("spam_max_w",50.0);
+  //------------------------------------------------------------------------------------------------
   // Allocate the coupler state and retrieve host/device data managers
   coupler.allocate_coupler_state( crm_nz , crm_ny , crm_nx , nens );
 
