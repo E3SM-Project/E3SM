@@ -2513,6 +2513,8 @@ contains
     ! !DESCRIPTION:
     ! Read/Write column carbon state information to/from restart file.
     !
+    use elm_varctl, only : do_budgets
+    !
     ! !ARGUMENTS:
     class(column_carbon_state)       :: this
     type(bounds_type), intent(in)    :: bounds
@@ -2543,6 +2545,13 @@ contains
     ! flags for comparing the model and restart decomposition cascades
     integer            :: decomp_cascade_state, restart_file_decomp_cascade_state
     !-----------------------------------------------------------------------
+
+    if (do_budgets) then
+       call restartvar(ncid=ncid, flag=flag, varname='ENDCB', xtype=ncd_double,  &
+         dim1name='column', &
+         long_name='carbon balance at end of timestep', units='gC/m2', &
+         interpinic_flag='interp', readvar=readvar, data=this%endcb)
+    endif
 
     if (carbon_type == 'c13' .or. carbon_type == 'c14') then
        if (.not. present(c12_carbonstate_vars)) then
