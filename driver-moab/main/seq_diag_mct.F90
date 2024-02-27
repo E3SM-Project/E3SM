@@ -317,8 +317,6 @@ module seq_diag_mct
 
   integer :: index_i2x_Fioi_melth
   integer :: index_i2x_Fioi_meltw
-  integer :: index_i2x_Fioi_bergh
-  integer :: index_i2x_Fioi_bergw
   integer :: index_i2x_Fioi_salt
   integer :: index_i2x_Faii_swnet
   integer :: index_i2x_Fioi_swpen
@@ -1404,7 +1402,7 @@ contains
              nf = f_wpolar;budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_c*o2x_o%rAttr(index_o2x_Foxo_ismw,n)
              nf = f_wpolar;budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - (ca_o+ca_i)*o2x_o%rAttr(index_o2x_Foxo_rrofl,n)
              nf = f_wpolar;budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - (ca_o+ca_i)*o2x_o%rAttr(index_o2x_Foxo_rrofi,n)
-             nf = f_hpolar;budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_c*o2x_o%rAttr(index_o2x_Foxo_ismh,n)
+             nf = f_hpolar;budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_c*o2x_o%rAttr(index_o2x_Foxo_ismh,n)
              nf = f_hpolar;budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_c*o2x_o%rAttr(index_o2x_Foxo_rrofih,n)
           end if
        end do
@@ -1513,11 +1511,11 @@ contains
           nf = f_hmelt ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Fioi_melth,n)
           nf = f_hswnet; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Foxx_swnet,n)
           nf = f_hlwdn ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Faxa_lwdn,n)
-          nf = f_hberg ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Fioi_bergh,n)
+          nf = f_hpolar; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Fioi_bergh,n)
           nf = f_wmelt ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Fioi_meltw,n)
           nf = f_wrain ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Faxa_rain,n)
           nf = f_wsnow ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Faxa_snow,n)
-          nf = f_wberg ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Fioi_bergw,n)
+          nf = f_wpolar; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Fioi_bergw,n)
           nf = f_wroff ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Foxx_rofl,n)
           nf = f_wioff ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Foxx_rofi,n)
 

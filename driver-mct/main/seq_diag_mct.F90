@@ -1402,7 +1402,7 @@ contains
              nf = f_wpolar;budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_c*o2x_o%rAttr(index_o2x_Foxo_ismw,n)
              nf = f_wpolar;budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - (ca_o+ca_i)*o2x_o%rAttr(index_o2x_Foxo_rrofl,n)
              nf = f_wpolar;budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - (ca_o+ca_i)*o2x_o%rAttr(index_o2x_Foxo_rrofi,n)
-             nf = f_hpolar;budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_c*o2x_o%rAttr(index_o2x_Foxo_ismh,n)
+             nf = f_hpolar;budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_c*o2x_o%rAttr(index_o2x_Foxo_ismh,n)
              nf = f_hpolar;budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_c*o2x_o%rAttr(index_o2x_Foxo_rrofih,n)
           end if
        end do
