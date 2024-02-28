@@ -22,7 +22,7 @@ set_grids (const std::shared_ptr<const GridsManager> grids_manager)
 {
   const auto m2 = ekat::units::m * ekat::units::m;
   const auto W = ekat::units::W;
-  const auto radflux_units W/(m2);
+  const auto radflux_units = W/(m2);
   radflux_units.set_string("W/m2");
 
   const auto surf_evap_units = ekat::units::kg / m2 / ekat::units::s;
