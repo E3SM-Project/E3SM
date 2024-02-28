@@ -2449,6 +2449,7 @@ module li_subglacial_hydro
       integer, dimension(:,:), pointer :: edgesOnCell
       integer, dimension(:), pointer :: cellMask
       integer, dimension(:), pointer :: edgeMask
+      real (kind=RKIND), dimension(:), pointer :: areaCell
       integer, pointer :: nCells
       integer :: edgeNum
       integer, dimension(:), pointer :: nEdgesOnCell
@@ -2456,12 +2457,11 @@ module li_subglacial_hydro
       integer :: iCell
       integer :: jCell
       integer :: iNeighbor
-      integer :: isMarineMargin
       real (kind=RKIND) :: maxNeighborHeight
       real (kind=RKIND) :: minNeighborHeight
       real (kind=RKIND) :: meanNeighborHeight
-      real (kind=RKIND) :: totNeighborHeight
-      real (kind=RKIND) :: numCells
+      real (kind=RKIND) :: totalNeighborHeight
+      real (kind=RKIND) :: totalArea
       real (kind=RKIND), parameter :: bigValue = 1.0e6_RKIND
       real (kind=RKIND), parameter :: bigNegativeValue = -1.0e6_RKIND
       logical, pointer :: config_SGH_use_iceThicknessHydro
@@ -2484,6 +2484,7 @@ module li_subglacial_hydro
       call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
       call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
       call mpas_pool_get_array(hydroPool, 'hydroMarineMarginMask', hydroMarineMarginMask)
       call mpas_pool_get_config(liConfigs, 'config_SGH_use_iceThicknessHydro', config_SGH_use_iceThicknessHydro)
 
@@ -2496,41 +2497,37 @@ module li_subglacial_hydro
       if (config_SGH_use_iceThicknessHydro) then
          do iCell = 1, nCells
 
-            if ((li_mask_is_grounded_ice(cellMask(iCell))) .and. (.not. li_mask_is_margin(cellMask(iCell)))) then !identify domain boundaries
+            if (li_mask_is_grounded_ice(cellMask(iCell))) then !identify domain boundaries
                
-               isMarineMargin = 0
-               do edgeNum = 1, nEdgesOnCell(iCell)
-                  iEdge = edgesOnCell(edgeNum,iCell)
-                  if (hydroMarineMarginMask(iEdge) == 1) then
-                     isMarineMargin = 1
-                     exit
-                  endif
-               enddo
-
-               if (isMarineMargin == 0) then
-                  maxNeighborHeight = bigNegativeValue !allocate
+                  maxNeighborHeight = bigNegativeValue !initialize
                   minNeighborHeight = bigValue
                   
+                  totalNeighborHeight = 0.0_RKIND
+                  totalArea = 0.0_RKIND
+
                   do jCell = 1, nEdgesOnCell(iCell)
+                  
                      iNeighbor = cellsOnCell(jCell,iCell)
 
-                     if (iNeighbor < nCells + 1) then
+                     !Only include neighbor cell in averaging if it contains grounded ice
+                     if ((li_mask_is_grounded_ice(cellMask(iNeighbor)))) then
 
-                         if (jCell == 1) then
-                                 totNeighborHeight = upperSurface(iNeighbor)
-                                 numCells = 1
-                         endif 
-                         
                          minNeighborHeight = min(minNeighborHeight, upperSurface(iNeighbor))
 
                          maxNeighborHeight = max(maxNeighborHeight, upperSurface(iNeighbor))
 
-                         totNeighborHeight = totNeighborHeight + upperSurface(iNeighbor)
-                         numCells = numCells + 1
+                         totalNeighborHeight = totalNeighborHeight + upperSurface(iNeighbor)*areaCell(iNeighbor)
+
+                         totalArea = totalArea + areaCell(iNeighbor)
+                         
                      endif
                   end do
-
-                  meanNeighborHeight = totNeighborHeight / numCells
+                  
+                  if ((totalNeighborHeight == 0.0_RKIND) .or. (totalArea == 0.0_RKIND)) then
+                     meanNeighborHeight = upperSurface(iCell) !no smoothing in single-cell islands
+                  else
+                     meanNeighborHeight = totalNeighborHeight / totalArea !area-weighted average height
+                  endif
 
                   !only adjust surface elevation if cell is local minimum or
                   !maximum
@@ -2550,7 +2547,6 @@ module li_subglacial_hydro
                   if (iceThicknessHydro(iCell) < 0.0_RKIND) then
                      iceThicknessHydro(iCell) = thickness(iCell)
                   endif
-               endif 
             endif
          enddo
       endif

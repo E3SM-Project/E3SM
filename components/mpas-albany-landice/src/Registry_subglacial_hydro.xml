@@ -79,7 +79,7 @@
 		/>
 		
 		<nml_option name="config_SGH_use_iceThicknessHydro" type="logical" default_value=".true." units="unitless"
-			    description="alter ice thickness along boundaries to avoid local maxima/minima in upperSurface. This can circumvent instabilities from forming along the boundaries of the hydro model that arise from unrealistic surface anomalies left over from building the domain. This option has no significant effect on the behavior of the model but makes it more stable."
+			    description="Option to use an altered ice thickness field called iceThicknessHydro that replaces local maxima/minima in upperSurface with a mean of the cells neighbors. This option has no significant effect on the behavior of the model but makes it more stable."
 		            possible_values=".true. or .false."
 		/>
 	
