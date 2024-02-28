@@ -376,7 +376,7 @@ contains
     !
     integer :: year, mon, day, sec
     integer :: ip
-    character(*),parameter :: subName = '(WaterBudget_Reset) '
+    character(*),parameter :: subName = '(Reset) '
 
     if (.not.present(mode)) then
        call get_curr_date(year, mon, day, sec)
@@ -470,7 +470,7 @@ contains
     type(file_desc_t), intent(inout) :: ncid   ! netcdf id
     character(len=*) , intent(in)    :: flag   ! 'read' or 'write'
     !
-    character(len=*),parameter :: subname = 'WaterBudget_Restart'
+    character(len=*),parameter :: subname = 'CNPBudget_Restart'
 
     select case (trim(flag))
     case ('define')
@@ -718,8 +718,8 @@ contains
     budg_fluxGtmp = 0._r8
     budg_stateGtmp = 0._r8
 
-    call shr_mpi_sum(budg_fluxL, budg_fluxGtmp, mpicom, subName)
-    call shr_mpi_sum(budg_stateL, budg_stateGtmp, mpicom, subName)
+    call shr_mpi_sum(budg_fluxL, budg_fluxGtmp, mpicom, subName, all=.true.)
+    call shr_mpi_sum(budg_stateL, budg_stateGtmp, mpicom, subName, all=.true.)
 
 
     budg_fluxG  = budg_fluxG + budg_fluxGtmp
@@ -946,7 +946,8 @@ contains
 
     call ncd_defvar(varname=trim(name)//'_budg_fluxG', xtype=ncd_double, &
          dim1name=trim(name)//'_budg_flux', &
-         long_name=trim(name)//'_budg_fluxG', units='mm', ncid=ncid)
+         long_name=trim(name)//'_budg_fluxG', &
+         units='g'//trim(name)//'/m2/s', ncid=ncid)
 
     call ncd_defvar(varname=trim(name)//'_budg_fluxN', xtype=ncd_double, &
          dim1name=trim(name)//'_budg_flux', &
@@ -954,7 +955,8 @@ contains
 
     call ncd_defvar(varname=trim(name)//'_budg_stateG', xtype=ncd_double, &
          dim1name=trim(name)//'_budg_state', &
-         long_name=trim(name)//'_budg_stateG', units='-', ncid=ncid)
+         long_name=trim(name)//'_budg_stateG', &
+         units='g'//trim(name)//'/m2', ncid=ncid)
 
   end subroutine Restart_Define
 
@@ -990,8 +992,8 @@ contains
     budg_fluxGtmp = 0._r8
     budg_stateGtmp = 0._r8
 
-    call shr_mpi_sum(budg_fluxL, budg_fluxGtmp, mpicom, subName)
-    call shr_mpi_sum(budg_stateL, budg_stateGtmp, mpicom, subName)
+    call shr_mpi_sum(budg_fluxL, budg_fluxGtmp, mpicom, subName, all=.true.)
+    call shr_mpi_sum(budg_stateL, budg_stateGtmp, mpicom, subName, all=.true.)
 
     ! Copy data from 2D into 1D array
     count = 0
