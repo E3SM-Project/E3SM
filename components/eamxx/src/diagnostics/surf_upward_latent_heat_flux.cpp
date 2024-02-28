@@ -22,6 +22,9 @@ set_grids (const std::shared_ptr<const GridsManager> grids_manager)
 {
   const auto m2 = ekat::units::m * ekat::units::m;
   const auto W = ekat::units::W;
+  const auto radflux_units W/(m2);
+  radflux_units.set_string("W/m2");
+
   const auto surf_evap_units = ekat::units::kg / m2 / ekat::units::s;
 
   auto grid  = grids_manager->get_grid("Physics");
@@ -35,7 +38,7 @@ set_grids (const std::shared_ptr<const GridsManager> grids_manager)
   add_field<Required>("surf_evap", scalar2d_layout_mid, surf_evap_units,  grid_name);
 
   // Construct and allocate the diagnostic field
-  FieldIdentifier fid(name(), scalar2d_layout_mid, W/m2, grid_name);
+  FieldIdentifier fid(name(), scalar2d_layout_mid, radflux_units, grid_name);
   // handle parent class member variables
   m_diagnostic_output = Field(fid);
   m_diagnostic_output.get_header().get_alloc_properties().request_allocation();
