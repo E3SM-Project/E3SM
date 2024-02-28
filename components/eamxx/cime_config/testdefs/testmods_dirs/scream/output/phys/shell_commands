@@ -2,23 +2,32 @@
 # The output will be INSTANT, with only a few state vars
 
 CASEROOT=$(./xmlquery --value CASEROOT)
+CASE=$(./xmlquery --value CASE)
 
 # Scripts location
 YAML_EDIT_SCRIPT=$CIMEROOT/../components/eamxx/scripts/edit-output-stream
 ATMCHANGE=$CIMEROOT/../components/eamxx/scripts/atmchange
 YAML_FILE=$CASEROOT/eamxx_phys_output.yaml
 
+# Figure out the suffix for the physics grid
+ATM_GRID=$(./xmlquery --value ATM_GRID)
+if [[ $ATM_GRID == *"pg2"* ]]; then
+  PGTYPE="PG2"
+else
+  PGTYPE="GLL"
+fi
+
 # List of output fields
 FIELDS='horiz_winds T_mid tracers pseudo_density p_mid p_int'
 
 # Generate the file
 $YAML_EDIT_SCRIPT -g \
- -f $YAML_FILE            \
- --avg-type INSTANT       \
- --freq STOP_N            \
- --freq-units STOP_OPTION \
- --prefix phys_state      \
- --grid Physics           \
+ -f $YAML_FILE                    \
+ --avg-type INSTANT               \
+ --freq HIST_N                    \
+ --freq-units HIST_OPTION         \
+ --prefix ${CASE}.scream.phys.hi  \
+ --grid "Physics ${PGTYPE}"       \
  --fields ${FIELDS}
 
 # Add this output yaml file to the list of eamxx output streams

@@ -2,34 +2,39 @@
 # The output will be INSTANT, with only dyn state vars
 
 CASEROOT=$(./xmlquery --value CASEROOT)
+CASE=$(./xmlquery --value CASE)
 
 # Scripts location
 YAML_EDIT_SCRIPT=$CIMEROOT/../components/eamxx/scripts/edit-output-stream
 ATMCHANGE=$CIMEROOT/../components/eamxx/scripts/atmchange
 YAML_FILE=$CASEROOT/eamxx_dyn_output.yaml
 
+# Figure out the suffix for the physics grid
+ATM_GRID=$(./xmlquery --value ATM_GRID)
+if [[ $ATM_GRID == *"pg2"* ]]; then
+  PGTYPE="PG2"
+else
+  PGTYPE="GLL"
+fi
+
 # List of output fields
 FIELDS='v_dyn vtheta_dp_dyn dp3d_dyn w_int_dyn phis_dyn phi_int_dyn ps_dyn omega_dyn Qdp_dyn'
 
 # Generate the file
 $YAML_EDIT_SCRIPT -g \
- -f $YAML_FILE            \
- --avg-type INSTANT       \
- --freq STOP_N            \
- --freq-units STOP_OPTION \
- --prefix dyn_state       \
- --grid Dynamics          \
- --io-grid 'Physics GLL'  \
+ -f $YAML_FILE                        \
+ --avg-type INSTANT                   \
+ --freq HIST_N                        \
+ --freq-units HIST_OPTION             \
+ --prefix ${CASE}.scream.phys_dyn.hi  \
+ --grid Dynamics                      \
+ --io-grid 'Physics GLL'              \
  --fields ${FIELDS}
 
-# Add also one field on phys grid, to trigger 2-grid in same stream
-$YAML_EDIT_SCRIPT -g \
- -f $YAML_FILE            \
- --avg-type INSTANT       \
- --freq STOP_N            \
- --freq-units STOP_OPTION \
- --prefix dyn_state       \
- --grid 'Physics GLL'     \
+# Add also a couple of fields on the phys grid, to trigger 2-grid in same stream
+$YAML_EDIT_SCRIPT \
+ -f $YAML_FILE              \
+ --grid "Physics ${PGTYPE}" \
  --fields T_mid horiz_winds
 
 # Add this output yaml file to the list of eamxx output streams
