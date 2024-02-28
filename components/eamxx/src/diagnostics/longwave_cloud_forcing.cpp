@@ -19,7 +19,7 @@ void LongwaveCloudForcingDiagnostic::set_grids(const std::shared_ptr<const Grids
   using namespace ShortFieldTagsNames;
 
   const auto m2 = m*m;
-  const auto radflux_units = W/(m2);
+  auto radflux_units = W/(m2);
   radflux_units.set_string("W/m2");
 
   auto grid  = grids_manager->get_grid("Physics");
