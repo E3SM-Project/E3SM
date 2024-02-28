@@ -1626,6 +1626,14 @@ contains
        attname  = 'Foxo_ismh'
        call metadata_set(attname, longname, stdname, units)
 
+       ! Water flux from removed liquid runoff
+       call seq_flds_add(o2x_fluxes,"Foxo_rrofl")
+       longname = 'Water flux due to removed liqiud runoff'
+       stdname  = 'removed_liquid_runoff_flux'
+       units    = 'kg m-2 s-1'
+       attname  = 'Foxo_rrofl'
+       call metadata_set(attname, longname, stdname, units)
+
        ! Water flux from removed solid runoff
        call seq_flds_add(o2x_fluxes,"Foxo_rrofi")
        longname = 'Water flux due to removed solid runoff'
