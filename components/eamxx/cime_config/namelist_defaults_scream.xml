@@ -292,6 +292,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <spa_remap_file hgrid="ne256np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne256pg2_20231201.nc</spa_remap_file>
       <spa_remap_file hgrid="ne512np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne512pg2_20231201.nc</spa_remap_file>
       <spa_remap_file hgrid="ne1024np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne1024pg2_20231201.nc</spa_remap_file>
+      <spa_remap_file COMPSET=".*DP-EAMxx"/>
 
       <spa_data_file type="file" doc="File containing aerosol data. Must be on same grid as the atm, or a coarser one"/>
       <spa_data_file hgrid="ne.*np4">${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne30_20220428.nc</spa_data_file>
@@ -338,6 +339,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <rad_frequency hgrid="ne256np4">3</rad_frequency>
       <rad_frequency hgrid="ne512np4">3</rad_frequency>
       <rad_frequency hgrid="ne1024np4">3</rad_frequency>
+      <rad_frequency COMPSET=".*DYCOMSrf01">3</rad_frequency>
       <rad_frequency hgrid="ne0np4_conus_x4v1_lowcon">4</rad_frequency>
       <do_aerosol_rad type="logical" doc="Flag to turn on/off considering aerosols in radiation calculations">true</do_aerosol_rad>
       <do_aerosol_rad COMPSET=".*SCREAM.*noAero">false</do_aerosol_rad>
@@ -370,6 +372,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <number_of_subcycles hgrid="ne256np4">6</number_of_subcycles>
       <number_of_subcycles hgrid="ne512np4">2</number_of_subcycles>
       <number_of_subcycles hgrid="ne1024np4">1</number_of_subcycles>
+      <number_of_subcycles COMPSET=".*DP-EAMxx">1</number_of_subcycles>
       <number_of_subcycles hgrid="ne0np4_conus_x4v1_lowcon">5</number_of_subcycles>
     </mac_aero_mic>
 
@@ -471,6 +474,7 @@ be lost if SCREAM_HACK_XML is not enabled.
 
     <!-- Information about perturbed fields-->
     <perturbed_fields type="array(string)"/>
+    <perturbed_fields type="array(string)" COMPSET=".*DP-EAMxx">T_mid</perturbed_fields>
     <perturbation_limit type="real">0.001</perturbation_limit>
     <perturbation_minimum_pressure type="real">900.0</perturbation_minimum_pressure>
   </initial_conditions>
@@ -502,6 +506,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <check_all_computed_fields_for_nans type="logical">true</check_all_computed_fields_for_nans >
     <property_check_data_fields type="array(string)" doc="list of additional data fields to output in property checks (only for physics grid)">phis,landfrac</property_check_data_fields>
     <enable_intensive_observation_period type="logical" doc="Enable intensive observation period. Currently the only use case is DP-EAMxx">false</enable_intensive_observation_period>
+    <enable_intensive_observation_period COMPSET=".*DP-EAMxx">true</enable_intensive_observation_period>
   </driver_options>
 
   <!-- E3SM Simulation Settings -->
@@ -509,20 +514,28 @@ be lost if SCREAM_HACK_XML is not enabled.
     <e3sm_casename>${CASE}</e3sm_casename>
   </e3sm_parameters>
 
+  <!-- Settings for IOP -->
   <intensive_observation_period_options>
     <doubly_periodic_mode type="logical">true</doubly_periodic_mode>
     <iop_file type="file">UNSET</iop_file>
+    <iop_file COMPSET=".*DYCOMSrf01">${DIN_LOC_ROOT}/atm/cam/scam/iop/DYCOMSrf01_iopfile_4scam.nc</iop_file>
     <target_latitude type="real">-999</target_latitude>
+    <target_latitude COMPSET=".*DYCOMSrf01">31.5</target_latitude>
     <target_longitude type="real">-999</target_longitude>
+    <target_longitude COMPSET=".*DYCOMSrf01">238.5</target_longitude>
     <iop_dosubsidence type="logical">false</iop_dosubsidence>
+    <iop_dosubsidence COMPSET=".*DYCOMSrf01">true</iop_dosubsidence>
     <iop_srf_prop type="logical">false</iop_srf_prop>
+    <iop_srf_prop COMPSET=".*DYCOMSrf01">true</iop_srf_prop>
   </intensive_observation_period_options>
 
   <!-- Homme control namelist -->
   <ctl_nl>
     <cubed_sphere_map>0</cubed_sphere_map>
+    <cubed_sphere_map COMPSET=".*DYCOMSrf01">2</cubed_sphere_map>
     <disable_diagnostics>False</disable_diagnostics>
     <dt_remap_factor constraints="ge 1">2</dt_remap_factor>
+    <dt_remap_factor COMPSET=".*DYCOMSrf01" constraints="ge 1">1</dt_remap_factor>
     <dt_tracer_factor constraints="ge 1">1</dt_tracer_factor>
     <hv_ref_profiles>6</hv_ref_profiles>                <!-- Default (rough topography) -->
     <hv_ref_profiles hgrid="ne4np4">0</hv_ref_profiles> <!-- Value for smooth topography/aquaplanet -->
@@ -536,6 +549,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <hypervis_subcycle_tom>1</hypervis_subcycle_tom>
     <hypervis_subcycle_q>1</hypervis_subcycle_q>
     <nu>3.4e-08</nu>
+    <nu COMPSET=".*DYCOMSrf01">0.216784</nu>
     <nu_top>UNSET</nu_top>
     <nu_top hgrid="ne4np4">250000.0</nu_top>
     <nu_top hgrid="ne30np4">250000.0</nu_top>
@@ -543,6 +557,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <nu_top hgrid="ne256np4">4.0e4</nu_top>
     <nu_top hgrid="ne512np4">2.0e4</nu_top>
     <nu_top hgrid="ne1024np4">1.0e4</nu_top>
+    <nu_top COMPSET=".*DP-EAMxx">1.0e4</nu_top>
     <nu_top hgrid="ne0np4_conus_x4v1_lowcon">100000.0</nu_top>
     <pgrad_correction>1</pgrad_correction>                <!-- Default (rough topography) -->
     <pgrad_correction hgrid="ne4np4">0</pgrad_correction> <!-- Value for smooth topography/aquaplanet -->
@@ -552,6 +567,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <pgrad_correction COMPSET=".*SCREAM%AQUA.*">0</pgrad_correction>
     <se_ftype valid_values="0,2">0</se_ftype>
     <se_geometry>sphere</se_geometry>
+    <se_geometry COMPSET=".*DP-EAMxx">plane</se_geometry>
     <se_limiter_option>9</se_limiter_option>
     <se_ne>UNSET</se_ne>
     <se_ne hgrid="ne4np4" constraints="ge 2">4</se_ne>
@@ -560,14 +576,20 @@ be lost if SCREAM_HACK_XML is not enabled.
     <se_ne hgrid="ne256np4" constraints="ge 2">256</se_ne>
     <se_ne hgrid="ne512np4" constraints="ge 2">512</se_ne>
     <se_ne hgrid="ne1024np4" constraints="ge 2">1024</se_ne>
+    <se_ne COMPSET=".*DP-EAMxx">1024</se_ne>
     <se_ne hgrid="ne0np4_conus_x4v1_lowcon">0</se_ne>
     <se_ne_x>0</se_ne_x>
+    <se_ne_x COMPSET=".*DYCOMSrf01">5</se_ne_x>
     <se_ne_y>0</se_ne_y>
+    <se_ne_y COMPSET=".*DYCOMSrf01">5</se_ne_y>
     <se_lx>0</se_lx>
+    <se_lx COMPSET=".*DYCOMSrf01">50000</se_lx>
     <se_ly>0</se_ly>
+    <se_ly COMPSET=".*DYCOMSrf01">50000</se_ly>
     <se_nsplit>-1</se_nsplit>
     <se_partmethod>4</se_partmethod>
     <se_topology>cube</se_topology>
+    <se_topology COMPSET=".*DP-EAMxx">plane</se_topology>
     <se_tstep type="real">UNSET</se_tstep>
     <se_tstep hgrid="ne4np4" constraints="gt 0">600</se_tstep>
     <se_tstep hgrid="ne30np4" constraints="gt 0">300</se_tstep>
@@ -575,6 +597,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <se_tstep hgrid="ne256np4" constraints="gt 0">33.33333333333</se_tstep>
     <se_tstep hgrid="ne512np4" constraints="gt 0">16.6666666666666</se_tstep>
     <se_tstep hgrid="ne1024np4" constraints="gt 0">8.3333333333333</se_tstep>
+    <se_tstep COMPSET=".*DP-EAMxx" constraints="gt 0">8.3333333333333</se_tstep>
     <se_tstep hgrid="ne0np4_conus_x4v1_lowcon" constraints="gt 0">75</se_tstep>
     <statefreq>9999</statefreq>
     <theta_advect_form>1</theta_advect_form>
