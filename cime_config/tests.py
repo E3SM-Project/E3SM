@@ -583,6 +583,13 @@ _TESTS = {
             )
     },
 
+    "e3sm_scream_v1_dp-eamxx" : {
+        "time"  : "01:00:00",
+        "tests" : (
+            "ERS_Ln22.ne30_ne30.F2010-SCREAMv1-DP-DYCOMSrf01", # 225 phys cols, roughly size of ne2
+            )
+    },
+
     # Tests run on exclusively on mappy for scream AT testing. These tests
     # should be fast, so we limit it to low res and add some thread tests
     # specifically for mappy.
