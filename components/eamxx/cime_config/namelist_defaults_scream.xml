@@ -354,6 +354,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       >
         false
       </extra_clnsky_diag>
+      <do_subcol_sampling type="logical">true</do_subcol_sampling>
     </rrtmgp>
 
     <mac_aero_mic inherit="atm_proc_group">
