@@ -268,6 +268,7 @@ ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".true." irrigate=".true." nu_co
 <finidat hgrid="ne1024np4.pg2" mask="ICOS10" ic_ymd="20160801">lnd/clm2/initdata/20220928.I2010CRUELM.ne1024pg2_ICOS10.elm.r.2016-08-01-00000.nc</finidat>
 <finidat hgrid="ne1024np4.pg2" mask="ICOS10" ic_ymd="20200120">lnd/clm2/initdata/20221218.F2010-CICE.ne30pg2_ne1024pg2.elm.r.2020-01-20-00000.nc</finidat>
 <finidat hgrid="ne1024np4.pg2" mask="ICOS10" ic_ymd="19941001">lnd/clm2/initdata/20231226.I2010CRUELM.ne1024pg2_ICOS10.elm.r.1994-10-01-00000.nc</finidat>
+<finidat hgrid="ne256np4.pg2"  mask="ICOS10" ic_ymd="19941001">lnd/clm2/initdata/20240104.I2010CRUELM.ne256pg2.elm.r.1994-10-01-00000.nc</finidat>
 <finidat hgrid="ne1024np4.pg2" mask="ICOS10" ic_ymd="101">lnd/clm2/initdata/20220717.I2010CRUELM.ne1024pg2_ICOS10.elm.r.2013-01-01-00000.nc</finidat>
 <finidat hgrid="ne1024np4.pg2" mask="ICOS10" ic_ymd="401">lnd/clm2/initdata/20220717.I2010CRUELM.ne1024pg2_ICOS10.elm.r.2013-04-01-00000.nc</finidat>
 <finidat hgrid="ne1024np4.pg2" mask="ICOS10" ic_ymd="701">lnd/clm2/initdata/20220717.I2010CRUELM.ne1024pg2_ICOS10.elm.r.2013-07-01-00000.nc</finidat>
