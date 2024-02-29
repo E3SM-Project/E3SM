@@ -372,7 +372,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     </mac_aero_mic>
 
     <cosp inherit="atm_proc_base">
-      <cosp_subcolumns>10</cosp_subcolumns>
+      <cosp_subcolumns doc="Number of subcolumns to use for COSP simulators; cosp_subcolumns=1 implies no subcolumn sampling">10</cosp_subcolumns>
       <cosp_subcolumns hgrid="ne1024np4">1</cosp_subcolumns>  <!-- No subcolumn sampling at satellite pixel scales -->
       <cosp_subcolumns hgrid="ne512np4" >1</cosp_subcolumns>  <!-- No subcolumn sampling at satellite pixel scales -->
       <cosp_subcolumns hgrid="ne256np4" >1</cosp_subcolumns>  <!-- No subcolumn sampling at satellite pixel scales -->
