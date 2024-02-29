@@ -423,6 +423,11 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   if (run_type==RunType::Initial) {
     initialize_homme_state ();
   } else {
+    if (m_iop) {
+      // We need to reload IOP data after restarting
+      m_iop->read_iop_file_data(timestamp());
+    }
+
     restart_homme_state ();
   }
 
