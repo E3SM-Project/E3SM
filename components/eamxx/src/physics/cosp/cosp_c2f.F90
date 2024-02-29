@@ -292,39 +292,43 @@ contains
  
     nptsperit = npoints
 
-    tca(:npoints,:nlevels) = cldfrac(:npoints,:nlevels)
-    cca(:npoints,:nlevels) = 0
-    mr_lsliq(:npoints,:nlevels) = 0
-    mr_ccliq(:npoints,:nlevels) = 0
-    mr_lsice(:npoints,:nlevels) = 0
-    mr_ccice(:npoints,:nlevels) = 0
-    dtau_c(:npoints,:nlevels) = 0
-    dtau_s(:npoints,:nlevels) = dtau067(:npoints,:nlevels)
-    dem_c (:npoints,:nlevels) = 0
-    dem_s (:npoints,:nlevels) = 1._wp - exp(-dtau105(:npoints,:nlevels))
-    mr_lsrain(:npoints,:nlevels) = 0
-    mr_ccrain(:npoints,:nlevels) = 0
-    mr_lssnow(:npoints,:nlevels) = 0
-    mr_lssnow(:npoints,:nlevels) = 0
-    mr_ccsnow(:npoints,:nlevels) = 0
-    mr_lsgrpl(:npoints,:nlevels) = 0
-    reff = 0  ! FIXME
-
     ! In-cloud values are assumed. If ncolumns = 1, then convert in-cloud values to gridbox
     if (ncolumns == 1) then
-       dtau_s = dtau_s * tca
-       dtau_c = dtau_c * cca
-       dem_s = dem_s * tca
-       dem_c = dem_c * cca
-       mr_lsliq = mr_lsliq * tca
-       mr_ccliq = mr_ccliq * cca
-       mr_lsice = mr_lsice * tca
-       mr_ccice = mr_ccice * cca
-       mr_lsrain = mr_lsrain * tca
-       mr_ccrain = mr_ccrain * cca
-       mr_lssnow = mr_lssnow * tca
-       mr_ccsnow = mr_ccsnow * cca
-       mr_lsgrpl = mr_lsgrpl * tca
+       tca(:npoints,:nlevels) = cldfrac(:npoints,:nlevels)
+       cca(:npoints,:nlevels) = 0
+       mr_lsliq(:npoints,:nlevels) = 0
+       mr_ccliq(:npoints,:nlevels) = 0
+       mr_lsice(:npoints,:nlevels) = 0
+       mr_ccice(:npoints,:nlevels) = 0
+       dtau_c(:npoints,:nlevels) = 0
+       dtau_s(:npoints,:nlevels) = cldfrac(:npoints,:nlevels) * dtau067(:npoints,:nlevels)
+       dem_c (:npoints,:nlevels) = 0
+       dem_s (:npoints,:nlevels) = 1._wp - exp(-cldfrac(:npoints,:nlevels) * dtau105(:npoints,:nlevels))
+       mr_lsrain(:npoints,:nlevels) = 0
+       mr_ccrain(:npoints,:nlevels) = 0
+       mr_lssnow(:npoints,:nlevels) = 0
+       mr_lssnow(:npoints,:nlevels) = 0
+       mr_ccsnow(:npoints,:nlevels) = 0
+       mr_lsgrpl(:npoints,:nlevels) = 0
+       reff = 0  ! FIXME
+    else
+       tca(:npoints,:nlevels) = cldfrac(:npoints,:nlevels)
+       cca(:npoints,:nlevels) = 0
+       mr_lsliq(:npoints,:nlevels) = 0
+       mr_ccliq(:npoints,:nlevels) = 0
+       mr_lsice(:npoints,:nlevels) = 0
+       mr_ccice(:npoints,:nlevels) = 0
+       dtau_c(:npoints,:nlevels) = 0
+       dtau_s(:npoints,:nlevels) = dtau067(:npoints,:nlevels)
+       dem_c (:npoints,:nlevels) = 0
+       dem_s (:npoints,:nlevels) = 1._wp - exp(-dtau105(:npoints,:nlevels))
+       mr_lsrain(:npoints,:nlevels) = 0
+       mr_ccrain(:npoints,:nlevels) = 0
+       mr_lssnow(:npoints,:nlevels) = 0
+       mr_lssnow(:npoints,:nlevels) = 0
+       mr_ccsnow(:npoints,:nlevels) = 0
+       mr_lsgrpl(:npoints,:nlevels) = 0
+       reff = 0  ! FIXME
     end if
 
     start_idx = 1
