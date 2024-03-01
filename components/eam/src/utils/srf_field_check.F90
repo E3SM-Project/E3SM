@@ -16,6 +16,11 @@ module srf_field_check
   logical, public, protected :: active_Fall_flxfire = .false.
   logical, public, protected :: active_Fall_fco2_lnd = .false.
   logical, public, protected :: active_Faoo_fco2_ocn = .false.
+! adivi: adding one for each ehc co2 flux level, but there are 12 for each
+!    not sure if this will work
+  logical, public, protected :: active_Fazz_co2sfc_iac = .false.
+  logical, public, protected :: active_Fazz_co2airlo_iac = .false.
+  logical, public, protected :: active_Fazz_co2airhi_iac = .false.
 
   ! output from atm
   logical, public, protected :: active_Faxa_nhx = .false.
@@ -29,6 +34,9 @@ module srf_field_check
   public :: set_active_Fall_flxfire
   public :: set_active_Fall_fco2_lnd
   public :: set_active_Faoo_fco2_ocn
+  public :: set_active_Fazz_co2sfc_iac
+  public :: set_active_Fazz_co2airlo_iac
+  public :: set_active_Fazz_co2airhi_iac
   public :: set_active_Faxa_nhx
   public :: set_active_Faxa_noy
 
@@ -75,6 +83,21 @@ contains
     logical, intent(in) :: is_active
     active_Faoo_fco2_ocn = is_active
   end subroutine set_active_Faoo_fco2_ocn
+
+  subroutine set_active_Fazz_co2sfc_iac(is_active)
+    logical, intent(in) :: is_active
+    active_Fazz_co2sfc_iac = is_active
+  end subroutine set_active_Fazz_co2sfc_iac
+
+  subroutine set_active_Fazz_co2airlo_iac(is_active)
+    logical, intent(in) :: is_active
+    active_Fazz_co2airlo_iac = is_active
+  end subroutine set_active_Fazz_co2airlo_iac
+
+  subroutine set_active_Fazz_co2airhi_iac(is_active)
+    logical, intent(in) :: is_active
+    active_Fazz_co2airhi_iac = is_active
+  end subroutine set_active_Fazz_co2airhi_iac
 
   subroutine set_active_Faxa_nhx(is_active)
     logical, intent(in) :: is_active

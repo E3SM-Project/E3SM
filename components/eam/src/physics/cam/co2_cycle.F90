@@ -423,6 +423,9 @@ subroutine co2_cycle_set_ptend(state, pbuf, ptend)
    use constituents,   only: pcnst
    use ppgrid,         only: pver
    use physconst,      only: gravit
+   use cam_control_mod,  only: ehc_active
+   !use camsrfexch,     only: cam_in 
+   use cam_logfile      , only: iulog
 
    ! Arguments
    type(physics_state), intent(in)    :: state
@@ -433,9 +436,17 @@ subroutine co2_cycle_set_ptend(state, pbuf, ptend)
    logical :: lq(pcnst)
    integer :: ifld, ncol, k
    real(r8), pointer :: ac_CO2(:,:)
+   logical :: iac_present ! if true => iac is present/active
 
    !----------------------------------------------------------------------------
-   if (.not. co2_flag .or. .not. co2_readFlux_aircraft) then
+   
+   ! note that currently if iac_present is true then it is active
+   ! but the prognostic co2 can be disabled while it is active,
+   !    in which case co2_readFlux_aircraft must be true if co2_flag is true
+   ! if the ehc is providing co2 then co2_flag must be true and
+   !    co2_readFlux_aircraft must be false
+
+   if ((.not. co2_flag .or. .not. co2_readFlux_aircraft) .and. .not. ehc_active) then
       call physics_ptend_init(ptend, state%psetcols, 'none')
       return
    end if
@@ -447,8 +458,18 @@ subroutine co2_cycle_set_ptend(state, pbuf, ptend)
 
    call physics_ptend_init(ptend, state%psetcols, 'co2_cycle_ac', lq=lq)
 
-   ifld = pbuf_get_index('ac_CO2')   
-   call pbuf_get_field(pbuf, ifld, ac_CO2)
+   if(ehc_active) then
+     ! put the data in ac_CO2(,) from the interpolated array
+     !    based on the imported one
+     ! i don't know how to relate the atm_import cols to these cols
+     ! i assume that pver is the number of vertical layers
+     ! cam_in is in chunks; maybe the state knows which chunk this is in?
+     write(iulog,*)'co2_cycle_set_ptend ncol= ', state%ncol
+     ac_CO2(:,:) = 1._r8
+   else
+      ifld = pbuf_get_index('ac_CO2')   
+      call pbuf_get_field(pbuf, ifld, ac_CO2)
+   endif
 
    ! [ac_CO2] = 'kg m-2 s-1'
    ! [ptend%q] = 'kg kg-1 s-1'

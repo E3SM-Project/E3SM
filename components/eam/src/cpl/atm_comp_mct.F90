@@ -55,6 +55,7 @@ module atm_comp_mct
   use runtime_opts     , only: read_namelist
   use scamMod          , only: single_column,scmlat,scmlon
   use lnd_infodata     , only: precip_downscaling_method !Precipitation downscaling method used in the land model
+  use cam_control_mod  , only: ehc_active
 !
 ! !PUBLIC TYPES:
   implicit none
@@ -266,6 +267,14 @@ CONTAINS
             orb_eccen=eccen, orb_mvelpp=mvelpp, orb_lambm0=lambm0, orb_obliqr=obliqr, &
             lnd_present=lnd_present, ocn_present=ocn_present, iac_present=iac_present, & 
             perpetual=perpetual_run, perpetual_ymd=perpetual_ymd)
+
+       ! set the ehc active control flag for eam
+       ! note that currently if iac_present is true then it is active
+       ! but the prognostic co2 can be disabled while it is active,
+       !    in which case co2_readFlux_aircraft must be true if co2_flag is true
+       ! if the ehc is providing co2 then co2_flag must be true and
+       !    co2_readFlux_aircraft must be false
+       ehc_active = iac_present
 
        ! Don't read in co2 data if iac is present
        ! Currently, iac is always prognostic if it is present - may need to

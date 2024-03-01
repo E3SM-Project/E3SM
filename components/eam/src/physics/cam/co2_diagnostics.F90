@@ -26,6 +26,7 @@ use spmd_utils     , only: masterproc
 use cam_abortutils , only: endrun
 use time_manager   , only: is_first_step, is_last_step, get_prev_date, &
                            get_curr_date, is_end_curr_month
+use cam_control_mod, only: ehc_active
 
 implicit none
 private
@@ -289,6 +290,7 @@ contains
       ! Called by: tphysac
       !-------------------------------------------------
       use physics_buffer, only: physics_buffer_desc, pbuf_get_index, pbuf_get_field
+      !use camsrfexch,     only: cam_in
 
       type(physics_state), intent(inout) :: state
       type(physics_buffer_desc), pointer :: pbuf(:)
@@ -303,7 +305,7 @@ contains
       real(r8) :: air_flux(pcols)           ! aircraft carbon flux
       !------------------------------------------------------------------------
 
-      if ( .not. co2_transport() .or. .not. co2_readFlux_aircraft ) return
+      if ( (.not. co2_transport() .or. .not. co2_readFlux_aircraft) .and. .not. ehc_active ) return
 
       ! Set CO2 global index
       do m = 1, ncnst
@@ -313,9 +315,19 @@ contains
          end select
       end do
 
-      ! acquire aircraft fluxes from physics buffer
-      index_ac_CO2 = pbuf_get_index('ac_CO2')   
-      call pbuf_get_field(pbuf, index_ac_CO2, ac_CO2)
+      if(ehc_active) then
+         ! put the data in ac_CO2(,) from the interpolated array
+         !    based on the imported one
+         ! i don't know how to relate the atm_import cols to these cols
+         ! i assume that pver is the number of vertical layers
+         ! cam_in is in chunks; which chunk are we at and how to relate to cols here?
+         !write(iulog,*)'co2_cycle_set_ptend ncol= ', state%ncol
+         ac_CO2(:,:) = 1._r8
+      else
+         ! acquire aircraft fluxes from physics buffer
+         index_ac_CO2 = pbuf_get_index('ac_CO2')   
+         call pbuf_get_field(pbuf, index_ac_CO2, ac_CO2)
+      endif
 
       ! initialize arrays
       ncol  = state%ncol

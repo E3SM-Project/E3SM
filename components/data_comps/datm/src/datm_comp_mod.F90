@@ -100,7 +100,9 @@ module datm_comp_mod
   real(R8), pointer    :: winddFactor(:)
   real(R8), pointer    :: qsatFactor(:)
 
-  integer(IN),parameter :: ktrans  = 77
+! adivi: adding one for each level of ehc co2 flux transfer
+!    there are actually 12 for each level; not sure this will work
+  integer(IN),parameter :: ktrans  = 80 
 
   character(16),parameter  :: avofld(1:ktrans) = &
        (/"Sa_z            ","Sa_topo         ", &
@@ -118,7 +120,7 @@ module datm_comp_mod
        "Sl_snowh        ","Sf_lfrac        ","Sf_ifrac        ","Sf_ofrac        ", &
        "Faxx_taux       ","Faxx_tauy       ","Faxx_lat        ","Faxx_sen        ", &
        "Faxx_lwup       ","Faxx_evap       ","Fall_fco2_lnd   ","Faoo_fco2_ocn   ", &
-       "Faoo_fdms_ocn   ",  &
+       "Faoo_fdms_ocn   ","Fazz_co2sfc     ","Fazz_co2airlo   ","Fazz_co2airhi   ", &
                                 ! add values for bias correction / anomaly forcing
        "Sa_precsf       ", &
        "Sa_prec_af      ","Sa_u_af         ","Sa_v_af         ","Sa_tbot_af      ",&
@@ -145,7 +147,7 @@ module datm_comp_mod
        "snowhl          ","lfrac           ","ifrac           ","ofrac           ", &
        "taux            ","tauy            ","lat             ","sen             ", &
        "lwup            ","evap            ","co2lnd          ","co2ocn          ", &
-       "dms             ", &
+       "dms             ","co2sfcehc       ","co2airloehc     ","co2airhiehc     ", &
                                 ! add values for bias correction / anomaly forcing (add Sa_precsf for precip scale factor)
        "precsf          ", &
        "prec_af         ","u_af            ","v_af            ","tbot_af         ", &

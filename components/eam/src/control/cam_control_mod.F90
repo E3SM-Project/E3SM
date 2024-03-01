@@ -19,6 +19,8 @@ module cam_control_mod
 
   logical :: indirect          ! True => include indirect radiative effects of sulfate aerosols
 
+  logical :: ehc_active        ! true => the ehc is active and providing co2 data
+
 ! Earth's orbital characteristics
 !	
 ! Orbital information after processed by orbit_params

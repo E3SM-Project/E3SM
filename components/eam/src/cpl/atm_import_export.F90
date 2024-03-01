@@ -20,6 +20,7 @@ contains
     use co2_cycle     , only: data_flux_ocn, data_flux_fuel
     use physconst     , only: mwco2
     use time_manager  , only: is_first_step
+    use seq_infodata_mod
     !
     ! Arguments
     !
@@ -39,6 +40,8 @@ contains
     integer, pointer   :: dst_a5_ndx, dst_a7_ndx
     integer, pointer   :: dst_a1_ndx, dst_a3_ndx
     logical :: overwrite_flds
+    logical :: iac_present ! if true => iac is present, and active in this case
+    type(seq_infodata_type), pointer :: infodata     ! CESM driver level info data
     !-----------------------------------------------------------------------
     overwrite_flds = .true.
     ! don't overwrite fields if invoked during the initialization phase 
@@ -46,6 +49,10 @@ contains
     if (present(restart_init)) overwrite_flds = .not. restart_init
 
     ! ccsm sign convention is that fluxes are positive downward
+
+    ! determine if the ehc/iac is active
+    ! currently it is active if it is present
+    call seq_infodata_GetData( infodata, iac_present=iac_present )
 
     ig=1
     do c=begchunk,endchunk
@@ -127,15 +134,41 @@ contains
              cam_in(c)%fco2_lnd(i) = -x2a(index_x2a_Fall_fco2_lnd,ig)
           end if
 
-          ! TRS atm_import is called during init prior to any iac
+          ! atm_import is called during init prior to any iac
           ! coupling, so we look for the optional month argument which
           ! we only use during atm run
+          ! but these are always defined in cam_cpl_indices,
+          ! so check for active ehc
+          ! these values are monthly and need temporal interpolation
+          ! the aircraft values need vertical interpolation
+
+          ! adivi: the aircraft data should go into a structure within co2_cycle
+          ! mod; this is because the physics package cannot see the camsrfexch
+          ! mod; and it needs special interpolation anyway    
+          ! and i don't know how to relate these chunks and columns to the
+          ! physics package columns
+
           if (present(mon_spec)) then 
-             if (index_x2a_Fazz_co2sfc_iac(mon_spec) /= 0) then
+             if (index_x2a_Fazz_co2sfc_iac(mon_spec) /= 0 .and. iac_present) then
                 ! TRS - iac co2 coupling
                 ! For now, just use the monthly value, without any
-                ! interpolation.  This will change with the rebase.
-                !cam_in(c)%fco2_iac(i) = -x2a(index_x2a_Fazz_co2sfc_iac(mon_spec),ig)
+                ! interpolation.
+                ! surface 
+                cam_in(c)%fco2_ehc_sfc(i) = -x2a(index_x2a_Fazz_co2sfc_iac(mon_spec),ig)
+                ! lo atm
+                cam_in(c)%fco2_ehc_airlo(i) = -x2a(index_x2a_Fazz_co2airlo_iac(mon_spec),ig)
+                ! hi atm
+                cam_in(c)%fco2_ehc_airhi(i) = -x2a(index_x2a_Fazz_co2airhi_iac(mon_spec),ig)
+                ! also check the values
+                if (cam_in(c)%fco2_ehc_sfc(i) /=0 .and. mon_spec == 1) then
+                        write(iulog,*)'atm_import mon_spec 1 chunk ',c,' col ',i,' ig= ', ig, ' fco2_iac= ', cam_in(c)%fco2_ehc_sfc(i)  
+                endif
+                if (cam_in(c)%fco2_ehc_airlo(i) /=0 .and. mon_spec == 1) then
+                        write(iulog,*)'atm_import mon_spec 1 chunk ',c,' col ',i,' ig= ', ig, ' fco2_iac= ', cam_in(c)%fco2_ehc_airlo(i)
+                endif
+                if (cam_in(c)%fco2_ehc_airhi(i) /=0 .and. mon_spec == 1) then
+                        write(iulog,*)'atm_import mon_spec 1 chunk ',c,' col ',i,' ig= ', ig, ' fco2_iac= ', cam_in(c)%fco2_ehc_airhi(i)
+                endif
              endif
           endif
           if (index_x2a_Faoo_fco2_ocn /= 0) then
@@ -164,7 +197,7 @@ contains
        end if
        
        ! from ocn : data read in or from coupler or zero
-       ! from fuel: data read in or zero
+       ! from fuel: data read in or zero or from ehc
        ! from lnd : through coupler or zero
        do c=begchunk,endchunk
           ncols = get_ncols_p(c)                                                 
@@ -194,8 +227,9 @@ contains
              end if
              
              ! co2 flux from fossil fuel
-             if (index_x2a_Fazz_co2sfc_iac(1) /= 0) then
-             !   cam_in(c)%cflx(i,c_i(2)) = cam_in(c)%fco2_iac(i)
+             ! from ehc or data or zero
+             if (index_x2a_Fazz_co2sfc_iac(1) /= 0 .and. iac_present) then
+                cam_in(c)%cflx(i,c_i(2)) = cam_in(c)%fco2_ehc_sfc(i)
              else if (co2_readFlux_fuel) then
 !++BEH  vvv old implementation vvv
 !                cam_in(c)%cflx(i,c_i(2)) = data_flux_fuel%co2flx(i,c)
