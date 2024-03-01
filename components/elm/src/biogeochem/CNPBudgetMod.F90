@@ -1200,7 +1200,7 @@ contains
     associate(                                                       &
          begcb             =>    col_cs%begcb         , & ! Input : [real(r8) (:)   ]  carbon mass begining of the time step
          endcb             =>    col_cs%endcb         , & ! Input : [real(r8) (:)   ]  carbon mass begining of the time step
-         tcs_month_end_grc =>    grc_cs%tcs_month_beg   & ! Output: [real(r8) (:)   ]  grid-level carbon mass at the begining of a month
+         tcs_month_beg_grc =>    grc_cs%tcs_month_beg   & ! Output: [real(r8) (:)   ]  grid-level carbon mass at the begining of a month
          )
 
       ! Get current and previous dates to determine if a new month started
@@ -1212,7 +1212,7 @@ contains
       if ( day_curr == 1 .and. sec_curr == 0 .and. get_nstep() <= 1 ) then
          call c2g( bounds, &
               begcb(bounds%begc:bounds%endc), &
-              tcs_month_end_grc(bounds%begg:bounds%endg), &
+              tcs_month_beg_grc(bounds%begg:bounds%endg), &
               c2l_scale_type= 'unity', l2g_scale_type='unity' )
       endif
 
@@ -1222,7 +1222,7 @@ contains
       if (get_nstep() > 1 .and. day_prev == 1 .and. sec_prev == 0) then
          call c2g( bounds, &
               endcb(bounds%begc:bounds%endc), &
-              tcs_month_end_grc(bounds%begg:bounds%endg), &
+              tcs_month_beg_grc(bounds%begg:bounds%endg), &
               c2l_scale_type= 'unity', l2g_scale_type='unity' )
       endif
 
