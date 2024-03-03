@@ -4112,11 +4112,11 @@
     <OS>Linux</OS>
     <COMPILERS>gnu,intel,nvidia,amdclang</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
-    <CIME_OUTPUT_ROOT>/lustre/scratch4/turquoise/$ENV{USER}/E3SM/scratch/chicoma-cpu</CIME_OUTPUT_ROOT>
+    <CIME_OUTPUT_ROOT>/lustre/scratch5/$ENV{USER}/E3SM/scratch/chicoma-cpu</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/usr/projects/e3sm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/usr/projects/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/lustre/scratch4/turquoise/$ENV{USER}/E3SM/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/lustre/scratch4/turquoise/$ENV{USER}/E3SM/input_data/ccsm_baselines/$COMPILER</BASELINE_ROOT>
+    <DOUT_S_ROOT>/lustre/scratch5/$ENV{USER}/E3SM/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/lustre/scratch5/$ENV{USER}/E3SM/input_data/ccsm_baselines/$COMPILER</BASELINE_ROOT>
     <CCSM_CPRNC>/usr/projects/climate/SHARED_CLIMATE/software/badger/cprnc</CCSM_CPRNC>
     <GMAKE_J>10</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
@@ -4236,11 +4236,11 @@ AMD EPYC 7713 64-Core (Milan) (256GB) and 4 nvidia A100'</DESC>
     <OS>Linux</OS>
     <COMPILERS>gnugpu,gnu,nvidiagpu,nvidia</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
-    <CIME_OUTPUT_ROOT>/lustre/scratch4/turquoise/$ENV{USER}/E3SM/scratch/chicoma-gpu</CIME_OUTPUT_ROOT>
+    <CIME_OUTPUT_ROOT>/lustre/scratch5/$ENV{USER}/E3SM/scratch/chicoma-gpu</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/usr/projects/e3sm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/usr/projects/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/lustre/scratch4/turquoise/$ENV{USER}/E3SM/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/lustre/scratch4/turquoise/$ENV{USER}/E3SM/input_data/ccsm_baselines/$COMPILER</BASELINE_ROOT>
+    <DOUT_S_ROOT>/lustre/scratch5/$ENV{USER}/E3SM/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/lustre/scratch5/$ENV{USER}/E3SM/input_data/ccsm_baselines/$COMPILER</BASELINE_ROOT>
     <CCSM_CPRNC>/usr/projects/climate/SHARED_CLIMATE/software/badger/cprnc</CCSM_CPRNC>
     <GMAKE_J>10</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
