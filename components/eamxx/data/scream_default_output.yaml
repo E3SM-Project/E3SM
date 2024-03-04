@@ -55,8 +55,6 @@ Fields:
       - cldtot
       - cldlow
       - cldmed
-      - aero_g_sw
-      - aodvis
       - cldhgh
       # Surface Fluxes
       - surf_evap
