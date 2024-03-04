@@ -2726,10 +2726,10 @@
     <MPILIBS>spectrum-mpi</MPILIBS>
     <PROJECT>cbronze</PROJECT>
     <CIME_OUTPUT_ROOT>/usr/workspace/$USER/e3sm_scratch</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/usr/gdata/climdat/ccsm3data/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/usr/gdata/climdat/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DIN_LOC_ROOT>/usr/gdata/e3sm/ccsm3data/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/usr/gdata/e3sm/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/usr/workspace/$USER/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/usr/gdata/climdat/baselines/$COMPILER</BASELINE_ROOT>
+    <BASELINE_ROOT>/usr/gdata/e3sm/baselines/$COMPILER</BASELINE_ROOT>
     <GMAKE_J>16</GMAKE_J>
     <BATCH_SYSTEM>lsf</BATCH_SYSTEM>
     <SUPPORTED_BY>donahue5 -at- llnl.gov</SUPPORTED_BY>
@@ -2783,9 +2783,9 @@
     </environment_variables>
     <environment_variables compiler="gnugpu">
       <env name="LLNL_USE_OMPI_VARS">y</env>
-      <env name="PATH">/usr/gdata/climdat/netcdf/bin:$ENV{PATH}</env>
-      <env name="LD_LIBRARY_PATH">/usr/gdata/climdat/netcdf/lib:$ENV{LD_LIBRARY_PATH}</env>
-      <env name="NETCDF_PATH">/usr/gdata/climdat/netcdf</env>
+      <env name="PATH">/usr/gdata/e3sm/netcdf/bin:$ENV{PATH}</env>
+      <env name="LD_LIBRARY_PATH">/usr/gdata/e3sm/netcdf/lib:$ENV{LD_LIBRARY_PATH}</env>
+      <env name="NETCDF_PATH">/usr/gdata/e3sm/netcdf</env>
       <env name="RS_PER_NODE">2</env>
       <env name="CPU_PER_RS">20</env>
       <env name="GPU_PER_RS">2</env>
@@ -2802,11 +2802,11 @@
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>cbronze</PROJECT>
     <CIME_OUTPUT_ROOT>/p/lustre2/$USER/e3sm_scratch/ruby</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/usr/gdata/climdat/ccsm3data/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/usr/gdata/climdat/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DIN_LOC_ROOT>/usr/gdata/e3sm/ccsm3data/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/usr/gdata/e3sm/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/p/lustre2/$USER/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/p/lustre2/$USER/ccsm_baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/usr/gdata/climdat/tools/cprnc</CCSM_CPRNC>
+    <CCSM_CPRNC>/usr/gdata/e3sm/tools/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <BATCH_SYSTEM>lc_slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>donahue5 -at- llnl.gov</SUPPORTED_BY>
@@ -2834,7 +2834,7 @@
         <command name="load">intel-classic/2021.6.0-magic</command>
         <command name="load">mvapich2/2.3.7</command>
         <command name="load">cmake/3.19.2</command>
-        <command name="use --append">/usr/gdata/climdat/install/quartz/modulefiles</command>
+        <command name="use --append">/usr/gdata/e3sm/install/quartz/modulefiles</command>
         <command name="load">hdf5/1.12.2</command>
         <command name="load">netcdf-c/4.9.0</command>
         <command name="load">netcdf-fortran/4.6.0</command>
@@ -2845,7 +2845,7 @@
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <environment_variables compiler="intel">
-      <env name="NETCDF_PATH">/usr/gdata/climdat/install/quartz/netcdf-fortran/</env>
+      <env name="NETCDF_PATH">/usr/gdata/e3sm/install/quartz/netcdf-fortran/</env>
       <env name="PNETCDF_PATH">/usr/tce/packages/parallel-netcdf/parallel-netcdf-1.12.3-mvapich2-2.3.7-intel-classic-2021.6.0</env>
     </environment_variables>
   </machine>
@@ -2857,11 +2857,11 @@
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>cbronze</PROJECT>
     <CIME_OUTPUT_ROOT>/p/lustre2/$USER/e3sm_scratch/quartz</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/usr/gdata/climdat/ccsm3data/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/usr/gdata/climdat/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DIN_LOC_ROOT>/usr/gdata/e3sm/ccsm3data/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/usr/gdata/e3sm/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/p/lustre2/$USER/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/p/lustre2/$USER/ccsm_baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/usr/gdata/climdat/tools/cprnc</CCSM_CPRNC>
+    <CCSM_CPRNC>/usr/gdata/e3sm/tools/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <BATCH_SYSTEM>lc_slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>donahue5 -at- llnl.gov</SUPPORTED_BY>
@@ -2889,7 +2889,7 @@
         <command name="load">intel-classic/2021.6.0-magic</command>
         <command name="load">mvapich2/2.3.7</command>
         <command name="load">cmake/3.19.2</command>
-        <command name="use --append">/usr/gdata/climdat/install/quartz/modulefiles</command>
+        <command name="use --append">/usr/gdata/e3sm/install/quartz/modulefiles</command>
         <command name="load">hdf5/1.12.2</command>
         <command name="load">netcdf-c/4.9.0</command>
         <command name="load">netcdf-fortran/4.6.0</command>
@@ -2900,7 +2900,7 @@
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <environment_variables compiler="intel">
-      <env name="NETCDF_PATH">/usr/gdata/climdat/install/quartz/netcdf-fortran/</env>
+      <env name="NETCDF_PATH">/usr/gdata/e3sm/install/quartz/netcdf-fortran/</env>
       <env name="PNETCDF_PATH">/usr/tce/packages/parallel-netcdf/parallel-netcdf-1.12.3-mvapich2-2.3.7-intel-classic-2021.6.0</env>
     </environment_variables>
   </machine>
