@@ -2674,7 +2674,7 @@ module li_subglacial_hydro
          do iCell = 1, nCells
             if (li_mask_is_grounded_ice(cellMask(iCell))) then !smooth over all grounded cells
 
-               totalPressure = pressureField(iCell)
+               totalPressure = pressureField(iCell)*areaCell(iCell) 
                totalArea = areaCell(iCell)
           
                do jCell = 1, nEdgesOnCell(iCell)
@@ -2688,7 +2688,7 @@ module li_subglacial_hydro
                   endif
                end do
           
-               waterPressureSmooth(iCell) = totalPressure / totalArea !area-weighted average height
+               waterPressureSmooth(iCell) = totalPressure / totalArea !area-weighted average pressure
             endif
       end do
 
