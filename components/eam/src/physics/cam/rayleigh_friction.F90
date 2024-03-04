@@ -85,8 +85,6 @@ contains
         call addfld ('uten_RF', (/ 'lev' /), 'I', 'm/s2','U tendency by rayleigh friction')
         call addfld ('vten_RF', (/ 'lev' /), 'I', 'm/s2','V tendency by rayleigh friction')
         call addfld ('tten_RF', (/ 'lev' /), 'I', 'm/s2','T tendency by rayleigh friction')
-
-
     endif
     !Jinbo Xie
 
