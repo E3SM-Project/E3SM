@@ -2,7 +2,7 @@ version: 2.1
 jobs:
   build:
     machine:
-      image: previous
+      image: ubuntu-2004:2024.01.1
     steps:
       - checkout
       - run: bash .circleci/setup.sh
