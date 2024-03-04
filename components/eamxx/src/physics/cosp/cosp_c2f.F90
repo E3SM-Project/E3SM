@@ -295,41 +295,27 @@ contains
     ! In-cloud values are assumed. If ncolumns = 1, then convert in-cloud values to gridbox
     if (ncolumns == 1) then
        tca(:npoints,:nlevels) = cldfrac(:npoints,:nlevels)
-       cca(:npoints,:nlevels) = 0
-       mr_lsliq(:npoints,:nlevels) = 0
-       mr_ccliq(:npoints,:nlevels) = 0
-       mr_lsice(:npoints,:nlevels) = 0
-       mr_ccice(:npoints,:nlevels) = 0
-       dtau_c(:npoints,:nlevels) = 0
        dtau_s(:npoints,:nlevels) = cldfrac(:npoints,:nlevels) * dtau067(:npoints,:nlevels)
-       dem_c (:npoints,:nlevels) = 0
        dem_s (:npoints,:nlevels) = 1._wp - exp(-cldfrac(:npoints,:nlevels) * dtau105(:npoints,:nlevels))
-       mr_lsrain(:npoints,:nlevels) = 0
-       mr_ccrain(:npoints,:nlevels) = 0
-       mr_lssnow(:npoints,:nlevels) = 0
-       mr_lssnow(:npoints,:nlevels) = 0
-       mr_ccsnow(:npoints,:nlevels) = 0
-       mr_lsgrpl(:npoints,:nlevels) = 0
-       reff = 0  ! FIXME
     else
        tca(:npoints,:nlevels) = cldfrac(:npoints,:nlevels)
-       cca(:npoints,:nlevels) = 0
-       mr_lsliq(:npoints,:nlevels) = 0
-       mr_ccliq(:npoints,:nlevels) = 0
-       mr_lsice(:npoints,:nlevels) = 0
-       mr_ccice(:npoints,:nlevels) = 0
-       dtau_c(:npoints,:nlevels) = 0
        dtau_s(:npoints,:nlevels) = dtau067(:npoints,:nlevels)
-       dem_c (:npoints,:nlevels) = 0
        dem_s (:npoints,:nlevels) = 1._wp - exp(-dtau105(:npoints,:nlevels))
-       mr_lsrain(:npoints,:nlevels) = 0
-       mr_ccrain(:npoints,:nlevels) = 0
-       mr_lssnow(:npoints,:nlevels) = 0
-       mr_lssnow(:npoints,:nlevels) = 0
-       mr_ccsnow(:npoints,:nlevels) = 0
-       mr_lsgrpl(:npoints,:nlevels) = 0
-       reff = 0  ! FIXME
     end if
+    ! Fields not currently being used (will need to be revisted when turning on additional simulators)
+    cca(:npoints,:nlevels) = 0        ! Cloud fraction of convective clouds; not present or used in our model
+    dtau_c(:npoints,:nlevels) = 0     ! Optical depth of convective clouds; not present or used in our model
+    dem_c (:npoints,:nlevels) = 0     ! Emissivity of convective clouds; not present or used in our model
+    mr_lsliq(:npoints,:nlevels) = 0   ! Mixing ratio of cloud liquid; will be needed for radar/lidar
+    mr_ccliq(:npoints,:nlevels) = 0   ! Mixing ratio of cloud liquid for convective clouds; not present or used in our model
+    mr_lsice(:npoints,:nlevels) = 0   ! Mixing ratio of cloud ice; will be needed for radar/lidar
+    mr_ccice(:npoints,:nlevels) = 0   ! Mixing ratio of cloud ice for convective clouds; not present or used in our model
+    mr_lsrain(:npoints,:nlevels) = 0  ! Mixing ratio of rain; will be needed for radar/lidar
+    mr_ccrain(:npoints,:nlevels) = 0  ! Mixing ratio of rain for convective clouds; not present or used in our model 
+    mr_lssnow(:npoints,:nlevels) = 0  ! Mixing ratio of snow; will be needed for radar/lidar
+    mr_ccsnow(:npoints,:nlevels) = 0  ! Mixing ratio of snow for convective clouds; will be needed for radar/lidar
+    mr_lsgrpl(:npoints,:nlevels) = 0  ! Mixing ratio of graupel; will be needed for radar/lidar
+    reff = 0                          ! Effective radii; will be needed for MODIS
 
     start_idx = 1
     end_idx = npoints
