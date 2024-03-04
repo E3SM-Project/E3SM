@@ -227,25 +227,24 @@
   </entry>
 
   <description>
-    <desc compset="_ELM"               >elm physics:</desc>
-    <desc compset="_ELM%[^_]*SP"       >elm Satellite phenology:</desc>
-    <desc compset="_ELM%[^_]*SPBC"     >elm Satellite phenology with black carbon deposition:</desc>
-    <desc compset="_ELM%[^_]*CN"       >elm cn:</desc>
-    <desc compset="_ELM%[^_]*CNDV"     >elm cn with dynamic vegetation:</desc>
-    <desc compset="_ELM%[^_]*BGC"      >elm bgc (cn and methane):</desc>
-    <desc compset="_ELM%[^_]*CROP"     >elm prognostic crop:</desc>
-    <desc compset="_ELM%[^_]*VIC"      >elm vic hydrology:</desc>
-    <desc compset="_ELM%[^_]*FATES"    >elm FATES (Functionally Assembled Terr. Ecosystem Simulator): (experimental)</desc>
-    <desc compset="_ELM%[^_]*BGCDV"    >elm BGC (CN with vertically resolved soil BGC, based on Century with Methane) with dynamic veg</desc>
-    <desc compset="_ELM%[^_]*CRDCTCBC"   >elm C only, nutirent competition via relative demand, ctc soil cascade with black carbon deposition:</desc>
-    <desc compset="_ELM%[^_]*CNRDCTCBC"  >elm C-N, nutirent competition via relative demand, ctc soil cascade with black carbon deposition:</desc>
-    <desc compset="_ELM%[^_]*CNPRDCTCBC" >elm C-N-P, nutirent competition via relative demand, ctc soil cascade with black carbon deposition:</desc>
-    <desc compset="_ELM%[^_]*CNECACTCBC" >elm C-N, nutirent competition via equilibrium chemistry approximation, ctc soil cascade with black carbon deposition:</desc>
-    <desc compset="_ELM%[^_]*CNPECACTCBC">elm C-N-P, nutirent competition via equilibrium chemistry approximation, ctc soil cascade with black carbon deposition:</desc>
-    <desc compset="_ELM50"               >elm physics:</desc>
-    <desc compset="_ELM50%[^_]*SP"       >elm Satellite phenology:</desc>
-    <desc compset="_ELM50%[^_]*BGC"      >elm bgc (cn and methane):</desc>
-    <desc compset="_ELM%[^_]*CNPRDCTCBCTOP" >elm C-N-P, nutrient competition via relative demand, ctc soil cascade with black carbon deposition and subgrid solar radiation parameterization :</desc>
+    <desc compset="_ELM"               >ELM with :</desc>
+    <desc compset="_ELM%SP"            >Satellite phenology :</desc>
+    <desc compset="_ELM%[^_]*SPBC"     >Satellite phenology with black carbon deposition :</desc>
+    <desc compset="_ELM%[^_]*CN"       >CN :</desc>
+    <desc compset="_ELM%[^_]*CNDV"     >CN with dynamic vegetation :</desc>
+    <desc compset="_ELM%[^_]*BGC"      >BGC (CN and methane) :</desc>
+    <desc compset="_ELM%[^_]*CROP"     >prognostic crop :</desc>
+    <desc compset="_ELM%[^_]*VIC"      >VIC hydrology :</desc>
+    <desc compset="_ELM%[^_]*FATES"    >FATES (Functionally Assembled Terr. Ecosystem Simulator) (experimental) :</desc>
+    <desc compset="_ELM%[^_]*BGCDV"    >BGC (CN with vertically resolved soil BGC, based on Century with Methane) with dynamic veg :</desc>
+    <desc compset="_ELM%[^_]*CRDCTCBC"   >C only, nutirent competition via relative demand, ctc soil cascade with black carbon deposition :</desc>
+    <desc compset="_ELM%[^_]*CNRDCTCBC"  >C-N, nutirent competition via relative demand, ctc soil cascade with black carbon deposition :</desc>
+    <desc compset="_ELM%[^_]*CNPRDCTCBC" >C-N-P, nutirent competition via relative demand, ctc soil cascade with black carbon deposition :</desc>
+    <desc compset="_ELM%[^_]*CNECACTCBC" >C-N, nutirent competition via equilibrium chemistry approximation, ctc soil cascade with black carbon deposition :</desc>
+    <desc compset="_ELM%[^_]*CNECACNTBC" >C-N, nutirent competition via equilibrium chemistry approximation, cnt soil cascade black carbon deposition :</desc>
+    <desc compset="_ELM%[^_]*CNPECACTCBC">C-N-P, nutirent competition via equilibrium chemistry approximation, ctc soil cascade with black carbon deposition :</desc>
+    <desc compset="_ELM%[^_]*CNPECACNTBC">C-N-P, nutirent competition via equilibrium chemistry approximation, cnt soil cascade with black carbon deposition :</desc>
+    <desc compset="_ELM%[^_]*CNPRDCTCBCTOP" >C-N-P, nutrient competition via relative demand, ctc soil cascade with black carbon deposition and subgrid solar radiation parameterization :</desc>
   </description>
 
   <help>
