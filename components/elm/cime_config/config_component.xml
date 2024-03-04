@@ -237,13 +237,13 @@
     <desc compset="_ELM%[^_]*VIC"      >VIC hydrology :</desc>
     <desc compset="_ELM%[^_]*FATES"    >FATES (Functionally Assembled Terr. Ecosystem Simulator) (experimental) :</desc>
     <desc compset="_ELM%[^_]*BGCDV"    >BGC (CN with vertically resolved soil BGC, based on Century with Methane) with dynamic veg :</desc>
-    <desc compset="_ELM%[^_]*CRDCTCBC"   >C only, nutirent competition via relative demand, ctc soil cascade with black carbon deposition :</desc>
-    <desc compset="_ELM%[^_]*CNRDCTCBC"  >C-N, nutirent competition via relative demand, ctc soil cascade with black carbon deposition :</desc>
-    <desc compset="_ELM%[^_]*CNPRDCTCBC" >C-N-P, nutirent competition via relative demand, ctc soil cascade with black carbon deposition :</desc>
-    <desc compset="_ELM%[^_]*CNECACTCBC" >C-N, nutirent competition via equilibrium chemistry approximation, ctc soil cascade with black carbon deposition :</desc>
-    <desc compset="_ELM%[^_]*CNECACNTBC" >C-N, nutirent competition via equilibrium chemistry approximation, cnt soil cascade black carbon deposition :</desc>
-    <desc compset="_ELM%[^_]*CNPECACTCBC">C-N-P, nutirent competition via equilibrium chemistry approximation, ctc soil cascade with black carbon deposition :</desc>
-    <desc compset="_ELM%[^_]*CNPECACNTBC">C-N-P, nutirent competition via equilibrium chemistry approximation, cnt soil cascade with black carbon deposition :</desc>
+    <desc compset="_ELM%[^_]*CRDCTCBC"   >C only, nutrient competition via relative demand, ctc soil cascade with black carbon deposition :</desc>
+    <desc compset="_ELM%[^_]*CNRDCTCBC"  >C-N, nutrient competition via relative demand, ctc soil cascade with black carbon deposition :</desc>
+    <desc compset="_ELM%[^_]*CNPRDCTCBC" >C-N-P, nutrient competition via relative demand, ctc soil cascade with black carbon deposition :</desc>
+    <desc compset="_ELM%[^_]*CNECACTCBC" >C-N, nutrient competition via equilibrium chemistry approximation, ctc soil cascade with black carbon deposition :</desc>
+    <desc compset="_ELM%[^_]*CNECACNTBC" >C-N, nutrient competition via equilibrium chemistry approximation, cnt soil cascade black carbon deposition :</desc>
+    <desc compset="_ELM%[^_]*CNPECACTCBC">C-N-P, nutrient competition via equilibrium chemistry approximation, ctc soil cascade with black carbon deposition :</desc>
+    <desc compset="_ELM%[^_]*CNPECACNTBC">C-N-P, nutrient competition via equilibrium chemistry approximation, cnt soil cascade with black carbon deposition :</desc>
     <desc compset="_ELM%[^_]*CNPRDCTCBCTOP" >C-N-P, nutrient competition via relative demand, ctc soil cascade with black carbon deposition and subgrid solar radiation parameterization :</desc>
   </description>
 
