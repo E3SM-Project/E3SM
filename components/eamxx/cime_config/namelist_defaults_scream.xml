@@ -354,7 +354,9 @@ be lost if SCREAM_HACK_XML is not enabled.
       >
         false
       </extra_clnsky_diag>
-      <do_subcol_sampling type="logical">true</do_subcol_sampling>
+      <do_subcol_sampling type="logical" doc="Flag to turn on/off subcolumn sampling of optical properties; if false treat cells as either completely clear or cloudy">
+          true
+      </do_subcol_sampling>
     </rrtmgp>
 
     <mac_aero_mic inherit="atm_proc_group">
