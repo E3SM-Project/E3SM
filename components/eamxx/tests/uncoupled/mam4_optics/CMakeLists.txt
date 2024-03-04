@@ -5,7 +5,7 @@ include (ScreamUtils)
 
 # Create the test
 CreateADUnitTest(mam4_optics_standalone
-  LABELS mam4 physics
+  LABELS mam4_optics physics
   LIBS mam
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
 )
