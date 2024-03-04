@@ -12,7 +12,6 @@ if (SCREAM_DOUBLE_PRECISION)
       # corresponding test here needs to be reworked with valid aerosol
       # initial conditions.
       #add_subdirectory(homme_mam4xx_pg2)
-      # FIXME: this test is failing in CUDA.
       add_subdirectory(homme_shoc_mam_optics_cld_p3_rrtmgp)
       add_subdirectory(homme_mam_optics)
     endif()
