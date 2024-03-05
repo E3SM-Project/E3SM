@@ -376,7 +376,8 @@ run (const std::string& filename,
   Real duration_write = 0.0;  // Record of time spent writing output
   if (is_write_step) {
     if (m_atm_logger) {
-      m_atm_logger->info("[EAMxx::scorpio_output] Writing variables to file:\n\t " + filename + " ...\n");
+      m_atm_logger->info("[EAMxx::scorpio_output] Writing variables to file");
+      m_atm_logger->info("  file name: " + filename);
     }
   }
 
@@ -634,7 +635,7 @@ run (const std::string& filename,
   }
   if (is_write_step) {
     if (m_atm_logger) {
-      m_atm_logger->info("[EAMxx::scorpio_output] Writing variables to file:\n\t " + filename + " ...done! (Elapsed time = " + std::to_string(duration_write/1000.0) +" seconds)\n");
+      m_atm_logger->info("  Done! Elapsed time: " + std::to_string(duration_write/1000.0) +" seconds");
     }
   }
 } // run
