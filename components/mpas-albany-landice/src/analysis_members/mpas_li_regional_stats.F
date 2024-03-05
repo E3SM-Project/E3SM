@@ -762,9 +762,8 @@ contains
            endif
 
            if (config_SGH) then
-              if (regionalIceArea(iRegion) > 0.0_RKIND) then
-                  ! WHAT SHOULD totalFLoationFraction equivalent be? 
-                  regionalAvgFlotationFraction(iRegion) = regionalSumFlotationFraction(iRegion) / regionalIceArea(iRegion)
+              if (regionalGroundedIceArea(iRegion) > 0.0_RKIND) then
+                  regionalAvgFlotationFraction(iRegion) = regionalSumFlotationFraction(iRegion) / regionalGroundedIceArea(iRegion)
               else
                   regionalAvgFlotationFraction(iRegion) = 0.0_RKIND
               endif
