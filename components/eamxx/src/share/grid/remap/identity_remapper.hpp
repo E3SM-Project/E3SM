@@ -63,7 +63,7 @@ public:
     return src_layout;
   }
 
-  void register_field_from_src (const field_type& src) {
+  void register_field_from_src (const field_type& src) override {
     EKAT_REQUIRE_MSG (m_aliasing!=SrcAliasTgt,
         "Error! Makes no sense to register from src and ask that src alias tgt.\n");
     if (m_aliasing==TgtAliasSrc) {
@@ -72,7 +72,7 @@ public:
       AbstractRemapper::register_field_from_src(src);
     }
   }
-  void register_field_from_tgt (const field_type& tgt) {
+  void register_field_from_tgt (const field_type& tgt) override {
     EKAT_REQUIRE_MSG (m_aliasing!=TgtAliasSrc,
         "Error! Makes no sense to register from tgt and ask that tgt alias src.\n");
     if (m_aliasing==SrcAliasTgt) {
