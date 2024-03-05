@@ -611,11 +611,21 @@ end subroutine moab_map_init_rcfile
          ! for true intx cases, tgt_mbid is set to be the same as intx_mbid
          ! just read map is special
          if (mapper%read_map)  then ! receive indeed in target app
-            write(logunit, *) subname,' iMOAB mapper receiving tags with read_map and tgt_mbid: ', mapper%mbname
+#ifdef MOABDEBUG
+            if (seq_comm_iamroot(CPLID)) then
+               write(logunit, *) subname,' iMOAB mapper receiving tags with read_map and tgt_mbid: ', &
+                mapper%mbname, trim(fldlist_moab)
+            endif
+#endif
             ierr = iMOAB_ReceiveElementTag( mapper%tgt_mbid, fldlist_moab, mapper%mpicom, mapper%src_context )
          else ! receive in the intx app, trick
-            write(logunit, *) subname,' iMOAB mapper receiving tags with intx and intx_mbid: ', mapper%mbname
-             ierr = iMOAB_ReceiveElementTag( mapper%intx_mbid, fldlist_moab, mapper%mpicom, mapper%src_context )
+#ifdef MOABDEBUG
+            if (seq_comm_iamroot(CPLID)) then
+               write(logunit, *) subname,' iMOAB mapper receiving tags with intx and intx_mbid: ', &
+                mapper%mbname, trim(fldlist_moab)
+            endif
+#endif
+            ierr = iMOAB_ReceiveElementTag( mapper%intx_mbid, fldlist_moab, mapper%mpicom, mapper%src_context )
          endif
          if (ierr .ne. 0) then
             write(logunit,*) subname,' error in receiving tags ', mapper%mbname, 'recv:',  mapper%intx_mbid, trim(fldlist_moab)
