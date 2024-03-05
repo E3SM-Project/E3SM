@@ -95,8 +95,11 @@ namespace scorpio {
   }
 
   // Shortcut to write/read to/from YYYYMMDD/HHMMSS attributes in the NC file
-  void write_timestamp (const std::string& filename, const std::string& ts_name, const util::TimeStamp& ts);
-  util::TimeStamp read_timestamp (const std::string& filename, const std::string& ts_name);
+  void write_timestamp (const std::string& filename, const std::string& ts_name,
+                        const util::TimeStamp& ts, const bool write_nsteps = false);
+  util::TimeStamp read_timestamp (const std::string& filename,
+                                  const std::string& ts_name,
+                                  const bool read_nsteps = false);
 
 extern "C" {
   /* Query whether the pio subsystem is inited or not */

@@ -168,7 +168,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
       auto rhist_file = find_filename_in_rpointer(hist_restart_filename_prefix,false,m_io_comm,m_run_t0);
 
       // From restart file, get the time of last write, as well as the current size of the avg sample
-      m_output_control.last_write_ts = read_timestamp(rhist_file,"last_write");
+      m_output_control.last_write_ts = read_timestamp(rhist_file,"last_write",true);
       m_output_control.compute_next_write_ts();
       m_output_control.nsamples_since_last_write = get_attribute<int>(rhist_file,"num_snapshots_since_last_write");
 
@@ -440,8 +440,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
       } else {
         if (filespecs.ftype==FileType::HistoryRestart) {
           // Update the date of last write and sample size
-          scorpio::write_timestamp (filespecs.filename,"last_write",m_output_control.last_write_ts);
-          scorpio::set_attribute (filespecs.filename,"last_write_nsteps",m_output_control.last_write_ts.get_num_steps());
+          scorpio::write_timestamp (filespecs.filename,"last_write",m_output_control.last_write_ts,true);
           scorpio::set_attribute (filespecs.filename,"last_output_filename",m_output_file_specs.filename);
           scorpio::set_attribute (filespecs.filename,"num_snapshots_since_last_write",m_output_control.nsamples_since_last_write);
         }

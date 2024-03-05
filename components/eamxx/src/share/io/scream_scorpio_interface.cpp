@@ -677,16 +677,21 @@ void grid_write_data_array<double>(const std::string &filename, const std::strin
   grid_write_data_array_c2f_double(filename.c_str(),varname.c_str(),hbuf,buf_size);
 }
 /* ----------------------------------------------------------------- */
-void write_timestamp (const std::string& filename, const std::string& ts_name, const util::TimeStamp& ts)
+void write_timestamp (const std::string& filename, const std::string& ts_name,
+                      const util::TimeStamp& ts, const bool write_nsteps)
 {
   set_attribute(filename,ts_name,ts.to_string());
-  set_attribute(filename,ts_name+"_nsteps",ts.get_num_steps());
+  if (write_nsteps) {
+    set_attribute(filename,ts_name+"_nsteps",ts.get_num_steps());
+  }
 }
 /* ----------------------------------------------------------------- */
-util::TimeStamp read_timestamp (const std::string& filename, const std::string& ts_name)
+util::TimeStamp read_timestamp (const std::string& filename,
+                                const std::string& ts_name,
+                                const bool read_nsteps)
 {
   auto ts = util::str_to_time_stamp(get_attribute<std::string>(filename,ts_name));
-  if (has_attribute(filename,ts_name+"_nsteps")) {
+  if (read_nsteps and has_attribute(filename,ts_name+"_nsteps")) {
     ts.set_num_steps(get_attribute<int>(filename,ts_name+"_nsteps"));
   }
   return ts;
