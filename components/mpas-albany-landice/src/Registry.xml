@@ -940,7 +940,7 @@
                         <var name="regionEdgeMasks"/>
                         <!--var name="nCellsInRegion"/>
                         <var name="regionVertexMasks"/>
-                            <var name="nVertice<gion"/>
+                        <var name="nVerticesInRegion"/>
                         <var name="nRegionsInGroup"/>
                         <var name="regionsInGroup"/>
                         <var name="regionMaskNames"/>
