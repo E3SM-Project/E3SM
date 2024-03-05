@@ -21,7 +21,7 @@ from atm_manip import apply_atm_procs_list_changes_from_buffer, apply_non_atm_pr
 from utils import ensure_yaml # pylint: disable=no-name-in-module
 ensure_yaml()
 import yaml
-from yaml_utils import Bools,Ints,Floats,Strings,array_representer
+from yaml_utils import Bools,Ints,Floats,Strings,array_representer,array_constructor
 
 _CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","cime")
 sys.path.append(os.path.join(_CIMEROOT, "CIME", "Tools"))
@@ -891,7 +891,7 @@ def get_file_parameters(caseroot):
     return list(OrderedDict.fromkeys(result))
 
 ###############################################################################
-def create_input_data_list_file(caseroot):
+def create_input_data_list_file(case,caseroot):
 ###############################################################################
     """
     Create the scream.input_data_list file for this case. This will tell CIME
@@ -899,18 +899,51 @@ def create_input_data_list_file(caseroot):
     """
     files_to_download = get_file_parameters(caseroot)
 
+    # Add array parsing knowledge to yaml loader
+    loader = yaml.SafeLoader
+    loader.add_constructor("!bools",array_constructor)
+    loader.add_constructor("!ints",array_constructor)
+    loader.add_constructor("!floats",array_constructor)
+    loader.add_constructor("!strings",array_constructor)
+
+    # Grab all the output yaml files, open them, and check if horiz_remap_file or vert_remap_file is used
+    rundir   = case.get_value("RUNDIR")
+    eamxx_xml_file = os.path.join(caseroot, "namelist_scream.xml")
+    with open(eamxx_xml_file, "r") as fd:
+        eamxx_xml = ET.parse(fd).getroot()
+
+        scorpio = get_child(eamxx_xml,'Scorpio')
+        out_files_xml = get_child(scorpio,"output_yaml_files",must_exist=False)
+        #  out_files = out_files_xml.text.split(",") if (out_files_xml is not None and out_files_xml.text is not None) else []
+        #  for fn in out_files:
+        if (out_files_xml is not None and out_files_xml.text is not None):
+            for fn in out_files_xml.text.split(","):
+                # Get full name
+                src_yaml = os.path.expanduser(os.path.join(fn.strip()))
+                dst_yaml = os.path.expanduser(os.path.join(rundir,'data',os.path.basename(src_yaml)))
+
+                # Load file, and look for the remap file entries
+                content = yaml.load(open(dst_yaml,"r"),Loader=loader)
+                if 'horiz_remap_file' in content.keys():
+                    files_to_download += [content['horiz_remap_file']]
+                if 'vert_remap_file' in content.keys():
+                    files_to_download += [content['vert_remap_file']]
+
     input_data_list_file = "{}/Buildconf/scream.input_data_list".format(caseroot)
     if os.path.exists(input_data_list_file):
         os.remove(input_data_list_file)
 
+    din_loc_root = case.get_value("DIN_LOC_ROOT")
     with open(input_data_list_file, "w") as fd:
-        for idx, file_path in enumerate(files_to_download):
-            fd.write("scream_dl_input_{} = {}\n".format(idx, file_path))
+        for idx, file_path in enumerate(list(set(files_to_download))):
+            # Only add files whose full path starts with the CIME's input data location
+            if file_path.startswith(din_loc_root):
+                fd.write("scream_dl_input_{} = {}\n".format(idx, file_path))
+
 
 ###############################################################################
 def do_cime_vars_on_yaml_output_files(case, caseroot):
 ###############################################################################
-    from yaml_utils import array_constructor
 
     rundir   = case.get_value("RUNDIR")
     eamxx_xml_file = os.path.join(caseroot, "namelist_scream.xml")
