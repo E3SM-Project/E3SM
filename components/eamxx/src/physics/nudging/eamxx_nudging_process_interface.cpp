@@ -233,6 +233,7 @@ void Nudging::initialize_impl (const RunType /* run_type */)
 
   // Initialize the time interpolator and horiz remapper
   m_time_interp = util::TimeInterpolation(grid_ext, m_datafiles);
+  m_time_interp.set_logger(m_atm_logger,"[EAMxx::Nudging] Reading nudging data");
 
   // NOTE: we are ASSUMING all fields are 3d and scalar!
   const auto layout_ext = grid_ext->get_3d_scalar_layout(true);

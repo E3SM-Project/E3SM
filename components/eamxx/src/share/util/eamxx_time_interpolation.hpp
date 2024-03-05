@@ -45,6 +45,13 @@ public:
   // Informational
   void print();
 
+  // Option to add a logger
+  void set_logger(const std::shared_ptr<ekat::logger::LoggerBase>& logger,
+                  const std::string& header) {
+      m_logger = logger;
+      m_header = header;
+  }
+
 protected:
 
   // Internal structure to store data source triplets (when using data from file)
@@ -85,7 +92,8 @@ protected:
   AtmosphereInput                            m_file_data_atm_input;
   bool                                       m_is_data_from_file=false;
 
-
+  std::shared_ptr<ekat::logger::LoggerBase>  m_logger;
+  std::string                                m_header;
 }; // class TimeInterpolation
 
 } // namespace util
