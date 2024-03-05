@@ -686,7 +686,9 @@ void write_timestamp (const std::string& filename, const std::string& ts_name, c
 util::TimeStamp read_timestamp (const std::string& filename, const std::string& ts_name)
 {
   auto ts = util::str_to_time_stamp(get_attribute<std::string>(filename,ts_name));
-  ts.set_num_steps(get_attribute<int>(filename,ts_name+"_nsteps"));
+  if (has_attribute(filename,ts_name+"_nsteps")) {
+    ts.set_num_steps(get_attribute<int>(filename,ts_name+"_nsteps"));
+  }
   return ts;
 }
 /* ----------------------------------------------------------------- */
