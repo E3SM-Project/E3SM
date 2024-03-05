@@ -1,4 +1,4 @@
-<?xml version="1.0"?>
+/?xml version="1.0"?>
 <registry model="mpas" core="landice" core_abbrev="li" version="7.0">
 
 
@@ -936,6 +936,8 @@
                                 input_interval="initial_only"
                                 runtime_format="single_file">
                         <var name="regionCellMasks"/>
+                        <var name="regionEdgeMasks"/>
+                        <var name="regionVertexMasks"/>
                         <!--var name="nCellsInRegion"/>
                         <var name="regionVertexMasks"/>
                         <var name="nVerticesInRegion"/>
@@ -1734,6 +1736,12 @@ is the value of that variable from the *previous* time level!
         <var_struct name="regions" time_levs="1">
 	  <var name="regionCellMasks" type="integer" dimensions="nRegions nCells" units="unitless" default_value="1"
 	       description="masks set to 1 in cells that fall within a given region and 0 otherwise"
+	       />
+	  <var name="regionEdgeMasks" type="integer" dimensions="nRegions nEdges" units="unitless" default_value="1"
+	       description="masks set to 1 in edges that fall within a given region and 0 otherwise"
+	       />
+	  <var name="regionVertexMasks" type="integer" dimensions="nRegions nVertices" units="unitless" default_value="1"
+	       description="masks set to 1 in vertices that fall within a given region and 0 otherwise"
 	       />
 	  <!--var name="nCellsInRegion" type="integer" dimensions="nRegions" units="unitless"
 	       description="number of cells that fall within a given region"

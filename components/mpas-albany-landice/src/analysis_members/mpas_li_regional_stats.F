@@ -203,6 +203,7 @@ contains
       logical, pointer :: config_SGH
 
       integer, dimension(:,:), pointer :: regionCellMasks
+      integer, dimension(:,:), pointer :: regionEdgeMasks
       integer, dimension(:), pointer :: cellMask
       integer, dimension(:), pointer :: edgeMask
       integer, dimension(:,:), pointer :: cellsOnEdge
@@ -348,7 +349,12 @@ contains
 
          ! get region cell masks from regionMasks.nc input file
          call mpas_pool_get_array(regionsPool, 'regionCellMasks', regionCellMasks)
-
+         if (config_SGH) then
+             ! regionEdgeMasks is required if calculating regional stats with SGH, 
+             ! in the fututre will probably be required for standalone regional stats
+             ! but this is used a stopgap to forestall backwards compatibility problems
+            call mpas_pool_get_array(regionsPool, 'regionEdgeMasks', regionEdgeMasks)
+         endif
          ! allocate & initialize sums over blocks to 0
          allocate(blockSumRegionIceArea(nRegions)); allocate(blockSumRegionIceVolume(nRegions))
          allocate(blockSumRegionVAF(nRegions))
@@ -570,32 +576,34 @@ contains
                end do ! end loop over regions
             end if ! if GL
 
-            ! TO DO: Need to define our own condition on how to decide which region to put the edge quantities
-            ! TO DO: Make sure SGH terms are masked based on region (using regionEdgeMasks?) b/c calculations are 
-            !        currently unmasked and therefore global values 
-
-
-            ! assign the SGH stats this edge quantities to the region of the upwind cell
+            ! assign the SGH stats based on edge values using the regionEdgeMask 
             if (config_SGH) then
-               ! Channel Melt
-               blockSumRegionChannelMelt(iRegion) = blockSumRegionChannelMelt(iRegion) + &
-                 abs(channelMelt(iEdge) * dcEdge(iEdge))
 
-               ! Meltwater Flux across the grounding line
-               blockSumRegionGLMeltFlux(iRegion) = blockSumRegionGLMeltFlux(iRegion) + &
-                 abs(hydroMarineMarginMask(iEdge) * waterFlux(iEdge) * dvEdge(iEdge) * rho_water)
+               do iRegion = 1,nRegions ! loop over regions
+                  ! Channel Melt
+                  blockSumRegionChannelMelt(iRegion) = blockSumRegionChannelMelt(iRegion) + &
+                    (real(regionEdgeMasks(iRegion,iEdge),RKIND) * abs(channelMelt(iEdge) * dcEdge(iEdge)))
 
-               ! Meltwater Flux across terrestrial margins
-               blockSumRegionTerrestrialMeltFlux(iRegion) = blockSumRegionTerrestrialMeltFlux(iRegion) + &
-                 abs(hydroTerrestrialMarginMask(iEdge) * waterFlux(iEdge) * dvEdge(iEdge) * rho_water)
+                  ! Meltwater Flux across the grounding line
+                  blockSumRegionGLMeltFlux(iRegion) = blockSumRegionGLMeltFlux(iRegion) + &
+                    (real(regionEdgeMasks(iRegion,iEdge),RKIND) * &
+                    abs(hydroMarineMarginMask(iEdge) * waterFlux(iEdge) * dvEdge(iEdge) * rho_water))
 
-               ! Meltwater Discharge in channels across grounding line
-               blockSumRegionChannelGLMeltFlux(iRegion) = blockSumRegionChannelGLMeltFlux(iRegion) + &
-                 abs(hydroMarineMarginMask(iEdge) * channelDischarge(iEdge) * rho_water)
+                  ! Meltwater Flux across terrestrial margins
+                  blockSumRegionTerrestrialMeltFlux(iRegion) = blockSumRegionTerrestrialMeltFlux(iRegion) + &
+                    (real(regionEdgeMasks(iRegion,iEdge),RKIND) * &
+                    abs(hydroTerrestrialMarginMask(iEdge) * waterFlux(iEdge) * dvEdge(iEdge) * rho_water))
 
-               ! Meltwater discharge in channels across terrestrial margin
-               blockSumRegionChannelTerrestrialMeltFlux(iRegion) = blockSumRegionChannelTerrestrialMeltFlux(iRegion) + &
-                 abs( hydroTerrestrialMarginMask(iEdge) * channelDischarge(iEdge) * rho_water)
+                  ! Meltwater Discharge in channels across grounding line
+                  blockSumRegionChannelGLMeltFlux(iRegion) = blockSumRegionChannelGLMeltFlux(iRegion) + &
+                    (real(regionEdgeMasks(iRegion,iEdge),RKIND) * &
+                    abs(hydroMarineMarginMask(iEdge) * channelDischarge(iEdge) * rho_water))
+
+                  ! Meltwater discharge in channels across terrestrial margin
+                  blockSumRegionChannelTerrestrialMeltFlux(iRegion) = blockSumRegionChannelTerrestrialMeltFlux(iRegion) + &
+                    (real(regionEdgeMasks(iRegion,iEdge),RKIND) * &
+                    abs( hydroTerrestrialMarginMask(iEdge) * channelDischarge(iEdge) * rho_water))
+               end do ! end loop over regions 
             endif ! if SGH is on
          end do ! end loop over edges
 
