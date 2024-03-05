@@ -1,4 +1,4 @@
-/?xml version="1.0"?>
+<?xml version="1.0"?>
 <registry model="mpas" core="landice" core_abbrev="li" version="7.0">
 
 
@@ -842,6 +842,7 @@
 			<var name="sfcMassBal"/>
                         <var name="floatingBasalMassBal"/>
                         <var name="regionCellMasks"/>
+                        <var name="regionEdgeMasks"/>
                         <!-- If restart file sizes become too large, eigencalvingParameter,
                              groundedVonMisesThresholdStress, and floatingVonMisesThresholdStress
                              could be moved to packages. -->
@@ -937,10 +938,9 @@
                                 runtime_format="single_file">
                         <var name="regionCellMasks"/>
                         <var name="regionEdgeMasks"/>
-                        <var name="regionVertexMasks"/>
                         <!--var name="nCellsInRegion"/>
                         <var name="regionVertexMasks"/>
-                        <var name="nVerticesInRegion"/>
+                            <var name="nVertice<gion"/>
                         <var name="nRegionsInGroup"/>
                         <var name="regionsInGroup"/>
                         <var name="regionMaskNames"/>
@@ -1739,9 +1739,6 @@ is the value of that variable from the *previous* time level!
 	       />
 	  <var name="regionEdgeMasks" type="integer" dimensions="nRegions nEdges" units="unitless" default_value="1"
 	       description="masks set to 1 in edges that fall within a given region and 0 otherwise"
-	       />
-	  <var name="regionVertexMasks" type="integer" dimensions="nRegions nVertices" units="unitless" default_value="1"
-	       description="masks set to 1 in vertices that fall within a given region and 0 otherwise"
 	       />
 	  <!--var name="nCellsInRegion" type="integer" dimensions="nRegions" units="unitless"
 	       description="number of cells that fall within a given region"
