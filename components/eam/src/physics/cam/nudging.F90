@@ -641,6 +641,7 @@ contains
    !if((Nudge_Vwin_Lindex.gt.Nudge_Vwin_Hindex)                         .or. &
    !  (Nudge_Vwin_Hindex.gt.float(pver+1)).or.(Nudge_Vwin_Hindex.lt.0.).or. &
    !  (Nudge_Vwin_Lindex.gt.float(pver+1)).or.(Nudge_Vwin_Lindex.lt.0.)   ) then
+   !write(iulog,*)'Jinbo Xie Nudge_Vwin_Lindex,Nudge_Vwin_Hindex',Nudge_Vwin_Lindex,Nudge_Vwin_Hindex
    if((Nudge_Vwin_Lindex.gt.Nudge_Vwin_Hindex)   .or. &
       (Nudge_Vwin_Hindex.lt.0.).or. &
       (Nudge_Vwin_Lindex.lt.0.)   ) then
@@ -3049,20 +3050,29 @@ contains
      !------------------------------
 !Jinbo Xie set
 if (1.eq.1) then
-     !get the hybrid vertical coordinates
-     do ilev=1,nlev
-     Nudge_hy_vert(ilev) = hyam(ilev)*ps0 + hybm(ilev)*psr
-     enddo
-     Nudge_hy_vert=Nudge_hy_vert/100.
      !
-     do ilev=12,24!1,10!nlev
+     do ilev=1,nlev
+       !!get the hybrid vertical coordinates
+       Nudge_hy_vert(ilev) = hyam(ilev)*ps0 + hybm(ilev)*psr
+       !!turn to hPa
+       Nudge_hy_vert(ilev) = Nudge_hy_vert(ilev)/100.
+       !!skip if not in the window of the vertical level
+       if (Nudge_hy_vert(ilev).gt.Nudge_Vwin_Hindex.or.\
+           Nudge_hy_vert(ilev).lt.Nudge_Vwin_Hindex) then
+       Wprof(ilev)=0.0
+                continue
+       else
+       !!
        lev_lo=(Nudge_hy_vert(ilev)-Nudge_Vwin_Lindex)/Nudge_Vwin_Ldelta
        lev_hi=(Nudge_Vwin_Hindex-Nudge_hy_vert(ilev))/Nudge_Vwin_Hdelta
        Wprof(ilev)=((1.+tanh(lev_lo))/2.)*((1.+tanh(lev_hi))/2.)
+       !!
+       endif
      end do
      !write(iulog,*) "Jinbo Xie",Nudge_hy_vert
      !write(iulog,*) "Jinbo Xie Wprof",Wprof
      !write(iulog,*) "Jinbo Xie Wprof(12:24)",Wprof(12:24)
+     !call endrun()
 else
 !Jinbo Xie set
      do ilev=1,nlev
