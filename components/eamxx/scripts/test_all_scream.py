@@ -852,11 +852,12 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         expect(test.uses_baselines,
                f"Something is off. generate_baseline should have not be called for test {test}")
 
-        test_dir = self.get_test_dir(self._baseline_dir, test)
+        baseline_dir = self.get_test_dir(self._baseline_dir, test)
+        test_dir = self.get_test_dir(self._work_dir, test)
 
         cmake_config = self.generate_cmake_config(test)
         cmake_config += " -DSCREAM_BASELINES_ONLY=ON"
-        cmake_config += f" -DSCREAM_TEST_DATA_DIR={test_dir}/data"
+        cmake_config += f" -DSCREAM_TEST_DATA_DIR={baseline_dir}/data"
 
         print("===============================================================================")
         print(f"Generating baseline for test {test} with config '{cmake_config}'")
@@ -887,10 +888,8 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
                     success = False
 
         finally:
-            # Clean up the directory, by removing everything but the 'data' subfolder. This must
-            # happen unconditionally or else subsequent runs could be corrupted
-            run_cmd_no_fail(r"find -maxdepth 1 -not -name data ! -path . -exec rm -rf {} \;",
-                            from_dir=test_dir, verbose=True, dry_run=self._dry_run)
+            # Clean up the directory by removing everything
+            run_cmd_no_fail(f"/bin/rm -rf {test_dir}/*")
 
         if success:
             # Store the sha used for baselines generation
@@ -972,9 +971,6 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         print("###############################################################################")
         print("Running tests!")
         print("###############################################################################")
-
-        # First, create build directories (one per test). If existing, nuke the content
-        self.create_tests_dirs(self._work_dir, not self._quick_rerun)
 
         success = True
         tests_success = {
@@ -1061,6 +1057,10 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         success = True
         try:
             # If needed, generate baselines first
+
+            # First, create build directories (one per test). If existing, nuke the content
+            self.create_tests_dirs(self._work_dir, not self._quick_rerun)
+
             tests_needing_baselines = [test for test in self._tests if test.missing_baselines]
             if tests_needing_baselines:
                 expect(self._baseline_ref is not None, "Missing baseline ref")
