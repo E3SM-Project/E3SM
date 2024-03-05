@@ -24,4 +24,9 @@
     <!-- lname>2000_CAM5_CLM45%CNPRDCTCBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_GCAM -->
     <lname>2000_EAM_ELM%CNPRDCTCBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_GCAM</lname>
    </compset>
+
+   <compset>
+    <alias>SSP245_ZATM</alias>
+    <lname>SSP245_EAM%CMIP6_ELM%CNPRDCTCBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_GCAM</lname>
+   </compset>
 </compsets>	
