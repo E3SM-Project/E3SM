@@ -38,6 +38,8 @@ namespace scorpio {
   int get_dimlen(const std::string& filename, const std::string& dimname);
   bool has_dim(const std::string& filename, const std::string& dimname);
   bool has_variable (const std::string& filename, const std::string& varname);
+  bool has_attribute (const std::string& filename, const std::string& attname);
+  bool has_attribute (const std::string& filename, const std::string& varname, const std::string& attname);
   void set_decomp(const std::string& filename);
   /* Sets the degrees-of-freedom for a particular variable in a particular file.  Called once for each variable, for each file. */
   void set_dof(const std::string &filename, const std::string &varname, const Int dof_len, const offset_t* x_dof);

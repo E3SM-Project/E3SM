@@ -190,10 +190,58 @@ bool has_variable (const std::string& filename, const std::string& varname)
     return false;
   }
   EKAT_REQUIRE_MSG (err==PIO_NOERR,
-      "Error! Something went wrong while retrieving dimension id.\n"
+      "Error! Something went wrong while retrieving variable id.\n"
       " - filename : " + filename + "\n"
       " - varname  : " + varname + "\n"
       " - pio error: " + std::to_string(err) + "\n");
+  if (not was_open) {
+    eam_pio_closefile(filename);
+  }
+
+  return true;
+}
+
+bool has_attribute (const std::string& filename, const std::string& attname)
+{
+  return has_attribute(filename,"GLOBAL",attname);
+}
+
+bool has_attribute (const std::string& filename, const std::string& varname, const std::string& attname)
+{
+  int ncid, varid, attid, err;
+
+  bool was_open = is_file_open_c2f(filename.c_str(),-1);
+  if (not was_open) {
+    register_file(filename,Read);
+  }
+
+  // Get file id
+  ncid = get_file_ncid_c2f (filename.c_str());
+
+  // Get var id
+  if (varname=="GLOBAL") {
+    varid = PIO_GLOBAL;
+  } else {
+    err = PIOc_inq_varid(ncid,varname.c_str(),&varid);
+    EKAT_REQUIRE_MSG (err==PIO_NOERR,
+        "Error! Something went wrong while retrieving variable id.\n"
+        " - filename : " + filename + "\n"
+        " - varname  : " + varname + "\n"
+        " - pio error: " + std::to_string(err) + "\n");
+  }
+
+  // Get att id
+  err = PIOc_inq_attid(ncid,varid,varname.c_str(),&attid);
+  if (err==PIO_ENOTATT) {
+    return false;
+  }
+  EKAT_REQUIRE_MSG (err==PIO_NOERR,
+      "Error! Something went wrong while retrieving attribute id.\n"
+      " - filename : " + filename + "\n"
+      " - varname  : " + varname + "\n"
+      " - attname  : " + attname + "\n"
+      " - pio error: " + std::to_string(err) + "\n");
+
   if (not was_open) {
     eam_pio_closefile(filename);
   }
