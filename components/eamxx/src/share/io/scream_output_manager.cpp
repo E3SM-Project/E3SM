@@ -290,13 +290,6 @@ void OutputManager::run(const util::TimeStamp& timestamp)
 
   using namespace scorpio;
 
-  // We did not have dt at init time. Now we can compute it based on timestamp and the ts of last write.
-  // NOTE: dt is only needed for frequency_units='nsteps'. For other units, the function returns immediately
-  m_output_control.compute_dt(timestamp);
-  if (m_checkpoint_control.output_enabled()) {
-    m_checkpoint_control.compute_dt(timestamp);
-  }
-
   std::string timer_root = m_is_model_restart_output ? "EAMxx::IO::restart" : "EAMxx::IO::standard";
   start_timer(timer_root);
 
@@ -432,7 +425,9 @@ void OutputManager::run(const util::TimeStamp& timestamp)
       }
 
       // Since we wrote to file we need to reset the timestamps
-      control.update_write_timestamps();
+      control.last_write_ts = timestamp;
+      control.compute_next_write_ts();
+      control.nsamples_since_last_write = 0;
 
       if (m_is_model_restart_output) {
         // Only write nsteps on model restart
@@ -678,7 +673,6 @@ set_params (const ekat::ParameterList& params,
       m_checkpoint_file_specs.ftype = FileType::HistoryRestart;
     }
   }
-
 }
 
 /*===============================================================================================*/
