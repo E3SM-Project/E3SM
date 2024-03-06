@@ -132,17 +132,17 @@
         </rootpe>
       </pes>
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+SGLC_SWAV_SIAC_SESP_BGC.*" pesize="any">
-        <comment>tests+chrysalis: --compset BGC* --res ne30pg2_r05_IcoswISC30E3r5 on 5 nodes pure-MPI </comment>
+        <comment>tests+chrysalis: --compset BGC* --res ne30pg2_r05_IcoswISC30E3r5 on 9 nodes pure-MPI </comment>
         <ntasks>
-          <ntasks_atm>256</ntasks_atm>
-          <ntasks_lnd>256</ntasks_lnd>
-          <ntasks_rof>256</ntasks_rof>
-          <ntasks_ice>256</ntasks_ice>
-          <ntasks_ocn>64</ntasks_ocn>
-          <ntasks_cpl>256</ntasks_cpl>
+          <ntasks_atm>448</ntasks_atm>
+          <ntasks_lnd>448</ntasks_lnd>
+          <ntasks_rof>448</ntasks_rof>
+          <ntasks_ice>448</ntasks_ice>
+          <ntasks_ocn>128</ntasks_ocn>
+          <ntasks_cpl>448</ntasks_cpl>
         </ntasks>
         <rootpe>
-          <rootpe_ocn>256</rootpe_ocn>
+          <rootpe_ocn>448</rootpe_ocn>
         </rootpe>
       </pes>
     </mach>
