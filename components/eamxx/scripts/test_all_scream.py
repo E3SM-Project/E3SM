@@ -853,7 +853,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
                f"Something is off. generate_baseline should have not be called for test {test}")
 
         baseline_dir = self.get_test_dir(self._baseline_dir, test)
-        test_dir = self.get_test_dir(self._work_dir, test)
+        test_dir = self.get_test_dir(self._work_dir, test, "tas_baseline_build")
 
         cmake_config = self.generate_cmake_config(test)
         cmake_config += " -DSCREAM_BASELINES_ONLY=ON"
@@ -887,14 +887,13 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
                     print(f"WARNING: Failed to create baselines:\n{err}")
                     success = False
 
-        finally:
-            # Clean up the directory by removing everything
-            run_cmd_no_fail(f"/bin/rm -rf {test_dir}/*")
-
         if success:
             # Store the sha used for baselines generation
             self.set_baseline_file_sha(test, commit)
             test.missing_baselines = False
+
+            # Clean up the directory by removing everything
+            shutil.rmtree(test_dir)
 
         return success
 
