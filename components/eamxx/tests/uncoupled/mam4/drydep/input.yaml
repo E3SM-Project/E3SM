@@ -32,6 +32,8 @@ initial_conditions:
   ocnfrac: 0.0
   fv: 1e-5
   ram1: 1e-5
+  w_updraft: 1e-5
+  pbl_height: 0.0
 
 # The parameters for I/O control
 Scorpio:
