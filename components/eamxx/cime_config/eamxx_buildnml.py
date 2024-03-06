@@ -906,7 +906,7 @@ def create_input_data_list_file(case,caseroot):
     loader.add_constructor("!floats",array_constructor)
     loader.add_constructor("!strings",array_constructor)
 
-    # Grab all the output yaml files, open them, and check if horiz_remap_file or vert_remap_file is used
+    # Grab all the output yaml files, open them, and check if horiz_remap_file or vertical_remap_file is used
     rundir   = case.get_value("RUNDIR")
     eamxx_xml_file = os.path.join(caseroot, "namelist_scream.xml")
     with open(eamxx_xml_file, "r") as fd:
@@ -926,8 +926,8 @@ def create_input_data_list_file(case,caseroot):
                 content = yaml.load(open(dst_yaml,"r"),Loader=loader)
                 if 'horiz_remap_file' in content.keys():
                     files_to_download += [content['horiz_remap_file']]
-                if 'vert_remap_file' in content.keys():
-                    files_to_download += [content['vert_remap_file']]
+                if 'vertical_remap_file' in content.keys():
+                    files_to_download += [content['vertical_remap_file']]
 
     input_data_list_file = "{}/Buildconf/scream.input_data_list".format(caseroot)
     if os.path.exists(input_data_list_file):
