@@ -77,6 +77,12 @@ OR
     )
 
     parser.add_argument(
+        "--skip-t0-output",
+        action="store_true",
+        help="Skip t=case_t0 output (only relevant for INSTANT avg)"
+    )
+
+    parser.add_argument(
         "--freq-units",
         default=None,
         type=str.lower,

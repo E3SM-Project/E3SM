@@ -48,6 +48,7 @@ def generate_empty_yaml(filename,overwrite):
     data["Averaging Type"] = "INVALID"
     data["Fields"] = {}
     data["output_control"] = {}
+    data["output_control"]["skip_t0_output"] = "false"
     data["output_control"]["Frequency"] = -1
     data["output_control"]["frequency_units"] = "never"
 
@@ -56,7 +57,7 @@ def generate_empty_yaml(filename,overwrite):
 
 ###############################################################################
 def edit_output_stream_impl(filename,prefix=None,generate=False,overwrite=False,
-                            avg_type=None,freq_units=None,freq=None,
+                            avg_type=None,skip_t0_output=False,freq_units=None,freq=None,
                             grid=None,fields=[],reset=None,io_grid=None,
                             horiz_remap_file=None,vertical_remap_file=None):
 ###############################################################################
@@ -126,6 +127,8 @@ def edit_output_stream_impl(filename,prefix=None,generate=False,overwrite=False,
         for s in reset:
             if s=="avg-type":
                 data["Averaging Type"] = "INVALID"
+            elif s=="skip_t0_output":
+                data["skip_t0_output"] = "false"
             elif s=="preifx":
                 data["filename_prefix"] = "UNSET"
             elif s=="freq":
@@ -161,6 +164,9 @@ def edit_output_stream_impl(filename,prefix=None,generate=False,overwrite=False,
 
     if avg_type is not None:
         data["Averaging Type"] = avg_type
+
+    if skip_t0_output is not None:
+        data["skip_t0_output"] = skip_t0_output
 
     if freq is not None:
         expect (freq.lstrip('-+').isnumeric() or freq=='hist_n',
