@@ -6,6 +6,5 @@ YAML_EDIT_SCRIPT=$CIMEROOT/../components/eamxx/scripts/edit-output-stream
 
 YAML_FILES=$(ls -1 | grep 'eamxx_.*_output.yaml')
 for fname in ${YAML_FILES}; do
-  echo "SETTING VREMAP ON $fname"
-  $YAML_EDIT_SCRIPT -f $fname --vertical-remap-file \${DIN_LOC_ROOT}/atm/scream/maps/map_ne4np4_to_ne2np4_mono.vert_remap.20230306.nc
+  $YAML_EDIT_SCRIPT -f $fname --vertical-remap-file \${DIN_LOC_ROOT}/atm/scream/maps/vrt_remapping_p_levs_20230926.nc
 done
