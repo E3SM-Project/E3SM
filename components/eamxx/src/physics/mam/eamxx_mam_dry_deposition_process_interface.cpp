@@ -418,7 +418,6 @@ void MAMDryDep::run_impl(const double dt) {
   const auto scan_policy = ekat::ExeSpaceUtils<
       KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
 
-  const int num_aero_modes = mam_coupling::num_aero_modes();
   // preprocess input -- needs a scan for the calculation of atm height
   Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
   Kokkos::fence();
