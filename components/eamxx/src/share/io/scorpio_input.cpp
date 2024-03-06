@@ -12,7 +12,7 @@ namespace scream
 
 AtmosphereInput::
 AtmosphereInput (const ekat::ParameterList& params,
-                const std::shared_ptr<const fm_type>& field_mgr)
+                 const std::shared_ptr<const fm_type>& field_mgr)
 {
   init(params,field_mgr);
 }
@@ -206,7 +206,12 @@ void AtmosphereInput::read_variables (const int time_index)
 {
   auto func_start = std::chrono::steady_clock::now();
   if (m_atm_logger) {
-    m_atm_logger->info("[EAMxx::scorpio_input] Reading variables from file:\n\t " + m_filename + " ...\n");
+    m_atm_logger->info("[EAMxx::scorpio_input] Reading variables from file");
+    m_atm_logger->info("  file name: " + m_filename);
+    m_atm_logger->info("  var names: " + ekat::join(m_fields_names,", "));
+    if (time_index!=-1) {
+      m_atm_logger->info("  time idx : " + std::to_string(time_index));
+    }
   }
   EKAT_REQUIRE_MSG (m_inited_with_views || m_inited_with_fields,
       "Error! Scorpio structures not inited yet. Did you forget to call 'init(..)'?\n");
@@ -323,7 +328,7 @@ void AtmosphereInput::read_variables (const int time_index)
   auto func_finish = std::chrono::steady_clock::now();
   if (m_atm_logger) {
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(func_finish - func_start)/1000.0;
-    m_atm_logger->info("[EAMxx::scorpio_input] Reading variables from file:\n\t " + m_filename + " ... done! (Elapsed time = " + std::to_string(duration.count()) +" seconds)\n");
+    m_atm_logger->info("  Done! Elapsed time: " + std::to_string(duration.count()) +" seconds");
   }
 } 
 

@@ -161,6 +161,7 @@ void TimeInterpolation::initialize_data_from_files()
   input_params.set("Field Names",m_field_names);
   input_params.set("Filename",triplet_curr.filename);
   m_file_data_atm_input = AtmosphereInput(input_params,m_fm_time1);
+  m_file_data_atm_input.set_logger(m_logger);
   // Assign the mask value gathered from the FillValue found in the source file.
   // TODO: Should we make it possible to check if FillValue is in the metadata and only assign mask_value if it is?
   float var_fill_value;
@@ -327,6 +328,11 @@ void TimeInterpolation::read_data()
       auto& field = m_fm_time1->get_field(name);
       field.get_header().set_extra_data("mask_value",var_fill_value);
     }
+  }
+
+  if (m_logger) {
+    m_logger->info(m_header);
+    m_logger->info("[EAMxx:time_interpolation] Reading data at time " + triplet_curr.timestamp.to_string());
   }
   m_file_data_atm_input.read_variables(triplet_curr.time_idx);
   m_time1 = triplet_curr.timestamp;
