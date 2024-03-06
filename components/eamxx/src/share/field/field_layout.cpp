@@ -29,7 +29,7 @@ bool FieldLayout::is_tensor_layout () const {
 
 // get the index of the CMP (Components) tag in the FieldLayout
 // e.g., for FieldLayout f({COL, CMP, LEV}, {...});
-// we have get_component_idx(f) = 1
+// we have get_vector_component_idx(f) = 1
 int FieldLayout::get_vector_component_idx () const {
   EKAT_REQUIRE_MSG (is_vector_layout(),
       "Error! 'get_vector_dim' available only for vector layouts.\n"
@@ -48,7 +48,7 @@ int FieldLayout::get_vector_component_idx () const {
 
 // get the extent of the CMP (Components) tag in the FieldLayout
 // e.g., for FieldLayout f({COL, CMP, LEV}, {ncol, ncmp, nlev});
-// we have get_component_idx(f) = ncmp
+// we have get_vector_dim(f) = ncmp
 int FieldLayout::get_vector_dim () const {
   // since we immediately call get_vector_component_idx(), the error checking
   // there should be sufficient
