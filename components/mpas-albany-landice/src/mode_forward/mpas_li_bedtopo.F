@@ -53,7 +53,7 @@ module li_bedtopo
    !--------------------------------------------------------------------
 
    ! sea-level model timestep
-   integer, save :: slmTimeStep
+   integer, save :: slmTimeStep, nglv_slm, norder_slm
 
    ! Interpolation weights variables
    integer, dimension(:), allocatable :: toRowValues, toColValues
@@ -404,7 +404,6 @@ contains
       integer :: err_tmp
       integer :: unit_num_slm                     ! SLM variable
       integer :: itersl, dtime                    ! SLM variable
-      integer :: norder_slm, nglv_slm             ! SLM variable
       real    :: starttime                        ! SLM variable
       integer, dimension(:), pointer :: cellMask  ! integer bitmask for cells
       integer, pointer :: config_slm_coupling_interval
@@ -474,6 +473,11 @@ contains
          if (err /= 0) then
             call mpas_log_write("Error occurred in check_SLM_coupling_interval.", MPAS_LOG_ERR)
          endif
+
+         ! check the number of points on the SLM Gauss-Legendre grid
+         call sl_get_model_res(norder_slm, nglv_slm)
+         call mpas_log_write("Solving the SLM upto $i order and degrees of Spherical Harmonics", intArgs=(/norder_slm/))
+         call mpas_log_write("Number of Gauss-Legendre latitudinal nodes in the SLM grid is $i", intArgs=(/nglv_slm/))
 
          ! Set Displacement variable for GATHERV command
          nCellsGlobal = sum(nCellsPerProc)
@@ -659,7 +663,7 @@ contains
 
       integer :: err, err_tmp
 
-      integer :: itersl, dtime, norder_slm, nglv_slm   ! SLM variable
+      integer :: itersl, dtime                 ! SLM variable
       real    :: starttime                     ! SLM variable
 
       err = 0
@@ -680,9 +684,6 @@ contains
       if (curProc.eq.0) then
          ! call the SLM modules to initialize arrays and their dimensions
          call sl_drive_readnl(itersl, dtime, starttime)
-         call sl_get_model_res(norder_slm, nglv_slm)
-         call mpas_log_write("Solving the SLM upto $i order and degrees of Spherical Harmonics", intArgs=(/norder_slm/))
-         call mpas_log_write("Number of Gauss-Legendre latitudinal nodes in the SLM grid is $i", intArgs=(/nglv_slm/))
          ! allocate and initialize the SLM-related variables used in this module
          allocate(globalArrayThickness(nCellsGlobal), gatheredArrayThickness(nCellsGlobal))
          allocate(globalArrayTopoChange(nCellsGlobal), gatheredArrayTopoChange(nCellsGlobal))
