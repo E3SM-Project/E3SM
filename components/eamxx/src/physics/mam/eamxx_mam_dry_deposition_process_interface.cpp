@@ -154,7 +154,6 @@ void MAMDryDep::set_grids(
   // (cloud) aerosol tracers of interest: mass (q) and number (n) mixing ratios
   for(int m = 0; m < num_aero_modes; ++m) {
     const char *cld_nmr_field_name = mam_coupling::cld_aero_nmr_field_name(m);
-    // printf("%s \n", int_nmr_field_name);
 
     add_field<Updated>(cld_nmr_field_name, scalar3d_layout_mid, n_unit,
                        grid_name);
@@ -315,7 +314,7 @@ void compute_tendencies(
   diags.tracer_mixing_ratio = ekat::subview(qtracers, icol);
   diags.d_tracer_mixing_ratio_dt = ekat::subview(d_qtracers_dt, icol);
 
-  for (int i=0; i<num_aero_modes; ++i)
+  for (int i=0; i<num_aero_modes; ++i) 
     diags.wet_geometric_mean_diameter_i[i] = ekat::subview(dgncur_awet[i], icol);
 
   for (int i=0; i<num_aero_modes; ++i)
@@ -352,8 +351,8 @@ void compute_tendencies(
     const double dt,
     MAMDryDep::view_3d qtracers,
     MAMDryDep::view_3d d_qtracers_dt,
-    const MAMDryDep::view_2d dgncur_awet[mam_coupling::num_aero_modes()],
-    const MAMDryDep::view_2d wet_dens[mam_coupling::num_aero_modes()],
+    const MAMDryDep::view_3d dgncur_awet_,
+    const MAMDryDep::view_3d wet_dens_,
     const mam_coupling::DryAtmosphere dry_atm,
     const mam_coupling::AerosolState dry_aero,
     const mam_coupling::AerosolState wet_aero,
@@ -363,6 +362,16 @@ void compute_tendencies(
 {
   const auto policy = ekat::ExeSpaceUtils<MAMDryDep::KT::ExeSpace>::get_default_team_policy(ncol, nlev);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MAMDryDep::KT::MemberType& team) {
+    const int num_aero_modes = mam_coupling::num_aero_modes();
+    MAMDryDep::view_2d dgncur_awet[num_aero_modes];
+    MAMDryDep::view_2d wet_dens[num_aero_modes];
+
+    for (int i=0; i<num_aero_modes; ++i)
+      dgncur_awet[i] = ekat::subview(dgncur_awet_, i);
+
+    for (int i=0; i<num_aero_modes; ++i)
+      wet_dens[i] = ekat::subview(wet_dens_, i);
+
     compute_tendencies(team, parameters, dry_deposition, dt, qtracers, d_qtracers_dt, 
       dgncur_awet, wet_dens, dry_atm, dry_aero, wet_aero, aerdepdrycw, aerdepdryis, tendencies);
   });
@@ -410,7 +419,6 @@ void MAMDryDep::run_impl(const double dt) {
       KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
 
   const int num_aero_modes = mam_coupling::num_aero_modes();
-  const int num_aero_species = mam_coupling::num_aero_species();
   // preprocess input -- needs a scan for the calculation of atm height
   Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
   Kokkos::fence();
@@ -437,19 +445,11 @@ void MAMDryDep::run_impl(const double dt) {
   // }
   // Kokkos::fence();
 
-  view_2d dgncur_awet[num_aero_modes];
-  for (int i=0; i<num_aero_modes; ++i)
-    dgncur_awet[i] = ekat::subview(dgncur_awet_, i);
-
-  view_2d wet_dens[num_aero_modes];
-  for (int i=0; i<num_aero_modes; ++i)
-    wet_dens[i] = ekat::subview(wet_dens_, i);
-
   fill_tracer_views(ncol_, nlev_, dry_atm_, dry_aero_, wet_aero_, qtracers_);
   Kokkos::fence();
 
   compute_tendencies(ncol_, nlev_, parameters_, dry_deposition, dt, qtracers_, d_qtracers_dt_, 
-    dgncur_awet, wet_dens, dry_atm_, dry_aero_, wet_aero_, aerdepdrycw_, aerdepdryis_, tendencies_);
+    dgncur_awet_, wet_dens_, dry_atm_, dry_aero_, wet_aero_, aerdepdrycw_, aerdepdryis_, tendencies_);
   Kokkos::fence();
 
   std::cout <<__FILE__<<":"<<__LINE__
