@@ -163,20 +163,18 @@ def edit_output_stream_impl(filename,prefix=None,generate=False,overwrite=False,
         data["Averaging Type"] = avg_type
 
     if freq is not None:
-        expect (freq.lstrip('-+').isnumeric() or (freq=='hist_n' or freq=='stop_n'),
+        expect (freq.lstrip('-+').isnumeric() or freq=='hist_n',
                 f"Invalid value '{freq}' for --freq. Valid options are\n"
                  " - an integer\n"
-                 " - STOP_N\n"
                  " - HIST_N\n")
         data["output_control"]["Frequency"] = int(freq) if freq.lstrip('-+').isnumeric() else f"${{{freq.upper()}}}"
 
     if freq_units is not None:
         explicit  = ['nsteps','nsecs','nmins','nhours','ndays','nmonths','nyears']
-        cime_vars = ['stop_option','hist_option']
-        expect (freq_units in explicit or freq_units in cime_vars,
+        expect (freq_units in explicit or freq_units=='hist_option',
                 f"Invalid value '{freq_units}' for --freq-units. Valid options are (case insensitive)\n"
                  " - explicit values: 'nsteps','nsecs','nmins','nhours','ndays','nmonths','nyears'\n"
-                 " - CIME variables : 'STOP_OPTION', 'HIST_OPTION'\n")
+                 " - CIME variables : 'HIST_OPTION'\n")
                 
         data["output_control"]["frequency_units"] = freq_units if freq_units in explicit else f"${{{freq_units.upper()}}}"
 
