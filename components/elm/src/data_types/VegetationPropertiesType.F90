@@ -151,6 +151,8 @@ module VegetationPropertiesType
      real(r8), pointer :: needleleaf(:)    => null()   !needleleaf or broadleaf
      real(r8), pointer :: nfixer(:)        => null()   !cablity of nitrogen fixation from atm. N2
 
+     !NGEE Arctic
+     real(r8), pointer :: bend_parm(:)     => null()   ! shrub bending parameter
 
    contains
    procedure, public :: Init => veg_vp_init

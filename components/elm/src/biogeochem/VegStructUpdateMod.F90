@@ -88,6 +88,7 @@ contains
          z0mr               =>  veg_vp%z0mr                   ,       & ! Input:  [real(r8) (:) ] ratio of momentum roughness length to canopy top height (-)
          displar            =>  veg_vp%displar                ,       & ! Input:  [real(r8) (:) ] ratio of displacement height to canopy top height (-)
          dwood              =>  veg_vp%dwood                  ,       & ! Input:  [real(r8) (:) ] density of wood (gC/m^3)
+         bend_parm          =>  veg_vp%bend_parm              ,       & ! Input:  [real(r8) (:) ] shrub bending parameter after Sturm et al. 2005 (-)
 
          snow_depth         =>  col_ws%snow_depth    ,       & ! Input:  [real(r8) (:) ] snow height (m)
 
@@ -249,7 +250,8 @@ contains
          ! Wang and Zeng, 2007.
          if (woody(ivt(p)) >= 1.0_r8 ) then
             ol = min( max(snow_depth(c)-hbot(p), 0._r8), htop(p)-hbot(p))
-            fb = 1._r8 - ol / max(1.e-06_r8, htop(p)-hbot(p))
+         !   fb = 1._r8 - ol / max(1.e-06_r8, htop(p)-hbot(p))   ! Wang and Zeng, 2007
+            fb = 1._r8 - ol / bend_parm(p)*max(1.e-06_r8, htop(p)-hbot(p)) ! Liston and Heimstra, 2011
          else
             fb = 1._r8 - max(min(snow_depth(c),0.2_r8),0._r8)/0.2_r8   ! 0.2m is assumed
             !depth of snow required for complete burial of grasses
