@@ -13,7 +13,7 @@
 namespace scream
 {
 
-// The type of the layout, that is, the kind of field it represent.
+// The type of the layout, that is, the kind of field it represents.
 enum class LayoutType {
   Invalid,
   Scalar0D,
@@ -81,7 +81,7 @@ public:
   bool has_tags (const std::vector<FieldTag>& tags) const;
 
   // The rank is the number of tags associated to this field.
-  int     rank () const  { return m_rank; }
+  int rank () const  { return m_rank; }
 
   int dim (const FieldTag tag) const;
   int dim (const int idim) const;
@@ -96,8 +96,12 @@ public:
   bool is_vector_layout () const;
   bool is_tensor_layout () const;
 
-  // If this is the layout of a vector field, get the idx of the vector dimension
+  // If this is the layout of a vector field, get the idx of the
+  // vector (CMP, Component) dimension
   // Note: throws if is_vector_layout()==false.
+  int get_vector_component_idx () const;
+  // get the dimension (extent) of the vector (CMP, Component) dimension
+  // calls get_vector_component_idx()
   int get_vector_dim () const;
   FieldTag get_vector_tag () const;
 
@@ -129,6 +133,7 @@ std::string to_string (const FieldLayout& l);
 
 // ========================== IMPLEMENTATION ======================= //
 
+// returns extent
 inline int FieldLayout::dim (const FieldTag t) const {
   auto it = ekat::find(m_tags,t);
 
@@ -158,10 +163,10 @@ inline long long FieldLayout::size () const {
   return prod;
 }
 
-inline FieldTag FieldLayout::tag (const int idim) const { 
+inline FieldTag FieldLayout::tag (const int idim) const {
   ekat::error::runtime_check(idim>=0 && idim<m_rank, "Error! Index out of bounds.", -1);
   return m_tags[idim];
-} 
+}
 
 inline bool FieldLayout::has_tags (const std::vector<FieldTag>& tags) const {
   bool b = true;
@@ -189,4 +194,3 @@ inline bool operator== (const FieldLayout& fl1, const FieldLayout& fl2) {
 } // namespace scream
 
 #endif // SCREAM_FIELD_LAYOUT_HPP
-
