@@ -8,6 +8,14 @@
 
 #include <memory>
 
+
+#include "share/scream_session.hpp"
+#include "mct_coupling/ScreamContext.hpp"
+#include "control/atmosphere_driver.hpp"
+#include <iomanip> 
+#include "physics/share/physics_constants.hpp"
+
+
 namespace scream {
 
 AtmosphereProcessGroup::
@@ -399,12 +407,42 @@ void AtmosphereProcessGroup::run_sequential (const double dt) {
   auto ts = timestamp();
   ts += dt;
 
+
+
+   auto& c = scream::ScreamContext::singleton();
+  auto ad = c.getNonConst<scream::control::AtmosphereDriver>();
+  const auto gn = "Physics";
+  //const auto gn = "Physics GLL";
+  const auto& phys_grid = ad.get_grids_manager()->get_grid(gn);
+  //auto area = phys_grid->get_geometry_data("area").get_view<const Real*, Host>();
+  const auto fm = ad.get_field_mgr(gn);
+  const int ncols = fm->get_grid()->get_num_local_dofs();
+  const int nlevs = fm->get_grid()->get_num_vertical_levels();
+
+  //fm->get_field("T_mid").sync_to_host();
+  auto ff = fm->get_field("T_mid").get_view<const Real**, Host>();
+
+#if 0
+  //const auto vv = ff(1,1);
+  for (int ii = 0; ii < ncols; ii++)
+  for (int jj = 0; jj < nlevs; jj++){
+    const auto vv = ff(ii,jj);
+m_atm_logger->info("OG T field ("+std::to_string(ii)+","+std::to_string(jj)+") = "+std::to_string(vv));
+std::cout << "OG T field (" <<std::to_string(ii)<<","<<std::to_string(jj)<<") = "<<std::to_string(vv)
+	<<"\n"<<std::flush;
+  }
+#endif
+
+
   // The stored atm procs should update the timestamp if both
   //  - this is the last subcycle iteration
   //  - nobody from outside told this APG to not update timestamps
   const bool do_update = do_update_time_stamp() &&
                       (get_subcycle_iter()==get_num_subcycles()-1);
   for (auto atm_proc : m_atm_processes) {
+
+std::cout << "OG  proc begin ------------------------ " << atm_proc->name() << " dt="<<std::to_string(dt) <<"\n"<<std::flush;
+
     atm_proc->set_update_time_stamps(do_update);
     // Run the process
     atm_proc->run(dt);
