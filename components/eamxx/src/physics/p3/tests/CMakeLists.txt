@@ -46,7 +46,7 @@ else ()
 endif()
 
 # NOTE: tests inside this if statement won't be built in a baselines-only build
-if (NOT SCREAM_BASELINES_ONLY)
+if (NOT SCREAM_ONLY_GENERATE_BASELINES)
   CreateUnitTest(p3_tests "${P3_TESTS_SRCS}"
       LIBS p3
       THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
@@ -77,10 +77,10 @@ if (NOT SCREAM_BASELINES_ONLY)
 endif()
 
 if (SCREAM_ENABLE_BASELINE_TESTS)
-  if (SCREAM_BASELINES_ONLY)
-    set(BASELINE_FILE_ARG "-g -b ${SCREAM_TEST_DATA_DIR}/p3_run_and_cmp.baseline")
-  else ()
-    set(BASELINE_FILE_ARG "-b ${SCREAM_TEST_DATA_DIR}/p3_run_and_cmp.baseline")
+  if (SCREAM_ONLY_GENERATE_BASELINES)
+    set(BASELINE_FILE_ARG "-g -b ${SCREAM_BASELINES_DIR}/data/p3_run_and_cmp.baseline")
+  else()
+    set(BASELINE_FILE_ARG "-b ${SCREAM_BASELINES_DIR}/data/p3_run_and_cmp.baseline")
   endif()
 
   CreateUnitTestExec(p3_run_and_cmp "p3_run_and_cmp.cpp"
@@ -109,7 +109,7 @@ if (SCREAM_ENABLE_BASELINE_TESTS)
 
   # By default, baselines should be created using all fortran (ctest -L baseline_gen). If the user wants
   # to use CXX to generate their baselines, they should use "ctest -L baseline_gen_cxx".
-  # Note: the baseline_gen label is really only used if SCREAM_BASELINES_ONLY=ON, but no harm adding it
+  # Note: the baseline_gen label label is really only used if SCREAM_ONLY_GENERATE_BASELINES=ON, but no harm adding it
   if (SCREAM_TEST_MAX_THREADS GREATER 1)
     # ECUT only adds _ompX if we have more than one value of X, or if X>1
     set (TEST_SUFFIX _omp${SCREAM_TEST_MAX_THREADS})

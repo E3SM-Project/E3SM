@@ -571,7 +571,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         result += f"--resource-spec-file {test_dir}/ctest_resource_file.json "
 
         if self._baseline_dir is not None and test.uses_baselines:
-            cmake_config += f" -DSCREAM_TEST_DATA_DIR={self.get_preexisting_baseline(test)}"
+            cmake_config += f" -DSCREAM_BASELINES_DIR={self.get_preexisting_baseline(test).parent}"
 
         if not self._submit:
             result += "-DNO_SUBMIT=True "
@@ -616,8 +616,8 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
 
         num_test_res = self.create_ctest_resource_file(test,test_dir)
         cmake_config = self.generate_cmake_config(test)
-        cmake_config += " -DSCREAM_BASELINES_ONLY=ON"
-        cmake_config += f" -DSCREAM_TEST_DATA_DIR={baseline_dir}/data"
+        cmake_config +=  " -DSCREAM_ONLY_GENERATE_BASELINES=ON"
+        cmake_config += f" -DSCREAM_BASELINES_DIR={baseline_dir}"
         cmake_config += f" -DSCREAM_TEST_MAX_TOTAL_THREADS={num_test_res}"
 
         print("===============================================================================")

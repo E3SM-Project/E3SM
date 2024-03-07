@@ -1,7 +1,7 @@
 INCLUDE (ScreamUtils)
 
 # Test atmosphere processes
-if (NOT SCREAM_BASELINES_ONLY)
+if (NOT SCREAM_ONLY_GENERATE_BASELINES)
   # Ensure test input files are present in the data dir
   GetInputFile(scream/init/${EAMxx_tests_IC_FILE_72lev})
 
@@ -15,7 +15,7 @@ if (NOT SCREAM_BASELINES_ONLY)
     CreateUnitTest(${TEST_BASE_NAME}_unit rrtmgp_standalone_unit.cpp
       LABELS rrtmgp physics driver
       LIBS scream_rrtmgp rrtmgp scream_control yakl diagnostics rrtmgp_test_utils
-      EXE_ARGS "--ekat-test-params rrtmgp_inputfile=${SCREAM_DATA_DIR}/init/rrtmgp-allsky.nc,rrtmgp_baseline=${SCREAM_TEST_DATA_DIR}/rrtmgp-allsky-baseline.nc"
+      EXE_ARGS "--ekat-test-params rrtmgp_inputfile=${SCREAM_DATA_DIR}/init/rrtmgp-allsky.nc,rrtmgp_baseline=${SCREAM_BASELINES_DIR}/data/rrtmgp-allsky-baseline.nc"
     )
   endif()
 
@@ -55,7 +55,6 @@ if (NOT SCREAM_BASELINES_ONLY)
     LABELS rrtmgp physics
     META_FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_not_chunked_npMPIRANKS_omp1
   )
-
 
   ## Test chunked version (only for ${TEST_RANK_END}) and compare against non-chunked
   set (SUFFIX "_chunked")

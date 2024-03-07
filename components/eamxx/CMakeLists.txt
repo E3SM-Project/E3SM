@@ -357,14 +357,18 @@ set (IOP_DATA_DIR ${SCREAM_INPUT_ROOT}/atm/cam/scam/iop CACHE PATH "" FORCE)
 
 if (NOT SCREAM_LIB_ONLY)
 
-  # Assuming SCREAM_LIB_ONLY is FALSE (else, no exec is built at all), we provide the option
-  # of building only baseline-related execs. By default, this option is off (menaing "build everything").
-  # However, when generating baselines, this can be useful to reduce the amount of stuff compiled.
-  set(SCREAM_BASELINES_ONLY FALSE CACHE BOOL "Whether building only baselines-related executables")
+  # Assuming SCREAM_LIB_ONLY is FALSE (else, no exec is built at all), we need to decide
+  # wether to build baseline-related execs, and wether we are generating baselines or
+  # comparing against them. These options can help reducing a bit the code that is built
+  # when generating baselines or when running memory-check tests (no baselines needed there)
+  option(SCREAM_ONLY_GENERATE_BASELINES "Whether building only baselines-related executables" OFF)
+  option(SCREAM_ENABLE_BASELINE_TESTS "Whether to run baselines-related tests" ON)
+  if (SCREAM_ONLY_GENERATE_BASELINES AND NOT SCREAM_ENABLE_BASELINE_TESTS)
+    message (FATAL_ERROR
+      "Makes no sense to set SCREAM_ONLY_GENERATE_BASELINES=ON,\n"
+      "but set SCREAM_ENABLE_BASELINE_TESTS=OFF.")
+  endif()
 
-  # Certain builds are not meant to compare against baselines. For instance, a valgrind build
-  # has the sole purpose of detecting memory errors. For these builds, we can disable baselines tests
-  set(SCREAM_ENABLE_BASELINE_TESTS TRUE CACHE BOOL "Whether to run baselines-related tests")
   set(SCREAM_BASELINES_DIR "UNSET" CACHE PATH "Folder containing baselines data")
   if (SCREAM_ENABLE_BASELINE_TESTS)
     if (NOT EXISTS ${SCREAM_BASELINES_DIR}/data OR NOT IS_DIRECTORY ${SCREAM_BASELINES_DIR}/data)
@@ -374,12 +378,6 @@ if (NOT SCREAM_LIB_ONLY)
       message ("${msg}")
       message (FATAL_ERROR "Aborting...")
     endif()
-  endif()
-
-  if (SCREAM_BASELINES_ONLY AND NOT SCREAM_ENABLE_BASELINE_TESTS)
-    message (FATAL_ERROR
-      "Makes no sense to set SCREAM_BASELINES_ONLY=ON,\n"
-      "but set SCREAM_ENABLE_BASELINE_TESTS=OFF.")
   endif()
 
   # All baselines-related tests will output inside this folder
