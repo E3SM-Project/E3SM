@@ -845,7 +845,7 @@ initialize_fields ()
       auto hw = fm->get_field("horiz_winds");
       const auto& fid = hw.get_header().get_identifier();
       const auto& layout = fid.get_layout();
-      const int vec_dim = layout.get_vector_dim();
+      const int vec_dim = layout.get_vector_component_idx();
       const auto& units = fid.get_units();
       auto U = hw.subfield("U",units,vec_dim,0);
       auto V = hw.subfield("V",units,vec_dim,1);
@@ -861,7 +861,7 @@ initialize_fields ()
       auto hw = fm->get_field("surf_mom_flux");
       const auto& fid = hw.get_header().get_identifier();
       const auto& layout = fid.get_layout();
-      const int vec_dim = layout.get_vector_dim();
+      const int vec_dim = layout.get_vector_component_idx();
       const auto& units = fid.get_units();
       auto surf_mom_flux_U = hw.subfield("surf_mom_flux_U",units,vec_dim,0);
       auto surf_mom_flux_V = hw.subfield("surf_mom_flux_V",units,vec_dim,1);
@@ -1454,8 +1454,8 @@ initialize_constant_field(const FieldIdentifier& fid,
   // In the first case, all entries of the field are inited to val, while in the latter,
   // each component is inited to the corresponding entry of the array.
   if (layout.is_vector_layout() and ic_pl.isType<std::vector<double>>(name)) {
-    const auto idim = layout.get_vector_dim();
-    const auto vec_dim = layout.dim(idim);
+    const auto idim = layout.get_vector_component_idx();
+    const auto vec_dim = layout.get_vector_dim();
     const auto& values = ic_pl.get<std::vector<double>>(name);
     EKAT_REQUIRE_MSG (values.size()==static_cast<size_t>(vec_dim),
         "Error! Initial condition values array for '" + name + "' has the wrong dimension.\n"

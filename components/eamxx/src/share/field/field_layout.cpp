@@ -27,7 +27,10 @@ bool FieldLayout::is_tensor_layout () const {
   return lt==LayoutType::Tensor2D || lt==LayoutType::Tensor3D;
 }
 
-int FieldLayout::get_vector_dim () const {
+// get the index of the CMP (Components) tag in the FieldLayout
+// e.g., for FieldLayout f({COL, CMP, LEV}, {...});
+// we have get_vector_component_idx(f) = 1
+int FieldLayout::get_vector_component_idx () const {
   EKAT_REQUIRE_MSG (is_vector_layout(),
       "Error! 'get_vector_dim' available only for vector layouts.\n"
       "       Current layout: " + e2str(get_layout_type(m_tags)) + "\n");
@@ -43,8 +46,17 @@ int FieldLayout::get_vector_dim () const {
   return std::distance(m_tags.cbegin(),it);
 }
 
+// get the extent of the CMP (Components) tag in the FieldLayout
+// e.g., for FieldLayout f({COL, CMP, LEV}, {ncol, ncmp, nlev});
+// we have get_vector_dim(f) = ncmp
+int FieldLayout::get_vector_dim () const {
+  // since we immediately call get_vector_component_idx(), the error checking
+  // there should be sufficient
+  return dim(get_vector_component_idx());
+}
+
 FieldTag FieldLayout::get_vector_tag () const {
-  return m_tags[get_vector_dim()];
+  return m_tags[get_vector_component_idx()];
 }
 
 std::vector<int> FieldLayout::get_tensor_dims () const {
