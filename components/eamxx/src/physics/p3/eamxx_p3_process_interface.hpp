@@ -256,6 +256,8 @@ public:
       // Unlike above, these fluxes do not need to be accumulated
       // since the conservation checks are run after each
       // Microphysics step.
+
+      Kokkos::printf("OG -- before compute_mass_and_energy_fluxes");
       if (compute_mass_and_energy_fluxes) {
         vapor_flux(icol) = 0.0;
         water_flux(icol) = precip_liq_surf_flux(icol)+precip_ice_surf_flux(icol);
