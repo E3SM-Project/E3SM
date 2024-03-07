@@ -853,7 +853,8 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
                f"Something is off. generate_baseline should have not be called for test {test}")
 
         baseline_dir = self.get_test_dir(self._baseline_dir, test)
-        test_dir = self.get_test_dir(self._work_dir, test, "tas_baseline_build")
+        test_dir = self.get_test_dir(self._work_dir, test) / "tas_baseline_build"
+        test_dir.mkdir()
 
         cmake_config = self.generate_cmake_config(test)
         cmake_config += " -DSCREAM_BASELINES_ONLY=ON"
@@ -865,27 +866,26 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
 
         success = True
 
-        try:
-            # We cannot just crash if we fail to generate baselines, since we would
-            # not get a dashboard report if we did that. Instead, just ensure there is
-            # no baseline file to compare against if there's a problem.
-            stat, _, err = run_cmd(f"{cmake_config} {self._root_dir}",
-                                   from_dir=test_dir, verbose=True, dry_run=self._dry_run)
+        # We cannot just crash if we fail to generate baselines, since we would
+        # not get a dashboard report if we did that. Instead, just ensure there is
+        # no baseline file to compare against if there's a problem.
+        stat, _, err = run_cmd(f"{cmake_config} {self._root_dir}",
+                               from_dir=test_dir, verbose=True, dry_run=self._dry_run)
+        if stat != 0:
+            print (f"WARNING: Failed to configure baselines:\n{err}")
+            success = False
+
+        else:
+            cmd = f"make -j{test.compile_res_count} && make -j{test.testing_res_count} baseline"
+            if self._parallel:
+                start, end = self.get_taskset_range(test)
+                cmd = f"taskset -c {start}-{end} sh -c '{cmd}'"
+
+            stat, _, err = run_cmd(cmd, from_dir=test_dir, verbose=True, dry_run=self._dry_run)
+
             if stat != 0:
-                print (f"WARNING: Failed to configure baselines:\n{err}")
+                print(f"WARNING: Failed to create baselines:\n{err}")
                 success = False
-
-            else:
-                cmd = f"make -j{test.compile_res_count} && make -j{test.testing_res_count} baseline"
-                if self._parallel:
-                    start, end = self.get_taskset_range(test)
-                    cmd = f"taskset -c {start}-{end} sh -c '{cmd}'"
-
-                stat, _, err = run_cmd(cmd, from_dir=test_dir, verbose=True, dry_run=self._dry_run)
-
-                if stat != 0:
-                    print(f"WARNING: Failed to create baselines:\n{err}")
-                    success = False
 
         if success:
             # Store the sha used for baselines generation
