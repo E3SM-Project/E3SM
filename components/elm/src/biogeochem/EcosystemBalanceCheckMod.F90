@@ -681,6 +681,9 @@ contains
          ! calculate total column-level inputs
          col_pinputs(c) = primp_to_labilep(c) + supplement_to_sminp(c)
 
+         if (crop_prog) col_pinputs(c) = col_pinputs(c) + &
+              fert_p_to_sminp(c) 
+
          if(use_fates) then
 
             col_poutputs(c) = secondp_to_occlp(c) + sminp_leached(c) + sminp_to_plant(c) + biochem_pmin_to_plant(c)
