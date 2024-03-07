@@ -852,11 +852,13 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         expect(test.uses_baselines,
                f"Something is off. generate_baseline should have not be called for test {test}")
 
-        test_dir = self.get_test_dir(self._baseline_dir, test)
+        baseline_dir = self.get_test_dir(self._baseline_dir, test)
+        test_dir = self.get_test_dir(self._work_dir, test) / "tas_baseline_build"
+        test_dir.mkdir()
 
         cmake_config = self.generate_cmake_config(test)
         cmake_config += " -DSCREAM_BASELINES_ONLY=ON"
-        cmake_config += f" -DSCREAM_TEST_DATA_DIR={test_dir}/data"
+        cmake_config += f" -DSCREAM_TEST_DATA_DIR={baseline_dir}/data"
 
         print("===============================================================================")
         print(f"Generating baseline for test {test} with config '{cmake_config}'")
@@ -864,38 +866,34 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
 
         success = True
 
-        try:
-            # We cannot just crash if we fail to generate baselines, since we would
-            # not get a dashboard report if we did that. Instead, just ensure there is
-            # no baseline file to compare against if there's a problem.
-            stat, _, err = run_cmd(f"{cmake_config} {self._root_dir}",
-                                   from_dir=test_dir, verbose=True, dry_run=self._dry_run)
+        # We cannot just crash if we fail to generate baselines, since we would
+        # not get a dashboard report if we did that. Instead, just ensure there is
+        # no baseline file to compare against if there's a problem.
+        stat, _, err = run_cmd(f"{cmake_config} {self._root_dir}",
+                               from_dir=test_dir, verbose=True, dry_run=self._dry_run)
+        if stat != 0:
+            print (f"WARNING: Failed to configure baselines:\n{err}")
+            success = False
+
+        else:
+            cmd = f"make -j{test.compile_res_count} && make -j{test.testing_res_count} baseline"
+            if self._parallel:
+                start, end = self.get_taskset_range(test)
+                cmd = f"taskset -c {start}-{end} sh -c '{cmd}'"
+
+            stat, _, err = run_cmd(cmd, from_dir=test_dir, verbose=True, dry_run=self._dry_run)
+
             if stat != 0:
-                print (f"WARNING: Failed to configure baselines:\n{err}")
+                print(f"WARNING: Failed to create baselines:\n{err}")
                 success = False
-
-            else:
-                cmd = f"make -j{test.compile_res_count} && make -j{test.testing_res_count} baseline"
-                if self._parallel:
-                    start, end = self.get_taskset_range(test)
-                    cmd = f"taskset -c {start}-{end} sh -c '{cmd}'"
-
-                stat, _, err = run_cmd(cmd, from_dir=test_dir, verbose=True, dry_run=self._dry_run)
-
-                if stat != 0:
-                    print(f"WARNING: Failed to create baselines:\n{err}")
-                    success = False
-
-        finally:
-            # Clean up the directory, by removing everything but the 'data' subfolder. This must
-            # happen unconditionally or else subsequent runs could be corrupted
-            run_cmd_no_fail(r"find -maxdepth 1 -not -name data ! -path . -exec rm -rf {} \;",
-                            from_dir=test_dir, verbose=True, dry_run=self._dry_run)
 
         if success:
             # Store the sha used for baselines generation
             self.set_baseline_file_sha(test, commit)
             test.missing_baselines = False
+
+            # Clean up the directory by removing everything
+            shutil.rmtree(test_dir)
 
         return success
 
@@ -972,9 +970,6 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         print("###############################################################################")
         print("Running tests!")
         print("###############################################################################")
-
-        # First, create build directories (one per test). If existing, nuke the content
-        self.create_tests_dirs(self._work_dir, not self._quick_rerun)
 
         success = True
         tests_success = {
@@ -1061,6 +1056,10 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         success = True
         try:
             # If needed, generate baselines first
+
+            # First, create build directories (one per test). If existing, nuke the content
+            self.create_tests_dirs(self._work_dir, not self._quick_rerun)
+
             tests_needing_baselines = [test for test in self._tests if test.missing_baselines]
             if tests_needing_baselines:
                 expect(self._baseline_ref is not None, "Missing baseline ref")
