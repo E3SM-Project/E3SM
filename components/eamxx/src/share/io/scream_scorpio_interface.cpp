@@ -231,7 +231,7 @@ bool has_attribute (const std::string& filename, const std::string& varname, con
   }
 
   // Get att id
-  err = PIOc_inq_attid(ncid,varid,varname.c_str(),&attid);
+  err = PIOc_inq_attid(ncid,varid,attname.c_str(),&attid);
   if (err==PIO_ENOTATT) {
     return false;
   }
