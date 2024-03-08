@@ -287,7 +287,7 @@ class TestAllScream(object):
     def create_tests_dirs(self, root, clean):
     ###############################################################################
 
-        # Make sure the baseline root directory exists
+        # Make sure the tests root directory exists
         root.mkdir(parents=True,exist_ok=True)
 
         # Create build directories (one per test)
@@ -300,9 +300,11 @@ class TestAllScream(object):
                 # TypeError: lstat: illegal type for path parameter
                 shutil.rmtree(str(test_dir))
 
-            # Create this baseline's build dir
-            if not test_dir.exists():
-                test_dir.mkdir(parents=True)
+            # Create this built type's build dir (if not already existing)
+            test_dir.mkdir(parents=True,exist_ok=True)
+
+            # Create the 'data' subdir (if not already existing)
+            (test_dir / "data").mkdir(parents=False,exist_ok=True)
 
     ###############################################################################
     def get_baseline_file_sha(self, test):
