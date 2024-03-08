@@ -18,7 +18,7 @@ module ColumnDataType
   use elm_varpar      , only : nlevdecomp_full, crop_prog, nlevdecomp
   use elm_varpar      , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
   use elm_varcon      , only : spval, ispval, zlnd, snw_rds_min, denice, denh2o, tfrz, pondmx
-  use elm_varcon      , only : watmin, bdsno, zsoi, zisoi, dzsoi_decomp
+  use elm_varcon      , only : watmin, bdsno, bdfirn, zsoi, zisoi, dzsoi_decomp
   use elm_varcon      , only : c13ratio, c14ratio, secspday
   use elm_varctl      , only : use_fates, use_fates_planthydro, create_glacier_mec_landunit
   use elm_varctl      , only : use_hydrstress, use_crop
@@ -28,6 +28,7 @@ module ColumnDataType
   use elm_varctl      , only : hist_wrtch4diag, use_century_decomp
   use elm_varctl      , only : get_carbontag, override_bgc_restart_mismatch_dump
   use elm_varctl      , only : pf_hmode, nu_com
+  use elm_varctl      , only : use_extrasnowlayers
   use elm_varctl      , only : use_fan
   use ch4varcon       , only : allowlakeprod
   use pftvarcon       , only : VMAX_MINSURF_P_vr, KM_MINSURF_P_vr, pinit_beta1, pinit_beta2
@@ -1742,8 +1743,20 @@ contains
           end do
           do j = -nlevsno+1, 0
              if (j > col_pp%snl(c)) then
-                this%h2osoi_ice(c,j) = col_pp%dz(c,j)*250._r8
-                this%h2osoi_liq(c,j) = 0._r8
+                    if (use_extrasnowlayers) then
+                    ! amschnei@uci.edu: Initialize "deep firn" on glacier columns
+                    if (lun_pp%itype(l) == istice .or. lun_pp%itype(l) == istice_mec) then
+                      this%h2osoi_ice(c,j) = col_pp%dz(c,j)*bdfirn
+                      this%h2osoi_liq(c,j) = 0._r8
+                    else
+                      this%h2osoi_ice(c,j) = col_pp%dz(c,j)*bdsno
+                      this%h2osoi_liq(c,j) = 0._r8
+                    end if
+                  else ! no firn model (default in v2)
+                       ! Below, "250._r8" should instead be "bdsno", which is 250 kg m^3 by default
+                    this%h2osoi_ice(c,j) = col_pp%dz(c,j)*250._r8
+                    this%h2osoi_liq(c,j) = 0._r8
+                  end if
              end if
           end do
        end if
@@ -5830,26 +5843,26 @@ contains
           avgflag='A', long_name='column-integrated snow freezing rate', &
            ptr_col=this%qflx_snofrz, set_lake=spval, c2l_scale_type='urbanf', default='inactive')
 
-    if (create_glacier_mec_landunit) then
+    !if (create_glacier_mec_landunit) then
        this%qflx_glcice(begc:endc) = spval
         call hist_addfld1d (fname='QICE',  units='mm/s',  &
              avgflag='A', long_name='ice growth/melt', &
               ptr_col=this%qflx_glcice, l2g_scale_type='ice')
-    end if
+    !end if
 
-    if (create_glacier_mec_landunit) then
+    !if (create_glacier_mec_landunit) then
        this%qflx_glcice_frz(begc:endc) = spval
         call hist_addfld1d (fname='QICE_FRZ',  units='mm/s',  &
              avgflag='A', long_name='ice growth', &
               ptr_col=this%qflx_glcice_frz, l2g_scale_type='ice')
-    end if
+    !end if
 
-    if (create_glacier_mec_landunit) then
+    !if (create_glacier_mec_landunit) then
        this%qflx_glcice_melt(begc:endc) = spval
         call hist_addfld1d (fname='QICE_MELT',  units='mm/s',  &
              avgflag='A', long_name='ice melt', &
               ptr_col=this%qflx_glcice_melt, l2g_scale_type='ice')
-    end if
+    !end if
 
     ! As defined here, snow_sources - snow_sinks will equal the change in h2osno at any
     ! given time step but only if there is at least one snow layer (for all landunits

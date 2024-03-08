@@ -67,6 +67,7 @@ module elm_varcon
   real(r8) :: oneatm = 1.01325e5_r8                         ! one standard atmospheric pressure [Pa]
 
   real(r8) :: bdsno = 250._r8                               ! bulk density snow (kg/m**3)
+  real(r8) :: bdfirn = 730._r8                              ! bulk density of deep firn (kg/m**3)
   real(r8) :: alpha_aero = 1.0_r8                           ! constant for aerodynamic parameter weighting
   real(r8) :: tlsai_crit = 2.0_r8                           ! critical value of elai+esai for which aerodynamic parameters are maximum
   real(r8) :: watmin = 0.01_r8                              ! minimum soil moisture (mm)
@@ -130,7 +131,7 @@ module elm_varcon
   real(r8) :: ac_wasteheat_factor = 0.0_r8  !wasteheat factor for urban air conditioning (-)
   real(r8) :: wasteheat_limit = 100._r8  !limit on wasteheat (W/m2)
 
-  real(r8) :: h2osno_max = 1000._r8      ! max allowed snow thickness (mm H2O)
+  real(r8) :: h2osno_max = 30000._r8      ! max allowed snow thickness (mm H2O)
   real(r8), parameter :: lapse_glcmec = 0.006_r8  ! surface temperature lapse rate (deg m-1)
                                                   ! Pritchard et al. (GRL, 35, 2008) use 0.006  
   real(r8), parameter :: glcmec_rain_snow_threshold = SHR_CONST_TKFRZ  ! temperature dividing rain & snow in downscaling (K)
