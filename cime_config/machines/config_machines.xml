@@ -2901,8 +2901,8 @@
     <DESC>ANL LCRC cluster 825-node AMD 7713 2-sockets 128-cores per node</DESC>
     <NODENAME_REGEX>ilogin(1|2|3|4).lcrc.anl.gov</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>oneapi-ifx,gnu</COMPILERS>
-    <MPILIBS>openmpi,impi</MPILIBS>
+    <COMPILERS>gnu</COMPILERS>
+    <MPILIBS>openmpi</MPILIBS>
     <PROJECT>e3sm</PROJECT>
     <CIME_OUTPUT_ROOT>/lcrc/group/e3sm/$USER/scratch/improv</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/lcrc/group/e3sm/data/inputdata</DIN_LOC_ROOT>
@@ -2922,15 +2922,7 @@
       <executable>mpirun</executable>
       <arguments>
         <arg name="num_tasks">--tag-output -n {{ total_tasks }}</arg>
-        <arg name="tasks_per_node"> --map-by ppr:1:core:PE=$ENV{OMP_NUM_THREADS} --bind-to core --oversubscribe</arg>
-      </arguments>
-    </mpirun>
-    <mpirun mpilib="impi">
-      <executable>mpiexec</executable>
-      <arguments>
-        <arg name="total_num_tasks">-n {{ total_tasks }} </arg>
-        <arg name="ranks_per_node">-ppn {{ tasks_per_node }}</arg>
-        <arg name="ranks_bind">-bind-to core -genvall</arg>
+        <arg name="tasks_per_node"> --map-by ppr:1:core:PE=$ENV{OMP_NUM_THREADS} --bind-to core --oversubscribe </arg>
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -2944,24 +2936,6 @@
         <command name="purge"/>
         <command name="load">cmake/3.27.4</command>
       </modules>
-      <modules compiler="oneapi-ifx">
-        <command name="load">intel-oneapi-compilers/2023.2.1</command>
-        <command name="load">intel-mkl/2020.4.304-oneapi-2023.2.1</command>
-      </modules>
-      <modules compiler="oneapi-ifx" mpilib="openmpi">
-        <command name="load">openmpi/4.1.6-oneapi-2023.2.1</command>
-        <command name="load">hdf5/1.14.3-openmpi-4.1.6-oneapi-2023.2.1</command>
-        <command name="load">netcdf-c/4.9.2-openmpi-4.1.6-oneapi-2023.2.1</command>
-        <command name="load">netcdf-fortran/4.6.1-openmpi-4.1.6-oneapi-2023.2.1</command>
-        <command name="load">parallel-netcdf/1.12.3-openmpi-4.1.6-oneapi-2023.2.1</command>
-      </modules>
-      <modules compiler="oneapi-ifx" mpilib="impi">
-        <command name="load">intel-oneapi-mpi/2021.10.0-oneapi-2023.2.1</command>
-        <command name="load">hdf5/1.14.3-intel-oneapi-mpi-2021.10.0-oneapi-2023.2.1</command>
-        <command name="load">netcdf-c/4.9.2-intel-oneapi-mpi-2021.10.0-oneapi-2023.2.1</command>
-        <command name="load">netcdf-fortran/4.6.1-intel-oneapi-mpi-2021.10.0-oneapi-2023.2.1</command>
-        <command name="load">parallel-netcdf/1.12.3-intel-oneapi-mpi-2021.10.0-oneapi-2023.2.1</command>
-      </modules>
       <modules compiler="gnu">
         <command name="load">gcc/12.3.0</command>
       </modules>
@@ -2970,20 +2944,6 @@
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <TEST_TPUT_TOLERANCE>0.05</TEST_TPUT_TOLERANCE>
     <MAX_GB_OLD_TEST_DATA>0</MAX_GB_OLD_TEST_DATA>
-    <environment_variables compiler="!gnu">
-      <env name="NETCDF_C_PATH">$SHELL{dirname $(dirname $(which nc-config))}</env>
-      <env name="NETCDF_FORTRAN_PATH">$SHELL{dirname $(dirname $(which nf-config))}</env>
-      <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf_version))}</env>
-      <env name="PATH">/lcrc/group/e3sm/soft/perl/improv/bin:$ENV{PATH}</env>
-    </environment_variables>
-    <environment_variables mpilib="impi">
-      <env name="I_MPI_PIN_DOMAIN">omp</env>
-      <env name="I_MPI_PIN_ORDER">spread</env>
-      <env name="I_MPI_PIN_CELL">core</env>
-    </environment_variables>
-    <environment_variables mpilib="impi" DEBUG="TRUE">
-      <env name="I_MPI_DEBUG">10</env>
-    </environment_variables>
     <environment_variables compiler="gnu" mpilib="openmpi">
       <env name="NETCDF_C_PATH">/lcrc/group/e3sm/soft/improv/netcdf-c/4.9.2b/gcc-12.3.0/openmpi-4.1.6</env>
       <env name="NETCDF_FORTRAN_PATH">/lcrc/group/e3sm/soft/improv/netcdf-fortran/4.6.1b/gcc-12.3.0/openmpi-4.1.6</env>
@@ -2993,12 +2953,6 @@
     </environment_variables>
     <environment_variables BUILD_THREADED="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
-    </environment_variables>
-    <environment_variables BUILD_THREADED="TRUE" compiler="oneapi-ifx" MAX_TASKS_PER_NODE="!256">
-      <env name="KMP_AFFINITY">granularity=core,balanced</env>
-    </environment_variables>
-    <environment_variables BUILD_THREADED="TRUE" compiler="oneapi-ifx" MAX_TASKS_PER_NODE="256">
-      <env name="KMP_AFFINITY">granularity=thread,balanced</env>
     </environment_variables>
     <environment_variables BUILD_THREADED="TRUE" compiler="gnu">
       <env name="OMP_PLACES">cores</env>
