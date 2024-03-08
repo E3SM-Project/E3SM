@@ -96,7 +96,6 @@ def buildlib(bldroot, installpath, case):
             expect(cxx_path is not None, "{} is not in PATH?".format(cxx))
             cxx = "-DCMAKE_CXX_COMPILER={}".format(cxx_path)
 
-    kokkos_options += " -DCMAKE_CXX_STANDARD=17"
     gmake_cmd = case.get_value("GMAKE")
     gmake_j = case.get_value("GMAKE_J")
 

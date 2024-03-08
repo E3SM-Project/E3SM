@@ -574,6 +574,7 @@ _TESTS = {
 
     "e3sm_scream_v1_lowres" : {
         "time"  : "01:00:00",
+        "inherit" : ("e3sm_scream_mam4xx_v1_lowres"),
         "tests" : (
             "ERP_D_Lh4.ne4_ne4.F2010-SCREAMv1",
             "ERS_Ln9.ne4_ne4.F2000-SCREAMv1-AQP1",
