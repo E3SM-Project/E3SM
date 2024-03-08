@@ -48,7 +48,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <sections>ctl_nl</sections>
     </file>
     <file name="data/scream_input.yaml" format="yaml">
-      <sections>driver_options,intensive_observation_period_options,atmosphere_processes,grids_manager,initial_conditions,Scorpio,e3sm_parameters</sections>
+      <sections>driver_options,iop_options,atmosphere_processes,grids_manager,initial_conditions,Scorpio,e3sm_parameters</sections>
     </file>
   </generated_files>
 
@@ -473,10 +473,12 @@ be lost if SCREAM_HACK_XML is not enabled.
     <o3_volume_mix_ratio hgrid="ne0np4_conus_x4v1_lowcon">0.0</o3_volume_mix_ratio>
 
     <!-- Information about perturbed fields-->
-    <perturbed_fields type="array(string)"/>
+    <perturbed_fields type="array(string)" doc="IC fields (with level dimension) to apply a random perturbation to based on the parameters below."/>
     <perturbed_fields type="array(string)" COMPSET=".*DP-EAMxx">T_mid</perturbed_fields>
-    <perturbation_limit type="real">0.001</perturbation_limit>
-    <perturbation_minimum_pressure type="real">900.0</perturbation_minimum_pressure>
+    <generate_perturbation_random_seed type="logical" doc="Whether or not to generate a random seed for perturbation.">false</generate_perturbation_random_seed>
+    <perturbation_random_seed type="integer" doc="Random seed used for perturbation. Will be overridded by generate_perturbation_random_seed=true.">0</perturbation_random_seed>
+    <perturbation_limit type="real" doc="Defines a range [1-x, 1+x] which perturbation will be taken from.">0.001</perturbation_limit>
+    <perturbation_minimum_pressure type="real" doc="Minimum pressure (relative to a reference level pressure profile) for which perturbation will be applied.">900.0</perturbation_minimum_pressure>
   </initial_conditions>
 
   <!-- List of yaml files containing I/O output specs -->
@@ -505,8 +507,8 @@ be lost if SCREAM_HACK_XML is not enabled.
     <column_conservation_checks_fail_handling_type>Warning</column_conservation_checks_fail_handling_type>
     <check_all_computed_fields_for_nans type="logical">true</check_all_computed_fields_for_nans >
     <property_check_data_fields type="array(string)" doc="list of additional data fields to output in property checks (only for physics grid)">phis,landfrac</property_check_data_fields>
-    <enable_intensive_observation_period type="logical" doc="Enable intensive observation period. Currently the only use case is DP-EAMxx">false</enable_intensive_observation_period>
-    <enable_intensive_observation_period COMPSET=".*DP-EAMxx">true</enable_intensive_observation_period>
+    <enable_iop type="logical" doc="Enable intensive observation period. Currently the only use case is DP-EAMxx">false</enable_iop>
+    <enable_iop COMPSET=".*DP-EAMxx">true</enable_iop>
   </driver_options>
 
   <!-- E3SM Simulation Settings -->
@@ -515,19 +517,19 @@ be lost if SCREAM_HACK_XML is not enabled.
   </e3sm_parameters>
 
   <!-- Settings for IOP -->
-  <intensive_observation_period_options>
-    <doubly_periodic_mode type="logical">true</doubly_periodic_mode>
-    <iop_file type="file">UNSET</iop_file>
+  <iop_options>
+    <doubly_periodic_mode type="logical" doc="Type of intensive observation period. Currently only DP is supported.">true</doubly_periodic_mode>
+    <iop_file type="file" doc="File containing DP level data">UNSET</iop_file>
     <iop_file COMPSET=".*DYCOMSrf01">${DIN_LOC_ROOT}/atm/cam/scam/iop/DYCOMSrf01_iopfile_4scam.nc</iop_file>
-    <target_latitude type="real">-999</target_latitude>
+    <target_latitude type="real" doc="Latitude to initialize IC columns.">-999</target_latitude>
     <target_latitude COMPSET=".*DYCOMSrf01">31.5</target_latitude>
-    <target_longitude type="real">-999</target_longitude>
+    <target_longitude type="real" doc="Longitude to initialize IC columns.">-999</target_longitude>
     <target_longitude COMPSET=".*DYCOMSrf01">238.5</target_longitude>
-    <iop_dosubsidence type="logical">false</iop_dosubsidence>
+    <iop_dosubsidence type="logical" doc="Whether or not to compute Eulerian LS vertical advection.">false</iop_dosubsidence>
     <iop_dosubsidence COMPSET=".*DYCOMSrf01">true</iop_dosubsidence>
-    <iop_srf_prop type="logical">false</iop_srf_prop>
+    <iop_srf_prop type="logical" doc="Use IOP file specified surface values in surface coupling importer.">false</iop_srf_prop>
     <iop_srf_prop COMPSET=".*DYCOMSrf01">true</iop_srf_prop>
-  </intensive_observation_period_options>
+  </iop_options>
 
   <!-- Homme control namelist -->
   <ctl_nl>

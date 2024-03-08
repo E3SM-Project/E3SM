@@ -43,7 +43,7 @@ public:
   // Constructor
   // Input:
   //   - comm: MPI communicator
-  //   - params: Input yaml file needs intensive_observation_period_options sublist
+  //   - params: Input yaml file needs iop_options sublist
   //   - run_t0: Initial timestamp for the simulation
   //   - model_nlevs: Number of vertical levels in the simulation. Needed since
   //                  the iop file contains a (potentially) different number of levels
