@@ -2,7 +2,7 @@
 #       Basic setup: version, cime debug, cmake paths,...          #
 ####################################################################
 if (NOT DEFINED PROJECT_NAME)
-  cmake_minimum_required(VERSION 3.3)
+  cmake_minimum_required(VERSION 3.14)
   cmake_policy(SET CMP0057 NEW)
   set(SCREAM_CIME_BUILD FALSE)
 
