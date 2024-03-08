@@ -115,6 +115,6 @@ if (SCREAM_ENABLE_BASELINE_TESTS)
     # ECUT only adds _ompX if we have more than one value of X, or if X>1
     set (TEST_SUFFIX _omp${SCREAM_TEST_MAX_THREADS})
   endif()
-  set_tests_properties (shoc_run_and_cmp_f90${TEST_SUFFIX} PROPERTIES LABELS baseline_gen)
-  set_tests_properties (shoc_run_and_cmp_cxx${TEST_SUFFIX} PROPERTIES LABELS baseline_gen_cxx)
+  set_tests_properties (shoc_run_and_cmp_f90${TEST_SUFFIX} PROPERTIES LABELS "baseline_gen;baseline_cmp")
+  set_tests_properties (shoc_run_and_cmp_cxx${TEST_SUFFIX} PROPERTIES LABELS "baseline_gen;cxx baseline_cmp")
 endif()

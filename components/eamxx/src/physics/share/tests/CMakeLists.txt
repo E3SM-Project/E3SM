@@ -22,5 +22,5 @@ if (SCREAM_ENABLE_BASELINE_TESTS)
     LABELS "physics")
 
   # Note: the baseline_gen label is really only used if SCREAM_ONLY_GENERATE_BASELINES=ON, but no harm adding it
-  set_tests_properties (physics_saturation_run_and_cmp PROPERTIES LABELS baseline_gen)
+  set_tests_properties(physics_saturation_run_and_cmp PROPERTIES LABELS "baseline_gen;baseline_cmp")
 endif()

@@ -56,6 +56,7 @@ if (SCREAM_ENABLE_BASELINE_TESTS)
   set_tests_properties(
     ${TEST_BASE_NAME}_baseline_cmp
     PROPERTIES
+    LABELS baseline_cmp
     FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_np${TEST_RANK_END}_omp1)
 
   # The np${TEST_RANK_END} test is used for baselines tests, so add it to the baseline label
@@ -63,7 +64,7 @@ if (SCREAM_ENABLE_BASELINE_TESTS)
     # ECUT only adds _npX if we have more than one value of X, or if X>1
     set (TEST_SUFFIX _np${TEST_RANK_END})
   endif()
-  set_tests_properties (${TEST_BASE_NAME}${TEST_SUFFIX} PROPERTIES LABELS baseline)
+  set_tests_properties (${TEST_BASE_NAME}${TEST_SUFFIX} PROPERTIES LABELS baseline_cmp)
 
   # test-all-scream will read this file to get the list of baseline nc files to
   # copy into the baseline dir
