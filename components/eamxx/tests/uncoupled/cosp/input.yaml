@@ -28,7 +28,7 @@ initial_conditions:
   topography_filename: ${TOPO_DATA_DIR}/USGS-gtopo30_ne4np4pg2_16x_converted.c20200527.nc
   dtau067: 1.0
   dtau105: 1.0
-  cldfrac_tot_for_analysis: 0.5
+  cldfrac_rad: 0.5
   eff_radius_qc: 0.0
   eff_radius_qi: 0.0
   sunlit: 1.0

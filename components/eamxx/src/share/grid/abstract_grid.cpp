@@ -169,7 +169,7 @@ is_valid_layout (const FieldLayout& layout) const
     case LayoutType::Vector2D: [[fallthrough]];
     case LayoutType::Vector3D:
     {
-      const auto vec_dim = layout.dims()[layout.get_vector_dim()];
+      const auto vec_dim = layout.dims()[layout.get_vector_component_idx()];
       const auto vec_tag = layout.get_vector_tag();
       return is3d ? layout==get_3d_vector_layout(midpoints,vec_tag,vec_dim)
                   : layout==get_2d_vector_layout(vec_tag,vec_dim);

@@ -354,6 +354,9 @@ be lost if SCREAM_HACK_XML is not enabled.
       >
         false
       </extra_clnsky_diag>
+      <do_subcol_sampling type="logical" doc="Flag to turn on/off subcolumn sampling of optical properties; if false treat cells as either completely clear or cloudy">
+          true
+      </do_subcol_sampling>
     </rrtmgp>
 
     <mac_aero_mic inherit="atm_proc_group">
@@ -371,7 +374,10 @@ be lost if SCREAM_HACK_XML is not enabled.
     </mac_aero_mic>
 
     <cosp inherit="atm_proc_base">
-      <cosp_subcolumns>10</cosp_subcolumns>
+      <cosp_subcolumns doc="Number of subcolumns to use for COSP simulators; cosp_subcolumns=1 implies no subcolumn sampling">10</cosp_subcolumns>
+      <cosp_subcolumns hgrid="ne1024np4">1</cosp_subcolumns>  <!-- No subcolumn sampling at satellite pixel scales -->
+      <cosp_subcolumns hgrid="ne512np4" >1</cosp_subcolumns>  <!-- No subcolumn sampling at satellite pixel scales -->
+      <cosp_subcolumns hgrid="ne256np4" >1</cosp_subcolumns>  <!-- No subcolumn sampling at satellite pixel scales -->
       <!-- Frequency at which to call COSP; positive values interpreted as number of steps, negative as number of hours -->
       <cosp_frequency>1</cosp_frequency>
       <cosp_frequency_units valid_values="steps,hours">hours</cosp_frequency_units>

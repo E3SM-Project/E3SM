@@ -55,9 +55,6 @@ TEST_CASE ("io_control") {
 
   SECTION ("nsteps") {
     control.frequency_units = "nsteps";
-    // dt only matters for nsteps output
-    control.compute_dt(t0+1);
-    REQUIRE (control.dt==1);
     control.compute_next_write_ts();
     auto t1 = t0 + 1;
     auto t2 = t1 + 1;
