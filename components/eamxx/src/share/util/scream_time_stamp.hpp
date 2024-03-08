@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <cstdint>
+#include <limits>
 
 namespace scream {
 namespace util {
