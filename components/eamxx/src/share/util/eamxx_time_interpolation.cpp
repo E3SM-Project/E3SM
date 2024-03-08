@@ -320,6 +320,7 @@ void TimeInterpolation::read_data()
     input_params.set("Field Names",m_field_names);
     input_params.set("Filename",triplet_curr.filename);
     m_file_data_atm_input = AtmosphereInput(input_params,m_fm_time1);
+    m_file_data_atm_input.set_logger(m_logger);
     // Also determine the FillValue, if used
     // TODO: Should we make it possible to check if FillValue is in the metadata and only assign mask_value if it is?
     float var_fill_value;
