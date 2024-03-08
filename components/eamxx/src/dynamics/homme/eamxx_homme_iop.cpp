@@ -426,7 +426,6 @@ apply_iop_forcing(const Real dt)
 
         Qdp_i(q, ilev) = Q_i(q, ilev)*dp3d_i(ilev);
         // For BFB on restarts, Q needs to be updated after we compute Qdp
-        // TODO: Is this needed?
         Q_i(q, ilev) = Qdp_i(q, ilev)/dp3d_i(ilev);
       });
 

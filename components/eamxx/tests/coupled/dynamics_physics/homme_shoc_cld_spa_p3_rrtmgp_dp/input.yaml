@@ -2,9 +2,9 @@
 ---
 driver_options:
   atmosphere_dag_verbosity_level: 5
-  enable_intensive_observation_period: true
+  enable_iop: true
 
-intensive_observation_period_options:
+iop_options:
   doubly_periodic_mode: true
   iop_file: ${IOP_DATA_DIR}/DYCOMSrf01_iopfile_4scam.nc
   target_latitude: 31.5

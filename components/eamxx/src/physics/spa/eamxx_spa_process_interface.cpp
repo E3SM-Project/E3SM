@@ -68,7 +68,7 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   // where a single column of data corresponding to the closest lat/lon pair to
   // the IOP lat/lon parameters is read from file, and that column data is mapped
   // to all columns of the IdentityRemapper source fields.
-  EKAT_REQUIRE_MSG(spa_map_file == "" or not m_iop,
+  EKAT_REQUIRE_MSG(spa_map_file == "" or spa_map_file == "None" or not m_iop,
     "Error! Cannot define spa_remap_file for cases with an Intensive Observation Period defined. "
     "The IOP class defines it's own remap from file data -> model data.\n");
 

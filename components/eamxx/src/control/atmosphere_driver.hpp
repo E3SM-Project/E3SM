@@ -72,7 +72,7 @@ public:
   void init_scorpio (const int atm_id = 0);
 
   // Setup IntensiveObservationPeriod
-  void setup_intensive_observation_period ();
+  void setup_iop ();
 
   // Create atm processes, without initializing them
   void create_atm_processes ();

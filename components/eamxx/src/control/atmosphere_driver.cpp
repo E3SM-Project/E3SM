@@ -167,29 +167,27 @@ init_time_stamps (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0)
 
 
 void AtmosphereDriver::
-setup_intensive_observation_period ()
+setup_iop ()
 {
   // At this point, must have comm, params, initialized timestamps created.
   check_ad_status(s_comm_set | s_params_set | s_ts_inited);
 
   // Check to make sure iop is not already initialized
-  EKAT_REQUIRE_MSG(not m_iop, "Error! setup_intensive_observation_period() is "
-                              "called, but IOP already set up.\n");
+  EKAT_REQUIRE_MSG(not m_iop, "Error! setup_iop() is called, but IOP already set up.\n");
 
   // This function should only be called if we are enabling IOP
   const bool enable_iop =
-    m_atm_params.sublist("driver_options").get("enable_intensive_observation_period", false);
-  EKAT_REQUIRE_MSG(enable_iop, "Error! setup_intensive_observation_period() is called, but "
-                               "enable_intensive_observation_period=false "
+    m_atm_params.sublist("driver_options").get("enable_iop", false);
+  EKAT_REQUIRE_MSG(enable_iop, "Error! setup_iop() is called, but enable_iop=false "
                                "in driver_options parameters.\n");
 
-  // Params must include intensive_observation_period_options sublist.
-  const auto iop_sublist_exists = m_atm_params.isSublist("intensive_observation_period_options");
+  // Params must include iop_options sublist.
+  const auto iop_sublist_exists = m_atm_params.isSublist("iop_options");
   EKAT_REQUIRE_MSG(iop_sublist_exists,
-                   "Error! setup_intensive_observation_period() is called, but no intensive_observation_period_options "
+                   "Error! setup_iop() is called, but no iop_options "
                    "defined in parameters.\n");
 
-  const auto iop_params = m_atm_params.sublist("intensive_observation_period_options");
+  const auto iop_params = m_atm_params.sublist("iop_options");
   const auto phys_grid = m_grids_manager->get_grid("Physics");
   const auto nlevs = phys_grid->get_num_vertical_levels();
   const auto hyam = phys_grid->get_geometry_data("hyam");
@@ -206,7 +204,7 @@ setup_intensive_observation_period ()
   m_iop->set_grid_spacing(dx_short_f.get_view<const Real,Host>()());
 
   // Set IOP object in atm processes
-  m_atm_process_group->set_intensive_observation_period(m_iop);
+  m_atm_process_group->set_iop(m_iop);
 }
 
 void AtmosphereDriver::create_atm_processes()
@@ -284,9 +282,9 @@ void AtmosphereDriver::create_grids()
   // IOP object needs the grids_manager to have been created, but is then needed in set_grids()
   // implementation of some processes, so setup here.
   const bool enable_iop =
-    m_atm_params.sublist("driver_options").get("enable_intensive_observation_period", false);
+    m_atm_params.sublist("driver_options").get("enable_iop", false);
   if (enable_iop) {
-    setup_intensive_observation_period ();
+    setup_iop ();
   }
 
   // Set the grids in the processes. Do this by passing the grids manager.

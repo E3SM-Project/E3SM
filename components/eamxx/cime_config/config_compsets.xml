@@ -74,12 +74,74 @@
       <lname>20TR_SCREAM_ELM%SPBC_CICE%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
   </compset>
 
+  <compset>
+      <alias>F2010-SCREAMv1-DP-DYCOMSrf01</alias> <!-- DP-EAMxx DYCOMSrf01 case -->
+      <lname>2010_SCREAM_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP%DP-EAMxx%DYCOMSrf01</lname>
+      <support_level>Experimental, under development</support_level>
+  </compset>
+
   <entries>
 
     <entry id="RUN_STARTDATE">
       <values>
         <value  compset=".*DYAMOND-1">2016-08-01</value>
         <value  compset=".*DYAMOND-2">2020-01-20</value>
+        <value  compset=".*DYCOMSrf01">1999-07-10</value>
+      </values>
+    </entry>
+
+    <!-- DP-EAMxx specific xml vars -->
+    <entry id="ATM_NCPL">
+      <values>
+        <value  compset=".*DYCOMSrf01">864</value>
+      </values>
+    </entry>
+
+    <entry id="PTS_MULTCOLS_MODE">
+      <values>
+        <value  compset=".*DYCOMSrf01">TRUE</value>
+      </values>
+    </entry>
+
+    <entry id="PTS_MODE">
+      <values>
+        <value  compset=".*DYCOMSrf01">TRUE</value>
+      </values>
+    </entry>
+
+    <entry id="PTS_LAT">
+      <values>
+        <value  compset=".*DYCOMSrf01">31.5</value>
+      </values>
+    </entry>
+
+    <entry id="PTS_LON">
+      <values>
+        <value  compset=".*DYCOMSrf01">238.5</value>
+      </values>
+    </entry>
+
+    <entry id="PTS_NX">
+      <values>
+        <value  compset=".*DYCOMSrf01">225</value>
+      </values>
+    </entry>
+
+    <entry id="PTS_NY">
+      <values>
+        <value  compset=".*DYCOMSrf01">1</value>
+      </values>
+    </entry>
+
+    <entry id="ICE_NX">
+      <values>
+        <value  compset=".*DYCOMSrf01">225</value>
+      </values>
+    </entry>
+
+    <entry id="ICE_NY">
+      <values>
+        <value  compset=".*DYCOMSrf01">1</value>
       </values>
     </entry>
 
