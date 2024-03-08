@@ -380,11 +380,14 @@ if (NOT SCREAM_LIB_ONLY)
     endif()
   endif()
 
-  # All baselines-related tests will output inside this folder
-  # When test-all-scream generates new baselines, it will simply copy this folder
-  # over into the baslines dir
+  # All baselines tests will add a line to the baseline_list file,
+  # specifyiing the full name of the baseline they generated.
+  # When test-all-scream has to generate new baselines, it will run
+  # ctest -L baseline_gen, and then read this file to find out all the
+  # baseline files to copy into the baseline directory
   set (SCREAM_TEST_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/data)
   file(MAKE_DIRECTORY ${SCREAM_TEST_OUTPUT_DIR})
+  file(TOUCH ${SCREAM_TEST_OUTPUT_DIR}/baseline_list)
 
   set(SCREAM_TEST_LEVEL_AT "0")
   set(SCREAM_TEST_LEVEL_NIGHTLY "1")
