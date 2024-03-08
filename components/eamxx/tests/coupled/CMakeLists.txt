@@ -1,7 +1,4 @@
-# NOTE: if you have baseline-type tests, add the subdirectory OUTSIDE the following if statement
-if (NOT SCREAM_ONLY_GENERATE_BASELINES)
-  add_subdirectory(physics_only)
-  if (NOT "${SCREAM_DYNAMICS_DYCORE}" STREQUAL "NONE")
-    add_subdirectory(dynamics_physics)
-  endif()
+add_subdirectory(physics_only)
+if (NOT "${SCREAM_DYNAMICS_DYCORE}" STREQUAL "NONE")
+  add_subdirectory(dynamics_physics)
 endif()

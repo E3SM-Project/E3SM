@@ -86,3 +86,32 @@ CompareNCFilesFamilyMpi (
   LABELS dynamics physics shoc cld p3 rrtmgp spa
   META_FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_npMPIRANKS_omp1
 )
+
+if (SCREAM_ENABLE_BASELINE_TESTS)
+  # Compare one of the output files with the baselines.
+  # Note: one is enough, since we already check that np1 is BFB with npX
+  set (OUT_FILE ${TEST_BASE_NAME}_output.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_END}.${RUN_T0}.nc)
+  set (SRC_FILE ${CMAKE_CURRENT_BINARY_DIR}/${OUT_FILE})
+  set (TGT_FILE ${SCREAM_BASELINES_DIR}/data/${OUT_FILE})
+  add_test (
+    NAME ${TEST_BASE_NAME}_baseline_cmp
+    COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+  set_tests_properties(
+    ${TEST_BASE_NAME}_baseline_cmp
+    PROPERTIES
+    FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_np${TEST_RANK_END}_omp1)
+
+  # The np${TEST_RANK_END} test is used for baselines tests, so add it to the baseline label
+  if (TEST_RANK_END GREATER 1)
+    # ECUT only adds _npX if we have more than one value of X, or if X>1
+    set (TEST_SUFFIX _np${TEST_RANK_END})
+  endif()
+  set_tests_properties (${TEST_BASE_NAME}${TEST_SUFFIX} PROPERTIES LABELS baseline)
+
+  # test-all-scream will read this file to get the list of baseline nc files to
+  # copy into the baseline dir
+  file (APPEND ${SCREAM_TEST_OUTPUT_DIR}/baseline_list
+    "${SRC_FILE}\n"
+  )
+endif()
