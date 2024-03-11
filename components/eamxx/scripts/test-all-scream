@@ -16,6 +16,7 @@ check_minimum_python_version(3, 4)
 
 import argparse, sys, pathlib
 
+from test_factory import get_test_name_dict
 from test_all_scream import TestAllScream
 
 ###############################################################################
@@ -100,7 +101,7 @@ OR
     parser.add_argument("--preserve-env", action="store_true",
                         help="Whether to skip machine env setup, and preserve the current user env (useful to manually test new modules)")
 
-    choices_doc = ", ".join(["'{}' ({})".format(k, v) for k, v in TestAllScream.get_test_name_desc().items()])
+    choices_doc = ", ".join(["'{}' ({})".format(k, v) for k, v in get_test_name_dict().items()])
     parser.add_argument("-t", "--test", dest="tests", action="append", default=[],
                         help=f"Only run specific test configurations, choices={choices_doc}")
 
