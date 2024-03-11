@@ -20,6 +20,13 @@
 #include <string>
 
 #include <share/util/scream_common_physics_functions.hpp>
+#ifndef KOKKOS_ENABLE_CUDA
+#define protected_except_cuda public
+#define private_except_cuda public
+#else
+#define protected_except_cuda protected
+#define private_except_cuda private
+#endif
 
 namespace scream {
 
@@ -49,10 +56,10 @@ class MAMWetscav : public scream::AtmosphereProcess {
   MAMWetscav(const ekat::Comm &comm, const ekat::ParameterList &params);
 
   // The type of subcomponent
-  AtmosphereProcessType type() const { return AtmosphereProcessType::Physics; }
-
+      AtmosphereProcessType
+      type() const override;
   // The name of the subcomponent
-  std::string name() const { return "mam_wetscavenging"; }
+  std::string name() const override;
 
   // Set the grid and input output variables
   void set_grids(
@@ -95,12 +102,14 @@ class MAMWetscav : public scream::AtmosphereProcess {
     KOKKOS_INLINE_FUNCTION
     void operator()(const Kokkos::TeamPolicy<KT::ExeSpace>::member_type& team) const {
       const int i = team.league_rank(); // column index
-
+      // first, compute dry fields
       compute_dry_mixing_ratios(team, wet_atm_pre_, dry_atm_pre_, i);
-      compute_vertical_layer_heights(team, dry_atm_pre_, i);
-      team.team_barrier(); // allows kernels below to use layer heights
-      compute_updraft_velocities(team, wet_atm_pre_, dry_atm_pre_, i);
+      compute_dry_mixing_ratios(team, wet_atm_pre_, wet_aero_pre_, dry_aero_pre_, i);
       team.team_barrier();
+      // second, we can use dry fields to compute dz, zmin, zint
+      compute_vertical_layer_heights(team, dry_atm_pre_, i);
+      compute_updraft_velocities(team, wet_atm_pre_, dry_atm_pre_, i);
+      team.team_barrier();  // allows kernels below to use layer heights
     } // operator()
      
     // number of horizontal columns and vertical levels

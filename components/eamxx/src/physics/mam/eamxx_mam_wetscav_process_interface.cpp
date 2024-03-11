@@ -1,4 +1,6 @@
+#include <ekat/ekat_assert.hpp>
 #include "physics/mam/eamxx_mam_wetscav_process_interface.hpp"
+#include "scream_config.h"  // for SCREAM_CIME_BUILD
 
 // NOTE: see the impl/ directory for the contents of the impl namespace
 #include "impl/compute_particle_size.cpp"
@@ -27,6 +29,11 @@ MAMWetscav::MAMWetscav(const ekat::Comm &comm,
    */
 }
 
+AtmosphereProcessType MAMWetscav::type() const {
+  return AtmosphereProcessType::Physics;
+}
+
+std::string MAMOptics::name() const { return "mam4_wet_scav"; }
 // =========================================================================================
 void MAMWetscav::set_grids(
     const std::shared_ptr<const GridsManager> grids_manager) {
