@@ -65,16 +65,16 @@ OR
                         help="Launch the different build types stacks in parallel")
 
     parser.add_argument("-f", "--fast-fail", action="store_true",
-                        help="Stop testing when the first failure is detected")
+                        help="Stop testing when the first failure is detected (ignored with -g)")
 
-    parser.add_argument("-b", "--baseline-ref", default=None, # default will be computed later
-        help="What commit to use to generate baselines. Default is merge-base of current commit and origin/master (or HEAD if --keep-tree)")
+    parser.add_argument("-g", "--generate", action="store_true",
+        help="Instruct test-all-scream to generate baselines from current commit. Skips tests")
 
     parser.add_argument("--baseline-dir", default=None,
-        help="Use baselines from the given directory, skip baseline creation.")
+        help="Directory where baselines should be read from (or written to, if -g is used)")
 
     parser.add_argument("-u", "--update-expired-baselines", action="store_true",
-        help="Update baselines that appear to be expired.")
+        help="Update baselines that appear to be expired (only used with -g)")
 
     parser.add_argument("-m", "--machine",
         help="Provide machine name. This is *always* required. It can, but does not"
@@ -86,9 +86,6 @@ OR
     parser.add_argument("--no-tests", action="store_true", help="Only build baselines, skip testing phase")
     parser.add_argument("--config-only", action="store_true",
             help="In the testing phase, only run config step, skip build and tests")
-
-    parser.add_argument("-k", "--keep-tree", action="store_true",
-        help="Allow to keep the current work tree when testing against HEAD (only valid with `-b HEAD`)")
 
     parser.add_argument("-c", "--custom-cmake-opts", action="append", default=[],
         help="Extra custom options to pass to cmake. Can use multiple times for multiple cmake options. The -D is added for you")
