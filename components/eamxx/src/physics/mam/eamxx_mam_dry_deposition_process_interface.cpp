@@ -411,8 +411,7 @@ void fill_tracer_views(
 // =========================================================================================
 void MAMDryDep::run_impl(const double dt) {
 
-  // Include this but update when scream is updated to use the newer DryDeposition class:
-  using DryDep = mam4::DryDeposition;  // mam4::DryDeposition;
+  using DryDep = mam4::DryDeposition;  
 
   using MemberType = KT::MemberType;
   const auto scan_policy = ekat::ExeSpaceUtils<
