@@ -418,6 +418,7 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
 void MAMWetscav::run_impl(const double dt) {
   const auto scan_policy = ekat::ExeSpaceUtils<
       KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
+
   printf("Working on wet_sav \n");
   // preprocess input -- needs a scan for the calculation of all variables
   // needed by this process or setting up MAM4xx classes and their objects
@@ -450,65 +451,6 @@ void MAMWetscav::run_impl(const double dt) {
    */
   // MUST: FIXME: Make sure state is not updated...only tendencies should be
   // updated!!
-#if 0
-  static constexpr int maxd_aspectype = mam4::ndrop::maxd_aspectype;
-  int nspec_amode[ntot_amode_];
-  int lspectype_amode[maxd_aspectype][ntot_amode_];
-  mam4::Real specdens_amode[maxd_aspectype];
-  int lmassptr_amode[maxd_aspectype][ntot_amode_];
-  Real spechygro[maxd_aspectype];
-
-  int numptr_amode[ntot_amode_];
-  int mam_idx[ntot_amode_][mam4::ndrop::nspec_max];
-  int mam_cnst_idx[ntot_amode_][mam4::ndrop::nspec_max];
-
-  mam4::ndrop::get_e3sm_parameters(nspec_amode, lspectype_amode, lmassptr_amode,
-                                   numptr_amode, specdens_amode, spechygro,
-                                   mam_idx, mam_cnst_idx);
-
-  Real inv_density[ntot_amode_][mam4::AeroConfig::num_aerosol_ids()] = {};
-  Real num2vol_ratio_min[ntot_amode_]                                = {};
-  Real num2vol_ratio_max[ntot_amode_]                                = {};
-  Real num2vol_ratio_max_nmodes[ntot_amode_]                         = {};
-  Real num2vol_ratio_min_nmodes[ntot_amode_]                         = {};
-  Real num2vol_ratio_nom_nmodes[ntot_amode_]                         = {};
-  Real dgnmin_nmodes[ntot_amode_]                                    = {};
-  Real dgnmax_nmodes[ntot_amode_]                                    = {};
-  Real dgnnom_nmodes[ntot_amode_]                                    = {};
-  Real mean_std_dev_nmodes[ntot_amode_]                              = {};
-
-  bool noxf_acc2ait[mam4::AeroConfig::num_aerosol_ids()]   = {};
-  int n_common_species_ait_accum                           = {};
-  int ait_spec_in_acc[mam4::AeroConfig::num_aerosol_ids()] = {};
-  int acc_spec_in_ait[mam4::AeroConfig::num_aerosol_ids()] = {};
-  mam4::modal_aero_calcsize::init_calcsize(
-      inv_density, num2vol_ratio_min, num2vol_ratio_max,
-      num2vol_ratio_max_nmodes, num2vol_ratio_min_nmodes,
-      num2vol_ratio_nom_nmodes, dgnmin_nmodes, dgnmax_nmodes, dgnnom_nmodes,
-      mean_std_dev_nmodes, noxf_acc2ait, n_common_species_ait_accum,
-      ait_spec_in_acc, acc_spec_in_ait);
-
-  // diagnostics for visible band summed over modes
-
-  // Note: Need to compute inv density using indexing from e3sm
-  // for(int imode = 0; imode < ntot_amode_; ++imode) {
-  //   const int nspec = nspec_amode[imode];
-    for(int isp = 0; isp < nspec; ++isp) {
-      const int idx           = lspectype_amode[isp][imode] - 1;
-      inv_density[imode][isp] = 1.0 / specdens_amode[idx];
-    }  // isp
-  }    // imode
-
-  view_2d state_q(
-      "state_q", nlev_,
-      nvars_);  // MUST FIXME: make it is 3d view to avoid race condition
-  view_2d qqcw("qqcw", nlev_, nvars_);
-
-    //create a const column view of zeros
-  view_1d zeros_nlev("zeros_nlev", nlev_);
-  Kokkos::deep_copy(zeros_nlev,0);
-  const_view_1d const_zeros_nlev(zeros_nlev);
-#endif
   constexpr int pcnst = mam4::aero_model::pcnst;
   constexpr int ntot_amode = mam4::AeroConfig::num_modes();
   constexpr int maxd_aspectype= mam4::ndrop::maxd_aspectype;
@@ -563,77 +505,13 @@ void MAMWetscav::run_impl(const double dt) {
          nspec_amode, lspectype_amode, specdens_amode, lmassptr_amode, spechygro,
          mean_std_dev_nmodes, dgnumwet_m_kk, qaerwat_m_kk);
 
-        team.team_barrier();
+
         mam4::utils::inject_qqcw_to_prognostics(qqcw, progs, kk);
         mam4::utils::inject_stateq_to_prognostics(state_q, progs, kk);
 
         });  // klev parallel_for loop
 
-#if 0
-        Kokkos::parallel_for(
-            Kokkos::TeamThreadRange(team, 0, nlev_), [&](int klev) {
-              view_1d state_q_k = ekat::subview(
-                  state_q, klev);  // 1d view of size (nvars_) for storing all
-                                   // gasses and aerosols
-              mam_coupling::state_q_for_column_at_one_lev(dry_aero_, icol, klev,
-                                                          state_q_k);
-
-              view_1d qqcw_k =
-                  ekat::subview(qqcw, klev);  // 1d view of size (nvars_) for
-                                              // storing all gasses and aerosols
-              mam_coupling::qqcw_for_column_at_one_lev(dry_aero_, icol, klev,
-                                                       qqcw_k);
-
-              static constexpr bool do_adjust = true, do_aitacc_transfer = true,
-                                    update_mmr = true;
-
-              Real dgncur_c_kk[ntot_amode_]   = {};
-              Real dgnumdry_m_kk[ntot_amode_] = {};
-              //  Calculate aerosol size distribution parameters and aerosol
-              //  water
-              //  uptake
-              mam4::modal_aero_calcsize::modal_aero_calcsize_sub(
-                  state_q_k.data(),  // in
-                  qqcw_k.data(),     // in/out
-                  dt, do_adjust, do_aitacc_transfer, update_mmr, lmassptr_amode,
-                  numptr_amode,
-                  inv_density,  // in
-                  num2vol_ratio_min, num2vol_ratio_max,
-                  num2vol_ratio_max_nmodes, num2vol_ratio_min_nmodes,
-                  num2vol_ratio_nom_nmodes, dgnmin_nmodes, dgnmax_nmodes,
-                  dgnnom_nmodes, mean_std_dev_nmodes,
-                  // outputs
-                  noxf_acc2ait, n_common_species_ait_accum, ait_spec_in_acc,
-                  acc_spec_in_ait, dgnumdry_m_kk, dgncur_c_kk);
-
-              Real dgnumwet_m_kk[ntot_amode_] = {};
-              Real qaerwat_m_kk[ntot_amode_]  = {};
-              // std::cout<<typeid(dry_atm_.T_mid(icol,
-              // klev)).name()<<std::endl;
-              int nspec_amode_tmp[ntot_amode_];
-              for(int imode = 0; imode < ntot_amode_; ++imode)
-                nspec_amode_tmp[imode] = nspec_amode[imode];
-
-              mam4::Real specdens_amode_tmp[maxd_aspectype];
-              mam4::Real spechygro_tmp[maxd_aspectype];
-              int lspectype_amode_tmp[maxd_aspectype][ntot_amode_];
-              for(int ispectype = 0; ispectype < maxd_aspectype; ispectype++) {
-                specdens_amode_tmp[ispectype] = specdens_amode[ispectype];
-                spechygro_tmp[ispectype]      = spechygro[ispectype];
-                for(int imode = 0; imode < ntot_amode_; ++imode)
-                  lspectype_amode_tmp[ispectype][imode] =
-                      lspectype_amode[ispectype][imode];
-              }
-
-              mam4::water_uptake::modal_aero_water_uptake_dr(
-                  nspec_amode_tmp, specdens_amode_tmp, spechygro_tmp,
-                  lspectype_amode_tmp, state_q_k.data(),
-                  dry_atm_.T_mid(icol, klev), dry_atm_.p_mid(icol, klev),
-                  cldn_prev_step_(icol, klev), dgnumdry_m_kk, dgnumwet_m_kk,
-                  qaerwat_m_kk);
-            });  // klev parallel_for loop
-#endif
-
+        team.team_barrier();
         // set up diagnostics
         mam4::Diagnostics diags(nlev_);
         diags.shallow_convective_precipitation_production =
