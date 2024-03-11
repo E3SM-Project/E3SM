@@ -607,9 +607,11 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         test_dir = self.get_test_dir(self._work_dir, test) / "tas_baseline_build"
         test_dir.mkdir()
 
+        num_test_res = self.create_ctest_resource_file(test,test_dir)
         cmake_config = self.generate_cmake_config(test)
         cmake_config += " -DSCREAM_BASELINES_ONLY=ON"
         cmake_config += f" -DSCREAM_TEST_DATA_DIR={baseline_dir}/data"
+        cmake_config += f" -DSCREAM_TEST_MAX_TOTAL_THREADS={num_test_res}"
 
         print("===============================================================================")
         print(f"Generating baseline for test {test} with config '{cmake_config}'")
