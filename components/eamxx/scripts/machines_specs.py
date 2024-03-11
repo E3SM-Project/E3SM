@@ -63,7 +63,7 @@ MACHINE_METADATA = {
                 ["CC","ftn","cc"],
                 "salloc --time 00:30:00 --nodes=1 --constraint=cpu -q debug --account e3sm_g",
                 "/global/cfs/cdirs/e3sm/baselines/gnu/scream/pm-cpu"),
-    "pm-gpu" : ([f"eval $({CIMEROOT}/CIME/Tools/get_case_env -c SMS.ne4pg2_ne4pg2.F2010-SCREAMv1.pm-gpu_gnugpu)"],
+    "pm-gpu" : ([f"eval $({CIMEROOT}/CIME/Tools/get_case_env -c SMS.ne4pg2_ne4pg2.F2010-SCREAMv1.pm-gpu_gnugpu)", "echo cuda=true"],
                 ["CC","ftn","cc"],
                 "salloc --time 00:30:00 --nodes=1 --constraint=gpu --gpus-per-node=4 --gpu-bind=none --exclusive -q debug --account e3sm_g",
                 "/global/cfs/cdirs/e3sm/baselines/gnugpu/scream/pm-gpu"),
