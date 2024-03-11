@@ -412,6 +412,9 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
   // objects in the argument list
   preprocess_.initialize(ncol_, nlev_, wet_atm_, wet_aero_, dry_atm_,
                          dry_aero_);
+
+  postprocess_.initialize(ncol_, nlev_, wet_atm_, wet_aero_, dry_atm_,
+                          dry_aero_);
 }
 
 // =========================================================================================
@@ -459,6 +462,23 @@ void MAMWetscav::run_impl(const double dt) {
   mam4::WetDeposition::Config wetdep_config;// = wetdep_.Config();
   wetdep_.init(aero_config,wetdep_config);//FIXME: Should we call this in the initialize????
 
+   // NOTE! we need a const mam_coupling::DryAtmosphere dry_atm for gpu access.
+  // We cannot use member of this class inside of the parallel_for
+  const mam_coupling::DryAtmosphere &dry_atm = dry_atm_;
+  const auto &dry_aero                       = dry_aero_;
+  const auto &cldn_prev_step =cldn_prev_step_;
+  const auto &rprdsh = rprdsh_;
+  const auto &evapcsh = evapcsh_;
+  const auto &dp_frac=dp_frac_;
+  const auto &sh_frac=sh_frac_;
+  const auto &icwmrsh=icwmrsh_;
+  const auto &cldt_prev_step=cldt_prev_step_;
+  const auto &cldst=cldst_;
+  const auto &evapr=evapr_;
+  const auto &rprddp=rprddp_;
+  const auto &evapcdp=evapcdp_;
+  const auto &icwmrdp=icwmrdp_;
+
   const auto policy =
       ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_);
 
@@ -469,14 +489,14 @@ void MAMWetscav::run_impl(const double dt) {
 
         // call wetdep for computing....add mod=re descriptive comment
         // here?
-        auto atm = mam_coupling::atmosphere_for_column(dry_atm_, icol);
+        auto atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
         // set surface state data
         const haero::Surface
             sfc{};  // sfc object is NEVER used in wetdep process
 
         // fetch column-specific subviews into aerosol prognostics
         mam4::Prognostics progs =
-            mam_coupling::interstitial_aerosols_for_column(dry_aero_, icol);
+            mam_coupling::aerosols_for_column(dry_aero, icol);
 
         // compute calcsize and
         Kokkos::parallel_for(
@@ -492,6 +512,7 @@ void MAMWetscav::run_impl(const double dt) {
         Real spechygro[maxd_aspectype];
 
         mam4::utils::extract_stateq_from_prognostics(progs, atm, state_q, kk);
+
         mam4::utils::extract_qqcw_from_prognostics(progs, qqcw, kk);
         team.team_barrier();
 
@@ -500,47 +521,48 @@ void MAMWetscav::run_impl(const double dt) {
         Real qaerwat_m_kk[ntot_amode] = {};
 
         mam4::modal_aer_opt::compute_calcsize_and_water_uptake_dr(
-         dry_atm_.p_mid(icol, kk), dry_atm_.T_mid(icol, kk),
-         cldn_prev_step_(icol, kk), state_q, qqcw, dt, // in
+         dry_atm.p_mid(icol, kk), dry_atm.T_mid(icol, kk),
+         cldn_prev_step(icol, kk), state_q, qqcw, dt, // in
          nspec_amode, lspectype_amode, specdens_amode, lmassptr_amode, spechygro,
          mean_std_dev_nmodes, dgnumwet_m_kk, qaerwat_m_kk);
 
-
         mam4::utils::inject_qqcw_to_prognostics(qqcw, progs, kk);
         mam4::utils::inject_stateq_to_prognostics(state_q, progs, kk);
-
         });  // klev parallel_for loop
 
         team.team_barrier();
         // set up diagnostics
         mam4::Diagnostics diags(nlev_);
         diags.shallow_convective_precipitation_production =
-            ekat::subview(rprdsh_, icol);
+            ekat::subview(rprdsh, icol);
         diags.shallow_convective_precipitation_evaporation =
-            ekat::subview(evapcsh_, icol);
+            ekat::subview(evapcsh, icol);
 
-        diags.deep_convective_cloud_fraction       = ekat::subview(dp_frac_,
+
+        diags.deep_convective_cloud_fraction       = ekat::subview(dp_frac,
          icol);
         //std::cout<<"BALLI:"<<diags.deep_convective_cloud_fraction(0)<<std::endl;
-        diags.shallow_convective_cloud_fraction    = ekat::subview(sh_frac_, icol);
+        diags.shallow_convective_cloud_fraction    = ekat::subview(sh_frac, icol);
         diags.shallow_convective_cloud_condensate  =  ekat::subview(icwmrsh_, icol);
         // FIXME: why are we setting deep_convective_cloud_fraction to zeros_nlev?
         // diags.deep_convective_cloud_fraction       = zeros_nlev;
-        diags.shallow_convective_cloud_fraction    = ekat::subview(cldt_prev_step_, icol);
-        diags.stratiform_cloud_fraction =        ekat::subview(cldst_, icol);
-        diags.evaporation_of_falling_precipitation = ekat::subview(evapr_, icol);
+        diags.shallow_convective_cloud_fraction    = ekat::subview(cldt_prev_step, icol);
+        diags.stratiform_cloud_fraction =        ekat::subview(cldst, icol);
+        diags.evaporation_of_falling_precipitation = ekat::subview(evapr, icol);
 
         diags.deep_convective_precipitation_production =
-            ekat::subview(rprddp_, icol);
+            ekat::subview(rprddp, icol);
         diags.deep_convective_precipitation_evaporation =
-            ekat::subview(evapcdp_, icol);
-        diags.deep_convective_cloud_condensate = ekat::subview(icwmrdp_, icol);
+            ekat::subview(evapcdp, icol);
+        diags.deep_convective_cloud_condensate = ekat::subview(icwmrdp, icol);
 
         // setup tendencies
         mam4::Tendencies tends{};
-
+#if 1
         wetdep_.compute_tendencies(aero_config, team, 0, dt, atm, sfc,
            progs, diags, tends);
+
+#endif
       });  // icol parallel_for loop
 
   /*
