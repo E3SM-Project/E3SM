@@ -118,7 +118,7 @@ int get_dimlen(const std::string& filename, const std::string& dimname)
 
   bool was_open = is_file_open_c2f(filename.c_str(),-1);
   if (not was_open) {
-    register_file(filename,Read,0);
+    register_file(filename,Read);
   }
 
   ncid = get_file_ncid_c2f (filename.c_str());
@@ -154,7 +154,7 @@ bool has_dim (const std::string& filename, const std::string& dimname)
 
   bool was_open = is_file_open_c2f(filename.c_str(),-1);
   if (not was_open) {
-    register_file(filename,Read,0);
+    register_file(filename,Read);
   }
 
   ncid = get_file_ncid_c2f (filename.c_str());
@@ -181,7 +181,7 @@ bool has_variable (const std::string& filename, const std::string& varname)
 
   bool was_open = is_file_open_c2f(filename.c_str(),-1);
   if (not was_open) {
-    register_file(filename,Read,0);
+    register_file(filename,Read);
   }
 
   ncid = get_file_ncid_c2f (filename.c_str());
@@ -212,7 +212,7 @@ bool has_attribute (const std::string& filename, const std::string& varname, con
 
   bool was_open = is_file_open_c2f(filename.c_str(),-1);
   if (not was_open) {
-    register_file(filename,Read,0);
+    register_file(filename,Read);
   }
 
   // Get file id
@@ -513,7 +513,7 @@ ekat::any get_any_attribute (const std::string& filename, const std::string& att
 }
 /* ----------------------------------------------------------------- */
 ekat::any get_any_attribute (const std::string& filename, const std::string& var_name, const std::string& att_name) {
-  register_file(filename,Read,0);
+  register_file(filename,Read);
   auto ncid = get_file_ncid_c2f (filename.c_str());
   EKAT_REQUIRE_MSG (ncid>=0,
       "[get_any_attribute] Error! Could not retrieve file ncid.\n"

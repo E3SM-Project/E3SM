@@ -38,7 +38,7 @@ get_my_triplets (const std::string& map_file) const
   using namespace ShortFieldTagsNames;
 
   // 1. Load the map file chunking it evenly across all ranks
-  scorpio::register_file(map_file,scorpio::FileMode::Read,0);
+  scorpio::register_file(map_file,scorpio::FileMode::Read);
 
   // 1.1 Create a "helper" grid, with as many dofs as the number
   //     of triplets in the map file, and divided linearly across ranks

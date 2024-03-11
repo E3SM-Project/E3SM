@@ -682,8 +682,8 @@ set_params (const ekat::ParameterList& params,
 
   // Set the iotype to use for the output file
   std::string iotype = m_params.get<std::string>("iotype", "default");
-  m_output_file_specs.iotype = str2iotype(iotype);
-  m_checkpoint_file_specs.iotype = str2iotype(iotype);
+  m_output_file_specs.iotype = scorpio::str2iotype(iotype);
+  m_checkpoint_file_specs.iotype = scorpio::str2iotype(iotype);
 }
 
 /*===============================================================================================*/

@@ -106,7 +106,7 @@ TEST_CASE("io_remap_test","io_remap_test")
 
   // Write remap data to file
   const std::string remap_filename = "remap_weights_np"+std::to_string(io_comm.size())+".nc";
-  scorpio::register_file(remap_filename, scorpio::FileMode::Write,0);
+  scorpio::register_file(remap_filename, scorpio::FileMode::Write);
 
   scorpio::register_dimension(remap_filename,"n_a",  "n_a",    ncols_src, true);
   scorpio::register_dimension(remap_filename,"n_b",  "n_b",    ncols_tgt, true);

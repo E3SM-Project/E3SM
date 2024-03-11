@@ -351,7 +351,7 @@ void AtmosphereInput::finalize()
 void AtmosphereInput::init_scorpio_structures() 
 {
   std::string iotype_str = m_params.get<std::string>("iotype", "default");
-  int iotype = str2iotype(iotype_str);
+  int iotype = scorpio::str2iotype(iotype_str);
 
   scorpio::register_file(m_filename,scorpio::Read,iotype);
 

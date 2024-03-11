@@ -59,40 +59,6 @@ inline OutputAvgType str2avg (const std::string& s) {
   return OAT::Invalid;
 }
 
-inline int str2iotype(const std::string &str)
-{
-  if(str == "default"){
-    return 0;
-  }
-  else if(str == "netcdf"){
-    return 1;
-  }
-  else if(str == "pnetcdf"){
-    return 2;
-  }
-  else if(str == "adios"){
-    return 3;
-  }
-  else if(str == "hdf5"){
-    return 4;
-  }
-  else{
-    return 0;
-  }
-}
-
-inline std::string iotype2str(int iotype)
-{
-  switch(iotype){
-    case 0: return "default";
-    case 1: return "netcdf";
-    case 2: return "pnetcdf";
-    case 3: return "adios";
-    case 4: return "hdf5";
-    default: return "default";
-  }
-}
-
 std::string find_filename_in_rpointer (
     const std::string& casename,
     const bool model_restart,

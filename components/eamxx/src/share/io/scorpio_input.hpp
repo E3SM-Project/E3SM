@@ -2,7 +2,6 @@
 #define SCREAM_SCORPIO_INPUT_HPP
 
 #include "share/io/scream_scorpio_interface.hpp"
-#include "share/io/scream_io_utils.hpp"
 #include "share/field/field_manager.hpp"
 #include "share/grid/abstract_grid.hpp"
 #include "share/grid/grids_manager.hpp"

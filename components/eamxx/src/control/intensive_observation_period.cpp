@@ -45,7 +45,7 @@ void read_dimensionless_variable_from_file(const std::string& filename,
   int ncid, varid, err1, err2;
   bool was_open = scorpio::is_file_open_c2f(filename.c_str(),-1);
   if (not was_open) {
-    scorpio::register_file(filename,scorpio::FileMode::Read,0);
+    scorpio::register_file(filename,scorpio::FileMode::Read);
   }
   ncid = scorpio::get_file_ncid_c2f (filename.c_str());
   err1 = PIOc_inq_varid(ncid,varname.c_str(),&varid);
@@ -87,7 +87,7 @@ void read_variable_from_file(const std::string&              filename,
   }
 
   // Read into data
-  scorpio::register_file(filename, scorpio::FileMode::Read,0);
+  scorpio::register_file(filename, scorpio::FileMode::Read);
   std::string io_decomp_tag = varname+","+filename;
   scorpio::register_variable(filename, varname, varname, dimnames, vartype, io_decomp_tag);
   std::vector<scorpio::offset_t> dof_offsets(data_size);
