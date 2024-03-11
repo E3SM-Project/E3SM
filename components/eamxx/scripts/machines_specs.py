@@ -65,7 +65,7 @@ MACHINE_METADATA = {
                 "/global/cfs/cdirs/e3sm/baselines/gnu/scream/pm-cpu"),
     "pm-gpu" : ([f"eval $({CIMEROOT}/CIME/Tools/get_case_env -c SMS.ne4pg2_ne4pg2.F2010-SCREAMv1.pm-gpu_gnugpu)"],
                 ["CC","ftn","cc"],
-                "salloc --time 00:30:00 --nodes=1 --constraint=gpu --exclusive -q debug --account e3sm_g",
+                "salloc --time 00:30:00 --nodes=1 --constraint=gpu --gpus-per-node=4 --gpu-bind=none --exclusive -q debug --account e3sm_g",
                 "/global/cfs/cdirs/e3sm/baselines/gnugpu/scream/pm-gpu"),
     "compy"   : (["module purge", "module load cmake/3.19.6 gcc/8.1.0  mvapich2/2.3.1 python/3.7.3"],
                  ["mpicxx","mpifort","mpicc"],
