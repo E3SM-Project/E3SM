@@ -64,7 +64,7 @@ class MAMWetscav : public scream::AtmosphereProcess {
   // Set the grid and input output variables
   void set_grids(
       const std::shared_ptr<const GridsManager> grids_manager) override;
-  
+
   // management of common atm process memory
   size_t requested_buffer_size_in_bytes() const override;
   void init_buffers(const ATMBufferManager &buffer_manager) override;
@@ -111,7 +111,7 @@ class MAMWetscav : public scream::AtmosphereProcess {
       compute_updraft_velocities(team, wet_atm_pre_, dry_atm_pre_, i);
       team.team_barrier();  // allows kernels below to use layer heights
     } // operator()
-     
+
     // number of horizontal columns and vertical levels
     int ncol_pre_, nlev_pre_;
 
@@ -166,7 +166,7 @@ class MAMWetscav : public scream::AtmosphereProcess {
   Preprocess preprocess_;
   Postprocess postprocess_;
 
-  
+
   // Number of horizontal columns and vertical levels
   int ncol_, nlev_;
 
@@ -177,7 +177,8 @@ class MAMWetscav : public scream::AtmosphereProcess {
   //--NOTE: The aerosol species are from index 16 to 40 ( or 15 to 39 in C++)
   //        but we define this variable from 0 to nvars_, where nvars_ is 39.
   //        Index 0 to 14 has no value
-  static constexpr int nvars_ = mam4::ndrop::nvars;
+  // FIXME: do we need nvars_?
+  static constexpr int nvars_ = mam4::aero_model::pcnst;
 
 
   // atmospheric variables
@@ -197,9 +198,9 @@ class MAMWetscav : public scream::AtmosphereProcess {
   view_2d evapcdp_;
   view_2d dp_frac_;
   view_2d icwmrdp_;
-  
 
-  
+
+
   // aerosol states
   mam_coupling::AerosolState  wet_aero_, dry_aero_;
 
@@ -209,8 +210,8 @@ class MAMWetscav : public scream::AtmosphereProcess {
 
   mam4::WetDeposition wetdep_;
 
-  
-                                         
+
+
   std::shared_ptr<const AbstractGrid> m_grid;
 };  // class MAMWetscav
 
