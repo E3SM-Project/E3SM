@@ -366,7 +366,7 @@ class TestAllScream(object):
             if test.uses_baselines:
                 data_dir = self.get_preexisting_baseline(test)
                 if not data_dir.is_dir():
-                    test.missing_baselines = True
+                    test.baselines_missing = True
                     print(f" -> Test {test} is missing baselines")
                 else:
                     print(f" -> Test {test} appears to have baselines")
@@ -387,12 +387,12 @@ class TestAllScream(object):
         expect(self._baseline_dir is not None, "Error! This routine should only be called when testing against pre-existing baselines.")
 
         for test in self._tests:
-            if test.uses_baselines and not test.missing_baselines:
+            if test.uses_baselines and not test.baselines_missing:
                 # this test is not missing a baseline, but it may be expired.
 
                 baseline_file_sha = self.get_baseline_file_sha(test)
                 if baseline_file_sha is None:
-                    test.missing_baselines = True
+                    test.baselines_missing = True
                     print(f" -> Test {test} has no stored sha so must be considered expired")
                 else:
                     num_ref_is_behind_file, num_ref_is_ahead_file = git_refs_difference(baseline_file_sha, baseline_ref_sha)
@@ -411,7 +411,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
 
                     # If the copy in our repo is not ahead, then baselines are not expired
                     if num_ref_is_ahead_file > 0 or self._force_baseline_regen:
-                        test.missing_baselines = True
+                        test.baselines_missing = True
                         reason = "forcing baseline regen" if self._force_baseline_regen \
                                  else f"{self._baseline_ref} is ahead of the baseline commit by {num_ref_is_ahead_file}"
                         print(f" -> Test {test} baselines are expired because {reason}")
@@ -667,7 +667,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         checkout_git_ref(self._baseline_ref, verbose=True, dry_run=self._dry_run)
 
         success = True
-        tests_needing_baselines = [test for test in self._tests if test.missing_baselines]
+        tests_needing_baselines = [test for test in self._tests if test.baselines_missing]
         num_workers = len(tests_needing_baselines) if self._parallel else 1
         with threading3.ProcessPoolExecutor(max_workers=num_workers) as executor:
 
@@ -815,7 +815,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
             # First, create build directories (one per test). If existing, nuke the content
             self.create_tests_dirs(self._work_dir, not self._quick_rerun)
 
-            tests_needing_baselines = [test for test in self._tests if test.missing_baselines]
+            tests_needing_baselines = [test for test in self._tests if test.baselines_missing]
             if tests_needing_baselines:
                 expect(self._baseline_ref is not None, "Missing baseline ref")
 
