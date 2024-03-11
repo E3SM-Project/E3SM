@@ -43,6 +43,7 @@ class MAMWetscav : public scream::AtmosphereProcess {
   using KT = ekat::KokkosTypes<DefaultDevice>;
   using view_1d = typename KT::template view_1d<Real>;
   using view_2d = typename KT::template view_2d<Real>;
+  using view_3d = typename KT::template view_3d<Real>;
 
   using const_view_2d = typename KT::template view_2d<const Real>;
   using const_view_1d = typename KT::template view_1d<const Real>; // remove it if possible
@@ -119,7 +120,6 @@ class MAMWetscav : public scream::AtmosphereProcess {
     mam_coupling::WetAtmosphere wet_atm_pre_;
     mam_coupling::DryAtmosphere dry_atm_pre_;
     mam_coupling::AerosolState  wet_aero_pre_, dry_aero_pre_;
-
   }; // MAMWetscav::Preprocess
 
   // Postprocessing functor
@@ -199,7 +199,13 @@ class MAMWetscav : public scream::AtmosphereProcess {
   view_2d dp_frac_;
   view_2d icwmrdp_;
 
-
+  // wet dep
+  view_3d tracer_mixing_ratio_work_;
+  view_3d d_tracer_mixing_ratio_dt_work_;
+  view_2d aerosol_wet_deposition_interstitial_work_;
+  view_2d aerosol_wet_deposition_cloud_water_work_;
+  view_2d wet_geometric_mean_diameter_i_work_[mam4::AeroConfig::num_modes()];
+  view_2d total_convective_detrainment_work_;
 
   // aerosol states
   mam_coupling::AerosolState  wet_aero_, dry_aero_;

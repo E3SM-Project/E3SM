@@ -340,38 +340,6 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
     dry_aero_.gas_mmr[g] = buffer_.dry_gas_mmr[g];
   }
 
-  // Other required variables
-  cldn_prev_step_ = get_field_out("cldn_prev_step").get_view< Real **>();
-  cldt_prev_step_ = get_field_out("cldt_prev_step").get_view< Real **>(); //FIXME: Is it same as cldn_prev_step??
-  cldst_ = get_field_out("cldst").get_view< Real **>();//??
-  evapr_ = get_field_out("evapr").get_view< Real **>();
-  rprdsh_ =
-      get_field_out("rprdsh").get_view<Real **>();  // rain production, shallow
-                                                    // convection [kg/kg/s]
-  evapcsh_ =
-      get_field_out("evapcsh")
-          .get_view<Real **>();  // Evaporation rate of shallow convective
-                                 // precipitation >=0. [kg/kg/s]
-
-  sh_frac_ = get_field_out("sh_frac")
-                 .get_view<Real **>(); // Shallow convective cloud fraction [fraction]
-
-  rprddp_ =
-      get_field_out("rprddp")
-          .get_view<Real **>();  // rain production, deep convection [kg/kg/s]
-
-  evapcdp_ = get_field_out("evapcdp")
-                 .get_view<Real **>();  //  Evaporation rate of deep convective
-                                        //  precipitation >=0. [kg/kg/s]
-  dp_frac_ = get_field_out("dp_frac")
-                 .get_view<Real **>(); // Deep convective cloud fraction [fraction]
-
-  icwmrsh_ = get_field_out("icwmrsh")
-                 .get_view<Real **>(); // ??
-
-  icwmrdp_ = get_field_out("icwmrdp")
-                 .get_view<Real **>(); // ??
-
   // set wet/dry aerosol state data (interstitial aerosols only)
   for(int imode = 0; imode < mam_coupling::num_aero_modes(); ++imode) {
     const char *int_nmr_field_name =
@@ -407,6 +375,39 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
     }
   }
 
+    // Other required variables
+  cldn_prev_step_ = get_field_out("cldn_prev_step").get_view< Real **>();
+  cldt_prev_step_ = get_field_out("cldt_prev_step").get_view< Real **>(); //FIXME: Is it same as cldn_prev_step??
+  cldst_ = get_field_out("cldst").get_view< Real **>();//??
+  evapr_ = get_field_out("evapr").get_view< Real **>();
+  rprdsh_ =
+      get_field_out("rprdsh").get_view<Real **>();  // rain production, shallow
+                                                    // convection [kg/kg/s]
+  evapcsh_ =
+      get_field_out("evapcsh")
+          .get_view<Real **>();  // Evaporation rate of shallow convective
+                                 // precipitation >=0. [kg/kg/s]
+
+  sh_frac_ = get_field_out("sh_frac")
+                 .get_view<Real **>(); // Shallow convective cloud fraction [fraction]
+
+  rprddp_ =
+      get_field_out("rprddp")
+          .get_view<Real **>();  // rain production, deep convection [kg/kg/s]
+
+  evapcdp_ = get_field_out("evapcdp")
+                 .get_view<Real **>();  //  Evaporation rate of deep convective
+                                        //  precipitation >=0. [kg/kg/s]
+  dp_frac_ = get_field_out("dp_frac")
+                 .get_view<Real **>(); // Deep convective cloud fraction [fraction]
+
+  icwmrsh_ = get_field_out("icwmrsh")
+                 .get_view<Real **>(); // ??
+
+  icwmrdp_ = get_field_out("icwmrdp")
+                 .get_view<Real **>(); // ??
+
+
   // set up our preprocess/postprocess functors
   // Here we initialize (not compute) objects in preprocess struct using the
   // objects in the argument list
@@ -415,6 +416,24 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
 
   postprocess_.initialize(ncol_, nlev_, wet_atm_, wet_aero_, dry_atm_,
                           dry_aero_);
+
+  // wetdep
+  constexpr int pcnst = mam4::aero_model::pcnst;
+
+  tracer_mixing_ratio_work_ =  view_3d("tracer_mixing_ratio_work_", ncol_, nlev_, pcnst);
+  d_tracer_mixing_ratio_dt_work_ = view_3d("d_tracer_mixing_ratio_dt_work_", ncol_, nlev_, pcnst);
+
+  aerosol_wet_deposition_interstitial_work_ = view_2d("aerosol_wet_deposition_interstitial",ncol_, nlev_);
+  aerosol_wet_deposition_cloud_water_work_ = view_2d("aerosol_wet_deposition_cloud_water",ncol_, nlev_);
+
+  for (int m = 0; m < mam_coupling::num_aero_modes(); m++)
+  {
+    wet_geometric_mean_diameter_i_work_[m]
+    = view_2d("wet_geometric_mean_diameter_i_work_1",ncol_, nlev_);
+  }
+
+  total_convective_detrainment_work_= view_2d("total_convective_detrainment_work_",ncol_, nlev_);
+
 }
 
 // =========================================================================================
@@ -455,7 +474,7 @@ void MAMWetscav::run_impl(const double dt) {
   // MUST: FIXME: Make sure state is not updated...only tendencies should be
   // updated!!
   constexpr int pcnst = mam4::aero_model::pcnst;
-  constexpr int ntot_amode = mam4::AeroConfig::num_modes();
+  constexpr int ntot_amode = mam_coupling::num_aero_modes();
   constexpr int maxd_aspectype= mam4::ndrop::maxd_aspectype;
 
   mam4::AeroConfig aero_config;
@@ -478,7 +497,16 @@ void MAMWetscav::run_impl(const double dt) {
   const auto &rprddp=rprddp_;
   const auto &evapcdp=evapcdp_;
   const auto &icwmrdp=icwmrdp_;
-
+  const auto &tracer_mixing_ratio_work=tracer_mixing_ratio_work_;
+  const auto &d_tracer_mixing_ratio_dt_work=d_tracer_mixing_ratio_dt_work_;
+  const auto &aerosol_wet_deposition_interstitial_work=aerosol_wet_deposition_interstitial_work_;
+  const auto &aerosol_wet_deposition_cloud_water_work=aerosol_wet_deposition_cloud_water_work_;
+  const auto &total_convective_detrainment_work=total_convective_detrainment_work_;
+  view_2d wet_geometric_mean_diameter_i_work[ntot_amode];
+  for (int m = 0; m < ntot_amode; m++)
+  {
+   wet_geometric_mean_diameter_i_work[m] = wet_geometric_mean_diameter_i_work_[m];
+  }
   const auto policy =
       ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_);
 
@@ -546,6 +574,7 @@ void MAMWetscav::run_impl(const double dt) {
         diags.shallow_convective_cloud_condensate  =  ekat::subview(icwmrsh_, icol);
         // FIXME: why are we setting deep_convective_cloud_fraction to zeros_nlev?
         // diags.deep_convective_cloud_fraction       = zeros_nlev;
+        // FXIME: shallow_convective_cloud_fraction was previously set to dp_frac_icol.
         diags.shallow_convective_cloud_fraction    = ekat::subview(cldt_prev_step, icol);
         diags.stratiform_cloud_fraction =        ekat::subview(cldst, icol);
         diags.evaporation_of_falling_precipitation = ekat::subview(evapr, icol);
@@ -556,7 +585,19 @@ void MAMWetscav::run_impl(const double dt) {
             ekat::subview(evapcdp, icol);
         diags.deep_convective_cloud_condensate = ekat::subview(icwmrdp, icol);
 
-        // setup tendencies
+        diags.tracer_mixing_ratio = ekat::subview(tracer_mixing_ratio_work, icol);
+        diags.d_tracer_mixing_ratio_dt = ekat::subview(d_tracer_mixing_ratio_dt_work, icol);
+
+        diags.aerosol_wet_deposition_interstitial = ekat::subview(aerosol_wet_deposition_interstitial_work, icol);
+        diags.aerosol_wet_deposition_cloud_water = ekat::subview(aerosol_wet_deposition_cloud_water_work, icol);
+
+        // FIXME where is dp computed? calcsize?
+        for (int m = 0; m < ntot_amode; m++)
+        {
+          diags.wet_geometric_mean_diameter_i[m] = ekat::subview(wet_geometric_mean_diameter_i_work[m], icol);
+        }
+        // // setup tendencies
+        diags.total_convective_detrainment = ekat::subview(total_convective_detrainment_work, icol);
         mam4::Tendencies tends{};
 #if 1
         wetdep_.compute_tendencies(aero_config, team, 0, dt, atm, sfc,
