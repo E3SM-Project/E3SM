@@ -615,38 +615,42 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         print(f"Generating baseline for test {test} with config '{cmake_config}'")
         print("===============================================================================")
 
-        success = True
-
         # We cannot just crash if we fail to generate baselines, since we would
         # not get a dashboard report if we did that. Instead, just ensure there is
         # no baseline file to compare against if there's a problem.
         stat, _, err = run_cmd(f"{cmake_config} {self._root_dir}",
                                from_dir=test_dir, verbose=True, dry_run=self._dry_run)
         if stat != 0:
-            print (f"WARNING: Failed to configure baselines:\n{err}")
-            success = False
+            print (f"WARNING: Failed to create baselines (config phase):\n{err}")
+            return False
 
-        else:
-            cmd = f"make -j{test.compile_res_count} && make -j{test.testing_res_count} baseline"
-            if self._parallel:
-                start, end = self.get_taskset_range(test)
-                cmd = f"taskset -c {start}-{end} sh -c '{cmd}'"
+        cmd = f"make -j{test.compile_res_count}"
+        if self._parallel:
+            start, end = self.get_taskset_range(test)
+            cmd = f"taskset -c {start}-{end} sh -c '{cmd}'"
 
-            stat, _, err = run_cmd(cmd, from_dir=test_dir, verbose=True, dry_run=self._dry_run)
+        stat, _, err = run_cmd(cmd, from_dir=test_dir, verbose=True, dry_run=self._dry_run)
 
-            if stat != 0:
-                print(f"WARNING: Failed to create baselines:\n{err}")
-                success = False
+        if stat != 0:
+            print (f"WARNING: Failed to create baselines (build phase):\n{err}")
+            return False
 
-        if success:
-            # Store the sha used for baselines generation
-            self.set_baseline_file_sha(test, commit)
-            test.missing_baselines = False
+        cmd  = f"ctest -j{test.testing_res_count}"
+        cmd += f" -L baseline_gen --resource-spec-file {test_dir}/ctest_resource_file.json"
+        stat, _, err = run_cmd(cmd, from_dir=test_dir, verbose=True, dry_run=self._dry_run)
 
-            # Clean up the directory by removing everything
-            shutil.rmtree(test_dir)
+        if stat != 0:
+            print (f"WARNING: Failed to create baselines (run phase):\n{err}")
+            return False
 
-        return success
+        # Store the sha used for baselines generation
+        self.set_baseline_file_sha(test,commit)
+        test.baselines_missing = False
+
+        # Clean up the directory by removing everything
+        shutil.rmtree(test_dir)
+
+        return True
 
     ###############################################################################
     def generate_all_baselines(self):

@@ -16,8 +16,6 @@ if (NOT SCREAM_BASELINES_ONLY)
     LIBS scream_rrtmgp rrtmgp scream_control yakl diagnostics rrtmgp_test_utils
     EXE_ARGS "--ekat-test-params rrtmgp_inputfile=${SCREAM_DATA_DIR}/init/rrtmgp-allsky.nc,rrtmgp_baseline=${SCREAM_TEST_DATA_DIR}/rrtmgp-allsky-baseline.nc"
   )
-  # This test needs the allsky baselines file
-  add_dependencies (rrtmgp_standalone_unit rrtmgp_allsky_baseline.nc)
 
   ## Create rrtmgp stand alone executable
   CreateUnitTestExec(${TEST_BASE_NAME} "rrtmgp_standalone.cpp"

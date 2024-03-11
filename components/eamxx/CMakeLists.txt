@@ -494,8 +494,6 @@ print_var(SCREAM_DYNAMICS_DYCORE)
 
 file(MAKE_DIRECTORY ${SCREAM_TEST_DATA_DIR})
 
-add_custom_target(baseline)
-add_custom_target(baseline_cxx)
 # SCREAM_FAKE_ONLY is used to run some tests to ensure the enclosing testing
 # scripts work correctly. We are not really interested in building/testing SCREAM.
 if (NOT DEFINED ENV{SCREAM_FAKE_ONLY})
