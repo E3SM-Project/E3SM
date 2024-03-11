@@ -72,11 +72,7 @@ if [ $skip_testing -eq 0 ]; then
   # IF such dir is not found, then the default (ctest-build/baselines) is used
   BASELINES_DIR=AUTO
 
-  TAS_ARGS="--baseline-dir $BASELINES_DIR \$compiler -c EKAT_DISABLE_TPL_WARNINGS=ON -i -m \$machine"
-  # Disable parallel testing on pm-gpu since that would oversubscribe it
-  if [[ "$SCREAM_MACHINE" != "pm-gpu" ]]; then
-      TAS_ARGS="${TAS_ARGS} -p"
-  fi
+  TAS_ARGS="--baseline-dir $BASELINES_DIR \$compiler -p -c EKAT_DISABLE_TPL_WARNINGS=ON -i -m \$machine"
 
   # Now that we are starting to run things that we expect could fail, we
   # do not want the script to exit on any fail since this will prevent

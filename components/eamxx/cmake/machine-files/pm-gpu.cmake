@@ -28,4 +28,6 @@ if ("${PROJECT_NAME}" STREQUAL "E3SM")
       set(CMAKE_Fortran_FLAGS "-fallow-argument-mismatch"  CACHE STRING "" FORCE) # only works with gnu v10 and above
     endif()
   endif()
+else()
+  set(CMAKE_Fortran_FLAGS "-fallow-argument-mismatch"  CACHE STRING "" FORCE) # only works with gnu v10 and above
 endif()
