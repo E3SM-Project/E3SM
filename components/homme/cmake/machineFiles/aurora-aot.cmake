@@ -43,8 +43,8 @@ SET(CMAKE_CXX_COMPILER "mpicxx" CACHE STRING "")
 #SET(SYCL_LINK_FLAGS "-fsycl -fsycl-link-huge-device-code -fsycl-device-code-split=per_kernel -fsycl-targets=spir64")
 
 #AOT flags
-SET(SYCL_LINK_FLAGS "-std=c++17 -fsycl -fsycl-device-code-split=per_kernel -fno-sycl-id-queries-fit-in-int -fsycl-unnamed-lambda")
-SET(SYCL_COMPILE_FLAGS "-fsycl -fsycl-device-code-split=per_kernel -fsycl-targets=spir64_gen -Xsycl-target-backend \"-device 12.60.7\"")
+SET(SYCL_COMPILE_FLAGS "-std=c++17 -fsycl -fsycl-device-code-split=per_kernel -fno-sycl-id-queries-fit-in-int -fsycl-unnamed-lambda")
+SET(SYCL_LINK_FLAGS "-fsycl -fsycl-device-code-split=per_kernel -fsycl-link-huge-device-code -fsycl-targets=spir64_gen -Xsycl-target-backend \"-device 12.60.7\"")
 
 SET(ADD_Fortran_FLAGS "-fc=ifx -O3 -DNDEBUG -DCPRINTEL -g" CACHE STRING "")
 SET(ADD_C_FLAGS "-O3 -DNDEBUG " CACHE STRING "")
