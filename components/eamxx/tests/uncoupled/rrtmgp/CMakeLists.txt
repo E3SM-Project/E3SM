@@ -8,14 +8,16 @@ if (NOT SCREAM_BASELINES_ONLY)
   set (TEST_BASE_NAME rrtmgp_standalone)
   set (FIXTURES_BASE_NAME ${TEST_BASE_NAME}_generate_output_nc_files)
 
-  # Unit test to compare against raw rrtmgp output
-  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input_unit.yaml
-                 ${CMAKE_CURRENT_BINARY_DIR}/input_unit.yaml)
-  CreateUnitTest(${TEST_BASE_NAME}_unit rrtmgp_standalone_unit.cpp
-    LABELS rrtmgp physics driver
-    LIBS scream_rrtmgp rrtmgp scream_control yakl diagnostics rrtmgp_test_utils
-    EXE_ARGS "--ekat-test-params rrtmgp_inputfile=${SCREAM_DATA_DIR}/init/rrtmgp-allsky.nc,rrtmgp_baseline=${SCREAM_TEST_DATA_DIR}/rrtmgp-allsky-baseline.nc"
-  )
+  if (SCREAM_ENABLE_BASELINE_TESTS)
+    # Unit test to compare against raw rrtmgp output
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input_unit.yaml
+                   ${CMAKE_CURRENT_BINARY_DIR}/input_unit.yaml)
+    CreateUnitTest(${TEST_BASE_NAME}_unit rrtmgp_standalone_unit.cpp
+      LABELS rrtmgp physics driver
+      LIBS scream_rrtmgp rrtmgp scream_control yakl diagnostics rrtmgp_test_utils
+      EXE_ARGS "--ekat-test-params rrtmgp_inputfile=${SCREAM_DATA_DIR}/init/rrtmgp-allsky.nc,rrtmgp_baseline=${SCREAM_TEST_DATA_DIR}/rrtmgp-allsky-baseline.nc"
+    )
+  endif()
 
   ## Create rrtmgp stand alone executable
   CreateUnitTestExec(${TEST_BASE_NAME} "rrtmgp_standalone.cpp"

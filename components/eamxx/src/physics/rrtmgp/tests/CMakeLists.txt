@@ -13,13 +13,16 @@ if (SCREAM_BASELINES_ONLY)
   )
 
 else ()
-  # NOTE: tests inside this branch won't be built in a baselines-only build
-  CreateUnitTest(rrtmgp_tests rrtmgp_tests.cpp
-      LIBS scream_rrtmgp rrtmgp_test_utils
-      LABELS "rrtmgp;physics"
-      EXE_ARGS "-i ${SCREAM_DATA_DIR}/init/rrtmgp-allsky.nc -b ${SCREAM_TEST_DATA_DIR}/rrtmgp-allsky-baseline.nc"
-      EXCLUDE_MAIN_CPP
-  )
+
+  if (SCREAM_ENABLE_BASELINE_TESTS)
+    # NOTE: tests inside this branch won't be built in a baselines-only build
+    CreateUnitTest(rrtmgp_tests rrtmgp_tests.cpp
+        LIBS scream_rrtmgp rrtmgp_test_utils
+        LABELS "rrtmgp;physics"
+        EXE_ARGS "-i ${SCREAM_DATA_DIR}/init/rrtmgp-allsky.nc -b ${SCREAM_TEST_DATA_DIR}/rrtmgp-allsky-baseline.nc"
+        EXCLUDE_MAIN_CPP
+    )
+  endif()
 
   CreateUnitTest(rrtmgp_unit_tests rrtmgp_unit_tests.cpp
       LIBS scream_rrtmgp rrtmgp_test_utils
