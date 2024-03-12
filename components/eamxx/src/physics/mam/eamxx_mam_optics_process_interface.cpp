@@ -298,8 +298,7 @@ void MAMOptics::initialize_impl(const RunType run_type) {
     dry_aero_.gas_mmr[g] = buffer_.dry_gas_mmr[g];
   }
 
-  // FIXME: We need to get ssa_cmip6_sw_, af_cmip6_sw_, ext_cmip6_sw_,
-  // ext_cmip6_lw_ from a nc file. aer_rad_props_sw inputs that are prescribed.
+  // prescribed volcanic aerosols.
   ssa_cmip6_sw_ =
       mam_coupling::view_3d("ssa_cmip6_sw", ncol_, nlev_, nswbands_);
   af_cmip6_sw_ = mam_coupling::view_3d("af_cmip6_sw", ncol_, nlev_, nswbands_);
@@ -307,6 +306,15 @@ void MAMOptics::initialize_impl(const RunType run_type) {
       mam_coupling::view_3d("ext_cmip6_sw", ncol_, nswbands_, nlev_);
   ext_cmip6_lw_ =
       mam_coupling::view_3d("ext_cmip6_lw_", ncol_, nlev_, nlwbands_);
+  // FIXME: We need to get ssa_cmip6_sw_, af_cmip6_sw_, ext_cmip6_sw_,
+  // ext_cmip6_lw_ from a netcdf file.
+  // We will rely on eamxx to interpolate/map data from netcdf files.
+  // The io interface in eamxx is being upgraded.
+  // Thus, I will wait until changes in the eamxx's side are completed.
+  Kokkos::deep_copy(ssa_cmip6_sw_, 0.0);
+  Kokkos::deep_copy(af_cmip6_sw_, 0.0);
+  Kokkos::deep_copy(ext_cmip6_sw_, 0.0);
+  Kokkos::deep_copy(ext_cmip6_lw_, 0.0);
 
   // set up our preprocess/postprocess functors
   preprocess_.initialize(ncol_, nlev_, wet_atm_, wet_aero_, dry_atm_,
@@ -317,10 +325,7 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   const int work_len = mam4::modal_aer_opt::get_work_len_aerosol_optics();
   work_              = mam_coupling::view_2d("work", ncol_, work_len);
 
-  Kokkos::deep_copy(ssa_cmip6_sw_, 0.0);
-  Kokkos::deep_copy(af_cmip6_sw_, 0.0);
-  Kokkos::deep_copy(ext_cmip6_sw_, 0.0);
-  Kokkos::deep_copy(ext_cmip6_lw_, 0.0);
+
   // read table info
   {
     using namespace ShortFieldTagsNames;
