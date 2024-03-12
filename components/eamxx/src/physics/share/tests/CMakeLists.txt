@@ -8,10 +8,10 @@ if (NOT SCREAM_BASELINES_ONLY)
 endif()
 
 if (SCREAM_ENABLE_BASELINE_TESTS)
-  if (SCREAM_GENERATE_BASELINES)
-    set(BASELINE_FILE_ARG "-g -b ${SCREAM_BASELINES_DIR}/data/physics_saturation.baseline")
+  if (SCREAM_BASELINES_ONLY)
+    set(BASELINE_FILE_ARG "-g -b ${SCREAM_TEST_DATA_DIR}/physics_saturation.baseline")
   else()
-    set(BASELINE_FILE_ARG "-b ${SCREAM_BASELINES_DIR}/data/physics_saturation.baseline")
+    set(BASELINE_FILE_ARG "-b ${SCREAM_TEST_DATA_DIR}/physics_saturation.baseline")
   endif()
 
   # The comparison test. Expects baseline to exist. All thread configurations
