@@ -1868,7 +1868,8 @@ contains
     ! initialized, and after ecophyscon file is read in.
     !
     ! !USES:
-    use pftvarcon       , only: npcropmin, npcropmax, mnNHplantdate
+    use elm_varpar      , only : mxpft
+    use pftvarcon       , only: iscft, crop, mnNHplantdate
     use pftvarcon       , only: mnSHplantdate, mxNHplantdate
     use pftvarcon       , only: mxSHplantdate
     use elm_time_manager, only: get_calday
@@ -1893,13 +1894,17 @@ contains
     ! Convert planting dates into julian day
     minplantjday(:,:) = huge(1)
     maxplantjday(:,:) = huge(1)
-    do n = npcropmin, npcropmax
+    do n = 0, mxpft
+      if (iscft(n)>=1) then
        minplantjday(n,inNH) = int( get_calday( mnNHplantdate(n), 0 ) )
        maxplantjday(n,inNH) = int( get_calday( mxNHplantdate(n), 0 ) )
+      end if
     end do
-    do n = npcropmin, npcropmax
+    do n = 0, mxpft
+      if (iscft(n)>=1) then
        minplantjday(n,inSH) = int( get_calday( mnSHplantdate(n), 0 ) )
        maxplantjday(n,inSH) = int( get_calday( mxSHplantdate(n), 0 ) )
+      end if
     end do
 
     ! Figure out what hemisphere each PFT is in

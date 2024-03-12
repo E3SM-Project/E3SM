@@ -146,7 +146,7 @@ CONTAINS
     use landunit_varcon, only : istsoil, istice, istice_mec, istdlak, istwet
     use elm_varctl     , only : iulog
     use pftvarcon       , only : noveg, nonvascular
-    use pftvarcon       , only : woody, graminoid, generic_crop, crop, percrop
+    use pftvarcon       , only : woody, graminoid, iscft, crop
     use pftvarcon       , only : needleleaf
     !
     ! !ARGUMENTS:
@@ -293,10 +293,8 @@ CONTAINS
             if (nonvascular(elmveg) == 1.0_r8                        ) wesveg = 3      ! assuming moss like grass
             !if (elmveg == nc3crop                             ) wesveg = 2
             !if (elmveg == nc3irrig                            ) wesveg = 2
-            if (generic_crop(elmveg) == 1.0_r8                       ) wesveg = 2
-            if (crop(elmveg) == 1.0_r8                               ) wesveg = 2
-            if (percrop(elmveg) == 1.0_r8                            ) wesveg = 2
             !if (elmveg >= npcropmin .and. elmveg <= npcropmax ) wesveg = 2
+            if (crop(elmveg) == 1.0_r8 .or. iscft(elmveg) == 1.0_r8  ) wesveg = 2
 #ifndef _OPENACC
             if (wesveg == wveg_unset )then
                write(iulog,*) 'elmveg = ', elmveg, 'lun_pp%itype = ', lun_pp%itype(l)

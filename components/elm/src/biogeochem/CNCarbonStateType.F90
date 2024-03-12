@@ -12,7 +12,7 @@ module CNCarbonStateType
   use elm_varctl             , only : iulog, use_vertsoilc, spinup_state 
   use decompMod              , only : bounds_type
   use CNStateType            , only : cnstate_type
-  use pftvarcon              , only : npcropmin
+  use pftvarcon              , only : iscft
   use CNDecompCascadeConType , only : decomp_cascade_con
   use VegetationPropertiesType         , only : veg_vp
   use abortutils             , only : endrun
@@ -400,7 +400,7 @@ contains
     !
     ! !USES:
     use landunit_varcon , only: istsoil
-    use pftvarcon       , only: noveg, npcropmin
+    use pftvarcon       , only: noveg
     !
     ! !ARGUMENTS:
     class(carbonstate_type) :: this 
@@ -459,7 +459,7 @@ contains
                 if (veg_vp%evergreen(veg_pp%itype(p)) == 1._r8) then
                    this%leafc_patch(p)         = 1._r8 * ratio
                    this%leafc_storage_patch(p) = 0._r8
-                else if (veg_pp%itype(p) >= npcropmin) then ! prognostic crop types
+                else if (iscft(veg_pp%itype(p)) >= 1) then ! prognostic crop types
                    this%leafc_patch(p) = 0._r8
                    this%leafc_storage_patch(p) = 0._r8
                 else
@@ -866,7 +866,7 @@ contains
             this%gresp_storage_patch(p)      + &
             this%gresp_xfer_patch(p)
 
-       if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
+       if ( crop_prog .and. iscft(veg_pp%itype(p)) >= 1 )then
           this%storvegc_patch(p) =            &
                this%storvegc_patch(p)       + &
                this%grainc_storage_patch(p) + &

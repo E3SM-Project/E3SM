@@ -7,7 +7,7 @@ module GrowthRespMod
   !
   ! !USES:
   use shr_kind_mod     , only : r8 => shr_kind_r8
-  use pftvarcon        , only : grperc, grpnow, npcropmin
+  use pftvarcon        , only : grperc, grpnow, iscft
   use VegetationPropertiesType   , only : veg_vp
   use VegetationType        , only : veg_pp
   use VegetationDataType    , only : veg_cf
@@ -102,7 +102,7 @@ contains
       do fp = 1,num_soilp
 
         p = filter_soilp(fp)
-         if (ivt(p) >= npcropmin) then ! skip 2 generic crops
+         if (iscft(ivt(p)) >= 1) then ! skip 2 generic crops
 
             cpool_livestem_gr(p)          = cpool_to_livestemc(p) * grperc(ivt(p))
 

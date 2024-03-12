@@ -2177,7 +2177,8 @@ contains
     ! initialized, and after ecophyscon file is read in.
     !
     ! !USES:
-    use pftvarcon       , only: npcropmin, npcropmax, nppercropmin, nppercropmax, mnNHplantdate
+    use elm_varpar      , only : mxpft
+    use pftvarcon       , only: iscft, mnNHplantdate
     use pftvarcon       , only: mnSHplantdate, mxNHplantdate
     use pftvarcon       , only: mxSHplantdate
     use elm_time_manager, only: get_calday
@@ -2203,23 +2204,28 @@ contains
     ! Convert planting dates into julian day
     minplantjday(:,:) = huge(1)
     maxplantjday(:,:) = huge(1)
-    do n = npcropmin, npcropmax
+    do n = 0, mxpft
+      if (iscft(n)>=1) then
         minplantjday(n,inNH) = int( get_calday( mnNHplantdate(n), 0 ) )
         maxplantjday(n,inNH) = int( get_calday( mxNHplantdate(n), 0 ) )
+      end if
     end do
-    do n = npcropmin, npcropmax
+    do n = 0, mxpft
+      if (iscft(n)>=1) then
         minplantjday(n,inSH) = int( get_calday( mnSHplantdate(n), 0 ) )
         maxplantjday(n,inSH) = int( get_calday( mxSHplantdate(n), 0 ) )
+      end if
     end do
 
-    do n = nppercropmin, nppercropmax
-       minplantjday(n,inNH) = int( get_calday( mnNHplantdate(n), 0 ) )
-       maxplantjday(n,inNH) = int( get_calday( mxNHplantdate(n), 0 ) )
-    end do
-    do n = nppercropmin, nppercropmax
-       minplantjday(n,inSH) = int( get_calday( mnSHplantdate(n), 0 ) )
-       maxplantjday(n,inSH) = int( get_calday( mxSHplantdate(n), 0 ) )
-    end do
+    ! with flag 'iscft', the following is not needed anymore
+    !do n = nppercropmin, nppercropmax
+    !   minplantjday(n,inNH) = int( get_calday( mnNHplantdate(n), 0 ) )
+    !   maxplantjday(n,inNH) = int( get_calday( mxNHplantdate(n), 0 ) )
+    !end do
+    !do n = nppercropmin, nppercropmax
+    !   minplantjday(n,inSH) = int( get_calday( mnSHplantdate(n), 0 ) )
+    !   maxplantjday(n,inSH) = int( get_calday( mxSHplantdate(n), 0 ) )
+    !end do
 
     ! Figure out what hemisphere each PFT is in
     do p = bounds%begp, bounds%endp
@@ -2965,7 +2971,7 @@ contains
     !
     ! !USES:
       !$acc routine seq
-    use pftvarcon , only : npcropmin
+    use pftvarcon , only : iscft
     !
     ! !ARGUMENTS:
     integer                 , intent(in)    :: num_soilp       ! number of soil patches in filter
@@ -3062,7 +3068,7 @@ contains
 
             if (offset_counter(p) == dt) then
                t1 = 1.0_r8 / dt
-               if (ivt(p) >= npcropmin) then
+               if (iscft(ivt(p)) >= 1) then
                ! this assumes that offset_counter == dt for crops
                ! if this were ever changed, we'd need to add code to the "else"
                   leafc_to_litter(p) = (1.0_r8 - presharv(ivt(p))) * ((t1 * leafc(p)) + cpool_to_leafc(p))
@@ -3079,7 +3085,7 @@ contains
             end if
 
             if ( nu_com .eq. 'RD') then
-               if (ivt(p) >= npcropmin) then
+               if (iscft(ivt(p)) >= 1) then
                   if (offset_counter(p) == dt) then
                       t1 = 1.0_r8 / dt
 
@@ -3113,7 +3119,7 @@ contains
             else
                if (offset_counter(p) == dt) then
                   t1 = 1.0_r8 / dt
-                  if (ivt(p) >= npcropmin) then
+                  if (iscft(ivt(p)) >= 1) then
                      ! this assumes that offset_counter == dt for crops
                      ! if this were ever changed, we'd need to add code to the "else"
                      leafn_to_litter(p) = (1.0_r8 - presharv(ivt(p))) * ((t1 * leafn(p)) + npool_to_leafn(p))
@@ -3387,7 +3393,7 @@ contains
     ! !USES:
       !$acc routine seq
     use elm_varpar , only : max_patch_per_col, nlevdecomp
-    use pftvarcon  , only : npcropmin
+    use pftvarcon  , only : iscft
     !
     ! !ARGUMENTS:
     integer                 , intent(in)    :: num_soilp       ! number of soil columns in filter
@@ -3497,7 +3503,7 @@ contains
                      ! new ones for now (slevis)
                      ! The food is now directed to the product pools (BDrewniak)
 
-                     if (ivt(p) >= npcropmin) then ! add livestemc to litter
+                     if (iscft(ivt(p)) >= 1) then ! add livestemc to litter
                         ! stem litter carbon fluxes
                         phenology_c_to_litr_met_c(c,j) = phenology_c_to_litr_met_c(c,j) &
                              + livestemc_to_litter(p) * lf_flab(ivt(p)) * wt_col * leaf_prof(p,j)

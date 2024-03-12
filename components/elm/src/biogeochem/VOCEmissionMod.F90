@@ -10,7 +10,7 @@ module VOCEmissionMod
   use elm_varctl         , only : iulog
   use elm_varpar         , only : numpft, nlevcan
   use elm_varpar         , only : numveg  ! fixed as 16, while numpft above may be variable
-  use pftvarcon          , only : woody, graminoid, generic_crop, crop, percrop
+  use pftvarcon          , only : woody, graminoid, iscft, crop
   use pftvarcon          , only : needleleaf, evergreen
   use shr_megan_mod      , only : shr_megan_megcomps_n, shr_megan_megcomp_t, shr_megan_linkedlist
   use shr_megan_mod      , only : shr_megan_mechcomps_n, shr_megan_mechcomps, shr_megan_mapped_emisfctrs
@@ -703,8 +703,7 @@ contains
        get_map_EF = vocemis_vars%efisop_grc(4,g_in, ti_in)
     else if (graminoid(ivt_in) == 1) then            !grass
        get_map_EF = vocemis_vars%efisop_grc(5,g_in, ti_in)
-    else if (generic_crop(ivt_in) == 1 .or. crop(ivt_in) == 1 &
-         .or. percrop(ivt_in) == 1) then                   !crops
+    else if (crop(ivt_in) == 1 .or. iscft(ivt_in) == 1) then !crops
        get_map_EF = vocemis_vars%efisop_grc(6,g_in, ti_in)
     end if
 

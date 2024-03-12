@@ -10,7 +10,7 @@ module RootDynamicsMod
   use elm_varpar          , only : nlevsoi, nlevgrnd
   use elm_varctl          , only : use_vertsoilc
   use decompMod           , only : bounds_type
-  use pftvarcon           , only : noveg, npcropmin, roota_par, rootb_par, root_dmx, evergreen
+  use pftvarcon           , only : noveg, iscft, roota_par, rootb_par, root_dmx, evergreen
   use CanopyStateType     , only: canopystate_type
   use CNStateType         , only : cnstate_type
   use CNCarbonStateType   , only : carbonstate_type
@@ -136,7 +136,7 @@ contains
          p = filter_soilp(f)
          c = pcolumn(p)
          if (ivt(p) /= noveg) then
-            if ((ivt(p)) >= npcropmin) then !skip generic crop types
+            if (iscft(ivt(p)) >= 1) then !skip generic crop types
                if (huigrain(p) > 0._r8) then
                   root_depth(p) = max(zi(c,2), min(hui(p)/huigrain(p)* root_dmx(ivt(p)), root_dmx(ivt(p))))
                end if

@@ -1265,6 +1265,8 @@ contains
 
        do nl = begg,endg
           do t = 1, max_topounits
+            ! (TODO) the following assumes that rainfed/irrigated crop are ordered side by side
+            ! indexing is fixed
             wt_cft(nl,t,nc3crop)       = wt_cft(nl,t,nc3crop)  + wt_cft(nl,t,nc3irrig)
             wt_cft(nl,t,nc3irrig)      = 0._r8
             wt_cft(nl,t,ncorn)         = wt_cft(nl,t,ncorn)    + wt_cft(nl,t,ncornirrig)

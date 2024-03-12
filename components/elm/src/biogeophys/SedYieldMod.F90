@@ -63,7 +63,7 @@ contains
     use elm_time_manager, only : get_step_size
     use landunit_varcon , only : istcrop, istsoil, istice
     use pftvarcon       , only : gcbc_p, gcbc_q, gcbr_p, gcbr_q 
-    use pftvarcon       , only : generic_crop, crop, percrop
+    use pftvarcon       , only : crop, iscft
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds
@@ -218,9 +218,7 @@ contains
                         (veg_cs%livecrootc(p)+veg_cs%deadcrootc(p))*croot_prof(p,1) )
                      fgndcov = exp( -gcbc_p(veg_pp%itype(p))*PCT_gnd - &
                         gcbr_p(veg_pp%itype(p))*Broot ) 
-                     if( generic_crop(veg_pp%itype(p)) >= 1 .or. &
-                         crop(veg_pp%itype(p)) >= 1 .or. &
-                         percrop(veg_pp%itype(p)) >=1 )then
+                     if( crop(veg_pp%itype(p)) >= 1 .or. iscft(veg_pp%itype(p)) >=1 )then
                         Es_Pcrp = Es_Pcrp + pfactor(c) * ftillage * flitho * &
                            fgndcov * veg_pp%wtcol(p) * K * (KE_DT+KE_LD)
                         
@@ -268,9 +266,7 @@ contains
                      nh = 0.03_r8 + 0.05_r8*max(Crsd,Clai)
                      fsr = fsr + veg_pp%wtcol(p) * (0.03_r8/nh)**0.6_r8
                   
-                     if ( generic_crop(veg_pp%itype(p)) >= 1 .or. &
-                          crop(veg_pp%itype(p)) >= 1 .or. &
-                          percrop(veg_pp%itype(p)) >=1 ) then
+                     if ( crop(veg_pp%itype(p)) >= 1 .or. iscft(veg_pp%itype(p)) >= 1 ) then
                         ftillage_tc = ftillage_tc + ftillage * veg_pp%wtcol(p)
 
                         Es_Q = Es_Q + 19.1_r8 * qfactor(c) * 2._r8/COH * flitho * fslp * &

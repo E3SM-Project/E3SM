@@ -12,7 +12,7 @@ module CNNitrogenStateType
   use elm_varctl             , only : use_vertsoilc, use_century_decomp, use_fan
   use elm_varctl             , only : iulog, override_bgc_restart_mismatch_dump, spinup_state
   use decompMod              , only : bounds_type
-  use pftvarcon              , only : npcropmin, nstor
+  use pftvarcon              , only : iscft, nstor
   use CNDecompCascadeConType , only : decomp_cascade_con
   use VegetationPropertiesType         , only : veg_vp
   use abortutils             , only : endrun
@@ -502,7 +502,7 @@ contains
     ! !USES:
     use elm_varpar     , only : crop_prog
     use decompMod      , only : bounds_type
-    use pftvarcon      , only : noveg, npcropmin
+    use pftvarcon      , only : noveg, iscft
     !
     ! !ARGUMENTS:
     class(nitrogenstate_type)      :: this
@@ -1007,7 +1007,7 @@ contains
            this%npool_patch(p)              + &
            this%retransn_patch(p)
 
-      if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
+      if ( crop_prog .and. iscft(veg_pp%itype(p)) >= 1 )then
          this%dispvegn_patch(p) = &
               this%dispvegn_patch(p) + &
               this%grainn_patch(p)
