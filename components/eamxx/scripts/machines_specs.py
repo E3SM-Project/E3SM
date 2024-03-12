@@ -199,9 +199,19 @@ def get_mach_testing_resources(machine):
     of jobs across cores.
     """
     if is_cuda_machine(machine):
-        return int(run_cmd_no_fail("nvidia-smi -L | wc -l"))
+        prefix = "srun " if is_salloc(machine) else ""
+        return int(run_cmd_no_fail(f"{prefix}nvidia-smi -L | wc -l"))
     else:
         return get_available_cpu_count()
+
+###############################################################################
+def is_salloc(machine):
+###############################################################################
+    """
+    Return true if we are running on an salloc'd job.
+    """
+    bcmd = get_mach_batch_command(machine)
+    return "salloc" in bcmd and "srun" not in bcmd
 
 ###############################################################################
 def is_cuda_machine(machine):
