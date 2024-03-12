@@ -6,7 +6,7 @@ set (FIXTURES_BASE_NAME ${TEST_BASE_NAME}_generate_output_nc_files)
 # Create the test
 CreateADUnitTest(${TEST_BASE_NAME}
   LIBS scream_rrtmgp mam
-  LABELS  rrtmgp physics mam4_optics
+  LABELS  rrtmgp physics diagnostics  mam4_optics
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
   FIXTURES_SETUP_INDIVIDUAL ${FIXTURES_BASE_NAME}
 )
@@ -15,10 +15,6 @@ CreateADUnitTest(${TEST_BASE_NAME}
 set (ATM_TIME_STEP 1800)
 SetVarDependingOnTestSize(NUM_STEPS 2 5 48)  # 1h 4h 24h
 set (RUN_T0 2021-10-12-45000)
-
-# Determine num subcycles needed to keep shoc dt<=300s
-set (SHOC_MAX_DT 300)
-math (EXPR MAC_MIC_SUBCYCLES "(${ATM_TIME_STEP} + ${SHOC_MAX_DT} - 1) / ${SHOC_MAX_DT}")
 
 # Ensure test input files are present in the data dir
 set (TEST_INPUT_FILES

@@ -22,7 +22,6 @@ Field Names:
   - rad_heating_pdel
   - sfc_flux_lw_dn
   - sfc_flux_sw_net
-  - dz_at_model_bot
 
 output_control:
   Frequency: ${NUM_STEPS}
