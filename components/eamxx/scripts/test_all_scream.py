@@ -19,7 +19,6 @@ ensure_psutil()
 import psutil
 import re
 
-from collections import OrderedDict
 from pathlib import Path
 
 ###############################################################################
