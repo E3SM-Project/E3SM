@@ -29,7 +29,7 @@ class TestAllScream(object):
 
     ###########################################################################
     def __init__(self, cxx_compiler=None, f90_compiler=None, c_compiler=None,
-                 submit=False, parallel=False, fast_fail=False, generate=False, no_tests=False,
+                 submit=False, parallel=False, generate=False, no_tests=False,
                  baseline_dir=None, machine=None, config_only=False,
                  custom_cmake_opts=(), custom_env_vars=(), preserve_env=False, tests=(),
                  integration_test=False, local=False, root_dir=None, work_dir=None,
@@ -51,7 +51,6 @@ class TestAllScream(object):
         self._c_compiler              = c_compiler
         self._submit                  = submit
         self._parallel                = parallel
-        self._fast_fail               = fast_fail
         self._machine                 = machine
         self._local                   = local
         self._run_tests               = not no_tests
@@ -694,9 +693,6 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
                 test = future_to_test[future]
                 success &= future.result()
 
-                if not success and self._fast_fail:
-                    print(f"Generation of baselines for test {test} failed")
-
         return success
 
     ###############################################################################
@@ -753,10 +749,6 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
                 test = future_to_test[future]
                 tests_success[test] = future.result()
                 success &= tests_success[test]
-                # If failed, and fast fail is requested, return immediately
-                # Note: this is effective only if num_worksers=1
-                if not success and self._fast_fail:
-                    break
 
         for t,s in tests_success.items():
             if not s:

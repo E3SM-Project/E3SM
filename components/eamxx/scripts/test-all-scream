@@ -64,14 +64,11 @@ OR
     parser.add_argument("-p", "--parallel", action="store_true",
                         help="Launch the different build types stacks in parallel")
 
-    parser.add_argument("-f", "--fast-fail", action="store_true",
-                        help="Stop testing when the first failure is detected (ignored with -g)")
-
     parser.add_argument("-g", "--generate", action="store_true",
         help="Instruct test-all-scream to generate baselines from current commit. Skips tests")
 
     parser.add_argument("--baseline-dir", default=None,
-        help="Directory where baselines should be read from (or written to, if -g is used)")
+        help="Directory where baselines should be read from (or written to, if -g/-i is used)")
 
     parser.add_argument("-u", "--update-expired-baselines", action="store_true",
         help="Update baselines that appear to be expired (only used with -g)")
@@ -103,7 +100,7 @@ OR
                         help=f"Only run specific test configurations, choices={choices_doc}")
 
     parser.add_argument("-i", "--integration-test", action="store_true",
-                        help="Merge origin/master into this branch before testing.")
+                        help="Merge origin/master into this branch before testing (implies -u).")
 
     parser.add_argument("-l", "--local", action="store_true",
                         help="Allow to not specify a machine name, and have test-all-scream to look"
