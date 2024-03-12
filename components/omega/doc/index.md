@@ -74,6 +74,7 @@ design/IOStreams
 design/Reductions
 design/ShallowWaterOmega0
 design/TimeMgr
+design/Tracers
 design/HorzMeshClass
 
 design/OmegaDesignTemplate
