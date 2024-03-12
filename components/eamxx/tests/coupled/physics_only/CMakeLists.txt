@@ -3,7 +3,7 @@ if (SCREAM_DOUBLE_PRECISION)
   add_subdirectory(shoc_cld_p3_rrtmgp)
   add_subdirectory(shoc_cld_spa_p3_rrtmgp)
     if (SCREAM_ENABLE_MAM)
-      add_subdirectory(shoc_cld_mam_optics_rrtmgp)
+      add_subdirectory(mam_optics_rrtmgp)
     endif()
 endif()
 
