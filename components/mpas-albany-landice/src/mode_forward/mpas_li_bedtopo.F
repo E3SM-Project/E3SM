@@ -578,11 +578,10 @@ contains
                call sl_solver_checkpoint(itersl, dtime)
                call sl_solver_init(itersl, starttime, ismIceload, ismBedtopo, ismMask)
                call sl_deallocate_array
-
-               deallocate(ismIceload, ismBedtopo, ismMask)
-               deallocate(bedtopoSLgrid1D, thicknessSLgrid1D, maskSLgrid1D)
             endif
 
+            deallocate(ismIceload, ismBedtopo, ismMask)
+            deallocate(bedtopoSLgrid1D, thicknessSLgrid1D, maskSLgrid1D)
          endif
          deallocate(globalArrayThickness)
          deallocate(gatheredArrayThickness)
