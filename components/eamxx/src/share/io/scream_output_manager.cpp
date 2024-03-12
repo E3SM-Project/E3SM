@@ -646,7 +646,8 @@ set_params (const ekat::ParameterList& params,
   // Note, (2) is needed for restarts since the restart frequency in CIME assumes a reference of when this run began.
   // NOTE: m_is_restarted_run and not m_is_model_restart_output, these timestamps will be corrected once we open the hist restart file
   const bool use_case_as_ref = out_control_pl.get<bool>("use_case_as_start_reference",!m_is_model_restart_output);
-  const auto& start_ref = use_case_as_ref ? m_case_t0 : m_run_t0;
+  const bool perform_history_restart = m_params.sublist("Restart").get("Perform Restart",true);
+  const auto& start_ref = use_case_as_ref and perform_history_restart ? m_case_t0 : m_run_t0;
   m_output_control.last_write_ts = start_ref;
   m_output_control.compute_next_write_ts();
 
