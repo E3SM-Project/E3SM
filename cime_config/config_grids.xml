@@ -1922,6 +1922,41 @@
       <mask>oEC60to30v3</mask>
     </model_grid>
 
+    <!-- ================================== -->
+    <!-- Special Grids for 2024 Gordon Bell -->
+
+    <model_grid alias="ne16pg2_oECv3">
+      <grid name="atm">ne16np4.pg2</grid>
+      <grid name="lnd">ne16np4.pg2</grid>
+      <grid name="ocnice">oEC60to30v3</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>oEC60to30v3</mask>
+    </model_grid>
+
+    <model_grid alias="ne24pg2_oECv3">
+      <grid name="atm">ne24np4.pg2</grid>
+      <grid name="lnd">ne24np4.pg2</grid>
+      <grid name="ocnice">oEC60to30v3</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>oEC60to30v3</mask>
+    </model_grid>
+
+    <model_grid alias="ne70pg2_oECv3">
+      <grid name="atm">ne70np4.pg2</grid>
+      <grid name="lnd">ne70np4.pg2</grid>
+      <grid name="ocnice">oEC60to30v3</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>oEC60to30v3</mask>
+    </model_grid>
+
+    <!-- ================================== -->
+
     <model_grid alias="ne30pg2_oARRM60to10">
       <grid name="atm">ne30np4.pg2</grid>
       <grid name="lnd">ne30np4.pg2</grid>
@@ -2448,6 +2483,34 @@
       <file grid="atm|lnd" mask="gx1v6">DUMMY</file>
       <file grid="ice|ocn" mask="gx1v6">DUMMY</file>
       <desc>ne16np4.pg2 is Spectral Elem 2-deg grid w/ 2x2 FV physics grid per element:</desc>
+    </domain>
+
+
+    <!-- ================================== -->
+    <!-- Special Grids for 2024 Gordon Bell -->
+
+    <domain name="ne16np4.pg2">
+      <nx>6144</nx>
+      <ny>1</ny>
+      <file grid="atm|lnd" mask="oEC60to30v3">$DIN_LOC_ROOT/share/domains/domain.lnd.ne16pg2_oEC60to30v3.240313.nc</file>
+      <file grid="ice|ocn" mask="oEC60to30v3">$DIN_LOC_ROOT/share/domains/domain.ocn.ne16pg2_oEC60to30v3.240313.nc</file>
+      <desc>ne16np4.pg2 Spectral Elem grid w/ 2x2 FV physics grid per element:</desc>
+    </domain>
+
+    <domain name="ne24np4.pg2">
+      <nx>13824</nx>
+      <ny>1</ny>
+      <file grid="atm|lnd" mask="oEC60to30v3">$DIN_LOC_ROOT/share/domains/domain.lnd.ne24pg2_oEC60to30v3.240313.nc</file>
+      <file grid="ice|ocn" mask="oEC60to30v3">$DIN_LOC_ROOT/share/domains/domain.ocn.ne24pg2_oEC60to30v3.240313.nc</file>
+      <desc>ne24np4.pg2 Spectral Elem grid w/ 2x2 FV physics grid per element:</desc>
+    </domain>
+
+    <domain name="ne70np4.pg2">
+      <nx>117600</nx>
+      <ny>1</ny>
+      <file grid="atm|lnd" mask="oEC60to30v3">$DIN_LOC_ROOT/share/domains/domain.lnd.ne70pg2_oEC60to30v3.240313.nc</file>
+      <file grid="ice|ocn" mask="oEC60to30v3">$DIN_LOC_ROOT/share/domains/domain.ocn.ne70pg2_oEC60to30v3.240313.nc</file>
+      <desc>ne70np4.pg2 Spectral Elem grid w/ 2x2 FV physics grid per element:</desc>
     </domain>
 
     <!--=====================================================================-->

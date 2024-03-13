@@ -299,6 +299,11 @@ lnd/clm2/surfdata_map/surfdata_ne1024pg2_simyr2010_c211021.nc</fsurdat>
 <fsurdat hgrid="ne1024np4"   sim_year="2010" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne1024np4_simyr2010_c220523.nc</fsurdat>
 
+<!-- Grids for Gordon Bell 2024 -->
+<fsurdat hgrid="ne16np4.pg2" sim_year="2010" use_crop=".false." >lnd/clm2/surfdata_map/surfdata_ne16pg2_simyr2010_c240313.nc</fsurdat>
+<fsurdat hgrid="ne24np4.pg2" sim_year="2010" use_crop=".false." >lnd/clm2/surfdata_map/surfdata_ne24pg2_simyr2010_c240313.nc</fsurdat>
+<fsurdat hgrid="ne70np4.pg2" sim_year="2010" use_crop=".false." >lnd/clm2/surfdata_map/surfdata_ne70pg2_simyr2010_c240313.nc</fsurdat>
+
 <!-- for present day simulations - year 2000 -->
 <fsurdat hgrid="360x720cru"   sim_year="2000" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_360x720cru_simyr2000_c180216.nc</fsurdat>
