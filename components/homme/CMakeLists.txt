@@ -456,9 +456,9 @@ IF (HOMME_USE_KOKKOS AND HOMME_STANDALONE)
   list(APPEND CMAKE_MODULE_PATH
        ${EKAT_CMAKE_PATH}
        ${EKAT_CMAKE_PATH}/pkg_build
+       ${EKAT_CMAKE_PATH}/tpls
   )
   include (EkatBuildKokkos)
-  BuildKokkos()
 ENDIF ()
 
 # This folder contains the CMake macro used to build cxx unit tests

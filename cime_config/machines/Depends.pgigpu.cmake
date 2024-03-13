@@ -107,6 +107,7 @@ list(APPEND MPAS_ADD_ACC_FLAGS
   ${CMAKE_BINARY_DIR}/core_ocean/mode_forward/mpas_ocn_time_integration_rk4.f90
   ${CMAKE_BINARY_DIR}/core_ocean/mode_forward/mpas_ocn_time_integration_si.f90
   ${CMAKE_BINARY_DIR}/core_ocean/mode_forward/mpas_ocn_time_integration_split.f90
+  ${CMAKE_BINARY_DIR}/core_ocean/mode_forward/mpas_ocn_time_integration_split_ab2.f90
   ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_diagnostics.f90
   ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_effective_density_in_land_ice.f90
   ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_diagnostics_variables.f90

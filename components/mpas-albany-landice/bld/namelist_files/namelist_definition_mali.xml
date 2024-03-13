@@ -139,7 +139,7 @@ Default: Defined in namelist_defaults.xml
 	category="advection" group="advection">
 Selection of the method for advecting thickness ('fo' = first-order upwinding).
 
-Valid values: 'fo', 'none'
+Valid values: 'fo', 'fct', 'none'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -147,7 +147,23 @@ Default: Defined in namelist_defaults.xml
 	category="advection" group="advection">
 Selection of the method for advecting tracers.
 
-Valid values: 'fo', 'none'
+Valid values: 'fo', 'fct', 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_horiz_tracer_adv_order" type="integer"
+	category="advection" group="advection">
+Order of polynomial used for tracer reconstruction at cell edges
+
+Valid values: 2, 3 and 4
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_advection_coef_3rd_order" type="real"
+	category="advection" group="advection">
+Reconstruction of 3rd-order reconstruction to blend with 4th-order reconstuction. Equivalent to beta in Skamarock and Gassmann (2011) eq. 7. 0 is fully 4th order, 1 is fully 3rd order.
+
+Valid values: any real between 0 and 1
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -464,6 +480,14 @@ Default: Defined in namelist_defaults.xml
 <entry id="config_distribute_unablatedVolumeDynCell" type="logical"
 	category="calving" group="calving">
 If true, then distribute unablatedVolumeDynCell among dynamic neighbors when converting ablation velocity to ablation thickness. This should only be used as a clean-up measure, while limiting the timestep based on ablation velocity should be used as the primary method of getting accurate ablation thickness from ablation velocity.  If you choose to set config_adaptive_timestep_calvingCFL_fraction much larger than 1.0 (which is not recommended), setting this option to true usually results in more accurate calving behavior. 
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_update_velocity_before_calving" type="logical"
+	category="calving" group="calving">
+If true, add an additional velocity solve between advection and calving. If false, use velocity field from beginning of time step to calculate calving rate. For certain calving laws, like damage threshold calving, it is not necessary to update the velocity before calving, while for von Mises stress and eigencalving, it is more accurate to have an updated velocity state before solving for calvingThickness.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
@@ -835,9 +859,25 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_time_integration" type="char*1024"
 	category="time_integration" group="time_integration">
-Time integration method (currently, only forward Euler is supported).
+Time integration method.
 
-Valid values: 'forward_euler'
+Valid values: 'forward_euler' or 'runge_kutta'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_rk_order" type="integer"
+	category="time_integration" group="time_integration">
+Order of Runge-Kutta time integration to use. A value of 1 would be equivalent to forward euler, but will cause an error to avoid unnecessary redundancy. Values of 2 and 3 indicate strong-stability preserving RK2 and RK3. There is currently no support for classical RK2 or RK4 methods.
+
+Valid values: 2 or 3
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_rk3_stages" type="integer"
+	category="time_integration" group="time_integration">
+Number of stages for strong stability preserving RK3 time integration. If set to 3, this involves 3 velocity solves and a maximum CFL fraction of 1. If set to 4, this involves 4 velocity solves, but the maximum CFL fraction is 2.
+
+Valid values: 3 or 4
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1128,6 +1168,14 @@ Default: Defined in namelist_defaults.xml
 <entry id="config_print_velocity_cleanup_details" type="logical"
 	category="debug" group="debug">
 After velocity is calculated there are a few checks for appropriate values in certain geometric configurations.  Setting this option to .true. will cause detailed information about those adjustments to be printed.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_check_tracer_monotonicity" type="logical"
+	category="debug" group="debug">
+Check tracer monotonicity at the end of the monotonic advection routine and write warnings to log file if not monotonic.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml

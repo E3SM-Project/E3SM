@@ -755,10 +755,6 @@
 		/>
 	</nml_record>
 	<nml_record name="coupling" mode="init;forward">
-		<nml_option name="config_ssh_grad_relax_timescale" type="real" default_value="0.0" units="seconds"
-					description="Timescale for relaxation of the ssh gradient for coupling. A value of 0.0 (default) removes any relaxation and gives instantaneous response."
-					possible_values="Any positive real number."
-		/>
 		<nml_option name="config_remove_AIS_coupler_runoff" type="logical" default_value=".false."
 					description="If true, solid and liquid runoff from the Antarctic Ice Sheet (below 60S latitude) coming from the coupled is zeroed in the coupler import routines.  To be used with data iceberg fluxes coming from the sea ice model."
 					possible_values=".true. or .false."
@@ -797,7 +793,7 @@
 		/>
 		<nml_option name="config_tidal_forcing_model" type="character" default_value="off"
 					description="Selects the mode in which tidal forcing is computed."
-					possible_values="'off','monochromatic'"
+					possible_values="'off','monochromatic','linear'"
 		/>
 		<nml_option name="config_tidal_forcing_monochromatic_amp" type="real" default_value="2.0" units="m"
 					description="Value of amplitude of monochromatic tide."
@@ -814,6 +810,18 @@
 		<nml_option name="config_tidal_forcing_monochromatic_baseline" type="real" default_value="0.0" units="days"
 					description="Value of baseline monochromatic tide, e.g., sea level rise."
 					possible_values="Any positive real number."
+		/>
+		<nml_option name="config_tidal_forcing_linear_baseline" type="real" default_value="0.0" units="days"
+					description="Value of baseline linear tide, e.g., sea level rise."
+					possible_values="Any positive real number."
+		/>
+		<nml_option name="config_tidal_forcing_linear_min" type="real" default_value="-1.0" units="days"
+					description="Value of minimum tide."
+					possible_values="Any real number."
+		/>
+		<nml_option name="config_tidal_forcing_linear_rate" type="real" default_value="-8.0" units="days"
+					description="Value of tide rate of change in m per day."
+					possible_values="Any real number."
 		/>
 	</nml_record>
 	<nml_record name="self_attraction_loading" mode="init;forward">
@@ -1930,8 +1938,7 @@
 			<var name="accumulatedLandIceHeat"/>
 			<var name="accumulatedLandIceFrazilMass"/>
 			<var name="frazilSurfacePressure"/>
-			<var name="filteredSSHGradientZonal"/>
-			<var name="filteredSSHGradientMeridional"/>
+			<var_array name="avgSSHGradient"/>
 			<var name="forcingGroupNames"/>
 			<var name="forcingGroupRestartTimes"/>
             <var name="gotmVertViscTopOfCell"/>
@@ -3679,14 +3686,6 @@
 				 description="Time averaged meridional gradient of SSH"
 			/>
 		</var_array>
-		<var name="filteredSSHGradientZonal" type="real" dimensions="nCells Time" units="1"
-			description="Time filtered zonal gradient of SSH"
-			packages="forwardMode;analysisMode"
-		/>
-		<var name="filteredSSHGradientMeridional" type="real" dimensions="nCells Time" units="1"
-			description="Time filtered meridional gradient of SSH"
-			packages="forwardMode;analysisMode"
-		/>
 		<var name="avgTotalFreshWaterTemperatureFlux" type="real" dimensions="nCells Time" units="C m s^-1"
 			 description="Sum of heat fluxes associated with water fluxes cell centers sent to coupler. Positive into the ocean."
 		/>
@@ -3870,11 +3869,11 @@
 		/>
 		<var name="sshSubcycleCurWithTides" type="real" dimensions="nCells Time" units="m"
 			description="SSH - tidal potential in split explicit "
-			packages="tidalPotentialForcingPKG"
+			packages="tidalPotentialForcingPKG;tidalForcing"
 		/>
 		<var name="sshSubcycleNewWithTides" type="real" dimensions="nCells Time" units="m"
 			description="SSH - tidal potential in split explicit "
-			packages="tidalPotentialForcingPKG"
+			packages="tidalPotentialForcingPKG;tidalForcing"
 		/>
 		<var name="coastalSmoothingFactor" type="real" dimensions="nCells" units="1"
 			 description="Multiplication factors to smooth ssh at coastlines for SAL caculation"
