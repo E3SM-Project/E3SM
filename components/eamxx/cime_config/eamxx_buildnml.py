@@ -906,7 +906,7 @@ def create_input_data_list_file(case,caseroot):
     loader.add_constructor("!floats",array_constructor)
     loader.add_constructor("!strings",array_constructor)
 
-    # Grab all the output yaml files, open them, and check if horiz_remap_file or vert_remap_file is used
+    # Grab all the output yaml files, open them, and check if horiz_remap_file or vertical_remap_file is used
     rundir   = case.get_value("RUNDIR")
     eamxx_xml_file = os.path.join(caseroot, "namelist_scream.xml")
     with open(eamxx_xml_file, "r") as fd:
@@ -926,8 +926,8 @@ def create_input_data_list_file(case,caseroot):
                 content = yaml.load(open(dst_yaml,"r"),Loader=loader)
                 if 'horiz_remap_file' in content.keys():
                     files_to_download += [content['horiz_remap_file']]
-                if 'vert_remap_file' in content.keys():
-                    files_to_download += [content['vert_remap_file']]
+                if 'vertical_remap_file' in content.keys():
+                    files_to_download += [content['vertical_remap_file']]
 
     input_data_list_file = "{}/Buildconf/scream.input_data_list".format(caseroot)
     if os.path.exists(input_data_list_file):
@@ -994,14 +994,15 @@ def do_cime_vars_on_yaml_output_files(case, caseroot):
         # produces an output at t=0, which is not present in the restarted run, and
         # which also causes different timestamp in the file name.
         # Hence, change default output settings to perform a single AVERAGE step at the end of the run
-        if case.get_value("TESTCASE") in ["ERP", "ERS"]:
-            test_env = case.get_env('test')
-            stop_n = int(test_env.get_value("STOP_N"))
-            stop_opt = test_env.get_value("STOP_OPTION")
-            content['output_control']['Frequency'] = stop_n
-            content['output_control']['frequency_units'] = stop_opt
-            content['Averaging Type'] = 'AVERAGE'
-            print ("WARNING: ERS/ERP tests hard code output to consist of a single AVERAGE output step at the end of the run.")
+        if case.get_value("TESTCASE") in ["ERP", "ERS"] and content['Averaging Type'].upper()=="INSTANT":
+            hist_n = int(case.get_value("HIST_N",resolved=True))
+            hist_opt = case.get_value("HIST_OPTION",resolved=True)
+            content['output_control']['Frequency'] = hist_n
+            content['output_control']['frequency_units'] = hist_opt
+            content['output_control']['skip_t0_output'] = True
+            print ("ERS/ERP test with INSTANT output detected. Adjusting output control specs:\n")
+            print ("  - setting skip_t0_output=true\n")
+            print ("  - setting freq and freq_units to HIST_N and HIST_OPTION respectively\n")
 
         ordered_dump(content, open(dst_yaml, "w"))
 

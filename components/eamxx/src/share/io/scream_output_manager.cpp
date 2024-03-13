@@ -257,7 +257,11 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
     // Init the left hand point of time_bnds based on run/case t0.
     m_time_bnds.resize(2);
     m_time_bnds[0] = m_run_t0.days_from(m_case_t0);
-  } else if (m_output_control.output_enabled() && m_run_t0==m_case_t0 && !m_is_model_restart_output) {
+  } else if (m_output_control.output_enabled() and
+             m_run_t0==m_case_t0 and
+             not m_is_model_restart_output and
+             not m_params.sublist("output_control").get<bool>("skip_t0_output",false)) // This will be true for ERS/ERP tests
+  {
     // In order to trigger a t0 write, we need to have next_write_ts matching run_t0
     m_output_control.next_write_ts = m_run_t0;
     this->run(m_run_t0);
