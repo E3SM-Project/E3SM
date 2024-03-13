@@ -75,7 +75,7 @@ if [ $skip_testing -eq 0 ]; then
   TAS_ARGS="--baseline-dir $BASELINES_DIR \$compiler -p -c EKAT_DISABLE_TPL_WARNINGS=ON -i -m \$machine"
   # pm-gpu needs to do work in scratch area in order not to fill home quota
   if [[ "$SCREAM_MACHINE" == "pm-gpu" ]]; then
-      TAS_ARGS="${TAS_ARGS} -w /pscratch/sd/e/e3smtest/e3sm_scratch/pm-gpu"
+      TAS_ARGS="${TAS_ARGS} -w /pscratch/sd/e/e3smtest/e3sm_scratch/pm-gpu/ctest-build"
   fi
 
   # Now that we are starting to run things that we expect could fail, we
