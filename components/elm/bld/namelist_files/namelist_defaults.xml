@@ -1575,6 +1575,44 @@ this mask will have smb calculated over the entire global land surface
 
 <!-- mapping files for 0.5x0.5 END -->
 
+<!-- mapping files for 0.25x0.25 START added on Tue Mar 12 21:06:52 2024-->
+<!-- Created by lnd/clm/bld/namelist_files/createMapEntry.pl-->
+
+<map frm_hgrid="3x3min"    frm_lmask="MODIS-wCsp"  to_hgrid="0.25x0.25"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_3x3min_MODIS-wCsp_to_0.25x0.25_nomask_aave_da_c20240308.nc</map>
+<map frm_hgrid="5x5min"    frm_lmask="IGBP-GSDP"  to_hgrid="0.25x0.25"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_5x5min_IGBP-GSDP_to_0.25x0.25_nomask_aave_da_c240123.nc</map>
+<map frm_hgrid="360x720cru"    frm_lmask="cruncep"  to_hgrid="0.25x0.25"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_360x720_cruncep_to_0.25x0.25_nomask_aave_da_c240124.nc</map>
+<map frm_hgrid="10x10min"    frm_lmask="nomask"  to_hgrid="0.25x0.25"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_10x10min_nomask_to_0.25x0.25_nomask_aave_da_c240123.nc</map>
+<map frm_hgrid="0.25x0.25"    frm_lmask="MODIS"  to_hgrid="0.25x0.25"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_0.25x0.25_MODIS_to_0.25x0.25_nomask_aave_da_c20240308.nc</map>
+<map frm_hgrid="0.5x0.5"    frm_lmask="GSDTG2000"  to_hgrid="0.25x0.25"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_0.5x0.5_GSDTG2000_to_0.25x0.25_nomask_aave_da_c240123.nc</map>
+<map frm_hgrid="3x3min"    frm_lmask="GLOBE-Gardner"  to_hgrid="0.25x0.25"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_3x3min_GLOBE-Gardner_to_0.25x0.25_nomask_aave_da_c240123.nc</map>
+<map frm_hgrid="0.9x1.25"    frm_lmask="GRDC"  to_hgrid="0.25x0.25"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_0.9x1.25_GRDC_to_0.25x0.25_nomask_aave_da_c240124.nc</map>
+<map frm_hgrid="1km-merge-10min"    frm_lmask="HYDRO1K-merge-nomask"  to_hgrid="0.25x0.25"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_1km-merge-10min_HYDRO1K-merge-nomask_to_0.25x0.25_nomask_aave_da_c240123.nc</map>
+<map frm_hgrid="5x5min"    frm_lmask="ISRIC-WISE"  to_hgrid="0.25x0.25"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_5x5min_ISRIC-WISE_to_0.25x0.25_nomask_aave_da_c240123.nc</map>
+<map frm_hgrid="0.5x0.5"    frm_lmask="MODIS"  to_hgrid="0.25x0.25"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_0.5x0.5_MODIS_to_0.25x0.25_nomask_aave_da_c240123.nc</map>
+<map frm_hgrid="5x5min"    frm_lmask="ORNL-Soil"  to_hgrid="0.25x0.25"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_5x5min_ORNL-Soil_to_0.25x0.25_nomask_aave_da_c20240308.nc</map>
+<map frm_hgrid="3x3min"    frm_lmask="MODIS"  to_hgrid="0.25x0.25"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_3x3min_MODIS_to_0.25x0.25_nomask_aave_da_c240123.nc</map>
+<map frm_hgrid="3x3min"    frm_lmask="LandScan2004"  to_hgrid="0.25x0.25"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_3x3min_LandScan2004_to_0.25x0.25_nomask_aave_da_c240123.nc</map>
+<map frm_hgrid="3x3min"    frm_lmask="USGS"  to_hgrid="0.25x0.25"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_3x3min_USGS_to_0.25x0.25_nomask_aave_da_c240123.nc</map>
+<map frm_hgrid="0.5x0.5"    frm_lmask="AVHRR"  to_hgrid="0.25x0.25"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_0.5x0.5_AVHRR_to_0.25x0.25_nomask_aave_da_c240123.nc</map>
+
+<!-- mapping files for 0.25x0.25 END -->
+
 <map frm_hgrid="0.5x0.5"  frm_lmask="MODIS"  to_hgrid="ne4np4"   to_lmask="nomask"
 >lnd/clm2/mappingdata/maps/ne4np4/map_0.5x0.5_MODIS_to_ne4np4_nomask_aave_da_c160614.nc</map>
 <map frm_hgrid="0.5x0.5"  frm_lmask="AVHRR"  to_hgrid="ne4np4"   to_lmask="nomask"
