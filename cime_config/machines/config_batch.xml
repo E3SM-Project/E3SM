@@ -673,7 +673,34 @@
      <directive>--qos=standard </directive>
     </directives>
     <queues>
-      <queue walltimemax="24:00:00" nodemax="1792" default="true">standard</queue>
+      <queue walltimemax="16:00:00" nodemax="1792" default="true">standard</queue>
+    </queues>
+   </batch_system>
+
+   <batch_system MACH="chicoma-gpu" type="slurm">
+    <directives>
+      <directive> --partition=gpu</directive>
+    </directives>
+    <directives compiler="gnugpu">
+      <directive> --gpu-bind=none</directive>
+    </directives>
+    <directives COMPSET="!.*MMF.*" compiler="gnugpu">
+      <directive> --gpu-bind=none</directive>
+    </directives>
+    <directives COMPSET=".*MMF.*" compiler="gnugpu">
+      <directive> --gpu-bind=map_gpu:0,1,2,3</directive>
+    </directives>
+    <directives compiler="nvidiagpu">
+      <directive> --gpu-bind=none</directive>
+    </directives>
+    <directives compiler="gnu">
+      <directive> -G 0</directive>
+    </directives>
+    <directives compiler="nvidia">
+      <directive> -G 0</directive>
+    </directives>
+    <queues>
+      <queue walltimemax="16:00:00" nodemax="96" default="true">gpu</queue>
     </queues>
    </batch_system>
 
