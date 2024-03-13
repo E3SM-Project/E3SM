@@ -365,11 +365,10 @@ class TestAllScream(object):
 
         if self._work_dir is not None:
             self._work_dir = Path(self._work_dir).absolute()
-            expect(self._work_dir.is_dir(),
-                   f"Error! Work directory '{self._work_dir}' does not exist.")
         else:
             self._work_dir = self._root_dir.absolute().joinpath("ctest-build")
-            self._work_dir.mkdir(exist_ok=True)
+
+        self._work_dir.mkdir(parents=True, exist_ok=True)
 
         os.chdir(str(self._root_dir)) # needed, or else every git command will need repo=root_dir
         expect(get_current_commit(), f"Root dir: {self._root_dir}, does not appear to be a git repo")

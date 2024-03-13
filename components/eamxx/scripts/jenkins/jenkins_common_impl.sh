@@ -72,7 +72,12 @@ if [ $skip_testing -eq 0 ]; then
   # IF such dir is not found, then the default (ctest-build/baselines) is used
   BASELINES_DIR=AUTO
 
-  TAS_ARGS="--baseline-dir $BASELINES_DIR \$compiler -c EKAT_DISABLE_TPL_WARNINGS=ON -p -i -m \$machine"
+  TAS_ARGS="--baseline-dir $BASELINES_DIR \$compiler -p -c EKAT_DISABLE_TPL_WARNINGS=ON -i -m \$machine"
+  # pm-gpu needs to do work in scratch area in order not to fill home quota
+  if [[ "$SCREAM_MACHINE" == "pm-gpu" ]]; then
+      TAS_ARGS="${TAS_ARGS} -w /pscratch/sd/e/e3smtest/e3sm_scratch/pm-gpu/ctest-build"
+  fi
+
   # Now that we are starting to run things that we expect could fail, we
   # do not want the script to exit on any fail since this will prevent
   # later tests from running.

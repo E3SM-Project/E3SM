@@ -61,11 +61,11 @@ MACHINE_METADATA = {
                 "/gpfs/alpine/cli115/proj-shared/scream/master-baselines"),
     "pm-cpu" : ([f"eval $({CIMEROOT}/CIME/Tools/get_case_env -c SMS.ne4pg2_ne4pg2.F2010-SCREAMv1.pm-cpu_gnu)"],
                 ["CC","ftn","cc"],
-                "srun --time 00:30:00 --nodes=1 --constraint=cpu -q regular --account e3sm_g",
+                "salloc --time 00:30:00 --nodes=1 --constraint=cpu -q debug --account e3sm_g",
                 "/global/cfs/cdirs/e3sm/baselines/gnu/scream/pm-cpu"),
-    "pm-gpu" : ([f"eval $({CIMEROOT}/CIME/Tools/get_case_env -c SMS.ne4pg2_ne4pg2.F2010-SCREAMv1.pm-gpu_gnugpu)"],
+    "pm-gpu" : ([f"eval $({CIMEROOT}/CIME/Tools/get_case_env -c SMS.ne4pg2_ne4pg2.F2010-SCREAMv1.pm-gpu_gnugpu)", "echo cuda=true"],
                 ["CC","ftn","cc"],
-                "srun --time 00:30:00 --nodes=1 --constraint=gpu --exclusive -q regular --account e3sm_g",
+                "salloc --time 02:00:00 --nodes=4 --constraint=gpu --gpus-per-node=4 --gpu-bind=none --exclusive -q regular --account e3sm_g",
                 "/global/cfs/cdirs/e3sm/baselines/gnugpu/scream/pm-gpu"),
     "compy"   : (["module purge", "module load cmake/3.19.6 gcc/8.1.0  mvapich2/2.3.1 python/3.7.3"],
                  ["mpicxx","mpifort","mpicc"],
@@ -199,9 +199,19 @@ def get_mach_testing_resources(machine):
     of jobs across cores.
     """
     if is_cuda_machine(machine):
-        return int(run_cmd_no_fail("nvidia-smi -L | wc -l"))
+        prefix = "srun " if is_salloc(machine) else ""
+        return int(run_cmd_no_fail(f"{prefix}nvidia-smi -L | wc -l"))
     else:
         return get_available_cpu_count()
+
+###############################################################################
+def is_salloc(machine):
+###############################################################################
+    """
+    Return true if we are running on an salloc'd job.
+    """
+    bcmd = get_mach_batch_command(machine)
+    return "salloc" in bcmd and "srun" not in bcmd
 
 ###############################################################################
 def is_cuda_machine(machine):
