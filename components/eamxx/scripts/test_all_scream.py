@@ -368,7 +368,7 @@ class TestAllScream(object):
         else:
             self._work_dir = self._root_dir.absolute().joinpath("ctest-build")
 
-        self._work_dir.mkdir(exist_ok=True)
+        self._work_dir.mkdir(parents=True, exist_ok=True)
 
         os.chdir(str(self._root_dir)) # needed, or else every git command will need repo=root_dir
         expect(get_current_commit(), f"Root dir: {self._root_dir}, does not appear to be a git repo")
