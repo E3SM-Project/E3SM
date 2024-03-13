@@ -62,7 +62,7 @@ def get_log_glob_from_atm_modelio(case_dir):
     ln = grep('logfile = ', filename)[0]
     atm_log_fn = ln.split()[2].split('"')[1]
     id_ = atm_log_fn.split('.')[2]
-    return str(run_dir / f'e3sm.log.{id_}*')
+    return str(run_dir / '**' / f'e3sm.log.{id_}*')
 
 ###############################################################################
 def get_hash_lines(fn):
@@ -113,7 +113,7 @@ def check_hashes_ers(case_dir):
 
     # Look for the two e3sm.log files.
     glob_pat = get_log_glob_from_atm_modelio(case_dir_p)
-    e3sm_fns = glob.glob(glob_pat)
+    e3sm_fns = glob.glob(glob_pat, recursive=True)
     if len(e3sm_fns) == 0:
         print('Could not find e3sm.log files with glob string {}'.format(glob_pat))
         return False
