@@ -198,6 +198,9 @@ class TestAllScream(object):
         # These two dir are special dir for "on-the-fly baselines" and "machine's official baselines"
         local_baseline_dir = self._work_dir/"baselines"
         auto_dir = Path(get_mach_baseline_root_dir(self._machine)).absolute()
+        # Handle the "fake" auto case, used in scripts tests
+        if "SCREAM_FAKE_AUTO" in os.environ:
+            auto_dir = auto_dir / "fake"
 
         if self._baseline_dir == "LOCAL":
             self._baseline_dir = local_baseline_dir
