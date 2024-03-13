@@ -433,17 +433,16 @@
     <directives>
       <directive> --constraint=gpu</directive>
     </directives>
-    <directives compiler="gnugpu">
-      <directive> --gpus-per-task=1</directive>
-    </directives>
     <directives COMPSET="!.*MMF.*" compiler="gnugpu">
+      <directive> --gpus-per-node=4</directive>
       <directive> --gpu-bind=none</directive>
     </directives>
     <directives COMPSET=".*MMF.*" compiler="gnugpu">
+      <directive> --gpus-per-task=1</directive>
       <directive> --gpu-bind=map_gpu:0,1,2,3</directive>
     </directives>
     <directives compiler="nvidiagpu">
-      <directive> --gpus-per-task=1</directive>
+      <directive> --gpus-per-node=4</directive>
       <directive> --gpu-bind=none</directive>
     </directives>
     <directives compiler="gnu">
@@ -475,17 +474,16 @@
     <directives>
       <directive> --constraint=gpu</directive>
     </directives>
-    <directives compiler="gnugpu">
-      <directive> --gpus-per-task=1</directive>
-    </directives>
     <directives COMPSET="!.*MMF.*" compiler="gnugpu">
+      <directive> --gpus-per-node=4</directive>
       <directive> --gpu-bind=none</directive>
     </directives>
     <directives COMPSET=".*MMF.*" compiler="gnugpu">
+      <directive> --gpus-per-task=1</directive>
       <directive> --gpu-bind=map_gpu:0,1,2,3</directive>
     </directives>
     <directives compiler="nvidiagpu">
-      <directive> --gpus-per-task=1</directive>
+      <directive> --gpus-per-node=4</directive>
       <directive> --gpu-bind=none</directive>
     </directives>
     <directives compiler="gnu">
