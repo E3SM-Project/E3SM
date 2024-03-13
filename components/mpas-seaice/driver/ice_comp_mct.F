@@ -1817,7 +1817,8 @@ contains
       config_use_aerosols,              &
       config_use_modal_aerosols,        &
       config_use_zaerosols,             &
-      config_use_column_biogeochemistry
+      config_use_column_biogeochemistry, &
+      config_couple_biogeochemistry_fields
 
    character(len=strKIND), pointer ::   &
       config_column_physics_type,       &
@@ -1937,6 +1938,7 @@ contains
       call mpas_pool_get_config(configs, "config_use_aerosols", config_use_aerosols)
       call mpas_pool_get_config(configs, "config_use_modal_aerosols", config_use_modal_aerosols)
       call mpas_pool_get_config(configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
+      call mpas_pool_get_config(configs, "config_couple_biogeochemistry_fields", config_couple_biogeochemistry_fields)
       call mpas_pool_get_config(configs, "config_use_zaerosols", config_use_zaerosols)
 
       call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
@@ -1981,8 +1983,8 @@ contains
          call mpas_pool_get_array(biogeochemistry, 'oceanZAerosolConc', oceanZAerosolConc)
          call mpas_pool_get_array(biogeochemistry, 'atmosBlackCarbonFlux', atmosBlackCarbonFlux)
          call mpas_pool_get_array(biogeochemistry, 'atmosDustFlux', atmosDustFlux)
-      endif 
-      if (config_use_column_biogeochemistry) then
+      endif
+      if (config_use_column_biogeochemistry .and. config_couple_biogeochemistry_fields) then
 
          call mpas_pool_get_array(biogeochemistry, 'oceanAlgaeConc', oceanAlgaeConc)
          call mpas_pool_get_array(biogeochemistry, 'oceanDOCConc', oceanDOCConc)
@@ -2128,7 +2130,7 @@ contains
            endif
         endif
         ! import biogeochemistry fields, if configured
-        if (config_use_column_biogeochemistry) then
+        if (config_use_column_biogeochemistry .and. config_couple_biogeochemistry_fields) then
            oceanAlgaeConc(1,i)           = x2i_i % rAttr(index_x2i_So_algae1, n)
            oceanAlgaeConc(2,i)           = x2i_i % rAttr(index_x2i_So_algae2, n)
            oceanAlgaeConc(3,i)           = 0.0_RKIND !x2i_i % rAttr(index_x2i_So_algae3, n)
@@ -2160,7 +2162,7 @@ contains
 
         seaSurfaceTemperature(i)  = seaSurfaceTemperature(i) - seaiceFreshWaterFreezingPoint
 
-        if (config_use_column_biogeochemistry) then
+        if (config_use_column_biogeochemistry .and. config_couple_biogeochemistry_fields) then
            ! convert from mmol C/m^3 to mmol N/m^3
            oceanAlgaeConc(1,i)           = oceanAlgaeConc(1,i) / carbonToNitrogenRatioAlgae(1)
            oceanAlgaeConc(2,i)           = oceanAlgaeConc(2,i) / carbonToNitrogenRatioAlgae(2)
@@ -2215,7 +2217,7 @@ contains
       call mpas_pool_get_field(biogeochemistry, "atmosDustFlux", atmosDustFluxField)
       call mpas_pool_get_field(biogeochemistry, 'oceanZAerosolConc', oceanZAerosolConcField)
    endif
-   if (config_use_column_biogeochemistry) then
+   if (config_use_column_biogeochemistry .and. config_couple_biogeochemistry_fields) then
       call mpas_pool_get_subpool(domain % blocklist % structs, 'biogeochemistry', biogeochemistry)
 
       call mpas_pool_get_field(biogeochemistry, 'oceanAlgaeConc', oceanAlgaeConcField)
@@ -2265,7 +2267,7 @@ contains
       call mpas_dmpar_exch_halo_field(atmosDustFluxField)
       call mpas_dmpar_exch_halo_field(oceanZAerosolConcField)
    endif
-   if (config_use_column_biogeochemistry) then
+   if (config_use_column_biogeochemistry .and. config_couple_biogeochemistry_fields) then
       call mpas_dmpar_exch_halo_field(oceanAlgaeConcField)
       call mpas_dmpar_exch_halo_field(oceanDOCConcField)
       call mpas_dmpar_exch_halo_field(oceanDICConcField)
@@ -2352,6 +2354,7 @@ contains
       config_rotate_cartesian_grid,      &
       config_use_topo_meltponds,         &
       config_use_column_biogeochemistry, &
+      config_couple_biogeochemistry_fields, &
       config_use_column_shortwave,       &
       config_use_data_icebergs
 
@@ -2424,6 +2427,7 @@ contains
       call MPAS_pool_get_config(configs, "config_rotate_cartesian_grid", config_rotate_cartesian_grid)
       call MPAS_pool_get_config(configs, "config_use_topo_meltponds", config_use_topo_meltponds)
       call MPAS_pool_get_config(configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
+      call mpas_pool_get_config(configs, "config_couple_biogeochemistry_fields", config_couple_biogeochemistry_fields)
       call MPAS_pool_get_config(configs, "config_use_column_shortwave", config_use_column_shortwave)
       call MPAS_pool_get_config(configs, "config_use_data_icebergs", config_use_data_icebergs)
 
@@ -2486,7 +2490,7 @@ contains
          call MPAS_pool_get_array(icebergFluxes, "bergLatentHeatFlux", bergLatentHeatFlux)
       endif
 
-      if (config_use_column_biogeochemistry) then
+      if (config_use_column_biogeochemistry .and. config_couple_biogeochemistry_fields) then
          call mpas_pool_get_subpool(block_ptr % structs, 'biogeochemistry', biogeochemistry)
 
          call mpas_pool_get_array(biogeochemistry, 'oceanAlgaeFlux', oceanAlgaeFlux)
@@ -2607,7 +2611,7 @@ contains
             i2x_i % rAttr(index_i2x_Fioi_tauy ,n) = tauyo
 
             ! export biogeochemistry fields, if configured
-            if (config_use_column_biogeochemistry) then
+            if (config_use_column_biogeochemistry .and. config_couple_biogeochemistry_fields) then
                ! convert from mmol N/m^3 to mmol C/m^3
                i2x_i % rAttr(index_i2x_Fioi_algae1,n) = oceanAlgaeFlux(1,i) * carbonToNitrogenRatioAlgae(1)
                i2x_i % rAttr(index_i2x_Fioi_algae2,n) = oceanAlgaeFlux(2,i) * carbonToNitrogenRatioAlgae(2)

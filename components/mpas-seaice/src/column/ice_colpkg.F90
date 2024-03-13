@@ -5459,7 +5459,8 @@
                            upNO, upNH, iDi, iki, zfswin, &
                            zsal_tot, darcy_V, grow_net,  &
                            PP_net, hbri,dhbr_bot, dhbr_top, Zoo,&
-                           fbio_snoice, fbio_atmice, ocean_bio, &
+                           fbio_snoice, fbio_atmice, &
+                           ocean_bio, &
                            first_ice, fswpenln, bphi, bTiz, ice_bio_net,  &
                            snow_bio_net, totalChla, fswthrun, Rayleigh_criteria, &
                            sice_rho, fzsal, fzsal_g, &
@@ -5816,7 +5817,7 @@
                           n_don,                                         &
                           n_fed,                 n_fep,                  &
                           n_zaero,               first_ice(n),           &
-                          hin_old(n),            ocean_bio(:),    &
+                          hin_old(n),            ocean_bio(1:nbtrcr),    &
                           bphi(:,n),             iphin,                  &
                           iDi(:,n),              sss,                    &
                           fswpenln(:,n),                                 &

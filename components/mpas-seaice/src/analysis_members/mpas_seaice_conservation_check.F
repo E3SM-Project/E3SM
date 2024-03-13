@@ -318,13 +318,15 @@ contains
            conservationCheckEnergyAMPool, &
            conservationCheckMassAMPool, &
            conservationCheckSaltAMPool, &
-           conservationCheckCarbonAMPool
+           conservationCheckCarbonAMPool, &
+           conservationCheckBlackCarbonAMPool
 
       integer, pointer :: &
            performConservationPrecompute
 
       logical, pointer :: &
-           config_use_column_biogeochemistry
+           config_use_column_biogeochemistry, &
+           config_use_zaerosols
 
       real(kind=RKIND), dimension(:), pointer :: &
            initialEnergy, &
@@ -333,7 +335,8 @@ contains
            initialMassOcean, &
            initialSalt, &
            initialSaltOcean, &
-           initialCarbon
+           initialCarbon, &
+           initialBlackCarbon
 
       err = 0
 
@@ -376,6 +379,17 @@ contains
             call compute_total_carbon(domain, initialCarbon)
          else
             initialCarbon = 0.0_RKIND
+         endif
+
+         ! initial total black carbon
+         call MPAS_pool_get_config(domain % configs, "config_use_zaerosols", config_use_zaerosols)
+         call MPAS_pool_get_subpool(domain % blocklist % structs, "conservationCheckBlackCarbonAM", conservationCheckBlackCarbonAMPool)
+         call MPAS_pool_get_array(conservationCheckBlackCarbonAMPool, "initialBlackCarbon", initialBlackCarbon)
+
+         if (config_use_zaerosols) then
+            call compute_total_black_carbon(domain, initialBlackCarbon)
+         else
+            initialBlackCarbon = 0.0_RKIND
          endif
 
          performConservationPrecompute = 0
@@ -445,7 +459,8 @@ contains
            performConservationPrecompute
 
       logical, pointer :: &
-           config_use_column_biogeochemistry
+           config_use_column_biogeochemistry, &
+           config_use_zaerosols
 
       type(MPAS_Time_type) :: &
            currentTime
@@ -486,6 +501,15 @@ contains
       ! initial total carbon
       call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
       if (config_use_column_biogeochemistry) call carbon_conservation(domain, err)
+
+      if (config_AM_conservationCheck_write_to_logfile .and. &
+         MPAS_stream_mgr_ringing_alarms(domain % streamManager, "conservationCheckOutput", ierr=ierr)) then
+         call mpas_log_write('===================================================================================')
+      endif
+
+      ! initial total black carbon
+      call MPAS_pool_get_config(domain % configs, "config_use_zaerosols", config_use_zaerosols)
+      if (config_use_zaerosols) call black_carbon_conservation(domain, err)
 
       if (config_AM_conservationCheck_write_to_logfile .and. &
          MPAS_stream_mgr_ringing_alarms(domain % streamManager, "conservationCheckOutput", ierr=ierr)) then
@@ -2201,6 +2225,314 @@ contains
 
 !***********************************************************************
 !
+!  routine black_carbon_conservation
+!
+!> \brief   Compute MPAS-Seaice analysis member
+!> \author  Nicole Jeffery
+!> \date    11 Mar 2024
+!> \details
+!>  This routine conducts all computations to verify black carbon conservation
+!
+!-----------------------------------------------------------------------
+
+   subroutine black_carbon_conservation(domain, err)
+
+      type (domain_type), intent(inout) :: &
+           domain
+
+      integer, intent(out) :: &
+           err !< Output: error flag
+
+      type(block_type), pointer :: &
+           blockPtr
+
+      type(MPAS_pool_type), pointer :: &
+           conservationCheckBlackCarbonAMPool, &
+           conservationCheckAMPool, &
+           conservationCheckAreaAMPool
+
+      real(kind=RKIND), dimension(:), pointer :: &
+           initialBlackCarbon, &
+           finalBlackCarbon, &
+           blackCarbonChange, &
+           blackCarbonChangeFlux, &
+           netBlackCarbonFlux, &
+           absoluteBlackCarbonError, &
+           relativeBlackCarbonError, &
+           iceAreaCell, &
+           iceAreaCellInitial, &
+           accumAbsoluteBlackCarbonError, &
+           accumRelativeBlackCarbonError
+
+      real(kind=RKIND), dimension(:), pointer :: &
+           blackCarbonConsAtmBlackCarbonFlux, &
+           blackCarbonConsOceanBlackCarbonFlux, &
+           blackCarbonConsAtmBC1Flux, &
+           blackCarbonConsAtmBC2Flux
+
+      real(kind=RKIND), dimension(:), allocatable :: &
+           sumArray, &
+           sumArrayOut
+
+      type(MPAS_pool_type), pointer :: &
+           meshPool, &
+           tracersAggregatePool, &
+           biogeochemistryPool, &
+           icestatePool
+
+      real(kind=RKIND), dimension(:), pointer :: &
+           areaCell, &
+           totalAtmBlackCarbonFlux, &
+           totalOceanBlackCarbonFlux, &
+           oceanBlackCarbonFlux
+
+      real(kind=RKIND), dimension(:,:), pointer :: &
+           atmosBlackCarbonFlux
+
+      integer, dimension(:,:), pointer :: &
+           cellInHemisphere
+
+      real(kind=RKIND), pointer :: &
+           dt, &
+           earthArea
+
+      logical, pointer :: &
+           config_AM_conservationCheck_write_to_logfile
+
+      real(kind=RKIND) :: &
+           totalAtmBlackCarbonCell, &
+           totalAtmBC1Cell, &
+           totalAtmBC2Cell, &
+           totalOceanBlackCarbonCell
+
+      integer, pointer :: &
+           nCellsSolve, &
+           nHemispheres, &
+           nAccumulate
+
+      type (MPAS_Time_Type) :: &
+           currTime, &
+           startTime
+
+      integer :: &
+           iCell, &
+           iHemisphere, &
+           iSumPrev, &
+           ierr
+
+      integer :: &
+           nVars, &
+           nZBGC, &
+           nSums
+
+      real(kind=RKIND) :: &
+           fluxScale
+
+      character(len=strKIND) :: &
+           timeStr, &
+           timeStrStart
+
+      character(len=16) :: &
+           valStr
+
+      err = 0
+
+      call MPAS_pool_get_config(domain % configs, "config_dt", dt)
+      call MPAS_pool_get_config(domain % configs, "config_AM_conservationCheck_write_to_logfile", &
+                                                   config_AM_conservationCheck_write_to_logfile)
+
+      !-------------------------------------------------------------
+      ! Net carbon flux to ice
+      !-------------------------------------------------------------
+
+      call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nHemispheres", nHemispheres)
+
+      nVars = 4
+
+      nSums = nHemispheres * nVars
+
+      allocate(sumArray(nSums))
+      allocate(sumArrayOut(nSums))
+
+      sumArray = 0.0_RKIND
+
+      blockPtr => domain % blocklist
+      do while (associated(blockPtr))
+
+         call MPAS_pool_get_dimension(blockPtr % dimensions, "nCellsSolve", nCellsSolve)
+
+         call MPAS_pool_get_subpool(blockPtr % structs, "mesh", meshPool)
+         call MPAS_pool_get_subpool(blockPtr % structs, "biogeochemistry", biogeochemistryPool)
+         call MPAS_pool_get_subpool(blockPtr % structs, "tracers_aggregate", tracersAggregatePool)
+         call MPAS_pool_get_subpool(blockPtr % structs, "icestate", icestatePool)
+         call MPAS_pool_get_subpool(blockPtr % structs, "conservationCheckAM", conservationCheckAMPool)
+
+
+         call MPAS_pool_get_array(tracersAggregatePool, "iceAreaCell", iceAreaCell)
+         call MPAS_pool_get_array(icestatePool, "iceAreaCellInitial", iceAreaCellInitial)
+         call MPAS_pool_get_array(meshPool, "areaCell", areaCell)
+         call MPAS_pool_get_array(biogeochemistryPool, "totalAtmBlackCarbonFlux", totalAtmBlackCarbonFlux)
+         call MPAS_pool_get_array(biogeochemistryPool, "totalOceanBlackCarbonFlux", totalOceanBlackCarbonFlux)
+         call MPAS_pool_get_array(biogeochemistryPool, "atmosBlackCarbonFlux", atmosBlackCarbonFlux)
+         call MPAS_pool_get_array(biogeochemistryPool, "oceanBlackCarbonFlux", oceanBlackCarbonFlux)
+         call MPAS_pool_get_array(conservationCheckAMPool, "cellInHemisphere", cellInHemisphere)
+
+         do iCell = 1, nCellsSolve
+
+            ! compute total black carbon flux to ocean from individual fluxes
+
+            nZBGC = 1
+            totalAtmBC1Cell = atmosBlackCarbonFlux(nZBGC,iCell) * areaCell(iCell)* &
+               iceAreaCellInitial(iCell)
+            nZBGC = nZBGC+1
+            totalAtmBC2Cell = atmosBlackCarbonFlux(nZBGC,iCell) * areaCell(iCell)* &
+               iceAreaCellInitial(iCell)
+            totalOceanBlackCarbonCell = oceanBlackCarbonFlux(iCell) * areaCell(iCell)* &
+               iceAreaCell(iCell)
+            totalAtmBlackCarbonCell = totalAtmBC1Cell + totalAtmBC2Cell
+
+            do iHemisphere = 1, nHemispheres
+               iSumPrev = (iHemisphere-1) * nVars
+               if (cellInHemisphere(iHemisphere,iCell) == 1) then
+                  sumArray(iSumPrev+1) = sumArray(iSumPrev+1) + totalAtmBlackCarbonCell
+                  sumArray(iSumPrev+2) = sumArray(iSumPrev+2) + totalAtmBC1Cell
+                  sumArray(iSumPrev+3) = sumArray(iSumPrev+3) + totalAtmBC2Cell
+                  sumArray(iSumPrev+4) = sumArray(iSumPrev+4) + totalOceanBlackCarbonCell
+               endif
+            enddo ! iHemisphere
+
+         enddo ! iCell
+
+         blockPtr => blockPtr % next
+      enddo
+
+      ! perform the sums over processors
+      call MPAS_dmpar_sum_real_array(domain % dminfo, nSums, sumArray, sumArrayOut)
+
+      ! accumulate fluxes
+      call MPAS_pool_get_subpool(domain % blocklist % structs, "conservationCheckBlackCarbonAM", conservationCheckBlackCarbonAMPool)
+      call MPAS_pool_get_array(conservationCheckBlackCarbonAMPool, "blackCarbonConsOceanBlackCarbonFlux", blackCarbonConsOceanBlackCarbonFlux)
+      call MPAS_pool_get_array(conservationCheckBlackCarbonAMPool, "blackCarbonConsAtmBlackCarbonFlux", blackCarbonConsAtmBlackCarbonFlux)
+      call MPAS_pool_get_array(conservationCheckBlackCarbonAMPool, "blackCarbonConsAtmBC1Flux", blackCarbonConsAtmBC1Flux)
+      call MPAS_pool_get_array(conservationCheckBlackCarbonAMPool, "blackCarbonConsAtmBC2Flux", blackCarbonConsAtmBC2Flux)
+
+      do iHemisphere = 1, nHemispheres
+         iSumPrev = (iHemisphere-1) * nVars
+         blackCarbonConsAtmBlackCarbonFlux(iHemisphere) = blackCarbonConsAtmBlackCarbonFlux(iHemisphere) + sumArrayOut(iSumPrev+1)
+         blackCarbonConsAtmBC1Flux(iHemisphere) = blackCarbonConsAtmBC1Flux(iHemisphere) + sumArrayOut(iSumPrev+2)
+         blackCarbonConsAtmBC2Flux(iHemisphere) = blackCarbonConsAtmBC2Flux(iHemisphere) + sumArrayOut(iSumPrev+3)
+         blackCarbonConsOceanBlackCarbonFlux(iHemisphere) = blackCarbonConsOceanBlackCarbonFlux(iHemisphere) + sumArrayOut(iSumPrev+4)
+      enddo ! iHemisphere
+
+      ! cleanup
+      deallocate(sumArray)
+      deallocate(sumArrayOut)
+
+      !-------------------------------------------------------------
+      ! Black carbon conservation error
+      !-------------------------------------------------------------
+
+      if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, "conservationCheckOutput", ierr=ierr)) then
+
+         ! convert fluxes to fluxes per m2 of whole earth and per second
+         call MPAS_pool_get_subpool(domain % blocklist % structs, "conservationCheckAM", conservationCheckAMPool)
+         call MPAS_pool_get_array(conservationCheckAMPool, "nAccumulate", nAccumulate)
+         call MPAS_pool_get_subpool(domain % blocklist % structs, "conservationCheckAreaAM", conservationCheckAreaAMPool)
+         call MPAS_pool_get_array(conservationCheckAreaAMPool, "earthArea", earthArea)
+         fluxScale = 1.0_RKIND / (earthArea * real(nAccumulate))
+
+         ! get initial black carbon content
+         call MPAS_pool_get_array(conservationCheckBlackCarbonAMPool, "initialBlackCarbon", initialBlackCarbon)
+
+         ! get final black carbon content
+         call MPAS_pool_get_array(conservationCheckBlackCarbonAMPool, "finalBlackCarbon", finalBlackCarbon)
+         call compute_total_black_carbon(domain, finalBlackCarbon)
+
+         ! compute the black carbon content change
+         call MPAS_pool_get_array(conservationCheckBlackCarbonAMPool, "blackCarbonChange", blackCarbonChange)
+         blackCarbonChange(:) = finalBlackCarbon(:) - initialBlackCarbon(:)
+         call MPAS_pool_get_array(conservationCheckBlackCarbonAMPool, "blackCarbonChangeFlux", blackCarbonChangeFlux)
+         blackCarbonChangeFlux(:) = blackCarbonChange(:) * (fluxScale / dt)
+
+         ! calculate the final net black carbon flux to the ice
+         call MPAS_pool_get_array(conservationCheckBlackCarbonAMPool, "netBlackCarbonFlux", netBlackCarbonFlux)
+         netBlackCarbonFlux(:) = blackCarbonConsAtmBlackCarbonFlux(:) &
+              - blackCarbonConsOceanBlackCarbonFlux(:)
+
+         ! absolute error
+         call MPAS_pool_get_array(conservationCheckBlackCarbonAMPool, "absoluteBlackCarbonError", absoluteBlackCarbonError)
+         call MPAS_pool_get_array(conservationCheckBlackCarbonAMPool, "accumAbsoluteBlackCarbonError", accumAbsoluteBlackCarbonError)
+         absoluteBlackCarbonError(:) = netBlackCarbonFlux(:) * dt - blackCarbonChange(:)
+
+         ! rescale fluxes
+         blackCarbonConsOceanBlackCarbonFlux(:) = blackCarbonConsOceanBlackCarbonFlux(:) * fluxScale
+         blackCarbonConsAtmBlackCarbonFlux(:) = blackCarbonConsAtmBlackCarbonFlux(:) * fluxScale
+         blackCarbonConsAtmBC1Flux(:) = blackCarbonConsAtmBC1Flux(:) * fluxScale
+         blackCarbonConsAtmBC2Flux(:) = blackCarbonConsAtmBC2Flux(:) * fluxScale
+         netBlackCarbonFlux(:) = netBlackCarbonFlux(:) * fluxScale
+
+         ! compute the final black carbon error
+         call MPAS_pool_get_array(conservationCheckBlackCarbonAMPool, "relativeBlackCarbonError", relativeBlackCarbonError)
+         call MPAS_pool_get_array(conservationCheckBlackCarbonAMPool, "accumRelativeBlackCarbonError", accumRelativeBlackCarbonError)
+         do iHemisphere = 1, nHemispheres
+            if (abs(finalBlackCarbon(iHemisphere)) > 0.0) then
+               relativeBlackCarbonError(iHemisphere) = absoluteBlackCarbonError(iHemisphere) / finalBlackCarbon(iHemisphere)
+            else
+               relativeBlackCarbonError(iHemisphere) = 0.0_RKIND
+            endif
+         enddo ! iHemisphere
+
+         startTime = mpas_get_clock_time(domain % clock, MPAS_START_TIME, ierr=ierr)
+         currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr=ierr)
+
+         call MPAS_get_time(currTime, dateTimeString=timeStr, ierr=ierr)
+         call MPAS_get_time(startTime, dateTimeString=timeStrStart, ierr=ierr)
+
+         if (trim(timeStr) /= trim(timeStrStart)) then
+            accumRelativeBlackCarbonError(:) = accumRelativeBlackCarbonError(:) + relativeBlackCarbonError(:)
+            accumAbsoluteBlackCarbonError(:) = accumAbsoluteBlackCarbonError(:) + absoluteBlackCarbonError(:)
+            !-------------------------------------------------------------
+            ! Output to log file
+            !-------------------------------------------------------------
+
+            if (config_AM_conservationCheck_write_to_logfile) then
+
+               call mpas_log_write('-----------------------------------------------------------------------------')
+               call mpas_log_write(' Black carbon conservation check')
+               call mpas_log_write(' ')
+               call mpas_log_write(' Initial black carbon         (kg) = '//trim(hemisphere_format(initialBlackCarbon)))
+               call mpas_log_write(' Final black carbon           (kg) = '//trim(hemisphere_format(finalBlackCarbon)))
+               call mpas_log_write(' Black carbon change          (kg) = '//trim(hemisphere_format(blackCarbonChange)))
+               call mpas_log_write(' Black carbon change flux (kg/m2s) = '//trim(hemisphere_format(blackCarbonChangeFlux)))
+               call mpas_log_write(' ')
+               call mpas_log_write(' Ocean black carbon flux  (kg/m2s) = '//trim(hemisphere_format(blackCarbonConsOceanBlackCarbonFlux)))
+               call mpas_log_write(' Atmos black carbon flux  (kg/m2s) = '//trim(hemisphere_format(blackCarbonConsAtmBlackCarbonFlux)))
+               call mpas_log_write(' Net black carbon flux    (kg/m2s) = '//trim(hemisphere_format(netBlackCarbonFlux)))
+               call mpas_log_write(' ')
+               call mpas_log_write(' Individual atmosphere black carbon fluxes     :')
+               call mpas_log_write(' Atmos BC1 flux           (kg/m2s) = '//trim(hemisphere_format(blackCarbonConsAtmBC1Flux)))
+               call mpas_log_write(' Atmos BC2 flux           (kg/m2s) = '//trim(hemisphere_format(blackCarbonConsAtmBC2Flux)))
+               call mpas_log_write(' ')
+
+               call mpas_log_write(' Net black carbon change      (kg) = '//trim(hemisphere_format((netBlackCarbonFlux * dt) / fluxScale)))
+               call mpas_log_write(' Net black carbon flux    (kg/m2s) = '//trim(hemisphere_format(netBlackCarbonFlux)))
+               call mpas_log_write(' ')
+               call mpas_log_write(' Absolute black carbon error  (kg) = '//trim(hemisphere_format(absoluteBlackCarbonError)))
+               call mpas_log_write(' Absolute BC error/s   (kg/m2s)    = '//trim(hemisphere_format((absoluteBlackCarbonError * fluxScale) / dt)))
+               call mpas_log_write(' Relative black carbon error       = '//trim(hemisphere_format(relativeBlackCarbonError)))
+
+               call mpas_log_write(' ')
+               call mpas_log_write(' Total run accumulated error ')
+               call mpas_log_write(' Accum. abs black carbon error(kg) = '//trim(hemisphere_format(accumAbsoluteBlackCarbonError)))
+               call mpas_log_write(' Accum. rel black carbon error     = '//trim(hemisphere_format(accumRelativeBlackCarbonError)))
+            endif
+         endif
+      endif
+
+    end subroutine black_carbon_conservation
+
+!***********************************************************************
+!
 !  routine compute_total_energy
 !
 !> \brief   Compute total energy of sea-ice system
@@ -2802,6 +3134,100 @@ contains
 
 !***********************************************************************
 !
+!  routine compute_total_black_carbon
+!
+!> \brief   Compute total black carbon
+!> \author  Nicole Jeffery
+!> \date    11 Mar 2024
+!> \details
+!>  Calculate the total black carbon
+!
+!-----------------------------------------------------------------------
+
+    subroutine compute_total_black_carbon(domain, totalBlackCarbon)
+
+      type (domain_type), intent(inout) :: &
+           domain
+
+      real(kind=RKIND), dimension(:), intent(out) :: &
+           totalBlackCarbon
+
+      type(block_type), pointer :: &
+           blockPtr
+
+      type(MPAS_pool_type), pointer :: &
+           meshPool, &
+           biogeochemistryPool, &
+           conservationCheckAMPool
+
+      integer, pointer :: &
+           nCellsSolve, &
+           nHemispheres
+
+      real(kind=RKIND), dimension(:), pointer :: &
+           totalBlackCarbonContentCell, &
+           areaCell
+
+      integer, dimension(:,:), pointer :: &
+           cellInHemisphere
+
+      integer :: &
+           iCell, &
+           iHemisphere
+
+      real(kind=RKIND) :: &
+           blackCarbonCell
+
+      real(kind=RKIND), dimension(:), allocatable :: &
+           blackCarbon
+
+      call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nHemispheres", nHemispheres)
+
+      allocate(blackCarbon(nHemispheres))
+      blackCarbon(:) = 0.0_RKIND
+
+      blockPtr => domain % blocklist
+      do while (associated(blockPtr))
+
+         call MPAS_pool_get_subpool(blockPtr % structs, "mesh", meshPool)
+         call MPAS_pool_get_subpool(blockPtr % structs, "biogeochemistry", biogeochemistryPool)
+         call MPAS_pool_get_subpool(blockPtr % structs, "conservationCheckAM", conservationCheckAMPool)
+
+         call MPAS_pool_get_dimension(blockPtr % dimensions, 'nCellsSolve', nCellsSolve)
+         call MPAS_pool_get_dimension(blockPtr % dimensions, 'nHemispheres', nHemispheres)
+
+         call MPAS_pool_get_array(meshPool, "areaCell", areaCell)
+         call MPAS_pool_get_array(biogeochemistryPool, "totalBlackCarbonContentCell", totalBlackCarbonContentCell)
+         call MPAS_pool_get_array(conservationCheckAMPool, "cellInHemisphere", cellInHemisphere)
+
+         call compute_black_carbon_cell(blockPtr,totalBlackCarbonContentCell)
+
+         do iCell = 1, nCellsSolve
+
+            ! black carbon mass (kg)
+            blackCarbonCell = totalBlackCarbonContentCell(iCell) * areaCell(iCell)
+
+            do iHemisphere = 1, nHemispheres
+               if (cellInHemisphere(iHemisphere,iCell) == 1) then
+                  blackCarbon(iHemisphere) = blackCarbon(iHemisphere) + blackCarbonCell
+               endif
+            enddo ! iHemisphere
+
+         enddo ! iCell
+
+         blockPtr => blockPtr % next
+      enddo
+
+      ! sum across processors
+      call MPAS_dmpar_sum_real_array(domain % dminfo, nHemispheres, blackCarbon, totalBlackCarbon)
+
+      ! clean up
+      deallocate(blackCarbon)
+
+    end subroutine compute_total_black_carbon
+
+!***********************************************************************
+!
 !  compute_carbon_cell
 !
 !> \brief
@@ -3061,6 +3487,127 @@ contains
 
 !***********************************************************************
 !
+!  compute_black_carbon_cell
+!
+!> \brief
+!> \author Nicole Jeffery, LANL
+!> \date 11 Mar 2024
+!> \details Calculate the total carbon concentration in the sea ice cell
+!> by summing the appropriate biogeochemical tracers in units of kg C
+!>
+!>      Total black carbon = black carbon 1 + black carbon 2
+!
+!-----------------------------------------------------------------------
+
+  subroutine compute_black_carbon_cell(blockPtr,totalBlackCarbonContentCell)
+
+    real(kind=RKIND), dimension(:), intent(out) :: &
+         totalBlackCarbonContentCell
+
+    type(block_type), intent(in) :: &
+         blockPtr
+
+    logical, pointer :: &
+         config_use_zaerosols
+
+    integer, pointer :: &
+         nBioLayersP1, &
+         nBioLayersP3, &
+         nBioLayers, &
+         nzAerosols, &
+         maxBCType, &
+         TWO
+
+    type(MPAS_pool_type), pointer :: &
+         mesh, &
+         biogeochemistry, &
+         tracers_aggregate
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         brineFractionCell, &
+         iceVolumeCell, &
+         snowVolumeCell
+
+    real(kind=RKIND), dimension(:,:), pointer :: &
+         verticalAerosolsConcCell
+
+    integer, pointer :: &
+         nCellsSolve, &
+         nSnowLayers
+
+    real(kind=RKIND), dimension(:), allocatable :: &
+         verticalGridSpace
+
+    real(kind=RKIND) :: &
+         snowleveltop, &
+         snowlevelint
+
+    integer :: &
+         iBioTracers, &
+         iBioCount, &
+         iBioData, &
+         iCell, &
+         nBC
+
+    call MPAS_pool_get_config(blockPtr % configs, "config_use_zaerosols",config_use_zaerosols)
+
+    call MPAS_pool_get_dimension(blockPtr % dimensions, "nBioLayers", nBioLayers)
+    call MPAS_pool_get_dimension(blockPtr % dimensions, "nBioLayersP1", nBioLayersP1)
+    call MPAS_pool_get_dimension(blockPtr % dimensions, "nBioLayersP3", nBioLayersP3)
+    call MPAS_pool_get_dimension(blockPtr % dimensions, "nzAerosols", nzAerosols)
+    call MPAS_pool_get_dimension(blockPtr % dimensions, "maxBCType", maxBCType)
+    call MPAS_pool_get_dimension(blockPtr % dimensions, "TWO", TWO)
+
+    call MPAS_pool_get_subpool(blockPtr % structs, "tracers_aggregate", tracers_aggregate)
+    call MPAS_pool_get_subpool(blockPtr % structs, "mesh", mesh)
+    call MPAS_pool_get_subpool(blockPtr % structs, "biogeochemistry", biogeochemistry)
+
+    call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
+    call MPAS_pool_get_dimension(mesh, 'nSnowLayers', nSnowLayers)
+
+    call MPAS_pool_get_array(tracers_aggregate, "verticalAerosolsConcCell", verticalAerosolsConcCell)
+    call MPAS_pool_get_array(tracers_aggregate, "brineFractionCell", brineFractionCell)
+    call MPAS_pool_get_array(tracers_aggregate, "iceVolumeCell", iceVolumeCell)
+    call MPAS_pool_get_array(tracers_aggregate, "snowVolumeCell", snowVolumeCell)
+
+    allocate(verticalGridSpace(nBioLayersP1))
+
+    verticalGridSpace(:) = 1.0_RKIND/real(nBioLayers,kind=RKIND)
+    verticalGridSpace(1) = verticalGridSpace(1)/2.0_RKIND
+    verticalGridSpace(nBioLayersP1) = verticalGridSpace(1)
+
+    totalBlackCarbonContentCell(:) = 0.0_RKIND
+
+    if (config_use_zaerosols) then
+         nBC = min(nzAerosols,maxBCType)
+         do iCell = 1, nCellsSolve
+            iBioCount = 0
+
+            ! BC
+            snowleveltop = snowVolumeCell(iCell)/real(nSnowLayers,kind=RKIND)/2.0_RKIND
+            snowlevelint = snowVolumeCell(iCell) - snowleveltop
+            do iBioTracers = 1, nBC
+               iBioData   = (iBioTracers-1)*nBioLayersP3
+               ! ice BC
+               do iBioCount = 1, nBioLayersP1
+                  totalBlackCarbonContentCell(iCell) = totalBlackCarbonContentCell(iCell) + &
+                     verticalAerosolsConcCell(iBioData + iBioCount,iCell) * verticalGridSpace(iBioCount) * &
+                     iceVolumeCell(iCell) * brineFractionCell(iCell)
+               end do
+               ! snow BC
+               totalBlackCarbonContentCell(iCell) = totalBlackCarbonContentCell(iCell) + &
+                  verticalAerosolsConcCell(iBioData+nBioLayersP1+1,iCell) * snowleveltop + &
+                  verticalAerosolsConcCell(iBioData+nBioLayersP1+2,iCell) * snowlevelint
+            enddo
+         enddo
+       endif
+
+     deallocate(verticalGridSpace)
+
+  end subroutine compute_black_carbon_cell
+
+!***********************************************************************
+!
 !  routine reset_accumulated_variables
 !
 !> \brief   Reset the accumulated fluxes
@@ -3082,7 +3629,8 @@ contains
            conservationCheckEnergyAMPool, &
            conservationCheckMassAMPool, &
            conservationCheckSaltAMPool, &
-           conservationCheckCarbonAMPool
+           conservationCheckCarbonAMPool, &
+           conservationCheckBlackCarbonAMPool
 
       integer, pointer :: &
            nAccumulate
@@ -3124,6 +3672,12 @@ contains
            carbonConsDONCarbonFlux, &
            carbonConsHumicsFlux, &
            carbonConsSemiLabileDOCFlux
+
+      real(kind=RKIND), dimension(:), pointer :: &
+           blackCarbonConsOceanBlackCarbonFlux, &
+           blackCarbonConsAtmBlackCarbonFlux, &
+           blackCarbonConsAtmBC1Flux, &
+           blackCarbonConsAtmBC2Flux
 
       ! number of accumulations
       call MPAS_pool_get_subpool(domain % blocklist % structs, "conservationCheckAM", conservationCheckAMPool)
@@ -3208,6 +3762,19 @@ contains
       carbonConsDONCarbonFlux(:)  = 0.0_RKIND
       carbonConsHumicsFlux(:)  = 0.0_RKIND
       carbonConsSemiLabileDOCFlux(:)  = 0.0_RKIND
+
+      ! black carbon
+
+      call MPAS_pool_get_subpool(domain % blocklist % structs, "conservationCheckBlackCarbonAM", conservationCheckBlackCarbonAMPool)
+      call MPAS_pool_get_array(conservationCheckBlackCarbonAMPool, "blackCarbonConsOceanBlackCarbonFlux", blackCarbonConsOceanBlackCarbonFlux)
+      call MPAS_pool_get_array(conservationCheckBlackCarbonAMPool, "blackCarbonConsAtmBlackCarbonFlux", blackCarbonConsAtmBlackCarbonFlux)
+      call MPAS_pool_get_array(conservationCheckBlackCarbonAMPool, "blackCarbonConsAtmBC1Flux", blackCarbonConsAtmBC1Flux)
+      call MPAS_pool_get_array(conservationCheckBlackCarbonAMPool, "blackCarbonConsAtmBC2Flux", blackCarbonConsAtmBC2Flux)
+
+      blackCarbonConsOceanBlackCarbonFlux(:) = 0.0_RKIND
+      blackCarbonConsAtmBlackCarbonFlux(:)   = 0.0_RKIND
+      blackCarbonConsAtmBC1Flux(:)           = 0.0_RKIND
+      blackCarbonConsAtmBC2Flux(:)           = 0.0_RKIND
 
     end subroutine reset_accumulated_variables
 

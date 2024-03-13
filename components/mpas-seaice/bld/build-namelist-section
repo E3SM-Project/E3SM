@@ -193,6 +193,7 @@ add_default($nl, 'config_use_floe_size_distribution');
 # Namelist group: biogeochemistry #
 ###################################
 
+add_default($nl, 'config_couple_biogeochemistry_fields');
 add_default($nl, 'config_use_brine');
 add_default($nl, 'config_use_vertical_zsalinity');
 add_default($nl, 'config_use_vertical_biochemistry');
@@ -447,7 +448,6 @@ add_default($nl, 'config_min_friction_velocity');
 add_default($nl, 'config_ocean_heat_transfer_type');
 add_default($nl, 'config_sea_freezing_temperature_type');
 add_default($nl, 'config_ocean_surface_type');
-add_default($nl, 'config_couple_biogeochemistry_fields');
 add_default($nl, 'config_use_data_icebergs');
 add_default($nl, 'config_salt_flux_coupling_type');
 add_default($nl, 'config_ice_ocean_drag_coefficient');

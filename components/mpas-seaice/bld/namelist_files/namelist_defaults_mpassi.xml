@@ -203,6 +203,7 @@
 <config_use_floe_size_distribution>false</config_use_floe_size_distribution>
 
 <!-- biogeochemistry -->
+<config_couple_biogeochemistry_fields>false</config_couple_biogeochemistry_fields>
 <config_use_brine>false</config_use_brine>
 <config_use_vertical_zsalinity>false</config_use_vertical_zsalinity>
 <config_use_vertical_biochemistry>false</config_use_vertical_biochemistry>
@@ -430,7 +431,6 @@
 <config_ocean_heat_transfer_type>'constant'</config_ocean_heat_transfer_type>
 <config_sea_freezing_temperature_type>'mushy'</config_sea_freezing_temperature_type>
 <config_ocean_surface_type>'free'</config_ocean_surface_type>
-<config_couple_biogeochemistry_fields>false</config_couple_biogeochemistry_fields>
 <config_use_data_icebergs>false</config_use_data_icebergs>
 <config_salt_flux_coupling_type>'constant'</config_salt_flux_coupling_type>
 <config_ice_ocean_drag_coefficient>0.00536</config_ice_ocean_drag_coefficient>

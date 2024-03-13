@@ -790,7 +790,11 @@
 		/>
 	</nml_record>
 
-	<nml_record name="biogeochemistry" in_defaults="true">
+	<nml_record name="biogeochemistry" in_defaults="false">
+		<nml_option name="config_couple_biogeochemistry_fields" type="logical" default_value="false" units="unitless"
+			description="Couple ocean and seaice biogeochemical fields"
+			possible_values="true or false"
+		/>
 		<nml_option name="config_use_brine" type="logical" default_value="false" units="unitless"
 			description="Use the brine height tracer"
 			possible_values="true or false"
@@ -1859,10 +1863,6 @@
 		<nml_option name="config_ocean_surface_type" type="character" default_value="free" units="unitless"
 			description="Type of coupled ocean surface: (MPAS-O:'free'), (SOM:'non-free')"
 			possible_values="'free' or 'non-free'"
-		/>
-		<nml_option name="config_couple_biogeochemistry_fields" type="logical" default_value="false" units="unitless"
-			description=""
-			possible_values="true or false"
 		/>
 		<nml_option name="config_use_data_icebergs" type="logical" default_value="false" units="unitless"
 			description="Use data iceberg meltwater forcing"
@@ -5287,6 +5287,27 @@
 		     description="Concentration of carbon in the ice column"
 		     packages="pkgColumnBiogeochemistry;pkgColumnPackage"
 		/>
+		<var name="totalBlackCarbonContentCell"
+		     type="real"
+		     dimensions="nCells Time"
+		     units="kg m-2"
+		     description="Concentration of black carbon in the ice and  snow column"
+		     packages="pkgColumnBiogeochemistry;pkgColumnPackage"
+		/>
+		<var name="totalAtmBlackCarbonFlux"
+		     type="real"
+		     dimensions="nCells Time"
+		     units="kg m-2 s-1"
+		     description="Total atmospheric black carbon flux (positive into the seaice)"
+		     packages="pkgColumnBiogeochemistry;pkgColumnPackage"
+		/>
+		<var name="totalOceanBlackCarbonFlux"
+		     type="real"
+		     dimensions="nCells Time"
+		     units="kg m-2 s-1"
+		     description="Total ocean black carbon flux (positive into the ocean)"
+		     packages="pkgColumnBiogeochemistry;pkgColumnPackage"
+		/>
 		<var name="totalOceanCarbonFlux"
 		     type="real"
 		     dimensions="nCells Time"
@@ -5298,7 +5319,8 @@
 		     type="real"
 		     dimensions="nZBGCTracers nCells Time"
 		     units="mmol m-2 s-1"
-		     description="Tracers are ordered: diatom nitrogen, smallPlankton nitrogen, phaeocystis nitrogen, nitrate, polysaccarid carbon, lipid carbon, ammonium, silicate, DMSPp, DMSPd, DMS, Nonreactive nitrate, Protein nitrogen, dissolved iron in umol/m2/s, particulate iron in umol/m2/s, humic carbon, black carbon1 in mg/m2/s, black carbon2 in mg/m2/s, dust1 in mg/m2/s, dust2 in mg/m2/s, dust3 in mg/m2/s, dust4 in mg/m2/s"
+		     description="Only bio tracers used in the order:
+				  diatom nitrogen, smallPlankton nitrogen, phaeocystis nitrogen, nitrate, polysaccarid carbon, lipid  carbon,dissolved inorganic carbon, ammonium, silicate, DMSPp, DMSPd, DMS, Nonreactive nitrate, Protein nitrogen, dissolved iron in umol/m2/s, particulate iron in umol/m2/s, humic carbon, black carbon1 in mg/m2/s, black carbon2 in mg/m2/s, dust1 in mg/m2/s, dust2 in mg/m2/s, dust3 in mg/m2/s, dust4 in mg/m2/s"
 		     icepack_name="flux_bio"
 		     packages="pkgColumnBiogeochemistry;pkgColumnPackage"
 		/>
@@ -5306,7 +5328,7 @@
 		     type="real"
 		     dimensions="nZBGCTracers nCategories nCells Time"
 		     units="mmol m-2 s-1"
-		     description="Tracers are ordered: diatom nitrogen, smallPlankton nitrogen, phaeocystis nitrogen, nitrate, polysaccarid carbon, lipid carbon, ammonium, silicate, DMSPp, DMSPd, DMS, Nonreactive nitrate, Protein nitrogen, dissolved iron in umol/m2/s, particulate iron in umol/m2/s, humic carbon, black carbon1 in mg/m2/s, black carbon2 in mg/m2/s, dust1 in mg/m2/s, dust2 in mg/m2/s, dust3 in mg/m2/s, dust4 in mg/m2/s"
+		     description="Only bio tracers used in the order: diatom nitrogen, smallPlankton nitrogen, phaeocystis nitrogen, nitrate, polysaccarid carbon, lipid carbon, dissolved inorganic carbon,ammonium, silicate, DMSPp, DMSPd, DMS, Nonreactive nitrate, Protein nitrogen, dissolved iron in umol/m2/s, particulate iron in umol/m2/s, humic carbon, black carbon1 in mg/m2/s, black carbon2 in mg/m2/s, dust1 in mg/m2/s, dust2 in mg/m2/s, dust3 in mg/m2/s, dust4 in mg/m2/s"
 		     icepack_name="flux_bion"
 		     packages="pkgColumnBiogeochemistry;pkgColumnPackage"
 		/>
@@ -5314,7 +5336,23 @@
 		     type="real"
 		     dimensions="nZBGCTracers nCells Time"
 		     units="mmol m-3"
-		     description="Tracers are ordered: diatom nitrogen, smallPlankton nitrogen, phaeocystis nitrogen, nitrate, polysaccarid carbon, lipid carbon, ammonium, silicate, DMSPp, DMSPd, DMS, Nonreactive nitrate, Protein nitrogen, dissolved iron in umol/m3, particulate iron in umol/m3, humic carbon, black carbon1 in mg/m3, black carbon2 in mg/m3,dust1 in mg/m3, dust2 in mg/m3, dust3 in mg/m3, dust4 in mg/m3"
+		     description="All bio tracers including those not used in the order: diatom nitrogen, smallPlankton nitrogen, phaeocystis nitrogen, nitrate, polysaccarid carbon, lipid carbon, dissolved inorganic carbon,ammonium, silicate, DMSPp, DMSPd, DMS, Nonreactive nitrate, Protein nitrogen, dissolved iron in umol/m3, particulate iron in umol/m3, humic carbon, black carbon1 in mg/m3, black carbon2 in mg/m3,dust1 in mg/m3, dust2 in mg/m3, dust3 in mg/m3, dust4 in mg/m3"
+		     icepack_name="ocean_bio"
+		     packages="pkgColumnBiogeochemistry;pkgColumnPackage"
+		/>
+		<var name="oceanBioConcentrationsInUse"
+		     type="real"
+		     dimensions="nZBGCTracers nCells Time"
+		     units="mmol m-3"
+		     description="Only bio tracers used in the order: diatom nitrogen, smallPlankton nitrogen, phaeocystis nitrogen, nitrate, polysaccarid carbon, lipid carbon,dissolved inorganic carbon, ammonium, silicate, DMSPp, DMSPd, DMS, Nonreactive nitrate, Protein nitrogen, dissolved iron in umol/m3, particulate iron in umol/m3, humic carbon, black carbon1 in mg/m3, black carbon2 in mg/m3,dust1 in mg/m3, dust2 in mg/m3, dust3 in mg/m3, dust4 in mg/m3"
+		     icepack_name="ocean_bio"
+		     packages="pkgColumnBiogeochemistry;pkgColumnPackage"
+		/>
+		<var name="oceanBioToIceInUse"
+		     type="real"
+		     dimensions="nZBGCTracers nCells Time"
+		     units="mmol m-2"
+		     description="Only bio tracers used and added to sea ice bottom in the order: diatom nitrogen, smallPlankton nitrogen, phaeocystis nitrogen, nitrate, polysaccarid carbon, lipid carbon, dissolved inorganic carbon,ammonium, silicate, DMSPp, DMSPd, DMS, Nonreactive nitrate, Protein nitrogen, dissolved iron in umol/m2, particulate iron in umol/m2, humic carbon, black carbon1 in mg/m2, black carbon2 in mg/m2,dust1 in mg/m2, dust2 in mg/m2, dust3 in mg/m2, dust4 in mg/m2"
 		     icepack_name="ocean_bio"
 		     packages="pkgColumnBiogeochemistry;pkgColumnPackage"
 		/>
@@ -5423,6 +5461,10 @@
 		     dimensions="maxIronType nCells Time"
 		/>
 		<var name="oceanDustIronFlux"
+		     type="real"
+		     dimensions="nCells Time"
+		/>
+		<var name="oceanBlackCarbonFlux"
 		     type="real"
 		     dimensions="nCells Time"
 		/>
@@ -5543,13 +5585,13 @@
 		     type="real"
 		     dimensions="nZBGCTracers nCells Time"
 		     units="mmol m-2"
-		     description="Tracers are ordered: diatom nitrogen, smallPlankton nitrogen, phaeocystis nitrogen, nitrate, polysaccarid carbon, lipid carbon, ammonium, silicate, DMSPp, DMSPd, DMS, Nonreactive nitrate, Protein nitrogen, dissolved iron in umol/m2, particulate iron in umol/m2, humic carbon, black carbon1 in mg/m2, black carbon2 in mg/m2,dust1 in mg/m2, dust2 in mg/m2, dust3 in mg/m2, dust4 in mg/m2"
+		     description="Tracers are ordered: diatom nitrogen, smallPlankton nitrogen, phaeocystis nitrogen, nitrate, polysaccarid carbon, lipid carbon, dissolved inorganic carbon,ammonium, silicate, DMSPp, DMSPd, DMS, Nonreactive nitrate, Protein nitrogen, dissolved iron in umol/m2, particulate iron in umol/m2, humic carbon, black carbon1 in mg/m2, black carbon2 in mg/m2,dust1 in mg/m2, dust2 in mg/m2, dust3 in mg/m2, dust4 in mg/m2"
 		/>
 		<var name="totalVerticalBiologySnow"
 		     type="real"
 		     dimensions="nZBGCTracers nCells Time"
 		     units="mmol m-2"
-		     description="Tracers are ordered: diatom nitrogen, smallPlankton nitrogen, phaeocystis nitrogen, nitrate, polysaccarid carbon, lipid carbon, ammonium, silicate, DMSPp, DMSPd, DMS, Nonreactive nitrate, Protein nitrogen, dissolved iron in umol/m2, particulate iron in umol/m2, humic carbon, black carbon1 in mg/m2, black carbon2 in mg/m2,dust1 in mg/m2, dust2 in mg/m2, dust3 in mg/m2, dust4 in mg/m2"
+		     description="Tracers are ordered: diatom nitrogen, smallPlankton nitrogen, phaeocystis nitrogen, nitrate, polysaccarid carbon, lipid carbon, dissolved inorganic carbon,ammonium, silicate, DMSPp, DMSPd, DMS, Nonreactive nitrate, Protein nitrogen, dissolved iron in umol/m2, particulate iron in umol/m2, humic carbon, black carbon1 in mg/m2, black carbon2 in mg/m2,dust1 in mg/m2, dust2 in mg/m2, dust3 in mg/m2, dust4 in mg/m2"
 		/>
 		<var name="totalVerticalSalinity"
 		     type="real"

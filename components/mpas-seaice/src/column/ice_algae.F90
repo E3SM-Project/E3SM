@@ -1325,7 +1325,8 @@
             trcrn(nt_zbgc_frac+mm-1) = zbgc_frac_init(mm)
             if (sum_tot > c0) trcrn(nt_zbgc_frac+mm-1) = sum_new/sum_tot
 
-            if (abs(sum_initial-sum_tot-flux_bio(mm)*dt + source(mm)) > accuracy*max(sum_initial,sum_tot) .or. &
+            if (abs(sum_initial-sum_tot-flux_bio(mm)*dt + source(mm)) > accuracy*max(sum_initial,sum_tot) .\
+or. &
 !            if (abs(sum_new-sum_old) > accuracy*sum_old .or. &
                 minval(biocons(:)) < c0  .or. minval(initcons_stationary(:)) < c0 &
                 .or. l_stop) then
@@ -2874,8 +2875,8 @@
             C_low(k) = C_new(k)
          enddo
 
-         accuracy = 1.0e-14_dbl_kind*max(c1, C_init_tot, C_new_tot)
-         fluxbio = (C_init_tot - C_new_tot + source)/dt
+         accuracy = 1.0e-11_dbl_kind*max(c1, C_init_tot, C_new_tot)
+         fluxbio = fluxbio + (C_init_tot - C_new_tot + source)/dt
          diff_dt =C_new_tot - C_init_tot - (S_top+S_bot+L_bot*C_new(nblyr+1)+L_top*C_new(1))*dt
 
          if (minval(C_low) < c0) then
@@ -2885,7 +2886,7 @@
          endif
 
          if (abs(diff_dt) > accuracy ) then
-           !l_stop = .true.
+           l_stop = .true.
            write(warning,*) 'Conservation of zbgc low order solution failed: diff_dt:',&
                         diff_dt
            call add_warning(warning)
