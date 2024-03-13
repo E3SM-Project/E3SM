@@ -1,6 +1,7 @@
 from utils import run_cmd, run_cmd_no_fail, expect, check_minimum_python_version, ensure_psutil
 from git_utils import get_current_head, get_current_commit, get_current_branch, is_repo_clean, \
     cleanup_repo, merge_git_ref, checkout_git_ref, git_refs_difference, print_last_commit
+from test_factory import create_tests, COV
 
 from machines_specs import get_mach_compilation_resources, get_mach_testing_resources, \
     get_mach_baseline_root_dir, setup_mach_env, is_cuda_machine, \
@@ -18,262 +19,11 @@ ensure_psutil()
 import psutil
 import re
 
-from collections import OrderedDict
 from pathlib import Path
-
-###############################################################################
-class TestProperty(object):
-###############################################################################
-
-    """
-    Parent class of predefined test types for SCREAM standalone. test-all-scream
-    offers a number of customization points, but you may need to just use
-    cmake if you need maximal customization. You can run test-all-scream --dry-run
-    to get the corresponding cmake command which can then be used as a starting
-    point for making your own cmake command.
-    """
-
-    def __init__(self, longname, description, cmake_args,
-                 uses_baselines=True, on_by_default=True, default_test_len=None):
-        # What the user uses to select tests via test-all-scream CLI.
-        # Should also match the class name when converted to caps
-        self.shortname      = type(self).__name__.lower()
-
-        # A longer name used to name baseline and test directories for a test.
-        # Also used in output/error messages to refer to the test
-        self.longname       = longname
-
-        # A longer decription of the test
-        self.description    = description
-
-        # Cmake config args for this test. Check that quoting is done with
-        # single quotes.
-        self.cmake_args     = cmake_args
-        for name, arg in self.cmake_args:
-            expect('"' not in arg,
-                   f"In test definition for {longname}, found cmake args with double quotes {name}='{arg}'"
-                   "Please use single quotes if quotes are needed.")
-
-        # Does the test do baseline testing
-        self.uses_baselines = uses_baselines
-
-        # Should this test be run if the user did not specify tests at all?
-        self.on_by_default  = on_by_default
-
-        # Should this test have a default test size
-        self.default_test_len = default_test_len
-
-        #
-        # Properties not set by constructor (Set by the main TestAllScream object)
-        #
-
-        # Resources used by this test.
-        self.compile_res_count = None
-        self.testing_res_count = None
-
-        # Does this test need baselines
-        self.missing_baselines = False
-
-        #
-        # Common
-        #
-
-        if not self.uses_baselines:
-            self.cmake_args += [("SCREAM_ENABLE_BASELINE_TESTS", "False")]
-
-    def disable_baselines(self):
-        if self.uses_baselines:
-            self.uses_baselines = False
-            self.cmake_args += [("SCREAM_ENABLE_BASELINE_TESTS", "False")]
-
-    # Tests will generally be referred to via their longname
-    def __str__(self):
-        return self.longname
-
-###############################################################################
-class DBG(TestProperty):
-###############################################################################
-
-    CMAKE_ARGS = [("CMAKE_BUILD_TYPE", "Debug"), ("EKAT_DEFAULT_BFB", "True")]
-
-    def __init__(self, _):
-        TestProperty.__init__(
-            self,
-            "full_debug",
-            "debug",
-            self.CMAKE_ARGS,
-        )
-
-###############################################################################
-class SP(TestProperty):
-###############################################################################
-
-    def __init__(self, _):
-        TestProperty.__init__(
-            self,
-            "full_sp_debug",
-            "debug single precision",
-            DBG.CMAKE_ARGS + [("SCREAM_DOUBLE_PRECISION", "False")],
-        )
-
-###############################################################################
-class FPE(TestProperty):
-###############################################################################
-
-    def __init__(self, tas):
-        TestProperty.__init__(
-            self,
-            "debug_nopack_fpe",
-            "debug pksize=1 floating point exceptions on",
-            DBG.CMAKE_ARGS + [("SCREAM_PACK_SIZE", "1"), ("SCREAM_FPE","True")],
-            uses_baselines=False,
-            on_by_default=(tas is not None and not tas.on_cuda())
-        )
-
-###############################################################################
-class OPT(TestProperty):
-###############################################################################
-
-    def __init__(self, _):
-        TestProperty.__init__(
-            self,
-            "release",
-            "release",
-            [("CMAKE_BUILD_TYPE", "Release")],
-        )
-
-###############################################################################
-class COV(TestProperty):
-###############################################################################
-
-    def __init__(self, _):
-        TestProperty.__init__(
-            self,
-            "coverage",
-            "debug coverage",
-            [("CMAKE_BUILD_TYPE", "Debug"), ("EKAT_ENABLE_COVERAGE", "True")],
-            uses_baselines=False,
-            on_by_default=False,
-            default_test_len="short"
-        )
-
-###############################################################################
-class VALG(TestProperty):
-###############################################################################
-
-    def __init__(self, tas):
-        TestProperty.__init__(
-            self,
-            "valgrind",
-            "debug with valgrind",
-            [("CMAKE_BUILD_TYPE", "Debug"), ("EKAT_ENABLE_VALGRIND", "True")],
-            uses_baselines=False,
-            on_by_default=False,
-            default_test_len="short"
-        )
-        if tas is not None:
-            # If a stored suppression file exists for this machine, use it
-            persistent_supp_file = tas.get_root_dir() / "scripts" / "jenkins" / "valgrind" / f"{tas.get_machine()}.supp"
-            if persistent_supp_file.exists():
-                self.cmake_args.append( ("EKAT_VALGRIND_SUPPRESSION_FILE", str(persistent_supp_file)) )
-
-###############################################################################
-class CSM(TestProperty):
-###############################################################################
-
-    def __init__(self, _):
-        TestProperty.__init__(
-            self,
-            "compute_sanitizer_memcheck",
-            "debug with compute sanitizer memcheck",
-            [("CMAKE_BUILD_TYPE", "Debug"),
-             ("EKAT_ENABLE_COMPUTE_SANITIZER", "True"),
-             ("EKAT_COMPUTE_SANITIZER_OPTIONS", "--tool=memcheck")],
-            uses_baselines=False,
-            on_by_default=False,
-            default_test_len="short"
-        )
-
-###############################################################################
-class CSR(TestProperty):
-###############################################################################
-
-    def __init__(self, _):
-        TestProperty.__init__(
-            self,
-            "compute_sanitizer_racecheck",
-            "debug with compute sanitizer racecheck",
-            [("CMAKE_BUILD_TYPE", "Debug"),
-             ("EKAT_ENABLE_COMPUTE_SANITIZER", "True"),
-             ("EKAT_COMPUTE_SANITIZER_OPTIONS", "'--tool=racecheck --racecheck-detect-level=error'")],
-            uses_baselines=False,
-            on_by_default=False,
-            default_test_len="short"
-        )
-
-###############################################################################
-class CSI(TestProperty):
-###############################################################################
-
-    def __init__(self, _):
-        TestProperty.__init__(
-            self,
-            "compute_sanitizer_initcheck",
-            "debug with compute sanitizer initcheck",
-            [("CMAKE_BUILD_TYPE", "Debug"),
-             ("EKAT_ENABLE_COMPUTE_SANITIZER", "True"),
-             ("EKAT_COMPUTE_SANITIZER_OPTIONS", "--tool=initcheck")],
-            uses_baselines=False,
-            on_by_default=False,
-            default_test_len="short"
-        )
-
-###############################################################################
-class CSS(TestProperty):
-###############################################################################
-
-    def __init__(self, _):
-        TestProperty.__init__(
-            self,
-            "compute_sanitizer_synccheck",
-            "debug with compute sanitizer synccheck",
-            [("CMAKE_BUILD_TYPE", "Debug"),
-             ("EKAT_ENABLE_COMPUTE_SANITIZER", "True"),
-             ("EKAT_COMPUTE_SANITIZER_OPTIONS", "--tool=synccheck")],
-            uses_baselines=False,
-            on_by_default=False,
-            default_test_len="short"
-        )
-
-###############################################################################
-def test_factory(user_req_tests, tas):
-###############################################################################
-    testclasses = TestProperty.__subclasses__()
-    if not user_req_tests:
-        result = [testclass(tas) for testclass in testclasses
-                  if testclass(tas).on_by_default]
-    else:
-        valid_names = [testclass(tas).shortname for testclass in testclasses]
-        for user_req_test in user_req_tests:
-            expect(user_req_test in valid_names, f"'{user_req_test}' is not a known test")
-
-        result = [testclass(tas) for testclass in testclasses if testclass(tas).shortname in user_req_tests]
-
-    return result
 
 ###############################################################################
 class TestAllScream(object):
 ###############################################################################
-
-    ###########################################################################
-    @classmethod
-    def get_test_name_desc(cls):
-    ###########################################################################
-        """
-        Returns a dict mapping short test names to full names
-        """
-        testclasses = TestProperty.__subclasses__()
-        return OrderedDict([(testc(None).shortname, testc(None).description) for testc in testclasses])
 
     ###########################################################################
     def __init__(self, cxx_compiler=None, f90_compiler=None, c_compiler=None,
@@ -361,7 +111,7 @@ class TestAllScream(object):
         # Make our test objects! Change mem to default mem-check test for current platform
         if "mem" in tests:
             tests[tests.index("mem")] = "csm" if self.on_cuda() else "valg"
-        self._tests = test_factory(tests, self)
+        self._tests = create_tests(tests, self)
 
         if self._work_dir is not None:
             self._work_dir = Path(self._work_dir).absolute()
@@ -614,7 +364,7 @@ class TestAllScream(object):
             if test.uses_baselines:
                 data_dir = self.get_preexisting_baseline(test)
                 if not data_dir.is_dir():
-                    test.missing_baselines = True
+                    test.baselines_missing = True
                     print(f" -> Test {test} is missing baselines")
                 else:
                     print(f" -> Test {test} appears to have baselines")
@@ -635,12 +385,12 @@ class TestAllScream(object):
         expect(self._baseline_dir is not None, "Error! This routine should only be called when testing against pre-existing baselines.")
 
         for test in self._tests:
-            if test.uses_baselines and not test.missing_baselines:
+            if test.uses_baselines and not test.baselines_missing:
                 # this test is not missing a baseline, but it may be expired.
 
                 baseline_file_sha = self.get_baseline_file_sha(test)
                 if baseline_file_sha is None:
-                    test.missing_baselines = True
+                    test.baselines_missing = True
                     print(f" -> Test {test} has no stored sha so must be considered expired")
                 else:
                     num_ref_is_behind_file, num_ref_is_ahead_file = git_refs_difference(baseline_file_sha, baseline_ref_sha)
@@ -659,7 +409,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
 
                     # If the copy in our repo is not ahead, then baselines are not expired
                     if num_ref_is_ahead_file > 0 or self._force_baseline_regen:
-                        test.missing_baselines = True
+                        test.baselines_missing = True
                         reason = "forcing baseline regen" if self._force_baseline_regen \
                                  else f"{self._baseline_ref} is ahead of the baseline commit by {num_ref_is_ahead_file}"
                         print(f" -> Test {test} baselines are expired because {reason}")
@@ -855,15 +605,15 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         test_dir = self.get_test_dir(self._work_dir, test) / "tas_baseline_build"
         test_dir.mkdir()
 
+        num_test_res = self.create_ctest_resource_file(test,test_dir)
         cmake_config = self.generate_cmake_config(test)
         cmake_config += " -DSCREAM_BASELINES_ONLY=ON"
         cmake_config += f" -DSCREAM_TEST_DATA_DIR={baseline_dir}/data"
+        cmake_config += f" -DSCREAM_TEST_MAX_TOTAL_THREADS={num_test_res}"
 
         print("===============================================================================")
         print(f"Generating baseline for test {test} with config '{cmake_config}'")
         print("===============================================================================")
-
-        success = True
 
         # We cannot just crash if we fail to generate baselines, since we would
         # not get a dashboard report if we did that. Instead, just ensure there is
@@ -871,30 +621,37 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         stat, _, err = run_cmd(f"{cmake_config} {self._root_dir}",
                                from_dir=test_dir, verbose=True, dry_run=self._dry_run)
         if stat != 0:
-            print (f"WARNING: Failed to configure baselines:\n{err}")
-            success = False
+            print (f"WARNING: Failed to create baselines (config phase):\n{err}")
+            return False
 
-        else:
-            cmd = f"make -j{test.compile_res_count} && make -j{test.testing_res_count} baseline"
-            if self._parallel:
-                start, end = self.get_taskset_range(test)
-                cmd = f"taskset -c {start}-{end} sh -c '{cmd}'"
+        cmd = f"make -j{test.compile_res_count}"
+        if self._parallel:
+            start, end = self.get_taskset_range(test)
+            cmd = f"taskset -c {start}-{end} sh -c '{cmd}'"
 
-            stat, _, err = run_cmd(cmd, from_dir=test_dir, verbose=True, dry_run=self._dry_run)
+        stat, _, err = run_cmd(cmd, from_dir=test_dir, verbose=True, dry_run=self._dry_run)
 
-            if stat != 0:
-                print(f"WARNING: Failed to create baselines:\n{err}")
-                success = False
+        if stat != 0:
+            print (f"WARNING: Failed to create baselines (build phase):\n{err}")
+            return False
 
-        if success:
-            # Store the sha used for baselines generation
-            self.set_baseline_file_sha(test, commit)
-            test.missing_baselines = False
+        cmd  = f"ctest -j{test.testing_res_count}"
+        cmd +=  " -L baseline_gen"
+        cmd += f" --resource-spec-file {test_dir}/ctest_resource_file.json"
+        stat, _, err = run_cmd(cmd, from_dir=test_dir, verbose=True, dry_run=self._dry_run)
 
-            # Clean up the directory by removing everything
-            shutil.rmtree(test_dir)
+        if stat != 0:
+            print (f"WARNING: Failed to create baselines (run phase):\n{err}")
+            return False
 
-        return success
+        # Store the sha used for baselines generation
+        self.set_baseline_file_sha(test,commit)
+        test.baselines_missing = False
+
+        # Clean up the directory by removing everything
+        shutil.rmtree(test_dir)
+
+        return True
 
     ###############################################################################
     def generate_all_baselines(self):
@@ -911,7 +668,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         checkout_git_ref(self._baseline_ref, verbose=True, dry_run=self._dry_run)
 
         success = True
-        tests_needing_baselines = [test for test in self._tests if test.missing_baselines]
+        tests_needing_baselines = [test for test in self._tests if test.baselines_missing]
         num_workers = len(tests_needing_baselines) if self._parallel else 1
         with threading3.ProcessPoolExecutor(max_workers=num_workers) as executor:
 
@@ -1059,7 +816,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
             # First, create build directories (one per test). If existing, nuke the content
             self.create_tests_dirs(self._work_dir, not self._quick_rerun)
 
-            tests_needing_baselines = [test for test in self._tests if test.missing_baselines]
+            tests_needing_baselines = [test for test in self._tests if test.baselines_missing]
             if tests_needing_baselines:
                 expect(self._baseline_ref is not None, "Missing baseline ref")
 

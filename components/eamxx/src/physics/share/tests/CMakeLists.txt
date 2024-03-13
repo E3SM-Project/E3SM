@@ -8,7 +8,11 @@ if (NOT SCREAM_BASELINES_ONLY)
 endif()
 
 if (SCREAM_ENABLE_BASELINE_TESTS)
-  set(BASELINE_FILE_ARG "-b ${SCREAM_TEST_DATA_DIR}/physics_saturation.baseline")
+  if (SCREAM_BASELINES_ONLY)
+    set(BASELINE_FILE_ARG "-g -b ${SCREAM_TEST_DATA_DIR}/physics_saturation.baseline")
+  else()
+    set(BASELINE_FILE_ARG "-b ${SCREAM_TEST_DATA_DIR}/physics_saturation.baseline")
+  endif()
 
   # The comparison test. Expects baseline to exist. All thread configurations
   # will use the same baseline.
@@ -17,23 +21,6 @@ if (SCREAM_ENABLE_BASELINE_TESTS)
     EXE_ARGS "${BASELINE_FILE_ARG}"
     LABELS "physics")
 
-  #
-  # Use fake tests to generate shell commands to generate baselines
-  #
-  CreateUnitTestFromExec(physics_saturation_baseline_fake physics_saturation_run_and_cmp
-    EXE_ARGS "-g ${BASELINE_FILE_ARG}"
-    PROPERTIES DISABLED True)
-
-  get_test_property(physics_saturation_baseline_fake FULL_TEST_COMMAND PHYSICS_SATURATION_GEN)
-
-  if (PHYSICS_SATURATION_GEN STREQUAL "NOTFOUND")
-    message(FATAL_ERROR "Could not get FULL_TEST_COMMAND for physics_saturation_baseline fake test")
-  endif()
-
-  separate_arguments(PHYSICS_SATURATION_GEN_ARGS UNIX_COMMAND "${PHYSICS_SATURATION_GEN}")
-
-  add_custom_target(physics_saturation_baseline
-    COMMAND ${CMAKE_COMMAND} -E env OMP_NUM_THREADS=${SCREAM_TEST_MAX_THREADS} ${PHYSICS_SATURATION_GEN_ARGS})
-
-  add_dependencies(baseline physics_saturation_baseline)
+  # Note: the baseline_gen label is really only used if SCREAM_BASELINES_ONLY=ON, but no harm adding it
+  set_tests_properties (physics_saturation_run_and_cmp PROPERTIES LABELS baseline_gen)
 endif()
