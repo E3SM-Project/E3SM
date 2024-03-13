@@ -636,7 +636,6 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
             print (f"WARNING: Failed to create baselines (build phase):\n{err}")
             return False
 
-        self.create_ctest_resource_file(test,test_dir)
         cmd  = f"ctest -j{test.testing_res_count}"
         cmd +=  " -L baseline_gen"
         cmd += f" --resource-spec-file {test_dir}/ctest_resource_file.json"
