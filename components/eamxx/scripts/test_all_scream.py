@@ -188,6 +188,35 @@ class TestAllScream(object):
             # Setup the env on this machine
             setup_mach_env(self._machine, ctest_j=ctest_max_jobs)
 
+        ############################################
+        #           Check repo status              #
+        ############################################
+
+        expect(get_current_commit(), f"Root dir: {self._root_dir}, does not appear to be a git repo")
+
+        # Get git status info. Besides printing this info, we will need it to restore the repo initial
+        # configuration if we are running an integration test (where baselines need to be created
+        # from the origin/master commit)
+        self._original_branch = get_current_branch()
+        self._original_commit = get_current_commit()
+
+        print_last_commit(git_ref=self._original_branch, dry_run=self._dry_run)
+
+        # If we have an integration test, we need to merge master. Hence, do two things:
+        #  1) create bkp commit for all uncommitted/unstaged changes
+        #  2) save commit, so we can undo the merge after testing
+        self._has_backup_commit = False
+        if self._integration_test:
+            if not is_repo_clean():
+                # Back up work in a temporary commit
+                create_backup_commit()
+                self._has_backup_commit = True
+
+            self._original_commit = get_current_commit()
+
+            # Merge origin/master
+            merge_git_ref(git_ref=self._baseline_ref, verbose=True, dry_run=self._dry_run)
+
         ###################################
         #      Compute baseline info      #
         ###################################
@@ -230,7 +259,7 @@ class TestAllScream(object):
             self.create_tests_dirs(self._baseline_dir, clean=False)
 
             # For now, assume baselines are generated from HEAD. If -i was used, we'll change this
-            self._baseline_ref = "origin/master" if self._integration_test else get_current_commit()
+            self._baseline_ref = "origin/master" if self._integration_test else self._original_commit
 
         # Check baselines status
         print (f"Checking baselines directory: {self._baseline_dir}")
@@ -240,35 +269,6 @@ class TestAllScream(object):
 
         if self._update_expired_baselines:
             self.check_baselines_are_expired()
-
-        ############################################
-        #           Check repo status              #
-        ############################################
-
-        expect(get_current_commit(), f"Root dir: {self._root_dir}, does not appear to be a git repo")
-
-        # Get git status info. Besides printing this info, we will need it to restore the repo initial
-        # configuration if we are running an integration test (where baselines need to be created
-        # from the origin/master commit)
-        self._original_branch = get_current_branch()
-        self._original_commit = get_current_commit()
-
-        print_last_commit(git_ref=self._original_branch, dry_run=self._dry_run)
-
-        # If we have an integration test, we need to merge master. Hence, do two things:
-        #  1) create bkp commit for all uncommitted/unstaged changes
-        #  2) save commit, so we can undo the merge after testing
-        self._has_backup_commit = False
-        if self._integration_test:
-            if not is_repo_clean():
-                # Back up work in a temporary commit
-                create_backup_commit()
-                self._has_backup_commit = True
-
-            self._original_commit = get_current_commit()
-
-            # Merge origin/master
-            merge_git_ref(git_ref=self._baseline_ref, verbose=True, dry_run=self._dry_run)
 
         ############################################
         #    Deduce compilers if needed/possible   #
