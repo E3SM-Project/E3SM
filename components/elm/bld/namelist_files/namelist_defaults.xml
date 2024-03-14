@@ -55,7 +55,14 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 
 <!-- Supplmental Nitrogen mode -->
 <suplnitro use_cn=".true." >NONE</suplnitro>
-<suplnitro use_fates=".true." >NONE</suplnitro>
+
+<!-- Supplemental N and P for FATES -->
+<!-- With c-only FATES, don't want partial N and P dynamics -->
+<!-- this is also true at different phases of spin-up -->
+<!-- so more cases than not, FATES wants supplemented N and P -->
+<suplnitro use_fates=".true." >ALL</suplnitro>
+<suplphos use_fates=".true." >ALL</suplphos>
+
 
 <!-- Nutrient competition pathway -->
 <nu_com>RD</nu_com>
