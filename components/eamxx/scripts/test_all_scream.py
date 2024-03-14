@@ -1,7 +1,7 @@
 from utils import run_cmd, run_cmd_no_fail, expect, check_minimum_python_version, ensure_psutil
 from git_utils import get_current_head, get_current_commit, get_current_branch, is_repo_clean, \
     cleanup_repo, merge_git_ref, git_refs_difference, print_last_commit, \
-    create_backup_commit
+    create_backup_commit, checkout_git_ref
 
 from test_factory import create_tests, COV
 
@@ -213,9 +213,6 @@ class TestAllScream(object):
                 self._has_backup_commit = True
 
             self._original_commit = get_current_commit()
-
-            # Merge origin/master
-            merge_git_ref(git_ref=self._baseline_ref, verbose=True, dry_run=self._dry_run)
 
         ###################################
         #      Compute baseline info      #
@@ -673,10 +670,11 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         if len(tests_needing_baselines)==0:
             return True
 
-        git_ref = get_current_head()
+        # Switch to baseline ref
+        checkout_git_ref (self._baseline_ref)
 
         print("###############################################################################")
-        print(f"Generating baselines from git ref {git_ref}")
+        print(f"Generating baselines from git ref {self._baseline_ref}")
         print("###############################################################################")
 
         tas_baseline_bld = self._work_dir / "tas_baseline_build"
@@ -695,6 +693,9 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
             for future in threading3.as_completed(future_to_test):
                 test = future_to_test[future]
                 success &= future.result()
+
+        # Restore original commit
+        checkout_git_ref (self._original_commit)
 
         return success
 
@@ -834,10 +835,18 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
 
         success = True
         try:
+
+            if self._integration_test:
+                # Merge origin/master
+                merge_git_ref(git_ref=self._baseline_ref, verbose=True, dry_run=self._dry_run)
+
             if self._generate:
                 success = self.generate_all_baselines()
                 if not success:
                     print ("Error(s) occurred during baselines generation phase")
+
+                    # Do not continue testing, as you may be testing against old/invalid baselines
+                    return False
 
             if self._run_tests:
                 # First, create build directories (one per test). If existing, nuke the content
