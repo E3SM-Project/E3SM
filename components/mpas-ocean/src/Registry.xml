@@ -201,8 +201,8 @@
 					possible_values="Any time stamp in 'YYYY-MM-DD_hh:mm:ss' format. Items can be removed from the left if they are unused."
 		/>
 		<nml_option name="config_time_integrator" type="character" default_value="split_explicit_ab2"
-					description="Time integration method."
-					possible_values="'split_explicit', 'RK4', 'unsplit_explicit', 'split_implicit', 'LTS', 'FB_LTS', 'split_explicit_ab2'"
+					description="Time integration method. These options are only supported in standalone, not E3SM: 'LTS', 'FB_LTS'."
+					possible_values="'split_explicit', 'RK4', 'unsplit_explicit', 'split_implicit', 'split_explicit_ab2', 'LTS', 'FB_LTS'"
 		/>
 		<nml_option name="config_number_of_time_levels" type="integer" default_value="2"
 					description="The number of time levels in the time-stepping scheme. This is used for array allocation."
