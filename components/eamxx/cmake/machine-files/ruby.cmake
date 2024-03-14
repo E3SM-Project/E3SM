@@ -12,4 +12,4 @@ include (${EKAT_MACH_FILES_PATH}/kokkos/openmp.cmake)
 
 include (${EKAT_MACH_FILES_PATH}/mpi/srun.cmake)
 
-set(SCREAM_INPUT_ROOT "/usr/gdata/climdat/ccsm3data/inputdata" CACHE STRING "")
+set(SCREAM_INPUT_ROOT "/usr/gdata/e3sm/ccsm3data/inputdata" CACHE STRING "")

@@ -16,4 +16,4 @@ elseif ("${COMPILER}" STREQUAL "gnu")
    set(CMAKE_EXE_LINKER_FLAGS "-L/usr/tce/packages/gcc/gcc-8.3.1/rh/lib/gcc/x86_64-redhat-linux/8/" CACHE STRING "" FORCE)
 endif()
 
-set(SCREAM_INPUT_ROOT "/usr/gdata/climdat/ccsm3data/inputdata" CACHE STRING "")
+set(SCREAM_INPUT_ROOT "/usr/gdata/e3sm/ccsm3data/inputdata" CACHE STRING "")
