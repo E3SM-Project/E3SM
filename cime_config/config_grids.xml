@@ -38,9 +38,6 @@
       <grid name="rof"    compset="DROF%CPLHIST">r05</grid>
       <grid name="rof"    compset="XROF">r05</grid>
       <grid name="glc"    compset="SGLC">null</grid>
-      <grid name="glc"    compset="CISM1">gland5UM</grid>
-      <grid name="glc"    compset="CISM2">gland4</grid>
-      <grid name="glc"    compset="XGLC">gland4</grid>
       <grid name="wav"    compset="SWAV">null</grid>
       <grid name="wav"    compset="DWAV">null</grid>
       <grid name="wav"    compset="XWAV">null</grid>

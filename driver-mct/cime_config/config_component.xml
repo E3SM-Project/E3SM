@@ -1086,7 +1086,7 @@
   <entry id="GLC_GRID">
     <type>char</type>
     <valid_values>mpas.aisgis20km,mpas.gis20km,mpas.ais20km,mpas.gis1to10km,mpas.gis1to10kmR2,null</valid_values>
-    <default_value>gland5UM</default_value>
+    <default_value>mpas.gis20km</default_value>
     <group>build_grid</group>
     <file>env_build.xml</file>
     <desc>glacier (glc) grid - DO NOT EDIT (for experts only)</desc>
