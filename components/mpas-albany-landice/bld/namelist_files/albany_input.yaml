@@ -1,8 +1,6 @@
 %YAML 1.1
 ---
 ANONYMOUS:
-# In order to use ML, change Tpetra to Epetra in the following line, 
-# and "Preconditioner Type: MueLu" to " Preconditioner Type: ML" several lines below 
   Build Type: Tpetra
 
   Problem:
