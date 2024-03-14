@@ -886,12 +886,10 @@ contains
          ! will allow that.
          ! Finally, set whence to latest_before so we have piecewise-constant forcing.
          ! Could add, e.g., linear interpolation later.
-! In coupled mode, we don't want to use forcing from a file - that should come from the coupler!
-!         call mpas_stream_mgr_read(stream_manager, whence=MPAS_STREAM_LATEST_BEFORE, ierr=err_tmp)
-!         err = ior(err, err_tmp)
-!         call mpas_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_INPUT, ierr=err_tmp)
-!         err = ior(err, err_tmp)
 
+         ! NOTE: If any input ("forcing") files here contain fields that the coupler also passes, 
+         ! the input file versions here will clobber the fields passed from the coupler. 
+         
          call mpas_stream_mgr_read(domain % streamManager, whence=MPAS_STREAM_LATEST_BEFORE, saveActualWhen = .true., ierr=err_tmp)
          err = ior(err, err_tmp)
          call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_INPUT, ierr=err_tmp)

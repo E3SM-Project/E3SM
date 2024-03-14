@@ -2918,7 +2918,7 @@
     <domain name="mpas.gis1to10kmR2">
       <nx>427386</nx>
       <ny>1</ny>
-      <desc>mpas.gis1to10km is a variable-resolution, from 1- to 10-km, MALI grid of the Greenland Ice Sheet.</desc>
+      <desc>mpas.gis1to10kmR2 is an updated (fewer grid cells; improved optimization) variable-resolution, from 1- to 10-km, MALI grid of the Greenland Ice Sheet.</desc>
     </domain>
 
     <domain name="mpas.ais20km">

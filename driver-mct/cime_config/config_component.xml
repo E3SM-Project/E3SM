@@ -1085,7 +1085,7 @@
 
   <entry id="GLC_GRID">
     <type>char</type>
-    <valid_values>gland20,gland10,gland5,gland5UM,gland4,mpas.aisgis20km,mpas.gis20km,mpas.ais20km,mpas.gis1to10km,mpas.gis1to10kmR2,null</valid_values>
+    <valid_values>mpas.aisgis20km,mpas.gis20km,mpas.ais20km,mpas.gis1to10km,mpas.gis1to10kmR2,null</valid_values>
     <default_value>gland5UM</default_value>
     <group>build_grid</group>
     <file>env_build.xml</file>

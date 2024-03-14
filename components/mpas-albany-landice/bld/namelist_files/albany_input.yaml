@@ -15,7 +15,7 @@ ANONYMOUS:
         Cubature Degree: 4
         Basal Friction Coefficient:
           Type: Power Law
-          Power Exponent: 1.0 #left blank to cause an error if not filled
+          Power Exponent: 1.0
           Mu Type: Field 
           Effective Pressure Type: Hydrostatic Computed At Nodes
           Zero Effective Pressure On Floating Ice At Nodes: true
