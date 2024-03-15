@@ -1,8 +1,8 @@
-# Build baseline code
-add_executable(generate_baseline generate_baseline.cpp)
-target_link_libraries(generate_baseline PUBLIC scream_rrtmgp rrtmgp_test_utils)
-
 if (SCREAM_ONLY_GENERATE_BASELINES)
+  # Build baseline code
+  add_executable(generate_baseline generate_baseline.cpp)
+  target_link_libraries(generate_baseline PUBLIC scream_rrtmgp rrtmgp_test_utils)
+
   # Generate allsky baseline with the usual cmake custom command-target pair pattern
   # Note: these "baselines" are not to compare scream with a previous version, but
   #       rather to compare scream::rrtmgp with raw rrtmgp.
