@@ -322,6 +322,33 @@ target_link_libraries(${_TestMetadataName} ${OMEGA_LIB_NAME} yakl)
 add_test(NAME METADATA_TEST COMMAND ./${_TestMetadataName})
 
 ##################
+# IOField test
+##################
+
+set(_TestIOFieldName testIOField.exe)
+
+add_executable(${_TestIOFieldName} infra/IOFieldTest.cpp)
+
+target_compile_options(
+   ${_TestIOFieldName}
+  PRIVATE
+  "-I${OMEGA_SOURCE_DIR}/src/base"
+  "-I${OMEGA_SOURCE_DIR}/src/infra"
+  ${OMEGA_CXX_FLAGS}
+)
+
+target_link_options(
+   ${_TestIOFieldName}
+  PRIVATE
+  ${OMEGA_LINK_OPTIONS}
+)
+
+target_link_libraries(${_TestIOFieldName} ${OMEGA_LIB_NAME} yakl)
+
+add_test(NAME IOFIELD_TEST
+         COMMAND ${MPI_EXEC} -n 8 -- ./${_TestIOFieldName})
+
+##################
 # YAKL test
 ##################
 
@@ -359,6 +386,7 @@ set_tests_properties(
   HORZMESH_TEST
   IO_TEST
   METADATA_TEST
+  IOFIELD_TEST
   PROPERTIES FAIL_REGULAR_EXPRESSION "FAIL" PASS_REGULAR_EXPRESSION "PASS"
 )
 

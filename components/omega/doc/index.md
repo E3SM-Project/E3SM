@@ -30,6 +30,7 @@ userGuide/Logging
 userGuide/Decomp
 userGuide/MetaData
 userGuide/IO
+userGuide/IOField
 userGuide/Halo
 userGuide/HorzMesh
 ```
@@ -52,6 +53,7 @@ devGuide/Logging
 devGuide/Decomp
 devGuide/MetaData
 devGuide/IO
+devGuide/IOField
 devGuide/Halo
 devGuide/HorzMesh
 ```
