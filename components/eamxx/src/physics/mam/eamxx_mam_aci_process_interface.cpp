@@ -232,7 +232,7 @@ void compute_nucleate_ice_tendencies(
     const mam4::NucleateIce &nucleate_ice, haero::ThreadTeamPolicy team_policy,
     MAMAci::view_2d nihf, MAMAci::view_2d niim, MAMAci::view_2d nidep,
     MAMAci::view_2d nimey, MAMAci::view_2d naai_hom, MAMAci::view_2d naai,
-    mam_coupling::AerosolState &aerosol_state,
+    mam_coupling::AerosolState &dry_aerosol_state,
     mam_coupling::DryAtmosphere &dry_atmosphere, MAMAci::view_2d aitken_dry_dia,
     const int nlev) {
   //-------------------------------------------------------------
@@ -261,7 +261,7 @@ void compute_nucleate_ice_tendencies(
         // set surface state data
         haero::Surface surf{};
         mam4::Prognostics progs =
-            mam_coupling::aerosols_for_column(aerosol_state, icol);
+            mam_coupling::aerosols_for_column(dry_aerosol_state, icol);
 
         // nucleation doesn't use any diagnostics, so it's okay to leave this
         // alone for now
@@ -355,6 +355,7 @@ void compute_recipical_pseudo_density(const haero::ThreadTeam &team,
                                       MAMAci::view_2d rpdel,
                                       MAMAci::const_view_2d pdel,
                                       const int icol, const int nlev) {
+  // FIXME: Add an assert to ensure pdel is non-zero
   Kokkos::parallel_for(
       Kokkos::TeamThreadRange(team, 0u, nlev),
       KOKKOS_LAMBDA(int kk) { rpdel(icol, kk) = 1 / pdel(icol, kk); });
@@ -490,8 +491,9 @@ void call_function_dropmixnuc(
              ptend, nctend_mixnuc, factnum)  !out
         */
 
-        //mam4::utils::extract_stateq_from_prognostics(progs, atm, state_q_at_kk,
-        //                                             kk);
+        // mam4::utils::extract_stateq_from_prognostics(progs, atm,
+        // state_q_at_kk,
+        //                                              kk);
         mam4::ndrop::dropmixnuc(
             team, dtmicro, ekat::subview(T_mid, icol),
             ekat::subview(p_mid, icol), ekat::subview(p_int, icol),
@@ -570,10 +572,10 @@ void call_hetfrz_compute_tendencies(
   using view_1d = typename KokkosTypes<DefaultDevice>::template view_1d<Real>;
   view_1d dummy("DummyView", nlev);
 
-  mam4::Hetfrz hetfrz                        = hetfrz_;
-  mam_coupling::AerosolState aerosol_state   = dry_aero_;
-  mam_coupling::WetAtmosphere wet_atmosphere = wet_atmosphere_;
-  mam_coupling::DryAtmosphere dry_atmosphere = dry_atmosphere_;
+  mam4::Hetfrz hetfrz                          = hetfrz_;
+  mam_coupling::AerosolState dry_aerosol_state = dry_aero_;
+  mam_coupling::WetAtmosphere wet_atmosphere   = wet_atmosphere_;
+  mam_coupling::DryAtmosphere dry_atmosphere   = dry_atmosphere_;
   MAMAci::view_2d diagnostic_scratch[42];
   for(int i = 0; i < 42; ++i) diagnostic_scratch[i] = diagnostic_scratch_[i];
   ;
@@ -597,7 +599,7 @@ void call_hetfrz_compute_tendencies(
         // set surface state data
         haero::Surface surf{};
         mam4::Prognostics progs =
-            mam_coupling::aerosols_for_column(aerosol_state, icol);
+            mam_coupling::aerosols_for_column(dry_aerosol_state, icol);
 
         const int accum_idx  = static_cast<int>(mam4::ModeIndex::Accumulation);
         const int coarse_idx = static_cast<int>(mam4::ModeIndex::Coarse);
@@ -690,14 +692,6 @@ const Real wsubmin = 1;
 MAMAci::MAMAci(const ekat::Comm &comm, const ekat::ParameterList &params)
     : AtmosphereProcess(comm, params) {}
 
-// Return type of the process
-AtmosphereProcessType MAMAci::type() const {
-  return AtmosphereProcessType::Physics;
-}
-
-// return name of the process
-std::string MAMAci::name() const { return "mam4_aci"; }
-
 // set grid for all the inputs and outputs
 void MAMAci::set_grids(
     const std::shared_ptr<const GridsManager> grids_manager) {
@@ -709,7 +703,9 @@ void MAMAci::set_grids(
   ncol_ = grid_->get_num_local_dofs();       // Number of columns on this rank
   nlev_ = grid_->get_num_vertical_levels();  // Number of levels per column
 
-  Kokkos::resize(rho_, ncol_, nlev_);
+  Kokkos::resize(
+      rho_, ncol_,
+      nlev_);  // BQ: Does Kokkos::resize allocates memory as well for rho_?
   Kokkos::resize(w0_, ncol_, nlev_);
   Kokkos::resize(tke_, ncol_, nlev_ + 1);
   Kokkos::resize(wsub_, ncol_, nlev_);
@@ -732,7 +728,7 @@ void MAMAci::set_grids(
   FieldLayout scalar3d_layout_int{{COL, ILEV},
                                   {ncol_, nlev_ + 1}};  // interfaces
 
-  ekat::units::Units kg = ekat::units::kg;
+  ekat::units::Units kg = ekat::units::kg;  // BQ: why do we need to do this???
   ekat::units::Units Pa = ekat::units::Pa;
   ekat::units::Units s  = ekat::units::s;
   ekat::units::Units m  = ekat::units::m;
@@ -773,22 +769,26 @@ void MAMAci::set_grids(
   add_field<Computed>("activation_fraction_coarse", scalar3d_layout_mid, nondim,
                       grid_name);  // Layer thickness(pdel) [Pa] at midpoints
 
-  add_field<Required>(
+  // MUST FIXME: remove state_q from this list
+  /*add_field<Required>(
       "state_q",
       FieldLayout{{COL, LEV, CMP}, {ncol_, nlev_, mam4::ndrop::nvars}}, q_unit,
-      grid_name);  // aerosol mmrs [kg/kg]
+      grid_name);  // aerosol mmrs [kg/kg]*/
+  // MUST FIXME: Is it same as nc or may be not????
   add_field<Required>("ncldwtr", scalar3d_layout_mid, n_unit,
                       grid_name);  // initial droplet number mixing ratio [#/kg]
-  // add_field<Required>("cldo", , unitless, grid_name); // cloud fraction on
-  // previous time step [fraction]
-  //
+
+  // MUST FIXME: This should be an internal variable. why we need this as an
+  // input???
   add_field<Updated>("w_updraft", scalar3d_layout_mid, q_unit,
                      grid_name);  // updraft velocity [m/s]
-  add_field<Required>(
+                                  // MUST FIXME: Remove qqcw from here
+  /*add_field<Required>(
       "qqcw",
       FieldLayout{{COL, LEV, CMP}, {ncol_, nlev_, mam4::ndrop::ncnst_tot}},
       q_unit, grid_name);  // cloud-borne aerosol mass, number mixing ratios
-                           // [#/kg or kg/kg]
+                           // [#/kg or kg/kg]*/
+  // MUST FIXME: move it above so that all "required" variables are together
   add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim,
                       grid_name);  // cloud fraction [nondimentional]
 
@@ -947,10 +947,6 @@ void MAMAci::set_grids(
    */
 }
 
-size_t MAMAci::requested_buffer_size_in_bytes() const {
-  return mam_coupling::buffer_size(ncol_, nlev_);
-}
-
 void MAMAci::init_buffers(const ATMBufferManager &buffer_manager) {
   EKAT_REQUIRE_MSG(
       buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(),
@@ -968,16 +964,27 @@ void MAMAci::initialize_impl(const RunType run_type) {
 
   // set atmosphere state data
 
-  p_int_      = get_field_in("p_int").get_view<const Real **>();
-  w_sec_      = get_field_in("w_sec").get_view<const Real **>();
-  state_q_    = get_field_in("state_q").get_view<const Real ***>();
-  ncldwtr_    = get_field_in("ncldwtr").get_view<const Real **>();
-  qqcw_input_ = get_field_in("qqcw").get_view<const Real ***>();
-  dgnum_      = get_field_in("dgnum").get_view<const Real ***>();
-  nihf_       = get_field_out("icenuc_num_hetfrz").get_view<Real **>();
-  niim_       = get_field_out("icenuc_num_immfrz").get_view<Real **>();
-  nidep_      = get_field_out("icenuc_num_depnuc").get_view<Real **>();
-  nimey_      = get_field_out("icenuc_num_meydep").get_view<Real **>();
+  p_int_ = get_field_in("p_int").get_view<const Real **>();
+  w_sec_ = get_field_in("w_sec").get_view<const Real **>();
+  /*state_q_ = get_field_in("state_q")
+                 .get_view<const Real ***>();  // MUST FIXME: remove this*/
+  ncldwtr_ =
+      get_field_in("ncldwtr")
+          .get_view<const Real **>();  // MUST FIXME: is is nc, may be not???
+  /*qqcw_input_ = get_field_in("qqcw")
+                    .get_view<const Real ***>();  // MUST FIXME: remove this*/
+  dgnum_ = get_field_in("dgnum")
+               .get_view<const Real ***>();  // MUST FIXME: is it an input, can
+                                             // we compute it using calcsize???
+  liqcldf_ = get_field_in("liq_strat_cld_frac").get_view<const Real **>();
+  kvh_     = get_field_in("kvh")
+             .get_view<const Real **>();  // MUST FIXME: See if scream has it,
+                                          // it should com from the land model
+
+  nihf_  = get_field_out("icenuc_num_hetfrz").get_view<Real **>();
+  niim_  = get_field_out("icenuc_num_immfrz").get_view<Real **>();
+  nidep_ = get_field_out("icenuc_num_depnuc").get_view<Real **>();
+  nimey_ = get_field_out("icenuc_num_meydep").get_view<Real **>();
   naai_hom_ =
       get_field_out("num_act_aerosol_ice_nucle_hom").get_view<Real **>();
   naai_ = get_field_out("num_act_aerosol_ice_nucle").get_view<Real **>();
@@ -992,8 +999,6 @@ void MAMAci::initialize_impl(const RunType run_type) {
   ccn_             = get_field_out("ccn").get_view<Real ***>();
   coltend_outp_    = get_field_out("coltend").get_view<Real ***>();
   coltend_cw_outp_ = get_field_out("coltend_cw").get_view<Real ***>();
-  liqcldf_ = get_field_in("liq_strat_cld_frac").get_view<const Real **>();
-  kvh_     = get_field_in("kvh").get_view<const Real **>();
 
   wet_atmosphere_.qv    = get_field_in("qv").get_view<const Real **>();
   wet_atmosphere_.qc    = get_field_in("qc").get_view<const Real **>();
@@ -1039,12 +1044,6 @@ void MAMAci::initialize_impl(const RunType run_type) {
   // interstitial and cloudborne aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
   for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
-    auto prog_index = [](const int mode, const int species) {
-      const mam4::AeroId aero_id = mam4::mode_aero_species(mode, species);
-      const int ind =
-          (mam4::AeroId::None != aero_id) ? static_cast<int>(aero_id) : -1;
-      return ind;
-    };
     // interstitial aerosol tracers of interest: number (n) mixing ratios
     const char *int_nmr_field_name = mam_coupling::int_aero_nmr_field_name(m);
     wet_aero_.int_aero_nmr[m] =
@@ -1062,11 +1061,8 @@ void MAMAci::initialize_impl(const RunType run_type) {
       const char *int_mmr_field_name =
           mam_coupling::int_aero_mmr_field_name(m, a);
       if(strlen(int_mmr_field_name) > 0) {
-        const int index = prog_index(m, a);
         wet_aero_.int_aero_mmr[m][a] =
             get_field_out(int_mmr_field_name).get_view<Real **>();
-        std::cout << "BALLI:-----" << m << "  " << a << "  " << index << " "
-                  << wet_aero_.int_aero_mmr[m][a](0, 0) << std::endl;
         dry_aero_.int_aero_mmr[m][a] = buffer_.dry_int_aero_mmr[m][a];
       }
 
@@ -1074,7 +1070,6 @@ void MAMAci::initialize_impl(const RunType run_type) {
       const char *cld_mmr_field_name =
           mam_coupling::cld_aero_mmr_field_name(m, a);
       if(strlen(cld_mmr_field_name) > 0) {
-        const int index = prog_index(m, a);
         wet_aero_.cld_aero_mmr[m][a] =
             get_field_out(cld_mmr_field_name).get_view<Real **>();
         dry_aero_.cld_aero_mmr[m][a] = buffer_.dry_cld_aero_mmr[m][a];
@@ -1091,21 +1086,21 @@ void MAMAci::initialize_impl(const RunType run_type) {
   for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i) {
     // These are temp arrays formatted like mam4xx wants.
     // Not sure if there is a way to do this with scream.
-    Kokkos::resize(qqcw_[i], ncol_, nlev_);
+    /*Kokkos::resize(qqcw_[i], ncol_, nlev_);  // MUST FIXME: remove this*/
     Kokkos::resize(coltend_[i], ncol_, nlev_);
     Kokkos::resize(coltend_cw_[i], ncol_, nlev_);
   }
   for(int i = 0; i < mam4::ndrop::nvar_ptend_q; ++i) {
-    Kokkos::resize(ptend_q_[i], ncol_, nlev_);
+    Kokkos::resize(ptend_q_[i], ncol_, nlev_);  // MUST FIXME:Do we need this?
   }
   for(int i = 0; i < mam4::ndrop::pver; ++i) {
-    for(int j = 0; j < 2; ++j) {
+    for(int j = 0; j < 2; ++j) {  // MUST FIXME:store 2 in a const variable
       Kokkos::resize(raercol_cw_[i][j], ncol_, mam4::ndrop::ncnst_tot);
       Kokkos::resize(raercol_[i][j], ncol_, mam4::ndrop::ncnst_tot);
     }
   }
 
-  for(int i = 0; i < 42; ++i)
+  for(int i = 0; i < 42; ++i)  // MUST FIXME:store 42 in a const var
     Kokkos::resize(diagnostic_scratch_[i], ncol_, nlev_);
 
   // nact : fractional aero. number activation rate [/s]
@@ -1133,44 +1128,54 @@ void MAMAci::run_impl(const double dt) {
   const auto scan_policy = ekat::ExeSpaceUtils<
       KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
 
-  // preprocess input -- needs a scan for the calculation of atm height
+  // preprocess input -- needs a scan for the calculation of local derivied
+  // quantities
   Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
   Kokkos::fence();
 
   haero::ThreadTeamPolicy team_policy(ncol_, Kokkos::AUTO);
 
-  copy_scream_array_to_mam4xx(team_policy, qqcw_, qqcw_input_, nlev_);
+  /*copy_scream_array_to_mam4xx(
+      team_policy, qqcw_, qqcw_input_,
+      nlev_);  // MUST FIXME: remove this and populate qqcw here*/
 
   // All the inputs are available to compute w0 and rho
   // Convert from omega to w (vertical velocity)
   // Negative omega means rising motion
-  compute_w0_and_rho(team_policy, w0_, rho_, wet_atmosphere_, dry_atmosphere_,
-                     top_lev_, nlev_);
+  compute_w0_and_rho(team_policy, w0_ /*output*/, rho_ /*output*/,
+                     wet_atmosphere_, dry_atmosphere_, top_lev_, nlev_);
 
-  compute_tke_using_w_sec(team_policy, tke_, w_sec_, nlev_);
+  compute_tke_using_w_sec(team_policy, tke_ /*output*/, w_sec_, nlev_);
+
   Kokkos::fence();  // wait for for tke_ to be computed.
 
-  compute_subgrid_scale_velocities(team_policy, wsub_, wsubice_, wsig_, tke_,
+  compute_subgrid_scale_velocities(team_policy, wsub_ /*output*/,
+                                   wsubice_ /*output*/, wsig_ /*output*/, tke_,
                                    wsubmin, top_lev_, nlev_);
   Kokkos::fence();  // wait for wsig_ to be computed.
 
-  compute_subgrid_mean_updraft_velocities(team_policy, w2_, w0_, wsig_, nlev_);
+  compute_subgrid_mean_updraft_velocities(team_policy, w2_ /*output*/, w0_,
+                                          wsig_, nlev_);
 
-  compute_aitken_dry_diameter(team_policy, aitken_dry_dia_, dgnum_, top_lev_);
+  compute_aitken_dry_diameter(team_policy, aitken_dry_dia_ /*output*/, dgnum_,
+                              top_lev_);
   Kokkos::fence();  // wait for aitken_dry_dia_ to be computed.
 
+  // FIXME: Find out in-outs of the following call!
   compute_nucleate_ice_tendencies(nucleate_ice_, team_policy, nihf_, niim_,
                                   nidep_, nimey_, naai_hom_, naai_, dry_aero_,
                                   dry_atmosphere_, aitken_dry_dia_, nlev_);
 
-  store_liquid_cloud_fraction(team_policy, cloud_frac_new_, cloud_frac_old_,
-                              wet_atmosphere_, liqcldf_, top_lev_);
+  store_liquid_cloud_fraction(team_policy, cloud_frac_new_ /*output*/,
+                              cloud_frac_old_ /*output*/, wet_atmosphere_,
+                              liqcldf_, top_lev_);
 
+  // MUST FIXME: save cloud borne aerosols here!!!!
   //-------------------------------------------------------------
-  // Save cloud borne aerosols to be used in the heterozenous
-  // freezing before they are changed by the droplet activation
-  // process. This is only a select subset of cloud borne
-  // aerosols, not all the cloud borne aerosols.
+  //  Save cloud borne aerosols to be used in the heterozenous
+  //  freezing before they are changed by the droplet activation
+  //  process. This is only a select subset of cloud borne
+  //  aerosols, not all the cloud borne aerosols.
   //-------------------------------------------------------------
   /*NOTE: We probably need to store indices for the select few cloud borne
   aerosols Fortran code: lchnk_zb = lchnk - begchunk ! save copy of cloud borne
@@ -1182,8 +1187,8 @@ void MAMAci::run_impl(const double dt) {
   rho(:ncol,:) enddo
   */
 
-  compute_recipical_pseudo_density(team_policy, rpdel_, dry_atmosphere_.p_del,
-                                   nlev_);
+  compute_recipical_pseudo_density(team_policy, rpdel_ /*output*/,
+                                   dry_atmosphere_.p_del, nlev_);
   Kokkos::fence();  // wait for rpdel_ to be computed.
 #if 0
   call_function_dropmixnuc(team_policy, dry_atmosphere_, dtmicro_,

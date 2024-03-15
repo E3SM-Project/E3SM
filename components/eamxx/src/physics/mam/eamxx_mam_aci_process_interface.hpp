@@ -62,7 +62,7 @@ class MAMAci final : public scream::AtmosphereProcess {
   const_view_2d liqcldf_;
   const_view_2d kvh_;
 
-  const_view_3d state_q_;
+  // const_view_3d state_q_;
   const_view_2d ncldwtr_;
 
   view_2d cloud_frac_new_;
@@ -133,15 +133,23 @@ class MAMAci final : public scream::AtmosphereProcess {
   // Constructor
   MAMAci(const ekat::Comm &comm, const ekat::ParameterList &params);
   // process metadata
-  AtmosphereProcessType type() const override;
-  std::string name() const override;
+
+  // Return type of the process
+  AtmosphereProcessType MAMAci::type() const {
+    return AtmosphereProcessType::Physics;
+  }
+
+  // return name of the process
+  std::string MAMAci::name() const { return "mam4_aci"; }
 
   // grid
   void set_grids(
       const std::shared_ptr<const GridsManager> grids_manager) override;
 
   // management of common atm process memory
-  size_t requested_buffer_size_in_bytes() const override;
+  size_t MAMAci::requested_buffer_size_in_bytes() const {
+    return mam_coupling::buffer_size(ncol_, nlev_);
+  }
   void init_buffers(const ATMBufferManager &buffer_manager) override;
 
   // process behavior
