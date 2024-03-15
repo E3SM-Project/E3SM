@@ -403,11 +403,66 @@ option (SCREAM_ENABLE_STATM "Whether /proc/self/statm can be used to get memory 
 # Whether to disable warnings from tpls.
 set (SCREAM_DISABLE_TPL_WARNINGS ON CACHE BOOL "")
 
-include(EkatBuildEkat)
-BuildEkat(PREFIX "SCREAM"
-  ENABLE_TESTS OFF
-  ENABLE_FPE   ON
-  ENABLE_FPE_DEFAULT_MASK OFF)
+if (DEFINED ENV{SCREAM_FAKE_ONLY})
+  # We don't really need to build ekat, but we do need to configure the test-launcher
+
+  # Declare some vars that Ekat would have declared, and may be used later
+  option (EKAT_ENABLE_MPI "Whether EKAT requires MPI." ON)
+  option (EKAT_TEST_LAUNCHER_MANAGE_RESOURCES "Whether test-launcher should try to manage thread distribution. Requires a ctest resource file to be effective." OFF)
+  option (EKAT_ENABLE_VALGRIND "Whether to run tests with valgrind" OFF)
+  set(EKAT_VALGRIND_SUPPRESSION_FILE "" CACHE FILEPATH "Use this valgrind suppression file if valgrind is enabled.")
+  set (EKAT_ENABLE_GPU False)
+  if (Kokkos_ENABLE_CUDA OR Kokkos_ENABLE_HIP OR Kokkos_ENABLE_SYCL)
+    set (EKAT_ENABLE_GPU True)
+  endif ()
+
+  if (EKAT_TEST_LAUNCHER_MANAGE_RESOURCES)
+    set (TEST_LAUNCHER_MANAGE_RESOURCES True)
+  else()
+    set (TEST_LAUNCHER_MANAGE_RESOURCES False)
+  endif()
+  if (EKAT_ENABLE_GPU)
+    set (TEST_LAUNCHER_ON_GPU True)
+  else()
+    set (TEST_LAUNCHER_ON_GPU False)
+  endif()
+
+  set (EKAT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../externals/ekat)
+
+  if (EKAT_ENABLE_MPI)
+    find_package(MPI REQUIRED COMPONENTS C)
+
+    # NOTE: may be an overkill, but depending on which FindMPI module is called,
+    #       if _FIND_REQUIRED is not checked, we may not get a fatal error
+    #       if the required components are not found. So check the _FOUND var.
+    if (NOT MPI_C_FOUND)
+      message (FATAL_ERROR "EKAT *requires* the C component of MPI to be found")
+    endif()
+
+    # We should avoid cxx bindings in mpi; they are already deprecated,
+    # and can cause headaches at link time, cause they require -lmpi_cxx
+    # (openpmi) or -lmpicxx (mpich) flags.
+    include(EkatMpiUtils)
+    DisableMpiCxxBindings()
+    SetMpiRuntimeEnvVars()
+  endif()
+
+  # Configure/install test-launcher to build/install folder
+  configure_file(${EKAT_SOURCE_DIR}/bin/test-launcher
+                 ${CMAKE_BINARY_DIR}/bin/test-launcher)
+
+  if (EKAT_ENABLE_VALGRIND)
+    add_subdirectory(${EKAT_SOURCE_DIR}/valgrind_support
+                     ${CMAKE_BINARY_DIR}/externals/ekat/valgrind_support)
+  endif()
+
+else()
+  include(EkatBuildEkat)
+  BuildEkat(PREFIX "SCREAM"
+    ENABLE_TESTS OFF
+    ENABLE_FPE   ON
+    ENABLE_FPE_DEFAULT_MASK OFF)
+endif()
 
 # Set compiler-specific flags
 include(EkatSetCompilerFlags)
