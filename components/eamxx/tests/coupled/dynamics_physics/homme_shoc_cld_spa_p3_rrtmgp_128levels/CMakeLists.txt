@@ -98,3 +98,10 @@ foreach (NRANKS RANGE ${TEST_RANK_START} ${TEST_RANK_END})
       LABELS "dynamics;shoc;cld;p3;rrtmgp;physics"
       FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_np${NRANKS}_omp1)
 endforeach()
+
+if (SCREAM_ENABLE_BASELINE_TESTS)
+  # Compare one of the output files with the baselines.
+  # Note: one is enough, since we already check that np1 is BFB with npX
+  set (OUT_FILE ${TEST_BASE_NAME}_output.INSTANT.nsteps_x1.np${TEST_RANK_END}.${RUN_T0}.nc)
+  CreateBaselineTest(${TEST_BASE_NAME} ${TEST_RANK_END} ${OUT_FILE} ${FIXTURES_BASE_NAME})
+endif()

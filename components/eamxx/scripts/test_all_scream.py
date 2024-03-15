@@ -287,7 +287,7 @@ class TestAllScream(object):
     def create_tests_dirs(self, root, clean):
     ###############################################################################
 
-        # Make sure the baseline root directory exists
+        # Make sure the tests root directory exists
         root.mkdir(parents=True,exist_ok=True)
 
         # Create build directories (one per test)
@@ -300,9 +300,11 @@ class TestAllScream(object):
                 # TypeError: lstat: illegal type for path parameter
                 shutil.rmtree(str(test_dir))
 
-            # Create this baseline's build dir
-            if not test_dir.exists():
-                test_dir.mkdir(parents=True)
+            # Create this built type's build dir (if not already existing)
+            test_dir.mkdir(parents=True,exist_ok=True)
+
+            # Create the 'data' subdir (if not already existing)
+            (test_dir / "data").mkdir(parents=False,exist_ok=True)
 
     ###############################################################################
     def get_baseline_file_sha(self, test):
@@ -571,7 +573,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         result += f"--resource-spec-file {test_dir}/ctest_resource_file.json "
 
         if self._baseline_dir is not None and test.uses_baselines:
-            cmake_config += f" -DSCREAM_TEST_DATA_DIR={self.get_preexisting_baseline(test)}"
+            cmake_config += f" -DSCREAM_BASELINES_DIR={self.get_preexisting_baseline(test).parent}"
 
         if not self._submit:
             result += "-DNO_SUBMIT=True "
@@ -616,8 +618,8 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
 
         num_test_res = self.create_ctest_resource_file(test,test_dir)
         cmake_config = self.generate_cmake_config(test)
-        cmake_config += " -DSCREAM_BASELINES_ONLY=ON"
-        cmake_config += f" -DSCREAM_TEST_DATA_DIR={baseline_dir}/data"
+        cmake_config +=  " -DSCREAM_ONLY_GENERATE_BASELINES=ON"
+        cmake_config += f" -DSCREAM_BASELINES_DIR={baseline_dir}"
         cmake_config += f" -DSCREAM_TEST_MAX_TOTAL_THREADS={num_test_res}"
 
         print("===============================================================================")
@@ -652,6 +654,17 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         if stat != 0:
             print (f"WARNING: Failed to create baselines (run phase):\n{err}")
             return False
+
+        # Read list of nc files to copy to baseline dir
+        with open(test_dir/"data/baseline_list","r",encoding="utf-8") as fd:
+            files = fd.read().splitlines()
+
+            for fn in files:
+                # In case appending to the file leaves an empty line at the end
+                src = Path(fn)
+                dst = baseline_dir / "data" / src.name
+                dst.touch(mode=0o664,exist_ok=True)
+                shutil.copy(src, dst)
 
         # Store the sha used for baselines generation
         self.set_baseline_file_sha(test)

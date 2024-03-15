@@ -142,7 +142,7 @@ def create_backup_commit (repo=None, dry_run=False):
 
     bkp_cmd = "git add -A && git commit -m 'WARNING: test-all-scream backup commit'"
     if dry_run:
-        print (f"Woudl run: {bkp_cmd}")
+        print (f"Would run: {bkp_cmd}")
     else:
         run_cmd_no_fail(bkp_cmd, from_dir=repo)
         expect(is_repo_clean(repo=repo), "Something went wrong while performing the backup commit")
