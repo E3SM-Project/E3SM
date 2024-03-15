@@ -52,6 +52,9 @@ Err = HmixConfig.get("MaxMeshDensity"   , MaxMeshDensity);
 Err = HmixConfig.get("HmixUseRefWidth"  , HmixUseRefWidth);
 Err = HmixConfig.get("HmixRefWidth"     , HmixRefWidth);
 ```
+All Config get/set/add functions support variables of all Omega data
+types (I4, I8, R4, R8, Real, bool, std::string) and also
+std::vector vectors of any of those supported types.
 If the module is deeper in the hierarchy (eg an HmixDel2 module
 under the Hmix module), you would need an additional call to extract
 the subconfiguration, like:
