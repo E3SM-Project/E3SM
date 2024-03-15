@@ -501,6 +501,11 @@ be lost if SCREAM_HACK_XML is not enabled.
                    doc="Verbosity level for the atm logger">
       info
     </atm_log_level>
+    <atm_flush_level type="string"
+                   valid_values="trace,debug,info,warn,error"
+                   doc="Verbosity level that triggers automatic flush of the atm logger">
+      warn
+    </atm_flush_level>
     <output_to_screen type="logical">false</output_to_screen>
     <mass_column_conservation_error_tolerance>1e-10</mass_column_conservation_error_tolerance>
     <energy_column_conservation_error_tolerance>1e-14</energy_column_conservation_error_tolerance>
