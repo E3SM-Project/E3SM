@@ -23,6 +23,12 @@ EkatCreateUnitTest(test_fail test_fail.cpp EXCLUDE_MAIN_CPP EXCLUDE_TEST_SESSION
 if (SCREAM_TEST_MAX_TOTAL_THREADS GREATER_EQUAL 16)
   EkatCreateUnitTestExec(resource_spread resource_spread.cpp EXCLUDE_MAIN_CPP EXCLUDE_TEST_SESSION)
 
+  # When scripts-tests builds this folder, they are not building Ekat (or even Kokkos).
+  # So we must add openmp to the compiler/linker flags manually
+  # NOTE: scripts-tests is already checking that this is an "OpenMP machine", so this is safe
+  find_package(OpenMP REQUIRED COMPONENTS CXX)
+  target_link_libraries(resource_spread OpenMP::OpenMP_CXX MPI::MPI_C)
+
   EkatCreateUnitTestFromExec(resource_spread_thread resource_spread
     PRINT_OMP_AFFINITY
     THREADS 1 4 1

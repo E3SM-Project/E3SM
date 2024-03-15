@@ -429,11 +429,8 @@ if (DEFINED ENV{SCREAM_FAKE_ONLY})
 
   set (EKAT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../externals/ekat)
 
-  # Configure/install test-launcher to build/install folder
-  configure_file(${EKAT_SOURCE_DIR}/bin/test-launcher
-                 ${CMAKE_BINARY_DIR}/bin/test-launcher)
   if (EKAT_ENABLE_MPI)
-    find_package(MPI REQUIRED)
+    find_package(MPI REQUIRED COMPONENTS C)
 
     # NOTE: may be an overkill, but depending on which FindMPI module is called,
     #       if _FIND_REQUIRED is not checked, we may not get a fatal error
@@ -447,7 +444,12 @@ if (DEFINED ENV{SCREAM_FAKE_ONLY})
     # (openpmi) or -lmpicxx (mpich) flags.
     include(EkatMpiUtils)
     DisableMpiCxxBindings()
+    SetMpiRuntimeEnvVars()
   endif()
+
+  # Configure/install test-launcher to build/install folder
+  configure_file(${EKAT_SOURCE_DIR}/bin/test-launcher
+                 ${CMAKE_BINARY_DIR}/bin/test-launcher)
 
   if (EKAT_ENABLE_VALGRIND)
     add_subdirectory(${EKAT_SOURCE_DIR}/valgrind_support
