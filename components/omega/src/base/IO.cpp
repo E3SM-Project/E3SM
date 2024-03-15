@@ -349,7 +349,9 @@ int getDimLength(int FileID, // [in] ID of the file containing dim
    int DimID = 0;
    Err       = PIOc_inq_dimid(FileID, DimName.c_str(), &DimID);
    if (Err != PIO_NOERR) {
-      LOG_ERROR("IO::getDimLength: PIO error while retrieving dimensionID");
+      LOG_ERROR("IO::getDimLength: PIO error while retrieving dimensionID for "
+                "dimension {}",
+                DimName);
       return -1;
    }
 
@@ -357,8 +359,9 @@ int getDimLength(int FileID, // [in] ID of the file containing dim
    PIO_Offset Length = -1;
    Err               = PIOc_inq_dimlen(FileID, DimID, &Length);
    if (Err != PIO_NOERR) {
-      LOG_ERROR(
-          "IO::getDimLength: PIO error while retrieving dimension length");
+      LOG_ERROR("IO::getDimLength: PIO error while retrieving dimension length "
+                "for dimension {}",
+                DimName);
       return -1;
    }
    return Length;
@@ -378,7 +381,9 @@ int defineDim(int FileID,                 // [in] ID of the file containing dim
 
    Err = PIOc_def_dim(FileID, DimName.c_str(), Length, &DimID);
    if (Err != PIO_NOERR) {
-      LOG_ERROR("IO::defineDim: PIO error while defining dimension");
+      LOG_ERROR(
+          "IO::defineDim: PIO error while defining dimension for dimension {}",
+          DimName);
       Err = -1;
    }
 
@@ -404,7 +409,8 @@ int writeMeta(const std::string &MetaName, // [in] name of metadata
    Err = PIOc_put_att(FileID, VarID, MetaName.c_str(), MetaType, Length,
                       &MetaValue);
    if (Err != PIO_NOERR) {
-      LOG_ERROR("IO::writeMeta(I4): PIO error while writing metadata");
+      LOG_ERROR("IO::writeMeta(I4): PIO error while writing metadata to {}",
+                MetaName);
       Err = -1;
    }
 
@@ -425,7 +431,8 @@ int writeMeta(const std::string &MetaName, // [in] name of metadata
    Err = PIOc_put_att(FileID, VarID, MetaName.c_str(), MetaType, Length,
                       &MetaValue);
    if (Err != PIO_NOERR) {
-      LOG_ERROR("IO::writeMeta(I8): PIO error while writing metadata");
+      LOG_ERROR("IO::writeMeta(I8): PIO error while writing metadata to {}",
+                MetaName);
       Err = -1;
    }
 
@@ -446,7 +453,8 @@ int writeMeta(const std::string &MetaName, // [in] name of metadata
    Err = PIOc_put_att(FileID, VarID, MetaName.c_str(), MetaType, Length,
                       &MetaValue);
    if (Err != PIO_NOERR) {
-      LOG_ERROR("IO::writeMeta(R4): PIO error while writing metadata");
+      LOG_ERROR("IO::writeMeta(R4): PIO error while writing metadata to {}",
+                MetaName);
       Err = -1;
    }
 
@@ -467,7 +475,8 @@ int writeMeta(const std::string &MetaName, // [in] name of metadata
    Err = PIOc_put_att(FileID, VarID, MetaName.c_str(), MetaType, Length,
                       &MetaValue);
    if (Err != PIO_NOERR) {
-      LOG_ERROR("IO::writeMeta(R8): PIO error while writing metadata");
+      LOG_ERROR("IO::writeMeta(R8): PIO error while writing metadata to {}",
+                MetaName);
       Err = -1;
    }
 
@@ -488,7 +497,8 @@ int writeMeta(const std::string &MetaName, // [in] name of metadata
    Err = PIOc_put_att(FileID, VarID, MetaName.c_str(), MetaType, Length,
                       (void *)MetaValue.c_str());
    if (Err != PIO_NOERR) {
-      LOG_ERROR("IO::writeMeta(str): PIO error while writing metadata");
+      LOG_ERROR("IO::writeMeta(str): PIO error while writing metadata to {}",
+                MetaName);
       Err = -1;
    }
 
@@ -510,7 +520,8 @@ int readMeta(const std::string &MetaName, // [in] name of metadata
 
    Err = PIOc_get_att(FileID, VarID, MetaName.c_str(), &MetaValue);
    if (Err != PIO_NOERR) {
-      LOG_ERROR("IO::readMeta(I4): PIO error while reading metadata");
+      LOG_ERROR("IO::readMeta(I4): PIO error while reading metadata for {}",
+                MetaName);
       Err = -1;
    }
 
@@ -527,7 +538,8 @@ int readMeta(const std::string &MetaName, // [in] name of metadata
 
    Err = PIOc_get_att(FileID, VarID, MetaName.c_str(), &MetaValue);
    if (Err != PIO_NOERR) {
-      LOG_ERROR("IO::readMeta(I8): PIO error while reading metadata");
+      LOG_ERROR("IO::readMeta(I8): PIO error while reading metadata for {}",
+                MetaName);
       Err = -1;
    }
 
@@ -544,7 +556,8 @@ int readMeta(const std::string &MetaName, // [in] name of metadata
 
    Err = PIOc_get_att(FileID, VarID, MetaName.c_str(), &MetaValue);
    if (Err != PIO_NOERR) {
-      LOG_ERROR("IO::readMeta(R4): PIO error while reading metadata");
+      LOG_ERROR("IO::readMeta(R4): PIO error while reading metadata for {}",
+                MetaName);
       Err = -1;
    }
 
@@ -561,7 +574,8 @@ int readMeta(const std::string &MetaName, // [in] name of metadata
 
    Err = PIOc_get_att(FileID, VarID, MetaName.c_str(), &MetaValue);
    if (Err != PIO_NOERR) {
-      LOG_ERROR("IO::readMeta(R8): PIO error while reading metadata");
+      LOG_ERROR("IO::readMeta(R8): PIO error while reading metadata for {}",
+                MetaName);
       Err = -1;
    }
 
@@ -593,7 +607,8 @@ int readMeta(const std::string &MetaName, // [in] name of metadata
    Err =
        PIOc_get_att(FileID, VarID, MetaName.c_str(), (void *)MetaValue.c_str());
    if (Err != PIO_NOERR) {
-      LOG_ERROR("IO::readMeta(str): PIO error while reading metadata");
+      LOG_ERROR("IO::readMeta(str): PIO error while reading metadata for {}",
+                MetaName);
       Err = -1;
    }
 
@@ -617,7 +632,7 @@ int defineVar(int FileID,                 // [in] ID of the file containing dim
 
    Err = PIOc_def_var(FileID, VarName.c_str(), VarType, NDims, DimIDs, &VarID);
    if (Err != PIO_NOERR) {
-      LOG_ERROR("IO::defineVar: PIO error while defining variable");
+      LOG_ERROR("IO::defineVar: PIO error while defining variable {}", VarName);
       Err = -1;
    }
 
@@ -671,7 +686,7 @@ int createDecomp(
    Err = PIOc_init_decomp(SysID, VarType, NDims, &DimLengths[0], Size,
                           &CompMap[0], &DecompID, Rearr, nullptr, nullptr);
    if (Err != PIO_NOERR)
-      LOG_ERROR("IOCreateDecomp: PIO error defining decomposition");
+      LOG_ERROR("IO::createDecomp: PIO error defining decomposition");
 
    return Err;
 
@@ -684,7 +699,7 @@ int destroyDecomp(int &DecompID // [inout] ID for decomposition to be removed
 
    int Err = PIOc_freedecomp(SysID, DecompID);
    if (Err != PIO_NOERR)
-      LOG_ERROR("IODestroyDecomp: PIO error freeing decomposition");
+      LOG_ERROR("IO::destroyDecomp: PIO error freeing decomposition");
 
    return Err;
 
@@ -706,13 +721,14 @@ int readArray(void *Array,                // [out] array to be read
    // Find variable ID from file
    Err = PIOc_inq_varid(FileID, VarName.c_str(), &VarID);
    if (Err != PIO_NOERR)
-      LOG_ERROR("IOReadArray(I4): Error finding varid");
+      LOG_ERROR("IO::readArray: Error finding varid for variable {}", VarName);
 
    // PIO Read array call to read the distributed array
    PIO_Offset ASize = Size;
    Err              = PIOc_read_darray(FileID, VarID, DecompID, ASize, Array);
    if (Err != PIO_NOERR)
-      LOG_ERROR("IOReadArray(I4): Error in SCORPIO read array");
+      LOG_ERROR("IO::readArray: Error in SCORPIO read array for variable {}",
+                VarName);
 
    return Err;
 
