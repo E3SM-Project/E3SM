@@ -387,14 +387,17 @@ contains
     logical :: flds_bgc_oi
     logical :: flds_wiso
     integer :: glc_nec
-    integer :: iac_npft
-    integer :: iac_nharvest
+
+    ! set these here because the cplflds namelist is not the right place
+    !    this namelist is called only under special circumstances
+    integer :: iac_npft = 17
+    integer :: iac_nharvest = 5
 
     namelist /seq_cplflds_inparm/  &
          flds_co2a, flds_co2b, flds_co2c, flds_co2_dmsa, flds_wiso, glc_nec, &
          ice_ncat, seq_flds_i2o_per_cat, flds_bgc_oi, &
          nan_check_component_fields, rof_heat, atm_flux_method, atm_gustiness, &
-         rof2ocn_nutrients, lnd_rof_two_way, ocn_rof_two_way, iac_npft, iac_nharvest
+         rof2ocn_nutrients, lnd_rof_two_way, ocn_rof_two_way
 
     ! user specified new fields
     integer,  parameter :: nfldmax = 200
@@ -2570,10 +2573,9 @@ contains
     ! also send harvest fraction from iac to land
     ! use the same loop and index string
   
-    ! avd - drv_in is rewritten so set these manually
-    iac_npft = 17
-    iac_nharvest = 5
- 
+    ! these two variables are hardcoded above because there is not an appropriate
+    !    namelist to put them in: iac_npft and iac_nharvest
+
     do i = 1,iac_npft
 
        ! Zero offset the tags, since that's how we access them in lnd and iac

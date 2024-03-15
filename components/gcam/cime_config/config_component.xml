@@ -11,6 +11,15 @@
      <desc>Name of integrated assessment component</desc>
   </entry>
 
+   <entry id="USE_EHC">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>TRUE</default_value>
+    <group>build_component_gcam</group>
+    <file>env_build.xml</file>
+    <desc>TRUE sets USE_CXX to TRUE to enable CXX library compiling for GCAM</desc>
+  </entry>
+
   <description>
     <desc compset="_GCAM">GCAM active</desc>
   </description>

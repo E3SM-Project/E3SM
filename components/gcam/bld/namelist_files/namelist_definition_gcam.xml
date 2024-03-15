@@ -82,14 +82,21 @@ Number of land types
 Number of emission sectors
 </entry>
 
-<entry id="num_emiss_regions"
+<entry id="num_emiss_ctys"
         type="integer"
         category="gcam"
         group="gcam_inparm"
         valid_values="">
-Number of emission regions
+Number of emission countries
 </entry>
 
+<entry id="num_periods"
+        type="integer"
+        category="gcam"
+        group="gcam_inparm"
+        valid_values="">
+Number of GCAM run periods
+</entry>
 
 <entry id="gcam_config"
 	type="char*256"
@@ -125,6 +132,15 @@ Baseline gcam lu and wh file
 	group="gcam_inparm"
 	valid_values="">
 Initial co2 surface emissions file
+</entry>
+
+<entry id="base_co2_shipment_file"
+    type="char*256"
+    category="gcam"
+    input_pathname="abs"
+    group="gcam_inparm"
+    valid_values="">
+Initial co2 international shipment emissions file
 </entry>
 
 <entry id="base_co2_aircraft_file"
@@ -245,6 +261,76 @@ Glm base luc file
 Glm base biomass file
 </entry>
 
+<entry id="country2grid_map"
+    type="char*256"
+    category="gcam"
+    input_pathname="abs"
+    group="gcam_inparm"
+    valid_values="">
+Mapping file from Country to Grid level
+</entry>
+
+<entry id="country2region_map"
+    type="char*256"
+    category="gcam"
+    input_pathname="abs"
+    group="gcam_inparm"
+    valid_values="">
+Mapping file from Country to Regional level
+</entry>
+
+<entry id="pop_iiasa_file"
+    type="char*256"
+    category="gcam"
+    input_pathname="abs"
+    group="gcam_inparm"
+    valid_values="">
+Country-level Population file from IIASA
+</entry>
+
+<entry id="gdp_iiasa_file"
+    type="char*256"
+    category="gcam"
+    input_pathname="abs"
+    group="gcam_inparm"
+    valid_values="">
+Country-level GDP file from IIASA at base year
+</entry>
+
+<entry id="pop_gcam_file"
+    type="char*256"
+    category="gcam"
+    input_pathname="abs"
+    group="gcam_inparm"
+    valid_values="">
+Region-level Population file from GCAM
+</entry>
+
+<entry id="gdp_gcam_file"
+    type="char*256"
+    category="gcam"
+    input_pathname="abs"
+    group="gcam_inparm"
+    valid_values="">
+Region-level GDP file from GCAM
+</entry>
+
+<entry id="co2_gcam_file"
+    type="char*256"
+    category="gcam"
+    input_pathname="abs"
+    group="gcam_inparm"
+    valid_values="">
+Region-level CO2 emission file from GCAM
+</entry>
+
+<entry id="surface_co2_downscaling_method"
+    type="char*256"
+    category="gcam"
+    group="gcam_inparm"
+    valid_values="">
+Downscaling methods for CO2 emission: 1. Linear; 2: Convergence
+</entry>
 
 <entry id="fdyndat_ehc"
         type="char*256"
@@ -253,7 +339,6 @@ Glm base biomass file
         valid_values="">
 Name of dynamic landuse timeseries file
 </entry>
-
 
 <entry id="read_scalars"
 	type="logical"
@@ -290,7 +375,7 @@ Changes in land productivity from elm scale ag yield in gcam
 Changes in land productivity from elm scale carbon density in gcam
 </entry>
 
-<entry id="ehc_elm_co2_emissions"
+<entry id="ehc_eam_co2_emissions"
 	type="logical"
 	category="gcam"
 	group="gcam_inparm">

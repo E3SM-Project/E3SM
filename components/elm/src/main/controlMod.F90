@@ -24,7 +24,7 @@ module controlMod
   use histFileMod             , only: hist_nhtfrq, hist_ndens, hist_mfilt, hist_fincl1, hist_fincl2, hist_fincl3
   use histFileMod             , only: hist_fincl4, hist_fincl5, hist_fincl6, hist_fexcl1, hist_fexcl2, hist_fexcl3
   use histFileMod             , only: hist_fexcl4, hist_fexcl5, hist_fexcl6
-  use LakeCon                 , only: deepmixing_depthcrit, deepmixing_mixfact 
+  use LakeCon                 , only: deepmixing_depthcrit, deepmixing_mixfact
   use AllocationMod         , only: suplnitro
   use AllocationMod         , only: suplphos
   use ColumnDataType          , only: nfix_timeconst
@@ -33,17 +33,17 @@ module controlMod
   use NitrifDenitrifMod     , only: no_frozen_nitrif_denitrif
   use C14DecayMod           , only: use_c14_bombspike, atm_c14_filename
   use SoilLittVertTranspMod , only: som_adv_flux, max_depth_cryoturb
-  use VerticalProfileMod    , only: exponential_rooting_profile, rootprof_exp 
-  use VerticalProfileMod    , only: surfprof_exp, pftspecific_rootingprofile  
+  use VerticalProfileMod    , only: exponential_rooting_profile, rootprof_exp
+  use VerticalProfileMod    , only: surfprof_exp, pftspecific_rootingprofile
   use SharedParamsMod       , only: anoxia_wtsat
   use CanopyStateType       , only: perchroot, perchroot_alt
   use CanopyHydrologyMod      , only: CanopyHydrology_readnl
-! use SurfaceAlbedoMod        , only: albice, lake_melt_icealb
+! use SurfaceAlbedoMod        , only: albice, lake_melt_icealb  
   use SurfaceAlbedoType        , only: albice, lake_melt_icealb
   use UrbanParamsType         , only: urban_hac, urban_traffic
   use elm_varcon              , only: h2osno_max
   use elm_varctl              , only: use_dynroot
-  use AllocationMod         , only: nu_com_phosphatase,nu_com_nfix 
+  use AllocationMod         , only: nu_com_phosphatase,nu_com_nfix
   use elm_varctl              , only: nu_com, use_var_soil_thick
   use seq_drydep_mod          , only: drydep_method, DD_XLND, n_drydep
 !  use elm_varctl              , only: forest_fert_exp
@@ -363,7 +363,8 @@ contains
              call endrun(msg='ERROR reading elm_mosart namelist'//errMsg(__FILE__, __LINE__))
           end if
        end if
-
+       
+       print*,"X.YANG debug SUPL NITROGEN and PHOSPHORUS ",suplnitro,suplphos
        call relavu( unitn )
 
 
@@ -525,7 +526,7 @@ contains
 
     if (use_betr) then
        call betr_readNL( NLFilename, use_c13, use_c14, nsoilorder)
-    endif
+    endif    
 
     ! ----------------------------------------------------------------------
     ! consistency checks

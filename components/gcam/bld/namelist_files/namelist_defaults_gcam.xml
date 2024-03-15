@@ -26,19 +26,21 @@ for the iac data in the e3sm distribution
 <num_gcam_energy_regions>32</num_gcam_energy_regions>
 <num_gcam_land_regions>392</num_gcam_land_regions>
 <num_iac2elm_landtypes>9</num_iac2elm_landtypes>
-<num_emiss_sectors>2</num_emiss_sectors>
-<num_emiss_regions>1</num_emiss_regions>
+<num_emiss_sectors>3</num_emiss_sectors>
+<num_emiss_ctys>238</num_emiss_ctys>
+<num_periods>20</num_periods>
 
 <!-- gcam config and init files, relative to inputdata -->
 <gcam_config>iac/giac/gcam/gcam_6_0/configuration/configuration_ref.xml</gcam_config>
-<base_gcam_co2_file>iac/giac/gcam/gcam_6_0/data/co2_2015_gcam_out.csv</base_gcam_co2_file>
+<base_gcam_co2_file>iac/giac/gcam/gcam_6_0/data/co2_2015_gcam_out_regional.csv</base_gcam_co2_file>
 <base_gcam_lu_wh_file>iac/giac/gcam/gcam_6_0/data/lu_wh_2015_gcam_out.csv</base_gcam_lu_wh_file>
-<base_co2_surface_file>iac/giac/gcam/gcam_6_0/data/gcam_CO2-em-anthro_0.9x1.25_201401-201412_c20200406.txt</base_co2_surface_file>
-<base_co2_aircraft_file>iac/giac/gcam/gcam_6_0/data/gcam_CO2-em-AIR-anthro_0.9x1.25_201401-201412_c20200427.txt</base_co2_aircraft_file>
+<base_co2_surface_file>iac/giac/gcam/gcam_6_0/data/CO2-em-SFC-anthro_0.9x1.25_input4MIPs_2014.csv</base_co2_surface_file>
+<base_co2_shipment_file>iac/giac/gcam/gcam_6_0/data/CO2-em-SHIP-anthro_0.9x1.25_input4MIPs_2014.csv</base_co2_shipment_file>
+<base_co2_aircraft_file>iac/giac/gcam/gcam_6_0/data/CO2-em-AIR-2lvl-anthro_0.9x1.25_input4MIPs_2014.csv</base_co2_aircraft_file>
 <base_npp_file>iac/giac/gcam/gcam_6_0/data/base_f09_annAvgMonthly_2010-2014_npp.csv</base_npp_file>
 <base_hr_file>iac/giac/gcam/gcam_6_0/data/base_f09_annAvgMonthly_2010-2014_hr.csv</base_hr_file>
 <base_pft_file>iac/giac/gcam/gcam_6_0/data/base_f09_annAvgMonthly_2010-2014_pft_wt.csv</base_pft_file>
-<gcam2elm_co2_mapping_file>iac/giac/gcam/gcam_6_0/mappings/co2.xml</gcam2elm_co2_mapping_file>
+<gcam2elm_co2_mapping_file>iac/giac/gcam/gcam_6_0/mappings/co2_regional.xml</gcam2elm_co2_mapping_file>
 <gcam2elm_luc_mapping_file>iac/giac/gcam/gcam_6_0/mappings/luc.xml</gcam2elm_luc_mapping_file>
 <gcam2elm_woodharvest_mapping_file>iac/giac/gcam/gcam_6_0/mappings/woodharvest.xml</gcam2elm_woodharvest_mapping_file>
 <gcam2elm_cdensity_mapping_file>iac/giac/gcam/gcam_6_0/mappings/cdensity.xml</gcam2elm_cdensity_mapping_file>
@@ -51,6 +53,17 @@ for the iac data in the e3sm distribution
 <gcam2glm_baselu>iac/giac/glm/inputs/initial/initial_state_LUH2_2015_v3.nc</gcam2glm_baselu>
 <gcam2glm_basebiomass>iac/giac/glm/inputs/vba_LUH1format.nc</gcam2glm_basebiomass>
 
+<!-- Config and input files for emiss downscaling, with relative paths from
+     inputdata directory -->
+<country2grid_map>iac/giac/gcam/gcam_6_0/data/emission_downscaling/elm0.9x1.25tocountry_mapping_iso.csv</country2grid_map>
+<country2region_map>iac/giac/gcam/gcam_6_0/data/emission_downscaling/iso_GCAM_regID_32reg.csv</country2region_map>
+<pop_iiasa_file>iac/giac/gcam/gcam_6_0/data/emission_downscaling/IIASAPOPData.csv</pop_iiasa_file>
+<gdp_iiasa_file>iac/giac/gcam/gcam_6_0/data/emission_downscaling/IIASAGDPData.csv</gdp_iiasa_file>
+<pop_gcam_file>iac/giac/gcam/gcam_6_0/data/emission_downscaling/GCAMRegionalPOPData.csv</pop_gcam_file>
+<gdp_gcam_file>iac/giac/gcam/gcam_6_0/data/emission_downscaling/GCAMRegionalGDPData.csv</gdp_gcam_file>
+<co2_gcam_file>iac/giac/gcam/gcam_6_0/data/emission_downscaling/GCAMRegionalCO2Data.csv</co2_gcam_file>
+<surface_co2_downscaling_method>Linear</surface_co2_downscaling_method>
+
 <!-- Name of dynamic landuse timeseries file  -->
 <fdyndat_ehc>surfdata_iESM_dyn.nc</fdyndat_ehc>
 
@@ -60,7 +73,7 @@ for the iac data in the e3sm distribution
 <write_co2>.true.</write_co2>
 <elm_ehc_agyield_scaling>.true.</elm_ehc_agyield_scaling>
 <elm_ehc_carbon_scaling>.true.</elm_ehc_carbon_scaling>
-<ehc_elm_co2_emissions>.false.</ehc_elm_co2_emissions>
+<ehc_eam_co2_emissions>.true.</ehc_eam_co2_emissions>
 <gcam_spinup>.false.</gcam_spinup>
 <run_gcam>.true.</run_gcam>
 </namelist_defaults>

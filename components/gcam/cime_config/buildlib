@@ -23,21 +23,14 @@ chdir "${OBJROOT}/iac/obj";
 open(file,">tmp_filepath") or die "ERROT: gcam.buildlib could not open file Filepath to write";
 print file "$CASEROOT/SourceMods/src.gcam \n";
 
-# This is absolutely not the right way to do this, but I currently do not
-# know how to include module includes in our build.  So this will add the
-# xerces, xqilla, and boost includes into the build path.
-#print file "/blues/gpfs/home/ac.shippert/local/include \n";
-#print file "/blues/gpfs/home/ac.shippert/local/src/boost_1_70_0 \n";
-
-# For compy:
-print file "$SRCROOT/components/gcam/src/iac/gcam/util/boost_intel_19.0.3/include \n";
-#print file "/qfs/people/crai556/xerces_intel_19.0.3/include \n";
-
-print file "$SRCROOT/components/gcam/src/iac/gcam/util/boost_intel_19.0.3 \n";
-#print file "/qfs/people/crai556/xerces_intel_19.0.3 \n";
-
-# added eigen in the util directory
-print file "$SRCROOT/components/gcam/src/iac/gcam/util/eigen-3.4.0 \n"
+# the first is for the compy install, the second is for chrysalis
+# #  eva's directory here is temporary until boost is installed
+# #  also waiting for the nersc boost install
+# # eigen 3.4 is a submodule of the gcam repo
+# # these three need to be in the buildlib_cmake file
+print file "/share/apps/boost/1.70/include \n";
+print file "/home/ac.eva.sinha/boost_intel_19.0.3/include \n";
+print file "$SRCROOT/components/gcam/src/iac/gcam/cpl/deps/eigen \n";
 
 # Well, it seems that anything we put in tmp_filepath is both scanned for
 # source code files AND included in a -I$dir flag, so we just need to list all

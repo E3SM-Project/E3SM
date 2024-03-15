@@ -32,12 +32,13 @@ def buildlib(bldroot, installpath, case):
     # directories we need
     #-------------------------------------------------------
 
-    # Some of this is hardcoded to work on compy only - boost and xerces
+# the paths for boost on different machines call all be added here
+
     filepaths = \
  """{caseroot}/SourceMods/src.gcam
-{srcroot}/components/gcam/src/iac/gcam/util/boost_intel_19.0.3/include
-{srcroot}/components/gcam/src/iac/gcam/util/boost_intel_19.0.3
-{srcroot}/components/gcam/src/iac/gcam/util/eigen-3.4.0
+/share/apps/boost/1.70/include
+/home/ac.eva.sinha/boost_intel_19.0.3/include
+{srcroot}/components/gcam/src/iac/gcam/cpl/deps/eigen
 {srcroot}/components/gcam/src/iac/gcam/cvs/objects
 {srcroot}/components/gcam/src/iac/coupling
 {srcroot}/components/gcam/src/iac/gcam/cpl/source

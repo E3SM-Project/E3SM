@@ -422,6 +422,10 @@ iamroot = seq_comm_iamroot(CPLID)
        !   represent the whole grid cell
        fractions_z%rAttr(kz,:) = dom_z%data%rAttr(kf,:)
 
+       ! this checks out correct with all 1 values
+       !if (iamroot) write(logunit,"('(seq_frac_check) ',a,2g26.18)") ' z domain fractions_z zfrac min/max     =',&
+       !   minval(fractions_z%rAttr(kz,:)),maxval(fractions_z%rAttr(kz,:))
+    
        if (atm_present) then
           mapper_z2a => prep_atm_get_mapper_Fz2a()
           mapper_a2z => prep_iac_get_mapper_Sa2z()

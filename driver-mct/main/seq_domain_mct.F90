@@ -285,7 +285,6 @@ contains
     endif
 
     ! note that the iac domain info is relative to the atm domain
-    ! currently atm and lnd must be on same grid if iac is present
     if (atm_present .and. iac_present) then
        gsmap_z  => component_get_gsmap_cx(iac) ! gsmap_zx
        iacdom_z => component_get_dom_cx(iac)   ! dom_zx
