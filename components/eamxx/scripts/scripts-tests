@@ -520,19 +520,11 @@ class TestTestAllScream(TestBaseOuter.TestBase):
         can manage resources correctly.
         """
         if self._full and self._machine == "mappy":
-            spread_test_opts = "-x -e SCREAM_TEST_THREAD_SPREAD=True -c EKAT_TEST_LAUNCHER_MANAGE_RESOURCES=True -c EKAT_MPIRUN_EXE=mpiexec -c EKAT_MPI_EXTRA_ARGS='-bind-to core' -c EKAT_MPI_NP_FLAG='--map-by' -c EKAT_MPI_THREAD_FLAG='' -m $machine -t dbg"
+            spread_test_opts = "-x -e SCREAM_TEST_THREAD_SPREAD=True -e SCREAM_TEST_RANK_SPREAD=True -c EKAT_TEST_LAUNCHER_MANAGE_RESOURCES=True -c EKAT_MPIRUN_EXE=mpiexec -c EKAT_MPI_EXTRA_ARGS='-bind-to core' -c EKAT_MPI_NP_FLAG='--map-by' -c EKAT_MPI_THREAD_FLAG='' -m $machine -t dbg"
 
             cmd = self.get_cmd(f"./test-all-scream {spread_test_opts} --ctest-parallel-level=40 ", self._machine, dry_run=False)
             output = run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
             test_omp_spread(self, output, 40)
-
-            cmd = self.get_cmd(f"./test-all-scream {spread_test_opts} --ctest-parallel-level=40 ", self._machine, dry_run=False)
-            output = run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
-            test_omp_spread(self, output, 40)
-
-            cmd = self.get_cmd(f"taskset -c 8-47 ./test-all-scream {spread_test_opts} --ctest-parallel-level=40 ", self._machine, dry_run=False)
-            output = run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
-            test_omp_spread(self, output, 48, begin=8)
 
             cmd = self.get_cmd(f"taskset -c 8-47 ./test-all-scream {spread_test_opts} --ctest-parallel-level=40 ", self._machine, dry_run=False)
             output = run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
