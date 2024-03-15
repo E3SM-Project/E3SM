@@ -941,29 +941,34 @@ void AtmosphereDriver::create_logger () {
   auto& driver_options_pl = m_atm_params.sublist("driver_options");
 
   ci_string log_fname = driver_options_pl.get<std::string>("Atm Log File","atm.log");
-  ci_string log_level_str = driver_options_pl.get<std::string>("atm_log_level","info");
+  ci_string log_level = driver_options_pl.get<std::string>("atm_log_level","info");
+  ci_string flush_level = driver_options_pl.get<std::string>("atm_flush_level","warn");
   EKAT_REQUIRE_MSG (log_fname!="",
       "Invalid string for 'Atm Log File': '" + log_fname + "'.\n");
 
-  LogLevel log_level;
-  if (log_level_str=="trace") {
-    log_level = LogLevel::trace;
-  } else if (log_level_str=="debug") {
-    log_level = LogLevel::debug;
-  } else if (log_level_str=="info") {
-    log_level = LogLevel::info;
-  } else if (log_level_str=="warn") {
-    log_level = LogLevel::warn;
-  } else if (log_level_str=="err") {
-    log_level = LogLevel::err;
-  } else if (log_level_str=="off") {
-    log_level = LogLevel::off;
-  } else {
-    EKAT_ERROR_MSG ("Invalid choice for 'atm_log_level': " + log_level_str + "\n");
-  }
+  auto str2lev = [](const std::string& s, const std::string& name) {
+    LogLevel lev;
+    if (s=="trace") {
+      lev = LogLevel::trace;
+    } else if (s=="debug") {
+      lev = LogLevel::debug;
+    } else if (s=="info") {
+      lev = LogLevel::info;
+    } else if (s=="warn") {
+      lev = LogLevel::warn;
+    } else if (s=="err") {
+      lev = LogLevel::err;
+    } else if (s=="off") {
+      lev = LogLevel::off;
+    } else {
+      EKAT_ERROR_MSG ("Invalid choice for '" + name + "': " + s + "\n");
+    }
+    return lev;
+  };
 
   using logger_t = Logger<LogBasicFile,LogRootRank>;
-  m_atm_logger = std::make_shared<logger_t>(log_fname,log_level,m_atm_comm,"");
+  m_atm_logger = std::make_shared<logger_t>(log_fname,str2lev(log_level,"atm_log_level"),m_atm_comm,"");
+  m_atm_logger->flush_on(str2lev(flush_level,"atm_flush_level"));
   m_atm_logger->set_no_format();
 
   // In CIME runs, this is already set to false, so atm log does not pollute e3sm.loc.
