@@ -238,6 +238,80 @@ void ElementsState::randomize(const int seed,
   Kokkos::fence();
 }
 
+
+void ElementsState::randomize(const int seed,
+                              const HybridVCoord& hvcoord) {
+  // Check elements were inited
+  assert (m_num_elems>0);
+
+  // Check data makes sense
+  assert (hvcoord.ps0>0);
+  assert (hvcoord.hybrid_ai0>=0);
+
+  // Arbitrary minimum value to generate
+  constexpr const Real min_value = 0.015625;
+
+  std::mt19937_64 engine(seed);
+  std::uniform_real_distribution<Real> random_dist(min_value, 1.0 / min_value);
+  std::uniform_real_distribution<Real> pdf_vtheta_dp(100.0, 1000.0);
+
+  genRandArray(m_v,         engine, random_dist);
+  genRandArray(m_w_i,       engine, random_dist);
+  genRandArray(m_vtheta_dp, engine, pdf_vtheta_dp);
+  // Note: to avoid errors in the equation of state, we need phi to be increasing.
+  //       Rather than using a constraint (which may call the function many times,
+  //       we simply ask that there are no duplicates, then we sort it later.
+  auto sort_and_chek = [](const ExecViewManaged<Scalar[NUM_LEV_P]>::HostMirror v)->bool {
+    Real* start = reinterpret_cast<Real*>(v.data());
+    Real* end   = reinterpret_cast<Real*>(v.data()) + NUM_LEV_P*VECTOR_SIZE;
+    std::sort(start,end);
+    std::reverse(start,end);
+    auto it = std::unique(start,end);
+    return it==end;
+  };
+  for (int ie=0; ie<m_num_elems; ++ie) {
+    for (int itl=0; itl<NUM_TIME_LEVELS; ++itl) {
+      for (int igp=0; igp<NP; ++igp) {
+        for (int jgp=0; jgp<NP; ++ jgp) {
+          genRandArray(Homme::subview(m_phinh_i,ie,itl,igp,jgp),engine,random_dist,sort_and_chek);
+        }
+      }
+    }
+  }
+
+  std::uniform_real_distribution<Real> pressure_pdf(800, 1200);
+  genRandArray(m_ps_v, engine, pressure_pdf);
+
+  auto dp = m_dp3d;
+  auto ps = m_ps_v;
+  auto ps0 = hvcoord.ps0;
+  auto hyai = hvcoord.hybrid_ai_packed;
+  auto hybi = hvcoord.hybrid_bi_packed;
+  auto hyai_delta = hvcoord.hybrid_ai_delta;
+  auto hybi_delta = hvcoord.hybrid_bi_delta;
+  const auto tu = m_tu;
+  Kokkos::parallel_for(m_policy, KOKKOS_LAMBDA(const TeamMember& team) {
+    KernelVariables kv(team, tu);
+    const int ie = kv.ie / NUM_TIME_LEVELS;
+    const int tl = kv.ie % NUM_TIME_LEVELS;
+
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
+                         [&](const int idx) {
+      const int igp  = idx / NP;
+      const int jgp  = idx % NP;
+      ColumnOps::compute_midpoint_delta(kv,hyai,hyai_delta);
+      ColumnOps::compute_midpoint_delta(kv,hybi,hybi_delta);
+      team.team_barrier();
+      Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
+                           [&](const int ilev) {
+        dp(ie,tl,igp,jgp,ilev) = ps0*hyai_delta(ilev)
+                               + ps(ie,tl,igp,jgp)*hybi_delta(ilev);
+      });
+    });
+  });
+  Kokkos::fence();
+}
+
 void ElementsState::pull_from_f90_pointers (CF90Ptr& state_v,         CF90Ptr& state_w_i,
                                             CF90Ptr& state_vtheta_dp, CF90Ptr& state_phinh_i,
                                             CF90Ptr& state_dp3d,      CF90Ptr& state_ps_v) {
