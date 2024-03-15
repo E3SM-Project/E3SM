@@ -379,6 +379,11 @@ contains
     crit_onset_swi=PhenolParamsInst%crit_onset_swi
     soilpsi_on=PhenolParamsInst%soilpsi_on
 
+    ! TRS - well, crit_onset_fdd is not actually set anywhere else, so
+    ! maybe somebody forgot?  Anyway, without this it's nan, which
+    ! causes debugger issues.
+    crit_onset_fdd=PhenolParamsInst%crit_onset_fdd
+
     ! offset parameters
     crit_offset_fdd=PhenolParamsInst%crit_offset_fdd
     crit_offset_swi=PhenolParamsInst%crit_offset_swi

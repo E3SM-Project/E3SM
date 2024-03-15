@@ -1,0 +1,126 @@
+#! /usr/bin/env perl
+use strict;
+
+if ($#ARGV == -1) {
+    die " ERROR gcam.buildlib: must specify a caseroot input argument";
+}
+my ($CASEROOT) = @ARGV;
+chdir "${CASEROOT}";
+
+my $CASEBUILD = `./xmlquery CASEBUILD -value`;
+my $SRCROOT  = `./xmlquery SRCROOT  -value`;
+my $CASETOOLS = `./xmlquery CASETOOLS -value`;
+my $OBJROOT   = `./xmlquery OBJROOT   -value`;
+my $LIBROOT   = `./xmlquery LIBROOT   -value`;
+my $GMAKE_J   = `./xmlquery GMAKE_J   -value`;
+my $GMAKE     = `./xmlquery GMAKE     -value`;
+my $MAKE_ARGS = `./Tools/get_standard_makefile_args`;
+chomp($MAKE_ARGS);
+
+chdir "${OBJROOT}/iac/obj";
+
+# Build the list of paths to run over our compilation with
+open(file,">tmp_filepath") or die "ERROT: gcam.buildlib could not open file Filepath to write";
+print file "$CASEROOT/SourceMods/src.gcam \n";
+
+# This is absolutely not the right way to do this, but I currently do not
+# know how to include module includes in our build.  So this will add the
+# xerces, xqilla, and boost includes into the build path.
+#print file "/blues/gpfs/home/ac.shippert/local/include \n";
+#print file "/blues/gpfs/home/ac.shippert/local/src/boost_1_70_0 \n";
+
+# For compy:
+print file "$SRCROOT/components/gcam/src/iac/gcam/util/boost_intel_19.0.3/include \n";
+#print file "/qfs/people/crai556/xerces_intel_19.0.3/include \n";
+
+print file "$SRCROOT/components/gcam/src/iac/gcam/util/boost_intel_19.0.3 \n";
+#print file "/qfs/people/crai556/xerces_intel_19.0.3 \n";
+
+# added eigen in the util directory
+print file "$SRCROOT/components/gcam/src/iac/gcam/util/eigen-3.4.0 \n"
+
+# Well, it seems that anything we put in tmp_filepath is both scanned for
+# source code files AND included in a -I$dir flag, so we just need to list all
+# the directories with source code plus the top level gcam/cvs/objects
+# directory, and the include paths should be used, then.
+print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects \n";
+
+# Does the order here matter?  This stuff is used by gcam_comp_mod.F90, so
+# we'll do it first.
+print file "$SRCROOT/components/gcam/src/iac/coupling \n";
+
+# This looks ike the kind of thing that should be in a config file, but
+# for now lets just verify that it works. As we go to a new version of gcam
+# all this stuff will probably be in a different set of directories
+print file "$SRCROOT/components/gcam/src/iac/gcam/cpl/source \n";
+print file "$SRCROOT/components/gcam/src/iac/gcam/cpl/include \n";
+
+# Turn off hector - this currently doesn't work, but it's most of what you
+# need to do to turn it back on.
+#print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector/headers \n";
+#print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector/headers/components \n";
+#print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector/headers/input \n";
+#print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector/headers/data \n";
+#print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector/headers/models \n";
+#print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector/headers/visitors \n";
+#print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector/headers/core \n";
+
+#print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector/source \n";
+#print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector/source/components \n";
+#print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector/source/core \n";
+#print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector/source/data \n";
+#print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector/source/input \n";
+#print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector/source/models \n";
+#print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/climate/source/hector/source/visitors \n";
+
+print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects \n";
+print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/util/logger/source \n";
+print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/util/database/source \n";
+print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/util/base/source \n";
+print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/util/curves/source \n";
+print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/sectors/source \n";
+print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/reporting/source \n";
+print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/land_allocator/source \n";
+print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/investment/source \n";
+print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/consumers/source \n";
+print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/ccarbon_model/source \n";
+print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/policy/source \n";
+print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/agLU/fortran_source \n";
+print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/target_finder/source \n";
+print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/functions/source \n";
+print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/demographics/source \n";
+print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/resources \n";
+print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/resources/source \n";
+print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/marketplace/source \n";
+print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/containers/source \n";
+print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/technologies/source \n";
+print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/climate/source \n";
+print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/solution/util/source \n";
+print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/solution/solvers/source \n";
+print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/emissions/source \n";
+print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/ccsmcpl/source \n";
+
+
+
+# I do not have the glm code in here yet.
+#print file "$SRCROOT/components/gcam/src/iac/glm \n";
+print file "$SRCROOT/components/gcam/src/cpl \n";
+close(file);
+
+if (-f "Filepath") {
+    #my $sysmod = "cmp -s tmp_filepath Filepath || mv -f tmp_filepath Filepath ";
+    my $sysmod = "cp -f tmp_filepath Filepath ";
+    system($sysmod) == 0 or die "ERROR: gcam.buildlib $sysmod failed: $?\n";
+} else {
+    #my $sysmod = "mv -f tmp_filepath Filepath ";
+    my $sysmod = "cp -f tmp_filepath Filepath ";
+    system($sysmod) == 0 or die "ERROR: gcam.buildlib $sysmod failed: $?\n";
+}
+
+my $sysmod = "$GMAKE complib -j $GMAKE_J MODEL=gcam COMPLIB=$LIBROOT/libiac.a -f $CASETOOLS/Makefile ${MAKE_ARGS} NDEBUG=TRUE";
+system($sysmod) == 0 or die "ERROR: gcam.buildlib $sysmod failed: $?\n";
+
+exit(0);
+
+
+

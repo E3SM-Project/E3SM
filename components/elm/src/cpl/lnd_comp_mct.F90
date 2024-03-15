@@ -43,7 +43,7 @@ contains
     use shr_kind_mod     , only : SHR_KIND_CL
     use clm_time_manager , only : get_nstep, get_step_size, set_timemgr_init, set_nextsw_cday
     use elm_initializeMod, only : initialize1, initialize2, initialize3
-    use elm_instMod      , only : lnd2atm_vars, lnd2glc_vars
+    use elm_instMod      , only : lnd2atm_vars, lnd2glc_vars, lnd2iac_vars
     use elm_instance     , only : elm_instance_init
     use elm_varctl       , only : finidat,single_column, elm_varctl_set, iulog, noland
     use elm_varctl       , only : inst_index, inst_suffix, inst_name, precip_downscaling_method
@@ -66,6 +66,7 @@ contains
     use spmdMod          , only : masterproc, npes, spmd_init
     use elm_varctl       , only : nsrStartup, nsrContinue, nsrBranch, use_lnd_rof_two_way
     use elm_cpl_indices  , only : elm_cpl_indices_set
+    use elm_varctl       , only : elm_varctl_set_iac_active_only, iac_active
     use perf_mod         , only : t_startf, t_stopf
     use mct_mod
     use ESMF
@@ -90,6 +91,7 @@ contains
     logical  :: verbose_taskmap_output               ! true then use verbose task-to-node mapping format
     logical  :: atm_aero                             ! Flag if aerosol data sent from atm model
     logical  :: atm_present                          ! Flag if atmosphere model present
+    logical  :: iac_present     ! Flag if iac model present
     real(r8) :: scmlat                               ! single-column latitude
     real(r8) :: scmlon                               ! single-column longitude
     real(r8) :: nextsw_cday                          ! calday from clock of next radiation computation
@@ -183,13 +185,13 @@ contains
              ' pes participating in computation of ELM instance #', &
              trim(adjustl(c_inst_index))
           call shr_sys_flush(iulog)
-       endif
+    endif
 
-       call t_startf("shr_taskmap_write")
-       call shr_taskmap_write(iulog, mpicom_lnd,                    &
-                              'LND #'//trim(adjustl(c_inst_index)), &
+    call t_startf("shr_taskmap_write")
+    call shr_taskmap_write(iulog, mpicom_lnd,                    &
+                           'LND #'//trim(adjustl(c_inst_index)), &
                               verbose=verbose_taskmap_output        )
-       call t_stopf("shr_taskmap_write")
+    call t_stopf("shr_taskmap_write")
 
     endif
 
@@ -239,6 +241,10 @@ contains
 
     use_lnd_rof_two_way = lnd_rof_two_way
     
+    ! Determine if iac is active, and set flag
+    call seq_infodata_GetData(infodata, iac_present=iac_present)
+    call elm_varctl_set_iac_active_only(iac_present)
+
     ! Read namelist, grid and surface data
 
     call initialize1( )
@@ -295,9 +301,9 @@ contains
     end if
 
     ! Create land export state 
-
-    if (atm_present) then 
-      call lnd_export(bounds, lnd2atm_vars, lnd2glc_vars, l2x_l%rattr)
+    ! avd - note that lnd2iac_vars is not set yet for restart
+    if (atm_present .or. iac_present) then 
+      call lnd_export(bounds, lnd2atm_vars, lnd2glc_vars, lnd2iac_vars, l2x_l%rattr)
     endif
 
     ! Fill in infodata settings
@@ -345,6 +351,7 @@ contains
     ! !USES:
     use shr_kind_mod    ,  only : r8 => shr_kind_r8
     use elm_instMod     , only : lnd2atm_vars, atm2lnd_vars, lnd2glc_vars, glc2lnd_vars
+    use elm_instMod     , only : lnd2iac_vars, iac2lnd_vars
     use elm_driver      ,  only : elm_drv
     use clm_time_manager,  only : get_curr_date, get_nstep, get_curr_calday, get_step_size
     use clm_time_manager,  only : advance_timestep, set_nextsw_cday,update_rad_dtime
@@ -454,7 +461,8 @@ contains
     ! Map to elm (only when state and/or fluxes need to be updated)
 
     call t_startf ('lc_lnd_import')
-    call lnd_import( bounds, x2l_l%rattr, atm2lnd_vars, glc2lnd_vars, lnd2atm_vars)
+    call lnd_import( bounds, x2l_l%rattr, atm2lnd_vars, glc2lnd_vars, lnd2atm_vars, &
+                     iac2lnd_vars)
     call t_stopf ('lc_lnd_import')
 
     ! Use infodata to set orbital values if updated mid-run
@@ -512,7 +520,7 @@ contains
 
 #ifndef CPL_BYPASS       
        call t_startf ('lc_lnd_export')
-       call lnd_export(bounds, lnd2atm_vars, lnd2glc_vars, l2x_l%rattr)
+       call lnd_export(bounds, lnd2atm_vars, lnd2glc_vars, lnd2iac_vars, l2x_l%rattr)
        call t_stopf ('lc_lnd_export')
 #endif
 

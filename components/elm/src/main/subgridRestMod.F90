@@ -15,11 +15,11 @@ module subgridRestMod
   use pio                , only : file_desc_t
   use ncdio_pio          , only : ncd_int, ncd_double
   use GetGlobalValuesMod , only : GetGlobalIndexArray
-  use GridcellType       , only : grc_pp
+  use GridcellType       , only : grc_pp                
   use TopounitType       , only : top_pp
-  use LandunitType       , only : lun_pp
-  use ColumnType         , only : col_pp
-  use VegetationType     , only : veg_pp
+  use LandunitType       , only : lun_pp                
+  use ColumnType         , only : col_pp                
+  use VegetationType          , only : veg_pp                
   use perf_mod           , only : t_startf, t_stopf
   use restUtilMod
 
@@ -141,7 +141,7 @@ contains
          interpinic_flag='skip', readvar=readvar, data=igarr)
 
     deallocate(rgarr,igarr)
-    
+
     !------------------------------------------------------------------
     ! Write topounit info
     !------------------------------------------------------------------
@@ -201,7 +201,7 @@ contains
          dim1name='landunit',                                                      &
          long_name='landunit longitude', units='degrees_east',                     &
          interpinic_flag='skip', readvar=readvar, data=rlarr)
- 
+    
     do l=bounds%begl,bounds%endl
        rlarr(l) = grc_pp%latdeg(lun_pp%gridcell(l))
     enddo
@@ -218,9 +218,9 @@ contains
          long_name='2d longitude index of corresponding landunit',                 &
          interpinic_flag='skip', readvar=readvar, data=ilarr)
 
-     do l=bounds%begl,bounds%endl
-        ilarr(l) = (ldecomp%gdc2glo(lun_pp%gridcell(l))-1)/ldomain%ni + 1
-     enddo
+    do l=bounds%begl,bounds%endl
+       ilarr(l) = (ldecomp%gdc2glo(lun_pp%gridcell(l))-1)/ldomain%ni + 1
+    end do
     call restartvar(ncid=ncid, flag=flag, varname='land1d_jxy', xtype=ncd_int,     &
          dim1name='landunit',                                                      &
          long_name='2d latitude index of corresponding landunit',                  &
@@ -300,7 +300,7 @@ contains
          dim1name='column',                                                               &
          long_name='gridcell index of corresponding column',                              &
          interpinic_flag='skip', readvar=readvar, data=icarr)
-    
+
     icarr = GetGlobalIndexArray(col_pp%topounit(bounds%begc:bounds%endc), bounds%begc, bounds%endc, elmlevel=namet)
     call restartvar(ncid=ncid, flag=flag, varname='cols1d_topounit_index', xtype=ncd_int, &
          dim1name='column',                                                               &
@@ -332,7 +332,7 @@ contains
        else
           icarr(c) = 0
        end if
-    enddo
+    end do
     call restartvar(ncid=ncid, flag=flag, varname='cols1d_active', xtype=ncd_int,   &
          dim1name='column',                                                         &
          long_name='column active flag (1=active, 0=inactive)', units=' ',          &
@@ -383,7 +383,7 @@ contains
          dim1name='pft',                                                                  &
          long_name='gridcell index of corresponding pft',                                 &
          interpinic_flag='skip', readvar=readvar, data=iparr)
-    
+
     iparr = GetGlobalIndexArray(veg_pp%topounit(bounds%begp:bounds%endp), bounds%begp, bounds%endp, elmlevel=namet)
     call restartvar(ncid=ncid, flag=flag, varname='pfts1d_topounit_index', xtype=ncd_int, &
          dim1name='pft',                                                                  &
@@ -456,6 +456,8 @@ contains
     !
     ! !USES:
     !
+    use topounit_varcon, only : max_topounits
+    !
     ! !ARGUMENTS:
     type(bounds_type), intent(in)    :: bounds ! bounds
     type(file_desc_t), intent(inout) :: ncid   ! netCDF dataset id
@@ -476,6 +478,16 @@ contains
          dim1name='landunit',                                                      &
          long_name='landunit weight relative to corresponding gridcell',           &
          interpinic_flag='skip', readvar=readvar, data=lun_pp%wtgcell)
+
+    ! this ensures land consistency with restart, rather than whatever fsurdat
+    !    was used
+    ! this is because weights are based on lun_pp%wttopounit now, and not on
+    !    lun_pp%wtgcell, but this hasn't been updated here
+    ! see issue 4942 for details on the proper fix, as this is only for one
+    !    topounit per grid cell 
+    if (max_topounits == 1) then
+     lun_pp%wttopounit = lun_pp%wtgcell
+    end if
 
     call restartvar(ncid=ncid, flag=flag, varname='cols1d_wtxy', xtype=ncd_double,  &
          dim1name='column',                                                         &
@@ -615,6 +627,7 @@ contains
       !
       ! !USES:
       use elm_varctl          , only : nsrest, nsrContinue, use_fates
+      use elm_varctl          , only : iac_active
       use dynSubgridControlMod, only : get_do_transient_pfts
       !
       ! !ARGUMENTS:
@@ -638,6 +651,9 @@ contains
       else if (use_fates) then
          ! Don't check weights for a ed case, because the weights will almost certainly
          ! differ from the surface dataset in this case
+         do_check_weights = .false.
+      else if (iac_active) then
+         ! Don't check weights if iac is active
          do_check_weights = .false.
       else
          do_check_weights = .true.

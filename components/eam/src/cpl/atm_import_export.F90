@@ -1,11 +1,12 @@
 module atm_import_export
 
   use shr_kind_mod  , only: r8 => shr_kind_r8, cl=>shr_kind_cl
+  use cam_logfile      , only: iulog
   implicit none
 
 contains
 
-  subroutine atm_import( x2a, cam_in, restart_init )
+  subroutine atm_import( x2a, cam_in, restart_init , mon_spec)
 
     !-----------------------------------------------------------------------
     use cam_cpl_indices
@@ -25,6 +26,8 @@ contains
     real(r8)      , intent(in)    :: x2a(:,:)
     type(cam_in_t), intent(inout) :: cam_in(begchunk:endchunk)
     logical, optional, intent(in) :: restart_init
+    ! For iac monthly coupling fields
+    integer, intent(in), optional :: mon_spec        ! Simulation month
     !
     ! Local variables
     !		
@@ -88,7 +91,7 @@ contains
           cam_in(c)%u10(i)       =  x2a(index_x2a_Sx_u10,   ig)
           cam_in(c)%icefrac(i)   =  x2a(index_x2a_Sf_ifrac, ig)  
           cam_in(c)%ocnfrac(i)   =  x2a(index_x2a_Sf_ofrac, ig)
-          cam_in(c)%landfrac(i)  =  x2a(index_x2a_Sf_lfrac, ig)
+	  cam_in(c)%landfrac(i)  =  x2a(index_x2a_Sf_lfrac, ig)
           if ( associated(cam_in(c)%ram1) ) &
                cam_in(c)%ram1(i) =  x2a(index_x2a_Sl_ram1 , ig)
           if ( associated(cam_in(c)%fv) ) &
@@ -123,6 +126,18 @@ contains
           if (index_x2a_Fall_fco2_lnd /= 0) then
              cam_in(c)%fco2_lnd(i) = -x2a(index_x2a_Fall_fco2_lnd,ig)
           end if
+
+          ! TRS atm_import is called during init prior to any iac
+          ! coupling, so we look for the optional month argument which
+          ! we only use during atm run
+          if (present(mon_spec)) then 
+             if (index_x2a_Fazz_co2sfc_iac(mon_spec) /= 0) then
+                ! TRS - iac co2 coupling
+                ! For now, just use the monthly value, without any
+                ! interpolation.  This will change with the rebase.
+                !cam_in(c)%fco2_iac(i) = -x2a(index_x2a_Fazz_co2sfc_iac(mon_spec),ig)
+             endif
+          endif
           if (index_x2a_Faoo_fco2_ocn /= 0) then
              cam_in(c)%fco2_ocn(i) = -x2a(index_x2a_Faoo_fco2_ocn,ig)
           end if
@@ -133,7 +148,7 @@ contains
           ig=ig+1
 
        end do
-    end do
+    end do 
 
     ! Get total co2 flux from components,
     ! Note - co2_transport determines if cam_in(c)%cflx(i,c_i(1:4)) is allocated
@@ -179,7 +194,9 @@ contains
              end if
              
              ! co2 flux from fossil fuel
-             if (co2_readFlux_fuel) then
+             if (index_x2a_Fazz_co2sfc_iac(1) /= 0) then
+             !   cam_in(c)%cflx(i,c_i(2)) = cam_in(c)%fco2_iac(i)
+             else if (co2_readFlux_fuel) then
 !++BEH  vvv old implementation vvv
 !                cam_in(c)%cflx(i,c_i(2)) = data_flux_fuel%co2flx(i,c)
 !       ^^^ old implementation ^^^   ///    vvv new implementation vvv
@@ -259,7 +276,7 @@ contains
           a2x(index_a2x_Sa_pslv   ,ig) = cam_out(c)%psl(i)
           a2x(index_a2x_Sa_z      ,ig) = cam_out(c)%zbot(i)   
           a2x(index_a2x_Sa_u      ,ig) = cam_out(c)%ubot(i)   
-          a2x(index_a2x_Sa_v      ,ig) = cam_out(c)%vbot(i)
+          a2x(index_a2x_Sa_v      ,ig) = cam_out(c)%vbot(i)   
           if (linearize_pbl_winds) then
              a2x(index_a2x_Sa_wsresp ,ig) = cam_out(c)%wsresp(i)
              a2x(index_a2x_Sa_tau_est,ig) = cam_out(c)%tau_est(i)

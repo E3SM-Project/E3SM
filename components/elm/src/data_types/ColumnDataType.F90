@@ -27,7 +27,7 @@ module ColumnDataType
   use elm_varctl      , only : use_elm_interface, use_pflotran, pf_cmode
   use elm_varctl      , only : hist_wrtch4diag, use_century_decomp
   use elm_varctl      , only : get_carbontag, override_bgc_restart_mismatch_dump
-  use elm_varctl      , only : pf_hmode, nu_com
+  use elm_varctl      , only : pf_hmode, nu_com, use_crop
   use ch4varcon       , only : allowlakeprod
   use pftvarcon       , only : VMAX_MINSURF_P_vr, KM_MINSURF_P_vr, pinit_beta1, pinit_beta2
   use soilorder_varcon, only : smax, ks_sorption
@@ -3068,8 +3068,13 @@ contains
             this%totlitc(c)  + &
             this%totsomc(c)  + &
             this%totprodc(c) + &
-            this%ctrunc(c)   + &
-            this%cropseedc_deficit(c)
+            this%ctrunc(c)
+
+       if (use_crop) then 
+          ! TRS we are seeing NaNs in cropseed deficit without the crop
+          ! model, so we need to break these out
+          this%totcolc(c) = this%totcolc(c) + this%cropseedc_deficit(c)
+       endif
 
        this%totabgc(c) =       &
             this%totprodc(c) + &
@@ -4033,8 +4038,13 @@ contains
             this%sminn(c) + &
             this%totprodn(c) + &
             this%ntrunc(c)+ &
-            this%plant_n_buffer(c) + &
-            this%cropseedn_deficit(c)
+            this%plant_n_buffer(c)
+
+       if (use_crop) then 
+          ! TRS we are seeing NaNs in cropseed deficit without the crop
+          ! model, so we need to break these out
+          this%totcoln(c) = this%totcoln(c) + this%cropseedn_deficit(c)
+       endif
 
        this%totabgn (c) =  &
             this%totpftn(c) + &
@@ -5075,8 +5085,13 @@ contains
            this%solutionp(c) + &
            this%labilep(c) + &
            this%secondp(c) + &
-           this%ptrunc(c) + &
-           this%cropseedp_deficit(c)
+           this%ptrunc(c)
+
+       if (use_crop) then 
+          ! TRS we are seeing NaNs in cropseed deficit without the crop
+          ! model, so we need to break these out
+          this%totcolp(c) = this%totcolp(c) + this%cropseedp_deficit(c)
+       endif 
    end do
 
   end subroutine col_ps_summary

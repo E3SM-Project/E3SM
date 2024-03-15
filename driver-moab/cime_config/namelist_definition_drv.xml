@@ -3879,6 +3879,37 @@
     </values>
   </entry>
 
+ <entry id="lnd2iac_smapname"    modify_via_xml="LND2IAC_SMAPNAME">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>                                                                                                                                                                   
+      lnd to iac mapping file for states                                                                                                                                     
+    </desc>
+    <values>
+      <value>$LND2IAC_SMAPNAME</value>
+    </values>
+ </entry>
+
+  <entry id="lnd2iac_smaptype"    modify_via_xml="LND2IAC_SMAPTYPE">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_maps</group>
+    <desc>                                                                                                                                                                   
+      The type of mapping desired, either "source" or "destination" mapping.                                                                                                 
+      X is associated with rearrangement of the source grid to the                                                                                                           
+      destination grid and then local mapping.  Y is associated with mapping                                                                                                 
+      on the source grid and then rearrangement and sum to the destination                                                                                                   
+      grid.                                                                                                                                                                  
+    </desc>
+    <values>
+      <value>$LND2IAC_SMAPTYPE</value>
+      <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
+
   <entry id="rof2lnd_fmapname"    modify_via_xml="ROF2LND_FMAPNAME">
     <type>char</type>
     <category>mapping</category>
@@ -4582,6 +4613,36 @@
     </desc>
     <values>
       <value>Buildconf/camconf/drv_flds_in,Buildconf/clmconf/drv_flds_in</value>
+    </values>
+  </entry>
+
+  <entry id="atm2iac_smapname"    modify_via_xml="ATM2IAC_SMAPNAME">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      atm to iac mapping file for states
+    </desc>
+    <values>
+      <value>$ATM2IAC_SMAPNAME</value>
+    </values>
+  </entry>
+
+  <entry id="atm2iac_smaptype"    modify_via_xml="ATM2IAC_SMAPTYPE">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_maps</group>
+    <desc>
+      The type of mapping desired, either "source" or "destination" mapping.
+      X is associated with rearrangement of the source grid to the
+      destination grid and then local mapping.  Y is associated with mapping
+      on the source grid and then rearrangement and sum to the destination
+      grid.
+    </desc>
+    <values>
+      <value>$ATM2IAC_SMAPTYPE</value>
+      <value bfbflag="on">X</value>
     </values>
   </entry>
 

@@ -23,7 +23,6 @@ module initGridCellsMod
   use VegetationType , only : veg_pp                
   use initSubgridMod , only : elm_ptrs_compdown, elm_ptrs_check
   use initSubgridMod , only : add_topounit, add_landunit, add_column, add_patch
-  !
   ! !PUBLIC TYPES:
   implicit none
   private

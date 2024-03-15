@@ -16,6 +16,7 @@ module elm_initializeMod
   use elm_varsur       , only : wt_lunit, urban_valid, wt_nat_patch, wt_cft, wt_glc_mec, topo_glc_mec,firrig,f_surf,f_grd 
   use elm_varsur       , only : fert_cft
   use elm_varsur       , only : wt_tunit, elv_tunit, slp_tunit,asp_tunit,num_tunit_per_grd
+  use elm_varctl       , only : iac_active
   use perf_mod         , only : t_startf, t_stopf
   !use readParamsMod    , only : readParameters
   use readParamsMod    , only : readSharedParameters, readPrivateParameters
@@ -225,7 +226,8 @@ contains
     if (masterproc) then
        call domain_check(ldomain)
     endif
-    ldomain%mask = 1  !!! TODO - is this needed?
+    ! avd - this doesn't appear to do anything and probably shouldn't
+    !ldomain%mask = 1  !!! TODO - is this needed?
 
     ! Get topo if appropriate (set ldomain%topo)
 

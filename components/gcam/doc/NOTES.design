@@ -1,0 +1,70 @@
+* Create .../components/iac area to hold new component.
+
+* Native gcam code in .../components/iac/src/iac
+
+1 New iac-specific coupling code in ../components/iac/src/cpl:
+
+a iac_comp_mct.F90: Thin interface to mct routines
+
+  New public functions:
+
+     iac_init_mct()
+     iac_run_mct()
+     iac_final_mct()
+
+  Internal functions:
+     ...
+
+2 Modify existing coupling code:
+
+a seq_comm_mct: variables and indeces
+
+b seq_timemgr_mod: alarm for iac
+     seq_timemgr_alarm_iacrun
+
+c seq_diag_mct: diagnostics for iac
+     seq_diag_iac_mct
+
+d seq_flds_mod: 
+     seq_flds_z2x_fluxes
+     seq_flds_x2z_fluxes
+
+e component_type_mod: iac component type
+
+f New file:
+     prep_iac_mod: to prep iac component
+        prep_iac_init()     
+
+? fractions_zx, iacrun_alarm, EClock_z
+
+g cesm_comp_mod.F90: mods to add in iac component
+     cesm_pre_init1() - init communications
+     cesm_pre_init2() - infodata
+     cesm_init(): calls include and setup iac component
+     cesm_run():
+        Init with iac variables and arrays
+	Accumulate and average lnd inputs on lnd time scale
+	Run iac on iac_alarm scale
+	Post output to coupler
+	Functions in atm and lnd recv sections to update from iac
+
+h new functions:
+     prep_iac_calc_l2r_rx() - grab inputs vars from land model
+     prep_iac_accum_avg() - average accumulated inputs
+
+? 
+i seq_rest_write()
+  seq_hist_write()
+  seq_hist_write_avg() 
+  seq_rest_read()- modifications to include iac 
+	
+3 Modifications to land and atm model code:
+
+a New functions:
+     prep_lnd_calc_z2x_lx() - update land model with iac output
+     prep_atm_calc_z2x_ax() - update atm model with iac output
+
+
+
+     
+

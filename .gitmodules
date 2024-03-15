@@ -32,6 +32,7 @@
 	path = cime
 	url = git@github.com:ESMCI/cime.git
 	branch = master
+        ignore = dirty
 [submodule "externals/YAKL"]
 	path = externals/YAKL
 	url = git@github.com:mrnorman/YAKL.git
@@ -71,3 +72,10 @@
 	path = components/ww3/src/WW3
 	url = git@github.com:E3SM-Project/WW3.git
 	branch = e3sm
+[submodule "gcam"]
+	path = components/gcam/src
+	url = git@github.com:E3SM-Project/giac
+	branch = working
+[submodule "giac"]
+	path = giac
+	url = git@github.com:E3SM-Project/giac

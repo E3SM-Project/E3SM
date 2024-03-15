@@ -64,7 +64,8 @@ module seq_rest_mod
   use prep_glc_mod,    only: prep_glc_get_l2gacc_lx_cnt
   use prep_glc_mod,    only: prep_glc_get_x2gacc_gx
   use prep_glc_mod,    only: prep_glc_get_x2gacc_gx_cnt
-
+  use prep_iac_mod,    only: prep_iac_get_l2zacc_lx
+  use prep_iac_mod,    only: prep_iac_get_l2zacc_lx_cnt
   use prep_aoflux_mod, only: prep_aoflux_get_xao_ox
   use prep_aoflux_mod, only: prep_aoflux_get_xao_ax
 
@@ -135,6 +136,8 @@ module seq_rest_mod
   integer        , pointer :: o2racc_ox_cnt
   type(mct_aVect), pointer :: l2gacc_lx(:)
   integer        , pointer :: l2gacc_lx_cnt
+  type(mct_aVect), pointer :: l2zacc_lx(:)
+  integer        , pointer :: l2zacc_lx_cnt
   type(mct_aVect), pointer :: x2gacc_gx(:)
   integer        , pointer :: x2gacc_gx_cnt
   type(mct_aVect), pointer :: xao_ox(:)
@@ -249,6 +252,14 @@ contains
           call seq_io_read(rest_file, gsmap, l2gacc_lx, 'l2gacc_lx')
           call seq_io_read(rest_file, l2gacc_lx_cnt ,'l2gacc_lx_cnt')
        end if
+       if (lnd_present .and. iac_present) then
+          ! note that iac is always prognostic if present
+          gsmap         => component_get_gsmap_cx(lnd(1))
+          l2zacc_lx     => prep_iac_get_l2zacc_lx()
+          l2zacc_lx_cnt => prep_iac_get_l2zacc_lx_cnt()
+          call seq_io_read(rest_file, gsmap, l2zacc_lx, 'l2zacc_lx')
+          call seq_io_read(rest_file, l2zacc_lx_cnt ,'l2zacc_lx_cnt')
+       end if
 
        if (ocn_c2_glcshelf) then
           gsmap         => component_get_gsmap_cx(glc(1))
@@ -293,6 +304,8 @@ contains
           call seq_io_read(rest_file, wav, 'c2x', 'w2x_wx')
        endif
        if (iac_present) then
+          ! avd: not sure these are needed; they are from the previous year
+          !    and get updated at the beginning of the run
           gsmap => component_get_gsmap_cx(iac(1))
           call seq_io_read(rest_file, gsmap, fractions_zx, 'fractions_zx')
           call seq_io_read(rest_file, iac, 'c2x', 'z2x_zx')
@@ -583,6 +596,16 @@ contains
              call seq_io_write(rest_file, l2gacc_lx_cnt, 'l2gacc_lx_cnt', &
                   whead=whead, wdata=wdata)
           end if
+          if (lnd_present .and. iac_present) then
+             ! note that iac is always prognostic if present
+             gsmap         => component_get_gsmap_cx(lnd(1))
+             l2zacc_lx     => prep_iac_get_l2zacc_lx()
+             l2zacc_lx_cnt =>  prep_iac_get_l2zacc_lx_cnt()
+             call seq_io_write(rest_file, gsmap, l2zacc_lx, 'l2zacc_lx', &
+                  whead=whead, wdata=wdata)
+             call seq_io_write(rest_file, l2zacc_lx_cnt, 'l2zacc_lx_cnt', &
+                  whead=whead, wdata=wdata)
+          end if
           if (ocn_c2_glcshelf) then
              gsmap         => component_get_gsmap_cx(glc(1))
              x2gacc_gx => prep_glc_get_x2gacc_gx()
@@ -643,6 +666,8 @@ contains
              gsmap  => component_get_gsmap_cx(iac(1))
              call seq_io_write(rest_file, gsmap, fractions_zx, 'fractions_zx', &
                   whead=whead, wdata=wdata)
+             ! avd: not sure these are needed; they are from the previous year
+             !    and get updated at the beginning of the run
              call seq_io_write(rest_file, iac, 'c2x', 'z2x_zx', &
                   whead=whead, wdata=wdata)
           endif

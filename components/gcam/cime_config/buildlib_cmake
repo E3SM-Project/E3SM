@@ -1,0 +1,93 @@
+#!/usr/bin/env python3
+
+"""
+build gcam library
+"""
+import sys, os
+
+_CIMEROOT = os.environ.get("CIMEROOT")
+if _CIMEROOT is None:
+    raise SystemExit("ERROR: must set CIMEROOT environment variable")
+
+_LIBDIR = os.path.join(_CIMEROOT, "scripts", "Tools")
+sys.path.append(_LIBDIR)
+
+from standard_script_setup import *
+from CIME.buildlib         import parse_input
+from CIME.case             import Case
+from CIME.utils            import expect, run_bld_cmd_ensure_logging, safe_copy
+
+logger = logging.getLogger(__name__)
+
+###############################################################################
+def buildlib(bldroot, installpath, case):
+###############################################################################
+    casebuild = case.get_value("CASEBUILD")
+    caseroot  = case.get_value("CASEROOT")
+    srcroot   = case.get_value("SRCROOT")
+
+    #-------------------------------------------------------
+    # create Filepath in bldroot, unlike most other components,
+    # We'll make our filepaths right here, to include just the
+    # directories we need
+    #-------------------------------------------------------
+
+    # Some of this is hardcoded to work on compy only - boost and xerces
+    filepaths = \
+ """{caseroot}/SourceMods/src.gcam
+{srcroot}/components/gcam/src/iac/gcam/util/boost_intel_19.0.3/include
+{srcroot}/components/gcam/src/iac/gcam/util/boost_intel_19.0.3
+{srcroot}/components/gcam/src/iac/gcam/util/eigen-3.4.0
+{srcroot}/components/gcam/src/iac/gcam/cvs/objects
+{srcroot}/components/gcam/src/iac/coupling
+{srcroot}/components/gcam/src/iac/gcam/cpl/source
+{srcroot}/components/gcam/src/iac/gcam/cpl/include
+{srcroot}/components/gcam/src/iac/gcam/cvs/objects
+{srcroot}/components/gcam/src/iac/gcam/cvs/objects/util/logger/source
+{srcroot}/components/gcam/src/iac/gcam/cvs/objects/util/database/source
+{srcroot}/components/gcam/src/iac/gcam/cvs/objects/util/base/source
+{srcroot}/components/gcam/src/iac/gcam/cvs/objects/util/curves/source
+{srcroot}/components/gcam/src/iac/gcam/cvs/objects/sectors/source
+{srcroot}/components/gcam/src/iac/gcam/cvs/objects/reporting/source
+{srcroot}/components/gcam/src/iac/gcam/cvs/objects/land_allocator/source
+{srcroot}/components/gcam/src/iac/gcam/cvs/objects/investment/source
+{srcroot}/components/gcam/src/iac/gcam/cvs/objects/consumers/source
+{srcroot}/components/gcam/src/iac/gcam/cvs/objects/ccarbon_model/source
+{srcroot}/components/gcam/src/iac/gcam/cvs/objects/policy/source
+{srcroot}/components/gcam/src/iac/gcam/cvs/objects/agLU/fortran_source
+{srcroot}/components/gcam/src/iac/gcam/cvs/objects/target_finder/source
+{srcroot}/components/gcam/src/iac/gcam/cvs/objects/functions/source
+{srcroot}/components/gcam/src/iac/gcam/cvs/objects/demographics/source
+{srcroot}/components/gcam/src/iac/gcam/cvs/objects/resources
+{srcroot}/components/gcam/src/iac/gcam/cvs/objects/resources/source
+{srcroot}/components/gcam/src/iac/gcam/cvs/objects/marketplace/source
+{srcroot}/components/gcam/src/iac/gcam/cvs/objects/containers/source
+{srcroot}/components/gcam/src/iac/gcam/cvs/objects/technologies/source
+{srcroot}/components/gcam/src/iac/gcam/cvs/objects/climate/source
+{srcroot}/components/gcam/src/iac/gcam/cvs/objects/solution/util/source
+{srcroot}/components/gcam/src/iac/gcam/cvs/objects/solution/solvers/source
+{srcroot}/components/gcam/src/iac/gcam/cvs/objects/emissions/source
+{srcroot}/components/gcam/src/iac/gcam/cvs/objects/ccsmcpl/source
+{srcroot}/components/gcam/src/iac/glm
+{srcroot}/components/gcam/src/cpl
+""".format(caseroot=caseroot, srcroot=srcroot)
+
+    with open(os.path.join(casebuild, "gcamconf", "Filepath"), "w") as fd:
+        fd.write(filepaths)
+
+    # I hope this is where compiler options go - no
+    # cppdefs = " -Wl,-rpath,$(XDIR) -L$(XDIR) -lxerces-c -lstdc++ \n"
+    with open(os.path.join(casebuild, "gcamconf", "CIME_cppdefs"), "w") as fd:
+        fd.write("")
+
+###############################################################################
+def _main_func():
+###############################################################################
+    caseroot, libroot, bldroot = parse_input(sys.argv)
+    with Case(caseroot, read_only=False) as case:
+        buildlib(bldroot, libroot, case)
+
+###############################################################################
+
+if __name__ == "__main__":
+    _main_func()

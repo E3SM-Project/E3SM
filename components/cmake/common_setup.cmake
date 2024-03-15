@@ -18,7 +18,8 @@ endif()
 # Determine whether any C++ code will be included in the build;
 # currently, C++ code is included if and only if we're linking to the
 # trilinos library or the Albany library.
-set(USE_CXX FALSE)
+#set(USE_CXX FALSE)
+set(USE_CXX TRUE)
 if (USE_TRILINOS OR USE_ALBANY OR USE_KOKKOS)
   set(USE_CXX TRUE)
 endif()
@@ -237,6 +238,9 @@ if (USE_ALBANY)
   file(READ ${ALBANY_PATH}/export_albany.in ALBANY_OUTPUT)
   string(REPLACE "ALBANY_LINK_LIBS=" "" ALBANY_LINK_LIBS "${ALBANY_OUTPUT}")
 endif()
+
+# IAC/GCAM needs the xerces library, but for now I'm hardcoding for
+# compy, and we'll set up the proper configuration variables later.
 
 if (USE_KOKKOS)
   # LB 09/04/20

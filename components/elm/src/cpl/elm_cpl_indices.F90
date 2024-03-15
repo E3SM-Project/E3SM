@@ -20,8 +20,13 @@ module elm_cpl_indices
   !
   integer , public :: glc_nec     ! number of elevation classes for glacier_mec landunits 
                                   ! (from coupler) - must equal maxpatch_glcmec from namelist
-  integer , parameter, private:: glc_nec_max = 100
+  integer , parameter, private :: glc_nec_max = 100
 
+  integer, public :: iac_npft ! Number of veg pfts (index 0 for bare ground)
+  integer , parameter, private :: iac_npft_max = 30  ! just for allocation
+  integer, public :: iac_nharvest ! Number of harvest variables
+  integer , parameter, private :: iac_nharvest_max = 5  ! just for allocation
+  
   ! lnd -> drv (required)
 
   integer, public ::index_l2x_Flrl_rofsur     ! lnd->rtm input liquid surface fluxes
@@ -59,7 +64,7 @@ module elm_cpl_indices
   integer, public ::index_l2x_Fall_flxdst2    ! dust flux size bin 2    
   integer, public ::index_l2x_Fall_flxdst3    ! dust flux size bin 3    
   integer, public ::index_l2x_Fall_flxdst4    ! dust flux size bin 4
-  integer, public ::index_l2x_Fall_flxvoc     ! MEGAN fluxes  
+  integer, public ::index_l2x_Fall_flxvoc     ! MEGAN fluxes
 
   ! In the following, index 0 is bare land, other indices are glc elevation classes
   integer, public ::index_l2x_Sl_tsrf(0:glc_nec_max)   = 0 ! glc MEC temperature
@@ -70,6 +75,11 @@ module elm_cpl_indices
   integer, public ::index_l2x_Fall_methane
 
   integer, public :: nflds_l2x = 0
+
+  ! IAC coupling
+  integer, public ::index_l2x_Sl_hr(0:iac_npft_max)  = 0
+  integer, public ::index_l2x_Sl_npp(0:iac_npft_max)  = 0
+  integer, public ::index_l2x_Sl_pftwgt(0:iac_npft_max)  = 0
 
   ! drv -> lnd (required)
 
@@ -125,7 +135,12 @@ module elm_cpl_indices
   
   integer, public ::index_x2l_Sg_icemask
   integer, public ::index_x2l_Sg_icemask_coupled_fluxes
-  
+
+  ! IAC -> lnd
+  integer, public ::index_x2l_Sz_pct_pft(0:iac_npft_max)  = 0
+  integer, public ::index_x2l_Sz_pct_pft_prev(0:iac_npft_max)  = 0 
+  integer, public ::index_x2l_Sz_harvest_frac(0:iac_nharvest_max)  = 0
+ 
   integer, public :: nflds_x2l = 0
 
   !-----------------------------------------------------------------------
@@ -147,6 +162,7 @@ contains
     use seq_drydep_mod , only: drydep_fields_token, lnd_drydep
     use shr_megan_mod  , only: shr_megan_fields_token, shr_megan_mechcomps_n
     use elm_varctl     , only: use_voc
+    use elm_varpar     , only: numpft
     !
     ! !ARGUMENTS:
     implicit none
@@ -158,8 +174,8 @@ contains
     ! !LOCAL VARIABLES:
     type(mct_aVect)   :: l2x      ! temporary, land to coupler
     type(mct_aVect)   :: x2l      ! temporary, coupler to land
-    integer           :: num 
-    character(len= 2) :: cnum
+    integer           :: num, p
+    character(len= 2) :: cnum, cpft
     character(len=64) :: name
     character(len=32) :: subname = 'elm_cpl_indices_set'  ! subroutine name
     !-----------------------------------------------------------------------
@@ -331,6 +347,38 @@ contains
           index_l2x_Flgl_qice(num) = mct_avect_indexra(l2x,trim(name))
        end do
     end if
+
+    !---------------------------------
+    ! IAC coupling
+    !---------------------------------
+
+    ! avd - this is called before the pft number is set
+    ! and these are indexed from zero on this elm side 
+    ! KVC: this has a different value than in iac. Need to align. Doing manually now
+    iac_npft = 17
+    ! avd - hardcode this for now, but should be able to get it from namelist like
+    ! in the iac
+    iac_nharvest = 5
+    do p = 0,iac_npft-1
+       write(cpft,'(I0)') p
+       cpft=trim(cpft)
+       index_l2x_Sl_hr(p) = mct_avect_indexra(l2x,trim('Sl_hr_pft' // cpft))
+       index_l2x_Sl_npp(p) = mct_avect_indexra(l2x,trim('Sl_npp_pft' // cpft))
+       index_l2x_Sl_pftwgt(p) = mct_avect_indexra(l2x,trim('Sl_pftwgt_pft' // cpft))
+       
+       ! iac pfts to land
+       name = 'Sz_pct_pft' // cpft
+       index_x2l_Sz_pct_pft(p) = mct_avect_indexra(x2l,trim(name))
+       name = 'Sz_pct_pft_prev' // cpft
+       index_x2l_Sz_pct_pft_prev(p) = mct_avect_indexra(x2l,trim(name))
+
+       ! iac harvest to land
+       if (p < iac_nharvest) then
+         name = 'Sz_harvest_frac' // cpft
+         index_x2l_Sz_harvest_frac(p) = mct_avect_indexra(x2l,trim(name))
+       end if
+
+    enddo
 
     call mct_aVect_clean(x2l)
     call mct_aVect_clean(l2x)

@@ -203,7 +203,17 @@ foreach $f (keys %file_includes) {
 
     # Expand
     for ($i = 0; $i <= $#expand_incs; ++$i) {
-	push @expand_incs, @{ $include_depends{$expand_incs[$i]} };
+	#push @expand_incs, @{ $include_depends{$expand_incs[$i]} };
+
+        # The above lead to an infinite loop with gcam, so grab each
+        # element and grep to see if it's already in the list.  Grep should
+        # be pretty fast for arrays of less than ~1000, so this shouldn't
+        # be too slow.
+        foreach $fff (@{ $include_depends{$expand_incs[$i]} }) {
+	  unless (grep( /^$fff$/, @expand_incs ) ) {
+	    push @expand_incs, $fff;
+	  }
+	}
     }
 
     $file_includes{$f} = rm_duplicates(\@expand_incs);

@@ -90,6 +90,7 @@ module seq_timemgr_mod
   !      seq_timemgr_clock_ice
   !      seq_timemgr_clock_glc
   !      seq_timemgr_clock_wav
+  !      seq_timemgr_clock_iac
   !      seq_timemgr_clock_esp
 
   !  alarmnames:
@@ -107,6 +108,7 @@ module seq_timemgr_mod
   !      seq_timemgr_alarm_glcrun
   !      seq_timemgr_alarm_glcrun_avg
   !      seq_timemgr_alarm_wavrun
+  !      seq_timemgr_alarm_iacrun
   !      seq_timemgr_alarm_esprun
   !      seq_timemgr_alarm_ocnnext
   !      seq_timemgr_alarm_tprof
@@ -166,6 +168,7 @@ module seq_timemgr_mod
        seq_timemgr_clock_glc  = 'seq_timemgr_clock_glc' , &
        seq_timemgr_clock_wav  = 'seq_timemgr_clock_wav' , &
        seq_timemgr_clock_rof  = 'seq_timemgr_clock_rof' , &
+       seq_timemgr_clock_iac  = 'seq_timemgr_clock_iac' , &
        seq_timemgr_clock_esp  = 'seq_timemgr_clock_esp'
   character(len=8),private,parameter :: seq_timemgr_clocks(max_clocks) = &
        (/'drv     ','atm     ','lnd     ','ocn     ', &
@@ -191,9 +194,10 @@ module seq_timemgr_mod
        seq_timemgr_nalarm_rofrun     =15 , & ! driver only clock alarm
        seq_timemgr_nalarm_wavrun     =16 , & ! driver only clock alarm
        seq_timemgr_nalarm_iacrun     =17 , & ! driver only clock alarm
-       seq_timemgr_nalarm_esprun     =18 , & ! driver only clock alarm
-       seq_timemgr_nalarm_pause      =19 , &
-       seq_timemgr_nalarm_barrier    =20 , & ! driver and component clock alarm
+       seq_timemgr_nalarm_iacrun_avg =18 , & ! driver only clock alarm
+       seq_timemgr_nalarm_esprun     =19 , & ! driver only clock alarm
+       seq_timemgr_nalarm_pause      =20 , &
+       seq_timemgr_nalarm_barrier    =21 , & ! driver and component clock alarm
        max_alarms = seq_timemgr_nalarm_barrier
 
   character(len=*),public,parameter :: &
@@ -214,6 +218,7 @@ module seq_timemgr_mod
        seq_timemgr_alarm_rofrun     = 'seq_timemgr_alarm_rofrun  ', &
        seq_timemgr_alarm_wavrun     = 'seq_timemgr_alarm_wavrun  ', &
        seq_timemgr_alarm_iacrun     = 'seq_timemgr_alarm_iacrun  ', &
+       seq_timemgr_alarm_iacrun_avg = 'seq_timemgr_alarm_iacrun_avg ', &
        seq_timemgr_alarm_esprun     = 'seq_timemgr_alarm_esprun  ', &
        seq_timemgr_alarm_pause      = 'seq_timemgr_alarm_pause   ', &
        seq_timemgr_alarm_barrier    = 'seq_timemgr_alarm_barrier '
@@ -1122,6 +1127,20 @@ contains
        opt_n   = dtime(seq_timemgr_nclock_iac), &
        RefTime = OffsetTime,                    &
        alarmname = trim(seq_timemgr_alarm_iacrun))
+    ! Now call the average at the 1800 tod of each year, like the run alarm
+    !    and call the average right before running the iac
+    call ESMF_TimeIntervalSet( TimeStep, s=offset(seq_timemgr_nclock_iac),&
+                               rc=rc)
+    OffsetTime = CurrTime + TimeStep
+    !call ESMF_TimeIntervalSet( TimeStep, s=-offset(seq_timemgr_nclock_drv),&
+    !                           rc=rc )
+    !OffsetTime = OffsetTime + TimeStep
+    call seq_timemgr_alarmInit(SyncClock%ECP(seq_timemgr_nclock_drv)%EClock, &
+         EAlarm  = SyncClock%EAlarm(seq_timemgr_nclock_drv,seq_timemgr_nalarm_iacrun_avg),  &
+         option  = seq_timemgr_optNSeconds,         &
+         opt_n   = 5*dtime(seq_timemgr_nclock_iac), &
+         RefTime = OffsetTime,                    &
+         alarmname = trim(seq_timemgr_alarm_iacrun_avg))
 
     call ESMF_TimeIntervalSet( TimeStep, s=offset(seq_timemgr_nclock_glc), rc=rc )
     OffsetTime = CurrTime + TimeStep
@@ -1430,6 +1449,14 @@ contains
        call ESMF_ClockAdvance(SyncClock%ECP(seq_timemgr_nclock_wav)%EClock, rc=rc )
        call seq_timemgr_ESMFCodeCheck(rc, msg=subname//"Error from wav ESMF_ClockAdvance")
     endif
+
+!    if (ESMF_AlarmIsRinging(SyncClock%EAlarm(seq_timemgr_nclock_drv, &
+!           seq_timemgr_nalarm_iacrun))) then
+!       call ESMF_ClockAdvance(SyncClock%ECP(seq_timemgr_nclock_iac)%EClock, &
+!                                 rc=rc )
+!       call seq_timemgr_ESMFCodeCheck(rc, &
+!               msg=subname//"Error from iac ESMF_ClockAdvance")
+!    endif 
 
     if (ESMF_AlarmIsRinging(SyncClock%EAlarm(seq_timemgr_nclock_drv,seq_timemgr_nalarm_esprun))) then
        call ESMF_ClockAdvance(SyncClock%ECP(seq_timemgr_nclock_esp)%EClock, rc=rc )

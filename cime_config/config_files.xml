@@ -231,6 +231,7 @@
     <type>char</type>
     <default_value>unset</default_value>
     <values>
+      <value component="gcam"      >$SRCROOT/components/gcam</value>
       <value component="siac"      >$SRCROOT/components/stub_comps/siac</value>
       <value component="xiac"      >$SRCROOT/components/xcpl_comps/xiac</value>
     </values>
@@ -269,6 +270,7 @@
       <value component="mpassi"   >$COMP_ROOT_DIR_ICE/cime_config/config_compsets.xml</value>
       <value component="mosart"   >$COMP_ROOT_DIR_ROF/cime_config/config_compsets.xml</value>
       <value component="ww3"      >$COMP_ROOT_DIR_WAV/cime_config/config_compsets.xml</value>
+      <value component="iac"      >$COMP_ROOT_DIR_IAC/cime_config/config_compsets.xml</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>

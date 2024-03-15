@@ -19,6 +19,7 @@ module elm_varctl
   public :: cnallocate_carbonphosphorus_only_set
   public :: cnallocate_carbonphosphorus_only
   public :: get_carbontag ! get the tag for carbon simulations
+  public :: elm_varctl_set_iac_active_only
   !
   private
   save
@@ -163,6 +164,9 @@ module elm_varctl
   !----------------------------------------------------------
   ! BGC logic and datasets
   !----------------------------------------------------------
+
+  ! true => iac/gcam component is present and prognostic
+  logical, public :: iac_active = .false.
 
   ! values of 'prognostic','diagnostic','constant'
   character(len=16), public :: co2_type = 'constant'
@@ -594,6 +598,12 @@ contains
   logical function CNAllocate_CarbonPhosphorus_only()
     cnallocate_carbonphosphorus_only = carbonphosphorus_only
   end function CNAllocate_CarbonPhosphorus_only
+
+  ! set module iac_active flag only
+  subroutine elm_varctl_set_iac_active_only(iac_active_in)
+    logical, intent(in) :: iac_active_in
+    iac_active = iac_active_in
+  end subroutine elm_varctl_set_iac_active_only
 
   function get_carbontag(carbon_type)result(ctag)
     !$acc routine seq

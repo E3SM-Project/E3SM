@@ -19,7 +19,7 @@ module dynHarvestMod
   use dynFileMod            , only : dyn_file_type
   use dynVarTimeUninterpMod , only : dyn_var_time_uninterp_type
   use CNStateType           , only : cnstate_type
-  use VegetationPropertiesType        , only : veg_vp
+   use VegetationPropertiesType        , only : veg_vp
   use elm_varcon            , only : grlnd
   use ColumnType            , only : col_pp
   use ColumnDataType        , only : col_cf, col_nf, col_pf  
@@ -71,7 +71,7 @@ module dynHarvestMod
 
   integer, public, parameter :: num_harvest_vars = 5
   character(len=64), public, parameter :: harvest_varnames(num_harvest_vars) = &
-       [character(len=64)  :: 'HARVEST_VH1', 'HARVEST_VH2', 'HARVEST_SH1', 'HARVEST_SH2', 'HARVEST_SH3']
+       [character(len=64) :: 'HARVEST_VH1', 'HARVEST_VH2', 'HARVEST_SH1', 'HARVEST_SH2', 'HARVEST_SH3']
   ! the units flag must match the units of harvest_varnames
   ! set this here because dynHarvest_init is called after alm_fates%init
   ! this flag is accessed only if namelist do_harvest is TRUE
@@ -81,7 +81,7 @@ module dynHarvestMod
 
   real(r8) , allocatable, public   :: harvest_rates(:,:) ! category harvest rates (d1) in each gridcell (d2)
 
-  logical, private         :: do_harvest ! whether we're in a period when we should do harvest
+  logical, public         :: do_cn_harvest ! whether we're in a period when we should do harvest
   !---------------------------------------------------------------------------
 
 contains
@@ -92,7 +92,7 @@ contains
     ! !DESCRIPTION:
     ! Initialize data structures for harvest information.
     ! This should be called once, during model initialization.
-    !
+    ! 
     use elm_varctl            , only : use_cn
     use dynVarTimeUninterpMod , only : dyn_var_time_uninterp_type
     use dynTimeInfoMod        , only : YEAR_POSITION_START_OF_TIMESTEP
@@ -114,6 +114,7 @@ contains
     SHR_ASSERT_ALL(bounds%level == BOUNDS_LEVEL_PROC, subname // ': argument must be PROC-level bounds')
 
     allocate(harvest_rates(num_harvest_vars,bounds%begg:bounds%endg),stat=ier)
+
     harvest_rates(:,bounds%begg:bounds%endg) = 0._r8
     if (ier /= 0) then
        call endrun(msg=' allocation error for harvest_rates'//errMsg(__FILE__, __LINE__))
@@ -137,7 +138,7 @@ contains
     
   end subroutine dynHarvest_init
 
-!-----------------------------------------------------------------------
+  !-----------------------------------------------------------------------
   subroutine dynHarvest_interp_harvest_types(bounds)
     !
     ! !DESCRIPTION:
@@ -175,13 +176,13 @@ contains
 
        if (dynHarvest_file%time_info%is_before_time_series()) then
           ! Turn off harvest before the start of the harvest time series
-          do_harvest = .false.
+          do_cn_harvest = .false.
        else
-          ! Note that do_harvest stays true even past the end of the time series. This
+          ! Note that do_cn_harvest stays true even past the end of the time series. This
           ! means that harvest rates will be maintained at the rate given in the last
           ! year of the file for all years past the end of this specified time series.
-          do_harvest = .true.
-          allocate(this_data(bounds%begg:bounds%endg))   
+          do_cn_harvest = .true.
+          allocate(this_data(bounds%begg:bounds%endg))
           do varnum = 1, num_harvest_vars
              call harvest_vars(varnum)%get_current_data(this_data)
              harvest_rates(varnum,bounds%begg:bounds%endg) = this_data(bounds%begg:bounds%endg)
@@ -376,7 +377,7 @@ contains
       ! and convert to rate per second
       if (ivt(p) > noveg .and. ivt(p) < nbrdlf_evr_shrub) then
 
-         if (do_harvest) then
+         if (do_cn_harvest) then
             am = 0._r8
             do varnum = 1, num_harvest_vars
                am = am + harvest_rates(varnum,g)

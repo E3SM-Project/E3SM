@@ -439,7 +439,9 @@ subroutine phys_inidat( cam_out, pbuf2d )
        tptr(:,:) = 0._r8
        if (masterproc) write(iulog,*) 'vmag_gust initialized to 1.'
     end if
-    vmag_gust_idx = pbuf_get_index( 'vmag_gust')
+! KVC: this is causing a problem
+!    vmag_gust_idx = pbuf_get_index( 'vmag_gust')
+    vmag_gust_idx = 1
     call pbuf_set_field(pbuf2d, vmag_gust_idx, tptr)
 
 

@@ -1,0 +1,314 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="namelist_definition.xsl"?>
+
+<namelist_definition>
+
+
+<entry id="case_name"
+	type="char*256"
+	category="gcam"
+	group="gcam_inparm"
+	valid_values="">
+Gcam case name
+</entry>
+
+
+<entry id="num_pft"
+        type="integer"
+        category="gcam"
+        group="gcam_inparm"
+        valid_values="">
+GCAM and LND number number of plant functional types
+Default: 17
+Used in GCAM to subgrid each cell by different land use type
+</entry>
+
+<entry id="num_harvest"
+        type="integer"
+        category="gcam"
+        group="gcam_inparm"
+        valid_values="">
+LND number number of harvest types 
+Default: 5
+Used in GCAM to subgrid each cell by different land use type
+</entry>
+
+<entry id="num_lat"
+        type="integer"
+        category="gcam"
+        group="gcam_inparm"
+        valid_values="">
+Number of horizontal grid cells
+</entry>
+
+<entry id="num_lon"
+        type="integer"
+        category="gcam"
+        group="gcam_inparm"
+        valid_values="">
+Number of vertical grid cells
+</entry>
+
+<entry id="num_gcam_energy_regions"
+        type="integer"
+        category="gcam"
+        group="gcam_inparm"
+        valid_values="">
+Number of energy regions
+</entry>
+
+<entry id="num_gcam_land_regions"
+        type="integer"
+        category="gcam"
+        group="gcam_inparm"
+        valid_values="">
+Number of land regions
+</entry>
+
+<entry id="num_iac2elm_landtypes"
+        type="integer"
+        category="gcam"
+        group="gcam_inparm"
+        valid_values="">
+Number of land types
+</entry>
+
+<entry id="num_emiss_sectors"
+        type="integer"
+        category="gcam"
+        group="gcam_inparm"
+        valid_values="">
+Number of emission sectors
+</entry>
+
+<entry id="num_emiss_regions"
+        type="integer"
+        category="gcam"
+        group="gcam_inparm"
+        valid_values="">
+Number of emission regions
+</entry>
+
+
+<entry id="gcam_config"
+	type="char*256"
+	category="gcam"
+	input_pathname="abs"
+	group="gcam_inparm"
+	valid_values="">
+Configuration file for gcam model
+</entry>
+
+<entry id="base_gcam_co2_file"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="gcam_inparm"
+        valid_values="">
+Baseline gcam co2 file
+</entry>
+
+<entry id="base_gcam_lu_wh_file"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="gcam_inparm"
+        valid_values="">
+Baseline gcam lu and wh file
+</entry>
+
+<entry id="base_co2_surface_file"
+	type="char*256"
+	category="gcam"
+	input_pathname="abs"
+	group="gcam_inparm"
+	valid_values="">
+Initial co2 surface emissions file
+</entry>
+
+<entry id="base_co2_aircraft_file"
+	type="char*256"
+	category="gcam"
+	input_pathname="abs"
+	group="gcam_inparm"
+	valid_values="">
+Initial co2 aircraft emissions file
+</entry>
+
+<entry id="base_npp_file"
+	type="char*256"
+	category="gcam"
+	input_pathname="abs"
+	group="gcam_inparm"
+	valid_values="">
+Initial npp values file for scalars
+</entry>
+
+<entry id="base_hr_file"
+	type="char*256"
+	category="gcam"
+	input_pathname="abs"
+	group="gcam_inparm"
+	valid_values="">
+Initial hr values file for scalars
+</entry>
+
+<entry id="base_pft_file"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="gcam_inparm"
+        valid_values="">
+Initial pft weights values file for scalars
+</entry>
+
+<entry id="gcam2elm_co2_mapping_file"
+	type="char*256"
+	category="gcam"
+	input_pathname="abs"
+	group="gcam_inparm"
+	valid_values="">
+Mapping file for co2 emissions
+</entry>
+
+<entry id="gcam2elm_luc_mapping_file"
+	type="char*256"
+	category="gcam"
+	input_pathname="abs"
+	group="gcam_inparm"
+	valid_values="">
+Mapping file for land use
+</entry>
+
+<entry id="gcam2elm_woodharvest_mapping_file"
+	type="char*256"
+	category="gcam"
+	input_pathname="abs"
+	group="gcam_inparm"
+	valid_values="">
+Mapping file for woodharvest
+</entry>
+
+<entry id="gcam2elm_cdensity_mapping_file"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="gcam_inparm"
+        valid_values="">
+Mapping file for carbon density
+</entry>
+
+
+<entry id="gcam_gridfile"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="gcam_inparm"
+        valid_values="">
+Full pathname of input gcam grid file
+</entry>
+
+<entry id="elm2gcam_mapping_file"
+	type="char*256"
+	category="gcam"
+	input_pathname="abs"
+	group="gcam_inparm"
+	valid_values="">
+Mapping file between land model and gcam types
+</entry>
+
+<entry id="gcam2glm_glumap"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="gcam_inparm"
+        valid_values="">
+Glm GLU mapping file
+</entry>
+
+<entry id="gcam2glm_baselu"
+	type="char*256"
+	category="gcam"
+	input_pathname="abs"
+	group="gcam_inparm"
+	valid_values="">
+Glm base luc file
+</entry>
+
+<entry id="gcam2glm_basebiomass"
+	type="char*256"
+	category="gcam"
+	input_pathname="abs"
+	group="gcam_inparm"
+	valid_values="">
+Glm base biomass file
+</entry>
+
+
+<entry id="fdyndat_ehc"
+        type="char*256"
+        category="gcam"
+        group="gcam_inparm"
+        valid_values="">
+Name of dynamic landuse timeseries file
+</entry>
+
+
+<entry id="read_scalars"
+	type="logical"
+	category="gcam"
+	group="gcam_inparm">
+If FALSE, scalars are calculated from npp/hr
+</entry>
+
+<entry id="write_scalars"
+        type="logical"  
+        category="gcam"
+        group="gcam_inparm">
+Write scalars to file
+</entry>
+
+<entry id="write_co2"
+	type="logical"
+	category="gcam"
+	group="gcam_inparm">
+Write co2 emissions to file (in addition to coupler)
+</entry>
+
+<entry id="elm_ehc_agyield_scaling"
+        type="logical"
+        category="gcam"
+        group="gcam_inparm">
+Changes in land productivity from elm scale ag yield in gcam
+</entry>
+
+<entry id="elm_ehc_carbon_scaling"
+	type="logical"
+	category="gcam"
+	group="gcam_inparm">
+Changes in land productivity from elm scale carbon density in gcam
+</entry>
+
+<entry id="ehc_elm_co2_emissions"
+	type="logical"
+	category="gcam"
+	group="gcam_inparm">
+Energy system co2 is passed from gcam to eam
+</entry>
+
+<entry id="gcam_spinup"
+        type="logical"
+        category="gcam"
+        group="gcam_inparm">
+GCAM is spunup to create baseline co2 and lu/wh files
+</entry>
+
+<entry id="run_gcam"
+        type="logical"
+        category="gcam"
+        group="gcam_inparm">
+Default is true; false enables historical iac runs
+</entry>
+
+</namelist_definition>

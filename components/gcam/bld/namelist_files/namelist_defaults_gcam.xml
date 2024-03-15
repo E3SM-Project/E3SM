@@ -1,0 +1,66 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="namelist_defaults.xsl"?>
+
+<!--
+Values to use by default for creation of gcam model namelists.
+The element names are the same as the corresponding namelist
+variables.  Values that depend on the model configuration use
+attributes to express the dependency.  
+
+The default filenames are given relative to the root directory
+for the iac data in the e3sm distribution 
+-->
+
+<!-- Default gcam namelist -->
+
+<namelist_defaults>
+
+<case_name>gcam_test</case_name>
+
+<!-- Grid and region size parameters -->
+<num_pft>17</num_pft>
+<num_harvest>5</num_harvest>
+<num_lat>192</num_lat>
+<num_lon>288</num_lon>
+<num_gcam_energy_regions>32</num_gcam_energy_regions>
+<num_gcam_land_regions>392</num_gcam_land_regions>
+<num_iac2elm_landtypes>9</num_iac2elm_landtypes>
+<num_emiss_sectors>2</num_emiss_sectors>
+<num_emiss_regions>1</num_emiss_regions>
+
+<!-- gcam config and init files, relative to inputdata -->
+<gcam_config>iac/giac/gcam/gcam_6_0/configuration/configuration_ref.xml</gcam_config>
+<base_gcam_co2_file>iac/giac/gcam/gcam_6_0/data/co2_2015_gcam_out.csv</base_gcam_co2_file>
+<base_gcam_lu_wh_file>iac/giac/gcam/gcam_6_0/data/lu_wh_2015_gcam_out.csv</base_gcam_lu_wh_file>
+<base_co2_surface_file>iac/giac/gcam/gcam_6_0/data/gcam_CO2-em-anthro_0.9x1.25_201401-201412_c20200406.txt</base_co2_surface_file>
+<base_co2_aircraft_file>iac/giac/gcam/gcam_6_0/data/gcam_CO2-em-AIR-anthro_0.9x1.25_201401-201412_c20200427.txt</base_co2_aircraft_file>
+<base_npp_file>iac/giac/gcam/gcam_6_0/data/base_f09_annAvgMonthly_2010-2014_npp.csv</base_npp_file>
+<base_hr_file>iac/giac/gcam/gcam_6_0/data/base_f09_annAvgMonthly_2010-2014_hr.csv</base_hr_file>
+<base_pft_file>iac/giac/gcam/gcam_6_0/data/base_f09_annAvgMonthly_2010-2014_pft_wt.csv</base_pft_file>
+<gcam2elm_co2_mapping_file>iac/giac/gcam/gcam_6_0/mappings/co2.xml</gcam2elm_co2_mapping_file>
+<gcam2elm_luc_mapping_file>iac/giac/gcam/gcam_6_0/mappings/luc.xml</gcam2elm_luc_mapping_file>
+<gcam2elm_woodharvest_mapping_file>iac/giac/gcam/gcam_6_0/mappings/woodharvest.xml</gcam2elm_woodharvest_mapping_file>
+<gcam2elm_cdensity_mapping_file>iac/giac/gcam/gcam_6_0/mappings/cdensity.xml</gcam2elm_cdensity_mapping_file>
+
+<!-- Grid and mapping and initialization files with relative paths from
+     inputdata directory -->
+<gcam_gridfile>iac/giac/glm2iac/landuse.timeseries_0.9x1.25_template_simyr2015-2100_c201021.nc</gcam_gridfile>
+<elm2gcam_mapping_file>iac/giac/iac2gcam/elm0.9x1.25togcam_mapping.csv</elm2gcam_mapping_file>
+<gcam2glm_glumap>iac/giac/glm/inputs/gcam2glm_mapping.csv</gcam2glm_glumap>
+<gcam2glm_baselu>iac/giac/glm/inputs/initial/initial_state_LUH2_2015_v3.nc</gcam2glm_baselu>
+<gcam2glm_basebiomass>iac/giac/glm/inputs/vba_LUH1format.nc</gcam2glm_basebiomass>
+
+<!-- Name of dynamic landuse timeseries file  -->
+<fdyndat_ehc>surfdata_iESM_dyn.nc</fdyndat_ehc>
+
+<!-- Runtime options -->
+<read_scalars>.false.</read_scalars>
+<write_scalars>.true.</write_scalars>
+<write_co2>.true.</write_co2>
+<elm_ehc_agyield_scaling>.true.</elm_ehc_agyield_scaling>
+<elm_ehc_carbon_scaling>.true.</elm_ehc_carbon_scaling>
+<ehc_elm_co2_emissions>.false.</ehc_elm_co2_emissions>
+<gcam_spinup>.false.</gcam_spinup>
+<run_gcam>.true.</run_gcam>
+</namelist_defaults>
