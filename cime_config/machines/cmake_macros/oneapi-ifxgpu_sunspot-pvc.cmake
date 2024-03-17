@@ -1,30 +1,21 @@
 
-set(CXX_LINKER "CXX")
+string(APPEND CMAKE_EXE_LINKER_FLAGS " -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -fsycl-device-code-split=per_kernel -fsycl-max-parallel-link-jobs=16")
+if (compile_threaded)
+  string(APPEND CMAKE_EXE_LINKER_FLAGS " -fiopenmp -fopenmp-targets=spir64")
+endif()
 
-execute_process(COMMAND $ENV{NETCDF_PATH}/bin/nf-config --flibs OUTPUT_VARIABLE SHELL_CMD_OUTPUT_BUILD_INTERNAL_IGNORE0 OUTPUT_STRIP_TRAILING_WHITESPACE)
+if (DEBUG)
+#undefined reference to `__msan....
+#https://community.intel.com/t5/Intel-Fortran-Compiler/Linking-errors-when-using-memory-sanitizer-in-fortran-project/m-p/1521476
+#When you compile with -check uninit (or -check all) you also need to link with that compiler option.
+#  string(APPEND CMAKE_EXE_LINKER_FLAGS " -check uninit")
+endif()
 
-string(APPEND SLIBS " ${SHELL_CMD_OUTPUT_BUILD_INTERNAL_IGNORE0} -Wl,-rpath -Wl,$ENV{NETCDF_PATH}/lib -lmkl_intel_lp64 -lmkl_sequential -lmkl_core")
+string(APPEND KOKKOS_OPTIONS " -DCMAKE_CXX_STANDARD=17 -DKokkos_ENABLE_SERIAL=On -DKokkos_ARCH_INTEL_PVC=On -DKokkos_ENABLE_SYCL=On -DKokkos_ENABLE_EXPLICIT_INSTANTIATION=Off")
+string(APPEND SYCL_FLAGS " -\-intel -fsycl -fsycl-targets=spir64_gen -mlong-double-64 -Xsycl-target-backend \"-device 12.60.7\"")
 
-execute_process(COMMAND $ENV{NETCDF_PATH}/bin/nc-config --libs OUTPUT_VARIABLE SHELL_CMD_OUTPUT_BUILD_INTERNAL_IGNORE0 OUTPUT_STRIP_TRAILING_WHITESPACE)
+set(SCREAM_MPI_ON_DEVICE OFF CACHE STRING "")
 
-string(APPEND SLIBS " ${SHELL_CMD_OUTPUT_BUILD_INTERNAL_IGNORE0}")
-string(APPEND SLIBS " -fiopenmp -fopenmp-targets=spir64")
-
-set(NETCDF_PATH "$ENV{NETCDF_PATH}")
-set(PNETCDF_PATH "$ENV{PNETCDF_PATH}")
-
-set(USE_SYCL "TRUE")
-
-string(APPEND KOKKOS_OPTIONS " -DCMAKE_CXX_STANDARD=17 -DKokkos_ENABLE_SERIAL=On -DKokkos_ARCH_INTEL_GEN=On -DKokkos_ENABLE_SYCL=On -DKokkos_ENABLE_EXPLICIT_INSTANTIATION=Off")
-
-string(APPEND SYCL_FLAGS " -\-intel -Xclang -fsycl-allow-virtual-functions -fsycl -mlong-double-64 -fsycl-device-code-split=per_kernel -fno-sycl-id-queries-fit-in-int -fsycl-unnamed-lambda")
-
-#string(APPEND SYCL_FLAGS " -\-intel -fsycl")
-string(APPEND CXX_LDFLAGS " -Wl,-\-defsym,main=MAIN_\_ -lifcore -\-intel -Xclang -fsycl-allow-virtual-functions -fsycl -lsycl -mlong-double-64 -fsycl-link-huge-device-code -fsycl-device-code-split=per_kernel -fsycl-targets=spir64 -Xsycl-target-backend \"-device 12.60.7\"")
-
-SET(CMAKE_CXX_COMPILER "mpicxx" CACHE STRING "")
-SET(CMAKE_C_COMPILER "mpicc" CACHE STRING "")
-SET(CMAKE_FORTRAN_COMPILER "mpifort" CACHE STRING "")
 
 
 
