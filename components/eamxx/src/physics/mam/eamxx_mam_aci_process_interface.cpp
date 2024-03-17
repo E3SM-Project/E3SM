@@ -373,15 +373,16 @@ void compute_recipical_pseudo_density(haero::ThreadTeamPolicy team_policy,
 
 void call_function_dropmixnuc(
     haero::ThreadTeamPolicy team_policy,
-    mam_coupling::DryAtmosphere &dry_atmosphere, const Real dtmicro,
+    mam_coupling::DryAtmosphere &dry_atmosphere,
+    const mam_coupling::AerosolState &dry_aerosol_state, const Real dtmicro,
     MAMAci::view_2d raercol_cw[mam4::ndrop::pver][2],
     MAMAci::view_2d raercol[mam4::ndrop::pver][2],
-    MAMAci::view_2d qqcw[mam4::ndrop::ncnst_tot],
+    // MAMAci::view_2d qqcw[mam4::ndrop::ncnst_tot],
     MAMAci::view_2d ptend_q[mam4::ndrop::nvar_ptend_q],
     MAMAci::view_2d coltend[mam4::ndrop::ncnst_tot],
     MAMAci::view_2d coltend_cw[mam4::ndrop::ncnst_tot],
     MAMAci::const_view_2d p_int, MAMAci::const_view_2d pdel,
-    MAMAci::view_2d rpdel, MAMAci::const_view_3d state_q,
+    MAMAci::view_2d rpdel, MAMAci::view_2d state_q[mam4::ndrop::ncnst_tot],
     MAMAci::const_view_2d ncldwtr, MAMAci::const_view_2d kvh,
     MAMAci::view_2d qcld, MAMAci::view_2d wsub, MAMAci::view_2d cloud_frac_new,
     MAMAci::view_2d cloud_frac_old, MAMAci::view_2d tendnd,
@@ -420,7 +421,7 @@ void call_function_dropmixnuc(
     for(int j = 0; j < 2; ++j) loc_raercol_cw[i][j] = raercol_cw[i][j];
   for(int i = 0; i < mam4::ndrop::pver; ++i)
     for(int j = 0; j < 2; ++j) loc_raercol[i][j] = raercol[i][j];
-  for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i) loc_qqcw[i] = qqcw[i];
+  // for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i) loc_qqcw[i] = qqcw[i];
   for(int i = 0; i < mam4::ndrop::nvar_ptend_q; ++i)
     loc_ptend_q[i] = ptend_q[i];
   for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i) loc_coltend[i] = coltend[i];
@@ -462,10 +463,10 @@ void call_function_dropmixnuc(
             raercol_view[i][j]    = ekat::subview(loc_raercol[i][j], icol);
           }
         }
-        mam4::ColumnView qqcw_view[mam4::ndrop::ncnst_tot];
+        /*mam4::ColumnView qqcw_view[mam4::ndrop::ncnst_tot];
         for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i) {
           qqcw_view[i] = ekat::subview(loc_qqcw[i], icol);
-        }
+        }*/
         mam4::ColumnView ptend_q_view[mam4::ndrop::nvar_ptend_q];
         for(int i = 0; i < mam4::ndrop::nvar_ptend_q; ++i) {
           ptend_q_view[i] = ekat::subview(loc_ptend_q[i], icol);
@@ -491,9 +492,11 @@ void call_function_dropmixnuc(
              ptend, nctend_mixnuc, factnum)  !out
         */
 
-        // mam4::utils::extract_stateq_from_prognostics(progs, atm,
-        // state_q_at_kk,
-        //                                              kk);
+        mam4::Prognostics prog_at_col =
+            aerosols_for_column(dry_aerosol_state, icol);
+        haero::Atmosphere haero_atm =
+            atmosphere_for_column(dry_atmosphere, icol);
+        /*
         mam4::ndrop::dropmixnuc(
             team, dtmicro, ekat::subview(T_mid, icol),
             ekat::subview(p_mid, icol), ekat::subview(p_int, icol),
@@ -525,7 +528,7 @@ void call_function_dropmixnuc(
             ekat::subview(eddy_diff_km, icol), ekat::subview(qncld, icol),
             ekat::subview(srcn, icol), ekat::subview(source, icol),
             ekat::subview(dz, icol), ekat::subview(csbot_cscen, icol),
-            ekat::subview(raertend, icol), ekat::subview(qqcwtend, icol));
+            ekat::subview(raertend, icol), ekat::subview(qqcwtend, icol));*/
       });
 }
 KOKKOS_INLINE_FUNCTION
@@ -727,6 +730,8 @@ void MAMAci::set_grids(
   FieldLayout scalar3d_layout_mid{{COL, LEV}, {ncol_, nlev_}};  // mid points
   FieldLayout scalar3d_layout_int{{COL, ILEV},
                                   {ncol_, nlev_ + 1}};  // interfaces
+  // layout for 2D (1d horiz X 1d vertical) variable
+  FieldLayout scalar2d_layout_col{{COL}, {ncol_}};
 
   ekat::units::Units kg = ekat::units::kg;  // BQ: why do we need to do this???
   ekat::units::Units Pa = ekat::units::Pa;
@@ -760,8 +765,9 @@ void MAMAci::set_grids(
                       grid_name);  // Total pressure [Pa] at interfaces
   add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa,
                       grid_name);  // Layer thickness(pdel) [Pa] at midpoints
-                                   //
-                                   //
+
+  add_field<Required>("pbl_height", scalar2d_layout_col, m,
+                      grid_name);  // planetary boundary layer height
   add_field<Computed>("stratiform_cloud_fraction", scalar3d_layout_mid, nondim,
                       grid_name);  // Layer thickness(pdel) [Pa] at midpoints
   add_field<Computed>("activation_fraction_accum", scalar3d_layout_mid, nondim,
@@ -964,7 +970,6 @@ void MAMAci::initialize_impl(const RunType run_type) {
 
   // set atmosphere state data
 
-  p_int_ = get_field_in("p_int").get_view<const Real **>();
   w_sec_ = get_field_in("w_sec").get_view<const Real **>();
   /*state_q_ = get_field_in("state_q")
                  .get_view<const Real ***>();  // MUST FIXME: remove this*/
@@ -1009,13 +1014,15 @@ void MAMAci::initialize_impl(const RunType run_type) {
 
   dry_atmosphere_.T_mid = get_field_in("T_mid").get_view<const Real **>();
   dry_atmosphere_.p_mid = get_field_in("p_mid").get_view<const Real **>();
+  dry_atmosphere_.p_int = get_field_in("p_int").get_view<const Real **>();
   dry_atmosphere_.p_del =
       get_field_in("pseudo_density").get_view<const Real **>();
-  dry_atmosphere_.qv = buffer_.qv_dry;
-  dry_atmosphere_.qc = buffer_.qc_dry;
-  dry_atmosphere_.nc = buffer_.nc_dry;
-  dry_atmosphere_.qi = buffer_.qi_dry;
-  dry_atmosphere_.ni = buffer_.ni_dry;
+  dry_atmosphere_.qv   = buffer_.qv_dry;
+  dry_atmosphere_.qc   = buffer_.qc_dry;
+  dry_atmosphere_.nc   = buffer_.nc_dry;
+  dry_atmosphere_.qi   = buffer_.qi_dry;
+  dry_atmosphere_.ni   = buffer_.ni_dry;
+  dry_atmosphere_.pblh = get_field_in("pbl_height").get_view<const Real *>();
 
   dry_atmosphere_.dz      = buffer_.dz;  // geometric thickness of layers (m)
   dry_atmosphere_.z_iface = buffer_.z_iface;  // geopotential height above
@@ -1087,6 +1094,7 @@ void MAMAci::initialize_impl(const RunType run_type) {
     // These are temp arrays formatted like mam4xx wants.
     // Not sure if there is a way to do this with scream.
     /*Kokkos::resize(qqcw_[i], ncol_, nlev_);  // MUST FIXME: remove this*/
+    Kokkos::resize(state_q_[i], ncol_, nlev_);
     Kokkos::resize(coltend_[i], ncol_, nlev_);
     Kokkos::resize(coltend_cw_[i], ncol_, nlev_);
   }
@@ -1190,14 +1198,15 @@ void MAMAci::run_impl(const double dt) {
   compute_recipical_pseudo_density(team_policy, rpdel_ /*output*/,
                                    dry_atmosphere_.p_del, nlev_);
   Kokkos::fence();  // wait for rpdel_ to be computed.
-#if 0
-  call_function_dropmixnuc(team_policy, dry_atmosphere_, dtmicro_,
-      raercol_cw_, raercol_, qqcw_, ptend_q_, coltend_, coltend_cw_, 
-      p_int_, dry_atmosphere_.p_del, rpdel_, state_q_, ncldwtr_, kvh_, qcld_, wsub_,
-      cloud_frac_new_, cloud_frac_old_,  tendnd_, factnum_, ndropcol_, ndropmix_,
-      nsource_, wtke_, ccn_, nact_, mact_, dropmixnuc_scratch_mem_, nlev_);
-  Kokkos::fence(); // wait for ptend_q_ to be computed.
 
+  call_function_dropmixnuc(
+      team_policy, dry_atmosphere_, dry_aero_, dtmicro_, raercol_cw_, raercol_,
+      /*qqcw_,*/ ptend_q_, coltend_, coltend_cw_, dry_atmosphere_.p_int,
+      dry_atmosphere_.p_del, rpdel_, state_q_, ncldwtr_, kvh_, qcld_, wsub_,
+      cloud_frac_new_, cloud_frac_old_, tendnd_, factnum_, ndropcol_, ndropmix_,
+      nsource_, wtke_, ccn_, nact_, mact_, dropmixnuc_scratch_mem_, nlev_);
+  Kokkos::fence();  // wait for ptend_q_ to be computed.
+#if 0
   copy_mam4xx_array_to_scream<mam4::ndrop::nvar_ptend_q>(team_policy, ptend_q_output_, ptend_q_, nlev_);
   copy_mam4xx_array_to_scream<mam4::ndrop::ncnst_tot   >(team_policy, coltend_outp_, coltend_, nlev_);
   copy_mam4xx_array_to_scream<mam4::ndrop::ncnst_tot   >(team_policy, coltend_cw_outp_, coltend_cw_, nlev_);

@@ -62,7 +62,7 @@ class MAMAci final : public scream::AtmosphereProcess {
   const_view_2d liqcldf_;
   const_view_2d kvh_;
 
-  // const_view_3d state_q_;
+  view_2d state_q_[mam4::ndrop::ncnst_tot];
   const_view_2d ncldwtr_;
 
   view_2d cloud_frac_new_;
@@ -112,7 +112,6 @@ class MAMAci final : public scream::AtmosphereProcess {
   const int top_lev_ = 6;
 
   // local atmospheric state column variables
-  const_view_2d p_int_;  // Total pressure [Pa] at interfaces
   const_view_2d pdel_;   // pressure thickess of layer [Pa]
   view_2d rpdel_;        // Inverse of pdel_
   const_view_2d w_sec_;  // Vertical velocity variance

@@ -26,10 +26,12 @@ initial_conditions:
   Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
   T_mid: 273.0
   p_mid: 1.e5
+  p_int: 1.e5
   num_a1: 1.e5
   num_c1: 1.e5
   bc_a1: 1.e-5
   qqcw: 1e5
+  pbl_height: 0.0
 
   aero_gas_mmr_o3: 0.0
   aero_gas_mmr_h2o2: 0.0
