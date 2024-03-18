@@ -625,6 +625,10 @@ read_iop_file_data (const util::TimeStamp& current_ts)
     Kokkos::Max<int>(iop_file_start),
     Kokkos::Min<int>(iop_file_end));
 
+    // If no file pressures are found outide the reference pressure range, set to file level endpoints
+    if (iop_file_start == Kokkos::reduction_identity<int>::max()) iop_file_start = 0;
+    if (iop_file_end   == Kokkos::reduction_identity<int>::min()) iop_file_end = adjusted_file_levs;
+
     // Find model pressure levels just inside range of file pressure levels
     Kokkos::parallel_reduce(model_nlevs, KOKKOS_LAMBDA (const int& ilev, int& lmin, int& lmax) {
       if (model_pres_v(ilev) >= iop_file_pres_v(iop_file_start) && ilev < lmin) {
@@ -636,6 +640,10 @@ read_iop_file_data (const util::TimeStamp& current_ts)
     },
     Kokkos::Min<int>(model_start),
     Kokkos::Max<int>(model_end));
+
+    // If not reference pressures are found inside file pressures, set to model level endpoints
+    if (model_start == Kokkos::reduction_identity<int>::min()) model_start = model_nlevs-1;
+    if (model_end   == Kokkos::reduction_identity<int>::max()) model_end = 1;
   }
 
   // Loop through fields and store data from file
@@ -725,18 +733,14 @@ read_iop_file_data (const util::TimeStamp& current_ts)
       // the interpolated region with the value at model_start/model_end
       if (fname == "T"    || fname == "q" || fname == "u" ||
           fname == "u_ls" || fname == "v" || fname == "v_ls") {
-        if (model_start > 0) {
-          Kokkos::parallel_for(Kokkos::RangePolicy<>(0, model_start),
-                               KOKKOS_LAMBDA (const int ilev) {
-            iop_field_v(ilev) = iop_field_v(model_start);
-          });
-        }
-        if (model_end < total_nlevs) {
-          Kokkos::parallel_for(Kokkos::RangePolicy<>(model_end, total_nlevs),
-                               KOKKOS_LAMBDA (const int ilev) {
-            iop_field_v(ilev) = iop_field_v(model_end-1);
-          });
-        }
+        Kokkos::parallel_for(Kokkos::RangePolicy<>(0, model_start+1),
+			     KOKKOS_LAMBDA (const int ilev) {
+			       iop_field_v(ilev) = iop_file_v(0);
+			     });
+	Kokkos::parallel_for(Kokkos::RangePolicy<>(model_end-1, total_nlevs),
+			     KOKKOS_LAMBDA (const int ilev) {
+			       iop_field_v(ilev) = iop_file_v(adjusted_file_levs-1);
+			     });
       }
     }
   }
