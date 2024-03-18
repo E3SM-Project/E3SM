@@ -465,7 +465,18 @@ def expand_cime_vars(element, case):
             child.text = do_cime_vars(child.text, case)
 
 ###############################################################################
-def _create_raw_xml_file_impl(case, xml):
+def write_pretty_xml(filepath, xml):
+###############################################################################
+    with open(filepath, "w") as fd:
+        # dom has better pretty printing than ET in older python versions < 3.9
+        dom = md.parseString(ET.tostring(xml, encoding="unicode"))
+        pretty_xml = dom.toprettyxml(indent="  ")
+        pretty_xml = os.linesep.join([s for s in pretty_xml.splitlines()
+                                      if s.strip()])
+        fd.write(pretty_xml)
+
+###############################################################################
+def _create_raw_xml_file_impl(case, xml, filepath=None):
 ###############################################################################
     """
     On input, xml contains the parsed content of namelist_defaults_scream.xml.
@@ -610,32 +621,40 @@ def _create_raw_xml_file_impl(case, xml):
     selectors = get_valid_selectors(xml)
 
     # 1. Evaluate all selectors
-    evaluate_selectors(xml, case, selectors)
+    try:
+        evaluate_selectors(xml, case, selectors)
 
-    # 2. Apply all changes in the SCREAM_ATMCHANGE_BUFFER that may alter
-    #    which atm processes are used
-    apply_atm_procs_list_changes_from_buffer (case,xml)
+        # 2. Apply all changes in the SCREAM_ATMCHANGE_BUFFER that may alter
+        #    which atm processes are used
+        apply_atm_procs_list_changes_from_buffer (case,xml)
 
-    # 3. Resolve all inheritances
-    resolve_all_inheritances(xml)
+        # 3. Resolve all inheritances
+        resolve_all_inheritances(xml)
 
-    # 4. Expand any CIME var that appears inside XML nodes text
-    expand_cime_vars(xml,case)
+        # 4. Expand any CIME var that appears inside XML nodes text
+        expand_cime_vars(xml,case)
 
-    # 5. Grab the atmosphere_processes macro list, with all the defaults
-    atm_procs_defaults = get_child(xml,"atmosphere_processes_defaults",remove=True)
+        # 5. Grab the atmosphere_processes macro list, with all the defaults
+        atm_procs_defaults = get_child(xml,"atmosphere_processes_defaults",remove=True)
 
-    # 6. Get atm procs list
-    atm_procs_list = get_child(atm_procs_defaults,"atm_procs_list",remove=True)
+        # 6. Get atm procs list
+        atm_procs_list = get_child(atm_procs_defaults,"atm_procs_list",remove=True)
 
-    # 7. Form the nested list of atm procs needed, append to atmosphere_driver section
-    atm_procs = gen_atm_proc_group(atm_procs_list.text, atm_procs_defaults)
-    atm_procs.tag = "atmosphere_processes"
-    xml.append(atm_procs)
+        # 7. Form the nested list of atm procs needed, append to atmosphere_driver section
+        atm_procs = gen_atm_proc_group(atm_procs_list.text, atm_procs_defaults)
+        atm_procs.tag = "atmosphere_processes"
+        xml.append(atm_procs)
 
-    # 8. Apply all changes in the SCREAM_ATMCHANGE_BUFFER that do not alter
-    #    which atm processes are used
-    apply_non_atm_procs_list_changes_from_buffer (case,xml)
+        # 8. Apply all changes in the SCREAM_ATMCHANGE_BUFFER that do not alter
+        #    which atm processes are used
+        apply_non_atm_procs_list_changes_from_buffer (case,xml)
+    except BaseException as e:
+        if filepath is not None:
+            dbg_xml_path = filepath.replace(".xml", ".dbg.xml")
+            write_pretty_xml(dbg_xml_path, xml)
+            print(f"Error during XML creation, writing {dbg_xml_path}")
+
+        raise e
 
     perform_consistency_checks (case, xml)
 
@@ -666,17 +685,11 @@ def create_raw_xml_file(case, caseroot):
         # be processed early by treating them as if they were made to the defaults file.
         with open(src, "r") as fd:
             defaults = ET.parse(fd).getroot()
-            raw_xml = _create_raw_xml_file_impl(case, defaults)
+            raw_xml = _create_raw_xml_file_impl(case, defaults, filepath=raw_xml_file)
 
         check_all_values(raw_xml)
 
-        with open(raw_xml_file, "w") as fd:
-            # dom has better pretty printing than ET in older python versions < 3.9
-            dom = md.parseString(ET.tostring(raw_xml, encoding="unicode"))
-            pretty_xml = dom.toprettyxml(indent="  ")
-            pretty_xml = os.linesep.join([s for s in pretty_xml.splitlines()
-                                          if s.strip()])
-            fd.write(pretty_xml)
+        write_pretty_xml(raw_xml_file, raw_xml)
 
 ###############################################################################
 def convert_to_dict(element):
