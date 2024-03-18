@@ -382,7 +382,7 @@ void call_function_dropmixnuc(
     MAMAci::view_2d coltend[mam4::ndrop::ncnst_tot],
     MAMAci::view_2d coltend_cw[mam4::ndrop::ncnst_tot],
     MAMAci::const_view_2d p_int, MAMAci::const_view_2d pdel,
-    MAMAci::view_2d rpdel, MAMAci::view_2d state_q[mam4::ndrop::ncnst_tot],
+    MAMAci::view_2d rpdel, /*MAMAci::view_2d state_q[mam4::ndrop::ncnst_tot],*/
     MAMAci::const_view_2d ncldwtr, MAMAci::const_view_2d kvh,
     MAMAci::view_2d qcld, MAMAci::view_2d wsub, MAMAci::view_2d cloud_frac_new,
     MAMAci::view_2d cloud_frac_old, MAMAci::view_2d tendnd,
@@ -428,6 +428,11 @@ void call_function_dropmixnuc(
   for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i)
     loc_coltend_cw[i] = coltend_cw[i];
 
+  MAMAci::view_1d state_q[mam4::ndrop::ncnst_tot];
+
+  for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i) {
+    Kokkos::resize(state_q[i], mam4::ndrop::pver);
+  }
   Kokkos::parallel_for(
       team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
         const int icol = team.league_rank();
@@ -492,10 +497,22 @@ void call_function_dropmixnuc(
              ptend, nctend_mixnuc, factnum)  !out
         */
 
-        mam4::Prognostics prog_at_col =
+        mam4::Prognostics progs_at_col =
             aerosols_for_column(dry_aerosol_state, icol);
         haero::Atmosphere haero_atm =
             atmosphere_for_column(dry_atmosphere, icol);
+
+        for(int klev = 0; klev < mam4::ndrop::pver; ++klev) {
+          Real state_q_at_lev_col[mam4::ndrop::ncnst_tot] = {};
+          mam4::utils::extract_stateq_from_prognostics(
+              progs_at_col, haero_atm, state_q_at_lev_col, klev);
+          // mam4::utils::extract_stateq_from_prognostics(progs_at_col,
+          // haero_atm, state_q, klev);
+          for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i) {
+            state_q[i](klev) = state_q_at_lev_col[i];
+          }
+        }
+
         /*
         mam4::ndrop::dropmixnuc(
             team, dtmicro, ekat::subview(T_mid, icol),
@@ -1202,7 +1219,7 @@ void MAMAci::run_impl(const double dt) {
   call_function_dropmixnuc(
       team_policy, dry_atmosphere_, dry_aero_, dtmicro_, raercol_cw_, raercol_,
       /*qqcw_,*/ ptend_q_, coltend_, coltend_cw_, dry_atmosphere_.p_int,
-      dry_atmosphere_.p_del, rpdel_, state_q_, ncldwtr_, kvh_, qcld_, wsub_,
+      dry_atmosphere_.p_del, rpdel_, /*state_q_,*/ ncldwtr_, kvh_, qcld_, wsub_,
       cloud_frac_new_, cloud_frac_old_, tendnd_, factnum_, ndropcol_, ndropmix_,
       nsource_, wtke_, ccn_, nact_, mact_, dropmixnuc_scratch_mem_, nlev_);
   Kokkos::fence();  // wait for ptend_q_ to be computed.
