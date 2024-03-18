@@ -128,6 +128,9 @@ class MAMAci final : public scream::AtmosphereProcess {
   // physics grid for column information
   std::shared_ptr<const AbstractGrid> grid_;
 
+  // A view array to carry cloud borne aerosol mmrs/nmrs
+  view_2d qqcw_fld_work_[25];
+
  public:
   // Constructor
   MAMAci(const ekat::Comm &comm, const ekat::ParameterList &params);

@@ -378,6 +378,7 @@ void call_function_dropmixnuc(
     MAMAci::view_2d raercol_cw[mam4::ndrop::pver][2],
     MAMAci::view_2d raercol[mam4::ndrop::pver][2],
     // MAMAci::view_2d qqcw[mam4::ndrop::ncnst_tot],
+    MAMAci::view_2d qqcw_fld_work_[mam4::ndrop::ncnst_tot],
     MAMAci::view_2d ptend_q[mam4::ndrop::nvar_ptend_q],
     MAMAci::view_2d coltend[mam4::ndrop::ncnst_tot],
     MAMAci::view_2d coltend_cw[mam4::ndrop::ncnst_tot],
@@ -428,18 +429,29 @@ void call_function_dropmixnuc(
   for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i)
     loc_coltend_cw[i] = coltend_cw[i];
 
-  MAMAci::view_1d state_q[mam4::ndrop::ncnst_tot];
-  MAMAci::view_2d state_q1;
-  Kokkos::resize(state_q1, mam4::ndrop::pver, mam4::ndrop::ncnst_tot);
-  MAMAci::view_1d qqcw[mam4::ndrop::ncnst_tot];
+  MAMAci::view_2d state_q;
+  Kokkos::resize(
+      state_q, mam4::ndrop::pver,
+      mam4::ndrop::nvars);  // FIXME: use pcnst here and add ncol dim as well
 
-  for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i) {
-    Kokkos::resize(state_q[i], mam4::ndrop::pver);
-    Kokkos::resize(qqcw[i], mam4::ndrop::pver);
-  }
+  // mam4::ColumnView qqcw[mam4::ndrop::ncnst_tot];
+  // qqcw = work_;
+  // MAMAci::view_1d qqcw[mam4::ndrop::ncnst_tot];
+
+  // for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i)
+  //   Kokkos::resize(
+
+  /*MAMAci::view_2d &qqcw_ptr[25];
+  for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i)
+    qqcw_ptr[i] = qqcw_fld_work_[i]*/
+  MAMAci::view_2d qqcw_fld_work_loc[25];
+  for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i)
+    qqcw_fld_work_loc[i] = qqcw_fld_work_[i];
+
   Kokkos::parallel_for(
       team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
         const int icol = team.league_rank();
+        // for (int icol =0 ; icol<1 ;icol++){
 
         // Initialize the ndrop class.
         const int ntot_amode        = mam_coupling::num_aero_modes();
@@ -472,10 +484,12 @@ void call_function_dropmixnuc(
             raercol_view[i][j]    = ekat::subview(loc_raercol[i][j], icol);
           }
         }
-        /*mam4::ColumnView qqcw_view[mam4::ndrop::ncnst_tot];
+        mam4::ColumnView qqcw_view[mam4::ndrop::ncnst_tot];
         for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i) {
-          qqcw_view[i] = ekat::subview(loc_qqcw[i], icol);
-        }*/
+          // qqcw_view[i] = ekat::subview(loc_qqcw[i], icol);
+          qqcw_view[i] = ekat::subview(qqcw_fld_work_loc[i], icol);
+        }
+
         mam4::ColumnView ptend_q_view[mam4::ndrop::nvar_ptend_q];
         for(int i = 0; i < mam4::ndrop::nvar_ptend_q; ++i) {
           ptend_q_view[i] = ekat::subview(loc_ptend_q[i], icol);
@@ -507,17 +521,19 @@ void call_function_dropmixnuc(
             atmosphere_for_column(dry_atmosphere, icol);
 
         for(int klev = 0; klev < mam4::ndrop::pver; ++klev) {
-          Real state_q_at_lev_col[mam4::ndrop::ncnst_tot] = {};
-          Real qqcw_at_lev_col[mam4::ndrop::ncnst_tot]    = {};
+          Real state_q_at_lev_col[mam4::ndrop::nvars] = {};  // use pcnst here
+          Real qqcw_at_lev_col[mam4::ndrop::nvars]    = {};  // use pcnst here
           mam4::utils::extract_stateq_from_prognostics(
               progs_at_col, haero_atm, state_q_at_lev_col, klev);
 
           mam4::utils::extract_qqcw_from_prognostics(progs_at_col,
                                                      qqcw_at_lev_col, klev);
-          for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i) {
-            state_q[i](klev)  = state_q_at_lev_col[i];
-            state_q1(klev, i) = state_q_at_lev_col[i];
-            qqcw[i](klev)     = qqcw_at_lev_col[i];
+          for(int icnst = 15; icnst < mam4::ndrop::nvars; ++icnst) {
+            state_q(klev, icnst - 15) = state_q_at_lev_col[icnst];
+            // std::cout<<"BALLI:"<<icnst<<" "<<icnst-15<<"
+            // "<<mam4::ndrop::nvars<<" "<<qqcw_at_lev_col[icnst]<<std::endl;
+            // qqcw[icnst-15](klev) = qqcw_at_lev_col[icnst];
+            qqcw_view[icnst - 15](klev) = qqcw_at_lev_col[icnst];
           }
         }
 
@@ -528,7 +544,7 @@ void call_function_dropmixnuc(
             ekat::subview(
                 zm,
                 icol),  //  ! in zm[kk] - zm[kk+1], for pver zm[kk-1] - zm[kk]
-            state_q1/*, ekat::subview(ncldwtr, icol),
+            state_q, ekat::subview(ncldwtr, icol),
             ekat::subview(kvh, icol),  // kvh[kk+1]
             ekat::subview(cloud_frac_new, icol), lspectype_amode,
             specdens_amode, spechygro, lmassptr_amode, num2vol_ratio_min_nmodes,
@@ -537,7 +553,7 @@ void call_function_dropmixnuc(
             ekat::subview(qcld, icol),            // out
             ekat::subview(wsub, icol),            // in
             ekat::subview(cloud_frac_old, icol),  // in
-            qqcw_view,                            // inout
+            qqcw_view/*,                            // inout
             ptend_q_view, ekat::subview(tendnd, icol),
             ekat::subview(factnum, icol), ekat::subview(ndropcol, icol),
             ekat::subview(ndropmix, icol), ekat::subview(nsource, icol),
@@ -554,6 +570,7 @@ void call_function_dropmixnuc(
             ekat::subview(dz, icol), ekat::subview(csbot_cscen, icol),
             ekat::subview(raertend, icol), ekat::subview(qqcwtend, icol)*/);
       });
+  //  }
 }
 KOKKOS_INLINE_FUNCTION
 void copy_mam4xx_array_to_scream(const haero::ThreadTeam &team,
@@ -1072,6 +1089,12 @@ void MAMAci::initialize_impl(const RunType run_type) {
   activation_fraction_coarse_idx_ =
       get_field_out("activation_fraction_coarse").get_view<Real **>();
 
+  // allocate work
+
+  for(int icnst = 0; icnst < 25; ++icnst) {
+    qqcw_fld_work_[icnst] = view_2d("qqcw_fld_work_", ncol_, nlev_);
+  }
+
   // interstitial and cloudborne aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
   for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
@@ -1225,6 +1248,7 @@ void MAMAci::run_impl(const double dt) {
 
   call_function_dropmixnuc(
       team_policy, dry_atmosphere_, dry_aero_, dtmicro_, raercol_cw_, raercol_,
+      qqcw_fld_work_,
       /*qqcw_,*/ ptend_q_, coltend_, coltend_cw_, dry_atmosphere_.p_int,
       dry_atmosphere_.p_del, rpdel_, /*state_q_,*/ ncldwtr_, kvh_, qcld_, wsub_,
       cloud_frac_new_, cloud_frac_old_, tendnd_, factnum_, ndropcol_, ndropmix_,
