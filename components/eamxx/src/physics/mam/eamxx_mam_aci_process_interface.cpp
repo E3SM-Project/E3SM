@@ -429,6 +429,8 @@ void call_function_dropmixnuc(
     loc_coltend_cw[i] = coltend_cw[i];
 
   MAMAci::view_1d state_q[mam4::ndrop::ncnst_tot];
+  MAMAci::view_2d state_q1;
+  Kokkos::resize(state_q1, mam4::ndrop::pver, mam4::ndrop::ncnst_tot);
   MAMAci::view_1d qqcw[mam4::ndrop::ncnst_tot];
 
   for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i) {
@@ -513,8 +515,9 @@ void call_function_dropmixnuc(
           mam4::utils::extract_qqcw_from_prognostics(progs_at_col,
                                                      qqcw_at_lev_col, klev);
           for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i) {
-            state_q[i](klev) = state_q_at_lev_col[i];
-            qqcw[i](klev)    = qqcw_at_lev_col[i];
+            state_q[i](klev)  = state_q_at_lev_col[i];
+            state_q1(klev, i) = state_q_at_lev_col[i];
+            qqcw[i](klev)     = qqcw_at_lev_col[i];
           }
         }
 
