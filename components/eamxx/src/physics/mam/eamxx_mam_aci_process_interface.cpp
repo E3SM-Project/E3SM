@@ -429,9 +429,11 @@ void call_function_dropmixnuc(
     loc_coltend_cw[i] = coltend_cw[i];
 
   MAMAci::view_1d state_q[mam4::ndrop::ncnst_tot];
+  MAMAci::view_1d qqcw[mam4::ndrop::ncnst_tot];
 
   for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i) {
     Kokkos::resize(state_q[i], mam4::ndrop::pver);
+    Kokkos::resize(qqcw[i], mam4::ndrop::pver);
   }
   Kokkos::parallel_for(
       team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
@@ -504,12 +506,15 @@ void call_function_dropmixnuc(
 
         for(int klev = 0; klev < mam4::ndrop::pver; ++klev) {
           Real state_q_at_lev_col[mam4::ndrop::ncnst_tot] = {};
+          Real qqcw_at_lev_col[mam4::ndrop::ncnst_tot]    = {};
           mam4::utils::extract_stateq_from_prognostics(
               progs_at_col, haero_atm, state_q_at_lev_col, klev);
-          // mam4::utils::extract_stateq_from_prognostics(progs_at_col,
-          // haero_atm, state_q, klev);
+
+          mam4::utils::extract_qqcw_from_prognostics(progs_at_col,
+                                                     qqcw_at_lev_col, klev);
           for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i) {
             state_q[i](klev) = state_q_at_lev_col[i];
+            qqcw[i](klev)    = qqcw_at_lev_col[i];
           }
         }
 
