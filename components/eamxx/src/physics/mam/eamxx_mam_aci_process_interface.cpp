@@ -529,10 +529,7 @@ void call_function_dropmixnuc(
           mam4::utils::extract_qqcw_from_prognostics(progs_at_col,
                                                      qqcw_at_lev_col, klev);
           for(int icnst = 15; icnst < mam4::ndrop::nvars; ++icnst) {
-            state_q(klev, icnst - 15) = state_q_at_lev_col[icnst];
-            // std::cout<<"BALLI:"<<icnst<<" "<<icnst-15<<"
-            // "<<mam4::ndrop::nvars<<" "<<qqcw_at_lev_col[icnst]<<std::endl;
-            // qqcw[icnst-15](klev) = qqcw_at_lev_col[icnst];
+            state_q(klev, icnst - 15)   = state_q_at_lev_col[icnst];
             qqcw_view[icnst - 15](klev) = qqcw_at_lev_col[icnst];
           }
         }
@@ -553,7 +550,7 @@ void call_function_dropmixnuc(
             ekat::subview(qcld, icol),            // out
             ekat::subview(wsub, icol),            // in
             ekat::subview(cloud_frac_old, icol),  // in
-            qqcw_view/*,                            // inout
+            qqcw_view,                            // inout
             ptend_q_view, ekat::subview(tendnd, icol),
             ekat::subview(factnum, icol), ekat::subview(ndropcol, icol),
             ekat::subview(ndropmix, icol), ekat::subview(nsource, icol),
@@ -568,7 +565,7 @@ void call_function_dropmixnuc(
             ekat::subview(eddy_diff_km, icol), ekat::subview(qncld, icol),
             ekat::subview(srcn, icol), ekat::subview(source, icol),
             ekat::subview(dz, icol), ekat::subview(csbot_cscen, icol),
-            ekat::subview(raertend, icol), ekat::subview(qqcwtend, icol)*/);
+            ekat::subview(raertend, icol), ekat::subview(qqcwtend, icol));
       });
   //  }
 }
