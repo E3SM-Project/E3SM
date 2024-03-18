@@ -3057,7 +3057,7 @@
         <env name="FI_CXI_DEFAULT_CQ_SIZE">131072</env>
 	<env name="FI_CXI_CQ_FILL_PERCENT">20</env>
 	<env name="ZES_ENABLE_SYSMAN">1</env>
-	<env name="ZEX_NUMBER_OF_CCS">0.0:1,0.1:1,1.0:1,1.1:1,2.0:1,2.1:1,3.0:1,3.1:1,4.0:1,4.1:1</env>
+	<env name="ZEX_NUMBER_OF_CCS">0.0:1,0.1:1,1.0:1,1.1:1,2.0:1,2.1:1,3.0:1,3.1:1,4.0:1,4.1:1,5.0:1,5.1:1</env>
     </environment_variables>
      <environment_variables compiler="oneapi-ifxgpu-2ccs">
         <env name="ONEAPI_DEVICE_SELECTOR">level_zero:gpu</env>
@@ -3072,7 +3072,7 @@
         <env name="FI_CXI_DEFAULT_CQ_SIZE">131072</env>
         <env name="FI_CXI_CQ_FILL_PERCENT">20</env>
         <env name="ZES_ENABLE_SYSMAN">1</env>
-        <env name="ZEX_NUMBER_OF_CCS">0.0:2,0.1:2,1.0:2,1.1:2,2.0:2,2.1:2,3.0:2,3.1:2,4.0:2,4.1:2</env>
+        <env name="ZEX_NUMBER_OF_CCS">0.0:2,0.1:2,1.0:2,1.1:2,2.0:2,2.1:2,3.0:2,3.1:2,4.0:2,4.1:2,5.0:2,5,1:2</env>
     </environment_variables>
      <environment_variables compiler="oneapi-ifxgpu-4ccs">
         <env name="ONEAPI_DEVICE_SELECTOR">level_zero:gpu</env>
@@ -3087,7 +3087,7 @@
         <env name="FI_CXI_DEFAULT_CQ_SIZE">131072</env>
         <env name="FI_CXI_CQ_FILL_PERCENT">20</env>
         <env name="ZES_ENABLE_SYSMAN">1</env>
-        <env name="ZEX_NUMBER_OF_CCS">0.0:4,0.1:4,1.0:4,1.1:4,2.0:4,2.1:4,3.0:4,3.1:4,4.0:4,4.1:4</env>
+        <env name="ZEX_NUMBER_OF_CCS">0.0:4,0.1:4,1.0:4,1.1:4,2.0:4,2.1:4,3.0:4,3.1:4,4.0:4,4.1:4,5.0:4,5.1:4</env>
     </environment_variables>
     <environment_variables compiler="oneapi-ifx">
         <env name="LIBOMPTARGET_DEBUG">0</env><!--default 0, max 5 -->
@@ -3201,6 +3201,42 @@
         <env name="ZES_ENABLE_SYSMAN">1</env>
         <env name="ZE_FLAT_DEVICE_HIERARCHY">COMPOSITE</env>
         <!--env name="NEOReadDebugKeys">1</env-->
+        <!--env name="EnableRecoverablePageFaults">0</env-->
+    </environment_variables>
+    <environment_variables compiler="oneapi-ifxgpu-2ccs">
+        <env name="ONEAPI_DEVICE_SELECTOR">level_zero:gpu</env>
+        <env name="ONEAPI_MPICH_GPU">NO_GPU</env>
+        <env name="MPIR_CVAR_ENABLE_GPU">0</env>
+        <env name="romio_cb_read">disable</env>
+        <env name="romio_cb_write">disable</env>
+        <env name="SYCL_CACHE_PERSISTENT">1</env>
+        <env name="GATOR_INITIAL_MB">4000MB</env>
+        <env name="GATOR_DISABLE">0</env>
+        <env name="GPU_TILE_COMPACT">/lus/gecko/projects/CSC249ADSE15_CNDA/omarahmed/tools/ccs/gpu_tile_compact_2ccs.sh</env>
+        <env name="FI_CXI_DEFAULT_CQ_SIZE">131072</env>
+        <env name="FI_CXI_CQ_FILL_PERCENT">20</env>
+	<env name="ZES_ENABLE_SYSMAN">1</env>
+	<env name="ZE_FLAT_DEVICE_HIERARCHY">COMPOSITE</env>
+	<env name="ZEX_NUMBER_OF_CCS">0.0:2,0.1:2,1.0:2,1.1:2,2.0:2,2.1:2,3.0:2,3.1:2,4.0:2,4.1:2,5.0:2,5.1:2</env>
+	<!--env name="NEOReadDebugKeys">1</env-->
+        <!--env name="EnableRecoverablePageFaults">0</env-->
+    </environment_variables>
+     <environment_variables compiler="oneapi-ifxgpu-4ccs">
+        <env name="ONEAPI_DEVICE_SELECTOR">level_zero:gpu</env>
+        <env name="ONEAPI_MPICH_GPU">NO_GPU</env>
+        <env name="MPIR_CVAR_ENABLE_GPU">0</env>
+        <env name="romio_cb_read">disable</env>
+        <env name="romio_cb_write">disable</env>
+        <env name="SYCL_CACHE_PERSISTENT">1</env>
+        <env name="GATOR_INITIAL_MB">4000MB</env>
+        <env name="GATOR_DISABLE">0</env>
+        <env name="GPU_TILE_COMPACT">/lus/gecko/projects/CSC249ADSE15_CNDA/omarahmed/tools/ccs/gpu_tile_compact_4ccs.sh</env>
+        <env name="FI_CXI_DEFAULT_CQ_SIZE">131072</env>
+        <env name="FI_CXI_CQ_FILL_PERCENT">20</env>
+	<env name="ZES_ENABLE_SYSMAN">1</env>
+	<env name="ZE_FLAT_DEVICE_HIERARCHY">COMPOSITE</env>
+	<env name="ZEX_NUMBER_OF_CCS">0.0:4,0.1:4,1.0:4,1.1:4,2.0:4,2.1:4,3.0:4,3.1:4,4.0:4,4.1:4,5.0:4,5.1:4</env>
+	<!--env name="NEOReadDebugKeys">1</env-->
         <!--env name="EnableRecoverablePageFaults">0</env-->
     </environment_variables>
     <environment_variables compiler="oneapi-ifx">
