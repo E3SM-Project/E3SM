@@ -64,7 +64,7 @@ module restFileMod
   use VegetationDataType   , only : veg_ns, veg_nf
   use VegetationDataType   , only : veg_ps, veg_pf
   use GridcellDataType     , only : grc_cs, grc_ws 
-  
+  use subgridWeightsMod    , only : compute_higher_order_weights
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -524,6 +524,7 @@ contains
     !$OMP PARALLEL DO PRIVATE (nc, bounds_clump)
     do nc = 1, nclumps
        call get_clump_bounds(nc, bounds_clump)
+       call compute_higher_order_weights(bounds_clump) 
        call reweight_wrapup(bounds_clump, glc2lnd_vars%icemask_grc(bounds_clump%begg:bounds_clump%endg))
     end do
     !$OMP END PARALLEL DO
