@@ -521,7 +521,6 @@ void call_function_dropmixnuc(
           }
         }
 
-        /*
         mam4::ndrop::dropmixnuc(
             team, dtmicro, ekat::subview(T_mid, icol),
             ekat::subview(p_mid, icol), ekat::subview(p_int, icol),
@@ -529,7 +528,7 @@ void call_function_dropmixnuc(
             ekat::subview(
                 zm,
                 icol),  //  ! in zm[kk] - zm[kk+1], for pver zm[kk-1] - zm[kk]
-            ekat::subview(state_q, icol), ekat::subview(ncldwtr, icol),
+            state_q1/*, ekat::subview(ncldwtr, icol),
             ekat::subview(kvh, icol),  // kvh[kk+1]
             ekat::subview(cloud_frac_new, icol), lspectype_amode,
             specdens_amode, spechygro, lmassptr_amode, num2vol_ratio_min_nmodes,
@@ -553,7 +552,7 @@ void call_function_dropmixnuc(
             ekat::subview(eddy_diff_km, icol), ekat::subview(qncld, icol),
             ekat::subview(srcn, icol), ekat::subview(source, icol),
             ekat::subview(dz, icol), ekat::subview(csbot_cscen, icol),
-            ekat::subview(raertend, icol), ekat::subview(qqcwtend, icol));*/
+            ekat::subview(raertend, icol), ekat::subview(qqcwtend, icol)*/);
       });
 }
 KOKKOS_INLINE_FUNCTION
