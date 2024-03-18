@@ -130,6 +130,7 @@ class MAMAci final : public scream::AtmosphereProcess {
 
   // A view array to carry cloud borne aerosol mmrs/nmrs
   view_2d qqcw_fld_work_[25];
+  view_3d state_q_work_;
 
  public:
   // Constructor
