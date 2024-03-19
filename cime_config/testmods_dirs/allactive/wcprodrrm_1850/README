@@ -1,5 +1,2 @@
-The namelist (user_nl_*) and shell commands in this drectory should result in a case
-which is considered as a V2 candidate at this moment (01/26/2020)
 
-The user_nl_* files should be replaced with "use case" files once v2 configuration
-is finalized.
+These mods should result in production output for an 1850 RRM case
