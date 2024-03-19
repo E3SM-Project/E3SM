@@ -53,7 +53,7 @@ module li_bedtopo
    !--------------------------------------------------------------------
 
    ! sea-level model timestep
-   integer, save :: slmTimeStep
+   integer, save :: slmTimeStep, nglv_slm, norder_slm
 
    ! Interpolation weights variables
    integer, dimension(:), allocatable :: toRowValues, toColValues
@@ -371,7 +371,6 @@ contains
       use mpas_timekeeping
       use sl_model_mod                    !< this is part of the SLM code
       use sl_io_mod                       !< this is part of the SLM code
-      use user_specs_mod, only: nglv      !< this is part of the SLM code
 #endif
       !-----------------------------------------------------------------
       ! input variables
@@ -398,14 +397,14 @@ contains
       type (mpas_pool_type), pointer :: geometryPool
       real (kind=RKIND), dimension(:), pointer :: thickness, bedTopography
       real (kind=RKIND), dimension(:), allocatable :: meshMask
-      real (kind=RKIND), dimension(nglv,2*nglv) :: ismIceload, ismBedtopo, ismMask
-      real (kind=RKIND), dimension(nglv*2*nglv) :: thicknessSLgrid1D
-      real (kind=RKIND), dimension(nglv*2*nglv) :: bedtopoSLgrid1D
-      real (kind=RKIND), dimension(nglv*2*nglv) :: maskSLgrid1D
+      real (kind=RKIND), dimension(:,:), allocatable :: ismIceload, ismBedtopo, ismMask
+      real (kind=RKIND), dimension(:), allocatable :: thicknessSLgrid1D
+      real (kind=RKIND), dimension(:), allocatable :: bedtopoSLgrid1D
+      real (kind=RKIND), dimension(:), allocatable :: maskSLgrid1D
       integer :: err_tmp
-      integer :: unit_num_slm  ! SLM variable
-      integer :: itersl, dtime ! SLM variable
-      real    :: starttime     ! SLM variable
+      integer :: unit_num_slm                     ! SLM variable
+      integer :: itersl, dtime                    ! SLM variable
+      real    :: starttime                        ! SLM variable
       integer, dimension(:), pointer :: cellMask  ! integer bitmask for cells
       integer, pointer :: config_slm_coupling_interval
       type (MPAS_TimeInterval_type) :: slm_coupling_interval
@@ -418,7 +417,6 @@ contains
 
       err = 0
       err_tmp = 0
-
 
       call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
 
@@ -476,6 +474,11 @@ contains
             call mpas_log_write("Error occurred in check_SLM_coupling_interval.", MPAS_LOG_ERR)
          endif
 
+         ! check the number of points on the SLM Gauss-Legendre grid
+         call sl_get_model_res(norder_slm, nglv_slm)
+         call mpas_log_write("Solving the SLM upto $i order and degrees of Spherical Harmonics", intArgs=(/norder_slm/))
+         call mpas_log_write("Number of Gauss-Legendre latitudinal nodes in the SLM grid is $i", intArgs=(/nglv_slm/))
+
          ! Set Displacement variable for GATHERV command
          nCellsGlobal = sum(nCellsPerProc)
          allocate(indexToCellIDGathered(nCellsGlobal))
@@ -515,17 +518,21 @@ contains
          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
          call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
-
+         
          if (curProc.eq.0) then
+            ! allocate and initialize the SLM-related variables used in this module
             allocate(globalArrayThickness(nCellsGlobal), gatheredArrayThickness(nCellsGlobal))
             allocate(globalArrayBedTopography(nCellsGlobal), gatheredArrayBedTopography(nCellsGlobal))
             allocate(meshMask(nCellsGlobal))
+            allocate(ismIceload(nglv_slm,2*nglv_slm), ismBedtopo(nglv_slm,2*nglv_slm), ismMask(nglv_slm,2*nglv_slm))
+            allocate(bedtopoSLgrid1D(nglv_slm*2*nglv_slm), thicknessSLgrid1D(nglv_slm*2*nglv_slm), maskSLgrid1D(nglv_slm*2*nglv_slm))
             ismIceload(:,:) = 0.0
             ismBedtopo(:,:) = 0.0
             ismMask(:,:) = 0.0
             bedtopoSLgrid1D(:) = 0.0
             thicknessSLgrid1D(:) = 0.0
             maskSLgrid1D(:) = 0.0
+            call mpas_log_write("Allocating SLM variables in MALI, nglv is $i", intArgs=(/nglv_slm/))
          else
             ! Intel requires these be allocated even though they are not meaningful on the non-destination procs
             allocate(globalArrayThickness(1), gatheredArrayThickness(1))
@@ -543,7 +550,6 @@ contains
          err = ior(err, err_tmp)
 
          if (curProc.eq.0) then
-
             ! Rearrange data into CellID order
             do iCell = 1,nCellsGlobal
                globalArrayThickness(indexToCellIDGathered(iCell)) = gatheredArrayThickness(iCell)
@@ -557,9 +563,9 @@ contains
             call interpolate(toColValues, toRowValues, toSvalues, meshMask, maskSLgrid1D)
 
             ! reformat the interpolated data
-            ismIceload = reshape(thicknessSLgrid1D, [nglv,2*nglv])
-            ismBedtopo = reshape(bedtopoSLgrid1D, [nglv,2*nglv])
-            ismMask = reshape(maskSLgrid1D, [nglv,2*nglv])
+            ismIceload = reshape(thicknessSLgrid1D, [nglv_slm,2*nglv_slm])
+            ismBedtopo = reshape(bedtopoSLgrid1D, [nglv_slm,2*nglv_slm])
+            ismMask = reshape(maskSLgrid1D, [nglv_slm,2*nglv_slm])
 
             ! initialize coupling time step number. initial time is 0
             slmTimeStep = 0
@@ -567,12 +573,15 @@ contains
             ! series of calling SLM routines
             if (err == 0) then
                call sl_call_readnl
-               call sl_solver_checkpoint(itersl, dtime)
                call sl_timewindow(slmTimeStep)
+               call sl_allocate_and_initialize_array
+               call sl_solver_checkpoint(itersl, dtime)
                call sl_solver_init(itersl, starttime, ismIceload, ismBedtopo, ismMask)
                call sl_deallocate_array
             endif
 
+            deallocate(ismIceload, ismBedtopo, ismMask)
+            deallocate(bedtopoSLgrid1D, thicknessSLgrid1D, maskSLgrid1D)
          endif
          deallocate(globalArrayThickness)
          deallocate(gatheredArrayThickness)
@@ -615,7 +624,6 @@ contains
 #ifdef USE_SEALEVELMODEL
       use sl_model_mod                    !< this is part of the SLM code
       use sl_io_mod                       !< this is part of the SLM code
-      use user_specs_mod, only: nglv, dt1 !< this is part of the SLM code
 #endif
       !-----------------------------------------------------------------
       ! input variables
@@ -645,17 +653,17 @@ contains
       real (kind=RKIND), dimension(:), pointer :: bedTopography, thickness
       real (kind=RKIND), dimension(:), pointer :: bedTopographyChange
       real (kind=RKIND), dimension(:), allocatable :: meshMask
-      real (kind=RKIND), dimension(nglv,2*nglv) :: ismIceload, ismMask
-      real (kind=RKIND), dimension(nglv,2*nglv) :: slmSLchange
-      real (kind=RKIND), dimension(nglv*2*nglv) :: slChangeSLgrid1D
-      real (kind=RKIND), dimension(nglv*2*nglv) :: thicknessSLgrid1D
-      real (kind=RKIND), dimension(nglv*2*nglv) :: maskSLgrid1D
+      real (kind=RKIND), dimension(:,:), allocatable :: ismIceload, ismMask
+      real (kind=RKIND), dimension(:,:), allocatable :: slmSLchange
+      real (kind=RKIND), dimension(:), allocatable :: slChangeSLgrid1D
+      real (kind=RKIND), dimension(:), allocatable :: thicknessSLgrid1D
+      real (kind=RKIND), dimension(:), allocatable :: maskSLgrid1D
       integer, dimension(:), pointer :: cellMask
 
       integer :: err, err_tmp
 
-      integer :: itersl, dtime     ! SLM variable
-      real    :: starttime         ! SLM variable
+      integer :: itersl, dtime                 ! SLM variable
+      real    :: starttime                     ! SLM variable
 
       err = 0
       err_tmp = 0
@@ -673,9 +681,14 @@ contains
       err = ior(err, err_tmp)
 
       if (curProc.eq.0) then
+         ! call the SLM modules to initialize arrays and their dimensions
+         call sl_drive_readnl(itersl, dtime, starttime)
+         ! allocate and initialize the SLM-related variables used in this module
          allocate(globalArrayThickness(nCellsGlobal), gatheredArrayThickness(nCellsGlobal))
          allocate(globalArrayTopoChange(nCellsGlobal), gatheredArrayTopoChange(nCellsGlobal))
          allocate(meshMask(nCellsGlobal))
+         allocate(ismIceload(nglv_slm,2*nglv_slm), ismMask(nglv_slm,2*nglv_slm), slmSLchange(nglv_slm,2*nglv_slm))
+         allocate(slChangeSLgrid1D(nglv_slm*2*nglv_slm), thicknessSLgrid1D(nglv_slm*2*nglv_slm), maskSLgrid1D(nglv_slm*2*nglv_slm))
          ismIceload(:,:) = 0.0
          ismMask(:,:) = 0.0
          slmSLchange(:,:) = 0.0
@@ -708,19 +721,19 @@ contains
          call interpolate(toColValues, toRowValues, toSvalues, meshMask, maskSLgrid1D)
 
          ! reformat the interpolated data
-         ismIceload = reshape(thicknessSLgrid1D, [nglv,2*nglv])
-         ismMask = reshape(maskSLgrid1D, [nglv,2*nglv])
+         ismIceload = reshape(thicknessSLgrid1D, [nglv_slm,2*nglv_slm])
+         ismMask = reshape(maskSLgrid1D, [nglv_slm,2*nglv_slm])
 
          ! series of calling SLM routines
-         call sl_drive_readnl(itersl, dtime, starttime)
          call sl_call_readnl
-         call sl_solver_checkpoint(itersl, dtime)
          call sl_timewindow(slmTimeStep)
+         call sl_allocate_and_initialize_array
+         call sl_solver_checkpoint(itersl, dtime)
          call sl_solver(itersl, slmTimeStep, dtime, starttime, ismIceload, ismMask, slmSLchange)
          call sl_deallocate_array
 
          ! reshape 2D array SLM output into 1D array
-         slChangeSLgrid1D = reshape(slmSLchange, [nglv*2*nglv])
+         slChangeSLgrid1D = reshape(slmSLchange, [nglv_slm*2*nglv_slm])
 
          ! interpolate sea-level change from GL grid to MALI mesh.
          ! note: in the static sea-level theory, sea level and topography are globally defined !>
@@ -733,6 +746,8 @@ contains
             gatheredArrayTopoChange(iCell) = globalArrayTopoChange(indexToCellIDGathered(iCell))
          enddo
 
+         deallocate(ismIceload, ismMask, slmSLchange)
+         deallocate(slChangeSLgrid1D, thicknessSLgrid1D, maskSLgrid1D)
       endif
 
       ! scatter output sea-level changes to processors
