@@ -125,8 +125,7 @@ CONTAINS
     use shr_pio_mod, only : shr_pio_getiosys, shr_pio_getiotype
 #ifdef HAVE_MOAB
 #include "moab/MOABConfig.h"
-    use iMOAB, only: iMOAB_RegisterApplication, iMOAB_LoadMesh, &
-                     iMOAB_DefineTagStorage, iMOAB_GetDoubleTagStorage, &
+    use iMOAB, only: iMOAB_DefineTagStorage, iMOAB_GetDoubleTagStorage, &
                      iMOAB_SetIntTagStorage, iMOAB_SetDoubleTagStorage, &
                      iMOAB_ResolveSharedEntities, iMOAB_CreateVertices, &
                      iMOAB_GetMeshInfo, iMOAB_UpdateMeshInfo
@@ -171,13 +170,12 @@ CONTAINS
     type(iosystem_desc_t), pointer :: ocn_pio_subsystem
 
 #ifdef HAVE_MOAB
-    character*100  tagname
+    character*400  tagname
     real(R8) latv, lonv
     integer iv, tagindex
     real(R8), allocatable, target :: data(:)
     integer(IN), pointer :: idata(:)   ! temporary
     real(r8), dimension(:), allocatable :: moab_vert_coords  ! temporary
-    integer :: mpigrp          ! mpigrp
 #endif
 
     !--- formats ---

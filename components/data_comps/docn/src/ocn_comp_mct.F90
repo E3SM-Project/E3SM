@@ -169,8 +169,8 @@ CONTAINS
 #ifdef HAVE_MOAB
   ierr = iMOAB_RegisterApplication(trim("DOCN")//C_NULL_CHAR, mpicom, compid, mpoid)
   if (ierr .ne. 0) then
-    write(logunit,*) subname,' error in registering atm ocn intx'
-    call shr_sys_abort(subname//' ERROR in registering atm ocn intx')
+    write(logunit,*) subname,' error in registering data ocn comp'
+    call shr_sys_abort(subname//' ERROR in registering data ocn comp')
   endif
    ! send path of ocean domain file to MOAB coupler.
   call seq_infodata_PutData( infodata, ocn_domain=SDOCN%domainFile)
