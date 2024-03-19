@@ -35,7 +35,7 @@ module prep_atm_mod
   use seq_comm_mct, only : seq_comm_getinfo => seq_comm_setptrs
   use seq_comm_mct, only : num_moab_exports
 
-  use dimensions_mod, only : np     ! for atmosphere
+  !use dimensions_mod, only : np     ! for atmosphere
 #ifdef MOABCOMP
   use component_type_mod, only:  compare_mct_av_moab_tag
 #endif
@@ -273,7 +273,8 @@ contains
                   call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_o2x_fields')
                endif
             else ! spectral case, fix later TODO
-               numco = np*np !
+               !numco = np*np !
+               numco = 16
             endif !
 
 
@@ -319,7 +320,7 @@ contains
                else
                   dm2 = "cgll"//C_NULL_CHAR
                   dofnameT="GLOBAL_DOFS"//C_NULL_CHAR
-                  orderT = np !  it should be 4
+                  orderT = 4 ! np !  it should be 4
                endif
                dm1 = "fv"//C_NULL_CHAR
                dofnameS="GLOBAL_ID"//C_NULL_CHAR
@@ -585,7 +586,7 @@ contains
             else
               dm2 = "cgll"//C_NULL_CHAR
               dofnameT="GLOBAL_DOFS"//C_NULL_CHAR
-              orderT = np !  it should be 4
+              orderT = 4 ! np !  it should be 4
             endif
             dm1 = "fv"//C_NULL_CHAR
             dofnameS="GLOBAL_ID"//C_NULL_CHAR
@@ -765,7 +766,7 @@ contains
                else
                   dm2 = "cgll"//C_NULL_CHAR
                   dofnameT="GLOBAL_DOFS"//C_NULL_CHAR
-                  orderT = np !  it should be 4
+                  orderT = 4 ! np !  it should be 4
                endif
                dm1 = "fv"//C_NULL_CHAR
                dofnameS="GLOBAL_ID"//C_NULL_CHAR
