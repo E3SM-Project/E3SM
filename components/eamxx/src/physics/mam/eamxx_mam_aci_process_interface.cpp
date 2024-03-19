@@ -511,8 +511,10 @@ void call_function_dropmixnuc(
           mam4::utils::extract_qqcw_from_prognostics(progs_at_col,
                                                      qqcw_at_lev_col, klev);
           for(int icnst = 15; icnst < mam4::ndrop::nvars; ++icnst) {
-            state_q_work_loc(icol, klev, icnst) = state_q_at_lev_col[icnst];
-            qqcw_view[icnst - 15](klev)         = qqcw_at_lev_col[icnst];
+            state_q_work_loc(icol, klev, icnst) =
+                state_q_at_lev_col[icnst];  // FIXME: ensure that indices are
+                                            // right! remove "15" if possible!!
+            qqcw_view[icnst - 15](klev) = qqcw_at_lev_col[icnst];
           }
         }
 
