@@ -85,6 +85,9 @@ CONTAINS
     real(R8)          :: orbObliqr                 ! orb obliquity (radians)
     real(R8)          :: nextsw_cday               ! calendar of next atm sw
 
+#ifdef HAVE_MOAB
+    integer(IN)       :: ATM_PHYS_CID  ! used to create a new comp id for phys atm; 200+ compid
+#endif
     !--- formats ---
     character(*), parameter :: F00   = "('(datm_comp_init) ',8a)"
     integer(IN) , parameter :: master_task=0 ! task number of master task
@@ -171,7 +174,8 @@ CONTAINS
 
 
 #ifdef HAVE_MOAB
-    ierr = iMOAB_RegisterApplication(trim("DATM")//C_NULL_CHAR, mpicom, compid, mphaid)
+    ATM_PHYS_CID = 200 + compid 
+    ierr = iMOAB_RegisterApplication(trim("DATM")//C_NULL_CHAR, mpicom, ATM_PHYS_CID, mphaid)
     if (ierr .ne. 0) then
       write(logunit,*) subname,' error in registering data atm comp'
       call shr_sys_abort(subname//' ERROR in registering data atm comp')
