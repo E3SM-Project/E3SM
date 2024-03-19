@@ -2221,7 +2221,8 @@ module li_subglacial_hydro
       integer, dimension(:,:), pointer :: cellsOnEdge
       integer, dimension(:), pointer :: cellMask
       integer, dimension(:), pointer :: waterFluxMask
-      integer, pointer :: nEdgesSolve, nCells
+      integer, pointer :: nEdgesSolve
+      integer, pointer :: nCells
       integer :: cell1, cell2, iEdge
       real (kind=RKIND), pointer :: config_sea_level
       integer :: wfmWarning
@@ -2262,21 +2263,25 @@ module li_subglacial_hydro
             ! Exclude no-flow boundaries
             if ( (li_mask_is_grounded_ice(cellMask(cell1))) .and. &
                  (li_mask_is_floating_ice(cellMask(cell2)) .or. &
-                 ((bedTopography(cell2) < config_sea_level) .and. (.not. li_mask_is_ice(cellMask(cell2)))) ) ) then
+                 ((bedTopography(cell2) < config_sea_level) .and. (.not. li_mask_is_ice(cellMask(cell2)))) ) &
+                  .and. (waterFluxMask(iEdge) .ne. 2) ) then
                hydroMarineMarginMask(iEdge) = 1
             elseif ( (li_mask_is_grounded_ice(cellMask(cell2))) .and. &
                      (li_mask_is_floating_ice(cellMask(cell1)) .or. &
-                     ((bedTopography(cell1) < config_sea_level) .and. (.not. li_mask_is_ice(cellMask(cell1)))) ) ) then
+                     ((bedTopography(cell1) < config_sea_level) .and. (.not. li_mask_is_ice(cellMask(cell1)))) ) &
+                     .and. (waterFluxMask(iEdge) .ne. 2) ) then
                hydroMarineMarginMask(iEdge) = 1
             endif
             
             ! hydroTerrestrialMarginMask: Look for edges with 1 cell on grounding ice and the other cell on land without ice
             ! Exclude no-flow boundaries
             if ((li_mask_is_grounded_ice(cellMask(cell1))) .and. ( .not. li_mask_is_ice(cellMask(cell2))) &
-               .and. (bedTopography(cell2) >= config_sea_level)) then
+               .and. (bedTopography(cell2) >= config_sea_level) &
+               .and. (waterFluxMask(iEdge) .ne. 2) ) then
                hydroTerrestrialMarginMask(iEdge) = 1
             elseif ((li_mask_is_grounded_ice(cellMask(cell2))) .and. ( .not. li_mask_is_ice(cellMask(cell1))) &
-               .and. (bedTopography(cell1) >= config_sea_level)) then
+               .and. (bedTopography(cell1) >= config_sea_level) &
+               .and. (waterFluxMask(iEdge) .ne. 2) ) then
                hydroTerrestrialMarginMask(iEdge) = 1
             endif
          enddo
