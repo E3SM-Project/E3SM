@@ -423,6 +423,16 @@
       </queues>
     </batch_system>
 
+  <batch_system MACH="improv" type="pbspro">
+    <directives>
+      <directive> -l select={{ num_nodes }}:mpiprocs={{ tasks_per_node }} </directive>
+    </directives>
+    <queues>
+      <queue walltimemax="00:30:00" jobmin="1" jobmax="8" strict="true" default="true">debug</queue>
+      <queue walltimemax="00:30:00" jobmin="9" jobmax="737" strict="true">compute</queue>
+    </queues>
+  </batch_system>
+
   <batch_system MACH="miller" type="miller_slurm">
     <queues>
       <queue walltimemax="06:00:00" nodemax="800" default="true">collaboration</queue>

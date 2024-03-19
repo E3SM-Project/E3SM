@@ -2616,7 +2616,7 @@
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <TEST_TPUT_TOLERANCE>0.05</TEST_TPUT_TOLERANCE>
     <TEST_MEMLEAK_TOLERANCE>0.05</TEST_MEMLEAK_TOLERANCE>
-    <MAX_GB_OLD_TEST_DATA>1000</MAX_GB_OLD_TEST_DATA>
+    <MAX_GB_OLD_TEST_DATA>0</MAX_GB_OLD_TEST_DATA>
     <environment_variables>
       <env name="PERL5LIB">/lcrc/group/e3sm/soft/perl/chrys/lib/perl5</env>
       <env name="NETCDF_C_PATH">$SHELL{dirname $(dirname $(which nc-config))}</env>
@@ -2698,7 +2698,7 @@
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
-    <MAX_GB_OLD_TEST_DATA>1000</MAX_GB_OLD_TEST_DATA>
+    <MAX_GB_OLD_TEST_DATA>0</MAX_GB_OLD_TEST_DATA>
     <environment_variables>
       <env name="NETCDF_C_PATH">$SHELL{dirname $(dirname $(which nc-config))}</env>
       <env name="NETCDF_FORTRAN_PATH">$SHELL{dirname $(dirname $(which nf-config))}</env>
@@ -2777,7 +2777,7 @@
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
-    <MAX_GB_OLD_TEST_DATA>1000</MAX_GB_OLD_TEST_DATA>
+    <MAX_GB_OLD_TEST_DATA>0</MAX_GB_OLD_TEST_DATA>
     <environment_variables>
       <env name="NETCDF_C_PATH">$SHELL{dirname $(dirname $(which nc-config))}</env>
       <env name="NETCDF_FORTRAN_PATH">$SHELL{dirname $(dirname $(which nf-config))}</env>
@@ -2894,6 +2894,68 @@
     </environment_variables>
     <environment_variables mpilib="impi">
       <env name="I_MPI_FABRICS">shm:tmi</env>
+    </environment_variables>
+  </machine>
+
+  <machine MACH="improv">
+    <DESC>ANL LCRC cluster 825-node AMD 7713 2-sockets 128-cores per node</DESC>
+    <NODENAME_REGEX>ilogin(1|2|3|4).lcrc.anl.gov</NODENAME_REGEX>
+    <OS>LINUX</OS>
+    <COMPILERS>gnu</COMPILERS>
+    <MPILIBS>openmpi</MPILIBS>
+    <PROJECT>e3sm</PROJECT>
+    <CIME_OUTPUT_ROOT>/lcrc/group/e3sm/$USER/scratch/improv</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/lcrc/group/e3sm/data/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/lcrc/group/e3sm/data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>/lcrc/group/e3sm/$USER/scratch/improv/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/lcrc/group/e3sm/baselines/improv/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/lcrc/group/e3sm/tools/cprnc/cprnc.improv</CCSM_CPRNC>
+    <GMAKE_J>8</GMAKE_J>
+    <TESTS>e3sm_integration</TESTS>
+    <NTEST_PARALLEL_JOBS>8</NTEST_PARALLEL_JOBS>
+    <BATCH_SYSTEM>pbspro</BATCH_SYSTEM>
+    <SUPPORTED_BY>E3SM</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
+    <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
+    <mpirun mpilib="openmpi">
+      <executable>mpirun</executable>
+      <arguments>
+        <arg name="num_tasks">--tag-output -n {{ total_tasks }}</arg>
+        <arg name="tasks_per_node"> --map-by ppr:1:core:PE=$ENV{OMP_NUM_THREADS} --bind-to core --oversubscribe </arg>
+      </arguments>
+    </mpirun>
+    <module_system type="module">
+      <init_path lang="sh">/gpfs/fs1/soft/chrysalis/spack/opt/spack/linux-centos8-x86_64/gcc-9.3.0/lmod-8.3-5be73rg/lmod/lmod/init/sh</init_path>
+      <init_path lang="csh">/gpfs/fs1/soft/chrysalis/spack/opt/spack/linux-centos8-x86_64/gcc-9.3.0/lmod-8.3-5be73rg/lmod/lmod/init/csh</init_path>
+      <init_path lang="python">/gpfs/fs1/soft/chrysalis/spack/opt/spack/linux-centos8-x86_64/gcc-9.3.0/lmod-8.3-5be73rg/lmod/lmod/init/env_modules_python.py</init_path>
+      <cmd_path lang="python">/gpfs/fs1/soft/chrysalis/spack/opt/spack/linux-centos8-x86_64/gcc-9.3.0/lmod-8.3-5be73rg/lmod/lmod/libexec/lmod python</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <modules>
+        <command name="purge"/>
+        <command name="load">cmake/3.27.4</command>
+      </modules>
+      <modules compiler="gnu">
+        <command name="load">gcc/12.3.0</command>
+      </modules>
+    </module_system>
+    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+    <TEST_TPUT_TOLERANCE>0.05</TEST_TPUT_TOLERANCE>
+    <MAX_GB_OLD_TEST_DATA>0</MAX_GB_OLD_TEST_DATA>
+    <environment_variables compiler="gnu" mpilib="openmpi">
+      <env name="NETCDF_C_PATH">/lcrc/group/e3sm/soft/improv/netcdf-c/4.9.2b/gcc-12.3.0/openmpi-4.1.6</env>
+      <env name="NETCDF_FORTRAN_PATH">/lcrc/group/e3sm/soft/improv/netcdf-fortran/4.6.1b/gcc-12.3.0/openmpi-4.1.6</env>
+      <env name="PNETCDF_PATH">/lcrc/group/e3sm/soft/improv/pnetcdf/1.12.3/gcc-12.3.0/openmpi-4.1.6</env>
+      <env name="PATH">/lcrc/group/e3sm/soft/improv/pnetcdf/1.12.3/gcc-12.3.0/openmpi-4.1.6/bin:/lcrc/group/e3sm/soft/improv/netcdf-fortran/4.6.1b/gcc-12.3.0/openmpi-4.1.6/bin:/lcrc/group/e3sm/soft/improv/netcdf-c/4.9.2b/gcc-12.3.0/openmpi-4.1.6/bin:/lcrc/group/e3sm/soft/improv/openmpi/4.1.6/gcc-12.3.0/bin:/lcrc/group/e3sm/soft/perl/improv/bin:$ENV{PATH}</env>
+      <env name="LD_LIBRARY_PATH">$SHELL{lp=/lcrc/group/e3sm/soft/improv/netlib-lapack/3.12.0/gcc-12.3.0:/lcrc/group/e3sm/soft/improv/pnetcdf/1.12.3/gcc-12.3.0/openmpi-4.1.6/lib:/lcrc/group/e3sm/soft/improv/netcdf-fortran/4.6.1b/gcc-12.3.0/openmpi-4.1.6/lib:/lcrc/group/e3sm/soft/improv/netcdf-c/4.9.2b/gcc-12.3.0/openmpi-4.1.6/lib:/opt/pbs/lib:/lcrc/group/e3sm/soft/improv/openmpi/4.1.6/gcc-12.3.0/lib; if [ -z "$LD_LIBRARY_PATH" ]; then echo $lp; else echo "$lp:$LD_LIBRARY_PATH"; fi}</env>
+    </environment_variables>
+    <environment_variables BUILD_THREADED="TRUE">
+      <env name="OMP_STACKSIZE">128M</env>
+    </environment_variables>
+    <environment_variables BUILD_THREADED="TRUE" compiler="gnu">
+      <env name="OMP_PLACES">cores</env>
     </environment_variables>
   </machine>
 
