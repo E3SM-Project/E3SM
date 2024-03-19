@@ -70,7 +70,7 @@ module li_thermal
    ! Note: kelvin_to_celsius = 273.15 (perhaps it should be called celsius_to_kelvin?)
 
    real (kind=RKIND), parameter ::   &
-        maxtempThreshold =  0.1_RKIND + kelvin_to_celsius,   &
+        maxtempThreshold =  1e-6_RKIND + kelvin_to_celsius,   &
         mintempThreshold = -100._RKIND + kelvin_to_celsius
 
 !***********************************************************************
@@ -2847,7 +2847,7 @@ module li_thermal
 
             ! Update basal water thickness based on melting or freezing (same for enthalpy or temperature)
             if (groundedBasalMassBal(iCell) > 0.0) then
-               ! for freezing conditions (+SMB), limit positive BMB to the available basal water
+               ! for freezing conditions, limit positive BMB to the available basal water
                groundedBasalMassBal(iCell) = min(groundedBasalMassBal(iCell), basalWaterThickness(iCell) / deltat)
             endif
             basalWaterThickness(iCell) = basalWaterThickness(iCell) - deltat*groundedBasalMassBal(iCell)
