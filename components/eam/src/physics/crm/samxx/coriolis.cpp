@@ -32,15 +32,19 @@ void coriolis() {
                       v(k,j+offy_v,ib+offx_v,icrm)+v(k,jc+offy_v,ib+offx_v,icrm));
       real w_av=0.25*(w(kc,j+offy_w,i+offx_w,icrm)+w(kc,j+offy_w,ib+offx_w,icrm)+
                       w(k,j+offy_w,i+offx_w,icrm)+w(k,j+offy_w,ib+offx_w,icrm));
-      dudt(na-1,k,j,i,icrm)=dudt(na-1,k,j,i,icrm)+fcory(j+offy_fcory,icrm)*(v_av-vg0(k,icrm))-fcorzy(j,icrm)*w_av;
-      real u_av=0.25*(u(k,j+offy_u,i+offx_u,icrm)+u(k,j+offy_u,ic+offx_u,icrm)+u(k,jb+offy_u,i+offx_u,icrm)+
-                      u(k,jb+offy_u,ic+offx_u,icrm));
-      dvdt(na-1,k,j,i,icrm)=dvdt(na-1,k,j,i,icrm)-0.5*(fcory(j+offy_fcory,icrm)+fcory(jb+offy_fcory,icrm))*
-                            (u_av-ug0(k,icrm));
+      // dudt(na-1,k,j,i,icrm)=dudt(na-1,k,j,i,icrm)+fcory(j+offy_fcory,icrm)*(v_av-vg0(k,icrm))-fcorzy(j,icrm)*w_av;
+      // real u_av=0.25*(u(k,j+offy_u,i+offx_u,icrm)+u(k,j+offy_u,ic+offx_u,icrm)+u(k,jb+offy_u,i+offx_u,icrm)+
+      //                 u(k,jb+offy_u,ic+offx_u,icrm));
+      // dvdt(na-1,k,j,i,icrm)=dvdt(na-1,k,j,i,icrm)-0.5*(fcory(j+offy_fcory,icrm)+fcory(jb+offy_fcory,icrm))*
+      //                       (u_av-ug0(k,icrm));
+      #ifdef MMF_DO_CORIOLIS_U
+        // dudt(na-1,k,j,i,icrm) += fcory(j+offy_fcory,icrm)*(v_av-vg0(k,icrm));
+        dudt(na-1,k,j,i,icrm) += -1*fcorzy(j,icrm) * w_av;
+      #endif
       #ifdef MMF_DO_CORIOLIS_W             
         real u_av_on_w = 0.25*( u(k ,j+offy_u,i+offx_u,icrm) + u(k ,j+offy_u,ic+offx_u,icrm)
                                +u(kc,j+offy_u,i+offx_u,icrm) + u(kc,j+offy_u,ic+offx_u,icrm));
-        dwdt(na-1,kc,j,i,icrm)= dwdt(na-1,kc,j,i,icrm) + fcorzy(j,icrm)*u_av_on_w;
+        dwdt(na-1,kc,j,i,icrm) += fcorzy(j,icrm)*u_av_on_w;
       #endif
     });
   } else {
@@ -68,22 +72,24 @@ void coriolis() {
       #ifdef MMF_DO_CORIOLIS_U
         real w_av_on_u = 0.25*( w(kc,j+offy_w,i+offx_w,icrm) + w(kc,j+offy_w,ib+offx_w,icrm)
                                +w(k ,j+offy_w,i+offx_w,icrm) + w(k ,j+offy_w,ib+offx_w,icrm));
-        dudt(na-1,k,j,i,icrm) = dudt(na-1,k ,j,i,icrm) - fcorzy(j,icrm)*w_av_on_u;
+        dudt(na-1,k,j,i,icrm) += -1*fcorzy(j,icrm)*w_av_on_u;
       #endif
       #ifdef MMF_DO_CORIOLIS_W
         real u_av_on_w = 0.25*( u(k ,j+offy_u,i+offx_u,icrm) + u(k ,j+offy_u,ic+offx_u,icrm)
                                +u(kc,j+offy_u,i+offx_u,icrm) + u(kc,j+offy_u,ic+offx_u,icrm));
-        dwdt(na-1,kc,j,i,icrm) = dwdt(na-1,kc,j,i,icrm) + fcorzy(j,icrm)*u_av_on_w;
+        dwdt(na-1,kc,j,i,icrm) += fcorzy(j,icrm)*u_av_on_w;
       #endif
       #ifdef MMF_DO_CORIOLIS_ESMT
         if (use_ESMT) {
           real w_av_on_s = 0.5*( w(kc,j+offy_w,i+offx_w,icrm) + w(k,j+offy_w,i+offx_w,icrm) );
-          u_esmt(k,j+offy_s,i+offx_s,icrm) = u_esmt(k,j+offy_s,i+offx_s,icrm) - fcorzy(j,icrm)*w_av_on_s;
+          u_esmt(k,j+offy_s,i+offx_s,icrm) += -1*fcorzy(j,icrm)*w_av_on_s;
         }
       #endif
       #ifdef MMF_DO_CORIOLIS_ESMT_W
-        real u_esmt_av_on_w = 0.5*( u_esmt(kb,j+offy_s,i+offx_s,icrm) + u_esmt(k,j+offy_s,i+offx_s,icrm) );
-        dwdt(na-1,kc,j,i,icrm) = dwdt(na-1,kc,j,i,icrm) + fcorzy(j,icrm)*u_esmt_av_on_w;
+        if (use_ESMT) {
+          real u_esmt_av_on_w = 0.5*( u_esmt(kb,j+offy_s,i+offx_s,icrm) + u_esmt(k,j+offy_s,i+offx_s,icrm) );
+          dwdt(na-1,kc,j,i,icrm) += fcorzy(j,icrm)*u_esmt_av_on_w;
+        }
       #endif
     });
   }

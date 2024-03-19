@@ -199,8 +199,9 @@ void pre_timeloop() {
 
   // for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( ncrms , YAKL_LAMBDA (int icrm) {
-    fcor(icrm)= 4.0*pi/86400.0*sin(latitude0(icrm)*pi/180.0);
-    fcorz(icrm) = sqrt(4.0*pow((2*pi/(3600.*24.)),2)-pow(fcor(icrm),2));
+    fcor(icrm)  = 4.0*pi/86400.0*sin(latitude0(icrm)*pi/180.0);
+    fcorz(icrm) = 4.0*pi/86400.0*cos(latitude0(icrm)*pi/180.0);
+    // fcorz(icrm) = sqrt(4.0*pow((2*pi/(3600.*24.)),2)-pow(fcor(icrm),2));
     zi(nz-1,icrm) = crm_input_zint(plev-nz+1,icrm)-crm_input_zint(plev,icrm); //+++mhwang, 2012-02-04
     presi(nz-1,icrm) = crm_input_pint(plev-nz+1,icrm)/100.0;
     adzw(0,icrm) = 1.0;
