@@ -212,6 +212,14 @@ CONTAINS
        scmMode, scmlat, scmlon, &
        orbEccen, orbMvelpp, orbLambm0, orbObliqr, phase, nextsw_cday)
 
+#ifdef HAVE_MOAB
+    use iMOAB, only: iMOAB_DefineTagStorage, iMOAB_GetDoubleTagStorage, &
+                     iMOAB_SetIntTagStorage, iMOAB_SetDoubleTagStorage, &
+                     iMOAB_ResolveSharedEntities, iMOAB_CreateVertices, &
+                     iMOAB_GetMeshInfo, iMOAB_UpdateMeshInfo
+    use seq_comm_mct, only : mphaid !            iMOAB app id for phys atm; comp atm is 5, phys 5+200
+    use iso_c_binding
+#endif
     ! !DESCRIPTION: initialize data atm model
     implicit none
 
@@ -257,6 +265,16 @@ CONTAINS
     integer(IN)   :: stepno      ! step number
     character(CL) :: calendar    ! calendar type
     character(CL) :: flds_strm
+
+#ifdef HAVE_MOAB
+    character*400  tagname
+    real(R8) latv, lonv
+    integer iv, tagindex, ilat, ilon, ierr
+    real(R8), allocatable, target :: data(:)
+    integer(IN), pointer :: idata(:)   ! temporary
+    real(r8), dimension(:), allocatable :: moab_vert_coords  ! temporary
+    integer :: mpigrp          ! mpigrp
+#endif
 
     !--- formats ---
     character(*), parameter :: F00   = "('(datm_comp_init) ',8a)"
@@ -347,6 +365,116 @@ CONTAINS
        call shr_dmodel_rearrGGrid(SDATM%grid, ggrid, gsmap, rearr, mpicom)
        call t_stopf('datm_initmctdom')
 
+#ifdef HAVE_MOAB
+       ilat = mct_aVect_indexRA(ggrid%data,'lat')
+       ilon = mct_aVect_indexRA(ggrid%data,'lon')
+       allocate(moab_vert_coords(lsize*3))
+       do iv = 1, lsize
+          lonv = ggrid%data%rAttr(ilon, iv) * SHR_CONST_PI/180.
+          latv = ggrid%data%rAttr(ilat, iv) * SHR_CONST_PI/180.
+          moab_vert_coords(3*iv-2)=COS(latv)*COS(lonv)
+          moab_vert_coords(3*iv-1)=COS(latv)*SIN(lonv)
+          moab_vert_coords(3*iv  )=SIN(latv)
+       enddo
+    
+       ! create the vertices with coordinates from MCT domain
+       ierr = iMOAB_CreateVertices(mphaid, lsize*3, 3, moab_vert_coords)
+       if (ierr .ne. 0)  &
+          call shr_sys_abort('Error: fail to create MOAB vertices in land model')
+    
+       tagname='GLOBAL_ID'//C_NULL_CHAR
+       ierr = iMOAB_DefineTagStorage(mphaid, tagname, &
+                                     0, & ! dense, integer
+                                     1, & ! number of components
+                                     tagindex )
+       if (ierr .ne. 0)  &
+          call shr_sys_abort('Error: fail to retrieve GLOBAL_ID tag ')
+    
+       ! get list of global IDs for Dofs
+       call mct_gsMap_orderedPoints(gsMap, my_task, idata)
+    
+       ierr = iMOAB_SetIntTagStorage ( mphaid, tagname, lsize, &
+                                        0, & ! vertex type
+                                        idata)
+       if (ierr .ne. 0)  &
+          call shr_sys_abort('Error: fail to set GLOBAL_ID tag ')
+    
+       ierr = iMOAB_ResolveSharedEntities( mphaid, lsize, idata );
+       if (ierr .ne. 0)  &
+          call shr_sys_abort('Error: fail to resolve shared entities')
+    
+       deallocate(moab_vert_coords)
+       deallocate(idata)
+    
+       ierr = iMOAB_UpdateMeshInfo( mphaid )
+       if (ierr .ne. 0)  &
+          call shr_sys_abort('Error: fail to update mesh info ')
+    
+       allocate(data(lsize))
+       ierr = iMOAB_DefineTagStorage( mphaid, "area:aream:frac:mask"//C_NULL_CHAR, &
+                                         1, & ! dense, double
+                                         1, & ! number of components
+                                         tagindex )
+       if (ierr > 0 )  &
+          call shr_sys_abort('Error: fail to create tag: area:aream:frac:mask' )
+    
+       data(:) = ggrid%data%rAttr(mct_aVect_indexRA(ggrid%data,'area'),:)
+       tagname='area'//C_NULL_CHAR
+       ierr = iMOAB_SetDoubleTagStorage ( mphaid, tagname, lsize, &
+                                          0, & ! set data on vertices
+                                          data)
+       if (ierr > 0 )  &
+          call shr_sys_abort('Error: fail to get area tag ')
+    
+       ! set the same data for aream (model area) as area
+       ! data(:) = ggrid%data%rAttr(mct_aVect_indexRA(ggrid%data,'aream'),:)
+       tagname='aream'//C_NULL_CHAR
+       ierr = iMOAB_SetDoubleTagStorage ( mphaid, tagname, lsize, &
+                                          0, & ! set data on vertices
+                                          data)
+       if (ierr > 0 )  &
+          call shr_sys_abort('Error: fail to set aream tag ')
+    
+       data(:) = ggrid%data%rAttr(kmask,:)
+       tagname='mask'//C_NULL_CHAR
+       ierr = iMOAB_SetDoubleTagStorage ( mphaid, tagname, lsize, &
+                                          0, & ! set data on vertices
+                                          data)
+       if (ierr > 0 )  &
+          call shr_sys_abort('Error: fail to set mask tag ')
+    
+       data(:) = ggrid%data%rAttr(mct_aVect_indexRA(ggrid%data,'frac'),:)
+       tagname='frac'//C_NULL_CHAR
+       ierr = iMOAB_SetDoubleTagStorage ( mphaid, tagname, lsize, &
+                                          0, & ! set data on vertices
+                                          data)
+       if (ierr > 0 )  &
+          call shr_sys_abort('Error: fail to set frac tag ')
+    
+       deallocate(data)
+    
+       ! define tags
+       ierr = iMOAB_DefineTagStorage( mphaid, trim(seq_flds_x2a_fields)//C_NULL_CHAR, &
+                                         1, & ! dense, double
+                                         1, & ! number of components
+                                         tagindex )
+       if (ierr > 0 )  &
+          call shr_sys_abort('Error: fail to create seq_flds_x2a_fields tags ')
+    
+       ierr = iMOAB_DefineTagStorage( mphaid, trim(seq_flds_a2x_fields)//C_NULL_CHAR, &
+                                         1, & ! dense, double
+                                         1, & ! number of components
+                                         tagindex )
+       if (ierr > 0 )  &
+          call shr_sys_abort('Error: fail to create seq_flds_a2x_fields tags ')
+    
+       ierr = iMOAB_DefineTagStorage( mphaid, trim(flds_strm)//C_NULL_CHAR, &
+                                         1, & ! dense, double
+                                         1, & ! number of components
+                                         tagindex )
+       if (ierr > 0 )  &
+          call shr_sys_abort('Error: fail to create flds_strm tags ')
+#endif
        !----------------------------------------------------------------------------
        ! Initialize MCT attribute vectors
        !----------------------------------------------------------------------------
