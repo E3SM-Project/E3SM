@@ -1020,6 +1020,7 @@ contains
       character(CL)            :: rtm_mesh
       character(CL)            :: lnd_domain
       character(CL)            :: ocn_domain
+      character(CL)            :: atm_mesh
       integer                  :: maxMH, maxMPO, maxMLID, maxMSID, maxMRID ! max pids for moab apps atm, ocn, lnd, sea-ice, rof
       integer                  :: tagtype, numco,  tagindex, partMethod, nghlay
       integer                  :: rank, ent_type
@@ -1064,18 +1065,31 @@ contains
       if ( comp%oneletterid == 'a' .and. maxMH /= -1) then
          call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
          call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
+
+         ! find atm mesh/domain file if it exists; it would be for data atm model (atm_prognostic false)
+         call seq_infodata_GetData(infodata,atm_mesh = atm_mesh)
          ! now, if on coupler pes, receive mesh; if on comp pes, send mesh
+
+         if (mphaid >= 0) then
+            ierr  = iMOAB_GetMeshInfo ( mphaid, nvert, nvise, nbl, nsurf, nvisBC )
+            comp%mbApCCid = mphaid ! phys atm 
+            comp%mbGridType = 0 ! point cloud
+            comp%mblsize = nvert(1) ! point cloud
+         endif
+
          if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (atmosphere)
          !  send mesh to coupler
-            if (atm_pg_active) then !  change : send the pg2 mesh, not coarse mesh, when atm pg active
-               ierr = iMOAB_SendMesh(mhpgid, mpicom_join, mpigrp_cplid, id_join, partMethod)
-            else
-               ! still use the mhid, original coarse mesh
-               ierr = iMOAB_SendMesh(mhid, mpicom_join, mpigrp_cplid, id_join, partMethod)
-            endif
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' error in sending mesh from atm comp '
-               call shr_sys_abort(subname//' ERROR in sending mesh from atm comp')
+            if ( trim(atm_mesh) == 'none' ) then
+               if (atm_pg_active) then !  change : send the pg2 mesh, not coarse mesh, when atm pg active
+                  ierr = iMOAB_SendMesh(mhpgid, mpicom_join, mpigrp_cplid, id_join, partMethod)
+               else
+                  ! still use the mhid, original coarse mesh
+                  ierr = iMOAB_SendMesh(mhid, mpicom_join, mpigrp_cplid, id_join, partMethod)
+               endif
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in sending mesh from atm comp '
+                  call shr_sys_abort(subname//' ERROR in sending mesh from atm comp')
+               endif
             endif
          endif
          if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
@@ -1086,25 +1100,48 @@ contains
                write(logunit,*) subname,' error in registering ', appname
                call shr_sys_abort(subname//' ERROR registering '// appname)
             endif
-            ierr = iMOAB_ReceiveMesh(mbaxid, mpicom_join, mpigrp_old, id_old)
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' error in receiving mesh on atm coupler '
-               call shr_sys_abort(subname//' ERROR in receiving mesh on atm coupler ')
+            if ( trim(atm_mesh) == 'none' ) then
+               ierr = iMOAB_ReceiveMesh(mbaxid, mpicom_join, mpigrp_old, id_old)
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in receiving mesh on atm coupler '
+                  call shr_sys_abort(subname//' ERROR in receiving mesh on atm coupler ')
+               endif
+            else
+              ! we need to read the atm mesh on coupler, from domain file 
+               ierr = iMOAB_LoadMesh(mbaxid, trim(atm_mesh)//C_NULL_CHAR, &
+                "PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;NO_CULLING", 0)
+               if ( ierr /= 0 ) then
+                  write(logunit,*) 'Failed to load atm domain mesh on coupler'
+                  call shr_sys_abort(subname//' ERROR Failed to load atm domain mesh on coupler  ')
+               endif
+               ! need to add global id tag to the app, it will be used in restart
+               tagtype = 0  ! dense, integer
+               numco = 1
+               tagname='GLOBAL_ID'//C_NULL_CHAR
+               ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in adding global id tag to atmx'
+                  call shr_sys_abort(subname//' ERROR in adding global id tag to atmx ')
+               endif
             endif
+
+            
 
          endif
          !  iMOAB_FreeSenderBuffers needs to be called after receiving the mesh
 
          if (mhid .ge. 0) then  ! we are on component atm pes
-            context_id = id_join
-            if (atm_pg_active) then! we send mesh from mhpgid app
-               ierr = iMOAB_FreeSenderBuffers(mhpgid, context_id)
-            else
-               ierr = iMOAB_FreeSenderBuffers(mhid, context_id)
-            endif
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' error in freeing send buffers '
-               call shr_sys_abort(subname//' ERROR in freeing send buffers')
+            if ( trim(atm_mesh) == 'none' ) then
+               context_id = id_join
+               if (atm_pg_active) then! we send mesh from mhpgid app
+                  ierr = iMOAB_FreeSenderBuffers(mhpgid, context_id)
+               else
+                  ierr = iMOAB_FreeSenderBuffers(mhid, context_id)
+               endif
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in freeing send buffers '
+                  call shr_sys_abort(subname//' ERROR in freeing send buffers')
+               endif
             endif
          endif
 
@@ -1116,13 +1153,8 @@ contains
             typeB = 3 ! in this case, we will have cells associated with DOFs as GLOBAL_ID tag
          endif
          ATM_PHYS_CID = 200 + id_old ! 200 + 5 for atm, see line  969   ATM_PHYS = 200 + ATMID ! in
-                                    ! components/cam/src/cpl/atm_comp_mct.F90
-         if (mphaid >= 0) then
-            ierr  = iMOAB_GetMeshInfo ( mphaid, nvert, nvise, nbl, nsurf, nvisBC )
-            comp%mbApCCid = mphaid ! phys atm 
-            comp%mbGridType = 0 ! point cloud
-            comp%mblsize = nvert(1) ! point cloud
-         endif
+                                    !  components/cam/src/cpl/atm_comp_mct.F90
+                                    !  components/data_comps/datm/src/atm_comp_mct.F90 ! line 177 !! 
 
          ierr = iMOAB_ComputeCommGraph( mphaid, mbaxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
              typeA, typeB, ATM_PHYS_CID, id_join) ! ID_JOIN is now 6 

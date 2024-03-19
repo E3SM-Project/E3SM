@@ -32,6 +32,9 @@ module datm_comp_mod
   use datm_shr_mod   , only: iradsw         ! namelist input
   use datm_shr_mod   , only: nullstr
 
+#ifdef HAVE_MOAB
+  use iso_c_binding
+#endif
   ! !PUBLIC TYPES:
 
   implicit none
@@ -216,9 +219,8 @@ CONTAINS
     use iMOAB, only: iMOAB_DefineTagStorage, iMOAB_GetDoubleTagStorage, &
                      iMOAB_SetIntTagStorage, iMOAB_SetDoubleTagStorage, &
                      iMOAB_ResolveSharedEntities, iMOAB_CreateVertices, &
-                     iMOAB_GetMeshInfo, iMOAB_UpdateMeshInfo
+                     iMOAB_GetMeshInfo, iMOAB_UpdateMeshInfo, iMOAB_WriteMesh
     use seq_comm_mct, only : mphaid !            iMOAB app id for phys atm; comp atm is 5, phys 5+200
-    use iso_c_binding
 #endif
     ! !DESCRIPTION: initialize data atm model
     implicit none
@@ -274,6 +276,9 @@ CONTAINS
     integer(IN), pointer :: idata(:)   ! temporary
     real(r8), dimension(:), allocatable :: moab_vert_coords  ! temporary
     integer :: mpigrp          ! mpigrp
+#ifdef MOABDEBUG
+    character*100 outfile, wopts
+#endif
 #endif
 
     !--- formats ---
@@ -434,8 +439,8 @@ CONTAINS
                                           data)
        if (ierr > 0 )  &
           call shr_sys_abort('Error: fail to set aream tag ')
-    
-       data(:) = ggrid%data%rAttr(kmask,:)
+
+       data(:) = ggrid%data%rAttr(mct_aVect_indexRA(ggrid%data,'mask'),:)
        tagname='mask'//C_NULL_CHAR
        ierr = iMOAB_SetDoubleTagStorage ( mphaid, tagname, lsize, &
                                           0, & ! set data on vertices
@@ -474,6 +479,16 @@ CONTAINS
                                          tagindex )
        if (ierr > 0 )  &
           call shr_sys_abort('Error: fail to create flds_strm tags ')
+#ifdef MOABDEBUG
+          !      debug test
+       outfile = 'AtmDataMesh.h5m'//C_NULL_CHAR
+       wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+          !      write out the mesh file to disk
+       ierr = iMOAB_WriteMesh(mphaid, trim(outfile), trim(wopts))
+       if (ierr .ne. 0) then
+          call shr_sys_abort(subname//' ERROR in writing data mesh atm ')
+       endif
+#endif
 #endif
        !----------------------------------------------------------------------------
        ! Initialize MCT attribute vectors
@@ -700,6 +715,34 @@ CONTAINS
 
   end subroutine datm_comp_init
 
+#ifdef HAVE_MOAB
+  !===============================================================================
+
+  subroutine moab_set_tag(tagname, avx, index, dataarr, lsize)
+
+    ! !DESCRIPTION:  set field method for data atm model
+    use iMOAB,        only: iMOAB_SetDoubleTagStorage
+    use seq_comm_mct, only : mphaid ! 
+    implicit none
+
+    integer :: ierr, lsize 
+    character(len=*), intent(in) :: tagname
+    type(mct_aVect), intent(in) :: avx
+    integer, intent(in) :: index
+    real(R8), intent(inout) :: dataarr(:)
+
+   !write(*,* ) "Setting data for tag: ", tagname, " with size = ", lsize
+   dataarr(:) = avx%rAttr(index, :)
+   ierr = iMOAB_SetDoubleTagStorage ( mphaid, tagname, lsize, &
+                                       0, & ! data on vertices
+                                       dataarr )
+   if (ierr > 0 )  &
+       call shr_sys_abort('Error: fail to set tag values for '//tagname)
+
+  end subroutine moab_set_tag
+
+#endif
+
   !===============================================================================
   subroutine datm_comp_run(EClock, x2a, a2x, &
        SDATM, gsmap, ggrid, mpicom, compid, my_task, master_task, &
@@ -755,7 +798,9 @@ CONTAINS
     !--- temporaries
     real(R8)      :: uprime,vprime,swndr,swndf,swvdr,swvdf,ratio_rvrf
     real(R8)      :: tbot,pbot,rtmp,vp,ea,e,qsat,frac
-
+#ifdef HAVE_MOAB
+    real(R8), allocatable, target :: datam(:)
+#endif
     character(*), parameter :: F00   = "('(datm_comp_run) ',8a)"
     character(*), parameter :: F04   = "('(datm_comp_run) ',2a,2i8,'s')"
     character(*), parameter :: subName = "(datm_comp_run) "
@@ -1272,6 +1317,47 @@ CONTAINS
     ! Log output for model date
     ! Reset shr logging to original values
     !----------------------------------------------------------------------------
+
+#ifdef HAVE_MOAB
+    lsize = mct_avect_lsize(a2x) ! is it the same as mct_avect_lsize(avstrm) ?
+    allocate(datam(lsize)) ! 
+    call moab_set_tag('Sa_z'//C_NULL_CHAR   , a2x, kz,    datam, lsize) ! kz    = mct_aVect_indexRA(a2x,'Sa_z')
+    call moab_set_tag('Sa_topo'//C_NULL_CHAR, a2x, ktopo, datam, lsize) ! ktopo = mct_aVect_indexRA(a2x,'Sa_topo')
+    call moab_set_tag('Sa_u'//C_NULL_CHAR,    a2x, ku   , datam, lsize) ! ku    = mct_aVect_indexRA(a2x,'Sa_u')
+    call moab_set_tag('Sa_v'//C_NULL_CHAR,    a2x, kv   , datam, lsize) ! kv    = mct_aVect_indexRA(a2x,'Sa_v')
+    call moab_set_tag('Sa_tbot'//C_NULL_CHAR, a2x, ktbot, datam, lsize) ! ktbot = mct_aVect_indexRA(a2x,'Sa_tbot')
+    call moab_set_tag('Sa_ptem'//C_NULL_CHAR, a2x, kptem, datam, lsize) ! kptem = mct_aVect_indexRA(a2x,'Sa_ptem')
+    call moab_set_tag('Sa_shum'//C_NULL_CHAR, a2x, kshum, datam, lsize) ! kshum = mct_aVect_indexRA(a2x,'Sa_shum')
+    call moab_set_tag('Sa_dens'//C_NULL_CHAR, a2x, kdens, datam, lsize) ! kdens = mct_aVect_indexRA(a2x,'Sa_dens')
+    call moab_set_tag('Sa_pbot'//C_NULL_CHAR, a2x, kpbot, datam, lsize) ! kpbot = mct_aVect_indexRA(a2x,'Sa_pbot')
+    call moab_set_tag('Sa_pslv'//C_NULL_CHAR, a2x, kpslv, datam, lsize) ! kpslv = mct_aVect_indexRA(a2x,'Sa_pslv')
+    call moab_set_tag('Faxa_lwdn'//C_NULL_CHAR, a2x, klwdn, datam, lsize) ! klwdn = mct_aVect_indexRA(a2x,'Faxa_lwdn')
+    call moab_set_tag('Faxa_rainc'//C_NULL_CHAR, a2x, krc, datam, lsize) ! krc   = mct_aVect_indexRA(a2x,'Faxa_rainc')
+    call moab_set_tag('Faxa_rainl'//C_NULL_CHAR, a2x, krl, datam, lsize) ! krl   = mct_aVect_indexRA(a2x,'Faxa_rainl')
+    call moab_set_tag('Faxa_snowc'//C_NULL_CHAR, a2x, ksc, datam, lsize) ! ksc   = mct_aVect_indexRA(a2x,'Faxa_snowc')
+    call moab_set_tag('Faxa_snowl'//C_NULL_CHAR, a2x, ksl, datam, lsize) ! ksl   = mct_aVect_indexRA(a2x,'Faxa_snowl')
+    call moab_set_tag('Faxa_swndr'//C_NULL_CHAR, a2x, kswndr, datam, lsize) ! kswndr= mct_aVect_indexRA(a2x,'Faxa_swndr')
+    call moab_set_tag('Faxa_swndf'//C_NULL_CHAR, a2x, kswndf, datam, lsize) ! kswndf= mct_aVect_indexRA(a2x,'Faxa_swndf')
+    call moab_set_tag('Faxa_swvdr'//C_NULL_CHAR, a2x, kswvdr, datam, lsize) ! kswvdr= mct_aVect_indexRA(a2x,'Faxa_swvdr')
+    call moab_set_tag('Faxa_swvdf'//C_NULL_CHAR, a2x, kswvdf, datam, lsize) ! kswvdf= mct_aVect_indexRA(a2x,'Faxa_swvdf')
+    call moab_set_tag('Faxa_swnet'//C_NULL_CHAR, a2x, kswnet, datam, lsize) ! kswnet= mct_aVect_indexRA(a2x,'Faxa_swnet')
+
+if (wiso_datm) then  ! water isotopic forcing
+   call moab_set_tag('Sa_shum_16O'//C_NULL_CHAR, a2x, kshum_16O, datam, lsize) ! kshum_16O = mct_aVect_indexRA(a2x,'Sa_shum_16O')
+   call moab_set_tag('Sa_shum_18O'//C_NULL_CHAR, a2x, kshum_18O, datam, lsize) ! kshum_18O = mct_aVect_indexRA(a2x,'Sa_shum_18O')
+   call moab_set_tag('Sa_shum_HDO'//C_NULL_CHAR, a2x, kshum_HDO, datam, lsize) ! kshum_HDO = mct_aVect_indexRA(a2x,'Sa_shum_HDO')
+   call moab_set_tag('Faxa_rainc_18O'//C_NULL_CHAR, a2x, krc_18O, datam, lsize) ! krc_18O   = mct_aVect_indexRA(a2x,'Faxa_rainc_18O')
+   call moab_set_tag('Faxa_rainc_HDO'//C_NULL_CHAR, a2x, krc_HDO, datam, lsize) ! krc_HDO   = mct_aVect_indexRA(a2x,'Faxa_rainc_HDO')
+   call moab_set_tag('Faxa_rainl_18O'//C_NULL_CHAR, a2x, krl_18O, datam, lsize) ! krl_18O   = mct_aVect_indexRA(a2x,'Faxa_rainl_18O')
+   call moab_set_tag('Faxa_rainl_HDO'//C_NULL_CHAR, a2x, krl_HDO, datam, lsize) ! krl_HDO   = mct_aVect_indexRA(a2x,'Faxa_rainl_HDO')
+   call moab_set_tag('Faxa_snowc_18O'//C_NULL_CHAR, a2x, ksc_18O, datam, lsize) ! ksc_18O   = mct_aVect_indexRA(a2x,'Faxa_snowc_18O')
+   call moab_set_tag('Faxa_snowc_HDO'//C_NULL_CHAR, a2x, ksc_HDO, datam, lsize) ! ksc_HDO   = mct_aVect_indexRA(a2x,'Faxa_snowc_HDO')
+   call moab_set_tag('Faxa_snowl_18O'//C_NULL_CHAR, a2x, ksl_18O, datam, lsize) ! ksl_18O   = mct_aVect_indexRA(a2x,'Faxa_snowl_18O')
+   call moab_set_tag('Faxa_snowl_HDO'//C_NULL_CHAR, a2x, ksl_HDO, datam, lsize) ! ksl_HDO   = mct_aVect_indexRA(a2x,'Faxa_snowl_HDO')
+end if
+   deallocate(datam) ! maybe we should keep it around, deallocate at the end
+
+#endif
 
     call t_startf('datm_run2')
     if (my_task == master_task) then

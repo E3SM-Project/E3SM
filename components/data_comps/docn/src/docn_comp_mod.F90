@@ -526,11 +526,10 @@ CONTAINS
   subroutine moab_init_tag(tagname, avx, index, dataarr)
 
     ! !DESCRIPTION:  run method for docn model
-    use iMOAB, only: iMOAB_SetDoubleTagStorage, &
-                     iMOAB_SetDoubleTagStorageWithGid
+    use iMOAB, only: iMOAB_SetDoubleTagStorage
     implicit none
 
-    integer :: ierr, n, lsize, tagindex
+    integer :: ierr, lsize 
     character(len=*), intent(in) :: tagname
     type(mct_aVect), intent(in) :: avx
     integer, intent(in) :: index
