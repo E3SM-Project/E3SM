@@ -377,19 +377,18 @@ void call_function_dropmixnuc(
     const mam_coupling::AerosolState &dry_aerosol_state, const Real dtmicro,
     MAMAci::view_2d raercol_cw[mam4::ndrop::pver][2],
     MAMAci::view_2d raercol[mam4::ndrop::pver][2],
-    // MAMAci::view_2d qqcw[mam4::ndrop::ncnst_tot],
     MAMAci::view_2d qqcw_fld_work_[mam4::ndrop::ncnst_tot],
     MAMAci::view_2d ptend_q[mam4::ndrop::nvar_ptend_q],
     MAMAci::view_2d coltend[mam4::ndrop::ncnst_tot],
     MAMAci::view_2d coltend_cw[mam4::ndrop::ncnst_tot],
     MAMAci::const_view_2d p_int, MAMAci::const_view_2d pdel,
-    MAMAci::view_2d rpdel, /*MAMAci::view_2d state_q[mam4::ndrop::ncnst_tot],*/
-    MAMAci::view_3d state_q_work_, MAMAci::const_view_2d ncldwtr,
-    MAMAci::const_view_2d kvh, MAMAci::view_2d qcld, MAMAci::view_2d wsub,
-    MAMAci::view_2d cloud_frac_new, MAMAci::view_2d cloud_frac_old,
-    MAMAci::view_2d tendnd, MAMAci::view_3d factnum, MAMAci::view_2d ndropcol,
-    MAMAci::view_2d ndropmix, MAMAci::view_2d nsource, MAMAci::view_2d wtke,
-    MAMAci::view_3d ccn, MAMAci::view_3d nact, MAMAci::view_3d mact,
+    MAMAci::view_2d rpdel, MAMAci::view_3d state_q_work_,
+    MAMAci::const_view_2d ncldwtr, MAMAci::const_view_2d kvh,
+    MAMAci::view_2d qcld, MAMAci::view_2d wsub, MAMAci::view_2d cloud_frac_new,
+    MAMAci::view_2d cloud_frac_old, MAMAci::view_2d tendnd,
+    MAMAci::view_3d factnum, MAMAci::view_2d ndropcol, MAMAci::view_2d ndropmix,
+    MAMAci::view_2d nsource, MAMAci::view_2d wtke, MAMAci::view_3d ccn,
+    MAMAci::view_3d nact, MAMAci::view_3d mact,
     MAMAci::view_2d dropmixnuc_scratch_mem[15], const int nlev) {
   MAMAci::const_view_2d T_mid = dry_atmosphere.T_mid;
   MAMAci::const_view_2d p_mid = dry_atmosphere.p_mid;
@@ -422,17 +421,11 @@ void call_function_dropmixnuc(
     for(int j = 0; j < 2; ++j) loc_raercol_cw[i][j] = raercol_cw[i][j];
   for(int i = 0; i < mam4::ndrop::pver; ++i)
     for(int j = 0; j < 2; ++j) loc_raercol[i][j] = raercol[i][j];
-  // for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i) loc_qqcw[i] = qqcw[i];
   for(int i = 0; i < mam4::ndrop::nvar_ptend_q; ++i)
     loc_ptend_q[i] = ptend_q[i];
   for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i) loc_coltend[i] = coltend[i];
   for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i)
     loc_coltend_cw[i] = coltend_cw[i];
-
-  MAMAci::view_2d state_q;
-  Kokkos::resize(
-      state_q, mam4::ndrop::pver,
-      mam4::ndrop::nvars);  // FIXME: use pcnst here and add ncol dim as well
 
   MAMAci::view_2d qqcw_fld_work_loc[25];
   for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i)
@@ -443,7 +436,6 @@ void call_function_dropmixnuc(
   Kokkos::parallel_for(
       team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
         const int icol = team.league_rank();
-        // for (int icol =0 ; icol<1 ;icol++){
 
         // Initialize the ndrop class.
         const int ntot_amode        = mam_coupling::num_aero_modes();
@@ -478,10 +470,8 @@ void call_function_dropmixnuc(
         }
         mam4::ColumnView qqcw_view[mam4::ndrop::ncnst_tot];
         for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i) {
-          // qqcw_view[i] = ekat::subview(loc_qqcw[i], icol);
           qqcw_view[i] = ekat::subview(qqcw_fld_work_loc[i], icol);
         }
-
         mam4::ColumnView ptend_q_view[mam4::ndrop::nvar_ptend_q];
         for(int i = 0; i < mam4::ndrop::nvar_ptend_q; ++i) {
           ptend_q_view[i] = ekat::subview(loc_ptend_q[i], icol);
@@ -521,7 +511,6 @@ void call_function_dropmixnuc(
           mam4::utils::extract_qqcw_from_prognostics(progs_at_col,
                                                      qqcw_at_lev_col, klev);
           for(int icnst = 15; icnst < mam4::ndrop::nvars; ++icnst) {
-            state_q(klev, icnst - 15)           = state_q_at_lev_col[icnst];
             state_q_work_loc(icol, klev, icnst) = state_q_at_lev_col[icnst];
             qqcw_view[icnst - 15](klev)         = qqcw_at_lev_col[icnst];
           }
@@ -560,7 +549,6 @@ void call_function_dropmixnuc(
             ekat::subview(dz, icol), ekat::subview(csbot_cscen, icol),
             ekat::subview(raertend, icol), ekat::subview(qqcwtend, icol));
       });
-  //  }
 }
 KOKKOS_INLINE_FUNCTION
 void copy_mam4xx_array_to_scream(const haero::ThreadTeam &team,
@@ -806,11 +794,6 @@ void MAMAci::set_grids(
   add_field<Computed>("activation_fraction_coarse", scalar3d_layout_mid, nondim,
                       grid_name);  // Layer thickness(pdel) [Pa] at midpoints
 
-  // MUST FIXME: remove state_q from this list
-  /*add_field<Required>(
-      "state_q",
-      FieldLayout{{COL, LEV, CMP}, {ncol_, nlev_, mam4::ndrop::nvars}}, q_unit,
-      grid_name);  // aerosol mmrs [kg/kg]*/
   // MUST FIXME: Is it same as nc or may be not????
   add_field<Required>("ncldwtr", scalar3d_layout_mid, n_unit,
                       grid_name);  // initial droplet number mixing ratio [#/kg]
@@ -818,13 +801,7 @@ void MAMAci::set_grids(
   // MUST FIXME: This should be an internal variable. why we need this as an
   // input???
   add_field<Updated>("w_updraft", scalar3d_layout_mid, q_unit,
-                     grid_name);  // updraft velocity [m/s]
-                                  // MUST FIXME: Remove qqcw from here
-  /*add_field<Required>(
-      "qqcw",
-      FieldLayout{{COL, LEV, CMP}, {ncol_, nlev_, mam4::ndrop::ncnst_tot}},
-      q_unit, grid_name);  // cloud-borne aerosol mass, number mixing ratios
-                           // [#/kg or kg/kg]*/
+                     grid_name);  // updraft velocity
   // MUST FIXME: move it above so that all "required" variables are together
   add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim,
                       grid_name);  // cloud fraction [nondimentional]
@@ -1002,13 +979,9 @@ void MAMAci::initialize_impl(const RunType run_type) {
   // set atmosphere state data
 
   w_sec_ = get_field_in("w_sec").get_view<const Real **>();
-  /*state_q_ = get_field_in("state_q")
-                 .get_view<const Real ***>();  // MUST FIXME: remove this*/
   ncldwtr_ =
       get_field_in("ncldwtr")
           .get_view<const Real **>();  // MUST FIXME: is is nc, may be not???
-  /*qqcw_input_ = get_field_in("qqcw")
-                    .get_view<const Real ***>();  // MUST FIXME: remove this*/
   dgnum_ = get_field_in("dgnum")
                .get_view<const Real ***>();  // MUST FIXME: is it an input, can
                                              // we compute it using calcsize???
@@ -1131,8 +1104,6 @@ void MAMAci::initialize_impl(const RunType run_type) {
   for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i) {
     // These are temp arrays formatted like mam4xx wants.
     // Not sure if there is a way to do this with scream.
-    /*Kokkos::resize(qqcw_[i], ncol_, nlev_);  // MUST FIXME: remove this*/
-    Kokkos::resize(state_q_[i], ncol_, nlev_);
     Kokkos::resize(coltend_[i], ncol_, nlev_);
     Kokkos::resize(coltend_cw_[i], ncol_, nlev_);
   }
@@ -1180,10 +1151,6 @@ void MAMAci::run_impl(const double dt) {
   Kokkos::fence();
 
   haero::ThreadTeamPolicy team_policy(ncol_, Kokkos::AUTO);
-
-  /*copy_scream_array_to_mam4xx(
-      team_policy, qqcw_, qqcw_input_,
-      nlev_);  // MUST FIXME: remove this and populate qqcw here*/
 
   // All the inputs are available to compute w0 and rho
   // Convert from omega to w (vertical velocity)
@@ -1237,14 +1204,13 @@ void MAMAci::run_impl(const double dt) {
                                    dry_atmosphere_.p_del, nlev_);
   Kokkos::fence();  // wait for rpdel_ to be computed.
 
-  call_function_dropmixnuc(team_policy, dry_atmosphere_, dry_aero_, dtmicro_,
-                           raercol_cw_, raercol_, qqcw_fld_work_,
-                           /*qqcw_,*/ ptend_q_, coltend_, coltend_cw_,
-                           dry_atmosphere_.p_int, dry_atmosphere_.p_del, rpdel_,
-                           /*state_q_,*/ state_q_work_, ncldwtr_, kvh_, qcld_,
-                           wsub_, cloud_frac_new_, cloud_frac_old_, tendnd_,
-                           factnum_, ndropcol_, ndropmix_, nsource_, wtke_,
-                           ccn_, nact_, mact_, dropmixnuc_scratch_mem_, nlev_);
+  call_function_dropmixnuc(
+      team_policy, dry_atmosphere_, dry_aero_, dtmicro_, raercol_cw_, raercol_,
+      qqcw_fld_work_, ptend_q_, coltend_, coltend_cw_, dry_atmosphere_.p_int,
+      dry_atmosphere_.p_del, rpdel_, state_q_work_, ncldwtr_, kvh_, qcld_,
+      wsub_, cloud_frac_new_, cloud_frac_old_, tendnd_, factnum_, ndropcol_,
+      ndropmix_, nsource_, wtke_, ccn_, nact_, mact_, dropmixnuc_scratch_mem_,
+      nlev_);
   Kokkos::fence();  // wait for ptend_q_ to be computed.
 #if 0
   copy_mam4xx_array_to_scream<mam4::ndrop::nvar_ptend_q>(team_policy, ptend_q_output_, ptend_q_, nlev_);
