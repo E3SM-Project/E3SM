@@ -15,7 +15,7 @@ module prep_rof_mod
   use seq_comm_mct,     only: mboxid   
   use seq_comm_mct,     only: mbintxlr ! iMOAB id for intx mesh between land and river
   use seq_comm_mct,     only : atm_pg_active  ! whether the atm uses FV mesh or not ; made true if fv_nphys > 0
-  use dimensions_mod,   only : np     ! for atmosphere degree 
+  !use dimensions_mod,   only : np     ! for atmosphere degree 
   use seq_comm_mct,     only: seq_comm_getData=>seq_comm_setptrs
   use seq_infodata_mod, only: seq_infodata_type, seq_infodata_getdata
   use shr_log_mod     , only: errMsg => shr_log_errMsg
@@ -582,7 +582,7 @@ contains
             else ! this part does not work, anyway
               dm1 = "cgll"//C_NULL_CHAR
               dofnameS="GLOBAL_DOFS"//C_NULL_CHAR
-              orderS = np !  it should be 4
+              orderS = 4 ! np !  it should be 4
             endif
             dm2 = "fv"//C_NULL_CHAR
             dofnameT="GLOBAL_ID"//C_NULL_CHAR

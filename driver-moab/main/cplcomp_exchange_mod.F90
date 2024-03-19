@@ -29,7 +29,7 @@ module cplcomp_exchange_mod
   use seq_comm_mct, only : MPSIID, mbixid  !  sea-ice on comp pes and on coupler pes
   use seq_comm_mct, only : mrofid, mbrxid  ! iMOAB id of moab rof app on comp pes and on coupler too
   use shr_mpi_mod,  only: shr_mpi_max
-  use dimensions_mod, only : np     ! for atmosphere
+  ! use dimensions_mod, only : np     ! for atmosphere
   use iso_c_binding
 
   implicit none
@@ -1136,7 +1136,7 @@ contains
               numco = 1 !  usually 1 value per cell
             else ! this is not supported now, but leave it here
               tagname = trim(seq_flds_a2x_ext_fields)//C_NULL_CHAR ! MOAB versions of a2x for spectral
-              numco = np*np !  usually 16 values per cell, GLL points; should be 4 x 4 = 16
+              numco = 16 ! np*np !  usually 16 values per cell, GLL points; should be 4 x 4 = 16
             endif
             ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
             if (ierr .ne. 0) then
