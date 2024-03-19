@@ -653,28 +653,6 @@
     </queues>
   </batch_system>
 
-  <batch_system MACH="grizzly" type="slurm" >
-	<directives>
-		<directive>--nodes={{ num_nodes }}</directive>
-		<directive>--ntasks-per-node={{ tasks_per_node }}</directive>
-		<directive>--qos=standard </directive>
-	</directives>
-	<queues>
-		<queue walltimemax="16:00:00" default="true">standard</queue>
-	</queues>
-  </batch_system>
-
-   <batch_system MACH="badger" type="slurm" >
-	<directives>
-		<directive>--nodes={{ num_nodes }}</directive>
-		<directive>--ntasks-per-node={{ tasks_per_node }}</directive>
-		<directive>--qos=standard </directive>
-	</directives>
-	<queues>
-		<queue walltimemax="16:00:00" default="true">standard</queue>
-	</queues>
-    </batch_system>
-
    <batch_system MACH="chicoma-cpu" type="slurm">
     <directives>
      <directive>--partition=standard </directive>
