@@ -95,6 +95,12 @@ void timeloop() {
         crmsurface(bflx);
       }
 
+      // //-----------------------------------------------------------
+      // //       Coriolis force:
+      // if (docoriolis) {
+      //   coriolis();
+      // }
+
       //-----------------------------------------------------------
       //  SGS physics:
       if (dosgs) {
