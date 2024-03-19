@@ -149,6 +149,7 @@
       <value compset="_ELM%[^_]*CNPECACNTBC">-bgc bgc -nutrient cnp -nutrient_comp_pathway eca -soil_decomp century -methane </value>
       <value compset="_ELM%[^_]*CNECACTCBC" >-bgc bgc -nutrient cn  -nutrient_comp_pathway eca -soil_decomp ctc     -methane </value>
       <value compset="_ELM%[^_]*CNPECACTCBC">-bgc bgc -nutrient cnp -nutrient_comp_pathway eca -soil_decomp ctc     -methane </value>
+      <value compset=="_ELM%[^_]*CNPRDCTCBCPHSWFMCROP" >-bgc bgc -nutrient cnp -nutrient_comp_pathway rd  -soil_decomp ctc -methane -hydrstress -irrig .true. -tw_irr_on -crop </value>
 
       <value compset="_ELM50%[^_]*SP"        >-bgc sp</value>
       <value compset="_ELM50%[^_]*BGC"       >-bgc bgc</value>
