@@ -1171,10 +1171,10 @@
         <command name="load">sems-archive-git</command>
         <command name="load">sems-archive-cmake/3.19.1</command>
         <command name="load">gnu/10.2.1</command>
-        <command name="load">sems-archive-intel/22.2.0</command>
+        <command name="load">sems-archive-intel/21.3.0</command>
       </modules>
       <modules mpilib="!mpi-serial">
-        <command name="load">sems-archive-openmpi/4.1.1</command>
+        <command name="load">sems-archive-openmpi/4.1.4</command>
         <command name="load">acme-netcdf/4.7.4/acme</command>
       </modules>
       <modules mpilib="mpi-serial">
