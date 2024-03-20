@@ -57,6 +57,11 @@ target_include_directories(scream_share PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_CURRENT_BINARY_DIR}/modules
 )
+
+if (GPTL_PATH)
+  target_include_directories(scream_share PUBLIC ${GPTL_PATH})
+endif ()
+
 target_link_libraries(scream_share PUBLIC ekat pioc)
 target_compile_options(scream_share PUBLIC
   $<$<COMPILE_LANGUAGE:Fortran>:${SCREAM_Fortran_FLAGS}>
