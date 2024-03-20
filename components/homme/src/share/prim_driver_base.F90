@@ -1621,8 +1621,9 @@ contains
   adjust_ps=.true.     ! preqx requires forcing to stay on reference levels
 #endif
 
-#ifdef CAM
-  adjust_ps=.true.     ! For CAM runs, require forcing to stay on reference levels
+#if defined(CAM) && !defined(SCREAM) 
+  adjust_ps=.true.     ! Special case when CAM is defined, and SCREAM is not defined, 
+                       ! require forcing to stay on reference levels no matter dt_remap_factor
 #endif
 
   dp=elem%state%dp3d(:,:,:,np1)
