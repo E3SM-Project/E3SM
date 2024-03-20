@@ -503,7 +503,8 @@ contains
             call mpas_log_write(' ')
          end do
 
-         if (config_time_integrator == 'LTS') then
+         if ( (config_time_integrator == 'LTS') & 
+              .or. (config_time_integrator == 'FB_LTS') ) then
             timeIntegratorLTS = .true.
          else
             timeIntegratorLTS = .false.

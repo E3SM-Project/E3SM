@@ -146,15 +146,14 @@
 <config_Redi_maximum_slope>0.01</config_Redi_maximum_slope>
 <config_Redi_use_slope_taper>.true.</config_Redi_use_slope_taper>
 <config_Redi_use_surface_taper>.true.</config_Redi_use_surface_taper>
+<config_Redi_limit_term1>.true.</config_Redi_limit_term1>
 <config_Redi_use_quasi_monotone_limiter>.true.</config_Redi_use_quasi_monotone_limiter>
 <config_Redi_quasi_monotone_safety_factor>0.9</config_Redi_quasi_monotone_safety_factor>
-<config_Redi_limit_term1>.true.</config_Redi_limit_term1>
 <config_Redi_min_layers_diag_terms>0</config_Redi_min_layers_diag_terms>
 <config_Redi_min_layers_diag_terms ocn_grid="ARRM10to60E2r1">15</config_Redi_min_layers_diag_terms>
 <config_Redi_horizontal_taper>'ramp'</config_Redi_horizontal_taper>
 <config_Redi_horizontal_taper ocn_grid="SOwISC12to60E2r4">'RossbyRadius'</config_Redi_horizontal_taper>
 <config_Redi_horizontal_taper ocn_grid="ECwISC30to60E2r1">'RossbyRadius'</config_Redi_horizontal_taper>
-<!-- To do: ramp for WC but RossbyRadius for Cryo -->
 <config_Redi_horizontal_taper ocn_grid="IcoswISC30E3r5">'ramp'</config_Redi_horizontal_taper>
 <config_Redi_horizontal_ramp_min>20e3</config_Redi_horizontal_ramp_min>
 <config_Redi_horizontal_ramp_min ocn_grid="WCAtl12to45E2r4">30e3</config_Redi_horizontal_ramp_min>
@@ -180,7 +179,6 @@
 <config_GM_closure ocn_grid="WCAtl12to45E2r4">'constant'</config_GM_closure>
 <config_GM_closure ocn_grid="SOwISC12to60E2r4">'N2_dependent'</config_GM_closure>
 <config_GM_closure ocn_grid="ECwISC30to60E2r1">'N2_dependent'</config_GM_closure>
-<!-- To do: constant for WC but N2_dependent for Cryo -->
 <config_GM_closure ocn_grid="IcoswISC30E3r5">'constant'</config_GM_closure>
 <config_GM_constant_kappa>900.0</config_GM_constant_kappa>
 <config_GM_constant_kappa ocn_forcing="datm_forced_restoring" ocn_grid="oEC60to30v3wLI">600.0</config_GM_constant_kappa>
@@ -198,7 +196,6 @@
 <config_GM_spatially_variable_baroclinic_mode>3.0</config_GM_spatially_variable_baroclinic_mode>
 <config_GM_spatially_variable_baroclinic_mode ocn_grid="SOwISC12to60E2r4">1.0</config_GM_spatially_variable_baroclinic_mode>
 <config_GM_spatially_variable_baroclinic_mode ocn_grid="ECwISC30to60E2r1">1.0</config_GM_spatially_variable_baroclinic_mode>
-<!-- To do: 3.0 for WC but 1.0 for Cryo? -->
 <config_GM_spatially_variable_baroclinic_mode ocn_grid="IcoswISC30E3r5">3.0</config_GM_spatially_variable_baroclinic_mode>
 <config_GM_Visbeck_alpha>0.13</config_GM_Visbeck_alpha>
 <config_GM_Visbeck_max_depth>1000.0</config_GM_Visbeck_max_depth>
@@ -209,7 +206,6 @@
 <config_GM_horizontal_taper>'ramp'</config_GM_horizontal_taper>
 <config_GM_horizontal_taper ocn_grid="SOwISC12to60E2r4">'RossbyRadius'</config_GM_horizontal_taper>
 <config_GM_horizontal_taper ocn_grid="ECwISC30to60E2r1">'RossbyRadius'</config_GM_horizontal_taper>
-<!-- To do: ramp for WC but RossbyRadius for Cryo -->
 <config_GM_horizontal_taper ocn_grid="IcoswISC30E3r5">'ramp'</config_GM_horizontal_taper>
 <config_GM_horizontal_ramp_min>20e3</config_GM_horizontal_ramp_min>
 <config_GM_horizontal_ramp_min ocn_grid="WCAtl12to45E2r4">30e3</config_GM_horizontal_ramp_min>

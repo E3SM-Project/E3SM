@@ -202,9 +202,9 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_time_integrator" type="char*1024"
 	category="time_integration" group="time_integration">
-Time integration method.
+Time integration method. These options are only supported in standalone, not E3SM: 'LTS', 'FB_LTS'.
 
-Valid values: 'split_explicit', 'RK4', 'unsplit_explicit', 'split_implicit', 'LTS', 'split_explicit_ab2'
+Valid values: 'split_explicit', 'RK4', 'unsplit_explicit', 'split_implicit', 'split_explicit_ab2', 'LTS', 'FB_LTS'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2038,7 +2038,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_n_ts_iter" type="integer"
 	category="split_timestep_share" group="split_timestep_share">
-number of large iterations over stages 1-3
+number of large iterations over stages 1-3; For the split_explicit_ab2 time integrator, this value only affects the first time step when it is not a restart run. For restart runs, this value has no effect on the split_explicit_ab2 time integrator.
 
 Valid values: any positive integer, but typically 1, 2, or 3
 Default: Defined in namelist_defaults.xml
