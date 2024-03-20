@@ -627,7 +627,7 @@ _TESTS = {
     "e3sm_scream_v1_dp-eamxx" : {
         "time"  : "01:00:00",
         "tests" : (
-            "ERS_Ln22.ne30_ne30.F2010-SCREAMv1-DP-DYCOMSrf01", # 225 phys cols, roughly size of ne2
+            "ERS_Ln22.ne30_ne30.F2010-SCREAMv1-DP-DYCOMSrf01.scream-ntasks-16", # 225 phys cols, roughly size of ne2
             )
     },
 
