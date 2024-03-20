@@ -797,6 +797,7 @@ contains
                ! we do not compute intersection, so we will have to just send data from atm to land and viceversa, by GLOBAL_ID matching
                ! so we compute just a comm graph, between lnd and atm dofs, on the coupler; target is atm
                ! land is point cloud in this case, type1 = 2
+               call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID) ! make sure we have the right MPI group 
                type1 = 3; !  full mesh for land now
                type2 = 3;  ! fv for target atm
                ierr = iMOAB_ComputeCommGraph( mblxid, mbaxid, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &

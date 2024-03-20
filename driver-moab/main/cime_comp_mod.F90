@@ -209,9 +209,7 @@ module cime_comp_mod
   use component_type_mod , only: expose_mct_grid_moab
 #endif
 
-#ifdef MOABCOMP
-    use iso_c_binding
-#endif
+  use iso_c_binding
 
 
   implicit none

@@ -12,7 +12,6 @@ module prep_ocn_mod
   use seq_comm_mct,     only: CPLID, OCNID, logunit
   use seq_comm_mct,     only: seq_comm_getData=>seq_comm_setptrs
 
-  use seq_comm_mct,     only: mpoid  ! iMOAB pid for ocean mesh on component pes
   use seq_comm_mct,     only: mboxid ! iMOAB id for mpas ocean migrated mesh to coupler pes
   use seq_comm_mct,     only: mbrmapro ! iMOAB id for map read from rof2ocn map file
   use seq_comm_mct,     only: mbrxoid ! iMOAB id for rof on coupler in ocean context;
