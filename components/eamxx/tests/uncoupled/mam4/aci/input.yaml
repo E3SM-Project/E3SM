@@ -6,7 +6,8 @@ driver_options:
 time_stepping:
   time_step: ${ATM_TIME_STEP}
   run_t0: ${RUN_T0}  # YYYY-MM-DD-XXXXX
-  number_of_steps: ${NUM_STEPS}
+  #number_of_steps: ${NUM_STEPS}
+  number_of_steps: 1
 
 atmosphere_processes:
   atm_procs_list: [mam4_aci]
@@ -22,8 +23,8 @@ grids_manager:
     number_of_vertical_levels:  72
 
 initial_conditions:
-  # The name of the file containing the initial conditions for this test.
-  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
+  # The name of the file containing the initial conditions for this test. FIXME: use a variable for the filename here
+  Filename: ${SCREAM_DATA_DIR}/init/scream_unit_tests_aerosol_optics_ne2np4L72_20220822.nc
   T_mid: 273.0
   p_mid: 1.e5
   p_int: 1.e5

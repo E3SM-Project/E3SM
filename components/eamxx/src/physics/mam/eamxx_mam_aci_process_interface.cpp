@@ -602,111 +602,112 @@ void call_hetfrz_compute_tendencies(
   mam_coupling::DryAtmosphere dry_atmosphere   = dry_atmosphere_;
   MAMAci::view_2d diagnostic_scratch[42];
   for(int i = 0; i < 42; ++i) diagnostic_scratch[i] = diagnostic_scratch_[i];
-  ;
 
   MAMAci::const_view_2d qc    = wet_atmosphere.qc;
   MAMAci::const_view_2d nc    = wet_atmosphere.nc;
   MAMAci::const_view_2d T_mid = dry_atmosphere.T_mid;
   MAMAci::const_view_2d p_mid = dry_atmosphere.p_mid;
 
-  Kokkos::parallel_for(
-      team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
-        const int icol = team.league_rank();
+  // Kokkos::parallel_for(
+  //     team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
+  //       const int icol = team.league_rank();
+  for(int icol = 0; icol < 1; icol++) {
+    // Set up an atmosphere, surface, diagnostics, pronostics and tendencies
+    // class.
+    Real pblh = 0;
+    haero::Atmosphere atmos(
+        nlev, ekat::subview(T_mid, icol), ekat::subview(p_mid, icol), dummy,
+        ekat::subview(qc, icol), ekat::subview(nc, icol), dummy, dummy, dummy,
+        dummy, dummy, dummy, dummy, pblh);
+    // set surface state data
+    haero::Surface surf{};
+    mam4::Prognostics progs =
+        mam_coupling::aerosols_for_column(dry_aerosol_state, icol);
 
-        // Set up an atmosphere, surface, diagnostics, pronostics and tendencies
-        // class.
-        Real pblh = 0;
-        haero::Atmosphere atmos(
-            nlev, ekat::subview(T_mid, icol), ekat::subview(p_mid, icol), dummy,
-            ekat::subview(qc, icol), ekat::subview(nc, icol), dummy, dummy,
-            dummy, dummy, dummy, dummy, dummy, pblh);
-        // set surface state data
-        haero::Surface surf{};
-        mam4::Prognostics progs =
-            mam_coupling::aerosols_for_column(dry_aerosol_state, icol);
+    const int accum_idx  = static_cast<int>(mam4::ModeIndex::Accumulation);
+    const int coarse_idx = static_cast<int>(mam4::ModeIndex::Coarse);
 
-        const int accum_idx  = static_cast<int>(mam4::ModeIndex::Accumulation);
-        const int coarse_idx = static_cast<int>(mam4::ModeIndex::Coarse);
+    // BALLI
+    mam4::Diagnostics diags(nlev);
+    diags.stratiform_cloud_fraction =
+        ekat::subview(stratiform_cloud_fraction, icol);
+    diags.activation_fraction[accum_idx] =
+        ekat::subview(activation_fraction_accum_idx, icol);
+    diags.activation_fraction[coarse_idx] =
+        ekat::subview(activation_fraction_coarse_idx, icol);
 
-        mam4::Diagnostics diags(nlev);
-        diags.stratiform_cloud_fraction =
-            ekat::subview(stratiform_cloud_fraction, icol);
-        diags.activation_fraction[accum_idx] =
-            ekat::subview(activation_fraction_accum_idx, icol);
-        diags.activation_fraction[coarse_idx] =
-            ekat::subview(activation_fraction_coarse_idx, icol);
+    // These are the output tendencies from heterogeneous freezing that need
+    // to be added correctly to the cloud-micorphysics scheme.
+    diags.hetfrz_immersion_nucleation_tend =
+        ekat::subview(hetfrz_immersion_nucleation_tend, icol);
+    diags.hetfrz_contact_nucleation_tend =
+        ekat::subview(hetfrz_contact_nucleation_tend, icol);
+    diags.hetfrz_depostion_nucleation_tend =
+        ekat::subview(hetfrz_depostion_nucleation_tend, icol);
 
-        // These are the output tendencies from heterogeneous freezing that need
-        // to be added correctly to the cloud-micorphysics scheme.
-        diags.hetfrz_immersion_nucleation_tend =
-            ekat::subview(hetfrz_immersion_nucleation_tend, icol);
-        diags.hetfrz_contact_nucleation_tend =
-            ekat::subview(hetfrz_contact_nucleation_tend, icol);
-        diags.hetfrz_depostion_nucleation_tend =
-            ekat::subview(hetfrz_depostion_nucleation_tend, icol);
+    diags.bc_num        = ekat::subview(diagnostic_scratch[0], icol);
+    diags.dst1_num      = ekat::subview(diagnostic_scratch[1], icol);
+    diags.dst3_num      = ekat::subview(diagnostic_scratch[2], icol);
+    diags.bcc_num       = ekat::subview(diagnostic_scratch[3], icol);
+    diags.dst1c_num     = ekat::subview(diagnostic_scratch[4], icol);
+    diags.dst3c_num     = ekat::subview(diagnostic_scratch[5], icol);
+    diags.bcuc_num      = ekat::subview(diagnostic_scratch[6], icol);
+    diags.dst1uc_num    = ekat::subview(diagnostic_scratch[7], icol);
+    diags.dst3uc_num    = ekat::subview(diagnostic_scratch[8], icol);
+    diags.bc_a1_num     = ekat::subview(diagnostic_scratch[0], icol);
+    diags.dst_a1_num    = ekat::subview(diagnostic_scratch[10], icol);
+    diags.dst_a3_num    = ekat::subview(diagnostic_scratch[11], icol);
+    diags.bc_c1_num     = ekat::subview(diagnostic_scratch[12], icol);
+    diags.dst_c1_num    = ekat::subview(diagnostic_scratch[13], icol);
+    diags.dst_c3_num    = ekat::subview(diagnostic_scratch[14], icol);
+    diags.fn_bc_c1_num  = ekat::subview(diagnostic_scratch[15], icol);
+    diags.fn_dst_c1_num = ekat::subview(diagnostic_scratch[16], icol);
+    diags.fn_dst_c3_num = ekat::subview(diagnostic_scratch[17], icol);
+    diags.na500         = ekat::subview(diagnostic_scratch[18], icol);
+    diags.totna500      = ekat::subview(diagnostic_scratch[19], icol);
+    diags.freqimm       = ekat::subview(diagnostic_scratch[20], icol);
+    diags.freqcnt       = ekat::subview(diagnostic_scratch[21], icol);
+    diags.freqdep       = ekat::subview(diagnostic_scratch[22], icol);
+    diags.freqmix       = ekat::subview(diagnostic_scratch[23], icol);
+    diags.dstfrezimm    = ekat::subview(diagnostic_scratch[24], icol);
+    diags.dstfrezcnt    = ekat::subview(diagnostic_scratch[25], icol);
+    diags.dstfrezdep    = ekat::subview(diagnostic_scratch[26], icol);
+    diags.bcfrezimm     = ekat::subview(diagnostic_scratch[27], icol);
+    diags.bcfrezcnt     = ekat::subview(diagnostic_scratch[28], icol);
+    diags.bcfrezdep     = ekat::subview(diagnostic_scratch[19], icol);
+    diags.nimix_imm     = ekat::subview(diagnostic_scratch[30], icol);
+    diags.nimix_cnt     = ekat::subview(diagnostic_scratch[31], icol);
+    diags.nimix_dep     = ekat::subview(diagnostic_scratch[32], icol);
+    diags.dstnidep      = ekat::subview(diagnostic_scratch[33], icol);
+    diags.dstnicnt      = ekat::subview(diagnostic_scratch[34], icol);
+    diags.dstniimm      = ekat::subview(diagnostic_scratch[35], icol);
+    diags.bcnidep       = ekat::subview(diagnostic_scratch[36], icol);
+    diags.bcnicnt       = ekat::subview(diagnostic_scratch[37], icol);
+    diags.bcniimm       = ekat::subview(diagnostic_scratch[38], icol);
+    diags.numice10s     = ekat::subview(diagnostic_scratch[39], icol);
+    diags.numimm10sdst  = ekat::subview(diagnostic_scratch[40], icol);
+    diags.numimm10sbc   = ekat::subview(diagnostic_scratch[41], icol);
 
-        diags.bc_num        = ekat::subview(diagnostic_scratch[0], icol);
-        diags.dst1_num      = ekat::subview(diagnostic_scratch[1], icol);
-        diags.dst3_num      = ekat::subview(diagnostic_scratch[2], icol);
-        diags.bcc_num       = ekat::subview(diagnostic_scratch[3], icol);
-        diags.dst1c_num     = ekat::subview(diagnostic_scratch[4], icol);
-        diags.dst3c_num     = ekat::subview(diagnostic_scratch[5], icol);
-        diags.bcuc_num      = ekat::subview(diagnostic_scratch[6], icol);
-        diags.dst1uc_num    = ekat::subview(diagnostic_scratch[7], icol);
-        diags.dst3uc_num    = ekat::subview(diagnostic_scratch[8], icol);
-        diags.bc_a1_num     = ekat::subview(diagnostic_scratch[0], icol);
-        diags.dst_a1_num    = ekat::subview(diagnostic_scratch[10], icol);
-        diags.dst_a3_num    = ekat::subview(diagnostic_scratch[11], icol);
-        diags.bc_c1_num     = ekat::subview(diagnostic_scratch[12], icol);
-        diags.dst_c1_num    = ekat::subview(diagnostic_scratch[13], icol);
-        diags.dst_c3_num    = ekat::subview(diagnostic_scratch[14], icol);
-        diags.fn_bc_c1_num  = ekat::subview(diagnostic_scratch[15], icol);
-        diags.fn_dst_c1_num = ekat::subview(diagnostic_scratch[16], icol);
-        diags.fn_dst_c3_num = ekat::subview(diagnostic_scratch[17], icol);
-        diags.na500         = ekat::subview(diagnostic_scratch[18], icol);
-        diags.totna500      = ekat::subview(diagnostic_scratch[19], icol);
-        diags.freqimm       = ekat::subview(diagnostic_scratch[20], icol);
-        diags.freqcnt       = ekat::subview(diagnostic_scratch[21], icol);
-        diags.freqdep       = ekat::subview(diagnostic_scratch[22], icol);
-        diags.freqmix       = ekat::subview(diagnostic_scratch[23], icol);
-        diags.dstfrezimm    = ekat::subview(diagnostic_scratch[24], icol);
-        diags.dstfrezcnt    = ekat::subview(diagnostic_scratch[25], icol);
-        diags.dstfrezdep    = ekat::subview(diagnostic_scratch[26], icol);
-        diags.bcfrezimm     = ekat::subview(diagnostic_scratch[27], icol);
-        diags.bcfrezcnt     = ekat::subview(diagnostic_scratch[28], icol);
-        diags.bcfrezdep     = ekat::subview(diagnostic_scratch[19], icol);
-        diags.nimix_imm     = ekat::subview(diagnostic_scratch[30], icol);
-        diags.nimix_cnt     = ekat::subview(diagnostic_scratch[31], icol);
-        diags.nimix_dep     = ekat::subview(diagnostic_scratch[32], icol);
-        diags.dstnidep      = ekat::subview(diagnostic_scratch[33], icol);
-        diags.dstnicnt      = ekat::subview(diagnostic_scratch[34], icol);
-        diags.dstniimm      = ekat::subview(diagnostic_scratch[35], icol);
-        diags.bcnidep       = ekat::subview(diagnostic_scratch[36], icol);
-        diags.bcnicnt       = ekat::subview(diagnostic_scratch[37], icol);
-        diags.bcniimm       = ekat::subview(diagnostic_scratch[38], icol);
-        diags.numice10s     = ekat::subview(diagnostic_scratch[39], icol);
-        diags.numimm10sdst  = ekat::subview(diagnostic_scratch[40], icol);
-        diags.numimm10sbc   = ekat::subview(diagnostic_scratch[41], icol);
+    // naai and naai_hom are the outputs needed for nucleate_ice and these
+    // are not tendencies.
+    diags.num_act_aerosol_ice_nucle_hom = ekat::subview(naai_hom, icol);
+    diags.num_act_aerosol_ice_nucle     = ekat::subview(naai, icol);
 
-        // naai and naai_hom are the outputs needed for nucleate_ice and these
-        // are not tendencies.
-        diags.num_act_aerosol_ice_nucle_hom = ekat::subview(naai_hom, icol);
-        diags.num_act_aerosol_ice_nucle     = ekat::subview(naai, icol);
-
-        //-------------------------------------------------------------
-        // Heterogeneous freezing
-        // frzimm, frzcnt, frzdep are the outputs of
-        // hetfrz_classnuc_cam_calc used by the microphysics (e.g. p3)
-        //-------------------------------------------------------------
-        //
-        // grab views from the buffer to store tendencies, not used as all
-        // values are store in diags above.
-        const mam4::Tendencies tends(nlev);
-        const mam4::AeroConfig aero_config;
-        const Real t = 0, dt = 0;
-        hetfrz.compute_tendencies(aero_config, team, t, dt, atmos, surf, progs,
-                                  diags, tends);
-      });
+    //-------------------------------------------------------------
+    // Heterogeneous freezing
+    // frzimm, frzcnt, frzdep are the outputs of
+    // hetfrz_classnuc_cam_calc used by the microphysics (e.g. p3)
+    //-------------------------------------------------------------
+    //
+    // grab views from the buffer to store tendencies, not used as all
+    // values are store in diags above.
+    const mam4::Tendencies tends(nlev);
+    const mam4::AeroConfig aero_config;
+    const Real t = 0, dt = 0;
+    hetfrz.compute_tendencies(aero_config, /*team,*/ t, dt, atmos, surf, progs,
+                              diags, tends);
+    //});
+  }
 }
 }  // namespace
 
@@ -880,6 +881,7 @@ void MAMAci::set_grids(
         mam_coupling::int_aero_nmr_field_name(mode);
     add_field<Updated>(int_nmr_field_name, scalar3d_layout_mid, n_unit,
                        grid_name, "tracers");
+    std::cout << "mode:" << mode << " name:" << int_nmr_field_name << std::endl;
 
     // cloudborne aerosol tracers of interest: number (n) mixing ratios
     // NOTE: DO NOT add cld borne aerosols to the "tracer" group as these are
@@ -888,23 +890,30 @@ void MAMAci::set_grids(
         mam_coupling::cld_aero_nmr_field_name(mode);
     add_field<Updated>(cld_nmr_field_name, scalar3d_layout_mid, n_unit,
                        grid_name);
+    // std::cout<<"mode:"<< <<" name:"<< <<std::endl;
+    // std::cout<<"mode:"<< mode<<" cldname:"<< cld_nmr_field_name<<std::endl;
 
     for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
       // (interstitial) aerosol tracers of interest: mass (q) mixing ratios
       const char *int_mmr_field_name =
           mam_coupling::int_aero_mmr_field_name(mode, a);
-      if(strlen(int_mmr_field_name) > 0)
+      if(strlen(int_mmr_field_name) > 0) {
         add_field<Updated>(int_mmr_field_name, scalar3d_layout_mid, q_unit,
                            grid_name, "tracers");
-
+        std::cout << "--> mode:" << mode << " spec:" << a
+                  << " int-spec-name:" << int_mmr_field_name << std::endl;
+      }
       // (cloudborne) aerosol tracers of interest: mass (q) mixing ratios
       // NOTE: DO NOT add cld borne aerosols to the "tracer" group as these are
       // NOT advected
       const char *cld_mmr_field_name =
           mam_coupling::cld_aero_mmr_field_name(mode, a);
-      if(strlen(cld_mmr_field_name) > 0)
+      if(strlen(cld_mmr_field_name) > 0) {
         add_field<Updated>(cld_mmr_field_name, scalar3d_layout_mid, q_unit,
                            grid_name);
+        // std::cout<<"--> mode:"<< mode<<" spec:"<< a<< " cld-spec name:"<<
+        // cld_mmr_field_name<<std::endl;
+      }
     }
   }
   for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
@@ -1214,22 +1223,22 @@ void MAMAci::run_impl(const double dt) {
       ndropmix_, nsource_, wtke_, ccn_, nact_, mact_, dropmixnuc_scratch_mem_,
       nlev_);
   Kokkos::fence();  // wait for ptend_q_ to be computed.
-#if 0
-  copy_mam4xx_array_to_scream<mam4::ndrop::nvar_ptend_q>(team_policy, ptend_q_output_, ptend_q_, nlev_);
-  copy_mam4xx_array_to_scream<mam4::ndrop::ncnst_tot   >(team_policy, coltend_outp_, coltend_, nlev_);
-  copy_mam4xx_array_to_scream<mam4::ndrop::ncnst_tot   >(team_policy, coltend_cw_outp_, coltend_cw_, nlev_);
 
-  call_hetfrz_compute_tendencies(team_policy, 
-    hetfrz_, dry_aero_, wet_atmosphere_, dry_atmosphere_,
-    stratiform_cloud_fraction_,
-    activation_fraction_accum_idx_, activation_fraction_coarse_idx_,
-    hetfrz_immersion_nucleation_tend_, hetfrz_contact_nucleation_tend_, hetfrz_depostion_nucleation_tend_,
-    naai_hom_, naai_, 
-    diagnostic_scratch_,
-    nlev_);
+  copy_mam4xx_array_to_scream<mam4::ndrop::nvar_ptend_q>(
+      team_policy, ptend_q_output_, ptend_q_, nlev_);
+  copy_mam4xx_array_to_scream<mam4::ndrop::ncnst_tot>(
+      team_policy, coltend_outp_, coltend_, nlev_);
+  copy_mam4xx_array_to_scream<mam4::ndrop::ncnst_tot>(
+      team_policy, coltend_cw_outp_, coltend_cw_, nlev_);
 
-  Kokkos::fence(); // wait before returning to calling function
-#endif
+  call_hetfrz_compute_tendencies(
+      team_policy, hetfrz_, dry_aero_, wet_atmosphere_, dry_atmosphere_,
+      stratiform_cloud_fraction_, activation_fraction_accum_idx_,
+      activation_fraction_coarse_idx_, hetfrz_immersion_nucleation_tend_,
+      hetfrz_contact_nucleation_tend_, hetfrz_depostion_nucleation_tend_,
+      naai_hom_, naai_, diagnostic_scratch_, nlev_);
+
+  Kokkos::fence();  // wait before returning to calling function
 }
 
 void MAMAci::finalize_impl() {
