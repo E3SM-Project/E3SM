@@ -245,7 +245,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_hmix_ref_cell_width" type="real"
 	category="hmix" group="hmix">
-Reference cell width. If config_hmix_use_ref_cell_width = .true., then hmix coefficients are set to be nu_{2h} = config_mom_del2*(cellWidth / config_hmix_use_ref_cell_width) and nu_{4h} = config_mom_del4*(cellWidth / config_hmix_use_ref_cell_width)^3 where cellWidth is the effective cell width computed as 2*sqrt(areaCell/pi). See Hoch et al 2020 JAMES eq 1,2. This relation applies within a simulation, but also generally among multiple simulations, so the parameters config_mom_del2, config_mom_del4, and config_hmix_use_ref_cell_width can generally remain at their standard values, and just be adjusted for fine tuning.
+Reference cell width. If config_hmix_use_ref_cell_width = .true., then hmix coefficients are set to be $nu_{2h}$ = config_mom_del2*(cellWidth / config_hmix_use_ref_cell_width) and $nu_{4h}$ = config_mom_del4*(cellWidth / config_hmix_use_ref_cell_width)$^3$ where cellWidth is the effective cell width computed as 2*sqrt(areaCell/pi). See Hoch et al 2020 JAMES eq 1,2. This relation applies within a simulation, but also generally among multiple simulations, so the parameters config_mom_del2, config_mom_del4, and config_hmix_use_ref_cell_width can generally remain at their standard values, and just be adjusted for fine tuning.
 
 Valid values: Any positive real number, but typically a resolution number such as 30km.
 Default: Defined in namelist_defaults.xml
@@ -307,7 +307,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_mom_del4" type="real"
 	category="hmix_del4" group="hmix_del4">
-Coefficient for horizontal biharmonic operator on momentum.  If config_hmix_use_ref_cell_width = .true. then $\nu_{4h}$ = config_mom_del4*(cellWidth / config_hmix_use_ref_cell_width)^3. If config_hmix_use_ref_cell_width = .false. then it is referenced to the smallest cell.
+Coefficient for horizontal biharmonic operator on momentum.  If config_hmix_use_ref_cell_width = .true. then $\nu_{4h}$ = config_mom_del4*(cellWidth / config_hmix_use_ref_cell_width)$^3$. If config_hmix_use_ref_cell_width = .false. then it is referenced to the smallest cell.
 
 Valid values: any positive real
 Default: Defined in namelist_defaults.xml
@@ -331,7 +331,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_tracer_del4" type="real"
 	category="hmix_del4" group="hmix_del4">
-Coefficient for horizontal biharmonic operator on tracers.  If config_hmix_use_ref_cell_width = .true. then $\nu_{4h}$ = config_tracer_del4*(cellWidth / config_hmix_use_ref_cell_width)^3. If config_hmix_use_ref_cell_width = .false. then it is referenced to the smallest cell.
+Coefficient for horizontal biharmonic operator on tracers.  If config_hmix_use_ref_cell_width = .true. then $\nu_{4h}$ = config_tracer_del4*(cellWidth / config_hmix_use_ref_cell_width)$^3$. If config_hmix_use_ref_cell_width = .false. then it is referenced to the smallest cell.
 
 Valid values: any positive real
 Default: Defined in namelist_defaults.xml
@@ -1188,7 +1188,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_sw_absorption_type" type="char*1024"
 	category="shortwaveRadiation" group="shortwaveRadiation">
-Name of shortwave absorption type used in simulation. 
+Name of shortwave absorption type used in simulation.
 
 Valid values: 'jerlov' or 'ohlmann00' or 'none'
 Default: Defined in namelist_defaults.xml
@@ -1809,7 +1809,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_Rayleigh_damping_depth_variable" type="logical"
 	category="Rayleigh_damping" group="Rayleigh_damping">
-If true applies r h^-1 instead of just r.
+If true applies r h$^-1$ instead of just r.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
