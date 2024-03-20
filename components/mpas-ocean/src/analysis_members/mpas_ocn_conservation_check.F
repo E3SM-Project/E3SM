@@ -1162,8 +1162,8 @@ v=accumulatedLandIceFrazilFlux     ; write(m,"('  landIceFrazilFlux    ',es16.8,
 
       real(kind=RKIND), pointer :: &
            accumulatedSeaIceSalinityFlux, &
-           accumulatedFrazilSalinityFlux, &
-           accumulatedLandIceFrazilSalinityFlux
+           accumulatedFrazilSalinityFlux
+           ! accumulatedLandIceFrazilSalinityFlux is not present because it is always 0
 
       real(kind=RKIND), dimension(:), allocatable :: &
            sumArray, &
@@ -1209,7 +1209,6 @@ v=accumulatedLandIceFrazilFlux     ; write(m,"('  landIceFrazilFlux    ',es16.8,
 
       call MPAS_pool_get_array(conservationCheckSaltAMPool, "accumulatedSeaIceSalinityFlux", accumulatedSeaIceSalinityFlux)
       call MPAS_pool_get_array(conservationCheckSaltAMPool, "accumulatedFrazilSalinityFlux", accumulatedFrazilSalinityFlux)
-      call MPAS_pool_get_array(conservationCheckSaltAMPool, "accumulatedLandIceFrazilSalinityFlux", accumulatedLandIceFrazilSalinityFlux)
 
       !-------------------------------------------------------------
       ! Net salt flux to ice
@@ -1251,11 +1250,9 @@ v=accumulatedLandIceFrazilFlux     ; write(m,"('  landIceFrazilFlux    ',es16.8,
             end if
 
             if (config_use_frazil_ice_formation .and. config_frazil_under_land_ice) then
-               call mpas_pool_get_array(statePool, 'accumulatedLandIceFrazilMass', accumulatedLandIceFrazilMassOld, 1)
-               call mpas_pool_get_array(statePool, 'accumulatedLandIceFrazilMass', accumulatedLandIceFrazilMassNew, 2)
+               ! Land ice frazil salinity is always 0
                do iCell = 1, nCellsSolve
-                  sumArray(3) = sumArray(3) + areaCell(iCell) &
-                                 * (accumulatedLandIceFrazilMassNew(iCell) - accumulatedLandIceFrazilMassOld(iCell))/dt
+                  sumArray(3) = sumArray(3) + 0.0_RKIND
                enddo
             end if
 
@@ -1268,7 +1265,6 @@ v=accumulatedLandIceFrazilFlux     ; write(m,"('  landIceFrazilFlux    ',es16.8,
          ! accumulate fluxes
          accumulatedSeaIceSalinityFlux = accumulatedSeaIceSalinityFlux + sumArrayOut(1)
          accumulatedFrazilSalinityFlux = accumulatedFrazilSalinityFlux + sumArrayOut(2)
-         accumulatedLandIceFrazilSalinityFlux = accumulatedLandIceFrazilSalinityFlux + sumArrayOut(3)
 
          ! cleanup
          deallocate(sumArray)
@@ -1285,7 +1281,6 @@ v=accumulatedLandIceFrazilFlux     ; write(m,"('  landIceFrazilFlux    ',es16.8,
          ! Average the fluxes
          accumulatedSeaIceSalinityFlux = accumulatedSeaIceSalinityFlux /accumulatedFluxCounter
          accumulatedFrazilSalinityFlux = accumulatedFrazilSalinityFlux /accumulatedFluxCounter
-         accumulatedLandIceFrazilSalinityFlux = accumulatedLandIceFrazilSalinityFlux /accumulatedFluxCounter
 
          ! get initial salt content
          call MPAS_pool_get_array(conservationCheckSaltAMPool, "initialSalt", initialSalt)
@@ -1302,8 +1297,7 @@ v=accumulatedLandIceFrazilFlux     ; write(m,"('  landIceFrazilFlux    ',es16.8,
          call MPAS_pool_get_array(conservationCheckSaltAMPool, "netSaltFlux", netSaltFlux)
 
          netSaltFlux = accumulatedSeaIceSalinityFlux &
-                     + accumulatedFrazilSalinityFlux &
-                     + accumulatedLandIceFrazilSalinityFlux
+                     + accumulatedFrazilSalinityFlux
 
          ! compute the final salt error
          call MPAS_pool_get_array(conservationCheckSaltAMPool, "absoluteSaltError", absoluteSaltError)
@@ -1331,7 +1325,7 @@ v=accumulatedSeaIceSalinityFlux    ; write(m,"('seaIceSalinityFlux     ',es16.8,
             if (landIceFreshwaterFluxesOn &
                .and.config_use_frazil_ice_formation &
                .and.config_frazil_under_land_ice) then
-v=accumulatedLandIceFrazilSalinityFlux; write(m,"('LandIceFrazilSalinityFlux',es16.8,' (already in wmelt, do not sum)                  ',f16.8)") v,v*c; call mpas_log_write(m); !no sum: s=s+v
+v=0; write(m,"('LandIceFrazilSalinityFlux',es16.8,' (already in wmelt, do not sum)                  ',f16.8)") v,v*c; call mpas_log_write(m); !no sum: s=s+v
             end if
 
                                      write(m,"('SUM VOLUME FLUXES      ',es16.8,'                                 ',f16.8,es16.8)") s, s*c; call mpas_log_write(m)
@@ -2256,8 +2250,7 @@ v=accumulatedLandIceFrazilSalinityFlux; write(m,"('LandIceFrazilSalinityFlux',es
 
       real(kind=RKIND), pointer :: &
            accumulatedSeaIceSalinityFlux, &
-           accumulatedFrazilSalinityFlux, &
-           accumulatedLandIceFrazilSalinityFlux
+           accumulatedFrazilSalinityFlux
 
       real(kind=RKIND), pointer :: &
            accumulatedCarbonSourceSink, &
@@ -2343,11 +2336,9 @@ v=accumulatedLandIceFrazilSalinityFlux; write(m,"('LandIceFrazilSalinityFlux',es
 
       call MPAS_pool_get_array(conservationCheckSaltAMPool, "accumulatedSeaIceSalinityFlux", accumulatedSeaIceSalinityFlux)
       call MPAS_pool_get_array(conservationCheckSaltAMPool, "accumulatedFrazilSalinityFlux", accumulatedFrazilSalinityFlux)
-      call MPAS_pool_get_array(conservationCheckSaltAMPool, "accumulatedLandIceFrazilSalinityFlux", accumulatedLandIceFrazilSalinityFlux)
 
       accumulatedSeaIceSalinityFlux = 0.0_RKIND
       accumulatedFrazilSalinityFlux = 0.0_RKIND
-      accumulatedLandIceFrazilSalinityFlux = 0.0_RKIND
 
       call MPAS_pool_get_subpool(domain % blocklist % structs, "conservationCheckCarbonAM", conservationCheckCarbonAMPool)
 

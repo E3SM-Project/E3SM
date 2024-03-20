@@ -527,7 +527,7 @@ contains
 
             ! get frazil salinity
             if (underLandIce) then
-              frazilSalinity = config_frazil_land_ice_reference_salinity
+              frazilSalinity = 0.0_RKIND
             else
               frazilSalinity = config_frazil_sea_ice_reference_salinity
             end if
@@ -618,6 +618,7 @@ contains
            ! for freshwater budgets
            accumulatedLandIceFrazilMassNew(iCell) = accumulatedLandIceFrazilMassOld(iCell) &
                                                   + sumNewFrazilIceThickness * config_frazil_ice_density
+           ! There is no accumulatedLandIceFrazilSalinity because it is always 0
         end if
 
       enddo   ! do iCell = 1, nCells
