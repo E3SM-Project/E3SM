@@ -63,8 +63,6 @@
       <value mach="lawrencium-lr6">netcdf</value>
 	  <value mach="eddi">netcdf</value>
       <value mach="cades">netcdf</value>
-      <value mach="grizzly">netcdf</value>
-      <value mach="badger">netcdf</value>
       <value mach="chicoma-cpu">netcdf</value>
       <value mach="chicoma-gpu">netcdf</value>
       <value mach="bebop" mpilib="impi" compset=".*CAM5.+MPAS.*">netcdf</value>
