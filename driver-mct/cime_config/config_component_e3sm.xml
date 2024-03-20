@@ -232,6 +232,7 @@
       <value compset="_SOCN"                     >CESM1_MOD</value>
       <value compset="_MPASO"                    >CESM1_MOD</value>
       <value compset="_MPASSI.*_MPASO"           >RASM_OPTION1</value>
+      <value compset="_MPASSI.*_MPASO" grid="oi%RRSwISC6to18E3r4">RASM_OPTION2</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
@@ -489,7 +490,7 @@
       <value compset="_MPASO" grid="oi%WC14to60E2r3">48</value>
       <value compset="_MPASO" grid="oi%oRRS30to10v3">48</value>
       <value compset="_MPASO" grid="oi%oRRS18to6v3">48</value>
-      <value compset="_MPASO" grid="oi%RRSwISC6to18E3r4">48</value>
+      <value compset="_MPASO" grid="oi%RRSwISC6to18E3r4">96</value>
       <value compset="_MPASO" grid="oi%oRRS15to5">96</value>
       <value compset="_MPASO" grid="oi%oARRM60to10">48</value>
       <value compset="_MPASO" grid="oi%oARRM60to6">48</value>
