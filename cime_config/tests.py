@@ -635,7 +635,7 @@ _TESTS = {
     # should be fast, so we limit it to low res and add some thread tests
     # specifically for mappy.
     "e3sm_scream_v1_at" : {
-        "inherit" : ("e3sm_scream_v1_lowres"),
+        "inherit" : ("e3sm_scream_v1_lowres", "e3sm_scream_v1_dp-eamxx"),
         "tests"   : ("PET_Ln9_P32x2.ne4pg2_ne4pg2.F2010-SCREAMv1.scream-output-preset-1")
     },
 
