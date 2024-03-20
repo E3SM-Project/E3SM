@@ -1114,6 +1114,8 @@ contains
                   write(logunit,*) 'Failed to load atm domain mesh on coupler'
                   call shr_sys_abort(subname//' ERROR Failed to load atm domain mesh on coupler  ')
                endif
+               ! right now, turn atm_pg_active to true
+               atm_pg_active = .true. ! FIXME TODO 
                ! need to add global id tag to the app, it will be used in restart
                tagtype = 0  ! dense, integer
                numco = 1
