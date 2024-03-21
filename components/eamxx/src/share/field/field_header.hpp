@@ -91,6 +91,12 @@ protected:
   create_subfield_header (const FieldIdentifier&,
                           std::shared_ptr<FieldHeader>,
                           const int, const int, const bool);
+  // for creating multi-slice subfield (continuous indices)
+  friend std::shared_ptr<FieldHeader>
+  create_subfield_header (const FieldIdentifier&,
+                          std::shared_ptr<FieldHeader>,
+                          const int idim, const int k_beg, const int k_end,
+                          const bool dynamic);
 
   // NOTE: the identifier *cannot* be a shared_ptr, b/c we
   //       don't foresee sharing an identifier between two
@@ -169,6 +175,11 @@ std::shared_ptr<FieldHeader>
 create_subfield_header (const FieldIdentifier& id,
                         std::shared_ptr<FieldHeader> parent,
                         const int idim, const int k, const bool dynamic);
+std::shared_ptr<FieldHeader>
+create_subfield_header (const FieldIdentifier& id,
+                        std::shared_ptr<FieldHeader> parent,
+                        const int idim, const int k_beg, const int k_end,
+                        const bool dynamic);
 
 } // namespace scream
 
