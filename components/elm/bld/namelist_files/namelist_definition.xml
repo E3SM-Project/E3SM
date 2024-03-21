@@ -1290,7 +1290,7 @@ Representative concentration pathway for future scenarios [radiative forcing at 
 
 <entry id="mask" type="char*20" category="default_settings"
        group="default_settings"  
-       valid_values="USGS,gx3v7,gx1v6,navy,test,tx0.1v2,tx1v1,T62,TL319,cruncep,oEC60to30v3,oEC60to30v3wLI,ECwISC30to60E1r2,EC30to60E2r2,WC14to60E2r3,WCAtl12to45E2r4,SOwISC12to60E2r4,ECwISC30to60E2r1,oRRS18to6,oRRS18to6v3,oRRS15to5,oARRM60to10,oARRM60to6,oQU480,oQU240,oQU240wLI,oQU120,oRRS30to10v3,oRRS30to10v3wLI,360x720cru,NLDASww3a,NLDAS,tx0.1v2">
+       valid_values="USGS,gx3v7,gx1v6,navy,test,tx0.1v2,tx1v1,T62,TL319,cruncep,oEC60to30v3,oEC60to30v3wLI,ECwISC30to60E1r2,EC30to60E2r2,WC14to60E2r3,WCAtl12to45E2r4,SOwISC12to60E2r4,ECwISC30to60E2r1,oRRS18to6,oRRS18to6v3,oRRS15to5,oARRM60to10,oARRM60to6,oQU480,oQU240,oQU240wLI,oQU120,oRRS30to10v3,oRRS30to10v3wLI,360x720cru,NLDASww3a,NLDAS,tx0.1v2,Kuroshio8to60E2r4">
 Land mask description
 </entry>
 

@@ -267,6 +267,16 @@ def buildnml(case, caseroot, compname):
             ic_date = '210414'
             ic_prefix = 'mpaso.ECwISC30to60E2r1.rstFromG-anvil'
 
+    elif ocn_grid == 'Kuroshio8to60E2r4':
+        decomp_date = '220616'
+        decomp_prefix = 'mpas-o.graph.info.'
+        restoring_file = 'sss.PHC3.0_monthlyClimatology.Kuroshio8to60E2r4.220621.nc'
+        analysis_mask_file = 'Kuroshio8to60E2r4_mocBasinsAndTransects20210623.nc'
+        ic_date = '220608'
+        ic_prefix = 'ocean.Kuroshio8to60E2r4'
+        if ocn_ic_mode == 'spunup':
+            ic_date = '220608'
+            ic_prefix = 'mpaso.Kuroshio8to60E2r4.rstFromG-anvil'
 
 
     #--------------------------------------------------------------------
