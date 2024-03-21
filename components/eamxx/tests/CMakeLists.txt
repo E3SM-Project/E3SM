@@ -65,8 +65,8 @@ if (NOT DEFINED ENV{SCREAM_FAKE_ONLY})
   set(EAMxx_tests_TOPO_FILE      "USGS-gtopo30_ne2np4pg2_x6t_20230331.nc")
 
   # Testing individual atm processes
-  add_subdirectory(uncoupled)
+  add_subdirectory(single-process)
 
   # Testing multiple atm processes coupled together
-  add_subdirectory(coupled)
+  add_subdirectory(multi-process)
 endif()
