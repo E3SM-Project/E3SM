@@ -138,7 +138,7 @@ class TestBaseOuter: # Hides the TestBase class from test scanner
         def test_full(self):
             if self._full:
                 for cmd in self._cmds:
-                    run_cmd_assert_result(self, self.get_cmd(cmd, self._machine, dry_run=False), from_dir=TEST_DIR)
+                    run_cmd_assert_result(self, self.get_cmd(cmd, self._machine), from_dir=TEST_DIR)
             else:
                 self.skipTest("Skipping full run")
 
@@ -232,7 +232,7 @@ class TestTestAllScream(TestBaseOuter.TestBase):
         if not self._jenkins:
             options = "-t dbg --config-only"
             cmd = self.get_cmd("./test-all-scream -m $machine {}".format(options),
-                                self._machine, dry_run=False)
+                                self._machine)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
             test_cmake_cache_contents(self, "full_debug", "CMAKE_BUILD_TYPE", "Debug")
             test_cmake_cache_contents(self, "full_debug", "SCREAM_DOUBLE_PRECISION", "TRUE")
@@ -251,7 +251,7 @@ class TestTestAllScream(TestBaseOuter.TestBase):
         if not self._jenkins:
             options = "-t sp --config-only"
             cmd = self.get_cmd("./test-all-scream -m $machine {}".format(options),
-                                self._machine, dry_run=False)
+                                self._machine)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
             test_cmake_cache_contents(self, "full_sp_debug", "CMAKE_BUILD_TYPE", "Debug")
             test_cmake_cache_contents(self, "full_sp_debug", "SCREAM_DOUBLE_PRECISION", "FALSE")
@@ -273,7 +273,7 @@ class TestTestAllScream(TestBaseOuter.TestBase):
             else:
                 options = "-t fpe --config-only"
                 cmd = self.get_cmd("./test-all-scream -m $machine {}".format(options),
-                                    self._machine, dry_run=False)
+                                    self._machine)
                 run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
                 test_cmake_cache_contents(self, "debug_nopack_fpe", "CMAKE_BUILD_TYPE", "Debug")
                 test_cmake_cache_contents(self, "debug_nopack_fpe", "SCREAM_DOUBLE_PRECISION", "TRUE")
@@ -289,7 +289,7 @@ class TestTestAllScream(TestBaseOuter.TestBase):
         if not self._jenkins:
             options = "-t mem --config-only"
             cmd = self.get_cmd("./test-all-scream -m $machine {}".format(options),
-                                self._machine, dry_run=False)
+                                self._machine)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
             builddir = "compute_sanitizer_memcheck" if is_cuda_machine(self._machine) else "valgrind"
             test_cmake_cache_contents(self, builddir, "CMAKE_BUILD_TYPE", "Debug")
@@ -309,7 +309,7 @@ class TestTestAllScream(TestBaseOuter.TestBase):
         if not self._jenkins:
             options = "-t opt --config-only"
             cmd = self.get_cmd("./test-all-scream -m $machine {}".format(options),
-                               self._machine, dry_run=False)
+                               self._machine)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
             test_cmake_cache_contents(self, "release", "CMAKE_BUILD_TYPE", "Release")
         else:
@@ -321,7 +321,7 @@ class TestTestAllScream(TestBaseOuter.TestBase):
         Test that the 'dbg' test in test-all-scream detects and returns non-zero if there's a cmake configure error
         """
         if self._full:
-            cmd = self.get_cmd("./test-all-scream -e SCREAM_FORCE_CONFIG_FAIL=True -m $machine -t dbg", self._machine, dry_run=False)
+            cmd = self.get_cmd("./test-all-scream -e SCREAM_FORCE_CONFIG_FAIL=True -m $machine -t dbg", self._machine)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR, expect_works=False)
         else:
             self.skipTest("Skipping full run")
@@ -331,7 +331,7 @@ class TestTestAllScream(TestBaseOuter.TestBase):
         Test that the 'dbg' test in test-all-scream detects and returns non-zero if there's a build error
         """
         if self._full:
-            cmd = self.get_cmd("./test-all-scream -e SCREAM_FORCE_BUILD_FAIL=True -m $machine -t dbg", self._machine, dry_run=False)
+            cmd = self.get_cmd("./test-all-scream -e SCREAM_FORCE_BUILD_FAIL=True -m $machine -t dbg", self._machine)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR, expect_works=False)
         else:
             self.skipTest("Skipping full run")
@@ -341,7 +341,7 @@ class TestTestAllScream(TestBaseOuter.TestBase):
         Test that a failure from ctest in the testing phase is caught by test-all-scream
         """
         if self._full:
-            cmd = self.get_cmd("./test-all-scream -e SCREAM_FORCE_RUN_FAIL=True -m $machine -t dbg", self._machine, dry_run=False)
+            cmd = self.get_cmd("./test-all-scream -e SCREAM_FORCE_RUN_FAIL=True -m $machine -t dbg", self._machine)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR, expect_works=False)
         else:
             self.skipTest("Skipping full run")
@@ -351,7 +351,7 @@ class TestTestAllScream(TestBaseOuter.TestBase):
         Test that the at test level works
         """
         if self._full:
-            cmd = self.get_cmd("./test-all-scream -x -m $machine -t dbg", self._machine, dry_run=False)
+            cmd = self.get_cmd("./test-all-scream -x -m $machine -t dbg", self._machine)
             output = run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
             test_test_levels_were_run(self, output, ["AT"], ["NIGHTLY", "EXPERIMENTAL"])
         else:
@@ -362,7 +362,7 @@ class TestTestAllScream(TestBaseOuter.TestBase):
         Test that the nightly test level works
         """
         if self._full:
-            cmd = self.get_cmd("./test-all-scream -x --test-level=nightly -m $machine -t dbg", self._machine, dry_run=False)
+            cmd = self.get_cmd("./test-all-scream -x --test-level=nightly -m $machine -t dbg", self._machine)
             output = run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
             test_test_levels_were_run(self, output, ["AT", "NIGHTLY"], ["EXPERIMENTAL"])
         else:
@@ -373,7 +373,7 @@ class TestTestAllScream(TestBaseOuter.TestBase):
         Test that the experimental test level works
         """
         if self._full:
-            cmd = self.get_cmd("./test-all-scream -x --test-level=experimental -m $machine -t dbg", self._machine, dry_run=False)
+            cmd = self.get_cmd("./test-all-scream -x --test-level=experimental -m $machine -t dbg", self._machine)
             output = run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
             test_test_levels_were_run(self, output, ["AT", "NIGHTLY", "EXPERIMENTAL"], [])
         else:
@@ -392,7 +392,7 @@ class TestTestAllScream(TestBaseOuter.TestBase):
             env = "SCREAM_FAKE_ONLY=ON SCREAM_FAKE_GIT_HEAD=FAKE1"
             opts = " -g -t dbg -t sp --no-tests"
             cmd = self.get_cmd(f"{env} ./test-all-scream -m $machine {opts}",
-                               self._machine, dry_run=False)
+                               self._machine)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
 
             test_baseline_has_sha(self, TEST_DIR, "full_debug",    "FAKE1")
@@ -402,7 +402,7 @@ class TestTestAllScream(TestBaseOuter.TestBase):
             env = "SCREAM_FAKE_ONLY=ON SCREAM_FAKE_GIT_HEAD=FAKE2"
             opts = "--baseline-dir LOCAL -t dbg -t sp --no-tests"
             cmd = self.get_cmd(f"{env} ./test-all-scream -m $machine {opts}",
-                               self._machine, dry_run=False)
+                               self._machine)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
 
             test_baseline_has_sha(self, TEST_DIR, "full_debug",    "FAKE1")
@@ -413,7 +413,7 @@ class TestTestAllScream(TestBaseOuter.TestBase):
             env = "SCREAM_FAKE_ONLY=ON SCREAM_FAKE_AHEAD=0 SCREAM_FAKE_GIT_HEAD=FAKE2"
             opts = "--baseline-dir LOCAL -t dbg -u --no-tests"
             cmd = self.get_cmd(f"{env} ./test-all-scream -m $machine {opts}",
-                               self._machine, dry_run=False)
+                               self._machine)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
 
             test_baseline_has_sha(self, TEST_DIR, "full_debug",    "FAKE1")
@@ -424,7 +424,7 @@ class TestTestAllScream(TestBaseOuter.TestBase):
             env = "SCREAM_FAKE_ONLY=ON SCREAM_FAKE_AHEAD=1 SCREAM_FAKE_GIT_HEAD=FAKE2"
             opts = "--baseline-dir LOCAL -t dbg -u --no-tests"
             cmd = self.get_cmd(f"{env} ./test-all-scream -m $machine {opts}",
-                               self._machine, dry_run=False)
+                               self._machine)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
 
             test_baseline_has_sha(self, TEST_DIR, "full_debug",    "FAKE2")
@@ -435,7 +435,7 @@ class TestTestAllScream(TestBaseOuter.TestBase):
             env = "SCREAM_FAKE_ONLY=ON SCREAM_FAKE_AHEAD=1 SCREAM_FAKE_GIT_HEAD=FAKE2"
             opts = "--baseline-dir LOCAL -t dbg -t sp -u --no-tests"
             cmd = self.get_cmd(f"{env} ./test-all-scream -m $machine {opts}",
-                               self._machine, dry_run=False)
+                               self._machine)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
 
             test_baseline_has_sha(self, TEST_DIR, "full_debug",    "FAKE2")
@@ -445,7 +445,7 @@ class TestTestAllScream(TestBaseOuter.TestBase):
             env = "SCREAM_FAKE_ONLY=ON SCREAM_FAKE_GIT_HEAD=FAKE3"
             opts = "-g -t dbg -t sp --no-tests"
             cmd = self.get_cmd(f"{env} ./test-all-scream -m $machine {opts}",
-                               self._machine, dry_run=False)
+                               self._machine)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
 
             test_baseline_has_sha(self, TEST_DIR, "full_debug",    "FAKE3")
@@ -464,11 +464,11 @@ class TestTestAllScream(TestBaseOuter.TestBase):
         if self._full and self._machine == "mappy":
             spread_test_opts = "-x -e SCREAM_TEST_THREAD_SPREAD=True -e SCREAM_TEST_RANK_SPREAD=True -c EKAT_TEST_LAUNCHER_MANAGE_RESOURCES=True -c EKAT_MPIRUN_EXE=mpiexec -c EKAT_MPI_EXTRA_ARGS='-bind-to core' -c EKAT_MPI_NP_FLAG='--map-by' -c EKAT_MPI_THREAD_FLAG='' -m $machine -t dbg"
 
-            cmd = self.get_cmd(f"./test-all-scream {spread_test_opts} --ctest-parallel-level=40 ", self._machine, dry_run=False)
+            cmd = self.get_cmd(f"./test-all-scream {spread_test_opts} --ctest-parallel-level=40 ", self._machine)
             output = run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
             test_omp_spread(self, output, 40)
 
-            cmd = self.get_cmd(f"taskset -c 8-47 ./test-all-scream {spread_test_opts} --ctest-parallel-level=40 ", self._machine, dry_run=False)
+            cmd = self.get_cmd(f"taskset -c 8-47 ./test-all-scream {spread_test_opts} --ctest-parallel-level=40 ", self._machine)
             output = run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
             test_omp_spread(self, output, 48, begin=8)
 
@@ -483,7 +483,7 @@ class TestTestAllScream(TestBaseOuter.TestBase):
             # We set PULLREQUESTNUM to block dashboard submission
             # We set SCREAM_FAKE_AUTO to not interere with real baselines
             cmd = self.get_cmd("PR_LABELS= NODE_NAME={} SCREAM_FAKE_AUTO=TRUE PULLREQUESTNUM=42 ./jenkins/jenkins_common.sh".format(self._machine),
-                               self._machine, dry_run=False)
+                               self._machine)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
 
         else:
@@ -497,7 +497,7 @@ class TestTestAllScream(TestBaseOuter.TestBase):
             # We set PULLREQUESTNUM to block dashboard submission
             # We set SCREAM_FAKE_AUTO to not interere with real baselines
             cmd = self.get_cmd("PR_LABELS= NODE_NAME={} SCREAM_FAKE_AUTO=TRUE PULLREQUESTNUM= ./jenkins/jenkins_common.sh".format(self._machine),
-                               self._machine, dry_run=False)
+                               self._machine)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
 
         else:
@@ -510,7 +510,7 @@ class TestTestAllScream(TestBaseOuter.TestBase):
         if self._jenkins:
             # Any fail will do, we already checked test-all-scream captures all the fail types
             cmd = self.get_cmd("PR_LABELS= SCREAM_FORCE_CONFIG_FAIL=True NODE_NAME={} SCREAM_FAKE_AUTO=TRUE PULLREQUESTNUM=42 ./jenkins/jenkins_common.sh".format(self._machine),
-                               self._machine, dry_run=False)
+                               self._machine)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR, expect_works=False)
 
         else:
@@ -523,7 +523,7 @@ class TestTestAllScream(TestBaseOuter.TestBase):
         if self._jenkins:
             # Any fail will do, we already checked test-all-scream captures all the fail types
             cmd = self.get_cmd("PR_LABELS= SCREAM_FORCE_CONFIG_FAIL=True NODE_NAME={} SCREAM_FAKE_AUTO=TRUE PULLREQUESTNUM= ./jenkins/jenkins_common.sh".format(self._machine),
-                               self._machine, dry_run=False)
+                               self._machine)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR, expect_works=False)
 
         else:
