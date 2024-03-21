@@ -1,5 +1,13 @@
 (omega-design-my-class)=
-# Template: MyClassOrModuleName
+# Template
+
+<!--- use table of contents if desired for longer documents  -->
+**Table of Contents**
+1. [Overview](#1-overview)
+2. [Requirements](#2-requirements)
+3. [Algorithmic Formulation](#3-algorithmic-formulation)
+4. [Design](#4-design)
+5. [Verification and Testing](#5-verification-and-testing)
 
 <!--- use table of contents if desired for longer documents  -->
 **Table of Contents**
