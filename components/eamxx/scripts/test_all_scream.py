@@ -33,7 +33,7 @@ class TestAllScream(object):
                  baseline_dir=None, machine=None, config_only=False,
                  custom_cmake_opts=(), custom_env_vars=(), preserve_env=False, tests=(),
                  integration_test=False, local=False, root_dir=None, work_dir=None,
-                 quick_rerun=False,quick_rerun_failed=False,dry_run=False,
+                 quick_rerun=False,quick_rerun_failed=False,
                  make_parallel_level=0, ctest_parallel_level=0, update_expired_baselines=False,
                  extra_verbose=False, limit_test_regex=None, test_level="at", test_size=None,
                  force_baseline_regen=False):
@@ -64,7 +64,6 @@ class TestAllScream(object):
         self._integration_test        = integration_test
         self._quick_rerun             = quick_rerun
         self._quick_rerun_failed      = quick_rerun_failed
-        self._dry_run                 = dry_run
         self._extra_verbose           = extra_verbose
         self._limit_test_regex        = limit_test_regex
         self._test_level              = test_level
@@ -200,7 +199,7 @@ class TestAllScream(object):
         self._original_branch = get_current_branch()
         self._original_commit = get_current_commit()
 
-        print_last_commit(git_ref=self._original_branch, dry_run=self._dry_run)
+        print_last_commit(git_ref=self._original_branch)
 
         # If we have an integration test, we need to merge master. Hence, do two things:
         #  1) create bkp commit for all uncommitted/unstaged changes
@@ -277,11 +276,6 @@ class TestAllScream(object):
             self._f90_compiler = get_mach_f90_compiler(self._machine)
         if self._c_compiler is None:
             self._c_compiler = get_mach_c_compiler(self._machine)
-
-        if not self._dry_run:
-            self._f90_compiler = run_cmd_no_fail(f"which {self._f90_compiler}")
-            self._cxx_compiler = run_cmd_no_fail(f"which {self._cxx_compiler}")
-            self._c_compiler   = run_cmd_no_fail(f"which {self._c_compiler}")
 
     ###############################################################################
     def create_tests_dirs(self, root, clean):
@@ -630,7 +624,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         # not get a dashboard report if we did that. Instead, just ensure there is
         # no baseline file to compare against if there's a problem.
         stat, _, err = run_cmd(f"{cmake_config} {self._root_dir}",
-                               from_dir=test_dir, verbose=True, dry_run=self._dry_run)
+                               from_dir=test_dir, verbose=True)
         if stat != 0:
             print (f"WARNING: Failed to create baselines (config phase):\n{err}")
             return False
@@ -640,7 +634,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
             start, end = self.get_taskset_range(test)
             cmd = f"taskset -c {start}-{end} sh -c '{cmd}'"
 
-        stat, _, err = run_cmd(cmd, from_dir=test_dir, verbose=True, dry_run=self._dry_run)
+        stat, _, err = run_cmd(cmd, from_dir=test_dir, verbose=True)
 
         if stat != 0:
             print (f"WARNING: Failed to create baselines (build phase):\n{err}")
@@ -649,7 +643,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         cmd  = f"ctest -j{test.testing_res_count}"
         cmd +=  " -L baseline_gen"
         cmd += f" --resource-spec-file {test_dir}/ctest_resource_file.json"
-        stat, _, err = run_cmd(cmd, from_dir=test_dir, verbose=True, dry_run=self._dry_run)
+        stat, _, err = run_cmd(cmd, from_dir=test_dir, verbose=True)
 
         if stat != 0:
             print (f"WARNING: Failed to create baselines (run phase):\n{err}")
@@ -738,9 +732,9 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
             # Although it's ok to build in the same dir, we MUST make sure to erase cmake's cache
             # and internal files from the previous build (CMakeCache.txt and CMakeFiles folder),
             # Otherwise, we may not pick up changes in certain cmake vars that are already cached.
-            run_cmd_no_fail("rm -rf CMake*", from_dir=test_dir, dry_run=self._dry_run)
+            run_cmd_no_fail("rm -rf CMake*", from_dir=test_dir)
 
-        success = run_cmd(ctest_config, from_dir=test_dir, arg_stdout=None, arg_stderr=None, verbose=True, dry_run=self._dry_run)[0] == 0
+        success = run_cmd(ctest_config, from_dir=test_dir, arg_stdout=None, arg_stderr=None, verbose=True)[0] == 0
 
         return success
 
@@ -851,7 +845,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
 
             if self._integration_test:
                 # Merge origin/master
-                merge_git_ref(git_ref=self._baseline_ref, verbose=True, dry_run=self._dry_run)
+                merge_git_ref(git_ref=self._baseline_ref, verbose=True)
 
             if self._generate:
                 success = self.generate_all_baselines()
@@ -871,6 +865,6 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
 
         finally:
             # Cleanup the repo if needed
-            cleanup_repo(self._original_branch, self._original_commit, self._has_backup_commit, dry_run=self._dry_run)
+            cleanup_repo(self._original_branch, self._original_commit, self._has_backup_commit)
 
         return success

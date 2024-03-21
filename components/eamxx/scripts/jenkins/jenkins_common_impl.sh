@@ -143,20 +143,6 @@ if [ $skip_testing -eq 0 ]; then
 
     # Run scripts-tests
     if [[ $test_scripts == 1 ]]; then
-      # JGF: I'm not sure there's much value in these dry-run comparisons
-      # since we aren't changing HEADs
-      ./scripts/scripts-tests -g -m $SCREAM_MACHINE
-      if [[ $? != 0 ]]; then
-        fails=$fails+1;
-        scripts_fail=1
-      fi
-
-      ./scripts/scripts-tests -c -m $SCREAM_MACHINE
-      if [[ $? != 0 ]]; then
-        fails=$fails+1;
-        scripts_fail=1
-      fi
-
       ./scripts/scripts-tests -f -m $SCREAM_MACHINE
       if [[ $? != 0 ]]; then
         fails=$fails+1;

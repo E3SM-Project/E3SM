@@ -36,10 +36,6 @@ OR
     > cd $scream_repo/components/eamxx
     > ./scripts/{0} --preserve-env -m melvin
 
-    \033[1;32m# Run all tests on current machine with default behavior except using a custom ref for baseline generation\033[0m
-    > cd $scream_repo/components/eamxx
-    > ./scripts/{0} -m melvin -b BASELINE_REF
-
     \033[1;32m# Run all tests on current machine with default behavior except using pre-existing baselines (skips baseline generation) \033[0m
     > cd $scream_repo/components/eamxx
     > ./scripts/{0} -m melvin --baseline-dir=PATH_TO_BASELINES
@@ -50,7 +46,7 @@ OR
 
     \033[1;32m# Run all tests on current machine with default behavior on a repo with uncommitted changes\033[0m
     > cd $scream_repo/components/eamxx
-    > ./scripts/{0} -m melvin -k -b HEAD
+    > ./scripts/{0} -m melvin -k -b AUTO
 """.format(pathlib.Path(args[0]).name),
         description=description,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
@@ -67,7 +63,7 @@ OR
     parser.add_argument("-g", "--generate", action="store_true",
         help="Instruct test-all-scream to generate baselines from current commit. Skips tests")
 
-    parser.add_argument("--baseline-dir", default=None,
+    parser.add_argument("-b", "--baseline-dir", default=None,
         help="Directory where baselines should be read from (or written to, if -g/-i is used)")
 
     parser.add_argument("-u", "--update-expired-baselines", action="store_true",
@@ -117,9 +113,6 @@ OR
 
     parser.add_argument("--quick-rerun-failed", action="store_true",
                         help="Do not clean the build dir, and do not reconfigure. Just (incremental) build and retest failed tests only.")
-
-    parser.add_argument("-d", "--dry-run", action="store_true",
-                        help="Do a dry run, commands will be printed but not executed")
 
     parser.add_argument("--make-parallel-level", action="store", type=int, default=0,
         help="Max number of jobs to be created during compilation. If not provided, use default for given machine.")
