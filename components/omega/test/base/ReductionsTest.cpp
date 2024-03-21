@@ -8,10 +8,10 @@
 //
 //===-----------------------------------------------------------------------===/
 
+#include "Reductions.h"
+#include "MachEnv.h"
 #include <mpi.h>
 #include <string>
-#include "MachEnv.h"
-#include "Reductions.h"
 
 //------------------------------------------------------------------------------
 // The test driver for Reductions. This tests
@@ -25,36 +25,50 @@ int main(int argc, char *argv[]) {
    int MyTask, MySize, err;
    OMEGA::MachEnv::init(MPI_COMM_WORLD);
    OMEGA::MachEnv *DefEnv = OMEGA::MachEnv::getDefaultEnv();
-   MyTask = DefEnv->getMyTask();
-   MySize = DefEnv->getNumTasks();
+   MyTask                 = DefEnv->getMyTask();
+   MySize                 = DefEnv->getNumTasks();
 
-   OMEGA::I4 MyInt4   = 1, MyResI4 = 0;
-   OMEGA::I8 MyInt8   = 2, MyResI8 = 0;
-   OMEGA::R4 MyR4     = 3.000001, MyResR4 = 0.0;
-   OMEGA::R8 MyR8     = 4.0000000000001, MyResR8 = 0.0, MyResReal = 0.0;
+   OMEGA::I4 MyInt4 = 1, MyResI4 = 0;
+   OMEGA::I8 MyInt8 = 2, MyResI8 = 0;
+   OMEGA::R4 MyR4 = 3.000001, MyResR4 = 0.0;
+   OMEGA::R8 MyR8 = 4.0000000000001, MyResR8 = 0.0, MyResReal = 0.0;
    OMEGA::Real MyReal = 5.000001;
-   char* res = "FAIL";
+   char *res          = "FAIL";
 
    // test SUM for scalars
    err = OMEGA::GlobalSum(DefEnv, &MyInt4, &MyResI4);
-   if (MyResI4 == MyInt4*MySize) res = "PASS";
-   printf("Global sum I4:    %s (exp,act=%d,%d)\n", res, MyInt4*MySize, MyResI4);
+   if (MyResI4 == MyInt4 * MySize)
+      res = "PASS";
+   printf("Global sum I4:    %s (exp,act=%d,%d)\n", res, MyInt4 * MySize,
+          MyResI4);
 
-   err = OMEGA::GlobalSum(DefEnv, &MyInt8, &MyResI8); res = "FAIL";
-   if (MyResI8 == MyInt8*MySize)                      res = "PASS";
-   printf("Global sum I8:    %s (exp,act=%lld,%lld)\n", res, MyInt8*MySize, MyResI8);
+   err = OMEGA::GlobalSum(DefEnv, &MyInt8, &MyResI8);
+   res = "FAIL";
+   if (MyResI8 == MyInt8 * MySize)
+      res = "PASS";
+   printf("Global sum I8:    %s (exp,act=%lld,%lld)\n", res, MyInt8 * MySize,
+          MyResI8);
 
-   err = OMEGA::GlobalSum(DefEnv, &MyR4, &MyResR4);  res = "FAIL";
-   if (MyResR4 == MyR4*MySize)                       res = "PASS";
-   printf("Global sum R4:    %s (exp,act=%f,%f)\n", res, MyR4*MySize, MyResR4);
+   err = OMEGA::GlobalSum(DefEnv, &MyR4, &MyResR4);
+   res = "FAIL";
+   if (MyResR4 == MyR4 * MySize)
+      res = "PASS";
+   printf("Global sum R4:    %s (exp,act=%f,%f)\n", res, MyR4 * MySize,
+          MyResR4);
 
-   err = OMEGA::GlobalSum(DefEnv, &MyR8, &MyResR8);  res = "FAIL";
-   if (MyResR8 == MyR8*MySize)                       res = "PASS";
-   printf("Global sum R8:    %s (exp,act=%.15lf,%.15lf)\n", res, MyR8*MySize, MyResR8);
+   err = OMEGA::GlobalSum(DefEnv, &MyR8, &MyResR8);
+   res = "FAIL";
+   if (MyResR8 == MyR8 * MySize)
+      res = "PASS";
+   printf("Global sum R8:    %s (exp,act=%.15lf,%.15lf)\n", res, MyR8 * MySize,
+          MyResR8);
 
-   err = OMEGA::GlobalSum(DefEnv, &MyReal, &MyResReal); res = "FAIL";
-   if (MyResReal == MyReal*MySize)                      res = "PASS";
-   printf("Global sum real:  %s (exp,act=%.15lf,%.15lf)\n", res, MyReal*MySize, MyResReal);
+   err = OMEGA::GlobalSum(DefEnv, &MyReal, &MyResReal);
+   res = "FAIL";
+   if (MyResReal == MyReal * MySize)
+      res = "PASS";
+   printf("Global sum real:  %s (exp,act=%.15lf,%.15lf)\n", res,
+          MyReal * MySize, MyResReal);
 
    // test SUM of I4 arrays
    int i, j, k;
@@ -66,18 +80,24 @@ int main(int argc, char *argv[]) {
       HostArr1DI4(i) = i;
       Sum1D += i;
       for (j = 0; j < NumVertLvls; j++) {
-         HostArr2DI4(i,j) = c;
+         HostArr2DI4(i, j) = c;
          Sum2D += c;
          c++;
       }
    }
-   err = OMEGA::GlobalSum(DefEnv, HostArr1DI4, &MyResI4); res = "FAIL";
-   if (MyResI4 == Sum1D*MySize)                           res = "PASS";
-   printf("Global sum A1DI4: %s (exp,act=%d,%d)\n", res, Sum1D*MySize, MyResI4);
+   err = OMEGA::GlobalSum(DefEnv, HostArr1DI4, &MyResI4);
+   res = "FAIL";
+   if (MyResI4 == Sum1D * MySize)
+      res = "PASS";
+   printf("Global sum A1DI4: %s (exp,act=%d,%d)\n", res, Sum1D * MySize,
+          MyResI4);
 
-   err = OMEGA::GlobalSum(DefEnv, HostArr2DI4, &MyResI4); res = "FAIL";
-   if (MyResI4 == Sum2D*MySize)                           res = "PASS";
-   printf("Global sum A2DI4: %s (exp,act=%d,%d)\n", res, Sum2D*MySize, MyResI4);
+   err = OMEGA::GlobalSum(DefEnv, HostArr2DI4, &MyResI4);
+   res = "FAIL";
+   if (MyResI4 == Sum2D * MySize)
+      res = "PASS";
+   printf("Global sum A2DI4: %s (exp,act=%d,%d)\n", res, Sum2D * MySize,
+          MyResI4);
    HostArr1DI4.deallocate();
    HostArr2DI4.deallocate();
 
@@ -89,18 +109,24 @@ int main(int argc, char *argv[]) {
       HostArr1DI8(i) = i;
       Sum1D += i;
       for (j = 0; j < NumVertLvls; j++) {
-         HostArr2DI8(i,j) = c;
+         HostArr2DI8(i, j) = c;
          Sum2D += c;
          c++;
       }
    }
-   err = OMEGA::GlobalSum(DefEnv, HostArr1DI8, &MyResI8); res = "FAIL";
-   if (MyResI8 == Sum1D*MySize)                           res = "PASS";
-   printf("Global sum A1DI8: %s (exp,act=%d,%d)\n", res, Sum1D*MySize, MyResI8);
+   err = OMEGA::GlobalSum(DefEnv, HostArr1DI8, &MyResI8);
+   res = "FAIL";
+   if (MyResI8 == Sum1D * MySize)
+      res = "PASS";
+   printf("Global sum A1DI8: %s (exp,act=%d,%d)\n", res, Sum1D * MySize,
+          MyResI8);
 
-   err = OMEGA::GlobalSum(DefEnv, HostArr2DI8, &MyResI8); res = "FAIL";
-   if (MyResI8 == Sum2D*MySize)                           res = "PASS";
-   printf("Global sum A2DI8: %s (exp,act=%d,%d)\n", res, Sum2D*MySize, MyResI8);
+   err = OMEGA::GlobalSum(DefEnv, HostArr2DI8, &MyResI8);
+   res = "FAIL";
+   if (MyResI8 == Sum2D * MySize)
+      res = "PASS";
+   printf("Global sum A2DI8: %s (exp,act=%d,%d)\n", res, Sum2D * MySize,
+          MyResI8);
    HostArr1DI8.deallocate();
    HostArr2DI8.deallocate();
 
@@ -110,20 +136,26 @@ int main(int argc, char *argv[]) {
    OMEGA::R4 Sum1DR4 = 0.0, Sum2DR4 = 0.0, f = 0.0;
    for (i = 0; i < NumCells; i++) {
       HostArr1DR4(i) = i + 0.000001;
-      Sum1DR4       += HostArr1DR4(i);
+      Sum1DR4 += HostArr1DR4(i);
       for (j = 0; j < NumVertLvls; j++) {
-         HostArr2DR4(i,j) = f;
-         Sum2DR4         += f;
+         HostArr2DR4(i, j) = f;
+         Sum2DR4 += f;
          f += 1.00001;
       }
    }
-   err = OMEGA::GlobalSum(DefEnv, HostArr1DR4, &MyResR4); res = "FAIL";
-   if (MyResR4 == Sum1DR4*MySize)                         res = "PASS";
-   printf("Global sum A1DR4: %s (exp,act=%.10f,%.10f)\n", res, Sum1DR4*MySize, MyResR4);
+   err = OMEGA::GlobalSum(DefEnv, HostArr1DR4, &MyResR4);
+   res = "FAIL";
+   if (MyResR4 == Sum1DR4 * MySize)
+      res = "PASS";
+   printf("Global sum A1DR4: %s (exp,act=%.10f,%.10f)\n", res, Sum1DR4 * MySize,
+          MyResR4);
 
-   err = OMEGA::GlobalSum(DefEnv, HostArr2DR4, &MyResR4); res = "FAIL";
-   if (MyResR4 == Sum2DR4*MySize)                         res = "PASS";
-   printf("Global sum A2DR4: %s (exp,act=%f,%f)\n", res, Sum2DR4*MySize, MyResR4);
+   err = OMEGA::GlobalSum(DefEnv, HostArr2DR4, &MyResR4);
+   res = "FAIL";
+   if (MyResR4 == Sum2DR4 * MySize)
+      res = "PASS";
+   printf("Global sum A2DR4: %s (exp,act=%f,%f)\n", res, Sum2DR4 * MySize,
+          MyResR4);
    HostArr1DR4.deallocate();
    HostArr2DR4.deallocate();
 
@@ -133,63 +165,79 @@ int main(int argc, char *argv[]) {
    OMEGA::R8 Sum1DR8 = 0.0, Sum2DR8 = 0.0, d = 0.0;
    for (i = 0; i < NumCells; i++) {
       HostArr1DR8(i) = i + 0.0000000000001;
-      Sum1DR8       += HostArr1DR8(i);
+      Sum1DR8 += HostArr1DR8(i);
       for (j = 0; j < NumVertLvls; j++) {
-         HostArr2DR8(i,j) = d;
-         Sum2DR8         += d;
+         HostArr2DR8(i, j) = d;
+         Sum2DR8 += d;
          d += 1.0000000000001;
       }
    }
-   err = OMEGA::GlobalSum(DefEnv, HostArr1DR8, &MyResReal); res = "FAIL";
-   if (MyResReal == Sum1DR8*MySize)                         res = "PASS";
-   printf("Global sum A1DR8: %s (exp,act=%.13lf,%.13lf)\n", res, Sum1DR8*MySize, MyResReal);
+   err = OMEGA::GlobalSum(DefEnv, HostArr1DR8, &MyResReal);
+   res = "FAIL";
+   if (MyResReal == Sum1DR8 * MySize)
+      res = "PASS";
+   printf("Global sum A1DR8: %s (exp,act=%.13lf,%.13lf)\n", res,
+          Sum1DR8 * MySize, MyResReal);
 
-   err = OMEGA::GlobalSum(DefEnv, HostArr2DR8, &MyResReal); res = "FAIL";
-   if (MyResReal == Sum2DR8*MySize)                         res = "PASS";
-   printf("Global sum A2DR8: %s (exp,act=%.13lf,%.13lf)\n", res, Sum2DR8*MySize, MyResReal);
+   err = OMEGA::GlobalSum(DefEnv, HostArr2DR8, &MyResReal);
+   res = "FAIL";
+   if (MyResReal == Sum2DR8 * MySize)
+      res = "PASS";
+   printf("Global sum A2DR8: %s (exp,act=%.13lf,%.13lf)\n", res,
+          Sum2DR8 * MySize, MyResReal);
    HostArr1DR8.deallocate();
    HostArr2DR8.deallocate();
 
    //==========================================================================
    // test MIN, MAX of scalars
    MyInt4 = MyTask;
-   err = OMEGA::GlobalMin(DefEnv, &MyInt4, &MyResI4); res = "FAIL";
-   if (MyResI4 == 0)                                  res = "PASS";
+   err    = OMEGA::GlobalMin(DefEnv, &MyInt4, &MyResI4);
+   res    = "FAIL";
+   if (MyResI4 == 0)
+      res = "PASS";
    printf("Global min I4:    %s (exp,act=0,%d)\n", res, MyResI4);
 
    MyInt8 = MyTask;
-   err = OMEGA::GlobalMax(DefEnv, &MyInt8, &MyResI8); res = "FAIL";
-   if (MyResI8 == MySize-1)                           res = "PASS";
-   printf("Global max I4:    %s (exp,act=%d,%d)\n", res, MySize-1, MyResI8);
+   err    = OMEGA::GlobalMax(DefEnv, &MyInt8, &MyResI8);
+   res    = "FAIL";
+   if (MyResI8 == MySize - 1)
+      res = "PASS";
+   printf("Global max I4:    %s (exp,act=%d,%d)\n", res, MySize - 1, MyResI8);
 
-   OMEGA::R8 MyR8Tmp = MyTask+MyR8;
-   err = OMEGA::GlobalMin(DefEnv, &MyR8Tmp, &MyResR8); res = "FAIL";
-   if (MyResR8 == MyR8)                                res = "PASS";
+   OMEGA::R8 MyR8Tmp = MyTask + MyR8;
+   err               = OMEGA::GlobalMin(DefEnv, &MyR8Tmp, &MyResR8);
+   res               = "FAIL";
+   if (MyResR8 == MyR8)
+      res = "PASS";
    printf("Global min R8:    %s (exp,act=%.13lf,%.13lf)\n", res, MyR8, MyResR8);
 
-   err = OMEGA::GlobalMax(DefEnv, &MyR8Tmp, &MyResR8); res = "FAIL";
-   if (MyResR8 == (MySize-1+MyR8))                     res = "PASS";
-   printf("Global max R8:    %s (exp,act=%.13lf,%.13lf)\n", res, MySize-1+MyR8, MyResR8);
+   err = OMEGA::GlobalMax(DefEnv, &MyR8Tmp, &MyResR8);
+   res = "FAIL";
+   if (MyResR8 == (MySize - 1 + MyR8))
+      res = "PASS";
+   printf("Global max R8:    %s (exp,act=%.13lf,%.13lf)\n", res,
+          MySize - 1 + MyR8, MyResR8);
 
    //==========================================================================
    // test MIN, MAX of arrays
    OMEGA::ArrayHost1DI4 HostA1DI4Work("HostA1DI4Work", NumCells * MySize);
-   OMEGA::ArrayHost1DI4 HostA1DI4Min( "HostA1DI4Min",  NumCells * MySize);
+   OMEGA::ArrayHost1DI4 HostA1DI4Min("HostA1DI4Min", NumCells * MySize);
    for (i = 0; i < MySize; i++) {
       for (j = 0; j < NumCells; j++) {
-        k = i * NumCells + j;
-        if (MyTask == i) {
-           HostA1DI4Work(k) = (i + 1) * k; // processor-specific work array
-        } else {
-           HostA1DI4Work(k) = k; // default
-        }
+         k = i * NumCells + j;
+         if (MyTask == i) {
+            HostA1DI4Work(k) = (i + 1) * k; // processor-specific work array
+         } else {
+            HostA1DI4Work(k) = k; // default
+         }
       }
    }
    err = OMEGA::GlobalMin(DefEnv, HostA1DI4Work, HostA1DI4Min);
    res = "PASS";
    for (i = 0; i < NumCells * MySize; i++) {
-      //printf("ReductionsTest::HostA1DI4Min(%2d)=%2d\n",i,HostA1DI4Min(i));
-      if (HostA1DI4Min(i) != i) res = "FAIL";
+      // printf("ReductionsTest::HostA1DI4Min(%2d)=%2d\n",i,HostA1DI4Min(i));
+      if (HostA1DI4Min(i) != i)
+         res = "FAIL";
    }
    printf("Global min A1DI4: %s\n", res);
    HostA1DI4Min.deallocate();
@@ -199,16 +247,16 @@ int main(int argc, char *argv[]) {
    res = "PASS";
    for (i = 0; i < MySize; i++) {
       for (j = 0; j < NumCells; j++) {
-        k = i * NumCells + j;
-        //printf("ReductionsTest::HostA1DI4Max(%2d)=%2d\n",k,HostA1DI4Max(k));
-        if (HostA1DI4Max(k) != (i + 1) * k) res = "FAIL";
+         k = i * NumCells + j;
+         // printf("ReductionsTest::HostA1DI4Max(%2d)=%2d\n",k,HostA1DI4Max(k));
+         if (HostA1DI4Max(k) != (i + 1) * k)
+            res = "FAIL";
       }
    }
    printf("Global max A1DI4: %s\n", res);
    HostA1DI4Max.deallocate();
 
    HostA1DI4Work.deallocate();
-
 
    MPI_Finalize();
 } // end of main
