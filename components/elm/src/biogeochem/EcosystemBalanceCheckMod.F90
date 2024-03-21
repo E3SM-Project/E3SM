@@ -528,7 +528,7 @@ contains
          write(iulog,*)'n_to_plant            = ',sminn_to_plant(c)*dt
          write(iulog,*)'plant_to_litter       = ',plant_to_litter_nflux(c)*dt
          if(crop_prog) then
-            write(iulog,*)'fertm                 = ',fert_to_sminn(c)*dt
+            write(iulog,*)'fertn                 = ',fert_to_sminn(c)*dt
             write(iulog,*)'soyfx                 = ',soyfixn_to_sminn(c)*dt
          endif
          write(iulog,*)'fire                  = ',col_fire_nloss(c)*dt
@@ -623,6 +623,7 @@ contains
 
       ! set time steps
       dt = dtime_mod
+      nstep = get_nstep()
       kyr = year_curr; kmo = mon_curr; kda = day_curr; mcsec = secs_curr;
 
       err_found = .false.
@@ -759,6 +760,9 @@ contains
          write(iulog,*)'supplement_to_sminp = ',supplement_to_sminp(c)*dt
          write(iulog,*)'secondp_to_occlp = ',secondp_to_occlp(c)*dt
          write(iulog,*)'sminp_leached = ',sminp_leached(c)*dt
+         if(crop_prog) then
+            write(iulog,*)'fertp              = ',fert_p_to_sminp(c)*dt
+         endif
          if(use_fates)then
             write(iulog,*) 'plant_to_litter_flux = ',plant_to_litter_pflux(c)*dt
             write(iulog,*) 'biochem_pmin_to_plant = ',biochem_pmin_to_plant(c)*dt
