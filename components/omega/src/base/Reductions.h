@@ -3,7 +3,7 @@
 //===-- base/Reductions.h - MPI reduction definitions -----------*- C++ -*-===//
 //
 /// \file
-/// \brief Defines 
+/// \brief Defines
 ///
 //
 //===----------------------------------------------------------------------===//

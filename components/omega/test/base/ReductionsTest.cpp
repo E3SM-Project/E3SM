@@ -14,7 +14,7 @@
 #include "Reductions.h"
 
 //------------------------------------------------------------------------------
-// The test driver for Reductions. This tests 
+// The test driver for Reductions. This tests
 //
 int main(int argc, char *argv[]) {
 
@@ -204,7 +204,7 @@ int main(int argc, char *argv[]) {
         if (HostA1DI4Max(k) != (i + 1) * k) res = "FAIL";
       }
    }
-   printf("Global max A1DI4: %s\n", res);  
+   printf("Global max A1DI4: %s\n", res);
    HostA1DI4Max.deallocate();
 
    HostA1DI4Work.deallocate();
@@ -213,4 +213,3 @@ int main(int argc, char *argv[]) {
    MPI_Finalize();
 } // end of main
 //===-----------------------------------------------------------------------===/
-

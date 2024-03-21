@@ -195,6 +195,17 @@ add_omega_test(
 )
 
 ##################
+# Reductions test
+##################
+
+add_omega_test(
+    REDUCTIONS_TEST
+    testReductions.exe
+    base/ReductionsTest.cpp
+    "-n 2;--cpu-bind=cores"
+)
+
+##################
 # Kokkos test
 ##################
 
@@ -225,5 +236,6 @@ set_tests_properties(
   TIMEMGR_TEST
   KOKKOS_TEST
   IOFIELD_TEST
+  REDUCTIONS_TEST
   PROPERTIES FAIL_REGULAR_EXPRESSION "FAIL" PASS_REGULAR_EXPRESSION "PASS"
 )
