@@ -19,7 +19,7 @@ from machines_specs import is_machine_supported, is_cuda_machine
 from git_utils import get_current_branch, get_current_commit, get_current_head, git_refs_difference, \
     is_repo_clean, get_common_ancestor, checkout_git_ref, get_git_toplevel_dir
 
-import unittest, argparse, sys, difflib, shutil, os
+import unittest, argparse, sys, shutil, os
 from pathlib import Path
 
 # Globals
@@ -125,7 +125,7 @@ class TestBaseOuter: # Hides the TestBase class from test scanner
             self._results = TEST_DIR.joinpath("results")
             self._results.mkdir(parents=True, exist_ok=True) # pylint: disable=no-member
 
-        def get_cmd(self, cmd, machine, dry_run=True):
+        def get_cmd(self, cmd, machine):
             return cmd.replace("$machine", machine).replace("$results", str(self._results))
 
         def test_doctests(self):
