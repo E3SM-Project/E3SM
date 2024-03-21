@@ -33,11 +33,14 @@ def buildlib(bldroot, installpath, case):
     #-------------------------------------------------------
 
 # the paths for boost on different machines call all be added here
-
+# the first is compy, second is nersc (v1.80), third is chrysalis
+# compy requires the boost module to be loaded with: module load boost
+# nersc requires: module load common-utils
     filepaths = \
  """{caseroot}/SourceMods/src.gcam
 /share/apps/boost/1.70/include
-/home/ac.eva.sinha/boost_intel_19.0.3/include
+/soft/boost/1.71.0/include
+/global/common/software/nersc/pm-2023q1/spack-stacks-1/views/basics/include
 {srcroot}/components/gcam/src/iac/gcam/cpl/deps/eigen
 {srcroot}/components/gcam/src/iac/gcam/cvs/objects
 {srcroot}/components/gcam/src/iac/coupling

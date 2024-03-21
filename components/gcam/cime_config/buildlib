@@ -23,13 +23,15 @@ chdir "${OBJROOT}/iac/obj";
 open(file,">tmp_filepath") or die "ERROT: gcam.buildlib could not open file Filepath to write";
 print file "$CASEROOT/SourceMods/src.gcam \n";
 
-# the first is for the compy install, the second is for chrysalis
-# #  eva's directory here is temporary until boost is installed
-# #  also waiting for the nersc boost install
-# # eigen 3.4 is a submodule of the gcam repo
-# # these three need to be in the buildlib_cmake file
+# the first is for the compy install: module load boost
+# the second is for nersc and is version 1.80: this requires module load common-utils
+# the third is for chrysalis, no module needed
+#  eva's boost directory is: /home/ac.eva.sinha/boost_intel_19.0.3/include
+# these three need to be in the buildlib_cmake file
 print file "/share/apps/boost/1.70/include \n";
-print file "/home/ac.eva.sinha/boost_intel_19.0.3/include \n";
+print file "/global/common/software/nersc/pm-2023q1/spack-stacks-1/views/basics/include \n";
+print file "/soft/boost/1.71.0/include \n";
+# eigen 3.4 is a submodule of the gcam repo
 print file "$SRCROOT/components/gcam/src/iac/gcam/cpl/deps/eigen \n";
 
 # Well, it seems that anything we put in tmp_filepath is both scanned for
