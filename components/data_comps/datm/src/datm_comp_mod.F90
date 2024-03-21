@@ -751,7 +751,10 @@ CONTAINS
        nextsw_cday, case_name)
 
     ! !DESCRIPTION: run method for datm model
-
+#ifdef MOABDEBUG
+    use seq_comm_mct, only : mphaid ! 
+    use iMOAB, only: iMOAB_WriteMesh
+#endif
     implicit none
 
     ! !INPUT/OUTPUT PARAMETERS:
@@ -800,6 +803,11 @@ CONTAINS
     real(R8)      :: tbot,pbot,rtmp,vp,ea,e,qsat,frac
 #ifdef HAVE_MOAB
     real(R8), allocatable, target :: datam(:)
+#ifdef MOABDEBUG
+    integer  :: cur_datm_stepno, ierr
+    character*100 outfile, wopts, lnum
+#endif
+
 #endif
     character(*), parameter :: F00   = "('(datm_comp_run) ',8a)"
     character(*), parameter :: F04   = "('(datm_comp_run) ',2a,2i8,'s')"
@@ -1356,6 +1364,17 @@ if (wiso_datm) then  ! water isotopic forcing
    call moab_set_tag('Faxa_snowl_HDO'//C_NULL_CHAR, a2x, ksl_HDO, datam, lsize) ! ksl_HDO   = mct_aVect_indexRA(a2x,'Faxa_snowl_HDO')
 end if
    deallocate(datam) ! maybe we should keep it around, deallocate at the end
+
+#ifdef MOABDEBUG
+    call seq_timemgr_EClockGetData( EClock, stepno=cur_datm_stepno )
+    write(lnum,"(I0.2)")cur_datm_stepno
+    outfile = 'datm_comp_run_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+    wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
+    ierr = iMOAB_WriteMesh(mphaid, outfile, wopts)
+    if (ierr > 0 )  then
+       write(logunit,*) 'Failed to write data atm component state '
+    endif
+#endif
 
 #endif
 
