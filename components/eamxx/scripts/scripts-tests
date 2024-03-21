@@ -3,14 +3,7 @@
 """
 Script containing python test suite for SCREAM test
 infrastructure. This suite should be run to confirm overall
-correctness. You should run this test once in generation mode to
-generate baseline results using your reference commit (common
-ancestor) and once in comparison mode to compare against these
-baselines using your development commit. Baseline and compare runs
-will use dry-run modes so we are only comparing hypothetical shell
-commands, not actually running them.
-
-You can also do a full run which will actually execute the commands.
+correctness.
 
 If you are on a batch machine, it is expected that you are on a compute node.
 
@@ -33,35 +26,9 @@ from pathlib import Path
 TEST_DIR = Path(__file__).resolve().parent
 CONFIG = {
     "machine"  : None,
-    "compare"  : False,
-    "generate" : False,
     "full"     : False,
     "jenkins"  : False
 }
-
-###############################################################################
-def run_cmd_store_output(test_obj, cmd, output_file):
-###############################################################################
-    output_file.parent.mkdir(parents=True, exist_ok=True)
-    output = run_cmd_assert_result(test_obj, cmd, from_dir=TEST_DIR)
-    head = get_current_head()
-    output = output.replace(head, "CURRENT_HEAD_NORMALIZED")
-    output_file.write_text(output)
-
-###############################################################################
-def run_cmd_check_baseline(test_obj, cmd, baseline_path):
-###############################################################################
-    test_obj.assertTrue(baseline_path.is_file(), msg="Missing baseline {}".format(baseline_path))
-    output = run_cmd_assert_result(test_obj, cmd, from_dir=TEST_DIR)
-    head = get_current_head()
-    output = output.replace(head, "CURRENT_HEAD_NORMALIZED")
-    diff = difflib.unified_diff(
-        baseline_path.read_text().splitlines(),
-        output.splitlines(),
-        fromfile=str(baseline_path),
-        tofile=cmd)
-    diff_output = "\n".join(diff)
-    test_obj.assertEqual("", diff_output, msg=diff_output)
 
 ###############################################################################
 def test_cmake_cache_contents(test_obj, build_name, cache_var, expected_value):
@@ -150,8 +117,6 @@ class TestBaseOuter: # Hides the TestBase class from test scanner
             self._source_file = source_file
             self._cmds        = list(cmds)
             self._machine     = CONFIG["machine"]
-            self._compare     = CONFIG["compare"]
-            self._generate    = CONFIG["generate"]
             self._full        = CONFIG["full"]
             self._jenkins     = CONFIG["jenkins"]
 
@@ -160,13 +125,8 @@ class TestBaseOuter: # Hides the TestBase class from test scanner
             self._results = TEST_DIR.joinpath("results")
             self._results.mkdir(parents=True, exist_ok=True) # pylint: disable=no-member
 
-        def get_baseline(self, cmd, machine):
-            return self._results.joinpath(self._source_file).with_suffix("").\
-                joinpath(machine, self.get_cmd(cmd, machine, dry_run=False).translate(str.maketrans(" /='", "____")))
-
         def get_cmd(self, cmd, machine, dry_run=True):
-            return "{}{}".format(cmd.replace("$machine", machine).replace("$results", str(self._results)),
-                                 " --dry-run" if (dry_run and "--dry-run" not in cmd) else "")
+            return cmd.replace("$machine", machine).replace("$results", str(self._results))
 
         def test_doctests(self):
             run_cmd_assert_result(self, "python3 -m doctest {}".format(self._source_file), from_dir=TEST_DIR)
@@ -174,23 +134,6 @@ class TestBaseOuter: # Hides the TestBase class from test scanner
         def test_pylint(self):
             ensure_pylint()
             run_cmd_assert_result(self, "python3 -m pylint --disable C --disable R {}".format(self._source_file), from_dir=TEST_DIR)
-
-        def test_gen_baseline(self):
-            if self._generate:
-                for cmd in self._cmds:
-                    run_cmd_store_output(self, self.get_cmd(cmd, self._machine), self.get_baseline(cmd, self._machine))
-            else:
-                self.skipTest("Skipping dry run baseline generation")
-
-        def test_cmp_baseline(self):
-            if self._compare:
-                for cmd in self._cmds:
-                    if "-p" in cmd:
-                        # Parallel builds can generate scrambled output. Skip them.
-                        continue
-                    run_cmd_check_baseline(self, self.get_cmd(cmd, self._machine), self.get_baseline(cmd, self._machine))
-            else:
-                self.skipTest("Skipping dry run baseline comparison")
 
         def test_full(self):
             if self._full:
@@ -271,9 +214,8 @@ class TestTestAllScream(TestBaseOuter.TestBase):
 ###############################################################################
 
     CMDS_TO_TEST = [
-        "./test-all-scream -m $machine -p",
+        "./test-all-scream -m $machine -p -i -c EKAT_DISABLE_TPL_WARNINGS=ON",
         "./test-all-scream -m $machine -t dbg",
-        "./test-all-scream --baseline-dir $results -p -c EKAT_DISABLE_TPL_WARNINGS=ON -i -m $machine --submit --dry-run", # always dry run
     ]
 
     def __init__(self, *internal_args):
@@ -592,7 +534,7 @@ class TestGatherAllData(TestBaseOuter.TestBase):
 ###############################################################################
 
     CMDS_TO_TEST = [
-        "./gather-all-data './scripts/test-all-scream -m $machine' -l -m $machine",
+        "./gather-all-data 'echo -m $machine' -l -m $machine",
     ]
 
     def __init__(self, *internal_args):
@@ -631,27 +573,10 @@ OR
     \033[1;32m# Run pylint tests for test_all_scream \033[0m
     > {0} TestTestAllScream.test_pylint
 
-    \033[1;32m# Do a dry-run generation for test_all_scream \033[0m
-    > {0} -g TestTestAllScream -m $machine
-
-    \033[1;32m# Do a dry-run comparison for test_all_scream \033[0m
-    > {0} -c TestTestAllScream -m $machine
-
     \033[1;32m# Do a full test run of test_all_scream \033[0m
     > {0} -f -m $machine TestTestAllScream
 
-    \033[1;32m# Do a full test run of everything \033[0m
-    > {0} -f -m $machine
-
-    \033[1;32m# Do a dry-run generation for everything \033[0m
-    > {0} -g -m $machine
-
-    \033[1;32m# Do a dry-run comparison for comparison \033[0m
-    > {0} -c -m $machine
-
     \033[1;32m# Run every possible test. This should be done before a PR is issued \033[0m
-    > {0} -g -m $machine # You likely want to do this for a reference commit
-    > {0} -c -m $machine
     > {0} -f -m $machine
 
     \033[1;32m# Test Jenkins script \033[0m
@@ -667,12 +592,6 @@ OR
     parser.add_argument("-m", "--machine",
                         help="Provide machine name. This is required for full (not dry) runs")
 
-    parser.add_argument("-g", "--generate", action="store_true",
-                        help="Do a dry run with baseline generation")
-
-    parser.add_argument("-c", "--compare", action="store_true",
-                        help="Do a dry run with baseline comparison")
-
     parser.add_argument("-f", "--full", action="store_true",
                         help="Do a full (not dry) run")
 
@@ -685,7 +604,7 @@ OR
     return args
 
 ###############################################################################
-def scripts_tests(machine=None, generate=False, compare=False, full=False, jenkins=False):
+def scripts_tests(machine=None, full=False, jenkins=False):
 ###############################################################################
     os.environ["SCREAM_FAKE_ONLY"] = "True"
 
@@ -694,9 +613,6 @@ def scripts_tests(machine=None, generate=False, compare=False, full=False, jenki
         expect(is_machine_supported(machine), "Machine {} is not supported".format(machine))
         CONFIG["machine"] = machine
 
-    expect(not (generate and compare), "Cannot do generate and compare in the same run")
-    CONFIG["compare"] = compare
-    CONFIG["generate"] = generate
     CONFIG["jenkins"] = jenkins
 
     if full:
