@@ -114,9 +114,6 @@ OR
     parser.add_argument("--quick-rerun-failed", action="store_true",
                         help="Do not clean the build dir, and do not reconfigure. Just (incremental) build and retest failed tests only.")
 
-    parser.add_argument("-d", "--dry-run", action="store_true",
-                        help="Do a dry run, commands will be printed but not executed")
-
     parser.add_argument("--make-parallel-level", action="store", type=int, default=0,
         help="Max number of jobs to be created during compilation. If not provided, use default for given machine.")
 
