@@ -868,6 +868,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
 
         finally:
             # Cleanup the repo if needed
-            cleanup_repo(self._original_branch, self._original_commit, self._has_backup_commit)
+            if self._original_commit!=get_current_commit():
+                cleanup_repo(self._original_branch, self._original_commit, self._has_backup_commit)
 
         return success
