@@ -526,9 +526,10 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
    use hycoef,      only: hyam, hybm
    use dimensions_mod, only: nlev, nelemd, np, npsq
    use se_iop_intr_mod, only: iop_setfield, iop_setinitial
-   use dyn_comp, only: TimeLevel
+   use dyn_comp, only: TimeLevel, hvcoord
    use cam_history,     only: outfld   
    use cam_logfile, only: iulog
+   use element_ops,     only: get_temperature
    use mpishorthand
    real(r8), intent(in) :: dtime   ! Time-step
    real(r8) :: ftmp_temp(np,np,nlev,nelemd), ftmp_q(np,np,nlev,pcnst,nelemd)
@@ -542,6 +543,7 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
    type (dyn_export_t), intent(inout) :: dyn_out ! Dynamics export container
    type (element_t), pointer :: elem(:)
    integer :: rc, i, j, k, p, ie, tl_f
+   real(r8) :: temperature(np,np,nlev)   ! Temperature from dynamics
 #if defined (E3SM_SCM_REPLAY)
    real(r8) :: forcing_temp(npsq,nlev), forcing_q(npsq,nlev,pcnst)
 #endif   
@@ -554,7 +556,10 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
    
    ! Save ftmp stuff to get state before dynamics is called
    do ie=1,nelemd
-     ftmp_temp(:,:,:,ie) = dyn_in%elem(ie)%state%T(:,:,:,tl_f)
+
+     call get_temperature(dyn_in%elem(ie),temperature,hvcoord,tl_f)
+
+     ftmp_temp(:,:,:,ie) = temperature(:,:,:)
      ftmp_q(:,:,:,:,ie) = dyn_in%elem(ie)%state%Q(:,:,:,:)
    enddo
 
@@ -599,6 +604,10 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
    tl_f = TimeLevel%n0
    
    do ie=1,nelemd
+
+     ! Get temperature from dynamics state
+     call get_temperature(dyn_in%elem(ie),temperature,hvcoord,tl_f)
+
      do k=1,nlev
        do j=1,np
          do i=1,np
@@ -606,9 +615,9 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
            ! Note that this calculation will not provide b4b results with 
            !  an E3SM because the dynamics tendency is not computed in the exact
            !  same way as an E3SM run, introducing error with roundoff 
-           forcing_temp(i+(j-1)*np,k) = (dyn_in%elem(ie)%state%T(i,j,k,tl_f) - &
+           forcing_temp(i+(j-1)*np,k) = (temperature(i,j,k) - &
              ftmp_temp(i,j,k,ie))/dtime - dyn_in%elem(ie)%derived%FT(i,j,k)
-           out_temp(i+(j-1)*np,k) = dyn_in%elem(ie)%state%T(i,j,k,tl_f)
+           out_temp(i+(j-1)*np,k) = temperature(i,j,k)
            out_u(i+(j-1)*np,k) = dyn_in%elem(ie)%state%v(i,j,1,k,tl_f)
            out_v(i+(j-1)*np,k) = dyn_in%elem(ie)%state%v(i,j,2,k,tl_f)
            out_q(i+(j-1)*np,k) = dyn_in%elem(ie)%state%Q(i,j,k,1)
