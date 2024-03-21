@@ -319,17 +319,17 @@ contains
               h2osno_col(c) = 0._r8
            endif
            snow_depth_col(c) = h2osno_col(c) / bdsno
-       else ! With a deeper firn model, we can no longer depend on "h2osno_max," because this will
-           !  potentially be large, resulting in a lot of artificial firn at initialization.          ! 
-            ! amschnei@uci.edu: UPDATE - By including a new parameter, bdfirn, we can
-            !   initialize a dense (e.g, 730 kd m^-3) "deep firn" layer for glacier
-            !   land units. This deep firn layer can be set to half of the total
-            !   maximum allotted snowpack mass (i.e., "h2osno_max"), which effectively
-            !   sets the Greenland and Antarctic ice sheets' (and mountain glaciers')
-            !   climatic (aka surface) mass balance (SMB) initial condition to 0. With this
-            !   cold start condition, a multi-decadal (100 to 300 years or more)
-            !   spin up is first required to prognose nonzero SMB.
-            ! 
+       else! With a deeper firn model, we can no longer depend on "h2osno_max," because this will
+           ! potentially be large, resulting in a lot of artificial firn at initialization.          ! 
+           ! amschnei@uci.edu: UPDATE - By including a new parameter, bdfirn, we can
+           ! initialize a dense (e.g, 730 kd m^-3) "deep firn" layer for glacier
+           ! land units. This deep firn layer can be set to half of the total
+           ! maximum allotted snowpack mass (i.e., "h2osno_max"), which effectively
+           ! sets the Greenland and Antarctic ice sheets' (and mountain glaciers')
+           ! climatic (aka surface) mass balance (SMB) initial condition to 0. With this
+           ! cold start condition, a multi-decadal (100 to 300 years or more)
+           ! spin up is first required to prognose nonzero SMB.
+           ! 
            ! However... (below docstring from CLMv5)
            ! In areas that should be snow-covered, it can be problematic to start with 0 snow
            ! cover, because this can affect the long-term state through soil heating, albedo
