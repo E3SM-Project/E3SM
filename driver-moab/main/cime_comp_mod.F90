@@ -679,7 +679,7 @@ module cime_comp_mod
   !----------------------------------------------------------------------------
   ! formats
   !----------------------------------------------------------------------------
-  character(*), parameter :: subname = '(seq_mct_drv)'
+  character(*), parameter :: subname = '(seq_moab_drv)'
   character(*), parameter :: F00 = "('"//subname//" : ', 4A )"
   character(*), parameter :: F0L = "('"//subname//" : ', A, L6 )"
   character(*), parameter :: F01 = "('"//subname//" : ', A, 2i8, 3x, A )"
