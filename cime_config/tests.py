@@ -220,9 +220,9 @@ _TESTS = {
     #atmopheric nbfb tests
     "e3sm_atm_nbfb" : {
         "tests" : (
-            "PGN_P1x1.ne4_oQU240.F2010",
-            "TSC_PS.ne4_oQU240.F2010",
-            "MVK_PS.ne4_oQU240.F2010",
+            "PGN_P1x1.ne4pg2_oQU480.F2010",
+            "TSC_PS.ne4pg2_oQU480.F2010",
+            "MVK_PS.ne4pg2_oQU480.F2010",
             )
         },
 
