@@ -173,50 +173,17 @@ class MAMWetscav : public scream::AtmosphereProcess {
   //Number of aerosol modes
   static constexpr int ntot_amode_ = mam4::AeroConfig::num_modes();
 
-  //Extent for the e3sm's state vector for tracers
-  //--NOTE: The aerosol species are from index 16 to 40 ( or 15 to 39 in C++)
-  //        but we define this variable from 0 to nvars_, where nvars_ is 39.
-  //        Index 0 to 14 has no value
-  // FIXME: do we need nvars_?
-  static constexpr int nvars_ = mam4::aero_model::pcnst;
-
-
   // atmospheric variables
   mam_coupling::WetAtmosphere wet_atm_;
   mam_coupling::DryAtmosphere dry_atm_;
-
-  view_2d cldn_prev_step_, cldt_prev_step_; // cloud fraction from the previous step, FIXME: they carry same info, we might remove one later
-  view_2d evapr_;
-  view_2d cldst_;
-
-  view_2d rprdsh_; // rain production, shallow convection [kg/kg/s]
-  view_2d evapcsh_;
-  view_2d sh_frac_;
-  view_2d icwmrsh_;
-
-  view_2d rprddp_;
-  view_2d evapcdp_;
-  view_2d dp_frac_;
-  view_2d icwmrdp_;
-
   // wet dep
-  view_3d tracer_mixing_ratio_work_;
-  view_3d d_tracer_mixing_ratio_dt_work_;
-  view_2d aerosol_wet_deposition_interstitial_work_;
-  view_2d aerosol_wet_deposition_cloud_water_work_;
-  view_2d wet_geometric_mean_diameter_i_work_[mam4::AeroConfig::num_modes()];
-  view_2d total_convective_detrainment_work_;
-
+  view_2d work_;
+  Kokkos::View<Real * [mam4::aero_model::maxd_aspectype + 2][mam4::aero_model::pcnst]>
+        qqcw_sav_;
   // aerosol states
   mam_coupling::AerosolState  wet_aero_, dry_aero_;
 
-  // workspace manager for internal local variables
-  //ekat::WorkspaceManager<Real, KT::Device> workspace_mgr_;
   mam_coupling::Buffer buffer_;
-
-  mam4::WetDeposition wetdep_;
-
-
 
   std::shared_ptr<const AbstractGrid> m_grid;
 };  // class MAMWetscav
