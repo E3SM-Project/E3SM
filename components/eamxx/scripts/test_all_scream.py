@@ -70,7 +70,7 @@ class TestAllScream(object):
         self._test_size               = test_size
         self._force_baseline_regen    = force_baseline_regen
         # Integration test always updates expired baselines
-        self._update_expired_baselines= update_expired_baselines or self._integration_test
+        self._update_expired_baselines= update_expired_baselines or self._integration_test or self._force_baseline_regen
         # If we are to update expired baselines, then we must run the generate phase
         # NOTE: the gen phase will do nothing if baselines are present and not expired
         self._generate                = generate or self._update_expired_baselines
