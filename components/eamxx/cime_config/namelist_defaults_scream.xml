@@ -237,7 +237,8 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- CLD fraction -->
     <cldFraction inherit="atm_proc_base"/>
 
-    <!-- Optics -->
+    <!-- MAM4xx namelist options -->
+    <!-- MAM4xx-Optics -->
     <mam4_optics inherit="atm_proc_base">
       <mam4_mode1_physical_properties_file type="file">${DIN_LOC_ROOT}/atm/scream/mam4xx/physprops/mam4_mode1_rrtmg_aeronetdust_c20240206.nc</mam4_mode1_physical_properties_file>
       <mam4_mode2_physical_properties_file type="file">${DIN_LOC_ROOT}/atm/scream/mam4xx/physprops/mam4_mode2_rrtmg_c20240206.nc</mam4_mode2_physical_properties_file>

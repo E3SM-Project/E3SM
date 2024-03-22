@@ -96,7 +96,6 @@ class MAMOptics final : public scream::AtmosphereProcess {
       // second, we can use dry fields to compute dz, zmin, zint
       compute_vertical_layer_heights(team, dry_atm_, i);
       compute_updraft_velocities(team, wet_atm_, dry_atm_, i);
-      team.team_barrier();  // allows kernels below to use layer heights
     }  // operator()
 
     // number of horizontal columns and vertical levels
@@ -132,7 +131,6 @@ class MAMOptics final : public scream::AtmosphereProcess {
         const Kokkos::TeamPolicy<KT::ExeSpace>::member_type &team) const {
       const int i = team.league_rank();  // column index
       compute_wet_mixing_ratios(team, dry_atm_, dry_aero_, wet_aero_, i);
-      team.team_barrier();
     }  // operator()
 
     // number of horizontal columns and vertical levels

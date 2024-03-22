@@ -238,6 +238,7 @@ void MAMOptics::initialize_impl(const RunType run_type) {
 
   dry_atm_.T_mid = get_field_in("T_mid").get_view<const Real **>();
   dry_atm_.p_mid = get_field_in("p_mid").get_view<const Real **>();
+  dry_atm_.p_int = get_field_in("p_int").get_view<const Real **>();
   p_int_         = get_field_in("p_int").get_view<const Real **>();
   dry_atm_.p_del = get_field_in("pseudo_density_dry").get_view<const Real **>();
   p_del_         = get_field_in("pseudo_density").get_view<const Real **>();
@@ -389,7 +390,7 @@ void MAMOptics::initialize_impl(const RunType run_type) {
       std::map<std::string, FieldLayout> layouts_aero;
       ekat::ParameterList params_aero;
       std::string surname_aero = "aer";
-      mam_coupling::set_refindex(surname_aero, params_aero, host_views_aero,
+      mam_coupling::set_refindex_names(surname_aero, params_aero, host_views_aero,
                                  layouts_aero);
 
       // read physical properties data for aerosol species

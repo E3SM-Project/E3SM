@@ -277,6 +277,7 @@ struct DryAtmosphere {
   view_2d       z_iface;   // height at layer interfaces [m]
   view_2d       dz;        // layer thickness [m]
   const_view_2d p_del;     // hydrostatic "pressure thickness" at grid interfaces [Pa]
+  const_view_2d p_int;    // total pressure at grid interfaces [Pa]
   const_view_2d cldfrac;   // cloud fraction [-]
   view_2d       w_updraft; // updraft velocity [m/s]
   const_view_1d pblh;      // planetary boundary layer height [m]
@@ -509,6 +510,8 @@ haero::Atmosphere atmosphere_for_column(const DryAtmosphere& dry_atm,
     "z_mid not defined for dry atmosphere state!");
   EKAT_KERNEL_ASSERT_MSG(dry_atm.p_del.data() != nullptr,
     "p_del not defined for dry atmosphere state!");
+  EKAT_KERNEL_ASSERT_MSG(dry_atm.p_int.data() != nullptr,
+    "p_int not defined for dry atmosphere state!");
   EKAT_KERNEL_ASSERT_MSG(dry_atm.cldfrac.data() != nullptr,
     "cldfrac not defined for dry atmosphere state!");
   EKAT_KERNEL_ASSERT_MSG(dry_atm.w_updraft.data() != nullptr,
@@ -523,7 +526,7 @@ haero::Atmosphere atmosphere_for_column(const DryAtmosphere& dry_atm,
                            ekat::subview(dry_atm.ni, column_index),
                            ekat::subview(dry_atm.z_mid, column_index),
                            ekat::subview(dry_atm.p_del, column_index),
-                           ekat::subview(dry_atm.p_del, column_index),
+                           ekat::subview(dry_atm.p_int, column_index),
                            ekat::subview(dry_atm.cldfrac, column_index),
                            ekat::subview(dry_atm.w_updraft, column_index),
                            dry_atm.pblh(column_index));

@@ -160,22 +160,22 @@ inline void read_rrtmg_table(
   // copy data from host to device for mode 1
   int d1 = imode;
   for(int d3 = 0; d3 < nswbands; ++d3) {
-    auto real_host_d3 = Kokkos::subview(
-        aerosol_optics_host_data.refindex_real_sw_host, d3, Kokkos::ALL());
+    auto real_host_d3 = ekat::subview(
+        aerosol_optics_host_data.refindex_real_sw_host, d3);
     Kokkos::deep_copy(aerosol_optics_device_data.refrtabsw[d1][d3],
                       real_host_d3);
-    auto im_host_d3 = Kokkos::subview(
-        aerosol_optics_host_data.refindex_im_sw_host, d3, Kokkos::ALL());
+    auto im_host_d3 = ekat::subview(
+        aerosol_optics_host_data.refindex_im_sw_host, d3);
     Kokkos::deep_copy(aerosol_optics_device_data.refitabsw[d1][d3], im_host_d3);
   }  // d3
 
   for(int d3 = 0; d3 < nlwbands; ++d3) {
-    auto real_host_d3 = Kokkos::subview(
-        aerosol_optics_host_data.refindex_real_lw_host, d3, Kokkos::ALL());
+    auto real_host_d3 = ekat::subview(
+        aerosol_optics_host_data.refindex_real_lw_host, d3);
     Kokkos::deep_copy(aerosol_optics_device_data.refrtablw[d1][d3],
                       real_host_d3);
-    auto im_host_d3 = Kokkos::subview(
-        aerosol_optics_host_data.refindex_im_lw_host, d3, Kokkos::ALL());
+    auto im_host_d3 = ekat::subview(
+        aerosol_optics_host_data.refindex_im_lw_host, d3);
     Kokkos::deep_copy(aerosol_optics_device_data.refitablw[d1][d3], im_host_d3);
   }  // d3
 
@@ -306,7 +306,7 @@ inline void read_water_refindex(const std::string &table_filename,
 }
 // read_refindex_aero
 
-inline void set_refindex(std::string surname, ekat::ParameterList &params,
+inline void set_refindex_names(std::string surname, ekat::ParameterList &params,
                          std::map<std::string, view_1d_host> &host_views,
                          std::map<std::string, FieldLayout> &layouts) {
   // set variables names
