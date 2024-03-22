@@ -52,7 +52,7 @@ include (CompareNCFiles)
 
 CompareNCFilesFamilyMpi (
   TEST_BASE_NAME ${TEST_BASE_NAME}
-  FILE_META_NAME ${TEST_BASE_NAME}_output.INSTANT.nsteps_x1.npMPIRANKS.${RUN_T0}.nc
+  FILE_META_NAME ${TEST_BASE_NAME}_output.INSTANT.nsteps_x2.npMPIRANKS.${RUN_T0}.nc
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
   LABELS mam4_optics physics
   META_FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_npMPIRANKS_omp1
@@ -61,6 +61,6 @@ CompareNCFilesFamilyMpi (
 if (SCREAM_ENABLE_BASELINE_TESTS)
   # Compare one of the output files with the baselines.
   # Note: one is enough, since we already check that np1 is BFB with npX
-  set (OUT_FILE ${TEST_BASE_NAME}_output.INSTANT.nsteps_x1.np${TEST_RANK_END}.${RUN_T0}.nc)
+  set (OUT_FILE ${TEST_BASE_NAME}_output.INSTANT.nsteps_x2.np${TEST_RANK_END}.${RUN_T0}.nc)
   CreateBaselineTest(${TEST_BASE_NAME} ${TEST_RANK_END} ${OUT_FILE} ${FIXTURES_BASE_NAME})
 endif()
