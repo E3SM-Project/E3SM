@@ -29,7 +29,7 @@ MACHINE_METADATA = {
                   "bsub -I -q rhel8 -n 4 -gpu num=4",
                   "/home/projects/e3sm/scream/pr-autotester/master-baselines/weaver/"),
     "mappy"   : (["module purge", "module load sems-archive-env acme-env acme-cmake/3.26.3 sems-archive-gcc/9.2.0 sems-archive-git/2.10.1 acme-openmpi/4.0.7 acme-netcdf/4.7.4/acme"],
-                 ["mpicxx","mpifort","mpicc"],
+                 ["mpicxx","mpifort","mpicc","export GATOR_INITIAL_MB=4000MB"],
                   "",
                   "/sems-data-store/ACME/baselines/scream/master-baselines"),
     "lassen" : (["module --force purge", "module load git gcc/8.3.1 cuda/11.8.0 cmake/3.16.8 spectrum-mpi python/3.7.2", "export LLNL_USE_OMPI_VARS='y'",
