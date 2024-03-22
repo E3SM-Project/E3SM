@@ -437,6 +437,10 @@ def safe_copy(src_path, tgt_path, preserve_meta=True):
     permissions of the src files.
     """
 
+    # Only works for str paths for now
+    src_path = str(src_path)
+    tgt_path = str(tgt_path)
+
     tgt_path = (
         os.path.join(tgt_path, os.path.basename(src_path))
         if os.path.isdir(tgt_path)
