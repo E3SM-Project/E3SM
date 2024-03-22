@@ -29,4 +29,36 @@
     <alias>SSP245_ZATM</alias>
     <lname>SSP245_EAM%CMIP6_ELM%CNPRDCTCBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_GCAM</lname>
    </compset>
+
+   <entry id="NCPL_BASE_PERIOD">
+     <values>
+       <value compset="ZLND">year</value>
+       <value compset="ZATM">year</value>
+       <value compset="SSP245_ZATM">year</value>
+     </values>
+   </entry>
+
+   <entry id="IAC_NCPL">
+     <values>
+       <value compset="ZLND">1</value>
+       <value compset="ZATM">1</value>
+       <value compset="SSP245_ZATM">1</value>
+     </values>
+   </entry>
+
+   <entry id="LND_NCPL">
+     <values>
+       <value compset="ZLND">17520</value>
+       <value compset="ZATM">17520</value>
+       <value compset="SSP245_ZATM">17520</value>
+     </values>
+   </entry>
+
+   <entry id="ATM_NCPL">
+     <values>
+       <value compset="ZATM">17520</value>
+       <value compset="SSP245_ZATM">17520</value>
+     </values>
+   </entry>
+
 </compsets>	
