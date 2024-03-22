@@ -1,4 +1,5 @@
-from utils import run_cmd, run_cmd_no_fail, expect, check_minimum_python_version, ensure_psutil
+from utils import run_cmd, run_cmd_no_fail, expect, check_minimum_python_version, ensure_psutil, \
+    SharedArea, safe_copy
 from git_utils import get_current_head, get_current_commit, get_current_branch, is_repo_clean, \
     cleanup_repo, merge_git_ref, git_refs_difference, print_last_commit, \
     create_backup_commit, checkout_git_ref
@@ -656,12 +657,13 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         with open(test_dir/"data/baseline_list","r",encoding="utf-8") as fd:
             files = fd.read().splitlines()
 
-            for fn in files:
-                # In case appending to the file leaves an empty line at the end
-                src = Path(fn)
-                dst = baseline_dir / "data" / src.name
-                dst.touch(mode=0o664,exist_ok=True)
-                shutil.copy(src, dst)
+            with SharedArea():
+                for fn in files:
+                    # In case appending to the file leaves an empty line at the end
+                    if fn != "":
+                        src = Path(fn)
+                        dst = baseline_dir / "data" / src.name
+                        safe_copy(src, dst)
 
         # Store the sha used for baselines generation
         self.set_baseline_file_sha(test)
