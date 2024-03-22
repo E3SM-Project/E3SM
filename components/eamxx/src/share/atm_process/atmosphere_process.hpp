@@ -281,7 +281,7 @@ public:
   void print_fast_global_state_hash(const std::string& label) const;
 
   // Set IOP object
-  virtual void set_intensive_observation_period(const iop_ptr& iop) {
+  virtual void set_iop(const iop_ptr& iop) {
     m_iop = iop;
   }
 

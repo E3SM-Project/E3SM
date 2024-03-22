@@ -190,10 +190,58 @@ bool has_variable (const std::string& filename, const std::string& varname)
     return false;
   }
   EKAT_REQUIRE_MSG (err==PIO_NOERR,
-      "Error! Something went wrong while retrieving dimension id.\n"
+      "Error! Something went wrong while retrieving variable id.\n"
       " - filename : " + filename + "\n"
       " - varname  : " + varname + "\n"
       " - pio error: " + std::to_string(err) + "\n");
+  if (not was_open) {
+    eam_pio_closefile(filename);
+  }
+
+  return true;
+}
+
+bool has_attribute (const std::string& filename, const std::string& attname)
+{
+  return has_attribute(filename,"GLOBAL",attname);
+}
+
+bool has_attribute (const std::string& filename, const std::string& varname, const std::string& attname)
+{
+  int ncid, varid, attid, err;
+
+  bool was_open = is_file_open_c2f(filename.c_str(),-1);
+  if (not was_open) {
+    register_file(filename,Read);
+  }
+
+  // Get file id
+  ncid = get_file_ncid_c2f (filename.c_str());
+
+  // Get var id
+  if (varname=="GLOBAL") {
+    varid = PIO_GLOBAL;
+  } else {
+    err = PIOc_inq_varid(ncid,varname.c_str(),&varid);
+    EKAT_REQUIRE_MSG (err==PIO_NOERR,
+        "Error! Something went wrong while retrieving variable id.\n"
+        " - filename : " + filename + "\n"
+        " - varname  : " + varname + "\n"
+        " - pio error: " + std::to_string(err) + "\n");
+  }
+
+  // Get att id
+  err = PIOc_inq_attid(ncid,varid,attname.c_str(),&attid);
+  if (err==PIO_ENOTATT) {
+    return false;
+  }
+  EKAT_REQUIRE_MSG (err==PIO_NOERR,
+      "Error! Something went wrong while retrieving attribute id.\n"
+      " - filename : " + filename + "\n"
+      " - varname  : " + varname + "\n"
+      " - attname  : " + attname + "\n"
+      " - pio error: " + std::to_string(err) + "\n");
+
   if (not was_open) {
     eam_pio_closefile(filename);
   }
@@ -629,14 +677,24 @@ void grid_write_data_array<double>(const std::string &filename, const std::strin
   grid_write_data_array_c2f_double(filename.c_str(),varname.c_str(),hbuf,buf_size);
 }
 /* ----------------------------------------------------------------- */
-void write_timestamp (const std::string& filename, const std::string& ts_name, const util::TimeStamp& ts)
+void write_timestamp (const std::string& filename, const std::string& ts_name,
+                      const util::TimeStamp& ts, const bool write_nsteps)
 {
   set_attribute(filename,ts_name,ts.to_string());
+  if (write_nsteps) {
+    set_attribute(filename,ts_name+"_nsteps",ts.get_num_steps());
+  }
 }
 /* ----------------------------------------------------------------- */
-util::TimeStamp read_timestamp (const std::string& filename, const std::string& ts_name)
+util::TimeStamp read_timestamp (const std::string& filename,
+                                const std::string& ts_name,
+                                const bool read_nsteps)
 {
-  return util::str_to_time_stamp(get_attribute<std::string>(filename,ts_name));
+  auto ts = util::str_to_time_stamp(get_attribute<std::string>(filename,ts_name));
+  if (read_nsteps and has_attribute(filename,ts_name+"_nsteps")) {
+    ts.set_num_steps(get_attribute<int>(filename,ts_name+"_nsteps"));
+  }
+  return ts;
 }
 /* ----------------------------------------------------------------- */
 } // namespace scorpio

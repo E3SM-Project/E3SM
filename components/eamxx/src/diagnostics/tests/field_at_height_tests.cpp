@@ -178,7 +178,7 @@ TEST_CASE("field_at_height")
   print(" -> Testing throws error with unsupported reference height... OK\n");
 
   // Run many times
-  int z_tgt,lev_tgt;
+  int z_tgt;
   std::string loc;
   for (std::string surf_ref : {"sealevel","surface"}) {
     printf(" -> Testing for a reference height above %s...\n",surf_ref.c_str());

@@ -1,4 +1,5 @@
 frivinp_rtm = '$DIN_LOC_ROOT/rof/mosart/MOSART_NLDAS_8th_20160426_20210609d_rslp.nc'
+frivinp_mesh = '$DIN_LOC_ROOT/share/meshes/rof/MOSART_global_8th.scrip.20180211c.nc'
 sediflag = .true.
 parafile = '$DIN_LOC_ROOT/rof/mosart/US_reservoir_8th_NLDAS3_updated.nc'
 routingmethod = 2

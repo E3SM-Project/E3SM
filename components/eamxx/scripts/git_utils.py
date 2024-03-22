@@ -137,6 +137,17 @@ def merge_git_ref(git_ref, repo=None, verbose=False, dry_run=False):
             print_last_commit()
 
 ###############################################################################
+def create_backup_commit (repo=None, dry_run=False):
+###############################################################################
+
+    bkp_cmd = "git add -A && git commit -m 'WARNING: test-all-scream backup commit'"
+    if dry_run:
+        print (f"Would run: {bkp_cmd}")
+    else:
+        run_cmd_no_fail(bkp_cmd, from_dir=repo)
+        expect(is_repo_clean(repo=repo), "Something went wrong while performing the backup commit")
+
+###############################################################################
 def print_last_commit(git_ref=None, repo=None, dry_run=False):
 ###############################################################################
     """
@@ -182,7 +193,7 @@ def get_git_toplevel_dir(repo=None):
     return output if stat == 0 else None
 
 ###############################################################################
-def cleanup_repo(orig_branch, orig_commit, repo=None, dry_run=False):
+def cleanup_repo(orig_branch, orig_commit, has_backup_commit=False, repo=None, dry_run=False):
 ###############################################################################
     """
     Discards all unstaged changes, as well as untracked files
@@ -206,4 +217,10 @@ def cleanup_repo(orig_branch, orig_commit, repo=None, dry_run=False):
     # NOTE: if you reset the branch, don't forget to re-update the modules!!
     if curr_commit != orig_commit and not dry_run:
         run_cmd_no_fail("git reset --hard {}".format(orig_commit), from_dir=repo)
+        if has_backup_commit:
+            # This can happen if we ran an integration test with a dirty repo.
+            # test_all_scream will create a temporary backup commit, which we
+            # need to undo, but leaving the changed files in the workspace.
+            # So DON'T add --hard to this call!
+            run_cmd_no_fail("git reset {HEAD~1}", from_dir=repo)
         update_submodules(repo=repo)

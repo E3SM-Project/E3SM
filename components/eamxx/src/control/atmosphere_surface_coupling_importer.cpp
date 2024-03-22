@@ -170,9 +170,11 @@ void SurfaceCouplingImporter::do_import(const bool called_during_initialization)
     }
   });
 
-  // If IOP is defined, potentially overwrite imports with data from IOP file
   if (m_iop) {
-    overwrite_iop_imports(called_during_initialization);
+    if (m_iop->get_params().get<bool>("iop_srf_prop")) {
+      // Overwrite imports with data from IOP file
+      overwrite_iop_imports(called_during_initialization);
+    }
   }
 }
 // =========================================================================================

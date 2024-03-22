@@ -74,7 +74,7 @@ TEST_CASE("nudging_tests") {
   // First section tests nudging when there is no horiz-vert interp
   SECTION ("no-horiz-no-vert") {
     ekat::ParameterList params;
-    params.set<strvec_t>("nudging_filename",{nudging_data});
+    params.set<strvec_t>("nudging_filenames_patterns",{nudging_data});
     params.set<std::string>("source_pressure_type","TIME_DEPENDENT_3D_PROFILE");
     params.set<strvec_t>("nudging_fields",{"U"});
     params.get<std::string>("log_level","warn");
@@ -189,7 +189,7 @@ TEST_CASE("nudging_tests") {
     };
 
     ekat::ParameterList params;
-    params.set<strvec_t>("nudging_filename",{nudging_data});
+    params.set<strvec_t>("nudging_filenames_patterns",{nudging_data});
     params.set<std::string>("source_pressure_type","TIME_DEPENDENT_3D_PROFILE");
     params.set<strvec_t>("nudging_fields",{"U"});
     params.get<std::string>("log_level","warn");
@@ -295,8 +295,7 @@ TEST_CASE("nudging_tests") {
       int ncols = fid.get_layout().dim(0);
       comm.all_reduce(&ncols,1,MPI_SUM);
 
-      FieldLayout glb_layout = fid.get_layout();
-      glb_layout.set_dimension(0,ncols);
+      FieldLayout glb_layout = fid.get_layout().clone_with_different_extent(0,ncols);
       FieldIdentifier glb_fid(fid.name(),glb_layout,fid.get_units(),fid.get_grid_name());
       Field glb(glb_fid);
       glb.allocate_view();
@@ -365,7 +364,7 @@ TEST_CASE("nudging_tests") {
     };
 
     ekat::ParameterList params;
-    params.set<strvec_t>("nudging_filename",{nudging_data});
+    params.set<strvec_t>("nudging_filenames_patterns",{nudging_data});
     params.set<std::string>("source_pressure_type","TIME_DEPENDENT_3D_PROFILE");
     params.set<std::string>("nudging_refine_remap_mapfile",map_file);
     params.set<strvec_t>("nudging_fields",{"U"});
@@ -430,7 +429,7 @@ TEST_CASE("nudging_tests") {
     };
 
     ekat::ParameterList params;
-    params.set<strvec_t>("nudging_filename",{nudging_data_filled});
+    params.set<strvec_t>("nudging_filenames_patterns",{nudging_data_filled});
     params.set<std::string>("source_pressure_type","TIME_DEPENDENT_3D_PROFILE");
     params.set<strvec_t>("nudging_fields",{"U"});
     params.get<std::string>("log_level","warn");

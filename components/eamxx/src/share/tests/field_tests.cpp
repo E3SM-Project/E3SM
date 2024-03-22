@@ -54,6 +54,8 @@ TEST_CASE("field_layout", "") {
 
   REQUIRE (fl2.get_vector_tag()==CMP);
   REQUIRE (fl5.get_vector_tag()==CMP);
+  REQUIRE (fl2.get_vector_component_idx()==1);
+  REQUIRE (fl5.get_vector_component_idx()==1);
   REQUIRE (fl2.get_vector_dim()==1);
   REQUIRE (fl5.get_vector_dim()==1);
 

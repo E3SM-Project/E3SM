@@ -167,29 +167,27 @@ init_time_stamps (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0)
 
 
 void AtmosphereDriver::
-setup_intensive_observation_period ()
+setup_iop ()
 {
-  // At this point, must have comm, params, initialized timestamps, and grids created.
-  check_ad_status(s_comm_set | s_params_set | s_ts_inited | s_grids_created);
+  // At this point, must have comm, params, initialized timestamps created.
+  check_ad_status(s_comm_set | s_params_set | s_ts_inited);
 
   // Check to make sure iop is not already initialized
-  EKAT_REQUIRE_MSG(not m_iop, "Error! setup_intensive_observation_period() is "
-                              "called, but IOP already set up.\n");
+  EKAT_REQUIRE_MSG(not m_iop, "Error! setup_iop() is called, but IOP already set up.\n");
 
   // This function should only be called if we are enabling IOP
   const bool enable_iop =
-    m_atm_params.sublist("driver_options").get("enable_intensive_observation_period", false);
-  EKAT_REQUIRE_MSG(enable_iop, "Error! setup_intensive_observation_period() is called, but "
-                               "enable_intensive_observation_period=false "
+    m_atm_params.sublist("driver_options").get("enable_iop", false);
+  EKAT_REQUIRE_MSG(enable_iop, "Error! setup_iop() is called, but enable_iop=false "
                                "in driver_options parameters.\n");
 
-  // Params must include intensive_observation_period_options sublist.
-  const auto iop_sublist_exists = m_atm_params.isSublist("intensive_observation_period_options");
+  // Params must include iop_options sublist.
+  const auto iop_sublist_exists = m_atm_params.isSublist("iop_options");
   EKAT_REQUIRE_MSG(iop_sublist_exists,
-                   "Error! setup_intensive_observation_period() is called, but no intensive_observation_period_options "
+                   "Error! setup_iop() is called, but no iop_options "
                    "defined in parameters.\n");
 
-  const auto iop_params = m_atm_params.sublist("intensive_observation_period_options");
+  const auto iop_params = m_atm_params.sublist("iop_options");
   const auto phys_grid = m_grids_manager->get_grid("Physics");
   const auto nlevs = phys_grid->get_num_vertical_levels();
   const auto hyam = phys_grid->get_geometry_data("hyam");
@@ -206,7 +204,7 @@ setup_intensive_observation_period ()
   m_iop->set_grid_spacing(dx_short_f.get_view<const Real,Host>()());
 
   // Set IOP object in atm processes
-  m_atm_process_group->set_intensive_observation_period(m_iop);
+  m_atm_process_group->set_iop(m_iop);
 }
 
 void AtmosphereDriver::create_atm_processes()
@@ -279,6 +277,14 @@ void AtmosphereDriver::create_grids()
   if(m_atm_process_group->has_process("tms") &&
      m_atm_process_group->has_process("shoc")) {
     setup_shoc_tms_links();
+  }
+
+  // IOP object needs the grids_manager to have been created, but is then needed in set_grids()
+  // implementation of some processes, so setup here.
+  const bool enable_iop =
+    m_atm_params.sublist("driver_options").get("enable_iop", false);
+  if (enable_iop) {
+    setup_iop ();
   }
 
   // Set the grids in the processes. Do this by passing the grids manager.
@@ -689,9 +695,9 @@ void AtmosphereDriver::initialize_output_managers () {
   checkpoint_params.set("Frequency",-1);
   if (io_params.isSublist("model_restart")) {
     auto restart_pl = io_params.sublist("model_restart");
-    m_output_managers.emplace_back();
+    restart_pl.set<std::string>("Averaging Type","Instant");
     restart_pl.sublist("provenance") = m_atm_params.sublist("provenance");
-    auto& om = m_output_managers.back();
+    auto& om = m_output_managers.emplace_back();
     if (fvphyshack) {
       // Don't save CGLL fields from ICs to the restart file.
       std::map<std::string,field_mgr_ptr> fms;
@@ -837,7 +843,7 @@ initialize_fields ()
       auto hw = fm->get_field("horiz_winds");
       const auto& fid = hw.get_header().get_identifier();
       const auto& layout = fid.get_layout();
-      const int vec_dim = layout.get_vector_dim();
+      const int vec_dim = layout.get_vector_component_idx();
       const auto& units = fid.get_units();
       auto U = hw.subfield("U",units,vec_dim,0);
       auto V = hw.subfield("V",units,vec_dim,1);
@@ -853,7 +859,7 @@ initialize_fields ()
       auto hw = fm->get_field("surf_mom_flux");
       const auto& fid = hw.get_header().get_identifier();
       const auto& layout = fid.get_layout();
-      const int vec_dim = layout.get_vector_dim();
+      const int vec_dim = layout.get_vector_component_idx();
       const auto& units = fid.get_units();
       auto surf_mom_flux_U = hw.subfield("surf_mom_flux_U",units,vec_dim,0);
       auto surf_mom_flux_V = hw.subfield("surf_mom_flux_V",units,vec_dim,1);
@@ -935,29 +941,34 @@ void AtmosphereDriver::create_logger () {
   auto& driver_options_pl = m_atm_params.sublist("driver_options");
 
   ci_string log_fname = driver_options_pl.get<std::string>("Atm Log File","atm.log");
-  ci_string log_level_str = driver_options_pl.get<std::string>("atm_log_level","info");
+  ci_string log_level = driver_options_pl.get<std::string>("atm_log_level","info");
+  ci_string flush_level = driver_options_pl.get<std::string>("atm_flush_level","warn");
   EKAT_REQUIRE_MSG (log_fname!="",
       "Invalid string for 'Atm Log File': '" + log_fname + "'.\n");
 
-  LogLevel log_level;
-  if (log_level_str=="trace") {
-    log_level = LogLevel::trace;
-  } else if (log_level_str=="debug") {
-    log_level = LogLevel::debug;
-  } else if (log_level_str=="info") {
-    log_level = LogLevel::info;
-  } else if (log_level_str=="warn") {
-    log_level = LogLevel::warn;
-  } else if (log_level_str=="err") {
-    log_level = LogLevel::err;
-  } else if (log_level_str=="off") {
-    log_level = LogLevel::off;
-  } else {
-    EKAT_ERROR_MSG ("Invalid choice for 'atm_log_level': " + log_level_str + "\n");
-  }
+  auto str2lev = [](const std::string& s, const std::string& name) {
+    LogLevel lev;
+    if (s=="trace") {
+      lev = LogLevel::trace;
+    } else if (s=="debug") {
+      lev = LogLevel::debug;
+    } else if (s=="info") {
+      lev = LogLevel::info;
+    } else if (s=="warn") {
+      lev = LogLevel::warn;
+    } else if (s=="err") {
+      lev = LogLevel::err;
+    } else if (s=="off") {
+      lev = LogLevel::off;
+    } else {
+      EKAT_ERROR_MSG ("Invalid choice for '" + name + "': " + s + "\n");
+    }
+    return lev;
+  };
 
   using logger_t = Logger<LogBasicFile,LogRootRank>;
-  m_atm_logger = std::make_shared<logger_t>(log_fname,log_level,m_atm_comm,"");
+  m_atm_logger = std::make_shared<logger_t>(log_fname,str2lev(log_level,"atm_log_level"),m_atm_comm,"");
+  m_atm_logger->flush_on(str2lev(flush_level,"atm_flush_level"));
   m_atm_logger->set_no_format();
 
   // In CIME runs, this is already set to false, so atm log does not pollute e3sm.loc.
@@ -1446,8 +1457,8 @@ initialize_constant_field(const FieldIdentifier& fid,
   // In the first case, all entries of the field are inited to val, while in the latter,
   // each component is inited to the corresponding entry of the array.
   if (layout.is_vector_layout() and ic_pl.isType<std::vector<double>>(name)) {
-    const auto idim = layout.get_vector_dim();
-    const auto vec_dim = layout.dim(idim);
+    const auto idim = layout.get_vector_component_idx();
+    const auto vec_dim = layout.get_vector_dim();
     const auto& values = ic_pl.get<std::vector<double>>(name);
     EKAT_REQUIRE_MSG (values.size()==static_cast<size_t>(vec_dim),
         "Error! Initial condition values array for '" + name + "' has the wrong dimension.\n"
@@ -1554,12 +1565,6 @@ initialize (const ekat::Comm& atm_comm,
   create_atm_processes ();
 
   create_grids ();
-
-  const bool enable_iop =
-    m_atm_params.sublist("driver_options").get("enable_intensive_observation_period", false);
-  if (enable_iop) {
-    setup_intensive_observation_period ();
-  }
 
   create_fields ();
 

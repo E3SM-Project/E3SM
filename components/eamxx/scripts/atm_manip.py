@@ -258,7 +258,11 @@ def apply_change(xml_root, node, new_value, append_this):
                 "Error! Can only append with array and string types.\n"
                 f"    - name: {node.tag}\n"
                 f"    - type: {type_}")
-        if is_array_type(type_):
+
+        if node.text is None:
+            node.text = ""
+
+        if is_array_type(type_) and node.text!="":
             node.text += ", " + new_value
         else:
             node.text += new_value

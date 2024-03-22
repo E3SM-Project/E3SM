@@ -64,7 +64,8 @@ MODULE MOSART_physics_mod
     integer :: iunit, idam, m, k, unitUp, cnt, ier, dd, nSubStep   !local index
     real(r8) :: temp_erout, localDeltaT, temp_haout, temp_Tt, temp_Tr, temp_T, temp_ha
     real(r8) :: mud_erout, san_erout, temp_ehexch, temp_etexch, temp_erexch
-    real(r8) :: negchan, numSubSteps
+    real(r8) :: negchan 
+    integer  :: numSubSteps
     integer  :: yr,mon,day,tod
     real(r8) :: myTINYVALUE
     character(len=*),parameter :: subname = '(Euler)'

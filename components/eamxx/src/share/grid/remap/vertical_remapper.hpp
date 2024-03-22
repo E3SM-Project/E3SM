@@ -23,6 +23,7 @@ public:
                     const Field& ilev_prof,
                     const Real mask_val);
 
+  // Calls the above one, with mask_val=max_float/10
   VerticalRemapper (const grid_ptr_type& src_grid,
                     const std::string& map_file,
                     const Field& lev_prof,

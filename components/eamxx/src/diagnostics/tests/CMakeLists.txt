@@ -6,7 +6,7 @@ function (createDiagTest test_name test_srcs)
     LABELS diagnostics)
 endfunction ()
 
-if (NOT SCREAM_BASELINES_ONLY)
+if (NOT SCREAM_ONLY_GENERATE_BASELINES)
   include(ScreamUtils)
 
   # Test extracting a single level of a field

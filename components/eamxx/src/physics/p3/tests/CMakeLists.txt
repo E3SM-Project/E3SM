@@ -46,7 +46,7 @@ else ()
 endif()
 
 # NOTE: tests inside this if statement won't be built in a baselines-only build
-if (NOT SCREAM_BASELINES_ONLY)
+if (NOT SCREAM_ONLY_GENERATE_BASELINES)
   CreateUnitTest(p3_tests "${P3_TESTS_SRCS}"
       LIBS p3
       THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
@@ -77,7 +77,11 @@ if (NOT SCREAM_BASELINES_ONLY)
 endif()
 
 if (SCREAM_ENABLE_BASELINE_TESTS)
-  set(BASELINE_FILE_ARG "-b ${SCREAM_TEST_DATA_DIR}/p3_run_and_cmp.baseline")
+  if (SCREAM_ONLY_GENERATE_BASELINES)
+    set(BASELINE_FILE_ARG "-g -b ${SCREAM_BASELINES_DIR}/data/p3_run_and_cmp.baseline")
+  else()
+    set(BASELINE_FILE_ARG "-b ${SCREAM_BASELINES_DIR}/data/p3_run_and_cmp.baseline")
+  endif()
 
   CreateUnitTestExec(p3_run_and_cmp "p3_run_and_cmp.cpp"
       LIBS p3
@@ -103,42 +107,13 @@ if (SCREAM_ENABLE_BASELINE_TESTS)
       EXCLUDE_MAIN_CPP
       ${FORCE_RUN_DIFF_FAILS})
 
-  #
-  # Use fake tests to generate shell commands to generate baselines
-  #
-  CreateUnitTestFromExec(p3_baseline_f90_fake p3_run_and_cmp
-    THREADS ${SCREAM_TEST_MAX_THREADS}
-    EXE_ARGS "-f -g ${BASELINE_FILE_ARG}"
-    PROPERTIES DISABLED True)
-
-  CreateUnitTestFromExec(p3_baseline_cxx_fake p3_run_and_cmp
-    THREADS ${SCREAM_TEST_MAX_THREADS}
-    EXE_ARGS "-g ${BASELINE_FILE_ARG}"
-    PROPERTIES DISABLED True)
-
+  # By default, baselines should be created using all fortran (ctest -L baseline_gen). If the user wants
+  # to use CXX to generate their baselines, they should use "ctest -L baseline_gen_cxx".
+  # Note: the baseline_gen label label is really only used if SCREAM_ONLY_GENERATE_BASELINES=ON, but no harm adding it
   if (SCREAM_TEST_MAX_THREADS GREATER 1)
-    get_test_property(p3_baseline_f90_fake_omp${SCREAM_TEST_MAX_THREADS} FULL_TEST_COMMAND P3_F90_GEN)
-    get_test_property(p3_baseline_cxx_fake_omp${SCREAM_TEST_MAX_THREADS} FULL_TEST_COMMAND P3_CXX_GEN)
-  else()
-    get_test_property(p3_baseline_f90_fake FULL_TEST_COMMAND P3_F90_GEN)
-    get_test_property(p3_baseline_cxx_fake FULL_TEST_COMMAND P3_CXX_GEN)
+    # ECUT only adds _ompX if we have more than one value of X, or if X>1
+    set (TEST_SUFFIX _omp${SCREAM_TEST_MAX_THREADS})
   endif()
-
-  if (P3_F90_GEN STREQUAL "NOTFOUND")
-    message(FATAL_ERROR "Could not get FULL_TEST_COMMAND for p3_baseline fake test")
-  endif()
-
-  separate_arguments(P3_F90_GEN_ARGS UNIX_COMMAND "${P3_F90_GEN}")
-  separate_arguments(P3_CXX_GEN_ARGS UNIX_COMMAND "${P3_CXX_GEN}")
-
-  add_custom_target(p3_baseline_f90
-    COMMAND ${CMAKE_COMMAND} -E env OMP_NUM_THREADS=${SCREAM_TEST_MAX_THREADS} ${P3_F90_GEN_ARGS})
-
-  add_custom_target(p3_baseline_cxx
-    COMMAND ${CMAKE_COMMAND} -E env OMP_NUM_THREADS=${SCREAM_TEST_MAX_THREADS} ${P3_CXX_GEN_ARGS})
-
-  # By default, baselines should be created using all fortran (make baseline). If the user wants
-  # to use CXX to generate their baselines, they should use "make baseline_cxx".
-  add_dependencies(baseline     p3_baseline_f90)
-  add_dependencies(baseline_cxx p3_baseline_cxx)
+  set_tests_properties (p3_run_and_cmp_f90${TEST_SUFFIX} PROPERTIES LABELS "baseline_gen;baseline_cmp")
+  set_tests_properties (p3_run_and_cmp_cxx${TEST_SUFFIX} PROPERTIES LABELS "baseline_gen;cxx baseline_cmp")
 endif()

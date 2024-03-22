@@ -26,7 +26,7 @@ module li_time_integration
    use mpas_timekeeping
    use mpas_log
 
-   use li_time_integration_fe
+   use li_time_integration_fe_rk
    use li_setup
    use li_constants
 
@@ -166,61 +166,15 @@ module li_time_integration
       !call mpas_log_write('Using ' // trim(config_time_integration) // ' time integration.')
       select case (config_time_integration)
       case ('forward_euler')
-         call li_time_integrator_forwardeuler(domain, err_tmp)
-      case ('rk4')
-         call mpas_log_write(trim(config_time_integration) // ' is not currently supported.', MPAS_LOG_ERR)
-         err_tmp = 1
+         call li_time_integrator_forwardeuler_rungekutta(domain, err_tmp)
+      case ('runge_kutta')
+         call li_time_integrator_forwardeuler_rungekutta(domain, err_tmp)
       case default
          call mpas_log_write(trim(config_time_integration) // ' is not a valid land ice time integration option.', MPAS_LOG_ERR)
          err_tmp = 1
       end select
       err = ior(err,err_tmp)
 
-
-      ! ===
-      ! === Adaptive timestep: update clock information
-      ! ===
-      ! Set time step in clock object since the time step could have changed
-      ! Need to get value out of a block, but all blocks should have the same value, so just use first block
-      if (config_adaptive_timestep) then
-         block => domain % blocklist
-         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-         call mpas_pool_get_array(meshPool, 'deltat', deltat)
-         ! convert dt in seconds to timeInterval type
-         call mpas_set_timeInterval(timeStepInterval, dt=deltat, ierr=err_tmp)
-         err = ior(err,err_tmp)
-         ! update the clock with the timeInterval
-         call mpas_set_clock_timestep(domain % clock, timeStepInterval, err_tmp)
-         err = ior(err,err_tmp)
-      endif
-
-      ! ===
-      ! === Update clock information
-      ! ===
-      ! Advance clock - needed to wait until after time step is completed in case the dt has changed!
-      call mpas_advance_clock(domain % clock)
-      currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, err_tmp)
-      call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=err_tmp)
-      err = ior(err, err_tmp)
-      call mpas_log_write('  Completed timestep.  New time is: ' // trim(timeStamp), flushNow=.true.)
-
-
-      block => domain % blocklist
-      do while (associated(block))
-         ! Assign the time stamp for this time step
-         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-         call mpas_pool_get_array(meshPool, 'xtime', xtime)
-         xtime = timeStamp
-
-         ! compute time since start of simulation, in days
-         call mpas_pool_get_array(meshPool, 'simulationStartTime', simulationStartTime)
-         call mpas_pool_get_array(meshPool, 'daysSinceStart',daysSinceStart)
-         call mpas_set_time(simulationStartTime_timeType, dateTimeString=simulationStartTime)
-         call mpas_get_timeInterval(currTime - simulationStartTime_timeType, dt=daysSinceStart)
-         daysSinceStart = daysSinceStart / seconds_per_day
-
-         block => block % next
-      end do
 
       ! === error check
       if (err > 0) then

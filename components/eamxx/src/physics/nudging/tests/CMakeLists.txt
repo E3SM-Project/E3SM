@@ -1,4 +1,4 @@
-if (NOT SCREAM_BASELINES_ONLY)
+if (NOT SCREAM_ONLY_GENERATE_BASELINES)
   include(ScreamUtils)
 
   CreateUnitTest (nudging_data "create_nudging_data.cpp"

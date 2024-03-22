@@ -106,9 +106,9 @@ public:
   void add_additional_data_fields_to_property_checks (const Field& data_field);
 
   // Loop through all proceeses in group and set IOP object
-  void set_intensive_observation_period(const iop_ptr& iop) {
+  void set_iop(const iop_ptr& iop) {
     for (auto& atm_proc : m_atm_processes) {
-      atm_proc->set_intensive_observation_period(iop);
+      atm_proc->set_iop(iop);
     }
   }
 

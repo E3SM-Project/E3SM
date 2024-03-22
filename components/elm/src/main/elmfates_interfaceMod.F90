@@ -7,11 +7,9 @@ module ELMFatesInterfaceMod
    !
    ! This is also the only location where CLM code is allowed to see FATES memory
    ! structures.
-   ! The routines here, that call FATES library routines, will not pass any types defined
-   ! by the driving land model (HLM).
-   !
-   ! either native type arrays (int,real,log, etc) or packed into ED boundary condition
-   ! structures.
+   ! The routines here, that call FATES library routines, cannot pass most types defined
+   ! by the driving land model (HLM), only native type arrays (int,real,log, etc), implementations
+   ! of fates abstract classes, and references into fates boundary condition structures.
    !
    ! Note that CLM/ALM does use Shared Memory Parallelism (SMP), where processes such as
    ! the update of state variables are forked.  However, IO is not assumed to be
@@ -176,7 +174,10 @@ module ELMFatesInterfaceMod
    use dynSubgridControlMod, only : get_do_harvest ! this gets the namelist value
 
    use FatesInterfaceTypesMod , only : bc_in_type, bc_out_type
-   use CLMFatesParamInterfaceMod         , only : FatesReadParameters
+
+   use ELMFatesParamInterfaceMod, only : fates_param_reader_ctsm_impl
+   use FatesParametersInterface, only : fates_param_reader_type
+   use FatesParametersInterface, only : fates_parameters_type
    
    use perf_mod          , only : t_startf, t_stopf
 
@@ -292,6 +293,7 @@ contains
     integer                                        :: pass_sp
     integer                                        :: pass_masterproc
     logical                                        :: verbose_output
+    type(fates_param_reader_ctsm_impl)             :: var_reader
 
     if (use_fates) then
 
@@ -346,7 +348,7 @@ contains
     ! want fates to handle crops, so again, it should be ignored.
     ! (RGK 07-2022)
     
-    call SetFatesGlobalElements1(use_fates,natpft_size,0)
+    call SetFatesGlobalElements1(use_fates,natpft_size,0,var_reader)
 
     natpft_size = fates_maxPatchesPerSite
 
@@ -1082,7 +1084,8 @@ contains
 
             call ed_update_site(this%fates(nc)%sites(s), &
                   this%fates(nc)%bc_in(s), &
-                  this%fates(nc)%bc_out(s))
+                  this%fates(nc)%bc_out(s), &
+                  is_restarting = .false.)
       enddo
 
       ! ---------------------------------------------------------------------------------
@@ -1668,9 +1671,17 @@ contains
                   this%fates(nc)%bc_in(s)%max_rooting_depth_index_col = &
                        min(this%fates(nc)%bc_in(s)%nlevsoil, canopystate_inst%altmax_lastyear_indx_col(c))
 
+                  ! When restarting the model, this subroutine has several
+                  ! procedures that are incremental or don't need to be performed for
+                  ! during the restart sequence. For the prior, we don't want the restarted
+                  ! run to call these routines more than would had been called during
+                  ! a continuous simulation period, as it would change results. So
+                  ! we pass in the "is_restarting=.true." flag so we can bypass those procedures
+
                   call ed_update_site( this%fates(nc)%sites(s), &
                         this%fates(nc)%bc_in(s), &
-                        this%fates(nc)%bc_out(s))
+                        this%fates(nc)%bc_out(s), &
+                        is_restarting = .true.)
 
                   ! This call sends internal fates variables into the
                   ! output boundary condition structures. Note: this is called
@@ -1893,7 +1904,8 @@ contains
 
               call ed_update_site(this%fates(nc)%sites(s), &
                    this%fates(nc)%bc_in(s), &
-                   this%fates(nc)%bc_out(s))
+                   this%fates(nc)%bc_out(s), &
+                   is_restarting = .false.)
 
               ! This call sends internal fates variables into the
               ! output boundary condition structures. Note: this is called
@@ -3442,6 +3454,6 @@ end subroutine wrap_update_hifrq_hist
 
  end subroutine GetAndSetTime
 
-
+ !-----------------------------------------------------------------------
 
 end module ELMFatesInterfaceMod

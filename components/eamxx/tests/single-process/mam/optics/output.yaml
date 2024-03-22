@@ -1,0 +1,18 @@
+%YAML 1.1
+---
+filename_prefix: mam4_optics_standalone_output
+Averaging Type: Instant
+Fields:
+  Physics:
+    Field Names:
+        - aero_g_sw
+        - aero_ssa_sw
+        - aero_tau_sw
+        - aero_tau_lw
+        - aero_tau_forward
+
+output_control:
+  Frequency: 2
+  frequency_units: nsteps
+  MPI Ranks in Filename: true
+...

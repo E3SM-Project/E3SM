@@ -376,7 +376,8 @@ run (const std::string& filename,
   Real duration_write = 0.0;  // Record of time spent writing output
   if (is_write_step) {
     if (m_atm_logger) {
-      m_atm_logger->info("[EAMxx::scorpio_output] Writing variables to file:\n\t " + filename + " ...\n");
+      m_atm_logger->info("[EAMxx::scorpio_output] Writing variables to file");
+      m_atm_logger->info("  file name: " + filename);
     }
   }
 
@@ -634,7 +635,7 @@ run (const std::string& filename,
   }
   if (is_write_step) {
     if (m_atm_logger) {
-      m_atm_logger->info("[EAMxx::scorpio_output] Writing variables to file:\n\t " + filename + " ...done! (Elapsed time = " + std::to_string(duration_write/1000.0) +" seconds)\n");
+      m_atm_logger->info("  Done! Elapsed time: " + std::to_string(duration_write/1000.0) +" seconds");
     }
   }
 } // run
@@ -820,7 +821,7 @@ void AtmosphereOutput::register_views()
     if (m_track_avg_cnt) {
       // Now create and store a dev view to track the averaging count for this layout (if we are tracking)
       // We don't need to track average counts for files that are not tracking the time dim
-      set_avg_cnt_tracking(name,"",layout);
+      set_avg_cnt_tracking(name,layout);
     }
   }
 
@@ -828,7 +829,7 @@ void AtmosphereOutput::register_views()
   reset_dev_views();
 }
 /* ---------------------------------------------------------- */
-void AtmosphereOutput::set_avg_cnt_tracking(const std::string& name, const std::string& avg_cnt_suffix, const FieldLayout& layout)
+void AtmosphereOutput::set_avg_cnt_tracking(const std::string& name, const FieldLayout& layout)
 {
   // Make sure this field "name" hasn't already been registered with avg_cnt tracking.
   // Note, we check this because some diagnostics need to have their own tracking which
@@ -848,6 +849,7 @@ void AtmosphereOutput::set_avg_cnt_tracking(const std::string& name, const std::
 
   // Now create and store a dev view to track the averaging count for this layout (if we are tracking)
   // We don't need to track average counts for files that are not tracking the time dim
+  const auto& avg_cnt_suffix = m_field_to_avg_cnt_suffix[name];
   const auto size = layout.size();
   const auto tags = layout.tags();
   if (m_track_avg_cnt) {
@@ -1276,6 +1278,15 @@ AtmosphereOutput::create_diagnostic (const std::string& diag_field_name) {
 	units = subtokens[0];
 	// Need to reset the vertical location to strip the "_above_" part of the string.
         params.set("vertical_location", tokens[1].substr(0,units_start)+subtokens[0]);
+	// If the slice is "above_sealevel" then we need to track the avg cnt uniquely.
+	// Note, "above_surface" is expected to never have masking and can thus use
+	// the typical 2d layout avg cnt.
+	if (subtokens[1]=="sealevel") {
+          diag_avg_cnt_name = "_" + tokens[1]; // Set avg_cnt tracking for this specific slice
+          // If we have 2D slices we need to be tracking the average count,
+          // if m_avg_type is not Instant
+          m_track_avg_cnt = m_track_avg_cnt || m_avg_type!=OutputAvgType::Instant;
+	}
       }
       if (units=="m") {
         diag_name = "FieldAtHeight";
@@ -1284,10 +1295,9 @@ AtmosphereOutput::create_diagnostic (const std::string& diag_field_name) {
       } else if (units=="mb" or units=="Pa" or units=="hPa") {
         diag_name = "FieldAtPressureLevel";
         diag_avg_cnt_name = "_" + tokens[1]; // Set avg_cnt tracking for this specific slice
-
-        // If we have pressure slices we need to be tracking the average count,
+        // If we have 2D slices we need to be tracking the average count,
         // if m_avg_type is not Instant
-        m_track_avg_cnt = m_avg_type!=OutputAvgType::Instant;
+        m_track_avg_cnt = m_track_avg_cnt || m_avg_type!=OutputAvgType::Instant;
       } else {
         EKAT_ERROR_MSG ("Error! Invalid units x for 'field_at_Nx' diagnostic.\n");
       }
@@ -1352,8 +1362,7 @@ AtmosphereOutput::create_diagnostic (const std::string& diag_field_name) {
   if (m_track_avg_cnt) {
     const auto diag_field = diag->get_diagnostic();
     const auto name       = diag_field.name();
-    const auto layout     = diag_field.get_header().get_identifier().get_layout();
-    set_avg_cnt_tracking(name,diag_avg_cnt_name,layout);
+    m_field_to_avg_cnt_suffix.emplace(name,diag_avg_cnt_name);
   }
 
   return diag;
