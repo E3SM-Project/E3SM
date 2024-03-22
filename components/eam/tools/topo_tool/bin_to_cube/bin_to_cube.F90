@@ -20,7 +20,6 @@ program convterr
   integer :: im, jm
   
   integer :: ncube !dimension of cubed-sphere grid
-!  integer,  parameter :: ncube = 540 !dimension of cubed-sphere grid
   !        integer,  parameter :: ncube = 361 ! for debugging
   
   integer*2,  allocatable, dimension(:,:) :: terr     ! global 30-sec terrain data
@@ -72,18 +71,24 @@ program convterr
   real(r8) :: vol,dx_rad,vol_cube,area_latlon,darea_latlon       ! latitude array
   real(r8), allocatable, dimension(:,:) :: darea_cube
 
-  INTEGER :: UNIT
+  INTEGER :: iargc
 
-  character(len=1024) :: raw_latlon_data_file,output_file
+  character(len=1024) :: raw_latlon_data_file,output_file,string_ncube
   
-  namelist /binparams/ &
-       raw_latlon_data_file,output_file,ncube
-  
-  UNIT=221
-  OPEN( UNIT=UNIT, FILE="bin_to_cube.nl" ) !, NML =  cntrls )
-  READ( UNIT=UNIT, NML=binparams)
-  CLOSE(UNIT=UNIT)
-  write(*,*) "Intermediate cubed-sphere resolution ",ncube
+  iargc = command_argument_count()
+  if (iargc /= 3) then
+      print *, "Usage: <executable> raw_latlon_data_file output_file ncube"
+      stop
+  end if
+
+  call get_command_argument(1, raw_latlon_data_file)
+  call get_command_argument(2, output_file)
+  call get_command_argument(3, string_ncube)
+  read(string_ncube, *) ncube
+
+  write(*,*) "Raw lat/lon data file: ", trim(raw_latlon_data_file)
+  write(*,*) "Output file: ", trim(output_file)
+  write(*,*) "ncube: ", ncube
 
   !
   ! read in USGS data from netCDF file
@@ -284,9 +289,7 @@ program convterr
           STOP
         ELSE
           terr_cube        (i,j,k) = terr_cube        (i,j,k)/weight(i,j,k)                
-!+++ARH
           landfrac_cube    (i,j,k) = landfrac_cube    (i,j,k)/weight(i,j,k)                
-!---ARH
         END IF
       END DO
     END DO
