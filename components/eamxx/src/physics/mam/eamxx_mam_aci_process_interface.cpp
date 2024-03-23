@@ -686,11 +686,11 @@ void call_hetfrz_compute_tendencies(
     diags.bcniimm       = ekat::subview(diagnostic_scratch[38], icol);
     diags.numice10s     = ekat::subview(diagnostic_scratch[39], icol);
     diags.numimm10sdst  = ekat::subview(diagnostic_scratch[40], icol);
-    diags.numimm10sbc   = ekat::subview(diagnostic_scratch[41], icol);
+    // diags.numimm10sbc   = ekat::subview(diagnostic_scratch[41], icol);
 
     // naai and naai_hom are the outputs needed for nucleate_ice and these
     // are not tendencies.
-    diags.num_act_aerosol_ice_nucle_hom = ekat::subview(naai_hom, icol);
+    /*diags.num_act_aerosol_ice_nucle_hom = ekat::subview(naai_hom, icol);
     diags.num_act_aerosol_ice_nucle     = ekat::subview(naai, icol);
 
     //-------------------------------------------------------------
@@ -703,10 +703,11 @@ void call_hetfrz_compute_tendencies(
     // values are store in diags above.
     const mam4::Tendencies tends(nlev);
     const mam4::AeroConfig aero_config;
-    const Real t = 0, dt = 0;
-    hetfrz.compute_tendencies(aero_config, /*team,*/ t, dt, atmos, surf, progs,
-                              diags, tends);
-    //});
+    const Real t = 0, dt = 0;*/
+    // hetfrz.compute_tendencies(aero_config, /*team,*/ t, dt, atmos, surf,
+    // progs,
+    //                           diags, tends);
+    // });
   }
 }
 }  // namespace
@@ -920,6 +921,8 @@ void MAMAci::set_grids(
     const char *gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
     add_field<Updated>(gas_mmr_field_name, scalar3d_layout_mid, q_unit,
                        grid_name, "tracers");
+    // std::cout << "--> Gasses:" << g <<" spec:"<<gas_mmr_field_name<<
+    // std::endl;
   }
 
   // Inputs (atmospheric quantities) for aci codes that existed in PBUF in EAM
