@@ -994,7 +994,7 @@ contains
       !
       use iMOAB, only: iMOAB_RegisterApplication, iMOAB_ReceiveMesh, iMOAB_SendMesh, &
       iMOAB_WriteMesh, iMOAB_DefineTagStorage, iMOAB_GetMeshInfo, &
-      iMOAB_SetIntTagStorage, iMOAB_FreeSenderBuffers, iMOAB_ComputeCommGraph, iMOAB_LoadMesh
+      iMOAB_SetDoubleTagStorage, iMOAB_FreeSenderBuffers, iMOAB_ComputeCommGraph, iMOAB_LoadMesh
       !
       use seq_infodata_mod
       !
@@ -1026,8 +1026,11 @@ contains
       integer                  :: rank, ent_type
       integer                  :: typeA, typeB, ATM_PHYS_CID ! used to compute par graph between atm phys
                                                             ! and atm spectral on coupler
-      character(CXX)             :: tagname
-      integer     nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
+      character(CXX)           :: tagname
+      integer                  nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
+      type(mct_list)           :: temp_list
+      integer                  :: nfields, arrsize
+      real(R8), allocatable, target :: values(:)
 
 
    !-----------------------------------------------------
@@ -1183,6 +1186,39 @@ contains
                write(logunit,*) subname,' error in defining tags seq_flds_x2a_fields on atm on coupler '
                call shr_sys_abort(subname//' ERROR in defining tags ')
             endif
+            ! zero out the fields for seq_flds_x2a_fields and seq_flds_a2x_fields, on mbaxid
+            ! first determine the size of array 
+            ierr  = iMOAB_GetMeshInfo ( mbaxid, nvert, nvise, nbl, nsurf, nvisBC )
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in getting mesh info on atm on coupler '
+               call shr_sys_abort(subname//' ERROR in getting mesh info on atm on coupler  ')
+            endif
+            ! find the length of fields, from the nb of fields of the AVs
+            call mct_list_init(temp_list ,seq_flds_x2a_fields)
+            nfields = mct_list_nitem (temp_list)
+            call mct_list_clean(temp_list)
+            arrsize=nfields * nvise(1) 
+            tagname = trim(seq_flds_x2a_fields)//C_NULL_CHAR
+            allocate(values(arrsize))
+            values = 0.
+            ierr = iMOAB_SetDoubleTagStorage(mbaxid, tagname, arrsize, 1,  values )
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in zeroing out x2a_fields '
+               call shr_sys_abort(subname//' ERROR in zeroing out x2a_fields  ')
+            endif
+            deallocate(values)
+            call mct_list_init(temp_list ,seq_flds_a2x_fields)
+            nfields = mct_list_nitem (temp_list)
+            call mct_list_clean(temp_list)
+            arrsize=nfields * nvise(1)
+            tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
+            allocate(values(arrsize))
+            values = 0.
+            ierr = iMOAB_SetDoubleTagStorage(mbaxid, tagname, arrsize, 1,  values )
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in zeroing out a2x_fields '
+               call shr_sys_abort(subname//' ERROR in zeroing out a2x_fields  ')
+            endif
 
             !add the normalization tag
             tagname = trim(seq_flds_dom_fields)//":norm8wt"//C_NULL_CHAR
@@ -1335,7 +1371,7 @@ contains
                endif
             endif
          endif
-         ! in case of domain read, we need ot compute the comm graph
+         ! in case of domain read, we need to compute the comm graph
         if ( trim(ocn_domain) /= 'none' ) then
             ! we are now on joint pes, compute comm graph between data ocn and coupler model ocn
             typeA = 2 ! point cloud on component PEs
@@ -1766,16 +1802,20 @@ contains
           call shr_sys_abort(subname//' cannot free sender buffers')
        endif
     endif
-
+    
 #ifdef MOABDEBUG
+    if (direction .eq. 0 ) then
+       dir = 'c2x'
+    else
+       dir = 'x2c'
+    endif
+    if (seq_comm_iamroot(CPLID) ) then
+       write(logunit,'(A)') subname//' '//comp%ntype//' called in direction '//trim(dir)//' for fields '//trim(tagname)
+    endif
     if (mbAPPid2 .ge. 0 ) then !  we are on receiving pes, for sure
       ! number_proj = number_proj+1 ! count the number of projections
       write(lnum,"(I0.2)") num_moab_exports
-      if (direction .eq. 0 ) then
-         dir = 'c2x'
-      else
-         dir = 'x2c'
-      endif
+      
       outfile = comp%ntype//'_'//trim(dir)//'_'//trim(lnum)//'.h5m'//C_NULL_CHAR
       wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
       ierr = iMOAB_WriteMesh(mbAPPid2, trim(outfile), trim(wopts))
