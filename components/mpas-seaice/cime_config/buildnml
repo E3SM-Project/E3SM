@@ -243,6 +243,46 @@ def buildnml(case, caseroot, compname):
             grid_date = '210203'
             grid_prefix = 'mpassi.SOwISC12to60E2r4.rstFromG-anvil'
 
+    elif ice_grid == 'FRISwISC08to60E3r1':
+        decomp_date = '20230913'  # changed to date of partiotions in ../files_for_e3sm/assembled_files/inputdata/ocn/mpas-seaice/FRISwISC08to60E3r1/partitions
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
+        grid_date = '20230913'  # changed to same as decomp_date
+        grid_prefix = 'mpassi.FRISwISC08to60E3r1'  # name from ../files_for_e3sm/assembled_files/inputdata/ice/mpas-seaice/FRISwISC08to60E3r1/mpassi.FRISwISC08to60E3r1.20230913.nc
+        data_iceberg_file += 'Iceberg_Climatology_Merino.FRISwISC08to60E3r1.20230913.nc'
+        if ice_ic_mode == 'spunup':
+            grid_date = '20230913'  # changed to same as decomp_date, but the spun up file does not yet exist
+            grid_prefix = 'mpassi.FRISwISC08to60E3r1.rstFromG-anvil'  #the spun up file does not yet exist
+
+    elif ice_grid == 'FRISwISC04to60E3r1':
+        decomp_date = '20230913'  # changed to date of partiotions in ../files_for_e3sm/assembled_files/inputdata/ocn/mpas-seaice/FRISwISC04to60E3r1/partitions
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
+        grid_date = '20230913'  # changed to same as decomp_date
+        grid_prefix = 'mpassi.FRISwISC04to60E3r1'  # name from ../files_for_e3sm/assembled_files/inputdata/ice/mpas-seaice/FRISwISC04to60E3r1/mpassi.FRISwISC04to60E3r1.20230913.nc
+        data_iceberg_file += 'Iceberg_Climatology_Merino.FRISwISC04to60E3r1.20230913.nc'
+        if ice_ic_mode == 'spunup':
+            grid_date = '20230913'  # changed to same as decomp_date, but the spun up file does not yet exist
+            grid_prefix = 'mpassi.FRISwISC04to60E3r1.rstFromG-anvil'  #the spun up file does not yet exist
+
+    elif ice_grid == 'FRISwISC02to60E3r1':
+        decomp_date = '20230914'  # changed to date of partiotions in ../files_for_e3sm/assembled_files/inputdata/ocn/mpas-seaice/FRISwISC02to60E3r1/partitions
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
+        grid_date = '20230914'  # changed to same as decomp_date
+        grid_prefix = 'mpassi.FRISwISC02to60E3r1'  # name from ../files_for_e3sm/assembled_files/inputdata/ice/mpas-seaice/FRISwISC02to60E3r1/mpassi.FRISwISC02to60E3r1.20230914.nc
+        data_iceberg_file += 'Iceberg_Climatology_Merino.FRISwISC02to60E3r1.20230914.nc'
+        if ice_ic_mode == 'spunup':
+            grid_date = '20230914'  # changed to same as decomp_date, but the spun up file does not yet exist
+            grid_prefix = 'mpassi.FRISwISC02to60E3r1.rstFromG-anvil'  #the spun up file does not yet exist
+
+    elif ice_grid == 'FRISwISC01to60E3r1':
+        decomp_date = '20230915'  # changed to date of partiotions in ../files_for_e3sm/assembled_files/inputdata/ocn/mpas-seaice/FRISwISC01to60E3r1/partitions
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
+        grid_date = '20230915'  # changed to same as decomp_date
+        grid_prefix = 'mpassi.FRISwISC01to60E3r1'  # name from ../files_for_e3sm/assembled_files/inputdata/ice/mpas-seaice/FRISwISC01to60E3r1/mpassi.FRISwISC01to60E3r1.20230915.nc
+        data_iceberg_file += 'Iceberg_Climatology_Merino.FRISwISC01to60E3r1.20230915.nc'
+        if ice_ic_mode == 'spunup':
+            grid_date = '20230915'  # changed to same as decomp_date, but the spun up file does not yet exist
+            grid_prefix = 'mpassi.FRISwISC01to60E3r1.rstFromG-anvil'  #the spun up file does not yet exist
+
     elif ice_grid == 'ECwISC30to60E2r1':
         grid_date = '210413'
         grid_prefix = 'seaice.ECwISC30to60E2r1'
@@ -400,7 +440,7 @@ def buildnml(case, caseroot, compname):
             lines.append('<streams>')
             lines.append('<immutable_stream name="mesh"')
             lines.append('                  type="none"')
-            if ice_grid.startswith("oRRS1"):
+            if ice_grid.startswith("oRRS1") or ice_grid.startswith("FRIS"):
                 lines.append('                  io_type="pnetcdf,cdf5"')
             else:
                 lines.append('                  io_type="{}"'.format(ice_pio_typename))
@@ -409,7 +449,7 @@ def buildnml(case, caseroot, compname):
             lines.append('')
             lines.append('<immutable_stream name="input"')
             lines.append('                  type="input"')
-            if ice_grid.startswith("oRRS1"):
+            if ice_grid.startswith("oRRS1") or ice_grid.startswith("FRIS"):
                 lines.append('                  io_type="pnetcdf,cdf5"')
             else:
                 lines.append('                  io_type="{}"'.format(ice_pio_typename))
@@ -431,7 +471,7 @@ def buildnml(case, caseroot, compname):
             lines.append('')
             lines.append('<immutable_stream name="restart"')
             lines.append('                  type="input;output"')
-            if ice_grid.startswith("oRRS1"):
+            if ice_grid.startswith("oRRS1") or ice_grid.startswith("FRIS"):
                 lines.append('                  io_type="pnetcdf,cdf5"')
             else:
                 lines.append('                  io_type="{}"'.format(ice_pio_typename))
@@ -447,7 +487,7 @@ def buildnml(case, caseroot, compname):
             if ice_ic_mode == 'spunup':
                 lines.append('<immutable_stream name="restart_ic"')
                 lines.append('                  type="input"')
-                if ice_grid.startswith("oRRS1"):
+                if ice_grid.startswith("oRRS1") or ice_grid.startswith("FRIS"):
                     lines.append('                  io_type="pnetcdf,cdf5"')
                 else:
                     lines.append('                  io_type="{}"'.format(ice_pio_typename))
