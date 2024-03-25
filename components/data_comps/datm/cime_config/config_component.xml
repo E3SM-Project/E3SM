@@ -10,14 +10,14 @@
        This file may have atm desc entries.
   -->
   <description modifier_mode="1">
-    <desc atm="DATM[%QIA][%WISOQIA][%CRU][%CRUv7][%GSWP3v1][%ERA5][%ERA5_6HR][%MOSARTTEST][%NLDAS2][%CPLHIST][%1PT][%NYF][%IAF][%JRA][%JRA-1p5][%JRA-1p4-2018][%JRA-RYF8485][%JRA-RYF9091][%JRA-RYF0304][%CFSv2][%CFSR]"> Data driven ATM </desc>
+    <desc atm="DATM[%QIA][%WISOQIA][%CRU][%CRUv7][%GSWP3v1][%ERA5][%ERA56HR][%MOSARTTEST][%NLDAS2][%CPLHIST][%1PT][%NYF][%IAF][%JRA][%JRA-1p5][%JRA-1p4-2018][%JRA-RYF8485][%JRA-RYF9091][%JRA-RYF0304][%CFSv2][%CFSR]"> Data driven ATM </desc>
     <desc option="QIA"> QIAN data set </desc>
     <desc option="WISOQIA">QIAN with water isotopes</desc>
     <desc option="CRU"> CRUNCEP data set </desc>
     <desc option="CRUv7"> CLM CRU NCEP v7 data set </desc>
     <desc option="GSWP3v1"> GSWP3v1 data set </desc>
     <desc option="ERA5"> Fifth generation ECMWF reanalysis </desc>
-    <desc option="ERA5_6HR"> Fifth generation ECMWF reanalysis,6 hourly data </desc>
+    <desc option="ERA56HR"> Fifth generation ECMWF reanalysis,6 hourly data </desc>
     <desc option="MOSARTTEST"> MOSART test data set using older NLDAS data </desc>
     <desc option="NLDAS2"> NLDAS2 regional 0.125 degree data set over the U.S. (25-53N, 235-293E). WARNING: Garbage data will be produced for runs extending beyond this regional domain. </desc>
     <desc option="CPLHIST"> Coupler hist data set (in this mode, it is strongly recommended that the model domain and the coupler history forcing are on the same domain)</desc>
@@ -45,13 +45,13 @@
 
   <entry id="DATM_MODE">
     <type>char</type>
-    <valid_values>CORE2_NYF,CORE2_IAF,CLM_QIAN,CLM_QIAN_WISO,CLM1PT,CLMCRUNCEP,CLMCRUNCEPv7,CLMGSWP3v1,ELMERA5,ERA5_6HR,CLMMOSARTTEST,CLMNLDAS2,CPLHIST,CORE_IAF_JRA,IAF_JRA_1p5,CORE_IAF_JRA_1p4_2018,CORE_RYF8485_JRA,CORE_RYF9091_JRA,CORE_RYF0304_JRA,CFSv2,CFSR</valid_values>
+    <valid_values>CORE2_NYF,CORE2_IAF,CLM_QIAN,CLM_QIAN_WISO,CLM1PT,CLMCRUNCEP,CLMCRUNCEPv7,CLMGSWP3v1,ELMERA5,ERA56HR,CLMMOSARTTEST,CLMNLDAS2,CPLHIST,CORE_IAF_JRA,IAF_JRA_1p5,CORE_IAF_JRA_1p4_2018,CORE_RYF8485_JRA,CORE_RYF9091_JRA,CORE_RYF0304_JRA,CFSv2,CFSR</valid_values>
     <default_value>CORE2_NYF</default_value>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
     <desc>Mode for data atmosphere component.
       CORE2_NYF (CORE2 normal year forcing) are modes used in forcing prognostic ocean/sea-ice components.
-      CLM_QIAN, CLMCRUNCEP, CLMCRUNCEPv7, CLMGSWP3v1, ELMERA5,ERA5_6HR, CLMMOSARTTEST, CLMNLDAS2 and CLM1PT are modes using observational data for forcing prognostic land components.
+      CLM_QIAN, CLMCRUNCEP, CLMCRUNCEPv7, CLMGSWP3v1, ELMERA5,ERA56HR, CLMMOSARTTEST, CLMNLDAS2 and CLM1PT are modes using observational data for forcing prognostic land components.
       WARNING for CLMNLDAS2: This is a regional forcing dataset over the U.S. (25-53N, 235-293E). Garbage data will be produced for runs extending beyond this regional domain. 
       WARNING for CLMGSWP3v1: Humidity is identically zero for last time step in Dec/2013 and all of 2014 so you should NOT use 2014
 data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
@@ -71,7 +71,7 @@ data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
       <value compset="%CRUv7">CLMCRUNCEPv7</value>
       <value compset="%GSWP3v1">CLMGSWP3v1</value>
       <value compset="%ERA5">ELMERA5</value>
-      <value compset="%ERA5_6HR">ERA5_6HR</value>
+      <value compset="%ERA56HR">ERA56HR</value>
       <value compset="%MOSARTTEST">CLMMOSARTTEST</value>
       <value compset="%NLDAS2">CLMNLDAS2</value>
       <value compset="%1PT">CLM1PT</value>
@@ -247,6 +247,8 @@ data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
       <value compset="2003.*_DATM">$DATM_CLMNCEP_YR_START</value>
       <value compset="2010.*_DATM">$DATM_CLMNCEP_YR_START</value>
       <value compset="4804.*_DATM">$DATM_CLMNCEP_YR_START</value>
+      <value compset="2000.*_DATM%ERA5">$DATM_CLMNCEP_YR_START</value>
+      <value compset="2000.*_DATM%ERA56HR">$DATM_CLMNCEP_YR_START</value>
     </values>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
@@ -290,6 +292,8 @@ data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
       <value compset="2010.*_DATM%NLDAS2">2005</value>
       <value compset="2003.*_DATM%NLDAS2">2002</value>
       <value compset="2000_DATM%JRA">1958</value>
+      <value compset="2000.*_DATM%ERA5">1979</value>
+      <value compset="2000.*_DATM%ERA56HR">1979</value>
     </values>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
@@ -334,6 +338,8 @@ data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
       <value   compset="2003.*_DATM%NLDAS2">2003</value>
       <value   compset="2000_DATM%JRA">2016</value>
       <value   compset="2000_DATM%JRA-1p5">2020</value>
+      <value   compset="2000.*_DATM%ERA5">1979</value>
+      <value   compset="2000.*_DATM%ERA56HR">1979</value>
     </values>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
