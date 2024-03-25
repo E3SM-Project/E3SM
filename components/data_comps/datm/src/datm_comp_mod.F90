@@ -271,11 +271,12 @@ CONTAINS
 #ifdef HAVE_MOAB
     character*400  tagname
     real(R8) latv, lonv
-    integer iv, tagindex, ilat, ilon, ierr
+    integer iv, tagindex, ilat, ilon, ierr, arrsize, nfields
     real(R8), allocatable, target :: data(:)
     integer(IN), pointer :: idata(:)   ! temporary
     real(r8), dimension(:), allocatable :: moab_vert_coords  ! temporary
     integer :: mpigrp          ! mpigrp
+    real(R8), allocatable, target :: vtags_zero(:, :)
 #ifdef MOABDEBUG
     character*100 outfile, wopts
 #endif
@@ -626,7 +627,36 @@ CONTAINS
        !----------------------------------------------------------------------------
        ! Read restart
        !----------------------------------------------------------------------------
+#ifdef HAVE_MOAB
+       ! zero out moab tags too, as in 
+       ! call mct_aVect_zero(x2a)
+       ! call mct_aVect_zero(a2x)
+       nfields=mct_aVect_nRAttr(x2a)
+       allocate( vtags_zero(lsize, nfields))
+       vtags_zero = 0.
+       arrsize = lsize * nfields
+       tagname = trim(seq_flds_x2a_fields)//C_NULL_CHAR
+       ierr = iMOAB_SetDoubleTagStorage(mphaid, tagname, arrsize, &
+                                          0, & ! set data on vertices
+                                          vtags_zero)
+       if (ierr .ne. 0) then
+          call shr_sys_abort(subname//' ERROR in setting tags to 0 ')
+       endif
+       deallocate(vtags_zero)
+       nfields=mct_aVect_nRAttr(a2x)
+       allocate( vtags_zero(lsize, nfields))
+       vtags_zero = 0.
+       arrsize = lsize * nfields
+       tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
+       ierr = iMOAB_SetDoubleTagStorage(mphaid, tagname, arrsize, &
+                                          0, & ! set data on vertices
+                                          vtags_zero)
+       if (ierr .ne. 0) then
+          call shr_sys_abort(subname//' ERROR in setting tags to 0 ')
+       endif
+       deallocate(vtags_zero)
 
+#endif
        if (read_restart) then
           if (trim(rest_file)      == trim(nullstr) .and. &
                trim(rest_file_strm) == trim(nullstr)) then
