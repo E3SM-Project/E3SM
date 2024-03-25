@@ -260,12 +260,18 @@ def buildnml(case, caseroot, compname):
         decomp_prefix = 'partitions/mpas-seaice.graph.info.'
         data_iceberg_file = 'Iceberg_Climatology_Merino.IcoswISC30E3r5.20231120.nc'
         if ice_ic_mode == 'spunup':
-            if iceberg_mode == 'data':
-                grid_date = '20240207'
-                grid_prefix = 'mpassi.IcoswISC30E3r5.rstFromG-DIB-chrysalis'
-            else:
-                grid_date = '20231121'
-                grid_prefix = 'mpassi.IcoswISC30E3r5.rstFromG-chrysalis'
+            grid_date = '20231121'
+            grid_prefix = 'mpassi.IcoswISC30E3r5.rstFromG-chrysalis'
+
+    elif ice_grid == 'RRSwISC6to18E3r4':
+        decomp_date = '20240105'
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
+        grid_date = '20240105'
+        grid_prefix = 'mpassi.RRSwISC6to18E3r4'
+        data_iceberg_file = 'Iceberg_Climatology_Merino.RRSwISC6to18E3r4.20240105.nc'
+        if ice_ic_mode == 'spunup':
+            grid_date = '20240110'
+            grid_prefix = 'mpassi.RRSwISC6to18E3r4.rstFromG-chrysalis'
 
     elif ice_grid == 'ICOS10':
         grid_date = '211015'
@@ -400,7 +406,7 @@ def buildnml(case, caseroot, compname):
             lines.append('<streams>')
             lines.append('<immutable_stream name="mesh"')
             lines.append('                  type="none"')
-            if ice_grid.startswith("oRRS1"):
+            if ice_grid.startswith("oRRS1") or ice_grid.startswith("RRSwISC6"):
                 lines.append('                  io_type="pnetcdf,cdf5"')
             else:
                 lines.append('                  io_type="{}"'.format(ice_pio_typename))
@@ -409,7 +415,7 @@ def buildnml(case, caseroot, compname):
             lines.append('')
             lines.append('<immutable_stream name="input"')
             lines.append('                  type="input"')
-            if ice_grid.startswith("oRRS1"):
+            if ice_grid.startswith("oRRS1") or ice_grid.startswith("RRSwISC6"):
                 lines.append('                  io_type="pnetcdf,cdf5"')
             else:
                 lines.append('                  io_type="{}"'.format(ice_pio_typename))
@@ -431,7 +437,7 @@ def buildnml(case, caseroot, compname):
             lines.append('')
             lines.append('<immutable_stream name="restart"')
             lines.append('                  type="input;output"')
-            if ice_grid.startswith("oRRS1"):
+            if ice_grid.startswith("oRRS1") or ice_grid.startswith("RRSwISC6"):
                 lines.append('                  io_type="pnetcdf,cdf5"')
             else:
                 lines.append('                  io_type="{}"'.format(ice_pio_typename))
@@ -447,7 +453,7 @@ def buildnml(case, caseroot, compname):
             if ice_ic_mode == 'spunup':
                 lines.append('<immutable_stream name="restart_ic"')
                 lines.append('                  type="input"')
-                if ice_grid.startswith("oRRS1"):
+                if ice_grid.startswith("oRRS1") or ice_grid.startswith("RRSwISC6"):
                     lines.append('                  io_type="pnetcdf,cdf5"')
                 else:
                     lines.append('                  io_type="{}"'.format(ice_pio_typename))

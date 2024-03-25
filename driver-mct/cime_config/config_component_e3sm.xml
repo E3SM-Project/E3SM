@@ -232,6 +232,7 @@
       <value compset="_SOCN"                     >CESM1_MOD</value>
       <value compset="_MPASO"                    >CESM1_MOD</value>
       <value compset="_MPASSI.*_MPASO"           >RASM_OPTION1</value>
+      <value compset="_MPASSI.*_MPASO" grid="oi%RRSwISC6to18E3r4">RASM_OPTION2</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
@@ -374,6 +375,7 @@
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oRRS30to10v3">96</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oRRS18to6v3">96</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oRRS15to5">96</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%RRSwISC6to18E3r4">96</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oARRM60to10">96</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oARRM60to6">96</value>
       <value compset="_EAM.*_ELM.*MPASO">48</value>
@@ -432,7 +434,6 @@
       <value compset="_SLND.*SOCN.*_MALI">1</value>
       <value compset="_DATM.*_SLND.*MPASO.*_MALI">$ATM_NCPL</value>
       <value compset="_EAM.*_ELM.*MPASO">48</value>
-      <value compset="_EAMXX.*_ELM.*MPASO">$ATM_NCPL</value>
       <value compset="_EAM.*_ELM.*MPASO" grid="a%ne4np4">$ATM_NCPL</value>
       <value compset="_EAM.*_ELM.*MPASO" grid="a%ne11np4">12</value>
       <value compset="_EAM.*_ELM.*MPASO" grid="a%ne120np4">96</value>
@@ -489,6 +490,7 @@
       <value compset="_MPASO" grid="oi%WC14to60E2r3">48</value>
       <value compset="_MPASO" grid="oi%oRRS30to10v3">48</value>
       <value compset="_MPASO" grid="oi%oRRS18to6v3">48</value>
+      <value compset="_MPASO" grid="oi%RRSwISC6to18E3r4">96</value>
       <value compset="_MPASO" grid="oi%oRRS15to5">96</value>
       <value compset="_MPASO" grid="oi%oARRM60to10">48</value>
       <value compset="_MPASO" grid="oi%oARRM60to6">48</value>
