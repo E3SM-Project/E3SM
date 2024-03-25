@@ -566,16 +566,6 @@ haero::Atmosphere atmosphere_for_column(const DryAtmosphere& dry_atm,
                            dry_atm.pblh(column_index));
 }
 
-//FIXME: move it to mam4xx and add comments and change variable names
-KOKKOS_INLINE_FUNCTION
-int get_haero_prognostics_index(const int mode, const int species)
-{
-  const mam4::AeroId aero_id = mam4::mode_aero_species(mode, species);
-  const int ind =
-      (mam4::AeroId::None != aero_id) ? static_cast<int>(aero_id) : -1;
-  return ind;
-};
-
 // Given an AerosolState with views for dry aerosol quantities, creates a
 // mam4::Prognostics object for the column with the given index with
 // ONLY INTERSTITIAL AEROSOL VIEWS DEFINED. This object can be provided to
@@ -591,8 +581,8 @@ mam4::Prognostics interstitial_aerosols_for_column(const AerosolState& dry_aero,
     progs.n_mode_i[m] = ekat::subview(dry_aero.int_aero_nmr[m], column_index);
     for (int a = 0; a < num_aero_species(); ++a) {
       if (dry_aero.int_aero_mmr[m][a].data()) {
-        int hindex = get_haero_prognostics_index(m,a);
-        progs.q_aero_i[m][hindex] = ekat::subview(dry_aero.int_aero_mmr[m][a], column_index);
+        int h_ind = mam4::utils::get_haero_prognostics_index(m,a);//Index of HAERO's prognostics 
+        progs.q_aero_i[m][h_ind] = ekat::subview(dry_aero.int_aero_mmr[m][a], column_index);
       }
     }
   }
@@ -617,8 +607,8 @@ mam4::Prognostics aerosols_for_column(const AerosolState& dry_aero,
     progs.n_mode_c[m] = ekat::subview(dry_aero.cld_aero_nmr[m], column_index);
     for (int a = 0; a < num_aero_species(); ++a) {
       if (dry_aero.cld_aero_mmr[m][a].data()) {
-        int hindex = get_haero_prognostics_index(m,a);
-        progs.q_aero_c[m][hindex] = ekat::subview(dry_aero.cld_aero_mmr[m][a], column_index);
+        int h_ind = mam4::utils::get_haero_prognostics_index(m,a); //Index of HAERO's prognostics array
+        progs.q_aero_c[m][h_ind] = ekat::subview(dry_aero.cld_aero_mmr[m][a], column_index);
       }
     }
   }
