@@ -994,7 +994,7 @@ contains
       !
       use iMOAB, only: iMOAB_RegisterApplication, iMOAB_ReceiveMesh, iMOAB_SendMesh, &
       iMOAB_WriteMesh, iMOAB_DefineTagStorage, iMOAB_GetMeshInfo, &
-      iMOAB_SetDoubleTagStorage, iMOAB_FreeSenderBuffers, iMOAB_ComputeCommGraph, iMOAB_LoadMesh
+      iMOAB_FreeSenderBuffers, iMOAB_ComputeCommGraph, iMOAB_LoadMesh
       !
       use seq_infodata_mod
       !
@@ -1028,9 +1028,9 @@ contains
                                                             ! and atm spectral on coupler
       character(CXX)           :: tagname
       integer                  nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
-      type(mct_list)           :: temp_list
-      integer                  :: nfields, arrsize
-      real(R8), allocatable, target :: values(:)
+      ! type(mct_list)           :: temp_list
+      ! integer                  :: nfields, arrsize
+      ! real(R8), allocatable, target :: values(:)
 
 
    !-----------------------------------------------------
@@ -1192,32 +1192,6 @@ contains
             if (ierr .ne. 0) then
                write(logunit,*) subname,' error in getting mesh info on atm on coupler '
                call shr_sys_abort(subname//' ERROR in getting mesh info on atm on coupler  ')
-            endif
-            ! find the length of fields, from the nb of fields of the AVs
-            call mct_list_init(temp_list ,seq_flds_x2a_fields)
-            nfields = mct_list_nitem (temp_list)
-            call mct_list_clean(temp_list)
-            arrsize=nfields * nvise(1) 
-            tagname = trim(seq_flds_x2a_fields)//C_NULL_CHAR
-            allocate(values(arrsize))
-            values = 0.
-            ierr = iMOAB_SetDoubleTagStorage(mbaxid, tagname, arrsize, 1,  values )
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' error in zeroing out x2a_fields '
-               call shr_sys_abort(subname//' ERROR in zeroing out x2a_fields  ')
-            endif
-            deallocate(values)
-            call mct_list_init(temp_list ,seq_flds_a2x_fields)
-            nfields = mct_list_nitem (temp_list)
-            call mct_list_clean(temp_list)
-            arrsize=nfields * nvise(1)
-            tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
-            allocate(values(arrsize))
-            values = 0.
-            ierr = iMOAB_SetDoubleTagStorage(mbaxid, tagname, arrsize, 1,  values )
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' error in zeroing out a2x_fields '
-               call shr_sys_abort(subname//' ERROR in zeroing out a2x_fields  ')
             endif
 
             !add the normalization tag

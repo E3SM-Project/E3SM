@@ -271,12 +271,12 @@ CONTAINS
 #ifdef HAVE_MOAB
     character*400  tagname
     real(R8) latv, lonv
-    integer iv, tagindex, ilat, ilon, ierr, arrsize, nfields
+    integer iv, tagindex, ilat, ilon, ierr  !, arrsize, nfields
     real(R8), allocatable, target :: data(:)
     integer(IN), pointer :: idata(:)   ! temporary
     real(r8), dimension(:), allocatable :: moab_vert_coords  ! temporary
     integer :: mpigrp          ! mpigrp
-    real(R8), allocatable, target :: vtags_zero(:, :)
+    !real(R8), allocatable, target :: vtags_zero(:, :)
 #ifdef MOABDEBUG
     character*100 outfile, wopts
 #endif
@@ -627,36 +627,7 @@ CONTAINS
        !----------------------------------------------------------------------------
        ! Read restart
        !----------------------------------------------------------------------------
-#ifdef HAVE_MOAB
-       ! zero out moab tags too, as in 
-       ! call mct_aVect_zero(x2a)
-       ! call mct_aVect_zero(a2x)
-       nfields=mct_aVect_nRAttr(x2a)
-       allocate( vtags_zero(lsize, nfields))
-       vtags_zero = 0.
-       arrsize = lsize * nfields
-       tagname = trim(seq_flds_x2a_fields)//C_NULL_CHAR
-       ierr = iMOAB_SetDoubleTagStorage(mphaid, tagname, arrsize, &
-                                          0, & ! set data on vertices
-                                          vtags_zero)
-       if (ierr .ne. 0) then
-          call shr_sys_abort(subname//' ERROR in setting tags to 0 ')
-       endif
-       deallocate(vtags_zero)
-       nfields=mct_aVect_nRAttr(a2x)
-       allocate( vtags_zero(lsize, nfields))
-       vtags_zero = 0.
-       arrsize = lsize * nfields
-       tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
-       ierr = iMOAB_SetDoubleTagStorage(mphaid, tagname, arrsize, &
-                                          0, & ! set data on vertices
-                                          vtags_zero)
-       if (ierr .ne. 0) then
-          call shr_sys_abort(subname//' ERROR in setting tags to 0 ')
-       endif
-       deallocate(vtags_zero)
 
-#endif
        if (read_restart) then
           if (trim(rest_file)      == trim(nullstr) .and. &
                trim(rest_file_strm) == trim(nullstr)) then
@@ -785,6 +756,9 @@ CONTAINS
     use seq_comm_mct, only : mphaid ! 
     use iMOAB, only: iMOAB_WriteMesh
 #endif
+#ifdef HAVE_MOAB
+    use seq_flds_mod    , only: seq_flds_a2x_fields ! this should not be an argument in datm_comp_init
+#endif
     implicit none
 
     ! !INPUT/OUTPUT PARAMETERS:
@@ -833,6 +807,10 @@ CONTAINS
     real(R8)      :: tbot,pbot,rtmp,vp,ea,e,qsat,frac
 #ifdef HAVE_MOAB
     real(R8), allocatable, target :: datam(:)
+    type(mct_list) :: temp_list
+    integer :: size_list, index_list
+    type(mct_string)    :: mctOStr  !
+    character*400  tagname, mct_field
 #ifdef MOABDEBUG
     integer  :: cur_datm_stepno, ierr
     character*100 outfile, wopts, lnum
@@ -886,6 +864,11 @@ CONTAINS
        allocate(count_av(SDATM%nstreams))
        allocate(count_st(SDATM%nstreams))
     end if
+
+#ifdef MOABDEBUG
+      write(logunit,*) ' a2x_aa (22,1..) at beginning of datm_comp_run', a2x%rattr(22,1), a2x%rattr(22,2)
+#endif
+
     do n = 1,SDATM%nstreams
        if (firstcall) then
           call shr_dmodel_translate_list(SDATM%avs(n),a2x,&
@@ -896,6 +879,9 @@ CONTAINS
                ilist_av(n),olist_av(n),rearr)
        end if
     enddo
+#ifdef MOABDEBUG
+      write(logunit,*) ' a2x_aa (22,1..) after  datm_comp_run translate lists', a2x%rattr(22,1), a2x%rattr(22,2)
+#endif
     do n = 1,SDATM%nstreams
        if (firstcall) then
           call shr_dmodel_translate_list(SDATM%avs(n),avstrm,&
@@ -907,7 +893,9 @@ CONTAINS
        end if
     enddo
     call t_stopf('datm_scatter')
-
+#ifdef MOABDEBUG
+      write(logunit,*) ' a2x_aa (22,1..) after  datm_comp_run scatter ', a2x%rattr(22,1), a2x%rattr(22,2)
+#endif
     !-------------------------------------------------
     ! Determine data model behavior based on the mode
     !-------------------------------------------------
@@ -1321,7 +1309,9 @@ CONTAINS
     !----------------------------------------------------------
     ! bias correction / anomaly forcing ( end block )
     !----------------------------------------------------------
-
+#ifdef MOABDEBUG
+      write(logunit,*) ' a2x_aa (22,1..) at the end of of datm_comp_run', a2x%rattr(22,1), a2x%rattr(22,2)
+#endif
     !--------------------
     ! Write restart
     !--------------------
@@ -1359,41 +1349,16 @@ CONTAINS
 #ifdef HAVE_MOAB
     lsize = mct_avect_lsize(a2x) ! is it the same as mct_avect_lsize(avstrm) ?
     allocate(datam(lsize)) ! 
-    call moab_set_tag('Sa_z'//C_NULL_CHAR   , a2x, kz,    datam, lsize) ! kz    = mct_aVect_indexRA(a2x,'Sa_z')
-    call moab_set_tag('Sa_topo'//C_NULL_CHAR, a2x, ktopo, datam, lsize) ! ktopo = mct_aVect_indexRA(a2x,'Sa_topo')
-    call moab_set_tag('Sa_u'//C_NULL_CHAR,    a2x, ku   , datam, lsize) ! ku    = mct_aVect_indexRA(a2x,'Sa_u')
-    call moab_set_tag('Sa_v'//C_NULL_CHAR,    a2x, kv   , datam, lsize) ! kv    = mct_aVect_indexRA(a2x,'Sa_v')
-    call moab_set_tag('Sa_tbot'//C_NULL_CHAR, a2x, ktbot, datam, lsize) ! ktbot = mct_aVect_indexRA(a2x,'Sa_tbot')
-    call moab_set_tag('Sa_ptem'//C_NULL_CHAR, a2x, kptem, datam, lsize) ! kptem = mct_aVect_indexRA(a2x,'Sa_ptem')
-    call moab_set_tag('Sa_shum'//C_NULL_CHAR, a2x, kshum, datam, lsize) ! kshum = mct_aVect_indexRA(a2x,'Sa_shum')
-    call moab_set_tag('Sa_dens'//C_NULL_CHAR, a2x, kdens, datam, lsize) ! kdens = mct_aVect_indexRA(a2x,'Sa_dens')
-    call moab_set_tag('Sa_pbot'//C_NULL_CHAR, a2x, kpbot, datam, lsize) ! kpbot = mct_aVect_indexRA(a2x,'Sa_pbot')
-    call moab_set_tag('Sa_pslv'//C_NULL_CHAR, a2x, kpslv, datam, lsize) ! kpslv = mct_aVect_indexRA(a2x,'Sa_pslv')
-    call moab_set_tag('Faxa_lwdn'//C_NULL_CHAR, a2x, klwdn, datam, lsize) ! klwdn = mct_aVect_indexRA(a2x,'Faxa_lwdn')
-    call moab_set_tag('Faxa_rainc'//C_NULL_CHAR, a2x, krc, datam, lsize) ! krc   = mct_aVect_indexRA(a2x,'Faxa_rainc')
-    call moab_set_tag('Faxa_rainl'//C_NULL_CHAR, a2x, krl, datam, lsize) ! krl   = mct_aVect_indexRA(a2x,'Faxa_rainl')
-    call moab_set_tag('Faxa_snowc'//C_NULL_CHAR, a2x, ksc, datam, lsize) ! ksc   = mct_aVect_indexRA(a2x,'Faxa_snowc')
-    call moab_set_tag('Faxa_snowl'//C_NULL_CHAR, a2x, ksl, datam, lsize) ! ksl   = mct_aVect_indexRA(a2x,'Faxa_snowl')
-    call moab_set_tag('Faxa_swndr'//C_NULL_CHAR, a2x, kswndr, datam, lsize) ! kswndr= mct_aVect_indexRA(a2x,'Faxa_swndr')
-    call moab_set_tag('Faxa_swndf'//C_NULL_CHAR, a2x, kswndf, datam, lsize) ! kswndf= mct_aVect_indexRA(a2x,'Faxa_swndf')
-    call moab_set_tag('Faxa_swvdr'//C_NULL_CHAR, a2x, kswvdr, datam, lsize) ! kswvdr= mct_aVect_indexRA(a2x,'Faxa_swvdr')
-    call moab_set_tag('Faxa_swvdf'//C_NULL_CHAR, a2x, kswvdf, datam, lsize) ! kswvdf= mct_aVect_indexRA(a2x,'Faxa_swvdf')
-    call moab_set_tag('Faxa_swnet'//C_NULL_CHAR, a2x, kswnet, datam, lsize) ! kswnet= mct_aVect_indexRA(a2x,'Faxa_swnet')
-
-if (wiso_datm) then  ! water isotopic forcing
-   call moab_set_tag('Sa_shum_16O'//C_NULL_CHAR, a2x, kshum_16O, datam, lsize) ! kshum_16O = mct_aVect_indexRA(a2x,'Sa_shum_16O')
-   call moab_set_tag('Sa_shum_18O'//C_NULL_CHAR, a2x, kshum_18O, datam, lsize) ! kshum_18O = mct_aVect_indexRA(a2x,'Sa_shum_18O')
-   call moab_set_tag('Sa_shum_HDO'//C_NULL_CHAR, a2x, kshum_HDO, datam, lsize) ! kshum_HDO = mct_aVect_indexRA(a2x,'Sa_shum_HDO')
-   call moab_set_tag('Faxa_rainc_18O'//C_NULL_CHAR, a2x, krc_18O, datam, lsize) ! krc_18O   = mct_aVect_indexRA(a2x,'Faxa_rainc_18O')
-   call moab_set_tag('Faxa_rainc_HDO'//C_NULL_CHAR, a2x, krc_HDO, datam, lsize) ! krc_HDO   = mct_aVect_indexRA(a2x,'Faxa_rainc_HDO')
-   call moab_set_tag('Faxa_rainl_18O'//C_NULL_CHAR, a2x, krl_18O, datam, lsize) ! krl_18O   = mct_aVect_indexRA(a2x,'Faxa_rainl_18O')
-   call moab_set_tag('Faxa_rainl_HDO'//C_NULL_CHAR, a2x, krl_HDO, datam, lsize) ! krl_HDO   = mct_aVect_indexRA(a2x,'Faxa_rainl_HDO')
-   call moab_set_tag('Faxa_snowc_18O'//C_NULL_CHAR, a2x, ksc_18O, datam, lsize) ! ksc_18O   = mct_aVect_indexRA(a2x,'Faxa_snowc_18O')
-   call moab_set_tag('Faxa_snowc_HDO'//C_NULL_CHAR, a2x, ksc_HDO, datam, lsize) ! ksc_HDO   = mct_aVect_indexRA(a2x,'Faxa_snowc_HDO')
-   call moab_set_tag('Faxa_snowl_18O'//C_NULL_CHAR, a2x, ksl_18O, datam, lsize) ! ksl_18O   = mct_aVect_indexRA(a2x,'Faxa_snowl_18O')
-   call moab_set_tag('Faxa_snowl_HDO'//C_NULL_CHAR, a2x, ksl_HDO, datam, lsize) ! ksl_HDO   = mct_aVect_indexRA(a2x,'Faxa_snowl_HDO')
-end if
-   deallocate(datam) ! maybe we should keep it around, deallocate at the end
+    call mct_list_init(temp_list ,seq_flds_a2x_fields)
+    size_list=mct_list_nitem (temp_list)
+    do index_list = 1, size_list
+      call mct_list_get(mctOStr,index_list,temp_list)
+      mct_field = mct_string_toChar(mctOStr)
+      tagname= trim(mct_field)//C_NULL_CHAR
+      call moab_set_tag(tagname, a2x, index_list, datam, lsize) ! loop over all a2x fields, not just a few
+    enddo
+    call mct_list_clean(temp_list)
+    deallocate(datam) ! maybe we should keep it around, deallocate at the final only?
 
 #ifdef MOABDEBUG
     call seq_timemgr_EClockGetData( EClock, stepno=cur_datm_stepno )
