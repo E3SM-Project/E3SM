@@ -167,6 +167,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
       using namespace scorpio;
       auto rhist_file = find_filename_in_rpointer(hist_restart_filename_prefix,false,m_io_comm,m_run_t0);
 
+      scorpio::register_file(rhist_file,scorpio::Read);
       // From restart file, get the time of last write, as well as the current size of the avg sample
       m_output_control.last_write_ts = read_timestamp(rhist_file,"last_write",true);
       m_output_control.compute_next_write_ts();
@@ -249,6 +250,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
         // since those are a property of the run, not of the file.
         setup_file(m_output_file_specs,m_output_control);
       }
+      scorpio::eam_pio_closefile(rhist_file);
     }
   }
 
