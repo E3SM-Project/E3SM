@@ -215,6 +215,7 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
   dry_atm_.p_del = get_field_in("pseudo_density").get_view<const Real **>();
   dry_atm_.cldfrac   = get_field_in("cldfrac_tot").get_view<const Real**>(); // FIXME: tot or liq?
   dry_atm_.pblh      = get_field_in("pbl_height").get_view<const Real*>();
+  dry_atm_.p_int = get_field_in("p_int").get_view<const Real **>();
   dry_atm_.z_mid = buffer_.z_mid;
   dry_atm_.z_iface = buffer_.z_iface;
   dry_atm_.dz = buffer_.dz;
@@ -421,8 +422,6 @@ void MAMDryDep::run_impl(const double dt) {
   Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
   Kokkos::fence();
 
-  std::cout<<__FILE__<<":"<<__LINE__<<" In MAMDryDep::run_impl"<<std::endl;
-
   const DryDep::Config process_config;
   // Future enhancement:
   // This is where we can set the fraction of land use parameters:
@@ -449,9 +448,6 @@ void MAMDryDep::run_impl(const double dt) {
   compute_tendencies(ncol_, nlev_, parameters_, dry_deposition, dt, qtracers_, d_qtracers_dt_, 
     dgncur_awet_, wet_dens_, dry_atm_, dry_aero_, wet_aero_, aerdepdrycw_, aerdepdryis_, tendencies_);
   Kokkos::fence();
-
-  std::cout <<__FILE__<<":"<<__LINE__
-    << "End of MAMDryDep::run_impl created array: tendencies" << std::endl;
 }
 
 // =========================================================================================
