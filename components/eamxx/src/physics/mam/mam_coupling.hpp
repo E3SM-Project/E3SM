@@ -566,6 +566,7 @@ haero::Atmosphere atmosphere_for_column(const DryAtmosphere& dry_atm,
                            dry_atm.pblh(column_index));
 }
 
+//FIXME: move it to mam4xx and add comments and change variable names
 KOKKOS_INLINE_FUNCTION
 int get_haero_prognostics_index(const int mode, const int species)
 {
