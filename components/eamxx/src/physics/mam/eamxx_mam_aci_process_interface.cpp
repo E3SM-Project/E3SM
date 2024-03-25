@@ -704,8 +704,8 @@ void call_hetfrz_compute_tendencies(
         const mam4::Tendencies tends(nlev);
         const mam4::AeroConfig aero_config;
         const Real t = 0;  //, dt = 0;
-        hetfrz.compute_tendencies(aero_config, /*team,*/ t, dt, atmos, surf,
-                                  progs, diags, tends);
+        hetfrz.compute_tendencies(aero_config, team, t, dt, atmos, surf, progs,
+                                  diags, tends);
       });
   //}
 }
