@@ -122,6 +122,10 @@ public:
   FieldLayout strip_dim (const int idim) const;
   FieldLayout clone_with_different_extent (const int idim, const int extent) const;
 
+  // NOTE: congruent does not check the tags names. It only checks
+  //       rank, m_tags, and m_dims. Use operator== if names are important
+  bool congruent (const FieldLayout& rhs) const;
+
   // Change the name of a dimension
   void rename_dim (const int idim, const std::string& n);
   void rename_dim (const FieldTag tag, const std::string& n);
@@ -201,10 +205,14 @@ inline bool FieldLayout::are_dimensions_set () const {
   return true;
 }
 
+inline bool FieldLayout::congruent (const FieldLayout& rhs) const {
+  return rank()==rhs.rank() &&
+         tags()==rhs.tags() &&
+         dims()==rhs.dims();
+}
+
 inline bool operator== (const FieldLayout& fl1, const FieldLayout& fl2) {
-  return fl1.rank()==fl2.rank() &&
-         fl1.tags()==fl2.tags() &&
-         fl1.dims()==fl2.dims();
+  return fl1.congruent(fl2) and fl1.names()==fl2.names();
 }
 
 } // namespace scream

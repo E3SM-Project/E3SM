@@ -146,47 +146,25 @@ is_valid_layout (const FieldLayout& layout) const
 {
   using namespace ShortFieldTagsNames;
 
-  const auto lt = layout.type();
-  if (lt==LayoutType::Scalar0D or lt==LayoutType::Vector0D) {
-    // 0d layouts are compatible with any grid
-    // Let's return true early to avoid segfautls below
-    return true;
-  }
-
-  const bool midpoints = layout.tags().back()==LEV;
-  const bool is3d = layout.tags().back()==LEV or layout.tags().back()==ILEV;
-
-  switch (lt) {
+  const bool midpoints = layout.has_tag(LEV);
+  switch (layout.type()) {
+    case LayoutType::Scalar0D: [[fallthrough]];
+    case LayoutType::Vector0D:
+      // 0d quantities are always ok
+      return true;
     case LayoutType::Scalar1D: [[fallthrough]];
     case LayoutType::Vector1D:
-      // 1d layouts need the right number of levels
-      return layout.dims().back() == m_num_vert_levs or
-             layout.dims().back() == (m_num_vert_levs+1);
-    case LayoutType::Scalar2D: [[fallthrough]];
+      return layout.congruent(get_vertical_layout(midpoints);
+    case LayoutType::Scalar2D:
+      return layout.congruent(get_2d_scalar_layout());
     case LayoutType::Scalar3D:
-      return is3d ? layout==get_3d_scalar_layout(midpoints)
-                  : layout==get_2d_scalar_layout();
-    case LayoutType::Vector2D: [[fallthrough]];
+      return layout.congruent(get_3d_scalar_layout(midpoints);
+    case LayoutType::Vector2D:
+      return layout.congruent(get_2d_vector_layout(layout.get_vector_dim()));
     case LayoutType::Vector3D:
-    {
-      const auto vec_dim = layout.dims()[layout.get_vector_component_idx()];
-      const auto vec_tag = layout.get_vector_tag();
-      return is3d ? layout==get_3d_vector_layout(midpoints,vec_tag,vec_dim)
-                  : layout==get_2d_vector_layout(vec_tag,vec_dim);
-    }
-    case LayoutType::Tensor2D: [[fallthrough]];
-    case LayoutType::Tensor3D:
-    {
-      const auto ttags = layout.get_tensor_tags();
-      std::vector<int> tdims;
-      for (auto idx : layout.get_tensor_dims()) {
-        tdims.push_back(layout.dim(idx));
-      }
-      return is3d ? layout==get_3d_tensor_layout(midpoints,ttags,tdims)
-                  : layout==get_2d_tensor_layout(ttags,tdims);
-    }
+      return layout.congruent(get_3d_vector_layout(midpoints,layout.get_vector_dim()));
     default:
-      // Anything else is probably no
+      // Anything else is probably not ok
       return false;
   }
 }
