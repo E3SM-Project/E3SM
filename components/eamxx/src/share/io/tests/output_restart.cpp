@@ -80,6 +80,7 @@ TEST_CASE("output_restart","io")
   output_params.set<std::vector<std::string>>("Field Names",{"field_1", "field_2", "field_3", "field_4","field_5"});
   output_params.set<double>("fill_value",FillValue);
   output_params.set<bool>("MPI Ranks in Filename","true");
+  output_params.set<int>("flush_frequency",1);
   output_params.sublist("output_control").set<std::string>("frequency_units","nsteps");
   output_params.sublist("output_control").set<int>("Frequency",10);
   output_params.sublist("Checkpoint Control").set<int>("Frequency",5);
