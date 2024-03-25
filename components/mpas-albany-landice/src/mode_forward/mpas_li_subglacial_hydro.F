@@ -2213,9 +2213,11 @@ module li_subglacial_hydro
       integer, dimension(:), pointer :: hydroTerrestrialMarginMask
       integer, dimension(:,:), pointer :: cellsOnEdge
       integer, dimension(:), pointer :: cellMask
-      integer, pointer :: nEdgesSolve
+      integer, dimension(:), pointer :: waterFluxMask
+      integer, pointer :: nEdgesSolve, nCells
       integer :: cell1, cell2, iEdge
       real (kind=RKIND), pointer :: config_sea_level
+      integer :: wfmWarning
 
       call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
 
@@ -2228,14 +2230,29 @@ module li_subglacial_hydro
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
          call mpas_pool_get_array(hydroPool, 'hydroMarineMarginMask', hydroMarineMarginMask)
          call mpas_pool_get_array(hydroPool, 'hydroTerrestrialMarginMask', hydroTerrestrialMarginMask)
+         call mpas_pool_get_array(hydroPool, 'waterFluxMask', waterFluxMask)
          call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
          call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
-
+         call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+         
          hydroMarineMarginMask(:) = 0
+         hydroTerrestrialMarginMask(:) = 0
+         wfmWarning = 0
+
          do iEdge = 1, nEdgesSolve
             cell1 = cellsOnEdge(1, iEdge)
             cell2 = cellsOnEdge(2, iEdge)
-            ! We are looking for edges with 1 edge grounded ice and the other edge floating ice or open ocean
+            
+            !ensure no-flow conditions on edges of domain if not set up
+            !in input file
+            if ( ((cell1 == nCells + 1) .or. (cell2 == nCells +1 )) &
+               .and. (waterFluxMask(iEdge) .ne. 2)) then
+                 waterFluxMask(iEdge) = 2
+                 wfmWarning = 1
+            endif
+
+            ! hydroMarineMarginMask: We are looking for edges with 1 edge grounded ice and the other edge floating ice or open ocean
+            ! Exclude no-flow boundaries
             if ( (li_mask_is_grounded_ice(cellMask(cell1))) .and. &
                  (li_mask_is_floating_ice(cellMask(cell2)) .or. &
                  ((bedTopography(cell2) < config_sea_level) .and. (.not. li_mask_is_ice(cellMask(cell2)))) ) ) then
@@ -2245,13 +2262,9 @@ module li_subglacial_hydro
                      ((bedTopography(cell1) < config_sea_level) .and. (.not. li_mask_is_ice(cellMask(cell1)))) ) ) then
                hydroMarineMarginMask(iEdge) = 1
             endif
-         enddo
-
-         hydroTerrestrialMarginMask(:) = 0
-         do iEdge = 1, nEdgesSolve
-            cell1 = cellsOnEdge(1, iEdge)
-            cell2 = cellsOnEdge(2, iEdge)
-            !Look for edges with 1 cell on grounding ice and the other cell on land without ice
+            
+            ! hydroTerrestrialMarginMask: Look for edges with 1 cell on grounding ice and the other cell on land without ice
+            ! Exclude no-flow boundaries
             if ((li_mask_is_grounded_ice(cellMask(cell1))) .and. ( .not. li_mask_is_ice(cellMask(cell2))) &
                .and. (bedTopography(cell2) >= config_sea_level)) then
                hydroTerrestrialMarginMask(iEdge) = 1
@@ -2264,8 +2277,13 @@ module li_subglacial_hydro
          block => block % next
       end do
 
+      if (wfmWarning == 1) then
+         call mpas_log_write('WARNING: Changing waterFluxMask to enforce no-flow conditions at domain boundaries')
+      endif
       call mpas_timer_start("halo updates")
       call mpas_dmpar_field_halo_exch(domain, 'hydroMarineMarginMask')
+      call mpas_dmpar_field_halo_exch(domain, 'hydroTerrestrialMarginMask')
+      call mpas_dmpar_field_halo_exch(domain, 'waterFluxMask')
       call mpas_timer_stop("halo updates")
 
    !--------------------------------------------------------------------
