@@ -129,6 +129,8 @@ module cime_comp_mod
   use seq_rest_mod, only : seq_rest_read, seq_rest_mb_read, seq_rest_write, seq_rest_mb_write
 #ifdef MOABDEBUG
   use seq_rest_mod, only : write_moab_state
+  use iMOAB, only: iMOAB_GetDoubleTagStorage, iMOAB_GetMeshInfo
+  use component_type_mod, only: component_get_name, component_get_c2x_cc
 #endif
 
   ! flux calc routines
@@ -688,6 +690,14 @@ module cime_comp_mod
   character(*), parameter :: FormatD = '(A,": =============== ", A20,I10.8,I8,6x,   " ===============")'
   character(*), parameter :: FormatR = '(A,": =============== ", A31,F12.3,1x,  " ===============")'
   character(*), parameter :: FormatQ = '(A,": =============== ", A20,2F10.2,4x," ===============")'
+
+#ifdef MOABDEBUG
+! allocate to get data frpm moab
+  real(r8) ,  private, pointer :: moab_tag_vals(:,:) ! various tags for debug purposes 
+  integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3), arrsize, ent_type
+  character(100) :: tagname
+  type(mct_aVect) , pointer :: a2x_aa => null()
+#endif
   !===============================================================================
 contains
   !===============================================================================
@@ -1490,6 +1500,30 @@ contains
     call component_init_cc(Eclock_a, atm, atm_init, infodata, NLFilename)
     call t_adj_detailf(-2)
     call t_stopf('CPL:comp_init_cc_atm')
+#ifdef MOABDEBUG
+   if (mphaid .ge. 0) then
+      a2x_aa => component_get_c2x_cc(atm(1))
+      write(logunit,*) ' a2x_aa (22,1..) after atm init', a2x_aa%rattr(22,1), a2x_aa%rattr(22,2)
+      tagname = "Faxa_bcphidry:Faxa_bcphodry:Faxa_bcphiwet"//C_NULL_CHAR
+      ierr  = iMOAB_GetMeshInfo ( mphaid, nvert, nvise, nbl, nsurf, nvisBC )
+      if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' ERROR in getting mesh info on atm on comp  ')
+      endif
+      allocate(moab_tag_vals(nvert(1), 3))
+      arrsize = nvise(1)*3
+      ent_type = 1
+      ierr = iMOAB_GetDoubleTagStorage(mphaid, tagname, arrsize , ent_type, moab_tag_vals)
+      if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' ERROR in getting 3 tags  ')
+      endif
+      if (iamroot_CPLID )then
+         write(logunit,*) ' Faxa_bcphidry Faxa_bcphodry Faxa_bcphiwet vals on comp:', moab_tag_vals(1,1), &
+               moab_tag_vals(1,2), moab_tag_vals(1,3)
+      endif
+      deallocate(moab_tag_vals)
+   endif
+#endif
+
 
     call t_startf('CPL:comp_init_cc_lnd')
     call t_adj_detailf(+2)
@@ -1539,6 +1573,7 @@ contains
     call t_adj_detailf(-2)
     call t_stopf('CPL:comp_init_cc_iac')
 
+
    !---------------------------------------------------------------------------------------
    ! Initialize coupler-component data
    !  if processor has cpl or model
@@ -1570,7 +1605,12 @@ contains
     call component_init_cx(iac, infodata)
     call t_adj_detailf(-2)
     call t_stopf('CPL:comp_init_cx_all')
-
+#ifdef MOABDEBUG
+    if (iamroot_CPLID )then
+       a2x_ax => component_get_c2x_cx(atm(1))
+       write(logunit,*) ' a2x_ax (22,1..) after init cx', a2x_ax%rattr(22,1), a2x_ax%rattr(22,2)
+    endif
+#endif
    !---------------------------------------------------------------------------------------
    ! Determine complist (list of comps for each id)
    ! Build complist string that will be output later.
@@ -2032,7 +2072,12 @@ contains
     ! MOAB: compute intersection intx for each pair of grids on coupler and weights
     ! MOAB: augment seq_map_type object with MOAB attributes to enable seq_map_map to do MOAB-based projections
     !----------------------------------------------------------
-
+#ifdef MOABDEBUG
+   if (mphaid .ge. 0) then
+      a2x_aa => component_get_c2x_cc(atm(1))
+      write(logunit,*) ' a2x_aa (22,1..) before atm prep', a2x_aa%rattr(22,1), a2x_aa%rattr(22,2)
+   endif
+#endif
     if (iamin_CPLID) then
 
        call t_startf('CPL:init_maps')
@@ -2042,7 +2087,12 @@ contains
        ! init maps for So2a, Sl2a, Si2a, Fo2a, Fl2a, Fi2a
        ! MOAB: calculate o2a intx, l2a intx for tri-grid
        call prep_atm_init(infodata, ocn_c2_atm, ice_c2_atm, lnd_c2_atm, iac_c2_lnd)
-
+#ifdef MOABDEBUG
+         if (iamroot_CPLID )then
+            a2x_ax => component_get_c2x_cx(atm(1))
+            write(logunit,*) ' a2x_ax (22,1..) after prep atm init', a2x_ax%rattr(22,1), a2x_ax%rattr(22,2)
+         endif
+#endif
        ! init maps for Sa2l, Fa2l, Fr2l, Sg2l, Fg2l
        ! MOABTODO:  a2l intx for tri-grid  r2l intx for bi-grid intx
        call prep_lnd_init(infodata, atm_c2_lnd, rof_c2_lnd, glc_c2_lnd, iac_c2_lnd)
@@ -2157,7 +2207,52 @@ contains
 
     ! mostly for debug mode
     num_moab_exports = 0
-
+#ifdef MOABDEBUG
+   if (iamroot_CPLID )then
+      a2x_ax => component_get_c2x_cx(atm(1))
+      write(logunit,*) ' a2x_ax (22,1..) before area corrections', a2x_ax%rattr(22,1), a2x_ax%rattr(22,2)
+   endif
+   if (mphaid .ge. 0) then
+      a2x_aa => component_get_c2x_cc(atm(1))
+      write(logunit,*) ' a2x_aa (22,1..) before area corrections', a2x_aa%rattr(22,1), a2x_aa%rattr(22,2)
+      tagname = "Faxa_bcphidry:Faxa_bcphodry:Faxa_bcphiwet"//C_NULL_CHAR
+      ierr  = iMOAB_GetMeshInfo ( mphaid, nvert, nvise, nbl, nsurf, nvisBC )
+      if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' ERROR in getting mesh info on atm on comp  ')
+      endif
+      allocate(moab_tag_vals(nvert(1), 3))
+      arrsize = nvise(1)*3
+      ent_type = 1
+      ierr = iMOAB_GetDoubleTagStorage(mphaid, tagname, arrsize , ent_type, moab_tag_vals)
+      if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' ERROR in getting 3 tags  ')
+      endif
+      if (iamroot_CPLID )then
+         write(logunit,*) ' Faxa_bcphidry Faxa_bcphodry Faxa_bcphiwet vals on comp:', moab_tag_vals(1,1), &
+               moab_tag_vals(1,2), moab_tag_vals(1,3)
+      endif
+      deallocate(moab_tag_vals)
+   endif
+   if (mbaxid .ge. 0) then
+      tagname = "Faxa_bcphidry:Faxa_bcphodry:Faxa_bcphiwet"//C_NULL_CHAR
+      ierr  = iMOAB_GetMeshInfo ( mbaxid, nvert, nvise, nbl, nsurf, nvisBC )
+      if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' ERROR in getting mesh info on atm on coupler  ')
+      endif
+      allocate(moab_tag_vals(nvise(1), 3))
+      arrsize = nvise(1)*3
+      ent_type = 1
+      ierr = iMOAB_GetDoubleTagStorage(mbaxid, tagname, arrsize , ent_type, moab_tag_vals)
+      if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' ERROR in getting 3 tags  ')
+      endif
+      if (iamroot_CPLID )then
+         write(logunit,*) ' Faxa_bcphidry Faxa_bcphodry Faxa_bcphiwet vals:', moab_tag_vals(1,1), &
+               moab_tag_vals(1,2), moab_tag_vals(1,3)
+      endif
+      deallocate(moab_tag_vals)
+   endif
+#endif
     call mpi_barrier(mpicom_GLOID,ierr)
     if (atm_present) call component_init_areacor(atm, areafact_samegrid, seq_flds_a2x_fluxes)
     ! send initial data to coupler
@@ -2196,7 +2291,32 @@ contains
 
     call t_adj_detailf(-2)
     call t_stopf ('CPL:init_areacor')
-
+#ifdef MOABDEBUG
+         
+   if (iamroot_CPLID )then
+      a2x_ax => component_get_c2x_cx(atm(1))
+      write(logunit,*) ' a2x_ax (22,1..) after area corrections', a2x_ax%rattr(22,1), a2x_ax%rattr(22,2)
+   endif
+   if (mbaxid .ge. 0) then
+      tagname = "Faxa_bcphidry:Faxa_bcphodry:Faxa_bcphiwet"//C_NULL_CHAR
+      ierr  = iMOAB_GetMeshInfo ( mbaxid, nvert, nvise, nbl, nsurf, nvisBC )
+      if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' ERROR in getting mesh info on atm on coupler  ')
+      endif
+      allocate(moab_tag_vals(nvise(1), 3))
+      arrsize = nvise(1)*3
+      ent_type = 1
+      ierr = iMOAB_GetDoubleTagStorage(mbaxid, tagname, arrsize , ent_type, moab_tag_vals)
+      if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' ERROR in getting 3 tags  ')
+      endif
+      if (iamroot_CPLID )then
+         write(logunit,*) ' Faxa_bcphidry Faxa_bcphodry Faxa_bcphiwet vals:', moab_tag_vals(1,1), &
+               moab_tag_vals(1,2), moab_tag_vals(1,3)
+      endif
+      deallocate(moab_tag_vals)
+   endif
+#endif
     !----------------------------------------------------------
     !| global sum diagnostics for initial data sent to coupler.
     !----------------------------------------------------------
@@ -2316,7 +2436,12 @@ contains
        call t_adj_detailf(-2)
        call t_stopf ('CPL:init_fracs')
     endif
-
+#ifdef MOABDEBUG
+         a2x_ax => component_get_c2x_cx(atm(1))
+         if (iamroot_CPLID )then
+            write(logunit,*) ' a2x_ax (22,1..) after fractions', a2x_ax%rattr(22,1), a2x_ax%rattr(22,2)
+         endif
+#endif
     !----------------------------------------------------------
     !| Initialize prep_aoflux_mod module variables xao_*x and
     ! set to zero.
