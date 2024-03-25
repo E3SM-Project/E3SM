@@ -398,7 +398,13 @@ class TestAllScream(object):
                 continue
 
             # There is a sha file, so check how it compares with self._baseline_ref
-            num_ref_is_behind_file, num_ref_is_ahead_file = git_refs_difference(baseline_file_sha, baseline_ref_sha)
+            try:
+                num_ref_is_behind_file, num_ref_is_ahead_file = git_refs_difference(baseline_file_sha, baseline_ref_sha)
+            except SystemExit as e:
+                test.baselines_expired = True
+                reason = f"Failed to get refs difference between {baseline_file_sha} and {baseline_ref_sha} because: {e}"
+                print(f" -> Test {test} baselines are expired because {reason}")
+                continue
 
             # If the copy in our repo is behind, then we need to update the repo
             expect (num_ref_is_behind_file==0 or not self._integration_test,

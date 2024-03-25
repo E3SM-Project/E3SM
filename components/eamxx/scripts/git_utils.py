@@ -55,7 +55,7 @@ def get_current_head(repo=None):
         return branch
 
 ###############################################################################
-def git_refs_difference (cmp_ref, head="HEAD", repo=None):
+def git_refs_difference(cmp_ref, head="HEAD", repo=None):
 ###############################################################################
     """
     Return the difference in commits between cmp_ref and head.
