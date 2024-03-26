@@ -58,9 +58,8 @@
 /* ZOLTAN2 SUBPACKAGE OF TRILINOS  library */
 #cmakedefine01 TRILINOS_HAVE_ZOLTAN2
 
-/* When doing BFB testing, we occasionally must use modified code. */
-/* Use this flag to protect such code. */
-#cmakedefine HOMMEXX_BFB_TESTING
+/* Detect whether this is a kokkos target */
+#cmakedefine01 KOKKOS_TARGET
 
 /* Whether to use OpenMP4 */
 #cmakedefine OMP4
