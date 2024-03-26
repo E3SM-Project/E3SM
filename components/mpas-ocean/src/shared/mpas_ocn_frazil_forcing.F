@@ -527,7 +527,7 @@ contains
 
             ! get frazil salinity
             if (underLandIce) then
-              frazilSalinity = 0.0_RKIND
+              frazilSalinity = config_frazil_land_ice_reference_salinity
             else
               frazilSalinity = config_frazil_sea_ice_reference_salinity
             end if
