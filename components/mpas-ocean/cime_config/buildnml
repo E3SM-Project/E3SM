@@ -293,8 +293,12 @@ def buildnml(case, caseroot, compname):
         if ocn_ic_mode == 'spunup':
             ic_date = '20231121'
             ic_prefix = 'mpaso.IcoswISC30E3r5.rstFromG-chrysalis'
+        if ocn_bgc in ['eco_only', 'eco_and_dms', 'eco_and_macromolecules', 'eco_and_dms_and_macromolecules']:
+            ic_date = '20231215'
+            ic_prefix = 'mpaso.IcoswISC30E3r5.20231120+MARBL_ICfromOMIP_64levels'
+            eco_forcing_file = 'ecoForcingSurfaceMonthly.IcoswISC30E3r5.20231215.nc'
         if ocn_ismf == 'data':
-            data_ismf_file = 'prescribed_ismf_adusumilli2020.IcoswISC30E3r5.20231120.nc'
+            data_ismf_file = 'prescribed_ismf_paolo2023.IcoswISC30E3r5.20240227.nc'
 
     #--------------------------------------------------------------------
     # Set OCN_FORCING = datm_forced_restoring if restoring file is available
@@ -1006,7 +1010,7 @@ def buildnml(case, caseroot, compname):
             lines.append('        filename_interval="00-01-00_00:00:00"')
             lines.append('        reference_time="01-01-01_00:00:00"')
             lines.append('        output_interval="00-01-00_00:00:00"')
-            lines.append('        clobber_mode="append"')
+            lines.append('        clobber_mode="truncate"')
             lines.append('        packages="conservationCheckAMPKG">')
             lines.append('')
             lines.append('<var name="xtime"/>')

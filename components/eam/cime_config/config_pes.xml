@@ -771,6 +771,21 @@
         </nthrds>
       </pes>
     </mach>
+    <mach name="improv">
+      <pes compset=".*EAM.+ELM.+MPASSI.+DOCN.+SGLC_SWAV_SIAC_SESP_BGC.*" pesize="any">
+        <comment>improv pelayout for tri-grid BGC tests with EAM+DOCN </comment>
+        <ntasks>
+          <ntasks_atm>-4</ntasks_atm>
+          <ntasks_cpl>-4</ntasks_cpl>
+          <ntasks_lnd>-4</ntasks_lnd>
+          <ntasks_rof>-4</ntasks_rof>
+          <ntasks_ocn>-4</ntasks_ocn>
+          <ntasks_ice>-4</ntasks_ice>
+          <ntasks_glc>-4</ntasks_glc>
+          <ntasks_wav>-4</ntasks_wav>
+        </ntasks>
+      </pes>
+    </mach>
   </grid>
   <grid name="a%ne30np4.pg2_l%.+_oi%oEC60to30v3">
     <mach name="anvil">
@@ -1093,9 +1108,37 @@
         </ntasks>
       </pes>
     </mach>
+    <mach name="improv">
+      <pes compset=".*EAM.+ELM.+MPASSI.+DOCN.+MOSART.+" pesize="M">
+        <comment>--res conusx4v1_r05_oECv3 --compset F2010 </comment>
+        <ntasks>
+          <ntasks_atm>-4</ntasks_atm>
+          <ntasks_cpl>-4</ntasks_cpl>
+          <ntasks_lnd>-4</ntasks_lnd>
+          <ntasks_rof>-4</ntasks_rof>
+          <ntasks_ocn>-4</ntasks_ocn>
+          <ntasks_ice>-4</ntasks_ice>
+          <ntasks_glc>-4</ntasks_glc>
+          <ntasks_wav>-4</ntasks_wav>
+        </ntasks>
+      </pes>
+    </mach>
     <mach name="summit|ascent|pm-gpu|muller-gpu">
       <pes compset=".*EAM.+ELM.+MPASSI.+DOCN.+MOSART.+" pesize="M">
         <comment>--res conusx4v1_r05_oECv3 --compset F2010 </comment>
+        <ntasks>
+          <ntasks_atm>-2</ntasks_atm>
+          <ntasks_lnd>-2</ntasks_lnd>
+          <ntasks_rof>-2</ntasks_rof>
+          <ntasks_ice>-2</ntasks_ice>
+          <ntasks_ocn>-2</ntasks_ocn>
+          <ntasks_cpl>-2</ntasks_cpl>
+        </ntasks>
+      </pes>
+    </mach>
+    <mach name="pm-cpu|muller-cpu|alvarez|gcp12">
+      <pes compset=".*EAM.+ELM.+MPASSI.+DOCN.+MOSART.+" pesize="any">
+        <comment>pm-cpu/gcp, eam, 2 nodes: --res conusx4v1_r05_oECv3 --compset F2010 </comment>
         <ntasks>
           <ntasks_atm>-2</ntasks_atm>
           <ntasks_lnd>-2</ntasks_lnd>
