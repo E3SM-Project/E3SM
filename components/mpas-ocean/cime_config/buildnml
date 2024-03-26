@@ -75,6 +75,7 @@ def buildnml(case, caseroot, compname):
     data_ismf_file = ''
     analysis_mask_file = ''
     eco_forcing_file = ''
+    u_tidal_rms_file = ''
 
     if ocn_grid == 'oEC60to30v3':
         decomp_date = '230424'
@@ -131,11 +132,12 @@ def buildnml(case, caseroot, compname):
         decomp_date = '230422'
         decomp_prefix = 'partitions/mpas-o.graph.info.'
         ic_date = '230220'
-        u_tidal_rms_file = 'oQU240wLI_velocityTidalRMS_CATS2008.nc'
         ic_prefix = 'ocean.QU.240wLI'
         if ocn_ic_mode == 'spunup':
             logger.warning("WARNING: The specified compset is requesting ocean ICs spunup from a G-case")
             logger.warning("         But no file available for this grid.")
+        if ocn_tidal_mixing == 'true':
+            u_tidal_rms_file = 'oQU240wLI_velocityTidalRMS_CATS2008.nc'
 
     elif ocn_grid == 'oQU120':
         decomp_date = '230424'
@@ -265,13 +267,14 @@ def buildnml(case, caseroot, compname):
         restoring_file = 'sss.PHC2_monthlyClimatology.SOwISC12to60E2r4_nomask.210120.nc'
         analysis_mask_file = 'SOwISC12to60E2r4_mocBasinsAndTransects20210623.nc'
         ic_date = '230220'
-        u_tidal_rms_file = 'SOwISC12to60E2r4_velocityTidalRMS_CATS2008.nc'
         ic_prefix = 'ocean.SOwISC12to60E2r4'
         if ocn_ic_mode == 'spunup':
             ic_date = '230220'
             ic_prefix = 'mpaso.SOwISC12to60E2r4.rstFromG-anvil'
         if ocn_ismf == 'data':
             data_ismf_file = 'prescribed_ismf_adusumilli2020.SOwISC12to60E2r4.230516.nc'
+        if ocn_tidal_mixing == 'true':
+            u_tidal_rms_file = 'SOwISC12to60E2r4_velocityTidalRMS_CATS2008.nc'
 
     elif ocn_grid == 'FRISwISC08to60E3r1':
         decomp_date = '20230913'  # changed to date of partiotions in ../files_for_e3sm/assembled_files/inputdata/ocn/mpas-o/FRISwISC08to60E3r1/partitions
@@ -331,13 +334,14 @@ def buildnml(case, caseroot, compname):
         restoring_file = 'sss.PHC2_monthlyClimatology.ECwISC30to60E2r1_nomask.201221.nc'
         analysis_mask_file = 'ECwISC30to60E2r1_mocBasinsAndTransects20210623.nc'
         ic_date = '230220'
-        u_tidal_rms_file = 'ECwISC30to60E2r1_velocityTidalRMS_CATS2008.nc'
         ic_prefix = 'ocean.ECwISC30to60E2r1'
         if ocn_ic_mode == 'spunup':
             ic_date = '230220'
             ic_prefix = 'mpaso.ECwISC30to60E2r1.rstFromG-anvil'
         if ocn_ismf == 'data':
             data_ismf_file = 'prescribed_ismf_adusumilli2020.ECwISC30to60E2r1.230429.nc'
+        if ocn_tidal_mixing == 'true':
+            u_tidal_rms_file = 'ECwISC30to60E2r1_velocityTidalRMS_CATS2008.nc'
 
     elif ocn_grid == 'IcoswISC30E3r5':
         decomp_date = '20231120'
@@ -355,6 +359,8 @@ def buildnml(case, caseroot, compname):
             eco_forcing_file = 'ecoForcingSurfaceMonthly.IcoswISC30E3r5.20231215.nc'
         if ocn_ismf == 'data':
             data_ismf_file = 'prescribed_ismf_paolo2023.IcoswISC30E3r5.20240227.nc'
+        if ocn_tidal_mixing == 'true':
+            u_tidal_rms_file = 'IcoswISC30E3r5_velocityTidalRMS_CATS2008.nc'
 
     #--------------------------------------------------------------------
     # Set OCN_FORCING = datm_forced_restoring if restoring file is available
@@ -392,7 +398,7 @@ def buildnml(case, caseroot, compname):
         if data_ismf_file != '':
             input_list.write("data_ismf = {}/ocn/mpas-o/{}/{}\n".format(din_loc_root, ocn_mask, data_ismf_file))
 
-        if ocn_tidal_mixing == 'true':
+        if u_tidal_rms_file != '':
             input_list.write("u_tidal_rms = {}/ocn/mpas-o/{}/{}\n".format(din_loc_root, ocn_mask, u_tidal_rms_file))
 
     #--------------------------------------------------------------------
@@ -643,7 +649,7 @@ def buildnml(case, caseroot, compname):
                 lines.append('</stream>')
                 lines.append('')
 
-            if ocn_tidal_mixing == 'true':
+            if u_tidal_rms_file != '':
                 lines.append('<stream name="tidal_velocity_rms_parameterized"')
                 lines.append('       type="input"')
                 lines.append('       io_type="{}"'.format(ocn_pio_typename))
