@@ -2882,6 +2882,10 @@ contains
 
              o2x_o % rAttr(index_o2x_Fioo_q, n)  = 0.0_RKIND
              o2x_o % rAttr(index_o2x_Fioo_frazil, n) = 0.0_RKIND
+             if (trim(config_land_ice_flux_mode) == 'standalone' .or. trim(config_land_ice_flux_mode) == 'data') then
+                o2x_o % rAttr(index_o2x_Foxo_q_li, n) = accumulatedFrazilIceMass(i) * config_frazil_heat_of_fusion / ocn_cpl_dt
+                o2x_o % rAttr(index_o2x_Foxo_frazil_li, n) = accumulatedFrazilIceMass(i) / ocn_cpl_dt
+             endif
 
           end if
 
@@ -4084,7 +4088,7 @@ contains
             call mpas_pool_get_array(statePool, 'accumulatedFrazilIceMass', accumulatedFrazilIceMass, 1)
          end if
 
-        if (trim(config_land_ice_flux_mode == 'standalone') .or. trim(config_land_ice_flux_mode) == 'data') then
+        if (trim(config_land_ice_flux_mode) == 'standalone' .or. trim(config_land_ice_flux_mode) == 'data') then
            call mpas_pool_get_array(forcingPool, 'avgLandIceFreshwaterFlux', avgLandIceFreshwaterFlux)
            call mpas_pool_get_array(forcingPool, 'avgLandIceHeatFlux', avgLandIceHeatFlux)
         endif
@@ -4145,7 +4149,7 @@ contains
    
             o2x_om(n, index_o2x_Faoo_h2otemp) = avgTotalFreshWaterTemperatureFlux(i) * rho_sw * cp_sw
 
-            if (trim(config_land_ice_flux_mode == 'standalone') .or. trim(config_land_ice_flux_mode) == 'data') then
+            if (trim(config_land_ice_flux_mode) == 'standalone' .or. trim(config_land_ice_flux_mode) == 'data') then
                o2x_om(n, index_o2x_Foxo_ismw)  = avgLandIceFreshwaterFlux(i)
                o2x_om(n, index_o2x_Foxo_ismh)  = avgLandIceHeatFlux(i)
             endif
@@ -4190,7 +4194,10 @@ contains
    
                   o2x_om(n, index_o2x_Fioo_q)      = 0.0_RKIND
                   o2x_om(n, index_o2x_Fioo_frazil) = 0.0_RKIND
-   
+                  if (trim(config_land_ice_flux_mode) == 'standalone' .or. trim(config_land_ice_flux_mode) == 'data') then
+                     o2x_om(n, index_o2x_Foxo_q_li)      = accumulatedFrazilIceMass(i) * config_frazil_heat_of_fusion / ocn_cpl_dt
+                     o2x_om(n, index_o2x_Foxo_frazil_li) = accumulatedFrazilIceMass(i) / ocn_cpl_dt
+                  endif
                end if
    
                ! Reset SeaIce Energy and Accumulated Frazil Ice

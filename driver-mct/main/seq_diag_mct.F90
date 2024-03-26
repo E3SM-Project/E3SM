@@ -286,7 +286,9 @@ module seq_diag_mct
 
   integer :: index_o2x_Faoo_h2otemp
   integer :: index_o2x_Fioo_frazil
+  integer :: index_o2x_Foxo_frazil_li
   integer :: index_o2x_Fioo_q
+  integer :: index_o2x_Foxo_q_li
 
   integer :: index_o2x_Foxo_ismw
   integer :: index_o2x_Foxo_rrofl
@@ -1376,7 +1378,9 @@ contains
     if (present(do_o2x)) then
        if (first_time) then
           index_o2x_Fioo_frazil  = mct_aVect_indexRA(o2x_o,'Fioo_frazil')
+          index_o2x_Foxo_frazil_li= mct_aVect_indexRA(o2x_o,'Foxo_frazil_li',perrWith='quiet')
           index_o2x_Fioo_q       = mct_aVect_indexRA(o2x_o,'Fioo_q')
+          index_o2x_Foxo_q_li    = mct_aVect_indexRA(o2x_o,'Foxo_q_li',perrWith='quiet')
           index_o2x_Faoo_h2otemp = mct_aVect_indexRA(o2x_o,'Faoo_h2otemp')
           index_o2x_Foxo_ismw    = mct_aVect_indexRA(o2x_o,'Foxo_ismw',perrWith='quiet')
           if ( index_o2x_Foxo_ismw /= 0 ) flds_polar = .true.
@@ -1399,9 +1403,11 @@ contains
           nf = f_hfrz;  budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*max(0.0_r8,o2x_o%rAttr(index_o2x_Fioo_q,n))
           nf = f_hh2ot; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*o2x_o%rAttr(index_o2x_Faoo_h2otemp,n)
           if (flds_polar) then
+             nf = f_wpolar;budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_c*o2x_o%rAttr(index_o2x_Foxo_frazil_li,n)
              nf = f_wpolar;budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_c*o2x_o%rAttr(index_o2x_Foxo_ismw,n)
              nf = f_wpolar;budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - (ca_o+ca_i)*o2x_o%rAttr(index_o2x_Foxo_rrofl,n)
              nf = f_wpolar;budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - (ca_o+ca_i)*o2x_o%rAttr(index_o2x_Foxo_rrofi,n)
+             nf = f_hpolar;budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_c*o2x_o%rAttr(index_o2x_Foxo_q_li,n)
              nf = f_hpolar;budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_c*o2x_o%rAttr(index_o2x_Foxo_ismh,n)
              nf = f_hpolar;budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_c*o2x_o%rAttr(index_o2x_Foxo_rrofih,n)
           end if

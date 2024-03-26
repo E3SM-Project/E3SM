@@ -598,16 +598,14 @@ contains
                enddo
             end if
 
-            if (landIceFreshwaterFluxesOn &
-               .and.config_use_frazil_ice_formation &
-               .and.config_frazil_under_land_ice) then
+            if (config_use_frazil_ice_formation .and. config_frazil_under_land_ice) then
                call mpas_pool_get_array(statePool, 'accumulatedLandIceFrazilMass', accumulatedLandIceFrazilMassOld, 1)
                call mpas_pool_get_array(statePool, 'accumulatedLandIceFrazilMass', accumulatedLandIceFrazilMassNew, 2)
                do iCell = 1, nCellsSolve
                   ! Frazil ice mass is negative. Negative coefficient makes heat
                   ! flux positive, because freezing ice releases heat.
                   sumArray(18) = sumArray(18) - areaCell(iCell) * config_frazil_heat_of_fusion &
-                                 * (accumulatedLandIceFrazilMassNew(iCell) - accumulatedLandIceFrazilMassOld(iCell))
+                                 * (accumulatedLandIceFrazilMassNew(iCell) - accumulatedLandIceFrazilMassOld(iCell))/dt
                enddo
             end if
 
@@ -748,9 +746,7 @@ v=accumulatedIcebergHeatFlux         ; write(m,"('icebergHeatFlux          ',es1
             if (landIceFreshwaterFluxesOn) then
 v=accumulatedLandIceHeatFlux         ; write(m,"('landIceHeatFlux          ',es16.8,'                                 ',f16.8)") v,v/A; call mpas_log_write(m); s=s+v
             end if
-            if (landIceFreshwaterFluxesOn &
-               .and.config_use_frazil_ice_formation &
-               .and.config_frazil_under_land_ice) then
+            if (config_use_frazil_ice_formation .and. config_frazil_under_land_ice) then
 v=accumulatedLandIceFrazilHeatFlux   ; write(m,"('   landIceFrazilHeatFlux ',es16.8,' (already in hfreeze, do not sum                )',f16.8)") v,v/A; call mpas_log_write(m); ! no sum: s=s+v
             end if
                                        write(m,"('SUM EXPLICIT HEAT FLUXES ',es16.8,'                                 ',f16.8)") s, s/A; call mpas_log_write(m)
@@ -976,9 +972,7 @@ v=accumulatedIcebergTemperatureFlux*rho_sw*cp_sw; write(m,"('IcebergTemperatureF
                enddo
             end if
 
-            if (landIceFreshwaterFluxesOn &
-               .and.config_use_frazil_ice_formation &
-               .and.config_frazil_under_land_ice) then
+            if (config_use_frazil_ice_formation .and. config_frazil_under_land_ice) then
                call mpas_pool_get_array(statePool, 'accumulatedLandIceFrazilMass', accumulatedLandIceFrazilMassOld, 1)
                call mpas_pool_get_array(statePool, 'accumulatedLandIceFrazilMass', accumulatedLandIceFrazilMassNew, 2)
                do iCell = 1, nCellsSolve
@@ -1101,9 +1095,7 @@ v=accumulatedIceRunoffFlux+accumulatedRemovedIceRunoffFlux;
                                      write(m,"('      SUM: ice runoff  ',es16.8,' x2o_Foxx_rofi    wfrzrof SUM                    ',f16.8)") v,v*c; call mpas_log_write(m)
 v=accumulatedLandIceFlux           ; write(m,"('landIceFreshwaterFlux  ',es16.8,'                                 ',f16.8)") v,v*c; call mpas_log_write(m); s=s+v
             endif
-            if (landIceFreshwaterFluxesOn &
-               .and.config_use_frazil_ice_formation &
-               .and.config_frazil_under_land_ice) then
+            if (config_use_frazil_ice_formation .and. config_frazil_under_land_ice) then
 v=accumulatedLandIceFrazilFlux     ; write(m,"('  landIceFrazilFlux    ',es16.8,' (already in wfreeze, do not sum                )',f16.8)") v,v*c; call mpas_log_write(m); ! no sum: s=s+v
             endif
                                      write(m,"('SUM VOLUME FLUXES      ',es16.8,'                                 ',f16.8,es16.8)") s, s*c; call mpas_log_write(m)
@@ -1258,9 +1250,7 @@ v=accumulatedLandIceFrazilFlux     ; write(m,"('  landIceFrazilFlux    ',es16.8,
                enddo
             end if
 
-            if (landIceFreshwaterFluxesOn &
-               .and.config_use_frazil_ice_formation &
-               .and.config_frazil_under_land_ice) then
+            if (config_use_frazil_ice_formation .and. config_frazil_under_land_ice) then
                call mpas_pool_get_array(statePool, 'accumulatedLandIceFrazilMass', accumulatedLandIceFrazilMassOld, 1)
                call mpas_pool_get_array(statePool, 'accumulatedLandIceFrazilMass', accumulatedLandIceFrazilMassNew, 2)
                do iCell = 1, nCellsSolve

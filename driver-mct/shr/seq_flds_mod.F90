@@ -1592,6 +1592,22 @@ contains
 
     if (flds_polar) then
 
+       ! Ocean Land ice freeze potential
+       call seq_flds_add(o2x_fluxes,"Foxo_q_li")
+       longname = 'Ocean land ice freeze potential'
+       stdname  = 'ice_shelf_cavity_ice_heat_flux'
+       units    = 'W m-2'
+       attname  = 'Foxo_q_li'
+       call metadata_set(attname, longname, stdname, units)
+
+       ! Ocean land ice frazil production
+       call seq_flds_add(o2x_fluxes,"Foxo_frazil_li")
+       longname = 'Ocean land ice frazil production'
+       stdname  = 'ocean_land_ice_frazil_ice_production'
+       units    = 'kg m-2 s-1'
+       attname  = 'Foxo_frazil_li'
+       call metadata_set(attname, longname, stdname, units)
+
        ! Water flux from ice shelf melt
        call seq_flds_add(o2x_fluxes,"Foxo_ismw")
        longname = 'Water flux due to basal melting of ice shelves'
