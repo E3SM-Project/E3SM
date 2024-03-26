@@ -1441,6 +1441,12 @@ contains
                newsnow = max(0._r8, (qflx_snow_grnd_col(c_idx)*dtime))
             endif
 
+            if (use_extrasnowlayers) then
+                snw_rds_refrz   = 1500._r8
+            else
+                snw_rds_refrz   = 1000._r8 
+            endif
+
             ! snow that has re-frozen [kg/m2]
             refrzsnow = max(0._r8, (qflx_snofrz_lyr(c_idx,i)*dtime))
 
