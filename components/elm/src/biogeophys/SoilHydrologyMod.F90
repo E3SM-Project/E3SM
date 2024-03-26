@@ -1819,6 +1819,7 @@ contains
           hksat              =>    soilstate_vars%hksat_col      , & ! Input:  [real(r8) (:,:) ] hydraulic conductivity at saturation (mm H2O /s)
           sucsat             =>    soilstate_vars%sucsat_col     , & ! Input:  [real(r8) (:,:) ] minimum soil suction (mm)
           watsat             =>    soilstate_vars%watsat_col     , & ! Input:  [real(r8) (:,:) ] volumetric soil water at saturation (porosity)
+          cellclay_col       =>    soilstate_vars%cellclay_col   , & ! Input:  [real(r8) (:,:) ] clay percentage
           zwt                =>    soilhydrology_vars%zwt_col    , & ! Output: [real(r8) (:)   ] water table depth (m)
           wa                 =>    soilhydrology_vars%wa_col     , & ! Output: [real(r8) (:)   ] water in the unconfined aquifer (mm)
           icefrac            =>    soilhydrology_vars%icefrac_col, & ! Input:  [real(r8) (:,:) ] fraction of ice in layer
@@ -1884,18 +1885,18 @@ contains
              ! SSH is within the soil column
              do j = jtran, nlevbed
                 if (j == jtran) then
-                   T1 = T1 + 1.e-3_r8*hksat(c,j)*dz_jtran
+                   T1 = T1 + 1.e-3_r8*hksat(c,j)*cellclay_col(c,j)*dz_jtran
                 else
-                   T1 = T1 + 1.e-3_r8*hksat(c,j)*dz(c,j)
+                   T1 = T1 + 1.e-3_r8*hksat(c,j)*cellclay_col(c,j)*dz(c,j)
                 endif
              enddo
-             T2 = 1.e-3_r8*hksat(c,nlevbed)*f
+             T2 = 1.e-3_r8*hksat(c,nlevbed)*cellclay_col(c,nlevbed)*f
           else
              ! SSH or ZWT is below the soil column
              if (ldomain%topo(g)-zwt(c) > ocn2lnd_vars%ssh_grc(g)) then
-                T2 = 1.e-3_r8*hksat(c,nlevbed)*f*exp(-((ldomain%topo(g)-zi(c,nlevbed))-ocn2lnd_vars%ssh_grc(g))/f)
+                T2 = 1.e-3_r8*hksat(c,nlevbed)*cellclay_col(c,nlevbed)*f*exp(-((ldomain%topo(g)-zi(c,nlevbed))-ocn2lnd_vars%ssh_grc(g))/f)
              else
-                T2 = 1.e-3_r8*hksat(c,nlevbed)*f*exp(-(zwt(c)-zi(c,nlevbed))/f)
+                T2 = 1.e-3_r8*hksat(c,nlevbed)*cellclay_col(c,nlevbed)*f*exp(-(zwt(c)-zi(c,nlevbed))/f)
              endif
           endif
           ! positive: lnd->ocn, negative: ocn->lnd
@@ -1932,12 +1933,16 @@ contains
                    lateral_layer = max(lateral_layer,0._r8)
                    h2osoi_left_vol = max(0._r8,(watsat(c,j)*dz(c,j)*1.e3_r8-h2osoi_ice(c,j)-watmin)) - &
                                      max(0._r8,h2osoi_liq(c,j)-watmin)
+                   lateral_layer = min(lateral_layer, h2osoi_left_vol)
 
                    h2osoi_liq(c,j) = h2osoi_liq(c,j) + lateral_layer
                    if(s_y > 0._r8) zwt(c) = zwt(c) - lateral_layer/s_y/1000._r8
                    lateral_tot = lateral_tot - lateral_layer
 
-                   if (lateral_tot <= 0._r8) exit
+                   if (lateral_tot <= 0._r8) then
+                      qflx_lnd2ocn(c) = qflx_lnd2ocn(c) + lateral_tot/dtime
+                      exit
+                   endif
                 enddo
                 if (lateral_tot > 1.e-14_r8) then
                    qflx_lnd2ocn(c) = qflx_lnd2ocn(c) + lateral_tot/dtime
@@ -1956,7 +1961,8 @@ contains
 
                    lateral_tot   = lateral_tot - lateral_layer
                    if (lateral_tot >= 0.) then
-                      zwt(c) = zwt(c) - lateral_layer/s_y/1000._r8
+                      zwt(c) = zwt(c) - lateral_layer/s_y/1000._r8/rous
+                      qflx_lnd2ocn(c) = qflx_lnd2ocn(c) + lateral_tot/dtime
                       exit
                    else
                       zwt(c) = zi(c,j)
