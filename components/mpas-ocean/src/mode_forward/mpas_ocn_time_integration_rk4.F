@@ -695,7 +695,7 @@ module ocn_time_integration_rk4
                                          subgridWetVolumeCellTable(:,iCell), &
                                          subgridSshCellTableRange(:,iCell),&
                                          bottomDepth(iCell), &
-                                         LayerThicknessNew(1,iCell) )
+                                         layerThicknessNew(1,iCell) )
                end if
 
              end if

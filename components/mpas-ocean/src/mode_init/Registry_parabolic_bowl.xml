@@ -1,6 +1,6 @@
 	<nml_record name="parabolic_bowl" mode="init" configuration=="parabolic_bowl">
 		<nml_option name="config_parabolic_bowl_vert_levels" type="integer" default_value="3" units="unitless"
-			description="Number of vertical levels in para_bowl."
+			description="Number of vertical levels in parabolic bowl."
 			possible_values="Any positive integer"
 	        />
 	        <nml_option name="config_parabolic_bowl_Coriolis_parameter" type="real" default_value="1.031e-4" units="1/s"

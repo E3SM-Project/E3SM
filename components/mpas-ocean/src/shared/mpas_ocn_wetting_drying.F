@@ -378,7 +378,7 @@ contains
 
       if (.not. config_zero_drying_velocity) return
 
-      if (.not. config_use_modify_wetting_drying_implementation) then
+      if (.not. config_use_ssh_gradient_wetting_drying) then
 
          ! need predicted transport velocity to limit drying flux
          !$omp parallel
@@ -423,7 +423,7 @@ contains
       ! Currently, this only works for single layer configurations with the 'ssh_gradient'
       ! pressure gradient option
 
-      if (config_use_modify_wetting_drying_implementation .and. &
+      if (config_use_ssh_gradient_wetting_drying .and. &
           pGradType == pGradTypeSSHgrad) then
 
         layerThicknessCell => layerThicknessCellWetDry
@@ -562,6 +562,12 @@ contains
             end if ! ifRampCell
 
         end do ! iCell
+
+      else if (config_use_ssh_gradient_wetting_drying .and. &
+          pGradType /= pGradTypeSSHgrad) then
+
+         call mpas_log_write("config_use_ssh_gradient_wetting_drying requires " // &
+                             "config_pressure_gradient_type = 'ssh_gradient'", MPAS_LOG_CRIT) 
 
       end if
 

@@ -1190,8 +1190,8 @@
 					description="If true, use subgrid wetting and drying algorithm"
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_use_modify_wetting_drying_implementation" type="logical" default_value=".false." units="unitless"
-					description="If true, use alternatove implementation of wetting and drying algorithm"
+		<nml_option name="config_use_ssh_gradient_wetting_drying" type="logical" default_value=".false." units="unitless"
+					description="If true, use take into account the ssh gradient across previously flux-limited edges in the wetting and drying algorithm"
 					possible_values=".true. or .false."
 		/>
 	</nml_record>
