@@ -25,7 +25,7 @@
 #include "p3_f90.hpp"
 
 #include "pam_debug.h"
-bool constexpr enable_check_state = true;
+bool constexpr enable_check_state = false;
 
 extern "C" void pam_driver() {
   //------------------------------------------------------------------------------------------------
@@ -180,10 +180,11 @@ extern "C" void pam_driver() {
 
     // Apply forcing tendencies
     if (use_MMF_VT) { pam_variance_transport_apply_forcing(coupler); }
-    coupler.run_module( "apply_gcm_forcing_tendencies" , modules::apply_gcm_forcing_tendencies );
     if (enable_check_state) { pam_debug_check_state(coupler, 2, nstep); }
-    coupler.run_module( "radiation"                    , [&] (pam::PamCoupler &coupler) {rad   .timeStep(coupler);} );
+    coupler.run_module( "apply_gcm_forcing_tendencies" , modules::apply_gcm_forcing_tendencies );
     if (enable_check_state) { pam_debug_check_state(coupler, 3, nstep); }
+    coupler.run_module( "radiation"                    , [&] (pam::PamCoupler &coupler) {rad   .timeStep(coupler);} );
+    if (enable_check_state) { pam_debug_check_state(coupler, 4, nstep); }
 
     // Dynamics
     if (enable_physics_tend_stats) { pam_statistics_save_state(coupler); }
@@ -191,13 +192,12 @@ extern "C" void pam_driver() {
     coupler.run_module( "dycore", [&] (pam::PamCoupler &coupler) {dycore.timeStep(coupler);} );
     if (do_density_save_recall)    { pam_state_recall_dry_density(coupler); }
     if (enable_physics_tend_stats) { pam_statistics_aggregate_tendency(coupler,"dycor"); }
-    if (enable_check_state)        { pam_debug_check_state(coupler, 4, nstep); }
+    if (enable_check_state)        { pam_debug_check_state(coupler, 5, nstep); }
 
     // Sponge layer damping
     if (enable_physics_tend_stats) { pam_statistics_save_state(coupler); }
     coupler.run_module( "sponge_layer", modules::sponge_layer );
     if (enable_physics_tend_stats) { pam_statistics_aggregate_tendency(coupler,"sponge"); }
-    // if (enable_check_state)        { pam_debug_check_state(coupler, 4, nstep); }
 
     // Apply hyperdiffusion to account for lack of horizontal mixing in SHOC
     pam_hyperdiffusion(coupler);
@@ -207,13 +207,13 @@ extern "C" void pam_driver() {
     if (enable_physics_tend_stats) { pam_statistics_save_state(coupler); }
     coupler.run_module( "sgs", [&] (pam::PamCoupler &coupler) {sgs   .timeStep(coupler);} );
     if (enable_physics_tend_stats) { pam_statistics_aggregate_tendency(coupler,"sgs"); }
-    if (enable_check_state)        { pam_debug_check_state(coupler, 5, nstep); }
+    if (enable_check_state)        { pam_debug_check_state(coupler, 6, nstep); }
 
     // Microphysics - P3
     if (enable_physics_tend_stats) { pam_statistics_save_state(coupler); }
     coupler.run_module( "micro", [&] (pam::PamCoupler &coupler) {micro .timeStep(coupler);} );
     if (enable_physics_tend_stats) { pam_statistics_aggregate_tendency(coupler,"micro"); }
-    if (enable_check_state)        { pam_debug_check_state(coupler, 6, nstep); }
+    if (enable_check_state)        { pam_debug_check_state(coupler, 7, nstep); }
 
     // CRM mean state acceleration
     if (use_crm_accel && !coupler.get_option<bool>("crm_acceleration_ceaseflag")) {

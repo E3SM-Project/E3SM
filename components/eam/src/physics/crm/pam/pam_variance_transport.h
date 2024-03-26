@@ -2,6 +2,7 @@
 
 #include "pam_coupler.h"
 
+
 inline void pam_variance_transport_init( pam::PamCoupler &coupler ) {
   using yakl::c::parallel_for;
   using yakl::c::SimpleBounds;
@@ -23,6 +24,7 @@ inline void pam_variance_transport_init( pam::PamCoupler &coupler ) {
   dm_device.register_and_allocate<real>("vt_uvel_forcing_tend", "u momentum variance forcing tendency",  {nz,nens}, {"z","nens"} );
   //------------------------------------------------------------------------------------------------
 }
+
 
 inline void pam_variance_transport_diagnose( pam::PamCoupler &coupler ) {
   using yakl::c::parallel_for;
@@ -83,6 +85,7 @@ inline void pam_variance_transport_diagnose( pam::PamCoupler &coupler ) {
   //------------------------------------------------------------------------------------------------
 }
 
+
 inline void pam_variance_transport_compute_forcing( pam::PamCoupler &coupler ) {
   using yakl::c::parallel_for;
   using yakl::c::SimpleBounds;
@@ -135,9 +138,10 @@ inline void pam_variance_transport_apply_forcing( pam::PamCoupler &coupler ) {
   // large-scale forcing from variance transport. This is meant to 
   // protect against creating unstable situations, although 
   // problematic scenarios were extremely rare in testing.
-  // A scaling limit of +/- 10% was found to be adequate.
-  real constexpr pert_scale_min = 1.0 - 0.005;
-  real constexpr pert_scale_max = 1.0 + 0.005;
+  // A scaling limit of +/- 10% was found to be adequate in SAM,
+  // but PAM seems much more sensitive (not sure why), so we use 0.1% here
+  real constexpr pert_scale_min = 1.0 - 0.001;
+  real constexpr pert_scale_max = 1.0 + 0.001;
   //------------------------------------------------------------------------------------------------
   auto temp                 = dm_device.get<real,4>("temp"                );
   auto rhov                 = dm_device.get<real,4>("water_vapor"         );
@@ -162,14 +166,15 @@ inline void pam_variance_transport_apply_forcing( pam::PamCoupler &coupler ) {
   //------------------------------------------------------------------------------------------------
   // calculate scaling factor for local perturbations
   parallel_for( SimpleBounds<2>(nz,nens) , YAKL_LAMBDA (int k, int n) {
+    real tmp;
     // initialize scaling factors to 1.0
     temp_pert_scale(k,n) = 1.0;
     rhov_pert_scale(k,n) = 1.0;
     uvel_pert_scale(k,n) = 1.0;
-    // set scaling factors as long as there are perturbations to scale
-    if (vt_temp(k,n)>0.0) { temp_pert_scale(k,n) = sqrt( 1.0 + crm_dt * vt_temp_forcing_tend(k,n) / vt_temp(k,n) ); }
-    if (vt_rhov(k,n)>0.0) { rhov_pert_scale(k,n) = sqrt( 1.0 + crm_dt * vt_rhov_forcing_tend(k,n) / vt_rhov(k,n) ); }
-    if (vt_uvel(k,n)>0.0) { uvel_pert_scale(k,n) = sqrt( 1.0 + crm_dt * vt_uvel_forcing_tend(k,n) / vt_uvel(k,n) ); }
+    // calculate variance scaling factor
+    tmp = 1.+crm_dt*vt_temp_forcing_tend(k,n)/vt_temp(k,n); if (tmp>0){ temp_pert_scale(k,n) = sqrt(tmp); }
+    tmp = 1.+crm_dt*vt_rhov_forcing_tend(k,n)/vt_rhov(k,n); if (tmp>0){ rhov_pert_scale(k,n) = sqrt(tmp); }
+    tmp = 1.+crm_dt*vt_uvel_forcing_tend(k,n)/vt_uvel(k,n); if (tmp>0){ uvel_pert_scale(k,n) = sqrt(tmp); }
     // enforce minimum scaling
     temp_pert_scale(k,n) = std::max( temp_pert_scale(k,n), pert_scale_min );
     rhov_pert_scale(k,n) = std::max( rhov_pert_scale(k,n), pert_scale_min );
@@ -261,7 +266,6 @@ inline void pam_variance_transport_copy_to_host( pam::PamCoupler &coupler ) {
   vt_temp_feedback_tend.deep_copy_to(output_vt_temp_tend_host);
   vt_rhov_feedback_tend.deep_copy_to(output_vt_rhov_tend_host);
   vt_uvel_feedback_tend.deep_copy_to(output_vt_uvel_tend_host);
-  yakl::fence();
   //------------------------------------------------------------------------------------------------
 }
 
