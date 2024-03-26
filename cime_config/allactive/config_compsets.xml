@@ -354,16 +354,6 @@
 </compset>
 
 <compset>
-  <alias>CRYO1850-TMIX</alias>
-  <lname>1850SOI_EAM%CMIP6_ELM%SPBC_MPASSI%DIB_MPASO%IBPISMFTMIX_MOSART_SGLC_SWAV</lname>
-</compset>
-
-<compset>
-  <alias>CRYO1950-TMIX</alias>
-  <lname>1950SOI_EAM%CMIP6_ELM%SPBC_MPASSI%DIB_MPASO%IBPISMFTMIX_MOSART_SGLC_SWAV</lname>
-</compset>
-
-<compset>
   <alias>CRYO20TR</alias>
   <lname>20TRSOI_EAM%CMIP6_ELM%SPBC_MPASSI%DIB_MPASO%IBPISMF_MOSART_SGLC_SWAV</lname>
 </compset>

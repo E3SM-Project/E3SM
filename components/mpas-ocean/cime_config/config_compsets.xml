@@ -28,30 +28,6 @@
   </compset>
 
   <compset>
-    <alias>CMPASO-JRA1p5</alias>
-    <lname>2000_DATM%JRA-1p5_SLND_DICE%SSMI_MPASO%DATMFORCED_DROF%JRA-1p4-2018-AIS0LIQ_SGLC_SWAV</lname>
-    <support_level>Experimental, under development</support_level>
-  </compset>
-
-  <compset>
-    <alias>CMPASO-JRA1p5-PISMF</alias>
-    <lname>2000_DATM%JRA-1p5_SLND_DICE%SSMI_MPASO%PISMFDATMFORCED_DROF%JRA-1p4-2018-AIS0LIQ_SGLC_SWAV</lname>
-    <support_level>Experimental, under development</support_level>
-  </compset>
-
-  <compset>
-    <alias>CMPASO-JRA1p5-DISMF</alias>
-    <lname>2000_DATM%JRA-1p5_SLND_DICE%SSMI_MPASO%DISMFDATMFORCED_DROF%JRA-1p4-2018-AIS0LIQ_SGLC_SWAV</lname>
-    <support_level>Experimental, under development</support_level>
-  </compset>
-
-  <compset>
-    <alias>CMPASO-JRA1p5-PISMF-TMIX</alias>
-    <lname>2000_DATM%JRA-1p5_SLND_DICE%SSMI_MPASO%PISMFDATMFORCEDTMIX_DROF%JRA-1p4-2018-AIS0LIQ_SGLC_SWAV</lname>
-    <support_level>Experimental, under development</support_level>
-  </compset>
-
-  <compset>
     <alias>GMPAS-NYF</alias>
     <lname>2000_DATM%NYF_SLND_MPASSI_MPASO%DATMFORCED_DROF%NYF_SGLC_SWAV</lname>
   </compset>
@@ -64,11 +40,6 @@
   <compset>
     <alias>GMPAS-NYF-DISMF</alias>
     <lname>2000_DATM%NYF_SLND_MPASSI_MPASO%DISMFDATMFORCED_DROF%NYFAIS45_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>GMPAS-NYF-PISMF-TMIX</alias>
-    <lname>2000_DATM%NYF_SLND_MPASSI_MPASO%PISMFDATMFORCEDTMIX_DROF%NYFAIS45_SGLC_SWAV</lname>
   </compset>
 
   <compset>
@@ -121,11 +92,6 @@
     <lname>2000_DATM%JRA-1p4-2018_SLND_MPASSI_MPASO%DISMFDATMFORCED_DROF%JRA-1p4-2018-AIS0LIQ_SGLC_SWAV</lname>
   </compset>
 
-    <compset>
-    <alias>GMPAS-JRA1p4-PISMF-TMIX</alias>
-    <lname>2000_DATM%JRA-1p4-2018_SLND_MPASSI_MPASO%PISMFDATMFORCEDTMIX_DROF%JRA-1p4-2018-AIS0LIQ_SGLC_SWAV</lname>
-  </compset>
-
   <compset>
     <alias>GMPAS-JRA1p4-DIB</alias>
     <lname>2000_DATM%JRA-1p4-2018_SLND_MPASSI%DIB_MPASO%IBDATMFORCED_DROF%JRA-1p4-2018-AIS0ICE_SGLC_SWAV</lname>
@@ -141,11 +107,6 @@
     <lname>2000_DATM%JRA-1p4-2018_SLND_MPASSI%DIB_MPASO%IBDISMFDATMFORCED_DROF%JRA-1p4-2018-AIS0ROF_SGLC_SWAV</lname>
   </compset>
 
-    <compset>
-    <alias>GMPAS-JRA1p4-DIB-PISMF-TMIX</alias>
-    <lname>2000_DATM%JRA-1p4-2018_SLND_MPASSI%DIB_MPASO%IBPISMFDATMFORCEDTMIX_DROF%JRA-1p4-2018-AIS0ROF_SGLC_SWAV</lname>
-  </compset>
-
   <compset>
     <alias>GMPAS-IAF-PISMF</alias>
     <lname>2000_DATM%IAF_SLND_MPASSI_MPASO%PISMFDATMFORCED_DROF%IAFAIS45_SGLC_SWAV</lname>
@@ -154,11 +115,6 @@
   <compset>
     <alias>GMPAS-IAF-DISMF</alias>
     <lname>2000_DATM%IAF_SLND_MPASSI_MPASO%DISMFDATMFORCED_DROF%IAFAIS45_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>GMPAS-IAF-PISMF-TMIX</alias>
-    <lname>2000_DATM%IAF_SLND_MPASSI_MPASO%PISMFDATMFORCEDTMIX_DROF%IAFAIS45_SGLC_SWAV</lname>
   </compset>
 
   <compset>
@@ -177,11 +133,6 @@
   </compset>
 
   <compset>
-    <alias>GMPAS-DIB-NYF-PISMF-TMIX</alias>
-    <lname>2000_DATM%NYF_SLND_MPASSI%DIB_MPASO%IBPISMFDATMFORCEDTMIX_DROF%NYFAIS00_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
     <alias>GMPAS-DIB-IAF</alias>
     <lname>2000_DATM%IAF_SLND_MPASSI%DIB_MPASO%IBDATMFORCED_DROF%IAFAIS55_SGLC_SWAV</lname>
   </compset>
@@ -194,11 +145,6 @@
   <compset>
     <alias>GMPAS-DIB-IAF-DISMF</alias>
     <lname>2000_DATM%IAF_SLND_MPASSI%DIB_MPASO%IBDISMFDATMFORCED_DROF%IAFAIS00_SGLC_SWAV</lname>
-  </compset>
-
-    <compset>
-    <alias>GMPAS-DIB-IAF-PISMF-TMIX</alias>
-    <lname>2000_DATM%IAF_SLND_MPASSI%DIB_MPASO%IBPISMFDATMFORCEDTMIX_DROF%IAFAIS00_SGLC_SWAV</lname>
   </compset>
 
   <compset>
