@@ -261,11 +261,11 @@ void MAMWetscav::set_grids(
                       grid_name);  // vertical pressure velocity
 
   // FIXME: units
-  add_field<Required>("dlf", scalar3d_layout_mid, n_unit,
+  add_field<Updated>("dlf", scalar3d_layout_mid, n_unit,
                       grid_name);  //
-  add_field<Required>("dp_ccf", scalar3d_layout_mid, n_unit,
+  add_field<Updated>("dp_ccf", scalar3d_layout_mid, n_unit,
                       grid_name);  //
-  add_field<Required>("sh_ccf", scalar3d_layout_mid, n_unit,
+  add_field<Updated>("sh_ccf", scalar3d_layout_mid, n_unit,
                       grid_name);  //
   //
   add_field<Computed>("aerdepwetis", scalar3d_layout_mid, n_unit,
@@ -399,8 +399,10 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
   // wetdep
   constexpr int pcnst = mam4::aero_model::pcnst;
   // FIXME: qqcw_sav_ should be part of work_
-  Kokkos::View<Real * [mam4::aero_model::maxd_aspectype + 2][pcnst]>
-        qqcw_sav_("qqcw_sav", mam4::nlev);
+  // we need to add columns
+  qqcw_sav_ =Kokkos::View<Real * [mam4::aero_model::maxd_aspectype + 2][pcnst]>("qqcw_sav", mam4::nlev);
+
+
   const int work_len = mam4::wetdep::get_aero_model_wetdep_work_len();
   work_ = view_2d("work", ncol_, work_len);
 }
@@ -449,30 +451,33 @@ void MAMWetscav::run_impl(const double dt) {
   const auto &qqcw_sav = qqcw_sav_;
   const auto &work = work_;
 
-  // inputs
-  auto dlf = get_field_in("dlf").get_view<Real**>();
-  auto dp_ccf = get_field_in("dp_ccf").get_view<Real**>();
-  auto sh_ccf = get_field_in("sh_ccf").get_view<Real**>();
+  // inputs/outputs
+  auto dlf = get_field_out("dlf").get_view<Real**>();
+  auto dp_ccf = get_field_out("dp_ccf").get_view<Real**>();
+  auto sh_ccf = get_field_out("sh_ccf").get_view<Real**>();
+
   auto cldn_prev_step = get_field_out("cldn_prev_step").get_view< Real **>();
+
   // where is cldt_prev_step used?
-  auto cldt_prev_step = get_field_in("cldt_prev_step").get_view< Real **>(); //FIXME: Is it same as cldn_prev_step??
-  auto cldst = get_field_in("cldst").get_view< Real **>();//??
-  auto evapr = get_field_in("evapr").get_view< Real **>();
-  auto rprdsh = get_field_in("rprdsh").get_view<Real **>();  // rain production, shallow
-                                                             // convection [kg/kg/s]
-  auto evapcsh = get_field_in("evapcsh").get_view<Real **>();  // Evaporation rate of shallow convective
+  auto cldt_prev_step = get_field_out("cldt_prev_step").get_view< Real **>(); //FIXME: Is it same as cldn_prev_step??
+  auto cldst = get_field_out("cldst").get_view< Real **>();//??
+  auto evapr = get_field_out("evapr").get_view< Real **>();
+  auto rprdsh = get_field_out("rprdsh").get_view<Real **>();  // rain production, shallow
+
+                                                          // convection [kg/kg/s]
+  auto evapcsh = get_field_out("evapcsh").get_view<Real **>();  // Evaporation rate of shallow convective
                                  // precipitation >=0. [kg/kg/s]
-  auto sh_frac = get_field_in("sh_frac").get_view<Real **>(); // Shallow convective cloud fraction [fraction]
-  auto rprddp = get_field_in("rprddp").get_view<Real **>();  // rain production, deep convection [kg/kg/s]
-  auto evapcdp = get_field_in("evapcdp").get_view<Real **>();  //  Evaporation rate of deep convective
+  auto sh_frac = get_field_out("sh_frac").get_view<Real **>(); // Shallow convective cloud fraction [fraction]
+  auto rprddp = get_field_out("rprddp").get_view<Real **>();  // rain production, deep convection [kg/kg/s]
+  auto evapcdp = get_field_out("evapcdp").get_view<Real **>();  //  Evaporation rate of deep convective
                                         //  precipitation >=0. [kg/kg/s]
-  auto dp_frac = get_field_in("dp_frac")
+  auto dp_frac = get_field_out("dp_frac")
                  .get_view<Real **>(); // Deep convective cloud fraction [fraction]
 
-  auto icwmrsh = get_field_in("icwmrsh")
+  auto icwmrsh = get_field_out("icwmrsh")
                  .get_view<Real **>(); // ??
 
-  auto icwmrdp = get_field_in("icwmrdp")
+  auto icwmrdp = get_field_out("icwmrdp")
                  .get_view<Real **>(); // ??
 
   // outputs
@@ -531,7 +536,8 @@ void MAMWetscav::run_impl(const double dt) {
         // diags.aerosol_wet_deposition_cloud_water;
         auto aerdepwetcw_icol  = ekat::subview(aerdepwetcw, icol);\
         auto work_icol = ekat::subview(work, icol);
-
+        // auto qqcw_sav_icol = ekat::subview(qqcw_sav,icol);
+#if 1
         mam4::wetdep::aero_model_wetdep(team, atm, progs, tends, dt,
                                     // inputs
                                     cldn_prev_step_icol, rprdsh_icol, rprddp_icol, evapcdp_icol,
@@ -542,6 +548,7 @@ void MAMWetscav::run_impl(const double dt) {
                                      aerdepwetis_icol, aerdepwetcw_icol,
                                     // FIXME remove qqcw_sav
                                     qqcw_sav, work_icol);
+#endif
       });  // icol parallel_for loop
 
   /*

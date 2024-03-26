@@ -61,7 +61,9 @@ initial_conditions:
   cldfrac_tot: 0.5
   pbl_height: 25.0
   phis : 0.1
-
+  dlf : 0.0
+  dp_ccf : 0.0
+  sh_ccf : 0.0
 # The parameters for I/O control
 Scorpio:
   output_yaml_files: ["output.yaml"]
