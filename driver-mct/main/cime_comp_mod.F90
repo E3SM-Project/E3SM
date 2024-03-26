@@ -2759,6 +2759,10 @@ contains
        ! Does the driver need to pause?
        drv_pause = pause_alarm .and. seq_timemgr_pause_component_active(drv_index)
 
+       ! Monitor each component's restart alarm. Determine when to prepare
+       ! backup copies of the rpointer files and when it's OK to remove
+       ! these. .false. on input means never to force removal of the backup
+       ! files until the monitor's state machine says they can be removed.
        call rpointer_manage(.false.)
 
        if (glc_prognostic .or. do_hist_l2x1yrg) then
@@ -3588,6 +3592,10 @@ contains
     call component_final(EClock_l, lnd, lnd_final)
     call component_final(EClock_a, atm, atm_final)
 
+    ! Finalize the rpointer manager. The manager can't always tell the earliest
+    ! time at which it can safely remove the backup rpointer files; pass
+    ! .true. here to force their removal if they still exist, because we now are
+    ! certain they can be removed.
     call rpointer_manage(.true.)
 
     !------------------------------------------------------------------------
@@ -5237,7 +5245,8 @@ contains
           end if
        end do
        if (.not. complete) then
-          call shr_sys_abort('rpointer_manage: rpointer.x.prev files exist but rpointer.y &
+          call shr_sys_abort('rpointer_prepare_restart: &
+               &rpointer.x.prev files exist but rpointer.y &
                &has no corresponding rpointer.y.prev file.')
        end if
     end if
@@ -5276,7 +5285,8 @@ contains
        if (sleep_len > 8) exit
     end do
     if (.not. ok) then
-       call shr_sys_abort('rpointer_manage: Could not copy rpointer.x.prev to rpointer.x')
+       call shr_sys_abort('rpointer_prepare_restart: &
+            &Could not copy rpointer.x.prev to rpointer.x')
     end if
     ! This rank is consistent. Wait for everyone else.
     call mpi_barrier(mpicom_GLOID, rcode)
