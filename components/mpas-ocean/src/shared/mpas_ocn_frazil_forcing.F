@@ -618,7 +618,6 @@ contains
            ! for freshwater budgets
            accumulatedLandIceFrazilMassNew(iCell) = accumulatedLandIceFrazilMassOld(iCell) &
                                                   + sumNewFrazilIceThickness * config_frazil_ice_density
-           ! There is no accumulatedLandIceFrazilSalinity because it is always 0
         end if
 
       enddo   ! do iCell = 1, nCells
