@@ -288,6 +288,8 @@ def buildnml(case, caseroot, compname):
             ic_prefix = 'mpaso.FRISwISC08to60E3r1.rstFromG-anvil'   # the spun up file does not yet exist
         if ocn_ismf == 'data':
             data_ismf_file = 'prescribed_ismf_adusumilli2020.FRISwISC08to60E3r1.20230913.nc'
+        if ocn_tidal_mixing == 'true':
+            u_tidal_rms_file = 'velocityTidalRMS_CATS2008.FRISwISC08to60E3r1.20230913.nc'
 
     elif ocn_grid == 'FRISwISC04to60E3r1':
         decomp_date = '20230913'  # changed to date of partiotions in ../files_for_e3sm/assembled_files/inputdata/ocn/mpas-o/FRISwISC04to60E3r1/partitions
@@ -301,6 +303,8 @@ def buildnml(case, caseroot, compname):
             ic_prefix = 'mpaso.FRISwISC04to60E3r1.rstFromG-anvil'   # the spun up file does not yet exist
         if ocn_ismf == 'data':
             data_ismf_file = 'prescribed_ismf_adusumilli2020.FRISwISC04to60E3r1.20230913.nc'
+        if ocn_tidal_mixing == 'true':
+            u_tidal_rms_file = 'velocityTidalRMS_CATS2008.FRISwISC04to60E3r1.20230913.nc'
 
     elif ocn_grid == 'FRISwISC02to60E3r1':
         decomp_date = '20230914'  # changed to date of partiotions in ../files_for_e3sm/assembled_files/inputdata/ocn/mpas-o/FRISwISC02to60E3r1/partitions
@@ -314,6 +318,8 @@ def buildnml(case, caseroot, compname):
             ic_prefix = 'mpaso.FRISwISC02to60E3r1.rstFromG-anvil'   # the spun up file does not yet exist
         if ocn_ismf == 'data':
             data_ismf_file = 'prescribed_ismf_adusumilli2020.FRISwISC02to60E3r1.20230914.nc'
+        if ocn_tidal_mixing == 'true':
+            u_tidal_rms_file = 'velocityTidalRMS_CATS2008.FRISwISC02to60E3r1.20230914.nc'
 
     elif ocn_grid == 'FRISwISC01to60E3r1':
         decomp_date = '20230915'  # changed to date of partiotions in ../files_for_e3sm/assembled_files/inputdata/ocn/mpas-o/FRISwISC01to60E3r1/partitions
@@ -327,6 +333,8 @@ def buildnml(case, caseroot, compname):
             ic_prefix = 'mpaso.FRISwISC01to60E3r1.rstFromG-anvil'   # the spun up file does not yet exist
         if ocn_ismf == 'data':
             data_ismf_file = 'prescribed_ismf_adusumilli2020.FRISwISC01to60E3r1.20230915.nc'
+        if ocn_tidal_mixing == 'true':
+            u_tidal_rms_file = 'velocityTidalRMS_CATS2008.FRISwISC01to60E3r1.20230915.nc'
 
     elif ocn_grid == 'ECwISC30to60E2r1':
         decomp_date = '200915'
