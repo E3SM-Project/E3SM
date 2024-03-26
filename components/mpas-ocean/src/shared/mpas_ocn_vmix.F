@@ -1583,9 +1583,26 @@ contains
                !$acc enter data copyin(tracerGroupSurfaceFlux)
 #endif
 
-               call ocn_tracer_vmix_tend_implicit(dt, vertDiffTopOfCell, layerThickness, tracersGroup, &
+               if (trim(groupItr % memberName) /= 'activeTracers' .and. &
+                   config_cvmix_background_diffusion_passive_enable) then
+                      vertDiffPassiveTopOfCell = vertDiffTopOfCell - &
+                         config_cvmix_background_diffusion + config_cvmix_background_diffusion_passive
+#ifdef MPAS_OPENACC
+                      !$acc update host (vertDiffPassiveTopOfCell)
+#endif
+!maltrud debug
+ do k = 1, maxLevelCell(1)
+  write(*,*)' DEBUG01: ',k,vertDiffPassiveTopOfCell(k,1)
+ enddo
+
+                      call ocn_tracer_vmix_tend_implicit(dt, vertDiffPassiveTopOfCell, layerThickness, tracersGroup, &
                         vertNonLocalFlux, tracerGroupSurfaceFlux,  &
                         config_cvmix_kpp_nonlocal_with_implicit_mix, err)
+               else
+                      call ocn_tracer_vmix_tend_implicit(dt, vertDiffTopOfCell, layerThickness, tracersGroup, &
+                        vertNonLocalFlux, tracerGroupSurfaceFlux,  &
+                        config_cvmix_kpp_nonlocal_with_implicit_mix, err)
+               end if
 #ifdef MPAS_OPENACC
                !$acc exit data delete(tracerGroupSurfaceFlux)
 #endif
