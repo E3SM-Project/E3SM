@@ -369,6 +369,10 @@
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oQU120">24</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oEC60to30v3">48</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%ECwISC30to60E1r2">48</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%FRISwISC08to60E3r1">180</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%FRISwISC04to60E3r1">360</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%FRISwISC02to60E3r1">720</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%FRISwISC01to60E3r1">1440</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%EC30to60E2r2">48</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%WC14to60E2r3">48</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oRRS30to10v3">96</value>

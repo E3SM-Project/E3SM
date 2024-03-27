@@ -4485,8 +4485,10 @@ contains
          ke_cell_flag = 1
       endif
 
-      if ((trim(config_time_integrator) == 'RK4') .or.(trim(config_time_integrator) == 'LTS') ) then
-         ! For RK4 or LTS, PV includes f: PV = (eta+f)/h.
+      if ( (trim(config_time_integrator) == 'RK4') &
+           .or. (trim(config_time_integrator) == 'LTS') &
+           .or. (trim(config_time_integrator) == 'FB_LTS') ) then
+         ! For RK4, LTS, or FB_LTS, PV includes f: PV = (eta+f)/h.
          fCoef = 1
       elseif (trim(config_time_integrator) == 'split_explicit' &
         .or.trim(config_time_integrator) == 'unsplit_explicit' &
