@@ -623,7 +623,6 @@ contains
 
       ! set time steps
       dt = dtime_mod
-      nstep = get_nstep()
       kyr = year_curr; kmo = mon_curr; kda = day_curr; mcsec = secs_curr;
 
       err_found = .false.
