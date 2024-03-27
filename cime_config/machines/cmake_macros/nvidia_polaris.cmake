@@ -1,0 +1,7 @@
+string(APPEND CONFIG_ARGS " --host=cray")
+if (COMP_NAME STREQUAL gptl)
+  string(APPEND CPPDEFS " -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_GETTIMEOFDAY")
+endif()
+set(SCC "cc")
+set(SCXX "CC")
+set(SFC "ftn")

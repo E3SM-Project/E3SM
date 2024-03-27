@@ -16,8 +16,8 @@ if (TARGET mct)
 endif()
 
 # Look for libmct in INSTALL_SHAREDPATH/lib
-find_library(MCT_LIB  mct  REQUIRED PATHS ${INSTALL_SHAREDPATH}/lib)
-find_library(MPEU_LIB mpeu REQUIRED PATHS ${INSTALL_SHAREDPATH}/lib $ENV{mct_ROOT})
+find_library(MCT_LIB  mct  REQUIRED HINTS ${INSTALL_SHAREDPATH}/lib)
+find_library(MPEU_LIB mpeu REQUIRED HINTS ${INSTALL_SHAREDPATH}/lib $ENV{mct_ROOT})
 
 # Create the interface library, and set target properties
 add_library(mct INTERFACE)

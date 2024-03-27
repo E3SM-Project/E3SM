@@ -201,8 +201,8 @@
 					possible_values="Any time stamp in 'YYYY-MM-DD_hh:mm:ss' format. Items can be removed from the left if they are unused."
 		/>
 		<nml_option name="config_time_integrator" type="character" default_value="split_explicit_ab2"
-					description="Time integration method."
-					possible_values="'split_explicit', 'RK4', 'unsplit_explicit', 'split_implicit', 'LTS', 'split_explicit_ab2'"
+					description="Time integration method. These options are only supported in standalone, not E3SM: 'LTS', 'FB_LTS'."
+					possible_values="'split_explicit', 'RK4', 'unsplit_explicit', 'split_implicit', 'split_explicit_ab2', 'LTS', 'FB_LTS'"
 		/>
 		<nml_option name="config_number_of_time_levels" type="integer" default_value="2"
 					description="The number of time levels in the time-stepping scheme. This is used for array allocation."
@@ -1194,6 +1194,20 @@
 		<nml_option name="config_dt_scaling_LTS" type="integer" default_value="1"
 					description="The ratio between the dt on the coarse region and the dt on the fine region. Specifically, it is the positive integer M that defines dtFine for LTS, dtFine = dt / M."
 					possible_values="Any positive integer greater than or equal to one. A value of one employs the same dt in all regions."
+		/>
+	</nml_record>
+    <nml_record name="forward_backward" mode="forward">
+		<nml_option name="config_fb_weight_1" type="real" default_value="0.531"
+					description="The forward-backward weight for the first stage of FB-RK(3,2), used in FB_LTS."
+					possible_values="Any positive real number less than or equal to one."
+		/>
+		<nml_option name="config_fb_weight_2" type="real" default_value="0.531"
+					description="The forward-backward weight for the second stage of FB-RK(3,2), used in FB_LTS."
+					possible_values="Any positive real number less than or equal to one."
+		/>
+		<nml_option name="config_fb_weight_3" type="real" default_value="0.313"
+					description="The forward-backward weight for the third stage of FB-RK(3,2), used in FB_LTS."
+					possible_values="Any positive real number less than or equal to one."
 		/>
 	</nml_record>
 	<nml_record name="pressure_gradient" mode="forward">

@@ -1,0 +1,3 @@
+fates_paramfile = '$SRCROOT/src/fates/parameter_files/fates_params_seeddisp_4x5.nc'
+fates_seeddisp_cadence = 1
+hist_fincl1       = 'FATES_SEEDS_IN_GRIDCELL_PF', 'FATES_SEEDS_OUT_GRIDCELL_PF'

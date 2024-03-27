@@ -30,7 +30,6 @@ module mpas_moabmesh
      iMOAB_ResolveSharedEntities, iMOAB_DetermineGhostEntities, &
      iMOAB_DefineTagStorage,  iMOAB_SetIntTagStorage , &
      iMOAB_UpdateMeshInfo, iMOAB_SetDoubleTagStorage
-    use seq_flds_mod, only: seq_flds_dom_fields
 
     type (domain_type), intent(inout) :: domain
     integer , intent(in) :: ext_comp_id
@@ -187,14 +186,12 @@ module mpas_moabmesh
          data(n)=areaCell(ic) / (sphere_radius * sphere_radius)
        enddo
 
-       ! add domain tags
-       tagname=trim(seq_flds_dom_fields)//C_NULL_CHAR
-       tagtype = 1
-       ierr = iMOAB_DefineTagStorage(pid, tagname, tagtype, numco,  tagindex )
-       if (ierr > 0 )  &
-          call errorout(ierr, 'Error: fail to define domain tags ')
-
        tagname='area'//C_NULL_CHAR
+       tagtype = 1  ! dense, real
+       numco = 1
+       ierr = iMOAB_DefineTagStorage(pid, tagname, tagtype, numco,  tagindex )
+       call errorout(ierr, 'fail to define area tag')
+
        ierr = iMOAB_SetDoubleTagStorage ( pid, tagname, nCellsSolve , ent_type, data)
        if (ierr > 0 )  &
           call errorout(ierr,'Error: fail to set area tag ')
