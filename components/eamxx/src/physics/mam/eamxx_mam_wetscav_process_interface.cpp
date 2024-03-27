@@ -64,6 +64,8 @@ void MAMWetscav::set_grids(
   // interfaces
   const FieldLayout scalar2d_layout_mid{{COL}, {ncol_}};
 
+  FieldLayout scalar3d_layout_int{{COL, ILEV}, {ncol_, nlev_ + 1}};
+
   // -------------------------------------------------------------------------------------------------------------------------
   // These variables are "required" or pure inputs for the process
   // -------------------------------------------------------------------------------------------------------------------------
@@ -77,6 +79,8 @@ void MAMWetscav::set_grids(
                       "tracers");  // liquid cloud water [kg/kg] wet
   add_field<Required>("qi", scalar3d_layout_mid, q_unit, grid_name,
                       "tracers");  // ice cloud water [kg/kg] wet
+  add_field<Required>("p_int", scalar3d_layout_int, Pa,
+                      grid_name);  // total pressure
 
   // -- Input variables that exists in PBUF in EAM
   static constexpr auto nondim =
@@ -321,7 +325,7 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
   dry_atm_.T_mid = get_field_in("T_mid").get_view<const Real **>();
   dry_atm_.p_mid = get_field_in("p_mid").get_view<const Real **>();
   dry_atm_.p_del = get_field_in("pseudo_density").get_view<const Real **>();
-
+  dry_atm_.p_int = get_field_in("p_int").get_view<const Real **>();
   // How "buffer_" works: We use buffer to allocate memory for the members of
   // dry_atm_ object. Here we are providing those memory locations to the
   // dry_atm_ members. These members are computed from the above wet_atm_ or
