@@ -1066,10 +1066,11 @@ void MAMAci::initialize_impl(const RunType run_type) {
       get_field_out("activation_fraction_coarse").get_view<Real **>();
 
   // allocate work
-
+  // FIXME: store 25 into a const var or get from MAM4xx
   for(int icnst = 0; icnst < 25; ++icnst) {
     qqcw_fld_work_[icnst] = view_2d("qqcw_fld_work_", ncol_, nlev_);
   }
+  // FIXME :store 40 in a const int or get from MAM4xx
   state_q_work_ = view_3d("state_q_work_", ncol_, nlev_, 40);
 
   // interstitial and cloudborne aerosol tracers of interest: mass (q) and
