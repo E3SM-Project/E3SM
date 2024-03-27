@@ -551,6 +551,21 @@ module li_subglacial_hydro
          call mpas_timer_stop("halo updates")
       endif
 
+      ! =============
+      ! Calculate total grounding line discharges
+      ! =============
+      block => domain % blocklist
+      do while (associated(block))
+
+         call calc_gl_totals(block, err_tmp)
+         err = ior(err, err_tmp)
+
+         block => block % next
+      end do
+      call mpas_timer_start("halo updates")
+      call mpas_dmpar_field_halo_exch(domain, 'totalGroundingLineDischargeCell')
+      call mpas_dmpar_field_halo_exch(domain, 'totalGroundingLineDischargeEdge')
+      call mpas_timer_stop("halo updates")
 
       ! =============
       ! Update water layer thickness
@@ -1887,28 +1902,6 @@ module li_subglacial_hydro
     
       channelChangeRate = channelOpeningRate - channelClosingRate
      
-      totalGroundingLineDischargeCell(:) = 0.0_RKIND
-      totalGroundingLineDischargeEdge(:) = 0.0_RKIND
-      do iEdge = 1, nEdgesSolve
-         cell1 = cellsOnEdge(1, iEdge)
-         cell2 = cellsOnEdge(2, iEdge)
-         
-         if (hydroMarineMarginMask(iEdge) == 1) then
-            ! We are looking for edges with 1 cell grounded ice and the
-            ! other cell floating ice or open ocean
-            if ( (li_mask_is_grounded_ice(cellMask(cell1))) .and. &
-                 (li_mask_is_floating_ice(cellMask(cell2)) .or. &
-                 ((bedTopography(cell2) < config_sea_level) .and. (.not. li_mask_is_ice(cellMask(cell2)))) ) ) then
-               totalGroundingLineDischargeEdge(iEdge) = abs(channelDischarge(iEdge)) +abs( waterFlux(iEdge) * dvEdge(iEdge))
-               totalGroundingLineDischargeCell(cell2) = totalGroundingLineDischargeCell(cell2) + totalGroundingLineDischargeEdge(iEdge)
-            elseif ( (li_mask_is_grounded_ice(cellMask(cell2))) .and. &
-                     (li_mask_is_floating_ice(cellMask(cell1)) .or. &
-                     ((bedTopography(cell1) < config_sea_level) .and. (.not. li_mask_is_ice(cellMask(cell1)))) ) ) then
-               totalGroundingLineDischargeEdge(iEdge) = abs(channelDischarge(iEdge)) + abs(waterFlux(iEdge) * dvEdge(iEdge))
-               totalGroundingLineDischargeCell(cell1) = totalGroundingLineDischargeCell(cell1) + totalGroundingLineDischargeEdge(iEdge)
-            endif
-         endif
-      enddo
    !--------------------------------------------------------------------
    end subroutine update_channel
 
@@ -2309,5 +2302,97 @@ module li_subglacial_hydro
 
    !--------------------------------------------------------------------
    end subroutine calc_hydro_mask
+
+!***********************************************************************
+!
+!  routine calc_gl_total
+!
+!> \brief   Calculate total grounding line discharge on edges and
+!           adjacent cells
+!> \author  Alex Hager
+!> \date    27 March 2024
+!> \details
+!-----------------------------------------------------------------------
+   subroutine calc_gl_totals(block, err)
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+      type (block_type), intent(inout) :: block    !< Input/Output: block object
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      type (mpas_pool_type), pointer :: hydroPool
+      type (mpas_pool_type), pointer :: geometryPool
+      type (mpas_pool_type), pointer :: meshPool
+
+      real (kind=RKIND), dimension(:), pointer :: totalGroundingLineDischargeCell
+      real (kind=RKIND), dimension(:), pointer :: totalGroundingLineDischargeEdge
+      real (kind=RKIND), dimension(:), pointer :: bedTopography
+      real (kind=RKIND), dimension(:), pointer :: channelDischarge
+      real (kind=RKIND), dimension(:), pointer :: waterFlux
+      real (kind=RKIND), dimension(:), pointer :: dvEdge
+      integer iEdge, cell1, cell2
+      integer, pointer :: nEdgesSolve
+      integer, dimension(:,:), pointer :: cellsOnEdge
+      integer, dimension(:), pointer :: hydroMarineMarginMask
+      integer, dimension(:), pointer :: cellMask
+      real (kind=RKIND), pointer :: config_sea_level
+
+      call mpas_pool_get_subpool(block % structs, 'hydro', hydroPool)
+      call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+      call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+      
+      call mpas_pool_get_array(hydroPool, 'totalGroundingLineDischargeCell', totalGroundingLineDischargeCell)
+      call mpas_pool_get_array(hydroPool, 'totalGroundingLineDischargeEdge', totalGroundingLineDischargeEdge)
+      call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
+      call mpas_pool_get_array(hydroPool, 'channelDischarge', channelDischarge)
+      call mpas_pool_get_array(hydroPool, 'waterFlux', waterFlux)
+      call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+      call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
+      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(hydroPool, 'hydroMarineMarginMask', hydroMarineMarginMask)
+      call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+      call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
+
+      totalGroundingLineDischargeCell(:) = 0.0_RKIND
+      totalGroundingLineDischargeEdge(:) = 0.0_RKIND
+      
+      do iEdge = 1, nEdgesSolve
+         cell1 = cellsOnEdge(1, iEdge)
+         cell2 = cellsOnEdge(2, iEdge)
+         
+         if (hydroMarineMarginMask(iEdge) == 1) then
+            ! We are looking for edges with 1 cell grounded ice and the
+            ! other cell floating ice or open ocean
+            if ( (li_mask_is_grounded_ice(cellMask(cell1))) .and. &
+                 (li_mask_is_floating_ice(cellMask(cell2)) .or. &
+                 ((bedTopography(cell2) < config_sea_level) .and. (.not. li_mask_is_ice(cellMask(cell2)))) ) ) then
+               totalGroundingLineDischargeEdge(iEdge) = abs(channelDischarge(iEdge)) +abs( waterFlux(iEdge) * dvEdge(iEdge))
+               totalGroundingLineDischargeCell(cell2) = totalGroundingLineDischargeCell(cell2) + totalGroundingLineDischargeEdge(iEdge)
+            elseif ( (li_mask_is_grounded_ice(cellMask(cell2))) .and. &
+                     (li_mask_is_floating_ice(cellMask(cell1)) .or. &
+                     ((bedTopography(cell1) < config_sea_level) .and. (.not. li_mask_is_ice(cellMask(cell1)))) ) ) then
+               totalGroundingLineDischargeEdge(iEdge) = abs(channelDischarge(iEdge)) + abs(waterFlux(iEdge) * dvEdge(iEdge))
+               totalGroundingLineDischargeCell(cell1) = totalGroundingLineDischargeCell(cell1) + totalGroundingLineDischargeEdge(iEdge)
+            endif
+         endif
+      enddo
+   end subroutine calc_gl_totals
 
 end module li_subglacial_hydro
