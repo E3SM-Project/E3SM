@@ -2250,8 +2250,8 @@
       <file grid="ice|ocn" mask="ECwISC30to60E2r1">$DIN_LOC_ROOT/share/domains/domain.ocn.TL319_ECwISC30to60E2r1.201007.nc</file>
       <file grid="atm|lnd" mask="oRRS18to6v3">$DIN_LOC_ROOT/share/domains/domain.lnd.TL319_oRRS18to6v3.220124.nc</file>
       <file grid="ice|ocn" mask="oRRS18to6v3">$DIN_LOC_ROOT/share/domains/domain.ocn.TL319_oRRS18to6v3.220124.nc</file>
-      <file grid="atm|lnd" mask="Kuroshio8to60E2r4">$DIN_LOC_ROOT/share/domains/domain.lnd.TL319_Kuroshio8to60E2r4.240319.nc</file>
-      <file grid="ice|ocn" mask="Kuroshio8to60E2r4">$DIN_LOC_ROOT/share/domains/domain.ocn.TL319_Kuroshio8to60E2r4.240319.nc</file>
+      <file grid="atm|lnd" mask="Kuroshio8to60E2r4">$DIN_LOC_ROOT/share/domains/domain.lnd.TL319_Kuroshio8to60E2r4.240327.nc</file>
+      <file grid="ice|ocn" mask="Kuroshio8to60E2r4">$DIN_LOC_ROOT/share/domains/domain.ocn.TL319_Kuroshio8to60E2r4.240327.nc</file>
       <desc>TL319 is JRA lat/lon grid:</desc>
     </domain>
 
@@ -2351,8 +2351,8 @@
       <file grid="ice|ocn" mask="SOwISC12to60E2r4">$DIN_LOC_ROOT/share/domains/domain.ocn.ne30pg2_SOwISC12to60E2r4.210119.nc</file>
       <file grid="atm|lnd" mask="ECwISC30to60E2r1">$DIN_LOC_ROOT/share/domains/domain.lnd.ne30pg2_ECwISC30to60E2r1.201007.nc</file>
       <file grid="ice|ocn" mask="ECwISC30to60E2r1">$DIN_LOC_ROOT/share/domains/domain.ocn.ne30pg2_ECwISC30to60E2r1.201007.nc</file>
-      <file grid="atm|lnd" mask="Kuroshio8to60E2r4">$DIN_LOC_ROOT/share/domains/domain.lnd.ne30pg2_Kuroshio8to60E2r4.240123.nc</file>
-      <file grid="ice|ocn" mask="Kuroshio8to60E2r4">$DIN_LOC_ROOT/share/domains/domain.ocn.ne30pg2_Kuroshio8to60E2r4.240123.nc</file>
+      <file grid="atm|lnd" mask="Kuroshio8to60E2r4">$DIN_LOC_ROOT/share/domains/domain.lnd.ne30pg2_Kuroshio8to60E2r4.240327.nc</file>
+      <file grid="ice|ocn" mask="Kuroshio8to60E2r4">$DIN_LOC_ROOT/share/domains/domain.ocn.ne30pg2_Kuroshio8to60E2r4.240327.nc</file>
       <file grid="atm|lnd" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.lnd.ne30pg2_gx1v6.190806.nc</file>
       <file grid="ice|ocn" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.ocn.ne30pg2_gx1v6.190806.nc</file>
       <desc>ne30np4.pg2 is Spectral Elem 1-deg grid w/ 2x2 FV physics grid per element:</desc>
@@ -2591,7 +2591,7 @@
     <domain name="Kuroshio8to60E2r4">
       <nx>457732</nx>
       <ny>1</ny>
-      <file grid="ice|ocn">$DIN_LOC_ROOT/share/domains/domain.ocn.Kuroshio8to60E2r4.240123.nc</file>
+      <file grid="ice|ocn">$DIN_LOC_ROOT/share/domains/domain.ocn.Kuroshio8to60E2r4.240327.nc</file>
       <desc>Kuroshio8to60E2r4 is a MPAS ice/ocean grid generated with the jigsaw/compass process using the eddy closure density function that has 8km gridcells at the Kuroshio, the rest is EC30to60:</desc>
     </domain>
 
@@ -3051,11 +3051,11 @@
     </gridmap>
 
     <gridmap atm_grid="ne30np4.pg2" ocn_grid="Kuroshio8to60E2r4">
-      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_Kuroshio8to60E2r4_traave.20240123.nc</map>
-      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_Kuroshio8to60E2r4_trbilin.20240123.nc</map>
-      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_Kuroshio8to60E2r4_trbilin.20240123.nc</map>
-      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/Kuroshio8to60E2r4/map_Kuroshio8to60E2r4_to_ne30pg2_traave.20240123.nc</map>
-      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/Kuroshio8to60E2r4/map_Kuroshio8to60E2r4_to_ne30pg2_traave.20240123.nc</map>
+      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_Kuroshio8to60E2r4_traave.20240327.nc</map>
+      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_Kuroshio8to60E2r4_trbilin.20240327.nc</map>
+      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_Kuroshio8to60E2r4_trbilin.20240327.nc</map>
+      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/Kuroshio8to60E2r4/map_Kuroshio8to60E2r4_to_ne30pg2_traave.20240327.nc</map>
+      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/Kuroshio8to60E2r4/map_Kuroshio8to60E2r4_to_ne30pg2_traave.20240327.nc</map>
     </gridmap>
 
     <gridmap atm_grid="ne30np4.pg3" ocn_grid="oEC60to30v3">
@@ -3765,11 +3765,11 @@
     </gridmap>
 
     <gridmap atm_grid="TL319" ocn_grid="Kuroshio8to60E2r4">
-      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/TL319/map_TL319_to_Kuroshio8to60E2r4_traave.20240319.nc</map>
-      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/TL319/map_TL319_to_Kuroshio8to60E2r4_trbilin.20240319.nc</map>
-      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/TL319/map_TL319_to_Kuroshio8to60E2r4_esmfpatch.20240319.nc</map>
-      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/Kuroshio8to60E2r4/map_Kuroshio8to60E2r4_to_TL319_traave.20240319.nc</map>
-      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/Kuroshio8to60E2r4/map_Kuroshio8to60E2r4_to_TL319_traave.20240319.nc</map>
+      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/TL319/map_TL319_to_Kuroshio8to60E2r4_traave.20240327.nc</map>
+      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/TL319/map_TL319_to_Kuroshio8to60E2r4_trbilin.20240327.nc</map>
+      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/TL319/map_TL319_to_Kuroshio8to60E2r4_esmfpatch.20240327.nc</map>
+      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/Kuroshio8to60E2r4/map_Kuroshio8to60E2r4_to_TL319_traave.20240327.nc</map>
+      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/Kuroshio8to60E2r4/map_Kuroshio8to60E2r4_to_TL319_traave.20240327.nc</map>
     </gridmap>
 
     <gridmap atm_grid="T31" ocn_grid="gx3v7">
