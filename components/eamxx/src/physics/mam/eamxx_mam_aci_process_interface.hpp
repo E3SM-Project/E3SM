@@ -7,8 +7,14 @@
 // For declaring ACI class derived from atm process class
 #include <share/atm_process/atmosphere_process.hpp>
 
-// For physical constants
-#include "physics/share/physics_constants.hpp"
+// For EKAT units package
+#include "ekat/util/ekat_units.hpp"
+
+// For aerosol configuration
+#include "mam4xx/aero_config.hpp"
+
+// For calling ndrop functions
+#include "mam4xx/ndrop.hpp"
 
 namespace scream {
 
@@ -19,15 +25,10 @@ class MAMAci final : public scream::AtmosphereProcess {
   mam4::Hetfrz hetfrz_;
 
   // views for single- and multi-column data
-  using view_1d       = scream::mam_coupling::view_1d;
   using view_2d       = scream::mam_coupling::view_2d;
   using view_3d       = scream::mam_coupling::view_3d;
-  using const_view_1d = scream::mam_coupling::const_view_1d;
   using const_view_2d = scream::mam_coupling::const_view_2d;
   using const_view_3d = scream::mam_coupling::const_view_3d;
-
-  template <typename Scalar, typename MemoryTraits = Kokkos::MemoryManaged>
-  using view_4d = KT::view<Scalar ****, MemoryTraits>;
 
   // FIXME:B: Should the following variables be public? They are like that in
   // micriphysics and optics codes
@@ -43,16 +44,20 @@ class MAMAci final : public scream::AtmosphereProcess {
   // turbulent kinetic energy  [m^2/s^2]
   view_2d tke_;
 
+  // Dry diameter of the aitken mode (for ice nucleation)
   view_2d aitken_dry_dia_;
 
-  view_2d cld_aero_mmr_[mam_coupling::num_aero_modes()]
-                       [mam_coupling::num_aero_species()];
-
+  // wet mixing ratios (water species)
   mam_coupling::WetAtmosphere wet_atmosphere_;
 
+  // dry mixing ratios (water species)
   mam_coupling::DryAtmosphere dry_atmosphere_;
 
+  // aerosol dry diameter
   const_view_3d dgnum_;
+
+  // FIXME: Make sure these output are used somewhere and add comments about
+  // these
   view_2d nihf_;
   view_2d niim_;
   view_2d nidep_;
@@ -128,20 +133,22 @@ class MAMAci final : public scream::AtmosphereProcess {
   std::shared_ptr<const AbstractGrid> grid_;
 
   // A view array to carry cloud borne aerosol mmrs/nmrs
+  // FIXME: 25 should be a const int
   view_2d qqcw_fld_work_[25];
+
+  // A view to carry interstitial aerosol mmrs/nmrs
   view_3d state_q_work_;
 
  public:
   // Constructor
   MAMAci(const ekat::Comm &comm, const ekat::ParameterList &params);
-  // process metadata
 
-  // Return type of the process
+  // Process metadata: Return type of the process
   AtmosphereProcessType MAMAci::type() const {
     return AtmosphereProcessType::Physics;
   }
 
-  // return name of the process
+  // Return name of the process
   std::string MAMAci::name() const { return "mam4_aci"; }
 
   // grid
@@ -152,6 +159,7 @@ class MAMAci final : public scream::AtmosphereProcess {
   size_t MAMAci::requested_buffer_size_in_bytes() const {
     return mam_coupling::buffer_size(ncol_, nlev_);
   }
+
   void init_buffers(const ATMBufferManager &buffer_manager) override;
 
   // process behavior

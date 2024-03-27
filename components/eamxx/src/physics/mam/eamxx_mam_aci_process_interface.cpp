@@ -1,9 +1,5 @@
 #include <physics/mam/eamxx_mam_aci_process_interface.hpp>
 
-#include "ekat/util/ekat_units.hpp"
-#include "mam4xx/aero_config.hpp"
-#include "mam4xx/ndrop.hpp"
-
 namespace scream {
 
 namespace {
