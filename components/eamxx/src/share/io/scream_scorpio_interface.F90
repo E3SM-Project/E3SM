@@ -446,9 +446,11 @@ contains
 
     if (is_write(pio_atm_file%purpose)) then
       ierr = PIO_def_var(pio_atm_file%pioFileDesc, trim(shortname), hist_var%nc_dtype, hist_var%dimid(:numdims), hist_var%piovar)
-      call errorHandle("PIO ERROR: could not define variable "//trim(shortname),ierr)
+      call errorHandle("PIO ERROR: could not define variable "//trim(shortname)//" in file "//trim(filename),ierr)
       ierr=PIO_put_att(pio_atm_file%pioFileDesc, hist_var%piovar, 'units', hist_var%units )
+      call errorHandle("PIO ERROR: could not set attribute 'units' for variable "//trim(shortname)//" in file "//trim(filename),ierr)
       ierr=PIO_put_att(pio_atm_file%pioFileDesc, hist_var%piovar, 'long_name', hist_var%long_name )
+      call errorHandle("PIO ERROR: could not set attribute 'long_name' for variable "//trim(shortname)//" in file "//trim(filename),ierr)
     else
       ierr = PIO_inq_varid(pio_atm_file%pioFileDesc,trim(shortname),hist_var%piovar)
       call errorHandle("PIO ERROR: could not retrieve id for variable "//trim(shortname)//" from file "//trim(filename),ierr)
@@ -778,7 +780,10 @@ contains
     pio_atm_file%numRecs = pio_atm_file%numRecs + 1
     call get_var(pio_atm_file,'time',var)
     ! Only update time on the file if a valid time is provided
-    if (time>=0) ierr = pio_put_var(pio_atm_file%pioFileDesc,var%piovar,(/ pio_atm_file%numRecs /), (/ 1 /), (/ time /))
+    if (time>=0) then
+      ierr = pio_put_var(pio_atm_file%pioFileDesc,var%piovar,(/ pio_atm_file%numRecs /), (/ 1 /), (/ time /))
+      call errorHandle("PIO ERROR: something went wrong while writing time var on file="//trim(filename),ierr)
+    endif
   end subroutine eam_update_time
 !=====================================================================!
   ! Assign institutions to header metadata for a specific pio output file.
@@ -1150,6 +1155,7 @@ contains
 
 #if !defined(SCREAM_CIME_BUILD)
     call PIO_finalize(pio_subsystem, ierr)
+    call errorHandle("PIO ERROR: something went wrong when calling PIO_finalize.",ierr)
     nullify(pio_subsystem)
 #endif
 
@@ -1491,6 +1497,7 @@ contains
     ierr = pio_inq_dimid(pio_atm_file%pioFileDesc,trim("time"),dim_id)
     call errorHandle("read_time_at_index ERROR: dimension 'time' not found in file "//trim(filename)//".",ierr)
     ierr = pio_inq_dimlen(pio_atm_file%pioFileDesc,dim_id,time_len)
+    call errorHandle("PIO Error! Something went wrong when inquiring time dim length on file file "//trim(filename)//".",ierr)
 
     if (present(time_index)) then
       timeidx = time_index
