@@ -327,7 +327,7 @@ end subroutine moab_map_init_rcfile
 
     use iso_c_binding
     use iMOAB, only: iMOAB_GetMeshInfo, iMOAB_GetDoubleTagStorage, iMOAB_SetDoubleTagStorage, &
-      iMOAB_GetIntTagStorage, iMOAB_SetDoubleTagStorageWithGid, iMOAB_ApplyScalarProjectionWeights, &
+      iMOAB_GetIntTagStorage, iMOAB_ApplyScalarProjectionWeights, &
       iMOAB_SendElementTag, iMOAB_ReceiveElementTag, iMOAB_FreeSenderBuffers
 
     implicit none
@@ -354,7 +354,7 @@ end subroutine moab_map_init_rcfile
     integer, dimension(:), allocatable  :: globalIds
     real(r8), dimension(:), allocatable  :: wghts
     real(kind=r8) , allocatable  :: targtags(:,:), targtags_ini(:,:)
-    real(kind=r8)  :: factor 
+    real(kind=r8)  :: factor
 #endif
     !
     ! Local Variables
@@ -495,7 +495,7 @@ end subroutine moab_map_init_rcfile
 #ifdef MOABDEBUG
          if (seq_comm_iamroot(CPLID)) then
             write(logunit, *) subname,' iMOAB mapper rearrange or copy ', mapper%mbname, ' send/recv tags ', trim(fldlist_moab), &
-              ' mbpresent=', mbpresent, ' mbnorm=', mbnorm 
+              ' mbpresent=', mbpresent, ' mbnorm=', mbnorm
             call shr_sys_flush(logunit)
          endif
 #endif
@@ -519,7 +519,7 @@ end subroutine moab_map_init_rcfile
             call shr_sys_abort(subname//' ERROR in freeing buffers') ! serious enough
          endif
        endif ! if (valid_moab_context)
-       
+
 #endif
 
       else
@@ -609,11 +609,23 @@ end subroutine moab_map_init_rcfile
        if ( valid_moab_context ) then
          ! receive in the intx app, because it is redistributed according to coverage (trick)
          ! for true intx cases, tgt_mbid is set to be the same as intx_mbid
-         ! just read map is special 
+         ! just read map is special
          if (mapper%read_map)  then ! receive indeed in target app
+#ifdef MOABDEBUG
+            if (seq_comm_iamroot(CPLID)) then
+               write(logunit, *) subname,' iMOAB mapper receiving tags with read_map and tgt_mbid: ', &
+                mapper%mbname, trim(fldlist_moab)
+            endif
+#endif
             ierr = iMOAB_ReceiveElementTag( mapper%tgt_mbid, fldlist_moab, mapper%mpicom, mapper%src_context )
-         else ! receive in the intx app, trick 
-             ierr = iMOAB_ReceiveElementTag( mapper%intx_mbid, fldlist_moab, mapper%mpicom, mapper%src_context )
+         else ! receive in the intx app, trick
+#ifdef MOABDEBUG
+            if (seq_comm_iamroot(CPLID)) then
+               write(logunit, *) subname,' iMOAB mapper receiving tags with intx and intx_mbid: ', &
+                mapper%mbname, trim(fldlist_moab)
+            endif
+#endif
+            ierr = iMOAB_ReceiveElementTag( mapper%intx_mbid, fldlist_moab, mapper%mpicom, mapper%src_context )
          endif
          if (ierr .ne. 0) then
             write(logunit,*) subname,' error in receiving tags ', mapper%mbname, 'recv:',  mapper%intx_mbid, trim(fldlist_moab)
@@ -684,7 +696,7 @@ end subroutine moab_map_init_rcfile
                write(logunit,*) subname,' error getting destination tag values ', mapper%mbname
                call shr_sys_abort(subname//' ERROR getting source tag values') ! serious enough
             endif
-            
+
             deallocate(wghts, targtags)
             if (mbpresent) then
 #ifdef MOABDEBUG

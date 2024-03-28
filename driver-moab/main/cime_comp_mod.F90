@@ -178,7 +178,7 @@ module cime_comp_mod
   use component_mod,      only: component_init_areacor_moab
 #endif
   use component_mod,      only: component_exch, component_diag
-  use component_mod,      only: component_exch_moab
+  use cplcomp_exchange_mod,      only: component_exch_moab
 
 ! used to send from components to coupler instances
   ! use component_mod,      only: ocn_cpl_moab
@@ -720,15 +720,15 @@ contains
     integer(i8) :: beg_count          ! start time
     integer(i8) :: end_count          ! end time
     integer(i8) :: irtc_rate          ! factor to convert time to seconds
-    
+
     beg_count = shr_sys_irtc(irtc_rate)
-    
+
     call mpi_init(ierr)
     call shr_mpi_chkerr(ierr,subname//' mpi_init')
 
     end_count = shr_sys_irtc(irtc_rate)
     mpi_init_time = real( (end_count-beg_count), r8)/real(irtc_rate, r8)
-    
+
     call mpi_comm_dup(MPI_COMM_WORLD, global_comm, ierr)
     call shr_mpi_chkerr(ierr,subname//' mpi_comm_dup')
 
@@ -1398,10 +1398,10 @@ contains
     !Print BFBFLAG value in the log file
     if (iamroot_CPLID) then
        call seq_infodata_GetData(infodata, bfbflag=bfbflag)
-       write(logunit,'(2A,L4)') subname,'BFBFLAG is:',bfbflag       
+       write(logunit,'(2A,L4)') subname,'BFBFLAG is:',bfbflag
     endif
 
-    
+
     call t_stopf('CPL:cime_pre_init2')
 
     ! CPL:cime_pre_init2 timer elapsed time will be double counted
@@ -2185,7 +2185,7 @@ contains
     call mpi_barrier(mpicom_GLOID,ierr)
     if (ice_present) call component_init_areacor(ice, areafact_samegrid, seq_flds_i2x_fluxes)
     if (ice_present) call component_init_areacor_moab(ice, mpsiid, mbixid, seq_flds_i2x_fluxes, seq_flds_i2x_fields)
-    !component_exch_moab(ice(1), mpsiid, mbixid, 0, seq_flds_i2x_fields) 
+    !component_exch_moab(ice(1), mpsiid, mbixid, 0, seq_flds_i2x_fields)
 
     call mpi_barrier(mpicom_GLOID,ierr)
     if (glc_present) call component_init_areacor(glc, areafact_samegrid, seq_flds_g2x_fluxes)
@@ -2431,7 +2431,7 @@ contains
                 ! will call prep_atm_merge for each instance.
                 call  prep_atm_mrg(infodata, &
                      fractions_ax=fractions_ax, xao_ax=xao_ax, timer_mrg='CPL:init_atminit')
-                     ! MOAB 
+                     ! MOAB
                 call  prep_atm_mrg_moab(infodata, xao_ax)
              endif
           endif
@@ -2481,7 +2481,7 @@ contains
        ! Send atm output data from atm pes to cpl pes
        call component_exch(atm, flow='c2x', infodata=infodata, &
             infodata_string='atm2cpl_init')
-       ! 
+       !
        call component_exch_moab(atm(1), mphaid, mbaxid, 0, seq_flds_a2x_fields)
 
        if (iamin_CPLID) then
@@ -2516,7 +2516,7 @@ contains
           write(logunit,103) subname,' Reading restart file ',trim(rest_file)
           call shr_sys_flush(logunit)
        end if
-       
+
        call t_startf('CPL:seq_rest_read-init')
        call seq_rest_read(rest_file, infodata, &
             atm, lnd, ice, ocn, rof, glc, wav, esp, iac, &
@@ -2528,7 +2528,7 @@ contains
           call shr_sys_flush(logunit)
        end if
        call t_startf('CPL:seq_rest_read-moab')
-       call seq_rest_mb_read(rest_file, infodata, samegrid_al)    
+       call seq_rest_mb_read(rest_file, infodata, samegrid_al)
        call t_stopf('CPL:seq_rest_read-moab')
 #ifdef MOABDEBUG
        call write_moab_state(.false.)
@@ -2673,7 +2673,7 @@ contains
     integer               :: i, nodeId
     character(len=15)     :: c_ymdtod
     character(len=18)     :: c_mprof_file
-    integer               :: cur_step_no ! step number 
+    integer               :: cur_step_no ! step number
 
 101 format( A, i10.8, i8, 12A, A, F8.2, A, F8.2 )
 102 format( A, i10.8, i8, A, 8L3 )
@@ -3358,7 +3358,7 @@ contains
           call cime_run_atm_recv_post
        endif
 
-       
+
        !----------------------------------------------------------
        !| Budget with new fractions
        !----------------------------------------------------------
@@ -3516,7 +3516,7 @@ contains
                call shr_sys_flush(logunit)
              end if
              call t_startf('CPL:seq_rest_read-moab')
-             call seq_rest_mb_read(drv_resume_file, infodata, samegrid_al)    
+             call seq_rest_mb_read(drv_resume_file, infodata, samegrid_al)
              call t_stopf('CPL:seq_rest_read-moab')
           end if
           ! Clear the resume file so we don't try to read it again
@@ -3975,7 +3975,7 @@ contains
           o2x_ax => prep_atm_get_o2x_ax()    ! array over all instances
           xao_ax => prep_aoflux_get_xao_ax() ! array over all instances
           call seq_flux_atmocn_mct(infodata, tod, dtime, a2x_ax, o2x_ax(eoi), xao_ax(exi))
-          !call seq_flux_atmocn_moab( atm(eai), xao_ax(exi) ) ! should be only one ensemble probably 
+          !call seq_flux_atmocn_moab( atm(eai), xao_ax(exi) ) ! should be only one ensemble probably
        enddo
        call t_drvstopf  ('CPL:atmocna_fluxa',hashint=hashint(6))
 
@@ -4057,7 +4057,7 @@ contains
        endif
        if (associated(xao_ax)) then
           call prep_atm_mrg(infodata, fractions_ax, xao_ax=xao_ax, timer_mrg='CPL:atmprep_mrgx2a')
-          ! call moab atm merge too 
+          ! call moab atm merge too
           call  prep_atm_mrg_moab(infodata, xao_ax)
        endif
 
@@ -4134,7 +4134,7 @@ contains
    !     ! migrate that tag from coupler pes to ocean pes
    !     call prep_lnd_migrate_moab(infodata)
    !  endif
-    
+
 
   end subroutine cime_run_atm_recv_post
 
@@ -4472,7 +4472,7 @@ contains
 
        if (lnd_prognostic) then
           call prep_lnd_mrg(infodata, timer_mrg='CPL:lndprep_mrgx2l')
-          call prep_lnd_mrg_moab(infodata) 
+          call prep_lnd_mrg_moab(infodata)
 
           call component_diag(infodata, lnd, flow='x2c', comment= 'send lnd', &
                info_debug=info_debug, timer_diag='CPL:lndprep_diagav')
@@ -4510,7 +4510,7 @@ contains
             mpicom_barrier=mpicom_CPLALLLNDID, run_barriers=run_barriers, &
             timer_barrier='CPL:L2C_BARRIER', timer_comp_exch='CPL:L2C', &
             timer_map_exch='CPL:l2c_lndl2lndx', timer_infodata_exch='lnd2cpl_run')
-       ! send from land to coupler, 
+       ! send from land to coupler,
        call component_exch_moab(lnd(1), mlnid, mblxid, 0, seq_flds_l2x_fields)
     endif
 
@@ -4725,7 +4725,7 @@ contains
             mpicom_barrier=mpicom_CPLALLROFID, run_barriers=run_barriers, &
             timer_barrier='CPL:R2C_BARRIER', timer_comp_exch='CPL:R2C', &
             timer_map_exch='CPL:r2c_rofr2rofx', timer_infodata_exch='CPL:r2c_infoexch')
-       ! this is for one hop 
+       ! this is for one hop
        call component_exch_moab(rof(1), mrofid, mbrxid, 0, seq_flds_r2x_fields)
 
        !call prep_rof_migrate_moab(infodata)
@@ -4759,7 +4759,7 @@ contains
 !----------------------------------------------------------------------------------
 
   subroutine cime_run_ice_setup_send()
-  
+
    use seq_flds_mod, only : seq_flds_x2i_fields
    use seq_comm_mct, only : mpsiid, mbixid
     !  Note that for atm->ice mapping below will leverage the assumption that the
@@ -4834,7 +4834,7 @@ contains
        ! this needs to happen between ice comp and ocn coupler directly
        ! it needs to be called on the joint comm between ice and coupler
        ! if we do a proper component_exch, then would need another hop, just on coupler pes
-       !  TODO when do we need to send from ice to ocn? Usually after ice run ? 
+       !  TODO when do we need to send from ice to ocn? Usually after ice run ?
        call component_exch_moab(ice(1), mpsiid, mbixid, 0, seq_flds_i2x_fields) ! this migrates all fields from ice to coupler
     endif
 
@@ -4973,7 +4973,7 @@ contains
     if (present(in_cplrun)) then
        lcplrun = .not. in_cplrun
     endif
-    
+
     if (iamin_CPLID) then
        call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET1_BARRIER')
        call t_drvstartf ('CPL:BUDGET1',cplrun=lcplrun,budget=.true.,barrier=mpicom_CPLID)
@@ -5014,7 +5014,7 @@ contains
     if (present(in_cplrun)) then
        lcplrun = .not. in_cplrun
     endif
-    
+
     if (iamin_CPLID) then
        call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET2_BARRIER')
 
@@ -5083,7 +5083,7 @@ contains
     if (present(in_cplrun)) then
        lcplrun = .not. in_cplrun
     endif
-    
+
     if (iamin_CPLID) then
        call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET0_BARRIER')
        call t_drvstartf ('CPL:BUDGET0',cplrun=lcplrun,budget=.true.,barrier=mpicom_CPLID)

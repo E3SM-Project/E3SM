@@ -249,6 +249,11 @@ macro(build_model COMP_CLASS COMP_NAME)
       target_link_libraries(${TARGET_NAME} ${ITEM})
     endforeach()
 
+    if (USE_MOAB)
+      target_link_libraries(${TARGET_NAME} ${MOAB_LIBRARIES})
+      target_include_directories(${TARGET_NAME} PRIVATE ${MOAB_INCLUDE_DIRS})
+    endif()
+
     # Make sure we link blas/lapack
     if (NOT DEFINED ENV{SKIP_BLAS})
       target_link_libraries(${TARGET_NAME} BLAS::BLAS LAPACK::LAPACK)
