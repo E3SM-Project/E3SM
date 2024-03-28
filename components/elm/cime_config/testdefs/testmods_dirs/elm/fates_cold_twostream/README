@@ -1,0 +1,15 @@
+Testing FATES two-stream radiation scheme is activated by switching the fates_rad_model
+parameter from 1 to 2.  This is all that is needed, both radiation schemes
+1) Norman and 2) two-stream use the same optical parameters.
+
+fates_rad_model
+
+Note that to avoid exceeding the filename string length maximum, the parameter
+file generated on the fly is placed in the $SRCROOT/src/fates/parameter_files
+directory.  This may still run into problems is the $SRCROOT string is too long.
+
+Like the test with seed dispersal activation, the main downside of this method is
+that this file will require a custom update for every fates parameter file API update.
+Allowing the HLM to generate the file at runtime via buildnamelist step
+will provide the capability to build the fates parameter file on 
+the fly which with the appropriate values for this test.
