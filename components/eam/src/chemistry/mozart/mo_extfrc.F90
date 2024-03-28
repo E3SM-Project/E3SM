@@ -53,6 +53,7 @@ module mo_extfrc
   logical :: diag_run_plumerise = .false.
   real    :: ef_bc_a4 = 0.55_r8*1.0e-03_r8*(1.0_r8/0.45_r8)
   real    :: ef_oc_a4 = 10.9_r8*1.0e-03_r8*(1.0_r8/0.45_r8)
+  real(r8)    :: fix_plume_height = 0.0
 contains
 
   subroutine extfrc_inti( extfrc_specifier, extfrc_type, extfrc_cycle_yr, extfrc_fixed_ymd, extfrc_fixed_tod)
@@ -110,7 +111,8 @@ contains
                        history_verbose_out        = history_verbose, &
                        emis_constrained_frp_out   = emis_constrained_frp, &
                        diag_run_plumerise_out   = diag_run_plumerise, &
-                       plumerise_out              = plumerise   )
+                       plumerise_out              = plumerise, &
+                       fix_plume_height_out = fix_plume_height   )
 
     do i = 1, gas_pcnst
        has_extfrc(i) = .false.
@@ -330,14 +332,14 @@ contains
                    if(masterproc) write(iulog,*) forcings(m)%species
                    if(masterproc) write(iulog,*) 'sector number = ', forcings(m)%nsectors
                    if(masterproc) write(iulog,*) 'UCI wildfire BA in model type ', nba_count
-                   PH_emis_m(nba_count) = m
-                   PH_emis_n(nba_count) = forcings(m)%nsectors
+                   BA_emis_m(nba_count) = m
+                   BA_emis_n(nba_count) = forcings(m)%nsectors
                    if(masterproc) write(iulog,*) 'BA_emis_m', BA_emis_m(nba_count)
                    if(masterproc) write(iulog,*) 'BA_emis_n', BA_emis_n(nba_count)
                 endif
              endif
           else
-             !write(iulog,*) 'extfrc_inti: Skipping variable ', trim(varname),', ndims = ',ndims,' , species=',trim(forcings(m)%species)
+             write(iulog,*) 'extfrc_inti: Skipping variable ', trim(varname),', ndims = ',ndims,' , species=',trim(forcings(m)%species)
           end if
        enddo
 
@@ -372,7 +374,8 @@ contains
                           rmv_file, extfrc_cycle_yr, extfrc_fixed_ymd, extfrc_fixed_tod, extfrc_type)
 
     enddo frcing_loop
-
+    if(masterproc) write(iulog,*) 'PH_emis_m', PH_emis_m(:)
+    if(masterproc) write(iulog,*) 'PH_emis_n', PH_emis_n(:)
 
   end subroutine extfrc_inti
 
@@ -577,7 +580,9 @@ contains
              if ((m == PH_emis_m(1) .and. isec == PH_emis_n(1)) .or. & 
                  (m == PH_emis_m(2) .and. isec == PH_emis_n(2)) .or. &
                  (m == PH_emis_m(3) .and. isec == PH_emis_n(3)) .or. &
-                 (m == PH_emis_m(4) .and. isec == PH_emis_n(4)) )then
+                 (m == PH_emis_m(4) .and. isec == PH_emis_n(4)) .or. &
+                 (m == PH_emis_m(5) .and. isec == PH_emis_n(5)) .or. &
+                 (m == PH_emis_m(6) .and. isec == PH_emis_n(6)) )then
                 !plume_height_EM(:ncol) = 0._r8
                 !heat_flux_plume(:ncol) = 0._r8
                 !frcing_col_plume = 0._r8
@@ -619,7 +624,7 @@ contains
                                  wt_ini_e3sm_out(icol,:), wt_end_e3sm_out(icol,:), &
                                  rbuoy_ini_e3sm_out(icol,:), rbuoy_end_e3sm_out(icol,:), &
                                  t_ini_e3sm_out(icol,:), t_end_e3sm_out(icol,:),area(icol) )
-                            plume_height = plume_height + zmidr(icol,pver)*1000.0_r8 ! plume height at middle of layer
+                            plume_height = plume_height + zmidr(icol,pver)*1000.0_r8 ! plume height at middle of bottom layer
                             plume_height_EM(icol) = plume_height ! in meter
                             heat_flux_plume(icol) = frp4plume ! in kw/m2 
                             if (emis_constrained_frp) then
@@ -646,11 +651,16 @@ contains
                          ! match plume height to model vertical grid
                          ph_z(icol) = pver
                          do k = 2, pver
+                            if (fix_plume_height > 0.0) then ! here use fixed plume height from namelist
+                                plume_height = fix_plume_height ! unit: meter
+                                plume_height_EM(icol) = fix_plume_height ! unit: meter
+                            endif
                             if ((plume_height - zmidr(icol,k)*1000_r8) > 0._r8 .and. (plume_height - zmidr(icol,k-1)*1000_r8 < 0._r8)) then
                                ph_z(icol) = k
                             endif 
                          enddo 
                          if (forcings(m)%species == 'bc_a4' .and. diag_run_plumerise )then
+                         write(iulog,*) 'fix_plume_height ', fix_plume_height 
                          write(iulog,*) 'kzm_fire_species ', forcings(m)%species, isec
                          write(iulog,*) 'kzm_heatflux ', heatflux_memory(icol)
                          write(iulog,*) 'kzm_FRP ',frp,frp4plume
