@@ -1,8 +1,16 @@
-Development of the MPAS-seaice component should follow the general procedures outlined by the E3SM project.  Please refer to LINK for instructions. For changes to Icepack, please consult the [CICE Consortium's recommendations for code contributions](https://github.com/CICE-Consortium/About-Us/wiki/Contributing).
+Development of the MPAS-seaice component should follow the general procedures outlined by the E3SM project.
+
+[Development Guide for E3SM Code](https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/1868455/Development+Getting+Started+Guide)    
+[Development Guide for E3SM Documentation](https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/3924787306/Developing+Documentation)
+
+**Icepack**
+-----------
+
+For changes to Icepack, please consult the [CICE Consortium's recommendations for code contributions](https://github.com/CICE-Consortium/About-Us/wiki/Contributing).
 
 To access the column physics in Icepack, MPAS-seaice uses methods defined in ``icepack_intfc.F90``. The 'init' and 'query' methods are used to set and retrieve Icepack values. A 'write' method is also available for documenting these values. MPAS-seaice follows the 'icepack_warnings' methodology where ``icepack_warnings_aborted`` is checked and ``icepack_warnings_flush`` is called after every call to an Icepack method. It does not directly “use” Icepack data, accessing Icepack data only through these interfaces.
 
-Basic Icepack development can be done in standalone mode using Icepack's testing scripts, directly in the submodule branch in MPAS-seaice.  We recommend that Icepack developments be thoroughly tested within E3SM's coupled framework throughout the development process, including fully coupled simulations.
+Basic Icepack development can be done in standalone mode using Icepack's testing scripts, directly in the submodule branch in MPAS-seaice. **We recommend that Icepack developments be thoroughly tested within E3SM's coupled framework throughout the development process, including fully coupled simulations.**
 
 **E3SM-Polar-Developer Script**
 -----------------------------------
@@ -21,12 +29,17 @@ The following examples describe how to use the script for development in Icepack
 
 **Set up and run baselines**
 
-Create a file containing modified namelist options. The file ``nset01.nlk`` in this example creates baselines for two types of column physics and turns off the ``snicar_ad`` radiation scheme. (A file without ``config`` settings will create a single, default baseline.)
-
+Create a file containing modified namelist options. The file ``nset01.nlk`` in this example creates baselines for two types of column physics and turns off the ``snicar_ad`` radiation scheme.
+    
     $ less nset01.nlk
     [mpassi]
     config_column_physics_type = {'column_package','icepack'}
     config_use_snicar_ad = {.false.}
+
+Notes:
+
+ - A .nlk file without any config settings will create a baseline using default settings.
+ - The ``column_package`` option is still available but is no longer being supported in MPAS-seaice.
 
 Fetch E3SM (choose any name for the directory baselines01):
 

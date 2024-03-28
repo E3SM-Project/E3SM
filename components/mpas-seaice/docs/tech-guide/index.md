@@ -7,12 +7,15 @@ Turner, A. K., Lipscomb, W. H., Hunke, E. C., Jacobsen, D. W., Jeffery, N., Engw
 
 Golaz, J.-C., Van Roekel, L. P., Zheng, X., Roberts, A. F., Wolfe, J. D., Lin, W., et al. (2022). The DOE E3SM Model version 2: Overview of the physical model and initial model evaluation. Journal of Advances in Modeling Earth Systems, 14, e2022MS003156. https://doi.org/10.1029/2022MS003156
 
-Full documentation for Icepack can be found at …. Link to main location in E3SM docs and  https://github.com/CICE-Consortium/Icepack (use readthedocs link).
+Full documentation for E3SM's version of Icepack can be found in [E3SM's Icepack readthedocs](https://e3sm-icepack.readthedocs.io/en/latest/).  The most up-to-date documentation from the CICE Consortium's main Icepack repository is [here](https://cice-consortium-icepack.readthedocs.io/en/main/).
+
+A comprehensive paper describing MPAS-seaice is in preparation.
 
 **Meshes**
 ----------
 
-MPAS-Seaice is the sea ice component of E3SMv1. MPAS-Seaice and MPAS-Ocean share identical meshes, but MPAS-Seaice uses a B-grid (Arakawa & Lamb, 1977) with sea ice concentration, volume, and tracers defined at cell centers and velocity defined at cell vertices.
+MPAS-Seaice is the sea ice component of E3SMv1. MPAS-Seaice and MPAS-Ocean share identical meshes, but MPAS-Seaice uses a B-grid (Arakawa & Lamb, 1977) with sea ice concentration, volume, and tracers defined at cell centers and velocity defined at cell vertices.  For more information about the meshes, see the [Users Guide](../user-guide/index.md).
+![mesh](../figures/mesh.png)
 
 **Velocity and Stresses**
 -------------------------
@@ -48,6 +51,10 @@ With advanced physics and biogeochemistry (BGC) options, MPAS-Seaice can be conf
 
 **Column Physics**
 ------------------
+
+The Icepack software has replaced the original ``colpkg`` column physics code in MPAS-seaice. The ``column_package`` option is still available but is no longer being supported in MPAS-seaice.
+
+Full documentation for E3SM's version of Icepack can be found in [E3SM's Icepack readthedocs](https://e3sm-icepack.readthedocs.io/en/latest/).  The most up-to-date documentation from the CICE Consortium's main Icepack repository is [here](https://cice-consortium-icepack.readthedocs.io/en/main/).
 
 Because of the strong thermal gradients between the (cold) atmosphere and (relatively warm) oceans in polar regions, a large portion of the physics in sea ice models can be described in a vertical column, without reference to neighboring grid cells. MPAS-Seaice shares the same column physics code as CICE through the Icepack library (Hunke et al., 2018), which is maintained by the CICE Consortium. This code includes several options for simulating sea ice thermodynamics, mechanical redistribution (ridging) and associated area and thickness changes. In addition, the model supports a number of tracers, including thickness, enthalpy, ice age, first-year ice area, deformed ice area and volume, melt ponds, snow properties and biogeochemistry.
 
