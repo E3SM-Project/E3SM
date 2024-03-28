@@ -475,6 +475,10 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   }
 }
 void MAMOptics::run_impl(const double dt) {
+
+  constexpr Real zero=0.0;
+  constexpr Real one=1.0;
+
   const auto policy =
       ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_);
   const auto scan_policy = ekat::ExeSpaceUtils<
@@ -485,10 +489,10 @@ void MAMOptics::run_impl(const double dt) {
   Kokkos::fence();
   /// outputs
    //In aer_rad_props.F90; tau_w_g=> aerosol asymmetry parameter * tau * w
-  const auto aero_g_sw = get_field_out("aero_g_sw_mam4").get_view<Real ***>();
+  const auto aero_tau_g_sw = get_field_out("aero_g_sw_mam4").get_view<Real ***>();
 
   //In aer_rad_props.F90; tau_w => aerosol single scattering albedo * tau
-  const auto aero_ssa_sw =
+  const auto aero_tau_ssa_sw =
       get_field_out("aero_ssa_sw_mam4").get_view<Real ***>();
   // In aer_rad_props.F90; tau => aerosol extinction optical depth
   const auto aero_tau_sw =
@@ -552,10 +556,10 @@ void MAMOptics::run_impl(const double dt) {
         // FIXME: check if this correct: Note that these variables have pver+1
         // levels tau_w =>  aero_ssa_sw  (pcols,0:pver,nswbands) ! aerosol
         // tau_w: aerosol single scattering albedo * tau
-        auto tau_w_icol = ekat::subview(aero_ssa_sw, icol);
+        auto tau_w_icol = ekat::subview(aero_tau_ssa_sw, icol);
         // tau_w_g => "aero_g_sw" (pcols,0:pver,nswbands) ! aerosol assymetry
         // parameter * tau * w
-        auto tau_w_g_icol = ekat::subview(aero_g_sw, icol);
+        auto tau_w_g_icol = ekat::subview(aero_tau_g_sw, icol);
         // tau_w_f(pcols,0:pver,nswbands) => aero_tau_forward  ? ! aerosol
         // forward scattered fraction * tau * w
         auto tau_w_f_icol = ekat::subview(aero_tau_forward, icol);
@@ -592,9 +596,20 @@ void MAMOptics::run_impl(const double dt) {
       Kokkos::MDRangePolicy<Kokkos::Rank<3> >({0, 0, 0},
                                               {ncol_, nswbands_, nlev_}),
       KOKKOS_LAMBDA(const int icol, const int iswband, const int kk) {
-        aero_g_sw_eamxx(icol, iswband, kk) = aero_g_sw(icol, iswband, kk + 1);
-        aero_ssa_sw_eamxx(icol, iswband, kk) =
-            aero_ssa_sw(icol, iswband, kk + 1);
+        // Extract single scattering albedo from the product-defined fields
+        if (aero_tau_sw(icol, iswband, kk + 1) > zero) {
+          aero_g_sw_eamxx(icol, iswband, kk) = aero_tau_g_sw(icol, iswband, kk + 1)/aero_tau_sw(icol, iswband, kk + 1);
+        } else {
+          aero_g_sw_eamxx(icol, iswband, kk) = one;
+        }
+        // Extract assymmetry parameter from the product-defined fields
+        if (aero_tau_g_sw(icol, iswband, kk + 1) > zero ) {
+          aero_ssa_sw_eamxx(icol, iswband, kk) =
+            aero_tau_ssa_sw(icol, iswband, kk + 1)/aero_tau_g_sw(icol, iswband, kk + 1) ;
+        } else {
+          aero_ssa_sw_eamxx(icol, iswband, kk) = zero;
+        }
+        // Copy cloud optical depth over directly
         aero_tau_sw_eamxx(icol, iswband, kk) =
             aero_tau_sw(icol, iswband, kk + 1);
       });
