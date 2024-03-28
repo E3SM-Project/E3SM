@@ -721,6 +721,16 @@
       <mask>oEC60to30v3</mask>
     </model_grid>
 
+    <model_grid alias="r025_r025" compset="(DOCN|XOCN|SOCN|AQP1)">
+      <grid name="atm">r025</grid>
+      <grid name="lnd">r025</grid>
+      <grid name="ocnice">r025</grid>
+      <grid name="rof">r025</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>oEC60to30v3</mask>
+    </model_grid>
+
     <model_grid alias="r0125_r0125" compset="(DOCN|XOCN|SOCN|AQP1)">
       <grid name="atm">r0125</grid>
       <grid name="lnd">r0125</grid>
@@ -749,6 +759,16 @@
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
       <mask>oRRS18to6v3</mask>
+    </model_grid>
+
+    <model_grid alias="r025_IcoswISC30E3r5" compset="(DATM.+ELM)">
+      <grid name="atm">r025</grid>
+      <grid name="lnd">r025</grid>
+      <grid name="ocnice">IcoswISC30E3r5</grid>
+      <grid name="rof">null</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>IcoswISC30E3r5</mask>
     </model_grid>
 
     <!--  spectral element grids -->
@@ -1424,6 +1444,26 @@
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
       <mask>oRRS18to6v3</mask>
+    </model_grid>
+
+    <model_grid alias="ne120pg2_r025_IcoswISC30E3r5">
+      <grid name="atm">ne120np4.pg2</grid>
+      <grid name="lnd">r025</grid>
+      <grid name="ocnice">IcoswISC30E3r5</grid>
+      <grid name="rof">null</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>IcoswISC30E3r5</mask>
+    </model_grid>
+
+    <model_grid alias="ne30pg2_r025_IcoswISC30E3r5">
+      <grid name="atm">ne30np4.pg2</grid>
+      <grid name="lnd">r025</grid>
+      <grid name="ocnice">IcoswISC30E3r5</grid>
+      <grid name="rof">null</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>IcoswISC30E3r5</mask>
     </model_grid>
 
     <model_grid alias="ne60_ne60" compset="(DOCN|XOCN|SOCN|AQP1)">
@@ -2938,6 +2978,12 @@
       <desc>r0125 is 1/8 degree river routing grid:</desc>
     </domain>
 
+    <domain name="r025">
+      <nx>1440</nx>
+      <ny>720</ny>
+      <file grid="atm|lnd" mask="IcoswISC30E3r5">$DIN_LOC_ROOT/share/domains/domain.lnd.r025_IcoswISC30E3r5.240129.nc</file>
+    </domain>
+
     <domain name="mp120v1">
       <nx>28993</nx>
       <ny>1</ny>
@@ -3547,6 +3593,22 @@
       <map name="LND2ATM_SMAPNAME">cpl/gridmaps/ne120pg2/map_r0125_to_ne120pg2_mono.200707.nc</map>
       <map name="ATM2ROF_FMAPNAME">cpl/gridmaps/ne120pg2/map_ne120pg2_to_r0125_mono.200707.nc</map>
       <map name="ATM2ROF_SMAPNAME">cpl/gridmaps/ne120pg2/map_ne120pg2_to_r0125_mono.200707.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="ne120np4.pg2" lnd_grid="r025">
+      <map name="ATM2LND_FMAPNAME">cpl/gridmaps/ne120pg2/map_ne120pg2_to_r025_traave.20240206.nc</map>
+      <map name="ATM2LND_FMAPNAME_NONLINEAR">cpl/gridmaps/ne120pg2/map_ne120pg2_to_r025_trfv2.20240206.nc</map>
+      <map name="ATM2LND_SMAPNAME">cpl/gridmaps/ne120pg2/map_ne120pg2_to_r025_esmfbilin.20240206.nc</map>
+      <map name="LND2ATM_FMAPNAME">cpl/gridmaps/ne120pg2/map_r025_to_ne120pg2_traave.20240206.nc</map>
+      <map name="LND2ATM_SMAPNAME">cpl/gridmaps/ne120pg2/map_r025_to_ne120pg2_traave.20240206.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="ne30np4.pg2" lnd_grid="r025">
+      <map name="ATM2LND_FMAPNAME">cpl/gridmaps/ne120pg2/map_ne30pg2_to_r025_traave.20240206.nc</map>
+      <map name="ATM2LND_FMAPNAME_NONLINEAR">cpl/gridmaps/ne120pg2/map_ne30pg2_to_r025_trfv2.20240206.nc</map>
+      <map name="ATM2LND_SMAPNAME">cpl/gridmaps/ne120pg2/map_ne30pg2_to_r025_esmfbilin.20240206.nc</map>
+      <map name="LND2ATM_FMAPNAME">cpl/gridmaps/ne120pg2/map_r025_to_ne30pg2_traave.20240206.nc</map>
+      <map name="LND2ATM_SMAPNAME">cpl/gridmaps/ne120pg2/map_r025_to_ne30pg2_traave.20240206.nc</map>
     </gridmap>
 
     <gridmap atm_grid="ne120np4" ocn_grid="oRRS18to6v3">
