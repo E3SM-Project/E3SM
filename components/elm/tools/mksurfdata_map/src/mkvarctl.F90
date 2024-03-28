@@ -52,7 +52,7 @@ module mkvarctl
   character(len=256), public :: mksrf_fslp10     = ' '  ! slope percentile file name
   character(len=256), public :: mksrf_fero       = ' '  ! ELM-Erosion parameters data file name
   character(len=256), public :: mksrf_ffert      = ' '  ! crop fertilizer data file name
-  integer           , public :: numpft         = 50   ! number of plant types
+  integer           , public :: numpft         = 16   ! number of plant types
 
   character(len=256), public :: map_fpft        = ' ' ! Mapping file for PFT
   character(len=256), public :: map_flakwat     = ' ' ! Mapping file for lake water

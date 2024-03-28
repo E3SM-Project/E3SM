@@ -344,7 +344,7 @@ sub trim($)
        $opts{'soil_override'} = 1;
    }
    # Check if pft set
-   if ( defined($opts{'crop'}) ) { $numpft = 24; }   # First set numpft if crop is on
+   if ( defined($opts{'crop'}) ) { $numpft = 50; }   # First set numpft if crop is on
    if ( defined($opts{'pft_frc'}) || defined($opts{'pft_idx'}) ) {
        &check_pft( );
        $opts{'pft_override'} = 1;
@@ -598,7 +598,7 @@ EOF
             my $crpdes  = "";
             if ( $mkcrop ne "" ) { 
                $options = "-options $mkcrop";
-               $crpdes  = "mp24_";
+               $crpdes  = "mp50_";
             }
             my $landuse_timeseries_text_file;
 	    if ( $sim_year ne $sim_yr0 ) {
