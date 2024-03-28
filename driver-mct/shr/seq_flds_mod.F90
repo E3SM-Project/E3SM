@@ -379,10 +379,11 @@ contains
     logical :: flds_co2_dmsa
     logical :: flds_bgc_oi
     logical :: flds_wiso
+    logical :: flds_polar
     integer :: glc_nec
 
     namelist /seq_cplflds_inparm/  &
-         flds_co2a, flds_co2b, flds_co2c, flds_co2_dmsa, flds_wiso, glc_nec, &
+         flds_co2a, flds_co2b, flds_co2c, flds_co2_dmsa, flds_wiso, flds_polar, glc_nec, &
          ice_ncat, seq_flds_i2o_per_cat, flds_bgc_oi, &
          nan_check_component_fields, rof_heat, atm_flux_method, atm_gustiness, &
          rof2ocn_nutrients, lnd_rof_two_way, ocn_rof_two_way, rof_sed
@@ -416,6 +417,7 @@ contains
        flds_co2_dmsa = .false.
        flds_bgc_oi   = .false.
        flds_wiso = .false.
+       flds_polar = .false.
        glc_nec   = 0
        ice_ncat  = 1
        seq_flds_i2o_per_cat = .false.
@@ -449,6 +451,7 @@ contains
     call shr_mpi_bcast(flds_co2_dmsa, mpicom)
     call shr_mpi_bcast(flds_bgc_oi  , mpicom)
     call shr_mpi_bcast(flds_wiso    , mpicom)
+    call shr_mpi_bcast(flds_polar   , mpicom)
     call shr_mpi_bcast(glc_nec      , mpicom)
     call shr_mpi_bcast(ice_ncat     , mpicom)
     call shr_mpi_bcast(seq_flds_i2o_per_cat, mpicom)
@@ -1582,6 +1585,70 @@ contains
     units    = 'kg m-2 s-1'
     attname  = 'PFioi_bergw'
     call metadata_set(attname, longname, stdname, units)
+
+    !--------------------------------
+    ! ocn<->cpl only exchange - Polar
+    !--------------------------------
+
+    if (flds_polar) then
+
+       ! Ocean Land ice freeze potential
+       call seq_flds_add(o2x_fluxes,"Foxo_q_li")
+       longname = 'Ocean land ice freeze potential'
+       stdname  = 'ice_shelf_cavity_ice_heat_flux'
+       units    = 'W m-2'
+       attname  = 'Foxo_q_li'
+       call metadata_set(attname, longname, stdname, units)
+
+       ! Ocean land ice frazil production
+       call seq_flds_add(o2x_fluxes,"Foxo_frazil_li")
+       longname = 'Ocean land ice frazil production'
+       stdname  = 'ocean_land_ice_frazil_ice_production'
+       units    = 'kg m-2 s-1'
+       attname  = 'Foxo_frazil_li'
+       call metadata_set(attname, longname, stdname, units)
+
+       ! Water flux from ice shelf melt
+       call seq_flds_add(o2x_fluxes,"Foxo_ismw")
+       longname = 'Water flux due to basal melting of ice shelves'
+       stdname  = 'basal_iceshelf_melt_flux'
+       units    = 'kg m-2 s-1'
+       attname  = 'Foxo_ismw'
+       call metadata_set(attname, longname, stdname, units)
+
+       ! Heat flux from ice shelf melt
+       call seq_flds_add(o2x_fluxes,"Foxo_ismh")
+       longname = 'Heat flux due to basal melting of ice shelves'
+       stdname  = 'basal_iceshelf_heat_flux'
+       units    = 'W m-2'
+       attname  = 'Foxo_ismh'
+       call metadata_set(attname, longname, stdname, units)
+
+       ! Water flux from removed liquid runoff
+       call seq_flds_add(o2x_fluxes,"Foxo_rrofl")
+       longname = 'Water flux due to removed liqiud runoff'
+       stdname  = 'removed_liquid_runoff_flux'
+       units    = 'kg m-2 s-1'
+       attname  = 'Foxo_rrofl'
+       call metadata_set(attname, longname, stdname, units)
+
+       ! Water flux from removed solid runoff
+       call seq_flds_add(o2x_fluxes,"Foxo_rrofi")
+       longname = 'Water flux due to removed solid runoff'
+       stdname  = 'removed_solid_runoff_flux'
+       units    = 'kg m-2 s-1'
+       attname  = 'Foxo_rrofi'
+       call metadata_set(attname, longname, stdname, units)
+
+       ! Heat flux from removed solid runoff
+       call seq_flds_add(o2x_fluxes,"Foxo_rrofih")
+       longname = 'Heat flux due to removed solid runoff'
+       stdname  = 'removed_solid_runoff_heat_flux'
+       units    = 'W m-2'
+       attname  = 'Foxo_rrofih'
+       call metadata_set(attname, longname, stdname, units)
+
+    end if
 
     ! Salt flux
     call seq_flds_add(i2x_fluxes,"Fioi_salt")
