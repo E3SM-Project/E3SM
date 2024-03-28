@@ -142,10 +142,10 @@ void MAMOptics::set_grids(
                       grid_name);  // planetary boundary layer height
 
   // shortwave aerosol scattering asymmetry parameter [-]
-  add_field<Computed>("aero_tau_g_sw", scalar3d_swband_layout_int, nondim,
+  add_field<Computed>("aero_tau_g_sw_mam4", scalar3d_swband_layout_int, nondim,
                       grid_name);
   // shortwave aerosol single-scattering albedo [-]
-  add_field<Computed>("aero_tau_ssa_sw", scalar3d_swband_layout_int, nondim,
+  add_field<Computed>("aero_tau_ssa_sw_mam4", scalar3d_swband_layout_int, nondim,
                       grid_name);
   // shortwave aerosol extinction optical depth [-]
   add_field<Computed>("aero_tau_sw_mam4", scalar3d_swband_layout_int, nondim,
@@ -489,11 +489,11 @@ void MAMOptics::run_impl(const double dt) {
   Kokkos::fence();
   /// outputs
    //In aer_rad_props.F90; tau_w_g=> aerosol asymmetry parameter * tau * w
-  const auto aero_tau_g_sw = get_field_out("aero_tau_g_sw").get_view<Real ***>();
+  const auto aero_tau_g_sw = get_field_out("aero_tau_g_sw_mam4").get_view<Real ***>();
 
   //In aer_rad_props.F90; tau_w => aerosol single scattering albedo * tau
   const auto aero_tau_ssa_sw =
-      get_field_out("aero_tau_ssa_sw").get_view<Real ***>();
+      get_field_out("aero_tau_ssa_sw_mam4").get_view<Real ***>();
   // In aer_rad_props.F90; tau => aerosol extinction optical depth
   const auto aero_tau_sw =
       get_field_out("aero_tau_sw_mam4").get_view<Real ***>();
