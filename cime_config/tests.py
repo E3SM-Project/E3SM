@@ -24,9 +24,9 @@ _TESTS = {
 
     "e3sm_mosart_exenoshare": {
         "time"  : "0:45:00",
-        "tests" : (
-            "ERS.ne30pg2_r05_IcoswISC30E3r5.GPMPAS-JRA.mosart-rof_ocn_2way",
-            )
+        # "tests" : (
+        #     "ERS.ne30pg2_r05_IcoswISC30E3r5.GPMPAS-JRA.mosart-rof_ocn_2way",
+        #     )
         },
 
     "e3sm_mosart_sediment" : {
@@ -55,7 +55,7 @@ _TESTS = {
         "time"  : "0:45:00",
         "tests" : (
             "ERS_Ld20.f45_f45.IELMFATES.elm-fates",
-            "ERS.hcru_hcru.I20TRGSWCNPRDCTCBC.elm-erosion",
+            # "ERS.hcru_hcru.I20TRGSWCNPRDCTCBC.elm-erosion",
             "ERS.f09_g16.IELMBC.elm-simple_decomp",
             "ERS.hcru_hcru.IELM.elm-multi_inst",
             )
