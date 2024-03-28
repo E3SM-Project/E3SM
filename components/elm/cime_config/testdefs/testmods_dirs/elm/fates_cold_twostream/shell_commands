@@ -1,0 +1,8 @@
+SRCDIR=`./xmlquery SRCROOT --value`
+CASEDIR=`./xmlquery CASEROOT --value`
+FATESDIR=$SRCDIR/src/fates
+FATESPARAMFILE=$CASEDIR/fates_params_twostream.nc
+
+ncgen -o $FATESPARAMFILE $FATESDIR/parameter_files/fates_params_default.cdl
+
+$FATESDIR/tools/modify_fates_paramfile.py --O --fin $FATESPARAMFILE --fout $FATESPARAMFILE --var fates_rad_model --val 2 --allpfts
