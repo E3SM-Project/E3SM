@@ -554,16 +554,16 @@ void MAMOptics::run_impl(const double dt) {
         auto ext_cmip6_lw_icol = ekat::subview(ext_cmip6_lw, icol);
 
         // FIXME: check if this correct: Note that these variables have pver+1
-        // levels tau_w =>  aero_ssa_sw  (pcols,0:pver,nswbands) ! aerosol
+        // levels tau_w : aero_ssa_sw  (pcols,0:pver,nswbands) ! aerosol
         // tau_w: aerosol single scattering albedo * tau
         auto tau_w_icol = ekat::subview(aero_tau_ssa_sw, icol);
-        // tau_w_g => "aero_g_sw" (pcols,0:pver,nswbands) ! aerosol assymetry
+        // tau_w_g:  (pcols,0:pver,nswbands)  aerosol assymetry
         // parameter * tau * w
         auto tau_w_g_icol = ekat::subview(aero_tau_g_sw, icol);
-        // tau_w_f(pcols,0:pver,nswbands) => aero_tau_forward  ? ! aerosol
+        // tau_w_f(pcols,0:pver,nswbands) => aero_tau_forward  ?  aerosol
         // forward scattered fraction * tau * w
         auto tau_w_f_icol = ekat::subview(aero_tau_forward, icol);
-        // tau  => aero_tau_sw (?)   (pcols,0:pver,nswbands) ! aerosol
+        // tau :  (pcols,0:pver,nswbands) aerosol
         // aerosol extinction optical depth
         auto tau_icol = ekat::subview(aero_tau_sw, icol);
 
