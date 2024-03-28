@@ -23,6 +23,9 @@ using const_view_1d = typename KT::template view_1d<const Real>;
 using const_view_2d = typename KT::template view_2d<const Real>;
 using const_view_3d = typename KT::template view_3d<const Real>;
 
+using complex_view_3d = typename KT::template view_3d<Kokkos::complex<Real>>;
+using complex_view_2d = typename KT::template view_2d<Kokkos::complex<Real>>;
+
 // Kokkos thread team (league member)
 using Team = Kokkos::TeamPolicy<KT::ExeSpace>::member_type;
 
@@ -266,10 +269,6 @@ struct WetAtmosphere {
 // This type stores multi-column views related to the dry atmospheric state
 // used by MAM.
 struct DryAtmosphere {
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> Reverted back mam_coupling changes for indexing but added a func to get prog index
   Real          z_surf;    // height of bottom of atmosphere [m]
   const_view_2d T_mid;     // temperature at grid midpoints [K]
   const_view_2d p_mid;     // total pressure at grid midpoints [Pa]
@@ -282,40 +281,11 @@ struct DryAtmosphere {
   view_2d       z_iface;   // height at layer interfaces [m]
   view_2d       dz;        // layer thickness [m]
   const_view_2d p_del;     // hydrostatic "pressure thickness" at grid interfaces [Pa]
-<<<<<<< HEAD
-  const_view_2d p_int;    // total pressure at grid interfaces [Pa]
-=======
   const_view_2d p_int;     // total pressure at grid interfaces [Pa]
->>>>>>> Reverted back mam_coupling changes for indexing but added a func to get prog index
   const_view_2d cldfrac;   // cloud fraction [-]
   view_2d       w_updraft; // updraft velocity [m/s]
   const_view_1d pblh;      // planetary boundary layer height [m]
   const_view_1d phis;      // surface geopotential [m2/s2]
-<<<<<<< HEAD
-=======
-  Real z_surf;          // height of bottom of atmosphere [m]
-  const_view_2d T_mid;  // temperature at grid midpoints [K]
-  const_view_2d p_mid;  // total pressure at grid midpoints [Pa]
-  view_2d qv;           // dry water vapor mixing ratio [kg vapor / kg dry air]
-  view_2d qc;  // dry cloud liquid water mass mixing ratio [kg cloud water/kg
-               // dry air]
-  view_2d nc;  // dry cloud liquid water number mixing ratio [# / kg dry air]
-  view_2d qi;  // dry cloud ice water mass mixing ratio [kg cloud ice water / kg
-               // dry air]
-  view_2d ni;  // dry cloud ice water number mixing ratio [# / kg dry air]
-  view_2d z_mid;    // height at layer midpoints [m]
-  view_2d z_iface;  // height at layer interfaces [m]
-  view_2d dz;       // layer thickness [m]
-  const_view_2d
-      p_del;  // hydrostatic "pressure thickness" at grid interfaces [Pa]
-  const_view_2d p_int;    // total pressure at grid interfaces [Pa]
-  const_view_2d cldfrac;  // cloud fraction [-]
-  view_2d w_updraft;      // updraft velocity [m/s]
-  const_view_1d pblh;     // planetary boundary layer height [m]
-  const_view_1d phis;     // surface geopotential [m2/s2]
->>>>>>> Modified species order to match E3SM with the folling change in mam4xx
-=======
->>>>>>> Reverted back mam_coupling changes for indexing but added a func to get prog index
 };
 
 // This type stores aerosol number and mass mixing ratios evolved by MAM. It
@@ -581,8 +551,8 @@ mam4::Prognostics interstitial_aerosols_for_column(const AerosolState& dry_aero,
     progs.n_mode_i[m] = ekat::subview(dry_aero.int_aero_nmr[m], column_index);
     for (int a = 0; a < num_aero_species(); ++a) {
       if (dry_aero.int_aero_mmr[m][a].data()) {
-        int h_ind = mam4::utils::get_haero_prognostics_index(m,a);//Index of HAERO's prognostics 
-        progs.q_aero_i[m][h_ind] = ekat::subview(dry_aero.int_aero_mmr[m][a], column_index);
+        int prg_idx = mam4::utils::get_prognostics_index(m,a);//Index of HAERO's prognostics 
+        progs.q_aero_i[m][prg_idx] = ekat::subview(dry_aero.int_aero_mmr[m][a], column_index);
       }
     }
   }
@@ -607,8 +577,8 @@ mam4::Prognostics aerosols_for_column(const AerosolState& dry_aero,
     progs.n_mode_c[m] = ekat::subview(dry_aero.cld_aero_nmr[m], column_index);
     for (int a = 0; a < num_aero_species(); ++a) {
       if (dry_aero.cld_aero_mmr[m][a].data()) {
-        int h_ind = mam4::utils::get_haero_prognostics_index(m,a); //Index of HAERO's prognostics array
-        progs.q_aero_c[m][h_ind] = ekat::subview(dry_aero.cld_aero_mmr[m][a], column_index);
+        int prg_idx = mam4::utils::get_prognostics_index(m,a); //Index of HAERO's prognostics array
+        progs.q_aero_c[m][prg_idx] = ekat::subview(dry_aero.cld_aero_mmr[m][a], column_index);
       }
     }
   }

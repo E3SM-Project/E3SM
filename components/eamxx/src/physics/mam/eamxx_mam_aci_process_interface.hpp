@@ -70,7 +70,7 @@ class MAMAci final : public scream::AtmosphereProcess {
   view_2d qcld_;
   view_2d tendnd_;
   // ptend_q_ is just ptend_q_output_ reformatted.
-  view_2d ptend_q_[mam4::ndrop::nvar_ptend_q];
+  view_2d ptend_q_[mam4::aero_model::pcnst];
   view_3d ptend_q_output_;
   view_3d factnum_;
   const_view_3d qqcw_input_;

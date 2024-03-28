@@ -374,7 +374,7 @@ void call_function_dropmixnuc(
     MAMAci::view_2d raercol_cw[mam4::ndrop::pver][2],
     MAMAci::view_2d raercol[mam4::ndrop::pver][2],
     MAMAci::view_2d qqcw_fld_work_[mam4::ndrop::ncnst_tot],
-    MAMAci::view_2d ptend_q[mam4::ndrop::nvar_ptend_q],
+    MAMAci::view_2d ptend_q[mam4::aero_model::pcnst],
     MAMAci::view_2d coltend[mam4::ndrop::ncnst_tot],
     MAMAci::view_2d coltend_cw[mam4::ndrop::ncnst_tot],
     MAMAci::const_view_2d p_int, MAMAci::const_view_2d pdel,
@@ -411,7 +411,7 @@ void call_function_dropmixnuc(
   MAMAci::view_2d loc_raercol_cw[mam4::ndrop::pver][2];
   MAMAci::view_2d loc_raercol[mam4::ndrop::pver][2];
   MAMAci::view_2d loc_qqcw[mam4::ndrop::ncnst_tot];
-  MAMAci::view_2d loc_ptend_q[mam4::ndrop::nvar_ptend_q];
+  MAMAci::view_2d loc_ptend_q[mam4::aero_model::pcnst];
   MAMAci::view_2d loc_coltend[mam4::ndrop::ncnst_tot];
   MAMAci::view_2d loc_coltend_cw[mam4::ndrop::ncnst_tot];
 
@@ -419,7 +419,7 @@ void call_function_dropmixnuc(
     for(int j = 0; j < 2; ++j) loc_raercol_cw[i][j] = raercol_cw[i][j];
   for(int i = 0; i < mam4::ndrop::pver; ++i)
     for(int j = 0; j < 2; ++j) loc_raercol[i][j] = raercol[i][j];
-  for(int i = 0; i < mam4::ndrop::nvar_ptend_q; ++i)
+  for(int i = 0; i < mam4::aero_model::pcnst; ++i)
     loc_ptend_q[i] = ptend_q[i];
   for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i) loc_coltend[i] = coltend[i];
   for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i)
@@ -470,8 +470,8 @@ void call_function_dropmixnuc(
         for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i) {
           qqcw_view[i] = ekat::subview(qqcw_fld_work_loc[i], icol);
         }
-        mam4::ColumnView ptend_q_view[mam4::ndrop::nvar_ptend_q];
-        for(int i = 0; i < mam4::ndrop::nvar_ptend_q; ++i) {
+        mam4::ColumnView ptend_q_view[mam4::aero_model::pcnst];
+        for(int i = 0; i < mam4::aero_model::pcnst; ++i) {
           ptend_q_view[i] = ekat::subview(loc_ptend_q[i], icol);
         }
         mam4::ColumnView coltend_view[mam4::ndrop::ncnst_tot],
@@ -501,14 +501,14 @@ void call_function_dropmixnuc(
             atmosphere_for_column(dry_atmosphere, icol);
 
         for(int klev = 0; klev < mam4::ndrop::pver; ++klev) {
-          Real state_q_at_lev_col[mam4::ndrop::nvars] = {};  // use pcnst here
-          Real qqcw_at_lev_col[mam4::ndrop::nvars]    = {};  // use pcnst here
+          Real state_q_at_lev_col[mam4::aero_model::pcnst] = {};  // use pcnst here
+          Real qqcw_at_lev_col[mam4::aero_model::pcnst]    = {};  // use pcnst here
           mam4::utils::extract_stateq_from_prognostics(
               progs_at_col, haero_atm, state_q_at_lev_col, klev);
 
           mam4::utils::extract_qqcw_from_prognostics(progs_at_col,
                                                      qqcw_at_lev_col, klev);
-          for(int icnst = 15; icnst < mam4::ndrop::nvars; ++icnst) {
+          for(int icnst = 15; icnst < mam4::aero_model::pcnst; ++icnst) {
             state_q_work_loc(icol, klev, icnst) =
                 state_q_at_lev_col[icnst];  // FIXME: ensure that indices are
                                             // right! remove "15" if possible!!
@@ -836,7 +836,7 @@ void MAMAci::set_grids(
   // BALLI:???
   add_field<Computed>(
       "ptend_q",
-      FieldLayout{{COL, LEV, CMP}, {ncol_, nlev_, mam4::ndrop::nvar_ptend_q}},
+      FieldLayout{{COL, LEV, CMP}, {ncol_, nlev_, mam4::aero_model::pcnst}},
       n_unit, grid_name);  // tendencies for interstitial and cloud borne
                            // aerosols [#/kg]
   // BALLI:???
@@ -956,7 +956,7 @@ void MAMAci::set_grids(
   // Layout for 4D (2d horiz X 1d vertical x number of modes) variables
   const int num_aero_modes = mam_coupling::num_aero_modes();
   FieldLayout scalar4d_layout_mid{
-      {COL, LEV, NUM_MODES}, {ncol_, nlev_, num_aero_modes}};  // mid points
+      {COL, LEV, NMODES}, {ncol_, nlev_, num_aero_modes}};  // mid points
   // BALLI:???
   add_field<Required>("dgnum", scalar4d_layout_mid, m,
                       grid_name);  // dry diameter of aerosols
@@ -1126,7 +1126,7 @@ void MAMAci::initialize_impl(const RunType run_type) {
     Kokkos::resize(coltend_[i], ncol_, nlev_);
     Kokkos::resize(coltend_cw_[i], ncol_, nlev_);
   }
-  for(int i = 0; i < mam4::ndrop::nvar_ptend_q; ++i) {
+  for(int i = 0; i < mam4::aero_model::pcnst; ++i) {
     Kokkos::resize(ptend_q_[i], ncol_, nlev_);  // MUST FIXME:Do we need this?
   }
   for(int i = 0; i < mam4::ndrop::pver; ++i) {
@@ -1226,7 +1226,7 @@ void MAMAci::run_impl(const double dt) {
       nsource_, wtke_, ccn_, nact_, mact_, dropmixnuc_scratch_mem_, nlev_);
   Kokkos::fence();  // wait for ptend_q_ to be computed.
 
-  copy_mam4xx_array_to_scream<mam4::ndrop::nvar_ptend_q>(
+  copy_mam4xx_array_to_scream<mam4::aero_model::pcnst>(
       team_policy, ptend_q_output_, ptend_q_, nlev_);
   copy_mam4xx_array_to_scream<mam4::ndrop::ncnst_tot>(
       team_policy, coltend_outp_, coltend_, nlev_);
