@@ -90,14 +90,19 @@ void MAMOptics::set_grids(
 
   // Define aerosol optics fields computed by this process.
   auto nondim = Units::nondimensional();
-  FieldLayout scalar3d_swbandp_layout{{COL, SWBND, ILEV},
+  // 3D layout for shortwave aerosol fields: columns, number of shortwave, and nlev +1 s
+  // shortwave aerosol fields in mam has one extra level (nlev+1)
+  FieldLayout scalar3d_swband_layout_int{{COL, SWBND, ILEV},
                                       {ncol_, nswbands_, nlev_ + 1}};
 
-  FieldLayout scalar3d_swbandp_layout2{{COL, SWBND, LEV},
+  // 3D layout for shortwave aerosol fields: columns, number of shortwave, and nlev
+  FieldLayout scalar3d_swband_layout{{COL, SWBND, LEV},
                                        {ncol_, nswbands_, nlev_}};
 
+  // 3D layout for longwave aerosol fields: columns, number of shortwave, and nlev +1 s
   FieldLayout scalar3d_lwband_layout{{COL, LWBND, LEV},
                                      {ncol_, nlwbands_, nlev_}};
+
   FieldLayout scalar3d_layout_int{{COL, ILEV}, {ncol_, nlev_ + 1}};
 
   // layout for 2D (1d horiz X 1d vertical) variable
@@ -137,29 +142,29 @@ void MAMOptics::set_grids(
                       grid_name);  // planetary boundary layer height
 
   // shortwave aerosol scattering asymmetry parameter [-]
-  add_field<Computed>("aero_g_sw_mam4", scalar3d_swbandp_layout, nondim,
+  add_field<Computed>("aero_g_sw_mam4", scalar3d_swband_layout_int, nondim,
                       grid_name);
   // shortwave aerosol single-scattering albedo [-]
-  add_field<Computed>("aero_ssa_sw_mam4", scalar3d_swbandp_layout, nondim,
+  add_field<Computed>("aero_ssa_sw_mam4", scalar3d_swband_layout_int, nondim,
                       grid_name);
   // shortwave aerosol optical depth [-]
-  add_field<Computed>("aero_tau_sw_mam4", scalar3d_swbandp_layout, nondim,
+  add_field<Computed>("aero_tau_sw_mam4", scalar3d_swband_layout_int, nondim,
                       grid_name);
 
   //
   // shortwave aerosol scattering asymmetry parameter [-]
-  add_field<Computed>("aero_g_sw", scalar3d_swbandp_layout2, nondim, grid_name);
+  add_field<Computed>("aero_g_sw", scalar3d_swband_layout, nondim, grid_name);
   // shortwave aerosol single-scattering albedo [-]
-  add_field<Computed>("aero_ssa_sw", scalar3d_swbandp_layout2, nondim,
+  add_field<Computed>("aero_ssa_sw", scalar3d_swband_layout, nondim,
                       grid_name);
   // shortwave aerosol optical depth [-]
-  add_field<Computed>("aero_tau_sw", scalar3d_swbandp_layout2, nondim,
+  add_field<Computed>("aero_tau_sw", scalar3d_swband_layout, nondim,
                       grid_name);
 
   // longwave aerosol optical depth [-]
   add_field<Computed>("aero_tau_lw", scalar3d_lwband_layout, nondim, grid_name);
   // // aerosol extinction optical depth
-  add_field<Computed>("aero_tau_forward", scalar3d_swbandp_layout, nondim,
+  add_field<Computed>("aero_tau_forward", scalar3d_swband_layout_int, nondim,
                       grid_name);
 
   add_field<Computed>("aodvis", scalar2d_layout_col, nondim, grid_name);
