@@ -581,8 +581,8 @@ void copy_mam4xx_array_to_scream(haero::ThreadTeamPolicy team_policy,
 void call_hetfrz_compute_tendencies(
     haero::ThreadTeamPolicy team_policy, mam4::Hetfrz &hetfrz_,
     mam_coupling::AerosolState &dry_aero_,
-    mam_coupling::WetAtmosphere &wet_atmosphere_,
-    mam_coupling::DryAtmosphere &dry_atmosphere_,
+    mam_coupling::WetAtmosphere &wet_atm_,
+    mam_coupling::DryAtmosphere &dry_atm_,
     MAMAci::view_2d stratiform_cloud_fraction,
     MAMAci::view_2d activation_fraction_accum_idx,
     MAMAci::view_2d activation_fraction_coarse_idx,
@@ -596,8 +596,8 @@ void call_hetfrz_compute_tendencies(
 
   mam4::Hetfrz hetfrz                          = hetfrz_;
   mam_coupling::AerosolState dry_aerosol_state = dry_aero_;
-  mam_coupling::WetAtmosphere wet_atmosphere   = wet_atmosphere_;
-  mam_coupling::DryAtmosphere dry_atmosphere   = dry_atmosphere_;
+  mam_coupling::WetAtmosphere wet_atmosphere   = wet_atm_;
+  mam_coupling::DryAtmosphere dry_atmosphere   = dry_atm_;
   MAMAci::view_2d diagnostic_scratch[42];
   for(int i = 0; i < 42; ++i) diagnostic_scratch[i] = diagnostic_scratch_[i];
 
@@ -783,65 +783,87 @@ void MAMAci::set_grids(
   add_field<Required>("pbl_height", scalar2d_layout_col, m,
                       grid_name);  // planetary boundary layer height
 
+  // BALLI:???
+  add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim,
+                      grid_name);  // cloud fraction [nondimentional]
+
+  // ------------------------------------------------------------------------
   // Output from this process
+  // ------------------------------------------------------------------------
+  // BALLI:???
   add_field<Computed>("stratiform_cloud_fraction", scalar3d_layout_mid, nondim,
                       grid_name);  // Layer thickness(pdel) [Pa] at midpoints
+  // BALLI:???
   add_field<Computed>("activation_fraction_accum", scalar3d_layout_mid, nondim,
                       grid_name);  // Layer thickness(pdel) [Pa] at midpoints
+  // BALLI:???
   add_field<Computed>("activation_fraction_coarse", scalar3d_layout_mid, nondim,
                       grid_name);  // Layer thickness(pdel) [Pa] at midpoints
 
   // MUST FIXME: This should be an internal variable. why we need this as an
   // input???
+  // BALLI:???
   add_field<Updated>("w_updraft", scalar3d_layout_mid, q_unit,
                      grid_name);  // updraft velocity
-  // MUST FIXME: move it above so that all "required" variables are together
-  add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim,
-                      grid_name);  // cloud fraction [nondimentional]
 
+  // BALLI:???
   add_field<Computed>("icenuc_num_hetfrz", scalar3d_layout_mid, 1 / m / m / m,
                       grid_name);  // number conc of ice nuclei due to
-                                   // heterogeneous freezing [1/m3]
+  // BALLI:???                                 // heterogeneous freezing [1/m3]
   add_field<Computed>("icenuc_num_immfrz", scalar3d_layout_mid, 1 / m / m / m,
                       grid_name);  // number conc of ice nuclei due to immersion
-                                   // freezing (hetero nuc) [1/m3]
+  // BALLI:???                                 // freezing (hetero nuc) [1/m3]
   add_field<Computed>("icenuc_num_depnuc", scalar3d_layout_mid, 1 / m / m / m,
                       grid_name);  // number conc of ice nuclei due to
                                    // deposition nucleation (hetero nuc)[1/m3]
+  // BALLI:???
   add_field<Computed>(
       "icenuc_num_meydep", scalar3d_layout_mid, 1 / m / m / m,
       grid_name);  // number conc of ice nuclei due to meyers deposition [1/m3]
+
+  // BALLI:???
   add_field<Computed>(
       "num_act_aerosol_ice_nucle_hom", scalar3d_layout_mid, n_unit,
       grid_name);  // number of activated aerosol for ice nucleation
                    // (homogeneous freezing only) [#/kg]
+  // BALLI:???
   add_field<Computed>(
       "num_act_aerosol_ice_nucle", scalar3d_layout_mid, n_unit,
       grid_name);  // number of activated aerosol for ice nucleation[#/kg]
+  // BALLI:???
   add_field<Computed>("qcld", scalar3d_layout_mid, n_unit,
                       grid_name);  // cloud droplet number mixing ratio [#/kg]
+  // BALLI:???
   add_field<Computed>(
       "ptend_q",
       FieldLayout{{COL, LEV, CMP}, {ncol_, nlev_, mam4::ndrop::nvar_ptend_q}},
       n_unit, grid_name);  // tendencies for interstitial and cloud borne
                            // aerosols [#/kg]
+  // BALLI:???
   add_field<Computed>(
       "tendnd", scalar3d_layout_mid, n_unit / s,
       grid_name);  // tendency in droplet number mixing ratio [#/kg/s]
+  // BALLI:???
   add_field<Computed>(
       "factnum",
       FieldLayout{{COL, LEV, CMP},
                   {ncol_, nlev_, mam_coupling::num_aero_modes()}},
       nondim, grid_name);  // activation fraction for aerosol number [fraction]
+  // BALLI:???
   add_field<Computed>("ndropcol", scalar3d_layout_mid, n_unit / s,
                       grid_name);  //
+  // BALLI:???
   add_field<Computed>("ndropmix", scalar3d_layout_mid, n_unit / s,
                       grid_name);  // droplet number mixing ratio tendency due
                                    // to mixing [#/kg/s]
+  // BALLI:???
   add_field<Computed>(
       "nsource", scalar3d_layout_mid, n_unit / s,
       grid_name);  // droplet number mixing ratio source tendency [#/kg/s]
+  // BALLI:???
   add_field<Computed>("wtke", scalar3d_layout_mid, n_unit / s, grid_name);  //
+
+  // BALLI:???
   add_field<Computed>(
       "ccn", FieldLayout{{COL, LEV, CMP}, {ncol_, nlev_, mam4::ndrop::psat}},
       n_unit,
@@ -851,10 +873,12 @@ void MAMAci::set_grids(
                    //      [#/m^2/s]]
                    //            / [aero. number conc. in updraft, just below
                    //            cloudbase [#/m^3]]
+  // BALLI:???
   add_field<Computed>(
       "coltend",
       FieldLayout{{COL, LEV, CMP}, {ncol_, nlev_, mam4::ndrop::ncnst_tot}},
       nondim, grid_name);  // column tendency for diagnostic output
+  // BALLI:???
   add_field<Computed>(
       "coltend_cw",
       FieldLayout{{COL, LEV, CMP}, {ncol_, nlev_, mam4::ndrop::ncnst_tot}},
@@ -871,7 +895,6 @@ void MAMAci::set_grids(
         mam_coupling::int_aero_nmr_field_name(mode);
     add_field<Updated>(int_nmr_field_name, scalar3d_layout_mid, n_unit,
                        grid_name, "tracers");
-    std::cout << "mode:" << mode << " name:" << int_nmr_field_name << std::endl;
 
     // cloudborne aerosol tracers of interest: number (n) mixing ratios
     // NOTE: DO NOT add cld borne aerosols to the "tracer" group as these are
@@ -880,8 +903,6 @@ void MAMAci::set_grids(
         mam_coupling::cld_aero_nmr_field_name(mode);
     add_field<Updated>(cld_nmr_field_name, scalar3d_layout_mid, n_unit,
                        grid_name);
-    // std::cout<<"mode:"<< <<" name:"<< <<std::endl;
-    // std::cout<<"mode:"<< mode<<" cldname:"<< cld_nmr_field_name<<std::endl;
 
     for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
       // (interstitial) aerosol tracers of interest: mass (q) mixing ratios
@@ -890,8 +911,6 @@ void MAMAci::set_grids(
       if(strlen(int_mmr_field_name) > 0) {
         add_field<Updated>(int_mmr_field_name, scalar3d_layout_mid, q_unit,
                            grid_name, "tracers");
-        std::cout << "--> mode:" << mode << " spec:" << a
-                  << " int-spec-name:" << int_mmr_field_name << std::endl;
       }
       // (cloudborne) aerosol tracers of interest: mass (q) mixing ratios
       // NOTE: DO NOT add cld borne aerosols to the "tracer" group as these are
@@ -901,8 +920,6 @@ void MAMAci::set_grids(
       if(strlen(cld_mmr_field_name) > 0) {
         add_field<Updated>(cld_mmr_field_name, scalar3d_layout_mid, q_unit,
                            grid_name);
-        // std::cout<<"--> mode:"<< mode<<" spec:"<< a<< " cld-spec name:"<<
-        // cld_mmr_field_name<<std::endl;
       }
     }
   }
@@ -910,8 +927,6 @@ void MAMAci::set_grids(
     const char *gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
     add_field<Updated>(gas_mmr_field_name, scalar3d_layout_mid, q_unit,
                        grid_name, "tracers");
-    // std::cout << "--> Gasses:" << g <<" spec:"<<gas_mmr_field_name<<
-    // std::endl;
   }
 
   // Inputs (atmospheric quantities) for aci codes that existed in PBUF in EAM
@@ -923,15 +938,18 @@ void MAMAci::set_grids(
 
   // MUST FIXME: w_sec,  is at OLD time step; strat_cld_frac and
   // liq_strat_cld_frac may also need OLD time
+  // BALLI:???
   add_field<Required>(
       "w_sec", scalar3d_layout_int, m2 / s2,
       grid_name);  // Vertical velocity variance (wp2) at midpoints
-
+  // BALLI:???
   add_field<Required>("strat_cld_frac", scalar3d_layout_mid, nondim,
                       grid_name);  // Stratiform cloud fraction at midpoints
+  // BALLI:???
   add_field<Required>(
       "liq_strat_cld_frac", scalar3d_layout_mid, nondim,
       grid_name);  // Liquid stratiform cloud fraction  at midpoints
+  // BALLI:???
   add_field<Required>("kvh", scalar3d_layout_int, m2 / s,
                       grid_name);  // Eddy diffusivity for heat
 
@@ -939,6 +957,7 @@ void MAMAci::set_grids(
   const int num_aero_modes = mam_coupling::num_aero_modes();
   FieldLayout scalar4d_layout_mid{
       {COL, LEV, NUM_MODES}, {ncol_, nlev_, num_aero_modes}};  // mid points
+  // BALLI:???
   add_field<Required>("dgnum", scalar4d_layout_mid, m,
                       grid_name);  // dry diameter of aerosols
 
@@ -946,11 +965,13 @@ void MAMAci::set_grids(
   auto frz_unit =
       1 / (cm * cm * cm * s);  // units of number mixing ratios of tracers
   n_unit.set_string("1(cm^-3 s^-1)");
-
+  // BALLI:???
   add_field<Computed>("hetfrz_immersion_nucleation_tend", scalar3d_layout_mid,
                       frz_unit, grid_name);  // dry diameter of aerosols
+                                             // BALLI:???
   add_field<Computed>("hetfrz_contact_nucleation_tend", scalar3d_layout_mid,
                       frz_unit, grid_name);  // dry diameter of aerosols
+                                             // BALLI:???
   add_field<Computed>("hetfrz_depostion_nucleation_tend", scalar3d_layout_mid,
                       frz_unit, grid_name);  // dry diameter of aerosols
   //
@@ -962,7 +983,7 @@ void MAMAci::set_grids(
    * qv_mid (see dry_static_energy.cpp's "compute_diagnostic_impl" function).
    *    qv_mid can be obtained from "get_field_in" call
    */
-}
+}  // set_grids ends
 
 void MAMAci::init_buffers(const ATMBufferManager &buffer_manager) {
   EKAT_REQUIRE_MSG(
@@ -977,10 +998,6 @@ void MAMAci::init_buffers(const ATMBufferManager &buffer_manager) {
 }
 
 void MAMAci::initialize_impl(const RunType run_type) {
-  m_atm_logger->log(ekat::logger::LogLevel::info, "Calling ACI init");
-
-  // set atmosphere state data
-
   w_sec_ = get_field_in("w_sec").get_view<const Real **>();
 
   dgnum_ = get_field_in("dgnum")
@@ -1010,34 +1027,34 @@ void MAMAci::initialize_impl(const RunType run_type) {
   coltend_outp_    = get_field_out("coltend").get_view<Real ***>();
   coltend_cw_outp_ = get_field_out("coltend_cw").get_view<Real ***>();
 
-  wet_atmosphere_.qv    = get_field_in("qv").get_view<const Real **>();
-  wet_atmosphere_.qc    = get_field_in("qc").get_view<const Real **>();
-  wet_atmosphere_.nc    = get_field_in("nc").get_view<const Real **>();
-  wet_atmosphere_.qi    = get_field_in("qi").get_view<const Real **>();
-  wet_atmosphere_.ni    = get_field_in("ni").get_view<const Real **>();
-  wet_atmosphere_.omega = get_field_in("omega").get_view<const Real **>();
+  wet_atm_.qv    = get_field_in("qv").get_view<const Real **>();
+  wet_atm_.qc    = get_field_in("qc").get_view<const Real **>();
+  wet_atm_.nc    = get_field_in("nc").get_view<const Real **>();
+  wet_atm_.qi    = get_field_in("qi").get_view<const Real **>();
+  wet_atm_.ni    = get_field_in("ni").get_view<const Real **>();
+  wet_atm_.omega = get_field_in("omega").get_view<const Real **>();
 
-  dry_atmosphere_.T_mid = get_field_in("T_mid").get_view<const Real **>();
-  dry_atmosphere_.p_mid = get_field_in("p_mid").get_view<const Real **>();
-  dry_atmosphere_.p_int = get_field_in("p_int").get_view<const Real **>();
-  dry_atmosphere_.p_del =
-      get_field_in("pseudo_density").get_view<const Real **>();
-  dry_atmosphere_.qv   = buffer_.qv_dry;
-  dry_atmosphere_.qc   = buffer_.qc_dry;
-  dry_atmosphere_.nc   = buffer_.nc_dry;
-  dry_atmosphere_.qi   = buffer_.qi_dry;
-  dry_atmosphere_.ni   = buffer_.ni_dry;
-  dry_atmosphere_.pblh = get_field_in("pbl_height").get_view<const Real *>();
+  dry_atm_.T_mid = get_field_in("T_mid").get_view<const Real **>();
+  dry_atm_.p_mid = get_field_in("p_mid").get_view<const Real **>();
+  dry_atm_.p_int = get_field_in("p_int").get_view<const Real **>();
+  dry_atm_.p_del = get_field_in("pseudo_density").get_view<const Real **>();
+  dry_atm_.qv    = buffer_.qv_dry;
+  dry_atm_.qc    = buffer_.qc_dry;
+  dry_atm_.nc    = buffer_.nc_dry;
+  dry_atm_.qi    = buffer_.qi_dry;
+  dry_atm_.ni    = buffer_.ni_dry;
 
-  dry_atmosphere_.dz      = buffer_.dz;  // geometric thickness of layers (m)
-  dry_atmosphere_.z_iface = buffer_.z_iface;  // geopotential height above
-                                              // surface at interface levels (m)
-  dry_atmosphere_.z_mid =
+  // pbl_height from SHOC
+  dry_atm_.pblh = get_field_in("pbl_height").get_view<const Real *>();
+
+  dry_atm_.dz      = buffer_.dz;       // geometric thickness of layers (m)
+  dry_atm_.z_iface = buffer_.z_iface;  // geopotential height above
+                                       // surface at interface levels (m)
+  dry_atm_.z_mid =
       buffer_.z_mid;  // geopotential height above surface at mid levels (m)
 
-  dry_atmosphere_.cldfrac =
-      get_field_in("cldfrac_tot").get_view<const Real **>();
-  dry_atmosphere_.w_updraft = get_field_out("w_updraft").get_view<Real **>();
+  dry_atm_.cldfrac   = get_field_in("cldfrac_tot").get_view<const Real **>();
+  dry_atm_.w_updraft = get_field_out("w_updraft").get_view<Real **>();
 
   hetfrz_immersion_nucleation_tend_ =
       get_field_out("hetfrz_immersion_nucleation_tend").get_view<Real **>();
@@ -1137,8 +1154,8 @@ void MAMAci::initialize_impl(const RunType run_type) {
   hetfrz_.init(aero_config, hetfrz_config);
 
   // set up our preprocess functor
-  preprocess_.initialize(ncol_, nlev_, wet_atmosphere_, wet_aero_,
-                         dry_atmosphere_, dry_aero_);
+  preprocess_.initialize(ncol_, nlev_, wet_atm_, wet_aero_, dry_atm_,
+                         dry_aero_);
 }
 
 void MAMAci::run_impl(const double dt) {
@@ -1157,8 +1174,8 @@ void MAMAci::run_impl(const double dt) {
   // All the inputs are available to compute w0 and rho
   // Convert from omega to w (vertical velocity)
   // Negative omega means rising motion
-  compute_w0_and_rho(team_policy, w0_ /*output*/, rho_ /*output*/,
-                     wet_atmosphere_, dry_atmosphere_, top_lev_, nlev_);
+  compute_w0_and_rho(team_policy, w0_ /*output*/, rho_ /*output*/, wet_atm_,
+                     dry_atm_, top_lev_, nlev_);
 
   compute_tke_using_w_sec(team_policy, tke_ /*output*/, w_sec_, nlev_);
 
@@ -1176,10 +1193,10 @@ void MAMAci::run_impl(const double dt) {
   // FIXME: Find out in-outs of the following call!
   compute_nucleate_ice_tendencies(nucleate_ice_, team_policy, nihf_, niim_,
                                   nidep_, nimey_, naai_hom_, naai_, dry_aero_,
-                                  dry_atmosphere_, aitken_dry_dia_, nlev_);
+                                  dry_atm_, aitken_dry_dia_, nlev_);
 
   store_liquid_cloud_fraction(team_policy, cloud_frac_new_, cloud_frac_old_,
-                              wet_atmosphere_, liqcldf_, top_lev_);
+                              wet_atm_, liqcldf_, top_lev_);
 
   // MUST FIXME: save cloud borne aerosols here!!!!
   //-------------------------------------------------------------
@@ -1198,17 +1215,15 @@ void MAMAci::run_impl(const double dt) {
   rho(:ncol,:) enddo
   */
 
-  compute_recipical_pseudo_density(team_policy, rpdel_, dry_atmosphere_.p_del,
-                                   nlev_);
+  compute_recipical_pseudo_density(team_policy, rpdel_, dry_atm_.p_del, nlev_);
   Kokkos::fence();  // wait for rpdel_ to be computed.
 
   call_function_dropmixnuc(
-      team_policy, dry_atmosphere_, dry_aero_, dt, raercol_cw_, raercol_,
-      qqcw_fld_work_, ptend_q_, coltend_, coltend_cw_, dry_atmosphere_.p_int,
-      dry_atmosphere_.p_del, rpdel_, state_q_work_, dry_atmosphere_.nc, kvh_,
-      qcld_, wsub_, cloud_frac_new_, cloud_frac_old_, tendnd_, factnum_,
-      ndropcol_, ndropmix_, nsource_, wtke_, ccn_, nact_, mact_,
-      dropmixnuc_scratch_mem_, nlev_);
+      team_policy, dry_atm_, dry_aero_, dt, raercol_cw_, raercol_,
+      qqcw_fld_work_, ptend_q_, coltend_, coltend_cw_, dry_atm_.p_int,
+      dry_atm_.p_del, rpdel_, state_q_work_, dry_atm_.nc, kvh_, qcld_, wsub_,
+      cloud_frac_new_, cloud_frac_old_, tendnd_, factnum_, ndropcol_, ndropmix_,
+      nsource_, wtke_, ccn_, nact_, mact_, dropmixnuc_scratch_mem_, nlev_);
   Kokkos::fence();  // wait for ptend_q_ to be computed.
 
   copy_mam4xx_array_to_scream<mam4::ndrop::nvar_ptend_q>(
@@ -1219,7 +1234,7 @@ void MAMAci::run_impl(const double dt) {
       team_policy, coltend_cw_outp_, coltend_cw_, nlev_);
 
   call_hetfrz_compute_tendencies(
-      team_policy, hetfrz_, dry_aero_, wet_atmosphere_, dry_atmosphere_,
+      team_policy, hetfrz_, dry_aero_, wet_atm_, dry_atm_,
       stratiform_cloud_fraction_, activation_fraction_accum_idx_,
       activation_fraction_coarse_idx_, hetfrz_immersion_nucleation_tend_,
       hetfrz_contact_nucleation_tend_, hetfrz_depostion_nucleation_tend_,

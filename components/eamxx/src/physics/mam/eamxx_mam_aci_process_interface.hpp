@@ -46,10 +46,10 @@ class MAMAci final : public scream::AtmosphereProcess {
   view_2d aitken_dry_dia_;
 
   // wet mixing ratios (water species)
-  mam_coupling::WetAtmosphere wet_atmosphere_;
+  mam_coupling::WetAtmosphere wet_atm_;
 
   // dry mixing ratios (water species)
-  mam_coupling::DryAtmosphere dry_atmosphere_;
+  mam_coupling::DryAtmosphere dry_atm_;
 
   // aerosol dry diameter
   const_view_3d dgnum_;
