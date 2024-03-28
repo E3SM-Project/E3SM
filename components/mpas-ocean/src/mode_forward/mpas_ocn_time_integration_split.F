@@ -91,12 +91,12 @@ module ocn_time_integration_split
       numTSIterations, &! number of outer timestep iterations
       nBtrSubcycles     ! number of barotropic subcycles
 
-   integer :: ssh_sal_on
    integer :: &
       thickEdgeFluxChoice ! choice of thickness flux type
    integer, parameter :: &
       thickEdgeFluxCenter   = 1, &! use mean thickness of cell neighbors
       thickEdgeFluxUpwind   = 2   ! use upwind cell thickness at edge
+   real (kind=RKIND) :: pgf_sal_on
 
    real (kind=RKIND) :: &
       useVelocityCorrection,&! mask for velocity correction
@@ -1020,8 +1020,8 @@ module ocn_time_integration_split
                         sshSubcycleCurWithTides(iCell) = &
                                  sshSubcycleCur(iCell) - &
                               tidalPotentialEta(iCell) - &
-                           ssh_sal_on * ssh_sal(iCell) - &
-                           (1 - ssh_sal_on) * self_attraction_and_loading_beta* &
+                           pgf_sal_on * pgf_sal(iCell) - &
+                           (1.0_RKIND - pgf_sal_on) * self_attraction_and_loading_beta* &
                                  sshSubcycleCur(iCell)
                      end do
                      !$omp end do
@@ -1268,15 +1268,15 @@ module ocn_time_integration_split
                         sshSubcycleCurWithTides(iCell) = &
                                  sshSubcycleCur(iCell) - &
                               tidalPotentialEta(iCell) - &
-                           ssh_sal_on * ssh_sal(iCell) - &
-                           (1 - ssh_sal_on) * self_attraction_and_loading_beta* &
+                           pgf_sal_on * pgf_sal(iCell) - &
+                           (1.0_RKIND - pgf_sal_on) * self_attraction_and_loading_beta* &
                                  sshSubcycleCur(iCell)
 
                         sshSubcycleNewWithTides(iCell) = &
                                  sshSubcycleNew(iCell) - &
                               tidalPotentialEta(iCell) - &
-                           ssh_sal_on * ssh_sal(iCell) - &
-                           (1 - ssh_sal_on) * self_attraction_and_loading_beta* &
+                           pgf_sal_on * pgf_sal(iCell) - &
+                           (1.0_RKIND - pgf_sal_on) * self_attraction_and_loading_beta* &
                                  sshSubcycleNew(iCell)
                      end do
                      !$omp end do
@@ -3071,10 +3071,10 @@ module ocn_time_integration_split
 
       !-----------------------------------------------------------------
       if (config_use_self_attraction_loading) then
-         ! set ssh_sal_on to 1
-         ssh_sal_on = 1
+         ! set pgf_sal_on to 1
+         pgf_sal_on = 1.0_RKIND
       else
-         ssh_sal_on = 0
+         pgf_sal_on = 0.0_RKIND
       endif
 
       self_attraction_and_loading_beta = config_self_attraction_and_loading_beta

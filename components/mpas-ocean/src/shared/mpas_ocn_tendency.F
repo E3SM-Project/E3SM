@@ -426,12 +426,13 @@ contains
                                thermExpCoeff, salineContractCoeff, &
                                tendVel, err)
 
-      ! Compute ssh additions due to self-attraction and loading
+      ! Compute pgf additions due to self-attraction and loading
       if(mpas_is_alarm_ringing(domain % clock, 'salComputeAlarm', ierr=err)) then 
 #ifdef MPAS_DEBUG
           call mpas_log_write('       Computing SAL')
 #endif
-          call ocn_compute_self_attraction_loading(domain, forcingPool, dminfo, ssh, err)
+          call ocn_compute_self_attraction_loading(domain, forcingPool, dminfo, &
+                                                   ssh, surfacePressure, err)
           call mpas_reset_clock_alarm(domain % clock, 'salComputeAlarm', ierr=err)
       endif
 

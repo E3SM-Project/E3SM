@@ -117,11 +117,12 @@ contains
 
       type (dm_info) :: dminfo
       type (block_type), pointer :: block
-      type (mpas_pool_type), pointer :: harmonicAnalysisAMPool 
+      type (mpas_pool_type), pointer :: statePool, harmonicAnalysisAMPool 
 
-      integer, pointer :: nAnalysisConstituents 
+      integer, pointer :: nAnalysisConstituents, nCellsSolve
       real (kind=RKIND), pointer :: harmonicAnalysisStart
       real (kind=RKIND), pointer :: harmonicAnalysisEnd
+      real (kind=RKIND), dimension(:),   pointer :: ssh, sshInit
       real (kind=RKIND), dimension(:,:), pointer :: leastSquaresLHSMatrix
       real (kind=RKIND), dimension(:,:), pointer :: leastSquaresRHSVector
       real (kind=RKIND), dimension(:,:), pointer :: decomposedConstituentAmplitude 
@@ -135,7 +136,7 @@ contains
       integer, dimension(:), allocatable :: tidalConstituentType
 
       type (MPAS_Time_Type) :: refTime
-      integer :: iCon
+      integer :: iCon, iCell
 
       err = 0
 
@@ -145,8 +146,13 @@ contains
 
       block => domain % blocklist
       do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'state', statePool)
          call mpas_pool_get_subpool(block % structs, 'harmonicAnalysisAM', harmonicAnalysisAMPool)
 
+         call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
+         call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
+
+         call mpas_pool_get_array(harmonicAnalysisAMPool, 'sshInit', sshInit)
          call mpas_pool_get_array(harmonicAnalysisAMPool, 'nAnalysisConstituents', nAnalysisConstituents)
          call mpas_pool_get_array(harmonicAnalysisAMPool, 'leastSquaresLHSMatrix', leastSquaresLHSMatrix)
          call mpas_pool_get_array(harmonicAnalysisAMPool, 'leastSquaresRHSVector', leastSquaresRHSVector)
@@ -214,11 +220,14 @@ contains
                                         tidalConstituentType, &
                                         err)
 
-          if (.not. config_do_restart) then
-            leastSquaresRHSVector = 0.0_RKIND
-            leastSquaresLHSMatrix = 0.0_RKIND
-          end if
+         if (.not. config_do_restart) then
+           leastSquaresRHSVector = 0.0_RKIND
+           leastSquaresLHSMatrix = 0.0_RKIND
+         end if
            
+         do iCell = 1,nCellSSolve
+           sshInit(iCell) = ssh(iCell)
+         end do
 
          do iCon = 1,nAnalysisConstituents  
            call mpas_log_write('Constituent '//constituentList(iCon)%constituent)
@@ -291,7 +300,8 @@ contains
 
       integer, pointer :: nCellsSolve      
       integer, pointer :: nAnalysisConstituents
-      real (kind=RKIND), dimension(:),   pointer :: ssh
+      real (kind=RKIND), dimension(:),   pointer :: ssh, sshInit
+      real (kind=RKIND), dimension(:), allocatable :: sshDiff
       real (kind=RKIND), dimension(:,:), pointer :: leastSquaresLHSMatrix
       real (kind=RKIND), dimension(:,:), pointer :: leastSquaresRHSVector
       real (kind=RKIND), dimension(:),   pointer :: analysisConstituentFrequency 
@@ -334,6 +344,7 @@ contains
 
          call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
          call mpas_pool_get_array(statePool, 'ssh', ssh, timeLevel)
+         call mpas_pool_get_array(harmonicAnalysisAMPool, 'sshInit', sshInit)
          call mpas_pool_get_array(harmonicAnalysisAMPool, 'nAnalysisConstituents', nAnalysisConstituents)
          call mpas_pool_get_array(harmonicAnalysisAMPool, 'leastSquaresLHSMatrix', leastSquaresLHSMatrix)
          call mpas_pool_get_array(harmonicAnalysisAMPool, 'leastSquaresRHSVector', leastSquaresRHSVector)
@@ -355,6 +366,12 @@ contains
 
          ! update if within harmonic analysis period 
          if (daysSinceStartOfSim .le. harmonicAnalysisEnd) then
+           allocate(sshDiff(nCellsSolve))
+
+           do iCell = 1,nCellsSolve
+             sshDiff(iCell) = ssh(iCell) - sshInit(iCell)
+           end do
+
            CALL update_least_squares_LHS_matrix(nAnalysisConstituents, &
                                                 time, &
                                                 analysisConstituentFrequency, &
@@ -364,8 +381,9 @@ contains
                                                 time, &
                                                 nCellsSolve, &
                                                 analysisConstituentFrequency, &
-                                                ssh, &
+                                                sshDiff, &
                                                 leastSquaresRHSVector)
+           deallocate(sshDiff)
            call mpas_log_write('harmonicAnalysisAM update')
          end if
 
