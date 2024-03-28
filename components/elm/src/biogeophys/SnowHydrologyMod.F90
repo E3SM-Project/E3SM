@@ -849,7 +849,8 @@ contains
        if (.not. use_extrasnowlayers) then
          dzminloc(:) = dzmin(:)
        else
-         dzminloc16(:) = dzmin16(:)
+         dzminloc(:) = dzmin(:) 
+         !dzminloc16(:) = dzmin16(:)
        endif
 
        ! Add lsadz to dzmin for lakes
@@ -862,7 +863,8 @@ contains
             if (.not. use_extrasnowlayers) then
                dzminloc(:) = dzmin(:) + lsadz
             else
-               dzminloc16(:) = dzmin16(:) + lsadz
+               dzminloc(:) = dzmin(:) + lsadz
+               !dzminloc16(:) = dzmin16(:) + lsadz
             end if
           end if
        end if
@@ -1044,7 +1046,8 @@ contains
                 if (.not. use_extrasnowlayers) then
                     dzminloc_mssi_c = dzminloc(mssi(c))
                 else
-                    dzminloc_mssi_c = dzminloc16(mssi(c))
+                    dzminloc_mssi_c = dzminloc(mssi(c))
+                    !dzminloc_mssi_c = dzminloc16(mssi(c))
                 end if
                 if ((frac_sno_eff(c)*dz(c,i) < dzminloc_mssi_c) .or. &
                      ((h2osoi_ice(c,i) + h2osoi_liq(c,i))/(frac_sno_eff(c)*dz(c,i)) < 50._r8)) then

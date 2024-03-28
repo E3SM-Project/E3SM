@@ -204,7 +204,7 @@ contains
     if (.not. use_extrasnowlayers) then
        nlevsno     =  5     ! maximum number of snow layers
     else
-       nlevsno     =  16    ! maximum number of snow layers (for firn model)
+       nlevsno     =  5!16    ! maximum number of snow layers (for firn model)
     end if
 
     ! here is a switch to set the number of soil levels for the biogeochemistry calculations.
