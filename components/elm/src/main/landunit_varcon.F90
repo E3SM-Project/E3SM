@@ -35,7 +35,12 @@ module landunit_varcon
 
   integer, parameter, public                   :: landunit_name_length = 40  ! max length of landunit names
   character(len=landunit_name_length), public  :: landunit_names(max_lunit)  ! name of each landunit type
-
+  
+  ! land unit polygonal ground types
+  integer, parameter, public :: ilowcenpoly     = 1     ! low-centered polygons
+  integer, parameter, public :: iflatcenpoly    = 2	    ! flat-centered polygons
+  integer, parameter, public :: ihighcenpoly    = 3	    ! high-centered polygons
+  
   ! parameters that depend on the above constants
 
   integer, parameter, public :: numurbl = isturb_MAX - isturb_MIN + 1   ! number of urban landunits
@@ -48,6 +53,7 @@ module landunit_varcon
   !
   ! !PRIVATE MEMBER FUNCTIONS:
   private :: set_landunit_names   ! set the landunit_names vector
+  private :: set_polygon_names    ! set the polygon_names vector
 !-----------------------------------------------------------------------
 
 contains
@@ -97,6 +103,30 @@ contains
     end if
 
   end function landunit_is_special
+
+  subroutine set_polygon_names
+    !
+    ! !DESCRIPTION:
+    ! Set the polygon_names vector
+    !
+    ! !USES:
+    use shr_sys_mod, only : shr_sys_abort
+    !
+    character(len=*), parameter :: not_set = 'NOT_SET'
+    character(len=*), parameter :: subname = 'set_polygon_names'
+    !-----------------------------------------------------------------------
+    
+    polygon_names(:) = not_set
+
+    polygon_names(ilowcenpoly) = 'low_centered_polygons'
+    polygon_names(iflatcenpoly) = 'flat_centered_polygons'
+    polygon_names(ihighcenpoly) = 'high_centered_polygons'
+
+    if (any(polygon_names == not_set)) then
+       call shr_sys_abort(trim(subname)//': Not all polygon names set')
+    end if
+ 
+  end subroutine set_polygon_names
 
   !-----------------------------------------------------------------------
   subroutine set_landunit_names

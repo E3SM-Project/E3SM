@@ -57,6 +57,9 @@ module ColumnType
      real(r8), pointer :: hslp_p10     (:,:) => null() ! hillslope slope percentiles (unitless)
      integer, pointer  :: nlevbed      (:) => null() ! number of layers to bedrock
      real(r8), pointer :: zibed        (:) => null() ! bedrock depth in model (interface level at nlevbed)
+	 real(r8), pointer :: iwp_microrel (:) => null() ! ice wedge polygon microtopographic relief (m)
+	 real(r8), pointer :: iwp_exclvol  (:) => null() ! ice wedge polygon excluded volume (m)
+	 real(r8), pointer :: iwp_ddep     (:) => null() ! ice wedge polygon depression depth (m)
 
      ! vertical levels
      integer , pointer :: snl          (:)   => null() ! number of snow layers
