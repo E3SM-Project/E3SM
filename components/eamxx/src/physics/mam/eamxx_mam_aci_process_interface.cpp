@@ -379,8 +379,8 @@ void call_function_dropmixnuc(
     MAMAci::view_2d coltend_cw[mam4::ndrop::ncnst_tot],
     MAMAci::const_view_2d p_int, MAMAci::const_view_2d pdel,
     MAMAci::view_2d rpdel, MAMAci::view_3d state_q_work_,
-    MAMAci::const_view_2d ncldwtr, MAMAci::const_view_2d kvh,
-    MAMAci::view_2d qcld, MAMAci::view_2d wsub, MAMAci::view_2d cloud_frac_new,
+    MAMAci::const_view_2d nc, MAMAci::const_view_2d kvh, MAMAci::view_2d qcld,
+    MAMAci::view_2d wsub, MAMAci::view_2d cloud_frac_new,
     MAMAci::view_2d cloud_frac_old, MAMAci::view_2d tendnd,
     MAMAci::view_3d factnum, MAMAci::view_2d ndropcol, MAMAci::view_2d ndropmix,
     MAMAci::view_2d nsource, MAMAci::view_2d wtke, MAMAci::view_3d ccn,
@@ -523,7 +523,7 @@ void call_function_dropmixnuc(
             ekat::subview(
                 zm,
                 icol),  //  ! in zm[kk] - zm[kk+1], for pver zm[kk-1] - zm[kk]
-            ekat::subview(state_q_work_loc, icol), ekat::subview(ncldwtr, icol),
+            ekat::subview(state_q_work_loc, icol), ekat::subview(nc, icol),
             ekat::subview(kvh, icol),  // kvh[kk+1]
             ekat::subview(cloud_frac_new, icol), lspectype_amode,
             specdens_amode, spechygro, lmassptr_amode, num2vol_ratio_min_nmodes,
@@ -791,10 +791,6 @@ void MAMAci::set_grids(
   add_field<Computed>("activation_fraction_coarse", scalar3d_layout_mid, nondim,
                       grid_name);  // Layer thickness(pdel) [Pa] at midpoints
 
-  // MUST FIXME: Is it same as nc or may be not????
-  add_field<Required>("ncldwtr", scalar3d_layout_mid, n_unit,
-                      grid_name);  // initial droplet number mixing ratio [#/kg]
-
   // MUST FIXME: This should be an internal variable. why we need this as an
   // input???
   add_field<Updated>("w_updraft", scalar3d_layout_mid, q_unit,
@@ -986,9 +982,7 @@ void MAMAci::initialize_impl(const RunType run_type) {
   // set atmosphere state data
 
   w_sec_ = get_field_in("w_sec").get_view<const Real **>();
-  ncldwtr_ =
-      get_field_in("ncldwtr")
-          .get_view<const Real **>();  // MUST FIXME: is is nc, may be not???
+
   dgnum_ = get_field_in("dgnum")
                .get_view<const Real ***>();  // MUST FIXME: is it an input, can
                                              // we compute it using calcsize???
@@ -1211,10 +1205,10 @@ void MAMAci::run_impl(const double dt) {
   call_function_dropmixnuc(
       team_policy, dry_atmosphere_, dry_aero_, dt, raercol_cw_, raercol_,
       qqcw_fld_work_, ptend_q_, coltend_, coltend_cw_, dry_atmosphere_.p_int,
-      dry_atmosphere_.p_del, rpdel_, state_q_work_, ncldwtr_, kvh_, qcld_,
-      wsub_, cloud_frac_new_, cloud_frac_old_, tendnd_, factnum_, ndropcol_,
-      ndropmix_, nsource_, wtke_, ccn_, nact_, mact_, dropmixnuc_scratch_mem_,
-      nlev_);
+      dry_atmosphere_.p_del, rpdel_, state_q_work_, dry_atmosphere_.nc, kvh_,
+      qcld_, wsub_, cloud_frac_new_, cloud_frac_old_, tendnd_, factnum_,
+      ndropcol_, ndropmix_, nsource_, wtke_, ccn_, nact_, mact_,
+      dropmixnuc_scratch_mem_, nlev_);
   Kokkos::fence();  // wait for ptend_q_ to be computed.
 
   copy_mam4xx_array_to_scream<mam4::ndrop::nvar_ptend_q>(
