@@ -370,7 +370,7 @@ void compute_recipical_pseudo_density(haero::ThreadTeamPolicy team_policy,
 void call_function_dropmixnuc(
     haero::ThreadTeamPolicy team_policy,
     mam_coupling::DryAtmosphere &dry_atmosphere,
-    const mam_coupling::AerosolState &dry_aerosol_state, const Real dtmicro,
+    const mam_coupling::AerosolState &dry_aerosol_state, const Real dt,
     MAMAci::view_2d raercol_cw[mam4::ndrop::pver][2],
     MAMAci::view_2d raercol[mam4::ndrop::pver][2],
     MAMAci::view_2d qqcw_fld_work_[mam4::ndrop::ncnst_tot],
@@ -386,6 +386,8 @@ void call_function_dropmixnuc(
     MAMAci::view_2d nsource, MAMAci::view_2d wtke, MAMAci::view_3d ccn,
     MAMAci::view_3d nact, MAMAci::view_3d mact,
     MAMAci::view_2d dropmixnuc_scratch_mem[15], const int nlev) {
+  // FIXME: why can't we use MAMAci::drop_scratch_ above
+
   MAMAci::const_view_2d T_mid = dry_atmosphere.T_mid;
   MAMAci::const_view_2d p_mid = dry_atmosphere.p_mid;
   MAMAci::const_view_2d zm    = dry_atmosphere.z_mid;
@@ -515,9 +517,9 @@ void call_function_dropmixnuc(
         }
 
         mam4::ndrop::dropmixnuc(
-            team, dtmicro, ekat::subview(T_mid, icol),
-            ekat::subview(p_mid, icol), ekat::subview(p_int, icol),
-            ekat::subview(pdel, icol), ekat::subview(rpdel, icol),
+            team, dt, ekat::subview(T_mid, icol), ekat::subview(p_mid, icol),
+            ekat::subview(p_int, icol), ekat::subview(pdel, icol),
+            ekat::subview(rpdel, icol),
             ekat::subview(
                 zm,
                 icol),  //  ! in zm[kk] - zm[kk+1], for pver zm[kk-1] - zm[kk]
@@ -716,17 +718,14 @@ MAMAci::MAMAci(const ekat::Comm &comm, const ekat::ParameterList &params)
 // set grid for all the inputs and outputs
 void MAMAci::set_grids(
     const std::shared_ptr<const GridsManager> grids_manager) {
-  m_atm_logger->log(ekat::logger::LogLevel::info, "Calling ACI set grid");
-
   grid_ = grids_manager->get_grid("Physics");  // Use physics grid
   const auto &grid_name = grid_->name();
 
   ncol_ = grid_->get_num_local_dofs();       // Number of columns on this rank
   nlev_ = grid_->get_num_vertical_levels();  // Number of levels per column
 
-  Kokkos::resize(
-      rho_, ncol_,
-      nlev_);  // BQ: Does Kokkos::resize allocates memory as well for rho_?
+  // Kokkos::resize only works on host to allocates memory
+  Kokkos::resize(rho_, ncol_, nlev_);
   Kokkos::resize(w0_, ncol_, nlev_);
   Kokkos::resize(tke_, ncol_, nlev_ + 1);
   Kokkos::resize(wsub_, ncol_, nlev_);
@@ -738,7 +737,7 @@ void MAMAci::set_grids(
   Kokkos::resize(aitken_dry_dia_, ncol_, nlev_);
   Kokkos::resize(rpdel_, ncol_, nlev_);
 
-  for(int i = 0; i < 15; ++i) {
+  for(int i = 0; i < drop_scratch_; ++i) {
     Kokkos::resize(dropmixnuc_scratch_mem_[i], ncol_, nlev_);
   }
   // Define the different field layouts that will be used for this process
@@ -751,12 +750,8 @@ void MAMAci::set_grids(
   // layout for 2D (1d horiz X 1d vertical) variable
   FieldLayout scalar2d_layout_col{{COL}, {ncol_}};
 
-  ekat::units::Units kg = ekat::units::kg;  // BQ: why do we need to do this???
-  ekat::units::Units Pa = ekat::units::Pa;
-  ekat::units::Units s  = ekat::units::s;
-  ekat::units::Units m  = ekat::units::m;
-  ekat::units::Units K  = ekat::units::K;
-  auto q_unit           = kg / kg;  // units of mass mixing ratios of tracers
+  using namespace ekat::units;
+  auto q_unit = kg / kg;  // units of mass mixing ratios of tracers
   q_unit.set_string("kg/kg");
   auto n_unit = 1 / kg;  // units of number mixing ratios of tracers
   n_unit.set_string("#/kg");
@@ -774,6 +769,7 @@ void MAMAci::set_grids(
                       "tracers");  // cloud ice number mixing ratio [1/kg]
   add_field<Required>("T_mid", scalar3d_layout_mid, K,
                       grid_name);  // Temperature[K] at midpoints
+
   add_field<Required>(
       "omega", scalar3d_layout_mid, Pa / s,
       grid_name);  // Vertical pressure velocity [Pa/s] at midpoints
@@ -786,6 +782,8 @@ void MAMAci::set_grids(
 
   add_field<Required>("pbl_height", scalar2d_layout_col, m,
                       grid_name);  // planetary boundary layer height
+
+  // Output from this process
   add_field<Computed>("stratiform_cloud_fraction", scalar3d_layout_mid, nondim,
                       grid_name);  // Layer thickness(pdel) [Pa] at midpoints
   add_field<Computed>("activation_fraction_accum", scalar3d_layout_mid, nondim,
@@ -1211,7 +1209,7 @@ void MAMAci::run_impl(const double dt) {
   Kokkos::fence();  // wait for rpdel_ to be computed.
 
   call_function_dropmixnuc(
-      team_policy, dry_atmosphere_, dry_aero_, dtmicro_, raercol_cw_, raercol_,
+      team_policy, dry_atmosphere_, dry_aero_, dt, raercol_cw_, raercol_,
       qqcw_fld_work_, ptend_q_, coltend_, coltend_cw_, dry_atmosphere_.p_int,
       dry_atmosphere_.p_del, rpdel_, state_q_work_, ncldwtr_, kvh_, qcld_,
       wsub_, cloud_frac_new_, cloud_frac_old_, tendnd_, factnum_, ndropcol_,

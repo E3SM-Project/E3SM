@@ -32,8 +32,6 @@ class MAMAci final : public scream::AtmosphereProcess {
 
   // FIXME:B: Should the following variables be public? They are like that in
   // micriphysics and optics codes
-  //  FIXME the time step for microphysics [s] need to get from the input
-  const Real dtmicro_ = .0001;
 
   // rho is air density [kg/m3]
   view_2d rho_;
@@ -96,7 +94,9 @@ class MAMAci final : public scream::AtmosphereProcess {
 
   view_3d nact_;
   view_3d mact_;
-  view_2d dropmixnuc_scratch_mem_[15];
+
+  static constexpr int drop_scratch_ = 15;
+  view_2d dropmixnuc_scratch_mem_[drop_scratch_];
 
   view_2d stratiform_cloud_fraction_;
   view_2d activation_fraction_accum_idx_;
