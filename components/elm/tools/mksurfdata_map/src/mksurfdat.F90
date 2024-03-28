@@ -763,8 +763,10 @@ program mksurfdat
          ero_c1_o=ero_c1, ero_c2_o=ero_c2, ero_c3_o=ero_c3, tillage_o=tillage, &
          litho_o=litho)
 
-    call mkfert(ldomain, mapfname=map_ffert, datfname=mksrf_ffert, ndiag=ndiag, &
-         nfert_o=nfert, pfert_o=pfert)
+    if(num_cft > 0) then
+       call mkfert(ldomain, mapfname=map_ffert, datfname=mksrf_ffert, ndiag=ndiag, &
+            nfert_o=nfert, pfert_o=pfert)
+    end if
 
     do n = 1,ns_o
 
