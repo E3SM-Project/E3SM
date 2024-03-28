@@ -352,6 +352,17 @@ def buildnml(case, caseroot, compname):
         if ocn_ismf == 'data':
             data_ismf_file = 'prescribed_ismf_paolo2023.IcoswISC30E3r5.20240227.nc'
 
+    elif ocn_grid == 'IcosXISC30E3r7':
+        decomp_date = '20240314'
+        decomp_prefix = 'partitions/mpas-o.graph.info.'
+        restoring_file = 'sss.PHC2_monthlyClimatology.IcosXISC30E3r7.20240314.nc'
+        analysis_mask_file = 'IcosXISC30E3r7_mocBasinsAndTransects20210623.nc'
+        ic_date = '20240314'
+        ic_prefix = 'mpaso.IcosXISC30E3r7'
+        if ocn_ic_mode == 'spunup':
+            ic_date = '20240314'
+            ic_prefix = 'mpaso.IcosXISC30E3r7.rstFromPiControlSpinup-chrysalis'
+
     #--------------------------------------------------------------------
     # Set OCN_FORCING = datm_forced_restoring if restoring file is available
     #--------------------------------------------------------------------
