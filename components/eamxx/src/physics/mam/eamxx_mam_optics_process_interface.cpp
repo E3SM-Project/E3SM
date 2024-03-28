@@ -147,23 +147,20 @@ void MAMOptics::set_grids(
   // shortwave aerosol single-scattering albedo [-]
   add_field<Computed>("aero_ssa_sw_mam4", scalar3d_swband_layout_int, nondim,
                       grid_name);
-  // shortwave aerosol optical depth [-]
+  // shortwave aerosol extinction optical depth [-]
   add_field<Computed>("aero_tau_sw_mam4", scalar3d_swband_layout_int, nondim,
                       grid_name);
-
-  //
   // shortwave aerosol scattering asymmetry parameter [-]
   add_field<Computed>("aero_g_sw", scalar3d_swband_layout, nondim, grid_name);
   // shortwave aerosol single-scattering albedo [-]
   add_field<Computed>("aero_ssa_sw", scalar3d_swband_layout, nondim,
                       grid_name);
-  // shortwave aerosol optical depth [-]
+  // shortwave aerosol extinction optical depth
   add_field<Computed>("aero_tau_sw", scalar3d_swband_layout, nondim,
                       grid_name);
-
-  // longwave aerosol optical depth [-]
+  // FIXME!!!: longwave aerosol extinction optical depth [-]
   add_field<Computed>("aero_tau_lw", scalar3d_lwband_layout, nondim, grid_name);
-  // // aerosol extinction optical depth
+  //aerosol forward scattered fraction * tau * w
   add_field<Computed>("aero_tau_forward", scalar3d_swband_layout_int, nondim,
                       grid_name);
 
@@ -487,20 +484,25 @@ void MAMOptics::run_impl(const double dt) {
   Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
   Kokkos::fence();
   /// outputs
+   //In aer_rad_props.F90; tau_w_g=> aerosol asymmetry parameter * tau * w
   const auto aero_g_sw = get_field_out("aero_g_sw_mam4").get_view<Real ***>();
+
+  //In aer_rad_props.F90; tau_w => aerosol single scattering albedo * tau
   const auto aero_ssa_sw =
       get_field_out("aero_ssa_sw_mam4").get_view<Real ***>();
+  // In aer_rad_props.F90; tau => aerosol extinction optical depth
   const auto aero_tau_sw =
       get_field_out("aero_tau_sw_mam4").get_view<Real ***>();
-
+  // In aer_rad_props.F90; odap_aer =>  absorption optical depth, per layer
   const auto aero_tau_lw = get_field_out("aero_tau_lw").get_view<Real ***>();
 
-  const auto aero_g_sw_eamx = get_field_out("aero_g_sw").get_view<Real ***>();
-  const auto aero_ssa_sw_eamx =
-      get_field_out("aero_ssa_sw").get_view<Real ***>();
-  const auto aero_tau_sw_eamx =
-      get_field_out("aero_tau_sw").get_view<Real ***>();
+  const auto aero_g_sw_eamxx = get_field_out("aero_g_sw").get_view<Real ***>();
 
+  const auto aero_ssa_sw_eamxx =
+      get_field_out("aero_ssa_sw").get_view<Real ***>();
+  const auto aero_tau_sw_eamxx =
+      get_field_out("aero_tau_sw").get_view<Real ***>();
+  // In aer_rad_props.F90; tau_w_f : aerosol forward scattered fraction * tau * w
   const auto aero_tau_forward =
       get_field_out("aero_tau_forward").get_view<Real ***>();
 
@@ -527,6 +529,7 @@ void MAMOptics::run_impl(const double dt) {
   Kokkos::parallel_for(
       policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
         const Int icol     = team.league_rank();  // column index
+        // absorption optical depth, per layer [unitless]
         auto odap_aer_icol = ekat::subview(aero_tau_lw, icol);
         const auto atm     = mam_coupling::atmosphere_for_column(dry_atm, icol);
 
@@ -548,7 +551,7 @@ void MAMOptics::run_impl(const double dt) {
 
         // FIXME: check if this correct: Note that these variables have pver+1
         // levels tau_w =>  aero_ssa_sw  (pcols,0:pver,nswbands) ! aerosol
-        // single scattering albedo * tau
+        // tau_w: aerosol single scattering albedo * tau
         auto tau_w_icol = ekat::subview(aero_ssa_sw, icol);
         // tau_w_g => "aero_g_sw" (pcols,0:pver,nswbands) ! aerosol assymetry
         // parameter * tau * w
@@ -557,7 +560,7 @@ void MAMOptics::run_impl(const double dt) {
         // forward scattered fraction * tau * w
         auto tau_w_f_icol = ekat::subview(aero_tau_forward, icol);
         // tau  => aero_tau_sw (?)   (pcols,0:pver,nswbands) ! aerosol
-        // extinction optical depth
+        // aerosol extinction optical depth
         auto tau_icol = ekat::subview(aero_tau_sw, icol);
 
         auto work_icol = ekat::subview(work, icol);
@@ -589,10 +592,10 @@ void MAMOptics::run_impl(const double dt) {
       Kokkos::MDRangePolicy<Kokkos::Rank<3> >({0, 0, 0},
                                               {ncol_, nswbands_, nlev_}),
       KOKKOS_LAMBDA(const int icol, const int iswband, const int kk) {
-        aero_g_sw_eamx(icol, iswband, kk) = aero_g_sw(icol, iswband, kk + 1);
-        aero_ssa_sw_eamx(icol, iswband, kk) =
+        aero_g_sw_eamxx(icol, iswband, kk) = aero_g_sw(icol, iswband, kk + 1);
+        aero_ssa_sw_eamxx(icol, iswband, kk) =
             aero_ssa_sw(icol, iswband, kk + 1);
-        aero_tau_sw_eamx(icol, iswband, kk) =
+        aero_tau_sw_eamxx(icol, iswband, kk) =
             aero_tau_sw(icol, iswband, kk + 1);
       });
   Kokkos::fence();
