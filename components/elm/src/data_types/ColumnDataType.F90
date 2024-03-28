@@ -2513,6 +2513,8 @@ contains
     ! !DESCRIPTION:
     ! Read/Write column carbon state information to/from restart file.
     !
+    use elm_varctl, only : do_budgets
+    !
     ! !ARGUMENTS:
     class(column_carbon_state)       :: this
     type(bounds_type), intent(in)    :: bounds
@@ -2543,6 +2545,13 @@ contains
     ! flags for comparing the model and restart decomposition cascades
     integer            :: decomp_cascade_state, restart_file_decomp_cascade_state
     !-----------------------------------------------------------------------
+
+    if (do_budgets) then
+       call restartvar(ncid=ncid, flag=flag, varname='ENDCB', xtype=ncd_double,  &
+         dim1name='column', &
+         long_name='carbon balance at end of timestep', units='gC/m2', &
+         interpinic_flag='interp', readvar=readvar, data=this%endcb)
+    endif
 
     if (carbon_type == 'c13' .or. carbon_type == 'c14') then
        if (.not. present(c12_carbonstate_vars)) then
@@ -7755,6 +7764,9 @@ contains
        this%prod1c_loss(i)               = value_column
        this%prod10c_loss(i)              = value_column
        this%prod100c_loss(i)             = value_column
+       this%er(i)                        = value_column
+       this%som_c_leached(i)             = value_column
+       this%somc_yield(i)                = value_column
        this%somhr(i)                     = value_column ! REVISIT
        this%lithr(i)                     = value_column ! REVISIT
        this%hr(i)                        = value_column
@@ -7831,7 +7843,7 @@ contains
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
     ! locals
     integer :: fc
-    integer :: c
+    integer :: c, j, k
 
     if(.not.use_fates) return
 
@@ -7847,6 +7859,15 @@ contains
        this%hrv_xsmrpool_to_atm(c) = 0._r8
 
     end do
+    
+    do k = 1, ndecomp_pools
+      do j = 1, nlevdecomp_full
+        do fc = 1,num_soilc
+           c = filter_soilc(fc)
+           this%m_decomp_cpools_to_fire_vr(c,j,k) = 0._r8
+        end do
+       end do
+     end do
 
 
   end subroutine col_cf_zero_forfates_veg

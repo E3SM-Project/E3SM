@@ -55,7 +55,14 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 
 <!-- Supplmental Nitrogen mode -->
 <suplnitro use_cn=".true." >NONE</suplnitro>
-<suplnitro use_fates=".true." >NONE</suplnitro>
+
+<!-- Supplemental N and P for FATES -->
+<!-- With c-only FATES, don't want partial N and P dynamics -->
+<!-- this is also true at different phases of spin-up -->
+<!-- so more cases than not, FATES wants supplemented N and P -->
+<suplnitro use_fates=".true." >ALL</suplnitro>
+<suplphos use_fates=".true." >ALL</suplphos>
+
 
 <!-- Nutrient competition pathway -->
 <nu_com>RD</nu_com>
@@ -127,7 +134,7 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <!-- ================================================================== -->
 <!-- FATES default parameter file                                       -->
 <!-- ================================================================== -->
-<fates_paramfile >lnd/clm2/paramdata/fates_params_api25.5.0_12pft_c230710.nc</fates_paramfile>
+<fates_paramfile >lnd/clm2/paramdata/fates_params_api.32.0.0_12pft_c231215.nc</fates_paramfile>
 
 <!-- soil order related parameters (relative to {csmdata}) -->
 <fsoilordercon             >lnd/clm2/paramdata/CNP_parameters_c131108.nc</fsoilordercon>
@@ -410,7 +417,7 @@ lnd/clm2/surfdata_map/surfdata_ne30np4_simyr1850_c180306.nc</fsurdat>
 lnd/clm2/surfdata_map/surfdata_ne30pg2_simyr1850_c230417_with_TOP.nc</fsurdat>
 
 <fsurdat hgrid="ne30np4.pg2"   sim_year="1950" use_crop=".false." >
-lnd/clm2/surfdata_map/surfdata_ne30pg2_simyr1950_c210729.nc</fsurdat>
+lnd/clm2/surfdata_map/surfdata_ne30pg2_simyr1950_c210729_with_TOP.nc</fsurdat>
 
 <fsurdat hgrid="ne16np4"      sim_year="1850" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne16np4_simyr1850_c160108.nc</fsurdat>
@@ -564,6 +571,11 @@ lnd/clm2/surfdata_map/surfdata_conusx4v1_simyr2000_c160503.nc</fsurdat>
  use_crop=".false." >lnd/clm2/surfdata_map/surfdata.pftdyn_48x96_rcp2.6_simyr1850-2100_c130524.nc</flanduse_timeseries>
 <flanduse_timeseries hgrid="ne30np4"       rcp="2.6" sim_year_range="1850-2100"
  use_crop=".false." >lnd/clm2/surfdata_map/surfdata.pftdyn_ne30np4_rcp2.6_simyr1850-2100_c130524.nc</flanduse_timeseries>
+
+<!-- Land Use Harmonization unified data sets for dynamic FATES land use change -->
+<fluh_timeseries hgrid="4x5" sim_year_range="1850-2015" use_fates=".true."
+ >lnd/clm2/surfdata_map/fates-sci.1.68.3_api.31.0.0_tools.1.0.1/LUH2_states_transitions_management.timeseries_4x5_hist_simyr1850-2015_c231101.nc</fluh_timeseries>
+
 
 <!-- GLC mask datasets (relative to {csmdata}) -->
 <!-- Currently glc_grid is not being read from anywhere, so these rules are broken.  -->
@@ -2136,6 +2148,7 @@ this mask will have smb calculated over the entire global land surface
 <use_fates_logging             use_fates=".true.">.false.</use_fates_logging>
 <use_fates_cohort_age_tracking use_fates=".true.">.false.</use_fates_cohort_age_tracking>
 <use_fates_sp                  use_fates=".true.">.false.</use_fates_sp>
+<use_fates_luh                 use_fates=".true.">.false.</use_fates_luh>
 <fates_parteh_mode             use_fates=".true.">1</fates_parteh_mode>
 <fates_seeddisp_cadence        use_fates=".true.">0</fates_seeddisp_cadence>
 <use_fates_inventory_init      use_fates=".true.">.false.</use_fates_inventory_init>

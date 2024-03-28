@@ -252,7 +252,9 @@ contains
     arow = mct_sMat_indexIA(m, 'grow')
     acol = mct_sMat_indexIA(m, 'gcol')
 
-    allocate(idxs(nnz), v(nnz))
+    allocate(idxs(nnz))
+    if (nnz == 0) return
+    allocate(v(nnz))
 
     maxrow = 0
     do i = 1, nnz
@@ -260,6 +262,7 @@ contains
        maxrow = max(maxrow, row)
     end do
     minrow = maxrow
+    mincol = m%data%iAttr(acol,1)
     do i = 1, nnz
        row = m%data%iAttr(arow,i)
        col = m%data%iAttr(acol,i)

@@ -228,7 +228,6 @@
     </desc>
     <values>
       <value>.false.</value>
-      <value cime_model='e3sm'>.true.</value>
     </values>
   </entry>
 

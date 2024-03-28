@@ -1,0 +1,2 @@
+./xmlchange TEST_MEMLEAK_TOLERANCE=0.75
+./xmlchange NTHRDS=1

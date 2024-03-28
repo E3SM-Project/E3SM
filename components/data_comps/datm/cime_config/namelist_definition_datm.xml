@@ -1798,8 +1798,8 @@
       <value stream="CORE2_NYF">1</value>
       <value stream="CORE2_IAF.CORE2.ArcFactor">1</value>
       <value stream="CORE2_IAF">1</value>
-      <value stream="CORE_IAF_JRA.*">1</value>
-      <value stream="IAF_JRA_1p5.*">1</value>
+      <value stream="CORE_IAF_JRA.*">$DATM_CLMNCEP_YR_ALIGN</value>
+      <value stream="IAF_JRA_1p5.*">$DATM_CLMNCEP_YR_ALIGN</value>
       <value stream="CORE_RYF*">1</value>
       <value stream="co2tseries.20tr">1850</value>
       <!-- ncycles*(year_end-year_start+1)-(year_end-co2_year_start) -->

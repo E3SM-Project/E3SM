@@ -32,6 +32,7 @@ module RtmVar
   logical, public :: use_lnd_rof_two_way = .false.     ! land river two way coupling flag
   logical, public :: sediflag = .false.                ! sediment model flag
   logical, public :: heatflag = .false.                ! heat model flag
+  integer, public :: do_budget = 0                     ! level of budget output, 0 is minimal, 1 is every month, 2 is everyday, 3 is every timestep with additional terms.
   logical, public :: use_ocn_rof_two_way = .false.     ! ocean river two way coupling flag
   logical, public :: rstraflag = .false.               ! reservoir stratification module flag
   real,    public :: rinittemp = 283.15_r8             ! initial reservoir temperature
