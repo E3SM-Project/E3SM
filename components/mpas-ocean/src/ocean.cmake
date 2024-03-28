@@ -113,6 +113,7 @@ list(APPEND RAW_SOURCES
   core_ocean/shared/mpas_ocn_vel_tidal_potential.F
   core_ocean/shared/mpas_ocn_stokes_drift.F
   core_ocean/shared/mpas_ocn_manufactured_solution.F
+  core_ocean/shared/mpas_ocn_subgrid.F
 )
 
 set(OCEAN_DRIVER
