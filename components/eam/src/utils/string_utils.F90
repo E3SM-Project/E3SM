@@ -10,7 +10,8 @@ module string_utils
       to_upper, &   ! Convert character string to upper case
       to_lower, &   ! Convert character string to lower case
       INCSTR, &     ! increments a string
-      GLC           ! Position of last significant character in string
+      GLC, &        ! Position of last significant character in string
+      int2str       ! convert integer to left justified string
 
 contains
 
@@ -239,5 +240,12 @@ integer function GLC( cs )
   GLC = n
 
 end function GLC
+
+character(len=10) function int2str(n)
+   ! return default integer as a left justified string
+   integer, intent(in) :: n
+   !-----------------------------------------------------------------------
+   write(int2str,'(i0)') n
+end function int2str
 
 end module string_utils
