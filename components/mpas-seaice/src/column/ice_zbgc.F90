@@ -769,7 +769,7 @@
 !
       subroutine update_vertical_bio_tracers(nbiolyr, trc, h1, h2, trc0, zspace)
 
-      use ice_constants_colpkg, only: c0
+      use ice_constants_colpkg, only: c0, puny
 
       integer (kind=int_kind), intent(in) :: &
          nbiolyr ! number of bio layers nblyr+1
@@ -801,6 +801,8 @@
         !rnilyr = real(nilyr,dbl_kind)
         z2a = c0
         z2b = c0
+
+        if (h2 > puny) then
         ! loop over new grid cells
         do k2 = 1, nbiolyr
 
@@ -840,7 +842,9 @@
            trc2(k2) = trc2(k2)/zspace(k2)/h2 !(rnilyr * trc2(k2)) / h2
 
         enddo ! k2
-
+        else
+           trc2 = trc
+        endif ! h2 > 0
         ! update vertical tracer array with the adjusted tracer
         trc = trc2
 

@@ -1829,6 +1829,7 @@ contains
            carbonChange, &
            carbonChangeFlux, &
            netCarbonFlux, &
+           checkCarbonFlux, &
            absoluteCarbonError, &
            relativeCarbonError, &
            iceAreaCell, &
@@ -1877,15 +1878,15 @@ contains
 
       real(kind=RKIND), dimension(:), pointer :: &
            areaCell, &
-           totalOceanCarbonFlux, &
-           oceanHumicsFlux
+           totalOceanCarbonFlux, &  ! weighted by sea ice area fraction
+           oceanHumicsFluxArea
 
       real(kind=RKIND), dimension(:,:), pointer :: &
            oceanBioFluxes, &
-           oceanAlgaeFlux, &
-           oceanDOCFlux, &
-           oceanDICFlux, &
-           oceanDONFlux
+           oceanAlgaeFluxArea, &
+           oceanDOCFluxArea, &
+           oceanDICFluxArea, &
+           oceanDONFluxArea
 
       integer, dimension(:,:), pointer :: &
            cellInHemisphere
@@ -1918,6 +1919,9 @@ contains
            nVars, &
            nZBGC, &
            nSums
+
+      real(kind=RKIND) :: &
+           checkFluxTotal
 
       real(kind=RKIND) :: &
            fluxScale, &
@@ -1979,11 +1983,11 @@ contains
          call MPAS_pool_get_array(meshPool, "areaCell", areaCell)
          call MPAS_pool_get_array(biogeochemistryPool, "totalOceanCarbonFlux", totalOceanCarbonFlux)
          call MPAS_pool_get_array(biogeochemistryPool, "oceanBioFluxes", oceanBioFluxes)
-         call MPAS_pool_get_array(biogeochemistryPool, "oceanAlgaeFlux", oceanAlgaeFlux)
-         call MPAS_pool_get_array(biogeochemistryPool, "oceanDOCFlux", oceanDOCFlux)
-         call MPAS_pool_get_array(biogeochemistryPool, "oceanDICFlux", oceanDICFlux)
-         call MPAS_pool_get_array(biogeochemistryPool, "oceanDONFlux", oceanDONFlux)
-         call MPAS_pool_get_array(biogeochemistryPool, "oceanHumicsFlux", oceanHumicsFlux)
+         call MPAS_pool_get_array(biogeochemistryPool, "oceanAlgaeFluxArea", oceanAlgaeFluxArea)
+         call MPAS_pool_get_array(biogeochemistryPool, "oceanDOCFluxArea", oceanDOCFluxArea)
+         call MPAS_pool_get_array(biogeochemistryPool, "oceanDICFluxArea", oceanDICFluxArea)
+         call MPAS_pool_get_array(biogeochemistryPool, "oceanDONFluxArea", oceanDONFluxArea)
+         call MPAS_pool_get_array(biogeochemistryPool, "oceanHumicsFluxArea", oceanHumicsFluxArea)
          call MPAS_pool_get_array(conservationCheckAMPool, "cellInHemisphere", cellInHemisphere)
 
          do iCell = 1, nCellsSolve
@@ -1991,38 +1995,31 @@ contains
             ! compute total carbon flux to ocean from individual fluxes
 
             nZBGC = 1
-            totalOceanDiatomCell = oceanAlgaeFlux(nZBGC,iCell) * areaCell(iCell) * &
-               config_ratio_C_to_N_diatoms * gramsCarbonPerMolCarbon * 1.0e-6_RKIND * &
-               iceAreaCell(iCell)
+            totalOceanDiatomCell = oceanAlgaeFluxArea(nZBGC,iCell) * areaCell(iCell) * &
+               config_ratio_C_to_N_diatoms * gramsCarbonPerMolCarbon * 1.0e-6_RKIND
             nZBGC = nZBGC+1
-            totalOceanSmallAlgaeCell = oceanAlgaeFlux(nZBGC,iCell) * areaCell(iCell) * &
-               config_ratio_C_to_N_small_plankton * gramsCarbonPerMolCarbon * 1.0e-6_RKIND * &
-               iceAreaCell(iCell)
+            totalOceanSmallAlgaeCell = oceanAlgaeFluxArea(nZBGC,iCell) * areaCell(iCell) * &
+               config_ratio_C_to_N_small_plankton * gramsCarbonPerMolCarbon * 1.0e-6_RKIND
             nZBGC = 1
-            totalOceanDOC1Cell = oceanDOCFlux(nZBGC,iCell) * areaCell(iCell) * &
-               gramsCarbonPerMolCarbon * 1.0e-6_RKIND * &
-               iceAreaCell(iCell)
+            totalOceanDOC1Cell = oceanDOCFluxArea(nZBGC,iCell) * areaCell(iCell) * &
+               gramsCarbonPerMolCarbon * 1.0e-6_RKIND
             nZBGC = nZBGC+1
-            totalOceanDOC2Cell = oceanDOCFlux(nZBGC,iCell) * areaCell(iCell) * &
-               gramsCarbonPerMolCarbon * 1.0e-6_RKIND * &
-               iceAreaCell(iCell)
+            totalOceanDOC2Cell = oceanDOCFluxArea(nZBGC,iCell) * areaCell(iCell) * &
+               gramsCarbonPerMolCarbon * 1.0e-6_RKIND
 
             nZBGC = 1
-            totalOceanDICCell = oceanDICFlux(nZBGC,iCell) * areaCell(iCell) * &
-               gramsCarbonPerMolCarbon * 1.0e-6_RKIND * &
-               iceAreaCell(iCell)
+            totalOceanDICCell = oceanDICFluxArea(nZBGC,iCell) * areaCell(iCell) * &
+               gramsCarbonPerMolCarbon * 1.0e-6_RKIND
 
             nZBGC = 1
-            totalOceanDONCarbonCell = oceanDONFlux(nZBGC,iCell) * areaCell(iCell) * &
-               config_ratio_C_to_N_proteins * gramsCarbonPerMolCarbon * 1.0e-6_RKIND * &
-               iceAreaCell(iCell)
+            totalOceanDONCarbonCell = oceanDONFluxArea(nZBGC,iCell) * areaCell(iCell) * &
+               config_ratio_C_to_N_proteins * gramsCarbonPerMolCarbon * 1.0e-6_RKIND
 
             totalOceanSemiLabileDOCCell = totalOceanDONCarbonCell + totalOceanDOC1Cell + &
                totalOceanDOC2Cell
 
-            totalOceanHumicsCell = oceanHumicsFlux(iCell) * areaCell(iCell) * &
-               gramsCarbonPerMolCarbon * 1.0e-6_RKIND * &
-               iceAreaCell(iCell)
+            totalOceanHumicsCell = oceanHumicsFluxArea(iCell) * areaCell(iCell) * &
+               gramsCarbonPerMolCarbon * 1.0e-6_RKIND
 
             totalOceanCarbonCellCheck = totalOceanHumicsCell + totalOceanDONCarbonCell + &
                totalOceanDOC2Cell + totalOceanDOC1Cell + totalOceanDiatomCell + totalOceanSmallAlgaeCell + &
@@ -2116,8 +2113,13 @@ contains
 
          ! calculate the final net carbon flux to the ice
          call MPAS_pool_get_array(conservationCheckCarbonAMPool, "netCarbonFlux", netCarbonFlux)
+         call MPAS_pool_get_array(conservationCheckCarbonAMPool, "checkCarbonFlux", checkCarbonFlux)
+         !netCarbonFlux(:) = &
+         !     - carbonConsOceanCarbonFlux(:)
          netCarbonFlux(:) = &
-              - carbonConsOceanCarbonFlux(:)
+              - carbonConsOceanCarbonFluxCheck(:)
+         checkCarbonFlux(:) = carbonConsOceanCarbonFlux(:) &
+              - carbonConsOceanCarbonFluxCheck(:)
 
          ! absolute error
          call MPAS_pool_get_array(conservationCheckCarbonAMPool, "absoluteCarbonError", absoluteCarbonError)
@@ -2136,6 +2138,7 @@ contains
          carbonConsSemiLabileDOCFlux(:) = carbonConsSemiLabileDOCFlux(:) * fluxScale
          carbonConsOceanCarbonFluxCheck(:) = carbonConsOceanCarbonFluxCheck(:) * fluxScale
          netCarbonFlux(:)             = netCarbonFlux(:)             * fluxScale
+         checkCarbonFlux(:)           = checkCarbonFlux(:)           * fluxScale
          carbonConsTOCFlux(:) = carbonConsDiatomFlux(:) + carbonConsSmallAlgaeFlux(:) + &
             carbonConsDOC1Flux(:) + carbonConsDOC2Flux(:) + carbonConsDONCarbonFlux(:) + &
             carbonConsHumicsFlux(:)
@@ -2196,6 +2199,7 @@ contains
                call mpas_log_write(' ')
                call mpas_log_write(' Net carbon change           (kg) = '//trim(hemisphere_format((netCarbonFlux * dt) / fluxScale)))
                call mpas_log_write(' Net carbon flux         (kg/m2s) = '//trim(hemisphere_format(netCarbonFlux)))
+               !call mpas_log_write(' ocean carbon flux - Sum (kg/m2s) = '//trim(hemisphere_format(checkCarbonFlux)))
                call mpas_log_write(' ')
                call mpas_log_write(' Absolute carbon error       (kg) = '//trim(hemisphere_format(absoluteCarbonError)))
                call mpas_log_write(' Absolute carbon error/s (kg/m2s) = '//trim(hemisphere_format((absoluteCarbonError * fluxScale) / dt)))
@@ -2284,7 +2288,7 @@ contains
            areaCell, &
            totalAtmBlackCarbonFlux, &
            totalOceanBlackCarbonFlux, &
-           oceanBlackCarbonFlux
+           oceanBlackCarbonFluxArea
 
       real(kind=RKIND), dimension(:,:), pointer :: &
            atmosBlackCarbonFlux
@@ -2374,7 +2378,7 @@ contains
          call MPAS_pool_get_array(biogeochemistryPool, "totalAtmBlackCarbonFlux", totalAtmBlackCarbonFlux)
          call MPAS_pool_get_array(biogeochemistryPool, "totalOceanBlackCarbonFlux", totalOceanBlackCarbonFlux)
          call MPAS_pool_get_array(biogeochemistryPool, "atmosBlackCarbonFlux", atmosBlackCarbonFlux)
-         call MPAS_pool_get_array(biogeochemistryPool, "oceanBlackCarbonFlux", oceanBlackCarbonFlux)
+         call MPAS_pool_get_array(biogeochemistryPool, "oceanBlackCarbonFluxArea", oceanBlackCarbonFluxArea)
          call MPAS_pool_get_array(conservationCheckAMPool, "cellInHemisphere", cellInHemisphere)
 
          do iCell = 1, nCellsSolve
@@ -2387,8 +2391,7 @@ contains
             nZBGC = nZBGC+1
             totalAtmBC2Cell = atmosBlackCarbonFlux(nZBGC,iCell) * areaCell(iCell)* &
                iceAreaCellInitial(iCell)
-            totalOceanBlackCarbonCell = oceanBlackCarbonFlux(iCell) * areaCell(iCell)* &
-               iceAreaCell(iCell)
+            totalOceanBlackCarbonCell = oceanBlackCarbonFlux(iCell) * areaCell(iCell)
             totalAtmBlackCarbonCell = totalAtmBC1Cell + totalAtmBC2Cell
 
             do iHemisphere = 1, nHemispheres

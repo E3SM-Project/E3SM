@@ -376,6 +376,12 @@
 		     units="kg s-1"
 		     description="Total ocean carbon flux computed from individual passed fluxes, positive into the ocean"
 		/>
+		<var name="checkCarbonFlux"
+		     type="real"
+		     dimensions="nHemispheres Time"
+		     units="kg s-1"
+		     description="Difference between total of individual carbon fluxes and total carbon flux"
+		/>
 		<var name="carbonConsDiatomFlux"
 		     type="real"
 		     dimensions="nHemispheres Time"

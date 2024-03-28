@@ -553,7 +553,7 @@
             enddo
          enddo
          endif
-  
+
          call shift_ice (ntrcr,    ncat,        &
                          trcr_depend,           &
                          trcr_base,             &

@@ -4922,7 +4922,17 @@ contains
          oceanDMSPdFlux, &
          oceanHumicsFlux, &
          oceanDustIronFlux, &
-         totalOceanCarbonFlux
+         oceanBlackCarbonFlux, &
+         totalOceanCarbonFlux, &
+         oceanNitrateFluxArea, &
+         oceanSilicateFluxArea, &
+         oceanAmmoniumFluxArea, &
+         oceanDMSFluxArea, &
+         oceanDMSPpFluxArea, &
+         oceanDMSPdFluxArea, &
+         oceanHumicsFluxArea, &
+         oceanDustIronFluxArea, &
+         oceanBlackCarbonFluxArea
 
     real(kind=RKIND), dimension(:,:), pointer :: &
          albedoVisibleDirectCategory, &
@@ -4939,7 +4949,13 @@ contains
          oceanDICFlux, &
          oceanDONFlux, &
          oceanParticulateIronFlux, &
-         oceanDissolvedIronFlux
+         oceanDissolvedIronFlux, &
+         oceanAlgaeFluxArea, &
+         oceanDOCFluxArea, &
+         oceanDICFluxArea, &
+         oceanDONFluxArea, &
+         oceanParticulateIronFluxArea, &
+         oceanDissolvedIronFluxArea
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          iceAreaCategory
@@ -5062,6 +5078,7 @@ contains
        call MPAS_pool_get_array(biogeochemistry, "oceanDMSPdFlux", oceanDMSPdFlux)
        call MPAS_pool_get_array(biogeochemistry, "oceanHumicsFlux", oceanHumicsFlux)
        call MPAS_pool_get_array(biogeochemistry, "oceanDustIronFlux", oceanDustIronFlux)
+       call MPAS_pool_get_array(biogeochemistry, "oceanBlackCarbonFlux", oceanBlackCarbonFlux)
        call MPAS_pool_get_array(biogeochemistry, "oceanBioFluxes", oceanBioFluxes)
        call MPAS_pool_get_array(biogeochemistry, "oceanAlgaeFlux", oceanAlgaeFlux)
        call MPAS_pool_get_array(biogeochemistry, "oceanDOCFlux", oceanDOCFlux)
@@ -5070,6 +5087,22 @@ contains
        call MPAS_pool_get_array(biogeochemistry, "oceanParticulateIronFlux", oceanParticulateIronFlux)
        call MPAS_pool_get_array(biogeochemistry, "oceanDissolvedIronFlux", oceanDissolvedIronFlux)
        call MPAS_pool_get_array(biogeochemistry, "totalOceanCarbonFlux", totalOceanCarbonFlux)
+
+       call MPAS_pool_get_array(biogeochemistry, "oceanNitrateFluxArea", oceanNitrateFluxArea)
+       call MPAS_pool_get_array(biogeochemistry, "oceanSilicateFluxArea", oceanSilicateFluxArea)
+       call MPAS_pool_get_array(biogeochemistry, "oceanAmmoniumFluxArea", oceanAmmoniumFluxArea)
+       call MPAS_pool_get_array(biogeochemistry, "oceanDMSFluxArea", oceanDMSFluxArea)
+       call MPAS_pool_get_array(biogeochemistry, "oceanDMSPpFluxArea", oceanDMSPpFluxArea)
+       call MPAS_pool_get_array(biogeochemistry, "oceanDMSPdFluxArea", oceanDMSPdFluxArea)
+       call MPAS_pool_get_array(biogeochemistry, "oceanHumicsFluxArea", oceanHumicsFluxArea)
+       call MPAS_pool_get_array(biogeochemistry, "oceanDustIronFluxArea", oceanDustIronFluxArea)
+       call MPAS_pool_get_array(biogeochemistry, "oceanBlackCarbonFluxArea", oceanBlackCarbonFluxArea)
+       call MPAS_pool_get_array(biogeochemistry, "oceanAlgaeFluxArea", oceanAlgaeFluxArea)
+       call MPAS_pool_get_array(biogeochemistry, "oceanDOCFluxArea", oceanDOCFluxArea)
+       call MPAS_pool_get_array(biogeochemistry, "oceanDICFluxArea", oceanDICFluxArea)
+       call MPAS_pool_get_array(biogeochemistry, "oceanDONFluxArea", oceanDONFluxArea)
+       call MPAS_pool_get_array(biogeochemistry, "oceanParticulateIronFluxArea", oceanParticulateIronFluxArea)
+       call MPAS_pool_get_array(biogeochemistry, "oceanDissolvedIronFluxArea", oceanDissolvedIronFluxArea)
 
        call MPAS_pool_get_dimension(mesh, "nZBGCTracers", nZBGCTracers)
        call MPAS_pool_get_dimension(mesh, "maxAlgaeType", maxAlgaeType)
@@ -5194,6 +5227,7 @@ contains
               oceanDMSPdFlux(iCell)             = 0.0_RKIND
               oceanDMSFlux(iCell)               = 0.0_RKIND
               oceanDustIronFlux(iCell)          = 0.0_RKIND
+              oceanBlackCarbonFlux(iCell)       = 0.0_RKIND
               oceanHumicsFlux(iCell)            = 0.0_RKIND
 
               do iBioTracers = 1, ciceTracerObject % nBioTracers
@@ -5206,6 +5240,7 @@ contains
               do iBioTracers = 1, maxAlgaeType
                   iBioData = iBioData+1
                   oceanAlgaeFlux(iBioTracers,iCell) = oceanBioFluxesAll(iBioData)
+                  oceanAlgaeFluxArea(iBioTracers,iCell) = oceanBioFluxesAll(iBioData)
                   totalOceanCarbonFlux(iCell) = totalOceanCarbonFlux(iCell) + &
                       oceanAlgaeFlux(iBioTracers,iCell) * ratio_C_to_N(iBioTracers)
               enddo
@@ -5213,11 +5248,13 @@ contains
               ! Nitrate
               iBioData = iBioData+1
               oceanNitrateFlux(iCell) = oceanBioFluxesAll(iBioData)
+              oceanNitrateFluxArea(iCell) = oceanBioFluxesAll(iBioData)
 
               ! Polysaccharids and Lipids
               do iBioTracers = 1, maxDOCType
                   iBioData = iBioData+1
                   oceanDOCFlux(iBioTracers,iCell) = oceanBioFluxesAll(iBioData)
+                  oceanDOCFluxArea(iBioTracers,iCell) = oceanBioFluxesAll(iBioData)
                   totalOceanCarbonFlux(iCell) = totalOceanCarbonFlux(iCell) + &
                       oceanDOCFlux(iBioTracers,iCell)
               enddo
@@ -5226,6 +5263,7 @@ contains
               do iBioTracers = 1, maxDICType
                   iBioData = iBioData+1
                   oceanDICFlux(iBioTracers,iCell) = oceanBioFluxesAll(iBioData)
+                  oceanDICFluxArea(iBioTracers,iCell) = oceanBioFluxesAll(iBioData)
                   totalOceanCarbonFlux(iCell) = totalOceanCarbonFlux(iCell) + &
                       oceanDICFlux(iBioTracers,iCell)
               enddo
@@ -5236,22 +5274,27 @@ contains
               ! Ammonium
               iBioData = iBioData+1
               oceanAmmoniumFlux(iCell) = oceanBioFluxesAll(iBioData)
+              oceanAmmoniumFluxArea(iCell) = oceanBioFluxesAll(iBioData)
 
               ! Silicate
               iBioData = iBioData+1
               oceanSilicateFlux(iCell) = oceanBioFluxesAll(iBioData)
+              oceanSilicateFluxArea(iCell) = oceanBioFluxesAll(iBioData)
 
               ! DMSPp
               iBioData = iBioData+1
               oceanDMSPpFlux(iCell) = oceanBioFluxesAll(iBioData)
+              oceanDMSPpFluxArea(iCell) = oceanBioFluxesAll(iBioData)
 
               ! DMSPd
               iBioData = iBioData+1
               oceanDMSPdFlux(iCell) = oceanBioFluxesAll(iBioData)
+              oceanDMSPdFluxArea(iCell) = oceanBioFluxesAll(iBioData)
 
               ! DMS
               iBioData = iBioData+1
               oceanDMSFlux(iCell) = oceanBioFluxesAll(iBioData)
+              oceanDMSFluxArea(iCell) = oceanBioFluxesAll(iBioData)
 
               ! PON
               iBioData = iBioData+1
@@ -5260,6 +5303,7 @@ contains
               do iBioTracers = 1, maxDONType
                   iBioData = iBioData+1
                   oceanDONFlux(iBioTracers,iCell) = oceanBioFluxesAll(iBioData)
+                  oceanDONFluxArea(iBioTracers,iCell) = oceanBioFluxesAll(iBioData)
                   totalOceanCarbonFlux(iCell) = totalOceanCarbonFlux(iCell) + &
                       oceanDONFlux(iBioTracers,iCell) * config_ratio_C_to_N_proteins
               enddo
@@ -5268,26 +5312,34 @@ contains
               do iBioTracers = 1, maxIronType
                   iBioData = iBioData+1
                   oceanDissolvedIronFlux(iBioTracers,iCell) = oceanBioFluxesAll(iBioData)
+                  oceanDissolvedIronFluxArea(iBioTracers,iCell) = oceanBioFluxesAll(iBioData)
               enddo
 
               ! Particulate Iron
               do iBioTracers = 1, maxIronType
                   iBioData = iBioData+1
                   oceanParticulateIronFlux(iBioTracers,iCell) = oceanBioFluxesAll(iBioData)
+                  oceanParticulateIronFluxArea(iBioTracers,iCell) = oceanBioFluxesAll(iBioData)
               enddo
 
-              ! Black Carbon (not saved)
-              iBioData = iBioData + maxBCType
+              ! Black Carbon (combined; saved for conservation)
+              do iBioTracers = 1, maxBCType
+                  iBioData = iBioData + 1
+                  oceanBlackCarbonFlux(iCell) = oceanBlackCarbonFlux(iCell) +  oceanBioFluxesAll(iBioData)
+               enddo
+               oceanBlackCarbonFluxArea(iCell) = oceanBlackCarbonFlux(iCell)
 
               ! Dust (combined)
               do iBioTracers = 1, maxDustType
                   iBioData = iBioData+1
                   oceanDustIronFlux(iCell) = oceanDustIronFlux(iCell) +  oceanBioFluxesAll(iBioData)
               enddo
+               oceanDustIronFluxArea(iCell) = oceanDustIronFlux(iCell)
 
               ! Humics
               iBioData = iBioData+1
               oceanHumicsFlux(iCell) = oceanBioFluxesAll(iBioData)
+              oceanHumicsFluxArea(iCell) = oceanBioFluxesAll(iBioData)
               totalOceanCarbonFlux(iCell) = totalOceanCarbonFlux(iCell) + &
                      oceanHumicsFlux(iCell)
 

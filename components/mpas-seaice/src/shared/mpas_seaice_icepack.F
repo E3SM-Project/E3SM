@@ -1256,7 +1256,8 @@ contains
   subroutine column_vertical_thermodynamics(domain, clock)
 
     use icepack_intfc, only: &
-         icepack_step_therm1
+         icepack_step_therm1, &
+         icepack_warnings_clear
 
     use seaice_constants, only: &
          seaicePuny
@@ -1690,13 +1691,17 @@ contains
        endif
 
        ! code abort
-       abortFlag = .false.
-       abortMessage = ""
+       !abortFlag = .false.
+       !abortMessage = ""
 
-       !$omp parallel do default(shared) private(iCategory,iAerosol,northernHemisphereMask,&
-       !$omp&  abortMessage) firstprivate(specificSnowAerosol,specificIceAerosol) &
-       !$omp&  reduction(.or.:abortFlag)
+       !$offomp parallel do default(shared) private(iCategory,iAerosol,northernHemisphereMask,&
+       !$offomp&  abortMessage) firstprivate(specificSnowAerosol,specificIceAerosol)
+       !$offomp&  reduction(.or.:abortFlag)
        do iCell = 1, nCellsSolve
+
+          ! code abort
+          abortFlag = .false.
+          abortMessage = ""
 
           ! initial state values
           iceAreaCellInitial(iCell) = iceAreaCell(iCell)
@@ -1737,6 +1742,7 @@ contains
              northernHemisphereMask = .false.
           endif
 
+          call icepack_warnings_clear()
           call icepack_step_therm1(&
                dt=config_dt, &
                ncat=nCategories, &
@@ -1871,6 +1877,7 @@ contains
                frz_onset=freezeOnset(iCell), &
                yday=dayOfYear, &
                prescribed_ice=config_use_prescribed_ice)
+
           abortFlag = icepack_warnings_aborted()
           call seaice_icepack_write_warnings(abortFlag)
 
@@ -2059,7 +2066,6 @@ contains
              enddo ! iCategory
 
           endif
-
        enddo ! iCell
 
        ! error-checking
@@ -2203,18 +2209,8 @@ contains
          iBioData, &
          iBioLayers
 
-    ! test carbon conservation
     real(kind=RKIND), dimension(:,:), allocatable :: &
-         totalCarbonCatFinal, &
-         totalCarbonCatInitial, &
          oceanBioFluxesTemp
-
-    real(kind=RKIND), dimension(:), allocatable :: &
-         verticalGridSpace, &
-         totalCarbonFinal, &
-         totalCarbonInitial, &
-         oceanCarbonFlux, &
-         carbonError
 
     logical, dimension(:), allocatable :: &
          newlyFormedIceLogical
@@ -2222,8 +2218,7 @@ contains
     logical :: &
          abortFlag, &
          setGetPhysicsTracers, &
-         setGetBGCTracers, &
-         checkCarbon
+         setGetBGCTracers
 
     character(len=strKIND) :: &
          abortMessage, &
@@ -2234,8 +2229,6 @@ contains
 
     ! day of year
     call get_day_of_year(clock, dayOfYear)
-
-    checkCarbon = .false.
 
     block => domain % blocklist
     do while (associated(block))
@@ -2333,27 +2326,6 @@ contains
        ! newly formed ice
        allocate(newlyFormedIceLogical(nCategories))
        allocate(oceanBioFluxesTemp(ciceTracerObject % nBioTracers,nCellsSolve))
-       allocate(verticalGridSpace(nBioLayersP1))
-       if (checkCarbon) then
-          allocate(totalCarbonCatFinal(nCategories,nCellsSolve))
-          allocate(totalCarbonCatInitial(nCategories,nCellsSolve))
-          allocate(totalCarbonInitial(nCellsSolve))
-          allocate(totalCarbonFinal(nCellsSolve))
-          allocate(oceanCarbonFlux(nCellsSolve))
-          allocate(carbonError(nCellsSolve))
-       else
-          allocate(totalCarbonCatFinal(1,1))
-          allocate(totalCarbonCatInitial(1,1))
-          allocate(totalCarbonInitial(1))
-          allocate(totalCarbonFinal(1))
-          allocate(oceanCarbonFlux(1))
-          allocate(carbonError(1))
-       endif
-
-       verticalGridSpace(:) = 1.0_RKIND/real(nBioLayers,kind=RKIND)
-       verticalGridSpace(1) = verticalGridSpace(1)/2.0_RKIND
-       verticalGridSpace(nBioLayersP1) = verticalGridSpace(1)
-
        setGetPhysicsTracers = .true.
        setGetBGCTracers     = (config_use_column_biogeochemistry .or. config_use_zaerosols)
 
@@ -2384,14 +2356,6 @@ contains
           ! set the category tracer array
           call set_cice_tracer_array_category(block, ciceTracerObject,&
                  tracerArrayCategory, iCell, setGetPhysicsTracers, setGetBGCTracers)
-
-          if (checkCarbon) then
-            totalCarbonInitial(iCell) = 0.0_RKIND
-            call seaice_total_carbon_content_category(block,totalCarbonCatInitial(:,iCell),iceAreaCategory(1,:,:),iceVolumeCategory(1,:,:),iCell)
-            do iCategory = 1,nCategories
-               totalCarbonInitial(iCell) = totalCarbonInitial(iCell) + totalCarbonCatInitial(iCategory,iCell)*iceAreaCategory(1,iCategory,iCell)
-            enddo
-          endif
 
           oceanBioFluxesTemp(:,iCell) = 0.0_RKIND
 
@@ -2464,9 +2428,6 @@ contains
              oceanBioFluxes(iBioTracers,iCell) = oceanBioFluxes(iBioTracers,iCell) + oceanBioFluxesTemp(iBioTracers,iCell)
           enddo
 
-          abortFlag = icepack_warnings_aborted()
-          call seaice_icepack_write_warnings(abortFlag)
-
           ! update
           do iCategory = 1, nCategories
              newlyFormedIce(iCategory,iCell) = 0
@@ -2477,41 +2438,13 @@ contains
           call get_cice_tracer_array_category(block, ciceTracerObject, &
                  tracerArrayCategory, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
-          if (checkCarbon) then
-            totalCarbonFinal(iCell) = 0.0_RKIND
-            call seaice_total_carbon_content_category(block,totalCarbonCatFinal(:,iCell),iceAreaCategory(1,:,:),iceVolumeCategory(1,:,:),iCell)
-            call seaice_ocean_carbon_flux_cell(block,oceanCarbonFlux(iCell),oceanBioFluxesTemp(:,iCell))
-            do iCategory = 1,nCategories
-               totalCarbonFinal(iCell) = totalCarbonFinal(iCell) + totalCarbonCatFinal(iCategory,iCell)*iceAreaCategory(1,iCategory,iCell)
-            enddo
-            carbonError(iCell) = (totalCarbonFinal(iCell) - totalCarbonInitial(iCell))/config_dt  + oceanCarbonFlux(iCell)
-
-            if (abs(carbonError(iCell)) > max(seaicePuny,1.0e-14_RKIND*abs(oceanCarbonFlux(iCell)))) then
-                  call mpas_log_write("column_step_therm2, carbon conservation error", messageType=MPAS_LOG_ERR)
-                  call mpas_log_write("iCell: $i", messageType=MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell)/))
-                  call mpas_log_write("carbonError: $r", messageType=MPAS_LOG_ERR, realArgs=(/carbonError(iCell)/))
-                  call mpas_log_write("totalCarbonInitial: $r", messageType=MPAS_LOG_ERR, realArgs=(/totalCarbonInitial(iCell)/))
-                  call mpas_log_write("totalCarbonFinal: $r", messageType=MPAS_LOG_ERR, realArgs=(/totalCarbonFinal(iCell)/))
-                  call mpas_log_write("oceanCarbonFlux: $r", messageType=MPAS_LOG_ERR, realArgs=(/oceanCarbonFlux(iCell)/))
-                  call mpas_log_write("config_dt: $r", messageType=MPAS_LOG_ERR, realArgs=(/config_dt/))
-
-                  do iCategory = 1, nCategories
-                     call mpas_log_write("iCategory: $i", messageType=MPAS_LOG_ERR, intArgs=(/iCategory/))
-                     call mpas_log_write("totalCarbonCatFinal(iCategory,iCell): $r", messageType=MPAS_LOG_ERR, realArgs=(/totalCarbonCatFinal(iCategory,iCell)/))
-                     call mpas_log_write("totalCarbonCatInitial(iCategory,iCell): $r", messageType=MPAS_LOG_ERR, realArgs=(/totalCarbonCatInitial(iCategory,iCell)/))
-                     call mpas_log_write("iceAreaCategoryInitial(iCategory,iCell): $r", messageType=MPAS_LOG_ERR, realArgs=(/iceAreaCategoryInitial(iCategory,iCell)/))
-                     call mpas_log_write("iceVolumeCategoryInitial(iCategory,iCell): $r", messageType=MPAS_LOG_ERR, realArgs=(/iceVolumeCategoryInitial(iCategory,iCell)/))
-                     call mpas_log_write("iceAreaCategory(1,iCategory,iCell): $r", messageType=MPAS_LOG_ERR, realArgs=(/iceAreaCategory(1,iCategory,iCell)/))
-                     call mpas_log_write("iceVolumeCategory(1,iCategory,iCell): $r", messageType=MPAS_LOG_ERR, realArgs=(/iceVolumeCategory(1,iCategory,iCell)/))
-                  enddo
-            endif
-          endif
-
+          abortFlag = icepack_warnings_aborted()
           ! cell-specific abort message
           if (abortFlag) then
              call mpas_log_write("column_itd_thermodynamics: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
              call mpas_log_write("iCell: $i", messageType=MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell)/))
           endif
+          call seaice_icepack_write_warnings(abortFlag)
 
        enddo ! iCell
 
@@ -2519,17 +2452,9 @@ contains
        call seaice_critical_error_write_block(domain, block, abortFlag)
        call seaice_check_critical_error(domain, abortFlag)
 
-       deallocate(totalCarbonCatFinal)
-       deallocate(totalCarbonCatInitial)
-       deallocate(totalCarbonInitial)
-       deallocate(totalCarbonFinal)
-       deallocate(oceanCarbonFlux)
-       deallocate(carbonError)
-
        ! newly formed ice
        deallocate(newlyFormedIceLogical)
        deallocate(oceanBioFluxesTemp)
-       deallocate(verticalGridSpace)
 
        block => block % next
     end do
@@ -3041,11 +2966,6 @@ contains
          iAerosol, &
          iBioTracers
 
-    integer, dimension(:), allocatable :: &
-         index_shortwaveAerosol, &
-         index_verticalAerosolsConc, &
-         index_algaeConc
-
     real(kind=RKIND) :: &
          dayOfYear, &
          lonCellColumn
@@ -3163,28 +3083,6 @@ contains
        ! aerosols array
        allocate(aerosolsArray(4*nAerosols,nCategories))
 
-       allocate(index_shortwaveAerosol(maxAerosolType))
-       allocate(index_verticalAerosolsConc(maxAerosolType))
-       allocate(index_algaeConc(nAlgae))
-
-       if (.not. config_use_zaerosols) then
-          index_shortwaveAerosol(1:maxAerosolType) = 1
-          index_verticalAerosolsConc(1:maxAerosolType) = 1
-       else
-          do iAerosol = 1, maxAerosolType
-             index_shortwaveAerosol(iAerosol) =  ciceTracerObject % index_verticalAerosolsConcShortwave(iAerosol)
-             index_verticalAerosolsConc(iAerosol) = ciceTracerObject % index_verticalAerosolsConc(iAerosol)
-          enddo
-       endif
-
-       if (.not. config_use_column_biogeochemistry) then
-          index_algaeConc(1:nAlgae) = 1
-       else
-          do iBioTracers = 1, nAlgae
-             index_algaeConc(iBioTracers) = ciceTracerObject % index_algaeConc(iBioTracers)
-          enddo
-       endif
-
        setGetPhysicsTracers = .true.
        setGetBGCTracers     = (config_use_column_biogeochemistry .or. config_use_zaerosols)
 
@@ -3192,7 +3090,7 @@ contains
        allocate(snow_grain_radius(nSnowLayers,nCategories))
 
        !$omp parallel do default(shared) &
-       !$omp&   firstprivate(aerosolsArray,index_shortwaveAerosol,snow_grain_radius) &
+       !$omp&   firstprivate(aerosolsArray,snow_grain_radius) &
        !$omp&   private(iCategory,iAerosol,lonCellColumn,iSnowLayer)
 
        do iCell = 1, nCellsSolve
@@ -3282,9 +3180,6 @@ contains
 
        ! aerosols array
        deallocate(aerosolsArray)
-       deallocate(index_shortwaveAerosol)
-       deallocate(index_verticalAerosolsConc)
-       deallocate(index_algaeConc)
 
        block => block % next
     end do
@@ -3404,29 +3299,15 @@ contains
          iBioData, &
          iBioLayers
 
-    ! test carbon conservation
     real(kind=RKIND), dimension(:,:), allocatable :: &
-         totalCarbonCatFinal, &
-         totalCarbonCatInitial, &
          oceanBioFluxesTemp
-
-    real(kind=RKIND), dimension(:), allocatable :: &
-         verticalGridSpace, &
-         totalCarbonFinal, &
-         totalCarbonInitial, &
-         oceanCarbonFlux, &
-         carbonError, &
-         iceAreaCategoryInitial
 
     logical, dimension(:), allocatable :: &
          newlyFormedIceLogical
 
     logical :: &
          setGetPhysicsTracers, &
-         setGetBGCTracers, &
-         checkCarbon
-
-    checkCarbon = .false.
+         setGetBGCTracers
 
     block => domain % blocklist
     do while (associated(block))
@@ -3507,28 +3388,6 @@ contains
        setGetBGCTracers     = (config_use_column_biogeochemistry .or. config_use_zaerosols)
 
        allocate(oceanBioFluxesTemp(ciceTracerObject % nBioTracers,nCellsSolve))
-       allocate(verticalGridSpace(nBioLayersP1))
-       if (checkCarbon) then
-          allocate(totalCarbonCatFinal(nCategories,nCellsSolve))
-          allocate(totalCarbonCatInitial(nCategories,nCellsSolve))
-          allocate(totalCarbonInitial(nCellsSolve))
-          allocate(totalCarbonFinal(nCellsSolve))
-          allocate(oceanCarbonFlux(nCellsSolve))
-          allocate(carbonError(nCellsSolve))
-          allocate(iceAreaCategoryInitial(nCategories))
-       else
-          allocate(totalCarbonCatFinal(1,1))
-          allocate(totalCarbonCatInitial(1,1))
-          allocate(totalCarbonInitial(1))
-          allocate(totalCarbonFinal(1))
-          allocate(oceanCarbonFlux(1))
-          allocate(carbonError(1))
-          allocate(iceAreaCategoryInitial(1))
-       endif
-
-       verticalGridSpace(:) = 1.0_RKIND/real(nBioLayers,kind=RKIND)
-       verticalGridSpace(1) = verticalGridSpace(1)/2.0_RKIND
-       verticalGridSpace(nBioLayersP1) = verticalGridSpace(1)
 
        do iCell = 1, nCellsSolve
 
@@ -3540,15 +3399,6 @@ contains
           ! set the category tracer array
           call set_cice_tracer_array_category(block, ciceTracerObject, &
                  tracerArrayCategory, iCell, setGetPhysicsTracers, setGetBGCTracers)
-
-          if (checkCarbon) then
-            totalCarbonInitial(iCell) = 0.0_RKIND
-            call seaice_total_carbon_content_category(block,totalCarbonCatInitial(:,iCell),iceAreaCategory(1,:,:),iceVolumeCategory(1,:,:),iCell)
-            do iCategory = 1,nCategories
-               iceAreaCategoryInitial(iCategory) = iceAreaCategory(1,iCategory,iCell)
-               totalCarbonInitial(iCell) = totalCarbonInitial(iCell) + totalCarbonCatInitial(iCategory,iCell)*iceAreaCategory(1,iCategory,iCell)
-            enddo
-          endif
 
           oceanBioFluxesTemp(:,iCell) = 0.0_RKIND
 
@@ -3609,53 +3459,12 @@ contains
           call get_cice_tracer_array_category(block, ciceTracerObject, &
                  tracerArrayCategory, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
-          if (checkCarbon) then
-            totalCarbonFinal(iCell) = 0.0_RKIND
-            call seaice_total_carbon_content_category(block,totalCarbonCatFinal(:,iCell),iceAreaCategory(1,:,:),iceVolumeCategory(1,:,:),iCell)
-            call seaice_ocean_carbon_flux_cell(block,oceanCarbonFlux(iCell),oceanBioFluxesTemp(:,iCell))
-            do iCategory = 1,nCategories
-               totalCarbonFinal(iCell) = totalCarbonFinal(iCell) + totalCarbonCatFinal(iCategory,iCell)*iceAreaCategory(1,iCategory,iCell)
-            enddo
-            carbonError(iCell) = (totalCarbonFinal(iCell) - totalCarbonInitial(iCell))/config_dt  + oceanCarbonFlux(iCell)
-
-            if (abs(carbonError(iCell)) > max(10.0_RKIND*seaicePuny,1.0e-14_RKIND*abs(oceanCarbonFlux(iCell))) .and. &
-               MAXVAL(iceAreaCategory(1,:,iCell)) > seaicePuny .and. &
-               MAXVAL(iceAreaCategoryInitial(:)) > seaicePuny) then
-                  call mpas_log_write("icepack_step_ridge, carbon conservation error", messageType=MPAS_LOG_ERR)
-                  call mpas_log_write("iCell: $i", messageType=MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell)/))
-                  call mpas_log_write("carbonError: $r", messageType=MPAS_LOG_ERR, realArgs=(/carbonError(iCell)/))
-                  call mpas_log_write("totalCarbonInitial: $r", messageType=MPAS_LOG_ERR, realArgs=(/totalCarbonInitial(iCell)/))
-                  call mpas_log_write("totalCarbonFinal: $r", messageType=MPAS_LOG_ERR, realArgs=(/totalCarbonFinal(iCell)/))
-                  call mpas_log_write("oceanCarbonFlux: $r", messageType=MPAS_LOG_ERR, realArgs=(/oceanCarbonFlux(iCell)/))
-                  call mpas_log_write("config_dt: $r", messageType=MPAS_LOG_ERR, realArgs=(/config_dt/))
-
-                  do iCategory = 1, nCategories
-                     call mpas_log_write("iCategory: $i", messageType=MPAS_LOG_ERR, intArgs=(/iCategory/))
-                     call mpas_log_write("totalCarbonCatFinal(iCategory,iCell): $r", messageType=MPAS_LOG_ERR, realArgs=(/totalCarbonCatFinal(iCategory,iCell)/))
-                     call mpas_log_write("totalCarbonCatInitial(iCategory,iCell): $r", messageType=MPAS_LOG_ERR, realArgs=(/totalCarbonCatInitial(iCategory,iCell)/))
-                     call mpas_log_write("iceAreaCategory(1,iCategory,iCell): $r", messageType=MPAS_LOG_ERR, realArgs=(/iceAreaCategory(1,iCategory,iCell)/))
-                     call mpas_log_write("iceAreaCategoryInitial(iCategory): $r", messageType=MPAS_LOG_ERR, realArgs=(/iceAreaCategoryInitial(iCategory)/))
-                     call mpas_log_write("iceVolumeCategory(1,iCategory,iCell): $r", messageType=MPAS_LOG_ERR, realArgs=(/iceVolumeCategory(1,iCategory,iCell)/))
-                  enddo
-            endif
-          endif
-
+          call seaice_icepack_write_warnings(icepack_warnings_aborted())
        enddo ! iCell
-
-       call seaice_icepack_write_warnings(icepack_warnings_aborted())
-! check carbon
-       deallocate(oceanBioFluxesTemp)
-       deallocate(verticalGridSpace)
-       deallocate(totalCarbonCatFinal)
-       deallocate(totalCarbonCatInitial)
-       deallocate(totalCarbonInitial)
-       deallocate(totalCarbonFinal)
-       deallocate(oceanCarbonFlux)
-       deallocate(carbonError)
-       deallocate(iceAreaCategoryInitial)
 
        ! newly formed ice
        deallocate(newlyFormedIceLogical)
+       deallocate(oceanBioFluxesTemp)
 
        block => block % next
     end do
@@ -3984,9 +3793,9 @@ contains
        ! newly formed ice
        allocate(newlyFormedIceLogical(nCategories))
        allocate(brineHeightCatInitial(nCategories,nCellsSolve))
-       allocate(carbonError(nCellsSolve))
 
        if (checkCarbon) then
+          allocate(carbonError(nCellsSolve))
           allocate(totalCarbonCatFinal(nCategories,nCellsSolve))
           allocate(totalCarbonCatInitial(nCategories,nCellsSolve))
           allocate(totalCarbonCatFlux(nCategories,nCellsSolve))
@@ -3995,6 +3804,7 @@ contains
           allocate(totalCarbonInitial(nCellsSolve))
           allocate(totalCarbonFlux(nCellsSolve))
        else
+          allocate(carbonError(1))
           allocate(totalCarbonCatFinal(1,1))
           allocate(totalCarbonCatInitial(1,1))
           allocate(totalCarbonCatFlux(1,1))
@@ -4153,7 +3963,6 @@ contains
                bioTemperatureIceCell=bgridTemperatureIceCell(:,iCell))
 
           abortFlag = icepack_warnings_aborted()
-          call seaice_icepack_write_warnings(abortFlag)
 
           call get_cice_tracer_array_category(block, ciceTracerObject, &
                tracerArrayCategory, iCell, setGetPhysicsTracers, setGetBGCTracers)
@@ -4215,13 +4024,16 @@ contains
              if (newlyFormedIceLogical(iCategory)) newlyFormedIce(iCategory,iCell) = 1
           enddo ! iCategory
 
+          ! code abort
+          if (abortFlag) then
+             call mpas_log_write("column_biogeochemistry: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
+             call mpas_log_write("iCell: $i", messageType=MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell)/))
+          endif
+
+          call seaice_icepack_write_warnings(abortFlag)
+
        enddo ! iCell
 
-       ! code abort
-       if (abortFlag) then
-          call mpas_log_write("column_biogeochemistry: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
-          call mpas_log_write("iCell: $i", messageType=MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell)/))
-       endif
        call seaice_critical_error_write_block(domain, block, abortFlag)
        call seaice_check_critical_error(domain, abortFlag)
 
@@ -4232,10 +4044,10 @@ contains
        deallocate(totalCarbonFinal)
        deallocate(totalCarbonInitial)
        deallocate(totalCarbonFlux)
+       deallocate(carbonError)
 
        deallocate(brineHeightCatInitial)
        deallocate(newlyFormedIceLogical)
-       deallocate(carbonError)
 
        block => block % next
     end do
@@ -4531,6 +4343,9 @@ contains
          nCellsSolve, &
          nCategories
 
+    integer, dimension(:), pointer :: &
+         indexToCellID
+
     logical :: &
          setGetPhysicsTracers, &
          setGetBGCTracers
@@ -4549,6 +4364,7 @@ contains
 
        call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
        call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
+       call MPAS_pool_get_array(mesh, "indexToCellID", indexToCellID)
 
        call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory, 1)
        call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory, 1)
@@ -4765,7 +4581,16 @@ contains
          oceanHumicsFlux, &
          oceanDustIronFlux, &
          oceanBlackCarbonFlux, &
-         totalOceanCarbonFlux
+         totalOceanCarbonFlux, &
+         oceanNitrateFluxArea, &
+         oceanSilicateFluxArea, &
+         oceanAmmoniumFluxArea, &
+         oceanDMSFluxArea, &
+         oceanDMSPpFluxArea, &
+         oceanDMSPdFluxArea, &
+         oceanHumicsFluxArea, &
+         oceanDustIronFluxArea, &
+         oceanBlackCarbonFluxArea
 
     real(kind=RKIND), dimension(:,:), pointer :: &
          albedoVisibleDirectCategory, &
@@ -4782,7 +4607,13 @@ contains
          oceanDICFlux, &
          oceanDONFlux, &
          oceanParticulateIronFlux, &
-         oceanDissolvedIronFlux
+         oceanDissolvedIronFlux, &
+         oceanAlgaeFluxArea, &
+         oceanDOCFluxArea, &
+         oceanDICFluxArea, &
+         oceanDONFluxArea, &
+         oceanParticulateIronFluxArea, &
+         oceanDissolvedIronFluxArea
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          iceAreaCategory
@@ -4914,6 +4745,22 @@ contains
        call MPAS_pool_get_array(biogeochemistry, "oceanParticulateIronFlux", oceanParticulateIronFlux)
        call MPAS_pool_get_array(biogeochemistry, "oceanDissolvedIronFlux", oceanDissolvedIronFlux)
        call MPAS_pool_get_array(biogeochemistry, "totalOceanCarbonFlux", totalOceanCarbonFlux)
+
+       call MPAS_pool_get_array(biogeochemistry, "oceanNitrateFluxArea", oceanNitrateFluxArea)
+       call MPAS_pool_get_array(biogeochemistry, "oceanSilicateFluxArea", oceanSilicateFluxArea)
+       call MPAS_pool_get_array(biogeochemistry, "oceanAmmoniumFluxArea", oceanAmmoniumFluxArea)
+       call MPAS_pool_get_array(biogeochemistry, "oceanDMSFluxArea", oceanDMSFluxArea)
+       call MPAS_pool_get_array(biogeochemistry, "oceanDMSPpFluxArea", oceanDMSPpFluxArea)
+       call MPAS_pool_get_array(biogeochemistry, "oceanDMSPdFluxArea", oceanDMSPdFluxArea)
+       call MPAS_pool_get_array(biogeochemistry, "oceanHumicsFluxArea", oceanHumicsFluxArea)
+       call MPAS_pool_get_array(biogeochemistry, "oceanDustIronFluxArea", oceanDustIronFluxArea)
+       call MPAS_pool_get_array(biogeochemistry, "oceanBlackCarbonFluxArea", oceanBlackCarbonFluxArea)
+       call MPAS_pool_get_array(biogeochemistry, "oceanAlgaeFluxArea", oceanAlgaeFluxArea)
+       call MPAS_pool_get_array(biogeochemistry, "oceanDOCFluxArea", oceanDOCFluxArea)
+       call MPAS_pool_get_array(biogeochemistry, "oceanDICFluxArea", oceanDICFluxArea)
+       call MPAS_pool_get_array(biogeochemistry, "oceanDONFluxArea", oceanDONFluxArea)
+       call MPAS_pool_get_array(biogeochemistry, "oceanParticulateIronFluxArea", oceanParticulateIronFluxArea)
+       call MPAS_pool_get_array(biogeochemistry, "oceanDissolvedIronFluxArea", oceanDissolvedIronFluxArea)
 
        call MPAS_pool_get_dimension(mesh, "nZBGCTracers", nZBGCTracers)
        call MPAS_pool_get_dimension(mesh, "maxAlgaeType", maxAlgaeType)
@@ -5051,6 +4898,7 @@ contains
               do iBioTracers = 1, maxAlgaeType
                   iBioData = iBioData+1
                   oceanAlgaeFlux(iBioTracers,iCell) = oceanBioFluxesAll(iBioData)
+                  oceanAlgaeFluxArea(iBioTracers,iCell) = oceanBioFluxesAll(iBioData)
                   totalOceanCarbonFlux(iCell) = totalOceanCarbonFlux(iCell) + &
                       oceanAlgaeFlux(iBioTracers,iCell) * ratio_C_to_N(iBioTracers)
               enddo
@@ -5058,11 +4906,13 @@ contains
               ! Nitrate
               iBioData = iBioData+1
               oceanNitrateFlux(iCell) = oceanBioFluxesAll(iBioData)
+              oceanNitrateFluxArea(iCell) = oceanBioFluxesAll(iBioData)
 
               ! Polysaccharids and Lipids
               do iBioTracers = 1, maxDOCType
                   iBioData = iBioData+1
                   oceanDOCFlux(iBioTracers,iCell) = oceanBioFluxesAll(iBioData)
+                  oceanDOCFluxArea(iBioTracers,iCell) = oceanBioFluxesAll(iBioData)
                   totalOceanCarbonFlux(iCell) = totalOceanCarbonFlux(iCell) + &
                       oceanDOCFlux(iBioTracers,iCell)
               enddo
@@ -5071,6 +4921,7 @@ contains
               do iBioTracers = 1, maxDICType
                   iBioData = iBioData+1
                   oceanDICFlux(iBioTracers,iCell) = oceanBioFluxesAll(iBioData)
+                  oceanDICFluxArea(iBioTracers,iCell) = oceanBioFluxesAll(iBioData)
                   totalOceanCarbonFlux(iCell) = totalOceanCarbonFlux(iCell) + &
                       oceanDICFlux(iBioTracers,iCell)
               enddo
@@ -5081,22 +4932,27 @@ contains
               ! Ammonium
               iBioData = iBioData+1
               oceanAmmoniumFlux(iCell) = oceanBioFluxesAll(iBioData)
+              oceanAmmoniumFluxArea(iCell) = oceanBioFluxesAll(iBioData)
 
               ! Silicate
               iBioData = iBioData+1
               oceanSilicateFlux(iCell) = oceanBioFluxesAll(iBioData)
+              oceanSilicateFluxArea(iCell) = oceanBioFluxesAll(iBioData)
 
               ! DMSPp
               iBioData = iBioData+1
               oceanDMSPpFlux(iCell) = oceanBioFluxesAll(iBioData)
+              oceanDMSPpFluxArea(iCell) = oceanBioFluxesAll(iBioData)
 
               ! DMSPd
               iBioData = iBioData+1
               oceanDMSPdFlux(iCell) = oceanBioFluxesAll(iBioData)
+              oceanDMSPdFluxArea(iCell) = oceanBioFluxesAll(iBioData)
 
               ! DMS
               iBioData = iBioData+1
               oceanDMSFlux(iCell) = oceanBioFluxesAll(iBioData)
+              oceanDMSFluxArea(iCell) = oceanBioFluxesAll(iBioData)
 
               ! PON
               iBioData = iBioData+1
@@ -5105,6 +4961,7 @@ contains
               do iBioTracers = 1, maxDONType
                   iBioData = iBioData+1
                   oceanDONFlux(iBioTracers,iCell) = oceanBioFluxesAll(iBioData)
+                  oceanDONFluxArea(iBioTracers,iCell) = oceanBioFluxesAll(iBioData)
                   totalOceanCarbonFlux(iCell) = totalOceanCarbonFlux(iCell) + &
                       oceanDONFlux(iBioTracers,iCell) * config_ratio_C_to_N_proteins
               enddo
@@ -5113,31 +4970,36 @@ contains
               do iBioTracers = 1, maxIronType
                   iBioData = iBioData+1
                   oceanDissolvedIronFlux(iBioTracers,iCell) = oceanBioFluxesAll(iBioData)
+                  oceanDissolvedIronFluxArea(iBioTracers,iCell) = oceanBioFluxesAll(iBioData)
               enddo
 
               ! Particulate Iron
               do iBioTracers = 1, maxIronType
                   iBioData = iBioData+1
                   oceanParticulateIronFlux(iBioTracers,iCell) = oceanBioFluxesAll(iBioData)
+                  oceanParticulateIronFluxArea(iBioTracers,iCell) = oceanBioFluxesAll(iBioData)
               enddo
 
               ! Black Carbon (combined; saved for conservation)
               do iBioTracers = 1, maxBCType
                   iBioData = iBioData + 1
                   oceanBlackCarbonFlux(iCell) = oceanBlackCarbonFlux(iCell) +  oceanBioFluxesAll(iBioData)
-              enddo
+               enddo
+               oceanBlackCarbonFluxArea(iCell) = oceanBlackCarbonFlux(iCell)
 
               ! Dust (combined)
               do iBioTracers = 1, maxDustType
                   iBioData = iBioData+1
                   oceanDustIronFlux(iCell) = oceanDustIronFlux(iCell) +  oceanBioFluxesAll(iBioData)
-              enddo
+               enddo
+               oceanDustIronFluxArea(iCell) = oceanDustIronFlux(iCell)
 
               ! Humics
               iBioData = iBioData+1
               oceanHumicsFlux(iCell) = oceanBioFluxesAll(iBioData)
+              oceanHumicsFluxArea(iCell) = oceanBioFluxesAll(iBioData)
               totalOceanCarbonFlux(iCell) = totalOceanCarbonFlux(iCell) + &
-                     oceanHumicsFlux(iCell)
+                 oceanHumicsFlux(iCell)
 
           endif ! config_use_column_biogeochemistry .or. config_use_zaerosols
 
@@ -15759,12 +15621,12 @@ contains
     if (logAsErrors) then
        do iWarning = 1, size(warnings)
           call mpas_log_write(trim(warnings(iWarning)), messageType=MPAS_LOG_ERR)
-       enddo ! iWarning
+       enddo                    ! iWarning
        call mpas_log_write("icepack aborted", MPAS_LOG_CRIT)
     else
        do iWarning = 1, size(warnings)
           call mpas_log_write(trim(warnings(iWarning)), messageType=MPAS_LOG_WARN)
-       enddo ! iWarning
+       enddo                    ! iWarning
     endif
 
     call icepack_warnings_clear()

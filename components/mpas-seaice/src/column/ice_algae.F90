@@ -1325,9 +1325,7 @@
             trcrn(nt_zbgc_frac+mm-1) = zbgc_frac_init(mm)
             if (sum_tot > c0) trcrn(nt_zbgc_frac+mm-1) = sum_new/sum_tot
 
-            if (abs(sum_initial-sum_tot-flux_bio(mm)*dt + source(mm)) > accuracy*max(sum_initial,sum_tot) .\
-or. &
-!            if (abs(sum_new-sum_old) > accuracy*sum_old .or. &
+            if (abs(sum_initial-sum_tot-flux_bio(mm)*dt + source(mm)) > max(accuracy,accuracy*max(sum_initial,sum_tot)) .or. &
                 minval(biocons(:)) < c0  .or. minval(initcons_stationary(:)) < c0 &
                 .or. l_stop) then
                 write(warning,*)'zbgc FCT tracer solution failed,mm', mm
@@ -1414,22 +1412,23 @@ or. &
          do k = 1,nblyr+1                  ! back to bulk quantity
             bio_tmp = (biomat_brine(k,m) + react(k,m))*iphin_N(k)
             if (tr_bgc_C .and. m .eq. nlt_bgc_DIC(1) .and. bio_tmp .le. -accuracy) then  ! satisfy DIC demands from ocean
-                write(warning, *) 'DIC demand from ocean'
-                call add_warning(warning)
-                write(warning, *) 'm, nlt_bgc_DIC(1), bio_tmp, react(k,m):'
-                call add_warning(warning)
-                write(warning, *) m, nlt_bgc_DIC(1), bio_tmp, react(k,m)
-                call add_warning(warning)
-                write(warning,*)'flux_bio(m) Initial, hbri_old, dz(k)'
-                call add_warning(warning)
-                write(warning,*) flux_bio(m), hbri_old, dz(k)
-                call add_warning(warning)
+               !uncomment for additional diagnostics
+               ! write(warning, *) 'DIC demand from ocean'
+               ! call add_warning(warning)
+               ! write(warning, *) 'm, nlt_bgc_DIC(1), bio_tmp, react(k,m):'
+               ! call add_warning(warning)
+               ! write(warning, *) m, nlt_bgc_DIC(1), bio_tmp, react(k,m)
+               ! call add_warning(warning)
+               ! write(warning,*)'flux_bio(m) Initial, hbri_old, dz(k)'
+               ! call add_warning(warning)
+               ! write(warning,*) flux_bio(m), hbri_old, dz(k)
+               ! call add_warning(warning)
                 flux_bio(m) = flux_bio(m) + bio_tmp*dz(k)*hbri/dt
                 bio_tmp = c0
-                write(warning,*)  'flux_bio(m)'
-                call add_warning(warning)
-                write(warning,*)  flux_bio(m)
-                call add_warning(warning)
+               ! write(warning,*)  'flux_bio(m)'
+               ! call add_warning(warning)
+               ! write(warning,*)  flux_bio(m)
+               ! call add_warning(warning)
             end if
             if (m .eq. nlt_bgc_Nit) then
                initcons_mobile(k) = max(c0,(biomat_brine(k,m)-nitrification(k) + &
