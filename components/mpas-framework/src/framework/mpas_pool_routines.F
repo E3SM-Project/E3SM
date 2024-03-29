@@ -932,20 +932,32 @@ module mpas_pool_routines
 !> copy the data from the members of srcPool into the members of destPool.
 !
 !-----------------------------------------------------------------------
-   recursive subroutine mpas_pool_copy_pool(srcPool, destPool)!{{{
+   recursive subroutine mpas_pool_copy_pool(srcPool, destPool, overrideTimeLevel)!{{{
 
       implicit none
 
       type (mpas_pool_type), pointer :: srcPool
       type (mpas_pool_type), pointer :: destPool
+      integer, intent(in), optional :: overrideTimeLevel
 
 
       integer :: i, j, threadNum
+      integer :: timeLevel
       type (mpas_pool_member_type), pointer :: ptr
       type (mpas_pool_data_type), pointer :: dptr
       type (mpas_pool_data_type), pointer :: mem
 
       threadNum = mpas_threading_get_thread_num()
+      timeLevel = 2 
+
+      if (present(overrideTimeLevel)) then
+         timeLevel = overrideTimeLevel
+
+         if (timeLevel < 1) then
+            call mpas_pool_set_error_level(MPAS_POOL_FATAL)
+            call pool_mesg('ERROR in mpas_pool_clone_pool: Input time levels cannot be less than 1.')
+         end if
+      end if
 
       if ( threadNum == 0 ) then
          do i=1,srcPool % size
@@ -1014,83 +1026,135 @@ module mpas_pool_routines
                   else if (associated(dptr % l0)) then
                      call mpas_duplicate_field(dptr % l0, mem % l0, copy_array_only=.true.)
                   else if (associated(dptr % r0a)) then
-                     do j=1,mem % contentsTimeLevs
-                        mem % r0 => mem % r0a(j)
-                        call mpas_duplicate_field(dptr % r0a(j), mem % r0, copy_array_only=.true.)
-                        nullify(mem % r0)
-                     end do
+                     if (timeLevel > 1) then
+                        do j=1,mem % contentsTimeLevs
+                           mem % r0 => mem % r0a(j)
+                           call mpas_duplicate_field(dptr % r0a(j), mem % r0, copy_array_only=.true.)
+                           nullify(mem % r0)
+                        end do
+                     else
+                         call mpas_duplicate_field(dptr % r0a(1), mem % r0, copy_array_only=.true.)
+                     end if
                   else if (associated(dptr % r1a)) then
-                     do j=1,mem % contentsTimeLevs
-                        mem % r1 => mem % r1a(j)
-                        call mpas_duplicate_field(dptr % r1a(j), mem % r1, copy_array_only=.true.)
-                        nullify(mem % r1)
-                     end do
+                     if (timeLevel > 1) then
+                        do j=1,mem % contentsTimeLevs
+                           mem % r1 => mem % r1a(j)
+                           call mpas_duplicate_field(dptr % r1a(j), mem % r1, copy_array_only=.true.)
+                           nullify(mem % r1)
+                        end do
+                     else
+                         call mpas_duplicate_field(dptr % r1a(1), mem % r1, copy_array_only=.true.)
+                     end if
                   else if (associated(dptr % r2a)) then
-                     do j=1,mem % contentsTimeLevs
-                        mem % r2 => mem % r2a(j)
-                        call mpas_duplicate_field(dptr % r2a(j), mem % r2, copy_array_only=.true.)
-                        nullify(mem % r2)
-                     end do
+                     if (timeLevel > 1) then
+                        do j=1,mem % contentsTimeLevs
+                           mem % r2 => mem % r2a(j)
+                           call mpas_duplicate_field(dptr % r2a(j), mem % r2, copy_array_only=.true.)
+                           nullify(mem % r2)
+                        end do
+                     else
+                         call mpas_duplicate_field(dptr % r2a(1), mem % r2, copy_array_only=.true.)
+                     end if
                   else if (associated(dptr % r3a)) then
-                     do j=1,mem % contentsTimeLevs
-                        mem % r3 => mem % r3a(j)
-                        call mpas_duplicate_field(dptr % r3a(j), mem % r3, copy_array_only=.true.)
-                        nullify(mem % r3)
-                     end do
+                     if (timeLevel > 1) then
+                        do j=1,mem % contentsTimeLevs
+                           mem % r3 => mem % r3a(j)
+                           call mpas_duplicate_field(dptr % r3a(j), mem % r3, copy_array_only=.true.)
+                           nullify(mem % r3)
+                        end do
+                     else
+                         call mpas_duplicate_field(dptr % r3a(1), mem % r3, copy_array_only=.true.)
+                     end if
                   else if (associated(dptr % r4a)) then
-                     do j=1,mem % contentsTimeLevs
-                        mem % r4 => mem % r4a(j)
-                        call mpas_duplicate_field(dptr % r4a(j), mem % r4, copy_array_only=.true.)
-                        nullify(mem % r4)
-                     end do
+                     if (timeLevel > 1) then
+                        do j=1,mem % contentsTimeLevs
+                           mem % r4 => mem % r4a(j)
+                           call mpas_duplicate_field(dptr % r4a(j), mem % r4, copy_array_only=.true.)
+                           nullify(mem % r4)
+                        end do
+                     else
+                         call mpas_duplicate_field(dptr % r4a(1), mem % r4, copy_array_only=.true.)
+                     end if
                   else if (associated(dptr % r5a)) then
-                     do j=1,mem % contentsTimeLevs
-                        mem % r5 => mem % r5a(j)
-                        call mpas_duplicate_field(dptr % r5a(j), mem % r5, copy_array_only=.true.)
-                        nullify(mem % r5)
-                     end do
+                     if (timeLevel > 1) then
+                        do j=1,mem % contentsTimeLevs
+                           mem % r5 => mem % r5a(j)
+                           call mpas_duplicate_field(dptr % r5a(j), mem % r5, copy_array_only=.true.)
+                           nullify(mem % r5)
+                        end do
+                     else
+                         call mpas_duplicate_field(dptr % r5a(1), mem % r5, copy_array_only=.true.)
+                     end if
                   else if (associated(dptr % i0a)) then
-                     do j=1,mem % contentsTimeLevs
-                        mem % i0 => mem % i0a(j)
-                        call mpas_duplicate_field(dptr % i0a(j), mem % i0, copy_array_only=.true.)
-                        nullify(mem % i0)
-                     end do
+                     if (timeLevel > 1) then
+                        do j=1,mem % contentsTimeLevs
+                           mem % i0 => mem % i0a(j)
+                           call mpas_duplicate_field(dptr % i0a(j), mem % i0, copy_array_only=.true.)
+                           nullify(mem % i0)
+                        end do
+                     else
+                         call mpas_duplicate_field(dptr % i0a(1), mem % i0, copy_array_only=.true.)
+                     end if
                   else if (associated(dptr % i1a)) then
-                     do j=1,mem % contentsTimeLevs
-                        mem % i1 => mem % i1a(j)
-                        call mpas_duplicate_field(dptr % i1a(j), mem % i1, copy_array_only=.true.)
-                        nullify(mem % i1)
-                     end do
+                     if (timeLevel > 1) then
+                        do j=1,mem % contentsTimeLevs
+                           mem % i1 => mem % i1a(j)
+                           call mpas_duplicate_field(dptr % i1a(j), mem % i1, copy_array_only=.true.)
+                           nullify(mem % i1)
+                        end do
+                     else
+                         call mpas_duplicate_field(dptr % i1a(1), mem % i1, copy_array_only=.true.)
+                     end if
                   else if (associated(dptr % i2a)) then
-                     do j=1,mem % contentsTimeLevs
-                        mem % i2 => mem % i2a(j)
-                        call mpas_duplicate_field(dptr % i2a(j), mem % i2, copy_array_only=.true.)
-                        nullify(mem % i2)
-                     end do
+                     if (timeLevel > 1) then
+                        do j=1,mem % contentsTimeLevs
+                           mem % i2 => mem % i2a(j)
+                           call mpas_duplicate_field(dptr % i2a(j), mem % i2, copy_array_only=.true.)
+                           nullify(mem % i2)
+                        end do
+                     else
+                         call mpas_duplicate_field(dptr % i2a(1), mem % i2, copy_array_only=.true.)
+                     end if
                   else if (associated(dptr % i3a)) then
-                     do j=1,mem % contentsTimeLevs
-                        mem % i3 => mem % i3a(j)
-                        call mpas_duplicate_field(dptr % i3a(j), mem % i3, copy_array_only=.true.)
-                        nullify(mem % i3)
-                     end do
+                     if (timeLevel > 1) then
+                        do j=1,mem % contentsTimeLevs
+                           mem % i3 => mem % i3a(j)
+                           call mpas_duplicate_field(dptr % i3a(j), mem % i3, copy_array_only=.true.)
+                           nullify(mem % i3)
+                        end do
+                     else
+                         call mpas_duplicate_field(dptr % i3a(1), mem % i3, copy_array_only=.true.)
+                     end if
                   else if (associated(dptr % c0a)) then
-                     do j=1,mem % contentsTimeLevs
-                        mem % c0 => mem % c0a(j)
-                        call mpas_duplicate_field(dptr % c0a(j), mem % c0, copy_array_only=.true.)
-                        nullify(mem % c0)
-                     end do
+                     if (timeLevel > 1) then
+                        do j=1,mem % contentsTimeLevs
+                           mem % c0 => mem % c0a(j)
+                           call mpas_duplicate_field(dptr % c0a(j), mem % c0, copy_array_only=.true.)
+                           nullify(mem % c0)
+                        end do
+                     else
+                         call mpas_duplicate_field(dptr % c0a(1), mem % c0, copy_array_only=.true.)
+                     end if
                   else if (associated(dptr % c1a)) then
-                     do j=1,mem % contentsTimeLevs
-                        mem % c1 => mem % c1a(j)
-                        call mpas_duplicate_field(dptr % c1a(j), mem % c1, copy_array_only=.true.)
-                        nullify(mem % c1)
-                     end do
+                     if (timeLevel > 1) then
+                        do j=1,mem % contentsTimeLevs
+                           mem % c1 => mem % c1a(j)
+                           call mpas_duplicate_field(dptr % c1a(j), mem % c1, copy_array_only=.true.)
+                           nullify(mem % c1)
+                        end do
+                     else
+                         call mpas_duplicate_field(dptr % c1a(1), mem % c1, copy_array_only=.true.)
+                     end if
                   else if (associated(dptr % l0a)) then
-                     do j=1,mem % contentsTimeLevs
-                        mem % l0 => mem % l0a(j)
-                        call mpas_duplicate_field(dptr % l0a(j), mem % l0, copy_array_only=.true.)
-                        nullify(mem % l0)
-                     end do
+                     if (timeLevel > 1) then
+                        do j=1,mem % contentsTimeLevs
+                           mem % l0 => mem % l0a(j)
+                           call mpas_duplicate_field(dptr % l0a(j), mem % l0, copy_array_only=.true.)
+                           nullify(mem % l0)
+                        end do
+                     else
+                        call mpas_duplicate_field(dptr % l0a(1), mem % l0, copy_array_only=.true.)
+                     end if
                   else
                      call pool_mesg('While copying pool, member '//trim(ptr % key)//' has no valid field pointers.')
                   end if
