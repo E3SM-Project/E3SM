@@ -23,9 +23,8 @@ void AODVis::set_grids(
   m_nlevs = grid->get_num_vertical_levels();
 
   // Define layouts we need (both inputs and outputs)
-  FieldLayout scalar3d_swband_layout{{COL, SWBND, LEV},
-                                     {m_ncols, m_swbands, m_nlevs}};
-  FieldLayout scalar1d_layout{{COL}, {m_ncols}};
+  FieldLayout scalar3d_swband_layout = grid->get_3d_vector_layout(true,m_swbands,"swband");
+  FieldLayout scalar1d_layout        = grid->get_2d_scalar_layout();
 
   // The fields required for this diagnostic to be computed
   add_field<Required>("aero_tau_sw", scalar3d_swband_layout, nondim, grid_name);

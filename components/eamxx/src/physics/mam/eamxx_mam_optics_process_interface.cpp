@@ -42,78 +42,60 @@ void MAMOptics::set_grids(
 
   // Define aerosol optics fields computed by this process.
   auto nondim = Units::nondimensional();
-  // 3D layout for shortwave aerosol fields: columns, number of shortwave, and nlev
-  FieldLayout scalar3d_swband_layout{{COL, SWBND, LEV},
-                                       {ncol_, nswbands_, nlev_}};
+  // 3D layout for short/longwave aerosol fields: columns, number of short/longwave band, nlev
+  FieldLayout scalar3d_swband = grid_->get_3d_vector_layout(true,nswbands_,"swband");
+  FieldLayout scalar3d_lwband = grid_->get_3d_vector_layout(true,nlwbands_,"lwband");
 
-  // 3D layout for longwave aerosol fields: columns, number of shortwave, and nlev +1 s
-  FieldLayout scalar3d_lwband_layout{{COL, LWBND, LEV},
-                                     {ncol_, nlwbands_, nlev_}};
+  // layout for 3D (2d horiz X 1d vertical) variables at level midpoints/interfaces
+  FieldLayout scalar3d_mid = grid_->get_3d_scalar_layout(true);
+  FieldLayout scalar3d_int = grid_->get_3d_scalar_layout(false);
 
-  FieldLayout scalar3d_layout_int{{COL, ILEV}, {ncol_, nlev_ + 1}};
+  // layout for 2D (1d horiz X 1d vertical) variables
+  FieldLayout scalar2d = grid_->get_2d_scalar_layout();
 
-  // layout for 2D (1d horiz X 1d vertical) variable
-  FieldLayout scalar2d_layout_col{{COL}, {ncol_}};
-
-  // layout for 3D (2d horiz X 1d vertical) variables
-  FieldLayout scalar3d_layout_mid{{COL, LEV}, {ncol_, nlev_}};
-  add_field<Required>("omega", scalar3d_layout_mid, Pa / s,
-                      grid_name);  // vertical pressure velocity
-  add_field<Required>("T_mid", scalar3d_layout_mid, K,
-                      grid_name);  // Temperature
-  add_field<Required>("p_mid", scalar3d_layout_mid, Pa,
-                      grid_name);  // total pressure
-
-  add_field<Required>("p_int", scalar3d_layout_int, Pa,
-                      grid_name);  // total pressure
-  add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa, grid_name);
-  add_field<Required>("pseudo_density_dry", scalar3d_layout_mid, Pa, grid_name);
-
-  add_field<Required>("qv", scalar3d_layout_mid, q_unit, grid_name,
-                      "tracers");  // specific humidity
-  add_field<Required>("qi", scalar3d_layout_mid, q_unit, grid_name,
-                      "tracers");  // ice wet mixing ratio
-  add_field<Required>("ni", scalar3d_layout_mid, n_unit, grid_name,
-                      "tracers");  // ice number mixing ratio
+  add_field<Required>("omega",              scalar3d_mid, Pa / s, grid_name);  // vertical pressure velocity
+  add_field<Required>("T_mid",              scalar3d_mid, K,      grid_name);  // Temperature
+  add_field<Required>("p_mid",              scalar3d_mid, Pa,     grid_name);  // total pressure
+  add_field<Required>("p_int",              scalar3d_int, Pa,     grid_name);  // total pressure
+  add_field<Required>("pseudo_density",     scalar3d_mid, Pa,     grid_name);
+  add_field<Required>("pseudo_density_dry", scalar3d_mid, Pa,     grid_name);
+  add_field<Required>("qv",                 scalar3d_mid, q_unit, grid_name,"tracers");  // specific humidity
+  add_field<Required>("qi",                 scalar3d_mid, q_unit, grid_name,"tracers");  // ice wet mixing ratio
+  add_field<Required>("ni",                 scalar3d_mid, n_unit, grid_name,"tracers");  // ice number mixing ratio
 
   // droplet activation can alter cloud liquid and number mixing ratios
-  add_field<Required>("qc", scalar3d_layout_mid, q_unit, grid_name,
-                     "tracers");  // cloud liquid wet mixing ratio
-  add_field<Required>("nc", scalar3d_layout_mid, n_unit, grid_name,
-                     "tracers");  // cloud liquid wet number mixing ratio
+  add_field<Required>("qc", scalar3d_mid, q_unit, grid_name,"tracers");  // cloud liquid wet mixing ratio
+  add_field<Required>("nc", scalar3d_mid, n_unit, grid_name,"tracers");  // cloud liquid wet number mixing ratio
 
-  add_field<Required>("phis", scalar2d_layout_col, m2 / s2, grid_name);
-  add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim,
-                      grid_name);  // cloud fraction
-  add_field<Required>("pbl_height", scalar2d_layout_col, m,
-                      grid_name);  // planetary boundary layer height
+  add_field<Required>("phis", scalar2d, m2 / s2, grid_name);
+  add_field<Required>("cldfrac_tot", scalar3d_mid, nondim,grid_name);  // cloud fraction
+  add_field<Required>("pbl_height", scalar2d, m,grid_name);  // planetary boundary layer height
+
   // shortwave aerosol scattering asymmetry parameter [unitless]
-  add_field<Computed>("aero_g_sw", scalar3d_swband_layout, nondim, grid_name);
-  // shortwave aerosol single-scattering albedo [unitless]
-  add_field<Computed>("aero_ssa_sw", scalar3d_swband_layout, nondim,
-                      grid_name);
-  // shortwave aerosol extinction optical depth
-  add_field<Computed>("aero_tau_sw", scalar3d_swband_layout, nondim,
-                      grid_name);
-  //longwave aerosol extinction optical depth [unitless]
-  add_field<Computed>("aero_tau_lw", scalar3d_lwband_layout, nondim, grid_name);
+  add_field<Computed>("aero_g_sw", scalar3d_swband, nondim, grid_name);
 
-  add_field<Computed>("aodvis", scalar2d_layout_col, nondim, grid_name);
+  // shortwave aerosol single-scattering albedo [unitless]
+  add_field<Computed>("aero_ssa_sw", scalar3d_swband, nondim,grid_name);
+
+  // shortwave aerosol extinction optical depth
+  add_field<Computed>("aero_tau_sw", scalar3d_swband, nondim, grid_name);
+
+  //longwave aerosol extinction optical depth [unitless]
+  add_field<Computed>("aero_tau_lw", scalar3d_lwband, nondim, grid_name);
+
+  add_field<Computed>("aodvis", scalar2d, nondim, grid_name);
 
   // (interstitial) aerosol tracers of interest: mass (q) and number (n) mixing
   // ratios
   for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
     const char *int_nmr_field_name = mam_coupling::int_aero_nmr_field_name(m);
 
-    add_field<Updated>(int_nmr_field_name, scalar3d_layout_mid, n_unit,
-                       grid_name, "tracers");
+    add_field<Updated>(int_nmr_field_name, scalar3d_mid, n_unit,grid_name, "tracers");
     for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
-      const char *int_mmr_field_name =
-          mam_coupling::int_aero_mmr_field_name(m, a);
+      const char *int_mmr_field_name = mam_coupling::int_aero_mmr_field_name(m, a);
 
       if(strlen(int_mmr_field_name) > 0) {
-        add_field<Updated>(int_mmr_field_name, scalar3d_layout_mid, q_unit,
-                           grid_name, "tracers");
+        add_field<Updated>(int_mmr_field_name, scalar3d_mid, q_unit,grid_name, "tracers");
       }
     }
   }
@@ -121,15 +103,13 @@ void MAMOptics::set_grids(
   for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
     const char *cld_nmr_field_name = mam_coupling::cld_aero_nmr_field_name(m);
 
-    add_field<Updated>(cld_nmr_field_name, scalar3d_layout_mid, n_unit,
-                       grid_name);
+    add_field<Updated>(cld_nmr_field_name, scalar3d_mid, n_unit, grid_name);
     for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
       const char *cld_mmr_field_name =
           mam_coupling::cld_aero_mmr_field_name(m, a);
 
       if(strlen(cld_mmr_field_name) > 0) {
-        add_field<Updated>(cld_mmr_field_name, scalar3d_layout_mid, q_unit,
-                           grid_name);
+        add_field<Updated>(cld_mmr_field_name, scalar3d_mid, q_unit, grid_name);
       }
     }
   }
@@ -137,8 +117,7 @@ void MAMOptics::set_grids(
   // aerosol-related gases: mass mixing ratios
   for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
     const char *gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
-    add_field<Updated>(gas_mmr_field_name, scalar3d_layout_mid, q_unit,
-                       grid_name, "tracers");
+    add_field<Updated>(gas_mmr_field_name, scalar3d_mid, q_unit, grid_name, "tracers");
   }
 }
 

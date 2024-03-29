@@ -58,15 +58,14 @@ Nudging::Nudging (const ekat::Comm& comm, const ekat::ParameterList& params)
 void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 {
   using namespace ekat::units;
-  using namespace ShortFieldTagsNames;
 
   m_grid = grids_manager->get_grid("Physics");
   const auto& grid_name = m_grid->name();
   m_num_cols = m_grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = m_grid->get_num_vertical_levels();  // Number of levels per column
 
-  FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols, m_num_levs} };
-  FieldLayout horiz_wind_layout { {COL,CMP,LEV}, {m_num_cols,2,m_num_levs} };
+  FieldLayout scalar3d_layout_mid = m_grid->get_3d_scalar_layout_mid();
+  FieldLayout horiz_wind_layout = m_grid->get_3d_vector_layout_mid(2);
 
   constexpr int ps = 1;
   auto Q = kg/kg;

@@ -33,20 +33,6 @@ enum class FieldTag {
   GaussPoint,
   Component,
   TimeLevel,
-  // Added for RRTMGP, TODO: Revisit this approach, is there a better way than adding more field tags?
-  Gases,
-  ShortWaveBand,
-  ShortWaveGpoint,
-  LongWaveBand,
-  LongWaveGpoint,
-  IsccpTau,
-  IsccpPrs,
-  //
-  MAM_NumModes,
-  MAM_NumRefIndexReal,
-  MAM_NumRefIndexImag,
-  MAM_NumCoefficients,
-  MAM_NumModesInFile
 };
 
 // If using tags a lot, consider adding 'using namespace ShortFieldTagsNames'
@@ -63,21 +49,6 @@ namespace ShortFieldTagsNames {
   constexpr auto LEV  = FieldTag::LevelMidPoint;
   constexpr auto ILEV = FieldTag::LevelInterface;
   constexpr auto CMP  = FieldTag::Component;
-  // Added for rrtmgp - see TODO item above
-  constexpr auto NGAS = FieldTag::Gases;
-  constexpr auto SWBND = FieldTag::ShortWaveBand;
-  constexpr auto LWBND = FieldTag::LongWaveBand;
-  constexpr auto SWGPT = FieldTag::ShortWaveGpoint;
-  constexpr auto LWGPT = FieldTag::LongWaveGpoint;
-  constexpr auto ISCCPTAU = FieldTag::IsccpTau;
-  constexpr auto ISCCPPRS = FieldTag::IsccpPrs;
-  constexpr auto NMODES = FieldTag::MAM_NumModes;
-  //
-  constexpr auto NREFINDEX_REAL = FieldTag::MAM_NumRefIndexReal;
-  constexpr auto NREFINDEX_IM = FieldTag::MAM_NumRefIndexImag;
-
-  constexpr auto NCOEF_NUMBER = FieldTag::MAM_NumCoefficients;
-  constexpr auto MODE = FieldTag::MAM_NumModesInFile;
 }
 
 inline std::string e2str (const FieldTag ft) {
@@ -107,43 +78,6 @@ inline std::string e2str (const FieldTag ft) {
       break;
     case FieldTag::Component:
       name = "dim";
-      break;
-    // Added for rrtmgp - see TODO item above
-    case FieldTag::Gases:
-      name = "ngas";
-      break;
-    case FieldTag::ShortWaveBand:
-      name = "swband";
-      break;
-    case FieldTag::ShortWaveGpoint:
-      name = "swgpt";
-      break;
-    case FieldTag::LongWaveBand:
-      name = "lwband";
-      break;
-    case FieldTag::LongWaveGpoint:
-      name = "lwgpt";
-      break;
-    case FieldTag::IsccpTau:
-      name = "ISCCPTAU";
-      break;
-    case FieldTag::IsccpPrs:
-      name = "ISCCPPRS";
-      break;
-    case FieldTag::MAM_NumModes:
-      name = "num_modes";
-      break;
-    case FieldTag::MAM_NumRefIndexReal:
-      name = "refindex_real";
-      break;
-    case FieldTag::MAM_NumRefIndexImag:
-      name = "refindex_im";
-      break;
-    case FieldTag::MAM_NumCoefficients:
-      name = "coef_number";
-      break;
-    case FieldTag::MAM_NumModesInFile:
-      name = "mode";
       break;
     default:
       EKAT_ERROR_MSG("Error! Unrecognized field tag.");
