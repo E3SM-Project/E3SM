@@ -385,10 +385,15 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   //FIXME: We are hard-coding the band ordering in RRTMGP.
   //TODO: We can update optics file using the ordering below (rrtmg_to_rrtmgp_swbands_).
   // Mapping from old RRTMG sw bands to new band ordering in RRTMGP
-  std::vector<int> temporal = {13, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
-  auto rrtmg_to_rrtmgp_swbands_host =mam_coupling::view_int_1d::HostMirror(temporal.data(),nswbands_);
-  rrtmg_to_rrtmgp_swbands_ = mam_coupling::view_int_1d("rrtmg_to_rrtmgp_swbands",nswbands_);
-  Kokkos::deep_copy(rrtmg_to_rrtmgp_swbands_,rrtmg_to_rrtmgp_swbands_host);
+  // rrtmg_swband (old) = 2925, 3625, 4325, 4900, 5650, 6925, 7875, 10450, 14425, 19325,
+    // 25825, 33500, 44000, 1710 ;
+  // rrtmgp_swband (new) = 1710, 2925, 3625, 4325, 4900, 5650, 6925, 7875, 10450, 14425,
+    // 19325, 25825, 33500, 44000 ;
+    // given the rrtmg index return the rrtmgp index
+  std::vector<int> temporal = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 0};
+  auto get_idx_rrtmgp_from_rrtmg_swbands_host =mam_coupling::view_int_1d::HostMirror(temporal.data(),nswbands_);
+  get_idx_rrtmgp_from_rrtmg_swbands_ = mam_coupling::view_int_1d("rrtmg_to_rrtmgp_swbands",nswbands_);
+  Kokkos::deep_copy(get_idx_rrtmgp_from_rrtmg_swbands_,get_idx_rrtmgp_from_rrtmg_swbands_host);
 }
 void MAMOptics::run_impl(const double dt) {
 
@@ -506,7 +511,7 @@ void MAMOptics::run_impl(const double dt) {
   // we are correcting the band ordering of mam4xx's ouputs, so that they are consistent with
   // inputs in RRTMG.
   // Mapping from old RRTMG sw bands to new band ordering in RRTMGP
-  const auto& rrtmg_to_rrtmgp_swbands = rrtmg_to_rrtmgp_swbands_;
+  const auto& get_idx_rrtmgp_from_rrtmg_swbands = get_idx_rrtmgp_from_rrtmg_swbands_;
   // postprocess output
   Kokkos::parallel_for("postprocess", policy, postprocess_);
   Kokkos::fence();
@@ -514,6 +519,8 @@ void MAMOptics::run_impl(const double dt) {
   // (ncols, nswlands, nlevs) Here, we copy data from kk=1 in mam4xx
   // Here, we are following: E3SM/components/eam/src/physics/rrtmgp
   ///cam_optics.F90
+  // nswbands loop is using rrtmg
+  //
   Kokkos::parallel_for(
       "copying data from mam4xx to eamxx",
       Kokkos::MDRangePolicy<Kokkos::Rank<3> >({0, 0, 0},
@@ -521,20 +528,20 @@ void MAMOptics::run_impl(const double dt) {
       KOKKOS_LAMBDA(const int icol, const int iswband, const int kk) {
         // Extract single scattering albedo from the product-defined fields
         if (aero_tau_sw(icol, iswband, kk + 1) > zero) {
-          aero_ssa_sw_eamxx(icol, rrtmg_to_rrtmgp_swbands(iswband), kk) =
+          aero_ssa_sw_eamxx(icol, get_idx_rrtmgp_from_rrtmg_swbands(iswband), kk) =
           aero_tau_ssa_sw(icol, iswband, kk + 1)/aero_tau_sw(icol, iswband, kk + 1);
         } else {
-          aero_ssa_sw_eamxx(icol, rrtmg_to_rrtmgp_swbands(iswband), kk) = one;
+          aero_ssa_sw_eamxx(icol, get_idx_rrtmgp_from_rrtmg_swbands(iswband), kk) = one;
         }
         // Extract assymmetry parameter from the product-defined fields
         if (aero_tau_ssa_sw(icol, iswband, kk + 1) > zero ) {
-          aero_g_sw_eamxx(icol, rrtmg_to_rrtmgp_swbands(iswband), kk) =
+          aero_g_sw_eamxx(icol, get_idx_rrtmgp_from_rrtmg_swbands(iswband), kk) =
             aero_tau_g_sw(icol, iswband, kk + 1)/aero_tau_ssa_sw(icol, iswband, kk + 1) ;
         } else {
-          aero_g_sw_eamxx(icol, rrtmg_to_rrtmgp_swbands(iswband), kk) = zero;
+          aero_g_sw_eamxx(icol, get_idx_rrtmgp_from_rrtmg_swbands(iswband), kk) = zero;
         }
         // Copy cloud optical depth over directly
-        aero_tau_sw_eamxx(icol, rrtmg_to_rrtmgp_swbands(iswband), kk) =
+        aero_tau_sw_eamxx(icol, get_idx_rrtmgp_from_rrtmg_swbands(iswband), kk) =
             aero_tau_sw(icol, iswband, kk + 1);
       });
   Kokkos::fence();
