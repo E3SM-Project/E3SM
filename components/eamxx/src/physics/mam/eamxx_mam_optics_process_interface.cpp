@@ -304,25 +304,11 @@ void MAMOptics::initialize_impl(const RunType run_type) {
     mam_coupling::set_parameters_table(aerosol_optics_host_data, rrtmg_params,
                                        layouts, host_views);
 
-    std::string mam4_mode1_physical_properties_file =
-      m_params.get<std::string>("mam4_mode1_physical_properties_file");
-
-    std::string mam4_mode2_physical_properties_file =
-      m_params.get<std::string>("mam4_mode2_physical_properties_file");
-
-    std::string mam4_mode3_physical_properties_file =
-      m_params.get<std::string>("mam4_mode3_physical_properties_file");
-
-    std::string mam4_mode4_physical_properties_file =
-      m_params.get<std::string>("mam4_mode4_physical_properties_file");
-
-
-    std::vector<std::string> name_table_modes = {
-      mam4_mode1_physical_properties_file, mam4_mode2_physical_properties_file,
-      mam4_mode3_physical_properties_file, mam4_mode4_physical_properties_file};
-
     for(int imode = 0; imode < ntot_amode; imode++) {
-      mam_coupling::read_rrtmg_table(name_table_modes[imode],
+       const auto  key = "mam4_mode" + std::to_string(imode+1)
+                       + "_physical_properties_file";
+       const auto& fname = m_params.get<std::string>(key);
+      mam_coupling::read_rrtmg_table(fname,
                                      imode,  // mode No
                                      rrtmg_params, grid_, host_views, layouts,
                                      aerosol_optics_host_data,
