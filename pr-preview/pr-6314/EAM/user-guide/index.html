@@ -1894,7 +1894,7 @@
 </li>
 </ol>
 <h2 id="steps-to-build-and-run-eam">Steps to build and run EAM</h2>
-<p>A step-by-step instruction on how to run E3SM can be found here: https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/2309226536</p>
+<p>A step-by-step instruction on how to run E3SM can be found <a href="https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/2309226536">here</a>.</p>
 <p>The difference when running in atmosphere-only mode (without an interactive ocean or sea-ice) would be to change the compset and grid. Certain namelist paramters, input data files, and output file specifcations can also be modified. These are described below as ways to customize runs. </p>
 <h2 id="scientifically-supported-compsets-and-grids">Scientifically supported compsets and grids</h2>
 <h3 id="compsets">Compsets</h3>
@@ -1903,7 +1903,6 @@
 <p><code>F1850</code> - Climatological pre-industrial-day climate (year 1850)</p>
 <p><code>F20TR</code> - Historical EAM simulation with time varying sea-surface temperatures, aerosol emissions, and greenhouse gas forcings (year 1850-2014)</p>
 <h3 id="grids">Grids</h3>
-<p><span style="color:red">Need to check final v3 grid to be used for ne30 simulations</span></p>
 <p><code>ne30pg2_r05_IcoswISC30E3r5</code> - ne30pg2 atmosphere, 0.5deg x 0.5deg land grid, and Icosahedral 30 km mesh with ice shelves cavities (wISC), E3SMv3 (E3) revision r5</p>
 <h2 id="customizing-runs">Customizing runs</h2>
 <h3 id="namelist-changes">Namelist changes</h3>
@@ -1964,10 +1963,10 @@
  avgflag_pertape = 'A','A','A','I'</p>
 <p>fexcl1 = 'U10' # Removes U10 output from monthly files
  fincl2 = 'PS', 'FLUT','PRECT','U200','V200','U850','V850',
-          'TCO','SCO','TREFHTMN','TREFHTMX','TREFHT','QREFHT'  # Output files of daily-averaged output, which includes 30 days of output in each file
+          'TCO','SCO','TREFHT','QREFHT'  # Output files of daily-averaged output, which includes 30 days of output in each file
  fincl3 = 'PS', 'PSL','PRECT','TUQ','TVQ','UBOT','VBOT','TREFHT','FLUT','OMEGA500','TBOT','U850','V850','U200','V200','T200','T500','Z700'  # Output files of 6-hour-averaged output, which includes 30 days of output in each file
- fincl4 = 'PRECT' # Output files of 3-hourly output with 3 days of output in every file
- ```</p>
+ fincl4 = 'PRECT' # Output files of 3-hourly output with 3 days of output in every file</p>
+<p>```</p>
 
 
 
