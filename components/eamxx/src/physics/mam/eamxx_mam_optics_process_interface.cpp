@@ -11,55 +11,7 @@ namespace scream {
 
 MAMOptics::MAMOptics(const ekat::Comm &comm, const ekat::ParameterList &params)
     : AtmosphereProcess(comm, params), aero_config_() {
-  EKAT_REQUIRE_MSG(
-      m_params.isParameter("mam4_mode1_physical_properties_file"),
-      "ERROR: mam4_mode1_physical_properties_file is missing from mam_optics parameter list.");
-
-  EKAT_REQUIRE_MSG(
-      m_params.isParameter("mam4_mode2_physical_properties_file"),
-      "ERROR: mam4_mode2_physical_properties_file is missing from mam_optics parameter list.");
-
-  EKAT_REQUIRE_MSG(
-      m_params.isParameter("mam4_mode3_physical_properties_file"),
-      "ERROR: mam4_mode3_physical_properties_file is missing from mam_optics parameter list.");
-
-  EKAT_REQUIRE_MSG(
-      m_params.isParameter("mam4_mode4_physical_properties_file"),
-      "ERROR: mam4_mode4_physical_properties_file is missing from mam_optics parameter list.");
-
-  EKAT_REQUIRE_MSG(
-      m_params.isParameter("mam4_water_refindex_file"),
-      "ERROR: mam4_water_refindex_file is missing from mam_optics parameter list.");
-
-  EKAT_REQUIRE_MSG(
-      m_params.isParameter("mam4_soa_physical_properties_file"),
-      "ERROR: mam4_soa_physical_properties_file is missing from mam_optics parameter list.");
-
-  EKAT_REQUIRE_MSG(
-      m_params.isParameter("mam4_dust_physical_properties_file"),
-      "ERROR: mam4_dust_physical_properties_file is missing from mam_optics parameter list.");
-
-  EKAT_REQUIRE_MSG(
-      m_params.isParameter("mam4_nacl_physical_properties_file"),
-      "ERROR: mam4_nacl_physical_properties_file is missing from mam_optics parameter list.");
-
-  EKAT_REQUIRE_MSG(
-      m_params.isParameter("mam4_so4_physical_properties_file"),
-      "ERROR: mam4_so4_physical_properties_file is missing from mam_optics parameter list.");
-
-  EKAT_REQUIRE_MSG(
-      m_params.isParameter("mam4_pom_physical_properties_file"),
-      "ERROR: mam4_pom_physical_properties_file is missing from mam_optics parameter list.");
-
-  EKAT_REQUIRE_MSG(
-      m_params.isParameter("mam4_bc_physical_properties_file"),
-      "ERROR: mam4_bc_physical_properties_file is missing from mam_optics parameter list.");
-
-  EKAT_REQUIRE_MSG(
-      m_params.isParameter("mam4_mom_physical_properties_file"),
-      "ERROR: mam4_mom_physical_properties_file is missing from mam_optics parameter list.");
-
-}
+ }
 
 AtmosphereProcessType MAMOptics::type() const {
   return AtmosphereProcessType::Physics;
