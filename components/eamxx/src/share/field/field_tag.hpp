@@ -41,12 +41,12 @@ enum class FieldTag {
   LongWaveGpoint,
   IsccpTau,
   IsccpPrs,
-  num_modes,
   //
-  nrefindex_real,
-  nrefindex_im,
-  ncoef_number,
-  mode
+  MAM_NumModes,
+  MAM_NumRefIndexReal,
+  MAM_NumRefIndexImag,
+  MAM_NumCoefficients,
+  MAM_NumModesInFile
 };
 
 // If using tags a lot, consider adding 'using namespace ShortFieldTagsNames'
@@ -71,13 +71,13 @@ namespace ShortFieldTagsNames {
   constexpr auto LWGPT = FieldTag::LongWaveGpoint;
   constexpr auto ISCCPTAU = FieldTag::IsccpTau;
   constexpr auto ISCCPPRS = FieldTag::IsccpPrs;
-  constexpr auto NMODES = FieldTag::num_modes;
+  constexpr auto NMODES = FieldTag::MAM_NumModes;
   //
-  constexpr auto NREFINDEX_REAL = FieldTag::nrefindex_real;
-  constexpr auto NREFINDEX_IM = FieldTag::nrefindex_im;
+  constexpr auto NREFINDEX_REAL = FieldTag::MAM_NumRefIndexReal;
+  constexpr auto NREFINDEX_IM = FieldTag::MAM_NumRefIndexImag;
 
-  constexpr auto NCOEF_NUMBER = FieldTag::ncoef_number;
-  constexpr auto MODE = FieldTag::mode;
+  constexpr auto NCOEF_NUMBER = FieldTag::MAM_NumCoefficients;
+  constexpr auto MODE = FieldTag::MAM_NumModesInFile;
 }
 
 inline std::string e2str (const FieldTag ft) {
@@ -130,19 +130,19 @@ inline std::string e2str (const FieldTag ft) {
     case FieldTag::IsccpPrs:
       name = "ISCCPPRS";
       break;
-    case FieldTag::num_modes:
+    case FieldTag::MAM_NumModes:
       name = "num_modes";
       break;
-    case FieldTag::nrefindex_real:
+    case FieldTag::MAM_NumRefIndexReal:
       name = "refindex_real";
       break;
-    case FieldTag::nrefindex_im:
+    case FieldTag::MAM_NumRefIndexImag:
       name = "refindex_im";
       break;
-    case FieldTag::ncoef_number:
+    case FieldTag::MAM_NumCoefficients:
       name = "coef_number";
       break;
-    case FieldTag::mode:
+    case FieldTag::MAM_NumModesInFile:
       name = "mode";
       break;
     default:
