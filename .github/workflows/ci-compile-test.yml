@@ -1,0 +1,56 @@
+name: CI
+on:
+  push:
+    branches:
+      - '**'
+jobs:
+  container-test-job:
+    runs-on: ubuntu-latest
+    container:
+      image: rfiorella/e3sm-dev:latest
+    steps:
+    - name: Check out the NGEE-Arctic-E3SM repo
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ github.ref }}
+        submodules: true
+    - name: Setup cime and input datafiles
+      run: |
+        mkdir ~/.cime 
+        cp /home/e3smuser/.cime/* /github/home/.cime/
+        git clone https://github.com/rfiorella/pt-e3sm-inputdata /home/e3smuser/inputdata
+        cd /home/e3smuser/inputdata/lnd/clm2/firedata
+        tar -zxvf clmforc.Li_2012_hdm_0.5x0.5_AVHRR_simyr1850-2010_c130401.nc.tar.gz
+        cd /home/e3smuser/inputdata/atm/datm7/NASA_LIS/
+        tar -zxvf clmforc.Li_2012_climo1995-2011.T62.lnfm_c130327.nc.tar.gz
+        tar -zxvf clmforc.Li_2012_climo1995-2011.T62.lnfm_Total_c140423.nc.tar.gz
+        ls -v /home/e3smuser/inputdata/atm/datm7/NASA_LIS/
+    - name: create new case and setup
+      run: |
+        cd cime/scripts && ./create_newcase --mach docker --res ELM_USRDAT --compset ICB1850CNPRDCTCBC --case ~/output/ci_test \
+        && cd ~/output/ci_test
+        ./xmlchange MOSART_MODE=NULL,DOUT_S=FALSE,DIN_LOC_ROOT=/home/e3smuser/inputdata
+        ./xmlchange DIN_LOC_ROOT_CLMFORC=/home/e3smuser/inputdata/atm/datm7
+        ./xmlchange ELM_USRDAT_NAME=1x1pt_AK-TLG
+        ./xmlchange ATM_DOMAIN_PATH=/home/e3smuser/inputdata/share/domains/domain.clm
+        ./xmlchange LND_DOMAIN_PATH=/home/e3smuser/inputdata/share/domains/domain.clm
+        ./xmlchange ATM_DOMAIN_FILE=domain.lnd.1x1pt_teller-GRID_navy.nc
+        ./xmlchange LND_DOMAIN_FILE=domain.lnd.1x1pt_teller-GRID_navy.nc
+        ./xmlchange PIO_TYPENAME=netcdf,NTASKS=1,NTHRDS=1
+        ./xmlchange STOP_OPTION=nyears,STOP_N=5
+        ./xmlchange BATCH_SYSTEM=none
+        echo "&clm_inparm" >> user_nl_elm
+        echo " do_budgets = .false." >> user_nl_elm
+        echo " use_nofire = .true." >> user_nl_elm
+        echo " metdata_type = 'gswp3'" >> user_nl_elm
+        echo " metdata_bypass = '/home/e3smuser/inputdata/atm/datm7/atm_forcing.datm7.GSWP3.0.5d.v2.c180716_NGEE-Grid/cpl_bypass_teller-Grid'" >> user_nl_elm
+        echo " fsurdat = '/home/e3smuser/inputdata/lnd/clm2/surfdata_map/surfdata_1x1pt_teller-GRID_simyr1850_c360x720_c171002.nc'" >> user_nl_elm
+        echo " stream_fldfilename_popdens = '/home/e3smuser/inputdata/lnd/clm2/firedata/clmforc.Li_2012_hdm_0.5x0.5_AVHRR_simyr1850-2010_c130401.nc'" >> user_nl_elm
+        ./case.setup
+        # add coupler bypass flag to cmake macros.
+        echo 'string(APPEND CPPDEFS " -DCPL_BYPASS")' >> cmake_macros/universal.cmake
+        ./case.build || cat /home/e3smuser/output/ci_test/bld/e3sm.bldlog.*
+        ./case.submit --no-batch
+        cat /home/e3smuser/output/ci_test/run/e3sm.log.*
+        cat /home/e3smuser/output/ci_test/run/lnd.log.*
+      
