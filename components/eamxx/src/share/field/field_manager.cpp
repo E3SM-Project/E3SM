@@ -732,14 +732,11 @@ void FieldManager::add_field (const Field& f) {
       "Error! The method 'add_field' can only be called on a closed repo.\n");
   EKAT_REQUIRE_MSG (f.is_allocated(),
       "Error! The method 'add_field' requires the input field to be already allocated.\n");
- // FIXME: emaxx assumes ncol is first dimension and nlevs is the last one.
- #if 1
   EKAT_REQUIRE_MSG (m_grid->is_valid_layout(f.get_header().get_identifier().get_layout()),
       "Error! Input field to 'add_field' has a layout not compatible with the stored grid.\n"
       "  - input field name : " + f.name() + "\n"
       "  - field manager grid: " + m_grid->name() + "\n"
       "  - input field layout:   " + to_string(f.get_header().get_identifier().get_layout()) + "\n");
-#endif
   EKAT_REQUIRE_MSG (not has_field(f.name()),
       "Error! The method 'add_field' requires the input field to not be already existing.\n"
       "  - field name: " + f.get_header().get_identifier().name() + "\n");
