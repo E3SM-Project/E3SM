@@ -512,6 +512,8 @@ void MAMOptics::run_impl(const double dt) {
   Kokkos::fence();
   // than rrtmgp mam4 layout: (ncols, nswlands, nlevs +1  ) rrtmgp in emaxx:
   // (ncols, nswlands, nlevs) Here, we copy data from kk=1 in mam4xx
+  // Here, we are following: E3SM/components/eam/src/physics/rrtmgp
+  ///cam_optics.F90
   Kokkos::parallel_for(
       "copying data from mam4xx to eamxx",
       Kokkos::MDRangePolicy<Kokkos::Rank<3> >({0, 0, 0},
@@ -519,17 +521,17 @@ void MAMOptics::run_impl(const double dt) {
       KOKKOS_LAMBDA(const int icol, const int iswband, const int kk) {
         // Extract single scattering albedo from the product-defined fields
         if (aero_tau_sw(icol, iswband, kk + 1) > zero) {
-          aero_g_sw_eamxx(icol, rrtmg_to_rrtmgp_swbands(iswband), kk) =
-          aero_tau_g_sw(icol, iswband, kk + 1)/aero_tau_sw(icol, iswband, kk + 1);
+          aero_ssa_sw_eamxx(icol, rrtmg_to_rrtmgp_swbands(iswband), kk) =
+          aero_tau_ssa_sw(icol, iswband, kk + 1)/aero_tau_sw(icol, iswband, kk + 1);
         } else {
-          aero_g_sw_eamxx(icol, rrtmg_to_rrtmgp_swbands(iswband), kk) = one;
+          aero_ssa_sw_eamxx(icol, rrtmg_to_rrtmgp_swbands(iswband), kk) = one;
         }
         // Extract assymmetry parameter from the product-defined fields
-        if (aero_tau_g_sw(icol, iswband, kk + 1) > zero ) {
-          aero_ssa_sw_eamxx(icol, rrtmg_to_rrtmgp_swbands(iswband), kk) =
-            aero_tau_ssa_sw(icol, iswband, kk + 1)/aero_tau_g_sw(icol, iswband, kk + 1) ;
+        if (aero_tau_ssa_sw(icol, iswband, kk + 1) > zero ) {
+          aero_g_sw_eamxx(icol, rrtmg_to_rrtmgp_swbands(iswband), kk) =
+            aero_tau_g_sw(icol, iswband, kk + 1)/aero_tau_ssa_sw(icol, iswband, kk + 1) ;
         } else {
-          aero_ssa_sw_eamxx(icol, rrtmg_to_rrtmgp_swbands(iswband), kk) = zero;
+          aero_g_sw_eamxx(icol, rrtmg_to_rrtmgp_swbands(iswband), kk) = zero;
         }
         // Copy cloud optical depth over directly
         aero_tau_sw_eamxx(icol, rrtmg_to_rrtmgp_swbands(iswband), kk) =
