@@ -32,6 +32,8 @@ This Technical Guide describes the physics of EAM.
 
 - [Dust](dust.md): The parameterization of dust emissions in EAMv3.
 
+- [OCEANFILMS](oceanfilms.md): The parameterization of sea soray irganic aerosol emissions in EAMv3.
+
 ## Chemistry
 
 - [chemUCI + Linoz v3](chemUCIlinozv3.md): The parameterization of interactive atmospheric chemistry in EAMv3.

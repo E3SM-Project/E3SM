@@ -16,7 +16,7 @@ This Users's Guide describes how to set up and run EAM.
 
 ## Steps to build and run EAM
 
-A step-by-step instruction on how to run E3SM can be found here: https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/2309226536
+A step-by-step instruction on how to run E3SM can be found [here](https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/2309226536).
 
 The difference when running in atmosphere-only mode (without an interactive ocean or sea-ice) would be to change the compset and grid. Certain namelist paramters, input data files, and output file specifcations can also be modified. These are described below as ways to customize runs. 
 
@@ -33,8 +33,6 @@ All of the compsets below run with the complete set of E3SM atmospheric configur
 `F20TR` - Historical EAM simulation with time varying sea-surface temperatures, aerosol emissions, and greenhouse gas forcings (year 1850-2014)
 
 ### Grids
-
-<span style="color:red">Need to check final v3 grid to be used for ne30 simulations</span>
 
 `ne30pg2_r05_IcoswISC30E3r5` - ne30pg2 atmosphere, 0.5deg x 0.5deg land grid, and Icosahedral 30 km mesh with ice shelves cavities (wISC), E3SMv3 (E3) revision r5
 
@@ -134,7 +132,8 @@ By default, EAM will output a set of monthly-averaged variables. Additional outp
 
  fexcl1 = 'U10' # Removes U10 output from monthly files
  fincl2 = 'PS', 'FLUT','PRECT','U200','V200','U850','V850',
-          'TCO','SCO','TREFHTMN','TREFHTMX','TREFHT','QREFHT'  # Output files of daily-averaged output, which includes 30 days of output in each file
+          'TCO','SCO','TREFHT','QREFHT'  # Output files of daily-averaged output, which includes 30 days of output in each file
  fincl3 = 'PS', 'PSL','PRECT','TUQ','TVQ','UBOT','VBOT','TREFHT','FLUT','OMEGA500','TBOT','U850','V850','U200','V200','T200','T500','Z700'  # Output files of 6-hour-averaged output, which includes 30 days of output in each file
  fincl4 = 'PRECT' # Output files of 3-hourly output with 3 days of output in every file
+
  ```
