@@ -100,7 +100,7 @@ initialize_impl (const RunType /*run_type*/)
   m_z_suffix = tag==LEV ? "_mid" : "_int";
 
   // All good, create the diag output
-  FieldIdentifier d_fid (m_diag_name,layout.strip_dim(tag),fid.get_units(),fid.get_grid_name());
+  FieldIdentifier d_fid (m_diag_name,layout.clone().strip_dim(tag),fid.get_units(),fid.get_grid_name());
   m_diagnostic_output = Field(d_fid);
   m_diagnostic_output.allocate_view();
 

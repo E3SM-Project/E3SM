@@ -64,7 +64,7 @@ Field all_gather_field (const Field& f, const ekat::Comm& comm) {
   constexpr auto COL = ShortFieldTagsNames::COL;
   const auto& fid = f.get_header().get_identifier();
   const auto& fl  = fid.get_layout();
-  int col_size = fl.strip_dim(COL).size();
+  int col_size = fl.clone().strip_dim(COL).size();
   auto tags = fl.tags();
   auto dims = fl.dims();
   int my_cols = dims[0];;

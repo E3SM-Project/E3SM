@@ -927,7 +927,7 @@ void CoarseningRemapper::setup_mpi_data_structures ()
   for (int i=0; i<m_num_fields; ++i) {
     const auto& f  = m_src_fields[i];
     const auto& fl = f.get_header().get_identifier().get_layout();
-    field_col_size[i] = fl.strip_dim(COL).size();
+    field_col_size[i] = fl.clone().strip_dim(COL).size();
     sum_fields_col_sizes += field_col_size[i];
   }
 

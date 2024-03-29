@@ -216,7 +216,7 @@ do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
   // Note, for vertical remapper we set all target fields as having LEV as the vertical dimension.  So we check that all other tags
   // between source and target match if source has ILEV
   if (has_ilev) {
-    EKAT_REQUIRE_MSG(src_layout.strip_dim(ILEV).tags()==tgt_layout.strip_dim(LEV).tags(),
+    EKAT_REQUIRE_MSG(src_layout.clone().strip_dim(ILEV).tags()==tgt_layout.clone().strip_dim(LEV).tags(),
         "ERROR! vert_remap:do_bind_field:" + name + ", tgt and src do not have the same set of field tags");
   } else {
     EKAT_REQUIRE_MSG(src_layout.tags()==tgt_layout.tags(),
@@ -248,7 +248,7 @@ do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
     auto tags = src_lay.tags();
     for (auto tag : tags) {
       if (tag != COL && tag != LEV && tag != ILEV) {
-        src_lay = src_lay.strip_dim(tag);
+        src_lay.strip_dim(tag);
       }
     }
     const auto  lname  = src.get_header().get_identifier().get_id_string()+"_mask";

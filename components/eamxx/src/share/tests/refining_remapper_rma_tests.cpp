@@ -37,7 +37,7 @@ public:
       const auto& fl = fh.get_identifier().get_layout();
       const auto& fap = fh.get_alloc_properties();
       const auto col_alloc_size = fap.get_num_scalars() / fl.dim(COL);
-      REQUIRE (m_col_size[i]==fl.strip_dim(COL).size());
+      REQUIRE (m_col_size[i]==fl.clone().strip_dim(COL).size());
       if (fh.get_parent().lock()) {
         REQUIRE (m_col_stride[i]==col_alloc_size*fap.get_subview_info().dim_extent);
         REQUIRE (m_col_offset[i]==col_alloc_size*fap.get_subview_info().slice_idx);
@@ -119,7 +119,7 @@ Field all_gather_field (const Field& f, const ekat::Comm& comm) {
   constexpr auto COL = ShortFieldTagsNames::COL;
   const auto& fid = f.get_header().get_identifier();
   const auto& fl  = fid.get_layout();
-  int col_size = fl.strip_dim(COL).size();
+  int col_size = fl.clone().strip_dim(COL).size();
   auto tags = fl.tags();
   auto dims = fl.dims();
   int my_cols = dims[0];;

@@ -522,7 +522,7 @@ read_fields_from_file_for_iop (const std::string& file_name,
     // Create a temporary field to store the data from the
     // single column of the closest lat/lon pair
     const auto io_fid = io_field.get_header().get_identifier();
-    FieldLayout col_data_fl = io_fid.get_layout().strip_dim(0);
+    FieldLayout col_data_fl = io_fid.get_layout().clone().strip_dim(0);
     FieldIdentifier col_data_fid("col_data", col_data_fl, dummy_units, "");
     Field col_data(col_data_fid);
     col_data.allocate_view();

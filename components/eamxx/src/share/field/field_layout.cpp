@@ -5,6 +5,13 @@
 namespace scream
 {
 
+FieldLayout::
+FieldLayout ()
+ : FieldLayout({},{})
+{
+
+}
+
 FieldLayout::FieldLayout (const std::vector<FieldTag>& tags,
                           const std::vector<int>& dims)
  : FieldLayout (tags,dims,tags2str(tags))
@@ -69,7 +76,7 @@ FieldTag FieldLayout::get_vector_tag () const {
   return m_tags[get_vector_component_idx()];
 }
 
-std::vector<int> FieldLayout::get_tensor_dims () const {
+std::vector<int> FieldLayout::get_tensor_components_ids () const {
   EKAT_REQUIRE_MSG (is_tensor_layout(),
       "Error! 'get_tensor_dims' available only for tensor layouts.\n"
       "       Current layout: " + to_string(*this) + "\n"
@@ -95,12 +102,20 @@ std::vector<int> FieldLayout::get_tensor_dims () const {
   return idx;
 }
 
+std::vector<int> FieldLayout::get_tensor_dims () const {
+  auto idx = get_tensor_components_ids();
+  for (auto& i : idx) {
+    i = m_dims[i];
+  }
+  return idx;
+}
+
 std::vector<FieldTag> FieldLayout::get_tensor_tags () const {
   auto idx = get_tensor_dims();
   return {m_tags[idx[0]], m_tags[idx[1]]};
 }
 
-FieldLayout FieldLayout::strip_dim (const FieldTag tag) const {
+FieldLayout& FieldLayout::strip_dim (const FieldTag tag) {
   auto it = ekat::find(m_tags,tag);
 
   // Check if found
@@ -111,40 +126,69 @@ FieldLayout FieldLayout::strip_dim (const FieldTag tag) const {
                      "Error! Tag '" + e2str(tag) + "' appears multiple times.\n"
                      "       You must inspect tags() and dims() manually.\n");
 
-  return strip_dim (std::distance(m_tags.begin(),it));
+  auto pos = std::distance(m_tags.begin(),it);
+  return strip_dim(pos);
 }
 
-FieldLayout FieldLayout::strip_dim (const int idim) const {
+FieldLayout& FieldLayout::strip_dim (const int idim) {
   EKAT_REQUIRE_MSG (idim>=0 and idim<m_rank,
       "Error! Cannot strip dimension, because it is out of bounds.\n"
       "  - input dim index: " + std::to_string(idim) + "\n"
       "  - layout rank    : " + std::to_string(m_rank) + "\n");
-  std::vector<FieldTag>    t = tags();
-  std::vector<int>         d = dims();
-  std::vector<std::string> n = names();
-  t.erase(t.begin()+idim);
-  d.erase(d.begin()+idim);
-  n.erase(n.begin()+idim);
-  return FieldLayout (t,n,d);
+
+  m_tags.erase(m_tags.begin()+idim);
+  m_names.erase(m_names.begin()+idim);
+  m_dims.erase(m_dims.begin()+idim);
+  --m_rank;
+
+  set_extents ();
+  compute_type ();
+  return *this;
 }
 
-FieldLayout FieldLayout::clone_with_different_extent (const int idim, const int extent) const
+FieldLayout&
+FieldLayout::append_dim (const FieldTag t, const int extent)
 {
-  EKAT_REQUIRE_MSG(idim>=0 && idim<m_rank, "Error! Index out of bounds.");
-  EKAT_REQUIRE_MSG(extent>=0, "Error! Dimensions must be non-negative.");
-
-  auto dims = m_dims;
-  dims[idim] = extent;
-  return FieldLayout (m_tags,m_names,dims);
+  return append_dim(t,extent,e2str(t));
 }
 
-void FieldLayout::rename_dim (const int idim, const std::string& n) {
+FieldLayout&
+FieldLayout::append_dim (const FieldTag t, const int extent, const std::string& name)
+{
+  m_tags.push_back(t);
+  m_names.push_back(name);
+  m_dims.push_back(extent);
+
+  ++m_rank;
+  set_extents();
+  compute_type();
+  return *this;
+}
+
+FieldLayout FieldLayout::clone() const
+{
+  return *this;
+}
+
+FieldLayout& FieldLayout::rename_dim (const int idim, const std::string& n)
+{
   EKAT_REQUIRE_MSG(idim>=0 && idim<m_rank, "Error! Index out of bounds.");
 
   m_names[idim] = n;
+  return *this;
 }
-void FieldLayout::rename_dim (const FieldTag tag, const std::string& n) {
+FieldLayout& FieldLayout::rename_dim (const FieldTag tag, const std::string& n)
+{
   rename_dim(dim(tag),n);
+  return *this;
+}
+FieldLayout& FieldLayout::reset_dim (const int idim, const int extent)
+{
+  EKAT_REQUIRE_MSG(idim>=0 && idim<m_rank, "Error! Index out of bounds.");
+
+  m_dims[idim] = idim;
+  set_extents();
+  return *this;
 }
 
 void FieldLayout::set_extents () {

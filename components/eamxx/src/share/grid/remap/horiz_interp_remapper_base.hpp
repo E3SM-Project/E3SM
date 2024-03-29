@@ -34,7 +34,7 @@ public:
     // be 0 src/tgt gids on some ranks, which means src/tgt.dim(0)=0.
     using namespace ShortFieldTagsNames;
 
-    return src.strip_dim(COL)==tgt.strip_dim(COL);
+    return src.clone().strip_dim(COL)==tgt.clone().strip_dim(COL);
   }
 
 protected:

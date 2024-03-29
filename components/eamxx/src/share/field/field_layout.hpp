@@ -5,6 +5,7 @@
 #include "share/scream_types.hpp"
 
 #include <ekat/std_meta/ekat_std_utils.hpp>
+#include <ekat/util/ekat_string_utils.hpp>
 #include <ekat/ekat_assert.hpp>
 
 #include <string>
@@ -61,7 +62,7 @@ public:
   using extents_type = typename KokkosTypes<DefaultDevice>::view_1d<int>;
 
   // Constructor(s)
-  FieldLayout () = delete;
+  FieldLayout ();
   FieldLayout (const FieldLayout&) = default;
   FieldLayout (const std::vector<FieldTag>& tags,
                const std::vector<int>& dims);
@@ -90,6 +91,7 @@ public:
   // The rank is the number of tags associated to this field.
   int rank () const  { return m_rank; }
 
+  int dim (const std::string& name) const;
   int dim (const FieldTag tag) const;
   int dim (const int idim) const;
   const std::vector<int>& dims () const { return m_dims; }
@@ -114,21 +116,26 @@ public:
 
   // If this is the layout of a tensor field, get the idx of the tensor dimensions
   // Note: throws if is_tensor_layout()==false.
+  std::vector<int> get_tensor_components_ids () const;
+  // Get the dimension (extent) of the tensor components. Calls get_tensor_components_ids
   std::vector<int> get_tensor_dims () const;
   std::vector<FieldTag> get_tensor_tags () const;
 
   // Returns a copy of this layout with a given dimension stripped
-  FieldLayout strip_dim (const FieldTag tag) const;
-  FieldLayout strip_dim (const int idim) const;
-  FieldLayout clone_with_different_extent (const int idim, const int extent) const;
+  FieldLayout& strip_dim (const FieldTag tag);
+  FieldLayout& strip_dim (const int idim);
+  FieldLayout& append_dim (const FieldTag t, const int extent);
+  FieldLayout& append_dim (const FieldTag t, const int extent, const std::string& name);
+  FieldLayout clone() const;
 
   // NOTE: congruent does not check the tags names. It only checks
   //       rank, m_tags, and m_dims. Use operator== if names are important
   bool congruent (const FieldLayout& rhs) const;
 
   // Change the name of a dimension
-  void rename_dim (const int idim, const std::string& n);
-  void rename_dim (const FieldTag tag, const std::string& n);
+  FieldLayout& rename_dim (const int idim, const std::string& n);
+  FieldLayout& rename_dim (const FieldTag tag, const std::string& n);
+  FieldLayout& reset_dim (const int idim, const int extent);
 
 protected:
   void compute_type ();
@@ -161,6 +168,22 @@ inline int FieldLayout::dim (const FieldTag t) const {
       "       You must inspect tags() and dims() manually.\n");
 
   return m_dims[std::distance(m_tags.begin(),it)];
+}
+
+inline int FieldLayout::dim (const std::string& name) const {
+  auto it = ekat::find(m_names,name);
+
+  // Check if found
+  EKAT_REQUIRE_MSG(it!=m_names.end(),
+      "Error! Dim name '" + name + "' not found in this layout.\n"
+      "  - layout dims: " + ekat::join(m_names,",") + "\n");
+
+  // Check only one tag (no ambiguity)
+  EKAT_REQUIRE_MSG(ekat::count(m_names,name)==1,
+      "Error! Dimension name '" + name + "' appears multiple times.\n"
+      "  - layout dims: " + ekat::join(m_names,",") + "\n");
+
+  return m_dims[std::distance(m_names.begin(),it)];
 }
 
 inline int FieldLayout::dim (const int idim) const {
