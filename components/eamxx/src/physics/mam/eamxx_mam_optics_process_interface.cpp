@@ -38,7 +38,6 @@ void MAMOptics::set_grids(
   nlwbands_ = mam4::modal_aer_opt::nlwbands;     // number of longwave bands
 
   // Define the different field layouts that will be used for this process
-  using namespace ShortFieldTagsNames;
 
   // Define aerosol optics fields computed by this process.
   auto nondim = Units::nondimensional();

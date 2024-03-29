@@ -64,8 +64,8 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   m_num_cols = m_grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = m_grid->get_num_vertical_levels();  // Number of levels per column
 
-  FieldLayout scalar3d_layout_mid = m_grid->get_3d_scalar_layout_mid();
-  FieldLayout horiz_wind_layout = m_grid->get_3d_vector_layout_mid(2);
+  FieldLayout scalar3d_layout_mid = m_grid->get_3d_scalar_layout(true);
+  FieldLayout horiz_wind_layout = m_grid->get_3d_vector_layout(true,2);
 
   constexpr int ps = 1;
   auto Q = kg/kg;

@@ -108,7 +108,6 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
 
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
-  using FL  = FieldLayout;
 
   constexpr int NGP = HOMMEXX_NP;
   constexpr int NTL = HOMMEXX_NUM_TIME_LEVELS;
@@ -119,7 +118,6 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   auto Q = kg/kg;
   Q.set_string("kg/kg");
 
-  const int ncols = m_phys_grid->get_num_local_dofs();
   const int nelem = m_dyn_grid->get_num_local_dofs()/(NGP*NGP);
   const int nlev_mid = m_dyn_grid->get_num_vertical_levels();
   const int nlev_int = nlev_mid+1;
@@ -168,18 +166,22 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   // Note: qv is needed to transform T<->Theta
 
   const auto& pgn = m_phys_grid->name();
-  add_field<Updated> ("horiz_winds",   FL({COL,CMP, LEV},{ncols,2,nlev_mid}),m/s,   pgn,N);
-  add_field<Updated> ("T_mid",         FL({COL,     LEV},{ncols,  nlev_mid}),K,     pgn,N);
-  add_field<Computed>("pseudo_density",FL({COL,     LEV},{ncols,  nlev_mid}),Pa,    pgn,N);
-  add_field<Computed>("pseudo_density_dry",FL({COL, LEV},{ncols,  nlev_mid}),Pa,    pgn,N);
-  add_field<Updated> ("ps",            FL({COL         },{ncols           }),Pa,    pgn);
-  add_field<Updated >("qv",            FL({COL,     LEV},{ncols,  nlev_mid}),Q,     pgn,"tracers",N);
-  add_field<Updated >("phis",          FL({COL         },{ncols           }),m2/s2, pgn);
-  add_field<Computed>("p_int",         FL({COL,    ILEV},{ncols,  nlev_int}),Pa,    pgn,N);
-  add_field<Computed>("p_mid",         FL({COL,     LEV},{ncols,  nlev_mid}),Pa,    pgn,N);
-  add_field<Computed>("p_dry_int",     FL({COL,    ILEV},{ncols,  nlev_int}),Pa,    pgn,N);
-  add_field<Computed>("p_dry_mid",     FL({COL,     LEV},{ncols,  nlev_mid}),Pa,    pgn,N);
-  add_field<Computed>("omega",         FL({COL,     LEV},{ncols,  nlev_mid}),Pa/s,  pgn,N);
+  auto pg_scalar2d     = m_phys_grid->get_2d_scalar_layout();
+  auto pg_scalar3d_mid = m_phys_grid->get_3d_scalar_layout(true);
+  auto pg_scalar3d_int = m_phys_grid->get_3d_scalar_layout(false);
+  auto pg_vector3d_mid = m_phys_grid->get_3d_vector_layout(true,2);
+  add_field<Updated> ("horiz_winds",        pg_vector3d_mid, m/s,   pgn,N);
+  add_field<Updated> ("T_mid",              pg_scalar3d_mid, K,     pgn,N);
+  add_field<Computed>("pseudo_density",     pg_scalar3d_mid, Pa,    pgn,N);
+  add_field<Computed>("pseudo_density_dry", pg_scalar3d_mid, Pa,    pgn,N);
+  add_field<Updated> ("ps",                 pg_scalar2d    , Pa,    pgn);
+  add_field<Updated >("qv",                 pg_scalar3d_mid, Q,     pgn,"tracers",N);
+  add_field<Updated >("phis",               pg_scalar2d    , m2/s2, pgn);
+  add_field<Computed>("p_int",              pg_scalar3d_int, Pa,    pgn,N);
+  add_field<Computed>("p_mid",              pg_scalar3d_mid, Pa,    pgn,N);
+  add_field<Computed>("p_dry_int",          pg_scalar3d_int, Pa,    pgn,N);
+  add_field<Computed>("p_dry_mid",          pg_scalar3d_mid, Pa,    pgn,N);
+  add_field<Computed>("omega",              pg_scalar3d_mid, Pa/s,  pgn,N);
   add_group<Updated>("tracers",pgn,N, Bundling::Required);
 
   if (fv_phys_active()) {
@@ -188,15 +190,18 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
     // doing so may conflict with additional IC mechanisms in the AD, e.g.,
     // init'ing a field to a constant.
     const auto& rgn = m_cgll_grid->name();
-    const auto nc = m_cgll_grid->get_num_local_dofs();
-    add_field<Required>("horiz_winds",   FL({COL,CMP, LEV},{nc,2,nlev_mid}),m/s,   rgn,N);
-    add_field<Required>("T_mid",         FL({COL,     LEV},{nc,  nlev_mid}),K,     rgn,N);
-    add_field<Required>("ps",            FL({COL         },{nc           }),Pa,    rgn);
-    add_field<Required>("phis",          FL({COL         },{nc           }),m2/s2, rgn);
+    auto rg_scalar2d     = m_cgll_grid->get_2d_scalar_layout();
+    auto rg_scalar3d_mid = m_cgll_grid->get_3d_scalar_layout(true);
+    auto rg_vector3d_mid = m_cgll_grid->get_3d_vector_layout(true,2);
+
+    add_field<Required>("horiz_winds",   rg_vector3d_mid,m/s,   rgn,N);
+    add_field<Required>("T_mid",         rg_scalar3d_mid,K,     rgn,N);
+    add_field<Required>("ps",            rg_scalar2d    ,Pa,    rgn);
+    add_field<Required>("phis",          rg_scalar2d    ,m2/s2, rgn);
     add_group<Required>("tracers",rgn,N, Bundling::Required, DerivationType::Import, "tracers", pgn);
     fv_phys_rrtmgp_active_gases_init(grids_manager);
     // This is needed for the dp_ref init in initialize_homme_state.
-    add_field<Computed>("pseudo_density",FL({COL,     LEV},{nc,  nlev_mid}),Pa,    rgn,N);
+    add_field<Computed>("pseudo_density",rg_scalar3d_mid,Pa,    rgn,N);
   }
 
   // Dynamics grid states
