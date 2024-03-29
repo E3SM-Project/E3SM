@@ -26,7 +26,6 @@ FieldLayout::FieldLayout (const std::vector<FieldTag>& tags,
  , m_tags (tags)
  , m_names(names)
  , m_dims (dims)
- , m_extents ("",tags.size())
 {
   EKAT_REQUIRE_MSG (dims.size()==tags.size(),
       "Error! Tags and dims vectors dimensions mismatch.\n"
@@ -111,7 +110,7 @@ std::vector<int> FieldLayout::get_tensor_dims () const {
 }
 
 std::vector<FieldTag> FieldLayout::get_tensor_tags () const {
-  auto idx = get_tensor_dims();
+  auto idx = get_tensor_components_ids();
   return {m_tags[idx[0]], m_tags[idx[1]]};
 }
 
@@ -186,12 +185,13 @@ FieldLayout& FieldLayout::reset_dim (const int idim, const int extent)
 {
   EKAT_REQUIRE_MSG(idim>=0 && idim<m_rank, "Error! Index out of bounds.");
 
-  m_dims[idim] = idim;
+  m_dims[idim] = extent;
   set_extents();
   return *this;
 }
 
 void FieldLayout::set_extents () {
+  m_extents = decltype(m_extents)("",m_rank);
   auto extents_h = Kokkos::create_mirror_view(m_extents);
   std::copy_n(m_dims.begin(),m_rank,extents_h.data());
   Kokkos::deep_copy(m_extents,extents_h);
@@ -265,18 +265,25 @@ void FieldLayout::compute_type () {
       // Possible supported scenarios:
       //  1) <CMP|TL,LEV|ILEV>
       //  2) <TL,CMP>
+      //  3) <CMP,CMP>
       if ( is_lev_tag(tags[1]) && (tags[0]==CMP || tags[0]==TL)) {
         m_type = LayoutType::Vector3D;
       } else if (tags[0]==TL && tags[1]==CMP ) {
         m_type = LayoutType::Tensor2D;
+      } else if (tags[0]==CMP and tags[1]==CMP) {
+        m_type = LayoutType::Tensor2D;
       }
       break;
     case 3:
-      // The only supported scenario is:
+      // The only supported scenarios are:
       //  1) <TL,  CMP, LEV|ILEV>
+      //  2) <CMP, CMP, LEV|ILEV>
       if ( tags[0]==TL && tags[1]==CMP && is_lev_tag(tags[2])) {
         m_type = LayoutType::Tensor3D;
+      } else if ( tags[0]==CMP && tags[1]==CMP && is_lev_tag(tags[2])) {
+        m_type = LayoutType::Tensor3D;
       }
+
       break;
     default:
       // If nothing worked, this type is not recognized
