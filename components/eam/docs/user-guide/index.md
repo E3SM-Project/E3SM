@@ -78,10 +78,22 @@ Linozv3 uses the ozone tendency, (net production minus loss) calculated from its
 
 Refer to [this page](https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/3764486280/Production+of+the+Linoz+v3+data) for more details on Linoz v3 input files. 
 
-#### Land
+#### Topography
+The global elevation on the atmosphere grid is a key input dataset.  The dataset is grid dependent. It contains the geopotential data (on both the GLL dynamics and PG2 physics grids) and two surface roughness quantities, `SGH` and `SGH30`.
 
-- <span style="color:red">More info on rough topography</span>
-- <span style="color:red">More info on land-use land cover change / land surface data</span>
+EAMv3 NE30 data:  
+```
+/lcrc/group/e3sm/data/inputdata/atm/cam/topo/USGS-gtopo30_ne30np4pg2_x6t-SGH.c20210614.nc'
+```
+
+This file is computed via a complex procedure that starts with high resolution dataset (for EAMv3, we use the GTOPO30, a 30 arc-second resolution data set on a lat-lon grid) that is then downsampled to a 3km cubed-sphere grid (cube3000) and then downsampled to the atmosphere  grid on the (GLL nodes), and then smoothed with the same viscosity operator used by the dycore. The smoothed GLL topography is then mapped to the PG2 grid. Finally, two different surface roughness fields are computed:
+
+- `SGH30`: the variance between GTOPO30 and GTOPO30-downsampled-to-PG2 (independent of any dycore specific smoothing).     (used by CLUBB, TMS, vertical_diffusion)
+- `SGH`:  the variance between the cube3000 data and the smoothed PG2 data.  (used by GWD parameterizations)
+
+#### Land-use / land cover change
+
+- <span style="color:red">Info needed on land-use land cover change / land surface data</span>
 
 #### Ocean/sea ice
 
