@@ -382,6 +382,13 @@ void MAMOptics::initialize_impl(const RunType run_type) {
           specrefndxlw_host);
     }
   }
+  //FIXME: We are hard-coding the band ordering in RRTMGP.
+  //TODO: We can update optics file using the ordering below (rrtmg_to_rrtmgp_swbands_).
+  // Mapping from old RRTMG sw bands to new band ordering in RRTMGP
+  std::vector<int> temporal = {13, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
+  auto rrtmg_to_rrtmgp_swbands_host =mam_coupling::view_int_1d::HostMirror(temporal.data(),nswbands_);
+  rrtmg_to_rrtmgp_swbands_ = mam_coupling::view_int_1d("rrtmg_to_rrtmgp_swbands",nswbands_);
+  Kokkos::deep_copy(rrtmg_to_rrtmgp_swbands_,rrtmg_to_rrtmgp_swbands_host);
 }
 void MAMOptics::run_impl(const double dt) {
 
@@ -499,7 +506,7 @@ void MAMOptics::run_impl(const double dt) {
   // we are correcting the band ordering of mam4xx's ouputs, so that they are consistent with
   // inputs in RRTMG.
   // Mapping from old RRTMG sw bands to new band ordering in RRTMGP
-  const int rrtmg_to_rrtmgp_swbands[14] = {13, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
+  const auto& rrtmg_to_rrtmgp_swbands = rrtmg_to_rrtmgp_swbands_;
   // postprocess output
   Kokkos::parallel_for("postprocess", policy, postprocess_);
   Kokkos::fence();
@@ -512,20 +519,20 @@ void MAMOptics::run_impl(const double dt) {
       KOKKOS_LAMBDA(const int icol, const int iswband, const int kk) {
         // Extract single scattering albedo from the product-defined fields
         if (aero_tau_sw(icol, iswband, kk + 1) > zero) {
-          aero_g_sw_eamxx(icol, rrtmg_to_rrtmgp_swbands[iswband], kk) =
+          aero_g_sw_eamxx(icol, rrtmg_to_rrtmgp_swbands(iswband), kk) =
           aero_tau_g_sw(icol, iswband, kk + 1)/aero_tau_sw(icol, iswband, kk + 1);
         } else {
-          aero_g_sw_eamxx(icol, rrtmg_to_rrtmgp_swbands[iswband], kk) = one;
+          aero_g_sw_eamxx(icol, rrtmg_to_rrtmgp_swbands(iswband), kk) = one;
         }
         // Extract assymmetry parameter from the product-defined fields
         if (aero_tau_g_sw(icol, iswband, kk + 1) > zero ) {
-          aero_ssa_sw_eamxx(icol, rrtmg_to_rrtmgp_swbands[iswband], kk) =
+          aero_ssa_sw_eamxx(icol, rrtmg_to_rrtmgp_swbands(iswband), kk) =
             aero_tau_ssa_sw(icol, iswband, kk + 1)/aero_tau_g_sw(icol, iswband, kk + 1) ;
         } else {
-          aero_ssa_sw_eamxx(icol, rrtmg_to_rrtmgp_swbands[iswband], kk) = zero;
+          aero_ssa_sw_eamxx(icol, rrtmg_to_rrtmgp_swbands(iswband), kk) = zero;
         }
         // Copy cloud optical depth over directly
-        aero_tau_sw_eamxx(icol, rrtmg_to_rrtmgp_swbands[iswband], kk) =
+        aero_tau_sw_eamxx(icol, rrtmg_to_rrtmgp_swbands(iswband), kk) =
             aero_tau_sw(icol, iswband, kk + 1);
       });
   Kokkos::fence();

@@ -174,6 +174,8 @@ class MAMOptics final : public scream::AtmosphereProcess {
   // physics grid for column information
   std::shared_ptr<const AbstractGrid> grid_;
   mam_coupling::view_2d work_;
+  //Mapping from old RRTMG sw bands to new band ordering in RRTMGP
+  mam_coupling::view_int_1d rrtmg_to_rrtmgp_swbands_;
 
   mam_coupling::Buffer buffer_;
 };  // MAMOptics

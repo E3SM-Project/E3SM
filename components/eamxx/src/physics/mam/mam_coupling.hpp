@@ -34,6 +34,8 @@ using uview_2d = typename ekat::template Unmanaged<typename KT::template view_2d
 
 using PF = scream::PhysicsFunctions<DefaultDevice>;
 
+using view_int_1d       = typename KT::template view_1d<int>;
+
 // number of constituents in gas chemistry "work arrays"
 KOKKOS_INLINE_FUNCTION
 constexpr int gas_pcnst() {
