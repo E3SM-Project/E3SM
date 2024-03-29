@@ -134,7 +134,7 @@ module seq_flux_mct
   real(r8),  allocatable :: tagValues(:) ! used for copying tag values from frac to frad
   real(r8),  allocatable :: tagValues2(:) ! used for copying tag values for albedos
   integer ,    allocatable :: GlobalIds(:) ! used for setting values associated with ids
-
+  
   ! Coupler field indices
 
   integer :: index_a2x_Sa_z
@@ -802,6 +802,7 @@ contains
     ! Local variables
     !
     type(mct_gGrid), pointer :: dom_o
+    type(mct_gsMap)        , pointer       :: gsMap               ! model global seg map 
     logical             :: flux_albav           ! flux avg option
     integer(in)         :: n                  ! indices
     real(r8)            :: rlat                 ! gridcell latitude in radians
@@ -826,12 +827,16 @@ contains
     integer(in)         :: klat,klon       ! field indices
     logical             :: update_alb           ! was albedo updated
 
+    integer(IN), pointer :: idata(:)   ! temporary for getting global ids from gsmap
+
 
     integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3) ! for moab info
     character(CXX) ::tagname
     integer :: ent_type, ierr, kgg
     integer , save  :: arrSize ! local size for moab tag arrays (number of cells locally)
 
+    integer mpicom   ! just to get the global ids from gsmap
+    integer my_task  ! again, just for global ids
     logical,save        :: first_call = .true.
     integer, save       :: lSize
     
@@ -890,8 +895,19 @@ contains
           lSize = mct_aVect_lSize(xao_o)
           allocate(tagValues2(lSize) )
           allocate(GlobalIds(lSize) )
-          kgg = mct_aVect_indexIA(dom_o%data ,"GlobGridNum" ,perrWith=subName)
-          GlobalIds = dom_o%data%iAttr(kgg,:)
+          ! use gsmap instead of domain; for data models, it seems to be not initialized
+          ! same problem during data ocean init
+          gsmap => component_get_gsmap_cx( ocn )
+          ! get list of global IDs for Dofs
+          call seq_comm_setptrs(CPLID, mpicom=mpicom)
+          ! Determine communicator task
+          call mpi_comm_rank(mpicom, my_task, ierr)
+          call mct_gsMap_orderedPoints(gsMap, my_task, idata)
+          do n = 1, lSize
+             GlobalIds (n) = idata (n)
+          enddo
+          !kgg = mct_aVect_indexIA(dom_o%data ,"GlobGridNum" ,perrWith=subName)
+          !GlobalIds = dom_o%data%iAttr(kgg,:)
        endif
 
        first_call = .false.
@@ -1802,19 +1818,14 @@ contains
      real(r8) , pointer :: local_xao_mct(:,:) ! atm-ocn fluxes, transpose, mct local sizes
      integer  appId ! moab app id
      integer i,j
-     integer nloc, listSize, kgg
-
-     type(mct_ggrid), pointer    :: dom
+     integer nloc, listSize
 
      ! moab
      integer                  :: tagtype, numco,  tagindex, ent_type, ierr, arrSize
      character(CXX)           :: tagname
-     integer ,    allocatable :: GlobalIdsLocal(:) ! used for setting values associated with ids
      character*100 outfile, wopts, lnum
-     
 
      character(*),parameter   :: subName =   '(seq_flux_atmocn_moab) '
-
 
      if (comp%oneletterid == 'a' ) then
         appId = mbaxid ! atm on coupler
@@ -1828,12 +1839,6 @@ contains
      ! transpose into moab double array, then set with global id 
      nloc = mct_avect_lsize(xao)
      listSize = mct_aVect_nRAttr(xao)
-     dom => component_get_dom_cx(comp)
-     kgg = mct_aVect_indexIA(dom%data ,"GlobGridNum" ,perrWith=subName)
-
-     allocate(GlobalIdsLocal(nloc))
-     GlobalIdsLocal = dom%data%iAttr(kgg,:)
-
 
      do j = 1, listSize
        local_xao_mct(:, j) = xao%rAttr(j, :)
@@ -1842,12 +1847,12 @@ contains
      tagname = trim(seq_flds_xao_fields)//C_NULL_CHAR
      arrSize = nloc * listSize
      ent_type = 1 ! cells
-     ierr = iMOAB_SetDoubleTagStorageWithGid ( appId, tagname, arrSize , ent_type, local_xao_mct, GlobalIdsLocal )
+     ! global ids are retrieved by albedo first call; it is a local module variable 
+     ierr = iMOAB_SetDoubleTagStorageWithGid ( appId, tagname, arrSize , ent_type, local_xao_mct, GlobalIds )
      if (ierr .ne. 0) then
        write(logunit,*) subname,' error in setting atm-ocn fluxes  '
        call shr_sys_abort(subname//' ERROR in setting atm-ocn fluxes')
      endif
-     deallocate(GlobalIdsLocal)
 
 #ifdef MOABDEBUG
         ! debug out file

@@ -18,6 +18,11 @@ module ocn_comp_mct
   use docn_shr_mod    , only: docn_shr_read_namelists
   use seq_flds_mod    , only: seq_flds_x2o_fields, seq_flds_o2x_fields
 
+#ifdef HAVE_MOAB
+  use seq_comm_mct,     only: mpoid  ! iMOAB pid for ocean mesh on component pes
+  use iso_c_binding
+#endif
+
   ! !PUBLIC TYPES:
   implicit none
   private ! except
@@ -52,6 +57,10 @@ CONTAINS
 
   !===============================================================================
   subroutine ocn_init_mct( EClock, cdata, x2o, o2x, NLFilename )
+
+#ifdef HAVE_MOAB
+    use iMOAB, only: iMOAB_RegisterApplication
+#endif
 
     ! !DESCRIPTION:  initialize docn model
     implicit none
@@ -155,6 +164,17 @@ CONTAINS
     !----------------------------------------------------------------------------
     ! Initialize docn
     !----------------------------------------------------------------------------
+
+
+#ifdef HAVE_MOAB
+  ierr = iMOAB_RegisterApplication(trim("DOCN")//C_NULL_CHAR, mpicom, compid, mpoid)
+  if (ierr .ne. 0) then
+    write(logunit,*) subname,' error in registering atm ocn intx'
+    call shr_sys_abort(subname//' ERROR in registering atm ocn intx')
+  endif
+   ! send path of ocean domain file to MOAB coupler.
+  call seq_infodata_PutData( infodata, ocn_domain=SDOCN%domainFile)
+#endif
 
     call docn_comp_init(Eclock, x2o, o2x, &
          seq_flds_x2o_fields, seq_flds_o2x_fields, &

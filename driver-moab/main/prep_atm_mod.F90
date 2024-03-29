@@ -250,50 +250,19 @@ contains
               write(logunit,*) subname,' error in registering atm ocn intx'
               call shr_sys_abort(subname//' ERROR in registering atm ocn intx')
             endif
-            ierr =  iMOAB_ComputeMeshIntersectionOnSphere (mboxid, mbaxid, mbintxoa)
-            if (ierr .ne. 0) then
-              write(logunit,*) subname,' error in computing ocn atm intx'
-              call shr_sys_abort(subname//' ERROR in computing ocn atm intx')
-            endif
-            if (iamroot_CPLID) then
-              write(logunit,*) 'iMOAB intersection between ocean and atm with id:', idintx
-            endif
 
-
-            ! we also need to compute the comm graph for the second hop, from the ocn on coupler to the
-            ! ocean for the intx ocean-atm context (coverage)
-            !
             call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID)
-            type1 = 3; !  fv for ocean and atm; fv-cgll does not work anyway
-            type2 = 3;
-            ! ierr      = iMOAB_ComputeCommGraph( mboxid, mbintxoa, &mpicom_CPLID, &mpigrp_CPLID, &mpigrp_CPLID, &type1, &type2,
-            !                              &ocn_id, &idintx)
-            ierr = iMOAB_ComputeCommGraph( mboxid, mbintxoa, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
-                                        ocn(1)%cplcompid, idintx)
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' error in computing comm graph for second hop, ocn-atm'
-               call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ocn-atm')
-            endif
 
-            ! now take care of the mapper
-            if ( mapper_So2a%src_mbid .gt. -1 ) then
-                if (iamroot_CPLID) then
-                     write(logunit,F00) 'overwriting '//trim(mapper_So2a%mbname) &
-                             //' mapper_So2a'
-                endif
-            endif
             mapper_So2a%src_mbid = mboxid
             mapper_So2a%tgt_mbid = mbaxid !
             mapper_So2a%intx_mbid = mbintxoa
             mapper_So2a%src_context = ocn(1)%cplcompid
-            mapper_So2a%intx_context = idintx
             wgtIdef = 'scalar'//C_NULL_CHAR
             mapper_So2a%weight_identifier = wgtIdef
             mapper_So2a%mbname = 'mapper_So2a'
 
-            ! because we will project fields from ocean to atm phys grid, we need to define
-            ! ocean o2x fields to atm phys grid (or atm spectral ext ) on coupler side
-
+            ! Since we are projecting fields from OCN to ATM-PHY grid, we need to define
+            ! OCN o2x fields to ATM-PHY grid (or ATM-DYN (spectral) ) on coupler side
             if (atm_pg_active) then
                tagname = trim(seq_flds_o2x_fields)//C_NULL_CHAR
                tagtype = 1 ! dense
@@ -307,72 +276,122 @@ contains
                numco = np*np !
             endif !
 
-            volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL;
 
-            if (atm_pg_active) then
-              dm2 = "fv"//C_NULL_CHAR
-              dofnameT="GLOBAL_ID"//C_NULL_CHAR
-              orderT = 1 !  fv-fv
-            else
-              dm2 = "cgll"//C_NULL_CHAR
-              dofnameT="GLOBAL_DOFS"//C_NULL_CHAR
-              orderT = np !  it should be 4
-            endif
-            dm1 = "fv"//C_NULL_CHAR
-            dofnameS="GLOBAL_ID"//C_NULL_CHAR
-            orderS = 1  !  not much arguing
-            fNoBubble = 1
-            monotonicity = 0 !
-            noConserve = 0
-            validate = 0 ! less verbose
-            fInverseDistanceMap = 0
-            if (iamroot_CPLID) then
-               write(logunit,*) subname, 'launch iMOAB weights with args ', 'mbintxoa=', mbintxoa, ' wgtIdef=', wgtIdef, &
-                   'dm1=', trim(dm1), ' orderS=',  orderS, 'dm2=', trim(dm2), ' orderT=', orderT, &
-                                               fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
-                                               noConserve, validate, &
-                                               trim(dofnameS), trim(dofnameT)
-            endif
-            ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxoa, wgtIdef, &
-                                               trim(dm1), orderS, trim(dm2), orderT, ''//C_NULL_CHAR, &
-                                               fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
-                                               noConserve, validate, &
-                                               trim(dofnameS), trim(dofnameT) )
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' error in iMOAB_ComputeScalarProjectionWeights ocn atm   '
-               call shr_sys_abort(subname//' ERROR in iMOAB_ComputeScalarProjectionWeights ocn atm ')
-            endif
+            if (.not. samegrid_ao) then ! data-OCN case
 
+               ierr =  iMOAB_ComputeMeshIntersectionOnSphere (mboxid, mbaxid, mbintxoa)
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in computing ocn atm intx'
+                  call shr_sys_abort(subname//' ERROR in computing ocn atm intx')
+               endif
+               if (iamroot_CPLID) then
+                  write(logunit,*) 'iMOAB intersection between ocean and atm with id:', idintx
+               endif
+
+               ! we also need to compute the comm graph for the second hop, from the ocn on coupler to the
+               ! ocean for the intx ocean-atm context (coverage)
+               !
+               type1 = 3; !  fv for ocean and atm; fv-cgll does not work anyway
+               type2 = 3;
+               ! ierr      = iMOAB_ComputeCommGraph( mboxid, mbintxoa, &mpicom_CPLID, &mpigrp_CPLID, &mpigrp_CPLID, &type1, &type2,
+               !                              &ocn_id, &idintx)
+               ierr = iMOAB_ComputeCommGraph( mboxid, mbintxoa, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
+                                          ocn(1)%cplcompid, idintx)
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in computing comm graph for second hop, ocn-atm'
+                  call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ocn-atm')
+               endif
+
+               ! now take care of the mapper
+               if ( mapper_So2a%src_mbid .gt. -1 ) then
+                  if (iamroot_CPLID) then
+                        write(logunit,F00) 'overwriting '//trim(mapper_So2a%mbname) &
+                              //' mapper_So2a'
+                  endif
+               endif
+
+               mapper_So2a%intx_context = idintx
+
+               if (atm_pg_active) then
+                  dm2 = "fv"//C_NULL_CHAR
+                  dofnameT="GLOBAL_ID"//C_NULL_CHAR
+                  orderT = 1 !  fv-fv
+               else
+                  dm2 = "cgll"//C_NULL_CHAR
+                  dofnameT="GLOBAL_DOFS"//C_NULL_CHAR
+                  orderT = np !  it should be 4
+               endif
+               dm1 = "fv"//C_NULL_CHAR
+               dofnameS="GLOBAL_ID"//C_NULL_CHAR
+               orderS = 1  !  not much arguing
+               fNoBubble = 1
+               monotonicity = 0 !
+               noConserve = 0
+               validate = 0 ! less verbose
+               fInverseDistanceMap = 0
+               volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL;
+               if (iamroot_CPLID) then
+                  write(logunit,*) subname, 'launch iMOAB weights with args ', 'mbintxoa=', mbintxoa, ' wgtIdef=', wgtIdef, &
+                     'dm1=', trim(dm1), ' orderS=',  orderS, 'dm2=', trim(dm2), ' orderT=', orderT, &
+                                                fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
+                                                noConserve, validate, &
+                                                trim(dofnameS), trim(dofnameT)
+               endif
+               ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxoa, wgtIdef, &
+                                                trim(dm1), orderS, trim(dm2), orderT, ''//C_NULL_CHAR, &
+                                                fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
+                                                noConserve, validate, &
+                                                trim(dofnameS), trim(dofnameT) )
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in iMOAB_ComputeScalarProjectionWeights ocn atm   '
+                  call shr_sys_abort(subname//' ERROR in iMOAB_ComputeScalarProjectionWeights ocn atm ')
+               endif
 
 #ifdef MOABDEBUG
-            wopts = C_NULL_CHAR
-            call shr_mpi_commrank( mpicom_CPLID, rank )
-            if (rank .lt. 3) then
-              write(lnum,"(I0.2)")rank !
-              outfile = 'intx_oa_'//trim(lnum)// '.h5m' // C_NULL_CHAR
-              ierr = iMOAB_WriteMesh(mbintxoa, outfile, wopts) ! write local intx file
-              if (ierr .ne. 0) then
-                write(logunit,*) subname,' error in writing intx file '
-                call shr_sys_abort(subname//' ERROR in writing intx file ')
-              endif
-            endif
+               wopts = C_NULL_CHAR
+               call shr_mpi_commrank( mpicom_CPLID, rank )
+               if (rank .lt. 3) then
+                  write(lnum,"(I0.2)")rank !
+                  outfile = 'intx_oa_'//trim(lnum)// '.h5m' // C_NULL_CHAR
+                  ierr = iMOAB_WriteMesh(mbintxoa, outfile, wopts) ! write local intx file
+                  if (ierr .ne. 0) then
+                     write(logunit,*) subname,' error in writing intx file '
+                     call shr_sys_abort(subname//' ERROR in writing intx file ')
+                  endif
+               endif
 ! endif for MOABDEBUG
 #endif
+            else ! samegrid_ao = TRUE
+
+               ! ATM and OCN components use the same mesh and DoF numbering (OCN is a subset of ATM);
+               ! We do not need to compute intersection since the "map" from ATM to OCN is essentially a
+               ! permutation operator and can be achieved by simply sending/receiving data from ATM to OCN
+               ! and viceversa, based on element GLOBAL_ID matching. In order to seamless produce the
+               ! permutation operator, we will compute a communication graph between ATM and OCN DoFs on the
+               ! coupler.
+               type1 = 3;  ! FV mesh on coupler OCN
+               if (atm_pg_active) then
+                  type2 = 3; ! FV for ATM; CGLL does not work correctly in parallel at the moment
+               else
+                  type2 = 1 ! This projection works (CGLL to FV), but reverse does not (FV - CGLL)
+               endif
+               ierr = iMOAB_ComputeCommGraph( mboxid, mbaxid, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
+                                      ocn(1)%cplcompid, atm(1)%cplcompid )
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in computing communication graph for second hop, ATM-OCN'
+                  call shr_sys_abort(subname//' ERROR in computing communication graph for second hop, ATM-OCN')
+               endif
+               mapper_So2a%intx_context = atm(1)%cplcompid
+
+            endif ! if (.not. samegrid_ao)
          endif ! if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) then
 
 ! FLUX make the app and mapper for the a2o flux mappings
          if ((mbaxid .ge. 0) .and.  (mbofxid .ge. 0)) then
-            ! we also need to compute the comm graph for the second hop, from the ocn on coupler to the
-            ! ocean for the intx ocean-atm context (coverage)
-            !
+            ! We also need to compute the comm graph for the second hop, from the OCN on the coupler to the
+            ! OCN for the intersection of OCN-ATM context (coverage)
             call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID)
-            type1 = 3; !  fv for ocean and atm; fv-cgll does not work anyway
-            type2 = 3;
-            ! we ideintified the app mbofxid with !id_join = id_join + 1000! kind of random
-            ! line 1267 in cplcomp_exchange_mod.F90
-            context_id = ocn(1)%cplcompid + 1000
-            ierr = iMOAB_ComputeCommGraph( mbofxid, mbintxoa, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
-                                        context_id, idintx)
+
             if (ierr .ne. 0) then
                write(logunit,*) subname,' error in computing comm graph for second hop, ocnf -atm'
                call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ocnf-atm')
@@ -384,14 +403,33 @@ contains
                              //' mapper_Sof2a'
                 endif
             endif
+            ! we identified the app mbofxid with !id_join = id_join + 1000! kind of random
+            ! line 1267 in cplcomp_exchange_mod.F90
+            context_id = ocn(1)%cplcompid + 1000
             mapper_Sof2a%src_mbid = mbofxid
             mapper_Sof2a%tgt_mbid = mbaxid
             mapper_Sof2a%intx_mbid = mbintxoa
             mapper_Sof2a%src_context = context_id
-            mapper_Sof2a%intx_context = idintx
+            mapper_Sof2a%intx_context = mapper_So2a%intx_context ! basically will use the same intx as ocean on coupler
             wgtIdef = 'scalar'//C_NULL_CHAR
             mapper_Sof2a%weight_identifier = wgtIdef
             mapper_Sof2a%mbname = 'mapper_Sof2a'
+
+            type1 = 3; !  fv for ocean and atm; fv-cgll does not work anyway
+            type2 = 3;
+            if (.not. samegrid_ao) then ! data-OCN case
+               ! we use the same intx, because the mesh will be the same, between mbofxid and mboxid
+               ierr = iMOAB_ComputeCommGraph( mbofxid, mbintxoa, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
+                                          context_id, idintx)
+            else
+               ! this is a case appearing in the data ocean case --res ne4pg2_ne4pg2 --compset FAQP
+               ierr = iMOAB_ComputeCommGraph( mbofxid, mbaxid, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
+                                      context_id, atm(1)%cplcompid )
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in computing communication graph for second hop, ATM-OCN'
+                  call shr_sys_abort(subname//' ERROR in computing communication graph for second hop, ATM-OCN')
+               endif
+            endif
          endif
 
 ! endif for HAVE_MOAB
@@ -431,8 +469,8 @@ contains
             mapper_Fo2a%src_mbid = mboxid
             mapper_Fo2a%tgt_mbid = mbaxid
             mapper_Fo2a%intx_mbid = mbintxoa
-            mapper_Fo2a%src_context = ocn(1)%cplcompid
-            mapper_Fo2a%intx_context = idintx
+            mapper_Fo2a%src_context = mapper_So2a%src_context ! ocn(1)%cplcompid
+            mapper_Fo2a%intx_context = mapper_So2a%intx_context ! it could be different, based on samegrid_ao
             wgtIdef = 'scalar'//C_NULL_CHAR
             mapper_Fo2a%weight_identifier = wgtIdef
             mapper_Fo2a%mbname = 'mapper_Fo2a'
@@ -447,8 +485,8 @@ contains
             mapper_Fof2a%src_mbid = mbofxid
             mapper_Fof2a%tgt_mbid = mbaxid
             mapper_Fof2a%intx_mbid = mbintxoa
-            mapper_Fof2a%src_context = ocn(1)%cplcompid
-            mapper_Fof2a%intx_context = idintx
+            mapper_Fof2a%src_context = mapper_Sof2a%src_context ! we use the same source 1000 + ?
+            mapper_Fof2a%intx_context = mapper_Sof2a%intx_context ! depends on samegrid_ao
             wgtIdef = 'scalar'//C_NULL_CHAR
             mapper_Fof2a%weight_identifier = wgtIdef
             mapper_Fof2a%mbname = 'mapper_Fof2a'
@@ -458,6 +496,21 @@ contains
 
       endif ! endif (ocn_present) then
       call shr_sys_flush(logunit)
+
+! because we will project fields from ocean to atm phys grid, we need to define
+      ! ice i2x fields to atm phys grid (or atm spectral ext ) on coupler side
+      if (atm_pg_active) then
+         tagname = trim(seq_flds_i2x_fields)//C_NULL_CHAR
+         tagtype = 1 ! dense
+         numco = 1 !
+         ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in defining tags for seq_flds_i2x_fields'
+            call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_i2x_fields')
+         endif
+      else ! spectral case, TODO
+         tagtype = 1 ! dense
+      endif
 
       if (ice_c2_atm) then
          if (iamroot_CPLID) then
@@ -472,7 +525,7 @@ contains
             ! similar to ocn-atm mapping, do ice 2 atm mapping / set up
 
 #ifdef HAVE_MOAB
-         ! Call moab intx only if atm and ice are init in moab coupler
+         ! Call moab intx only if ATM and ICE are init in moab coupler
          if ((mbaxid .ge. 0) .and.  (mbixid .ge. 0)) then
             appname = "ICE_ATM_COU"//C_NULL_CHAR
             ! idintx is a unique number of MOAB app that takes care of intx between ice and atm mesh
@@ -521,20 +574,7 @@ contains
             wgtIdef = 'scalar'//C_NULL_CHAR
             mapper_Si2a%weight_identifier = wgtIdef
             mapper_Si2a%mbname = 'mapper_Si2a'
-            ! because we will project fields from ocean to atm phys grid, we need to define
-            ! ice i2x fields to atm phys grid (or atm spectral ext ) on coupler side
-            if (atm_pg_active) then
-               tagname = trim(seq_flds_i2x_fields)//C_NULL_CHAR
-               tagtype = 1 ! dense
-               numco = 1 !
-               ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
-               if (ierr .ne. 0) then
-                  write(logunit,*) subname,' error in defining tags for seq_flds_i2x_fields'
-                  call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_i2x_fields')
-               endif
-            else ! spectral case, TODO
-               tagtype = 1 ! dense
-            endif
+
 
             volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL;
 
@@ -612,7 +652,7 @@ contains
                              //' mapper_Fi2a'
                 endif
             endif
-                
+
             mapper_Fi2a%src_mbid = mbixid
             mapper_Fi2a%tgt_mbid = mbaxid
             mapper_Fi2a%intx_mbid = mbintxia
@@ -625,6 +665,21 @@ contains
       endif !  if (ice_present) then
       call shr_sys_flush(logunit)
 
+      if (mbaxid > 0) then
+          ! we still need to define seq_flds_l2x_fields on atm cpl mesh
+         if (atm_pg_active) then
+            tagname = trim(seq_flds_l2x_fields)//C_NULL_CHAR
+            tagtype = 1 ! dense
+            numco = 1 !
+            ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in defining tags for seq_flds_l2x_fields'
+               call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_l2x_fields')
+            endif
+         else ! spectral case, TODO
+            tagtype = 1 ! dense
+         endif
+      endif
       ! needed for domain checking
       if (lnd_present) then
          if (iamroot_CPLID) then
@@ -754,19 +809,6 @@ contains
                mapper_Fl2a%intx_context = atm(1)%cplcompid
 
             endif ! if tri-grid
-            ! we still need to define seq_flds_l2x_fields on atm cpl mesh
-            if (atm_pg_active) then
-               tagname = trim(seq_flds_l2x_fields)//C_NULL_CHAR
-               tagtype = 1 ! dense
-               numco = 1 !
-               ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
-               if (ierr .ne. 0) then
-                  write(logunit,*) subname,' error in defining tags for seq_flds_l2x_fields'
-                  call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_l2x_fields')
-               endif
-            else ! spectral case, TODO
-               tagtype = 1 ! dense
-            endif
          endif    ! if ((mbaxid .ge. 0) .and.  (mblxid .ge. 0) ) then
 #endif
       endif ! if lnd_present
@@ -1128,6 +1170,18 @@ contains
           endif
 
        end do
+#ifdef HAVE_MOAB 
+       ! just to mark it; we know that l2x_am should be 0, and we should init everything to 0 just because it will affect
+       l2x_am = 0! 
+       ! allocate(l2x_am (lsize, nlflds))
+       tagname = trim(seq_flds_l2x_fields)//C_NULL_CHAR
+       arrsize = lsize * nlflds
+       ent_type = 1 ! always atm on coupler is cells
+       ierr = iMOAB_SetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, l2x_am)
+       if (ierr .ne. 0) then
+           call shr_sys_abort(subname//' error in setting l2x_am array in init ')
+       endif
+#endif
     endif
 
     ! Zero attribute vector
@@ -1345,7 +1399,7 @@ contains
     arrsize = naflds * lsize
     ierr = iMOAB_SetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, x2a_am)
     if (ierr .ne. 0) then
-      call shr_sys_abort(subname//' error in setting x2o_om array ')
+      call shr_sys_abort(subname//' error in setting x2a_am array in atm merging ')
     endif
 #ifdef MOABCOMP
   !compare_mct_av_moab_tag(comp, attrVect, field, imoabApp, tag_name, ent_type, difference)
