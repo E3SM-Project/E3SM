@@ -333,49 +333,6 @@ void MAMOptics::initialize_impl(const RunType run_type) {
       mam_coupling::set_refindex_names(surname_aero, params_aero, host_views_aero,
                                  layouts_aero);
 
-      // read physical properties data for aerosol species
-      std::string mam4_soa_physical_properties_file =
-        m_params.get<std::string>("mam4_soa_physical_properties_file");
-
-      std::string mam4_dust_physical_properties_file =
-        m_params.get<std::string>("mam4_dust_physical_properties_file");
-
-      std::string mam4_nacl_physical_properties_file =
-        m_params.get<std::string>("mam4_nacl_physical_properties_file");
-
-      std::string mam4_so4_physical_properties_file =
-        m_params.get<std::string>("mam4_so4_physical_properties_file");
-
-      std::string mam4_pom_physical_properties_file =
-        m_params.get<std::string>("mam4_pom_physical_properties_file");
-
-      std::string mam4_bc_physical_properties_file =
-        m_params.get<std::string>("mam4_bc_physical_properties_file");
-
-      std::string mam4_mom_physical_properties_file =
-        m_params.get<std::string>("mam4_mom_physical_properties_file");
-
-      std::vector<std::string> name_table_aerosols = {
-        mam4_soa_physical_properties_file, mam4_dust_physical_properties_file,
-        mam4_nacl_physical_properties_file, mam4_so4_physical_properties_file,
-        mam4_pom_physical_properties_file, mam4_bc_physical_properties_file,
-        mam4_mom_physical_properties_file};
-
-      // specname_amode(ntot_aspectype) = (/ 'sulfate (0)   ',
-      //  'ammonium (1) ', 'nitrate (2)   ', &
-      //  'p-organic (3) ', 's-organic (4) ', 'black-c (5)  ', &
-      //  'seasalt (6)  ', 'dust  (7)    ', &
-      //  'm-organic (8)' /)
-      std::vector<int> species_ids = {
-          4,  // soa:s-organic
-          7,  // dst:dust:
-          6,  // ncl:seasalt
-          0,  // so4:sulfate
-          3,  // pom:p-organic
-          5,  // bc :black-c
-          8   // mom:m-organic
-      };
-
       constexpr int maxd_aspectype = mam4::ndrop::maxd_aspectype;
       auto specrefndxsw_host       = mam_coupling::complex_view_2d::HostMirror(
                 "specrefndxsw_host", nswbands_, maxd_aspectype);
@@ -383,20 +340,34 @@ void MAMOptics::initialize_impl(const RunType run_type) {
       auto specrefndxlw_host = mam_coupling::complex_view_2d::HostMirror(
           "specrefndxlw_host", nlwbands_, maxd_aspectype);
 
-      const int n_spec = size(name_table_aerosols);
-      for(int ispec = 0; ispec < n_spec; ispec++) {
+      // read physical properties data for aerosol species
+      // specname_amode(ntot_aspectype) = (/ 'sulfate (0)   ',
+      //  'ammonium (1) ', 'nitrate (2)   ', &
+      //  'p-organic (3) ', 's-organic (4) ', 'black-c (5)  ', &
+      //  'seasalt (6)  ', 'dust  (7)    ', &
+      //  'm-organic (8)' /)
+      std::map<std::string, int> map_table_name_species_id;
+      map_table_name_species_id["soa"] = 4;  // soa:s-organic
+      map_table_name_species_id["dust"] = 7;  // dst:dust:
+      map_table_name_species_id["nacl"] = 6;  // ncl:seasalt
+      map_table_name_species_id["so4"] = 0;  // so4:sulfate
+      map_table_name_species_id["pom"] = 3;  // pom:p-organic
+      map_table_name_species_id["bc"] = 5;  // bc :black-c
+      map_table_name_species_id["mom"] = 8;   // mom:m-organic
+
+      for (const auto& item : map_table_name_species_id) {
+       const auto spec_name = item.first;
+       const int species_id = item.second;
+       const auto table_name = "mam4_" + spec_name + "_physical_properties_file";
+       const auto& fname = m_params.get<std::string>(table_name);
         // read data
-        auto table_name = name_table_aerosols[ispec];
         // need to update table name
-        params_aero.set("Filename", table_name);
+        params_aero.set("Filename", fname);
         AtmosphereInput refindex_aerosol(params_aero, grid_, host_views_aero,
                                          layouts_aero);
         refindex_aerosol.read_variables();
         refindex_aerosol.finalize();
-
         // copy data to device
-        int species_id =
-            species_ids[ispec];
         mam_coupling::set_refindex_aerosol(
             species_id, host_views_aero,
             specrefndxsw_host,  // complex refractive index for water visible
