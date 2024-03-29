@@ -2,7 +2,7 @@
 github_url = "https://github.com/E3SM-Project/e3sm_diags"
 
 [version]
-current = "2.11.0rc1"
+current = "2.11.0"
 
 # Example of a semver regexp.
 # Make sure this matches current_version before

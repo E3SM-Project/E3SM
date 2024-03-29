@@ -152,7 +152,7 @@ setup(
         "Programming Language :: Python :: 3.10",
     ],
     name="e3sm_diags",
-    version="2.11.0rc1",
+    version="2.11.0",
     author="Chengzhu (Jill) Zhang, Tom Vo, Ryan Forsyth, Chris Golaz and Zeshawn Shaheen",
     author_email="zhang40@llnl.gov",
     description="E3SM Diagnostics",

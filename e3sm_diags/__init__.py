@@ -6,7 +6,7 @@ import sys
 # issue with dask when using ESMF with system compilers.
 import shapely
 
-__version__ = "v2.11.0rc1"
+__version__ = "v2.11.0"
 INSTALL_PATH = os.path.join(sys.prefix, "share/e3sm_diags/")
 
 # Disable MPI in cdms2, which is not currently supported by E3SM-unified
