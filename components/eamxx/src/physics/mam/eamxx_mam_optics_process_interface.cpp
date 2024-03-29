@@ -507,7 +507,7 @@ void MAMOptics::run_impl(const double dt) {
   Kokkos::fence();
   // TODO: We will need to generate optical inputs files with  band ordering  that is consistent with
   // RRTMGP
-  // Optical files depend on the band ordering in RRTMG. As temporal fix,
+  // Optical files depend on the band ordering in RRTMG. As a temporary fix,
   // we are correcting the band ordering of mam4xx's ouputs, so that they are consistent with
   // inputs in RRTMG.
   // Mapping from old RRTMG sw bands to new band ordering in RRTMGP
