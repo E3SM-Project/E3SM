@@ -61,7 +61,7 @@ module element_ops
   use parallel_mod,   only: abortmp
   use physical_constants, only : p0, Cp, Rgas, Rwater_vapor, Cpwater_vapor, kappa, g, dd_pi, TREF
   use control_mod,    only: use_moisture, theta_hydrostatic_mode, hv_ref_profiles
-  use eos,            only: pnh_and_exner_from_eos, phi_from_eos, phi_from_eos_da
+  use eos,            only: pnh_and_exner_from_eos, phi_from_eos
   implicit none
   private
 
@@ -713,13 +713,8 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
 
   tl=1
 
-#ifndef DA
   call phi_from_eos(hvcoord,elem%state%phis,elem%state%vtheta_dp(:,:,:,tl),&
        elem%state%dp3d(:,:,:,tl),elem%state%phinh_i(:,:,:,tl))
-#else
-  call phi_from_eos_da(hvcoord,elem%state%phis,elem%state%vtheta_dp(:,:,:,tl),&
-       elem%state%dp3d(:,:,:,tl),elem%state%phinh_i(:,:,:,tl))
-#endif
 
   ! Disable the following check in CUDA bfb builds,
   ! since the calls to pow are inexact

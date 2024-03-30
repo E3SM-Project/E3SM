@@ -503,8 +503,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
        ! moviefreq and restartfreq are interpreted to be in units of days.
        ! Both must be converted to numbers of steps.
        ! ================================================
-#if 0
-!#if !defined(CAM) && !defined(SCREAM)
+#if !defined(CAM) && !defined(SCREAM)
        if (tstep <= 0) then
           call abortmp('tstep must be > 0')
        end if
@@ -1265,6 +1264,12 @@ end if
        write(iulog,*)"physconst: omega  = ",omega
        write(iulog,*)"physconst: rearth = ",rearth
        write(iulog,*)"physconst: rrearth= ",rrearth
+       write(iulog,*)""
+#ifdef DA
+       write(iulog,*)"DEEP ATMOSPHERE ----------"
+#else
+       write(iulog,*)"SHALLOW ATMOSPHERE -------"
+#endif
        write(iulog,*)""
 #endif
 

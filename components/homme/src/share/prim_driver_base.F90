@@ -1795,8 +1795,9 @@ contains
 
 !da issue
    do k=nlev,1,-1
-      !phi_n1(:,:,k)=phi_n1(:,:,k+1) + Rgas*vthn1(:,:,k)*exner(:,:,k)/pnh(:,:,k)
-
+#ifndef DA
+      phi_n1(:,:,k)=phi_n1(:,:,k+1) + Rgas*vthn1(:,:,k)*exner(:,:,k)/pnh(:,:,k)
+#else
       !bottom rhat
       rs = phi_n1(:,:,k+1)/gravit/r0 + 1.0
      
@@ -1804,7 +1805,7 @@ contains
       r1=( rs**3.0 + 3.0*Rgas*vthn1(:,:,k)/p_exner(:,:,k)/gravit/r0 )**(1.0/3.0)
 
       phi_n1(:,:,k)=gravit*r0*(r1-1.0)
-    
+#endif    
    enddo
    
    !finally, compute difference for FVTheta

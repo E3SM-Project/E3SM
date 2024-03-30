@@ -67,11 +67,19 @@ implicit none
      dphi(:,:,k)=phi_i(:,:,k+1)-phi_i(:,:,k)
   enddo
   if (present(caller)) then
-     call pnh_and_exner_from_eos2(hvcoord,vtheta_dp,dp3d,dphi,pnh,exner,&
-          dpnh_dp_i,phi_i,caller,pnh_i_out)
+!     call pnh_and_exner_from_eos2(hvcoord,vtheta_dp,dp3d,dphi,pnh,exner,&
+!          dpnh_dp_i,phi_i,caller,pnh_i_out)
+
+     call pnh_and_exner_from_eos3(hvcoord,vtheta_dp,dp3d,dphi,pnh,exner,&
+          dpnh_dp_i,phi_i(:,:,nlevp),caller,pnh_i_out)
+
   else
-     call pnh_and_exner_from_eos2(hvcoord,vtheta_dp,dp3d,dphi,pnh,exner,&
-          dpnh_dp_i,phi_i,'not specified',pnh_i_out)
+!     call pnh_and_exner_from_eos2(hvcoord,vtheta_dp,dp3d,dphi,pnh,exner,&
+!          dpnh_dp_i,phi_i,'not specified',pnh_i_out)
+
+     call pnh_and_exner_from_eos3(hvcoord,vtheta_dp,dp3d,dphi,pnh,exner,&
+     dpnh_dp_i,phi_i(:,:,nlevp),'not specified',pnh_i_out)
+
   endif
   end subroutine pnh_and_exner_from_eos
 
@@ -538,144 +546,6 @@ print *, 'phi_i', phi_i(1,1,:)
   endif ! hydrostatic/nonhydrostatic version
 
   end subroutine pnh_and_exner_from_eos3
-
-
-
-
-
-
-
-!this sub needs a different version for da
-!if dp is usually d(phydro), then for da dp3d is d(pmass)
-!and changes needed are
-!more than just using rhat
-!most likely we need a routine that would recover hydro p from dp3d
-  !_____________________________________________________________________
-  subroutine phi_from_eos_da(hvcoord,phis,vtheta_dp,dp,phi_i)
-!
-! Use Equation of State to compute HYDROSTATIC geopotential
-!
-! input:  dp, phis, vtheta_dp  
-! output:  phi
-!
-! used to initialize phi for dry and wet test cases
-! used to compute background phi for reference state
-!
-! NOTE1: dp is pressure layer thickness.  If pnh is used to compute thickness, this
-! routine should be the discrete inverse of pnh_and_exner_from_eos().
-! This routine is usually called with hydrostatic layer thickness (dp3d), 
-! in which case it returns a hydrostatic PHI
-!
-! NOTE2: Exner pressure is defined in terms of p0=1000mb.  Be sure to use global constant p0,
-! instead of hvcoord%ps0, which is set by CAM to ~1021mb
-!  
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  implicit none
-  
-  type (hvcoord_t),      intent(in)  :: hvcoord                      ! hybrid vertical coordinate struct
-  real (kind=real_kind), intent(in) :: vtheta_dp(np,np,nlev)
-  real (kind=real_kind), intent(inout) :: dp(np,np,nlev)
-  real (kind=real_kind), intent(in) :: phis(np,np)
-  real (kind=real_kind), intent(inout) :: phi_i(np,np,nlevp)
- 
-  !   local
-  real (kind=real_kind) :: p(np,np,nlev), exner_p(np,np,nlev), r1(np,np), rs(np,np) ! pressure at cell centers 
-  real (kind=real_kind) :: p_i(np,np,nlevp)  ! pressure on interfaces
-
-  integer :: k
-
-#ifndef NDEBUG
-  logical :: ierr
-  integer :: i,j,k2
-
-  ierr= any(vtheta_dp(:,:,:) < 0 )  .or. &
-          any(dp(:,:,:) < 0 )
-
-  if (ierr) then
-     print *,'bad state in phi_from_eos:'
-     do j=1,np
-     do i=1,np
-     do k=1,nlev
-        if ( (vtheta_dp(i,j,k) < 0) .or. (dp(i,j,k)<0) ) then
-           print *,'bad i,j,k=',i,j,k
-           print *,'vertical column: dp,vtheta_dp'
-           do k2=1,nlev
-              write(*,'(i3,4f14.4)') k2,dp(i,j,k2),vtheta_dp(i,j,k2)
-           enddo
-           call abortmp('EOS bad state: dp or vtheta_dp < 0')
-        endif
-     enddo
-     enddo
-     enddo
-  endif
-#endif
-
-!compute SA geopotential for approximate phi_top value !!!!!!!!!!!!!!!!!!!!!!!!!!!
-  p_i(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
-  do k=1,nlev
-     p_i(:,:,k+1)=p_i(:,:,k) + dp(:,:,k)
-  enddo
-  do k=1,nlev
-     p(:,:,k) = (p_i(:,:,k+1)+p_i(:,:,k))/2
-  enddo
-  phi_i(:,:,nlevp) = phis(:,:)
-  do k=nlev,1,-1
-     phi_i(:,:,k) = phi_i(:,:,k+1)+(Rgas*vtheta_dp(:,:,k)*(p(:,:,k)/p0)**(kappa-1))/p0
-  enddo
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  ! compute pressure on interfaces                                                                                   
-  p_i(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0/phi_i(:,:,1)/phi_i(:,:,1)*rearth*rearth
-  do k=1,nlev
-     p_i(:,:,k+1)=p_i(:,:,k) + dp(:,:,k)
-  enddo
-  do k=1,nlev
-     p(:,:,k) = (p_i(:,:,k+1)+p_i(:,:,k))/2
-  enddo
- 
-  phi_i(:,:,nlevp) = phis(:,:)
-
-  exner_p(:,:,1:nlev) = (p(:,:,1:nlev)/p0)**kappa / p(:,:,1:nlev)
-
-  do k=nlev,1,-1
-    !phi_n1(:,:,k)=phi_n1(:,:,k+1) + Rgas*vthn1(:,:,k)*exner(:,:,k)/pnh(:,:,k)
-
-    !bottom rhat
-    rs = phi_i(:,:,k+1)/g/rearth + 1.0
-
-    !top rhat
-    r1=( rs**3.0 + 3.0*Rgas*vtheta_dp(:,:,k)*exner_p(:,:,k)/g/rearth )**(1.0/3.0)
-    phi_i(:,:,k)=g*rearth*(r1-1.0)
-
-  enddo
-
-!now that phi is computed, recompute dp3d
-  do k=1,nlev
-    rs = phi_i(:,:,k+1)/g/rearth + 1.0
-    r1 = phi_i(:,:,k)/g/rearth + 1.0
-
-    !same result for either averaging for mu
-    dp(:,:,k) = (p_i(:,:,k+1)-p_i(:,:,k)) * 3.0 / (rs*rs + r1*r1 + rs*r1)
-    !dp(:,:,k) = (p_i(:,:,k+1)-p_i(:,:,k)) * 4.0 / (rs + r1) / (rs + r1)
-
-  enddo
-
-  end subroutine phi_from_eos_da
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 end module
 

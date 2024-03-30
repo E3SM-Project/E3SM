@@ -139,6 +139,7 @@ contains
 
     call t_startf('compute_stage_value_dirk')
 
+    ! DA is not affected
     if (theta_hydrostatic_mode) then
        itercount=0
        itererr=0
@@ -172,7 +173,7 @@ contains
        phi_np1 => elem(ie)%state%phinh_i(:,:,:,np1)
        w_np1 => elem(ie)%state%w_i(:,:,:,np1)
 
-
+       ! what part is this?
        if (alphadt_n0.ne.0d0) then ! add dt*alpha*S(un0) to the rhs
           dt3=alphadt_n0
           nt=n0
@@ -258,6 +259,7 @@ contains
           enddo
           w_np1(:,:,1:nlev) = (phi_np1(:,:,1:nlev) -  phi_n0(:,:,1:nlev) )/(dt2*g)
        endif
+
        call pnh_and_exner_from_eos3(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,np1),elem(ie)%state%dp3d(:,:,:,np1),&
             dphi,pnh,exner,dpnh_dp_i,elem(ie)%state%phis,'dirk1')
        Fn(:,:,1:nlev) = w_np1(:,:,1:nlev) - &
@@ -269,9 +271,9 @@ contains
 
 !try numerical with DA too?
           ! numerical J:
-          call get_dirk_jacobian(JacL,JacD,JacU,dt2,elem(ie)%state%dp3d(:,:,:,np1),dphi,elem(ie)%state%phis,pnh,0,1d-4,hvcoord,dpnh_dp_i,elem(ie)%state%vtheta_dp(:,:,:,np1)) 
+          !call get_dirk_jacobian(JacL,JacD,JacU,dt2,elem(ie)%state%dp3d(:,:,:,np1),dphi,elem(ie)%state%phis,pnh,0,1d-4,hvcoord,dpnh_dp_i,elem(ie)%state%vtheta_dp(:,:,:,np1)) 
           ! analytic J:
-          !call get_dirk_jacobian(JacL,JacD,JacU,dt2,elem(ie)%state%dp3d(:,:,:,np1),dphi,elem(ie)%state%phis,pnh,1) 
+          call get_dirk_jacobian(JacL,JacD,JacU,dt2,elem(ie)%state%dp3d(:,:,:,np1),dphi,elem(ie)%state%phis,pnh,1) 
 
           x(:,:,1:nlev) = -Fn(:,:,1:nlev)
 
