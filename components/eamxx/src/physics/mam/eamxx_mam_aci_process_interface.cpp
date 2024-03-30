@@ -609,7 +609,6 @@ void call_hetfrz_compute_tendencies(
   Kokkos::parallel_for(
       team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
         const int icol = team.league_rank();
-        // for(int icol = 0; icol < 1; icol++) {
         //  Set up an atmosphere, surface, diagnostics, pronostics and
         //  tendencies class.
         Real pblh = 0;
@@ -705,7 +704,7 @@ void call_hetfrz_compute_tendencies(
         hetfrz.compute_tendencies(aero_config, team, t, dt, atmos, surf, progs,
                                   diags, tends);
       });
-  //}
+      //}
 }
 }  // namespace
 
@@ -1097,10 +1096,12 @@ void MAMAci::initialize_impl(const RunType run_type) {
       // (interstitial) aerosol tracers of interest: mass (q) mixing ratios
       const char *int_mmr_field_name =
           mam_coupling::int_aero_mmr_field_name(m, a);
+      
       if(strlen(int_mmr_field_name) > 0) {
         wet_aero_.int_aero_mmr[m][a] =
             get_field_out(int_mmr_field_name).get_view<Real **>();
         dry_aero_.int_aero_mmr[m][a] = buffer_.dry_int_aero_mmr[m][a];
+        std::cout<<m<<":"<<a<<":"<<int_mmr_field_name<<":"<<dry_aero_.int_aero_mmr[m][a](0,0)<<":"<<wet_aero_.int_aero_mmr[m][a](0,0)<<std::endl;
       }
 
       // (cloudborne) aerosol tracers of interest: mass (q) mixing ratios
