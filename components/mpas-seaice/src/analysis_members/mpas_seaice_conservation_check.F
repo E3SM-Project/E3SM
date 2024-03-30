@@ -2391,7 +2391,7 @@ contains
             nZBGC = nZBGC+1
             totalAtmBC2Cell = atmosBlackCarbonFlux(nZBGC,iCell) * areaCell(iCell)* &
                iceAreaCellInitial(iCell)
-            totalOceanBlackCarbonCell = oceanBlackCarbonFlux(iCell) * areaCell(iCell)
+            totalOceanBlackCarbonCell = oceanBlackCarbonFluxArea(iCell) * areaCell(iCell)
             totalAtmBlackCarbonCell = totalAtmBC1Cell + totalAtmBC2Cell
 
             do iHemisphere = 1, nHemispheres
