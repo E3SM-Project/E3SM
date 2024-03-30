@@ -51,8 +51,10 @@ module mo_extfrc
   logical :: plumerise = .false.
   logical :: emis_constrained_frp = .false.
   logical :: diag_run_plumerise = .false.
-  real    :: ef_bc_a4 = 0.55_r8*1.0e-03_r8*(1.0_r8/0.45_r8)
-  real    :: ef_oc_a4 = 10.9_r8*1.0e-03_r8*(1.0_r8/0.45_r8)
+  real(r8)    :: ef_bc_a4 = 0.55_r8*1.0e-03_r8*(1.0_r8/0.45_r8)
+  real(r8)    :: ef_oc_a4 = 10.9_r8*1.0e-03_r8*(1.0_r8/0.45_r8)
+  #real(r8)    :: ef_h2o_a4 = 350.0_r8*1.0e-03_r8*(1.0_r8/0.45_r8)
+  real(r8)    :: ef_h2o_a4 = 10000.0_r8*1.0e-03_r8*(1.0_r8/0.45_r8) ! test the sensitivity
   real(r8)    :: fix_plume_height = 0.0
 contains
 
@@ -602,7 +604,8 @@ contains
                                                      frcing_vertical_plume_old(k)*(zint(icol,k)-zint(icol,k+1))*km_to_cm
                            ! write(iulog,*)'kzm_level ',k, 'old emis ', frcing_vertical_plume_old(k)
                          enddo
-                         if (forcings(m)%species == 'bc_a4' .and. forcings(m)%sectors(isec) == 'EM' )then
+                         if (forcings(m)%species == 'bc_a4' .and. forcings(m)%sectors(isec) == 'EM' &
+                             .and. heatflux_memory(icol) > 0.0)then
                          ! convert molecular/cm2/s to kw/m2/s, based on Wooster et al., 2005, equation 14                           
                          ! mass (kg/s) = emis*1.0E4/Avogadr_cst*12/1000
                          ! FRP (kW/m2) = mass/0.368*1000
@@ -639,7 +642,7 @@ contains
                             !     tfld(icol,:), relhum(icol,:), qh2o(icol,:), ufld(icol,:), &
                             !     vfld(icol,:), clat(icol)/(3.1415_r8)*180.0_r8, clon(icol)/(3.1415_r8)*180.0_r8, tl, pt_v,frp)
                             plume_height = plume_height_EM(icol) 
-                         elseif (forcings(m)%species == 'num_a4' )then
+                         elseif (forcings(m)%species == 'num_a4' .or. forcings(m)%species == 'H2OFIRE')then
                             !if at same timestep and other fire species        
                              !frp = frp_memory(icol)
                              !call cal_plume_height(plume_height,zmidr(icol,:), pmid(icol,:), &
@@ -697,6 +700,12 @@ contains
                                   frcing_vertical_plume_new(k) =  frcing_vertical_plume_new(k)*ef_oc_a4
                                   if (diag_run_plumerise) then
                                      write(iulog,*) 'kzm_oc_a4_emis_at_layer ', k, frcing_vertical_plume_new(k)
+                                  endif
+                               elseif (forcings(m)%species == 'H2OFIRE')then
+                                  frcing_vertical_plume_new(k) =  frcing_col_plume/(abs(zint(icol,k)-zint(icol,k+1))*km_to_cm)
+                                  frcing_vertical_plume_new(k) =  frcing_vertical_plume_new(k)*ef_h2o_a4
+                                  if (diag_run_plumerise) then
+                                     write(iulog,*) 'kzm_H2O_emis_at_layer ', k, frcing_vertical_plume_new(k)
                                   endif
                                elseif (forcings(m)%species == 'num_a4')then
                                   frcing_vertical_plume_new(k) =  frcing_col_plume/(abs(zint(icol,k)-zint(icol,k+1))*km_to_cm) 
