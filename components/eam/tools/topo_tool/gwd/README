@@ -1,0 +1,20 @@
+cube_to_target performs rigourous remapping of topo variables from cubed-sphere grid to 
+any target grid. In the process SGH is computed.
+
+Input files:
+
+1. USGS-topo-cube.nc (may be found here $CESMDATA/inputdata/atm/cam/hrtopo/USGS-topo-cube3000.nc)
+
+   This is the topo data on a cubed-sphere (default is 3km cubed-sphere grid)
+
+2. target.nc (e.g., $CESMDATA/inputdata/atm/cam/grid-description/se/ne30np4_091226_pentagons.nc)
+
+   This is a SCRIP/ESMF grid descriptor file for the target grid
+
+3. phis-smooth.nc
+
+   (optional) The user may provide a smoothed PHIS field. The software then recomputes SGH to
+   account for the smoothing in the sub-grid-scale. 
+
+
+
