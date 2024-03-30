@@ -1,7 +1,7 @@
 
 #Default scream has 10 tracers, MAM4xx adds another 31 making a total of 41 tracer
-#Set total number of tracers to 41
-./xmlchange SCREAM_CMAKE_OPTIONS="`./xmlquery --value SCREAM_CMAKE_OPTIONS | sed 's/SCREAM_NUM_TRACERS [0-9][0-9]*/SCREAM_NUM_TRACERS 41/'`"
+#Set total number of tracers to 41. We are using append here as last entry wins while parsing xml options
+./xmlchange --append SCREAM_CMAKE_OPTIONS="SCREAM_NUM_TRACERS 41"
 
 $CIMEROOT/../components/eamxx/scripts/atmchange initial_conditions::Filename='$DIN_LOC_ROOT/atm/scream/init/screami_mam4xx_ne4np4L72_c20240208.nc' -b
 $CIMEROOT/../components/eamxx/scripts/atmchange physics::atm_procs_list="mac_aero_mic,mam4_optics,rrtmgp" -b
