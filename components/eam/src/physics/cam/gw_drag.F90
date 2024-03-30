@@ -874,7 +874,9 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
      !---------------------------------------------------------------------
      ! Orographic stationary gravity waves
      !---------------------------------------------------------------------
-
+!!===================
+!!Jinbo Xie
+#if 0
      ! Determine the orographic wave source
      call gw_oro_src(ncol, &
           u, v, t, sgh(:ncol), pmid, pint, dpm, zm, nm, &
@@ -888,6 +890,152 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
           piln, rhoi,       nm,   ni, ubm,  ubi,  xv,    yv,   &
           effgw_oro,   c,   kvtt, q,  dse,  tau,  utgw,  vtgw, &
           ttgw, qtgw,  taucd,     egwdffi,  gwut(:,:,0:0), dttdf, dttke)
+#endif
+!!Jinbo Xie
+!==========================================================================
+!  Jinbo Xie4  Modification
+!  Present moment, use the profile adjustment in the code rather than cam's
+!==========================================================================
+!1. Replaced the basic units with cam's states
+!===========================================
+        !this is for z,dz,dx,dy
+        ! add surface height (surface geopotential/gravity) to convert CAM
+        ! heights based on geopotential above surface into height above sea
+        ! level
+        !taken from %%module cospsimulator_intr
+        !CAM is top to surface, which may be opposite in WRF
+        !fv is same dlat,dlon, so we do it directly
+        !%%needs to decide which to reverse!!!!!!!
+        !ztop and zbot are already reversed, start from bottom to top
+        !dz needs no reverse also
+        !zmid is different calculation process, 
+        !so it needs reverse if to use
+        ztop(1:ncol,1:pver)=0._r8
+        zbot(1:ncol,1:pver)=0._r8
+        zmid(1:ncol,1:pver)=0._r8
+        do k=1,pverp-1
+        ! assign values from top
+        ztop(1:ncol,k)=state%zi(1:ncol,pverp-k)
+        ! assign values from bottom           
+        zbot(1:ncol,k)=state%zi(1:ncol,pverp-k+1)
+        end do
+        !transform adding the pressure
+        !transfer from surface to sea level
+        do k=1,pver
+                do i=1,ncol
+                ztop(i,k)=ztop(i,k)+state%phis(i)/g
+                zbot(i,k)=zbot(i,k)+state%phis(i)/g
+                zmid(i,k)=state%zm(i,k)+state%phis(i)/g
+                !dz is from bottom to top already for gw_drag
+                dz(i,k)=ztop(i,k)-zbot(i,k)
+                end do
+        end do
+        !=======
+	!=======Jinbo Xie=========================
+        !get the layer index of pblh in layer
+        kpbl2d_in=0_r8
+        do i=1,pcols
+        kpbl2d_in(i)=pblh_get_level_idx(zbot(i,:)-state%phis(i)/g,pblh(i))
+        end do
+        !=========================================
+        !================
+        !p3d as state%pmid
+        !p3di as state%pint
+        !Take care
+        !Jinbo Xie
+        !===========
+        call get_rlat_all_p(lchnk, ncol, rlat)
+        !
+	!=====================
+        !      Jinbo Xie            
+        !=====================
+        !Initialize
+        utgw=0._r8
+        vtgw=0._r8
+        ttgw=0._r8
+	!
+	call gwdo_gsd(&
+        u3d=state%u(:,pver:1:-1),v3d=state%v(:,pver:1:-1),t3d=state%t(:,pver:1:-1),&
+        qv3d=state%q(:,pver:1:-1,1),p3d=state%pmid(:,pver:1:-1),p3di=state%pint(:,pver:1:-1),&
+        pi3d=state%exner(:,pver:1:-1),z=zbot,&
+        rublten=utgw(:,pver:1:-1),rvblten=vtgw(:,pver:1:-1),rthblten=ttgw(:,pver:1:-1),&
+        dtaux3d_ls=dtaux3_ls(:,pver:1:-1),dtauy3d_ls=dtauy3_ls(:,pver:1:-1),&
+        dtaux3d_bl=dtaux3_bl(:,pver:1:-1),dtauy3d_bl=dtauy3_bl(:,pver:1:-1),&
+        dtaux3d_ss=dtaux3_ss(:,pver:1:-1),dtauy3d_ss=dtauy3_ss(:,pver:1:-1),&
+        dusfcg_ls=dusfc_ls,dvsfcg_ls=dvsfc_ls,&
+        dusfcg_bl=dusfc_bl,dvsfcg_bl=dvsfc_bl,&
+        dusfcg_ss=dusfc_ss,dvsfcg_ss=dvsfc_ss,&
+        xland=landfrac,br=rino_pub,&
+        var2d=state%var,oc12d=state%oc,&
+        oa2d=state%oadir,&
+        ol2d=state%ol,&!dxy2d=state%dxydir,&
+	znu=etamid(pver:1:-1),dz=dz,pblh=pblh,&
+        cp=cpair,g=g,rd=r,rv=rh2o,ep1=zvir,pi=pi,bnvbg=nm(:,pver:1:-1),&
+        dt=dt,dx=rearth*cos(rlat)*(2._r8*pi/256._r8),dy=rearth*(pi/(128._r8-1._r8)),&
+        kpbl2d=kpbl2d_in,itimestep=0,gwd_opt=0,&
+        ids=1,ide=pcols,jds=0,jde=0,kds=1,kde=pver, &
+        ims=1,ime=pcols,jms=0,jme=0,kms=1,kme=pver, &
+        its=1,ite=pcols,jts=0,jte=0,kts=1,kte=pver, &
+        gwd_ls=1,gwd_bl=0,gwd_ss=0,gwd_fd=0 )
+	! z and dz all above surface and sea level, no need to add a new layer
+! (just need an empty),gwd_opt(no need in my, take out 33 option))
+!(itimestep just needs an empty, number of timestep,0)
+!p_top       pressure top of the model (pa), set to 0
+!gwd_opt is a no need
+!znu         eta values on half (mass) levels, this is needed, currently set to
+!midpoint eta value (hybrid),either is ok
+!znw         eta values on full (w) levels , no need set to 0
+
+!we also turn the index around, since wrf is bot-top, and cam is top-bot
+!xland is only needed for small scale GWD, so not set in the moment
+!Jinbo Xie
+    !output the tendency profile and drag
+    call outfld ('DTAUX3_LS', dtaux3_ls,  pcols, lchnk)
+    call outfld ('DTAUY3_LS', dtauy3_ls,  pcols, lchnk)
+    call outfld ('DTAUX3_BL', dtaux3_bl,  pcols, lchnk)
+    call outfld ('DTAUY3_BL', dtauy3_bl,  pcols, lchnk)
+    call outfld ('DTAUX3_SS', dtaux3_ss,  pcols, lchnk)
+    call outfld ('DTAUY3_SS', dtauy3_ss,  pcols, lchnk)
+    !call outfld ('DTAUX3_FD', dtaux3_fd,  pcols, lchnk)
+    !call outfld ('DTAUY3_FD', dtauy3_fd,  pcols, lchnk)
+    call outfld ('DUSFC_LS', dusfc_ls,  pcols, lchnk)
+    call outfld ('DVSFC_LS', dvsfc_ls,  pcols, lchnk)
+    call outfld ('DUSFC_BL', dusfc_bl,  pcols, lchnk)
+    call outfld ('DVSFC_BL', dvsfc_bl,  pcols, lchnk)
+    call outfld ('DUSFC_SS', dusfc_ss,  pcols, lchnk)
+    call outfld ('DVSFC_SS', dvsfc_ss,  pcols, lchnk)
+    !call outfld ('DUSFC_FD', dusfc_fd,  pcols, lchnk)
+    !call outfld ('DVSFC_FD', dvsfc_fd,  pcols, lchnk)
+!==========================================================================
+!  Jinbo Xie4 Modification
+!  Present moment, use the profile adjustment in the code rather than cam's
+!==========================================================================
+!print*,"Jinbo Xie utgw max min",maxval(utgw),minval(utgw)
+!print*,"Jinbo Xie vtgw max min",maxval(vtgw),minval(vtgw)
+!#if 0  
+    do k = 1, pver
+       do i = 1, ncol           
+          ptend%u(i,k) = ptend%u(i,k) + utgw(i,k) * landfrac(i)
+          ptend%v(i,k) = ptend%v(i,k) + vtgw(i,k) * landfrac(i)
+          ptend%s(i,k) = -(ptend%u(i,k) * (state%u(i,k) + ptend%u(i,k)*0.5_r8*dt) &
+                          +ptend%v(i,k) * (state%v(i,k) + ptend%v(i,k)*0.5_r8*dt))
+          ttgw(i,k) = ptend%s(i,k) / cpair
+          utgw(i,k) = ptend%u(i,k)
+          vtgw(i,k) = ptend%v(i,k)
+       end do
+    end do
+!#endif
+!Jinbo Xie
+        tau0x=0.0_r8
+        tau0y=0.0_r8
+                                !Jinbo Xie for base flux
+                                !do not add small-scale gwd at the moment
+        tau0x=dusfc_ls+dusfc_bl!+dusfc_ss 
+        tau0y=dvsfc_ls+dvsfc_bl!+dvsfc_ss
+        !Jinbo Xie
+
+!!Jinbo Xie
+!!===============
 
      ! Add the orographic tendencies to the spectrum tendencies
      ! Compute the temperature tendency from energy conservation

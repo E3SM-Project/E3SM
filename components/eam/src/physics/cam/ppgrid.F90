@@ -21,6 +21,10 @@ module ppgrid
   public psubcols
   public pver
   public pverp
+!!====Jinbo Xie====
+  public nvar_dirOA
+  public nvar_dirOL
+!!====Jinbo Xie====
 
 
 ! Grid point resolution parameters
@@ -38,6 +42,10 @@ module ppgrid
    parameter (psubcols  = PSUBCOLS)
    parameter (pver      = PLEV)
    parameter (pverp     = pver + 1  )
+   !!====Jinbo Xie====
+   parameter (nvar_dirOA =2+1 )!Jinbo Xie avoid bug when nvar_dirOA is 2
+   parameter (nvar_dirOL =180)
+   !!====Jinbo Xie====
 !
 ! start, end indices for chunks owned by a given MPI task
 ! (set in phys_grid_init).

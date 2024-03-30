@@ -35,6 +35,9 @@ module hb_diff
   ! Public interfaces
   public init_hb_diff
   public compute_hb_diff
+  !==============Jinbo Xie=============
+    real(r8),public :: rino_pub(pcols)        ! bulk Richardson no. surface level
+  !=====================================
   public pblintd
   !
   ! PBL limits
@@ -447,6 +450,11 @@ end subroutine init_hb_diff
           end if
        end do
     end do
+
+
+    !!================Jinbo Xie============
+    rino_pub(:)=rino(:,pver)
+    !!================Jinbo Xie============
     !
     ! PBL height must be greater than some minimum mechanical mixing depth
     ! Several investigators have proposed minimum mechanical mixing depth

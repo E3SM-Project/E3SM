@@ -17,7 +17,9 @@ module comsrf
 ! USES:
 !
   use shr_kind_mod, only: r8 => shr_kind_r8, r4 => shr_kind_r4
-  use ppgrid, only: pcols, begchunk, endchunk
+  !====Jinbo Xie====
+   use ppgrid, only: pcols, begchunk, endchunk,nvar_dirOA,nvar_dirOL,indexb
+  !====Jinbo Xie====
   use infnan, only: nan, assignment(=)
   use cam_abortutils, only: endrun
 
@@ -53,6 +55,19 @@ module comsrf
   real(r8), allocatable:: prcsnw(:,:)    ! cam tot snow precip
   real(r8), allocatable:: trefmxav(:,:)  ! diagnostic: tref max over the day
   real(r8), allocatable:: trefmnav(:,:)  ! diagnostic: tref min over the day
+
+!================
+! Jinbo Xie1
+!================
+        public oc,ol,oadir
+        real(r8), allocatable:: oc(:,:) ! Convexity
+        real(r8), allocatable:: oadir(:,:,:) ! Asymmetry
+        real(r8), allocatable:: ol(:,:,:) ! Effective length
+        !public dxydir
+        !real(r8), allocatable:: dxydir(:,:,:) ! Effective length
+!================
+! Jinbo Xie1
+!================
 
 ! Private module data
 
@@ -100,6 +115,18 @@ CONTAINS
     if(.not. (adiabatic .or. ideal_phys)) then
        allocate (sgh     (pcols,begchunk:endchunk))
        allocate (sgh30   (pcols,begchunk:endchunk))
+	!!========================
+       !!Jinbo Xie
+	allocate (oc(pcols,begchunk:endchunk))
+	allocate (oadir(pcols,nvar_dirOA,begchunk:endchunk))
+       	allocate (ol(pcols,nvar_dirOL,begchunk:endchunk))
+        oc    (:,:) = nan
+        oadir (:,:,:) = nan
+        ol  (:,:,:) = nan
+        !allocate (dxydir(pcols,nvar_dirOL,begchunk:endchunk))
+        !dxydir  (:,:,:) = nan
+	!!Jinbo Xie
+	!!=============================
 
        allocate (fv      (pcols,begchunk:endchunk))
        allocate (ram1    (pcols,begchunk:endchunk))
