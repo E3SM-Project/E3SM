@@ -144,6 +144,8 @@ module chemistry
   integer :: ndx_prain
   integer :: ndx_cldtop
   integer :: h2o_ndx
+  integer :: h2ofire_ndx = -1 ! fire related water vapor (kzm)
+  integer :: brc_a4_ndx = -1 ! fire related BrC (kzm)
   integer :: ixndrop             ! cloud droplet number index
   integer :: ndx_pblh
 
@@ -246,6 +248,10 @@ end function chem_is
     n2p_ndx   = get_spc_ndx('N2p')
     nop_ndx   = get_spc_ndx('NOp')
     h2o_ndx   = get_spc_ndx('H2O')
+    h2ofire_ndx   = get_spc_ndx('H2OFIRE')  !kzm
+    brc_a4_ndx = get_spc_ndx('brc_a4')  !kzm 
+    write(iulog,*)'kzm_h2ofire_ndx ', h2ofire_ndx
+    write(iulog,*)'kzm_h2o_ndx ', h2o_ndx
     o2p_ndx   = get_spc_ndx('O2p')
 
     cly_ndx   = get_spc_ndx('CLY')
@@ -1396,7 +1402,7 @@ end function chem_is_active
     use phys_control,        only : phys_getopts
     use mo_chem_utls,        only : get_spc_ndx
     use cam_abortutils,      only: endrun
- 
+    use phys_grid,           only : get_rlat_all_p, get_rlon_all_p !kzm
     implicit none
 
 !-----------------------------------------------------------------------
@@ -1758,32 +1764,6 @@ end function chem_is_active
     end do
 
 
-   if (1.0 > 2.0)then
-   if (h2ofire_ndx > 0) then
-       ! add fire emitted vapor to water vapor tendency
-       call get_rlat_all_p(lchnk, ncol, clat)
-       call get_rlon_all_p(lchnk, ncol, clon)
-       ptend%lq(1) = .true. 
-       ptend%q(:ncol,:,1) = 0._r8
-       !write(iulog, *)'kzm_pend_lq_1 ', ptend%lq(1)
-       do it = 1,pcols
-             ptend_sum = 0.0_r8
-             ptend_sum_brc = 0.0_r8
-             ptend_sum = maxval(ptend%q(it, :, h2ofire_ndx))
-             ptend_sum_brc = maxval(ptend%q(it, :, brc_a4_ndx))
-          !do kt = 2,pver-1
-          !   ptend_sum = ptend_sum + ptend%q(it, kt, h2ofire_ndx) 
-          !   ptend_sum_brc = ptend_sum_brc + ptend%q(it, kt, brc_a4_ndx) 
-          !enddo
-          if (ptend_sum_brc > 0.0_r8 .and. ptend_sum > 0.0_r8) then ! when ptend of h2ofire is impactful
-             write(iulog,*)'kzm_h2ofire_tend ', ptend_sum,  ptend_sum_brc, state%q(it,2,1) 
-             write(iulog,*)'kzm_h2ofire_loca ', clat(it)/(3.1415_r8)*180.0_r8, clon(it)/(3.1415_r8)*180.0_r8 
-          endif
-       enddo  
-       ptend%q(:ncol,:,1) = ptend%q(:ncol,:,1) + ptend%q(:ncol,:,h2ofire_ndx) 
-       ptend%q(:ncol,:,h2ofire_ndx) = 0._r8 ! remove tendency
-   endif
-   endif
 !-----------------------------------------------------------------------
 ! Compute water vapor flux required to make conservation check
 !-----------------------------------------------------------------------
