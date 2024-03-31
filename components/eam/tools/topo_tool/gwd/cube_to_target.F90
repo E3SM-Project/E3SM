@@ -319,7 +319,7 @@ nvar_dirOL=180
   CALL overlap_weights(weights_lgr_index_all,weights_eul_index_all,weights_all,&
        jall,ncube,ngauss,ntarget,ncorner,jmax_segments,target_corner_lon,target_corner_lat,nreconstruction)
 !#endif
-!weights_all=0.00001
+!weights_all=0.01
 !!Jinbo Xie debug
 !!======Jinbo Xie======
   !
@@ -486,10 +486,12 @@ nvar_dirOL=180
     
     wt = weights_all(count,1)
     terr_target        (i) = terr_target        (i) + wt*terr        (ii)/area_target(i)
+!!Jinbo Xie debug
+!#if 0
     landfrac_target    (i) = landfrac_target    (i) + wt*landfrac    (ii)/area_target(i)
     landm_coslat_target(i) = landm_coslat_target(i) + wt*landm_coslat(ii)/area_target(i)
     sgh30_target       (i) = sgh30_target       (i) + wt*sgh30       (ii)/area_target(i)
-    
+!#endif
     tmp = tmp+wt*terr(ii)
   end do
 !!Jinbo Xie debug
@@ -984,15 +986,14 @@ call OAdir(terr,ntarget,ncube,n,nvar_dirOA,jall,weights_lgr_index_all,weights_eu
 
 !stop
 !#if 0
+!#endif
 !OL
         print*,"cal ol"
         allocate(ol_target(ntarget,nvar_dirOL),stat=alloc_error)
         ol_target=0.0_r8
         !call OLorig(terr,ntarget,ncube,n,jall,weights_lgr_index_all,weights_eul_index_all(:,1),weights_eul_index_all(:,2),weights_eul_index_all(:,3),weights_all,landfrac_target,lon_terr,lat_terr,area_target,sgh_target,target_center_lat,target_center_lon,target_corner_lat_deg,target_corner_lon_deg,ol_target)
-
 !!Jinbo Xie debug
 !#endif
-!#if 0
         allocate(indexb(ntarget),stat=alloc_error)
         indexb=0.0_r8
         do count=1,jall
@@ -1004,10 +1005,14 @@ call OAdir(terr,ntarget,ncube,n,nvar_dirOA,jall,weights_lgr_index_all,weights_eu
         !call OLdir(terr,ntarget,ncube,n,jall,nlon,nlat,maxval(indexb),nvar_dirOL,weights_lgr_index_all,weights_eul_index_all(:,1),weights_eul_index_all(:,2),weights_eul_index_all(:,3),weights_all,landfrac_target,target_center_lon,target_center_lat,lon_terr,lat_terr,sgh_target,ol_target,terrout,dxy)
         !call OLdir(terr,ntarget,ncube,n,jall,nlon,nlat,maxval(indexb),nvar_dirOL,weights_lgr_index_all,weights_eul_index_all(:,1),weights_eul_index_all(:,2),weights_eul_index_all(:,3),weights_all,landfrac_target,target_center_lon,target_center_lat,lon_terr,lat_terr,sgh_target,ol_target,terrout)
         !call OLorig(terr,ntarget,ncube,n,jall,weights_lgr_index_all,weights_eul_index_all(:,1),weights_eul_index_all(:,2),weights_eul_index_all(:,3),weights_all,landfrac_target,lon_terr,lat_terr,area_target,sgh_target,target_center_lat,target_center_lon,target_corner_lat_deg,target_corner_lon_deg,ol_target)
-        call OLdir(terr,ntarget,ncube,n,jall,nlon,nlat,maxval(indexb),nvar_dirOL,weights_lgr_index_all,weights_eul_index_all(:,1),weights_eul_index_all(:,2),weights_eul_index_all(:,3),weights_all,landfrac_target,target_center_lon,target_center_lat,lon_terr,lat_terr,sgh_target,area_target,ol_target,terrout,dxy)
+        !call OLdir(terr,ntarget,ncube,n,jall,nlon,nlat,maxval(indexb),nvar_dirOL,weights_lgr_index_all,weights_eul_index_all(:,1),weights_eul_index_all(:,2),weights_eul_index_all(:,3),weights_all,landfrac_target,target_center_lon,target_center_lat,lon_terr,lat_terr,sgh_target,area_target,ol_target,terrout,dxy)
+        call OLdir(terr,ntarget,ncube,n,jall,nlon,nlat,maxval(indexb),nvar_dirOL,weights_lgr_index_all,weights_eul_index_all(:,1),weights_eul_index_all(:,2),weights_eul_index_all(:,3),weights_all,landfrac_target,target_center_lon,target_center_lat,target_corner_lon_deg,target_corner_lat_deg,lon_terr,lat_terr,sgh_target,area_target,ol_target,terrout,dxy)
+        !do i=1,10!180
+        !print*,"OLdir Jinbo Xie",minval(ol_target(:,i)),maxval(ol_target(:,i))
+        !enddo
+        !stop
 !!Jinbo Xie debug
 !#endif
-        
 !#endif
 !========Jinbo Xie par=========
 
