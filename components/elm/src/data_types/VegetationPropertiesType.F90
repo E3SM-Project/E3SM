@@ -115,7 +115,7 @@ module VegetationPropertiesType
      real(r8), pointer :: lamda_ptase              => null()! critical value that incur biochemical production
      real(r8), pointer :: i_vc(:)          => null()        ! intercept of photosynthesis vcmax ~ leaf n content regression model
      real(r8), pointer :: s_vc(:)          => null()        ! slope of photosynthesis vcmax ~ leaf n content regression model
-     real(r8), pointer :: nsc_rtime(:)     => null()        ! non-structural carbon residence time 
+     real(r8), pointer :: nsc_rtime(:)     => null()        ! non-structural carbon residence time
      real(r8), pointer :: pinit_beta1(:)   => null()        ! shaping parameter for P initialization
      real(r8), pointer :: pinit_beta2(:)   => null()        ! shaping parameter for P initialization
      real(r8), pointer :: alpha_nfix(:)    => null()        ! fraction of fixed N goes directly to plant
@@ -151,8 +151,11 @@ module VegetationPropertiesType
      real(r8), pointer :: needleleaf(:)    => null()   !needleleaf or broadleaf
      real(r8), pointer :: nfixer(:)        => null()   !cablity of nitrogen fixation from atm. N2
 
-     !NGEE Arctic
-     real(r8), pointer :: bend_parm(:)     => null()   ! shrub bending parameter
+     ! NGEE Arctic snow-vegetation interactions
+     real(r8), pointer :: bendresist(:)       ! vegetation resistance to bending under snow loading, 0 to 1 (e.g., Liston and Hiemstra 2011)
+     real(r8), pointer :: vegshape(:)         ! shape parameter to modify shrub burial by snow (1 = parabolic, 2 = hemispheric)
+     real(r8), pointer :: stocking(:)         ! stocking density for pft (stems / hectare)
+     real(r8), pointer :: taper(:)            ! ratio of height:radius_breast_height (woody vegetation allometry)
 
    contains
    procedure, public :: Init => veg_vp_init
@@ -190,8 +193,10 @@ contains
     use pftvarcon , only : fnr, act25, kcha, koha, cpha, vcmaxha, jmaxha, tpuha
     use pftvarcon , only : lmrha, vcmaxhd, jmaxhd, tpuhd, lmrse, qe, theta_cj
     use pftvarcon , only : bbbopt, mbbopt, nstor, br_xr, tc_stress, lmrhd
-    ! new properties for flexible PFT
+    ! new properties for flexible PFT (NGEE Arctic IM4)
     use pftvarcon , only : climatezone, nonvascular, graminoid, iscft,needleleaf, nfixer
+    ! snow/vegetation interactions (NGEE Arctic IM3)
+    use pftvarcon , only : bendresist, stocking, vegshape, taper
     !
 
     class (vegetation_properties_type) :: this
@@ -324,6 +329,11 @@ contains
     allocate( this%needleleaf(0:numpft))                         ; this%needleleaf(:)            =spval
     allocate( this%nfixer(0:numpft))                             ; this%nfixer(:)                =spval
     ! -----------------------------------------------------------------------------------------------------------
+    ! NGEE Arctic show-vegetation interactions
+    allocate(this%bendresist(0:numpft))                          ; this%bendresist(:)            =spval
+    allocate(this%vegshape(0:numpft))                            ; this%vegshape(:)              =spval
+    allocate(this%stocking(0:numpft))                            ; this%stocking(:)              =spval
+    allocate(this%taper(0:numpft))                               ; this%taper(:)                 =spval
 
     do m = 0,numpft
 
@@ -474,6 +484,13 @@ contains
     this%lamda_ptase   = lamda_ptase
     this%tc_stress     = tc_stress
 
+    ! NGEE Arctic - snow/vegetation interactions
+    do m = 0, numpft ! RPF - move up to earlier pft loops?
+      this%bendresist(m)  = bendresist(m)
+      this%vegshape(m)    = vegshape(m)
+      this%stocking(m)    = stocking(m)
+      this%taper(m)       = taper(m)
+    end do
   end subroutine veg_vp_init
 
 end module VegetationPropertiesType
