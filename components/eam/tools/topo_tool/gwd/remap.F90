@@ -148,7 +148,10 @@ MODULE remap
       IF (tmp<-1.0E-9) THEN
         WRITE(*,*) "sum of weights is negative - negative area?",tmp,jx,jy
         !              ldbgr=.TRUE.
-        stop
+        !stop
+        !!Jinbo Xie
+        !!turn this off for phys grid as that of E3SM
+        !!Jinbo Xie
       END IF
     else
       jcollect = 0
