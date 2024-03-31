@@ -274,6 +274,7 @@ real(r8) :: wt
 
       where(abs(oc_target)<.001_r8.or.abs(oc_target).gt.1e+7) oc_target=0.0_r8
       where(abs(sgh_target).eq.0.0_r8) oc_target=0.0_r8
+      where(oc_target<0.0_r8) oc_target=0.0_r8
 end subroutine OC
 !========================
 subroutine OLorig(terr,ntarget,ncube,n,jall,weights_lgr_index_all,weights_eul_index_all1,weights_eul_index_all2,weights_eul_index_all3,weights_all,landfrac_target,lon_terr,lat_terr,area_target,sgh_target,target_center_lat,target_center_lon,target_corner_lat_deg,target_corner_lon_deg,ol_target)
