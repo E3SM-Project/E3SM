@@ -315,11 +315,11 @@ nvar_dirOL=180
 
 !!======Jinbo Xie====
 !!Jinbo Xie debug
-#if 0
+!#if 0
   CALL overlap_weights(weights_lgr_index_all,weights_eul_index_all,weights_all,&
        jall,ncube,ngauss,ntarget,ncorner,jmax_segments,target_corner_lon,target_corner_lat,nreconstruction)
-#endif
-weights_all=0.00001
+!#endif
+!weights_all=0.00001
 !!Jinbo Xie debug
 !!======Jinbo Xie======
   !
@@ -471,7 +471,7 @@ weights_all=0.00001
   end do
   
 
-#if 0
+!#if 0
 !!Jinbo Xie debug
   do count=1,jall
     i    = weights_lgr_index_all(count)
@@ -493,7 +493,7 @@ weights_all=0.00001
     tmp = tmp+wt*terr(ii)
   end do
 !!Jinbo Xie debug
-#endif
+!#endif
   
   
   write(*,*) "tmp", tmp
@@ -967,7 +967,7 @@ weights_all=0.00001
 !============Jinbo Xie==========
 !for centroid of mass
 !wt is useful proxy for dA
-#if 0
+!#if 0
 !!Jinbo Xie debug
 print*,"cal oa"
 allocate(oa_target(ntarget,nvar_dirOA),stat=alloc_error)
@@ -1006,7 +1006,7 @@ call OAdir(terr,ntarget,ncube,n,nvar_dirOA,jall,weights_lgr_index_all,weights_eu
         !call OLorig(terr,ntarget,ncube,n,jall,weights_lgr_index_all,weights_eul_index_all(:,1),weights_eul_index_all(:,2),weights_eul_index_all(:,3),weights_all,landfrac_target,lon_terr,lat_terr,area_target,sgh_target,target_center_lat,target_center_lon,target_corner_lat_deg,target_corner_lon_deg,ol_target)
         call OLdir(terr,ntarget,ncube,n,jall,nlon,nlat,maxval(indexb),nvar_dirOL,weights_lgr_index_all,weights_eul_index_all(:,1),weights_eul_index_all(:,2),weights_eul_index_all(:,3),weights_all,landfrac_target,target_center_lon,target_center_lat,lon_terr,lat_terr,sgh_target,area_target,ol_target,terrout,dxy)
 !!Jinbo Xie debug
-#endif
+!#endif
         
 !#endif
 !========Jinbo Xie par=========
@@ -1114,11 +1114,11 @@ subroutine wrtncdf_unstructured(nvar_dirOA,nvar_dirOL,indexb,n,terr,landfrac,sgh
   print*,"dir number", nvar_dirOL
   fout='final-'//adjustl(trim(numb))//'.nc'
   !!======Jinbo Xie========
-  print*,"Jinbo Xie shape(oc_in),shape(oc)",shape(oc_in),shape(oc)
-        oc=0.0!oc_in
-        oa=0.0!oa_in
-        ol=0.0!ol_in
-        dxy=0.0!dxy_in
+  !print*,"Jinbo Xie shape(oc_in),shape(oc)",shape(oc_in),shape(oc)
+        oc=oc_in
+        oa=oa_in
+        ol=ol_in
+        dxy=dxy_in
         !Jinbo Xie debug
   !!======Jinbo Xie========
   !
@@ -1140,9 +1140,8 @@ subroutine wrtncdf_unstructured(nvar_dirOA,nvar_dirOL,indexb,n,terr,landfrac,sgh
   if (status .ne. NF_NOERR) call handle_err(status)
 
   !Jinbo Xie debug
-  status = nf_def_dim (foutid, 'indexb',23, indexbid)
-  !status = nf_def_dim (foutid, 'indexb', indexb, indexbid)
-  !Jinbo Xie debug
+  !status = nf_def_dim (foutid, 'indexb',23, indexbid)
+  status = nf_def_dim (foutid, 'indexb', indexb, indexbid)
   !Jinbo Xie debug
   if (status .ne. NF_NOERR) call handle_err(status)
   !!=====Jinbo Xie=====
