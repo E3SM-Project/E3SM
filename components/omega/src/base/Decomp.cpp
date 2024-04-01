@@ -630,26 +630,26 @@ Decomp::Decomp(
    // Create device copies of all arrays
 
    NCellsHalo = createDeviceCopy(NCellsHaloH);
-   CellID = createDeviceCopy(CellIDH);
-   CellLoc = createDeviceCopy(CellLocH);
+   CellID     = createDeviceCopy(CellIDH);
+   CellLoc    = createDeviceCopy(CellLocH);
 
    NEdgesHalo = createDeviceCopy(NEdgesHaloH);
-   EdgeID = createDeviceCopy(EdgeIDH);
-   EdgeLoc = createDeviceCopy(EdgeLocH);
+   EdgeID     = createDeviceCopy(EdgeIDH);
+   EdgeLoc    = createDeviceCopy(EdgeLocH);
 
    NVerticesHalo = createDeviceCopy(NVerticesHaloH);
-   VertexID = createDeviceCopy(VertexIDH);
-   VertexLoc = createDeviceCopy(VertexLocH);
+   VertexID      = createDeviceCopy(VertexIDH);
+   VertexLoc     = createDeviceCopy(VertexLocH);
 
-   CellsOnCell = createDeviceCopy(CellsOnCellH);
-   EdgesOnCell = createDeviceCopy(EdgesOnCellH);
+   CellsOnCell    = createDeviceCopy(CellsOnCellH);
+   EdgesOnCell    = createDeviceCopy(EdgesOnCellH);
    VerticesOnCell = createDeviceCopy(VerticesOnCellH);
-   NEdgesOnCell = createDeviceCopy(NEdgesOnCellH);
+   NEdgesOnCell   = createDeviceCopy(NEdgesOnCellH);
 
-   CellsOnEdge = createDeviceCopy(CellsOnEdgeH);
-   EdgesOnEdge = createDeviceCopy(EdgesOnEdgeH);
+   CellsOnEdge    = createDeviceCopy(CellsOnEdgeH);
+   EdgesOnEdge    = createDeviceCopy(EdgesOnEdgeH);
    VerticesOnEdge = createDeviceCopy(VerticesOnEdgeH);
-   NEdgesOnEdge = createDeviceCopy(NEdgesOnEdgeH);
+   NEdgesOnEdge   = createDeviceCopy(NEdgesOnEdgeH);
 
    CellsOnVertex = createDeviceCopy(CellsOnVertexH);
    EdgesOnVertex = createDeviceCopy(EdgesOnVertexH);

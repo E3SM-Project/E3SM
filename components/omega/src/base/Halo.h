@@ -226,8 +226,8 @@ class Halo {
    Halo(const MachEnv *InEnv, const Decomp *InDecomp);
 
    //---------------------------------------------------------------------------
-   // Function template to perform a full halo exchange on the input Kokkos array
-   // of any supported type defined on the input index space ThisElem
+   // Function template to perform a full halo exchange on the input Kokkos
+   // array of any supported type defined on the input index space ThisElem
    template <typename T>
    int
    exchangeFullArrayHalo(T &Array,            // Kokkos array of any type
