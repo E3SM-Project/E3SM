@@ -43,21 +43,28 @@ OMEGA_EXE_NAME: Name of the executable ("omega.exe")
 OMEGA_LIB_NAME: Name of the library ("OmegaLib")
 OMEGA_BUILD_MODES: List of build modes ("E3SM", "STANDALONE", "NOT_DEFINED")
 OMEGA_BUILD_MODE: Selected build mode
-OMEGA_DEFAULT_BUILD_TYPE: Default build type ("Release")
+OMEGA_BUILD_DIR: Omega top-level build directory
 OMEGA_SOURCE_DIR: Directory where the top-level Omega CMakeLists.txt is located
+OMEGA_DEFAULT_BUILD_TYPE: Default build type ("Release")
 OMEGA_INSTALL_PREFIX: User-defined output directory for the library and executable
 OMEGA_ARCH: User-defined programming framework (e.g., "CUDA", "HIP", "OPENMP", "SYCL", "")
-OMEGA_${YAKL_ARCH}_FLAGS: Framework-specific compiler flags
 OMEGA_CXX_COMPILER: C++ compiler
+OMEGA_C_COMPILER: C compiler
+OMEGA_Fortran_COMPILER: Fortran compiler
 OMEGA_CIME_COMPILER: E3SM compiler name defined in config_machines.xml
 OMEGA_CIME_MACHINE: E3SM machine name defined in config_machines.xml
 OMEGA_CXX_FLAGS: a list for C++ compiler flags
 OMEGA_LINK_OPTIONS: a list for linker flags
+OMEGA_EXE_LINKER_FLAGS: linker flags for building the Omega executable
 OMEGA_BUILD_EXECUTABLE: Enable building the Omega executable
 OMEGA_BUILD_TEST: Enable building Omega tests
 OMEGA_PARMETIS_ROOT: Parmetis installtion directory
 OMEGA_METIS_ROOT: Metis installtion directory
 OMEGA_GKLIB_ROOT: GKlib installtion directory
+OMEGA_HIP_COMPILER: HIP compiler (e.g., hipcc)
+OMEGA_HIP_FLAGS: HIP compiler flags
+OMEGA_MEMORY_LAYOUT: Kokkos memory layout ("LEFT" or "RIGHT"). "RIGHT" is a default value.
+OMEGA_TILE_LENGTH: a length of one "side" of a Kokkos tile. 64 is a default value.
 ```
 
 E3SM-specific variables
@@ -88,7 +95,7 @@ CMAKE_VERSION
 ## Step 2: Update
 
 In this step, CMake is configured, and external library variables,
-such as YAKL, MPI, NetCDF, and PNetCDF, are set based on the settings
+such as Kokkos, MPI, NetCDF, and PNetCDF, are set based on the settings
 defined in the Setup step. The integrity of the build setup is verified
 at the end of this step.
 

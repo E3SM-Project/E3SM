@@ -8,6 +8,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "Logging.h"
+#include <iostream>
 #include <spdlog/sinks/basic_file_sink.h>
 
 namespace OMEGA {

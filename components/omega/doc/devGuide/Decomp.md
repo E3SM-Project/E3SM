@@ -50,7 +50,7 @@ OMEGA::Decomp *DefDecomp = OMEGA::Decomp::getDefault();
 Once retrieved all Decomp members are public and can be accessed using
 ```c++
 OMEGA::I4 NCells = DefDecomp->NCells;
-OMEGA::ArrayHost1DI4 CellIDH = DefDecomp->CellIDH;
+OMEGA::HostArray1DI4 CellIDH = DefDecomp->CellIDH;
 ```
 Decomp is a container for all mesh index and connectivity arrays as
 described in the mesh specification above. In particular, it contains
@@ -83,7 +83,7 @@ described in the mesh specification above. In particular, it contains
 
 For each of the arrays above, there is a copy of the array on the host and
 device (GPU) with the host array named with an extra H on the end
-(eg CellsOnCellH). All are YAKL arrays so are accessed with (index) rather
+(eg CellsOnCellH). All are Kokkos arrays so are accessed with (index) rather
 than [index] and for some of the arrays noted above are multi-dimensional.
 A typical host loop might then look something like:
 ```c++
@@ -93,12 +93,10 @@ for (int Cell = 0; Cell < NCellsOwned; ++Cell) {
    }
 }
 ```
-And on the device, we use the YAKL form (note that we will likely create
-aliases for extended yakl expressions, like parallel_for to replace
-yakl::c::parallel_for);
+And on the device, we use `OMEGA::parallelFor` in place of `Kokkos::parallel_for`;
 ```c++
-yakl::c::parallel_for( yakl::c::Bounds<2>(NCellsOwned,MaxEdges),
-                       YAKL_LAMBDA (int Cell, int Edge) {
+OMEGA::parallelFor( {NCellsOwned,MaxEdges},
+                       KOKKOS_LAMBDA (int Cell, int Edge) {
   if (Edge < NEdgesOnCell(Cell)) {
       Var(Cell) = Var(Cell) + Flux(Cell,Edge);
   }
@@ -109,10 +107,10 @@ Any defined decomposition can be removed by name using
 ```c++
 Decomp::erase(Name);
 ```
-and all decompositions *must* be removed before the yakl finalize call using
+and all decompositions *must* be removed before the Kokkos finalize call using
 ```c++
 Decomp::clear();
 ```
-which destroys all host and device arrays before YAKL finalizes and removes
+which destroys all host and device arrays before Kokkos finalizes and removes
 the memory pool in which all the arrays are allocated. Failure to call clear
-before `yakl::finalize()` will result in an error.
+before `Kokkos::finalize()` will result in an error.

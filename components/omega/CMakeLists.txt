@@ -14,6 +14,9 @@ cmake_policy(SET CMP0007 NEW)
 # Only interpret if() arguments as variables or keywords when unquoted
 cmake_policy(SET CMP0054 NEW)
 
+#find_package() uses <PackageName>_ROOT variables.
+cmake_policy(SET CMP0074 NEW)
+
 ###########################################################
 # STEP 1: Setup                                           #
 #                                                         #
@@ -23,6 +26,8 @@ cmake_policy(SET CMP0054 NEW)
 # define variables and macros for Omega build
 include(${CMAKE_CURRENT_SOURCE_DIR}/OmegaBuild.cmake)
 
+# common pre-processing for standalone and e3sm mode
+common()
 
 # handle build modes
 if (NOT DEFINED PROJECT_NAME)
@@ -31,14 +36,15 @@ if (NOT DEFINED PROJECT_NAME)
   cmake_minimum_required(VERSION 3.21) # the minimum version for HIP support
 
   # Collect machine and compiler info from CIME
-  preset()
+  init_standalone_build()
 
   project(${OMEGA_PROJECT_NAME}
-          LANGUAGES CXX
+          LANGUAGES C CXX
          )
 
   set(CMAKE_CXX_STANDARD 17) # used in E3SM
   set(CMAKE_CXX_STANDARD_REQUIRED ON)
+  set(LINKER_LANGUAGE C)     # needed to support Cray C compiler wrapper
 
   # update variables for standalone build
   setup_standalone_build()
@@ -61,11 +67,11 @@ endif()
 ###########################################################
 # STEP 2: Update                                          #
 #                                                         #
-# update cmake & yakl variables, and adjust               #
+# update cmake & kokkos variables, and adjust               #
 # build-controlling variables                             #
 ###########################################################
 
-# update CMake and YAKL variables from the build-controlling variables
+# update CMake and Kokkos variables from the build-controlling variables
 update_variables()
 
 ###########################################

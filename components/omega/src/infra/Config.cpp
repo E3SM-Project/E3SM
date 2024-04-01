@@ -17,6 +17,7 @@
 #include "mpi.h"
 #include "yaml-cpp/yaml.h"
 
+#include <fstream>
 #include <iostream>
 #include <string>
 

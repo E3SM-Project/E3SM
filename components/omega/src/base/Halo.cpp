@@ -2,7 +2,7 @@
 //
 // The Halo class and its nested classes Neighbor and ExchList contain all
 // the information and methods needed for exchanging the halo elements of
-// supported YAKL array types for a given machine environment (MachEnv)
+// supported Kokkos array types for a given machine environment (MachEnv)
 // and parallel decomposition (Decomp). These exchanges are carried out
 // via non-blocking MPI library routines. Constructor and private member
 // functions are defined here. The Halo class public member function
@@ -167,8 +167,8 @@ int Halo::generateExchangeLists(
    // Pointers to the needed info from the Decomp for the input index space
    const I4 *NOwnedPtr{nullptr};
    const I4 *NAllPtr{nullptr};
-   ArrayHost1DI4 NHaloPtr;
-   ArrayHost2DI4 LocPtr;
+   HostArray1DI4 NHaloPtr;
+   HostArray2DI4 LocPtr;
 
    // Logical flag to check if this is the first time the function is called
    bool First{false};
@@ -442,7 +442,7 @@ int Halo::startSends() {
 // recast as a Real in a bit-preserving manner using reinterpret_cast to pack
 // into the buffer, which is of type std::vector<Real>.
 
-int Halo::packBuffer(const ArrayHost1DI4 Array) {
+int Halo::packBuffer(const HostArray1DI4 Array) {
 
    ExchList *MyList = &MyNeighbor->SendLists[MyElem];
 
@@ -457,9 +457,9 @@ int Halo::packBuffer(const ArrayHost1DI4 Array) {
    }
 
    return 0;
-} // end packBuffer ArrayHost1DI4
+} // end packBuffer HostArray1DI4
 
-int Halo::packBuffer(const ArrayHost1DI8 Array) {
+int Halo::packBuffer(const HostArray1DI8 Array) {
 
    ExchList *MyList = &MyNeighbor->SendLists[MyElem];
 
@@ -474,25 +474,9 @@ int Halo::packBuffer(const ArrayHost1DI8 Array) {
    }
 
    return 0;
-} // end packBuffer ArrayHost1DI8
+} // end packBuffer HostArray1DI8
 
-int Halo::packBuffer(const ArrayHost1DR4 Array) {
-
-   ExchList *MyList = &MyNeighbor->SendLists[MyElem];
-
-   MyNeighbor->SendBuffer.resize(MyList->NTot);
-
-   for (int ILayer = 0; ILayer < NumLayers; ++ILayer) {
-      for (int IExch = 0; IExch < MyList->NList[ILayer]; ++IExch) {
-         I4 IBuff                      = MyList->Offsets[ILayer] + IExch;
-         MyNeighbor->SendBuffer[IBuff] = Array(MyList->Ind[ILayer][IExch]);
-      }
-   }
-
-   return 0;
-} // end packBuffer ArrayHost1DR4
-
-int Halo::packBuffer(const ArrayHost1DR8 Array) {
+int Halo::packBuffer(const HostArray1DR4 Array) {
 
    ExchList *MyList = &MyNeighbor->SendLists[MyElem];
 
@@ -506,13 +490,28 @@ int Halo::packBuffer(const ArrayHost1DR8 Array) {
    }
 
    return 0;
-} // end packBuffer ArrayHost1DR8
+} // end packBuffer HostArray1DR4
 
-int Halo::packBuffer(const ArrayHost2DI4 Array) {
+int Halo::packBuffer(const HostArray1DR8 Array) {
 
-   ExchList *MyList  = &MyNeighbor->SendLists[MyElem];
-   yakl::Dims MyDims = Array.get_dimensions();
-   int NJ            = MyDims[1];
+   ExchList *MyList = &MyNeighbor->SendLists[MyElem];
+
+   MyNeighbor->SendBuffer.resize(MyList->NTot);
+
+   for (int ILayer = 0; ILayer < NumLayers; ++ILayer) {
+      for (int IExch = 0; IExch < MyList->NList[ILayer]; ++IExch) {
+         I4 IBuff                      = MyList->Offsets[ILayer] + IExch;
+         MyNeighbor->SendBuffer[IBuff] = Array(MyList->Ind[ILayer][IExch]);
+      }
+   }
+
+   return 0;
+} // end packBuffer HostArray1DR8
+
+int Halo::packBuffer(const HostArray2DI4 Array) {
+
+   ExchList *MyList = &MyNeighbor->SendLists[MyElem];
+   int NJ = Array.extent(0);
 
    MyNeighbor->SendBuffer.resize(MyList->NTot * TotSize);
 
@@ -527,13 +526,12 @@ int Halo::packBuffer(const ArrayHost2DI4 Array) {
    }
 
    return 0;
-} // end packBuffer ArrayHost2DI4
+} // end packBuffer HostArray2DI4
 
-int Halo::packBuffer(const ArrayHost2DI8 Array) {
+int Halo::packBuffer(const HostArray2DI8 Array) {
 
-   ExchList *MyList  = &MyNeighbor->SendLists[MyElem];
-   yakl::Dims MyDims = Array.get_dimensions();
-   int NJ            = MyDims[1];
+   ExchList *MyList = &MyNeighbor->SendLists[MyElem];
+   int NJ = Array.extent(1);
 
    MyNeighbor->SendBuffer.resize(MyList->NTot * TotSize);
 
@@ -548,34 +546,12 @@ int Halo::packBuffer(const ArrayHost2DI8 Array) {
    }
 
    return 0;
-} // end packBuffer ArrayHost2DI8
+} // end packBuffer HostArray2DI8
 
-int Halo::packBuffer(const ArrayHost2DR4 Array) {
+int Halo::packBuffer(const HostArray2DR4 Array) {
 
-   ExchList *MyList  = &MyNeighbor->SendLists[MyElem];
-   yakl::Dims MyDims = Array.get_dimensions();
-   int NJ            = MyDims[1];
-
-   MyNeighbor->SendBuffer.resize(MyList->NTot * TotSize);
-
-   for (int ILayer = 0; ILayer < NumLayers; ++ILayer) {
-      for (int IExch = 0; IExch < MyList->NList[ILayer]; ++IExch) {
-         for (int J = 0; J < NJ; ++J) {
-            I4 IBuff = (MyList->Offsets[ILayer] + IExch) * NJ + J;
-            MyNeighbor->SendBuffer[IBuff] =
-                Array(MyList->Ind[ILayer][IExch], J);
-         }
-      }
-   }
-
-   return 0;
-} // end packBuffer ArrayHost2DR4
-
-int Halo::packBuffer(const ArrayHost2DR8 Array) {
-
-   ExchList *MyList  = &MyNeighbor->SendLists[MyElem];
-   yakl::Dims MyDims = Array.get_dimensions();
-   int NJ            = MyDims[1];
+   ExchList *MyList = &MyNeighbor->SendLists[MyElem];
+   int NJ = Array.extent(1);
 
    MyNeighbor->SendBuffer.resize(MyList->NTot * TotSize);
 
@@ -590,14 +566,33 @@ int Halo::packBuffer(const ArrayHost2DR8 Array) {
    }
 
    return 0;
-} // end packBuffer ArrayHost2DR8
+} // end packBuffer HostArray2DR4
 
-int Halo::packBuffer(const ArrayHost3DI4 Array) {
+int Halo::packBuffer(const HostArray2DR8 Array) {
 
-   ExchList *MyList  = &MyNeighbor->SendLists[MyElem];
-   yakl::Dims MyDims = Array.get_dimensions();
-   int NK            = MyDims[0];
-   int NJ            = MyDims[2];
+   ExchList *MyList = &MyNeighbor->SendLists[MyElem];
+   int NJ = Array.extent(1);
+
+   MyNeighbor->SendBuffer.resize(MyList->NTot * TotSize);
+
+   for (int ILayer = 0; ILayer < NumLayers; ++ILayer) {
+      for (int IExch = 0; IExch < MyList->NList[ILayer]; ++IExch) {
+         for (int J = 0; J < NJ; ++J) {
+            I4 IBuff = (MyList->Offsets[ILayer] + IExch) * NJ + J;
+            MyNeighbor->SendBuffer[IBuff] =
+                Array(MyList->Ind[ILayer][IExch], J);
+         }
+      }
+   }
+
+   return 0;
+} // end packBuffer HostArray2DR8
+
+int Halo::packBuffer(const HostArray3DI4 Array) {
+
+   ExchList *MyList = &MyNeighbor->SendLists[MyElem];
+   int NK = Array.extent(0);
+   int NJ = Array.extent(2);
 
    MyNeighbor->SendBuffer.resize(MyList->NTot * TotSize);
 
@@ -616,14 +611,13 @@ int Halo::packBuffer(const ArrayHost3DI4 Array) {
    }
 
    return 0;
-} // end packBuffer ArrayHost3DI4
+} // end packBuffer HostArray3DI4
 
-int Halo::packBuffer(const ArrayHost3DI8 Array) {
+int Halo::packBuffer(const HostArray3DI8 Array) {
 
-   ExchList *MyList  = &MyNeighbor->SendLists[MyElem];
-   yakl::Dims MyDims = Array.get_dimensions();
-   int NK            = MyDims[0];
-   int NJ            = MyDims[2];
+   ExchList *MyList = &MyNeighbor->SendLists[MyElem];
+   int NK = Array.extent(0);
+   int NJ = Array.extent(2);
 
    MyNeighbor->SendBuffer.resize(MyList->NTot * TotSize);
 
@@ -642,40 +636,13 @@ int Halo::packBuffer(const ArrayHost3DI8 Array) {
    }
 
    return 0;
-} // end packBuffer ArrayHost3DI8
+} // end packBuffer HostArray3DI8
 
-int Halo::packBuffer(const ArrayHost3DR4 Array) {
+int Halo::packBuffer(const HostArray3DR4 Array) {
 
-   ExchList *MyList  = &MyNeighbor->SendLists[MyElem];
-   yakl::Dims MyDims = Array.get_dimensions();
-   int NK            = MyDims[0];
-   int NJ            = MyDims[2];
-
-   MyNeighbor->SendBuffer.resize(MyList->NTot * TotSize);
-
-   for (int K = 0; K < NK; ++K) {
-      for (int ILayer = 0; ILayer < NumLayers; ++ILayer) {
-         for (int IExch = 0; IExch < MyList->NList[ILayer]; ++IExch) {
-            for (int J = 0; J < NJ; ++J) {
-               I4 IBuff =
-                   (K * MyList->NTot + MyList->Offsets[ILayer] + IExch) * NJ +
-                   J;
-               MyNeighbor->SendBuffer[IBuff] =
-                   Array(K, MyList->Ind[ILayer][IExch], J);
-            }
-         }
-      }
-   }
-
-   return 0;
-} // end packBuffer ArrayHost3DR4
-
-int Halo::packBuffer(const ArrayHost3DR8 Array) {
-
-   ExchList *MyList  = &MyNeighbor->SendLists[MyElem];
-   yakl::Dims MyDims = Array.get_dimensions();
-   int NK            = MyDims[0];
-   int NJ            = MyDims[2];
+   ExchList *MyList = &MyNeighbor->SendLists[MyElem];
+   int NK = Array.extent(0);
+   int NJ = Array.extent(2);
 
    MyNeighbor->SendBuffer.resize(MyList->NTot * TotSize);
 
@@ -694,15 +661,39 @@ int Halo::packBuffer(const ArrayHost3DR8 Array) {
    }
 
    return 0;
-} // end packBuffer ArrayHost3DR8
+} // end packBuffer HostArray3DR4
 
-int Halo::packBuffer(const ArrayHost4DI4 Array) {
+int Halo::packBuffer(const HostArray3DR8 Array) {
 
-   ExchList *MyList  = &MyNeighbor->SendLists[MyElem];
-   yakl::Dims MyDims = Array.get_dimensions();
-   int NL            = MyDims[0];
-   int NK            = MyDims[1];
-   int NJ            = MyDims[3];
+   ExchList *MyList = &MyNeighbor->SendLists[MyElem];
+   int NK = Array.extent(0);
+   int NJ = Array.extent(2);
+
+   MyNeighbor->SendBuffer.resize(MyList->NTot * TotSize);
+
+   for (int K = 0; K < NK; ++K) {
+      for (int ILayer = 0; ILayer < NumLayers; ++ILayer) {
+         for (int IExch = 0; IExch < MyList->NList[ILayer]; ++IExch) {
+            for (int J = 0; J < NJ; ++J) {
+               I4 IBuff =
+                   (K * MyList->NTot + MyList->Offsets[ILayer] + IExch) * NJ +
+                   J;
+               MyNeighbor->SendBuffer[IBuff] =
+                   Array(K, MyList->Ind[ILayer][IExch], J);
+            }
+         }
+      }
+   }
+
+   return 0;
+} // end packBuffer HostArray3DR8
+
+int Halo::packBuffer(const HostArray4DI4 Array) {
+
+   ExchList *MyList = &MyNeighbor->SendLists[MyElem];
+   int NL = Array.extent(0);
+   int NK = Array.extent(1);
+   int NJ = Array.extent(3);
 
    MyNeighbor->SendBuffer.resize(MyList->NTot * TotSize);
 
@@ -724,15 +715,14 @@ int Halo::packBuffer(const ArrayHost4DI4 Array) {
    }
 
    return 0;
-} // end packBuffer ArrayHost4DI4
+} // end packBuffer HostArray4DI4
 
-int Halo::packBuffer(const ArrayHost4DI8 Array) {
+int Halo::packBuffer(const HostArray4DI8 Array) {
 
-   ExchList *MyList  = &MyNeighbor->SendLists[MyElem];
-   yakl::Dims MyDims = Array.get_dimensions();
-   int NL            = MyDims[0];
-   int NK            = MyDims[1];
-   int NJ            = MyDims[3];
+   ExchList *MyList = &MyNeighbor->SendLists[MyElem];
+   int NL = Array.extent(0);
+   int NK = Array.extent(1);
+   int NJ = Array.extent(3);
 
    MyNeighbor->SendBuffer.resize(MyList->NTot * TotSize);
 
@@ -754,45 +744,14 @@ int Halo::packBuffer(const ArrayHost4DI8 Array) {
    }
 
    return 0;
-} // end packBuffer ArrayHost4DI8
+} // end packBuffer HostArray4DI8
 
-int Halo::packBuffer(const ArrayHost4DR4 Array) {
+int Halo::packBuffer(const HostArray4DR4 Array) {
 
-   ExchList *MyList  = &MyNeighbor->SendLists[MyElem];
-   yakl::Dims MyDims = Array.get_dimensions();
-   int NL            = MyDims[0];
-   int NK            = MyDims[1];
-   int NJ            = MyDims[3];
-
-   MyNeighbor->SendBuffer.resize(MyList->NTot * TotSize);
-
-   for (int L = 0; L < NL; ++L) {
-      for (int K = 0; K < NK; ++K) {
-         for (int ILayer = 0; ILayer < NumLayers; ++ILayer) {
-            for (int IExch = 0; IExch < MyList->NList[ILayer]; ++IExch) {
-               for (int J = 0; J < NJ; ++J) {
-                  I4 IBuff = ((L * NK + K) * MyList->NTot +
-                              MyList->Offsets[ILayer] + IExch) *
-                                 NJ +
-                             J;
-                  MyNeighbor->SendBuffer[IBuff] =
-                      Array(L, K, MyList->Ind[ILayer][IExch], J);
-               }
-            }
-         }
-      }
-   }
-
-   return 0;
-} // end packBuffer ArrayHost4DR4
-
-int Halo::packBuffer(const ArrayHost4DR8 Array) {
-
-   ExchList *MyList  = &MyNeighbor->SendLists[MyElem];
-   yakl::Dims MyDims = Array.get_dimensions();
-   int NL            = MyDims[0];
-   int NK            = MyDims[1];
-   int NJ            = MyDims[3];
+   ExchList *MyList = &MyNeighbor->SendLists[MyElem];
+   int NL = Array.extent(0);
+   int NK = Array.extent(1);
+   int NJ = Array.extent(3);
 
    MyNeighbor->SendBuffer.resize(MyList->NTot * TotSize);
 
@@ -814,16 +773,44 @@ int Halo::packBuffer(const ArrayHost4DR8 Array) {
    }
 
    return 0;
-} // end packBuffer ArrayHost4DR8
+} // end packBuffer HostArray4DR4
 
-int Halo::packBuffer(const ArrayHost5DI4 Array) {
+int Halo::packBuffer(const HostArray4DR8 Array) {
 
-   ExchList *MyList  = &MyNeighbor->SendLists[MyElem];
-   yakl::Dims MyDims = Array.get_dimensions();
-   int NM            = MyDims[0];
-   int NL            = MyDims[1];
-   int NK            = MyDims[2];
-   int NJ            = MyDims[4];
+   ExchList *MyList = &MyNeighbor->SendLists[MyElem];
+   int NL = Array.extent(0);
+   int NK = Array.extent(1);
+   int NJ = Array.extent(3);
+
+   MyNeighbor->SendBuffer.resize(MyList->NTot * TotSize);
+
+   for (int L = 0; L < NL; ++L) {
+      for (int K = 0; K < NK; ++K) {
+         for (int ILayer = 0; ILayer < NumLayers; ++ILayer) {
+            for (int IExch = 0; IExch < MyList->NList[ILayer]; ++IExch) {
+               for (int J = 0; J < NJ; ++J) {
+                  I4 IBuff = ((L * NK + K) * MyList->NTot +
+                              MyList->Offsets[ILayer] + IExch) *
+                                 NJ +
+                             J;
+                  MyNeighbor->SendBuffer[IBuff] =
+                      Array(L, K, MyList->Ind[ILayer][IExch], J);
+               }
+            }
+         }
+      }
+   }
+
+   return 0;
+} // end packBuffer HostArray4DR8
+
+int Halo::packBuffer(const HostArray5DI4 Array) {
+
+   ExchList *MyList = &MyNeighbor->SendLists[MyElem];
+   int NM = Array.extent(0);
+   int NL = Array.extent(1);
+   int NK = Array.extent(2);
+   int NJ = Array.extent(4);
 
    MyNeighbor->SendBuffer.resize(MyList->NTot * TotSize);
 
@@ -847,16 +834,15 @@ int Halo::packBuffer(const ArrayHost5DI4 Array) {
    }
 
    return 0;
-} // end packBuffer ArrayHost5DI4
+} // end packBuffer HostArray5DI4
 
-int Halo::packBuffer(const ArrayHost5DI8 Array) {
+int Halo::packBuffer(const HostArray5DI8 Array) {
 
-   ExchList *MyList  = &MyNeighbor->SendLists[MyElem];
-   yakl::Dims MyDims = Array.get_dimensions();
-   int NM            = MyDims[0];
-   int NL            = MyDims[1];
-   int NK            = MyDims[2];
-   int NJ            = MyDims[4];
+   ExchList *MyList = &MyNeighbor->SendLists[MyElem];
+   int NM = Array.extent(0);
+   int NL = Array.extent(1);
+   int NK = Array.extent(2);
+   int NJ = Array.extent(4);
 
    MyNeighbor->SendBuffer.resize(MyList->NTot * TotSize);
 
@@ -880,49 +866,15 @@ int Halo::packBuffer(const ArrayHost5DI8 Array) {
    }
 
    return 0;
-} // end packBuffer ArrayHost5DI8
+} // end packBuffer HostArray5DI8
 
-int Halo::packBuffer(const ArrayHost5DR4 Array) {
+int Halo::packBuffer(const HostArray5DR4 Array) {
 
-   ExchList *MyList  = &MyNeighbor->SendLists[MyElem];
-   yakl::Dims MyDims = Array.get_dimensions();
-   int NM            = MyDims[0];
-   int NL            = MyDims[1];
-   int NK            = MyDims[2];
-   int NJ            = MyDims[4];
-
-   MyNeighbor->SendBuffer.resize(MyList->NTot * TotSize);
-
-   for (int M = 0; M < NM; ++M) {
-      for (int L = 0; L < NL; ++L) {
-         for (int K = 0; K < NK; ++K) {
-            for (int ILayer = 0; ILayer < NumLayers; ++ILayer) {
-               for (int IExch = 0; IExch < MyList->NList[ILayer]; ++IExch) {
-                  for (int J = 0; J < NJ; ++J) {
-                     I4 IBuff = (((M * NL + L) * NK + K) * MyList->NTot +
-                                 MyList->Offsets[ILayer] + IExch) *
-                                    NJ +
-                                J;
-                     MyNeighbor->SendBuffer[IBuff] =
-                         Array(M, L, K, MyList->Ind[ILayer][IExch], J);
-                  }
-               }
-            }
-         }
-      }
-   }
-
-   return 0;
-} // end packBuffer ArrayHost5DR4
-
-int Halo::packBuffer(const ArrayHost5DR8 Array) {
-
-   ExchList *MyList  = &MyNeighbor->SendLists[MyElem];
-   yakl::Dims MyDims = Array.get_dimensions();
-   int NM            = MyDims[0];
-   int NL            = MyDims[1];
-   int NK            = MyDims[2];
-   int NJ            = MyDims[4];
+   ExchList *MyList = &MyNeighbor->SendLists[MyElem];
+   int NM = Array.extent(0);
+   int NL = Array.extent(1);
+   int NK = Array.extent(2);
+   int NJ = Array.extent(4);
 
    MyNeighbor->SendBuffer.resize(MyList->NTot * TotSize);
 
@@ -946,7 +898,39 @@ int Halo::packBuffer(const ArrayHost5DR8 Array) {
    }
 
    return 0;
-} // end packBuffer ArrayHost5DR8
+} // end packBuffer HostArray5DR4
+
+int Halo::packBuffer(const HostArray5DR8 Array) {
+
+   ExchList *MyList = &MyNeighbor->SendLists[MyElem];
+   int NM = Array.extent(0);
+   int NL = Array.extent(1);
+   int NK = Array.extent(2);
+   int NJ = Array.extent(4);
+
+   MyNeighbor->SendBuffer.resize(MyList->NTot * TotSize);
+
+   for (int M = 0; M < NM; ++M) {
+      for (int L = 0; L < NL; ++L) {
+         for (int K = 0; K < NK; ++K) {
+            for (int ILayer = 0; ILayer < NumLayers; ++ILayer) {
+               for (int IExch = 0; IExch < MyList->NList[ILayer]; ++IExch) {
+                  for (int J = 0; J < NJ; ++J) {
+                     I4 IBuff = (((M * NL + L) * NK + K) * MyList->NTot +
+                                 MyList->Offsets[ILayer] + IExch) *
+                                    NJ +
+                                J;
+                     MyNeighbor->SendBuffer[IBuff] =
+                         Array(M, L, K, MyList->Ind[ILayer][IExch], J);
+                  }
+               }
+            }
+         }
+      }
+   }
+
+   return 0;
+} // end packBuffer HostArray5DR8
 
 //------------------------------------------------------------------------------
 // The unpackBuffer function is overloaded to all supported data types. After
@@ -959,7 +943,7 @@ int Halo::packBuffer(const ArrayHost5DR8 Array) {
 // integer type (I4 or I8) using reinterpret_cast, and then saved in the
 // input Array.
 
-int Halo::unpackBuffer(ArrayHost1DI4 &Array) {
+int Halo::unpackBuffer(HostArray1DI4 &Array) {
 
    ExchList *MyList = &MyNeighbor->RecvLists[MyElem];
 
@@ -972,9 +956,9 @@ int Halo::unpackBuffer(ArrayHost1DI4 &Array) {
    }
 
    return 0;
-} // end unpackBuffer ArrayHost1DI4
+} // end unpackBuffer HostArray1DI4
 
-int Halo::unpackBuffer(ArrayHost1DI8 &Array) {
+int Halo::unpackBuffer(HostArray1DI8 &Array) {
 
    ExchList *MyList = &MyNeighbor->RecvLists[MyElem];
 
@@ -987,23 +971,9 @@ int Halo::unpackBuffer(ArrayHost1DI8 &Array) {
    }
 
    return 0;
-} // end unpackBuffer ArrayHost1DI8
+} // end unpackBuffer HostArray1DI8
 
-int Halo::unpackBuffer(ArrayHost1DR4 &Array) {
-
-   ExchList *MyList = &MyNeighbor->RecvLists[MyElem];
-
-   for (int ILayer = 0; ILayer < NumLayers; ++ILayer) {
-      for (int IExch = 0; IExch < MyList->NList[ILayer]; ++IExch) {
-         I4 IBuff                          = MyList->Offsets[ILayer] + IExch;
-         Array(MyList->Ind[ILayer][IExch]) = MyNeighbor->RecvBuffer[IBuff];
-      }
-   }
-
-   return 0;
-} // end unpackBuffer ArrayHost1DR4
-
-int Halo::unpackBuffer(ArrayHost1DR8 &Array) {
+int Halo::unpackBuffer(HostArray1DR4 &Array) {
 
    ExchList *MyList = &MyNeighbor->RecvLists[MyElem];
 
@@ -1015,13 +985,26 @@ int Halo::unpackBuffer(ArrayHost1DR8 &Array) {
    }
 
    return 0;
-} // end unpackBuffer ArrayHost1DR8
+} // end unpackBuffer HostArray1DR4
 
-int Halo::unpackBuffer(ArrayHost2DI4 &Array) {
+int Halo::unpackBuffer(HostArray1DR8 &Array) {
 
-   ExchList *MyList  = &MyNeighbor->RecvLists[MyElem];
-   yakl::Dims MyDims = Array.get_dimensions();
-   int NJ            = MyDims[1];
+   ExchList *MyList = &MyNeighbor->RecvLists[MyElem];
+
+   for (int ILayer = 0; ILayer < NumLayers; ++ILayer) {
+      for (int IExch = 0; IExch < MyList->NList[ILayer]; ++IExch) {
+         I4 IBuff                          = MyList->Offsets[ILayer] + IExch;
+         Array(MyList->Ind[ILayer][IExch]) = MyNeighbor->RecvBuffer[IBuff];
+      }
+   }
+
+   return 0;
+} // end unpackBuffer HostArray1DR8
+
+int Halo::unpackBuffer(HostArray2DI4 &Array) {
+
+   ExchList *MyList = &MyNeighbor->RecvLists[MyElem];
+   int NJ = Array.extent(1);
 
    for (int ILayer = 0; ILayer < NumLayers; ++ILayer) {
       for (int IExch = 0; IExch < MyList->NList[ILayer]; ++IExch) {
@@ -1034,13 +1017,12 @@ int Halo::unpackBuffer(ArrayHost2DI4 &Array) {
    }
 
    return 0;
-} // end unpackBuffer ArrayHost2DI4
+} // end unpackBuffer HostArray2DI4
 
-int Halo::unpackBuffer(ArrayHost2DI8 &Array) {
+int Halo::unpackBuffer(HostArray2DI8 &Array) {
 
-   ExchList *MyList  = &MyNeighbor->RecvLists[MyElem];
-   yakl::Dims MyDims = Array.get_dimensions();
-   int NJ            = MyDims[1];
+   ExchList *MyList = &MyNeighbor->RecvLists[MyElem];
+   int NJ = Array.extent(1);
 
    for (int ILayer = 0; ILayer < NumLayers; ++ILayer) {
       for (int IExch = 0; IExch < MyList->NList[ILayer]; ++IExch) {
@@ -1053,32 +1035,12 @@ int Halo::unpackBuffer(ArrayHost2DI8 &Array) {
    }
 
    return 0;
-} // end unpackBuffer ArrayHost2DI8
+} // end unpackBuffer HostArray2DI8
 
-int Halo::unpackBuffer(ArrayHost2DR4 &Array) {
+int Halo::unpackBuffer(HostArray2DR4 &Array) {
 
-   ExchList *MyList  = &MyNeighbor->RecvLists[MyElem];
-   yakl::Dims MyDims = Array.get_dimensions();
-   int NJ            = MyDims[1];
-
-   for (int ILayer = 0; ILayer < NumLayers; ++ILayer) {
-      for (int IExch = 0; IExch < MyList->NList[ILayer]; ++IExch) {
-         for (int J = 0; J < NJ; ++J) {
-            I4 IBuff = (MyList->Offsets[ILayer] + IExch) * NJ + J;
-            Array(MyList->Ind[ILayer][IExch], J) =
-                MyNeighbor->RecvBuffer[IBuff];
-         }
-      }
-   }
-
-   return 0;
-} // end unpackBuffer ArrayHost2DR4
-
-int Halo::unpackBuffer(ArrayHost2DR8 &Array) {
-
-   ExchList *MyList  = &MyNeighbor->RecvLists[MyElem];
-   yakl::Dims MyDims = Array.get_dimensions();
-   int NJ            = MyDims[1];
+   ExchList *MyList = &MyNeighbor->RecvLists[MyElem];
+   int NJ = Array.extent(1);
 
    for (int ILayer = 0; ILayer < NumLayers; ++ILayer) {
       for (int IExch = 0; IExch < MyList->NList[ILayer]; ++IExch) {
@@ -1091,14 +1053,31 @@ int Halo::unpackBuffer(ArrayHost2DR8 &Array) {
    }
 
    return 0;
-} // end unpackBuffer ArrayHost2DR8
+} // end unpackBuffer HostArray2DR4
 
-int Halo::unpackBuffer(ArrayHost3DI4 &Array) {
+int Halo::unpackBuffer(HostArray2DR8 &Array) {
 
-   ExchList *MyList  = &MyNeighbor->RecvLists[MyElem];
-   yakl::Dims MyDims = Array.get_dimensions();
-   int NK            = MyDims[0];
-   int NJ            = MyDims[2];
+   ExchList *MyList = &MyNeighbor->RecvLists[MyElem];
+   int NJ = Array.extent(1);
+
+   for (int ILayer = 0; ILayer < NumLayers; ++ILayer) {
+      for (int IExch = 0; IExch < MyList->NList[ILayer]; ++IExch) {
+         for (int J = 0; J < NJ; ++J) {
+            I4 IBuff = (MyList->Offsets[ILayer] + IExch) * NJ + J;
+            Array(MyList->Ind[ILayer][IExch], J) =
+                MyNeighbor->RecvBuffer[IBuff];
+         }
+      }
+   }
+
+   return 0;
+} // end unpackBuffer HostArray2DR8
+
+int Halo::unpackBuffer(HostArray3DI4 &Array) {
+
+   ExchList *MyList = &MyNeighbor->RecvLists[MyElem];
+   int NK = Array.extent(0);
+   int NJ = Array.extent(2);
 
    for (int K = 0; K < NK; ++K) {
       for (int ILayer = 0; ILayer < NumLayers; ++ILayer) {
@@ -1115,14 +1094,13 @@ int Halo::unpackBuffer(ArrayHost3DI4 &Array) {
    }
 
    return 0;
-} // end unpackBuffer ArrayHost3DI4
+} // end unpackBuffer HostArray3DI4
 
-int Halo::unpackBuffer(ArrayHost3DI8 &Array) {
+int Halo::unpackBuffer(HostArray3DI8 &Array) {
 
-   ExchList *MyList  = &MyNeighbor->RecvLists[MyElem];
-   yakl::Dims MyDims = Array.get_dimensions();
-   int NK            = MyDims[0];
-   int NJ            = MyDims[2];
+   ExchList *MyList = &MyNeighbor->RecvLists[MyElem];
+   int NK = Array.extent(0);
+   int NJ = Array.extent(2);
 
    for (int K = 0; K < NK; ++K) {
       for (int ILayer = 0; ILayer < NumLayers; ++ILayer) {
@@ -1139,38 +1117,13 @@ int Halo::unpackBuffer(ArrayHost3DI8 &Array) {
    }
 
    return 0;
-} // end unpackBuffer ArrayHost3DI8
+} // end unpackBuffer HostArray3DI8
 
-int Halo::unpackBuffer(ArrayHost3DR4 &Array) {
+int Halo::unpackBuffer(HostArray3DR4 &Array) {
 
-   ExchList *MyList  = &MyNeighbor->RecvLists[MyElem];
-   yakl::Dims MyDims = Array.get_dimensions();
-   int NK            = MyDims[0];
-   int NJ            = MyDims[2];
-
-   for (int K = 0; K < NK; ++K) {
-      for (int ILayer = 0; ILayer < NumLayers; ++ILayer) {
-         for (int IExch = 0; IExch < MyList->NList[ILayer]; ++IExch) {
-            for (int J = 0; J < NJ; ++J) {
-               I4 IBuff =
-                   (K * MyList->NTot + MyList->Offsets[ILayer] + IExch) * NJ +
-                   J;
-               Array(K, MyList->Ind[ILayer][IExch], J) =
-                   MyNeighbor->RecvBuffer[IBuff];
-            }
-         }
-      }
-   }
-
-   return 0;
-} // end unpackBuffer ArrayHost3DR4
-
-int Halo::unpackBuffer(ArrayHost3DR8 &Array) {
-
-   ExchList *MyList  = &MyNeighbor->RecvLists[MyElem];
-   yakl::Dims MyDims = Array.get_dimensions();
-   int NK            = MyDims[0];
-   int NJ            = MyDims[2];
+   ExchList *MyList = &MyNeighbor->RecvLists[MyElem];
+   int NK = Array.extent(0);
+   int NJ = Array.extent(2);
 
    for (int K = 0; K < NK; ++K) {
       for (int ILayer = 0; ILayer < NumLayers; ++ILayer) {
@@ -1187,15 +1140,37 @@ int Halo::unpackBuffer(ArrayHost3DR8 &Array) {
    }
 
    return 0;
-} // end unpackBuffer ArrayHost3DR8
+} // end unpackBuffer HostArray3DR4
 
-int Halo::unpackBuffer(ArrayHost4DI4 &Array) {
+int Halo::unpackBuffer(HostArray3DR8 &Array) {
 
-   ExchList *MyList  = &MyNeighbor->RecvLists[MyElem];
-   yakl::Dims MyDims = Array.get_dimensions();
-   int NL            = MyDims[0];
-   int NK            = MyDims[1];
-   int NJ            = MyDims[3];
+   ExchList *MyList = &MyNeighbor->RecvLists[MyElem];
+   int NK = Array.extent(0);
+   int NJ = Array.extent(2);
+
+   for (int K = 0; K < NK; ++K) {
+      for (int ILayer = 0; ILayer < NumLayers; ++ILayer) {
+         for (int IExch = 0; IExch < MyList->NList[ILayer]; ++IExch) {
+            for (int J = 0; J < NJ; ++J) {
+               I4 IBuff =
+                   (K * MyList->NTot + MyList->Offsets[ILayer] + IExch) * NJ +
+                   J;
+               Array(K, MyList->Ind[ILayer][IExch], J) =
+                   MyNeighbor->RecvBuffer[IBuff];
+            }
+         }
+      }
+   }
+
+   return 0;
+} // end unpackBuffer HostArray3DR8
+
+int Halo::unpackBuffer(HostArray4DI4 &Array) {
+
+   ExchList *MyList = &MyNeighbor->RecvLists[MyElem];
+   int NL = Array.extent(0);
+   int NK = Array.extent(1);
+   int NJ = Array.extent(3);
 
    for (int L = 0; L < NL; ++L) {
       for (int K = 0; K < NK; ++K) {
@@ -1215,15 +1190,14 @@ int Halo::unpackBuffer(ArrayHost4DI4 &Array) {
    }
 
    return 0;
-} // end unpackBuffer ArrayHost4DI4
+} // end unpackBuffer HostArray4DI4
 
-int Halo::unpackBuffer(ArrayHost4DI8 &Array) {
+int Halo::unpackBuffer(HostArray4DI8 &Array) {
 
-   ExchList *MyList  = &MyNeighbor->RecvLists[MyElem];
-   yakl::Dims MyDims = Array.get_dimensions();
-   int NL            = MyDims[0];
-   int NK            = MyDims[1];
-   int NJ            = MyDims[3];
+   ExchList *MyList = &MyNeighbor->RecvLists[MyElem];
+   int NL = Array.extent(0);
+   int NK = Array.extent(1);
+   int NJ = Array.extent(3);
 
    for (int L = 0; L < NL; ++L) {
       for (int K = 0; K < NK; ++K) {
@@ -1243,43 +1217,14 @@ int Halo::unpackBuffer(ArrayHost4DI8 &Array) {
    }
 
    return 0;
-} // end unpackBuffer ArrayHost4DI8
+} // end unpackBuffer HostArray4DI8
 
-int Halo::unpackBuffer(ArrayHost4DR4 &Array) {
+int Halo::unpackBuffer(HostArray4DR4 &Array) {
 
-   ExchList *MyList  = &MyNeighbor->RecvLists[MyElem];
-   yakl::Dims MyDims = Array.get_dimensions();
-   int NL            = MyDims[0];
-   int NK            = MyDims[1];
-   int NJ            = MyDims[3];
-
-   for (int L = 0; L < NL; ++L) {
-      for (int K = 0; K < NK; ++K) {
-         for (int ILayer = 0; ILayer < NumLayers; ++ILayer) {
-            for (int IExch = 0; IExch < MyList->NList[ILayer]; ++IExch) {
-               for (int J = 0; J < NJ; ++J) {
-                  I4 IBuff = ((L * NK + K) * MyList->NTot +
-                              MyList->Offsets[ILayer] + IExch) *
-                                 NJ +
-                             J;
-                  Array(L, K, MyList->Ind[ILayer][IExch], J) =
-                      MyNeighbor->RecvBuffer[IBuff];
-               }
-            }
-         }
-      }
-   }
-
-   return 0;
-} // end unpackBuffer ArrayHost4DR4
-
-int Halo::unpackBuffer(ArrayHost4DR8 &Array) {
-
-   ExchList *MyList  = &MyNeighbor->RecvLists[MyElem];
-   yakl::Dims MyDims = Array.get_dimensions();
-   int NL            = MyDims[0];
-   int NK            = MyDims[1];
-   int NJ            = MyDims[3];
+   ExchList *MyList = &MyNeighbor->RecvLists[MyElem];
+   int NL = Array.extent(0);
+   int NK = Array.extent(1);
+   int NJ = Array.extent(3);
 
    for (int L = 0; L < NL; ++L) {
       for (int K = 0; K < NK; ++K) {
@@ -1299,16 +1244,42 @@ int Halo::unpackBuffer(ArrayHost4DR8 &Array) {
    }
 
    return 0;
-} // end unpackBuffer ArrayHost4DR8
+} // end unpackBuffer HostArray4DR4
 
-int Halo::unpackBuffer(ArrayHost5DI4 &Array) {
+int Halo::unpackBuffer(HostArray4DR8 &Array) {
 
-   ExchList *MyList  = &MyNeighbor->RecvLists[MyElem];
-   yakl::Dims MyDims = Array.get_dimensions();
-   int NM            = MyDims[0];
-   int NL            = MyDims[1];
-   int NK            = MyDims[2];
-   int NJ            = MyDims[4];
+   ExchList *MyList = &MyNeighbor->RecvLists[MyElem];
+   int NL = Array.extent(0);
+   int NK = Array.extent(1);
+   int NJ = Array.extent(3);
+
+   for (int L = 0; L < NL; ++L) {
+      for (int K = 0; K < NK; ++K) {
+         for (int ILayer = 0; ILayer < NumLayers; ++ILayer) {
+            for (int IExch = 0; IExch < MyList->NList[ILayer]; ++IExch) {
+               for (int J = 0; J < NJ; ++J) {
+                  I4 IBuff = ((L * NK + K) * MyList->NTot +
+                              MyList->Offsets[ILayer] + IExch) *
+                                 NJ +
+                             J;
+                  Array(L, K, MyList->Ind[ILayer][IExch], J) =
+                      MyNeighbor->RecvBuffer[IBuff];
+               }
+            }
+         }
+      }
+   }
+
+   return 0;
+} // end unpackBuffer HostArray4DR8
+
+int Halo::unpackBuffer(HostArray5DI4 &Array) {
+
+   ExchList *MyList = &MyNeighbor->RecvLists[MyElem];
+   int NM = Array.extent(0);
+   int NL = Array.extent(1);
+   int NK = Array.extent(2);
+   int NJ = Array.extent(4);
 
    for (int M = 0; M < NM; ++M) {
       for (int L = 0; L < NL; ++L) {
@@ -1330,16 +1301,15 @@ int Halo::unpackBuffer(ArrayHost5DI4 &Array) {
    }
 
    return 0;
-} // end unpackBuffer ArrayHost5DI4
+} // end unpackBuffer HostArray5DI4
 
-int Halo::unpackBuffer(ArrayHost5DI8 &Array) {
+int Halo::unpackBuffer(HostArray5DI8 &Array) {
 
-   ExchList *MyList  = &MyNeighbor->RecvLists[MyElem];
-   yakl::Dims MyDims = Array.get_dimensions();
-   int NM            = MyDims[0];
-   int NL            = MyDims[1];
-   int NK            = MyDims[2];
-   int NJ            = MyDims[4];
+   ExchList *MyList = &MyNeighbor->RecvLists[MyElem];
+   int NM = Array.extent(0);
+   int NL = Array.extent(1);
+   int NK = Array.extent(2);
+   int NJ = Array.extent(4);
 
    for (int M = 0; M < NM; ++M) {
       for (int L = 0; L < NL; ++L) {
@@ -1361,47 +1331,15 @@ int Halo::unpackBuffer(ArrayHost5DI8 &Array) {
    }
 
    return 0;
-} // end unpackBuffer ArrayHost5DI8
+} // end unpackBuffer HostArray5DI8
 
-int Halo::unpackBuffer(ArrayHost5DR4 &Array) {
+int Halo::unpackBuffer(HostArray5DR4 &Array) {
 
-   ExchList *MyList  = &MyNeighbor->RecvLists[MyElem];
-   yakl::Dims MyDims = Array.get_dimensions();
-   int NM            = MyDims[0];
-   int NL            = MyDims[1];
-   int NK            = MyDims[2];
-   int NJ            = MyDims[4];
-
-   for (int M = 0; M < NM; ++M) {
-      for (int L = 0; L < NL; ++L) {
-         for (int K = 0; K < NK; ++K) {
-            for (int ILayer = 0; ILayer < NumLayers; ++ILayer) {
-               for (int IExch = 0; IExch < MyList->NList[ILayer]; ++IExch) {
-                  for (int J = 0; J < NJ; ++J) {
-                     I4 IBuff = (((M * NL + L) * NK + K) * MyList->NTot +
-                                 MyList->Offsets[ILayer] + IExch) *
-                                    NJ +
-                                J;
-                     Array(M, L, K, MyList->Ind[ILayer][IExch], J) =
-                         MyNeighbor->RecvBuffer[IBuff];
-                  }
-               }
-            }
-         }
-      }
-   }
-
-   return 0;
-} // end unpackBuffer ArrayHost5DR4
-
-int Halo::unpackBuffer(ArrayHost5DR8 &Array) {
-
-   ExchList *MyList  = &MyNeighbor->RecvLists[MyElem];
-   yakl::Dims MyDims = Array.get_dimensions();
-   int NM            = MyDims[0];
-   int NL            = MyDims[1];
-   int NK            = MyDims[2];
-   int NJ            = MyDims[4];
+   ExchList *MyList = &MyNeighbor->RecvLists[MyElem];
+   int NM = Array.extent(0);
+   int NL = Array.extent(1);
+   int NK = Array.extent(2);
+   int NJ = Array.extent(4);
 
    for (int M = 0; M < NM; ++M) {
       for (int L = 0; L < NL; ++L) {
@@ -1423,7 +1361,37 @@ int Halo::unpackBuffer(ArrayHost5DR8 &Array) {
    }
 
    return 0;
-} // end unpackBuffer ArrayHost5DR8
+} // end unpackBuffer HostArray5DR4
+
+int Halo::unpackBuffer(HostArray5DR8 &Array) {
+
+   ExchList *MyList = &MyNeighbor->RecvLists[MyElem];
+   int NM = Array.extent(0);
+   int NL = Array.extent(1);
+   int NK = Array.extent(2);
+   int NJ = Array.extent(4);
+
+   for (int M = 0; M < NM; ++M) {
+      for (int L = 0; L < NL; ++L) {
+         for (int K = 0; K < NK; ++K) {
+            for (int ILayer = 0; ILayer < NumLayers; ++ILayer) {
+               for (int IExch = 0; IExch < MyList->NList[ILayer]; ++IExch) {
+                  for (int J = 0; J < NJ; ++J) {
+                     I4 IBuff = (((M * NL + L) * NK + K) * MyList->NTot +
+                                 MyList->Offsets[ILayer] + IExch) *
+                                    NJ +
+                                J;
+                     Array(M, L, K, MyList->Ind[ILayer][IExch], J) =
+                         MyNeighbor->RecvBuffer[IBuff];
+                  }
+               }
+            }
+         }
+      }
+   }
+
+   return 0;
+} // end unpackBuffer HostArray5DR8
 
 } // end namespace OMEGA
 

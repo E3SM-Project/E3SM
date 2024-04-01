@@ -3,7 +3,7 @@
 
 ## 1 Overview
 
-The mesh class will contain the YAKL arrays which describe the horizontal mesh and are used in the computation of the tendency terms in the discrete governing equations. OMEGA will separate the horizontal mesh variables from the vertical mesh information.
+The mesh class will contain the Kokkos arrays which describe the horizontal mesh and are used in the computation of the tendency terms in the discrete governing equations. OMEGA will separate the horizontal mesh variables from the vertical mesh information.
 
 ## 2 Requirements
 
@@ -15,12 +15,12 @@ The OMEGA mesh information should be compatible with the [MPAS Mesh Specificatio
 
 Not all mesh information is required in computing the tendency terms on the device, e.g. lonCell, latCell, etc.
 However, other arrays will need to be allocated and copied to the device for use in tendency computation.
-The mesh class will explicitly include host and device YAKL arrays for each variable.
+The mesh class will explicitly include host and device Kokkos arrays for each variable.
 A class method will be included to copy the relevant mesh information to the device.
 
 ### 2.3 Requirement: Zero-based cell, edge, and vertex numbering
 
-Although the existing MPAS Mesh spec uses a one-based mesh numbering, zero-based mesh numbering is required to be compatible with the zero-based indexing used for YAKL arrays.
+Although the existing MPAS Mesh spec uses a one-based mesh numbering, zero-based mesh numbering is required to be compatible with the zero-based indexing used for Kokkos arrays.
 
 ### 2.4 Requirement: Work with Decomp class to decompose mesh
 
@@ -28,7 +28,7 @@ The mesh class will reference the partitioned connectivity arrays created by the
 
 ### 2.5 Requirement: Mesh variables will be associated with metadata to describe data
 
-Following the Metadata and IO designs, the YAKL arrays for the mesh variables will be associated with information about the represented values.
+Following the Metadata and IO designs, the Kokkos arrays for the mesh variables will be associated with information about the represented values.
 
 ### 2.6 Requirement: I/O to obtain mesh data
 
@@ -67,7 +67,7 @@ The algorithms required for computing dependent mesh quantities are currently im
 ```
 
 #### 4.1.2 Class/structs/data types
-The horizontal mesh information will be organized in a class with public YAKL arrays.
+The horizontal mesh information will be organized in a class with public Kokkos arrays.
 Arrays that require a device copy will have a explicit variable.
 Connectivity arrays that are already contained in the Decomp class will be replicated in the horizontal mesh class via pointers.
 ```c++
@@ -76,10 +76,10 @@ class HorzMesh {
 public:
 
   Array1DR8 AreaCell;
-  ArrayHost1DR8 AreaCellH;
+  HostArray1DR8 AreaCellH;
 
   Array2DI4 CellsOnCell;
-  ArrayHost2DI4 CellsOnCellH;
+  HostArray2DI4 CellsOnCellH;
 
 }
 ```
@@ -113,7 +113,7 @@ The compute method will be a private method called by the constructor. It will b
 This method will be repsonsible for creating the device copies of the required mesh information on the host. It will be a private method called by the constructor.
 
 ```c++
-AreaCell = AreaCellH.createDeviceCopy()
+AreaCell = OMEGA::createDeviceCopy(AreaCellH)
 
 ```
 

@@ -5,7 +5,7 @@
 Omega's logging system is built upon the
 [spdlog](https://github.com/gabime/spdlog) logging tool.
 
-Logging macros and custom formatters for YAKL data types have been
+Logging macros and custom formatters for Kokkos data types have been
 integrated into the Omega logging system via the Logging.h header file
 located in the src/infra directory. Users who wish to utilize Omega's
 logging capabilities must include this header file in their code.
@@ -39,10 +39,10 @@ versatility by accommodating the utilization of the spdlog logger as
 their first argument. This approach facilitats the integration of various
 logger types.
 
-## Customer formatter for YAKL
+## Customer formatter for Kokkos
 
 Within the same header file, you will encounter specialized spdlog formatter
-structs designed to accommodate YAKL data types.
+structs designed to accommodate Kokkos data types.
 
 For further information on customizing the spdlog formatter, refer to
 [Custom formatting](https://github.com/gabime/spdlog/wiki/3.-Custom-formatting).

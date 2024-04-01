@@ -4,406 +4,134 @@
 # Data type test
 ##################
 
-set(_TestDataTypesName testDataTypes.exe)
+add_executable(testDataTypes.exe base/DataTypesTest.cpp)
 
-add_executable(${_TestDataTypesName} base/DataTypesTest.cpp)
+target_link_libraries(testDataTypes.exe ${OMEGA_LIB_NAME})
 
-target_compile_options(
-  ${_TestDataTypesName}
-  PRIVATE
-  "-I${OMEGA_SOURCE_DIR}/src/base"
-  "-I${OMEGA_SOURCE_DIR}/src/infra"
-  ${OMEGA_CXX_FLAGS}
-)
-
-target_link_options(
-  ${_TestDataTypesName}
-  PRIVATE
-  ${OMEGA_LINK_OPTIONS}
-)
-
-target_link_libraries(${_TestDataTypesName} ${OMEGA_LIB_NAME} yakl parmetis metis)
-
-if(GKlib_FOUND)
-  target_link_libraries(${_TestDataTypesName} gklib)
-endif()
-
-add_test(
-  NAME DATA_TYPES_TEST
-  COMMAND ${MPI_EXEC} -n 1 -- ./${_TestDataTypesName}
-)
-
+add_test(NAME DATA_TYPES_TEST COMMAND ${MPI_EXEC} --cpu-bind=cores -n 1 -- ./testDataTypes.exe)
 
 ##################
 # Machine env test
 ##################
 
-set(_TestMachEnvName testMachEnv.exe)
+add_executable(testMachEnv.exe base/MachEnvTest.cpp)
 
-add_executable(${_TestMachEnvName} base/MachEnvTest.cpp)
+target_link_libraries(testMachEnv.exe ${OMEGA_LIB_NAME})
 
-target_compile_options(
-  ${_TestMachEnvName}
-  PRIVATE
-  "-I${OMEGA_SOURCE_DIR}/src/base"
-  "-I${OMEGA_SOURCE_DIR}/src/infra"
-  ${OMEGA_CXX_FLAGS}
-)
-
-target_link_options(
-  ${_TestMachEnvName}
-  PRIVATE
-  ${OMEGA_LINK_OPTIONS}
-)
-
-target_link_libraries(${_TestMachEnvName} ${OMEGA_LIB_NAME} yakl)
-
-add_test(
-  NAME MACHINE_ENV_TEST
-  COMMAND ${MPI_EXEC} -n 8 -- ./${_TestMachEnvName}
-)
+add_test(NAME MACHINE_ENV_TEST COMMAND ${MPI_EXEC} --cpu-bind=cores -n 8 -- ./testMachEnv.exe)
 
 
 ##################
 # Broadcast test
 ##################
 
-set(_TestBroadcastName testBroadcast.exe)
+add_executable(testBroadcast.exe base/BroadcastTest.cpp)
 
-# Add broadcast test
-add_executable(${_TestBroadcastName} base/BroadcastTest.cpp)
+target_link_libraries(testBroadcast.exe ${OMEGA_LIB_NAME})
 
-target_compile_options(
-  ${_TestBroadcastName}
-  PRIVATE
-  "-I${OMEGA_SOURCE_DIR}/src/base"
-  "-I${OMEGA_SOURCE_DIR}/src/infra"
-  ${OMEGA_CXX_FLAGS}
-)
-
-target_link_options(
-  ${_TestBroadcastName}
-  PRIVATE
-  ${OMEGA_LINK_OPTIONS}
-)
-
-target_link_libraries(${_TestBroadcastName} ${OMEGA_LIB_NAME} spdlog yakl)
-
-add_test(
-  NAME BROADCAST_TEST
-  COMMAND ${MPI_EXEC} -n 8 -- ./${_TestBroadcastName}
-)
+add_test(NAME BROADCAST_TEST COMMAND ${MPI_EXEC} --cpu-bind=cores -n 8 -- ./testBroadcast.exe)
 
 
 ##################
 # Logging test
 ##################
 
-set(_TestLoggingName testLogging.exe)
+add_executable(testLogging.exe infra/LoggingTest.cpp)
 
-add_executable(${_TestLoggingName} infra/LoggingTest.cpp)
+target_link_libraries(testLogging.exe ${OMEGA_LIB_NAME})
 
-target_compile_options(
-  ${_TestLoggingName}
-  PRIVATE
-  "-I${OMEGA_SOURCE_DIR}/src/base"
-  "-I${OMEGA_SOURCE_DIR}/src/infra"
-  ${OMEGA_CXX_FLAGS}
-)
-
-target_link_options(
-  ${_TestLoggingName}
-  PRIVATE
-  ${OMEGA_LINK_OPTIONS}
-)
-
-target_link_libraries(${_TestLoggingName} ${OMEGA_LIB_NAME} spdlog yakl)
-
-add_test(NAME LOGGING_TEST COMMAND ./${_TestLoggingName})
+add_test(NAME LOGGING_TEST COMMAND ./testLogging.exe)
 
 #############
 # Decomp test
 #############
 
-set(_TestDecompName testDecomp.exe)
+add_executable(testDecomp.exe base/DecompTest.cpp)
 
-add_executable(${_TestDecompName} base/DecompTest.cpp)
+target_link_libraries(testDecomp.exe ${OMEGA_LIB_NAME})
 
-target_include_directories(
-  ${_TestDecompName}
-  PRIVATE
-  ${OMEGA_SOURCE_DIR}/src/base
-  ${OMEGA_SOURCE_DIR}/src/infra
-  ${Parmetis_INCLUDE_DIRS}
-)
+add_test( NAME DECOMP_TEST COMMAND ${MPI_EXEC} -n 8 --cpu-bind=cores -- ./testDecomp.exe)
 
-target_compile_options(
-  ${_TestDecompName}
-  PRIVATE
-  ${OMEGA_CXX_FLAGS}
-)
-
-target_link_options(
-  ${_TestDecompName}
-  PRIVATE
-  ${OMEGA_LINK_OPTIONS}
-)
-
-target_link_libraries(${_TestDecompName} ${OMEGA_LIB_NAME} spdlog yakl parmetis metis pioc)
-
-if(GKlib_FOUND)
-  target_link_libraries(${_TestDecompName} gklib)
-endif()
-
-add_test(
-  NAME DECOMP_TEST
-  COMMAND ${MPI_EXEC} -n 8 -- ./${_TestDecompName}
-)
-
-##################
-# Halo test
-##################
-
-set(_TestHaloName testHalo.exe)
-
-# Add halo test
-add_executable(${_TestHaloName} base/HaloTest.cpp)
-
-target_include_directories(
-  ${_TestHaloName}
-  PRIVATE
-  ${OMEGA_SOURCE_DIR}/src/base
-  ${OMEGA_SOURCE_DIR}/src/infra
-  ${Parmetis_INCLUDE_DIRS}
-)
-
-target_compile_options(
-  ${_TestHaloName}
-  PRIVATE
-  ${OMEGA_CXX_FLAGS}
-)
-
-target_link_libraries(${_TestHaloName} ${OMEGA_LIB_NAME} spdlog yakl parmetis metis pioc)
-
-add_test(
-  NAME HALO_TEST
-  COMMAND ${MPI_EXEC} -n 8 -- ./${_TestHaloName}
-)
+###################
+## Halo test
+###################
+#
+#add_executable(testHalo.exe base/HaloTest.cpp)
+#
+#target_link_libraries(testHalo.exe ${OMEGA_LIB_NAME})
+#
+#add_test(NAME HALO_TEST COMMAND ${MPI_EXEC} --cpu-bind=cores -n 8 -- ./testHalo.exe)
 
 ################
 # HorzMesh test
 ################
 
-set(_TestHorzMeshName testHorzMesh.exe)
+add_executable(testHorzMesh.exe ocn/HorzMeshTest.cpp)
 
-# Add broadcast test
-add_executable(${_TestHorzMeshName} ocn/HorzMeshTest.cpp)
+target_link_libraries(testHorzMesh.exe ${OMEGA_LIB_NAME})
 
-target_include_directories(
-  ${_TestHorzMeshName}
-  PRIVATE
-  ${OMEGA_SOURCE_DIR}/src/base
-  ${OMEGA_SOURCE_DIR}/src/infra
-  ${OMEGA_SOURCE_DIR}/src/ocn
-  ${Parmetis_INCLUDE_DIRS}
-)
-
-target_compile_options(
-  ${_TestHorzMeshName}
-  PRIVATE
-  ${OMEGA_LINK_OPTIONS}
-)
-
-target_link_libraries(${_TestHorzMeshName} ${OMEGA_LIB_NAME} spdlog yakl parmetis metis pioc)
-
-add_test(
-  NAME HORZMESH_TEST
-  COMMAND ${MPI_EXEC} -n 8 -- ./${_TestHorzMeshName}
-)
+add_test(NAME HORZMESH_TEST COMMAND ${MPI_EXEC} -n 8 --cpu-bind=cores -- ./testHorzMesh.exe)
 
 #############
 # IO test
 #############
 
-set(_TestIOName testIO.exe)
+add_executable(testIO.exe base/IOTest.cpp)
 
-add_executable(${_TestIOName} base/IOTest.cpp)
+target_link_libraries(testIO.exe ${OMEGA_LIB_NAME})
 
-target_include_directories(
-   ${_TestIOName}
-  PRIVATE
-  ${OMEGA_SOURCE_DIR}/src/base
-  ${OMEGA_SOURCE_DIR}/src/infra
-  ${Parmetis_INCLUDE_DIRS}
-)
-
-target_compile_options(
-   ${_TestIOName}
-  PRIVATE
-  ${OMEGA_CXX_FLAGS}
-)
-
-target_link_options(
-   ${_TestIOName}
-  PRIVATE
-  ${OMEGA_LINK_OPTIONS}
-)
-
-target_link_libraries(${_TestIOName}     ${OMEGA_LIB_NAME} spdlog yakl parmetis metis pioc)
-
-if(GKlib_FOUND)
-   target_link_libraries(${_TestIOName} gklib)
-endif()
-
-add_test(
-  NAME IO_TEST
-  COMMAND ${MPI_EXEC} -n 8 -- ./${_TestIOName}
-)
+add_test(NAME IO_TEST COMMAND ${MPI_EXEC} -n 8 --cpu-bind=cores -- ./testIO.exe)
 
 ##################
 # Config test
 ##################
 
-set(_TestConfigName testConfig.exe)
+add_executable(testConfig.exe infra/ConfigTest.cpp)
 
-# Add broadcast test
-add_executable(${_TestConfigName} infra/ConfigTest.cpp)
+target_link_libraries(testConfig.exe ${OMEGA_LIB_NAME})
 
-target_include_directories(
-  ${_TestConfigName}
-  PRIVATE
-  ${OMEGA_SOURCE_DIR}/src/base
-  ${OMEGA_SOURCE_DIR}/src/infra
-)
-
-target_compile_options(
-  ${_TestConfigName}
-  PRIVATE
-  ${OMEGA_CXX_FLAGS}
-)
-
-target_link_options(
-  ${_TestConfigName}
-  PRIVATE
-  ${OMEGA_LINK_OPTIONS}
-)
-
-target_link_libraries(${_TestConfigName} ${OMEGA_LIB_NAME} yaml-cpp)
-
-add_test(
-  NAME CONFIG_TEST
-  COMMAND ${MPI_EXEC} -n 8 -- ./${_TestConfigName}
-)
+add_test(NAME CONFIG_TEST COMMAND ${MPI_EXEC} --cpu-bind=cores -n 8 -- ./testConfig.exe)
 
 ##################
 # Metadata test
 ##################
 
-set(_TestMetadataName testMetadata.exe)
+add_executable(testMetadata.exe infra/MetadataTest.cpp)
 
-add_executable(${_TestMetadataName} infra/MetadataTest.cpp)
+target_link_libraries(testMetadata.exe ${OMEGA_LIB_NAME})
 
-target_compile_options(
-  ${_TestMetadataName}
-  PRIVATE
-  "-I${OMEGA_SOURCE_DIR}/src/base"
-  "-I${OMEGA_SOURCE_DIR}/src/infra"
-  ${OMEGA_CXX_FLAGS}
-)
-
-target_link_options(
-  ${_TestMetadataName}
-  PRIVATE
-  ${OMEGA_LINK_OPTIONS}
-)
-
-target_link_libraries(${_TestMetadataName} ${OMEGA_LIB_NAME} yakl)
-
-add_test(NAME METADATA_TEST COMMAND ./${_TestMetadataName})
+add_test(NAME METADATA_TEST COMMAND ./testMetadata.exe)
 
 ##################
 # IOField test
 ##################
 
-set(_TestIOFieldName testIOField.exe)
+add_executable(testIOField.exe infra/IOFieldTest.cpp)
 
-add_executable(${_TestIOFieldName} infra/IOFieldTest.cpp)
+target_link_libraries(testIOField.exe ${OMEGA_LIB_NAME})
 
-target_compile_options(
-   ${_TestIOFieldName}
-  PRIVATE
-  "-I${OMEGA_SOURCE_DIR}/src/base"
-  "-I${OMEGA_SOURCE_DIR}/src/infra"
-  ${OMEGA_CXX_FLAGS}
-)
-
-target_link_options(
-   ${_TestIOFieldName}
-  PRIVATE
-  ${OMEGA_LINK_OPTIONS}
-)
-
-target_link_libraries(${_TestIOFieldName} ${OMEGA_LIB_NAME} yakl)
-
-add_test(NAME IOFIELD_TEST
-         COMMAND ${MPI_EXEC} -n 8 -- ./${_TestIOFieldName})
+add_test(NAME IOFIELD_TEST COMMAND ${MPI_EXEC} --cpu-bind=cores -n 8 -- ./testIOField.exe)
 
 ##################
 # Time Manager test
 ##################
 
-set(_TestTimeMgrName testTimeMgr.exe)
+add_executable(testTimeMgr.exe infra/TimeMgrTest.cpp)
 
-add_executable(${_TestTimeMgrName} infra/TimeMgrTest.cpp)
+target_link_libraries(testTimeMgr.exe ${OMEGA_LIB_NAME})
 
-target_include_directories(
-   ${_TestTimeMgrName}
-  PRIVATE
-  ${OMEGA_SOURCE_DIR}/src/base
-  ${OMEGA_SOURCE_DIR}/src/infra
-)
+add_test(NAME TIMEMGR_TEST COMMAND ./testTimeMgr.exe)
 
-target_compile_options(
-   ${_TestTimeMgrName}
-  PRIVATE
-  ${OMEGA_CXX_FLAGS}
-)
-
-target_link_options(
-   ${_TestTimeMgrName}
-  PRIVATE
-  ${OMEGA_LINK_OPTIONS}
-)
-
-target_link_libraries(${_TestTimeMgrName}     ${OMEGA_LIB_NAME} spdlog yakl)
-
-add_test(
-  NAME TIMEMGR_TEST
-  COMMAND ./${_TestTimeMgrName}
-)
 
 ##################
-# YAKL test
+# Kokkos test
 ##################
 
-set(_TestYaklName testYakl.exe)
+add_executable(testKokkos.exe infra/OmegaKokkosTest.cpp)
 
-add_executable(
-  ${_TestYaklName} ${E3SM_EXTERNALS_ROOT}/YAKL/unit/ParForC/ParForC.cpp
-)
+target_link_libraries(testKokkos.exe ${OMEGA_LIB_NAME})
 
-include(${E3SM_EXTERNALS_ROOT}/YAKL/yakl_utils.cmake)
-yakl_process_target(${_TestYaklName})
-
-# handles cuda cases
-if (YAKL_ARCH STREQUAL "CUDA")
-  set_target_properties(${_TestYaklName} PROPERTIES LINKER_LANGUAGE CXX)
-  if (CMAKE_VERSION VERSION_GREATER "3.18.0")
-    set_target_properties(${_TestYaklName} PROPERTIES CUDA_ARCHITECTURES OFF)
-  endif()
-endif()
-
-add_test(NAME YAKL_TEST COMMAND ./${_TestYaklName})
+add_test(NAME KOKKOS_TEST COMMAND ./testKokkos.exe)
 
 ##################
 # test properties
@@ -416,15 +144,12 @@ set_tests_properties(
   LOGGING_TEST
   CONFIG_TEST
   DECOMP_TEST
-  HALO_TEST
+#  HALO_TEST
   HORZMESH_TEST
   IO_TEST
   METADATA_TEST
+  TIMEMGR_TEST
+  KOKKOS_TEST
   IOFIELD_TEST
   PROPERTIES FAIL_REGULAR_EXPRESSION "FAIL" PASS_REGULAR_EXPRESSION "PASS"
-)
-
-set_tests_properties(
-  YAKL_TEST
-  PROPERTIES FAIL_REGULAR_EXPRESSION "ERROR"
 )

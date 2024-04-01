@@ -84,7 +84,7 @@ like minloc/maxloc.
 
 For integers, the sum is straightforward. For single-precision floating
 point, we will perform sums in double precision and convert back to
-single before returning. In each of the above cases, the local YAKL
+single before returning. In each of the above cases, the local Kokkos
 versions of sum, minval, maxval will be used for the local sum before
 accumulating the MPI sum across ranks.
 
@@ -140,7 +140,7 @@ entries.
 For scalar sums, the interface is the same with the
 indxRange argument absent.
 
-We will assume that YAKL host arrays will be summed on the
+We will assume that Kokkos host arrays will be summed on the
 host and device arrays will be summed on the device.
 
 #### 4.2.2 Global sum with product
@@ -199,7 +199,7 @@ to manage two use cases. A typical use case is for the second
 array in the product to be the same for all fields (eg a mask or
 an area array), but we may wish to support a case where each
 array product has a different array for both operands.
-Because YAKL arrays contain metadata and a pointer to
+Because Kokkos arrays contain metadata and a pointer to
 the data, it may be possible to create a std::vector of
 the same array, allowing both the case of a fixed array
 to be used for all or for all the array products to have

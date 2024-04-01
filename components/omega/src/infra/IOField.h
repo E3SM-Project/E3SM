@@ -89,7 +89,7 @@ class IOField {
 
    //---------------------------------------------------------------------------
    /// Retrieves IOField data array given the field name. Because all data
-   /// arrays in OMEGA are Kokkos/YAKL arrays, this is a shallow copy of the
+   /// arrays in OMEGA are Kokkos arrays, this is a shallow copy of the
    /// attached data array. This is a templated function on the supported
    /// OMEGA array types so a template argument with the proper type must
    /// also be supplied.

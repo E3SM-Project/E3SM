@@ -9,7 +9,7 @@ For performance at high resolution, much of this IO must occur in parallel
 and interact with a high-performance filesystem. We describe here an IO
 layer that provides interfaces to the underlying SCORPIO parallel I/O
 library used in E3SM. It primarily provides a translation layer to
-read/write OMEGA metadata and YAKL arrays. It works together with the
+read/write OMEGA metadata and Kokkos arrays. It works together with the
 OMEGA Metadata and IOStreams capabilities. Users will interact with
 IO primarily through the IOStreams and should not need to access this
 layer directly.
@@ -67,14 +67,14 @@ of those tasks.
 ### 2.7 Requirement: Data types and type conversion
 
 The I/O system must be able to read/write all supported
-data types for metadata and all supported YAKL array types.
+data types for metadata and all supported Kokkos array types.
 In some cases, output files at reduced precision are required
 so an option to convert data to reduced precision is needed.
 
-### 2.8 Requirement: YAKL arrays and host/device support
+### 2.8 Requirement: Kokkos arrays and host/device support
 
-Distributed data in OMEGA is stored as YAKL array types.
-We must be able to read/write YAKL arrays and be able
+Distributed data in OMEGA is stored as Kokkos array types.
+We must be able to read/write Kokkos arrays and be able
 to move data between host and device as needed.
 
 ### 2.9 Requirement: Modes on file existence
@@ -114,7 +114,7 @@ The OMEGA model I/O will be built on top of the SCORPIO
 parallel I/O library used across E3SM components. The
 I/O interfaces here generally provide wrappers for
 translating internal OMEGA metadata representations and
-YAKL array types to the form required by SCORPIO. OMEGA
+Kokkos array types to the form required by SCORPIO. OMEGA
 users and developers will generally interact with I/O
 through the IO Streams layer that manages all files and
 associated file contents.
@@ -253,7 +253,7 @@ to specify the fields in an IOStream.
          /// only one of the pointers will be defined based on array type
          std::shared_ptr<Array1DI4> data1DI4;
          [replicated up to 5D arrays of I4,I8,R4,R8]
-         std::shared_ptr<ArrayHost1DI4> dataHost1DI4;
+         std::shared_ptr<HostArray1DI4> dataHost1DI4;
          [replicated up to 5D arrays of I4,I8,R4,R8]
 
 

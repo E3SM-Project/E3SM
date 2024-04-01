@@ -12,7 +12,7 @@ or file sequence an IO stream with its own unique set of properties.
 We describe here the requirements and design of these IO streams.
 The design relies on companion designs for managing metadata and a
 lower-level IO functions for writing metadata and data stored in
-YAKL arrays.
+Kokkos arrays.
 
 ## 2 Requirements
 

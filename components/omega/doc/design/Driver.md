@@ -38,7 +38,7 @@ must be stored internally within OMEGA as static variables.
 
 ### 2.4 Requirement: Managing environments
 
-Initializing and exiting environments like MPI and YAKL must
+Initializing and exiting environments like MPI and Kokkos must
 take place at the driver level (standalone driver or coupled
 model driver) as these environments are shared by other
 components. The finalize method described below must clean up
@@ -58,7 +58,7 @@ is typically the fastest forcing data interval.
 
 The finalize method must provide a graceful exit, checkpointing
 as needed and cleaning up all memory. It must not, however,
-exit the MPI or other shared environments (eg YAKL) per
+exit the MPI or other shared environments (eg Kokkos) per
 requirement 2.4
 
 ### 2.7 Requirement: Init method
@@ -194,7 +194,8 @@ something like the code below (details subject to change during implementation).
 int main(int argc, char **argv) {
 
    MPI_Init(); // initialize MPI
-   yakl::init(); // initialize YAKL
+   Kokkos::init(); // initialize Kokkos
+   {
 
    OMEGA::State CurrState;
    OMEGA::TimeInstant CurrTime;
@@ -229,9 +230,9 @@ int main(int argc, char **argv) {
       LOG_ERROR("OMEGA terminating due to error");
    }
 
-   // Exit various environments
-   yakl::finalize();
-   MPI::Finalize();
+   }
+   Kokkos::finalize(); // Exit Kokkos
+   MPI::Finalize(); // Exit MPI
 
    return ErrAll;
 }

@@ -80,7 +80,7 @@ to buid and test Omega. The utility automates many of the steps below.
 In the Omega branch you would like to build, first update the submodules that
 Omega requires:
 ```sh
-git submodule update --init --recursive externals/YAKL externals/ekat \
+git submodule update --init --recursive externals/ekat \
     externals/scorpio cime
 ```
 
@@ -165,8 +165,8 @@ Test project /gpfs/fs1/home/ac.xylar/e3sm_work/polaris/add-omega-ctest-util/buil
 7/9 Test #7: IO_TEST ..........................   Passed    2.94 sec
     Start 8: CONFIG_TEST
 8/9 Test #8: CONFIG_TEST ......................   Passed    1.01 sec
-    Start 9: YAKL_TEST
-9/9 Test #9: YAKL_TEST ........................   Passed    0.03 sec
+    Start 9: KOKKOS_TEST
+9/9 Test #9: KOKKOS_TEST ........................   Passed    0.03 sec
 
 100% tests passed, 0 tests failed out of 9
 
