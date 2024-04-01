@@ -177,6 +177,7 @@ module seq_frac_mct
   ! for tri grid, sameg_al would be false 
 
   use seq_comm_mct, only : mbrxid   !          iMOAB id of moab rof migrated to coupler pes 
+  use seq_comm_mct, only : mbrof_data ! different logic for data rof model
 
   use iMOAB, only : iMOAB_DefineTagStorage, iMOAB_SetDoubleTagStorage, &
         iMOAB_GetMeshInfo, iMOAB_SetDoubleTagStorageWithGid, iMOAB_WriteMesh, &
@@ -516,9 +517,15 @@ contains
             call shr_sys_abort(subname//' ERROR in defining tags on rof phys mesh on cpl')
          endif
          ierr  = iMOAB_GetMeshInfo ( mbrxid, nvert, nvise, nbl, nsurf, nvisBC );
-         arrSize = 3 * nvise(1) ! there are 3 tags 
+         if (mbrof_data) then ! then the coupler has point cloud too
+            arrSize = 3 * nvert(1)
+            ent_type = 0 ! vertex type on rof
+         else
+            arrSize = 3 * nvise(1) ! there are 3 tags 
+            ent_type = 1 ! cell type, rof is now FV on coupler side
+         endif
          allocate(tagValues(arrSize) )
-         ent_type = 1 ! vertex type, rof is now FV
+         
          tagValues = 0. 
          ierr = iMOAB_SetDoubleTagStorage ( mbrxid, tagname, arrSize , ent_type, tagValues)
          deallocate(tagValues)

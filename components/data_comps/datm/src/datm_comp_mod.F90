@@ -275,7 +275,6 @@ CONTAINS
     real(R8), allocatable, target :: data(:)
     integer(IN), pointer :: idata(:)   ! temporary
     real(r8), dimension(:), allocatable :: moab_vert_coords  ! temporary
-    integer :: mpigrp          ! mpigrp
     !real(R8), allocatable, target :: vtags_zero(:, :)
 #ifdef MOABDEBUG
     character*100 outfile, wopts
@@ -474,22 +473,6 @@ CONTAINS
        if (ierr > 0 )  &
           call shr_sys_abort('Error: fail to create seq_flds_a2x_fields tags ')
     
-       ierr = iMOAB_DefineTagStorage( mphaid, trim(flds_strm)//C_NULL_CHAR, &
-                                         1, & ! dense, double
-                                         1, & ! number of components
-                                         tagindex )
-       if (ierr > 0 )  &
-          call shr_sys_abort('Error: fail to create flds_strm tags ')
-#ifdef MOABDEBUG
-          !      debug test
-       outfile = 'AtmDataMesh.h5m'//C_NULL_CHAR
-       wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
-          !      write out the mesh file to disk
-       ierr = iMOAB_WriteMesh(mphaid, trim(outfile), trim(wopts))
-       if (ierr .ne. 0) then
-          call shr_sys_abort(subname//' ERROR in writing data mesh atm ')
-       endif
-#endif
 #endif
        !----------------------------------------------------------------------------
        ! Initialize MCT attribute vectors
@@ -623,6 +606,24 @@ CONTAINS
        yc(:) = ggrid%data%rAttr(klat,:)
 
        call t_stopf('datm_initmctavs')
+#ifdef HAVE_MOAB
+       ierr = iMOAB_DefineTagStorage( mphaid, trim(flds_strm)//C_NULL_CHAR, &
+                                         1, & ! dense, double
+                                         1, & ! number of components
+                                         tagindex )
+       if (ierr > 0 )  &
+          call shr_sys_abort('Error: fail to create flds_strm tags ')
+#ifdef MOABDEBUG
+          !      debug test
+       outfile = 'AtmDataMesh.h5m'//C_NULL_CHAR
+       wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+          !      write out the mesh file to disk
+       ierr = iMOAB_WriteMesh(mphaid, trim(outfile), trim(wopts))
+       if (ierr .ne. 0) then
+          call shr_sys_abort(subname//' ERROR in writing data mesh atm ')
+       endif
+#endif
+#endif
 
        !----------------------------------------------------------------------------
        ! Read restart
@@ -716,34 +717,6 @@ CONTAINS
 
   end subroutine datm_comp_init
 
-#ifdef HAVE_MOAB
-  !===============================================================================
-
-  subroutine moab_set_tag(tagname, avx, index, dataarr, lsize)
-
-    ! !DESCRIPTION:  set field method for data atm model
-    use iMOAB,        only: iMOAB_SetDoubleTagStorage
-    use seq_comm_mct, only : mphaid ! 
-    implicit none
-
-    integer :: ierr, lsize 
-    character(len=*), intent(in) :: tagname
-    type(mct_aVect), intent(in) :: avx
-    integer, intent(in) :: index
-    real(R8), intent(inout) :: dataarr(:)
-
-   !write(*,* ) "Setting data for tag: ", tagname, " with size = ", lsize
-   dataarr(:) = avx%rAttr(index, :)
-   ierr = iMOAB_SetDoubleTagStorage ( mphaid, tagname, lsize, &
-                                       0, & ! data on vertices
-                                       dataarr )
-   if (ierr > 0 )  &
-       call shr_sys_abort('Error: fail to set tag values for '//tagname)
-
-  end subroutine moab_set_tag
-
-#endif
-
   !===============================================================================
   subroutine datm_comp_run(EClock, x2a, a2x, &
        SDATM, gsmap, ggrid, mpicom, compid, my_task, master_task, &
@@ -754,6 +727,7 @@ CONTAINS
     ! !DESCRIPTION: run method for datm model
 #ifdef MOABDEBUG
     use seq_comm_mct, only : mphaid ! 
+    use seq_flds_mod, only: moab_set_tag_from_av
     use iMOAB, only: iMOAB_WriteMesh
 #endif
 #ifdef HAVE_MOAB
@@ -865,9 +839,6 @@ CONTAINS
        allocate(count_st(SDATM%nstreams))
     end if
 
-#ifdef MOABDEBUG
-      write(logunit,*) ' a2x_aa (22,1..) at beginning of datm_comp_run', a2x%rattr(22,1), a2x%rattr(22,2)
-#endif
 
     do n = 1,SDATM%nstreams
        if (firstcall) then
@@ -879,9 +850,7 @@ CONTAINS
                ilist_av(n),olist_av(n),rearr)
        end if
     enddo
-#ifdef MOABDEBUG
-      write(logunit,*) ' a2x_aa (22,1..) after  datm_comp_run translate lists', a2x%rattr(22,1), a2x%rattr(22,2)
-#endif
+
     do n = 1,SDATM%nstreams
        if (firstcall) then
           call shr_dmodel_translate_list(SDATM%avs(n),avstrm,&
@@ -893,9 +862,6 @@ CONTAINS
        end if
     enddo
     call t_stopf('datm_scatter')
-#ifdef MOABDEBUG
-      write(logunit,*) ' a2x_aa (22,1..) after  datm_comp_run scatter ', a2x%rattr(22,1), a2x%rattr(22,2)
-#endif
     !-------------------------------------------------
     ! Determine data model behavior based on the mode
     !-------------------------------------------------
@@ -1309,9 +1275,6 @@ CONTAINS
     !----------------------------------------------------------
     ! bias correction / anomaly forcing ( end block )
     !----------------------------------------------------------
-#ifdef MOABDEBUG
-      write(logunit,*) ' a2x_aa (22,1..) at the end of of datm_comp_run', a2x%rattr(22,1), a2x%rattr(22,2)
-#endif
     !--------------------
     ! Write restart
     !--------------------
@@ -1355,7 +1318,7 @@ CONTAINS
       call mct_list_get(mctOStr,index_list,temp_list)
       mct_field = mct_string_toChar(mctOStr)
       tagname= trim(mct_field)//C_NULL_CHAR
-      call moab_set_tag(tagname, a2x, index_list, datam, lsize) ! loop over all a2x fields, not just a few
+      call moab_set_tag_from_av(tagname, a2x, index_list, mphaid, datam, lsize) ! loop over all a2x fields, not just a few
     enddo
     call mct_list_clean(temp_list)
     deallocate(datam) ! maybe we should keep it around, deallocate at the final only?

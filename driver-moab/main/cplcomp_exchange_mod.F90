@@ -28,6 +28,7 @@ module cplcomp_exchange_mod
   use seq_comm_mct, only : mphaid !            iMOAB app id for phys atm; comp atm is 5, phys 5+200
   use seq_comm_mct, only : MPSIID, mbixid  !  sea-ice on comp pes and on coupler pes
   use seq_comm_mct, only : mrofid, mbrxid  ! iMOAB id of moab rof app on comp pes and on coupler too
+  use seq_comm_mct, only : mbrof_data ! if data rof
   use shr_mpi_mod,  only: shr_mpi_max
   ! use dimensions_mod, only : np     ! for atmosphere
   use iso_c_binding
@@ -1213,7 +1214,7 @@ contains
                outfile = 'recMeshAtm.h5m'//C_NULL_CHAR
             endif
             wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR
-      !      write out the mesh file to disk
+      !      write out the mesh file to diskocn_domain
             ierr = iMOAB_WriteMesh(mbaxid, trim(outfile), trim(wopts))
             if (ierr .ne. 0) then
                write(logunit,*) subname,' error in writing mesh '
@@ -1622,21 +1623,43 @@ contains
          call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
          call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
 
+         call seq_infodata_GetData(infodata,rof_mesh=rtm_mesh)
+        
+         if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (rof)
+            comp%mbApCCid = mrofid ! rof comp app in moab 
+            if ( trim(rtm_mesh) == 'none' ) then  ! mbrof_data is .true. also
+               !  send mesh to coupler
+               ierr = iMOAB_SendMesh(mrofid, mpicom_join, mpigrp_cplid, id_join, partMethod)
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in sending rof mesh to coupler '
+                  call shr_sys_abort(subname//' ERROR in sending rof mesh to coupler ')
+               endif
+            endif
+         endif
          if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
             appname = "COUPLE_MROF"//C_NULL_CHAR
             ierr = iMOAB_RegisterApplication(trim(appname), mpicom_new, id_join, mbrxid)
 
+            if ( trim(rtm_mesh) == 'none' ) then
+               mbrof_data = .true. ! turn it on the coupler pes too; 
+               ierr = iMOAB_ReceiveMesh(mbrxid, mpicom_join, mpigrp_old, id_old)
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in receiving mesh on rof coupler '
+                  call shr_sys_abort(subname//' ERROR in receiving mesh on rof coupler ')
+               endif
+            else
             ! load mesh from scrip file passed from river model
-            call seq_infodata_GetData(infodata,rof_mesh=rtm_mesh)
-            outfile = trim(rtm_mesh)//C_NULL_CHAR
-            ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=RCBZOLTAN'//C_NULL_CHAR
-         
-            nghlay = 0 ! no ghost layers 
-            ierr = iMOAB_LoadMesh(mbrxid, outfile, ropts, nghlay)
-            if ( ierr .ne. 0  ) then
-               call shr_sys_abort( subname//' ERROR: cannot read rof mesh on coupler' )
-            end if
-             ! need to add global id tag to the app, it will be used in restart
+               outfile = trim(rtm_mesh)//C_NULL_CHAR
+               ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=RCBZOLTAN'//C_NULL_CHAR
+            
+               nghlay = 0 ! no ghost layers 
+               ierr = iMOAB_LoadMesh(mbrxid, outfile, ropts, nghlay)
+               if ( ierr .ne. 0  ) then
+                  call shr_sys_abort( subname//' ERROR: cannot read rof mesh on coupler' )
+               end if
+               
+            endif
+            ! need to add global id tag to the app, it will be used in restart
             tagtype = 0  ! dense, integer
             numco = 1
             tagname='GLOBAL_ID'//C_NULL_CHAR
@@ -1645,7 +1668,6 @@ contains
                write(logunit,*) subname,' error in adding global id tag to rof'
                call shr_sys_abort(subname//' ERROR in adding global id tag to rof ')
             endif
-            
 #ifdef MOABDEBUG
    !      debug test
             outfile = 'recRof.h5m'//C_NULL_CHAR
@@ -1685,14 +1707,16 @@ contains
             comp%mbGridType = 0 ! 0 or 1, pc or cells 
             comp%mblsize = nvert(1) ! vertices
          endif
-         ! we are now on joint pes, compute comm graph between rof and coupler model 
-         typeA = 2 ! point cloud on component PEs
-         typeB = 3 ! full mesh on coupler pes, we just read it
-         ierr = iMOAB_ComputeCommGraph( mrofid, mbrxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
-             typeA, typeB, id_old, id_join) 
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in computing comm graph for rof model '
-            call shr_sys_abort(subname//' ERROR in computing comm graph for rof model ')
+         if ( trim(rtm_mesh) /= 'none' ) then ! we are in full mesh case
+            ! we are now on joint pes, compute comm graph between rof and coupler model 
+            typeA = 2 ! point cloud on component PEs
+            typeB = 3 ! full mesh on coupler pes, we just read it
+            ierr = iMOAB_ComputeCommGraph( mrofid, mbrxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
+               typeA, typeB, id_old, id_join) 
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in computing comm graph for rof model '
+               call shr_sys_abort(subname//' ERROR in computing comm graph for rof model ')
+            endif
          endif
 
          ! if (mrofid .ge. 0) then  ! we are on component rof  pes
