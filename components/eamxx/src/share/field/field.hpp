@@ -136,6 +136,10 @@ public:
   get_strided_view_type<DT,HD>
   get_strided_view () const;
 
+  template<typename DT, HostOrDevice HD = Device>
+  Kokkos::View<Real****, Kokkos::LayoutStride>
+  get_strided_view (bool special) const;
+
   // These two getters are convenience function for commonly accessed metadata.
   // The same info can be extracted from the metadata stored in the FieldHeader
   DataType data_type () const { return get_header().get_identifier().data_type(); }
@@ -327,7 +331,7 @@ protected:
   auto get_ND_view () const
     -> if_t<(N<MaxRank), get_view_type<data_nd_t<T,N>,HD>>;
 
-  // Metadata (name, rank, dims, customere/providers, time stamp, ...)
+  // Metadata (name, rank, dims, customer/providers, time stamp, ...)
   std::shared_ptr<header_type>            m_header;
 
   // Actual data.

@@ -308,6 +308,55 @@ TEST_CASE("field", "") {
     REQUIRE (f3.is_read_only());
   }
 
+  // Subfields (multi-sliced)
+  SECTION ("subfield--multi-slice") {
+    std::vector<FieldTag> t1 = {COL,CMP,CMP,LEV};
+    std::vector<int> d1 = {5,10,2,24};
+
+    FieldIdentifier fid1("4d",{t1,d1},m/s,"some_grid");
+
+    Field f1(fid1);
+    f1.allocate_view();
+    randomize(f1,engine,pdf);
+
+    const int idim = 0;
+    const int ivar = 2;
+    const int sl_beg = 2;
+    const int sl_end = 4;
+
+    auto f3 = f1.subfield(idim, sl_beg, sl_end);
+
+    // const auto fl3 = f3.get_header().get_identifier().get_layout();
+    // const auto alprop3 = f3.get_header().get_alloc_properties();
+    // std::cout << "fl3.rank() = " << fl3.rank() << "\n";
+    // auto f3dim = fl3.dims();
+    // for (size_t i = 0; i < 4; i++)
+    // {
+    //   std::cout << "f3dim(i) = " << f3dim[i] << "\n";
+    // }
+    // auto f3ext = fl3.extents();
+    // for (size_t i = 0; i < 4; i++)
+    // {
+    //   std::cout << "f3ext(i) = " << f3ext(i) << "\n";
+    // }
+    // std::cout << "alprop3.is_subfield() = " << alprop3.is_subfield() << "\n";
+
+    auto v3_h = f3.get_strided_view<Real****, Host>(true);
+    auto v4d_h = f1.get_view<Real****, Host>();
+
+    for (size_t i = sl_beg; i < sl_end; i++) {
+      for (size_t j = 0; j < d1[1]; j++) {
+        for (size_t k = 0; k < d1[2]; k++) {
+          for (size_t l = 0; l < d1[3]; l++) {
+            // std::cout << "v4d_h(i, j, k, l) = " << v4d_h(i, j, k, l) << "\n";
+            // std::cout << "v3_h(i - sl_beg, j, k, l) = " << v3_h(i - sl_beg, j, k, l) << "\n";
+            REQUIRE(v4d_h(i, j, k, l) == v3_h(i - sl_beg, j, k, l));
+          }
+        }
+      }
+    }
+  }
+
   // Dynamic Subfields
   SECTION ("dynamic_subfield") {
     const int vec_dim = 10;

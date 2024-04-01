@@ -40,7 +40,7 @@ Field (const identifier_type& id,
         " - field name: " + id.name() + "\n"
         " - idim: " + std::to_string(i) + "\n"
         " - layout i-th dim: " + std::to_string(fl.dims()[i]) + "\n"
-        " - view i-th dim: " + std::to_string(view_d.extent(i)) + "\n"); 
+        " - view i-th dim: " + std::to_string(view_d.extent(i)) + "\n");
   }
 
   auto& alloc_prop = m_header->get_alloc_properties();
@@ -49,7 +49,7 @@ Field (const identifier_type& id,
         "Error! Input view has the wrong last extent.\n"
         " - field name: " + id.name() + "\n"
         " - layout last dim: " + std::to_string(fl.dims()[N-1]) + "\n"
-        " - view last dim: " + std::to_string(view_d.extent(N-1)) + "\n"); 
+        " - view last dim: " + std::to_string(view_d.extent(N-1)) + "\n");
 
     // We have a padded view. We don't know what the pack size was, so we pick the largest
     // power of 2 that divides the last extent
@@ -73,8 +73,6 @@ Field (const identifier_type& id,
   // Create an unmanaged dev view, and its host mirror
   const auto view_dim = alloc_prop.get_alloc_size();
   char* data = reinterpret_cast<char*>(view_d.data());
-  std::cout << "fl: " << fl.to_string() << "\n"
-            << "view dim: " << view_dim << "\n";
   m_data.d_view = decltype(m_data.d_view)(data,view_dim);
   m_data.h_view = Kokkos::create_mirror_view(m_data.d_view);
 
@@ -101,6 +99,10 @@ auto Field::get_view () const
   // Make sure input field is allocated
   EKAT_REQUIRE_MSG(is_allocated(),
       "Error! Cannot extract a field's view before allocation happens.\n");
+  // FIXME: add check
+  // EKAT_REQUIRE_MSG(true /*is_multiSlice_subview()*/,
+  //                  "Error! Multi-sliced subfield is incompatible--must employ "
+  //                  "get_strided_view().\n")
 
   EKAT_REQUIRE_MSG (not m_is_read_only || std::is_const<DstValueType>::value,
       "Error! Cannot get a view to non-const data if the field is read-only.\n");
@@ -203,6 +205,83 @@ auto Field::get_strided_view () const
 
   // Not a subfield, so stride=1, and we can create the strided view from the LayoutRight 1d view.
   return DstView(get_ND_view<HD,DstValueType,1>());
+}
+
+template<typename DT, HostOrDevice HD>
+Kokkos::View<Real****, Kokkos::LayoutStride> Field::get_strided_view (bool special) const
+{
+  // The destination view type on correct mem space
+  using DstView = get_strided_view_type<DT,HD>;
+  // The dst value types
+  using DstValueType = typename DstView::traits::value_type;
+  // We only allow to reshape to a view of the correct rank
+  constexpr int DstRank = DstView::rank;
+  constexpr int DstRankDynamic = DstView::rank_dynamic;
+
+  // Get src details
+  const auto& alloc_prop = m_header->get_alloc_properties();
+  const auto& fl = m_header->get_identifier().get_layout();
+
+  // Checks
+  // EKAT_REQUIRE_MSG (DstRank==1 && fl.rank()==1,
+  //     "Error! Strided view only available for rank-1 fields.\n");
+  // EKAT_REQUIRE_MSG (DstRankDynamic==1,
+  //     "Error! Strided view not allowed with compile-time dimensions.\n");
+  EKAT_REQUIRE_MSG(is_allocated(),
+      "Error! Cannot extract a field's view before allocation happens.\n");
+  EKAT_REQUIRE_MSG (not m_is_read_only || std::is_const<DstValueType>::value,
+      "Error! Cannot get a view to non-const data if the field is read-only.\n");
+  EKAT_REQUIRE_MSG(alloc_prop.template is_compatible<DstValueType>(),
+      "Error! Source field allocation is not compatible with the requested value type.\n");
+
+  // Check if this field is a subview of another field
+  const auto parent = m_header->get_parent().lock();
+  if (parent!=nullptr) {
+    // Parent field has correct layout to reinterpret the view into N+1-dim view
+    // So create the parent field on the fly, use it to get the N+1-dim view, then subview it.
+    // NOTE: we can set protected members, since f is the same type of this class.
+    Field f;
+    f.m_header = parent;
+    f.m_data   = m_data;
+
+  //   // Take 2 dimensional view with normal LayoutRight
+  //   auto v_np1 = f.get_ND_view<HD,DstValueType,2>();
+      // const auto vfs_rank = f.get_header().get_identifier().get_layout().rank();
+      auto v_fullsize = f.get_ND_view<HD, DstValueType, 4>();
+
+    // Now we can subview v_np1 at the correct slice
+    const auto& info = m_header->get_alloc_properties().get_subview_info();
+    const int idim = info.dim_idx;
+    const int k    = info.slice_idx;
+    const int k_end = info.slice_idx_end;
+
+  //   // So far we can only subview at first or second dimension.
+  //   EKAT_REQUIRE_MSG (idim==0 || idim==1,
+  //       "Error! Subview dimension index is out of bounds.\n");
+
+    // Use correct subview utility
+    if (idim==0) {
+      // FIXME: what's a better way to do this? can't use v_fullsize after the
+      // logic block b/c of scoping, and it's also not easy to know what type of
+      // exotic
+      // we know it's a subview, so if it has the same rank as its parent, then
+      // we know that it's a multi-slice subview
+      if (fl.rank() == f.get_header().get_identifier().get_layout().rank()) {
+        auto svs = ekat::subview(v_fullsize, Kokkos::make_pair<int, int>(k, k_end), idim);
+        // for (size_t i = 0; i < 4; i++)
+        // {
+        //   std::cout << "i = " << i << "\n";
+        //   std::cout << "svs.stride(i) = " << svs.stride(i) << "\n";
+        //   std::cout << "svs.extent(i) = " << svs.extent(i) << "\n";
+        // }
+        return svs;
+      } else {
+        // return DstView(ekat::subview(v_np1,k));
+      }
+    } else {
+      // return DstView(ekat::subview_1(v_np1,k));
+    }
+  }
 }
 
 template<HostOrDevice HD>
@@ -764,6 +843,7 @@ auto Field::get_ND_view () const ->
   return ret_type (ptr,kl);
 }
 
+// TODO: will need to set this up for multi-sliced subfield
 template<HostOrDevice HD,typename T,int N>
 auto Field::get_ND_view () const ->
   if_t<N==MaxRank,get_view_type<data_nd_t<T,N>,HD>>
@@ -773,6 +853,7 @@ auto Field::get_ND_view () const ->
       "Error! Input Rank must either be 1 (flat array) or the actual field rank.\n");
 
   // Given that N==MaxRank, this field cannot be a subview of another field
+  // NOTE: this will not be true for multi-slice
   EKAT_REQUIRE_MSG (m_header->get_parent().expired(),
       "Error! A view of rank " + std::to_string(MaxRank) + " should not be the subview of another field.\n");
 

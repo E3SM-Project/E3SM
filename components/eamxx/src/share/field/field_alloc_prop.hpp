@@ -69,14 +69,15 @@ struct SubviewInfo {
   // multi-slice subview across contiguous indices
   SubviewInfo(const int dim, const int slice_beg, const int slice_end,
               const int extent, const bool is_dynamic)
-      : dim_idx(dim), slice_idx_beg(slice_beg), slice_idx_end(slice_end),
+      : dim_idx(dim), slice_idx(slice_beg), slice_idx_end(slice_end),
         dim_extent(extent), dynamic(is_dynamic) {}
   SubviewInfo(const SubviewInfo&) = default;
   SubviewInfo& operator=(const SubviewInfo&) = default;
 
-  // TODO: is it better to do it this way, or to create an alternative struct?
   int dim_idx = -1;    // Dimension along which slicing happened
-  // Slice along dimension $dim_idx (uninitialized if multi-slice subview)
+  // Slice along dimension $dim_idx if taking single-index slice for subfield
+  // If taking multi-slice subfield, then this is the starting slice index
+  // e.g., slicing (:, slice_idx_end : slice_idx_end, :)
   int slice_idx = -1;
   // beginning slice index for multi-slice (remains == -1 if single-slice subview)
   int slice_idx_beg = -1;
@@ -90,6 +91,7 @@ struct SubviewInfo {
 inline bool operator== (const SubviewInfo& lhs, const SubviewInfo& rhs) {
   return lhs.dim_idx==rhs.dim_idx &&
          lhs.slice_idx==rhs.slice_idx &&
+        //  FIXME: change for multi-slice (throw error to check?)
          lhs.dim_extent==rhs.dim_extent &&
          lhs.dynamic==rhs.dynamic;
 }
