@@ -13,3 +13,7 @@ that this file will require a custom update for every fates parameter file API u
 Allowing the HLM to generate the file at runtime via buildnamelist step
 will provide the capability to build the fates parameter file on 
 the fly which with the appropriate values for this test.
+
+Note that the test as currently designed is not machine agnostic as it requires
+specific shell commands for enabling the workflow to have access to ncgen.  Currently
+this test is only usable on perlmutter.

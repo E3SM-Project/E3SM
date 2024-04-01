@@ -4,7 +4,7 @@ spack load nco
 
 SRCDIR=`./xmlquery SRCROOT --value`
 CASEDIR=`./xmlquery CASEROOT --value`
-FATESDIR=$SRCDIR/src/fates
+FATESDIR=$SRCDIR/components/elm/src/external_models/fates
 FATESPARAMFILE=$CASEDIR/fates_params_twostream.nc
 
 ncgen -o $FATESPARAMFILE $FATESDIR/parameter_files/fates_params_default.cdl
