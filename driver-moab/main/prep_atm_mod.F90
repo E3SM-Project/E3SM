@@ -646,7 +646,8 @@ contains
             'mapper_Fi2a initialization',esmf_map_flag, no_match)
 
 #ifdef HAVE_MOAB
-           ! now take care of the mapper for MOAB
+         ! now take care of the mapper for MOAB, only if ice is coupled to atm !
+         if (ice_c2_atm) then
             if ( mapper_Fi2a%src_mbid .gt. -1 ) then
                 if (iamroot_CPLID) then
                      write(logunit,F00) 'overwriting '//trim(mapper_Fi2a%mbname) &
@@ -662,6 +663,7 @@ contains
             wgtIdef = 'scalar'//C_NULL_CHAR
             mapper_Fi2a%weight_identifier = wgtIdef
             mapper_Fi2a%mbname = 'mapper_Fi2a'
+         endif
 #endif
       endif !  if (ice_present) then
       call shr_sys_flush(logunit)
