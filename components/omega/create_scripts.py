@@ -355,7 +355,7 @@ class OmegaMachines(Machines):
                 f.write(f"export {key}=\"{value}\"\n")
 
             if "OMP_NUM_THREADS" not in self.__OMEGA_SCRIPT_EXPORTS__:
-                f.write(f"export OMP_NUM_THREADS=\"1\"\n")
+                f.write("export OMP_NUM_THREADS=\"1\"\n")
 
         with open(omega_build, "w") as f:
             f.write("#!/usr/bin/env bash\n\n")
