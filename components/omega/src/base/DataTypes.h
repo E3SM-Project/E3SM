@@ -30,7 +30,7 @@ using R8 = double;       ///< alias for 64-bit (double prec) real
 #ifdef SINGLE_PRECISION
 using Real = float;
 #else
-using Real     = double;
+using Real = double;
 #endif
 
 // user-defined literal for generic reals
