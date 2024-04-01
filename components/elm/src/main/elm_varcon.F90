@@ -131,7 +131,7 @@ module elm_varcon
   real(r8) :: ac_wasteheat_factor = 0.0_r8  !wasteheat factor for urban air conditioning (-)
   real(r8) :: wasteheat_limit = 100._r8  !limit on wasteheat (W/m2)
 
-  real(r8) :: h2osno_max = 30000._r8      ! max allowed snow thickness (mm H2O)
+  real(r8) :: h2osno_max = 1000._r8      ! max allowed snow thickness (mm H2O)
   real(r8), parameter :: lapse_glcmec = 0.006_r8  ! surface temperature lapse rate (deg m-1)
                                                   ! Pritchard et al. (GRL, 35, 2008) use 0.006  
   real(r8), parameter :: glcmec_rain_snow_threshold = SHR_CONST_TKFRZ  ! temperature dividing rain & snow in downscaling (K)
@@ -249,7 +249,7 @@ contains
     allocate( dzsoifl(1:nlevsoifl            ))
 
     if (use_extrasnowlayers) then
-       h2osno_max = 10000._r8
+       h2osno_max = 30000._r8
     end if
 
   end subroutine elm_varcon_init
