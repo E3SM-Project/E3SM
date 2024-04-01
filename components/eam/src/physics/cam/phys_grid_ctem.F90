@@ -1,6 +1,22 @@
 !----------------------------------------------------------------------------------
 ! circulation diagnostics -- terms of the Transformed Eulerian Mean (TEM) equation
 !
+! This module makes use of the zonal_mean_mod methods to produce terms needed 
+! for the TEM budget from the physics grid state. Without this online 
+! calculation of terms, high-frequency 3D history output would be required to 
+! calculate the terms offline. The resulting zonal mean quantities and eddy
+! covariance terms take up much less disk space and can be output monthly
+! 
+! History output variables:
+!   Uzm      Zonal-Mean zonal wind
+!   Vzm      Zonal-Mean meridional wind
+!   Wzm      Zonal-Mean vertical wind
+!   THzm     Zonal-Mean potential temp
+!   VTHzm    Meridional Heat Flux
+!   WTHzm    Vertical Heat Flux
+!   UVzm     Meridional Flux of Zonal Momentum
+!   UWzm     Vertical Flux of Zonal Momentum
+!   THphys   Potential temp
 !----------------------------------------------------------------------------------
 module phys_grid_ctem
 use shr_kind_mod,  only: r8 => shr_kind_r8
