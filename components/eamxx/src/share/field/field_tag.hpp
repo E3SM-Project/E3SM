@@ -4,6 +4,7 @@
 #include "ekat/ekat_assert.hpp"
 
 #include <string>
+#include <vector>
 
 namespace scream
 {
