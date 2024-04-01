@@ -2959,7 +2959,7 @@
     <DESC>ANL Sunspot Test and Development System (TDS), batch system is pbspro</DESC>
     <NODENAME_REGEX>uan-.*</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>oneapi-ifx,oneapi-ifxgpu,oneapi-ifxgpu-2ccs,oneapi-ifxgpu-4ccs,gnu</COMPILERS>
+    <COMPILERS>oneapi-ifx,oneapi-ifxgpu,oneapi-ifxgpu-2ccs,oneapi-ifxgpu-4ccs,oneapi-ifxgpu-4ccs-cal,gnu</COMPILERS>
     <MPILIBS>mpich,impi,openmpi</MPILIBS>
     <CHARGE_ACCOUNT>CSC249ADSE15_CNDA</CHARGE_ACCOUNT>
     <SAVE_TIMING_DIR>/gila/CSC249ADSE15_CNDA/performance_archive</SAVE_TIMING_DIR>
@@ -2980,14 +2980,16 @@
     <MAX_TASKS_PER_NODE compiler="oneapi-ifxgpu">104</MAX_TASKS_PER_NODE>
     <MAX_TASKS_PER_NODE compiler="oneapi-ifxgpu-2ccs">104</MAX_TASKS_PER_NODE>
     <MAX_TASKS_PER_NODE compiler="oneapi-ifxgpu-4ccs">104</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="oneapi-ifxgpu-4ccs-cal">104</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>104</MAX_MPITASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE compiler="oneapi-ifx">104</MAX_MPITASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE compiler="oneapi-ifxgpu">12</MAX_MPITASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE compiler="oneapi-ifxgpu-2ccs">24</MAX_MPITASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE compiler="oneapi-ifxgpu-4ccs">48</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="oneapi-ifxgpu-4ccs-cal">96</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
-       <executable>mpiexec</executable>
+       <executable>$ENV{CALRUN} mpiexec</executable>
        <!--executable>numactl -m 2-3 mpiexec</executable--><!--for HBM runs-->
        <arguments>
           <arg name="total_num_tasks">-np {{ total_tasks }} --label</arg>
@@ -3013,17 +3015,27 @@
        <cmd_path lang="python">/soft/packaging/lmod/lmod/libexec/lmod python</cmd_path>
        <modules>
           <command name="purge"></command>
-          <command name="use">/soft/modulefiles</command>
-          <command name="load">spack cmake/3.26.3-gcc-11.2.0-vnn7ncx</command>
-          <command name="load">prepend-deps/default</command>
+          <command name="use">/opt/aurora/23.275.2/spack/gcc/0.6.1/install/modulefiles/Core</command>
+          <command name="use">/opt/aurora/23.275.2/modulefiles</command>
+	  <command name="load">cray-pals</command>
+          <command name="load">libfabric</command>
+          <command name="load">cray-libpals</command>
+	  <command name="load">cmake</command>
         </modules>
         <modules compiler="!gnu">
           <command name="unload">gcc</command>
-          <command name="load">oneapi/eng-compiler/2023.10.15.002</command>
-          <command name="load">tools/xpu-smi/1.2.1</command>
+          <!--command name="load">oneapi/eng-compiler/.2023.12.15.002</command-->
+          <!--command name="load">oneapi/eng-compiler/2023.10.15.002</command-->
+          <command name="load">oneapi/eng-compiler/2023.12.15.002</command>
+          <!--command name="load">intel_compute_runtime/release/775.20</command-->
+	  <command name="load">xpu-smi</command>
+	  <command name="use">/lus/gila/projects/CSC249ADSE15_CNDA/omarahmed/modules</command>
+	  <command name="load">cal</command>
+	  <!--command name="load">intel_compute_runtime/release/agama-devel-736.25</command-->
+	  <!--command name="load">intel_compute_runtime/release/agama-devel-775.20</command-->
         </modules>
         <modules compiler="gnu">
-           <command name="unload">spack cmake</command>
+           <command name="unload">cmake</command>
            <command name="load">gcc/10.3.0</command>
         </modules>
      </module_system>
@@ -3057,8 +3069,10 @@
         <env name="FI_CXI_DEFAULT_CQ_SIZE">131072</env>
 	<env name="FI_CXI_CQ_FILL_PERCENT">20</env>
 	<env name="ZES_ENABLE_SYSMAN">1</env>
-	<env name="ZEX_NUMBER_OF_CCS">0.0:1,0.1:1,1.0:1,1.1:1,2.0:1,2.1:1,3.0:1,3.1:1,4.0:1,4.1:1,5.0:1,5.1:1</env>
-    </environment_variables>
+	<!--env name="ZEX_NUMBER_OF_CCS">0.0:1,0.1:1,1.0:1,1.1:1,2.0:1,2.1:1,3.0:1,3.1:1,4.0:1,4.1:1,5.0:1,5.1:1</env-->
+        <env name="CALRUN"> </env>
+        <env name="ZE_FLAT_DEVICE_HIERARCHY">COMPOSITE</env>
+     </environment_variables>
      <environment_variables compiler="oneapi-ifxgpu-2ccs">
         <env name="ONEAPI_DEVICE_SELECTOR">level_zero:gpu</env>
         <env name="ONEAPI_MPICH_GPU">NO_GPU</env>
@@ -3072,7 +3086,9 @@
         <env name="FI_CXI_DEFAULT_CQ_SIZE">131072</env>
         <env name="FI_CXI_CQ_FILL_PERCENT">20</env>
         <env name="ZES_ENABLE_SYSMAN">1</env>
-        <env name="ZEX_NUMBER_OF_CCS">0.0:2,0.1:2,1.0:2,1.1:2,2.0:2,2.1:2,3.0:2,3.1:2,4.0:2,4.1:2,5.0:2,5,1:2</env>
+	<env name="ZEX_NUMBER_OF_CCS">0.0:2,0.1:2,1.0:2,1.1:2,2.0:2,2.1:2,3.0:2,3.1:2,4.0:2,4.1:2,5.0:2,5,1:2</env>
+	<env name="CALRUN"> </env>
+	<env name="ZE_FLAT_DEVICE_HIERARCHY">COMPOSITE</env>
     </environment_variables>
      <environment_variables compiler="oneapi-ifxgpu-4ccs">
         <env name="ONEAPI_DEVICE_SELECTOR">level_zero:gpu</env>
@@ -3087,7 +3103,26 @@
         <env name="FI_CXI_DEFAULT_CQ_SIZE">131072</env>
         <env name="FI_CXI_CQ_FILL_PERCENT">20</env>
         <env name="ZES_ENABLE_SYSMAN">1</env>
+	<env name="ZEX_NUMBER_OF_CCS">0.0:4,0.1:4,1.0:4,1.1:4,2.0:4,2.1:4,3.0:4,3.1:4,4.0:4,4.1:4,5.0:4,5.1:4</env>
+	<env name="CALRUN"> </env>
+	<env name="ZE_FLAT_DEVICE_HIERARCHY">COMPOSITE</env>
+    </environment_variables>
+    <environment_variables compiler="oneapi-ifxgpu-4ccs-cal">
+        <env name="ONEAPI_DEVICE_SELECTOR">level_zero:gpu</env>
+        <env name="ONEAPI_MPICH_GPU">NO_GPU</env>
+        <env name="MPIR_CVAR_ENABLE_GPU">0</env>
+        <env name="romio_cb_read">disable</env>
+        <env name="romio_cb_write">disable</env>
+        <env name="SYCL_CACHE_PERSISTENT">1</env>
+        <env name="GATOR_INITIAL_MB">4000MB</env>
+        <env name="GATOR_DISABLE">0</env>
+        <env name="GPU_TILE_COMPACT">/lus/gila/projects/CSC249ADSE15_CNDA/omarahmed/tools/ccs/gpu_tile_compact_4ccs_cal.sh</env>
+        <env name="FI_CXI_DEFAULT_CQ_SIZE">131072</env>
+        <env name="FI_CXI_CQ_FILL_PERCENT">20</env>
+        <env name="ZES_ENABLE_SYSMAN">1</env>
         <env name="ZEX_NUMBER_OF_CCS">0.0:4,0.1:4,1.0:4,1.1:4,2.0:4,2.1:4,3.0:4,3.1:4,4.0:4,4.1:4,5.0:4,5.1:4</env>
+	<env name="CALRUN">calrun</env>
+	<env name="ZE_FLAT_DEVICE_HIERARCHY">COMPOSITE</env>
     </environment_variables>
     <environment_variables compiler="oneapi-ifx">
         <env name="LIBOMPTARGET_DEBUG">0</env><!--default 0, max 5 -->
