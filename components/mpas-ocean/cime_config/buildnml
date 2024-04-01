@@ -275,8 +275,8 @@ def buildnml(case, caseroot, compname):
         ic_date = '220608'
         ic_prefix = 'ocean.Kuroshio8to60E2r4'
         if ocn_ic_mode == 'spunup':
-            ic_date = '220608'
-            ic_prefix = 'mpaso.Kuroshio8to60E2r4.rstFromG-anvil'
+            ic_date = '240328'
+            ic_prefix = 'mpaso.Kuroshio8to60E2r4.rstFromG-pm'
 
 
     #--------------------------------------------------------------------

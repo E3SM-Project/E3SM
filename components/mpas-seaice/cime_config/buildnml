@@ -251,8 +251,8 @@ def buildnml(case, caseroot, compname):
         grid_date = '220608'
         grid_prefix = 'seaice.Kuroshio8to60E2r4'
         if ice_ic_mode == 'spunup':
-            grid_date = '220608'
-            grid_prefix = 'mpassi.Kuroshio8to60E2r4.rstFromG-anvil'
+            grid_date = '240328'
+            grid_prefix = 'mpassi.Kuroshio8to60E2r4.rstFromG-pm'
 
 
     #--------------------------------------------------------------------
