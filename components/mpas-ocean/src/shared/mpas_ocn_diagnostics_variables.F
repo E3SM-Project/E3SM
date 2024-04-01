@@ -74,8 +74,8 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:), pointer :: pressureAdjustedSSH
    real (kind=RKIND), dimension(:), pointer :: pgf_sal
    real (kind=RKIND), dimension(:), pointer :: temp_twd
-   real (kind=RKIND), dimension(:), pointer :: normalCoeff 
-   real (kind=RKIND), dimension(:), pointer :: tangentialCoeff 
+   real (kind=RKIND), dimension(:), pointer :: normalCoeffTWD 
+   real (kind=RKIND), dimension(:), pointer :: tangentialCoeffTWD 
    real (kind=RKIND), dimension(:), pointer :: topographicWaveDrag 
 
    real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceValue
@@ -415,11 +415,11 @@ contains
                   'temp_twd', &
                    temp_twd)
          call mpas_pool_get_array(diagnosticsPool, &
-                  'normalCoeff', &
-                   normalCoeff)
+                  'normalCoeffTWD', &
+                   normalCoeffTWD)
          call mpas_pool_get_array(diagnosticsPool, &
-                  'tangentialCoeff', &
-                   tangentialCoeff)
+                  'tangentialCoeffTWD', &
+                   tangentialCoeffTWD)
       end if
       if (config_use_topographic_wave_drag) then
          call mpas_pool_get_array(diagnosticsPool, &
@@ -743,8 +743,8 @@ contains
          !$acc enter data create(lonGradEdge)
          !$acc enter data create(latGradEdge)
          !$acc enter data create(temp_twd)
-         !$acc enter data create(normalCoeff)
-         !$acc enter data create(tangentialCoeff)
+         !$acc enter data create(normalCoeffTWD)
+         !$acc enter data create(tangentialCoeffTWD)
          !$acc enter data create(topographicWaveDrag)
       end if
       if (config_use_self_attraction_loading) then
@@ -994,8 +994,8 @@ contains
       if (config_use_topographic_wave_drag) then
          !$acc exit data delete(topographic_wave_drag)
          !$acc exit data delete(temp_twd)
-         !$acc exit data delete(normalCoeff)
-         !$acc exit data delete(tangentialCoeff)
+         !$acc exit data delete(normalCoeffTWD)
+         !$acc exit data delete(tangentialCoeffTWD)
          !$acc exit data delete(topographicWaveDrag)
       end if
       if (config_use_self_attraction_loading) then
@@ -1340,8 +1340,8 @@ contains
       end if
       if ( config_use_topographic_wave_drag) then
          nullify(temp_twd)
-         nullify(normalCoeff)
-         nullify(tangentialCoeff)
+         nullify(normalCoeffTWD)
+         nullify(tangentialCoeffTWD)
          nullify(topographicWaveDrag)
       end if
       if ( trim(config_time_integrator) == 'split_implicit' ) then

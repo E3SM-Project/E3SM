@@ -10,7 +10,7 @@
 !  ocn_vel_forcing_topographic_wave_drag
 !
 !> \brief MPAS ocean topographic wave drag
-!> \author Nairita Pal
+!> \author Nairita Pal, Kristin Barton
 !> \date   Oct 2020
 !> \details
 !>  This module contains the routine for computing
@@ -68,7 +68,7 @@ contains
 !  routine ocn_vel_forcing_topographic_wave_drag_tend
 !
 !> \brief   Computes tendency term from topographic wave drag
-!> \author  Nairita Pal
+!> \author  Nairita Pal, Kristin Barton
 !> \date    15 Oct 2020
 !> \details
 !>  This routine computes the topographic wave drag tendency for momentum
@@ -127,13 +127,9 @@ contains
           !$omp do schedule(runtime) private(k)
           do iEdge = 1, nEdgesOwned
             k =  maxLevelEdgeTop(iEdge)
-            ! topographic wave drag term:
-            ! du/dt = ... 1/rinv * u
-            ! rinv is the e-folding time use in HyCOM. Here
-            ! topographic_wave_drag = 1/rinv
             if (k>0) then
               temp_twd(iEdge) = topographicWaveDrag(iEdge) * normalVelocity(k,iEdge)
-              tend(k,iEdge) = tend(k,iEdge) - topographicWaveDrag(iEdge) * normalVelocity(k,iEdge)
+              tend(k,iEdge) = tend(k,iEdge) - temp_twd(iEdge)
             endif
           enddo
           !$omp end do
@@ -142,9 +138,8 @@ contains
           do iEdge = 1, nEdgesOwned
             k =  maxLevelEdgeTop(iEdge)
             if (k>0) then
-              temp_twd(iEdge) = topographicWaveDrag(iEdge) * (normalVelocity(k,iEdge) * normalCoeff(iEdge) + tangentialVelocity(k,iEdge) * tangentialCoeff(iEdge))
-              tend(k,iEdge) = tend(k,iEdge) - topographicWaveDrag(iEdge) &
-                 * (normalVelocity(k,iEdge) * normalCoeff(iEdge) + tangentialVelocity(k,iEdge) * tangentialCoeff(iEdge))
+              temp_twd(iEdge) = topographicWaveDrag(iEdge) * (normalVelocity(k,iEdge) * normalCoeffTWD(iEdge) + tangentialVelocity(k,iEdge) * tangentialCoeffTWD(iEdge))
+              tend(k,iEdge) = tend(k,iEdge) - temp_twd(iEdge)
             endif
           enddo
           !$omp end do
@@ -161,7 +156,7 @@ contains
 !  routine ocn_vel_forcing_topographic_wave_drag_init
 !
 !> \brief   Initializes ocean topographic wave drag forcing
-!> \author  Nairita Pal
+!> \author  Nairita Pal, Kristin Barton
 !> \date    Oct 2020
 !> \details
 !>  This routine initializes quantities related to topographic wave  drag
@@ -183,9 +178,11 @@ contains
 
       real (kind=RKIND) :: topoDragCutoffDepth, topoDragCutoffWidth
       real (kind=RKIND) :: omegaM2 = 1.405189e-4_RKIND
+      real (kind=RKIND) :: kappa
+      real (kind=RKIND) :: N0, L, Nb, Nbar, gam
       real (kind=RKIND) :: topoDragTurnOff
 
-      integer :: iEdge, k, kmin, kmax
+      integer :: iEdge, k, kmax
 
       err = 0
 
@@ -202,14 +199,17 @@ contains
               call mpas_log_write(" Topographic wave drag scheme is: Jayne and St. Laurent")
               call mpas_log_write("")
               tensorScheme = .false.
+              kappa = pii/10000.0_RKIND
 
               do iEdge = 1, nEdgesAll
                   kmax =  maxLevelEdgeTop(iEdge)
                   topographicWaveDrag(iEdge) = 0.0_RKIND
                   if (kmax > 0) then
                       k =  maxLevelEdgeTop(iEdge)
-                      topoDragTurnOff = (TANH((layerThickEdgeMean(k,iEdge)-topoDragCutoffDepth)/topoDragCutoffWidth)+1)/2
-                      topographicWaveDrag(iEdge) = topographicWaveDragCoeff*topoDragTurnOff*pii*(bathy_stddev(iEdge)**2)*topo_buoyancy_N1B(iEdge)/10000.0_RKIND/layerThickEdgeMean(k,iEdge)
+                      topographicWaveDrag(iEdge) = topographicWaveDragCoeff*kappa &
+                                                 * bathy_stddev(iEdge)**2 &
+                                                 * topo_buoyancy_N1B(iEdge) &
+                                                 / layerThickEdgeMean(k,iEdge)
                   endif
               end do
 
@@ -218,29 +218,30 @@ contains
               call mpas_log_write("")
               call mpas_log_write(" Topographic wave drag scheme is: Zaron and Egbert")
               call mpas_log_write("")
-!              topographicWaveDrag = topographicWaveDragCoeff*(bed_slope_edges**2)*topo_buoyancy_N1B*topo_buoyancy_N1V / (8.0_RKIND * 1.405189e-4_RKIND * pii**2)
 
-! Cze = Gamma H grad(H)^2 Nb Nbar / (8 pi^2 omega)
-! Gamma = 50
-! N(z) = N0 exp(z/1300)
-! N0 = 5.24 x 10^-3
-! z = 0 at surface
-! Nb is N(z) evaluated at z = -H
-! Nbar = 1300 N0 (1 - exp(-H/1300))/H
+              ! Cze = Gamma H grad(H)^2 Nb Nbar / (8 pi^2 omega)
+              ! Gamma = 50
+              ! N(z) = N0 exp(z/1300)
+              ! N0 = 5.24 x 10^-3
+              ! z = 0 at surface
+              ! Nb is N(z) evaluated at z = -H
+              ! Nbar = 1300 N0 (1 - exp(-H/1300))/H
+
+              N0 = 5.24e-3_RKIND
+              L = 1300.0_RKIND
+              gam = 50.0_RKIND
               do iEdge = 1, nEdgesAll
                   kmax =  maxLevelEdgeTop(iEdge)
-                  kmin =  minLevelEdgeBot(iEdge)
                   topographicWaveDrag(iEdge) = 0.0_RKIND
                   if (kmax > 0) then
                       k = 1 ! Note: Only works for single layer case
-                      topoDragTurnOff = (TANH((layerThickEdgeMean(k,iEdge)-topoDragCutoffDepth)/topoDragCutoffWidth)+1)/2
-                      topographicWaveDrag(iEdge) = topographicWaveDragCoeff*topoDragTurnOff*50.0_RKIND  * &
-                                (bed_slope_edges(iEdge)**2)                                             * &
-                                (5.24e-3_RKIND*1300.0_RKIND                                             * &
-                                    (1 - exp(-layerThickEdgeMean(k,iEdge)/1300.0_RKIND))                / &
-                                        layerThickEdgeMean(k,iEdge))                                    * &
-                                (5.24e-3_RKIND*exp(-layerThickEdgeMean(k,iEdge)/1300.0_RKIND))          / &
-                                (8 * omegaM2 * pii**2)
+
+                      Nb = N0*exp(-layerThickEdgeMean(k,iEdge)/L)
+                      Nbar = N0*L*(1.0_RKIND - exp(-layerThickEdgeMean(k,iEdge)/L)) / layerThickEdgeMean(k,iEdge)
+
+                      topographicWaveDrag(iEdge) = topographicWaveDragCoeff * gam  &
+                                                 * bed_slope_edges(iEdge)**2 * Nbar * Nb &
+                                                 / (8.0_RKIND * omegaM2 * pii**2)
                   endif
               enddo
           else if (config_topographic_wave_drag_scheme.EQ."LGF") then
@@ -250,23 +251,19 @@ contains
               call mpas_log_write("")
               do iEdge = 1, nEdgesAll
                   kmax =  maxLevelEdgeTop(iEdge)
-                  kmin =  minLevelEdgeBot(iEdge)
                   topographicWaveDrag(iEdge) = 0.0_RKIND
                   if (kmax > 0) then
-                      k = 1
-                      topoDragTurnOff = (TANH((layerThickEdgeMean(k,iEdge)-topoDragCutoffDepth)/topoDragCutoffWidth)+1)/2
-                      topographicWaveDrag = topographicWaveDragCoeff  &
-                                            * topoDragTurnOff         &
-                                            * (sqrt((topo_buoyancy_N1B(iEdge)**2 - omegaM2**2) * &
-                                                    (topo_buoyancy_N1V(iEdge)**2 - omegaM2**2))) &
-                                            / (4*pii*omegaM2)
-                      normalCoeff = (lonGradEdge(iEdge)**2) * &
-                                    (cos(angleEdge(iEdge))**2) + (latGradEdge(iEdge)**2)*(sin(angleEdge(iEdge))**2) - &
-                                        2*latGradEdge(iEdge)*lonGradEdge(iEdge)*sin(angleEdge(iEdge))*(cos(angleEdge(iEdge)))
-                      tangentialCoeff = sin(angleEdge(iEdge)) * &
-                                        cos(angleEdge(iEdge)) * &
-                                        (lonGradEdge(iEdge)**2 - latGradEdge(iEdge)**2) + &
-                                        latGradEdge(iEdge)*lonGradEdge(iEdge)*(cos(angleEdge(iEdge))**2 - sin(angleEdge(iEdge))**2)
+                      topographicWaveDrag(iEdge) = topographicWaveDragCoeff  &
+                                                 * (sqrt((topo_buoyancy_N1B(iEdge)**2 - omegaM2**2)   &
+                                                       * (topo_buoyancy_N1V(iEdge)**2 - omegaM2**2))) &
+                                                 / (4.0_RKIND*pii*omegaM2)
+                      normalCoeffTWD(iEdge) = (lonGradEdge(iEdge)**2) &
+                                         * (cos(angleEdge(iEdge))**2) + (latGradEdge(iEdge)**2)*(sin(angleEdge(iEdge))**2) &
+                                         - 2.0_RKIND*latGradEdge(iEdge)*lonGradEdge(iEdge)*sin(angleEdge(iEdge))*(cos(angleEdge(iEdge)))
+                      tangentialCoeffTWD(iEdge) = sin(angleEdge(iEdge)) &
+                                             * cos(angleEdge(iEdge)) &
+                                             * (lonGradEdge(iEdge)**2 - latGradEdge(iEdge)**2) &
+                                             + latGradEdge(iEdge)*lonGradEdge(iEdge)*(cos(angleEdge(iEdge))**2 - sin(angleEdge(iEdge))**2)
                   endif
               enddo
           else 
@@ -275,6 +272,17 @@ contains
               call mpas_log_write("Invalid parameter for config_topopgraphic_wave_drag_scheme. It must be one of: 'JSL', 'ZAE', or 'LGF'" , MPAS_LOG_CRIT)
               call mpas_log_write("")
           end if
+
+          ! Apply ramping factor to wave drag
+          do iEdge = 1, nEdgesAll
+              kmax =  maxLevelEdgeTop(iEdge)
+              if (kmax > 0) then
+                  k = 1
+                  topoDragTurnOff = (TANH((layerThickEdgeMean(k,iEdge)-topoDragCutoffDepth)/topoDragCutoffWidth)+1.0_RKIND)/2.0_RKIND
+                  topographicWaveDrag(iEdge) = topoDragTurnOff * topographicWaveDrag(iEdge)
+              endif
+          enddo
+          
       endif
 
       if (config_disable_vel_topographic_wave_drag) topographicWaveDragOn = .false.

@@ -1975,10 +1975,6 @@
             <var name="gotmDissTopOfCell"/>
             <var name="gotmLengthTopOfCell"/>
             <var name="pgf_sal"/>
-            <var name="temp_twd"/>
-            <var name="normalCoeff"/>
-            <var name="tangentialCoeff"/>
-            <var name="topographicWaveDrag"/>
 		</stream>
 
 		<stream name="output"
@@ -3486,11 +3482,11 @@
 			description="tendency perturbation due to topographic wave drag"
 			packages="tidalPotentialForcingPKG"
 		/>
-		<var name="normalCoeff" type="real" dimensions="nEdges" units=""
+		<var name="normalCoeffTWD" type="real" dimensions="nEdges" units=""
 			description="Coefficient multiplied by the normal velocity in the topographic wave drag"
 			packages="tidalPotentialForcingPKG"
 		/>
-		<var name="tangentialCoeff" type="real" dimensions="nEdges" units=""
+		<var name="tangentialCoeffTWD" type="real" dimensions="nEdges" units=""
 			description="Coefficient multiplied by the tangential velocity in the topographic wave drag"
 			packages="tidalPotentialForcingPKG"
 		/>
