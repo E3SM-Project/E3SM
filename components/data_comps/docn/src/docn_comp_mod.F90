@@ -815,45 +815,45 @@ CONTAINS
 
    ! set dense double tags on vertices of the temporary DOCN app
    ! first set o2x data
-   call moab_set_tag_from_av('So_t'//C_NULL_CHAR, o2x, kt, data, lsize) 
+   call moab_set_tag_from_av('So_t'//C_NULL_CHAR, o2x, kt, mpoid, data, lsize) 
 
-   call moab_set_tag_from_av('So_s'//C_NULL_CHAR, o2x, ks, data, lsize)
+   call moab_set_tag_from_av('So_s'//C_NULL_CHAR, o2x, ks, mpoid, data, lsize)
 
-   call moab_set_tag_from_av( 'So_u'//C_NULL_CHAR, o2x, ku, data, lsize)
+   call moab_set_tag_from_av( 'So_u'//C_NULL_CHAR, o2x, ku, mpoid, data, lsize)
 
-   call moab_set_tag_from_av( 'So_v'//C_NULL_CHAR, o2x, kv, data, lsize)
+   call moab_set_tag_from_av( 'So_v'//C_NULL_CHAR, o2x, kv, mpoid, data, lsize)
 
-   call moab_set_tag_from_av( 'So_dhdx'//C_NULL_CHAR, o2x, kdhdx, data, lsize)
+   call moab_set_tag_from_av( 'So_dhdx'//C_NULL_CHAR, o2x, kdhdx, mpoid, data, lsize)
 
-   call moab_set_tag_from_av( 'So_dhdy'//C_NULL_CHAR, o2x, kdhdy, data, lsize)
+   call moab_set_tag_from_av( 'So_dhdy'//C_NULL_CHAR, o2x, kdhdy, mpoid, data, lsize)
 
-   call moab_set_tag_from_av( 'Fioo_q'//C_NULL_CHAR, o2x, kq, data, lsize)
+   call moab_set_tag_from_av( 'Fioo_q'//C_NULL_CHAR, o2x, kq, mpoid, data, lsize)
 
    if (kswp /= 0) then
-      call moab_set_tag_from_av( 'So_fswpen'//C_NULL_CHAR, o2x, kswp, data, lsize)
+      call moab_set_tag_from_av( 'So_fswpen'//C_NULL_CHAR, o2x, kswp, mpoid, data, lsize)
    endif
 
    ! next set x2o data
-   call moab_set_tag_from_av( 'Foxx_swnet'//C_NULL_CHAR, x2o, kswnet, data, lsize)
+   call moab_set_tag_from_av( 'Foxx_swnet'//C_NULL_CHAR, x2o, kswnet, mpoid, data, lsize)
 
-   call moab_set_tag_from_av( 'Foxx_lwup'//C_NULL_CHAR, x2o, klwup, data, lsize)
+   call moab_set_tag_from_av( 'Foxx_lwup'//C_NULL_CHAR, x2o, klwup, mpoid, data, lsize)
 
-   call moab_set_tag_from_av( 'Foxx_sen'//C_NULL_CHAR, x2o, ksen, data, lsize)
+   call moab_set_tag_from_av( 'Foxx_sen'//C_NULL_CHAR, x2o, ksen, mpoid, data, lsize)
 
-   call moab_set_tag_from_av( 'Foxx_lat'//C_NULL_CHAR, x2o, klat, data, lsize)
+   call moab_set_tag_from_av( 'Foxx_lat'//C_NULL_CHAR, x2o, klat, mpoid, data, lsize)
 
-   call moab_set_tag_from_av( 'Foxx_rofi'//C_NULL_CHAR, x2o, krofi, data, lsize)
+   call moab_set_tag_from_av( 'Foxx_rofi'//C_NULL_CHAR, x2o, krofi, mpoid, data, lsize)
 
-   call moab_set_tag_from_av( 'Faxa_lwdn'//C_NULL_CHAR, x2o, klwdn, data, lsize)
+   call moab_set_tag_from_av( 'Faxa_lwdn'//C_NULL_CHAR, x2o, klwdn, mpoid, data, lsize)
 
-   call moab_set_tag_from_av( 'Faxa_snow'//C_NULL_CHAR, x2o, ksnow, data, lsize)
+   call moab_set_tag_from_av( 'Faxa_snow'//C_NULL_CHAR, x2o, ksnow, mpoid, data, lsize)
 
-   call moab_set_tag_from_av( 'Fioi_melth'//C_NULL_CHAR, x2o, kmelth, data, lsize)
+   call moab_set_tag_from_av( 'Fioi_melth'//C_NULL_CHAR, x2o, kmelth, mpoid, data, lsize)
 
    ! next set avstrm data
-   call moab_set_tag_from_av( 'strm_h'//C_NULL_CHAR, avstrm, kh, data, lsize)
+   call moab_set_tag_from_av( 'strm_h'//C_NULL_CHAR, avstrm, kh, mpoid, data, lsize)
 
-   call moab_set_tag_from_av( 'strm_qbot'//C_NULL_CHAR, avstrm, kqbot, data, lsize)
+   call moab_set_tag_from_av( 'strm_qbot'//C_NULL_CHAR, avstrm, kqbot, mpoid, data, lsize)
 
 
 #ifdef MOABDEBUG
