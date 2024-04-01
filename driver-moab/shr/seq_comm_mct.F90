@@ -241,7 +241,6 @@ module seq_comm_mct
   integer, public :: mbrmapro ! iMOAB id for read map between river and ocean; it exists on coupler PEs
                               ! similar to intx id, oa, la; 
   integer, public :: mbrxoid  ! iMOAB id for rof migrated to coupler for ocean context (r2o mapping)
-  logical, public :: mbrof_data = .false. ! made true if no rtm mesh, which means data rof ? 
   integer, public :: mbintxar ! iMOAB id for intx mesh between atm and river
   integer, public :: mbintxlr ! iMOAB id for intx mesh between land and river
   integer, public :: mbintxrl ! iMOAB id for intx mesh between river and land

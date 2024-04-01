@@ -16,11 +16,7 @@ module rof_comp_mct
   use drof_comp_mod   , only: drof_comp_init, drof_comp_run, drof_comp_final
   use drof_shr_mod    , only: drof_shr_read_namelists
   use seq_flds_mod    , only: seq_flds_x2r_fields, seq_flds_r2x_fields
-#ifdef HAVE_MOAB
-  use seq_comm_mct, only : mrofid !            iMOAB app id for rof
-  use iso_c_binding
-  use iMOAB           , only: iMOAB_RegisterApplication
-#endif
+
   ! !PUBLIC TYPES:
   implicit none
   private ! except
@@ -143,16 +139,6 @@ CONTAINS
     !----------------------------------------------------------------------------
     ! Initialize drof
     !----------------------------------------------------------------------------
-
-#ifdef HAVE_MOAB
-    ierr = iMOAB_RegisterApplication(trim("DROF")//C_NULL_CHAR, mpicom, compid, mrofid)
-    if (ierr .ne. 0) then
-      write(logunit,*) subname,' error in registering data rof comp'
-      call shr_sys_abort(subname//' ERROR in registering data rof comp')
-    endif
-     ! send path of atm domain file to MOAB coupler. Note that here we may have the land domain in some cases?
-    !call seq_infodata_PutData( infodata, atm_mesh=SDATM%domainFile)
-#endif
 
     call drof_comp_init(Eclock, x2r, r2x, &
          seq_flds_x2r_fields, seq_flds_r2x_fields, &
