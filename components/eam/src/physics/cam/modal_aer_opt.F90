@@ -1305,9 +1305,9 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
       aodabs(idxnite(i))    = fillvalue
    end do
 
-   call outfld('MODAL_AER_TAU_SW'//diag(list_idx), aertau_bnd_sw, pcols, lchnk)
-   call outfld('MODAL_AER_SSA_SW'//diag(list_idx), aerssa_bnd_sw, pcols, lchnk)
-   call outfld('MODAL_AER_G_SW'//diag(list_idx), aerasm_bnd_sw, pcols, lchnk)
+   call outfld('MODAL_AER_TAU_SW'//diag(list_idx), aertaubndsw, pcols, lchnk)
+   call outfld('MODAL_AER_SSA_SW'//diag(list_idx), aerssabndsw, pcols, lchnk)
+   call outfld('MODAL_AER_G_SW'//diag(list_idx), aerasmbndsw, pcols, lchnk)
    call outfld('EXTINCT'//diag(list_idx),  extinct, pcols, lchnk)
    call outfld('AER_TAU_SW_VIS'//diag(list_idx), aertauswvis, pcols, lchnk)
    call outfld('tropopause_m', tropopause_m, pcols, lchnk)
