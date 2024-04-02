@@ -1099,7 +1099,9 @@ contains
     if (.not. readv ) then
       taper(:) = 200._r8
       do i = 0, npft - 1
-        if (woody(i) == 2) taper(i) = 10.0_r8 ! shrubs
+        ! RPF 240331 - need to revisit this section when integrating with IM4,
+        ! to make consistent with attempt to remove hard-coded pft numbers.
+        if (i >= nbrdlf_evr_shrub .and. i <= nbrdlf_dcd_brl_shrub) taper(i) = 10.0_r8 ! shrubs
       end do
     end if
 
