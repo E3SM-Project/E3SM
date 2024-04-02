@@ -211,6 +211,8 @@ subroutine modal_aer_opt_init()
    ! Add diagnostic fields to history output.
 
    call addfld ('EXTINCT',(/ 'lev' /),    'A','/m','Aerosol extinction', flag_xyfill=.true.)
+   call addfld ('AER_TAU_SW_VIS', (/'lev'/), 'A', '/m', &
+                  'Aerosol shortwave extinction optical depth at 550 nm', flag_xyfill=.true.)
    call addfld ('tropopause_m',horiz_only,    'A',' m  ','tropopause level in meters', flag_xyfill=.true.)
    call addfld ('ABSORB',(/ 'lev' /),    'A','/m','Aerosol absorption', flag_xyfill=.true.)
    call addfld ('AODVIS',horiz_only,    'A','  ','Aerosol optical depth 550 nm', flag_xyfill=.true., &
@@ -436,6 +438,8 @@ subroutine modal_aer_opt_init()
 
          call addfld ('EXTINCT'//diag(ilist), (/ 'lev' /), 'A','1/m', &
               'Aerosol extinction', flag_xyfill=.true.)
+         call addfld ('AER_TAU_SW_VIS'//diag(ilist), (/'lev'/), 'A', '/m', &
+                  'Aerosol shortwave extinction optical depth at 550 nm', flag_xyfill=.true.)
          call addfld ('ABSORB'//diag(ilist),  (/ 'lev' /), 'A','1/m', &
               'Aerosol absorption', flag_xyfill=.true.)
          call addfld ('AODVIS'//diag(ilist),       horiz_only, 'A','  ', &
@@ -540,6 +544,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
 
    ! Diagnostics
    real(r8) :: extinct(pcols,pver), tropopause_m(pcols)
+   real(r8) :: aertauswvis(pcols, pver)
    real(r8) :: absorb(pcols,pver)
    real(r8) :: aodvis(pcols)               ! extinction optical depth
    real(r8) :: aodall(pcols)               ! extinction optical depth
@@ -656,6 +661,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
 
    ! diagnostics for visible band summed over modes
    extinct(1:ncol,:)     = 0.0_r8
+   aertauswvis(1:ncol,:) = 0.0_r8
    absorb(1:ncol,:)      = 0.0_r8
    aodvis(1:ncol)        = 0.0_r8
    if (is_output_interactive_volc) then
@@ -1013,6 +1019,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
                ! aerosol extinction (/m)
                do i = 1, ncol
                   extinct(i,k) = extinct(i,k) + dopaer(i)*air_density(i,k)/mass(i,k)
+                  aertauswvis(i,k) = aertauswvis(i,k) + dopaer(i)
                   absorb(i,k)  = absorb(i,k) + pabs(i)*air_density(i,k)
                   aodvis(i)    = aodvis(i) + dopaer(i)
                   if ((k .le. trop_level(i)) .and. (is_output_interactive_volc)) then ! in stratosphere
@@ -1222,6 +1229,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
          ilev_tropp = trop_level(i)
          tropopause_m(i) = state%zm(i,ilev_tropp)!in meters
          extinct(i,ilev_tropp) = 0.5_r8*( extinct(i,ilev_tropp) + ext_cmip6_sw(i,ilev_tropp) )
+         aertauswvis(i,ilev_tropp) = 0.5_r8*( aertauswvis(i,ilev_tropp) + aertauswvis_cmip6(i,ilev_tropp) )
       enddo
       do k = 1, pver
          do i = 1, ncol
@@ -1229,6 +1237,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
             if (k < ilev_tropp) then
                !extinction is assigned read in values only for visible band above tropopause
                extinct(i,k) = ext_cmip6_sw(i,k)
+               aertauswvis(i,k) = aertauswvis_cmip6(i,k)
             endif
          enddo
       enddo
@@ -1247,6 +1256,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
    end do
 
    call outfld('EXTINCT'//diag(list_idx),  extinct, pcols, lchnk)
+   call outfld('AER_TAU_SW_VIS'//diag(list_idx),  aertauswvis, pcols, lchnk)
    call outfld('tropopause_m', tropopause_m, pcols, lchnk)
    call outfld('ABSORB'//diag(list_idx),   absorb,  pcols, lchnk)
    call outfld('AODVIS'//diag(list_idx),   aodvis,  pcols, lchnk)
