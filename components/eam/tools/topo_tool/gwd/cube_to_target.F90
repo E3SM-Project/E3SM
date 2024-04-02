@@ -175,6 +175,10 @@ real(r8),dimension(32768) :: xhds,yhds,zhds,hds,xbar,ybar,zbar,lon_bar,lat_bar
 real(r8) :: rad,xx2,yy2,zz2,ix2,iy2,ip2
 real(r8) :: lonii,latii
 character*20 :: indice
+
+!=======Jinbo Xie array=======
+nvar_dirOA=2+1!4 !2+1!4!36
+nvar_dirOL=180
 !=======Jinbo Xie array=======
 
   !
@@ -191,7 +195,11 @@ character*20 :: indice
   !*********************************************************
   !
   ! status = nf_open('target0.5x0.5.nc', 0, ncid)
-  status = nf_open('target.nc', 0, ncid)
+  !status = nf_open('target.nc', 0, ncid)
+  status = nf_open('ne30pg2_scrip.nc',0,ncid)
+  !status = nf_open('ne30pg4_scrip.nc',0,ncid)
+  !status = nf_open('ne4pg4_scrip.nc',0,ncid)
+
   IF (STATUS .NE. NF_NOERR) CALL HANDLE_ERR(STATUS)
   
   status = NF_INQ_DIMID(ncid, 'grid_size', ntarget_id)
@@ -214,10 +222,10 @@ character*20 :: indice
     status = NF_INQ_DIMID(ncid, 'lpole', ntarget_id)
     status = NF_INQ_DIMLEN(ncid, ntarget_id, lpole)
 !=====Jinbo Xie======
-nlon=256!720!256
-nlat=128!361!128
-nvar_dirOA=2+1!4 !2+1!4!36
-nvar_dirOL=180 !4!8 !4 !720 !180 !4 !180 !4!180 !720 !180 !4 !180 !720!180 !4 !180 !4 !2*11520!4!720!5760!2880!1440!720 !360!180  !4 !180!360!4 !18!36!4
+!nlon=256!720!256
+!nlat=128!361!128
+!nvar_dirOA=2+1!4 !2+1!4!36
+!nvar_dirOL=180 !4!8 !4 !720 !180 !4 !180 !4!180 !720 !180 !4 !180 !720!180 !4 !180 !4 !2*11520!4!720!5760!2880!1440!720 !360!180  !4 !180!360!4 !18!36!4
 
 !=====Jinbo Xie======
     WRITE(*,*) "nlon=",nlon,"nlat=",nlat
@@ -278,9 +286,8 @@ nvar_dirOL=180 !4!8 !4 !720 !180 !4 !180 !4!180 !720 !180 !4 !180 !720!180 !4 !1
   !****************************************************
   !
   WRITE(*,*) "get dimension of cubed-sphere data from file"
-  status = nf_open('USGS-topo-cube.nc', 0, ncid)
+  status = nf_open('USGS-topo-cube3000.nc', 0, ncid)
   IF (STATUS .NE. NF_NOERR) CALL HANDLE_ERR(STATUS)
-  
   status = NF_INQ_DIMID(ncid, 'grid_size', dimid)
   IF (status .NE. NF_NOERR) CALL HANDLE_ERR(status)
   status = NF_INQ_DIMLEN(ncid, dimid, n)
@@ -289,7 +296,7 @@ nvar_dirOL=180 !4!8 !4 !720 !180 !4 !180 !4!180 !720 !180 !4 !180 !720!180 !4 !1
   ncube = INT(SQRT(DBLE(n/6)))
   WRITE(*,*) "cubed-sphere dimension: ncube = ",ncube
   WRITE(*,*) "average grid-spacing at the Equator (degrees):" ,90.0/ncube
-  
+
   status = nf_close (ncid)
   if (status .ne. NF_NOERR) call handle_err(status)          
   !
@@ -306,10 +313,15 @@ nvar_dirOL=180 !4!8 !4 !720 !180 !4 !180 !4!180 !720 !180 !4 !180 !720!180 !4 !1
   allocate (weights_eul_index_all(jall,3),stat=alloc_error )
   allocate (weights_lgr_index_all(jall),stat=alloc_error )
 
+!!======Jinbo Xie====
+!!Jinbo Xie debug
 !#if 0
   CALL overlap_weights(weights_lgr_index_all,weights_eul_index_all,weights_all,&
        jall,ncube,ngauss,ntarget,ncorner,jmax_segments,target_corner_lon,target_corner_lat,nreconstruction)
 !#endif
+!weights_all=0.01
+!!Jinbo Xie debug
+!!======Jinbo Xie======
   !
   !****************************************************
   !
@@ -318,7 +330,7 @@ nvar_dirOL=180 !4!8 !4 !720 !180 !4 !180 !4!180 !720 !180 !4 !180 !720!180 !4 !1
   !****************************************************
   !
   WRITE(*,*) "read cubed-sphere 3km data from file"
-  status = nf_open('USGS-topo-cube.nc', 0, ncid)
+  status = nf_open('USGS-topo-cube3000.nc', 0, ncid)
   IF (STATUS .NE. NF_NOERR) CALL HANDLE_ERR(STATUS)
   
   status = NF_INQ_DIMID(ncid, 'grid_size', dimid)
@@ -458,6 +470,9 @@ nvar_dirOL=180 !4!8 !4 !720 !180 !4 !180 !4!180 !720 !180 !4 !180 !720!180 !4 !1
     area_target        (i) = area_target(i) + wt
   end do
   
+
+!#if 0
+!!Jinbo Xie debug
   do count=1,jall
     i    = weights_lgr_index_all(count)
     
@@ -470,14 +485,17 @@ nvar_dirOL=180 !4!8 !4 !720 !180 !4 !180 !4!180 !720 !180 !4 !180 !720!180 !4 !1
     ii = (ip-1)*ncube*ncube+(iy-1)*ncube+ix
     
     wt = weights_all(count,1)
-    
     terr_target        (i) = terr_target        (i) + wt*terr        (ii)/area_target(i)
+!!Jinbo Xie debug
+!#if 0
     landfrac_target    (i) = landfrac_target    (i) + wt*landfrac    (ii)/area_target(i)
     landm_coslat_target(i) = landm_coslat_target(i) + wt*landm_coslat(ii)/area_target(i)
     sgh30_target       (i) = sgh30_target       (i) + wt*sgh30       (ii)/area_target(i)
-    
+!#endif
     tmp = tmp+wt*terr(ii)
   end do
+!!Jinbo Xie debug
+!#endif
   
   
   write(*,*) "tmp", tmp
@@ -709,11 +727,10 @@ nvar_dirOL=180 !4!8 !4 !720 !180 !4 !180 !4!180 !720 !180 !4 !180 !720!180 !4 !1
       !
       !
       !
-!#if 0
       CALL overlap_weights(weights_lgr_index_all_coarse,weights_eul_index_all_coarse,weights_all_coarse,&
            jall_coarse,ncube_coarse,ngauss,ntarget,ncorner,jmax_segments_coarse,target_corner_lon,&
            target_corner_lat,nreconstruction)            
-!#endif
+
       WRITE(*,*) "MIN/MAX of area-weight [0:1]: ",&
            MINVAL(weights_all_coarse(:,1)),MAXVAL(weights_all_coarse(:,1))
       !
@@ -953,6 +970,7 @@ nvar_dirOL=180 !4!8 !4 !720 !180 !4 !180 !4!180 !720 !180 !4 !180 !720!180 !4 !1
 !for centroid of mass
 !wt is useful proxy for dA
 !#if 0
+!!Jinbo Xie debug
 print*,"cal oa"
 allocate(oa_target(ntarget,nvar_dirOA),stat=alloc_error)
 call OAdir(terr,ntarget,ncube,n,nvar_dirOA,jall,weights_lgr_index_all,weights_eul_index_all(:,1),weights_eul_index_all(:,2),weights_eul_index_all(:,3),weights_all,landfrac_target,target_center_lon,target_center_lat,lon_terr,lat_terr,area_target,oa_target)!OAx,OAy)
@@ -968,12 +986,14 @@ call OAdir(terr,ntarget,ncube,n,nvar_dirOA,jall,weights_lgr_index_all,weights_eu
 
 !stop
 !#if 0
+!#endif
 !OL
         print*,"cal ol"
         allocate(ol_target(ntarget,nvar_dirOL),stat=alloc_error)
         ol_target=0.0_r8
         !call OLorig(terr,ntarget,ncube,n,jall,weights_lgr_index_all,weights_eul_index_all(:,1),weights_eul_index_all(:,2),weights_eul_index_all(:,3),weights_all,landfrac_target,lon_terr,lat_terr,area_target,sgh_target,target_center_lat,target_center_lon,target_corner_lat_deg,target_corner_lon_deg,ol_target)
-!#if 0
+!!Jinbo Xie debug
+!#endif
         allocate(indexb(ntarget),stat=alloc_error)
         indexb=0.0_r8
         do count=1,jall
@@ -985,8 +1005,14 @@ call OAdir(terr,ntarget,ncube,n,nvar_dirOA,jall,weights_lgr_index_all,weights_eu
         !call OLdir(terr,ntarget,ncube,n,jall,nlon,nlat,maxval(indexb),nvar_dirOL,weights_lgr_index_all,weights_eul_index_all(:,1),weights_eul_index_all(:,2),weights_eul_index_all(:,3),weights_all,landfrac_target,target_center_lon,target_center_lat,lon_terr,lat_terr,sgh_target,ol_target,terrout,dxy)
         !call OLdir(terr,ntarget,ncube,n,jall,nlon,nlat,maxval(indexb),nvar_dirOL,weights_lgr_index_all,weights_eul_index_all(:,1),weights_eul_index_all(:,2),weights_eul_index_all(:,3),weights_all,landfrac_target,target_center_lon,target_center_lat,lon_terr,lat_terr,sgh_target,ol_target,terrout)
         !call OLorig(terr,ntarget,ncube,n,jall,weights_lgr_index_all,weights_eul_index_all(:,1),weights_eul_index_all(:,2),weights_eul_index_all(:,3),weights_all,landfrac_target,lon_terr,lat_terr,area_target,sgh_target,target_center_lat,target_center_lon,target_corner_lat_deg,target_corner_lon_deg,ol_target)
-        call OLdir(terr,ntarget,ncube,n,jall,nlon,nlat,maxval(indexb),nvar_dirOL,weights_lgr_index_all,weights_eul_index_all(:,1),weights_eul_index_all(:,2),weights_eul_index_all(:,3),weights_all,landfrac_target,target_center_lon,target_center_lat,lon_terr,lat_terr,sgh_target,area_target,ol_target,terrout,dxy)
-        
+        !call OLdir(terr,ntarget,ncube,n,jall,nlon,nlat,maxval(indexb),nvar_dirOL,weights_lgr_index_all,weights_eul_index_all(:,1),weights_eul_index_all(:,2),weights_eul_index_all(:,3),weights_all,landfrac_target,target_center_lon,target_center_lat,lon_terr,lat_terr,sgh_target,area_target,ol_target,terrout,dxy)
+        call OLdir(terr,ntarget,ncube,n,jall,nlon,nlat,maxval(indexb),nvar_dirOL,weights_lgr_index_all,weights_eul_index_all(:,1),weights_eul_index_all(:,2),weights_eul_index_all(:,3),weights_all,landfrac_target,target_center_lon,target_center_lat,target_corner_lon_deg,target_corner_lat_deg,lon_terr,lat_terr,sgh_target,area_target,ol_target,terrout,dxy)
+        !do i=1,10!180
+        !print*,"OLdir Jinbo Xie",minval(ol_target(:,i)),maxval(ol_target(:,i))
+        !enddo
+        !stop
+!!Jinbo Xie debug
+!#endif
 !#endif
 !========Jinbo Xie par=========
 
@@ -1010,8 +1036,14 @@ print*,"output rll"
 !========Jinbo Xie==========
 
   ELSE
+#if 0 
     CALL wrtncdf_unstructured(ntarget,terr_target,landfrac_target,sgh_target,sgh30_target,&
          landm_coslat_target,target_center_lon,target_center_lat)
+#endif
+!========Jinbo Xie==========
+ print*,"output unstructure"
+    CALL wrtncdf_unstructured(nvar_dirOA,nvar_dirOL,maxval(indexb),ntarget,terr_target,landfrac_target,sgh_target,sgh30_target,oc_target,oa_target,ol_target,terrout,dxy,landm_coslat_target,target_center_lon,target_center_lat)
+!========Jinbo Xie==========
   END IF
 
   DEALLOCATE(terr_target,landfrac_target,sgh30_target,sgh_target,landm_coslat_target)
@@ -1025,7 +1057,11 @@ end program convterr
 !
 !
 !
+#if 0
 subroutine wrtncdf_unstructured(n,terr,landfrac,sgh,sgh30,landm_coslat,lon,lat)
+#endif
+subroutine wrtncdf_unstructured(nvar_dirOA,nvar_dirOL,indexb,n,terr,landfrac,sgh,sgh30,oc_in,oa_in,ol_in,terrout,dxy_in,landm_coslat,lon,lat)
+
   use shr_kind_mod, only: r8 => shr_kind_r8
   implicit none
   
@@ -1052,8 +1088,44 @@ subroutine wrtncdf_unstructured(n,terr,landfrac,sgh,sgh30,landm_coslat,lon,lat)
   integer :: nc_gridcorn_id, lat_vid, lon_vid
   
   real(r8), parameter :: fillvalue = 1.d36
-  
-  fout='new-topo-file.nc'
+  !=====Jinbo Xie========
+  integer, intent(in) :: nvar_dirOA,nvar_dirOL,indexb
+  !Jinbo Xie add direction
+  !=====Jinbo Xie========
+  integer            ::  ocid,varid,var2id,indexbid,terroutid(4)
+  integer            ::  oaid,olid,dxyid
+  integer            :: oa1id,oa2id,oa3id,oa4id
+  integer            :: ol1id,ol2id,ol3id,ol4id
+  !======Jinbo Xie=======
+  integer, dimension(2) :: ocdim
+  integer, dimension(3) :: oadim,oldim,terroutdim
+  !======Jinbo Xie=========
+  real(r8),dimension(n)  , intent(in) :: oc_in
+  real(r8),dimension(n,nvar_dirOA)  , intent(in) :: oa_in
+  real(r8),dimension(n,nvar_dirOL)  , intent(in) :: ol_in
+  real(r8),dimension(4,n,indexb),intent(in) :: terrout
+  real(r8),dimension(n,nvar_dirOL),intent(in) :: dxy_in
+  character*20,dimension(4) :: terroutchar
+  !!=======Jinbo Xie=========
+  real(r8),dimension(n) :: oc
+  real(r8),dimension(n,nvar_dirOA) :: oa
+  real(r8),dimension(n,nvar_dirOL) :: ol
+  real(r8),dimension(n,nvar_dirOL) :: dxy
+  character*20 :: numb
+  !!======Jinbo Xie=======
+
+  !fout='new-topo-file.nc'
+  write(numb,"(i0.1)") nvar_dirOL
+  print*,"dir number", nvar_dirOL
+  fout='final-'//adjustl(trim(numb))//'.nc'
+  !!======Jinbo Xie========
+  !print*,"Jinbo Xie shape(oc_in),shape(oc)",shape(oc_in),shape(oc)
+        oc=oc_in
+        oa=oa_in
+        ol=ol_in
+        dxy=dxy_in
+        !Jinbo Xie debug
+  !!======Jinbo Xie========
   !
   !  Create NetCDF file for output
   !
@@ -1065,6 +1137,19 @@ subroutine wrtncdf_unstructured(n,terr,landfrac,sgh,sgh30,landm_coslat,lon,lat)
   !
   status = nf_def_dim (foutid, 'ncol', n, nid)
   if (status .ne. NF_NOERR) call handle_err(status)
+
+  !!====Jinbo Xie========
+  status = nf_def_dim (foutid, 'nvar_dirOA', nvar_dirOA, varid)
+  if (status .ne. NF_NOERR) call handle_err(status)
+  status = nf_def_dim (foutid, 'nvar_dirOL', nvar_dirOL, var2id)
+  if (status .ne. NF_NOERR) call handle_err(status)
+
+  !Jinbo Xie debug
+  !status = nf_def_dim (foutid, 'indexb',23, indexbid)
+  status = nf_def_dim (foutid, 'indexb', indexb, indexbid)
+  !Jinbo Xie debug
+  if (status .ne. NF_NOERR) call handle_err(status)
+  !!=====Jinbo Xie=====
   !
   ! Create variable for output
   !
@@ -1090,6 +1175,30 @@ subroutine wrtncdf_unstructured(n,terr,landfrac,sgh,sgh30,landm_coslat,lon,lat)
   status = nf_def_var (foutid,'lon', NF_DOUBLE, 1, nid, lonvid)
   if (status .ne. NF_NOERR) call handle_err(status)
   
+  !!========Jinbo Xie========
+        status = nf_def_var (foutid,'OC', NF_DOUBLE,  1, nid, ocid)
+        oadim(1)=nid
+        oadim(2)=varid
+        status = nf_def_var (foutid,'OA', NF_DOUBLE, 2, oadim, oaid)
+        oldim(1)=nid
+        oldim(2)=var2id
+        status = nf_def_var (foutid,'OL', NF_DOUBLE, 2, oldim, olid)
+#if 0
+        terroutdim(1)=nid
+        terroutdim(2)=indexbid
+        !name
+        terroutchar(1)="terr"
+        terroutchar(2)="terrx"
+        terroutchar(3)="terry"
+        terroutchar(4)="wt"
+        do i=1,4
+        status = nf_def_var (foutid, terroutchar(i), NF_DOUBLE, 2, &
+                                     terroutdim, terroutid(i))
+        enddo
+        !dxy
+        status = nf_def_var (foutid,'dxy', NF_DOUBLE,  2, oldim, dxyid)
+#endif
+  !!========Jinbo Xie==========
   !
   ! Create attributes for output variables
   !
@@ -1145,6 +1254,17 @@ subroutine wrtncdf_unstructured(n,terr,landfrac,sgh,sgh30,landm_coslat,lon,lat)
   call DATE_AND_TIME(DATE=datestring)
   status = nf_put_att_text (foutid,NF_GLOBAL,'history',25, 'Written on date: ' // datestring )
   if (status .ne. NF_NOERR) call handle_err(status)
+  !!======Jinbo Xie============
+	status = nf_put_att_text (foutid,oaid,'note', 40, '(2)+1 in nvar_dirOA to avoid bug in io')
+#if 0
+        do i=1,4
+        status = nf_put_att_double (foutid, terroutid(i),&
+        'missing_value', nf_double, 1,fillvalue)
+        status = nf_put_att_double (foutid, terroutid(i),&
+        '_FillValue'   , nf_double, 1,fillvalue)
+        enddo
+#endif
+  !!======Jinbo Xie============
   
   !
   ! End define mode for output file
@@ -1154,6 +1274,39 @@ subroutine wrtncdf_unstructured(n,terr,landfrac,sgh,sgh30,landm_coslat,lon,lat)
   !
   ! Write variable for output
   !
+
+  !!==========Jinbo Xie============
+	print*,"writing oc data",MINVAL(oc),MAXVAL(oc)
+	status = nf_put_var_double (foutid, ocid, oc)
+	if (status .ne. NF_NOERR) call handle_err(status)
+	!oa,ol
+	print*,"writing oa data",MINVAL(oa),MAXVAL(oa)
+	status = nf_put_var_double (foutid, oaid, oa)
+	if (status .ne. NF_NOERR) call handle_err(status)
+	print*,"writing ol data",MINVAL(ol),MAXVAL(ol)
+	status = nf_put_var_double (foutid, olid, ol)
+  !========Jinbo Xie========
+  !===========
+  if (status .ne. NF_NOERR) call handle_err(status)
+#if 0
+        do i=1,4
+        status = nf_put_att_double (foutid, terroutid(i),&
+        'missing_value', nf_double, 1,fillvalue)
+        status = nf_put_att_double (foutid, terroutid(i),&
+        '_FillValue'   , nf_double, 1,fillvalue)
+        print*,"writing"//terroutchar(i)//" data",&
+        MINVAL(terrout(i,:,:)),MAXVAL(terrout(i,:,:))
+        status = nf_put_var_double (foutid, terroutid(i), terrout(i,:,:))
+        if (status .ne. NF_NOERR) call handle_err(status)
+        enddo
+!#endif
+!#if 0
+        print*,"writing dxy data",MINVAL(dxy),MAXVAL(dxy)
+        status = nf_put_var_double (foutid, dxyid, dxy)
+        if (status .ne. NF_NOERR) call handle_err(status)
+#endif
+!========Jinbo Xie========
+
   print*,"writing terrain data",MINVAL(terr),MAXVAL(terr)
   status = nf_put_var_double (foutid, terrid, terr*9.80616)
   if (status .ne. NF_NOERR) call handle_err(status)

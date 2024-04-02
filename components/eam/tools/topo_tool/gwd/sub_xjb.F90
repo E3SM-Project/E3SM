@@ -274,6 +274,7 @@ real(r8) :: wt
 
       where(abs(oc_target)<.001_r8.or.abs(oc_target).gt.1e+7) oc_target=0.0_r8
       where(abs(sgh_target).eq.0.0_r8) oc_target=0.0_r8
+      where(oc_target<0.0_r8) oc_target=0.0_r8
 end subroutine OC
 !========================
 subroutine OLorig(terr,ntarget,ncube,n,jall,weights_lgr_index_all,weights_eul_index_all1,weights_eul_index_all2,weights_eul_index_all3,weights_all,landfrac_target,lon_terr,lat_terr,area_target,sgh_target,target_center_lat,target_center_lon,target_corner_lat_deg,target_corner_lon_deg,ol_target)
@@ -304,10 +305,10 @@ real(r8) :: wt,terr_if,Nw(4,ntarget),area_target_par(4,ntarget),j
         !determine terr_if
         terr_if=0._r8
         if (terr(ii).GT.(1116.2-0.878*sgh_target(i))) terr_if=1.
-! (1):  the lower left corner
-! (2):  the lower right corner
-! (3):  the upper right corner
-! (4):  the upper left corner
+        ! (1):  the lower left corner
+        ! (2):  the lower right corner
+        ! (3):  the upper right corner
+        ! (4):  the upper left corner
      !OL1
      if (lat_terr(ii) &!(ii)&
      .GT.(target_corner_lat_deg(1,i)+target_center_lat(i))/2..and. &
@@ -649,7 +650,6 @@ interval=3
                 terr_count=1._r8
                 endif
 
-
                 !output
                 OLout=sum(wt*terr_count)/sum(wt*terr_whole_count)!
                 !when insufficient number of grids to support anisotropic
@@ -660,6 +660,13 @@ interval=3
                 where(terr.gt.hc) terr_count=1._r8
                 OLout=sum(wt*terr_count)/sum(wt*terr_whole_count)
                 endif
+!!Jinbo Xie debug
+!print*,"Jinbo Xie a,b,hc",a,b,hc
+!print*,"Jinbo Xie c1,c2",c1,c2
+!print*,"Jinbo Xie wt",minval(wt),maxval(wt)
+!print*,"Jinbo Xie theta_in,terr_count",theta_in,minval(terr_count),maxval(terr_count)
+!print*,"Jinbo Xie theta_in,theta1,theta2",theta_in,theta1,theta2
+!!Jinbo Xie debug
                 !take out pole point
                 !where dx is usually smaller than 1m
                 !if (a.lt.1.or.b.lt.1) OLout=0.0_r8
@@ -668,7 +675,7 @@ interval=3
 end subroutine OLgrid
 !===================================================================
 !#if 0
-subroutine OLdir(terr,ntarget,ncube,n,jall,nlon,nlat,indexb,nvar_dir,weights_lgr_index_all,weights_eul_index_all1,weights_eul_index_all2,weights_eul_index_all3,weights_all,landfrac_target,lon_cen,lat_cen,lon_terr,lat_terr,sgh_target,area_target,ol_target,terrout,dxy)
+subroutine OLdir(terr,ntarget,ncube,n,jall,nlon,nlat,indexb,nvar_dir,weights_lgr_index_all,weights_eul_index_all1,weights_eul_index_all2,weights_eul_index_all3,weights_all,landfrac_target,lon_cen,lat_cen,lon_cor,lat_cor,lon_terr,lat_terr,sgh_target,area_target,ol_target,terrout,dxy)
 IMPLICIT NONE
 integer ,intent(in)  :: ncube,ntarget,n,jall,indexb
 integer ,intent(in)  :: weights_lgr_index_all(jall) ,&
@@ -680,6 +687,8 @@ real(r8),intent(in)  :: weights_all(jall,1),landfrac_target(ntarget)
 real(r8),intent(in)  :: terr(n),lon_terr(n),lat_terr(n)
 real(r8),intent(in)  :: lon_cen(ntarget),&
                         lat_cen(ntarget),&
+                        lon_cor(4,ntarget),&
+                        lat_cor(4,ntarget),&
                         sgh_target(ntarget),&
                         area_target(ntarget)
 real(r8),intent(out) :: ol_target(ntarget,nvar_dir)
@@ -692,7 +701,8 @@ real(r8),intent(out) :: dxy(ntarget,nvar_dir)
 integer  :: index_b(3,ntarget),index_jall(jall)
 integer,allocatable :: indexii_b(:,:)
 integer  :: ix,iy,ip,i,count,alloc_error,j
-real(r8) :: xterr(n),yterr(n),dx(ntarget),dy,hc(ntarget),theta1(nvar_dir)
+!real(r8) :: xterr(n),yterr(n),dx(ntarget),dy,hc(ntarget),theta1(nvar_dir)
+real(r8) :: xterr(n),yterr(n),dx(ntarget),dy(ntarget),hc(ntarget),theta1(nvar_dir)
 real(r8) :: xterr_cen(ntarget),yterr_cen(ntarget),rad
 real(r8) :: reflon_terr(n),reflat_terr(n)!,lon_terr2(n)
 REAL(r8), PARAMETER :: pi    = 3.14159265358979323846264338327
@@ -787,7 +797,7 @@ integer :: ii
         !and are set out later elsewhere
         where(reflon_terr.gt.350) reflon_terr=reflon_terr-360
         where(reflon_terr.lt.-350) reflon_terr=reflon_terr+360
-
+        !
         print*,"get reflonlat"
         !determine real length on cartesian coordinate
         xterr=reflon_terr*cos(lat_terr*rad)
@@ -796,19 +806,35 @@ integer :: ii
         !dx is a function of latitude
         !at this time, we do not need real length
         !so R is set to normalized 1
-!dx=rearth*cos(rlat)*(2._r8*pi/256._r8),dy=rearth*(pi/(128._r8-1._r8))
-        dx=(2._r8*pi/real(nlon,kind=r8))*cos(lat_cen*rad)
-        dy=(      pi/real(nlat-1,kind=r8))
+        !dx=rearth*cos(rlat)*(2._r8*pi/256._r8),dy=rearth*(pi/(128._r8-1._r8))
+        !dx=(2._r8*pi/real(nlon,kind=r8))*cos(lat_cen*rad)
+        !dy=(      pi/real(nlat-1,kind=r8))
+        !!======Jinbo Xie======
+        !!Jinbo Xie debug, get dx and dy for each grid
+	! (1):  the lower left corner
+        ! (2):  the lower right corner
+        ! (3):  the upper right corner
+        ! (4):  the upper left corner
+        !take half of upper and lower to approximate rectangular
+        dx=0.5*(abs(lon_cor(3,:)-lon_cor(4,:))+abs(lon_cor(2,:)-lon_cor(1,:)))*cos(lat_cen*rad)
+        dy=0.5*(abs(lat_cor(3,:)-lat_cor(2,:))+abs(lat_cor(4,:)-lat_cor(1,:)))
+        !!======Jinbo Xie======
 
         !test 4 direction for the time
         !only needs 0-180 half of the axis
         do j=1,ntarget
                 do i=1,nvar_dir
                 theta1(i)=(180._r8/nvar_dir)*real(i-1,kind=r8)
-                call dxygrid(6.37100e6_r8*dx(j),6.37100e6_r8*dy,theta1(i),dxy(j,i))
+                !call dxygrid(6.37100e6_r8*dx(j),6.37100e6_r8*dy,theta1(i),dxy(j,i))
+                call dxygrid(6.37100e6_r8*dx(j),6.37100e6_r8*dy(i),theta1(i),dxy(j,i))
                 enddo
         enddo
 
+!!Jinbo Xie debug
+!do i=1,10!nvar_dir
+!print*,"Jinbo Xie theta1",theta1(i)
+!enddo
+!!Jinbo Xie debug
         print*,"before into OLgrid"
         !input into every large grid
         do j=1,nvar_dir
@@ -817,16 +843,14 @@ integer :: ii
                    xterr(indexii_b(:index_b(3,i),i)),&
                    yterr(indexii_b(:index_b(3,i),i)),&
             weights_all(index_b(1,i):index_b(2,i),1),&
-                          dx(i),dy,&
+                          dx(i),dy(i),&
                         index_b(3,i),&
                         theta1(j),hc(i),ol_target(i,j))
         !landfrac may cause coast area par diminish
         !ol_target(i,:)=ol_target(i,:)*landfrac_target(i)
                 enddo
         enddo
-
         print*,"after OLgrid"
-
         !get correspondent relationship for terr,terrx,terry,wt
         terrout=1.d36
         do i=1,ntarget
@@ -843,6 +867,7 @@ integer :: ii
         where(abs(ol_target)<.001_r8.or.&
               abs(ol_target).gt.1e+7) ol_target=0.0_r8
         where(abs(ol_target).gt.1) ol_target=1.0_r8
+        where(ol_target.lt.0) ol_target=0.0_r8
         where(ol_target.ne.ol_target) ol_target=0.0_r8
 !#endif
 end subroutine OLdir
