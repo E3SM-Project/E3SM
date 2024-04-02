@@ -31,7 +31,7 @@ initial_conditions:
 
   #we should get the following variables from other processes
   dgnum: 1e-3
-  kvh: 1e-3
+  eddy_diff_heat: 1e-3
   liq_strat_cld_frac: 1e-3
   w_sec: 1e-3
   w_updraft: 1e-3

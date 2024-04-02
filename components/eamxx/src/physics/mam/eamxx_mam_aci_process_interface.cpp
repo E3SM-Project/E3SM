@@ -780,6 +780,12 @@ void MAMAci::set_grids(
   // cloud fraction [nondimentional] computed by eamxx_cld_fraction_process
   add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid_name);
 
+  // Inputs (atmospheric quantities) for aci codes that existed in PBUF in EAM
+  // These outputs should come from the cloud macrophysics process (e.g., SHOC)
+  auto m2 = m * m;
+  m2.set_string("m^2");
+  auto s2 = s * s;
+  s2.set_string("s^2");
   // MUST FIXME: w_sec,  is at OLD time step; strat_cld_frac and
   // BALLI:???
   // Vertical velocity variance (wp2) at midpoints
@@ -791,7 +797,7 @@ void MAMAci::set_grids(
   add_field<Required>("liq_strat_cld_frac", scalar3d_layout_mid, nondim,
                       grid_name);
   // BALLI:???
-  add_field<Required>("kvh", scalar3d_layout_int, m2 / s,
+  add_field<Required>("eddy_diff_heat", scalar3d_layout_int, m2 / s,
                       grid_name);  // Eddy diffusivity for heat
 
   // Layout for 4D (2d horiz X 1d vertical x number of modes) variables
@@ -944,13 +950,6 @@ void MAMAci::set_grids(
       FieldLayout{{COL, LEV, CMP}, {ncol_, nlev_, mam4::ndrop::ncnst_tot}},
       nondim, grid_name);
 
-  // Inputs (atmospheric quantities) for aci codes that existed in PBUF in EAM
-  // These outputs should come from the cloud macrophysics process (e.g., SHOC)
-  auto m2 = m * m;
-  m2.set_string("m^2");
-  auto s2 = s * s;
-  s2.set_string("s^2");
-
   auto cm = m / 100;
 
   // units of number mixing ratios of tracers
@@ -994,13 +993,12 @@ void MAMAci::init_buffers(const ATMBufferManager &buffer_manager) {
 void MAMAci::initialize_impl(const RunType run_type) {
   w_sec_ = get_field_in("w_sec").get_view<const Real **>();
 
-  dgnum_ = get_field_in("dgnum")
-               .get_view<const Real ***>();  // MUST FIXME: is it an input, can
-                                             // we compute it using calcsize???
+  // MUST FIXME: is it an input, should we invoke calcsize here??
+  dgnum_   = get_field_in("dgnum").get_view<const Real ***>();
   liqcldf_ = get_field_in("liq_strat_cld_frac").get_view<const Real **>();
-  kvh_     = get_field_in("kvh")
-             .get_view<const Real **>();  // MUST FIXME: See if scream has it,
-                                          // it should com from the land model
+
+  // MUST FIXME: This comes from shoc
+  kvh_ = get_field_in("eddy_diff_mom").get_view<const Real **>();
 
   nihf_  = get_field_out("icenuc_num_hetfrz").get_view<Real **>();
   niim_  = get_field_out("icenuc_num_immfrz").get_view<Real **>();

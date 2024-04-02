@@ -114,6 +114,7 @@ void Functions<S,D>::shoc_main_internal(
   const uview_1d<Spack>&       wthv_sec,
   const uview_2d<Spack>&       qtracers,
   const uview_1d<Spack>&       tk,
+  const uview_1d<Spack>&       tkh,
   const uview_1d<Spack>&       shoc_cldfrac,
   const uview_1d<Spack>&       shoc_ql,
   // Output Variables
@@ -366,6 +367,7 @@ void Functions<S,D>::shoc_main_internal(
   const view_2d<Spack>&       wthv_sec,
   const view_3d<Spack>&       qtracers,
   const view_2d<Spack>&       tk,
+  const view_2d<Spack>&       tkh,
   const view_2d<Spack>&       shoc_cldfrac,
   const view_2d<Spack>&       shoc_ql,
   // Output Variables
@@ -640,6 +642,7 @@ Int Functions<S,D>::shoc_main(
     const auto qw_s           = ekat::subview(shoc_input_output.qw, i);
     const auto wthv_sec_s     = ekat::subview(shoc_input_output.wthv_sec, i);
     const auto tk_s           = ekat::subview(shoc_input_output.tk, i);
+    const auto tkh_s          = ekat::subview(shoc_input_output.tkh, i);
     const auto shoc_cldfrac_s = ekat::subview(shoc_input_output.shoc_cldfrac, i);
     const auto shoc_ql_s      = ekat::subview(shoc_input_output.shoc_ql, i);
     const auto shoc_ql2_s     = ekat::subview(shoc_output.shoc_ql2, i);
@@ -672,7 +675,7 @@ Int Functions<S,D>::shoc_main(
                        wtracer_sfc_s, inv_exner_s, phis_s,                    // Input
                        workspace,                                             // Workspace
                        host_dse_s, tke_s, thetal_s, qw_s, u_wind_s, v_wind_s, // Input/Output
-                       wthv_sec_s, qtracers_s, tk_s, shoc_cldfrac_s,          // Input/Output
+                       wthv_sec_s, qtracers_s, tk_s, tkh_s, shoc_cldfrac_s,   // Input/Output
                        shoc_ql_s,                                             // Input/Output
                        pblh_s, shoc_ql2_s,                                    // Output
                        shoc_mix_s, w_sec_s, thl_sec_s, qw_sec_s, qwthl_sec_s, // Diagnostic Output Variables
@@ -696,7 +699,7 @@ Int Functions<S,D>::shoc_main(
     shoc_input.wtracer_sfc, shoc_input.inv_exner, shoc_input.phis, // Input
     workspace_mgr, // Workspace Manager
     shoc_input_output.host_dse, shoc_input_output.tke, shoc_input_output.thetal, shoc_input_output.qw, u_wind_s, v_wind_s, // Input/Output
-    shoc_input_output.wthv_sec, shoc_input_output.qtracers, shoc_input_output.tk, shoc_input_output.shoc_cldfrac, // Input/Output
+    shoc_input_output.wthv_sec, shoc_input_output.qtracers, shoc_input_output.tk, shoc_input_output.tkh, shoc_input_output.shoc_cldfrac, // Input/Output
     shoc_input_output.shoc_ql, // Input/Output
     shoc_output.pblh, shoc_output.shoc_ql2, // Output
     shoc_history_output.shoc_mix, shoc_history_output.w_sec, shoc_history_output.thl_sec, shoc_history_output.qw_sec, shoc_history_output.qwthl_sec, // Diagnostic Output Variables
