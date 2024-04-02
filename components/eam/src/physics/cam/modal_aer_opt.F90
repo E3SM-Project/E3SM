@@ -467,6 +467,7 @@ subroutine modal_aer_opt_init()
 
    do ilist = 1, n_diag
       if (call_list(ilist)) then
+
          call addfld ('MODAL_AER_TAU_SW'//diag(ilist), (/'lev','swband'/), 'A', '1', &
                         'Aerosol shortwave extinction optical depth', flag_xyfill=.true.) 
          call addfld ('MODAL_AER_SSA_SW'//diag(ilist), (/'lev','swband'/), 'A', '1', &
@@ -1278,7 +1279,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
          ilev_tropp = trop_level(i)
          tropopause_m(i) = state%zm(i,ilev_tropp)!in meters
          extinct(i,ilev_tropp) = 0.5_r8*( extinct(i,ilev_tropp) + ext_cmip6_sw(i,ilev_tropp) )
-         aertauswvis(i,ilev_tropp) = 0.5_r8*( aertauswvis(i,ilev_tropp) + aertauswvis_cmip6(i,ilev_tropp) )
+         aertauswvis(i,ilev_tropp) = 0.5_r8*( aertauswvis(i,ilev_tropp) + ext_cmip6_sw(i,ilev_tropp) )
       enddo
       do k = 1, pver
          do i = 1, ncol
@@ -1286,7 +1287,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
             if (k < ilev_tropp) then
                !extinction is assigned read in values only for visible band above tropopause
                extinct(i,k) = ext_cmip6_sw(i,k)
-               aertauswvis(i,k) = aertauswvis_cmip6(i,k)
+               aertauswvis(i,k) = ext_cmip6_sw(i,k)
             endif
          enddo
       enddo
