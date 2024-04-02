@@ -1239,8 +1239,16 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
                ga(i,k,isw)     = ga(i,k,isw)     + dopaer(i)*palb(i)*pasm(i)
                fa(i,k,isw)     = fa(i,k,isw)     + dopaer(i)*palb(i)*pasm(i)*pasm(i)
                aertaubndsw(i,k,isw) = tauxar(i,k,isw)
-               aerssabndsw(i,k,isw) = wa(i,k,isw)/tauxar(i,k,isw)
-               aerasmbndsw(i,k,isw) = ga(i,k,isw)/wa(i,k,isw)
+               if (tauxar(i,k,isw) > 0._r8) then
+                  aerssabndsw(i,k,isw) = wa(i,k,isw)/tauxar(i,k,isw)
+               else
+                  aerssabndsw(i,k,isw) = 1._r8
+               end if
+               if (wa(i,k,isw) > 0._r8) then
+                  aerasmbndsw(i,k,isw) = ga(i,k,isw)/wa(i,k,isw)
+               else
+                  aerasmbndsw(i,k,isw) = 0._r8
+               end if
             end do
 
          end do ! pver
