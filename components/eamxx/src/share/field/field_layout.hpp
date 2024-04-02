@@ -122,7 +122,7 @@ public:
   std::vector<FieldTag> get_tensor_tags () const;
 
   // Returns a copy of this layout with a given dimension stripped
-  FieldLayout& strip_dim (const FieldTag tag);
+  FieldLayout& strip_dim (const FieldTag tag, const bool throw_if_not_found = true);
   FieldLayout& strip_dim (const int idim);
   FieldLayout& append_dim (const FieldTag t, const int extent);
   FieldLayout& append_dim (const FieldTag t, const int extent, const std::string& name);

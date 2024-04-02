@@ -114,11 +114,14 @@ std::vector<FieldTag> FieldLayout::get_tensor_tags () const {
   return {m_tags[idx[0]], m_tags[idx[1]]};
 }
 
-FieldLayout& FieldLayout::strip_dim (const FieldTag tag) {
+FieldLayout& FieldLayout::strip_dim (const FieldTag tag, const bool throw_if_not_found) {
   auto it = ekat::find(m_tags,tag);
 
-  // Check if found
-  EKAT_REQUIRE_MSG(it!=m_tags.end(), "Error! Tag '" + e2str(tag) + "' not found.\n");
+  if (it==m_tags.end()) {
+    // Check if found
+    EKAT_REQUIRE_MSG(not throw_if_not_found, "Error! Tag '" + e2str(tag) + "' not found.\n");
+    return *this;
+  }
 
   // Check only one tag (no ambiguity)
   EKAT_REQUIRE_MSG(ekat::count(m_tags,tag)==1,
