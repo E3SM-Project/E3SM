@@ -786,8 +786,8 @@ module li_subglacial_hydro
       integer, pointer :: nEdges
       integer, pointer :: nCells
       integer, pointer :: nVertices
-      integer :: iEdge, cell1, cell2
       integer :: i, j, iVertex, iCell
+      integer :: iEdge, cell1, cell2
       real (kind=RKIND) :: velSign
       integer :: numGroundedCells
       integer :: err_tmp
@@ -946,7 +946,6 @@ module li_subglacial_hydro
       ! contaminated values.
       call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
       call mpas_pool_get_array(meshPool, 'verticesOnEdge', verticesOnEdge)
-      call mpas_pool_get_array(meshPool, 'cellsOnVertex', cellsOnVertex)
       select case (trim(config_SGH_tangent_slope_calculation))
       case ('from_vertex_barycentric', 'from_vertex_barycentric_kiteareas')
          do iEdge = 1, nEdges
@@ -960,17 +959,11 @@ module li_subglacial_hydro
                hydropotentialBaseSlopeTangent(iEdge) = 0.0_RKIND
                hydropotentialSlopeTangent(iEdge) = 0.0_RKIND
             endif
-            ! check for edges where a vertex is on the edge of the mesh and zero the tangent slope there
-            do i = 1, 2
-               iVertex = verticesOnEdge(i, iEdge)
-               do j = 1, 3
-                  iCell = cellsOnVertex(j, iVertex)
-                  if (iCell == nCells + 1) then
-                     hydropotentialBaseSlopeTangent(iEdge) = 0.0_RKIND
-                     hydropotentialSlopeTangent(iEdge) = 0.0_RKIND
-                  endif
-               enddo
-            enddo
+            ! zero tangent slope at waterFluxMask==2            
+            if (waterFluxMask(iEdge) == 2) then
+                hydropotentialBaseSlopeTangent(iEdge) = 0.0_RKIND
+                hydropotentialSlopeTangent(iEdge) = 0.0_RKIND
+             endif
          end do  ! edges
       case ('from_normal_slope')
          ! Do first with hydropotentialBase
@@ -985,6 +978,11 @@ module li_subglacial_hydro
                hydropotentialBaseSlopeTangent(iEdge) = 0.0_RKIND
                hydropotentialSlopeTangent(iEdge) = 0.0_RKIND
             endif
+            if (waterFluxMask(iEdge) == 2) then
+               hydropotentialBaseSlopeTangent(iEdge) = 0.0_RKIND
+               hydropotentialSlopeTangent(iEdge) = 0.0_RKIND
+            endif
+
          end do  ! edges
       case default
          call mpas_log_write('Invalid value for config_SGH_tangent_slope_calculation.', MPAS_LOG_ERR)
