@@ -33,7 +33,6 @@ initial_conditions:
   dgnum: 1e-3
   kvh: 1e-3
   liq_strat_cld_frac: 1e-3
-  strat_cld_frac: 1e-3
   w_sec: 1e-3
   w_updraft: 1e-3
 

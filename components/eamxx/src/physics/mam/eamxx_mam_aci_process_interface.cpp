@@ -419,8 +419,7 @@ void call_function_dropmixnuc(
     for(int j = 0; j < 2; ++j) loc_raercol_cw[i][j] = raercol_cw[i][j];
   for(int i = 0; i < mam4::ndrop::pver; ++i)
     for(int j = 0; j < 2; ++j) loc_raercol[i][j] = raercol[i][j];
-  for(int i = 0; i < mam4::aero_model::pcnst; ++i)
-    loc_ptend_q[i] = ptend_q[i];
+  for(int i = 0; i < mam4::aero_model::pcnst; ++i) loc_ptend_q[i] = ptend_q[i];
   for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i) loc_coltend[i] = coltend[i];
   for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i)
     loc_coltend_cw[i] = coltend_cw[i];
@@ -501,8 +500,9 @@ void call_function_dropmixnuc(
             atmosphere_for_column(dry_atmosphere, icol);
 
         for(int klev = 0; klev < mam4::ndrop::pver; ++klev) {
-          Real state_q_at_lev_col[mam4::aero_model::pcnst] = {};  // use pcnst here
-          Real qqcw_at_lev_col[mam4::aero_model::pcnst]    = {};  // use pcnst here
+          Real state_q_at_lev_col[mam4::aero_model::pcnst] =
+              {};                                              // use pcnst here
+          Real qqcw_at_lev_col[mam4::aero_model::pcnst] = {};  // use pcnst here
           mam4::utils::extract_stateq_from_prognostics(
               progs_at_col, haero_atm, state_q_at_lev_col, klev);
 
@@ -583,9 +583,7 @@ void call_hetfrz_compute_tendencies(
     mam_coupling::AerosolState &dry_aero_,
     mam_coupling::WetAtmosphere &wet_atm_,
     mam_coupling::DryAtmosphere &dry_atm_,
-    MAMAci::view_2d stratiform_cloud_fraction,
-    MAMAci::view_2d activation_fraction_accum_idx,
-    MAMAci::view_2d activation_fraction_coarse_idx,
+    MAMAci::view_3d factnum_,
     MAMAci::view_2d hetfrz_immersion_nucleation_tend,
     MAMAci::view_2d hetfrz_contact_nucleation_tend,
     MAMAci::view_2d hetfrz_depostion_nucleation_tend, MAMAci::view_2d naai_hom,
@@ -594,6 +592,7 @@ void call_hetfrz_compute_tendencies(
   using view_1d = typename KokkosTypes<DefaultDevice>::template view_1d<Real>;
   view_1d dummy("DummyView", nlev);
 
+
   mam4::Hetfrz hetfrz                          = hetfrz_;
   mam_coupling::AerosolState dry_aerosol_state = dry_aero_;
   mam_coupling::WetAtmosphere wet_atmosphere   = wet_atm_;
@@ -601,21 +600,21 @@ void call_hetfrz_compute_tendencies(
   MAMAci::view_2d diagnostic_scratch[42];
   for(int i = 0; i < 42; ++i) diagnostic_scratch[i] = diagnostic_scratch_[i];
 
-  MAMAci::const_view_2d qc    = wet_atmosphere.qc;
-  MAMAci::const_view_2d nc    = wet_atmosphere.nc;
-  MAMAci::const_view_2d T_mid = dry_atmosphere.T_mid;
-  MAMAci::const_view_2d p_mid = dry_atmosphere.p_mid;
 
   Kokkos::parallel_for(
       team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
         const int icol = team.league_rank();
+  //for (int icol=0; icol<1; icol++){
         //  Set up an atmosphere, surface, diagnostics, pronostics and
         //  tendencies class.
-        Real pblh = 0;
+
+        haero::Atmosphere haero_atm =
+            atmosphere_for_column(dry_atmosphere, icol);
+        /*Real pblh = 0;
         haero::Atmosphere atmos(
             nlev, ekat::subview(T_mid, icol), ekat::subview(p_mid, icol), dummy,
             ekat::subview(qc, icol), ekat::subview(nc, icol), dummy, dummy,
-            dummy, dummy, dummy, dummy, dummy, pblh);
+            dummy, dummy, dummy, dummy, dummy, pblh);*/
         // set surface state data
         haero::Surface surf{};
         mam4::Prognostics progs =
@@ -626,12 +625,10 @@ void call_hetfrz_compute_tendencies(
 
         // BALLI
         mam4::Diagnostics diags(nlev);
-        diags.stratiform_cloud_fraction =
-            ekat::subview(stratiform_cloud_fraction, icol);
-        diags.activation_fraction[accum_idx] =
-            ekat::subview(activation_fraction_accum_idx, icol);
-        diags.activation_fraction[coarse_idx] =
-            ekat::subview(activation_fraction_coarse_idx, icol);
+
+        diags.activation_fraction[accum_idx] = ekat::subview(factnum_,icol, accum_idx);
+
+        diags.activation_fraction[coarse_idx] = ekat::subview(factnum_, icol, coarse_idx);
 
         // These are the output tendencies from heterogeneous freezing that need
         // to be added correctly to the cloud-micorphysics scheme.
@@ -701,10 +698,10 @@ void call_hetfrz_compute_tendencies(
         const mam4::Tendencies tends(nlev);
         const mam4::AeroConfig aero_config;
         const Real t = 0;  //, dt = 0;
-        hetfrz.compute_tendencies(aero_config, team, t, dt, atmos, surf, progs,
+        hetfrz.compute_tendencies(aero_config, team, t, dt, haero_atm, surf, progs,
                                   diags, tends);
       });
-      //}
+  //}
 }
 }  // namespace
 
@@ -723,8 +720,9 @@ void MAMAci::set_grids(
   ncol_ = grid_->get_num_local_dofs();       // Number of columns on this rank
   nlev_ = grid_->get_num_vertical_levels();  // Number of levels per column
 
+  // Allocate memory for the class members
   // Kokkos::resize only works on host to allocates memory
-  Kokkos::resize(rho_, ncol_, nlev_);
+  Kokkos::resize(rho_, ncol_, nlev_);// FIXME: rho_ is only used internally in compute_w0_and_rho
   Kokkos::resize(w0_, ncol_, nlev_);
   Kokkos::resize(tke_, ncol_, nlev_ + 1);
   Kokkos::resize(wsub_, ncol_, nlev_);
@@ -766,6 +764,7 @@ void MAMAci::set_grids(
                       "tracers");  // cloud liquid number mixing ratio [1/kg]
   add_field<Required>("ni", scalar3d_layout_mid, n_unit, grid_name,
                       "tracers");  // cloud ice number mixing ratio [1/kg]
+
   add_field<Required>("T_mid", scalar3d_layout_mid, K,
                       grid_name);  // Temperature[K] at midpoints
 
@@ -782,28 +781,13 @@ void MAMAci::set_grids(
   add_field<Required>("pbl_height", scalar2d_layout_col, m,
                       grid_name);  // planetary boundary layer height
 
-  // BALLI:???
+  // cloud fraction [nondimentional] computed by eamxx_cld_fraction_process
   add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim,
-                      grid_name);  // cloud fraction [nondimentional]
+                      grid_name);
 
   // ------------------------------------------------------------------------
   // Output from this process
   // ------------------------------------------------------------------------
-  // BALLI:???
-  add_field<Computed>("stratiform_cloud_fraction", scalar3d_layout_mid, nondim,
-                      grid_name);  // Layer thickness(pdel) [Pa] at midpoints
-  // BALLI:???
-  add_field<Computed>("activation_fraction_accum", scalar3d_layout_mid, nondim,
-                      grid_name);  // Layer thickness(pdel) [Pa] at midpoints
-  // BALLI:???
-  add_field<Computed>("activation_fraction_coarse", scalar3d_layout_mid, nondim,
-                      grid_name);  // Layer thickness(pdel) [Pa] at midpoints
-
-  // MUST FIXME: This should be an internal variable. why we need this as an
-  // input???
-  // BALLI:???
-  add_field<Updated>("w_updraft", scalar3d_layout_mid, q_unit,
-                     grid_name);  // updraft velocity
 
   // BALLI:???
   add_field<Computed>("icenuc_num_hetfrz", scalar3d_layout_mid, 1 / m / m / m,
@@ -845,8 +829,8 @@ void MAMAci::set_grids(
   // BALLI:???
   add_field<Computed>(
       "factnum",
-      FieldLayout{{COL, LEV, CMP},
-                  {ncol_, nlev_, mam_coupling::num_aero_modes()}},
+      FieldLayout{{COL, NMODES, LEV},
+                  {ncol_, mam_coupling::num_aero_modes(),nlev_}},
       nondim, grid_name);  // activation fraction for aerosol number [fraction]
   // BALLI:???
   add_field<Computed>("ndropcol", scalar3d_layout_mid, n_unit / s,
@@ -941,9 +925,7 @@ void MAMAci::set_grids(
   add_field<Required>(
       "w_sec", scalar3d_layout_int, m2 / s2,
       grid_name);  // Vertical velocity variance (wp2) at midpoints
-  // BALLI:???
-  add_field<Required>("strat_cld_frac", scalar3d_layout_mid, nondim,
-                      grid_name);  // Stratiform cloud fraction at midpoints
+
   // BALLI:???
   add_field<Required>(
       "liq_strat_cld_frac", scalar3d_layout_mid, nondim,
@@ -961,18 +943,22 @@ void MAMAci::set_grids(
                       grid_name);  // dry diameter of aerosols
 
   auto cm = m / 100;
-  auto frz_unit =
-      1 / (cm * cm * cm * s);  // units of number mixing ratios of tracers
+
+    // units of number mixing ratios of tracers
+  auto frz_unit = 1 / (cm * cm * cm * s);
   n_unit.set_string("1(cm^-3 s^-1)");
-  // BALLI:???
+ 
+  // heterogeous freezing by immersion nucleation [cm^-3 s^-1]
   add_field<Computed>("hetfrz_immersion_nucleation_tend", scalar3d_layout_mid,
-                      frz_unit, grid_name);  // dry diameter of aerosols
-                                             // BALLI:???
+                      frz_unit, grid_name);
+
+  // heterogeous freezing by contact nucleation [cm^-3 s^-1]
   add_field<Computed>("hetfrz_contact_nucleation_tend", scalar3d_layout_mid,
-                      frz_unit, grid_name);  // dry diameter of aerosols
-                                             // BALLI:???
+                      frz_unit, grid_name);
+
+  // heterogeous freezing by deposition nucleation [cm^-3 s^-1]
   add_field<Computed>("hetfrz_depostion_nucleation_tend", scalar3d_layout_mid,
-                      frz_unit, grid_name);  // dry diameter of aerosols
+                      frz_unit, grid_name);
   //
   /*
    * NOTE on other inputs for the aci process:
@@ -1053,7 +1039,7 @@ void MAMAci::initialize_impl(const RunType run_type) {
       buffer_.z_mid;  // geopotential height above surface at mid levels (m)
 
   dry_atm_.cldfrac   = get_field_in("cldfrac_tot").get_view<const Real **>();
-  dry_atm_.w_updraft = get_field_out("w_updraft").get_view<Real **>();
+  dry_atm_.w_updraft = buffer_.w_updraft;
 
   hetfrz_immersion_nucleation_tend_ =
       get_field_out("hetfrz_immersion_nucleation_tend").get_view<Real **>();
@@ -1061,13 +1047,6 @@ void MAMAci::initialize_impl(const RunType run_type) {
       get_field_out("hetfrz_contact_nucleation_tend").get_view<Real **>();
   hetfrz_depostion_nucleation_tend_ =
       get_field_out("hetfrz_depostion_nucleation_tend").get_view<Real **>();
-
-  stratiform_cloud_fraction_ =
-      get_field_out("stratiform_cloud_fraction").get_view<Real **>();
-  activation_fraction_accum_idx_ =
-      get_field_out("activation_fraction_accum").get_view<Real **>();
-  activation_fraction_coarse_idx_ =
-      get_field_out("activation_fraction_coarse").get_view<Real **>();
 
   // allocate work
   // FIXME: store 25 into a const var or get from MAM4xx
@@ -1096,12 +1075,14 @@ void MAMAci::initialize_impl(const RunType run_type) {
       // (interstitial) aerosol tracers of interest: mass (q) mixing ratios
       const char *int_mmr_field_name =
           mam_coupling::int_aero_mmr_field_name(m, a);
-      
+
       if(strlen(int_mmr_field_name) > 0) {
         wet_aero_.int_aero_mmr[m][a] =
             get_field_out(int_mmr_field_name).get_view<Real **>();
         dry_aero_.int_aero_mmr[m][a] = buffer_.dry_int_aero_mmr[m][a];
-        std::cout<<m<<":"<<a<<":"<<int_mmr_field_name<<":"<<dry_aero_.int_aero_mmr[m][a](0,0)<<":"<<wet_aero_.int_aero_mmr[m][a](0,0)<<std::endl;
+        std::cout << m << ":" << a << ":" << int_mmr_field_name << ":"
+                  << dry_aero_.int_aero_mmr[m][a](0, 0) << ":"
+                  << wet_aero_.int_aero_mmr[m][a](0, 0) << std::endl;
       }
 
       // (cloudborne) aerosol tracers of interest: mass (q) mixing ratios
@@ -1226,6 +1207,9 @@ void MAMAci::run_impl(const double dt) {
       cloud_frac_new_, cloud_frac_old_, tendnd_, factnum_, ndropcol_, ndropmix_,
       nsource_, wtke_, ccn_, nact_, mact_, dropmixnuc_scratch_mem_, nlev_);
   Kokkos::fence();  // wait for ptend_q_ to be computed.
+  
+
+
 
   copy_mam4xx_array_to_scream<mam4::aero_model::pcnst>(
       team_policy, ptend_q_output_, ptend_q_, nlev_);
@@ -1236,8 +1220,7 @@ void MAMAci::run_impl(const double dt) {
 
   call_hetfrz_compute_tendencies(
       team_policy, hetfrz_, dry_aero_, wet_atm_, dry_atm_,
-      stratiform_cloud_fraction_, activation_fraction_accum_idx_,
-      activation_fraction_coarse_idx_, hetfrz_immersion_nucleation_tend_,
+      factnum_, hetfrz_immersion_nucleation_tend_,
       hetfrz_contact_nucleation_tend_, hetfrz_depostion_nucleation_tend_,
       naai_hom_, naai_, diagnostic_scratch_, nlev_, dt);
 

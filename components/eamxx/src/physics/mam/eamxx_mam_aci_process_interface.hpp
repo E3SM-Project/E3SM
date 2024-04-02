@@ -25,8 +25,10 @@ class MAMAci final : public scream::AtmosphereProcess {
   mam4::Hetfrz hetfrz_;
 
   // views for single- and multi-column data
+  using view_1d       = scream::mam_coupling::view_1d;
   using view_2d       = scream::mam_coupling::view_2d;
   using view_3d       = scream::mam_coupling::view_3d;
+  using const_view_1d = scream::mam_coupling::const_view_1d;
   using const_view_2d = scream::mam_coupling::const_view_2d;
   using const_view_3d = scream::mam_coupling::const_view_3d;
 
@@ -196,7 +198,7 @@ class MAMAci final : public scream::AtmosphereProcess {
       // vertical heights has to be computed after computing dry mixing ratios
       // for atmosphere
       compute_vertical_layer_heights(team, dry_atm_pre_, i);
-
+      compute_updraft_velocities(team, wet_atm_pre_, dry_atm_pre_, i);
     }  // operator()
 
     // local variables for preprocess struct
