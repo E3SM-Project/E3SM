@@ -479,10 +479,10 @@ contains
          interpinic_flag='skip', readvar=readvar, data=lun_pp%wtgcell)
         
     
-    if(flag == 'read') then 
+    if (flag == 'read') then 
       ! For backwards compatibility, check if wttopounit is on restart file
       call check_var(ncid=ncid, varname='land1d_wttopounit', vardesc=vardesc, readvar=readvar)
-      if(readvar) then 
+      if (readvar) then 
         call restartvar(ncid=ncid, flag=flag, varname='land1d_wttopounit', xtype=ncd_double, &
            dim1name='landunit',                                                            &
            long_name='landunit weight relative to corresponding topounit', units='',         &
