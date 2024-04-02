@@ -121,24 +121,34 @@ create_layout (const FieldLayout& fl_in,
         auto fl_out = FieldLayout::invalid();
   using namespace ShortFieldTagsNames;
   const bool midpoints = fl_in.has_tag(LEV);
+  std::vector<std::string> tdims_names;
+  std::string vdim_name;
   switch (fl_in.type()) {
     case LayoutType::Scalar2D:
       fl_out = grid->get_2d_scalar_layout();
       break;
     case LayoutType::Vector2D:
-      fl_out = grid->get_2d_vector_layout(fl_in.get_vector_dim());
+      vdim_name = fl_in.names()[fl_in.get_vector_component_idx()];
+      fl_out = grid->get_2d_vector_layout(fl_in.get_vector_dim(),vdim_name);
       break;
     case LayoutType::Tensor2D:
-      fl_out = grid->get_2d_tensor_layout(fl_in.get_tensor_dims());
+      for (auto idx  : fl_in.get_tensor_components_ids()) {
+        tdims_names.push_back(fl_in.names()[idx]);
+      }
+      fl_out = grid->get_2d_tensor_layout(fl_in.get_tensor_dims(),tdims_names);
       break;
     case LayoutType::Scalar3D:
       fl_out = grid->get_3d_scalar_layout(midpoints);
       break;
     case LayoutType::Vector3D:
-      fl_out = grid->get_3d_vector_layout(midpoints,fl_in.get_vector_dim());
+      vdim_name = fl_in.names()[fl_in.get_vector_component_idx()];
+      fl_out = grid->get_3d_vector_layout(midpoints,fl_in.get_vector_dim(),vdim_name);
       break;
     case LayoutType::Tensor3D:
-      fl_out = grid->get_3d_tensor_layout(midpoints,fl_in.get_tensor_dims());
+      for (auto idx  : fl_in.get_tensor_components_ids()) {
+        tdims_names.push_back(fl_in.names()[idx]);
+      }
+      fl_out = grid->get_3d_tensor_layout(midpoints,fl_in.get_tensor_dims(),tdims_names);
     default:
       EKAT_ERROR_MSG ("Layout not supported by HorizInterpRemapperBase:\n"
                       " - layout: " + to_string(fl_in) + "\n");
