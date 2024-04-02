@@ -234,16 +234,16 @@ subroutine modal_aer_opt_init()
 
    ! Add diagnostic fields to history output.
 
-   call addfld ('MODAL_AER_TAU_SW', (/'lev','swband'/), 'A', '1', &
+   call addfld ('MODAL_AER_TAU_SW', (/'lev   ','swband'/), 'A', '1', &
                   'Aerosol shortwave extinction optical depth', flag_xyfill=.true.) 
-   call addfld ('MODAL_AER_SSA_SW', (/'lev','swband'/), 'A', '1', &
+   call addfld ('MODAL_AER_SSA_SW', (/'lev   ','swband'/), 'A', '1', &
                   'Aerosol shortwave single scattering albedo', flag_xyfill=.true.) 
-   call addfld ('MODAL_AER_G_SW', (/'lev','swband'/), 'A', '1', &
+   call addfld ('MODAL_AER_G_SW', (/'lev   ','swband'/), 'A', '1', &
                   'Aerosol shortwave assymmetry parameter', flag_xyfill=.true.)
-   call addfld ('MODAL_AER_TAU_LW', (/'lev','lwband'/), 'A', '1', &
+   call addfld ('MODAL_AER_TAU_LW', (/'lev   ','lwband'/), 'A', '1', &
                   'Aerosol longwave absorption optical depth', flag_xyfill=.true.)
    call addfld ('EXTINCT',(/ 'lev' /),    'A','/m','Aerosol extinction', flag_xyfill=.true.)
-   call addfld ('AER_TAU_SW_VIS', (/'lev'/), 'A', '1', &
+   call addfld ('AER_TAU_SW_VIS', (/ 'lev' /), 'A', '1', &
                   'Aerosol shortwave extinction optical depth at 550 nm', flag_xyfill=.true.)
    call addfld ('tropopause_m',horiz_only,    'A',' m  ','tropopause level in meters', flag_xyfill=.true.)
    call addfld ('ABSORB',(/ 'lev' /),    'A','/m','Aerosol absorption', flag_xyfill=.true.)
@@ -468,17 +468,17 @@ subroutine modal_aer_opt_init()
    do ilist = 1, n_diag
       if (call_list(ilist)) then
 
-         call addfld ('MODAL_AER_TAU_SW'//diag(ilist), (/'lev','swband'/), 'A', '1', &
+         call addfld ('MODAL_AER_TAU_SW'//diag(ilist), (/'lev   ','swband'/), 'A', '1', &
                         'Aerosol shortwave extinction optical depth', flag_xyfill=.true.) 
-         call addfld ('MODAL_AER_SSA_SW'//diag(ilist), (/'lev','swband'/), 'A', '1', &
+         call addfld ('MODAL_AER_SSA_SW'//diag(ilist), (/'lev   ','swband'/), 'A', '1', &
                         'Aerosol shortwave single scattering albedo', flag_xyfill=.true.) 
-         call addfld ('MODAL_AER_G_SW'//diag(ilist), (/'lev','swband'/), 'A', '1', &
+         call addfld ('MODAL_AER_G_SW'//diag(ilist), (/'lev   ','swband'/), 'A', '1', &
                         'Aerosol shortwave assymmetry parameter', flag_xyfill=.true.)
-         call addfld ('MODAL_AER_TAU_LW'//diag(ilist), (/'lev','lwband'/), 'A', '1', &
+         call addfld ('MODAL_AER_TAU_LW'//diag(ilist), (/'lev   ','lwband'/), 'A', '1', &
                         'Aerosol longwave absorption optical depth', flag_xyfill=.true.)
          call addfld ('EXTINCT'//diag(ilist), (/ 'lev' /), 'A','1/m', &
               'Aerosol extinction', flag_xyfill=.true.)
-         call addfld ('AER_TAU_SW_VIS'//diag(ilist), (/'lev'/), 'A', '1', &
+         call addfld ('AER_TAU_SW_VIS'//diag(ilist), (/ 'lev' /), 'A', '1', &
                   'Aerosol shortwave extinction optical depth at 550 nm', flag_xyfill=.true.)
          call addfld ('ABSORB'//diag(ilist),  (/ 'lev' /), 'A','1/m', &
               'Aerosol absorption', flag_xyfill=.true.)
