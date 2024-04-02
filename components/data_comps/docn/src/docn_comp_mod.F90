@@ -620,8 +620,6 @@ CONTAINS
 
     call t_startf('DOCN_RUN')
 
-    dbug = 1
-
     call t_startf('docn_run1')
     call seq_timemgr_EClockGetData( EClock, dtime=idt)
     dt = idt * 1.0_R8
