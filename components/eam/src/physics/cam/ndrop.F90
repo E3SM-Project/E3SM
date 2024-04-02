@@ -1714,7 +1714,6 @@ end subroutine maxsat
 
 !===============================================================================
 
-subroutine ccncalc(state, pbuf, cs, ccn)
 subroutine ccncalc(state, pbuf, cs, ccn, ccnmair)
 
    ! calculates number concentration of aerosols activated as CCN at
