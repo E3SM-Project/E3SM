@@ -2545,7 +2545,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      real (kind=RKIND), dimension(:,:), intent(in) :: &
+      real (kind=RKIND), dimension(:,:), intent(inout) :: &
          layerThickness
 
       !-----------------------------------------------------------------
@@ -2558,7 +2558,7 @@ contains
          zMid
       real (kind=RKIND), dimension(:,:), intent(out) :: &
          zTop
-      real (kind=RKIND), dimension(:), intent(out) :: &
+      real (kind=RKIND), dimension(:), intent(inout) :: &
          ssh
 
       !-----------------------------------------------------------------
@@ -2601,7 +2601,13 @@ contains
          end do
 
          ! copy zTop(1,iCell) into sea-surface height array
-         ssh(iCell) = zTop(minLevelCell(iCell),iCell)
+         !ssh(iCell) = zTop(minLevelCell(iCell),iCell)
+
+
+         zTop(minLevelCell(iCell),iCell) = ssh(iCell)
+
+         layerThickness(minLevelCell(iCell),iCell) = zTop(minLevelCell(iCell)  ,iCell) &
+                                                   - zTop(minLevelCell(iCell)+1,iCell)
 
       end do
 #ifndef MPAS_OPENACC

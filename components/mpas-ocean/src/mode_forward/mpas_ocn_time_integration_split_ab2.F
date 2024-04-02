@@ -53,6 +53,8 @@ module ocn_time_integration_split_ab2
    use ocn_surface_land_ice_fluxes
    use ocn_transport_tests
 
+   use ocn_surface_bulk_forcing
+
    implicit none
    private
    save
@@ -208,6 +210,8 @@ module ocn_time_integration_split_ab2
       real (kind=RKIND), dimension(:), allocatable :: &
          btrvel_temp,      &
          sshTemp,          &
+         sshAccum,         &
+         deltaSSH,         &
          wctEdge,          &! flux water column thickness at edge
          bottomDepthEdge
 
@@ -287,6 +291,10 @@ module ocn_time_integration_split_ab2
       ! Remap variables
       real (kind=RKIND), dimension(:,:), pointer :: &
          layerThicknessLagNew
+
+      ! Net freshwater flux
+      real (kind=RKIND), dimension(:), pointer :: &
+         netFreshwaterFlux
 
       ! These are public variables used from the diagnostics module
       ! indexSurfaceVelocityZonal, indexSurfaceVelocityMeridional
@@ -966,6 +974,9 @@ module ocn_time_integration_split_ab2
                                normalBarotropicVelocitySubcycleCur, &
                                oldBtrSubcycleTime)
 
+         call mpas_pool_get_array(forcingPool, 'netFreshwaterFlux', &
+                                  netFreshwaterFlux,1)
+
          if (config_filter_btr_mode) then
             !$omp parallel
             !$omp do schedule(runtime)
@@ -981,8 +992,12 @@ module ocn_time_integration_split_ab2
          do iCell = 1, nCellsAll
             ! sshSubcycleOld = sshOld
             sshSubcycleCur(iCell) = sshCur(iCell)
+               netFreshwaterFlux(iCell) = 0.0_RKIND
          end do
          !$omp end do
+
+         ! Compute net freshwater
+         call ocn_surface_net_freshwater(forcingPool,netFreshwaterFlux,err)
 
          !$omp do schedule(runtime)
          do iEdge = 1, nEdgesAll
@@ -1015,6 +1030,10 @@ module ocn_time_integration_split_ab2
          btrvel_temp(:) = 0.0_RKIND
          allocate(wctEdge(nEdgesAll+1))
          wctEdge(:) = 0.0_RKIND
+         allocate(deltaSSH(nCellsAll))
+         deltaSSH(:) = 0.0_RKIND
+         allocate(sshAccum(nCellsAll))
+         sshAccum(:) = sshNew(:)
 
          cellHaloComputeCounter = 0
          edgeHaloComputeCounter = 0

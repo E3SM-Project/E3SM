@@ -49,6 +49,8 @@ module ocn_time_integration_split
    use ocn_surface_land_ice_fluxes
    use ocn_transport_tests
 
+   use ocn_surface_bulk_forcing
+
    implicit none
    private
    save
@@ -199,6 +201,7 @@ module ocn_time_integration_split
       real (kind=RKIND), dimension(:), allocatable :: &
          btrvel_temp,      &
          sshTemp,          &
+         sshAccum,         &
          deltaSSH,         &
          wctEdge,          &! flux water column thickness at edge
          baroclinicThickness
@@ -283,6 +286,10 @@ module ocn_time_integration_split
       ! Remap variables
       real (kind=RKIND), dimension(:,:), pointer :: &
          layerThicknessLagNew
+
+      ! Net freshwater flux
+      real (kind=RKIND), dimension(:), pointer :: &
+         netFreshwaterFlux
 
       ! These are public variables used from the diagnostics module
       ! indexSurfaceVelocityZonal, indexSurfaceVelocityMeridional
@@ -711,7 +718,7 @@ module ocn_time_integration_split
                  vertAleTransportTop, err)
          endif
 
-#ifdef MPAS_OPENACC
+#ifdef MPAS_OPENAC
          !$acc exit data delete(layerThicknessCur, normalVelocityCur, sshCur)
          !$acc update host(vertAleTransportTop)
          if (config_use_freq_filtered_thickness .or. associated(highFreqThicknessNew) ) then
@@ -908,6 +915,9 @@ module ocn_time_integration_split
                                   normalBarotropicVelocitySubcycleCur, &
                                   oldBtrSubcycleTime)
 
+            call mpas_pool_get_array(forcingPool, 'netFreshwaterFlux', &
+                                     netFreshwaterFlux,1)
+
             if (config_filter_btr_mode) then
                !$omp parallel
                !$omp do schedule(runtime)
@@ -923,8 +933,11 @@ module ocn_time_integration_split
             do iCell = 1, nCellsAll
                ! sshSubcycleOld = sshOld
                sshSubcycleCur(iCell) = sshCur(iCell)
+               netFreshwaterFlux(iCell) = 0.0_RKIND
             end do
             !$omp end do
+
+            call ocn_surface_net_freshwater(forcingPool,netFreshwaterFlux,err)
 
             !$omp do schedule(runtime)
             do iEdge = 1, nEdgesAll
@@ -945,6 +958,7 @@ module ocn_time_integration_split
             !$omp end do
             !$omp end parallel
 
+
             call mpas_timer_stop('btr vel se init')
 
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -959,6 +973,8 @@ module ocn_time_integration_split
             wctEdge(:) = 0.0_RKIND
             allocate(deltaSSH(nCellsAll))
             deltaSSH(:) = 0.0_RKIND
+            allocate(sshAccum(nCellsAll))
+            sshAccum(:) = sshNew(:)
 
             cellHaloComputeCounter = 0
             edgeHaloComputeCounter = 0
@@ -1182,9 +1198,14 @@ module ocn_time_integration_split
                   end do ! edges on cell
 
                   ! SSHnew = SSHold + dt/J*(-div(Flux))
+!                 sshSubcycleNew(iCell) = sshSubcycleCur(iCell) &
+!                                       + dt/nBtrSubcycles* &
+!                                         sshTend(iCell)/areaCell(iCell)
+
                   sshSubcycleNew(iCell) = sshSubcycleCur(iCell) &
                                         + dt/nBtrSubcycles* &
-                                          sshTend(iCell)/areaCell(iCell)
+                                          (sshTend(iCell)/areaCell(iCell)+ &
+                                           netFreshwaterFlux(iCell))
                end do ! cells
                !$omp end do
                !$omp end parallel
@@ -1486,9 +1507,15 @@ module ocn_time_integration_split
                      end do ! edges on cell
 
                      ! SSHnew = SSHold + dt/J*(-div(Flux))
+!                    sshSubcycleNew(iCell) = sshSubcycleCur(iCell) &
+!                                       + dt/nBtrSubcycles * &
+!                                         sshTend(iCell)/areaCell(iCell)
+
                      sshSubcycleNew(iCell) = sshSubcycleCur(iCell) &
-                                        + dt/nBtrSubcycles * &
-                                          sshTend(iCell)/areaCell(iCell)
+                                           + dt/nBtrSubcycles* &
+                                             (sshTend(iCell)/areaCell(iCell)+ &
+                                              netFreshwaterFlux(iCell))
+
                   end do ! cell loop for ssh
                   !$omp end do
                   !$omp end parallel
@@ -1556,6 +1583,11 @@ module ocn_time_integration_split
                end do  ! iEdge
                !$omp end do
                !$omp end parallel
+ 
+               do iCell = 1, nCellsOwned
+                  sshAccum(iCell) = sshAccum(iCell) + &
+                                    sshSubcycleNew(iCell)
+               end do
 
                ! advance time pointers
                oldBtrSubcycleTime = mod(oldBtrSubcycleTime,2)+1
@@ -1590,6 +1622,14 @@ module ocn_time_integration_split
             !$omp end do
             !$omp end parallel
 
+            do iCell = 1, nCellsOwned
+               !sshAccum(iCell) = sshAccum(iCell) &
+               sshNew(iCell) = sshAccum(iCell) &
+                     / (nBtrSubcycles*config_btr_subcycle_loop_factor + 1)
+            end do
+
+            deallocate(sshAccum)
+
             call mpas_timer_stop('btr se norm')
 
             ! boundary update on F
@@ -1602,6 +1642,10 @@ module ocn_time_integration_split
             call mpas_dmpar_exch_group_add_field(domain, &
                                               finalBtrGroupName, &
                                              'normalBarotropicVelocity', &
+                                              timeLevel=2)
+            call mpas_dmpar_exch_group_add_field(domain, &
+                                              finalBtrGroupName, &
+                                             'ssh', &
                                               timeLevel=2)
 
             call mpas_dmpar_exch_group_full_halo_exch(domain, &

@@ -49,6 +49,7 @@ module ocn_surface_bulk_forcing
    public :: ocn_surface_bulk_forcing_tracers, &
              ocn_surface_bulk_forcing_vel, &
              ocn_surface_bulk_forcing_thick, &
+             ocn_surface_net_freshwater, &
              ocn_surface_bulk_forcing_init
 
    !--------------------------------------------------------------------
@@ -357,6 +358,94 @@ contains
       call mpas_timer_stop("bulk_thick")
 
    end subroutine ocn_surface_bulk_forcing_thick!}}}
+
+!***********************************************************************
+!
+!  routine ocn_surface_net_freshwater
+!
+!> \brief   Determines the net freshwater forcing array used for the barotropic system.
+!> \author  Doug Jacobsen
+!> \date    04/25/12
+!> \details
+!>  This routine computes the net freshwater forcing.
+!
+!-----------------------------------------------------------------------
+
+   subroutine ocn_surface_net_freshwater(forcingPool, netFreshwaterFlux, err)!{{{
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+      type (mpas_pool_type), intent(inout) :: forcingPool !< Input: Forcing information
+      real (kind=RKIND), dimension(:), intent(inout) :: netFreshwaterFlux !< Input/Output: Array for surface thickness flux
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(out) :: err !< Output: Error flag
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      integer :: iCell, nCells
+
+      real (kind=RKIND), dimension(:), pointer :: evaporationFlux, snowFlux
+      real (kind=RKIND), dimension(:), pointer :: seaIceFreshWaterFlux, icebergFreshWaterFlux, riverRunoffFlux, iceRunoffFlux
+      real (kind=RKIND), dimension(:), pointer :: rainFlux
+
+      err = 0
+
+      if (bulkThicknessFluxOff) return
+
+      call mpas_timer_start("net_freshwater", .false.)
+
+      call mpas_pool_get_array(forcingPool, 'evaporationFlux', evaporationFlux)
+      call mpas_pool_get_array(forcingPool, 'snowFlux', snowFlux)
+      call mpas_pool_get_array(forcingPool, 'seaIceFreshWaterFlux', seaIceFreshWaterFlux)
+      call mpas_pool_get_array(forcingPool, 'icebergFreshWaterFlux', icebergFreshWaterFlux)
+      call mpas_pool_get_array(forcingPool, 'riverRunoffFlux', riverRunoffFlux)
+      call mpas_pool_get_array(forcingPool, 'iceRunoffFlux', iceRunoffFlux)
+      call mpas_pool_get_array(forcingPool, 'rainFlux', rainFlux)
+
+      nCells = nCellsHalo( 2 )
+
+      ! Build surface fluxes at cell centers
+#ifdef MPAS_OPENACC
+      !$acc enter data copyin(evaporationFlux, snowFlux, seaIceFreshWaterFlux, icebergFreshWaterFlux, &
+      !$acc     riverRunoffFlux, iceRunoffFlux, rainFlux)
+
+      !$acc parallel loop &
+      !$acc     present(surfaceThicknessFlux, surfaceThicknessFluxRunoff, evaporationFlux, snowFlux, &
+      !$acc     seaIceFreshWaterFlux, icebergFreshWaterFlux, riverRunoffFlux, iceRunoffFlux, rainFlux)
+#else
+      !$omp parallel
+      !$omp do schedule(runtime)
+#endif
+      do iCell = 1, nCells
+        netFreshwaterFlux(iCell) = ( snowFlux(iCell) + rainFlux(iCell) + evaporationFlux(iCell) + riverRunoffFlux(iCell) &
+                                   + seaIceFreshWaterFlux(iCell) + icebergFreshWaterFlux(iCell) + iceRunoffFlux(iCell) ) / rho_sw
+      end do
+#ifndef MPAS_OPENACC
+      !$omp end do
+      !$omp end parallel
+#endif
+
+#ifdef MPAS_OPENACC
+      !$acc exit data delete(evaporationFlux, snowFlux, seaIceFreshWaterFlux, icebergFreshWaterFlux, &
+      !$acc     riverRunoffFlux, iceRunoffFlux, rainFlux)
+#endif
+
+      call mpas_timer_stop("net_freshwater")
+
+   end subroutine ocn_surface_net_freshwater!}}}
 
 !***********************************************************************
 !

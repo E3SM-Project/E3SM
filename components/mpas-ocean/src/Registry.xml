@@ -3476,6 +3476,10 @@
 			 description="Flux of mass through the ocean surface. Positive into ocean."
 			 packages="forwardMode;analysisMode"
 		/>
+		<var name="netFreshwaterFlux" type="real" dimensions="nCells Time" units="m s^-1"
+			 description="Net freshwaer flux of mass through the ocean surface. Positive into ocean."
+			 packages="forwardMode;analysisMode"
+		/>
 		<var name="surfaceThicknessFluxRunoff" type="real" dimensions="nCells Time" units="m s^-1"
 			 description="Flux of mass through the ocean surface due to river runoff. Positive into ocean."
 			 packages="forwardMode;analysisMode"
