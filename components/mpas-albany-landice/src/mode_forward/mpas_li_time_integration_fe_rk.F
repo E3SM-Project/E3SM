@@ -37,6 +37,7 @@ module li_time_integration_fe_rk
    use li_constants
    use li_mesh
    use li_mask
+   use li_tracer_advection_fct_shared
 
    implicit none
    private
@@ -112,7 +113,8 @@ module li_time_integration_fe_rk
       logical, pointer :: config_calculate_damage
       logical, pointer :: config_finalize_damage_after_advection
       logical, pointer :: config_update_velocity_before_calving
-      character (len=StrKIND), pointer :: config_thickness_advection
+      character (len=StrKIND), pointer :: config_thickness_advection, &
+                                          config_tracer_advection
       character (len=StrKIND), pointer :: config_thermal_solver
       character (len=StrKIND), pointer :: config_time_integration
       integer, pointer :: config_rk_order, config_rk3_stages
@@ -164,9 +166,10 @@ module li_time_integration_fe_rk
 
       call mpas_pool_get_config(liConfigs, 'config_restore_calving_front', config_restore_calving_front)
       call mpas_pool_get_config(liConfigs, 'config_restore_calving_front_prevent_retreat', config_restore_calving_front_prevent_retreat)
-      call mpas_pool_get_config(liConfigs, 'config_calculate_damage',config_calculate_damage)
+      call mpas_pool_get_config(liConfigs, 'config_calculate_damage', config_calculate_damage)
       call mpas_pool_get_config(liConfigs, 'config_finalize_damage_after_advection', config_finalize_damage_after_advection)
       call mpas_pool_get_config(liConfigs, 'config_thickness_advection', config_thickness_advection)
+      call mpas_pool_get_config(liConfigs, 'config_tracer_advection', config_tracer_advection)
       call mpas_pool_get_config(liConfigs, 'config_thermal_solver', config_thermal_solver)
       call mpas_pool_get_config(liConfigs, 'config_rk_order', config_rk_order)
       call mpas_pool_get_config(liConfigs, 'config_rk3_stages', config_rk3_stages)
@@ -278,6 +281,17 @@ module li_time_integration_fe_rk
          passiveTracer3dPrev(k,:) = passiveTracer2d(:)
       enddo
       deltatFull = deltat ! Save deltat in order to reset it at end of RK loop
+
+      if ( (trim(config_tracer_advection) == 'fct') .or. &
+           (trim(config_thickness_advection) == 'fct') ) then
+         call li_tracer_advection_fct_shared_init(geometryPool, err_tmp)
+         if (err_tmp /= 0) then
+            err = 1
+            call mpas_log_write(                                 &
+               'Error encountered during fct tracer advection shared init', &
+               MPAS_LOG_ERR, masterOnly=.true.)
+         endif
+      endif
 
       ! Set RK weights based on desired time integration method. Note
       ! that rkSubstepWeights are used to update at each sub-step, and
@@ -513,6 +527,17 @@ module li_time_integration_fe_rk
       floatingBasalMassBalApplied(:) = floatingBasalMassBalAccum(:)
       fluxAcrossGroundingLine(:) = fluxAcrossGroundingLineAccum(:)
       fluxAcrossGroundingLineOnCells(:) = fluxAcrossGroundingLineOnCellsAccum(:)
+
+      ! Deallocate arrays for fct
+      if ( (trim(config_thickness_advection) .eq. 'fct') .or. &
+           (trim(config_tracer_advection) .eq. 'fct') ) then
+         deallocate( nAdvCellsForEdge, &
+                     advCellsForEdge, &
+                     advCoefs, &
+                     advCoefs3rd, &
+                     advMaskHighOrder, &
+                     advMask2ndOrder)
+      endif
 
 ! Reset time step to full length after RK loop
       deltat = deltatFull

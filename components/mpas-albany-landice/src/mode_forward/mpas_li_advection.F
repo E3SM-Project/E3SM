@@ -717,13 +717,7 @@ module li_advection
       ! Deallocate arrays for fct
       if ( (trim(config_thickness_advection) .eq. 'fct') .or. &
            (trim(config_tracer_advection) .eq. 'fct') ) then
-         deallocate( nAdvCellsForEdge, &
-                     advCellsForEdge, &
-                     advCoefs, &
-                     advCoefs3rd, &
-                     advMaskHighOrder, &
-                     advMask2ndOrder, &
-                     tend)
+         deallocate(tend)
       endif
 
       ! clean up
@@ -1093,7 +1087,6 @@ module li_advection
          nTracers)
 
       use li_thermal, only: li_temperature_to_enthalpy_kelvin
-      use li_tracer_advection_fct_shared
       use li_tracer_advection_fct
       !-----------------------------------------------------------------
       !
@@ -1301,7 +1294,6 @@ module li_advection
       !       May need to increase maxTracers in the Registry.
       if ( (trim(config_tracer_advection) == 'fct') .or. &
            (trim(config_thickness_advection) == 'fct') ) then
-         call li_tracer_advection_fct_shared_init(geometryPool, err1)
          call li_tracer_advection_fct_init(err2)
 
          if (err1 /= 0 .or. err2 /= 0) then
