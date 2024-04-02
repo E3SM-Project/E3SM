@@ -263,7 +263,8 @@ contains
           fluh_timeseries,                              &
           fates_parteh_mode,                            &
           fates_seeddisp_cadence,                       &
-          use_fates_tree_damage
+          use_fates_tree_damage,                        &
+          fates_history_dimlevel
 
     namelist /elm_inparm / use_betr
 
@@ -818,7 +819,8 @@ contains
     call mpi_bcast (fates_parteh_mode, 1, MPI_INTEGER, 0, mpicom, ier)
     call mpi_bcast (fates_seeddisp_cadence, 1, MPI_INTEGER, 0, mpicom, ier)
     call mpi_bcast (use_fates_tree_damage, 1, MPI_LOGICAL, 0, mpicom, ier)
-
+    call mpi_bcast (fates_history_dimlevel, 2, MPI_INTEGER, 0, mpicom, ier)
+    
     call mpi_bcast (use_betr, 1, MPI_LOGICAL, 0, mpicom, ier)
 
     call mpi_bcast (use_lai_streams, 1, MPI_LOGICAL, 0, mpicom, ier)

@@ -2191,7 +2191,7 @@ this mask will have smb calculated over the entire global land surface
 <use_fates_nocomp              use_fates=".true."                      >.false.</use_fates_nocomp>
 <use_fates_fixed_biogeog       use_fates=".true." use_fates_sp=".true.">.true.</use_fates_fixed_biogeog>
 <use_fates_fixed_biogeog       use_fates=".true."                      >.false.</use_fates_fixed_biogeog>
-
+<fates_history_dimlevel        use_fates=".true.">2,2</fates_history_dimlevel>
 <use_vertsoilc                 bgc_mode="fates"  >.true.</use_vertsoilc>
 <use_century_decomp            bgc_mode="fates"  >.true.</use_century_decomp>
 <use_lch4                      bgc_mode="fates"  >.false.</use_lch4>
