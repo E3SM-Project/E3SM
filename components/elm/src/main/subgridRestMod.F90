@@ -12,8 +12,8 @@ module subgridRestMod
   use clm_time_manager   , only : get_curr_date
   use elm_varcon         , only : nameg, namet, namel, namec, namep
   use elm_varpar         , only : nlevsno
-  use pio                , only : file_desc_t
-  use ncdio_pio          , only : ncd_int, ncd_double
+  use pio                , only : file_desc_t, var_desc_t
+  use ncdio_pio          , only : ncd_int, ncd_double, check_var
   use GetGlobalValuesMod , only : GetGlobalIndexArray
   use GridcellType       , only : grc_pp
   use TopounitType       , only : top_pp
@@ -463,6 +463,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     logical :: readvar              ! temporary
+    type(var_desc_t)  :: vardesc            ! variable descriptor
     real(r8), pointer :: temp2d(:,:) ! temporary for sno column variables
     
     character(len=*), parameter :: subname = 'subgridRest_write_and_read'
@@ -476,6 +477,23 @@ contains
          dim1name='landunit',                                                      &
          long_name='landunit weight relative to corresponding gridcell',           &
          interpinic_flag='skip', readvar=readvar, data=lun_pp%wtgcell)
+        
+    
+    if (flag == 'read') then 
+      ! For backwards compatibility, check if wttopounit is on restart file
+      call check_var(ncid=ncid, varname='land1d_wttopounit', vardesc=vardesc, readvar=readvar)
+      if (readvar) then 
+        call restartvar(ncid=ncid, flag=flag, varname='land1d_wttopounit', xtype=ncd_double, &
+           dim1name='landunit',                                                            &
+           long_name='landunit weight relative to corresponding topounit', units='',         &
+           interpinic_flag='skip', readvar=readvar, data=lun_pp%wttopounit)
+       endif
+    else ! flag == 'write' 
+       call restartvar(ncid=ncid, flag=flag, varname='land1d_wttopounit', xtype=ncd_double, &
+           dim1name='landunit',                                                            &
+           long_name='landunit weight relative to corresponding topounit', units='',         &
+           interpinic_flag='skip', readvar=readvar, data=lun_pp%wttopounit)
+    endif 
 
     call restartvar(ncid=ncid, flag=flag, varname='cols1d_wtxy', xtype=ncd_double,  &
          dim1name='column',                                                         &
