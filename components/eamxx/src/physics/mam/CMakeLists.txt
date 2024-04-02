@@ -7,7 +7,7 @@ else()
 endif()
 
 # Haero (Kokkos-based aerosol interface library)
-set(HAERO_ENABLE_GPU ${Kokkos_ENABLE_CUDA}) # might need to include HIP, etc
+set(HAERO_ENABLE_GPU ${EAMXX_ENABLE_GPU})
 set(HAERO_ENABLE_MPI ON)
 set(HAERO_ENABLE_TESTS OFF)
 if (SCREAM_DOUBLE_PRECISION)
