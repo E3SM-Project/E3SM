@@ -95,8 +95,8 @@ class MAMAci final : public scream::AtmosphereProcess {
   view_3d nact_;
   view_3d mact_;
 
-  static constexpr int drop_scratch_ = 15;
-  view_2d dropmixnuc_scratch_mem_[drop_scratch_];
+  static constexpr int dropmix_scratch_ = 15;
+  view_2d dropmixnuc_scratch_mem_[dropmix_scratch_];
 
   view_2d stratiform_cloud_fraction_;
   view_2d activation_fraction_accum_idx_;

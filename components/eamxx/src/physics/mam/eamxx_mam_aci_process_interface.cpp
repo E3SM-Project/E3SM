@@ -386,7 +386,7 @@ void call_function_dropmixnuc(
     MAMAci::view_2d nsource, MAMAci::view_2d wtke, MAMAci::view_3d ccn,
     MAMAci::view_3d nact, MAMAci::view_3d mact,
     MAMAci::view_2d dropmixnuc_scratch_mem[15], const int nlev) {
-  // FIXME: why can't we use MAMAci::drop_scratch_ above
+  // FIXME: why can't we use MAMAci::dropmix_scratch_ above
 
   MAMAci::const_view_2d T_mid = dry_atmosphere.T_mid;
   MAMAci::const_view_2d p_mid = dry_atmosphere.p_mid;
@@ -582,8 +582,7 @@ void call_hetfrz_compute_tendencies(
     haero::ThreadTeamPolicy team_policy, mam4::Hetfrz &hetfrz_,
     mam_coupling::AerosolState &dry_aero_,
     mam_coupling::WetAtmosphere &wet_atm_,
-    mam_coupling::DryAtmosphere &dry_atm_,
-    MAMAci::view_3d factnum_,
+    mam_coupling::DryAtmosphere &dry_atm_, MAMAci::view_3d factnum_,
     MAMAci::view_2d hetfrz_immersion_nucleation_tend,
     MAMAci::view_2d hetfrz_contact_nucleation_tend,
     MAMAci::view_2d hetfrz_depostion_nucleation_tend, MAMAci::view_2d naai_hom,
@@ -592,7 +591,6 @@ void call_hetfrz_compute_tendencies(
   using view_1d = typename KokkosTypes<DefaultDevice>::template view_1d<Real>;
   view_1d dummy("DummyView", nlev);
 
-
   mam4::Hetfrz hetfrz                          = hetfrz_;
   mam_coupling::AerosolState dry_aerosol_state = dry_aero_;
   mam_coupling::WetAtmosphere wet_atmosphere   = wet_atm_;
@@ -600,13 +598,12 @@ void call_hetfrz_compute_tendencies(
   MAMAci::view_2d diagnostic_scratch[42];
   for(int i = 0; i < 42; ++i) diagnostic_scratch[i] = diagnostic_scratch_[i];
 
-
   Kokkos::parallel_for(
       team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
         const int icol = team.league_rank();
-  //for (int icol=0; icol<1; icol++){
-        //  Set up an atmosphere, surface, diagnostics, pronostics and
-        //  tendencies class.
+        // for (int icol=0; icol<1; icol++){
+        //   Set up an atmosphere, surface, diagnostics, pronostics and
+        //   tendencies class.
 
         haero::Atmosphere haero_atm =
             atmosphere_for_column(dry_atmosphere, icol);
@@ -626,9 +623,11 @@ void call_hetfrz_compute_tendencies(
         // BALLI
         mam4::Diagnostics diags(nlev);
 
-        diags.activation_fraction[accum_idx] = ekat::subview(factnum_,icol, accum_idx);
+        diags.activation_fraction[accum_idx] =
+            ekat::subview(factnum_, icol, accum_idx);
 
-        diags.activation_fraction[coarse_idx] = ekat::subview(factnum_, icol, coarse_idx);
+        diags.activation_fraction[coarse_idx] =
+            ekat::subview(factnum_, icol, coarse_idx);
 
         // These are the output tendencies from heterogeneous freezing that need
         // to be added correctly to the cloud-micorphysics scheme.
@@ -682,11 +681,6 @@ void call_hetfrz_compute_tendencies(
         diags.numimm10sdst  = ekat::subview(diagnostic_scratch[40], icol);
         diags.numimm10sbc   = ekat::subview(diagnostic_scratch[41], icol);
 
-        // naai and naai_hom are the outputs needed for nucleate_ice and these
-        // are not tendencies.
-        diags.num_act_aerosol_ice_nucle_hom = ekat::subview(naai_hom, icol);
-        diags.num_act_aerosol_ice_nucle     = ekat::subview(naai, icol);
-
         //-------------------------------------------------------------
         // Heterogeneous freezing
         // frzimm, frzcnt, frzdep are the outputs of
@@ -698,8 +692,8 @@ void call_hetfrz_compute_tendencies(
         const mam4::Tendencies tends(nlev);
         const mam4::AeroConfig aero_config;
         const Real t = 0;  //, dt = 0;
-        hetfrz.compute_tendencies(aero_config, team, t, dt, haero_atm, surf, progs,
-                                  diags, tends);
+        hetfrz.compute_tendencies(aero_config, team, t, dt, haero_atm, surf,
+                                  progs, diags, tends);
       });
   //}
 }
@@ -722,7 +716,9 @@ void MAMAci::set_grids(
 
   // Allocate memory for the class members
   // Kokkos::resize only works on host to allocates memory
-  Kokkos::resize(rho_, ncol_, nlev_);// FIXME: rho_ is only used internally in compute_w0_and_rho
+  Kokkos::resize(
+      rho_, ncol_,
+      nlev_);  // FIXME: rho_ is only used internally in compute_w0_and_rho
   Kokkos::resize(w0_, ncol_, nlev_);
   Kokkos::resize(tke_, ncol_, nlev_ + 1);
   Kokkos::resize(wsub_, ncol_, nlev_);
@@ -734,7 +730,7 @@ void MAMAci::set_grids(
   Kokkos::resize(aitken_dry_dia_, ncol_, nlev_);
   Kokkos::resize(rpdel_, ncol_, nlev_);
 
-  for(int i = 0; i < drop_scratch_; ++i) {
+  for(int i = 0; i < dropmix_scratch_; ++i) {
     Kokkos::resize(dropmixnuc_scratch_mem_[i], ncol_, nlev_);
   }
   // Define the different field layouts that will be used for this process
@@ -768,9 +764,9 @@ void MAMAci::set_grids(
   add_field<Required>("T_mid", scalar3d_layout_mid, K,
                       grid_name);  // Temperature[K] at midpoints
 
-  add_field<Required>(
-      "omega", scalar3d_layout_mid, Pa / s,
-      grid_name);  // Vertical pressure velocity [Pa/s] at midpoints
+  // Vertical pressure velocity [Pa/s] at midpoints
+  add_field<Required>("omega", scalar3d_layout_mid, Pa / s, grid_name);
+
   add_field<Required>("p_mid", scalar3d_layout_mid, Pa,
                       grid_name);  // Total pressure [Pa] at midpoints
   add_field<Required>("p_int", scalar3d_layout_int, Pa,
@@ -782,58 +778,71 @@ void MAMAci::set_grids(
                       grid_name);  // planetary boundary layer height
 
   // cloud fraction [nondimentional] computed by eamxx_cld_fraction_process
-  add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim,
+  add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid_name);
+
+  // ========================================================================
+  // Output from this whole process
+  // ========================================================================
+
+  // ------------------------------------------------------------------------
+  // Output from ice nucleation process
+  // ------------------------------------------------------------------------
+  auto m3_inv = 1 / m / m / m;  // inverse of m3
+  // number conc of ice nuclei due to heterogeneous freezing [1/m3]
+  add_field<Computed>("icenuc_num_hetfrz", scalar3d_layout_mid, m3_inv,
+                      grid_name);
+
+  // number conc of ice nuclei due to immersionfreezing (hetero nuc) [1/m3]
+  add_field<Computed>("icenuc_num_immfrz", scalar3d_layout_mid, m3_inv,
+                      grid_name);
+
+  // number conc of ice nuclei due to deposition nucleation (hetero nuc)[1/m3]
+  add_field<Computed>("icenuc_num_depnuc", scalar3d_layout_mid, m3_inv,
+                      grid_name);  //
+
+  // number conc of ice nuclei due to meyers deposition [1/m3]
+  add_field<Computed>("icenuc_num_meydep", scalar3d_layout_mid, m3_inv,
+                      grid_name);
+
+  // number of activated aerosol for ice nucleation(homogeneous frz only)[#/kg]
+  add_field<Computed>("num_act_aerosol_ice_nucle_hom", scalar3d_layout_mid,
+                      n_unit, grid_name);
+
+  // number of activated aerosol for ice nucleation[#/kg]
+  add_field<Computed>("num_act_aerosol_ice_nucle", scalar3d_layout_mid, n_unit,
                       grid_name);
 
   // ------------------------------------------------------------------------
-  // Output from this process
+  // Output from droplet activation process (dropmixnuc)
   // ------------------------------------------------------------------------
-
   // BALLI:???
-  add_field<Computed>("icenuc_num_hetfrz", scalar3d_layout_mid, 1 / m / m / m,
-                      grid_name);  // number conc of ice nuclei due to
-  // BALLI:???                                 // heterogeneous freezing [1/m3]
-  add_field<Computed>("icenuc_num_immfrz", scalar3d_layout_mid, 1 / m / m / m,
-                      grid_name);  // number conc of ice nuclei due to immersion
-  // BALLI:???                                 // freezing (hetero nuc) [1/m3]
-  add_field<Computed>("icenuc_num_depnuc", scalar3d_layout_mid, 1 / m / m / m,
-                      grid_name);  // number conc of ice nuclei due to
-                                   // deposition nucleation (hetero nuc)[1/m3]
-  // BALLI:???
-  add_field<Computed>(
-      "icenuc_num_meydep", scalar3d_layout_mid, 1 / m / m / m,
-      grid_name);  // number conc of ice nuclei due to meyers deposition [1/m3]
-
-  // BALLI:???
-  add_field<Computed>(
-      "num_act_aerosol_ice_nucle_hom", scalar3d_layout_mid, n_unit,
-      grid_name);  // number of activated aerosol for ice nucleation
-                   // (homogeneous freezing only) [#/kg]
-  // BALLI:???
-  add_field<Computed>(
-      "num_act_aerosol_ice_nucle", scalar3d_layout_mid, n_unit,
-      grid_name);  // number of activated aerosol for ice nucleation[#/kg]
-  // BALLI:???
+  // FIXME: THis looks like an internal variable for dropmixnuc, why we need it
+  // here???
   add_field<Computed>("qcld", scalar3d_layout_mid, n_unit,
                       grid_name);  // cloud droplet number mixing ratio [#/kg]
   // BALLI:???
+  // FIXME:This array should update the mmrs and nmrs
+  // tendencies for interstitial and cloud borne aerosols [#/kg]
   add_field<Computed>(
       "ptend_q",
       FieldLayout{{COL, LEV, CMP}, {ncol_, nlev_, mam4::aero_model::pcnst}},
-      n_unit, grid_name);  // tendencies for interstitial and cloud borne
-                           // aerosols [#/kg]
-  // BALLI:???
-  add_field<Computed>(
-      "tendnd", scalar3d_layout_mid, n_unit / s,
-      grid_name);  // tendency in droplet number mixing ratio [#/kg/s]
-  // BALLI:???
+      n_unit, grid_name);
+
+  // tendency in droplet number mixing ratio [#/kg/s]
+  add_field<Computed>("tendnd", scalar3d_layout_mid, n_unit / s, grid_name);
+
+  // activation fraction for aerosol number [fraction]
   add_field<Computed>(
       "factnum",
       FieldLayout{{COL, NMODES, LEV},
-                  {ncol_, mam_coupling::num_aero_modes(),nlev_}},
-      nondim, grid_name);  // activation fraction for aerosol number [fraction]
-  // BALLI:???
-  add_field<Computed>("ndropcol", scalar3d_layout_mid, n_unit / s,
+                  {ncol_, mam_coupling::num_aero_modes(), nlev_}},
+      nondim, grid_name);
+
+  auto inv_m2 = 1 / m / m;  // units of number mixing ratios of tracers
+  inv_m2.set_string("#/m2");
+  // BALLI:??? FIXME: This is internal diagnostic variable
+  // column-integrated droplet number [#/m2]
+  add_field<Computed>("ndropcol", scalar3d_layout_mid, inv_m2,
                       grid_name);  //
   // BALLI:???
   add_field<Computed>("ndropmix", scalar3d_layout_mid, n_unit / s,
@@ -944,10 +953,10 @@ void MAMAci::set_grids(
 
   auto cm = m / 100;
 
-    // units of number mixing ratios of tracers
+  // units of number mixing ratios of tracers
   auto frz_unit = 1 / (cm * cm * cm * s);
   n_unit.set_string("1(cm^-3 s^-1)");
- 
+
   // heterogeous freezing by immersion nucleation [cm^-3 s^-1]
   add_field<Computed>("hetfrz_immersion_nucleation_tend", scalar3d_layout_mid,
                       frz_unit, grid_name);
@@ -1207,9 +1216,6 @@ void MAMAci::run_impl(const double dt) {
       cloud_frac_new_, cloud_frac_old_, tendnd_, factnum_, ndropcol_, ndropmix_,
       nsource_, wtke_, ccn_, nact_, mact_, dropmixnuc_scratch_mem_, nlev_);
   Kokkos::fence();  // wait for ptend_q_ to be computed.
-  
-
-
 
   copy_mam4xx_array_to_scream<mam4::aero_model::pcnst>(
       team_policy, ptend_q_output_, ptend_q_, nlev_);
@@ -1219,10 +1225,10 @@ void MAMAci::run_impl(const double dt) {
       team_policy, coltend_cw_outp_, coltend_cw_, nlev_);
 
   call_hetfrz_compute_tendencies(
-      team_policy, hetfrz_, dry_aero_, wet_atm_, dry_atm_,
-      factnum_, hetfrz_immersion_nucleation_tend_,
-      hetfrz_contact_nucleation_tend_, hetfrz_depostion_nucleation_tend_,
-      naai_hom_, naai_, diagnostic_scratch_, nlev_, dt);
+      team_policy, hetfrz_, dry_aero_, wet_atm_, dry_atm_, factnum_,
+      hetfrz_immersion_nucleation_tend_, hetfrz_contact_nucleation_tend_,
+      hetfrz_depostion_nucleation_tend_, naai_hom_, naai_, diagnostic_scratch_,
+      nlev_, dt);
 
   Kokkos::fence();  // wait before returning to calling function
 }
