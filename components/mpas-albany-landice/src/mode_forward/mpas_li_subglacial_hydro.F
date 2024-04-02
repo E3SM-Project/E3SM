@@ -1000,16 +1000,27 @@ module li_subglacial_hydro
       if (conduc_coeff_drowned > 0.0_RKIND) then
          ! Use a thickness weighted conductivity coeff. when water thickness exceeds bump height
          do iEdge = 1, nEdges
-            conduc_coeff_wtd = (conduc_coeff * min(waterThicknessEdge(iEdge), bedRoughMax) + &
-                             conduc_coeff_drowned * max(waterThicknessEdge(iEdge) - bedRoughMax, 0.0_RKIND)) / &
-                             (waterThicknessEdge(iEdge) + 1.0e-16_RKIND)  ! Regularization only applies where value doesn't matter
-            effectiveConducEdge(iEdge) = conduc_coeff_wtd * waterThicknessEdge(iEdge)**(alpha-1.0_RKIND) * &
-               (gradMagPhiBaseEdge(iEdge)+1.0e-30_RKIND)**(beta - 2.0_RKIND)   ! small value used for regularization
+            if (gradMagPhiBaseEdge(iEdge) < 0.01_RKIND) then
+               effectiveConducEdge(iEdge) = 0.0_RKIND
+            else
+               conduc_coeff_wtd = (conduc_coeff * min(waterThicknessEdge(iEdge), bedRoughMax) + &
+                  conduc_coeff_drowned * max(waterThicknessEdge(iEdge) - bedRoughMax, 0.0_RKIND)) / &
+                  (waterThicknessEdge(iEdge) + 1.0e-16_RKIND)  ! Regularization only applies where value doesn't matter
+            
+               effectiveConducEdge(iEdge) = conduc_coeff_wtd * waterThicknessEdge(iEdge)**(alpha-1.0_RKIND) * &
+                  gradMagPhiBaseEdge(iEdge)**(beta - 2.0_RKIND)              
+            endif
          end do
       else
-         ! Just use a single conductivity coeff.
-         effectiveConducEdge(:) = conduc_coeff * waterThicknessEdge(:)**(alpha-1.0_RKIND) *&
-            (gradMagPhiBaseEdge(:)+1.0e-30_RKIND)**(beta - 2.0_RKIND)   ! small value used for regularization
+         do iEdge = 1, nEdges
+            ! Just use a single conductivity coeff.
+            if (gradMagPhiBaseEdge(iEdge) < 0.01_RKIND) then
+               effectiveConducEdge(iEdge) = 0.0_RKIND
+            else
+               effectiveConducEdge(iEdge) = conduc_coeff * waterThicknessEdge(iEdge)**(alpha-1.0_RKIND) *&
+               gradMagPhiBaseEdge(iEdge)**(beta - 2.0_RKIND)   
+            endif
+         enddo
       endif
 
       ! calculate diffusivity on edges
