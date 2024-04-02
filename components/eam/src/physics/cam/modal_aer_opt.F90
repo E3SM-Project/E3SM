@@ -18,6 +18,7 @@ use phys_control,      only: cam_chempkg_is
 use ref_pres,          only: top_lev => clim_modal_aero_top_lev
 use physconst,         only: rhoh2o, rga, rair
 use radconstants,      only: nswbands, nlwbands, idx_sw_diag, idx_uv_diag, idx_nir_diag
+use radconstants,      only: get_sw_spectral_midpoints, get_lw_spectral_midpoints
 use rad_constituents,  only: n_diag, rad_cnst_get_call_list, rad_cnst_get_info, rad_cnst_get_aer_mmr, &
                              rad_cnst_get_aer_props, rad_cnst_get_mode_props
 use physics_types,     only: physics_state
@@ -28,6 +29,7 @@ use pio,               only: file_desc_t, var_desc_t, pio_inq_dimlen, pio_inq_di
 use cam_pio_utils,     only: cam_pio_openfile
 use cam_history,       only:  addfld, horiz_only, add_default, outfld
 use cam_history_support, only: fillvalue
+use cam_history_support, only: add_hist_coord
 use cam_logfile,       only: iulog
 use perf_mod,          only: t_startf, t_stopf
 use cam_abortutils,        only: endrun
@@ -66,6 +68,15 @@ integer :: qaerwat_idx  = -1
 
 character(len=4) :: diag(0:n_diag) = (/'    ','_d1 ','_d2 ','_d3 ','_d4 ','_d5 ', &
                                        '_d6 ','_d7 ','_d8 ','_d9 ','_d10'/)
+
+integer, dimension(14) :: rrtmg_to_rrtmgp_swbands = (/ &
+   14, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 &
+/)
+real(r8), target :: sw_band_midpoints(nswbands), sw_band_midpoints_p(nswbands), lw_band_midpoints(nlwbands)
+
+! A toggle to switch between rrtmg and rrtmgp
+! TODO: move this to the namelist at some point?
+integer :: output_aer_props_rrtmgp = 1 ! 1=rrtmgp, 0=rrtmg
 
 !Declare the following threadprivate variables to be used for calcsize and water uptake
 !These are defined as module level variables to aviod allocation-deallocation in a loop
@@ -138,6 +149,7 @@ subroutine modal_aer_opt_init()
    logical :: call_list(0:n_diag)
    integer :: ilist, nmodes, m_ncoef, m_prefr, m_prefi
    integer :: errcode, istat
+   integer :: i_nswband
 
    character(len=*), parameter :: routine='modal_aer_opt_init'
    !----------------------------------------------------------------------------
@@ -208,10 +220,30 @@ subroutine modal_aer_opt_init()
    if (istat .ne. 0) call endrun("Unable to allocate qaerwat_m: "//errmsg(__FILE__,__LINE__) )
    !$OMP END PARALLEL
 
+   call get_sw_spectral_midpoints(sw_band_midpoints, 'cm-1')
+   call get_lw_spectral_midpoints(lw_band_midpoints, 'cm-1')
+   do i_nswband = 1, nswbands
+      sw_band_midpoints_p(i_nswband) = sw_band_midpoints(rrtmg_to_rrtmgp_swbands(i_nswband))
+   end do
+   if (output_aer_props_rrtmgp == 1) then
+      call add_hist_coord('swband', nswbands, 'Shortwave wavenumber', '1/cm', sw_band_midpoints_p)
+   else
+      call add_hist_coord('swband', nswbands, 'Shortwave wavenumber', '1/cm', sw_band_midpoints)
+   end if
+   call add_hist_coord('lwband', nlwbands, 'Longwave wavenumber', '1/cm', lw_band_midpoints)
+
    ! Add diagnostic fields to history output.
 
+   call addfld ('MODAL_AER_TAU_SW', (/'lev','swband'/), 'A', '1', &
+                  'Aerosol shortwave extinction optical depth', flag_xyfill=.true.) 
+   call addfld ('MODAL_AER_SSA_SW', (/'lev','swband'/), 'A', '1', &
+                  'Aerosol shortwave single scattering albedo', flag_xyfill=.true.) 
+   call addfld ('MODAL_AER_G_SW', (/'lev','swband'/), 'A', '1', &
+                  'Aerosol shortwave assymmetry parameter', flag_xyfill=.true.)
+   call addfld ('MODAL_AER_TAU_LW', (/'lev','lwband'/), 'A', '1', &
+                  'Aerosol longwave absorption optical depth', flag_xyfill=.true.)
    call addfld ('EXTINCT',(/ 'lev' /),    'A','/m','Aerosol extinction', flag_xyfill=.true.)
-   call addfld ('AER_TAU_SW_VIS', (/'lev'/), 'A', '/m', &
+   call addfld ('AER_TAU_SW_VIS', (/'lev'/), 'A', '1', &
                   'Aerosol shortwave extinction optical depth at 550 nm', flag_xyfill=.true.)
    call addfld ('tropopause_m',horiz_only,    'A',' m  ','tropopause level in meters', flag_xyfill=.true.)
    call addfld ('ABSORB',(/ 'lev' /),    'A','/m','Aerosol absorption', flag_xyfill=.true.)
@@ -435,10 +467,17 @@ subroutine modal_aer_opt_init()
 
    do ilist = 1, n_diag
       if (call_list(ilist)) then
-
+         call addfld ('MODAL_AER_TAU_SW'//diag(ilist), (/'lev','swband'/), 'A', '1', &
+                        'Aerosol shortwave extinction optical depth', flag_xyfill=.true.) 
+         call addfld ('MODAL_AER_SSA_SW'//diag(ilist), (/'lev','swband'/), 'A', '1', &
+                        'Aerosol shortwave single scattering albedo', flag_xyfill=.true.) 
+         call addfld ('MODAL_AER_G_SW'//diag(ilist), (/'lev','swband'/), 'A', '1', &
+                        'Aerosol shortwave assymmetry parameter', flag_xyfill=.true.)
+         call addfld ('MODAL_AER_TAU_LW'//diag(ilist), (/'lev','lwband'/), 'A', '1', &
+                        'Aerosol longwave absorption optical depth', flag_xyfill=.true.)
          call addfld ('EXTINCT'//diag(ilist), (/ 'lev' /), 'A','1/m', &
               'Aerosol extinction', flag_xyfill=.true.)
-         call addfld ('AER_TAU_SW_VIS'//diag(ilist), (/'lev'/), 'A', '/m', &
+         call addfld ('AER_TAU_SW_VIS'//diag(ilist), (/'lev'/), 'A', '1', &
                   'Aerosol shortwave extinction optical depth at 550 nm', flag_xyfill=.true.)
          call addfld ('ABSORB'//diag(ilist),  (/ 'lev' /), 'A','1/m', &
               'Aerosol absorption', flag_xyfill=.true.)
@@ -545,6 +584,9 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
    ! Diagnostics
    real(r8) :: extinct(pcols,pver), tropopause_m(pcols)
    real(r8) :: aertauswvis(pcols, pver)
+   real(r8) :: aertaubndsw(pcols,pver,nswbands)
+   real(r8) :: aerssabndsw(pcols,pver,nswbands)
+   real(r8) :: aerasmbndsw(pcols,pver,nswbands)
    real(r8) :: absorb(pcols,pver)
    real(r8) :: aodvis(pcols)               ! extinction optical depth
    real(r8) :: aodall(pcols)               ! extinction optical depth
@@ -658,6 +700,10 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
 
    mass(:ncol,:)        = state%pdeldry(:ncol,:)*rga
    air_density(:ncol,:) = state%pmid(:ncol,:)/(rair*state%t(:ncol,:))
+
+   aertaubndsw(1:ncol,:pver,:) = 0.0_r8
+   aerssabndsw(1:ncol,:pver,:) = 0.0_r8
+   aerasmbndsw(1:ncol,:pver,:) = 0.0_r8
 
    ! diagnostics for visible band summed over modes
    extinct(1:ncol,:)     = 0.0_r8
@@ -1191,6 +1237,9 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
                wa(i,k,isw)     = wa(i,k,isw)     + dopaer(i)*palb(i)
                ga(i,k,isw)     = ga(i,k,isw)     + dopaer(i)*palb(i)*pasm(i)
                fa(i,k,isw)     = fa(i,k,isw)     + dopaer(i)*palb(i)*pasm(i)*pasm(i)
+               aertaubndsw(i,k,isw) = tauxar(i,k,isw)
+               aerssabndsw(i,k,isw) = wa(i,k,isw)/tauxar(i,k,isw)
+               aerasmbndsw(i,k,isw) = ga(i,k,isw)/wa(i,k,isw)
             end do
 
          end do ! pver
@@ -1255,8 +1304,11 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
       aodabs(idxnite(i))    = fillvalue
    end do
 
+   call outfld('MODAL_AER_TAU_SW'//diag(list_idx), aertau_bnd_sw, pcols, lchnk)
+   call outfld('MODAL_AER_SSA_SW'//diag(list_idx), aerssa_bnd_sw, pcols, lchnk)
+   call outfld('MODAL_AER_G_SW'//diag(list_idx), aerasm_bnd_sw, pcols, lchnk)
    call outfld('EXTINCT'//diag(list_idx),  extinct, pcols, lchnk)
-   call outfld('AER_TAU_SW_VIS'//diag(list_idx),  aertauswvis, pcols, lchnk)
+   call outfld('AER_TAU_SW_VIS'//diag(list_idx), aertauswvis, pcols, lchnk)
    call outfld('tropopause_m', tropopause_m, pcols, lchnk)
    call outfld('ABSORB'//diag(list_idx),   absorb,  pcols, lchnk)
    call outfld('AODVIS'//diag(list_idx),   aodvis,  pcols, lchnk)
@@ -1386,6 +1438,7 @@ subroutine modal_aero_lw(list_idx, dt, state, pbuf, tauxar, clear_rh)
    type(physics_buffer_desc), pointer :: pbuf(:)
 
    real(r8), intent(out) :: tauxar(pcols,pver,nlwbands) ! layer absorption optical depth
+   real(r8) :: aertaubndlw(pcols,pver,nlwbands)
    real(r8), optional,  intent(in) :: clear_rh(pcols,pver) ! optional clear air relative humidity
                                                            ! that gets passed to modal_aero_wateruptake_dr
 
@@ -1440,6 +1493,7 @@ subroutine modal_aero_lw(list_idx, dt, state, pbuf, tauxar, clear_rh)
 
    ! initialize output variables
    tauxar(:ncol,:,:) = 0._r8
+   aertaubndlw(1:ncol,:pver,:) = 0.0_r8
 
    ! dry mass in each cell
    mass(:ncol,:) = state%pdeldry(:ncol,:)*rga
@@ -1597,6 +1651,7 @@ subroutine modal_aero_lw(list_idx, dt, state, pbuf, tauxar, clear_rh)
 
             do i = 1, ncol
                tauxar(i,k,ilw) = tauxar(i,k,ilw) + dopaer(i)
+               aertaubndlw(i,k,ilw) = tauxar(i,k,ilw)
             end do
 
          end do ! k = top_lev, pver
@@ -1604,6 +1659,8 @@ subroutine modal_aero_lw(list_idx, dt, state, pbuf, tauxar, clear_rh)
       end do  ! nlwbands
 
    end do ! m = 1, nmodes
+
+   call outfld('MODAL_AER_TAU_LW'//diag(list_idx), aertaubndlw, pcols, lchnk)
 
 end subroutine modal_aero_lw
 
