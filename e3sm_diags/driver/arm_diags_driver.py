@@ -343,6 +343,8 @@ def run_diag_annual_cycle(parameter: ARMDiagsParameter) -> ARMDiagsParameter:
                 vars_to_data[season] = result
                 # Saving the metrics as a json.
                 metrics_dict["unit"] = test.units
+                metrics_dict["ref_domain"]  = list(ref_domain)
+                metrics_dict["test_domain"] = list(test_domain)
                 parameter.output_file = "-".join([ref_name, var, season, region])
                 fnm = os.path.join(
                     utils.general.get_output_dir(parameter.current_set, parameter),
@@ -538,6 +540,8 @@ def run_diag_annual_cycle_aerosol(parameter: ARMDiagsParameter) -> ARMDiagsParam
                 vars_to_data[season] = result
                 # Saving the metrics as a json.
                 metrics_dict["unit"] = test.units
+                metrics_dict["ref_domain"]  = list(ref_domain)
+                metrics_dict["test_domain"] = list(test_domain)
                 print(parameter.var_units, test.units)
                 parameter.output_file = "-".join(
                     [ref_name, var, season, "aerosol", region]
