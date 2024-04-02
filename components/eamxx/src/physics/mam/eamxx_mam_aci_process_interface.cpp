@@ -780,9 +780,73 @@ void MAMAci::set_grids(
   // cloud fraction [nondimentional] computed by eamxx_cld_fraction_process
   add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid_name);
 
+  // MUST FIXME: w_sec,  is at OLD time step; strat_cld_frac and
+  // BALLI:???
+  // Vertical velocity variance (wp2) at midpoints
+  add_field<Required>("w_sec", scalar3d_layout_int, m2 / s2, grid_name);
+
+  // BALLI:???
+  // FIXME:liq_strat_cld_frac may also need OLD time
+  // Liquid stratiform cloud fraction  at midpoints
+  add_field<Required>("liq_strat_cld_frac", scalar3d_layout_mid, nondim,
+                      grid_name);
+  // BALLI:???
+  add_field<Required>("kvh", scalar3d_layout_int, m2 / s,
+                      grid_name);  // Eddy diffusivity for heat
+
+  // Layout for 4D (2d horiz X 1d vertical x number of modes) variables
+  const int num_aero_modes = mam_coupling::num_aero_modes();
+  FieldLayout scalar4d_layout_mid{
+      {COL, LEV, NMODES}, {ncol_, nlev_, num_aero_modes}};  // mid points
+  // BALLI:???
+  add_field<Required>("dgnum", scalar4d_layout_mid, m,
+                      grid_name);  // dry diameter of aerosols
+
   // ========================================================================
   // Output from this whole process
   // ========================================================================
+
+  // interstitial and cloudborne aerosol tracers of interest: mass (q) and
+  // number (n) mixing ratios
+  for(int mode = 0; mode < mam_coupling::num_aero_modes(); ++mode) {
+    // interstitial aerosol tracers of interest: number (n) mixing ratios
+    const char *int_nmr_field_name =
+        mam_coupling::int_aero_nmr_field_name(mode);
+    add_field<Updated>(int_nmr_field_name, scalar3d_layout_mid, n_unit,
+                       grid_name, "tracers");
+
+    // cloudborne aerosol tracers of interest: number (n) mixing ratios
+    // NOTE: DO NOT add cld borne aerosols to the "tracer" group as these are
+    // NOT advected
+    const char *cld_nmr_field_name =
+        mam_coupling::cld_aero_nmr_field_name(mode);
+    add_field<Updated>(cld_nmr_field_name, scalar3d_layout_mid, n_unit,
+                       grid_name);
+
+    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+      // (interstitial) aerosol tracers of interest: mass (q) mixing ratios
+      const char *int_mmr_field_name =
+          mam_coupling::int_aero_mmr_field_name(mode, a);
+      if(strlen(int_mmr_field_name) > 0) {
+        add_field<Updated>(int_mmr_field_name, scalar3d_layout_mid, q_unit,
+                           grid_name, "tracers");
+      }
+      // (cloudborne) aerosol tracers of interest: mass (q) mixing ratios
+      // NOTE: DO NOT add cld borne aerosols to the "tracer" group as these are
+      // NOT advected
+      const char *cld_mmr_field_name =
+          mam_coupling::cld_aero_mmr_field_name(mode, a);
+      if(strlen(cld_mmr_field_name) > 0) {
+        add_field<Updated>(cld_mmr_field_name, scalar3d_layout_mid, q_unit,
+                           grid_name);
+      }
+    }
+  }
+  for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
+    const char *gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
+    add_field<Updated>(gas_mmr_field_name, scalar3d_layout_mid, q_unit,
+                       grid_name, "tracers");
+  }
 
   // ------------------------------------------------------------------------
   // Output from ice nucleation process
@@ -838,88 +902,47 @@ void MAMAci::set_grids(
                   {ncol_, mam_coupling::num_aero_modes(), nlev_}},
       nondim, grid_name);
 
-  auto inv_m2 = 1 / m / m;  // units of number mixing ratios of tracers
+  auto inv_m2 = 1 / m / m;
   inv_m2.set_string("#/m2");
   // BALLI:??? FIXME: This is internal diagnostic variable
   // column-integrated droplet number [#/m2]
   add_field<Computed>("ndropcol", scalar3d_layout_mid, inv_m2,
                       grid_name);  //
-  // BALLI:???
-  add_field<Computed>("ndropmix", scalar3d_layout_mid, n_unit / s,
-                      grid_name);  // droplet number mixing ratio tendency due
-                                   // to mixing [#/kg/s]
-  // BALLI:???
-  add_field<Computed>(
-      "nsource", scalar3d_layout_mid, n_unit / s,
-      grid_name);  // droplet number mixing ratio source tendency [#/kg/s]
-  // BALLI:???
-  add_field<Computed>("wtke", scalar3d_layout_mid, n_unit / s, grid_name);  //
+  // BALLI:??? FIXME: This is internal diagnostic variable
+  // droplet number mixing ratio tendency due to mixing [#/kg/s]
+  add_field<Computed>("ndropmix", scalar3d_layout_mid, n_unit / s, grid_name);
+  // BALLI:??? FIXME: This is internal diagnostic variable
+  // droplet number mixing ratio source tendency [#/kg/s]
+  add_field<Computed>("nsource", scalar3d_layout_mid, n_unit / s, grid_name);
 
-  // BALLI:???
+  // BALLI:??? FIXME: This is internal diagnostic variable
+  // subgrid vertical velocity [m/s]
+  add_field<Computed>("wtke", scalar3d_layout_mid, m / s, grid_name);
+
+  // BALLI:??? FIXME: This is internal diagnostic variable
+  // number conc of aerosols activated at supersat [#/m^3]
+  //       note:  activation fraction fluxes are defined as
+  //      fluxn = [flux of activated aero. number into cloud
+  //      [#/m^2/s]]
+  //            / [aero. number conc. in updraft, just below
+  //            cloudbase [#/m^3]]
   add_field<Computed>(
       "ccn", FieldLayout{{COL, LEV, CMP}, {ncol_, nlev_, mam4::ndrop::psat}},
-      n_unit,
-      grid_name);  // number conc of aerosols activated at supersat [#/m^3]
-                   //       note:  activation fraction fluxes are defined as
-                   //      fluxn = [flux of activated aero. number into cloud
-                   //      [#/m^2/s]]
-                   //            / [aero. number conc. in updraft, just below
-                   //            cloudbase [#/m^3]]
-  // BALLI:???
+      m3_inv, grid_name);
+
+  // BALLI:??? FIXME: This is internal diagnostic variable
+  // column tendency for diagnostic output
   add_field<Computed>(
       "coltend",
       FieldLayout{{COL, LEV, CMP}, {ncol_, nlev_, mam4::ndrop::ncnst_tot}},
-      nondim, grid_name);  // column tendency for diagnostic output
-  // BALLI:???
+      nondim, grid_name);
+
+  // BALLI:??? FIXME: This is internal diagnostic variable
+  // column tendency
   add_field<Computed>(
       "coltend_cw",
       FieldLayout{{COL, LEV, CMP}, {ncol_, nlev_, mam4::ndrop::ncnst_tot}},
-      nondim, grid_name);  // column tendency
-
-  // MUST FIXME: The aerosols has a wet mixing ratio, we should convert that to
-  // dry
-
-  // interstitial and cloudborne aerosol tracers of interest: mass (q) and
-  // number (n) mixing ratios
-  for(int mode = 0; mode < mam_coupling::num_aero_modes(); ++mode) {
-    // interstitial aerosol tracers of interest: number (n) mixing ratios
-    const char *int_nmr_field_name =
-        mam_coupling::int_aero_nmr_field_name(mode);
-    add_field<Updated>(int_nmr_field_name, scalar3d_layout_mid, n_unit,
-                       grid_name, "tracers");
-
-    // cloudborne aerosol tracers of interest: number (n) mixing ratios
-    // NOTE: DO NOT add cld borne aerosols to the "tracer" group as these are
-    // NOT advected
-    const char *cld_nmr_field_name =
-        mam_coupling::cld_aero_nmr_field_name(mode);
-    add_field<Updated>(cld_nmr_field_name, scalar3d_layout_mid, n_unit,
-                       grid_name);
-
-    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
-      // (interstitial) aerosol tracers of interest: mass (q) mixing ratios
-      const char *int_mmr_field_name =
-          mam_coupling::int_aero_mmr_field_name(mode, a);
-      if(strlen(int_mmr_field_name) > 0) {
-        add_field<Updated>(int_mmr_field_name, scalar3d_layout_mid, q_unit,
-                           grid_name, "tracers");
-      }
-      // (cloudborne) aerosol tracers of interest: mass (q) mixing ratios
-      // NOTE: DO NOT add cld borne aerosols to the "tracer" group as these are
-      // NOT advected
-      const char *cld_mmr_field_name =
-          mam_coupling::cld_aero_mmr_field_name(mode, a);
-      if(strlen(cld_mmr_field_name) > 0) {
-        add_field<Updated>(cld_mmr_field_name, scalar3d_layout_mid, q_unit,
-                           grid_name);
-      }
-    }
-  }
-  for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
-    const char *gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
-    add_field<Updated>(gas_mmr_field_name, scalar3d_layout_mid, q_unit,
-                       grid_name, "tracers");
-  }
+      nondim, grid_name);
 
   // Inputs (atmospheric quantities) for aci codes that existed in PBUF in EAM
   // These outputs should come from the cloud macrophysics process (e.g., SHOC)
@@ -927,29 +950,6 @@ void MAMAci::set_grids(
   m2.set_string("m^2");
   auto s2 = s * s;
   s2.set_string("s^2");
-
-  // MUST FIXME: w_sec,  is at OLD time step; strat_cld_frac and
-  // liq_strat_cld_frac may also need OLD time
-  // BALLI:???
-  add_field<Required>(
-      "w_sec", scalar3d_layout_int, m2 / s2,
-      grid_name);  // Vertical velocity variance (wp2) at midpoints
-
-  // BALLI:???
-  add_field<Required>(
-      "liq_strat_cld_frac", scalar3d_layout_mid, nondim,
-      grid_name);  // Liquid stratiform cloud fraction  at midpoints
-  // BALLI:???
-  add_field<Required>("kvh", scalar3d_layout_int, m2 / s,
-                      grid_name);  // Eddy diffusivity for heat
-
-  // Layout for 4D (2d horiz X 1d vertical x number of modes) variables
-  const int num_aero_modes = mam_coupling::num_aero_modes();
-  FieldLayout scalar4d_layout_mid{
-      {COL, LEV, NMODES}, {ncol_, nlev_, num_aero_modes}};  // mid points
-  // BALLI:???
-  add_field<Required>("dgnum", scalar4d_layout_mid, m,
-                      grid_name);  // dry diameter of aerosols
 
   auto cm = m / 100;
 
