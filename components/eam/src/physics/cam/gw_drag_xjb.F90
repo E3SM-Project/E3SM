@@ -1,6 +1,4 @@
 !
-#include<xjb_drag3.inc>
-!#define continuous 1
 module gw_drag_xjb
 !---------------------------------------------------------------------------------
 ! Purpose:
@@ -10,9 +8,6 @@ module gw_drag_xjb
 !
 ! Author: Byron Boville
 !
-! Modified: Zhang He, 2012-01-14, important revision in subroutine gw_oro
-!           Zhang He, 2013-02-25, ubi(i,pver) < 1E-12 --> abs(ubi(i,pver)) < 1E-12
-!           Zhang He, 2013-03-12
 !---------------------------------------------------------------------------------
   use shr_kind_mod,  only: r8 => shr_kind_r8
   use spmd_utils,    only: masterproc
@@ -38,7 +33,7 @@ module gw_drag_xjb
 !===========
 !kpbl2d(!Layer index containing PBL top within or at the base interface)
         use hycoef,             only: hyai, hybi, hyam, hybm, etamid !get the znu,znw,p_top set to 0
-        use hb_diff,            only: rino_pub
+        use hb_diff,            only: pblintd!rino_pub
 !===========================
 !   Jinbo Xie1 modification
 !===========================
@@ -588,11 +583,7 @@ integer :: kpbl2d_in(pcols)
         xland=landfrac,br=rino_pub,&
         var2d=state%var,oc12d=state%oc,&
         oa2d=state%oadir,&
-#ifndef continuous
         ol2d=state%ol,&!dxy2d=state%dxydir,&
-#else
-        ol2d=state%terrout,&
-#endif
         znu=etamid(pver:1:-1),dz=dz,pblh=pblh,&
         cp=cpair,g=g,rd=r,rv=rh2o,ep1=zvir,pi=pi,bnvbg=nm(:,pver:1:-1),&
         dt=dt,dx=rearth*cos(rlat)*(2._r8*pi/256._r8),dy=rearth*(pi/(128._r8-1._r8)),&
@@ -601,8 +592,6 @@ integer :: kpbl2d_in(pcols)
         ims=1,ime=pcols,jms=0,jme=0,kms=1,kme=pver, &
         its=1,ite=pcols,jts=0,jte=0,kts=1,kte=pver, &
         gwd_ls=1,gwd_bl=1,gwd_ss=0,gwd_fd=0 )
-        !ï¼gwd_ls=1,gwd_b0=1,gwd_ss=0,gwd_fd=0 )
-
 
 
 ! z and dz all above surface and sea level, no need to add a new layer
@@ -762,7 +751,6 @@ integer :: kpbl2d_in(pcols)
   end subroutine gw_prof
 
 !===============================================================================
-
   subroutine gw_oro (lchnk, ncol,                &
        u, v, t, sgh, pm, pi, dpm, zm, nm, pblh,  &
        kldv, kldvmn, ksrc, ksrcmn, rdpldv, tau, ubi, ubm, xv, yv)

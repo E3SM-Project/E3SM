@@ -35,9 +35,6 @@ module hb_diff
   ! Public interfaces
   public init_hb_diff
   public compute_hb_diff
-  !==============Jinbo Xie=============
-    real(r8),public :: rino_pub(pcols)        ! bulk Richardson no. surface level
-  !=====================================
   public pblintd
   !
   ! PBL limits
@@ -69,6 +66,10 @@ module hb_diff
   integer :: npbl       ! Maximum number of levels in pbl from surface
   integer :: ntop_turb  ! Top level to which turbulent vertical diffusion is applied.
   integer :: nbot_turb  ! Bottom level to which turbulent vertical diff is applied.
+  !==============Jinbo Xie=============
+  !real(r8),public :: rino_pub(pcols)        ! bulk Richardson no. surface level
+  !real(r8) :: rino_pub(pcols)
+  !=====================================
 
 !===============================================================================
 CONTAINS
@@ -376,9 +377,11 @@ end subroutine init_hb_diff
     !
     integer  :: i                       ! longitude index
     integer  :: k                       ! level index
-
     real(r8) :: phiminv(pcols)          ! inverse phi function for momentum
     real(r8) :: phihinv(pcols)          ! inverse phi function for heat
+    !!Jinbo Xie
+    real(r8) :: rino_pub(pcols)
+    !!Jinbo Xie
     real(r8) :: rino(pcols,pver)        ! bulk Richardson no. from level to ref lev
     real(r8) :: tlv(pcols)              ! ref. level pot tmp + tmp excess
     real(r8) :: vvk                     ! velocity magnitude squared
@@ -450,8 +453,6 @@ end subroutine init_hb_diff
           end if
        end do
     end do
-
-
     !!================Jinbo Xie============
     rino_pub(:)=rino(:,pver)
     !!================Jinbo Xie============

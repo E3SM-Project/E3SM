@@ -119,7 +119,7 @@ module physics_types
           oc        !convexity of high-res grid height
      real(r8), dimension(:,:),allocatable           :: &
           oadir        !orographic asymmetry in a coarse grid
-     real(r8), dimension(:,:),,allocatable          :: &
+     real(r8), dimension(:,:),allocatable          :: &
           ol        !orographic length in a coarse grid 
      !real(r8), dimension(pcols,nvar_dirOL)           :: &
           !dxydir    !representative grid length in a coarse grid

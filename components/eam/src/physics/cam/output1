@@ -1,0 +1,404 @@
+28a29
+>   use constituents, only: pcnst               ! these should be passed in
+38c39,43
+<   public pblintd
+---
+> 
+> !==============Jinbo Xie=============
+>   real(r8),public :: rino_pub(pcols)        ! bulk Richardson no. surface level
+> !=====================================
+> 
+41a47
+>   real(r8), parameter :: ustar_min = 0.01_r8        ! min permitted value of ustar
+57c63
+< 
+---
+>   !
+59c65
+< 
+---
+>   !
+60a67,68
+>   real(r8) :: rair       ! Gas const for dry air
+>   real(r8) :: zvir       ! rh2o/rair - 1
+69,71d76
+<   !==============Jinbo Xie=============
+<   !real(r8),public :: rino_pub(pcols)        ! bulk Richardson no. surface level
+<   !=====================================
+73d77
+< !===============================================================================
+75,131c79,100
+< !===============================================================================
+< 
+< subroutine init_hb_diff(gravx, cpairx, ntop_eddy, nbot_eddy, pref_mid, &
+<                         vkx, eddy_scheme)
+< 
+<    !----------------------------------------------------------------------- 
+<    ! 
+<    ! Initialize time independent variables of turbulence/pbl package.
+<    ! 
+<    !-----------------------------------------------------------------------
+< 
+<    !------------------------------Arguments--------------------------------
+<    real(r8), intent(in) :: gravx     ! acceleration of gravity
+<    real(r8), intent(in) :: cpairx    ! specific heat of dry air
+<    real(r8), intent(in) :: pref_mid(pver)! reference pressures at midpoints
+<    real(r8), intent(in) :: vkx       ! Von Karman's constant
+<    integer, intent(in)  :: ntop_eddy ! Top level to which eddy vert diff is applied.
+<    integer, intent(in)  :: nbot_eddy ! Bottom level to which eddy vert diff is applied.
+<    character(len=16),  intent(in) :: eddy_scheme
+< 
+<    !---------------------------Local workspace-----------------------------
+<    integer :: k                     ! vertical loop index
+<    !-----------------------------------------------------------------------
+< 
+<    ! Basic constants
+<    cpair = cpairx
+<    g     = gravx
+<    vk    = vkx
+<    ccon  = fak*sffrac*vk
+<    ntop_turb = ntop_eddy
+<    nbot_turb = nbot_eddy
+< 
+<    ! Set the square of the mixing lengths.
+<    ml2(ntop_turb) = 0._r8
+<    do k = ntop_turb+1, nbot_turb
+<       ml2(k) = 30.0_r8**2                 ! HB scheme: length scale = 30m  
+<       if  ( eddy_scheme .eq. 'HBR' ) then      
+<          ml2(k) = 1.0_r8**2               ! HBR scheme: length scale = 1m  
+<       end if
+<    end do
+<    ml2(nbot_turb+1) = 0._r8
+< 
+<    ! Limit pbl height to regions below 400 mb
+<    ! npbl = max number of levels (from bottom) in pbl
+< 
+<    npbl = 0
+<    do k=nbot_turb,ntop_turb,-1
+<       if (pref_mid(k) >= pblmaxp) then
+<          npbl = npbl + 1
+<       end if
+<    end do
+<    npbl = max(npbl,1)
+< 
+<    if (masterproc) then
+<       write(iulog,*)'INIT_HB_DIFF: PBL height will be limited to bottom ',npbl, &
+<          ' model levels. Top is ',pref_mid(pverp-npbl),' pascals'
+<    end if
+---
+>   !
+>   !===============================================================================
+>   subroutine init_hb_diff(gravx,      cpairx, rairx, zvirx, ntop_eddy,  &
+>        nbot_eddy,  hypm,   vkx , eddy_scheme)
+>     !----------------------------------------------------------------------- 
+>     ! 
+>     ! Purpose:  
+>     ! Initialize time independent variables of turbulence/pbl package.
+>     ! 
+>     ! Author: B. Boville, B. Stevens (August 2000)
+>     ! 
+>     !-----------------------------------------------------------------------
+>     !------------------------------Arguments--------------------------------
+>     real(r8), intent(in) :: gravx     ! acceleration of gravity
+>     real(r8), intent(in) :: cpairx    ! specific heat of dry air
+>     real(r8), intent(in) :: rairx     ! gas constant for dry air
+>     real(r8), intent(in) :: zvirx     ! rh2o/rair - 1
+>     real(r8), intent(in) :: hypm(pver)! reference pressures at midpoints
+>     real(r8), intent(in) :: vkx       ! Von Karman's constant
+>     integer, intent(in)  :: ntop_eddy ! Top level to which eddy vert diff is applied.
+>     integer, intent(in)  :: nbot_eddy ! Bottom level to which eddy vert diff is applied.
+>     character(len=16),  intent(in) :: eddy_scheme
+133c102,137
+< end subroutine init_hb_diff
+---
+>     !---------------------------Local workspace-----------------------------
+>     integer :: k                     ! vertical loop index
+>     !-----------------------------------------------------------------------
+>     !
+>     ! Basic constants
+>     !
+>     cpair = cpairx
+>     rair  = rairx
+>     g     = gravx
+>     zvir  = zvirx
+>     vk    = vkx
+>     ccon  = fak*sffrac*vk
+>     ntop_turb = ntop_eddy
+>     nbot_turb = nbot_eddy
+>     !
+>     ! Set the square of the mixing lengths.
+>     !
+>     ml2(ntop_turb) = 0._r8
+>     do k = ntop_turb+1, nbot_turb
+>        ml2(k) = 30.0_r8**2                 ! HB scheme: length scale = 30m  
+>        if  ( eddy_scheme .eq. 'HBR' ) then      
+>           ml2(k) = 1.0_r8**2               ! HBR scheme: length scale = 1m  
+>        end if
+>     end do
+>     ml2(nbot_turb+1) = 0._r8
+>     !
+>     ! Limit pbl height to regions below 400 mb
+>     ! npbl = max number of levels (from bottom) in pbl
+>     !
+>     npbl = 0
+>     do k=nbot_turb,ntop_turb,-1
+>        if (hypm(k) >= pblmaxp) then
+>           npbl = npbl + 1
+>        end if
+>     end do
+>     npbl = max(npbl,1)
+135c139,142
+< !===============================================================================
+---
+>     if (masterproc) then
+>        write(iulog,*)'INIT_HB_DIFF: PBL height will be limited to bottom ',npbl, &
+>             ' model levels. Top is ',hypm(pverp-npbl),' pascals'
+>     end if
+136a144,147
+>     return
+>   end subroutine init_hb_diff
+>   !
+>   !===============================================================================
+140c151
+<        shflx   ,qflx    ,obklen  ,ustar   ,pblh    , &
+---
+>        shflx   ,cflx    ,obklen  ,ustar   ,pblh    , &
+143d153
+<        ri      , &
+154,156d163
+< 
+<     use pbl_utils, only: virtem, calc_ustar, calc_obklen
+< 
+166c173
+<     real(r8), intent(in)  :: q(pcols,pver)            ! specific humidity [kg/kg]
+---
+>     real(r8), intent(in)  :: q(pcols,pver,pcnst)      ! specific humidity [kg/kg]
+174c181
+<     real(r8), intent(in)  :: qflx(pcols)              ! water vapor flux
+---
+>     real(r8), intent(in)  :: cflx(pcols,pcnst)        ! constituent flux
+182a190
+>     real(r8) :: kqfs(pcols,pcnst)                     ! kinematic surf constituent flux (kg/m2/s)
+194c202,204
+<     real(r8), intent(out) :: ri(pcols,pver)           ! richardson number: n2/s2
+---
+> 
+>     integer :: ktopbl(pcols)            ! index of first midpoint inside pbl
+>     integer :: ktopblmn                 ! min value of ktopbl
+198,199d207
+<     real(r8) :: thv(pcols,pver)         ! virtual temperature
+<     real(r8) :: rrho(pcols)             ! 1./bottom level density
+201d208
+<     real(r8) :: kqfs(pcols)             ! kinematic surf constituent flux (kg/m2/s)
+206a214
+>     real(r8) :: ri(pcols,pver)          ! richardson number: n2/s2
+208d215
+<     integer  :: ktopbl(pcols)           ! index of first midpoint inside pbl
+212,223d218
+< 
+<     ! virtual temperature
+<     thv(:ncol,ntop_turb:) = virtem(th(:ncol,ntop_turb:),q(:ncol,ntop_turb:))
+< 
+<     ! Compute ustar, Obukhov length, and kinematic surface fluxes.
+<     call calc_ustar(t(:ncol,pver),pmid(:ncol,pver),taux(:ncol),tauy(:ncol), &
+<          rrho(:ncol),ustar(:ncol))
+<     call calc_obklen(th(:ncol,pver), thv(:ncol,pver), qflx(:ncol),  &
+<                      shflx(:ncol),   rrho(:ncol),     ustar(:ncol), &
+<                      khfs(:ncol),    kqfs(:ncol),     kbfs(:ncol),  &
+<                      obklen(:ncol))
+<     ! Calculate s2, n2, and Richardson number.
+225,226c220,223
+<          thv     ,z       ,u       ,v       , &
+<          s2      ,n2      ,ri      )
+---
+>          th      ,q       ,z       ,u       ,v       , &
+>          t       ,pmid    ,cflx    ,shflx   ,taux    , &
+>          tauy    ,ustar   ,obklen  ,kqfs    ,khfs    , &
+>          kbfs    ,s2      ,n2      ,ri      )
+231c228
+<          thv     ,z       ,u       ,v       , &
+---
+>          th      ,q       ,z       ,u       ,v       , &
+245c242
+<          ktopbl  ,tke     ,bge     ,eddy_scheme)
+---
+>          ktopbl  ,ktopblmn,tke     ,bge     ,eddy_scheme)
+249d245
+< 
+255,257c251,254
+<        thv     ,z       ,u       ,v       , &
+<        s2      ,n2      ,ri      )
+< 
+---
+>        th      ,q       ,z       ,u       ,v       , &
+>        t       ,pmid    ,cflx    ,shflx   ,taux    , &
+>        tauy    ,ustar   ,obklen  ,kqfs    ,khfs    , &
+>        kbfs    ,s2      ,n2      ,ri      )
+276c273,274
+<     real(r8), intent(in)  :: thv(pcols,pver)         ! virtual temperature
+---
+>     real(r8), intent(in)  :: th(pcols,pver)          ! potential temperature [K]
+>     real(r8), intent(in)  :: q(pcols,pver,pcnst)     ! specific humidity [kg/kg]
+279a278,283
+>     real(r8), intent(in)  :: t(pcols,pver)           ! temperature (used for density)
+>     real(r8), intent(in)  :: pmid(pcols,pver)        ! midpoint pressures
+>     real(r8), intent(in)  :: cflx(pcols,pcnst)       ! surface constituent flux (kg/m2/s)
+>     real(r8), intent(in)  :: shflx(pcols)            ! surface heat flux (W/m2)
+>     real(r8), intent(in)  :: taux(pcols)             ! surface u stress [N/m2]
+>     real(r8), intent(in)  :: tauy(pcols)             ! surface v stress [N/m2]
+283a288,292
+>     real(r8), intent(out) :: ustar(pcols)            ! surface friction velocity [m/s]
+>     real(r8), intent(out) :: obklen(pcols)           ! Obukhov length
+>     real(r8), intent(out) :: khfs(pcols)             ! surface kinematic heat flux [mK/s]
+>     real(r8), intent(out) :: kbfs(pcols)             ! sfc kinematic buoyancy flux [m^2/s^3]
+>     real(r8), intent(out) :: kqfs(pcols,pcnst)       ! sfc kinematic constituent flux [m/s]
+291a301
+>     integer  :: m                        ! constituent index
+292a303,305
+>     real(r8) :: thvsrf(pcols)            ! sfc (bottom) level virtual temperature
+>     real(r8) :: thv(pcols,pver)          ! bulk Richardson no. from level to ref lev
+>     real(r8) :: rrho(pcols)              ! 1./bottom level density (temporary)
+296a310,330
+>     ! Compute ustar, and kinematic surface fluxes from surface energy fluxes
+>     !
+>     do i=1,ncol
+>        rrho(i)   = rair*t(i,pver)/pmid(i,pver)
+>        ustar(i)  = max(sqrt(sqrt(taux(i)**2 + tauy(i)**2)*rrho(i)),ustar_min)
+>        khfs(i)   = shflx(i)*rrho(i)/cpair
+>     end do
+>     do m=1,pcnst
+>        do i=1,ncol
+>           kqfs(i,m)= cflx(i,m)*rrho(i)
+>        end do
+>     end do
+>     !
+>     ! Compute Obukhov length virtual temperature flux and various arrays for use later:
+>     !
+>     do i=1,ncol
+>        kbfs(i)      = khfs(i) + 0.61_r8*th(i,pver)*kqfs(i,1)
+>        thvsrf(i)    = th(i,pver)*(1.0_r8 + 0.61_r8*q(i,pver,1))
+>        obklen(i)    = -thvsrf(i)*ustar(i)**3/(g*vk*(kbfs(i) + sign(1.e-10_r8,kbfs(i))))
+>     end do
+>     !
+298c332
+<     ! number (ri). Use virtual temperature to compute n2.
+---
+>     ! number (ri).  For the n2 calcualtion use the dry theta_v derived from virtem
+300c334
+< 
+---
+>     call virtem(ncol, pcols, pver, th      ,q(1,1,1),0.61_r8 ,thv)
+317c351
+<        thv     ,z       ,u       ,v       , &
+---
+>        th      ,q       ,z       ,u       ,v       , &
+352c386,387
+<     real(r8), intent(in)  :: thv(pcols,pver)         ! virtual temperature
+---
+>     real(r8), intent(in)  :: th(pcols,pver)          ! potential temperature [K]
+>     real(r8), intent(in)  :: q(pcols,pver,pcnst)     ! specific humidity [kg/kg]
+378a414,415
+> 
+>     real(r8) :: thvref(pcols)           ! reference level virtual temperature
+382a420
+>     real(r8) :: tkv                     ! model level potential temperature
+383a422
+>     real(r8) :: tkvb, tkvt              ! model level potential temperature
+393a433
+>        thvref(i)    = th(i,pver)*(1.0_r8 + 0.61_r8*q(i,pver,1))
+406c446,447
+<              rino(i,k) = g*(thv(i,k) - thv(i,pver))*(z(i,k)-z(i,pver))/(thv(i,pver)*vvk)
+---
+>              tkv = th(i,k)*(1._r8 + 0.61_r8*q(i,k,1))
+>              rino(i,k) = g*(tkv - thvref(i))*(z(i,k)-z(i,pver))/(thvref(i)*vvk)
+425c466
+<           tlv(i)       = thv(i,pver) + kbfs(i)*fak/( ustar(i)*phiminv(i) )
+---
+>           tlv(i)       = thvref(i) + kbfs(i)*fak/( ustar(i)*phiminv(i) )
+432c473
+<        bge(i) = 1.e-8_r8
+---
+>        bge(i) = 1.e-8
+439c480,481
+<              rino(i,k) = g*(thv(i,k) - tlv(i))*(z(i,k)-z(i,pver))/(thv(i,pver)*vvk)
+---
+>              tkv = th(i,k)*(1._r8 + 0.61_r8*q(i,k,1))
+>              rino(i,k) = g*(tkv - tlv(i))*(z(i,k)-z(i,pver))/(thvref(i)*vvk)
+443,445c485,489
+<                 bge(i) = 2._r8*g/(thv(i,k)+thv(i,k+1))*(thv(i,k)-thv(i,k+1))/(z(i,k)-z(i,k+1))*pblh(i)
+<                 if (bge(i).lt.0._r8) then
+<                    bge(i) = 1.e-8_r8
+---
+>                 tkvt = th(i,k)*(1._r8 + 0.61_r8*q(i,k,1))
+>                 tkvb = th(i,k+1)*(1._r8 + 0.61_r8*q(i,k+1,1))
+>                 bge(i) = 2.*g/(tkvt+tkvb)*(tkvt-tkvb)/(z(i,k)-z(i,k+1))*pblh(i)
+>                 if (bge(i).lt.0.) then
+>                    bge(i) = 1.e-8
+452a497,499
+> !!!!!!================Jinbo Xie============
+> rino_pub(:)=rino(:,pver)
+> !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+454,456d500
+<     !!================Jinbo Xie============
+<     rino_pub(:)=rino(:,pver)
+<     !!================Jinbo Xie============
+473c517
+<        wstar(i) = (max(0._r8,kbfs(i))*g*pblh(i)/thv(i,pver))**onet
+---
+>        wstar(i) = (max(0._r8,kbfs(i))*g*pblh(i)/thvref(i))**onet
+572c616
+<        ktopbl  ,tke     ,bge     ,eddy_scheme)
+---
+>        ktopbl  ,ktopblmn,tke     ,bge     ,eddy_scheme)
+613c657
+<     real(r8), intent(in) :: kqfs(pcols)             ! kinematic surf cnstituent flux (kg/m2/s)
+---
+>     real(r8), intent(in) :: kqfs(pcols,pcnst)       ! kinematic surf cnstituent flux (kg/m2/s)
+633,634c677,679
+<     integer,  intent(out) :: ktopbl(pcols)          ! index of first midpoint inside pbl
+<     real(r8), intent(out) :: tke(pcols,pverp)       ! turbulent kinetic energy (estimated)
+---
+>     integer, intent(out) :: ktopbl(pcols)           ! index of first midpoint inside pbl
+>     integer, intent(out) :: ktopblmn                ! min value of ktopbl
+>     real(r8), intent(out) :: tke(pcols,pverp)         ! turbulent kinetic energy (estimated)
+671a717
+>     ktopblmn = 0._r8
+685c731
+<           qpert(i)   = max(kqfs(i)*fak/wm(i),0._r8)
+---
+>           qpert(i)   = max(kqfs(i,1)*fak/wm(i),0._r8)
+688c734
+<           qpert(i)   = max(kqfs(i)*fak/ustar(i),0._r8)
+---
+>           qpert(i)   = max(kqfs(i,1)*fak/ustar(i),0._r8)
+749c795
+<     ! Check whether last allowed midpoint is within pbl
+---
+>     ! Check whether last allowed midpoint is within pbl, determine ktopblmn
+750a797,802
+>     ktopblmn = pver
+>     k = pver-npbl+1
+>     do i = 1, ncol
+>        if (z(i,k) < pblh(i)) ktopbl(i) = k
+>        ktopblmn = min(ktopblmn, ktopbl(i))
+>     end do
+755c807
+<           if (bge(i) > 1.e-7_r8) then
+---
+>           if (bge(i) > 1.e-7) then
+757c809
+<              kve = 0.2_r8*(wstar(i)**3+5._r8*ustar(i)**3)/bge(i)
+---
+>              kve = 0.2*(wstar(i)**3+5.*ustar(i)**3)/bge(i)
+765c817
+<     do k = max(pverp-npbl,2),pverp
+---
+>     do k = ktopblmn,pverp
+767,769c819
+<           if (z(i,k-1) < pblh(i)) then
+<              tke(i,k) = ( kvm(i,k) / pblh(i) ) ** 2
+<           endif
+---
+>           tke(i,k) = ( kvm(i,k) / pblh(i) ) ** 2
+774d823
+< 
