@@ -349,6 +349,40 @@ add_test(NAME IOFIELD_TEST
          COMMAND ${MPI_EXEC} -n 8 -- ./${_TestIOFieldName})
 
 ##################
+# Time Manager test
+##################
+
+set(_TestTimeMgrName testTimeMgr.exe)
+
+add_executable(${_TestTimeMgrName} infra/TimeMgrTest.cpp)
+
+target_include_directories(
+   ${_TestTimeMgrName}
+  PRIVATE
+  ${OMEGA_SOURCE_DIR}/src/base
+  ${OMEGA_SOURCE_DIR}/src/infra
+)
+
+target_compile_options(
+   ${_TestTimeMgrName}
+  PRIVATE
+  ${OMEGA_CXX_FLAGS}
+)
+
+target_link_options(
+   ${_TestTimeMgrName}
+  PRIVATE
+  ${OMEGA_LINK_OPTIONS}
+)
+
+target_link_libraries(${_TestTimeMgrName}     ${OMEGA_LIB_NAME} spdlog yakl)
+
+add_test(
+  NAME TIMEMGR_TEST
+  COMMAND ./${_TestTimeMgrName}
+)
+
+##################
 # YAKL test
 ##################
 
