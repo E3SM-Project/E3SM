@@ -2955,6 +2955,573 @@ int testTimeInterval(void) {
 } // end testTimeInterval
 
 //------------------------------------------------------------------------------
+// TimeInstant test
+
+int testTimeInstant(void) {
+
+   LOG_INFO("TimeMgrTest: TimeInstant tests ---------------------------------");
+
+   // Initialize error codes
+   OMEGA::I4 Err1{0};
+   OMEGA::I4 Err2{0};
+   OMEGA::I4 Err3{0};
+   OMEGA::I4 ErrAll{0};
+
+   // Use default constructor to create first (empty) instant
+   OMEGA::TimeInstant TiEmpty;
+
+   // Test put/get function for calendar
+   OMEGA::Calendar CalGreg("Gregorian", OMEGA::CalendarGregorian);
+   OMEGA::Calendar *CalCheckPtr;
+
+   Err1 = TiEmpty.set(&CalGreg);
+   Err2 = TiEmpty.get(CalCheckPtr);
+
+   if (Err1 == 0 && Err2 == 0 && CalGreg == *CalCheckPtr) {
+      LOG_INFO("TimeMgrTest/TimeInstant: calendar get/set: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInstant: calendar get/set: FAIL");
+   }
+
+   // Create some reference elapsed times based on 4 most likely calendars
+   // (Gregorian, NoLeap, 360 day and no-calendar). And use reference date
+   // of July 4, 2019 at 3:16:23.25.
+
+   OMEGA::Calendar CalNoLeap("NoLeap", OMEGA::CalendarNoLeap);
+   OMEGA::Calendar Cal360Day("360Day", OMEGA::Calendar360Day);
+   OMEGA::Calendar CalNone("No Calendar", OMEGA::CalendarNoCalendar);
+
+   OMEGA::I8 YearRef{2019};
+   OMEGA::I8 MonthRef{7};
+   OMEGA::I8 DayRef{4};
+   OMEGA::I8 HourRef{15};
+   OMEGA::I8 MinuteRef{16};
+   OMEGA::I8 WRef{23};
+   OMEGA::I8 NRef{1};
+   OMEGA::I8 DRef{4};
+   OMEGA::R8 RRef{23.25};
+
+   // Construct an instant for the most likely Gregorian use case
+   // Then test using get functions
+
+   OMEGA::TimeInstant TiGreg(&CalGreg, YearRef, MonthRef, DayRef, HourRef,
+                             MinuteRef, RRef);
+
+   OMEGA::I8 YearChk    = 0;
+   OMEGA::I8 MonthChk   = 0;
+   OMEGA::I8 DayChk     = 0;
+   OMEGA::I8 HourChk    = 0;
+   OMEGA::I8 MinuteChk  = 0;
+   OMEGA::R8 RSecondChk = 0.0;
+
+   Err1 = TiGreg.get(YearChk, MonthChk, DayChk, HourChk, MinuteChk, RSecondChk);
+   if (Err1 == 0 && YearChk == YearRef && MonthChk == MonthRef &&
+       DayChk == DayRef && HourChk == HourRef && MinuteChk == MinuteRef &&
+       abs(RSecondChk - RRef) < 1.e-15) {
+      LOG_INFO("TimeMgrTest/TimeInstant: constructor YMDHMS(real): PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInstant: constructor YMDHMS(real): FAIL");
+   }
+
+   // Now use set function to create an identical instant
+
+   OMEGA::TimeInstant TiGreg2;
+   Err1 = TiGreg2.set(&CalGreg);
+   Err2 = TiGreg2.set(YearRef, MonthRef, DayRef, HourRef, MinuteRef, RRef);
+
+   YearChk    = 0;
+   MonthChk   = 0;
+   DayChk     = 0;
+   HourChk    = 0;
+   MinuteChk  = 0;
+   RSecondChk = 0.0;
+
+   Err3 =
+       TiGreg2.get(YearChk, MonthChk, DayChk, HourChk, MinuteChk, RSecondChk);
+   if (Err1 == 0 && Err2 == 0 && Err3 == 0 && YearChk == YearRef &&
+       MonthChk == MonthRef && DayChk == DayRef && HourChk == HourRef &&
+       MinuteChk == MinuteRef && abs(RSecondChk - RRef) < 1.e-15) {
+      LOG_INFO("TimeMgrTest/TimeInstant: get/set YMDHMS(real): PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInstant: get/set YMDHMS(real): FAIL");
+   }
+
+   // Can now also check equivalence and equivalence part of >=, <=
+
+   if (TiGreg == TiGreg2) {
+      LOG_INFO("TimeMgrTest/TimeInstant: operator(==): PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInstant: operator(==): FAIL");
+   }
+
+   if (TiGreg >= TiGreg2) {
+      LOG_INFO("TimeMgrTest/TimeInstant: operator(>=): PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInstant: operator(>=): FAIL");
+   }
+
+   if (TiGreg <= TiGreg2) {
+      LOG_INFO("TimeMgrTest/TimeInstant: operator(<=): PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInstant: operator(<=): FAIL");
+   }
+
+   // Construct a no-leap instant using frac second interface
+   OMEGA::TimeInstant TiNoLeap(&CalNoLeap, YearRef, MonthRef, DayRef, HourRef,
+                               MinuteRef, WRef, NRef, DRef);
+
+   YearChk   = 0;
+   MonthChk  = 0;
+   DayChk    = 0;
+   HourChk   = 0;
+   MinuteChk = 0;
+   OMEGA::I8 WChk{0};
+   OMEGA::I8 NChk{0};
+   OMEGA::I8 DChk{0};
+
+   Err1 = TiNoLeap.get(YearChk, MonthChk, DayChk, HourChk, MinuteChk, WChk,
+                       NChk, DChk);
+   if (Err1 == 0 && YearChk == YearRef && MonthChk == MonthRef &&
+       DayChk == DayRef && HourChk == HourRef && MinuteChk == MinuteRef &&
+       WChk == WRef && NChk == NRef && DChk == DRef) {
+      LOG_INFO("TimeMgrTest/TimeInstant: constructor YMDHMS(frac): PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInstant: constructor YMDHMS(frac): FAIL");
+   }
+
+   // Now use get/set interface to set a slightly earlier instant
+
+   OMEGA::TimeInstant TiNoLeap2;
+   Err1 = TiNoLeap2.set(&CalNoLeap);
+   Err2 = TiNoLeap2.set(YearRef, MonthRef, DayRef, HourRef, MinuteRef, WRef - 1,
+                        NRef, DRef);
+
+   YearChk   = 0;
+   MonthChk  = 0;
+   DayChk    = 0;
+   HourChk   = 0;
+   MinuteChk = 0;
+   WChk      = 0;
+   NChk      = 0;
+   DChk      = 0;
+   Err3 = TiNoLeap2.get(YearChk, MonthChk, DayChk, HourChk, MinuteChk, WChk,
+                        NChk, DChk);
+
+   if (Err1 == 0 && Err2 == 0 && Err3 == 0 && YearChk == YearRef &&
+       MonthChk == MonthRef && DayChk == DayRef && HourChk == HourRef &&
+       MinuteChk == MinuteRef && WChk == WRef - 1 && NChk == NRef &&
+       DChk == DRef) {
+      LOG_INFO("TimeMgrTest/TimeInstant: get/set by YMDHMS(frac): PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInstant: get/set by YMDHMS(frac): FAIL");
+   }
+
+   // Can use these to test a few more operators like non-equivalence, <
+
+   // Non-equiv for different calendars
+   if (TiNoLeap != TiGreg) {
+      LOG_INFO("TimeMgrTest/TimeInstant: operator(!=) for "
+               "different calendars: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInstant: operator(!=) for "
+                "different calendars: FAIL");
+   }
+
+   // Non-equiv for different time instant in same calendar
+   if (TiNoLeap != TiNoLeap2) {
+      LOG_INFO("TimeMgrTest/TimeInstant: operator(!=) for "
+               "different time instant: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInstant: operator(!=) for "
+                "different time instant: FAIL");
+   }
+
+   // Test forms of > operator
+   if (TiNoLeap >= TiNoLeap2) {
+      LOG_INFO("TimeMgrTest/TimeInstant: operator(>=): PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInstant: operator(>=): FAIL");
+   }
+
+   if (TiNoLeap > TiNoLeap2) {
+      LOG_INFO("TimeMgrTest/TimeInstant: operator(>): PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInstant: operator(>): FAIL");
+   }
+
+   // Test forms of < operator
+   if (TiNoLeap2 <= TiNoLeap) {
+      LOG_INFO("TimeMgrTest/TimeInstant: operator(<=): PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInstant: operator(<=): FAIL");
+   }
+
+   if (TiNoLeap2 < TiNoLeap) {
+      LOG_INFO("TimeMgrTest/TimeInstant: operator(<): PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInstant: operator(<): FAIL");
+   }
+
+   // Construct a 360Day instant using frac second interface
+   OMEGA::TimeInstant Ti360Day(&Cal360Day, YearRef, MonthRef, DayRef, HourRef,
+                               MinuteRef, WRef, NRef, DRef);
+
+   YearChk   = 0;
+   MonthChk  = 0;
+   DayChk    = 0;
+   HourChk   = 0;
+   MinuteChk = 0;
+   WChk      = 0;
+   NChk      = 0;
+   DChk      = 0;
+   Err1      = Ti360Day.get(YearChk, MonthChk, DayChk, HourChk, MinuteChk, WChk,
+                            NChk, DChk);
+
+   if (Err1 == 0 && YearChk == YearRef && MonthChk == MonthRef &&
+       DayChk == DayRef && HourChk == HourRef && MinuteChk == MinuteRef &&
+       WChk == WRef && NChk == NRef && DChk == DRef) {
+      LOG_INFO("TimeMgrTest/TimeInstant: construct 360Day: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInstant: construct 360Day: FAIL");
+   }
+
+   // Create 2 no-calendar time instants using different elapsed time
+   // constructors
+
+   YearChk   = 0;
+   MonthChk  = 0;
+   DayChk    = 0;
+   HourChk   = 0;
+   MinuteChk = 0;
+   OMEGA::TimeInstant TiNone(&CalNone, YearChk, MonthChk, DayChk, HourChk,
+                             MinuteChk, WRef, NRef, DRef);
+
+   OMEGA::TimeInstant TiNone2(&CalNone, YearChk, MonthChk, DayChk, HourChk,
+                              MinuteChk, RRef);
+
+   if (TiNone == TiNone2) {
+      LOG_INFO("TimeMgrTest/TimeInstant: No-calendar time constructors: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInstant: No-calendar time constructors: FAIL");
+   }
+
+   // Now must test remaining operators involving time intervals
+
+   // NoLeap and NoLeap2 above differ by one second, so create
+   // a 1-second interval and compare result with the difference
+   // between the two instants
+
+   OMEGA::TimeInterval IntervalSec(1, OMEGA::TimeUnits::Seconds);
+   OMEGA::TimeInterval IntervalSec2 = TiNoLeap - TiNoLeap2;
+
+   if (IntervalSec == IntervalSec2) {
+      LOG_INFO("TimeMgrTest/TimeInstant: create interval from "
+               "diff of instants: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInstant: create interval from "
+                "diff of instants: FAIL");
+   }
+
+   // Now test addition, subtraction for seconds
+
+   TiGreg2                    = TiGreg + IntervalSec;
+   OMEGA::TimeInstant TiGreg3 = TiGreg2 - IntervalSec;
+
+   YearChk   = 0;
+   MonthChk  = 0;
+   DayChk    = 0;
+   HourChk   = 0;
+   MinuteChk = 0;
+   WChk      = 0;
+   NChk      = 0;
+   DChk      = 0;
+   Err1 = TiGreg2.get(YearChk, MonthChk, DayChk, HourChk, MinuteChk, WChk, NChk,
+                      DChk);
+
+   if (Err1 == 0 && YearChk == YearRef && MonthChk == MonthRef &&
+       DayChk == DayRef && HourChk == HourRef && MinuteChk == MinuteRef &&
+       NChk == NRef && DChk == DRef && WChk == WRef + 1) {
+      LOG_INFO("TimeMgrTest/TimeInstant: addition second interval: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInstant: addition second interval: FAIL");
+   }
+
+   if (TiGreg3 == TiGreg) {
+      LOG_INFO("TimeMgrTest/TimeInstant: subtraction second interval: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInstant: subtraction second interval: FAIL");
+   }
+
+   // Test increment and decrement using the second interval and noLeap
+   OMEGA::TimeInstant TiNoLeap3 = TiNoLeap2;
+
+   TiNoLeap2 += IntervalSec;
+   if (TiNoLeap2 == TiNoLeap) {
+      LOG_INFO("TimeMgrTest/TimeInstant: increment by second interval: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInstant: increment by second interval: FAIL");
+   }
+
+   TiNoLeap2 -= IntervalSec;
+   if (TiNoLeap2 == TiNoLeap3) {
+      LOG_INFO("TimeMgrTest/TimeInstant: decrement by second interval: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInstant: decrement by second interval: FAIL");
+   }
+
+   // Test time string generator
+
+   std::string StrDateRef = "2019-07-04_15:16:23.2500";
+   std::string StrDateChk = TiGreg.getString(4, 4, "_");
+
+   if (StrDateChk == StrDateRef) {
+      LOG_INFO("TimeMgrTest/TimeInstant: getString: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInstant: getString: FAIL");
+   }
+
+   // Finally, for each calendar, test a 5-year integration in several
+   // units (year, month, day, hour, minute). Include a nominal leap year to
+   // test Gregorian and noLeap calendars
+
+   OMEGA::TimeInterval IntervalYear5(5, OMEGA::TimeUnits::Years);
+   OMEGA::TimeInterval IntervalYear(1, OMEGA::TimeUnits::Years);
+   OMEGA::TimeInterval IntervalMonth(2, OMEGA::TimeUnits::Months);
+   OMEGA::TimeInterval IntervalDay(1, OMEGA::TimeUnits::Days);
+   OMEGA::TimeInterval IntervalHour(2, OMEGA::TimeUnits::Hours);
+   OMEGA::TimeInterval IntervalMinute(20, OMEGA::TimeUnits::Minutes);
+   // for the no-calendar case
+   OMEGA::TimeInterval IntervalSeconds5yr(86400 * 365 * 5,
+                                          OMEGA::TimeUnits::Seconds);
+
+   // Add the five year interval to create a final target for each calendar
+   OMEGA::TimeInstant Ti360Day2;
+   TiGreg2   = TiGreg + IntervalYear5;
+   TiNoLeap2 = TiNoLeap + IntervalYear5;
+   Ti360Day2 = Ti360Day + IntervalYear5;
+   TiNone2   = TiNone + IntervalSeconds5yr;
+
+   // Test intervals for Gregorian calendars
+   OMEGA::TimeInstant TiFinal = TiGreg;
+   for (int N = 1; N <= 5; ++N) {
+      TiFinal += IntervalYear;
+   }
+   if (TiFinal == TiGreg2) {
+      LOG_INFO("TimeMgrTest/TimeInstant: Gregorian annual integration: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInstant: Gregorian annual integration: FAIL");
+   }
+
+   TiFinal = TiGreg;
+   for (int N = 1; N <= 30; ++N) {
+      TiFinal += IntervalMonth;
+   }
+   if (TiFinal == TiGreg2) {
+      LOG_INFO("TimeMgrTest/TimeInstant: Gregorian monthly integration: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInstant: Gregorian monthly integration: FAIL");
+   }
+
+   TiFinal = TiGreg;
+   for (int N = 1; N <= 365 * 5 + 2; ++N) { // period includes 2 leap years
+      TiFinal += IntervalDay;
+   }
+   if (TiFinal == TiGreg2) {
+      LOG_INFO("TimeMgrTest/TimeInstant: Gregorian daily integration: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInstant: Gregorian daily integration: FAIL");
+   }
+
+   TiFinal = TiGreg;
+   for (int N = 1; N <= 12 * (365 * 5 + 2); ++N) {
+      TiFinal += IntervalHour;
+   }
+   if (TiFinal == TiGreg2) {
+      LOG_INFO("TimeMgrTest/TimeInstant: Gregorian hourly integration: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInstant: Gregorian hourly integration: FAIL");
+   }
+
+   TiFinal = TiGreg;
+   for (int N = 1; N <= (3 * 24) * (365 * 5 + 2); ++N) {
+      TiFinal += IntervalMinute;
+   }
+   if (TiFinal == TiGreg2) {
+      LOG_INFO("TimeMgrTest/TimeInstant: Gregorian minute integration: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInstant: Gregorian minute integration: FAIL");
+   }
+
+   // Test intervals for NoLeap calendars
+   TiFinal = TiNoLeap;
+   for (int N = 1; N <= 5; ++N) {
+      TiFinal += IntervalYear;
+   }
+   if (TiFinal == TiNoLeap2) {
+      LOG_INFO("TimeMgrTest/TimeInstant: NoLeap annual integration: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInstant: NoLeap annual integration: FAIL");
+   }
+
+   TiFinal = TiNoLeap;
+   for (int N = 1; N <= 30; ++N) {
+      TiFinal += IntervalMonth;
+   }
+   if (TiFinal == TiNoLeap2) {
+      LOG_INFO("TimeMgrTest/TimeInstant: NoLeap monthly integration: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInstant: NoLeap monthly integration: FAIL");
+   }
+
+   TiFinal = TiNoLeap;
+   for (int N = 1; N <= 365 * 5; ++N) {
+      TiFinal += IntervalDay;
+   }
+   if (TiFinal == TiNoLeap2) {
+      LOG_INFO("TimeMgrTest/TimeInstant: NoLeap daily integration: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInstant: NoLeap daily integration: FAIL");
+   }
+
+   TiFinal = TiNoLeap;
+   for (int N = 1; N <= 12 * 365 * 5; ++N) {
+      TiFinal += IntervalHour;
+   }
+   if (TiFinal == TiNoLeap2) {
+      LOG_INFO("TimeMgrTest/TimeInstant: NoLeap hourly integration: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInstant: NoLeap hourly integration: FAIL");
+   }
+
+   TiFinal = TiNoLeap;
+   for (int N = 1; N <= (3 * 24) * (365 * 5); ++N) {
+      TiFinal += IntervalMinute;
+   }
+   if (TiFinal == TiNoLeap2) {
+      LOG_INFO("TimeMgrTest/TimeInstant: NoLeap minute integration: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInstant: NoLeap minute integration: FAIL");
+   }
+
+   // Test intervals for 360Day calendars
+   TiFinal = Ti360Day;
+   for (int N = 1; N <= 5; ++N) {
+      TiFinal += IntervalYear;
+   }
+   if (TiFinal == Ti360Day2) {
+      LOG_INFO("TimeMgrTest/TimeInstant: 360Day annual integration: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInstant: 360Day annual integration: FAIL");
+   }
+
+   TiFinal = Ti360Day;
+   for (int N = 1; N <= 30; ++N) {
+      TiFinal += IntervalMonth;
+   }
+   if (TiFinal == Ti360Day2) {
+      LOG_INFO("TimeMgrTest/TimeInstant: 360Day monthly integration: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInstant: 360Day monthly integration: FAIL");
+   }
+
+   TiFinal = Ti360Day;
+   for (int N = 1; N <= 360 * 5; ++N) { // period includes 2 leap years
+      TiFinal += IntervalDay;
+   }
+   if (TiFinal == Ti360Day2) {
+      LOG_INFO("TimeMgrTest/TimeInstant: 360Day daily integration: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInstant: 360Day daily integration: FAIL");
+   }
+
+   TiFinal = Ti360Day;
+   for (int N = 1; N <= 12 * 360 * 5; ++N) {
+      TiFinal += IntervalHour;
+   }
+   if (TiFinal == Ti360Day2) {
+      LOG_INFO("TimeMgrTest/TimeInstant: 360Day hourly integration: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInstant: 360Day hourly integration: FAIL");
+   }
+
+   TiFinal = Ti360Day;
+   for (int N = 1; N <= (3 * 24) * (360 * 5); ++N) {
+      TiFinal += IntervalMinute;
+   }
+   if (TiFinal == Ti360Day2) {
+      LOG_INFO("TimeMgrTest/TimeInstant: 360Day minute integration: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInstant: 360Day minute integration: FAIL");
+   }
+
+   // Test intervals for no calendar times
+   // In this case, annual, monthly or daily intervals are meaningless
+   TiFinal = TiNone;
+   for (int N = 1; N <= 12 * 365 * 5; ++N) {
+      TiFinal += IntervalHour;
+   }
+   if (TiFinal == TiNone2) {
+      LOG_INFO("TimeMgrTest/TimeInstant: No-calendar hourly integration: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInstant: No-calendar "
+                "hourly integration: FAIL");
+   }
+
+   TiFinal = TiNone;
+   for (int N = 1; N <= (3 * 24) * (365 * 5); ++N) {
+      TiFinal += IntervalMinute;
+   }
+   if (TiFinal == TiNone2) {
+      LOG_INFO("TimeMgrTest/TimeInstant: No-calendar minute integration: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInstant: No-calendar "
+                "minute integration: FAIL");
+   }
+
+   return ErrAll;
+
+} // end testTimeInstant
+
+//------------------------------------------------------------------------------
 // The test driver.
 
 int main(int argc, char *argv[]) {
@@ -2969,6 +3536,9 @@ int main(int argc, char *argv[]) {
    TotErr += Err;
 
    Err = testTimeInterval();
+   TotErr += Err;
+
+   Err = testTimeInstant();
    TotErr += Err;
 
    if (TotErr == 0) {
