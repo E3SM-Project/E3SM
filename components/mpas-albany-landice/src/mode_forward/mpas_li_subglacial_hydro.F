@@ -56,7 +56,8 @@ module li_subglacial_hydro
    ! Private module variables
    !
    !--------------------------------------------------------------------
-
+! Minimum gradMagPhiBaseEdge and gradMagPhiEdge allowed before all dependent variables are zeroed out
+real(kind=RKIND), parameter :: SMALL_GRADPHI = 1.0e-6_RKIND
 
 !***********************************************************************
    contains
@@ -1000,7 +1001,7 @@ module li_subglacial_hydro
       if (conduc_coeff_drowned > 0.0_RKIND) then
          ! Use a thickness weighted conductivity coeff. when water thickness exceeds bump height
          do iEdge = 1, nEdges
-            if (gradMagPhiBaseEdge(iEdge) < 0.01_RKIND) then
+            if (gradMagPhiBaseEdge(iEdge) < SMALL_GRADPHI) then
                effectiveConducEdge(iEdge) = 0.0_RKIND
             else
                conduc_coeff_wtd = (conduc_coeff * min(waterThicknessEdge(iEdge), bedRoughMax) + &
@@ -1014,7 +1015,7 @@ module li_subglacial_hydro
       else
          do iEdge = 1, nEdges
             ! Just use a single conductivity coeff.
-            if (gradMagPhiBaseEdge(iEdge) < 0.01_RKIND) then
+            if (gradMagPhiBaseEdge(iEdge) < SMALL_GRADPHI) then
                effectiveConducEdge(iEdge) = 0.0_RKIND
             else
                effectiveConducEdge(iEdge) = conduc_coeff * waterThicknessEdge(iEdge)**(alpha-1.0_RKIND) *&
@@ -1809,7 +1810,7 @@ module li_subglacial_hydro
 
       ! Calculate terms needed for opening (melt) rate
 
-      where(gradMagPhiEdge < 0.01_RKIND)
+      where(gradMagPhiEdge < SMALL_GRADPHI)
          channelDischarge(:) = 0.0_RKIND
       elsewhere
          channelDischarge = -1.0_RKIND * Kc * channelArea**alpha_c * gradMagPhiEdge**(beta_c - 2.0_RKIND) * &
@@ -1838,7 +1839,7 @@ module li_subglacial_hydro
       channelVelocity = channelDischarge / (channelArea + 1.0e-12_RKIND)
 
       ! diffusivity used only to limit channel dt right now
-      where(gradMagPhiEdge < 0.01_RKIND)
+      where(gradMagPhiEdge < SMALL_GRADPHI)
          channelDiffusivity = 0.0_RKIND
       elsewhere
          channelDiffusivity = abs(rho_water * gravity * channelArea *  &
