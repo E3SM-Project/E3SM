@@ -147,8 +147,6 @@ struct Functions
     view_3d<Spack>  qtracers;
     // eddy coefficient for momentum [m2/s]
     view_2d<Spack>  tk;
-    // eddy coefficient for heat [m2/s]
-    view_2d<Spack>  tkh;
     // Cloud fraction [-]
     view_2d<Spack>  shoc_cldfrac;
     // cloud liquid mixing ratio [kg/kg]
@@ -163,6 +161,8 @@ struct Functions
     view_1d<Scalar> pblh;
     // cloud liquid mixing ratio variance [kg^2/kg^2]
     view_2d<Spack>  shoc_ql2;
+    // eddy coefficient for heat [m2/s]
+    view_2d<Spack>  tkh;
   };
 
   // This struct stores output views for SHOC diagnostics for shoc_main.
@@ -890,6 +890,7 @@ struct Functions
     // Output Variables
     Scalar&                      pblh,
     const uview_1d<Spack>&       shoc_ql2,
+    const uview_1d<Spack>&       tkh_out,
     // Diagnostic Output Variables
     const uview_1d<Spack>&       shoc_mix,
     const uview_1d<Spack>&       w_sec,
@@ -961,6 +962,7 @@ struct Functions
     // Output Variables
     const view_1d<Scalar>&      pblh,
     const view_2d<Spack>&       shoc_ql2,
+    const view_2d<Spack>&       tkh_out,
     // Diagnostic Output Variables
     const view_2d<Spack>&       shoc_mix,
     const view_2d<Spack>&       w_sec,

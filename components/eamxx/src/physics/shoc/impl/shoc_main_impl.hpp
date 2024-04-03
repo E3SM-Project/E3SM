@@ -114,12 +114,12 @@ void Functions<S,D>::shoc_main_internal(
   const uview_1d<Spack>&       wthv_sec,
   const uview_2d<Spack>&       qtracers,
   const uview_1d<Spack>&       tk,
-  const uview_1d<Spack>&       tkh,
   const uview_1d<Spack>&       shoc_cldfrac,
   const uview_1d<Spack>&       shoc_ql,
   // Output Variables
   Scalar&                      pblh,
   const uview_1d<Spack>&       shoc_ql2,
+  const uview_1d<Spack>&       tkh_out,
   // Diagnostic Output Variables
   const uview_1d<Spack>&       shoc_mix,
   const uview_1d<Spack>&       w_sec,
@@ -266,7 +266,7 @@ void Functions<S,D>::shoc_main_internal(
     check_tke(team,nlev,tke);
   }
 
-  // End SHOC parameterization
+  // End SHOC parameterization  
 
   // Use SHOC outputs to update the host model
   // temperature
@@ -310,6 +310,12 @@ void Functions<S,D>::shoc_main_internal(
           kbfs,shoc_cldfrac,              // Input
           workspace,                      // Workspace
           pblh);                          // Output
+
+  // Assign tkh to tkh output variable
+  const Int nlev_pack = ekat::npack<Spack>(nlev);
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
+    tkh_out(k) = tkh(k);
+  });
 
   // Release temporary variables from the workspace
   workspace.template release_many_contiguous<6>(
@@ -367,12 +373,12 @@ void Functions<S,D>::shoc_main_internal(
   const view_2d<Spack>&       wthv_sec,
   const view_3d<Spack>&       qtracers,
   const view_2d<Spack>&       tk,
-  const view_2d<Spack>&       tkh,
   const view_2d<Spack>&       shoc_cldfrac,
   const view_2d<Spack>&       shoc_ql,
   // Output Variables
   const view_1d<Scalar>&      pblh,
   const view_2d<Spack>&       shoc_ql2,
+  const view_2d<Spack>&       tkh_out,
   // Diagnostic Output Variables
   const view_2d<Spack>&       shoc_mix,
   const view_2d<Spack>&       w_sec,
@@ -567,6 +573,8 @@ void Functions<S,D>::shoc_main_internal(
                kbfs,shoc_cldfrac,              // Input
                workspace_mgr,                  // Workspace mgr
                pblh);                          // Output
+  
+  tkh_out = tkh;
 }
 #endif
 
@@ -642,10 +650,10 @@ Int Functions<S,D>::shoc_main(
     const auto qw_s           = ekat::subview(shoc_input_output.qw, i);
     const auto wthv_sec_s     = ekat::subview(shoc_input_output.wthv_sec, i);
     const auto tk_s           = ekat::subview(shoc_input_output.tk, i);
-    const auto tkh_s          = ekat::subview(shoc_input_output.tkh, i);
     const auto shoc_cldfrac_s = ekat::subview(shoc_input_output.shoc_cldfrac, i);
     const auto shoc_ql_s      = ekat::subview(shoc_input_output.shoc_ql, i);
     const auto shoc_ql2_s     = ekat::subview(shoc_output.shoc_ql2, i);
+    const auto tkh_out_s          = ekat::subview(shoc_output.tkh, i);
     const auto shoc_mix_s     = ekat::subview(shoc_history_output.shoc_mix, i);
     const auto w_sec_s        = ekat::subview(shoc_history_output.w_sec, i);
     const auto thl_sec_s      = ekat::subview(shoc_history_output.thl_sec, i);
@@ -675,9 +683,9 @@ Int Functions<S,D>::shoc_main(
                        wtracer_sfc_s, inv_exner_s, phis_s,                    // Input
                        workspace,                                             // Workspace
                        host_dse_s, tke_s, thetal_s, qw_s, u_wind_s, v_wind_s, // Input/Output
-                       wthv_sec_s, qtracers_s, tk_s, tkh_s, shoc_cldfrac_s,   // Input/Output
+                       wthv_sec_s, qtracers_s, tk_s, shoc_cldfrac_s,          // Input/Output
                        shoc_ql_s,                                             // Input/Output
-                       pblh_s, shoc_ql2_s,                                    // Output
+                       pblh_s, shoc_ql2_s, tkh_out_s,                             // Output
                        shoc_mix_s, w_sec_s, thl_sec_s, qw_sec_s, qwthl_sec_s, // Diagnostic Output Variables
                        wthl_sec_s, wqw_sec_s, wtke_sec_s, uw_sec_s, vw_sec_s, // Diagnostic Output Variables
                        w3_s, wqls_sec_s, brunt_s, isotropy_s);                // Diagnostic Output Variables
@@ -699,9 +707,9 @@ Int Functions<S,D>::shoc_main(
     shoc_input.wtracer_sfc, shoc_input.inv_exner, shoc_input.phis, // Input
     workspace_mgr, // Workspace Manager
     shoc_input_output.host_dse, shoc_input_output.tke, shoc_input_output.thetal, shoc_input_output.qw, u_wind_s, v_wind_s, // Input/Output
-    shoc_input_output.wthv_sec, shoc_input_output.qtracers, shoc_input_output.tk, shoc_input_output.tkh, shoc_input_output.shoc_cldfrac, // Input/Output
+    shoc_input_output.wthv_sec, shoc_input_output.qtracers, shoc_input_output.tk, shoc_input_output.shoc_cldfrac, // Input/Output
     shoc_input_output.shoc_ql, // Input/Output
-    shoc_output.pblh, shoc_output.shoc_ql2, // Output
+    shoc_output.pblh, shoc_output.shoc_ql2, shoc_output.tkh, // Output
     shoc_history_output.shoc_mix, shoc_history_output.w_sec, shoc_history_output.thl_sec, shoc_history_output.qw_sec, shoc_history_output.qwthl_sec, // Diagnostic Output Variables
     shoc_history_output.wthl_sec, shoc_history_output.wqw_sec, shoc_history_output.wtke_sec, shoc_history_output.uw_sec, shoc_history_output.vw_sec, // Diagnostic Output Variables
     shoc_history_output.w3, shoc_history_output.wqls_sec, shoc_history_output.brunt, shoc_history_output.isotropy, // Diagnostic Output Variables
