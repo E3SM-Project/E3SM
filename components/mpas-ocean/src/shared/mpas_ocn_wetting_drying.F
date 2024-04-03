@@ -376,42 +376,37 @@ contains
 
       hCrit = config_drying_min_cell_height
 
-
       if (.not. config_zero_drying_velocity) return
 
       layerThicknessCell => layerThicknessCellWetDry
-      if (.not. config_use_ssh_gradient_wetting_drying) then
+      ! need predicted transport velocity to limit drying flux
+      !$omp parallel
+      !$omp do schedule(runtime) private(i, iEdge, k, divOutFlux)
+      do iCell = 1, nCellsAll
+        do k = minLevelCell(iCell), maxLevelCell(iCell)
+          divOutFlux = 0.0_RKIND
+          do i = 1, nEdgesOnCell(iCell)
+            iEdge = edgesOnCell(i, iCell)
+            if (k <= maxLevelEdgeTop(iEdge) .and. k >= minLevelEdgeBot(iEdge)) then
+              ! only consider divergence flux leaving the cell
+              if ( normalVelocity(k, iEdge) * edgeSignOnCell(i, iCell) < 0.0_RKIND ) then
+                divOutFlux = divOutFlux + &
+                             normalVelocity(k, iEdge) * edgeSignOnCell(i, iCell) * &
+                             layerThickEdgeFlux(k, iEdge) * dvEdge(iEdge) * &
+                             invAreaCell(iCell)
+              end if
+            end if
+          end do
 
-         ! need predicted transport velocity to limit drying flux
-         !$omp parallel
-         !$omp do schedule(runtime) private(i, iEdge, k, divOutFlux, layerThickness)
-         do iCell = 1, nCellsAll
-           do k = minLevelCell(iCell), maxLevelCell(iCell)
-             divOutFlux = 0.0_RKIND
-             do i = 1, nEdgesOnCell(iCell)
-               iEdge = edgesOnCell(i, iCell)
-               if (k <= maxLevelEdgeTop(iEdge) .and. k >= minLevelEdgeBot(iEdge)) then
-                 ! only consider divergence flux leaving the cell
-                 if ( normalVelocity(k, iEdge) * edgeSignOnCell(i, iCell) < 0.0_RKIND ) then
-                   divOutFlux = divOutFlux + &
-                                normalVelocity(k, iEdge) * edgeSignOnCell(i, iCell) * &
-                                layerThickEdgeFlux(k, iEdge) * dvEdge(iEdge) * &
-                                invAreaCell(iCell)
-                 end if
-               end if
-             end do
-             layerThicknessCell(k, iCell) = min(layerThicknessProvis(k, iCell), layerThicknessCur(k, iCell)) + dt * divOutFlux
+          layerThicknessCell(k, iCell) = min(layerThicknessProvis(k, iCell), layerThicknessCur(k, iCell)) + dt * divOutFlux
 
-             call ocn_wetting_velocity_factor_on_cell_edges(wettingVelocityFactor, layerThicknessCell(k, iCell), normalVelocity, iCell, k)
+        end do
+      end do
+      !$omp end do
+      !$omp end parallel
 
-           end do
-         end do
-         !$omp end do
-         !$omp end parallel
+      call mpas_dmpar_field_halo_exch(domain, 'layerThicknessCellWetDry')
 
-         call mpas_dmpar_field_halo_exch(domain, 'layerThicknessCellWetDry')
-
-      end if
 
       ! This wetting and drying implementation is based on the one above.
       ! However, it has special considerations for edges with normal velocities
@@ -426,40 +421,26 @@ contains
       ! Currently, this only works for single layer configurations with the 'ssh_gradient'
       ! pressure gradient option
 
-      if (config_use_ssh_gradient_wetting_drying .and. &
-          pGradType == pGradTypeSSHgrad) then
+      if (.not. config_use_modify_wetting_drying_implementation) then
 
+        !$omp parallel
+        !$omp do schedule(runtime) private(k)
+        do iCell = 1, nCellsAll
+          do k = minLevelCell(iCell), maxLevelCell(iCell)
+             call ocn_wetting_velocity_factor_on_cell_edges(wettingVelocityFactor, layerThicknessCell(k, iCell), normalVelocity, iCell, k)
+          end do
+        end do
+        !$omp end do
+        !$omp end parallel
+      elseif (config_use_modify_wetting_drying_implementation .and. &
+          pGradType == pGradTypeSSHgrad) then
+        ! Compute predicted ssh
+        k = 1
         sshCell => sshCellWetDry
-        layerThickness = 0.0_RKIND
         sshCell = 0.0_RKIND
 
         wettingVelocityFactor = 0.0_RKIND
 
-        ! Predict new layerThickness based on out-going flux
-        do iCell = 1, nCellsAll
-           do k = minLevelCell(iCell), maxLevelCell(iCell)
-             divOutFlux = 0.0_RKIND
-             do i = 1, nEdgesOnCell(iCell)
-               iEdge = edgesOnCell(i, iCell)
-               if (k <= maxLevelEdgeTop(iEdge) .and. k >= minLevelEdgeBot(iEdge)) then
-                 ! only consider divergence flux leaving the cell
-                 if ( normalVelocity(k, iEdge) * edgeSignOnCell(i, iCell) < 0.0_RKIND ) then
-                   divOutFlux = divOutFlux + &
-                                normalVelocity(k, iEdge) * edgeSignOnCell(i, iCell) * &
-                                layerThickEdgeFlux(k, iEdge) * dvEdge(iEdge) * &
-                                invAreaCell(iCell)
-                  end if
-               end if
-             end do
-             layerThicknessCell(k, iCell) = min(layerThicknessProvis(k, iCell), layerThicknessCur(k, iCell)) + dt * divOutFlux
-           end do
-
-        end do
-
-        call mpas_dmpar_field_halo_exch(domain, 'layerThicknessCellWetDry')
-
-        ! Compute predicted ssh
-        k = 1
         do iCell = 1, nCellsAll
            if ( config_use_subgrid_wetting_drying  ) then
 
