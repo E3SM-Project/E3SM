@@ -5,15 +5,37 @@ module startup_initialconds
 ! 
 !-----------------------------------------------------------------------
 
+
+!!==========Jinbo Xie=============
+use pio,          only: file_desc_t
+!!==========Jinbo Xie=============
+
 implicit none
 private
 save
 
 public :: initial_conds ! Read in initial conditions (dycore dependent)
 
+!=======Jinbo Xie=========
+public topoGWD_file_get_id
+public setup_initialGWD
+public close_initial_fileGWD
+type(file_desc_t), pointer :: ncid_topoGWD
+!=======Jinbo Xie=========
+
 !======================================================================= 
 contains
 !======================================================================= 
+
+!====================================
+!!Jinbo Xie
+function topoGWD_file_get_id()  
+type(file_desc_t), pointer :: topoGWD_file_get_id
+topoGWD_file_get_id => ncid_topoGWD
+end function topoGWD_file_get_id
+!!Jinbo Xie
+!====================================
+
 
 subroutine initial_conds(dyn_in)
 
@@ -61,5 +83,35 @@ subroutine initial_conds(dyn_in)
 end subroutine initial_conds
 
 !======================================================================= 
+
+!======Jinbo Xie file==============
+subroutine setup_initialGWD()
+   use filenames,        only: bnd_topo
+   use ioFileMod,        only: getfil
+   use cam_pio_utils,    only: cam_pio_openfile
+   use pio,              only: pio_nowrite
+!
+! Input arguments
+!
+!-----------------------------------------------------------------------
+   include 'netcdf.inc'
+!-----------------------------------------------------------------------
+   character(len=256) :: bnd_topo_loc   ! filepath of topo file on local disk
+      allocate(ncid_topoGWD)
+      call getfil(bnd_topo, bnd_topo_loc)
+      call cam_pio_openfile(ncid_topoGWD, bnd_topo_loc, PIO_NOWRITE)
+end subroutine setup_initialGWD
+
+
+subroutine close_initial_fileGWD
+  use pio,          only: pio_closefile
+        call pio_closefile(ncid_topoGWD)
+        deallocate(ncid_topoGWD)
+        nullify(ncid_topoGWD)
+end subroutine close_initial_fileGWD
+!======================================================================= 
+
+
+
 
 end module startup_initialconds
