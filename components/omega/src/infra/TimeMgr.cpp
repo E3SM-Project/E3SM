@@ -3935,5 +3935,173 @@ std::string TimeInstant::getString(
 
 } // end TimeInstant:: getString
 
+//------------------------------------------------------------------------------
+// Alarm definitions
+//------------------------------------------------------------------------------
+
+// Alarm constructors/destructors
+//------------------------------------------------------------------------------
+// Alarm::Alarm - construct single instance alarm
+// Construct a single alarm using the input ring time.
+
+Alarm::Alarm(
+    const std::string InName,   //< [in] Name of alarm
+    const TimeInstant AlarmTime //< [in] Time at/after which alarm rings
+) {
+
+   Name    = InName; // assign input name to alarm
+   Ringing = false;  // initialize ringer to false
+   Stopped = false;  // alarm is initially on
+
+   // This is not an interval alarm, so set interval properties appropriately
+   Periodic = false; // this is not an interval alarm
+   // ringInterval - will be set using default interval constructor
+   // ringTimePrev - will be set using default instant constructor
+
+   // Now set ringing time to desired input value
+   RingTime = AlarmTime;
+
+} // end Alarm::Alarm (single instance alarm)
+
+//------------------------------------------------------------------------------
+// Alarm::Alarm - Construct a periodic/interval alarm
+// Construct a periodic/interval alarm based on an input time interval and a
+// start time for the interval period.
+
+Alarm::Alarm(
+    const std::string InName,         //< [in] Name of alarm
+    const TimeInterval AlarmInterval, //< [in] interval at which alarm rings
+    const TimeInstant IntervalStart   //< [in] start time of first interval
+) {
+
+   Name    = InName; // set the alarm name to the input value
+   Ringing = false;  // initialize alarm ringer to false
+   Stopped = false;  // alarm is initially on
+
+   // this is an interval alarm so set flags and times appropriately
+   Periodic     = true;
+   RingInterval = AlarmInterval;
+
+   // Set the previous ring time to the start time
+   RingTimePrev = IntervalStart;
+   // Next alarm time is initially set to be start + interval
+   // If the start time is set in the distant past (multiple intervals from
+   // present) later calls to the updateStatus method will move the previous
+   // ring time forward to be closer to the actual time
+   RingTime = IntervalStart + AlarmInterval;
+
+} // end Alarm::Alarm constructor for periodic/interval alarms
+
+//------------------------------------------------------------------------------
+// Alarm::~Alarm - destructor for alarm
+// Destructor for an alarm. No allocated space so does nothing.
+
+Alarm::~Alarm(void) { // Nothing to be done
+
+} // end Alarm destructor
+
+// Alarm methods
+//------------------------------------------------------------------------------
+// Alarm::isRinging - Check whether an alarm is ringing
+// This function checks to see if an alarm is ringing by simply returning
+// the ringing flag that is true if alarm is ringing, false otherwise.
+
+bool Alarm::isRinging(void) { return Ringing; }
+
+// end TimeInstant::isRinging
+
+//------------------------------------------------------------------------------
+// Alarm::updateStatus - Changes the alarm status based on current time
+// Checks whether the alarm should ring based on the current (or supplied)
+// time instant. If the instant is equal to, or later than the ring time,
+// the alarm begins ringing until stopped.  Returns an error code that is
+// generally true unless you try to check a stopped alarm.
+
+I4 Alarm::updateStatus(const TimeInstant CurrentTime // [in] current time
+) {
+
+   I4 Err{0};
+   if (!Stopped) { // if stopped, then status never changes
+      if (CurrentTime >= RingTime)
+         Ringing = true;
+   }
+
+   return Err;
+
+} // end Alarm::updateStatus
+
+//------------------------------------------------------------------------------
+// Alarm::reset - Stops a ringing alarm and resets to a new alarm time
+// Stops a ringing alarm and sets next a new ring time. If the alarm
+// is a periodic/interval alarm, the next ring time is set to be the
+// next interval boundary after the input time.  If the alarm is a
+// single instance, the input time is used as the next alarm time.
+
+I4 Alarm::reset(const TimeInstant InTime // [in] new alarm time
+) {
+
+   // initialize error code and stop the ringing alarm
+   I4 Err{0};
+   Ringing = false;
+
+   // if this is an interval alarm, find the next alarm time after
+   // the input time
+   if (Periodic) {
+
+      // first check that the input time is valid
+      if (InTime < RingTime) {
+         Err = 1;
+         LOG_ERROR("TimeMgr: Alarm::reset input time less than the current "
+                   "ring time");
+      } else {
+         // now move forward in time until the next interval is greater
+         // than the input time
+         while (RingTime <= InTime) {
+            RingTimePrev = RingTime;
+            RingTime += RingInterval;
+         }
+      }
+   } else {
+      // if this is a single instance, just set the new ring time to the
+      // input value
+      RingTime = InTime;
+   }
+
+   return Err;
+
+} // end Alarm::reset
+
+//------------------------------------------------------------------------------
+// Alarm::stop - Stops a ringing alarm
+// This function permanently stops a ringing alarm. Use the reset function
+// if the alarm needs to be set for a later time.
+
+I4 Alarm::stop(void) {
+
+   I4 Err{0};
+   Stopped = true;
+   Ringing = false;
+   return Err;
+
+} // end Alarm::stop
+
+//------------------------------------------------------------------------------
+// Alarm::rename - Renames an existing timer
+
+I4 Alarm::rename(const std::string NewName ///< [in] new name for alarm
+) {
+
+   I4 Err{0};
+   Name = NewName;
+   return Err;
+
+} // end Alarm:: rename
+
+//------------------------------------------------------------------------------
+// Alarm::getName - retrieves name of an alarm
+// Returns the name of an alarm.
+
+std::string Alarm::getName() const { return Name; }
+
 } // namespace OMEGA
 //===-----------------------------------------------------------------------===/

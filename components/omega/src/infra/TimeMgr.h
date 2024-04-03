@@ -716,6 +716,75 @@ class TimeInstant {
 
 }; // end class TimeInstant
 
+/// The Alarm class mimics a clock alarm by ringing on or after a specified
+/// time. Alarms can be created to ring after a single time or to ring on
+/// periodic intervals. Once ringing, an alarm must be manually stopped using
+/// either a stop method or a reset. The reset method will stop the current
+/// alarm and set the new alarm time for periodic/interval alarms.
+///
+class Alarm {
+   // private variables
+ private:
+   std::string Name; ///< name for the alarm
+
+   bool Ringing;  ///< alarm is currently ringing
+   bool Periodic; ///< alarm rings periodically on interval
+   bool Stopped;  ///< alarm has been stopped and not reset
+
+   TimeInstant RingTime;      ///< time at/after which alarm rings
+   TimeInterval RingInterval; ///< interval at which this alarm rings
+   TimeInstant RingTimePrev;  ///< previous alarm time for interval alarms
+
+ public:
+   // constructors/destructors
+
+   /// Constructs a one-time alarm using the input ring time.
+   Alarm(const std::string InName,   ///< [in] Name of alarm
+         const TimeInstant AlarmTime ///< [in] Time at/after which alarm rings
+   );
+
+   /// Constructs a periodic/interval alarm based on an input periodic
+   /// time interval and a start time for the interval period.
+   Alarm(
+       const std::string InName,         ///< [in] Name of alarm
+       const TimeInterval AlarmInterval, ///< [in] interval at which alarm rings
+       const TimeInstant IntervalStart   ///< [in] start time of first interval
+   );
+
+   /// Destructor for alarm
+   ~Alarm(void);
+
+   /// Check whether an alarm is ringing
+   /// \return true if alarm is ringing, false otherwise
+   bool isRinging(void);
+
+   /// Checks whether the alarm should ring based on the current
+   /// (or supplied) time instant (returns error code)
+   I4 updateStatus(const TimeInstant CurrentTime ///< [in] current time
+   );
+
+   /// Stops a ringing alarm and sets next a new ring time. If the alarm
+   /// is a periodic/interval alarm, the next ring time is set to be the
+   /// next interval boundary after the input time.  If the alarm is a
+   /// single instance, the input time is used as the next alarm time.
+   /// (returns error code)
+   I4 reset(const TimeInstant InTime ///< [in] new basis for alarm time
+   );
+
+   /// Stops a ringing alarm (returns error code).
+   I4 stop(void);
+
+   /// Rename an alarm (returns error code)
+   I4 rename(const std::string NewName ///< [in] new name for alarm
+   );
+
+   /// Get alarm name
+   std::string getName(void) const;
+
+   I4 print(void) const;
+
+}; // end class Alarm
+
 } // namespace OMEGA
 
 //===----------------------------------------------------------------------===//
