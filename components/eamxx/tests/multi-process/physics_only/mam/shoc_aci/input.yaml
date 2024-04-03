@@ -1,0 +1,74 @@
+%YAML 1.1
+---
+driver_options:
+  atmosphere_dag_verbosity_level: 5
+
+time_stepping:
+  time_step: ${ATM_TIME_STEP}
+  run_t0: ${RUN_T0}  # YYYY-MM-DD-XXXXX
+  number_of_steps: ${NUM_STEPS}
+
+atmosphere_processes:
+  atm_procs_list: [mac_mic,rrtmgp]
+  schedule_type: Sequential
+  mac_mic:
+    atm_procs_list: [shoc,CldFraction,mam4_aci,p3]
+    Type: Group
+    schedule_type: Sequential
+    number_of_subcycles: ${MAC_MIC_SUBCYCLES}
+    p3:
+      max_total_ni: 740.0e3
+      do_prescribed_ccn: false
+    shoc:
+      lambda_low: 0.001
+      lambda_high: 0.04
+      lambda_slope: 2.65
+      lambda_thresh: 0.02
+      thl2tune: 1.0
+      qw2tune: 1.0
+      qwthl2tune: 1.0
+      w2tune: 1.0
+      length_fac: 0.5
+      c_diag_3rd_mom: 7.0
+      Ckh: 0.1
+      Ckm: 0.1
+  rrtmgp:
+    column_chunk_size: 123
+    active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
+    orbital_year: 1990
+    do_aerosol_rad: false
+    rrtmgp_coefficients_file_sw: ${SCREAM_DATA_DIR}/init/rrtmgp-data-sw-g112-210809.nc
+    rrtmgp_coefficients_file_lw: ${SCREAM_DATA_DIR}/init/rrtmgp-data-lw-g128-210809.nc
+    rrtmgp_cloud_optics_file_sw: ${SCREAM_DATA_DIR}/init/rrtmgp-cloud-optics-coeffs-sw.nc
+    rrtmgp_cloud_optics_file_lw: ${SCREAM_DATA_DIR}/init/rrtmgp-cloud-optics-coeffs-lw.nc
+
+grids_manager:
+  Type: Mesh Free
+  geo_data_source: IC_FILE
+  grids_names: [Physics GLL]
+  Physics GLL:
+    aliases: [Physics]
+    type: point_grid
+    number_of_global_columns:   218
+    number_of_vertical_levels:   72
+
+initial_conditions:
+  # The name of the file containing the initial conditions for this test.
+  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_MAM4xx_72lev}
+  topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
+  surf_sens_flux: 0.0
+  surf_evap: 0.0
+  precip_ice_surf_mass: 0.0
+  precip_liq_surf_mass: 0.0
+  aero_g_sw: 0.0
+  aero_ssa_sw: 0.0
+  aero_tau_sw: 0.0
+  aero_tau_lw: 0.0
+  dgnum: 1e-3
+  liq_strat_cld_frac: 1e-3
+  w_sec: 1e-3
+
+# The parameters for I/O control
+Scorpio:
+  output_yaml_files: ["output.yaml"]
+...

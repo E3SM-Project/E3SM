@@ -6,6 +6,7 @@ Fields:
   Physics:
     Field Names:
         - T_mid
+        - dgnum
 
 output_control:
   Frequency: 2

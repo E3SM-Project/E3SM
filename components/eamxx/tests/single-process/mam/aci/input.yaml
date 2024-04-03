@@ -25,11 +25,11 @@ initial_conditions:
   # The name of the file containing the initial conditions for this test.
   Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_MAM4xx_72lev}
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
-  pbl_height : 1.0
   phis : 1.0
   #These should come from the input file
 
   #we should get the following variables from other processes
+  pbl_height : 1.0
   dgnum: 1e-3
   eddy_diff_heat: 1e-3
   liq_strat_cld_frac: 1e-3

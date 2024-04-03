@@ -797,7 +797,7 @@ void MAMAci::set_grids(
   add_field<Required>("liq_strat_cld_frac", scalar3d_layout_mid, nondim,
                       grid_name);
   // BALLI:???
-  add_field<Required>("eddy_diff_heat", scalar3d_layout_int, m2 / s,
+  add_field<Required>("eddy_diff_heat", scalar3d_layout_mid, m2 / s,
                       grid_name);  // Eddy diffusivity for heat
 
   // Layout for 4D (2d horiz X 1d vertical x number of modes) variables
@@ -998,7 +998,7 @@ void MAMAci::initialize_impl(const RunType run_type) {
   liqcldf_ = get_field_in("liq_strat_cld_frac").get_view<const Real **>();
 
   // MUST FIXME: This comes from shoc
-  kvh_ = get_field_in("eddy_diff_mom").get_view<const Real **>();
+  kvh_ = get_field_in("eddy_diff_heat").get_view<const Real **>();
 
   nihf_  = get_field_out("icenuc_num_hetfrz").get_view<Real **>();
   niim_  = get_field_out("icenuc_num_immfrz").get_view<Real **>();
