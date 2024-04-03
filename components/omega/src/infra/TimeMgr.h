@@ -391,6 +391,183 @@ class Calendar {
    ) const;
 }; // end class Calendar
 
+/// The TimeInterval class represents an interval of time -- the amount of time
+/// between two instants in time.  These can either be independent of any
+/// calendar (represented as fractional seconds) or dependent on a calendar
+/// (eg months or years) and thought of as a calendar interval.
+///
+/// Calendar independent intervals are stored as fractional integer seconds and
+/// use much of the functionality from the TimeFrac class (though inheritance
+/// proved awkward). Interfaces creating and  accessing calendar-independent
+/// intervals also support units of hours, minutes and seconds in either real
+/// or integer form.
+///
+/// A TimeInterval can also be defined as a Calendar interval and then becomes
+/// calendar-dependent. Currently, these must be specified in integer years,
+/// months or days and all operations that compare or or modify these intervals
+/// must be in the same units of years, months or days. Note that this
+/// restriction only applies to the operations described below between time
+/// intervals. When interacting with time instants, these restrictions do
+/// not apply.
+///
+/// TimeInterval also defines methods for multiplication and division of
+/// TimeIntervals by integer and real scalars. Other methods include absolute
+/// value and negative absolute value for use with both positive or negative
+/// time intervals.
+///
+class TimeInterval {
+   // private variables
+ private:
+   TimeFrac Interval; ///< Non-calendar interval in fractional seconds
+   bool IsCalendar;   ///< True if calendar interval
+   I8 CalInterval;    ///< Calendar interval length
+   TimeUnits Units;   ///< Calendar interval units
+
+ public:
+   // constructors/destructors
+
+   /// Default time interval constructor
+   TimeInterval(void);
+
+   /// Construct time interval from base time fractional integer seconds
+   TimeInterval(const I8 Whole, ///< Whole integer seconds
+                const I8 Numer, ///< Fractional seconds numerator
+                const I8 Denom  ///< Fractional seconds denominator
+   );
+
+   /// Construct time interval from an integer length and units
+   TimeInterval(const I4 InLength,      ///< length of time interval
+                const TimeUnits InUnits ///< unit of time for interval
+   );
+
+   /// Construct time interval from a I8 integer length and units
+   TimeInterval(const I8 Length,        ///< length of time interval
+                const TimeUnits InUnits ///< unit of time for interval
+   );
+
+   /// Construct time interval from an real length and units
+   TimeInterval(const R8 Length,        ///< length of time interval
+                const TimeUnits InUnits ///< unit of time for interval
+   );
+
+   /// Destructor for time interval
+   ~TimeInterval(void);
+
+   // Accessor methods
+
+   /// Set a non-calendar interval in native fractional integer seconds
+   /// \return error code
+   I4 set(const I8 Whole, ///< Whole integer seconds
+          const I8 Numer, ///< Fractional seconds numerator
+          const I8 Denom  ///< Fractional seconds denominator
+   );
+
+   /// Set a time interval from I4 length and units
+   /// \return error code
+   I4 set(const I4 InLength,      ///< length of time interval
+          const TimeUnits InUnits ///< unit of time for interval
+   );
+
+   /// Set a time interval from I8 length and units
+   /// \return error code
+   I4 set(const I8 Length,        ///< length of time interval
+          const TimeUnits InUnits ///< unit of time for interval
+   );
+
+   /// Set a time interval from a real length and units
+   /// Real length is only supported for non-calendar intervals since
+   /// a non-integral length has ambiguous meaning when months, years
+   /// have variable length.
+   /// \return error code
+   I4 set(const R8 Length,        ///< length of time interval
+          const TimeUnits InUnits ///< unit of time for interval
+   );
+
+   /// Retrieve non-calendar interval in native fractional integer form
+   /// \return error code
+   I4 get(I8 &Whole, ///< [out] whole seconds
+          I8 &Numer, ///< [out] fractional second numerator
+          I8 &Denom  ///< [out] fractional second denominator
+   ) const;
+
+   /// Retrieve a time interval in integer length in specified units.
+   /// To avoid roundoff issues during conversions, integer retrieval
+   /// is only permitted in the same units in which the interval was
+   /// defined.
+   /// \return error code
+   I4 get(I8 &Length, ///< [out] requested integer length of interval
+          const TimeUnits ReqUnits ///< [in] unit of time for interval
+   ) const;
+
+   /// Retrieve a time interval in real length and specified units.
+   /// For calendar intervals, the units must match the units in which
+   /// the interval was defined. For non-calendar intervals, only conversions
+   /// between hours, minutes and seconds are allowed.
+   /// \return error code
+   I4 get(R8 &Length,              ///< [out] Requested time interval length
+          const TimeUnits ReqUnits ///< [in] unit of time for interval
+   ) const;
+
+   /// Equivalence comparison operator for TimeInterval
+   bool operator==(const TimeInterval &) const;
+   /// Non-equivalence comparison operator for TimeInterval
+   bool operator!=(const TimeInterval &) const;
+   /// Less than comparison operator for TimeInterval
+   bool operator<(const TimeInterval &) const;
+   /// Greater than comparison operator for TimeInterval
+   bool operator>(const TimeInterval &) const;
+   /// Less than or equal comparison operator for TimeInterval
+   bool operator<=(const TimeInterval &) const;
+   /// Greater than or equal comparison operator for TimeInterval
+   bool operator>=(const TimeInterval &) const;
+   /// Addition operator for TimeInterval
+   TimeInterval operator+(const TimeInterval &) const;
+   /// Subtraction operator for TimeInterval
+   TimeInterval operator-(const TimeInterval &) const;
+   /// Increment operator for TimeInterval
+   TimeInterval &operator+=(const TimeInterval &);
+   /// Decrement operator for TimeInterval
+   TimeInterval &operator-=(const TimeInterval &);
+   /// Multiplication by integer scalar
+   TimeInterval operator*(const I4 Multiplier) const;
+   /// Multiplication by real scalar
+   /// This is primarily meant for non-calendar intervals, but
+   /// for calendar intervals, it will multiply the year, month or
+   /// day interval and convert to the nearest integer.
+   TimeInterval operator*(const R8 Multiplier) const;
+   /// Multiplication in place by integer scalar
+   TimeInterval &operator*=(const I4 Multiplier);
+   /// Multiplication in place by real scalar
+   /// This is primarily meant for non-calendar intervals, but
+   /// for calendar intervals, it will multiply the year, month or
+   /// day interval and convert to the nearest integer.
+   TimeInterval &operator*=(const R8 Multiplier);
+   /// Divide interval by integer scalar
+   TimeInterval operator/(const I4 Divisor) const;
+   /// Divide interval in place by integer scalar
+   TimeInterval &operator/=(const I4 Divisor);
+
+   /// Absolute value
+   static TimeInterval absValue(const TimeInterval &);
+   /// Negative absolute value
+   static TimeInterval negAbsValue(const TimeInterval &);
+
+   // Other utility methods
+   /// Check whether a time interval is positive
+   bool isPositive(void);
+
+   /// commutative multiplication operators need to be defined as
+   /// free functions, and therefore need to be given acces to
+   /// private members of TimeInterval
+   friend TimeInterval operator*(const I4 &Multiplier, const TimeInterval &TI);
+   friend TimeInterval operator*(const R8 &Multiplier, const TimeInterval &TI);
+
+   /// Give TimeInstant access to TimeInterval so that
+   /// incrementing/decrementing time is easier.
+   friend class TimeInstant;
+
+}; // end class TimeInterval
+
 } // namespace OMEGA
 
 //===----------------------------------------------------------------------===//

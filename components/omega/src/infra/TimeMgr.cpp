@@ -2147,5 +2147,1156 @@ I4 Calendar::incrementDate(
 
 } // end Calendar::incrementDateTime
 
+//------------------------------------------------------------------------------
+// TimeInterval definitions
+//------------------------------------------------------------------------------
+
+// TimeInterval constructors/destructors
+//------------------------------------------------------------------------------
+// TimeInterval::TimeInterval - default constructor
+// This is a default constructor that creates a zero, non-calendar interval.
+
+TimeInterval::TimeInterval(void) {
+
+   // Create a base time interval of zero
+   Interval = TimeFrac(0, 0, 1);
+   Units    = TimeUnits::Seconds;
+
+   // Default is not a calendar interval
+   IsCalendar  = false;
+   CalInterval = 0;
+
+} // end TimeInterval::TimeInterval
+
+//------------------------------------------------------------------------------
+// TimeInterval::TimeInterval
+// This is a time interval constructor that creates a non-calendar interval from
+// the integer fraction representation (full + numerator + denominator).
+
+TimeInterval::TimeInterval(const I8 Whole, // [in] whole integer seconds
+                           const I8 Numer, // [in] fractional seconds numerator
+                           const I8 Denom // [in] fractional seconds denominator
+) {
+
+   // Create non-calendar TimeFrac interval using TimeFrac constructor
+   Interval = TimeFrac(Whole, Numer, Denom);
+   Units    = TimeUnits::Seconds;
+
+   // Default is not a calendar interval
+   IsCalendar  = false;
+   CalInterval = 0;
+
+} // end TimeInterval::TimeInterval frac second constructor
+
+//------------------------------------------------------------------------------
+// TimeInterval::TimeInterval
+// Constructs a time interval from an integer length and specified unit of time.
+
+TimeInterval::TimeInterval(
+    const I4 InLength,      // [in] Time interval length
+    const TimeUnits InUnits // [in] Units of time for this interval
+) {
+
+   // Define a default time interval
+   Interval    = TimeFrac(0, 0, 1);
+   Units       = InUnits;
+   IsCalendar  = false;
+   CalInterval = 0;
+   I4 Err{0};
+
+   // Now set values based on input units
+   I8 Length = InLength;
+   switch (Units) {
+   case TimeUnits::Seconds:
+      Err = Interval.set(Length, 0, 1);
+      break;
+   case TimeUnits::Minutes:
+      Err = Interval.setHMS(0, Length, 0);
+      break;
+   case TimeUnits::Hours:
+      Err = Interval.setHMS(Length, 0, 0);
+      break;
+   case TimeUnits::Years:  // these three are all calendar
+   case TimeUnits::Months: // intervals with the input length
+   case TimeUnits::Days:   // units already set correctly
+      IsCalendar  = true;
+      CalInterval = Length;
+      break;
+   case TimeUnits::None:
+   default:
+      LOG_ERROR("TimeMgr: invalid time units for TimeInterval constructor");
+   }
+
+} // end TimeInterval::TimeInterval I4 length/unit constructor
+
+//------------------------------------------------------------------------------
+// TimeInterval::TimeInterval
+// Constructs a time interval from an integer length and specified unit of time.
+
+TimeInterval::TimeInterval(
+    const I8 Length,        // [in] Time interval length
+    const TimeUnits InUnits // [in] Units of time for this interval
+) {
+
+   // Define a default time interval
+   Interval    = TimeFrac(0, 0, 1);
+   Units       = InUnits;
+   IsCalendar  = false;
+   CalInterval = 0;
+   I4 Err{0};
+
+   // Now set values based on input units
+   switch (InUnits) {
+   case TimeUnits::Seconds:
+      Err = Interval.set(Length, 0, 1);
+      break;
+   case TimeUnits::Minutes:
+      Err = Interval.setHMS(0, Length, 0);
+      break;
+   case TimeUnits::Hours:
+      Err = Interval.setHMS(Length, 0, 0);
+      break;
+   case TimeUnits::Years:  // these three are all calendar
+   case TimeUnits::Months: // intervals with the input length
+   case TimeUnits::Days:   // units already set correctly
+      IsCalendar  = true;
+      CalInterval = Length;
+      break;
+   case TimeUnits::None:
+   default:
+      LOG_ERROR("TimeMgr: invalid time units for TimeInterval constructor");
+   }
+
+} // end TimeInterval::TimeInterval I8 length/unit constructor
+
+//------------------------------------------------------------------------------
+// TimeInterval::TimeInterval
+// Constructs a time interval from a real length and specified unit of time.
+// If a calendar interval is requested the real input is converted to an
+// integer number of months, days or years using standard conversion.
+
+TimeInterval::TimeInterval(
+    const R8 Length,        // [in] Time interval length
+    const TimeUnits InUnits // [in] Units of time for this interval
+) {
+
+   // Define a default time interval
+   Interval    = TimeFrac(0, 0, 1);
+   Units       = InUnits;
+   IsCalendar  = false;
+   CalInterval = 0;
+   I4 Err{0};
+
+   // Now set values based on input units
+   switch (InUnits) {
+   case TimeUnits::Seconds:
+      Err = Interval.setSeconds(Length); // TimeFrac set
+      break;
+   case TimeUnits::Minutes:
+      Err = Interval.setMinutes(Length); // TimeFrac set
+      break;
+   case TimeUnits::Hours:
+      Err = Interval.setHours(Length); // TimeFrac set
+      break;
+   case TimeUnits::Years:  // these three are all calendar
+   case TimeUnits::Months: // intervals with the input length
+   case TimeUnits::Days:   // units already set correctly
+      IsCalendar  = true;
+      CalInterval = Length; // Length is coverted to an integer
+      break;
+   case TimeUnits::None:
+   default:
+      LOG_ERROR("TimeMgr: invalid time units for TimeInterval constructor");
+   }
+
+} // end TimeInterval::TimeInterval real length/unit constructor
+
+//------------------------------------------------------------------------------
+// TimeInterval::~TimeInterval - destructor for time interval
+// Destructor for a time interval. No allocated space so does nothing.
+
+TimeInterval::~TimeInterval(void) { // Nothing to be done
+
+} // end TimeInterval destructor
+
+// TimeInterval accessors
+//------------------------------------------------------------------------------
+// TimeInterval::set
+// Set a non-calendar time interval from the base time integer fraction
+// representation (whole seconds + numerator + denominator).
+
+I4 TimeInterval::set(const I8 Whole, // [in] whole integer seconds
+                     const I8 Numer, // [in] fractional seconds numerator
+                     const I8 Denom  // [in] fractional seconds denominator
+) {
+
+   // Create non-calendar TimeFrac interval using TimeFrac constructor
+   Interval = TimeFrac(Whole, Numer, Denom);
+   Units    = TimeUnits::Seconds;
+
+   // Default is not a calendar interval
+   IsCalendar  = false;
+   CalInterval = 0;
+
+   return 0;
+
+} // end TimeInterval::set (fractional seconds)
+
+//------------------------------------------------------------------------------
+// TimeInterval::set
+// Sets a time interval from an integer length and specified unit of time.
+
+I4 TimeInterval::set(
+    const I4 InLength,      // [in] Time interval length
+    const TimeUnits InUnits // [in] Units of time for this interval
+) {
+
+   // Reset to a default time interval
+   Interval    = TimeFrac(0, 0, 1);
+   Units       = InUnits;
+   IsCalendar  = false;
+   CalInterval = 0;
+   I4 Err{0};
+
+   // Now set values based on input units
+   I8 Length = InLength;
+   switch (InUnits) {
+   case TimeUnits::Seconds:
+      Err = Interval.set(Length, 0, 1);
+      break;
+   case TimeUnits::Minutes:
+      Err = Interval.setHMS(0, Length, 0);
+      break;
+   case TimeUnits::Hours:
+      Err = Interval.setHMS(Length, 0, 0);
+      break;
+   case TimeUnits::Years:  // these three are all calendar
+   case TimeUnits::Months: // intervals with the input length
+   case TimeUnits::Days:   // units already set correctly
+      IsCalendar  = true;
+      CalInterval = Length;
+      break;
+   case TimeUnits::None:
+   default:
+      Err = 1;
+      LOG_ERROR("TimeMgr: invalid time units for TimeInterval::set");
+   }
+
+   return Err;
+
+} // end TimeInterval::set (I4 length/unit)
+
+//------------------------------------------------------------------------------
+// TimeInterval::set
+// Sets a time interval from an integer length and specified unit of time.
+
+I4 TimeInterval::set(
+    const I8 Length,        // [in] Time interval length
+    const TimeUnits InUnits // [in] Units of time for this interval
+) {
+
+   // Reset to a default time interval
+   Interval    = TimeFrac(0, 0, 1);
+   Units       = InUnits;
+   IsCalendar  = false;
+   CalInterval = 0;
+   I4 Err{0};
+
+   // Now set values based on input units
+   switch (InUnits) {
+   case TimeUnits::Seconds:
+      Err = Interval.set(Length, 0, 1);
+      break;
+   case TimeUnits::Minutes:
+      Err = Interval.setHMS(0, Length, 0);
+      break;
+   case TimeUnits::Hours:
+      Err = Interval.setHMS(Length, 0, 0);
+      break;
+   case TimeUnits::Years:  // these three are all calendar
+   case TimeUnits::Months: // intervals with the input length
+   case TimeUnits::Days:   // units already set correctly
+      IsCalendar  = true;
+      CalInterval = Length;
+      break;
+   case TimeUnits::None:
+   default:
+      Err = 1;
+      LOG_ERROR("TimeMgr: invalid time units for TimeInterval::set");
+   }
+
+   return Err;
+
+} // end TimeInterval::set (I8 length/unit)
+
+//------------------------------------------------------------------------------
+// TimeInterval::set
+// Sets a time interval from a real length and specified unit of time.
+// Because a calendar interval only supports integer lengths, the input
+// real value is converted to an integer number of months, days or years
+// using standard conversions.
+
+I4 TimeInterval::set(
+    const R8 Length,        // [in] Time interval length
+    const TimeUnits InUnits // [in] Units of time for this interval
+) {
+
+   // Reset to a default time interval
+   Interval    = TimeFrac(0, 0, 1);
+   Units       = InUnits;
+   IsCalendar  = false;
+   CalInterval = 0;
+   I4 Err{0};
+
+   // Now set values based on input units
+   switch (InUnits) {
+   case TimeUnits::Seconds:
+      Err = Interval.setSeconds(Length); // TimeFrac set
+      break;
+   case TimeUnits::Minutes:
+      Err = Interval.setMinutes(Length); // TimeFrac set
+      break;
+   case TimeUnits::Hours:
+      Err = Interval.setHours(Length); // TimeFrac set
+      break;
+   case TimeUnits::Years:  // these three are all calendar
+   case TimeUnits::Months: // intervals with the input length
+   case TimeUnits::Days:   // units already set correctly
+      IsCalendar  = true;
+      CalInterval = Length; // length is coverted to an integer
+      break;
+   case TimeUnits::None:
+   default:
+      Err = 1;
+      LOG_ERROR("TimeMgr: invalid time units for TimeInterval::set");
+   }
+
+   return Err;
+
+} // end TimeInterval::set (real length/unit)
+
+//------------------------------------------------------------------------------
+// TimeInterval::get
+// Retrieve a non-calendar time interval in fractional integer seconds
+
+I4 TimeInterval::get(I8 &Whole, ///< [out] whole seconds
+                     I8 &Numer, ///< [out] fractional second numerator
+                     I8 &Denom  ///< [out] fractional second denominator
+) const {
+
+   I4 Err{0};
+
+   // If this is a calendar interval, return an error
+   if (IsCalendar) {
+      Err = 1;
+      LOG_ERROR("TimeMgr: TimeInterval::get attempt to retrieve non-calendar "
+                "values from calendar interval");
+   } else {
+      // otherwise, just use the TimeFrac::get to extract
+      Err = Interval.get(Whole, Numer, Denom);
+   }
+
+   return Err;
+
+} // end TimeInterval::get (fractonal seconds)
+
+//------------------------------------------------------------------------------
+// TimeInterval::get (integer)
+// Retrieve a time interval in requested units and integer length.
+// Due to issues in unit conversion, we only allow integer retrieval to
+// return in the same units that the interval was defined.
+
+I4 TimeInterval::get(
+    I8 &Length,              // requested length of interval
+    const TimeUnits ReqUnits // units requested for time interval
+) const {
+
+   Length = 0;
+   I4 Hours{0}; // needed for TimeFrac HMS interface
+   I4 Minutes{0};
+   I4 Seconds{0};
+   I4 Err{0};
+
+   // Now get values based on requested units
+   // If requested units are same as the interval was defined,
+   // just return length. Otherwise, attempt to convert or
+   // write an error if not possible.
+   switch (ReqUnits) {
+   case TimeUnits::Seconds:
+      Err = Interval.getHMS(Hours, Minutes, Seconds); // TimeFrac get
+      if (Units == TimeUnits::Seconds) {
+         Length = Seconds;
+      } else {
+         Err = 1;
+         LOG_ERROR("TimeMgr: TimeInterval::get (integer) attempt to get "
+                   "interval in seconds but defined in other units");
+      }
+      break;
+   case TimeUnits::Minutes:
+      Err = Interval.getHMS(Hours, Minutes, Seconds); // TimeFrac get
+      if (Units == TimeUnits::Minutes) {
+         Length = Minutes;
+      } else {
+         Err = 1;
+         LOG_ERROR("TimeMgr: TimeInterval::get (integer) attempt to get "
+                   "interval in minutes but defined in other units");
+      }
+      break;
+   case TimeUnits::Hours:
+      Err = Interval.getHMS(Hours, Minutes, Seconds); // TimeFrac get
+      if (Units == TimeUnits::Hours) {
+         Length = Hours;
+      } else {
+         Err = 1;
+         LOG_ERROR("TimeMgr: TimeInterval::get (integer) attempt to get "
+                   "interval in hours but defined in other units");
+      }
+      break;
+   case TimeUnits::Years:
+      if (Units == TimeUnits::Years) {
+         Length = CalInterval;
+      } else {
+         Err = 1;
+         LOG_ERROR("TimeMgr: TimeInterval::get (integer) attempt to get "
+                   "interval in years but defined in other units");
+      }
+      break;
+   case TimeUnits::Months:
+      if (Units == TimeUnits::Months) {
+         Length = CalInterval;
+      } else {
+         Err = 1;
+         LOG_ERROR("TimeMgr: TimeInterval::get (integer) attempt to get "
+                   "interval in months but defined in other units");
+      }
+      break;
+   case TimeUnits::Days:
+      if (Units == TimeUnits::Days) {
+         Length = CalInterval;
+      } else {
+         Err = 1;
+         LOG_ERROR("TimeMgr: TimeInterval::get (integer) attempt to get "
+                   "interval in days but defined in other units");
+      }
+      break;
+   case TimeUnits::None:
+   default:
+      Err = 1;
+      LOG_ERROR("TimeMgr: TimeInterval::get (integer) invalid time units for "
+                "time interval");
+   }
+
+   // return error code
+   return Err;
+
+} // end TimeInterval::get (integer)
+
+//------------------------------------------------------------------------------
+// TimeInterval::get (real)
+// Retrieve a time interval in requested units and real length.
+// For non-calendar intervals, this routine will convert units to desired
+// units. Because year, month intervals change based on current date, no
+// conversion is supported yet.
+
+I4 TimeInterval::get(
+    R8 &Length,              // requested length of interval
+    const TimeUnits ReqUnits // units requested for time interval
+) const {
+
+   Length = 0.0;
+   R8 TmpResult{0.0}; // temporary for conversion
+   I4 Err{0};
+
+   // Now get values based on requested units
+   // If requested units are same as the interval was defined,
+   // just return length. Otherwise perform a conversion if needed or
+   // error if not supported.
+
+   switch (ReqUnits) {
+   case TimeUnits::Years:
+      if (Units == TimeUnits::Years) {
+         Length = CalInterval;
+      } else {
+         Err = 1;
+         LOG_ERROR("TimeMgr: TimeInterval::get (real) attempt to get interval "
+                   "in years but defined in other units");
+      }
+      break;
+   case TimeUnits::Months:
+      if (Units == TimeUnits::Months) {
+         Length = CalInterval;
+      } else {
+         Err = 1;
+         LOG_ERROR("TimeMgr: TimeInterval::get (real) attempt to get interval "
+                   "in months but defined in other units");
+      }
+      break;
+   case TimeUnits::Days:
+      switch (Units) {
+      case TimeUnits::Days:
+         Length = CalInterval;
+         break;
+      case TimeUnits::Seconds:
+      case TimeUnits::Minutes:
+      case TimeUnits::Hours:
+         TmpResult = Interval.getSeconds();
+         Length    = TmpResult / static_cast<R8>(SECONDS_PER_DAY);
+         break;
+      case TimeUnits::Months:
+      case TimeUnits::Years:
+         Err = 1;
+         LOG_ERROR("TimeMgr: TimeInterval::get (real) conversion of year/month "
+                   "units to days not supported");
+         break;
+      case TimeUnits::None:
+      default:
+         Err = 1;
+         LOG_ERROR("TimeMgr: TimeInterval::get (real) interval units not "
+                   "defined");
+      } // end switch on interval units
+      break;
+   case TimeUnits::Seconds:
+      switch (Units) {         // result depends on units interval defined
+      case TimeUnits::Seconds: // non-calendar interval simply
+      case TimeUnits::Minutes: // retrieves from TimeFrac
+      case TimeUnits::Hours:
+         Length = Interval.getSeconds();
+         break;
+      case TimeUnits::Days:
+         TmpResult = CalInterval;
+         Length    = TmpResult * static_cast<R8>(SECONDS_PER_DAY);
+         break;
+      case TimeUnits::Years:  // some calendar intervals cannot
+      case TimeUnits::Months: // be converted
+         Length = 0.0;
+         Err    = 1;
+         LOG_ERROR("TimeMgr: TimeInterval::get (real) conversion of year/month "
+                   "intervals to seconds unsupported");
+         break;
+      case TimeUnits::None:
+      default:
+         Err = 1;
+         LOG_ERROR("TimeMgr: TimeInterval::get (real) interval units not "
+                   "defined");
+      } // end switch on interval units
+      break;
+   case TimeUnits::Minutes:
+      switch (Units) {         // result depends on units interval defined
+      case TimeUnits::Seconds: // non-calendar interval simply
+      case TimeUnits::Minutes: // retrieves from Base Time
+      case TimeUnits::Hours:
+         Length = Interval.getMinutes();
+         break;
+      case TimeUnits::Years:  // some calendar intervals cannot
+      case TimeUnits::Months: // be converted
+         Length = 0.0;
+         Err    = 1;
+         LOG_ERROR("TimeMgr: TimeInterval::get (real) conversion of year/month "
+                   "intervals to minutes unsupported");
+         break;
+      case TimeUnits::Days:
+         TmpResult = CalInterval;
+         Length    = TmpResult * static_cast<R8>(SECONDS_PER_DAY) /
+                  static_cast<R8>(SECONDS_PER_MINUTE);
+         break;
+      case TimeUnits::None:
+      default:
+         Err = 1;
+         LOG_ERROR(
+             "TimeMgr: TimeInterval::get (real) interval units not defined");
+      } // end switch on interval units
+      break;
+   case TimeUnits::Hours:
+      switch (Units) {         // result depends on units interval defined
+      case TimeUnits::Seconds: // non-calendar interval simply
+      case TimeUnits::Minutes: // retrieves from Base Time
+      case TimeUnits::Hours:
+         Length = Interval.getHours();
+         break;
+      case TimeUnits::Years:  // some calendar intervals cannot
+      case TimeUnits::Months: // be converted
+         Length = 0.0;
+         Err    = 1;
+         LOG_ERROR("TimeMgr: TimeInterval::get (real) conversion of year/month "
+                   "intervals to seconds unsupported");
+         break;
+      case TimeUnits::Days:
+         TmpResult = CalInterval;
+         Length    = TmpResult * static_cast<R8>(SECONDS_PER_DAY) /
+                  static_cast<R8>(SECONDS_PER_HOUR);
+         break;
+      case TimeUnits::None:
+      default:
+         Err = 1;
+         LOG_ERROR("TimeMgr: TimeInterval::get (real) interval units not "
+                   "defined");
+      } // end switch on interval units
+      break;
+   case TimeUnits::None:
+   default:
+      Err = 1;
+      LOG_ERROR("TimeMgr: TimeInterval::get (real) invalid time units for time "
+                "interval");
+   } // end switch on requested units
+
+   // return error code
+   return Err;
+
+} // end TimeInterval::get (real)
+
+// TimeInterval operators
+//------------------------------------------------------------------------------
+// TimeInterval::operator==
+// This equivalence operator returns true if the time intervals are
+// equal. If time intervals are set correctly, this simply means
+// checking whether all components are equal.
+
+bool TimeInterval::operator==(
+    const TimeInterval &TimeInt) const { // [in] - interval to compare
+
+   // check calendar components if a calendar interval
+   // both units and length of interval must match
+   if (this->IsCalendar) {
+      if (!TimeInt.IsCalendar)
+         return false;
+      if (this->Units != TimeInt.Units)
+         return false;
+      if (this->CalInterval != TimeInt.CalInterval)
+         return false;
+   }
+   // check non-calendar interval using base time equivalence
+   if (!(this->Interval == TimeInt.Interval))
+      return false;
+
+   // if we made it here, they should be equivalent
+   return true;
+
+} // end TimeInterval::operator==
+
+//------------------------------------------------------------------------------
+// TimeInterval::operator!=
+// This non-equivalence operator returns true if time intervals are
+// not equal. If time intervals are set correctly, this simply means
+// checking whether all components are not equal.
+
+bool TimeInterval::operator!=(
+    const TimeInterval &TimeInt) const { // [in] - interval to compare
+
+   // use the equivalence operator above
+   return !(*this == TimeInt);
+
+} // end TimeInterval::operator!=
+
+//------------------------------------------------------------------------------
+// TimeInterval::operator<
+// This operator returns true if this time interval is less than
+// another. Time intervals must be of the same type. That is, they
+// both must be calendar or non-calendar intervals and if calendar
+// interval, they must define the interval in the same units
+// (years, months, or days).
+
+bool TimeInterval::operator<(
+    const TimeInterval &TimeInt) const { // [in] - interval to compare
+
+   // calendar intervals
+   if (this->IsCalendar) {
+      // cannot determine result if both are not calendar intervals
+      if (!(TimeInt.IsCalendar)) {
+         LOG_ERROR("TimeMgr: TimeInterval::operator< attempt to compare "
+                   "incompatible time intervals");
+         return false;
+      }
+      // calendar must also compare intervals with same units
+      if (this->Units == TimeInt.Units) {
+         return this->CalInterval < TimeInt.CalInterval;
+      } else {
+         LOG_ERROR("TimeMgr: TimeInterval::operator< attempt to compare "
+                   "incompatible calendar intervals");
+         return false;
+      }
+   } else {
+      // non-calendar intervals use inherited operator
+      // check for incompatibility
+      if (TimeInt.IsCalendar) {
+         LOG_ERROR("TimeMgr: TimeInterval::operator< attempt to compare "
+                   "incompatible time intervals");
+         return false;
+      } else {
+         // use base time comparison
+         return this->Interval < TimeInt.Interval;
+      }
+   } // end else (non-calendar)
+
+} // end TimeInterval::operator<
+
+//------------------------------------------------------------------------------
+// TimeInterval::operator>
+// This operator returns true if this time interval is greater than
+// another. Time intervals must be of the same type. That is, they
+// both must be calendar or non-calendar intervals and if calendar
+// interval, they must define the interval in the same units
+// (years, months, or days).
+
+bool TimeInterval::operator>(
+    const TimeInterval &TimeInt) const { // [in] - interval to compare
+
+   // calendar intervals
+   if (this->IsCalendar) {
+      // cannot determine result if both are not calendar intervals
+      if (!(TimeInt.IsCalendar)) {
+         LOG_ERROR("TimeMgr: TimeInterval::operator> attempt to compare "
+                   "incompatible time intervals");
+         return false;
+      }
+      // calendar must also compare intervals with same units
+      if (this->Units == TimeInt.Units) {
+         return this->CalInterval > TimeInt.CalInterval;
+      } else {
+         LOG_ERROR("TimeMgr: TimeInterval::operator> attempt to compare "
+                   "incompatible calendar intervals");
+         return false;
+      }
+   } else {
+      // non-calendar intervals use inherited operator
+      // check for incompatibility
+      if (TimeInt.IsCalendar) {
+         LOG_ERROR("TimeInterval::operator> attempt to compare incompatible "
+                   "time intervals");
+         return false;
+      } else {
+         // use TimeFrac comparison
+         return this->Interval > TimeInt.Interval;
+      }
+   }
+
+} // end TimeInterval::operator>
+
+//------------------------------------------------------------------------------
+// TimeInterval::operator<=
+// This operator returns true if this time interval is less than or
+// equal to another. Time intervals must be of the same type. That is,
+// they both must be calendar or non-calendar intervals and if calendar
+// interval, they must define the interval in the same units
+// (years, months, or days).
+
+bool TimeInterval::operator<=(
+    const TimeInterval &TimeInt) const { // [in] - interval to compare
+
+   // use existing existing operators
+   return (*this < TimeInt) || (*this == TimeInt);
+
+} // end TimeInterval::operator<=
+
+//------------------------------------------------------------------------------
+// TimeInterval::operator>=
+// This operator returns true if this time interval is greater than
+// or equal to another. Time intervals must be of the same type. That
+// is, they both must be calendar or non-calendar intervals and if
+// calendar interval, they must define the interval in the same units
+// (years, months, or days).
+
+bool TimeInterval::operator>=(
+    const TimeInterval &TimeInt) const { // [in] - interval to compare
+
+   // use existing existing operators
+   return (*this > TimeInt) || (*this == TimeInt);
+
+} // end TimeInterval::operator>=
+
+//------------------------------------------------------------------------------
+// TimeInterval::operator+
+// This operator adds two time intervals and returns the result.
+
+TimeInterval TimeInterval::operator+(
+    const TimeInterval &TimeInt) const { // [in] - interval to add
+
+   // start by copying result
+   TimeInterval Result = *this;
+
+   // can only really add compatible time intervals
+   // add calendar intervals
+   if (Result.IsCalendar) {
+      if (!(TimeInt.IsCalendar)) {
+         LOG_ERROR("TimeMgr: TimeInterval::operator+ attempt to add "
+                   "incompatible time intervals");
+         return Result;
+      }
+      // calendar can only add intervals with same units
+      if (this->Units == TimeInt.Units) {
+         Result.CalInterval += TimeInt.CalInterval;
+      } else {
+         LOG_ERROR("TimeMgr: TimeInterval::operator+ attempt to add "
+                   "incompatible calendar intervals");
+         return Result;
+      }
+   } else {
+      // add non-calendar using TimeFrac operator
+      // first check that both operands are non-calendar intervals
+      if (TimeInt.IsCalendar) {
+         LOG_ERROR("TimeMgr: TimeInterval::operator+ attempt to add "
+                   "incompatible time intervals");
+         return Result;
+      }
+
+      // use underlying TimeFrac operator to add the TimeFrac component
+      Result.Interval += TimeInt.Interval;
+   }
+
+   // return the result
+   return Result;
+
+} // end TimeInterval::operator+
+
+//------------------------------------------------------------------------------
+// TimeInterval::operator-
+// This operator subtracts two time intervals and returns the result.
+
+TimeInterval TimeInterval::operator-(
+    const TimeInterval &TimeInt) const { // [in] - interval to subtract
+
+   // start by copying result
+   TimeInterval Result = *this;
+
+   // can only really subtract compatible time intervals
+   // subtract calendar intervals
+   if (Result.IsCalendar) {
+      if (!(TimeInt.IsCalendar)) {
+         LOG_ERROR("TimeMgr: TimeInterval::operator- attempt to subtract "
+                   "incompatible time intervals");
+         return Result;
+      }
+      // calendar can only subtract intervals with same units
+      if (this->Units == TimeInt.Units) {
+         Result.CalInterval -= TimeInt.CalInterval;
+      } else {
+         LOG_ERROR("TimeMgr: TimeInterval::operator- attempt to subtract "
+                   "incompatible calendar intervals");
+         return Result;
+      }
+   } else {
+      // subtract non-calendar intervals using TimeFrac operator
+      // check compatibility of operands
+      if (TimeInt.IsCalendar) {
+         LOG_ERROR("TimeInterval::operator- attempt to subtract incompatible "
+                   "time intervals");
+         return Result;
+      }
+
+      // use TimeFrac operator on the TimeFrac component
+      Result.Interval -= TimeInt.Interval;
+   }
+
+   // return the result
+   return Result;
+
+} // end TimeInterval::operator-
+
+//------------------------------------------------------------------------------
+// TimeInterval::operator+=
+// This operator increments a time interval by adding another interval and
+// storing the result in place.
+
+TimeInterval &TimeInterval::operator+=(const TimeInterval &TimeInt) {
+
+   // reuse (+) operator defined above
+   *this = *this + TimeInt;
+   return *this;
+
+} // end TimeInterval::operator+=
+
+//------------------------------------------------------------------------------
+// TimeInterval::operator-=
+// This operator decrements a time interval by subtracting another interval and
+// storing the result in place.
+
+TimeInterval &TimeInterval::operator-=(const TimeInterval &TimeInt) {
+
+   // reuse (-) operator defined above
+   *this = *this - TimeInt;
+   return *this;
+
+} // end TimeInterval::operator-=
+
+//------------------------------------------------------------------------------
+// TimeInterval::operator*
+// This operator increases the size of a time interval by an integer multiple.
+
+TimeInterval
+TimeInterval::operator*(const I4 Multiplier) const { // [in] integer multiplier
+
+   // start with a copy of the input time interval
+   TimeInterval Product = *this;
+
+   // for all interval types, just multiply values by integer
+
+   Product.Interval *= Multiplier;
+   Product.CalInterval *= Multiplier;
+
+   // return the result
+   return Product;
+
+} // end TimeInterval::operator* for integers
+
+//------------------------------------------------------------------------------
+// TimeInterval::operator*
+// This operator increases the size of a time interval by a real
+// multiple. For calendar intervals, the year, month or day is
+// multiplied as a real number, then converted back to an integer
+// so some rounding of the result occurs to maintain the integer interval.
+
+TimeInterval
+TimeInterval::operator*(const R8 Multiplier) const { // [in] real multiplier
+
+   // start with a copy of the input time interval
+   TimeInterval Product = *this;
+
+   // for non-calendar types, just multiply values by real variable
+   // using the base time operator
+   Product.Interval *= Multiplier;
+
+   // for calendar intervals, must convert (and round) back to integer
+   R8 Tmp{0.0};
+   Tmp                 = static_cast<R8>(Product.CalInterval) * Multiplier;
+   Product.CalInterval = static_cast<I8>(Tmp);
+
+   // return the result
+   return Product;
+
+} // end TimeInterval::operator* for reals
+
+//------------------------------------------------------------------------------
+// TimeInterval::operator*
+// This operator increases the size of a time interval by an integer
+// multiple. It is the commutative complement to the member operator
+// in which the integer multiplier is the first argument.
+
+TimeInterval
+operator*(const I4 &Multiplier,     // [in] integer multiplier
+          const TimeInterval &TI) { // [in] TimeInterval multiplicand
+
+   // just call the member operator in the right order
+   return TI * Multiplier;
+
+} // end TimeInterval::operator* for integers commutative version
+
+//------------------------------------------------------------------------------
+// TimeInterval::operator*
+// This operator increases the size of a time interval by an real
+// multiple. It is the commutative complement to the member operator
+// in which the real multiplier is the first argument. As in that case,
+// calendar intervals are rounded to an integer using a static cast.
+
+TimeInterval
+operator*(const R8 &Multiplier,     // [in] real (dble) multiplier
+          const TimeInterval &TI) { // [in] TimeInterval multiplicand
+
+   // just call the member operator in the right order
+   return TI * Multiplier;
+
+} // end TimeInterval::operator* for reals commutative version
+
+//------------------------------------------------------------------------------
+// TimeInterval::operator*=
+// This operator increases the size of a time interval by an integer multiple.
+
+TimeInterval &
+TimeInterval::operator*=(const I4 Multiplier) { // [in] integer multiplier
+
+   // call the member multiply operator and return
+   return *this = *this * Multiplier;
+
+} // end TimeInterval::operator*= for integer multipliers
+
+//------------------------------------------------------------------------------
+// TimeInterval::operator*=
+// This operator increases the size of a time interval by an real
+// multiple and stores the result in place. For calendar-dependent intervals,
+// the multiplication is carried out as a real operation, but the result is
+// converted back to integer form, so some rounding occurs.
+
+TimeInterval &
+TimeInterval::operator*=(const R8 Multiplier) { // [in] real multiplier
+
+   // call the member multiply operator and return
+   *this = *this * Multiplier;
+   return *this;
+
+} // end TimeInterval::operator*= for real multipliers
+
+//------------------------------------------------------------------------------
+// TimeInterval::operator/
+// This routine creates a new time interval by subdividing a current
+// interval by an integral number. For calendar-independent intervals
+// this simply divides the fractional integer interval. For calendar-
+// dependent intervals, this will divide the year, month or day
+// interval using integer division. If the year, month or day does
+// not divide evenly, a warning is generated but the result of the
+// integer division is returned.
+
+TimeInterval
+TimeInterval::operator/(const I4 Divisor) const { //! [in] integer divisor
+
+   // check for divide by zero and return a zero default interval
+   TimeInterval Quotient;
+   if (Divisor == 0) {
+      LOG_ERROR("TimeMgr: TimeInterval::operator/ (int) attempt to divide by "
+                "zero");
+      return Quotient;
+   }
+
+   // copy the time interval to the result
+   Quotient = *this;
+
+   // for calendar-dependent intervals, divide the
+   // year, month or day intervals
+   if (Quotient.IsCalendar) {
+      // generate warning if divisor does not divide evenly
+      if (Quotient.CalInterval != 0 && Quotient.CalInterval % Divisor != 0) {
+         LOG_WARN("TimeMgr: TimeInterval::operator/ (int) interval does not "
+                  "divide evenly");
+      }
+      // return the result of the integer division
+      Quotient.CalInterval /= Divisor;
+
+   } else {
+      // for calendar-independent intervals, use the TimeFrac
+      // operator to divide fractional seconds
+      Quotient.Interval /= Divisor;
+   }
+
+   // return the result
+   return Quotient;
+
+} // end TimeInterval::operator/ for int divisor
+
+//------------------------------------------------------------------------------
+// TimeInterval::operator/=
+// This routine subdivides a current interval by an integral number
+// and returns the result in place. For calendar-independent intervals
+// this simply divides the fractional integer interval. For calendar-
+// dependent intervals, this will divide the year, month or day
+// interval using integer division. If the year, month or day does
+// not divide evenly, a warning is generated but the result of the
+// integer division is returned.
+
+TimeInterval &
+TimeInterval::operator/=(const I4 Divisor) { // in - integer divisor
+
+   // simply call the related integer division function and
+   // return in place
+   return *this = *this / Divisor;
+
+} // end TimeInterval::operator/= for int division
+
+// TimeInterval methods
+//------------------------------------------------------------------------------
+// TimeInterval::absValue
+// This function returns the absolute value of the given time interval.
+// For calendar-independent intervals, this is just the positive value
+// of the fractional second representation.  For calendar-dependent
+// intervals it is the abs value of the year, month or day interval.
+
+TimeInterval TimeInterval::absValue(
+    const TimeInterval &TimeInt) { // [in] interval for abs value
+
+   // initialize result to a copy of the current interval
+   TimeInterval AbsValue = TimeInt;
+
+   // take abs value of calendar-independent components
+   I8 W{0};
+   I8 N{0};
+   I8 D{0};
+   AbsValue.Interval.get(W, N, D);
+   if (W < 0)
+      AbsValue.Interval.setWhole(-1 * W);
+   if (N < 0)
+      AbsValue.Interval.setNumer(-1 * N);
+   if (D < 0)
+      AbsValue.Interval.setDenom(-1 * D);
+
+   // take abs value of calendar-dependent components
+   // if this is a calendar-dependent interval
+   if (AbsValue.IsCalendar) {
+      if (AbsValue.CalInterval < 0)
+         AbsValue.CalInterval = -1 * AbsValue.CalInterval;
+   }
+
+   return AbsValue;
+
+} // end TimeInterval::absValue
+
+//------------------------------------------------------------------------------
+// TimeInterval::negAbsValue
+// This function returns the negative absolute value of the given time
+// interval. For calendar-independent intervals, this is just the
+// negative absolute value of the fractional second representation.
+// For calendar-dependent intervals it is the negative abs value of
+// the year, month or day interval.
+
+TimeInterval TimeInterval::negAbsValue(
+    const TimeInterval &TimeInt) { // [in] interval for neg abs val
+
+   // initialize result to a copy of the current interval
+   TimeInterval NegAbsValue = TimeInt;
+
+   // take negative abs value of calendar-independent components
+   I8 W{0};
+   I8 N{0};
+   I8 D{0};
+   NegAbsValue.Interval.get(W, N, D);
+   if (W > 0)
+      NegAbsValue.Interval.setWhole(-1 * W);
+   if (N > 0)
+      NegAbsValue.Interval.setNumer(-1 * N);
+   if (D < 0)
+      NegAbsValue.Interval.setDenom(-1 * D); // must ensure denom positive
+
+   // take negative abs value of calendar-dependent components
+   // if this is a calendar-dependent interval
+   if (NegAbsValue.IsCalendar) {
+      if (NegAbsValue.CalInterval > 0)
+         NegAbsValue.CalInterval = -1 * NegAbsValue.CalInterval;
+   }
+
+   return NegAbsValue;
+
+} // end TimeInterval::negAbsValue
+
+//------------------------------------------------------------------------------
+// TimeInterval::isPositive
+// Function that returns true if the time interval is positive
+
+bool TimeInterval::isPositive(void) {
+
+   // initialize result to false
+   bool Result = false;
+
+   // Check components of a non-calendar interval
+   I8 W{0};
+   I8 N{0};
+   I8 D{0};
+   // make sure fraction is in proper form, particularly that the
+   // whole and fraction have same sign and numerator and denomintator
+   // have the same sign.
+   I4 Err = Interval.simplify();
+
+   // now retrieve fractional seconds and check components
+   Err = Interval.get(W, N, D);
+   if (W >= 0) { // whole part of seconds non-negative
+      // only need check the numerator with simplified form
+      if (N > 0)
+         Result = true;
+   }
+
+   // Check calendar interval quantities
+   if (IsCalendar) {
+      if (CalInterval > 0)
+         Result = true;
+   }
+
+   return Result;
+
+} // end TimeInterval::isPositive
+
 } // namespace OMEGA
 //===-----------------------------------------------------------------------===/
