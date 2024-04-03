@@ -1731,6 +1731,1230 @@ int testCalendar(void) {
 } // end testCalendar
 
 //------------------------------------------------------------------------------
+// TimeInterval test
+
+int testTimeInterval(void) {
+
+   LOG_INFO("TimeMgrTest: TimeInterval tests --------------------------------");
+
+   // Initialize error codes
+   OMEGA::I4 Err1{0};
+   OMEGA::I4 Err2{0};
+   OMEGA::I4 ErrAll{0};
+
+   // Initialize some reference values for the fractional
+   // representation of a TimeInterval 5 3/8 seconds.
+   OMEGA::I8 WRef{5};
+   OMEGA::I8 NRef{3};
+   OMEGA::I8 DRef{8};
+   OMEGA::R8 RRef{5.375};
+   OMEGA::I8 IRef{WRef};
+
+   OMEGA::I8 WTst{5};
+   OMEGA::I8 NTst{3};
+   OMEGA::I8 DTst{8};
+   OMEGA::R8 RTst{5.375};
+   OMEGA::I8 ITst{WTst};
+
+   // Test default constructor to create a reference fraction
+   // Also implicitly tests one form of the get routine.
+
+   OMEGA::TimeInterval TiRef;
+
+   // Test get function for a fractional second representation
+   Err1 = TiRef.get(WTst, NTst, DTst);
+
+   if (Err1 == 0 && WTst == 0 && NTst == 0 && DTst == 1) {
+      LOG_INFO("TimeMgrTest/TimeInterval: default constructor and get: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: default constructor and get: FAIL");
+   }
+
+   // Test constructor from fractional seconds
+
+   OMEGA::TimeInterval TiTstFS(WRef, NRef, DRef);
+
+   Err1 = TiTstFS.get(WTst, NTst, DTst);
+
+   if (Err1 == 0 && WTst == WRef && NTst == NRef && DTst == DRef) {
+      LOG_INFO("TimeMgrTest/TimeInterval: fractional second constructor: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: fractional second "
+                "constructor: FAIL");
+   }
+
+   // Can now test assignment and equivalence operator
+
+   TiRef = TiTstFS;
+   if (TiTstFS == TiRef) {
+      LOG_INFO("TimeMgrTest/TimeInterval: operator(==): PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: operator(==): FAIL");
+   }
+
+   // Test time interval constructor from real seconds
+   OMEGA::TimeInterval TiTstRSec(RRef, OMEGA::TimeUnits::Seconds);
+
+   if (TiTstRSec == TiRef) {
+      LOG_INFO("TimeMgrTest/TimeInterval: real seconds constructor: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: real seconds constructor: FAIL");
+   }
+
+   // Test time interval constructor from real minutes
+   OMEGA::TimeInterval TiTstRMin((RRef / SECONDS_PER_MINUTE),
+                                 OMEGA::TimeUnits::Minutes);
+   if (TiTstRMin == TiRef) {
+      LOG_INFO("TimeMgrTest/TimeInterval: real minutes constructor: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: real minutes constructor: FAIL");
+   }
+
+   // Test time interval constructor from real hours
+   OMEGA::TimeInterval TiTstRHour((RRef / SECONDS_PER_HOUR),
+                                  OMEGA::TimeUnits::Hours);
+   if (TiTstRHour == TiRef) {
+      LOG_INFO("TimeMgrTest/TimeInterval: real hours constructor: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: real hours constructor: FAIL");
+   }
+
+   // Test time interval constructor from real days
+   OMEGA::TimeInterval TiTstRDay(RRef, OMEGA::TimeUnits::Days);
+
+   Err1 = TiTstRDay.get(RTst, OMEGA::TimeUnits::Days);
+   if (Err1 == 0 && RTst == 5.0) {
+      LOG_INFO("TimeMgrTest/TimeInterval: real days constructor: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: real days constructor: FAIL");
+   }
+
+   // Test time interval constructor from real months
+   OMEGA::TimeInterval TiTstRMonth(RRef, OMEGA::TimeUnits::Months);
+
+   Err1 = TiTstRMonth.get(RTst, OMEGA::TimeUnits::Months);
+   if (Err1 == 0 && RTst == 5.0) {
+      LOG_INFO("TimeMgrTest/TimeInterval: real months constructor: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: real months constructor: FAIL");
+   }
+
+   // Test time interval constructor from real years
+   OMEGA::TimeInterval TiTstRYear(RRef, OMEGA::TimeUnits::Years);
+
+   Err1 = TiTstRYear.get(RTst, OMEGA::TimeUnits::Years);
+   if (Err1 == 0 && RTst == 5.0) {
+      LOG_INFO("TimeMgrTest/TimeInterval: real years constructor: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: real years constructor: FAIL");
+   }
+
+   // Test time interval constructor from integer seconds
+   OMEGA::TimeInterval TiTstISec(IRef, OMEGA::TimeUnits::Seconds);
+
+   Err1 = TiTstISec.get(WTst, NTst, DTst);
+   if (Err1 == 0 && WTst == WRef && NTst == 0 && DTst == 1) {
+      LOG_INFO("TimeMgrTest/TimeInterval: integer seconds constructor: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: integer seconds constructor: FAIL");
+   }
+
+   // Test time interval constructor from integer minutes
+   OMEGA::TimeInterval TiTstIMin(IRef, OMEGA::TimeUnits::Minutes);
+
+   Err1 = TiTstIMin.get(WTst, NTst, DTst);
+   if (Err1 == 0 && WTst == WRef * SECONDS_PER_MINUTE && NTst == 0 &&
+       DTst == 1) {
+      LOG_INFO("TimeMgrTest/TimeInterval: integer minutes constructor: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: integer minutes constructor: FAIL");
+   }
+
+   // Test non-equivalence comparison operator for TimeInterval
+
+   if (TiTstIMin != TiRef) {
+      LOG_INFO("TimeMgrTest/TimeInterval: operator(!=): PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: operator(!=): FAIL");
+   }
+
+   // Test time interval constructor from integer hours
+   OMEGA::TimeInterval TiTstIHour(IRef, OMEGA::TimeUnits::Hours);
+
+   Err1 = TiTstIHour.get(WTst, NTst, DTst);
+   if (Err1 == 0 && WTst == WRef * SECONDS_PER_HOUR && NTst == 0 && DTst == 1) {
+      LOG_INFO("TimeMgrTest/TimeInterval: integer hours constructor: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: integer hours constructor: FAIL");
+   }
+
+   // Test calendar-based time interval constructor in years
+   OMEGA::TimeInterval TiTstIYear(IRef, OMEGA::TimeUnits::Years);
+
+   Err1 = TiTstIYear.get(ITst, OMEGA::TimeUnits::Years);
+
+   if (Err1 == 0 && ITst == IRef) {
+      LOG_INFO("TimeMgrTest/TimeInterval: year constructor: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: year constructor: FAIL");
+   }
+
+   // Test calendar-based time interval constructor in months
+   OMEGA::TimeInterval TiTstIMonth(IRef, OMEGA::TimeUnits::Months);
+
+   Err1 = TiTstIMonth.get(ITst, OMEGA::TimeUnits::Months);
+
+   if (Err1 == 0 && ITst == IRef) {
+      LOG_INFO("TimeMgrTest/TimeInterval: month constructor: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: month constructor: FAIL");
+   }
+
+   // Test calendar-based time interval constructor in days
+   OMEGA::TimeInterval TiTstIDay(IRef, OMEGA::TimeUnits::Days);
+
+   Err1 = TiTstIDay.get(ITst, OMEGA::TimeUnits::Days);
+
+   if (Err1 == 0 && ITst == IRef) {
+      LOG_INFO("TimeMgrTest/TimeInterval: day constructor: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: day constructor: FAIL");
+   }
+
+   // Test assignment operator for time interval
+   TiTstFS = TiRef;
+
+   if (TiTstFS == TiRef) {
+      LOG_INFO("TimeMgrTest/TimeInterval: assignment operator: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: assignment operator: FAIL");
+   }
+
+   // Test accessor functions in pairs
+   // Test fractional second put/get
+
+   Err1 = TiTstFS.set(WRef, NRef, DRef);
+   Err2 = TiTstFS.get(WTst, NTst, DTst);
+
+   if (Err1 == 0 && Err2 == 0 && WTst == WRef && NTst == NRef && DTst == DRef) {
+      LOG_INFO("TimeMgrTest/TimeInterval: fractional second put/get: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: fractional second put/get: FAIL");
+   }
+
+   // Test real seconds put/get
+
+   Err1 = TiTstRSec.set(RRef, OMEGA::TimeUnits::Seconds);
+   Err2 = TiTstRSec.get(RTst, OMEGA::TimeUnits::Seconds);
+
+   if (Err1 == 0 && Err2 == 0 && RTst == RRef) {
+      LOG_INFO("TimeMgrTest/TimeInterval: real seconds put/get: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: real seconds put/get: FAIL");
+   }
+
+   // Test integer seconds put/get
+
+   Err1 = TiTstISec.set(IRef, OMEGA::TimeUnits::Seconds);
+   Err2 = TiTstISec.get(ITst, OMEGA::TimeUnits::Seconds);
+
+   if (Err1 == 0 && Err2 == 0 && ITst == IRef) {
+      LOG_INFO("TimeMgrTest/TimeInterval: integer seconds put/get: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: integer seconds put/get: FAIL");
+   }
+
+   // Test real hours put/get
+
+   Err1 = TiTstRSec.set(RRef, OMEGA::TimeUnits::Hours);
+   Err2 = TiTstRSec.get(RTst, OMEGA::TimeUnits::Hours);
+
+   if (Err1 == 0 && Err2 == 0 && RTst == RRef) {
+      LOG_INFO("TimeMgrTest/TimeInterval: real hours put/get: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: real hours put/get: FAIL");
+   }
+
+   // Test integer hours put/get
+
+   Err1 = TiTstISec.set(IRef, OMEGA::TimeUnits::Hours);
+   Err2 = TiTstISec.get(ITst, OMEGA::TimeUnits::Hours);
+
+   if (Err1 == 0 && Err2 == 0 && ITst == IRef) {
+      LOG_INFO("TimeMgrTest/TimeInterval: integer hours put/get: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: integer hours put/get: FAIL");
+   }
+
+   // Test real minutes put/get
+
+   Err1 = TiTstRSec.set(RRef, OMEGA::TimeUnits::Minutes);
+   Err2 = TiTstRSec.get(RTst, OMEGA::TimeUnits::Minutes);
+
+   if (Err1 == 0 && Err2 == 0 && RTst == RRef) {
+      LOG_INFO("TimeMgrTest/TimeInterval: real minutes put/get: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: real minutes put/get: FAIL");
+   }
+
+   // Test integer minutes put/get
+
+   Err1 = TiTstISec.set(IRef, OMEGA::TimeUnits::Minutes);
+   Err2 = TiTstISec.get(ITst, OMEGA::TimeUnits::Minutes);
+
+   if (Err1 == 0 && Err2 == 0 && ITst == IRef) {
+      LOG_INFO("TimeMgrTest/TimeInterval: integer minutes put/get: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: integer minutes put/get: FAIL");
+   }
+
+   // Test integer years put/get
+
+   Err1 = TiTstISec.set(IRef + 1, OMEGA::TimeUnits::Years);
+   Err2 = TiTstISec.get(ITst, OMEGA::TimeUnits::Years);
+
+   if (Err1 == 0 && Err2 == 0 && ITst == IRef + 1) {
+      LOG_INFO("TimeMgrTest/TimeInterval: integer years put/get: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: integer years put/get: FAIL");
+   }
+
+   // Test integer months put/get
+
+   Err1 = TiTstISec.set(IRef + 1, OMEGA::TimeUnits::Months);
+   Err2 = TiTstISec.get(ITst, OMEGA::TimeUnits::Months);
+
+   if (Err1 == 0 && Err2 == 0 && ITst == IRef + 1) {
+      LOG_INFO("TimeMgrTest/TimeInterval: integer months put/get: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: integer months put/get: FAIL");
+   }
+
+   // Test integer days put/get
+
+   Err1 = TiTstISec.set(IRef + 1, OMEGA::TimeUnits::Days);
+   Err2 = TiTstISec.get(ITst, OMEGA::TimeUnits::Days);
+
+   if (Err1 == 0 && Err2 == 0 && ITst == IRef + 1) {
+      LOG_INFO("TimeMgrTest/TimeInterval: integer days put/get: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: integer days put/get: FAIL");
+   }
+
+   // Test < operator (and < part of <= operator) for non-calendars
+   // Test both success and failure modes
+
+   Err1 = TiTstFS.set(WRef - 1, NRef - 1, DRef);
+
+   if (TiTstFS < TiRef) {
+      LOG_INFO("TimeMgrTest/TimeInterval: operator(<): PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: operator(<): FAIL");
+   }
+
+   if (TiTstFS <= TiRef) {
+      LOG_INFO("TimeMgrTest/TimeInterval: operator(<=): PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: operator(<=): FAIL");
+   }
+
+   if (!(TiRef < TiTstFS)) {
+      LOG_INFO("TimeMgrTest/TimeInterval: operator(<): PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: operator(<): FAIL");
+   }
+
+   if (!(TiRef <= TiTstFS)) {
+      LOG_INFO("TimeMgrTest/TimeInterval: operator(<=): PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: operator(<=): FAIL");
+   }
+
+   // Test < operator (and < part of <= operator) for calendar intervals
+
+   Err1 = TiTstIYear.set(IRef, OMEGA::TimeUnits::Years);
+   Err1 = TiTstIMonth.set(IRef, OMEGA::TimeUnits::Months);
+   Err1 = TiTstIDay.set(IRef, OMEGA::TimeUnits::Days);
+
+   OMEGA::TimeInterval TiTstIYear2(IRef - 1, OMEGA::TimeUnits::Years);
+   OMEGA::TimeInterval TiTstIMonth2(IRef - 1, OMEGA::TimeUnits::Months);
+   OMEGA::TimeInterval TiTstIDay2(IRef - 1, OMEGA::TimeUnits::Days);
+
+   if (TiTstIYear2 < TiTstIYear) {
+      LOG_INFO("TimeMgrTest/TimeInterval: operator(<) years: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: operator(<) years: FAIL");
+   }
+
+   if (TiTstIYear2 <= TiTstIYear) {
+      LOG_INFO("TimeMgrTest/TimeInterval: operator(<=) years: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: operator(<=) years: FAIL");
+   }
+
+   if (TiTstIMonth2 < TiTstIMonth) {
+      LOG_INFO("TimeMgrTest/TimeInterval: operator(<) months: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: operator(<) months: FAIL");
+   }
+
+   if (TiTstIMonth2 <= TiTstIMonth) {
+      LOG_INFO("TimeMgrTest/TimeInterval: operator(<=) months: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: operator(<=) months: FAIL");
+   }
+
+   if (TiTstIDay2 < TiTstIDay) {
+      LOG_INFO("TimeMgrTest/TimeInterval: operator(<) days: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: operator(<) days: FAIL");
+   }
+
+   if (TiTstIDay2 <= TiTstIDay) {
+      LOG_INFO("TimeMgrTest/TimeInterval: operator(<=) days: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: operator(<=) days: FAIL");
+   }
+
+   // test failure modes
+
+   if (!(TiTstIYear < TiTstIYear2)) {
+      LOG_INFO("TimeMgrTest/TimeInterval: operator(<) years: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: operator(<) years: FAIL");
+   }
+
+   if (!(TiTstIYear <= TiTstIYear2)) {
+      LOG_INFO("TimeMgrTest/TimeInterval: operator(<=) years: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: operator(<=) years: FAIL");
+   }
+
+   if (!(TiTstIMonth < TiTstIMonth2)) {
+      LOG_INFO("TimeMgrTest/TimeInterval: operator(<) months: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: operator(<) months: FAIL");
+   }
+
+   if (!(TiTstIMonth <= TiTstIMonth2)) {
+      LOG_INFO("TimeMgrTest/TimeInterval: operator(<=) months: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: operator(<=) months: FAIL");
+   }
+
+   if (!(TiTstIDay < TiTstIDay2)) {
+      LOG_INFO("TimeMgrTest/TimeInterval: operator(<) days: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: operator(<) days: FAIL");
+   }
+
+   if (!(TiTstIDay <= TiTstIDay2)) {
+      LOG_INFO("TimeMgrTest/TimeInterval: operator(<=) days: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: operator(<=) days: FAIL");
+   }
+
+   // Test > operator (and > part of >= operator) for non-calendars
+
+   if (TiRef > TiTstFS) {
+      LOG_INFO("TimeMgrTest/TimeInterval: operator(>): PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: operator(>): FAIL");
+   }
+
+   if (TiRef >= TiTstFS) {
+      LOG_INFO("TimeMgrTest/TimeInterval: operator(>=): PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: operator(>=): FAIL");
+   }
+
+   if (!(TiTstFS > TiRef)) {
+      LOG_INFO("TimeMgrTest/TimeInterval: operator(>): PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: operator(>): FAIL");
+   }
+
+   if (!(TiTstFS >= TiRef)) {
+      LOG_INFO("TimeMgrTest/TimeInterval: operator(>=): PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: operator(>=): FAIL");
+   }
+
+   // Test > operator (and > part of >= operator) for calendar interval
+
+   if (TiTstIYear > TiTstIYear2) {
+      LOG_INFO("TimeMgrTest/TimeInterval: operator(>) years: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: operator(>) years: FAIL");
+   }
+
+   if (TiTstIYear >= TiTstIYear2) {
+      LOG_INFO("TimeMgrTest/TimeInterval: operator(>=) years: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: operator(>=) years: FAIL");
+   }
+
+   if (TiTstIMonth > TiTstIMonth2) {
+      LOG_INFO("TimeMgrTest/TimeInterval: operator(>) months: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: operator(>) months: FAIL");
+   }
+
+   if (TiTstIMonth >= TiTstIMonth2) {
+      LOG_INFO("TimeMgrTest/TimeInterval: operator(>=) months: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: operator(>=) months: FAIL");
+   }
+
+   if (TiTstIDay > TiTstIDay2) {
+      LOG_INFO("TimeMgrTest/TimeInterval: operator(>) days: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: operator(>) days: FAIL");
+   }
+
+   if (TiTstIDay >= TiTstIDay2) {
+      LOG_INFO("TimeMgrTest/TimeInterval: operator(>=) days: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: operator(>=) days: FAIL");
+   }
+
+   // test failure modes
+
+   if (!(TiTstIYear2 > TiTstIYear)) {
+      LOG_INFO("TimeMgrTest/TimeInterval: operator(>) years: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: operator(>) years: FAIL");
+   }
+
+   if (!(TiTstIYear2 >= TiTstIYear)) {
+      LOG_INFO("TimeMgrTest/TimeInterval: operator(>=) years: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: operator(>=) years: FAIL");
+   }
+
+   if (!(TiTstIMonth2 > TiTstIMonth)) {
+      LOG_INFO("TimeMgrTest/TimeInterval: operator(>) months: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: operator(>) months: FAIL");
+   }
+
+   if (!(TiTstIMonth2 >= TiTstIMonth)) {
+      LOG_INFO("TimeMgrTest/TimeInterval: operator(>=) months: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: operator(>=) months: FAIL");
+   }
+
+   if (!(TiTstIDay2 > TiTstIDay)) {
+      LOG_INFO("TimeMgrTest/TimeInterval: operator(>) days: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: operator(>) days: FAIL");
+   }
+
+   if (!(TiTstIDay2 >= TiTstIDay)) {
+      LOG_INFO("TimeMgrTest/TimeInterval: operator(>=) days: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: operator(>=) days: FAIL");
+   }
+
+   // Test equivalence part of comparisons
+
+   TiTstFS      = TiRef;
+   TiTstIYear2  = TiTstIYear;
+   TiTstIMonth2 = TiTstIMonth;
+   TiTstIDay2   = TiTstIDay;
+
+   if (TiTstFS <= TiRef) {
+      LOG_INFO("TimeMgrTest/TimeInterval: operator(<=): PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: operator(<=): FAIL");
+   }
+
+   if (TiTstFS >= TiRef) {
+      LOG_INFO("TimeMgrTest/TimeInterval: operator(>=): PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: operator(>=): FAIL");
+   }
+
+   if (TiTstIYear2 <= TiTstIYear) {
+      LOG_INFO("TimeMgrTest/TimeInterval: operator(<=) years: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: operator(<=) years: FAIL");
+   }
+
+   if (TiTstIYear2 >= TiTstIYear) {
+      LOG_INFO("TimeMgrTest/TimeInterval: operator(>=) years: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: operator(>=) years: FAIL");
+   }
+
+   if (TiTstIMonth2 <= TiTstIMonth) {
+      LOG_INFO("TimeMgrTest/TimeInterval: operator(<=) months: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: operator(<=) months: FAIL");
+   }
+
+   if (TiTstIMonth2 >= TiTstIMonth) {
+      LOG_INFO("TimeMgrTest/TimeInterval: operator(>=) months: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: operator(>=) months: FAIL");
+   }
+
+   if (TiTstIDay2 <= TiTstIDay) {
+      LOG_INFO("TimeMgrTest/TimeInterval: operator(<=) days: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: operator(<=) days: FAIL");
+   }
+
+   if (TiTstIDay2 >= TiTstIDay) {
+      LOG_INFO("TimeMgrTest/TimeInterval: operator(>=) days: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: operator(>=) days: FAIL");
+   }
+
+   // Test addition operator for interval
+
+   TiTstFS      = TiRef + TiRef;
+   TiTstIYear2  = TiTstIYear + TiTstIYear;
+   TiTstIMonth2 = TiTstIMonth + TiTstIMonth;
+   TiTstIDay2   = TiTstIDay + TiTstIDay;
+
+   Err1 = TiTstFS.get(WTst, NTst, DTst);
+   if (Err1 == 0 && WTst == 10 && NTst == 3 && DTst == 4) {
+      LOG_INFO("TimeMgrTest/TimeInterval: addition: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: addition: FAIL");
+   }
+
+   Err1 = TiTstIYear2.get(ITst, OMEGA::TimeUnits::Years);
+   if (Err1 == 0 && ITst == (IRef + IRef)) {
+      LOG_INFO("TimeMgrTest/TimeInterval: addition years: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: addition years: FAIL");
+   }
+
+   Err1 = TiTstIMonth2.get(ITst, OMEGA::TimeUnits::Months);
+   if (Err1 == 0 && ITst == (IRef + IRef)) {
+      LOG_INFO("TimeMgrTest/TimeInterval: addition months: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: addition months: FAIL");
+   }
+
+   Err1 = TiTstIDay2.get(ITst, OMEGA::TimeUnits::Days);
+   if (Err1 == 0 && ITst == (IRef + IRef)) {
+      LOG_INFO("TimeMgrTest/TimeInterval: addition days: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: addition days: FAIL");
+   }
+
+   // Test increment
+
+   TiTstFS += TiRef;
+   TiTstIYear2 += TiTstIYear;
+   TiTstIMonth2 += TiTstIMonth;
+   TiTstIDay2 += TiTstIDay;
+
+   Err1 = TiTstFS.get(WTst, NTst, DTst);
+   if (Err1 == 0 && WTst == 16 && NTst == 1 && DTst == 8) {
+      LOG_INFO("TimeMgrTest/TimeInterval: increment: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: increment: FAIL");
+   }
+
+   Err1 = TiTstIYear2.get(ITst, OMEGA::TimeUnits::Years);
+   if (Err1 == 0 && ITst == (IRef + IRef + IRef)) {
+      LOG_INFO("TimeMgrTest/TimeInterval: increment years: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: increment years: FAIL");
+   }
+
+   Err1 = TiTstIMonth2.get(ITst, OMEGA::TimeUnits::Months);
+   if (Err1 == 0 && ITst == (IRef + IRef + IRef)) {
+      LOG_INFO("TimeMgrTest/TimeInterval: increment months: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: increment months: FAIL");
+   }
+
+   Err1 = TiTstIDay2.get(ITst, OMEGA::TimeUnits::Days);
+   if (Err1 == 0 && ITst == (IRef + IRef + IRef)) {
+      LOG_INFO("TimeMgrTest/TimeInterval: increment days: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: increment days: FAIL");
+   }
+
+   // Test subtraction
+
+   TiTstFS      = TiTstFS - TiRef;
+   TiTstIYear2  = TiTstIYear2 - TiTstIYear;
+   TiTstIMonth2 = TiTstIMonth2 - TiTstIMonth;
+   TiTstIDay2   = TiTstIDay2 - TiTstIDay;
+
+   Err1 = TiTstFS.get(WTst, NTst, DTst);
+   if (Err1 == 0 && WTst == 10 && NTst == 3 && DTst == 4) {
+      LOG_INFO("TimeMgrTest/TimeInterval: subtraction: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: subtraction: FAIL");
+   }
+
+   Err1 = TiTstIYear2.get(ITst, OMEGA::TimeUnits::Years);
+   if (Err1 == 0 && ITst == (IRef + IRef)) {
+      LOG_INFO("TimeMgrTest/TimeInterval: subtraction years: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: subtraction years: FAIL");
+   }
+
+   Err1 = TiTstIMonth2.get(ITst, OMEGA::TimeUnits::Months);
+   if (Err1 == 0 && ITst == (IRef + IRef)) {
+      LOG_INFO("TimeMgrTest/TimeInterval: subtraction months: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: subtraction months: FAIL");
+   }
+
+   Err1 = TiTstIDay2.get(ITst, OMEGA::TimeUnits::Days);
+   if (Err1 == 0 && ITst == (IRef + IRef)) {
+      LOG_INFO("TimeMgrTest/TimeInterval: subtraction days: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: subtraction days: FAIL");
+   }
+
+   // Test decrement
+
+   TiTstFS -= TiRef;
+   TiTstIYear2 -= TiTstIYear;
+   TiTstIMonth2 -= TiTstIMonth;
+   TiTstIDay2 -= TiTstIDay;
+
+   Err1 = TiTstFS.get(WTst, NTst, DTst);
+   if (Err1 == 0 && WTst == 5 && NTst == 3 && DTst == 8) {
+      LOG_INFO("TimeMgrTest/TimeInterval: decrement: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: decrement: FAIL");
+   }
+
+   Err1 = TiTstIYear2.get(ITst, OMEGA::TimeUnits::Years);
+   if (Err1 == 0 && ITst == IRef) {
+      LOG_INFO("TimeMgrTest/TimeInterval: decrement years: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: decrement years: FAIL");
+   }
+
+   Err1 = TiTstIMonth2.get(ITst, OMEGA::TimeUnits::Months);
+   if (Err1 == 0 && ITst == IRef) {
+      LOG_INFO("TimeMgrTest/TimeInterval: decrement months: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: decrement months: FAIL");
+   }
+
+   Err1 = TiTstIDay2.get(ITst, OMEGA::TimeUnits::Days);
+   if (Err1 == 0 && ITst == IRef) {
+      LOG_INFO("TimeMgrTest/TimeInterval: decrement days: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: decrement days: FAIL");
+   }
+
+   // Test multiply by integer scalar
+
+   TiTstFS      = TiRef * 3;
+   TiTstIYear2  = TiTstIYear * 3;
+   TiTstIMonth2 = TiTstIMonth * 3;
+   TiTstIDay2   = TiTstIDay * 3;
+
+   Err1 = TiTstFS.get(WTst, NTst, DTst);
+   if (Err1 == 0 && WTst == 16 && NTst == 1 && DTst == 8) {
+      LOG_INFO("TimeMgrTest/TimeInterval: int multiply: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: int multiply: FAIL");
+   }
+
+   Err1 = TiTstIYear2.get(ITst, OMEGA::TimeUnits::Years);
+   if (Err1 == 0 && ITst == 3 * IRef) {
+      LOG_INFO("TimeMgrTest/TimeInterval: int multiply years: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: int multiply years: FAIL");
+   }
+
+   Err1 = TiTstIMonth2.get(ITst, OMEGA::TimeUnits::Months);
+   if (Err1 == 0 && ITst == 3 * IRef) {
+      LOG_INFO("TimeMgrTest/TimeInterval: int multiply months: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: int multiply months: FAIL");
+   }
+
+   Err1 = TiTstIDay2.get(ITst, OMEGA::TimeUnits::Days);
+   if (Err1 == 0 && ITst == 3 * IRef) {
+      LOG_INFO("TimeMgrTest/TimeInterval: int multiply days: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: int multiply days: FAIL");
+   }
+
+   // Test multiply by integer scalar commutative version
+
+   TiTstFS      = 3 * TiRef;
+   TiTstIYear2  = 3 * TiTstIYear;
+   TiTstIMonth2 = 3 * TiTstIMonth;
+   TiTstIDay2   = 3 * TiTstIDay;
+
+   Err1 = TiTstFS.get(WTst, NTst, DTst);
+   if (Err1 == 0 && WTst == 16 && NTst == 1 && DTst == 8) {
+      LOG_INFO("TimeMgrTest/TimeInterval: comm int multiply: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: comm int multiply: FAIL");
+   }
+
+   Err1 = TiTstIYear2.get(ITst, OMEGA::TimeUnits::Years);
+   if (Err1 == 0 && ITst == 3 * IRef) {
+      LOG_INFO("TimeMgrTest/TimeInterval: comm int multiply years: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: comm int multiply years: FAIL");
+   }
+
+   Err1 = TiTstIMonth2.get(ITst, OMEGA::TimeUnits::Months);
+   if (Err1 == 0 && ITst == 3 * IRef) {
+      LOG_INFO("TimeMgrTest/TimeInterval: comm int multiply months: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: comm int multiply months: FAIL");
+   }
+
+   Err1 = TiTstIDay2.get(ITst, OMEGA::TimeUnits::Days);
+   if (Err1 == 0 && ITst == 3 * IRef) {
+      LOG_INFO("TimeMgrTest/TimeInterval: comm int multiply days: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: comm int multiply days: FAIL");
+   }
+
+   // Test multiply by integer scalar in place
+
+   TiTstFS *= 3;
+   TiTstIYear2 *= 3;
+   TiTstIMonth2 *= 3;
+   TiTstIDay2 *= 3;
+
+   Err1 = TiTstFS.get(WTst, NTst, DTst);
+   if (Err1 == 0 && WTst == 48 && NTst == 3 && DTst == 8) {
+      LOG_INFO("TimeMgrTest/TimeInterval: int multiply in place: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: int multiply in place: FAIL");
+   }
+
+   Err1 = TiTstIYear2.get(ITst, OMEGA::TimeUnits::Years);
+   if (Err1 == 0 && ITst == 9 * IRef) {
+      LOG_INFO("TimeMgrTest/TimeInterval: int multiply in place years: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: int multiply in place years: FAIL");
+   }
+
+   Err1 = TiTstIMonth2.get(ITst, OMEGA::TimeUnits::Months);
+   if (Err1 == 0 && ITst == 9 * IRef) {
+      LOG_INFO("TimeMgrTest/TimeInterval: int multiply in place months: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: int multiply in place months: FAIL");
+   }
+
+   Err1 = TiTstIDay2.get(ITst, OMEGA::TimeUnits::Days);
+   if (Err1 == 0 && ITst == 9 * IRef) {
+      LOG_INFO("TimeMgrTest/TimeInterval: int multiply in place days: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: int multiply in place days: FAIL");
+   }
+
+   // Test multiply by real scalar
+
+   TiTstFS      = TiRef * 3.25;
+   TiTstIYear2  = TiTstIYear * 3.25;
+   TiTstIMonth2 = TiTstIMonth * 3.25;
+   TiTstIDay2   = TiTstIDay * 3.25;
+
+   Err1 = TiTstFS.get(WTst, NTst, DTst);
+   if (Err1 == 0 && WTst == 17 && NTst == 15 && DTst == 32) {
+      LOG_INFO("TimeMgrTest/TimeInterval: real multiply: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: real multiply: FAIL");
+   }
+
+   Err1 = TiTstIYear2.get(ITst, OMEGA::TimeUnits::Years);
+   if (Err1 == 0 && ITst == 16) {
+      LOG_INFO("TimeMgrTest/TimeInterval: real multiply years: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: real multiply years: FAIL");
+   }
+
+   Err1 = TiTstIMonth2.get(ITst, OMEGA::TimeUnits::Months);
+   if (Err1 == 0 && ITst == 16) {
+      LOG_INFO("TimeMgrTest/TimeInterval: real multiply months: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: real multiply months: FAIL");
+   }
+
+   Err1 = TiTstIDay2.get(ITst, OMEGA::TimeUnits::Days);
+   if (Err1 == 0 && ITst == 16) {
+      LOG_INFO("TimeMgrTest/TimeInterval: real multiply days: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: real multiply days: FAIL");
+   }
+
+   // Test multiply by real scalar commutative version
+
+   TiTstFS      = 3.25 * TiRef;
+   TiTstIYear2  = 3.25 * TiTstIYear;
+   TiTstIMonth2 = 3.25 * TiTstIMonth;
+   TiTstIDay2   = 3.25 * TiTstIDay;
+
+   Err1 = TiTstFS.get(WTst, NTst, DTst);
+   if (Err1 == 0 && WTst == 17 && NTst == 15 && DTst == 32) {
+      LOG_INFO("TimeMgrTest/TimeInterval: comm real multiply: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: comm real multiply: FAIL");
+   }
+
+   Err1 = TiTstIYear2.get(ITst, OMEGA::TimeUnits::Years);
+   if (Err1 == 0 && ITst == 16) {
+      LOG_INFO("TimeMgrTest/TimeInterval: comm real multiply years: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: comm real multiply years: FAIL");
+   }
+
+   Err1 = TiTstIMonth2.get(ITst, OMEGA::TimeUnits::Months);
+   if (Err1 == 0 && ITst == 16) {
+      LOG_INFO("TimeMgrTest/TimeInterval: comm real multiply months: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: comm real multiply months: FAIL");
+   }
+
+   Err1 = TiTstIDay2.get(ITst, OMEGA::TimeUnits::Days);
+   if (Err1 == 0 && ITst == 16) {
+      LOG_INFO("TimeMgrTest/TimeInterval: comm real multiply days: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: comm real multiply days: FAIL");
+   }
+
+   // Test multiply by real scalar in place
+
+   TiTstFS *= 3.25;
+   TiTstIYear2 *= 3.25;
+   TiTstIMonth2 *= 3.25;
+   TiTstIDay2 *= 3.25;
+
+   Err1 = TiTstFS.get(WTst, NTst, DTst);
+   if (Err1 == 0 && WTst == 56 && NTst == 99 && DTst == 128) {
+      LOG_INFO("TimeMgrTest/TimeInterval: real multiply in place: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: real multiply in place: FAIL");
+   }
+
+   Err1 = TiTstIYear2.get(ITst, OMEGA::TimeUnits::Years);
+   if (Err1 == 0 && ITst == 52) {
+      LOG_INFO("TimeMgrTest/TimeInterval: real multiply in place years: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: real multiply in place years: FAIL");
+   }
+
+   Err1 = TiTstIMonth2.get(ITst, OMEGA::TimeUnits::Months);
+   if (Err1 == 0 && ITst == 52) {
+      LOG_INFO("TimeMgrTest/TimeInterval: real multiply in place months: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: real multiply in place "
+                "months: FAIL");
+   }
+
+   Err1 = TiTstIDay2.get(ITst, OMEGA::TimeUnits::Days);
+   if (Err1 == 0 && ITst == 52) {
+      LOG_INFO("TimeMgrTest/TimeInterval: real multiply in place days: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: real multiply in place days: FAIL");
+   }
+
+   // Test divide by integer functions
+
+   TiTstFS      = TiRef / 3;
+   TiTstIYear2  = TiTstIYear / 3;
+   TiTstIMonth2 = TiTstIMonth / 3;
+   TiTstIDay2   = TiTstIDay / 3;
+
+   Err1 = TiTstFS.get(WTst, NTst, DTst);
+   if (Err1 == 0 && WTst == 1 && NTst == 19 && DTst == 24) {
+      LOG_INFO("TimeMgrTest/TimeInterval: int divide: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: int divide: FAIL");
+   }
+
+   Err1 = TiTstIYear2.get(ITst, OMEGA::TimeUnits::Years);
+   if (Err1 == 0 && ITst == 1) {
+      LOG_INFO("TimeMgrTest/TimeInterval: int divide years: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: int divide years: FAIL");
+   }
+
+   Err1 = TiTstIMonth2.get(ITst, OMEGA::TimeUnits::Months);
+   if (Err1 == 0 && ITst == 1) {
+      LOG_INFO("TimeMgrTest/TimeInterval: int divide months: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: int divide months: FAIL");
+   }
+
+   Err1 = TiTstIDay2.get(ITst, OMEGA::TimeUnits::Days);
+   if (Err1 == 0 && ITst == 1) {
+      LOG_INFO("TimeMgrTest/TimeInterval: int divide days: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: int divide days: FAIL");
+   }
+
+   // Test divide by integer scalar in place
+
+   TiTstFS /= 3;
+   TiTstIYear2 /= 3;
+   TiTstIMonth2 /= 3;
+   TiTstIDay2 /= 3;
+
+   Err1 = TiTstFS.get(WTst, NTst, DTst);
+   if (Err1 == 0 && WTst == 0 && NTst == 43 && DTst == 72) {
+      LOG_INFO("TimeMgrTest/TimeInterval: int divide in place: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: int divide in place: FAIL");
+   }
+
+   Err1 = TiTstIYear2.get(ITst, OMEGA::TimeUnits::Years);
+   if (Err1 == 0 && ITst == 0) {
+      LOG_INFO("TimeMgrTest/TimeInterval: int divide in place years: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: int divide in place years: FAIL");
+   }
+
+   Err1 = TiTstIMonth2.get(ITst, OMEGA::TimeUnits::Months);
+   if (Err1 == 0 && ITst == 0) {
+      LOG_INFO("TimeMgrTest/TimeInterval: int divide in place months: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: int divide in place months: FAIL");
+   }
+
+   Err1 = TiTstIDay2.get(ITst, OMEGA::TimeUnits::Days);
+   if (Err1 == 0 && ITst == 0) {
+      LOG_INFO("TimeMgrTest/TimeInterval: int divide in place days: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: int divide in place days: FAIL");
+   }
+
+   // Test negative absolute value first to change sign
+
+   TiTstFS      = OMEGA::TimeInterval::negAbsValue(TiRef);
+   TiTstIYear2  = OMEGA::TimeInterval::negAbsValue(TiTstIYear);
+   TiTstIMonth2 = OMEGA::TimeInterval::negAbsValue(TiTstIMonth);
+   TiTstIDay2   = OMEGA::TimeInterval::negAbsValue(TiTstIDay);
+
+   Err1 = TiTstFS.get(WTst, NTst, DTst);
+   if (Err1 == 0 && WTst == -WRef && NTst == -NRef && DTst == DRef) {
+      LOG_INFO("TimeMgrTest/TimeInterval: negAbsValue: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: negAbsValue: FAIL");
+   }
+
+   Err1 = TiTstIYear2.get(ITst, OMEGA::TimeUnits::Years);
+   if (Err1 == 0 && ITst == -IRef) {
+      LOG_INFO("TimeMgrTest/TimeInterval: negAbsValue years: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: negAbsValue years: FAIL");
+   }
+
+   Err1 = TiTstIMonth2.get(ITst, OMEGA::TimeUnits::Months);
+   if (Err1 == 0 && ITst == -IRef) {
+      LOG_INFO("TimeMgrTest/TimeInterval: negAbsValue months: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: negAbsValue months: FAIL");
+   }
+
+   Err1 = TiTstIDay2.get(ITst, OMEGA::TimeUnits::Days);
+   if (Err1 == 0 && ITst == -IRef) {
+      LOG_INFO("TimeMgrTest/TimeInterval: negAbsValue days: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: negAbsValue days: FAIL");
+   }
+
+   // Test is positive function with negative results
+
+   if (!(TiTstFS.isPositive()) && !(TiTstIYear2.isPositive()) &&
+       !(TiTstIDay2.isPositive())) {
+      LOG_INFO("TimeMgrTest/TimeInterval: not isPositive: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: not isPositive: FAIL");
+   }
+
+   // Test absolute value by changing the above to abs value
+
+   OMEGA::TimeInterval TiTst3;
+   OMEGA::TimeInterval TiTstIYear3;
+   OMEGA::TimeInterval TiTstIMonth3;
+   OMEGA::TimeInterval TiTstIDay3;
+
+   TiTst3       = OMEGA::TimeInterval::absValue(TiTstFS);
+   TiTstIYear3  = OMEGA::TimeInterval::absValue(TiTstIYear2);
+   TiTstIMonth3 = OMEGA::TimeInterval::absValue(TiTstIMonth2);
+   TiTstIDay3   = OMEGA::TimeInterval::absValue(TiTstIDay2);
+
+   Err1 = TiTst3.get(WTst, NTst, DTst);
+   if (Err1 == 0 && WTst == WRef && NTst == NRef && DTst == DRef) {
+      LOG_INFO("TimeMgrTest/TimeInterval: absValue: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: absValue: FAIL");
+   }
+
+   Err1 = TiTstIYear3.get(ITst, OMEGA::TimeUnits::Years);
+   if (Err1 == 0 && ITst == IRef) {
+      LOG_INFO("TimeMgrTest/TimeInterval: absValue years: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: absValue years: FAIL");
+   }
+
+   Err1 = TiTstIMonth3.get(ITst, OMEGA::TimeUnits::Months);
+   if (Err1 == 0 && ITst == IRef) {
+      LOG_INFO("TimeMgrTest/TimeInterval: absValue months: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: absValue months: FAIL");
+   }
+
+   Err1 = TiTstIDay3.get(ITst, OMEGA::TimeUnits::Days);
+   if (Err1 == 0 && ITst == IRef) {
+      LOG_INFO("TimeMgrTest/TimeInterval: absValue days: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: absValue days: FAIL");
+   }
+
+   // Test is positive function with positive results
+
+   if (TiTst3.isPositive() && TiTstIYear3.isPositive() &&
+       TiTstIMonth3.isPositive() && TiTstIDay3.isPositive()) {
+      LOG_INFO("TimeMgrTest/TimeInterval: isPositive: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: isPositive: FAIL");
+   }
+
+   return ErrAll;
+
+} // end testTimeInterval
+
+//------------------------------------------------------------------------------
 // The test driver.
 
 int main(int argc, char *argv[]) {
@@ -1742,6 +2966,9 @@ int main(int argc, char *argv[]) {
    TotErr += Err;
 
    Err = testCalendar();
+   TotErr += Err;
+
+   Err = testTimeInterval();
    TotErr += Err;
 
    if (TotErr == 0) {
