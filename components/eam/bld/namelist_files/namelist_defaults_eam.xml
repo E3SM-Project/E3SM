@@ -29,6 +29,7 @@
 <!-- Grids for Gordon Bell 2024 -->
 <dtime use_MMF="1" dyn="se" hgrid="ne16np4" >1200</dtime>
 <dtime use_MMF="1" dyn="se" hgrid="ne24np4" >1200</dtime>
+<dtime use_MMF="1" dyn="se" hgrid="ne60np4" >600</dtime>
 <dtime use_MMF="1" dyn="se" hgrid="ne70np4" >600</dtime>
 
 <dtime dyn="sld"                   >3600</dtime>
@@ -106,7 +107,24 @@
 <ncdata dyn="se" hgrid="ne4np4"   nlev="72"  aquaplanet="1" rce="1" ic_ymd="101" >atm/cam/inic/homme/cami_rcemip_ne4np4_L72_c190919.nc</ncdata>
 <ncdata dyn="se" hgrid="ne30np4"  nlev="72"  aquaplanet="1" rce="1" ic_ymd="101" >atm/cam/inic/homme/cami_rcemip_ne30np4_L72_c190919.nc</ncdata>
 
+<!-- Grids for Gordon Bell 2024 -->
+<ncdata dyn="se" hgrid="ne16np4"  nlev="60" ic_ymd="101" >atm/cam/inic/homme/GB-2024/HICCUP.atm_era5.2023-10-22.ne16np4.L60.nc</ncdata>
+<ncdata dyn="se" hgrid="ne24np4"  nlev="60" ic_ymd="101" >atm/cam/inic/homme/GB-2024/HICCUP.atm_era5.2023-10-22.ne24np4.L60.nc</ncdata>
+<ncdata dyn="se" hgrid="ne30np4"  nlev="60" ic_ymd="101" >atm/cam/inic/homme/GB-2024/HICCUP.atm_era5.2023-10-22.ne30np4.L60.nc</ncdata>
+<ncdata dyn="se" hgrid="ne60np4"  nlev="60" ic_ymd="101" >atm/cam/inic/homme/GB-2024/HICCUP.atm_era5.2023-10-22.ne60np4.L60.nc</ncdata>
+<ncdata dyn="se" hgrid="ne70np4"  nlev="60" ic_ymd="101" >atm/cam/inic/homme/GB-2024/HICCUP.atm_era5.2023-10-22.ne70np4.L60.nc</ncdata>
 
+<ncdata dyn="se" hgrid="ne16np4"  nlev="148" ic_ymd="101" >atm/cam/inic/homme/GB-2024/HICCUP.atm_era5.2023-10-22.ne16np4.L148.nc</ncdata>
+<ncdata dyn="se" hgrid="ne24np4"  nlev="148" ic_ymd="101" >atm/cam/inic/homme/GB-2024/HICCUP.atm_era5.2023-10-22.ne24np4.L148.nc</ncdata>
+<ncdata dyn="se" hgrid="ne30np4"  nlev="148" ic_ymd="101" >atm/cam/inic/homme/GB-2024/HICCUP.atm_era5.2023-10-22.ne30np4.L148.nc</ncdata>
+<ncdata dyn="se" hgrid="ne60np4"  nlev="148" ic_ymd="101" >atm/cam/inic/homme/GB-2024/HICCUP.atm_era5.2023-10-22.ne60np4.L148.nc</ncdata>
+<ncdata dyn="se" hgrid="ne70np4"  nlev="148" ic_ymd="101" >atm/cam/inic/homme/GB-2024/HICCUP.atm_era5.2023-10-22.ne70np4.L148.nc</ncdata>
+
+<ncdata dyn="se" hgrid="ne16np4"  nlev="276" ic_ymd="101" >atm/cam/inic/homme/GB-2024/HICCUP.atm_era5.2023-10-22.ne16np4.L276.nc</ncdata>
+<ncdata dyn="se" hgrid="ne24np4"  nlev="276" ic_ymd="101" >atm/cam/inic/homme/GB-2024/HICCUP.atm_era5.2023-10-22.ne24np4.L276.nc</ncdata>
+<ncdata dyn="se" hgrid="ne30np4"  nlev="276" ic_ymd="101" >atm/cam/inic/homme/GB-2024/HICCUP.atm_era5.2023-10-22.ne30np4.L276.nc</ncdata>
+<ncdata dyn="se" hgrid="ne60np4"  nlev="276" ic_ymd="101" >atm/cam/inic/homme/GB-2024/HICCUP.atm_era5.2023-10-22.ne60np4.L276.nc</ncdata>
+<ncdata dyn="se" hgrid="ne70np4"  nlev="276" ic_ymd="101" >atm/cam/inic/homme/GB-2024/HICCUP.atm_era5.2023-10-22.ne70np4.L276.nc</ncdata>
 
 <!-- ******************************************* -->
 <!-- Regionally Refined Initial Conditions (RRM) -->
@@ -156,6 +174,7 @@
 <!-- Grids for Gordon Bell 2024 -->
 <bnd_topo hgrid="ne16np4"  npg="0">atm/cam/topo/USGS-topo_16np4_smoothed_x6tensor_20240313.nc</bnd_topo>
 <bnd_topo hgrid="ne24np4"  npg="0">atm/cam/topo/USGS-topo_24np4_smoothed_x6tensor_20240313.nc</bnd_topo>
+<bnd_topo hgrid="ne60np4"  npg="0">atm/cam/topo/USGS-topo_60np4_smoothed_x6tensor_20240313.nc</bnd_topo>
 <bnd_topo hgrid="ne70np4"  npg="0">atm/cam/topo/USGS-topo_70np4_smoothed_x6tensor_20240313.nc</bnd_topo>
 
 <bnd_topo hgrid="ne0np4_arm_x8v3_lowcon"  >atm/cam/inic/homme/USGS-gtopo30_arm_x8v3_lowcon_tensor12xconsistentSGH.nc</bnd_topo>
@@ -736,6 +755,7 @@
 <!-- Grids for Gordon Bell 2024 -->
 <drydep_srf_file hgrid="ne16np4" npg="2">atm/cam/chem/trop_mam/atmsrf_ne16pg2_20240313.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne24np4" npg="2">atm/cam/chem/trop_mam/atmsrf_ne24pg2_20240313.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne60np4" npg="2">atm/cam/chem/trop_mam/atmsrf_ne60pg2_20240313.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne70np4" npg="2">atm/cam/chem/trop_mam/atmsrf_ne70pg2_20240313.nc</drydep_srf_file>
 
 <drydep_srf_file hgrid="ne0np4_arm_x8v3_lowcon">atm/cam/chem/trop_mam/atmsrf_armx8v3.nc</drydep_srf_file>
@@ -1054,9 +1074,10 @@
 <dust_emis_fact          hgrid="ne120np4"  phys="cam5"                  >1.2D0</dust_emis_fact>
 
 <!-- Grids for Gordon Bell 2024 -->
-<dust_emis_fact         hgrid="ne16np4" npg="2">atm/cam/chem/trop_mam/atmsrf_ne16pg4_20240313.nc</drydep_srf_file>
-<dust_emis_fact         hgrid="ne24np4" npg="2">atm/cam/chem/trop_mam/atmsrf_ne24pg4_20240313.nc</drydep_srf_file>
-<dust_emis_fact         hgrid="ne70np4" npg="2">atm/cam/chem/trop_mam/atmsrf_ne70pg4_20240313.nc</drydep_srf_file>
+<dust_emis_fact         hgrid="ne16np4" npg="2">atm/cam/chem/trop_mam/atmsrf_ne16pg4_20240313.nc</dust_emis_fact>
+<dust_emis_fact         hgrid="ne24np4" npg="2">atm/cam/chem/trop_mam/atmsrf_ne24pg4_20240313.nc</dust_emis_fact>
+<dust_emis_fact         hgrid="ne60np4" npg="2">atm/cam/chem/trop_mam/atmsrf_ne60pg4_20240313.nc</dust_emis_fact>
+<dust_emis_fact         hgrid="ne70np4" npg="2">atm/cam/chem/trop_mam/atmsrf_ne70pg4_20240313.nc</dust_emis_fact>
 
 <dust_emis_fact                                         chem="trop_bam"	>4.2D0 </dust_emis_fact>
 <dust_emis_fact                            phys="cam5"                  >0.35D0</dust_emis_fact>
@@ -1559,6 +1580,7 @@
 <!-- Grids for Gordon Bell 2024 -->
 <se_tstep use_MMF="1" dyn_target="theta-l" hgrid="ne16np4" >  300 </se_tstep>
 <se_tstep use_MMF="1" dyn_target="theta-l" hgrid="ne24np4" >  300 </se_tstep>
+<se_tstep use_MMF="1" dyn_target="theta-l" hgrid="ne60np4" >  120 </se_tstep>
 <se_tstep use_MMF="1" dyn_target="theta-l" hgrid="ne70np4" >  120 </se_tstep>
 
 <dt_remap_factor     dyn_target="theta-l" hgrid="ne16np4"> 4    </dt_remap_factor>
