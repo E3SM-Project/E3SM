@@ -66,10 +66,6 @@ module hb_diff
   integer :: npbl       ! Maximum number of levels in pbl from surface
   integer :: ntop_turb  ! Top level to which turbulent vertical diffusion is applied.
   integer :: nbot_turb  ! Bottom level to which turbulent vertical diff is applied.
-  !==============Jinbo Xie=============
-  !real(r8),public :: rino_pub(pcols)        ! bulk Richardson no. surface level
-  !real(r8) :: rino_pub(pcols)
-  !=====================================
 
 !===============================================================================
 CONTAINS
@@ -367,6 +363,9 @@ end subroutine init_hb_diff
     real(r8), intent(out) :: wstar(pcols)            ! convective sclae velocity [m/s]
     real(r8), intent(out) :: pblh(pcols)             ! boundary-layer height [m]
     real(r8), intent(out) :: bge(pcols)              ! buoyancy gradient enhancment
+    !!=====Jinbo Xie=====
+    !real(r8),intent(out) :: rino_bulk(pcols)        ! bulk Richardson no. surface level
+    !!=====Jinbo Xie=====
     !
     !---------------------------Local parameters----------------------------
     !
@@ -379,9 +378,6 @@ end subroutine init_hb_diff
     integer  :: k                       ! level index
     real(r8) :: phiminv(pcols)          ! inverse phi function for momentum
     real(r8) :: phihinv(pcols)          ! inverse phi function for heat
-    !!Jinbo Xie
-    real(r8) :: rino_pub(pcols)
-    !!Jinbo Xie
     real(r8) :: rino(pcols,pver)        ! bulk Richardson no. from level to ref lev
     real(r8) :: tlv(pcols)              ! ref. level pot tmp + tmp excess
     real(r8) :: vvk                     ! velocity magnitude squared
@@ -454,7 +450,7 @@ end subroutine init_hb_diff
        end do
     end do
     !!================Jinbo Xie============
-    rino_pub(:)=rino(:,pver)
+    !rino_bulk(:)=rino(:,pver)
     !!================Jinbo Xie============
     !
     ! PBL height must be greater than some minimum mechanical mixing depth
@@ -663,7 +659,7 @@ end subroutine init_hb_diff
     !
 
     !drb initialize variables for runtime error checking
-    kvm = 0._r8	
+    kvm = 0._r8
     kvh = 0._r8
     kve = 0._r8
     cgh = 0._r8

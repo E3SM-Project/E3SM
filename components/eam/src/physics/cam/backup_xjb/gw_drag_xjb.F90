@@ -220,8 +220,6 @@ end subroutine gw_drag_readnl
                                 endchunk,  oadir(:,:,:),  found, grid_map='PHYS')
                 call infld('OL', ncid_topoGWD,'lon','nvar_dirOL','lat',1,pcols,1,nvar_dirOL,begchunk, &
                                 endchunk,  ol, found, grid_map='PHYS')
-                !call infld('dxy',ncid_topoGWD,'lon','nvar_dirOL','lat',1,pcols,1,nvar_dirOL,begchunk, &
-                                !endchunk,  dxydir, found, grid_map='PHYS')
                 if(.not. found) call endrun('ERROR: GWD topo file readerr')
                 call close_initial_fileGWD()
 !#endif
@@ -308,19 +306,16 @@ end subroutine gw_drag_readnl
     call addfld ('TAUGWX  ','N/m2    ',1,    'A','Zonal gravity wave surface stress',        phys_decomp)
     call addfld ('TAUGWY  ','N/m2    ',1,    'A','Meridional gravity wave surface stress',   phys_decomp)
 
-        !Jinbo Xie
-!add new field
+!!========Jinbo Xie=========
+    !add new field
     call addfld ('DTAUX3_LS','m/s2',pver,'A','U tendency - ls orographic drag',phys_decomp)
     call addfld ('DTAUY3_LS','m/s2',pver,'A','V tendency - ls orographic drag',phys_decomp)
     call addfld ('DTAUX3_BL','m/s2',pver,'A','U tendency - bl orographic drag',phys_decomp)
     call addfld ('DTAUY3_BL','m/s2',pver,'A','V tendency - bl orographic drag',phys_decomp)
     call addfld ('DTAUX3_SS','m/s2',pver,'A','U tendency - ss orographic drag',phys_decomp)
     call addfld ('DTAUY3_SS','m/s2',pver,'A','V tendency - ss orographic drag',phys_decomp)
-    !call addfld ('DTAUX3_FD','m/s2',pver,'A','U tendency - fd orographic
-    !drag',phys_decomp)
-    !call addfld ('DTAUY3_FD','m/s2',pver,'A','V tendency - fd orographic
-    !drag',phys_decomp)
-        !Jinbo Xie 
+    !call addfld ('DTAUX3_FD','m/s2',pver,'A','U tendency - fd orographic drag',phys_decomp)
+    !call addfld ('DTAUY3_FD','m/s2',pver,'A','V tendency - fd orographic drag',phys_decomp)
         !stress
     call addfld ('DUSFC_LS',  'N/m2', 1 , 'A', 'ls zonal oro surface stress',phys_decomp)
     call addfld ('DVSFC_LS',  'N/m2', 1 , 'A', 'ls merio oro surface stress',phys_decomp)
@@ -328,32 +323,28 @@ end subroutine gw_drag_readnl
     call addfld ('DVSFC_BL',  'N/m2', 1 , 'A', 'bl merio oro surface stress',phys_decomp)
     call addfld ('DUSFC_SS',  'N/m2', 1 , 'A', 'ss zonal oro surface stress',phys_decomp)
     call addfld ('DVSFC_SS',  'N/m2', 1 , 'A', 'ss merio oro surface stress',phys_decomp)
-    !call addfld ('DUSFC_FD',  'N/m2', 1 , 'A', 'fd zonal oro surface stress',
-    !phys_decomp)
-    !call addfld ('DVSFC_FD',  'N/m2', 1 , 'A', 'fd merio oro surface stress',
-    !phys_decomp)
-!Jinbo Xie
-!add default
+    !call addfld ('DUSFC_FD',  'N/m2', 1 , 'A', 'fd zonal oro surface stress',phys_decomp)
+    !call addfld ('DVSFC_FD',  'N/m2', 1 , 'A', 'fd merio oro surface stress',phys_decomp)
+!!========Jinbo Xie=========
+!!add default
     call add_default('DTAUX3_LS       ',   1,' ' )
     call add_default('DTAUY3_LS       ',   1,' ' )
     call add_default('DTAUX3_BL       ',   1,' ' )
     call add_default('DTAUY3_BL       ',   1,' ' )
     call add_default('DTAUX3_SS       ',   1,' ' )
     call add_default('DTAUY3_SS       ',   1,' ' )
-        !
+    !call add_default('DTAUX3_FD       ',   1,' ' )
+    !call add_default('DTAUY3_fD       ',   1,' ' )
+    !!==============
     call add_default ('DUSFC_LS      ',   1 , ' ')
     call add_default ('DVSFC_LS      ',   1 , ' ')
     call add_default ('DUSFC_BL      ',   1 , ' ')
     call add_default ('DVSFC_BL      ',   1 , ' ')
     call add_default ('DUSFC_SS      ',   1 , ' ')
     call add_default ('DVSFC_SS      ',   1 , ' ')
-        !add original var to default
-    call add_default ('TTGWORO     ', 1   ,' ')                           
-    call add_default ('UTGWORO     ', 1   ,' ')
-    call add_default ('VTGWORO     ', 1   ,' ')
-    call add_default ('TAUGWX      ', 1   ,' ')
-    call add_default ('TAUGWY      ', 1   ,' ')
-
+    !call add_default ('DUSFC_FD      ',   1 , ' ')
+    !call add_default ('DVSFC_FD      ',   1 , ' ')
+!!========Jinbo Xie=========
 
     call phys_getopts(history_budget_out = history_budget, history_budget_histfile_num_out = history_budget_histfile_num)
     if ( history_budget ) then

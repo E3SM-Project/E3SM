@@ -32,7 +32,14 @@ module comsrf
 !
 ! ! PUBLIC MEMBER FUNCTIONS:
 !
-  public initialize_comsrf          ! Set the surface temperature and sea-ice fraction
+  public initialize_comsrf          ! Set the surface temperature and sea-ice fractionA
+  !================
+  ! Jinbo Xie1  
+  !================
+  public initialize_comsrf2
+  !================
+  ! Jinbo Xie1  
+  !================
 !
 ! Public data
 !
@@ -59,7 +66,9 @@ module comsrf
 !================
 ! Jinbo Xie1
 !================
-        public oc,ol,oadir
+        public var,var30,oc,ol,oadir
+        real(r8), allocatable:: var(:,:)!sgh
+        real(r8), allocatable:: var30(:,:)!sgh30
         real(r8), allocatable:: oc(:,:) ! Convexity
         real(r8), allocatable:: oadir(:,:,:) ! Asymmetry
         real(r8), allocatable:: ol(:,:,:) ! Effective length
@@ -117,12 +126,12 @@ CONTAINS
        allocate (sgh30   (pcols,begchunk:endchunk))
 	!!========================
        !!Jinbo Xie
-	allocate (oc(pcols,begchunk:endchunk))
-	allocate (oadir(pcols,nvar_dirOA,begchunk:endchunk))
-       	allocate (ol(pcols,nvar_dirOL,begchunk:endchunk))
-        oc    (:,:) = nan
-        oadir (:,:,:) = nan
-        ol  (:,:,:) = nan
+	!allocate (oc(pcols,begchunk:endchunk))
+	!allocate (oadir(pcols,nvar_dirOA,begchunk:endchunk))
+       	!allocate (ol(pcols,nvar_dirOL,begchunk:endchunk))
+        !oc    (:,:) = nan
+        !oadir (:,:,:) = nan
+        !ol  (:,:,:) = nan
         !allocate (dxydir(pcols,nvar_dirOL,begchunk:endchunk))
         !dxydir  (:,:,:) = nan
 	!!Jinbo Xie
@@ -160,5 +169,40 @@ CONTAINS
        trefmnav (:,:) =  1.0e36_r8
     end if
   end subroutine initialize_comsrf
+  !!
+  subroutine initialize_comsrf2
+  use cam_control_mod,  only: ideal_phys, adiabatic
+!-----------------------------------------------------------------------
+!
+! Purpose:
+! Initialize surface data
+!
+! Method:
+!
+! Author: Mariana Vertenstein
+!
+!-----------------------------------------------------------------------
+    integer k,c      ! level, constituent indices
+
+    if(.not. (adiabatic .or. ideal_phys)) then
+        !!========================
+        !!Jinbo Xie
+        allocate (var(pcols,begchunk:endchunk))
+        allocate (var30(pcols,begchunk:endchunk))
+        allocate (oc(pcols,begchunk:endchunk))
+        allocate (oadir(pcols,nvar_dirOA,begchunk:endchunk))
+        allocate (ol(pcols,nvar_dirOL,begchunk:endchunk))
+        var(:,:)=nan
+        var30(:,:)=nan
+        oc    (:,:) = nan
+        oadir (:,:,:) = nan
+        ol  (:,:,:) = nan
+        !allocate (dxydir(pcols,nvar_dirOL,begchunk:endchunk))
+        !dxydir  (:,:,:) = nan
+        !!Jinbo Xie
+        !!=============================
+    end if
+  end subroutine initialize_comsrf2
+
 
 end module comsrf

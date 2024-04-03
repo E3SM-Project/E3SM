@@ -29,10 +29,11 @@ module ppgrid
 
 
 ! Grid point resolution parameters
-
+!!Jinbo Xie
 #ifdef PPCOLS
    integer pcols      ! max number of columns per chunk (set at compile-time)
 #endif
+   !!Jinbo Xie
    integer psubcols   ! number of sub-columns (max)
    integer pver       ! number of vertical levels
    integer pverp      ! pver + 1
@@ -41,9 +42,11 @@ module ppgrid
    integer nvar_dirOL
    integer indexb
    !====Jinbo Xie====
+   !!Jinbo Xie
 #ifdef PPCOLS
    parameter (pcols     = PCOLS)
 #endif
+   !!Jinbo Xie
    parameter (psubcols  = PSUBCOLS)
    parameter (pver      = PLEV)
    parameter (pverp     = pver + 1  )
@@ -59,10 +62,12 @@ module ppgrid
    integer :: begchunk = 0            ! 
    integer :: endchunk = -1           ! 
 
+
+   !!Jinbo Xie
 #ifndef PPCOLS
-!
 ! pcols set in physgrid_init
    integer :: pcols = -1    ! max number of columns per chunk (set at runtime)
 #endif
+   !!Jinbo Xie
 
 end module ppgrid

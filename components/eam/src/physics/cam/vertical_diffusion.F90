@@ -950,7 +950,7 @@ contains
                              kvm       , kvh      , kvq     , cgh      , cgs     , &
                              tpert     , qpert    , cldn    , ocnfrac  , tke     , &
                              ri        , &
-                             eddy_scheme )
+                             eddy_scheme)
     
        call outfld( 'HB_ri',          ri,         pcols,   lchnk )
 
