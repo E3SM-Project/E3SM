@@ -220,17 +220,17 @@ subroutine modal_aer_opt_init()
    if (istat .ne. 0) call endrun("Unable to allocate qaerwat_m: "//errmsg(__FILE__,__LINE__) )
    !$OMP END PARALLEL
 
-   call get_sw_spectral_midpoints(sw_band_midpoints, 'cm-1')
-   call get_lw_spectral_midpoints(lw_band_midpoints, 'cm-1')
+   call get_sw_spectral_midpoints(sw_band_midpoints, 'nm')
+   call get_lw_spectral_midpoints(lw_band_midpoints, 'nm')
    do i_nswband = 1, nswbands
       sw_band_midpoints_p(i_nswband) = sw_band_midpoints(rrtmg_to_rrtmgp_swbands(i_nswband))
    end do
    if (output_aer_props_rrtmgp == 1) then
-      call add_hist_coord('swband', nswbands, 'Shortwave wavenumber', '1/cm', sw_band_midpoints_p)
+      call add_hist_coord('swband', nswbands, 'Shortwave wavelength', 'nm', sw_band_midpoints_p)
    else
-      call add_hist_coord('swband', nswbands, 'Shortwave wavenumber', '1/cm', sw_band_midpoints)
+      call add_hist_coord('swband', nswbands, 'Shortwave wavelength', 'nm', sw_band_midpoints)
    end if
-   call add_hist_coord('lwband', nlwbands, 'Longwave wavenumber', '1/cm', lw_band_midpoints)
+   call add_hist_coord('lwband', nlwbands, 'Longwave wavelength', 'nm', lw_band_midpoints)
 
    ! Add diagnostic fields to history output.
 
