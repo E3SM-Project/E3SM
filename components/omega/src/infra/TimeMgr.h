@@ -568,6 +568,154 @@ class TimeInterval {
 
 }; // end class TimeInterval
 
+/// The TimeInstant class represents an instant of time. It is represented by
+/// a time in fractional seconds from a reference time, typically year or day
+/// zero of the relevant calendar.
+///
+/// This class includes a number of functions for manipulating time for the
+/// purpose of tracking time within a simulation. These can include adding a
+/// TimeInterval (eg a time step) to advance the time or creating a TimeInterval
+/// by subtracting two instants in time. Other useful queries like time of day
+/// or day of year are also provided to place the time in a practical context.
+///
+class TimeInstant {
+   // private variables
+ private:
+   TimeFrac ElapsedTime; ///< Fractional seconds since reference time
+   Calendar *CalPtr;     ///< Pointer to calendar in which time is based
+
+ public:
+   // constructors/destructors
+
+   /// Default constructor creates empty time instant
+   TimeInstant(void);
+
+   /// Construct time instant from date, time, calendar
+   /// Where seconds is supplied as real number.
+   TimeInstant(Calendar *Cal,   ///< [in] Calendar to use
+               const I8 Year,   ///< [in] year
+               const I8 Month,  ///< [in] month
+               const I8 Day,    ///< [in] day
+               const I8 Hour,   ///< [in] hour
+               const I8 Minute, ///< [in] minute
+               const R8 RSecond ///< [in] second (real)
+   );
+
+   /// Construct time instant from date, time, calendar
+   /// Where seconds is supplied in integer fractional seconds.
+   TimeInstant(Calendar *Cal,   ///< [in] Calendar to use
+               const I8 Year,   ///< [in] year
+               const I8 Month,  ///< [in] month
+               const I8 Day,    ///< [in] day
+               const I8 Hour,   ///< [in] hour
+               const I8 Minute, ///< [in] minute
+               const I8 Whole,  ///< [in] second (whole integer)
+               const I8 Numer,  ///< [in] second (fraction numerator)
+               const I8 Denom   ///< [in] second (fraction denominator)
+   );
+
+   /// Destructor for time interval
+   ~TimeInstant(void);
+
+   // Accessor methods
+
+   /// Set time instant calendar
+   /// \return error code
+   I4 set(Calendar *Cal ///< [in] Calendar to use for this time
+   );
+
+   /// Set time instant from date and time, where seconds is supplied
+   /// as a real number.
+   /// \return error code
+   I4 set(const I8 Year,   ///< [in] year
+          const I8 Month,  ///< [in] month
+          const I8 Day,    ///< [in] day
+          const I8 Hour,   ///< [in] hour
+          const I8 Minute, ///< [in] minute
+          const R8 RSecond ///< [in] second (real)
+   );
+
+   /// Set time instant from date and time, where seconds is supplied
+   /// in integer fractional seconds.
+   /// \return error code
+   I4 set(const I8 Year,   ///< [in] year
+          const I8 Month,  ///< [in] month
+          const I8 Day,    ///< [in] day
+          const I8 Hour,   ///< [in] hour
+          const I8 Minute, ///< [in] minute
+          const I8 Whole,  ///< [in] second (whole integer)
+          const I8 Numer,  ///< [in] second (fraction numerator)
+          const I8 Denom   ///< [in] second (fraction denominator)
+   );
+
+   /// Retrieve calendar from time instant
+   /// \return error code
+   I4 get(Calendar *&Cal ///< [out] Calendar ptr in which instant defined
+   ) const;
+
+   /// Retrieve time in date, time form with real seconds.
+   /// \return error code
+   I4 get(I8 &Year,   ///< [out] year   of this time instant
+          I8 &Month,  ///< [out] month  of this time instant
+          I8 &Day,    ///< [out] day    of this time instant
+          I8 &Hour,   ///< [out] hour   of this time instant
+          I8 &Minute, ///< [out] minute of this time instant
+          R8 &Second  ///< [out] second of this time instant
+   ) const;
+
+   /// Retrieve time in date, time form with fractional integer seconds.
+   /// \return error code
+   I4 get(I8 &Year,   ///< [out] year   of this time instant
+          I8 &Month,  ///< [out] month  of this time instant
+          I8 &Day,    ///< [out] day    of this time instant
+          I8 &Hour,   ///< [out] hour   of this time instant
+          I8 &Minute, ///< [out] minute of this time instant
+          I8 &Whole,  ///< [out] whole seconds of this time
+          I8 &Numer,  ///< [out] frac second numerator
+          I8 &Denom   ///< [out] frac second denominator
+   ) const;
+
+   // Operators on time instants
+
+   /// Equivalence comparison for TimeInstant
+   bool operator==(const TimeInstant &) const;
+   /// Non-equivalence comparison operator for TimeInstant
+   bool operator!=(const TimeInstant &) const;
+   /// Less than comparison operator for TimeInstant
+   bool operator<(const TimeInstant &) const;
+   /// Greater than comparison operator for TimeInstant
+   bool operator>(const TimeInstant &) const;
+   /// Less than or equal comparison operator for TimeInstant
+   bool operator<=(const TimeInstant &) const;
+   /// Greater than or equal comparison operator for TimeInstant
+   bool operator>=(const TimeInstant &) const;
+   /// Increment time by adding a time interval
+   TimeInstant operator+(const TimeInterval &) const;
+   /// Decrement time by subtracting a time interval
+   TimeInstant operator-(const TimeInterval &) const;
+   /// Create a time interval by subtracting two time instants
+   TimeInterval operator-(const TimeInstant &) const;
+   /// Increment time in place by adding time interval
+   /// Increment time in place by adding time interval
+   TimeInstant &operator+=(const TimeInterval &);
+   /// Decrement time in place by subtracting time interval
+   TimeInstant &operator-=(const TimeInterval &);
+
+   // Other utility methods
+   /// Get time as a string in the format
+   /// 'YYYYYY-MM-DD{separator}HH:MM:SS.SSSSSS' where the number
+   /// of digits in year, number of digits after the decimal in
+   /// seconds and the character to use as separator are all input
+   /// by the user.
+   /// \return time string
+   std::string
+   getString(const I4 YearWidth,   ///< [in] number of digits in year
+             const I4 SecondWidth, ///< [in] num digits after decimal in seconds
+             std::string Separator ///< [in] string(char) to separate date/time
+   ) const;
+
+}; // end class TimeInstant
+
 } // namespace OMEGA
 
 //===----------------------------------------------------------------------===//

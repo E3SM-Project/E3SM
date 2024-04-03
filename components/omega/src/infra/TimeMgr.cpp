@@ -3298,5 +3298,642 @@ bool TimeInterval::isPositive(void) {
 
 } // end TimeInterval::isPositive
 
+//------------------------------------------------------------------------------
+// TimeInstant definitions
+//------------------------------------------------------------------------------
+
+// TimeInstant accessors
+// Define first so constructors can use set methods
+//------------------------------------------------------------------------------
+// TimeInstant::set (calendar)
+// Sets the calendar to be used for a time instant
+
+I4 TimeInstant::set(Calendar *Cal) {
+
+   I4 Err{0};
+
+   // Check to see whether pointer is valid and if so, set the pointer
+   if (Cal != nullptr) {
+      CalPtr = Cal;
+   } else {
+      // Otherwise return an error
+      Err = 1;
+      LOG_ERROR("TimeMgr: TimeInstant::set(calendar) Calendar not defined "
+                "(null ptr)");
+   }
+
+   return Err;
+
+} // end TimeInstant::set (calendar)
+
+//------------------------------------------------------------------------------
+// TimeInstant::set (date and time, real seconds)
+// Sets a time instant from a date and time, where the seconds is supplied as
+// a real number. The calendar must already be set in order to correctly use
+// this function.
+
+I4 TimeInstant::set(const I8 Year,   //< [in] year
+                    const I8 Month,  //< [in] month
+                    const I8 Day,    //< [in] day
+                    const I8 Hour,   //< [in] hour
+                    const I8 Minute, //< [in] minute
+                    const R8 RSecond //< [in] second (real)
+) {
+
+   // Initialize error code
+   I4 Err{0};
+
+   // Convert real seconds to fractional representation
+   TimeFrac TmpSeconds(RSecond);
+   I8 Whole{0};
+   I8 Numer{0};
+   I8 Denom{0};
+   Err = TmpSeconds.get(Whole, Numer, Denom);
+
+   // Check that calendar has already been defined
+   if (CalPtr == nullptr) {
+      Err = 1;
+      LOG_ERROR("TimeMgr: TimeInstant::set(date and time, real seconds) "
+                "calendar must be defined to set by date");
+   } else {
+      // Call Calendar function to determine elapsed time since reference time
+      ElapsedTime = CalPtr->getElapsedTime(Year, Month, Day, Hour, Minute,
+                                           Whole, Numer, Denom);
+   }
+
+   return Err;
+
+} // end TimeInstant::set (date and time, real seconds)
+
+//------------------------------------------------------------------------------
+// TimeInstant::set (date and time, fractional integer seconds)
+// Sets a time instant from a date and time, where the seconds is supplied as
+// a fractional integer. The calendar must already be set in order to correctly
+// use this function.
+
+int TimeInstant::set(const I8 Year,   //< [in] year
+                     const I8 Month,  //< [in] month
+                     const I8 Day,    //< [in] day
+                     const I8 Hour,   //< [in] hour
+                     const I8 Minute, //< [in] minute
+                     const I8 Whole,  //< [in] second (whole integer)
+                     const I8 Numer,  //< [in] second (fraction numerator)
+                     const I8 Denom   //< [in] second (fraction denominator)
+) {
+
+   // Initialize error code
+   I4 Err{0};
+
+   // Check that calendar has already been defined
+   if (CalPtr == nullptr) {
+      LOG_ERROR("TimeMgr: TimeInstant::set(date and time, frac int seconds)",
+                "calendar must be defined to set by date");
+   } else {
+      // Call Calendar function to determine elapsed time since reference time
+      ElapsedTime = CalPtr->getElapsedTime(Year, Month, Day, Hour, Minute,
+                                           Whole, Numer, Denom);
+   }
+
+   return Err;
+
+} // end TimeInstant::set (date and time, fractional integer seconds)
+
+//------------------------------------------------------------------------------
+// TimeInstant::get (calendar)
+// Retrieve the associated calendar from a time instant.
+
+I4 TimeInstant::get(Calendar *&Cal //< [out] Calendar in which instant defined
+) const {
+
+   // Initialize error code
+   I4 Err{0};
+
+   // If the calendar has been defined, return the calendar pointer
+   if (CalPtr != nullptr) {
+      Cal = CalPtr;
+   } else {
+      // Otherwise, set a null pointer print an error message
+      Cal = nullptr;
+      Err = 0;
+      LOG_ERROR("TimeMgr: TimeInstant::get(date and time, frac int seconds) ",
+                "attempt to retrieve a Calendar that is not defined");
+   }
+
+   // return the error code
+   return Err;
+
+} // end TimeInstant::get (calendar)
+
+//------------------------------------------------------------------------------
+// TimeInstant::get (date and time, real seconds)
+// Retrieve the time instant in terms of a date and time with seconds returned
+// as a real (double) value.
+
+I4 TimeInstant::get(I8 &Year,   //< [out] year   of this time instant
+                    I8 &Month,  //< [out] month  of this time instant
+                    I8 &Day,    //< [out] day    of this time instant
+                    I8 &Hour,   //< [out] hour   of this time instant
+                    I8 &Minute, //< [out] minute of this time instant
+                    R8 &Second  //< [out] second of this time instant
+) const {
+
+   // Initialize error code
+   I4 Err{0};
+
+   Second = 0.0;
+
+   // If the calendar has been defined, call the calendar function to
+   // convert the time to a date and time appropriate for that calendar
+   if (CalPtr != nullptr) {
+      I8 Whole{0};
+      I8 Numer{0};
+      I8 Denom{0};
+      Err = CalPtr->getDateTime(ElapsedTime, Year, Month, Day, Hour, Minute,
+                                Whole, Numer, Denom);
+      if (Err != 0) {
+         LOG_ERROR("TimeMgr: TimeInstant::get(date and time, real seconds) "
+                   "error converting base time to date/time");
+      } else {
+         // Convert retrieved seconds in TimeFrac and then
+         // to real seconds for return
+         TimeFrac TmpSeconds(Whole, Numer, Denom);
+         Second = TmpSeconds.getSeconds();
+      }
+
+   } else {
+      // Otherwise, print an error message
+      Err = 1;
+      LOG_ERROR("TimeMgr: TimeInstant::get(date and time, real seconds) ",
+                "calendar not defined.");
+   }
+
+   // return the error code
+   return Err;
+
+} // end TimeInstant::get (date and time, real seconds)
+
+//------------------------------------------------------------------------------
+// TimeInstant::get (date and time, fractional integer seconds)
+// Retrieve the time instant in terms of a date and time with seconds returned
+// as a fractional integer.
+
+I4 TimeInstant::get(I8 &Year,   //< [out] year   of this time instant
+                    I8 &Month,  //< [out] month  of this time instant
+                    I8 &Day,    //< [out] day    of this time instant
+                    I8 &Hour,   //< [out] hour   of this time instant
+                    I8 &Minute, //< [out] minute of this time instant
+                    I8 &Whole,  //< [out] whole seconds of this time
+                    I8 &Numer,  //< [out] frac second numerator
+                    I8 &Denom   //< [out] frac second denominator
+) const {
+
+   // Initialize error code
+   I4 Err{0};
+
+   // If the calendar has been defined, call the calendar function to
+   // convert the time to a date and time appropriate for that calendar
+   if (CalPtr != nullptr) {
+      Err = CalPtr->getDateTime(ElapsedTime, Year, Month, Day, Hour, Minute,
+                                Whole, Numer, Denom);
+      if (Err != 0)
+         LOG_ERROR("TimeMgr: TimeInstant::get(date and time, frac int seconds) "
+                   "error converting base time to date/time");
+   } else {
+      // Otherwise, print an error message
+      LOG_ERROR("TimeMgr: TimeInstant::get(date and time, frac int seconds) "
+                "calendar not defined.");
+   }
+
+   // return the error code
+   return Err;
+
+} // end TimeInstant::get (date and time, fractional integer seconds)
+
+// TimeInstant constructors/destructors
+//------------------------------------------------------------------------------
+// TimeInstant::TimeInstant - default constructor
+// This is a default constructor that creates an empty time instant with zero
+// values and a null calendar.
+
+TimeInstant::TimeInstant(void) : ElapsedTime(0, 0, 1), CalPtr(nullptr) {
+   // Everything taken care of in initialization list above
+} // end TimeInstant::TimeInstant
+
+//------------------------------------------------------------------------------
+// TimeInstant::TimeInstant
+// Constructs a time instant from a date, time, calendar, where the seconds
+// part of time is supplied as a real number.
+
+TimeInstant::TimeInstant(Calendar *Cal,   //< [in] Calendar to use
+                         const I8 Year,   //< [in] year
+                         const I8 Month,  //< [in] month
+                         const I8 Day,    //< [in] day
+                         const I8 Hour,   //< [in] hour
+                         const I8 Minute, //< [in] minute
+                         const R8 RSecond //< [in] second (real)
+) {
+
+   // Set the calendar
+   CalPtr = Cal;
+
+   // Reuse the set function to define the time component
+   I4 Err = this->set(Year, Month, Day, Hour, Minute, RSecond);
+   if (Err != 0)
+      LOG_ERROR("TimeMgr: TimeInstant::TimeInstant "
+                "(date and time, real seconds) "
+                "error using set function to construct TimeInstant.");
+
+} // end TimeInstant::TimeInstant constructor from yy/mm/dd-hh:mm:ss(real)
+
+//------------------------------------------------------------------------------
+// TimeInstant::TimeInstant
+// Constructs a time instant from a calendar, date and time, where the seconds
+// is supplied as an integer fraction (whole + numrator/denominator)
+
+TimeInstant::TimeInstant(Calendar *Cal,   //< [in] Calendar to use
+                         const I8 Year,   //< [in] year
+                         const I8 Month,  //< [in] month
+                         const I8 Day,    //< [in] day
+                         const I8 Hour,   //< [in] hour
+                         const I8 Minute, //< [in] minute
+                         const I8 Whole,  //< [in] second (whole integer)
+                         const I8 Numer,  //< [in] second (fraction numerator)
+                         const I8 Denom   //< [in] second (fraction denominator)
+) {
+
+   // Set the calendar
+   CalPtr = Cal;
+
+   // Reuse the set function to define the time component
+   I4 Err = this->set(Year, Month, Day, Hour, Minute, Whole, Numer, Denom);
+   if (Err != 0)
+      LOG_ERROR("TimeMgr: TimeInstant::TimeInstant "
+                "(date and time, frac int seconds) "
+                "error using set function to construct TimeInstant.");
+
+} // end TimeInstant::TimeInstant constructor from yy/mm/dd-hh:mm:ss(real ss)
+
+//------------------------------------------------------------------------------
+// TimeInstant::~TimeInstant - destructor for time instant
+// Destructor for a time instant. No allocated space so does nothing.
+
+TimeInstant::~TimeInstant(void) { // Nothing to be done
+
+} // end TimeInstant destructor
+
+// TimeInstant operators
+//------------------------------------------------------------------------------
+// TimeInstant::operator==
+// This equivalence operator returns true if two time instants are
+// equivalent. If time instants are set correctly, this simply means
+// checking whether all components are equivalent using the basetime and
+// calendar equivalence operators.
+
+bool TimeInstant::operator==(
+    const TimeInstant &Instant) const { // [in] - instant to compare
+
+   // check equivalence of both calendar and basetime components
+   // Note that the calendars do not need to be the same calendar,
+   //   simply equivalent calendars
+
+   if ((*(this->CalPtr) == *(Instant.CalPtr)) &&
+       (this->ElapsedTime == Instant.ElapsedTime))
+      return true;
+   else
+      return false;
+
+} // end TimeInstant::operator==
+
+//------------------------------------------------------------------------------
+// TimeInstant::operator!=
+// This non-equivalence operator returns true if two time instants are
+// not equal. If time instants are set correctly, this simply means
+// checking whether all components are not equivalent.
+
+bool TimeInstant::operator!=(
+    const TimeInstant &Instant) const { // [in] - instant to compare
+
+   // use the equivalence operator above
+   return (!(*this == Instant));
+
+} // end TimeInstant::operator!=
+
+//------------------------------------------------------------------------------
+// TimeInstant::operator<
+// This operator returns true if this time instant is less than
+// another. Time instant must be defined on the same calendar.
+
+bool TimeInstant::operator<(
+    const TimeInstant &Instant) const { // [in] - instant to compare
+
+   // check that calendars are equivalent
+   if (*(this->CalPtr) != *(Instant.CalPtr)) {
+      LOG_ERROR("TimeMgr: TimeInstant::operator< cannot compare time instants "
+                "on different calendars");
+      return false;
+   }
+
+   // If on the same calendar, just a matter of comparing ElapsedTimes
+   return (this->ElapsedTime < Instant.ElapsedTime);
+
+} // end TimeInstant::operator<
+
+//------------------------------------------------------------------------------
+// TimeInstant::operator>
+// This operator returns true if this time instant is greater than
+// another. Time instant must be defined on the same calendar.
+
+bool TimeInstant::operator>(
+    const TimeInstant &Instant) const { // [in] - instant to compare
+
+   // check that calendars are equivalent
+   if (*(this->CalPtr) != *(Instant.CalPtr)) {
+      LOG_ERROR("TimeMgr: TimeInstant::operator> cannot compare time instants "
+                "on different calendars");
+      return false;
+   }
+
+   // If on the same calendar, just a matter of comparing ElapsedTimes
+   return (this->ElapsedTime > Instant.ElapsedTime);
+
+} // end TimeInstant::operator>
+
+//------------------------------------------------------------------------------
+// TimeInstant::operator<=
+// This operator returns true if this time instant is less than or equal to
+// another. Time instant must be defined on the same calendar.
+
+bool TimeInstant::operator<=(
+    const TimeInstant &Instant) const { // [in] - instant to compare
+
+   // check that calendars are equivalent
+   if (*(this->CalPtr) != *(Instant.CalPtr)) {
+      LOG_ERROR("TimeMgr: TimeInstant::operator<= cannot compare time instants "
+                "on different calendars");
+      return false;
+   }
+
+   // If on the same calendar, just a matter of comparing ElapsedTimes
+   return (this->ElapsedTime <= Instant.ElapsedTime);
+
+} // end TimeInstant::operator<=
+
+//------------------------------------------------------------------------------
+// TimeInstant::operator>=
+// This operator returns true if this time instant is greater than or equal to
+// another. Time instant must be defined on the same calendar.
+
+bool TimeInstant::operator>=(
+    const TimeInstant &Instant) const { // [in] - instant to compare
+
+   // check that calendars are equivalent
+   if (*(this->CalPtr) != *(Instant.CalPtr)) {
+      LOG_ERROR("TimeMgr: TimeInstant::operator>= cannot compare time instants "
+                "on different calendars");
+      return false;
+   }
+
+   // If on the same calendar, just a matter of comparing ElapsedTimes
+   return (this->ElapsedTime >= Instant.ElapsedTime);
+
+} // end TimeInstant::operator>=
+
+//------------------------------------------------------------------------------
+// TimeInstant::operator+
+// This operator is used to advance time by adding a time interval.
+
+TimeInstant TimeInstant::operator+(
+    const TimeInterval &Interval) const { // [in] - interval to add
+
+   I4 Err{0};
+
+   // start by copying result
+   TimeInstant Result = *this;
+
+   // for non-calendar intervals, we can simply add the ElapsedTime components
+   if (!(Interval.IsCalendar))
+      Result.ElapsedTime = ElapsedTime + Interval.Interval;
+
+   else {
+      // for calendar intervals, interval depends on current date
+      // convert current time instant to date/time form
+      I8 Year{0};
+      I8 Month{0};
+      I8 Day{0};
+      I8 Hour{0};
+      I8 Minute{0};
+      I8 Whole{0};
+      I8 Numer{0};
+      I8 Denom{1};
+      Err = CalPtr->getDateTime(ElapsedTime, Year, Month, Day, Hour, Minute,
+                                Whole, Numer, Denom);
+      if (Err != 0)
+         LOG_ERROR("TimeMgr: TimeInstant::operator+ error converting instant "
+                   "to date/time");
+      // use calendar function to increment date based on calendar kind
+      Err = CalPtr->incrementDate(Interval.CalInterval, Interval.Units, Year,
+                                  Month, Day);
+      if (Err != 0)
+         LOG_ERROR("TimeMgr: TimeInstant::operator+ error advancing calendar "
+                   "date/time");
+
+      // convert new date/time back to time instant
+      Err = Result.set(Year, Month, Day, Hour, Minute, Whole, Numer, Denom);
+      if (Err != 0)
+         LOG_ERROR("TimeMgr: TimeInstant::operator+ error converting date/time "
+                   "to instant");
+
+   } // end calendar else clause
+
+   // return the result
+   return Result;
+
+} // end TimeInstant::operator+
+
+//------------------------------------------------------------------------------
+// TimeInstant::operator-
+// This operator is used to reverse time by subtracting a time interval.
+
+TimeInstant TimeInstant::operator-(
+    const TimeInterval &Interval) const { // [in] - interval to subtract
+
+   I4 Err{0};
+
+   // start by copying result
+   TimeInstant Result = *this;
+
+   // for non-calendar intervals, we can simply subtract the ElapsedTime
+   // components
+   if (!(Interval.IsCalendar))
+      Result.ElapsedTime = ElapsedTime - Interval.Interval;
+
+   else {
+      // for calendar intervals, interval depends on current date
+      // convert current time instant to date/time form
+      I8 Year{0};
+      I8 Month{0};
+      I8 Day{0};
+      I8 Hour{0};
+      I8 Minute{0};
+      I8 Whole{0};
+      I8 Numer{0};
+      I8 Denom{1};
+      Err = CalPtr->getDateTime(ElapsedTime, Year, Month, Day, Hour, Minute,
+                                Whole, Numer, Denom);
+      if (Err != 0)
+         LOG_ERROR("TimeMgr: TimeInstant::operator- error converting instant "
+                   "to date/time");
+      // use calendar function to decrement date based on calendar kind
+      I8 TmpInterval = -(Interval.CalInterval);
+      Err =
+          CalPtr->incrementDate(TmpInterval, Interval.Units, Year, Month, Day);
+      if (Err != 0)
+         LOG_ERROR("TimeMgr: TimeInstant::operator- error reversing calendar "
+                   "date/time");
+
+      // convert new date/time back to time instant
+      Err = Result.set(Year, Month, Day, Hour, Minute, Whole, Numer, Denom);
+      if (Err != 0)
+         LOG_ERROR("TimeMgr: TimeInstant::operator- cannot compare time "
+                   "instants on different calendars");
+
+   } // end calendar else clause
+
+   // return the result
+   return Result;
+
+} // end TimeInstant::operator-
+
+//------------------------------------------------------------------------------
+// TimeInstant::operator- (time interval)
+// This operator creates a time interval as a difference of two time instants
+
+TimeInterval TimeInstant::operator-(const TimeInstant &Instant) const {
+
+   I4 Err{0};
+   I8 Whole{0};
+   I8 Numer{0};
+   I8 Denom{1};
+   TimeInterval Result(Whole, Numer, Denom); // zero interval as default
+
+   // check that calendars are equivalent
+   if (*(this->CalPtr) != *(Instant.CalPtr)) {
+      LOG_ERROR("TimeMgr: TimeInstant::operator- (interval) cannot subtract "
+                "time instants on different calendars");
+      return Result;
+   }
+
+   // subtract the ElapsedTime components of time instants
+   TimeFrac Timediff = ElapsedTime - Instant.ElapsedTime;
+
+   // extract ElapsedTime components of time difference and use them to
+   // set time interval result
+   Err = Timediff.get(Whole, Numer, Denom);
+   if (Err != 0)
+      LOG_ERROR("TimeMgr: TimeInstant::operator- (interval) error retrieving "
+                "time difference components");
+
+   Err = Result.set(Whole, Numer, Denom);
+   if (Err != 0)
+      LOG_ERROR("TimeMgr: TimeInstant::operator- (interval) error setting "
+                "TimeFrac components of interval");
+
+   // finally return time interval result
+   return Result;
+
+} // end TimeInstant::operator- (create time interval)
+
+//------------------------------------------------------------------------------
+// TimeInstant::operator+=
+// This operator increments a time instant by adding a time interval and
+// storing the result in place.
+
+TimeInstant &TimeInstant::operator+=(const TimeInterval &Timeint) {
+
+   // reuse (+) operator defined above
+   *this = *this + Timeint;
+   return *this;
+
+} // end TimeInstant::operator+=
+
+//------------------------------------------------------------------------------
+// TimeInstant::operator-=
+// This operator decrements a time instant by subtracting a time interval and
+// storing the result in place.
+
+TimeInstant &TimeInstant::operator-=(const TimeInterval &Timeint) {
+
+   // reuse (-) operator defined above
+   *this = *this - Timeint;
+   return *this;
+
+} // end TimeInstant::operator-=
+
+// utility methods
+//------------------------------------------------------------------------------
+// TimeInstant::getString
+// Get time instant as a string in the format
+// 'YYYYYY-MM-DD_HH:MM:SS.SSSSSS' where number of digits in year, and number
+// of digits after the decimal are inputs. The string separating date and time
+// is also input.
+
+std::string TimeInstant::getString(
+    const I4 YearWidth,         // [in] number of digits in year
+    const I4 SecondWidth,       // [in] num of decimal digits in seconds
+    const std::string Separator // [in] string to separate date/time
+) const {
+
+   // First retrieve time/day
+   I8 Year{0};
+   I8 Month{0};
+   I8 Day{0};
+   I8 Hour{0};
+   I8 Minute{0};
+   R8 Second{0.0};
+   I4 Err = this->get(Year, Month, Day, Hour, Minute, Second);
+   if (Err != 0)
+      LOG_ERROR("TimeMgr: TimeInstant::getString error retrieving time/date");
+
+   // allocate character string for date/time
+   I4 TimeLength = YearWidth + 3 + 3 + 1 + 3 + 3 + 3 + SecondWidth + 1;
+   char *TimeStr = new char[TimeLength];
+
+   // Use formatted print to create string
+
+   // First define format
+   std::ostringstream FmtString;
+   FmtString.str(std::string());          // clear format stream
+   FmtString << "%0" << YearWidth << "d"; // 0 padded year of defined width
+   FmtString << "-";
+   FmtString << "%02d"; // 2 digit month with leading 0
+   FmtString << "-";
+   FmtString << "%02d";    // 2 digit day with leading 0
+   FmtString << Separator; // user-supplied separator between date/time
+   FmtString << "%02d";    // 2 digit hour with leading 0
+   FmtString << ":";
+   FmtString << "%02d"; // 2 digit minute with leading 0
+   FmtString << ":";
+   FmtString << "%" << SecondWidth + 3 << "." << SecondWidth << "f"; // seconds
+
+   // convert format string to an actual string for formatted write
+   const std::string Tmp = FmtString.str();
+   const char *FormatStr = Tmp.c_str();
+
+   // now use sprintf to print to C string
+   Err = sprintf(TimeStr, FormatStr, Year, Month, Day, Hour, Minute, Second);
+   if (Err < 0)
+      LOG_ERROR("TimeMgr: TimeInstant::getString error in sprintf");
+
+   // now convert C string to std::string for result
+   std::string Result(TimeStr);
+
+   // deallocate temp strings
+   delete[] TimeStr;
+
+   // All done
+   return Result;
+
+} // end TimeInstant:: getString
+
 } // namespace OMEGA
 //===-----------------------------------------------------------------------===/
