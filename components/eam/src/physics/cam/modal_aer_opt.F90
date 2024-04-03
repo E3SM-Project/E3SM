@@ -69,7 +69,7 @@ integer :: qaerwat_idx  = -1
 character(len=4) :: diag(0:n_diag) = (/'    ','_d1 ','_d2 ','_d3 ','_d4 ','_d5 ', &
                                        '_d6 ','_d7 ','_d8 ','_d9 ','_d10'/)
 
-integer, dimension(14) :: rrtmg_to_rrtmgp_swbands = (/ &
+integer, dimension(nswbands) :: rrtmg_to_rrtmgp_swbands = (/ &
    14, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 &
 /)
 real(r8), target :: sw_band_midpoints(nswbands), sw_band_midpoints_p(nswbands), lw_band_midpoints(nlwbands)
