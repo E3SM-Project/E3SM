@@ -909,7 +909,7 @@ module li_subglacial_hydro
          endif ! if edge of grounded ice
       end do
 
-      ! zero gradients at boundaries of the mesh
+      ! zero gradients at edges that are marked as no flux. These should be applied at boundaries of the mesh.
       do iEdge = 1, nEdges
          if (waterFluxMask(iEdge) == 2) then
             hydropotentialBaseSlopeNormal(iEdge) = 0.0_RKIND
