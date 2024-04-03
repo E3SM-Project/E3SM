@@ -3522,6 +3522,452 @@ int testTimeInstant(void) {
 } // end testTimeInstant
 
 //------------------------------------------------------------------------------
+// Alarm test
+
+int testAlarm(void) {
+
+   LOG_INFO("TimeMgrTest: Alarm tests ---------------------------------------");
+
+   // Initialize error codes
+   OMEGA::I4 Err1{0};
+   OMEGA::I4 Err2{0};
+   OMEGA::I4 Err3{0};
+   OMEGA::I4 ErrAll{0};
+
+   // For various time intervals, we create alarms at relevant times
+   // and step through time to trigger the alarm.
+
+   // Do all testing in Gregorian calendar
+   OMEGA::Calendar CalGreg("Gregorian", OMEGA::CalendarGregorian);
+
+   // Create a zero start time and generic start time
+   OMEGA::TimeInstant Time0(&CalGreg, 2000, 1, 1, 0, 0, 0.0);
+   OMEGA::TimeInstant StartTime(&CalGreg, 2019, 8, 15, 14, 25, 23.25);
+
+   // Test a year-based alarm and periodic alarm using a start time and
+   // monthly interval
+
+   OMEGA::TimeInstant TimeNewYear2020(&CalGreg, 2020, 1, 1, 0, 0, 0.0);
+   OMEGA::Alarm AlarmNewYear2020("New Year 2020", TimeNewYear2020);
+
+   OMEGA::TimeInterval IntervalAnnual(1, OMEGA::TimeUnits::Years);
+   OMEGA::TimeInterval IntervalMonthly(1, OMEGA::TimeUnits::Months);
+   OMEGA::Alarm AlarmEveryYear("Every Year", IntervalAnnual, Time0);
+
+   OMEGA::TimeInstant CurTime = StartTime;
+
+   // quick test of update status function
+   Err1 = AlarmNewYear2020.updateStatus(CurTime);
+   Err2 = AlarmEveryYear.updateStatus(CurTime);
+   if (Err1 == 0 && Err2 == 0) {
+      LOG_INFO("TimeMgrTest/Alarm: update status: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/Alarm: update status: FAIL");
+   }
+
+   // reset interval timer to make sure first ring time is in future
+   Err1 = AlarmEveryYear.reset(CurTime);
+   if (Err1 == 0) {
+      LOG_INFO("TimeMgrTest/Alarm: initial reset: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/Alarm: initial reset: FAIL");
+   }
+
+   // now integrate forward for 18 months
+   for (int N = 1; N <= 18; ++N) {
+      // increment time in monthly intervals
+      CurTime += IntervalMonthly;
+
+      // update alarm state based on current time
+      Err1 = AlarmNewYear2020.updateStatus(CurTime);
+      Err2 = AlarmEveryYear.updateStatus(CurTime);
+      if (Err1 != 0 || Err2 != 0) {
+         ++ErrAll;
+         LOG_ERROR("TimeMgrTest/Alarm: update annual alarms: FAIL");
+      }
+
+      // Test whether one-time alarm should be ringing or not
+      if (N == 5) {
+         if (AlarmNewYear2020.isRinging()) {
+            LOG_INFO("TimeMgrTest/Alarm: one-time annual alarm: PASS");
+         } else {
+            ++ErrAll;
+            LOG_ERROR("TimeMgrTest/Alarm: one-time annual alarm: FAIL");
+         }
+         Err1 = AlarmNewYear2020.stop();
+         if (Err1 == 0) {
+            LOG_INFO("TimeMgrTest/Alarm: one-time annual alarm stop: PASS");
+         } else {
+            ++ErrAll;
+            LOG_ERROR("TimeMgrTest/Alarm: one-time annual alarm stop: FAIL");
+         }
+      } else {
+         if (AlarmNewYear2020.isRinging()) {
+            ++ErrAll;
+            LOG_ERROR("TimeMgrTest/Alarm: one-time annual alarm "
+                      "should not be ringing: FAIL");
+         }
+      }
+
+      // Test whether interval alarm should be ringing or not
+      if (N == 5 || N == 17) {
+         if (AlarmEveryYear.isRinging()) {
+            LOG_INFO("TimeMgrTest/Alarm: periodic annual alarm: PASS");
+         } else {
+            ++ErrAll;
+            LOG_ERROR("TimeMgrTest/Alarm: periodic annual alarm: FAIL");
+         }
+         Err1 = AlarmEveryYear.reset(CurTime);
+         if (Err1 == 0) {
+            LOG_INFO("TimeMgrTest/Alarm: periodic annual alarm reset: PASS");
+         } else {
+            ++ErrAll;
+            LOG_ERROR("TimeMgrTest/Alarm: periodic annual alarm reset: FAIL");
+         }
+      } else {
+         if (AlarmEveryYear.isRinging()) {
+            ++ErrAll;
+            LOG_ERROR("TimeMgrTest/Alarm: periodic annual alarm "
+                      "should not be ringing: FAIL");
+         }
+      }
+   }
+
+   // Test a month-based alarm and periodic alarm using a start time and
+   // daily interval (pick a leap year just to catch an edge case)
+
+   OMEGA::TimeInstant Time2020Mar1(&CalGreg, 2020, 3, 1, 0, 0, 0.0);
+   OMEGA::Alarm Alarm2020Mar1("2020-03-01", Time2020Mar1);
+
+   OMEGA::Alarm AlarmEveryMonth("Every Month", IntervalMonthly, Time0);
+   OMEGA::TimeInterval IntervalDaily(1, OMEGA::TimeUnits::Days);
+
+   CurTime = StartTime; // start time is 2019-08-15_14:25:23.25
+   Err1    = AlarmEveryMonth.reset(CurTime); // ensure first alarm in future
+
+   Err3 = 1; // use to limit messages
+   for (int N = 1; N <= 365; ++N) {
+      // increment time in daily intervals
+      CurTime += IntervalDaily;
+
+      // update alarm state based on current time
+      Err1 = Alarm2020Mar1.updateStatus(CurTime);
+      Err2 = AlarmEveryMonth.updateStatus(CurTime);
+      if (Err1 != 0 || Err2 != 0) {
+         ++ErrAll;
+         LOG_ERROR("TimeMgrTest/Alarm: update monthly alarms: FAIL");
+      }
+      // Test whether one-time alarm should be ringing or not
+      if (N == 199) {
+         if (Alarm2020Mar1.isRinging()) {
+            LOG_INFO("TimeMgrTest/Alarm: one-time monthly alarm: PASS");
+         } else {
+            ++ErrAll;
+            LOG_ERROR("TimeMgrTest/Alarm: one-time monthly alarm: FAIL");
+         }
+         Err1 = Alarm2020Mar1.stop();
+         if (Err1 != 0) {
+            ++ErrAll;
+            LOG_ERROR("TimeMgrTest/Alarm: one-time monthly alarm stop: FAIL");
+         }
+      } else {
+         if (Alarm2020Mar1.isRinging()) {
+            ++ErrAll;
+            LOG_ERROR("TimeMgrTest/Alarm: one-time monthly alarm "
+                      "should not be ringing: FAIL");
+         }
+      }
+
+      // Test whether interval alarm should be ringing or not
+      if (N == 17 || N == 47 || N == 78 || N == 108 || N == 139 || N == 170 ||
+          N == 199 || N == 230 || N == 260 || N == 291 || N == 321 ||
+          N == 352) {
+         if (AlarmEveryMonth.isRinging()) {
+            if (Err3 == 1) // only print first instance for pass
+               LOG_INFO("TimeMgrTest/Alarm: periodic monthly alarm: PASS");
+            Err3 = 0;
+         } else {
+            ++ErrAll;
+            LOG_ERROR("TimeMgrTest/Alarm: periodic monthly alarm: FAIL");
+         }
+         Err1 = AlarmEveryMonth.reset(CurTime);
+         if (Err1 != 0) {
+            ++ErrAll;
+            LOG_ERROR("TimeMgrTest/Alarm: periodic monthly alarm reset: FAIL");
+         }
+      } else {
+         if (AlarmEveryMonth.isRinging()) {
+            ++ErrAll;
+            LOG_ERROR("TimeMgrTest/Alarm: periodic monthly alarm "
+                      "should not be ringing: FAIL");
+         }
+      }
+   }
+
+   // Test a day-based alarm and periodic alarm using a start time and
+   // hourly interval
+
+   OMEGA::TimeInstant Time2019Aug20(&CalGreg, 2019, 8, 20, 0, 0, 0.0);
+   OMEGA::Alarm Alarm2019Aug20("2020-08-20", Time2019Aug20);
+
+   OMEGA::Alarm AlarmEveryDay("Every Day", IntervalDaily, Time0);
+   OMEGA::TimeInterval IntervalHourly(1, OMEGA::TimeUnits::Hours);
+
+   CurTime = StartTime; // start time is 2019-08-15_14:25:23.25
+   Err1    = AlarmEveryDay.reset(CurTime); // ensure first alarm in future
+
+   Err3 = 1; // use to limit output
+   for (int N = 1; N <= 240; ++N) {
+      // increment time in hourly intervals
+      CurTime += IntervalHourly;
+
+      // update alarm state based on current time
+      Err1 = Alarm2019Aug20.updateStatus(CurTime);
+      Err2 = AlarmEveryDay.updateStatus(CurTime);
+      if (Err1 != 0 || Err2 != 0) {
+         ++ErrAll;
+         LOG_ERROR("TimeMgrTest/Alarm: update daily alarms: FAIL");
+      }
+
+      // Test whether one-time alarm should be ringing or not
+      if (N == 106) {
+         if (Alarm2019Aug20.isRinging()) {
+            LOG_INFO("TimeMgrTest/Alarm: one-time daily alarm: PASS");
+         } else {
+            ++ErrAll;
+            LOG_ERROR("TimeMgrTest/Alarm: one-time daily alarm: FAIL");
+         }
+         Err1 = Alarm2019Aug20.stop();
+         if (Err1 != 0) {
+            ++ErrAll;
+            LOG_ERROR("TimeMgrTest/Alarm: one-time daily alarm stop: FAIL");
+         }
+      } else {
+         if (Alarm2019Aug20.isRinging()) {
+            ++ErrAll;
+            LOG_ERROR("TimeMgrTest/Alarm: one-time daily alarm "
+                      "should not be ringing: FAIL");
+         }
+      }
+
+      // Test whether interval alarm should be ringing or not
+      if (N == 10 || N == 34 || N == 58 || N == 82 || N == 106 || N == 130 ||
+          N == 154 || N == 178 || N == 202 || N == 226 || N == 250) {
+         if (AlarmEveryDay.isRinging()) {
+            if (Err3 == 1) // only print first instance for pass
+               LOG_INFO("TimeMgrTest/Alarm: periodic daily alarm: PASS");
+            Err3 = 0;
+         } else {
+            ++ErrAll;
+            LOG_ERROR("TimeMgrTest/Alarm: periodic daily alarm: FAIL");
+         }
+         Err1 = AlarmEveryDay.reset(CurTime);
+         if (Err1 != 0) {
+            ++ErrAll;
+            LOG_ERROR("TimeMgrTest/Alarm: periodic daily alarm reset: FAIL");
+         }
+      } else {
+         if (AlarmEveryMonth.isRinging()) {
+            ++ErrAll;
+            LOG_ERROR("TimeMgrTest/Alarm: periodic monthly alarm "
+                      "should not be ringing: FAIL");
+         }
+      }
+   }
+
+   // Test an hour-based alarm and periodic alarm using a start time and
+   // minute interval
+
+   OMEGA::TimeInstant Time9am(&CalGreg, 2019, 8, 16, 9, 0, 0.0);
+   OMEGA::Alarm Alarm9am("2019-08-16_0900", Time9am);
+
+   OMEGA::Alarm AlarmEveryHour("Every Hour", IntervalHourly, Time0);
+   OMEGA::TimeInterval IntervalMinute(1, OMEGA::TimeUnits::Minutes);
+
+   CurTime = StartTime; // start time is 2019-08-15_14:25:23.25
+   Err1    = AlarmEveryHour.reset(CurTime); // ensure first alarm in future
+
+   Err3 = 1; // use to limit number of output lines
+   for (int N = 1; N <= 2880; ++N) {
+      // increment time in minute intervals
+      CurTime += IntervalMinute;
+
+      // update alarm state based on current time
+      Err1 = Alarm9am.updateStatus(CurTime);
+      Err2 = AlarmEveryHour.updateStatus(CurTime);
+      if (Err1 != 0 || Err2 != 0) {
+         ++ErrAll;
+         LOG_ERROR("TimeMgrTest/Alarm: update hourly alarms: FAIL");
+      }
+
+      // Test whether one-time alarm should be ringing or not
+      if (N == 1115) {
+         if (Alarm9am.isRinging()) {
+            LOG_INFO("TimeMgrTest/Alarm: one-time hourly alarm: PASS");
+         } else {
+            ++ErrAll;
+            LOG_ERROR("TimeMgrTest/Alarm: one-time hourly alarm: FAIL");
+         }
+         Err1 = Alarm9am.stop();
+         if (Err1 != 0) {
+            ++ErrAll;
+            LOG_ERROR("TimeMgrTest/Alarm: one-time hourly alarm stop: FAIL");
+         }
+      } else {
+         if (Alarm9am.isRinging()) {
+            ++ErrAll;
+            LOG_ERROR("TimeMgrTest/Alarm: one-time hourly alarm "
+                      "should not be ringing: FAIL");
+         }
+      }
+
+      // Test whether interval alarm should be ringing or not
+      if ((N - 35) % 60 == 0) {
+         if (AlarmEveryHour.isRinging()) {
+            if (Err3 == 1) // only print success on first instance
+               LOG_INFO("TimeMgrTest/Alarm: periodic hourly alarm: PASS");
+            Err3 = 0;
+         } else {
+            ++ErrAll;
+            LOG_ERROR("TimeMgrTest/Alarm: periodic hourly alarm: FAIL");
+         }
+         Err1 = AlarmEveryHour.reset(CurTime);
+         if (Err1 != 0) {
+            ++ErrAll;
+            LOG_ERROR("TimeMgrTest/Alarm: periodic hourly alarm reset: FAIL");
+         }
+      } else {
+         if (AlarmEveryHour.isRinging()) {
+            ++ErrAll;
+            LOG_ERROR("TimeMgrTest/Alarm: periodic hourly alarm "
+                      "should not be ringing: FAIL");
+         }
+      }
+   }
+
+   // Test a 6-hour periodic alarm using a start time and
+   // hourly interval to test a non-unit time interval
+
+   OMEGA::TimeInterval Interval6Hour(6, OMEGA::TimeUnits::Hours);
+   OMEGA::Alarm AlarmEvery6Hour("Every 6 Hours", Interval6Hour, Time0);
+
+   CurTime = StartTime; // start time is 2019-08-15_14:25:23.25
+   Err1    = AlarmEvery6Hour.reset(CurTime); // ensure first alarm in future
+
+   Err3 = 1; // limit output
+   for (int N = 1; N <= 120; ++N) {
+      // increment time in hourly intervals
+      CurTime += IntervalHourly;
+
+      // update alarm state based on current time
+      Err2 = AlarmEvery6Hour.updateStatus(CurTime);
+      if (Err2 != 0) {
+         ++ErrAll;
+         LOG_ERROR("TimeMgrTest/Alarm: update 6-hourly alarms: FAIL");
+      }
+
+      // Test whether interval alarm should be ringing or not
+      if ((N - 4) % 6 == 0) {
+         if (AlarmEvery6Hour.isRinging()) {
+            if (Err3 == 1) // only print first instance of pass
+               LOG_INFO("TimeMgrTest/Alarm: periodic 6-hourly alarm: PASS");
+            Err3 = 0;
+         } else {
+            ++ErrAll;
+            LOG_ERROR("TimeMgrTest/Alarm: periodic 6-hourly alarm: FAIL");
+         }
+         Err1 = AlarmEvery6Hour.reset(CurTime);
+         if (Err1 != 0) {
+            ++ErrAll;
+            LOG_ERROR("TimeMgrTest/Alarm: periodic 6-hourly alarm reset: FAIL");
+         }
+      } else {
+         if (AlarmEvery6Hour.isRinging()) {
+            ++ErrAll;
+            LOG_ERROR("TimeMgrTest/Alarm: periodic 6-hourly alarm "
+                      "should not be ringing: FAIL");
+         }
+      }
+   }
+
+   // Test a minute-based alarm and periodic 20-minute alarm using a start
+   // time and second interval
+
+   OMEGA::TimeInstant Time30min(&CalGreg, 2019, 8, 15, 14, 55, 23.25);
+   OMEGA::Alarm Alarm30min("30min", Time30min);
+
+   OMEGA::TimeInterval Interval20min(20, OMEGA::TimeUnits::Minutes);
+   OMEGA::Alarm AlarmEvery20min("Every 20 minutes", Interval20min, Time0);
+   OMEGA::TimeInterval IntervalSecond(1, OMEGA::TimeUnits::Seconds);
+
+   CurTime = StartTime; // start time is 2019-08-15_14:25:23.25
+   Err1    = AlarmEvery20min.reset(CurTime); // ensure first alarm in future
+
+   Err3 = 1;                          // to limit output
+   for (int N = 1; N <= 10800; ++N) { // integrate for 3 hours
+      // increment time in second intervals
+      CurTime += IntervalSecond;
+
+      // update alarm state based on current time
+      Err1 = Alarm30min.updateStatus(CurTime);
+      Err2 = AlarmEvery20min.updateStatus(CurTime);
+      if (Err1 != 0 && Err2 != 0) {
+         ++ErrAll;
+         LOG_ERROR("TimeMgrTest/Alarm: update minute alarms: FAIL");
+      }
+
+      // Test whether one-time alarm should be ringing or not
+      if (N == 1800) {
+         if (Alarm30min.isRinging()) {
+            LOG_INFO("TimeMgrTest/Alarm: one-time minute alarm: PASS");
+         } else {
+            ++ErrAll;
+            LOG_ERROR("TimeMgrTest/Alarm: one-time minute alarm: FAIL");
+         }
+         Err1 = Alarm30min.stop();
+         if (Err1 != 0) {
+            ++ErrAll;
+            LOG_ERROR("TimeMgrTest/Alarm: one-time minute alarm stop: FAIL");
+         }
+      } else {
+         if (Alarm30min.isRinging()) {
+            ++ErrAll;
+            LOG_ERROR("TimeMgrTest/Alarm: one-time minute alarm "
+                      "should not be ringing: FAIL");
+         }
+      }
+
+      // Test whether interval alarm should be ringing or not
+      if ((N - 877) % 1200 == 0) {
+         if (AlarmEvery20min.isRinging()) {
+            if (Err3 == 1) // only print first instance of pass
+               LOG_INFO("TimeMgrTest/Alarm: periodic minute alarm: PASS");
+            Err3 = 0;
+         } else {
+            ++ErrAll;
+            LOG_ERROR("TimeMgrTest/Alarm: periodic minute alarm: FAIL");
+         }
+         Err1 = AlarmEvery20min.reset(CurTime);
+         if (Err1 != 0) {
+            ++ErrAll;
+            LOG_ERROR("TimeMgrTest/Alarm: periodic minute alarm reset: FAIL");
+         }
+      } else {
+         if (AlarmEvery20min.isRinging()) {
+            ++ErrAll;
+            LOG_ERROR("TimeMgrTest/Alarm: periodic minute alarm "
+                      "should not be ringing: FAIL");
+         }
+      }
+   }
+
+   return ErrAll;
+
+} // end testAlarm
+
+//------------------------------------------------------------------------------
 // The test driver.
 
 int main(int argc, char *argv[]) {
@@ -3539,6 +3985,9 @@ int main(int argc, char *argv[]) {
    TotErr += Err;
 
    Err = testTimeInstant();
+   TotErr += Err;
+
+   Err = testAlarm();
    TotErr += Err;
 
    if (TotErr == 0) {
