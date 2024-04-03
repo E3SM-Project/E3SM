@@ -56,6 +56,15 @@ module vertical_diffusion
   use phys_control,     only : phys_getopts, waccmx_is
   use time_manager,     only : is_first_step
 
+!=============Jinbo Xie=====================
+use gw_common,          only: gwdo_gsd
+use hycoef,             only: etamid
+!use hb_diff,            only: rino_pub
+use physconst,          only: rh2o,pi,rearth,r_universal
+!get the znu,znw,p_top set to 0
+use phys_grid, only: get_rlat_all_p
+!=============Jinbo Xie=====================
+
   implicit none
   private      
   save
@@ -129,7 +138,6 @@ module vertical_diffusion
   logical              :: prog_modal_aero = .false.    ! set true if prognostic modal aerosols are present
   integer              :: pmam_ncnst = 0               ! number of prognostic modal aerosol constituents
   integer, allocatable :: pmam_cnst_idx(:)             ! constituent indices of prognostic modal aerosols
-
 contains
 
   ! =============================================================================== !
@@ -385,6 +393,21 @@ contains
           call add_default('TAUTMSX ', 1, ' ')
           call add_default('TAUTMSY ', 1, ' ')
        end if
+
+	!=========Jinbo Xie===========
+        call addfld ('DTAUX3_FD',(/'lev'/),'A','m/s2','U tendency - fd orographic drag')
+        call addfld ('DTAUY3_FD',(/'lev'/),'A','m/s2','V tendency - fd orographic drag')
+        call addfld ('DUSFC_FD',horiz_only,'A','N/m2','fd zonal oro surface stress')
+        call addfld ('DVSFC_FD',horiz_only,'A','N/m2','fd merio oro surface stress')
+        !=========Jinbo Xie=========== 
+        call add_default('DTAUX3_FD', 1,  ' ')
+        call add_default('DTAUY3_FD', 1,  ' ')
+        call add_default('DUSFC_FD',  1,  ' ')
+        call add_default('DVSFC_FD',  1,  ' ')
+        !add original var to default
+        call add_default( 'TAUTMSX' ,1,' ')
+        call add_default( 'TAUTMSY' ,1,' ')
+        !=========Jinbo Xie===========
 
        if (masterproc) then
           write(iulog,*)'Using turbulent mountain stress module'
@@ -783,6 +806,25 @@ contains
     logical  :: lq(pcnst)
 
     character(len=3), dimension(pcnst) :: cnst_type_loc             ! local override option for constituents cnst_type
+    !==========Jinbo Xie==================
+	!simply add par
+        !for z,dz,from other files
+    real(r8) :: ztop(pcols,pver)             ! top interface height asl(m)
+    real(r8) :: zbot(pcols,pver)             ! bottom interface height asl(m)
+    real(r8) :: zmid(pcols,pver)             ! middle interface height asl(m)
+    real(r8) :: dz(pcols,pver)   
+    !=======Jinbo Xie=========== 
+    real(r8) :: rlat(pcols)                 ! latitude in radians for columns
+    integer :: kpbl2d_in(pcols) 
+    real(r8) :: ttgw(pcols,pver)                 ! temperature tendency
+    real(r8) :: utgw(pcols,pver)                 ! zonal wind tendency
+    real(r8) :: vtgw(pcols,pver)                 ! meridional wind tendency
+    !=======Jinbo Xie================
+    real(r8) :: dtaux3_fd(pcols,pver)  
+    real(r8) :: dtauy3_fd(pcols,pver)  
+    real(r8) :: dusfc_fd(pcols)        
+    real(r8) :: dvsfc_fd(pcols)        
+    !=======Jinbo Xie================
 
     ! ----------------------- !
     ! Main Computation Begins !
@@ -826,6 +868,76 @@ contains
       ! computation in this module.   
         tautotx(:ncol) = taux(:ncol) + tautmsx(:ncol)
         tautoty(:ncol) = tauy(:ncol) + tautmsy(:ncol)
+        !================Jinbo Xie=======================
+	 ztop= 0.0_r8            ! top interface height asl(m)
+    	 zbot= 0.0_r8            ! bottom interface height asl(m)
+    	 zmid= 0.0_r8            ! middle interface height asl(m)
+    	 dz= 0.0_r8
+    	 kpbl2d_in = -1
+    	 dtaux3_fd= 0.0_r8
+    	 dtauy3_fd= 0.0_r8
+    	 dusfc_fd= 0.0_r8
+    	 dvsfc_fd= 0.0_r8
+ 	!================Jinbo Xie=======================
+        !similar as in gw_drag
+        do k=1,pverp-1
+        ! assign values from top
+        ztop(1:ncol,k)=state%zi(1:ncol,pverp-k)
+        ! assign values from bottom           
+        zbot(1:ncol,k)=state%zi(1:ncol,pverp-k+1)
+        end do
+        !transform adding the pressure
+        !transfer from surface to sea level
+        do k=1,pver
+                do i=1,ncol
+                ztop(i,k)=ztop(i,k)+state%phis(i)/gravit
+                zbot(i,k)=zbot(i,k)+state%phis(i)/gravit
+                zmid(i,k)=state%zm(i,k)+state%phis(i)/gravit
+                !dz is from bottom to top already for gw_drag
+                dz(i,k)=ztop(i,k)-zbot(i,k)
+                end do
+        end do
+        !=======Jinbo Xie=========================
+	!get the layer index of pblh in layer
+        ![0/281]
+ ! czy 20181120 kpbl2d_in=0_r8
+        kpbl2d_in=0_r8
+        do i=1,pcols
+        kpbl2d_in(i)=pblh_get_level_idx(zbot(i,:)-state%phis(i)/gravit,pblh(i))
+        end do
+
+        !rlat
+        call get_rlat_all_p(lchnk, ncol, rlat)
+        !=========================================
+	utgw=0_r8
+        vtgw=0_r8
+        ttgw=0_r8
+        dusfc_fd=0_r8
+        dvsfc_fd=0_r8
+        call gwdo_gsd(&
+        u3d=state%u(:,pver:1:-1),v3d=state%v(:,pver:1:-1),&
+        t3d=state%t(:,pver:1:-1),qv3d=state%q(:,pver:1:-1,1),&
+        p3d=state%pmid(:,pver:1:-1),p3di=state%pint(:,pver:1:-1),&
+        pi3d=state%exner(:,pver:1:-1),z=zbot,&
+        rublten=utgw(:,pver:1:-1),rvblten=vtgw(:,pver:1:-1),&
+        rthblten=ttgw(:,pver:1:-1),&
+        dtaux3d_fd=dtaux3_fd(:,pver:1:-1),dtauy3d_fd=dtauy3_fd(:,pver:1:-1),&
+        dusfcg_fd=dusfc_fd,dvsfcg_fd=dvsfc_fd,&
+        xland=landfrac,br=state%ribulk,&
+        var2d=state%var,&
+        znu=etamid(pver:1:-1),dz=dz,pblh=pblh,&
+        cp=cpair,g=gravit,rd=rair,rv=rh2o,ep1=zvir,pi=pi,&
+        dx=rearth*cos(rlat)*(2*pi/256.),dy=rearth*(pi/(128.-1.)),&
+        kpbl2d=kpbl2d_in,itimestep=0,gwd_opt=0,&
+        ids=1,ide=pcols,jds=0,jde=0,kds=1,kde=pver, &
+        ims=1,ime=pcols,jms=0,jme=0,kms=1,kme=pver, &
+        its=1,ite=pcols,jts=0,jte=0,kts=1,kte=pver,&
+        gwd_ls=0,gwd_bl=0,gwd_ss=0,gwd_fd=0 )
+        !!=========Jinbo Xie=========
+        !add the Beljaars drag
+        tautotx(:ncol) = tautotx(:ncol)+dusfc_fd(:ncol)!taux(:ncol) + tautmsx(:ncol)
+        tautoty(:ncol) = tautoty(:ncol)+dvsfc_fd(:ncol)!tauy(:ncol) + tautmsy(:ncol)
+        !!=============Jinbo Xie=====================
     else
         ksrftms(:ncol) = 0._r8
         tautotx(:ncol) = taux(:ncol)
@@ -1425,5 +1537,31 @@ contains
     return
 
   end subroutine positive_moisture
+
+
+!===========Jinbo Xie===============================                                                       
+function pblh_get_level_idx(height_array ,pblheight)
+implicit none                  
+real(8),intent(in),dimension(30) :: height_array
+real(8),intent(in) :: pblheight
+integer :: pblh_get_level_idx
+                               
+!local
+integer :: i                   
+logical :: found
+                               
+pblh_get_level_idx = -1
+found=.False.                  
+
+do i = 1, pver                 
+        if((pblheight >= height_array(i).and.pblheight <height_array(i+1)))then
+                pblh_get_level_idx =  i 
+                found=.True.
+                return         
+        endif                  
+enddo
+end function                   
+!================================Jinbo Xie====================
+
 
 end module vertical_diffusion
