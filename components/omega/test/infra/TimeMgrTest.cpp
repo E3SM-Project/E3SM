@@ -3968,6 +3968,357 @@ int testAlarm(void) {
 } // end testAlarm
 
 //------------------------------------------------------------------------------
+// Clock test
+
+int testClock(void) {
+
+   LOG_INFO("TimeMgrTest: Clock tests ---------------------------------------");
+
+   // Initialize error codes
+   OMEGA::I4 Err1{0};
+   OMEGA::I4 Err2{0};
+   OMEGA::I4 Err3{0};
+   OMEGA::I4 ErrAll{0};
+
+   // For various time intervals, we create alarms at relevant times
+   // and step through time to trigger the alarm.
+
+   // Do all testing in Gregorian calendar
+   OMEGA::Calendar CalGreg("Gregorian", OMEGA::CalendarGregorian);
+
+   // Create an initial model clock with a 2000 start time and
+   // one hour time step.
+
+   OMEGA::TimeInstant Time0(&CalGreg, 2000, 1, 1, 0, 0, 0.0);
+   OMEGA::TimeInterval TimeStep(1, OMEGA::TimeUnits::Hours);
+
+   OMEGA::Clock ModelClock(Time0, TimeStep);
+
+   // Test some basic retrieval functions
+
+   OMEGA::TimeInstant TimeCheck; // init to default values
+   OMEGA::TimeInterval StepCheck;
+
+   TimeCheck = ModelClock.getStartTime();
+   StepCheck = ModelClock.getTimeStep();
+
+   if (TimeCheck == Time0) {
+      LOG_INFO("TimeMgrTest/Clock: get start time: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/Clock: get start time: FAIL");
+   }
+
+   if (StepCheck == TimeStep) {
+      LOG_INFO("TimeMgrTest/Clock: get time step: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/Clock: get time step: FAIL");
+   }
+
+   // Define a number of periodic and one-time alarms
+
+   OMEGA::TimeInstant TimeNewYear2020(&CalGreg, 2020, 1, 1, 0, 0, 0.0);
+   OMEGA::TimeInstant Time2020Mar1(&CalGreg, 2020, 3, 1, 0, 0, 0.0);
+   OMEGA::TimeInstant Time2019Aug20(&CalGreg, 2019, 8, 20, 0, 0, 0.0);
+
+   OMEGA::Alarm AlarmNewYear2020("New Year 2020", TimeNewYear2020);
+   OMEGA::Alarm Alarm2020Mar1("2020-03-01", Time2020Mar1);
+   OMEGA::Alarm Alarm2019Aug20("2020-08-20", Time2019Aug20);
+
+   OMEGA::TimeInterval IntervalAnnual(1, OMEGA::TimeUnits::Years);
+   OMEGA::TimeInterval IntervalMonthly(1, OMEGA::TimeUnits::Months);
+   OMEGA::TimeInterval IntervalDaily(1, OMEGA::TimeUnits::Days);
+   OMEGA::TimeInterval IntervalHourly(1, OMEGA::TimeUnits::Hours);
+   OMEGA::TimeInterval Interval6Hour(6, OMEGA::TimeUnits::Hours);
+   OMEGA::TimeInterval Interval20min(20, OMEGA::TimeUnits::Minutes);
+
+   OMEGA::Alarm AlarmEveryYear("Every Year", IntervalAnnual, Time0);
+   OMEGA::Alarm AlarmEveryMonth("Every Month", IntervalMonthly, Time0);
+   OMEGA::Alarm AlarmEveryDay("Every Day", IntervalDaily, Time0);
+   OMEGA::Alarm AlarmEveryHour("Every Hour", IntervalHourly, Time0);
+   OMEGA::Alarm AlarmEvery6Hour("Every 6 Hours", Interval6Hour, Time0);
+   OMEGA::Alarm AlarmEvery20min("Every 20 minutes", Interval20min, Time0);
+
+   // Test adding alarms to clock
+
+   Err1 = ModelClock.attachAlarm(&AlarmNewYear2020);
+   Err2 = ModelClock.attachAlarm(&Alarm2020Mar1);
+   Err3 = ModelClock.attachAlarm(&Alarm2019Aug20);
+
+   if (Err1 == 0 && Err2 == 0 && Err3 == 0) {
+      LOG_INFO("TimeMgrTest/Clock: attach one-time alarms: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/Clock: attach one-time alarms: FAIL");
+   }
+
+   Err1 = ModelClock.attachAlarm(&AlarmEveryYear);
+   Err2 = ModelClock.attachAlarm(&AlarmEveryMonth);
+   Err3 = ModelClock.attachAlarm(&AlarmEveryDay);
+
+   if (Err1 == 0 && Err2 == 0 && Err3 == 0) {
+      LOG_INFO("TimeMgrTest/Clock: attach periodic alarms 1: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/Clock: attach periodic alarms 1: FAIL");
+   }
+
+   Err1 = ModelClock.attachAlarm(&AlarmEveryHour);
+   Err2 = ModelClock.attachAlarm(&AlarmEvery6Hour);
+   Err3 = ModelClock.attachAlarm(&AlarmEvery20min);
+
+   if (Err1 == 0 && Err2 == 0 && Err3 == 0) {
+      LOG_INFO("TimeMgrTest/Clock: attach periodic alarms 2: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/Clock: attach periodic alarms 2: FAIL");
+   }
+
+   // Test changing the time step
+
+   Err1 = ModelClock.changeTimeStep(Interval20min);
+
+   StepCheck = ModelClock.getTimeStep();
+   if (StepCheck == Interval20min && Err1 == 0) {
+      LOG_INFO("TimeMgrTest/Clock: change time step: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/Clock: change time step: FAIL");
+   }
+
+   // Test setting new current time and retrieving current, previous,
+   // and next times.
+
+   OMEGA::TimeInstant CurrTime(&CalGreg, 2019, 1, 1, 0, 0, 0.0);
+   OMEGA::TimeInstant PrevTime(&CalGreg, 2018, 12, 31, 23, 40, 0.0);
+   OMEGA::TimeInstant NextTime(&CalGreg, 2019, 1, 1, 0, 20, 0.0);
+
+   Err1      = ModelClock.setCurrentTime(CurrTime);
+   TimeCheck = ModelClock.getCurrentTime();
+
+   if (TimeCheck == CurrTime && Err1 == 0) {
+      LOG_INFO("TimeMgrTest/Clock: set/get current time: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/Clock: set/get current time: FAIL");
+   }
+
+   TimeCheck = ModelClock.getPreviousTime();
+   if (TimeCheck == PrevTime) {
+      LOG_INFO("TimeMgrTest/Clock: set/get previous time: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/Clock: set/get previous time: FAIL");
+   }
+
+   TimeCheck = ModelClock.getNextTime();
+   if (TimeCheck == NextTime) {
+      LOG_INFO("TimeMgrTest/Clock: set/get next time: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/Clock: set/get next time: FAIL");
+   }
+
+   // Update periodic alarms to new current time
+
+   Err1 = AlarmEveryYear.reset(CurrTime);
+   Err1 = AlarmEveryMonth.reset(CurrTime);
+   Err1 = AlarmEveryDay.reset(CurrTime);
+   Err1 = AlarmEveryHour.reset(CurrTime);
+   Err1 = AlarmEvery6Hour.reset(CurrTime);
+   Err1 = AlarmEvery20min.reset(CurrTime);
+
+   // Test the integration of a model clock by advancing forward
+   // in time and checking alarms. Integrate forward 2 years with a
+   // 20 min timestep.
+
+   OMEGA::TimeInstant StopTime(&CalGreg, 2021, 1, 1, 0, 0, 0.0);
+   bool FirstStep{true};
+   bool RingCheck{false};
+   OMEGA::I8 Year{0};
+   OMEGA::I8 Month{0};
+   OMEGA::I8 Day{0};
+   OMEGA::I8 Hour{0};
+   OMEGA::I8 Minute{0};
+   OMEGA::R8 Second{0.0};
+
+   while (CurrTime <= StopTime) {
+
+      Err1 = ModelClock.advance(); // advance one time step
+
+      if (Err1 == 0) {
+         if (FirstStep)
+            LOG_INFO("TimeMgrTest/Clock: advance: PASS");
+      } else {
+         ++ErrAll;
+         break;
+         LOG_ERROR("TimeMgrTest/Clock: advance: FAIL");
+      }
+
+      // retrieve current time for both loop cycling and tests below
+      CurrTime = ModelClock.getCurrentTime();
+
+      // check various one-time alarms and stop if needed
+      RingCheck = AlarmNewYear2020.isRinging();
+      if (CurrTime == TimeNewYear2020) {
+         if (RingCheck) {
+            LOG_INFO("TimeMgrTest/Clock: alarm NewYear2020: PASS");
+            Err1 = AlarmNewYear2020.stop();
+         } else {
+            ++ErrAll;
+            LOG_ERROR("TimeMgrTest/Clock: alarm NewYear2020: FAIL");
+         }
+      } else {
+         if (RingCheck) {
+            ++ErrAll;
+            LOG_ERROR("TimeMgrTest/Clock: alarm NewYear2020: FAIL");
+         }
+      }
+
+      RingCheck = Alarm2020Mar1.isRinging();
+      if (CurrTime == Time2020Mar1) {
+         if (RingCheck) {
+            LOG_INFO("TimeMgrTest/Clock: alarm 2020Mar1: PASS");
+            Err1 = Alarm2020Mar1.stop();
+         } else {
+            ++ErrAll;
+            LOG_ERROR("TimeMgrTest/Clock: alarm 2020Mar1: FAIL");
+         }
+      } else {
+         if (RingCheck) {
+            ++ErrAll;
+            LOG_ERROR("TimeMgrTest/Clock: alarm 2020Mar1: FAIL");
+         }
+      }
+
+      RingCheck = Alarm2019Aug20.isRinging();
+      if (CurrTime == Time2019Aug20) {
+         if (RingCheck) {
+            LOG_INFO("TimeMgrTest/Clock: alarm 2019Aug20: PASS");
+            Err1 = Alarm2019Aug20.stop();
+         } else {
+            ++ErrAll;
+            LOG_ERROR("TimeMgrTest/Clock: alarm 2019Aug20: FAIL");
+         }
+      } else {
+         if (RingCheck) {
+            ++ErrAll;
+            LOG_ERROR("TimeMgrTest/Clock: alarm 2019Aug20: FAIL");
+         }
+      }
+
+      // check 20-min alarm should always be ringing
+      RingCheck = AlarmEvery20min.isRinging();
+      if (RingCheck) {
+         if (FirstStep)
+            LOG_INFO("TimeMgrTest/Clock: alarm Every20min: PASS");
+         Err1 = AlarmEvery20min.reset(CurrTime);
+      } else {
+         ++ErrAll;
+         LOG_INFO("TimeMgrTest/Clock: alarm Every20min: FAIL");
+      }
+
+      // Extract year, month, day, hour, min, seconds from current
+      // time to check other periodic alarms
+
+      Err1 = CurrTime.get(Year, Month, Day, Hour, Minute, Second);
+
+      // Check annual alarm
+      RingCheck = AlarmEveryYear.isRinging();
+      if (Month == 1 && Day == 1 && Hour == 0 && Minute == 0 && Second == 0.0) {
+         if (RingCheck) {
+            // success but avoid printing excessive PASS output
+            Err1 = AlarmEveryYear.reset(CurrTime);
+         } else {
+            ++ErrAll;
+            LOG_ERROR("TimeMgrTest/Clock: alarm EveryYear 1: FAIL");
+         }
+      } else {
+         if (RingCheck) {
+            ++ErrAll;
+            LOG_ERROR("TimeMgrTest/Clock: alarm EveryYear 2: FAIL");
+         }
+      }
+
+      // Check monthly alarm
+      RingCheck = AlarmEveryMonth.isRinging();
+      if (Day == 1 && Hour == 0 && Minute == 0 && Second == 0.0) {
+         if (RingCheck) {
+            // success but avoid printing excessive PASS output
+            Err1 = AlarmEveryMonth.reset(CurrTime);
+         } else {
+            ++ErrAll;
+            LOG_ERROR("TimeMgrTest/Clock: alarm EveryMonth 1: FAIL");
+         }
+      } else {
+         if (RingCheck) {
+            ++ErrAll;
+            LOG_ERROR("TimeMgrTest/Clock: alarm EveryMonth 2: FAIL");
+         }
+      }
+
+      // Check daily alarm
+      RingCheck = AlarmEveryDay.isRinging();
+      if (Hour == 0 && Minute == 0 && Second == 0.0) {
+         if (RingCheck) {
+            // success but avoid printing excessive PASS output
+            Err1 = AlarmEveryDay.reset(CurrTime);
+         } else {
+            ++ErrAll;
+            LOG_ERROR("TimeMgrTest/Clock: alarm EveryDay 1: FAIL");
+         }
+      } else {
+         if (RingCheck) {
+            ++ErrAll;
+            LOG_ERROR("TimeMgrTest/Clock: alarm EveryDay 2: FAIL");
+         }
+      }
+
+      // Check hourly alarm
+      RingCheck = AlarmEveryHour.isRinging();
+      if (Minute == 0 && Second == 0.0) {
+         if (RingCheck) {
+            // success but avoid printing excessive PASS output
+            Err1 = AlarmEveryHour.reset(CurrTime);
+         } else {
+            ++ErrAll;
+            LOG_ERROR("TimeMgrTest/Clock: alarm EveryHour 1: FAIL");
+         }
+      } else {
+         if (RingCheck) {
+            ++ErrAll;
+            LOG_ERROR("TimeMgrTest/Clock: alarm EveryHour 2: FAIL");
+         }
+      }
+
+      // Check 6-hour alarm
+      RingCheck = AlarmEvery6Hour.isRinging();
+      if (Hour % 6 == 0 && Minute == 0 && Second == 0.0) {
+         if (RingCheck) {
+            // success but avoid printing excessive PASS output
+            Err1 = AlarmEvery6Hour.reset(CurrTime);
+         } else {
+            ++ErrAll;
+            LOG_ERROR("TimeMgrTest/Clock: alarm Every6Hour 1: FAIL");
+         }
+      } else {
+         if (RingCheck) {
+            ++ErrAll;
+            LOG_ERROR("TimeMgrTest/Clock: alarm Every6Hour 2: FAIL");
+         }
+      }
+
+      // reset flag for stuff on first step
+      if (FirstStep)
+         FirstStep = false;
+   }
+
+   return ErrAll;
+
+} // end testClock
+
+//------------------------------------------------------------------------------
 // The test driver.
 
 int main(int argc, char *argv[]) {
@@ -3988,6 +4339,9 @@ int main(int argc, char *argv[]) {
    TotErr += Err;
 
    Err = testAlarm();
+   TotErr += Err;
+
+   Err = testClock();
    TotErr += Err;
 
    if (TotErr == 0) {
