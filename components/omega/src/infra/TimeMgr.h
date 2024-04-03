@@ -785,6 +785,77 @@ class Alarm {
 
 }; // end class Alarm
 
+// default max number of alarms to create initial space in Alarms vector
+#define MAX_ALARMS 20
+
+/// The Clock class manages the time for a forward-integrating model. Given a
+/// start time and a time step, a user can advance the clock. The clock will be
+/// consistent with the Calendar associated with the start time. A user can
+/// attach any number of alarms to the clock and the clock will update the
+/// ringing status of these attached alarms as the clock marches forward.
+///
+class Clock {
+   // private variables
+ private:
+   TimeInstant StartTime; ///< initial time for this clock
+   TimeInstant CurrTime;  ///< current time
+   TimeInstant PrevTime;  ///< time at previous timestep
+   TimeInstant NextTime;  ///< time at next timestep
+   TimeInterval TimeStep; ///< interval at which this clock advances
+
+   I4 NumAlarms; ///< current number of attached alarms
+
+   std::vector<Alarm *>
+       Alarms; ///< pointers to alarms associated with this clock
+
+ public:
+   // constructors/destructors
+
+   /// Construct a clock from start time and time step
+   Clock(const TimeInstant StartTime, ///< [in] Start time for clock
+         const TimeInterval TimeStep  ///< [in] Time step to advance clock
+   );
+
+   /// Destructor for clocks
+   ~Clock(void);
+
+   // Accessor Methods
+   /// Set the current time (returns error code)
+   I4 setCurrentTime(
+       const TimeInstant CurrTime ///< [in] new value for current time
+   );
+
+   /// Changes the time step for this clock (returns error code)
+   I4 changeTimeStep(
+       const TimeInterval NewTimeStep ///< [in] new value for time step
+   );
+
+   /// Retrieves current time of this clock
+   TimeInstant getCurrentTime(void) const;
+
+   /// Retrieves time at the previous time step
+   TimeInstant getPreviousTime(void) const;
+
+   /// Retrieves time at the next time step
+   TimeInstant getNextTime(void) const;
+
+   /// Retrieves start time for this clock
+   TimeInstant getStartTime(void) const;
+
+   /// Retrieves time step for clock
+   TimeInterval getTimeStep(void) const;
+
+   /// Attaches an alarm to this clock. The clock simply stores a
+   /// pointer to this alarm. (returns error code)
+   I4 attachAlarm(Alarm *InAlarm ///< [in] pointer to alarm to attach
+   );
+
+   /// Advance a clock one timestep and update status of any attached
+   /// alarms. (returns error code)
+   I4 advance(void);
+
+}; // end class Clock
+
 } // namespace OMEGA
 
 //===----------------------------------------------------------------------===//

@@ -4103,5 +4103,187 @@ I4 Alarm::rename(const std::string NewName ///< [in] new name for alarm
 
 std::string Alarm::getName() const { return Name; }
 
+//------------------------------------------------------------------------------
+// Clock definitions
+//------------------------------------------------------------------------------
+
+// Clock constructors/destructors
+//------------------------------------------------------------------------------
+// Clock::Clock - constructs a clock for tracking time within a model
+// Construct a clock using a start time and time step.
+
+Clock::Clock(const TimeInstant InStartTime, //< [in] Start time for clock
+             const TimeInterval InTimeStep  //< [in] Time step to advance clock
+) {
+
+   // Set start time and time step to input values
+   StartTime = InStartTime;
+   TimeStep  = InTimeStep;
+
+   // The default for current time on creation is the start time
+   CurrTime = StartTime;
+
+   // Compute prev, next time based on time step
+   PrevTime = CurrTime - TimeStep;
+   NextTime = CurrTime + TimeStep;
+
+   // Initialize number of alarms
+   NumAlarms = 0;
+
+   // create an initial vector with null pointers for later attached alarms
+   Alarms.resize(MAX_ALARMS);
+   for (I4 I = 0; I < MAX_ALARMS; ++I) {
+      Alarms[I] = nullptr;
+   }
+
+} // end Clock::Clock
+
+//------------------------------------------------------------------------------
+// Clock::~Clock - destructor for clock
+// Destructor for a clock. No allocated space and std::vector does it's own
+// cleanup, so nothing to do here.
+
+Clock::~Clock(void) { // Nothing to be done
+
+} // end Clock destructor
+
+// Clock accessor methods
+//------------------------------------------------------------------------------
+// Clock::setCurrentTime - Sets the current time
+// Sets the current time to an input value. Also must reset previous time and
+// next time to be consistent. Check that new time does not precede start time.
+
+I4 Clock::setCurrentTime(
+    const TimeInstant InCurrTime // new value for current time
+) {
+
+   I4 Err{0};
+
+   // Check that the new value does not precede start time
+   if (InCurrTime < StartTime) {
+      LOG_ERROR("TimeMgr: Clock::setCurrentTime value for current time "
+                "precedes start time");
+
+   } else {
+      // otherwise reset currTime to input value and
+      // recompute prev time, next time
+      CurrTime = InCurrTime;
+      PrevTime = CurrTime - TimeStep;
+      NextTime = CurrTime + TimeStep;
+   }
+
+   return Err;
+
+} // end Clock::setCurrentTime
+
+//------------------------------------------------------------------------------
+// Clock::changeTimeStep - Changes the time step for this clock
+// Simply changes the time step. Does not check to see if the new time step
+// is reasonable. With the new time step, must also update the next time.
+
+I4 Clock::changeTimeStep(
+    const TimeInterval InTimeStep // [in] new time step to use
+) {
+
+   I4 Err{0};
+
+   // Assign the new time step to this clock
+   TimeStep = InTimeStep;
+
+   // Update the next time based on new time step
+   NextTime = CurrTime + TimeStep;
+
+   return Err;
+
+} // end Clock::changeTimeStep
+
+//------------------------------------------------------------------------------
+// Clock::getCurrentTime - Retrieves current time of this clock
+// Returns the value of the current time in this clock.
+
+TimeInstant Clock::getCurrentTime(void) const { return CurrTime; }
+
+//------------------------------------------------------------------------------
+// Clock::getPreviousTime - Retrieves time at previous time step
+// Returns the time associated with the previous time step.
+
+TimeInstant Clock::getPreviousTime(void) const { return PrevTime; }
+
+//------------------------------------------------------------------------------
+// Clock::getNextTime - Retrieves time at next time step
+// Returns the time associated with the next time step.
+
+TimeInstant Clock::getNextTime(void) const { return NextTime; }
+
+//------------------------------------------------------------------------------
+// Clock::getStartTime - Retrieves start time of this clock
+// Returns the start time for this clock
+
+TimeInstant Clock::getStartTime(void) const { return StartTime; }
+
+//------------------------------------------------------------------------------
+// Clock::getTimeStep - Retrieves the time step used by this clock
+// Returns the time step for this clock
+
+TimeInterval Clock::getTimeStep(void) const { return TimeStep; }
+
+//------------------------------------------------------------------------------
+// Clock::attachAlarm - Attaches an alarm to this clock
+// Attaches an alarm to this clock. The clock simply stores a pointer to this
+// alarm, so user must be careful not to destroy any alarms before the clock.
+
+I4 Clock::attachAlarm(Alarm *InAlarm // [in] pointer to alarm to attach
+) {
+
+   I4 Err{0};
+
+   // First update the alarm count and resize array if needed
+   NumAlarms += 1;
+
+   I4 AlarmsSize = Alarms.size();
+   if (NumAlarms > AlarmsSize) {
+      AlarmsSize += MAX_ALARMS;
+      Alarms.resize(AlarmsSize);
+   }
+
+   // Now add the pointer to the next available slot in the array
+   Alarms[NumAlarms - 1] = InAlarm;
+
+   return Err;
+
+} // end Clock::attachAlarm
+
+// Clock methods
+//------------------------------------------------------------------------------
+// Clock::advance - Advances a clock one timestep and updates alarms
+// This method advances a clock one interval and updates the status of all
+// attached alarms.
+
+I4 Clock::advance(void) {
+
+   I4 Err{0};
+
+   // Update previous time and current time from previously computed times
+   PrevTime = CurrTime;
+   CurrTime = NextTime;
+
+   // Advance next time
+   NextTime += TimeStep;
+
+   // Update status of all attached alarms
+   I4 Err1{0};
+   for (I4 N = 0; N < NumAlarms; ++N) {
+      Err1 = Alarms[N]->updateStatus(CurrTime);
+      if (Err1 != 0) {
+         ++Err;
+         LOG_ERROR("TimeMgr: Clock::advance error updating alarm # {}", N);
+         break;
+      }
+   }
+
+   return Err;
+
+} // end Clock::advance
+
 } // namespace OMEGA
 //===-----------------------------------------------------------------------===/
