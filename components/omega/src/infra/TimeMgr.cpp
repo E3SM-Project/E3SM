@@ -1082,5 +1082,1070 @@ I4 TimeFrac::simplify(void) {
 
 } // end TimeFrac::simplify
 
+//------------------------------------------------------------------------------
+// Calendar definitions
+//------------------------------------------------------------------------------
+
+// initialize static calendar instance counter
+I4 Calendar::NumCalendars = 0;
+
+// Calendar accessors
+//------------------------------------------------------------------------------
+// Calendar::rename - Resets a calendar's name
+// Resets the name of a calendar. This is the only variable that
+// should be changed outside the constructor.
+
+I4 Calendar::rename(const std::string InName) { // input - name of calendar
+
+   // set error code
+   I4 Err = 0;
+
+   // set calendar name
+   Name = InName;
+
+   // Return error code
+   return Err;
+
+} // end Calendar::rename
+
+//-------------------------------------------------------------------------
+// Calendar::get - retrieves calendar properties
+// Retrieves selected components of a Calendar
+
+I4 Calendar::get(I4 *OutID,             // [out] assigned id
+                 std::string *OutName,  // [out] calendar name
+                 CalendarKind *OutKind, // [out] calendar type
+                 I4 *OutDaysPerMonth,   // [out] array of days/month
+                 I4 *OutMonthsPerYear,  // [out] months per year
+                 I4 *OutSecondsPerDay,  // [out] seconds per day
+                 I4 *OutSecondsPerYear, // [out] seconds per normal year
+                 I4 *OutDaysPerYear     // [out] days per normal year
+) const {
+
+   // initial error code
+   I4 Err = 0;
+
+   // check for valid calendar
+   if (this->CalKind == CalendarUnknown) {
+      Err = 1;
+      LOG_ERROR("TimeMgr: Calendar::get unknown calendar");
+      return Err;
+   }
+
+   // if id requested, return id
+   if (OutID != NULL)
+      *OutID = this->ID;
+
+   // if name requested, return calendar name
+   if (OutName != NULL)
+      *OutName = this->Name;
+
+   // if calendar type requested, return calendar type
+   if (OutKind != NULL)
+      *OutKind = this->CalKind;
+
+   // if days per month requested, return days per month
+   if (OutDaysPerMonth != NULL) {
+      for (I4 I = 0; I < this->MonthsPerYear; I++) {
+         OutDaysPerMonth[I] = this->DaysPerMonth[I];
+      }
+   }
+
+   // if months per year requested, return months per year
+   if (OutMonthsPerYear != NULL)
+      *OutMonthsPerYear = this->MonthsPerYear;
+
+   // if seconds per day requested, return seconds per day
+   if (OutSecondsPerDay != NULL)
+      *OutSecondsPerDay = this->SecondsPerDay;
+
+   // if seconds per year requested, return seconds per year
+   if (OutSecondsPerYear != NULL)
+      *OutSecondsPerYear = this->SecondsPerYear;
+
+   // if days per year requested, return seconds per year
+   if (OutDaysPerYear != NULL)
+      *OutDaysPerYear = this->DaysPerYear;
+
+   // all done, return
+   return Err;
+
+} // end Calendar::get
+
+// Calendar constructors/destructors
+//------------------------------------------------------------------------------
+// Calendar::Calendar - default constructor creates no calendar option
+// This constructor routine creates a calendar that uses no calendar,
+// meaning the time variable stays in seconds with no notion of days
+// or years. Construction by calendar kind is the most preferred
+// option for construction, so this version should not be used often.
+
+Calendar::Calendar(void) {
+
+   // set default name and id
+   Name = ' ';
+   ID   = ++NumCalendars;
+
+   // define calendar as using no calendar
+   CalKind     = CalendarNoCalendar;
+   CalKindName = CalendarKindName[CalKind - 1];
+
+   MonthsPerYear = MONTHS_PER_YEAR;
+   for (I4 I = 0; I < MonthsPerYear; I++)
+      DaysPerMonth[I] = 0;
+   SecondsPerDay  = 0;
+   SecondsPerYear = 0;
+   DaysPerYear    = 0;
+
+} // end Calendar::Calendar default constructor
+
+//------------------------------------------------------------------------------
+// Calendar::Calendar - constructor creates standard calendar by kind
+// This routine creates a standard calendar from a selection of
+// standard supported calendars (e.g. Gregorian, Julian, no-leap).
+// It is the preferred method for creating a calendar.
+
+Calendar::Calendar(std::string InName,       // [in] name for calendar
+                   CalendarKind InCalKind) { // [in] calendar type
+
+   // set calendar name and id
+   Name = InName;
+   ID   = ++NumCalendars;
+
+   // set calendar kind
+   CalKind     = InCalKind;
+   CalKindName = CalendarKindName[CalKind - 1];
+
+   // months per year fixed
+   MonthsPerYear = MONTHS_PER_YEAR;
+
+   // set remaining variables based on type (kind) of calendar
+   switch (CalKind) {
+   // All these cases have similar months, days per month
+   case CalendarGregorian:
+   case CalendarJulian:
+   case CalendarNoLeap:
+      // note that February by default is still 28 days
+      // leap years are treated as exceptions later
+      DaysPerMonth[0]  = 31;
+      DaysPerMonth[1]  = 28;
+      DaysPerMonth[2]  = 31;
+      DaysPerMonth[3]  = 30;
+      DaysPerMonth[4]  = 31;
+      DaysPerMonth[5]  = 30;
+      DaysPerMonth[6]  = 31;
+      DaysPerMonth[7]  = 31;
+      DaysPerMonth[8]  = 30;
+      DaysPerMonth[9]  = 31;
+      DaysPerMonth[10] = 30;
+      DaysPerMonth[11] = 31;
+      SecondsPerDay    = SECONDS_PER_DAY;
+      DaysPerYear      = 365;
+      SecondsPerYear   = SECONDS_PER_DAY * DaysPerYear;
+      break;
+
+   case CalendarJulianDay:
+   case CalendarModJulianDay:
+      // Julian day calendars have no month or year, just
+      // days since reference time
+      for (I4 I = 0; I < MonthsPerYear; I++)
+         DaysPerMonth[I] = 0;
+      SecondsPerDay  = SECONDS_PER_DAY;
+      SecondsPerYear = 0;
+      DaysPerYear    = 0;
+      break;
+
+   case Calendar360Day:
+      // 12 months of 30 days each
+      for (I4 I = 0; I < MonthsPerYear; I++)
+         DaysPerMonth[I] = 30;
+      SecondsPerDay  = SECONDS_PER_DAY;
+      DaysPerYear    = 360;
+      SecondsPerYear = SECONDS_PER_DAY * DaysPerYear;
+      break;
+
+   case CalendarNoCalendar:
+      // no calendar needed, only uses seconds since time zero
+      for (I4 I = 0; I < MonthsPerYear; I++)
+         DaysPerMonth[I] = 0;
+      SecondsPerDay  = 0;
+      SecondsPerYear = 0;
+      DaysPerYear    = 0;
+      break;
+
+   case CalendarCustom:
+      // custom requires more info, so separate interface should be used
+      LOG_ERROR(
+          "TimeMgr: Must use custom constructor for custom calendar type");
+      break;
+
+   default:
+      // unknown calendar kind, invalidate and return with error
+      CalKind     = CalendarUnknown;
+      CalKindName = CalendarKindName[CalKind - 1];
+      LOG_ERROR("TimeMgr: Calendar constructor unknown calendar kind");
+      break;
+
+   } // end switch on CalKind
+
+} // end Calendar::Calendar standard constructor
+
+//-----------------------------------------------------------------------------
+// Calendar::Calendar - constructor that creates by copying another
+// This calendar constructor creates a new calendar by copying from
+// an existing calendar.
+
+Calendar::Calendar(const Calendar &InCalendar) { // in - calendar to copy
+
+   // copy from the input calendar
+   *this = InCalendar;
+
+   // but give it a new id
+   ID = ++NumCalendars;
+
+} // end Calendar::Calendar copy constructor
+
+//------------------------------------------------------------------------------
+// Calendar::Calendar - constructs a custom calendar
+// In some cases, the standard calendars are inappropriate, so this
+// custom constructor permits users to define their own calendar.
+
+Calendar::Calendar(const std::string InName, // [in] name for calendar
+                   int *InDaysPerMonth,      // [in] array of days/month
+                   int InSecondsPerDay,      // [in] seconds per day
+                   int InSecondsPerYear,     // [in] seconds per year
+                   int InDaysPerYear) {      // [in] days per year
+
+   // set name and id
+   Name = InName;
+   ID   = ++NumCalendars;
+
+   // define calendar as custom
+   CalKind     = CalendarCustom;
+   CalKindName = CalendarKindName[CalKind - 1];
+
+   // months per year is fixed
+   MonthsPerYear = MONTHS_PER_YEAR;
+
+   // set remaining calendar vars from input values
+   for (I4 I = 0; I < MonthsPerYear; I++)
+      DaysPerMonth[I] = InDaysPerMonth[I];
+   SecondsPerDay  = InSecondsPerDay;
+   SecondsPerYear = InSecondsPerYear;
+   DaysPerYear    = InDaysPerYear;
+
+} // end Calendar::Calendar custom constructor
+
+//------------------------------------------------------------------------------
+// Calendar::~Calendar - destructor for calendar
+
+Calendar::~Calendar(void) {
+
+   // decrement counter
+   --NumCalendars;
+
+} // end ~Calendar
+
+// Calendar operators
+//------------------------------------------------------------------------------
+// Calendar(==) - Calendar equality comparison
+// The equivalence operator to determine whether two calendars are the
+// same. For most, it is sufficient to compare the calendar type, but
+// for custom calendars, must check equivalence of each component.
+
+bool Calendar::operator==(const Calendar &Cal) const {
+
+   // if custom calendars, must check all properties for equality;
+   // return false as soon as inequality is known, otherwise return true
+   if (CalKind == CalendarCustom && Cal.CalKind == CalendarCustom) {
+      if (MonthsPerYear != Cal.MonthsPerYear)
+         return false;
+      for (I4 I = 0; I < MonthsPerYear; I++) {
+         if (DaysPerMonth[I] != Cal.DaysPerMonth[I])
+            return false;
+      }
+      if (SecondsPerDay != Cal.SecondsPerDay)
+         return false;
+      if (SecondsPerYear != Cal.SecondsPerYear)
+         return false;
+      if (DaysPerYear != Cal.DaysPerYear)
+         return false;
+      return true; // custom calendars are equal
+   } else {
+      // for all other calendars, sufficient to just check kind
+      return CalKind == Cal.CalKind;
+   }
+   return true;
+
+} // end Calendar::operator==
+
+//------------------------------------------------------------------------------
+// Calendar(!=) - Calendar inequality comparison
+// Compare two calendars for inequality. For most calendars, sufficient
+// to check calendar kind, but custom calendars must compare all
+// properties.
+
+bool Calendar::operator!=(const Calendar &Cal) const {
+
+   // if custom calendars, must check all properties for inequality
+   // can return true as soon as any inequality is known
+   if (CalKind == CalendarCustom && Cal.CalKind == CalendarCustom) {
+      if (MonthsPerYear != Cal.MonthsPerYear)
+         return true;
+      if (SecondsPerDay != Cal.SecondsPerDay)
+         return true;
+      if (SecondsPerYear != Cal.SecondsPerYear)
+         return true;
+      if (DaysPerYear != Cal.DaysPerYear)
+         return true;
+      for (I4 I = 0; I < MonthsPerYear; I++) {
+         if (DaysPerMonth[I] != Cal.DaysPerMonth[I])
+            return true;
+      }
+      return false; // custom calendars are equal
+   }
+
+   // for all other calendars, just check calendar kind
+   else
+      return CalKind != Cal.CalKind;
+
+} // end Calendar::operator!=
+
+// Calendar methods
+//------------------------------------------------------------------------------
+// Calendar::validate - validate Calendar state
+// Validates the Calendar state, checking for improper values.
+
+I4 Calendar::validate() const {
+
+   // initialize error code
+   I4 Err{0};
+
+   // Check if calendar kind was invalid
+   if (this->CalKind == CalendarUnknown) {
+      Err = 1;
+      LOG_ERROR("TimeMgr: Calendar::validate unknown calendar kind");
+      return Err;
+   }
+
+   // Check type of calendar
+   if (this->CalKind < 1 || this->CalKind > NUM_SUPPORTED_CALENDARS) {
+      Err = 1;
+      LOG_ERROR("TimeMgr: Calendar::validate calendar kind out of range");
+      return Err;
+   }
+
+   // Check seconds per day
+   if (this->SecondsPerDay < 0) {
+      Err = 1;
+      LOG_ERROR("TimeMgr: Calendar::validate invalid seconds per day");
+      return Err;
+   }
+
+   // Check seconds per year
+   if (this->SecondsPerYear < 0) {
+      Err = 1;
+      LOG_ERROR("TimeMgr: Calendar::validate invalid seconds per year");
+      return Err;
+   }
+
+   // Check days per year
+   if (this->DaysPerYear < 0) {
+      Err = 1;
+      LOG_ERROR("TimeMgr: Calendar::validate invalid days per year");
+      return Err;
+   }
+
+   // Check days per month
+   if (this->MonthsPerYear > 0 && this->MonthsPerYear <= MONTHS_PER_YEAR) {
+      I4 CountDaysPerYr{0};
+      for (I4 I = 0; I < this->MonthsPerYear; I++) {
+         CountDaysPerYr += this->DaysPerMonth[I];
+         if (this->DaysPerMonth[I] < 0) {
+            Err = 1;
+            LOG_ERROR("TimeMgr: Calendar::validate invalid days per month "
+                      "DaysPerMonth[{}] = {}",
+                      I, this->DaysPerMonth[I]);
+            return Err;
+         }
+      }
+
+      // check whether sum of days per month is same as days per year
+      if (this->DaysPerYear != CountDaysPerYr) {
+         Err = 1;
+         LOG_ERROR("TimeMgr: Calendar::validate DaysPerYear != sum of "
+                   "DaysPerMonth[]");
+         return Err;
+      }
+   }
+
+   // all done, return error code
+   return Err;
+
+} // end Calendar::validate
+
+//------------------------------------------------------------------------------
+// Calendar::isLeapYear - Determine if given year is a leap year
+// Logical function that returns true if input year is a leap year.
+
+bool Calendar::isLeapYear(I8 Year,         // [in] a calendar year
+                          I4 &Err) const { // [out] error return code
+
+   // initialize error code
+   Err = 0;
+
+   // now check for leap year depending on calendar kind
+   switch (CalKind) {
+   case CalendarGregorian:
+      // leap year is divisible by 400 or divisible by 4 and not 100.
+      return (Year % 400 == 0) || ((Year % 4 == 0) && (Year % 100 != 0));
+      break;
+
+   case CalendarJulian:
+      // leap year is divisible by 4.
+      return Year % 4 == 0;
+      break;
+
+   default:
+      // all other calendars don't have leap years.
+      return false;
+      break;
+   } // end switch CalKind
+
+} // end Calendar::isLeapYear
+
+//------------------------------------------------------------------------------
+// Calendar::getElapsedTime - return time since ref time for a given date/time
+// Retrieves the total elapsed time (seconds, in TimeFrac form) since the
+// calendar reference time associated with a particular calendar date and
+// time of day.
+
+TimeFrac Calendar::getElapsedTime(
+    const I8 Year,   ///< [in] calendar year
+    const I8 Month,  ///< [in] calendar month
+    const I8 Day,    ///< [in] calendar day
+    const I8 Hour,   ///< [in] time of day-hour
+    const I8 Minute, ///< [in] time of day-min
+    const I8 Whole,  ///< [in] time of day-whole seconds
+    const I8 Numer,  ///< [in] time of day-frac secs (numerator)
+    const I8 Denom   ///< [in] time of day-frac secs (denom)
+) const {
+
+   // initialize error code, the basetime result, and common temps
+   I4 Err{0};
+   TimeFrac Result(0, 0, 1);
+   I8 ResultWhole{0}; // whole seconds for result
+   I8 DayOfYear{0};   // day since beginning of year
+   I8 JD{0};          // Julian Day used for many conversions
+   I8 HourTmp{0};     // For half-day JD conversions
+   I4 FebDays{0};     // For tracking leap days
+
+   // Branch on calendar type for actual calculation
+   switch (CalKind) {
+
+   // convert Gregorian Date to time since reference of noon 3/1/-4800
+   case CalendarGregorian: {
+      // Validate inputs
+      if (Year < -4800 || Month < 1 || Month > 12 || Day < 1) {
+         Err = 1;
+         LOG_ERROR("TimeMgr: Calendar::getElapsedTime invalid Gregorian date");
+         break;
+      }
+      // invalid before 3/1/-4800
+      if (Year == -4800 && Month < 3) {
+         Err = 1;
+         LOG_ERROR("TimeMgr: Calendar::getElapsedTime invalid date prior to "
+                   "reference Gregorian date");
+         break;
+      }
+      // check day of the month for any month except February
+      if (Month != 2 && Day > DaysPerMonth[Month - 1]) {
+         Err = 1;
+         LOG_ERROR("TimeMgr: Calendar::getElapsedTime invalid day of month for "
+                   "Gregorian calendar");
+         break;
+      }
+      // if February, take leap year into account before checking
+      //   day of the month
+      if (Month == 2) {
+         FebDays = DaysPerMonth[1];
+         if (isLeapYear(Year, Err))
+            FebDays += 1;
+         if (Day > FebDays) {
+            Err = 1;
+            LOG_ERROR("TimeMgr: Calendar::getElapsedTime invalid day of "
+                      "February for Gregorian calendar");
+            break;
+         }
+      }
+      // Check valid hour, minute, seconds
+      if (Hour < 0 || Hour > 24 || Minute < 0 || Minute > 60 || Whole < 0 ||
+          Whole > SECONDS_PER_MINUTE) {
+         Err = 1;
+         LOG_ERROR("TimeMgr: Calendar::getElapsedTime invalid time of day "
+                   "(hour, min, sec) for Gregorian calendar");
+         break;
+      }
+      // convert Gregorian date to Julian days
+      // using Fliegel, van Flandern algorithm
+      // Gregorian date (year, month, day) => Julian days (JD)
+      I4 Temp = (Month - 14) / 12;
+      JD      = (1461 * (Year + 4800 + Temp)) / 4 +
+           (367 * (Month - 2 - 12 * Temp)) / 12 -
+           (3 * ((Year + 4900 + Temp) / 100)) / 4 + Day - 32075;
+
+      // Julian Day starts at noon, so correct for the half day
+      HourTmp = Hour - 12;
+      if (HourTmp < 0) {
+         HourTmp += 24;
+         JD -= 1;
+      }
+
+      // Finally, convert JD to seconds and add hours, minutes, secs
+      ResultWhole = JD * SecondsPerDay + HourTmp * SECONDS_PER_HOUR +
+                    Minute * SECONDS_PER_MINUTE + Whole;
+      Err = Result.set(ResultWhole, Numer, Denom);
+      if (Err != 0)
+         LOG_ERROR("TimeMgr: Calendar::getElapsedTime Gregorian - error "
+                   "setting final result");
+      break;
+   }
+
+   // The Julian <-> Julian day conversion algorithm is from D.A. Hatcher,
+   // Q.JlR. astr. Soc. (1984) 25, 53-55.  It is valid from 3/1/-4712 forward.
+   case CalendarJulian: {
+      // Validate inputs
+      if (Year < -4712 || Month < 1 || Month > 12 || Day < 1) {
+         Err = 1;
+         LOG_ERROR("TimeMgr: Calendar::getElapsedTime invalid Julian date");
+         break;
+      }
+      if (Year == -4712 && Month < 3) {
+         Err = 1;
+         LOG_ERROR("TimeMgr: Calendar::getElapsedTime invalid date prior to "
+                   "reference Julian date");
+         break;
+      }
+      // check day of the month for any month except February
+      if (Month != 2 && Day > DaysPerMonth[Month - 1]) {
+         Err = 1;
+         LOG_ERROR("TimeMgr: Calendar::getElapsedTime invalid day of month for "
+                   "Julian calendar");
+         break;
+      }
+      // if February, take leap year into account before checking
+      //   day of the month
+      if (Month == 2) {
+         FebDays = DaysPerMonth[1];
+         if (isLeapYear(Year, Err))
+            FebDays += 1;
+         if (Day > FebDays) {
+            Err = 1;
+            LOG_ERROR("TimeMgr: Calendar::getElapsedTime invalid day of "
+                      "February for Julian calendar");
+            break;
+         }
+      }
+      // Check valid hour, minute, seconds
+      if (Hour < 0 || Hour > 24 || Minute < 0 || Minute > 60 || Whole < 0 ||
+          Whole > SECONDS_PER_MINUTE) {
+         Err = 1;
+         LOG_ERROR("TimeMgr: Calendar::getElapsedTime invalid time of day "
+                   "(hour, min, sec) for Julian calendar");
+         break;
+      }
+
+      // Convert date to Julian day number
+      I8 YPrime = Year - ((12 - Month) / 10);
+      I4 MPrime = (Month + 9) % 12;
+      I8 Y      = (I8)(365.25 * (YPrime + 4712));
+      I4 D      = (I4)((30.6 * MPrime) + 0.5);
+      JD        = Y + D + Day + 59;
+
+      // Julian Day starts at noon, so correct for the half day
+      HourTmp = Hour - 12;
+      if (HourTmp < 0) {
+         HourTmp += 24;
+         JD -= 1;
+      }
+
+      // Finally, conver JD to seconds and add hours, minutes, secs
+      ResultWhole = JD * SecondsPerDay + HourTmp * SECONDS_PER_HOUR +
+                    Minute * SECONDS_PER_MINUTE + Whole;
+      Err = Result.set(ResultWhole, Numer, Denom);
+      if (Err != 0)
+         LOG_ERROR("TimeMgr: Calendar::getElapsedTime Julian - error setting "
+                   "final result");
+      break;
+   }
+
+   // For Julian Day calendars, just counting days from ref time
+   case CalendarJulianDay:
+   case CalendarModJulianDay: {
+      // Validate inputs
+      if (Year != 0 || Month != 0 || Day < 1) {
+         Err = 1;
+         LOG_ERROR("TimeMgr: Calendar::getElapsedTime Invalid date for Julian "
+                   "Day calendars");
+         break;
+      }
+      // Check valid hour, minute, seconds
+      if (Hour < 0 || Hour > 24 || Minute < 0 || Minute > 60 || Whole < 0 ||
+          Whole > SECONDS_PER_MINUTE) {
+         Err = 1;
+         LOG_ERROR("TimeMgr: Calendar::getElapsedTime invalid time of day "
+                   "(hour, min, sec) for Julian calendar");
+      }
+      // Elapsed time just seconds per day plus time of day
+      // For regular Julian Day, the start of the day is at noon on
+      // other calendars - does not matter for internal calendar
+      // operations, so no correction and just noted here
+      ResultWhole = (Day - 1) * SecondsPerDay + Hour * SECONDS_PER_HOUR +
+                    Minute * SECONDS_PER_MINUTE + Whole;
+      // Now set final result and add fractional second
+      Err = Result.set(ResultWhole, Numer, Denom);
+      if (Err != 0)
+         LOG_ERROR("TimeMgr: Calendar::getElapsedTime Julian Day calendars - "
+                   "error setting final result");
+      break;
+   }
+
+   case CalendarNoLeap:
+   case Calendar360Day:
+   case CalendarCustom: {
+      // Validate inputs
+      if (Year < 0 || Month < 1 || Month > MonthsPerYear || Day < 1) {
+         Err = 1;
+         LOG_ERROR("TimeMgr: Calendar::getElapsedTime invalid date for "
+                   "fixed-length calendars");
+         break;
+      }
+      // check day of the month for any month except February
+      if (Day > DaysPerMonth[Month - 1]) {
+         Err = 1;
+         LOG_ERROR("TimeMgr: Calendar::getElapsedTime invalid date of month "
+                   "for fixed-length calendars");
+         break;
+      }
+      // Check valid hour, minute, seconds
+      if (Hour < 0 || Hour > 24 || Minute < 0 || Minute > 60 || Whole < 0 ||
+          Whole > SECONDS_PER_MINUTE) {
+         Err = 1;
+         LOG_ERROR("TimeMgr: Calendar::getElapsedTime invalid time of day "
+                   "(hour, min, sec) for fixed-length calendars");
+         break;
+      }
+
+      // Conversion straightforward for fixed-length calendars
+      ResultWhole = Year * SecondsPerYear; // secs at beg of year
+      for (I4 Imonth = 0; Imonth < Month - 1; Imonth++)
+         ResultWhole += DaysPerMonth[Imonth] * SecondsPerDay; // add months
+      ResultWhole += (Day - 1) * SecondsPerDay;               // add days
+      ResultWhole +=
+          Hour * SECONDS_PER_HOUR + Minute * SECONDS_PER_MINUTE + Whole;
+      // Now set final result and add fractional second
+      Err = Result.set(ResultWhole, Numer, Denom);
+      if (Err != 0)
+         LOG_ERROR("TimeMgr: Calendar::getElapsedTime fixed-length calendars - "
+                   "error setting final result");
+      break;
+   }
+
+   // No calendar option should only be tracking seconds, so check for
+   // inappropriate entries for other fields and simply return the
+   // input seconds field
+   case CalendarNoCalendar: {
+      // Validate inputs
+      if (Year != 0 || Month != 0 || Day != 0 || Hour != 0 || Minute != 0)
+         LOG_ERROR("TimeMgr: Calendar::getElapsedTime NoCalendar option should "
+                   "not be tracking date or time of day");
+      Err = Result.set(Whole, Numer, Denom);
+      if (Err != 0)
+         LOG_ERROR("TimeMgr: Calendar::getElapsedTime NoCalendar calendars - "
+                   "error setting final result");
+      break;
+   }
+
+   // Undefined calendars
+   case CalendarUnknown:
+   default: {
+      LOG_ERROR("TimeMgr: Calendar::getElapsedTime invalid calendar");
+      break;
+   }
+   } // end switch CalKind
+
+   return Result;
+
+} // end Calendar::getElapsedTime(
+
+//------------------------------------------------------------------------------
+// Calendar::getDateTime - Determine date and time of day given elapsed time
+// Determines the calendar date and time of day, given an elapsed time since
+// the calendar reference time.
+
+I4 Calendar::getDateTime(
+    const TimeFrac ElapsedTime, //< [in] time (secs) from ref time
+    I8 &Year,                   //< [out] calendar year
+    I8 &Month,                  //< [out] calendar month
+    I8 &Day,                    //< [out] calendar day
+    I8 &Hour,                   //< [out] time of day-hours
+    I8 &Minute,                 //< [out] time of day-minutes
+    I8 &Whole,                  //< [out] time of day-whole seconds
+    I8 &Numer,                  //< [out] time of day-frac secs (numerator)
+    I8 &Denom                   //< [out] time of day-frac secs (denom)
+) const {
+
+   // initialize error code to success and make sure input elapsed
+   // time is reduced to its simplest form
+   I4 Error{0};
+   TimeFrac RevisedTime = ElapsedTime;
+   Error                = RevisedTime.simplify();
+   if (Error != 0) {
+      LOG_ERROR("TimeMgr: Calendar::getDateTime error simplifying time "
+                "representation");
+      return Error;
+   }
+
+   // retrieve whole and fractional seconds to manipulate
+   Error = RevisedTime.get(Whole, Numer, Denom);
+   if (Error != 0) {
+      LOG_ERROR("TimeMgr: Calendar::getDateTime error retrieving fractional "
+                "second components");
+      return Error;
+   }
+
+   // initialize common counters used by several calendars
+   I4 DayInYear{0};
+   I4 CountDays{0};
+   I4 PrevDays{0};
+   I8 JD{0};
+
+   // branch to appropriate calculation based on calendar type
+   switch (CalKind) {
+   case CalendarGregorian: {
+      // Reference time same as Julian Days
+      // Convert whole seconds to Julian Day (number of days)
+      // and remove that from elapsed seconds
+      JD = Whole / SecondsPerDay;
+      Whole -= (JD * SecondsPerDay);
+
+      // Now convert the remaining seconds to hour, minute, seconds
+      Hour = Whole / SECONDS_PER_HOUR;
+      Whole -= Hour * SECONDS_PER_HOUR;
+      Minute = Whole / SECONDS_PER_MINUTE;
+      Whole -= Minute * SECONDS_PER_MINUTE;
+
+      // Since Julian date uses a noon time for start of day, must
+      // correct to a midnight start and modify day count if necessary
+      Hour += 12;
+      if (Hour >= 24) {
+         Hour -= 24;
+         JD += 1;
+      }
+
+      // convert Julian days to Gregorian date
+      // Julian days (jdays) => Gregorian date (yy, mm, dd)
+
+      I8 TempL = JD + 68569;
+      I8 TempN = (4 * TempL) / 146097;
+      TempL    = TempL - (146097 * TempN + 3) / 4;
+      I8 TempI = (4000 * (TempL + 1)) / 1461001;
+      TempL    = TempL - (1461 * TempI) / 4 + 31;
+      I8 TempJ = (80 * TempL) / 2447;
+
+      Day   = TempL - (2447 * TempJ) / 80;
+      TempL = TempJ / 11;
+      Month = TempJ + 2 - (12 * TempL);
+      Year  = 100 * (TempN - 49) + TempI + TempL;
+
+      // All done with Gregorian calendar
+      break;
+   }
+
+   // The Julian <-> Julian day conversion algorithm is from D.A. Hatcher,
+   // Q.JlR. astr. Soc. (1984) 25, 53-55.  It is valid from 3/1/-4712 forward.
+   case CalendarJulian: {
+      // Reference time same as Julian Days
+      // Convert whole seconds to Julian Day (number of days)
+      // and remove that from elapsed seconds
+      JD = Whole / SecondsPerDay;
+      Whole -= JD * SecondsPerDay;
+
+      // Now convert the remaining seconds to hour, minute, seconds
+      Hour = Whole / SECONDS_PER_HOUR;
+      Whole -= Hour * SECONDS_PER_HOUR;
+      Minute = Whole / SECONDS_PER_MINUTE;
+      Whole -= Minute * SECONDS_PER_MINUTE;
+
+      // Since Julian date uses a noon time for start of day, must
+      // correct to a midnight start and modify day count if necessary
+      Hour += 12;
+      if (Hour >= 24) {
+         Hour -= 24;
+         JD += 1;
+      }
+
+      // Julian day (D) => Julian date (yy, mm, dd)
+      Year      = (I8)((R8)JD / 365.25) - 4712;
+      I8 DPrime = (I8)fmod((JD - 59.25), 365.25);
+      Month     = ((I8)((DPrime + 0.5) / 30.6) + 2) % 12 + 1;
+      Day       = (I8)(fmod((DPrime + 0.5), 30.6)) + 1;
+
+      break;
+   }
+
+   case CalendarJulianDay:
+   case CalendarModJulianDay: {
+      // Since Julian day calendars just count days since ref time
+      // year and month not defined
+      // Convert whole seconds to Julian Day (number of days)
+      // and remove that from elapsed seconds
+      JD = Whole / SecondsPerDay;
+      Whole -= JD * SecondsPerDay;
+      Year  = 0;
+      Month = 0;
+      Day   = JD + 1; // correct for 1-based counting
+
+      // Now convert the remaining seconds to hour, minute, seconds
+      // Note that for JD calendar we retain the convention of a noon
+      // start for the day and do not correct the hour.
+      Hour = Whole / SECONDS_PER_HOUR;
+      Whole -= Hour * SECONDS_PER_HOUR;
+      Minute = Whole / SECONDS_PER_MINUTE;
+      Whole -= Minute * SECONDS_PER_MINUTE;
+      break;
+   }
+
+   // for calendars with fixed number of days and year 0000 reference
+   case CalendarNoLeap:
+   case Calendar360Day:
+   case CalendarCustom: {
+      Year = Whole / SecondsPerYear;      // determine year
+      Whole -= SecondsPerYear * Year;     // modify Whole to hold remainder
+      DayInYear = Whole / SecondsPerDay;  // determine day in current year
+      Whole -= SecondsPerDay * DayInYear; // modify Whole to hold remainder
+      DayInYear += 1;                     // correct for 1-based counting
+      // find month, day
+      CountDays = 0;
+      PrevDays  = 0;
+      for (I4 I = 0; I < MonthsPerYear; I++) {
+         CountDays += DaysPerMonth[I];
+         if (DayInYear <= CountDays) { // day is in this month
+            Month = I + 1;
+            Day   = DayInYear - PrevDays;
+            break;
+         }
+         PrevDays += DaysPerMonth[I];
+      }
+      // keep peeling off for hour, minute
+      Hour = Whole / SECONDS_PER_HOUR;
+      Whole -= Hour * SECONDS_PER_HOUR;
+      Minute = Whole / SECONDS_PER_MINUTE;
+      Whole -= Minute * SECONDS_PER_MINUTE;
+      break;
+   }
+
+   case CalendarNoCalendar: {
+      // If no calendar is used, we only track elapsed time so simply
+      // return elapsed time in current form and zero all other elements.
+      Year   = 0;
+      Month  = 0;
+      Day    = 0;
+      Hour   = 0;
+      Minute = 0;
+      break;
+   }
+
+   case CalendarUnknown:
+   default: {
+      Error = 1;
+      LOG_ERROR("TimeMgr: Calendar::getDateTime invalid calendar");
+      break;
+   }
+   } // end switch calKindFlag
+
+   return Error;
+
+} // end Calendar::getDateTime
+
+//------------------------------------------------------------------------------
+// Calendar::incrementDate - Increments (decrements) date by a given interval
+// Increments (or decrements if negative) the date by a given integer time
+// interval. Only calendar intervals are supported.
+
+I4 Calendar::incrementDate(
+    const I8 Interval,     //< [in] interval to advance time
+    const TimeUnits Units, //< [in] units for input interval
+    I8 &Year,              //< [in,out] calendar year for time to be advanced
+    I8 &Month,             //< [in,out] calendar month for time to be advanced
+    I8 &Day                //< [in,out] calendar day for time to be advanced
+) const {
+
+   // initialize error code
+   I4 Err{0};
+
+   // Increment date based on supported interval types
+   switch (Units) {
+   // For year intervals, mostly just increment/decrement the year
+   // while keeping all other units fixed, though check for leap day error
+   case TimeUnits::Years: {
+      switch (CalKind) {
+      case CalendarGregorian:
+      case CalendarNoLeap:
+      case CalendarJulian:
+      case Calendar360Day:
+      case CalendarCustom: {
+         Year += Interval;
+         if (!(this->isLeapYear(Year, Err)) && Month == 2 && Day == 29) {
+            Err = 1;
+            LOG_ERROR("TimeMgr: Calendar::incrementDate day out of range for "
+                      "new year increment");
+         }
+         break;
+      }
+      // all other options return an error since year undefined
+      case CalendarJulianDay:
+      case CalendarModJulianDay:
+      case CalendarNoCalendar:
+      case CalendarUnknown:
+      default: {
+         Err = 1;
+         LOG_ERROR("TimeMgr: Calendar::incrementDate invalid calendar for year "
+                   "interval");
+         break;
+      }
+      } // end switch on calendar type
+      break;
+   }
+
+   // For monthly intervals, check for year rollovers
+   case TimeUnits::Months: {
+      switch (CalKind) {
+      // For most calendars, add the monthly interval and adjust year
+      // and day accordingly.
+      case CalendarGregorian:
+      case CalendarNoLeap:
+      case CalendarJulian:
+      case Calendar360Day:
+      case CalendarCustom: {
+         I8 TmpMonth = Month + Interval;
+         // correct the year if the interval pushes beyond the end of year
+         // use a while loop in case interval extends across multiple years
+         while (TmpMonth > MonthsPerYear) {
+            Year += 1;
+            TmpMonth -= MonthsPerYear;
+         }
+         // For negative intervals, check the opposite direction
+         while (TmpMonth < 1) {
+            Year -= 1;
+            TmpMonth += MonthsPerYear;
+         }
+         // Set month and check that the day of the month is valid
+         Month      = TmpMonth;
+         I8 MaxDays = DaysPerMonth[Month - 1];
+         if (this->isLeapYear(Year, Err) && Month == 2)
+            MaxDays += 1;
+         if (Day < 1 || Day > MaxDays) {
+            Err = 1;
+            LOG_ERROR("TimeMgr: Calendar::incrementDate day outside range for "
+                      "new month");
+         }
+         break;
+      }
+      // all other options return an error since month undefined
+      case CalendarJulianDay:
+      case CalendarModJulianDay:
+      case CalendarNoCalendar:
+      case CalendarUnknown:
+      default: {
+         Err = 1;
+         LOG_ERROR("TimeMgr: Calendar::incrementDate invalid calendar for "
+                   "month interval");
+         break;
+      }
+      } // end switch on calendar type
+      break;
+   }
+
+   // For day intervals, increment days and adjust year, month
+   case TimeUnits::Days: {
+      switch (CalKind) {
+      case CalendarGregorian:
+      case CalendarNoLeap:
+      case CalendarJulian:
+      case Calendar360Day:
+      case CalendarCustom: {
+         if (Interval > 0) { // positive interval - step forward
+            I4 DayMax = DaysPerMonth[Month - 1];
+            if (Month == 2 && this->isLeapYear(Year, Err))
+               DayMax += 1;
+            for (I4 I = 1; I <= Interval; ++I) {
+               Day += 1;
+               if (Day > DayMax) { // rollover month boundary
+                  Day = 1;
+                  Month += 1;
+                  if (Month > MonthsPerYear) { // rollover year boundary
+                     Month = 1;
+                     Year += 1;
+                  }
+                  DayMax = DaysPerMonth[Month - 1];
+                  if (Month == 2 && this->isLeapYear(Year, Err))
+                     DayMax += 1;
+               }
+            }
+         } else { // negative interval - step backward
+            for (I4 I = 1; I <= llabs(Interval); ++I) {
+               Day -= 1;
+               if (Day < 1) {
+                  Month -= 1;
+                  if (Month < 1) {
+                     Month = MonthsPerYear;
+                     Year -= 1;
+                  }
+                  Day = DaysPerMonth[Month - 1];
+                  if (Month == 2 && this->isLeapYear(Year, Err))
+                     Day += 1;
+               }
+            }
+         }
+         break;
+      }
+      // For day-only calendars, just increment/decrement the day
+      case CalendarJulianDay:
+      case CalendarModJulianDay: {
+         Day += Interval;
+         break;
+      }
+      // all other options return an error
+      case CalendarNoCalendar:
+      case CalendarUnknown:
+      default: {
+         Err = 1;
+         LOG_ERROR("TimeMgr: Calendar::incrementDate invalid calendar for day "
+                   "interval");
+         break;
+      }
+      } // end switch on calendar type
+      break;
+   }
+
+   // All other intervals return an error
+   case TimeUnits::None:
+   case TimeUnits::Seconds:
+   case TimeUnits::Minutes:
+   case TimeUnits::Hours:
+   default: {
+      Err = 1;
+      LOG_ERROR("TimeMgr: Calendar::incrementDateTime only calendar intervals "
+                "supported");
+      break;
+   }
+   } // end switch on interval type
+
+   // All done, return the results
+   return Err;
+
+} // end Calendar::incrementDateTime
+
 } // namespace OMEGA
 //===-----------------------------------------------------------------------===/

@@ -253,6 +253,144 @@ class TimeFrac {
 
 }; // end class TimeFrac
 
+/// The Calendar class encapsulates the knowledge (attributes and behavior)
+/// of all supported calendar kinds:  Gregorian, Julian, Julian Day, Modified
+/// Julian Day, no-leap, 360-day, custom, and no-calendar.
+///
+/// Time in OMEGA is measured in seconds since a reference time so conversions
+/// between that time and actual calendar dates must convert correctly based on
+/// calendar assumptions. For the fixed calendars like 360-day, no-leap, and
+/// custom calendars, the reference time is simply year 0 at midnight (where
+/// midnight typically refers to Universal Time). For the other standard
+/// calendars, the reference time is part of the calendar definition.
+///
+/// For simplicity, Julian Day is often used during calendar conversion to
+/// time. The Gregorian to/from Julian day conversion algorithm is from
+/// Henry F. Fliegel and Thomas C. Van Flandern, in Communications of the ACM,
+/// CACM, volume 11, number 10, October 1968, p. 657. Julian day refers to the
+/// number of days since a reference day. For the algorithm used, this reference
+/// day is noon November 24, -4713 in the Proleptic Gregorian calendar
+/// (Gregorian calendar reversed in time to that date), which is equivalent to
+/// January 1, -4712 in the Proleptic Julian calendar. When converting from a
+/// Julian day to a Gregorian date, this algorithm is valid from 3/1/-4900
+/// Gregorian forward.  When converting from a Gregorian date to a Julian day,
+/// the algorithm is valid from 3/1/-4800 forward. In both cases, the algorithm
+/// correctly takes into account leap years, those that are divisible by 4
+/// and not 100, or those divisible by 400.
+///
+class Calendar {
+   // private variables
+ private:
+   I4 ID;                   ///< unique id for quick checks
+   static I4 NumCalendars;  ///< number of calendars created
+   std::string Name;        ///< name of calendar
+   CalendarKind CalKind;    ///< enum for calendar kind
+   std::string CalKindName; ///< name of calendar kind
+
+   // variables defining calendar characteristics for time
+   I4 DaysPerMonth[MONTHS_PER_YEAR]; ///< days in each month
+   I4 MonthsPerYear;                 ///< num months in year
+   I4 SecondsPerDay;                 ///< seconds per day
+   I4 SecondsPerYear;                ///< seconds per normal year
+   I4 DaysPerYear;                   ///< days per normal year
+
+   // public methods
+ public:
+   /// Renames a Calendar to the input string
+   /// \return Error code
+   I4 rename(const std::string InName ///< [in] name to use for calendar
+   );
+
+   /// Retrieve any/all calendar properties
+   /// \return Error code
+   I4 get(I4 *OutID,             ///< [out] id assigned to calendar
+          std::string *OutName,  ///< [out] Name of calendar
+          CalendarKind *OutKind, ///< [out] Kind of calendar
+          I4 *OutDaysPerMonth,   ///< [out] Days per month
+          I4 *OutMonthsPerYear,  ///< [out] Months per year
+          I4 *OutSecondsPerDay,  ///< [out] Seconds per day
+          I4 *OutSecondsPerYear, ///< [out] Seconds per year
+          I4 *OutDaysPerYear     ///< [out] Days per year (DPY)
+   ) const;
+
+   /// Default constructor
+   Calendar(void);
+   /// Copy constructor
+   Calendar(const Calendar &Cal);
+   /// Constructor based on kind of calendar
+   Calendar(std::string InName,  ///< [in] name of calendar
+            CalendarKind CalKind ///< [in] choice of calendar kind
+   );
+   /// Constructs custom calendar based in inputs
+   Calendar(const std::string InName, ///< [in] name of calendar
+            I4 *InDaysPerMonth,       ///< [in] array of days per month
+            I4 InSecondsPerDay,       ///< [in] seconds per day
+            I4 InSecondsPerYear,      ///< [in] seconds per year
+            I4 InDaysPerYear          ///< [in] days per year (dpy)
+   );
+   /// Calendar destructor
+   ~Calendar(void);
+
+   /// Calendar equivalence operator
+   bool operator==(const Calendar &Cal) const;
+   /// Calendar non-equivalence operator
+   bool operator!=(const Calendar &Cal) const;
+
+   /// Validate calendar
+   I4 validate() const;
+
+   /// Checks whether input year is a leap year
+   /// \return true if year is a leap year, false otherwise
+   bool isLeapYear(I8 Year, ///< [in] year to check
+                   I4 &Err  ///< [out] return code to flag errors
+   ) const;
+
+   /// Computes the total elapsed time in seconds (in TimeFrac form)
+   /// since the calendar reference time, given a calendar date, time.
+   /// \return Elapsed time in TimeFrac form
+   TimeFrac
+   getElapsedTime(const I8 Year,   ///< [in] calendar year
+                  const I8 Month,  ///< [in] calendar month
+                  const I8 Day,    ///< [in] calendar day
+                  const I8 Hour,   ///< [in] time of day-hour
+                  const I8 Minute, ///< [in] time of day-min
+                  const I8 Whole,  ///< [in] time of day-whole seconds
+                  const I8 Numer,  ///< [in] time of day-frac secs (numerator)
+                  const I8 denom   ///< [in] time of day-frac secs (denom)
+   ) const;
+
+   /// Determines the calendar date and time of day, given an
+   /// elapsed time since the calendar reference time.
+   /// \return error code
+   I4 getDateTime(
+       const TimeFrac ElapsedTime, ///< [in] time in secs from ref time
+       I8 &Year,                   ///< [out] calendar year
+       I8 &Month,                  ///< [out] calendar month
+       I8 &Day,                    ///< [out] calendar day
+       I8 &Hour,                   ///< [out] time of day-hours
+       I8 &Minute,                 ///< [out] time of day-minutes
+       I8 &Whole,                  ///< [out] time of day-whole seconds
+       I8 &Numer,                  ///< [out] time of day-frac secs (numerator)
+       I8 &Denom                   ///< [out] time of day-frac secs (denom)
+   ) const;
+
+   /// Increments (or decrements) a calendar date by a specified
+   /// interval, supplied by an integer interval in given time units.
+   /// Only calendar based intervals (years, months or days) are
+   /// supported. This is primarily meant to be called by other time
+   /// manager routines (eg to add/subtract time instants) for those
+   /// time intervals that are dependent on date and sensitive to
+   /// calendar features like leap years and varying days of the month.
+   /// \return error code
+   I4 incrementDate(
+       const I8 Interval,     ///< [in] time interval to advance date
+       const TimeUnits Units, ///< [in] time units for interval
+       I8 &Year,  ///< [in,out] calendar year for time to be advanced
+       I8 &Month, ///< [in,out] calendar month for time to be advanced
+       I8 &Day    ///< [in,out] calendar day for time to be advanced
+   ) const;
+}; // end class Calendar
+
 } // namespace OMEGA
 
 //===----------------------------------------------------------------------===//
