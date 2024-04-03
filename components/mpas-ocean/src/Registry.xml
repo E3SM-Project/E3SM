@@ -3515,7 +3515,7 @@
                         description="Coriolis term at the previous time step used in the split-explicit AB2 time stepping"
 			packages="splitAB2TimeIntegrator"
 		/>
-		<var name="layerThicknessCellWetDry" type="real" dimensions="nCells Time" units="m"
+		<var name="layerThicknessCellWetDry" type="real" dimensions="nVertLevels nCells Time" units="m"
 			description="intermediate estimate total layer thickness for wetting/drying purposes"
 			packages="forwardMode"
 		/>

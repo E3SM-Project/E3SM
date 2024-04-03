@@ -140,7 +140,7 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:,:), pointer :: wettingVelocityFactor
    type (field2DReal), pointer :: wettingVelocityField
 
-   real (kind=RKIND), dimension(:), pointer :: layerThicknessCellWetDry
+   real (kind=RKIND), dimension(:,:), pointer :: layerThicknessCellWetDry
    real (kind=RKIND), dimension(:), pointer :: sshCellWetDry
 
    real (kind=RKIND), dimension(:,:), pointer :: vertDiffTopOfCell
