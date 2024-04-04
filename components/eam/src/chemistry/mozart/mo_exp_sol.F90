@@ -115,7 +115,7 @@ contains
                ! V2-like explicit equation 
           do i = 1,ncol
              do k = 1,ltrop(i)
-             ! above tropopause, emission only
+             ! above tropopause, allow BrC emission, but do not consider BrC decay for now because of low radical concentration.
                 chem_loss(i,k,l) = 0.0_r8
                 chem_prod(i,k,l) = ind_prd(i,k,m) 
                 base_sol(i,k,l) = base_sol(i,k,l) + delt * ind_prd(i,k,m)  
