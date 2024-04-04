@@ -134,6 +134,8 @@ def buildnml(case, caseroot, compname):
         if ocn_ic_mode == 'spunup':
             logger.warning("WARNING: The specified compset is requesting ocean ICs spunup from a G-case")
             logger.warning("         But no file available for this grid.")
+        if ocn_ismf == 'data':
+            data_ismf_file = 'prescribed_ismf_paolo2023.oQU240wLI.20240404.nc'
 
     elif ocn_grid == 'oQU120':
         decomp_date = '230424'
