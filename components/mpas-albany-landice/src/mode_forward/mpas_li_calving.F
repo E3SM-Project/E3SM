@@ -305,6 +305,12 @@ module li_calving
 
       endif
 
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'velocity', velocityPool)
+
+      call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+
       ! Consider mask calving as a possible additional step
       ! Mask calving can occur by itself or in conjunction with a physical calving law
       if (config_apply_calving_mask) then
@@ -312,18 +318,25 @@ module li_calving
          err = ior(err, err_tmp)
       endif
 
+      call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+
       ! now also remove any icebergs
       call remove_icebergs(domain)
 
-      ! Final operations after calving has been applied.
+      call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+
+      ! Final operations after calving has been applied, including removal
+      ! of small islands
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
          call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
+         call remove_small_islands(meshPool, geometryPool)
          ! In data calving mode we just calculate what should be calved but don't actually calve it.
          ! So set thickness back to original value.
          if (config_data_calving) then
@@ -348,7 +361,6 @@ module li_calving
          endif   ! config_print_calving_info
 
          ! Update mask and geometry
-         call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
          call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
          err = ior(err, err_tmp)
          call li_update_geometry(geometryPool)
@@ -927,8 +939,6 @@ module li_calving
          ! === apply calving ===
          thickness(:) = thickness(:) - calvingThickness(:)
 
-         call remove_small_islands(meshPool, geometryPool)
-
          block => block % next
       enddo
 
@@ -1002,8 +1012,6 @@ module li_calving
 
          ! === apply calving ===
          thickness(:) = thickness(:) - calvingThickness(:)
-
-         call remove_small_islands(meshPool, geometryPool)
 
          block => block % next
       enddo
@@ -1179,8 +1187,6 @@ module li_calving
 
          ! === apply calving ===
          thickness(:) = thickness(:) - calvingThickness(:)
-
-         call remove_small_islands(meshPool, geometryPool)
 
          block => block % next
       enddo
@@ -1412,8 +1418,6 @@ module li_calving
          enddo
          ! TODO: global reduce & reporting on amount of calving generated in this step
 
-         call remove_small_islands(meshPool, geometryPool)
-
          block => block % next
       enddo
 
@@ -1595,8 +1599,6 @@ module li_calving
            endif
          enddo
          ! TODO: global reduce & reporting on amount of calving generated in this step
-
-         call remove_small_islands(meshPool, geometryPool)
 
          block => block % next
       enddo
@@ -1985,8 +1987,6 @@ module li_calving
           call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
           err = ior(err, err_tmp)
 
-          call remove_small_islands(meshPool, geometryPool)
-          
           block => block % next
 
       enddo ! associated(block)
@@ -2256,7 +2256,6 @@ module li_calving
       ! update mask
       call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
       err = ior(err, err_tmp)
-      call remove_small_islands(meshPool, geometryPool)
 
       deallocate(submergedArea)
 
@@ -3326,8 +3325,6 @@ module li_calving
          enddo
          ! TODO: global reduce & reporting on amount of calving generated in this step
 
-         call remove_small_islands(meshPool, geometryPool)
-
          block => block % next
 
       enddo
@@ -3985,8 +3982,6 @@ module li_calving
          ! update mask
          call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
          err = ior(err, err_tmp)
-
-         call remove_small_islands(meshPool, geometryPool)
 
          block => block % next
       enddo
