@@ -136,9 +136,11 @@ public:
   get_strided_view_type<DT,HD>
   get_strided_view () const;
 
-  template<typename DT, HostOrDevice HD = Device>
-  Kokkos::View<Real****, Kokkos::LayoutStride>
-  get_strided_view (bool special) const;
+  // this is the same as above but for a multi-sliced view
+  // which is to say, also a strided view
+  template<typename DT, int N, HostOrDevice HD = Device>
+  auto get_multi_sliced_view () const
+    -> get_strided_view_type<data_nd_t<DT, N>, HD>;
 
   // These two getters are convenience function for commonly accessed metadata.
   // The same info can be extracted from the metadata stored in the FieldHeader
@@ -245,10 +247,9 @@ public:
   Field subfield (const std::string& sf_name, const int idim,
                   const int index, const bool dynamic = false) const;
   Field subfield (const int idim, const int k, const bool dynamic = false) const;
-  // get subfield to extract multiple slices in a continuous range of indices
+  // subfield fxn to extract multiple slices in a continuous range of indices
   // e.g., (in matlab syntax) subf = f.subfield(:, 1:3, :)
   // but NOT subf = f.subfield(:, [1, 3, 4], :)
-  // NOTE: use std::pair(index_beg, index_end) or a kokkos::pair()?
   Field subfield (const std::string& sf_name, const ekat::units::Units& sf_units,
                   const int idim, const int index_beg, const int index_end,
                   const bool dynamic = false) const;

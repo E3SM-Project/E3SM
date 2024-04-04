@@ -106,7 +106,7 @@ public:
 
   FieldAllocProp& operator= (const FieldAllocProp&);
 
-  // Return allocation props of an unmanaged subivew of this field
+  // Return allocation props of an unmanaged subview of this field
   // at entry k along dimension idim. If dynamic = true, then it will be
   // possible to change the entry index (k) at runtime.
   FieldAllocProp subview (const int idim, const int k, const bool dynamic) const;

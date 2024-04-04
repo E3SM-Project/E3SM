@@ -319,38 +319,31 @@ TEST_CASE("field", "") {
     f1.allocate_view();
     randomize(f1,engine,pdf);
 
-    const int idim = 0;
-    const int ivar = 2;
-    const int sl_beg = 2;
-    const int sl_end = 4;
+    const int idim[4] = {0, 1, 2, 3};
+    const int sl_beg[4] = {2, 3, 0, 9};
+    const int sl_end[4] = {4, 6, 1, 15};
 
-    auto f3 = f1.subfield(idim, sl_beg, sl_end);
-
-    // const auto fl3 = f3.get_header().get_identifier().get_layout();
-    // const auto alprop3 = f3.get_header().get_alloc_properties();
-    // std::cout << "fl3.rank() = " << fl3.rank() << "\n";
-    // auto f3dim = fl3.dims();
-    // for (size_t i = 0; i < 4; i++)
-    // {
-    //   std::cout << "f3dim(i) = " << f3dim[i] << "\n";
-    // }
-    // auto f3ext = fl3.extents();
-    // for (size_t i = 0; i < 4; i++)
-    // {
-    //   std::cout << "f3ext(i) = " << f3ext(i) << "\n";
-    // }
-    // std::cout << "alprop3.is_subfield() = " << alprop3.is_subfield() << "\n";
-
-    auto v3_h = f3.get_strided_view<Real****, Host>(true);
     auto v4d_h = f1.get_view<Real****, Host>();
 
-    for (size_t i = sl_beg; i < sl_end; i++) {
-      for (size_t j = 0; j < d1[1]; j++) {
-        for (size_t k = 0; k < d1[2]; k++) {
-          for (size_t l = 0; l < d1[3]; l++) {
-            // std::cout << "v4d_h(i, j, k, l) = " << v4d_h(i, j, k, l) << "\n";
-            // std::cout << "v3_h(i - sl_beg, j, k, l) = " << v3_h(i - sl_beg, j, k, l) << "\n";
-            REQUIRE(v4d_h(i, j, k, l) == v3_h(i - sl_beg, j, k, l));
+    int i1, i2, j1, j2, k1, k2, l1, l2;
+
+    for (int ens = 0; ens < 4; ens++) {
+      auto sf = f1.subfield(idim[ens], sl_beg[ens], sl_end[ens]);
+      auto sv_h = sf.get_multi_sliced_view<Real, 4, Host>();
+      i1 = (ens == 0) ? sl_beg[0] : 0;
+      i2 = (ens == 0) ? sl_end[0] : d1[0];
+      j1 = (ens == 1) ? sl_beg[1] : 0;
+      j2 = (ens == 1) ? sl_end[1] : d1[1];
+      k1 = (ens == 2) ? sl_beg[2] : 0;
+      k2 = (ens == 2) ? sl_end[2] : d1[2];
+      l1 = (ens == 3) ? sl_beg[3] : 0;
+      l2 = (ens == 3) ? sl_end[3] : d1[3];
+      for (int i = i1; i < i2; i++) {
+        for (int j = j1; j < j2; j++) {
+          for (int k = k1; k < k2; k++) {
+            for (int l = l1; l < l2; l++) {
+              REQUIRE(v4d_h(i, j, k, l) == sv_h(i - i1, j - j1, k - k1, l - l1));
+            }
           }
         }
       }

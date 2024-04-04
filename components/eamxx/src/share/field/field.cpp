@@ -129,8 +129,8 @@ Field Field::subfield(const std::string& sf_name,
   EKAT_REQUIRE_MSG(
       is_allocated(),
       "Error! Input field must be allocated in order to subview it.\n");
-  EKAT_REQUIRE_MSG(idim == 0 || idim == 1,
-                   "Error! Subview dimension index must be either 0 or 1.\n");
+  // EKAT_REQUIRE_MSG(idim == 0 || idim == 1,
+  //                  "Error! Subview dimension index must be either 0 or 1.\n");
 
   auto sf_layout =
       lt.clone_with_different_extent(idim, index_end - index_beg + 1);

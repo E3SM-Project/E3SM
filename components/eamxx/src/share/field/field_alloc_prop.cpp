@@ -77,22 +77,20 @@ subview (const int idim, const int k, const bool dynamic) const {
   return props;
 }
 
-FieldAllocProp FieldAllocProp::subview(const int idim, const int k_beg,
+FieldAllocProp FieldAllocProp::subview(const int idim,
+                                       const int k_beg,
                                        const int k_end,
                                        const bool dynamic) const {
   EKAT_REQUIRE_MSG(
       is_committed(),
       "Error! Subview requires alloc properties to be committed.\n");
-  EKAT_REQUIRE_MSG(
-      idim == 0 || idim == 1,
-      "Error! Subviewing is only allowed along first or second dimension.\n");
-  EKAT_REQUIRE_MSG(idim < m_layout.rank(),
+  EKAT_REQUIRE_MSG(idim <= m_layout.rank(),
                    "Error! Dimension index out of bounds.\n");
-  EKAT_REQUIRE_MSG(k_beg <= k_end,
+  EKAT_REQUIRE_MSG(k_beg < k_end,
                    "Error! Slice indices are invalid (non-increasing).\n");
   EKAT_REQUIRE_MSG(
       k_beg >= 0 && k_end < m_layout.dim(idim),
-      "Error! Index range along the dimension is out of bounds.\n");
+      "Error! Slice index range along the idim dimension is out of bounds.\n");
 
   // Set new layout basic stuff
   FieldAllocProp props(m_scalar_type_size);
