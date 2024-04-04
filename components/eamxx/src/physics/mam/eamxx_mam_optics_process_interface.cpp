@@ -402,17 +402,16 @@ void MAMOptics::run_impl(const double dt) {
   // preprocess input -- needs a scan for the calculation of atm height
   Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
   Kokkos::fence();
-  /// outputs
-   //In aer_rad_props.F90; tau_w_g=> aerosol asymmetry parameter * tau * w
-  const auto aero_tau_g_sw = get_field_out("aero_tau_g_sw_mam4").get_view<Real ***>();
 
-  //In aer_rad_props.F90; tau_w => aerosol single scattering albedo * tau
+  //tau_w_g : aerosol asymmetry parameter * tau * w
+  const auto aero_tau_g_sw = get_field_out("aero_tau_g_sw_mam4").get_view<Real ***>();
+  //tau_w : aerosol single scattering albedo * tau
   const auto aero_tau_ssa_sw =
       get_field_out("aero_tau_ssa_sw_mam4").get_view<Real ***>();
-  // In aer_rad_props.F90; tau => aerosol extinction optical depth
+  // tau : aerosol extinction optical depth
   const auto aero_tau_sw =
       get_field_out("aero_tau_sw_mam4").get_view<Real ***>();
-  // In aer_rad_props.F90; odap_aer =>  absorption optical depth, per layer
+  // aero_tau_lw  ( or odap_aer) :  absorption optical depth, per layer
   const auto aero_tau_lw = get_field_out("aero_tau_lw").get_view<Real ***>();
 
   const auto aero_g_sw_eamxx = get_field_out("aero_g_sw").get_view<Real ***>();
@@ -421,16 +420,11 @@ void MAMOptics::run_impl(const double dt) {
       get_field_out("aero_ssa_sw").get_view<Real ***>();
   const auto aero_tau_sw_eamxx =
       get_field_out("aero_tau_sw").get_view<Real ***>();
-  // In aer_rad_props.F90; tau_w_f : aerosol forward scattered fraction * tau * w
+  //tau_w_f : aerosol forward scattered fraction * tau * w
   const auto aero_tau_forward =
       get_field_out("aero_tau_forward").get_view<Real ***>();
 
   const auto aodvis = get_field_out("aodvis").get_view<Real *>();
-
-  // Compute optical properties on all local columns.
-  // (Strictly speaking, we don't need this parallel_for here yet, but we
-  // leave
-  //  it in anticipation of column-specific aerosol optics to come.)
 
   // NOTE! we need a const mam_coupling::DryAtmosphere dry_atm for gpu access.
   // We cannot use member of this class inside of the parallel_for
@@ -463,17 +457,15 @@ void MAMOptics::run_impl(const double dt) {
         auto ext_cmip6_sw_icol = ekat::subview(ext_cmip6_sw, icol);
         auto ext_cmip6_lw_icol = ekat::subview(ext_cmip6_lw, icol);
 
-        // FIXME: check if this correct: Note that these variables have pver+1
-        // levels tau_w : aero_ssa_sw  (pcols,0:pver,nswbands) ! aerosol
         // tau_w: aerosol single scattering albedo * tau
         auto tau_w_icol = ekat::subview(aero_tau_ssa_sw, icol);
-        // tau_w_g:  (pcols,0:pver,nswbands)  aerosol assymetry
+        // tau_w_g: aerosol assymetry
         // parameter * tau * w
         auto tau_w_g_icol = ekat::subview(aero_tau_g_sw, icol);
-        // tau_w_f(pcols,0:pver,nswbands) => aero_tau_forward  ?  aerosol
+        // tau_w_f: aero_tau_forward
         // forward scattered fraction * tau * w
         auto tau_w_f_icol = ekat::subview(aero_tau_forward, icol);
-        // tau :  (pcols,0:pver,nswbands) aerosol
+        // tau: aerosol
         // aerosol extinction optical depth
         auto tau_icol = ekat::subview(aero_tau_sw, icol);
 
