@@ -1369,72 +1369,23 @@
     </environment_variables>
 </machine>
 
-<machine MACH="syrah">
-         <DESC>LLNL Linux Cluster, Linux (pgi), 16 pes/node, batch system is Slurm</DESC>
-         <COMPILERS>intel</COMPILERS>
-         <MPILIBS>mpich</MPILIBS>
-         <RUNDIR>/p/lscratchh/$CCSMUSER/ACME/$CASE/run</RUNDIR>
-         <EXEROOT>/p/lscratchh/$CCSMUSER/$CASE/bld</EXEROOT>
-         <CIME_OUTPUT_ROOT>/p/lscratchh/$USER</CIME_OUTPUT_ROOT>
-         <DIN_LOC_ROOT>/usr/gdata/climdat/ccsm3data/inputdata</DIN_LOC_ROOT>
-         <DIN_LOC_ROOT_CLMFORC>/usr/gdata/climdat/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>/p/lscratchh/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
-         <DOUT_L_HTAR>FALSE</DOUT_L_HTAR>
-         <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
-         <BASELINE_ROOT>/p/lscratchh/$CCSMUSER/ccsm_baselines/$COMPILER</BASELINE_ROOT>
-         <CCSM_CPRNC>/p/lscratchd/ma21/ccsm3data/tools/cprnc/cprnc</CCSM_CPRNC>
-         <OS>LINUX</OS>
-         <SUPPORTED_BY>donahue5 -at- llnl.gov</SUPPORTED_BY>
-         <GMAKE_J>8</GMAKE_J>
-         <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
-	 <MAX_MPITASKS_PER_NODE>16</MAX_MPITASKS_PER_NODE>
-	 <BATCH_SYSTEM>lc_slurm</BATCH_SYSTEM>
-	 <mpirun mpilib="mpi-serial">
-	   <executable></executable>
-	 </mpirun>
-         <mpirun mpilib="default">
-           <executable>srun</executable>
-         </mpirun>
-         <module_system type="module">
-              <init_path lang="python">/usr/share/lmod/lmod/init/env_modules_python.py</init_path>
-              <init_path lang="perl">/usr/share/lmod/lmod/init/perl</init_path>
-              <init_path lang="sh">/usr/share/lmod/lmod/init/sh</init_path>
-              <init_path lang="csh">/usr/share/lmod/lmod/init/csh</init_path>
-              <cmd_path lang="csh">module</cmd_path>
-              <cmd_path lang="sh">module</cmd_path>
-              <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
-              <cmd_path lang="perl">/usr/share/lmod/lmod/libexec/lmod perl</cmd_path>
-           <modules compiler="intel">
-             <command name="load">python</command>
-             <command name="load">git</command>
-             <command name="load">intel</command>
-             <command name="load">mvapich2</command>
-             <command name="load">netcdf-fortran/4.4.4</command>
-             <command name="load">pnetcdf/1.9.0</command>
-           </modules>
-         </module_system>
-         <environment_variables compiler="intel">
-           <env name="NETCDFROOT">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-18.0.1/</env>
-         </environment_variables>
-         <environment_variables compiler="intel" mpilib="!mpi-serial">
-           <env name="PNETCDFROOT">/usr/tce/packages/pnetcdf/pnetcdf-1.9.0-intel-18.0.1-mvapich2-2.2/</env>
-         </environment_variables>
-</machine>
-
 <machine MACH="quartz">
          <DESC>LLNL Linux Cluster, Linux (pgi), 36 pes/node, batch system is Slurm</DESC>
          <COMPILERS>intel</COMPILERS>
          <MPILIBS>mpich</MPILIBS>
-         <RUNDIR>/p/lscratchh/$CCSMUSER/ACME/$CASE/run</RUNDIR>
-         <EXEROOT>/p/lscratchh/$CCSMUSER/$CASE/bld</EXEROOT>
-         <CIME_OUTPUT_ROOT>/p/lscratchh/$USER</CIME_OUTPUT_ROOT>
-         <DIN_LOC_ROOT>/usr/gdata/climdat/ccsm3data/inputdata</DIN_LOC_ROOT>
-         <DIN_LOC_ROOT_CLMFORC>/usr/gdata/climdat/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>/p/lscratchh/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
+         <PROJECT>cbronze</PROJECT>
+         <SAVE_TIMING_DIR>/usr/gdata/e3sm</SAVE_TIMING_DIR>
+         <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
+         <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+         <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+         <CIME_OUTPUT_ROOT>/p/lustre2/$USER/e3sm_scratch/quartz</CIME_OUTPUT_ROOT>
+         <DIN_LOC_ROOT>/usr/gdata/e3sm/ccsm3data/inputdata</DIN_LOC_ROOT>
+         <DIN_LOC_ROOT_CLMFORC>/usr/gdata/e3sm/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+         <DOUT_S_ROOT>/p/lustre2/$USER/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_HTAR>FALSE</DOUT_L_HTAR>
          <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
-         <BASELINE_ROOT>/p/lscratchh/$CCSMUSER/ccsm_baselines/$COMPILER</BASELINE_ROOT>
-         <CCSM_CPRNC>/p/lscratchd/ma21/ccsm3data/tools/cprnc/cprnc</CCSM_CPRNC>
+         <BASELINE_ROOT>/p/lustre2/$USER/ccsm_baselines/$COMPILER</BASELINE_ROOT>
+         <CCSM_CPRNC>/usr/gdata/e3sm/tools/cprnc</CCSM_CPRNC>
          <OS>LINUX</OS>
          <SUPPORTED_BY>donahue5 -at- llnl.gov</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
@@ -1448,28 +1399,91 @@
            <executable>srun</executable>
          </mpirun>
          <module_system type="module">
-              <init_path lang="python">/usr/share/lmod/lmod/init/env_modules_python.py</init_path>
-              <init_path lang="perl">/usr/share/lmod/lmod/init/perl</init_path>
-              <init_path lang="sh">/usr/share/lmod/lmod/init/sh</init_path>
-              <init_path lang="csh">/usr/share/lmod/lmod/init/csh</init_path>
-              <cmd_path lang="csh">module</cmd_path>
-              <cmd_path lang="sh">module</cmd_path>
-              <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
-              <cmd_path lang="perl">/usr/share/lmod/lmod/libexec/lmod perl</cmd_path>
+           <init_path lang="python">/usr/share/lmod/lmod/init/env_modules_python.py</init_path>
+           <init_path lang="perl">/usr/share/lmod/lmod/init/perl</init_path>
+           <init_path lang="sh">/usr/share/lmod/lmod/init/sh</init_path>
+           <init_path lang="csh">/usr/share/lmod/lmod/init/csh</init_path>
+           <cmd_path lang="csh">module</cmd_path>
+           <cmd_path lang="sh">module</cmd_path>
+           <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
+           <cmd_path lang="perl">/usr/share/lmod/lmod/libexec/lmod perl</cmd_path>
            <modules compiler="intel">
-             <command name="load">python</command>
+             <command name="load">python/3.9.12</command>
              <command name="load">git</command>
-             <command name="load">intel</command>
-             <command name="load">mvapich2</command>
-             <command name="load">netcdf-fortran/4.4.4</command>
-             <command name="load">pnetcdf/1.9.0</command>
+             <command name="load">mkl/2022.1.0</command>
+             <command name="load">intel-classic/2021.6.0-magic</command>
+             <command name="load">mvapich2/2.3.7</command>
+             <command name="load">cmake/3.19.2</command>
+             <command name="use --append">/usr/gdata/e3sm/install/quartz/modulefiles</command>
+             <command name="load">hdf5/1.12.2</command>
+             <command name="load">netcdf-c/4.9.0</command>
+             <command name="load">netcdf-fortran/4.6.0</command>
+             <command name="load">parallel-netcdf/1.12.3</command>
+             <command name="load">screamML-venv/0.0.1</command>
            </modules>
          </module_system>
          <environment_variables compiler="intel">
-           <env name="NETCDFROOT">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-18.0.1/</env>
+           <env name="NETCDF_PATH">/usr/gdata/e3sm/install/quartz/netcdf-fortran/</env>
+           <env name="PNETCDF_PATH">/usr/tce/packages/parallel-netcdf/parallel-netcdf-1.12.3-mvapich2-2.3.7-intel-classic-2021.6.0</env>
          </environment_variables>
-         <environment_variables compiler="intel" mpilib="!mpi-serial">
-           <env name="PNETCDFROOT">/usr/tce/packages/pnetcdf/pnetcdf-1.9.0-intel-18.0.1-mvapich2-2.2/</env>
+</machine>
+
+<machine MACH="ruby">
+         <DESC>LLNL Linux Cluster, Linux (pgi), 56 pes/node, batch system is Slurm</DESC>
+         <COMPILERS>intel</COMPILERS>
+         <MPILIBS>mpich</MPILIBS>
+         <PROJECT>cbronze</PROJECT>
+         <SAVE_TIMING_DIR>/usr/gdata/e3sm</SAVE_TIMING_DIR>
+         <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
+         <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+         <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+         <CIME_OUTPUT_ROOT>/p/lustre2/$USER/e3sm_scratch/ruby</CIME_OUTPUT_ROOT>
+         <DIN_LOC_ROOT>/usr/gdata/e3sm/ccsm3data/inputdata</DIN_LOC_ROOT>
+         <DIN_LOC_ROOT_CLMFORC>/usr/gdata/e3sm/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+         <DOUT_S_ROOT>/p/lustre2/$USER/archive/$CASE</DOUT_S_ROOT>
+         <DOUT_L_HTAR>FALSE</DOUT_L_HTAR>
+         <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
+         <BASELINE_ROOT>/p/lustre2/$USER/ccsm_baselines/$COMPILER</BASELINE_ROOT>
+         <CCSM_CPRNC>/usr/gdata/e3sm/tools/cprnc</CCSM_CPRNC>
+         <OS>LINUX</OS>
+         <SUPPORTED_BY>donahue5 -at- llnl.gov</SUPPORTED_BY>
+         <GMAKE_J>8</GMAKE_J>
+         <MAX_TASKS_PER_NODE>56</MAX_TASKS_PER_NODE>
+	 <MAX_MPITASKS_PER_NODE>56</MAX_MPITASKS_PER_NODE>
+	 <BATCH_SYSTEM>lc_slurm</BATCH_SYSTEM>
+	 <mpirun mpilib="mpi-serial">
+	   <executable></executable>
+	 </mpirun>
+         <mpirun mpilib="default">
+           <executable>srun</executable>
+         </mpirun>
+         <module_system type="module">
+           <init_path lang="python">/usr/share/lmod/lmod/init/env_modules_python.py</init_path>
+           <init_path lang="perl">/usr/share/lmod/lmod/init/perl</init_path>
+           <init_path lang="sh">/usr/share/lmod/lmod/init/sh</init_path>
+           <init_path lang="csh">/usr/share/lmod/lmod/init/csh</init_path>
+           <cmd_path lang="csh">module</cmd_path>
+           <cmd_path lang="sh">module</cmd_path>
+           <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
+           <cmd_path lang="perl">/usr/share/lmod/lmod/libexec/lmod perl</cmd_path>
+           <modules compiler="intel">
+             <command name="load">python/3.9.12</command>
+             <command name="load">git</command>
+             <command name="load">mkl/2022.1.0</command>
+             <command name="load">intel-classic/2021.6.0-magic</command>
+             <command name="load">mvapich2/2.3.7</command>
+             <command name="load">cmake/3.19.2</command>
+             <command name="use --append">/usr/gdata/e3sm/install/quartz/modulefiles</command>
+             <command name="load">hdf5/1.12.2</command>
+             <command name="load">netcdf-c/4.9.0</command>
+             <command name="load">netcdf-fortran/4.6.0</command>
+             <command name="load">parallel-netcdf/1.12.3</command>
+             <command name="load">screamML-venv/0.0.1</command>
+           </modules>
+         </module_system>
+         <environment_variables compiler="intel">
+           <env name="NETCDF_PATH">/usr/gdata/e3sm/install/quartz/netcdf-fortran/</env>
+           <env name="PNETCDF_PATH">/usr/tce/packages/parallel-netcdf/parallel-netcdf-1.12.3-mvapich2-2.3.7-intel-classic-2021.6.0</env>
          </environment_variables>
 </machine>
 
