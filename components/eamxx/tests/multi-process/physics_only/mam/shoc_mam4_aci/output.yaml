@@ -1,0 +1,17 @@
+%YAML 1.1
+---
+filename_prefix: shoc_cld_p3_rrtmgp_output
+Averaging Type: Instant
+Field Names:
+  # SHOC
+  - cldfrac_liq
+  - eddy_diff_mom
+  - horiz_winds
+  - sgs_buoy_flux
+  - tke
+  - inv_qc_relvar
+  - pbl_height
+output_control:
+  Frequency: ${NUM_STEPS}
+  frequency_units: nsteps
+...
