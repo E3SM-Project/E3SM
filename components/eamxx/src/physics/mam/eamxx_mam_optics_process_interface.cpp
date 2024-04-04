@@ -185,7 +185,6 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   wet_atm_.ni    = get_field_in("ni").get_view<const Real **>();
   wet_atm_.omega = get_field_in("omega").get_view<const Real **>();
 
-  // FIXME: we have nvars in several process.
   constexpr int ntot_amode = mam4::AeroConfig::num_modes();
 
   dry_atm_.T_mid = get_field_in("T_mid").get_view<const Real **>();
@@ -208,7 +207,9 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   dry_atm_.qi        = buffer_.qi_dry;
   dry_atm_.ni        = buffer_.ni_dry;
   dry_atm_.w_updraft = buffer_.w_updraft;
-  dry_atm_.z_surf    = 0.0;  // FIXME: for now
+  // The surface height is zero by definition.
+  // see eam/src/physics/cam/geopotential.F90
+  dry_atm_.z_surf    = 0.0;
 
   // set wet/dry aerosol state data (interstitial aerosols only)
   for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
