@@ -122,7 +122,6 @@ void MAMOptics::set_grids(
   // ratios
   for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
     const char *int_nmr_field_name = mam_coupling::int_aero_nmr_field_name(m);
-    // printf("%s \n", int_nmr_field_name);
 
     add_field<Updated>(int_nmr_field_name, scalar3d_layout_mid, n_unit,
                        grid_name, "tracers");
@@ -139,7 +138,6 @@ void MAMOptics::set_grids(
   // (cloud) aerosol tracers of interest: mass (q) and number (n) mixing ratios
   for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
     const char *cld_nmr_field_name = mam_coupling::cld_aero_nmr_field_name(m);
-    // printf("%s \n", int_nmr_field_name);
 
     add_field<Updated>(cld_nmr_field_name, scalar3d_layout_mid, n_unit,
                        grid_name);
