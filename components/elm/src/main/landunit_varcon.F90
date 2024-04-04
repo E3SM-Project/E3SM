@@ -41,6 +41,14 @@ module landunit_varcon
   integer, parameter, public :: iflatcenpoly    = 2	    ! flat-centered polygons
   integer, parameter, public :: ihighcenpoly    = 3	    ! high-centered polygons
   
+  integer, parameter, public :: max_poly  = 3  !maximum value that lun_pp%polygontype can have
+                                        !(i.e., largest value in the above list)
+
+  integer, parameter, public                   :: polygon_name_length = 40  ! max length of landunit names
+  character(len=polygon_name_length), public   :: polygon_names(max_poly)  ! name of each landunit type
+  
+  
+  
   ! parameters that depend on the above constants
 
   integer, parameter, public :: numurbl = isturb_MAX - isturb_MIN + 1   ! number of urban landunits
