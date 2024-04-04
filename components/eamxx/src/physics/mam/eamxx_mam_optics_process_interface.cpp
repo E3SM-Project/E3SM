@@ -82,9 +82,9 @@ void MAMOptics::set_grids(
                       "tracers");  // ice number mixing ratio
 
   // droplet activation can alter cloud liquid and number mixing ratios
-  add_field<Updated>("qc", scalar3d_layout_mid, q_unit, grid_name,
+  add_field<Required>("qc", scalar3d_layout_mid, q_unit, grid_name,
                      "tracers");  // cloud liquid wet mixing ratio
-  add_field<Updated>("nc", scalar3d_layout_mid, n_unit, grid_name,
+  add_field<Required>("nc", scalar3d_layout_mid, n_unit, grid_name,
                      "tracers");  // cloud liquid wet number mixing ratio
 
   add_field<Required>("phis", scalar2d_layout_col, m2 / s2, grid_name);
