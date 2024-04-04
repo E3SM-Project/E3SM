@@ -9,6 +9,10 @@
       
       
       
+        <link rel="prev" href="..">
+      
+      
+        <link rel="next" href="../EAM/">
       
       
       <link rel="icon" href="../assets/images/favicon.png">
@@ -16,7 +20,7 @@
     
     
       
-        <title>Useful Aliases - E3SM</title>
+        <title>Step by Step Guide - E3SM</title>
       
     
     
@@ -104,7 +108,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Useful Aliases
+              Step by Step Guide
             
           </span>
         </div>
@@ -223,10 +227,30 @@
       
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="https://e3sm-project.github.io/E3SM/pr-preview/pr-6326/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Step by Step Guide
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -235,6 +259,44 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#batch-jobs" class="md-nav__link">
+    <span class="md-ellipsis">
+      Batch Jobs
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#directories" class="md-nav__link">
+    <span class="md-ellipsis">
+      Directories
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1487,9 +1549,9 @@
 <li>Perlmutter (NERSC) – <simulations_dir>: <code>/global/cfs/cdirs/e3sm/&lt;username&gt;/E3SMv2</code></li>
 </ul>
 <p>So, it may be useful to set the following aliases:
-<div class="highlight"><pre><span></span><code># Model running
-alias run_scripts=&quot;cd &lt;run_scripts_dir&gt;&quot;
-alias simulations=&quot;cd &lt;simulations_dir&gt;&quot;
+<div class="highlight"><pre><span></span><code><span class="c1"># Model running</span>
+<span class="nb">alias</span><span class="w"> </span><span class="nv">run_scripts</span><span class="o">=</span><span class="s2">&quot;cd &lt;run_scripts_dir&gt;&quot;</span>
+<span class="nb">alias</span><span class="w"> </span><span class="nv">simulations</span><span class="o">=</span><span class="s2">&quot;cd &lt;simulations_dir&gt;&quot;</span>
 </code></pre></div></p>
 <h1 id="configuring-the-model-run-run-script">Configuring the Model Run – Run Script</h1>
 <p>Start with an example of a run script for a low-resolution coupled simulation:  </p>
@@ -1499,22 +1561,21 @@ alias simulations=&quot;cd &lt;simulations_dir&gt;&quot;
 - <code>readonly MACHINE=pm-cpu</code>: the name of the machine you’re running on.
 - <code>readonly PROJECT="e3sm"</code>: SLURM project accounting (typically <code>e3sm</code>).</p>
 <p><code># Simulation</code>
-- <code>readonly COMPSET="WCYCL1850"</code> : compset (configuration)
-- <code>readonly RESOLUTION="ne30pg2_r05_IcoswISC30E3r5"</code>: resolution
-  - <code>ne30</code> is the number of spectral elements for the atmospheric dynamics grid
-  - <code>pg2</code> refers to the physics grid option. This mesh grid spacing is approximately 110 km.
-  - <code>r05</code> is the ... <!-- (TODO: define) -->
-  - <code>IcoswISC30E3r5</code> is the ... <!-- (TODO: define) -->
-- <code>readonly CASE_NAME="your_casename"</code> : case name
-- <code># readonly CASE_GROUP=""</code> : This will let you mark multiple cases as part of the same group for later processing (e.g., with PACE). </p>
+- <code>readonly COMPSET="WCYCL1850"</code>: compset (configuration)
+- <code>readonly RESOLUTION="ne30pg2_r05_IcoswISC30E3r5"</code>: resolution. In this example, we have:
+  - <code>ne30pg2</code>: atmosphere (ne30 dynamics grid -- 30 spectral elements, pg2 physics grid)
+  - <code>r05</code>: land and river on 1/2 lat/lon grid (commonly referred to as "tri-grid")
+  - <code>IcoswISC30E3r5</code>: ocean and sea-ice on Icosahedral 30 km mesh with ice shelves cavities (wISC), E3SMv3 (E3) revision r5.
+- <code>readonly CASE_NAME="your_casename"</code>: case name
+- <code># readonly CASE_GROUP=""</code>: This will let you mark multiple cases as part of the same group for later processing (e.g., with PACE). </p>
 <blockquote>
 <p>[!IMPORTANT]
 If this is part of a simulation campaign, ask your group lead about using a <code>CASE_GROUP</code> label. Otherwise, please use a unique name to distinguish from existing <code>CASE_GROUP</code> label names, (e.g., “v2.LR“).</p>
 </blockquote>
 <p><code># Code and compilation</code>
 - <code>readonly CHECKOUT="latest"</code>: Date the code was checked out on, in the form <code>{year}{month}{day}</code>. The source code will be checked out in <code>&lt;code_source__dir&gt;/{year}{month}{day}</code>.
-- <code>readonly BRANCH="master"</code> : branch the code was checked out from. Valid options include “master”, a branch name, or a git hash. For provenance purposes, it is best to specify the git hash.
-- <code>readonly DEBUG_COMPILE=false</code> : option to compile with DEBUG flag (leave set to false)</p>
+- <code>readonly BRANCH="master"</code>: branch the code was checked out from. Valid options include “master”, a branch name, or a git hash. For provenance purposes, it is best to specify the git hash.
+- <code>readonly DEBUG_COMPILE=false</code>: option to compile with DEBUG flag (leave set to false)</p>
 <blockquote>
 <p>[!IMPORTANT]
 BEFORE RUNNING: Change <code>CHECKOUT</code> to a date string like 20240301. </p>
@@ -1522,28 +1583,28 @@ BEFORE RUNNING: Change <code>CHECKOUT</code> to a date string like 20240301. </p
 A case is tied to one code base and one executable. That is, if you change <code>CHECKOUT</code> or <code>BRANCH</code>, then you should also change <code>CASE_NAME</code>.</p>
 </blockquote>
 <p><code># Run options</code>
-- <code>readonly MODEL_START_TYPE="initial"</code> : specify how the model should start – use initial conditions,  continue from existing restart files, branch, or hybrid (respectively: initial, continue, branch, hybrid).
-- <code>readonly START_DATE="0001-01-01"</code> : model start date. Typically year 1 for simulations with perpetual (time invariant) forcing or a real year for simulations with transient forcings.</p>
+- <code>readonly MODEL_START_TYPE="initial"</code>: specify how the model should start – use initial conditions,  continue from existing restart files, branch, or hybrid (respectively: initial, continue, branch, hybrid).
+- <code>readonly START_DATE="0001-01-01"</code>: model start date. Typically year 1 for simulations with perpetual (time invariant) forcing or a real year for simulations with transient forcings.</p>
 <p><code># Set paths</code>
-- <code>readonly CODE_ROOT="${HOME}/E3SMv3/code/${CHECKOUT}"</code> : where the E3SM code will be checked out.
+- <code>readonly CODE_ROOT="${HOME}/E3SMv3/code/${CHECKOUT}"</code>: where the E3SM code will be checked out.
 - <code>readonly CASE_ROOT="/pscratch/sd/r/${USER}/e3sm-scratch/${CASE_NAME}"</code>: where the results will go. The directory will be <code>&lt;simulations_dir&gt;/${CASE_NAME}</code>.</p>
 <p><code># Sub-directories</code>
-- <code>readonly CASE_BUILD_DIR=${CASE_ROOT}/build</code> : all the compilation files, including the executable.
-- <code>readonly CASE_ARCHIVE_DIR=${CASE_ROOT}/archive</code> : where short-term archived files will reside.</p>
+- <code>readonly CASE_BUILD_DIR=${CASE_ROOT}/build</code>: all the compilation files, including the executable.
+- <code>readonly CASE_ARCHIVE_DIR=${CASE_ROOT}/archive</code>: where short-term archived files will reside.</p>
 <p><code># Define type of run</code>
-- <code>readonly run='XS_2x5_ndays'</code> : type of simulation to run – i.e, a short test for verification or a long production run. (See next section for details).</p>
+- <code>readonly run='XS_2x5_ndays'</code>: type of simulation to run – i.e, a short test for verification or a long production run. (See next section for details).</p>
 <p><code># Coupler history</code>
 - <code>readonly HIST_OPTION="nyears"</code>
 - <code>readonly HIST_N="5"</code></p>
 <p><code># Leave empty (unless you understand what it does)</code>
-- <code>readonly OLD_EXECUTABLE=""</code> : this is a somewhat risky option that allows you to re-use a pre-existing executable. This is not recommended because it breaks provenance.</p>
+- <code>readonly OLD_EXECUTABLE=""</code>: this is a somewhat risky option that allows you to re-use a pre-existing executable. This is not recommended because it breaks provenance.</p>
 <p><code># --- Toggle flags for what to do ----</code></p>
 <p>This section controls what operations the script should perform. The run_e3sm script can be invoked multiple times with the user having the option to bypass certain steps by toggling true / false.
-- <code>do_fetch_code=true</code> : fetch the source code from Github.
-- <code>do_create_newcase=true</code> : create new case.
-- <code>do_case_setup=true</code> : case setup.
-- <code>do_case_build=false</code> : compile.
-- <code>do_case_submit=true</code> : submit simulation.</p>
+- <code>do_fetch_code=true</code>: fetch the source code from Github.
+- <code>do_create_newcase=true</code>: create new case.
+- <code>do_case_setup=true</code>: case setup.
+- <code>do_case_build=false</code>: compile.
+- <code>do_case_submit=true</code>: submit simulation.</p>
 <p>The first time the script is called, all the flags should be set to true. Subsequently, the user may decide to bypass code checkout (<code>do_fetch_code=false</code>) or compilation (<code>do_case_build=false</code>). A user may also prefer to manually submit the job by setting <code>do_case_submit=false</code> and then invoking <code>./case.submit</code>.</p>
 <h1 id="running-the-model">Running the Model</h1>
 <h2 id="short-tests">Short Tests</h2>
@@ -1555,26 +1616,26 @@ A case is tied to one code base and one executable. That is, if you change <code
 <p>Many code bugs can be caught with (2) and (3). While the E3SM nightly tests should catch such non-BFB errors, it is possible that you’ll be running a slightly different configuration (e.g., a different physics option) for which those tests have not been performed.</p>
 <h3 id="running-short-tests">Running Short Tests</h3>
 <p>The type of run to perform is controlled by the script variable <code>run</code>. You should typically perform at least two short tests (two different layouts, with and without restart). Let’s start with a short test using the 'S' (small) PE layout and running for 2x5 days: <code>readonly run='S_2x5_ndays'</code>. If you have not fetched and compiled the code, set all the toggle flags to true:
-<div class="highlight"><pre><span></span><code>do_fetch_code=true
-do_create_newcase=true
-do_case_setup=true
-do_case_build=true
-do_case_submit=true
+<div class="highlight"><pre><span></span><code><span class="nv">do_fetch_code</span><span class="o">=</span><span class="nb">true</span>
+<span class="nv">do_create_newcase</span><span class="o">=</span><span class="nb">true</span>
+<span class="nv">do_case_setup</span><span class="o">=</span><span class="nb">true</span>
+<span class="nv">do_case_build</span><span class="o">=</span><span class="nb">true</span>
+<span class="nv">do_case_submit</span><span class="o">=</span><span class="nb">true</span>
 </code></pre></div>
 At this point, execute the run_e3sm script:
-<div class="highlight"><pre><span></span><code>cd &lt;run_scripts_dir&gt;
+<div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>&lt;run_scripts_dir&gt;
 ./run.&lt;case_name&gt;.sh
 </code></pre></div>
 Fetching the code and compiling it will take some time (30 to 45 minutes). Once the script finishes, the test job will have been submitted to the batch queue. </p>
 <p>You can immediately edit the script to prepare for the second short test. In this case, we will be running for 10 days (without restart) using the 'M' (medium PE layout): <code>readonly run='M_1x10_ndays'</code>. Since the code has already been fetched and compiled, change the toggle flags:
-<div class="highlight"><pre><span></span><code>do_fetch_code=false
-do_create_newcase=true
-do_case_setup=true
-do_case_build=false
-do_case_submit=true
+<div class="highlight"><pre><span></span><code><span class="nv">do_fetch_code</span><span class="o">=</span><span class="nb">false</span>
+<span class="nv">do_create_newcase</span><span class="o">=</span><span class="nb">true</span>
+<span class="nv">do_case_setup</span><span class="o">=</span><span class="nb">true</span>
+<span class="nv">do_case_build</span><span class="o">=</span><span class="nb">false</span>
+<span class="nv">do_case_submit</span><span class="o">=</span><span class="nb">true</span>
 </code></pre></div>
 and execute the script:
-<div class="highlight"><pre><span></span><code>cd &lt;run_scripts_dir&gt;
+<div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>&lt;run_scripts_dir&gt;
 ./run.&lt;case_name&gt;.sh
 </code></pre></div></p>
 <p>Since we are bypassing the code fetch and compilation (by re-using the previous executable), the script should only take a few seconds to run and submit the second test.</p>
@@ -1584,37 +1645,37 @@ The short tests use separate output directories, so it is safe to submit and run
 </blockquote>
 <h3 id="verrifying-results-are-bfb">Verrifying Results are BFB</h3>
 <p>Once the short tests are complete, we can confirm the results were bit-for-bit (BFB) the same. All the test output is located under the <code>tests</code> directory. To verify that the results are indeed BFB, we extract the global integral from the atmosphere log files (lines starting with ‘nstep, te’) and make sure that they are identical for all tests. 
-<div class="highlight"><pre><span></span><code>cd &lt;simulations_dir&gt;/&lt;case_name&gt;/tests
-for test in *
-do
-  zgrep -h &#39;^ nstep, te &#39; ${test}/run/atm.log.*.gz | uniq &gt; atm_${test}.txt
-done
-md5sum *.txt
-&lt;hash&gt;  atm_M_1x10_ndays.txt
-&lt;matching hash&gt;  atm_M80_1x10_ndays.txt
-&lt;matching hash&gt;  atm_S_2x5_ndays.txt
+<div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>&lt;simulations_dir&gt;/&lt;case_name&gt;/tests
+<span class="k">for</span><span class="w"> </span><span class="nb">test</span><span class="w"> </span><span class="k">in</span><span class="w"> </span>*
+<span class="k">do</span>
+<span class="w">  </span>zgrep<span class="w"> </span>-h<span class="w"> </span><span class="s1">&#39;^ nstep, te &#39;</span><span class="w"> </span><span class="si">${</span><span class="nv">test</span><span class="si">}</span>/run/atm.log.*.gz<span class="w"> </span><span class="p">|</span><span class="w"> </span>uniq<span class="w"> </span>&gt;<span class="w"> </span>atm_<span class="si">${</span><span class="nv">test</span><span class="si">}</span>.txt
+<span class="k">done</span>
+md5sum<span class="w"> </span>*.txt
+&lt;hash&gt;<span class="w">  </span>atm_M_1x10_ndays.txt
+&lt;matching<span class="w"> </span>hash&gt;<span class="w">  </span>atm_M80_1x10_ndays.txt
+&lt;matching<span class="w"> </span>hash&gt;<span class="w">  </span>atm_S_2x5_ndays.txt
 </code></pre></div>
 If the BFB check fails, you should stop here and understand why. If they succeed, you can now start the production simulation.</p>
 <h2 id="production-simulation">Production Simulation</h2>
 <p>To prepare for the long production simulation, edit the run_e3sm script and set <code>readonly run='production'</code>. In addition, you may need to customize some variables in the code block below to configure run options:</p>
 <p><code># Production simulation</code>
 - <code>readonly PELAYOUT="L"</code>: 1=single processor, S=small, M=medium, L=large, X1=very large, X2=very very large. Production simulations typically use M or L. The size determines how many nodes will be used. The exact number of nodes will differ amongst machines.
-- <code>readonly WALLTIME="34:00:00"</code> : maximum wall clock time requested for the batch jobs.
-- <code>readonly STOP_OPTION="nyears"</code> : see next line
-- <code>readonly STOP_N="50"</code> : units and length of each segment (i.e., each batch job). E.g, the current configuration stops after 50 years.
+- <code>readonly WALLTIME="34:00:00"</code>: maximum wall clock time requested for the batch jobs.
+- <code>readonly STOP_OPTION="nyears"</code>: see next line
+- <code>readonly STOP_N="50"</code>: units and length of each segment (i.e., each batch job). E.g, the current configuration stops after 50 years.
 - <code>readonly REST_OPTION="nyears"</code>: see next line
-- <code>readonly REST_N="5"</code> : units and frequency for writing restart files (make sure <code>STOP_N</code> is a multiple of <code>REST_N</code>, otherwise the model will stop without writing a restart fie at the end). E.g., the current configurations saves restart files after every 5 years. 10 restart files will be saved, since <code>STOP_N=50</code>.
-- <code>readonly RESUBMIT=”9”</code> : number of resubmissions beyond the original segment. This simulation would run for a total of 500 years (=inital 50 + 9x50).
-- <code>readonly DO_SHORT_TERM_ARCHIVING=false</code> : leave set to false if you want to manually run the short term archive.</p>
+- <code>readonly REST_N="5"</code>: units and frequency for writing restart files (make sure <code>STOP_N</code> is a multiple of <code>REST_N</code>, otherwise the model will stop without writing a restart fie at the end). E.g., the current configurations saves restart files after every 5 years. 10 restart files will be saved, since <code>STOP_N=50</code>.
+- <code>readonly RESUBMIT=”9”</code>: number of resubmissions beyond the original segment. This simulation would run for a total of 500 years (=inital 50 + 9x50).
+- <code>readonly DO_SHORT_TERM_ARCHIVING=false</code>: leave set to false if you want to manually run the short term archive.</p>
 <p>Since the code has already been fetched and compiled for the short tests, the toggle flags can be set to:
-<div class="highlight"><pre><span></span><code>do_fetch_code=false
-do_create_newcase=true
-do_case_setup=true
-do_case_build=false
-do_case_submit=true
+<div class="highlight"><pre><span></span><code><span class="nv">do_fetch_code</span><span class="o">=</span><span class="nb">false</span>
+<span class="nv">do_create_newcase</span><span class="o">=</span><span class="nb">true</span>
+<span class="nv">do_case_setup</span><span class="o">=</span><span class="nb">true</span>
+<span class="nv">do_case_build</span><span class="o">=</span><span class="nb">false</span>
+<span class="nv">do_case_submit</span><span class="o">=</span><span class="nb">true</span>
 </code></pre></div>
 Finally, execute the script:
-<div class="highlight"><pre><span></span><code>cd &lt;run_scripts_dir&gt;
+<div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>&lt;run_scripts_dir&gt;
 ./run.&lt;case_name&gt;.sh
 </code></pre></div>
 The script will automatically submit the first job. New jobs will be automatically be resubmitted at the end until the total number of segments have been run.</p>
@@ -1643,9 +1704,9 @@ When running on two different machines (such as Compy and Chrysalis) and/or two 
 This can be done while the model is still running.</p>
 </blockquote>
 <p>Use <code>--force-move</code> to move instead of copying, which can take a long time. Set <code>--last-date</code> to the latest date in the simulation you want to archive. You do not have to specify a beginning date.
-<div class="highlight"><pre><span></span><code>cd &lt;simulations_dir&gt;/&lt;case_name&gt;/case_scripts
-./case.st_archive --last-date 0051-01-01 --force-move --no-incomplete-logs
-ls &lt;e3sm_simulations_dir&gt;/&lt;case_name&gt;/archive
+<div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>&lt;simulations_dir&gt;/&lt;case_name&gt;/case_scripts
+./case.st_archive<span class="w"> </span>--last-date<span class="w"> </span><span class="m">0051</span>-01-01<span class="w"> </span>--force-move<span class="w"> </span>--no-incomplete-logs
+ls<span class="w"> </span>&lt;e3sm_simulations_dir&gt;/&lt;case_name&gt;/archive
 </code></pre></div>
 Each component of the model has a directory under <code>archive/</code>. There are also two additional directories under <code>archive/</code>: <code>logs</code> holds the gzipped log files and <code>rest</code> holds the restart files.
 | Component | Directory | File naming pattern |
@@ -1658,19 +1719,19 @@ Each component of the model has a directory under <code>archive/</code>. There a
 | River Runoff (MOSART) | <code>archive/rof/hist</code> | <code>*.mosart.h*</code> |</p>
 <h1 id="performance-information">Performance Information</h1>
 <p>Model throughput is the number of simulated years per day (SYPD). You can find this with:
-<div class="highlight"><pre><span></span><code>cd &lt;simulations_dir&gt;/&lt;case_name&gt;/case_scripts/timing
-grep &quot;simulated_years&quot; e3sm*
+<div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>&lt;simulations_dir&gt;/&lt;case_name&gt;/case_scripts/timing
+grep<span class="w"> </span><span class="s2">&quot;simulated_years&quot;</span><span class="w"> </span>e3sm*
 </code></pre></div>
 PACE provides detailed performance information. Go to <a href="https://pace.ornl.gov/">PACE</a> and enter your username to search for your jobs. You can also simply search by providing the JobID appended to log files (<code>NNNNN.yymmdd-hhmmss</code> where <code>NNNNN</code> is the SLURM job id). Click on a job ID to see its performance details. “Experiment Details” are listed at the top of the job’s page. There is also a helpful chart detailing how many processors and how much time each component (<code>atm</code>, <code>ocn</code>, etc.) used. White areas indicate time spent idle/waiting. The area of each box is essentially the "cost = simulation time * number of processors" of the corresponding component.</p>
 <h1 id="re-submitting-a-job-after-a-crash">Re-Submitting a Job After a Crash</h1>
 <p>If a job crashes, you can rerun with:
-<div class="highlight"><pre><span></span><code>cd &lt;simulations_dir&gt;/&lt;case_name&gt;/case_scripts
-# Make any changes necessary to avoid the crash
+<div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>&lt;simulations_dir&gt;/&lt;case_name&gt;/case_scripts
+<span class="c1"># Make any changes necessary to avoid the crash</span>
 ./case.submit
 </code></pre></div>
 If you need to change a XML value, the following commands in the <code>case_scripts</code> directory are useful:
-<div class="highlight"><pre><span></span><code>&gt; ./xmlquery &lt;variable&gt;                   # Get value of a variable
-&gt; ./xmlchange -id &lt;variable&gt; -val &lt;value&gt; # Set value of a variable
+<div class="highlight"><pre><span></span><code>&gt;<span class="w"> </span>./xmlquery<span class="w"> </span>&lt;variable&gt;<span class="w">                   </span><span class="c1"># Get value of a variable</span>
+&gt;<span class="w"> </span>./xmlchange<span class="w"> </span>-id<span class="w"> </span>&lt;variable&gt;<span class="w"> </span>-val<span class="w"> </span>&lt;value&gt;<span class="w"> </span><span class="c1"># Set value of a variable</span>
 </code></pre></div>
 Before re-submitting:
 - Check that the rpointer files all point to the last restart. On very rare occasions, there might be some inconsistency if the model crashed at the end.. Run <code>head -n 1 rpointer.*</code> to see the restart date.
@@ -1719,9 +1780,9 @@ The output of your simulation (<code>&lt;simulations_dir&gt;/&lt;case_name&gt;</
 - <code>years</code> should match the <code>[climo]</code> section <code>years</code></p>
 <p><code>[mpas_analysis]</code>
 Years can be specified separately for time series, climatology, and ENSO plots. The lists must have the same lengths and each entry will be mapped to a realization of <code>mpas_analysis</code>:
-<div class="highlight"><pre><span></span><code>climo_years =&quot;21-50&quot;, &quot;51-100&quot;,
-enso_years = &quot;11-50&quot;, &quot;11-100&quot;,
-ts_years = &quot;1-50&quot;, &quot;1-100&quot;,
+<div class="highlight"><pre><span></span><code><span class="nv">climo_years</span><span class="w"> </span><span class="o">=</span><span class="s2">&quot;21-50&quot;</span>,<span class="w"> </span><span class="s2">&quot;51-100&quot;</span>,
+<span class="nv">enso_years</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;11-50&quot;</span>,<span class="w"> </span><span class="s2">&quot;11-100&quot;</span>,
+<span class="nv">ts_years</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;1-50&quot;</span>,<span class="w"> </span><span class="s2">&quot;1-100&quot;</span>,
 </code></pre></div>
 In this particular example, MPAS Analysis will be run twice. The first realization will produce 
 climatology plots averaged over years 21-50, ENSO plots for years 11 to 50, and time series plots covering years 1 to 50. The second realization will cover years 51-100 for climatologies, 11-100 for ENSO, and 1-100 for time series.</p>
@@ -1736,9 +1797,9 @@ See the <code>zppy</code> <a href="https://e3sm-project.github.io/zppy/_build/ht
 <p><code>zppy</code> automatically handles dependencies of jobs. E.g., <code>e3sm_diags</code> jobs are dependent on <code>climo</code> and <code>ts</code> jobs, so they wait for those to finish. MPAS Analysis jobs re-use computations, so they are chained.</p>
 <p>Most jobs run quickly, though E3SM Diags may take around an hour and MPAS Analysis may take several hours.</p>
 <p><code>zppy</code> creates a new directory <code>&lt;simulations_dir&gt;/&lt;case_name&gt;/post</code>. Each realization will have a shell script (typically <code>bash</code>). This is the actual file that has been submitted to the <code>batch</code> system. There will also be a log file <code>*.o&lt;job ID&gt;</code> as well as a <code>*.status</code> file. The status file indicates the state (WAITING, RUNNING, OK, ERROR). These files can be found in <code>&lt;simulations_dir&gt;/&lt;case_name&gt;/post/scripts</code>. Once all the jobs are complete, you can check their status.
-<div class="highlight"><pre><span></span><code>cd &lt;simulations_dir&gt;/&lt;case_name&gt;/post/scripts
-cat *.status # should be a list of &quot;OK&quot;
-grep -v &quot;OK&quot; *.status # lists files without &quot;OK&quot;
+<div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>&lt;simulations_dir&gt;/&lt;case_name&gt;/post/scripts
+cat<span class="w"> </span>*.status<span class="w"> </span><span class="c1"># should be a list of &quot;OK&quot;</span>
+grep<span class="w"> </span>-v<span class="w"> </span><span class="s2">&quot;OK&quot;</span><span class="w"> </span>*.status<span class="w"> </span><span class="c1"># lists files without &quot;OK&quot;</span>
 </code></pre></div>
 If you re-run <code>zppy</code>, it will check the status of tasks and will skip a task if its status is “OK”. As your simulation progresses, you can update the post-processing years in the configuration file and re-run <code>zppy</code>. Newly added task will be submitted, while previously completed ones will be skipped.</p>
 <h2 id="tasks">Tasks</h2>
@@ -1761,14 +1822,14 @@ There is also a corresponding output file. It will have the same name but end wi
 
 <h2 id="code">Code</h2>
 <p><code>code_root_dir</code> and <code>tag_name</code> are defined in <code>&lt;run_scripts_dir&gt;/run.&lt;case_name&gt;.sh</code> as <code>CODE_ROOT</code> and <code>BRANCH</code> respectively.
-<div class="highlight"><pre><span></span><code>cd &lt;code_root_dir&gt;/&lt;tag_name&gt;
-git log
+<div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>&lt;code_root_dir&gt;/&lt;tag_name&gt;
+git<span class="w"> </span>log
 </code></pre></div>
 The commit hash at the top is the most recent commit. Add <code>“&lt;branch name&gt;, &lt;commit hash&gt;”</code> to this section of your page.</p>
 <h2 id="configuration">Configuration</h2>
 <p><code>Compset</code> and <code>Res</code> are specified on in the PACE “Experiment Details” section. See “Performance Information” above for how to access PACE. Choose the latest job and list these settings on your page. Custom parameters should also be listed. Find these by running:
-<div class="highlight"><pre><span></span><code>cd &lt;run_scripts_dir&gt;
-grep -n &quot;EOF &gt;&gt; user_nl&quot; run.&lt;case_name&gt;.sh # Find the line numbers to look at
+<div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>&lt;run_scripts_dir&gt;
+grep<span class="w"> </span>-n<span class="w"> </span><span class="s2">&quot;EOF &gt;&gt; user_nl&quot;</span><span class="w"> </span>run.&lt;case_name&gt;.sh<span class="w"> </span><span class="c1"># Find the line numbers to look at</span>
 </code></pre></div>
 Copy the code blocks after <code>cat &lt;&lt;EOF &gt;&gt; user_nl_eam</code>, <code>cat &lt;&lt; EOF &gt;&gt; user_nl_elm</code>, and <code>cat &lt;&lt; EOF &gt;&gt; user_nl_mosart</code> to your page.</p>
 <h2 id="scripts">Scripts</h2>
@@ -1780,15 +1841,15 @@ Copy the code blocks after <code>cat &lt;&lt;EOF &gt;&gt; user_nl_eam</code>, <c
 <p>Log file names will give you the job IDs. Logs are found in <code>&lt;simulations_dir&gt;/&lt;case_name&gt;/run/</code>. If you have done short term archiving, then they will instead be in <code>&lt;simulations_dir&gt;/&lt;case_name&gt;/archive/logs/</code>.  Use <code>ls</code> to see what logs are in the directory. The job ID will be the two-part (period-separated) number after <code>.log.</code>.</p>
 <p>PACE’s “Experiment Details” section shows <code>JobID</code> as well. In the table, link each job ID to its corresponding PACE web page. Note that failed jobs will not have a web page on PACE, but you should still list them in the table.</p>
 <p>Use <code>zgrep "DATE=" &lt;log&gt; | head -n 1</code> to find the start date. Use <code>zgrep "DATE=" &lt;log&gt; | tail -n 1</code> to find the end date. If you would like, you can write a bash function to make this easier:
-<div class="highlight"><pre><span></span><code>get_dates()
-{
-    for f in atm.log.*.gz; do
-        echo $f
-        zgrep &quot;DATE=&quot; $f | head -n 1
-        zgrep &quot;DATE=&quot; $f | tail -n 1
-    echo &quot;&quot;
-    done
-}
+<div class="highlight"><pre><span></span><code>get_dates<span class="o">()</span>
+<span class="o">{</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span>f<span class="w"> </span><span class="k">in</span><span class="w"> </span>atm.log.*.gz<span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<span class="w">        </span><span class="nb">echo</span><span class="w"> </span><span class="nv">$f</span>
+<span class="w">        </span>zgrep<span class="w"> </span><span class="s2">&quot;DATE=&quot;</span><span class="w"> </span><span class="nv">$f</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-n<span class="w"> </span><span class="m">1</span>
+<span class="w">        </span>zgrep<span class="w"> </span><span class="s2">&quot;DATE=&quot;</span><span class="w"> </span><span class="nv">$f</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tail<span class="w"> </span>-n<span class="w"> </span><span class="m">1</span>
+<span class="w">    </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
+<span class="w">    </span><span class="k">done</span>
+<span class="o">}</span>
 </code></pre></div>
 (If <code>zgrep</code> is unavailable, use <code>less &lt;log&gt;</code> to look at a gzipped log file. Scroll down a decent amount to <code>DATE=</code> to find the start date. Use <code>SHIFT+g</code> to go to the end of the file. Scroll up to <code>DATE=</code> to find the end date.)</p>
 <p>In the “Years” column specify <code>&lt;start&gt; - &lt;end&gt;</code>, with each in <code>year-month-day</code> format.</p>
@@ -1828,34 +1889,34 @@ Compy, Anvil and Chrysalis do not have local HPSS. We rely on NERSC HPSS for lon
 </blockquote>
 <h2 id="1-clean-up-directory">1. Clean up directory</h2>
 <p>Log into the machine that you ran the simulation on. Remove all <code>eam.i</code> files except the latest one. Dates are of the form <code>&lt;YYYY-MM-DD&gt;</code>.
-<div class="highlight"><pre><span></span><code>$ cd &lt;simulations_dir&gt;/&lt;case_name&gt;/run
-$ ls | wc -l # See how many items are in this directory
-$ mv &lt;case_name&gt;.eam.i.&lt;Latest YYYY-MM-DD&gt;-00000.nc tmp.nc
-$ rm &lt;case_name&gt;.eam.i.*.nc
-$ mv tmp.nc &lt;case_name&gt;.eam.i.&lt;Latest YYYY-MM-DD&gt;-00000.nc
-$ ls | wc -l # See how many items are in this directory
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>&lt;simulations_dir&gt;/&lt;case_name&gt;/run
+$<span class="w"> </span>ls<span class="w"> </span><span class="p">|</span><span class="w"> </span>wc<span class="w"> </span>-l<span class="w"> </span><span class="c1"># See how many items are in this directory</span>
+$<span class="w"> </span>mv<span class="w"> </span>&lt;case_name&gt;.eam.i.&lt;Latest<span class="w"> </span>YYYY-MM-DD&gt;-00000.nc<span class="w"> </span>tmp.nc
+$<span class="w"> </span>rm<span class="w"> </span>&lt;case_name&gt;.eam.i.*.nc
+$<span class="w"> </span>mv<span class="w"> </span>tmp.nc<span class="w"> </span>&lt;case_name&gt;.eam.i.&lt;Latest<span class="w"> </span>YYYY-MM-DD&gt;-00000.nc
+$<span class="w"> </span>ls<span class="w"> </span><span class="p">|</span><span class="w"> </span>wc<span class="w"> </span>-l<span class="w"> </span><span class="c1"># See how many items are in this directory</span>
 </code></pre></div>
 There may still be more files than is necessary to archive. You can probably remove <code>*.err</code>, <code>*.lock</code>, <code>*debug_block*</code>, <code>*ocean_block_stats*</code> files.</p>
 <h2 id="2-zstash-create-transfer-to-nersc-hpss">2. <code>zstash create</code> &amp; Transfer to NERSC HPSS</h2>
 <p>On the machine that you ran the simulation on:</p>
 <p>If you don’t have one already, create a directory for utilities, e.g., <code>utils/</code>. Then, open a file in that directory called <code>batch_zstash_create.bash</code> and paste the following in it, making relevant edits:
-<div class="highlight"><pre><span></span><code>#!/bin/bash
-# Run on &lt;machine name&gt;
-# Load E3SM Unified
-&lt;Command to load the E3SM Unified environment&gt;
-# List of experiments to archive with zstash
-EXPS=(\
-&lt;case_name&gt; \
-)
-# Loop over simulations
-for EXP in &quot;${EXPS[@]}&quot;
-do
-    echo === Archiving ${EXP} ===
-    cd &lt;simulations_dir&gt;/${EXP}
-    mkdir -p zstash
-    stamp=`date +%Y%m%d`
-    time zstash create -v --hpss=globus://nersc/home/&lt;first letter&gt;/&lt;username&gt;/E3SMv2/${EXP} --maxsize 128 . 2&gt;&amp;1 | tee zstash/zstash_create_${stamp}.log
-done
+<div class="highlight"><pre><span></span><code><span class="ch">#!/bin/bash</span>
+<span class="c1"># Run on &lt;machine name&gt;</span>
+<span class="c1"># Load E3SM Unified</span>
+&lt;Command<span class="w"> </span>to<span class="w"> </span>load<span class="w"> </span>the<span class="w"> </span>E3SM<span class="w"> </span>Unified<span class="w"> </span>environment&gt;
+<span class="c1"># List of experiments to archive with zstash</span>
+<span class="nv">EXPS</span><span class="o">=(</span><span class="se">\</span>
+&lt;case_name&gt;<span class="w"> </span><span class="se">\</span>
+<span class="o">)</span>
+<span class="c1"># Loop over simulations</span>
+<span class="k">for</span><span class="w"> </span>EXP<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">EXPS</span><span class="p">[@]</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="k">do</span>
+<span class="w">    </span><span class="nb">echo</span><span class="w"> </span><span class="o">===</span><span class="w"> </span>Archiving<span class="w"> </span><span class="si">${</span><span class="nv">EXP</span><span class="si">}</span><span class="w"> </span><span class="o">===</span>
+<span class="w">    </span><span class="nb">cd</span><span class="w"> </span>&lt;simulations_dir&gt;/<span class="si">${</span><span class="nv">EXP</span><span class="si">}</span>
+<span class="w">    </span>mkdir<span class="w"> </span>-p<span class="w"> </span>zstash
+<span class="w">    </span><span class="nv">stamp</span><span class="o">=</span><span class="sb">`</span>date<span class="w"> </span>+%Y%m%d<span class="sb">`</span>
+<span class="w">    </span><span class="nb">time</span><span class="w"> </span>zstash<span class="w"> </span>create<span class="w"> </span>-v<span class="w"> </span>--hpss<span class="o">=</span>globus://nersc/home/&lt;first<span class="w"> </span>letter&gt;/&lt;username&gt;/E3SMv2/<span class="si">${</span><span class="nv">EXP</span><span class="si">}</span><span class="w"> </span>--maxsize<span class="w"> </span><span class="m">128</span><span class="w"> </span>.<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tee<span class="w"> </span>zstash/zstash_create_<span class="si">${</span><span class="nv">stamp</span><span class="si">}</span>.log
+<span class="k">done</span>
 </code></pre></div>
 Load the E3SM Unified environment.</p>
 <blockquote>
@@ -1863,117 +1924,117 @@ Load the E3SM Unified environment.</p>
 The E3SM Unified environment activation commands can be found on <a href="https://e3sm-project.github.io/zppy/_build/html/main/getting_started.html">zppy's Getting started page</a>. Alternatively, they can be found using <a href="https://github.com/E3SM-Project/mache/tree/main/mache/machines">Mache</a>: click the relevant machine and find the <code>base_path</code> listed under <code>[e3sm_unified]</code> -- the activation command will be <code>source &lt;base_path&gt;/load_latest_e3sm_unified_&lt;machine_name&gt;.sh</code>.</p>
 </blockquote>
 <p>Then, do the following:</p>
-<p><div class="highlight"><pre><span></span><code>$ screen # Enter screen
-$ screen -ls # Output should say &quot;Attached&quot;
-$ ./batch_zstash_create.bash 2&gt;&amp;1 | tee batch_zstash_create.log
-# Control A D to exit screen
-# DO NOT CONTROL X / CONTROL C (as for emacs). This will terminate the task running in screen!!!
-$ screen -ls # Output should say &quot;Detached&quot;
-$ hostname
-# If you log in on another login node, 
-# then you will need to ssh to this one to get back to the screen session.
-$ tail -f batch_zstash_create.log # Check log without going into screen
-# Wait for this to finish
-$ screen -r # Return to screen
-# Check that output ends with `real`, `user`, `sys` time information
-$ exit # Terminate screen
-$ screen -ls # The screen should no longer be listed
-$ ls &lt;simulations_dir&gt;/&lt;case_name&gt;/zstash
-# `index.db`, and a `zstash_create` log should be present
-# No tar files should be listed
-# If you&#39;d like to know how much space the archive or entire simulation use, run:
-$ du -sh &lt;simulations_dir&gt;/&lt;case_name&gt;/zstash
-$ du -sh &lt;simulations_dir&gt;/&lt;case_name&gt;
+<p><div class="highlight"><pre><span></span><code>$<span class="w"> </span>screen<span class="w"> </span><span class="c1"># Enter screen</span>
+$<span class="w"> </span>screen<span class="w"> </span>-ls<span class="w"> </span><span class="c1"># Output should say &quot;Attached&quot;</span>
+$<span class="w"> </span>./batch_zstash_create.bash<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tee<span class="w"> </span>batch_zstash_create.log
+<span class="c1"># Control A D to exit screen</span>
+<span class="c1"># DO NOT CONTROL X / CONTROL C (as for emacs). This will terminate the task running in screen!!!</span>
+$<span class="w"> </span>screen<span class="w"> </span>-ls<span class="w"> </span><span class="c1"># Output should say &quot;Detached&quot;</span>
+$<span class="w"> </span>hostname
+<span class="c1"># If you log in on another login node, </span>
+<span class="c1"># then you will need to ssh to this one to get back to the screen session.</span>
+$<span class="w"> </span>tail<span class="w"> </span>-f<span class="w"> </span>batch_zstash_create.log<span class="w"> </span><span class="c1"># Check log without going into screen</span>
+<span class="c1"># Wait for this to finish</span>
+$<span class="w"> </span>screen<span class="w"> </span>-r<span class="w"> </span><span class="c1"># Return to screen</span>
+<span class="c1"># Check that output ends with `real`, `user`, `sys` time information</span>
+$<span class="w"> </span><span class="nb">exit</span><span class="w"> </span><span class="c1"># Terminate screen</span>
+$<span class="w"> </span>screen<span class="w"> </span>-ls<span class="w"> </span><span class="c1"># The screen should no longer be listed</span>
+$<span class="w"> </span>ls<span class="w"> </span>&lt;simulations_dir&gt;/&lt;case_name&gt;/zstash
+<span class="c1"># `index.db`, and a `zstash_create` log should be present</span>
+<span class="c1"># No tar files should be listed</span>
+<span class="c1"># If you&#39;d like to know how much space the archive or entire simulation use, run:</span>
+$<span class="w"> </span>du<span class="w"> </span>-sh<span class="w"> </span>&lt;simulations_dir&gt;/&lt;case_name&gt;/zstash
+$<span class="w"> </span>du<span class="w"> </span>-sh<span class="w"> </span>&lt;simulations_dir&gt;/&lt;case_name&gt;
 </code></pre></div>
 Then, on NERSC/Perlmutter:
-<div class="highlight"><pre><span></span><code>$ hsi
-$ ls /home/&lt;first letter&gt;/&lt;username&gt;/E3SMv2/&lt;case_name&gt;
-# Tar files and `index.db` should be listed.
-# Note `| wc -l` doesn&#39;t work on hsi
-$ exit
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>hsi
+$<span class="w"> </span>ls<span class="w"> </span>/home/&lt;first<span class="w"> </span>letter&gt;/&lt;username&gt;/E3SMv2/&lt;case_name&gt;
+<span class="c1"># Tar files and `index.db` should be listed.</span>
+<span class="c1"># Note `| wc -l` doesn&#39;t work on hsi</span>
+$<span class="w"> </span><span class="nb">exit</span>
 </code></pre></div></p>
 <h2 id="3-zstash-check">3. <code>zstash check</code></h2>
 <p>On a NERSC machine (Perlmutter):
-<div class="highlight"><pre><span></span><code>$ cd /global/homes/&lt;first letter&gt;/&lt;username&gt;
-$ emacs batch_zstash_check.bash
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>/global/homes/&lt;first<span class="w"> </span>letter&gt;/&lt;username&gt;
+$<span class="w"> </span>emacs<span class="w"> </span>batch_zstash_check.bash
 </code></pre></div>
 Paste the following in that file, making relevant edits:
-<div class="highlight"><pre><span></span><code>#!/bin/bash
-# Run on NERSC dtn
-# Load environment that includes zstash
-&lt;Command to load the E3SM Unified environment&gt;
-# List of experiments to archive with zstash
-EXPS=(\
-&lt;case_name&gt; \
-)
-# Loop over simulations
-for EXP in &quot;${EXPS[@]}&quot;
-do
-    echo === Checking ${EXP} ===
-    cd /global/cfs/cdirs/e3sm/&lt;username&gt;/E3SMv2
-    mkdir -p ${EXP}/zstash
-    cd ${EXP}
-    stamp=`date +%Y%m%d`
-    time zstash check -v --hpss=/home/&lt;first letter&gt;/&lt;username&gt;/E3SMv2/${EXP} --workers 2 2&gt;&amp;1 | tee zstash/zstash_check_${stamp}.log
-done
+<div class="highlight"><pre><span></span><code><span class="ch">#!/bin/bash</span>
+<span class="c1"># Run on NERSC dtn</span>
+<span class="c1"># Load environment that includes zstash</span>
+&lt;Command<span class="w"> </span>to<span class="w"> </span>load<span class="w"> </span>the<span class="w"> </span>E3SM<span class="w"> </span>Unified<span class="w"> </span>environment&gt;
+<span class="c1"># List of experiments to archive with zstash</span>
+<span class="nv">EXPS</span><span class="o">=(</span><span class="se">\</span>
+&lt;case_name&gt;<span class="w"> </span><span class="se">\</span>
+<span class="o">)</span>
+<span class="c1"># Loop over simulations</span>
+<span class="k">for</span><span class="w"> </span>EXP<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">EXPS</span><span class="p">[@]</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="k">do</span>
+<span class="w">    </span><span class="nb">echo</span><span class="w"> </span><span class="o">===</span><span class="w"> </span>Checking<span class="w"> </span><span class="si">${</span><span class="nv">EXP</span><span class="si">}</span><span class="w"> </span><span class="o">===</span>
+<span class="w">    </span><span class="nb">cd</span><span class="w"> </span>/global/cfs/cdirs/e3sm/&lt;username&gt;/E3SMv2
+<span class="w">    </span>mkdir<span class="w"> </span>-p<span class="w"> </span><span class="si">${</span><span class="nv">EXP</span><span class="si">}</span>/zstash
+<span class="w">    </span><span class="nb">cd</span><span class="w"> </span><span class="si">${</span><span class="nv">EXP</span><span class="si">}</span>
+<span class="w">    </span><span class="nv">stamp</span><span class="o">=</span><span class="sb">`</span>date<span class="w"> </span>+%Y%m%d<span class="sb">`</span>
+<span class="w">    </span><span class="nb">time</span><span class="w"> </span>zstash<span class="w"> </span>check<span class="w"> </span>-v<span class="w"> </span>--hpss<span class="o">=</span>/home/&lt;first<span class="w"> </span>letter&gt;/&lt;username&gt;/E3SMv2/<span class="si">${</span><span class="nv">EXP</span><span class="si">}</span><span class="w"> </span>--workers<span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tee<span class="w"> </span>zstash/zstash_check_<span class="si">${</span><span class="nv">stamp</span><span class="si">}</span>.log
+<span class="k">done</span>
 </code></pre></div></p>
 <blockquote>
 <p>[!TIP]
 If you want to check a long simulation, you can use the <code>--tars</code> option to split the checking into more manageable pieces:
-<div class="highlight"><pre><span></span><code># Starting at 00005a until the end
-zstash check --tars=00005a-
-# Starting from the beginning to 00005a (included)
-zstash check --tars=-00005a
-# Specific range
-zstash check --tars=00005a-00005c
-# Selected tar files
-zstash check --tars=00003e,00004e,000059
-# Mix and match
-zstash check --tars=000030-00003e,00004e,00005a-
+<div class="highlight"><pre><span></span><code><span class="c1"># Starting at 00005a until the end</span>
+zstash<span class="w"> </span>check<span class="w"> </span>--tars<span class="o">=</span>00005a-
+<span class="c1"># Starting from the beginning to 00005a (included)</span>
+zstash<span class="w"> </span>check<span class="w"> </span>--tars<span class="o">=</span>-00005a
+<span class="c1"># Specific range</span>
+zstash<span class="w"> </span>check<span class="w"> </span>--tars<span class="o">=</span>00005a-00005c
+<span class="c1"># Selected tar files</span>
+zstash<span class="w"> </span>check<span class="w"> </span>--tars<span class="o">=</span>00003e,00004e,000059
+<span class="c1"># Mix and match</span>
+zstash<span class="w"> </span>check<span class="w"> </span>--tars<span class="o">=</span><span class="m">000030</span>-00003e,00004e,00005a-
 </code></pre></div></p>
 </blockquote>
 <p>Then, do the following:
-<div class="highlight"><pre><span></span><code>$ ssh dtn01.nersc.gov
-$ screen
-$ screen -ls # Output should say &quot;Attached&quot;
-$ cd /global/homes/&lt;first letter&gt;/&lt;username&gt;
-$ ./batch_zstash_check.bash
-# Control A D to exit screen
-# DO NOT CONTROL X / CONTROL C (as for emacs). This will terminate the task running in screen!!!
-$ screen -ls # Output should say &quot;Detached&quot;
-$ hostname
-# If you log in on another login node, 
-# then you will need to ssh to this one to get back to the screen session.
-# Wait for the script to finish
-# (On Chrysalis, for 165 years of data, this takes ~5 hours)
-$ screen -r # Return to screen
-# Check that output ends with `INFO: No failures detected when checking the files.`
-# as well as listing real`, `user`, `sys` time information
-$ exit # Terminate screen
-$ screen -ls # The screen should no longer be listed
-$ exit # exit data transfer node
-$ cd /global/cfs/cdirs/e3sm/&lt;username&gt;/E3SMv2/&lt;case_name&gt;/zstash
-$ tail zstash_check_&lt;stamp&gt;.log
-# Output should match the output from the screen (without the time information)
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>ssh<span class="w"> </span>dtn01.nersc.gov
+$<span class="w"> </span>screen
+$<span class="w"> </span>screen<span class="w"> </span>-ls<span class="w"> </span><span class="c1"># Output should say &quot;Attached&quot;</span>
+$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>/global/homes/&lt;first<span class="w"> </span>letter&gt;/&lt;username&gt;
+$<span class="w"> </span>./batch_zstash_check.bash
+<span class="c1"># Control A D to exit screen</span>
+<span class="c1"># DO NOT CONTROL X / CONTROL C (as for emacs). This will terminate the task running in screen!!!</span>
+$<span class="w"> </span>screen<span class="w"> </span>-ls<span class="w"> </span><span class="c1"># Output should say &quot;Detached&quot;</span>
+$<span class="w"> </span>hostname
+<span class="c1"># If you log in on another login node, </span>
+<span class="c1"># then you will need to ssh to this one to get back to the screen session.</span>
+<span class="c1"># Wait for the script to finish</span>
+<span class="c1"># (On Chrysalis, for 165 years of data, this takes ~5 hours)</span>
+$<span class="w"> </span>screen<span class="w"> </span>-r<span class="w"> </span><span class="c1"># Return to screen</span>
+<span class="c1"># Check that output ends with `INFO: No failures detected when checking the files.`</span>
+<span class="c1"># as well as listing real`, `user`, `sys` time information</span>
+$<span class="w"> </span><span class="nb">exit</span><span class="w"> </span><span class="c1"># Terminate screen</span>
+$<span class="w"> </span>screen<span class="w"> </span>-ls<span class="w"> </span><span class="c1"># The screen should no longer be listed</span>
+$<span class="w"> </span><span class="nb">exit</span><span class="w"> </span><span class="c1"># exit data transfer node</span>
+$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>/global/cfs/cdirs/e3sm/&lt;username&gt;/E3SMv2/&lt;case_name&gt;/zstash
+$<span class="w"> </span>tail<span class="w"> </span>zstash_check_&lt;stamp&gt;.log
+<span class="c1"># Output should match the output from the screen (without the time information)</span>
 </code></pre></div></p>
 <h2 id="4-document">4. Document</h2>
 <p>On a NERSC machine (Perlmutter):
-<div class="highlight"><pre><span></span><code>$ hsi
-$ ls /home/&lt;first letter&gt;/&lt;username&gt;/E3SMv2
-# Check that the simulation case is now listed in this directory
-$ ls /home/&lt;first letter&gt;/&lt;username&gt;/E3SMv2/&lt;case_name&gt;
-# Should match the number of files in the other machine&#39;s `&lt;simulations_dir&gt;/&lt;case_name&gt;/zstash`
-$ exit
-$ cd /global/cfs/cdirs/e3sm/&lt;username&gt;/E3SMv2/&lt;case_name&gt;/zstash
-$ ls
-# `index.db` and `zstash_check` log should be the only items listed
-# https://www2.cisl.ucar.edu/resources/storage-and-file-systems/hpss/managing-files-hsi
-# cput will not transfer a file if it exists.
-$ hsi &quot;cd /home/&lt;first letter&gt;/&lt;username&gt;/E3SMv2/&lt;case_name&gt;; cput -R &lt;zstash_check log&gt;&quot;
-$ hsi
-$ ls /home/&lt;first letter&gt;/&lt;username&gt;/E3SMv2/&lt;case_name&gt;
-# tar files, `index.db`, `zstash_create` log, and `zstash_check` log should be present
-$ exit
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>hsi
+$<span class="w"> </span>ls<span class="w"> </span>/home/&lt;first<span class="w"> </span>letter&gt;/&lt;username&gt;/E3SMv2
+<span class="c1"># Check that the simulation case is now listed in this directory</span>
+$<span class="w"> </span>ls<span class="w"> </span>/home/&lt;first<span class="w"> </span>letter&gt;/&lt;username&gt;/E3SMv2/&lt;case_name&gt;
+<span class="c1"># Should match the number of files in the other machine&#39;s `&lt;simulations_dir&gt;/&lt;case_name&gt;/zstash`</span>
+$<span class="w"> </span><span class="nb">exit</span>
+$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>/global/cfs/cdirs/e3sm/&lt;username&gt;/E3SMv2/&lt;case_name&gt;/zstash
+$<span class="w"> </span>ls
+<span class="c1"># `index.db` and `zstash_check` log should be the only items listed</span>
+<span class="c1"># https://www2.cisl.ucar.edu/resources/storage-and-file-systems/hpss/managing-files-hsi</span>
+<span class="c1"># cput will not transfer a file if it exists.</span>
+$<span class="w"> </span>hsi<span class="w"> </span><span class="s2">&quot;cd /home/&lt;first letter&gt;/&lt;username&gt;/E3SMv2/&lt;case_name&gt;; cput -R &lt;zstash_check log&gt;&quot;</span>
+$<span class="w"> </span>hsi
+$<span class="w"> </span>ls<span class="w"> </span>/home/&lt;first<span class="w"> </span>letter&gt;/&lt;username&gt;/E3SMv2/&lt;case_name&gt;
+<span class="c1"># tar files, `index.db`, `zstash_create` log, and `zstash_check` log should be present</span>
+$<span class="w"> </span><span class="nb">exit</span>
 </code></pre></div>
 Update the simulation Confluence page with information regarding this simulation (For Water Cycle’s v2 work, that page is <a href="https://acme-climate.atlassian.net/wiki/spaces/ED/pages/2766340117">V2 Simulation Planning</a>). In the <code>zstash archive</code> column, specify: 
 - <code>/home/&lt;first letter&gt;/&lt;username&gt;/E3SMv2/&lt;case_name&gt;</code>
@@ -1983,25 +2044,25 @@ Update the simulation Confluence page with information regarding this simulation
 
 <h2 id="5-delete-files">5. Delete files</h2>
 <p>On a NERSC machine (Perlmutter):
-<div class="highlight"><pre><span></span><code>$ hsi
-$ ls /home/&lt;first letter&gt;/&lt;username&gt;/E3SMv2/&lt;case_name&gt;
-# tar files, `index.db`, `zstash_create` log, and `zstash_check` log should be present
-# So, we can safely delete these items on cfs
-$ exit
-$ ls /global/cfs/cdirs/e3sm/&lt;username&gt;/E3SMv2/&lt;case_name&gt;
-# Should match output from the `ls` on `hsi` above
-$ cd /global/cfs/cdirs/e3sm/&lt;username&gt;
-$ ls E3SMv2
-# Only the &lt;case_name&gt; you just transferred to HPSS should be listed.
-# We only want to remove that one.
-$ rm -rf E3SMv2
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>hsi
+$<span class="w"> </span>ls<span class="w"> </span>/home/&lt;first<span class="w"> </span>letter&gt;/&lt;username&gt;/E3SMv2/&lt;case_name&gt;
+<span class="c1"># tar files, `index.db`, `zstash_create` log, and `zstash_check` log should be present</span>
+<span class="c1"># So, we can safely delete these items on cfs</span>
+$<span class="w"> </span><span class="nb">exit</span>
+$<span class="w"> </span>ls<span class="w"> </span>/global/cfs/cdirs/e3sm/&lt;username&gt;/E3SMv2/&lt;case_name&gt;
+<span class="c1"># Should match output from the `ls` on `hsi` above</span>
+$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>/global/cfs/cdirs/e3sm/&lt;username&gt;
+$<span class="w"> </span>ls<span class="w"> </span>E3SMv2
+<span class="c1"># Only the &lt;case_name&gt; you just transferred to HPSS should be listed.</span>
+<span class="c1"># We only want to remove that one.</span>
+$<span class="w"> </span>rm<span class="w"> </span>-rf<span class="w"> </span>E3SMv2
 </code></pre></div>
 On the machine that you ran the simulation on:
-<div class="highlight"><pre><span></span><code>$ cd &lt;simulations_dir&gt;/&lt;case_name&gt;
-$ ls zstash
-# tar files, index.db, `zstash_create` log should be present
-$ rm -rf zstash # Remove the zstash directory, keeping original files
-$ cd &lt;simulations_dir&gt;
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>&lt;simulations_dir&gt;/&lt;case_name&gt;
+$<span class="w"> </span>ls<span class="w"> </span>zstash
+<span class="c1"># tar files, index.db, `zstash_create` log should be present</span>
+$<span class="w"> </span>rm<span class="w"> </span>-rf<span class="w"> </span>zstash<span class="w"> </span><span class="c1"># Remove the zstash directory, keeping original files</span>
+$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>&lt;simulations_dir&gt;
 </code></pre></div></p>
 <h2 id="more-info">More info</h2>
 <p>Refer to <a href="https://e3sm-project.github.io/zstash/_build/html/master/best_practices.html">zstash's best practices for E3SM</a> for details.</p>
