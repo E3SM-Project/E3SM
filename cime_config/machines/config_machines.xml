@@ -1818,20 +1818,11 @@
         <command name="load">acme-cmake/3.26.3</command>
       </modules>
       <modules compiler="gnu">
-        <command name="load">acme-gcc/8.1.0</command>
+        <command name="load">acme-gcc/11.2.0</command>
       </modules>
-      <modules compiler="gnu9">
-        <command name="load">sems-archive-gcc/9.2.0</command>
-      </modules>
-      <modules compiler="intel">
-        <command name="load">sems-archive-intel/19.0.5</command>
-      </modules>
-      <modules mpilib="mpi-serial" compiler="!gnu9">
+      <modules mpilib="mpi-serial">
         <command name="load">acme-netcdf/4.4.1/exo_acme</command>
         <command name="load">acme-pfunit/3.2.8/base</command>
-      </modules>
-      <modules mpilib="mpi-serial" compiler="gnu9">
-        <command name="load">sems-archive-netcdf/4.7.3/base</command>
       </modules>
       <modules mpilib="!mpi-serial">
         <command name="load">acme-openmpi/4.1.4</command>
@@ -1849,6 +1840,7 @@
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
       <env name="BLA_VENDOR">Generic</env>
+      <env name="GATOR_INITIAL_MB">4000MB</env>
     </environment_variables>
   </machine>
 
