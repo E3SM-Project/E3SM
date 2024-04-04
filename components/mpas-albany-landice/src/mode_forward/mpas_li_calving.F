@@ -305,6 +305,12 @@ module li_calving
 
       endif
 
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'velocity', velocityPool)
+
+      call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+
       ! Consider mask calving as a possible additional step
       ! Mask calving can occur by itself or in conjunction with a physical calving law
       if (config_apply_calving_mask) then
@@ -312,8 +318,12 @@ module li_calving
          err = ior(err, err_tmp)
       endif
 
+      call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+
       ! now also remove any icebergs
       call remove_icebergs(domain)
+
+      call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
 
       ! Final operations after calving has been applied, including removal
       ! of small islands
@@ -321,6 +331,7 @@ module li_calving
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
          call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
@@ -350,7 +361,6 @@ module li_calving
          endif   ! config_print_calving_info
 
          ! Update mask and geometry
-         call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
          call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
          err = ior(err, err_tmp)
          call li_update_geometry(geometryPool)
