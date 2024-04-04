@@ -93,24 +93,24 @@ void MAMOptics::set_grids(
   add_field<Required>("pbl_height", scalar2d_layout_col, m,
                       grid_name);  // planetary boundary layer height
 
-  // shortwave aerosol scattering asymmetry parameter [-]
+  // shortwave aerosol scattering asymmetry parameter [unitless]
   add_field<Computed>("aero_tau_g_sw_mam4", scalar3d_swband_layout_levp1, nondim,
                       grid_name);
-  // shortwave aerosol single-scattering albedo [-]
+  // shortwave aerosol single-scattering albedo [unitless]
   add_field<Computed>("aero_tau_ssa_sw_mam4", scalar3d_swband_layout_levp1, nondim,
                       grid_name);
-  // shortwave aerosol extinction optical depth [-]
+  // shortwave aerosol extinction optical depth [unitless]
   add_field<Computed>("aero_tau_sw_mam4", scalar3d_swband_layout_levp1, nondim,
                       grid_name);
-  // shortwave aerosol scattering asymmetry parameter [-]
+  // shortwave aerosol scattering asymmetry parameter [unitless]
   add_field<Computed>("aero_g_sw", scalar3d_swband_layout, nondim, grid_name);
-  // shortwave aerosol single-scattering albedo [-]
+  // shortwave aerosol single-scattering albedo [unitless]
   add_field<Computed>("aero_ssa_sw", scalar3d_swband_layout, nondim,
                       grid_name);
   // shortwave aerosol extinction optical depth
   add_field<Computed>("aero_tau_sw", scalar3d_swband_layout, nondim,
                       grid_name);
-  // FIXME!!!: longwave aerosol extinction optical depth [-]
+  // FIXME!!!: longwave aerosol extinction optical depth [unitless]
   add_field<Computed>("aero_tau_lw", scalar3d_lwband_layout, nondim, grid_name);
   //aerosol forward scattered fraction * tau * w
   add_field<Computed>("aero_tau_forward", scalar3d_swband_layout_levp1, nondim,
