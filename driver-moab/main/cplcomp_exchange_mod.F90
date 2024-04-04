@@ -1201,6 +1201,12 @@ contains
                write(logunit,*) subname,' error in defining tags seq_flds_dom_fields on atm on coupler '
                call shr_sys_abort(subname//' ERROR in defining tags ')
             endif
+            if ( trim(atm_mesh) /= 'none' ) then
+               ! also, frac, area, aream, masks has to come from atm mphaid, not from domain file reader
+               ! this is hard to digest :(
+               tagname = 'area:aream:frac:mask'//C_NULL_CHAR
+               call component_exch_moab(comp, mphaid, mbaxid, 0, tagname)
+            endif
 
          endif
 
@@ -1358,7 +1364,7 @@ contains
             endif
             ! also, frac, area, aream, masks has to come from ocean mpoid, not from domain file reader
             ! this is hard to digest :(
-            tagname = 'area:frac:frac:mask'//C_NULL_CHAR
+            tagname = 'area:aream:frac:mask'//C_NULL_CHAR
             call component_exch_moab(comp, mpoid, mboxid, 0, tagname)
          endif 
 
