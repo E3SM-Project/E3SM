@@ -411,7 +411,7 @@ void MAMOptics::run_impl(const double dt) {
   // tau : aerosol extinction optical depth
   const auto aero_tau_sw =
       get_field_out("aero_tau_sw_mam4").get_view<Real ***>();
-  // aero_tau_lw  ( or odap_aer) :  absorption optical depth, per layer
+  // aero_tau_lw ( or odap_aer) : absorption optical depth, per layer
   const auto aero_tau_lw = get_field_out("aero_tau_lw").get_view<Real ***>();
 
   const auto aero_g_sw_eamxx = get_field_out("aero_g_sw").get_view<Real ***>();
