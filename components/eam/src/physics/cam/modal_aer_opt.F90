@@ -534,6 +534,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
 
    ! Local variables
    integer :: i, ifld, isw, k, l, m, nc, ns, ilev_tropp
+   integer :: isw_p
    integer :: lchnk                    ! chunk id
    integer :: ncol                     ! number of active columns in the chunk
    integer :: nmodes
@@ -1238,22 +1239,37 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
                wa(i,k,isw)     = wa(i,k,isw)     + dopaer(i)*palb(i)
                ga(i,k,isw)     = ga(i,k,isw)     + dopaer(i)*palb(i)*pasm(i)
                fa(i,k,isw)     = fa(i,k,isw)     + dopaer(i)*palb(i)*pasm(i)*pasm(i)
-               aertaubndsw(i,k,isw) = tauxar(i,k,isw)
-               if (tauxar(i,k,isw) > 0._r8) then
-                  aerssabndsw(i,k,isw) = wa(i,k,isw)/tauxar(i,k,isw)
-               else
-                  aerssabndsw(i,k,isw) = 1._r8
-               end if
-               if (wa(i,k,isw) > 0._r8) then
-                  aerasmbndsw(i,k,isw) = ga(i,k,isw)/wa(i,k,isw)
-               else
-                  aerasmbndsw(i,k,isw) = 0._r8
-               end if
             end do
 
          end do ! pver
 
       end do ! sw bands
+
+      do isw = 1, nswbands
+         ! For RRTMGP-specific output, reorder the RRTMG bands, such that
+         ! isw becomes RRTMGP and isw_p becomes RRTMG argument ---
+         ! an example, for isw=1 (RRTMGP), use isw_p=14 (RRTMG).
+         if (output_aer_props_rrtmgp == 1) then
+            isw_p = rrtmg_to_rrtmgp_swbands(isw)
+         else
+            isw_p = isw
+         end if
+         do k = top_lev, pver
+            do i = 1, ncol
+               aertaubndsw(i,k,isw) = tauxar(i,k,isw_p)
+               if (tauxar(i,k,isw_p) > 0._r8) then
+                  aerssabndsw(i,k,isw) = wa(i,k,isw_p)/tauxar(i,k,isw_p)
+               else
+                  aerssabndsw(i,k,isw) = 1._r8
+               end if
+               if (wa(i,k,isw_p) > 0._r8) then
+                  aerasmbndsw(i,k,isw) = ga(i,k,isw_p)/wa(i,k,isw_p)
+               else
+                  aerasmbndsw(i,k,isw) = 0._r8
+               end if
+            end do ! 1, ncol
+         end do ! top_lev, pver
+      end do ! 1, nswbands
 
       ! mode diagnostics
       ! The diagnostics are currently only output for the climate list.  Code mods will
