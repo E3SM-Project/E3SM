@@ -31,7 +31,7 @@ You will be working in several directories.
 - Perlmutter (NERSC) – <simulations_dir>: `/global/cfs/cdirs/e3sm/<username>/E3SMv2`
 
 So, it may be useful to set the following aliases:
-```
+```shell
 # Model running
 alias run_scripts="cd <run_scripts_dir>"
 alias simulations="cd <simulations_dir>"
@@ -49,22 +49,21 @@ Create a new run script or copy an existing one (such as the template above). Th
 - `readonly PROJECT="e3sm"`: SLURM project accounting (typically `e3sm`).
 
 `# Simulation`
-- `readonly COMPSET="WCYCL1850"` : compset (configuration)
-- `readonly RESOLUTION="ne30pg2_r05_IcoswISC30E3r5"`: resolution
-  - `ne30` is the number of spectral elements for the atmospheric dynamics grid
-  - `pg2` refers to the physics grid option. This mesh grid spacing is approximately 110 km.
-  - `r05` is the ... <!-- (TODO: define) -->
-  - `IcoswISC30E3r5` is the ... <!-- (TODO: define) -->
-- `readonly CASE_NAME="your_casename"` : case name
-- `# readonly CASE_GROUP=""` : This will let you mark multiple cases as part of the same group for later processing (e.g., with PACE). 
+- `readonly COMPSET="WCYCL1850"`: compset (configuration)
+- `readonly RESOLUTION="ne30pg2_r05_IcoswISC30E3r5"`: resolution. In this example, we have:
+  - `ne30pg2`: atmosphere (ne30 dynamics grid -- 30 spectral elements, pg2 physics grid)
+  - `r05`: land and river on 1/2 lat/lon grid (commonly referred to as "tri-grid")
+  - `IcoswISC30E3r5`: ocean and sea-ice on Icosahedral 30 km mesh with ice shelves cavities (wISC), E3SMv3 (E3) revision r5.
+- `readonly CASE_NAME="your_casename"`: case name
+- `# readonly CASE_GROUP=""`: This will let you mark multiple cases as part of the same group for later processing (e.g., with PACE). 
 
 > [!IMPORTANT]
 > If this is part of a simulation campaign, ask your group lead about using a `CASE_GROUP` label. Otherwise, please use a unique name to distinguish from existing `CASE_GROUP` label names, (e.g., “v2.LR“).
 
 `# Code and compilation`
 - `readonly CHECKOUT="latest"`: Date the code was checked out on, in the form `{year}{month}{day}`. The source code will be checked out in `<code_source__dir>/{year}{month}{day}`.
-- `readonly BRANCH="master"` : branch the code was checked out from. Valid options include “master”, a branch name, or a git hash. For provenance purposes, it is best to specify the git hash.
-- `readonly DEBUG_COMPILE=false` : option to compile with DEBUG flag (leave set to false)
+- `readonly BRANCH="master"`: branch the code was checked out from. Valid options include “master”, a branch name, or a git hash. For provenance purposes, it is best to specify the git hash.
+- `readonly DEBUG_COMPILE=false`: option to compile with DEBUG flag (leave set to false)
 
 > [!IMPORTANT]
 > BEFORE RUNNING: Change `CHECKOUT` to a date string like 20240301. 
@@ -73,35 +72,35 @@ Create a new run script or copy an existing one (such as the template above). Th
 > A case is tied to one code base and one executable. That is, if you change `CHECKOUT` or `BRANCH`, then you should also change `CASE_NAME`.
 
 `# Run options`
-- `readonly MODEL_START_TYPE="initial"` : specify how the model should start – use initial conditions,  continue from existing restart files, branch, or hybrid (respectively: initial, continue, branch, hybrid).
-- `readonly START_DATE="0001-01-01"` : model start date. Typically year 1 for simulations with perpetual (time invariant) forcing or a real year for simulations with transient forcings.
+- `readonly MODEL_START_TYPE="initial"`: specify how the model should start – use initial conditions,  continue from existing restart files, branch, or hybrid (respectively: initial, continue, branch, hybrid).
+- `readonly START_DATE="0001-01-01"`: model start date. Typically year 1 for simulations with perpetual (time invariant) forcing or a real year for simulations with transient forcings.
 
 `# Set paths`
-- `readonly CODE_ROOT="${HOME}/E3SMv3/code/${CHECKOUT}"` : where the E3SM code will be checked out.
+- `readonly CODE_ROOT="${HOME}/E3SMv3/code/${CHECKOUT}"`: where the E3SM code will be checked out.
 - `readonly CASE_ROOT="/pscratch/sd/r/${USER}/e3sm-scratch/${CASE_NAME}"`: where the results will go. The directory will be `<simulations_dir>/${CASE_NAME}`.
 
 `# Sub-directories`
-- `readonly CASE_BUILD_DIR=${CASE_ROOT}/build` : all the compilation files, including the executable.
-- `readonly CASE_ARCHIVE_DIR=${CASE_ROOT}/archive` : where short-term archived files will reside.
+- `readonly CASE_BUILD_DIR=${CASE_ROOT}/build`: all the compilation files, including the executable.
+- `readonly CASE_ARCHIVE_DIR=${CASE_ROOT}/archive`: where short-term archived files will reside.
 
 `# Define type of run`
-- `readonly run='XS_2x5_ndays'` : type of simulation to run – i.e, a short test for verification or a long production run. (See next section for details).
+- `readonly run='XS_2x5_ndays'`: type of simulation to run – i.e, a short test for verification or a long production run. (See next section for details).
 
 `# Coupler history`
 - `readonly HIST_OPTION="nyears"`
 - `readonly HIST_N="5"`
 
 `# Leave empty (unless you understand what it does)`
-- `readonly OLD_EXECUTABLE=""` : this is a somewhat risky option that allows you to re-use a pre-existing executable. This is not recommended because it breaks provenance.
+- `readonly OLD_EXECUTABLE=""`: this is a somewhat risky option that allows you to re-use a pre-existing executable. This is not recommended because it breaks provenance.
 
 `# --- Toggle flags for what to do ----`
 
 This section controls what operations the script should perform. The run_e3sm script can be invoked multiple times with the user having the option to bypass certain steps by toggling true / false.
-- `do_fetch_code=true` : fetch the source code from Github.
-- `do_create_newcase=true` : create new case.
-- `do_case_setup=true` : case setup.
-- `do_case_build=false` : compile.
-- `do_case_submit=true` : submit simulation.
+- `do_fetch_code=true`: fetch the source code from Github.
+- `do_create_newcase=true`: create new case.
+- `do_case_setup=true`: case setup.
+- `do_case_build=false`: compile.
+- `do_case_submit=true`: submit simulation.
 
 The first time the script is called, all the flags should be set to true. Subsequently, the user may decide to bypass code checkout (`do_fetch_code=false`) or compilation (`do_case_build=false`). A user may also prefer to manually submit the job by setting `do_case_submit=false` and then invoking `./case.submit`.
 
@@ -119,7 +118,7 @@ Many code bugs can be caught with (2) and (3). While the E3SM nightly tests shou
 
 ### Running Short Tests
 The type of run to perform is controlled by the script variable `run`. You should typically perform at least two short tests (two different layouts, with and without restart). Let’s start with a short test using the 'S' (small) PE layout and running for 2x5 days: `readonly run='S_2x5_ndays'`. If you have not fetched and compiled the code, set all the toggle flags to true:
-```
+```shell
 do_fetch_code=true
 do_create_newcase=true
 do_case_setup=true
@@ -127,14 +126,14 @@ do_case_build=true
 do_case_submit=true
 ```
 At this point, execute the run_e3sm script:
-```
+```shell
 cd <run_scripts_dir>
 ./run.<case_name>.sh
 ```
 Fetching the code and compiling it will take some time (30 to 45 minutes). Once the script finishes, the test job will have been submitted to the batch queue. 
 
 You can immediately edit the script to prepare for the second short test. In this case, we will be running for 10 days (without restart) using the 'M' (medium PE layout): `readonly run='M_1x10_ndays'`. Since the code has already been fetched and compiled, change the toggle flags:
-```
+```shell
 do_fetch_code=false
 do_create_newcase=true
 do_case_setup=true
@@ -142,7 +141,7 @@ do_case_build=false
 do_case_submit=true
 ```
 and execute the script:
-```
+```shell
 cd <run_scripts_dir>
 ./run.<case_name>.sh
 ```
@@ -154,7 +153,7 @@ Since we are bypassing the code fetch and compilation (by re-using the previous 
 
 ### Verrifying Results are BFB
 Once the short tests are complete, we can confirm the results were bit-for-bit (BFB) the same. All the test output is located under the `tests` directory. To verify that the results are indeed BFB, we extract the global integral from the atmosphere log files (lines starting with ‘nstep, te’) and make sure that they are identical for all tests. 
-```
+```shell
 cd <simulations_dir>/<case_name>/tests
 for test in *
 do
@@ -172,16 +171,16 @@ To prepare for the long production simulation, edit the run_e3sm script and set 
 
 `# Production simulation`
 - `readonly PELAYOUT="L"`: 1=single processor, S=small, M=medium, L=large, X1=very large, X2=very very large. Production simulations typically use M or L. The size determines how many nodes will be used. The exact number of nodes will differ amongst machines.
-- `readonly WALLTIME="34:00:00"` : maximum wall clock time requested for the batch jobs.
-- `readonly STOP_OPTION="nyears"` : see next line
-- `readonly STOP_N="50"` : units and length of each segment (i.e., each batch job). E.g, the current configuration stops after 50 years.
+- `readonly WALLTIME="34:00:00"`: maximum wall clock time requested for the batch jobs.
+- `readonly STOP_OPTION="nyears"`: see next line
+- `readonly STOP_N="50"`: units and length of each segment (i.e., each batch job). E.g, the current configuration stops after 50 years.
 - `readonly REST_OPTION="nyears"`: see next line
-- `readonly REST_N="5"` : units and frequency for writing restart files (make sure `STOP_N` is a multiple of `REST_N`, otherwise the model will stop without writing a restart fie at the end). E.g., the current configurations saves restart files after every 5 years. 10 restart files will be saved, since `STOP_N=50`.
-- `readonly RESUBMIT=”9”` : number of resubmissions beyond the original segment. This simulation would run for a total of 500 years (=inital 50 + 9x50).
-- `readonly DO_SHORT_TERM_ARCHIVING=false` : leave set to false if you want to manually run the short term archive.
+- `readonly REST_N="5"`: units and frequency for writing restart files (make sure `STOP_N` is a multiple of `REST_N`, otherwise the model will stop without writing a restart fie at the end). E.g., the current configurations saves restart files after every 5 years. 10 restart files will be saved, since `STOP_N=50`.
+- `readonly RESUBMIT=”9”`: number of resubmissions beyond the original segment. This simulation would run for a total of 500 years (=inital 50 + 9x50).
+- `readonly DO_SHORT_TERM_ARCHIVING=false`: leave set to false if you want to manually run the short term archive.
 
 Since the code has already been fetched and compiled for the short tests, the toggle flags can be set to:
-```
+```shell
 do_fetch_code=false
 do_create_newcase=true
 do_case_setup=true
@@ -189,7 +188,7 @@ do_case_build=false
 do_case_submit=true
 ```
 Finally, execute the script:
-```
+```shell
 cd <run_scripts_dir>
 ./run.<case_name>.sh
 ```
@@ -223,7 +222,7 @@ By default, E3SM will store all output files under the `<simulations_dir>/<case_
 > This can be done while the model is still running.
 
 Use `--force-move` to move instead of copying, which can take a long time. Set `--last-date` to the latest date in the simulation you want to archive. You do not have to specify a beginning date.
-```
+```shell
 cd <simulations_dir>/<case_name>/case_scripts
 ./case.st_archive --last-date 0051-01-01 --force-move --no-incomplete-logs
 ls <e3sm_simulations_dir>/<case_name>/archive
@@ -240,7 +239,7 @@ Each component of the model has a directory under `archive/`. There are also two
 
 # Performance Information
 Model throughput is the number of simulated years per day (SYPD). You can find this with:
-```
+```shell
 cd <simulations_dir>/<case_name>/case_scripts/timing
 grep "simulated_years" e3sm*
 ```
@@ -248,13 +247,13 @@ PACE provides detailed performance information. Go to [PACE](https://pace.ornl.g
 
 # Re-Submitting a Job After a Crash
 If a job crashes, you can rerun with:
-```
+```shell
 cd <simulations_dir>/<case_name>/case_scripts
 # Make any changes necessary to avoid the crash
 ./case.submit
 ```
 If you need to change a XML value, the following commands in the `case_scripts` directory are useful:
-```
+```shell
 > ./xmlquery <variable>                   # Get value of a variable
 > ./xmlchange -id <variable> -val <value> # Set value of a variable
 ```
@@ -313,7 +312,7 @@ The key sections of the configuration file are:
 
 `[mpas_analysis]`
 Years can be specified separately for time series, climatology, and ENSO plots. The lists must have the same lengths and each entry will be mapped to a realization of `mpas_analysis`:
-```
+```shell
 climo_years ="21-50", "51-100",
 enso_years = "11-50", "11-100",
 ts_years = "1-50", "1-100",
@@ -336,7 +335,7 @@ Run `zppy -c post.<case_name>.cfg`. This will submit a number of jobs. Run `sq` 
 Most jobs run quickly, though E3SM Diags may take around an hour and MPAS Analysis may take several hours.
 
 `zppy` creates a new directory `<simulations_dir>/<case_name>/post`. Each realization will have a shell script (typically `bash`). This is the actual file that has been submitted to the `batch` system. There will also be a log file `*.o<job ID>` as well as a `*.status` file. The status file indicates the state (WAITING, RUNNING, OK, ERROR). These files can be found in `<simulations_dir>/<case_name>/post/scripts`. Once all the jobs are complete, you can check their status.
-```
+```shell
 cd <simulations_dir>/<case_name>/post/scripts
 cat *.status # should be a list of "OK"
 grep -v "OK" *.status # lists files without "OK"
@@ -366,7 +365,7 @@ You should create a Confluence page for your model run in the relevant Confluenc
 
 ## Code
 `code_root_dir` and `tag_name` are defined in `<run_scripts_dir>/run.<case_name>.sh` as `CODE_ROOT` and `BRANCH` respectively.
-```
+```shell
 cd <code_root_dir>/<tag_name>
 git log
 ```
@@ -374,7 +373,7 @@ The commit hash at the top is the most recent commit. Add `“<branch name>, <co
 
 ## Configuration
 `Compset` and `Res` are specified on in the PACE “Experiment Details” section. See “Performance Information” above for how to access PACE. Choose the latest job and list these settings on your page. Custom parameters should also be listed. Find these by running:
-```
+```shell
 cd <run_scripts_dir>
 grep -n "EOF >> user_nl" run.<case_name>.sh # Find the line numbers to look at
 ```
@@ -394,7 +393,7 @@ Log file names will give you the job IDs. Logs are found in `<simulations_dir>/<
 PACE’s “Experiment Details” section shows `JobID` as well. In the table, link each job ID to its corresponding PACE web page. Note that failed jobs will not have a web page on PACE, but you should still list them in the table.
 
 Use `zgrep "DATE=" <log> | head -n 1` to find the start date. Use `zgrep "DATE=" <log> | tail -n 1` to find the end date. If you would like, you can write a bash function to make this easier:
-```
+```shell
 get_dates()
 {
     for f in atm.log.*.gz; do
@@ -448,7 +447,7 @@ Simulations that are deemed sufficiently valuable should be archived using `zsta
 
 ## 1. Clean up directory
 Log into the machine that you ran the simulation on. Remove all `eam.i` files except the latest one. Dates are of the form `<YYYY-MM-DD>`.
-```
+```shell
 $ cd <simulations_dir>/<case_name>/run
 $ ls | wc -l # See how many items are in this directory
 $ mv <case_name>.eam.i.<Latest YYYY-MM-DD>-00000.nc tmp.nc
@@ -462,7 +461,7 @@ There may still be more files than is necessary to archive. You can probably rem
 On the machine that you ran the simulation on:
 
 If you don’t have one already, create a directory for utilities, e.g., `utils/`. Then, open a file in that directory called `batch_zstash_create.bash` and paste the following in it, making relevant edits:
-```
+```shell
 #!/bin/bash
 # Run on <machine name>
 # Load E3SM Unified
@@ -487,7 +486,7 @@ Load the E3SM Unified environment.
 
 Then, do the following:
 
-```
+```shell
 $ screen # Enter screen
 $ screen -ls # Output should say "Attached"
 $ ./batch_zstash_create.bash 2>&1 | tee batch_zstash_create.log
@@ -511,7 +510,7 @@ $ du -sh <simulations_dir>/<case_name>/zstash
 $ du -sh <simulations_dir>/<case_name>
 ```
 Then, on NERSC/Perlmutter:
-```
+```shell
 $ hsi
 $ ls /home/<first letter>/<username>/E3SMv2/<case_name>
 # Tar files and `index.db` should be listed.
@@ -521,12 +520,12 @@ $ exit
 
 ## 3. `zstash check`
 On a NERSC machine (Perlmutter):
-```
+```shell
 $ cd /global/homes/<first letter>/<username>
 $ emacs batch_zstash_check.bash
 ```
 Paste the following in that file, making relevant edits:
-```
+```shell
 #!/bin/bash
 # Run on NERSC dtn
 # Load environment that includes zstash
@@ -549,7 +548,7 @@ done
 
 > [!TIP]
 > If you want to check a long simulation, you can use the `--tars` option to split the checking into more manageable pieces:
-> ```
+> ```shell
 > # Starting at 00005a until the end
 > zstash check --tars=00005a-
 > # Starting from the beginning to 00005a (included)
@@ -563,7 +562,7 @@ done
 > ```
 
 Then, do the following:
-```
+```shell
 $ ssh dtn01.nersc.gov
 $ screen
 $ screen -ls # Output should say "Attached"
@@ -590,7 +589,7 @@ $ tail zstash_check_<stamp>.log
 
 ## 4. Document
 On a NERSC machine (Perlmutter):
-```
+```shell
 $ hsi
 $ ls /home/<first letter>/<username>/E3SMv2
 # Check that the simulation case is now listed in this directory
@@ -617,7 +616,7 @@ Update the simulation Confluence page with information regarding this simulation
 
 ## 5. Delete files
 On a NERSC machine (Perlmutter):
-```
+```shell
 $ hsi
 $ ls /home/<first letter>/<username>/E3SMv2/<case_name>
 # tar files, `index.db`, `zstash_create` log, and `zstash_check` log should be present
@@ -632,7 +631,7 @@ $ ls E3SMv2
 $ rm -rf E3SMv2
 ```
 On the machine that you ran the simulation on:
-```
+```shell
 $ cd <simulations_dir>/<case_name>
 $ ls zstash
 # tar files, index.db, `zstash_create` log should be present
