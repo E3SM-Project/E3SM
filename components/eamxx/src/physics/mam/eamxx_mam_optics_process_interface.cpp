@@ -490,7 +490,7 @@ void MAMOptics::run_impl(const double dt) {
   // RRTMGP
   // Optical files depend on the band ordering in RRTMG. As a temporary fix,
   // we are correcting the band ordering of mam4xx's ouputs, so that they are consistent with
-  // inputs in RRTMG.
+  // inputs in RRTMGP.
   // Mapping from old RRTMG sw bands to new band ordering in RRTMGP
   const auto& get_idx_rrtmgp_from_rrtmg_swbands = get_idx_rrtmgp_from_rrtmg_swbands_;
   // postprocess output
