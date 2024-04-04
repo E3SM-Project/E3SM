@@ -161,12 +161,14 @@ use cam_map_utils, only: goldy_debug
     logical                            :: unstructured  ! Is this needed?
     logical                            :: block_indexed ! .false. for lon/lat
     logical                            :: attrs_defined = .false.
+    logical                            :: zonal_grid    = .false.
     type(cam_filemap_t),       pointer :: map => null() ! global dim map (dof)
     type(cam_grid_attr_ptr_t), pointer :: attributes => NULL()
   contains
     procedure :: print_cam_grid
     procedure :: is_unstructured        => cam_grid_unstructured
     procedure :: is_block_indexed       => cam_grid_block_indexed
+    procedure :: is_zonal_grid          => cam_grid_zonal_grid
     procedure :: coord_lengths          => cam_grid_get_dims
     procedure :: coord_names            => cam_grid_coord_names
     procedure :: dim_names              => cam_grid_dim_names
@@ -205,9 +207,12 @@ use cam_map_utils, only: goldy_debug
     integer                      :: global_lon_size = 0  ! lon patch dim size
     real(r8)                     :: lon_range(2)
     real(r8)                     :: lat_range(2)
+    logical                      :: collected_columns    ! Output unstructured
     type(cam_filemap_t), pointer :: mask       => null() ! map for active pts
     integer(iMap),       pointer :: latmap(:) => null() ! map for patch coords
     integer(iMap),       pointer :: lonmap(:) => null() ! map for patch coords
+    real(r8),            pointer :: lonvals(:) => null() ! For collected output
+    real(r8),            pointer :: latvals(:) => null() ! For collected output
   contains
     procedure :: gridid              => cam_grid_patch_get_id
     procedure :: get_axis_names      => cam_grid_patch_get_axis_names
@@ -307,6 +312,7 @@ use cam_map_utils, only: goldy_debug
   public     :: cam_grid_has_blocksize, cam_grid_get_block_count
   public     :: cam_grid_get_latvals,   cam_grid_get_lonvals
   public     :: cam_grid_is_unstructured, cam_grid_is_block_indexed
+  public     :: cam_grid_is_zonal
   ! Functions for dealing with patch masks
   public     :: cam_grid_compute_patch
 
@@ -320,6 +326,11 @@ use cam_map_utils, only: goldy_debug
   interface cam_grid_dimensions
     module procedure cam_grid_dimensions_id
     module procedure cam_grid_dimensions_name
+  end interface
+
+  interface cam_grid_get_dim_names
+    module procedure cam_grid_get_dim_names_id
+    module procedure cam_grid_get_dim_names_name
   end interface
 
   interface cam_grid_read_dist_array
@@ -739,7 +750,7 @@ contains
   end function num_cam_grid_attrs
 
   subroutine cam_grid_register(name, id, lat_coord, lon_coord, map,           &
-       unstruct, block_indexed, src_in, dest_in)
+       unstruct, block_indexed, zonal_grid, src_in, dest_in)
     ! Dummy arguments
     character(len=*),             intent(in) :: name
     integer,                      intent(in) :: id
@@ -748,6 +759,7 @@ contains
     integer(iMap),       pointer, intent(in) :: map(:,:)
     logical,  optional,           intent(in) :: unstruct
     logical,  optional,           intent(in) :: block_indexed
+    logical,  optional,           intent(in) :: zonal_grid
     integer,  optional,           intent(in) :: src_in(2)
     integer,  optional,           intent(in) :: dest_in(2)
 
@@ -798,6 +810,16 @@ contains
       else
         cam_grids(registeredhgrids)%block_indexed = cam_grids(registeredhgrids)%unstructured
       end if
+      if (present(zonal_grid)) then
+        ! Check the size of the longitude coordinate
+        call lon_coord%get_coord_len(i)
+        if (i /= 1) then
+          call endrun(subname//': lon_coord is not of size 1 for a zonal grid')
+        end if
+        cam_grids(registeredhgrids)%zonal_grid = zonal_grid
+      else
+        cam_grids(registeredhgrids)%zonal_grid = .false.
+      end if
       if (associated(cam_grids(registeredhgrids)%map)) then
         write(errormsg, *) 
         call endrun(trim(subname)//": new grid map should not be associated")
@@ -837,7 +859,8 @@ contains
            ', lat coord = ', trim(this%lat_coord%name),                       &
            ', lon coord = ', trim(this%lon_coord%name),                       &
            ', unstruct = ', this%unstructured,                                &
-           ', block_ind = ', this%block_indexed
+           ', block_ind = ', this%block_indexed,                              &
+           ', zonal_grid = ', this%zonal_grid
       attrPtr => this%attributes
       do while (associated(attrPtr))
 !!XXgoldyXX: Is this not working in PGI?
@@ -1406,23 +1429,50 @@ contains
 
   end subroutine cam_grid_get_coord_names
 
-  subroutine cam_grid_get_dim_names(id, name1, name2)
+  !---------------------------------------------------------------------------
+  ! 
+  !  cam_grid_get_dim_names: Return the names of the grid axes dimensions.
+  !        Note that these may be the same
+  !
+  !---------------------------------------------------------------------------
+  subroutine cam_grid_get_dim_names_id(id, name1, name2)
 
     ! Dummy arguments
     integer,                  intent(in)    :: id
     character(len=*),         intent(out)   :: name1
     character(len=*),         intent(out)   :: name2
-
+    
     ! Local variables
     integer                                 :: gridid
     gridid = get_cam_grid_index(id)
     if (gridid > 0) then
       call cam_grids(gridid)%dim_names(name1, name2)
     else
-      call endrun('cam_grid_get_dim_names: Bad grid ID')
+      call endrun('cam_grid_get_dim_names_id: Bad grid ID')
     end if
 
-  end subroutine cam_grid_get_dim_names
+  end subroutine cam_grid_get_dim_names_id
+
+  subroutine cam_grid_get_dim_names_name(gridname, name1, name2)
+
+    ! Dummy arguments
+    character(len=*),         intent(in)  :: gridname
+    character(len=*),         intent(out) :: name1
+    character(len=*),         intent(out) :: name2
+
+    ! Local variables
+    integer                               :: gridind
+    character(len=120)                    :: errormsg
+
+    gridind = get_cam_grid_index(trim(gridname))
+    if (gridind < 0) then
+      write(errormsg, *) 'No CAM grid with name = ', trim(gridname)
+      call endrun('cam_grid_get_dim_names_name: '//errormsg)
+    else
+      call cam_grids(gridind)%dim_names(name1, name2)
+    end if
+
+  end subroutine cam_grid_get_dim_names_name
 
   logical function cam_grid_has_blocksize(id)
 
@@ -1534,8 +1584,23 @@ contains
     end if
   end function cam_grid_is_block_indexed
 
+  logical function cam_grid_is_zonal(id) result(zonal)
+
+    ! Dummy arguments
+    integer,                  intent(in) :: id
+
+    ! Local variables
+    integer                              :: gridid
+    gridid = get_cam_grid_index(id)
+    if (gridid > 0) then
+      zonal = cam_grids(gridid)%is_zonal_grid()
+    else
+      call endrun('s: Bad grid ID')
+    end if
+  end function cam_grid_is_zonal
+
   ! Compute or update a grid patch mask
-  subroutine cam_grid_compute_patch(id, patch, lonl, lonu, latl, latu)
+  subroutine cam_grid_compute_patch(id, patch, lonl, lonu, latl, latu, cco)
 
     ! Dummy arguments
     integer,                         intent(in)    :: id
@@ -1544,13 +1609,14 @@ contains
     real(r8),                        intent(in)    :: lonu
     real(r8),                        intent(in)    :: latl
     real(r8),                        intent(in)    :: latu
+    logical,                         intent(in)    :: cco ! Collect columns?
 
     ! Local variables
     integer                                        :: gridid
 
     gridid = get_cam_grid_index(id)
     if (gridid > 0) then
-      call cam_grids(gridid)%get_patch_mask(lonl, lonu, latl, latu, patch)
+      call cam_grids(gridid)%get_patch_mask(lonl, lonu, latl, latu, patch, cco)
     else
       call endrun('cam_grid_compute_patch: Bad grid ID')
     end if
@@ -2409,6 +2475,12 @@ contains
     cam_grid_block_indexed = this%block_indexed
   end function cam_grid_block_indexed
 
+  logical function cam_grid_zonal_grid(this)
+    class(cam_grid_t)                         :: this
+    
+    cam_grid_zonal_grid = this%zonal_grid
+  end function cam_grid_zonal_grid
+
   logical function cam_grid_unstructured(this)
     class(cam_grid_t)                         :: this
 
@@ -3197,7 +3269,7 @@ contains
   !       within the input patch.
   !
   !---------------------------------------------------------------------------
-  subroutine cam_grid_get_patch_mask(this, lonl, lonu, latl, latu, patch)
+  subroutine cam_grid_get_patch_mask(this, lonl, lonu, latl, latu, patch, cco)
     use spmd_utils,      only: mpi_min, mpi_real8, mpicom
     use physconst,       only: pi
 
@@ -3206,6 +3278,7 @@ contains
     real(r8),                  intent(in)    :: lonl, lonu ! Longitude bounds
     real(r8),                  intent(in)    :: latl, latu ! Latitude bounds
     type(cam_grid_patch_t),    intent(inout) :: patch
+    logical,                   intent(in)    :: cco        ! Collect columns?
 
     ! Local arguments
     real(r8)                         :: mindist
@@ -3228,6 +3301,7 @@ contains
     real(r8), parameter              :: maxangle = pi / 4.0_r8
     real(r8), parameter              :: deg2rad = pi / 180.0_r8
     real(r8), parameter              :: maxlat = 89.5_r8
+    character(len=*), parameter      :: subname = 'cam_grid_get_patch_mask'
 
     if (.not. associated(this%map)) then
       call endrun('cam_grid_get_patch_mask: Grid, '//trim(this%name)//', has no map')
@@ -3243,6 +3317,9 @@ contains
         ! NB: Compacting the mask must be done after all calls (for a
         !     particular mask) to this function.
       end if
+      if (patch%collected_columns .neqv. cco) then
+        call endrun(subname//': collected_column mismatch')
+      end if
     else
       if (associated(patch%latmap)) then
         call endrun('cam_grid_get_patch_mask: unallocated patch has latmap')
@@ -3257,17 +3334,29 @@ contains
       end if
       call patch%mask%clear()
       ! Set up the lat/lon maps
-      if (associated(this%lat_coord%values)) then
-        allocate(patch%latmap(LBOUND(this%lat_coord%values, 1):UBOUND(this%lat_coord%values, 1)))
+      if (cco) then
+        ! For collected column output, we need to collect coordinates and values
+        allocate(patch%latmap(patch%mask%num_elem()))
         patch%latmap = 0
-      else
-        nullify(patch%latmap)
-      end if
-      if (associated(this%lon_coord%values)) then
-        allocate(patch%lonmap(LBOUND(this%lon_coord%values, 1):UBOUND(this%lon_coord%values, 1)))
+        allocate(patch%latvals(patch%mask%num_elem()))
+        patch%latvals = 91.0_r8
+        allocate(patch%lonmap(patch%mask%num_elem()))
         patch%lonmap = 0
+        allocate(patch%lonvals(patch%mask%num_elem()))
+        patch%lonvals = 361.0_r8
       else
-        nullify(patch%lonmap)
+        if (associated(this%lat_coord%values)) then
+          allocate(patch%latmap(LBOUND(this%lat_coord%values, 1):UBOUND(this%lat_coord%values, 1)))
+          patch%latmap = 0
+        else
+          nullify(patch%latmap)
+        end if
+        if (associated(this%lon_coord%values)) then
+          allocate(patch%lonmap(LBOUND(this%lon_coord%values, 1):UBOUND(this%lon_coord%values, 1)))
+          patch%lonmap = 0
+        else
+          nullify(patch%lonmap)
+        end if
       end if
     end if
 

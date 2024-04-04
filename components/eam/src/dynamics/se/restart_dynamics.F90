@@ -379,6 +379,7 @@ CONTAINS
     use spmd_dyn, only: spmd_readnl
     use control_mod,            only: qsplit
     use time_mod,               only: TimeLevel_Qdp
+    use phys_grid_ctem,   only: phys_grid_ctem_reg
 
     !
     ! Input arguments
@@ -412,6 +413,9 @@ CONTAINS
     ! Define physics data structures
     if(par%masterproc  ) write(iulog,*) 'Running phys_grid_init()'
     call phys_grid_init()
+
+    ! Register zonal average grid for phys TEM diagnostics
+    call phys_grid_ctem_reg()
 
     ! Initialize index values for advected and non-advected tracers
     call phys_register()
