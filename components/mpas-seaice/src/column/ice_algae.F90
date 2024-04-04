@@ -304,7 +304,7 @@
 
       carbonError = carbonInitial-carbonFlux*dt-carbonFinal
 
-      if (abs(carbonError) > accuracy * maxval ((/carbonInitial, carbonFinal/))) then
+      if (abs(carbonError) > max(puny,accuracy * maxval ((/carbonInitial, carbonFinal/)))) then
             write(warning,*) 'carbonError:', carbonError
             call add_warning(warning)
             write(warning,*) 'carbonInitial:', carbonInitial
@@ -314,6 +314,8 @@
             write(warning,*) 'carbonFlux (positive into ocean):', carbonFlux
             call add_warning(warning)
             write(warning,*) 'accuracy * maxval ((/carbonInitial, carbonFinal/:)', accuracy * maxval ((/carbonInitial, carbonFinal/))
+            call add_warning(warning)
+            write(warning,*) 'puny', puny
             call add_warning(warning)
             if (aicen > c0) then
             hsnow_f = vsnon/aicen
@@ -347,8 +349,12 @@
                call add_warning(warning)
                write(warning,*)  Tot_BGC_i(mm) + flux_bio_atm(mm)*dt - flux_bion(mm)*dt
                call add_warning(warning)
-               !l_stop = .true.
-               !stop_label = "carbon conservation in ice_algae.F90"
+               write(warning,*) 'hbri, hbri_old'
+               call add_warning(warning)
+               write(warning,*) hbri, hbri_old
+               call add_warning(warning)
+               l_stop = .true.
+               stop_label = "carbon conservation in ice_algae.F90"
             enddo
          endif
       endif
@@ -1012,7 +1018,7 @@
       ! local parameters
 
       real (kind=dbl_kind), parameter :: &
-         accuracy = 1.0e-14_dbl_kind, &
+         accuracy = 1.0e-13_dbl_kind, & ! 1.0e-14_dbl_kind, &
          r_c  = 3.0e3_dbl_kind     , & ! ice crystal radius (um)
          r_bac= 4.7_dbl_kind    , & ! diatom large radius (um)
          r_alg= 10.0_dbl_kind    , & ! diatom small radius (um)
@@ -1021,7 +1027,7 @@
          Nquota_I = 0.0408_dbl_kind, & ! Intercept in N quota to cell volume fit
          f_s = p1, & ! fracton of sites available for saturation
          f_a = 0.3_dbl_kind, & !c1 , &  ! fraction of collector available for attachment
-         f_v = 0.7854  ! fraction of algal coverage on area availabel for attachment
+         f_v = 0.7854_dbl_kind  ! fraction of algal coverage on area availabel for attachment
                        ! 4(pi r^2)/(4r)^2  [Johnson et al, 1995, water res. research]
 
       integer, parameter :: &
@@ -1058,7 +1064,7 @@
             iphin_N(k) = iphin(k)
             bphin_N(1) = bphi_min
 
-            if (abs(trcrn(bio_index(m) + k-1)) < puny) then
+            if (abs(trcrn(bio_index(m) + k-1)) < accuracy) then
                flux_bio(m) = flux_bio(m) + trcrn(bio_index(m) + k-1)* hbri_old * dz(k)/dt
                trcrn(bio_index(m) + k-1) = c0
                in_init_cons(k,m) = c0
@@ -1319,8 +1325,7 @@
             trcrn(nt_zbgc_frac+mm-1) = zbgc_frac_init(mm)
             if (sum_tot > c0) trcrn(nt_zbgc_frac+mm-1) = sum_new/sum_tot
 
-            if (abs(sum_initial-sum_tot-flux_bio(mm)*dt + source(mm)) > accuracy*max(sum_initial,sum_tot) .or. &
-!            if (abs(sum_new-sum_old) > accuracy*sum_old .or. &
+            if (abs(sum_initial-sum_tot-flux_bio(mm)*dt + source(mm)) > max(accuracy,accuracy*max(sum_initial,sum_tot)) .or. &
                 minval(biocons(:)) < c0  .or. minval(initcons_stationary(:)) < c0 &
                 .or. l_stop) then
                 write(warning,*)'zbgc FCT tracer solution failed,mm', mm
@@ -1406,15 +1411,24 @@
       do m = 1,nbtrcr
          do k = 1,nblyr+1                  ! back to bulk quantity
             bio_tmp = (biomat_brine(k,m) + react(k,m))*iphin_N(k)
-            if (tr_bgc_C .and. m .eq. nlt_bgc_DIC(1) .and. bio_tmp < -puny) then  ! satisfy DIC demands from ocean
-                write(warning, *) 'DIC demand from ocean'
-                call add_warning(warning)
-                write(warning, *) 'm, nlt_bgc_DIC(1), bio_tmp, react(k,m):'
-                call add_warning(warning)
-                write(warning, *) m, nlt_bgc_DIC(1), bio_tmp, react(k,m)
-                call add_warning(warning)
-                flux_bio(m) = flux_bio(m) + bio_tmp*dz(k)*hbri_old/dt
+            if (tr_bgc_C .and. m .eq. nlt_bgc_DIC(1) .and. bio_tmp .le. -accuracy) then  ! satisfy DIC demands from ocean
+               !uncomment for additional diagnostics
+               ! write(warning, *) 'DIC demand from ocean'
+               ! call add_warning(warning)
+               ! write(warning, *) 'm, nlt_bgc_DIC(1), bio_tmp, react(k,m):'
+               ! call add_warning(warning)
+               ! write(warning, *) m, nlt_bgc_DIC(1), bio_tmp, react(k,m)
+               ! call add_warning(warning)
+               ! write(warning,*)'flux_bio(m) Initial, hbri_old, dz(k)'
+               ! call add_warning(warning)
+               ! write(warning,*) flux_bio(m), hbri_old, dz(k)
+               ! call add_warning(warning)
+                flux_bio(m) = flux_bio(m) + bio_tmp*dz(k)*hbri/dt
                 bio_tmp = c0
+               ! write(warning,*)  'flux_bio(m)'
+               ! call add_warning(warning)
+               ! write(warning,*)  flux_bio(m)
+               ! call add_warning(warning)
             end if
             if (m .eq. nlt_bgc_Nit) then
                initcons_mobile(k) = max(c0,(biomat_brine(k,m)-nitrification(k) + &
@@ -1441,8 +1455,8 @@
                 call add_warning(warning)
                 l_stop = .true.
                 stop_label = 'C in algal_dyn not conserved'
-            elseif (abs(bio_tmp) < puny) then
-               flux_bio(m) = flux_bio(m) + bio_tmp*dz(k)*hbri_old/dt
+            elseif (abs(bio_tmp) < accuracy) then
+               flux_bio(m) = flux_bio(m) + bio_tmp*dz(k)*hbri/dt
                bio_tmp = c0
             elseif (bio_tmp > 1.0e8_dbl_kind) then
                 write(warning, *) 'very large bgc value'
@@ -2258,6 +2272,10 @@
             write(warning, *) 'Conservation error!'
             call add_warning(warning)
             if (tr_bgc_DON) then
+               write(warning, *) 'Error bound = max(puny,maxval(abs(reactb(:)))*1.0e-13_dbl_kind)'
+               call add_warning(warning)
+               write(warning, *)  max(puny,maxval(abs(reactb(:)))*1.0e-13_dbl_kind)
+               call add_warning(warning)
                write(warning, *) 'dN,DONin(1), kn_bac(1),secday,dt,n_doc'
                call add_warning(warning)
                write(warning, *) dN, DONin(1),kn_bac(1),secday,dt,n_doc
@@ -2271,10 +2289,16 @@
             call add_warning(warning)
             write(warning, *) dN,secday,dt,n_doc
             call add_warning(warning)
-            write(warning, *) 'reactb(nlt_bgc_Nit),reactb(nlt_bgc_N(1)),reactb(nlt_bgc_N(2)'
+            write(warning, *) 'reactb(nlt_bgc_Nit),fr_resp'
             call add_warning(warning)
-            write(warning, *) reactb(nlt_bgc_Nit),reactb(nlt_bgc_N(1)),reactb(nlt_bgc_N(2))
+            write(warning, *) reactb(nlt_bgc_Nit),fr_resp
             call add_warning(warning)
+            do k = 1,n_algae
+               write(warning, *) 'reactb(nlt_bgc_N(k)),fr_graze(k), grow_N(k), mort(k)'
+               call add_warning(warning)
+               write(warning, *) reactb(nlt_bgc_N(k)),fr_graze(k), grow_N(k), mort(k)
+               call add_warning(warning)
+            enddo
             if (tr_bgc_Am) then
                write(warning, *) 'reactb(nlt_bgc_Am),Am_r, Am_s'
                call add_warning(warning)
@@ -2297,6 +2321,7 @@
                write(warning, *) 'DOC_r,DOC_s'
                call add_warning(warning)
                write(warning, *) DOC_r(k),DOC_s(k)
+               call add_warning(warning)
              end do
              do k = 1,n_dic
                write(warning, *) 'DICin'
@@ -2311,7 +2336,6 @@
                call add_warning(warning)
                write(warning, *) DIC_r(k),DIC_s(k)
             end do
-            call add_warning(warning)
             write(warning, *) 'Zoo'
             call add_warning(warning)
             write(warning, *) Zoo
@@ -2850,8 +2874,8 @@
             C_low(k) = C_new(k)
          enddo
 
-         accuracy = 1.0e-14_dbl_kind*max(c1, C_init_tot, C_new_tot)
-         fluxbio = (C_init_tot - C_new_tot + source)/dt
+         accuracy = 1.0e-11_dbl_kind*max(c1, C_init_tot, C_new_tot)
+         fluxbio = fluxbio + (C_init_tot - C_new_tot + source)/dt
          diff_dt =C_new_tot - C_init_tot - (S_top+S_bot+L_bot*C_new(nblyr+1)+L_top*C_new(1))*dt
 
          if (minval(C_low) < c0) then
@@ -2861,7 +2885,7 @@
          endif
 
          if (abs(diff_dt) > accuracy ) then
-           !l_stop = .true.
+           l_stop = .true.
            write(warning,*) 'Conservation of zbgc low order solution failed: diff_dt:',&
                         diff_dt
            call add_warning(warning)
