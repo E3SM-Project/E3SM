@@ -725,13 +725,13 @@ CONTAINS
        nextsw_cday, case_name)
 
     ! !DESCRIPTION: run method for datm model
-#ifdef MOABDEBUG
-    use seq_comm_mct, only : mphaid ! 
-    use seq_flds_mod, only: moab_set_tag_from_av
-    use iMOAB, only: iMOAB_WriteMesh
-#endif
 #ifdef HAVE_MOAB
     use seq_flds_mod    , only: seq_flds_a2x_fields ! this should not be an argument in datm_comp_init
+    use seq_comm_mct, only : mphaid ! 
+    use seq_flds_mod, only: moab_set_tag_from_av
+#ifdef MOABDEBUG   
+    use iMOAB, only: iMOAB_WriteMesh
+#endif
 #endif
     implicit none
 
