@@ -340,11 +340,6 @@ void MAMOptics::initialize_impl(const RunType run_type) {
           "specrefndxlw_host", nlwbands_, maxd_aspectype);
 
       // read physical properties data for aerosol species
-      // specname_amode(ntot_aspectype) = (/ 'sulfate (0)   ',
-      //  'ammonium (1) ', 'nitrate (2)   ', &
-      //  'p-organic (3) ', 's-organic (4) ', 'black-c (5)  ', &
-      //  'seasalt (6)  ', 'dust  (7)    ', &
-      //  'm-organic (8)' /)
       std::map<std::string, int> map_table_name_species_id;
       map_table_name_species_id["soa"] = 4;  // soa:s-organic
       map_table_name_species_id["dust"] = 7;  // dst:dust:
