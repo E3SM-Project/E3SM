@@ -31,7 +31,7 @@ public :: gravit
 public :: rair
 
 !!======Jinbo Xie=======
-public :: gwdo_gsd,pblh_get_level_idx
+public :: gwdo_gsd,pblh_get_level_idx,grid_size
 !!======Jinbo Xie=======
 
 ! This flag preserves answers for vanilla CAM by making a few changes (e.g.
@@ -775,6 +775,42 @@ do i = 1, pver
 enddo
 end function
 !================================Jinbo Xie====================
+subroutine grid_size(state, grid_dx, grid_dy)
+  ! Determine the size of the grid for each of the columns in state
+
+  use phys_grid,       only: get_area_p
+  use shr_const_mod,   only: shr_const_pi
+  use physics_types,   only: physics_state
+  use ppgrid,          only: pver, pverp, pcols
+
+  type(physics_state), intent(in) :: state
+  real(r8), intent(out)           :: grid_dx(pcols), grid_dy(pcols)   ! E3SM grid [m]
+
+  real(r8), parameter :: earth_ellipsoid1 = 111132.92_r8 ! World Geodetic System 1984 (WGS84) 
+                                                         ! first coefficient, meters per degree longitude at equator
+  real(r8), parameter :: earth_ellipsoid2 = 559.82_r8 ! second expansion coefficient for WGS84 ellipsoid
+  real(r8), parameter :: earth_ellipsoid3 = 1.175_r8 ! third expansion coefficient for WGS84 ellipsoid
+
+  real(r8) :: mpdeglat, column_area, degree, lat_in_rad
+  integer  :: i
+
+  do i=1,state%ncol
+      ! determine the column area in radians
+      column_area = get_area_p(state%lchnk,i)
+      ! convert to degrees
+      degree = sqrt(column_area)*(180._r8/shr_const_pi)
+
+      ! convert latitude to radians
+      lat_in_rad = state%lat(i)*(shr_const_pi/180._r8)
+
+      ! Now find meters per degree latitude
+      ! Below equation finds distance between two points on an ellipsoid, derived from expansion
+      !  taking into account ellipsoid using World Geodetic System (WGS84) reference 
+      mpdeglat = earth_ellipsoid1 - earth_ellipsoid2 * cos(2._r8*lat_in_rad) + earth_ellipsoid3 * cos(4._r8*lat_in_rad)
+      grid_dx(i) = mpdeglat * degree
+      grid_dy(i) = grid_dx(i) ! Assume these are the same
+  enddo
+end subroutine grid_size
 !================================Jinbo Xie====================
 !-------------------------------------------------------------------------------
    subroutine gwdo_gsd(u3d,v3d,t3d,qv3d,p3d,p3di,pi3d,z,                       &
@@ -859,12 +895,8 @@ end function
         real(r8),     intent(in), optional   ::  dt
         real(r8),     intent(in), dimension( ims:ime, kms:kme ),optional   ::  bnvbg
 !======Jinbo Xie=========
-!==========================
-!Jinbo Xie add dy
-        real(r8),     intent(in)   ::      dy
-!variable
-        !real(r8),   !dimension(:),  intent(in   )   ::      dx
-        real(r8),    intent(in)   ::      dx(:)
+        real(r8),    intent(in)   ::     dx(:)
+        real(r8),    intent(in)   ::     dy(:)
 !==========================
 !
   real(r8),     dimension( ims:ime, kms:kme )             ,  &
@@ -1144,7 +1176,7 @@ use sub_xjb,only:OLgrid,dxygrid
    real(r8)                 ::  g,rd,rv,fv,cp,pi,deltim,rcl!dxmeter,deltim,rcl
 !=======================
 !!!!Jinbo Xie, add dymeter
-        real(r8)                 :: dymeter
+        real(r8),dimension(:)    :: dymeter
         real(r8),dimension(:)    :: dxmeter
 !======================
    real(r8)                ::  dudt(ims:ime,kms:kme),dvdt(ims:ime,kms:kme),          &
@@ -1286,7 +1318,7 @@ real(r8) :: wdir1_xjb(its:ite)
 !Jinbo Xie
 real(r8)                 :: pe,ke
 !================================
-   real(r8)                 :: dely,dxy4(its:ite,nvar_dirOL),&
+   real(r8)                 :: dely(its:ite),dxy4(its:ite,nvar_dirOL),&
                      delx(its:ite),dxy4p(its:ite,nvar_dirOL)
 !=====Jinbo Xie==================
    real(r8)                 :: dxy(its:ite),dxyp(its:ite)
@@ -1529,7 +1561,7 @@ wdir1_xjb(i)=wdir1/rad
         !select OL
         ol(i)  = ol4(i,MOD(nwd-1,int(mdir/2))+1)
         !calculate dxygrid, not so slow
-        call dxygrid(dxmeter(i),dymeter,theta,dxy(i))
+        call dxygrid(dxmeter(i),dymeter(i),theta,dxy(i))
 	!
 	!----- compute orographic width along (ol) and perpendicular (olp)
 !----- the direction of wind
@@ -1546,7 +1578,7 @@ wdir1_xjb(i)=wdir1/rad
                 olp(i)=ol4(i,MOD(nwd1-1,int(mdir/2))+1)
                 endif
                 theta=(real(nwd1,kind=r8)-1._r8)*(360._r8/real(mdir,kind=r8))
-                call dxygrid(dxmeter(i),dymeter,theta,dxyp(i))
+                call dxygrid(dxmeter(i),dymeter(i),theta,dxyp(i))
 		!
 		!====Jinbo Xie====
 #else

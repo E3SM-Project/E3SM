@@ -223,6 +223,7 @@ subroutine gw_init()
   use pio,                 only:file_desc_t
   use startup_initialconds,only:topoGWD_file_get_id,setup_initialGWD,close_initial_fileGWD
   use ncdio_atm,           only:infld
+  use cam_grid_support, only: cam_grid_check, cam_grid_get_decomp, cam_grid_id,cam_grid_get_dim_names
   !!======Jinbo Xie======
 
   !---------------------------Local storage-------------------------------
@@ -300,25 +301,35 @@ subroutine gw_init()
   !=================Jinbo Xie-3-18-2019============
   type(file_desc_t), pointer :: ncid_topoGWD  !Jinbo Xie add
   logical :: found=.false.
+  character(len=8) :: dim1name, dim2name
+  character*11 :: subname='gw_init' ! subroutine name
+  integer                   :: grid_id
   !================================================
 
   !!============Jinbo Xie==================
   pblh_idx = pbuf_get_index('pblh')
   !call pbuf_add_field('pblh',       'global', dtype_r8, (/pcols/),                    pblh_idx)
   !!============Jinbo Xie==================
+                !!
+		grid_id = cam_grid_id('physgrid')
+    		if (.not. cam_grid_check(grid_id)) then
+      		call endrun(trim(subname)//': Internal error, no "physgrid" grid')
+    		end if
+    		call cam_grid_get_dim_names(grid_id, dim1name, dim2name)
+                !!
                 call initialize_comsrf2()
                 call setup_initialGWD()
                 ncid_topoGWD=>topoGWD_file_get_id()
-                call infld('SGH'  ,ncid_topoGWD,'lon','lat', 1,pcols,begchunk,&
+                call infld('SGH'  ,ncid_topoGWD,dim1name,dim2name, 1,pcols,begchunk,&
                                 endchunk,  var, found, gridname='physgrid')
-                call infld('SGH30',ncid_topoGWD,'lon','lat', 1,pcols,begchunk,&
+                call infld('SGH30',ncid_topoGWD,dim1name,dim2name, 1,pcols,begchunk,&
                                 endchunk,  var30, found, gridname='physgrid')
-                call infld('OC', ncid_topoGWD,'lon', 'lat', 1,pcols,begchunk,  &
+                call infld('OC', ncid_topoGWD,dim1name,dim2name, 1,pcols,begchunk,  &
                                 endchunk,  oc,  found, gridname='physgrid')
                 !keep the same interval of OA,OL
-                call infld('OA', ncid_topoGWD,'lon','nvar_dirOA','lat',1,pcols,1,nvar_dirOA,begchunk, &
+                call infld('OA', ncid_topoGWD,dim1name,'nvar_dirOA',dim2name,1,pcols,1,nvar_dirOA,begchunk, &
                                 endchunk,  oadir(:,:,:),  found, gridname='physgrid')   
-                call infld('OL', ncid_topoGWD,'lon','nvar_dirOL','lat',1,pcols,1,nvar_dirOL,begchunk, &
+                call infld('OL', ncid_topoGWD,dim1name,'nvar_dirOL',dim2name,1,pcols,1,nvar_dirOL,begchunk, &
                                 endchunk,  ol, found, gridname='physgrid')
                 if(.not. found) call endrun('ERROR: GWD topo file readerr')
                 call close_initial_fileGWD()
@@ -673,7 +684,7 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
   use dycore,     only: dycore_is
   !=====Jinbo Xie=====
   use phys_grid, only: get_rlat_all_p
-  use gw_common,  only: gwdo_gsd,pblh_get_level_idx
+  use gw_common,  only: gwdo_gsd,pblh_get_level_idx,grid_size
   use physconst,          only: gravit,rair
   !====Jinbo Xie=====
 
@@ -733,6 +744,7 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
   !Jinbo Xie
   !real(r8) :: pblh(pcols) ! Planetary boundary layer height
   real(r8), pointer :: pblh(:)
+  real(r8) :: dx(pcols),dy(pcols)
   !Jinbo Xie
   !============================================
 
@@ -1098,6 +1110,7 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
         ttgw=0._r8
         !!
         !state%ribulk=0.0_r8!!bulk is used only for gwd_ss, set as 0 for now.
+        call grid_size(state,dx,dy)
         !!
 	call gwdo_gsd(&
         u3d=state%u(:,pver:1:-1),v3d=state%v(:,pver:1:-1),t3d=state%t(:,pver:1:-1),&
@@ -1116,7 +1129,7 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
         ol2d=state%ol,&!dxy2d=state%dxydir,&
         znu=etamid(pver:1:-1),dz=dz,pblh=pblh,&
         cp=cpair,g=g,rd=rair,rv=rh2o,ep1=zvir,pi=pi,bnvbg=nm(:,pver:1:-1),&
-        dt=dt,dx=rearth*cos(rlat)*(2._r8*pi/256._r8),dy=rearth*(pi/(128._r8-1._r8)),&
+        dt=dt,dx=dx,dy=dy,&
         kpbl2d=kpbl2d_in,itimestep=0,gwd_opt=0,&
         ids=1,ide=pcols,jds=0,jde=0,kds=1,kde=pver, &
         ims=1,ime=pcols,jms=0,jme=0,kms=1,kme=pver, &

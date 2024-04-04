@@ -57,7 +57,7 @@ module vertical_diffusion
   use time_manager,     only : is_first_step
 
 !=============Jinbo Xie=====================
-use gw_common,          only: gwdo_gsd
+use gw_common,          only: gwdo_gsd,grid_size
 use hycoef,             only: etamid
 !use hb_diff,            only: rino_pub
 use physconst,          only: rh2o,pi,rearth,r_universal
@@ -825,6 +825,8 @@ contains
     real(r8) :: dusfc_fd(pcols)        
     real(r8) :: dvsfc_fd(pcols)        
     !=======Jinbo Xie================
+    real(r8) :: dx(pcols),dy(pcols)
+    !=======Jinbo Xie================
 
     ! ----------------------- !
     ! Main Computation Begins !
@@ -914,6 +916,9 @@ contains
         ttgw=0_r8
         dusfc_fd=0_r8
         dvsfc_fd=0_r8
+        !
+        call grid_size(state,dx,dy)
+        !
         call gwdo_gsd(&
         u3d=state%u(:,pver:1:-1),v3d=state%v(:,pver:1:-1),&
         t3d=state%t(:,pver:1:-1),qv3d=state%q(:,pver:1:-1,1),&
@@ -927,7 +932,7 @@ contains
         var2d=state%var,&
         znu=etamid(pver:1:-1),dz=dz,pblh=pblh,&
         cp=cpair,g=gravit,rd=rair,rv=rh2o,ep1=zvir,pi=pi,&
-        dx=rearth*cos(rlat)*(2*pi/256.),dy=rearth*(pi/(128.-1.)),&
+        dx=dx,dy=dy,&
         kpbl2d=kpbl2d_in,itimestep=0,gwd_opt=0,&
         ids=1,ide=pcols,jds=0,jde=0,kds=1,kde=pver, &
         ims=1,ime=pcols,jms=0,jme=0,kms=1,kme=pver, &
