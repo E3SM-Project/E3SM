@@ -492,16 +492,16 @@ void MAMOptics::run_impl(const double dt) {
   // we are correcting the band ordering of mam4xx's ouputs, so that they are consistent with
   // inputs in RRTMGP.
   // Mapping from old RRTMG sw bands to new band ordering in RRTMGP
-  const auto& get_idx_rrtmgp_from_rrtmg_swbands = get_idx_rrtmgp_from_rrtmg_swbands_;
-  // postprocess output
-  Kokkos::parallel_for("postprocess", policy, postprocess_);
-  Kokkos::fence();
   // than rrtmgp mam4 layout: (ncols, nswlands, nlevs +1  ) rrtmgp in emaxx:
   // (ncols, nswlands, nlevs) Here, we copy data from kk=1 in mam4xx
   // Here, we are following: E3SM/components/eam/src/physics/rrtmgp
   ///cam_optics.F90
-  // nswbands loop is using rrtmg
-  //
+  const auto& get_idx_rrtmgp_from_rrtmg_swbands = get_idx_rrtmgp_from_rrtmg_swbands_;
+  // postprocess output
+  Kokkos::parallel_for("postprocess", policy, postprocess_);
+  Kokkos::fence();
+
+  // nswbands loop is using rrtmg indexing.
   Kokkos::parallel_for(
       "copying data from mam4xx to eamxx",
       Kokkos::MDRangePolicy<Kokkos::Rank<3> >({0, 0, 0},
