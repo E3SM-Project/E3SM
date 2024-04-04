@@ -7,6 +7,7 @@ if (SCREAM_DOUBLE_PRECISION)
       add_subdirectory(mam/shoc_mam4_aci)
       add_subdirectory(mam/shoc_cldfrac_mam4_aci_p3)
       add_subdirectory(mam/shoc_cldfrac_mam4_aci_p3_rrtmgp)
+      add_subdirectory(mam/shoc_cldfrac_mam4_aci_p3_mam4_optics_rrtmgp)
     endif()
 endif()
 
