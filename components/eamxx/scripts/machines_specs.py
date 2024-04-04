@@ -28,7 +28,7 @@ MACHINE_METADATA = {
                  ["mpicxx","mpifort","mpicc"],
                   "bsub -I -q rhel8 -n 4 -gpu num=4",
                   "/home/projects/e3sm/scream/pr-autotester/master-baselines/weaver/"),
-    "mappy"   : (["module purge", "module load sems-archive-env acme-env acme-cmake/3.26.3 sems-archive-gcc/9.2.0 sems-archive-git/2.10.1 acme-openmpi/4.0.7 acme-netcdf/4.7.4/acme", "export GATOR_INITIAL_MB=4000MB"],
+    "mappy"   : (["module purge", "module load sems-archive-env acme-env acme-cmake/3.26.3 acme-gcc/11.2.0 sems-archive-git/2.10.1 acme-openmpi/4.1.4 acme-netcdf/4.7.4/acme", "export GATOR_INITIAL_MB=4000MB"],
                  ["mpicxx","mpifort","mpicc"],
                   "",
                   "/sems-data-store/ACME/baselines/scream/master-baselines"),
