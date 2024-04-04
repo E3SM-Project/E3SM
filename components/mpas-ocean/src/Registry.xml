@@ -1108,13 +1108,13 @@
 					description="If true, topographic wave drag is used on the momentum equation."
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_topographic_wave_drag_scheme" type="character" default_value="JSL" units="unitless"
-					description="hich of the following three wave drag schemes to use: JSL: Jayne and St. Laurent; ZAE: Zaron and Egbert; or LGF: Local generation formula"
+		<nml_option name="config_topographic_wave_drag_scheme" type="character" default_value="ZAE" units="unitless"
+					description="Which of the following three wave drag schemes to use: JSL: Jayne and St. Laurent; ZAE: Zaron and Egbert; or LGF: Local generation formula"
 					possible_values="JSL or ZAE or LGF"
 		/>
-		<nml_option name="config_topographic_wave_drag_coeff" type="real" default_value="5.0e-4" units="unitless"
+		<nml_option name="config_topographic_wave_drag_coeff" type="real" default_value="0.3" units="unitless"
 					description="Dimensionless topographic wave drag coefficient, $c_{topo}$."
-					possible_values="any positive real, typically 5.0e-4"
+					possible_values="any positive real"
 		/>
 		<nml_option name="config_thickness_drag_type" type="character" default_value="centered"
 					description="The type of layerThickness averaging to use on the drag term. The standard MPAS-O approach is 'centered'."
