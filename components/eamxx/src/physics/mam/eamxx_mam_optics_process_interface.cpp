@@ -190,7 +190,6 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   dry_atm_.T_mid = get_field_in("T_mid").get_view<const Real **>();
   dry_atm_.p_mid = get_field_in("p_mid").get_view<const Real **>();
   dry_atm_.p_int = get_field_in("p_int").get_view<const Real **>();
-  p_int_         = get_field_in("p_int").get_view<const Real **>();
   dry_atm_.p_del = get_field_in("pseudo_density_dry").get_view<const Real **>();
   p_del_         = get_field_in("pseudo_density").get_view<const Real **>();
   dry_atm_.cldfrac = get_field_in("cldfrac_tot")
@@ -429,7 +428,6 @@ void MAMOptics::run_impl(const double dt) {
   // NOTE! we need a const mam_coupling::DryAtmosphere dry_atm for gpu access.
   // We cannot use member of this class inside of the parallel_for
   const mam_coupling::DryAtmosphere &dry_atm = dry_atm_;
-  const auto &p_int                          = p_int_;
   const auto &p_del                          = p_del_;
   const auto &ssa_cmip6_sw                   = ssa_cmip6_sw_;
   const auto &af_cmip6_sw                    = af_cmip6_sw_;
@@ -446,7 +444,7 @@ void MAMOptics::run_impl(const double dt) {
         const auto atm     = mam_coupling::atmosphere_for_column(dry_atm, icol);
 
         // FIXME: interface pressure [Pa]
-        auto pint = ekat::subview(p_int, icol);
+        auto pint = ekat::subview(dry_atm.p_int, icol);
         // FIXME: dry mass pressure interval [Pa]
         auto zi      = ekat::subview(dry_atm.z_iface, icol);
         auto pdel    = ekat::subview(p_del, icol);
