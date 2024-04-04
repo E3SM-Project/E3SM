@@ -1205,6 +1205,13 @@ struct Functions
     const view_2d<Spack>&        tk,
     const view_2d<Spack>&        tkh,
     const view_2d<Spack>&        isotropy);
+  
+  static void shoc_assign_2d_view_disp(
+    const Int&                   shcol,
+    const Int&                   nlev,
+    const view_2d<const Spack>&  input_view,
+    const view_2d<Spack>&        output_view);
+  
 #endif
 }; // struct Functions
 

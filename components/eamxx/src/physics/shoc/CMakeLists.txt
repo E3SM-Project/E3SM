@@ -85,6 +85,7 @@ set(SHOC_SK_SRCS
     disp/shoc_diag_third_shoc_moments_disp.cpp
     disp/shoc_assumed_pdf_disp.cpp
     disp/shoc_update_host_dse_disp.cpp
+    disp/shoc_assign_2d_view_disp.cpp
     )
 
 if (NOT SCREAM_DEBUG)

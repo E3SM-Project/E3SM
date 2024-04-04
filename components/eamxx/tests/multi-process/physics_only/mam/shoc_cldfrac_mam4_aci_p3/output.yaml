@@ -1,0 +1,44 @@
+%YAML 1.1
+---
+filename_prefix: shoc_cld_p3_rrtmgp_output
+Averaging Type: Instant
+Field Names:
+  # SHOC
+  - cldfrac_liq
+  - eddy_diff_mom
+  - horiz_winds
+  - sgs_buoy_flux
+  - tke
+  - inv_qc_relvar
+  - pbl_height
+  # CLD
+  - cldfrac_ice
+  - cldfrac_tot
+  # P3
+  - bm
+  - nc
+  - ni
+  - nr
+  - qi
+  - qm
+  - qr
+  - T_prev_micro_step
+  - qv_prev_micro_step
+  - eff_radius_qc
+  - eff_radius_qi
+  - eff_radius_qr
+  - micro_liq_ice_exchange
+  - micro_vap_ice_exchange
+  - micro_vap_liq_exchange
+  - precip_ice_surf_mass
+  - precip_liq_surf_mass
+  - rainfrac
+  # SHOC + P3
+  - qc
+  - qv
+  # SHOC + P3 + RRTMGP
+  - T_mid
+output_control:
+  Frequency: ${NUM_STEPS}
+  frequency_units: nsteps
+...

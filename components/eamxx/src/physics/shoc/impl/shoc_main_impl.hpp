@@ -311,7 +311,7 @@ void Functions<S,D>::shoc_main_internal(
           workspace,                      // Workspace
           pblh);                          // Output
 
-  // Assign tkh to tkh output variable
+  // Assign tkh to the tkh output variable
   const Int nlev_pack = ekat::npack<Spack>(nlev);
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
     tkh_out(k) = tkh(k);
@@ -574,7 +574,8 @@ void Functions<S,D>::shoc_main_internal(
                workspace_mgr,                  // Workspace mgr
                pblh);                          // Output
   
-  tkh_out = tkh;
+  // Assign tkh to the tkh output variable
+  shoc_assign_2d_view_disp(shcol, nlev, tkh_out,tkh);
 }
 #endif
 
