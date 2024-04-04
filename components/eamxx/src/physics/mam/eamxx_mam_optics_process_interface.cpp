@@ -444,7 +444,6 @@ void MAMOptics::run_impl(const double dt) {
   const auto &work                           = work_;
   const auto &dry_aero                       = dry_aero_;
   const auto &aerosol_optics_device_data     = aerosol_optics_device_data_;
-  // const auto& z_int =z_iface;
   Kokkos::parallel_for(
       policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
         const Int icol     = team.league_rank();  // column index
@@ -452,13 +451,9 @@ void MAMOptics::run_impl(const double dt) {
         auto odap_aer_icol = ekat::subview(aero_tau_lw, icol);
         const auto atm     = mam_coupling::atmosphere_for_column(dry_atm, icol);
 
-        // FIXME: Get rid of this
-        // auto nccn = ekat::subview(aero_nccn, icol);
-
         // FIXME: interface pressure [Pa]
         auto pint = ekat::subview(p_int, icol);
         // FIXME: dry mass pressure interval [Pa]
-        // FIXME:
         auto zi      = ekat::subview(dry_atm.z_iface, icol);
         auto pdel    = ekat::subview(p_del, icol);
         auto pdeldry = ekat::subview(dry_atm.p_del, icol);
