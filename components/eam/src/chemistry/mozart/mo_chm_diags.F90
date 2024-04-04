@@ -1488,16 +1488,16 @@ contains
           
           call outfld( 'Mass_'//trim(aerosol_name(aerosol_idx))//'_srf',  mass_3d_tmp(:ncol,pver), ncol, lchnk )
 
-          call vertinterp(ncol, pcols, pver, pmid,  85000._r8, mass_3d_tmp, mass_at_pressure)
+          call vertinterp(ncol, ncol, pver, pmid(:ncol,:),  85000._r8, mass_3d_tmp, mass_at_pressure)
           call outfld( 'Mass_'//trim(aerosol_name(aerosol_idx))//'_850',  mass_at_pressure, ncol, lchnk )
 
-          call vertinterp(ncol, pcols, pver, pmid,  50000._r8, mass_3d_tmp, mass_at_pressure)
+          call vertinterp(ncol, ncol, pver, pmid(:ncol,:),  50000._r8, mass_3d_tmp, mass_at_pressure)
           call outfld( 'Mass_'//trim(aerosol_name(aerosol_idx))//'_500',  mass_at_pressure, ncol, lchnk )
 
-          call vertinterp(ncol, pcols, pver, pmid,  33000._r8, mass_3d_tmp, mass_at_pressure)
+          call vertinterp(ncol, ncol, pver, pmid(:ncol,:),  33000._r8, mass_3d_tmp, mass_at_pressure)
           call outfld( 'Mass_'//trim(aerosol_name(aerosol_idx))//'_330',  mass_at_pressure, ncol, lchnk )
 
-          call vertinterp(ncol, pcols, pver, pmid,  20000._r8, mass_3d_tmp, mass_at_pressure)
+          call vertinterp(ncol, ncol, pver, pmid(:ncol,:),  20000._r8, mass_3d_tmp, mass_at_pressure)
           call outfld( 'Mass_'//trim(aerosol_name(aerosol_idx))//'_200',  mass_at_pressure, ncol, lchnk )
 
        end do

@@ -1375,6 +1375,14 @@
     <desc>atm2ocn flux mapping file</desc>
   </entry>
 
+  <entry id="ATM2ICE_FMAPNAME_NONLINEAR">
+    <type>char</type>
+    <default_value>idmap_ignore</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>atm2ice flux mapping file</desc>
+  </entry>
+
   <entry id="ATM2OCN_SMAPNAME">
     <type>char</type>
     <default_value>idmap</default_value>
