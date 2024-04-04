@@ -1,10 +1,13 @@
+# About This Guide
+This guide is intended to walk users step-by-step through the simulation process -- from setting up a simulation to post-processing, long-term archiving, and publishing it. 
+
 # Useful Aliases
 Setting some aliases may be useful in running the model. You can edit your bash settings file to add aliases. Run `source` on that file to start using your new aliases. Examples:
 - Chrysalis – `source ~/.bashrc`
 - Compy – `source ~/.bash_profile`
 - Perlmutter – `source ~/.bash_profile.ext`
 
-Note that the specific file name may differ amongst machines. For example, it might be named `~/.bashrc`.ext.
+Note that the specific file name may differ amongst machines. For example, it might be named `~/.bashrc.ext`.
 
 ## Batch Jobs
 To check on all batch jobs: 
@@ -40,7 +43,7 @@ alias simulations="cd <simulations_dir>"
 # Configuring the Model Run – Run Script
 Start with an example of a run script for a low-resolution coupled simulation:  
 
-We'll use the template script in the E3SM repository, which uses Perlmutter: https://github.com/E3SM-Project/E3SM/blob/master/run_e3sm.template.sh
+We'll use the [template script](https://github.com/E3SM-Project/E3SM/blob/master/run_e3sm.template.sh) in the E3SM repository, which uses Perlmutter.
 
 Create a new run script or copy an existing one (such as the template above). The path to it should be `<run_scripts_dir>/run.<case_name>.sh`
 
