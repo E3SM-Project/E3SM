@@ -44,7 +44,7 @@ void MAMOptics::set_grids(
   auto nondim = Units::nondimensional();
   // 3D layout for shortwave aerosol fields: columns, number of shortwave, and nlev +1 s
   // shortwave aerosol fields in mam has one extra level (nlev+1)
-  FieldLayout scalar3d_swband_layout_ilev{{COL, SWBND, ILEV},
+  FieldLayout scalar3d_swband_layout_levp1{{COL, SWBND, ILEV},
                                       {ncol_, nswbands_, nlev_ + 1}};
 
   // 3D layout for shortwave aerosol fields: columns, number of shortwave, and nlev
@@ -94,13 +94,13 @@ void MAMOptics::set_grids(
                       grid_name);  // planetary boundary layer height
 
   // shortwave aerosol scattering asymmetry parameter [-]
-  add_field<Computed>("aero_tau_g_sw_mam4", scalar3d_swband_layout_ilev, nondim,
+  add_field<Computed>("aero_tau_g_sw_mam4", scalar3d_swband_layout_levp1, nondim,
                       grid_name);
   // shortwave aerosol single-scattering albedo [-]
-  add_field<Computed>("aero_tau_ssa_sw_mam4", scalar3d_swband_layout_ilev, nondim,
+  add_field<Computed>("aero_tau_ssa_sw_mam4", scalar3d_swband_layout_levp1, nondim,
                       grid_name);
   // shortwave aerosol extinction optical depth [-]
-  add_field<Computed>("aero_tau_sw_mam4", scalar3d_swband_layout_ilev, nondim,
+  add_field<Computed>("aero_tau_sw_mam4", scalar3d_swband_layout_levp1, nondim,
                       grid_name);
   // shortwave aerosol scattering asymmetry parameter [-]
   add_field<Computed>("aero_g_sw", scalar3d_swband_layout, nondim, grid_name);
@@ -113,7 +113,7 @@ void MAMOptics::set_grids(
   // FIXME!!!: longwave aerosol extinction optical depth [-]
   add_field<Computed>("aero_tau_lw", scalar3d_lwband_layout, nondim, grid_name);
   //aerosol forward scattered fraction * tau * w
-  add_field<Computed>("aero_tau_forward", scalar3d_swband_layout_ilev, nondim,
+  add_field<Computed>("aero_tau_forward", scalar3d_swband_layout_levp1, nondim,
                       grid_name);
 
   add_field<Computed>("aodvis", scalar2d_layout_col, nondim, grid_name);
