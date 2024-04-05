@@ -46,9 +46,10 @@ void AODVis::compute_diagnostic_impl() {
   using ESU = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
 
   const auto aod = m_diagnostic_output.get_view<Real *>();
-  // get slice of tau at swbnd 9
+  // TODO: don't hardcode swbnd 10
+  // Get slice of tau at swbnd 10
   const auto tau_vis =
-      get_field_in("aero_tau_sw").subfield(1, 9).get_view<Real **>();
+      get_field_in("aero_tau_sw").subfield(1, 10).get_view<Real **>();
 
   const auto num_levs = m_nlevs;
   const auto policy   = ESU::get_default_team_policy(m_ncols, m_nlevs);
