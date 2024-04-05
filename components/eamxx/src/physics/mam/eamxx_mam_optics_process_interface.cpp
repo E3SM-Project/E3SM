@@ -403,7 +403,7 @@ void MAMOptics::run_impl(const double dt) {
   Kokkos::fence();
 
   //tau_w_g : aerosol asymmetry parameter * tau * w
-  const auto aero_tau_g_sw = get_field_out("aero_tau_g_sw_mam4").get_view<Real ***>();
+  const auto tau_g_sw = get_field_out("aero_tau_g_sw_mam4").get_view<Real ***>();
   //tau_w : aerosol single scattering albedo * tau
   const auto aero_tau_ssa_sw =
       get_field_out("aero_tau_ssa_sw_mam4").get_view<Real ***>();
@@ -459,7 +459,7 @@ void MAMOptics::run_impl(const double dt) {
         auto tau_w_icol = ekat::subview(aero_tau_ssa_sw, icol);
         // tau_w_g: aerosol assymetry
         // parameter * tau * w
-        auto tau_w_g_icol = ekat::subview(aero_tau_g_sw, icol);
+        auto tau_w_g_icol = ekat::subview(tau_g_sw, icol);
         // tau_w_f: aero_tau_forward
         // forward scattered fraction * tau * w
         auto tau_w_f_icol = ekat::subview(aero_tau_forward, icol);
@@ -515,7 +515,7 @@ void MAMOptics::run_impl(const double dt) {
         // Extract assymmetry parameter from the product-defined fields
         if (aero_tau_ssa_sw(icol, iswband, kk + 1) > zero ) {
           aero_g_sw_eamxx(icol, get_idx_rrtmgp_from_rrtmg_swbands(iswband), kk) =
-            aero_tau_g_sw(icol, iswband, kk + 1)/aero_tau_ssa_sw(icol, iswband, kk + 1) ;
+            tau_g_sw(icol, iswband, kk + 1)/aero_tau_ssa_sw(icol, iswband, kk + 1) ;
         } else {
           aero_g_sw_eamxx(icol, get_idx_rrtmgp_from_rrtmg_swbands(iswband), kk) = zero;
         }
