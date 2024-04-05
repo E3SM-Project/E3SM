@@ -2192,7 +2192,7 @@ module li_subglacial_hydro
 !> \date    24 October 2022
 !> \details
 !>  This routine calculates a mask of the boundaries of the active hydrology domain.
-!>  If there no waterFluxMask around domain boundaries, then calc_hydro_mask creates one.
+!>  If there is no waterFluxMask set around domain boundaries, then calc_hydro_mask creates one.
 !-----------------------------------------------------------------------
    subroutine calc_hydro_mask(domain)
 
