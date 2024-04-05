@@ -1744,22 +1744,22 @@ end function chem_is_active
        m = map2chm(n)
        if (m == h2ofire_ndx) then
        ! add fire emitted vapor to water vapor tendency
-       call get_rlat_all_p(lchnk, ncol, clat)
-       call get_rlon_all_p(lchnk, ncol, clon)
-       ptend%lq(1) = .true.
-       ptend%q(:ncol,:,1) = 0._r8
+          call get_rlat_all_p(lchnk, ncol, clat)
+          call get_rlon_all_p(lchnk, ncol, clon)
+          ptend%lq(1) = .true.
+       !ptend%q(:ncol,:,1) = 0._r8
        !write(iulog, *)'kzm_pend_lq_1 ', ptend%lq(1)
-       do it = 1,pcols
-          ptend_sum = 0.0_r8
-          !ptend_sum_brc = 0.0_r8
-          ptend_sum = maxval(ptend%q(it, :, n))
-          !ptend_sum_brc = maxval(ptend%q(it, :, brc_a4_ndx))
-          if ( ptend_sum > 1.0e-10_r8) then ! when ptend of h2ofire is impactful
-             write(iulog,*)'kzm_h2ofire_tend ', ptend_sum,   state%q(it,52,1)
-             write(iulog,*)'kzm_h2ofire_loca ', clat(it)/(3.1415_r8)*180.0_r8, clon(it)/(3.1415_r8)*180.0_r8
-          endif
-       enddo
-       ptend%q(:ncol,:,1) = ptend%q(:ncol,:,1) + ptend%q(:ncol,:,m)
+         ! do it = 1,pcols
+         !    ptend_sum = 0.0_r8
+             !ptend_sum_brc = 0.0_r8
+         !    ptend_sum = maxval(ptend%q(it, :, n))
+             !ptend_sum_brc = maxval(ptend%q(it, :, brc_a4_ndx))
+             !if ( ptend_sum > 1.0e-10_r8) then ! when ptend of h2ofire is impactful
+                !write(iulog,*)'kzm_h2ofire_tend ', ptend_sum,   state%q(it,52,1)
+                !write(iulog,*)'kzm_h2ofire_loca ', clat(it)/(3.1415_r8)*180.0_r8, clon(it)/(3.1415_r8)*180.0_r8
+             !endif
+         ! enddo
+          ptend%q(:ncol,:,1) = ptend%q(:ncol,:,1) + ptend%q(:ncol,:,n)
       endif 
     end do
 

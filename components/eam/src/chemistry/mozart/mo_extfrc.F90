@@ -53,8 +53,8 @@ module mo_extfrc
   logical :: diag_run_plumerise = .false.
   real(r8)    :: ef_bc_a4 = 0.55_r8*1.0e-03_r8*(1.0_r8/0.45_r8)
   real(r8)    :: ef_oc_a4 = 10.9_r8*1.0e-03_r8*(1.0_r8/0.45_r8)
-  #real(r8)    :: ef_h2o_a4 = 350.0_r8*1.0e-03_r8*(1.0_r8/0.45_r8)
-  real(r8)    :: ef_h2o_a4 = 10000.0_r8*1.0e-03_r8*(1.0_r8/0.45_r8) ! test the sensitivity
+  real(r8)    :: ef_h2o_a4 = 350.0_r8*1.0e-03_r8*(1.0_r8/0.45_r8)
+  !real(r8)    :: ef_h2o_a4 = (1.0_r8/0.45_r8) ! test the sensitivity
   real(r8)    :: fix_plume_height = 0.0
 contains
 
