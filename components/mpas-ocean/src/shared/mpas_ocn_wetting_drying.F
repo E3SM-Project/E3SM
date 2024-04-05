@@ -374,11 +374,19 @@ contains
 
       err = 0
 
-      hCrit = config_drying_min_cell_height
-
       if (.not. config_zero_drying_velocity) return
+
+      if (config_use_ssh_gradient_wetting_drying .and. &
+          pGradType /= pGradTypeSSHgrad) then
+
+         call mpas_log_write("config_use_ssh_gradient_wetting_drying requires " // &
+                             "config_pressure_gradient_type = 'ssh_gradient'", MPAS_LOG_CRIT)
+      endif
+
       hRampMin = config_zero_drying_velocity_ramp_hmin
       hRampMax = config_zero_drying_velocity_ramp_hmax
+      hCrit = config_drying_min_cell_height + config_drying_safety_height
+
       layerThicknessCell => layerThicknessCellWetDry
       ! need predicted transport velocity to limit drying flux
       !$omp parallel
@@ -421,8 +429,7 @@ contains
       !     be prevented completely (and not ramped).
       ! Currently, this only works for single layer configurations with the 'ssh_gradient'
       ! pressure gradient option
-      if (config_use_modify_wetting_drying_implementation .and. &
-          pGradType == pGradTypeSSHgrad) then
+      if (config_use_ssh_gradient_wetting_drying ) then
         ! Compute predicted ssh
         sshCell => sshCellWetDry
         sshCell = 0.0_RKIND
@@ -460,7 +467,7 @@ contains
             iEdge = edgesOnCell(i, iCell)
             do k = minLevelCell(iCell), maxLevelCell(iCell)
               if (k <= maxLevelEdgeTop(iEdge) .and. k >= minLevelEdgeBot(iEdge) .and. &
-                 layerThicknessCell(k, iCell) <= hCrit + config_drying_safety_height ) then
+                 layerThicknessCell(k, iCell) <= hCrit ) then
                 ! If edge velocity has been zeroed, check neighbor and currnt cell ssh.
                 ! Allow flow into current cell if neighbor cell is wet and the ssh gradient
                 ! would cause flow from neighbor cell into current cell.
@@ -480,8 +487,7 @@ contains
                   wettingVelocityFactor(k,iEdge) = 1.0_RKIND
 
                   ! if the neigbor cell is anticipated wet
-                  if ( layerThicknessCell(k, cellNei) >  &
-                       hCrit + config_drying_safety_height ) then
+                  if ( layerThicknessCell(k, cellNei) >  hCrit ) then
                     if ( sshCur < sshNei ) then
                        wettingVelocityFactor(k,iEdge) = 0.0_RKIND
                     end if
@@ -503,8 +509,7 @@ contains
             do k = minLevelCell(iCell), maxLevelCell(iCell)
               if (k <= maxLevelEdgeTop(iEdge) .and. k >= minLevelEdgeBot(iEdge) .and. &
                   config_zero_drying_velocity_ramp .and. &
-                  (layerThicknessCell(k, iCell)  > &
-                   hCrit + config_drying_safety_height) .and. &
+                  (layerThicknessCell(k, iCell) > hCrit) .and. &
                   (layerThicknessCell(k, iCell) <= hRampMax) ) then
 
                 if ( normalVelocity(k, iEdge) * edgeSignOnCell(i, iCell) <= 0.0_RKIND ) then
@@ -525,8 +530,7 @@ contains
                   sshNei = sshCell(cellNei)
 
                   ! if the neigbor cell is anticipated dry
-                  if ( layerThicknessCell(k, cellNei) <=  &
-                      hCrit + config_drying_safety_height ) then
+                  if ( layerThicknessCell(k, cellNei) <=  hCrit ) then
                      if ( sshCur < sshNei ) then
                          wettingVelocityFactor(k,iEdge) = 1.0_RKIND
                      end if
@@ -538,12 +542,6 @@ contains
         end do ! iCell
         !$omp end do
         !$omp end parallel
-
-      else if (config_use_ssh_gradient_wetting_drying .and. &
-          pGradType /= pGradTypeSSHgrad) then
-
-         call mpas_log_write("config_use_ssh_gradient_wetting_drying requires " // &
-                             "config_pressure_gradient_type = 'ssh_gradient'", MPAS_LOG_CRIT) 
 
       end if
 
