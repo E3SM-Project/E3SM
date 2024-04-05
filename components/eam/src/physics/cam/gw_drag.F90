@@ -332,6 +332,16 @@ subroutine gw_init()
                 call infld('OL', ncid_topoGWD,dim1name,'nvar_dirOL',dim2name,1,pcols,1,nvar_dirOL,begchunk, &
                                 endchunk,  ol, found, gridname='physgrid')
                 if(.not. found) call endrun('ERROR: GWD topo file readerr')
+
+
+                write(iulog,*) "Jinbo Xie dim1name,dim2name ",dim1name,dim2name        
+                write(iulog,*) "Jinbo Xie var",var
+                write(iulog,*) "Jinbo Xie var30",var30
+                write(iulog,*) "Jinbo Xie oc",oc
+                write(iulog,*) "Jinbo Xie oadir",oadir
+                write(iulog,*) "Jinbo Xie ol",ol
+                call endrun("Jinbo Xie endrun")
+                !
                 call close_initial_fileGWD()
   !!============Jinbo Xie==================
 
@@ -1145,7 +1155,6 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
 	!znw         eta values on full (w) levels , no need set to 0
 	!we also turn the index around, since wrf is bot-top, and cam is top-bot
 	!xland is only needed for small scale GWD, so not set in the moment
-
 	!Jinbo Xie
 	!Jinbo Xie
     !output the tendency profile and drag

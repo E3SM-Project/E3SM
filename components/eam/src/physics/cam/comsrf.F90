@@ -72,8 +72,6 @@ module comsrf
         real(r8), allocatable:: oc(:,:) ! Convexity
         real(r8), allocatable:: oadir(:,:,:) ! Asymmetry
         real(r8), allocatable:: ol(:,:,:) ! Effective length
-        !public dxydir
-        !real(r8), allocatable:: dxydir(:,:,:) ! Effective length
 !================
 ! Jinbo Xie1
 !================
@@ -197,8 +195,6 @@ CONTAINS
         oc    (:,:) = nan
         oadir (:,:,:) = nan
         ol  (:,:,:) = nan
-        !allocate (dxydir(pcols,nvar_dirOL,begchunk:endchunk))
-        !dxydir  (:,:,:) = nan
         !!Jinbo Xie
         !!=============================
     end if
