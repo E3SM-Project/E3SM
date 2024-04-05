@@ -8,8 +8,8 @@
 pre-commit
 
 # c++ linting
-clang-format
-clang-tools
+clang-format >=18.1.0,<18.2.0
+clang-tools >=18.1.0,<18.2.0
 cppcheck
 cpplint
 lizard
