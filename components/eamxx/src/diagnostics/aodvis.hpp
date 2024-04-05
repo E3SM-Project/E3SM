@@ -29,7 +29,7 @@ class AODVis : public AtmosphereDiagnostic {
 
   int m_ncols;
   int m_nlevs;
-
+  int m_swbnd;
 };
 
 }  // namespace scream

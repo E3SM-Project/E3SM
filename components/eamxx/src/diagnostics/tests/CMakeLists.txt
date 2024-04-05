@@ -61,4 +61,7 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
 
   # Test wind speed diagnostic
   CreateDiagTest(wind_speed "wind_speed_tests.cpp")
+
+  # Test AODVIS
+  CreateDiagTest(aodvis "aodvis_test.cpp")
 endif()
