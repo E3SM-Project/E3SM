@@ -420,7 +420,7 @@ void MAMOptics::run_impl(const double dt) {
   const auto aero_tau_sw_eamxx =
       get_field_out("aero_tau_sw").get_view<Real ***>();
   //tau_w_f : aerosol forward scattered fraction * tau * w
-  const auto tau_f_lw =
+  const auto tau_f_sw =
       get_field_out("aero_tau_forward").get_view<Real ***>();
 
   const auto aodvis = get_field_out("aodvis").get_view<Real *>();
@@ -462,7 +462,7 @@ void MAMOptics::run_impl(const double dt) {
         auto tau_w_g_icol = ekat::subview(tau_g_sw, icol);
         // tau_w_f: aero_tau_forward
         // forward scattered fraction * tau * w
-        auto tau_w_f_icol = ekat::subview(tau_f_lw, icol);
+        auto tau_w_f_icol = ekat::subview(tau_f_sw, icol);
         // tau: aerosol
         // aerosol extinction optical depth
         auto tau_icol = ekat::subview(tau_sw, icol);
