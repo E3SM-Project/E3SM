@@ -216,7 +216,8 @@ void Functions<S,D>
                      lamc(k), cdist(k), cdist1(k), not_skip_micro);
       nc(k).set(not_skip_micro, nc_incld(k) * cld_frac_l(k));
 
-      get_rain_dsd2(qr_incld(k), nr_incld(k), mu_r(k), lamr(k), cdistr(k), logn0r(k), p3constants, not_skip_micro);
+      get_rain_dsd2(qr_incld(k), nr_incld(k), mu_r(k), lamr(k), p3constants, not_skip_micro);
+      get_cdistr_logn0r(qr_incld(k), nr_incld(k), mu_r(k), lamr(k), cdistr(k), logn0r(k), not_skip_micro);
       nr(k).set(not_skip_micro, nr_incld(k) * cld_frac_r(k));
 
       impose_max_total_ni(ni_incld(k), max_total_ni, inv_rho(k), not_skip_micro);

@@ -1,4 +1,5 @@
-from utils import run_cmd, run_cmd_no_fail, expect, check_minimum_python_version, ensure_psutil
+from utils import run_cmd, run_cmd_no_fail, expect, check_minimum_python_version, ensure_psutil, \
+    SharedArea, safe_copy
 from git_utils import get_current_head, get_current_commit, get_current_branch, is_repo_clean, \
     cleanup_repo, merge_git_ref, git_refs_difference, print_last_commit, \
     create_backup_commit, checkout_git_ref
@@ -70,7 +71,7 @@ class TestAllScream(object):
         self._test_size               = test_size
         self._force_baseline_regen    = force_baseline_regen
         # Integration test always updates expired baselines
-        self._update_expired_baselines= update_expired_baselines or self._integration_test
+        self._update_expired_baselines= update_expired_baselines or self._integration_test or self._force_baseline_regen
         # If we are to update expired baselines, then we must run the generate phase
         # NOTE: the gen phase will do nothing if baselines are present and not expired
         self._generate                = generate or self._update_expired_baselines
@@ -397,7 +398,13 @@ class TestAllScream(object):
                 continue
 
             # There is a sha file, so check how it compares with self._baseline_ref
-            num_ref_is_behind_file, num_ref_is_ahead_file = git_refs_difference(baseline_file_sha, baseline_ref_sha)
+            try:
+                num_ref_is_behind_file, num_ref_is_ahead_file = git_refs_difference(baseline_file_sha, baseline_ref_sha)
+            except SystemExit as e:
+                test.baselines_expired = True
+                reason = f"Failed to get refs difference between {baseline_file_sha} and {baseline_ref_sha} because: {e}"
+                print(f" -> Test {test} baselines are expired because {reason}")
+                continue
 
             # If the copy in our repo is behind, then we need to update the repo
             expect (num_ref_is_behind_file==0 or not self._integration_test,
@@ -443,6 +450,9 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         stat, c_path, _ = run_cmd("nc-config --prefix")
         if stat == 0:
             result += f" -DNetCDF_C_PATH={c_path}"
+        stat, pc_path, _ = run_cmd("pnetcdf-config --prefix")
+        if stat == 0:
+            result += f" -DPnetCDF_C_PATH={pc_path}"
 
         # Test-specific cmake options
         for key, value in test.cmake_args:
@@ -653,12 +663,13 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         with open(test_dir/"data/baseline_list","r",encoding="utf-8") as fd:
             files = fd.read().splitlines()
 
-            for fn in files:
-                # In case appending to the file leaves an empty line at the end
-                src = Path(fn)
-                dst = baseline_dir / "data" / src.name
-                dst.touch(mode=0o664,exist_ok=True)
-                shutil.copy(src, dst)
+            with SharedArea():
+                for fn in files:
+                    # In case appending to the file leaves an empty line at the end
+                    if fn != "":
+                        src = Path(fn)
+                        dst = baseline_dir / "data" / src.name
+                        safe_copy(src, dst)
 
         # Store the sha used for baselines generation
         self.set_baseline_file_sha(test)
@@ -865,6 +876,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
 
         finally:
             # Cleanup the repo if needed
-            cleanup_repo(self._original_branch, self._original_commit, self._has_backup_commit)
+            if self._original_commit!=get_current_commit():
+                cleanup_repo(self._original_branch, self._original_commit, self._has_backup_commit)
 
         return success

@@ -998,7 +998,7 @@ contains
     call lookup_pio_atm_file(trim(fname),pio_atm_file,found)
 
     if (found) then
-      if ( is_write(pio_atm_file%purpose) ) then
+      if ( is_write(pio_atm_file%purpose) .or. is_append(pio_atm_file%purpose) ) then
         call PIO_syncfile(pio_atm_file%pioFileDesc)
       else
         call errorHandle("PIO ERROR: unable to flush file: "//trim(fname)//", is not open in write mode",-999)

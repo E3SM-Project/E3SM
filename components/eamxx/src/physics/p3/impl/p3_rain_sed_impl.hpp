@@ -22,8 +22,7 @@ void Functions<S,D>
   const Smask& context)
 {
   Table3 table;
-  Spack tmp1, tmp2; //ignore
-  get_rain_dsd2(qr_incld, nr_incld, mu_r, lamr, tmp1, tmp2, p3constants, context);
+  get_rain_dsd2(qr_incld, nr_incld, mu_r, lamr, p3constants, context);
 
   if (context.any()) {
     lookup(mu_r, lamr, table, context);
