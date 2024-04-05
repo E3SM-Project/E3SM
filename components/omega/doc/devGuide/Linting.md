@@ -69,3 +69,8 @@ pre-commit run flake8 --all-files
 pre-commit run mypy --all-files
 ```
 You can specify one more more files instead of `--all-files`.
+
+## Updating the linting pacakge
+
+To update the linting packages, you just need to recreate the development
+conda environment.  See {ref}`omega-dev-update-conda-env`.

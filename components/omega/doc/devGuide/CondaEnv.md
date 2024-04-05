@@ -57,3 +57,12 @@ cd components/omega/
 conda create -n omega_dev --file dev-conda.txt
 conda activate omega_dev
 ```
+
+(omega-dev-update-conda-env)=
+
+## Updating the Conda Environment
+
+If you need to update the `omega_dev` conda environment, the easiest way to
+do that is just to recreate it by following the same instructions as above.
+You will be prompted about whether you want to delete the old environment
+unless you include the `-y` flag (to say "yes" to all prompts).
