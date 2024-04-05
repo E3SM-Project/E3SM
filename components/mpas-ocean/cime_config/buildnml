@@ -366,7 +366,7 @@ def buildnml(case, caseroot, compname):
             ic_prefix = 'mpaso.IcosXISC30E3r7.rstFromPiControlSpinup-chrysalis'
 
     elif ocn_grid == 'RRSwISC6to18E3r5':
-        decomp_date = '20240327'
+        decomp_date = '20240404'
         decomp_prefix = 'partitions/mpas-o.graph.info.'
         restoring_file = 'sss.PHC2_monthlyClimatology.RRSwISC6to18E3r5.20240327.nc'
         analysis_mask_file = 'RRSwISC6to18E3r5_mocBasinsAndTransects20210623.nc'
