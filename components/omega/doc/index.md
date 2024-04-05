@@ -40,14 +40,14 @@ userGuide/HorzMesh
 :maxdepth: 2
 
 devGuide/QuickStart
-devGuide/DataTypes
-devGuide/MachEnv
-devGuide/Config
-devGuide/Broadcast
 devGuide/CondaEnv
 devGuide/Linting
 devGuide/Docs
 devGuide/BuildDocs
+devGuide/DataTypes
+devGuide/MachEnv
+devGuide/Config
+devGuide/Broadcast
 devGuide/CMakeBuild
 devGuide/Logging
 devGuide/Decomp
