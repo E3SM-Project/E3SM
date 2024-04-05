@@ -20,6 +20,7 @@
 #include "diagnostics/precip_surf_mass_flux.hpp"
 #include "diagnostics/surf_upward_latent_heat_flux.hpp"
 #include "diagnostics/wind_speed.hpp"
+#include "diagnostics/aodvis.hpp"
 
 namespace scream {
 
@@ -47,6 +48,7 @@ inline void register_diagnostics () {
   diag_factory.register_product("precip_surf_mass_flux",&create_atmosphere_diagnostic<PrecipSurfMassFlux>);
   diag_factory.register_product("surface_upward_latent_heat_flux",&create_atmosphere_diagnostic<SurfaceUpwardLatentHeatFlux>);
   diag_factory.register_product("wind_speed",&create_atmosphere_diagnostic<WindSpeed>);
+  diag_factory.register_product("aodvis",&create_atmosphere_diagnostic<AODVis>);
 }
 
 } // namespace scream
