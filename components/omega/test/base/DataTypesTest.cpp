@@ -99,8 +99,7 @@ int main(int argc, char *argv[]) {
          RefArr1DI4(i) = i;
       }
 
-      parallelFor(
-          {NumCells}, KOKKOS_LAMBDA(int i) { TstArr1DI4(i) = i; });
+      parallelFor({NumCells}, KOKKOS_LAMBDA(int i) { TstArr1DI4(i) = i; });
 
       Kokkos::fence();
 
@@ -284,8 +283,7 @@ int main(int argc, char *argv[]) {
          RefArr1DI8(i) = i;
       }
 
-      parallelFor(
-          {NumCells}, KOKKOS_LAMBDA(int i) { TstArr1DI8(i) = i; });
+      parallelFor({NumCells}, KOKKOS_LAMBDA(int i) { TstArr1DI8(i) = i; });
 
       Kokkos::fence();
 
@@ -469,8 +467,7 @@ int main(int argc, char *argv[]) {
          RefArr1DR4(i) = i;
       }
 
-      parallelFor(
-          {NumCells}, KOKKOS_LAMBDA(int i) { TstArr1DR4(i) = i; });
+      parallelFor({NumCells}, KOKKOS_LAMBDA(int i) { TstArr1DR4(i) = i; });
 
       Kokkos::fence();
 
@@ -654,8 +651,7 @@ int main(int argc, char *argv[]) {
          RefArr1DR8(i) = i;
       }
 
-      parallelFor(
-          {NumCells}, KOKKOS_LAMBDA(int i) { TstArr1DR8(i) = i; });
+      parallelFor({NumCells}, KOKKOS_LAMBDA(int i) { TstArr1DR8(i) = i; });
 
       Kokkos::fence();
 
@@ -839,8 +835,7 @@ int main(int argc, char *argv[]) {
          RefArr1DReal(i) = i;
       }
 
-      parallelFor(
-          {NumCells}, KOKKOS_LAMBDA(int i) { TstArr1DReal(i) = i; });
+      parallelFor({NumCells}, KOKKOS_LAMBDA(int i) { TstArr1DReal(i) = i; });
 
       Kokkos::fence();
 
