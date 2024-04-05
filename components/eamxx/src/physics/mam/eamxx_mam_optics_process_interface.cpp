@@ -92,16 +92,6 @@ void MAMOptics::set_grids(
                       grid_name);  // cloud fraction
   add_field<Required>("pbl_height", scalar2d_layout_col, m,
                       grid_name);  // planetary boundary layer height
-
-  // shortwave aerosol scattering asymmetry parameter [unitless]
-  add_field<Computed>("aero_tau_g_sw_mam4", scalar3d_swband_layout_levp1, nondim,
-                      grid_name);
-  // shortwave aerosol single-scattering albedo [unitless]
-  add_field<Computed>("aero_tau_ssa_sw_mam4", scalar3d_swband_layout_levp1, nondim,
-                      grid_name);
-  // shortwave aerosol extinction optical depth [unitless]
-  add_field<Computed>("aero_tau_sw_mam4", scalar3d_swband_layout_levp1, nondim,
-                      grid_name);
   // shortwave aerosol scattering asymmetry parameter [unitless]
   add_field<Computed>("aero_g_sw", scalar3d_swband_layout, nondim, grid_name);
   // shortwave aerosol single-scattering albedo [unitless]
@@ -278,7 +268,12 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   const int work_len = mam4::modal_aer_opt::get_work_len_aerosol_optics();
   work_              = mam_coupling::view_2d("work", ncol_, work_len);
 
-
+  // shortwave aerosol scattering asymmetry parameter [unitless]
+  tau_g_sw_ = mam_coupling::view_3d("tau_g_sw_", ncol_, nswbands_, nlev_ + 1);
+  // shortwave aerosol single-scattering albedo [unitless]
+  tau_ssa_sw_ = mam_coupling::view_3d("tau_ssa_sw_", ncol_, nswbands_, nlev_ + 1);
+  // shortwave aerosol extinction optical depth [unitless]
+  tau_sw_ = mam_coupling::view_3d("tau_sw_", ncol_, nswbands_, nlev_ + 1);
   // read table info
   {
     using namespace ShortFieldTagsNames;
@@ -403,13 +398,12 @@ void MAMOptics::run_impl(const double dt) {
   Kokkos::fence();
 
   //tau_w_g : aerosol asymmetry parameter * tau * w
-  const auto tau_g_sw = get_field_out("aero_tau_g_sw_mam4").get_view<Real ***>();
+  const auto tau_g_sw = tau_g_sw_;
   //tau_w : aerosol single scattering albedo * tau
-  const auto tau_ssa_sw =
-      get_field_out("aero_tau_ssa_sw_mam4").get_view<Real ***>();
+  const auto tau_ssa_sw =tau_ssa_sw_;
   // tau : aerosol extinction optical depth
-  const auto tau_sw =
-      get_field_out("aero_tau_sw_mam4").get_view<Real ***>();
+  const auto tau_sw = tau_sw_;
+      // get_field_out("aero_tau_sw_mam4").get_view<Real ***>();
   // aero_tau_lw ( or odap_aer) : absorption optical depth, per layer
   const auto aero_tau_lw = get_field_out("aero_tau_lw").get_view<Real ***>();
 
