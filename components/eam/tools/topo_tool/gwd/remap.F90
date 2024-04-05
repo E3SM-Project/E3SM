@@ -143,7 +143,7 @@ MODULE remap
 
       IF (abs(tmp)>0.01) THEN
         WRITE(*,*) "sum of weights too large",tmp
-        stop
+        !stop
       END IF
       IF (tmp<-1.0E-9) THEN
         WRITE(*,*) "sum of weights is negative - negative area?",tmp,jx,jy

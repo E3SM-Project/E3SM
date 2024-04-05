@@ -11,13 +11,13 @@ DEBUG = FALSE
 
 # Check for the NetCDF library and include directories 
 ifeq ($(LIB_NETCDF),$(null))
-LIB_NETCDF := /global/common/software/nersc/pm-2023q1/spack-stacks-1/stacks/gcc/linux-sles15-zen3/netcdf-fortran-4.6.0-puynz3y/lib
+LIB_NETCDF := /gpfs/fs1/soft/chrysalis/spack/opt/spack/linux-centos8-x86_64/intel-20.0.4/netcdf-fortran-4.4.4-rdxohvp/lib
 #/global/common/software/nersc/pm-2023q1/spack-stacks-1/views/climate-utils/lib
 #/public/software/mathlib/netcdf/4.3.2/intel/lib
 endif
 
 ifeq ($(INC_NETCDF),$(null))
-INC_NETCDF := /global/common/software/nersc/pm-2023q1/spack-stacks-1/stacks/gcc/linux-sles15-zen3/netcdf-fortran-4.6.0-puynz3y/include
+INC_NETCDF := /gpfs/fs1/soft/chrysalis/spack/opt/spack/linux-centos8-x86_64/intel-20.0.4/netcdf-fortran-4.4.4-rdxohvp/include
 #/global/common/software/nersc/pm-2023q1/spack-stacks-1/views/climate-utils/include
 #/public/software/mathlib/netcdf/4.3.2/intel/include
 endif
@@ -64,7 +64,7 @@ endif
  FC = ifort #xlf90
  #FFLAGS = -c -I$(INC_NETCDF) -I/BIGDATA1/iapcas_mhzhang_xiejinbo/topo_tool/cube_to_target/functional/  -convert big_endian
 
- FFLAGS = -c -I$(INC_NETCDF)   -convert big_endian
+ FFLAGS = -c -I$(INC_NETCDF)   -convert big_endian  -traceback
  #FFLAGS        := -c -I$(INC_NETCDF)  -no-prec-div -traceback -convert big_endian -fp-model source  -assume byterecl -ftz   -m64  -mcmodel=large -safe-cray-ptr
  LDFLAGS = -L$(LIB_NETCDF)  -lnetcdff
  #LDFLAGS = -L$(LIB_NETCDF) -lnetcdf -lnetcdff -m64 -static-intel

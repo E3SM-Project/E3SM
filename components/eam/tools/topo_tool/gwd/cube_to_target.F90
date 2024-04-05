@@ -196,9 +196,10 @@ nvar_dirOL=180
   !
   ! status = nf_open('target0.5x0.5.nc', 0, ncid)
   !status = nf_open('target.nc', 0, ncid)
-  status = nf_open('ne30pg2_scrip.nc',0,ncid)
+  !status = nf_open('ne30pg2_scrip.nc',0,ncid)
   !status = nf_open('ne30pg4_scrip.nc',0,ncid)
   !status = nf_open('ne4pg4_scrip.nc',0,ncid)
+  status = nf_open('ne4pg2_scrip.nc',0,ncid)
 
   IF (STATUS .NE. NF_NOERR) CALL HANDLE_ERR(STATUS)
   
