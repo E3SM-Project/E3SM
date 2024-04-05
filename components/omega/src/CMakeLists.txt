@@ -3,34 +3,46 @@
 # Add source files for the library
 file(GLOB _LIBSRC_FILES infra/*.cpp base/*.cpp ocn/*.cpp)
 
-  add_library(${OMEGA_LIB_NAME} ${_LIBSRC_FILES})
+add_library(${OMEGA_LIB_NAME} ${_LIBSRC_FILES})
 
-  target_include_directories(
+target_include_directories(
     ${OMEGA_LIB_NAME}
-    PRIVATE
+    PUBLIC
     ${OMEGA_SOURCE_DIR}/src/base
     ${OMEGA_SOURCE_DIR}/src/infra
     ${OMEGA_SOURCE_DIR}/src/ocn
     ${Parmetis_INCLUDE_DIRS}
-  )
+)
 
-  target_compile_definitions(
+target_compile_definitions(
     ${OMEGA_LIB_NAME}
     PUBLIC
     OMEGA_ARCH=${OMEGA_ARCH}
-  )
+)
 
-# add linker options
 target_link_options(
     ${OMEGA_LIB_NAME}
-    PRIVATE
+    PUBLIC
     ${OMEGA_LINK_OPTIONS}
 )
 
-target_link_libraries(${OMEGA_LIB_NAME} Kokkos::kokkos spdlog pioc yaml-cpp parmetis metis)
+target_link_libraries(
+	${OMEGA_LIB_NAME}
+	PUBLIC
+	Kokkos::kokkos
+	spdlog
+	pioc
+	yaml-cpp
+	parmetis
+	metis
+)
 
 if(GKlib_FOUND)
-    target_link_libraries(${OMEGA_LIB_NAME} gklib)
+    target_link_libraries(
+		${OMEGA_LIB_NAME}
+		PUBLIC
+		gklib
+	)
 endif()
 
 # build Omega executable
@@ -50,11 +62,11 @@ if(OMEGA_BUILD_EXECUTABLE)
 #		"-L${CMAKE_CURRENT_SOURCE_DIR}/infra"
 #  )
 
-  target_compile_definitions(
-    ${OMEGA_EXE_NAME}
-    PUBLIC
-    OMEGA_ARCH=${OMEGA_ARCH}
-  )
+#  target_compile_definitions(
+#    ${OMEGA_EXE_NAME}
+#    PUBLIC
+#    OMEGA_ARCH=${OMEGA_ARCH}
+#  )
 
   target_link_libraries(${OMEGA_EXE_NAME} ${OMEGA_LIB_NAME})
 

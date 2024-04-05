@@ -48,7 +48,7 @@ As an example, we can define and allocate a device and host array using:
 Alternatively, you can use the copy functions to create a host copy
 from the device or vice versa.
 ```c++
-   auto TemperatureHost = OMEGA::createHostCopy(Temperature);
+   auto TemperatureHost = OMEGA::createHostMirrorCopy(Temperature);
 ```
 Finally, the arrays can be deallocated explicity using the class
 deallocate method, eg `Temperature.deallocate();` or if they are local

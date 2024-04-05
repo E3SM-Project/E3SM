@@ -113,7 +113,7 @@ The compute method will be a private method called by the constructor. It will b
 This method will be repsonsible for creating the device copies of the required mesh information on the host. It will be a private method called by the constructor.
 
 ```c++
-AreaCell = OMEGA::createDeviceCopy(AreaCellH)
+AreaCell = OMEGA::createDeviceMirrorCopy(AreaCellH)
 
 ```
 

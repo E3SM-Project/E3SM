@@ -18,27 +18,17 @@ namespace OMEGA {
 using ExecSpace     = MemSpace::execution_space;
 using HostExecSpace = HostMemSpace::execution_space;
 
-#ifdef OMEGA_TARGET_DEVICE
-
 template <typename V>
-auto createHostCopy(const V &view)
+auto createHostMirrorCopy(const V &view)
     -> Kokkos::View<typename V::data_type, HostMemLayout, HostMemSpace> {
    return Kokkos::create_mirror_view_and_copy(HostExecSpace(), view);
 }
 
 template <typename V>
-auto createDeviceCopy(const V &view)
+auto createDeviceMirrorCopy(const V &view)
     -> Kokkos::View<typename V::data_type, MemLayout, MemSpace> {
    return Kokkos::create_mirror_view_and_copy(ExecSpace(), view);
 }
-
-#else
-
-template <typename V> V createHostCopy(const V &view) { return view; }
-
-template <typename V> V createDeviceCopy(const V &view) { return view; }
-
-#endif
 
 // function alias to follow Camel Naming Convention
 template <typename D, typename S> void deepCopy(D &dst, const S &src) {

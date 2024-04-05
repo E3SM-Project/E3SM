@@ -99,11 +99,12 @@ int main(int argc, char *argv[]) {
          RefArr1DI4(i) = i;
       }
 
-      parallelFor({NumCells}, KOKKOS_LAMBDA(int i) { TstArr1DI4(i) = i; });
+      parallelFor(
+          {NumCells}, KOKKOS_LAMBDA(int i) { TstArr1DI4(i) = i; });
 
       Kokkos::fence();
 
-      auto TstHost1DI4 = createHostCopy(TstArr1DI4);
+      auto TstHost1DI4 = createHostMirrorCopy(TstArr1DI4);
 
       int icount = 0;
       for (int i = 0; i < NumCells; ++i) {
@@ -132,7 +133,7 @@ int main(int argc, char *argv[]) {
 
       Kokkos::fence();
 
-      auto TstHost2DI4 = createHostCopy(TstArr2DI4);
+      auto TstHost2DI4 = createHostMirrorCopy(TstArr2DI4);
 
       icount = 0;
       for (int j = 0; j < NumCells; ++j) {
@@ -167,7 +168,7 @@ int main(int argc, char *argv[]) {
 
       Kokkos::fence();
 
-      auto TstHost3DI4 = createHostCopy(TstArr3DI4);
+      auto TstHost3DI4 = createHostMirrorCopy(TstArr3DI4);
 
       icount = 0;
       for (int k = 0; k < NumTracers; ++k) {
@@ -208,7 +209,7 @@ int main(int argc, char *argv[]) {
 
       Kokkos::fence();
 
-      auto TstHost4DI4 = createHostCopy(TstArr4DI4);
+      auto TstHost4DI4 = createHostMirrorCopy(TstArr4DI4);
 
       icount = 0;
       for (int m = 0; m < NumTimeLvls; ++m) {
@@ -253,7 +254,7 @@ int main(int argc, char *argv[]) {
 
       Kokkos::fence();
 
-      auto TstHost5DI4 = createHostCopy(TstArr5DI4);
+      auto TstHost5DI4 = createHostMirrorCopy(TstArr5DI4);
 
       icount = 0;
       for (int n = 0; n < NumExtra; ++n) {
@@ -283,11 +284,12 @@ int main(int argc, char *argv[]) {
          RefArr1DI8(i) = i;
       }
 
-      parallelFor({NumCells}, KOKKOS_LAMBDA(int i) { TstArr1DI8(i) = i; });
+      parallelFor(
+          {NumCells}, KOKKOS_LAMBDA(int i) { TstArr1DI8(i) = i; });
 
       Kokkos::fence();
 
-      auto TstHost1DI8 = createHostCopy(TstArr1DI8);
+      auto TstHost1DI8 = createHostMirrorCopy(TstArr1DI8);
 
       icount = 0;
       for (int i = 0; i < NumCells; ++i) {
@@ -316,7 +318,7 @@ int main(int argc, char *argv[]) {
 
       Kokkos::fence();
 
-      auto TstHost2DI8 = createHostCopy(TstArr2DI8);
+      auto TstHost2DI8 = createHostMirrorCopy(TstArr2DI8);
 
       icount = 0;
       for (int j = 0; j < NumCells; ++j) {
@@ -351,7 +353,7 @@ int main(int argc, char *argv[]) {
 
       Kokkos::fence();
 
-      auto TstHost3DI8 = createHostCopy(TstArr3DI8);
+      auto TstHost3DI8 = createHostMirrorCopy(TstArr3DI8);
 
       icount = 0;
       for (int k = 0; k < NumTracers; ++k) {
@@ -392,7 +394,7 @@ int main(int argc, char *argv[]) {
 
       Kokkos::fence();
 
-      auto TstHost4DI8 = createHostCopy(TstArr4DI8);
+      auto TstHost4DI8 = createHostMirrorCopy(TstArr4DI8);
 
       icount = 0;
       for (int m = 0; m < NumTimeLvls; ++m) {
@@ -437,7 +439,7 @@ int main(int argc, char *argv[]) {
 
       Kokkos::fence();
 
-      auto TstHost5DI8 = createHostCopy(TstArr5DI8);
+      auto TstHost5DI8 = createHostMirrorCopy(TstArr5DI8);
 
       icount = 0;
       for (int n = 0; n < NumExtra; ++n) {
@@ -467,11 +469,12 @@ int main(int argc, char *argv[]) {
          RefArr1DR4(i) = i;
       }
 
-      parallelFor({NumCells}, KOKKOS_LAMBDA(int i) { TstArr1DR4(i) = i; });
+      parallelFor(
+          {NumCells}, KOKKOS_LAMBDA(int i) { TstArr1DR4(i) = i; });
 
       Kokkos::fence();
 
-      auto TstHost1DR4 = createHostCopy(TstArr1DR4);
+      auto TstHost1DR4 = createHostMirrorCopy(TstArr1DR4);
 
       icount = 0;
       for (int i = 0; i < NumCells; ++i) {
@@ -500,7 +503,7 @@ int main(int argc, char *argv[]) {
 
       Kokkos::fence();
 
-      auto TstHost2DR4 = createHostCopy(TstArr2DR4);
+      auto TstHost2DR4 = createHostMirrorCopy(TstArr2DR4);
 
       icount = 0;
       for (int j = 0; j < NumCells; ++j) {
@@ -535,7 +538,7 @@ int main(int argc, char *argv[]) {
 
       Kokkos::fence();
 
-      auto TstHost3DR4 = createHostCopy(TstArr3DR4);
+      auto TstHost3DR4 = createHostMirrorCopy(TstArr3DR4);
 
       icount = 0;
       for (int k = 0; k < NumTracers; ++k) {
@@ -576,7 +579,7 @@ int main(int argc, char *argv[]) {
 
       Kokkos::fence();
 
-      auto TstHost4DR4 = createHostCopy(TstArr4DR4);
+      auto TstHost4DR4 = createHostMirrorCopy(TstArr4DR4);
 
       icount = 0;
       for (int m = 0; m < NumTimeLvls; ++m) {
@@ -621,7 +624,7 @@ int main(int argc, char *argv[]) {
 
       Kokkos::fence();
 
-      auto TstHost5DR4 = createHostCopy(TstArr5DR4);
+      auto TstHost5DR4 = createHostMirrorCopy(TstArr5DR4);
 
       icount = 0;
       for (int n = 0; n < NumExtra; ++n) {
@@ -651,11 +654,12 @@ int main(int argc, char *argv[]) {
          RefArr1DR8(i) = i;
       }
 
-      parallelFor({NumCells}, KOKKOS_LAMBDA(int i) { TstArr1DR8(i) = i; });
+      parallelFor(
+          {NumCells}, KOKKOS_LAMBDA(int i) { TstArr1DR8(i) = i; });
 
       Kokkos::fence();
 
-      auto TstHost1DR8 = createHostCopy(TstArr1DR8);
+      auto TstHost1DR8 = createHostMirrorCopy(TstArr1DR8);
 
       icount = 0;
       for (int i = 0; i < NumCells; ++i) {
@@ -684,7 +688,7 @@ int main(int argc, char *argv[]) {
 
       Kokkos::fence();
 
-      auto TstHost2DR8 = createHostCopy(TstArr2DR8);
+      auto TstHost2DR8 = createHostMirrorCopy(TstArr2DR8);
 
       icount = 0;
       for (int j = 0; j < NumCells; ++j) {
@@ -719,7 +723,7 @@ int main(int argc, char *argv[]) {
 
       Kokkos::fence();
 
-      auto TstHost3DR8 = createHostCopy(TstArr3DR8);
+      auto TstHost3DR8 = createHostMirrorCopy(TstArr3DR8);
 
       icount = 0;
       for (int k = 0; k < NumTracers; ++k) {
@@ -760,7 +764,7 @@ int main(int argc, char *argv[]) {
 
       Kokkos::fence();
 
-      auto TstHost4DR8 = createHostCopy(TstArr4DR8);
+      auto TstHost4DR8 = createHostMirrorCopy(TstArr4DR8);
 
       icount = 0;
       for (int m = 0; m < NumTimeLvls; ++m) {
@@ -805,7 +809,7 @@ int main(int argc, char *argv[]) {
 
       Kokkos::fence();
 
-      auto TstHost5DR8 = createHostCopy(TstArr5DR8);
+      auto TstHost5DR8 = createHostMirrorCopy(TstArr5DR8);
 
       icount = 0;
       for (int n = 0; n < NumExtra; ++n) {
@@ -835,11 +839,12 @@ int main(int argc, char *argv[]) {
          RefArr1DReal(i) = i;
       }
 
-      parallelFor({NumCells}, KOKKOS_LAMBDA(int i) { TstArr1DReal(i) = i; });
+      parallelFor(
+          {NumCells}, KOKKOS_LAMBDA(int i) { TstArr1DReal(i) = i; });
 
       Kokkos::fence();
 
-      auto TstHost1DReal = createHostCopy(TstArr1DReal);
+      auto TstHost1DReal = createHostMirrorCopy(TstArr1DReal);
 
       icount = 0;
       for (int i = 0; i < NumCells; ++i) {
@@ -868,7 +873,7 @@ int main(int argc, char *argv[]) {
 
       Kokkos::fence();
 
-      auto TstHost2DReal = createHostCopy(TstArr2DReal);
+      auto TstHost2DReal = createHostMirrorCopy(TstArr2DReal);
 
       icount = 0;
       for (int j = 0; j < NumCells; ++j) {
@@ -905,7 +910,7 @@ int main(int argc, char *argv[]) {
 
       Kokkos::fence();
 
-      auto TstHost3DReal = createHostCopy(TstArr3DReal);
+      auto TstHost3DReal = createHostMirrorCopy(TstArr3DReal);
 
       icount = 0;
       for (int k = 0; k < NumTracers; ++k) {
@@ -946,7 +951,7 @@ int main(int argc, char *argv[]) {
 
       Kokkos::fence();
 
-      auto TstHost4DReal = createHostCopy(TstArr4DReal);
+      auto TstHost4DReal = createHostMirrorCopy(TstArr4DReal);
 
       icount = 0;
       for (int m = 0; m < NumTimeLvls; ++m) {
@@ -991,7 +996,7 @@ int main(int argc, char *argv[]) {
 
       Kokkos::fence();
 
-      auto TstHost5DReal = createHostCopy(TstArr5DReal);
+      auto TstHost5DReal = createHostMirrorCopy(TstArr5DReal);
 
       icount = 0;
       for (int n = 0; n < NumExtra; ++n) {

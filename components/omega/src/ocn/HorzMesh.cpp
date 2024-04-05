@@ -511,7 +511,7 @@ void HorzMesh::readCoriolis() {
 // Compute the sign of edge contributions to a cell/vertex for each edge
 void HorzMesh::computeEdgeSign() {
 
-   auto EdgeSignOnCell = Array2DR8("EdgeSignOnCell", NCellsSize, MaxEdges);
+   EdgeSignOnCell = Array2DR8("EdgeSignOnCell", NCellsSize, MaxEdges);
 
    OMEGA_SCOPE(o_NEdgesOnCell, NEdgesOnCell);
    OMEGA_SCOPE(o_EdgesOnCell, EdgesOnCell);
@@ -532,7 +532,7 @@ void HorzMesh::computeEdgeSign() {
           }
        });
 
-   EdgeSignOnCellH = createHostCopy(EdgeSignOnCell);
+   EdgeSignOnCellH = createHostMirrorCopy(EdgeSignOnCell);
 
    EdgeSignOnVertex =
        Array2DR8("EdgeSignOnVertex", NVerticesSize, VertexDegree);
@@ -556,22 +556,22 @@ void HorzMesh::computeEdgeSign() {
           }
        });
 
-   EdgeSignOnVertexH = createHostCopy(EdgeSignOnVertex);
+   EdgeSignOnVertexH = createHostMirrorCopy(EdgeSignOnVertex);
 } // end computeEdgeSign
 
 //------------------------------------------------------------------------------
 // Perform copy to device for mesh variables
 void HorzMesh::copyToDevice() {
 
-   AreaCell          = createDeviceCopy(AreaCellH);
-   AreaTriangle      = createDeviceCopy(AreaTriangleH);
-   KiteAreasOnVertex = createDeviceCopy(KiteAreasOnVertexH);
-   DcEdge            = createDeviceCopy(DcEdgeH);
-   DvEdge            = createDeviceCopy(DvEdgeH);
-   AngleEdge         = createDeviceCopy(AngleEdgeH);
-   WeightsOnEdge     = createDeviceCopy(WeightsOnEdgeH);
-   FVertex           = createDeviceCopy(FVertexH);
-   BottomDepth       = createDeviceCopy(BottomDepthH);
+   AreaCell          = createDeviceMirrorCopy(AreaCellH);
+   AreaTriangle      = createDeviceMirrorCopy(AreaTriangleH);
+   KiteAreasOnVertex = createDeviceMirrorCopy(KiteAreasOnVertexH);
+   DcEdge            = createDeviceMirrorCopy(DcEdgeH);
+   DvEdge            = createDeviceMirrorCopy(DvEdgeH);
+   AngleEdge         = createDeviceMirrorCopy(AngleEdgeH);
+   WeightsOnEdge     = createDeviceMirrorCopy(WeightsOnEdgeH);
+   FVertex           = createDeviceMirrorCopy(FVertexH);
+   BottomDepth       = createDeviceMirrorCopy(BottomDepthH);
 
 } // end copyToDevice
 

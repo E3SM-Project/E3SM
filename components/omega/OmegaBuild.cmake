@@ -459,6 +459,8 @@ macro(update_variables)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DOMEGA_TARGET_DEVICE")
 
   elseif(OMEGA_ARCH STREQUAL "OPENMP")
+    set(ENV{OMP_PROC_BIND} "spread")
+    set(ENV{OMP_PLACES} "threads")
     option(Kokkos_ENABLE_OPENMP "" ON)
 
   elseif(OMEGA_ARCH STREQUAL "THREADS")

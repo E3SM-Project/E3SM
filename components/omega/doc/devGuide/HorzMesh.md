@@ -48,7 +48,7 @@ For member variables that are host arrays, variable names are appended with an
 `H`.  Array variable names not ending in `H` are device arrays.  The copy from
 host to device array is performed in the constructor via:
 ```c++
-AreaCell = OMEGA::createDeviceCopy(AreaCellH);
+AreaCell = OMEGA::createDeviceMirrorCopy(AreaCellH);
 ```
 
 The device arrays are deallocated by the `HorzMesh::clear()` method, which is

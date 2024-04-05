@@ -122,7 +122,6 @@ target_link_libraries(testTimeMgr.exe ${OMEGA_LIB_NAME})
 
 add_test(NAME TIMEMGR_TEST COMMAND ./testTimeMgr.exe)
 
-
 ##################
 # Kokkos test
 ##################
