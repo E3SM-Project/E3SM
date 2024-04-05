@@ -7,6 +7,7 @@ module gw_common
 use gw_utils, only: r8 
 !!======Jinbo Xie=======
 use ppgrid,        only: nvar_dirOA,nvar_dirOL!pcols,pver,pverp,
+use cam_logfile,   only: iulog
 !!======Jinbo Xie=======
 
 implicit none
@@ -819,22 +820,14 @@ end subroutine grid_size
                   dtaux3d_ss,dtauy3d_ss,dtaux3d_fd,dtauy3d_fd,                 &
                   dusfcg_ls,dvsfcg_ls,dusfcg_bl,dvsfcg_bl,dusfcg_ss,dvsfcg_ss, &
                   dusfcg_fd,dvsfcg_fd,xland,br,                                &
-                  var2d,oc12d,oa2d,ol2d,znu,znw,p_top,dz,pblh,          &
-                  cp,g,rd,rv,ep1,pi,bnvbg,                                           &
+                  var2d,oc12d,oa2d,ol2d,znu,znw,p_top,dz,pblh,                 &
+                  cp,g,rd,rv,ep1,pi,bnvbg,                                     &
                   dt,dx,dy,kpbl2d,itimestep,gwd_opt,                           &
                     ids,ide, jds,jde, kds,kde,                                 &
                     ims,ime, jms,jme, kms,kme,                                 &
                     its,ite, jts,jte, kts,kte,                                 &
                     gwd_ls,gwd_bl,gwd_ss,gwd_fd)!Jinbo Xie added
 !Jinbo Xie add dy, since global model is not dx=dy
-!===========================
-! Jinbo Xie0
-!===========================
-        !dt,dx,kpbl2d,itimestep,gwd_opt,
-        !&
-    !                ids,ide, jds,jde, kds,kde,                                 &
-    !                ims,ime, jms,jme, kms,kme,                                 &
-    !                its,ite, jts,jte, kts,kte))
 !=================================
 !   Jinbo Xie0 Modification
 !changed the index used in WRF
@@ -965,17 +958,11 @@ end subroutine grid_size
                                                                           pdh
   real(r8),   dimension( its:ite, kts:kte+1 )   ::     pdhi
   real(r8),   dimension( its:ite, nvar_dirOA )  ::     oa4
-  !real(r8),   dimension( its:ite, nvar_dirOL )  ::     dxy42d
-#ifndef continuous
   real(r8),   dimension( its:ite, nvar_dirOL )  ::     ol4
-#else
-  real(r8),   dimension( 4,its:ite, indexb )    ::     ol4
-#endif
   integer ::  i,j,k,kdt,kpblmax
 !
         !===========Jinbo Xie=========
         integer , intent(in) :: gwd_ls,gwd_bl,gwd_ss,gwd_fd!Jinbo Xie 
-!real(r8),dimension(ims:ime, kms:kme) :: temp
         !===========Jinbo Xie=========
    do k = kts,kte
      if(znu(k).gt.0.6_r8) kpblmax = k + 1
@@ -1000,15 +987,7 @@ IF ( (gwd_ls .EQ. 1).and.(gwd_bl .EQ. 1)) then
 
         do i = its,ite
             oa4(i,:) = oa2d(i,:)
-#ifndef continuous
             ol4(i,:) = ol2d(i,:)
-            !dxy42d(i,:)=dxy2d(i,:)!rearth*(2*pi/360.)*dxy2d(i,:)
-#else
-            ol4(:,i,:) = ol2d(:,i,:)
-            !turn terrx and terry into (m) unit
-            !to be aligned with dxmter and dymeter (m) 
-            ol4(2:3,i,:)=rearth*ol4(2:3,i,:)
-#endif
         enddo
 ENDIF
 !========Jinbo Xie================
@@ -1022,14 +1001,14 @@ ENDIF
               ,dtaux2d_ss=dtaux2d_ss,dtauy2d_ss=dtauy2d_ss                     &
               ,dtaux2d_fd=dtaux2d_fd,dtauy2d_fd=dtauy2d_fd                     &
               ,u1=u3d(ims,kms),v1=v3d(ims,kms)                                 &
-              ,t1=t3d(ims,kms)                                                &
-              ,q1=qv3d(ims,kms)                                                 &
+              ,t1=t3d(ims,kms)                                                 &
+              ,q1=qv3d(ims,kms)                                                &
               ,del=delprsi(its,kts)                                            &
               ,prsi=pdhi(its,kts)                                              &
               ,prsl=pdh(its,kts),prslk=pi3d(ims,kms)                           &
               ,zl=z(ims,kms),rcl=1.0_r8                                        &
               ,xland1=xland(ims),br1=br(ims),hpbl=pblh(ims)                    &
-              ,bnv_in=bnvbg(ims,kms)                                         &
+              ,bnv_in=bnvbg(ims,kms)                                           &
               ,dz2=dz(ims,kms)                                                 &
               ,kpblmax=kpblmax                                                 &
               ,dusfc_ls=dusfc_ls,dvsfc_ls=dvsfc_ls                             &
@@ -1192,7 +1171,6 @@ use sub_xjb,only:OLgrid,dxygrid
    real(r8),intent(in)                ::  prsi(its:ite,kts:kte+1),del(its:ite,kts:kte)
 !=========Jinbo Xie=======
    real(r8),intent(in),optional    ::  oa4(its:ite,nvar_dirOA)
-   !real(r8),intent(in),optional    ::  dxy_in(its:ite,nvar_dirOL)
    real(r8),intent(in),optional    ::  ol4(its:ite,nvar_dirOL)
 !=========Jinbo Xie=======
 !
@@ -1392,7 +1370,7 @@ ss_taper=1._r8
 !
 !--- calculate length of grid for flow-blocking drag
 !
-   delx   = dxmeter
+   delx=dxmeter
 !============
 ! Jinbo Xie2
 !============
@@ -1460,10 +1438,9 @@ ss_taper=1._r8
      dvsfc_fd(i) = 0.0_r8
 
 !temp for base flux xjb
-!taub_xjb(i)=0.0_r8
-!taufb_xjb(i)=0.0_r8
-!zblk_col(i)=0.0_r8
-
+taub_xjb(i)=0.0_r8
+taufb_xjb(i)=0.0_r8
+zblk_col(i)=0.0_r8
 wdir1_xjb(i)=0.0_r8
    enddo
 
@@ -1543,7 +1520,6 @@ IF  ((gsd_gwd_ls .EQ. 1).or.(gsd_gwd_bl .EQ. 1)) then
      wdir   = atan2(vbar(i),ubar(i)) + pi!changed into y/x Jinbo Xie
      !idir   = MOD(nint(fdir*wdir),mdir) + 1!starts from pi already
       !nwd   = idir
-#ifndef continuous
         wdir1=wdir-pi
         if (wdir1.ge.0._r8.and.wdir1.lt.pi) then
         nwd  = MOD(nint(fdir*wdir1),mdir) + 1
@@ -1581,37 +1557,6 @@ wdir1_xjb(i)=wdir1/rad
                 call dxygrid(dxmeter(i),dymeter(i),theta,dxyp(i))
 		!
 		!====Jinbo Xie====
-#else
-            !determine oa by wind direction angle
-            oa1(i)  = oa4(i,1)*cos(wdir-pi)+oa4(i,2)*sin(wdir-pi)!oalon,oalat
-            !number of nonfillvalue variables
-            !assume fillvalue 1.d36 in data
-            !rather loose threshold to 10 below 1.d36
-            nind_non=count(abs(ol4(1,i,:)).lt.1.d36-10)
-            rad=4.0_r8*atan(1.0_r8)/180.0_r8
-            wdir1=wdir-pi
-                if (wdir1.ge.0._r8.and.wdir1.lt.pi) then
-                theta  = wdir1/rad
-                else !(-pi,0) to (pi,2*pi)
-                theta  = (wdir1+2._r8*pi)/rad
-                endif
-            call OLgrid(ol4(1,i,:nind_non),ol4(2,i,:nind_non),&
-                        ol4(3,i,:nind_non),ol4(4,i,:nind_non),&
-                        dxmeter(i),dymeter,&
-                        nind_non,theta,1116.2_r8-0.878_r8*var(i),ol(i))
-            call dxygrid(dxmeter(i),dymeter,theta,dxy(i))
-                if (wdir1.ge.0._r8.and.wdir1.lt.pi) then
-                theta  = (wdir1+pi/2._r8)/rad
-                else !(-pi,0)
-                theta  = (wdir1-pi/2._r8+2._r8*pi)/rad
-                endif
-            call OLgrid(ol4(1,i,:nind_non),ol4(2,i,:nind_non),&
-                        ol4(3,i,:nind_non),ol4(4,i,:nind_non),&
-                        dxmeter(i),dymeter,&
-                        nind_non,theta,1116.2_r8-0.878_r8*var(i),olp(i))
-            call dxygrid(dxmeter(i),dymeter,theta,dxyp(i))
-!Jinbo Xie
-#endif
 	!
 !----- compute orographic direction (horizontal orographic aspect ratio)
 !
@@ -2079,7 +2024,7 @@ IF ( (gsd_gwd_bl .EQ. 1) .and. (ls_taper .GT. 1.E-02) ) THEN
               kblk = k
               kblk = min(kblk,kbl(i))
               zblk = zl(i,kblk)-zl(i,kts)
-!zblk_col(i)=zblk
+zblk_col(i)=zblk
             endif
           endif
         enddo
@@ -2156,8 +2101,6 @@ IF ( (gsd_gwd_ls .EQ. 1 .OR. gsd_gwd_bl .EQ. 1) .and. (ls_taper .GT. 1.E-02) ) T
    enddo
 !
 
-
-
    do k = kts,kte
       do i = its,ite
          taud_ls(i,k)  = taud_ls(i,k) * dtfac(i) * ls_taper
@@ -2190,26 +2133,32 @@ do i = its,ite
    dvsfc_fd(i) = (-1._r8/g*rcs) * dvsfc_fd(i)
 enddo
 
+
 !#Jinbo get base flux
+!#if 0
 do i = its,ite
-dusfc_ss(i)=wdir1_xjb(i)
-dvsfc_ss(i)=ol(i)
+!dusfc_ss(i)=wdir1_xjb(i)
+!dvsfc_ss(i)=ol(i)
 dtaux2d_ss(i,1)=oa1(i)
 dtaux2d_ss(i,2)=ol(i)
 dtaux2d_ss(i,3)=olp(i)
 dtaux2d_ss(i,4)=dxy(i)
 dtaux2d_ss(i,5)=dxyp(i)
-dtaux2d_ss(i,6)=var(i)!hpbl(i)!zblk_xjb(i)!vtj(i,2)-vtj(i,1)
+dtaux2d_ss(i,6)=var(i)
 dtaux2d_ss(i,7)=klowtop(i)!pe_xjb(i)!bnv2(i,2)!vtk(i,k+1)-vtk(i,k)
 dtaux2d_ss(i,8)=kpbl(i)
 dtaux2d_ss(i,9)=zblk_col(i)
 dtaux2d_ss(i,10)=oa4(i,1)
 dtaux2d_ss(i,11)=oa4(i,2)
 dtaux2d_ss(i,12)=oa4(i,3)
-!print*,"wdir1_xjb(i)",wdir1_xjb(i)
-!u1*q1
-!v1*q1
+dtaux2d_ss(i,13)=taub_xjb(i)
+dtaux2d_ss(i,14)=taufb_xjb(i)
+dtaux2d_ss(i,15)=xn(i)
+dtaux2d_ss(i,16)=yn(i)
+dtaux2d_ss(i,17)=dtfac(i)
+dtaux2d_ss(i,18)=ulow(i)
 enddo
+!#endif
 !stop
 #if 0
 do i = its,ite
@@ -2218,22 +2167,6 @@ dvsfc_ss(i)=taufb_xjb(i)
 enddo
 #endif
 
-#if 0
-do i = its,ite
-dtaux2d_ls(i,1)=oa1(i)
-dtaux2d_ls(i,2)=ol(i)
-dtaux2d_ls(i,3)=olp(i)
-dtaux2d_ls(i,4)=dxy(i)
-dtaux2d_ls(i,5)=dxyp(i)
-dtaux2d_ls(i,6)=var(i)!hpbl(i)!zblk_xjb(i)!vtj(i,2)-vtj(i,1)
-dtaux2d_ls(i,7)=klowtop(i)!pe_xjb(i)!bnv2(i,2)!vtk(i,k+1)-vtk(i,k)
-dtaux2d_ls(i,8)=kpbl(i)
-dtaux2d_ls(i,9)=zblk_col(i)
-dtaux2d_ls(i,10)=oa4(i,1)
-dtaux2d_ls(i,11)=oa4(i,2)
-dtaux2d_ls(i,12)=oa4(i,3)
-enddo
-#endif
    return
    end subroutine gwdo2d
 !-------------------------------------------------------------------

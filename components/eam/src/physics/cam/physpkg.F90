@@ -398,9 +398,6 @@ subroutine phys_inidat( cam_out, pbuf2d )
             sgh30, found, gridname='physgrid')
        call t_stopf('phys_inidat_infld')
 
-write(iulog,*) "Jinbo Xie sgh ",sgh
-write(iulog,*) "Jinbo Xie sgh30 ",sgh30
-       
        if(.not. found) then
           if (masterproc) write(iulog,*) 'Warning: Error reading SGH30 from topo file.'
           if (masterproc) write(iulog,*) 'The field SGH30 will be filled using data from SGH.'

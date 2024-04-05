@@ -332,20 +332,9 @@ subroutine gw_init()
                 call infld('OL', ncid_topoGWD,dim1name,'nvar_dirOL',dim2name,1,pcols,1,nvar_dirOL,begchunk, &
                                 endchunk,  ol, found, gridname='physgrid')
                 if(.not. found) call endrun('ERROR: GWD topo file readerr')
-
-
-                write(iulog,*) "Jinbo Xie dim1name,dim2name ",dim1name,dim2name        
-                write(iulog,*) "Jinbo Xie var",var
-                write(iulog,*) "Jinbo Xie var30",var30
-                write(iulog,*) "Jinbo Xie oc",oc
-                write(iulog,*) "Jinbo Xie oadir",oadir
-                write(iulog,*) "Jinbo Xie ol",ol
-                call endrun("Jinbo Xie endrun")
                 !
                 call close_initial_fileGWD()
   !!============Jinbo Xie==================
-
-
 
 
 
@@ -1123,27 +1112,27 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
         call grid_size(state,dx,dy)
         !!
 	call gwdo_gsd(&
-        u3d=state%u(:,pver:1:-1),v3d=state%v(:,pver:1:-1),t3d=state%t(:,pver:1:-1),&
-        qv3d=state%q(:,pver:1:-1,1),p3d=state%pmid(:,pver:1:-1),p3di=state%pint(:,pver:1:-1),&
-        pi3d=state%exner(:,pver:1:-1),z=zbot,&
-        rublten=utgw(:,pver:1:-1),rvblten=vtgw(:,pver:1:-1),rthblten=ttgw(:,pver:1:-1),&
+        u3d=state%u(:ncol,pver:1:-1),v3d=state%v(:ncol,pver:1:-1),t3d=state%t(:ncol,pver:1:-1),&
+        qv3d=state%q(:ncol,pver:1:-1,1),p3d=state%pmid(:ncol,pver:1:-1),p3di=state%pint(:ncol,pver:1:-1),&
+        pi3d=state%exner(:ncol,pver:1:-1),z=zbot,&
+        rublten=utgw(:ncol,pver:1:-1),rvblten=vtgw(:ncol,pver:1:-1),rthblten=ttgw(:ncol,pver:1:-1),&
         dtaux3d_ls=dtaux3_ls(:,pver:1:-1),dtauy3d_ls=dtauy3_ls(:,pver:1:-1),&
         dtaux3d_bl=dtaux3_bl(:,pver:1:-1),dtauy3d_bl=dtauy3_bl(:,pver:1:-1),&
         dtaux3d_ss=dtaux3_ss(:,pver:1:-1),dtauy3d_ss=dtauy3_ss(:,pver:1:-1),&
         dusfcg_ls=dusfc_ls,dvsfcg_ls=dvsfc_ls,&
         dusfcg_bl=dusfc_bl,dvsfcg_bl=dvsfc_bl,&
         dusfcg_ss=dusfc_ss,dvsfcg_ss=dvsfc_ss,&
-        xland=cam_in%landfrac,br=state%ribulk,&
-        var2d=state%var,oc12d=state%oc,&
-        oa2d=state%oadir,&
-        ol2d=state%ol,&!dxy2d=state%dxydir,&
+        xland=cam_in%landfrac,br=state%ribulk(:ncol),&
+        var2d=state%var(:ncol),oc12d=state%oc(:ncol),&
+        oa2d=state%oadir(:ncol,:),&
+        ol2d=state%ol(:ncol,:),&
         znu=etamid(pver:1:-1),dz=dz,pblh=pblh,&
         cp=cpair,g=g,rd=rair,rv=rh2o,ep1=zvir,pi=pi,bnvbg=nm(:,pver:1:-1),&
         dt=dt,dx=dx,dy=dy,&
         kpbl2d=kpbl2d_in,itimestep=0,gwd_opt=0,&
-        ids=1,ide=pcols,jds=0,jde=0,kds=1,kde=pver, &
-        ims=1,ime=pcols,jms=0,jme=0,kms=1,kme=pver, &
-        its=1,ite=pcols,jts=0,jte=0,kts=1,kte=pver, &
+        ids=1,ide=ncol,jds=0,jde=0,kds=1,kde=pver, &
+        ims=1,ime=ncol,jms=0,jme=0,kms=1,kme=pver, &
+        its=1,ite=ncol,jts=0,jte=0,kts=1,kte=pver, &
         gwd_ls=1,gwd_bl=1,gwd_ss=0,gwd_fd=0 )
 	! z and dz all above surface and sea level, no need to add a new layer
 	! (just need an empty),gwd_opt(no need in my, take out 33 option))
@@ -1182,7 +1171,12 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
      ! Add the orographic tendencies to the spectrum tendencies
      ! Compute the temperature tendency from energy conservation
      ! (includes spectrum).
-
+!#if 0
+    !
+    !utgw=0.0_r8
+    !vtgw=0.0_r8
+    !ttgw=0.0_r8
+    !
      if(.not. use_gw_energy_fix) then
         !original
         do k = 1, pver
@@ -1250,6 +1244,7 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
         end do
      end if
   end do
+!#endif
 
   ! Write total temperature tendency to history file
   call outfld ('TTGW', ptend%s/cpairv(:,:,lchnk),  pcols, lchnk)
