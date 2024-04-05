@@ -33,6 +33,7 @@ userGuide/IO
 userGuide/IOField
 userGuide/Halo
 userGuide/HorzMesh
+userGuide/TimeMgr
 ```
 
 ```{toctree}
@@ -56,6 +57,7 @@ devGuide/IO
 devGuide/IOField
 devGuide/Halo
 devGuide/HorzMesh
+devGuide/TimeMgr
 ```
 
 ```{toctree}
