@@ -408,7 +408,7 @@ void MAMOptics::run_impl(const double dt) {
   const auto tau_ssa_sw =
       get_field_out("aero_tau_ssa_sw_mam4").get_view<Real ***>();
   // tau : aerosol extinction optical depth
-  const auto aero_tau_sw =
+  const auto tau_sw =
       get_field_out("aero_tau_sw_mam4").get_view<Real ***>();
   // aero_tau_lw ( or odap_aer) : absorption optical depth, per layer
   const auto aero_tau_lw = get_field_out("aero_tau_lw").get_view<Real ***>();
@@ -465,7 +465,7 @@ void MAMOptics::run_impl(const double dt) {
         auto tau_w_f_icol = ekat::subview(aero_tau_forward, icol);
         // tau: aerosol
         // aerosol extinction optical depth
-        auto tau_icol = ekat::subview(aero_tau_sw, icol);
+        auto tau_icol = ekat::subview(tau_sw, icol);
 
         auto work_icol = ekat::subview(work, icol);
 
@@ -506,9 +506,9 @@ void MAMOptics::run_impl(const double dt) {
                                               {ncol_, nswbands_, nlev_}),
       KOKKOS_LAMBDA(const int icol, const int iswband, const int kk) {
         // Extract single scattering albedo from the product-defined fields
-        if (aero_tau_sw(icol, iswband, kk + 1) > zero) {
+        if (tau_sw(icol, iswband, kk + 1) > zero) {
           aero_ssa_sw_eamxx(icol, get_idx_rrtmgp_from_rrtmg_swbands(iswband), kk) =
-          tau_ssa_sw(icol, iswband, kk + 1)/aero_tau_sw(icol, iswband, kk + 1);
+          tau_ssa_sw(icol, iswband, kk + 1)/tau_sw(icol, iswband, kk + 1);
         } else {
           aero_ssa_sw_eamxx(icol, get_idx_rrtmgp_from_rrtmg_swbands(iswband), kk) = one;
         }
@@ -521,7 +521,7 @@ void MAMOptics::run_impl(const double dt) {
         }
         // Copy cloud optical depth over directly
         aero_tau_sw_eamxx(icol, get_idx_rrtmgp_from_rrtmg_swbands(iswband), kk) =
-            aero_tau_sw(icol, iswband, kk + 1);
+            tau_sw(icol, iswband, kk + 1);
       });
   Kokkos::fence();
 }
