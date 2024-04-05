@@ -100,7 +100,7 @@ void MAMOptics::set_grids(
   // shortwave aerosol extinction optical depth
   add_field<Computed>("aero_tau_sw", scalar3d_swband_layout, nondim,
                       grid_name);
-  // FIXME!!!: longwave aerosol extinction optical depth [unitless]
+  //longwave aerosol extinction optical depth [unitless]
   add_field<Computed>("aero_tau_lw", scalar3d_lwband_layout, nondim, grid_name);
   //aerosol forward scattered fraction * tau * w
   add_field<Computed>("aero_tau_forward", scalar3d_swband_layout_levp1, nondim,
