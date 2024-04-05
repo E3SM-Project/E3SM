@@ -408,7 +408,10 @@ contains
           end do
 
           layerThicknessCell(k, iCell) = min(layerThicknessProvis(k, iCell), layerThicknessCur(k, iCell)) + dt * divOutFlux
-
+          if ( .not. config_use_ssh_gradient_wetting_drying ) then
+             call ocn_wetting_velocity_factor_on_cell_edges( &
+                      wettingVelocityFactor, layerThicknessCell(k, iCell), normalVelocity, iCell, k)
+          end if
         end do
       end do
       !$omp end do
