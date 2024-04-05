@@ -56,8 +56,8 @@ module li_subglacial_hydro
    ! Private module variables
    !
    !--------------------------------------------------------------------
-! Minimum gradMagPhiBaseEdge and gradMagPhiEdge allowed before all dependent variables are zeroed out
-real(kind=RKIND), parameter :: SMALL_GRADPHI = 1.0e-6_RKIND
+   ! Minimum gradMagPhiBaseEdge and gradMagPhiEdge allowed before all dependent variables are zeroed out
+   real(kind=RKIND), parameter :: SMALL_GRADPHI = 1.0e-6_RKIND
 
 !***********************************************************************
    contains
@@ -773,7 +773,6 @@ real(kind=RKIND), parameter :: SMALL_GRADPHI = 1.0e-6_RKIND
       integer, dimension(:), pointer :: edgeMask
       integer, dimension(:,:), pointer :: cellsOnEdge
       integer, dimension(:,:), pointer :: verticesOnEdge
-      integer, dimension(:,:), pointer :: cellsOnVertex
       integer, dimension(:,:), pointer :: baryCellsOnVertex
       real (kind=RKIND), dimension(:,:), pointer :: baryWeightsOnVertex
       real (kind=RKIND), pointer :: alpha, beta
@@ -1019,7 +1018,7 @@ real(kind=RKIND), parameter :: SMALL_GRADPHI = 1.0e-6_RKIND
                effectiveConducEdge(iEdge) = 0.0_RKIND
             else
                effectiveConducEdge(iEdge) = conduc_coeff * waterThicknessEdge(iEdge)**(alpha-1.0_RKIND) *&
-               gradMagPhiBaseEdge(iEdge)**(beta - 2.0_RKIND)   
+                  gradMagPhiBaseEdge(iEdge)**(beta - 2.0_RKIND)   
             endif
          enddo
       endif
@@ -2192,7 +2191,8 @@ real(kind=RKIND), parameter :: SMALL_GRADPHI = 1.0e-6_RKIND
 !> \author  Matt Hoffman
 !> \date    24 October 2022
 !> \details
-!>  This routine calculates a mask of the boundaries of the active hydrology domain
+!>  This routine calculates a mask of the boundaries of the active hydrology domain.
+!>  If there no waterFluxMask around domain boundaries, then calc_hydro_mask creates one.
 !-----------------------------------------------------------------------
    subroutine calc_hydro_mask(domain)
 
@@ -2291,7 +2291,7 @@ real(kind=RKIND), parameter :: SMALL_GRADPHI = 1.0e-6_RKIND
       end do
 
       if (wfmWarning == 1) then
-         call mpas_log_write('WARNING: Changing waterFluxMask to enforce no-flow conditions at domain boundaries')
+         call mpas_log_write('Changing waterFluxMask to enforce no-flow conditions at domain boundaries', MPAS_LOG_WARN)
       endif
       call mpas_timer_start("halo updates")
       call mpas_dmpar_field_halo_exch(domain, 'hydroMarineMarginMask')
