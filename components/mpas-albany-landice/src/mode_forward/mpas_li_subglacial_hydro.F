@@ -56,7 +56,8 @@ module li_subglacial_hydro
    ! Private module variables
    !
    !--------------------------------------------------------------------
-
+   ! Minimum gradMagPhiBaseEdge and gradMagPhiEdge allowed before all dependent variables are zeroed out
+   real(kind=RKIND), parameter :: SMALL_GRADPHI = 1.0e-6_RKIND
 
 !***********************************************************************
    contains
@@ -772,7 +773,6 @@ module li_subglacial_hydro
       integer, dimension(:), pointer :: edgeMask
       integer, dimension(:,:), pointer :: cellsOnEdge
       integer, dimension(:,:), pointer :: verticesOnEdge
-      integer, dimension(:,:), pointer :: cellsOnVertex
       integer, dimension(:,:), pointer :: baryCellsOnVertex
       real (kind=RKIND), dimension(:,:), pointer :: baryWeightsOnVertex
       real (kind=RKIND), pointer :: alpha, beta
@@ -786,8 +786,8 @@ module li_subglacial_hydro
       integer, pointer :: nEdges
       integer, pointer :: nCells
       integer, pointer :: nVertices
-      integer :: iEdge, cell1, cell2
       integer :: i, j, iVertex, iCell
+      integer :: iEdge, cell1, cell2
       real (kind=RKIND) :: velSign
       integer :: numGroundedCells
       integer :: err_tmp
@@ -909,11 +909,9 @@ module li_subglacial_hydro
          endif ! if edge of grounded ice
       end do
 
-      ! zero gradients at boundaries of the mesh
+      ! zero gradients at edges that are marked as no flux. These should be applied at boundaries of the mesh.
       do iEdge = 1, nEdges
-         cell1 = cellsOnEdge(1, iEdge)
-         cell2 = cellsOnEdge(2, iEdge)
-         if ((cell1 == nCells+1) .or. (cell2 == nCells+1)) then
+         if (waterFluxMask(iEdge) == 2) then
             hydropotentialBaseSlopeNormal(iEdge) = 0.0_RKIND
             hydropotentialSlopeNormal(iEdge) = 0.0_RKIND
             waterPressureSlopeNormal(iEdge) = 0.0_RKIND
@@ -948,7 +946,6 @@ module li_subglacial_hydro
       ! contaminated values.
       call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
       call mpas_pool_get_array(meshPool, 'verticesOnEdge', verticesOnEdge)
-      call mpas_pool_get_array(meshPool, 'cellsOnVertex', cellsOnVertex)
       select case (trim(config_SGH_tangent_slope_calculation))
       case ('from_vertex_barycentric', 'from_vertex_barycentric_kiteareas')
          do iEdge = 1, nEdges
@@ -962,17 +959,11 @@ module li_subglacial_hydro
                hydropotentialBaseSlopeTangent(iEdge) = 0.0_RKIND
                hydropotentialSlopeTangent(iEdge) = 0.0_RKIND
             endif
-            ! check for edges where a vertex is on the edge of the mesh and zero the tangent slope there
-            do i = 1, 2
-               iVertex = verticesOnEdge(i, iEdge)
-               do j = 1, 3
-                  iCell = cellsOnVertex(j, iVertex)
-                  if (iCell == nCells + 1) then
-                     hydropotentialBaseSlopeTangent(iEdge) = 0.0_RKIND
-                     hydropotentialSlopeTangent(iEdge) = 0.0_RKIND
-                  endif
-               enddo
-            enddo
+            ! zero tangent slope at waterFluxMask==2            
+            if (waterFluxMask(iEdge) == 2) then
+                hydropotentialBaseSlopeTangent(iEdge) = 0.0_RKIND
+                hydropotentialSlopeTangent(iEdge) = 0.0_RKIND
+             endif
          end do  ! edges
       case ('from_normal_slope')
          ! Do first with hydropotentialBase
@@ -987,6 +978,11 @@ module li_subglacial_hydro
                hydropotentialBaseSlopeTangent(iEdge) = 0.0_RKIND
                hydropotentialSlopeTangent(iEdge) = 0.0_RKIND
             endif
+            if (waterFluxMask(iEdge) == 2) then
+               hydropotentialBaseSlopeTangent(iEdge) = 0.0_RKIND
+               hydropotentialSlopeTangent(iEdge) = 0.0_RKIND
+            endif
+
          end do  ! edges
       case default
          call mpas_log_write('Invalid value for config_SGH_tangent_slope_calculation.', MPAS_LOG_ERR)
@@ -1004,16 +1000,27 @@ module li_subglacial_hydro
       if (conduc_coeff_drowned > 0.0_RKIND) then
          ! Use a thickness weighted conductivity coeff. when water thickness exceeds bump height
          do iEdge = 1, nEdges
-            conduc_coeff_wtd = (conduc_coeff * min(waterThicknessEdge(iEdge), bedRoughMax) + &
-                             conduc_coeff_drowned * max(waterThicknessEdge(iEdge) - bedRoughMax, 0.0_RKIND)) / &
-                             (waterThicknessEdge(iEdge) + 1.0e-16_RKIND)  ! Regularization only applies where value doesn't matter
-            effectiveConducEdge(iEdge) = conduc_coeff_wtd * waterThicknessEdge(iEdge)**(alpha-1.0_RKIND) * &
-               (gradMagPhiBaseEdge(iEdge)+1.0e-30_RKIND)**(beta - 2.0_RKIND)   ! small value used for regularization
+            if (gradMagPhiBaseEdge(iEdge) < SMALL_GRADPHI) then
+               effectiveConducEdge(iEdge) = 0.0_RKIND
+            else
+               conduc_coeff_wtd = (conduc_coeff * min(waterThicknessEdge(iEdge), bedRoughMax) + &
+                  conduc_coeff_drowned * max(waterThicknessEdge(iEdge) - bedRoughMax, 0.0_RKIND)) / &
+                  (waterThicknessEdge(iEdge) + 1.0e-16_RKIND)  ! Regularization only applies where value doesn't matter
+            
+               effectiveConducEdge(iEdge) = conduc_coeff_wtd * waterThicknessEdge(iEdge)**(alpha-1.0_RKIND) * &
+                  gradMagPhiBaseEdge(iEdge)**(beta - 2.0_RKIND)              
+            endif
          end do
       else
-         ! Just use a single conductivity coeff.
-         effectiveConducEdge(:) = conduc_coeff * waterThicknessEdge(:)**(alpha-1.0_RKIND) *&
-            (gradMagPhiBaseEdge(:)+1.0e-30_RKIND)**(beta - 2.0_RKIND)   ! small value used for regularization
+         do iEdge = 1, nEdges
+            ! Just use a single conductivity coeff.
+            if (gradMagPhiBaseEdge(iEdge) < SMALL_GRADPHI) then
+               effectiveConducEdge(iEdge) = 0.0_RKIND
+            else
+               effectiveConducEdge(iEdge) = conduc_coeff * waterThicknessEdge(iEdge)**(alpha-1.0_RKIND) *&
+                  gradMagPhiBaseEdge(iEdge)**(beta - 2.0_RKIND)   
+            endif
+         enddo
       endif
 
       ! calculate diffusivity on edges
@@ -1802,7 +1809,7 @@ module li_subglacial_hydro
 
       ! Calculate terms needed for opening (melt) rate
 
-      where(gradMagPhiEdge < 0.01_RKIND)
+      where(gradMagPhiEdge < SMALL_GRADPHI)
          channelDischarge(:) = 0.0_RKIND
       elsewhere
          channelDischarge = -1.0_RKIND * Kc * channelArea**alpha_c * gradMagPhiEdge**(beta_c - 2.0_RKIND) * &
@@ -1831,7 +1838,7 @@ module li_subglacial_hydro
       channelVelocity = channelDischarge / (channelArea + 1.0e-12_RKIND)
 
       ! diffusivity used only to limit channel dt right now
-      where(gradMagPhiEdge < 0.01_RKIND)
+      where(gradMagPhiEdge < SMALL_GRADPHI)
          channelDiffusivity = 0.0_RKIND
       elsewhere
          channelDiffusivity = abs(rho_water * gravity * channelArea *  &
@@ -2184,7 +2191,8 @@ module li_subglacial_hydro
 !> \author  Matt Hoffman
 !> \date    24 October 2022
 !> \details
-!>  This routine calculates a mask of the boundaries of the active hydrology domain
+!>  This routine calculates a mask of the boundaries of the active hydrology domain.
+!>  If there is no waterFluxMask set around domain boundaries, then calc_hydro_mask creates one.
 !-----------------------------------------------------------------------
    subroutine calc_hydro_mask(domain)
 
@@ -2213,9 +2221,12 @@ module li_subglacial_hydro
       integer, dimension(:), pointer :: hydroTerrestrialMarginMask
       integer, dimension(:,:), pointer :: cellsOnEdge
       integer, dimension(:), pointer :: cellMask
+      integer, dimension(:), pointer :: waterFluxMask
       integer, pointer :: nEdgesSolve
+      integer, pointer :: nCells
       integer :: cell1, cell2, iEdge
       real (kind=RKIND), pointer :: config_sea_level
+      integer :: wfmWarning
 
       call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
 
@@ -2228,35 +2239,50 @@ module li_subglacial_hydro
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
          call mpas_pool_get_array(hydroPool, 'hydroMarineMarginMask', hydroMarineMarginMask)
          call mpas_pool_get_array(hydroPool, 'hydroTerrestrialMarginMask', hydroTerrestrialMarginMask)
+         call mpas_pool_get_array(hydroPool, 'waterFluxMask', waterFluxMask)
          call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
          call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
-
+         call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+         
          hydroMarineMarginMask(:) = 0
+         hydroTerrestrialMarginMask(:) = 0
+         wfmWarning = 0
+
          do iEdge = 1, nEdgesSolve
             cell1 = cellsOnEdge(1, iEdge)
             cell2 = cellsOnEdge(2, iEdge)
-            ! We are looking for edges with 1 edge grounded ice and the other edge floating ice or open ocean
+            
+            !ensure no-flow conditions on edges of domain if not set up
+            !in input file
+            if ( ((cell1 == nCells + 1) .or. (cell2 == nCells +1 )) &
+               .and. (waterFluxMask(iEdge) .ne. 2)) then
+                 waterFluxMask(iEdge) = 2
+                 wfmWarning = 1
+            endif
+
+            ! hydroMarineMarginMask: We are looking for edges with 1 edge grounded ice and the other edge floating ice or open ocean
+            ! Exclude no-flow boundaries
             if ( (li_mask_is_grounded_ice(cellMask(cell1))) .and. &
                  (li_mask_is_floating_ice(cellMask(cell2)) .or. &
-                 ((bedTopography(cell2) < config_sea_level) .and. (.not. li_mask_is_ice(cellMask(cell2)))) ) ) then
+                 ((bedTopography(cell2) < config_sea_level) .and. (.not. li_mask_is_ice(cellMask(cell2)))) ) &
+                  .and. (waterFluxMask(iEdge) .ne. 2) ) then
                hydroMarineMarginMask(iEdge) = 1
             elseif ( (li_mask_is_grounded_ice(cellMask(cell2))) .and. &
                      (li_mask_is_floating_ice(cellMask(cell1)) .or. &
-                     ((bedTopography(cell1) < config_sea_level) .and. (.not. li_mask_is_ice(cellMask(cell1)))) ) ) then
+                     ((bedTopography(cell1) < config_sea_level) .and. (.not. li_mask_is_ice(cellMask(cell1)))) ) &
+                     .and. (waterFluxMask(iEdge) .ne. 2) ) then
                hydroMarineMarginMask(iEdge) = 1
             endif
-         enddo
-
-         hydroTerrestrialMarginMask(:) = 0
-         do iEdge = 1, nEdgesSolve
-            cell1 = cellsOnEdge(1, iEdge)
-            cell2 = cellsOnEdge(2, iEdge)
-            !Look for edges with 1 cell on grounding ice and the other cell on land without ice
+            
+            ! hydroTerrestrialMarginMask: Look for edges with 1 cell on grounding ice and the other cell on land without ice
+            ! Exclude no-flow boundaries
             if ((li_mask_is_grounded_ice(cellMask(cell1))) .and. ( .not. li_mask_is_ice(cellMask(cell2))) &
-               .and. (bedTopography(cell2) >= config_sea_level)) then
+               .and. (bedTopography(cell2) >= config_sea_level) &
+               .and. (waterFluxMask(iEdge) .ne. 2) ) then
                hydroTerrestrialMarginMask(iEdge) = 1
             elseif ((li_mask_is_grounded_ice(cellMask(cell2))) .and. ( .not. li_mask_is_ice(cellMask(cell1))) &
-               .and. (bedTopography(cell1) >= config_sea_level)) then
+               .and. (bedTopography(cell1) >= config_sea_level) &
+               .and. (waterFluxMask(iEdge) .ne. 2) ) then
                hydroTerrestrialMarginMask(iEdge) = 1
             endif
          enddo
@@ -2264,8 +2290,13 @@ module li_subglacial_hydro
          block => block % next
       end do
 
+      if (wfmWarning == 1) then
+         call mpas_log_write('Changing waterFluxMask to enforce no-flow conditions at domain boundaries', MPAS_LOG_WARN)
+      endif
       call mpas_timer_start("halo updates")
       call mpas_dmpar_field_halo_exch(domain, 'hydroMarineMarginMask')
+      call mpas_dmpar_field_halo_exch(domain, 'hydroTerrestrialMarginMask')
+      call mpas_dmpar_field_halo_exch(domain, 'waterFluxMask')
       call mpas_timer_stop("halo updates")
 
    !--------------------------------------------------------------------
