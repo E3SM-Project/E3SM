@@ -894,7 +894,7 @@ end subroutine grid_size
 !
   real(r8),     dimension( ims:ime, kms:kme )             ,  &
 
-            intent(in   )   ::                      qv3d, &
+            intent(in)   ::                      qv3d, &
                                                               p3d, &
                                                              pi3d, &
                                                               t3d, &
@@ -920,7 +920,7 @@ end subroutine grid_size
                                                                 v3d
 !
   integer,   dimension( ims:ime )                                   , &
-             intent(in  )   ::             kpbl2d
+             intent(in  )   ::                             kpbl2d
 
   real(r8),   dimension( ims:ime )                                      , &
         intent(in  )   ::                                   pblh, &
@@ -934,23 +934,17 @@ end subroutine grid_size
   real(r8),   dimension( ims:ime ) ::  dusfc_ls,dvsfc_ls,dusfc_bl,dvsfc_bl,        &
                                        dusfc_ss,dvsfc_ss,dusfc_fd,dvsfc_fd
 !Jinbo Xie
-!optional because other schemes may not need these par
-!Jinbo Xie
-  !real(r8),   dimension( ims:ime ),                                     , &
-        real(r8),   dimension( ims:ime ),     optional                   , &
+        real(r8),   dimension( ims:ime ),     optional               , &
              intent(in  )   ::                                  var2d, &
                                                                 oc12d
-
-       !real(r8),dimension(ims:ime,nvar_dirOL),optional, intent(in) :: dxy2d
        real(r8),dimension(ims:ime,nvar_dirOL),optional, intent(in) :: ol2d
        real(r8),dimension(ims:ime,nvar_dirOA),optional, intent(in) :: oa2d
 !Jinbo Xie
-  !real(r8),     dimension( kms:kme )                                             , &
             real(r8),   optional                                                         , &
-            intent(in  )   ::                                             znu(:), &
-                                                                          znw(:)
+            intent(in)   ::                                             znu(:), &
+                                                                        znw(:)
 !
-  real(r8),     optional, intent(in  )   ::                           p_top
+  real(r8),     optional, intent(in)         ::                           p_top
 !
 !local
 !
@@ -1293,6 +1287,8 @@ real(r8) :: zblk_col(its:ite)
 real(r8) :: taub_xjb(its:ite)
 real(r8) :: taufb_xjb(its:ite)
 real(r8) :: wdir1_xjb(its:ite)
+integer  :: kblk_xjb(its:ite)
+
 !Jinbo Xie
 real(r8)                 :: pe,ke
 !================================
@@ -1442,6 +1438,7 @@ taub_xjb(i)=0.0_r8
 taufb_xjb(i)=0.0_r8
 zblk_col(i)=0.0_r8
 wdir1_xjb(i)=0.0_r8
+kblk_xjb(i)=0.0_r8
    enddo
 
 !
@@ -2025,6 +2022,7 @@ IF ( (gsd_gwd_bl .EQ. 1) .and. (ls_taper .GT. 1.E-02) ) THEN
               kblk = min(kblk,kbl(i))
               zblk = zl(i,kblk)-zl(i,kts)
 zblk_col(i)=zblk
+!write(iulog,*)"Jinbo Xie kblk,k",kblk,k,zblk
             endif
           endif
         enddo
@@ -2052,11 +2050,15 @@ taufb_xjb(i)=taufb(i,kts)
           do k = kts+1, kblk
             taufb(i,k) = taufb(i,k-1) - tautem
           enddo
+
 !
 !----------sum orographic GW stress and flow-blocking stress
 !
            !taup(i,:) = taup(i,:) + taufb(i,:)   ! Keep taup and taufb separate for now
         endif
+!!Jinbo Xie
+!kblk_xjb(i)=kblk
+!!Jinbo Xie
       endif
    enddo
 
@@ -2157,6 +2159,7 @@ dtaux2d_ss(i,15)=xn(i)
 dtaux2d_ss(i,16)=yn(i)
 dtaux2d_ss(i,17)=dtfac(i)
 dtaux2d_ss(i,18)=ulow(i)
+dtaux2d_ss(i,19)=kblk_xjb(i)
 enddo
 !#endif
 !stop

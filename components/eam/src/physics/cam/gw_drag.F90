@@ -1084,6 +1084,9 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
                 dz(i,k)=ztop(i,k)-zbot(i,k)
                 end do
         end do
+        !reverse to keep good format in scheme
+        ztop=ztop(:,pver:1:-1)
+        zbot=zbot(:,pver:1:-1)
         !=======Jinbo Xie=========================
         !get the layer index of pblh in layer
         call pbuf_get_field(pbuf, pblh_idx,     pblh)
@@ -1114,11 +1117,11 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
 	call gwdo_gsd(&
         u3d=state%u(:ncol,pver:1:-1),v3d=state%v(:ncol,pver:1:-1),t3d=state%t(:ncol,pver:1:-1),&
         qv3d=state%q(:ncol,pver:1:-1,1),p3d=state%pmid(:ncol,pver:1:-1),p3di=state%pint(:ncol,pver:1:-1),&
-        pi3d=state%exner(:ncol,pver:1:-1),z=zbot,&
+        pi3d=state%exner(:ncol,pver:1:-1),z=zbot(:ncol,pver:1:-1),&
         rublten=utgw(:ncol,pver:1:-1),rvblten=vtgw(:ncol,pver:1:-1),rthblten=ttgw(:ncol,pver:1:-1),&
-        dtaux3d_ls=dtaux3_ls(:,pver:1:-1),dtauy3d_ls=dtauy3_ls(:,pver:1:-1),&
-        dtaux3d_bl=dtaux3_bl(:,pver:1:-1),dtauy3d_bl=dtauy3_bl(:,pver:1:-1),&
-        dtaux3d_ss=dtaux3_ss(:,pver:1:-1),dtauy3d_ss=dtauy3_ss(:,pver:1:-1),&
+        dtaux3d_ls=dtaux3_ls(:ncol,pver:1:-1),dtauy3d_ls=dtauy3_ls(:ncol,pver:1:-1),&
+        dtaux3d_bl=dtaux3_bl(:ncol,pver:1:-1),dtauy3d_bl=dtauy3_bl(:ncol,pver:1:-1),&
+        dtaux3d_ss=dtaux3_ss(:ncol,pver:1:-1),dtauy3d_ss=dtauy3_ss(:ncol,pver:1:-1),&
         dusfcg_ls=dusfc_ls,dvsfcg_ls=dvsfc_ls,&
         dusfcg_bl=dusfc_bl,dvsfcg_bl=dvsfc_bl,&
         dusfcg_ss=dusfc_ss,dvsfcg_ss=dvsfc_ss,&
@@ -1126,8 +1129,8 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
         var2d=state%var(:ncol),oc12d=state%oc(:ncol),&
         oa2d=state%oadir(:ncol,:),&
         ol2d=state%ol(:ncol,:),&
-        znu=etamid(pver:1:-1),dz=dz,pblh=pblh,&
-        cp=cpair,g=g,rd=rair,rv=rh2o,ep1=zvir,pi=pi,bnvbg=nm(:,pver:1:-1),&
+        znu=etamid(pver:1:-1),dz=dz(:ncol,pver:1:-1),pblh=pblh(:ncol),&
+        cp=cpair,g=g,rd=rair,rv=rh2o,ep1=zvir,pi=pi,bnvbg=nm(:ncol,pver:1:-1),&
         dt=dt,dx=dx,dy=dy,&
         kpbl2d=kpbl2d_in,itimestep=0,gwd_opt=0,&
         ids=1,ide=ncol,jds=0,jde=0,kds=1,kde=pver, &
@@ -1139,8 +1142,7 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
 	!(itimestep just needs an empty, number of timestep,0)
 	!p_top       pressure top of the model (pa), set to 0
 	!gwd_opt is a no need
-	!znu         eta values on half (mass) levels, this is needed, currently set to
-	!midpoint eta value (hybrid),either is ok
+	!znu         eta values on half (mass) levels, this is needed, currently set to midpoint eta value (hybrid),either is ok
 	!znw         eta values on full (w) levels , no need set to 0
 	!we also turn the index around, since wrf is bot-top, and cam is top-bot
 	!xland is only needed for small scale GWD, so not set in the moment
