@@ -357,6 +357,9 @@
 		<var name="landIceDraftObserved" type="real" dimensions="nCells" units="m"
 			 description="z-coordinate of land ice bottom, read in from data file"
 		/>
+		<var name="landIcePressureObserved" type="real" dimensions="nCells" units="m"
+			 description="Pressure of land ice on the ocean surface, read in from data file"
+		/>
 		<var name="landIceThkObserved" type="real" dimensions="nCells" units="m"
 			 description="Thickness of land ice, read in from data file"
 		/>

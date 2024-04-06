@@ -942,7 +942,9 @@ contains
                                          statePool
 
        real (kind=RKIND), dimension(:), pointer :: latCell, lonCell
-       real (kind=RKIND), dimension(:), pointer :: landIceThkObserved, landIceDraftObserved, &
+       real (kind=RKIND), dimension(:), pointer :: landIceThkObserved, &
+                                                   landIceDraftObserved, &
+                                                   landIcePressureObserved, &
                                                    landIceFracObserved, &
                                                    landIceFloatingFracObserved, &
                                                    landIceGroundedFracObserved
@@ -962,6 +964,10 @@ contains
        ! and landIceGroundedFracObserved before using them to adjust SSH, compute
        ! land-ice pressure, etc.
        call ocn_init_smooth_field(domain, 'landIceDraftObserved', 'landIceInit', &
+                                  config_global_ocean_topography_smooth_iterations, &
+                                  config_global_ocean_topography_smooth_weight)
+
+       call ocn_init_smooth_field(domain, 'landIcePressureObserved', 'landIceInit', &
                                   config_global_ocean_topography_smooth_iterations, &
                                   config_global_ocean_topography_smooth_weight)
 
@@ -988,6 +994,7 @@ contains
 
           call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
           call mpas_pool_get_array(landIceInitPool, 'landIceDraftObserved', landIceDraftObserved)
+          call mpas_pool_get_array(landIceInitPool, 'landIcePressureObserved', landIcePressureObserved)
           call mpas_pool_get_array(landIceInitPool, 'landIceThkObserved', landIceThkObserved)
           call mpas_pool_get_array(landIceInitPool, 'landIceFracObserved', landIceFracObserved)
           call mpas_pool_get_array(landIceInitPool, 'landIceFracObserved', landIceFloatingFracObserved)
