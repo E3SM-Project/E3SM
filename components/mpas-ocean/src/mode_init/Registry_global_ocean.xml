@@ -136,7 +136,7 @@
 			possible_values="Any real positive number."
 		/>
 		<nml_option name="config_global_ocean_topography_source" type="character" default_value="latlon_file" units="unitless"
-			description="If 'latlon_file', reads in topography from file specified in config_global_ocean_topography_file. If 'mpas_variable', reads in topography from mpas variable bed_elevation, and optionally oceanFracObserved, landIceDraftObserved, landIceThkObserved, landIceFracObserved, and landIceGroundedFracObserved"
+			description="If 'latlon_file', reads in topography from file specified in config_global_ocean_topography_file. If 'mpas_variable', reads in topography from mpas variable bed_elevation, and optionally oceanFracObserved, landIceDraftObserved, landIceThkObserved, landIceFracObserved, and landIceFloatingFracObserved"
 			possible_values="'latlon_file' or 'mpas_variable'"
 		/>
 		<nml_option name="config_global_ocean_topography_file" type="character" default_value="none" units="unitless"
@@ -366,8 +366,8 @@
 		<var name="landIceFracObserved" type="real" dimensions="nCells" units="unitless"
 			 description="Fraction of land ice, read in from data file"
 		/>
-		<var name="landIceGroundedFracObserved" type="real" dimensions="nCells" units="unitless"
-			 description="Fraction of grounded land ice, read in from data file"
+		<var name="landIceFloatingFracObserved" type="real" dimensions="nCells" units="unitless"
+			 description="Fraction of floating land ice, read in from data file"
 		/>
 	</var_struct>
 	<var_struct name="criticalPassages" time_levs="1" mode="init" packages="criticalPassages">

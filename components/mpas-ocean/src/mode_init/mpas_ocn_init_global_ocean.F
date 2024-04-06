@@ -37,7 +37,6 @@ module ocn_init_global_ocean
    use ocn_init_cell_markers
    use ocn_init_vertical_grids
    use ocn_init_interpolation
-   use ocn_init_ssh_and_landIcePressure
    use ocn_init_smoothing
 
    implicit none
@@ -491,21 +490,9 @@ contains
       if (config_global_ocean_depress_by_land_ice) then
          call mpas_log_write('Modifying temperature and surface restoring under land ice.')
          call ocn_init_setup_global_ocean_modify_temp_under_land_ice(domain, iErr)
-
-         call mpas_log_write('Calculating land-ice pressure from the weight of ice shelves')
-         ! compute the land-ice pressure, also computing density along the way.
-         call ocn_init_ssh_and_landIcePressure_balance(domain, iErr)
-
-         if(iErr .ne. 0) then
-            call mpas_log_write( 'ocn_init_ssh_and_landIcePressure_balance failed.', MPAS_LOG_CRIT)
-            call mpas_dmpar_finalize(domain % dminfo)
-         end if
-
       end if
 
       call mpas_log_write( 'Copying restoring fields')
-      ! this occurs after ocn_init_ssh_and_landIcePressure_balance because activeTracers may have been remapped
-      ! to a new vertical coordinate
       call ocn_init_setup_global_ocean_interpolate_restoring(domain, iErr)
 
       call mpas_log_write( 'Compute Haney number')
@@ -942,16 +929,16 @@ contains
                                          statePool
 
        real (kind=RKIND), dimension(:), pointer :: latCell, lonCell
-       real (kind=RKIND), dimension(:), pointer :: landIceThkObserved, &
-                                                   landIceDraftObserved, &
+       real (kind=RKIND), dimension(:), pointer :: landIceDraftObserved, &
                                                    landIcePressureObserved, &
                                                    landIceFracObserved, &
-                                                   landIceFloatingFracObserved, &
-                                                   landIceGroundedFracObserved
+                                                   landIceFloatingFracObserved
 
-       real (kind=RKIND), dimension(:), pointer :: landIcePressure, landIceFraction, &
-                                                   landIceFloatingFraction, ssh, &
-                                                   bottomDepth
+       real (kind=RKIND), dimension(:), pointer :: landIceDraft, &
+                                                   landIcePressure, &
+                                                   landIceFraction, &
+                                                   landIceFloatingFraction, &
+                                                   ssh
 
        integer, pointer :: nCells
        integer, dimension(:), pointer :: maxLevelCell, landIceMask, landIceFloatingMask
@@ -960,28 +947,24 @@ contains
 
        iErr = 0
 
-       ! Iteratively smooth landIceDraftObserved, landIceThkObserved, landIceFracObserved,
-       ! and landIceGroundedFracObserved before using them to adjust SSH, compute
-       ! land-ice pressure, etc.
-       call ocn_init_smooth_field(domain, 'landIceDraftObserved', 'landIceInit', &
-                                  config_global_ocean_topography_smooth_iterations, &
-                                  config_global_ocean_topography_smooth_weight)
+       ! Iteratively smooth land ice topography variables
+       if (config_global_ocean_topography_smooth_weight > 0) then
+          call ocn_init_smooth_field(domain, 'landIceDraftObserved', 'landIceInit', &
+                                     config_global_ocean_topography_smooth_iterations, &
+                                     config_global_ocean_topography_smooth_weight)
 
-       call ocn_init_smooth_field(domain, 'landIcePressureObserved', 'landIceInit', &
-                                  config_global_ocean_topography_smooth_iterations, &
-                                  config_global_ocean_topography_smooth_weight)
+          call ocn_init_smooth_field(domain, 'landIcePressureObserved', 'landIceInit', &
+                                     config_global_ocean_topography_smooth_iterations, &
+                                     config_global_ocean_topography_smooth_weight)
 
-       call ocn_init_smooth_field(domain, 'landIceThkObserved', 'landIceInit', &
-                                  config_global_ocean_topography_smooth_iterations, &
-                                  config_global_ocean_topography_smooth_weight)
+          call ocn_init_smooth_field(domain, 'landIceFracObserved', 'landIceInit', &
+                                     config_global_ocean_topography_smooth_iterations, &
+                                     config_global_ocean_topography_smooth_weight)
 
-       call ocn_init_smooth_field(domain, 'landIceFracObserved', 'landIceInit', &
-                                  config_global_ocean_topography_smooth_iterations, &
-                                  config_global_ocean_topography_smooth_weight)
-
-       call ocn_init_smooth_field(domain, 'landIceGroundedFracObserved', 'landIceInit', &
-                                  config_global_ocean_topography_smooth_iterations, &
-                                  config_global_ocean_topography_smooth_weight)
+          call ocn_init_smooth_field(domain, 'landIceFloatingFracObserved', 'landIceInit', &
+                                     config_global_ocean_topography_smooth_iterations, &
+                                     config_global_ocean_topography_smooth_weight)
+       end if
 
        block_ptr => domain % blocklist
        do while(associated(block_ptr))
@@ -995,13 +978,12 @@ contains
           call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
           call mpas_pool_get_array(landIceInitPool, 'landIceDraftObserved', landIceDraftObserved)
           call mpas_pool_get_array(landIceInitPool, 'landIcePressureObserved', landIcePressureObserved)
-          call mpas_pool_get_array(landIceInitPool, 'landIceThkObserved', landIceThkObserved)
           call mpas_pool_get_array(landIceInitPool, 'landIceFracObserved', landIceFracObserved)
-          call mpas_pool_get_array(landIceInitPool, 'landIceFracObserved', landIceFloatingFracObserved)
-          call mpas_pool_get_array(landIceInitPool, 'landIceGroundedFracObserved', landIceGroundedFracObserved)
+          call mpas_pool_get_array(landIceInitPool, 'landIceFloatingFracObserved', landIceFloatingFracObserved)
           call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
           call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
           call mpas_pool_get_array(forcingPool, 'landIceFloatingMask', landIceFloatingMask)
+          call mpas_pool_get_array(forcingPool, 'landIceDraft', landIceDraft)
           call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
           call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
           call mpas_pool_get_array(forcingPool, 'landIceFloatingFraction', landIceFloatingFraction)
@@ -1013,26 +995,25 @@ contains
           endif
           ssh(:) = 0.0_RKIND
           landIceFraction(:) = 0.0_RKIND
-          modifyLandIcePressureMask(:) = 0
+          landIceDraft(:) = 0.0_RKIND
           landIcePressure(:) = 0.0_RKIND
+          modifyLandIcePressureMask(:) = 0
           do iCell = 1, nCells
+             ! nothing to do here if the cell is land
+             if (maxLevelCell(iCell) <= 0) cycle
 
              if (landIceMask(iCell) == 1) then
                 landIceFraction(iCell) = landIceFracObserved(iCell)
              end if
 
-             ! this implicitly assumes that when a cell is considered floating, the
-             ! full landIceFracObserved is floating
              if (landIceFloatingMask(iCell) == 1) then
                 landIceFloatingFraction(iCell) = landIceFloatingFracObserved(iCell)
              end if
 
-             ! nothing to do here if the cell is land
-             if (maxLevelCell(iCell) <= 0) cycle
-
-             ! we compute the SSH first and find out the land-ice pressure
-             ssh(iCell) = min(0.0_RKIND, landIceDraftObserved(iCell))
-             if (ssh(iCell) < 0.0_RKIND) then
+             landIceDraft(iCell) = landIceDraftObserved(iCell)
+             ssh(iCell) = landIceDraft(iCell)
+             landIcePressure(iCell) = landIcePressureObserved(iCell)
+             if (landIcePressure(iCell) > 0.0_RKIND) then
                 modifyLandIcePressureMask(iCell) = 1
              end if
           end do
