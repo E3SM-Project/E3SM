@@ -1175,9 +1175,6 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
      ! (includes spectrum).
 !#if 0
     !
-    !utgw=0.0_r8
-    !vtgw=0.0_r8
-    !ttgw=0.0_r8
     !
      if(.not. use_gw_energy_fix) then
         !original
