@@ -52,15 +52,15 @@ target_link_libraries(testDecomp.exe ${OMEGA_LIB_NAME})
 
 add_test( NAME DECOMP_TEST COMMAND ${MPI_EXEC} -n 8 --cpu-bind=cores -- ./testDecomp.exe)
 
-###################
-## Halo test
-###################
-#
-#add_executable(testHalo.exe base/HaloTest.cpp)
-#
-#target_link_libraries(testHalo.exe ${OMEGA_LIB_NAME})
-#
-#add_test(NAME HALO_TEST COMMAND ${MPI_EXEC} --cpu-bind=cores -n 8 -- ./testHalo.exe)
+##################
+# Halo test
+##################
+
+add_executable(testHalo.exe base/HaloTest.cpp)
+
+target_link_libraries(testHalo.exe ${OMEGA_LIB_NAME})
+
+add_test(NAME HALO_TEST COMMAND ${MPI_EXEC} --cpu-bind=cores -n 8 -- ./testHalo.exe)
 
 ################
 # HorzMesh test
@@ -143,7 +143,7 @@ set_tests_properties(
   LOGGING_TEST
   CONFIG_TEST
   DECOMP_TEST
-#  HALO_TEST
+  HALO_TEST
   HORZMESH_TEST
   IO_TEST
   METADATA_TEST

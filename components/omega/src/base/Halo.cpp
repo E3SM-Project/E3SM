@@ -511,7 +511,7 @@ int Halo::packBuffer(const HostArray1DR8 Array) {
 int Halo::packBuffer(const HostArray2DI4 Array) {
 
    ExchList *MyList = &MyNeighbor->SendLists[MyElem];
-   int NJ           = Array.extent(0);
+   int NJ           = Array.extent(1);
 
    MyNeighbor->SendBuffer.resize(MyList->NTot * TotSize);
 
