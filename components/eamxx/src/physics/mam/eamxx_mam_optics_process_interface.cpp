@@ -161,8 +161,8 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   // populate the wet and dry atmosphere states with views from fields and
   // the buffer
   wet_atm_.qv    = get_field_in("qv").get_view<const Real **>();
-  wet_atm_.qc    = get_field_out("qc").get_view<Real **>();
-  wet_atm_.nc    = get_field_out("nc").get_view<Real **>();
+  wet_atm_.qc    = get_field_in("qc").get_view<const Real **>();
+  wet_atm_.nc    = get_field_in("nc").get_view<const Real **>();
   wet_atm_.qi    = get_field_in("qi").get_view<const Real **>();
   wet_atm_.ni    = get_field_in("ni").get_view<const Real **>();
   wet_atm_.omega = get_field_in("omega").get_view<const Real **>();
