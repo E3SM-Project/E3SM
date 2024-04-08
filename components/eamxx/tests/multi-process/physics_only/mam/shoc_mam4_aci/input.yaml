@@ -48,7 +48,6 @@ initial_conditions:
   surf_evap: 0.0
   dgnum: 1e-3
   liq_strat_cld_frac: 1e-3
-  w_sec: 1e-3
 
 # The parameters for I/O control
 Scorpio:

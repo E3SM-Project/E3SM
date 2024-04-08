@@ -80,17 +80,18 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   add_field<Required>("phis",           scalar2d    , m2/s2, grid_name, ps);
 
   // Input/Output variables
-  add_field<Updated>("tke",            scalar3d_layout_mid, m2/s2,   grid_name, "tracers", ps);
-  add_field<Updated>("horiz_winds",    horiz_wind_layout,   m/s,     grid_name, ps);
-  add_field<Updated>("sgs_buoy_flux",  scalar3d_layout_mid, K*(m/s), grid_name, ps);
-  add_field<Updated>("eddy_diff_mom",  scalar3d_layout_mid, m2/s,    grid_name, ps);
-  add_field<Updated>("qc",             scalar3d_layout_mid, Qunit,   grid_name, "tracers", ps);
-  add_field<Updated>("cldfrac_liq",    scalar3d_layout_mid, nondim,  grid_name, ps);
+  add_field<Updated>("tke",             scalar3d_layout_mid, m2/s2,   grid_name, "tracers", ps);
+  add_field<Updated>("horiz_winds",     horiz_wind_layout,   m/s,     grid_name, ps);
+  add_field<Updated>("sgs_buoy_flux",   scalar3d_layout_mid, K*(m/s), grid_name, ps);
+  add_field<Updated>("eddy_diff_mom",   scalar3d_layout_mid, m2/s,    grid_name, ps);
+  add_field<Updated>("qc",              scalar3d_layout_mid, Qunit,   grid_name, "tracers", ps);
+  add_field<Updated>("cldfrac_liq",     scalar3d_layout_mid, nondim,  grid_name, ps);
 
   // Output variables
   add_field<Computed>("pbl_height",     scalar2d_layout_col, m,           grid_name);
   add_field<Computed>("inv_qc_relvar",  scalar3d_layout_mid, Qunit*Qunit, grid_name, ps);
   add_field<Computed>("eddy_diff_heat", scalar3d_layout_mid, m2/s,        grid_name, ps);
+  add_field<Computed>("w_variance",     scalar3d_layout_mid, m2/s2,       grid_name, ps);
 
   // Tracer group
   add_group<Updated>("tracers", grid_name, ps, Bundling::Required);
@@ -338,7 +339,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   // Ouput (diagnostic)
   history_output.shoc_mix  = m_buffer.shoc_mix;
   history_output.isotropy  = m_buffer.isotropy;
-  history_output.w_sec     = m_buffer.w_sec;
+  history_output.w_sec     = get_field_out("w_variance").get_view<Spack**>();
   history_output.thl_sec   = m_buffer.thl_sec;
   history_output.qw_sec    = m_buffer.qw_sec;
   history_output.qwthl_sec = m_buffer.qwthl_sec;

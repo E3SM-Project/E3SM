@@ -786,10 +786,17 @@ void MAMAci::set_grids(
   m2.set_string("m^2");
   auto s2 = s * s;
   s2.set_string("s^2");
-  // MUST FIXME: w_sec,  is at OLD time step; strat_cld_frac and
-  // BALLI:???
-  // Vertical velocity variance (wp2) at midpoints
-  add_field<Required>("w_sec", scalar3d_layout_int, m2 / s2, grid_name);
+  
+  // NOTE: w_variance im microp_aero_run.F90 is at "itim_old" dynamics time step
+  // Since, we are using SE dycore, itim_old is 1 which is equivalent to the 
+  // current time step. For other dycores (such as EUL), it may be different
+  // and we might need to revisit this
+
+  //FIXME: w_variance in microp_aero_run.F90 is at the interfaces but
+  // SHOC provides it at the midpoints. Verify how it is being used.
+
+  // Vertical velocity variance at midpoints
+  add_field<Required>("w_variance", scalar3d_layout_mid, m2 / s2, grid_name);
 
   // BALLI:???
   // FIXME:liq_strat_cld_frac may also need OLD time
@@ -991,7 +998,7 @@ void MAMAci::init_buffers(const ATMBufferManager &buffer_manager) {
 }
 
 void MAMAci::initialize_impl(const RunType run_type) {
-  w_sec_ = get_field_in("w_sec").get_view<const Real **>();
+  w_sec_ = get_field_in("w_variance").get_view<const Real **>();
 
   // MUST FIXME: is it an input, should we invoke calcsize here??
   dgnum_   = get_field_in("dgnum").get_view<const Real ***>();
