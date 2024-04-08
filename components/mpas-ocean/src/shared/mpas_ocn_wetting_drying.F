@@ -367,7 +367,8 @@ contains
 
       character (len=100) :: log_string
 
-      integer:: cellDummy(2), cellCur, CellNei, sshCur, sshNei
+      integer:: cellDummy(2), cellCur, CellNei
+      real (kind=RKIND) :: sshCur, sshNei
       real (kind=RKIND), dimension(:), pointer :: sshCell
       real (kind=RKIND), dimension(:, :), pointer :: layerThicknessCell
 
