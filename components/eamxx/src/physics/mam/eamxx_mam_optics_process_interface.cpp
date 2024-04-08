@@ -42,11 +42,6 @@ void MAMOptics::set_grids(
 
   // Define aerosol optics fields computed by this process.
   auto nondim = Units::nondimensional();
-  // 3D layout for shortwave aerosol fields: columns, number of shortwave, and nlev +1 s
-  // shortwave aerosol fields in mam has one extra level (nlev+1)
-  FieldLayout scalar3d_swband_layout_levp1{{COL, SWBND, ILEV},
-                                      {ncol_, nswbands_, nlev_ + 1}};
-
   // 3D layout for shortwave aerosol fields: columns, number of shortwave, and nlev
   FieldLayout scalar3d_swband_layout{{COL, SWBND, LEV},
                                        {ncol_, nswbands_, nlev_}};
@@ -102,9 +97,6 @@ void MAMOptics::set_grids(
                       grid_name);
   //longwave aerosol extinction optical depth [unitless]
   add_field<Computed>("aero_tau_lw", scalar3d_lwband_layout, nondim, grid_name);
-  //aerosol forward scattered fraction * tau * w
-  add_field<Computed>("aero_tau_forward", scalar3d_swband_layout_levp1, nondim,
-                      grid_name);
 
   add_field<Computed>("aodvis", scalar2d_layout_col, nondim, grid_name);
 
@@ -274,6 +266,9 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   tau_ssa_sw_ = mam_coupling::view_3d("tau_ssa_sw_", ncol_, nswbands_, nlev_ + 1);
   // shortwave aerosol extinction optical depth [unitless]
   tau_sw_ = mam_coupling::view_3d("tau_sw_", ncol_, nswbands_, nlev_ + 1);
+  //aerosol forward scattered fraction * tau * w
+  tau_f_sw_= mam_coupling::view_3d("tau_f_sw_", ncol_, nswbands_, nlev_ + 1);
+
   // read table info
   {
     using namespace ShortFieldTagsNames;
@@ -414,7 +409,7 @@ void MAMOptics::run_impl(const double dt) {
   const auto aero_tau_sw_eamxx =
       get_field_out("aero_tau_sw").get_view<Real ***>();
   //tau_w_f : aerosol forward scattered fraction * tau * w
-  const auto tau_f_sw =
+  const auto tau_f_sw = tau_f_sw_;
       get_field_out("aero_tau_forward").get_view<Real ***>();
 
   const auto aodvis = get_field_out("aodvis").get_view<Real *>();

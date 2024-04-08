@@ -9,7 +9,6 @@ Fields:
         - aero_ssa_sw
         - aero_tau_sw
         - aero_tau_lw
-        - aero_tau_forward
 
 output_control:
   Frequency: 2
