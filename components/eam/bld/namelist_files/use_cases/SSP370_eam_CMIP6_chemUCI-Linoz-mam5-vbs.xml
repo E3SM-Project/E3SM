@@ -53,7 +53,7 @@
 <pom_a4_emis_file     >atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/cmip6_ssp370_mam4_pom_a4_surf_2015-2100_c210216.nc </pom_a4_emis_file>
 <so4_a1_emis_file     >atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/cmip6_ssp370_mam4_so4_a1_surf_2015-2100_c210216.nc </so4_a1_emis_file>
 <so4_a2_emis_file     >atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/cmip6_ssp370_mam4_so4_a2_surf_2015-2100_c210216.nc </so4_a2_emis_file>
-<e90_emis_file        >atm/cam/chem/emis/CMIP6_emissions_1750_2015/emissions_E90global_surface_1750-2100_0.9x1.25_c20170322.nc </e90_emis_file>
+<e90_emis_file        >atm/cam/chem/trop_mozart/ub/emissions_E90_surface_1750-2101_1.9x2.5_c20231222.nc </e90_emis_file>
 
 <airpl_emis_file></airpl_emis_file>   <!-- need to be empty, but if specifying empty here, the value would be root of input_data_path -->
 
