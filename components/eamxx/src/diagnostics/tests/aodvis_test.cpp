@@ -89,7 +89,8 @@ TEST_CASE("aodvis") {
     auto aod_h  = aod_hf.get_view<const Real *, Host>();
 
     Field aod_tf = diag->get_diagnostic().clone();
-    auto aod_t   = aod_tf.get_view<Real *, Host>();
+    aod_tf.deep_copy<double, Host>(0.0);
+    auto aod_t = aod_tf.get_view<Real *, Host>();
 
     for(int icol = 0; icol < grid->get_num_local_dofs(); ++icol) {
       auto aod_temp = 0.0;
