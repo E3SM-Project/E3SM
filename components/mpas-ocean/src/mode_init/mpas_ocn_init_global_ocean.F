@@ -34,6 +34,7 @@ module ocn_init_global_ocean
    use ocn_constants
    use ocn_config
    use ocn_diagnostics_variables
+   use ocn_equation_of_state
    use ocn_init_cell_markers
    use ocn_init_vertical_grids
    use ocn_init_interpolation
@@ -123,7 +124,7 @@ contains
       real (kind=RKIND), dimension(:, :), pointer :: PH_PREV_3D, PH_PREV_ALT_CO2_3D
       real (kind=RKIND), dimension(:, :), pointer :: FESEDFLUX
 
-      integer, dimension(:), pointer :: maxLevelCell
+      integer, dimension(:), pointer :: minLevelCell, maxLevelCell
 
       real (kind=RKIND), dimension(:, :), pointer :: normalVelocity
       real (kind=RKIND), dimension(:, :, :), pointer :: ecosysTracers, activeTracers, debugTracers, &
@@ -501,6 +502,33 @@ contains
          call mpas_log_write( 'ocn_compute_Haney_number failed.', MPAS_LOG_CRIT)
          call mpas_dmpar_finalize(domain % dminfo)
       end if
+
+      call mpas_log_write( 'Compute density')
+       block_ptr => domain % blocklist
+       do while(associated(block_ptr))
+
+          call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+          call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
+          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+          call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
+
+          do iCell = 1, nCells
+             do iTracer = 1,size(tracersSurfaceValue,1)
+                tracersSurfaceValue(iTracer, iCell) = activeTracers(iTracer, minLevelCell(iCell), iCell)
+             enddo
+          end do
+
+          call ocn_equation_of_state_density(statePool, meshPool, tracersSurfaceValue, &
+             nCells, 0, 'relative', density, iErr, &
+             timeLevelIn=1)
+
+         if(iErr .ne. 0) then
+            call mpas_log_write( 'ocn_equation_of_state_density failed.', MPAS_LOG_CRIT)
+            return
+         end if
+
+          block_ptr => block_ptr % next
+       end do
 
       if (config_global_ocean_cull_inland_seas) then
          call mpas_log_write( 'Removing inland seas.')
