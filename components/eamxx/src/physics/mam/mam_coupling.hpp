@@ -598,7 +598,6 @@ void compute_vertical_layer_heights(const Team& team,
   const auto p_mid = ekat::subview(dry_atm.p_mid, column_index);
   const auto T_mid = ekat::subview(dry_atm.T_mid, column_index);
   const auto pseudo_density = ekat::subview(dry_atm.p_del, column_index);
-  // NOTE: we are using dry qv. Does calculate_dz require dry or wet?
   PF::calculate_dz(team, pseudo_density, p_mid, T_mid, qv, dz);
   team.team_barrier();
   PF::calculate_z_int(team, mam4::nlev, dz, dry_atm.z_surf, z_iface);
