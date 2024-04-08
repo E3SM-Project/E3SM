@@ -14,6 +14,7 @@ module mo_extfrc
   use phys_grid,    only : get_rlat_all_p, get_rlon_all_p,get_area_all_p
   use time_manager,  only: get_curr_date
   use mo_constants, only : pi, rgrav, rearth, avogadro
+  use physconst,         only: rhoh2o, rga, rair
   implicit none
 
   type :: forcing
@@ -53,7 +54,7 @@ module mo_extfrc
   logical :: diag_run_plumerise = .false.
   real(r8)    :: ef_bc_a4 = 0.55_r8*1.0e-03_r8*(1.0_r8/0.45_r8)
   real(r8)    :: ef_oc_a4 = 10.9_r8*1.0e-03_r8*(1.0_r8/0.45_r8)
-  real(r8)    :: ef_h2o_a4 = 350.0_r8*1.0e-03_r8*(1.0_r8/0.45_r8)
+  real(r8)    :: ef_h2o_a4 = 350.0_r8*1.0e-03_r8*(1.0_r8/0.45_r8)*(12.0_r8/18.0_r8) ! adjust moleculer weight from carbon to h2o
   !real(r8)    :: ef_h2o_a4 = (1.0_r8/0.45_r8) ! test the sensitivity
   real(r8)    :: fix_plume_height = 0.0
 contains
@@ -458,6 +459,15 @@ contains
     real(r8) :: wt_ini_e3sm_out(pcols,pver), wt_end_e3sm_out(pcols,pver), &
                 rbuoy_ini_e3sm_out(pcols,pver), rbuoy_end_e3sm_out(pcols,pver), &
                 t_ini_e3sm_out(pcols,pver), t_end_e3sm_out(pcols,pver)
+    real(r8) :: air_density(pcols,pver) ! (kg/m3)
+    real(r8) :: v_air, m_vapor, f_vapor
+    logical :: surface_flux_flag = .true.
+    !kzm ++ surface air flux
+    !mass(:ncol,:)        = state%pdeldry(:ncol,:)*rga
+    if (surface_flux_flag) then
+       air_density(:ncol,:) = pmid(:ncol,:)/(rair*tfld(:ncol,:))
+    endif
+    !kzm --
     if( extfrc_cnt < 1 .or. extcnt < 1 ) then
        return
     end if
@@ -706,6 +716,17 @@ contains
                                   frcing_vertical_plume_new(k) =  frcing_vertical_plume_new(k)*ef_h2o_a4
                                   if (diag_run_plumerise) then
                                      write(iulog,*) 'kzm_H2O_emis_at_layer ', k, frcing_vertical_plume_new(k)
+                                  endif
+                                  if (surface_flux_flag) then
+                                     ! v_air, m_vapor, f_vapor
+                                     v_air = burnedarea_memory(icol)*wt_ini_e3sm_out(icol,pver) !(m3/s) The volume at the bottom per second
+                                     m_vapor = v_air*air_density(icol,pver)*qh2o(icol,pver) ! The mass of water vapor (kg/s) 
+                                     f_vapor = m_vapor/area(icol)*1000.0_r8/10000.0_r8 ! g/cm2/s 
+                                     f_vapor = f_vapor/(abs(zint(icol,k)-zint(icol,k+1))*km_to_cm) !g/cm3/s
+                                     f_vapor = f_vapor/18.0_r8*avogadro !moleculer/cm3/s (H2O)  
+                                     write(iulog,*) 'kzm_H2OFIRE_surf_flux_emis_at_layer ',  &
+                                           f_vapor/frcing_vertical_plume_new(k), burnedarea_memory(icol)/area(icol)
+                                     frcing_vertical_plume_new(k) = frcing_vertical_plume_new(k) + f_vapor   
                                   endif
                                elseif (forcings(m)%species == 'num_a4')then
                                   frcing_vertical_plume_new(k) =  frcing_col_plume/(abs(zint(icol,k)-zint(icol,k+1))*km_to_cm) 
