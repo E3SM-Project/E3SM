@@ -410,8 +410,6 @@ void MAMOptics::run_impl(const double dt) {
       get_field_out("aero_tau_sw").get_view<Real ***>();
   //tau_w_f : aerosol forward scattered fraction * tau * w
   const auto tau_f_sw = tau_f_sw_;
-      get_field_out("aero_tau_forward").get_view<Real ***>();
-
   const auto aodvis = get_field_out("aodvis").get_view<Real *>();
 
   // NOTE! we need a const mam_coupling::DryAtmosphere dry_atm for gpu access.
