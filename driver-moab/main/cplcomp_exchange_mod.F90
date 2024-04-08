@@ -1017,7 +1017,7 @@ contains
       integer                  :: mpigrp_old   !  component group pes
       integer                  :: ierr, context_id
       character*200            :: appname, outfile, wopts, ropts
-      character(CL)            :: rtm_mesh
+      character(CL)            :: rtm_mesh, rof_domain
       character(CL)            :: lnd_domain
       character(CL)            :: ocn_domain
       character(CL)            :: atm_mesh
@@ -1633,10 +1633,14 @@ contains
             ierr = iMOAB_RegisterApplication(trim(appname), mpicom_new, id_join, mbrxid)
 
             ! load mesh from scrip file passed from river model
-            call seq_infodata_GetData(infodata,rof_mesh=rtm_mesh)
-            outfile = trim(rtm_mesh)//C_NULL_CHAR
-            ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=RCBZOLTAN'//C_NULL_CHAR
-         
+            call seq_infodata_GetData(infodata,rof_mesh=rtm_mesh,rof_domain=rof_domain)
+            if ( trim(rof_domain) == 'none' ) then
+               outfile = trim(rtm_mesh)//C_NULL_CHAR
+               ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=RCBZOLTAN'//C_NULL_CHAR
+            else
+               outfile = trim(rof_domain)//C_NULL_CHAR
+               ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE='//C_NULL_CHAR
+            endif
             nghlay = 0 ! no ghost layers 
             ierr = iMOAB_LoadMesh(mbrxid, outfile, ropts, nghlay)
             if ( ierr .ne. 0  ) then
