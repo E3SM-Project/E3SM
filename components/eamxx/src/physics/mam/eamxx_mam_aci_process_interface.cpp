@@ -299,13 +299,11 @@ void compute_nucleate_ice_tendencies(
       });
 }
 KOKKOS_INLINE_FUNCTION
-void store_liquid_cloud_fraction(const haero::ThreadTeam &team,
-                                 MAMAci::view_2d cloud_frac_new,
-                                 MAMAci::view_2d cloud_frac_old,
-                                 MAMAci::const_view_2d qc,
-                                 MAMAci::const_view_2d qi,
-                                 MAMAci::const_view_2d liqcldf, const int icol,
-                                 const int top_lev) {
+void store_liquid_cloud_fraction(
+    const haero::ThreadTeam &team, MAMAci::view_2d cloud_frac_new,
+    MAMAci::view_2d cloud_frac_old, MAMAci::const_view_2d qc,
+    MAMAci::const_view_2d qi, MAMAci::const_view_2d liqcldf,
+    MAMAci::const_view_2d liqcldf_prev, const int icol, const int top_lev) {
   //-------------------------------------------------------------
   // Get old and new liquid cloud fractions when amount of cloud
   // is above qsmall threshold value
@@ -323,8 +321,7 @@ void store_liquid_cloud_fraction(const haero::ThreadTeam &team,
         const Real qcld = qc(icol, kk) + qi(icol, kk);
         if(qcld > qsmall) {
           cloud_frac_new(icol, kk) = liqcldf(icol, kk);
-          cloud_frac_old(icol, kk) =
-              liqcldf(icol, kk);  // FIXME should be liqcldf_old
+          cloud_frac_old(icol, kk) = liqcldf_prev(icol, kk);
         } else {
           cloud_frac_new(icol, kk) = 0;
           cloud_frac_old(icol, kk) = 0;
@@ -336,6 +333,7 @@ void store_liquid_cloud_fraction(haero::ThreadTeamPolicy team_policy,
                                  MAMAci::view_2d cloud_frac_old,
                                  mam_coupling::WetAtmosphere &wet_atmosphere,
                                  MAMAci::const_view_2d liqcldf,
+                                 MAMAci::const_view_2d liqcldf_prev,
                                  const int top_lev) {
   MAMAci::const_view_2d qc = wet_atmosphere.qc;
   MAMAci::const_view_2d qi = wet_atmosphere.qi;
@@ -343,7 +341,7 @@ void store_liquid_cloud_fraction(haero::ThreadTeamPolicy team_policy,
       team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
         const int icol = team.league_rank();
         store_liquid_cloud_fraction(team, cloud_frac_new, cloud_frac_old, qc,
-                                    qi, liqcldf, icol, top_lev);
+                                    qi, liqcldf, liqcldf_prev, icol, top_lev);
       });
 }
 KOKKOS_INLINE_FUNCTION
@@ -786,22 +784,27 @@ void MAMAci::set_grids(
   m2.set_string("m^2");
   auto s2 = s * s;
   s2.set_string("s^2");
-  
+
   // NOTE: w_variance im microp_aero_run.F90 is at "itim_old" dynamics time step
-  // Since, we are using SE dycore, itim_old is 1 which is equivalent to the 
+  // Since, we are using SE dycore, itim_old is 1 which is equivalent to the
   // current time step. For other dycores (such as EUL), it may be different
   // and we might need to revisit this
 
-  //FIXME: w_variance in microp_aero_run.F90 is at the interfaces but
-  // SHOC provides it at the midpoints. Verify how it is being used.
+  // FIXME: w_variance in microp_aero_run.F90 is at the interfaces but
+  //  SHOC provides it at the midpoints. Verify how it is being used.
 
   // Vertical velocity variance at midpoints
   add_field<Required>("w_variance", scalar3d_layout_mid, m2 / s2, grid_name);
 
-  // BALLI:???
-  // FIXME:liq_strat_cld_frac may also need OLD time
-  // Liquid stratiform cloud fraction  at midpoints
-  add_field<Required>("liq_strat_cld_frac", scalar3d_layout_mid, nondim,
+  // NOTE: "cldfrac_liq" is updated in SHOC. "cldfrac_liq" in C++ code is
+  // equivalent
+  //  to "alst" in the shoc_intr.F90. In the C++ code, it is used as
+  //  "shoc_cldfrac" and in the F90 code it is called "cloud_frac"
+
+  // Liquid stratiform cloud fraction at midpoints
+  add_field<Required>("cldfrac_liq", scalar3d_layout_mid, nondim, grid_name);
+
+  add_field<Required>("cldfrac_liq_prev", scalar3d_layout_mid, nondim,
                       grid_name);
   // BALLI:???
   add_field<Required>("eddy_diff_heat", scalar3d_layout_mid, m2 / s,
@@ -1001,8 +1004,9 @@ void MAMAci::initialize_impl(const RunType run_type) {
   w_sec_ = get_field_in("w_variance").get_view<const Real **>();
 
   // MUST FIXME: is it an input, should we invoke calcsize here??
-  dgnum_   = get_field_in("dgnum").get_view<const Real ***>();
-  liqcldf_ = get_field_in("liq_strat_cld_frac").get_view<const Real **>();
+  dgnum_        = get_field_in("dgnum").get_view<const Real ***>();
+  liqcldf_      = get_field_in("cldfrac_liq").get_view<const Real **>();
+  liqcldf_prev_ = get_field_in("cldfrac_liq_prev").get_view<const Real **>();
 
   // MUST FIXME: This comes from shoc
   kvh_ = get_field_in("eddy_diff_heat").get_view<const Real **>();
@@ -1192,7 +1196,7 @@ void MAMAci::run_impl(const double dt) {
                                   dry_atm_, aitken_dry_dia_, nlev_);
 
   store_liquid_cloud_fraction(team_policy, cloud_frac_new_, cloud_frac_old_,
-                              wet_atm_, liqcldf_, top_lev_);
+                              wet_atm_, liqcldf_, liqcldf_prev_, top_lev_);
 
   // MUST FIXME: save cloud borne aerosols here!!!!
   //-------------------------------------------------------------

@@ -88,10 +88,11 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   add_field<Updated>("cldfrac_liq",     scalar3d_layout_mid, nondim,  grid_name, ps);
 
   // Output variables
-  add_field<Computed>("pbl_height",     scalar2d_layout_col, m,           grid_name);
-  add_field<Computed>("inv_qc_relvar",  scalar3d_layout_mid, Qunit*Qunit, grid_name, ps);
-  add_field<Computed>("eddy_diff_heat", scalar3d_layout_mid, m2/s,        grid_name, ps);
-  add_field<Computed>("w_variance",     scalar3d_layout_mid, m2/s2,       grid_name, ps);
+  add_field<Computed>("pbl_height",       scalar2d_layout_col, m,           grid_name);
+  add_field<Computed>("inv_qc_relvar",    scalar3d_layout_mid, Qunit*Qunit, grid_name, ps);
+  add_field<Computed>("eddy_diff_heat",   scalar3d_layout_mid, m2/s,        grid_name, ps);
+  add_field<Computed>("w_variance",       scalar3d_layout_mid, m2/s2,       grid_name, ps);
+  add_field<Computed>("cldfrac_liq_prev", scalar3d_layout_mid, nondim,  grid_name, ps);
 
   // Tracer group
   add_group<Updated>("tracers", grid_name, ps, Bundling::Required);
@@ -257,6 +258,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   const auto& qv                  = get_field_out("qv").get_view<Spack**>();
   const auto& tke                 = get_field_out("tke").get_view<Spack**>();
   const auto& cldfrac_liq         = get_field_out("cldfrac_liq").get_view<Spack**>();
+  const auto& cldfrac_liq_prev    = get_field_out("cldfrac_liq_prev").get_view<Spack**>();
   const auto& sgs_buoy_flux       = get_field_out("sgs_buoy_flux").get_view<Spack**>();
   const auto& tk                  = get_field_out("eddy_diff_mom").get_view<Spack**>();
   const auto& inv_qc_relvar       = get_field_out("inv_qc_relvar").get_view<Spack**>();
@@ -301,7 +303,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
                                 T_mid,p_mid,p_int,pseudo_density,omega,phis,surf_sens_flux,surf_evap,
                                 surf_mom_flux,qtracers,qv,qc,qc_copy,tke,tke_copy,z_mid,z_int,
                                 dse,rrho,rrho_i,thv,dz,zt_grid,zi_grid,wpthlp_sfc,wprtp_sfc,upwp_sfc,vpwp_sfc,
-                                wtracer_sfc,wm_zt,inv_exner,thlm,qw);
+                                wtracer_sfc,wm_zt,inv_exner,thlm,qw, cldfrac_liq, cldfrac_liq_prev);
 
   // Input Variables:
   input.zt_grid     = shoc_preprocess.zt_grid;

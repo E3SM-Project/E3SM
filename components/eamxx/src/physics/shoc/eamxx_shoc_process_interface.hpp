@@ -83,6 +83,9 @@ public:
 
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_packs), [&] (const Int& k) {
 
+        
+        cldfrac_liq_prev(i,k)=cldfrac_liq(i,k);
+
         const auto range = ekat::range<IntSmallPack>(k*Spack::n);
         const Smask in_nlev_range = (range < nlev);
 
@@ -198,6 +201,8 @@ public:
     view_2d        thlm;
     view_2d        qw;
     view_2d        cloud_frac;
+    view_2d        cldfrac_liq;
+    view_2d        cldfrac_liq_prev;
 
     // Assigning local variables
     void set_variables(const int ncol_, const int nlev_, const int num_qtracers_,
@@ -213,7 +218,8 @@ public:
                        const view_2d& dse_, const view_2d& rrho_, const view_2d& rrho_i_,
                        const view_2d& thv_, const view_2d& dz_,const view_2d& zt_grid_,const view_2d& zi_grid_, const view_1d& wpthlp_sfc_,
                        const view_1d& wprtp_sfc_,const view_1d& upwp_sfc_,const view_1d& vpwp_sfc_, const view_2d& wtracer_sfc_,
-                       const view_2d& wm_zt_,const view_2d& inv_exner_,const view_2d& thlm_,const view_2d& qw_)
+                       const view_2d& wm_zt_,const view_2d& inv_exner_,const view_2d& thlm_,const view_2d& qw_,
+                       const view_2d& cldfrac_liq_, const view_2d& cldfrac_liq_prev_)
     {
       ncol = ncol_;
       nlev = nlev_;
@@ -254,6 +260,8 @@ public:
       inv_exner = inv_exner_;
       thlm = thlm_;
       qw = qw_;
+      cldfrac_liq=cldfrac_liq_;
+      cldfrac_liq_prev=cldfrac_liq_prev_;
     } // set_variables
   }; // SHOCPreprocess
   /* --------------------------------------------------------------------------------------------*/

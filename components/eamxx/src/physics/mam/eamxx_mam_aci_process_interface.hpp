@@ -65,6 +65,7 @@ class MAMAci final : public scream::AtmosphereProcess {
   view_2d naai_hom_;
   view_2d naai_;
   const_view_2d liqcldf_;
+  const_view_2d liqcldf_prev_;
   const_view_2d kvh_;
 
   view_2d cloud_frac_new_;
