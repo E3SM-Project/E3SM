@@ -223,7 +223,7 @@
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_hmix_ref_cell_width" type="real" default_value="30.0e3" units="m"
-					description="Reference cell width. If config_hmix_use_ref_cell_width = .true., then hmix coefficients are set to be nu_{2h} = config_mom_del2*(cellWidth / config_hmix_use_ref_cell_width) and nu_{4h} = config_mom_del4*(cellWidth / config_hmix_use_ref_cell_width)^3 where cellWidth is the effective cell width computed as 2*sqrt(areaCell/pi). See Hoch et al 2020 JAMES eq 1,2. This relation applies within a simulation, but also generally among multiple simulations, so the parameters config_mom_del2, config_mom_del4, and config_hmix_use_ref_cell_width can generally remain at their standard values, and just be adjusted for fine tuning."
+					description="Reference cell width. If config_hmix_use_ref_cell_width = .true., then hmix coefficients are set to be $nu_{2h}$ = config_mom_del2*(cellWidth / config_hmix_use_ref_cell_width) and $nu_{4h}$ = config_mom_del4*(cellWidth / config_hmix_use_ref_cell_width)$^3$ where cellWidth is the effective cell width computed as 2*sqrt(areaCell/pi). See Hoch et al 2020 JAMES eq 1,2. This relation applies within a simulation, but also generally among multiple simulations, so the parameters config_mom_del2, config_mom_del4, and config_hmix_use_ref_cell_width can generally remain at their standard values, and just be adjusted for fine tuning."
 					possible_values="Any positive real number, but typically a resolution number such as 30km."
 		/>
 		<nml_option name="config_apvm_scale_factor" type="real" default_value="0.0"
@@ -255,7 +255,7 @@
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_mom_del4" type="real" default_value="1.2e11" units="m^4 s^-1"
-					description="Coefficient for horizontal biharmonic operator on momentum.  If config_hmix_use_ref_cell_width = .true. then $\nu_{4h}$ = config_mom_del4*(cellWidth / config_hmix_use_ref_cell_width)^3. If config_hmix_use_ref_cell_width = .false. then it is referenced to the smallest cell."
+					description="Coefficient for horizontal biharmonic operator on momentum.  If config_hmix_use_ref_cell_width = .true. then $\nu_{4h}$ = config_mom_del4*(cellWidth / config_hmix_use_ref_cell_width)$^3$. If config_hmix_use_ref_cell_width = .false. then it is referenced to the smallest cell."
 					possible_values="any positive real"
 		/>
 		<nml_option name="config_mom_del4_div_factor" type="real" default_value="1.0" units="non-dimensional"
@@ -267,7 +267,7 @@
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_tracer_del4" type="real" default_value="0.0" units="m^4 s^-1"
-					description="Coefficient for horizontal biharmonic operator on tracers.  If config_hmix_use_ref_cell_width = .true. then $\nu_{4h}$ = config_tracer_del4*(cellWidth / config_hmix_use_ref_cell_width)^3. If config_hmix_use_ref_cell_width = .false. then it is referenced to the smallest cell."
+					description="Coefficient for horizontal biharmonic operator on tracers.  If config_hmix_use_ref_cell_width = .true. then $\nu_{4h}$ = config_tracer_del4*(cellWidth / config_hmix_use_ref_cell_width)$^3$. If config_hmix_use_ref_cell_width = .false. then it is referenced to the smallest cell."
 					possible_values="any positive real"
 		/>
 	</nml_record>
@@ -762,7 +762,7 @@
 	</nml_record>
 	<nml_record name="shortwaveRadiation" mode="init;forward">
 		<nml_option name="config_sw_absorption_type" type="character" default_value="none"
-					description="Name of shortwave absorption type used in simulation. "
+					description="Name of shortwave absorption type used in simulation."
 					possible_values="'jerlov' or 'ohlmann00' or 'none'"
 		/>
 		<nml_option name="config_jerlov_water_type" type="integer" default_value="3"
@@ -1123,7 +1123,7 @@
 					possible_values="Any positive real value."
 		/>
 		<nml_option name="config_Rayleigh_damping_depth_variable" type="logical" default_value=".false."
-					description="If true applies r h^-1 instead of just r."
+					description="If true applies r h$^-1$ instead of just r."
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_Rayleigh_bottom_friction" type="logical" default_value=".false."
@@ -3878,7 +3878,7 @@
 			packages="tidalPotentialForcingPKG"
 		/>
 		<var name="tidalPotentialLatitudeFunction" type="real" dimensions="nCells R3 Time" units="1"
-			description="Latitude function for tidal constituents: long-period = 3\sin^2(\phi)-1, diurnal = \sin(2\phi), semi-diurnal = \cos^2(\phi)"
+			description="Latitude function for tidal constituents: long-period = $3\sin^2(\phi)-1$, diurnal = $\sin(2\phi)$, semi-diurnal = $\cos^2(\phi)$"
 			packages="tidalPotentialForcingPKG"
 		/>
 		<var name="sshSubcycleCurWithTides" type="real" dimensions="nCells Time" units="m"

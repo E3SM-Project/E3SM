@@ -503,6 +503,7 @@ contains
      values  = mct_values - values
 
      difference = dot_product(values, values)
+     differenceg = 0. ! intel complained; why ?
      call shr_mpi_sum(difference,differenceg,mpicom,subname)
      difference = sqrt(differenceg)
      iamroot = seq_comm_iamroot(CPLID)
