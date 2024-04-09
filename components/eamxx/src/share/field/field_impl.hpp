@@ -204,6 +204,8 @@ auto Field::get_strided_view () const
 }
 
 // NOTE: multi-slicing a view is only supported for strided view return type
+// TODO: N doesn't actually need to be passed in, since the subview must have
+// the same rank as its parent
 template<typename DT, int N, HostOrDevice HD>
 auto Field::get_multi_sliced_view () const
  -> get_strided_view_type<data_nd_t<DT, N>, HD>
@@ -218,9 +220,6 @@ auto Field::get_multi_sliced_view () const
   const auto& fl = m_header->get_identifier().get_layout();
 
   // Checks
-  // TODO: decide whether a dynamic-rank view is ok
-  // EKAT_REQUIRE_MSG (DstRankDynamic == 1,
-  //     "Error! Strided view not allowed with compile-time dimensions.\n");
   EKAT_REQUIRE_MSG (N == fl.rank(),
       "Error! Input Rank must be equal to parent view's rank for multi-sliced subview.\n");
   EKAT_REQUIRE_MSG(is_allocated(),
@@ -230,26 +229,27 @@ auto Field::get_multi_sliced_view () const
   EKAT_REQUIRE_MSG(alloc_prop.template is_compatible<DstValueType>(),
       "Error! Source field allocation is not compatible with the requested value type.\n");
 
-  // Check if this field is a subview of another field
+  // get parent header and check if this field is a subview of another field
   const auto parent = m_header->get_parent().lock();
-  if (parent != nullptr) {
-    Field f;
-    f.m_header = parent;
-    f.m_data   = m_data;
+  EKAT_REQUIRE_MSG(parent != nullptr,
+      "Error! Multi-sliced subview is unavailable for non-subfields.\n");
+  Field f;
+  // create new field with the header/data from the parent
+  f.m_header = parent;
+  f.m_data = m_data;
 
-    auto v_fullsize = f.get_ND_view<HD, DstValueType, N>();
+  auto v_fullsize = f.get_ND_view<HD, DstValueType, N>();
 
-    // Now we can subview v_np1 at the correct slice
-    const auto& info = m_header->get_alloc_properties().get_subview_info();
-    const int idim   = info.dim_idx;
-    const int k      = info.slice_idx;
-    const int k_end  = info.slice_idx_end;
+  // Now we can subview v_np1 at the correct slice
+  const auto& info = m_header->get_alloc_properties().get_subview_info();
+  const int idim   = info.dim_idx;
+  const int k_beg  = info.slice_idx;
+  const int k_end  = info.slice_idx_end;
 
-    // this version of ekat::subview overloaded conveniently, so only the single
-    // version of the call is required here
-    return DstView(ekat::subview(v_fullsize,
-                                 Kokkos::make_pair<int, int>(k, k_end), idim));
-  }
+  // this version of ekat::subview overloaded conveniently, so only the single
+  // version of the call is required here
+  return DstView(ekat::subview(v_fullsize,
+                               Kokkos::make_pair<int, int>(k_beg, k_end), idim));
 }
 
 template<HostOrDevice HD>
