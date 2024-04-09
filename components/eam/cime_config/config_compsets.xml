@@ -52,6 +52,11 @@
   </compset>
 
   <compset>
+    <alias>FSSP245</alias>
+    <lname>SSP245_eam_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>FSSP370</alias>
     <lname>SSP370_eam_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
   </compset>

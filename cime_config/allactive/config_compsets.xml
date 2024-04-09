@@ -121,6 +121,11 @@
   <lname>SSP370SOI_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
+<compset>
+  <alias>WCYCLSSP245</alias>
+  <lname>SSP245SOI_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
 <!-- E3SM v1 science compsets -->
 
 <compset>
