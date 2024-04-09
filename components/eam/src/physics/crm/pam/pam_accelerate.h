@@ -25,7 +25,7 @@ inline void pam_accelerate_init( pam::PamCoupler &coupler ) {
   auto crm_accel_uv = coupler.get_option<bool>("crm_accel_uv");
   //------------------------------------------------------------------------------------------------
   dm_device.register_and_allocate<real>("accel_save_t", "saved temperature for MSA", {nz,nens}, {"z","nens"} );
-  dm_device.register_and_allocate<real>("accel_save_r", "saved dry density for MSA", {nz,nens}, {"z","nens"} );
+  // dm_device.register_and_allocate<real>("accel_save_r", "saved dry density for MSA", {nz,nens}, {"z","nens"} );
   dm_device.register_and_allocate<real>("accel_save_q", "saved total water for MSA", {nz,nens}, {"z","nens"} );
   dm_device.register_and_allocate<real>("accel_save_u", "saved uvel for MSA",        {nz,nens}, {"z","nens"} );
   dm_device.register_and_allocate<real>("accel_save_v", "saved vvel for MSA",        {nz,nens}, {"z","nens"} );
@@ -45,14 +45,14 @@ inline void pam_accelerate_diagnose( pam::PamCoupler &coupler ) {
   auto crm_accel_uv = coupler.get_option<bool>("crm_accel_uv");
   //------------------------------------------------------------------------------------------------
   auto temp = dm_device.get<real,4>("temp"       );
-  auto rhod = dm_device.get<real,4>("density_dry");
+  // auto rhod = dm_device.get<real,4>("density_dry");
   auto rhov = dm_device.get<real,4>("water_vapor");
   auto rhol = dm_device.get<real,4>("cloud_water");
   auto rhoi = dm_device.get<real,4>("ice"        );
   auto uvel = dm_device.get<real,4>("uvel"       );
   auto vvel = dm_device.get<real,4>("vvel"       );
   auto accel_save_t = dm_device.get<real,2>("accel_save_t");
-  auto accel_save_r = dm_device.get<real,2>("accel_save_r");
+  // auto accel_save_r = dm_device.get<real,2>("accel_save_r");
   auto accel_save_q = dm_device.get<real,2>("accel_save_q");
   auto accel_save_u = dm_device.get<real,2>("accel_save_u");
   auto accel_save_v = dm_device.get<real,2>("accel_save_v");
@@ -60,7 +60,7 @@ inline void pam_accelerate_diagnose( pam::PamCoupler &coupler ) {
   // compute horizontal means needed later for mean-state acceleration
   parallel_for( SimpleBounds<2>(nz,nens) , YAKL_LAMBDA (int k, int n) {
     accel_save_t(k,n) = 0.0;
-    accel_save_r(k,n) = 0.0;
+    // accel_save_r(k,n) = 0.0;
     accel_save_q(k,n) = 0.0;
     if (crm_accel_uv) {
       accel_save_u(k,n) = 0.0;
@@ -70,7 +70,7 @@ inline void pam_accelerate_diagnose( pam::PamCoupler &coupler ) {
   real r_nx_ny  = 1._fp/(nx*ny);  // precompute reciprocal to avoid costly divisions
   parallel_for( SimpleBounds<4>(nz,ny,nx,nens) , YAKL_LAMBDA (int k, int j, int i, int n) {
     yakl::atomicAdd( accel_save_t(k,n), temp(k,j,i,n) * r_nx_ny );
-    yakl::atomicAdd( accel_save_r(k,n), rhod(k,j,i,n) * r_nx_ny );
+    // yakl::atomicAdd( accel_save_r(k,n), rhod(k,j,i,n) * r_nx_ny );
     yakl::atomicAdd( accel_save_q(k,n), ( rhov(k,j,i,n) + rhol(k,j,i,n) + rhoi(k,j,i,n) ) * r_nx_ny );
     if (crm_accel_uv) {
       yakl::atomicAdd( accel_save_u(k,n), uvel(k,j,i,n) * r_nx_ny );
@@ -93,14 +93,14 @@ inline void pam_accelerate( pam::PamCoupler &coupler, int nstep, int &nstop ) {
   auto nx         = coupler.get_option<int>("crm_nx");
   //------------------------------------------------------------------------------------------------
   auto temp = dm_device.get<real,4>("temp"       );
-  auto rhod = dm_device.get<real,4>("density_dry");
+  // auto rhod = dm_device.get<real,4>("density_dry");
   auto rhov = dm_device.get<real,4>("water_vapor");
   auto rhol = dm_device.get<real,4>("cloud_water");
   auto rhoi = dm_device.get<real,4>("ice"        );
   auto uvel = dm_device.get<real,4>("uvel"       );
   auto vvel = dm_device.get<real,4>("vvel"       );
   auto accel_save_t = dm_device.get<real,2>("accel_save_t");
-  auto accel_save_r = dm_device.get<real,2>("accel_save_r");
+  // auto accel_save_r = dm_device.get<real,2>("accel_save_r");
   auto accel_save_q = dm_device.get<real,2>("accel_save_q");
   auto accel_save_u = dm_device.get<real,2>("accel_save_u");
   auto accel_save_v = dm_device.get<real,2>("accel_save_v");
@@ -109,12 +109,12 @@ inline void pam_accelerate( pam::PamCoupler &coupler, int nstep, int &nstop ) {
   real crm_accel_factor = coupler.get_option<real>("crm_accel_factor");
   //------------------------------------------------------------------------------------------------
   real2d hmean_t  ("hmean_t",   nz,nens);
-  real2d hmean_r  ("hmean_r",   nz,nens);
+  // real2d hmean_r  ("hmean_r",   nz,nens);
   real2d hmean_q  ("hmean_q",   nz,nens);
   real2d hmean_u  ("hmean_u",   nz,nens);
   real2d hmean_v  ("hmean_v",   nz,nens);
   real2d ttend_acc("ttend_acc", nz,nens);
-  real2d rtend_acc("rtend_acc", nz,nens);
+  // real2d rtend_acc("rtend_acc", nz,nens);
   real2d qtend_acc("qtend_acc", nz,nens);
   real2d utend_acc("utend_acc", nz,nens);
   real2d vtend_acc("vtend_acc", nz,nens);
@@ -127,7 +127,7 @@ inline void pam_accelerate( pam::PamCoupler &coupler, int nstep, int &nstop ) {
   // Compute the horizontal mean for each variable
   parallel_for( SimpleBounds<2>(nz,nens) , YAKL_LAMBDA (int k, int n) {
     hmean_t(k,n) = 0.0;
-    hmean_r(k,n) = 0.0;
+    // hmean_r(k,n) = 0.0;
     hmean_q(k,n) = 0.0;
     if (crm_accel_uv) {
       hmean_u(k,n) = 0.0;
@@ -137,7 +137,7 @@ inline void pam_accelerate( pam::PamCoupler &coupler, int nstep, int &nstop ) {
   real r_nx_ny  = 1._fp/(nx*ny);  // precompute reciprocal to avoid costly divisions
   parallel_for( SimpleBounds<4>(nz,ny,nx,nens) , YAKL_LAMBDA (int k, int j, int i, int n) {
     yakl::atomicAdd( hmean_t(k,n), temp(k,j,i,n) * r_nx_ny );
-    yakl::atomicAdd( hmean_r(k,n), rhod(k,j,i,n) * r_nx_ny );
+    // yakl::atomicAdd( hmean_r(k,n), rhod(k,j,i,n) * r_nx_ny );
     yakl::atomicAdd( hmean_q(k,n), ( rhov(k,j,i,n) + rhol(k,j,i,n) + rhoi(k,j,i,n) ) * r_nx_ny );
     if (crm_accel_uv) {
       yakl::atomicAdd( hmean_u(k,n), uvel(k,j,i,n) * r_nx_ny );
@@ -150,7 +150,7 @@ inline void pam_accelerate( pam::PamCoupler &coupler, int nstep, int &nstop ) {
   ScalarLiveOut<bool> ceaseflag_liveout(false);
   parallel_for( SimpleBounds<2>(nz,nens) , YAKL_LAMBDA (int k, int n) {
     ttend_acc(k,n) = hmean_t(k,n) - accel_save_t(k,n);
-    rtend_acc(k,n) = hmean_r(k,n) - accel_save_r(k,n);
+    // rtend_acc(k,n) = hmean_r(k,n) - accel_save_r(k,n);
     qtend_acc(k,n) = hmean_q(k,n) - accel_save_q(k,n);
     if (crm_accel_uv) {
       utend_acc(k,n) = hmean_u(k,n) - accel_save_u(k,n);
@@ -193,7 +193,7 @@ inline void pam_accelerate( pam::PamCoupler &coupler, int nstep, int &nstop ) {
   parallel_for( SimpleBounds<4>(nz,ny,nx,nens) , YAKL_LAMBDA (int k, int j, int i, int n) {
     
     temp(k,j,i,n) = temp(k,j,i,n) + crm_accel_factor * ttend_acc(k,n);
-    rhod(k,j,i,n) = rhod(k,j,i,n) + crm_accel_factor * rtend_acc(k,n);
+    // rhod(k,j,i,n) = rhod(k,j,i,n) + crm_accel_factor * rtend_acc(k,n);
     rhov(k,j,i,n) = rhov(k,j,i,n) + crm_accel_factor * qtend_acc(k,n);
     if (crm_accel_uv) {
       uvel(k,j,i,n) = uvel(k,j,i,n) + crm_accel_factor * utend_acc(k,n); 
