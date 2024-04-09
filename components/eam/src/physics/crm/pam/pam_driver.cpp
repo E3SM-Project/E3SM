@@ -25,7 +25,7 @@
 #include "p3_f90.hpp"
 
 #include "pam_debug.h"
-bool constexpr enable_check_state = false;
+bool constexpr enable_check_state = true;
 
 extern "C" void pam_driver() {
   //------------------------------------------------------------------------------------------------
@@ -62,7 +62,7 @@ extern "C" void pam_driver() {
   coupler.set_option<bool>("spam_clip_vertical_velocities",true);
   coupler.set_option<bool>("spam_adjust_crm_per_phys_using_vert_cfl",true);
   coupler.set_option<real>("spam_target_cfl",0.7);
-  coupler.set_option<real>("spam_max_w",50.0);
+  coupler.set_option<real>("spam_max_w",30.0);
   //------------------------------------------------------------------------------------------------
   // Allocate the coupler state and retrieve host/device data managers
   coupler.allocate_coupler_state( crm_nz , crm_ny , crm_nx , nens );
@@ -91,8 +91,10 @@ extern "C" void pam_driver() {
   // Copy input CRM state (saved by the GCM) to coupler
   pam_state_copy_input_to_coupler(coupler);
 
-  // // update CRM dry density to match GCM and disable dry density forcing
-  // pam_state_update_dry_density(coupler);
+  #ifdef MMF_DISABLE_DENSITY_FORCING
+    // update CRM dry density to match GCM and disable dry density forcing
+    pam_state_update_dry_density(coupler);
+  #endif
 
   // if debugging - initialize saved state variables and check initial CRM state
   if (enable_check_state) {
