@@ -32,9 +32,9 @@ initial_conditions:
   pbl_height : 1.0
   dgnum: 1e-3
   eddy_diff_heat: 1e-3
-  liq_strat_cld_frac: 1e-3
-  w_sec: 1e-3
-  w_updraft: 1e-3
+  cldfrac_liq: 1e-3
+  cldfrac_liq_prev: 0.1
+  w_variance: 1e-3
 
 # The parameters for I/O control
 Scorpio:

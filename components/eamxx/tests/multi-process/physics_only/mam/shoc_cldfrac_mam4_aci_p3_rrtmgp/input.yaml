@@ -56,17 +56,23 @@ initial_conditions:
   # The name of the file containing the initial conditions for this test.
   Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_MAM4xx_72lev}
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
+
+  #variables required for shoc
   surf_sens_flux: 0.0
   surf_evap: 0.0
+
+  #variables required for p3
   precip_ice_surf_mass: 0.0
   precip_liq_surf_mass: 0.0
+  
+  #variables required for rrtmgp
   aero_g_sw: 0.0
   aero_ssa_sw: 0.0
   aero_tau_sw: 0.0
   aero_tau_lw: 0.0
+
+  #variables required for mam4_aci
   dgnum: 1e-3
-  liq_strat_cld_frac: 1e-3
-  w_sec: 1e-3
 
 # The parameters for I/O control
 Scorpio:

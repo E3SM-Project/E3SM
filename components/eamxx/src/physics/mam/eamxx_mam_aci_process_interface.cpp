@@ -210,7 +210,7 @@ void compute_aitken_dry_diameter(const haero::ThreadTeam &team,
   const int aitken_idx = static_cast<int>(mam4::ModeIndex::Aitken);
   Kokkos::parallel_for(
       Kokkos::TeamThreadRange(team, 0u, top_lev), KOKKOS_LAMBDA(int kk) {
-        aitken_dry_dia(icol, kk) = dgnum(icol, kk, aitken_idx);
+        aitken_dry_dia(icol, kk) = dgnum(icol, aitken_idx, kk);
       });
 }
 void compute_aitken_dry_diameter(haero::ThreadTeamPolicy team_policy,
@@ -230,7 +230,7 @@ void compute_nucleate_ice_tendencies(
     MAMAci::view_2d nimey, MAMAci::view_2d naai_hom, MAMAci::view_2d naai,
     mam_coupling::AerosolState &dry_aerosol_state,
     mam_coupling::DryAtmosphere &dry_atmosphere, MAMAci::view_2d aitken_dry_dia,
-    const int nlev) {
+    const int nlev, const double dt) {
   //-------------------------------------------------------------
   // Get number of activated aerosol for ice nucleation (naai)
   // from ice nucleation
@@ -248,16 +248,12 @@ void compute_nucleate_ice_tendencies(
 
         // Set up an atmosphere, surface, diagnostics, pronostics and tendencies
         // class.
-        Real pblh = 0;
-        haero::Atmosphere atmos(
-            nlev, ekat::subview(T_mid, icol), ekat::subview(p_mid, icol),
-            ekat::subview(qv_dry, icol), dummy, dummy, dummy, dummy, dummy,
-            dummy, dummy, ekat::subview(cldfrac, icol),
-            ekat::subview(w_updraft, icol), pblh);
-        // set surface state data
         haero::Surface surf{};
         mam4::Prognostics progs =
             mam_coupling::aerosols_for_column(dry_aerosol_state, icol);
+
+        haero::Atmosphere haero_atm =
+            atmosphere_for_column(dry_atmosphere, icol);
 
         // nucleation doesn't use any diagnostics, so it's okay to leave this
         // alone for now
@@ -283,7 +279,7 @@ void compute_nucleate_ice_tendencies(
         // values are store in diags above.
         const mam4::Tendencies tends(nlev);
         const mam4::AeroConfig aero_config;
-        const Real t = 0, dt = 0;
+        const Real t = 0;
         /*
           NOTE:"state_q" is a combination of subset of tracers added by
           "int_mmr_field_name" and "int_nmr_field_name". Only output we care
@@ -294,8 +290,8 @@ void compute_nucleate_ice_tendencies(
           ! input rho, wsubice, strat_cld_frac, dgnum, &          ! input naai,
           naai_hom)                                 ! output
         */
-        nucleate_ice.compute_tendencies(aero_config, team, t, dt, atmos, surf,
-                                        progs, diags, tends);
+        nucleate_ice.compute_tendencies(aero_config, team, t, dt, haero_atm,
+                                        surf, progs, diags, tends);
       });
 }
 KOKKOS_INLINE_FUNCTION
@@ -605,12 +601,6 @@ void call_hetfrz_compute_tendencies(
 
         haero::Atmosphere haero_atm =
             atmosphere_for_column(dry_atmosphere, icol);
-        /*Real pblh = 0;
-        haero::Atmosphere atmos(
-            nlev, ekat::subview(T_mid, icol), ekat::subview(p_mid, icol), dummy,
-            ekat::subview(qc, icol), ekat::subview(nc, icol), dummy, dummy,
-            dummy, dummy, dummy, dummy, dummy, pblh);*/
-        // set surface state data
         haero::Surface surf{};
         mam4::Prognostics progs =
             mam_coupling::aerosols_for_column(dry_aerosol_state, icol);
@@ -707,16 +697,14 @@ MAMAci::MAMAci(const ekat::Comm &comm, const ekat::ParameterList &params)
 void MAMAci::set_grids(
     const std::shared_ptr<const GridsManager> grids_manager) {
   grid_ = grids_manager->get_grid("Physics");  // Use physics grid
-  const auto &grid_name = grid_->name();
+  const auto &grid_name = grid_->name();       // Name of the grid
 
   ncol_ = grid_->get_num_local_dofs();       // Number of columns on this rank
   nlev_ = grid_->get_num_vertical_levels();  // Number of levels per column
 
   // Allocate memory for the class members
   // Kokkos::resize only works on host to allocates memory
-  Kokkos::resize(
-      rho_, ncol_,
-      nlev_);  // FIXME: rho_ is only used internally in compute_w0_and_rho
+  Kokkos::resize(rho_, ncol_, nlev_);
   Kokkos::resize(w0_, ncol_, nlev_);
   Kokkos::resize(tke_, ncol_, nlev_ + 1);
   Kokkos::resize(wsub_, ncol_, nlev_);
@@ -735,60 +723,69 @@ void MAMAci::set_grids(
   using namespace ShortFieldTagsNames;
 
   // Layout for 3D (2d horiz X 1d vertical) variables
-  FieldLayout scalar3d_layout_mid{{COL, LEV}, {ncol_, nlev_}};  // mid points
-  FieldLayout scalar3d_layout_int{{COL, ILEV},
-                                  {ncol_, nlev_ + 1}};  // interfaces
+  // mid points
+  FieldLayout scalar3d_layout_mid{{COL, LEV}, {ncol_, nlev_}};
+  // interfaces
+  FieldLayout scalar3d_layout_int{{COL, ILEV}, {ncol_, nlev_ + 1}};
+
   // layout for 2D (1d horiz X 1d vertical) variable
   FieldLayout scalar2d_layout_col{{COL}, {ncol_}};
 
   using namespace ekat::units;
   auto q_unit = kg / kg;  // units of mass mixing ratios of tracers
   q_unit.set_string("kg/kg");
+
   auto n_unit = 1 / kg;  // units of number mixing ratios of tracers
   n_unit.set_string("#/kg");
-  auto nondim = ekat::units::Units::nondimensional();
-  // atmospheric quantities
-  add_field<Required>("qv", scalar3d_layout_mid, q_unit, grid_name,
-                      "tracers");  // specific humidity [kg/kg]
-  add_field<Required>("qc", scalar3d_layout_mid, q_unit, grid_name,
-                      "tracers");  // cloud liquid mass mixing ratio [kg/kg]
-  add_field<Required>("qi", scalar3d_layout_mid, q_unit, grid_name,
-                      "tracers");  // cloud ice mass mixing ratio [kg/kg]
-  add_field<Required>("nc", scalar3d_layout_mid, n_unit, grid_name,
-                      "tracers");  // cloud liquid number mixing ratio [1/kg]
-  add_field<Required>("ni", scalar3d_layout_mid, n_unit, grid_name,
-                      "tracers");  // cloud ice number mixing ratio [1/kg]
 
-  add_field<Required>("T_mid", scalar3d_layout_mid, K,
-                      grid_name);  // Temperature[K] at midpoints
+  auto nondim = ekat::units::Units::nondimensional();
+
+  // atmospheric quantities
+  // specific humidity [kg/kg]
+  add_field<Required>("qv", scalar3d_layout_mid, q_unit, grid_name, "tracers");
+
+  // cloud liquid mass mixing ratio [kg/kg]
+  add_field<Required>("qc", scalar3d_layout_mid, q_unit, grid_name, "tracers");
+
+  // cloud ice mass mixing ratio [kg/kg]
+  add_field<Required>("qi", scalar3d_layout_mid, q_unit, grid_name, "tracers");
+
+  // cloud liquid number mixing ratio [1/kg]
+  add_field<Required>("nc", scalar3d_layout_mid, n_unit, grid_name, "tracers");
+
+  // cloud ice number mixing ratio [1/kg]
+  add_field<Required>("ni", scalar3d_layout_mid, n_unit, grid_name, "tracers");
+
+  // Temperature[K] at midpoints
+  add_field<Required>("T_mid", scalar3d_layout_mid, K, grid_name);
 
   // Vertical pressure velocity [Pa/s] at midpoints
   add_field<Required>("omega", scalar3d_layout_mid, Pa / s, grid_name);
 
-  add_field<Required>("p_mid", scalar3d_layout_mid, Pa,
-                      grid_name);  // Total pressure [Pa] at midpoints
-  add_field<Required>("p_int", scalar3d_layout_int, Pa,
-                      grid_name);  // Total pressure [Pa] at interfaces
-  add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa,
-                      grid_name);  // Layer thickness(pdel) [Pa] at midpoints
+  // Total pressure [Pa] at midpoints
+  add_field<Required>("p_mid", scalar3d_layout_mid, Pa, grid_name);
 
-  add_field<Required>("pbl_height", scalar2d_layout_col, m,
-                      grid_name);  // planetary boundary layer height
+  // Total pressure [Pa] at interfaces
+  add_field<Required>("p_int", scalar3d_layout_int, Pa, grid_name);
+
+  // Layer thickness(pdel) [Pa] at midpoints
+  add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa, grid_name);
+
+  // planetary boundary layer height
+  add_field<Required>("pbl_height", scalar2d_layout_col, m, grid_name);
 
   // cloud fraction [nondimentional] computed by eamxx_cld_fraction_process
   add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid_name);
 
-  // Inputs (atmospheric quantities) for aci codes that existed in PBUF in EAM
-  // These outputs should come from the cloud macrophysics process (e.g., SHOC)
   auto m2 = m * m;
   m2.set_string("m^2");
   auto s2 = s * s;
   s2.set_string("s^2");
 
-  // NOTE: w_variance im microp_aero_run.F90 is at "itim_old" dynamics time step
-  // Since, we are using SE dycore, itim_old is 1 which is equivalent to the
-  // current time step. For other dycores (such as EUL), it may be different
-  // and we might need to revisit this
+  // NOTE: w_variance im microp_aero.F90 in EAM is at "itim_old" dynamics time
+  // step Since, we are using SE dycore, itim_old is 1 which is equivalent to
+  // the current time step. For other dycores (such as EUL), it may be different
+  // and we might need to revisit this.
 
   // FIXME: w_variance in microp_aero_run.F90 is at the interfaces but
   //  SHOC provides it at the midpoints. Verify how it is being used.
@@ -797,26 +794,26 @@ void MAMAci::set_grids(
   add_field<Required>("w_variance", scalar3d_layout_mid, m2 / s2, grid_name);
 
   // NOTE: "cldfrac_liq" is updated in SHOC. "cldfrac_liq" in C++ code is
-  // equivalent
-  //  to "alst" in the shoc_intr.F90. In the C++ code, it is used as
-  //  "shoc_cldfrac" and in the F90 code it is called "cloud_frac"
+  // equivalent to "alst" in the shoc_intr.F90. In the C++ code, it is used as
+  // "shoc_cldfrac" and in the F90 code it is called "cloud_frac"
 
   // Liquid stratiform cloud fraction at midpoints
   add_field<Required>("cldfrac_liq", scalar3d_layout_mid, nondim, grid_name);
 
+  // Previous value of liquid stratiform cloud fraction at midpoints
   add_field<Required>("cldfrac_liq_prev", scalar3d_layout_mid, nondim,
                       grid_name);
-  // BALLI:???
-  add_field<Required>("eddy_diff_heat", scalar3d_layout_mid, m2 / s,
-                      grid_name);  // Eddy diffusivity for heat
+
+  // Eddy diffusivity for heat
+  add_field<Required>("eddy_diff_heat", scalar3d_layout_mid, m2 / s, grid_name);
 
   // Layout for 4D (2d horiz X 1d vertical x number of modes) variables
   const int num_aero_modes = mam_coupling::num_aero_modes();
-  FieldLayout scalar4d_layout_mid{
-      {COL, LEV, NMODES}, {ncol_, nlev_, num_aero_modes}};  // mid points
-  // BALLI:???
-  add_field<Required>("dgnum", scalar4d_layout_mid, m,
-                      grid_name);  // dry diameter of aerosols
+  FieldLayout scalar4d_layout_mid{{COL, NMODES, LEV},
+                                  {ncol_, num_aero_modes, nlev_}};
+
+  // dry diameter of aerosols [m]
+  add_field<Required>("dgnum", scalar4d_layout_mid, m, grid_name);
 
   // ========================================================================
   // Output from this whole process
@@ -895,56 +892,50 @@ void MAMAci::set_grids(
   // ------------------------------------------------------------------------
   // Output from droplet activation process (dropmixnuc)
   // ------------------------------------------------------------------------
-  // BALLI:???
-  // FIXME: THis looks like an internal variable for dropmixnuc, why we need it
-  // here???
-  add_field<Computed>("qcld", scalar3d_layout_mid, n_unit,
-                      grid_name);  // cloud droplet number mixing ratio [#/kg]
-  // BALLI:???
-  // FIXME:This array should update the mmrs and nmrs
-  // tendencies for interstitial and cloud borne aerosols [#/kg]
-  add_field<Computed>(
-      "ptend_q",
-      FieldLayout{{COL, LEV, CMP}, {ncol_, nlev_, mam4::aero_model::pcnst}},
-      n_unit, grid_name);
+
+  constexpr int pcnst = mam4::aero_model::pcnst;
+  FieldLayout scalar4d_layout_nconst_mid{{COL, LEV, MAM_NCNST},
+                                         {ncol_, nlev_, pcnst}};
+
+  // tendencies for interstitial and cloud borne aerosols [kg/kg or #/kg]
+  add_field<Computed>("ptend_q", scalar4d_layout_nconst_mid, q_unit, grid_name);
 
   // tendency in droplet number mixing ratio [#/kg/s]
   add_field<Computed>("tendnd", scalar3d_layout_mid, n_unit / s, grid_name);
 
   // activation fraction for aerosol number [fraction]
-  add_field<Computed>(
-      "factnum",
-      FieldLayout{{COL, NMODES, LEV},
-                  {ncol_, mam_coupling::num_aero_modes(), nlev_}},
-      nondim, grid_name);
+  add_field<Computed>("factnum", scalar4d_layout_mid, nondim, grid_name);
+
+  // NOTE: Here is a series of internal dropmixnuc variables;
+  // maybe we should move them to diagnostics later
+
+  // cloud droplet number mixing ratio [#/kg]
+  add_field<Computed>("qcld", scalar3d_layout_mid, n_unit, grid_name);
 
   auto inv_m2 = 1 / m / m;
   inv_m2.set_string("#/m2");
-  // BALLI:??? FIXME: This is internal diagnostic variable
+
   // column-integrated droplet number [#/m2]
-  add_field<Computed>("ndropcol", scalar3d_layout_mid, inv_m2,
-                      grid_name);  //
-  // BALLI:??? FIXME: This is internal diagnostic variable
+  add_field<Computed>("ndropcol", scalar3d_layout_mid, inv_m2, grid_name);
+
   // droplet number mixing ratio tendency due to mixing [#/kg/s]
   add_field<Computed>("ndropmix", scalar3d_layout_mid, n_unit / s, grid_name);
-  // BALLI:??? FIXME: This is internal diagnostic variable
+
   // droplet number mixing ratio source tendency [#/kg/s]
   add_field<Computed>("nsource", scalar3d_layout_mid, n_unit / s, grid_name);
 
-  // BALLI:??? FIXME: This is internal diagnostic variable
   // subgrid vertical velocity [m/s]
   add_field<Computed>("wtke", scalar3d_layout_mid, m / s, grid_name);
 
-  // BALLI:??? FIXME: This is internal diagnostic variable
   // number conc of aerosols activated at supersat [#/m^3]
-  //       note:  activation fraction fluxes are defined as
-  //      fluxn = [flux of activated aero. number into cloud
-  //      [#/m^2/s]]
-  //            / [aero. number conc. in updraft, just below
-  //            cloudbase [#/m^3]]
-  add_field<Computed>(
-      "ccn", FieldLayout{{COL, LEV, CMP}, {ncol_, nlev_, mam4::ndrop::psat}},
-      m3_inv, grid_name);
+  // NOTE:  activation fraction fluxes are defined as
+  // fluxn = [flux of activated aero. number into cloud[#/m^2/s]]
+  //        / [aero. number conc. in updraft, just below cloudbase [#/m^3]]
+
+  constexpr int psat = mam4::ndrop::psat;
+  FieldLayout scalar4d_layout_psat_mid{{COL, LEV, MAM_PSAT},
+                                       {ncol_, nlev_, psat}};
+  add_field<Computed>("ccn", scalar4d_layout_psat_mid, m3_inv, grid_name);
 
   // BALLI:??? FIXME: This is internal diagnostic variable
   // column tendency for diagnostic output
@@ -1174,6 +1165,7 @@ void MAMAci::run_impl(const double dt) {
   // All the inputs are available to compute w0 and rho
   // Convert from omega to w (vertical velocity)
   // Negative omega means rising motion
+  // FIXME: Why wet_atm_ used here????? We should use dry_atm
   compute_w0_and_rho(team_policy, w0_ /*output*/, rho_ /*output*/, wet_atm_,
                      dry_atm_, top_lev_, nlev_);
 
@@ -1193,8 +1185,8 @@ void MAMAci::run_impl(const double dt) {
   // FIXME: Find out in-outs of the following call!
   compute_nucleate_ice_tendencies(nucleate_ice_, team_policy, nihf_, niim_,
                                   nidep_, nimey_, naai_hom_, naai_, dry_aero_,
-                                  dry_atm_, aitken_dry_dia_, nlev_);
-
+                                  dry_atm_, aitken_dry_dia_, nlev_, dt);
+  // FIXME: Why wet_atm_ used here????? We should use dry_atm
   store_liquid_cloud_fraction(team_policy, cloud_frac_new_, cloud_frac_old_,
                               wet_atm_, liqcldf_, liqcldf_prev_, top_lev_);
 
@@ -1232,7 +1224,7 @@ void MAMAci::run_impl(const double dt) {
       team_policy, coltend_outp_, coltend_, nlev_);
   copy_mam4xx_array_to_scream<mam4::ndrop::ncnst_tot>(
       team_policy, coltend_cw_outp_, coltend_cw_, nlev_);
-
+  // FIXME: Why wet_atm_ used here????? We should use dry_atm
   call_hetfrz_compute_tendencies(
       team_policy, hetfrz_, dry_aero_, wet_atm_, dry_atm_, factnum_,
       hetfrz_immersion_nucleation_tend_, hetfrz_contact_nucleation_tend_,
