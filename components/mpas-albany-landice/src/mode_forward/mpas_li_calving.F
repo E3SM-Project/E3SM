@@ -320,7 +320,7 @@ module li_calving
 
       call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
 
-      call remove_small_islands(meshPool, geometryPool, domain)
+      call remove_small_islands(domain, err_tmp)
 
       call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
 
@@ -1032,16 +1032,14 @@ module li_calving
 !> unrealistic velocities in the Albany velocity solver.  Specifically, this
 !> finds one- and two-cell masses of grounded ice that are surrounded by dynamic
 !> floating ice ice shelves ≥1 cell wide. It eliminates the dynamic cells
-!> (both grounded and floating) in these islands by sending them to the
-!> and then cleans up stranded non-dynamic cells using a flood-fill routine.
+!> (both grounded and floating) in these islands by sending them to the calving
+!> flux and then cleans up stranded non-dynamic cells using a flood-fill routine.
 !-----------------------------------------------------------------------
 
-   subroutine remove_small_islands(meshPool, geometryPool, domain)
-      type (mpas_pool_type), pointer, intent(in) :: meshPool !< Input: Mesh pool
-      type (mpas_pool_type), pointer, intent(inout) :: geometryPool !< Input: Geometry pool
+   subroutine remove_small_islands(domain, err)
       type (domain_type), intent(inout) :: domain !< Input/Output: domain object
-
-      type (mpas_pool_type), pointer :: scratchPool
+      integer, intent(inout) :: err
+      type (mpas_pool_type), pointer :: scratchPool, meshPool, geometryPool, velocityPool
       logical, pointer :: config_remove_small_islands
       real (kind=RKIND), dimension(:), pointer :: calvingThickness    ! thickness of ice that calves (computed in this subroutine)
       real (kind=RKIND), dimension(:), pointer :: calvingThicknessFromThreshold    ! thickness of ice that calves (computed in this subroutine)
@@ -1053,6 +1051,7 @@ module li_calving
       integer, pointer :: nCells, maxEdges
       logical :: removeIsland
       integer :: iCell, jCell, kCell, m, n, count
+      integer :: nIslandCellsLocal, nIslandCellsGlobal
       integer :: nGroundedNeighbors, nGroundedNeighborsJCell
       integer, dimension(:), allocatable :: connectedCellsList
       integer, dimension(:), allocatable :: islandMask
@@ -1066,6 +1065,9 @@ module li_calving
       endif
 
       call mpas_pool_get_subpool(domain % blocklist % structs, 'scratch', scratchPool)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'velocity', velocityPool)
 
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_dimension(meshPool, 'maxEdges', maxEdges)
@@ -1080,7 +1082,8 @@ module li_calving
                islandMask(nCells+1))
 
       islandMask(:) = 0
-
+      nIslandCellsLocal = 0
+      nIslandCellsGlobal = 0
       ! Allocate scratch fields for flood-fill
       call mpas_pool_get_field(scratchPool, 'seedMask', seedMaskField)
       call mpas_allocate_scratch_field(seedMaskField, single_block_in = .true.)
@@ -1096,7 +1099,7 @@ module li_calving
       ! which are potentially islands that need to be removed.
       do iCell = 1, nCells
          if (li_mask_is_grounded_ice(cellMask(iCell))) then
-
+            islandMask(iCell) = 1 ! Potentially an island. Further evaluated below.
             nGroundedNeighbors = 0
             ! Count grounded neighbors
             do n = 1, nEdgesOnCell(iCell)
@@ -1120,11 +1123,10 @@ module li_calving
                ! fewer other grounded cells, then it should potentially
                ! be removed. If its dynamic neighbors have other grounded
                ! neighbors, then it is not an island.
-               if ( (nGroundedNeighborsJCell .le. 1) .and. &
-                    (nGroundedNeighbors .le. 1) ) then
-                  islandMask(iCell) = 1
-               else
+               if ( (nGroundedNeighborsJCell > 1) .or. &
+                    (nGroundedNeighbors > 1) ) then
                   islandMask(iCell) = 0
+                  exit
                endif
             enddo
          endif
@@ -1166,53 +1168,63 @@ module li_calving
             do n = 1, (maxEdges+1)**2
                if (connectedCellsList(n) == -1) then
                   exit  ! We've reached the end of the list.
-               else
-                  jCell = connectedCellsList(n)
-                  do m = 1, nEdgesOnCell(jCell)
-                     kCell = cellsOnCell(m, jCell)
-                     if ( li_mask_is_dynamic_ice(cellMask(kCell)) .and. &
-                          (.not. any(connectedCellsList == kCell)) ) then
-                           removeIsland = .false.
-                           exit
-                     endif
-                  enddo
                endif
+               jCell = connectedCellsList(n)
+               do m = 1, nEdgesOnCell(jCell)
+                  kCell = cellsOnCell(m, jCell)
+                  if ( li_mask_is_dynamic_ice(cellMask(kCell)) .and. &
+                       (.not. any(connectedCellsList == kCell)) ) then
+                        removeIsland = .false.
+                        exit
+                  endif
+               enddo
             enddo
             ! Actually remove island
-            ! TODO: halo update needed? Would need to change logic.
             if ( removeIsland ) then
+               nIslandCellsLocal = nIslandCellsLocal + count
                do n = 1, count
                   calvingThickness(connectedCellsList(n)) = calvingThickness(connectedCellsList(n)) + &
                                                             thickness(connectedCellsList(n))
                   calvingThicknessFromThreshold(connectedCellsList(n)) = &
                      calvingThicknessFromThreshold(connectedCellsList(n)) + thickness(connectedCellsList(n))
                   thickness(connectedCellsList(n)) = 0.0_RKIND
+                  ! No need to evaluate any cells in this list again.
+                  if (islandMask(connectedCellsList(n)) == 1) islandMask(connectedCellsList(n)) = 0
                enddo
             endif
          endif
       enddo
 
-      ! Clean up by removing non-dynamic ice that may have been left behind
-      ! after islands where removed.
-      where (li_mask_is_grounded_ice(cellMask))
-         seedMask = 1
-      end where
+      call mpas_timer_start("halo updates")
+      call mpas_dmpar_field_halo_exch(domain, 'thickness')
+      call mpas_dmpar_field_halo_exch(domain, 'calvingThickness')
+      call mpas_timer_stop("halo updates")
+      call li_calculate_mask(meshPool, velocityPool, geometryPool, err)
 
-      where (li_mask_is_ice(cellMask))
-         growMask = 1
-      end where
+      call mpas_dmpar_sum_int(domain % dminfo, nIslandCellsLocal, nIslandCellsGlobal)
 
-      call mpas_log_write("***Cleaning up stranded cells after removing small islands***")
-      call li_flood_fill(seedMask, growMask, domain)
-      do iCell = 1, nCells
-         if (li_mask_is_floating_ice(cellMask(iCell)) .and. seedMask(iCell) == 0) then
-               calvingThickness(iCell) = calvingThickness(iCell) + thickness(iCell)
-               calvingThicknessFromThreshold(iCell) = calvingThicknessFromThreshold(iCell) + thickness(iCell)
-               thickness(iCell) = 0.0_RKIND
-         endif
-      enddo
-      call mpas_log_write("***Finished cleaning up after removing small islands***")
+      if ( nIslandCellsGlobal > 0 ) then
+         ! Clean up by removing non-dynamic ice that may have been left behind
+         ! after islands where removed.
+         where (li_mask_is_grounded_ice(cellMask))
+            seedMask = 1
+         end where
 
+         where (li_mask_is_ice(cellMask))
+            growMask = 1
+         end where
+
+         call mpas_log_write("***Cleaning up stranded cells after removing small islands***")
+         call li_flood_fill(seedMask, growMask, domain)
+         do iCell = 1, nCells
+            if (li_mask_is_floating_ice(cellMask(iCell)) .and. seedMask(iCell) == 0) then
+                  calvingThickness(iCell) = calvingThickness(iCell) + thickness(iCell)
+                  calvingThicknessFromThreshold(iCell) = calvingThicknessFromThreshold(iCell) + thickness(iCell)
+                  thickness(iCell) = 0.0_RKIND
+            endif
+         enddo
+         call mpas_log_write("***Finished cleaning up after removing small islands***")
+      endif
       deallocate(connectedCellsList, &
                  islandMask)
       call mpas_deallocate_scratch_field(seedMaskField, single_block_in=.true.)
