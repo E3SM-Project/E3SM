@@ -144,7 +144,7 @@ inline void pam_state_set_reference_state( pam::PamCoupler &coupler ) {
   real2d hmean_temp ("hmean_temp" ,nz  ,nens);
   real r_nx_ny  = 1._fp/(nx*ny);  // precompute reciprocal to avoid costly divisions
   // initialize horizontal means
-  parallel_for(SimpleBounds<2>(nz,nens), YAKL_LAMBDA (int k, int iens) {
+  parallel_for(SimpleBounds<2>(nz+1,nens), YAKL_LAMBDA (int k, int iens) {
     hmean_pint(k,iens) = 0;
     if (k < nz) { 
       hmean_pmid (k,iens) = 0;
@@ -166,24 +166,42 @@ inline void pam_state_set_reference_state( pam::PamCoupler &coupler ) {
     atomicAdd( hmean_temp (k,iens), temp    (k,j,i,iens) * r_nx_ny );
   });
   // calculate interface pressure from mid-level pressure
-  parallel_for(SimpleBounds<4>(nz+1,ny,nx,nens) , YAKL_LAMBDA (int k, int j, int i, int iens) {
+  // parallel_for(SimpleBounds<4>(nz+1,ny,nx,nens) , YAKL_LAMBDA (int k, int j, int i, int iens) {
+  parallel_for(SimpleBounds<2>(nz+1,nens) , YAKL_LAMBDA (int k, int iens) {
     if (k == 0 ) {
-      real rho = rho_d(k  ,j,i,iens)+rho_v(k  ,j,i,iens);
-      real dz  = zint(k+1,iens)-zint(k  ,iens);
+      real rho = hmean_rho_d(k,iens)+hmean_rho_v(k,iens);
+      real dz  = zint(k+1,iens)-zint(k,iens);
       hmean_pint(k,iens) = hmean_pmid(k  ,iens) + grav*rho*dz/2;
     } else if (k == nz) {
-      real rho = rho_d(k-1,j,i,iens)+rho_v(k-1,j,i,iens);
-      real dz  = zint(k  ,iens)-zint(k-1,iens);
+      real rho = hmean_rho_d(k-1,iens)+hmean_rho_v(k-1,iens);
+      real dz  = zint(k,iens)-zint(k-1,iens);
       hmean_pint(k,iens) = hmean_pmid(k-1,iens) - grav*rho*dz/2;
     } else {
-      real rhokm1 = rho_d(k-1,j,i,iens)+rho_v(k-1,j,i,iens);
-      real rhokm0 = rho_d(k  ,j,i,iens)+rho_v(k  ,j,i,iens);
+      real rhokm1 = hmean_rho_d(k-1,iens)+hmean_rho_v(k-1,iens);;
+      real rhokm0 = hmean_rho_d(k  ,iens)+hmean_rho_v(k  ,iens);
       real dzkm1  = zint(k  ,iens)-zint(k-1,iens);
       real dzkm0  = zint(k+1,iens)-zint(k  ,iens);
       hmean_pint(k,iens) = 0.5_fp * ( hmean_pmid(k-1,iens) - grav*rhokm1*dzkm1/2 +
                                       hmean_pmid(k  ,iens) + grav*rhokm0*dzkm0/2 );
     }
   });
+
+  auto &dm_host   = coupler.get_data_manager_host_readonly();
+  auto lat        = dm_host.get<real const,1>("latitude"  ).createDeviceCopy();
+  auto lon        = dm_host.get<real const,1>("longitude" ).createDeviceCopy();
+  auto input_phis = dm_host.get<real const,1>("input_phis").createDeviceCopy();
+  // check that interface pressure is reasonable
+  parallel_for(SimpleBounds<2>(nz+1,nens) , YAKL_LAMBDA (int k, int iens) {
+    if ( hmean_pint(k,iens) < hmean_pmid(k,iens) ) {
+      auto phis = input_phis(iens)/grav;
+      printf("PAM-DEBUG bad-pint - k:%3.3d n:%3.3d y:%5.1f x:%5.1f ph:%6.1f -- pint:%8.2g pmid:%8.2g \n",
+        k,iens,lat(iens),lon(iens),phis,
+        hmean_pint(k,iens),
+        hmean_pmid(k,iens)
+      );
+    }
+  });
+
   // set anelastic reference state from CRM horizontal mean
   parallel_for(SimpleBounds<2>(nz+1,nens) , YAKL_LAMBDA (int k, int iens) {
     ref_presi(k,iens) = hmean_pint(k,iens);
