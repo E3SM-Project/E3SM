@@ -1619,7 +1619,7 @@
 	</nml_record>
 	<nml_record name="init_mode_subgrid">
 		<nml_option name="config_subgrid_table_levels" type="integer" default_value="-1"
-					description=""
+					description="Number of levels in subgrid lookup tables"
 					possible_values="Any positive non-zero integer. A value of -1 causes this to be overwritten with the configurations subgrid table levels definition."
 		/>
 	</nml_record>
