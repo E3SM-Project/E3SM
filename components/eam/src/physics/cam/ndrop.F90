@@ -58,6 +58,8 @@ real(r8), parameter :: supersat(psat)= & ! supersaturation (%) to determine ccn 
                        (/ 0.02_r8, 0.05_r8, 0.1_r8, 0.2_r8, 0.5_r8, 1.0_r8 /)
 character(len=8) :: ccn_name(psat)= &
                     (/'CCN1','CCN2','CCN3','CCN4','CCN5','CCN6'/)
+! The following additional fields output CCN in units of 1/kg,
+! which could be handy for appplications such as SCREAM-SPA.
 character(len=8) :: ccnmair_name(psat)= &
                     (/'CCN1MAIR','CCN2MAIR','CCN3MAIR','CCN4MAIR','CCN5MAIR','CCN6MAIR'/)
 
@@ -443,8 +445,8 @@ subroutine dropmixnuc( &
 
    real(r8), allocatable :: coltend(:,:)       ! column tendency for diagnostic output
    real(r8), allocatable :: coltend_cw(:,:)    ! column tendency
-   real(r8) :: ccn(pcols,pver,psat)    ! number conc of aerosols activated at supersat
-   real(r8) :: ccnmair(pcols,pver,psat) ! number conc of aerosols activated at supersat
+   real(r8) :: ccn(pcols,pver,psat)    ! number conc [1/m3] of aerosols activated at supersat
+   real(r8) :: ccnmair(pcols,pver,psat) ! number conc [1/kg] of aerosols activated at supersat
    integer :: ccn3d_idx  
    real(r8), pointer :: ccn3d(:, :) 
 
