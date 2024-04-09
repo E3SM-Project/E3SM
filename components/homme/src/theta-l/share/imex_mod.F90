@@ -153,7 +153,7 @@ contains
 
        
     ! dirk settings
-    maxiter=20
+    maxiter=100
 #ifdef HOMMEXX_BFB_TESTING
     deltatol=1.0e-6_real_kind ! In BFB testing we can't converge due to calls of zeroulp
 #else
@@ -267,17 +267,23 @@ contains
 
 
        itercount=0
+call t_startf('dirk_iteration')
        do while (itercount < maxiter) 
-
-!try numerical with DA too?
+call t_startf('get_dirk_jacobian_num')
           ! numerical J:
           !call get_dirk_jacobian(JacL,JacD,JacU,dt2,elem(ie)%state%dp3d(:,:,:,np1),dphi,elem(ie)%state%phis,pnh,0,1d-4,hvcoord,dpnh_dp_i,elem(ie)%state%vtheta_dp(:,:,:,np1)) 
+call t_stopf('get_dirk_jacobian_num')
+
+call t_startf('get_dirk_jacobian_analyt')
           ! analytic J:
           call get_dirk_jacobian(JacL,JacD,JacU,dt2,elem(ie)%state%dp3d(:,:,:,np1),dphi,elem(ie)%state%phis,pnh,1) 
+call t_stopf('get_dirk_jacobian_analyt')
 
           x(:,:,1:nlev) = -Fn(:,:,1:nlev)
 
+call t_startf('dirk_solve_tridiag')
           call solve_strict_diag_dominant_tridiag(JacL, JacD, JacU, x)
+call t_stopf('dirk_solve_tridiag')
 
           do k = 1,nlev-1
              dphi(:,:,k) = dphi_n0(:,:,k) + &
@@ -338,6 +344,7 @@ contains
           !if (reserr < restol) exit
           if (deltaerr<deltatol) exit
        end do ! end do for the do while loop
+call t_stopf('dirk_iteration')
 
        ! update phi:
        phi_np1(:,:,1:nlev) =  phi_n0(:,:,1:nlev) +  dt2*g*w_np1(:,:,1:nlev)
