@@ -142,10 +142,31 @@ void pam_debug_check_state( pam::PamCoupler &coupler, int id, int nstep ) {
         debug_save_wvel(k,j,i,iens)
       );
     }
-    // Check for low temperature
-    const auto is_low_t = temp(k,j,i,iens)<100;
-    if ( is_low_t ) {
-      printf("PAM-DEBUG low-T - st:%3.3d id:%2.2d k:%3.3d i:%3.3d n:%3.3d y:%5.1f x:%5.1f ph:%6.1f -- t:%8.2g rd:%8.2g rv:%8.2g rc:%8.2g ri:%8.2g u:%8.2g w:%8.2g -- t:%8.2g rd:%8.2g rv:%8.2g rc:%8.2g ri:%8.2g u:%8.2g w:%8.2g \n",
+    // // Check for low temperature
+    // const auto is_low_t = temp(k,j,i,iens)<100;
+    // if ( is_low_t ) {
+    //   printf("PAM-DEBUG low-T - st:%3.3d id:%2.2d k:%3.3d i:%3.3d n:%3.3d y:%5.1f x:%5.1f ph:%6.1f -- t:%8.2g rd:%8.2g rv:%8.2g rc:%8.2g ri:%8.2g u:%8.2g w:%8.2g -- t:%8.2g rd:%8.2g rv:%8.2g rc:%8.2g ri:%8.2g u:%8.2g w:%8.2g \n",
+    //     nstep,id,k,i,iens,lat(iens),lon(iens),phis,
+    //     temp(k,j,i,iens),
+    //     rhod(k,j,i,iens),
+    //     rhov(k,j,i,iens),
+    //     rhoc(k,j,i,iens),
+    //     rhoi(k,j,i,iens),
+    //     uvel(k,j,i,iens),
+    //     wvel(k,j,i,iens),
+    //     debug_save_temp(k,j,i,iens),
+    //     debug_save_rhod(k,j,i,iens),
+    //     debug_save_rhov(k,j,i,iens),
+    //     debug_save_rhoc(k,j,i,iens),
+    //     debug_save_rhoi(k,j,i,iens),
+    //     debug_save_uvel(k,j,i,iens),
+    //     debug_save_wvel(k,j,i,iens)
+    //   );
+    // }
+    // Check for large temperature drops
+    const auto is_drop_t = (temp(k,j,i,iens)-debug_save_temp(k,j,i,iens))<-50;
+    if ( is_drop_t ) {
+      printf("PAM-DEBUG drop-T - st:%3.3d id:%2.2d k:%3.3d i:%3.3d n:%3.3d y:%5.1f x:%5.1f ph:%6.1f -- t:%8.2g rd:%8.2g rv:%8.2g rc:%8.2g ri:%8.2g u:%8.2g w:%8.2g -- t:%8.2g rd:%8.2g rv:%8.2g rc:%8.2g ri:%8.2g u:%8.2g w:%8.2g \n",
         nstep,id,k,i,iens,lat(iens),lon(iens),phis,
         temp(k,j,i,iens),
         rhod(k,j,i,iens),
@@ -163,28 +184,28 @@ void pam_debug_check_state( pam::PamCoupler &coupler, int id, int nstep ) {
         debug_save_wvel(k,j,i,iens)
       );
     }
-    // Check for large vertical velocity
-    const auto is_large_pos_w = wvel(k,j,i,iens)> 40;
-    const auto is_large_neg_w = wvel(k,j,i,iens)<-40;
-    if ( is_large_pos_w || is_large_neg_w ) {
-      printf("PAM-DEBUG large-W - st:%3.3d id:%2.2d k:%3.3d i:%3.3d n:%3.3d y:%5.1f x:%5.1f ph:%6.1f -- t:%8.2g rd:%8.2g rv:%8.2g rc:%8.2g ri:%8.2g u:%8.2g w:%8.2g -- t:%8.2g rd:%8.2g rv:%8.2g rc:%8.2g ri:%8.2g u:%8.2g w:%8.2g \n",
-        nstep,id,k,i,iens,lat(iens),lon(iens),phis,
-        temp(k,j,i,iens),
-        rhod(k,j,i,iens),
-        rhov(k,j,i,iens),
-        rhoc(k,j,i,iens),
-        rhoi(k,j,i,iens),
-        uvel(k,j,i,iens),
-        wvel(k,j,i,iens),
-        debug_save_temp(k,j,i,iens),
-        debug_save_rhod(k,j,i,iens),
-        debug_save_rhov(k,j,i,iens),
-        debug_save_rhoc(k,j,i,iens),
-        debug_save_rhoi(k,j,i,iens),
-        debug_save_uvel(k,j,i,iens),
-        debug_save_wvel(k,j,i,iens)
-      );
-    }
+    // // Check for large vertical velocity
+    // const auto is_large_pos_w = wvel(k,j,i,iens)> 40;
+    // const auto is_large_neg_w = wvel(k,j,i,iens)<-40;
+    // if ( is_large_pos_w || is_large_neg_w ) {
+    //   printf("PAM-DEBUG large-W - st:%3.3d id:%2.2d k:%3.3d i:%3.3d n:%3.3d y:%5.1f x:%5.1f ph:%6.1f -- t:%8.2g rd:%8.2g rv:%8.2g rc:%8.2g ri:%8.2g u:%8.2g w:%8.2g -- t:%8.2g rd:%8.2g rv:%8.2g rc:%8.2g ri:%8.2g u:%8.2g w:%8.2g \n",
+    //     nstep,id,k,i,iens,lat(iens),lon(iens),phis,
+    //     temp(k,j,i,iens),
+    //     rhod(k,j,i,iens),
+    //     rhov(k,j,i,iens),
+    //     rhoc(k,j,i,iens),
+    //     rhoi(k,j,i,iens),
+    //     uvel(k,j,i,iens),
+    //     wvel(k,j,i,iens),
+    //     debug_save_temp(k,j,i,iens),
+    //     debug_save_rhod(k,j,i,iens),
+    //     debug_save_rhov(k,j,i,iens),
+    //     debug_save_rhoc(k,j,i,iens),
+    //     debug_save_rhoi(k,j,i,iens),
+    //     debug_save_uvel(k,j,i,iens),
+    //     debug_save_wvel(k,j,i,iens)
+    //   );
+    // }
     // update saved previous values
     debug_save_temp(k,j,i,iens) = temp(k,j,i,iens);
     debug_save_rhod(k,j,i,iens) = rhod(k,j,i,iens);
