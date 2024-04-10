@@ -120,7 +120,6 @@ CONTAINS
        scmMode, scm_multcols, scmlat, scmlon, scm_nx, scm_ny)
 
     ! !DESCRIPTION: initialize docn model
-    use mct_mod
     use pio        , only : iosystem_desc_t
     use shr_pio_mod, only : shr_pio_getiosys, shr_pio_getiotype
 #ifdef HAVE_MOAB
