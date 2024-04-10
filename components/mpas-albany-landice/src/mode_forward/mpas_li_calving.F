@@ -1095,8 +1095,12 @@ module li_calving
       growMask => growMaskField % array
       growMask(:) = 0
 
-      ! Loop over cells to find one- and two-cell regions of grounded ice,
-      ! which are potentially islands that need to be removed.
+      ! Loop over cells to find one- and two-cell regions of grounded ice
+      ! that are not dynamically connected to other grounded regions,
+      ! which are "islands" that potentially need to be removed.
+      ! In this first phase we identify islands that meet these
+      ! criteria.  In phase 2 below we check if islands are dynamically
+      ! connected to floating ice, which will disqualify them for removal.
       do iCell = 1, nCells
          if (li_mask_is_grounded_ice(cellMask(iCell))) then
             islandMask(iCell) = 1 ! Potentially an island. Further evaluated below.
@@ -1132,12 +1136,14 @@ module li_calving
          endif
       enddo
 
-      ! Determine whether to remove each island. First, make a list of the
-      ! dynamic neighbors of the cells in islandMask. If the grounded island
-      ! cell has a grounded neighbour, add that neighbor's dynamic neighbors
+      ! Determine whether to remove each island based on if it is dynamically
+      ! connected to other regions.  For each cell in islandMask,
+      ! first make a list of its dynamic neighbors. If the grounded island
+      ! cell has a grounded neighbor, add that neighbor's dynamic neighbors
       ! to the list. Then, check that all the dynamic neighbors of the cells
       ! in the list are also in the list. If so, then this is considered an
-      ! island and is removed. If not, then leave it alone.
+      ! isolated island and is removed. If not, then it is dynamically connected
+      ! to other regions, so we leave it alone.
       do iCell = 1, nCells
          connectedCellsList(:) = -1
          if (islandMask(iCell) == 1) then
@@ -1182,6 +1188,10 @@ module li_calving
             ! Actually remove island
             if ( removeIsland ) then
                nIslandCellsLocal = nIslandCellsLocal + count
+               ! Note: nIslandCellsLocal may be inaccurate as neighbors or neighbors of neighbors to iCell
+               ! may get tallied multiple times from different members of islandMask.  However, we only need
+               ! to know if nIslandCells>0, so this is ok.  If we ever need an accurate value of nIslandCells,
+               ! some additional steps must be taken to avoid potential double counting.
                do n = 1, count
                   calvingThickness(connectedCellsList(n)) = calvingThickness(connectedCellsList(n)) + &
                                                             thickness(connectedCellsList(n))
