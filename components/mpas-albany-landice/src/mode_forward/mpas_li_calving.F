@@ -1123,10 +1123,15 @@ module li_calving
                      endif
                   enddo
                endif
-               ! If this grounded cell is dynamically connected to 1 or
-               ! fewer other grounded cells, then it should potentially
-               ! be removed. If its dynamic neighbors have other grounded
-               ! neighbors, then it is not an island.
+               ! Two checks that a grounded cell is NOT a 1 or 2 cell island:
+               ! 1. If a grounded cell has more than 1 grounded neighbor, it is not an island
+               ! This is the nGroundedNeighbors criterion.  It gets re-evaluated with every 
+               ! neighbor each time through the loop.  It may not trigger on early checks
+               ! but it will trigger eventually if this cell has more than 1 grounded neighbor.
+               ! 2. If its dynamic neighbors have other grounded neighbors, then we do not
+               ! consider it an island.  This is the nGroundedNeighborsJCell criterion.
+               ! Any grounded cells that survive these two checks are considered islands
+               ! and are further evaluated in the next phase.
                if ( (nGroundedNeighborsJCell > 1) .or. &
                     (nGroundedNeighbors > 1) ) then
                   islandMask(iCell) = 0
