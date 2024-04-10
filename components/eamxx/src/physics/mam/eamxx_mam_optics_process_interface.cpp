@@ -261,7 +261,7 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   work_              = mam_coupling::view_2d("work", ncol_, work_len);
 
   // shortwave aerosol scattering asymmetry parameter [unitless]
-  tau_g_sw_ = mam_coupling::view_3d("tau_g_sw_", ncol_, nswbands_, nlev_ + 1);
+  tau_ssa_g_sw_ = mam_coupling::view_3d("tau_ssa_g_sw_", ncol_, nswbands_, nlev_ + 1);
   // shortwave aerosol single-scattering albedo [unitless]
   tau_ssa_sw_ = mam_coupling::view_3d("tau_ssa_sw_", ncol_, nswbands_, nlev_ + 1);
   // shortwave aerosol extinction optical depth [unitless]
@@ -393,7 +393,7 @@ void MAMOptics::run_impl(const double dt) {
   Kokkos::fence();
 
   //tau_w_g : aerosol asymmetry parameter * tau * w
-  const auto tau_g_sw = tau_g_sw_;
+  const auto tau_ssa_g_sw = tau_ssa_g_sw_;
   //tau_w : aerosol single scattering albedo * tau
   const auto tau_ssa_sw =tau_ssa_sw_;
   // tau : aerosol extinction optical depth
@@ -446,7 +446,7 @@ void MAMOptics::run_impl(const double dt) {
         auto tau_w_icol = ekat::subview(tau_ssa_sw, icol);
         // tau_w_g: aerosol assymetry
         // parameter * tau * w
-        auto tau_w_g_icol = ekat::subview(tau_g_sw, icol);
+        auto tau_w_g_icol = ekat::subview(tau_ssa_g_sw, icol);
         // tau_w_f: aero_tau_forward
         // forward scattered fraction * tau * w
         auto tau_w_f_icol = ekat::subview(tau_f_sw, icol);
@@ -502,7 +502,7 @@ void MAMOptics::run_impl(const double dt) {
         // Extract assymmetry parameter from the product-defined fields
         if (tau_ssa_sw(icol, iswband, kk + 1) > zero ) {
           aero_g_sw_eamxx(icol, get_idx_rrtmgp_from_rrtmg_swbands(iswband), kk) =
-            tau_g_sw(icol, iswband, kk + 1)/tau_ssa_sw(icol, iswband, kk + 1) ;
+            tau_ssa_g_sw(icol, iswband, kk + 1)/tau_ssa_sw(icol, iswband, kk + 1) ;
         } else {
           aero_g_sw_eamxx(icol, get_idx_rrtmgp_from_rrtmg_swbands(iswband), kk) = zero;
         }
