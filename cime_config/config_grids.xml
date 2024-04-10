@@ -5085,32 +5085,32 @@
 
     <gridmap atm_grid="ne16np4.pg2" ocn_grid="oEC60to30v3">
       <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/ne16pg2/map_ne16pg2_to_oEC60to30v3_aave.240403.nc</map>
-      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/ne16pg2/map_ne16pg2_to_oEC60to30v3_blin.240403.nc</map>
-      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/ne16pg2/map_ne16pg2_to_oEC60to30v3_blin.240403.nc</map>
+      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/ne16pg2/map_ne16pg2_to_oEC60to30v3_trintbilin.240409.nc</map>
+      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/ne16pg2/map_ne16pg2_to_oEC60to30v3_trintbilin.240409.nc</map>
       <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/oEC60to30v3/map_oEC60to30v3_to_ne16pg2_aave.240403.nc</map>
       <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/oEC60to30v3/map_oEC60to30v3_to_ne16pg2_aave.240403.nc</map>
     </gridmap>
 
     <gridmap atm_grid="ne24np4.pg2" ocn_grid="oEC60to30v3">
       <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/ne24pg2/map_ne24pg2_to_oEC60to30v3_aave.240403.nc</map>
-      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/ne24pg2/map_ne24pg2_to_oEC60to30v3_blin.240403.nc</map>
-      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/ne24pg2/map_ne24pg2_to_oEC60to30v3_blin.240403.nc</map>
+      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/ne24pg2/map_ne24pg2_to_oEC60to30v3_trintbilin.240409.nc</map>
+      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/ne24pg2/map_ne24pg2_to_oEC60to30v3_trintbilin.240409.nc</map>
       <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/oEC60to30v3/map_oEC60to30v3_to_ne24pg2_aave.240403.nc</map>
       <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/oEC60to30v3/map_oEC60to30v3_to_ne24pg2_aave.240403.nc</map>
     </gridmap>
 
     <gridmap atm_grid="ne60np4.pg2" ocn_grid="oEC60to30v3">
       <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/ne60pg2/map_ne60pg2_to_oEC60to30v3_aave.240403.nc</map>
-      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/ne60pg2/map_ne60pg2_to_oEC60to30v3_blin.240403.nc</map>
-      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/ne60pg2/map_ne60pg2_to_oEC60to30v3_blin.240403.nc</map>
+      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/ne60pg2/map_ne60pg2_to_oEC60to30v3_trintbilin.240409.nc</map>
+      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/ne60pg2/map_ne60pg2_to_oEC60to30v3_trintbilin.240409.nc</map>
       <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/oEC60to30v3/map_oEC60to30v3_to_ne60pg2_aave.240403.nc</map>
       <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/oEC60to30v3/map_oEC60to30v3_to_ne60pg2_aave.240403.nc</map>
     </gridmap>
 
     <gridmap atm_grid="ne70np4.pg2" ocn_grid="oEC60to30v3">
       <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/ne70pg2/map_ne70pg2_to_oEC60to30v3_aave.240403.nc</map>
-      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/ne70pg2/map_ne70pg2_to_oEC60to30v3_blin.240403.nc</map>
-      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/ne70pg2/map_ne70pg2_to_oEC60to30v3_blin.240403.nc</map>
+      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/ne70pg2/map_ne70pg2_to_oEC60to30v3_trintbilin.240409.nc</map>
+      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/ne70pg2/map_ne70pg2_to_oEC60to30v3_trintbilin.240409.nc</map>
       <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/oEC60to30v3/map_oEC60to30v3_to_ne70pg2_aave.240403.nc</map>
       <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/oEC60to30v3/map_oEC60to30v3_to_ne70pg2_aave.240403.nc</map>
     </gridmap>
