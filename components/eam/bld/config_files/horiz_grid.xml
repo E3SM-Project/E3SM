@@ -34,7 +34,7 @@
 <!-- if npg=0 then physics is done on GLL nodes -->
 <!-- if npg=N>0 then physics is done FV grid with NxN cells per element -->
 <!-- Formualas for ncol:           -->
-<!--   GLL grid (np4): ncol = (np-1)*6*ne^2+2 -->
+<!--   GLL grid (np4): ncol = 6*ne^2*(np-1)^2+2 -->
 <!--   FV physgrid   : ncol = 6*ne^2*npg^2    -->
 <horiz_grid dyn="se"    hgrid="ne2np4"       ncol="218"     csne="2"   csnp="4" npg="0" />
 <horiz_grid dyn="se"    hgrid="ne4np4"       ncol="866"     csne="4"   csnp="4" npg="0" />
@@ -49,7 +49,7 @@
 <horiz_grid dyn="se"    hgrid="ne16np4.pg2"  ncol="6144"    csne="16"  csnp="4" npg="2" />
 <horiz_grid dyn="se"    hgrid="ne16np8"      ncol="75266"   csne="16"  csnp="8" npg="0" />
 <horiz_grid dyn="se"    hgrid="ne21np4"      ncol="23816"   csne="21"  csnp="4" npg="0" />
-<horiz_grid dyn="se"    hgrid="ne24np4.pg2"  ncol="13824"   csne="24"  csnp="4" npg="0" />
+<horiz_grid dyn="se"    hgrid="ne24np4.pg2"  ncol="13824"   csne="24"  csnp="4" npg="2" />
 <horiz_grid dyn="se"    hgrid="ne30np4"      ncol="48602"   csne="30"  csnp="4" npg="0" />
 <horiz_grid dyn="se"    hgrid="ne30np4.pg2"  ncol="21600"   csne="30"  csnp="4" npg="2" />
 <horiz_grid dyn="se"    hgrid="ne30np4.pg3"  ncol="48600"   csne="30"  csnp="4" npg="3" />
@@ -57,7 +57,7 @@
 <horiz_grid dyn="se"    hgrid="ne45np4.pg2"  ncol="48600"   csne="45"  csnp="4" npg="2" />
 <horiz_grid dyn="se"    hgrid="ne60np4"      ncol="194402"  csne="60"  csnp="4" npg="0" />
 <horiz_grid dyn="se"    hgrid="ne60np4.pg2"  ncol="86400"   csne="60"  csnp="4" npg="2" />
-<horiz_grid dyn="se"    hgrid="ne70np4.pg2"  ncol="117600"   csne="70"  csnp="4" npg="2" />
+<horiz_grid dyn="se"    hgrid="ne70np4.pg2"  ncol="117600"  csne="70"  csnp="4" npg="2" />
 <horiz_grid dyn="se"    hgrid="ne120np4"     ncol="777602"  csne="120" csnp="4" npg="0" />
 <horiz_grid dyn="se"    hgrid="ne120np4.pg2" ncol="345600"  csne="120" csnp="4" npg="2" />
 <horiz_grid dyn="se"    hgrid="ne240np4"     ncol="3110402" csne="240" csnp="4" npg="0" />
