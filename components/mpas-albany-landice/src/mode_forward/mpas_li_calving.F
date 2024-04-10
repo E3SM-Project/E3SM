@@ -1095,12 +1095,14 @@ module li_calving
       growMask => growMaskField % array
       growMask(:) = 0
 
-      ! Loop over cells to find one- and two-cell regions of grounded ice
-      ! that are not dynamically connected to other grounded regions,
-      ! which are "islands" that potentially need to be removed.
+      ! Phase 1: Loop over cells to find one- and two-cell regions of
+      ! grounded ice that are not dynamically connected to other grounded
+      ! regions, which are "islands" that potentially need to be removed.
       ! In this first phase we identify islands that meet these
-      ! criteria.  In phase 2 below we check if islands are dynamically
-      ! connected to floating ice, which will disqualify them for removal.
+      ! criteria. In phase 2 below we check if islands are dynamically
+      ! connected to more extensive floating ice, which will disqualify
+      ! them for removal to avoid removing pinning points from ice
+      ! shelves, for example.
       do iCell = 1, nCells
          if (li_mask_is_grounded_ice(cellMask(iCell))) then
             islandMask(iCell) = 1 ! Potentially an island. Further evaluated below.
@@ -1141,8 +1143,8 @@ module li_calving
          endif
       enddo
 
-      ! Determine whether to remove each island based on if it is dynamically
-      ! connected to other regions.  For each cell in islandMask,
+      ! Phase 2: Determine whether to remove each island based on if it is
+      ! dynamically connected to other regions.  For each cell in islandMask,
       ! first make a list of its dynamic neighbors. If the grounded island
       ! cell has a grounded neighbor, add that neighbor's dynamic neighbors
       ! to the list. Then, check that all the dynamic neighbors of the cells
