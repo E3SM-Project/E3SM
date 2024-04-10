@@ -63,7 +63,7 @@ void compute_w0_and_rho(haero::ThreadTeamPolicy team_policy, MAMAci::view_2d w0,
                         const int top_lev, const int nlev) {
   // Get physical constants
   using C                     = physics::Constants<Real>;
-  MAMAci::const_view_2d omega = wet_atmosphere.omega;
+  MAMAci::const_view_2d omega = dry_atmosphere.omega;
   MAMAci::const_view_2d T_mid = dry_atmosphere.T_mid;
   MAMAci::const_view_2d p_mid = dry_atmosphere.p_mid;
   Kokkos::parallel_for(
@@ -1005,18 +1005,18 @@ void MAMAci::initialize_impl(const RunType run_type) {
   kvh_          = get_field_in("eddy_diff_heat").get_view<const Real **>();
 
   // store fields only to be converted to dry mmrs in wet_atm_
-  wet_atm_.qv    = get_field_in("qv").get_view<const Real **>();
-  wet_atm_.qc    = get_field_in("qc").get_view<const Real **>();
-  wet_atm_.nc    = get_field_in("nc").get_view<const Real **>();
-  wet_atm_.qi    = get_field_in("qi").get_view<const Real **>();
-  wet_atm_.ni    = get_field_in("ni").get_view<const Real **>();
-  wet_atm_.omega = get_field_in("omega").get_view<const Real **>();
+  wet_atm_.qv = get_field_in("qv").get_view<const Real **>();
+  wet_atm_.qc = get_field_in("qc").get_view<const Real **>();
+  wet_atm_.nc = get_field_in("nc").get_view<const Real **>();
+  wet_atm_.qi = get_field_in("qi").get_view<const Real **>();
+  wet_atm_.ni = get_field_in("ni").get_view<const Real **>();
 
   // store rest fo the atm fields in dry_atm_in
   dry_atm_.T_mid = get_field_in("T_mid").get_view<const Real **>();
   dry_atm_.p_mid = get_field_in("p_mid").get_view<const Real **>();
   dry_atm_.p_int = get_field_in("p_int").get_view<const Real **>();
   dry_atm_.p_del = get_field_in("pseudo_density").get_view<const Real **>();
+  dry_atm_.omega = get_field_in("omega").get_view<const Real **>();
 
   // store fields converted to dry mmr from wet mmr in dry_atm_
   dry_atm_.qv = buffer_.qv_dry;

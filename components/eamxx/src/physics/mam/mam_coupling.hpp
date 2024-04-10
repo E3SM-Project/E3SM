@@ -260,7 +260,6 @@ struct WetAtmosphere {
   const_view_2d nc;      // wet cloud liquid water number mixing ratio [# / kg moist air]
   const_view_2d qi;      // wet cloud ice water mass mixing ratio [kg cloud ice water / kg moist air]
   const_view_2d ni;      // wet cloud ice water number mixing ratio [# / kg moist air]
-  const_view_2d omega;   // vertical pressure velocity [Pa/s]
 };
 
 // This type stores multi-column views related to the dry atmospheric state
@@ -283,6 +282,7 @@ struct DryAtmosphere {
   view_2d       w_updraft; // updraft velocity [m/s]
   const_view_1d pblh;      // planetary boundary layer height [m]
   const_view_1d phis;      // surface geopotential [m2/s2]
+  const_view_2d omega;   // vertical pressure velocity [Pa/s]
 };
 
 // This type stores aerosol number and mass mixing ratios evolved by MAM. It
@@ -625,7 +625,7 @@ void compute_updraft_velocities(const Team& team,
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&] (const int k) {
     dry_atm.dz(i,k) = PF::calculate_dz(dry_atm.p_del(i,k), dry_atm.p_mid(i,k), dry_atm.T_mid(i,k), wet_atm.qv(i,k));
     const auto rho  = PF::calculate_density(dry_atm.p_del(i,k), dry_atm.dz(i,k));
-    dry_atm.w_updraft(i,k) = PF::calculate_vertical_velocity(wet_atm.omega(i,k), rho);
+    dry_atm.w_updraft(i,k) = PF::calculate_vertical_velocity(dry_atm.omega(i,k), rho);
   });
 }
 

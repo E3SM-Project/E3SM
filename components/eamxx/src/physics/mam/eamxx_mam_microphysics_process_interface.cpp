@@ -201,7 +201,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   wet_atm_.nc = get_field_out("nc").get_view<Real**>();
   wet_atm_.qi = get_field_in("qi").get_view<const Real**>();
   wet_atm_.ni = get_field_in("ni").get_view<const Real**>();
-  wet_atm_.omega = get_field_in("omega").get_view<const Real**>();
+  
 
   dry_atm_.T_mid     = get_field_in("T_mid").get_view<const Real**>();
   dry_atm_.p_mid     = get_field_in("p_mid").get_view<const Real**>();
@@ -209,6 +209,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   dry_atm_.cldfrac   = get_field_in("cldfrac_tot").get_view<const Real**>(); // FIXME: tot or liq?
   dry_atm_.pblh      = get_field_in("pbl_height").get_view<const Real*>();
   dry_atm_.phis      = get_field_in("phis").get_view<const Real*>();
+  dry_atm_.omega     = get_field_in("omega").get_view<const Real**>();
   dry_atm_.z_mid     = buffer_.z_mid;
   dry_atm_.dz        = buffer_.dz;
   dry_atm_.z_iface   = buffer_.z_iface;
