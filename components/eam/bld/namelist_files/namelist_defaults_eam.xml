@@ -27,10 +27,15 @@
 <dtime dyn="se"    hgrid="ne0np4_twpx4v1">900</dtime>
 
 <!-- Grids for Gordon Bell 2024 -->
-<dtime use_MMF="1" dyn="se" hgrid="ne16np4" >1200</dtime>
-<dtime use_MMF="1" dyn="se" hgrid="ne24np4" >1200</dtime>
-<dtime use_MMF="1" dyn="se" hgrid="ne60np4" >600</dtime>
-<dtime use_MMF="1" dyn="se" hgrid="ne70np4" >600</dtime>
+<dtime use_MMF="1" dyn="se" hgrid="ne16np4" >240</dtime>
+<dtime use_MMF="1" dyn="se" hgrid="ne24np4" >240</dtime>
+<dtime use_MMF="1" dyn="se" hgrid="ne60np4" >240</dtime>
+<dtime use_MMF="1" dyn="se" hgrid="ne70np4" >240</dtime>
+
+<dtime dyn="se" hgrid="ne16np4" >240</dtime>
+<dtime dyn="se" hgrid="ne24np4" >240</dtime>
+<dtime dyn="se" hgrid="ne60np4" >240</dtime>
+<dtime dyn="se" hgrid="ne70np4" >240</dtime>
 
 <dtime dyn="sld"                   >3600</dtime>
 
@@ -172,10 +177,10 @@
 <bnd_topo hgrid="ne1024np4" npg="2">atm/cam/topo/USGS-gtopo30_ne1024np4pg2_16xconsistentSGH_20190528_converted.nc</bnd_topo>
 
 <!-- Grids for Gordon Bell 2024 -->
-<bnd_topo hgrid="ne16np4"  npg="0">atm/cam/topo/USGS-topo_16np4_smoothed_x6tensor_20240313.nc</bnd_topo>
-<bnd_topo hgrid="ne24np4"  npg="0">atm/cam/topo/USGS-topo_24np4_smoothed_x6tensor_20240313.nc</bnd_topo>
-<bnd_topo hgrid="ne60np4"  npg="0">atm/cam/topo/USGS-topo_60np4_smoothed_x6tensor_20240313.nc</bnd_topo>
-<bnd_topo hgrid="ne70np4"  npg="0">atm/cam/topo/USGS-topo_70np4_smoothed_x6tensor_20240313.nc</bnd_topo>
+<bnd_topo hgrid="ne16np4"  npg="2">atm/cam/topo/USGS-topo_16np4_smoothed_x6tensor_20240315.nc</bnd_topo>
+<bnd_topo hgrid="ne24np4"  npg="2">atm/cam/topo/USGS-topo_24np4_smoothed_x6tensor_20240315.nc</bnd_topo>
+<bnd_topo hgrid="ne60np4"  npg="2">atm/cam/topo/USGS-topo_60np4_smoothed_x6tensor_20240315.nc</bnd_topo>
+<bnd_topo hgrid="ne70np4"  npg="2">atm/cam/topo/USGS-topo_70np4_smoothed_x6tensor_20240315.nc</bnd_topo>
 
 <bnd_topo hgrid="ne0np4_arm_x8v3_lowcon"  >atm/cam/inic/homme/USGS-gtopo30_arm_x8v3_lowcon_tensor12xconsistentSGH.nc</bnd_topo>
 <bnd_topo hgrid="ne0np4_conus_x4v1_lowcon"        >atm/cam/topo/USGS_conusx4v1-tensor12x_consistentSGH_c150924.nc</bnd_topo>
@@ -1074,10 +1079,10 @@
 <dust_emis_fact          hgrid="ne120np4"  phys="cam5"                  >1.2D0</dust_emis_fact>
 
 <!-- Grids for Gordon Bell 2024 -->
-<dust_emis_fact         hgrid="ne16np4" npg="2">atm/cam/chem/trop_mam/atmsrf_ne16pg4_20240313.nc</dust_emis_fact>
-<dust_emis_fact         hgrid="ne24np4" npg="2">atm/cam/chem/trop_mam/atmsrf_ne24pg4_20240313.nc</dust_emis_fact>
-<dust_emis_fact         hgrid="ne60np4" npg="2">atm/cam/chem/trop_mam/atmsrf_ne60pg4_20240313.nc</dust_emis_fact>
-<dust_emis_fact         hgrid="ne70np4" npg="2">atm/cam/chem/trop_mam/atmsrf_ne70pg4_20240313.nc</dust_emis_fact>
+<dust_emis_fact         hgrid="ne16np4" npg="2">1.38D0</dust_emis_fact>
+<dust_emis_fact         hgrid="ne24np4" npg="2">1.38D0</dust_emis_fact>
+<dust_emis_fact         hgrid="ne60np4" npg="2">1.38D0</dust_emis_fact>
+<dust_emis_fact         hgrid="ne70np4" npg="2">1.38D0</dust_emis_fact>
 
 <dust_emis_fact                                         chem="trop_bam"	>4.2D0 </dust_emis_fact>
 <dust_emis_fact                            phys="cam5"                  >0.35D0</dust_emis_fact>
@@ -1535,9 +1540,9 @@
 <se_tstep dyn_target="theta-l" hgrid="ne0np4_enax4v1"> 75 </se_tstep>
 <se_tstep dyn_target="theta-l" hgrid="ne0np4_twpx4v1"> 75 </se_tstep>
 
-<dt_remap_factor     dyn_target="theta-l" hgrid="ne16np4"> 3    </dt_remap_factor>
-<dt_tracer_factor    dyn_target="theta-l" hgrid="ne16np4"> 3    </dt_tracer_factor>
-<hypervis_subcycle_q dyn_target="theta-l" hgrid="ne16np4"> 3    </hypervis_subcycle_q>
+<!-- <dt_remap_factor     dyn_target="theta-l" hgrid="ne16np4"> 3    </dt_remap_factor> -->
+<!-- <dt_tracer_factor    dyn_target="theta-l" hgrid="ne16np4"> 3    </dt_tracer_factor> -->
+<!-- <hypervis_subcycle_q dyn_target="theta-l" hgrid="ne16np4"> 3    </hypervis_subcycle_q> -->
 
 <se_tstep            dyn_target="theta-l" hgrid="ne240np4"> 37.5 </se_tstep>
 <dt_tracer_factor    dyn_target="theta-l" hgrid="ne240np4"> 8    </dt_tracer_factor>
@@ -1578,22 +1583,40 @@
 <hypervis_subcycle_q use_MMF="1" dyn_target="theta-l" hgrid="ne30np4"> 4 </hypervis_subcycle_q>
 
 <!-- Grids for Gordon Bell 2024 -->
-<se_tstep use_MMF="1" dyn_target="theta-l" hgrid="ne16np4" >  300 </se_tstep>
-<se_tstep use_MMF="1" dyn_target="theta-l" hgrid="ne24np4" >  300 </se_tstep>
-<se_tstep use_MMF="1" dyn_target="theta-l" hgrid="ne60np4" >  120 </se_tstep>
-<se_tstep use_MMF="1" dyn_target="theta-l" hgrid="ne70np4" >  120 </se_tstep>
+<!-- 
+NOTE - the physics time step will always need to be small to accomodate 
+the fine vertical grid for these experiments. The current thinking is that
+4-min might be adequate, but this might be reduced to O(1-min) or less
+-->
+<se_tstep             use_MMF="1" dyn_target="theta-l" hgrid="ne16np4"> 120 </se_tstep>
+<dt_remap_factor      use_MMF="1" dyn_target="theta-l" hgrid="ne16np4"> 1   </dt_remap_factor>
+<dt_tracer_factor     use_MMF="1" dyn_target="theta-l" hgrid="ne16np4"> 2   </dt_tracer_factor>
+<hypervis_subcycle    use_MMF="1" dyn_target="theta-l" hgrid="ne16np4"> 1   </hypervis_subcycle>
+<hypervis_subcycle_q  use_MMF="1" dyn_target="theta-l" hgrid="ne16np4"> 2   </hypervis_subcycle_q>
 
-<dt_remap_factor     dyn_target="theta-l" hgrid="ne16np4"> 4    </dt_remap_factor>
-<dt_tracer_factor    dyn_target="theta-l" hgrid="ne16np4"> 4    </dt_tracer_factor>
-<hypervis_subcycle_q dyn_target="theta-l" hgrid="ne16np4"> 4    </hypervis_subcycle_q>
+<se_tstep             use_MMF="1" dyn_target="theta-l" hgrid="ne24np4"> 120 </se_tstep>
+<dt_remap_factor      use_MMF="1" dyn_target="theta-l" hgrid="ne24np4"> 1   </dt_remap_factor>
+<dt_tracer_factor     use_MMF="1" dyn_target="theta-l" hgrid="ne24np4"> 2   </dt_tracer_factor>
+<hypervis_subcycle    use_MMF="1" dyn_target="theta-l" hgrid="ne24np4"> 1   </hypervis_subcycle>
+<hypervis_subcycle_q  use_MMF="1" dyn_target="theta-l" hgrid="ne24np4"> 2   </hypervis_subcycle_q>
 
-<dt_remap_factor     dyn_target="theta-l" hgrid="ne24np4"> 4    </dt_remap_factor>
-<dt_tracer_factor    dyn_target="theta-l" hgrid="ne24np4"> 4    </dt_tracer_factor>
-<hypervis_subcycle_q dyn_target="theta-l" hgrid="ne24np4"> 4    </hypervis_subcycle_q>
+<se_tstep             use_MMF="1" dyn_target="theta-l" hgrid="ne60np4"> 120 </se_tstep>
+<dt_remap_factor      use_MMF="1" dyn_target="theta-l" hgrid="ne60np4"> 1   </dt_remap_factor>
+<dt_tracer_factor     use_MMF="1" dyn_target="theta-l" hgrid="ne60np4"> 2   </dt_tracer_factor>
+<hypervis_subcycle    use_MMF="1" dyn_target="theta-l" hgrid="ne60np4"> 1   </hypervis_subcycle>
+<hypervis_subcycle_q  use_MMF="1" dyn_target="theta-l" hgrid="ne60np4"> 2   </hypervis_subcycle_q>
 
-<dt_remap_factor     dyn_target="theta-l" hgrid="ne70np4"> 4    </dt_remap_factor>
-<dt_tracer_factor    dyn_target="theta-l" hgrid="ne70np4"> 4    </dt_tracer_factor>
-<hypervis_subcycle_q dyn_target="theta-l" hgrid="ne70np4"> 4    </hypervis_subcycle_q>
+<se_tstep             use_MMF="1" dyn_target="theta-l" hgrid="ne70np4"> 120 </se_tstep>
+<dt_remap_factor      use_MMF="1" dyn_target="theta-l" hgrid="ne70np4"> 1   </dt_remap_factor>
+<dt_tracer_factor     use_MMF="1" dyn_target="theta-l" hgrid="ne70np4"> 2   </dt_tracer_factor>
+<hypervis_subcycle    use_MMF="1" dyn_target="theta-l" hgrid="ne70np4"> 1   </hypervis_subcycle>
+<hypervis_subcycle_q  use_MMF="1" dyn_target="theta-l" hgrid="ne70np4"> 2   </hypervis_subcycle_q>
+
+<se_tstep             dyn_target="theta-l" hgrid="ne16np4"> 120 </se_tstep>
+<dt_remap_factor      dyn_target="theta-l" hgrid="ne16np4"> 1   </dt_remap_factor>
+<dt_tracer_factor     dyn_target="theta-l" hgrid="ne16np4"> 2   </dt_tracer_factor>
+<hypervis_subcycle    dyn_target="theta-l" hgrid="ne16np4"> 1   </hypervis_subcycle>
+<hypervis_subcycle_q  dyn_target="theta-l" hgrid="ne16np4"> 2   </hypervis_subcycle_q>
 
 <!-- ================================================================== -->
 <!-- 
