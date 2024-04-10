@@ -1802,7 +1802,6 @@ module li_subglacial_hydro
       call mpas_pool_get_array(hydroPool, 'hydroMarineMarginMask', hydroMarineMarginMask)
       call mpas_pool_get_array(hydroPool, 'channelDiffusivity', channelDiffusivity)
       call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
-      
       ! Calculate terms needed for opening (melt) rate
       where(gradMagPhiEdge < 0.01_RKIND)
          channelDischarge(:) = 0.0_RKIND
