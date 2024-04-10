@@ -693,9 +693,12 @@ const Real wsubmin = 1;
 MAMAci::MAMAci(const ekat::Comm &comm, const ekat::ParameterList &params)
     : AtmosphereProcess(comm, params) {}
 
-// set grid for all the inputs and outputs
+// ================================================================
+//  SET_GRIDS
+// ================================================================
 void MAMAci::set_grids(
     const std::shared_ptr<const GridsManager> grids_manager) {
+  // set grid for all the inputs and outputs
   grid_ = grids_manager->get_grid("Physics");  // Use physics grid
   const auto &grid_name = grid_->name();       // Name of the grid
 
@@ -853,18 +856,19 @@ void MAMAci::set_grids(
         add_field<Updated>(cld_mmr_field_name, scalar3d_layout_mid, q_unit,
                            grid_name);
       }
-    }
-  }
+    }  // end for loop num species
+  }    // end for loop for num modes
+
   for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
     const char *gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
     add_field<Updated>(gas_mmr_field_name, scalar3d_layout_mid, q_unit,
                        grid_name, "tracers");
-  }
+  }  // end for loop num gases
 
   // ------------------------------------------------------------------------
   // Output from ice nucleation process
   // ------------------------------------------------------------------------
-  auto m3_inv = 1 / m / m / m;  // inverse of m3
+  const auto m3_inv = 1 / m / m / m;  // inverse of m3
   // number conc of ice nuclei due to heterogeneous freezing [1/m3]
   add_field<Computed>("icenuc_num_hetfrz", scalar3d_layout_mid, m3_inv,
                       grid_name);
@@ -875,7 +879,7 @@ void MAMAci::set_grids(
 
   // number conc of ice nuclei due to deposition nucleation (hetero nuc)[1/m3]
   add_field<Computed>("icenuc_num_depnuc", scalar3d_layout_mid, m3_inv,
-                      grid_name);  //
+                      grid_name);
 
   // number conc of ice nuclei due to meyers deposition [1/m3]
   add_field<Computed>("icenuc_num_meydep", scalar3d_layout_mid, m3_inv,
@@ -927,35 +931,36 @@ void MAMAci::set_grids(
   // subgrid vertical velocity [m/s]
   add_field<Computed>("wtke", scalar3d_layout_mid, m / s, grid_name);
 
+  constexpr int psat = mam4::ndrop::psat;
+  FieldLayout scalar4d_layout_psat_mid{{COL, LEV, MAM_PSAT},
+                                       {ncol_, nlev_, psat}};
   // number conc of aerosols activated at supersat [#/m^3]
   // NOTE:  activation fraction fluxes are defined as
   // fluxn = [flux of activated aero. number into cloud[#/m^2/s]]
   //        / [aero. number conc. in updraft, just below cloudbase [#/m^3]]
-
-  constexpr int psat = mam4::ndrop::psat;
-  FieldLayout scalar4d_layout_psat_mid{{COL, LEV, MAM_PSAT},
-                                       {ncol_, nlev_, psat}};
   add_field<Computed>("ccn", scalar4d_layout_psat_mid, m3_inv, grid_name);
 
-  // BALLI:??? FIXME: This is internal diagnostic variable
+  constexpr int num_aero_const = mam4::ndrop::ncnst_tot;
+  FieldLayout scalar4d_layout_naero_const_mid{{COL, LEV, MAM_AERO_NCNST},
+                                              {ncol_, nlev_, num_aero_const}};
+
   // column tendency for diagnostic output
-  add_field<Computed>(
-      "coltend",
-      FieldLayout{{COL, LEV, CMP}, {ncol_, nlev_, mam4::ndrop::ncnst_tot}},
-      nondim, grid_name);
+  add_field<Computed>("coltend", scalar4d_layout_naero_const_mid, nondim,
+                      grid_name);
 
-  // BALLI:??? FIXME: This is internal diagnostic variable
   // column tendency
-  add_field<Computed>(
-      "coltend_cw",
-      FieldLayout{{COL, LEV, CMP}, {ncol_, nlev_, mam4::ndrop::ncnst_tot}},
-      nondim, grid_name);
+  add_field<Computed>("coltend_cw", scalar4d_layout_naero_const_mid, nondim,
+                      grid_name);
 
-  auto cm = m / 100;
+  const auto cm = m / 100;
 
   // units of number mixing ratios of tracers
   auto frz_unit = 1 / (cm * cm * cm * s);
   n_unit.set_string("1(cm^-3 s^-1)");
+
+  // ------------------------------------------------------------------------
+  // Output from hetrozenous freezing
+  // ------------------------------------------------------------------------
 
   // heterogeous freezing by immersion nucleation [cm^-3 s^-1]
   add_field<Computed>("hetfrz_immersion_nucleation_tend", scalar3d_layout_mid,
@@ -968,16 +973,11 @@ void MAMAci::set_grids(
   // heterogeous freezing by deposition nucleation [cm^-3 s^-1]
   add_field<Computed>("hetfrz_depostion_nucleation_tend", scalar3d_layout_mid,
                       frz_unit, grid_name);
-  //
-  /*
-   * NOTE on other inputs for the aci process:
-   * 1. reciprocal of pseudo_density (rpdel): computed from the pseudo_density
-   * 2. geopotential height at midpoints: computed geopotential height at
-   * interfaces, which inturn is computed using pseudo_density, p_mid, T_mid and
-   * qv_mid (see dry_static_energy.cpp's "compute_diagnostic_impl" function).
-   *    qv_mid can be obtained from "get_field_in" call
-   */
-}  // set_grids ends
+}  // function set_grids ends
+
+// ================================================================
+//  INIT_BUFFERS
+// ================================================================
 
 void MAMAci::init_buffers(const ATMBufferManager &buffer_manager) {
   EKAT_REQUIRE_MSG(
@@ -989,18 +989,59 @@ void MAMAci::init_buffers(const ATMBufferManager &buffer_manager) {
   EKAT_REQUIRE_MSG(
       used_mem == requested_buffer_size_in_bytes(),
       "Error! Used memory != requested memory for MAMMicrophysics.");
-}
+}  // function init_buffers ends
 
+// ================================================================
+//  INITIALIZE_IMPL
+// ================================================================
 void MAMAci::initialize_impl(const RunType run_type) {
-  w_sec_ = get_field_in("w_variance").get_view<const Real **>();
-
-  // MUST FIXME: is it an input, should we invoke calcsize here??
+  // ------------------------------------------------------------------------
+  // Input fields read in from IC file, namelist or other processes
+  // ------------------------------------------------------------------------
+  w_sec_        = get_field_in("w_variance").get_view<const Real **>();
   dgnum_        = get_field_in("dgnum").get_view<const Real ***>();
   liqcldf_      = get_field_in("cldfrac_liq").get_view<const Real **>();
   liqcldf_prev_ = get_field_in("cldfrac_liq_prev").get_view<const Real **>();
+  kvh_          = get_field_in("eddy_diff_heat").get_view<const Real **>();
 
-  // MUST FIXME: This comes from shoc
-  kvh_ = get_field_in("eddy_diff_heat").get_view<const Real **>();
+  // store fields only to be converted to dry mmrs in wet_atm_
+  wet_atm_.qv    = get_field_in("qv").get_view<const Real **>();
+  wet_atm_.qc    = get_field_in("qc").get_view<const Real **>();
+  wet_atm_.nc    = get_field_in("nc").get_view<const Real **>();
+  wet_atm_.qi    = get_field_in("qi").get_view<const Real **>();
+  wet_atm_.ni    = get_field_in("ni").get_view<const Real **>();
+  wet_atm_.omega = get_field_in("omega").get_view<const Real **>();
+
+  // store rest fo the atm fields in dry_atm_in
+  dry_atm_.T_mid = get_field_in("T_mid").get_view<const Real **>();
+  dry_atm_.p_mid = get_field_in("p_mid").get_view<const Real **>();
+  dry_atm_.p_int = get_field_in("p_int").get_view<const Real **>();
+  dry_atm_.p_del = get_field_in("pseudo_density").get_view<const Real **>();
+
+  // store fields converted to dry mmr from wet mmr in dry_atm_
+  dry_atm_.qv = buffer_.qv_dry;
+  dry_atm_.qc = buffer_.qc_dry;
+  dry_atm_.nc = buffer_.nc_dry;
+  dry_atm_.qi = buffer_.qi_dry;
+  dry_atm_.ni = buffer_.ni_dry;
+
+  // pbl_height
+  dry_atm_.pblh = get_field_in("pbl_height").get_view<const Real *>();
+
+  // geometric thickness of layers (m)
+  dry_atm_.dz = buffer_.dz;
+
+  // geopotential height above surface at interface levels (m)
+  dry_atm_.z_iface = buffer_.z_iface;
+
+  // geopotential height above surface at mid levels (m)
+  dry_atm_.z_mid = buffer_.z_mid;
+
+  // total cloud fraction
+  dry_atm_.cldfrac = get_field_in("cldfrac_tot").get_view<const Real **>();
+
+  // computed updraft velocity
+  dry_atm_.w_updraft = buffer_.w_updraft;
 
   nihf_  = get_field_out("icenuc_num_hetfrz").get_view<Real **>();
   niim_  = get_field_out("icenuc_num_immfrz").get_view<Real **>();
@@ -1008,6 +1049,7 @@ void MAMAci::initialize_impl(const RunType run_type) {
   nimey_ = get_field_out("icenuc_num_meydep").get_view<Real **>();
   naai_hom_ =
       get_field_out("num_act_aerosol_ice_nucle_hom").get_view<Real **>();
+
   naai_ = get_field_out("num_act_aerosol_ice_nucle").get_view<Real **>();
   qcld_ = get_field_out("qcld").get_view<Real **>();
   ptend_q_output_  = get_field_out("ptend_q").get_view<Real ***>();
@@ -1020,50 +1062,12 @@ void MAMAci::initialize_impl(const RunType run_type) {
   ccn_             = get_field_out("ccn").get_view<Real ***>();
   coltend_outp_    = get_field_out("coltend").get_view<Real ***>();
   coltend_cw_outp_ = get_field_out("coltend_cw").get_view<Real ***>();
-
-  wet_atm_.qv    = get_field_in("qv").get_view<const Real **>();
-  wet_atm_.qc    = get_field_in("qc").get_view<const Real **>();
-  wet_atm_.nc    = get_field_in("nc").get_view<const Real **>();
-  wet_atm_.qi    = get_field_in("qi").get_view<const Real **>();
-  wet_atm_.ni    = get_field_in("ni").get_view<const Real **>();
-  wet_atm_.omega = get_field_in("omega").get_view<const Real **>();
-
-  dry_atm_.T_mid = get_field_in("T_mid").get_view<const Real **>();
-  dry_atm_.p_mid = get_field_in("p_mid").get_view<const Real **>();
-  dry_atm_.p_int = get_field_in("p_int").get_view<const Real **>();
-  dry_atm_.p_del = get_field_in("pseudo_density").get_view<const Real **>();
-  dry_atm_.qv    = buffer_.qv_dry;
-  dry_atm_.qc    = buffer_.qc_dry;
-  dry_atm_.nc    = buffer_.nc_dry;
-  dry_atm_.qi    = buffer_.qi_dry;
-  dry_atm_.ni    = buffer_.ni_dry;
-
-  // pbl_height from SHOC
-  dry_atm_.pblh = get_field_in("pbl_height").get_view<const Real *>();
-
-  dry_atm_.dz      = buffer_.dz;       // geometric thickness of layers (m)
-  dry_atm_.z_iface = buffer_.z_iface;  // geopotential height above
-                                       // surface at interface levels (m)
-  dry_atm_.z_mid =
-      buffer_.z_mid;  // geopotential height above surface at mid levels (m)
-
-  dry_atm_.cldfrac   = get_field_in("cldfrac_tot").get_view<const Real **>();
-  dry_atm_.w_updraft = buffer_.w_updraft;
-
   hetfrz_immersion_nucleation_tend_ =
       get_field_out("hetfrz_immersion_nucleation_tend").get_view<Real **>();
   hetfrz_contact_nucleation_tend_ =
       get_field_out("hetfrz_contact_nucleation_tend").get_view<Real **>();
   hetfrz_depostion_nucleation_tend_ =
       get_field_out("hetfrz_depostion_nucleation_tend").get_view<Real **>();
-
-  // allocate work
-  // FIXME: store 25 into a const var or get from MAM4xx
-  for(int icnst = 0; icnst < 25; ++icnst) {
-    qqcw_fld_work_[icnst] = view_2d("qqcw_fld_work_", ncol_, nlev_);
-  }
-  // FIXME :store 40 in a const int or get from MAM4xx
-  state_q_work_ = view_3d("state_q_work_", ncol_, nlev_, 40);
 
   // interstitial and cloudborne aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
@@ -1089,9 +1093,6 @@ void MAMAci::initialize_impl(const RunType run_type) {
         wet_aero_.int_aero_mmr[m][a] =
             get_field_out(int_mmr_field_name).get_view<Real **>();
         dry_aero_.int_aero_mmr[m][a] = buffer_.dry_int_aero_mmr[m][a];
-        std::cout << m << ":" << a << ":" << int_mmr_field_name << ":"
-                  << dry_aero_.int_aero_mmr[m][a](0, 0) << ":"
-                  << wet_aero_.int_aero_mmr[m][a](0, 0) << std::endl;
       }
 
       // (cloudborne) aerosol tracers of interest: mass (q) mixing ratios
@@ -1111,6 +1112,13 @@ void MAMAci::initialize_impl(const RunType run_type) {
     dry_aero_.gas_mmr[g] = buffer_.dry_gas_mmr[g];
   }
 
+  // Allocate work arrays
+  for(int icnst = 0; icnst < mam4::ndrop::ncnst_tot; ++icnst) {
+    qqcw_fld_work_[icnst] = view_2d("qqcw_fld_work_", ncol_, nlev_);
+  }
+  state_q_work_ =
+      view_3d("state_q_work_", ncol_, nlev_, mam4::aero_model::pcnst);
+
   for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i) {
     // These are temp arrays formatted like mam4xx wants.
     // Not sure if there is a way to do this with scream.
@@ -1118,16 +1126,16 @@ void MAMAci::initialize_impl(const RunType run_type) {
     Kokkos::resize(coltend_cw_[i], ncol_, nlev_);
   }
   for(int i = 0; i < mam4::aero_model::pcnst; ++i) {
-    Kokkos::resize(ptend_q_[i], ncol_, nlev_);  // MUST FIXME:Do we need this?
+    Kokkos::resize(ptend_q_[i], ncol_, nlev_);
   }
   for(int i = 0; i < mam4::ndrop::pver; ++i) {
-    for(int j = 0; j < 2; ++j) {  // MUST FIXME:store 2 in a const variable
+    for(int j = 0; j < 2; ++j) {
       Kokkos::resize(raercol_cw_[i][j], ncol_, mam4::ndrop::ncnst_tot);
       Kokkos::resize(raercol_[i][j], ncol_, mam4::ndrop::ncnst_tot);
     }
   }
 
-  for(int i = 0; i < 42; ++i)  // MUST FIXME:store 42 in a const var
+  for(int i = 0; i < 42; ++i)
     Kokkos::resize(diagnostic_scratch_[i], ncol_, nlev_);
 
   // nact : fractional aero. number activation rate [/s]
@@ -1147,11 +1155,12 @@ void MAMAci::initialize_impl(const RunType run_type) {
   // set up our preprocess functor
   preprocess_.initialize(ncol_, nlev_, wet_atm_, wet_aero_, dry_atm_,
                          dry_aero_);
-}
+}  // end function initialize_impl
 
+// ================================================================
+//  RUN_IMPL
+// ================================================================
 void MAMAci::run_impl(const double dt) {
-  m_atm_logger->log(ekat::logger::LogLevel::info, "calling ACI run");
-
   const auto scan_policy = ekat::ExeSpaceUtils<
       KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
 
@@ -1162,8 +1171,6 @@ void MAMAci::run_impl(const double dt) {
 
   haero::ThreadTeamPolicy team_policy(ncol_, Kokkos::AUTO);
 
-  // All the inputs are available to compute w0 and rho
-  // Convert from omega to w (vertical velocity)
   // Negative omega means rising motion
   // FIXME: Why wet_atm_ used here????? We should use dry_atm
   compute_w0_and_rho(team_policy, w0_ /*output*/, rho_ /*output*/, wet_atm_,

@@ -36,6 +36,7 @@ enum class FieldTag {
   TimeLevel,
   num_modes,
   num_constituents,
+  num_aero_const,
   psat,
   //
   nrefindex_real,
@@ -60,6 +61,7 @@ namespace ShortFieldTagsNames {
   constexpr auto CMP  = FieldTag::Component;
   constexpr auto NMODES = FieldTag::num_modes;
   constexpr auto MAM_NCNST = FieldTag::num_constituents;
+  constexpr auto MAM_AERO_NCNST = FieldTag::num_aero_const;
   constexpr auto MAM_PSAT = FieldTag::psat;
   //
   constexpr auto NREFINDEX_REAL = FieldTag::nrefindex_real;
@@ -102,6 +104,9 @@ inline std::string e2str (const FieldTag ft) {
       break;
     case FieldTag::num_constituents:
       name = "num_constituents";
+      break;
+    case FieldTag::num_aero_const:
+      name = "num_aero_const";
       break;
     case FieldTag::psat:
       name = "psat";
