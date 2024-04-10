@@ -37,7 +37,7 @@
 <flanduse_timeseries hgrid="ne30np4">lnd/clm2/surfdata_map/landuse.timeseries_ne30np4_hist_simyr1850_2015_c20171018.nc</flanduse_timeseries>
 <finidat hgrid="ne30np4" mask="oEC60to30v3">lnd/clm2/initdata_map/20180316.DECKv1b_A1.ne30_oEC.edison.clm2.r.1980-01-01-00000.8575c3f_c20190904.nc</finidat>
 
-<flanduse_timeseries hgrid="r05">lnd/clm2/surfdata_map/landuse.timeseries_0.5x0.5_hist_simyr1850-2015_c191004.nc</flanduse_timeseries>
+<flanduse_timeseries hgrid="r05">lnd/clm2/surfdata_map/landuse.timeseries_0.5x0.5_hist_simyr1850-2015_c240308.nc</flanduse_timeseries>
 
 <flanduse_timeseries hgrid="ne120np4">lnd/clm2/surfdata_map/landuse.timeseries_ne120np4_historical_simyr1850-2015_c190904.nc</flanduse_timeseries>
 
