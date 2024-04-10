@@ -74,7 +74,8 @@ contains
     logical, pointer :: &
          config_use_forcing, &
          config_use_data_icebergs, &
-         config_use_column_biogeochemistry
+         config_use_column_biogeochemistry, &
+         config_use_zaerosols
 
     call MPAS_pool_get_config(domain % configs, "config_use_forcing", config_use_forcing)
     call MPAS_pool_get_config(domain % configs, "config_use_data_icebergs", config_use_data_icebergs)
@@ -89,8 +90,12 @@ contains
        call init_oceanic_forcing(domain)
 
        ! init the ocean bgc forcing
-       if (config_use_column_biogeochemistry) &
+       if (config_use_column_biogeochemistry) then
           call init_oceanic_bgc_forcing(domain)
+          call MPAS_pool_get_config(domain % configs, "config_use_zaerosols", config_use_zaerosols)
+          if (config_use_zaerosols) &
+             call init_atm_iron_bgc_forcing(domain)
+       end if
 
     endif
 
@@ -656,12 +661,18 @@ contains
     real(kind=RKIND), pointer :: &
          config_dt
 
+    logical, pointer :: &
+         config_use_column_biogeochemistry, &
+         config_use_zaerosols
+
     character(len=strKIND), pointer :: &
          config_atmospheric_forcing_type
 
     ! configurations
     call mpas_pool_get_config(domain % configs, 'config_dt', config_dt)
     call mpas_pool_get_config(domain % configs, 'config_atmospheric_forcing_type', config_atmospheric_forcing_type)
+    call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
+    call MPAS_pool_get_config(domain % configs, "config_use_zaerosols", config_use_zaerosols)
 
     ! use the forcing layer to get data
     if (trim(config_atmospheric_forcing_type) == "CORE") then
@@ -701,6 +712,13 @@ contains
             config_dt)
 
     endif
+
+    if (config_use_zaerosols .and. config_use_column_biogeochemistry) &
+       call MPAS_forcing_get_forcing(&
+            seaiceForcingGroups, &
+            "seaice_atm_bgc_forcing_monthly", &
+            streamManager, &
+            config_dt)
 
     block => domain % blocklist
     do while (associated(block))
@@ -1674,6 +1692,81 @@ contains
     end select
 
   end subroutine init_oceanic_bgc_forcing
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  init_atm_iron_bgc_forcing
+!
+!> \brief
+!> \author Nicole Jeffery, LANL
+!> \date 5th April 2024
+!> \details
+!> Uses monthly iron solubility maps from CAM6-MIMI (Yan Feng)
+!  to convert dust to dissolved iron for bgc.
+!-----------------------------------------------------------------------
+
+  subroutine init_atm_iron_bgc_forcing(domain)
+
+    type (domain_type) :: domain
+
+    logical, pointer :: &
+         config_do_restart
+
+    character(len=strKIND) :: &
+         forcingIntervalMonthly, &
+         forcingReferenceTimeMonthly
+
+    ! get forcing configuration options
+    call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
+
+    ! create the dust iron solubility forcing group
+
+    call MPAS_forcing_init_group(&
+         seaiceForcingGroups, &
+         "seaice_atm_bgc_forcing_monthly", &
+         domain, &
+         '0000-01-01_00:00:00', &
+         '0000-01-01_00:00:00', &
+         '0001-00-00_00:00:00', &
+         config_do_restart)
+
+    forcingIntervalMonthly = "00-01-00_00:00:00"
+    forcingReferenceTimeMonthly = "0001-01-15_00:00:00"
+
+    ! iron solubility fraction of wet dust iron
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         seaiceForcingGroups, &
+         "seaice_atm_bgc_forcing_monthly", &
+         "dustIronSolubilityWet", &
+         "DustIronMonthlyForcing", &
+         "atmos_forcing", &
+         "dustIronSolubilityWet", &
+         "linear", &
+         forcingReferenceTimeMonthly, &
+         forcingIntervalMonthly)
+
+    ! iron solubility fraction of dry dust iron
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         seaiceForcingGroups, &
+         "seaice_atm_bgc_forcing_monthly", &
+         "dustIronSolubilityDry", &
+         "DustIronMonthlyForcing", &
+         "atmos_forcing", &
+         "dustIronSolubilityDry", &
+         "linear", &
+         forcingReferenceTimeMonthly, &
+         forcingIntervalMonthly)
+
+    call MPAS_forcing_init_field_data(&
+         seaiceForcingGroups, &
+         "seaice_atm_bgc_forcing_monthly", &
+         domain % streamManager, &
+         config_do_restart, &
+         .false.)
+
+  end subroutine init_atm_iron_bgc_forcing
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !

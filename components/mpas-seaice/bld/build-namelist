@@ -628,12 +628,7 @@ add_default($nl, 'config_recover_tracer_means_check');
 ##################################
 # Namelist group: column_package #
 ##################################
-
-if ($ice_bgc eq 'ice_bgc') {
-        add_default($nl, 'config_column_physics_type', 'val'=>"column_package");
-} else {
-        add_default($nl, 'config_column_physics_type');
-}
+add_default($nl, 'config_column_physics_type');
 add_default($nl, 'config_use_column_shortwave');
 add_default($nl, 'config_use_column_vertical_thermodynamics');
 if ($ice_bgc eq 'ice_bgc') {
@@ -681,6 +676,7 @@ if ($ice_bgc eq 'ice_bgc') {
         add_default($nl, 'config_use_humics', 'val'=>".true.");
         add_default($nl, 'config_use_DON', 'val'=>".true.");
         add_default($nl, 'config_use_iron', 'val'=>".true.");
+        add_default($nl, 'config_couple_biogeochemistry_fields');
 } else {
         add_default($nl, 'config_use_vertical_biochemistry', 'val'=>".false.");
         add_default($nl, 'config_use_vertical_tracers', 'val'=>".false.");
@@ -694,6 +690,7 @@ if ($ice_bgc eq 'ice_bgc') {
         add_default($nl, 'config_use_humics', 'val'=>".false.");
         add_default($nl, 'config_use_DON', 'val'=>".false.");
         add_default($nl, 'config_use_iron', 'val'=>".false.");
+        add_default($nl, 'config_couple_biogeochemistry_fields', 'val'=>".false.");
 }
 add_default($nl, 'config_use_chlorophyll');
 add_default($nl, 'config_use_macromolecules');

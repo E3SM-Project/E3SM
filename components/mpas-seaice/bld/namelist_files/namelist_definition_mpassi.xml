@@ -955,6 +955,14 @@ Default: Defined in namelist_defaults.xml
 
 <!-- biogeochemistry -->
 
+<entry id="config_couple_biogeochemistry_fields" type="logical"
+	category="biogeochemistry" group="biogeochemistry">
+Couple ocean and seaice biogeochemical fields
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_use_brine" type="logical"
 	category="biogeochemistry" group="biogeochemistry">
 Use the brine height tracer

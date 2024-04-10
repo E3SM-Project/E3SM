@@ -2538,7 +2538,7 @@
 
       real (kind=dbl_kind), dimension(:,:), intent(inout) :: &
          trcrn        ! tracers
- 
+
       logical (kind=log_kind), dimension(:), intent(inout) :: &
          first_ice      ! true until ice forms
 
@@ -4594,6 +4594,7 @@
       real (kind=dbl_kind), intent(in) :: & 
          grid_oS_in     , & ! for bottom flux (zsalinity)
          l_skS_in           ! 0.02 characteristic skeletal layer thickness (m) (zsalinity)
+
       real (kind=dbl_kind), intent(in) :: &
          ratio_Si2N_diatoms_in, &   ! algal Si to N (mol/mol)
          ratio_Si2N_sp_in     , &
@@ -5458,7 +5459,8 @@
                            upNO, upNH, iDi, iki, zfswin, &
                            zsal_tot, darcy_V, grow_net,  &
                            PP_net, hbri,dhbr_bot, dhbr_top, Zoo,&
-                           fbio_snoice, fbio_atmice, ocean_bio, &
+                           fbio_snoice, fbio_atmice, &
+                           ocean_bio, &
                            first_ice, fswpenln, bphi, bTiz, ice_bio_net,  &
                            snow_bio_net, totalChla, fswthrun, Rayleigh_criteria, &
                            sice_rho, fzsal, fzsal_g, &
@@ -5815,7 +5817,7 @@
                           n_don,                                         &
                           n_fed,                 n_fep,                  &
                           n_zaero,               first_ice(n),           &
-                          hin_old(n),            ocean_bio(:),    &
+                          hin_old(n),            ocean_bio(1:nbtrcr),    &
                           bphi(:,n),             iphin,                  &
                           iDi(:,n),              sss,                    &
                           fswpenln(:,n),                                 &

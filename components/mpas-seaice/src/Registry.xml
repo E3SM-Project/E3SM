@@ -790,7 +790,11 @@
 		/>
 	</nml_record>
 
-	<nml_record name="biogeochemistry" in_defaults="true">
+	<nml_record name="biogeochemistry" in_defaults="false">
+		<nml_option name="config_couple_biogeochemistry_fields" type="logical" default_value="false" units="unitless"
+			description="Couple ocean and seaice biogeochemical fields"
+			possible_values="true or false"
+		/>
 		<nml_option name="config_use_brine" type="logical" default_value="false" units="unitless"
 			description="Use the brine height tracer"
 			possible_values="true or false"
@@ -1431,32 +1435,32 @@
 			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange"
 			icepack_name="feptype_1"
 		/>
-		<nml_option name="config_mobility_type_black_carbon1" type="real" default_value="0.0" units="unitless"
+		<nml_option name="config_mobility_type_black_carbon1" type="real" default_value="-1.0" units="unitless"
 			description="Transport type of black carbon 1 pool"
 			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange"
 			icepack_name="zaerotype_bc1"
 		/>
-		<nml_option name="config_mobility_type_black_carbon2" type="real" default_value="0.0" units="unitless"
+		<nml_option name="config_mobility_type_black_carbon2" type="real" default_value="-1.0" units="unitless"
 			description="Transport type of black carbon 1 pool"
 			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange"
 			icepack_name="zaerotype_bc2"
 		/>
-		<nml_option name="config_mobility_type_dust1" type="real" default_value="0.0" units="unitless"
+		<nml_option name="config_mobility_type_dust1" type="real" default_value="-1.0" units="unitless"
 			description="Transport type of dust pool 1"
 			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange"
 			icepack_name="zaerotype_dust1"
 		/>
-		<nml_option name="config_mobility_type_dust2" type="real" default_value="0.0" units="unitless"
+		<nml_option name="config_mobility_type_dust2" type="real" default_value="-1.0" units="unitless"
 			description="Transport type of dust pool 2"
 			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange"
 			icepack_name="zaerotype_dust2"
 		/>
-		<nml_option name="config_mobility_type_dust3" type="real" default_value="0.0" units="unitless"
+		<nml_option name="config_mobility_type_dust3" type="real" default_value="-1.0" units="unitless"
 			description="Transport type of dust pool 3"
 			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange"
 			icepack_name="zaerotype_dust3"
 		/>
-		<nml_option name="config_mobility_type_dust4" type="real" default_value="0.0" units="unitless"
+		<nml_option name="config_mobility_type_dust4" type="real" default_value="-1.0" units="unitless"
 			description="Transport type of dust pool 4"
 			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange"
 			icepack_name="zaerotype_dust4"
@@ -2272,6 +2276,15 @@
 				immutable="true">
 			<var name="oceanNitrateConc1D"/>
 			<var name="oceanSilicateConc1D"/>
+		</stream>
+		<stream name="DustIronMonthlyForcing"
+				type="input"
+				filename_template="forcing/seaice_atm_bgc_forcing_monthly.nc"
+				filename_interval="none"
+				input_interval="none"
+				immutable="true">
+			<var name="dustIronSolubilityDry"/>
+			<var name="dustIronSolubilityWet"/>
 		</stream>
 
 		<!-- Aerosols input -->
@@ -3907,6 +3920,18 @@
 		     dimensions="nCells Time"
 		     units="W m-2"
 		/>
+		<var name="dustIronSolubilityWet"
+		     type="real"
+		     dimensions="nCells Time"
+		     units="1"
+                     description="Iron solubility fraction for wet dust iron"
+		/>
+		<var name="dustIronSolubilityDry"
+		     type="real"
+		     dimensions="nCells Time"
+		     units="1"
+                     description="Iron solubility fraction for dry dust iron"
+		/>
 	</var_struct>
 
 	<!--alternative atmos forcing -->
@@ -5274,7 +5299,21 @@
 		     />
 		<var name="atmosDustFlux"
 		     type="real"
+		     units="kg m-2 s-1"
 		     dimensions="maxDustType nCells Time"
+		     description="Total flux of dry atmospheric dust positive into the ice column"
+		     />
+		<var name="atmosWetDustFlux"
+		     type="real"
+		     units="kg m-2 s-1"
+		     dimensions="nCells Time"
+		     description="Total flux of wet atmospheric dust positive into the ice column"
+		     />
+		<var name="atmosDryDustFlux"
+		     type="real"
+		     units="kg m-2 s-1"
+		     dimensions="nCells Time"
+		     description="Total flux of dry atmospheric dust positive into the ice column"
 		     />
 		<var name="totalCarbonContentCell"
 		     type="real"
@@ -5283,18 +5322,42 @@
 		     description="Concentration of carbon in the ice column"
 		     packages="pkgColumnBiogeochemistry;pkgColumnPackage"
 		/>
+		<var name="totalBlackCarbonContentCell"
+		     type="real"
+		     dimensions="nCells Time"
+		     units="kg m-2"
+		     description="Concentration of black carbon in the ice and  snow column"
+		     packages="pkgColumnBiogeochemistry;pkgColumnPackage"
+		/>
+		<var name="totalAtmBlackCarbonFlux"
+		     type="real"
+		     dimensions="nCells Time"
+		     units="kg m-2 s-1"
+		     description="Total atmospheric black carbon flux (positive into the seaice)"
+		     packages="pkgColumnBiogeochemistry;pkgColumnPackage"
+		/>
+		<var name="totalOceanBlackCarbonFlux"
+		     type="real"
+		     dimensions="nCells Time"
+		     units="kg m-2 s-1"
+		     description="Total ocean black carbon flux (positive into the ocean)"
+		     packages="pkgColumnBiogeochemistry;pkgColumnPackage"
+		/>
 		<var name="totalOceanCarbonFlux"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="mmol m-2 s-1"
-		     description="Total ocean carbon flux (positive into the ocean)"
+		     description="Total ocean carbon flux (positive
+				  into the ocean) weighted bysea ice
+				  area fraction"
 		     packages="pkgColumnBiogeochemistry;pkgColumnPackage"
 		/>
 		<var name="oceanBioFluxes"
 		     type="real"
 		     dimensions="nZBGCTracers nCells Time"
 		     units="mmol m-2 s-1"
-		     description="Tracers are ordered: diatom nitrogen, smallPlankton nitrogen, phaeocystis nitrogen, nitrate, polysaccarid carbon, lipid carbon, ammonium, silicate, DMSPp, DMSPd, DMS, Nonreactive nitrate, Protein nitrogen, dissolved iron in umol/m2/s, particulate iron in umol/m2/s, humic carbon, black carbon1 in mg/m2/s, black carbon2 in mg/m2/s, dust1 in mg/m2/s, dust2 in mg/m2/s, dust3 in mg/m2/s, dust4 in mg/m2/s"
+		     description="Only bio tracers used in the order:
+				  diatom nitrogen, smallPlankton nitrogen, phaeocystis nitrogen, nitrate, polysaccarid carbon, lipid  carbon,dissolved inorganic carbon, ammonium, silicate, DMSPp, DMSPd, DMS, Nonreactive nitrate, Protein nitrogen, dissolved iron in umol/m2/s, particulate iron in umol/m2/s, humic carbon, black carbon1 in kg/m2/s, black carbon2 in kg/m2/s, dust1 in kg/m2/s, dust2 in kg/m2/s, dust3 in kg/m2/s, dust4 in kg/m2/s"
 		     icepack_name="flux_bio"
 		     packages="pkgColumnBiogeochemistry;pkgColumnPackage"
 		/>
@@ -5302,7 +5365,7 @@
 		     type="real"
 		     dimensions="nZBGCTracers nCategories nCells Time"
 		     units="mmol m-2 s-1"
-		     description="Tracers are ordered: diatom nitrogen, smallPlankton nitrogen, phaeocystis nitrogen, nitrate, polysaccarid carbon, lipid carbon, ammonium, silicate, DMSPp, DMSPd, DMS, Nonreactive nitrate, Protein nitrogen, dissolved iron in umol/m2/s, particulate iron in umol/m2/s, humic carbon, black carbon1 in mg/m2/s, black carbon2 in mg/m2/s, dust1 in mg/m2/s, dust2 in mg/m2/s, dust3 in mg/m2/s, dust4 in mg/m2/s"
+		     description="Only bio tracers used in the order: diatom nitrogen, smallPlankton nitrogen, phaeocystis nitrogen, nitrate, polysaccarid carbon, lipid carbon, dissolved inorganic carbon,ammonium, silicate, DMSPp, DMSPd, DMS, Nonreactive nitrate, Protein nitrogen, dissolved iron in umol/m2/s, particulate iron in umol/m2/s, humic carbon, black carbon1 in kg/m2/s, black carbon2 in kg/m2/s, dust1 in kg/m2/s, dust2 in kg/m2/s, dust3 in kg/m2/s, dust4 in kg/m2/s"
 		     icepack_name="flux_bion"
 		     packages="pkgColumnBiogeochemistry;pkgColumnPackage"
 		/>
@@ -5310,130 +5373,305 @@
 		     type="real"
 		     dimensions="nZBGCTracers nCells Time"
 		     units="mmol m-3"
-		     description="Tracers are ordered: diatom nitrogen, smallPlankton nitrogen, phaeocystis nitrogen, nitrate, polysaccarid carbon, lipid carbon, ammonium, silicate, DMSPp, DMSPd, DMS, Nonreactive nitrate, Protein nitrogen, dissolved iron in umol/m3, particulate iron in umol/m3, humic carbon, black carbon1 in mg/m3, black carbon2 in mg/m3,dust1 in mg/m3, dust2 in mg/m3, dust3 in mg/m3, dust4 in mg/m3"
+		     description="All bio tracers including those not used in the order: diatom nitrogen, smallPlankton nitrogen, phaeocystis nitrogen, nitrate, polysaccarid carbon, lipid carbon, dissolved inorganic carbon,ammonium, silicate, DMSPp, DMSPd, DMS, Nonreactive nitrate, Protein nitrogen, dissolved iron in umol/m3, particulate iron in umol/m3, humic carbon, black carbon1 in mg/m3, black carbon2 in mg/m3,dust1 in mg/m3, dust2 in mg/m3, dust3 in mg/m3, dust4 in mg/m3"
+		     icepack_name="ocean_bio"
+		     packages="pkgColumnBiogeochemistry;pkgColumnPackage"
+		/>
+		<var name="oceanBioConcentrationsInUse"
+		     type="real"
+		     dimensions="nZBGCTracers nCells Time"
+		     units="mmol m-3"
+		     description="Only bio tracers used in the order: diatom nitrogen, smallPlankton nitrogen, phaeocystis nitrogen, nitrate, polysaccarid carbon, lipid carbon,dissolved inorganic carbon, ammonium, silicate, DMSPp, DMSPd, DMS, Nonreactive nitrate, Protein nitrogen, dissolved iron in umol/m3, particulate iron in umol/m3, humic carbon, black carbon1 in mg/m3, black carbon2 in mg/m3,dust1 in mg/m3, dust2 in mg/m3, dust3 in mg/m3, dust4 in mg/m3"
+		     icepack_name="ocean_bio"
+		     packages="pkgColumnBiogeochemistry;pkgColumnPackage"
+		/>
+		<var name="oceanBioToIceInUse"
+		     type="real"
+		     dimensions="nZBGCTracers nCells Time"
+		     units="mmol m-2"
+		     description="Only bio tracers used and added to sea ice bottom in the order: diatom nitrogen, smallPlankton nitrogen, phaeocystis nitrogen, nitrate, polysaccarid carbon, lipid carbon, dissolved inorganic carbon,ammonium, silicate, DMSPp, DMSPd, DMS, Nonreactive nitrate, Protein nitrogen, dissolved iron in umol/m2, particulate iron in umol/m2, humic carbon, black carbon1 in mg/m2, black carbon2 in mg/m2,dust1 in mg/m2, dust2 in mg/m2, dust3 in mg/m2, dust4 in mg/m2"
 		     icepack_name="ocean_bio"
 		     packages="pkgColumnBiogeochemistry;pkgColumnPackage"
 		/>
 		<var name="oceanAlgaeConc"
 		     type="real"
 		     dimensions="maxAlgaeType nCells Time"
+		     units="mmol m-3"
+                     description="Surface ocean algal nitrogen concentration"
 		/>
 		<var name="oceanDOCConc"
 		     type="real"
 		     dimensions="maxDOCType nCells Time"
+		     units="mmol m-3"
+                     description="Surface ocean dissolved organic carbon concentration"
 		/>
 		<var name="oceanDICConc"
 		     type="real"
 		     dimensions="maxDICType nCells Time"
+		     units="mmol m-3"
+                     description="Surface ocean dissolved inorganic carbon concentration"
 		/>
 		<var name="oceanDONConc"
 		     type="real"
 		     dimensions="maxDONType nCells Time"
+		     units="mmol m-3"
+                     description="Surface ocean dissolved organic nitrogen concentration"
 		/>
 		<var name="oceanNitrateConc"
 		     type="real"
 		     dimensions="nCells Time"
+		     units="mmol m-3"
+                     description="Surface ocean nitrate concentration"
 		/>
 		<var name="oceanSilicateConc"
 		     type="real"
 		     dimensions="nCells Time"
+		     units="mmol m-3"
+                     description="Surface ocean silicate concentration"
 		/>
 		<var name="oceanAmmoniumConc"
 		     type="real"
 		     dimensions="nCells Time"
+		     units="mmol m-3"
+                     description="Surface ocean ammonium concentration"
 		/>
 		<var name="oceanDMSConc"
 		     type="real"
 		     dimensions="nCells Time"
+		     units="mmol m-3"
+                     description="Surface ocean dimethylsulfide concentration"
 		/>
 		<var name="oceanDMSPConc"
 		     type="real"
 		     dimensions="nCells Time"
+		     units="mmol m-3"
+                     description="Surface ocean DMSP concentration"
 		/>
 		<var name="oceanHumicsConc"
 		     type="real"
 		     dimensions="nCells Time"
+		     units="mmol m-3"
+                     description="Surface ocean refractory dissolved
+				  organic carbon concentration"
 		/>
 		<var name="oceanParticulateIronConc"
 		     type="real"
 		     dimensions="maxIronType nCells Time"
+		     units="umol m-3"
+                     description="Surface ocean particulate iron concentration"
 		/>
 		<var name="oceanDissolvedIronConc"
 		     type="real"
 		     dimensions="maxIronType nCells Time"
+		     units="umol m-3"
+                     description="Surface ocean dissolved iron concentration"
 		/>
 		<var name="oceanZAerosolConc"
 		     type="real"
 		     dimensions="maxAerosolType nCells Time"
+		     units="mg m-3"
+                     description="Surface ocean aerosol concentration"
 		/>
 		<var name="oceanAlgaeFlux"
 		     type="real"
 		     dimensions="maxAlgaeType nCells Time"
+		     units="mmol m-2 s-1"
+                     description="Algal nitrogen flux to ocean from ice column"
 		/>
 		<var name="oceanDOCFlux"
 		     type="real"
 		     dimensions="maxDOCType nCells Time"
+		     units="mmol m-2 s-1"
+                     description="Dissolved organic carbon flux to ocean from ice column"
 		/>
 		<var name="oceanDICFlux"
 		     type="real"
 		     dimensions="maxDICType nCells Time"
+		     units="mmol m-2 s-1"
+                     description="Dissolved inorganic carbon flux to ocean from ice column"
 		/>
 		<var name="oceanDONFlux"
 		     type="real"
 		     dimensions="maxDONType nCells Time"
+		     units="mmol m-2 s-1"
+                     description="Dissolved organic nitrogen flux to ocean from ice column"
 		/>
 		<var name="oceanNitrateFlux"
 		     type="real"
 		     dimensions="nCells Time"
+		     units="mmol m-2 s-1"
+                     description="Nitrate flux to ocean from ice column"
 		/>
 		<var name="oceanSilicateFlux"
 		     type="real"
 		     dimensions="nCells Time"
+		     units="mmol m-2 s-1"
+                     description="Silicate flux to ocean from ice column"
 		/>
 		<var name="oceanAmmoniumFlux"
 		     type="real"
 		     dimensions="nCells Time"
+		     units="mmol m-2 s-1"
+                     description="Ammonium flux to ocean from ice column"
 		/>
 		<var name="oceanDMSFlux"
 		     type="real"
 		     dimensions="nCells Time"
+		     units="mmol m-2 s-1"
+                     description="Dimethylsulfide flux to ocean from ice column"
 		/>
 		<var name="oceanDMSPpFlux"
 		     type="real"
 		     dimensions="nCells Time"
+		     units="mmol m-2 s-1"
+                     description="Particulate DMSP flux to ocean from ice column"
 		/>
 		<var name="oceanDMSPdFlux"
 		     type="real"
 		     dimensions="nCells Time"
+		     units="mmol m-2 s-1"
+                     description="Dissolved DMSP flux to ocean from ice column"
 		/>
 		<var name="oceanHumicsFlux"
 		     type="real"
 		     dimensions="nCells Time"
+		     units="mmol m-2 s-1"
+                     description="Refractory DOC flux to ocean from ice column"
 		/>
 		<var name="oceanParticulateIronFlux"
 		     type="real"
 		     dimensions="maxIronType nCells Time"
+		     units="umol m-2 s-1"
+                     description="Particulate iron flux to ocean from ice column"
 		/>
 		<var name="oceanDissolvedIronFlux"
 		     type="real"
 		     dimensions="maxIronType nCells Time"
+		     units="umol m-2 s-1"
+                     description="Dissolved iron flux to ocean from ice column"
 		/>
 		<var name="oceanDustIronFlux"
 		     type="real"
 		     dimensions="nCells Time"
+		     units="kg m-2 s-1"
+                     description="Total iron dust flux to ocean from ice column"
+		/>
+		<var name="oceanBlackCarbonFlux"
+		     type="real"
+		     dimensions="nCells Time"
+		     units="kg m-2 s-1"
+                     description="Total black carbon flux to ocean from ice column"
+		/>
+		<var name="oceanAlgaeFluxArea"
+		     type="real"
+		     dimensions="maxAlgaeType nCells Time"
+		     units="mmol m-2 s-1"
+                     description="Algal nitrogen flux to ocean weighted by ice area fraction"
+		/>
+		<var name="oceanDOCFluxArea"
+		     type="real"
+		     dimensions="maxDOCType nCells Time"
+		     units="mmol m-2 s-1"
+                     description="Dissolved organic carbon flux to ocean weighted by ice area fraction"
+		/>
+		<var name="oceanDICFluxArea"
+		     type="real"
+		     dimensions="maxDICType nCells Time"
+		     units="mmol m-2 s-1"
+                     description="Dissolved inorganic carbon flux to ocean weighted by ice area fraction"
+		/>
+		<var name="oceanDONFluxArea"
+		     type="real"
+		     dimensions="maxDONType nCells Time"
+		     units="mmol m-2 s-1"
+                     description="Dissolved organic nitrogen flux to ocean weighted by ice area fraction"
+		/>
+		<var name="oceanNitrateFluxArea"
+		     type="real"
+		     dimensions="nCells Time"
+		     units="mmol m-2 s-1"
+                     description="Nitrate flux to ocean weighted by ice area fraction"
+		/>
+		<var name="oceanSilicateFluxArea"
+		     type="real"
+		     dimensions="nCells Time"
+		     units="mmol m-2 s-1"
+                     description="Silicate flux to ocean weighted by ice area fraction"
+		/>
+		<var name="oceanAmmoniumFluxArea"
+		     type="real"
+		     dimensions="nCells Time"
+		     units="mmol m-2 s-1"
+                     description="Ammonium flux to ocean weighted by ice area fraction"
+		/>
+		<var name="oceanDMSFluxArea"
+		     type="real"
+		     dimensions="nCells Time"
+		     units="mmol m-2 s-1"
+                     description="Dimethylsulfide flux to ocean weighted by ice area fraction"
+		/>
+		<var name="oceanDMSPpFluxArea"
+		     type="real"
+		     dimensions="nCells Time"
+		     units="mmol m-2 s-1"
+                     description="Particulate DMSP flux to ocean weighted by ice area fraction"
+		/>
+		<var name="oceanDMSPdFluxArea"
+		     type="real"
+		     dimensions="nCells Time"
+		     units="mmol m-2 s-1"
+                     description="Dissolved DMSP flux to ocean weighted by ice area fraction"
+		/>
+		<var name="oceanHumicsFluxArea"
+		     type="real"
+		     dimensions="nCells Time"
+		     units="mmol m-2 s-1"
+                     description="Refractory DOC flux to ocean weighted by ice area fraction"
+		/>
+		<var name="oceanParticulateIronFluxArea"
+		     type="real"
+		     dimensions="maxIronType nCells Time"
+		     units="umol m-2 s-1"
+                     description="Particulate iron flux to ocean weighted by ice area fraction"
+		/>
+		<var name="oceanDissolvedIronFluxArea"
+		     type="real"
+		     dimensions="maxIronType nCells Time"
+		     units="umol m-2 s-1"
+                     description="Dissolved iron flux to ocean weighted by ice area fraction"
+		/>
+		<var name="oceanDustIronFluxArea"
+		     type="real"
+		     dimensions="nCells Time"
+		     units="kg m-2 s-1"
+                     description="Total iron dust flux to ocean weighted by ice area fraction"
+		/>
+		<var name="oceanBlackCarbonFluxArea"
+		     type="real"
+		     dimensions="nCells Time"
+		     units="kg m-2 s-1"
+                     description="Total black carbon flux to ocean weighted by ice area fraction"
 		/>
 		<var name="bioTracerShortwave"
 		     type="real"
 		     dimensions="nShortwaveBio nCategories nCells"
+		     units="mg m-3"
+                     description="Chlorophyll and aerosol
+				  concentrations in the snow and on
+				  the shortwave vertical grid (verticalShortwaveGrid)"
 		     packages="pkgColumnBiogeochemistry;pkgColumnPackage"
 		/>
 		<var name="bioPorosity"
 		     type="real"
 		     dimensions="nBioLayersP2 nCategories nCells Time"
+		     units="1"
+		     description="Liquid to total volume ratio of sea ice on the biologyGrid"
 		/>
 		<var name="bioTemperature"
 		     type="real"
 		     dimensions="nBioLayersP2 nCategories nCells"
+		     units="C"
+		     description="Temperature of sea ice on the biologyGrid"
 		/>
 		<var name="bioShortwaveFlux"
 		     type="real"
@@ -5451,10 +5689,14 @@
 		<var name="bioDiffusivity"
 		     type="real"
 		     dimensions="nBioLayersP1 nCategories nCells"
+		     units="m2 s-1"
+		     description="Vertical diffusivity of biology tracers on the interfaceBiologyGrid"
 		/>
 		<var name="bioPermeability"
 		     type="real"
 		     dimensions="nBioLayersP1 nCategories nCells"
+		     units="m2"
+		     description="Fluid permeability on the interfaceBiologyGrid"
 		/>
 		<var name="zSalinityFlux"
 		     type="real"
@@ -5539,13 +5781,13 @@
 		     type="real"
 		     dimensions="nZBGCTracers nCells Time"
 		     units="mmol m-2"
-		     description="Tracers are ordered: diatom nitrogen, smallPlankton nitrogen, phaeocystis nitrogen, nitrate, polysaccarid carbon, lipid carbon, ammonium, silicate, DMSPp, DMSPd, DMS, Nonreactive nitrate, Protein nitrogen, dissolved iron in umol/m2, particulate iron in umol/m2, humic carbon, black carbon1 in mg/m2, black carbon2 in mg/m2,dust1 in mg/m2, dust2 in mg/m2, dust3 in mg/m2, dust4 in mg/m2"
+		     description="Tracers are ordered: diatom nitrogen, smallPlankton nitrogen, phaeocystis nitrogen, nitrate, polysaccarid carbon, lipid carbon, dissolved inorganic carbon,ammonium, silicate, DMSPp, DMSPd, DMS, Nonreactive nitrate, Protein nitrogen, dissolved iron in umol/m2, particulate iron in umol/m2, humic carbon, black carbon1 in mg/m2, black carbon2 in mg/m2,dust1 in mg/m2, dust2 in mg/m2, dust3 in mg/m2, dust4 in mg/m2"
 		/>
 		<var name="totalVerticalBiologySnow"
 		     type="real"
 		     dimensions="nZBGCTracers nCells Time"
 		     units="mmol m-2"
-		     description="Tracers are ordered: diatom nitrogen, smallPlankton nitrogen, phaeocystis nitrogen, nitrate, polysaccarid carbon, lipid carbon, ammonium, silicate, DMSPp, DMSPd, DMS, Nonreactive nitrate, Protein nitrogen, dissolved iron in umol/m2, particulate iron in umol/m2, humic carbon, black carbon1 in mg/m2, black carbon2 in mg/m2,dust1 in mg/m2, dust2 in mg/m2, dust3 in mg/m2, dust4 in mg/m2"
+		     description="Tracers are ordered: diatom nitrogen, smallPlankton nitrogen, phaeocystis nitrogen, nitrate, polysaccarid carbon, lipid carbon, dissolved inorganic carbon,ammonium, silicate, DMSPp, DMSPd, DMS, Nonreactive nitrate, Protein nitrogen, dissolved iron in umol/m2, particulate iron in umol/m2, humic carbon, black carbon1 in mg/m2, black carbon2 in mg/m2,dust1 in mg/m2, dust2 in mg/m2, dust3 in mg/m2, dust4 in mg/m2"
 		/>
 		<var name="totalVerticalSalinity"
 		     type="real"
