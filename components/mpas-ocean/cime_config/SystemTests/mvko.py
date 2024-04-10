@@ -180,7 +180,7 @@ class MVKO(SystemTestsCommon):
         # Write yearly averages to custom output file
         tss_climatology_config = [
             "config_am_timeseriesstatsclimatology_enable = .true.\n",
-            "config_am_timeseriesstatsclimatology_backward_output_offset = '00-03-00_00:00:00'\n",
+            "config_am_timeseriesstatsclimatology_backward_output_offset = '01-00-00_00:00:00'\n",
             "config_am_timeseriesstatsclimatology_compute_interval = '00-00-00_01:00:00'\n",
             "config_am_timeseriesstatsclimatology_compute_on_startup = .false.\n",
             "config_am_timeseriesstatsclimatology_duration_intervals = '01-00-00_00:00'\n",
