@@ -320,6 +320,10 @@ module li_calving
 
       call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
 
+      call remove_small_islands(domain, err_tmp)
+
+      call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+
       ! now also remove any icebergs
       call remove_icebergs(domain)
 
@@ -336,7 +340,6 @@ module li_calving
          call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
-         call remove_small_islands(meshPool, geometryPool)
          ! In data calving mode we just calculate what should be calved but don't actually calve it.
          ! So set thickness back to original value.
          if (config_data_calving) then
@@ -1023,20 +1026,21 @@ module li_calving
 !    routine remove_small_islands
 !
 !> \brief Remove very small islands that lead to velocity solver problems
-!> \author Matthew Hoffman
-!> \date   Summer 2018
+!> \author Matthew Hoffman, Trevor Hillebrand
+!> \date   Summer 2018, re-written Apr 2024
 !> \details This routine finds and eliminates very small islands that lead to
 !> unrealistic velocities in the Albany velocity solver.  Specifically, this
-!> finds one- and two-cell masses of ice that are surrounded by open ocean
-!> and eliminates them by sending them to the calving flux.
+!> finds one- and two-cell masses of grounded ice that are surrounded by dynamic
+!> floating ice ice shelves ≥1 cell wide. It eliminates the dynamic cells
+!> (both grounded and floating) in these islands by sending them to the calving
+!> flux and then cleans up stranded non-dynamic cells using a flood-fill routine.
 !-----------------------------------------------------------------------
 
-   subroutine remove_small_islands(meshPool, geometryPool)
-      type (mpas_pool_type), pointer, intent(in) :: meshPool !< Input: Mesh pool
-      type (mpas_pool_type), pointer, intent(inout) :: geometryPool !< Input: Geometry pool
-
+   subroutine remove_small_islands(domain, err)
+      type (domain_type), intent(inout) :: domain !< Input/Output: domain object
+      integer, intent(inout) :: err
+      type (mpas_pool_type), pointer :: scratchPool, meshPool, geometryPool, velocityPool
       logical, pointer :: config_remove_small_islands
-      real(kind=RKIND), pointer :: config_sea_level
       real (kind=RKIND), dimension(:), pointer :: calvingThickness    ! thickness of ice that calves (computed in this subroutine)
       real (kind=RKIND), dimension(:), pointer :: calvingThicknessFromThreshold    ! thickness of ice that calves (computed in this subroutine)
       real (kind=RKIND), dimension(:), pointer :: thickness
@@ -1044,73 +1048,202 @@ module li_calving
       integer, dimension(:), pointer :: cellMask
       integer, dimension(:,:), pointer :: cellsOnCell ! list of cells that neighbor each cell
       integer, dimension(:), pointer :: nEdgesOnCell ! number of cells that border each cell
-      integer, pointer :: nCellsSolve
-      integer :: iCell, jCell, n, nIceNeighbors, nIceNeighbors2, neighborWithIce
-      integer :: nOpenOceanNeighbors, nOpenOceanNeighbors2
+      integer, pointer :: nCells, maxEdges
+      logical :: removeIsland
+      integer :: iCell, jCell, kCell, m, n, count
+      integer :: nIslandCellsLocal, nIslandCellsGlobal
+      integer :: nGroundedNeighbors, nGroundedNeighborsJCell
+      integer, dimension(:), allocatable :: connectedCellsList
+      integer, dimension(:), allocatable :: islandMask
+      type (field1dInteger), pointer :: seedMaskField
+      type (field1dInteger), pointer :: growMaskField
+      integer, dimension(:), pointer :: seedMask, growMask !masks to pass to flood-fill routine
 
       call mpas_pool_get_config(liConfigs, 'config_remove_small_islands', config_remove_small_islands)
       if (.not. config_remove_small_islands) then
          return  ! skip this entire routine if disabled
       endif
 
-      call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
-      call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'scratch', scratchPool)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'velocity', velocityPool)
+
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'maxEdges', maxEdges)
       call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
       call mpas_pool_get_array(geometryPool, 'calvingThicknessFromThreshold', calvingThicknessFromThreshold)
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
-      call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
 
-      do iCell = 1, nCellsSolve
-         if (li_mask_is_ice(cellMask(iCell))) then ! might as well do for both grounded or floating
-                                                   ! (1 or 2 cell floating masses are icebergs)
-            nIceNeighbors = 0
-            nOpenOceanNeighbors = 0
+      allocate(connectedCellsList((maxEdges+1)**2), &
+               islandMask(nCells+1))
+
+      islandMask(:) = 0
+      nIslandCellsLocal = 0
+      nIslandCellsGlobal = 0
+      ! Allocate scratch fields for flood-fill
+      call mpas_pool_get_field(scratchPool, 'seedMask', seedMaskField)
+      call mpas_allocate_scratch_field(seedMaskField, single_block_in = .true.)
+      seedMask => seedMaskField % array
+      seedMask(:) = 0
+
+      call mpas_pool_get_field(scratchPool, 'growMask', growMaskField)
+      call mpas_allocate_scratch_field(growMaskField, single_block_in = .true.)
+      growMask => growMaskField % array
+      growMask(:) = 0
+
+      ! Loop over cells to find one- and two-cell regions of grounded ice
+      ! that are not dynamically connected to other grounded regions,
+      ! which are "islands" that potentially need to be removed.
+      ! In this first phase we identify islands that meet these
+      ! criteria.  In phase 2 below we check if islands are dynamically
+      ! connected to floating ice, which will disqualify them for removal.
+      do iCell = 1, nCells
+         if (li_mask_is_grounded_ice(cellMask(iCell))) then
+            islandMask(iCell) = 1 ! Potentially an island. Further evaluated below.
+            nGroundedNeighbors = 0
+            ! Count grounded neighbors
             do n = 1, nEdgesOnCell(iCell)
                jCell = cellsOnCell(n, iCell)
-               if (li_mask_is_ice(cellMask(jCell))) then
-                  nIceNeighbors = nIceNeighbors + 1
-                  neighborWithIce = jCell
+               if (li_mask_is_grounded_ice(cellMask(jCell))) then
+                  nGroundedNeighbors = nGroundedNeighbors + 1
                endif
-               if (.not. li_mask_is_ice(cellMask(jCell)) .and. bedTopography(jCell) < config_sea_level) then
-                  nOpenOceanNeighbors = nOpenOceanNeighbors + 1
+               nGroundedNeighborsJCell = 0
+               ! If the neighbor contains dynamic ice, check whether
+               ! it has other grounded neighbors. If it does, then we
+               ! will not consider this an island.
+               if (li_mask_is_dynamic_ice(cellMask(jCell))) then
+                  do m = 1, nEdgesOnCell(jCell)
+                     kCell = cellsOnCell(m, jCell)
+                     if (li_mask_is_grounded_ice(cellMask(kCell))) then
+                        nGroundedNeighborsJCell = nGroundedNeighborsJCell + 1
+                     endif
+                  enddo
+               endif
+               ! Two checks that a grounded cell is NOT a 1 or 2 cell island:
+               ! 1. If a grounded cell has more than 1 grounded neighbor, it is not an island
+               ! This is the nGroundedNeighbors criterion.  It gets re-evaluated with every 
+               ! neighbor each time through the loop.  It may not trigger on early checks
+               ! but it will trigger eventually if this cell has more than 1 grounded neighbor.
+               ! 2. If its dynamic neighbors have other grounded neighbors, then we do not
+               ! consider it an island.  This is the nGroundedNeighborsJCell criterion.
+               ! Any grounded cells that survive these two checks are considered islands
+               ! and are further evaluated in the next phase.
+               if ( (nGroundedNeighborsJCell > 1) .or. &
+                    (nGroundedNeighbors > 1) ) then
+                  islandMask(iCell) = 0
+                  exit
                endif
             enddo
-            if ((nIceNeighbors == 0) .and. (nOpenOceanNeighbors == nEdgesOnCell(iCell))) then
-               ! If this is a single cell of ice surrounded by open ocean, kill this location
-               calvingThickness(iCell) = calvingThickness(iCell) + thickness(iCell)
-               calvingThicknessFromThreshold(iCell) = calvingThicknessFromThreshold(iCell) + thickness(iCell)
-               thickness(iCell) = 0.0_RKIND
-            elseif (nIceNeighbors == 1) then
-               ! check if this neighbor has any additional neighbors with ice
-               nIceNeighbors2 = 0
-               nOpenOceanNeighbors2 = 0
-               do n = 1, nEdgesOnCell(neighborWithIce)
-                  jCell = cellsOnCell(n, neighborWithIce)
-                  if (li_mask_is_ice(cellMask(jCell))) then
-                     nIceNeighbors2 = nIceNeighbors2 + 1
-                  endif
-                  if (.not. li_mask_is_ice(cellMask(jCell)) .and. bedTopography(jCell) < config_sea_level) then
-                     nOpenOceanNeighbors2 = nOpenOceanNeighbors2 + 1
+         endif
+      enddo
+
+      ! Determine whether to remove each island based on if it is dynamically
+      ! connected to other regions.  For each cell in islandMask,
+      ! first make a list of its dynamic neighbors. If the grounded island
+      ! cell has a grounded neighbor, add that neighbor's dynamic neighbors
+      ! to the list. Then, check that all the dynamic neighbors of the cells
+      ! in the list are also in the list. If so, then this is considered an
+      ! isolated island and is removed. If not, then it is dynamically connected
+      ! to other regions, so we leave it alone.
+      do iCell = 1, nCells
+         connectedCellsList(:) = -1
+         if (islandMask(iCell) == 1) then
+            removeIsland = .true.  ! evalulated and updated below
+            ! Make a list of the grounded island cell and its
+            ! dynamic neighbors.
+            count = 1
+            connectedCellsList(count) = iCell
+            do n = 1, nEdgesOnCell(iCell)
+               jCell = cellsOnCell(n, iCell)
+               if (li_mask_is_dynamic_ice(cellMask(jCell))) then
+                  count = count + 1
+                  connectedCellsList(count) = jCell
+               endif
+               ! If there is a grounded neighbor, list its dynamic neighbors as well
+               if (li_mask_is_grounded_ice(cellMask(jCell))) then
+                  do m = 1, nEdgesOnCell(jCell)
+                     kCell = cellsOnCell(m, jCell)
+                     if (li_mask_is_dynamic_ice(cellMask(kCell))) then
+                        count = count + 1
+                        connectedCellsList(count) = kCell
+                     endif
+                  enddo
+               endif
+            enddo
+            ! Check that all the dynamic neighbors of neighbors are
+            ! in the list. If not, then do not remove the island.
+            do n = 1, (maxEdges+1)**2
+               if (connectedCellsList(n) == -1) then
+                  exit  ! We've reached the end of the list.
+               endif
+               jCell = connectedCellsList(n)
+               do m = 1, nEdgesOnCell(jCell)
+                  kCell = cellsOnCell(m, jCell)
+                  if ( li_mask_is_dynamic_ice(cellMask(kCell)) .and. &
+                       (.not. any(connectedCellsList == kCell)) ) then
+                        removeIsland = .false.
+                        exit
                   endif
                enddo
-               if ((nIceNeighbors2 == 1) .and. (nOpenOceanNeighbors2 == nEdgesOnCell(iCell)-1)) then
-                  ! <- only neighbor with ice must have been iCell
-                  ! kill both cells
+            enddo
+            ! Actually remove island
+            if ( removeIsland ) then
+               nIslandCellsLocal = nIslandCellsLocal + count
+               ! Note: nIslandCellsLocal may be inaccurate as neighbors or neighbors of neighbors to iCell
+               ! may get tallied multiple times from different members of islandMask.  However, we only need
+               ! to know if nIslandCells>0, so this is ok.  If we ever need an accurate value of nIslandCells,
+               ! some additional steps must be taken to avoid potential double counting.
+               do n = 1, count
+                  calvingThickness(connectedCellsList(n)) = calvingThickness(connectedCellsList(n)) + &
+                                                            thickness(connectedCellsList(n))
+                  calvingThicknessFromThreshold(connectedCellsList(n)) = &
+                     calvingThicknessFromThreshold(connectedCellsList(n)) + thickness(connectedCellsList(n))
+                  thickness(connectedCellsList(n)) = 0.0_RKIND
+                  ! No need to evaluate any cells in this list again.
+                  if (islandMask(connectedCellsList(n)) == 1) islandMask(connectedCellsList(n)) = 0
+               enddo
+            endif
+         endif
+      enddo
+
+      call mpas_timer_start("halo updates")
+      call mpas_dmpar_field_halo_exch(domain, 'thickness')
+      call mpas_dmpar_field_halo_exch(domain, 'calvingThickness')
+      call mpas_timer_stop("halo updates")
+      call li_calculate_mask(meshPool, velocityPool, geometryPool, err)
+
+      call mpas_dmpar_sum_int(domain % dminfo, nIslandCellsLocal, nIslandCellsGlobal)
+
+      if ( nIslandCellsGlobal > 0 ) then
+         ! Clean up by removing non-dynamic ice that may have been left behind
+         ! after islands where removed.
+         where (li_mask_is_grounded_ice(cellMask))
+            seedMask = 1
+         end where
+
+         where (li_mask_is_ice(cellMask))
+            growMask = 1
+         end where
+
+         call mpas_log_write("***Cleaning up stranded cells after removing small islands***")
+         call li_flood_fill(seedMask, growMask, domain)
+         do iCell = 1, nCells
+            if (li_mask_is_floating_ice(cellMask(iCell)) .and. seedMask(iCell) == 0) then
                   calvingThickness(iCell) = calvingThickness(iCell) + thickness(iCell)
                   calvingThicknessFromThreshold(iCell) = calvingThicknessFromThreshold(iCell) + thickness(iCell)
                   thickness(iCell) = 0.0_RKIND
-                  calvingThickness(neighborWithIce) = calvingThickness(neighborWithIce) + thickness(neighborWithIce)
-                  calvingThicknessFromThreshold(neighborWithIce) = calvingThicknessFromThreshold(neighborWithIce) + thickness(neighborWithIce)
-                  thickness(neighborWithIce) = 0.0_RKIND
-               endif
-
-            endif ! check on nIceNeighbors
-
-         endif ! check if iCell has ice
-      end do ! loop over cells
+            endif
+         enddo
+         call mpas_log_write("***Finished cleaning up after removing small islands***")
+      endif
+      deallocate(connectedCellsList, &
+                 islandMask)
+      call mpas_deallocate_scratch_field(seedMaskField, single_block_in=.true.)
+      call mpas_deallocate_scratch_field(growMaskField, single_block_in=.true.)
 
    end subroutine remove_small_islands
 
