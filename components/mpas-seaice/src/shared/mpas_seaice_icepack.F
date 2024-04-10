@@ -3487,7 +3487,9 @@ contains
          icepack_warnings_clear
 
     use seaice_constants, only: &
-         seaicePuny
+         seaicePuny, &
+         kilogramsToMicrograms, &
+         gramsIronPerMolIron
 
     type(domain_type), intent(inout) :: domain
 
@@ -3503,6 +3505,7 @@ contains
          melt_growth_rates, &
          ocean_coupling, &
          atmos_coupling, &
+         atmos_forcing, &
          initial
 
     ! configs
@@ -3554,7 +3557,13 @@ contains
          oceanDMSPConc, &
          oceanHumicsConc, &
          openWaterArea, &
-         totalChlorophyll
+         totalChlorophyll, &
+         dustIronSolubilityWet, &
+         dustIronSolubilityDry
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         atmosWetDustFlux, &
+         atmosDryDustFlux
 
     real(kind=RKIND), dimension(:,:), pointer :: &
          iceAreaCategoryInitial, &
@@ -3617,6 +3626,9 @@ contains
     integer, dimension(:), pointer :: &
          indexToCellID
 
+    real(kind=RKIND), pointer :: &
+         config_ratio_Fe_to_dust
+
     ! local
     integer :: &
          iCell, &
@@ -3656,7 +3668,8 @@ contains
          abortFlag, &
          setGetPhysicsTracers, &
          setGetBGCTracers, &
-         checkCarbon
+         checkCarbon, &
+         use_iron_solubility_file
 
     character(len=strKIND) :: &
          abortMessage, &
@@ -3681,6 +3694,7 @@ contains
        call MPAS_pool_get_subpool(block % structs, "diagnostics_biogeochemistry", diagnostics_biogeochemistry)
        call MPAS_pool_get_subpool(block % structs, "shortwave", shortwave)
        call MPAS_pool_get_subpool(block % structs, "atmos_coupling", atmos_coupling)
+       call MPAS_pool_get_subpool(block % structs, "atmos_forcing", atmos_forcing)
        call MPAS_pool_get_subpool(block % structs, "melt_growth_rates", melt_growth_rates)
        call MPAS_pool_get_subpool(block % structs, "ocean_coupling", ocean_coupling)
        call MPAS_pool_get_subpool(block % structs, "initial", initial)
@@ -3704,6 +3718,7 @@ contains
        call MPAS_pool_get_config(block % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
        call MPAS_pool_get_config(block % configs, "config_use_zaerosols",config_use_zaerosols)
        call MPAS_pool_get_config(block % configs, "config_use_vertical_tracers",config_use_vertical_tracers)
+       call MPAS_pool_get_config(block % configs, "config_ratio_Fe_to_dust", config_ratio_Fe_to_dust)
 
        call MPAS_pool_get_array(biogeochemistry, "newlyFormedIce", newlyFormedIce)
        call MPAS_pool_get_array(biogeochemistry, "netNitrateUptake", netNitrateUptake)
@@ -3734,6 +3749,8 @@ contains
        call MPAS_pool_get_array(biogeochemistry, "atmosBioFluxes", atmosBioFluxes)
        call MPAS_pool_get_array(biogeochemistry, "atmosBlackCarbonFlux", atmosBlackCarbonFlux)
        call MPAS_pool_get_array(biogeochemistry, "atmosDustFlux", atmosDustFlux)
+       call MPAS_pool_get_array(biogeochemistry, "atmosWetDustFlux", atmosWetDustFlux)
+       call MPAS_pool_get_array(biogeochemistry, "atmosDryDustFlux", atmosDryDustFlux)
        call MPAS_pool_get_array(biogeochemistry, "oceanBioFluxes", oceanBioFluxes)
        call MPAS_pool_get_array(biogeochemistry, "oceanBioFluxesCategory", oceanBioFluxesCategory)
        call MPAS_pool_get_array(biogeochemistry, "verticalNitrogenLosses", verticalNitrogenLosses)
@@ -3763,6 +3780,9 @@ contains
 
        call MPAS_pool_get_array(atmos_coupling, "snowfallRate", snowfallRate)
 
+       call MPAS_pool_get_array(atmos_coupling, "dustIronSolubilityWet", dustIronSolubilityWet)
+       call MPAS_pool_get_array(atmos_coupling, "dustIronSolubilityDry", dustIronSolubilityDry)
+
        call MPAS_pool_get_array(icestate, "iceAreaCategoryInitial", iceAreaCategoryInitial)
        call MPAS_pool_get_array(icestate, "iceVolumeCategoryInitial", iceVolumeCategoryInitial)
        call MPAS_pool_get_array(icestate, "snowVolumeCategoryInitial", snowVolumeCategoryInitial)
@@ -3786,7 +3806,11 @@ contains
        call MPAS_pool_get_array(tracers, "skeletalAlgaeConc", skeletalAlgaeConc, 1)
        call MPAS_pool_get_array(tracers, "brineFraction", brineFraction, 1)
 
-       ! newly formed ice
+       use_iron_solubility_file = .false.
+       if (config_use_zaerosols .and. config_use_column_biogeochemistry) &
+          use_iron_solubility_file = .true.
+
+! newly formed ice
        allocate(newlyFormedIceLogical(nCategories))
        allocate(brineHeightCatInitial(nCategories,nCellsSolve))
 
@@ -3875,6 +3899,9 @@ contains
              do iBioTracers = maxBCType + 1, nzAerosols
                 atmosBioFluxes(indexj -1 + iBioTracers, iCell) = atmosDustFlux(iBioTracers-maxBCType,iCell)
              enddo
+             indexj = ciceTracerObject % index_dissolvedIronConc(1)
+             if (use_iron_solubility_file) &
+                atmosBioFluxes(indexj,iCell) = (atmosWetDustFlux(iCell) * dustIronSolubilityWet(iCell) + atmosDryDustFlux(iCell) * dustironSolubilityDry(iCell)) * config_ratio_Fe_to_dust * kilogramsToMicrograms *  gramsIronPerMolIron
           endif
 
           do iBioTracers = 1, ciceTracerObject % nBioTracers
@@ -10026,7 +10053,9 @@ contains
          config_do_restart_bgc, &
          config_use_snow_liquid_ponds, &
          config_use_snow_grain_radius, &
-         config_use_shortwave_redistribution
+         config_use_shortwave_redistribution, &
+         config_use_column_biogeochemistry, &
+         config_use_zaerosols
 
     real(kind=RKIND), pointer :: &
          config_min_friction_velocity, &
@@ -10222,6 +10251,7 @@ contains
     integer :: itmp1, itmp2
     real(kind=RKIND) :: rtmp1, rtmp2
     character(len=strKIND) :: ctmp1, ctmp2
+    logical :: use_iron_solubility_file
 
     call MPAS_pool_get_config(domain % configs, "config_thermodynamics_type", config_thermodynamics_type)
     call MPAS_pool_get_config(domain % configs, "config_heat_conductivity_type", config_heat_conductivity_type)
@@ -10285,6 +10315,8 @@ contains
                                                  config_snow_on_pond_ice_tapering_parameter)
     call MPAS_pool_get_config(domain % configs, "config_critical_pond_ice_thickness", config_critical_pond_ice_thickness)
     call MPAS_pool_get_config(domain % configs, "config_skeletal_bgc_flux_type", config_skeletal_bgc_flux_type)
+    call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
+    call MPAS_pool_get_config(domain % configs, "config_use_column_zaerosols", config_use_zaerosols)
     call MPAS_pool_get_config(domain % configs, "config_use_vertical_tracers", config_use_vertical_tracers)
     call MPAS_pool_get_config(domain % configs, "config_scale_initial_vertical_bgc", config_scale_initial_vertical_bgc)
     call MPAS_pool_get_config(domain % configs, "config_use_vertical_biochemistry", config_use_vertical_biochemistry)
@@ -10453,6 +10485,10 @@ contains
     config_ridging_redistribution_function_int = config_cice_int("config_ridging_redistribution_function", config_ridging_redistribution_function)
     config_itd_conversion_type_int = config_cice_int("config_itd_conversion_type", config_itd_conversion_type)
     config_category_bounds_type_int = config_cice_int("config_category_bounds_type", config_category_bounds_type)
+
+    use_iron_solubility_file = .false.
+    if (config_use_zaerosols .and. config_use_column_biogeochemistry) &
+      use_iron_solubility_file = .true.
 
     if (config_use_snicar_ad .and. (trim(config_shortwave_type(1:4)) == "dEdd")) then
        tmp_config_shortwave_type = 'dEdd_snicar_ad'
@@ -10752,6 +10788,7 @@ contains
          algal_vel_in            = config_algal_maximum_velocity, &
          R_dFe2dust_in           = config_ratio_Fe_to_dust, &
          dustFe_sol_in           = config_solubility_of_Fe_in_dust, &
+         use_atm_dust_sol_in     = use_iron_solubility_file, &
          !chlabs_diatoms_in       = config_chla_absorptivity_of_diatoms, &
          !chlabs_sp_in            = config_chla_absorptivity_of_small_plankton, &
          !chlabs_phaeo_in         = config_chla_absorptivity_of_phaeocystis, &
@@ -11366,10 +11403,6 @@ contains
     ! dustFe_sol;
     ! solubility fraction
     ! dustFe_sol = config_solubility_of_Fe_in_dust
-
-    ! chlabs_diatoms:
-    ! chl absorption (1/m/(mg/m^3))
-    ! chlabs_diatoms = config_chla_absorptivity_of_diatoms
 
     ! chlabs_sp:
     ! chl absorption (1/m/(mg/m^3))
