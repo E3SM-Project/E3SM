@@ -386,7 +386,7 @@ void call_function_dropmixnuc(
     mam_coupling::DryAtmosphere &dry_atmosphere, MAMAci::view_2d rpdel,
     MAMAci::const_view_2d kvh, MAMAci::view_2d wsub, MAMAci::view_2d cloud_frac,
     MAMAci::view_2d cloud_frac_prev,
-    const mam_coupling::AerosolState &dry_aerosol_state,
+    const mam_coupling::AerosolState &dry_aerosol_state, const int nlev,
 
     // output
     MAMAci::view_2d qqcw_fld_work_[mam4::ndrop::ncnst_tot],
@@ -400,8 +400,7 @@ void call_function_dropmixnuc(
     MAMAci::view_3d state_q_work_, MAMAci::view_2d qcld,
     MAMAci::view_2d ndropcol, MAMAci::view_2d ndropmix, MAMAci::view_2d nsource,
     MAMAci::view_2d wtke, MAMAci::view_3d ccn, MAMAci::view_3d nact,
-    MAMAci::view_3d mact, MAMAci::view_2d dropmixnuc_scratch_mem[15],
-    const int nlev) {
+    MAMAci::view_3d mact, MAMAci::view_2d dropmixnuc_scratch_mem[15]) {
   // FIXME: why can't we use MAMAci::dropmix_scratch_ above
 
   MAMAci::const_view_2d T_mid = dry_atmosphere.T_mid;
@@ -434,47 +433,55 @@ void call_function_dropmixnuc(
   MAMAci::view_2d loc_coltend[mam4::ndrop::ncnst_tot];
   MAMAci::view_2d loc_coltend_cw[mam4::ndrop::ncnst_tot];
 
-  for(int i = 0; i < mam4::ndrop::pver; ++i)
-    for(int j = 0; j < 2; ++j) loc_raercol_cw[i][j] = raercol_cw[i][j];
-  for(int i = 0; i < mam4::ndrop::pver; ++i)
-    for(int j = 0; j < 2; ++j) loc_raercol[i][j] = raercol[i][j];
-  for(int i = 0; i < mam4::aero_model::pcnst; ++i) loc_ptend_q[i] = ptend_q[i];
-  for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i) loc_coltend[i] = coltend[i];
-  for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i)
+  for(int i = 0; i < mam4::ndrop::pver; ++i) {
+    for(int j = 0; j < 2; ++j) {
+      loc_raercol_cw[i][j] = raercol_cw[i][j];
+      loc_raercol[i][j]    = raercol[i][j];
+    }
+  }
+
+  for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i) {
+    loc_coltend[i]    = coltend[i];
     loc_coltend_cw[i] = coltend_cw[i];
+  }
+
+  for(int i = 0; i < mam4::aero_model::pcnst; ++i) loc_ptend_q[i] = ptend_q[i];
 
   MAMAci::view_2d qqcw_fld_work_loc[25];
   for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i)
     qqcw_fld_work_loc[i] = qqcw_fld_work_[i];
 
   MAMAci::view_3d state_q_work_loc = state_q_work_;
+  //---------------------------------------------------------------------------
+  // ## Initialize the ndrop class.
+  //---------------------------------------------------------------------------
+  const int ntot_amode        = mam_coupling::num_aero_modes();
+  const int maxd_aspectype    = mam4::ndrop::maxd_aspectype;
+  const int nspec_max         = mam4::ndrop::nspec_max;
+  int nspec_amode[ntot_amode] = {};
+  int lspectype_amode[maxd_aspectype][ntot_amode] = {};
+  int lmassptr_amode[maxd_aspectype][ntot_amode]  = {};
+  Real specdens_amode[maxd_aspectype]             = {};
+  Real spechygro[maxd_aspectype]                  = {};
+  int numptr_amode[ntot_amode]                    = {};
+  int mam_idx[ntot_amode][nspec_max]              = {};
+  int mam_cnst_idx[ntot_amode][nspec_max]         = {};
+  Real exp45logsig[ntot_amode] = {}, alogsig[ntot_amode] = {},
+       num2vol_ratio_min_nmodes[ntot_amode] = {},
+       num2vol_ratio_max_nmodes[ntot_amode] = {};
+  Real aten                                 = 0;
+  mam4::ndrop::get_e3sm_parameters(nspec_amode, lspectype_amode, lmassptr_amode,
+                                   numptr_amode, specdens_amode, spechygro,
+                                   mam_idx, mam_cnst_idx);
+  mam4::ndrop::ndrop_init(exp45logsig, alogsig, aten, num2vol_ratio_min_nmodes,
+                          num2vol_ratio_max_nmodes);
+  //---------------------------------------------------------------------------
+  // ## END (Initialize the ndrop class.)
+  //---------------------------------------------------------------------------
 
   Kokkos::parallel_for(
       team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
         const int icol = team.league_rank();
-
-        // Initialize the ndrop class.
-        const int ntot_amode        = mam_coupling::num_aero_modes();
-        const int maxd_aspectype    = mam4::ndrop::maxd_aspectype;
-        const int nspec_max         = mam4::ndrop::nspec_max;
-        int nspec_amode[ntot_amode] = {};
-        int lspectype_amode[maxd_aspectype][ntot_amode] = {};
-        int lmassptr_amode[maxd_aspectype][ntot_amode]  = {};
-        Real specdens_amode[maxd_aspectype]             = {};
-        Real spechygro[maxd_aspectype]                  = {};
-        int numptr_amode[ntot_amode]                    = {};
-        int mam_idx[ntot_amode][nspec_max]              = {};
-        int mam_cnst_idx[ntot_amode][nspec_max]         = {};
-        Real exp45logsig[ntot_amode] = {}, alogsig[ntot_amode] = {},
-             num2vol_ratio_min_nmodes[ntot_amode] = {},
-             num2vol_ratio_max_nmodes[ntot_amode] = {};
-        Real aten                                 = 0;
-        mam4::ndrop::get_e3sm_parameters(
-            nspec_amode, lspectype_amode, lmassptr_amode, numptr_amode,
-            specdens_amode, spechygro, mam_idx, mam_cnst_idx);
-        mam4::ndrop::ndrop_init(exp45logsig, alogsig, aten,
-                                num2vol_ratio_min_nmodes,   // voltonumbhi_amode
-                                num2vol_ratio_max_nmodes);  // voltonumblo_amode
 
         mam4::ndrop::View1D raercol_cw_view[mam4::ndrop::pver][2];
         mam4::ndrop::View1D raercol_view[mam4::ndrop::pver][2];
@@ -1259,12 +1266,12 @@ void MAMAci::run_impl(const double dt) {
 
   call_function_dropmixnuc(
       team_policy, dt, dry_atm_, rpdel_, kvh_, wsub_, cloud_frac_,
-      cloud_frac_prev_, dry_aero_,
+      cloud_frac_prev_, dry_aero_, nlev_,
       // output
       qqcw_fld_work_, ptend_q_, factnum_, tendnd_, coltend_, coltend_cw_,
       // work arrays
       raercol_cw_, raercol_, state_q_work_, qcld_, ndropcol_, ndropmix_,
-      nsource_, wtke_, ccn_, nact_, mact_, dropmixnuc_scratch_mem_, nlev_);
+      nsource_, wtke_, ccn_, nact_, mact_, dropmixnuc_scratch_mem_);
   Kokkos::fence();  // wait for ptend_q_ to be computed.
 
   copy_mam4xx_array_to_scream<mam4::aero_model::pcnst>(
