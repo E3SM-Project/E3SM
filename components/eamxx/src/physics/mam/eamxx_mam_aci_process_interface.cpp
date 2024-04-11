@@ -35,16 +35,18 @@ void copy_scream_array_to_mam4xx(
 }
 
 KOKKOS_INLINE_FUNCTION
-void compute_w0_and_rho(const haero::ThreadTeam &team, MAMAci::view_2d w0,
-                        MAMAci::view_2d rho, MAMAci::const_view_2d omega,
-                        MAMAci::const_view_2d T_mid,
-                        MAMAci::const_view_2d p_mid, const int icol,
-                        const int top_lev, const int nlev) {
+void compute_w0_and_rho(const haero::ThreadTeam &team,
+                        const MAMAci::const_view_2d omega,
+                        const MAMAci::const_view_2d T_mid,
+                        const MAMAci::const_view_2d p_mid, const int icol,
+                        const int top_lev, const int nlev,
+                        // output
+                        MAMAci::view_2d w0, MAMAci::view_2d rho) {
   // Get physical constants
   using C                      = physics::Constants<Real>;
   static constexpr auto gravit = C::gravit;  // Gravity [m/s2]
-  static constexpr auto rair =
-      C::Rair;  // Gas constant for dry air [J/(kg*K) or J/Kg/K]
+  // Gas constant for dry air [J/(kg*K) or J/Kg/K]
+  static constexpr auto rair = C::Rair;
   Kokkos::parallel_for(
       Kokkos::TeamThreadRange(team, 0u, top_lev), KOKKOS_LAMBDA(int kk) {
         w0(icol, kk)  = 0;
@@ -56,27 +58,29 @@ void compute_w0_and_rho(const haero::ThreadTeam &team, MAMAci::view_2d w0,
         w0(icol, kk)  = -1.0 * omega(icol, kk) / (rho(icol, kk) * gravit);
       });
 }
-void compute_w0_and_rho(haero::ThreadTeamPolicy team_policy, MAMAci::view_2d w0,
-                        MAMAci::view_2d rho,
-                        mam_coupling::DryAtmosphere &dry_atmosphere,
-                        const int top_lev, const int nlev) {
-  // Get physical constants
-  using C                     = physics::Constants<Real>;
+void compute_w0_and_rho(haero::ThreadTeamPolicy team_policy,
+                        const mam_coupling::DryAtmosphere &dry_atmosphere,
+                        const int top_lev, const int nlev,
+                        // output
+                        MAMAci::view_2d w0, MAMAci::view_2d rho) {
   MAMAci::const_view_2d omega = dry_atmosphere.omega;
   MAMAci::const_view_2d T_mid = dry_atmosphere.T_mid;
   MAMAci::const_view_2d p_mid = dry_atmosphere.p_mid;
   Kokkos::parallel_for(
       team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
         const int icol = team.league_rank();
-        compute_w0_and_rho(team, w0, rho, omega, T_mid, p_mid, icol, top_lev,
-                           nlev);
+        compute_w0_and_rho(team, omega, T_mid, p_mid, icol, top_lev, nlev,
+                           // output
+                           w0, rho);
       });
 }
 
 KOKKOS_INLINE_FUNCTION
-void compute_tke_using_w_sec(const haero::ThreadTeam &team, MAMAci::view_2d tke,
-                             MAMAci::const_view_2d w_sec, const int icol,
-                             const int nlev) {
+void compute_tke_using_w_sec(const haero::ThreadTeam &team,
+                             const MAMAci::const_view_2d w_sec, const int icol,
+                             const int nlev,
+                             // output
+                             MAMAci::view_2d tke) {
   // FIXME Is this the correct boundary condition for tke at the surface?
   // TKE seems to be at interfaces but w_sec is at cell centers so this
   // descrepensy needs to be worked out.
@@ -85,19 +89,23 @@ void compute_tke_using_w_sec(const haero::ThreadTeam &team, MAMAci::view_2d tke,
       KOKKOS_LAMBDA(int kk) { tke(icol, kk) = (3.0 / 2.0) * w_sec(icol, kk); });
 }
 void compute_tke_using_w_sec(haero::ThreadTeamPolicy team_policy,
-                             MAMAci::view_2d tke, MAMAci::const_view_2d w_sec,
-                             const int nlev) {
+                             const MAMAci::const_view_2d w_sec, const int nlev,
+                             // output
+                             MAMAci::view_2d tke) {
   Kokkos::parallel_for(
       team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
         const int icol = team.league_rank();
-        compute_tke_using_w_sec(team, tke, w_sec, icol, nlev);
+        compute_tke_using_w_sec(team, w_sec, icol, nlev,
+                                // output
+                                tke);
       });
 }
 KOKKOS_INLINE_FUNCTION
 void compute_subgrid_scale_velocities(
-    const haero::ThreadTeam &team, MAMAci::view_2d wsub,
-    MAMAci::view_2d wsubice, MAMAci::view_2d wsig, MAMAci::const_view_2d tke,
-    const Real wsubmin, const int icol, const int top_lev, const int nlev) {
+    const haero::ThreadTeam &team, const MAMAci::const_view_2d tke,
+    const Real wsubmin, const int icol, const int top_lev, const int nlev,
+    // output
+    MAMAci::view_2d wsub, MAMAci::view_2d wsubice, MAMAci::view_2d wsig) {
   // More refined computation of sub-grid vertical velocity
   // Set to be zero at the surface by initialization.
   Kokkos::parallel_for(
@@ -118,14 +126,17 @@ void compute_subgrid_scale_velocities(
       });
 }
 void compute_subgrid_scale_velocities(
-    haero::ThreadTeamPolicy team_policy, MAMAci::view_2d wsub,
-    MAMAci::view_2d wsubice, MAMAci::view_2d wsig, MAMAci::const_view_2d tke,
-    const Real wsubmin, const int top_lev, const int nlev) {
+    haero::ThreadTeamPolicy team_policy, const MAMAci::const_view_2d tke,
+    const Real wsubmin, const int top_lev, const int nlev,
+    // output
+    MAMAci::view_2d wsub, MAMAci::view_2d wsubice, MAMAci::view_2d wsig) {
   Kokkos::parallel_for(
       team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
         const int icol = team.league_rank();
-        compute_subgrid_scale_velocities(team, wsub, wsubice, wsig, tke,
-                                         wsubmin, icol, top_lev, nlev);
+        compute_subgrid_scale_velocities(team, tke, wsubmin, icol, top_lev,
+                                         nlev,
+                                         // output
+                                         wsub, wsubice, wsig);
       });
 }
 
@@ -183,115 +194,124 @@ Real subgrid_mean_updraft(const Real w0, const Real wsig) {
 }
 KOKKOS_INLINE_FUNCTION
 void compute_subgrid_mean_updraft_velocities(const haero::ThreadTeam &team,
-                                             MAMAci::view_2d w2,
-                                             MAMAci::const_view_2d w0,
-                                             MAMAci::const_view_2d wsig,
-                                             const int icol, const int nlev) {
+                                             const MAMAci::const_view_2d w0,
+                                             const MAMAci::const_view_2d wsig,
+                                             const int icol, const int nlev,
+                                             // output
+                                             MAMAci::view_2d w2) {
   Kokkos::parallel_for(
       Kokkos::TeamThreadRange(team, 0u, nlev), KOKKOS_LAMBDA(int kk) {
         w2(icol, kk) = subgrid_mean_updraft(w0(icol, kk), wsig(icol, kk));
       });
 }
 void compute_subgrid_mean_updraft_velocities(
-    haero::ThreadTeamPolicy team_policy, MAMAci::view_2d w2,
-    MAMAci::const_view_2d w0, MAMAci::const_view_2d wsig, const int nlev) {
+    haero::ThreadTeamPolicy team_policy, const MAMAci::const_view_2d w0,
+    const MAMAci::const_view_2d wsig, const int nlev,
+    // output
+    MAMAci::view_2d w2) {
   Kokkos::parallel_for(
       team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
         const int icol = team.league_rank();
-        compute_subgrid_mean_updraft_velocities(team, w2, w0, wsig, icol, nlev);
+        compute_subgrid_mean_updraft_velocities(team, w0, wsig, icol, nlev,
+                                                // output
+                                                w2);
       });
 }
 KOKKOS_INLINE_FUNCTION
 void compute_aitken_dry_diameter(const haero::ThreadTeam &team,
-                                 MAMAci::view_2d aitken_dry_dia,
-                                 MAMAci::const_view_3d dgnum, const int icol,
-                                 const int top_lev) {
+                                 const MAMAci::const_view_3d dgnum,
+                                 const int icol, const int top_lev,
+                                 const int nlev,
+                                 // output
+                                 MAMAci::view_2d aitken_dry_dia) {
   const int aitken_idx = static_cast<int>(mam4::ModeIndex::Aitken);
   Kokkos::parallel_for(
-      Kokkos::TeamThreadRange(team, 0u, top_lev), KOKKOS_LAMBDA(int kk) {
+      Kokkos::TeamThreadRange(team, top_lev, nlev), KOKKOS_LAMBDA(int kk) {
         aitken_dry_dia(icol, kk) = dgnum(icol, aitken_idx, kk);
       });
 }
 void compute_aitken_dry_diameter(haero::ThreadTeamPolicy team_policy,
-                                 MAMAci::view_2d aitken_dry_dia,
-                                 MAMAci::const_view_3d dgnum,
-                                 const int top_lev) {
+                                 const MAMAci::const_view_3d dgnum,
+                                 const int top_lev, const int nlev,
+                                 // output
+                                 MAMAci::view_2d aitken_dry_dia) {
   Kokkos::parallel_for(
       team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
         const int icol = team.league_rank();
-        compute_aitken_dry_diameter(team, aitken_dry_dia, dgnum, icol, top_lev);
+        compute_aitken_dry_diameter(team, dgnum, icol, top_lev, nlev,
+                                    // output
+                                    aitken_dry_dia);
       });
 }
 
 void compute_nucleate_ice_tendencies(
     const mam4::NucleateIce &nucleate_ice, haero::ThreadTeamPolicy team_policy,
+    const mam_coupling::DryAtmosphere &dry_atmosphere,
+    const mam_coupling::AerosolState &dry_aerosol_state,
+    const MAMAci::view_2d wsubice, const MAMAci::view_2d aitken_dry_dia,
+    const int nlev, const double dt,
+    // output
     MAMAci::view_2d nihf, MAMAci::view_2d niim, MAMAci::view_2d nidep,
-    MAMAci::view_2d nimey, MAMAci::view_2d naai_hom, MAMAci::view_2d naai,
-    mam_coupling::AerosolState &dry_aerosol_state,
-    mam_coupling::DryAtmosphere &dry_atmosphere, MAMAci::view_2d aitken_dry_dia,
-    const int nlev, const double dt) {
+    MAMAci::view_2d nimey, MAMAci::view_2d naai_hom, MAMAci::view_2d naai) {
   //-------------------------------------------------------------
   // Get number of activated aerosol for ice nucleation (naai)
   // from ice nucleation
   //-------------------------------------------------------------
-  MAMAci::const_view_2d T_mid     = dry_atmosphere.T_mid;
-  MAMAci::const_view_2d p_mid     = dry_atmosphere.p_mid;
-  MAMAci::const_view_2d qv_dry    = dry_atmosphere.qv;
-  MAMAci::const_view_2d cldfrac   = dry_atmosphere.cldfrac;
-  MAMAci::const_view_2d w_updraft = dry_atmosphere.w_updraft;
-  using view_1d = typename KokkosTypes<DefaultDevice>::template view_1d<Real>;
-  view_1d dummy("DummyView", nlev);
-  Kokkos::parallel_for(
-      team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
-        const int icol = team.league_rank();
 
-        // Set up an atmosphere, surface, diagnostics, pronostics and tendencies
-        // class.
-        haero::Surface surf{};
-        mam4::Prognostics progs =
-            mam_coupling::aerosols_for_column(dry_aerosol_state, icol);
+  // Kokkos::parallel_for(
+  //     team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
+  //       const int icol = team.league_rank();
+  for(int icol = 0; icol < 218; ++icol) {
+    //---------------------------------------------------------------------
+    // Set up surface, pronostics atmosphere, diagnostics, and tendencies
+    // classes.
+    //---------------------------------------------------------------------
 
-        haero::Atmosphere haero_atm =
-            atmosphere_for_column(dry_atmosphere, icol);
+    // For compute_tendecies interface only, this structure is empty
+    haero::Surface surf{};
 
-        // nucleation doesn't use any diagnostics, so it's okay to leave this
-        // alone for now
-        mam4::Diagnostics diags(nlev);
-        const int aitken_idx = static_cast<int>(mam4::ModeIndex::Aitken);
-        diags.dry_geometric_mean_diameter_i[aitken_idx] =
-            ekat::subview(aitken_dry_dia, icol);
+    // Store interstitial and cld borne aerosols in "progrs" struture
+    mam4::Prognostics progs =
+        mam_coupling::aerosols_for_column(dry_aerosol_state, icol);
 
-        // These are the fields that are updated. Taking subviews means that
-        // the nihf, niim, nidep, nimey, naai_hom, and naai filds are updated
-        // in nucleate_ice.compute_tendencies.
-        diags.icenuc_num_hetfrz = ekat::subview(nihf, icol);
-        diags.icenuc_num_immfrz = ekat::subview(niim, icol);
-        diags.icenuc_num_depnuc = ekat::subview(nidep, icol);
-        diags.icenuc_num_meydep = ekat::subview(nimey, icol);
+    // Store atmopsheric vars (Tmid, Pmid, cloud fraction, qv, wsubmin)
+    haero::Atmosphere haero_atm = atmosphere_for_column(dry_atmosphere, icol);
 
-        // naai and naai_hom are the outputs needed for nucleate_ice and these
-        // are not tendencies.
-        diags.num_act_aerosol_ice_nucle_hom = ekat::subview(naai_hom, icol);
-        diags.num_act_aerosol_ice_nucle     = ekat::subview(naai, icol);
+    // Update the updraft velocity needed by nucleation to be "wsubice"
+    // in the haero_atm object
+    haero_atm.updraft_vel_ice_nucleation = ekat::subview(wsubice, icol);
 
-        // grab views from the buffer to store tendencies, not used as all
-        // values are store in diags above.
-        const mam4::Tendencies tends(nlev);
-        const mam4::AeroConfig aero_config;
-        const Real t = 0;
-        /*
-          NOTE:"state_q" is a combination of subset of tracers added by
-          "int_mmr_field_name" and "int_nmr_field_name". Only output we care
-          about is "naai", "naai_hom" is never used anywhere
+    // All the output from this process is diagnotics; creates "diags" with
+    // nlev column length
+    mam4::Diagnostics diags(nlev);
 
-          Fortran code:
-          call nucleate_ice_cam_calc(ncol, lchnk, temperature, state_q, pmid, &
-          ! input rho, wsubice, strat_cld_frac, dgnum, &          ! input naai,
-          naai_hom)                                 ! output
-        */
-        nucleate_ice.compute_tendencies(aero_config, team, t, dt, haero_atm,
-                                        surf, progs, diags, tends);
-      });
+    // Aitken mode index
+    const int aitken_idx = static_cast<int>(mam4::ModeIndex::Aitken);
+    diags.dry_geometric_mean_diameter_i[aitken_idx] =
+        ekat::subview(aitken_dry_dia, icol);
+
+    // These are the fields that are updated. Taking subviews means that
+    // the nihf, niim, nidep, nimey, naai_hom, and naai fields are updated
+    // in nucleate_ice.compute_tendencies.
+    diags.icenuc_num_hetfrz = ekat::subview(nihf, icol);
+    diags.icenuc_num_immfrz = ekat::subview(niim, icol);
+    diags.icenuc_num_depnuc = ekat::subview(nidep, icol);
+    diags.icenuc_num_meydep = ekat::subview(nimey, icol);
+
+    // naai and naai_hom are the outputs needed for nucleate_ice and these
+    // are not tendencies.
+    diags.num_act_aerosol_ice_nucle_hom = ekat::subview(naai_hom, icol);
+    diags.num_act_aerosol_ice_nucle     = ekat::subview(naai, icol);
+
+    // grab views from the buffer to store tendencies, not used as all
+    // values are store in diags above.
+    const mam4::Tendencies tends(nlev);  // not used
+    const mam4::AeroConfig aero_config;
+    const Real t = 0;  // not used
+    nucleate_ice.compute_tendencies(aero_config, /*team,*/ t, dt, haero_atm,
+                                    surf, progs, diags, tends);
+    //});
+  }
 }
 KOKKOS_INLINE_FUNCTION
 void store_liquid_cloud_fraction(
@@ -577,9 +597,6 @@ void call_hetfrz_compute_tendencies(
     MAMAci::view_2d hetfrz_depostion_nucleation_tend, MAMAci::view_2d naai_hom,
     MAMAci::view_2d naai, MAMAci::view_2d diagnostic_scratch_[], const int nlev,
     const double dt) {
-  using view_1d = typename KokkosTypes<DefaultDevice>::template view_1d<Real>;
-  view_1d dummy("DummyView", nlev);
-
   mam4::Hetfrz hetfrz                          = hetfrz_;
   mam_coupling::AerosolState dry_aerosol_state = dry_aero_;
   mam_coupling::DryAtmosphere dry_atmosphere   = dry_atm_;
@@ -1165,26 +1182,38 @@ void MAMAci::run_impl(const double dt) {
 
   haero::ThreadTeamPolicy team_policy(ncol_, Kokkos::AUTO);
 
-  compute_w0_and_rho(team_policy, w0_ /*output*/, rho_ /*output*/, dry_atm_,
-                     top_lev_, nlev_);
+  compute_w0_and_rho(team_policy, dry_atm_, top_lev_, nlev_,
+                     // output
+                     w0_, rho_);
 
-  compute_tke_using_w_sec(team_policy, tke_ /*output*/, w_sec_, nlev_);
+  compute_tke_using_w_sec(team_policy, w_sec_, nlev_,
+                          // output
+                          tke_);
 
   Kokkos::fence();  // wait for for tke_ to be computed.
 
-  compute_subgrid_scale_velocities(team_policy, wsub_, wsubice_, wsig_, tke_,
-                                   wsubmin, top_lev_, nlev_);
+  compute_subgrid_scale_velocities(team_policy, tke_, wsubmin, top_lev_, nlev_,
+                                   // output
+                                   wsub_, wsubice_, wsig_);
   Kokkos::fence();  // wait for wsig_ to be computed.
 
-  compute_subgrid_mean_updraft_velocities(team_policy, w2_, w0_, wsig_, nlev_);
+  compute_subgrid_mean_updraft_velocities(team_policy, w0_, wsig_, nlev_,
+                                          // output
+                                          w2_);
 
-  compute_aitken_dry_diameter(team_policy, aitken_dry_dia_, dgnum_, top_lev_);
+  compute_aitken_dry_diameter(team_policy, dgnum_, top_lev_, nlev_,
+                              // output
+                              aitken_dry_dia_);
   Kokkos::fence();  // wait for aitken_dry_dia_ to be computed.
 
-  // FIXME: Find out in-outs of the following call!
-  compute_nucleate_ice_tendencies(nucleate_ice_, team_policy, nihf_, niim_,
-                                  nidep_, nimey_, naai_hom_, naai_, dry_aero_,
-                                  dry_atm_, aitken_dry_dia_, nlev_, dt);
+  // Compute Ice nucleation
+  // NOTE: The Fortran version uses "ast" for cloud fraction which is equivalent
+  // to "cldfrac_tot" in FM. It is part of the "dry_atm_" struct
+  compute_nucleate_ice_tendencies(
+      nucleate_ice_, team_policy, dry_atm_, dry_aero_, wsubice_,
+      aitken_dry_dia_, nlev_, dt,
+      // output
+      nihf_, niim_, nidep_, nimey_, naai_hom_, naai_);
 
   store_liquid_cloud_fraction(team_policy, dry_atm_, liqcldf_, liqcldf_prev_,
                               top_lev_, nlev_,
