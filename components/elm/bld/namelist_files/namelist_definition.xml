@@ -381,6 +381,21 @@ Toggle to turn on inventory initialization(only relevant if FATES is being used)
 Full pathname to the inventory initialization control file.
 </entry>
 
+<!-- This may eventually migrate to the dynamic_subgrid group-->
+<entry id="use_fates_luh" type="logical" category="physics"
+       group="elm_inparm" valid_values="" >
+If TRUE, enable use of land use state and transition data from luh_timeseries file.
+(Only valid for fates land use change runs, where there is a luh_timeseries file.)
+(Also, only valid for use_fates = true and is incompatible with transient runs currently.)
+</entry>
+
+<!-- This could eventually be included in the "dynamic_subgrid" -->
+<entry id="fluh_timeseries" type="char*256" category="datasets"
+       input_pathname="abs" group="elm_inparm" valid_values="" >
+Full pathname of unified land use harmonization data file. This causes the land-use
+types to vary over time.
+</entry>
+
 <entry id="use_hydrstress" type="logical" category="physics"
         group="elm_inparm" valid_values="" value=".false.">
 Toggle to turn on if Kennedy et al plant hydraulics model is used.
@@ -772,7 +787,7 @@ in its attributes. (Only used if scripgriddata_src_type = UGRID.)
 <!--                                                   -->
 <entry id="mksrf_filename" type="char*256" category="mksurfdata"
        group="default_settings"
-       valid_values="mksrf_fsoitex,mksrf_forganic,mksrf_flakwat,mksrf_fwetlnd,mksrf_fmax,mksrf_fmax,mksrf_fglacier,mksrf_fvocef,mksrf_furbtopo,mksrf_flndtopo,firrig,mksrf_furban,mksrf_fvegtyp,mksrf_fsoicol,mksrf_fsoiord,mksrf_flai,mksrf_fgdp,mksrf_fpeat,mksrf_fabm,mksrf_ftopostats,mksrf_fvic,mksrf_fch4,mksrf_fgrvl,mksrf_fslp10,mksrf_fero" >
+       valid_values="mksrf_fsoitex,mksrf_forganic,mksrf_flakwat,mksrf_fwetlnd,mksrf_fmax,mksrf_fmax,mksrf_fglacier,mksrf_fvocef,mksrf_furbtopo,mksrf_flndtopo,firrig,mksrf_furban,mksrf_fvegtyp,mksrf_fsoicol,mksrf_fsoiord,mksrf_flai,mksrf_fgdp,mksrf_fpeat,mksrf_fabm,mksrf_ftopostats,mksrf_fvic,mksrf_fch4,mksrf_fgrvl,mksrf_fslp10,mksrf_fero,mksrf_ffert" >
 Filename for mksurfdata_map to remap raw data into the output surface dataset
 </entry>
 
@@ -928,6 +943,11 @@ Slope percentile dataset
 <entry id="mksrf_fero" type="char*256" category="mksurfdata"
        input_pathname="abs" group="elmexp" valid_values="" >
 ELM-Erosion parameters dataset
+</entry>
+
+<entry id="mksrf_ffert" type="char*256" category="mksurfdata"
+       input_pathname="abs" group="elmexp" valid_values="" >
+ELM-Fertilizer dataset
 </entry>
 
 <entry id="outnc_double" type="logical" category="mksurfdata"

@@ -181,7 +181,7 @@ contains
          call mpas_pool_get_array(forcingPool, 'landIceDraft', landIceDraft)
          call mpas_pool_get_array(forcingPool, 'landIceFloatingMask', landIceFloatingMask)
          call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
-         if (landIceFloatingMask(1) == -1) then
+         if (nCellsAll.gt.0 .AND. landIceFloatingMask(1) == -1) then
             call mpas_log_write('landIceFloatingMask contains the default value which likely indicates that this field is missing in the initial condition file (e.g. because it is meant for an older E3SM version).', &
                                 MPAS_LOG_CRIT)
          endif
@@ -4485,8 +4485,10 @@ contains
          ke_cell_flag = 1
       endif
 
-      if ((trim(config_time_integrator) == 'RK4') .or.(trim(config_time_integrator) == 'LTS') ) then
-         ! For RK4 or LTS, PV includes f: PV = (eta+f)/h.
+      if ( (trim(config_time_integrator) == 'RK4') &
+           .or. (trim(config_time_integrator) == 'LTS') &
+           .or. (trim(config_time_integrator) == 'FB_LTS') ) then
+         ! For RK4, LTS, or FB_LTS, PV includes f: PV = (eta+f)/h.
          fCoef = 1
       elseif (trim(config_time_integrator) == 'split_explicit' &
         .or.trim(config_time_integrator) == 'unsplit_explicit' &

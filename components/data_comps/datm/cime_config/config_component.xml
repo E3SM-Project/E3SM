@@ -240,6 +240,8 @@ data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
       <value compset="1850.*_DATM%CRU">1</value>
       <value compset="1850.*_DATM%GSW">1</value>
       <value compset="2000.*_DATM">$DATM_CLMNCEP_YR_START</value>
+      <value compset="2000_DATM%JRA">1</value>
+      <value compset="2000_DATM%JRA-1p5">1</value>
       <value compset="2003.*_DATM">$DATM_CLMNCEP_YR_START</value>
       <value compset="2010.*_DATM">$DATM_CLMNCEP_YR_START</value>
       <value compset="4804.*_DATM">$DATM_CLMNCEP_YR_START</value>

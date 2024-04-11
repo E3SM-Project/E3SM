@@ -1975,6 +1975,8 @@ contains
                ecosysSurfaceFlux(fe_ind_MPAS,iCell) + iceFluxFeDissolved(iCell)/parm_Fe_bioavail
             ecosysSurfaceFlux(dic_ind_MPAS,iCell) =  &
                ecosysSurfaceFlux(dic_ind_MPAS,iCell) + iceFluxDIC(iCell)
+            ecosysSurfaceFlux(alk_ind_MPAS,iCell) =  &
+               ecosysSurfaceFlux(alk_ind_MPAS,iCell) + iceFluxDIC(iCell)
             ecosysSurfaceFlux(dic_alt_co2_ind_MPAS,iCell) =  &
                ecosysSurfaceFlux(dic_alt_co2_ind_MPAS,iCell) + iceFluxDIC(iCell)
             ecosysSurfaceFlux(doc_ind_MPAS,iCell) =  &

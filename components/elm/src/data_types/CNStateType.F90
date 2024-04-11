@@ -1368,6 +1368,11 @@ contains
             interpinic_flag='interp', readvar=readvar, data=ptr2d)
     end if
 
+    call restartvar(ncid=ncid, flag=flag, varname='nfire', xtype=ncd_double,  &
+         dim1name='column', &
+         long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%nfire_col)
+
     call restartvar(ncid=ncid, flag=flag, varname='fpg', xtype=ncd_double,  &
          dim1name='column', &
          long_name='', units='', &

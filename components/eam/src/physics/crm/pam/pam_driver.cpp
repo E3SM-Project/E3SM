@@ -13,6 +13,7 @@
 #include "pam_statistics.h"
 #include "pam_output.h"
 #include "pam_accelerate.h"
+#include "pam_variance_transport.h"
 #include "sponge_layer.h"
 #include "surface_friction.h"
 #include "scream_cxx_interface_finalize.h"
@@ -46,6 +47,7 @@ extern "C" void pam_driver() {
   auto is_first_step = coupler.get_option<bool>("is_first_step");
   auto is_restart    = coupler.get_option<bool>("is_restart");
   bool use_crm_accel = coupler.get_option<bool>("use_crm_accel");
+  bool use_MMF_VT    = coupler.get_option<bool>("use_MMF_VT");
   bool enable_physics_tend_stats = coupler.get_option<bool>("enable_physics_tend_stats");
   //------------------------------------------------------------------------------------------------
   // set various coupler options
@@ -111,6 +113,11 @@ extern "C" void pam_driver() {
   // initialize variables for CRM mean-state acceleration
   if (use_crm_accel) { pam_accelerate_init(coupler); }
 
+  if (use_MMF_VT) {
+    pam_variance_transport_init(coupler);
+    pam_variance_transport_compute_forcing(coupler);
+  }
+
   // initilize surface "psuedo-friction" (psuedo => doesn't match "real" GCM friction)
   auto input_tau  = dm_host.get<real const,1>("input_tau00").createDeviceCopy();
   auto input_bflx = dm_host.get<real const,1>("input_bflxls").createDeviceCopy();
@@ -166,7 +173,8 @@ extern "C" void pam_driver() {
 
     if (enable_check_state) { pam_debug_check_state(coupler, 1, nstep); }
 
-    // run a PAM time step
+    // Apply forcing tendencies
+    if (use_MMF_VT) { pam_variance_transport_apply_forcing(coupler); }
     coupler.run_module( "apply_gcm_forcing_tendencies" , modules::apply_gcm_forcing_tendencies );
     coupler.run_module( "radiation"                    , [&] (pam::PamCoupler &coupler) {rad   .timeStep(coupler);} );
     if (enable_check_state) { pam_debug_check_state(coupler, 2, nstep); }
@@ -236,6 +244,11 @@ extern "C" void pam_driver() {
   // convert aggregated diagnostic quantities to means and copy to host
   pam_statistics_compute_means(coupler);
   pam_statistics_copy_to_host(coupler);
+
+  if (use_MMF_VT) {
+    pam_variance_transport_compute_feedback(coupler);
+    pam_variance_transport_copy_to_host(coupler);
+  }
 
   //------------------------------------------------------------------------------------------------
   // Finalize and clean up
