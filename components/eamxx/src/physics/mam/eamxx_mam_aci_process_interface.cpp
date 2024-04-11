@@ -382,22 +382,26 @@ void compute_recipical_pseudo_density(haero::ThreadTeamPolicy team_policy,
 }
 
 void call_function_dropmixnuc(
-    haero::ThreadTeamPolicy team_policy,
-    mam_coupling::DryAtmosphere &dry_atmosphere,
-    const mam_coupling::AerosolState &dry_aerosol_state, const Real dt,
+    haero::ThreadTeamPolicy team_policy, const Real dt,
+    mam_coupling::DryAtmosphere &dry_atmosphere, MAMAci::view_2d rpdel,
+    MAMAci::const_view_2d kvh, MAMAci::view_2d wsub, MAMAci::view_2d cloud_frac,
+    MAMAci::view_2d cloud_frac_prev,
+    const mam_coupling::AerosolState &dry_aerosol_state,
+
+    // output
+    MAMAci::view_2d qqcw_fld_work_[mam4::ndrop::ncnst_tot],
+    MAMAci::view_2d ptend_q[mam4::aero_model::pcnst], MAMAci::view_3d factnum,
+    MAMAci::view_2d tendnd, MAMAci::view_2d coltend[mam4::ndrop::ncnst_tot],
+    MAMAci::view_2d coltend_cw[mam4::ndrop::ncnst_tot],
+
+    // work arrays
     MAMAci::view_2d raercol_cw[mam4::ndrop::pver][2],
     MAMAci::view_2d raercol[mam4::ndrop::pver][2],
-    MAMAci::view_2d qqcw_fld_work_[mam4::ndrop::ncnst_tot],
-    MAMAci::view_2d ptend_q[mam4::aero_model::pcnst],
-    MAMAci::view_2d coltend[mam4::ndrop::ncnst_tot],
-    MAMAci::view_2d coltend_cw[mam4::ndrop::ncnst_tot], MAMAci::view_2d rpdel,
-    MAMAci::view_3d state_q_work_, MAMAci::const_view_2d kvh,
-    MAMAci::view_2d qcld, MAMAci::view_2d wsub, MAMAci::view_2d cloud_frac,
-    MAMAci::view_2d cloud_frac_prev, MAMAci::view_2d tendnd,
-    MAMAci::view_3d factnum, MAMAci::view_2d ndropcol, MAMAci::view_2d ndropmix,
-    MAMAci::view_2d nsource, MAMAci::view_2d wtke, MAMAci::view_3d ccn,
-    MAMAci::view_3d nact, MAMAci::view_3d mact,
-    MAMAci::view_2d dropmixnuc_scratch_mem[15], const int nlev) {
+    MAMAci::view_3d state_q_work_, MAMAci::view_2d qcld,
+    MAMAci::view_2d ndropcol, MAMAci::view_2d ndropmix, MAMAci::view_2d nsource,
+    MAMAci::view_2d wtke, MAMAci::view_3d ccn, MAMAci::view_3d nact,
+    MAMAci::view_3d mact, MAMAci::view_2d dropmixnuc_scratch_mem[15],
+    const int nlev) {
   // FIXME: why can't we use MAMAci::dropmix_scratch_ above
 
   MAMAci::const_view_2d T_mid = dry_atmosphere.T_mid;
@@ -1253,12 +1257,14 @@ void MAMAci::run_impl(const double dt) {
      qqcw, &  ! inout
            ptend, nctend_mixnuc, factnum)  !out*/
 
-  call_function_dropmixnuc(team_policy, dry_atm_, dry_aero_, dt, raercol_cw_,
-                           raercol_, qqcw_fld_work_, ptend_q_, coltend_,
-                           coltend_cw_, rpdel_, state_q_work_, kvh_, qcld_,
-                           wsub_, cloud_frac_, cloud_frac_prev_, tendnd_,
-                           factnum_, ndropcol_, ndropmix_, nsource_, wtke_,
-                           ccn_, nact_, mact_, dropmixnuc_scratch_mem_, nlev_);
+  call_function_dropmixnuc(
+      team_policy, dt, dry_atm_, rpdel_, kvh_, wsub_, cloud_frac_,
+      cloud_frac_prev_, dry_aero_,
+      // output
+      qqcw_fld_work_, ptend_q_, factnum_, tendnd_, coltend_, coltend_cw_,
+      // work arrays
+      raercol_cw_, raercol_, state_q_work_, qcld_, ndropcol_, ndropmix_,
+      nsource_, wtke_, ccn_, nact_, mact_, dropmixnuc_scratch_mem_, nlev_);
   Kokkos::fence();  // wait for ptend_q_ to be computed.
 
   copy_mam4xx_array_to_scream<mam4::aero_model::pcnst>(
