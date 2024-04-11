@@ -61,8 +61,9 @@ if (TARGET yakl)
 else ()
   # Prepare CUDA/HIP flags for YAKL
   if (CUDA_BUILD)
+    string(REPLACE ";" " " KOKKOS_CUDA_OPTIONS_STR "${KOKKOS_CUDA_OPTIONS}")
     set(YAKL_ARCH "CUDA")
-    set(YAKL_CUDA_FLAGS "-DYAKL_ARCH_CUDA --expt-extended-lambda --expt-relaxed-constexpr -ccbin ${CMAKE_CXX_COMPILER}")
+    set(YAKL_CUDA_FLAGS "-DYAKL_ARCH_CUDA ${KOKKOS_CUDA_OPTIONS_STR} --expt-relaxed-constexpr -ccbin ${CMAKE_CXX_COMPILER}")
     string (REPLACE " " ";" YAKL_CUDA_FLAGS_LIST ${YAKL_CUDA_FLAGS})
   endif()
   if (HIP_BUILD)
@@ -124,7 +125,7 @@ yakl_process_target(rrtmgp)
 # NOTE: cannot use 'PUBLIC' in target_link_libraries,
 #       since yakl_process_target already used it
 #       with the "plain" signature
-target_link_libraries(rrtmgp yakl)
+target_link_libraries(rrtmgp yakl Kokkos::kokkos)
 target_include_directories(rrtmgp PUBLIC
     ${SCREAM_BASE_DIR}/../../externals/YAKL
     ${EAM_RRTMGP_DIR}/external/cpp
@@ -133,12 +134,6 @@ target_include_directories(rrtmgp PUBLIC
     ${EAM_RRTMGP_DIR}/external/cpp/rrtmgp
     ${EAM_RRTMGP_DIR}/external/cpp/rrtmgp/kernels
 )
-
-# The lines below are needed to ensure that kokkos_launch_compiler injects
-# nvcc into compilations. rrtmgp uses YAKL, not kokkos, so the wrapper
-# didn't know to add nvcc without these lines.
-target_compile_definitions(rrtmgp PRIVATE KOKKOS_DEPENDENCE)
-target_link_options(rrtmgp PRIVATE -DKOKKOS_DEPENDENCE)
 
 # Build RRTMGP interface; note that we separate the SCREAM-specific RRTMGP interface
 # from the external core RRTMGP library because, ideally, the RRTMGP library has its
@@ -168,7 +163,7 @@ yakl_process_target(scream_rrtmgp_yakl)
 #       since yakl_process_target already used it
 #       with the "plain" signature
 find_library(NETCDF_C netcdf HINTS ${NetCDF_C_PATH}/lib)
-target_link_libraries(scream_rrtmgp_yakl ${NETCDF_C} rrtmgp scream_share)
+target_link_libraries(scream_rrtmgp_yakl ${NETCDF_C} rrtmgp scream_share Kokkos::kokkos)
 target_include_directories(scream_rrtmgp_yakl PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(scream_rrtmgp_yakl SYSTEM PUBLIC
@@ -185,7 +180,7 @@ set(SCREAM_RRTMGP_SOURCES
 )
 
 add_library(scream_rrtmgp ${SCREAM_RRTMGP_SOURCES})
-target_link_libraries(scream_rrtmgp PUBLIC scream_share physics_share csm_share scream_rrtmgp_yakl)
+target_link_libraries(scream_rrtmgp PUBLIC scream_share physics_share csm_share scream_rrtmgp_yakl Kokkos::kokkos)
 set_target_properties(scream_rrtmgp PROPERTIES
   Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules
 )

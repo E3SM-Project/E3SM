@@ -408,7 +408,7 @@ contains
       prev => curr
       curr => prev%next
     end do
-    
+
     allocate(prev%next)
     curr => prev%next
     allocate(curr%var)
@@ -562,7 +562,7 @@ contains
     character(len=256), intent(in) :: varname
     character(len=256), intent(in) :: metaname
     real(kind=c_float)             :: metaval
-    
+
 
     ! Local variables
     type(pio_atm_file_t),pointer :: pio_file
@@ -1674,7 +1674,6 @@ contains
 
     call lookup_pio_atm_file(trim(filename),pio_atm_file,found)
     call get_var(pio_atm_file,varname,var)
-
     ! Set the timesnap we are reading
     if (time_index .gt. 0) then
       ! The user has set a valid time index to read from

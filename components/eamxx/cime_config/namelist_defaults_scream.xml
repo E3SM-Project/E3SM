@@ -237,6 +237,23 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- CLD fraction -->
     <cldFraction inherit="atm_proc_base"/>
 
+    <!-- MAM4xx namelist options -->
+    <!-- MAM4xx-Optics -->
+    <mam4_optics inherit="atm_proc_base">
+      <mam4_mode1_physical_properties_file type="file" doc="File containing optical properties for MAM4 mode 1, accumulation mode">${DIN_LOC_ROOT}/atm/scream/mam4xx/physprops/mam4_mode1_rrtmg_aeronetdust_c20240206.nc</mam4_mode1_physical_properties_file>
+      <mam4_mode2_physical_properties_file type="file" doc="File containing optical properties for MAM4 mode 2, Aitken mode">${DIN_LOC_ROOT}/atm/scream/mam4xx/physprops/mam4_mode2_rrtmg_c20240206.nc</mam4_mode2_physical_properties_file>
+      <mam4_mode3_physical_properties_file type="file" doc="File containing optical properties for MAM4 mode 3, coarse mode">${DIN_LOC_ROOT}/atm/scream/mam4xx/physprops/mam4_mode3_rrtmg_aeronetdust_c20240206.nc</mam4_mode3_physical_properties_file>
+      <mam4_mode4_physical_properties_file type="file" doc="File containing optical properties for MAM4 mode 4, p-carbon mode">${DIN_LOC_ROOT}/atm/scream/mam4xx/physprops/mam4_mode4_rrtmg_c20240206.nc</mam4_mode4_physical_properties_file>
+      <mam4_water_refindex_file type="file" doc="File containing optical properties for aerosol water">${DIN_LOC_ROOT}/atm/scream/mam4xx/physprops/water_refindex_rrtmg_c20240206.nc</mam4_water_refindex_file>
+      <mam4_soa_physical_properties_file type="file" doc="File containing optical properties for secondary organic aerosol">${DIN_LOC_ROOT}/atm/scream/mam4xx/physprops/ocphi_rrtmg_c20240206.nc</mam4_soa_physical_properties_file>
+      <mam4_dust_physical_properties_file type="file" doc="File containing optical properties for dust">${DIN_LOC_ROOT}/atm/scream/mam4xx/physprops/dust_aeronet_rrtmg_c20240206.nc</mam4_dust_physical_properties_file>
+      <mam4_nacl_physical_properties_file type="file" doc="File containing optical properties for sea salt">${DIN_LOC_ROOT}/atm/scream/mam4xx/physprops/ssam_rrtmg_c20240206.nc</mam4_nacl_physical_properties_file>
+      <mam4_so4_physical_properties_file type="file" doc="File containing optical properties for sulfate">${DIN_LOC_ROOT}/atm/scream/mam4xx/physprops/sulfate_rrtmg_c20240206.nc</mam4_so4_physical_properties_file>
+      <mam4_pom_physical_properties_file type="file" doc="File containing optical properties for primary organic aerosol">${DIN_LOC_ROOT}/atm/scream/mam4xx/physprops/ocpho_rrtmg_c20240206.nc</mam4_pom_physical_properties_file>
+      <mam4_bc_physical_properties_file type="file" doc="File containing optical properties for black carbon">${DIN_LOC_ROOT}/atm/scream/mam4xx/physprops/bcpho_rrtmg_c20240206.nc</mam4_bc_physical_properties_file>
+      <mam4_mom_physical_properties_file type="file" doc="File containing optical properties for marine organic aerosol">${DIN_LOC_ROOT}/atm/scream/mam4xx/physprops/poly_rrtmg_c20240206.nc</mam4_mom_physical_properties_file>
+    </mam4_optics>
+
     <!-- nudging -->
     <nudging inherit="atm_proc_base">
       <nudging_filenames_patterns type="array(string)"/>

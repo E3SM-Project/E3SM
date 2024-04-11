@@ -610,6 +610,7 @@ _TESTS = {
 
     "e3sm_scream_v1_lowres" : {
         "time"  : "01:00:00",
+        "inherit" : ("e3sm_scream_mam4xx_v1_lowres"),
         "tests" : (
             "ERP_D_Lh4.ne4_ne4.F2010-SCREAMv1.scream-output-preset-1",
             "ERS_Ln9.ne4_ne4.F2000-SCREAMv1-AQP1.scream-output-preset-2",
@@ -684,6 +685,14 @@ _TESTS = {
             "ERS_Ln362.ne30pg2_ne30pg2.F2010-SCREAMv1"
             )
     },
+
+    "e3sm_scream_mam4xx_v1_lowres" : {
+        "time"  : "01:00:00",
+        "tests" : (
+            "SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.scream-mam4xx-optics",
+        )
+    },
+
 
     "e3sm_gpuacc" : {
         "tests"    : (
@@ -1006,4 +1015,3 @@ _TESTS = {
                      "e3sm_superbfb_atm", "e3sm_superbfb_wcycl"),
     },
 }
-

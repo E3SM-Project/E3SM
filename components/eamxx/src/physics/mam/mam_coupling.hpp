@@ -18,8 +18,12 @@ using KT            = ekat::KokkosTypes<ekat::DefaultDevice>;
 // views for single- and multi-column data
 using view_1d       = typename KT::template view_1d<Real>;
 using view_2d       = typename KT::template view_2d<Real>;
+using view_3d       = typename KT::template view_3d<Real>;
 using const_view_1d = typename KT::template view_1d<const Real>;
 using const_view_2d = typename KT::template view_2d<const Real>;
+
+using complex_view_3d = typename KT::template view_3d<Kokkos::complex<Real>>;
+using complex_view_2d = typename KT::template view_2d<Kokkos::complex<Real>>;
 
 // Kokkos thread team (league member)
 using Team = Kokkos::TeamPolicy<KT::ExeSpace>::member_type;
@@ -29,6 +33,8 @@ using uview_1d = typename ekat::template Unmanaged<typename KT::template view_1d
 using uview_2d = typename ekat::template Unmanaged<typename KT::template view_2d<Real>>;
 
 using PF = scream::PhysicsFunctions<DefaultDevice>;
+
+using view_int_1d       = typename KT::template view_1d<int>;
 
 // number of constituents in gas chemistry "work arrays"
 KOKKOS_INLINE_FUNCTION
@@ -102,12 +108,12 @@ const char* aero_species_name(const int species_id) {
 KOKKOS_INLINE_FUNCTION
 const char* gas_species_name(const int gas_id) {
   static const char *species_names[num_aero_gases()] = {
-    "o3",
-    "h2o2",
-    "h2so4",
-    "so2",
-    "dms",
-    "soag"
+    "O3",
+    "H2O2",
+    "H2SO4",
+    "SO2",
+    "DMS",
+    "SOAG"
   };
   return species_names[gas_id];
 }
@@ -241,13 +247,10 @@ const char* cld_aero_mmr_field_name(const int mode, const int species) {
 };
 
 // Given a MAM aerosol-related gas identifier, returns the name of its mass
-// mixing ratio field in EAMxx ("aero_gas_mmr_<gas>")
+// mixing ratio field in EAMxx
 KOKKOS_INLINE_FUNCTION
 const char* gas_mmr_field_name(const int gas) {
-  if (!gas_mmr_names(gas)[0]) {
-    concat_2_strings("aero_gas_mmr_", gas_species_name(gas), gas_mmr_names(gas));
-  }
-  return const_cast<const char*>(gas_mmr_names(gas));
+  return const_cast<const char*>(gas_species_name(gas));
 }
 
 // This type stores multi-column views related specifically to the wet
@@ -276,6 +279,7 @@ struct DryAtmosphere {
   view_2d       z_iface;   // height at layer interfaces [m]
   view_2d       dz;        // layer thickness [m]
   const_view_2d p_del;     // hydrostatic "pressure thickness" at grid interfaces [Pa]
+  const_view_2d p_int;    // total pressure at grid interfaces [Pa]
   const_view_2d cldfrac;   // cloud fraction [-]
   view_2d       w_updraft; // updraft velocity [m/s]
   const_view_1d pblh;      // planetary boundary layer height [m]
@@ -508,6 +512,8 @@ haero::Atmosphere atmosphere_for_column(const DryAtmosphere& dry_atm,
     "z_mid not defined for dry atmosphere state!");
   EKAT_KERNEL_ASSERT_MSG(dry_atm.p_del.data() != nullptr,
     "p_del not defined for dry atmosphere state!");
+  EKAT_KERNEL_ASSERT_MSG(dry_atm.p_int.data() != nullptr,
+    "p_int not defined for dry atmosphere state!");
   EKAT_KERNEL_ASSERT_MSG(dry_atm.cldfrac.data() != nullptr,
     "cldfrac not defined for dry atmosphere state!");
   EKAT_KERNEL_ASSERT_MSG(dry_atm.w_updraft.data() != nullptr,
@@ -522,6 +528,7 @@ haero::Atmosphere atmosphere_for_column(const DryAtmosphere& dry_atm,
                            ekat::subview(dry_atm.ni, column_index),
                            ekat::subview(dry_atm.z_mid, column_index),
                            ekat::subview(dry_atm.p_del, column_index),
+                           ekat::subview(dry_atm.p_int, column_index),
                            ekat::subview(dry_atm.cldfrac, column_index),
                            ekat::subview(dry_atm.w_updraft, column_index),
                            dry_atm.pblh(column_index));
@@ -585,13 +592,18 @@ void compute_vertical_layer_heights(const Team& team,
     "Given column index does not correspond to given team!");
 
   const auto dz = ekat::subview(dry_atm.dz, column_index);
-  auto z_iface  = ekat::subview(dry_atm.z_iface, column_index);
-  auto z_mid    = ekat::subview(dry_atm.z_mid, column_index);
+  const auto z_iface  = ekat::subview(dry_atm.z_iface, column_index);
+  const auto z_mid    = ekat::subview(dry_atm.z_mid, column_index);
+  const auto qv = ekat::subview(dry_atm.qv, column_index);
+  const auto p_mid = ekat::subview(dry_atm.p_mid, column_index);
+  const auto T_mid = ekat::subview(dry_atm.T_mid, column_index);
+  const auto pseudo_density = ekat::subview(dry_atm.p_del, column_index);
+  PF::calculate_dz(team, pseudo_density, p_mid, T_mid, qv, dz);
+  team.team_barrier();
   PF::calculate_z_int(team, mam4::nlev, dz, dry_atm.z_surf, z_iface);
   team.team_barrier(); // likely necessary to have z_iface up to date
   PF::calculate_z_mid(team, mam4::nlev, z_iface, z_mid);
 }
-
 
 // Given a thread team and wet and dry atmospheres, dispatches threads from the
 // team to compute the vertical updraft velocity for the column with the given
