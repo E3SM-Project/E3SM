@@ -32,6 +32,11 @@ theme:
     - search.suggest
     - search.highlight
     - search.share
+    - content.code.select
+    - content.code.copy
+    - content.action.edit
+    - content.action.view
+    - content.tooltips
 
 
 markdown_extensions:
