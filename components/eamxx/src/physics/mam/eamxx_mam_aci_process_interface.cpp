@@ -295,11 +295,12 @@ void compute_nucleate_ice_tendencies(
 }
 KOKKOS_INLINE_FUNCTION
 void store_liquid_cloud_fraction(
-    const haero::ThreadTeam &team, MAMAci::view_2d cloud_frac,
-    MAMAci::view_2d cloud_frac_prev, MAMAci::const_view_2d qc,
-    MAMAci::const_view_2d qi, MAMAci::const_view_2d liqcldf,
-    MAMAci::const_view_2d liqcldf_prev, const int icol, const int top_lev,
-    const int nlev) {
+    const haero::ThreadTeam &team, const MAMAci::const_view_2d qc,
+    const MAMAci::const_view_2d qi, const MAMAci::const_view_2d liqcldf,
+    const MAMAci::const_view_2d liqcldf_prev, const int icol, const int top_lev,
+    const int nlev,
+    // output
+    MAMAci::view_2d cloud_frac, MAMAci::view_2d cloud_frac_prev) {
   //-------------------------------------------------------------
   // Get old and new liquid cloud fractions when amount of cloud
   // is above qsmall threshold value
@@ -317,20 +318,22 @@ void store_liquid_cloud_fraction(
         }
       });
 }
-void store_liquid_cloud_fraction(haero::ThreadTeamPolicy team_policy,
-                                 MAMAci::view_2d cloud_frac,
-                                 MAMAci::view_2d cloud_frac_prev,
-                                 mam_coupling::DryAtmosphere &dry_atmosphere,
-                                 MAMAci::const_view_2d liqcldf,
-                                 MAMAci::const_view_2d liqcldf_prev,
-                                 const int top_lev, const int nlev) {
+void store_liquid_cloud_fraction(
+    haero::ThreadTeamPolicy team_policy,
+    const mam_coupling::DryAtmosphere &dry_atmosphere,
+    const MAMAci::const_view_2d liqcldf,
+    const MAMAci::const_view_2d liqcldf_prev, const int top_lev, const int nlev,
+    // output
+    MAMAci::view_2d cloud_frac, MAMAci::view_2d cloud_frac_prev) {
   MAMAci::const_view_2d qc = dry_atmosphere.qc;
   MAMAci::const_view_2d qi = dry_atmosphere.qi;
   Kokkos::parallel_for(
       team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
         const int icol = team.league_rank();
-        store_liquid_cloud_fraction(team, cloud_frac, cloud_frac_prev, qc, qi,
-                                    liqcldf, liqcldf_prev, icol, top_lev, nlev);
+        store_liquid_cloud_fraction(team, qc, qi, liqcldf, liqcldf_prev, icol,
+                                    top_lev, nlev,
+                                    // output
+                                    cloud_frac, cloud_frac_prev);
       });
 }
 KOKKOS_INLINE_FUNCTION
@@ -1183,9 +1186,10 @@ void MAMAci::run_impl(const double dt) {
                                   nidep_, nimey_, naai_hom_, naai_, dry_aero_,
                                   dry_atm_, aitken_dry_dia_, nlev_, dt);
 
-  store_liquid_cloud_fraction(team_policy, cloud_frac_, cloud_frac_prev_,
-                              dry_atm_, liqcldf_, liqcldf_prev_, top_lev_,
-                              nlev_);
+  store_liquid_cloud_fraction(team_policy, dry_atm_, liqcldf_, liqcldf_prev_,
+                              top_lev_, nlev_,
+                              // output
+                              cloud_frac_, cloud_frac_prev_);
 
   // MUST FIXME: save cloud borne aerosols here!!!!
   //-------------------------------------------------------------
