@@ -1,7 +1,7 @@
 # build Omega
 
-# create library flag target for LibOmega.so
-add_library(OmegaLibFlags INTERFACE) 
+# create library flag target for LibOmega
+add_library(OmegaLibFlags INTERFACE)
 
 target_include_directories(
     OmegaLibFlags

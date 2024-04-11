@@ -20,12 +20,11 @@ function(add_omega_test test_name exe_name source_files mpi_args)
 
   # Add the test command
   add_test(
-    NAME ${test_name} 
+    NAME ${test_name}
     COMMAND ${MPI_EXEC} ${mpi_args} -- ./${exe_name}
   )
 
 endfunction()
-
 
 ##################
 # Data type test
