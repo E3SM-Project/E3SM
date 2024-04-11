@@ -55,6 +55,8 @@ module ocn_time_integration_split_ab2
 
    use ocn_surface_bulk_forcing
 
+   use ocn_diagnostic_solve_z_coordinates
+
    implicit none
    private
    save
@@ -415,6 +417,12 @@ module ocn_time_integration_split_ab2
       call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracersNew, 2)
 
       allocate(bottomDepthEdge(nEdgesAll+1))
+
+
+      if ( nowTimeStamp /= initialTimeStamp .or. config_do_restart ) then
+         call ocn_diagnostic_solve_z_coordinates(layerThicknessCur,zMid,zTop,sshCur)
+      endif
+
 
       if (config_transport_tests_flow_id > 0) then
         ! This is a transport test. Write advection velocity from prescribed
@@ -992,7 +1000,7 @@ module ocn_time_integration_split_ab2
          do iCell = 1, nCellsAll
             ! sshSubcycleOld = sshOld
             sshSubcycleCur(iCell) = sshCur(iCell)
-               netFreshwaterFlux(iCell) = 0.0_RKIND
+            netFreshwaterFlux(iCell) = 0.0_RKIND
          end do
          !$omp end do
 
@@ -1030,10 +1038,8 @@ module ocn_time_integration_split_ab2
          btrvel_temp(:) = 0.0_RKIND
          allocate(wctEdge(nEdgesAll+1))
          wctEdge(:) = 0.0_RKIND
-         allocate(deltaSSH(nCellsAll))
-         deltaSSH(:) = 0.0_RKIND
          allocate(sshAccum(nCellsAll))
-         sshAccum(:) = sshNew(:)
+         sshAccum(:) = sshNew(1:nCellsAll)
 
          cellHaloComputeCounter = 0
          edgeHaloComputeCounter = 0
@@ -1227,9 +1233,15 @@ module ocn_time_integration_split_ab2
                end do ! edges on cell
 
                ! SSHnew = SSHold + dt/J*(-div(Flux))
+!              sshSubcycleNew(iCell) = sshSubcycleCur(iCell) &
+!                                    + dt/nBtrSubcycles* &
+!                                      sshTend(iCell)/areaCell(iCell)
+
                sshSubcycleNew(iCell) = sshSubcycleCur(iCell) &
                                      + dt/nBtrSubcycles* &
-                                       sshTend(iCell)/areaCell(iCell)
+                                       (sshTend(iCell)/areaCell(iCell)+ &
+                                        netFreshwaterFlux(iCell))
+
             end do ! cells
             !$omp end do
             !$omp end parallel
@@ -1499,9 +1511,15 @@ module ocn_time_integration_split_ab2
                   end do ! edges on cell
 
                   ! SSHnew = SSHold + dt/J*(-div(Flux))
+!                 sshSubcycleNew(iCell) = sshSubcycleCur(iCell) &
+!                                    + dt/nBtrSubcycles * &
+!                                      sshTend(iCell)/areaCell(iCell)
+
                   sshSubcycleNew(iCell) = sshSubcycleCur(iCell) &
-                                     + dt/nBtrSubcycles * &
-                                       sshTend(iCell)/areaCell(iCell)
+                                        + dt/nBtrSubcycles* &
+                                          (sshTend(iCell)/areaCell(iCell)+ &
+                                           netFreshwaterFlux(iCell))
+
                end do ! cell loop for ssh
                !$omp end do
                !$omp end parallel
@@ -1569,6 +1587,11 @@ module ocn_time_integration_split_ab2
             !$omp end do
             !$omp end parallel
 
+            do iCell = 1, nCellsOwned
+               sshAccum(iCell) = sshAccum(iCell) + &
+                                 sshSubcycleNew(iCell)
+            end do
+
             ! advance time pointers
             oldBtrSubcycleTime = mod(oldBtrSubcycleTime,2)+1
             newBtrSubcycleTime = mod(newBtrSubcycleTime,2)+1
@@ -1600,6 +1623,14 @@ module ocn_time_integration_split_ab2
          end do
          !$omp end do
          !$omp end parallel
+
+         do iCell = 1, nCellsOwned
+            !sshAccum(iCell) = sshAccum(iCell) &
+            sshNew(iCell) = sshAccum(iCell) &
+                  / (nBtrSubcycles*config_btr_subcycle_loop_factor + 1)
+         end do
+
+         deallocate(sshAccum)
 
          call mpas_timer_stop('btr se norm')
 
@@ -2049,6 +2080,8 @@ module ocn_time_integration_split_ab2
             !$omp end do
             !$omp end parallel
 #endif
+
+            call ocn_diagnostic_solve_z_coordinates(layerThicknessNew,zMid,zTop,sshNew)
                
             ! Compute layerThicknessTend again
             !   layerThickTend from 0.5 * (h_{n} + h_{*})
@@ -2185,6 +2218,11 @@ module ocn_time_integration_split_ab2
                        + (0.5*(layerThicknessNew(k  ,iCell)+layerThicknessCur(k  ,iCell)))
                   end do
 
+                     zTop(minLevelCell(iCell),iCell) = 0.5_RKIND * (sshNew(iCell)+sshCur(iCell))
+
+                     layerThickness(minLevelCell(iCell),iCell) = zTop(minLevelCell(iCell)  ,iCell) &
+                                                               - zTop(minLevelCell(iCell)+1,iCell)
+
                end do
 #ifndef MPAS_OPENACC
                !$omp end do
@@ -2230,6 +2268,8 @@ module ocn_time_integration_split_ab2
                !$omp end do
                !$omp end parallel
 #endif
+
+            call ocn_diagnostic_solve_z_coordinates(layerThicknessNew,zMid,zTop,sshNew)
 
             endif ! nowTimeStamp
 

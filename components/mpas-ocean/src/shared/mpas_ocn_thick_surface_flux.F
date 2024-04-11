@@ -141,19 +141,24 @@ contains
           remainingFlux = remainingFlux - transmissionCoefficients(k, iCell)
           remainingFluxRunoff = remainingFluxRunoff - transmissionCoefficientsRunoff(k, iCell)
 
-!         tend(k, iCell) = tend(k, iCell) + surfaceThicknessFlux(iCell) * transmissionCoefficients(k, iCell)  &
-!                                         + surfaceThicknessFluxRunoff(iCell) * transmissionCoefficientsRunoff(k, iCell)
+          tend(k, iCell) = tend(k, iCell) + surfaceThicknessFlux(iCell) * transmissionCoefficients(k, iCell)  &
+                                          + surfaceThicknessFluxRunoff(iCell) * transmissionCoefficientsRunoff(k, iCell)
         end do
 
-!       if(maxLevelCell(iCell) > 0 .and. remainingFlux > 0.0_RKIND) then
-!         tend(maxLevelCell(iCell), iCell) = tend(maxLevelCell(iCell), iCell) + remainingFlux * surfaceThicknessFlux(iCell)
-!       end if
+        if(maxLevelCell(iCell) > 0 .and. remainingFlux > 0.0_RKIND) then
+          tend(maxLevelCell(iCell), iCell) = tend(maxLevelCell(iCell), iCell) + remainingFlux * surfaceThicknessFlux(iCell)
+        end if
 
-!       if(maxLevelCell(iCell) > 0 .and. remainingFluxRunoff > 0.0_RKIND) then
-!         tend(maxLevelCell(iCell), iCell) = tend(maxLevelCell(iCell), iCell) &
-!            + remainingFluxRunoff * surfaceThicknessFluxRunoff(iCell)
-!       end if
+        if(maxLevelCell(iCell) > 0 .and. remainingFluxRunoff > 0.0_RKIND) then
+          tend(maxLevelCell(iCell), iCell) = tend(maxLevelCell(iCell), iCell) &
+             + remainingFluxRunoff * surfaceThicknessFluxRunoff(iCell)
+        end if
       end do
+
+!     do iCell = 1, nCellsOwned
+!        k = minLevelCell(iCell)
+!        tend(k, iCell) = tend(k, iCell) + surfaceThicknessFlux(iCell) + surfaceThicknessFluxRunoff(iCell)
+!     end do
 #ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel

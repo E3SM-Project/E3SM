@@ -66,6 +66,7 @@ module ocn_diagnostics
              ocn_compute_kpp_input_fields, &
              ocn_validate_state, &
              ocn_build_log_filename, &
+             ocn_diagnostic_solve_z_coordinates, &
              ocn_diagnostics_init
 
    !--------------------------------------------------------------------
@@ -343,7 +344,7 @@ contains
       !
       ! inputs : layerThickness
       ! outputs : zMid, zTop, ssh)
-      call ocn_diagnostic_solve_z_coordinates(layerThickness, zMid, zTop, ssh)
+      !call ocn_diagnostic_solve_z_coordinates(layerThickness, zMid, zTop, ssh)
 
       !
       ! equation of state
@@ -2573,6 +2574,7 @@ contains
 
       nCells = nCellsAll
 
+      if ( minval(ssh) == 0.0_RKIND .and. maxval(ssh) == 0.0_RKIND ) then
 #ifdef MPAS_OPENACC
       !$acc parallel loop gang vector &
       !$acc          present(maxLevelCell, zMid, layerThickness, zTop, bottomDepth, ssh, &
@@ -2601,19 +2603,41 @@ contains
          end do
 
          ! copy zTop(1,iCell) into sea-surface height array
-         !ssh(iCell) = zTop(minLevelCell(iCell),iCell)
+         ssh(iCell) = zTop(minLevelCell(iCell),iCell)
+      end do
 
+#ifndef MPAS_OPENACC
+      !$omp end do
+      !$omp end parallel
+#endif
+
+   else
+
+      do iCell = 1, nCells
+
+         ! Compute zMid, the z-coordinate of the middle of the layer.
+         ! Compute zTop, the z-coordinate of the top of the layer.
+         ! Note the negative sign, since bottomDepth is positive
+         ! and z-coordinates are negative below the surface.
+         k = maxLevelCell(iCell)
+         zMid(k:nVertLevels,iCell) = -bottomDepth(iCell) + 0.5_RKIND*layerThickness(k,iCell)
+         zTop(k:nVertLevels,iCell) = -bottomDepth(iCell) + layerThickness(k,iCell)
+
+         do k = maxLevelCell(iCell)-1, minLevelCell(iCell), -1
+            zMid(k,iCell) = zMid(k+1,iCell)  &
+              + 0.5_RKIND*(  layerThickness(k+1,iCell) &
+                           + layerThickness(k  ,iCell))
+            zTop(k,iCell) = zTop(k+1,iCell)  &
+              + layerThickness(k  ,iCell)
+         end do
 
          zTop(minLevelCell(iCell),iCell) = ssh(iCell)
 
          layerThickness(minLevelCell(iCell),iCell) = zTop(minLevelCell(iCell)  ,iCell) &
                                                    - zTop(minLevelCell(iCell)+1,iCell)
-
       end do
-#ifndef MPAS_OPENACC
-      !$omp end do
-      !$omp end parallel
-#endif
+
+   endif
 
    end subroutine ocn_diagnostic_solve_z_coordinates!}}}
 

@@ -974,7 +974,7 @@ module ocn_time_integration_split
             allocate(deltaSSH(nCellsAll))
             deltaSSH(:) = 0.0_RKIND
             allocate(sshAccum(nCellsAll))
-            sshAccum(:) = sshNew(:)
+            sshAccum(:) = sshNew(1:nCellsAll)
 
             cellHaloComputeCounter = 0
             edgeHaloComputeCounter = 0
