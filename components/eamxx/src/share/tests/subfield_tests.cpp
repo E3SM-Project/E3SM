@@ -88,7 +88,7 @@ TEST_CASE("field", "") {
 
       auto sf = f1.subfield(idim, sl_beg, sl_end);
 
-      REQUIRE_THROWS(f1.get_view<Real**, Host>());
+      REQUIRE_THROWS(f1.get_multi_sliced_view<Real, 2, Host>());
 
       auto sv_h = sf.get_multi_sliced_view<Real, 1, Host>();
       for (int i = sl_beg; i < sl_end; i++) {
