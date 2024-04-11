@@ -1112,6 +1112,7 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
         ttgw=0._r8
         !!
         !state%ribulk=0.0_r8!!bulk is used only for gwd_ss, set as 0 for now.
+        !!
         call grid_size(state,dx,dy)
         !!
 	call gwdo_gsd(&

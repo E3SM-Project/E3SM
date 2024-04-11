@@ -2175,5 +2175,100 @@ enddo
 !-------------------------------------------------------------------
 
 
+#if 0
+!-------------------------------------------------------------------
+     subroutine bulk_ri(lchnk, ncol,            &
+       th      ,t       ,q       ,z       ,zi      , &
+       pmid    ,u       ,v       ,taux    ,tauy    , &
+       shflx   ,qflx    ,obklen  ,ustar   ,pblh    , &
+       kvm     ,kvh     ,kvq     ,cgh     ,cgs     , &
+       tpert   ,qpert   ,tke     , &
+       ri      , &
+       eddy_scheme)
+    !!
+    use pbl_utils, only: virtem, calc_ustar, calc_obklen
+    !!
+    ! Input arguments
+    !
+    integer, intent(in) :: lchnk                      ! chunk index (for debug only)
+    integer, intent(in) :: ncol                       ! number of atmospheric columns
+    !
+    real(r8), intent(in)  :: th(pcols,pver)           ! potential temperature [K]
+    real(r8), intent(in)  :: t(pcols,pver)            ! temperature (used for density)
+    real(r8), intent(in)  :: q(pcols,pver)            ! specific humidity [kg/kg]
+    real(r8), intent(in)  :: z(pcols,pver)            ! height above surface [m]
+    real(r8), intent(in)  :: zi(pcols,pverp)          ! height above surface [m]
+    real(r8), intent(in)  :: u(pcols,pver)            ! zonal velocity
+    real(r8), intent(in)  :: v(pcols,pver)            ! meridional velocity
+    real(r8), intent(in)  :: taux(pcols)              ! zonal stress [N/m2]
+    real(r8), intent(in)  :: tauy(pcols)              ! meridional stress [N/m2]
+    real(r8), intent(in)  :: shflx(pcols)             ! sensible heat flux
+    real(r8), intent(in)  :: qflx(pcols)              ! water vapor flux
+    real(r8), intent(in)  :: pmid(pcols,pver)         ! midpoint pressures
+    character(len=16), intent(in) :: eddy_scheme
+
+    !
+    ! Output arguments
+    !
+    real(r8), intent(out) :: kvm(pcols,pverp)         ! eddy diffusivity for momentum [m2/s]
+    real(r8), intent(out) :: kvh(pcols,pverp)         ! eddy diffusivity for heat [m2/s]
+    real(r8), intent(out) :: kvq(pcols,pverp)         ! eddy diffusivity for constituents [m2/s]
+    real(r8), intent(out) :: cgh(pcols,pverp)         ! counter-gradient term for heat [J/kg/m]
+    real(r8), intent(out) :: cgs(pcols,pverp)         ! counter-gradient star (cg/flux)
+    real(r8), intent(out) :: tpert(pcols)             ! convective temperature excess
+    real(r8), intent(out) :: qpert(pcols)             ! convective humidity excess
+    real(r8), intent(out) :: ustar(pcols)             ! surface friction velocity [m/s]
+    real(r8), intent(out) :: obklen(pcols)            ! Obukhov length
+    real(r8), intent(out) :: pblh(pcols)              ! boundary-layer height [m]
+    real(r8), intent(out) :: tke(pcols,pverp)         ! turbulent kinetic energy (estimated)
+    real(r8), intent(out) :: ri(pcols,pver)           ! richardson number: n2/s2
+    !
+    !---------------------------Local workspace-----------------------------
+    !
+    real(r8) :: thv(pcols,pver)         ! virtual temperature
+    real(r8) :: rrho(pcols)             ! 1./bottom level density
+    real(r8) :: wstar(pcols)            ! convective velocity scale [m/s]
+    real(r8) :: kqfs(pcols)             ! kinematic surf constituent flux (kg/m2/s)
+    real(r8) :: khfs(pcols)             ! kinimatic surface heat flux 
+    real(r8) :: kbfs(pcols)             ! surface buoyancy flux 
+    real(r8) :: kvf(pcols,pverp)        ! free atmospheric eddy diffsvty [m2/s]
+    real(r8) :: s2(pcols,pver)          ! shear squared
+    real(r8) :: n2(pcols,pver)          ! brunt vaisaila frequency
+    real(r8) :: bge(pcols)              ! buoyancy gradient enhancment
+    integer  :: ktopbl(pcols)           ! index of first midpoint inside pbl
+    !!
+    ! virtual temperature
+    thv(:ncol,ntop_turb:) = virtem(th(:ncol,ntop_turb:),q(:ncol,ntop_turb:))
+
+    ! Compute ustar, Obukhov length, and kinematic surface fluxes.
+    call calc_ustar(t(:ncol,pver),pmid(:ncol,pver),taux(:ncol),tauy(:ncol), &
+         rrho(:ncol),ustar(:ncol))
+    call calc_obklen(th(:ncol,pver), thv(:ncol,pver), qflx(:ncol),  &
+                     shflx(:ncol),   rrho(:ncol),     ustar(:ncol), &
+                     khfs(:ncol),    kqfs(:ncol),     kbfs(:ncol),  &
+                     obklen(:ncol))
+    ! Calculate s2, n2, and Richardson number.
+    call trbintd(ncol    ,                            &
+         thv     ,z       ,u       ,v       , &
+         s2      ,n2      ,ri      )
+    !
+    ! Initialize time dependent variables that do depend on pbl height
+    !
+    !call  pblintd(ncol    ,                            &
+    !     thv     ,z       ,u       ,v       , &
+    !     ustar   ,obklen  ,kbfs    ,pblh    ,wstar   , &
+    !     zi      ,cldn    ,ocnfrac ,bge     )
+    call pblintd_ri(ncol    ,                            &
+       thv     ,z       ,u       ,v       , &
+       ustar   ,obklen  ,kbfs    ,pblh    ,wstar   , &
+       bge     ,rino_bulk)
+    !!
+
+    !!================Jinbo Xie============
+    !rino_bulk(:)=rino(:,pver)
+    return
+    end subroutine bulk_ri
+#endif
+!-------------------------------------------------------------------
 
 end module gw_common

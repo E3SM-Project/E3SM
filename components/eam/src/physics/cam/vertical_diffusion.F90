@@ -868,8 +868,8 @@ contains
       ! taux and tautmsx are fully implicitly treated within compute_vdiff.
       ! However, 'tautotx, tautoty' are not used in the actual numerical
       ! computation in this module.   
-        tautotx(:ncol) = taux(:ncol) + tautmsx(:ncol)
-        tautoty(:ncol) = tauy(:ncol) + tautmsy(:ncol)
+        !tautotx(:ncol) = taux(:ncol) + tautmsx(:ncol)
+        !tautoty(:ncol) = tauy(:ncol) + tautmsy(:ncol)
         !================Jinbo Xie=======================
 	 ztop= 0.0_r8            ! top interface height asl(m)
     	 zbot= 0.0_r8            ! bottom interface height asl(m)
@@ -937,7 +937,7 @@ contains
         ids=1,ide=pcols,jds=0,jde=0,kds=1,kde=pver, &
         ims=1,ime=pcols,jms=0,jme=0,kms=1,kme=pver, &
         its=1,ite=pcols,jts=0,jte=0,kts=1,kte=pver,&
-        gwd_ls=0,gwd_bl=0,gwd_ss=0,gwd_fd=0 )
+        gwd_ls=0,gwd_bl=0,gwd_ss=0,gwd_fd=1 )
         !!=========Jinbo Xie=========
         !add the Beljaars drag
         tautotx(:ncol) = tautotx(:ncol)+dusfc_fd(:ncol)!taux(:ncol) + tautmsx(:ncol)
