@@ -267,6 +267,7 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance) {
     for (auto f : {hyai, hybi, hyam, hybm}) {
       auto f_d = get_grid("Dynamics")->get_geometry_data(f.name());
       f.deep_copy(f_d);
+      f.sync_to_host();
     }
   }
 
@@ -284,7 +285,7 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance) {
 
 void HommeGridsManager::
 initialize_vertical_coordinates (const nonconstgrid_ptr_type& dyn_grid) {
-  using view_1d_host = AtmosphereInput::view_1d_host; 
+  using view_1d_host = AtmosphereInput::view_1d_host;
   using vos_t = std::vector<std::string>;
   using namespace ShortFieldTagsNames;
 
@@ -337,7 +338,7 @@ initialize_vertical_coordinates (const nonconstgrid_ptr_type& dyn_grid) {
   hybi.sync_to_dev();
   hyam.sync_to_dev();
   hybm.sync_to_dev();
-  
+
   // Pass host views data to hvcoord init function
   const auto ps0 = Homme::PhysicalConstants::p0;
 

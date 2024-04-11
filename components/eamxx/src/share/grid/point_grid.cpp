@@ -56,6 +56,20 @@ PointGrid::get_2d_vector_layout (const FieldTag vector_tag, const int vector_dim
 }
 
 FieldLayout
+PointGrid::get_2d_tensor_layout (const std::vector<FieldTag>& cmp_tags,
+                                 const std::vector<int>& cmp_dims) const
+{
+  using namespace ShortFieldTagsNames;
+
+  std::vector<FieldTag> tags = {COL};
+  std::vector<int>      dims = {get_num_local_dofs()};
+
+  tags.insert(tags.end(),cmp_tags.begin(),cmp_tags.end());
+  dims.insert(dims.end(),cmp_dims.begin(),cmp_dims.end());
+  return FieldLayout(tags,dims);
+}
+
+FieldLayout
 PointGrid::get_3d_scalar_layout (const bool midpoints) const
 {
   using namespace ShortFieldTagsNames;
@@ -75,6 +89,26 @@ PointGrid::get_3d_vector_layout (const bool midpoints, const FieldTag vector_tag
   auto VL = midpoints ? LEV : ILEV;
 
   return FieldLayout({COL,vector_tag,VL},{get_num_local_dofs(),vector_dim,nvl});
+}
+
+FieldLayout
+PointGrid::get_3d_tensor_layout (const bool midpoints,
+                                 const std::vector<FieldTag>& cmp_tags,
+                                 const std::vector<int>& cmp_dims) const
+{
+  using namespace ShortFieldTagsNames;
+
+  int nvl = this->get_num_vertical_levels() + (midpoints ? 0 : 1);
+  auto VL = midpoints ? LEV : ILEV;
+
+  std::vector<FieldTag> tags = {COL};
+  std::vector<int>      dims = {get_num_local_dofs()};
+
+  tags.insert(tags.end(),cmp_tags.begin(),cmp_tags.end());
+  dims.insert(dims.end(),cmp_dims.begin(),cmp_dims.end());
+  tags.push_back(VL);
+  dims.push_back(nvl);
+  return FieldLayout(tags,dims);
 }
 
 std::shared_ptr<AbstractGrid>

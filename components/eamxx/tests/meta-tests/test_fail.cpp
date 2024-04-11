@@ -1,16 +1,10 @@
-#include <catch2/catch.hpp>
-
 #include <iostream>
 
-namespace scream {
-
-TEST_CASE("pass", "[fake_infra_test]")
+int main(int, char**)
 {
 #ifdef SCREAM_FORCE_RUN_FAIL
-  REQUIRE(false);
+  return 1;
 #else
-  REQUIRE(true);
+  return 0;
 #endif
 }
-
-} // empty namespace

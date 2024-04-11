@@ -1,27 +1,27 @@
 #ifndef SPA_FUNCTIONS_IMPL_HPP
 #define SPA_FUNCTIONS_IMPL_HPP
 
-#include "share/scream_types.hpp"
-#include "share/io/scream_scorpio_interface.hpp"
-#include "share/io/scorpio_input.hpp"
-#include "share/grid/point_grid.hpp"
 #include "physics/share/physics_constants.hpp"
-
-#include "ekat/kokkos/ekat_subview_utils.hpp"
-#include "ekat/util/ekat_lin_interp.hpp"
-#include "ekat/ekat_pack_utils.hpp"
-#include "ekat/ekat_parse_yaml_file.hpp"
-
-#include <numeric>
-
+#include "share/grid/remap/coarsening_remapper.hpp"
+#include "share/grid/remap/refining_remapper_p2p.hpp"
+#include "share/grid/remap/identity_remapper.hpp"
+#include "share/io/scream_scorpio_interface.hpp"
 #include "share/util/scream_timing.hpp"
+#include "share/scream_types.hpp"
+
+#include <ekat/kokkos/ekat_subview_utils.hpp>
+#include <ekat/kokkos/ekat_kokkos_utils.hpp>
+#include <ekat/util/ekat_lin_interp.hpp>
+#include <ekat/ekat_pack_utils.hpp>
+#include <ekat/ekat_pack_kokkos.hpp>
+
 /*-----------------------------------------------------------------
  * The main SPA routines used to convert SPA data into a format that
  * is usable by the rest of the atmosphere processes.
  *
  * SPA or Simple Prescribed Aerosols provides a way to prescribe
  * aerosols for an atmospheric simulation using pre-computed data.
- * 
+ *
  * The data is typically provided at a frequency of monthly, and
  * does not necessarily have to be on the same horizontal or vertical
  * domain as the atmospheric simulation.
@@ -61,11 +61,118 @@
  * temporally interpolated in the last step and the set of hybrid coordinates (hyam and hybm)
  * that are used in EAM to construct the physics pressure profiles.
  * The SPA data is then projected onto the simulation pressure profile (pmid)
- * using EKAT linear interpolation. 
+ * using EKAT linear interpolation.
 -----------------------------------------------------------------*/
 
 namespace scream {
 namespace spa {
+
+template <typename S, typename D>
+std::shared_ptr<AbstractRemapper>
+SPAFunctions<S,D>::
+create_horiz_remapper (
+    const std::shared_ptr<const AbstractGrid>& model_grid,
+    const std::string& spa_data_file,
+    const std::string& map_file,
+    const bool use_iop)
+{
+  using namespace ShortFieldTagsNames;
+
+  scorpio::register_file(spa_data_file,scorpio::Read);
+  const int nlevs_data = scorpio::get_dimlen(spa_data_file,"lev");
+  const int ncols_data = scorpio::get_dimlen(spa_data_file,"ncol");
+  const int nswbands   = scorpio::get_dimlen(spa_data_file,"swband");
+  const int nlwbands   = scorpio::get_dimlen(spa_data_file,"lwband");
+  scorpio::eam_pio_closefile(spa_data_file);
+
+  // We could use model_grid directly if using same num levels,
+  // but since shallow clones are cheap, we may as well do it (less lines of code)
+  auto horiz_interp_tgt_grid = model_grid->clone("spa_horiz_interp_tgt_grid",true);
+  horiz_interp_tgt_grid->reset_num_vertical_lev(nlevs_data);
+
+  const int ncols_model = model_grid->get_num_global_dofs();
+  std::shared_ptr<AbstractRemapper> remapper;
+  if (ncols_data==ncols_model
+      or
+      use_iop /*IOP class defines it's own remapper for file data*/) {
+    remapper = std::make_shared<IdentityRemapper>(horiz_interp_tgt_grid,IdentityRemapper::SrcAliasTgt);
+  } else {
+    EKAT_REQUIRE_MSG (ncols_data<=ncols_model,
+      "Error! We do not allow to coarsen spa data to fit the model. We only allow\n"
+      "       spa data to be at the same or coarser resolution as the model.\n");
+    // We must have a valid map file
+    EKAT_REQUIRE_MSG (map_file!="",
+        "ERROR: Spa data is on a different grid than the model one,\n"
+        "       but spa_remap_file is missing from SPA parameter list.");
+
+    remapper = std::make_shared<RefiningRemapperP2P>(horiz_interp_tgt_grid,map_file);
+  }
+
+  remapper->registration_begins();
+
+  const auto tgt_grid = remapper->get_tgt_grid();
+
+  const auto layout_2d   = tgt_grid->get_2d_scalar_layout();
+  const auto layout_ccn3 = tgt_grid->get_3d_scalar_layout(true);
+  const auto layout_sw   = tgt_grid->get_3d_vector_layout(true,SWBND,nswbands);
+  const auto layout_lw   = tgt_grid->get_3d_vector_layout(true,LWBND,nlwbands);
+  const auto nondim = ekat::units::Units::nondimensional();
+
+  Field ps          (FieldIdentifier("PS",        layout_2d,  nondim,tgt_grid->name()));
+  Field ccn3        (FieldIdentifier("CCN3",      layout_ccn3,nondim,tgt_grid->name()));
+  Field aero_g_sw   (FieldIdentifier("AER_G_SW",  layout_sw,  nondim,tgt_grid->name()));
+  Field aero_ssa_sw (FieldIdentifier("AER_SSA_SW",layout_sw,  nondim,tgt_grid->name()));
+  Field aero_tau_sw (FieldIdentifier("AER_TAU_SW",layout_sw,  nondim,tgt_grid->name()));
+  Field aero_tau_lw (FieldIdentifier("AER_TAU_LW",layout_lw,  nondim,tgt_grid->name()));
+  ps.allocate_view();
+  ccn3.allocate_view();
+  aero_g_sw.allocate_view();
+  aero_ssa_sw.allocate_view();
+  aero_tau_sw.allocate_view();
+  aero_tau_lw.allocate_view();
+
+  remapper->register_field_from_tgt (ps);
+  remapper->register_field_from_tgt (ccn3);
+  remapper->register_field_from_tgt (aero_g_sw);
+  remapper->register_field_from_tgt (aero_ssa_sw);
+  remapper->register_field_from_tgt (aero_tau_sw);
+  remapper->register_field_from_tgt (aero_tau_lw);
+
+  remapper->registration_ends();
+
+  return remapper;
+}
+
+template <typename S, typename D>
+std::shared_ptr<AtmosphereInput>
+SPAFunctions<S,D>::
+create_spa_data_reader (
+    const std::shared_ptr<AbstractRemapper>& horiz_remapper,
+    const std::string& spa_data_file)
+{
+  std::vector<Field> io_fields;
+  for (int i=0; i<horiz_remapper->get_num_fields(); ++i) {
+    io_fields.push_back(horiz_remapper->get_src_field(i));
+  }
+  const auto io_grid = horiz_remapper->get_src_grid();
+  return std::make_shared<AtmosphereInput>(spa_data_file,io_grid,io_fields,true);
+}
+
+template <typename S, typename D>
+std::shared_ptr<typename SPAFunctions<S,D>::IOPReader>
+SPAFunctions<S,D>::
+create_spa_data_reader (
+    iop_ptr_type& iop,
+    const std::shared_ptr<AbstractRemapper>& horiz_remapper,
+    const std::string& spa_data_file)
+{
+  std::vector<Field> io_fields;
+  for (int i=0; i<horiz_remapper->get_num_fields(); ++i) {
+    io_fields.push_back(horiz_remapper->get_src_field(i));
+  }
+  const auto io_grid = horiz_remapper->get_src_grid();
+  return std::make_shared<IOPReader>(iop, spa_data_file, io_fields, io_grid);
+}
 
 /*-----------------------------------------------------------------*/
 // The main SPA routine which handles projecting SPA data onto the
@@ -82,9 +189,9 @@ namespace spa {
 //     set of SPA data projected onto the pressure profile of the current atmosphere
 //     state.  This is the data that will be passed to other processes.
 //   ncols_tgt, nlevs_tgt: The number of columns and levels in the simulation grid.
-//     (not to be confused with the number of columns and levels used for the SPA data, 
+//     (not to be confused with the number of columns and levels used for the SPA data,
 //      which can be different.)
-//   nswbands, nlwbands: The number of shortwave (sw) and longwave (lw) aerosol bands 
+//   nswbands, nlwbands: The number of shortwave (sw) and longwave (lw) aerosol bands
 //     for the data that will be passed to radiation.
 template <typename S, typename D>
 void SPAFunctions<S,D>
@@ -268,7 +375,7 @@ perform_vertical_interpolation(
     KOKKOS_LAMBDA(typename LIV::MemberType const& team) {
 
     const int icol = team.league_rank();
-  
+
     // Setup
     vert_interp.setup(team, ekat::subview(p_src,icol),
                             ekat::subview(p_tgt,icol));
@@ -296,62 +403,6 @@ perform_vertical_interpolation(
 }
 
 /*-----------------------------------------------------------------*/
-// Function to set the remap and weights for a one-to-one mapping.
-// This is used when the SPA data and the simulation grid are the
-// same and no remapping is needed.
-// Note: This function should be called only once during SPA::init
-template <typename S, typename D>
-void SPAFunctions<S,D>
-::set_remap_weights_one_to_one(
-    gid_type                       min_dof,
-    const view_1d<const gid_type>& dofs_gids,
-          SPAHorizInterp&          spa_horiz_interp
-  )
-{
-  // There may be cases where the SPA data is defined on the same grid as the simulation
-  // and thus no remapping is required.  This simple routine establishes a 1-1 horizontal
-  // mapping
-  const int num_local_cols = dofs_gids.size();
-  auto& spa_horiz_map = spa_horiz_interp.horiz_map;
-  spa_horiz_map = HorizontalMap(spa_horiz_interp.m_comm,"SPA 1-1 Remap",dofs_gids,min_dof);
-  view_1d<gid_type> src_dofs("",1);
-  view_1d<Real>     src_wgts("",1);
-  auto dofs_gids_h = Kokkos::create_mirror_view(dofs_gids);
-  Kokkos::deep_copy(dofs_gids_h,dofs_gids);
-  for (int ii=0;ii<num_local_cols;ii++) {
-    gid_type seg_dof = dofs_gids_h(ii)-min_dof;
-    Kokkos::deep_copy(src_dofs,seg_dof);
-    Kokkos::deep_copy(src_wgts,   1.0);
-    HorizontalMapSegment seg(seg_dof,1,src_dofs,src_wgts);
-    spa_horiz_map.add_remap_segment(seg);
-  }
-  spa_horiz_map.set_unique_source_dofs();
-
-} // END set_remap_weights_one_to_one
-/*-----------------------------------------------------------------*/
-// Function to gather the remap and weights from a specific file.
-// This is used when the SPA data is not on the same grid as the
-// simulation, and so some remapping is needed.  In this case the
-// remapping is provided by file.
-// Note: This function should only be called once during SPA::init
-template <typename S, typename D>
-void SPAFunctions<S,D>
-::get_remap_weights_from_file(
-    const std::string&             remap_file_name,
-    const gid_type                 min_dof,
-    const view_1d<const gid_type>& dofs_gids,
-          SPAHorizInterp&          spa_horiz_interp
-  )
-{
-  start_timer("EAMxx::SPA::get_remap_weights_from_file");
-  auto& spa_horiz_map = spa_horiz_interp.horiz_map;
-  spa_horiz_map = HorizontalMap(spa_horiz_interp.m_comm,"SPA File Remap", dofs_gids, min_dof);
-  spa_horiz_map.set_remap_segments_from_file(remap_file_name);
-  spa_horiz_map.set_unique_source_dofs();
-  stop_timer("EAMxx::SPA::get_remap_weights_from_file");
-
-}  // END get_remap_weights_from_file
-/*-----------------------------------------------------------------*/
 /* Note: In this routine the SPA source data is padded in the vertical
  * to facilitate the proper behavior at the boundaries when doing the
  * vertical interpolation in spa_main.
@@ -370,7 +421,7 @@ void SPAFunctions<S,D>
  * lhs of the hybrid coordinate system to ensure that the lhs of the
  * source pressure levels is 0.0 and the rhs is big enough to be larger than
  * the highest pressure in the target pressure levels.
- * 
+ *
  * The padding sets the lhs in a vertical column of data to 0.0.
  * This has the effect of ramping the top-of-model target data down to 0.0
  * when the top target pressure level is smaller than the top source pressure,
@@ -393,264 +444,143 @@ void SPAFunctions<S,D>
  * pressure profile that is constructed in spa_main is
  * a) the current length, and
  * b) ensures that whatever the target pressure profile is, it's within the
- *    the range of the source data.                                        
+ *    the range of the source data.
  */
 template<typename S, typename D>
 void SPAFunctions<S,D>
 ::update_spa_data_from_file(
-    const std::string&          spa_data_file_name,
-    const int                   time_index, // zero-based
-    const int                   nswbands,
-    const int                   nlwbands,
-          SPAHorizInterp&       spa_horiz_interp,
-          SPAInput&             spa_data)
+    std::shared_ptr<AtmosphereInput>& scorpio_reader,
+    std::shared_ptr<IOPReader>&       iop_reader,
+    const util::TimeStamp&            ts,
+    const int                         time_index, // zero-based
+    AbstractRemapper&                 spa_horiz_interp,
+    SPAInput&                         spa_input)
 {
-  start_timer("EAMxx::SPA::update_spa_data_from_file");
-  // Ensure all ranks are operating independently when reading the file, so there's a copy on all ranks
-  auto comm = spa_horiz_interp.m_comm;
-
-  // Use HorizontalMap to define the set of source column data we need to load
-  auto& spa_horiz_map = spa_horiz_interp.horiz_map;
-  auto unique_src_dofs = spa_horiz_map.get_unique_source_dofs();
-  const int num_local_cols = spa_horiz_map.get_num_unique_dofs();
-  scorpio::register_file(spa_data_file_name,scorpio::Read);
-  const int source_data_nlevs = scorpio::get_dimlen(spa_data_file_name,"lev");
-
-  // Construct local arrays to read data into
-  // Note, all of the views being created here are meant to hold the source resolution
-  // data that will need to be horizontally interpolated to the simulation grid using the remap
-  // data.  For example, 
-  //   We will first define the data surface pressure PS_v and read that from file.
-  //   then we will use the horizontal interpolation structure, spa_horiz_interp, to
-  //   interpolate PS_v onto the simulation grid: PS_v -> spa_data.PS
-  //   and so on for the other variables.
-  start_timer("EAMxx::SPA::update_spa_data_from_file::read_data");
-  std::vector<std::string> fnames = {"hyam","hybm","PS","CCN3","AER_G_SW","AER_SSA_SW","AER_TAU_SW","AER_TAU_LW"};
-  ekat::ParameterList spa_data_in_params;
-  spa_data_in_params.set("Field Names",fnames);
-  spa_data_in_params.set("Filename",spa_data_file_name);
-  spa_data_in_params.set("Skip_Grid_Checks",true);  // We need to skip grid checks because multiple ranks may want the same column of source data.
-  
-  // Retrieve number of cols on spa_data_file.
-  scorpio::register_file(spa_data_file_name,scorpio::Read);
-  int num_global_cols = scorpio::get_dimlen(spa_data_file_name,"ncol");
-  scorpio::eam_pio_closefile(spa_data_file_name);
-
-  // Construct the grid needed for input:
-  auto grid = std::make_shared<PointGrid>("grid",num_local_cols,num_global_cols,source_data_nlevs,comm);
-  Kokkos::deep_copy(grid->get_dofs_gids().template get_view<gid_type*>(),unique_src_dofs);
-  grid->get_dofs_gids().sync_to_host();
-
-  // Check that padding matches source size:
-  EKAT_REQUIRE(source_data_nlevs+2 == spa_data.data.nlevs);
-  EKAT_REQUIRE_MSG(nswbands==scorpio::get_dimlen(spa_data_file_name,"swband"),
-      "ERROR update_spa_data_from_file: Number of SW bands in simulation doesn't match the SPA data file");
-  EKAT_REQUIRE_MSG(nlwbands==scorpio::get_dimlen(spa_data_file_name,"lwband"),
-      "ERROR update_spa_data_from_file: Number of LW bands in simulation doesn't match the SPA data file");
-
-  // Constuct views to read source data in from file
-  typename view_1d<Real>::HostMirror hyam_v_h("hyam",source_data_nlevs);
-  typename view_1d<Real>::HostMirror hybm_v_h("hybm",source_data_nlevs);
-  view_1d<Real> PS_v("PS",num_local_cols);
-  view_2d<Real> CCN3_v("CCN3",num_local_cols,source_data_nlevs);
-  view_3d<Real> AER_G_SW_v("AER_G_SW",num_local_cols,nswbands,source_data_nlevs);
-  view_3d<Real> AER_SSA_SW_v("AER_SSA_SW",num_local_cols,nswbands,source_data_nlevs);
-  view_3d<Real> AER_TAU_SW_v("AER_TAU_SW",num_local_cols,nswbands,source_data_nlevs);
-  view_3d<Real> AER_TAU_LW_v("AER_TAU_LW",num_local_cols,nlwbands,source_data_nlevs);
-
-  auto PS_v_h         = Kokkos::create_mirror_view(PS_v);
-  auto CCN3_v_h       = Kokkos::create_mirror_view(CCN3_v);      
-  auto AER_G_SW_v_h   = Kokkos::create_mirror_view(AER_G_SW_v);
-  auto AER_SSA_SW_v_h = Kokkos::create_mirror_view(AER_SSA_SW_v);
-  auto AER_TAU_SW_v_h = Kokkos::create_mirror_view(AER_TAU_SW_v);
-  auto AER_TAU_LW_v_h = Kokkos::create_mirror_view(AER_TAU_LW_v);
-
-  // Set up input structure to read data from file.
   using namespace ShortFieldTagsNames;
-  FieldLayout scalar1d_layout { {LEV}, {source_data_nlevs} };
-  FieldLayout scalar2d_layout_mid { {COL}, {num_local_cols} };
-  FieldLayout scalar3d_layout_mid { {COL,LEV}, {num_local_cols, source_data_nlevs} };
-  FieldLayout scalar3d_swband_layout { {COL,SWBND, LEV}, {num_local_cols, nswbands, source_data_nlevs} }; 
-  FieldLayout scalar3d_lwband_layout { {COL,LWBND, LEV}, {num_local_cols, nlwbands, source_data_nlevs} };
-  std::map<std::string,view_1d_host<Real>> host_views;
-  std::map<std::string,FieldLayout>  layouts;
-  // Define each input variable we need
-  host_views["hyam"] = view_1d_host<Real>(hyam_v_h.data(),hyam_v_h.size());
-  layouts.emplace("hyam", scalar1d_layout);
-  host_views["hybm"] = view_1d_host<Real>(hybm_v_h.data(),hybm_v_h.size());
-  layouts.emplace("hybm", scalar1d_layout);
-  //
-  host_views["PS"] = view_1d_host<Real>(PS_v_h.data(),PS_v_h.size());
-  layouts.emplace("PS", scalar2d_layout_mid);
-  //
-  host_views["CCN3"] = view_1d_host<Real>(CCN3_v_h.data(),CCN3_v_h.size());
-  layouts.emplace("CCN3",scalar3d_layout_mid);
-  //
-  host_views["AER_G_SW"] = view_1d_host<Real>(AER_G_SW_v_h.data(),AER_G_SW_v_h.size());
-  layouts.emplace("AER_G_SW",scalar3d_swband_layout);
-  //
-  host_views["AER_SSA_SW"] = view_1d_host<Real>(AER_SSA_SW_v_h.data(),AER_SSA_SW_v_h.size());
-  layouts.emplace("AER_SSA_SW",scalar3d_swband_layout);
-  //
-  host_views["AER_TAU_SW"] = view_1d_host<Real>(AER_TAU_SW_v_h.data(),AER_TAU_SW_v_h.size());
-  layouts.emplace("AER_TAU_SW",scalar3d_swband_layout);
-  //
-  host_views["AER_TAU_LW"] = view_1d_host<Real>(AER_TAU_LW_v_h.data(),AER_TAU_LW_v_h.size());
-  layouts.emplace("AER_TAU_LW",scalar3d_lwband_layout);
-  //
-  
-  // Now that we have all the variables defined we can use the scorpio_input class to grab the data.
-  AtmosphereInput spa_data_input(spa_data_in_params,grid,host_views,layouts);
-  spa_data_input.read_variables(time_index);
-  spa_data_input.finalize();
-  scorpio::eam_pio_closefile(spa_data_file_name);
-  stop_timer("EAMxx::SPA::update_spa_data_from_file::read_data");
-  start_timer("EAMxx::SPA::update_spa_data_from_file::apply_remap");
-  // Copy data from host back to the device views.
-  Kokkos::deep_copy(PS_v,PS_v_h);
-  Kokkos::deep_copy(CCN3_v      , CCN3_v_h);      
-  Kokkos::deep_copy(AER_G_SW_v  , AER_G_SW_v_h);
-  Kokkos::deep_copy(AER_SSA_SW_v, AER_SSA_SW_v_h);
-  Kokkos::deep_copy(AER_TAU_SW_v, AER_TAU_SW_v_h);
-  Kokkos::deep_copy(AER_TAU_LW_v, AER_TAU_LW_v_h);
+  using ESU = ekat::ExeSpaceUtils<typename DefaultDevice::execution_space>;
+  using Member = typename KokkosTypes<DefaultDevice>::MemberType;
 
-  // Apply the remap to this data
-  spa_horiz_map.apply_remap(PS_v,spa_data.PS); // Note PS is not padded, so remap can be applied right away
-  // For padded data we need create temporary arrays to store the direct remapped data, then we can add
-  // padding.
-  int tgt_ncol = spa_data.data.ncols;
-  int tgt_nlev = spa_data.data.nlevs-2;  // Note, the spa data already accounts for padding in the nlevs, so we subtract 2
-  view_2d<Real> CCN3_unpad("",tgt_ncol,tgt_nlev);
-  view_3d<Real> AER_G_SW_unpad("",tgt_ncol,nswbands,tgt_nlev);
-  view_3d<Real> AER_SSA_SW_unpad("",tgt_ncol,nswbands,tgt_nlev);
-  view_3d<Real> AER_TAU_SW_unpad("",tgt_ncol,nswbands,tgt_nlev);
-  view_3d<Real> AER_TAU_LW_unpad("",tgt_ncol,nlwbands,tgt_nlev);
-  // Apply remap to "unpadded" data
-  spa_horiz_map.apply_remap(CCN3_v,CCN3_unpad);
-  spa_horiz_map.apply_remap(AER_G_SW_v, AER_G_SW_unpad);
-  spa_horiz_map.apply_remap(AER_SSA_SW_v, AER_SSA_SW_unpad);
-  spa_horiz_map.apply_remap(AER_TAU_SW_v, AER_TAU_SW_unpad);
-  spa_horiz_map.apply_remap(AER_TAU_LW_v, AER_TAU_LW_unpad);
-  stop_timer("EAMxx::SPA::update_spa_data_from_file::apply_remap");
-  start_timer("EAMxx::SPA::update_spa_data_from_file::copy_and_pad");
-  // Copy unpadded data to SPA data structure, add padding.
-  // Note, all variables we map to are packed, while all the data we just loaded as
-  // input are in real N-D views.  So we need to set the pack and index of the actual
-  // data ahead by one value.
-  // Note, we want to pad the actual source data such that
-  //   Y[0]   = 0.0, note this is handled by the deep copy above
-  //   Y[k+1] = y[k], k = 0,source_data_nlevs (y is the data from file)
-  //   Y[N+2] = y[N-1], N = source_data_nlevs
-  Kokkos::deep_copy(spa_data.data.CCN3,0.0);
-  Kokkos::deep_copy(spa_data.data.AER_G_SW,0.0);
-  Kokkos::deep_copy(spa_data.data.AER_SSA_SW,0.0);
-  Kokkos::deep_copy(spa_data.data.AER_TAU_SW,0.0);
-  Kokkos::deep_copy(spa_data.data.AER_TAU_LW,0.0);
-  // 2D vars - CCN3
-  Kokkos::parallel_for("", tgt_ncol*tgt_nlev, KOKKOS_LAMBDA (const int& idx) {
-    int icol  = idx / tgt_nlev;
-    int klev1 = idx % tgt_nlev;
-    int kpack = (klev1+1) / Spack::n;
-    int klev2 = (klev1+1) % Spack::n;
-    spa_data.data.CCN3(icol,kpack)[klev2] = CCN3_unpad(icol,klev1);
-    if (klev1 == tgt_nlev-1) {
-      int kpack = (tgt_nlev+1) / Spack::n;
-      int klev2 = (tgt_nlev+1) % Spack::n;
-      spa_data.data.CCN3(icol,kpack)[klev2] = CCN3_unpad(icol,klev1);
-    }
-  });
-  Kokkos::fence();
-  // 3D vars - AER_G_SW, AER_SSA_SW, AER_TAU_SW, AER_TAU_LW
-  Kokkos::parallel_for("", tgt_ncol*tgt_nlev*nswbands, KOKKOS_LAMBDA (const int& idx) {
-    int icol  = idx / (tgt_nlev*nswbands);
-    int nband = (idx-icol*tgt_nlev*nswbands) / tgt_nlev;
-    int klev1 = idx % tgt_nlev;
-    int kpack = (klev1+1) / Spack::n;
-    int klev2 = (klev1+1) % Spack::n;
-    spa_data.data.AER_G_SW(icol,nband,kpack)[klev2] = AER_G_SW_unpad(icol,nband,klev1);
-    spa_data.data.AER_SSA_SW(icol,nband,kpack)[klev2] = AER_SSA_SW_unpad(icol,nband,klev1);
-    spa_data.data.AER_TAU_SW(icol,nband,kpack)[klev2] = AER_TAU_SW_unpad(icol,nband,klev1);
-    if (klev1 == tgt_nlev-1) {
-      int kpack = (tgt_nlev+1) / Spack::n;
-      int klev2 = (tgt_nlev+1) % Spack::n;
-      spa_data.data.AER_G_SW(icol,nband,kpack)[klev2] = AER_G_SW_unpad(icol,nband,klev1);
-      spa_data.data.AER_SSA_SW(icol,nband,kpack)[klev2] = AER_SSA_SW_unpad(icol,nband,klev1);
-      spa_data.data.AER_TAU_SW(icol,nband,kpack)[klev2] = AER_TAU_SW_unpad(icol,nband,klev1);
-    }
-  });
-  Kokkos::parallel_for("", tgt_ncol*tgt_nlev*nlwbands, KOKKOS_LAMBDA (const int& idx) {
-    int icol  = idx / (tgt_nlev*nlwbands);
-    int nband = (idx-icol*tgt_nlev*nlwbands) / tgt_nlev;
-    int klev1 = idx % tgt_nlev;
-    int kpack = (klev1+1) / Spack::n;
-    int klev2 = (klev1+1) % Spack::n;
-    spa_data.data.AER_TAU_LW(icol,nband,kpack)[klev2] = AER_TAU_LW_unpad(icol,nband,klev1);
-    if (klev1 == tgt_nlev-1) {
-      int kpack = (tgt_nlev+1) / Spack::n;
-      int klev2 = (tgt_nlev+1) % Spack::n;
-      spa_data.data.AER_TAU_LW(icol,nband,kpack)[klev2] = AER_TAU_LW_unpad(icol,nband,klev1);
-    }
-  });
-  stop_timer("EAMxx::SPA::update_spa_data_from_file::copy_and_pad");
-  // The hybrid coordinates are just vertical data, so not remapped.  We still need to make
-  // a padded version of the data.
-  //   hya/b[0] = 0.0, note this is handled by deep copy above
-  //   hya/b[N+2] = BIG number so always bigger than likely pmid for target
-  auto hyam_h       = Kokkos::create_mirror_view(spa_data.hyam);
-  auto hybm_h       = Kokkos::create_mirror_view(spa_data.hybm);
-  Kokkos::deep_copy(hyam_h,0.0);
-  Kokkos::deep_copy(hybm_h,0.0);
-  for (int kk=0; kk<source_data_nlevs; kk++) {
-    int pack = (kk+1) / Spack::n; 
-    int kidx = (kk+1) % Spack::n;
-    hyam_h(pack)[kidx] = hyam_v_h(kk);
-    hybm_h(pack)[kidx] = hybm_v_h(kk);
+  start_timer("EAMxx::SPA::update_spa_data_from_file");
+
+  // 1. Read from file
+  start_timer("EAMxx::SPA::update_spa_data_from_file::read_data");
+  if (iop_reader) {
+    iop_reader->read_variables(time_index, ts);
+  } else {
+    scorpio_reader->read_variables(time_index);
   }
-  const int pack = (source_data_nlevs+1) / Spack::n;
-  const int kidx = (source_data_nlevs+1) % Spack::n;
-  hyam_h(pack)[kidx] = 1e5; 
-  hybm_h(pack)[kidx] = 0.0;
-  Kokkos::deep_copy(spa_data.hyam,hyam_h);
-  Kokkos::deep_copy(spa_data.hybm,hybm_h);
-  stop_timer("EAMxx::SPA::update_spa_data_from_file");
+  stop_timer("EAMxx::SPA::update_spa_data_from_file::read_data");
 
+  // 2. Run the horiz remapper (it is a do-nothing op if spa data is on same grid as model)
+  start_timer("EAMxx::SPA::update_spa_data_from_file::horiz_remap");
+  spa_horiz_interp.remap(/*forward = */ true);
+  stop_timer("EAMxx::SPA::update_spa_data_from_file::horiz_remap");
+
+  // 3. Copy from the tgt field of the remapper into the spa_data, padding data if necessary
+  start_timer("EAMxx::SPA::update_spa_data_from_file::copy_and_pad");
+  // Recall, the fields are registered in the order: ps, ccn3, g_sw, ssa_sw, tau_sw, tau_lw
+  auto ps          = spa_horiz_interp.get_tgt_field (0).get_view<const Real*>();
+  auto ccn3        = spa_horiz_interp.get_tgt_field (1).get_view<const Real**>();
+  auto aero_g_sw   = spa_horiz_interp.get_tgt_field (2).get_view<const Real***>();
+  auto aero_ssa_sw = spa_horiz_interp.get_tgt_field (3).get_view<const Real***>();
+  auto aero_tau_sw = spa_horiz_interp.get_tgt_field (4).get_view<const Real***>();
+  auto aero_tau_lw = spa_horiz_interp.get_tgt_field (5).get_view<const Real***>();
+
+  const auto& sw_layout = spa_horiz_interp.get_tgt_field (2).get_header().get_identifier().get_layout();
+  const auto& lw_layout = spa_horiz_interp.get_tgt_field (5).get_header().get_identifier().get_layout();
+
+  const int ncols    = sw_layout.dim(COL);
+  const int nlevs    = sw_layout.dim(LEV);
+  const int nswbands = sw_layout.dim(SWBND);
+  const int nlwbands = lw_layout.dim(LWBND);
+
+  Kokkos::deep_copy(spa_input.PS,ps);
+  Kokkos::fence();
+  auto spa_data_ccn3        = ekat::scalarize(spa_input.data.CCN3);
+  auto spa_data_aero_g_sw   = ekat::scalarize(spa_input.data.AER_G_SW);
+  auto spa_data_aero_ssa_sw = ekat::scalarize(spa_input.data.AER_SSA_SW);
+  auto spa_data_aero_tau_sw = ekat::scalarize(spa_input.data.AER_TAU_SW);
+  auto spa_data_aero_tau_lw = ekat::scalarize(spa_input.data.AER_TAU_LW);
+
+  auto copy_and_pad = KOKKOS_LAMBDA (const Member& team) {
+    int icol = team.league_rank();
+
+    auto copy_col = [&](const int k) {
+      spa_data_ccn3(icol,k+1) = ccn3(icol,k);
+      for (int isw=0; isw<nswbands; ++isw) {
+        spa_data_aero_g_sw(icol,isw,k+1)   = aero_g_sw(icol,isw,k);
+        spa_data_aero_ssa_sw(icol,isw,k+1) = aero_ssa_sw(icol,isw,k);
+        spa_data_aero_tau_sw(icol,isw,k+1) = aero_tau_sw(icol,isw,k);
+      }
+      for (int ilw=0; ilw<nlwbands; ++ilw) {
+        spa_data_aero_tau_lw(icol,ilw,k+1) = aero_tau_lw(icol,ilw,k);
+      }
+    };
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team,nlevs),copy_col);
+
+    // Set the first/last entries of the spa data, so that linear interp
+    // can extrapolate if the p_tgt is outside the p_src bounds
+    Kokkos::single(Kokkos::PerTeam(team),[&]{
+      spa_data_ccn3(icol,0) = 0;
+      for (int isw=0; isw<nswbands; ++isw) {
+        spa_data_aero_g_sw(icol,isw,0)   = 0;
+        spa_data_aero_ssa_sw(icol,isw,0) = 0;
+        spa_data_aero_tau_sw(icol,isw,0) = 0;
+      }
+      for (int ilw=0; ilw<nlwbands; ++ilw) {
+        spa_data_aero_tau_lw(icol,ilw,0) = 0;
+      }
+      spa_data_ccn3(icol,nlevs+1) = ccn3(icol,nlevs-1);
+      for (int isw=0; isw<nswbands; ++isw) {
+        spa_data_aero_g_sw(icol,isw,nlevs+1)   = aero_g_sw(icol,isw,nlevs-1);
+        spa_data_aero_ssa_sw(icol,isw,nlevs+1) = aero_ssa_sw(icol,isw,nlevs-1);
+        spa_data_aero_tau_sw(icol,isw,nlevs+1) = aero_tau_sw(icol,isw,nlevs-1);
+      }
+      for (int ilw=0; ilw<nlwbands; ++ilw) {
+        spa_data_aero_tau_lw(icol,ilw,nlevs+1) = aero_tau_lw(icol,ilw,nlevs-1);
+      }
+    });
+  };
+  auto policy = ESU::get_default_team_policy(ncols,nlevs);
+  Kokkos::parallel_for("", policy, copy_and_pad);
+  Kokkos::fence();
+  stop_timer("EAMxx::SPA::update_spa_data_from_file::copy_and_pad");
+
+  stop_timer("EAMxx::SPA::update_spa_data_from_file");
 } // END update_spa_data_from_file
 
 /*-----------------------------------------------------------------*/
 template<typename S, typename D>
 void SPAFunctions<S,D>
 ::update_spa_timestate(
-  const std::string&     spa_data_file_name,
-  const int              nswbands,
-  const int              nlwbands,
-  const util::TimeStamp& ts,
-        SPAHorizInterp&  spa_horiz_interp,
-        SPATimeState&    time_state, 
-        SPAInput&        spa_beg,
-        SPAInput&        spa_end)
+    std::shared_ptr<AtmosphereInput>& scorpio_reader,
+    std::shared_ptr<IOPReader>&       iop_reader,
+    const util::TimeStamp&            ts,
+    AbstractRemapper&                 spa_horiz_interp,
+    SPATimeState&                     time_state,
+    SPAInput&                         spa_beg,
+    SPAInput&                         spa_end)
 {
-
   // Now we check if we have to update the data that changes monthly
   // NOTE:  This means that SPA assumes monthly data to update.  Not
   //        any other frequency.
-  const auto month = ts.get_month();
-  if (month != time_state.current_month or !time_state.inited) {
-
+  const auto month = ts.get_month() - 1; // Make it 0-based
+  if (month != time_state.current_month) {
     // Update the SPA time state information
     time_state.current_month = month;
-    time_state.t_beg_month = util::TimeStamp({ts.get_year(),month,1}, {0,0,0}).frac_of_year_in_days();
-    time_state.days_this_month = util::days_in_month(ts.get_year(),month);
+    time_state.t_beg_month = util::TimeStamp({ts.get_year(),month+1,1}, {0,0,0}).frac_of_year_in_days();
+    time_state.days_this_month = util::days_in_month(ts.get_year(),month+1);
+
+    // Copy spa_end'data into spa_beg'data, and read in the new spa_end
+    std::swap(spa_beg,spa_end);
+
     // Update the SPA forcing data for this month and next month
-    // Start by copying next months data to this months data structure.  
+    // Start by copying next months data to this months data structure.
     // NOTE: If the timestep is bigger than monthly this could cause the wrong values
     //       to be assigned.  A timestep greater than a month is very unlikely so we
     //       will proceed.
-    // NOTE: we use zero-based time indexing here.
-    update_spa_data_from_file(spa_data_file_name,time_state.current_month-1,nswbands,nlwbands,spa_horiz_interp,spa_beg);
-    int next_month = time_state.current_month==12 ? 1 : time_state.current_month+1;
-    update_spa_data_from_file(spa_data_file_name,next_month-1,nswbands,nlwbands,spa_horiz_interp,spa_end);
-    // If time state was not initialized it is now:
-    time_state.inited = true;
+    int next_month = (time_state.current_month + 1) % 12;
+    update_spa_data_from_file(scorpio_reader,iop_reader,ts,next_month,spa_horiz_interp,spa_end);
   }
 
 } // END updata_spa_timestate
@@ -659,12 +589,12 @@ template<typename S,typename D>
 KOKKOS_INLINE_FUNCTION
 auto SPAFunctions<S,D>::
 get_var_column (const SPAData& data, const int icol, const int ivar)
-  -> view_1d<Spack> 
+  -> view_1d<Spack>
 {
   if (ivar==0) {
     return ekat::subview(data.CCN3,icol);
   } else {
-    // NOTE: if we ever get 2+ long-wave vars, you will have to do 
+    // NOTE: if we ever get 2+ long-wave vars, you will have to do
     //       something like
     //    if (jvar<num_sw_vars) {..} else { // compute lw var index }
     int jvar   = (ivar-1) / data.nswbands;
@@ -672,9 +602,9 @@ get_var_column (const SPAData& data, const int icol, const int ivar)
     int lwband = (ivar-1) - 3*data.nswbands;
     switch (jvar) {
       case 0: return ekat::subview(data.AER_G_SW,icol,swband);
-      case 1: return ekat::subview(data.AER_SSA_SW,icol,swband); 
-      case 2: return ekat::subview(data.AER_TAU_SW,icol,swband); 
-      default: return ekat::subview(data.AER_TAU_LW,icol,lwband); 
+      case 1: return ekat::subview(data.AER_SSA_SW,icol,swband);
+      case 2: return ekat::subview(data.AER_TAU_SW,icol,swband);
+      default: return ekat::subview(data.AER_TAU_LW,icol,lwband);
 
     }
   }

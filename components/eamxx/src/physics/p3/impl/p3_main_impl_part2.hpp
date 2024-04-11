@@ -94,7 +94,8 @@ void Functions<S,D>
   const uview_1d<Spack>& liq_ice_exchange,
   const uview_1d<Spack>& pratot,
   const uview_1d<Spack>& prctot,
-  bool& hydrometeorsPresent, const Int& nk)
+  bool& hydrometeorsPresent, const Int& nk,
+  const physics::P3_Constants<S> & p3constants)
 {
   constexpr Scalar qsmall       = C::QSMALL;
   constexpr Scalar nsmall       = C::NSMALL;
@@ -215,7 +216,8 @@ void Functions<S,D>
                      lamc(k), cdist(k), cdist1(k), not_skip_micro);
       nc(k).set(not_skip_micro, nc_incld(k) * cld_frac_l(k));
 
-      get_rain_dsd2(qr_incld(k), nr_incld(k), mu_r(k), lamr(k), cdistr(k), logn0r(k), not_skip_micro);
+      get_rain_dsd2(qr_incld(k), nr_incld(k), mu_r(k), lamr(k), p3constants, not_skip_micro);
+      get_cdistr_logn0r(qr_incld(k), nr_incld(k), mu_r(k), lamr(k), cdistr(k), logn0r(k), not_skip_micro);
       nr(k).set(not_skip_micro, nr_incld(k) * cld_frac_r(k));
 
       impose_max_total_ni(ni_incld(k), max_total_ni, inv_rho(k), not_skip_micro);
@@ -227,7 +229,7 @@ void Functions<S,D>
         ni_incld(k).set(qi_gt_small, max(ni_incld(k), nsmall));
         nr_incld(k).set(qi_gt_small, max(nr_incld(k), nsmall));
 
-        const auto rhop = calc_bulk_rho_rime(qi_incld(k), qm_incld(k), bm_incld(k), qi_gt_small);
+        const auto rhop = calc_bulk_rho_rime(qi_incld(k), qm_incld(k), bm_incld(k), p3constants, qi_gt_small);
         qm(k).set(qi_gt_small, qm_incld(k)*cld_frac_i(k) );
         bm(k).set(qi_gt_small, bm_incld(k)*cld_frac_i(k) );
 
@@ -268,12 +270,12 @@ void Functions<S,D>
       // collection of droplets
       ice_cldliq_collection(
         rho(k), T_atm(k), rhofaci(k), table_val_qc2qi_collect, qi_incld(k), qc_incld(k), ni_incld(k), nc_incld(k),
-        qc2qi_collect_tend, nc_collect_tend, qc2qr_ice_shed_tend, ncshdc, not_skip_micro);
+        qc2qi_collect_tend, nc_collect_tend, qc2qr_ice_shed_tend, ncshdc, p3constants, not_skip_micro);
 
       // collection of rain
       ice_rain_collection(
         rho(k), T_atm(k), rhofaci(k), logn0r(k), table_val_nr_collect, table_val_qr2qi_collect, qi_incld(k), ni_incld(k), qr_incld(k),
-        qr2qi_collect_tend, nr_collect_tend, not_skip_micro);
+        qr2qi_collect_tend, nr_collect_tend, p3constants, not_skip_micro);
 
       // collection between ice categories
 
@@ -309,12 +311,12 @@ void Functions<S,D>
       // contact and immersion freezing droplets
       cldliq_immersion_freezing(
         T_atm(k), lamc(k), mu_c(k), cdist1(k), qc_incld(k), inv_qc_relvar(k),
-        qc2qi_hetero_freeze_tend, nc2ni_immers_freeze_tend, not_skip_micro);
+        qc2qi_hetero_freeze_tend, nc2ni_immers_freeze_tend, p3constants, not_skip_micro);
 
       // for future: get rid of log statements below for rain freezing
       rain_immersion_freezing(
         T_atm(k), lamr(k), mu_r(k), cdistr(k), qr_incld(k),
-        qr2qi_immers_freeze_tend, nr2ni_immers_freeze_tend, not_skip_micro);
+        qr2qi_immers_freeze_tend, nr2ni_immers_freeze_tend, p3constants, not_skip_micro);
 
       //  rime splintering (Hallet-Mossop 1974)
       // PMC comment: Morrison and Milbrandt 2015 part 1 and 2016 part 3 both say
@@ -343,13 +345,13 @@ void Functions<S,D>
     // deposition/condensation-freezing nucleation
     ice_nucleation(
       T_atm(k), inv_rho(k), ni(k), ni_activated(k), qv_supersat_i(k), inv_dt, predictNc, do_prescribed_CCN,
-      qv2qi_nucleat_tend, ni_nucleat_tend, not_skip_all);
+      qv2qi_nucleat_tend, ni_nucleat_tend, p3constants, not_skip_all);
 
     // cloud water autoconversion
     // NOTE: cloud_water_autoconversion must be called before droplet_self_collection
     cloud_water_autoconversion(
       rho(k), qc_incld(k), nc_incld(k), inv_qc_relvar(k),
-      qc2qr_autoconv_tend, nc2nr_autoconv_tend, ncautr, not_skip_all);
+      qc2qr_autoconv_tend, nc2nr_autoconv_tend, ncautr, p3constants, not_skip_all);
 
     // self-collection of droplets
     droplet_self_collection(
@@ -359,13 +361,13 @@ void Functions<S,D>
     // accretion of cloud by rain
     cloud_rain_accretion(
       rho(k), inv_rho(k), qc_incld(k), nc_incld(k), qr_incld(k), inv_qc_relvar(k),
-      qc2qr_accret_tend, nc_accret_tend, not_skip_all);
+      qc2qr_accret_tend, nc_accret_tend, p3constants, not_skip_all);
 
     // self-collection and breakup of rain
     // (breakup following modified Verlinde and Cotton scheme)
     rain_self_collection(
       rho(k), qr_incld(k), nr_incld(k),
-      nr_selfcollect_tend, not_skip_all);
+      nr_selfcollect_tend, p3constants, not_skip_all);
 
     // Here we map the microphysics tendency rates back to CELL-AVERAGE quantities for updating
     // cell-average quantities.

@@ -23,6 +23,7 @@ public:
                     const Field& ilev_prof,
                     const Real mask_val);
 
+  // Calls the above one, with mask_val=max_float/10
   VerticalRemapper (const grid_ptr_type& src_grid,
                     const std::string& map_file,
                     const Field& lev_prof,
@@ -67,8 +68,20 @@ public:
            src_col_size == tgt_col_size;
   }
 
+  // NOTE: for the vert remapper, it doesn't really make sense to distinguish
+  //       between midpoints and interfaces: we're simply asking for a quantity
+  //       at a given set of pressure levels. So we choose to NOT allow a tgt
+  //       layout with ILEV tag.
+  bool is_valid_tgt_layout (const layout_type& layout) const override {
+    using namespace ShortFieldTagsNames;
+    return not layout.has_tag(ILEV)
+           and AbstractRemapper::is_valid_tgt_layout(layout);
+  }
 
 protected:
+
+  FieldLayout create_layout (const FieldLayout& fl_in,
+                             const grid_ptr_type& grid_out) const;
 
   void register_vertical_source_field(const Field& src);
 

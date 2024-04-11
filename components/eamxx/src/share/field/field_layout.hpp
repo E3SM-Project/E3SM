@@ -13,7 +13,7 @@
 namespace scream
 {
 
-// The type of the layout, that is, the kind of field it represent.
+// The type of the layout, that is, the kind of field it represents.
 enum class LayoutType {
   Invalid,
   Scalar0D,
@@ -81,7 +81,7 @@ public:
   bool has_tags (const std::vector<FieldTag>& tags) const;
 
   // The rank is the number of tags associated to this field.
-  int     rank () const  { return m_rank; }
+  int rank () const  { return m_rank; }
 
   int dim (const FieldTag tag) const;
   int dim (const int idim) const;
@@ -92,22 +92,34 @@ public:
 
   bool are_dimensions_set () const;
 
-  // Check if this layout is that of a vector field
+  // Check if this layout is that of a vector/tensor field
   bool is_vector_layout () const;
+  bool is_tensor_layout () const;
 
-  // If this is the layout of a vector field, get the idx of the vector dimension
+  // If this is the layout of a vector field, get the idx of the
+  // vector (CMP, Component) dimension
   // Note: throws if is_vector_layout()==false.
+  int get_vector_component_idx () const;
+  // get the dimension (extent) of the vector (CMP, Component) dimension
+  // calls get_vector_component_idx()
   int get_vector_dim () const;
   FieldTag get_vector_tag () const;
 
+  // If this is the layout of a tensor field, get the idx of the tensor dimensions
+  // Note: throws if is_tensor_layout()==false.
+  std::vector<int> get_tensor_dims () const;
+  std::vector<FieldTag> get_tensor_tags () const;
+
+  // Returns a copy of this layout with a given dimension stripped
   FieldLayout strip_dim (const FieldTag tag) const;
   FieldLayout strip_dim (const int idim) const;
-
-  // ----- Setters ----- //
-
-  void set_dimension  (const int idim, const int dimension);
+  FieldLayout clone_with_different_extent (const int idim, const int extent) const;
 
 protected:
+
+  // Only this class is allowed to change a layout. Customers can request
+  // a *slightly* different layout (via strip_dim or clone_with_different_extent)
+  void set_dimension  (const int idim, const int dimension);
 
   int                   m_rank;
   std::vector<FieldTag> m_tags;
@@ -121,6 +133,7 @@ std::string to_string (const FieldLayout& l);
 
 // ========================== IMPLEMENTATION ======================= //
 
+// returns extent
 inline int FieldLayout::dim (const FieldTag t) const {
   auto it = ekat::find(m_tags,t);
 
@@ -150,10 +163,10 @@ inline long long FieldLayout::size () const {
   return prod;
 }
 
-inline FieldTag FieldLayout::tag (const int idim) const { 
+inline FieldTag FieldLayout::tag (const int idim) const {
   ekat::error::runtime_check(idim>=0 && idim<m_rank, "Error! Index out of bounds.", -1);
   return m_tags[idim];
-} 
+}
 
 inline bool FieldLayout::has_tags (const std::vector<FieldTag>& tags) const {
   bool b = true;
@@ -181,4 +194,3 @@ inline bool operator== (const FieldLayout& fl1, const FieldLayout& fl2) {
 } // namespace scream
 
 #endif // SCREAM_FIELD_LAYOUT_HPP
-

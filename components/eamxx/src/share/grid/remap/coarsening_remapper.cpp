@@ -15,45 +15,53 @@ namespace scream
 CoarseningRemapper::
 CoarseningRemapper (const grid_ptr_type& src_grid,
                     const std::string& map_file,
-                    const bool track_mask)
+                    const bool track_mask,
+                    const bool populate_tgt_grid_geo_data)
  : HorizInterpRemapperBase (src_grid,map_file,InterpType::Coarsen)
  , m_track_mask (track_mask)
 {
   using namespace ShortFieldTagsNames;
 
-  // Replicate the src grid geo data in the tgt grid. We use this remapper to do
-  // the remapping (if needed), and clean it up afterwards.
-  const auto& src_geo_data_names = src_grid->get_geometry_data_names();
-  registration_begins();
-  for (const auto& name : src_geo_data_names) {
-    const auto& src_data = src_grid->get_geometry_data(name);
-    const auto& src_data_fid = src_data.get_header().get_identifier();
-    const auto& layout = src_data_fid.get_layout();
-    if (layout.tags()[0]!=COL) {
-      // Not a field to be coarsened (perhaps a vertical coordinate field).
-      // Simply copy it in the tgt grid, but we still need to assign the new grid name.
-      FieldIdentifier tgt_data_fid(src_data_fid.name(),src_data_fid.get_layout(),src_data_fid.get_units(),m_tgt_grid->name());
-      auto tgt_data = m_coarse_grid->create_geometry_data(tgt_data_fid);
-      tgt_data.deep_copy(src_data);
-    } else {
-      // This field needs to be remapped
-      auto tgt_data_fid = create_tgt_fid(src_data_fid);
-      auto tgt_data = m_coarse_grid->create_geometry_data(tgt_data_fid);
-      register_field(src_data,tgt_data);
+  if (populate_tgt_grid_geo_data) {
+    // Replicate the src grid geo data in the tgt grid. We use this remapper to do
+    // the remapping (if needed), and clean it up afterwards.
+    const auto& src_geo_data_names = src_grid->get_geometry_data_names();
+    registration_begins();
+    for (const auto& name : src_geo_data_names) {
+      // Since different remappers may share the same data (if the map file is the same)
+      // the coarse grid may already have the geo data.
+      if (m_coarse_grid->has_geometry_data(name)) {
+        continue;
+      }
+      const auto& src_data = src_grid->get_geometry_data(name);
+      const auto& src_data_fid = src_data.get_header().get_identifier();
+      const auto& layout = src_data_fid.get_layout();
+      if (layout.tags()[0]!=COL) {
+        // Not a field to be coarsened (perhaps a vertical coordinate field).
+        // Simply copy it in the tgt grid, but we still need to assign the new grid name.
+        FieldIdentifier tgt_data_fid(src_data_fid.name(),src_data_fid.get_layout(),src_data_fid.get_units(),m_tgt_grid->name());
+        auto tgt_data = m_coarse_grid->create_geometry_data(tgt_data_fid);
+        tgt_data.deep_copy(src_data);
+      } else {
+        // This field needs to be remapped
+        auto tgt_data_fid = create_tgt_fid(src_data_fid);
+        auto tgt_data = m_coarse_grid->create_geometry_data(tgt_data_fid);
+        register_field(src_data,tgt_data);
+      }
     }
-  }
-  registration_ends();
-  if (get_num_fields()>0) {
-    remap(true);
+    registration_ends();
+    if (get_num_fields()>0) {
+      remap(true);
 
-    // The remap phase only alters the fields on device.
-    // We need to sync them to host as well
-    for (int i=0; i<get_num_fields(); ++i) {
-      auto tgt_data = get_tgt_field(i);
-      tgt_data.sync_to_host();
+      // The remap phase only alters the fields on device.
+      // We need to sync them to host as well
+      for (int i=0; i<get_num_fields(); ++i) {
+        auto tgt_data = get_tgt_field(i);
+        tgt_data.sync_to_host();
+      }
     }
+    clean_up();
   }
-  clean_up();
 }
 
 CoarseningRemapper::
@@ -344,6 +352,57 @@ rescale_masked_fields (const Field& x, const Field& mask) const
       });
       break;
     }
+    case 4:
+    {
+      auto x_view = x.get_view<Pack****>();
+      bool mask1d = mask.rank()==1;
+      view_1d<const Real> mask_1d;
+      view_2d<const Pack> mask_2d;
+      // If the mask comes from FieldAtLevel, it's only defined on columns (rank=1)
+      // If the mask comes from vert interpolation remapper, it is defined on ncols x nlevs (rank=2)
+      if (mask.rank()==1) {
+        mask_1d = mask.get_view<const Real*>();
+      } else {
+        mask_2d = mask.get_view<const Pack**>();
+      }
+      const int dim1 = layout.dim(1);
+      const int dim2 = layout.dim(2);
+      const int dim3 = PackInfo::num_packs(layout.dim(3));
+      auto policy = ESU::get_default_team_policy(ncols,dim1*dim2*dim3);
+      Kokkos::parallel_for(policy,
+                           KOKKOS_LAMBDA(const MemberType& team) {
+        const auto icol = team.league_rank();
+        if (mask1d) {
+          auto mask = mask_1d(icol);
+          if (mask>mask_threshold) {
+            Kokkos::parallel_for(Kokkos::TeamVectorRange(team,dim1*dim2*dim3),
+                                [&](const int idx){
+              const int j = (idx / dim3) / dim2;
+              const int k = (idx / dim3) % dim2;
+              const int l =  idx % dim3;
+              auto x_sub = ekat::subview(x_view,icol,j,k);
+              x_sub(l) /= mask;
+            });
+          }
+        } else {
+          auto m_sub      = ekat::subview(mask_2d,icol);
+          Kokkos::parallel_for(Kokkos::TeamVectorRange(team,dim1*dim2*dim3),
+                              [&](const int idx){
+            const int j = (idx / dim3) / dim2;
+            const int k = (idx / dim3) % dim2;
+            const int l =  idx % dim3;
+            auto x_sub = ekat::subview(x_view,icol,j,k);
+            auto masked = m_sub(l) > mask_threshold;
+
+            if (masked.any()) {
+              x_sub(l).set(masked,x_sub(l)/m_sub(l));
+            }
+            x_sub(l).set(!masked,mask_val);
+          });
+        }
+      });
+      break;
+    }
   }
 }
 
@@ -458,6 +517,46 @@ local_mat_vec (const Field& x, const Field& y, const Field& mask) const
       });
       break;
     }
+    case 4:
+    {
+      auto x_view = x.get_view<const Pack****>();
+      auto y_view = y.get_view<      Pack****>();
+      // Note, the mask is still assumed to be defined on COLxLEV so still only 2D for case 3.
+      view_1d<const Real> mask_1d;
+      view_2d<const Pack> mask_2d;
+      bool mask1d = mask.rank()==1;
+      // If the mask comes from FieldAtLevel, it's only defined on columns (rank=1)
+      // If the mask comes from vert interpolation remapper, it is defined on ncols x nlevs (rank=2)
+      if (mask1d) {
+        mask_1d = mask.get_view<const Real*>();
+      } else {
+        mask_2d = mask.get_view<const Pack**>();
+      }
+      const int dim1 = src_layout.dim(1);
+      const int dim2 = src_layout.dim(2);
+      const int dim3 = PackInfo::num_packs(src_layout.dim(3));
+      auto policy = ESU::get_default_team_policy(nrows,dim1*dim2*dim3);
+      Kokkos::parallel_for(policy,
+                           KOKKOS_LAMBDA(const MemberType& team) {
+        const auto row = team.league_rank();
+
+        const auto beg = row_offsets(row);
+        const auto end = row_offsets(row+1);
+        Kokkos::parallel_for(Kokkos::TeamVectorRange(team,dim1*dim2*dim3),
+                            [&](const int idx){
+          const int j = (idx / dim3) / dim2;
+          const int k = (idx / dim3) % dim2;
+          const int l =  idx % dim3;
+          y_view(row,j,k,l) = weights(beg)*x_view(col_lids(beg),j,k,l) * 
+                          (mask1d ? mask_1d (col_lids(beg)) : mask_2d(col_lids(beg),l));
+          for (int icol=beg+1; icol<end; ++icol) {
+            y_view(row,j,k,l) += weights(icol)*x_view(col_lids(icol),j,k,l) *
+                          (mask1d ? mask_1d (col_lids(icol)) : mask_2d(col_lids(icol),l));
+          }
+        });
+      });
+      break;
+    }
     default:
     {
       EKAT_ERROR_MSG("Error::coarsening_remapper::local_mat_vec doesn't support fields of rank 4 or greater");
@@ -536,6 +635,30 @@ void CoarseningRemapper::pack_and_send ()
             const int idim = idx / dim2;
             const int ilev = idx % dim2;
             buf(offset + lidpos*dim1*dim2 + idim*dim2 + ilev) = v(lid,idim,ilev);
+          });
+        });
+      } break;
+      case 4:
+      {
+        auto v = f.get_view<const Real****>();
+        const int dim1 = fl.dim(1);
+        const int dim2 = fl.dim(2);
+        const int dim3 = fl.dim(3);
+        auto policy = ESU::get_default_team_policy(num_send_gids,dim1*dim2*dim3);
+        Kokkos::parallel_for(policy,
+                             KOKKOS_LAMBDA(const MemberType& team){
+          const int i = team.league_rank();
+          const int lid = lids_pids(i,0);
+          const int pid = lids_pids(i,1);
+          const int lidpos = i - pid_lid_start(pid);
+          const int offset = f_pid_offsets(pid);
+
+          Kokkos::parallel_for(Kokkos::TeamVectorRange(team,dim1*dim2*dim3),
+                               [&](const int idx) {
+            const int idim = (idx / dim3) / dim2;
+            const int jdim = (idx / dim3) % dim2;
+            const int ilev =  idx % dim3;
+            buf(offset + lidpos*dim1*dim2*dim3 + idim*dim2*dim3 + jdim*dim3 + ilev) = v(lid,idim,jdim,ilev);
           });
         });
       } break;
@@ -659,6 +782,34 @@ void CoarseningRemapper::recv_and_unpack ()
         });
       } break;
 
+      case 4:
+      {
+        auto v = f.get_view<Real****>();
+        const int dim1 = fl.dim(1);
+        const int dim2 = fl.dim(2);
+        const int dim3 = fl.dim(3);
+        auto policy = ESU::get_default_team_policy(num_tgt_dofs,dim1*dim2*dim3);
+        Kokkos::parallel_for(policy,
+                             KOKKOS_LAMBDA(const MemberType& team){
+          const int lid = team.league_rank();
+          const int recv_beg = recv_lids_beg(lid);
+          const int recv_end = recv_lids_end(lid);
+          for (int irecv=recv_beg; irecv<recv_end; ++irecv) {
+            const int pid = recv_lids_pidpos(irecv,0);
+            const int lidpos = recv_lids_pidpos(irecv,1);
+            const int offset = f_pid_offsets(pid) + lidpos*dim1*dim2*dim3;
+
+            Kokkos::parallel_for(Kokkos::TeamVectorRange(team,dim1*dim2*dim3),
+                                 [&](const int idx) {
+              const int idim = (idx / dim3) / dim2;
+              const int jdim = (idx / dim3) % dim2;
+              const int ilev =  idx % dim3;
+              v(lid,idim,jdim,ilev) += buf (offset + idim*dim2*dim3 + jdim*dim3 + ilev);
+            });
+          }
+        });
+      } break;
+
       default:
         EKAT_ERROR_MSG ("Unexpected field rank in CoarseningRemapper::pack.\n"
             "  - MPI rank  : " + std::to_string(m_comm.rank()) + "\n"
@@ -763,6 +914,7 @@ recv_gids_from_pids (const std::map<int,std::vector<int>>& pid2gids_send) const
 void CoarseningRemapper::setup_mpi_data_structures ()
 {
   using namespace ShortFieldTagsNames;
+  using gid_type = AbstractGrid::gid_type;
 
   const auto mpi_comm  = m_comm.mpi_comm();
   const auto mpi_real  = ekat::get_mpi_type<Real>();

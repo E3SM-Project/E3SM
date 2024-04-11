@@ -423,6 +423,11 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   if (run_type==RunType::Initial) {
     initialize_homme_state ();
   } else {
+    if (m_iop) {
+      // We need to reload IOP data after restarting
+      m_iop->read_iop_file_data(timestamp());
+    }
+
     restart_homme_state ();
   }
 
@@ -547,16 +552,13 @@ void HommeDynamics::homme_pre_process (const double dt) {
   // T and uv tendencies are backed out on the ref grid.
   // Homme takes care of turning the FT tendency into a tendency for VTheta_dp.
 
-  constexpr int N = sizeof(Homme::Scalar) / sizeof(Real);
-  using Pack = RPack<N>;
-
   using namespace Homme;
   const auto& c = Context::singleton();
   const auto& params = c.get<SimulationParams>();
 
   const int ncols = m_phys_grid->get_num_local_dofs();
   const int nlevs = m_phys_grid->get_num_vertical_levels();
-  const int npacks = ekat::PackInfo<N>::num_packs(nlevs);
+  const int npacks = ekat::npack<Pack>(nlevs);
 
   const auto& pgn = m_phys_grid->name();
 
@@ -664,6 +666,10 @@ void HommeDynamics::homme_post_process (const double dt) {
     get_internal_field("w_int_dyn").get_header().get_alloc_properties().reset_subview_idx(tl.n0);
   }
 
+  if (m_iop) {
+    apply_iop_forcing(dt);
+  }
+
   if (fv_phys_active()) {
     fv_phys_post_process();
     // Apply Rayleigh friction to update temperature and horiz_winds
@@ -675,8 +681,6 @@ void HommeDynamics::homme_post_process (const double dt) {
   // Remap outputs to ref grid
   m_d2p_remapper->remap(true);
 
-  constexpr int N = HOMMEXX_PACK_SIZE;
-  using Pack = RPack<N>;
   using ColOps = ColumnOps<DefaultDevice,Real>;
   using PF = PhysicsFunctions<DefaultDevice>;
 
@@ -697,7 +701,7 @@ void HommeDynamics::homme_post_process (const double dt) {
 
   const auto ncols = m_phys_grid->get_num_local_dofs();
   const auto nlevs = m_phys_grid->get_num_vertical_levels();
-  const auto npacks= ekat::PackInfo<N>::num_packs(nlevs);
+  const auto npacks= ekat::npack<Pack>(nlevs);
 
   using ESU = ekat::ExeSpaceUtils<KT::ExeSpace>;
   const auto policy = ESU::get_thread_range_parallel_scan_team_policy(ncols,npacks);
@@ -797,14 +801,13 @@ void HommeDynamics::init_homme_views () {
   constexpr int QSZ  = HOMMEXX_QSIZE_D;
   constexpr int NVL  = HOMMEXX_NUM_LEV;
   constexpr int NVLI = HOMMEXX_NUM_LEV_P;
-  constexpr int N    = HOMMEXX_PACK_SIZE;
 
   const int nelem = m_dyn_grid->get_num_local_dofs()/(NGP*NGP);
   const int qsize = tracers.num_tracers();
 
   const auto ncols = m_phys_grid->get_num_local_dofs();
   const auto nlevs = m_phys_grid->get_num_vertical_levels();
-  const auto npacks= ekat::PackInfo<N>::num_packs(nlevs);
+  const auto npacks= ekat::npack<Pack>(nlevs);
 
   using ESU = ekat::ExeSpaceUtils<KT::ExeSpace>;
   const auto default_policy = ESU::get_default_team_policy(ncols,npacks);
@@ -931,8 +934,6 @@ void HommeDynamics::restart_homme_state () {
         "  - field name: " + f.get_header().get_identifier().name() + "\n");
   }
 
-  constexpr int N = HOMMEXX_PACK_SIZE;
-  using Pack = RPack<N>;
   using ESU = ekat::ExeSpaceUtils<KT::ExeSpace>;
   using PF = PhysicsFunctions<DefaultDevice>;
 
@@ -957,7 +958,7 @@ void HommeDynamics::restart_homme_state () {
   const int nlevs = m_phys_grid->get_num_vertical_levels();
   const int ncols = m_phys_grid->get_num_local_dofs();
   const int nelem = m_dyn_grid->get_num_local_dofs() / (NGP*NGP);
-  const int npacks = ekat::PackInfo<N>::num_packs(nlevs);
+  const int npacks = ekat::npack<Pack>(nlevs);
   const int qsize = params.qsize;
 
   // NOTE: when restarting stuff like T_prev, and other "previous steps" quantities that HommeDynamics
@@ -1060,12 +1061,10 @@ void HommeDynamics::restart_homme_state () {
 
 void HommeDynamics::initialize_homme_state () {
   // Some types
-  using Pack = RPack<HOMMEXX_PACK_SIZE>;
   using ColOps = ColumnOps<DefaultDevice,Real>;
   using PF = PhysicsFunctions<DefaultDevice>;
   using ESU = ekat::ExeSpaceUtils<KT::ExeSpace>;
   using EOS = Homme::EquationOfState;
-  using WS = ekat::WorkspaceManager<Pack,DefaultDevice>;
 
   const auto& rgn = m_cgll_grid->name();
 
@@ -1080,8 +1079,8 @@ void HommeDynamics::initialize_homme_state () {
   constexpr int NGP = HOMMEXX_NP;
   const int nelem = m_dyn_grid->get_num_local_dofs()/(NGP*NGP);
   const int qsize = params.qsize;
-  const int npacks_mid = ekat::PackInfo<HOMMEXX_PACK_SIZE>::num_packs(nlevs);
-  const int npacks_int = ekat::PackInfo<HOMMEXX_PACK_SIZE>::num_packs(nlevs+1);
+  const int npacks_mid = ekat::npack<Pack>(nlevs);
+  const int npacks_int = ekat::npack<Pack>(nlevs+1);
 
   // Bootstrap dp on phys grid, and let the ic remapper transfer dp on dyn grid
   // NOTE: HybridVCoord already stores hyai and hybi deltas as packed views,
@@ -1138,7 +1137,7 @@ void HommeDynamics::initialize_homme_state () {
   const auto hyai0 = hvcoord.hybrid_ai0;
   // Need two temporaries, for pi_mid and pi_int
   const auto policy = ESU::get_thread_range_parallel_scan_team_policy(nelem*NGP*NGP,npacks_mid);
-  WS wsm(npacks_int,2,policy);
+  WorkspaceMgr wsm(npacks_int,2,policy);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int ie  =  team.league_rank() / (NGP*NGP);
     const int igp = (team.league_rank() / NGP) % NGP;
@@ -1149,8 +1148,8 @@ void HommeDynamics::initialize_homme_state () {
 
     // Compute p_mid
     auto ws = wsm.get_workspace(team);
-    ekat::Unmanaged<WS::view_1d<Pack> > p_int, p_mid;
-    ws.template take_many_and_reset<2>({"p_int", "p_mid"}, {&p_int, &p_mid});
+    ekat::Unmanaged<WorkspaceMgr::view_1d<Pack> > p_int, p_mid;
+    ws.take_many_and_reset<2>({"p_int", "p_mid"}, {&p_int, &p_mid});
 
     ColOps::column_scan<true>(team,nlevs,dp,p_int,ps0*hyai0);
     team.team_barrier();
@@ -1281,12 +1280,11 @@ copy_dyn_states_to_all_timelevels () {
 //       TODO item to consolidate how we update the pressure during initialization and run, but
 //       for now we have two locations where we do this.
 void HommeDynamics::update_pressure(const std::shared_ptr<const AbstractGrid>& grid) {
-  using Pack = RPack<HOMMEXX_PACK_SIZE>;
   using ColOps = ColumnOps<DefaultDevice,Real>;
 
   const auto ncols = grid->get_num_local_dofs();
   const auto nlevs = grid->get_num_vertical_levels();
-  const auto npacks= ekat::PackInfo<HOMMEXX_PACK_SIZE>::num_packs(nlevs);
+  const auto npacks= ekat::npack<Pack>(nlevs);
 
   const auto& c = Homme::Context::singleton();
   const auto& hvcoord = c.get<Homme::HybridVCoord>();

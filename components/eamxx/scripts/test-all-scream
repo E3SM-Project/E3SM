@@ -16,6 +16,7 @@ check_minimum_python_version(3, 4)
 
 import argparse, sys, pathlib
 
+from test_factory import get_test_name_dict
 from test_all_scream import TestAllScream
 
 ###############################################################################
@@ -35,10 +36,6 @@ OR
     > cd $scream_repo/components/eamxx
     > ./scripts/{0} --preserve-env -m melvin
 
-    \033[1;32m# Run all tests on current machine with default behavior except using a custom ref for baseline generation\033[0m
-    > cd $scream_repo/components/eamxx
-    > ./scripts/{0} -m melvin -b BASELINE_REF
-
     \033[1;32m# Run all tests on current machine with default behavior except using pre-existing baselines (skips baseline generation) \033[0m
     > cd $scream_repo/components/eamxx
     > ./scripts/{0} -m melvin --baseline-dir=PATH_TO_BASELINES
@@ -49,7 +46,7 @@ OR
 
     \033[1;32m# Run all tests on current machine with default behavior on a repo with uncommitted changes\033[0m
     > cd $scream_repo/components/eamxx
-    > ./scripts/{0} -m melvin -k -b HEAD
+    > ./scripts/{0} -m melvin -k -b AUTO
 """.format(pathlib.Path(args[0]).name),
         description=description,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
@@ -63,17 +60,14 @@ OR
     parser.add_argument("-p", "--parallel", action="store_true",
                         help="Launch the different build types stacks in parallel")
 
-    parser.add_argument("-f", "--fast-fail", action="store_true",
-                        help="Stop testing when the first failure is detected")
+    parser.add_argument("-g", "--generate", action="store_true",
+        help="Instruct test-all-scream to generate baselines from current commit. Skips tests")
 
-    parser.add_argument("-b", "--baseline-ref", default=None, # default will be computed later
-        help="What commit to use to generate baselines. Default is merge-base of current commit and origin/master (or HEAD if --keep-tree)")
-
-    parser.add_argument("--baseline-dir", default=None,
-        help="Use baselines from the given directory, skip baseline creation.")
+    parser.add_argument("-b", "--baseline-dir", default=None,
+        help="Directory where baselines should be read from (or written to, if -g/-i is used)")
 
     parser.add_argument("-u", "--update-expired-baselines", action="store_true",
-        help="Update baselines that appear to be expired.")
+        help="Update baselines that appear to be expired (only used with -g)")
 
     parser.add_argument("-m", "--machine",
         help="Provide machine name. This is *always* required. It can, but does not"
@@ -86,9 +80,6 @@ OR
     parser.add_argument("--config-only", action="store_true",
             help="In the testing phase, only run config step, skip build and tests")
 
-    parser.add_argument("-k", "--keep-tree", action="store_true",
-        help="Allow to keep the current work tree when testing against HEAD (only valid with `-b HEAD`)")
-
     parser.add_argument("-c", "--custom-cmake-opts", action="append", default=[],
         help="Extra custom options to pass to cmake. Can use multiple times for multiple cmake options. The -D is added for you")
 
@@ -100,12 +91,12 @@ OR
     parser.add_argument("--preserve-env", action="store_true",
                         help="Whether to skip machine env setup, and preserve the current user env (useful to manually test new modules)")
 
-    choices_doc = ", ".join(["'{}' ({})".format(k, v) for k, v in TestAllScream.get_test_name_desc().items()])
+    choices_doc = ", ".join(["'{}' ({})".format(k, v) for k, v in get_test_name_dict().items()])
     parser.add_argument("-t", "--test", dest="tests", action="append", default=[],
                         help=f"Only run specific test configurations, choices={choices_doc}")
 
     parser.add_argument("-i", "--integration-test", action="store_true",
-                        help="Merge origin/master into this branch before testing.")
+                        help="Merge origin/master into this branch before testing (implies -u).")
 
     parser.add_argument("-l", "--local", action="store_true",
                         help="Allow to not specify a machine name, and have test-all-scream to look"
@@ -122,9 +113,6 @@ OR
 
     parser.add_argument("--quick-rerun-failed", action="store_true",
                         help="Do not clean the build dir, and do not reconfigure. Just (incremental) build and retest failed tests only.")
-
-    parser.add_argument("-d", "--dry-run", action="store_true",
-                        help="Do a dry run, commands will be printed but not executed")
 
     parser.add_argument("--make-parallel-level", action="store", type=int, default=0,
         help="Max number of jobs to be created during compilation. If not provided, use default for given machine.")

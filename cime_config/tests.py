@@ -610,12 +610,20 @@ _TESTS = {
 
     "e3sm_scream_v1_lowres" : {
         "time"  : "01:00:00",
+        "inherit" : ("e3sm_scream_mam4xx_v1_lowres"),
         "tests" : (
-            "ERP_D_Lh4.ne4_ne4.F2010-SCREAMv1",
-            "ERS_Ln9.ne4_ne4.F2000-SCREAMv1-AQP1",
-            "SMS_D_Ln9.ne4_ne4.F2010-SCREAMv1-noAero",
-            "ERP_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1",
-            "ERS_D_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.scream-rad_frequency_2",
+            "ERP_D_Lh4.ne4_ne4.F2010-SCREAMv1.scream-output-preset-1",
+            "ERS_Ln9.ne4_ne4.F2000-SCREAMv1-AQP1.scream-output-preset-2",
+            "SMS_D_Ln9.ne4_ne4.F2010-SCREAMv1-noAero.scream-output-preset-3",
+            "ERP_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.scream-output-preset-4",
+            "ERS_D_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.scream-rad_frequency_2--scream-output-preset-5",
+            )
+    },
+
+    "e3sm_scream_v1_dp-eamxx" : {
+        "time"  : "01:00:00",
+        "tests" : (
+            "ERS_P16_Ln22.ne30_ne30.F2010-SCREAMv1-DP-DYCOMSrf01", # 225 phys cols, roughly size of ne2
             )
     },
 
@@ -623,27 +631,26 @@ _TESTS = {
     # should be fast, so we limit it to low res and add some thread tests
     # specifically for mappy.
     "e3sm_scream_v1_at" : {
-        "inherit" : ("e3sm_scream_v1_lowres"),
-        "tests"   : ("PET_Ln9_P32x2.ne4pg2_ne4pg2.F2010-SCREAMv1")
+        "inherit" : ("e3sm_scream_v1_lowres", "e3sm_scream_v1_dp-eamxx"),
+        "tests"   : ("PET_Ln9_P32x2.ne4pg2_ne4pg2.F2010-SCREAMv1.scream-output-preset-1")
     },
 
     "e3sm_scream_v1_medres" : {
         "time"  : "02:00:00",
         "tests" : (
             #  "SMS_D_Ln2.ne30_ne30.F2000-SCREAMv1-AQP1", # Uncomment once IC file for ne30 is ready
-            "ERS_Ln22.ne30_ne30.F2010-SCREAMv1.scream-internal_diagnostics_level",
-            "PEM_Ln90.ne30pg2_ne30pg2.F2010-SCREAMv1",
-            "ERS_Ln90.ne30pg2_ne30pg2.F2010-SCREAMv1.scream-small_kernels",
-            "ERP_Ln22.conusx4v1pg2_r05_oECv3.F2010-SCREAMv1-noAero.scream-bfbhash",
+            "ERS_Ln22.ne30_ne30.F2010-SCREAMv1.scream-internal_diagnostics_level--scream-output-preset-3",
+            "PEM_Ln90.ne30pg2_ne30pg2.F2010-SCREAMv1.scream-spa_remap--scream-output-preset-4",
+            "ERS_Ln90.ne30pg2_ne30pg2.F2010-SCREAMv1.scream-small_kernels--scream-output-preset-5",
+            "ERP_Ln22.conusx4v1pg2_r05_oECv3.F2010-SCREAMv1-noAero.scream-bfbhash--scream-output-preset-6",
             )
     },
 
+    # Used to track performance
     "e3sm_scream_v1_hires" : {
-        "time"  : "03:00:00",
+        "time"  : "01:00:00",
         "tests" : (
-            "SMS_D_Ln12.ne120_r0125_oRRS18to6v3.F2010-SCREAMv1",
-            "SMS_Ln12.ne120_ne120.F2010-SCREAMv1",
-#            "SMS_Ln12.ne120_r0125_oRRS18to6v3.F2000-SCREAMv1-AQP1", add when aquap 120 inputs available
+            "SMS_Ln300.ne30pg2_ne30pg2.F2010-SCREAMv1.scream-perf_test--scream-output-preset-1"
             )
     },
 
@@ -655,7 +662,7 @@ _TESTS = {
          # Disable the two 111422-commented tests b/c they fail on pm-gpu and
          # we're not using MPASSI right now.
          #111422 "ERP_Ln22.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.atmlndactive-rtm_off",
-         "ERS_D_Ln22.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.atmlndactive-rtm_off",
+         "ERS_D_Ln22.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.atmlndactive-rtm_off--scream-output-preset-1",
          #  "ERS_Ln22.ne30_oECv3.F2010-SCREAMv1-MPASSI.atmlndactive-rtm_off",
          #111422 "PEM_Ln90.ne30pg2_EC30to60E2r2.F2010-SCREAMv1-MPASSI",
          #  "ERS_Ln22.ne30pg2_EC30to60E2r2.F2010-SCREAMv1-MPASSI.atmlndactive-rtm_off",
@@ -678,6 +685,14 @@ _TESTS = {
             "ERS_Ln362.ne30pg2_ne30pg2.F2010-SCREAMv1"
             )
     },
+
+    "e3sm_scream_mam4xx_v1_lowres" : {
+        "time"  : "01:00:00",
+        "tests" : (
+            "SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.scream-mam4xx-optics",
+        )
+    },
+
 
     "e3sm_gpuacc" : {
         "tests"    : (
@@ -1000,4 +1015,3 @@ _TESTS = {
                      "e3sm_superbfb_atm", "e3sm_superbfb_wcycl"),
     },
 }
-

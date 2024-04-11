@@ -152,10 +152,9 @@ is_valid_layout (const FieldLayout& layout) const
     // Let's return true early to avoid segfautls below
     return true;
   }
+
   const bool midpoints = layout.tags().back()==LEV;
-  const bool is_vec = layout.is_vector_layout();
-  const int vec_dim = is_vec ? layout.dims()[layout.get_vector_dim()] : 0;
-  const auto vec_tag = is_vec ? layout.get_vector_tag() : INV;
+  const bool is3d = layout.tags().back()==LEV or layout.tags().back()==ILEV;
 
   switch (lt) {
     case LayoutType::Scalar1D: [[fallthrough]];
@@ -163,14 +162,29 @@ is_valid_layout (const FieldLayout& layout) const
       // 1d layouts need the right number of levels
       return layout.dims().back() == m_num_vert_levs or
              layout.dims().back() == (m_num_vert_levs+1);
-    case LayoutType::Scalar2D:
-      return layout==get_2d_scalar_layout();
-    case LayoutType::Vector2D:
-      return layout==get_2d_vector_layout(vec_tag,vec_dim);
+    case LayoutType::Scalar2D: [[fallthrough]];
     case LayoutType::Scalar3D:
-      return layout==get_3d_scalar_layout(midpoints);
+      return is3d ? layout==get_3d_scalar_layout(midpoints)
+                  : layout==get_2d_scalar_layout();
+    case LayoutType::Vector2D: [[fallthrough]];
     case LayoutType::Vector3D:
-      return layout==get_3d_vector_layout(midpoints,vec_tag,vec_dim);
+    {
+      const auto vec_dim = layout.dims()[layout.get_vector_component_idx()];
+      const auto vec_tag = layout.get_vector_tag();
+      return is3d ? layout==get_3d_vector_layout(midpoints,vec_tag,vec_dim)
+                  : layout==get_2d_vector_layout(vec_tag,vec_dim);
+    }
+    case LayoutType::Tensor2D: [[fallthrough]];
+    case LayoutType::Tensor3D:
+    {
+      const auto ttags = layout.get_tensor_tags();
+      std::vector<int> tdims;
+      for (auto idx : layout.get_tensor_dims()) {
+        tdims.push_back(layout.dim(idx));
+      }
+      return is3d ? layout==get_3d_tensor_layout(midpoints,ttags,tdims)
+                  : layout==get_2d_tensor_layout(ttags,tdims);
+    }
     default:
       // Anything else is probably no
       return false;
@@ -241,6 +255,17 @@ AbstractGrid::create_geometry_data (const FieldIdentifier& fid)
   auto& f = m_geo_fields[name] = Field(fid);
   f.allocate_view();
   return f;
+}
+
+void
+AbstractGrid::delete_geometry_data (const std::string& name)
+{
+  EKAT_REQUIRE_MSG (has_geometry_data(name),
+      "Error! Cannot delete geometry data, since it is does not exist.\n"
+      "  - grid name: " + this->name() + "\n"
+      "  - geo data name: " + name + "\n");
+
+  m_geo_fields.erase(name);
 }
 
 void
@@ -501,6 +526,9 @@ void AbstractGrid::copy_data (const AbstractGrid& src, const bool shallow)
       m_geo_fields[name] = src.m_geo_fields.at(name).clone();
     }
   }
+
+  m_global_max_dof_gid = src.m_global_max_dof_gid;
+  m_global_min_dof_gid = src.m_global_min_dof_gid;
   m_is_unique = src.m_is_unique;
   m_is_unique_computed = src.m_is_unique_computed;
 }
