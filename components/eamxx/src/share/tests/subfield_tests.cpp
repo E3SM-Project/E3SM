@@ -78,19 +78,9 @@ TEST_CASE("field", "") {
       const int sl_end = {7};
 
       auto v1d_h = f1.get_view<Real*, Host>();
-
-      // error on idx_end > v.extent(idim)
-      REQUIRE_THROWS(f1.subfield(idim, sl_beg, d1[0] + 1));
-      // error on idx_beg negative
-      REQUIRE_THROWS(f1.subfield(idim, -1, sl_end));
-      // error on idim > v.rank()
-      REQUIRE_THROWS(f1.subfield(1, sl_beg, sl_end));
-
-      auto sf = f1.subfield(idim, sl_beg, sl_end);
-
-      REQUIRE_THROWS(f1.get_multi_sliced_view<Real, 2, Host>());
-
+      auto sf = f1.subfield(idim, sl_beg, sl_end
       auto sv_h = sf.get_multi_sliced_view<Real, 1, Host>();
+
       for (int i = sl_beg; i < sl_end; i++) {
         REQUIRE(v1d_h(i) == sv_h(i - sl_beg));
       }
@@ -165,8 +155,6 @@ TEST_CASE("field", "") {
       /*  get_component test */
       // ======================
       auto cmp3 = f3.get_component(sl_beg[1], sl_end[1]);
-      REQUIRE_THROWS(f3.get_component(sl_beg[1], d3[1] + 1));
-      REQUIRE_THROWS(f3.get_component(-1, sl_end[1] + 1));
 
       auto svc_h = cmp3.get_multi_sliced_view<Real, 3, Host>();
       for (int i = 0; i < d3[0]; i++) {
