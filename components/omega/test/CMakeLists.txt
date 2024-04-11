@@ -1,136 +1,174 @@
 # Omega Unit Tests
 
+
+#####################
+# Omega Test Function
+#####################
+
+function(add_omega_test test_name exe_name source_files mpi_args)
+
+  # Create the executable
+  add_executable(${exe_name} ${source_files})
+
+  # Link the library
+  target_link_libraries(
+    ${exe_name}
+    PRIVATE
+    ${OMEGA_LIB_NAME}
+    OmegaLibFlags
+  )
+
+  # Add the test command
+  add_test(
+    NAME ${test_name} 
+    COMMAND ${MPI_EXEC} ${mpi_args} -- ./${exe_name}
+  )
+
+endfunction()
+
+
 ##################
 # Data type test
 ##################
 
-add_executable(testDataTypes.exe base/DataTypesTest.cpp)
-
-target_link_libraries(testDataTypes.exe ${OMEGA_LIB_NAME})
-
-add_test(NAME DATA_TYPES_TEST COMMAND ${MPI_EXEC} --cpu-bind=cores -n 1 -- ./testDataTypes.exe)
+add_omega_test(
+    DATA_TYPES_TEST
+    testDataTypes.exe
+    base/DataTypesTest.cpp
+    "-n 1;--cpu-bind=cores"
+)
 
 ##################
 # Machine env test
 ##################
 
-add_executable(testMachEnv.exe base/MachEnvTest.cpp)
-
-target_link_libraries(testMachEnv.exe ${OMEGA_LIB_NAME})
-
-add_test(NAME MACHINE_ENV_TEST COMMAND ${MPI_EXEC} --cpu-bind=cores -n 8 -- ./testMachEnv.exe)
-
+add_omega_test(
+    MACHINE_ENV_TEST
+    testMachEnv.exe
+    base/MachEnvTest.cpp
+    "-n 8;--cpu-bind=cores"
+)
 
 ##################
 # Broadcast test
 ##################
 
-add_executable(testBroadcast.exe base/BroadcastTest.cpp)
-
-target_link_libraries(testBroadcast.exe ${OMEGA_LIB_NAME})
-
-add_test(NAME BROADCAST_TEST COMMAND ${MPI_EXEC} --cpu-bind=cores -n 8 -- ./testBroadcast.exe)
-
+add_omega_test(
+    BROADCAST_TEST
+    testBroadcast.exe
+    base/BroadcastTest.cpp
+    "-n 8;--cpu-bind=cores"
+)
 
 ##################
 # Logging test
 ##################
 
-add_executable(testLogging.exe infra/LoggingTest.cpp)
-
-target_link_libraries(testLogging.exe ${OMEGA_LIB_NAME})
-
-add_test(NAME LOGGING_TEST COMMAND ./testLogging.exe)
+add_omega_test(
+    LOGGING_TEST
+    testLogging.exe
+    infra/LoggingTest.cpp
+    "-n 8;--cpu-bind=cores"
+)
 
 #############
 # Decomp test
 #############
 
-add_executable(testDecomp.exe base/DecompTest.cpp)
-
-target_link_libraries(testDecomp.exe ${OMEGA_LIB_NAME})
-
-add_test( NAME DECOMP_TEST COMMAND ${MPI_EXEC} -n 8 --cpu-bind=cores -- ./testDecomp.exe)
+add_omega_test(
+    DECOMP_TEST
+    testDecomp.exe
+    base/DecompTest.cpp
+    "-n 8;--cpu-bind=cores"
+)
 
 ##################
 # Halo test
 ##################
 
-add_executable(testHalo.exe base/HaloTest.cpp)
-
-target_link_libraries(testHalo.exe ${OMEGA_LIB_NAME})
-
-add_test(NAME HALO_TEST COMMAND ${MPI_EXEC} --cpu-bind=cores -n 8 -- ./testHalo.exe)
+add_omega_test(
+    HALO_TEST
+    testHalo.exe
+    base/HaloTest.cpp
+    "-n 8;--cpu-bind=cores"
+)
 
 ################
 # HorzMesh test
 ################
 
-add_executable(testHorzMesh.exe ocn/HorzMeshTest.cpp)
-
-target_link_libraries(testHorzMesh.exe ${OMEGA_LIB_NAME})
-
-add_test(NAME HORZMESH_TEST COMMAND ${MPI_EXEC} -n 8 --cpu-bind=cores -- ./testHorzMesh.exe)
+add_omega_test(
+    HORZMESH_TEST
+    testHorzMesh.exe
+    ocn/HorzMeshTest.cpp
+    "-n 8;--cpu-bind=cores"
+)
 
 #############
 # IO test
 #############
 
-add_executable(testIO.exe base/IOTest.cpp)
-
-target_link_libraries(testIO.exe ${OMEGA_LIB_NAME})
-
-add_test(NAME IO_TEST COMMAND ${MPI_EXEC} -n 8 --cpu-bind=cores -- ./testIO.exe)
+add_omega_test(
+    IO_TEST
+    testIO.exe
+    base/IOTest.cpp
+    "-n 8;--cpu-bind=cores"
+)
 
 ##################
 # Config test
 ##################
 
-add_executable(testConfig.exe infra/ConfigTest.cpp)
-
-target_link_libraries(testConfig.exe ${OMEGA_LIB_NAME})
-
-add_test(NAME CONFIG_TEST COMMAND ${MPI_EXEC} --cpu-bind=cores -n 8 -- ./testConfig.exe)
+add_omega_test(
+    CONFIG_TEST
+    testConfig.exe
+    infra/ConfigTest.cpp
+    "-n 8;--cpu-bind=cores"
+)
 
 ##################
 # Metadata test
 ##################
 
-add_executable(testMetadata.exe infra/MetadataTest.cpp)
-
-target_link_libraries(testMetadata.exe ${OMEGA_LIB_NAME})
-
-add_test(NAME METADATA_TEST COMMAND ./testMetadata.exe)
+add_omega_test(
+    METADATA_TEST
+    testMetadata.exe
+    infra/MetadataTest.cpp
+    "-n 1;--cpu-bind=cores"
+)
 
 ##################
 # IOField test
 ##################
 
-add_executable(testIOField.exe infra/IOFieldTest.cpp)
-
-target_link_libraries(testIOField.exe ${OMEGA_LIB_NAME})
-
-add_test(NAME IOFIELD_TEST COMMAND ${MPI_EXEC} --cpu-bind=cores -n 8 -- ./testIOField.exe)
+add_omega_test(
+    IOFIELD_TEST
+    testIOField.exe
+    infra/IOFieldTest.cpp
+    "-n 8;--cpu-bind=cores"
+)
 
 ##################
 # Time Manager test
 ##################
 
-add_executable(testTimeMgr.exe infra/TimeMgrTest.cpp)
-
-target_link_libraries(testTimeMgr.exe ${OMEGA_LIB_NAME})
-
-add_test(NAME TIMEMGR_TEST COMMAND ./testTimeMgr.exe)
+add_omega_test(
+    TIMEMGR_TEST
+    testTimeMgr.exe
+    infra/TimeMgrTest.cpp
+    "-n 1;--cpu-bind=cores"
+)
 
 ##################
 # Kokkos test
 ##################
 
-add_executable(testKokkos.exe infra/OmegaKokkosTest.cpp)
-
-target_link_libraries(testKokkos.exe ${OMEGA_LIB_NAME})
-
-add_test(NAME KOKKOS_TEST COMMAND ./testKokkos.exe)
+add_omega_test(
+    KOKKOS_TEST
+    testKokkos.exe
+    infra/OmegaKokkosTest.cpp
+    "-n 1;--cpu-bind=cores"
+)
 
 ##################
 # test properties
