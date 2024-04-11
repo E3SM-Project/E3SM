@@ -42,6 +42,8 @@ plugins:
   - monorepo
   - bibtex:
       bib_file: components/elm/docs/refs.bib
+  - search:
+      separator: '[\s\u200b\-_,:!=\[\]()"`/]+|\.(?!\d)|&[lg]t;|(?!\b)(?=[A-Z][a-z])'
 
 extra_javascript:
   - javascript/mathjax.js
