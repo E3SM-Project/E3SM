@@ -358,22 +358,26 @@ void store_liquid_cloud_fraction(
 }
 KOKKOS_INLINE_FUNCTION
 void compute_recipical_pseudo_density(const haero::ThreadTeam &team,
-                                      MAMAci::view_2d rpdel,
-                                      MAMAci::const_view_2d pdel,
-                                      const int icol, const int nlev) {
+                                      const MAMAci::const_view_2d pdel,
+                                      const int icol, const int nlev,
+                                      // output
+                                      MAMAci::view_2d rpdel) {
   // FIXME: Add an assert to ensure pdel is non-zero
   Kokkos::parallel_for(
       Kokkos::TeamThreadRange(team, 0u, nlev),
       KOKKOS_LAMBDA(int kk) { rpdel(icol, kk) = 1 / pdel(icol, kk); });
 }
 void compute_recipical_pseudo_density(haero::ThreadTeamPolicy team_policy,
-                                      MAMAci::view_2d rpdel,
                                       MAMAci::const_view_2d pdel,
-                                      const int nlev) {
+                                      const int nlev,
+                                      // output
+                                      MAMAci::view_2d rpdel) {
   Kokkos::parallel_for(
       team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
         const int icol = team.league_rank();
-        compute_recipical_pseudo_density(team, rpdel, pdel, icol, nlev);
+        compute_recipical_pseudo_density(team, pdel, icol, nlev,
+                                         // output
+                                         rpdel);
       });
 }
 
@@ -1237,8 +1241,16 @@ void MAMAci::run_impl(const double dt) {
   rho(:ncol,:) enddo
   */
 
-  compute_recipical_pseudo_density(team_policy, rpdel_, dry_atm_.p_del, nlev_);
+  compute_recipical_pseudo_density(team_policy, dry_atm_.p_del, nlev_,
+                                   // output
+                                   rpdel_);
+
   Kokkos::fence();  // wait for rpdel_ to be computed.
+  /*call dropmixnuc(lchnk, ncol, deltatin, temperature, pmid, pint, pdel, rpdel,
+     zm, &  ! in
+     state_q, nc, kvh, wsub, lcldn, lcldo, &  ! in
+     qqcw, &  ! inout
+    ptend, nctend_mixnuc, factnum)  !out*/
 
   call_function_dropmixnuc(
       team_policy, dry_atm_, dry_aero_, dt, raercol_cw_, raercol_,
