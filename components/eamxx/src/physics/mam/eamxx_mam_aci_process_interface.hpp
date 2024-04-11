@@ -68,8 +68,8 @@ class MAMAci final : public scream::AtmosphereProcess {
   const_view_2d liqcldf_prev_;
   const_view_2d kvh_;
 
-  view_2d cloud_frac_new_;
-  view_2d cloud_frac_old_;
+  view_2d cloud_frac_;
+  view_2d cloud_frac_prev_;
   view_2d qcld_;
   view_2d tendnd_;
   // ptend_q_ is just ptend_q_output_ reformatted.

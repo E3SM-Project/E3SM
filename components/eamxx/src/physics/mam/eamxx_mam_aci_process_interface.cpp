@@ -58,7 +58,6 @@ void compute_w0_and_rho(const haero::ThreadTeam &team, MAMAci::view_2d w0,
 }
 void compute_w0_and_rho(haero::ThreadTeamPolicy team_policy, MAMAci::view_2d w0,
                         MAMAci::view_2d rho,
-                        mam_coupling::WetAtmosphere &wet_atmosphere,
                         mam_coupling::DryAtmosphere &dry_atmosphere,
                         const int top_lev, const int nlev) {
   // Get physical constants
@@ -296,48 +295,42 @@ void compute_nucleate_ice_tendencies(
 }
 KOKKOS_INLINE_FUNCTION
 void store_liquid_cloud_fraction(
-    const haero::ThreadTeam &team, MAMAci::view_2d cloud_frac_new,
-    MAMAci::view_2d cloud_frac_old, MAMAci::const_view_2d qc,
+    const haero::ThreadTeam &team, MAMAci::view_2d cloud_frac,
+    MAMAci::view_2d cloud_frac_prev, MAMAci::const_view_2d qc,
     MAMAci::const_view_2d qi, MAMAci::const_view_2d liqcldf,
-    MAMAci::const_view_2d liqcldf_prev, const int icol, const int top_lev) {
+    MAMAci::const_view_2d liqcldf_prev, const int icol, const int top_lev,
+    const int nlev) {
   //-------------------------------------------------------------
   // Get old and new liquid cloud fractions when amount of cloud
   // is above qsmall threshold value
-
-  // MUST FIXME NOTE: We need old and new liquid cloud fractions here.
-  // We have the new liquid cloud fraction (liq_strat_cld_frac) but we need to
-  // store the old (liq_strat_cld_frac_old) before we call SHOC. For now, we
-  // will make a note of it and use the new cloud fraction for the old cloud
-  // fraction.
   //-------------------------------------------------------------
-  static constexpr auto qsmall =
-      1e-18;  // cut-off for cloud amount (ice or liquid)
+  // cut-off for cloud amount (ice or liquid)
+  static constexpr auto qsmall = 1e-18;
   Kokkos::parallel_for(
-      Kokkos::TeamThreadRange(team, 0u, top_lev), KOKKOS_LAMBDA(int kk) {
-        const Real qcld = qc(icol, kk) + qi(icol, kk);
-        if(qcld > qsmall) {
-          cloud_frac_new(icol, kk) = liqcldf(icol, kk);
-          cloud_frac_old(icol, kk) = liqcldf_prev(icol, kk);
+      Kokkos::TeamThreadRange(team, top_lev, nlev), KOKKOS_LAMBDA(int kk) {
+        if((qc(icol, kk) + qi(icol, kk)) > qsmall) {
+          cloud_frac(icol, kk)      = liqcldf(icol, kk);
+          cloud_frac_prev(icol, kk) = liqcldf_prev(icol, kk);
         } else {
-          cloud_frac_new(icol, kk) = 0;
-          cloud_frac_old(icol, kk) = 0;
+          cloud_frac(icol, kk)      = 0;
+          cloud_frac_prev(icol, kk) = 0;
         }
       });
 }
 void store_liquid_cloud_fraction(haero::ThreadTeamPolicy team_policy,
-                                 MAMAci::view_2d cloud_frac_new,
-                                 MAMAci::view_2d cloud_frac_old,
-                                 mam_coupling::WetAtmosphere &wet_atmosphere,
+                                 MAMAci::view_2d cloud_frac,
+                                 MAMAci::view_2d cloud_frac_prev,
+                                 mam_coupling::DryAtmosphere &dry_atmosphere,
                                  MAMAci::const_view_2d liqcldf,
                                  MAMAci::const_view_2d liqcldf_prev,
-                                 const int top_lev) {
-  MAMAci::const_view_2d qc = wet_atmosphere.qc;
-  MAMAci::const_view_2d qi = wet_atmosphere.qi;
+                                 const int top_lev, const int nlev) {
+  MAMAci::const_view_2d qc = dry_atmosphere.qc;
+  MAMAci::const_view_2d qi = dry_atmosphere.qi;
   Kokkos::parallel_for(
       team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
         const int icol = team.league_rank();
-        store_liquid_cloud_fraction(team, cloud_frac_new, cloud_frac_old, qc,
-                                    qi, liqcldf, liqcldf_prev, icol, top_lev);
+        store_liquid_cloud_fraction(team, cloud_frac, cloud_frac_prev, qc, qi,
+                                    liqcldf, liqcldf_prev, icol, top_lev, nlev);
       });
 }
 KOKKOS_INLINE_FUNCTION
@@ -374,8 +367,8 @@ void call_function_dropmixnuc(
     MAMAci::const_view_2d p_int, MAMAci::const_view_2d pdel,
     MAMAci::view_2d rpdel, MAMAci::view_3d state_q_work_,
     MAMAci::const_view_2d nc, MAMAci::const_view_2d kvh, MAMAci::view_2d qcld,
-    MAMAci::view_2d wsub, MAMAci::view_2d cloud_frac_new,
-    MAMAci::view_2d cloud_frac_old, MAMAci::view_2d tendnd,
+    MAMAci::view_2d wsub, MAMAci::view_2d cloud_frac,
+    MAMAci::view_2d cloud_frac_prev, MAMAci::view_2d tendnd,
     MAMAci::view_3d factnum, MAMAci::view_2d ndropcol, MAMAci::view_2d ndropmix,
     MAMAci::view_2d nsource, MAMAci::view_2d wtke, MAMAci::view_3d ccn,
     MAMAci::view_3d nact, MAMAci::view_3d mact,
@@ -519,14 +512,14 @@ void call_function_dropmixnuc(
                 icol),  //  ! in zm[kk] - zm[kk+1], for pver zm[kk-1] - zm[kk]
             ekat::subview(state_q_work_loc, icol), ekat::subview(nc, icol),
             ekat::subview(kvh, icol),  // kvh[kk+1]
-            ekat::subview(cloud_frac_new, icol), lspectype_amode,
-            specdens_amode, spechygro, lmassptr_amode, num2vol_ratio_min_nmodes,
+            ekat::subview(cloud_frac, icol), lspectype_amode, specdens_amode,
+            spechygro, lmassptr_amode, num2vol_ratio_min_nmodes,
             num2vol_ratio_max_nmodes, numptr_amode, nspec_amode, exp45logsig,
             alogsig, aten, mam_idx, mam_cnst_idx,
-            ekat::subview(qcld, icol),            // out
-            ekat::subview(wsub, icol),            // in
-            ekat::subview(cloud_frac_old, icol),  // in
-            qqcw_view,                            // inout
+            ekat::subview(qcld, icol),             // out
+            ekat::subview(wsub, icol),             // in
+            ekat::subview(cloud_frac_prev, icol),  // in
+            qqcw_view,                             // inout
             ptend_q_view, ekat::subview(tendnd, icol),
             ekat::subview(factnum, icol), ekat::subview(ndropcol, icol),
             ekat::subview(ndropmix, icol), ekat::subview(nsource, icol),
@@ -575,7 +568,6 @@ void copy_mam4xx_array_to_scream(haero::ThreadTeamPolicy team_policy,
 void call_hetfrz_compute_tendencies(
     haero::ThreadTeamPolicy team_policy, mam4::Hetfrz &hetfrz_,
     mam_coupling::AerosolState &dry_aero_,
-    mam_coupling::WetAtmosphere &wet_atm_,
     mam_coupling::DryAtmosphere &dry_atm_, MAMAci::view_3d factnum_,
     MAMAci::view_2d hetfrz_immersion_nucleation_tend,
     MAMAci::view_2d hetfrz_contact_nucleation_tend,
@@ -587,7 +579,6 @@ void call_hetfrz_compute_tendencies(
 
   mam4::Hetfrz hetfrz                          = hetfrz_;
   mam_coupling::AerosolState dry_aerosol_state = dry_aero_;
-  mam_coupling::WetAtmosphere wet_atmosphere   = wet_atm_;
   mam_coupling::DryAtmosphere dry_atmosphere   = dry_atm_;
   MAMAci::view_2d diagnostic_scratch[42];
   for(int i = 0; i < 42; ++i) diagnostic_scratch[i] = diagnostic_scratch_[i];
@@ -714,8 +705,8 @@ void MAMAci::set_grids(
   Kokkos::resize(wsubice_, ncol_, nlev_);
   Kokkos::resize(wsig_, ncol_, nlev_);
   Kokkos::resize(w2_, ncol_, nlev_);
-  Kokkos::resize(cloud_frac_new_, ncol_, nlev_);
-  Kokkos::resize(cloud_frac_old_, ncol_, nlev_);
+  Kokkos::resize(cloud_frac_, ncol_, nlev_);
+  Kokkos::resize(cloud_frac_prev_, ncol_, nlev_);
   Kokkos::resize(aitken_dry_dia_, ncol_, nlev_);
   Kokkos::resize(rpdel_, ncol_, nlev_);
 
@@ -1171,10 +1162,8 @@ void MAMAci::run_impl(const double dt) {
 
   haero::ThreadTeamPolicy team_policy(ncol_, Kokkos::AUTO);
 
-  // Negative omega means rising motion
-  // FIXME: Why wet_atm_ used here????? We should use dry_atm
-  compute_w0_and_rho(team_policy, w0_ /*output*/, rho_ /*output*/, wet_atm_,
-                     dry_atm_, top_lev_, nlev_);
+  compute_w0_and_rho(team_policy, w0_ /*output*/, rho_ /*output*/, dry_atm_,
+                     top_lev_, nlev_);
 
   compute_tke_using_w_sec(team_policy, tke_ /*output*/, w_sec_, nlev_);
 
@@ -1193,9 +1182,10 @@ void MAMAci::run_impl(const double dt) {
   compute_nucleate_ice_tendencies(nucleate_ice_, team_policy, nihf_, niim_,
                                   nidep_, nimey_, naai_hom_, naai_, dry_aero_,
                                   dry_atm_, aitken_dry_dia_, nlev_, dt);
-  // FIXME: Why wet_atm_ used here????? We should use dry_atm
-  store_liquid_cloud_fraction(team_policy, cloud_frac_new_, cloud_frac_old_,
-                              wet_atm_, liqcldf_, liqcldf_prev_, top_lev_);
+
+  store_liquid_cloud_fraction(team_policy, cloud_frac_, cloud_frac_prev_,
+                              dry_atm_, liqcldf_, liqcldf_prev_, top_lev_,
+                              nlev_);
 
   // MUST FIXME: save cloud borne aerosols here!!!!
   //-------------------------------------------------------------
@@ -1221,7 +1211,7 @@ void MAMAci::run_impl(const double dt) {
       team_policy, dry_atm_, dry_aero_, dt, raercol_cw_, raercol_,
       qqcw_fld_work_, ptend_q_, coltend_, coltend_cw_, dry_atm_.p_int,
       dry_atm_.p_del, rpdel_, state_q_work_, dry_atm_.nc, kvh_, qcld_, wsub_,
-      cloud_frac_new_, cloud_frac_old_, tendnd_, factnum_, ndropcol_, ndropmix_,
+      cloud_frac_, cloud_frac_prev_, tendnd_, factnum_, ndropcol_, ndropmix_,
       nsource_, wtke_, ccn_, nact_, mact_, dropmixnuc_scratch_mem_, nlev_);
   Kokkos::fence();  // wait for ptend_q_ to be computed.
 
@@ -1231,12 +1221,12 @@ void MAMAci::run_impl(const double dt) {
       team_policy, coltend_outp_, coltend_, nlev_);
   copy_mam4xx_array_to_scream<mam4::ndrop::ncnst_tot>(
       team_policy, coltend_cw_outp_, coltend_cw_, nlev_);
-  // FIXME: Why wet_atm_ used here????? We should use dry_atm
-  call_hetfrz_compute_tendencies(
-      team_policy, hetfrz_, dry_aero_, wet_atm_, dry_atm_, factnum_,
-      hetfrz_immersion_nucleation_tend_, hetfrz_contact_nucleation_tend_,
-      hetfrz_depostion_nucleation_tend_, naai_hom_, naai_, diagnostic_scratch_,
-      nlev_, dt);
+
+  call_hetfrz_compute_tendencies(team_policy, hetfrz_, dry_aero_, dry_atm_,
+                                 factnum_, hetfrz_immersion_nucleation_tend_,
+                                 hetfrz_contact_nucleation_tend_,
+                                 hetfrz_depostion_nucleation_tend_, naai_hom_,
+                                 naai_, diagnostic_scratch_, nlev_, dt);
 
   Kokkos::fence();  // wait before returning to calling function
 }
