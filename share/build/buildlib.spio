@@ -106,6 +106,9 @@ def buildlib(bldroot, installpath, case):
 
     if "ADIOS2_ROOT" in os.environ:
         cmake_opts += "-DWITH_ADIOS2:BOOL=ON "
+        if "FROM_CREATE_TEST" in os.environ and os.environ["FROM_CREATE_TEST"] == "True":
+            cmake_opts += "-DADIOS_BP2NC_TEST:BOOL=ON "
+
     if debug:
         cmake_opts += "-DPIO_ENABLE_LOGGING=ON "
     # Case changes for NetCDF/NETCDF forces us to do this. For other packages
