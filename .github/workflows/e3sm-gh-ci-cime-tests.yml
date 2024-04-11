@@ -9,7 +9,9 @@ on:
       - 'components/elm/**'
     paths-ignore:
       - 'components/eam/docs/**'
+      - 'components/eam/mkdocs.yml'
       - 'components/elm/docs/**'
+      - 'components/elm/mkdocs.yml'
 
   workflow_dispatch:
 
