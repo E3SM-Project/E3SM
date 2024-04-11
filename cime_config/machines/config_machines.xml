@@ -4875,12 +4875,12 @@ AMD EPYC 7713 64-Core (Milan) (256GB) and 4 nvidia A100'</DESC>
     <CHARGE_ACCOUNT>cli115</CHARGE_ACCOUNT>
     <SAVE_TIMING_DIR>/gpfs/alpine/proj-shared/cli115</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
-    <CIME_OUTPUT_ROOT>/gpfs/alpine/$PROJECT/proj-shared/$ENV{USER}/e3sm_scratch</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/gpfs/alpine/cli115/world-shared/e3sm/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/gpfs/alpine/cli115/world-shared/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <CIME_OUTPUT_ROOT>/gpfs/alpine2/$PROJECT/proj-shared/$ENV{USER}/e3sm_scratch</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/gpfs/alpine2/atm146/world-shared/e3sm/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/gpfs/alpine2/atm146/world-shared/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/gpfs/alpine/$PROJECT/proj-shared/$ENV{USER}/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/gpfs/alpine/cli115/world-shared/e3sm/baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/gpfs/alpine/cli115/world-shared/e3sm/tools/cprnc.summit/cprnc</CCSM_CPRNC>
+    <BASELINE_ROOT>/gpfs/alpine2/atm146/world-shared/e3sm/baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/gpfs/alpine2/atm146/world-shared/e3sm/tools/cprnc.summit/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
     <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
@@ -4890,7 +4890,7 @@ AMD EPYC 7713 64-Core (Milan) (256GB) and 4 nvidia A100'</DESC>
     <MAX_TASKS_PER_NODE compiler="pgigpu">18</MAX_TASKS_PER_NODE>
     <MAX_TASKS_PER_NODE compiler="gnugpu">42</MAX_TASKS_PER_NODE>
     <MAX_TASKS_PER_NODE compiler="ibmgpu">42</MAX_TASKS_PER_NODE>
-	<!-- Need to activate following attribute after CIME update from upstream -->
+    <!-- Need to activate following attribute after CIME update from upstream -->
     <!-- <MAX_GPUS_PER_NODE>6</MAX_GPUS_PER_NODE> -->
     <MAX_MPITASKS_PER_NODE>84</MAX_MPITASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE compiler="pgigpu">18</MAX_MPITASKS_PER_NODE>
@@ -4924,7 +4924,7 @@ AMD EPYC 7713 64-Core (Milan) (256GB) and 4 nvidia A100'</DESC>
       <cmd_path lang="csh">module</cmd_path>
       <modules>
         <command name="purge"/>
-        <command name="load">DefApps</command>
+        <command name="load">DefApps-2023</command>
         <command name="load">python/3.7-anaconda3</command>
         <command name="load">subversion/1.14.0</command>
         <command name="load">git/2.31.1</command>
@@ -4972,6 +4972,7 @@ AMD EPYC 7713 64-Core (Milan) (256GB) and 4 nvidia A100'</DESC>
       <env name="PNETCDF_PATH">$ENV{OLCF_PARALLEL_NETCDF_ROOT}</env>
       <env name="PGI_ACC_POOL_ALLOC">0</env>
       <env name="SMPIARGS"> </env>
+      <env name="CRAYPE_VERSION">True</env>
     </environment_variables>
     <environment_variables BUILD_THREADED="FALSE">
       <env name="JSRUN_THREAD_VARS"> </env>
@@ -5034,15 +5035,6 @@ AMD EPYC 7713 64-Core (Milan) (256GB) and 4 nvidia A100'</DESC>
       <env name="PAMI_IBV_ADAPTER_AFFINITY">1</env>
       <env name="PAMI_IBV_DEVICE_NAME_1">mlx5_3:1,mlx5_0:1</env>
       <env name="PAMI_IBV_DEVICE_NAME">mlx5_0:1,mlx5_3:1</env>
-    </environment_variables>
-    <environment_variables compiler="ibm.*" mpilib="spectrum-mpi">
-      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /gpfs/alpine/cli115/world-shared/3rdparty/adios2/2.9.1/spectrum-mpi-10.4.0.3/xl-16.1.1-10; else echo "$ADIOS2_ROOT"; fi}</env>
-    </environment_variables>
-    <environment_variables compiler="pgi.*" mpilib="spectrum-mpi">
-      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /gpfs/alpine/cli115/world-shared/3rdparty/adios2/2.9.1/spectrum-mpi-10.4.0.3/nvhpc-21.11; else echo "$ADIOS2_ROOT"; fi}</env>
-    </environment_variables>
-    <environment_variables compiler="gnu.*" mpilib="spectrum-mpi">
-      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /gpfs/alpine/cli115/world-shared/3rdparty/adios2/2.9.1/spectrum-mpi-10.4.0.3/gcc-9.1.0; else echo "$ADIOS2_ROOT"; fi}</env>
     </environment_variables>
   </machine>
 
