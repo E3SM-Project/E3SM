@@ -26,7 +26,10 @@ theme:
     - navigation.instant
     - navigation.sections
     - navigation.top
-#    - navigation.tabs
+    - search.suggest
+    - search.highlight
+    - search.share
+
 
 markdown_extensions:
   - footnotes
@@ -42,8 +45,7 @@ plugins:
   - monorepo
   - bibtex:
       bib_file: components/elm/docs/refs.bib
-  - search:
-      separator: '[\s\u200b\-_,:!=\[\]()"`/]+|\.(?!\d)|&[lg]t;|(?!\b)(?=[A-Z][a-z])'
+  - search
 
 extra_javascript:
   - javascript/mathjax.js
