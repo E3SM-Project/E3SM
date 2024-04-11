@@ -5,6 +5,9 @@ nav:
   - 'Developing Docs': 'https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/3924787306/Developing+Documentation'
   - Components: '*include ./components/*/mkdocs.yml'
 
+repo_name: E3SM-Project/E3SM
+repo_url: https://github.com/E3SM-Project/E3SM
+
 theme:
   name: material
   palette:
