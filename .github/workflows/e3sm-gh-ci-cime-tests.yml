@@ -3,6 +3,11 @@ name: gh
 on:
   pull_request:
     branches: [ master ]
+    paths:
+      - 'cime_config/**'
+      - 'components/eam/**'
+    paths-ignore:
+      - 'components/eam/docs/**'
 
   workflow_dispatch:
 
