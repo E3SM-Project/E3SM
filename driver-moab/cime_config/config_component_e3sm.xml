@@ -265,6 +265,7 @@
       <value compset="20TR.*_DATM%(QIA|CRU|GSW)">CO2A</value>
       <value compset="RCP.*_DATM%(QIA|CRU|GSW)" >CO2A</value>
       <value compset="_DATM%IAF.*_MPASO%OECO" >CO2A</value>
+      <value compset="_DATM%JRA.*_MPASO%OECO" >CO2A</value>
       <value compset="_MPASSI%BGC.*_MPASO%OIECO" >CO2A_OI</value>
       <value compset="_MPASSI%BGC.*_MPASO%TOIECO_" >CO2A_OI</value>
       <value compset="_MPASSI_MPASO_.*_BGC%BCRC" >CO2C</value>
