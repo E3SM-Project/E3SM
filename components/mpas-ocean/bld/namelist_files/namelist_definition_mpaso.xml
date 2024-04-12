@@ -1477,17 +1477,9 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_frazil_sea_ice_reference_salinity" type="real"
 	category="frazil_ice" group="frazil_ice">
-assumed salinity of frazil ice in the open ocean.
+assumed salinity of frazil ice in the open ocean. Land ice frazil salinity is always 0.
 
 Valid values: Any positive real number.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_frazil_land_ice_reference_salinity" type="real"
-	category="frazil_ice" group="frazil_ice">
-assumed salinity of frazil ice under land ice.
-
-Valid values: Any non-negative real number.
 Default: Defined in namelist_defaults.xml
 </entry>
 
