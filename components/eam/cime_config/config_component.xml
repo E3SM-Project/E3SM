@@ -76,7 +76,7 @@
       <value compset="_EAM%.*MMF2-AWFL">-crm pam -pam_dycor awfl -crm_dt 10 </value>
       <value compset="_EAM%.*MMF"      >-use_MMF -nlev 60 -crm_nz 50</value>
       <value compset="_EAM%.*MMF1"     >-crm_dx 2000 -crm_nx 64 -crm_ny 1 -crm_nx_rad 4 -crm_ny_rad 1</value>
-      <value compset="_EAM%.*MMF2"     >-crm_dx 2000 -crm_nx 45 -crm_ny 1 -crm_nx_rad 5 -crm_ny_rad 1</value>
+      <value compset="_EAM%.*MMF2"     >-crm_dx 3000 -crm_nx 45 -crm_ny 1 -crm_nx_rad 5 -crm_ny_rad 1</value>
       <value compset="_EAM%.*MMF1"     >-MMF_microphysics_scheme sam1mom -chem none</value>
       <value compset="_EAM%.*MMF2"     >-MMF_microphysics_scheme p3 -chem none</value>
       <value compset="_EAM%.*MMF"      >-rad rrtmgp -rrtmgpxx</value>
