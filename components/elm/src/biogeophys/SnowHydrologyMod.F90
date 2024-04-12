@@ -571,14 +571,14 @@ contains
      ! parameters
      real(r8), parameter :: c2 = 23.e-3_r8       ! [m3/kg]
      real(r8), parameter :: c3 = 2.777e-6_r8     ! [1/s]
-     real(r8), parameter :: c3_ams = 5.8e-7_r8   ! Schneider et al., 2020 [1/s]
+     real(r8), parameter :: c3_ams = 0.83e-6_r8   ! Schneider et al.,(2021),Table 2 [1/s]
      real(r8), parameter :: c4 = 0.04_r8         ! [1/K]
      real(r8), parameter :: c5 = 2.0_r8          !
      real(r8), parameter :: dm = 100.0_r8        ! Upper Limit on Destructive Metamorphism Compaction [kg/m3]
-     real(r8), parameter :: rho_dm = 150.0_r8    ! Upper limit on destructive metamorphism compaction [kg/m3] (Anderson, 1976; Schneider et al., 2020)
+     real(r8), parameter :: rho_dm = 150.0_r8    ! Upper limit on destructive metamorphism compaction [kg/m3] (Anderson, 1976;Schneider et al., 2021)
      real(r8), parameter :: eta0 = 9.e+5_r8      ! The Viscosity Coefficient Eta0 [kg-s/m2]
-     real(r8), parameter :: k_creep_snow = 1.4e-9_r8 ! Creep coefficient for snow (bi < 550 kg / m3) [m3-s/kg]
-     real(r8), parameter :: k_creep_firn = 1.2e-9_r8 ! Creep coefficient for firn (bi > 550 kg / m3)
+     real(r8), parameter :: k_creep_snow = 9.2e-9_r8 ! Creep coefficient for snow (bi < 550 kg / m3) [m3-s/kg]
+     real(r8), parameter :: k_creep_firn = 3.7e-9_r8 ! Creep coefficient for firn (bi > 550 kg / m3) [m3-s/kg]
      !
      real(r8) :: p_gls                           ! grain load stress [kg / m-s2]
      real(r8) :: burden(bounds%begc:bounds%endc) ! pressure of overlying snow [kg/m2]
@@ -693,12 +693,12 @@ contains
                          ddz2 = (-k_creep_snow * (max(denice / bi, 1._r8) - 1._r8) * &
                                  exp(-60.e6_r8 / (rgas * t_soisno(c,j))) * p_gls) / &
                                  (snw_rds(c,j) * 1.e-6_r8 * snw_rds(c,j) * 1.e-6_r8) - &
-                                 2.02e-10_r8
+                                 1.0e-10_r8
                       else ! High density, i.e. firn
                          ddz2 = (-k_creep_firn * (max(denice / bi, 1._r8) - 1._r8) * &
                                  exp(-60.e6_r8 / (rgas * t_soisno(c,j))) * p_gls) / &
                                  (snw_rds(c,j) * 1.e-6_r8 * snw_rds(c,j) * 1.e-6_r8) - &
-                                 2.7e-11_r8
+                                 1.0e-10_r8
                       endif
                    endif
 
