@@ -871,7 +871,7 @@
 <MMF_VT_wn_max                > 0      </MMF_VT_wn_max>
 <use_MMF_ESMT                 > .false.</use_MMF_ESMT>
 <use_MMF_ESMT use_MMF_ESMT="1"> .true. </use_MMF_ESMT>
-<MMF_PAM_dyn_per_phys         > 2      </MMF_PAM_dyn_per_phys>
+<MMF_PAM_dyn_per_phys         > 1      </MMF_PAM_dyn_per_phys>
 <MMF_orientation_angle yes3Dval=0 > 90.0 </MMF_orientation_angle>
 <MMF_orientation_angle yes3Dval=1 >  0.0 </MMF_orientation_angle>
 
