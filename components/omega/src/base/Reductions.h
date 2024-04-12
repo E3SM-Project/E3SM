@@ -42,7 +42,7 @@ int globalSumInit() {
 ///-----------------------------------------------------------------------------
 
 //////////
-// Scalars
+// Global sum scalars
 //////////
 // I4
 int globalSum(const I4 *Val, const MPI_Comm Comm, I4 *Res) {
@@ -81,71 +81,67 @@ int globalSum(const R8 *Val, const MPI_Comm Comm, R8 *Res) {
 }
 
 //////////
-// Arrays: sum each array locally, then sum scalars across all MPI tasks
+// Global sum arrays
 //////////
-// I4 or I8 array wout indxRange
+// I4 or I8 array
 template <class T, int dim>
 typename std::enable_if<std::is_integral<T>::value, // value is true if T is an
                                                     // integer type
                         T>::type                    // return type is T
 globalSum(yakl::Array<T, dim, yakl::memHost, yakl::styleC> const arr,
-          const MPI_Comm Comm, T *val) {
-   T LocalSum = yakl::intrinsics::sum(arr);
-   return MPI_Allreduce(&LocalSum, val, 1, MPI_INT64_T, MPI_SUM, Comm);
-}
-
-// I4 or I8 array with indxRange
-template <class T, int dim>
-typename std::enable_if<std::is_integral<T>::value, // value is true if T is an
-                                                    // integer type
-                        T>::type                    // return type is T
-globalSum(yakl::Array<T, dim, yakl::memHost, yakl::styleC> const arr,
-          const MPI_Comm Comm, const std::vector<I4> IndxRange, T *val) {
+          const MPI_Comm Comm, T *GlobalSum,
+          const std::vector<I4> *IndxRange = nullptr) {
    T LocalSum = 0;
-   for (int i = IndxRange[0]; i < IndxRange[1]; i++) {
-      LocalSum += arr.data()[i];
+   if (IndxRange == nullptr) {
+      LocalSum = yakl::intrinsics::sum(arr);
+   } else {
+      for (int i = (*IndxRange)[0]; i < (*IndxRange)[1]; i++) {
+         LocalSum += arr.data()[i];
+      }
    }
-   return MPI_Allreduce(&LocalSum, val, 1, MPI_INT64_T, MPI_SUM, Comm);
+   return MPI_Allreduce(&LocalSum, GlobalSum, 1, MPI_INT64_T, MPI_SUM, Comm);
 }
 
-// R4 array wout indxRange
+// R4 array
 template <int dim>
 int globalSum(yakl::Array<R4, dim, yakl::memHost, yakl::styleC> const arr,
-              const MPI_Comm Comm, R4 *val) {
-   R8 GlobalSum = 0.0, LocalSum = yakl::intrinsics::sum(arr);
+              const MPI_Comm Comm, R4 *GlobalSum,
+              const std::vector<I4> *IndxRange = nullptr) {
+   R8 GlobalTmp = 0.0, LocalSum = 0.0;
+   if (IndxRange == nullptr) {
+      LocalSum = yakl::intrinsics::sum(arr);
+   } else {
+      for (int i = (*IndxRange)[0]; i < (*IndxRange)[1]; i++) {
+         LocalSum += arr.data()[i];
+      }
+   }
    int ierr =
-       MPI_Allreduce(&LocalSum, &GlobalSum, 1, MPI_DOUBLE, MPI_SUM, Comm);
-   *val = GlobalSum;
+       MPI_Allreduce(&LocalSum, &GlobalTmp, 1, MPI_DOUBLE, MPI_SUM, Comm);
+   *GlobalSum = GlobalTmp;
    return ierr;
 }
 
-// R4 array with indxRange
-template <int dim>
-int globalSum(yakl::Array<R4, dim, yakl::memHost, yakl::styleC> const arr,
-              const MPI_Comm Comm, const std::vector<I4> IndxRange, R4 *val) {
-   R8 GlobalSum = 0.0, LocalSum = 0.0;
-   for (int i = IndxRange[0]; i < IndxRange[1]; i++) {
-      LocalSum += arr.data()[i];
-   }
-   int ierr =
-       MPI_Allreduce(&LocalSum, &GlobalSum, 1, MPI_DOUBLE, MPI_SUM, Comm);
-   *val = GlobalSum;
-   return ierr;
-}
-
-// R8 array wout indxRange
+// R8 array
 template <int dim>
 int globalSum(yakl::Array<R8, dim, yakl::memHost, yakl::styleC> const arr,
-              const MPI_Comm Comm, R8 *val) {
-   // initialize reproducible MPI_SUMDD operator
+              const MPI_Comm Comm, R8 *GlobalSum,
+              const std::vector<I4> *IndxRange = nullptr) {
    if (!R8SumInitialized) {
       globalSumInit();
    }
+   int i, imin, imax, ierr;
+   if (IndxRange == nullptr) {
+      imin = 0;
+      imax = arr.totElems();
+   } else {
+      imin = (*IndxRange)[0];
+      imax = (*IndxRange)[1];
+   }
 
    // Accumulate the local sum using Knuth's algorithm
-   double _Complex LocalSum = CMPLX(0.0, 0.0);
+   double _Complex LocalSum = CMPLX(0.0, 0.0), GlobalTmp = CMPLX(0.0, 0.0);
    double e, t1, t2, ai;
-   for (int i = 0; i < arr.totElems(); i++) {
+   for (i = imin; i < imax; i++) {
       ai = arr.data()[i];
       t1 = ai + creal(LocalSum);
       e  = t1 - ai;
@@ -153,37 +149,403 @@ int globalSum(yakl::Array<R8, dim, yakl::memHost, yakl::styleC> const arr,
       // The result is t1 + t2, after normalization.
       LocalSum = CMPLX(t1 + t2, t2 - ((t1 + t2) - t1));
    }
-   double _Complex GlobalSum = CMPLX(0.0, 0.0);
-   int ierr = MPI_Allreduce(&LocalSum, &GlobalSum, 1, MPI_C_DOUBLE_COMPLEX,
-                            MPI_SUMDD, Comm);
-   *val     = creal(GlobalSum);
+   ierr       = MPI_Allreduce(&LocalSum, &GlobalTmp, 1, MPI_C_DOUBLE_COMPLEX,
+                              MPI_SUMDD, Comm);
+   *GlobalSum = creal(GlobalTmp);
    return ierr;
 }
 
-// R8 array with indxRange
+//////////
+// Global sum with product
+//////////
+// I4 or I8 array
+template <class T, int dim>
+typename std::enable_if<std::is_integral<T>::value, T>::type
+globalSum(yakl::Array<T, dim, yakl::memHost, yakl::styleC> const arr,
+          yakl::Array<T, dim, yakl::memHost, yakl::styleC> const arr2,
+          const MPI_Comm Comm, T *GlobalSum,
+          const std::vector<I4> *IndxRange = nullptr) {
+   T LocalSum = 0;
+   int i, imin, imax;
+   if (IndxRange == nullptr) {
+      imin = 0;
+      imax = arr.totElems();
+   } else {
+      imin = (*IndxRange)[0];
+      imax = (*IndxRange)[1];
+   }
+   for (i = imin; i < imax; i++) {
+      LocalSum += arr.data()[i] * arr2.data()[i];
+   }
+   return MPI_Allreduce(&LocalSum, GlobalSum, 1, MPI_INT64_T, MPI_SUM, Comm);
+}
+
+// R4 array
+template <int dim>
+int globalSum(yakl::Array<R4, dim, yakl::memHost, yakl::styleC> const arr,
+              yakl::Array<R4, dim, yakl::memHost, yakl::styleC> const arr2,
+              const MPI_Comm Comm, R4 *GlobalSum,
+              const std::vector<I4> *IndxRange = nullptr) {
+   R8 GlobalTmp = 0.0, LocalSum = 0.0;
+   int i, imin, imax, ierr;
+   if (IndxRange == nullptr) {
+      imin = 0;
+      imax = arr.totElems();
+   } else {
+      imin = (*IndxRange)[0];
+      imax = (*IndxRange)[1];
+   }
+   for (i = imin; i < imax; i++) {
+      LocalSum += arr.data()[i] * arr2.data()[i];
+   }
+   ierr = MPI_Allreduce(&LocalSum, &GlobalTmp, 1, MPI_DOUBLE, MPI_SUM, Comm);
+   *GlobalSum = GlobalTmp;
+   return ierr;
+}
+
+// R8 array
 template <int dim>
 int globalSum(yakl::Array<R8, dim, yakl::memHost, yakl::styleC> const arr,
-              const MPI_Comm Comm, const std::vector<I4> IndxRange, R8 *val) {
-   // initialize reproducible MPI_SUMDD operator
+              yakl::Array<R8, dim, yakl::memHost, yakl::styleC> const arr2,
+              const MPI_Comm Comm, R8 *GlobalSum,
+              const std::vector<I4> *IndxRange = nullptr) {
    if (!R8SumInitialized) {
       globalSumInit();
    }
+   int i, imin, imax, ierr;
+   if (IndxRange == nullptr) {
+      imin = 0;
+      imax = arr.totElems();
+   } else {
+      imin = (*IndxRange)[0];
+      imax = (*IndxRange)[1];
+   }
 
    // Accumulate the local sum using Knuth's algorithm
-   double _Complex LocalSum = CMPLX(0.0, 0.0);
+   double _Complex LocalSum = CMPLX(0.0, 0.0), GlobalTmp = CMPLX(0.0, 0.0);
    double e, t1, t2, ai;
-   for (int i = IndxRange[0]; i < IndxRange[1]; i++) {
-      ai = arr.data()[i];
+   for (i = imin; i < imax; i++) {
+      ai = arr.data()[i] * arr2.data()[i];
       t1 = ai + creal(LocalSum);
       e  = t1 - ai;
       t2 = ((creal(LocalSum) - e) + (ai - (t1 - e))) + cimag(LocalSum);
       // The result is t1 + t2, after normalization.
       LocalSum = CMPLX(t1 + t2, t2 - ((t1 + t2) - t1));
    }
-   double _Complex GlobalSum = CMPLX(0.0, 0.0);
-   int ierr = MPI_Allreduce(&LocalSum, &GlobalSum, 1, MPI_C_DOUBLE_COMPLEX,
-                            MPI_SUMDD, Comm);
-   *val     = creal(GlobalSum);
+   ierr       = MPI_Allreduce(&LocalSum, &GlobalTmp, 1, MPI_C_DOUBLE_COMPLEX,
+                              MPI_SUMDD, Comm);
+   *GlobalSum = creal(GlobalTmp);
+   return ierr;
+}
+
+//////////
+// Global sum multi-field
+//////////
+// I4 scalars
+int globalSum(const std::vector<I4> scalars, const MPI_Comm Comm,
+              std::vector<I4> GlobalSum) {
+   int nFlds = scalars.size();
+   return MPI_Allreduce(&scalars[0], &GlobalSum[0], nFlds, MPI_INT32_T, MPI_SUM,
+                        Comm);
+}
+
+// I8 scalars
+int globalSum(const std::vector<I8> scalars, const MPI_Comm Comm,
+              std::vector<I8> GlobalSum) {
+   int nFlds = scalars.size();
+   return MPI_Allreduce(&scalars[0], &GlobalSum[0], nFlds, MPI_INT64_T, MPI_SUM,
+                        Comm);
+}
+
+// R4 scalars
+int globalSum(const std::vector<R4> scalars, const MPI_Comm Comm,
+              std::vector<R4> GlobalSum) {
+   int nFlds = scalars.size();
+   R8 LocalTmp[nFlds], GlobalTmp[nFlds];
+   int i, ierr;
+   for (i = 0; i < nFlds; i++) {
+      LocalTmp[i] = scalars[i]; // R8<-R4
+   }
+   ierr = MPI_Allreduce(LocalTmp, GlobalTmp, nFlds, MPI_DOUBLE, MPI_SUM, Comm);
+   for (i = 0; i < nFlds; i++) {
+      GlobalSum[i] = GlobalTmp[i]; // R4<-R8
+   }
+   return ierr;
+}
+
+// R8 scalars
+int globalSum(const std::vector<R8> scalars, const MPI_Comm Comm,
+              std::vector<R8> GlobalSum) {
+   if (!R8SumInitialized) {
+      globalSumInit();
+   }
+   int nFlds = scalars.size();
+   double _Complex LocalTmp[nFlds], GlobalTmp[nFlds];
+   int i, ierr;
+   for (i = 0; i < nFlds; i++) {
+      LocalTmp[i]  = CMPLX(scalars[i], 0.0);
+      GlobalTmp[i] = CMPLX(0.0, 0.0);
+   }
+   ierr = MPI_Allreduce(LocalTmp, GlobalTmp, nFlds, MPI_C_DOUBLE_COMPLEX,
+                        MPI_SUMDD, Comm);
+   for (i = 0; i < nFlds; i++) {
+      GlobalSum[i] = creal(GlobalTmp[i]);
+   }
+   return ierr;
+}
+
+// I4 arrays
+template <int dim>
+int globalSum(
+    const std::vector<yakl::Array<I4, dim, yakl::memHost, yakl::styleC>> arrays,
+    const MPI_Comm Comm, std::vector<I4> GlobalSum,
+    const std::vector<I4> *IndxRange = nullptr) {
+   int i, imin, imax, ifld;
+   int nFlds = arrays.size();
+   I4 LocalSum[nFlds];
+   if (IndxRange == nullptr) {
+      imin = 0;
+      imax = arrays[0].totElems();
+   } else {
+      imin = (*IndxRange)[0];
+      imax = (*IndxRange)[1];
+   }
+   for (ifld = 0; ifld < nFlds; ifld++) {
+      LocalSum[ifld] = 0;
+      for (i = imin; i < imax; i++) {
+         LocalSum[ifld] += arrays[ifld].data()[i];
+      }
+   }
+   return MPI_Allreduce(LocalSum, &GlobalSum[0], nFlds, MPI_INT32_T, MPI_SUM,
+                        Comm);
+}
+
+// I8 arrays
+template <int dim>
+int globalSum(
+    const std::vector<yakl::Array<I8, dim, yakl::memHost, yakl::styleC>> arrays,
+    const MPI_Comm Comm, std::vector<I8> GlobalSum,
+    const std::vector<I4> *IndxRange = nullptr) {
+   int i, imin, imax, ifld;
+   int nFlds = arrays.size();
+   I8 LocalSum[nFlds];
+   if (IndxRange == nullptr) {
+      imin = 0;
+      imax = arrays[0].totElems();
+   } else {
+      imin = (*IndxRange)[0];
+      imax = (*IndxRange)[1];
+   }
+   for (ifld = 0; ifld < nFlds; ifld++) {
+      LocalSum[ifld] = 0;
+      for (i = imin; i < imax; i++) {
+         LocalSum[ifld] += arrays[ifld].data()[i];
+      }
+   }
+   return MPI_Allreduce(LocalSum, &GlobalSum[0], nFlds, MPI_INT64_T, MPI_SUM,
+                        Comm);
+}
+
+// R4 arrays
+template <int dim>
+int globalSum(
+    const std::vector<yakl::Array<R4, dim, yakl::memHost, yakl::styleC>> arrays,
+    const MPI_Comm Comm, std::vector<R4> GlobalSum,
+    const std::vector<I4> *IndxRange = nullptr) {
+   int i, imin, imax, ifld;
+   int nFlds = arrays.size();
+   R8 GlobalTmp[nFlds], LocalSum[nFlds];
+   if (IndxRange == nullptr) {
+      imin = 0;
+      imax = arrays[0].totElems();
+   } else {
+      imin = (*IndxRange)[0];
+      imax = (*IndxRange)[1];
+   }
+   for (ifld = 0; ifld < nFlds; ifld++) {
+      LocalSum[ifld] = 0.0;
+      for (i = imin; i < imax; i++) {
+         LocalSum[ifld] += arrays[ifld].data()[i];
+      }
+   }
+   ierr = MPI_Allreduce(LocalSum, GlobalTmp, nFlds, MPI_DOUBLE, MPI_SUM, Comm);
+   for (ifld = 0; ifld < nFlds; ifld++) {
+      GlobalSum[ifld] = GlobalTmp[ifld]; // R4<-R8
+   }
+   return ierr;
+}
+
+// R8 arrays
+template <int dim>
+int globalSum(
+    const std::vector<yakl::Array<R8, dim, yakl::memHost, yakl::styleC>> arrays,
+    const MPI_Comm Comm, std::vector<R8> GlobalSum,
+    const std::vector<I4> *IndxRange = nullptr) {
+   if (!R8SumInitialized) {
+      globalSumInit();
+   }
+   int i, imin, imax, ifld;
+   int nFlds = arrays.size();
+   double _Complex GlobalTmp[nFlds], LocalSum[nFlds];
+   if (IndxRange == nullptr) {
+      imin = 0;
+      imax = arrays[0].totElems();
+   } else {
+      imin = (*IndxRange)[0];
+      imax = (*IndxRange)[1];
+   }
+   double e, t1, t2, ai;
+   for (ifld = 0; ifld < nFlds; ifld++) {
+      LocalSum[ifld] = CMPLX(0.0, 0.0);
+      for (i = imin; i < imax; i++) {
+         ai = arrays[ifld].data()[i];
+         t1 = ai + creal(LocalSum[ifld]);
+         e  = t1 - ai;
+         t2 = ((creal(LocalSum[ifld]) - e) + (ai - (t1 - e))) +
+              cimag(LocalSum[ifld]);
+         // The result is t1 + t2, after normalization.
+         LocalSum[ifld] = CMPLX(t1 + t2, t2 - ((t1 + t2) - t1));
+      }
+      GlobalTmp[ifld] = CMPLX(0.0, 0.0);
+   }
+   ierr = MPI_Allreduce(LocalSum, GlobalTmp, nFlds, MPI_C_DOUBLE_COMPLEX,
+                        MPI_SUMDD, Comm);
+   for (ifld = 0; ifld < nFlds; ifld++) {
+      GlobalSum[ifld] = creal(GlobalTmp[ifld]);
+   }
+   return ierr;
+}
+
+//////////
+// Global sum multi-field with product
+//////////
+// I4 arrays
+template <int dim>
+int globalSum(
+    const std::vector<yakl::Array<I4, dim, yakl::memHost, yakl::styleC>> arrays,
+    const std::vector<yakl::Array<I4, dim, yakl::memHost, yakl::styleC>>
+        arrays2,
+    const MPI_Comm Comm, std::vector<I4> GlobalSum,
+    const std::vector<I4> *IndxRange = nullptr) {
+   int i, imin, imax, ifld;
+   int nFlds = arrays.size();
+   I4 LocalSum[nFlds];
+   if (IndxRange == nullptr) {
+      imin = 0;
+      imax = arrays[0].totElems();
+   } else {
+      imin = (*IndxRange)[0];
+      imax = (*IndxRange)[1];
+   }
+   for (ifld = 0; ifld < nFlds; ifld++) {
+      LocalSum[ifld] = 0;
+      for (i = imin; i < imax; i++) {
+         LocalSum[ifld] += arrays[ifld].data()[i] * arrays2[ifld].data()[i];
+      }
+   }
+   return MPI_Allreduce(LocalSum, &GlobalSum[0], nFlds, MPI_INT32_T, MPI_SUM,
+                        Comm);
+}
+
+// I8 arrays
+template <int dim>
+int globalSum(
+    const std::vector<yakl::Array<I8, dim, yakl::memHost, yakl::styleC>> arrays,
+    const std::vector<yakl::Array<I8, dim, yakl::memHost, yakl::styleC>>
+        arrays2,
+    const MPI_Comm Comm, std::vector<I8> GlobalSum,
+    const std::vector<I4> *IndxRange = nullptr) {
+   int i, imin, imax, ifld;
+   int nFlds = arrays.size();
+   I8 LocalSum[nFlds];
+   if (IndxRange == nullptr) {
+      imin = 0;
+      imax = arrays[0].totElems();
+   } else {
+      imin = (*IndxRange)[0];
+      imax = (*IndxRange)[1];
+   }
+   for (ifld = 0; ifld < nFlds; ifld++) {
+      LocalSum[ifld] = 0;
+      for (i = imin; i < imax; i++) {
+         LocalSum[ifld] += arrays[ifld].data()[i] * arrays2[ifld].data()[i];
+      }
+   }
+   return MPI_Allreduce(LocalSum, &GlobalSum[0], nFlds, MPI_INT64_T, MPI_SUM,
+                        Comm);
+}
+
+// R4 arrays
+template <int dim>
+int globalSum(
+    const std::vector<yakl::Array<R4, dim, yakl::memHost, yakl::styleC>> arrays,
+    const std::vector<yakl::Array<R4, dim, yakl::memHost, yakl::styleC>>
+        arrays2,
+    const MPI_Comm Comm, std::vector<R4> GlobalSum,
+    const std::vector<I4> *IndxRange = nullptr) {
+   int i, imin, imax, ifld;
+   int nFlds = arrays.size();
+   R8 GlobalTmp[nFlds], LocalSum[nFlds];
+   if (IndxRange == nullptr) {
+      imin = 0;
+      imax = arrays[0].totElems();
+   } else {
+      imin = (*IndxRange)[0];
+      imax = (*IndxRange)[1];
+   }
+   for (ifld = 0; ifld < nFlds; ifld++) {
+      LocalSum[ifld] = 0.0;
+      for (i = imin; i < imax; i++) {
+         LocalSum[ifld] += arrays[ifld].data()[i] * arrays2[ifld].data()[i];
+      }
+   }
+   ierr = MPI_Allreduce(LocalSum, GlobalTmp, nFlds, MPI_DOUBLE, MPI_SUM, Comm);
+   for (ifld = 0; ifld < nFlds; ifld++) {
+      GlobalSum[ifld] = GlobalTmp[ifld]; // R4<-R8
+   }
+   return ierr;
+}
+
+// R8 arrays
+template <int dim>
+int globalSum(
+    const std::vector<yakl::Array<R8, dim, yakl::memHost, yakl::styleC>> arrays,
+    const std::vector<yakl::Array<R8, dim, yakl::memHost, yakl::styleC>>
+        arrays2,
+    const MPI_Comm Comm, std::vector<R8> GlobalSum,
+    const std::vector<I4> *IndxRange = nullptr) {
+   if (!R8SumInitialized) {
+      globalSumInit();
+   }
+   int i, imin, imax, ifld;
+   int nFlds = arrays.size();
+   double _Complex GlobalTmp[nFlds], LocalSum[nFlds];
+   if (IndxRange == nullptr) {
+      imin = 0;
+      imax = arrays[0].totElems();
+   } else {
+      imin = (*IndxRange)[0];
+      imax = (*IndxRange)[1];
+   }
+   double e, t1, t2, ai;
+   for (ifld = 0; ifld < nFlds; ifld++) {
+      LocalSum[ifld] = CMPLX(0.0, 0.0);
+      for (i = imin; i < imax; i++) {
+         ai = arrays[ifld].data()[i] * arrays2[ifld].data()[i];
+         t1 = ai + creal(LocalSum[ifld]);
+         e  = t1 - ai;
+         t2 = ((creal(LocalSum[ifld]) - e) + (ai - (t1 - e))) +
+              cimag(LocalSum[ifld]);
+         // The result is t1 + t2, after normalization.
+         LocalSum[ifld] = CMPLX(t1 + t2, t2 - ((t1 + t2) - t1));
+      }
+      GlobalTmp[ifld] = CMPLX(0.0, 0.0);
+   }
+   ierr = MPI_Allreduce(LocalSum, GlobalTmp, nFlds, MPI_C_DOUBLE_COMPLEX,
+                        MPI_SUMDD, Comm);
+   for (ifld = 0; ifld < nFlds; ifld++) {
+      GlobalSum[ifld] = creal(GlobalTmp[ifld]);
+   }
    return ierr;
 }
 

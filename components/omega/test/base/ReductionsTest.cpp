@@ -8,10 +8,10 @@
 //
 //===-----------------------------------------------------------------------===/
 
-#include "Reductions.h"
-#include "MachEnv.h"
-#include <mpi.h>
 #include <string>
+#include <mpi.h>
+#include "MachEnv.h"
+#include "Reductions.h"
 
 //------------------------------------------------------------------------------
 // The test driver for Reductions. This tests
