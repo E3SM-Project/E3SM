@@ -696,7 +696,7 @@ module li_advection
          ! Note: If tracers are not being advected, then this subroutine simply restores the
          !       layer thickness to sigma coordinate values.
 
-         call vertical_remap(thickness, cellMask, meshPool, layerThickness, advectedTracers, err_tmp)
+         call vertical_remap(thickness, meshPool, layerThickness, advectedTracers, err_tmp)
          err = ior(err, err_tmp)
 
          if (config_print_thickness_advection_info) then
@@ -1965,7 +1965,7 @@ module li_advection
 !>  OpenMP over either blocks or cells.
 !
 !-----------------------------------------------------------------------
-   subroutine vertical_remap(thickness, cellMask, meshPool, layerThickness, tracers, err)
+   subroutine vertical_remap(thickness, meshPool, layerThickness, tracers, err)
 
       !-----------------------------------------------------------------
       !
@@ -1978,9 +1978,6 @@ module li_advection
 
       real(kind=RKIND), dimension(:), intent(in) :: &
          thickness         !< Input: ice thickness
-
-      integer, dimension(:), intent(in) :: &
-         cellMask          !< Input: mask for cells (needed for determining presence/absence of ice)
 
       !-----------------------------------------------------------------
       !
