@@ -108,6 +108,7 @@ inline void pam_state_set_reference_state( pam::PamCoupler &coupler ) {
   auto &dm_device = coupler.get_data_manager_device_readwrite();
   auto nens       = coupler.get_option<int>("ncrms");
   auto nz         = coupler.get_option<int>("crm_nz");
+  auto gcm_nlev   = coupler.get_option<int>("gcm_nlev");
   auto ref_presi  = dm_device.get<real,2>("ref_presi");
   auto ref_pres   = dm_device.get<real,2>("ref_pres");
   auto ref_rho_d  = dm_device.get<real,2>("ref_density_dry");
@@ -131,6 +132,14 @@ inline void pam_state_set_reference_state( pam::PamCoupler &coupler ) {
   auto rho_v      = dm_device.get<real,4>("water_vapor");
   auto rho_c      = dm_device.get<real,4>("cloud_water");
   auto rho_i      = dm_device.get<real,4>("ice");
+
+  auto &dm_host   = coupler.get_data_manager_host_readonly();
+  auto input_pmid = dm_host.get<real const,2>("input_pmid").createDeviceCopy();
+  auto input_pint = dm_host.get<real const,2>("input_pint").createDeviceCopy();
+
+  auto lat        = dm_host.get<real const,1>("latitude"  ).createDeviceCopy();
+  auto lon        = dm_host.get<real const,1>("longitude" ).createDeviceCopy();
+  auto input_phis = dm_host.get<real const,1>("input_phis").createDeviceCopy();
   //------------------------------------------------------------------------------------------------
   // Set anelastic reference state with current CRM mean state
 
@@ -157,48 +166,34 @@ inline void pam_state_set_reference_state( pam::PamCoupler &coupler ) {
   });
   // calculate horizontal means
   parallel_for(SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
-    real pmid_tmp = rho_d(k,j,i,iens)*R_d*temp(k,j,i,iens) + rho_v(k,j,i,iens)*R_v*temp(k,j,i,iens);
-    atomicAdd( hmean_pmid (k,iens), pmid_tmp * r_nx_ny );
     atomicAdd( hmean_rho_d(k,iens), rho_d   (k,j,i,iens) * r_nx_ny );
     atomicAdd( hmean_rho_v(k,iens), rho_v   (k,j,i,iens) * r_nx_ny );
     atomicAdd( hmean_rho_c(k,iens), rho_c   (k,j,i,iens) * r_nx_ny );
     atomicAdd( hmean_rho_i(k,iens), rho_i   (k,j,i,iens) * r_nx_ny );
     atomicAdd( hmean_temp (k,iens), temp    (k,j,i,iens) * r_nx_ny );
   });
-  // calculate interface pressure from mid-level pressure
-  // parallel_for(SimpleBounds<4>(nz+1,ny,nx,nens) , YAKL_LAMBDA (int k, int j, int i, int iens) {
-  parallel_for(SimpleBounds<2>(nz+1,nens) , YAKL_LAMBDA (int k, int iens) {
-    if (k == 0 ) {
-      real rho = hmean_rho_d(k,iens)+hmean_rho_v(k,iens);
-      real dz  = zint(k+1,iens)-zint(k,iens);
-      hmean_pint(k,iens) = hmean_pmid(k  ,iens) + grav*rho*dz/2;
-    } else if (k == nz) {
-      real rho = hmean_rho_d(k-1,iens)+hmean_rho_v(k-1,iens);
-      real dz  = zint(k,iens)-zint(k-1,iens);
-      hmean_pint(k,iens) = hmean_pmid(k-1,iens) - grav*rho*dz/2;
-    } else {
-      real rhokm1 = hmean_rho_d(k-1,iens)+hmean_rho_v(k-1,iens);;
-      real rhokm0 = hmean_rho_d(k  ,iens)+hmean_rho_v(k  ,iens);
-      real dzkm1  = zint(k  ,iens)-zint(k-1,iens);
-      real dzkm0  = zint(k+1,iens)-zint(k  ,iens);
-      hmean_pint(k,iens) = 0.5_fp * ( hmean_pmid(k-1,iens) - grav*rhokm1*dzkm1/2 +
-                                      hmean_pmid(k  ,iens) + grav*rhokm0*dzkm0/2 );
-    }
+
+  // Use GCM state for reference pressure -  previously, the current CRM pressure 
+  // was used, but the way the interface pressure was calculated led to problems
+  // in edge cases (ex. over topography) - switching to GCM pressure works well
+  parallel_for( SimpleBounds<2>(nz+1,nens) , YAKL_LAMBDA (int k_crm, int iens) {
+    int k_gcm = (gcm_nlev+1)-1-k_crm;
+    hmean_pint(k_crm,iens) = input_pint(k_gcm,iens);
+  });
+  parallel_for(SimpleBounds<2>(nz,nens), YAKL_LAMBDA (int k_crm, int iens) {
+    int k_gcm = gcm_nlev-1-k_crm;
+    hmean_pmid(k_crm,iens) = input_pmid(k_gcm,iens);
   });
 
-  auto &dm_host   = coupler.get_data_manager_host_readonly();
-  auto lat        = dm_host.get<real const,1>("latitude"  ).createDeviceCopy();
-  auto lon        = dm_host.get<real const,1>("longitude" ).createDeviceCopy();
-  auto input_phis = dm_host.get<real const,1>("input_phis").createDeviceCopy();
   // check that interface pressure is reasonable
-  parallel_for(SimpleBounds<2>(nz+1,nens) , YAKL_LAMBDA (int k, int iens) {
+  parallel_for(SimpleBounds<2>(nz,nens) , YAKL_LAMBDA (int k, int iens) {
     if ( hmean_pint(k,iens) < hmean_pmid(k,iens) ) {
       auto phis = input_phis(iens)/grav;
-      printf("PAM-DEBUG bad-pint - k:%3.3d n:%3.3d y:%5.1f x:%5.1f ph:%6.1f -- pint:%8.2g pmid:%8.2g \n",
-        k,iens,lat(iens),lon(iens),phis,
-        hmean_pint(k,iens),
-        hmean_pmid(k,iens)
-      );
+      printf("PAM-STATE - bad interface pressure for reference state - "+\
+             "k:%3.3d n:%3.3d y:%5.1f x:%5.1f ph:%6.1f -- "+\
+             "pint:%12.4f pmid:%12.4f \n",
+             k,iens,lat(iens),lon(iens),phis,
+             hmean_pint(k,iens),hmean_pmid(k,iens));
     }
   });
 
