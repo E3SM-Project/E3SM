@@ -19,10 +19,18 @@ function(add_omega_test test_name exe_name source_files mpi_args)
   )
 
   # Add the test command
-  add_test(
-    NAME ${test_name}
-    COMMAND ${MPI_EXEC} ${mpi_args} -- ./${exe_name}
-  )
+  if (mpi_args)
+    add_test(
+      NAME ${test_name}
+      COMMAND ${MPI_EXEC} ${mpi_args} -- ./${exe_name}
+    )
+
+  else()
+    add_test(
+      NAME ${test_name}
+      COMMAND ./${exe_name}
+    )
+  endif()
 
 endfunction()
 
@@ -133,7 +141,7 @@ add_omega_test(
     METADATA_TEST
     testMetadata.exe
     infra/MetadataTest.cpp
-    "-n 1;--cpu-bind=cores"
+    ""
 )
 
 ##################
@@ -155,7 +163,7 @@ add_omega_test(
     TIMEMGR_TEST
     testTimeMgr.exe
     infra/TimeMgrTest.cpp
-    "-n 1;--cpu-bind=cores"
+    ""
 )
 
 ##################
@@ -166,7 +174,7 @@ add_omega_test(
     KOKKOS_TEST
     testKokkos.exe
     infra/OmegaKokkosTest.cpp
-    "-n 1;--cpu-bind=cores"
+    ""
 )
 
 ##################
