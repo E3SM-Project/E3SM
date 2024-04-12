@@ -2727,7 +2727,7 @@ end subroutine print_active_fldlst
         end if
         do i = 1, size(tape(t)%grid_ids)
           call cam_grid_compute_patch(tape(t)%grid_ids(i), patchptr%patches(i),&
-               beglon, endlon, beglat, endlat)
+               beglon, endlon, beglat, endlat, collect_column_output(t))
         end do
         nullify(patchptr)
       end do

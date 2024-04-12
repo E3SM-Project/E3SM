@@ -2125,6 +2125,7 @@
       <env name="HDF5_ROOT">/nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/hdf5/1.12.2/mpich-4.1.2/gcc-12.1.0</env>
       <env name="NETCDF_PATH">/nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/netcdf/4.8.0c-4.3.1cxx-4.5.3f-parallel/mpich-4.1.2/gcc-12.1.0</env>
       <env name="PNETCDF_PATH">/nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/pnetcdf/1.12.3/mpich-4.1.2/gcc-12.1.0</env>
+      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /nfs/gce/projects/climate/software/moab/devel/mpich-4.1.2/gcc-12.1.0; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables mpilib="openmpi">
       <!-- We currently don't have modules for HDF5, NetCDF & PnetCDF -->
@@ -2134,6 +2135,7 @@
       <env name="HDF5_ROOT">/nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/hdf5/1.12.2/openmpi-4.1.6/gcc-12.1.0</env>
       <env name="NETCDF_PATH">/nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/netcdf/4.8.0c-4.3.1cxx-4.5.3f-parallel/openmpi-4.1.6/gcc-12.1.0</env>
       <env name="PNETCDF_PATH">/nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/pnetcdf/1.12.3/openmpi-4.1.6/gcc-12.1.0</env>
+      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /nfs/gce/projects/climate/software/moab/devel/openmpi-4.1.6/gcc-12.1.0; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables BUILD_THREADED="TRUE">
       <env name="OMP_STACKSIZE">64M</env>
@@ -2562,12 +2564,12 @@
         <command name="load">intel-mkl/2020.4.304-g2qaxzf</command>
       </modules>
       <modules compiler="intel" mpilib="openmpi">
-        <command name="load">openmpi/4.1.3-pin4k7o</command>
-        <command name="load">hdf5/1.10.7-eewgp6v</command>
-        <command name="load">netcdf-c/4.4.1-ihoo4zq</command>
-        <command name="load">netcdf-cxx/4.2-soitsxm</command>
-        <command name="load">netcdf-fortran/4.4.4-tplolxh</command>
-        <command name="load">parallel-netcdf/1.11.0-gvcfihh</command>
+        <command name="load">openmpi/4.1.6-2mm63n2</command>
+        <command name="load">hdf5/1.10.7-4cghwvq</command>
+        <command name="load">netcdf-c/4.4.1-a4hji6e</command>
+        <command name="load">netcdf-cxx/4.2-ldoxr43</command>
+        <command name="load">netcdf-fortran/4.4.4-husened</command>
+        <command name="load">parallel-netcdf/1.11.0-icrpxty</command>
       </modules>
       <modules compiler="intel" mpilib="impi">
         <command name="load">intel-mpi/2019.9.304-tkzvizk</command>
@@ -2619,6 +2621,7 @@
       <env name="NETCDF_C_PATH">$SHELL{dirname $(dirname $(which nc-config))}</env>
       <env name="NETCDF_FORTRAN_PATH">$SHELL{dirname $(dirname $(which nf-config))}</env>
       <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf_version))}</env>
+      <env name="OMPI_MCA_sharedfp">^lockedfile,individual</env>
     </environment_variables>
     <environment_variables BUILD_THREADED="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
@@ -5035,15 +5038,6 @@ AMD EPYC 7713 64-Core (Milan) (256GB) and 4 nvidia A100'</DESC>
       <env name="PAMI_IBV_DEVICE_NAME_1">mlx5_3:1,mlx5_0:1</env>
       <env name="PAMI_IBV_DEVICE_NAME">mlx5_0:1,mlx5_3:1</env>
     </environment_variables>
-    <!-- <environment_variables compiler="ibm.*" mpilib="spectrum-mpi"> -->
-      <!-- <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /gpfs/alpine/cli115/world-shared/3rdparty/adios2/2.9.1/spectrum-mpi-10.4.0.3/xl-16.1.1-10; else echo "$ADIOS2_ROOT"; fi}</env> -->
-    <!-- </environment_variables> -->
-    <!-- <environment_variables compiler="pgi.*" mpilib="spectrum-mpi"> -->
-      <!-- <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /gpfs/alpine/cli115/world-shared/3rdparty/adios2/2.9.1/spectrum-mpi-10.4.0.3/nvhpc-21.11; else echo "$ADIOS2_ROOT"; fi}</env> -->
-    <!-- </environment_variables> -->
-    <!-- <environment_variables compiler="gnu.*" mpilib="spectrum-mpi"> -->
-      <!-- <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /gpfs/alpine/cli115/world-shared/3rdparty/adios2/2.9.1/spectrum-mpi-10.4.0.3/gcc-9.1.0; else echo "$ADIOS2_ROOT"; fi}</env> -->
-    <!-- </environment_variables> -->
   </machine>
 
   <machine MACH="ascent">
