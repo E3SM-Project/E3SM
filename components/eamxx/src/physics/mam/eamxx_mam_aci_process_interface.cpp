@@ -393,17 +393,17 @@ void call_function_dropmixnuc(
     MAMAci::view_2d ptend_q[mam4::aero_model::pcnst], MAMAci::view_3d factnum,
     MAMAci::view_2d tendnd, MAMAci::view_2d coltend[mam4::ndrop::ncnst_tot],
     MAMAci::view_2d coltend_cw[mam4::ndrop::ncnst_tot], MAMAci::view_2d qcld,
-    MAMAci::view_2d ndropcol,
+    MAMAci::view_2d ndropcol, MAMAci::view_2d ndropmix, MAMAci::view_2d nsource,
+    MAMAci::view_2d wtke, MAMAci::view_3d ccn,
 
     // work arrays
     MAMAci::view_2d raercol_cw[mam4::ndrop::pver][2],
-    MAMAci::view_2d raercol[mam4::ndrop::pver][2],
-    MAMAci::view_3d state_q_work_, MAMAci::view_2d ndropmix,
-    MAMAci::view_2d nsource, MAMAci::view_2d wtke, MAMAci::view_3d ccn,
+    MAMAci::view_2d raercol[mam4::ndrop::pver][2], MAMAci::view_3d state_q_work,
     MAMAci::view_3d nact, MAMAci::view_3d mact,
     MAMAci::view_2d dropmixnuc_scratch_mem[15]) {
-  // FIXME: why can't we use MAMAci::dropmix_scratch_ above
+  // FIXME: why can't we use MAMAci::dropmix_scratch_ above instead of 15?
 
+  // Extract atmosphere variables
   MAMAci::const_view_2d T_mid = dry_atmosphere.T_mid;
   MAMAci::const_view_2d p_mid = dry_atmosphere.p_mid;
   MAMAci::const_view_2d zm    = dry_atmosphere.z_mid;
@@ -440,7 +440,7 @@ void call_function_dropmixnuc(
   for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i)
     qqcw_fld_work_loc[i] = qqcw_fld_work_[i];
 
-  MAMAci::view_3d state_q_work_loc = state_q_work_;
+  MAMAci::view_3d state_q_work_loc = state_q_work;
 
   //----------------------------------------------------------------------
   // ## Assign scratch memory for work variables
@@ -1274,10 +1274,10 @@ void MAMAci::run_impl(const double dt) {
                            cloud_frac_, cloud_frac_prev_, dry_aero_, nlev_,
                            // output
                            qqcw_fld_work_, ptend_q_, factnum_, tendnd_,
-                           coltend_, coltend_cw_, qcld_, ndropcol_,
+                           coltend_, coltend_cw_, qcld_, ndropcol_, ndropmix_,
+                           nsource_, wtke_, ccn_,
                            // work arrays
-                           raercol_cw_, raercol_, state_q_work_, ndropmix_,
-                           nsource_, wtke_, ccn_, nact_, mact_,
+                           raercol_cw_, raercol_, state_q_work_, nact_, mact_,
                            dropmixnuc_scratch_mem_);
   Kokkos::fence();  // wait for ptend_q_ to be computed.
 
