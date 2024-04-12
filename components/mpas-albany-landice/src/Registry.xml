@@ -1433,6 +1433,14 @@ is the value of that variable from the *previous* time level!
 	       description="temporary copy of cellMask"
 	       persistence="scratch"
 	       />
+	       <var name="edgeMaskTemporary" type="integer" dimensions="nEdges" units="none"
+               description="temporary copy of edgeMask"
+               persistence="scratch"
+	       />
+	       <var name="vertexMaskTemporary" type="integer" dimensions="nVertices" units="none"
+               description="temporary copy of vertexMask"
+               persistence="scratch"
+	       />
         </var_struct>
 
 <!-- ================ -->

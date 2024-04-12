@@ -401,9 +401,8 @@ module li_time_integration_fe_rk
             layerThickness(:,:) = rkSSPweights(rkStage) * layerThicknessPrev(:,:) + &
                                      (1.0_RKIND - rkSSPweights(rkStage)) * layerThickness(:,:)
             thickness = sum(layerThickness, 1)
-            ! Calculate masks after updating thickness
-            call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
-            err = ior(err, err_tmp)
+            ! Do not calculate masks after updating thickness! We need to keep masks
+            ! constant for now to preserve accuracy of time integration
 
             if (trim(config_thermal_solver) .ne. 'none') then
                do iCell = 1, nCells
