@@ -143,8 +143,8 @@ inline void pam_variance_transport_apply_forcing( pam::PamCoupler &coupler ) {
   // protect against creating unstable situations, although 
   // problematic scenarios were extremely rare in testing.
   // A scaling limit of +/- 10% was found to be adequate.
-  real constexpr pert_scale_min = 1.0 - 0.1;
-  real constexpr pert_scale_max = 1.0 + 0.1;
+  real constexpr pert_scale_min = 1.0 - 0.05;
+  real constexpr pert_scale_max = 1.0 + 0.05;
   //------------------------------------------------------------------------------------------------
   auto temp                 = dm_device.get<real,4>("temp"                );
   auto rhov                 = dm_device.get<real,4>("water_vapor"         );
@@ -166,7 +166,6 @@ inline void pam_variance_transport_apply_forcing( pam::PamCoupler &coupler ) {
   //------------------------------------------------------------------------------------------------
   // calculate scaling factor for local perturbations
   parallel_for( SimpleBounds<2>(nz,nens) , YAKL_LAMBDA (int k, int n) {
-    real tmp;
     // initialize scaling factors to 1.0
     temp_pert_scale(k,n) = 1.0;
     rhov_pert_scale(k,n) = 1.0;
@@ -178,9 +177,9 @@ inline void pam_variance_transport_apply_forcing( pam::PamCoupler &coupler ) {
     if (vt_temp(k,n)>0.0) { tmp_t_scale = 1. + crm_dt*vt_temp_forcing_tend(k,n) / vt_temp(k,n); }
     if (vt_rhov(k,n)>0.0) { tmp_q_scale = 1. + crm_dt*vt_rhov_forcing_tend(k,n) / vt_rhov(k,n); }
     if (vt_uvel(k,n)>0.0) { tmp_u_scale = 1. + crm_dt*vt_uvel_forcing_tend(k,n) / vt_uvel(k,n); }
-    if (tmp>0.0){ temp_pert_scale(k,n) = sqrt(tmp_t_scale); }
-    if (tmp>0.0){ rhov_pert_scale(k,n) = sqrt(tmp_q_scale); }
-    if (tmp>0.0){ uvel_pert_scale(k,n) = sqrt(tmp_u_scale); }
+    if (tmp_t_scale>0.0){ temp_pert_scale(k,n) = sqrt(tmp_t_scale); }
+    if (tmp_q_scale>0.0){ rhov_pert_scale(k,n) = sqrt(tmp_q_scale); }
+    if (tmp_u_scale>0.0){ uvel_pert_scale(k,n) = sqrt(tmp_u_scale); }
     // enforce minimum scaling
     temp_pert_scale(k,n) = std::max( temp_pert_scale(k,n), pert_scale_min );
     rhov_pert_scale(k,n) = std::max( rhov_pert_scale(k,n), pert_scale_min );
