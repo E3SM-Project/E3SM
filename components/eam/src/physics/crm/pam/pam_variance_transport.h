@@ -118,9 +118,9 @@ inline void pam_variance_transport_compute_forcing( pam::PamCoupler &coupler ) {
   // calculate variance transport forcing
   parallel_for( SimpleBounds<2>(nz,nens) , YAKL_LAMBDA (int k_crm, int n) {
     int k_gcm = gcm_nlev-1-k_crm;
-    vt_temp_forcing_tend(k_crm,n) = ( gcm_vt_temp(k_gcm,n) - vt_temp(k_crm,n) ) * gcm_dt ;
-    vt_rhov_forcing_tend(k_crm,n) = ( gcm_vt_rhov(k_gcm,n) - vt_rhov(k_crm,n) ) * gcm_dt ;
-    vt_uvel_forcing_tend(k_crm,n) = ( gcm_vt_uvel(k_gcm,n) - vt_uvel(k_crm,n) ) * gcm_dt ;
+    vt_temp_forcing_tend(k_crm,n) = ( gcm_vt_temp(k_gcm,n) - vt_temp(k_crm,n) ) / gcm_dt ;
+    vt_rhov_forcing_tend(k_crm,n) = ( gcm_vt_rhov(k_gcm,n) - vt_rhov(k_crm,n) ) / gcm_dt ;
+    vt_uvel_forcing_tend(k_crm,n) = ( gcm_vt_uvel(k_gcm,n) - vt_uvel(k_crm,n) ) / gcm_dt ;
   });
   //------------------------------------------------------------------------------------------------
 }
@@ -174,9 +174,9 @@ inline void pam_variance_transport_apply_forcing( pam::PamCoupler &coupler ) {
     real tmp_t_scale = -1.0;
     real tmp_q_scale = -1.0;
     real tmp_u_scale = -1.0;
-    if (vt_temp(k,n)>0.0) { tmp_t_scale = 1. + crm_dt*vt_temp_forcing_tend(k,n) / vt_temp(k,n); }
-    if (vt_rhov(k,n)>0.0) { tmp_q_scale = 1. + crm_dt*vt_rhov_forcing_tend(k,n) / vt_rhov(k,n); }
-    if (vt_uvel(k,n)>0.0) { tmp_u_scale = 1. + crm_dt*vt_uvel_forcing_tend(k,n) / vt_uvel(k,n); }
+    if (vt_temp(k,n)>0.0) { tmp_t_scale = 1. + crm_dt * vt_temp_forcing_tend(k,n) / vt_temp(k,n); }
+    if (vt_rhov(k,n)>0.0) { tmp_q_scale = 1. + crm_dt * vt_rhov_forcing_tend(k,n) / vt_rhov(k,n); }
+    if (vt_uvel(k,n)>0.0) { tmp_u_scale = 1. + crm_dt * vt_uvel_forcing_tend(k,n) / vt_uvel(k,n); }
     if (tmp_t_scale>0.0){ temp_pert_scale(k,n) = sqrt(tmp_t_scale); }
     if (tmp_q_scale>0.0){ rhov_pert_scale(k,n) = sqrt(tmp_q_scale); }
     if (tmp_u_scale>0.0){ uvel_pert_scale(k,n) = sqrt(tmp_u_scale); }
@@ -236,9 +236,9 @@ inline void pam_variance_transport_compute_feedback( pam::PamCoupler &coupler ) 
   parallel_for( SimpleBounds<2>(nz,nens) , YAKL_LAMBDA (int k_crm, int n) {
     int k_gcm = gcm_nlev-1-k_crm;
     if (k_crm<nz) {
-      vt_temp_feedback_tend(k_gcm,n) = ( vt_temp(k_crm,n) - gcm_vt_temp(k_gcm,n) ) * gcm_dt;
-      vt_rhov_feedback_tend(k_gcm,n) = ( vt_rhov(k_crm,n) - gcm_vt_rhov(k_gcm,n) ) * gcm_dt;
-      vt_uvel_feedback_tend(k_gcm,n) = ( vt_uvel(k_crm,n) - gcm_vt_uvel(k_gcm,n) ) * gcm_dt;
+      vt_temp_feedback_tend(k_gcm,n) = ( vt_temp(k_crm,n) - gcm_vt_temp(k_gcm,n) ) / gcm_dt;
+      vt_rhov_feedback_tend(k_gcm,n) = ( vt_rhov(k_crm,n) - gcm_vt_rhov(k_gcm,n) ) / gcm_dt;
+      vt_uvel_feedback_tend(k_gcm,n) = ( vt_uvel(k_crm,n) - gcm_vt_uvel(k_gcm,n) ) / gcm_dt;
     } else {
       vt_temp_feedback_tend(k_gcm,n) = 0.0;
       vt_rhov_feedback_tend(k_gcm,n) = 0.0;
