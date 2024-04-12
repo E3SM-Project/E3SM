@@ -13,6 +13,8 @@
 #include "DataTypes.h"
 #include "Logging.h"
 #include "MetaData.h"
+#include "OmegaKokkos.h"
+#include "mpi.h"
 #include <cstdlib>
 #include <vector>
 
@@ -79,8 +81,8 @@ int initIOFieldTest() {
    );
 
    // Create host data arrays
-   OMEGA::ArrayHost2DI4 DataI4H("FieldI4H", NCellsSize, NVertLevels);
-   OMEGA::ArrayHost2DR8 DataR8H("FieldR8H", NCellsSize, NVertLevels);
+   OMEGA::HostArray2DI4 DataI4H("FieldI4H", NCellsSize, NVertLevels);
+   OMEGA::HostArray2DR8 DataR8H("FieldR8H", NCellsSize, NVertLevels);
    for (int Cell = 0; Cell < NCellsSize; ++Cell) {
       for (int k = 0; k < NVertLevels; ++k) {
          DataI4H(Cell, k) = Cell + k;
@@ -91,9 +93,8 @@ int initIOFieldTest() {
    // Create device data arrays
    OMEGA::Array2DI4 DataI4D("FieldI4D", NCellsSize, NVertLevels);
    OMEGA::Array2DR8 DataR8D("FieldR8D", NCellsSize, NVertLevels);
-   yakl::c::parallel_for(
-       yakl::c::Bounds<2>(NCellsSize, NVertLevels),
-       YAKL_LAMBDA(int Cell, int k) {
+   OMEGA::parallelFor(
+       {NCellsSize, NVertLevels}, KOKKOS_LAMBDA(int Cell, int k) {
           DataI4D(Cell, k) = Cell + k + 1;
           DataR8D(Cell, k) = Cell + k + 2.2345678;
        });
@@ -108,7 +109,7 @@ int initIOFieldTest() {
       Err += std::abs(Err1) + std::abs(Err2);
    }
 
-   Err1 = OMEGA::IOField::attachData<OMEGA::ArrayHost2DI4>("FieldI4H", DataI4H);
+   Err1 = OMEGA::IOField::attachData<OMEGA::HostArray2DI4>("FieldI4H", DataI4H);
    Err2 = OMEGA::IOField::attachData<OMEGA::Array2DI4>("FieldI4D", DataI4D);
    if (Err1 == 0 && Err2 == 0) {
       LOG_INFO("IOField: attaching I4 data: PASS");
@@ -126,7 +127,7 @@ int initIOFieldTest() {
       Err += std::abs(Err1) + std::abs(Err2);
    }
 
-   Err1 = OMEGA::IOField::attachData<OMEGA::ArrayHost2DR8>("FieldR8H", DataR8H);
+   Err1 = OMEGA::IOField::attachData<OMEGA::HostArray2DR8>("FieldR8H", DataR8H);
    Err2 = OMEGA::IOField::attachData<OMEGA::Array2DR8>("FieldR8D", DataR8D);
    if (Err1 == 0 && Err2 == 0) {
       LOG_INFO("IOField: attaching R8 data: PASS");
@@ -158,182 +159,180 @@ int main(int argc, char **argv) {
    // We do not actually use message passing but need to test the
    // array types and behavior within the distributed environment
    MPI_Init(&argc, &argv);
-   yakl::init();
+   Kokkos::initialize();
+   {
+      // Call initialization to create reference IO field
+      Err = initIOFieldTest();
+      if (Err != 0)
+         LOG_ERROR("IOFieldTest: Error in initialization routine");
 
-   // Call initialization to create reference IO field
-   Err = initIOFieldTest();
-   if (Err != 0)
-      LOG_ERROR("IOFieldTest: Error in initialization routine");
+      // Set reference data - must match the values in the init routine
+      std::string RefIUnits = "unitless";
+      std::string RefRUnits = "m";
+      int NCellsSize        = 100;
+      int NVertLevels       = 64;
+      OMEGA::HostArray2DI4 RefI4H("RefI4H", NCellsSize, NVertLevels);
+      OMEGA::HostArray2DR8 RefR8H("RefR8H", NCellsSize, NVertLevels);
+      for (int Cell = 0; Cell < NCellsSize; ++Cell) {
+         for (int k = 0; k < NVertLevels; ++k) {
+            RefI4H(Cell, k) = Cell + k;
+            RefR8H(Cell, k) = Cell + k + 1.2345678;
+         }
+      }
+      OMEGA::Array2DI4 RefI4D("RefI4D", NCellsSize, NVertLevels);
+      OMEGA::Array2DR8 RefR8D("RefR8D", NCellsSize, NVertLevels);
+      OMEGA::parallelFor(
+          {NCellsSize, NVertLevels}, KOKKOS_LAMBDA(int Cell, int k) {
+             RefI4D(Cell, k) = Cell + k + 1;
+             RefR8D(Cell, k) = Cell + k + 2.2345678;
+          });
 
-   // Set reference data - must match the values in the init routine
-   std::string RefIUnits = "unitless";
-   std::string RefRUnits = "m";
-   int NCellsSize        = 100;
-   int NVertLevels       = 64;
-   OMEGA::ArrayHost2DI4 RefI4H("RefI4H", NCellsSize, NVertLevels);
-   OMEGA::ArrayHost2DR8 RefR8H("RefR8H", NCellsSize, NVertLevels);
-   for (int Cell = 0; Cell < NCellsSize; ++Cell) {
-      for (int k = 0; k < NVertLevels; ++k) {
-         RefI4H(Cell, k) = Cell + k;
-         RefR8H(Cell, k) = Cell + k + 1.2345678;
+      // Check existence of fields
+      bool FieldExistsI4H = OMEGA::IOField::isDefined("FieldI4H");
+      bool FieldExistsI4D = OMEGA::IOField::isDefined("FieldI4D");
+      bool FieldExistsR8H = OMEGA::IOField::isDefined("FieldR8H");
+      bool FieldExistsR8D = OMEGA::IOField::isDefined("FieldR8D");
+      if (FieldExistsI4H && FieldExistsI4D && FieldExistsR8H &&
+          FieldExistsR8D) {
+         LOG_INFO("IOFieldTest: existence test PASS");
+      } else {
+         LOG_ERROR("IOFieldTest: existence test FAIL");
+      }
+
+      bool FieldExistsJunk = OMEGA::IOField::isDefined("FieldJunk");
+      if (!FieldExistsJunk) {
+         LOG_INFO("IOFieldTest: non-existence test PASS");
+      } else {
+         LOG_ERROR("IOFieldTest: non-existence test FAIL");
+      }
+
+      // Test retrieval of data and metadata
+      // Retrieve metadata first
+      std::shared_ptr<OMEGA::MetaData> MetaI4D =
+          OMEGA::IOField::getMetaData("FieldI4D");
+      std::shared_ptr<OMEGA::MetaData> MetaR8D =
+          OMEGA::IOField::getMetaData("FieldR8D");
+      std::shared_ptr<OMEGA::MetaData> MetaI4H =
+          OMEGA::IOField::getMetaData("FieldI4H");
+      std::shared_ptr<OMEGA::MetaData> MetaR8H =
+          OMEGA::IOField::getMetaData("FieldR8H");
+
+      std::string NewIUnits;
+      std::string NewRUnits;
+
+      Err1 = MetaI4H->getEntry("Units", NewIUnits);
+      if (Err1 == 0 && NewIUnits == RefIUnits) {
+         LOG_INFO("IOField: Retrieve I4H metadata by name: PASS");
+      } else {
+         LOG_ERROR("IOField: Retrieve I4H metadata by name: FAIL");
+      }
+
+      Err2 = MetaR8H->getEntry("Units", NewRUnits);
+      if (Err2 == 0 && NewRUnits == RefRUnits) {
+         LOG_INFO("IOField: Retrieve R8H metadata by name: PASS");
+      } else {
+         LOG_ERROR("IOField: Retrieve R8H metadata by name: FAIL");
+      }
+
+      Err3 = MetaI4D->getEntry("Units", NewIUnits);
+      if (Err3 == 0 && NewIUnits == RefIUnits) {
+         LOG_INFO("IOField: Retrieve I4D metadata by name: PASS");
+      } else {
+         LOG_ERROR("IOField: Retrieve I4D metadata by name: FAIL");
+      }
+
+      Err4 = MetaR8D->getEntry("Units", NewRUnits);
+      if (Err4 == 0 && NewRUnits == RefRUnits) {
+         LOG_INFO("IOField: Retrieve R8D metadata by name: PASS");
+      } else {
+         LOG_ERROR("IOField: Retrieve R8D metadata by name: FAIL");
+      }
+      Err += std::abs(Err1) + std::abs(Err2) + std::abs(Err3) + std::abs(Err4);
+
+      // Now retrieve full data
+      OMEGA::HostArray2DI4 NewI4H =
+          OMEGA::IOField::getData<OMEGA::HostArray2DI4>("FieldI4H");
+      OMEGA::HostArray2DR8 NewR8H =
+          OMEGA::IOField::getData<OMEGA::HostArray2DR8>("FieldR8H");
+      OMEGA::Array2DI4 NewI4D =
+          OMEGA::IOField::getData<OMEGA::Array2DI4>("FieldI4D");
+      OMEGA::Array2DR8 NewR8D =
+          OMEGA::IOField::getData<OMEGA::Array2DR8>("FieldR8D");
+
+      Err1 = 0;
+      Err2 = 0;
+
+      for (int Cell = 0; Cell < NCellsSize; ++Cell) {
+         for (int k = 0; k < NVertLevels; ++k) {
+            if (NewI4H(Cell, k) != RefI4H(Cell, k))
+               ++Err1;
+            if (NewR8H(Cell, k) != RefR8H(Cell, k))
+               ++Err2;
+         }
+      }
+      if (Err1 == 0) {
+         LOG_INFO("IOField: Retrieve I4 host data by name: PASS");
+      } else {
+         LOG_ERROR("IOField: Retrieve I4 host data by name: FAIL");
+      }
+      if (Err2 == 0) {
+         LOG_INFO("IOField: Retrieve R8 host data by name: PASS");
+      } else {
+         LOG_ERROR("IOField: Retrieve R8 host data by name: FAIL");
+      }
+
+      OMEGA::Array2DI4 ErrArray("ErrorArray", NCellsSize, NVertLevels);
+      OMEGA::parallelFor(
+          {NCellsSize, NVertLevels}, KOKKOS_LAMBDA(int Cell, int k) {
+             if ((NewI4D(Cell, k) != RefI4D(Cell, k)) or
+                 (NewR8D(Cell, k) != RefR8D(Cell, k)))
+                ErrArray(Cell, k) += 1;
+          });
+
+      // Create a reducer
+      Kokkos::Sum<OMEGA::I4> reducer(Err3);
+
+      // Perform the reduction
+      OMEGA::parallelReduce(
+          "SumReduce", {NCellsSize, NVertLevels},
+          KOKKOS_LAMBDA(int Cell, int k, OMEGA::I4 &update) {
+             update += ErrArray(Cell, k);
+          },
+          reducer);
+
+      if (Err3 == 0) {
+         LOG_INFO("IOField: Retrieve device data by name: PASS");
+      } else {
+         LOG_ERROR("IOField: Retrieve device data by name: FAIL");
+      }
+
+      Err += std::abs(Err1) + std::abs(Err2) + std::abs(Err3);
+
+      // Erase a field and check for non-existence
+      OMEGA::IOField::erase("FieldI4D");
+      FieldExistsI4D = OMEGA::IOField::isDefined("FieldI4D");
+      if (!FieldExistsI4D) {
+         LOG_INFO("IOFieldTest: erase field PASS");
+      } else {
+         LOG_ERROR("IOFieldTest: erase field FAIL");
+         ++Err;
+      }
+
+      // Clear all fields
+      OMEGA::IOField::clear();
+      FieldExistsI4H = OMEGA::IOField::isDefined("FieldI4H");
+      FieldExistsI4D = OMEGA::IOField::isDefined("FieldI4D");
+      FieldExistsR8H = OMEGA::IOField::isDefined("FieldR8H");
+      FieldExistsR8D = OMEGA::IOField::isDefined("FieldR8D");
+      if (FieldExistsI4H or FieldExistsI4D or FieldExistsR8H or
+          FieldExistsR8D) {
+         LOG_ERROR("IOFieldTest: clear all data FAIL");
+         ++Err;
+      } else {
+         LOG_INFO("IOFieldTest: clear all data PASS");
       }
    }
-   OMEGA::Array2DI4 RefI4D("RefI4D", NCellsSize, NVertLevels);
-   OMEGA::Array2DR8 RefR8D("RefR8D", NCellsSize, NVertLevels);
-   yakl::c::parallel_for(
-       yakl::c::Bounds<2>(NCellsSize, NVertLevels),
-       YAKL_LAMBDA(int Cell, int k) {
-          RefI4D(Cell, k) = Cell + k + 1;
-          RefR8D(Cell, k) = Cell + k + 2.2345678;
-       });
-
-   // Check existence of fields
-   bool FieldExistsI4H = OMEGA::IOField::isDefined("FieldI4H");
-   bool FieldExistsI4D = OMEGA::IOField::isDefined("FieldI4D");
-   bool FieldExistsR8H = OMEGA::IOField::isDefined("FieldR8H");
-   bool FieldExistsR8D = OMEGA::IOField::isDefined("FieldR8D");
-   if (FieldExistsI4H && FieldExistsI4D && FieldExistsR8H && FieldExistsR8D) {
-      LOG_INFO("IOFieldTest: existence test PASS");
-   } else {
-      LOG_ERROR("IOFieldTest: existence test FAIL");
-   }
-
-   bool FieldExistsJunk = OMEGA::IOField::isDefined("FieldJunk");
-   if (!FieldExistsJunk) {
-      LOG_INFO("IOFieldTest: non-existence test PASS");
-   } else {
-      LOG_ERROR("IOFieldTest: non-existence test FAIL");
-   }
-
-   // Test retrieval of data and metadata
-   // Retrieve metadata first
-   std::shared_ptr<OMEGA::MetaData> MetaI4D =
-       OMEGA::IOField::getMetaData("FieldI4D");
-   std::shared_ptr<OMEGA::MetaData> MetaR8D =
-       OMEGA::IOField::getMetaData("FieldR8D");
-   std::shared_ptr<OMEGA::MetaData> MetaI4H =
-       OMEGA::IOField::getMetaData("FieldI4H");
-   std::shared_ptr<OMEGA::MetaData> MetaR8H =
-       OMEGA::IOField::getMetaData("FieldR8H");
-
-   std::string NewIUnits;
-   std::string NewRUnits;
-
-   Err1 = MetaI4H->getEntry("Units", NewIUnits);
-   if (Err1 == 0 && NewIUnits == RefIUnits) {
-      LOG_INFO("IOField: Retrieve I4H metadata by name: PASS");
-   } else {
-      LOG_ERROR("IOField: Retrieve I4H metadata by name: FAIL");
-   }
-
-   Err2 = MetaR8H->getEntry("Units", NewRUnits);
-   if (Err2 == 0 && NewRUnits == RefRUnits) {
-      LOG_INFO("IOField: Retrieve R8H metadata by name: PASS");
-   } else {
-      LOG_ERROR("IOField: Retrieve R8H metadata by name: FAIL");
-   }
-
-   Err3 = MetaI4D->getEntry("Units", NewIUnits);
-   if (Err3 == 0 && NewIUnits == RefIUnits) {
-      LOG_INFO("IOField: Retrieve I4D metadata by name: PASS");
-   } else {
-      LOG_ERROR("IOField: Retrieve I4D metadata by name: FAIL");
-   }
-
-   Err4 = MetaR8D->getEntry("Units", NewRUnits);
-   if (Err4 == 0 && NewRUnits == RefRUnits) {
-      LOG_INFO("IOField: Retrieve R8D metadata by name: PASS");
-   } else {
-      LOG_ERROR("IOField: Retrieve R8D metadata by name: FAIL");
-   }
-   Err += std::abs(Err1) + std::abs(Err2) + std::abs(Err3) + std::abs(Err4);
-
-   // Now retrieve full data
-   OMEGA::ArrayHost2DI4 NewI4H =
-       OMEGA::IOField::getData<OMEGA::ArrayHost2DI4>("FieldI4H");
-   OMEGA::ArrayHost2DR8 NewR8H =
-       OMEGA::IOField::getData<OMEGA::ArrayHost2DR8>("FieldR8H");
-   OMEGA::Array2DI4 NewI4D =
-       OMEGA::IOField::getData<OMEGA::Array2DI4>("FieldI4D");
-   OMEGA::Array2DR8 NewR8D =
-       OMEGA::IOField::getData<OMEGA::Array2DR8>("FieldR8D");
-
-   Err1 = 0;
-   Err2 = 0;
-
-   for (int Cell = 0; Cell < NCellsSize; ++Cell) {
-      for (int k = 0; k < NVertLevels; ++k) {
-         if (NewI4H(Cell, k) != RefI4H(Cell, k))
-            ++Err1;
-         if (NewR8H(Cell, k) != RefR8H(Cell, k))
-            ++Err2;
-      }
-   }
-   if (Err1 == 0) {
-      LOG_INFO("IOField: Retrieve I4 host data by name: PASS");
-   } else {
-      LOG_ERROR("IOField: Retrieve I4 host data by name: FAIL");
-   }
-   if (Err2 == 0) {
-      LOG_INFO("IOField: Retrieve R8 host data by name: PASS");
-   } else {
-      LOG_ERROR("IOField: Retrieve R8 host data by name: FAIL");
-   }
-
-   OMEGA::Array2DI4 ErrArray("ErrorArray", NCellsSize, NVertLevels);
-
-   yakl::c::parallel_for(
-       yakl::c::Bounds<2>(NCellsSize, NVertLevels),
-       YAKL_LAMBDA(int Cell, int k) {
-          if ((NewI4D(Cell, k) != RefI4D(Cell, k)) or
-              (NewR8D(Cell, k) != RefR8D(Cell, k)))
-             ErrArray(Cell, k) += 1;
-       });
-   Err3 = yakl::intrinsics::sum(ErrArray);
-
-   if (Err3 == 0) {
-      LOG_INFO("IOField: Retrieve device data by name: PASS");
-   } else {
-      LOG_ERROR("IOField: Retrieve device data by name: FAIL");
-   }
-
-   Err += std::abs(Err1) + std::abs(Err2) + std::abs(Err3);
-
-   // Erase a field and check for non-existence
-   OMEGA::IOField::erase("FieldI4D");
-   FieldExistsI4D = OMEGA::IOField::isDefined("FieldI4D");
-   if (!FieldExistsI4D) {
-      LOG_INFO("IOFieldTest: erase field PASS");
-   } else {
-      LOG_ERROR("IOFieldTest: erase field FAIL");
-      ++Err;
-   }
-
-   // Clear all fields
-   OMEGA::IOField::clear();
-   FieldExistsI4H = OMEGA::IOField::isDefined("FieldI4H");
-   FieldExistsI4D = OMEGA::IOField::isDefined("FieldI4D");
-   FieldExistsR8H = OMEGA::IOField::isDefined("FieldR8H");
-   FieldExistsR8D = OMEGA::IOField::isDefined("FieldR8D");
-   if (FieldExistsI4H or FieldExistsI4D or FieldExistsR8H or FieldExistsR8D) {
-      LOG_ERROR("IOFieldTest: clear all data FAIL");
-      ++Err;
-   } else {
-      LOG_INFO("IOFieldTest: clear all data PASS");
-   }
-
-   // Clean up
-   RefI4H.deallocate();
-   RefI4D.deallocate();
-   RefR8H.deallocate();
-   RefR8D.deallocate();
-   NewI4H.deallocate();
-   NewI4D.deallocate();
-   NewR8H.deallocate();
-   NewR8D.deallocate();
-   ErrArray.deallocate();
-
-   yakl::finalize();
+   Kokkos::finalize();
    MPI_Finalize();
 
    // End of testing

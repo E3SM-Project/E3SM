@@ -19,6 +19,7 @@
 #include "IO.h"
 #include "Logging.h"
 #include "MachEnv.h"
+#include "OmegaKokkos.h"
 #include "mpi.h"
 #include "parmetis.h"
 
@@ -68,17 +69,18 @@ I4 srchVector(const std::vector<I4> &InVector, // vector to search
 } // end function srchVector (std::vector)
 
 //------------------------------------------------------------------------------
-// A search routine for vectors in which the vector is a YAKL array rather
+// A search routine for vectors in which the vector is a Kokkos array rather
 // than a std::vector. It searches for a value and returns the first index of
 // that // entry. If not found, the size is returned (corresponding to the
 // last index + 1)
 
-I4 srchVector(ArrayHost1DI4 InVector, // vector to search
+I4 srchVector(HostArray1DI4 InVector, // vector to search
               I4 Value                // value to search for
 ) {
 
    // extract the vector length
-   I4 VecSize  = InVector.totElems();
+   // I4 VecSize  = InVector.totElems();
+   I4 VecSize  = InVector.size();
    I4 LocIndex = VecSize; // set default to size (return value if not found)
 
    // Loop over elements, searching for Value
@@ -91,7 +93,7 @@ I4 srchVector(ArrayHost1DI4 InVector, // vector to search
 
    return LocIndex;
 
-} // end function srchVector (YAKL)
+} // end function srchVector (Kokkos)
 
 // Routines needed for creating the decomposition
 //------------------------------------------------------------------------------
@@ -214,7 +216,7 @@ int readMesh(const int MeshFileID, // file ID for open mesh file
          OnVertexOffset[Vrtx * VertexDegree + Cell] =
              VertexGlob * VertexDegree + Cell;
       } // end loop VertexDegree
-   }    // end loop NVerticesLocal
+   } // end loop NVerticesLocal
 
    // Create the parallel IO decompositions
    IO::Rearranger Rearr = IO::RearrBox;
@@ -627,30 +629,30 @@ Decomp::Decomp(
 
    // Create device copies of all arrays
 
-   NCellsHalo = NCellsHaloH.createDeviceCopy();
-   CellID     = CellIDH.createDeviceCopy();
-   CellLoc    = CellLocH.createDeviceCopy();
+   NCellsHalo = createDeviceMirrorCopy(NCellsHaloH);
+   CellID     = createDeviceMirrorCopy(CellIDH);
+   CellLoc    = createDeviceMirrorCopy(CellLocH);
 
-   NEdgesHalo = NEdgesHaloH.createDeviceCopy();
-   EdgeID     = EdgeIDH.createDeviceCopy();
-   EdgeLoc    = EdgeLocH.createDeviceCopy();
+   NEdgesHalo = createDeviceMirrorCopy(NEdgesHaloH);
+   EdgeID     = createDeviceMirrorCopy(EdgeIDH);
+   EdgeLoc    = createDeviceMirrorCopy(EdgeLocH);
 
-   NVerticesHalo = NVerticesHaloH.createDeviceCopy();
-   VertexID      = VertexIDH.createDeviceCopy();
-   VertexLoc     = VertexLocH.createDeviceCopy();
+   NVerticesHalo = createDeviceMirrorCopy(NVerticesHaloH);
+   VertexID      = createDeviceMirrorCopy(VertexIDH);
+   VertexLoc     = createDeviceMirrorCopy(VertexLocH);
 
-   CellsOnCell    = CellsOnCellH.createDeviceCopy();
-   EdgesOnCell    = EdgesOnCellH.createDeviceCopy();
-   VerticesOnCell = VerticesOnCellH.createDeviceCopy();
-   NEdgesOnCell   = NEdgesOnCellH.createDeviceCopy();
+   CellsOnCell    = createDeviceMirrorCopy(CellsOnCellH);
+   EdgesOnCell    = createDeviceMirrorCopy(EdgesOnCellH);
+   VerticesOnCell = createDeviceMirrorCopy(VerticesOnCellH);
+   NEdgesOnCell   = createDeviceMirrorCopy(NEdgesOnCellH);
 
-   CellsOnEdge    = CellsOnEdgeH.createDeviceCopy();
-   EdgesOnEdge    = EdgesOnEdgeH.createDeviceCopy();
-   VerticesOnEdge = VerticesOnEdgeH.createDeviceCopy();
-   NEdgesOnEdge   = NEdgesOnEdgeH.createDeviceCopy();
+   CellsOnEdge    = createDeviceMirrorCopy(CellsOnEdgeH);
+   EdgesOnEdge    = createDeviceMirrorCopy(EdgesOnEdgeH);
+   VerticesOnEdge = createDeviceMirrorCopy(VerticesOnEdgeH);
+   NEdgesOnEdge   = createDeviceMirrorCopy(NEdgesOnEdgeH);
 
-   CellsOnVertex = CellsOnVertexH.createDeviceCopy();
-   EdgesOnVertex = EdgesOnVertexH.createDeviceCopy();
+   CellsOnVertex = createDeviceMirrorCopy(CellsOnVertexH);
+   EdgesOnVertex = createDeviceMirrorCopy(EdgesOnVertexH);
 
    // Assign this as the default decomposition
    AllDecomps.emplace(Name, *this);
@@ -663,7 +665,7 @@ Decomp::Decomp(
 
 Decomp::~Decomp() {
 
-   // No operations needed, YAKL arrays removed when no longer in scope
+   // No operations needed, Kokkos arrays removed when no longer in scope
 
 } // end decomp destructor
 
@@ -763,7 +765,7 @@ int Decomp::partCellsKWay(
          for (int n = 0; n < CellsOnCellSize; ++n) {
             CellsOnCellBuf[n] = CellsOnCellInit[n];
          } // end loop CellsOnCell
-      }    // end if this is MyTask
+      } // end if this is MyTask
       Err = MPI_Bcast(&CellsOnCellBuf[0], CellsOnCellSize, MPI_INT32_T, Task,
                       Comm);
       if (Err != 0) {
@@ -792,8 +794,8 @@ int Decomp::partCellsKWay(
                ++Add; // increment address counter
             }
          }
-      }                        // end cell loop for buffer
-   }                           // end task loop
+      } // end cell loop for buffer
+   } // end task loop
    AdjAdd[NCellsGlobal] = Add; // Add the ending address
 
    // Set up remaining partitioning variables
@@ -876,7 +878,7 @@ int Decomp::partCellsKWay(
          CellLocTmp[2 * LocalAdd]     = TaskLoc;
          CellLocTmp[2 * LocalAdd + 1] = LocalAdd;
       } // end if my task
-   }    // end loop over all cells
+   } // end loop over all cells
 
    // Find and add the halo cells to the cell list. Here we use the
    // adjacency array to find the active neighbor cells and store if they
@@ -885,7 +887,7 @@ int Decomp::partCellsKWay(
    I4 CellLocStart = 0;
    I4 CellLocEnd   = NCellsOwned - 1;
    I4 CurSize      = NCellsOwned;
-   ArrayHost1DI4 NCellsHaloTmp("NCellsHalo", HaloWidth);
+   HostArray1DI4 NCellsHaloTmp("NCellsHalo", HaloWidth);
    std::set<I4> HaloList;
    // Loop over each halo layer
    for (int Halo = 0; Halo < HaloWidth; ++Halo) {
@@ -915,7 +917,7 @@ int Decomp::partCellsKWay(
                   HaloList.insert(NbrID);
                   CellsInList.insert(NbrID);
                } // end search for existing entry
-            }    // end if not on task
+            } // end if not on task
 
          } // end loop over neighbors
 
@@ -953,8 +955,8 @@ int Decomp::partCellsKWay(
    // Copy global ID for each cell, both owned and halo.
    // Copy cell location (task, local add) for each cell, both owned and halo
 
-   ArrayHost1DI4 CellIDHTmp("CellID", NCellsSize);
-   ArrayHost2DI4 CellLocHTmp("CellLoc", NCellsSize, 2);
+   HostArray1DI4 CellIDHTmp("CellID", NCellsSize);
+   HostArray2DI4 CellLocHTmp("CellLoc", NCellsSize, 2);
    for (int Cell = 0; Cell < NCellsAll; ++Cell) {
       CellIDHTmp(Cell)     = CellIDTmp[Cell];
       CellLocHTmp(Cell, 0) = CellLocTmp[2 * Cell];     // task owning this cell
@@ -1094,12 +1096,12 @@ int Decomp::partEdges(
    // edge IDs, locations and CellsOnEdge with this ordering.
 
    NEdgesOwned = EdgesOwned.size();
-   ArrayHost1DI4 NEdgesHaloTmp("NEdgesHalo", HaloWidth);
+   HostArray1DI4 NEdgesHaloTmp("NEdgesHalo", HaloWidth);
    I4 HaloCount     = EdgesOwnedHalo1.size();
    NEdgesHaloTmp(0) = HaloCount;
 
-   ArrayHost1DI4 EdgeIDTmp("EdgeID", NEdgesSize);
-   yakl::memset(EdgeIDTmp, NEdgesGlobal + 1);
+   HostArray1DI4 EdgeIDTmp("EdgeID", NEdgesSize);
+   deepCopy(EdgeIDTmp, NEdgesGlobal + 1);
 
    // The owned and first halo of edges comes from the edges around
    // the owned cells, so start with these.
@@ -1146,8 +1148,8 @@ int Decomp::partEdges(
                ++HaloCount;
                EdgesAll.erase(EdgeGlob);
             } // end if valid edge
-         }    // end loop over cell edges
-      }       // end cell loop
+         } // end loop over cell edges
+      } // end cell loop
       // reset address range for next halo and set NEdgesHalo
       CellStart = CellEnd;
       if ((Halo + 1) < HaloWidth)
@@ -1160,7 +1162,7 @@ int Decomp::partEdges(
    // Resize the buffer to make sure we have enough room - the distribution
    // may be less even than the original chunk size.
 
-   ArrayHost2DI4 EdgeLocTmp("EdgeLoc", NEdgesSize, 2);
+   HostArray2DI4 EdgeLocTmp("EdgeLoc", NEdgesSize, 2);
    EdgeBuf.resize(2 * NEdgesChunk);
 
    for (int Edge = 0; Edge < NEdgesSize; ++Edge) {
@@ -1331,12 +1333,12 @@ int Decomp::partVertices(
    // vertex IDs, locations and CellsOnVertex with this ordering.
 
    NVerticesOwned = VerticesOwned.size();
-   ArrayHost1DI4 NVerticesHaloTmp("NVerticesHalo", HaloWidth);
+   HostArray1DI4 NVerticesHaloTmp("NVerticesHalo", HaloWidth);
    I4 HaloCount        = VerticesOwnedHalo1.size();
    NVerticesHaloTmp(0) = HaloCount;
 
-   ArrayHost1DI4 VertexIDTmp("VertexID", NVerticesSize);
-   yakl::memset(VertexIDTmp, NVerticesGlobal + 1);
+   HostArray1DI4 VertexIDTmp("VertexID", NVerticesSize);
+   deepCopy(VertexIDTmp, NVerticesGlobal + 1);
 
    // The owned and first halo of vertices comes from the vertices around
    // the owned cells, so start with these.
@@ -1398,7 +1400,7 @@ int Decomp::partVertices(
    // Resize the buffer to make sure we have enough room - the distribution
    // may be less even than the original chunk size.
 
-   ArrayHost2DI4 VertexLocTmp("VertexLoc", NVerticesSize, 2);
+   HostArray2DI4 VertexLocTmp("VertexLoc", NVerticesSize, 2);
    VrtxBuf.resize(2 * NVerticesChunk);
 
    for (int Vrtx = 0; Vrtx < NVerticesSize; ++Vrtx) {
@@ -1475,14 +1477,14 @@ int Decomp::rearrangeCellArrays(
 
    // Create temporary arrays for holding the XxOnCell results
    // and initialize to NXxGlobal+1 to denote a non-existent entry
-   ArrayHost2DI4 CellsOnCellTmp("CellsOnCell", NCellsSize, MaxEdges);
-   ArrayHost2DI4 EdgesOnCellTmp("EdgesOnCell", NCellsSize, MaxEdges);
-   ArrayHost2DI4 VerticesOnCellTmp("VerticesOnCell", NCellsSize, MaxEdges);
-   ArrayHost1DI4 NEdgesOnCellTmp("NEdgesOnCell", NCellsSize);
-   yakl::memset(CellsOnCellTmp, NCellsGlobal + 1);
-   yakl::memset(EdgesOnCellTmp, NEdgesGlobal + 1);
-   yakl::memset(VerticesOnCellTmp, NVerticesGlobal + 1);
-   yakl::memset(NEdgesOnCellTmp, 0);
+   HostArray2DI4 CellsOnCellTmp("CellsOnCell", NCellsSize, MaxEdges);
+   HostArray2DI4 EdgesOnCellTmp("EdgesOnCell", NCellsSize, MaxEdges);
+   HostArray2DI4 VerticesOnCellTmp("VerticesOnCell", NCellsSize, MaxEdges);
+   HostArray1DI4 NEdgesOnCellTmp("NEdgesOnCell", NCellsSize);
+   deepCopy(CellsOnCellTmp, NCellsGlobal + 1);
+   deepCopy(EdgesOnCellTmp, NEdgesGlobal + 1);
+   deepCopy(VerticesOnCellTmp, NVerticesGlobal + 1);
+   deepCopy(NEdgesOnCellTmp, 0);
 
    // Each task will broadcast the cells it owns in the initial linear
    // distribution and all tasks will search that list and extract the
@@ -1551,8 +1553,8 @@ int Decomp::rearrangeCellArrays(
             }
             NEdgesOnCellTmp(LocCell) = EdgeCount;
          } // end if local cell
-      }    // end loop over chunk of global cells
-   }       // end loop over MPI tasks
+      } // end loop over chunk of global cells
+   } // end loop over MPI tasks
 
    // Copy to final location on host - wait to create device copies until
    // the entries are translated to local addresses rather than global IDs
@@ -1600,14 +1602,14 @@ int Decomp::rearrangeEdgeArrays(
 
    // Create temporary arrays for holding the XxOnEdge results
    // and initialize to NXxGlobal+1 to denote a non-existent entry
-   ArrayHost2DI4 CellsOnEdgeTmp("CellsOnEdge", NEdgesSize, MaxCellsOnEdge);
-   ArrayHost2DI4 EdgesOnEdgeTmp("EdgesOnEdge", NEdgesSize, 2 * MaxEdges);
-   ArrayHost2DI4 VerticesOnEdgeTmp("VerticesOnEdge", NEdgesSize, 2);
-   ArrayHost1DI4 NEdgesOnEdgeTmp("NEdgesOnEdge", NEdgesSize);
-   yakl::memset(CellsOnEdgeTmp, NCellsGlobal + 1);
-   yakl::memset(EdgesOnEdgeTmp, NEdgesGlobal + 1);
-   yakl::memset(VerticesOnEdgeTmp, NVerticesGlobal + 1);
-   yakl::memset(NEdgesOnEdgeTmp, 0);
+   HostArray2DI4 CellsOnEdgeTmp("CellsOnEdge", NEdgesSize, MaxCellsOnEdge);
+   HostArray2DI4 EdgesOnEdgeTmp("EdgesOnEdge", NEdgesSize, 2 * MaxEdges);
+   HostArray2DI4 VerticesOnEdgeTmp("VerticesOnEdge", NEdgesSize, 2);
+   HostArray1DI4 NEdgesOnEdgeTmp("NEdgesOnEdge", NEdgesSize);
+   deepCopy(CellsOnEdgeTmp, NCellsGlobal + 1);
+   deepCopy(EdgesOnEdgeTmp, NEdgesGlobal + 1);
+   deepCopy(VerticesOnEdgeTmp, NVerticesGlobal + 1);
+   deepCopy(NEdgesOnEdgeTmp, 0);
 
    // Each task will broadcast the array chunks it owns in the initial linear
    // distribution and all tasks will search that list and extract the
@@ -1687,8 +1689,8 @@ int Decomp::rearrangeEdgeArrays(
             }
             NEdgesOnEdgeTmp(LocEdge) = EdgeCount;
          } // end if local cell
-      }    // end loop over chunk of global cells
-   }       // end loop over MPI tasks
+      } // end loop over chunk of global cells
+   } // end loop over MPI tasks
 
    // Copy to final location on host - wait to create device copies until
    // the entries are translated to local addresses rather than global IDs
@@ -1735,10 +1737,10 @@ int Decomp::rearrangeVertexArrays(
 
    // Create temporary arrays for holding the XxOnVertex results
    // and initialize to NXxGlobal+1 to denote a non-existent entry
-   ArrayHost2DI4 CellsOnVertexTmp("CellsOnVertex", NVerticesSize, VertexDegree);
-   ArrayHost2DI4 EdgesOnVertexTmp("EdgesOnVertex", NVerticesSize, VertexDegree);
-   yakl::memset(CellsOnVertexTmp, NCellsGlobal + 1);
-   yakl::memset(EdgesOnVertexTmp, NEdgesGlobal + 1);
+   HostArray2DI4 CellsOnVertexTmp("CellsOnVertex", NVerticesSize, VertexDegree);
+   HostArray2DI4 EdgesOnVertexTmp("EdgesOnVertex", NVerticesSize, VertexDegree);
+   deepCopy(CellsOnVertexTmp, NCellsGlobal + 1);
+   deepCopy(EdgesOnVertexTmp, NEdgesGlobal + 1);
 
    // Each task will broadcast the array chunks it owns in the initial linear
    // distribution and all tasks will search that list and extract the
@@ -1796,8 +1798,8 @@ int Decomp::rearrangeVertexArrays(
                ++BufAdd;
             }
          } // end if local cell
-      }    // end loop over chunk of global cells
-   }       // end loop over MPI tasks
+      } // end loop over chunk of global cells
+   } // end loop over MPI tasks
 
    // Copy to final location on host - wait to create device copies until
    // the entries are translated to local addresses rather than global IDs

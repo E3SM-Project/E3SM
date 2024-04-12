@@ -12,28 +12,45 @@
 #include "DataTypes.h"
 #include <spdlog/spdlog.h>
 
+// TODO:
+// 1. Use template to create formatter for various array types
+// 2. Consider using some of the following for formatting
+// View.rank()
+// View.rank_dynamic()
+// View.stride_(0, 1,2,3...)()
+// View.span()
+// View.size()
+// View.span_is_contiguous()
+// View.use_count()
+// View.label()
+// View.is_allocated()
+// ExecSpace.name()
+// ExecSpace.print_configuration(ostr);
+// ExecSpace.print_configuration(ostr, detail);
+// MemSpace.name()
+
 template <>
-struct fmt::formatter<OMEGA::ArrayHost1DReal> : fmt::formatter<std::string> {
-   auto format(OMEGA::ArrayHost1DReal my, format_context &ctx)
-       -> decltype(ctx.out()) {
+struct fmt::formatter<OMEGA::HostArray1DReal> : fmt::formatter<std::string> {
+   auto format(OMEGA::HostArray1DReal my,
+               format_context &ctx) -> decltype(ctx.out()) {
 #ifdef OMEGA_DEBUG
       return fmt::format_to(
-          ctx.out(), "[data type of '{}' is ArrayHost1DReal.]", my.label());
+          ctx.out(), "[data type of '{}' is HostArray1DReal.]", my.label());
 #else
-      return fmt::format_to(ctx.out(), "[data type of '' is ArrayHost1DReal.]");
+      return fmt::format_to(ctx.out(), "[data type of '' is HostArray1DReal.]");
 #endif
    }
 };
 
 template <>
-struct fmt::formatter<OMEGA::ArrayHost2DReal> : fmt::formatter<std::string> {
-   auto format(OMEGA::ArrayHost2DReal my, format_context &ctx)
-       -> decltype(ctx.out()) {
+struct fmt::formatter<OMEGA::HostArray2DReal> : fmt::formatter<std::string> {
+   auto format(OMEGA::HostArray2DReal my,
+               format_context &ctx) -> decltype(ctx.out()) {
 #ifdef OMEGA_DEBUG
       return fmt::format_to(
-          ctx.out(), "[data type of '{}' is ArrayHost2DReal.]", my.label());
+          ctx.out(), "[data type of '{}' is HostArray2DReal.]", my.label());
 #else
-      return fmt::format_to(ctx.out(), "[data type of '' is ArrayHost2DReal.]");
+      return fmt::format_to(ctx.out(), "[data type of '' is HostArray2DReal.]");
 #endif
    }
 };

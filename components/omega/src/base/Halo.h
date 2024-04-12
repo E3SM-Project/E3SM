@@ -170,54 +170,54 @@ class Halo {
    /// the neighboring tasks
    int startSends();
 
-   /// Buffer pack functions overloaded to each supported YAKL array type.
+   /// Buffer pack functions overloaded to each supported Kokkos array type.
    /// Select out the proper elements from the input Array to send to a
    /// neighboring task and pack them into SendBuffer for that Neighbor
-   int packBuffer(const ArrayHost1DI4 Array);
-   int packBuffer(const ArrayHost1DI8 Array);
-   int packBuffer(const ArrayHost1DR4 Array);
-   int packBuffer(const ArrayHost1DR8 Array);
-   int packBuffer(const ArrayHost2DI4 Array);
-   int packBuffer(const ArrayHost2DI8 Array);
-   int packBuffer(const ArrayHost2DR4 Array);
-   int packBuffer(const ArrayHost2DR8 Array);
-   int packBuffer(const ArrayHost3DI4 Array);
-   int packBuffer(const ArrayHost3DI8 Array);
-   int packBuffer(const ArrayHost3DR4 Array);
-   int packBuffer(const ArrayHost3DR8 Array);
-   int packBuffer(const ArrayHost4DI4 Array);
-   int packBuffer(const ArrayHost4DI8 Array);
-   int packBuffer(const ArrayHost4DR4 Array);
-   int packBuffer(const ArrayHost4DR8 Array);
-   int packBuffer(const ArrayHost5DI4 Array);
-   int packBuffer(const ArrayHost5DI8 Array);
-   int packBuffer(const ArrayHost5DR4 Array);
-   int packBuffer(const ArrayHost5DR8 Array);
+   int packBuffer(const HostArray1DI4 Array);
+   int packBuffer(const HostArray1DI8 Array);
+   int packBuffer(const HostArray1DR4 Array);
+   int packBuffer(const HostArray1DR8 Array);
+   int packBuffer(const HostArray2DI4 Array);
+   int packBuffer(const HostArray2DI8 Array);
+   int packBuffer(const HostArray2DR4 Array);
+   int packBuffer(const HostArray2DR8 Array);
+   int packBuffer(const HostArray3DI4 Array);
+   int packBuffer(const HostArray3DI8 Array);
+   int packBuffer(const HostArray3DR4 Array);
+   int packBuffer(const HostArray3DR8 Array);
+   int packBuffer(const HostArray4DI4 Array);
+   int packBuffer(const HostArray4DI8 Array);
+   int packBuffer(const HostArray4DR4 Array);
+   int packBuffer(const HostArray4DR8 Array);
+   int packBuffer(const HostArray5DI4 Array);
+   int packBuffer(const HostArray5DI8 Array);
+   int packBuffer(const HostArray5DR4 Array);
+   int packBuffer(const HostArray5DR8 Array);
 
-   /// Buffer unpack functions overloaded to each supported YAKL array type.
+   /// Buffer unpack functions overloaded to each supported Kokkos array type.
    /// After receiving a message from a neighboring task, save the elements
    /// of RecvBuffer for that Neighbor into the corresponding halo elements
    /// of the input Array
-   int unpackBuffer(ArrayHost1DI4 &Array);
-   int unpackBuffer(ArrayHost1DI8 &Array);
-   int unpackBuffer(ArrayHost1DR4 &Array);
-   int unpackBuffer(ArrayHost1DR8 &Array);
-   int unpackBuffer(ArrayHost2DI4 &Array);
-   int unpackBuffer(ArrayHost2DI8 &Array);
-   int unpackBuffer(ArrayHost2DR4 &Array);
-   int unpackBuffer(ArrayHost2DR8 &Array);
-   int unpackBuffer(ArrayHost3DI4 &Array);
-   int unpackBuffer(ArrayHost3DI8 &Array);
-   int unpackBuffer(ArrayHost3DR4 &Array);
-   int unpackBuffer(ArrayHost3DR8 &Array);
-   int unpackBuffer(ArrayHost4DI4 &Array);
-   int unpackBuffer(ArrayHost4DI8 &Array);
-   int unpackBuffer(ArrayHost4DR4 &Array);
-   int unpackBuffer(ArrayHost4DR8 &Array);
-   int unpackBuffer(ArrayHost5DI4 &Array);
-   int unpackBuffer(ArrayHost5DI8 &Array);
-   int unpackBuffer(ArrayHost5DR4 &Array);
-   int unpackBuffer(ArrayHost5DR8 &Array);
+   int unpackBuffer(HostArray1DI4 &Array);
+   int unpackBuffer(HostArray1DI8 &Array);
+   int unpackBuffer(HostArray1DR4 &Array);
+   int unpackBuffer(HostArray1DR8 &Array);
+   int unpackBuffer(HostArray2DI4 &Array);
+   int unpackBuffer(HostArray2DI8 &Array);
+   int unpackBuffer(HostArray2DR4 &Array);
+   int unpackBuffer(HostArray2DR8 &Array);
+   int unpackBuffer(HostArray3DI4 &Array);
+   int unpackBuffer(HostArray3DI8 &Array);
+   int unpackBuffer(HostArray3DR4 &Array);
+   int unpackBuffer(HostArray3DR8 &Array);
+   int unpackBuffer(HostArray4DI4 &Array);
+   int unpackBuffer(HostArray4DI8 &Array);
+   int unpackBuffer(HostArray4DR4 &Array);
+   int unpackBuffer(HostArray4DR8 &Array);
+   int unpackBuffer(HostArray5DI4 &Array);
+   int unpackBuffer(HostArray5DI8 &Array);
+   int unpackBuffer(HostArray5DR4 &Array);
+   int unpackBuffer(HostArray5DR8 &Array);
 
  public:
    // Methods
@@ -226,11 +226,11 @@ class Halo {
    Halo(const MachEnv *InEnv, const Decomp *InDecomp);
 
    //---------------------------------------------------------------------------
-   // Function template to perform a full halo exchange on the input YAKL array
-   // of any supported type defined on the input index space ThisElem
+   // Function template to perform a full halo exchange on the input Kokkos
+   // array of any supported type defined on the input index space ThisElem
    template <typename T>
    int
-   exchangeFullArrayHalo(T &Array,            // YAKL array of any type
+   exchangeFullArrayHalo(T &Array,            // Kokkos array of any type
                          MeshElement ThisElem // index space Array is defined on
    ) {
 
@@ -252,18 +252,17 @@ class Halo {
 
       // Determine the number of array elements per cell, edge, or vertex
       // in the input array
-      yakl::Dims MyDims = Array.get_dimensions();
-      I4 NDims          = MyDims.size();
+      I4 NDims = Array.Rank;
       if (NDims == 1) {
          TotSize = 1;
       } else if (NDims == 2) {
-         TotSize = MyDims[1];
+         TotSize = Array.extent(1);
       } else {
          TotSize = 1;
          for (int I = 0; I < NDims - 2; ++I) {
-            TotSize *= MyDims[I];
+            TotSize *= Array.extent(I);
          }
-         TotSize *= MyDims[NDims - 1];
+         TotSize *= Array.extent(NDims - 1);
       }
 
       // Allocate the receive buffers and Call MPI_Irecv for each Neighbor

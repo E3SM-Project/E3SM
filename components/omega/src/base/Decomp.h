@@ -150,11 +150,11 @@ class Decomp {
    I4 MaxEdges;     ///< Max number of edges around a cell
 
    Array1DI4 NCellsHalo;      ///< num cells owned+halo for halo layer
-   ArrayHost1DI4 NCellsHaloH; ///< num cells owned+halo for halo layer
+   HostArray1DI4 NCellsHaloH; ///< num cells owned+halo for halo layer
    Array1DI4 CellID;          ///< global cell ID for each local cell
-   ArrayHost1DI4 CellIDH;     ///< global cell ID for each local cell
+   HostArray1DI4 CellIDH;     ///< global cell ID for each local cell
    Array2DI4 CellLoc;      ///< location (task, local add) for local cells,halo
-   ArrayHost2DI4 CellLocH; ///< location (task, local add) for local cells,halo
+   HostArray2DI4 CellLocH; ///< location (task, local add) for local cells,halo
 
    I4 NEdgesGlobal;   ///< Number of edges in the full global mesh
    I4 NEdgesOwned;    ///< Number of edges owned by this task
@@ -163,11 +163,11 @@ class Decomp {
    I4 MaxCellsOnEdge; ///< Max number of cells sharing an edge
 
    Array1DI4 NEdgesHalo;      ///< num cells owned+halo for halo layer
-   ArrayHost1DI4 NEdgesHaloH; ///< num cells owned+halo for halo layer
+   HostArray1DI4 NEdgesHaloH; ///< num cells owned+halo for halo layer
    Array1DI4 EdgeID;          ///< global cell ID for each local cell
-   ArrayHost1DI4 EdgeIDH;     ///< global cell ID for each local cell
+   HostArray1DI4 EdgeIDH;     ///< global cell ID for each local cell
    Array2DI4 EdgeLoc;      ///< location (task, local add) for local edges,halo
-   ArrayHost2DI4 EdgeLocH; ///< location (task, local add) for local edges,halo
+   HostArray2DI4 EdgeLocH; ///< location (task, local add) for local edges,halo
 
    I4 NVerticesGlobal; ///< Number of vertices in the full global mesh
    I4 NVerticesOwned;  ///< Number of vertices owned by this task
@@ -176,43 +176,43 @@ class Decomp {
    I4 VertexDegree;    ///< Number of cells that meet at each vertex
 
    Array1DI4 NVerticesHalo;      ///< num cells owned+halo for halo layer
-   ArrayHost1DI4 NVerticesHaloH; ///< num cells owned+halo for halo layer
+   HostArray1DI4 NVerticesHaloH; ///< num cells owned+halo for halo layer
    Array1DI4 VertexID;           ///< global vertex ID for each local cell
-   ArrayHost1DI4 VertexIDH;      ///< global vertex ID for each local cell
+   HostArray1DI4 VertexIDH;      ///< global vertex ID for each local cell
    Array2DI4 VertexLoc;      ///< location (task, local add) for local vrtx halo
-   ArrayHost2DI4 VertexLocH; ///< location (task, local add) for local vrtx halo
+   HostArray2DI4 VertexLocH; ///< location (task, local add) for local vrtx halo
 
    // Mesh connectivity
 
    Array2DI4 CellsOnCell;      ///< Indx of cells that neighbor each cell
-   ArrayHost2DI4 CellsOnCellH; ///< Indx of cells that neighbor each cell
+   HostArray2DI4 CellsOnCellH; ///< Indx of cells that neighbor each cell
 
    Array2DI4 EdgesOnCell;      ///< Indx of edges that border each cell
-   ArrayHost2DI4 EdgesOnCellH; ///< Indx of edges that border each cell
+   HostArray2DI4 EdgesOnCellH; ///< Indx of edges that border each cell
 
    Array1DI4 NEdgesOnCell;      ///< Num of active edges around each cell
-   ArrayHost1DI4 NEdgesOnCellH; ///< Num of active edges around each cell
+   HostArray1DI4 NEdgesOnCellH; ///< Num of active edges around each cell
 
    Array2DI4 VerticesOnCell;      ///< Indx of vertices bordering each cell
-   ArrayHost2DI4 VerticesOnCellH; ///< Indx of vertices bordering each cell
+   HostArray2DI4 VerticesOnCellH; ///< Indx of vertices bordering each cell
 
    Array2DI4 CellsOnEdge;      ///< Indx of cells straddling each edge
-   ArrayHost2DI4 CellsOnEdgeH; ///< Indx of cells straddling each edge
+   HostArray2DI4 CellsOnEdgeH; ///< Indx of cells straddling each edge
 
    Array2DI4 EdgesOnEdge;      ///< Indx of edges around cells across each edge
-   ArrayHost2DI4 EdgesOnEdgeH; ///< Indx of edges around cells across each edge
+   HostArray2DI4 EdgesOnEdgeH; ///< Indx of edges around cells across each edge
 
    Array1DI4 NEdgesOnEdge;      ///< Num of edges around the cells across edge
-   ArrayHost1DI4 NEdgesOnEdgeH; ///< Num of edges around the cells across edge
+   HostArray1DI4 NEdgesOnEdgeH; ///< Num of edges around the cells across edge
 
    Array2DI4 VerticesOnEdge;      ///< Indx of vertices straddling each edge
-   ArrayHost2DI4 VerticesOnEdgeH; ///< Indx of vertices straddling each edge
+   HostArray2DI4 VerticesOnEdgeH; ///< Indx of vertices straddling each edge
 
    Array2DI4 CellsOnVertex;      ///< Indx of cells that share a vertex
-   ArrayHost2DI4 CellsOnVertexH; ///< Indx of cells that share a vertex
+   HostArray2DI4 CellsOnVertexH; ///< Indx of cells that share a vertex
 
    Array2DI4 EdgesOnVertex;      ///< Indx of edges sharing vertex as endpoint
-   ArrayHost2DI4 EdgesOnVertexH; ///< Indx of edges sharing vertex as endpoint
+   HostArray2DI4 EdgesOnVertexH; ///< Indx of edges sharing vertex as endpoint
 
    // Methods
 

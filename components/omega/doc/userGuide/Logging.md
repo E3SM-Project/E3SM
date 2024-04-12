@@ -55,7 +55,7 @@ Here is a table that summarizes the different log severities and their meanings:
 
 You can replace the string "World" with any variable whose type is
 a C++ basic data type, such as an int, a float, or a string. You can
-also use a limited set of YAKL variables. For example, the following code
+also use a limited set of Kokkos variables. For example, the following code
 writes the value of the variable `MyInt` as a TRACE level log:
 
 ```c

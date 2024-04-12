@@ -26,10 +26,10 @@ communicator based on a parent communicator sent by the calling routine
 Each MPI rank will need to know its own rank id, number of ranks and
 define a master rank.
 
-### 2.4 Requirement: YAKL initialization
+### 2.4 Requirement: Kokkos initialization
 
-Since we are using YAKL for kernel launching and array types, we
-will need to initialize YAKL in standalone mode. It may also be
+Since we are using Kokkos for kernel launching and array types, we
+will need to initialize Kokkos in standalone mode. It may also be
 needed for coupled simulations.
 
 ### 2.5 Requirement: Vector blocking size defined at compile time
@@ -229,9 +229,9 @@ success/fail return code.
 ## 5 Verification and Testing
 
 We will test this with a simple test driver in an 8-rank
-MPI configuration. Requirement 2.4 (YAKL initialization) will
+MPI configuration. Requirement 2.4 (Kokkos initialization) will
 need to be verified by visual inspection but later tests using
-YAKL functions will determine whether this has been successful.
+Kokkos functions will determine whether this has been successful.
 
 ### 5.1 Test standalone initialization
 

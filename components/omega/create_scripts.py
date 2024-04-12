@@ -82,7 +82,7 @@ class OmegaMachines(Machines):
         self.machos = self.get_value("OS")
         self.mpilibs = self.get_value("MPILIBS").split(",")
 
-    # modifed based on generic_xml.py in CIME
+    # modified based on generic_xml.py in CIME
     def get_processed_value(self, raw_value, outvar):
 
         reference_re = re.compile(r"\${?(\w+)}?")
@@ -327,6 +327,7 @@ class OmegaMachines(Machines):
             f.write(f"set(OS {self.machos})\n")
             f.write(f"set(COMPILER {self.compiler})\n")
             f.write(f"set(MPI_EXEC {self.mpiexec})\n")
+            f.write(f"set(MPILIB_NAME {self.mpilib})\n")
             f.write(f"set(CASEROOT {self.machpath})\n")
             f.write(f"include({self.macrospath})\n")
 
@@ -353,24 +354,38 @@ class OmegaMachines(Machines):
             for key, value in self.__OMEGA_SCRIPT_EXPORTS__.items():
                 f.write(f"export {key}=\"{value}\"\n")
 
+            if "OMP_NUM_THREADS" not in self.__OMEGA_SCRIPT_EXPORTS__:
+                f.write("export OMP_NUM_THREADS=\"1\"\n")
+
+            if "OMP_PROC_BIND" not in self.__OMEGA_SCRIPT_EXPORTS__:
+                f.write("export OMP_PROC_BIND=\"spread\"\n")
+
+            if "OMP_PLACES" not in self.__OMEGA_SCRIPT_EXPORTS__:
+                f.write("export OMP_PLACES=\"threads\"\n")
+
         with open(omega_build, "w") as f:
             f.write("#!/usr/bin/env bash\n\n")
 
             f.write("source ./omega_env.sh\n")
-            nthreads_build = self.get_value("GMAKE_J")
-            f.write(f"make -j{nthreads_build}\n")
+
+            if self.debug == "TRUE":
+                f.write("make\n")
+
+            else:
+                nthreads_build = self.get_value("GMAKE_J")
+                f.write(f"make -j{nthreads_build}\n")
 
         with open(omega_run, "w") as f:
             f.write("#!/usr/bin/env bash\n\n")
 
             f.write("source ./omega_env.sh\n")
-            f.write("./src/omega.exe\n")
+            f.write("./src/omega.exe 1000\n")
 
         with open(omega_ctest, "w") as f:
             f.write("#!/usr/bin/env bash\n\n")
 
             f.write("source ./omega_env.sh\n")
-            f.write("ctest $* # --rerun-failed --output-on-failure\n")
+            f.write("ctest --output-on-failure $* # --rerun-failed \n")
 
         st = os.stat(omega_env)
         os.chmod(omega_env, st.st_mode | stat.S_IEXEC)

@@ -133,7 +133,7 @@ before the parallel IO is set up.
 Once the primary (cell) mesh is partitioned, the edge and vertex
 index spaces will be assigned based on the adjacency to the local
 cells, as in the current MPAS model. Because much of this information
-will be later replicated in a mesh class with YAKL arrays, this
+will be later replicated in a mesh class with Kokkos arrays, this
 decomposition structure will be destroyed after initialization and
 any related setup of halos and other infrastructure.
 

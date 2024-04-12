@@ -4,7 +4,7 @@
 ## 1 Overview
 
 Data type aliases are a useful means for managing precision within OMEGA and
-to improve readability for for YAKL array data types. This header file
+to improve readability for for Kokkos array data types. This header file
 defines a number of aliases to common data types used throughout OMEGA.
 
 
@@ -20,7 +20,7 @@ types to enforce precision where needed.
 
 ### 2.2 Desired: Readability for array types
 
-OMEGA will be using YAKL array data types which have a long syntax. For
+OMEGA will be using Kokkos array data types which have a long syntax. For
 readability, these should be aliased to a shorter, intuitive data type.
 
 ### 2.3 Desired: Fixed width integer types
@@ -50,7 +50,7 @@ require reproducible algorithms in the future.
 Currently, the data types can be defined in a single header file that sets
 up aliases. Because the main data types are simply aliases to the standard
 data types, interoperability (Req 2.4) should not be an issue. For the
-YAKL arrays, YAKL provides means for interoperability with both other
+Kokkos arrays, Kokkos provides means for interoperability with both other
 languages and other frameworks and will be incorporated into any
 interfaces with other codes.
 
@@ -67,7 +67,7 @@ Otherwise, the default real will be double precision.
 
 The data types will be defined using type aliases within a single header
 file DataTypes.h We will use the "using" syntax rather than
-the older typedef. For YAKL arrays, we require both device arrays (default)
+the older typedef. For Kokkos arrays, we require both device arrays (default)
 and host array types and will use C-ordering.
 
 ```c++
@@ -82,22 +82,27 @@ using Real = float;
 using Real = double;
 #endif
 
-// Aliases for YAKL arrays - by default on device and in
+// Aliases for Kokkos arrays - by default on device and in
 // C-ordering.
-using Array1DI4   = YAKL::Array<I4,1,memDevice,styleC>
-using Array1DI8   = YAKL::Array<I8,1,memDevice,styleC>
-using Array1DR4   = YAKL::Array<R4,1,memDevice,styleC>
-using Array1DR8   = YAKL::Array<R8,1,memDevice,styleC>
-using Array1DReal = YAKL::Array<Real,1,memDevice,styleC>
-using Array2DI4   = YAKL::Array<I4,2,memDevice,styleC>
-using Array2DI8   = YAKL::Array<I8,2,memDevice,styleC>
-using Array2DR4   = YAKL::Array<R4,2,memDevice,styleC>
-using Array2DR8   = YAKL::Array<R8,2,memDevice,styleC>
-using Array2DReal = YAKL::Array<Real,2,memDevice,styleC>
-// continue this pattern for higher-dimensional arrays
-// Also need similar aliases for arrays on the host
-using ArrayHost1DI4   = YAKL::Array<I4,1,memHost,styleC>
-// replicated as above for each type, dimension
+#define MAKE_OMEGA_VIEW_DIMS(N, V, T, ML, MS)  \
+   using N##1D##T = Kokkos::V<T *, ML, MS>;    \
+   using N##2D##T = Kokkos::V<T **, ML, MS>;   \
+   using N##3D##T = Kokkos::V<T ***, ML, MS>;  \
+   using N##4D##T = Kokkos::V<T ****, ML, MS>; \
+   using N##5D##T = Kokkos::V<T *****, ML, MS>;
+
+#define MAKE_OMEGA_VIEW_TYPES(N, V, ML, MS) \
+   MAKE_OMEGA_VIEW_DIMS(N, V, I4, ML, MS)   \
+   MAKE_OMEGA_VIEW_DIMS(N, V, I8, ML, MS)   \
+   MAKE_OMEGA_VIEW_DIMS(N, V, R4, ML, MS)   \
+   MAKE_OMEGA_VIEW_DIMS(N, V, R8, ML, MS)   \
+   MAKE_OMEGA_VIEW_DIMS(N, V, Real, ML, MS)
+
+// Aliases for Kokkos device arrays of various dimensions and types
+MAKE_OMEGA_VIEW_TYPES(Array, View, MemLayout, MemSpace)
+
+// Aliases for Kokkos host arrays of various dimensions and types
+MAKE_OMEGA_VIEW_TYPES(HostArray, View, HostMemLayout, HostMemSpace)
 ```
 
 ### 4.2 Methods
@@ -122,10 +127,10 @@ Build test code with and without -D SINGLE_PRECISION and
 verify size is as expected using sizeof
   * tests requirement 2.1
 
-### 5.3 YAKL array test
+### 5.3 Kokkos array test
 
-Create YAKL arrays of each type on device. Create host arrays to
-mirror each. Initialize YAKL arrays on device and copy to host
-using YAKL. Create a non-YAKL array on host initialized the same
+Create Kokkos arrays of each type on device. Create host arrays to
+mirror each. Initialize Kokkos arrays on device and copy to host
+using Kokkos. Create a non-Kokkos array on host initialized the same
 way and compare values from each on the host.
   * tests requirement 2.2

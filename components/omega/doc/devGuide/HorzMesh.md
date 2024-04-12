@@ -15,7 +15,7 @@ connectivity information from Decomp so this information can be passed among the
 computational routines, alongside the other local mesh information.  It then
 creates several parallel I/O decompositions and reads in the remaining subdomain
 mesh information.  Finally, any mesh information needed on the device is copied
-from the host to a device YAKL array. Arrays such as the coordinate variables,
+from the host to a device Kokkos array. Arrays such as the coordinate variables,
 which are not involved in tendency calculations, are not transferred to the
 device. These tasks are organized into several private methods. Eventually,
 dependent mesh variables will be computed from the minimum set of required mesh
@@ -36,8 +36,8 @@ The HorzMesh is meant to be a container that allows the mesh information to be
 passed to the PDE solver routines:
 ```
 void computeFluxTendency(OMEGA::HorzMesh *HMesh, ...) {
-yakl::c::parallel_for(yakl::c::Bounds<2>(HMesh->NCellsOwned,HMesh->MaxEdges),
-                      YAKL_LAMBDA (int Cell, int Edge) {
+OMEGA::parallelFor({HMesh->NCellsOwned,HMesh->MaxEdges},
+                      KOKKOS_LAMBDA (int Cell, int Edge) {
   if (Edge < HMesh->NEdgesOnCell(Cell)) {
       Var(Cell) = Var(Cell) + Flux(Cell,Edge);
   }
@@ -48,8 +48,8 @@ For member variables that are host arrays, variable names are appended with an
 `H`.  Array variable names not ending in `H` are device arrays.  The copy from
 host to device array is performed in the constructor via:
 ```c++
-AreaCell = AreaCellH.createDeviceCopy();
+AreaCell = OMEGA::createDeviceMirrorCopy(AreaCellH);
 ```
 
 The device arrays are deallocated by the `HorzMesh::clear()` method, which is
-necessary before calling `yakl::finalize`.
+necessary before calling `Kokkos::finalize`.

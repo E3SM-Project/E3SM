@@ -1,47 +1,58 @@
 # build Omega
 
-# Add source files for the library
-file(GLOB _LIBSRC_FILES infra/*.cpp base/*.cpp ocn/*.cpp)
+# create library flag target for LibOmega
+add_library(OmegaLibFlags INTERFACE)
 
-# Create the library target
-add_library(${OMEGA_LIB_NAME} ${_LIBSRC_FILES})
-
-# add include directories
 target_include_directories(
-    ${OMEGA_LIB_NAME}
-    PRIVATE
-    ${OMEGA_SOURCE_DIR}/src/base
-    ${OMEGA_SOURCE_DIR}/src/infra
-    ${Parmetis_INCLUDE_DIRS}
-)
-
-# add compiler options
-target_include_directories(
-    ${OMEGA_LIB_NAME}
-    PRIVATE
+    OmegaLibFlags
+    INTERFACE
     ${OMEGA_SOURCE_DIR}/src/base
     ${OMEGA_SOURCE_DIR}/src/infra
     ${OMEGA_SOURCE_DIR}/src/ocn
+    ${Parmetis_INCLUDE_DIRS}
 )
 
-target_compile_options(
-    ${OMEGA_LIB_NAME}
-    PRIVATE
-     ${OMEGA_CXX_FLAGS}
+target_compile_definitions(
+    OmegaLibFlags
+    INTERFACE
+    OMEGA_ARCH=${OMEGA_ARCH}
 )
 
-# add linker options
 target_link_options(
-    ${OMEGA_LIB_NAME}
-    PRIVATE
+    OmegaLibFlags
+    INTERFACE
     ${OMEGA_LINK_OPTIONS}
 )
 
-target_link_libraries(${OMEGA_LIB_NAME} spdlog yakl pioc yaml-cpp parmetis metis)
+target_link_libraries(
+    OmegaLibFlags
+    INTERFACE
+    Kokkos::kokkos
+    spdlog
+    pioc
+    yaml-cpp
+    parmetis
+    metis
+)
 
 if(GKlib_FOUND)
-    target_link_libraries(${OMEGA_LIB_NAME} gklib)
+    target_link_libraries(
+        OmegaLibFlags
+        PUBLIC
+        gklib
+    )
 endif()
+
+# Add source files for the library
+file(GLOB _LIBSRC_FILES infra/*.cpp base/*.cpp ocn/*.cpp)
+
+add_library(${OMEGA_LIB_NAME} ${_LIBSRC_FILES})
+
+target_link_libraries(
+    ${OMEGA_LIB_NAME}
+    PRIVATE
+    OmegaLibFlags
+)
 
 # build Omega executable
 if(OMEGA_BUILD_EXECUTABLE)
@@ -53,13 +64,11 @@ if(OMEGA_BUILD_EXECUTABLE)
   # Create the executable target
   add_executable(${OMEGA_EXE_NAME} ${EXESRC_FILES})
 
-  target_compile_options(
-		${OMEGA_EXE_NAME}
-		PRIVATE
-		"-L${OMEGA_SOURCE_DIR}/src/base"
-		"-L${CMAKE_CURRENT_SOURCE_DIR}/infra"
-  )
-
-  target_link_libraries(${OMEGA_EXE_NAME} ${OMEGA_LIB_NAME})
+  target_link_libraries(
+    ${OMEGA_EXE_NAME}
+    PRIVATE
+    ${OMEGA_LIB_NAME}
+    OmegaLibFlags
+)
 
 endif()

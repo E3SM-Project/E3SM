@@ -1,56 +1,57 @@
 # Add external packages
 
 # Add the spdlog library
-add_subdirectory(
-  ${E3SM_EXTERNALS_ROOT}/ekat/extern/spdlog
-  ${CMAKE_CURRENT_BINARY_DIR}/ekat/extern/spdlog
-)
+if (NOT TARGET spdlog::spdlog)
+	add_subdirectory(
+	  ${E3SM_EXTERNALS_ROOT}/ekat/extern/spdlog
+	  ${CMAKE_CURRENT_BINARY_DIR}/ekat/extern/spdlog
+	)
+endif()
 
 # Add the yaml-cpp library
-add_subdirectory(
-  ${E3SM_EXTERNALS_ROOT}/ekat/extern/yaml-cpp
-  ${CMAKE_CURRENT_BINARY_DIR}/ekat/extern/yaml-cpp
-)
-
-# Add the YAKL library
-add_subdirectory(
-  ${E3SM_EXTERNALS_ROOT}/YAKL
-  ${CMAKE_CURRENT_BINARY_DIR}/YAKL
-)
-
-if (CMAKE_VERSION VERSION_GREATER "3.18.0")
-  set_property(TARGET yakl PROPERTY CUDA_ARCHITECTURES OFF)
+if (NOT TARGET yaml-cpp::yaml-cpp)
+	add_subdirectory(
+	  ${E3SM_EXTERNALS_ROOT}/ekat/extern/yaml-cpp
+	  ${CMAKE_CURRENT_BINARY_DIR}/ekat/extern/yaml-cpp
+	)
 endif()
 
-if(OMEGA_DEBUG)
-  target_compile_definitions(yakl INTERFACE YAKL_DEBUG=1)
+# Add the Kokkos library
+if (NOT TARGET Kokkos::kokkos)
+	add_subdirectory(
+      ${E3SM_EXTERNALS_ROOT}/ekat/extern/kokkos
+      ${CMAKE_CURRENT_BINARY_DIR}/ekat/extern/kokkos
+	)
 endif()
-
-# forward env. variables to Scorpio build
-if(DEFINED ENV{NETCDF_PATH})
-  set(NetCDF_PATH $ENV{NETCDF_PATH}
-		CACHE STRING "Path to NETCDF library" FORCE)
-endif()
-if(DEFINED ENV{NETCDF_C_PATH})
-  set(NetCDF_C_PATH $ENV{NETCDF_C_PATH}
-		CACHE STRING "Path to NETCDF-C library" FORCE)
-endif()
-if(DEFINED ENV{NETCDF_FORTRAN_PATH})
-  set(NetCDF_Fortran_PATH $ENV{NETCDF_FORTRAN_PATH}
-		CACHE STRING "Path to NETCDF-Fortran library" FORCE)
-endif()
-if(DEFINED ENV{PNETCDF_PATH})
-  set(PnetCDF_PATH $ENV{PNETCDF_PATH}
-		CACHE STRING "Path to PNETCDF library" FORCE)
-endif()
-
-option(PIO_ENABLE_TOOLS "" OFF)
 
 # Add the Scorpio library
-add_subdirectory(
-  ${E3SM_EXTERNALS_ROOT}/scorpio
-  ${CMAKE_CURRENT_BINARY_DIR}/scorpio
-)
+if (NOT TARGET pioc)
+
+	# forward env. variables to Scorpio build
+	if(DEFINED ENV{NETCDF_PATH})
+	  set(NetCDF_PATH $ENV{NETCDF_PATH}
+			CACHE STRING "Path to NETCDF library" FORCE)
+	endif()
+	if(DEFINED ENV{NETCDF_C_PATH})
+	  set(NetCDF_C_PATH $ENV{NETCDF_C_PATH}
+			CACHE STRING "Path to NETCDF-C library" FORCE)
+	endif()
+	if(DEFINED ENV{NETCDF_FORTRAN_PATH})
+	  set(NetCDF_Fortran_PATH $ENV{NETCDF_FORTRAN_PATH}
+			CACHE STRING "Path to NETCDF-Fortran library" FORCE)
+	endif()
+	if(DEFINED ENV{PNETCDF_PATH})
+	  set(PnetCDF_PATH $ENV{PNETCDF_PATH}
+			CACHE STRING "Path to PNETCDF library" FORCE)
+	endif()
+
+	option(PIO_ENABLE_TOOLS "" OFF)
+
+	add_subdirectory(
+	  ${E3SM_EXTERNALS_ROOT}/scorpio
+	  ${CMAKE_CURRENT_BINARY_DIR}/scorpio
+	)
+endif()
 
 # Add the parmetis and related libraries
 

@@ -3,7 +3,7 @@
 
 ## 1 Overview
 
-This design document describes the first version of the Omega ocean model, Omega0. Overall, Omega is an unstructured-mesh ocean model based on TRiSK numerical methods ([Thuburn et al. 2009](https://www.sciencedirect.com/science/article/pii/S0021999109004434)) that is specifically designed for modern exascale computing architectures. The algorithms in Omega will be nearly identical to those in MPAS-Ocean, but it will be written in c++ rather than Fortran in order to take advantage of libraries to run on GPUs, such as YAKL (Yet Another Kernel Library, [Norman et al. 2023](https://link.springer.com/10.1007/s10766-022-00739-0)).
+This design document describes the first version of the Omega ocean model, Omega0. Overall, Omega is an unstructured-mesh ocean model based on TRiSK numerical methods ([Thuburn et al. 2009](https://www.sciencedirect.com/science/article/pii/S0021999109004434)) that is specifically designed for modern exascale computing architectures. The algorithms in Omega will be nearly identical to those in MPAS-Ocean, but it will be written in c++ rather than Fortran in order to take advantage of libraries to run on GPUs, such as Kokkos (https://github.com/kokkos).
 
 The planned versions of Omega are:
 
@@ -87,7 +87,7 @@ The test cases relevant to this design document are in Section 5 below.
 
 Omega will be able to run on all the upcoming DOE architectures and make good use of GPU hardware. This should occur with minimal alterations in the high-level PDE solver code for different platforms.
 
-Options include: writing kernels directly for GPUs in CUDA; adding OpenACC pragmas for the GPUs; or calling libraries such as Kokkos ([Trott et al. 2022](https://ieeexplore.ieee.org/document/9485033)), YAKL ([Norman et al. 2023](https://link.springer.com/10.1007/s10766-022-00739-0)) or [HIP](https://github.com/ROCm-Developer-Tools/HIP) that execute code optimized for specialized architectures on the back-end, while providing a simpler front-end interface for the domain scientist.
+Options include: writing kernels directly for GPUs in CUDA; adding OpenACC pragmas for the GPUs; or calling libraries such as Kokkos ([Trott et al. 2022](https://ieeexplore.ieee.org/document/9485033)), Kokkos (https://github.com/kokkos) or [HIP](https://github.com/ROCm-Developer-Tools/HIP) that execute code optimized for specialized architectures on the back-end, while providing a simpler front-end interface for the domain scientist.
 
 ### 2.6 Requirement: Omega-0 will run on multi-node with domain decomposition
 

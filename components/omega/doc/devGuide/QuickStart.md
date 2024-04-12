@@ -80,7 +80,7 @@ to buid and test Omega. The utility automates many of the steps below.
 In the Omega branch you would like to build, first update the submodules that
 Omega requires:
 ```sh
-git submodule update --init --recursive externals/YAKL externals/ekat \
+git submodule update --init --recursive externals/ekat \
     externals/scorpio cime
 ```
 
@@ -135,10 +135,10 @@ script that you can run to build Omega:
 Omega includes several unit tests that run through CTest.  These need to be
 run on a compute node.  Some tests also require a valid Omega mesh file
 called `test/OmegaMesh.nc`.  An appropriate mesh file can be downloaded from
-[mesh.230220.nc](https://web.lcrc.anl.gov/public/e3sm/polaris/ocean/polaris_cache/global_convergence/icos/cosine_bell/Icos480/mesh/mesh.230220.nc).
+[mesh.230220.nc](https://web.lcrc.anl.gov/public/e3sm/polaris/ocean/omega_ctest/ocean.QU.240km.151209.nc).
 ```sh
-wget https://web.lcrc.anl.gov/public/e3sm/polaris/ocean/polaris_cache/global_convergence/icos/cosine_bell/Icos480/mesh/mesh.230220.nc
-mv mesh.230220.nc test/OmegaMesh.nc
+wget https://web.lcrc.anl.gov/public/e3sm/polaris/ocean/omega_ctest/ocean.QU.240km.151209.nc
+mv ocean.QU.240km.151209.nc test/OmegaMesh.nc
 ```
 
 Then, run the tests:
@@ -165,8 +165,8 @@ Test project /gpfs/fs1/home/ac.xylar/e3sm_work/polaris/add-omega-ctest-util/buil
 7/9 Test #7: IO_TEST ..........................   Passed    2.94 sec
     Start 8: CONFIG_TEST
 8/9 Test #8: CONFIG_TEST ......................   Passed    1.01 sec
-    Start 9: YAKL_TEST
-9/9 Test #9: YAKL_TEST ........................   Passed    0.03 sec
+    Start 9: KOKKOS_TEST
+9/9 Test #9: KOKKOS_TEST ........................   Passed    0.03 sec
 
 100% tests passed, 0 tests failed out of 9
 
