@@ -189,8 +189,8 @@ inline void pam_state_set_reference_state( pam::PamCoupler &coupler ) {
   parallel_for(SimpleBounds<2>(nz,nens) , YAKL_LAMBDA (int k, int iens) {
     if ( hmean_pint(k,iens) < hmean_pmid(k,iens) ) {
       auto phis = input_phis(iens)/grav;
-      printf("PAM-STATE - bad interface pressure for reference state - "+\
-             "k:%3.3d n:%3.3d y:%5.1f x:%5.1f ph:%6.1f -- "+\
+      printf("PAM-STATE - bad interface pressure for reference state - "
+             "k:%3.3d n:%3.3d y:%5.1f x:%5.1f ph:%6.1f -- "
              "pint:%12.4f pmid:%12.4f \n",
              k,iens,lat(iens),lon(iens),phis,
              hmean_pint(k,iens),hmean_pmid(k,iens));

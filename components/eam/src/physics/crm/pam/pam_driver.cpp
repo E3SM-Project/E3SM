@@ -83,7 +83,7 @@ inline int pam_driver_set_subcycle_timestep( pam::PamCoupler &coupler, real crm_
   if(num_subcycle > max_num_subcycle) {
     real umax = pmax(uvel_max.data());
     real wmax = pmax(wvel_max.data());
-    printf("PAM_DRIVER - WARNING: excessive subcycling!"+\
+    printf("PAM_DRIVER - WARNING: excessive subcycling!"
           " - num_subcycle: %3.3d  dt: %8.4f  cfl: %8.4f  umax: %8.2f  wmax: %8.2f \n",
           num_subcycle,crm_dt_subcycle,cfl,umax,wmax);
     // exit(-1);
