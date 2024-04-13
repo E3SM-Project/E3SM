@@ -1,0 +1,4 @@
+CASEDIR=`./xmlquery CASEROOT --value`
+SRCROOT=`./xmlquery SRCROOT --value`
+cp $SRCROOT/components/elm/cime_config/testdefs/testmods_dirs/elm/era56hr/user_datm.* $CASEDIR
+
