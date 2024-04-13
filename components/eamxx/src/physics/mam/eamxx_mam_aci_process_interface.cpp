@@ -141,83 +141,6 @@ void compute_subgrid_scale_velocities(
 }
 
 KOKKOS_INLINE_FUNCTION
-Real subgrid_mean_updraft(const Real w0, const Real wsig) {
-  /* ---------------------------------------------------------------------------------
-   Purpose: Calculate the mean updraft velocity inside a GCM grid assuming the
-            vertical velocity distribution is Gaussian and peaks at the
-            GCM resolved large-scale vertical velocity.
-            When icenul_wsub_scheme = 2, the model uses the mean updraft
-  velocity as the characteristic updraft velocity to calculate the ice
-  nucleation rate. Author:  Kai Zhang (kai.zhang@pnnl.gov) Last Modified: Oct,
-  2015
-  --------------------------------------------------------------------------------
-*/
-
-  // interface
-
-  //   in :: wsig  standard deviation (m/s)
-  //   in :: w0  large scale vertical velocity (m/s)
-  //   out::   mean updraft velocity(m/s) -> characteristic w*
-
-  // FIXME should nbin be a user parameter?
-  const int nbin = 50;
-
-  using C           = physics::Constants<Real>;
-  constexpr Real pi = C::Pi;
-  Real zz[nbin], wa = 0, ww = 0;
-  int kp = 0;
-
-  const Real sigma  = haero::max(0.001, wsig);
-  const Real wlarge = w0;
-
-  const Real xx = 6.0 * sigma / nbin;
-
-  for(int ibin = 0; ibin < nbin; ++ibin) {
-    Real yy = wlarge - 3.0 * sigma + 0.5 * xx;
-    yy += (ibin - 1) * xx;
-    // wbar = integrator < w * f(w) * dw >
-    zz[ibin] =
-        yy *
-        haero::exp(-1.0 * haero::square(yy - wlarge) / (2 * sigma * sigma)) /
-        (sigma * haero::sqrt(2 * pi)) * xx;
-  }
-  for(int ibin = 0; ibin < nbin; ++ibin) {
-    if(zz[ibin] > 0) ++kp, wa += zz[ibin];
-  }
-  if(kp) {
-    // wbar = integrator < w * f(w) * dw >
-    ww = wa;
-  } else {
-    ww = 0.001;
-  }
-  return ww;
-}
-KOKKOS_INLINE_FUNCTION
-void compute_subgrid_mean_updraft_velocities(const haero::ThreadTeam &team,
-                                             const MAMAci::const_view_2d w0,
-                                             const MAMAci::const_view_2d wsig,
-                                             const int icol, const int nlev,
-                                             // output
-                                             MAMAci::view_2d w2) {
-  Kokkos::parallel_for(
-      Kokkos::TeamThreadRange(team, 0u, nlev), KOKKOS_LAMBDA(int kk) {
-        w2(icol, kk) = subgrid_mean_updraft(w0(icol, kk), wsig(icol, kk));
-      });
-}
-void compute_subgrid_mean_updraft_velocities(
-    haero::ThreadTeamPolicy team_policy, const MAMAci::const_view_2d w0,
-    const MAMAci::const_view_2d wsig, const int nlev,
-    // output
-    MAMAci::view_2d w2) {
-  Kokkos::parallel_for(
-      team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
-        const int icol = team.league_rank();
-        compute_subgrid_mean_updraft_velocities(team, w0, wsig, icol, nlev,
-                                                // output
-                                                w2);
-      });
-}
-KOKKOS_INLINE_FUNCTION
 void compute_aitken_dry_diameter(const haero::ThreadTeam &team,
                                  const MAMAci::const_view_3d dgnum,
                                  const int icol, const int top_lev,
@@ -449,7 +372,7 @@ void call_function_dropmixnuc(
 
   MAMAci::view_2d qqcw_fld_work_loc[25];
   for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i)
-    qqcw_fld_work_loc[i] = qqcw_fld_work_[i];
+    qqcw_fld_work_loc[i] = qqcw_fld_work[i];
 
   MAMAci::view_3d state_q_work_loc = state_q_work;
 
@@ -1274,11 +1197,6 @@ void MAMAci::run_impl(const double dt) {
 
   Kokkos::fence();  // wait for wsig_ to be computed.
 
-  compute_subgrid_mean_updraft_velocities(team_policy, w0_, wsig_, nlev_,
-                                          // output
-                                          w2_);
-
-  std::cout << "W2_:" << w2_(0, kb) << std::endl;
   /* wo  9.784350381198358E-003
  rho:   1.07565908612486
  TKE:  2.323111869706078E-002  4.796154961104696E-002
