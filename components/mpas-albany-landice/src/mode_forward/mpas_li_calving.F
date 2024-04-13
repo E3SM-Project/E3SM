@@ -45,7 +45,8 @@ module li_calving
    !--------------------------------------------------------------------
 
    public :: li_calve_ice, li_restore_calving_front, li_apply_front_ablation_velocity, &
-             li_calculate_damage, li_finalize_damage_after_advection, li_flood_fill
+             li_calculate_damage, li_finalize_damage_after_advection, li_flood_fill, &
+             li_remove_icebergs
 
    !--------------------------------------------------------------------
    !
@@ -325,7 +326,7 @@ module li_calving
       call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
 
       ! now also remove any icebergs
-      call remove_icebergs(domain)
+      call li_remove_icebergs(domain)
 
       call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
 
@@ -4208,7 +4209,7 @@ module li_calving
    end subroutine calculate_calving_front_mask
 
 
-   subroutine remove_icebergs(domain)
+   subroutine li_remove_icebergs(domain)
       !-----------------------------------------------------------------
       ! input/output variables
       !-----------------------------------------------------------------
@@ -4362,7 +4363,7 @@ module li_calving
       call mpas_deallocate_scratch_field(growMaskField, single_block_in=.false.)
       call mpas_log_write("Iceberg-detection flood-fill complete. Removed $i iceberg cells.", intArgs=(/globalIcebergCellCount/))
       call mpas_timer_stop("iceberg detection")
-   end subroutine remove_icebergs
+   end subroutine li_remove_icebergs
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
