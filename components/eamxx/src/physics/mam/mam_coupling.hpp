@@ -252,6 +252,15 @@ const char* gas_mmr_field_name(const int gas) {
   return const_cast<const char*>(gas_species_name(gas));
 }
 
+  // This struct stores runtime options for MAM4xx-ACI
+ struct MAM4ACIRuntime {
+   MAM4ACIRuntime() = default;
+   // Runtime options for MAM4xx aerosol cloud interactions code
+   
+   Real wsubmin; //Minimum diagnostic sub-grid vertical velocity
+ };
+
+
 // This type stores multi-column views related specifically to the wet
 // atmospheric state used by EAMxx.
 struct WetAtmosphere {

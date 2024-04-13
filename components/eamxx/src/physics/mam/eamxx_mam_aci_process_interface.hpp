@@ -32,8 +32,11 @@ class MAMAci final : public scream::AtmosphereProcess {
   using const_view_2d = scream::mam_coupling::const_view_2d;
   using const_view_3d = scream::mam_coupling::const_view_3d;
 
-  // FIXME:B: Should the following variables be public? They are like that in
+  // FIXME: Should the following variables be public? They are like that in
   // micriphysics and optics codes
+
+  // ACI runtime ( or namelist) options
+  mam_coupling::MAM4ACIRuntime ACIRuntime_;
 
   // rho is air density [kg/m3]
   view_2d rho_;

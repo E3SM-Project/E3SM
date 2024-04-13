@@ -388,15 +388,26 @@ void call_function_dropmixnuc(
     const MAMAci::view_2d cloud_frac, const MAMAci::view_2d cloud_frac_prev,
     const mam_coupling::AerosolState &dry_aerosol_state, const int nlev,
 
-    // output
-    MAMAci::view_2d qqcw_fld_work_[mam4::ndrop::ncnst_tot],
-    MAMAci::view_2d ptend_q[mam4::aero_model::pcnst], MAMAci::view_3d factnum,
-    MAMAci::view_2d tendnd, MAMAci::view_2d coltend[mam4::ndrop::ncnst_tot],
+    // ## outputs ##
+    // qqcw_fld_work should be directly assigned to the cloud borne aerosols
+    MAMAci::view_2d qqcw_fld_work[mam4::ndrop::ncnst_tot],
+
+    // ptend_q are the tendencies to the interstitial aerosols
+    MAMAci::view_2d ptend_q[mam4::aero_model::pcnst],
+
+    // factnum is used by the hetrozenous freezing
+    MAMAci::view_3d factnum,
+
+    // tendnd is used by microphysics scheme (e.g. P3)
+    MAMAci::view_2d tendnd,
+
+    // Following outputs are all diagnostics
+    MAMAci::view_2d coltend[mam4::ndrop::ncnst_tot],
     MAMAci::view_2d coltend_cw[mam4::ndrop::ncnst_tot], MAMAci::view_2d qcld,
     MAMAci::view_2d ndropcol, MAMAci::view_2d ndropmix, MAMAci::view_2d nsource,
     MAMAci::view_2d wtke, MAMAci::view_3d ccn,
 
-    // work arrays
+    // ## work arrays ##
     MAMAci::view_2d raercol_cw[mam4::ndrop::pver][2],
     MAMAci::view_2d raercol[mam4::ndrop::pver][2], MAMAci::view_3d state_q_work,
     MAMAci::view_3d nact, MAMAci::view_3d mact,
@@ -471,11 +482,12 @@ void call_function_dropmixnuc(
   int nspec_amode[ntot_amode] = {};
   int lspectype_amode[maxd_aspectype][ntot_amode] = {};
   int lmassptr_amode[maxd_aspectype][ntot_amode]  = {};
-  Real specdens_amode[maxd_aspectype]             = {};
-  Real spechygro[maxd_aspectype]                  = {};
   int numptr_amode[ntot_amode]                    = {};
   int mam_idx[ntot_amode][nspec_max]              = {};
   int mam_cnst_idx[ntot_amode][nspec_max]         = {};
+
+  Real specdens_amode[maxd_aspectype] = {};
+  Real spechygro[maxd_aspectype]      = {};
   Real exp45logsig[ntot_amode] = {}, alogsig[ntot_amode] = {},
        num2vol_ratio_min_nmodes[ntot_amode] = {},
        num2vol_ratio_max_nmodes[ntot_amode] = {};
@@ -552,11 +564,9 @@ void call_function_dropmixnuc(
             team, dt, ekat::subview(T_mid, icol), ekat::subview(p_mid, icol),
             ekat::subview(p_int, icol), ekat::subview(pdel, icol),
             ekat::subview(rpdel, icol),
-            ekat::subview(
-                zm,
-                icol),  //  ! in zm[kk] - zm[kk+1], for pver zm[kk-1] - zm[kk]
-            ekat::subview(state_q_work_loc, icol), ekat::subview(nc, icol),
-            ekat::subview(kvh, icol),  // kvh[kk+1]
+            // in zm[kk] - zm[kk+1], for pver zm[kk-1] - zm[kk]
+            ekat::subview(zm, icol), ekat::subview(state_q_work_loc, icol),
+            ekat::subview(nc, icol), ekat::subview(kvh, icol),  // kvh[kk+1]
             ekat::subview(cloud_frac, icol), lspectype_amode, specdens_amode,
             spechygro, lmassptr_amode, num2vol_ratio_min_nmodes,
             num2vol_ratio_max_nmodes, numptr_amode, nspec_amode, exp45logsig,
@@ -612,23 +622,24 @@ void copy_mam4xx_array_to_scream(haero::ThreadTeamPolicy team_policy,
 
 void call_hetfrz_compute_tendencies(
     haero::ThreadTeamPolicy team_policy, mam4::Hetfrz &hetfrz_,
-    mam_coupling::AerosolState &dry_aero_,
-    mam_coupling::DryAtmosphere &dry_atm_, MAMAci::view_3d factnum_,
+    mam_coupling::DryAtmosphere &dry_atm_,
+    mam_coupling::AerosolState &dry_aero_, MAMAci::view_3d factnum_,
+    const double dt, const int nlev,
+    // output
     MAMAci::view_2d hetfrz_immersion_nucleation_tend,
     MAMAci::view_2d hetfrz_contact_nucleation_tend,
-    MAMAci::view_2d hetfrz_depostion_nucleation_tend, MAMAci::view_2d naai_hom,
-    MAMAci::view_2d naai, MAMAci::view_2d diagnostic_scratch_[], const int nlev,
-    const double dt) {
+    MAMAci::view_2d hetfrz_depostion_nucleation_tend,
+    MAMAci::view_2d diagnostic_scratch_[]) {
   mam4::Hetfrz hetfrz                          = hetfrz_;
   mam_coupling::AerosolState dry_aerosol_state = dry_aero_;
   mam_coupling::DryAtmosphere dry_atmosphere   = dry_atm_;
+
   MAMAci::view_2d diagnostic_scratch[42];
   for(int i = 0; i < 42; ++i) diagnostic_scratch[i] = diagnostic_scratch_[i];
 
   Kokkos::parallel_for(
       team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
         const int icol = team.league_rank();
-        // for (int icol=0; icol<1; icol++){
         //   Set up an atmosphere, surface, diagnostics, pronostics and
         //   tendencies class.
 
@@ -641,7 +652,6 @@ void call_hetfrz_compute_tendencies(
         const int accum_idx  = static_cast<int>(mam4::ModeIndex::Accumulation);
         const int coarse_idx = static_cast<int>(mam4::ModeIndex::Coarse);
 
-        // BALLI
         mam4::Diagnostics diags(nlev);
 
         diags.activation_fraction[accum_idx] =
@@ -712,19 +722,19 @@ void call_hetfrz_compute_tendencies(
         // values are store in diags above.
         const mam4::Tendencies tends(nlev);
         const mam4::AeroConfig aero_config;
-        const Real t = 0;  //, dt = 0;
+        const Real t = 0;
         hetfrz.compute_tendencies(aero_config, team, t, dt, haero_atm, surf,
                                   progs, diags, tends);
       });
-  //}
 }
 }  // namespace
 
-// FIXME: The following variables are namelist variables
-const Real wsubmin = 1;
-
 MAMAci::MAMAci(const ekat::Comm &comm, const ekat::ParameterList &params)
-    : AtmosphereProcess(comm, params) {}
+    : AtmosphereProcess(comm, params) {
+  // Asserts for the runtime or namelist options
+  EKAT_REQUIRE_MSG(m_params.isParameter("wsubmin"),
+                   "ERROR: wsubmin is missing from mam_optics parameter list.");
+}
 
 // ================================================================
 //  SET_GRIDS
@@ -1029,6 +1039,12 @@ void MAMAci::init_buffers(const ATMBufferManager &buffer_manager) {
 // ================================================================
 void MAMAci::initialize_impl(const RunType run_type) {
   // ------------------------------------------------------------------------
+  // ## Runtime options
+  // ------------------------------------------------------------------------
+
+  ACIRuntime_.wsubmin = m_params.get<double>("wsubmin");
+
+  // ------------------------------------------------------------------------
   // Input fields read in from IC file, namelist or other processes
   // ------------------------------------------------------------------------
   w_sec_        = get_field_in("w_variance").get_view<const Real **>();
@@ -1204,30 +1220,79 @@ void MAMAci::run_impl(const double dt) {
 
   haero::ThreadTeamPolicy team_policy(ncol_, Kokkos::AUTO);
 
+  const int kb = 66;
   compute_w0_and_rho(team_policy, dry_atm_, top_lev_, nlev_,
                      // output
                      w0_, rho_);
+  // std::cout << "T_mid:" << dry_atm_.T_mid(0, kb) << std::endl;
+  // std::cout << "p_mid:" << dry_atm_.p_mid(0, kb) << std::endl;
+  std::cout << "wsec:" << w_sec_(0, kb) << std::endl;
+  std::cout << "w0:" << w0_(0, kb) << std::endl;
+  std::cout << " rho: " << rho_(0, kb) << std::endl;
 
   compute_tke_using_w_sec(team_policy, w_sec_, nlev_,
                           // output
                           tke_);
+  const Real tke_b[73] = {
+      0.00060000000000000, 0.00060000000000000, 0.00060000000000000,
+      0.00060000000000000, 0.00060000000000000, 0.00060000000000000,
+      0.00060000000000000, 0.00060000000000000, 0.00060000000000000,
+      0.00060000000000000, 0.00060000000000000, 0.00060000000000000,
+      0.00060000000000000, 0.00060000000000000, 0.00060000000000000,
+      0.00060000000000000, 0.00060000000000000, 0.00060000000000000,
+      0.00060000000000000, 0.00060000000000000, 0.00060000000000000,
+      0.00060000000000000, 0.00060000000000000, 0.00060000000000000,
+      0.00060000000000000, 0.00060000000000000, 0.00060000000000000,
+      0.00060000000000000, 0.00060000000000000, 0.00060000000000000,
+      0.00060000000000000, 0.00060000000000000, 0.00060000000000000,
+      0.00060000000000000, 0.00060000000000000, 0.00060000000000000,
+      0.00060000000000000, 0.00060000000000000, 0.00060000000000000,
+      0.00060000000000000, 0.00060000000000000, 0.00060000000000000,
+      0.00060000000000000, 0.00060000000000000, 0.00060000000000000,
+      0.00060000000000000, 0.00060000000000000, 0.00060000000000000,
+      0.00060000000000000, 0.00060000000000000, 0.00060000000000000,
+      0.00062854116332895, 0.00067291680645447, 0.00101664413803513,
+      0.00232786652593969, 0.00569557505990274, 0.01000238209664803,
+      0.01519680083369616, 0.02170550249412443, 0.02401690416836010,
+      0.02366486534737443, 0.02153664341694223, 0.01578233182683715,
+      0.01145733753135718, 0.01010923067444657, 0.01243858801725962,
+      0.02323111869706078, 0.04796154961104696, 0.08572647178140329,
+      0.12086080769994784, 0.14941194987050846, 0.15643944255461628,
+      0.14719266313675605};
+  for(int kk = 0; kk < 73; ++kk) tke_(0, kk) = tke_b[kk];
+
+  std::cout << "TKE:" << tke_(0, kb) << std::endl;
 
   Kokkos::fence();  // wait for for tke_ to be computed.
-
+  const Real &wsubmin = ACIRuntime_.wsubmin;  // runtime variable
   compute_subgrid_scale_velocities(team_policy, tke_, wsubmin, top_lev_, nlev_,
                                    // output
                                    wsub_, wsubice_, wsig_);
+  std::cout << "WSUB:" << wsub_(0, kb) << std::endl;
+  std::cout << "WICE:" << wsubice_(0, kb) << std::endl;
+  std::cout << "WSIG:" << wsig_(0, kb) << std::endl;
+
   Kokkos::fence();  // wait for wsig_ to be computed.
 
   compute_subgrid_mean_updraft_velocities(team_policy, w0_, wsig_, nlev_,
                                           // output
                                           w2_);
 
+  std::cout << "W2_:" << w2_(0, kb) << std::endl;
+  /* wo  9.784350381198358E-003
+ rho:   1.07565908612486
+ TKE:  2.323111869706078E-002  4.796154961104696E-002
+ wsub:  0.154048334739574
+ wsubi:  0.200000000000000
+ wsig:  0.154048334739574
+ w2:  6.571878680006606E-002*/
+
   compute_aitken_dry_diameter(team_policy, dgnum_, top_lev_, nlev_,
                               // output
                               aitken_dry_dia_);
-  Kokkos::fence();  // wait for aitken_dry_dia_ to be computed.
 
+  Kokkos::fence();  // wait for aitken_dry_dia_ to be computed.
+  std::cout << "aitken_dry_dia_:" << aitken_dry_dia_(0, kb) << std::endl;
   // Compute Ice nucleation
   // NOTE: The Fortran version uses "ast" for cloud fraction which is equivalent
   // to "cldfrac_tot" in FM. It is part of the "dry_atm_" struct
@@ -1264,11 +1329,6 @@ void MAMAci::run_impl(const double dt) {
                                    rpdel_);
 
   Kokkos::fence();  // wait for rpdel_ to be computed.
-  /*call dropmixnuc(lchnk, ncol, deltatin, temperature, pmid, pint, pdel, rpdel,
-     zm, &  ! in
-     state_q, nc, kvh, wsub, lcldn, lcldo, &  ! in
-     qqcw, &  ! inout
-           ptend, nctend_mixnuc, factnum)  !out*/
 
   call_function_dropmixnuc(team_policy, dt, dry_atm_, rpdel_, kvh_, wsub_,
                            cloud_frac_, cloud_frac_prev_, dry_aero_, nlev_,
@@ -1288,12 +1348,17 @@ void MAMAci::run_impl(const double dt) {
   copy_mam4xx_array_to_scream<mam4::ndrop::ncnst_tot>(
       team_policy, coltend_cw_outp_, coltend_cw_, nlev_);
 
-  call_hetfrz_compute_tendencies(team_policy, hetfrz_, dry_aero_, dry_atm_,
-                                 factnum_, hetfrz_immersion_nucleation_tend_,
-                                 hetfrz_contact_nucleation_tend_,
-                                 hetfrz_depostion_nucleation_tend_, naai_hom_,
-                                 naai_, diagnostic_scratch_, nlev_, dt);
+  /*    call hetfrz_classnuc_cam_calc(ncol, lchnk, temperature, pmid, rho, ast,
+     &   ! in qc, nc, state_q, aer_cb(:,:,:,lchnk_zb), deltatin, factnum, & ! in
+         frzimm, frzcnt, frzdep) */
 
+  call_hetfrz_compute_tendencies(
+      team_policy, hetfrz_, dry_atm_, dry_aero_, factnum_, dt, nlev_,
+      // output
+      hetfrz_immersion_nucleation_tend_, hetfrz_contact_nucleation_tend_,
+      hetfrz_depostion_nucleation_tend_,
+      // work arrays
+      diagnostic_scratch_);
   Kokkos::fence();  // wait before returning to calling function
 }
 

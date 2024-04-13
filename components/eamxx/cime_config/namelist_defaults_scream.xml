@@ -234,6 +234,10 @@ be lost if SCREAM_HACK_XML is not enabled.
       <Ckm type="real" doc="Eddy diffusivity coefficient for momentum">0.1</Ckm>
     </shoc>
 
+    <!-- MAM4xx-ACI -->
+    <mam4_aci inherit="atm_proc_base">
+    <wsubmin type="real" doc="Minimum diagnostic sub-grid vertical velocity">0.001</qwthl2tune>
+    </mam4_aci>
     <!-- CLD fraction -->
     <cldFraction inherit="atm_proc_base"/>
 

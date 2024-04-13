@@ -10,6 +10,8 @@ time_stepping:
 
 atmosphere_processes:
   atm_procs_list: [mam4_aci]
+  mam4_aci:
+    wsubmin: 0.001
 
 grids_manager:
   Type: Mesh Free
@@ -30,11 +32,14 @@ initial_conditions:
 
   #we should get the following variables from other processes
   pbl_height : 1.0
-  dgnum: 1e-3
-  eddy_diff_heat: 1e-3
-  cldfrac_liq: 1e-3
-  cldfrac_liq_prev: 0.1
-  w_variance: 1e-3
+  p_mid: 86389.8729712384
+  omega: -0.103206160508178
+  T_mid: 279.796493114264  
+  dgnum: 1.326982247461267E-007
+  eddy_diff_heat: 2.82379273906116
+  cldfrac_liq: 0.999966505294370 
+  cldfrac_liq_prev: 0.999999418697814
+  w_variance: 1.548741246470719E-002
 
 # The parameters for I/O control
 Scorpio:
