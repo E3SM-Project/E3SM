@@ -95,7 +95,7 @@ globalSum(yakl::Array<T, dim, yakl::memHost, yakl::styleC> const arr,
    if (IndxRange == nullptr) {
       LocalSum = yakl::intrinsics::sum(arr);
    } else {
-      for (int i = (*IndxRange)[0]; i < (*IndxRange)[1]; i++) {
+      for (int i = (*IndxRange)[0]; i < (*IndxRange)[dim * 2 - 1]; i++) {
          LocalSum += arr.data()[i];
       }
    }
@@ -111,7 +111,7 @@ int globalSum(yakl::Array<R4, dim, yakl::memHost, yakl::styleC> const arr,
    if (IndxRange == nullptr) {
       LocalSum = yakl::intrinsics::sum(arr);
    } else {
-      for (int i = (*IndxRange)[0]; i < (*IndxRange)[1]; i++) {
+      for (int i = (*IndxRange)[0]; i < (*IndxRange)[dim * 2 - 1]; i++) {
          LocalSum += arr.data()[i];
       }
    }
@@ -135,7 +135,7 @@ int globalSum(yakl::Array<R8, dim, yakl::memHost, yakl::styleC> const arr,
       imax = arr.totElems();
    } else {
       imin = (*IndxRange)[0];
-      imax = (*IndxRange)[1];
+      imax = (*IndxRange)[dim * 2 - 1];
    }
 
    // Accumulate the local sum using Knuth's algorithm
@@ -172,7 +172,7 @@ globalSum(yakl::Array<T, dim, yakl::memHost, yakl::styleC> const arr,
       imax = arr.totElems();
    } else {
       imin = (*IndxRange)[0];
-      imax = (*IndxRange)[1];
+      imax = (*IndxRange)[dim * 2 - 1];
    }
    for (i = imin; i < imax; i++) {
       LocalSum += arr.data()[i] * arr2.data()[i];
@@ -193,7 +193,7 @@ int globalSum(yakl::Array<R4, dim, yakl::memHost, yakl::styleC> const arr,
       imax = arr.totElems();
    } else {
       imin = (*IndxRange)[0];
-      imax = (*IndxRange)[1];
+      imax = (*IndxRange)[dim * 2 - 1];
    }
    for (i = imin; i < imax; i++) {
       LocalSum += arr.data()[i] * arr2.data()[i];
@@ -218,7 +218,7 @@ int globalSum(yakl::Array<R8, dim, yakl::memHost, yakl::styleC> const arr,
       imax = arr.totElems();
    } else {
       imin = (*IndxRange)[0];
-      imax = (*IndxRange)[1];
+      imax = (*IndxRange)[dim * 2 - 1];
    }
 
    // Accumulate the local sum using Knuth's algorithm
@@ -308,7 +308,7 @@ int globalSum(
       imax = arrays[0].totElems();
    } else {
       imin = (*IndxRange)[0];
-      imax = (*IndxRange)[1];
+      imax = (*IndxRange)[dim * 2 - 1];
    }
    for (ifld = 0; ifld < nFlds; ifld++) {
       LocalSum[ifld] = 0;
@@ -334,7 +334,7 @@ int globalSum(
       imax = arrays[0].totElems();
    } else {
       imin = (*IndxRange)[0];
-      imax = (*IndxRange)[1];
+      imax = (*IndxRange)[dim * 2 - 1];
    }
    for (ifld = 0; ifld < nFlds; ifld++) {
       LocalSum[ifld] = 0;
@@ -360,7 +360,7 @@ int globalSum(
       imax = arrays[0].totElems();
    } else {
       imin = (*IndxRange)[0];
-      imax = (*IndxRange)[1];
+      imax = (*IndxRange)[dim * 2 - 1];
    }
    for (ifld = 0; ifld < nFlds; ifld++) {
       LocalSum[ifld] = 0.0;
@@ -392,7 +392,7 @@ int globalSum(
       imax = arrays[0].totElems();
    } else {
       imin = (*IndxRange)[0];
-      imax = (*IndxRange)[1];
+      imax = (*IndxRange)[dim * 2 - 1];
    }
    double e, t1, t2, ai;
    for (ifld = 0; ifld < nFlds; ifld++) {
@@ -435,7 +435,7 @@ int globalSum(
       imax = arrays[0].totElems();
    } else {
       imin = (*IndxRange)[0];
-      imax = (*IndxRange)[1];
+      imax = (*IndxRange)[dim * 2 - 1];
    }
    for (ifld = 0; ifld < nFlds; ifld++) {
       LocalSum[ifld] = 0;
@@ -463,7 +463,7 @@ int globalSum(
       imax = arrays[0].totElems();
    } else {
       imin = (*IndxRange)[0];
-      imax = (*IndxRange)[1];
+      imax = (*IndxRange)[dim * 2 - 1];
    }
    for (ifld = 0; ifld < nFlds; ifld++) {
       LocalSum[ifld] = 0;
@@ -491,7 +491,7 @@ int globalSum(
       imax = arrays[0].totElems();
    } else {
       imin = (*IndxRange)[0];
-      imax = (*IndxRange)[1];
+      imax = (*IndxRange)[dim * 2 - 1];
    }
    for (ifld = 0; ifld < nFlds; ifld++) {
       LocalSum[ifld] = 0.0;
@@ -525,7 +525,7 @@ int globalSum(
       imax = arrays[0].totElems();
    } else {
       imin = (*IndxRange)[0];
-      imax = (*IndxRange)[1];
+      imax = (*IndxRange)[dim * 2 - 1];
    }
    double e, t1, t2, ai;
    for (ifld = 0; ifld < nFlds; ifld++) {
@@ -549,154 +549,340 @@ int globalSum(
    return ierr;
 }
 
+//////////
+// Global minval
+//////////
+// Array
+template <class T, int dim>
+int globalMinVal(yakl::Array<T, dim, yakl::memHost, yakl::styleC> const arr,
+                 const MPI_Comm Comm, T GlobalMinVal,
+                 const std::vector<I4> *IndxRange = nullptr) {
+   int i, imin, imax, ierr;
+   if (IndxRange == nullptr) {
+      imin = 0;
+      imax = arr.totElems();
+   } else {
+      imin = (*IndxRange)[0];
+      imax = (*IndxRange)[dim * 2 - 1];
+   }
+   T LocalMinVal = arr.data()[imin];
+   for (i = imin + 1; i < imax; i++) {
+      if (LocalMinVal > arr.data()[i]) {
+         LocalMinVal = arr.data()[i];
+      }
+   }
+
+   if (typeid(T) == typeid(I4)) {
+      ierr = MPI_Allreduce(&LocalMinVal, &GlobalMinVal, 1, MPI_INT32_T, MPI_MIN,
+                           Comm);
+   } else if (typeid(T) == typeid(I8)) {
+      ierr = MPI_Allreduce(&LocalMinVal, &GlobalMinVal, 1, MPI_INT64_T, MPI_MIN,
+                           Comm);
+   } else if (typeid(T) == typeid(R4)) {
+      ierr = MPI_Allreduce(&LocalMinVal, &GlobalMinVal, 1, MPI_FLOAT, MPI_MIN,
+                           Comm);
+   } else if (typeid(T) == typeid(R8)) {
+      ierr = MPI_Allreduce(&LocalMinVal, &GlobalMinVal, 1, MPI_DOUBLE, MPI_MIN,
+                           Comm);
+   }
+   return ierr;
+}
+
+// Array with mask
+template <class T, int dim>
+int globalMinVal(yakl::Array<T, dim, yakl::memHost, yakl::styleC> const arr,
+                 yakl::Array<T, dim, yakl::memHost, yakl::styleC> const arr2,
+                 const MPI_Comm Comm, T GlobalMinVal,
+                 const std::vector<I4> *IndxRange = nullptr) {
+   int i, imin, imax, ierr;
+   if (IndxRange == nullptr) {
+      imin = 0;
+      imax = arr.totElems();
+   } else {
+      imin = (*IndxRange)[0];
+      imax = (*IndxRange)[dim * 2 - 1];
+   }
+   T tmp, LocalMinVal = arr.data()[imin] * arr2.data()[imin];
+   for (i = imin + 1; i < imax; i++) {
+      tmp = arr.data()[i] * arr2.data()[i];
+      if (LocalMinVal > tmp) {
+         LocalMinVal = tmp;
+      }
+   }
+
+   if (typeid(T) == typeid(I4)) {
+      ierr = MPI_Allreduce(&LocalMinVal, &GlobalMinVal, 1, MPI_INT32_T, MPI_MIN,
+                           Comm);
+   } else if (typeid(T) == typeid(I8)) {
+      ierr = MPI_Allreduce(&LocalMinVal, &GlobalMinVal, 1, MPI_INT64_T, MPI_MIN,
+                           Comm);
+   } else if (typeid(T) == typeid(R4)) {
+      ierr = MPI_Allreduce(&LocalMinVal, &GlobalMinVal, 1, MPI_FLOAT, MPI_MIN,
+                           Comm);
+   } else if (typeid(T) == typeid(R8)) {
+      ierr = MPI_Allreduce(&LocalMinVal, &GlobalMinVal, 1, MPI_DOUBLE, MPI_MIN,
+                           Comm);
+   }
+   return ierr;
+}
+
+// Array multi-field
+template <class T, int dim>
+int globalMinVal(
+    const std::vector<yakl::Array<T, dim, yakl::memHost, yakl::styleC>> arrays,
+    const MPI_Comm Comm, std::vector<T> GlobalMinVal,
+    const std::vector<I4> *IndxRange = nullptr) {
+   int i, imin, imax, ierr;
+   if (IndxRange == nullptr) {
+      imin = 0;
+      imax = arrays[0].totElems();
+   } else {
+      imin = (*IndxRange)[0];
+      imax = (*IndxRange)[dim * 2 - 1];
+   }
+   int ifld, nFlds = arrays.size();
+   T LocalMinVal[nFlds];
+   for (ifld = 0; ifld < nFlds; ifld++) {
+      LocalMinVal[ifld] = arrays[ifld].data()[imin];
+      for (i = imin + 1; i < imax; i++) {
+         if (LocalMinVal[ifld] > arrays[ifld].data()[i]) {
+            LocalMinVal[ifld] = arrays[ifld].data()[i];
+         }
+      }
+   }
+   if (typeid(T) == typeid(I4)) {
+      ierr = MPI_Allreduce(LocalMinVal, &GlobalMinVal[0], nFlds, MPI_INT32_T,
+                           MPI_MIN, Comm);
+   } else if (typeid(T) == typeid(I8)) {
+      ierr = MPI_Allreduce(LocalMinVal, &GlobalMinVal[0], nFlds, MPI_INT64_T,
+                           MPI_MIN, Comm);
+   } else if (typeid(T) == typeid(R4)) {
+      ierr = MPI_Allreduce(LocalMinVal, &GlobalMinVal[0], nFlds, MPI_FLOAT,
+                           MPI_MIN, Comm);
+   } else if (typeid(T) == typeid(R8)) {
+      ierr = MPI_Allreduce(LocalMinVal, &GlobalMinVal[0], nFlds, MPI_DOUBLE,
+                           MPI_MIN, Comm);
+   }
+   return ierr;
+}
+
+//////////
+// Global maxval
+//////////
+// Array
+template <class T, int dim>
+int globalMaxVal(yakl::Array<T, dim, yakl::memHost, yakl::styleC> const arr,
+                 const MPI_Comm Comm, T GlobalMaxVal,
+                 const std::vector<I4> *IndxRange = nullptr) {
+   int i, imin, imax, ierr;
+   if (IndxRange == nullptr) {
+      imin = 0;
+      imax = arr.totElems();
+   } else {
+      imin = (*IndxRange)[0];
+      imax = (*IndxRange)[dim * 2 - 1];
+   }
+   T LocalMaxVal = arr.data()[imin];
+   for (i = imin + 1; i < imax; i++) {
+      if (LocalMaxVal < arr.data()[i]) {
+         LocalMaxVal = arr.data()[i];
+      }
+   }
+
+   if (typeid(T) == typeid(I4)) {
+      ierr = MPI_Allreduce(&LocalMaxVal, &GlobalMaxVal, 1, MPI_INT32_T, MPI_MAX,
+                           Comm);
+   } else if (typeid(T) == typeid(I8)) {
+      ierr = MPI_Allreduce(&LocalMaxVal, &GlobalMaxVal, 1, MPI_INT64_T, MPI_MAX,
+                           Comm);
+   } else if (typeid(T) == typeid(R4)) {
+      ierr = MPI_Allreduce(&LocalMaxVal, &GlobalMaxVal, 1, MPI_FLOAT, MPI_MAX,
+                           Comm);
+   } else if (typeid(T) == typeid(R8)) {
+      ierr = MPI_Allreduce(&LocalMaxVal, &GlobalMaxVal, 1, MPI_DOUBLE, MPI_MAX,
+                           Comm);
+   }
+   return ierr;
+}
+
+// Array with mask
+template <class T, int dim>
+int globalMaxVal(yakl::Array<T, dim, yakl::memHost, yakl::styleC> const arr,
+                 yakl::Array<T, dim, yakl::memHost, yakl::styleC> const arr2,
+                 const MPI_Comm Comm, T GlobalMaxVal,
+                 const std::vector<I4> *IndxRange = nullptr) {
+   int i, imin, imax, ierr;
+   if (IndxRange == nullptr) {
+      imin = 0;
+      imax = arr.totElems();
+   } else {
+      imin = (*IndxRange)[0];
+      imax = (*IndxRange)[dim * 2 - 1];
+   }
+   T tmp, LocalMaxVal = arr.data()[imin] * arr2.data()[imin];
+   for (i = imin + 1; i < imax; i++) {
+      tmp = arr.data()[i] * arr2.data()[i];
+      if (LocalMaxVal < tmp) {
+         LocalMaxVal = tmp;
+      }
+   }
+
+   if (typeid(T) == typeid(I4)) {
+      ierr = MPI_Allreduce(&LocalMaxVal, &GlobalMaxVal, 1, MPI_INT32_T, MPI_MAX,
+                           Comm);
+   } else if (typeid(T) == typeid(I8)) {
+      ierr = MPI_Allreduce(&LocalMaxVal, &GlobalMaxVal, 1, MPI_INT64_T, MPI_MAX,
+                           Comm);
+   } else if (typeid(T) == typeid(R4)) {
+      ierr = MPI_Allreduce(&LocalMaxVal, &GlobalMaxVal, 1, MPI_FLOAT, MPI_MAX,
+                           Comm);
+   } else if (typeid(T) == typeid(R8)) {
+      ierr = MPI_Allreduce(&LocalMaxVal, &GlobalMaxVal, 1, MPI_DOUBLE, MPI_MAX,
+                           Comm);
+   }
+   return ierr;
+}
+
+// Array multi-field
+template <class T, int dim>
+int globalMaxVal(
+    const std::vector<yakl::Array<T, dim, yakl::memHost, yakl::styleC>> arrays,
+    const MPI_Comm Comm, std::vector<T> GlobalMaxVal,
+    const std::vector<I4> *IndxRange = nullptr) {
+   int i, imin, imax, ierr;
+   if (IndxRange == nullptr) {
+      imin = 0;
+      imax = arrays[0].totElems();
+   } else {
+      imin = (*IndxRange)[0];
+      imax = (*IndxRange)[dim * 2 - 1];
+   }
+   int ifld, nFlds = arrays.size();
+   T LocalMaxVal[nFlds];
+   for (ifld = 0; ifld < nFlds; ifld++) {
+      LocalMaxVal[ifld] = arrays[ifld].data()[imin];
+      for (i = imin + 1; i < imax; i++) {
+         if (LocalMaxVal[ifld] < arrays[ifld].data()[i]) {
+            LocalMaxVal[ifld] = arrays[ifld].data()[i];
+         }
+      }
+   }
+   if (typeid(T) == typeid(I4)) {
+      ierr = MPI_Allreduce(LocalMaxVal, &GlobalMaxVal[0], nFlds, MPI_INT32_T,
+                           MPI_MAX, Comm);
+   } else if (typeid(T) == typeid(I8)) {
+      ierr = MPI_Allreduce(LocalMaxVal, &GlobalMaxVal[0], nFlds, MPI_INT64_T,
+                           MPI_MAX, Comm);
+   } else if (typeid(T) == typeid(R4)) {
+      ierr = MPI_Allreduce(LocalMaxVal, &GlobalMaxVal[0], nFlds, MPI_FLOAT,
+                           MPI_MAX, Comm);
+   } else if (typeid(T) == typeid(R8)) {
+      ierr = MPI_Allreduce(LocalMaxVal, &GlobalMaxVal[0], nFlds, MPI_DOUBLE,
+                           MPI_MAX, Comm);
+   }
+   return ierr;
+}
+
 ///-----------------------------------------------------------------------------
 /// Get MIN-value across all MPI processors in the MachEnv
 ///-----------------------------------------------------------------------------
-int GlobalMin(const MachEnv *InEnv, const I4 *Val, I4 *Res) {
-   return MPI_Allreduce(Val, Res, 1, MPI_INT32_T, MPI_MIN, InEnv->getComm());
+int GlobalMin(const I4 *Val, I4 *Res, const MPI_Comm Comm) {
+   return MPI_Allreduce(Val, Res, 1, MPI_INT32_T, MPI_MIN, Comm);
 }
 
-int GlobalMin(const MachEnv *InEnv, const I8 *Val, I8 *Res) {
-   return MPI_Allreduce(Val, Res, 1, MPI_INT64_T, MPI_MIN, InEnv->getComm());
+int GlobalMin(const I8 *Val, I8 *Res, const MPI_Comm Comm) {
+   return MPI_Allreduce(Val, Res, 1, MPI_INT64_T, MPI_MIN, Comm);
 }
 
-int GlobalMin(const MachEnv *InEnv, const R4 *Val, R4 *Res) {
-   return MPI_Allreduce(Val, Res, 1, MPI_FLOAT, MPI_MIN, InEnv->getComm());
+int GlobalMin(const R4 *Val, R4 *Res, const MPI_Comm Comm) {
+   return MPI_Allreduce(Val, Res, 1, MPI_FLOAT, MPI_MIN, Comm);
 }
 
-int GlobalMin(const MachEnv *InEnv, const R8 *Val, R8 *Res) {
-   return MPI_Allreduce(Val, Res, 1, MPI_DOUBLE, MPI_MIN, InEnv->getComm());
-}
-
-template <int dim>
-int GlobalMin(const MachEnv *InEnv,
-              yakl::Array<I4, dim, yakl::memHost, yakl::styleC> const in,
-              yakl::Array<I4, dim, yakl::memHost, yakl::styleC> out) {
-   int i, err, sz = in.size();
-   I4 snd[sz], rcv[sz];
-   for (i = 0; i < sz; i++)
-      snd[i] = in(i);
-   err = MPI_Allreduce(&snd, &rcv, sz, MPI_INT32_T, MPI_MIN, InEnv->getComm());
-   for (i = 0; i < sz; i++)
-      out(i) = rcv[i];
-   return err;
+int GlobalMin(const R8 *Val, R8 *Res, const MPI_Comm Comm) {
+   return MPI_Allreduce(Val, Res, 1, MPI_DOUBLE, MPI_MIN, Comm);
 }
 
 template <int dim>
-int GlobalMin(const MachEnv *InEnv,
-              yakl::Array<I8, dim, yakl::memHost, yakl::styleC> const in,
-              yakl::Array<I8, dim, yakl::memHost, yakl::styleC> out) {
-   int i, err, sz = in.size();
-   I8 snd[sz], rcv[sz];
-   for (i = 0; i < sz; i++)
-      snd[i] = in(i);
-   err = MPI_Allreduce(&snd, &rcv, sz, MPI_INT64_T, MPI_MIN, InEnv->getComm());
-   for (i = 0; i < sz; i++)
-      out(i) = rcv[i];
-   return err;
+int GlobalMin(yakl::Array<I4, dim, yakl::memHost, yakl::styleC> const in,
+              yakl::Array<I4, dim, yakl::memHost, yakl::styleC> out,
+              const MPI_Comm Comm) {
+   return MPI_Allreduce(in.data(), out.data(), in.size(), MPI_INT32_T, MPI_MIN,
+                        Comm);
 }
 
 template <int dim>
-int GlobalMin(const MachEnv *InEnv,
-              yakl::Array<R4, dim, yakl::memHost, yakl::styleC> const in,
-              yakl::Array<R4, dim, yakl::memHost, yakl::styleC> out) {
-   int i, err, sz = in.size();
-   R4 snd[sz], rcv[sz];
-   for (i = 0; i < sz; i++)
-      snd[i] = in(i);
-   err = MPI_Allreduce(&snd, &rcv, sz, MPI_FLOAT, MPI_MIN, InEnv->getComm());
-   for (i = 0; i < sz; i++)
-      out(i) = rcv[i];
-   return err;
+int GlobalMin(yakl::Array<I8, dim, yakl::memHost, yakl::styleC> const in,
+              yakl::Array<I8, dim, yakl::memHost, yakl::styleC> out,
+              const MPI_Comm Comm) {
+   return MPI_Allreduce(in.data(), out.data(), in.size(), MPI_INT64_T, MPI_MIN,
+                        Comm);
 }
 
 template <int dim>
-int GlobalMin(const MachEnv *InEnv,
-              yakl::Array<R8, dim, yakl::memHost, yakl::styleC> const in,
-              yakl::Array<R8, dim, yakl::memHost, yakl::styleC> out) {
-   int i, err, sz = in.size();
-   R4 snd[sz], rcv[sz];
-   for (i = 0; i < sz; i++)
-      snd[i] = in(i);
-   err = MPI_Allreduce(&snd, &rcv, sz, MPI_DOUBLE, MPI_MIN, InEnv->getComm());
-   for (i = 0; i < sz; i++)
-      out(i) = rcv[i];
-   return err;
+int GlobalMin(yakl::Array<R4, dim, yakl::memHost, yakl::styleC> const in,
+              yakl::Array<R4, dim, yakl::memHost, yakl::styleC> out,
+              const MPI_Comm Comm) {
+   return MPI_Allreduce(in.data(), out.data(), in.size(), MPI_FLOAT, MPI_MIN,
+                        Comm);
+}
+
+template <int dim>
+int GlobalMin(yakl::Array<R8, dim, yakl::memHost, yakl::styleC> const in,
+              yakl::Array<R8, dim, yakl::memHost, yakl::styleC> out,
+              const MPI_Comm Comm) {
+   return MPI_Allreduce(in.data(), out.data(), in.size(), MPI_DOUBLE, MPI_MIN,
+                        Comm);
 }
 
 ///-----------------------------------------------------------------------------
 /// Get MAX-value across all MPI processors in the MachEnv
 ///-----------------------------------------------------------------------------
-int GlobalMax(const MachEnv *InEnv, const I4 *Val, I4 *Res) {
-   return MPI_Allreduce(Val, Res, 1, MPI_INT32_T, MPI_MAX, InEnv->getComm());
+int GlobalMax(const I4 *Val, I4 *Res, const MPI_Comm Comm) {
+   return MPI_Allreduce(Val, Res, 1, MPI_INT32_T, MPI_MAX, Comm);
 }
 
-int GlobalMax(const MachEnv *InEnv, const I8 *Val, I8 *Res) {
-   return MPI_Allreduce(Val, Res, 1, MPI_INT64_T, MPI_MAX, InEnv->getComm());
+int GlobalMax(const I8 *Val, I8 *Res, const MPI_Comm Comm) {
+   return MPI_Allreduce(Val, Res, 1, MPI_INT64_T, MPI_MAX, Comm);
 }
 
-int GlobalMax(const MachEnv *InEnv, const R4 *Val, R4 *Res) {
-   return MPI_Allreduce(Val, Res, 1, MPI_FLOAT, MPI_MAX, InEnv->getComm());
+int GlobalMax(const R4 *Val, R4 *Res, const MPI_Comm Comm) {
+   return MPI_Allreduce(Val, Res, 1, MPI_FLOAT, MPI_MAX, Comm);
 }
 
-int GlobalMax(const MachEnv *InEnv, const R8 *Val, R8 *Res) {
-   return MPI_Allreduce(Val, Res, 1, MPI_DOUBLE, MPI_MAX, InEnv->getComm());
-}
-
-template <int dim>
-int GlobalMax(const MachEnv *InEnv,
-              yakl::Array<I4, dim, yakl::memHost, yakl::styleC> const in,
-              yakl::Array<I4, dim, yakl::memHost, yakl::styleC> out) {
-   int i, err, sz = in.size();
-   I4 snd[sz], rcv[sz];
-   for (i = 0; i < sz; i++)
-      snd[i] = in(i);
-   err = MPI_Allreduce(&snd, &rcv, sz, MPI_INT32_T, MPI_MAX, InEnv->getComm());
-   for (i = 0; i < sz; i++)
-      out(i) = rcv[i];
-   return err;
+int GlobalMax(const R8 *Val, R8 *Res, const MPI_Comm Comm) {
+   return MPI_Allreduce(Val, Res, 1, MPI_DOUBLE, MPI_MAX, Comm);
 }
 
 template <int dim>
-int GlobalMax(const MachEnv *InEnv,
-              yakl::Array<I8, dim, yakl::memHost, yakl::styleC> const in,
-              yakl::Array<I8, dim, yakl::memHost, yakl::styleC> out) {
-   int i, err, sz = in.size();
-   I8 snd[sz], rcv[sz];
-   for (i = 0; i < sz; i++)
-      snd[i] = in(i);
-   err = MPI_Allreduce(&snd, &rcv, sz, MPI_INT64_T, MPI_MAX, InEnv->getComm());
-   for (i = 0; i < sz; i++)
-      out(i) = rcv[i];
-   return err;
+int GlobalMax(yakl::Array<I4, dim, yakl::memHost, yakl::styleC> const in,
+              yakl::Array<I4, dim, yakl::memHost, yakl::styleC> out,
+              const MPI_Comm Comm) {
+   return MPI_Allreduce(in.data(), out.data(), in.size(), MPI_INT32_T, MPI_MAX,
+                        Comm);
 }
 
 template <int dim>
-int GlobalMax(const MachEnv *InEnv,
-              yakl::Array<R4, dim, yakl::memHost, yakl::styleC> const in,
-              yakl::Array<R4, dim, yakl::memHost, yakl::styleC> out) {
-   int i, err, sz = in.size();
-   R4 snd[sz], rcv[sz];
-   for (i = 0; i < sz; i++)
-      snd[i] = in(i);
-   err = MPI_Allreduce(&snd, &rcv, sz, MPI_FLOAT, MPI_MAX, InEnv->getComm());
-   for (i = 0; i < sz; i++)
-      out(i) = rcv[i];
-   return err;
+int GlobalMax(yakl::Array<I8, dim, yakl::memHost, yakl::styleC> const in,
+              yakl::Array<I8, dim, yakl::memHost, yakl::styleC> out,
+              const MPI_Comm Comm) {
+   return MPI_Allreduce(in.data(), out.data(), in.size(), MPI_INT64_T, MPI_MAX,
+                        Comm);
 }
 
 template <int dim>
-int GlobalMax(const MachEnv *InEnv,
-              yakl::Array<R8, dim, yakl::memHost, yakl::styleC> const in,
-              yakl::Array<R8, dim, yakl::memHost, yakl::styleC> out) {
-   int i, err, sz = in.size();
-   R8 snd[sz], rcv[sz];
-   for (i = 0; i < sz; i++)
-      snd[i] = in(i);
-   err = MPI_Allreduce(&snd, &rcv, sz, MPI_DOUBLE, MPI_MAX, InEnv->getComm());
-   for (i = 0; i < sz; i++)
-      out(i) = rcv[i];
-   return err;
+int GlobalMax(yakl::Array<R4, dim, yakl::memHost, yakl::styleC> const in,
+              yakl::Array<R4, dim, yakl::memHost, yakl::styleC> out,
+              const MPI_Comm Comm) {
+   return MPI_Allreduce(in.data(), out.data(), in.size(), MPI_FLOAT, MPI_MAX,
+                        Comm);
+}
+
+template <int dim>
+int GlobalMax(yakl::Array<R8, dim, yakl::memHost, yakl::styleC> const in,
+              yakl::Array<R8, dim, yakl::memHost, yakl::styleC> out,
+              const MPI_Comm Comm) {
+   return MPI_Allreduce(in.data(), out.data(), in.size(), MPI_DOUBLE, MPI_MAX,
+                        Comm);
 }
 
 } // end namespace OMEGA

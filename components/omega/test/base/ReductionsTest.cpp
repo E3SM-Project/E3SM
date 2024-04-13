@@ -223,27 +223,27 @@ int main(int argc, char *argv[]) {
    //==========================================================================
    // test MIN, MAX of scalars
    MyInt4 = MyTask;
-   err    = OMEGA::GlobalMin(DefEnv, &MyInt4, &MyResI4);
+   err    = OMEGA::GlobalMin(&MyInt4, &MyResI4, Comm);
    res    = "FAIL";
    if (MyResI4 == 0)
       res = "PASS";
    printf("Global min I4:    %s (exp,act=0,%d)\n", res, MyResI4);
 
    MyInt8 = MyTask;
-   err    = OMEGA::GlobalMax(DefEnv, &MyInt8, &MyResI8);
+   err    = OMEGA::GlobalMax(&MyInt8, &MyResI8, Comm);
    res    = "FAIL";
    if (MyResI8 == MySize - 1)
       res = "PASS";
    printf("Global max I4:    %s (exp,act=%d,%d)\n", res, MySize - 1, MyResI8);
 
    OMEGA::R8 MyR8Tmp = MyTask + MyR8;
-   err               = OMEGA::GlobalMin(DefEnv, &MyR8Tmp, &MyResR8);
+   err               = OMEGA::GlobalMin(&MyR8Tmp, &MyResR8, Comm);
    res               = "FAIL";
    if (MyResR8 == MyR8)
       res = "PASS";
    printf("Global min R8:    %s (exp,act=%.13lf,%.13lf)\n", res, MyR8, MyResR8);
 
-   err = OMEGA::GlobalMax(DefEnv, &MyR8Tmp, &MyResR8);
+   err = OMEGA::GlobalMax(&MyR8Tmp, &MyResR8, Comm);
    res = "FAIL";
    if (MyResR8 == (MySize - 1 + MyR8))
       res = "PASS";
@@ -264,7 +264,7 @@ int main(int argc, char *argv[]) {
          }
       }
    }
-   err = OMEGA::GlobalMin(DefEnv, HostA1DI4Work, HostA1DI4Min);
+   err = OMEGA::GlobalMin(HostA1DI4Work, HostA1DI4Min, Comm);
    res = "PASS";
    for (i = 0; i < NumCells * MySize; i++) {
       // printf("ReductionsTest::HostA1DI4Min(%2d)=%2d\n",i,HostA1DI4Min(i));
@@ -275,7 +275,7 @@ int main(int argc, char *argv[]) {
    HostA1DI4Min.deallocate();
 
    OMEGA::ArrayHost1DI4 HostA1DI4Max("HostA1DI4Max", NumCells * MySize);
-   err = OMEGA::GlobalMax(DefEnv, HostA1DI4Work, HostA1DI4Max);
+   err = OMEGA::GlobalMax(HostA1DI4Work, HostA1DI4Max, Comm);
    res = "PASS";
    for (i = 0; i < MySize; i++) {
       for (j = 0; j < NumCells; j++) {
