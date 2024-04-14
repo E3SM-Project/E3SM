@@ -463,15 +463,10 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
 
   // wetdep
   constexpr int pcnst = mam4::aero_model::pcnst;
-  // FIXME: qqcw_sav_ should be part of work_
-  // we need to add columns
-  qqcw_sav_ =Kokkos::View<Real * [mam4::aero_model::maxd_aspectype + 2][pcnst]>("qqcw_sav", mam4::nlev);
-
-
   const int work_len = mam4::wetdep::get_aero_model_wetdep_work_len();
   work_ = view_2d("work", ncol_, work_len);
-  aerdepwetis_ = view_2d("aerdepwetis", ncol_, mam4::aero_model::pcnst);
-  aerdepwetcw_ = view_2d("aerdepwetcw", ncol_, mam4::aero_model::pcnst);
+  aerdepwetis_ = view_2d("aerdepwetis", ncol_, pcnst);
+  aerdepwetcw_ = view_2d("aerdepwetcw", ncol_, pcnst);
 }
 
 // =========================================================================================
@@ -515,7 +510,6 @@ void MAMWetscav::run_impl(const double dt) {
   // We cannot use member of this class inside of the parallel_for
   const mam_coupling::DryAtmosphere &dry_atm = dry_atm_;
   const auto &dry_aero                       = dry_aero_;
-  const auto &qqcw_sav = qqcw_sav_;
   const auto &work = work_;
   const auto & dry_aero_tends= dry_aero_tends_;
 
@@ -624,9 +618,8 @@ void MAMWetscav::run_impl(const double dt) {
                                     wet_diameter_icol,dry_diameter_icol,
                                     qaerwat_icol, wetdens_icol,
                                     // output
-                                     aerdepwetis_icol, aerdepwetcw_icol,
-                                    // FIXME remove qqcw_sav
-                                    qqcw_sav, work_icol);
+                                    aerdepwetis_icol, aerdepwetcw_icol,
+                                    work_icol);
       });  // icol parallel_for loop
 
   /*

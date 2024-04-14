@@ -178,8 +178,6 @@ class MAMWetscav : public scream::AtmosphereProcess {
   mam_coupling::DryAtmosphere dry_atm_;
   // wet dep
   view_2d work_;
-  Kokkos::View<Real * [mam4::aero_model::maxd_aspectype + 2][mam4::aero_model::pcnst]>
-        qqcw_sav_;
   // aerosol states
   mam_coupling::AerosolState  wet_aero_, dry_aero_, dry_aero_tends_;
 
