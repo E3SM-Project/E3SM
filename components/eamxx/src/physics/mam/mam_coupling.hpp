@@ -618,7 +618,7 @@ mam4::Tendencies aerosols_tendencies_for_column(const AerosolState& dry_aero,
   auto tends = interstitial_aerosols_tendencies_for_column(dry_aero, column_index);
   for (int m = 0; m < num_aero_modes(); ++m) {
     EKAT_KERNEL_ASSERT_MSG(dry_aero.cld_aero_nmr[m].data(),
-      "dry_cld_aero_nmr not defined for aerosol state!");
+      "Tendencies : dry_cld_aero_nmr not defined for aerosol state!");
     tends.n_mode_c[m] = ekat::subview(dry_aero.cld_aero_nmr[m], column_index);
     for (int a = 0; a < num_aero_species(); ++a) {
       if (dry_aero.cld_aero_mmr[m][a].data()) {

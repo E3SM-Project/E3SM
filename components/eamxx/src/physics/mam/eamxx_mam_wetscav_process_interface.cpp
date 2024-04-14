@@ -256,26 +256,23 @@ void MAMWetscav::set_grids(
 
   // aerosol-related gases: mass mixing ratios
   for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
-    std::string ptend_gas_name(mam_coupling::gas_mmr_field_name(g));
-    ptend_gas_name += "ptend_";
-    add_field<Updated>(ptend_gas_name, scalar3d_layout_mid, dqdt_unit,
+    std::string ptend_gas_name = "ptend_" + std::string(mam_coupling::gas_mmr_field_name(g));
+    add_field<Computed>(ptend_gas_name, scalar3d_layout_mid, dqdt_unit,
                        grid_name);
   }
 
   // tendencies for interstitial aerosols
   for(int imode = 0; imode < mam_coupling::num_aero_modes(); ++imode) {
-    std::string ptend_num(mam_coupling::int_aero_nmr_field_name(imode));
-    ptend_num += "ptend_";
-    add_field<Updated>(ptend_num, scalar3d_layout_mid, n_unit,
+    std::string ptend_num = "ptend_" +std::string(mam_coupling::int_aero_nmr_field_name(imode));
+    add_field<Computed>(ptend_num, scalar3d_layout_mid, n_unit,
                        grid_name);
     for(int ispec = 0; ispec < mam_coupling::num_aero_species(); ++ispec) {
       // (interstitial) aerosol tracers of interest: mass (q) mixing ratios
       const char *int_mmr_field_name =
           mam_coupling::int_aero_mmr_field_name(imode, ispec);
       if(strlen(int_mmr_field_name) > 0) {
-        std::string ptend_int_mmr_field_name (int_mmr_field_name);
-        ptend_int_mmr_field_name += "ptend_";
-        add_field<Updated>(ptend_int_mmr_field_name, scalar3d_layout_mid, dqdt_unit,
+        std::string ptend_int_mmr_field_name =  "ptend_" + std::string(int_mmr_field_name);
+        add_field<Computed>(ptend_int_mmr_field_name, scalar3d_layout_mid, dqdt_unit,
                            grid_name);
       }
     }
@@ -428,15 +425,15 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
 
   // ---- set aerosol-related gas tendencies  data
   for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
-    std::string ptend_mmr_field_name(mam_coupling::gas_mmr_field_name(g));
-    ptend_mmr_field_name += "ptend_";
+    std::string ptend_mmr_field_name = "ptend_" +
+    std::string(mam_coupling::gas_mmr_field_name(g));
     dry_aero_tends_.gas_mmr[g] = get_field_out(ptend_mmr_field_name).get_view<Real **>();
   }
 
     // set  aerosol state tendencies data (interstitial aerosols only)
   for(int imode = 0; imode < mam_coupling::num_aero_modes(); ++imode) {
-    std::string ptend_int_nmr_field_name(mam_coupling::int_aero_nmr_field_name(imode));
-    ptend_int_nmr_field_name +="ptend_";
+    std::string ptend_int_nmr_field_name ="ptend_"+
+    std::string(mam_coupling::int_aero_nmr_field_name(imode));
     dry_aero_tends_.int_aero_nmr[imode] =
         get_field_out(ptend_int_nmr_field_name).get_view<Real **>();
 
@@ -444,10 +441,9 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
       const char *int_mmr_field_name =
           mam_coupling::int_aero_mmr_field_name(imode, ispec);
       if(strlen(int_mmr_field_name) > 0) {
-        std::string ptend_int_nmr_field_name(int_mmr_field_name);
-        ptend_int_nmr_field_name +="ptend_";
+        std::string ptend_int_aero_mmr_field_name = "ptend_" + std::string(int_mmr_field_name);
         dry_aero_tends_.int_aero_mmr[imode][ispec] =
-            get_field_out(ptend_int_nmr_field_name).get_view<Real **>();
+            get_field_out(ptend_int_aero_mmr_field_name).get_view<Real **>();
       }
     }
   }
@@ -511,7 +507,7 @@ void MAMWetscav::run_impl(const double dt) {
   const mam_coupling::DryAtmosphere &dry_atm = dry_atm_;
   const auto &dry_aero                       = dry_aero_;
   const auto &work = work_;
-  const auto & dry_aero_tends= dry_aero_tends_;
+  const auto &dry_aero_tends= dry_aero_tends_;
 
   // inputs/outputs
   auto dlf = get_field_out("dlf").get_view<Real**>();
@@ -565,8 +561,8 @@ void MAMWetscav::run_impl(const double dt) {
         mam4::Prognostics progs =
             mam_coupling::aerosols_for_column(dry_aero, icol);
         // fetch column-specific subviews into aerosol tendencies
-        mam4::Tendencies tends = mam_coupling::aerosols_tendencies_for_column(dry_aero_tends, icol);
-
+        // Note: we are only updating interstitial aerosols.
+        mam4::Tendencies tends = mam_coupling::interstitial_aerosols_tendencies_for_column(dry_aero_tends, icol);
         // shallow_convective_cloud_fraction
         auto cldn_prev_step_icol = ekat::subview(cldn_prev_step, icol);
         ///shallow_convective_precipitation_production
