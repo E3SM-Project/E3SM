@@ -109,11 +109,18 @@ contains
                 base_sol(i,k,l) = base_sol(i,k,l)*exp(-delt*loss(i,k,m)/base_sol(i,k,l)) + delt*(prod(i,k,m)+ind_prd(i,k,m))
              end do
           end do
-       ! apply brc -> pom decay to entire atmosphere
+       ! apply brc -> pom decay to troposphere
+       ! apply ext emission to whole atmosphere in case of large fires
        elseif (trim(solsym(l)) == 'brc_a4' .or. trim(solsym(l)) == 'brc_a1' .or. trim(solsym(l)) == 'brc_a3') then
                ! V2-like explicit equation 
           do i = 1,ncol
-             do k = 1,pver
+             do k = 1,ltrop(i)
+             ! above tropopause, allow BrC emission, but do not consider BrC decay for now because of low radical concentration.
+                chem_loss(i,k,l) = 0.0_r8
+                chem_prod(i,k,l) = ind_prd(i,k,m) 
+                base_sol(i,k,l) = base_sol(i,k,l) + delt * ind_prd(i,k,m)  
+             end do               
+             do k = ltrop(i)+1,pver ! brown carbon oxidation to form pom  only in troposphere
                 chem_loss(i,k,l) = -loss(i,k,m)
                 chem_prod(i,k,l) = prod(i,k,m)+ind_prd(i,k,m)
                 base_sol(i,k,l) = base_sol(i,k,l) + delt * (prod(i,k,m) + ind_prd(i,k,m) - loss(i,k,m))
@@ -122,16 +129,45 @@ contains
        elseif (trim(solsym(l)) == 'pom_a4' .or. trim(solsym(l)) == 'pom_a1' .or. trim(solsym(l)) == 'pom_a3') then
                ! V2-like explicit equation 
           do i = 1,ncol
-             do k = 1,pver
+             do k = 1,ltrop(i)
+             ! above tropopause, emission only
+                chem_loss(i,k,l) = 0.0_r8
+                chem_prod(i,k,l) = ind_prd(i,k,m)
+                base_sol(i,k,l) = base_sol(i,k,l) + delt * ind_prd(i,k,m)
+             end do
+             do k = ltrop(i)+1,pver ! brown carbon oxidation to form pom only in troposphere 
                 chem_loss(i,k,l) = -loss(i,k,m)
                 chem_prod(i,k,l) = prod(i,k,m)+ind_prd(i,k,m)
                 base_sol(i,k,l) = base_sol(i,k,l) + delt * (prod(i,k,m) + ind_prd(i,k,m) - loss(i,k,m))
              end do
           end do
+       ! no reaction for now but in case emission in stratosphere 
        elseif (trim(solsym(l)) == 'bc_a4' .or. trim(solsym(l)) == 'bc_a1' .or. trim(solsym(l)) == 'bc_a3') then
                ! V2-like explicit equation
           do i = 1,ncol
-             do k = 1,pver
+             do k = 1,ltrop(i)
+             ! above tropopause, emission only
+                chem_loss(i,k,l) = 0.0_r8
+                chem_prod(i,k,l) = ind_prd(i,k,m)
+                base_sol(i,k,l) = base_sol(i,k,l) + delt * ind_prd(i,k,m)
+             end do 
+             do k = ltrop(i)+1,pver
+                chem_loss(i,k,l) = -loss(i,k,m)
+                chem_prod(i,k,l) = prod(i,k,m)+ind_prd(i,k,m)
+                base_sol(i,k,l) = base_sol(i,k,l) + delt * (prod(i,k,m) + ind_prd(i,k,m) - loss(i,k,m))
+             end do
+          end do
+       ! no reaction for now but in case emission in stratosphere
+       elseif (trim(solsym(l)) == 'num_a4' .or. trim(solsym(l)) == 'num_a1' .or. trim(solsym(l)) == 'num_a3') then
+               ! V2-like explicit equation
+          do i = 1,ncol
+             do k = 1,ltrop(i)
+             ! above tropopause, emission only
+                chem_loss(i,k,l) = 0.0_r8
+                chem_prod(i,k,l) = ind_prd(i,k,m)
+                base_sol(i,k,l) = base_sol(i,k,l) + delt * ind_prd(i,k,m)
+             end do
+             do k = ltrop(i)+1,pver
                 chem_loss(i,k,l) = -loss(i,k,m)
                 chem_prod(i,k,l) = prod(i,k,m)+ind_prd(i,k,m)
                 base_sol(i,k,l) = base_sol(i,k,l) + delt * (prod(i,k,m) + ind_prd(i,k,m) - loss(i,k,m))
@@ -148,6 +184,11 @@ contains
           end do
        else
           do i = 1,ncol
+             do k = 1,ltrop(i) ! for emissions in the stratosphere
+                chem_prod(i,k,l) = ind_prd(i,k,m)
+                chem_loss(i,k,l) = 0.0_r8
+                base_sol(i,k,l) = base_sol(i,k,l) + delt*ind_prd(i,k,m)
+             end do
              do k = ltrop(i)+1,pver
                 chem_prod(i,k,l) = prod(i,k,m)+ind_prd(i,k,m)
                 chem_loss(i,k,l) = (base_sol(i,k,l)*exp(-delt*loss(i,k,m)/base_sol(i,k,l)) - base_sol(i,k,l))/delt
