@@ -159,7 +159,7 @@ contains
        end if
 
        do iCell = 1, nCells
-         if(modifyLandIcePressureMask(iCell) == 0) then
+         if(sshAdjustmentMask(iCell) == 0) then
            ssh(iCell) = 0.0_RKIND
            landIcePressure(iCell) = 0.0_RKIND
 

@@ -1022,7 +1022,7 @@ contains
           landIceFraction(:) = 0.0_RKIND
           landIceDraft(:) = 0.0_RKIND
           landIcePressure(:) = 0.0_RKIND
-          modifyLandIcePressureMask(:) = 0
+          sshAdjustmentMask(:) = 0
           do iCell = 1, nCells
              ! nothing to do here if the cell is land
              if (maxLevelCell(iCell) <= 0) cycle
@@ -1038,7 +1038,7 @@ contains
              landIceDraft(iCell) = landIceDraftObserved(iCell)
              landIcePressure(iCell) = landIcePressureObserved(iCell)
              if (landIcePressure(iCell) > 0.0_RKIND) then
-                modifyLandIcePressureMask(iCell) = 1
+                sshAdjustmentMask(iCell) = 1
              end if
           end do
 
