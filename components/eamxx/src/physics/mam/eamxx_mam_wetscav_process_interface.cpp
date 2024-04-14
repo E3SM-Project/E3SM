@@ -43,6 +43,9 @@ void MAMWetscav::set_grids(
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
   auto q_unit = kg / kg;
   q_unit.set_string("kg/kg");
+  // FIXME: units of tendencies; check units
+  auto dqdt_unit = kg / kg / s;
+  dqdt_unit.set_string("kg/kg/t");
 
   auto n_unit = 1 / kg;  // units of number mixing ratios of tracers
   n_unit.set_string("#/kg");
@@ -52,7 +55,7 @@ void MAMWetscav::set_grids(
 
   ncol_ = m_grid->get_num_local_dofs();       // Number of columns on this rank
   nlev_ = m_grid->get_num_vertical_levels();  // Number of levels per column
-
+  const int nmodes = mam4::AeroConfig::num_modes();;
   // Define the different field layouts that will be used for this process
   using namespace ShortFieldTagsNames;
 
@@ -65,6 +68,9 @@ void MAMWetscav::set_grids(
   const FieldLayout scalar2d_layout_mid{{COL}, {ncol_}};
 
   FieldLayout scalar3d_layout_int{{COL, ILEV}, {ncol_, nlev_ + 1}};
+
+  // Layout for 3D for nmodes
+  const FieldLayout scalar3d_layout_nmodes_mid{{COL, NMODES, LEV}, {ncol_, nmodes, nlev_}};
 
   // -------------------------------------------------------------------------------------------------------------------------
   // These variables are "required" or pure inputs for the process
@@ -180,13 +186,14 @@ void MAMWetscav::set_grids(
   // -- input/ouputs from PBUF for updating particle size and water uptake by
   // particles
   static constexpr auto m3 = m2 * m;
-  add_field<Updated>("dgncur_a", scalar3d_layout_mid, m,
-                     grid_name);  // aerosol particle diameter [m]
-  add_field<Updated>("wetdens", scalar3d_layout_mid, kg / m3,
+  add_field<Updated>("dgncur_a", scalar3d_layout_nmodes_mid, m,
+                     grid_name);  // aerosol dry particle diameter [m]
+  add_field<Updated>("wetdens", scalar3d_layout_nmodes_mid, kg / m3,
                      grid_name);  // wet aerosol density [kg/m3]
-  add_field<Updated>("qaerwat", scalar3d_layout_mid, kg / kg,
+  add_field<Updated>("qaerwat", scalar3d_layout_nmodes_mid, kg / kg,
                      grid_name);  // aerosol water [kg/kg]
-  add_field<Updated>("dgnumwet", scalar3d_layout_mid, m,
+  //
+  add_field<Updated>("dgnumwet", scalar3d_layout_nmodes_mid, m,
                      grid_name);  // wet aerosol diameter [m]
   add_field<Updated>("fracis", scalar3d_layout_mid, nondim,
                      grid_name);  // fraction of transported species that are
@@ -247,6 +254,33 @@ void MAMWetscav::set_grids(
                        grid_name, "tracers");
   }
 
+  // aerosol-related gases: mass mixing ratios
+  for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
+    std::string ptend_gas_name(mam_coupling::gas_mmr_field_name(g));
+    ptend_gas_name += "ptend_";
+    add_field<Updated>(ptend_gas_name, scalar3d_layout_mid, dqdt_unit,
+                       grid_name);
+  }
+
+  // tendencies for interstitial aerosols
+  for(int imode = 0; imode < mam_coupling::num_aero_modes(); ++imode) {
+    std::string ptend_num(mam_coupling::int_aero_nmr_field_name(imode));
+    ptend_num += "ptend_";
+    add_field<Updated>(ptend_num, scalar3d_layout_mid, n_unit,
+                       grid_name);
+    for(int ispec = 0; ispec < mam_coupling::num_aero_species(); ++ispec) {
+      // (interstitial) aerosol tracers of interest: mass (q) mixing ratios
+      const char *int_mmr_field_name =
+          mam_coupling::int_aero_mmr_field_name(imode, ispec);
+      if(strlen(int_mmr_field_name) > 0) {
+        std::string ptend_int_mmr_field_name (int_mmr_field_name);
+        ptend_int_mmr_field_name += "ptend_";
+        add_field<Updated>(ptend_int_mmr_field_name, scalar3d_layout_mid, dqdt_unit,
+                           grid_name);
+      }
+    }
+  }
+
   add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim,
                       grid_name);  // Cloud fraction
   add_field<Required>("pbl_height", scalar2d_layout_mid, m,
@@ -271,11 +305,11 @@ void MAMWetscav::set_grids(
                       grid_name);  //
   add_field<Updated>("sh_ccf", scalar3d_layout_mid, n_unit,
                       grid_name);  //
-  //
-  add_field<Computed>("aerdepwetis", scalar3d_layout_mid, n_unit,
-                      grid_name);  //
-  add_field<Computed>("aerdepwetcw", scalar3d_layout_mid, n_unit,
-                      grid_name);  //
+  // FIXME: do we need to write aerdepwetis and  aerdepwetcw?
+  // add_field<Computed>("aerdepwetis", scalar3d_layout_mid, n_unit,
+  //                     grid_name);  //
+  // add_field<Computed>("aerdepwetcw", scalar3d_layout_mid, n_unit,
+  //                     grid_name);  //
 }
 
 // =========================================================================================
@@ -349,7 +383,7 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
   dry_atm_.cldfrac = get_field_in("cldfrac_tot").get_view<const Real **>();
   dry_atm_.pblh    = get_field_in("pbl_height").get_view<const Real *>();
   dry_atm_.phis    = get_field_in("phis").get_view<const Real *>();
-  dry_atm_.z_surf  = 0.0;  // MUST FIXME: for now
+  dry_atm_.z_surf  = 0.0;
   // ---- set wet/dry aerosol-related gas state data
   for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
     const char *mmr_field_name = mam_coupling::gas_mmr_field_name(g);
@@ -391,6 +425,33 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
       }
     }
   }
+
+  // ---- set aerosol-related gas tendencies  data
+  for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
+    std::string ptend_mmr_field_name(mam_coupling::gas_mmr_field_name(g));
+    ptend_mmr_field_name += "ptend_";
+    dry_aero_tends_.gas_mmr[g] = get_field_out(ptend_mmr_field_name).get_view<Real **>();
+  }
+
+    // set  aerosol state tendencies data (interstitial aerosols only)
+  for(int imode = 0; imode < mam_coupling::num_aero_modes(); ++imode) {
+    std::string ptend_int_nmr_field_name(mam_coupling::int_aero_nmr_field_name(imode));
+    ptend_int_nmr_field_name +="ptend_";
+    dry_aero_tends_.int_aero_nmr[imode] =
+        get_field_out(ptend_int_nmr_field_name).get_view<Real **>();
+
+    for(int ispec = 0; ispec < mam_coupling::num_aero_species(); ++ispec) {
+      const char *int_mmr_field_name =
+          mam_coupling::int_aero_mmr_field_name(imode, ispec);
+      if(strlen(int_mmr_field_name) > 0) {
+        std::string ptend_int_nmr_field_name(int_mmr_field_name);
+        ptend_int_nmr_field_name +="ptend_";
+        dry_aero_tends_.int_aero_mmr[imode][ispec] =
+            get_field_out(ptend_int_nmr_field_name).get_view<Real **>();
+      }
+    }
+  }
+
   // set up our preprocess/postprocess functors
   // Here we initialize (not compute) objects in preprocess struct using the
   // objects in the argument list
@@ -409,6 +470,8 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
 
   const int work_len = mam4::wetdep::get_aero_model_wetdep_work_len();
   work_ = view_2d("work", ncol_, work_len);
+  aerdepwetis_ = view_2d("aerdepwetis", ncol_, mam4::aero_model::pcnst);
+  aerdepwetcw_ = view_2d("aerdepwetcw", ncol_, mam4::aero_model::pcnst);
 }
 
 // =========================================================================================
@@ -454,6 +517,7 @@ void MAMWetscav::run_impl(const double dt) {
   const auto &dry_aero                       = dry_aero_;
   const auto &qqcw_sav = qqcw_sav_;
   const auto &work = work_;
+  const auto & dry_aero_tends= dry_aero_tends_;
 
   // inputs/outputs
   auto dlf = get_field_out("dlf").get_view<Real**>();
@@ -485,8 +549,13 @@ void MAMWetscav::run_impl(const double dt) {
                  .get_view<Real **>(); // ??
 
   // outputs
-  const auto aerdepwetis = get_field_out("aerdepwetis").get_view<Real **>();
-  const auto aerdepwetcw = get_field_out("aerdepwetcw").get_view<Real **>();
+  const auto aerdepwetis = aerdepwetis_;//get_field_out("aerdepwetis").get_view<Real **>();
+  const auto aerdepwetcw = aerdepwetcw_;// get_field_out("aerdepwetcw").get_view<Real **>();
+
+  const auto wet_geometric_mean_diameter_i = get_field_out("dgnumwet").get_view<Real ***>();
+  const auto dry_geometric_mean_diameter_i = get_field_out("dgncur_a").get_view<Real ***>();
+  const auto qaerwat = get_field_out("qaerwat").get_view<Real ***>();
+  const auto wetdens = get_field_out("wetdens").get_view<Real ***>();
 
   const auto policy =
       ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_);
@@ -501,8 +570,8 @@ void MAMWetscav::run_impl(const double dt) {
         // fetch column-specific subviews into aerosol prognostics
         mam4::Prognostics progs =
             mam_coupling::aerosols_for_column(dry_aero, icol);
-        // FIXME: we need to create tendecies...
-        mam4::Tendencies tends{};
+        // fetch column-specific subviews into aerosol tendencies
+        mam4::Tendencies tends = mam_coupling::aerosols_tendencies_for_column(dry_aero_tends, icol);
 
         // shallow_convective_cloud_fraction
         auto cldn_prev_step_icol = ekat::subview(cldn_prev_step, icol);
@@ -530,9 +599,9 @@ void MAMWetscav::run_impl(const double dt) {
         auto cldst_icol = ekat::subview(cldst, icol);
 
         // deep_convective_cloud_fraction;
-        auto dp_ccf_icol = ekat::subview(dp_ccf, icol);
-        // shallow_convective_cloud_fraction;
-        auto sh_ccf_icol = ekat::subview(sh_ccf, icol);
+        // auto dp_ccf_icol = ekat::subview(dp_ccf, icol);
+        // // shallow_convective_cloud_fraction;
+        // auto sh_ccf_icol = ekat::subview(sh_ccf, icol);
         //  total_convective_detrainment;
         auto dlf_icol = ekat::subview(dlf, icol);
         //aerosol_wet_deposition_interstitial;
@@ -541,18 +610,23 @@ void MAMWetscav::run_impl(const double dt) {
         auto aerdepwetcw_icol  = ekat::subview(aerdepwetcw, icol);\
         auto work_icol = ekat::subview(work, icol);
         // auto qqcw_sav_icol = ekat::subview(qqcw_sav,icol);
-#if 1
+        auto wet_diameter_icol = ekat::subview(wet_geometric_mean_diameter_i,icol);
+        auto dry_diameter_icol = ekat::subview(dry_geometric_mean_diameter_i,icol);
+        auto qaerwat_icol = ekat::subview(qaerwat,icol);
+        auto wetdens_icol = ekat::subview(wetdens,icol);
+
         mam4::wetdep::aero_model_wetdep(team, atm, progs, tends, dt,
                                     // inputs
-                                    cldn_prev_step_icol, rprdsh_icol, rprddp_icol, evapcdp_icol,
-                                    evapcsh_icol, dp_frac_icol, sh_frac_icol, dp_ccf_icol, sh_ccf_icol,
-                                    icwmrdp_col, icwmrsh_icol, evapr_icol, cldst_icol,
+                                    cldst_icol, cldn_prev_step_icol, rprdsh_icol, rprddp_icol, evapcdp_icol,
+                                    evapcsh_icol, dp_frac_icol, sh_frac_icol,
+                                    icwmrdp_col, icwmrsh_icol, evapr_icol,
                                     dlf_icol,
+                                    wet_diameter_icol,dry_diameter_icol,
+                                    qaerwat_icol, wetdens_icol,
                                     // output
                                      aerdepwetis_icol, aerdepwetcw_icol,
                                     // FIXME remove qqcw_sav
                                     qqcw_sav, work_icol);
-#endif
       });  // icol parallel_for loop
 
   /*

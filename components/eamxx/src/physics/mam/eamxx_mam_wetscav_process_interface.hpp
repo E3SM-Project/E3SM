@@ -181,9 +181,10 @@ class MAMWetscav : public scream::AtmosphereProcess {
   Kokkos::View<Real * [mam4::aero_model::maxd_aspectype + 2][mam4::aero_model::pcnst]>
         qqcw_sav_;
   // aerosol states
-  mam_coupling::AerosolState  wet_aero_, dry_aero_;
+  mam_coupling::AerosolState  wet_aero_, dry_aero_, dry_aero_tends_;
 
   mam_coupling::Buffer buffer_;
+  mam_coupling::view_2d aerdepwetis_, aerdepwetcw_;
 
   std::shared_ptr<const AbstractGrid> m_grid;
 };  // class MAMWetscav
