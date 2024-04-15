@@ -513,7 +513,6 @@ subroutine wrt_cube(ncube,terr_cube,sgh30_cube,raw_latlon_data_file,output_file)
   end do
   
   WRITE(*,*) "Create NetCDF file for output: ", TRIM(output_file)
-  !ncstat = nf_create (TRIM(output_file), NF_64BIT_OFFSET,nc_grid_id)
   ncstat = nf_create (TRIM(output_file), NF_64BIT_DATA,nc_grid_id)
   call handle_err(ncstat)
   
