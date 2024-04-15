@@ -5,6 +5,9 @@ nav:
   - 'Developing Docs': 'https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/3924787306/Developing+Documentation'
   - Components: '*include ./components/*/mkdocs.yml'
 
+repo_name: E3SM-Project/E3SM
+repo_url: https://github.com/E3SM-Project/E3SM
+
 theme:
   name: material
   palette:
@@ -19,11 +22,22 @@ theme:
       icon: material/weather-night
       name: Switch to light mode
   features:
-    - navigation.indices
+    - navigation.indexes
     - navigation.instant
+    - navigation.instant.prefetch
     - navigation.sections
+    - navigation.path
+    - navigation.tracking
     - navigation.top
-#    - navigation.tabs
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.code.select
+    - content.code.copy
+    - content.action.edit
+    - content.action.view
+    - content.tooltips
+
 
 markdown_extensions:
   - footnotes
@@ -39,6 +53,7 @@ plugins:
   - monorepo
   - bibtex:
       bib_file: components/elm/docs/refs.bib
+  - search
 
 extra_javascript:
   - javascript/mathjax.js
