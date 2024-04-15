@@ -3,16 +3,6 @@ name: gh
 on:
   pull_request:
     branches: [ master ]
-    paths:
-      # first, yes to these
-      - 'cime_config/**'
-      - 'components/eam/**'
-      - 'components/elm/**'
-      # second, no to these
-      - '!components/eam/docs/**'
-      - '!components/eam/mkdocs.yml'
-      - '!components/elm/docs/**'
-      - '!components/elm/mkdocs.yml'
 
   workflow_dispatch:
 
