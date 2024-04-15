@@ -17,18 +17,20 @@ MAMSrfOnlineEmiss::MAMSrfOnlineEmiss(const ekat::Comm &comm,
    */
 }
 
-// ================================================================
-//  SET_GRIDS
-// ================================================================
+// =========================================================================================
 void MAMSrfOnlineEmiss::set_grids(
     const std::shared_ptr<const GridsManager> grids_manager) {
   using namespace ekat::units;
 
-  // set grid for all the inputs and outputs
-  // use physics grid
-  grid_ = grids_manager->get_grid("Physics");
+  // The units of mixing ratio Q are technically non-dimensional.
+  // Nevertheless, for output reasons, we like to see 'kg/kg'.
+  auto q_unit = kg / kg;
+  q_unit.set_string("kg/kg");
 
-  // Name of the grid
+  auto n_unit = 1 / kg;  // units of number mixing ratios of tracers
+  n_unit.set_string("#/kg");
+
+  grid_                 = grids_manager->get_grid("Physics");
   const auto &grid_name = grid_->name();
 
   ncol_ = grid_->get_num_local_dofs();       // Number of columns on this rank
@@ -37,119 +39,93 @@ void MAMSrfOnlineEmiss::set_grids(
   // Define the different field layouts that will be used for this process
   using namespace ShortFieldTagsNames;
 
-  // Layout for 3D (2d horiz X 1d vertical) variables
-  // mid points
-  FieldLayout scalar3d_mid{{COL, LEV}, {ncol_, nlev_}};
+  // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level and
   // interfaces
-  FieldLayout scalar3d_int{{COL, ILEV}, {ncol_, nlev_ + 1}};
-  // vector layout
-  FieldLayout vector3d_mid = grid_->get_3d_vector_layout(true,2);
+  const FieldLayout scalar3d_layout_mid{{COL, LEV}, {ncol_, nlev_}};
+  const FieldLayout scalar3d_layout_int{{COL, ILEV}, {ncol_, nlev_ + 1}};
 
-  // layout for 2D (1d horiz X 1d vertical) variable
-  FieldLayout scalar2d_col{{COL}, {ncol_}};
-
-  using namespace ekat::units;
-  auto q_unit = kg / kg;  // units of mass mixing ratios of tracers
-  auto n_unit = 1 / kg;   // units of number mixing ratios of tracers
-
-  auto nondim = ekat::units::Units::nondimensional();
+  // Layout for 2D (2d horiz) variable
+  const FieldLayout scalar2d_layout{{COL}, {ncol_}};
 
   // -------------------------------------------------------------------------------------------------------------------------
   // These variables are "required" or pure inputs for the process
   // -------------------------------------------------------------------------------------------------------------------------
-  // atmospheric quantities
-  // specific humidity [kg/kg]
-  add_field<Required>("qv", scalar3d_mid, q_unit, grid_name, "tracers");
+  add_field<Required>("T_mid", scalar3d_layout_mid, K,
+                      grid_name);  // temperature [K]
+  add_field<Required>("p_mid", scalar3d_layout_mid, Pa,
+                      grid_name);  // pressure at mid points in [Pa]
+  add_field<Required>("p_int", scalar3d_layout_int, Pa,
+                      grid_name);  // total pressure
+  add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa,
+                      grid_name);  // pseudo density in [Pa]
+  add_field<Required>("qv", scalar3d_layout_mid, q_unit, grid_name,
+                      "tracers");  // specific humidity
+  add_field<Required>("qc", scalar3d_layout_mid, q_unit, grid_name,
+                      "tracers");  // liquid cloud water [kg/kg] wet
+  add_field<Required>("qi", scalar3d_layout_mid, q_unit, grid_name,
+                      "tracers");  // ice cloud water [kg/kg] wet
+  add_field<Updated>("nc", scalar3d_layout_mid, n_unit, grid_name,
+                     "tracers");  // cloud liquid wet number mixing ratio
+  add_field<Required>("ni", scalar3d_layout_mid, n_unit, grid_name,
+                      "tracers");  // ice number mixing ratio
+  add_field<Required>(
+      "omega", scalar3d_layout_mid, Pa / s,
+      grid_name);  // Vertical pressure velocity [Pa/s] at midpoints
 
-  // cloud liquid mass mixing ratio [kg/kg]
-  add_field<Required>("qc", scalar3d_mid, q_unit, grid_name, "tracers");
+  // (interstitial) aerosol tracers of interest: mass (q) and number (n) mixing
+  // ratios
+  for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+    const char *int_nmr_field_name = mam_coupling::int_aero_nmr_field_name(m);
 
-  // cloud ice mass mixing ratio [kg/kg]
-  add_field<Required>("qi", scalar3d_mid, q_unit, grid_name, "tracers");
-
-  // cloud liquid number mixing ratio [1/kg]
-  add_field<Required>("nc", scalar3d_mid, n_unit, grid_name, "tracers");
-
-  // cloud ice number mixing ratio [1/kg]
-  add_field<Required>("ni", scalar3d_mid, n_unit, grid_name, "tracers");
-
-  // Temperature[K] at midpoints
-  add_field<Required>("T_mid", scalar3d_mid, K, grid_name);
-
-  // Vertical pressure velocity [Pa/s] at midpoints
-  add_field<Required>("omega", scalar3d_mid, Pa / s, grid_name);
-
-  // Total pressure [Pa] at midpoints
-  add_field<Required>("p_mid", scalar3d_mid, Pa, grid_name);
-
-  // Total pressure [Pa] at interfaces
-  add_field<Required>("p_int", scalar3d_int, Pa, grid_name);
-
-  // Layer thickness(pdel) [Pa] at midpoints
-  add_field<Required>("pseudo_density", scalar3d_mid, Pa, grid_name);
-
-  // Planetary boundary layer height
-  add_field<Required>("pbl_height", scalar2d_col, m, grid_name);
-
-  // Horizontal winds (U and V wind components) [m/s]
-  add_field<Required>("horiz_winds", vector3d_mid, m/s, grid_name);
-
-  // ========================================================================
-  // Output from this whole process
-  // ========================================================================
-
-  // interstitial and cloudborne aerosol tracers of interest: mass (q) and
-  // number (n) mixing ratios
-  for(int mode = 0; mode < mam_coupling::num_aero_modes(); ++mode) {
-    // interstitial aerosol tracers of interest: number (n) mixing ratios
-    const char *int_nmr_field_name =
-        mam_coupling::int_aero_nmr_field_name(mode);
-    add_field<Updated>(int_nmr_field_name, scalar3d_mid, n_unit,
+    add_field<Updated>(int_nmr_field_name, scalar3d_layout_mid, n_unit,
                        grid_name, "tracers");
-
-    // cloudborne aerosol tracers of interest: number (n) mixing ratios
-    // NOTE: DO NOT add cld borne aerosols to the "tracer" group as these are
-    // NOT advected
-    const char *cld_nmr_field_name =
-        mam_coupling::cld_aero_nmr_field_name(mode);
-    add_field<Updated>(cld_nmr_field_name, scalar3d_mid, n_unit,
-                       grid_name);
-
     for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
-      // (interstitial) aerosol tracers of interest: mass (q) mixing ratios
       const char *int_mmr_field_name =
-          mam_coupling::int_aero_mmr_field_name(mode, a);
+          mam_coupling::int_aero_mmr_field_name(m, a);
+
       if(strlen(int_mmr_field_name) > 0) {
-        add_field<Updated>(int_mmr_field_name, scalar3d_mid, q_unit,
+        add_field<Updated>(int_mmr_field_name, scalar3d_layout_mid, q_unit,
                            grid_name, "tracers");
       }
-      // (cloudborne) aerosol tracers of interest: mass (q) mixing ratios
-      // NOTE: DO NOT add cld borne aerosols to the "tracer" group as these are
-      // NOT advected
+    }
+  }
+  // (cloud) aerosol tracers of interest: mass (q) and number (n) mixing ratios
+  for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+    const char *cld_nmr_field_name = mam_coupling::cld_aero_nmr_field_name(m);
+    // printf("%s \n", int_nmr_field_name);
+
+    add_field<Updated>(cld_nmr_field_name, scalar3d_layout_mid, n_unit,
+                       grid_name);
+    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
       const char *cld_mmr_field_name =
-          mam_coupling::cld_aero_mmr_field_name(mode, a);
+          mam_coupling::cld_aero_mmr_field_name(m, a);
+
       if(strlen(cld_mmr_field_name) > 0) {
-        add_field<Updated>(cld_mmr_field_name, scalar3d_mid, q_unit,
+        add_field<Updated>(cld_mmr_field_name, scalar3d_layout_mid, q_unit,
                            grid_name);
       }
-    }  // end for loop num species
-  }    // end for loop for num modes
+    }
+  }
 
+  // aerosol-related gases: mass mixing ratios
   for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
     const char *gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
-    add_field<Updated>(gas_mmr_field_name, scalar3d_mid, q_unit,
+    add_field<Updated>(gas_mmr_field_name, scalar3d_layout_mid, q_unit,
                        grid_name, "tracers");
-  }  // end for loop num gases
+  }
+}
 
-}  // function set_grids ends
-
-// ================================================================
-//  INIT_BUFFERS
-// ================================================================
+// =========================================================================================
+// ON HOST, returns the number of bytes of device memory needed by the above
+// Buffer type given the number of columns and vertical levels
 size_t MAMSrfOnlineEmiss::requested_buffer_size_in_bytes() const {
   return mam_coupling::buffer_size(ncol_, nlev_);
 }
 
+// =========================================================================================
+// ON HOST, initializeѕ the Buffer type with sufficient memory to store
+// intermediate (dry) quantities on the given number of columns with the given
+// number of vertical levels. Returns the number of bytes allocated.
 void MAMSrfOnlineEmiss::init_buffers(const ATMBufferManager &buffer_manager) {
   EKAT_REQUIRE_MSG(
       buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(),
@@ -162,31 +138,26 @@ void MAMSrfOnlineEmiss::init_buffers(const ATMBufferManager &buffer_manager) {
       "Error! Used memory != requested memory for MAMSrfOnlineEmiss.");
 }
 
-// ================================================================
-//  INITIALIZE_IMPL
-// ================================================================
-
+// =========================================================================================
 void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   // Gather runtime options
   //(e.g.) runtime_options.lambda_low    = m_params.get<double>("lambda_low");
 
-  wet_atm_.qv = get_field_in("qv").get_view<const Real **>();
-  wet_atm_.qc = get_field_in("qc").get_view<const Real **>();
-  wet_atm_.nc = get_field_in("nc").get_view<const Real **>();
-  wet_atm_.qi = get_field_in("qi").get_view<const Real **>();
-  wet_atm_.ni = get_field_in("ni").get_view<const Real **>();
+  wet_atm_.qv    = get_field_in("qv").get_view<const Real **>();
+  wet_atm_.qc    = get_field_in("qc").get_view<const Real **>();
+  wet_atm_.nc    = get_field_in("nc").get_view<const Real **>();
+  wet_atm_.qi    = get_field_in("qi").get_view<const Real **>();
+  wet_atm_.ni    = get_field_in("ni").get_view<const Real **>();
+  wet_atm_.omega = get_field_in("omega").get_view<const Real **>();
 
   dry_atm_.T_mid = get_field_in("T_mid").get_view<const Real **>();
   dry_atm_.p_mid = get_field_in("p_mid").get_view<const Real **>();
   dry_atm_.p_del = get_field_in("pseudo_density").get_view<const Real **>();
-  dry_atm_.omega = get_field_in("omega").get_view<const Real **>();
-
-  // store fields converted to dry mmr from wet mmr in dry_atm_
-  dry_atm_.qv = buffer_.qv_dry;
-  dry_atm_.qc = buffer_.qc_dry;
-  dry_atm_.nc = buffer_.nc_dry;
-  dry_atm_.qi = buffer_.qi_dry;
-  dry_atm_.ni = buffer_.ni_dry;
+  dry_atm_.qv    = buffer_.qv_dry;
+  dry_atm_.qc    = buffer_.qc_dry;
+  dry_atm_.nc    = buffer_.nc_dry;
+  dry_atm_.qi    = buffer_.qi_dry;
+  dry_atm_.ni    = buffer_.ni_dry;
 
   // interstitial and cloudborne aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
@@ -237,6 +208,7 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
 
 // =========================================================================================
 void MAMSrfOnlineEmiss::run_impl(const double dt) {
+
   const auto scan_policy = ekat::ExeSpaceUtils<
       KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
 
@@ -246,16 +218,15 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
 
   /* Rough notes:
 
-  Here we should implement or port the chem_emissions subroutine in
-  chemistry.F90. Basically call two subroutines, aero_model_emissions and
-  set_srf_emissions.
-
+  Here we should implement or port the chem_emissions subroutine in chemistry.F90. Basically call two 
+  subroutines, aero_model_emissions and set_srf_emissions.
+  
   Here is the code:
 
     ! initialize chemistry constituent surface fluxes to zero
     do m = 2,pcnst
        n = map2chm(m)
-       if (n>0) cam_in%cflx(:,m) = 0._r8
+       if (n>0) cam_in%cflx(:,m) = 0._r8 
     enddo
 
     ! aerosol emissions ...
@@ -264,9 +235,9 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
 
     ! prescribed emissions from file ...
 
-    !-----------------------------------------------------------------------
+    !-----------------------------------------------------------------------      
     !        ... Set surface emissions
-    !-----------------------------------------------------------------------
+    !-----------------------------------------------------------------------      
     call set_srf_emissions( lchnk, ncol, sflx(:,:) )
 
     do m = 1,pcnst
@@ -277,7 +248,7 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
        endif
     enddo
 
-
+  
   */
 
   std::cout << "End of surface emissions run" << std::endl;
