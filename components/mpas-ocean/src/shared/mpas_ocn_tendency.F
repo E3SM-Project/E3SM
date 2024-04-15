@@ -46,6 +46,7 @@ module ocn_tendency
    use ocn_tracer_surface_restoring
    use ocn_tracer_interior_restoring
    use ocn_tracer_exponential_decay
+   use ocn_tracer_freshwater
    use ocn_tracer_ideal_age
    use ocn_tracer_TTD
    use ocn_tracer_surface_flux_to_tend
@@ -804,6 +805,7 @@ contains
          ! Get tracers from pool, determine number of tracers in group
          call mpas_pool_get_array(tracersPool, groupName, &
                                   tracerGroup, timeLevel)
+         !call mpas_pool_print_summary(tracersPool, MPAS_POOL_FIELD, .true.)
          nTracersGroup = size(tracerGroup, dim=1)
 
          ! Get Tendency array
@@ -811,12 +813,18 @@ contains
          call mpas_pool_get_array(tracersTendPool, &
                                   modifiedGroupName, &
                                   tracerGroupTend)
+         call mpas_pool_print_summary(tracersTendPool, MPAS_POOL_FIELD, .true.)
 
          ! Get surface flux array
          modifiedGroupName = groupName // "SurfaceFlux"
          call mpas_pool_get_array(tracersSurfaceFluxPool, &
                                   modifiedGroupName, &
                                   tracerGroupSurfaceFlux)
+         if (associated(tracerGroupSurfaceFlux)) then
+           call mpas_log_write(modifiedGroupName // " is associated")
+         else
+           call mpas_log_write(modifiedGroupName // " is not associated")
+         endif
 
          ! Get Array of total surface temp/salt flux 
          ! (includes thickness tendencies)
@@ -842,6 +850,12 @@ contains
                                       tracerGroupSurfaceFluxSubglacialRunoff)
          end if
 
+         if (associated(tracerGroupSurfaceFluxRunoff)) then
+           call mpas_log_write(modifiedGroupName // " is associated")
+         else
+           call mpas_log_write(modifiedGroupName // " is not associated")
+         endif
+         call mpas_pool_print_summary(tracersSurfaceFluxPool, MPAS_POOL_FIELD, .true.)
          ! Get surface flux removed array to keep track of how much
          ! flux is ignored
          modifiedGroupName = groupName // "SurfaceFluxRemoved"
@@ -1043,6 +1057,16 @@ contains
          ! fluxes are added into tracerGroupSurfaceFlux
          call ocn_surface_land_ice_fluxes_tracers(meshPool, groupName, &
                              forcingPool, tracerGroupSurfaceFlux, err)
+
+         !
+         ! compute freshwaterTracers surface fluxes, there are no interior sources/sinks
+         !
+         if ( groupName == 'freshwaterTracers' ) then
+
+            call ocn_tracer_freshwater_surface_flux_compute(tracersPool, forcingPool,  &
+                                        nTracersGroup, nCellsOwned, &
+                                        tracerGroupSurfaceFlux, tracerGroupSurfaceFluxRunoff, err)
+         endif ! freshwater
 
          !
          ! other additions to tracerGroupSurfaceFlux should be added here
