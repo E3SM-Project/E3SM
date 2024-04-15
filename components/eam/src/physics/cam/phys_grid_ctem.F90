@@ -236,6 +236,8 @@ end subroutine phys_grid_ctem_init
 !-----------------------------------------------------------------------------
 !-----------------------------------------------------------------------------
 subroutine phys_grid_ctem_diags(phys_state)
+   use physconst,     only: rair, cpair
+
    type(physics_state), intent(in) :: phys_state(begchunk:endchunk)
 
    character(len=*), parameter :: prefix = 'phys_grid_ctem_diags: '
@@ -275,7 +277,6 @@ subroutine phys_grid_ctem_diags(phys_state)
    real(r8) :: thza(nzalat,pver)
 
    real(r8) :: mbarv ! molecular weight of dry air (g/mol)
-   real(r8) :: sheight(pcols,pver) ! pressure scale height (m)
 
    if (.not.do_calc()) return
 
@@ -287,14 +288,11 @@ subroutine phys_grid_ctem_diags(phys_state)
 
       ncol = phys_state(lchnk)%ncol
 
-      ! scale height
-      sheight(:ncol,:) = phys_state(lchnk)%t(:ncol,:) * rgas / ( mbarv * grav ) ! meters
-
       ! potential temperature
-      theta(:ncol,:,lchnk) = phys_state(lchnk)%t(:ncol,:) * phys_state(lchnk)%exner(:ncol,:)
+      theta(:ncol,:,lchnk) = phys_state(lchnk)%t(:ncol,:) * ( 1000e2 / phys_state(lchnk)%pmid(:ncol,:) )**(rair/cpair)
 
-      ! vertical velocity
-      w(:ncol,:,lchnk) = -sheight(:ncol,:) *  phys_state(lchnk)%omega(:ncol,:) / phys_state(lchnk)%pmid(:ncol,:)
+      ! vertical pressure velocity
+      w(:ncol,:,lchnk) = phys_state(lchnk)%omega(:ncol,:)
 
       u(:ncol,:,lchnk) =  phys_state(lchnk)%u(:ncol,:)
       v(:ncol,:,lchnk) =  phys_state(lchnk)%v(:ncol,:)
