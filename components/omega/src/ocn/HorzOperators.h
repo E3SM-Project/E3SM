@@ -10,7 +10,8 @@ class DivergenceOnCell {
  public:
    DivergenceOnCell(HorzMesh const *mesh);
 
-   YAKL_INLINE Real operator()(int ICell, const Array1DReal &VecEdge) const {
+   KOKKOS_INLINE_FUNCTION Real operator()(int ICell,
+                                          const Array1DReal &VecEdge) const {
       Real DivCell = 0;
       for (int J = 0; J < NEdgesOnCell(ICell); ++J) {
          const int JEdge = EdgesOnCell(ICell, J);
@@ -33,7 +34,8 @@ class GradientOnEdge {
  public:
    GradientOnEdge(HorzMesh const *mesh);
 
-   YAKL_INLINE Real operator()(int IEdge, const Array1DReal &ScalarCell) const {
+   KOKKOS_INLINE_FUNCTION Real operator()(int IEdge,
+                                          const Array1DReal &ScalarCell) const {
       const auto JCell0    = CellsOnEdge(IEdge, 0);
       const auto JCell1    = CellsOnEdge(IEdge, 1);
       const Real InvDcEdge = 1. / DcEdge(IEdge);
@@ -51,7 +53,8 @@ class CurlOnVertex {
  public:
    CurlOnVertex(HorzMesh const *mesh);
 
-   YAKL_INLINE Real operator()(int IVertex, const Array1DReal &VecEdge) const {
+   KOKKOS_INLINE_FUNCTION Real operator()(int IVertex,
+                                          const Array1DReal &VecEdge) const {
       Real CurlVertex = 0;
       for (int J = 0; J < VertexDegree; ++J) {
          const int JEdge = EdgesOnVertex(IVertex, J);
@@ -75,7 +78,8 @@ class TangentialReconOnEdge {
  public:
    TangentialReconOnEdge(HorzMesh const *mesh);
 
-   YAKL_INLINE Real operator()(int IEdge, const Array1DReal &VecEdge) const {
+   KOKKOS_INLINE_FUNCTION Real operator()(int IEdge,
+                                          const Array1DReal &VecEdge) const {
       Real ReconEdge = 0;
       for (int J = 0; J < NEdgesOnEdge(IEdge); ++J) {
          const int JEdge = EdgesOnEdge(IEdge, J);

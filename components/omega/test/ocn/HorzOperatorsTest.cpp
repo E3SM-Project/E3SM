@@ -6,16 +6,40 @@
 #include "IO.h"
 #include "Logging.h"
 #include "MachEnv.h"
+#include "OmegaKokkos.h"
 #include "mpi.h"
 
 #include <cmath>
 
 using namespace OMEGA;
-using yakl::c::parallel_for;
 
 // check if two real numbers are equal with a given relative tolerance
 bool isApprox(Real X, Real Y, Real RTol) {
    return std::abs(X - Y) <= RTol * std::max(std::abs(X), std::abs(Y));
+}
+
+// temporary replacement for YAKL intrinsics
+Real maxVal(const Array1DReal &Arr) {
+   Real MaxVal;
+
+   parallelReduce(
+       {Arr.extent_int(0)},
+       KOKKOS_LAMBDA(int I, Real &Accum) {
+          Accum = Kokkos::max(Arr(I), Accum);
+       },
+       Kokkos::Max<Real>(MaxVal));
+
+   return MaxVal;
+}
+
+Real sum(const Array1DReal &Arr) {
+   Real Sum;
+
+   parallelReduce(
+       {Arr.extent_int(0)},
+       KOKKOS_LAMBDA(int I, Real &Accum) { Accum += Arr(I); }, Sum);
+
+   return Sum;
 }
 
 #ifdef HORZOPERATORS_TEST_PLANE
@@ -40,34 +64,34 @@ struct TestSetup {
    Real ExpectedReconErrorLInf = 0.00450897496974901352;
    Real ExpectedReconErrorL2   = 0.00417367308684470691;
 
-   YAKL_INLINE Real exactScalar(Real X, Real Y) const {
+   KOKKOS_INLINE_FUNCTION Real exactScalar(Real X, Real Y) const {
       return std::sin(2 * Pi * X / Lx) * std::sin(2 * Pi * Y / Ly);
    }
 
-   YAKL_INLINE Real exactGradScalarX(Real X, Real Y) const {
+   KOKKOS_INLINE_FUNCTION Real exactGradScalarX(Real X, Real Y) const {
       return 2 * Pi / Lx * std::cos(2 * Pi * X / Lx) *
              std::sin(2 * Pi * Y / Ly);
    }
 
-   YAKL_INLINE Real exactGradScalarY(Real X, Real Y) const {
+   KOKKOS_INLINE_FUNCTION Real exactGradScalarY(Real X, Real Y) const {
       return 2 * Pi / Ly * std::sin(2 * Pi * X / Lx) *
              std::cos(2 * Pi * Y / Ly);
    }
 
-   YAKL_INLINE Real exactVecX(Real X, Real Y) const {
+   KOKKOS_INLINE_FUNCTION Real exactVecX(Real X, Real Y) const {
       return std::sin(2 * Pi * X / Lx) * std::cos(2 * Pi * Y / Ly);
    }
 
-   YAKL_INLINE Real exactVecY(Real X, Real Y) const {
+   KOKKOS_INLINE_FUNCTION Real exactVecY(Real X, Real Y) const {
       return std::cos(2 * Pi * X / Lx) * std::sin(2 * Pi * Y / Ly);
    }
 
-   YAKL_INLINE Real exactDivVec(Real X, Real Y) const {
+   KOKKOS_INLINE_FUNCTION Real exactDivVec(Real X, Real Y) const {
       return 2 * Pi * (1. / Lx + 1. / Ly) * std::cos(2 * Pi * X / Lx) *
              std::cos(2 * Pi * Y / Ly);
    }
 
-   YAKL_INLINE Real exactCurlVec(Real X, Real Y) const {
+   KOKKOS_INLINE_FUNCTION Real exactCurlVec(Real X, Real Y) const {
       return 2 * Pi * (-1. / Lx + 1. / Ly) * std::sin(2 * Pi * X / Lx) *
              std::sin(2 * Pi * Y / Ly);
    }
@@ -92,33 +116,33 @@ struct TestSetup {
    Real ExpectedReconErrorLInf = 0.0207855998352246864;
    Real ExpectedReconErrorL2   = 0.00687944381487612909;
 
-   YAKL_INLINE Real exactScalar(Real Lon, Real Lat) const {
+   KOKKOS_INLINE_FUNCTION Real exactScalar(Real Lon, Real Lat) const {
       return Radius * std::cos(Lon) * std::pow(std::cos(Lat), 4);
    }
 
-   YAKL_INLINE Real exactGradScalarX(Real Lon, Real Lat) const {
+   KOKKOS_INLINE_FUNCTION Real exactGradScalarX(Real Lon, Real Lat) const {
       return -std::sin(Lon) * std::pow(std::cos(Lat), 3);
    }
 
-   YAKL_INLINE Real exactGradScalarY(Real Lon, Real Lat) const {
+   KOKKOS_INLINE_FUNCTION Real exactGradScalarY(Real Lon, Real Lat) const {
       return -4 * std::cos(Lon) * std::pow(std::cos(Lat), 3) * std::sin(Lat);
    }
 
-   YAKL_INLINE Real exactVecX(Real Lon, Real Lat) const {
+   KOKKOS_INLINE_FUNCTION Real exactVecX(Real Lon, Real Lat) const {
       return -Radius * std::pow(std::sin(Lon), 2) * std::pow(std::cos(Lat), 3);
    }
 
-   YAKL_INLINE Real exactVecY(Real Lon, Real Lat) const {
+   KOKKOS_INLINE_FUNCTION Real exactVecY(Real Lon, Real Lat) const {
       return -4 * Radius * std::sin(Lon) * std::cos(Lon) *
              std::pow(std::cos(Lat), 3) * std::sin(Lat);
    }
 
-   YAKL_INLINE Real exactDivVec(Real Lon, Real Lat) const {
+   KOKKOS_INLINE_FUNCTION Real exactDivVec(Real Lon, Real Lat) const {
       return std::sin(Lon) * std::cos(Lon) * std::pow(std::cos(Lat), 2) *
              (20 * std::pow(std::sin(Lat), 2) - 6);
    }
 
-   YAKL_INLINE Real exactCurlVec(Real Lon, Real Lat) const {
+   KOKKOS_INLINE_FUNCTION Real exactCurlVec(Real Lon, Real Lat) const {
       return -4 * std::pow(std::cos(Lon), 2) * std::pow(std::cos(Lat), 2) *
              std::sin(Lat);
    }
@@ -143,25 +167,29 @@ struct TestSetup {
    Real ExpectedReconErrorLInf = 0.0253216806569417016;
    Real ExpectedReconErrorL2   = 0.00425161856853827763;
 
-   YAKL_INLINE Real exactScalar(Real Lon, Real Lat) const {
+   KOKKOS_INLINE_FUNCTION Real exactScalar(Real Lon, Real Lat) const {
       return -Radius * std::pow(std::sin(Lat), 2);
    }
 
-   YAKL_INLINE Real exactGradScalarX(Real Lon, Real Lat) const { return 0; }
+   KOKKOS_INLINE_FUNCTION Real exactGradScalarX(Real Lon, Real Lat) const {
+      return 0;
+   }
 
-   YAKL_INLINE Real exactGradScalarY(Real Lon, Real Lat) const {
+   KOKKOS_INLINE_FUNCTION Real exactGradScalarY(Real Lon, Real Lat) const {
       return -2 * std::sin(Lat) * std::cos(Lat);
    }
 
-   YAKL_INLINE Real exactVecX(Real Lon, Real Lat) const {
+   KOKKOS_INLINE_FUNCTION Real exactVecX(Real Lon, Real Lat) const {
       return std::cos(Lat);
    }
 
-   YAKL_INLINE Real exactVecY(Real Lon, Real Lat) const { return 0; }
+   KOKKOS_INLINE_FUNCTION Real exactVecY(Real Lon, Real Lat) const { return 0; }
 
-   YAKL_INLINE Real exactDivVec(Real Lon, Real Lat) const { return 0; }
+   KOKKOS_INLINE_FUNCTION Real exactDivVec(Real Lon, Real Lat) const {
+      return 0;
+   }
 
-   YAKL_INLINE Real exactCurlVec(Real Lon, Real Lat) const {
+   KOKKOS_INLINE_FUNCTION Real exactCurlVec(Real Lon, Real Lat) const {
       return 2 * std::sin(Lat) / Radius;
    }
 };
@@ -173,18 +201,18 @@ int testDivergence(Real RTol) {
 
    const auto &mesh = HorzMesh::getDefault();
 #ifdef HORZOPERATORS_TEST_PLANE
-   auto XEdge = mesh->XEdgeH.createDeviceCopy();
-   auto YEdge = mesh->YEdgeH.createDeviceCopy();
+   auto XEdge = createDeviceMirrorCopy(mesh->XEdgeH);
+   auto YEdge = createDeviceMirrorCopy(mesh->YEdgeH);
 #else
-   auto XEdge = mesh->LonEdgeH.createDeviceCopy();
-   auto YEdge = mesh->LatEdgeH.createDeviceCopy();
+   auto XEdge = createDeviceMirrorCopy(mesh->LonEdgeH);
+   auto YEdge = createDeviceMirrorCopy(mesh->LatEdgeH);
 #endif
    auto &AngleEdge = mesh->AngleEdge;
 
    // Prepare operator input
    Array1DReal VecEdge("VecEdge", mesh->NEdgesSize);
-   parallel_for(
-       mesh->NEdgesOwned, YAKL_LAMBDA(int IEdge) {
+   parallelFor(
+       {mesh->NEdgesOwned}, KOKKOS_LAMBDA(int IEdge) {
           const Real X = XEdge(IEdge);
           const Real Y = YEdge(IEdge);
 
@@ -199,16 +227,16 @@ int testDivergence(Real RTol) {
 
    // Perform halo exchange
    Halo MyHalo(MachEnv::getDefaultEnv(), Decomp::getDefault());
-   auto VecEdgeH = VecEdge.createHostCopy();
+   auto VecEdgeH = createHostMirrorCopy(VecEdge);
    MyHalo.exchangeFullArrayHalo(VecEdgeH, OnEdge);
-   VecEdgeH.deep_copy_to(VecEdge);
+   deepCopy(VecEdge, VecEdgeH);
 
 #ifdef HORZOPERATORS_TEST_PLANE
-   auto XCell = mesh->XCellH.createDeviceCopy();
-   auto YCell = mesh->YCellH.createDeviceCopy();
+   auto XCell = createDeviceMirrorCopy(mesh->XCellH);
+   auto YCell = createDeviceMirrorCopy(mesh->YCellH);
 #else
-   auto XCell = mesh->LonCellH.createDeviceCopy();
-   auto YCell = mesh->LatCellH.createDeviceCopy();
+   auto XCell = createDeviceMirrorCopy(mesh->LonCellH);
+   auto YCell = createDeviceMirrorCopy(mesh->LatCellH);
 #endif
    auto &AreaCell = mesh->AreaCell;
 
@@ -219,8 +247,8 @@ int testDivergence(Real RTol) {
    Array1DReal LInfScaleCell("LInfScaleCell", mesh->NCellsOwned);
    Array1DReal L2ScaleCell("L2ScaleCell", mesh->NCellsOwned);
    DivergenceOnCell DivergenceCell(mesh);
-   parallel_for(
-       mesh->NCellsOwned, YAKL_LAMBDA(int ICell) {
+   parallelFor(
+       {mesh->NCellsOwned}, KOKKOS_LAMBDA(int ICell) {
           // Numerical result
           const Real DivCellNum = DivergenceCell(ICell, VecEdge);
 
@@ -238,10 +266,10 @@ int testDivergence(Real RTol) {
        });
 
    // Compute global normalized error norms
-   const Real LInfErrorLoc = yakl::intrinsics::maxval(LInfCell);
-   const Real L2ErrorLoc   = yakl::intrinsics::sum(L2Cell);
-   const Real LInfScaleLoc = yakl::intrinsics::maxval(LInfScaleCell);
-   const Real L2ScaleLoc   = yakl::intrinsics::sum(L2ScaleCell);
+   const Real LInfErrorLoc = maxVal(LInfCell);
+   const Real L2ErrorLoc   = sum(L2Cell);
+   const Real LInfScaleLoc = maxVal(LInfScaleCell);
+   const Real L2ScaleLoc   = sum(L2ScaleCell);
 
    MPI_Comm Comm = MachEnv::getDefaultEnv()->getComm();
    Real LInfError, LInfScale;
@@ -277,17 +305,17 @@ int testGradient(Real RTol) {
 
    const auto &mesh = HorzMesh::getDefault();
 #ifdef HORZOPERATORS_TEST_PLANE
-   const auto XCell = mesh->XCellH.createDeviceCopy();
-   const auto YCell = mesh->YCellH.createDeviceCopy();
+   const auto XCell = createDeviceMirrorCopy(mesh->XCellH);
+   const auto YCell = createDeviceMirrorCopy(mesh->YCellH);
 #else
-   const auto XCell = mesh->LonCellH.createDeviceCopy();
-   const auto YCell = mesh->LatCellH.createDeviceCopy();
+   const auto XCell = createDeviceMirrorCopy(mesh->LonCellH);
+   const auto YCell = createDeviceMirrorCopy(mesh->LatCellH);
 #endif
 
    // Prepare operator input
    Array1DReal ScalarCell("ScalarCell", mesh->NCellsSize);
-   parallel_for(
-       mesh->NCellsOwned, YAKL_LAMBDA(int ICell) {
+   parallelFor(
+       {mesh->NCellsOwned}, KOKKOS_LAMBDA(int ICell) {
           const Real X      = XCell(ICell);
           const Real Y      = YCell(ICell);
           ScalarCell(ICell) = Setup.exactScalar(X, Y);
@@ -295,16 +323,16 @@ int testGradient(Real RTol) {
 
    // Perform halo exchange
    Halo MyHalo(MachEnv::getDefaultEnv(), Decomp::getDefault());
-   auto ScalarCellH = ScalarCell.createHostCopy();
+   auto ScalarCellH = createHostMirrorCopy(ScalarCell);
    MyHalo.exchangeFullArrayHalo(ScalarCellH, OnCell);
-   ScalarCellH.deep_copy_to(ScalarCell);
+   deepCopy(ScalarCell, ScalarCellH);
 
 #ifdef HORZOPERATORS_TEST_PLANE
-   const auto XEdge = mesh->XEdgeH.createDeviceCopy();
-   const auto YEdge = mesh->YEdgeH.createDeviceCopy();
+   const auto XEdge = createDeviceMirrorCopy(mesh->XEdgeH);
+   const auto YEdge = createDeviceMirrorCopy(mesh->YEdgeH);
 #else
-   const auto XEdge = mesh->LonEdgeH.createDeviceCopy();
-   const auto YEdge = mesh->LatEdgeH.createDeviceCopy();
+   const auto XEdge = createDeviceMirrorCopy(mesh->LonEdgeH);
+   const auto YEdge = createDeviceMirrorCopy(mesh->LatEdgeH);
 #endif
    const auto &AngleEdge = mesh->AngleEdge;
    const auto &DcEdge    = mesh->DcEdge;
@@ -316,8 +344,8 @@ int testGradient(Real RTol) {
    Array1DReal LInfScaleEdge("LInfScaleEdge", mesh->NEdgesOwned);
    Array1DReal L2ScaleEdge("L2ScaleEdge", mesh->NEdgesOwned);
    GradientOnEdge GradientEdge(mesh);
-   parallel_for(
-       mesh->NEdgesOwned, YAKL_LAMBDA(int IEdge) {
+   parallelFor(
+       {mesh->NEdgesOwned}, KOKKOS_LAMBDA(int IEdge) {
           // Numerical result
           const Real GradScalarNum = GradientEdge(IEdge, ScalarCell);
 
@@ -340,10 +368,10 @@ int testGradient(Real RTol) {
        });
 
    // Compute global normalized error norms
-   const Real LInfErrorLoc = yakl::intrinsics::maxval(LInfEdge);
-   const Real LInfScaleLoc = yakl::intrinsics::maxval(LInfScaleEdge);
-   const Real L2ErrorLoc   = yakl::intrinsics::sum(L2Edge);
-   const Real L2ScaleLoc   = yakl::intrinsics::sum(L2ScaleEdge);
+   const Real LInfErrorLoc = maxVal(LInfEdge);
+   const Real LInfScaleLoc = maxVal(LInfScaleEdge);
+   const Real L2ErrorLoc   = sum(L2Edge);
+   const Real L2ScaleLoc   = sum(L2ScaleEdge);
 
    MPI_Comm Comm = MachEnv::getDefaultEnv()->getComm();
    Real LInfError, LInfScale;
@@ -379,18 +407,18 @@ int testCurl(Real RTol) {
    const auto &mesh = HorzMesh::getDefault();
 
 #ifdef HORZOPERATORS_TEST_PLANE
-   const auto XEdge = mesh->XEdgeH.createDeviceCopy();
-   const auto YEdge = mesh->YEdgeH.createDeviceCopy();
+   const auto XEdge = createDeviceMirrorCopy(mesh->XEdgeH);
+   const auto YEdge = createDeviceMirrorCopy(mesh->YEdgeH);
 #else
-   const auto XEdge = mesh->LonEdgeH.createDeviceCopy();
-   const auto YEdge = mesh->LatEdgeH.createDeviceCopy();
+   const auto XEdge = createDeviceMirrorCopy(mesh->LonEdgeH);
+   const auto YEdge = createDeviceMirrorCopy(mesh->LatEdgeH);
 #endif
    const auto &AngleEdge = mesh->AngleEdge;
 
    // Prepare operator input
    Array1DReal VecEdge("VecEdge", mesh->NEdgesSize);
-   parallel_for(
-       mesh->NEdgesOwned, YAKL_LAMBDA(int IEdge) {
+   parallelFor(
+       {mesh->NEdgesOwned}, KOKKOS_LAMBDA(int IEdge) {
           const Real X = XEdge(IEdge);
           const Real Y = YEdge(IEdge);
 
@@ -403,16 +431,16 @@ int testCurl(Real RTol) {
 
    // Perform halo exchange
    Halo MyHalo(MachEnv::getDefaultEnv(), Decomp::getDefault());
-   auto VecEdgeH = VecEdge.createHostCopy();
+   auto VecEdgeH = createHostMirrorCopy(VecEdge);
    MyHalo.exchangeFullArrayHalo(VecEdgeH, OnEdge);
-   VecEdgeH.deep_copy_to(VecEdge);
+   deepCopy(VecEdge, VecEdgeH);
 
 #ifdef HORZOPERATORS_TEST_PLANE
-   const auto XVertex = mesh->XVertexH.createDeviceCopy();
-   const auto YVertex = mesh->YVertexH.createDeviceCopy();
+   const auto XVertex = createDeviceMirrorCopy(mesh->XVertexH);
+   const auto YVertex = createDeviceMirrorCopy(mesh->YVertexH);
 #else
-   const auto XVertex = mesh->LonVertexH.createDeviceCopy();
-   const auto YVertex = mesh->LatVertexH.createDeviceCopy();
+   const auto XVertex = createDeviceMirrorCopy(mesh->LonVertexH);
+   const auto YVertex = createDeviceMirrorCopy(mesh->LatVertexH);
 #endif
    const auto &AreaTriangle = mesh->AreaTriangle;
 
@@ -422,8 +450,8 @@ int testCurl(Real RTol) {
    Array1DReal L2Vertex("L2Vertex", mesh->NVerticesOwned);
    Array1DReal L2ScaleVertex("L2ScaleVertex", mesh->NVerticesOwned);
    CurlOnVertex CurlVertex(mesh);
-   parallel_for(
-       mesh->NVerticesOwned, YAKL_LAMBDA(int IVertex) {
+   parallelFor(
+       {mesh->NVerticesOwned}, KOKKOS_LAMBDA(int IVertex) {
           // Numerical result
           const Real CurlNum = CurlVertex(IVertex, VecEdge);
 
@@ -443,10 +471,10 @@ int testCurl(Real RTol) {
        });
 
    // Compute global normalized error norms
-   const Real LInfErrorLoc = yakl::intrinsics::maxval(LInfVertex);
-   const Real LInfScaleLoc = yakl::intrinsics::maxval(LInfScaleVertex);
-   const Real L2ErrorLoc   = yakl::intrinsics::sum(L2Vertex);
-   const Real L2ScaleLoc   = yakl::intrinsics::sum(L2ScaleVertex);
+   const Real LInfErrorLoc = maxVal(LInfVertex);
+   const Real LInfScaleLoc = maxVal(LInfScaleVertex);
+   const Real L2ErrorLoc   = sum(L2Vertex);
+   const Real L2ScaleLoc   = sum(L2ScaleVertex);
 
    MPI_Comm Comm = MachEnv::getDefaultEnv()->getComm();
    Real LInfError, LInfScale;
@@ -482,18 +510,18 @@ int testRecon(Real RTol) {
 
    const auto &mesh = HorzMesh::getDefault();
 #ifdef HORZOPERATORS_TEST_PLANE
-   const auto XEdge = mesh->XEdgeH.createDeviceCopy();
-   const auto YEdge = mesh->YEdgeH.createDeviceCopy();
+   const auto XEdge = createDeviceMirrorCopy(mesh->XEdgeH);
+   const auto YEdge = createDeviceMirrorCopy(mesh->YEdgeH);
 #else
-   const auto XEdge = mesh->LonEdgeH.createDeviceCopy();
-   const auto YEdge = mesh->LatEdgeH.createDeviceCopy();
+   const auto XEdge = createDeviceMirrorCopy(mesh->LonEdgeH);
+   const auto YEdge = createDeviceMirrorCopy(mesh->LatEdgeH);
 #endif
    const auto &AngleEdge = mesh->AngleEdge;
 
    // Prepare operator input
    Array1DReal VecEdge("VecEdge", mesh->NEdgesSize);
-   parallel_for(
-       mesh->NEdgesOwned, YAKL_LAMBDA(int IEdge) {
+   parallelFor(
+       {mesh->NEdgesOwned}, KOKKOS_LAMBDA(int IEdge) {
           const Real X = XEdge(IEdge);
           const Real Y = YEdge(IEdge);
 
@@ -506,9 +534,9 @@ int testRecon(Real RTol) {
 
    // Perform halo exchange
    Halo MyHalo(MachEnv::getDefaultEnv(), Decomp::getDefault());
-   auto VecEdgeH = VecEdge.createHostCopy();
+   auto VecEdgeH = createHostMirrorCopy(VecEdge);
    MyHalo.exchangeFullArrayHalo(VecEdgeH, OnEdge);
-   VecEdgeH.deep_copy_to(VecEdge);
+   deepCopy(VecEdge, VecEdgeH);
 
    const auto &DcEdge = mesh->DcEdge;
    const auto &DvEdge = mesh->DvEdge;
@@ -519,8 +547,8 @@ int testRecon(Real RTol) {
    Array1DReal L2Edge("L2Edge", mesh->NEdgesOwned);
    Array1DReal L2ScaleEdge("L2ScaleEdge", mesh->NEdgesOwned);
    TangentialReconOnEdge TanReconEdge(mesh);
-   parallel_for(
-       mesh->NEdgesOwned, YAKL_LAMBDA(int IEdge) {
+   parallelFor(
+       {mesh->NEdgesOwned}, KOKKOS_LAMBDA(int IEdge) {
           // Numerical result
           const Real VecReconNum = TanReconEdge(IEdge, VecEdge);
 
@@ -543,10 +571,10 @@ int testRecon(Real RTol) {
        });
 
    // Compute global normalized error norms
-   const Real LInfErrorLoc = yakl::intrinsics::maxval(LInfEdge);
-   const Real LInfScaleLoc = yakl::intrinsics::maxval(LInfScaleEdge);
-   const Real L2ErrorLoc   = yakl::intrinsics::sum(L2Edge);
-   const Real L2ScaleLoc   = yakl::intrinsics::sum(L2ScaleEdge);
+   const Real LInfErrorLoc = maxVal(LInfEdge);
+   const Real LInfScaleLoc = maxVal(LInfScaleEdge);
+   const Real L2ErrorLoc   = sum(L2Edge);
+   const Real L2ScaleLoc   = sum(L2ScaleEdge);
 
    MPI_Comm Comm = MachEnv::getDefaultEnv()->getComm();
    Real LInfError, LInfScale;
@@ -581,7 +609,7 @@ int testRecon(Real RTol) {
 int initOperatorsTest(int argc, char *argv[]) {
 
    MPI_Init(&argc, &argv);
-   yakl::init();
+   Kokkos::initialize(argc, argv);
 
    int Err = 0;
 
@@ -611,7 +639,7 @@ void finalizeOperatorsTest() {
    HorzMesh::clear();
    Decomp::clear();
    MachEnv::removeAll();
-   yakl::finalize();
+   Kokkos::finalize();
    MPI_Finalize();
 }
 
