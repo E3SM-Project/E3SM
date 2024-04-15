@@ -137,6 +137,18 @@
     </values>
   </entry>
 
+  <entry id="flds_polar">
+    <type>logical</type>
+    <category>seq_flds</category>
+    <group>seq_cplflds_inparm</group>
+    <desc>
+      If set to .true. Polar fields will be passed from the ocean to the coupler.
+    </desc>
+    <values>
+      <value>$FLDS_POLAR</value>
+    </values>
+  </entry>
+
   <entry  id="flds_wiso" modify_via_xml="FLDS_WISO">
     <type>logical</type>
     <category>seq_flds</category>
