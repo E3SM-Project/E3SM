@@ -6,10 +6,13 @@ driver_options:
 
 iop_options:
   doubly_periodic_mode: true
-  iop_file: ${IOP_DATA_DIR}/DYCOMSrf01_iopfile_4scam.nc
-  target_latitude: 31.5
-  target_longitude: 238.5
+  iop_file: ${IOP_DATA_DIR}/CASS_iopfile_4scam.nc
+  target_latitude: 36.605
+  target_longitude: 262.515
   iop_dosubsidence: true
+  iop_coriolis: true
+  iop_nudge_tq: true
+  iop_nudge_uv: true
   iop_srf_prop: true
 
 time_stepping:
