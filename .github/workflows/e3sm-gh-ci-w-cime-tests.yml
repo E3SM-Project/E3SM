@@ -3,11 +3,10 @@ name: gh
 on:
   pull_request:
     branches: [ master ]
-    paths:
-      # no to these
-      - '!docs/**'
-      - '!components/*/docs/**'
-      - '!components/*/mkdocs.yml'
+    paths-ignore:
+      - 'docs/**'
+      - 'components/*/docs/**'
+      - 'components/*/mkdocs.yml'
 
   workflow_dispatch:
 
