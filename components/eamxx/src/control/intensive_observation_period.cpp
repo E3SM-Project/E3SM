@@ -697,6 +697,7 @@ read_iop_file_data (const util::TimeStamp& current_ts)
         const auto dx = iop_file_v_h(adjusted_file_levs-2) - iop_file_v_h(adjusted_file_levs-3);
         if (dx == 0) iop_file_v_h(adjusted_file_levs-1) = iop_file_v_h(adjusted_file_levs-2);
         else {
+          iop_file_pressure.sync_to_host();
           const auto iop_file_pres_v_h = iop_file_pressure.get_view<const Real*, Host>();
           const auto dy = iop_file_pres_v_h(adjusted_file_levs-2) - iop_file_pres_v_h(adjusted_file_levs-3);
           const auto scale = dy/dx;
