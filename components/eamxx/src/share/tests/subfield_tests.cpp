@@ -78,7 +78,7 @@ TEST_CASE("field", "") {
       const int sl_end = {7};
 
       auto v1d_h = f1.get_view<Real*, Host>();
-      auto sf = f1.subfield(idim, sl_beg, sl_end
+      auto sf = f1.subfield(idim, sl_beg, sl_end);
       auto sv_h = sf.get_multi_sliced_view<Real, 1, Host>();
 
       for (int i = sl_beg; i < sl_end; i++) {
