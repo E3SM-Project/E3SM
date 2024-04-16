@@ -138,26 +138,23 @@ advance_iop_subsidence(const KT::MemberType& team,
     const auto fac = (dt/2)/pdel(k);
 
     // Update u
-    auto& u_k = u(k);
-    u_k.set(at_top, u_k - fac*omega_int_kp1*delta_u_k);
-    u_k.set(at_bot, u_k - fac*omega_int_k*delta_u_km1);
-    u_k.set(at_mid, u_k - fac*(omega_int_kp1*delta_u_k + omega_int_k*delta_u_km1));
+    u(k).update(at_top, fac*omega_int_kp1*delta_u_k, -1, 1);
+    u(k).update(at_bot, fac*omega_int_k*delta_u_km1, -1, 1);
+    u(k).update(at_mid, fac*(omega_int_kp1*delta_u_k + omega_int_k*delta_u_km1), -1, 1);
 
     // Update v
-    auto& v_k = v(k);
-    v_k.set(at_top, v_k - fac*omega_int_kp1*delta_v_k);
-    v_k.set(at_bot, v_k - fac*omega_int_k*delta_v_km1);
-    v_k.set(at_mid, v_k - fac*(omega_int_kp1*delta_v_k + omega_int_k*delta_v_km1));
+    v(k).update(at_top, fac*omega_int_kp1*delta_v_k, -1, 1);
+    v(k).update(at_bot, fac*omega_int_k*delta_v_km1, -1, 1);
+    v(k).update(at_mid, fac*(omega_int_kp1*delta_v_k + omega_int_k*delta_v_km1), -1, 1);
 
     // Before updating T, first scale using thermal
     // expansion term due to LS vertical advection
-    auto& T_k = T(k);
-    T_k *= 1 + (dt*Rair/Cpair)*omega(k)/pmid(k);
+    T(k) *= 1 + (dt*Rair/Cpair)*omega(k)/pmid(k);
 
     // Update T
-    T_k.set(at_top, T_k - fac*omega_int_kp1*delta_T_k);
-    T_k.set(at_bot, T_k - fac*omega_int_k*delta_T_km1);
-    T_k.set(at_mid, T_k - fac*(omega_int_kp1*delta_T_k + omega_int_k*delta_T_km1));
+    T(k).update(at_top, fac*omega_int_kp1*delta_T_k, -1, 1);
+    T(k).update(at_bot, fac*omega_int_k*delta_T_km1, -1, 1);
+    T(k).update(at_mid, fac*(omega_int_kp1*delta_T_k + omega_int_k*delta_T_km1), -1, 1);
 
     // Update Q
     Pack delta_tracer_k, delta_tracer_km1;
@@ -167,10 +164,9 @@ advance_iop_subsidence(const KT::MemberType& team,
       if (any_at_top) delta_tracer_k.set(at_top, s_delta_tracer(0));
       if (any_at_bot) delta_tracer_km1.set(at_bot, s_delta_tracer(nlevs-2));
 
-      auto& Q_k = Q(iq, k);
-      Q_k.set(at_top, Q_k - fac*omega_int_kp1*delta_tracer_k);
-      Q_k.set(at_bot, Q_k - fac*omega_int_k*delta_tracer_km1);
-      Q_k.set(at_mid, Q_k - fac*(omega_int_kp1*delta_tracer_k + omega_int_k*delta_tracer_km1));
+      Q(iq, k).update(at_top, fac*omega_int_kp1*delta_tracer_k, -1, 1);
+      Q(iq, k).update(at_bot, fac*omega_int_k*delta_tracer_km1, -1, 1);
+      Q(iq, k).update(at_mid, fac*(omega_int_kp1*delta_tracer_k + omega_int_k*delta_tracer_km1), -1, 1);
     }
   });
 
@@ -192,8 +188,8 @@ advance_iop_forcing(const KT::MemberType& team,
 {
   const auto nlev_packs = ekat::npack<Pack>(nlevs);
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_packs), [&] (const int k) {
-    T(k) += dt*divT(k);
-    qv(k) += dt*divq(k);
+    T(k).update(divT(k), dt, 1.0);
+    qv(k).update(divq(k), dt, 1.0);
   });
 }
 
