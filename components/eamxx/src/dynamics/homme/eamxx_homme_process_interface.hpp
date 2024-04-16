@@ -135,6 +135,17 @@ protected:
                                   const view_1d<Pack>& T,
                                   const view_1d<Pack>& qv);
 
+
+  KOKKOS_FUNCTION
+  static void iop_apply_coriolis(const KT::MemberType& team,
+                                 const int nlevs,
+                                 const Real dt,
+                                 const Real lat,
+                                 const view_1d<const Pack>& u_ls,
+                                 const view_1d<const Pack>& v_ls,
+                                 const view_1d<Pack>& u,
+                                 const view_1d<Pack>& v);
+
 public:
   // Fast boolean function returning whether Physics PGN is being used.
   bool fv_phys_active() const;

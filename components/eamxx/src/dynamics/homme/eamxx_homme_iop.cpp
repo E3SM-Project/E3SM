@@ -193,6 +193,34 @@ advance_iop_forcing(const KT::MemberType& team,
   });
 }
 
+// Provide coriolis forcing to u and v winds, using large scale winds specified in IOP forcing file.
+KOKKOS_FUNCTION
+void HommeDynamics::
+iop_apply_coriolis(const KT::MemberType& team,
+                   const int nlevs,
+                   const Real dt,
+                   const Real lat,
+                   const view_1d<const Pack>& u_ls,
+                   const view_1d<const Pack>& v_ls,
+                   const view_1d<Pack>& u,
+                   const view_1d<Pack>& v)
+{
+  using C = physics::Constants<Real>;
+  constexpr Real pi = C::Pi;
+  constexpr Real earth_rotation = C::omega;
+
+  // Compute coriolis force
+  const auto fcor = 2*earth_rotation*std::sin(lat*pi/180);
+
+  const auto nlev_packs = ekat::npack<Pack>(nlevs);
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_packs), [&] (const int k) {
+    const auto u_cor = v(k) - v_ls(k);
+    const auto v_cor = u(k) - u_ls(k);
+    u(k).update(u_cor, dt*fcor, 1.0);
+    v(k).update(v_cor, -dt*fcor, 1.0);
+  });
+}
+
 void HommeDynamics::
 apply_iop_forcing(const Real dt)
 {
@@ -256,14 +284,23 @@ apply_iop_forcing(const Real dt)
   // Load data from IOP files, if necessary
   m_iop->read_iop_file_data(timestamp());
 
-  // Define local IOP param values and views
+  // Define local IOP param values
   const auto iop_dosubsidence = m_iop->get_params().get<bool>("iop_dosubsidence");
+  const auto iop_coriolis = m_iop->get_params().get<bool>("iop_coriolis");
   const auto use_3d_forcing = m_iop->get_params().get<bool>("use_3d_forcing");
-  const auto omega = m_iop->get_iop_field("omega").get_view<const Pack*>();
-  const auto divT = use_3d_forcing ? m_iop->get_iop_field("divT3d").get_view<const Pack*>()
-                                   : m_iop->get_iop_field("divT").get_view<const Pack*>();
-  const auto divq = use_3d_forcing ? m_iop->get_iop_field("divq3d").get_view<const Pack*>()
-                                   : m_iop->get_iop_field("divq").get_view<const Pack*>();
+  const auto lat = m_iop->get_params().get<Real>("target_latitude");
+
+  // Define local IOP field views
+  view_1d<const Pack> omega, divT, divq, u_ls, v_ls;
+  if (iop_dosubsidence) omega = m_iop->get_iop_field("omega").get_view<const Pack*>();
+  divT = use_3d_forcing ? m_iop->get_iop_field("divT3d").get_view<const Pack*>()
+                        : m_iop->get_iop_field("divT").get_view<const Pack*>();
+  divq = use_3d_forcing ? m_iop->get_iop_field("divq3d").get_view<const Pack*>()
+                        : m_iop->get_iop_field("divq").get_view<const Pack*>();
+  if (iop_coriolis) {
+    u_ls = m_iop->get_iop_field("u_ls").get_view<const Pack*>();
+    v_ls = m_iop->get_iop_field("v_ls").get_view<const Pack*>();
+  }
 
   // Team policy and workspace manager for both homme and scream
   // related loops. We need separate policies since hommexx functions used here
@@ -381,6 +418,11 @@ apply_iop_forcing(const Real dt)
 
     // Update T and qv according to large scale forcing as specified in IOP file.
     advance_iop_forcing(team, total_levels, dt, divT, divq, temperature_i, qv_i);
+
+    if (iop_coriolis) {
+      // Apply coriolis forcing to u and v winds
+      iop_apply_coriolis(team, total_levels, dt, lat, u_ls, v_ls, u_i, v_i);
+    }
 
     // Release WS views
     ws.release_many_contiguous<3>({&pmid, &pint, &pdel});
