@@ -622,7 +622,11 @@ int initOperatorsTest(int argc, char *argv[]) {
       LOG_ERROR("HorzMeshTest: error initializing parallel IO");
    }
 
-   Err = Decomp::init();
+#ifdef HORZOPERATORS_TEST_PLANE
+   Err = Decomp::init("OmegaPlanarMesh.nc");
+#else
+   Err = Decomp::init("OmegaSphereMesh.nc");
+#endif
    if (Err != 0) {
       LOG_ERROR("HorzMeshTest: error initializing default decomposition");
    }
