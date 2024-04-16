@@ -1671,6 +1671,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#map-file-generation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Map File Generation
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1720,6 +1729,12 @@ https://e3sm.org/resources/tools/other-tools/e3sm-unified-environment/</p>
 <p>Alternatively, a simple conda environment can be created with the following command:
 <div class="highlight"><pre><span></span><code>conda create --name example_env --channel conda-forge xarray numpy numba scikit-learn netcdf4
 </code></pre></div></p>
+<h2 id="map-file-generation">Map File Generation</h2>
+<p>The map file used to generate the domain files can be created a few different ways.
+For a typical E3SM configuration we recommend using a conservative, monotone map.
+Here is an example command that can be used to generate one (as of NCO version 5.2.2)</p>
+<div class="highlight"><pre><span></span><code>ncremap -5 -a traave --src_grd=${OCN_GRID} --dst_grd=${ATM_GRID} --map_file=${MAP_FILE}
+</code></pre></div>
 
 
 
