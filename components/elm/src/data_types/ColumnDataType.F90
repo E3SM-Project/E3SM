@@ -1574,9 +1574,9 @@ contains
     end if
 
     this%excess_ice(begc:endc) = spval
-    call hist_addfld1d (fname='EXCESS_ICE', units = 'kg/m2', &
-         avgflag='A', long_name='Excess ground ice', &
-         ptr_col=this$excess_ice, l2g_scale_type='veg') ! <- RPF: should this be natveg?
+    call hist_addfld1d (fname='EXCESS_ICE', units = '1', &
+         avgflag='A', long_name='Excess ground ice (0 to 1)', &
+         ptr_col=this%excess_ice, l2g_scale_type='veg') ! <- RPF: should this be natveg?
 
     this%frac_sno(begc:endc) = spval
     call hist_addfld1d (fname='FSNO',  units='1',  &
@@ -1649,6 +1649,7 @@ contains
        this%frac_h2osfc_act(c)        = 0._r8
        this%h2orof(c)                 = 0._r8
        this%frac_h2orof(c)            = 0._r8
+       this%excess_ice(c)             = 0.5_r8
 
        if (lun_pp%urbpoi(l)) then
           ! From Bonan 1996 (LSM technical note)
@@ -1928,7 +1929,7 @@ contains
 
     call restartvar(ncid=ncid, flag=flag, varname='EXCESS_ICE', xtype=ncd_double, &
          dim1name='column', &
-         long_name='excess ground ice', units='kg/m2', &
+         long_name='excess ground ice (0 to 1)', units='1', &
          interpinic_flag='interp', readvar=readvar, data=this%excess_ice)
 
     call restartvar(ncid=ncid, flag=flag, varname='frac_sno', xtype=ncd_double,  &
