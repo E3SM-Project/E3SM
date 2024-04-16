@@ -321,14 +321,13 @@ int readMesh(const int MeshFileID, // file ID for open mesh file
 // Initialize the decomposition and create the default decomposition with
 // (currently) one partition per MPI task using a ParMetis KWay method.
 
-int Decomp::init() {
+int Decomp::init(const std::string &MeshFileName) {
 
    int Err = 0; // default successful return code
 
    // TODO: retrieve from Config when available - currently hardwired
    // Initialize decomposition options
    I4 InHaloWidth           = 3;
-   std::string MeshFileName = "OmegaMesh.nc";
    std::string DecompMethod = "MetisKWay";
    PartMethod Method        = getPartMethodFromStr(DecompMethod);
 
