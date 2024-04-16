@@ -24,3 +24,13 @@ Alternatively, a simple conda environment can be created with the following comm
 ```
 conda create --name example_env --channel conda-forge xarray numpy numba scikit-learn netcdf4
 ```
+
+## Map File Generation
+
+The map file used to generate the domain files can be created a few different ways.
+For a typical E3SM configuration we recommend using a conservative, monotone map.
+Here is an example command that can be used to generate one (as of NCO version 5.2.2)
+
+```
+ncremap -5 -a traave --src_grd=${OCN_GRID} --dst_grd=${ATM_GRID} --map_file=${MAP_FILE}
+```
