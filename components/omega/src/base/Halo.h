@@ -46,6 +46,15 @@ enum MeshElement { OnCell, OnEdge, OnVertex };
 /// here for easy accesibility by the Halo methods.
 class Halo {
  private:
+   /// The default Halo handles halo exchanges for arrays defined on the mesh
+   /// with the default decomposition. A pointer is stored here for easy
+   /// retrieval.
+   static Halo *DefaultHalo;
+
+   /// All halos are tracked/stored within the class as a map paired with a
+   /// name for later retrieval.
+   static std::map<std::string, Halo> AllHalos;
+
    const Decomp *MyDecomp{nullptr}; /// Pointer to decomposition object
 
    I4 NNghbr;          /// number of neighboring tasks
@@ -222,8 +231,27 @@ class Halo {
  public:
    // Methods
 
-   // Construct a new halo for the input MachEnv and Decomp
-   Halo(const MachEnv *InEnv, const Decomp *InDecomp);
+   /// initialize default Halo
+   static int init();
+
+   /// Construct a new halo labeled Name for the input MachEnv and Decomp
+   Halo(const std::string &Name, const MachEnv *InEnv, const Decomp *InDecomp);
+
+   /// Destructor
+   ~Halo();
+
+   /// Erase - removes Halo by name
+   static void erase(std::string InName ///< [in] name of Halo to remove
+   );
+
+   /// Clear - removes all defined Halo instances
+   static void clear();
+
+   /// Retrieves a pointer to the default Halo object.
+   static Halo *getDefault();
+
+   /// Retrieves a pointer to a Halo object by Name
+   static Halo *get(std::string Name);
 
    //---------------------------------------------------------------------------
    // Function template to perform a full halo exchange on the input Kokkos

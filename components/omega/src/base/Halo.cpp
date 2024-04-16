@@ -19,7 +19,11 @@
 
 namespace OMEGA {
 
-// -----------------------------------------------------------------------------
+// create the static class members
+Halo *Halo::DefaultHalo = nullptr;
+std::map<std::string, Halo> Halo::AllHalos;
+
+//------------------------------------------------------------------------------
 // Local routine that searches a std::vector<I4> for a particular entry and
 // returns the index of that entry. If not found, the size is returned
 // (corresponding to the last index + 1)
@@ -37,7 +41,7 @@ I4 searchVector(const std::vector<I4> &InVector, // vector to search
 
 } // end function searchVector (std::vector)
 
-// -----------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 // Construct a new ExchList based on input 2D vector which contains a list
 // of indices sorted by halo layer
 
@@ -74,7 +78,7 @@ Halo::ExchList::ExchList(
 // Empty constructor for ExchList class
 Halo::ExchList::ExchList() = default;
 
-// -----------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 // Construct a new Neighbor given the send and receive lists for each index
 // space of the neighboring task identified by NghbrID
 
@@ -102,10 +106,31 @@ Halo::Neighbor::Neighbor(
 
 } // end Neighbor constructor
 
-// -----------------------------------------------------------------------------
-// Construct a Halo for the input MachEnv and Decomp.
+//------------------------------------------------------------------------------
+// Initialize and construct the default Halo. MachEnv and Decomp must already
+// be initialized
 
-Halo::Halo(const MachEnv *InEnv, const Decomp *InDecomp) {
+int Halo::init() {
+
+   I4 IErr{0}; // error code
+
+   MachEnv *DefEnv   = MachEnv::getDefaultEnv();
+   Decomp *DefDecomp = Decomp::getDefault();
+
+   Halo DefHalo("Default", DefEnv, DefDecomp);
+
+   Halo::DefaultHalo = Halo::get("Default");
+
+   return IErr;
+
+} // End Halo init
+
+// Constructor
+//------------------------------------------------------------------------------
+// Construct a Halo for the input Name, MachEnv, and Decomp.
+
+Halo::Halo(const std::string &Name, const MachEnv *InEnv,
+           const Decomp *InDecomp) {
 
    I4 IErr{0}; // error code
 
@@ -147,7 +172,67 @@ Halo::Halo(const MachEnv *InEnv, const Decomp *InDecomp) {
                                    NeighborList[INghbr]));
    }
 
+   // Associate this instance with the input name
+   AllHalos.emplace(Name, *this);
+
 } // end Halo constructor
+
+// Destructor
+//------------------------------------------------------------------------------
+// Destroy instance of Halo
+
+Halo::~Halo() {
+
+   // No operations necessary
+
+} // end destructor
+
+//------------------------------------------------------------------------------
+// Removes a Halo from AllHalos map and destroys it
+
+void Halo::erase(std::string InName // name of Halo to remove
+) {
+
+   AllHalos.erase(InName); // removes the Halo from the map and in
+                           // the process, calls the destructor
+
+} // end Halo erase
+
+//------------------------------------------------------------------------------
+// Removes all Halos and destroys them
+
+void Halo::clear() {
+
+   AllHalos.clear(); // removes all Halos from the map and in the
+                     // process, calls the destructor for each
+
+} // end Halo clear
+
+// Retrieval functions
+//------------------------------------------------------------------------------
+// Get default Halo
+
+Halo *Halo::getDefault() { return Halo::DefaultHalo; }
+
+//------------------------------------------------------------------------------
+// Get Halo by name
+
+Halo *Halo::get(const std::string Name // name of Halo to retrieve
+) {
+
+   // look for an instance of this name
+   auto it = AllHalos.find(Name);
+
+   // if found, return the Halo pointer
+   if (it != AllHalos.end()) {
+      return &(it->second);
+   } else {
+      // otherwise print an error and retrun a null pointer
+      LOG_ERROR("Halo::get: Attempt to retrieve non-existent Halo:");
+      LOG_ERROR(" {} has not been defined or has been removed", Name);
+      return nullptr;
+   }
+} // end Halo get
 
 // -----------------------------------------------------------------------------
 // Generate the lists of indices that are used to construct the ExchList
@@ -333,7 +418,7 @@ int Halo::generateExchangeLists(
    return IErr;
 } // end generateExchangeLists
 
-// -----------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 // Exchange 1D integer vectors with each neighbor. Takes as input two 2D
 // vectors, SendVec and RecvVec, where the first dimension is the neighboring
 // task to send to or receive from, and the second dimension is the 1D vector
@@ -377,7 +462,7 @@ int Halo::exchangeVectorInt(
    return Err;
 } // end exchangeVectorInt
 
-// -----------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 // Allocate RecvBuffer and prepare for MPI communication by calling MPI_Irecv
 // for each Neighbor
 
@@ -405,7 +490,7 @@ int Halo::startReceives() {
    return Err;
 } // end startReceives
 
-// -----------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 // Initiate MPI communication by calling MPI_Isend for each Neighbor to send
 // the packed buffers to each task
 
