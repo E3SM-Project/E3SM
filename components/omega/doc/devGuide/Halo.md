@@ -18,20 +18,32 @@ methods to conduct the exchanges. The halo exchanges are carried out using
 non-blocking MPI (Message Passing Interface) communication.
 
 An instance of the Halo class is dependent on a parallel domain decomposition
-and the associated parallel machine environment, so the Halo constructor takes
-as input a MachEnv object and a Decomp object:
+and the associated parallel machine environment, so those objects need to be
+constructed first. The default Halo is created with the call:
 ```c++
-OMEGA::Halo NewHalo(NewEnv, NewDecomp);
+OMEGA::Halo::init();
 ```
-Therefore, these objects need to be constructed first. The Halo constructor
-will save the MPI communicator handle and the MPI task ID of the local task
-from the MachEnv object, and will extract and save from the Decomp object
-indices defining the local and neighboring halo elements for the cell, edge,
-and vertex index spaces. This information is organized into objects of two
-nested classes of the Halo class: the ExchList class and the Neighbor class.
-The ExchList class contains the indices of Halo elements to either send to or
-receive from a single neighboring task for a particular index space, and the
-Neighbor class contains all the ExchList objects needed to carry out a halo
+This must be done after the default MachEnv and Decomp have been initialized.
+Once initialized, a pointer to the default Halo can be retrieved with:
+```c++
+OMEGA::Halo *DefHalo = OMEGA::Halo::getDefault();
+```
+Additional Halo objects can be constructed for defined MachEnv and Decomp
+objects by calling the Halo constructor with a supplied `std::string` Name:
+```c++
+OMEGA::Halo NewHalo(Name, NewEnv, NewDecomp);
+```
+A pointer to each constructed Halo is stored in a `std::map` container, which
+can be retrieved by supplying the Name to `OMEGA::Halo::get(Name)`.
+
+The Halo constructor will save the MPI communicator handle and the MPI task ID
+of the local task from the MachEnv object, and will extract and save from the
+Decomp object indices defining the local and neighboring halo elements for the
+cell, edge, and vertex index spaces. This information is organized into objects
+of two nested classes of the Halo class: the ExchList class and the Neighbor
+class. The ExchList class contains the indices of Halo elements to either send
+to or receive from a single neighboring task for a particular index space, and
+the Neighbor class contains all the ExchList objects needed to carry out a halo
 exchange with a single neighboring task in any index space, as well as the
 buffer memory space to communicate with that neighbor. All member variables
 and objects and most member methods of the Halo class are declared private
@@ -46,9 +58,8 @@ The main private methods of the Halo class which execute an exchange are
 The packBuffer and unpackBuffer functions are overloaded to support different
 array types.
 
-The only public methods are the Halo class constructor, and the
-exchangeFullArrayHalo function, which is the interface for the user to conduct
-a halo exchange for any supported array defined in the DataTypes module. The
+The exchangeFullArrayHalo function is the main interface to conduct a halo
+exchange for any supported array defined in the DataTypes module. The
 exchangeFullArrayHalo function is a template which passes the array to the
 proper private Halo methods which perform the exchange, depending on the type
 and dimensionality of the array. The user must also pass the index space on
