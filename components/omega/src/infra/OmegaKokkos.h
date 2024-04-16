@@ -10,6 +10,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "DataTypes.h"
+#include <utility>
 
 namespace OMEGA {
 
@@ -86,24 +87,26 @@ inline void parallelFor(const int (&upper_bounds)[N], const F &f,
 // parallelReduce: with label
 template <int N, class F, class R, class... Args>
 inline void parallelReduce(const std::string &label,
-                           const int (&upper_bounds)[N], const F &f, R &reducer,
+                           const int (&upper_bounds)[N], const F &f,
+                           R &&reducer,
                            const int (&tile)[N] = DefaultTile<N>::value) {
    if constexpr (N == 1) {
       const auto policy = Kokkos::RangePolicy<Args...>(0, upper_bounds[0]);
-      Kokkos::parallel_reduce(label, policy, f, reducer);
+      Kokkos::parallel_reduce(label, policy, f, std::forward<R>(reducer));
 
    } else {
       const int lower_bounds[N] = {0};
       const auto policy = Bounds<N, Args...>(lower_bounds, upper_bounds, tile);
-      Kokkos::parallel_reduce(label, policy, f, reducer);
+      Kokkos::parallel_reduce(label, policy, f, std::forward<R>(reducer));
    }
 }
 
 // parallelReduce: without label
 template <int N, class F, class R, class... Args>
-inline void parallelReduce(const int (&upper_bounds)[N], const F &f, R &reducer,
+inline void parallelReduce(const int (&upper_bounds)[N], const F &f,
+                           R &&reducer,
                            const int (&tile)[N] = DefaultTile<N>::value) {
-   parallelReduce("", upper_bounds, f, tile, reducer);
+   parallelReduce("", upper_bounds, f, std::forward<R>(reducer), tile);
 }
 
 } // end namespace OMEGA
