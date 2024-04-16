@@ -1,0 +1,59 @@
+name: gh
+
+on:
+  pull_request:
+    branches: [ master ]
+    paths:
+      # no to these
+      - '!docs/**'
+      - '!components/*/docs/**'
+      - '!components/*/mkdocs.yml'
+
+  workflow_dispatch:
+
+jobs:
+
+  ci-w:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        test: 
+          - SMS_D_P8.ne4pg2_oQU480.WCYCL2010NS.singularity_gnu
+          - SMS_P8.ne4pg2_oQU480.WCYCL2010NS.singularity_gnu
+          - REP_P8.ne4pg2_oQU480.WCYCL2010NS.singularity_gnu
+          - ERS_P8.ne4pg2_oQU480.WCYCL2010NS.singularity_gnu
+          - ERS_P8.ne4pg2_oQU480.WCYCL2010NS.singularity_gnu.allactive-wcprod_1850
+          - ERP_P8.ne4pg2_oQU480.WCYCL2010NS.singularity_gnu
+          - PET_P8.ne4pg2_oQU480.WCYCL2010NS.singularity_gnu
+          - PEM_P8.ne4pg2_oQU480.WCYCL2010NS.singularity_gnu
+    container: 
+      image: ghcr.io/mahf708/e3sm-imgs:v0.0.6
+
+    steps:
+      - 
+        name: Checkout
+        uses: actions/checkout@v4
+        with:
+          show-progress: false
+          submodules: recursive
+      - 
+        name: CIME
+        working-directory: cime/scripts
+        run: |
+          mkdir -p $HOME/projects/e3sm/cesm-inputdata/atm/cam/physprops/
+          wget https://web.lcrc.anl.gov/public/e3sm/inputdata/atm/cam/physprops/p3_lookup_table_1.dat-v4.1.2
+          mv p3_lookup_table_1.dat-v4.1.2 $HOME/projects/e3sm/cesm-inputdata/atm/cam/physprops/
+          export USER=test
+          ./create_test ${{ matrix.test }} --wait --debug
+      - 
+        name: Artifacts
+        uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: ${{ matrix.test }}
+          path: |
+            ~/projects/e3sm/scratch/${{ matrix.test }}*/TestStatus.log
+            ~/projects/e3sm/scratch/${{ matrix.test }}*/bld/*.bldlog.*
+            ~/projects/e3sm/scratch/${{ matrix.test }}*/run/*.log.*
+            ~/projects/e3sm/scratch/${{ matrix.test }}*/run/*.cprnc.out
