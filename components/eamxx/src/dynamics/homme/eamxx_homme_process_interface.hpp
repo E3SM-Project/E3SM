@@ -26,6 +26,7 @@ class HommeDynamics : public AtmosphereProcess
   // Define some types needed by class
   using Pack = ekat::Pack<Real, SCREAM_PACK_SIZE>;
   using IntPack = ekat::Pack<int, SCREAM_PACK_SIZE>;
+  using Mask = ekat::Mask<SCREAM_PACK_SIZE>;
 
   using KT = KokkosTypes<DefaultDevice>;
   template<typename ScalarT>

@@ -288,19 +288,38 @@ apply_iop_forcing(const Real dt)
   // Define local IOP param values
   const auto iop_dosubsidence = m_iop->get_params().get<bool>("iop_dosubsidence");
   const auto iop_coriolis = m_iop->get_params().get<bool>("iop_coriolis");
+  const auto iop_nudge_tq = m_iop->get_params().get<bool>("iop_nudge_tq");
+  const auto iop_nudge_uv = m_iop->get_params().get<bool>("iop_nudge_uv");
+  const auto use_large_scale_wind = m_iop->get_params().get<bool>("use_large_scale_wind");
   const auto use_3d_forcing = m_iop->get_params().get<bool>("use_3d_forcing");
   const auto lat = m_iop->get_params().get<Real>("target_latitude");
+  const auto iop_nudge_tscale = m_iop->get_params().get<Real>("iop_nudge_tscale");
+  const auto iop_nudge_tq_low = m_iop->get_params().get<Real>("iop_nudge_tq_low");
+  const auto iop_nudge_tq_high = m_iop->get_params().get<Real>("iop_nudge_tq_high");
 
   // Define local IOP field views
-  view_1d<const Pack> omega, divT, divq, u_ls, v_ls;
-  if (iop_dosubsidence) omega = m_iop->get_iop_field("omega").get_view<const Pack*>();
+  const Real ps_iop = m_iop->get_iop_field("Ps").get_view<const Real, Host>()();
+  view_1d<const Pack> omega, divT, divq, u_ls, v_ls, qv_iop, t_iop, u_iop, v_iop;
   divT = use_3d_forcing ? m_iop->get_iop_field("divT3d").get_view<const Pack*>()
                         : m_iop->get_iop_field("divT").get_view<const Pack*>();
   divq = use_3d_forcing ? m_iop->get_iop_field("divq3d").get_view<const Pack*>()
                         : m_iop->get_iop_field("divq").get_view<const Pack*>();
+  if (iop_dosubsidence) {
+    omega = m_iop->get_iop_field("omega").get_view<const Pack*>();
+  }
   if (iop_coriolis) {
     u_ls = m_iop->get_iop_field("u_ls").get_view<const Pack*>();
     v_ls = m_iop->get_iop_field("v_ls").get_view<const Pack*>();
+  }
+  if (iop_nudge_tq) {
+    qv_iop = m_iop->get_iop_field("q").get_view<const Pack*>();
+    t_iop  = m_iop->get_iop_field("T").get_view<const Pack*>();
+  }
+  if (iop_nudge_uv) {
+    u_iop = use_large_scale_wind ? m_iop->get_iop_field("u_ls").get_view<const Pack*>()
+                                 : m_iop->get_iop_field("u").get_view<const Pack*>();
+    v_iop  = use_large_scale_wind ? m_iop->get_iop_field("v_ls").get_view<const Pack*>()
+                                  : m_iop->get_iop_field("v").get_view<const Pack*>();
   }
 
   // Team policy and workspace manager for both homme and scream
@@ -472,6 +491,135 @@ apply_iop_forcing(const Real dt)
       });
     });
   });
+
+  if (iop_nudge_tq or iop_nudge_uv) {
+    // Nudge the domain based on the domain mean
+    // and observed quantities of T, Q, u, and
+
+    if (iop_nudge_tq) {
+      // Compute rstar, exner and temperature from Hommexx
+      compute_homme_states();
+      Kokkos::fence();
+    }
+
+    // Compute domain mean of qv, temperature, u, and v
+
+    // TODO: add to local mem buffer
+    view_1d<Pack> qv_mean, t_mean, u_mean, v_mean;
+    if (iop_nudge_tq) {
+      qv_mean = view_1d<Pack>("u_mean", NLEV),
+      t_mean = view_1d<Pack>("v_mean", NLEV);
+    }
+    if (iop_nudge_uv){
+      u_mean = view_1d<Pack>("u_mean", NLEV),
+      v_mean = view_1d<Pack>("v_mean", NLEV);
+    }
+
+    const auto qv_mean_h = Kokkos::create_mirror_view(qv_mean);
+    const auto t_mean_h  = Kokkos::create_mirror_view(t_mean);
+    const auto u_mean_h  = Kokkos::create_mirror_view(u_mean);
+    const auto v_mean_h  = Kokkos::create_mirror_view(v_mean);
+
+    for (int k=0; k<total_levels; ++k) {
+      if (iop_nudge_tq){
+        Real& qv_mean_k = qv_mean_h(k/Pack::n)[k%Pack::n];
+        Real& t_mean_k = t_mean_h(k/Pack::n)[k%Pack::n];
+        Kokkos::parallel_reduce("compute_domain_means_tq",
+                                nelem*NGP*NGP,
+                                KOKKOS_LAMBDA (const int idx, Real& q_sum, Real& t_sum) {
+          const int ie  =  idx/(NGP*NGP);
+          const int igp = (idx/NGP)%NGP;
+          const int jgp =  idx%NGP;
+
+          q_sum += Q_dyn(ie, 0, igp, jgp, k/Pack::n)[k%Pack::n];
+          t_sum += temperature(ie, igp, jgp, k/Pack::n)[k%Pack::n];
+        },
+        qv_mean_k,
+        t_mean_k);
+
+        m_comm.all_reduce(&qv_mean_k, 1, MPI_SUM);
+        m_comm.all_reduce(&t_mean_k, 1, MPI_SUM);
+
+        qv_mean_k /= m_dyn_grid->get_num_global_dofs();
+        t_mean_k /= m_dyn_grid->get_num_global_dofs();
+      }
+      if (iop_nudge_uv){
+        Real& u_mean_k = u_mean_h(k/Pack::n)[k%Pack::n];
+        Real& v_mean_k = v_mean_h(k/Pack::n)[k%Pack::n];
+        Kokkos::parallel_reduce("compute_domain_means_uv",
+                                nelem*NGP*NGP,
+                                KOKKOS_LAMBDA (const int idx, Real& u_sum, Real& v_sum) {
+          const int ie  =  idx/(NGP*NGP);
+          const int igp = (idx/NGP)%NGP;
+          const int jgp =  idx%NGP;
+
+          u_sum += v_dyn(ie, 0, igp, jgp, k/Pack::n)[k%Pack::n];
+          v_sum += v_dyn(ie, 1, igp, jgp, k/Pack::n)[k%Pack::n];
+        },
+        u_mean_k,
+        v_mean_k);
+
+        m_comm.all_reduce(&u_mean_k, 1, MPI_SUM);
+        m_comm.all_reduce(&v_mean_k, 1, MPI_SUM);
+
+        u_mean_k /= m_dyn_grid->get_num_global_dofs();
+        v_mean_k /= m_dyn_grid->get_num_global_dofs();
+      }
+    }
+    Kokkos::deep_copy(qv_mean, qv_mean_h);
+    Kokkos::deep_copy(t_mean,  t_mean_h);
+    Kokkos::deep_copy(u_mean,  u_mean_h);
+    Kokkos::deep_copy(v_mean,  v_mean_h);
+
+    // Apply relaxation
+    const auto rtau = std::max(dt, iop_nudge_tscale);
+    Kokkos::parallel_for("apply_domain_relaxation",
+                          policy_homme,
+                          KOKKOS_LAMBDA (const KT::MemberType& team) {
+      KV kv(team);
+      const int ie  =  team.league_rank();
+
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, NGP*NGP), [&] (const int idx) {
+        const int igp = idx/NGP;
+        const int jgp = idx%NGP;
+
+        auto dp3d_i        = ekat::subview(dp3d_dyn, ie, igp, jgp);
+        auto vtheta_dp_i   = ekat::subview(vtheta_dp_dyn, ie, igp, jgp);
+        auto rstar_i       = ekat::subview(rstar, ie, igp, jgp);
+        auto exner_i       = ekat::subview(exner, ie, igp, jgp);
+        auto qv_i          = ekat::subview(Q_dyn, ie, 0, igp, jgp);
+        auto temperature_i = ekat::subview(temperature, ie, igp, jgp);
+        auto u_i           = ekat::subview(v_dyn, ie, 0, igp, jgp);
+        auto v_i           = ekat::subview(v_dyn, ie, 1, igp, jgp);
+
+        Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, NLEV), [&](const int& k) {
+          if (iop_nudge_tq) {
+            // Restrict nudging of T and qv to certain levels if requested by user
+            // IOP pressure variable is in unitis of [Pa], while iop_nudge_tq_low/high
+            // is in units of [hPa], thus convert iop_nudge_tq_low/high
+            Mask nudge_level;
+            for (int p=0; p<Pack::n; ++p) {
+              const auto lev = k*Pack::n + p;
+              const auto pressure_from_iop = hyam(lev)*ps0 + hybm(lev)*ps_iop;
+              nudge_level.set(p, pressure_from_iop <= iop_nudge_tq_low*100
+                                 and
+                                 pressure_from_iop >= iop_nudge_tq_high*100);
+            }
+
+            qv_i(k).update(nudge_level, qv_mean(k) - qv_iop(k), -dt/rtau, 1.0);
+            temperature_i(k).update(nudge_level, t_mean(k) - t_iop(k), -dt/rtau, 1.0);
+
+            // Convert updated temperature back to potential temperature
+            vtheta_dp_i(k) = temperature_i(k)*rstar_i(k)*dp3d_i(k)/(Rair*exner_i(k));
+          }
+          if (iop_nudge_uv) {
+            u_i(k).update(u_mean(k) - u_iop(k), -dt/rtau, 1.0);
+            v_i(k).update(v_mean(k) - v_iop(k), -dt/rtau, 1.0);
+          }
+        });
+      });
+    });
+  }
 }
 
 } // namespace scream
