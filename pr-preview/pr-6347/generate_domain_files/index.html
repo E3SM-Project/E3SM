@@ -9,25 +9,23 @@
       
       
       
-        <link rel="prev" href="../../developer/ci_nightly/">
+        <link rel="prev" href="../MOSART/tech-guide/">
       
       
-        <link rel="next" href="../clean_clear_sky/">
       
-      
-      <link rel="icon" href="../../../assets/images/favicon.png">
+      <link rel="icon" href="../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.18">
     
     
       
-        <title>AeroCOM cloud top - E3SM</title>
+        <title>Generating Domain Files - E3SM</title>
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.66ac8b77.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.66ac8b77.min.css">
       
         
-        <link rel="stylesheet" href="../../../assets/stylesheets/palette.06af60db.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
       
       
 
@@ -46,7 +44,7 @@
       
     
     
-    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -72,7 +70,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#the-aerocom-algorithm" class="md-skip">
+        <a href="#generating-domain-files" class="md-skip">
           Skip to content
         </a>
       
@@ -88,7 +86,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../../.." title="E3SM" class="md-header__button md-logo" aria-label="E3SM" data-md-component="logo">
+    <a href=".." title="E3SM" class="md-header__button md-logo" aria-label="E3SM" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -108,7 +106,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              AeroCOM cloud top
+              Generating Domain Files
             
           </span>
         </div>
@@ -228,7 +226,7 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../../.." title="E3SM" class="md-nav__button md-logo" aria-label="E3SM" data-md-component="logo">
+    <a href=".." title="E3SM" class="md-nav__button md-logo" aria-label="E3SM" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -258,7 +256,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../.." class="md-nav__link">
+      <a href=".." class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -295,10 +293,8 @@
       
   
   
-    
   
   
-  
     
     
       
@@ -318,11 +314,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
         
           
           <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
@@ -336,7 +332,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             Components
@@ -382,7 +378,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../EAM/" class="md-nav__link ">
+            <a href="../EAM/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -415,7 +411,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../EAM/user-guide/" class="md-nav__link">
+      <a href="../EAM/user-guide/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -436,7 +432,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../EAM/dev-guide/" class="md-nav__link">
+      <a href="../EAM/dev-guide/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -457,7 +453,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../EAM/tech-guide/" class="md-nav__link">
+      <a href="../EAM/tech-guide/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -483,8 +479,6 @@
                 
   
   
-    
-  
   
   
     
@@ -505,16 +499,16 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" >
         
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../" class="md-nav__link ">
+            <a href="../EAMxx/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -531,7 +525,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3_2">
             <span class="md-nav__icon md-icon"></span>
             EAMxx
@@ -577,7 +571,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../user/" class="md-nav__link ">
+            <a href="../EAMxx/user/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -610,7 +604,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../common/installation/" class="md-nav__link">
+      <a href="../EAMxx/common/installation/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -631,7 +625,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../user/model_output/" class="md-nav__link">
+      <a href="../EAMxx/user/model_output/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -652,7 +646,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../user/model_input/" class="md-nav__link">
+      <a href="../EAMxx/user/model_input/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -673,7 +667,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../common/eamxx_params/" class="md-nav__link">
+      <a href="../EAMxx/common/eamxx_params/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -694,7 +688,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../user/coarse_nudging/" class="md-nav__link">
+      <a href="../EAMxx/user/coarse_nudging/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -757,7 +751,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../developer/" class="md-nav__link ">
+            <a href="../EAMxx/developer/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -790,7 +784,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../common/installation/" class="md-nav__link">
+      <a href="../EAMxx/common/installation/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -811,7 +805,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../developer/style_guide/" class="md-nav__link">
+      <a href="../EAMxx/developer/style_guide/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -832,7 +826,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../developer/kokkos_ekat/" class="md-nav__link">
+      <a href="../EAMxx/developer/kokkos_ekat/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -853,7 +847,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../developer/source_tree/" class="md-nav__link">
+      <a href="../EAMxx/developer/source_tree/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -921,7 +915,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../developer/field/" class="md-nav__link">
+      <a href="../EAMxx/developer/field/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -942,7 +936,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../developer/grid/" class="md-nav__link">
+      <a href="../EAMxx/developer/grid/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -963,7 +957,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../developer/processes/" class="md-nav__link">
+      <a href="../EAMxx/developer/processes/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -984,7 +978,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../developer/managers/" class="md-nav__link">
+      <a href="../EAMxx/developer/managers/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1013,7 +1007,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../developer/io/" class="md-nav__link">
+      <a href="../EAMxx/developer/io/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1079,7 +1073,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../developer/standalone_testing/" class="md-nav__link">
+      <a href="../EAMxx/developer/standalone_testing/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1100,7 +1094,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../developer/cime_testing/" class="md-nav__link">
+      <a href="../EAMxx/developer/cime_testing/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1121,7 +1115,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../developer/ci_nightly/" class="md-nav__link">
+      <a href="../EAMxx/developer/ci_nightly/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1155,10 +1149,8 @@
                 
   
   
-    
   
   
-  
     
     
       
@@ -1171,11 +1163,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4" >
         
           
           <label class="md-nav__link" for="__nav_3_2_4" id="__nav_3_2_4_label" tabindex="0">
@@ -1189,7 +1181,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_4_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_4_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3_2_4">
             <span class="md-nav__icon md-icon"></span>
             Technical Guide
@@ -1200,19 +1192,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../EAMxx/technical/aerocom_cldtop/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1221,7 +1204,6 @@
   
 
       </a>
-      
     </li>
   
 
@@ -1234,7 +1216,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../clean_clear_sky/" class="md-nav__link">
+      <a href="../EAMxx/technical/clean_clear_sky/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1303,7 +1285,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../ELM/" class="md-nav__link ">
+            <a href="../ELM/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -1336,7 +1318,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../ELM/user-guide/" class="md-nav__link">
+      <a href="../ELM/user-guide/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1357,7 +1339,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../ELM/dev-guide/" class="md-nav__link">
+      <a href="../ELM/dev-guide/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1378,7 +1360,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../ELM/tech-guide/" class="md-nav__link">
+      <a href="../ELM/tech-guide/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1439,7 +1421,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../MOSART/" class="md-nav__link ">
+            <a href="../MOSART/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -1472,7 +1454,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../MOSART/user-guide/" class="md-nav__link">
+      <a href="../MOSART/user-guide/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1493,7 +1475,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../MOSART/dev-guide/" class="md-nav__link">
+      <a href="../MOSART/dev-guide/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1514,7 +1496,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../MOSART/tech-guide/" class="md-nav__link">
+      <a href="../MOSART/tech-guide/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1547,8 +1529,10 @@
       
   
   
+    
   
   
+  
     
     
       
@@ -1562,11 +1546,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
         
           
           <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
@@ -1580,7 +1564,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             Tools
@@ -1591,6 +1575,8 @@
                 
   
   
+    
+  
   
   
     
@@ -1605,16 +1591,16 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1" checked>
         
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../generate_domain_files/" class="md-nav__link ">
+            <a href="./" class="md-nav__link md-nav__link--active">
               
   
   <span class="md-ellipsis">
@@ -1626,7 +1612,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_1_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_1_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4_1">
             <span class="md-nav__icon md-icon"></span>
             generate_domain_files
@@ -1670,6 +1656,23 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#environement" class="md-nav__link">
+    <span class="md-ellipsis">
+      Environement
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -1683,7 +1686,7 @@
                   
 
   
-    <a href="https://github.com/E3SM-Project/screamtechnical/aerocom_cldtop.md" title="Edit this page" class="md-content__button md-icon">
+    <a href="https://github.com/E3SM-Project/E3SM/edit/master/tools/generate_domain_files/docs/index.md" title="Edit this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4v-2m10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1 2.1 2.1Z"/></svg>
     </a>
@@ -1692,46 +1695,31 @@
     
       
     
-    <a href="https://github.com/E3SM-Project/screamtechnical/aerocom_cldtop.md" title="View source of this page" class="md-content__button md-icon">
+    <a href="https://github.com/E3SM-Project/E3SM/raw/master/tools/generate_domain_files/docs/index.md" title="View source of this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.15 8.15 0 0 1-1.23-2Z"/></svg>
     </a>
   
 
 
-<h1 id="the-aerocom-algorithm">The AeroCOM algorithm</h1>
-<p>The goal of the AeroCOM algorithm is to calculate properties at cloud top based on the AeroCOM recommendation. There are two main parts of the algorithm: probabilistically determining "cloud top" and then "calculating properties" at said cloud top.</p>
-<p>We treat model columns independently, so we loop over all columns in parallel. We then loop over all layers in serial (due to needing an accumulative product), starting at 2 (second highest) layer because the highest is assumed to have no clouds. Let's take a photonic approach from above the model top. Let's say that <span class="arithmatex">\(p_{k}\)</span> is the probability of a photon passing through the layer <span class="arithmatex">\(k\)</span>. We follow the maximum-random overlap assumption. In all cases, we assume the cloudiness (or cloudy fraction) is completely opaque.</p>
-<p>We assume the highest layer has no clouds, thus the <span class="arithmatex">\(p_{k} = 1\)</span> for the highest layer. Note that <span class="arithmatex">\(p_{k}\)</span> is initialized as 1 for all layers. We also clip the cloudy fraction <span class="arithmatex">\(C_{i,k}\)</span> to ensure that <span class="arithmatex">\(C_{i,k} \in [0+\epsilon, 1-\epsilon]\)</span>, where <span class="arithmatex">\(\epsilon = 0.001\)</span>. Starting at the second highest layer, <span class="arithmatex">\(k+1\)</span>, we check if some "cloudy" conditions are met. These conditions are now arbitrarily defined by a cloudiness threshold of <span class="arithmatex">\(\epsilon\)</span> (i.e., <span class="arithmatex">\(C_{i,k}&gt;\epsilon\)</span>) and a non-zero threshold on the total (both liquid and ice) droplet number concentration (i.e., <span class="arithmatex">\(cQ_{i,k} + iQ_{i,k} &gt; 0\)</span>). If the conditions are met, we estimate the cloud-top cloud fraction using an accumulative product following the maximum-random overlap assumption.</p>
-<div class="arithmatex">\[c_{i} = 1 - \prod_{k=2}^{K} p_{k} = 1 - \prod_{k=2}^{K} \frac{1 - \max(C_{i,k}, C_{i,k-1})}{1-C_{i,k-1}}\]</div>
-<p>In order to estimate cloud-top properties, we weight by the probability of "remaining cloudiness" or <span class="arithmatex">\(p_{k-1} - p_{k}\)</span>.</p>
-<table>
-<thead>
-<tr>
-<th>Type</th>
-<th>Equation</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>cloud property</td>
-<td><span class="arithmatex">\(x_{i} = \sum_{k=2}^{K} X_{i,k} \Phi_{i,k} (p_{k-1} - p_{k})\)</span></td>
-</tr>
-<tr>
-<td>cloud content</td>
-<td><span class="arithmatex">\(x_{i} = \sum_{k=2}^{K} \Phi_{i,k} (p_{k-1} - p_{k})\)</span></td>
-</tr>
-<tr>
-<td>other property</td>
-<td><span class="arithmatex">\(x_{i} = \sum_{k=2}^{K} X_{i,k} (p_{k-1} - p_{k})\)</span></td>
-</tr>
-</tbody>
-</table>
-<p>In the above, <span class="arithmatex">\(\Phi_{i,k}\)</span> is the thermodynamic phase defined by the cloud droplet number concentration ratios.</p>
-<div class="arithmatex">\[i\Phi_{i,k} = \frac{iQ_{i,k}}{iQ_{i,k} + cQ_{i,k}}\]</div>
-<div class="arithmatex">\[c\Phi_{i,k} = \frac{cQ_{i,k}}{iQ_{i,k} + cQ_{i,k}}\]</div>
-<p>The thermodynamic phase is used only for cloud properties (e.g., cloud-top cloud droplet number concentration) or cloud content (e.g., cloud liquid content). Further, <span class="arithmatex">\(X_{i,k}\)</span> is the three-dimensional cloud property of interest which is needed if we are converting a property from three-dimensional (<span class="arithmatex">\(X\)</span>) to its two-dimensional counterpart (<span class="arithmatex">\(x\)</span>). "Other" properties here include temperature and pressure which are not dependent on the thermodynamic phase.</p>
-<p>A helpful references: Räisänen, P., Barker, H. W., Khairoutdinov, M. F., Li, J., &amp; Randall, D. A. (2004). Stochastic generation of subgrid‐scale cloudy columns for large‐scale models. Quarterly Journal of the Royal Meteorological Society: A journal of the atmospheric sciences, applied meteorology and physical oceanography, 130(601), 2047-2067.</p>
+<h1 id="generating-domain-files">Generating Domain Files</h1>
+<p>Domain files are needed at runtime by the coupler, data models, and land model.
+The land model uses the mask to determine where to run and the coupler use the
+land fraction to merge fluxes from multiple surface types to the atmosphere
+above them.</p>
+<p>Domain files are created from a conservative, monotone mapping file from the 
+ocean grid (where the mask is defined) to the atmosphere grid.</p>
+<p>a mapping files created in the 
+previous step, using a tool provided with CIME in 
+${e3sm_root}/cime/tools/mapping/gen_domain_files. </p>
+<h2 id="environement">Environement</h2>
+<p>The new domain generation tool requires a few special packages, 
+such as xarray, numba, and itertools.
+These are all included in the E3SM unified environment:
+https://e3sm.org/resources/tools/other-tools/e3sm-unified-environment/</p>
+<p>Alternatively, a simple conda environment can be created with the following command:
+<div class="highlight"><pre><span></span><code>conda create --name example_env --channel conda-forge xarray numpy numba scikit-learn netcdf4
+</code></pre></div></p>
 
 
 
@@ -1784,12 +1772,12 @@
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.indexes", "navigation.instant", "navigation.instant.prefetch", "navigation.sections", "navigation.path", "navigation.tracking", "navigation.top", "search.suggest", "search.highlight", "search.share", "content.code.select", "content.code.copy", "content.action.edit", "content.action.view", "content.tooltips"], "search": "../../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.indexes", "navigation.instant", "navigation.instant.prefetch", "navigation.sections", "navigation.path", "navigation.tracking", "navigation.top", "search.suggest", "search.highlight", "search.share", "content.code.select", "content.code.copy", "content.action.edit", "content.action.view", "content.tooltips"], "search": "../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.3220b9d7.min.js"></script>
+      <script src="../assets/javascripts/bundle.3220b9d7.min.js"></script>
       
-        <script src="../../../javascript/mathjax.js"></script>
+        <script src="../javascript/mathjax.js"></script>
       
         <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
       
