@@ -23,6 +23,7 @@
 #include "Logging.h"
 #include "MachEnv.h"
 #include "mpi.h"
+#include <numeric>
 
 namespace OMEGA {
 
@@ -73,9 +74,15 @@ class Halo {
    /// exchange in any index space.
    std::vector<Neighbor> Neighbors;
 
-   /// List of Task IDs of all neighboring tasks in the order they appear
-   /// in the Neighbors vector above
+   /// Sorted list of Task IDs of all neighboring tasks in ascending order.
+   /// Another task is considered a neighbor if a mesh element owned by that
+   /// task is in the halo of the local task in at least one index space, or if
+   /// an owned element is in the halo of that task in at least one index space.
    std::vector<I4> NeighborList;
+
+   /// Flags to control which tasks in NeighborList that the local task needs to
+   /// send elements to and receive elements from for each index space.
+   std::vector<I4> SendFlags[3], RecvFlags[3];
 
    /// Pointer to current neighbor, utilized in the various member functions
    /// to make code more concise.
@@ -152,6 +159,23 @@ class Halo {
    }; // end class Neighbor
 
    // Private methods
+
+   /// Uses info from Decomp to generate a sorted list of tasks that own
+   /// elements in the the Halo of the local task for a particular index space.
+   /// Utilized only during halo construction
+   int generateListOfTasksInHalo(const I4 NOwned, const I4 NAll,
+                                 HostArray2DI4 Locs,
+                                 std::vector<I4> &ListOfTasks);
+
+   /// Set SendFlags and RecvFlags for the input index space. Utilized only
+   /// during halo construction
+   int setNeighborFlags(std::vector<I4> NeighborElem,
+                        const MeshElement IdxSpace);
+
+   /// Uses info from Decomp to determine all tasks which own elements in the
+   /// halo of the local task or need locally owned elements for their halo.
+   /// Utilized only during halo construction
+   int determineNeighbors(const I4 NumTasks);
 
    /// Send a vector of integers to each neighboring task and receive a vector
    /// of integers from each neighboring task. The first dimension of each
@@ -293,18 +317,23 @@ class Halo {
          TotSize *= Array.extent(NDims - 1);
       }
 
+      // Synchronize all tasks before starting communication
+      MPI_Barrier(MyComm);
+
       // Allocate the receive buffers and Call MPI_Irecv for each Neighbor
       // so the local task is ready to accept messages from each
       // neighboring task
       startReceives();
 
-      // Loop through each Neighbor and pack the buffers to be sent
-      // to each neighboring task
+      // Loop through each Neighbor, resetting communication flags and packing
+      // buffers if there are elements to be sent to the neighboring task
       for (int INghbr = 0; INghbr < NNghbr; ++INghbr) {
-         MyNeighbor = &Neighbors[INghbr];
-         packBuffer(Array);
+         MyNeighbor           = &Neighbors[INghbr];
          MyNeighbor->Received = false;
          MyNeighbor->Unpacked = false;
+         if (SendFlags[MyElem][INghbr]) {
+            packBuffer(Array);
+         }
       }
 
       // Call MPI_Isend for each Neighbor to send the packed buffers
@@ -312,33 +341,42 @@ class Halo {
 
       // Wait for all sends to complete before proceeding
       for (int INghbr = 0; INghbr < NNghbr; ++INghbr) {
-         MyNeighbor = &Neighbors[INghbr];
-         MPI_Wait(&MyNeighbor->SReq, MPI_STATUS_IGNORE);
+         if (SendFlags[MyElem][INghbr]) {
+            MyNeighbor = &Neighbors[INghbr];
+            MPI_Wait(&MyNeighbor->SReq, MPI_STATUS_IGNORE);
+         }
       }
 
-      I4 MaxIter = 100000000; // Large integer to prevent infinite loop
-      I4 IPass   = 0;         // Number of passes through while loop
-      I4 NRcvd   = 0;         // Number of messages received
+      I4 MaxIter = 1000000000; // Large integer to prevent infinite loop
+      I4 IPass   = 0;          // Number of passes through while loop
+      I4 NRcvd   = 0;          // Integer to track number of messages received
+
+      // Total number of messages the local task will receive
+      I4 NMessages = std::accumulate(RecvFlags[MyElem].begin(),
+                                     RecvFlags[MyElem].end(), 0);
 
       // Until all messages from neighboring tasks are received, loop
       // through Neighbor objects and use MPI_Test to check if the message
-      // has been received
+      // has been received. Unpack buffers upon receipt of each message
       while (not AllReceived) {
          for (int INghbr = 0; INghbr < NNghbr; ++INghbr) {
-            MyNeighbor = &Neighbors[INghbr];
-            if (not MyNeighbor->Received) {
-               MPI_Test(&MyNeighbor->RReq, &MyNeighbor->Received,
-                        MPI_STATUS_IGNORE);
-               if (MyNeighbor->Received) {
-                  NRcvd++;
+            if (RecvFlags[MyElem][INghbr]) {
+               MyNeighbor = &Neighbors[INghbr];
+               if (not MyNeighbor->Received) {
+                  MPI_Test(&MyNeighbor->RReq, &MyNeighbor->Received,
+                           MPI_STATUS_IGNORE);
+                  if (MyNeighbor->Received) {
+                     ++NRcvd;
+                  }
+               }
+               if (MyNeighbor->Received and not MyNeighbor->Unpacked) {
+                  unpackBuffer(Array);
+                  MyNeighbor->Unpacked = true;
                }
             }
-            if (MyNeighbor->Received and not MyNeighbor->Unpacked) {
-               unpackBuffer(Array);
-               MyNeighbor->Unpacked = true;
-            }
          }
-         if (NRcvd == NNghbr) {
+
+         if (NRcvd == NMessages) {
             AllReceived = true;
          }
          ++IPass;
