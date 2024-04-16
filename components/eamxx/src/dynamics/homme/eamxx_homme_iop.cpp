@@ -246,6 +246,7 @@ apply_iop_forcing(const Real dt)
   const auto nelem    = m_dyn_grid->get_num_local_dofs()/(NGP*NGP);
   const auto total_levels = m_dyn_grid->get_num_vertical_levels();
   const auto qsize = params.qsize;
+  const auto theta_hydrostatic_mode = params.theta_hydrostatic_mode;
 
   // Sanity checks since we will be switching between ekat::Pack
   // and Homme::Scalar view types
@@ -316,66 +317,68 @@ apply_iop_forcing(const Real dt)
   // TODO: Create a memory buffer for this class
   //       and add the below WSM and views
   WorkspaceMgr eamxx_wsm(NLEVI, 7+qsize, policy_eamxx);
-  WorkspaceMgr homme_wsm(NLEV,  32,      policy_homme);
+  WorkspaceMgr homme_wsm(NLEV, 16 + (theta_hydrostatic_mode ? 16 : 0), policy_homme);
   view_Nd<Pack, 4>
-    temperature("temperature", nelem, NGP, NGP, NLEV),
-    exner("exner", nelem, NGP, NGP, NLEV);
+    rstar      ("rstar",       nelem, NGP, NGP, NLEV),
+    exner      ("exner",       nelem, NGP, NGP, NLEV),
+    temperature("temperature", nelem, NGP, NGP, NLEV);
+
+  // Lambda for computing rstar, exner, and temperature from Hommexx
+  auto compute_homme_states = [&] () {
+    Kokkos::parallel_for("compute_rstar_exner_and_temperature", policy_homme, KOKKOS_LAMBDA (const KT::MemberType& team) {
+      KV kv(team);
+      const int ie  =  team.league_rank();
+
+      // Get temp views from workspace
+      auto ws = homme_wsm.get_workspace(team);
+      auto pnh_slot   = ws.take_macro_block("pnh"  , NGP*NGP);
+      uview_2d<Pack> pnh(reinterpret_cast<Pack*>(pnh_slot.data()), NGP*NGP, NLEV);
+
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, NGP*NGP), [&] (const int idx) {
+        const int igp = idx/NGP;
+        const int jgp = idx%NGP;
+
+        auto dp3d_i        = ekat::subview(dp3d_dyn, ie, igp, jgp);
+        auto vtheta_dp_i   = ekat::subview(vtheta_dp_dyn, ie, igp, jgp);
+        auto phi_int_i     = ekat::subview(phi_int_dyn, ie, igp, jgp);
+        auto qv_i          = ekat::subview(Q_dyn, ie, 0, igp, jgp);
+        auto pnh_i         = ekat::subview(pnh, idx);
+        auto rstar_i       = ekat::subview(rstar, ie, igp, jgp);
+        auto exner_i       = ekat::subview(exner, ie, igp, jgp);
+        auto temperature_i = ekat::subview(temperature, ie, igp, jgp);
+
+        // Reinterperate into views of Homme::Scalar for calling Hommexx function.
+        Homme::ExecViewUnmanaged<Homme::Scalar[NLEV]> dp3d_scalar(reinterpret_cast<Homme::Scalar*>(dp3d_i.data()), NLEV);
+        Homme::ExecViewUnmanaged<Homme::Scalar[NLEV]> vtheta_dp_scalar(reinterpret_cast<Homme::Scalar*>(vtheta_dp_i.data()), NLEV);
+        Homme::ExecViewUnmanaged<Homme::Scalar[NLEVI]> phi_int_scalar(reinterpret_cast<Homme::Scalar*>(phi_int_i.data()), NLEVI);
+        Homme::ExecViewUnmanaged<Homme::Scalar[NLEV]> qv_scalar(reinterpret_cast<Homme::Scalar*>(qv_i.data()), NLEV);
+        Homme::ExecViewUnmanaged<Homme::Scalar[NLEV]> pnh_scalar(reinterpret_cast<Homme::Scalar*>(pnh_i.data()), NLEV);
+        Homme::ExecViewUnmanaged<Homme::Scalar[NLEV]> exner_scalar(reinterpret_cast<Homme::Scalar*>(exner_i.data()), NLEV);
+        Homme::ExecViewUnmanaged<Homme::Scalar[NLEV]> rstar_scalar(reinterpret_cast<Homme::Scalar*>(rstar_i.data()), NLEV);
+        Homme::ExecViewUnmanaged<Homme::Scalar[NLEV]> temperature_scalar(reinterpret_cast<Homme::Scalar*>(temperature_i.data()), NLEV);
+
+        // Compute exner from EOS
+        if (theta_hydrostatic_mode) {
+          auto hydro_p_int = ws.take("hydro_p_int");
+          Homme::ExecViewUnmanaged<Homme::Scalar[NLEVI]> hydro_p_int_scalar(reinterpret_cast<Homme::Scalar*>(hydro_p_int.data()), NLEVI);
+          elem_ops.compute_hydrostatic_p(kv, dp3d_scalar, hydro_p_int_scalar, pnh_scalar);
+          eos.compute_exner(kv, pnh_scalar, exner_scalar);
+          ws.release(hydro_p_int);
+        } else {
+          eos.compute_pnh_and_exner(kv, vtheta_dp_scalar, phi_int_scalar, pnh_scalar, exner_scalar);
+        }
+
+        // Get the temperature from dynamics states
+        elem_ops.get_temperature(kv, eos, use_moisture, dp3d_scalar, exner_scalar, vtheta_dp_scalar, qv_scalar, rstar_scalar, temperature_scalar);
+      });
+
+      // Release WS views
+      ws.release_macro_block(pnh_slot, NGP*NGP);
+    });
+  };
 
   // Preprocess some homme states to get temperature and exner
-  Kokkos::parallel_for("compute_t_and_exner", policy_homme, KOKKOS_LAMBDA (const KT::MemberType& team) {
-    KV kv(team);
-    const int ie  =  team.league_rank();
-
-    // Get temp views from workspace
-    auto ws = homme_wsm.get_workspace(team);
-    auto pnh_slot   = ws.take_macro_block("pnh"  , NGP*NGP);
-    auto rstar_slot = ws.take_macro_block("rstar", NGP*NGP);
-    uview_2d<Pack>
-      pnh  (reinterpret_cast<Pack*>(pnh_slot.data()),   NGP*NGP, NLEV),
-      rstar(reinterpret_cast<Pack*>(rstar_slot.data()), NGP*NGP, NLEV);
-
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, NGP*NGP), [&] (const int idx) {
-      const int igp = idx/NGP;
-      const int jgp = idx%NGP;
-
-      auto dp3d_i      = ekat::subview(dp3d_dyn, ie, igp, jgp);
-      auto vtheta_dp_i = ekat::subview(vtheta_dp_dyn, ie, igp, jgp);
-      auto phi_int_i   = ekat::subview(phi_int_dyn, ie, igp, jgp);
-      auto qv_i        = ekat::subview(Q_dyn, ie, 0, igp, jgp);
-      auto pnh_i         = ekat::subview(pnh, idx);
-      auto rstar_i       = ekat::subview(rstar, idx);
-      auto exner_i       = ekat::subview(exner, ie, igp, jgp);
-      auto temperature_i = ekat::subview(temperature, ie, igp, jgp);
-
-      // Reinterperate into views of Homme::Scalar for calling Hommexx function.
-      Homme::ExecViewUnmanaged<Homme::Scalar[NLEV]> dp3d_scalar(reinterpret_cast<Homme::Scalar*>(dp3d_i.data()), NLEV);
-      Homme::ExecViewUnmanaged<Homme::Scalar[NLEV]> vtheta_dp_scalar(reinterpret_cast<Homme::Scalar*>(vtheta_dp_i.data()), NLEV);
-      Homme::ExecViewUnmanaged<Homme::Scalar[NLEVI]> phi_int_scalar(reinterpret_cast<Homme::Scalar*>(phi_int_i.data()), NLEVI);
-      Homme::ExecViewUnmanaged<Homme::Scalar[NLEV]> qv_scalar(reinterpret_cast<Homme::Scalar*>(qv_i.data()), NLEV);
-      Homme::ExecViewUnmanaged<Homme::Scalar[NLEV]> pnh_scalar(reinterpret_cast<Homme::Scalar*>(pnh_i.data()), NLEV);
-      Homme::ExecViewUnmanaged<Homme::Scalar[NLEV]> exner_scalar(reinterpret_cast<Homme::Scalar*>(exner_i.data()), NLEV);
-      Homme::ExecViewUnmanaged<Homme::Scalar[NLEV]> rstar_scalar(reinterpret_cast<Homme::Scalar*>(rstar_i.data()), NLEV);
-      Homme::ExecViewUnmanaged<Homme::Scalar[NLEV]> temperature_scalar(reinterpret_cast<Homme::Scalar*>(temperature_i.data()), NLEV);
-
-      // Compute exner from EOS
-      if (params.theta_hydrostatic_mode) {
-        auto hydro_p_int = ws.take("hydro_p_int");
-        Homme::ExecViewUnmanaged<Homme::Scalar[NLEVI]> hydro_p_int_scalar(reinterpret_cast<Homme::Scalar*>(hydro_p_int.data()), NLEVI);
-        elem_ops.compute_hydrostatic_p(kv, dp3d_scalar, hydro_p_int_scalar, pnh_scalar);
-        eos.compute_exner(kv, pnh_scalar, exner_scalar);
-        ws.release(hydro_p_int);
-      } else {
-        eos.compute_pnh_and_exner(kv, vtheta_dp_scalar, phi_int_scalar, pnh_scalar, exner_scalar);
-      }
-
-      // Get the temperature from dynamics states
-      elem_ops.get_temperature(kv, eos, use_moisture, dp3d_scalar, exner_scalar, vtheta_dp_scalar, qv_scalar, rstar_scalar, temperature_scalar);
-    });
-
-    // Release WS views
-    ws.release_macro_block(rstar_slot, NGP*NGP);
-    ws.release_macro_block(pnh_slot, NGP*NGP);
-  });
+  compute_homme_states();
   Kokkos::fence();
 
   // Apply IOP forcing
@@ -434,22 +437,16 @@ apply_iop_forcing(const Real dt)
     KV kv(team);
     const int ie  =  team.league_rank();
 
-    // Get temp views from workspace
-    auto ws = homme_wsm.get_workspace(team);
-    auto rstar_slot = ws.take_macro_block("rstar", NGP*NGP);
-    uview_2d<Pack>
-      rstar(reinterpret_cast<Pack*>(rstar_slot.data()), NGP*NGP, NLEV);
-
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, NGP*NGP), [&] (const int idx) {
       const int igp = idx/NGP;
       const int jgp = idx%NGP;
 
-      auto dp3d_i      = ekat::subview(dp3d_dyn, ie, igp, jgp);
-      auto vtheta_dp_i = ekat::subview(vtheta_dp_dyn, ie, igp, jgp);
-      auto qv_i        = ekat::subview(Q_dyn, ie, 0, igp, jgp);
-      auto Q_i         = Kokkos::subview(Q_dyn, ie, Kokkos::ALL(), igp, jgp, Kokkos::ALL());
-      auto Qdp_i       = Kokkos::subview(Qdp_dyn, ie, Kokkos::ALL(), igp, jgp, Kokkos::ALL());
-      auto rstar_i = ekat::subview(rstar, idx);
+      auto dp3d_i        = ekat::subview(dp3d_dyn, ie, igp, jgp);
+      auto vtheta_dp_i   = ekat::subview(vtheta_dp_dyn, ie, igp, jgp);
+      auto qv_i          = ekat::subview(Q_dyn, ie, 0, igp, jgp);
+      auto Q_i           = Kokkos::subview(Q_dyn, ie, Kokkos::ALL(), igp, jgp, Kokkos::ALL());
+      auto Qdp_i         = Kokkos::subview(Qdp_dyn, ie, Kokkos::ALL(), igp, jgp, Kokkos::ALL());
+      auto rstar_i       = ekat::subview(rstar, ie, igp, jgp);
       auto exner_i       = ekat::subview(exner, ie, igp, jgp);
       auto temperature_i = ekat::subview(temperature, ie, igp, jgp);
 
@@ -466,16 +463,14 @@ apply_iop_forcing(const Real dt)
         // For BFB on restarts, Q needs to be updated after we compute Qdp
         Q_i(q, ilev) = Qdp_i(q, ilev)/dp3d_i(ilev);
       });
+      team.team_barrier();
 
-      // Convert updated temperature back to potential temperature
+      // Recompute rstar with updated qv, and convert updated temperature back to potential temperature
       elem_ops.get_R_star(kv, use_moisture, qv_scalar, rstar_scalar);
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, NLEV), [&] (const int k) {
         vtheta_dp_i(k) = temperature_i(k)*rstar_i(k)*dp3d_i(k)/(Rair*exner_i(k));
       });
     });
-
-    // Release WS views
-    ws.release_macro_block(rstar_slot, NGP*NGP);
   });
 }
 
