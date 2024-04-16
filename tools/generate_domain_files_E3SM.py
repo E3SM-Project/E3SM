@@ -27,6 +27,8 @@ usage = '''
 python generate_domain_files_E3SM.py  -m <map_file> 
                                       -o <ocn_grid_name> 
                                       -l <lnd_grid_name>
+                                      [--output-root <path>]
+                                      [--date-stamp <date string>]
                                       [--fminval <fminval>]
                                       [--fmaxval <fmaxval>]
                                       [--set-omask]
@@ -39,7 +41,16 @@ Purpose:
 
   For "tr-grid" configurations of E3SM (land grid is different from atmos/ocn):
   In addition to running this tool with the ocn->atm map as above,
-  a second iteration is needed with a similar ocn->lnd map. 
+  a second iteration is needed with a similar ocn->lnd map.
+
+Environment
+  
+  This tool requires a few special packages, such as xarray, numba, and itertools.
+  These are all included in the E3SM unified environment:
+  https://e3sm.org/resources/tools/other-tools/e3sm-unified-environment/
+
+  Otherwise a simple conda environment can be created:
+  conda create --name example_env --channel conda-forge xarray numpy numba scikit-learn netcdf4
 
 The following output domain files are created:
 
@@ -121,10 +132,6 @@ else:
 domain_file_ocn_on_ocn = f'{opts.output_root}/test.domain.ocn.{opts.ocn_grid}.{cdate}.nc'
 domain_file_lnd_on_atm = f'{opts.output_root}/test.domain.lnd.{opts.lnd_grid}_{opts.ocn_grid}.{cdate}.nc'
 domain_file_ocn_on_atm = f'{opts.output_root}/test.domain.ocn.{opts.lnd_grid}_{opts.ocn_grid}.{cdate}.nc'
-
-fn1_out_ocn = f'{opts.output_root}/test.domain.ocn.{opts.ocn_grid}.{cdate}.nc'
-fn2_out_lnd = f'{opts.output_root}/test.domain.lnd.{opts.lnd_grid}_{opts.ocn_grid}.{cdate}.nc'
-fn2_out_ocn = f'{opts.output_root}/test.domain.ocn.{opts.lnd_grid}_{opts.ocn_grid}.{cdate}.nc'
 #-------------------------------------------------------------------------------
 # print some informative stuff
 print(f'''
@@ -235,7 +242,7 @@ Grid information from map file:
 ''')
 
 #-------------------------------------------------------------------------------
-# Create ocean domain on ocean grid (fn1_out_ocn)
+# Create ocean domain on ocean grid (domain_file_ocn_on_ocn)
 
 # Get ocn mask on ocn grid
 omask = get_mask(ds,opts,suffix='_a')
@@ -250,12 +257,12 @@ ds_out['area'] = ds['area_a'].expand_dims(dim='nj').rename({'n_a':'ni'})
 ds_out['frac'] = ofrac       .expand_dims(dim='nj').rename({'n_a':'ni'})
 ds_out['mask'] = omask       .expand_dims(dim='nj').rename({'n_a':'ni'})
 add_metadata(ds_out)
-ds_out.to_netcdf(path=fn1_out_ocn,mode='w')
+ds_out.to_netcdf(path=domain_file_ocn_on_ocn,mode='w')
 
-print(f'successfully created domain file: {clr.MAGENTA}{fn1_out_ocn}{clr.END}')
+print(f'successfully created domain file: {clr.MAGENTA}{domain_file_ocn_on_ocn}{clr.END}')
 
 #-------------------------------------------------------------------------------
-# Create land and ocean domains on atmosphere grid ( fn2_out_lnd / fn2_out_ocn )
+# Create land and ocean domains on atmosphere grid ( domain_file_lnd_on_atm / domain_file_ocn_on_atm )
 
 xc   = ds['xc_b']
 yc   = ds['yc_b']
@@ -311,9 +318,9 @@ ds_out['mask'] = lmask       .expand_dims(dim='nj').rename({'n_b':'ni'})
 
 add_metadata(ds_out)
 
-ds_out.to_netcdf(path=fn2_out_lnd,mode='w')
+ds_out.to_netcdf(path=domain_file_lnd_on_atm,mode='w')
 
-print(f'successfully created domain file: {clr.MAGENTA}{fn2_out_lnd}{clr.END}')
+print(f'successfully created domain file: {clr.MAGENTA}{domain_file_lnd_on_atm}{clr.END}')
 
 #-------------------------------------------------------------------------------
 
@@ -328,9 +335,9 @@ ds_out['mask'] = omask       .expand_dims(dim='nj').rename({'n_b':'ni'})
 
 add_metadata(ds_out)
 
-ds_out.to_netcdf(path=fn2_out_ocn,mode='w')
+ds_out.to_netcdf(path=domain_file_ocn_on_atm,mode='w')
 
-print(f'successfully created domain file: {clr.MAGENTA}{fn2_out_ocn}{clr.END}')
+print(f'successfully created domain file: {clr.MAGENTA}{domain_file_ocn_on_atm}{clr.END}')
 
 #-------------------------------------------------------------------------------
 print()
