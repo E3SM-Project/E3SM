@@ -7,7 +7,7 @@ Domain files are created from a conservative, monotone mapping file from the oce
 ## Environement
 
 The new domain generation tool requires a few special packages, such as xarray, numba, and itertools. These are all included in the E3SM unified environment:
-https://e3sm.org/resources/tools/other-tools/e3sm-unified-environment/
+<https://e3sm.org/resources/tools/other-tools/e3sm-unified-environment/>
 
 Alternatively, a simple conda environment can be created with the following command:
 
@@ -36,7 +36,7 @@ ConvertMeshToSCRIP --in ${GRID_FILE_PATH}/ne${NE}pg2.g --out ${GRID_FILE_PATH}/n
 
 For RRM grids the last two commands would be used on the exodus file produced by [SQuadGen](https://github.com/ClimateGlobalChange/squadgen) (See the [Adding Support for New Grids](https://docs.e3sm.org/user-guides/adding-grid-support-overview.md) tutorial for more information.).
 
-## Generating Domain Files
+## Running the Domain Generation Tool
 
 Below is a typical example of how to invoke the domain generation tool from the command line:
 
