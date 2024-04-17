@@ -60,7 +60,8 @@ TEST_CASE("forcing", "forcing") {
   // Init everything through singleton, which is what happens in normal runs
   auto& c = Context::singleton();
   auto& p = c.create<SimulationParams>();
-
+  p.dt_remap_factor = 1;
+ 
   auto& hv = c.create<HybridVCoord>();
   hv.random_init(seed);
 
@@ -165,7 +166,7 @@ TEST_CASE("forcing", "forcing") {
           std::cout << "     -> adjustment: " << (adjustment ? "true" : "false") << "\n";
 
           // Reset state, tracers, and forcing to the original random values
-          state.randomize(seed, 10*hv.ps0, hv.ps0, hv.hybrid_ai0);
+          state.randomize(seed, hv);
           tracers.randomize(seed,-1e-3,1e-3);
           forcing.randomize(seed);
 
@@ -289,7 +290,7 @@ TEST_CASE("forcing", "forcing") {
     // Reset state and forcing to the original random values
     std::cout << "Testing dynamics forcing.\n";
 
-    state.randomize(seed, 10*hv.ps0, hv.ps0, hv.hybrid_ai0);
+    state.randomize(seed, hv);
     forcing.randomize(seed);
 
     // Sync views

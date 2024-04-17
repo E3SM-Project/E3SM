@@ -10,7 +10,7 @@ module cam_abortutils
 !-----------------------------------------------------------------------
 !- use statements ------------------------------------------------------
 !-----------------------------------------------------------------------
-  use shr_kind_mod, only: shr_kind_in
+  use shr_kind_mod, only: shr_kind_in, SHR_KIND_CL
   use shr_sys_mod,  only: shr_sys_abort
 
 !-----------------------------------------------------------------------
@@ -24,6 +24,7 @@ module cam_abortutils
 ! Public interfaces ----------------------------------------------------
 !-----------------------------------------------------------------------
   public endrun
+  public handle_allocate_error
 
 !-----------------------------------------------------------------------
 ! Subroutines and functions --------------------------------------------
@@ -62,5 +63,21 @@ contains
     endif
 
    end subroutine
+
+   subroutine handle_allocate_error(retval, subname, fieldname)
+      ! if <retval> is not zero, generate an error message and abort
+      ! Dummy arguments
+      integer,          intent(in) :: retval
+      character(len=*), intent(in) :: subname
+      character(len=*), intent(in) :: fieldname
+      ! Local variable
+      character(len=SHR_KIND_CL)   :: errmsg
+
+      if (retval /= 0) then
+         write(errmsg, '(4a,i0)') trim(subname), ' error allocating ',        &
+              trim(fieldname), ', error = ', retval
+         call endrun(errmsg)
+      end if
+   end subroutine handle_allocate_error
 
 end module cam_abortutils

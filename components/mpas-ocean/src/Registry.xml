@@ -201,8 +201,8 @@
 					possible_values="Any time stamp in 'YYYY-MM-DD_hh:mm:ss' format. Items can be removed from the left if they are unused."
 		/>
 		<nml_option name="config_time_integrator" type="character" default_value="split_explicit_ab2"
-					description="Time integration method."
-					possible_values="'split_explicit', 'RK4', 'unsplit_explicit', 'split_implicit', 'LTS', 'split_explicit_ab2'"
+					description="Time integration method. These options are only supported in standalone, not E3SM: 'LTS', 'FB_LTS'."
+					possible_values="'split_explicit', 'RK4', 'unsplit_explicit', 'split_implicit', 'split_explicit_ab2', 'LTS', 'FB_LTS'"
 		/>
 		<nml_option name="config_number_of_time_levels" type="integer" default_value="2"
 					description="The number of time levels in the time-stepping scheme. This is used for array allocation."
@@ -223,7 +223,7 @@
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_hmix_ref_cell_width" type="real" default_value="30.0e3" units="m"
-					description="Reference cell width. If config_hmix_use_ref_cell_width = .true., then hmix coefficients are set to be nu_{2h} = config_mom_del2*(cellWidth / config_hmix_use_ref_cell_width) and nu_{4h} = config_mom_del4*(cellWidth / config_hmix_use_ref_cell_width)^3 where cellWidth is the effective cell width computed as 2*sqrt(areaCell/pi). See Hoch et al 2020 JAMES eq 1,2. This relation applies within a simulation, but also generally among multiple simulations, so the parameters config_mom_del2, config_mom_del4, and config_hmix_use_ref_cell_width can generally remain at their standard values, and just be adjusted for fine tuning."
+					description="Reference cell width. If config_hmix_use_ref_cell_width = .true., then hmix coefficients are set to be $nu_{2h}$ = config_mom_del2*(cellWidth / config_hmix_use_ref_cell_width) and $nu_{4h}$ = config_mom_del4*(cellWidth / config_hmix_use_ref_cell_width)$^3$ where cellWidth is the effective cell width computed as 2*sqrt(areaCell/pi). See Hoch et al 2020 JAMES eq 1,2. This relation applies within a simulation, but also generally among multiple simulations, so the parameters config_mom_del2, config_mom_del4, and config_hmix_use_ref_cell_width can generally remain at their standard values, and just be adjusted for fine tuning."
 					possible_values="Any positive real number, but typically a resolution number such as 30km."
 		/>
 		<nml_option name="config_apvm_scale_factor" type="real" default_value="0.0"
@@ -255,7 +255,7 @@
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_mom_del4" type="real" default_value="1.2e11" units="m^4 s^-1"
-					description="Coefficient for horizontal biharmonic operator on momentum.  If config_hmix_use_ref_cell_width = .true. then $\nu_{4h}$ = config_mom_del4*(cellWidth / config_hmix_use_ref_cell_width)^3. If config_hmix_use_ref_cell_width = .false. then it is referenced to the smallest cell."
+					description="Coefficient for horizontal biharmonic operator on momentum.  If config_hmix_use_ref_cell_width = .true. then $\nu_{4h}$ = config_mom_del4*(cellWidth / config_hmix_use_ref_cell_width)$^3$. If config_hmix_use_ref_cell_width = .false. then it is referenced to the smallest cell."
 					possible_values="any positive real"
 		/>
 		<nml_option name="config_mom_del4_div_factor" type="real" default_value="1.0" units="non-dimensional"
@@ -267,7 +267,7 @@
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_tracer_del4" type="real" default_value="0.0" units="m^4 s^-1"
-					description="Coefficient for horizontal biharmonic operator on tracers.  If config_hmix_use_ref_cell_width = .true. then $\nu_{4h}$ = config_tracer_del4*(cellWidth / config_hmix_use_ref_cell_width)^3. If config_hmix_use_ref_cell_width = .false. then it is referenced to the smallest cell."
+					description="Coefficient for horizontal biharmonic operator on tracers.  If config_hmix_use_ref_cell_width = .true. then $\nu_{4h}$ = config_tracer_del4*(cellWidth / config_hmix_use_ref_cell_width)$^3$. If config_hmix_use_ref_cell_width = .false. then it is referenced to the smallest cell."
 					possible_values="any positive real"
 		/>
 	</nml_record>
@@ -762,7 +762,7 @@
 	</nml_record>
 	<nml_record name="shortwaveRadiation" mode="init;forward">
 		<nml_option name="config_sw_absorption_type" type="character" default_value="none"
-					description="Name of shortwave absorption type used in simulation. "
+					description="Name of shortwave absorption type used in simulation."
 					possible_values="'jerlov' or 'ohlmann00' or 'none'"
 		/>
 		<nml_option name="config_jerlov_water_type" type="integer" default_value="3"
@@ -1123,7 +1123,7 @@
 					possible_values="Any positive real value."
 		/>
 		<nml_option name="config_Rayleigh_damping_depth_variable" type="logical" default_value=".false."
-					description="If true applies r h^-1 instead of just r."
+					description="If true applies r h$^-1$ instead of just r."
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_Rayleigh_bottom_friction" type="logical" default_value=".false."
@@ -1194,6 +1194,20 @@
 		<nml_option name="config_dt_scaling_LTS" type="integer" default_value="1"
 					description="The ratio between the dt on the coarse region and the dt on the fine region. Specifically, it is the positive integer M that defines dtFine for LTS, dtFine = dt / M."
 					possible_values="Any positive integer greater than or equal to one. A value of one employs the same dt in all regions."
+		/>
+	</nml_record>
+    <nml_record name="forward_backward" mode="forward">
+		<nml_option name="config_fb_weight_1" type="real" default_value="0.531"
+					description="The forward-backward weight for the first stage of FB-RK(3,2), used in FB_LTS."
+					possible_values="Any positive real number less than or equal to one."
+		/>
+		<nml_option name="config_fb_weight_2" type="real" default_value="0.531"
+					description="The forward-backward weight for the second stage of FB-RK(3,2), used in FB_LTS."
+					possible_values="Any positive real number less than or equal to one."
+		/>
+		<nml_option name="config_fb_weight_3" type="real" default_value="0.313"
+					description="The forward-backward weight for the third stage of FB-RK(3,2), used in FB_LTS."
+					possible_values="Any positive real number less than or equal to one."
 		/>
 	</nml_record>
 	<nml_record name="pressure_gradient" mode="forward">
@@ -3608,6 +3622,7 @@
 			 packages="activeTracersBulkRestoringPKG;thicknessBulkPKG"
 		/>
 
+
 		<!-- Misc. coupling fields -->
 		<var name="iceFraction" type="real" dimensions="nCells Time" units="fractional"
 			 description="Fraction of sea ice coverage at cell centers from coupler. Positive into the ocean."
@@ -3688,6 +3703,21 @@
 		</var_array>
 		<var name="avgTotalFreshWaterTemperatureFlux" type="real" dimensions="nCells Time" units="C m s^-1"
 			 description="Sum of heat fluxes associated with water fluxes cell centers sent to coupler. Positive into the ocean."
+		/>
+		<var name="avgLandIceFreshwaterFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
+		         description="Time-averaged sum of freshwater fluxes associated with ice shelf basal melt fluxes cell centers sent to coupler. Positive into the ocean."
+		/>
+		<var name="avgLandIceHeatFlux" type="real" dimensions="nCells Time" units="W m^-2"
+			 description="Time-averaged sum of heat fluxes associated with ice shelf basal melt fluxes cell centers sent to coupler. Positive into the ocean."
+		/>
+		<var name="avgRemovedRiverRunoffFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
+			 description="Time-averaged sum of freshwater fluxes associated with removed liquid runoff fluxes cell centers sent to coupler. Positive into the ocean."
+		/>
+		<var name="avgRemovedIceRunoffFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
+			 description="Time-averaged sum of freshwater fluxes associated with removed ice runoff fluxes cell centers sent to coupler. Positive into the ocean."
+	        />
+		<var name="avgRemovedIceRunoffHeatFlux" type="real" dimensions="nCells Time" units="W m^-2"
+			 description="Time-averaged sum of heat fluxes associated with removed ice runoff fluxes cell centers sent to coupler. Positive into the ocean."
 		/>
 
 		<!-- Input fields from coupler or initial condition for forcing under land ice -->
@@ -3864,7 +3894,7 @@
 			packages="tidalPotentialForcingPKG"
 		/>
 		<var name="tidalPotentialLatitudeFunction" type="real" dimensions="nCells R3 Time" units="1"
-			description="Latitude function for tidal constituents: long-period = 3\sin^2(\phi)-1, diurnal = \sin(2\phi), semi-diurnal = \cos^2(\phi)"
+			description="Latitude function for tidal constituents: long-period = $3\sin^2(\phi)-1$, diurnal = $\sin(2\phi)$, semi-diurnal = $\cos^2(\phi)$"
 			packages="tidalPotentialForcingPKG"
 		/>
 		<var name="sshSubcycleCurWithTides" type="real" dimensions="nCells Time" units="m"
