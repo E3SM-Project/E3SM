@@ -4,7 +4,7 @@ Domain files are needed at runtime by the coupler, data models, and land model. 
 
 Domain files are created from a conservative, monotone mapping file from the ocean grid (where the mask is defined) to the atmosphere grid.
 
-## Environement
+## Environment
 
 The new domain generation tool requires a few special packages, such as xarray, numba, and itertools. These are all included in the E3SM unified environment:
 <https://e3sm.org/resources/tools/other-tools/e3sm-unified-environment/>
