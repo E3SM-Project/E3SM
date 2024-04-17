@@ -28,7 +28,7 @@ inline void pam_hyperdiffusion( pam::PamCoupler &coupler ) {
   #ifdef MMF_PAM_HDT
   real constexpr hd_timescale = MMF_PAM_HDT;  // damping time scale [sec]
   #else
-  real constexpr hd_timescale = 120.0;  // damping time scale [sec]
+  real constexpr hd_timescale = 60.0;  // damping time scale [sec]
   #endif
   //------------------------------------------------------------------------------------------------
   real4d hd_temp("hd_temp",nz,ny,nx,nens);
