@@ -1226,8 +1226,10 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
      call outfld('UTGWORO', utgw,  ncol, lchnk)
      call outfld('VTGWORO', vtgw,  ncol, lchnk)
      call outfld('TTGWORO', ttgw,  ncol, lchnk)
-     tau0x = tau(:,0,pver) * xv * effgw_oro
-     tau0y = tau(:,0,pver) * yv * effgw_oro
+     tau0x=dusfc_ls+dusfc_bl
+     tau0y=dvsfc_ls+dvsfc_bl
+        !tau0x = tau(:,0,pver) * xv * effgw_oro
+        !tau0y = tau(:,0,pver) * yv * effgw_oro
      call outfld('TAUGWX', tau0x, ncol, lchnk)
      call outfld('TAUGWY', tau0y, ncol, lchnk)
      call outfld('SGH   ',   sgh,pcols, lchnk)
