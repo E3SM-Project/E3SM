@@ -380,6 +380,17 @@ contains
     ! ------------------------------------------- !
     ! Initialize turbulent mountain stress module !
     ! ------------------------------------------- !
+            
+	!=========Jinbo Xie===========
+        call addfld ('DTAUX3_FD',(/'lev'/),'A','m/s2','U tendency - fd orographic drag')
+        call addfld ('DTAUY3_FD',(/'lev'/),'A','m/s2','V tendency - fd orographic drag')
+        call addfld ('DUSFC_FD',horiz_only,'A','N/m2','fd zonal oro surface stress')
+        call addfld ('DVSFC_FD',horiz_only,'A','N/m2','fd merio oro surface stress')
+        !=========Jinbo Xie=========== 
+        call add_default('DTAUX3_FD', 1,  ' ')
+        call add_default('DTAUY3_FD', 1,  ' ')
+        call add_default('DUSFC_FD',  1,  ' ')
+        call add_default('DVSFC_FD',  1,  ' ')
 
     if( do_tms ) then
        call init_tms( r8, tms_orocnst, tms_z0fac, karman, gravit, rair, errstring )
@@ -393,21 +404,9 @@ contains
           call add_default('TAUTMSX ', 1, ' ')
           call add_default('TAUTMSY ', 1, ' ')
        end if
-
-	!=========Jinbo Xie===========
-        call addfld ('DTAUX3_FD',(/'lev'/),'A','m/s2','U tendency - fd orographic drag')
-        call addfld ('DTAUY3_FD',(/'lev'/),'A','m/s2','V tendency - fd orographic drag')
-        call addfld ('DUSFC_FD',horiz_only,'A','N/m2','fd zonal oro surface stress')
-        call addfld ('DVSFC_FD',horiz_only,'A','N/m2','fd merio oro surface stress')
-        !=========Jinbo Xie=========== 
-        call add_default('DTAUX3_FD', 1,  ' ')
-        call add_default('DTAUY3_FD', 1,  ' ')
-        call add_default('DUSFC_FD',  1,  ' ')
-        call add_default('DVSFC_FD',  1,  ' ')
         !add original var to default
         call add_default( 'TAUTMSX' ,1,' ')
         call add_default( 'TAUTMSY' ,1,' ')
-        !=========Jinbo Xie===========
 
        if (masterproc) then
           write(iulog,*)'Using turbulent mountain stress module'
@@ -927,7 +926,7 @@ contains
         rublten=utgw(:,pver:1:-1),rvblten=vtgw(:,pver:1:-1),&
         rthblten=ttgw(:,pver:1:-1),&
         dtaux3d_fd=dtaux3_fd(:,pver:1:-1),dtauy3d_fd=dtauy3_fd(:,pver:1:-1),&
-        dusfcg_fd=dusfc_fd,dvsfcg_fd=dvsfc_fd,&
+        dusfcg_fd=dusfc_fd(:ncol),dvsfcg_fd=dvsfc_fd(:ncol),&
         xland=landfrac,br=state%ribulk,&
         var2d=state%var,&
         znu=etamid(pver:1:-1),dz=dz,pblh=pblh,&

@@ -1123,9 +1123,9 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
         dtaux3d_ls=dtaux3_ls(:ncol,pver:1:-1),dtauy3d_ls=dtauy3_ls(:ncol,pver:1:-1),&
         dtaux3d_bl=dtaux3_bl(:ncol,pver:1:-1),dtauy3d_bl=dtauy3_bl(:ncol,pver:1:-1),&
         dtaux3d_ss=dtaux3_ss(:ncol,pver:1:-1),dtauy3d_ss=dtauy3_ss(:ncol,pver:1:-1),&
-        dusfcg_ls=dusfc_ls,dvsfcg_ls=dvsfc_ls,&
-        dusfcg_bl=dusfc_bl,dvsfcg_bl=dvsfc_bl,&
-        dusfcg_ss=dusfc_ss,dvsfcg_ss=dvsfc_ss,&
+        dusfcg_ls=dusfc_ls(:ncol),dvsfcg_ls=dvsfc_ls(:ncol),&
+        dusfcg_bl=dusfc_bl(:ncol),dvsfcg_bl=dvsfc_bl(:ncol),&
+        dusfcg_ss=dusfc_ss(:ncol),dvsfcg_ss=dvsfc_ss(:ncol),&
         xland=cam_in%landfrac,br=state%ribulk(:ncol),&
         var2d=state%var(:ncol),oc12d=state%oc(:ncol),&
         oa2d=state%oadir(:ncol,:),&
