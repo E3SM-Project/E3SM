@@ -399,6 +399,7 @@ int Halo::setNeighborFlags(std::vector<I4> ListOfTasks,
       }
    }
 
+   MPI_Waitall(NNghbr, SendReqs.data(), MPI_STATUS_IGNORE);
    MPI_Waitall(NNghbr, RecvReqs.data(), MPI_STATUS_IGNORE);
 
    return Err;
@@ -607,6 +608,7 @@ int Halo::exchangeVectorInt(
       }
    }
 
+   MPI_Waitall(NNghbr, SendReqs.data(), MPI_STATUS_IGNORE);
    MPI_Waitall(NNghbr, RecvReqs.data(), MPI_STATUS_IGNORE);
 
    return Err;

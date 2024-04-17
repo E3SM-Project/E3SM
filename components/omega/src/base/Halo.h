@@ -317,9 +317,6 @@ class Halo {
          TotSize *= Array.extent(NDims - 1);
       }
 
-      // Synchronize all tasks before starting communication
-      MPI_Barrier(MyComm);
-
       // Allocate the receive buffers and Call MPI_Irecv for each Neighbor
       // so the local task is ready to accept messages from each
       // neighboring task
