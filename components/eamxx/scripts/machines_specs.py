@@ -78,7 +78,10 @@ MACHINE_METADATA = {
                   ["mpic++","mpif90","mpicc"],
                   "srun --mpi=pmi2 -l -N 1 --kill-on-bad-exit --cpu_bind=cores",
                   "/lcrc/group/e3sm/baselines/chrys/intel/scream"),
-
+    "anlgce"   : ([". /nfs/gce/software/spack/opt/spack/linux-ubuntu20.04-x86_64/gcc-9.3.0/lmod-8.3-6fjdtku/lmod/lmod/init/sh", "module purge", "module load autoconf/2.69-bmnwajj automake/1.16.3-r7w24o4 libtool/2.4.6-uh3mpsu m4/1.4.19-7fztfyz cmake/3.20.5-zyz2eld gcc/11.1.0-qsjmpcg zlib/1.2.11-p7dmb5p", "export LD_LIBRARY_PATH=/nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/mpich/4.0/gcc-11.1.0/lib:$LD_LIBRARY_PATH", "export PATH=/nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/mpich/4.0/gcc-11.1.0/bin:/nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/netcdf/4.8.0c-4.3.1cxx-4.5.3f-serial/gcc-11.1.0/bin:$PATH", "export NetCDF_ROOT=/nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/netcdf/4.8.0c-4.3.1cxx-4.5.3f-serial/gcc-11.1.0", "export PERL5LIB=/nfs/gce/projects/climate/software/perl5/lib/perl5"],
+                 ["mpicxx","mpifort","mpicc"],
+                  "",
+                  ""),
     "linux-generic" :        ([],["mpicxx","mpifort","mpicc"],"", ""),
     "linux-generic-debug" :  ([],["mpicxx","mpifort","mpicc"],"", ""),
     "linux-generic-serial" : ([],["mpicxx","mpifort","mpicc"],"", ""),

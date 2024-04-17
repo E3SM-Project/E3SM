@@ -74,6 +74,12 @@ def _convert_adios_to_nc(case):
     # Load the environment
     case.load_env(reset=True)
 
+    # Reset MPICH/MPI GPU support, if enabled
+    is_mpich_gpu_enabled = os.environ.get('MPICH_GPU_SUPPORT_ENABLED')
+    if int(0 if is_mpich_gpu_enabled is None else is_mpich_gpu_enabled) == 1:
+      logger.info("Resetting support for GPU in MPICH/MPI library (since its not used by the tool)")
+      os.environ['MPICH_GPU_SUPPORT_ENABLED'] = str(0);
+
     run_func = lambda: run_cmd(cmd, from_dir=rundir)[0]
 
     # Run the modified case

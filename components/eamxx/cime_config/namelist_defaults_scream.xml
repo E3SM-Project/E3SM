@@ -503,6 +503,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <output_yaml_files type="array(string)"/>
     <model_restart>
       <filename_prefix>./${CASE}.scream</filename_prefix>
+      <iotype>default</iotype>
       <output_control locked="true">
         <Frequency>${REST_N}</Frequency>
         <frequency_units>${REST_OPTION}</frequency_units>

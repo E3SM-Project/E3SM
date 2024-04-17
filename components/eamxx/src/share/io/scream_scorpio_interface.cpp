@@ -15,7 +15,7 @@ using scream::Int;
 extern "C" {
 
 // Fortran routines to be called from C++
-  void register_file_c2f(const char*&& filename, const int& mode);
+  void register_file_c2f(const char*&& filename, const int& mode, const int& iotype);
   int get_file_mode_c2f(const char*&& filename);
   void set_decomp_c2f(const char*&& filename);
   void set_dof_c2f(const char*&& filename,const char*&& varname,const Int dof_len,const std::int64_t *x_dof);
@@ -94,8 +94,8 @@ void eam_pio_finalize() {
   eam_pio_finalize_c2f();
 }
 /* ----------------------------------------------------------------- */
-void register_file(const std::string& filename, const FileMode mode) {
-  register_file_c2f(filename.c_str(),mode);
+void register_file(const std::string& filename, const FileMode mode, const int iotype) {
+  register_file_c2f(filename.c_str(),mode,iotype);
 }
 /* ----------------------------------------------------------------- */
 void eam_pio_closefile(const std::string& filename) {

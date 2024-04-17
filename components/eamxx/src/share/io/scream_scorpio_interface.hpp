@@ -24,6 +24,51 @@ namespace scorpio {
     Append = 2,
     Write = 4
   };
+
+  // I/O types supported
+  enum IOType {
+    // Default I/O type is used to let the code choose I/O type as needed (via CIME)
+    DefaultIOType = 0,
+    NetCDF,
+    PnetCDF,
+    Adios,
+    Hdf5
+  };
+
+  inline int str2iotype(const std::string &str)
+  {
+    if(str == "default"){
+      return static_cast<int>(IOType::DefaultIOType);
+    }
+    else if(str == "netcdf"){
+      return static_cast<int>(IOType::NetCDF);
+    }
+    else if(str == "pnetcdf"){
+      return static_cast<int>(IOType::PnetCDF);
+    }
+    else if(str == "adios"){
+      return static_cast<int>(IOType::Adios);
+    }
+    else if(str == "hdf5"){
+      return static_cast<int>(IOType::Hdf5);
+    }
+    else{
+      return static_cast<int>(IOType::DefaultIOType);
+    }
+  }
+
+  inline std::string iotype2str(int iotype)
+  {
+    switch(iotype){
+      case static_cast<int>(IOType::DefaultIOType): return "default";
+      case static_cast<int>(IOType::NetCDF): return "netcdf";
+      case static_cast<int>(IOType::PnetCDF): return "pnetcdf";
+      case static_cast<int>(IOType::Adios): return "adios";
+      case static_cast<int>(IOType::Hdf5): return "hdf5";
+      default: return "default";
+    }
+  }
+
   /* All scorpio usage requires that the pio_subsystem is initialized. Happens only once per simulation */
   void eam_init_pio_subsystem(const ekat::Comm& comm);
   void eam_init_pio_subsystem(const int mpicom, const int atm_id = 0);
@@ -33,7 +78,7 @@ namespace scorpio {
   void eam_pio_closefile(const std::string& filename);
   void eam_flush_file(const std::string& filename);
   /* Register a new file to be used for input/output with the scorpio module */
-  void register_file(const std::string& filename, const FileMode mode);
+  void register_file(const std::string& filename, const FileMode mode, int iotype = IOType::DefaultIOType);
   /* Sets the IO decompostion for all variables in a particular filename.  Required after all variables have been registered.  Called once per file. */
   int get_dimlen(const std::string& filename, const std::string& dimname);
   bool has_dim(const std::string& filename, const std::string& dimname);
