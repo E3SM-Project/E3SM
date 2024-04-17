@@ -11,7 +11,7 @@ The new domain generation tool requires a few special packages, such as xarray, 
 
 Alternatively, a simple conda environment can be created with the following command:
 
-```bash
+```shell
 conda create --name example_env --channel conda-forge xarray numpy numba scikit-learn netcdf4
 ```
 
@@ -19,7 +19,7 @@ conda create --name example_env --channel conda-forge xarray numpy numba scikit-
 
 The map file used to generate the domain files can be created a few different ways. For a typical E3SM configuration we recommend using a conservative, monotone map. Here is an example command that can be used to generate one (as of NCO version 5.2.2)
 
-```bash
+```shell
 ncremap -5 -a traave --src_grd=${OCN_GRID} --dst_grd=${ATM_GRID} --map_file=${MAP_FILE}
 ```
 
@@ -27,7 +27,7 @@ Note that existing ocean grid files can be found in the inputdata repository: `i
 
 The atmosphere grid file should be on the "pg2" grid. These grid files are easily generated with three TempestRemap commands as follows:
 
-```bash
+```shell
 NE=30
 GenerateCSMesh --alt --res ${NE} --file ${GRID_FILE_PATH}/ne${NE}.g
 GenerateVolumetricMesh --in ${GRID_FILE_PATH}/ne${NE}.g --out ${GRID_FILE_PATH}/ne${NE}pg2.g --np 2 --uniform
@@ -40,7 +40,7 @@ For RRM grids the last two commands would be used on the exodus file produced by
 
 Below is a typical example of how to invoke the domain generation tool from the command line:
 
-```bash
+```shell
 NE=30
 MAP_FILE=${MAP_FILE_ROOT}/map_oEC60to30v3_to_ne${NE}pg2_traave.20240313.nc
 python generate_domain_files_E3SM.py -m ${MAP_FILE} -o oEC60to30v3 -l ne${NE}pg2 --date-stamp=9999 --output-root=${OUTPUT_ROOT}
