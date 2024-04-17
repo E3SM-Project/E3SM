@@ -34,3 +34,13 @@ Here is an example command that can be used to generate one (as of NCO version 5
 ```
 ncremap -5 -a traave --src_grd=${OCN_GRID} --dst_grd=${ATM_GRID} --map_file=${MAP_FILE}
 ```
+
+## Generating Domain Files
+
+Below is a typical example of how to invoke the domain generation tool from the command line:
+
+```
+NE=30
+MAP_FILE=${MAP_FILE_ROOT}/map_oEC60to30v3_to_ne${NE}pg2_traave.20240313.nc
+python generate_domain_files_E3SM.py -m ${MAP_FILE} -o oEC60to30v3 -l ne${NE}pg2 --date-stamp=9999 --output-root=${OUTPUT_ROOT}
+```
