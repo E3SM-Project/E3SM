@@ -1112,7 +1112,7 @@ contains
             else
               ! we need to read the atm mesh on coupler, from domain file 
                ierr = iMOAB_LoadMesh(mbaxid, trim(atm_mesh)//C_NULL_CHAR, &
-                "PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;NO_CULLING", 0)
+                "PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;REPARTITION;NO_CULLING", 0)
                if ( ierr /= 0 ) then
                   write(logunit,*) 'Failed to load atm domain mesh on coupler'
                   call shr_sys_abort(subname//' ERROR Failed to load atm domain mesh on coupler  ')
@@ -1290,7 +1290,7 @@ contains
             else
               ! we need to read the ocean mesh on coupler, from domain file 
                ierr = iMOAB_LoadMesh(mboxid, trim(ocn_domain)//C_NULL_CHAR, &
-                "PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;NO_CULLING", 0)
+                "PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;NO_CULLING;REPARTITION", 0)
                if ( ierr /= 0 ) then
                   write(logunit,*) 'Failed to load ocean domain mesh on coupler'
                   call shr_sys_abort(subname//' ERROR Failed to load ocean domain mesh on coupler  ')
@@ -1399,7 +1399,7 @@ contains
             else
                 ! we need to read the ocean mesh on coupler, from domain file 
                ierr = iMOAB_LoadMesh(mbofxid, trim(ocn_domain)//C_NULL_CHAR, &
-                "PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;NO_CULLING", 0)
+                "PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;NO_CULLING;REPARTITION", 0)
                if ( ierr /= 0 ) then
                   write(logunit,*) 'Failed to load second ocean domain mesh on coupler'
                   call shr_sys_abort(subname//' ERROR Failed to load second ocean domain mesh on coupler  ')
@@ -1445,7 +1445,7 @@ contains
             ! do not receive the mesh anymore, read it from file, then pair it with mlnid, component land PC mesh
             ! similar to rof mosart mesh  
             
-            ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE='//C_NULL_CHAR
+            ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;REPARTITION'//C_NULL_CHAR
             call seq_infodata_GetData(infodata,lnd_domain=lnd_domain)
             outfile = trim(lnd_domain)//C_NULL_CHAR
             nghlay = 0 ! no ghost layers 
@@ -1639,7 +1639,7 @@ contains
                ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=RCBZOLTAN'//C_NULL_CHAR
             else
                outfile = trim(rof_domain)//C_NULL_CHAR
-               ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE='//C_NULL_CHAR
+               ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;REPARTITION'//C_NULL_CHAR
             endif
             nghlay = 0 ! no ghost layers 
             ierr = iMOAB_LoadMesh(mbrxid, outfile, ropts, nghlay)
