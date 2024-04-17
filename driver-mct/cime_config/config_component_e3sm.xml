@@ -177,8 +177,7 @@
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
     <values match="last">
-      <value compset="_MPASO%IBPISMF_">TRUE</value>
-      <value compset="_MPASO%IBDISMF_">TRUE</value>
+      <value compset="_MPASO%[^_]*ISMF">TRUE</value>
       <value compset="_MPASSI%DIB_">TRUE</value>
     </values>
     <group>run_flags</group>
